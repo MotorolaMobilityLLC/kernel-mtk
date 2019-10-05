@@ -629,7 +629,8 @@ int ccci_util_broadcast_init(void)
 	s_md1_user_request_lock_cnt = 0;
 	s_md3_user_request_lock_cnt = 0;
 
-	ret = alloc_chrdev_region(&s_md_status_dev, 0, 3, "ccci_md_sta");
+	ret = alloc_chrdev_region(&s_md_status_dev, 0, MD_BC_MAX_NUM,
+				"ccci_md_sta");
 	if (ret != 0) {
 		CCCI_UTIL_ERR_MSG("alloc chrdev fail for ccci_md_sta(%d)\n",
 		ret);
@@ -637,7 +638,7 @@ int ccci_util_broadcast_init(void)
 	}
 	cdev_init(&s_bd_char_dev, &broad_cast_fops);
 	s_bd_char_dev.owner = THIS_MODULE;
-	ret = cdev_add(&s_bd_char_dev, s_md_status_dev, 3);
+	ret = cdev_add(&s_bd_char_dev, s_md_status_dev, MD_BC_MAX_NUM);
 	if (ret) {
 		CCCI_UTIL_ERR_MSG("cdev_add failed\n");
 		goto _exit_2;
@@ -660,7 +661,7 @@ _exit_2:
 	cdev_del(&s_bd_char_dev);
 
 _exit_1:
-	unregister_chrdev_region(s_md_status_dev, 3);
+	unregister_chrdev_region(s_md_status_dev, MD_BC_MAX_NUM);
 
 _exit:
 	for (i = 0; i < MD_BC_MAX_NUM; i++)
