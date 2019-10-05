@@ -497,6 +497,8 @@ int pmic_get_auxadc_value(int list)
 	if (list == AUXADC_LIST_HPOFS_CAL) {
 		ret = iio_read_channel_raw(
 			legacy_auxadc[list].chan, &value);
+	} else if (list == AUXADC_LIST_VBIF && g_pmic_pad_vbif28_vol) {
+		value = g_pmic_pad_vbif28_vol;
 	} else {
 		ret = iio_read_channel_processed(
 			legacy_auxadc[list].chan, &value);
@@ -534,10 +536,13 @@ static void auxadc_dcxo_temp_convert(unsigned char convert)
 
 static void auxadc_vbif_convert(unsigned char convert)
 {
-	if (convert == 1)
+	if (convert == 1) {
+		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 1);
 		pmic_set_hk_reg_value(PMIC_BATON_TDET_EN, 0);
-	else if (convert == 0)
+	} else if (convert == 0) {
+		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
 		pmic_set_hk_reg_value(PMIC_BATON_TDET_EN, 1);
+	}
 }
 
 static int auxadc_bat_temp_cali(int bat_temp, int precision_factor)
