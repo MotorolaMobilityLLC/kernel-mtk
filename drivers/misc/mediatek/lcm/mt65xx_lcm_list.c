@@ -1038,6 +1038,11 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695B_FHD_DSI_CMD_AUO_RT4801)
 	&nt35695B_fhd_dsi_cmd_auo_rt4801_lcm_drv,
 #endif
+
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_HDP)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_hdp_lcm_drv,
+#endif
+
 #if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081)
 	&nt35695B_fhd_dsi_cmd_auo_rt5081_lcm_drv,
 #endif
