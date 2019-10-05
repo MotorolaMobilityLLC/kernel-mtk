@@ -57,7 +57,11 @@
 
 #include <cmdq_core.h>
 #include <cmdq_record.h>
+#ifdef CONFIG_MTK_IOMMU_V2
+#include <mach/mt_iommu.h>
+#else
 #include <m4u.h>
+#endif
 #include <smi_public.h>
 #include "engine_request.h"
 
@@ -189,6 +193,9 @@ struct DPE_CLK_STRUCT dpe_clk;
 
 #define DPE_ENABLE 0x1
 
+cmdqBackupSlotHandle DPE_slot;
+static u32 DPE_counter;
+u32 DPE_val;
 
 /* static irqreturn_t DPE_Irq_CAM_A(signed int  Irq,void *DeviceId); */
 static irqreturn_t ISP_Irq_DVP(signed int Irq, void *DeviceId);
@@ -1149,7 +1156,7 @@ signed int dpe_deque_cb(struct frame *frames, void *req)
 void DPEQOS_Init(void)
 {
 	s32 result = 0;
-	u64 dpe_freq_steps[MAX_FREQ_STEP] = {0};
+	u64 dpe_freq_steps[MAX_FREQ_STEP];
 	u32 step_size;
 
 	/* Call pm_qos_add_request when initialize module or driver prob */
@@ -1404,6 +1411,7 @@ signed int CmdqDPEHW(struct frame *frame)
 
 	prevFrm = (pDpeConfig->DVS_CTRL00 & 0x01800000) >> 23;
 	curFrm = (pDpeConfig->DVS_CTRL00 & 0x00600000) >> 21;
+	LOG_DBG("prevFrm: %d, curFrm: %d\n", prevFrm, curFrm);
 
 	if (pDpeConfig->USERDUMP_EN == 1)
 		DPE_DumpUserSpaceReg(pDpeConfig);
@@ -1432,49 +1440,53 @@ signed int CmdqDPEHW(struct frame *frame)
 	CMDQWR(DVS_SRC_02);
 	CMDQWR(DVS_SRC_03);
 	CMDQWR(DVS_SRC_04);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_05_L_FRM0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_06_L_FRM1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_07_L_FRM2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_08_L_FRM3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_09_R_FRM0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_10_R_FRM1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_11_R_FRM2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_12_R_FRM3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_13_L_VMAP0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_14_L_VMAP1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_15_L_VMAP2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_16_L_VMAP3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_17_R_VMAP0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_18_R_VMAP1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_19_R_VMAP2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_20_R_VMAP3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_21_INTER_MEDV);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_22_MEDV0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_23_MEDV1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_24_MEDV2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_25_MEDV3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_26_OCCDV0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_27_OCCDV1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_28_OCCDV2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_29_OCCDV3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_30_DCV_CONF0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_31_DCV_CONF1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_32_DCV_CONF2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_33_DCV_CONF3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_34_DCV_L_FRM0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_35_DCV_L_FRM1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_36_DCV_L_FRM2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_37_DCV_L_FRM3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_38_DCV_R_FRM0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_39_DCV_R_FRM1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_40_DCV_R_FRM2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_41_DCV_R_FRM3);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_42_OCCDV_EXT0);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_43_OCCDV_EXT1);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_44_OCCDV_EXT2);
-	CMDQWR_DPE_DRAM_ADDR(DVS_SRC_45_OCCDV_EXT3);
 
-	LOG_DBG("prevFrm: %d, curFrm: %d\n", prevFrm, curFrm);
+	if (curFrm == 0) {
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_05_L_FRM0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_06_L_FRM1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_09_R_FRM0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_10_R_FRM1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_13_L_VMAP0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_14_L_VMAP1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_17_R_VMAP0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_18_R_VMAP1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_21_INTER_MEDV);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_22_MEDV0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_23_MEDV1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_26_OCCDV0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_27_OCCDV1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_30_DCV_CONF0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_31_DCV_CONF1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_34_DCV_L_FRM0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_35_DCV_L_FRM1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_38_DCV_R_FRM0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_39_DCV_R_FRM1);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_42_OCCDV_EXT0);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_43_OCCDV_EXT1);
+	} else if (curFrm == 2) {
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_07_L_FRM2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_08_L_FRM3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_11_R_FRM2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_12_R_FRM3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_15_L_VMAP2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_16_L_VMAP3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_19_R_VMAP2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_20_R_VMAP3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_21_INTER_MEDV);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_24_MEDV2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_25_MEDV3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_28_OCCDV2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_29_OCCDV3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_32_DCV_CONF2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_33_DCV_CONF3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_36_DCV_L_FRM2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_37_DCV_L_FRM3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_40_DCV_R_FRM2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_41_DCV_R_FRM3);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_44_OCCDV_EXT2);
+		CMDQWR_DPE_DRAM_ADDR(DVS_SRC_45_OCCDV_EXT3);
+	}
+
 	/* For First Frame  */
 	if (prevFrm == curFrm)
 	cmdqRecWrite(handle, DVS_SRC_21_INTER_MEDV_HW, 0x80000000, 0x80000000);
@@ -1553,6 +1565,12 @@ if (g_isDvpInUse == 0) {
 	CMDQWR(DVP_CORE_15);
 	CMDQWR(DVP_DRAM_PITCH);
 
+	CMDQWR(DVP_SRC_00);
+	CMDQWR(DVP_SRC_01);
+	CMDQWR(DVP_SRC_02);
+	CMDQWR(DVP_SRC_03);
+	CMDQWR(DVP_SRC_04);
+	CMDQWR(DVP_CTRL04);
 	/*CRC EN, CRC SEL = 0x1000*/
 	/* cmdqRecWrite(handle, DVP_CRC_CTRL_HW, 0x00000801, 0x00000F01); */
 	/* CRC CLEAR  = 1 */
@@ -1565,47 +1583,49 @@ if (g_isDvpInUse == 0) {
 }
 	/* Double Buffer Mask = 1 */
 	cmdqRecWrite(handle, DVP_CTRL01_HW, 0x00020000, 0x00020000);
-	CMDQWR(DVP_SRC_00);
-	CMDQWR(DVP_SRC_01);
-	CMDQWR(DVP_SRC_02);
-	CMDQWR(DVP_SRC_03);
-	CMDQWR(DVP_SRC_04);
-	CMDQWR(DVP_CTRL04);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_05_Y_FRM0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_06_Y_FRM1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_07_Y_FRM2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_08_Y_FRM3);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_09_C_FRM0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_10_C_FRM1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_11_C_FRM2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_12_C_FRM3);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_13_OCCDV0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_14_OCCDV1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_15_OCCDV2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_16_OCCDV3);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_17_CRM);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_18_ASF_RMDV);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_19_ASF_RDDV);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_20_ASF_DV0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_21_ASF_DV1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_22_ASF_DV2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_23_ASF_DV3);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_24_WMF_HFDV);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_25_WMF_DV0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_26_WMF_DV1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_27_WMF_DV2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_SRC_28_WMF_DV3);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_13_OCCDV0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_14_OCCDV1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_15_OCCDV2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_16_OCCDV3);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_18_ASF_RMDV);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_19_ASF_RDDV);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_20_ASF_DV0);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_21_ASF_DV1);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_22_ASF_DV2);
-	CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_23_ASF_DV3);
-
+	if (curFrm == 0) {
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_05_Y_FRM0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_06_Y_FRM1);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_09_C_FRM0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_10_C_FRM1);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_13_OCCDV0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_14_OCCDV1);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_17_CRM);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_18_ASF_RMDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_19_ASF_RDDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_20_ASF_DV0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_21_ASF_DV1);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_24_WMF_HFDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_25_WMF_DV0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_26_WMF_DV1);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_13_OCCDV0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_14_OCCDV1);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_18_ASF_RMDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_19_ASF_RDDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_20_ASF_DV0);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_21_ASF_DV1);
+	} else if (curFrm == 2) {
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_07_Y_FRM2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_08_Y_FRM3);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_11_C_FRM2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_12_C_FRM3);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_15_OCCDV2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_16_OCCDV3);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_17_CRM);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_18_ASF_RMDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_19_ASF_RDDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_22_ASF_DV2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_23_ASF_DV3);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_24_WMF_HFDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_27_WMF_DV2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_SRC_28_WMF_DV3);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_15_OCCDV2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_16_OCCDV3);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_18_ASF_RMDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_19_ASF_RDDV);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_22_ASF_DV2);
+		CMDQWR_DPE_DRAM_ADDR(DVP_EXT_SRC_23_ASF_DV3);
+	}
 	/* Double Buffer Mask = 0 */
 	cmdqRecWrite(handle, DVP_CTRL01_HW, 0x00000000, 0x00020000);
 	/* Double Buffer Config Ready = 1 */
@@ -1635,6 +1655,22 @@ if (g_isDvpInUse == 0) {
 		/*  Non-16Bit Mode, use mid vopp */
 		DPEQOS_UpdateDpeFreq(1, 1);
 #endif
+
+	if (curFrm == 0) {
+	LOG_INF("DVS_SRC05_L: 0x%08X, DVP05_SRC_Y: 0x%08X, DPE_counter: %d\n",
+		pDpeConfig->DVS_SRC_05_L_FRM0,
+		pDpeConfig->DVP_SRC_05_Y_FRM0,
+		DPE_counter);
+	} else if (curFrm == 2) {
+	LOG_INF("DVS_SRC07_L: 0x%08X, DVP_SRC07_Y: 0x%08X, DPE_counter: %d\n",
+		pDpeConfig->DVS_SRC_07_L_FRM2,
+		pDpeConfig->DVP_SRC_07_Y_FRM2,
+		DPE_counter);
+	}
+
+	/* each flush */
+	cmdq_op_write_mem(handle, DPE_slot, 0, DPE_counter++);
+
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
 	cmdq_task_flush_async_destroy(handle);	/* flush and destroy in cmdq */
 
@@ -1694,6 +1730,8 @@ static signed int DPE_DumpReg(void)
 		(unsigned int)DPE_RD32(DVS_CTRL_STATUS1_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_CTRL_STATUS2_HW),
 		(unsigned int)DPE_RD32(DVS_CTRL_STATUS2_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_IRQ_STATUS_HW),
+		(unsigned int)DPE_RD32(DVS_IRQ_STATUS_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_FRM_STATUS0_HW),
 		(unsigned int)DPE_RD32(DVS_FRM_STATUS0_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_FRM_STATUS1_HW),
@@ -1720,6 +1758,28 @@ static signed int DPE_DumpReg(void)
 		(unsigned int)DPE_RD32(DVS_SRC_03_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_04_HW),
 		(unsigned int)DPE_RD32(DVS_SRC_04_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_05_L_FRM0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_05_L_FRM0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_09_R_FRM0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_09_R_FRM0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_13_L_VMAP0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_13_L_VMAP0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_17_R_VMAP0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_17_R_VMAP0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_21_INTER_MEDV_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_21_INTER_MEDV_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_22_MEDV0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_22_MEDV0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_26_OCCDV0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_26_OCCDV0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_30_DCV_CONF0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_30_DCV_CONF0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_34_DCV_L_FRM0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_34_DCV_L_FRM0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_38_DCV_R_FRM0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_38_DCV_R_FRM0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVS_SRC_42_OCCDV_EXT0_HW),
+		(unsigned int)DPE_RD32(DVS_SRC_42_OCCDV_EXT0_REG));
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_CTRL00_HW),
 		(unsigned int)DPE_RD32(DVP_CTRL00_REG));
@@ -1763,6 +1823,22 @@ static signed int DPE_DumpReg(void)
 		(unsigned int)DPE_RD32(DVP_SRC_03_REG));
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_04_HW),
 		(unsigned int)DPE_RD32(DVP_SRC_04_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_05_Y_FRM0_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_05_Y_FRM0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_09_C_FRM0_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_09_C_FRM0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_13_OCCDV0_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_13_OCCDV0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_17_CRM_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_17_CRM_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_18_ASF_RMDV_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_18_ASF_RMDV_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_19_ASF_RDDV_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_19_ASF_RDDV_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_20_ASF_DV0_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_20_ASF_DV0_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DVP_SRC_24_WMF_HFDV_HW),
+		(unsigned int)DPE_RD32(DVP_SRC_24_WMF_HFDV_REG));
 
 #endif
 	LOG_INF("- X.");
@@ -2059,9 +2135,9 @@ EXIT:
  ******************************************************************************/
 static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 {
-
 	signed int Ret = 0;
 	signed int Timeout = WaitIrq->Timeout;
+	pid_t ProcessID;
 	enum DPE_PROCESS_ID_ENUM whichReq = DPE_PROCESS_ID_NONE;
 
 	/*unsigned int i;*/
@@ -2168,6 +2244,28 @@ static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 	}
 	/* timeout */
 	if (Timeout == 0) {
+		LOG_INF("DPE Queue Index(icnt): %d\n", dpe_reqs.req_ctl.icnt);
+		LOG_INF("DPE Queue Index(gcnt): %d\n", dpe_reqs.req_ctl.gcnt);
+		if ((dpe_reqs.req_ctl.icnt) != (dpe_reqs.req_ctl.gcnt)) {
+		LOG_INF("DPE IRQ Recover\n");
+		spin_lock_irq(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]));
+			dpe_update_request(&dpe_reqs, &ProcessID);
+
+			DPEInfo.IrqInfo.Status[DPE_IRQ_TYPE_INT_DVP_ST] |=
+				DPE_INT_ST;
+			DPEInfo.IrqInfo.ProcessID[DPE_PROCESS_ID_DPE] =
+				ProcessID;
+			DPEInfo.IrqInfo.DpeIrqCnt++;
+			DPEInfo.ProcessID[DPEInfo.WriteReqIdx] = ProcessID;
+			DPEInfo.WriteReqIdx =
+				(DPEInfo.WriteReqIdx + 1) %
+				_SUPPORT_MAX_DPE_FRAME_REQUEST_;
+			wake_up_interruptible(&DPEInfo.WaitQueueHead);
+		spin_unlock_irq(
+			&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]));
+		Ret = 0;
+		goto EXIT;
+		}
 		spin_lock_irqsave(&(DPEInfo.SpinLockIrq[WaitIrq->Type]),
 									flags);
 		irqStatus = DPEInfo.IrqInfo.Status[WaitIrq->Type];
@@ -2227,7 +2325,6 @@ static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 
 
 EXIT:
-
 
 	return Ret;
 }
@@ -2595,7 +2692,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				"DPE_ENQUE_REQ copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
-
 			break;
 		}
 	case DPE_DEQUE_NUM:
@@ -2757,7 +2853,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				LOG_ERR("DPE_CMD_DPE_DEQUE_REQ failed\n");
 				Ret = -EFAULT;
 			}
-
 			break;
 		}
 	default:
@@ -3123,6 +3218,9 @@ static signed int DPE_release(struct inode *pInode, struct file *pFile)
 
 	LOG_DBG("- E. UserCount: %d.", DPEInfo.UserCount);
 
+	spin_lock_irq(&(DPEInfo.SpinLockDPE));
+	g_isDvpInUse = 0;
+	spin_unlock_irq(&(DPEInfo.SpinLockDPE));
 	/*  */
 	if (pFile->private_data != NULL) {
 		pUserInfo =
@@ -3168,7 +3266,7 @@ EXIT:
  ******************************************************************************/
 static signed int DPE_mmap(struct file *pFile, struct vm_area_struct *pVma)
 {
-	unsigned long length = 0;
+	long length = 0;
 	unsigned int pfn = 0x0;
 
 	length = pVma->vm_end - pVma->vm_start;
@@ -3222,6 +3320,133 @@ static const struct file_operations DPEFileOper = {
 	.compat_ioctl = DPE_ioctl_compat,
 #endif
 };
+
+/**************************************************************
+ *
+ **************************************************************/
+#ifdef CONFIG_MTK_IOMMU_V2
+enum mtk_iommu_callback_ret_t DPE_M4U_TranslationFault_callback(int port,
+	unsigned int mva, void *data)
+#else
+enum m4u_callback_ret_t DPE_M4U_TranslationFault_callback(int port,
+	unsigned int mva, void *data)
+#endif
+{
+
+	pr_info("[DPE_M4U]fault call port=%d, mva=0x%x", port, mva);
+
+	switch (port) {
+	case M4U_PORT_DVS_RDMA:
+	case M4U_PORT_DVS_WDMA:
+	case M4U_PORT_DVP_RDMA:
+	case M4U_PORT_DVP_WDMA:
+	default:  //ISP_DPE_BASE = 0x1b001000
+		pr_info("DVS_SRC_05_L_FRM0:0x%08x, DVS_SRC_06_L_FRM1:0x%08x, DVS_SRC_07_L_FRM2:0x%08x, DVS_SRC_08_L_FRM3:0x%08x\n",
+			DPE_RD32(DVS_SRC_05_L_FRM0_REG),
+			DPE_RD32(DVS_SRC_06_L_FRM1_REG),
+			DPE_RD32(DVS_SRC_07_L_FRM2_REG),
+			DPE_RD32(DVS_SRC_08_L_FRM3_REG));
+		pr_info("DVS_SRC_09_R_FRM0:0x%08x, DVS_SRC_10_R_FRM1:0x%08x, DVS_SRC_11_R_FRM2:0x%08x, DVS_SRC_12_R_FRM3:0x%08x\n",
+			DPE_RD32(DVS_SRC_09_R_FRM0_REG),
+			DPE_RD32(DVS_SRC_10_R_FRM1_REG),
+			DPE_RD32(DVS_SRC_11_R_FRM2_REG),
+			DPE_RD32(DVS_SRC_12_R_FRM3_REG));
+		pr_info("DVS_SRC_13_L_VMAP0:0x%08x, DVS_SRC_14_L_VMAP1:0x%08x, DVS_SRC_15_L_VMAP2:0x%08x, DVS_SRC_16_L_VMAP3:0x%08x\n",
+			DPE_RD32(DVS_SRC_13_L_VMAP0_REG),
+			DPE_RD32(DVS_SRC_14_L_VMAP1_REG),
+			DPE_RD32(DVS_SRC_15_L_VMAP2_REG),
+			DPE_RD32(DVS_SRC_16_L_VMAP3_REG));
+		pr_info("DVS_SRC_17_R_VMAP0:0x%08x, DVS_SRC_18_R_VMAP1:0x%08x, DVS_SRC_19_R_VMAP2:0x%08x, DVS_SRC_20_R_VMAP3:0x%08x\n",
+			DPE_RD32(DVS_SRC_17_R_VMAP0_REG),
+			DPE_RD32(DVS_SRC_18_R_VMAP1_REG),
+			DPE_RD32(DVS_SRC_19_R_VMAP2_REG),
+			DPE_RD32(DVS_SRC_20_R_VMAP3_REG));
+		pr_info("DVS_SRC_21_INTER_MEDV:0x%08x\n",
+			DPE_RD32(DVS_SRC_21_INTER_MEDV_REG));
+		pr_info("DVS_SRC_22_MEDV0:0x%08x, DVS_SRC_23_MEDV1:0x%08x, DVS_SRC_24_MEDV2:0x%08x, DVS_SRC_25_MEDV3:0x%08x\n",
+			DPE_RD32(DVS_SRC_22_MEDV0_REG),
+			DPE_RD32(DVS_SRC_23_MEDV1_REG),
+			DPE_RD32(DVS_SRC_24_MEDV2_REG),
+			DPE_RD32(DVS_SRC_25_MEDV3_REG));
+		pr_info("DVS_SRC_26_OCCDV0:0x%08x, DVS_SRC_27_OCCDV1:0x%08x, DVS_SRC_28_OCCDV2:0x%08x, DVS_SRC_29_OCCDV3:0x%08x\n",
+			DPE_RD32(DVS_SRC_26_OCCDV0_REG),
+			DPE_RD32(DVS_SRC_27_OCCDV1_REG),
+			DPE_RD32(DVS_SRC_28_OCCDV2_REG),
+			DPE_RD32(DVS_SRC_29_OCCDV3_REG));
+		pr_info("DVS_SRC_30_DCV_CONF0:0x%08x, DVS_SRC_31_DCV_CONF1:0x%08x, DVS_SRC_32_DCV_CONF2:0x%08x, DVS_SRC_33_DCV_CONF3:0x%08x\n",
+			DPE_RD32(DVS_SRC_30_DCV_CONF0_REG),
+			DPE_RD32(DVS_SRC_31_DCV_CONF1_REG),
+			DPE_RD32(DVS_SRC_32_DCV_CONF2_REG),
+			DPE_RD32(DVS_SRC_33_DCV_CONF3_REG));
+		pr_info("DVS_SRC_34_DCV_L_FRM0:0x%08x, DVS_SRC_35_DCV_L_FRM1:0x%08x, DVS_SRC_36_DCV_L_FRM2:0x%08x, DVS_SRC_37_DCV_L_FRM3:0x%08x\n",
+			DPE_RD32(DVS_SRC_34_DCV_L_FRM0_REG),
+			DPE_RD32(DVS_SRC_35_DCV_L_FRM1_REG),
+			DPE_RD32(DVS_SRC_36_DCV_L_FRM2_REG),
+			DPE_RD32(DVS_SRC_37_DCV_L_FRM3_REG));
+		pr_info("DVS_SRC_38_DCV_R_FRM0:0x%08x, DVS_SRC_39_DCV_R_FRM1:0x%08x, DVS_SRC_40_DCV_R_FRM2:0x%08x, DVS_SRC_41_DCV_R_FRM3:0x%08x\n",
+			DPE_RD32(DVS_SRC_38_DCV_R_FRM0_REG),
+			DPE_RD32(DVS_SRC_39_DCV_R_FRM1_REG),
+			DPE_RD32(DVS_SRC_40_DCV_R_FRM2_REG),
+			DPE_RD32(DVS_SRC_41_DCV_R_FRM3_REG));
+		pr_info("DVS_SRC_42_OCCDV_EXT0:0x%08x, DVS_SRC_43_OCCDV_EXT1:0x%08x, DVS_SRC_44_OCCDV_EXT2:0x%08x, DVS_SRC_45_OCCDV_EXT3:0x%08x\n",
+			DPE_RD32(DVS_SRC_42_OCCDV_EXT0_REG),
+			DPE_RD32(DVS_SRC_43_OCCDV_EXT1_REG),
+			DPE_RD32(DVS_SRC_44_OCCDV_EXT2_REG),
+			DPE_RD32(DVS_SRC_45_OCCDV_EXT3_REG));
+
+		pr_info("DVP_SRC_05_Y_FRM0:0x%08x, DVP_SRC_06_Y_FRM1:0x%08x, DVP_SRC_07_Y_FRM2:0x%08x, DVP_SRC_08_Y_FRM3:0x%08x\n",
+			DPE_RD32(DVP_SRC_05_Y_FRM0_REG),
+			DPE_RD32(DVP_SRC_06_Y_FRM1_REG),
+			DPE_RD32(DVP_SRC_07_Y_FRM2_REG),
+			DPE_RD32(DVP_SRC_08_Y_FRM3_REG));
+		pr_info("DVP_SRC_09_C_FRM0:0x%08x, DVP_SRC_10_C_FRM1:0x%08x, DVP_SRC_11_C_FRM2:0x%08x, DVP_SRC_12_C_FRM3:0x%08x\n",
+			DPE_RD32(DVP_SRC_09_C_FRM0_REG),
+			DPE_RD32(DVP_SRC_10_C_FRM1_REG),
+			DPE_RD32(DVP_SRC_11_C_FRM2_REG),
+			DPE_RD32(DVP_SRC_12_C_FRM3_REG));
+		pr_info("DVP_SRC_13_OCCDV0:0x%08x, DVP_SRC_14_OCCDV1:0x%08x, DVP_SRC_15_OCCDV2:0x%08x, DVP_SRC_16_OCCDV3:0x%08x\n",
+			DPE_RD32(DVP_SRC_13_OCCDV0_REG),
+			DPE_RD32(DVP_SRC_14_OCCDV1_REG),
+			DPE_RD32(DVP_SRC_15_OCCDV2_REG),
+			DPE_RD32(DVP_SRC_16_OCCDV3_REG));
+		pr_info("DVP_SRC_17_CRM:0x%08x\n",
+			DPE_RD32(DVP_SRC_17_CRM_REG));
+		pr_info("DVP_SRC_18_ASF_RMDV:0x%08x, DVP_SRC_19_ASF_RDDV:0x%08x\n",
+			DPE_RD32(DVP_SRC_18_ASF_RMDV_REG),
+			DPE_RD32(DVP_SRC_19_ASF_RDDV_REG));
+		pr_info("DVP_SRC_20_ASF_DV0:0x%08x, DVP_SRC_21_ASF_DV1:0x%08x, DVP_SRC_22_ASF_DV2:0x%08x, DVP_SRC_23_ASF_DV3:0x%08x\n",
+			DPE_RD32(DVP_SRC_20_ASF_DV0_REG),
+			DPE_RD32(DVP_SRC_21_ASF_DV1_REG),
+			DPE_RD32(DVP_SRC_22_ASF_DV2_REG),
+			DPE_RD32(DVP_SRC_23_ASF_DV3_REG));
+		pr_info("DVP_SRC_24_WMF_HFDV:0x%08x\n",
+			DPE_RD32(DVP_SRC_24_WMF_HFDV_REG));
+		pr_info("DVP_SRC_25_WMF_DV0:0x%08x, DVP_SRC_26_WMF_DV1:0x%08x, DVP_SRC_27_WMF_DV2:0x%08x, DVP_SRC_28_WMF_DV3:0x%08x\n",
+			DPE_RD32(DVP_SRC_25_WMF_DV0_REG),
+			DPE_RD32(DVP_SRC_26_WMF_DV1_REG),
+			DPE_RD32(DVP_SRC_27_WMF_DV2_REG),
+			DPE_RD32(DVP_SRC_28_WMF_DV3_REG));
+		pr_info("DVP_EXT_SRC_13_OCCDV0:0x%08x, DVP_EXT_SRC_14_OCCDV1:0x%08x, DVP_EXT_SRC_15_OCCDV2:0x%08x, DVP_EXT_SRC_16_OCCDV3:0x%08x\n",
+			DPE_RD32(DVP_EXT_SRC_13_OCCDV0_REG),
+			DPE_RD32(DVP_EXT_SRC_14_OCCDV1_REG),
+			DPE_RD32(DVP_EXT_SRC_15_OCCDV2_REG),
+			DPE_RD32(DVP_EXT_SRC_16_OCCDV3_REG));
+		pr_info("DVP_EXT_SRC_18_ASF_RMDV:0x%08x, DVP_EXT_SRC_19_ASF_RDDV:0x%08x\n",
+			DPE_RD32(DVP_EXT_SRC_18_ASF_RMDV_REG),
+			DPE_RD32(DVP_EXT_SRC_19_ASF_RDDV_REG));
+		pr_info("DVP_EXT_SRC_20_ASF_DV0:0x%08x, DVP_EXT_SRC_21_ASF_DV1:0x%08x, DVP_EXT_SRC_22_ASF_DV2:0x%08x, DVP_EXT_SRC_23_ASF_DV3:0x%08x\n",
+			DPE_RD32(DVP_EXT_SRC_20_ASF_DV0_REG),
+			DPE_RD32(DVP_EXT_SRC_21_ASF_DV1_REG),
+			DPE_RD32(DVP_EXT_SRC_22_ASF_DV2_REG),
+			DPE_RD32(DVP_EXT_SRC_23_ASF_DV3_REG));
+	break;
+	}
+#ifdef CONFIG_MTK_IOMMU_V2
+	return MTK_IOMMU_CALLBACK_HANDLED;
+#else
+	return M4U_CALLBACK_HANDLED;
+#endif
+}
 
 /*******************************************************************************
  *
@@ -3446,7 +3671,12 @@ static signed int DPE_probe(struct platform_device *pDev)
 		if (!DPEInfo.wkqueue)
 			LOG_ERR("NULL DPE-CMDQ-WQ\n");
 
-		wakeup_source_init(&DPE_wake_lock, "dpe_lock_wakelock");
+#ifdef CONFIG_PM_WAKELOCKS
+		wakeup_source_init(&DPE_wake_lock, "DPE_wake_lock");
+#else
+		wake_lock_init(&DPE_wake_lock, WAKE_LOCK_SUSPEND,
+			"DPE_wakelock");
+#endif
 
 		INIT_WORK(&logWork, logPrint);
 		for (i = 0; i < DPE_IRQ_TYPE_AMOUNT; i++)
@@ -3471,6 +3701,9 @@ EXIT:
 	if (Ret < 0)
 		DPE_UnregCharDev();
 
+
+	/* only once */
+	cmdq_alloc_mem(&DPE_slot, 1);
 
 	LOG_INF("- X. DPE driver probe.");
 
@@ -3945,6 +4178,12 @@ int32_t DPE_ClockOnCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("DPE_ClockOnCallback"); */
 	/* LOG_DBG("+CmdqEn:%d", g_u4EnableClockCount); */
+
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&DPE_wake_lock);
+#else
+	wake_lock(&DPE_wake_lock);
+#endif
 	/* DPE_EnableClock(MTRUE); */
 
 	return 0;
@@ -3972,6 +4211,12 @@ int32_t DPE_ClockOffCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("DPE_ClockOffCallback"); */
 	/* DPE_EnableClock(MFALSE); */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&DPE_wake_lock);
+#else
+	wake_unlock(&DPE_wake_lock);
+#endif
+
 	/* LOG_DBG("-CmdqEn:%d", g_u4EnableClockCount); */
 	return 0;
 }
@@ -3997,6 +4242,9 @@ static signed int __init DPE_Init(void)
 		return Ret;
 	}
 
+	spin_lock_irq(&(DPEInfo.SpinLockDPE));
+	g_isDvpInUse = 0;
+	spin_unlock_irq(&(DPEInfo.SpinLockDPE));
 #if 0
 	struct device_node *node = NULL;
 
@@ -4072,6 +4320,30 @@ static signed int __init DPE_Init(void)
 			   DPE_DumpCallback, DPE_ResetCallback,
 							DPE_ClockOffCallback);
 
+#ifdef CONFIG_MTK_IOMMU_V2
+	mtk_iommu_register_fault_callback(M4U_PORT_DVS_RDMA,
+					  DPE_M4U_TranslationFault_callback,
+					  NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_DVS_WDMA,
+					  DPE_M4U_TranslationFault_callback,
+					  NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_DVP_RDMA,
+					  DPE_M4U_TranslationFault_callback,
+					  NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_DVP_WDMA,
+					  DPE_M4U_TranslationFault_callback,
+					  NULL);
+#else
+	m4u_register_fault_callback(M4U_PORT_DVS_RDMA,
+			DPE_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_DVS_WDMA,
+			DPE_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_DVP_RDMA,
+			DPE_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_DVP_WDMA,
+			DPE_M4U_TranslationFault_callback, NULL);
+#endif
+
 #ifdef DPE_PMQOS
 	DPEQOS_Init();
 #endif
@@ -4122,7 +4394,7 @@ void DPE_ScheduleWork(struct work_struct *data)
 
 static irqreturn_t ISP_Irq_DVP(signed int Irq, void *DeviceId)
 {
-	unsigned int DvsStatus, DvpStatus;
+	unsigned int DvsStatus, DvpStatus, DvpSrc05, DvpSrc07;
 	bool bResulst = MFALSE;
 	//bool isDvsDone = MFALSE;
 	bool isDvpDone = MFALSE;
@@ -4130,18 +4402,22 @@ static irqreturn_t ISP_Irq_DVP(signed int Irq, void *DeviceId)
 
 	DvsStatus = DPE_RD32(DVS_CTRL_STATUS0_REG);	/* DVS Status */
 	DvpStatus = DPE_RD32(DVP_CTRL_STATUS0_REG);	/* DVP Status */
+	DvpSrc05 = DPE_RD32(DVP_SRC_05_Y_FRM0_REG);
+	DvpSrc07 = DPE_RD32(DVP_SRC_07_Y_FRM2_REG);
 
 	/* LOG_INF("DVP IRQ, DvsStatus: 0x%08x, DvpStatus: 0x%08x\n", */
 	/*	DvsStatus, DvpStatus); */
 
 	/* DPE done status may rise later, so can't use done status now  */
 	/* if (DPE_INT_ST == (DPE_INT_ST & DvpStatus)) { */
-		DPE_WR32(DVP_IRQ_00_REG, 0x000000F0); /* Clear DVP IRQ */
-		DPE_WR32(DVP_IRQ_00_REG, 0x00000E00);
+		DPE_WR32(DVP_IRQ_00_REG, 0x00000FF0); /* Clear DVP IRQ */
+		DPE_WR32(DVP_IRQ_00_REG, 0x00000E00); /* Clear DVP IRQ */
 		isDvpDone = MTRUE;
+		/*
 		spin_lock_irq(&(DPEInfo.SpinLockDPE));
 		g_isDvpInUse = 0;
 		spin_unlock_irq(&(DPEInfo.SpinLockDPE));
+		*/
 	/* } */
 
 	spin_lock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]));
@@ -4177,24 +4453,30 @@ static irqreturn_t ISP_Irq_DVP(signed int Irq, void *DeviceId)
 	if (bResulst == MTRUE)
 		wake_up_interruptible(&DPEInfo.WaitQueueHead);
 
+	/* after irq or timeout */
+	cmdq_cpu_read_mem(DPE_slot, 0, &DPE_val);
+
 	/* dump log, use tasklet */
 	IRQ_LOG_KEEPER(
 		DPE_IRQ_TYPE_INT_DVP_ST,
 		m_CurrentPPB,
 		_LOG_INF,
-		"IRQ:%d,0x%x:0x%x,0x%x:0x%x,Result:%d\n",
+		"IRQ:%d,0x%x:0x%x,0x%x:0x%x,DvpSrc05:0x%X0,DvpSrc07:0x%X0,DPE_val:%u\n",
 		Irq,
 		DVS_CTRL_STATUS0_HW,
 		DvsStatus,
 		DVP_CTRL_STATUS0_HW,
 		DvpStatus,
-		bResulst);
+		DvpSrc05,
+		DvpSrc07,
+		DPE_val);
 	IRQ_LOG_KEEPER(
 		DPE_IRQ_TYPE_INT_DVP_ST,
 		m_CurrentPPB,
 		_LOG_INF,
-		"IrqCnt:0x%x,WReq:0x%x,RReq:0x%x\n",
+		"IrqCnt:0x%x,Result:%d,WReq:0x%x,RReq:0x%x\n",
 		DPEInfo.IrqInfo.DpeIrqCnt,
+		bResulst,
 		DPEInfo.WriteReqIdx,
 		DPEInfo.ReadReqIdx);
 
@@ -4209,33 +4491,41 @@ static irqreturn_t ISP_Irq_DVP(signed int Irq, void *DeviceId)
 
 static irqreturn_t ISP_Irq_DVS(signed int Irq, void *DeviceId)
 {
-	unsigned int DvsStatus, DvpStatus;
+	unsigned int DvsStatus, DvpStatus, DvsSrc05, DvsSrc07;
 	bool isDvsDone = MFALSE;
 
 	DvsStatus = DPE_RD32(DVS_CTRL_STATUS0_REG);	/* DVS Status */
 	DvpStatus = DPE_RD32(DVP_CTRL_STATUS0_REG);	/* DVP Status */
+	DvsSrc05 = DPE_RD32(DVS_SRC_05_L_FRM0_REG);
+	DvsSrc07 = DPE_RD32(DVS_SRC_07_L_FRM2_REG);
 
 	/* LOG_INF("DVS IRQ, DvsStatus: 0x%08x, DvpStatus: 0x%08x\n", */
 	/*	DvsStatus, DvpStatus); */
 
 	/* DPE done status may rise later, so can't use done status now  */
 	/* if (DPE_INT_ST == (DPE_INT_ST & DvsStatus)) { */
-		DPE_WR32(DVS_IRQ_00_REG, 0x000000F0); /* Clear DVS IRQ */
-		DPE_WR32(DVS_IRQ_00_REG, 0x00000E00);
+		DPE_WR32(DVS_IRQ_00_REG, 0x00000FF0); /* Clear DVS IRQ */
+		DPE_WR32(DVS_IRQ_00_REG, 0x00000E00); /* Clear DVS IRQ */
 		isDvsDone = MTRUE;
 	/* } */
+
+	/* after irq or timeout */
+	cmdq_cpu_read_mem(DPE_slot, 0, &DPE_val);
 
 	/* dump log, use tasklet */
 	IRQ_LOG_KEEPER(
 		DPE_IRQ_TYPE_INT_DVP_ST,
 		m_CurrentPPB,
 		_LOG_INF,
-		"IRQ:%d,0x%x:0x%x,0x%x:0x%x\n",
+		"IRQ:%d,0x%x:0x%x,0x%x:0x%x,DvsSrc05:0x%X0,DvsSrc07:0x%X0,DPE_val:%u\n",
 		Irq,
 		DVS_CTRL_STATUS0_HW,
 		DvsStatus,
 		DVP_CTRL_STATUS0_HW,
-		DvpStatus);
+		DvpStatus,
+		DvsSrc05,
+		DvsSrc07,
+		DPE_val);
 	IRQ_LOG_KEEPER(
 		DPE_IRQ_TYPE_INT_DVP_ST,
 		m_CurrentPPB,
