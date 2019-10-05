@@ -266,7 +266,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 #ifdef MTK_LOCK_DEBUG
 	u64 one_second = loops_per_jiffy * LOOP_HZ;
 	u64 loops = one_second;
-	int owner_cpu = -1;
+	int owner_cpu = -1, target_cpu = -1;
 	int curr_cpu = raw_smp_processor_id();
 	int print_once = 1, cnt = 0;
 	int is_warning_owner = 0;
@@ -290,7 +290,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 				if (is_warning_owner) {
 					struct spinlock_debug_info *sdi;
 
-					sdi = per_cpu_ptr(&sp_dbg, owner_cpu);
+					sdi = per_cpu_ptr(&sp_dbg, target_cpu);
 					sdi->detector_cpu = -1;
 				}
 				return;
@@ -307,20 +307,17 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 
 		owner = lock->owner;
 		owner_cpu = lock->owner_cpu;
-		if (owner == SPINLOCK_OWNER_INIT)
-			owner = NULL;
-
-		pr_info("(%s)(%p) spin time: %llu ms(from %lld.%06lu), raw_lock: 0x%08x, magic: %08x, held by %s/%d on CPU#%d(from %lld.%06lu)\n",
-		lock->name, lock,
-		msec_high(t2 - t1), sec_high(t1), sec_low(t1),
-		*((unsigned int *)&lock->raw_lock), lock->magic,
-		owner ? owner->comm : "<none>",
-		owner ? task_pid_nr(owner) : -1, owner_cpu,
-		sec_high(lock->lock_t), sec_low(lock->lock_t));
 
 		/* lock is already released */
-		if (owner == NULL || owner_cpu == -1)
+		if (owner == SPINLOCK_OWNER_INIT || owner_cpu == -1)
 			continue;
+
+		pr_info("(%s)(%p) spin time: %llu ms(from %lld.%06lu), raw_lock: 0x%08x, magic: %08x, held by %s/%d on CPU#%d(from %lld.%06lu)\n",
+			lock->name, lock,
+			msec_high(t2 - t1), sec_high(t1), sec_low(t1),
+			*((unsigned int *)&lock->raw_lock), lock->magic,
+			owner->comm, task_pid_nr(owner), owner_cpu,
+			sec_high(lock->lock_t), sec_low(lock->lock_t));
 
 		/* print held lock information per 5 sec */
 		if (cnt == 0) {
@@ -331,6 +328,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 				raw_spin_trylock(&sdi->lock)) {
 				is_warning_owner = 1;
 				sdi->detector_cpu = curr_cpu;
+				target_cpu = owner_cpu;
 				raw_spin_unlock(&sdi->lock);
 			}
 
@@ -347,10 +345,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 			continue;
 		print_once = 0;
 
-		pr_info("========== The call trace of spinning task ==========\n");
-		dump_stack();
-
-		if (owner_cpu != raw_smp_processor_id()) {
+		if (owner_cpu != curr_cpu) {
 			struct call_single_data *csd;
 
 			csd = per_cpu_ptr(&spinlock_debug_csd, owner_cpu);
