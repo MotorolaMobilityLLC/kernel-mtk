@@ -803,6 +803,7 @@ int mtk_adsp_init_gen_pool(struct mtk_base_dsp *dsp)
 int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp)
 {
 	int task_id, ret;
+	struct ipi_msg_t ipi_msg;
 
 	if (dsp == NULL) {
 		pr_info("%s dsp == NULL\n", __func__);
@@ -831,12 +832,16 @@ int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp)
 			pr_warn("copy_ipi_payload err\n");
 			continue;
 		}
-
-		ret = mtk_scp_ipi_send(
-			get_dspscene_by_dspdaiid(task_id), AUDIO_IPI_PAYLOAD,
+		ret = audio_send_ipi_msg(
+			&ipi_msg, get_dspscene_by_dspdaiid(task_id),
+			AUDIO_IPI_LAYER_TO_DSP, AUDIO_IPI_PAYLOAD,
 			AUDIO_IPI_MSG_BYPASS_ACK, AUDIO_DSP_TASK_MSGA2DSHAREMEM,
 			sizeof(struct audio_dsp_dram), 0,
 			(char *)dsp->dsp_mem[task_id].ipi_payload_buf);
+		if (ret) {
+			pr_info("%s(), task [%d]send ipi fail\n",
+				__func__, task_id);
+		}
 
 		/* send share message to SCP side */
 		ret = copy_ipi_payload(
@@ -848,11 +853,18 @@ int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp)
 			pr_warn("copy_ipi_payload err\n");
 			continue;
 		}
-		ret = mtk_scp_ipi_send(
-			get_dspscene_by_dspdaiid(task_id), AUDIO_IPI_PAYLOAD,
+
+		ret = audio_send_ipi_msg(
+			&ipi_msg, get_dspscene_by_dspdaiid(task_id),
+			AUDIO_IPI_LAYER_TO_DSP, AUDIO_IPI_PAYLOAD,
 			AUDIO_IPI_MSG_BYPASS_ACK, AUDIO_DSP_TASK_MSGD2ASHAREMEM,
 			sizeof(struct audio_dsp_dram), 0,
 			(char *)dsp->dsp_mem[task_id].ipi_payload_buf);
+		if (ret) {
+			pr_info("%s(), task [%d]send ipi fail\n",
+				__func__, task_id);
+		}
+
 	}
 
 	adsp_deregister_feature(AUDIO_PLAYBACK_FEATURE_ID);

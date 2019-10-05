@@ -714,25 +714,6 @@ mtk_dsp_pcm_pointer(struct snd_pcm_substream *substream)
 }
 #endif
 
-static int pcmenable(int id)
-{
-	switch (id) {
-	case AUDIO_TASK_PRIMARY_ID:
-	case AUDIO_TASK_PLAYBACK_ID:
-	case AUDIO_TASK_DEEPBUFFER_ID:
-	case AUDIO_TASK_VOIP_ID:
-	case AUDIO_TASK_CAPTURE_UL1_ID:
-	case AUDIO_TASK_A2DP_ID:
-	case AUDIO_TASK_DATAPROVIDER_ID:
-	case AUDIO_TASK_CALL_FINAL_ID:
-		return 0;
-	default:
-		pr_warn("%s err id = %d\n", __func__, id);
-		return -1;
-	}
-	return -1;
-}
-
 static int mtk_dsp_pcm_open(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
@@ -742,11 +723,8 @@ static int mtk_dsp_pcm_open(struct snd_pcm_substream *substream)
 	int id = rtd->cpu_dai->id;
 	int dsp_feature_id = get_featureid_by_dsp_daiid(id);
 
-	if (pcmenable(id) != 0)
-		return 0;
 	memcpy((void *)(&(runtime->hw)), (void *)dsp->mtk_dsp_hardware,
 	       sizeof(struct snd_pcm_hardware));
-
 
 	ret = mtk_dsp_register_feature(dsp_feature_id);
 	if (ret) {
@@ -771,10 +749,7 @@ static int mtk_dsp_pcm_close(struct snd_pcm_substream *substream)
 	int id = rtd->cpu_dai->id;
 	int dsp_feature_id = get_featureid_by_dsp_daiid(id);
 
-	pr_info("%s\n", __func__);
-
-	if (pcmenable(id) != 0)
-		return 0;
+	pr_info("%s id[%d]\n", __func__, id);
 
 	/* send to task with close information */
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(id), AUDIO_IPI_MSG_ONLY,
