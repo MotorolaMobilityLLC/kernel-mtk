@@ -61,7 +61,6 @@ static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
 #define LCM_ID 0x31
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
-//#define SET_RESET_PIN_TS(v)    (lcm_util.set_reset_pin_ts((v)))
 #define MDELAY(n)       (lcm_util.mdelay(n))
 #define UDELAY(n)       (lcm_util.udelay(n))
 
@@ -114,7 +113,9 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_END_OF_TABLE    0xFFFD
 #define REGFLAG_RESET_LOW   0xFFFE
 #define REGFLAG_RESET_HIGH  0xFFFF
+#ifndef BUILD_LK
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
+#endif
 //static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 
 #ifndef TRUE
@@ -137,8 +138,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x10, 0x01, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
 };
-
-	#if 1
+#if 1
 static struct LCM_setting_table init_setting[] = {
         //GIP timing
 	{0xFF,0x03,{0x98,0x81,0x01}},
@@ -362,12 +362,11 @@ static struct LCM_setting_table init_setting[] = {
 	{0xFF, 0x03, {0x98, 0x81, 0x00}},//Page0
 	{0x35, 0x1, {0x00}}, //TE enable
 
-	{0x51, 0x02, {0xFF, 0xFF}},
+	{0x51, 0x02, {0x00, 0x00}},
 	{0x53, 0x01, {0x2C}},
 	{0x11, 0x01, {0x00}},
-	{REGFLAG_DELAY, 120,{}},
+	{REGFLAG_DELAY, 60,{}},
 	{0x29, 0x01, {0x00}}, 
-	{REGFLAG_DELAY, 20,{}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 #else
@@ -384,7 +383,7 @@ static struct LCM_setting_table init_setting[] = {
 };
 #endif
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 0x02, {0x3F,0xFF} },
+	{0x51, 0x02, {0x3F, 0xFF} },
 	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
