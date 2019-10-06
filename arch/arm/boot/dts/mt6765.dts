@@ -2109,7 +2109,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				<&mmsys_config CLK_MM_IMG_DL_ASYNC_TOP>;
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
-
+#if 0
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-rst = <172>;
@@ -2117,7 +2117,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			gpio-irq = <10>;
 			gpio-irq-std = <&pio 10 0x0>;
 		};
-
+#endif
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
