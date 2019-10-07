@@ -331,7 +331,7 @@
 	};
 };
 /* accdet end */
-
+#if 0
 /* FINGERPRINT start */
 &spi0 {
 	#address-cells = <1>;
@@ -372,7 +372,7 @@
 	};
 };
 /* FINGERPRINT end */
-
+#endif
 &led_simple {
 	pinctrl-names = "default", "red_led_output0", "red_led_output1";
 	pinctrl-0 = <&red_led_default>;
