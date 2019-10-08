@@ -668,7 +668,6 @@ static int sx932x_situation_open_report_data(int open)
 	{
 		SX932X_LOG("%s open report data, line:%d.\n", __func__, __LINE__);
 		if (g_this) {
-			write_register(g_this,SX932x_CTRL1_REG,0x24);//enable PH2
 			sx93XX_schedule_work(g_this,0);
 			if (g_this->init)
 				g_this->init(g_this);
@@ -996,6 +995,10 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	pplatData->exit_platform_hw = sx932x_exit_platform_hw;
 	g_this = this;
 	disable_irq(this->irq);
+
+	/* set sx932x to sleep mode */
+	write_register(this,SX932x_CTRL1_REG,0x20);
+
 	sx932x_situation_init();
 	sx932x_init_flag = 0;
 
