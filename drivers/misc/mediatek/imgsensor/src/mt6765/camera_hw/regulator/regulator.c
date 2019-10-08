@@ -53,6 +53,7 @@ struct REGULATOR_CTRL regulator_control[REGULATOR_TYPE_MAX_NUM] = {
 };
 
 static struct REGULATOR reg_instance;
+static int back_dvdd_id , front_dvdd_id;
 
 static void imgsensor_oc_handler1(void)
 {
@@ -244,12 +245,23 @@ static enum IMGSENSOR_RETURN regulator_set(
 	enum   REGULATOR_TYPE reg_type_offset;
 	atomic_t	*enable_cnt;
 
-
+//add by guozy begin 1
+//struct REGULATOR_CTRL *pregulator_ctrl = regulator_control;
+    struct device *pdevice;
+    struct device_node *pof_node;//
+    pdevice = gimgsensor_device;//
+    pof_node = pdevice->of_node;
+    pdevice->of_node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
+//add by guozy end 1
+	pr_err("sensor_idx=%d  pin=%d  pin_state=%d\n", sensor_idx, pin, pin_state);
 	if (pin > IMGSENSOR_HW_PIN_DOVDD   ||
 		pin < IMGSENSOR_HW_PIN_AVDD    ||
 		pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 		pin_state >= IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH)
+    {
+		pr_err("return IMGSENSOR_RETURN_ERROR\n");
 		return IMGSENSOR_RETURN_ERROR;
+    }
 
 	reg_type_offset = (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN)
 		? REGULATOR_TYPE_MAIN_VCAMA
@@ -261,6 +273,43 @@ static enum IMGSENSOR_RETURN regulator_set(
 		? REGULATOR_TYPE_SUB2_VCAMA
 		: REGULATOR_TYPE_MAIN3_VCAMA;
 
+//add by guozy begin 2
+    if(sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN)
+    {
+        if(pin == IMGSENSOR_HW_PIN_DVDD && pin_state != IMGSENSOR_HW_PIN_STATE_LEVEL_0)//  上电
+        {
+
+            pr_err(" preg->pregulator[back_dvdd_id=%d]=%p\n", back_dvdd_id, preg->pregulator[back_dvdd_id]);
+            preg->pregulator[back_dvdd_id] = regulator_get(pdevice, "vcamd");
+            if (preg->pregulator[back_dvdd_id] == NULL)
+            {
+                pr_err("regulator[%d] fail!\n", back_dvdd_id);
+            }
+
+            atomic_set(&preg->enable_cnt[back_dvdd_id], 0);
+            pdevice->of_node = pof_node;
+
+            pr_err(" preg->pregulator[back_dvdd_id=%d]=%p\n", back_dvdd_id, preg->pregulator[back_dvdd_id]);
+        }
+    }
+    else if(sensor_idx == IMGSENSOR_SENSOR_IDX_SUB)
+    {
+        if(pin == IMGSENSOR_HW_PIN_DVDD && pin_state != IMGSENSOR_HW_PIN_STATE_LEVEL_0)
+        {
+
+            pr_err(" preg->pregulator[front_dvdd_id=%d]=%p\n", front_dvdd_id, preg->pregulator[front_dvdd_id]);
+            preg->pregulator[front_dvdd_id] = regulator_get(pdevice, "vcamd_sub");
+            if (preg->pregulator[front_dvdd_id] == NULL)
+            {
+                pr_err("regulator[%d]  fail!\n",front_dvdd_id);
+            }
+            atomic_set(&preg->enable_cnt[front_dvdd_id], 0);
+            pdevice->of_node = pof_node;
+
+            pr_err(" preg->pregulator[front_dvdd_id=%d]=%p\n", front_dvdd_id, preg->pregulator[front_dvdd_id]);
+        }
+    }
+//add by guozy end 2
 	pregulator =
 		preg->pregulator[reg_type_offset + pin - IMGSENSOR_HW_PIN_AVDD];
 
@@ -305,6 +354,21 @@ static enum IMGSENSOR_RETURN regulator_set(
 				}
 			}
 			atomic_dec(enable_cnt);
+//add by guozy 3
+            if(pin == IMGSENSOR_HW_PIN_DVDD )
+            {
+                if(sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN)
+                {
+                    pr_err(" MAIN  sensor  regulator_put  pregulator[back_dvdd_id] 111 !\n");
+                    regulator_put(preg->pregulator[back_dvdd_id]);
+                }
+                else if(sensor_idx == IMGSENSOR_SENSOR_IDX_SUB)
+                {
+                    pr_err(" SUB sensor regulator_put pregulator[front_dvdd_id] 111 !\n");
+                    regulator_put(preg->pregulator[front_dvdd_id]);
+                }
+            }
+//add by guozy 3
 		}
 	} else {
 		pr_err("regulator == NULL %d %d %d\n",
