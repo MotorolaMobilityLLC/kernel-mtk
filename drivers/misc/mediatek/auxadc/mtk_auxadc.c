@@ -1776,24 +1776,24 @@ static int mt_auxadc_probe(struct platform_device *dev)
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node,
-				"mediatek,adc_fdd_rf_params_dynamic_custom_ch",
+				"mediatek,usb_id",
 					&of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name,
-				"ADC_FDD_Rf_Params_Dynamic_Custom");
+				"USB_ID");
 			g_adc_info[used_channel_counter].channel_number =
 					of_value;
-			pr_info(TAG "find adc_fdd_rf node:%d\n", of_value);
+			pr_info(TAG "find usb id:%d\n", of_value);
 			used_channel_counter++;
 		}
-        ret = of_property_read_u32_array(node, "mediatek,usb_id",
+        ret = of_property_read_u32_array(node, "mediatek,batt_id",
 				&of_value, 1);
 		if (ret == 0) {
 			sprintf(g_adc_info[used_channel_counter].channel_name,
-					"ADC_USB_ID");
+					"BATT_ID");
 			g_adc_info[used_channel_counter].channel_number =
 					of_value;
-			pr_info(TAG "find node USB_ID:%d\n", of_value);
+			pr_info(TAG "find node batt ID:%d\n", of_value);
 			used_channel_counter++;
 	    }
         ret = of_property_read_u32_array(node, "mediatek,temperature2",
