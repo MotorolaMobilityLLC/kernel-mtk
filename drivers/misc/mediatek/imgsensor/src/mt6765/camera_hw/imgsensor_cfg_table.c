@@ -176,15 +176,14 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #if defined(GC2375H_MIPI_RAW)
 		 {SENSOR_DRVNAME_GC2375H_MIPI_RAW,
 		  {
-		   {SensorMCLK, Vol_High, 0},
 		   {PDN, Vol_High, 1},
 		   {RST, Vol_Low, 0},
 		   {DOVDD, Vol_1800, 0}, 
 		  // {DVDD, Vol_1800, 0}, dovdd same
 		   {AVDD, Vol_2800, 0},
+		   {SensorMCLK, Vol_High, 0},
 		   {PDN, Vol_Low, 1},
 		   {RST, Vol_High, 0},
-
 		   },
 		  },
 #endif
