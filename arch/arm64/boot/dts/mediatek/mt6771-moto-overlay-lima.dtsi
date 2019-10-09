@@ -1,0 +1,76 @@
+
+
+&pio {
+	fingerprint_irq: fingerprint_irq {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerprint_reset_high: fingerprint_reset_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: fingerprint_reset_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+};
+
+
+
+&goodix_fp{
+	status = "disabled";
+};
+
+&odm {
+
+	fingerprint_int: fingerprint_int {
+		compatible = "mediatek,fingerprint";
+		fpc,enable-wakeup;
+		interrupts = <GIC_SPI 11 IRQ_TYPE_EDGE_RISING>;
+		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+		pinctrl-0 = <&fingerprint_irq>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_reset_low>;
+        int-gpios = <&pio 11 0>;
+		status = "okay";
+	};
+
+};
+
+&spi0 {
+	mediatek,pad-select = <0>,<1>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	fps_tee@0 {
+		compatible = "fpc,fpc_spi";
+		reg = <0>;
+		fpc,enable-wakeup;
+		spi-max-frequency = <10000000>;
+		netlink-event = <31>;
+		status = "okay";
+	};
+
+	fps_tee@1 {
+		compatible = "goodix,goodix-fp";
+		reg = <1>;
+		spi-max-frequency = <10000000>;
+		netlink-event = <31>;
+		status = "okay";
+	};
+};
+
+
+
