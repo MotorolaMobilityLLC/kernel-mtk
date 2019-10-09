@@ -106,7 +106,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FRAME_HEIGHT                                    (1560)
 #define LCM_DENSITY		(320)
 
-#define LCM_PHYSICAL_WIDTH                  (66600)
+#define LCM_PHYSICAL_WIDTH                  (64800)
 #define LCM_PHYSICAL_HEIGHT                    (140400)
 #define REGFLAG_DELAY       0xFFFC
 #define REGFLAG_UDELAY  0xFFFB
@@ -376,7 +376,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x53, 0x01, {0x2C}},
 	{0x55, 0x01, {0x00}},
 	{0x11, 0x01, {0x00}},
-	{REGFLAG_DELAY, 120,{}},
+	{REGFLAG_DELAY, 60,{}},
 	{0x29, 0x01, {0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 
@@ -510,13 +510,10 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 static void lcm_reset(void)
 {
-	SET_RESET_PIN(1);
-	MDELAY(10);
 	SET_RESET_PIN(0);
-	MDELAY(10);
+	MDELAY(2);//t3
 	SET_RESET_PIN(1);	
-
-	MDELAY(60);
+	MDELAY(60);//t5
 
 	LCM_LOGI("ili9881h lcm reset end.\n");
 }
@@ -541,8 +538,9 @@ static void lcm_init(void)
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
     
 	set_gpio_lcd_enp(1);
+	MDELAY(2);//t2
 	set_gpio_lcd_enn(1);
-
+ 
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
 		LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
@@ -573,9 +571,9 @@ static void lcm_suspend(void)
 
 	LCM_LOGI("%s,ili9881h lcm_suspend start\n", __func__);
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-	MDELAY(1);
+	
 	set_gpio_lcd_enn(0);
-
+    MDELAY(2);
 	set_gpio_lcd_enp(0);
 #endif
 	LCM_LOGI("%s,ili9881h lcm_suspend done\n", __func__);
