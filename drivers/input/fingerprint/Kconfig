@@ -47,4 +47,10 @@ config GOODIX_SENSOR_TYPE
 	  GF3288 GF5206 GF5216 GF5208
 endif
 endif
+config INPUT_FPC_FINGERPRINT
+	tristate "FPC1020 fingerprint sensor IRQ support"
+	default n
+	help
+	If you say yes here you get IRQ support for the FPC1020 family
+	of fingerprint sensors from Fingerprint Cards (FPC).
 endmenu
