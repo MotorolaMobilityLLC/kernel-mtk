@@ -49,7 +49,7 @@
 
 /* BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,LCD and TP Device information */
 extern char lcd_info_pr[256];
-u8 ft_fw=0;
+char ft_fw=0;
 #include <ontim/ontim_dev_dgb.h>
 static char version[40]="0x00";
 static char vendor_name[50]="Truly_focaltech";
@@ -972,6 +972,7 @@ static int fts_power_source_suspend(struct fts_ts_data *ts_data)
     return ret;
 }
 
+
 static int fts_power_source_resume(struct fts_ts_data *ts_data)
 {
     int ret = 0;
@@ -1030,6 +1031,26 @@ static void fts_platform_data_init(struct fts_ts_data *ts_data)
              pdata->x_max, pdata->y_max);
 }
 
+
+static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
+{
+    struct input_dev *input_dev = ts_data->input_dev;
+    int cnt=0;
+    mutex_lock(&input_dev->mutex);
+    do {
+        if (fts_read_reg( FTS_REG_FW_VER, &ft_fw) >= 0) {
+            if ((ft_fw != 0xFF) && (ft_fw != 0x00)) {
+                snprintf(version, sizeof(version)," %d.0",ft_fw );
+                break;
+            }
+        }
+
+        cnt++;
+        msleep(INTERVAL_READ_REG);
+    } while (cnt  < 5);
+    snprintf(vendor_name, sizeof(vendor_name),"Truly_focaltech" );
+    mutex_unlock(&input_dev->mutex);
+}
 static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
 {
     int ret = 0;
@@ -1161,18 +1182,15 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
 
     tpd_load_status = 1;
-    /* BEGIN, Ontim,  wzx, 19/04/19, St-result :PASS,LCD and TP Device information */
+    
+    /* BEGIN, Ontim,  wzx, 19/10/9, St-result :PASS,LCD and TP Device information */
     if(strstr(lcd_info_pr,"ft8006p")){
 	   snprintf(lcdname, sizeof(lcdname),"%s ","Ft8006p" );
-	   snprintf(version, sizeof(version),"0x%x ",ft_fw );
-	   snprintf(vendor_name, sizeof(vendor_name),"Truly_focaltech" );
     }
-	
-	FTS_FUNC_EXIT();
-      /* END */
-	
-	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-    FTS_FUNC_EXIT();
+    ontim_refresh_fw_ver( ts_data);
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+   //END
+    FTS_FUNC_EXIT( );
     return 0;
 
 err_irq_req:
