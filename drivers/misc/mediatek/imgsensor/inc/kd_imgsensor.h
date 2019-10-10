@@ -304,6 +304,7 @@
 #define GC0313MIPI_YUV_SENSOR_ID                0xD0
 #define GC0312_SENSOR_ID                        0xb310
 #define GC5035_SENSOR_ID                    0x5035
+#define GC5035_MIPI_SENSOR_ID                    0x5035
 
 
 /*SP*/
