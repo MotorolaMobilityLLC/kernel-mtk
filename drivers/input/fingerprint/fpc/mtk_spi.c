@@ -244,21 +244,19 @@ static int fpc_irq_request(struct fpc_data *fpc)
 
 	if (!fpc->request_irq) {
 		fpc->irq_gpio = of_get_named_gpio(dev->of_node, "int-gpios", 0);
-        dev_info(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
-        if (!gpio_is_valid(fpc->irq_gpio)){
-            dev_err(dev, "invalid irq gpio!");
-            return -EINVAL;
-        }
+		irq_num = irq_of_parse_and_map(dev->of_node, 0);/*get irq num*/
+		if (!irq_num) {
+			rc = -EINVAL;
+			dev_err(fpc->dev, "get irq_num error rc = %d.\n", rc);
+			goto exit;
+		}
 
-        gpio_direction_input(fpc->irq_gpio);
-        irq_num = gpio_to_irq(fpc->irq_gpio);
-        dev_info(dev, "requested irq %d\n", irq_num);
-        if (!irq_num) {
-            rc = -EINVAL;
-            dev_err(dev, "get irq_num error rc = %d.\n", rc);
-            goto exit;
-        }
 		fpc->irq_num = irq_num;
+
+		//set_clks(fpc, true);
+
+		dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
+		dev_dbg(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
 
 		fpc->wakeup_enabled = false;
 
@@ -275,6 +273,7 @@ static int fpc_irq_request(struct fpc_data *fpc)
 			dev_err(dev, "could not request irq %d\n", irq_num);
 			goto exit;
 		}
+		dev_info(dev, "requested irq %d\n", irq_num);
 
 		/* Request that the interrupt should be wakeable */
 		enable_irq_wake(irq_num);

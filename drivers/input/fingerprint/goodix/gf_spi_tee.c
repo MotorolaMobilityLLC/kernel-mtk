@@ -25,7 +25,6 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
-#include <linux/of_gpio.h>
 #endif
 
 #ifdef CONFIG_COMPAT
@@ -302,14 +301,10 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,fingerprint");
-	int gpio = of_get_named_gpio(node, "int-gpios", 0);
-
 	if (node) {
-		//gpio_direction_input(gpio);
+		gf_dev->irq = irq_of_parse_and_map(node, 0);
 
-		//gf_dev->irq = irq_of_parse_and_map(node, 0);
-		gf_dev->irq = gpio_to_irq(gpio);
-		gf_debug(INFO_LOG, "requested gpio=%d irq=%d\n", gpio, gf_dev->irq);
+		gf_debug(INFO_LOG, "requested irq=%d\n", gf_dev->irq);
 #ifndef CONFIG_MTK_EIC
 		irq_set_irq_wake(gf_dev->irq, 1);
 #else
