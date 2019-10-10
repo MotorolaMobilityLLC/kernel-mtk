@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef _S5K3P9SX_PDFA_H
+#ifndef _S5K3P9SX_PDAF_H
 #define _S5K3P9SX_PDAF_H
 
 extern int iReadRegI2C(u8 *a_pSendData,
