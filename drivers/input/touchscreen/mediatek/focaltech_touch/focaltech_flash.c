@@ -38,7 +38,7 @@
 /*****************************************************************************
 * Static variables
 *****************************************************************************/
-#define FTS_FW_REQUEST_SUPPORT                      1
+#define FTS_FW_REQUEST_SUPPORT                      0
 /* Example: focaltech_ts_fw_tianma.bin */
 #define FTS_FW_NAME_PREX_WITH_REQUEST               "focaltech_ts_fw_"
 
@@ -1206,7 +1206,7 @@ static int fts_lic_get_vid_in_host(struct fts_upgrade *upg, u16 *vid)
     return 0;
 }
 
-extern u8 ft_fw;
+
 static int fts_lic_get_ver_in_tp(u8 *ver)
 {
     int ret = 0;
@@ -1221,7 +1221,7 @@ static int fts_lic_get_ver_in_tp(u8 *ver)
         FTS_ERROR("read lcd initcode ver from tp fail");
         return ret;
     }
-    ft_fw = *ver;
+   
     return 0;
 }
 
@@ -1528,8 +1528,7 @@ static int fts_fwupg_get_ver_in_tp(u8 *ver)
         FTS_ERROR("read fw ver from tp fail");
         return ret;
     }
-
-    return 0;
+  return 0;
 }
 
 static int fts_fwupg_get_ver_in_host(struct fts_upgrade *upg, u8 *ver)
@@ -1611,6 +1610,7 @@ int fts_fwupg_upgrade(struct fts_upgrade *upg)
 
     upgrade_flag = fts_fwupg_need_upgrade(upg);
     FTS_INFO("fw upgrade flag:%d", upgrade_flag);
+	
     do {
         upgrade_count++;
         if (upgrade_flag) {
@@ -1864,7 +1864,7 @@ static int fts_fwupg_get_fw_file(struct fts_upgrade *upg)
     } else {
         get_fw_i_flag = true;
     }
-
+     FTS_ERROR("wzx get i file");
     if (get_fw_i_flag) {
         ret = fts_get_fw_file_via_i(upg);
     }
