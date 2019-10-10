@@ -318,6 +318,8 @@ int gauge_get_nag_vbat(void)
 /* custom setting */
 /* ============================================================ */
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
+extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);
+
 void fgauge_get_profile_id(void)
 {
 	int id_volt = 0;
@@ -326,18 +328,20 @@ void fgauge_get_profile_id(void)
 
 	ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
 	if (ret != 0)
-		bm_debug("[%s]id_volt read fail\n", __func__);
+		printk(KERN_ERR "[%s]id_volt read fail BATTERY_ID_CHANNEL_NUM=%d\n", __func__,BATTERY_ID_CHANNEL_NUM);
 	else
-		bm_debug("[%s]id_volt = %d\n", __func__, id_volt);
+		printk(KERN_ERR "[%s]id_volt = %d BATTERY_ID_CHANNEL_NUM=%d\n", __func__, id_volt,BATTERY_ID_CHANNEL_NUM);
 
 	if ((sizeof(g_battery_id_voltage) /
 		sizeof(int)) != TOTAL_BATTERY_NUMBER) {
-		bm_debug("[%s]error! voltage range incorrect!\n",
+		printk(KERN_ERR "[%s]error! voltage range incorrect!\n",
 			__func__);
 		return;
 	}
 
 	for (id = 0; id < TOTAL_BATTERY_NUMBER; id++) {
+		printk(KERN_ERR "[fgauge_get_profile_idg_battery_id_voltage[%d]=%d\n",id, g_battery_id_voltage[id]);
+		
 		if (id_volt < g_battery_id_voltage[id]) {
 			gm.battery_id = id;
 			break;
@@ -349,14 +353,14 @@ void fgauge_get_profile_id(void)
 	
 	if(id >(battery_total_number-1))
 	{
-		bm_err("[fgauge_get_profile_id]Battery id (%d) check error;\n", id);
+		printk(KERN_ERR "[fgauge_get_profile_id]Battery id (%d) check error;\n", id);
 
 	gm.battery_id = 0;
 	}
 	
 	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],20);
 
-	bm_debug("[%s]Battery id (%d)\n",
+	printk(KERN_ERR "[%s]Battery id (%d)\n",
 		__func__,
 		gm.battery_id);
 }

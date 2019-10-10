@@ -798,7 +798,7 @@ static int get_secure_boot_version(void)
 static int get_dual_sim(void)
 {
 	unsigned int gpio_base = 343;
-	unsigned int pin4 = 11;
+	unsigned int pin4 = 167;
 	int pin_val = 0;
 
 	pin_val |= (gpio_get_value(gpio_base + pin4) & 0x01) << 4;
@@ -812,21 +812,21 @@ static int get_band_id(void)
 {
 	unsigned int gpio_base = 343;
 
-	unsigned int pin2 = 53;
-	unsigned int pin3 = 5;
+	unsigned int pin1 = 163;
+	unsigned int pin2 = 164;
 	int pin_val = 0;
 
 	pin_val  = (gpio_get_value(gpio_base + pin2) & 0x01) << 1;
-	pin_val |= (gpio_get_value(gpio_base + pin3) & 0x01);
+	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01);
 
 	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
 
-	if (pin_val == 3)
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-2");
+	if (pin_val == 1)
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-2");
 	else if (pin_val == 0)
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-1");
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-1");
 	else
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-3");
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-1");
 	return 0;
 }
 
@@ -835,9 +835,9 @@ EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
 {
 	unsigned int gpio_base = 343;
-	unsigned int pin0 = 11;
-	unsigned int pin1 = 5;
-	unsigned int pin2 = 53;
+	unsigned int pin0 = 165;
+	unsigned int pin1 = 166;
+	unsigned int pin2 = 167;
 	int pin_val = 0;
 
 	pin_val  = (gpio_get_value(gpio_base + pin2) & 0x01) << 2;
