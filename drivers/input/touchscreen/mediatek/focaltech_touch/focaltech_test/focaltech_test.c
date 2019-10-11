@@ -1125,7 +1125,7 @@ static int fts_test_save_test_data(char *file_name, char *data_buf, int len)
 
     FTS_TEST_FUNC_ENTER();
     memset(filepath, 0, sizeof(filepath));
-    sprintf(filepath, "%s%s", FTS_INI_FILE_PATH, file_name);
+    sprintf(filepath, "%s%s", FTS_DATA_FILE_PATH, file_name);
     if (NULL == pfile) {
         pfile = filp_open(filepath, O_TRUNC | O_CREAT | O_RDWR, 0);
     }
@@ -1912,7 +1912,57 @@ test_err:
 static ssize_t fts_test_show(
     struct device *dev, struct device_attribute *attr, char *buf)
 {
-    return -EPERM;
+    struct fts_ts_data *ts_data = fts_data;
+    struct input_dev *input_dev;
+	ssize_t num_read_chars = 0;
+    char fwname[128] = {0};
+    int ret = 0;
+    //char apk_ret[100] = {0};
+    pr_err("111111111111111111\n");
+	if (ts_data->suspended) {
+        FTS_INFO("In suspend, no test, return now");
+        return -EINVAL;
+    }
+    pr_err("fts_test_show \n");
+    input_dev = ts_data->input_dev;
+    //memset(fwname, 0, sizeof(fwname));
+    sprintf(fwname, "%s", "Conf_MultipleTest.ini");
+    //fwname[count - 1] = '\0';
+    //FTS_TEST_DBG("fwname:%s.", fwname);
+
+    mutex_lock(&input_dev->mutex);
+    disable_irq(ts_data->irq);
+
+#if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
+    fts_esdcheck_switch(DISABLE);
+#endif
+
+    ret = fts_enter_test_environment(1);
+    if (ret < 0) {
+        FTS_ERROR("enter test environment fail");
+    } else {
+        fts_test_entry(fwname);
+    }
+    ret = fts_enter_test_environment(0);
+    if (ret < 0) {
+        FTS_ERROR("enter normal environment fail");
+    }
+
+#if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
+    fts_esdcheck_switch(ENABLE);
+#endif
+
+	if(0 == result) {
+		printk("wzx1 %s result=%d\n",__func__,result);
+		num_read_chars =  snprintf(buf, PAGE_SIZE, "FTS TP Pass\n");
+	} else if(1 == result) {
+		printk("wzx1 %s result=%d\n",__func__,result);
+		num_read_chars =  snprintf(buf, PAGE_SIZE, "FTS TP Fail\n");
+	}
+	//ret = copy_to_user((char *)buf, apk_ret, num_read_chars);
+    enable_irq(ts_data->irq);
+    mutex_unlock(&input_dev->mutex);
+    return num_read_chars;
 }
 
 static ssize_t fts_test_store(

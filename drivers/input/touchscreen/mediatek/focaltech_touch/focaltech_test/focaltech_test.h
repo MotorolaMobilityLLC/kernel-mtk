@@ -34,7 +34,7 @@
 /*****************************************************************************
 * Macro definitions using #define
 *****************************************************************************/
-//#define FTS_DATA_FILE_PATH                       "/mnt/sdcard/"
+#define FTS_DATA_FILE_PATH                       "/mnt/sdcard/"
 #define FTS_INI_FILE_PATH                       "/system/etc/"
 #define FTS_CSV_FILE_NAME                       "testdata.csv"
 #define FTS_TXT_FILE_NAME                       "testresult.txt"
