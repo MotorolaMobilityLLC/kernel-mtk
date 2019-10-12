@@ -33,7 +33,7 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
