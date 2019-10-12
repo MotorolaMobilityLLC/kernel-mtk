@@ -808,6 +808,7 @@ static int get_dual_sim(void)
 	return sprintf(hwinfo[dual_sim].hwinfo_buf, "%s", pin_val ? "sig" : "dual");
 }
 
+#if 0
 static int get_band_id(void)
 {
 	unsigned int gpio_base = 343;
@@ -826,9 +827,17 @@ static int get_band_id(void)
 	else if (pin_val == 0)
 		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-1");
 	else
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-1");
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-1");
 	return 0;
 }
+#endif
+static int set_band_id(char *src)
+{
+	sprintf(hwinfo[band_id].hwinfo_buf, "%s", src);
+	return 0;
+}
+
+__setup("band_id=", set_band_id);
 
 unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
@@ -1133,9 +1142,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case dual_sim:
 		get_dual_sim();
 		break;
-	case band_id:
-		get_band_id();
-		break;
+	//case band_id:
+	//	get_band_id();
+	//	break;
 	case board_id:
 		get_version_id();
 		break;
