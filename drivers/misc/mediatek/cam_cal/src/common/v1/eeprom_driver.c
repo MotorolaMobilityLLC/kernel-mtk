@@ -791,7 +791,7 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 {
 
-    //const char * str_ov13855_path = "/data/vendor/camera_dump/sunwin_ov13855.data";
+    const char * str_ov13855_path = "/data/vendor/camera_dump/seansons_ov13855.data";
     //const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
     //const char * str_s5k5e9_path  = "/data/vendor/camera_dump/sunrise_s5k5e9.data";
     //const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
@@ -812,15 +812,15 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     
     switch(sensorid)
     {
-/*
+
         case OV13855_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0xcee;
+            u4Length = 0x1FFF;
             str_dump_path = str_ov13855_path;
             break;
         }
-        
+        #if 0
         case S5K3L6_SENSOR_ID:
         {
             u4Offset = 0;
@@ -870,7 +870,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_gc5025_path;
             break;
         }
-*/
+		#endif
         case AR1337_SENSOR_ID:
         {
             u4Offset = 0;
@@ -890,9 +890,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     }
     
     
-    //if((sensorid == OV13855_SENSOR_ID) ||
-       //(sensorid == S5K3L6_SENSOR_ID) ||
-       if(sensorid == AR1337_SENSOR_ID)
+    if((sensorid == OV13855_SENSOR_ID) ||
+       (sensorid == AR1337_SENSOR_ID))
    {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
 	if (pu1Params == NULL) 
