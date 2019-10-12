@@ -30,6 +30,24 @@ static struct workqueue_struct *bat_wq;
 static struct delayed_work esd_work;
 static struct delayed_work bat_work;
 
+/* zhangyunfeng <add LCD and CTP hardware infomation node> start*/
+#include <ontim/ontim_dev_dgb.h>
+
+static char version[30]="unknown";
+static char vendor_name[30]="unknown";
+static char lcdname[30]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+
+extern char *mtkfb_find_lcm_driver(void);
+/* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
+
 #if RESUME_BY_DDI
 static struct workqueue_struct	*resume_by_ddi_wq;
 static struct work_struct	resume_by_ddi_work;
@@ -490,6 +508,17 @@ int ilitek_tddi_fw_upgrade_handler(void *data)
 		ilitek_tddi_wq_ctrl(WQ_BAT, ENABLE);
 	}
 
+    /* zhangyunfeng <add LCD and CTP hardware infomation node> start*/
+	ipio_info("idev->chip->fw_ver  = 0x%02x \n",(idev->chip->fw_ver >> 8) & 0xff);
+	if(strstr(mtkfb_find_lcm_driver(),"ili9881h") != NULL)
+	{
+        snprintf(lcdname, sizeof(lcdname), "skyworth-ili9881h");
+	}
+	snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(idev->chip->fw_ver >> 8) & 0xff);
+	snprintf(vendor_name, sizeof(vendor_name),"skyworth-ili9881h");
+    /* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
+
+
 	atomic_set(&idev->fw_stat, END);
 	return ret;
 }
@@ -747,6 +776,13 @@ int ilitek_tddi_init(void)
 
 	ipio_info("driver version = %s\n", DRIVER_VERSION);
 
+   /* zhangyunfeng <add LCD and CTP hardware infomation node> start*/
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+   /* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
+
 	mutex_init(&idev->touch_mutex);
 	mutex_init(&idev->debug_mutex);
 	mutex_init(&idev->debug_read_mutex);
@@ -825,11 +861,25 @@ int ilitek_tddi_init(void)
 	ilitek_tddi_wq_ctrl(WQ_ESD, ENABLE);
 	ilitek_tddi_wq_ctrl(WQ_BAT, ENABLE);
 	idev->boot = true;
+
+    /* zhangyunfeng <add LCD and CTP hardware infomation node> start*/
+	ipio_info("idev->chip->fw_ver  = 0x%02x \n",(idev->chip->fw_ver >> 8) & 0xff);
+	if(strstr(mtkfb_find_lcm_driver(),"ili9881h") != NULL)
+	{
+        snprintf(lcdname, sizeof(lcdname), "skyworth-ili9881h");
+	}
+	snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(idev->chip->fw_ver >> 8) & 0xff);
+	snprintf(vendor_name, sizeof(vendor_name),"skyworth-ili9881h");
+	/* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
 #endif
 
 	idev->ws = wakeup_source_register("ili_wakelock");
 	if (!idev->ws)
 		ipio_err("wakeup source request failed\n");
+
+	/* zhangyunfeng <add LCD and CTP hardware infomation node> start*/
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+    /* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
 
 	return 0;
 }
