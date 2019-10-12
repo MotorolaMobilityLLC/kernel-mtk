@@ -140,7 +140,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 #if 1
 static struct LCM_setting_table init_setting[] = {
-        //GIP timing
+	//GIP timing
 	{0xFF,0x03,{0x98,0x81,0x01}},
 	{0x00, 0x01, {0x46}},
 	{0x01, 0x01, {0x16}},
@@ -149,7 +149,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x04, 0x01, {0xCC}},
 	{0x05, 0x01, {0x13}},
 
-	{0x08, 0x01, {0x80}},  
+	{0x08, 0x01, {0x80}},
 	{0x09, 0x01, {0x12}},   //DUMMT CK
 	{0x0a, 0x01, {0x71}},
 	{0x0b, 0x01, {0x00}},  //clk keep 10 off 00
@@ -536,11 +536,11 @@ static void lcm_init(void)
 	unsigned char data = 0x0E;  //up to +/-5.4V
 	int ret = 0;
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
-    
+
 	set_gpio_lcd_enp(1);
 	MDELAY(2);//t2
 	set_gpio_lcd_enn(1);
- 
+
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
 		LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
@@ -561,7 +561,7 @@ static void lcm_init(void)
 
 	push_table(NULL, init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-	
+
 	LCM_LOGI("%s: ili9881h  init done\n",__func__);
 }
 
@@ -571,9 +571,9 @@ static void lcm_suspend(void)
 
 	LCM_LOGI("%s,ili9881h lcm_suspend start\n", __func__);
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-	
+
 	set_gpio_lcd_enn(0);
-    MDELAY(2);
+	MDELAY(2);
 	set_gpio_lcd_enp(0);
 #endif
 	LCM_LOGI("%s,ili9881h lcm_suspend done\n", __func__);
@@ -616,9 +616,8 @@ static unsigned int lcm_compare_id(void)
 	unsigned char buffer[2];
 	unsigned int array[16];
 
-	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
-	MDELAY(1);
+	MDELAY(5);
 
 	SET_RESET_PIN(1);
 	MDELAY(20);

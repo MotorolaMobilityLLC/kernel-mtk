@@ -36,8 +36,6 @@
 #endif
 
 #include "lcm_drv.h"
-#include "tpd.h"
-
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>
 #include <platform/mt_gpio.h>
@@ -264,24 +262,21 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
-    params->dsi.lcm_esd_check_table[0].count = 1;
-    params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
+	params->dsi.lcm_esd_check_table[0].count = 1;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
 }
 
 
 
 static void lcm_reset(void)
 {
-	tpd_gpio_output(0, 0);
 	SET_RESET_PIN(0);
-        
 	MDELAY(5);
-
-        tpd_gpio_output(0, 1);
 	SET_RESET_PIN(1);
-	
+
 	MDELAY(50);
-	
+
+
 	LCM_LOGI("%s:ft8006p lcm reset done\n",__func__);
 }
 
@@ -304,7 +299,7 @@ static void lcm_init(void)
 	int ret = 0;
 	LCM_LOGI("%s: ft8006P start\n",__func__);
 
-        set_gpio_lcd_enp(1);
+	set_gpio_lcd_enp(1);
 	set_gpio_lcd_enn(1);
 
 	ret = NT50358A_write_byte(cmd, data);
@@ -320,12 +315,12 @@ static void lcm_init(void)
 	else
 		LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
 
-	
+
 	lcm_reset();
 
 	push_table(NULL, init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-	
+
 	LCM_LOGI("%s: ft8006P done\n",__func__);
 }
 
@@ -370,9 +365,8 @@ static unsigned int lcm_compare_id(void)
 	unsigned char buffer[2];
 	unsigned int array[16];
 
-	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
-	MDELAY(1);
+	MDELAY(5);
 
 	SET_RESET_PIN(1);
 	MDELAY(20);
