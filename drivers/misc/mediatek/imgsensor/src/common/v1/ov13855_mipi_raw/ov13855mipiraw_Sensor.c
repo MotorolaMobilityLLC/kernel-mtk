@@ -1616,6 +1616,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		memset(back_cam_name, 0x00, sizeof(back_cam_name));
 		memcpy(back_cam_name, "0_ov13855", 64);
 		dual_main_sensorid = *sensor_id;
+		ontim_get_otp_data(*sensor_id, NULL, 0);
 		return ERROR_NONE;
 	}
 		retry--;
