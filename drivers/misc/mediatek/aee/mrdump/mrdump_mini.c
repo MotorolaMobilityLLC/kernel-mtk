@@ -75,7 +75,7 @@ __weak void get_android_log_buffer(unsigned long *addr, unsigned long *size,
 {
 }
 
-#if defined(CONFIG_TRUSTY_LOG)
+#if defined(CONFIG_GZ_LOG)
 __weak void get_gz_log_buffer(unsigned long *addr, unsigned long *paddr,
 			unsigned long *size, unsigned long *start)
 {
@@ -814,8 +814,8 @@ static void mrdump_mini_build_elf_misc(void)
 	unsigned long task_info_va =
 	    (unsigned long)((void *)mrdump_mini_ehdr + MRDUMP_MINI_HEADER_SIZE);
 	unsigned long task_info_pa = 0;
-#if defined(CONFIG_TRUSTY_LOG)
-	unsigned long gz_log_pa;
+#if defined(CONFIG_GZ_LOG)
+	unsigned long gz_log_pa = 0;
 
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_gz_log_buffer(&misc.vaddr, &gz_log_pa, &misc.size, &misc.start);

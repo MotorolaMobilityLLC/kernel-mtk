@@ -14,17 +14,9 @@
 #ifndef __LINUX_TRUSTY_SMCALL_MAPPING_H
 #define __LINUX_TRUSTY_SMCALL_MAPPING_H
 
-#if 0
-#if defined(CONFIG_MTK_NEBULA_VM_SUPPORT) && defined(CONFIG_GZ_SMC_CALL_REMAP)
-#include <gz-trusty/hvcall.h>
-#include <gz-trusty/smcall_remap.h>
-#else
-#include <gz-trusty/smcall_trusty.h>
-#endif
-#endif
-
-#include <gz-trusty/hvcall.h>
-#include <gz-trusty/smcall_trusty.h>
+//#include <gz-trusty/hvcall.h>
+//#include <gz-trusty/smcall_trusty.h>
+#include <gz-trusty/smcnr_table.h>
 
 void trusty_fiq_glue_arm64(void);
 

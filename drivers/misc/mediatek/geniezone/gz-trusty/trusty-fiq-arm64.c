@@ -34,7 +34,8 @@ void trusty_fiq_handler(struct pt_regs *regs, void *svc_sp)
 	for (handler = READ_ONCE(fiq_handlers); handler;
 	     handler = READ_ONCE(handler->next)) {
 		/* Barrier paired with smp_wmb in fiq_glue_register_handler */
-		smp_read_barrier_depends();
+		/*smp_read_barrier_depends();*/ /*orig*/
+		smp_rmb(); /*fix check patch*/
 		handler->fiq(handler, regs, svc_sp);
 	}
 }
@@ -55,10 +56,11 @@ static void fiq_glue_clear_handler(void)
 		if (!stack)
 			continue;
 
-		ret = trusty_fast_call64(trusty_dev, SMC_FC64_SET_FIQ_HANDLER,
-					 cpu, 0, 0);
+		ret = trusty_fast_call64(trusty_dev,
+			MTEE_SMCNR(SMCF_FC64_SET_FIQ_HANDLER, trusty_dev),
+			cpu, 0, 0);
 		if (ret) {
-			pr_info("%s: SMC_FC_SET_FIQ_HANDLER(%d, 0, 0) failed 0x%x, skip free stack\n",
+			pr_info("%s: SET_FIQ_HANDLER(%d, 0, 0) failed 0x%x\n",
 			       __func__, cpu, ret);
 			continue;
 		}
@@ -86,12 +88,13 @@ static int fiq_glue_set_handler(void)
 		stack += THREAD_START_SP;
 
 		local_irq_save(irqflags);
-		ret = trusty_fast_call64(trusty_dev, SMC_FC64_SET_FIQ_HANDLER,
-					 cpu, (uintptr_t)trusty_fiq_glue_arm64,
-					 (uintptr_t)stack);
+		ret = trusty_fast_call64(trusty_dev,
+			MTEE_SMCNR(SMCF_FC64_SET_FIQ_HANDLER, trusty_dev),
+			cpu, (uintptr_t)trusty_fiq_glue_arm64,
+			(uintptr_t)stack);
 		local_irq_restore(irqflags);
 		if (ret) {
-			pr_info("%s: SMC_FC_SET_FIQ_HANDLER(%d, %p, %p) failed 0x%x\n",
+			pr_info("%s: SET_FIQ_HANDLER(%d, %p, %p) failed 0x%x\n",
 			       __func__, cpu, trusty_fiq_glue_arm64,
 			       stack, ret);
 			ret = -EINVAL;
