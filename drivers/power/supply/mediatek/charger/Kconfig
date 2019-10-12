@@ -104,6 +104,15 @@ config CHARGER_HL7007
 	default n
 	depends on MTK_CHARGER
 
+config CHARGER_ETA6937
+	bool "Charger Driver for ETA6937 Charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  Say Yes to enable Richtek RT9465 driver.
+	  It is mainly used as slave IC for dual charger
+	  application.
+	  It depends on config MTK_CHARGER.
 
 config CHARGER_SY6923
 	bool "Charger Driver for SY6923 Charger IC"
