@@ -183,8 +183,9 @@ static bool trusty_supports_logging(struct device *device)
 {
 	int ret;
 
-	ret = trusty_std_call32(device, SMC_SC_GZ_SHARED_LOG_VERSION,
-				   TRUSTY_LOG_API_VERSION, 0, 0);
+	ret = trusty_std_call32(device,
+				MTEE_SMCNR(SMCF_SC_SHARED_LOG_VERSION, device),
+				TRUSTY_LOG_API_VERSION, 0, 0);
 	if (ret == SM_ERR_UNDEFINED_SMC) {
 		pr_info("trusty-log not supported on secure side.\n");
 		return false;
@@ -235,9 +236,8 @@ static int do_gz_log_read(struct gz_log_state *gls,
 			  char __user *buf, size_t size)
 {
 	struct log_rb *log = gls->log;
-	uint32_t get, put, alloc;
-	int read_chars = 0, copy_chars = 0, tbuf_size, outbuf_size;
-	char *psrc = NULL;
+	uint32_t get, put, alloc, read_chars = 0, copy_chars = 0;
+	int ret = 0;
 
 	WARN_ON(!is_power_of_2(log->sz));
 
@@ -265,34 +265,23 @@ static int do_gz_log_read(struct gz_log_state *gls,
 	if (is_buf_empty(gls))
 		return 0;
 
-	outbuf_size = min((int)(put - get), (int)size);
-
-	tbuf_size = (outbuf_size / TRUSTY_LINE_BUFFER_SIZE + 1)
-		      * TRUSTY_LINE_BUFFER_SIZE;
-
-	/* tbuf_size >= outbuf_size >= size */
-	psrc = kzalloc(tbuf_size, GFP_KERNEL);
-
-	if (!psrc)
-		return -ENOMEM;
-
 	while (get != put) {
 		read_chars = log_read_line(gls, put, get);
 		/* Force the loads from log_read_line to complete. */
 		rmb();
-		if (copy_chars + read_chars > outbuf_size)
+		if (copy_chars + read_chars > (uint32_t)size)
 			break;
-		memcpy(psrc + copy_chars, gls->line_buffer, read_chars);
+
+		ret = copy_to_user(buf + copy_chars, gls->line_buffer,
+				   read_chars);
+		if (ret) {
+			pr_notice("[%s] copy_to_user failed ret %d\n",
+				  __func__, ret);
+			break;
+		}
 		get += read_chars;
 		copy_chars += read_chars;
 	}
-
-	if (copy_to_user(buf, psrc, copy_chars)) {
-		kfree(psrc);
-		return -EFAULT;
-	}
-	kfree(psrc);
-
 	gls->get = get;
 
 	return copy_chars;
@@ -360,21 +349,18 @@ static int trusty_gz_log_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct gz_log_state *gls;
-	struct device_node *node = pdev->dev.of_node;
+	struct device_node *pnode = pdev->dev.parent->of_node;
 	int tee_id = 0;
-
-	dev_info(&pdev->dev, "%s refine version\n", __func__);
 
 	if (!trusty_supports_logging(pdev->dev.parent))
 		return -ENXIO;
 
-	ret = of_property_read_u32(node, "tee_id", &tee_id);
+	ret = of_property_read_u32(pnode, "tee-id", &tee_id);
 	if (ret != 0)
-		dev_info(&pdev->dev,
-			 "tee_id is not set on device tree, please fix it\n");
+		dev_info(&pdev->dev, "tee_id is not set\n");
 	else
-		dev_info(&pdev->dev,
-			 "[%s] gz_log for TEE:%d\n", __func__, tee_id);
+		dev_info(&pdev->dev, "--- init gz-log for MTEE %d ---\n",
+			 tee_id);
 
 	gz_log_page_init();
 	gls = kzalloc(sizeof(*gls), GFP_KERNEL);
@@ -389,39 +375,29 @@ static int trusty_gz_log_probe(struct platform_device *pdev)
 	gls->tee_id = tee_id;
 	gls->get = 0;
 
+	/* STATIC: memlog already is added at preloader stage.
+	 * DYNAMIC: add memlog as usual.
+	 */
+	if (glctx.flag == DYNAMIC) {
+		ret = trusty_std_call32(gls->trusty_dev,
+			MTEE_SMCNR(SMCF_SC_SHARED_LOG_ADD, gls->trusty_dev),
+			(u32)(glctx.paddr), (u32)((u64)glctx.paddr >> 32),
+			glctx.size);
+		if (ret < 0) {
+			dev_info(&pdev->dev,
+				"std call(GZ_SHARED_LOG_ADD) failed: %d %pa\n",
+				ret, &glctx.paddr);
+			goto error_std_call;
+		}
+	}
+
 	gls->log = glctx.virt;
 	dev_info(&pdev->dev, "gls->log virtual address:%p\n", gls->log);
 	if (!gls->log) {
 		ret = -ENOMEM;
 		goto error_alloc_log;
 	}
-
 	glctx.gls = gls;
-
-	ret = trusty_std_call32(gls->trusty_dev,
-				SMC_SC_GZ_SHARED_LOG_ADD,
-				(u32)(glctx.paddr),
-				(u32)((u64)glctx.paddr >> 32),
-				glctx.size);
-	if (ret < 0 && glctx.flag == DYNAMIC) {
-		dev_info(&pdev->dev,
-			 "std call(GZ_SHARED_LOG_ADD) failed: %d %pa\n",
-			 ret, &glctx.paddr);
-		goto error_std_call;
-	} else if (glctx.flag == STATIC) {
-		/* NOTE: When static memory used, the gz memlog should
-		 * be registered already and SMC_LOG_ADD should return
-		 * -2(SM_ERR_INVALID_PARAMETERS).
-		 */
-		if (ret == 0)
-			dev_info(&pdev->dev,
-				 "[%s] Detected using old geniezone image\n",
-				 __func__);
-		else if (ret == (-2))
-			dev_info(&pdev->dev,
-				 "[%s] memlog is already registered\n",
-				 __func__, ret);
-	}
 
 	gls->call_notifier.notifier_call = trusty_log_call_notify;
 	ret = trusty_call_notifier_register(gls->trusty_dev,
@@ -457,11 +433,12 @@ static int trusty_gz_log_probe(struct platform_device *pdev)
 error_panic_notifier:
 	trusty_call_notifier_unregister(gls->trusty_dev, &gls->call_notifier);
 error_call_notifier:
-	trusty_std_call32(gls->trusty_dev, SMC_SC_GZ_SHARED_LOG_RM,
+	trusty_std_call32(gls->trusty_dev,
+			  MTEE_SMCNR(SMCF_SC_SHARED_LOG_RM, gls->trusty_dev),
 			  (u32)glctx.paddr, (u32)((u64)glctx.paddr >> 32), 0);
 error_std_call:
 	if (glctx.flag == STATIC)
-		iounmap(gls->log);
+		iounmap(glctx.virt);
 	else
 		kfree(gls->log);
 error_alloc_log:
@@ -484,14 +461,13 @@ static int trusty_gz_log_remove(struct platform_device *pdev)
 	trusty_call_notifier_unregister(gls->trusty_dev, &gls->call_notifier);
 
 	ret = trusty_std_call32(gls->trusty_dev,
-				SMC_SC_GZ_SHARED_LOG_RM,
-				(u32)glctx.paddr,
-				(u32)((u64)glctx.paddr >> 32), 0);
+			MTEE_SMCNR(SMCF_SC_SHARED_LOG_RM, gls->trusty_dev),
+			(u32)glctx.paddr, (u32)((u64)glctx.paddr >> 32), 0);
 	if (ret)
 		pr_info("std call(GZ_SHARED_LOG_RM) failed: %d\n", ret);
 
 	if (glctx.flag == STATIC)
-		iounmap(gls->log);
+		iounmap(glctx.virt);
 	else
 		kfree(gls->log);
 
