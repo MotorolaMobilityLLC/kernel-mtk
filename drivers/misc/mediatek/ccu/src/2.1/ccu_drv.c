@@ -859,12 +859,12 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			break;
 	}
 	case CCU_IOCTL_GET_SENSOR_I2C_SLAVE_ADDR:
-		{
-			int32_t sensorI2cSlaveAddr[5];
+	{
+		int32_t sensorI2cSlaveAddr[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 
 		ccu_get_sensor_i2c_slave_addr(&sensorI2cSlaveAddr[0]);
-		ret = copy_to_user((void *)arg,
-				&sensorI2cSlaveAddr, sizeof(int32_t) * 5);
+		ret = copy_to_user((void *)arg, &sensorI2cSlaveAddr,
+			sizeof(int32_t) * IMGSENSOR_SENSOR_IDX_MAX_NUM);
 
 		break;
 	}
