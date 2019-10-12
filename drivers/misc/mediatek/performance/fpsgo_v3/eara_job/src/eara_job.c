@@ -39,7 +39,6 @@
 #include "mdla_dvfs.h"
 #endif
 
-#define API_READY 0
 
 #define MAX_DEVICE 2
 struct EARA_NN_JOB {
@@ -1102,7 +1101,7 @@ static void get_pwr_tbl(void)
 	unsigned int temp2;
 	int cluster_num = 2;
 
-#if API_READY
+#if defined(CONFIG_MACH_MT6779)
 	cobra_tbl = ppm_cobra_pass_tbl();
 #endif
 	if (!cobra_tbl)
