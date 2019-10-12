@@ -924,14 +924,17 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 	ipio_info("MP TEST %s, Error code = %d\n", (ret < 0) ? "FAIL" : "PASS", ret);
 	//apk_ret[sizeof(apk_ret) - 1] = ret;
 	memset(apk_ret, 0, sizeof(apk_ret));
-	if(ret){
-               size = sprintf(apk_ret, "%s\n", "pass");
+	if(ret <0){
+		size = sprintf(apk_ret, "%s\n", "fail");
+               ipio_info("fail wzx \n");
 	}
-	else
-	        size = sprintf(apk_ret, "%s\n", "fail");
+	else{
+	       size = sprintf(apk_ret, "%s\n", "pass");
+		   ipio_info("pass wzx \n");
+		}
 
 	ret = copy_to_user((char *)buff, apk_ret, size);
-		ipio_err("Failed to copy data to user space\n");
+		//ipio_err("Failed to copy data to user space\n");
 
 	if (esd_en)
 		ilitek_tddi_wq_ctrl(WQ_ESD, ENABLE);
@@ -939,7 +942,8 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 		ilitek_tddi_wq_ctrl(WQ_BAT, ENABLE);
 
 	mutex_unlock(&idev->touch_mutex);
-	return ret;
+	 *pos += size;
+	return size;
 }
 
 static ssize_t ilitek_node_mp_lcm_off_test_read(struct file *filp, char __user *buff, size_t size, loff_t *pos)
