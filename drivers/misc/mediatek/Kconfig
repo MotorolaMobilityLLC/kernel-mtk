@@ -52,6 +52,9 @@ config MTK_AB_OTA_UPDATER
 	  Y means this kernel enabled OTA A/B system updates feature.
 	  If you are not sure about this, set n
 
+config MTK_DTB_CHECK
+	bool "MTK dtb check"
+
 config SYSTEM_AS_ROOT
 	bool "Support system-as-root"
 	default y
