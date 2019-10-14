@@ -1804,7 +1804,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	spi1: spi@11010000 {
-		compatible = "mediatek,mt6765-spi";
+		compatible = "mediatek,mt6765-spi-fp";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11010000 0 0x1000>;
 		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
