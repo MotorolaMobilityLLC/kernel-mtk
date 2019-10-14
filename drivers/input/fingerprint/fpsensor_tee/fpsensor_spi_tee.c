@@ -44,6 +44,7 @@
 //#include "mach/mt_clkmgr.h" //kernel 3.18
 extern void mt_spi_disable_master_clk(struct spi_device *ms);
 extern void mt_spi_enable_master_clk(struct spi_device *spidev);
+struct spi_device *g_fpsensor_spidev = NULL;
 #define FPSENSOR_SPI_VERSION              "fpsensor_spi_tee_mtk_v1.23.1"
 #define FP_NOTIFY                         1
 
@@ -237,9 +238,9 @@ static void fpsensor_spi_clk_enable(u8 bonoff)
 {
 #if defined(USE_SPI_BUS)
     if (bonoff == 0) {
-        mt_spi_disable_master_clk(g_fpsensor->spi);
+        //mt_spi_disable_master_clk(g_fpsensor->spi);
     } else {
-        mt_spi_enable_master_clk(g_fpsensor->spi);
+        mt_spi_enable_master_clk(g_fpsensor_spidev);
     }
 #elif defined(USE_PLATFORM_BUS)
     if (bonoff == 0) {
@@ -295,6 +296,10 @@ out:
     return;
 }
 
+static irqreturn_t fpsensor_irq2(int irq, void *handle)
+{
+	return  IRQ_HANDLED;
+}
 static irqreturn_t fpsensor_irq(int irq, void *handle)
 {
     fpsensor_data_t *fpsensor_dev = (fpsensor_data_t *)handle;
@@ -330,6 +335,7 @@ static void fpsensor_dev_cleanup(fpsensor_data_t *fpsensor)
 
 static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
+	struct TEEC_UUID vendor_uuid = { 0x7778c03f, 0xc30c, 0x4dd0, { 0xa3, 0x19, 0xea, 0x29, 0x64, 0x3d, 0x4d, 0xc0 }};
     fpsensor_data_t *fpsensor_dev = NULL;
     int retval = 0;
     uint32_t val = 0;
@@ -340,6 +346,7 @@ static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
     fpsensor_dev->cancel = 0 ;
     switch (cmd) {
     case FPSENSOR_IOC_INIT:
+
         fpsensor_debug(INFO_LOG, "%s: fpsensor init started======\n", __func__);
         retval = fpsensor_spidev_dts_init(fpsensor_dev);
         if (retval) {
@@ -364,6 +371,8 @@ static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
         fpsensor_dev->irq_enabled = 1;
         fpsensor_disable_irq(fpsensor_dev);
         fpsensor_debug(INFO_LOG, "%s: fpsensor init finished======\n", __func__);
+
+		memcpy(&uuid_fp, &vendor_uuid, sizeof(struct TEEC_UUID));
         break;
 
     case FPSENSOR_IOC_EXIT:
@@ -419,6 +428,17 @@ static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
             free_irq(fpsensor_dev->irq, fpsensor_dev);
             fpsensor_dev->irq_enabled = 0;
         }
+#if  1
+        irqf = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
+		retval = request_threaded_irq(fpsensor_dev->irq, fpsensor_irq2, NULL,
+				irqf, FPSENSOR_DEV_NAME, fpsensor_dev);
+		if (retval == 0) {
+			fpsensor_debug(ERR_LOG, " irq thread reqquest success!\n");
+		} else {
+			fpsensor_debug(ERR_LOG, " irq thread request failed , retval =%d \n", retval);
+		}
+		free_irq(fpsensor_dev->irq, fpsensor_dev);
+#endif
         fpsensor_dev->device_available = 0;
         fpsensor_dev_cleanup(fpsensor_dev);
 #if FP_NOTIFY
@@ -681,7 +701,6 @@ static int fpsensor_probe(struct platform_device *spi)
 {
     int status = 0;
     fpsensor_data_t *fpsensor_dev = NULL;
-	struct TEEC_UUID vendor_uuid = { 0x7778c03f, 0xc30c, 0x4dd0, { 0xa3, 0x19, 0xea, 0x29, 0x64, 0x3d, 0x4d, 0xc0 }};
 
     FUNC_ENTRY();
 	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
@@ -696,6 +715,7 @@ static int fpsensor_probe(struct platform_device *spi)
 	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
 
     /* Initialize the driver data */
+	g_fpsensor_spidev = spi;
     g_fpsensor = fpsensor_dev;
     fpsensor_dev->spi               = spi ;
     fpsensor_dev->device_available  = 0;
@@ -730,7 +750,6 @@ static int fpsensor_probe(struct platform_device *spi)
     fpsensor_debug(INFO_LOG, "%s finished, driver version: %s\n", __func__, FPSENSOR_SPI_VERSION);
 	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
 
-	memcpy(&uuid_fp, &vendor_uuid, sizeof(struct TEEC_UUID));
 
     goto out;
 

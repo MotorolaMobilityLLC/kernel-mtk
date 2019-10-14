@@ -1,7 +1,7 @@
 /**
  * plat-mt6735m.c
  *
-**/
+ **/
 
 #include <linux/stddef.h>
 #include <linux/bug.h>
@@ -29,7 +29,7 @@
 
 /* TODO: */
 #define FF_COMPATIBLE_NODE_1 "mediatek,fpsensor_pinctrl" //"mediatek,focal-fp"
-#define FF_COMPATIBLE_NODE_3 "mediatek,mt6765-spi"
+#define FF_COMPATIBLE_NODE_3 "mediatek,mt6765-spi-fp"
 extern struct spi_device *g_spidev;
 extern void mt_spi_disable_master_clk(struct spi_device *ms);
 extern void mt_spi_enable_master_clk(struct spi_device *spidev);
@@ -41,207 +41,179 @@ bool g_context_enabled = false;
 
 /* Define pinctrl state types. */
 typedef enum {
-    FF_PINCTRL_STATE_PWR_ACT,
-    FF_PINCTRL_STATE_PWR_CLR,
-    FF_PINCTRL_STATE_RST_ACT,
-    FF_PINCTRL_STATE_RST_CLR,
-    FF_PINCTRL_STATE_INT_ACT,
-    FF_PINCTRL_STATE_MAXIMUM /* Array size */
+	FF_PINCTRL_STATE_PWR_ACT,
+	FF_PINCTRL_STATE_PWR_CLR,
+	FF_PINCTRL_STATE_RST_ACT,
+	FF_PINCTRL_STATE_RST_CLR,
+	FF_PINCTRL_STATE_INT_ACT,
+	FF_PINCTRL_STATE_MAXIMUM /* Array size */
 } ff_pinctrl_state_t;
 
 static const char *g_pinctrl_state_names[FF_PINCTRL_STATE_MAXIMUM] = {
-    "fpsensor_finger_power_high", "fpsensor_finger_power_low","fpsensor_finger_rst_high", "fpsensor_finger_rst_low", "fpsensor_eint_as_int",
+	"fpsensor_finger_power_high", "fpsensor_finger_power_low","fpsensor_finger_rst_high", "fpsensor_finger_rst_low", "fpsensor_eint_as_int",
 };
 static struct pinctrl *g_pinctrl = NULL;
 static struct pinctrl_state *g_pin_states[FF_PINCTRL_STATE_MAXIMUM] = {
-    NULL,
+	NULL,
 };
 
 int ff_ctl_init_pins(int *irq_num)
 {
-    int err = 0, i;
-    struct device_node *dev_node = NULL;
-    struct platform_device *pdev = NULL;
-    FF_LOGV("'%s' enter.", __func__);
+	int err = 0, i;
+	struct device_node *dev_node = NULL;
+	struct platform_device *pdev = NULL;
+	FF_LOGV("'%s' enter.", __func__);
 
-    /* Find device tree node. */
-    dev_node = of_find_compatible_node(NULL, NULL, FF_COMPATIBLE_NODE_1);
-    if (!dev_node) {
-        FF_LOGE("of_find_compatible_node(.., '%s') failed.", FF_COMPATIBLE_NODE_1);
-        return (-ENODEV);
-    }
+	/* Find device tree node. */
+	dev_node = of_find_compatible_node(NULL, NULL, FF_COMPATIBLE_NODE_1);
+	if (!dev_node) {
+		FF_LOGE("of_find_compatible_node(.., '%s') failed.", FF_COMPATIBLE_NODE_1);
+		return (-ENODEV);
+	}
 
-    /* Convert to platform device. */
-    pdev = of_find_device_by_node(dev_node);
-    if (!pdev) {
-        FF_LOGE("of_find_device_by_node(..) failed.");
-        return (-ENODEV);
-    }
+	/* Convert to platform device. */
+	pdev = of_find_device_by_node(dev_node);
+	if (!pdev) {
+		FF_LOGE("of_find_device_by_node(..) failed.");
+		return (-ENODEV);
+	}
 
-    /* Retrieve the pinctrl handler. */
-    g_pinctrl = devm_pinctrl_get(&pdev->dev);
-    if (!g_pinctrl) {
-        FF_LOGE("devm_pinctrl_get(..) failed.");
-        return (-ENODEV);
-    }
+	/* Retrieve the pinctrl handler. */
+	g_pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (!g_pinctrl) {
+		FF_LOGE("devm_pinctrl_get(..) failed.");
+		return (-ENODEV);
+	}
 
-    /* Register all pins. */
-    for (i = 0; i < FF_PINCTRL_STATE_MAXIMUM; ++i) {
-        g_pin_states[i] = pinctrl_lookup_state(g_pinctrl, g_pinctrl_state_names[i]);
-        if (!g_pin_states[i]) {
-            FF_LOGE("can't find pinctrl state for '%s'.", g_pinctrl_state_names[i]);
-            err = (-ENODEV);
-            break;
-        }
-    }
-    if (i < FF_PINCTRL_STATE_MAXIMUM) {
-        return (-ENODEV);
-    }
+	/* Register all pins. */
+	for (i = 0; i < FF_PINCTRL_STATE_MAXIMUM; ++i) {
+		g_pin_states[i] = pinctrl_lookup_state(g_pinctrl, g_pinctrl_state_names[i]);
+		if (!g_pin_states[i]) {
+			FF_LOGE("can't find pinctrl state for '%s'.", g_pinctrl_state_names[i]);
+			err = (-ENODEV);
+			break;
+		}
+	}
+	if (i < FF_PINCTRL_STATE_MAXIMUM) {
+		return (-ENODEV);
+	}
 
-    /* Initialize the INT pin. */
-    err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_INT_ACT]);
+	/* Initialize the INT pin. */
+	err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_INT_ACT]);
 
-    /* Retrieve the irq number. */
-    *irq_num = irq_of_parse_and_map(dev_node, 0);
-    printk("%s +%d, errno=%d, devnode=%s, irq=%d\n", __func__, __LINE__, err, dev_node->name, *irq_num);
+	/* Retrieve the irq number. */
+	*irq_num = irq_of_parse_and_map(dev_node, 0);
+	printk("%s +%d, errno=%d, devnode=%s, irq=%d\n", __func__, __LINE__, err, dev_node->name, *irq_num);
 
 #if !defined(CONFIG_MTK_CLKMGR)
-    //
-    // Retrieve the clock source of the SPI controller.
-    //
+	//
+	// Retrieve the clock source of the SPI controller.
+	//
 
-    /* 3-1: Find device tree node. */
+	/* 3-1: Find device tree node. */
 #if 0
-    dev_node = of_find_compatible_node(NULL, NULL, FF_COMPATIBLE_NODE_3);
-    if (!dev_node) {
-        FF_LOGE("of_find_compatible_node(.., '%s') failed.", FF_COMPATIBLE_NODE_3);
-        return (-ENODEV);
-    }
+	dev_node = of_find_compatible_node(NULL, NULL, FF_COMPATIBLE_NODE_3);
+	if (!dev_node) {
+		FF_LOGE("of_find_compatible_node(.., '%s') failed.", FF_COMPATIBLE_NODE_3);
+		return (-ENODEV);
+	}
 
-    /* 3-2: Convert to platform device. */
-    pdev = of_find_device_by_node(dev_node);
-    if (!pdev) {
-        FF_LOGE("of_find_device_by_node(..) failed.");
-        return (-ENODEV);
-    }
-    FF_LOGD("spi controller name: %s.", pdev->name);
+	/* 3-2: Convert to platform device. */
+	pdev = of_find_device_by_node(dev_node);
+	if (!pdev) {
+		FF_LOGE("of_find_device_by_node(..) failed.");
+		return (-ENODEV);
+	}
+	FF_LOGD("spi controller name: %s.", pdev->name);
 
-    /* 3-3: Retrieve the SPI clk handler. */
-    g_context_spiclk = devm_clk_get(&pdev->dev, "spi-clk");
-    if (!g_context_spiclk) {
-        FF_LOGE("devm_clk_get(..) failed.");
-        return (-ENODEV);
-    }
+	/* 3-3: Retrieve the SPI clk handler. */
+	g_context_spiclk = devm_clk_get(&pdev->dev, "spi-clk");
+	if (!g_context_spiclk) {
+		FF_LOGE("devm_clk_get(..) failed.");
+		return (-ENODEV);
+	}
 #endif
 #endif
-    /* Initialize the RESET pin. */
-    pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_RST_ACT]);
+	/* Initialize the RESET pin. */
+	pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_RST_ACT]);
 
-    FF_LOGV("'%s' leave.", __func__);
-    return err;
+	FF_LOGV("'%s' leave.", __func__);
+	return err;
 }
 
 int ff_ctl_free_pins(void)
 {
-    int err = 0;
-    FF_LOGV("'%s' enter.", __func__);
+	int err = 0;
+	FF_LOGV("'%s' enter.", __func__);
 
-    // TODO:
-    devm_pinctrl_put(g_pinctrl);
+	// TODO:
+	devm_pinctrl_put(g_pinctrl);
 
-    FF_LOGV("'%s' leave.", __func__);
-    return err;
+	FF_LOGV("'%s' leave.", __func__);
+	return err;
 }
 
 int ff_ctl_enable_spiclk(bool on)
 {
-#if 1
-    FF_LOGD("clock: '%s'.", on ? "enable" : "disabled");
-
-    /* Control the clock source. */
-    if (on && !g_context_enabled) {
+	FF_LOGD("clock: '%s'.", on ? "enable" : "disabled");
+#if 0
+	/* Control the clock source. */
+	if (on && !g_context_enabled) {
 		mt_spi_enable_master_clk(g_spidev);
-        g_context_enabled = true;
-    } else if (!on && g_context_enabled) {
+		g_context_enabled = true;
+	} else if (!on && g_context_enabled) {
 		mt_spi_disable_master_clk(g_spidev);
-        g_context_enabled = false;
+		g_context_enabled = false;
 	}
-	return 0;
-#else
-
-    int err = 0;
-
-    //FF_LOGI("'%s' enter.", __func__);
-    FF_LOGD("clock: '%s'.", on ? "enable" : "disabled");
-
-    if (unlikely(!g_context_spiclk)) {
-        return (-ENOSYS);
-    }
-    //FF_LOGI("b_spiclk_enabled = %d.", g_context->b_spiclk_enabled);
-    /* Control the clock source. */
-    if (on && !g_context_enabled) {
-        err = clk_prepare_enable(g_context_spiclk);
-        if (err) {
-            FF_LOGE("clk_prepare_enable(..) = %d.", err);
-        }
-        g_context_enabled = true;
-    } else if (!on && g_context_enabled) {
-        clk_disable_unprepare(g_context_spiclk);
-        g_context_enabled = false;
-    }
-
-    //FF_LOGI("'%s' leave.", __func__);
-    return err;
-
-    return 0;
 #endif
+	return 0;
 }
 
 int ff_ctl_enable_power(bool on)
 {
-    int err = 0;
-    FF_LOGV("'%s' enter.", __func__);
-    FF_LOGD("power: '%s'.", on ? "on" : "off");
+	int err = 0;
+	FF_LOGV("'%s' enter.", __func__);
+	FF_LOGD("power: '%s'.", on ? "on" : "off");
 
-    if (unlikely(!g_pinctrl)) {
+	if (unlikely(!g_pinctrl)) {
 		FF_LOGE("g_pinctrl is NULL.");
-        return (-ENOSYS);
-    }
+		return (-ENOSYS);
+	}
 
-    if (on) {
-//        err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_PWR_ACT]);
-    } else {
-//        err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_PWR_CLR]);
-    }
+	if (on) {
+		//        err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_PWR_ACT]);
+	} else {
+		//        err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_PWR_CLR]);
+	}
 
-    FF_LOGV("'%s' leave.", __func__);
-    return err;
+	FF_LOGV("'%s' leave.", __func__);
+	return err;
 }
 
 int ff_ctl_reset_device(void)
 {
-    int err = 0;
-    FF_LOGV("'%s' enter.", __func__);
+	int err = 0;
+	FF_LOGV("'%s' enter.", __func__);
 
-    if (unlikely(!g_pinctrl)) {
-        return (-ENOSYS);
-    }
+	if (unlikely(!g_pinctrl)) {
+		return (-ENOSYS);
+	}
 
-    /* 3-1: Pull down RST pin. */
-    err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_RST_CLR]);
+	/* 3-1: Pull down RST pin. */
+	err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_RST_CLR]);
 
-    /* 3-2: Delay for 10ms. */
-    mdelay(10);
+	/* 3-2: Delay for 10ms. */
+	mdelay(10);
 
-    /* Pull up RST pin. */
-    err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_RST_ACT]);
+	/* Pull up RST pin. */
+	err = pinctrl_select_state(g_pinctrl, g_pin_states[FF_PINCTRL_STATE_RST_ACT]);
 
-    FF_LOGV("'%s' leave.", __func__);
-    return err;
+	FF_LOGV("'%s' leave.", __func__);
+	return err;
 }
 
 const char *ff_ctl_arch_str(void)
 {
-    return CONFIG_MTK_PLATFORM;
+	return CONFIG_MTK_PLATFORM;
 }
 
