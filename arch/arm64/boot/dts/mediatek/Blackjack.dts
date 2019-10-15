@@ -515,7 +515,7 @@
 		reg = <0x6c>;
 		status = "okay";
 	};
-       externel-eta-charger@6a{
+       externel-eta-charger@6b{
                compatible = "ontim,eta6937";
                reg = <0x6b>;/*dumy addr,in fact ,the addr is 0x6b-1*/
                status = "okay";
