@@ -263,6 +263,11 @@
 		reg = <0x6a>;
 		status = "okay";
 	};
+       externel-eta-charger@6a{
+               compatible = "ontim,eta6937";
+               reg = <0x6b>;/*dumy addr,in fact ,the addr is 0x6b-1*/
+               status = "okay";
+       };
 
 };
 &i2c6 {
