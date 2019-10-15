@@ -1,0 +1,19 @@
+menuconfig TINNO
+	bool "tinno kernel code"
+	help
+	  You can build and test tinno kernel code here.
+
+config MTK_FOCALTECH_TOUCH_TS
+	bool "FOCALTECH_TS for Mediatek package"
+	help
+	  Say Y here if you have FOCALTECH_TS touch panel.
+	  If unsure, say N.
+config MTK_TGESTURE
+        bool "tGesture for Mediatek package"
+        default n
+
+#source "tinno/common_features/sensors/accelerometer/Kconfig"
+#source "tinno/common_features/sensors/alsps/Kconfig"
+#source "tinno/common_features/sensors/magnetometer/Kconfig"
+source "tinno/common_features/sensors/hall/Kconfig"
+#source "tinno/common_features/sensors/gyroscope/Kconfig"

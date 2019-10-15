@@ -1,0 +1,50 @@
+menuconfig TINNO
+	bool "tinno kernel code"
+	help
+	  You can build and test tinno kernel code here.
+
+config MTK_FOCALTECH_TOUCH_TS
+	bool "FOCALTECH_TS for Mediatek package"
+	help
+	  Say Y here if you have FOCALTECH_TS touch panel.
+	  If unsure, say N.
+config MTK_TGESTURE
+        bool "tGesture for Mediatek package"
+        default n
+
+
+# product info.
+config TINNO_PRODUCT_INFO
+    bool "TINNO_PRODUCT_INFO"
+    default n
+
+config MTK_BQ24157_SUPPORT
+	bool "Charger Driver for TI BQ24157 Charger IC"
+	default n
+	help
+	  Say Y to enable
+	  TI BQ24157 driver.
+
+config MTK_BQ2560X_SUPPORT
+	bool "Charger Driver for TI BQ2560X Charger IC"
+	default n
+	help
+	  Say Y to enable
+	  TI BQ2560X driver.
+
+config FS16XX_FS1894_SUPPORT
+	bool "smart pa driver for FS1894 "
+	default n
+	help
+	  Say Y to enable
+	  TI FS1894 driver.
+
+config FS16XX_FS1818_SUPPORT
+	bool "smart pa driver for FS1818 "
+	default n
+	help
+	  Say Y to enable
+	  TI FS1818 driver.
+
+source "tinno/common_features/sensors/Kconfig"
+#source "tinno/common_features/charger/Kconfig"

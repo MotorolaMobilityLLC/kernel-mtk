@@ -1,0 +1,1 @@
+obj-$(CONFIG_FS16XX_FS1894_SUPPORT) += fs16xx_i2c.o

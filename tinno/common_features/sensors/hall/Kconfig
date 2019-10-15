@@ -1,0 +1,8 @@
+
+config CUSTOM_KERNEL_HALL
+	bool "MTK_TINNO_HALL"
+	help
+	  hall sensor driver to detect ambient light and the object is close
+	  or far awary from device. After configure this configuration,
+          the specific ambient light and proximity sensor driver configuration
+          should be configured as well.
