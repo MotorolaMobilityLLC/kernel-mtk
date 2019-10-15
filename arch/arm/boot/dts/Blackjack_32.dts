@@ -346,48 +346,7 @@
 	};
 };
 /* accdet end */
-#if 0
-/* FINGERPRINT start */
-&spi0 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	fingerprint@0 {
-		compatible = "goodix,goodix-fp";
-		reg = <0>;
-		spi-max-frequency = <8000000>;
-		netlink-event = <30>;
-		status = "okay";
-	};
-};
 
-&goodix_fp {
-	pinctrl-names = "default", "reset_high", "reset_low";
-	pinctrl-0 = <&fingerprint_default>;
-	pinctrl-1 = <&fingerprint_reset_high>;
-	pinctrl-2 = <&fingerprint_reset_low>;
-	status = "okay";
-};
-
-&pio {
-	fingerprint_default: state_default {
-	};
-	fingerprint_reset_high: state_reset_high {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	fingerprint_reset_low: state_reset_low {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-};
-/* FINGERPRINT end */
-#endif
 &led_simple {
 	pinctrl-names = "default", "red_led_output0", "red_led_output1";
 	pinctrl-0 = <&red_led_default>;
@@ -865,11 +824,12 @@
 	fpsensor_finger_power_en1: fpsensor_finger_power_high {
 	};
 
-	fpsensor_fp_eint_as_int: eint@5 {
+	fpsensor_fp_eint_as_int: fpsensor_eint_as_int {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
 			slew-rate = <0>;
-			bias-pull-down = <00>;
+			bias-disable;
+			//bias-pull-down = <00>;
 		};
 	};
 	fpsensor_fp_eint_in_low: fpsensor_eint_in_low {
