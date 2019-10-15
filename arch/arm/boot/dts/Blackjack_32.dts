@@ -102,6 +102,11 @@
                reg = <0x6b>;/*dumy addr,in fact ,the addr is 0x6b-1*/
                status = "okay";
        };
+	externel-charger@6a{
+		compatible = "halo,hl7005";
+		reg = <0x6a>;
+		status = "okay";
+	};
 };
 &i2c6 {
 	ext_buck_vgpu@55 {
