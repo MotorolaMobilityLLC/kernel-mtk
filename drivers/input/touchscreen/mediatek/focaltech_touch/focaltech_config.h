@@ -200,7 +200,7 @@
 /*
  * Numbers of modules support
  */
-#define FTS_GET_MODULE_NUM                      0
+#define FTS_GET_MODULE_NUM                      2
 
 /*
  * module_id: mean vendor_id generally, also maybe gpio or lcm_id...
@@ -209,8 +209,8 @@
  * FTS_GET_MODULE_NUM >= 2, compatible with FTS_MODULE2_ID
  * FTS_GET_MODULE_NUM >= 3, compatible with FTS_MODULE3_ID
  */
-#define FTS_MODULE_ID                          0x0000
-#define FTS_MODULE2_ID                         0x0000
+#define FTS_MODULE_ID                          0x8282
+#define FTS_MODULE2_ID                         0x7070
 #define FTS_MODULE3_ID                         0x0000
 
 /*
@@ -221,8 +221,8 @@
  * You should rename fw to "focaltech_ts_fw_tianma", and push it into
  * etc/firmware or by customers
  */
-#define FTS_MODULE_NAME                        ""
-#define FTS_MODULE2_NAME                       ""
+#define FTS_MODULE_NAME                        "focal_fw_holitech"
+#define FTS_MODULE2_NAME                       "focal_fw_truly"
 #define FTS_MODULE3_NAME                       ""
 
 /*
@@ -230,7 +230,7 @@
  * define your own fw_file, the sample one to be replaced is invalid
  * NOTE: if FTS_GET_MODULE_NUM > 1, it's the fw corresponding with FTS_VENDOR_ID
  */
-#define FTS_UPGRADE_FW_FILE                      "include/firmware/ft8006p_v02_all.i"
+#define FTS_UPGRADE_FW_FILE                      "include/firmware/blackjack_ft8006p_ver10.i"
 
 /*
  * if FTS_GET_MODULE_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
