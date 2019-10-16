@@ -1590,9 +1590,11 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x4902, 0x02);
 #endif
 }
+
 extern char back_cam_efuse_id[64];
 extern char back_cam_name[64];
 extern u32 dual_main_sensorid;
+
 static kal_uint32 return_sensor_id(void)
 {
 	return ((read_cmos_sensor(0x300a) << 16) |
@@ -1616,6 +1618,7 @@ static  void get_back_cam_efuse_id(void)
 		msleep(1);
 	}
 }
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
