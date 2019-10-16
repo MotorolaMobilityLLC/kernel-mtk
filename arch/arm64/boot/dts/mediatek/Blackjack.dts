@@ -871,11 +871,12 @@
 	fpsensor_finger_power_en1: fpsensor_finger_power_high {
 	};
 
-	fpsensor_fp_eint_as_int: eint@5 {
+	fpsensor_fp_eint_as_int: fpsensor_eint_as_int {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
 			slew-rate = <0>;
-			bias-pull-down = <00>;
+			bias-disable;
+			//bias-pull-down = <00>;
 		};
 	};
 	fpsensor_fp_eint_in_low: fpsensor_eint_in_low {
