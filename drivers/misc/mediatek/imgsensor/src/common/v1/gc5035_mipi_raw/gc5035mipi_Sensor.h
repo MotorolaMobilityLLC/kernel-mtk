@@ -49,7 +49,7 @@
 #define GC5035_SENSOR_DGAIN_BASE            0x100
 
 /* SENSOR PRIVATE INFO FOR OTP SETTINGS */
-#define GC5035_OTP_FOR_CUSTOMER            0
+#define GC5035_OTP_FOR_CUSTOMER            1
 #define GC5035_OTP_DEBUG                   0
 
 /* DEBUG */
