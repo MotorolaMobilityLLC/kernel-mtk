@@ -143,6 +143,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 static struct LCM_setting_table init_setting[] = {
 	{0x53, 0x01,{0x2C}},
 	{0x55, 0x01,{0x00}},
+	{0x51, 0x01,{0x00}},
 	{0x11, 0x01,{0x00}},
 	{REGFLAG_DELAY, 120,{}},
 	{0x29, 0x01,{0x00}},
@@ -150,7 +151,7 @@ static struct LCM_setting_table init_setting[] = {
 
 };
 static struct LCM_setting_table bl_level[] = {
-	{0x51,1,{0xFF}},
+	{0x51, 0x01,{0xFF}},
 	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
