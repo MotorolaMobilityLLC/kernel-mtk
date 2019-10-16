@@ -1330,11 +1330,7 @@ void fts_lcm_update_firmware_work(void)
 	if (!fts_data)
 		return;
 
-	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
-		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
-		//fts_fwupg_init(fts_data);
-		fts_load_fw_init(fts_data);
-	}
+	fts_load_fw_init(fts_data);
 }
 EXPORT_SYMBOL(fts_lcm_update_firmware_work);
 
@@ -1559,7 +1555,20 @@ static struct spi_driver fts_ts_driver = {
 
 static int fts_ts_driver_init(void)
 {
-    return spi_register_driver(&fts_ts_driver);
+    int ret = 0;
+
+    if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+        && get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+        /* ---add spi driver--- */
+        ret = spi_register_driver(&fts_ts_driver);
+        if (ret) {
+            FTS_ERROR("failed to add spi driver");
+            goto err_driver;
+        }
+    }
+
+err_driver:
+    return ret;
 }
 
 
