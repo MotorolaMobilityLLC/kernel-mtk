@@ -42,3 +42,7 @@ subdir-ccflags-y += $(CUSTOM_KERNEL_FLAGS)
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM_SENSOR))/
 
+ifeq ($(MIPI_SWITCH_SUPPORT),y)
+define MIPI_SWITCH
+endef
+endif

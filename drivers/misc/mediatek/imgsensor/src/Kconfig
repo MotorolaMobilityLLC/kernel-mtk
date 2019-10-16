@@ -29,3 +29,6 @@ config IMGSENSOR_SUB2
 	depends on SPECIFY_IMGSENSOR
 	help
 	  Specify sub2 sensor.
+
+config MIPI_SWITCH_SUPPORT
+	bool "MIPI SWITCH"
