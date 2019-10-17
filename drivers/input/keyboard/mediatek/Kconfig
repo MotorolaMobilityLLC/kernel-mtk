@@ -92,3 +92,8 @@ config LONG_PRESS_MODE_EN
 
 	  The memory dump key includes power key,homerst key and
 	  volume down key,and used for debug purpose.
+
+config ONTIM_DUAL_85
+	bool "ONTIM_DUAL_85"
+	help
+	  Add charge dual 85
