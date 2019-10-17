@@ -52,8 +52,8 @@ extern char lcd_info_pr[256];
 char ft_fw=0;
 #include <ontim/ontim_dev_dgb.h>
 static char version[40]="0x00";
-static char vendor_name[50]="Truly_focaltech";
-static char lcdname[50]="FT8006P";
+static char vendor_name[50]="truly-ft8006p";
+static char lcdname[50]="truly-ft8006p";
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
@@ -1036,11 +1036,11 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
 {
     struct input_dev *input_dev = ts_data->input_dev;
     int cnt=0;
+    u8 focal_vendor_id = 0;
     mutex_lock(&input_dev->mutex);
     do {
         if (fts_read_reg( FTS_REG_FW_VER, &ft_fw) >= 0) {
             if ((ft_fw != 0xFF) && (ft_fw != 0x00)) {
-                snprintf(version, sizeof(version)," %d.0",ft_fw );
                 break;
             }
         }
@@ -1048,7 +1048,19 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
         cnt++;
         msleep(INTERVAL_READ_REG);
     } while (cnt  < 5);
-    snprintf(vendor_name, sizeof(vendor_name),"Truly_focaltech" );
+    do {
+        if (fts_read_reg( FTS_REG_VENDOR_ID, &focal_vendor_id) >= 0) {
+            if ((focal_vendor_id != 0xFF) && (focal_vendor_id != 0x00)) {
+                snprintf(version, sizeof(version)," %d.0 VID:0x%x", ft_fw, focal_vendor_id);
+		 pr_info("version:%s", version);
+                break;
+            }
+        }
+
+        cnt++;
+        msleep(INTERVAL_READ_REG);
+    } while (cnt  < 5);
+    snprintf(vendor_name, sizeof(vendor_name),"truly_focaltech" );
     mutex_unlock(&input_dev->mutex);
 }
 static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
@@ -1185,7 +1197,7 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     
     /* BEGIN, Ontim,  wzx, 19/10/9, St-result :PASS,LCD and TP Device information */
     if(strstr(lcd_info_pr,"ft8006p")){
-	   snprintf(lcdname, sizeof(lcdname),"%s ","Ft8006p" );
+	   snprintf(lcdname, sizeof(lcdname),"%s ","truly-ft8006p" );
     }
     ontim_refresh_fw_ver( ts_data);
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
