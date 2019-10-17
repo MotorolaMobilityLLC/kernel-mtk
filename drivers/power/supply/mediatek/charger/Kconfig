@@ -154,3 +154,8 @@ config MTK_BQ24296_SUPPORT
 	  It depends on config MTK_SMART_BATTERY
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ24296 is used.
+
+config ONTIM_DUAL_85
+	bool "ONTIM_DUAL_85"
+	help
+	  Add charge dual 85
