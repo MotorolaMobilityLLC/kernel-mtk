@@ -5,3 +5,8 @@ config MTK_THERMAL_PA_VIA_ATCMD
 	  to query modem RF temperature
 	  via AT command.
 	  (RIL sockets)
+
+config ONTIM_DUAL_85
+	bool "ONTIM_DUAL_85"
+	help
+	  Add charge dual 85

@@ -35,3 +35,8 @@ config MTK_ADDITIONAL_BATTERY_TABLE
 	  Table number is five.
 	  Set No to disable the fifth battery table
 	  Table number is four.
+
+config ONTIM_DUAL_85
+	bool "ONTIM_DUAL_85"
+	help
+	  Add charge dual 85
