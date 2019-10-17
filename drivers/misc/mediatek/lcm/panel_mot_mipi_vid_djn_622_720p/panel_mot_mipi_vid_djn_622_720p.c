@@ -496,7 +496,7 @@ static void lcm_set_recovery_backlight(void)
 static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
 		unsigned int *lcm_value)
 {
-	cabc_array[1].para_list[0] = *lcm_value;
+	cabc_array[0].para_list[0] = *lcm_value;
 	push_table(handle, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
 }
 
