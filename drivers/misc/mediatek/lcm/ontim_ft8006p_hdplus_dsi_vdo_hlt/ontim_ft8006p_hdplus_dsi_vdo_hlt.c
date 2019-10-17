@@ -230,14 +230,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* video mode timing */
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 	params->dsi.vertical_sync_active = 8; //old is 2,now is 4
-	params->dsi.vertical_backporch = 110; //old is 8,now is 100
-	params->dsi.vertical_frontporch = 130; //old is 24,now is 124
+	params->dsi.vertical_backporch = 108; //old is 8,now is 100
+	params->dsi.vertical_frontporch = 132; //old is 24,now is 124
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 14; //old is 20,now is 8
-	params->dsi.horizontal_backporch = 25;//old is 60,now is 12
-	params->dsi.horizontal_frontporch = 45;//old is 60,now is 16
+	params->dsi.horizontal_sync_active = 20; //old is 20,now is 8
+	params->dsi.horizontal_backporch = 60;//old is 60,now is 12
+	params->dsi.horizontal_frontporch = 60;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 270;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 303;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 #if 0
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
