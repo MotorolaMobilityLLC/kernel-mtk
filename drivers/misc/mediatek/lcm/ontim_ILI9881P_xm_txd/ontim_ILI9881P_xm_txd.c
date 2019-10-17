@@ -498,15 +498,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.ssc_disable = 0;
 	params->dsi.ssc_range = 3;
 	//params->dsi.HS_TRAIL = 15;
-	params->dsi.PLL_CLOCK = 336;    /* this value must be in MTK suggested table */
-	params->dsi.PLL_CK_CMD = 300;    
-	params->dsi.PLL_CK_VDO = 300;     
+	params->dsi.PLL_CLOCK = 336;/* this value must be in MTK suggested table */
+	params->dsi.PLL_CK_CMD = 300;
+	params->dsi.PLL_CK_VDO = 300;
 	params->dsi.CLK_HS_POST = 36;
 
 	params->dsi.clk_lp_per_line_enable = 0;
 	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 0;
-	
+	params->dsi.customization_esd_check_enable = 1;
+
 	params->dsi.lcm_esd_check_table[0].cmd = 0x09;
 	params->dsi.lcm_esd_check_table[0].count = 3;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x81;
