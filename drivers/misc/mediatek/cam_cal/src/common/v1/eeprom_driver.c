@@ -793,10 +793,10 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 
     const char * str_ov13855_path = "/data/vendor/camera_dump/seansons_ov13855.data";
     //const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
-    //const char * str_s5k5e9_path  = "/data/vendor/camera_dump/sunrise_s5k5e9.data";
+    const char * str_s5k5e9yx_path  = "/data/vendor/camera_dump/qunhui_s5k5e9yx.data";
     //const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
-    const char * str_ar1337_path  = "/data/vendor/camera_dump/TXD_ar1337.data";
-    //const char * str_gc5025_path  = "/data/vendor/camera_dump/shine_gc5025.data";
+    const char * str_ar1337_path  = "/data/vendor/camera_dump/qunhui_ar1337.data";
+    const char * str_gc5035_path  = "/data/vendor/camera_dump/seansons_gc5035.data";
     const char * str_dump_path = NULL;
     
 	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
@@ -828,21 +828,6 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_s5k3l6_path;
             break;
         }
-        
-        case S5K5E9YX_SENSOR_ID:
-        {
-            if((p_buf == NULL)|| (Length == 0))
-            {
-                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
-                __FUNCTION__, __LINE__, p_buf, Length);
-                return -1;
-            }
-            pu1Params = p_buf;
-            u4Length = Length;
-            str_dump_path = str_s5k5e9_path;
-            break;
-        }    
-        
         case HI556_SENSOR_ID:
         {
             if((p_buf == NULL)|| (Length == 0))
@@ -856,8 +841,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_hi556_path;
             break;
         }
-
-        case GC5025AW_SENSOR_ID:
+		#endif
+        case S5K5E9YX_SENSOR_ID:
         {
             if((p_buf == NULL)|| (Length == 0))
             {
@@ -867,10 +852,22 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             }
             pu1Params = p_buf;
             u4Length = Length;
-            str_dump_path = str_gc5025_path;
+            str_dump_path = str_s5k5e9yx_path;
+            break;
+        }    
+        case GC5035_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_gc5035_path;
             break;
         }
-		#endif
         case AR1337_SENSOR_ID:
         {
             u4Offset = 0;
