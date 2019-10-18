@@ -57,7 +57,6 @@
 #define GC5035_OTP_START_ADDR              0x0000
 #endif
 
-
 #define GC5035_OTP_DATA_LENGTH             1024
 
 /* OTP FLAG TYPE */
