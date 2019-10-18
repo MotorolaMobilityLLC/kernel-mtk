@@ -27,6 +27,7 @@
 #include "kd_imgsensor_errcode.h"
 
 #include "gc5035mipi_Sensor.h"
+#include <linux/slab.h>
 
 /**************** Modify Following Strings for Debug ******************/
 #define PFX "gc5035_camera_sensor"
@@ -650,10 +651,26 @@ static void gc5035_otp_update(void)
 	gc5035_otp_update_reg();
 }
 
-static kal_uint8 gc5035_otp_identify(void)
+static kal_uint8 * ontim_read_otp(void)
+{
+	kal_uint8 * pu1Params = NULL;
+    kal_uint8 * p_dummy = NULL;
+	pu1Params = kmalloc(GC5035_OTP_DATA_LENGTH, GFP_KERNEL);
+    p_dummy = pu1Params;
+    if(pu1Params == NULL)
+    {
+        pr_err(PFX"[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+        __FUNCTION__, __LINE__);
+        return NULL;
+    }
+	gc5035_otp_read_group(0x0000, p_dummy,GC5035_OTP_DATA_LENGTH);
+	return p_dummy;
+}
+
+static kal_uint8 gc5035_otp_identify(kal_uint32  sensorid)
 {
 	kal_uint8 moduleID = 0;
-
+	kal_uint8 * p_buf = NULL;
 	memset(&gc5035_otp_data, 0, sizeof(gc5035_otp_data));
 
 	write_cmos_sensor(0xfc, 0x01);
@@ -686,7 +703,8 @@ static kal_uint8 gc5035_otp_identify(void)
 	gc5035_otp_read_group(GC5035_OTP_ID_DATA_OFFSET,
 			&gc5035_otp_data.otp_id[0], GC5035_OTP_ID_SIZE);
 	moduleID = gc5035_otp_read_sensor_info();
-
+	p_buf = ontim_read_otp();
+	ontim_get_otp_data(sensorid, p_buf,GC5035_OTP_DATA_LENGTH);
 	write_cmos_sensor(0xfe, 0x02);
 	write_cmos_sensor(0x67, 0x00);
 	write_cmos_sensor(0xfe, 0x00);
@@ -1739,7 +1757,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(front_cam_name, 0x00, sizeof(front_cam_name));
 				memcpy(front_cam_name, "1_gc5035", 64);
-				gc5035_otp_identify();
+				gc5035_otp_identify(*sensor_id);
 				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
