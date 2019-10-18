@@ -61,6 +61,7 @@ struct imgsensor_mode_struct {
 
 	/* MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario */
 	kal_uint8 mipi_data_lp2hs_settle_dc;
+	kal_uint32 mipi_pixel_rate;
 
 	/*	 following for GetDefaultFramerateByScenario()	*/
 	kal_uint16 max_framerate;
@@ -80,6 +81,7 @@ struct imgsensor_struct {
 
 	kal_uint32 frame_length;		//current framelength
 	kal_uint32 line_length;			//current linelength
+
 
 	kal_uint32 min_frame_length; //current min  framelength to max
 	kal_int32 dummy_pixel;			//current dummypixel
@@ -119,6 +121,7 @@ struct imgsensor_info_struct {
 	kal_uint8  ihdr_support;		//1, support; 0,not support
 	kal_uint8  ihdr_le_firstline;	//1,le first ; 0, se first
 	kal_uint8  sensor_mode_num;		//support sensor mode num
+	kal_uint32 frame_time_delay_frame;
 
 	kal_uint8  cap_delay_frame; //enter capture delay frame num
 	kal_uint8  pre_delay_frame; //enter preview delay frame num
