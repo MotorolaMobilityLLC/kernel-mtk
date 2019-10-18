@@ -34,12 +34,13 @@
 #include "kd_imgsensor_errcode.h"
 #include "kd_camera_typedef.h"
 #include "s5k5e9yxmipiraw_Sensor.h"
+#include <linux/slab.h>
 
 #define PFX "S5K5E9Y_camera_sensor"
 //#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
-#define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)	printk(" PFX [%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -179,7 +180,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 0,         //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_MONO,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x20,0xff},
@@ -230,6 +231,285 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 	//imgsensor.i2c_write_id = 0x20;
     iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
 }
+#define S5K5E9_OTP_ENABLE
+#ifdef S5K5E9_OTP_ENABLE
+
+#define HLT_MODULE_ID       0x42
+#define SUNRISE_MODULE_ID   0xc
+
+struct s5k5e9_otp_struct
+{
+    // //Bit[1:0]:Flag of Group1      Bit[3:2]:Flag of Group2
+    kal_uint8   mi_flag; // 00:empty, 01:valid,  10 11:invalid
+    kal_uint8   mid;     //module id
+    kal_uint8   year;
+    kal_uint8   month;
+    kal_uint8   day;
+
+    
+    kal_uint8   awb_flag;
+    kal_uint16  Unit_R_Ratio_Gr;	//unit awb
+    kal_uint16  Unit_B_Ratio_Gr;
+    kal_uint16  Unit_Gr_Ratio_Gb;
+    kal_uint16  Golden_R_Ratio_Gr;	//golden awb
+    kal_uint16  Golden_B_Ratio_Gr;
+    kal_uint16  Golden_Gr_Ratio_Gb;
+
+    kal_uint8   lsc_flag;
+    
+    
+};
+
+static struct s5k5e9_otp_struct current_5e9_otp;
+
+
+static void s5k5e9_start_read_otp(u8 page)
+{
+    int n = 0;
+    uint temp;
+
+    write_cmos_sensor_8(0x0100,0x01);
+    mdelay(80);
+
+    write_cmos_sensor_8(0x0a02,page);
+    write_cmos_sensor_8(0x0a00,0x01); //read command
+    mdelay(5);
+
+    do{
+		mdelay(10); //Delay time, the time is data(512 bits) loading time from OTP core to OTP block
+		temp = read_cmos_sensor_8(0x0a01);
+		n++;
+    }while((temp!= 0x01)&& (n<12));
+}
+
+static void s5k5e9_stop_read_otp(void)
+{
+    write_cmos_sensor_8(0x0a00,0x04); //clear error bits
+    write_cmos_sensor_8(0x0a00,0x00); //initial command
+    write_cmos_sensor_8(0x0100,0x00);
+}
+
+static void s5k5e9_read_otp(struct s5k5e9_otp_struct *otp)
+{
+    u8 group_id = 0;
+    UINT16 temp_address  = 0;
+	unsigned int AWB_CheckSum=0,i;
+    s5k5e9_start_read_otp(17);//page 17
+
+    // ---------------- Module Info ----------------
+    otp->mi_flag = read_cmos_sensor_8(0x0A04);
+    printk("best--mi_flag=%x-\n",otp->mi_flag);
+    if( (otp->mi_flag & 0xF0) == 0x40)
+    {
+        group_id = 1;
+        temp_address = 0x0a05;
+    }
+    else if( (otp->mi_flag & 0xF0) == 0xD0)
+    {
+        group_id = 2;
+        temp_address = 0x0a10;
+    }
+    else
+    {
+        otp->mi_flag = 0;
+    }
+
+    if(group_id != 0)
+    {
+        otp->mid = read_cmos_sensor_8(temp_address);
+        otp->year = read_cmos_sensor_8(temp_address++);
+        otp->month = read_cmos_sensor_8(temp_address++);
+        otp->day = read_cmos_sensor_8(temp_address++);
+        LOG_INF("mid=%d,  year=%d   month=%d   day=%d   \n",
+        otp->mid, otp->year, otp->month, otp->day);
+    }
+ 
+    // ---------------- AWB Info ----------------
+    group_id = 0;
+    otp->awb_flag = read_cmos_sensor_8(0x0A1B);
+    printk("best--otp->awb_flag=%x-\n",otp->awb_flag);
+    if( (otp->awb_flag & 0xF0) == 0x40)
+    {
+        group_id = 1;
+        temp_address = 0x0a1c;
+    }
+    else if( (otp->awb_flag & 0xF0) == 0xD0)
+    {
+        group_id = 2;
+        temp_address = 0x0a25;
+    }
+    else
+    {
+        otp->awb_flag = 0;
+    }
+
+    if(group_id != 0)
+    {
+
+        unsigned int  Unit_Ratio_R = (read_cmos_sensor_8(temp_address));
+        unsigned int Unit_Ratio_Gr = (read_cmos_sensor_8(temp_address+1));
+        unsigned int Unit_Ratio_Gb = (read_cmos_sensor_8(temp_address+2));
+        unsigned int Unit_Ratio_B = (read_cmos_sensor_8(temp_address+3));
+        unsigned int Golden_Ratio_R = (read_cmos_sensor_8(temp_address+4));
+        unsigned int Golden_Ratio_Gr = (read_cmos_sensor_8(temp_address+5));
+        unsigned int Golden_Ratio_Gb = (read_cmos_sensor_8(temp_address+6));
+        unsigned int Golden_Ratio_B = (read_cmos_sensor_8(temp_address+7));
+
+		otp->Unit_R_Ratio_Gr = (kal_uint16)(int)(((1024*Unit_Ratio_R/Unit_Ratio_Gr)*2+1)/2);
+		otp->Unit_B_Ratio_Gr = (kal_uint16)(int)(((1024*Unit_Ratio_B/Unit_Ratio_Gr)*2+1)/2);
+		otp->Unit_Gr_Ratio_Gb = (kal_uint16)(int)(((1024*Unit_Ratio_Gr/Unit_Ratio_Gb)*2+1)/2);
+		otp->Golden_R_Ratio_Gr = (kal_uint16)(int)(((1024*Golden_Ratio_R/Golden_Ratio_Gr)*2+1)/2);
+		otp->Golden_B_Ratio_Gr = (kal_uint16)(int)(((1024*Golden_Ratio_B/Golden_Ratio_Gr)*2+1)/2);
+		otp->Golden_Gr_Ratio_Gb = (kal_uint16)(int)(((1024*Golden_Ratio_Gr/Golden_Ratio_Gb)*2+1)/2);
+
+		LOG_INF("Unit_R_Ratio_Gr=0x%x, Unit_B_Ratio_Gr=0x%x, Unit_Gr_Ratio_Gb=0x%x \n",
+			otp->Unit_R_Ratio_Gr, otp->Unit_B_Ratio_Gr, otp->Unit_Gr_Ratio_Gb);
+		LOG_INF("Golden_R_Ratio_Gr=0x%x, Golden_B_Ratio_Gr=0x%x, Golden_Gr_Ratio_Gb=0x%x \n",
+			otp->Golden_R_Ratio_Gr, otp->Golden_B_Ratio_Gr, otp->Golden_Gr_Ratio_Gb);
+    }
+    // ---------------- AWB CheckSum ----------------
+    for(i=0;i<8;i++){
+    	AWB_CheckSum=(read_cmos_sensor_8(temp_address)+i);
+	}
+	AWB_CheckSum=AWB_CheckSum%255+1;//CheckSum=sum%0xff+1
+	if(AWB_CheckSum!=(read_cmos_sensor_8(temp_address)+8))
+		LOG_INF("Error:AWB CheckSum not right!AWB_CheckSum=0x%x,OTP_AWB_CheckSum=0x%x\n",AWB_CheckSum,read_cmos_sensor_8(temp_address)+8);
+    // ---------------- LSC Info ----------------
+    group_id = 0;
+    otp->lsc_flag = read_cmos_sensor_8(0x0A41);
+
+    if( (otp->lsc_flag & 0x3) == 1)
+    {
+        group_id = 1;
+    }
+    else if( (otp->lsc_flag & 0xc) == 4)
+    {
+        group_id = 2;
+    }
+    else
+    {
+        otp->lsc_flag = 0;
+    }
+    //------------------------
+
+    s5k5e9_stop_read_otp();
+}
+
+static void s5k5e9_read_from_otp(void)
+{
+    memset(&current_5e9_otp, 0, sizeof(struct s5k5e9_otp_struct));
+    s5k5e9_read_otp(&current_5e9_otp);
+}
+
+static u8 * ontim_read_otp(void)
+{
+    u8 * pu1Params = NULL;
+    u8 * p_dummy = NULL;
+    int i = 0;  
+    pu1Params = kmalloc(13*64, GFP_KERNEL);
+    p_dummy = pu1Params;
+    if (pu1Params == NULL)
+    {
+        pr_err(PFX"[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+        __FUNCTION__, __LINE__);
+        return NULL;
+    }
+/*
+	for(page=1; page<13; page++)
+    {
+        s5k5e9_start_read_otp(page);
+        for(i=0; i<64; i++)
+        {
+            *pu1Params = read_cmos_sensor_8(0x0A04 + i);
+            pu1Params++;
+        }
+    }
+  */  
+    s5k5e9_start_read_otp(17);
+    for(i=0; i<64; i++)
+    {
+        *pu1Params = read_cmos_sensor_8(0x0A04 + i);
+        pu1Params++;
+    }
+    
+    s5k5e9_stop_read_otp();
+    return p_dummy;
+}
+
+
+static void s5k5e9_apply_otp_wb(struct s5k5e9_otp_struct *otp)
+{
+    kal_uint16  R_gain, B_gain, Gb_gain, Gr_gain, Base_gain;
+
+/*     
+    kal_uint16  Unit_R_Ratio_Gr;	//unit awb
+    kal_uint16  Unit_B_Ratio_Gr;
+    kal_uint16  Unit_Gr_Ratio_Gb;
+    kal_uint16  Golden_R_Ratio_Gr;	//golden awb
+    kal_uint16  Golden_B_Ratio_Gr;
+    kal_uint16  Golden_Gr_Ratio_Gb;
+     */
+    R_gain = (otp->Golden_R_Ratio_Gr * 1000)/otp->Unit_R_Ratio_Gr;
+    B_gain = (otp->Golden_B_Ratio_Gr * 1000)/otp->Unit_B_Ratio_Gr;
+    Gb_gain = (otp->Golden_Gr_Ratio_Gb * 1000)/otp->Unit_Gr_Ratio_Gb;
+    Gr_gain = 1000;
+     
+    Base_gain = R_gain;
+    if(Base_gain > B_gain) Base_gain = B_gain;
+    if(Base_gain > Gb_gain) Base_gain = Gb_gain;
+    if(Base_gain > Gr_gain) Base_gain = Gr_gain;
+    
+    R_gain = 0x100 * R_gain / Base_gain;
+    B_gain = 0x100 * B_gain / Base_gain;
+    Gb_gain = 0x100 * Gb_gain / Base_gain;
+    Gr_gain = 0x100 * Gr_gain / Base_gain;
+
+    LOG_INF(" R_gain = 0x%x, B_gain = 0x%x, Gb_gain = 0x%x, Gr_gain = 0x%x  \n", 
+    R_gain, B_gain, Gb_gain, Gr_gain);
+
+    //digital gain Gr
+    if(Gr_gain > 0x100) {
+        write_cmos_sensor_8(0x020e, Gr_gain>>8);
+        write_cmos_sensor_8(0x020f, Gr_gain&0xff);
+    }
+    //digital gain R
+    if(R_gain > 0x100) {
+        write_cmos_sensor_8(0x0210, R_gain>>8);
+        write_cmos_sensor_8(0x0211, R_gain&0xff);
+    }
+    //digital gain B
+    if(B_gain > 0x100) {
+        write_cmos_sensor_8(0x0212, B_gain>>8);
+        write_cmos_sensor_8(0x0213, B_gain&0xff);
+    }
+    //digital gain Gb
+    if(Gb_gain > 0x100) {
+        write_cmos_sensor_8(0x0214, Gb_gain>>8);
+        write_cmos_sensor_8(0x0215, Gb_gain&0xff);
+    }
+}
+
+
+
+static void s5k5e9_otp_lsc_update(void)
+{
+    //LSC auto apply
+    if(current_5e9_otp.lsc_flag != 0)
+    {
+        write_cmos_sensor_8(0x3400,0x00); //auto load
+        write_cmos_sensor_8(0x0B00,0x01); //lsc on
+        LOG_INF("LSC Auto Correct OK!\n");
+    }
+/*     else
+    {
+        write_cmos_sensor_8(0x3400,0x01);
+        write_cmos_sensor_8(0x0B00,0x00); 
+        LOG_INF("LSC off\n");
+    } */
+}
+
+
+#endif
 
 static void set_dummy(void)
 {
@@ -304,10 +584,10 @@ static void write_shutter(kal_uint16 shutter)
 		write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
 	}
 	// Update Shutter
-	//write_cmos_sensor(0x0104, 0x01);   //group hold
+	//write_cmos_sensor_8(0x0104, 0x01);   //group hold
 	write_cmos_sensor_8(0x0202, shutter >> 8);
 	write_cmos_sensor_8(0x0203, shutter & 0xFF);
-	//write_cmos_sensor(0x0104, 0x00);   //group hold
+	//write_cmos_sensor_8(0x0104, 0x00);   //group hold
 
 	LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 	//LOG_INF("frame_length = %d ", frame_length);
@@ -361,10 +641,10 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 	}
 
 	// Update Shutter
-	//write_cmos_sensor(0x0104, 0x01);   //group hold
+	//write_cmos_sensor_8(0x0104, 0x01);   //group hold
 	write_cmos_sensor_8(0x0202, shutter >> 8);
 	write_cmos_sensor_8(0x0203, shutter & 0xFF);
-	//write_cmos_sensor(0x0104, 0x00);   //group hold
+	//write_cmos_sensor_8(0x0104, 0x00);   //group hold
 
 	LOG_INF("shutter =%d, framelength =%d/%d, dummy_line=%d\n", shutter,imgsensor.frame_length, frame_length, dummy_line);
 
@@ -445,7 +725,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
     spin_unlock(&imgsensor_drv_lock);
     LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
 
-    //write_cmos_sensor(0x0204,reg_gain);
+    //write_cmos_sensor_8(0x0204,reg_gain);
     write_cmos_sensor_8(0x0204,(reg_gain>>8));
     write_cmos_sensor_8(0x0205,(reg_gain&0xff));
 
@@ -931,10 +1211,15 @@ static void slim_video_setting(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+extern char front_cam_name[64];
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	#ifdef S5K5E9_OTP_ENABLE
+    u8 * p_buf = NULL;
+	#endif
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -944,12 +1229,25 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 			pr_err("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n",read_cmos_sensor_8(0x0000),read_cmos_sensor_8(0x0001),read_cmos_sensor_8(0x0000));
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
-				sensor_init();
-				preview_setting();
+			if (*sensor_id == imgsensor_info.sensor_id) {				
+            #ifdef S5K5E9_OTP_ENABLE
+              sensor_init();
+              s5k5e9_read_from_otp(); //read otp data only one time
+              LOG_INF("module_id = 0x%x\n", current_5e9_otp.mid);          
+              if(SUNRISE_MODULE_ID == current_5e9_otp.mid){
+                  LOG_INF("find SUNRISE, s5k5e9.\n");
+              }             
+                p_buf = ontim_read_otp();
+                ontim_get_otp_data(*sensor_id, p_buf, 13*64);
+            #else
+              //strcpy(camera_f_info,"5M-Camera S5K5E9-HLT"); //module info: HLT
+            #endif           
+                memset(front_cam_name, 0x00, sizeof(front_cam_name));
+                memcpy(front_cam_name, "1_s5k5e9yx", 64); 
+				pr_err(PFX"[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+                __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
 				return ERROR_NONE;
-			}
+			}		
 			pr_err("Read sensor id fail, id: 0x%x ensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 			retry--;
 		} while(retry > 0);
@@ -1014,7 +1312,15 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
-	
+	#ifdef S5K5E9_OTP_ENABLE
+	if(0 != current_5e9_otp.awb_flag) 
+    {
+        LOG_INF(" apply_otp   \n");
+
+        s5k5e9_apply_otp_wb(&current_5e9_otp);//apply awb otp
+        s5k5e9_otp_lsc_update();//apply lsc otp
+	}
+	#endif
 	spin_lock(&imgsensor_drv_lock);
 
 	imgsensor.autoflicker_en= KAL_FALSE;
