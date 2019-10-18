@@ -196,6 +196,12 @@ config CUSTOM_KERNEL_IMGSENSOR
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
+config CUSTOM_KERNEL_IMGSENSOR_BJ
+	bool "Enable Blackjack 32 and 64 config"
+	default n
+	help
+		Enable Blackjack 32 and 64 config
+
 config MTK_SEC_VIDEO_PATH_SUPPORT
 	bool "Enable MTK Secure Video Path Support"
 	default n
