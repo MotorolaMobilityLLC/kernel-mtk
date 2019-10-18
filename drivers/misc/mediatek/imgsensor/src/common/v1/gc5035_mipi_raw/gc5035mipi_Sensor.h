@@ -57,6 +57,7 @@
 #define GC5035_OTP_START_ADDR              0x0000
 #endif
 
+
 #define GC5035_OTP_DATA_LENGTH             1024
 
 /* OTP FLAG TYPE */
@@ -247,6 +248,7 @@ extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 	u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 
 #endif
 
