@@ -1367,7 +1367,7 @@ int force_get_tbat(bool update)
 	gm.ntc_disable_nafg = false;
 #ifdef DUAL_85_VERSION
 	if (bat_temperature_val > 59)
-		bat_temperature_val = 59
+		bat_temperature_val = 59;
 	if (bat_temperature_val < 10)
 		bat_temperature_val = 10;
 #endif
