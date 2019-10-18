@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *     AR1337mipi_Sensor.c
+ *     ar1337mipi_Sensor.c
  *
  * Project:
  * --------
@@ -28,36 +28,9 @@
 #include <asm/atomic.h>
 //#include <asm/system.h>
 //#include <linux/xlog.h>
-
-#if 1
-#include <linux/module.h>       
-#include <linux/kernel.h>       
-#include <linux/init.h>         
-#include <linux/clk.h>      
-#include <linux/irq.h>
-#include <linux/interrupt.h>
-#include <asm/io.h>         
 #include <linux/types.h>
-#include <linux/device.h>
-#include <linux/module.h>
-#include <linux/init.h>
-#include <linux/kernel.h>	/* printk() */
-#include <linux/fs.h>		/* everything... */
-#include <linux/errno.h>	/* error codes */
-#include <linux/sched.h>
-#include <linux/slab.h>
-#include <linux/ioport.h>
-#include <linux/interrupt.h>
-#include <linux/spinlock.h>
-#include <linux/mutex.h>
-#include <linux/timer.h>
-#include <linux/sysfs.h>
-#include <linux/device.h>
-#include <linux/miscdevice.h>
-#include <linux/platform_device.h>
-#include <asm/io.h>		/* inb/outb */
-#include <asm/uaccess.h>
-#endif
+#include <linux/of_gpio.h>
+
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -66,24 +39,7 @@
 #include "ar1337mipi_Sensor.h"
 
 
-
-#define AR1337_AWBOTP_SIZE 9
-#define AR1337_AWB_addr  43
-#define AR1337_AFOTP_SIZE 7
-#define AR1337_AF_addr  58	
-#define AR1337_LSCOTP_SIZE 1868
-#define AR1337_LSC_addr  76	
-
-u8 AR1337_OTPData[AR1337_LSCOTP_SIZE]={0};
-
-#if 0
-//
-extern int iRead16Data_ar1337(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata);
-#endif
-
-//#define TEST_PATTERN
 #define PE_16
-//#define PE_10
 
 /*VC FIX */
 #define VC_FIX 1
@@ -92,8 +48,8 @@ extern int iRead16Data_ar1337(unsigned short ui4_offset, unsigned int  ui4_lengt
 #define LLPCK_LONG 0x1A00 
 
 /****************************Modify Following Strings for Debug****************************/
-#define PFX "AR1337_camera_sensor"
-#define LOG_1 LOG_INF("AR1337,MIPI 4LANE\n")
+#define PFX "ar1337_camera_sensor"
+#define LOG_1 LOG_INF("ar1337,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2106*1560@30fps,640Mbps/lane; video 4192*3104@30fps,1.2Gbps/lane; capture 13M@30fps,1.2Gbps/lane\n")
 /****************************   Modify end    *******************************************/
 
@@ -110,15 +66,302 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 //sensor otp
 extern void otp_cali(unsigned char writeid);
 
+
+
+
+//#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+
+
+#define _GSL_DEBUG_
+//#define _GSL_CHECKSUM_
+
+
+#define SENSOR_I2C_ADDR     0x6C    // Sensor模组厂提供的OTP文档中 , 该ar1335 otp I2C地址为0x6C
+#define EEPROM_I2C_ADDR         0xB0
+
+#define LSC_START     		0x0836
+#define SC_START      		0x0995
+#define TOLERANCE_START 	0x0A38
+
+//#define WB_GOLDEN_R
+//#define WB_GOLDEN_GR
+//#define WB_GOLDEN_GB
+//#define WB_GOLDEN_B
+
+
+static kal_uint16 read_cmos_sensor16(kal_uint32 addr)
+{
+	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+    kal_uint16 get_byte=0;
+	//kdSetI2CSpeed(400);
+    iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 2, SENSOR_I2C_ADDR);
+
+    return ((get_byte<<8)&0xff00)|((get_byte>>8)&0x00ff);
+}
+static kal_uint16 read_cmos_sensor(kal_uint32 addr)
+{
+	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+    kal_uint16 get_byte=0;
+	//kdSetI2CSpeed(400); 
+    iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1,SENSOR_I2C_ADDR);
+
+    return get_byte;
+}
+
+static kal_uint16 read_eeprom(kal_uint32 addr)
+{
+  char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+  kal_uint16 get_byte=0;
+  //kdSetI2CSpeed(400);
+  iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1,EEPROM_I2C_ADDR );
+
+  return get_byte;
+}
+
+static void write_cmos_sensor_2byte(kal_uint32 addr, kal_uint32 para)
+{
+    char pu_send_cmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para >> 8), (char)(para & 0xFF)};
+	//kdSetI2CSpeed(400);
+    iWriteRegI2C(pu_send_cmd, 4, SENSOR_I2C_ADDR);
+}
+
+
+void ar1337_eeprom_lsc(void)
+{
+#ifdef _GSL_CHECKSUM_
+	int iCheckSum = 0;
+#endif
+	int j=0;
+	int i = 0;
+#ifdef _GSL_CHECKSUM_
+	for( i=0; i<424; i++)
+	{
+		iCheckSum += read_eeprom(0x0762);
+	}
+	iCheckSum = iCheckSum % 256;
+	if(iCheckSum != read_eeprom(0x090A))
+	{
+		LOG_INF("***GSL Debug***  LSC CheckSum ERROR!!!\n");
+		return;
+	}
+#endif
+//	for(i=0; i<212; i++)
+//	{
+//		LOG_INF("---GSL Dump--- LSC: 0x%x\n",read_eeprom(LSC_START + i));
+//	}
+	for( i=0; i<20; i++)
+	{
+		j=2*i;
+		write_cmos_sensor_2byte(0x3600+j,read_eeprom(LSC_START+j)<<8 |read_eeprom(LSC_START+j+1) );
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x,%x \n",0x3600+j,read_eeprom(LSC_START+j),read_eeprom(LSC_START+j+1));
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x \n",0x3600+j,read_cmos_sensor16(0x3600+j));
+	}
+	j=0;
+	for( i=0; i<20; i++)
+	{
+		j=2*i;
+		write_cmos_sensor_2byte(0x3640+j,read_eeprom(LSC_START+40+j)<<8 |read_eeprom(LSC_START+40+j+1) );
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x,%x \n",0x3640+j,read_eeprom(LSC_START+40+j),read_eeprom(LSC_START+40+j+1));	
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x \n",0x3640+j,read_cmos_sensor16(0x3640+j));
+	}
+	j=0;
+	for( i=0; i<20; i++)
+	{
+		j=2*i;
+		write_cmos_sensor_2byte(0x3680+j,read_eeprom(LSC_START+80+j)<<8 |read_eeprom(LSC_START+80+j+1) );
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x,%x \n",0x3680+j,read_eeprom(LSC_START+80+j),read_eeprom(LSC_START+80+j+1));	
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x \n",0x3680+j,read_cmos_sensor16(0x3680+j));
+	}
+	j=0;
+	for( i=0; i<20; i++)
+	{
+		j=2*i;
+		write_cmos_sensor_2byte(0x36c0+j,read_eeprom(LSC_START+120+j)<<8 |read_eeprom(LSC_START+120+j+1) );
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x,%x \n",0x36c0+j,read_eeprom(LSC_START+120+j),read_eeprom(LSC_START+120+j+1));
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x \n",0x36c0+j,read_cmos_sensor16(0x36c0+j));
+	}
+	j=0;
+	for( i=0; i<20; i++)
+	{
+		j=2*i;
+		write_cmos_sensor_2byte(0x3700+j,read_eeprom(LSC_START+160+j)<<8 |read_eeprom(LSC_START+160+j+1) );
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x,%x \n",0x3700+j,read_eeprom(LSC_START+160+j),read_eeprom(LSC_START+160+j+1));
+		LOG_INF("---GSL Debug--- LSC: 0x%x=0x%x \n",0x3700+j,read_cmos_sensor16(0x3700+j));
+	}
+	write_cmos_sensor_2byte(0x3782,read_eeprom(LSC_START+200)<<8 |read_eeprom(LSC_START+201) );  //83c
+	write_cmos_sensor_2byte(0x3784,read_eeprom(LSC_START+202)<<8 |read_eeprom(LSC_START+203) );  //676
+	write_cmos_sensor_2byte(0x37c0,read_eeprom(LSC_START+204)<<8 |read_eeprom(LSC_START+205) );  //0
+	write_cmos_sensor_2byte(0x37c2,read_eeprom(LSC_START+206)<<8 |read_eeprom(LSC_START+207) );  //0
+	write_cmos_sensor_2byte(0x37c4,read_eeprom(LSC_START+208)<<8 |read_eeprom(LSC_START+209) );  //0
+	write_cmos_sensor_2byte(0x37c6,read_eeprom(LSC_START+210)<<8 |read_eeprom(LSC_START+211) );  //0
+	
+	write_cmos_sensor_2byte(0x3780,0x8000);//Enable LSC
+}
+
+
+void ar1337_eeprom_wb_af(void)
+{
+	kal_uint16 unit_r,unit_gr,unit_gb,unit_b;
+	kal_uint16 golden_r,golden_gr,golden_gb,golden_b;
+	kal_uint16 basegain =0;
+	kal_uint16 af_macro,af_inf,a1,a2,a3,a4;
+	kal_uint16 R_Gain,B_Gain,Gr_Gain,Gb_Gain;
+	kal_uint16 r_ratio,b_ratio,g_ratio;
+		
+	int temp;
+#ifdef _GSL_CHECKSUM_
+	int iCheckSum = 0;
+#endif	
+	unit_r = read_eeprom(0x0008);
+	unit_gr = read_eeprom(0x0009);
+	unit_gb = read_eeprom(0x000A);
+	unit_b = read_eeprom(0x000B);
+	golden_r = read_eeprom(0x000C);
+	golden_gr = read_eeprom(0x000D);
+	golden_gb = read_eeprom(0x000E);
+	golden_b = read_eeprom(0x000F);
+	a1 = read_eeprom(0x0010);
+	a2= read_eeprom(0x0011);
+	a3 = read_eeprom(0x0012);
+	a4= read_eeprom(0x0013);
+	
+	af_inf = (((a1<<8)&0x0300) | a2);
+	af_macro = (((a3<<8)&0x0300) | a4);
+	total_steps = af_inf - af_macro;
+	printk("qxj511 total_steps = %d\n", total_steps);
+	LOG_INF(" ---GSL Debug--- unit_r:%d,unit_b:%d, unit_gr:%d, unit_gb:%d\n",unit_r,unit_b,unit_gr,unit_gb);
+	LOG_INF(" ---GSL Debug--- golden_r:%d,golden_gr:%d, golden_gb:%d, golden_b:%d\n",golden_r,golden_gr,golden_gb,golden_b);
+	LOG_INF(" ---GSL Debug---  af_mac:%d, af_inf:%d\n",af_macro,af_inf);
+#ifdef _GSL_CHECKSUM_
+	iCheckSum = unit_r+unit_gr+unit_gb+unit_b+golden_r+golden_gr+golden_gb+golden_b+a1+a2+a3+a4;
+	if(iCheckSum != read_eeprom(0x0014))
+		{
+			LOG_INF("***GSL Debug*** WB & AF CheckSum Error\n");
+			return;
+		}
+		else
+			LOG_INF("oooGSL Debugooo WB & AF CheckSum OK\n");
+#endif			
+	golden_gr = (golden_gr+golden_gb)/2;
+	unit_gr = (unit_gr+unit_gb)/2;
+			
+	r_ratio = 512*golden_r*unit_gr/(golden_gr*unit_r);
+	b_ratio = 512*golden_b*unit_gr/(golden_gr*unit_b);	
+	//g_ratio = 512;
+	g_ratio = 512*golden_gb*unit_gb/(golden_gr*unit_gr);
+	basegain = r_ratio;
+	if(basegain>b_ratio) basegain = b_ratio;
+    if(basegain>g_ratio) basegain = g_ratio;
+
+	R_Gain = 64*r_ratio/basegain;
+	B_Gain = 64*b_ratio/basegain;
+	Gr_Gain= 64*g_ratio/basegain;
+	Gb_Gain= Gr_Gain;
+	
+	temp = read_cmos_sensor16(0x3056)&0x00ff;
+    write_cmos_sensor_2byte(0x3056, ((Gr_Gain << 8) | temp));
+    temp = read_cmos_sensor16(0x3058);
+    write_cmos_sensor_2byte(0x3058, ((B_Gain << 8) | temp));
+    temp = read_cmos_sensor16(0x305A);
+    write_cmos_sensor_2byte(0x305A, ((R_Gain << 8) | temp));
+    temp = read_cmos_sensor16(0x305C);
+    write_cmos_sensor_2byte(0x305C, ((Gb_Gain << 8) | temp));
+	LOG_INF(" ---GSL Debug--- R_Gain:%d, B_Gain:%d, Gr_Gain:%d, Gb_Gain:%d\n",R_Gain,B_Gain,Gr_Gain,Gb_Gain);
+	
+}
+
+void ar1337_eeprom_sc(void)
+{
+#ifdef _GSL_CHECKSUM_
+	kal_uint16 iCheckSum;
+#endif
+	kal_uint16 iData[2];
+	int i = 0;
+	int j=0;
+	//136+2
+//	for(i=0; i<69; i++)
+//		LOG_INF("---GSL Debug--- SC: 0x%x\n",SC_START+i);
+	for( i=0; i<68; i=i+2)
+	{
+		iData[j]=read_eeprom(SC_START+i);
+		iData[j+1]=read_eeprom(SC_START+i+1);
+		
+#ifdef _GSL_CHECKSUM_
+		iCheckSum += iData[j]+iData[j+1];
+#endif
+
+		write_cmos_sensor_2byte(0x3232+i,iData[j]<<8|iData[j+1]);
+		j=0;
+	}
+	iData[0]=read_eeprom(SC_START+136);
+	iData[1]=read_eeprom(SC_START+137);
+	
+#ifdef _GSL_CHECKSUM_
+	iCheckSum = iData[0]+iData[1];
+#endif
+
+	write_cmos_sensor_2byte(0x3c92,iData[0]<<8|iData[1]);
+	
+#ifdef _GSL_CHECKSUM_	
+	for(i=0; i<138; i++)
+	{
+		iCheckSum +=read_eeprom(0x090b+i); 
+	}
+	iCheckSum = iCheckSum % 256;
+	if(iCheckSum!=read_eeprom(SC_START+138))
+	{
+		LOG_INF("***GSL Debug*** SC CheckSum Error\n");
+		return;
+	}
+	else
+		LOG_INF("oooGSL Debugooo SC CheckSum OK\n");
+#endif	
+	
+}
+
+
+void ar1337_eeprom_tolerance(void)
+{
+#ifdef _GSL_CHECKSUM_
+	kal_uint16 iCheckSum;
+#endif
+	kal_uint16 iData[2];
+	int i = 0;
+	int j = 0;
+	for(i=0; i<24; i=i+2)
+	{
+		iData[j] = read_eeprom(TOLERANCE_START+i);
+		iData[j+1] = read_eeprom(TOLERANCE_START+i+1);
+		write_cmos_sensor_2byte(0x3ca8,iData[j]<<8|iData[j+1]);
+	//	iCheckSum += iData[j]+iData[j+1];
+		
+		j = 0;
+	}
+	
+//	iCheckSum = iCheckSum % 256;
+	
+}
+
+void ar1337_eeprom_load(void)
+{
+	ar1337_eeprom_lsc();
+	ar1337_eeprom_wb_af();
+	ar1337_eeprom_sc();
+	ar1337_eeprom_tolerance();
+}
+
+
+
+
 static imgsensor_info_struct imgsensor_info = {
     .sensor_id = AR1337_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
 
     .checksum_value = 0xbde6b5f8,//0xf86cfdf4,        //checksum value for Camera Auto Test
 
     .pre = {
-        .pclk = 454400000,                //record different mode's pclk
-        .linelength = 4680,                //record different mode's linelength
-        .framelength = 3220,            //record different mode's framelength
+        .pclk = 451200000,                //record different mode's pclk
+        .linelength = 4792,                //record different mode's linelength
+        .framelength = 3138,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 4208,        //record different mode's width of grabwindow
@@ -127,14 +370,11 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
         .max_framerate = 300,
-		
-		//.mipi_pixel_rate = 454400000,
-		//.mipi_data_rate = 1136000000,
     },
     .cap = {
-        .pclk = 454400000,                //record different mode's pclk
-        .linelength = 4680,                //record different mode's linelength
-        .framelength = 3220,            //record different mode's framelength
+        .pclk = 451200000,                //record different mode's pclk
+        .linelength = 4792,                //record different mode's linelength
+        .framelength = 3138,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 4208,        //record different mode's width of grabwindow
@@ -143,13 +383,11 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
         .max_framerate = 300,
-		//.mipi_pixel_rate = 454400000,
-		//.mipi_data_rate = 1136000000,
     },
     .cap1 = {
-        .pclk = 454400000,                //record different mode's pclk
-        .linelength = 4680,                //record different mode's linelength
-        .framelength = 3220,            //record different mode's framelength
+        .pclk = 451200000,                //record different mode's pclk
+        .linelength = 4792,                //record different mode's linelength
+        .framelength = 3138,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 4208,        //record different mode's width of grabwindow
@@ -158,13 +396,11 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
         .max_framerate = 300,
-		//.mipi_pixel_rate = 454400000,
-		//.mipi_data_rate = 1136000000,
     },
     .normal_video = {
-        .pclk = 454400000,                //record different mode's pclk
-        .linelength = 4680,                //record different mode's linelength
-        .framelength = 3220,            //record different mode's framelength
+        .pclk = 451200000,                //record different mode's pclk
+        .linelength = 4792,                //record different mode's linelength
+        .framelength = 3138,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 4208,        //record different mode's width of grabwindow
@@ -173,13 +409,11 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
         .max_framerate = 300,
-		//.mipi_pixel_rate = 454400000,
-		//.mipi_data_rate = 1136000000,
     },
     .hs_video = {
-        .pclk = 454400000,                //record different mode's pclk
-        .linelength = 4680,                //record different mode's linelength
-        .framelength = 3220,            //record different mode's framelength
+        .pclk = 450000000,                //record different mode's pclk
+        .linelength = 4800,                //record different mode's linelength
+        .framelength = 3328,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 4208,        //record different mode's width of grabwindow
@@ -188,13 +422,11 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
         .max_framerate = 300,
-		//.mipi_pixel_rate = 454400000,
-		//.mipi_data_rate = 1136000000,
     },
     .slim_video = {
-        .pclk = 454400000,                //record different mode's pclk
-        .linelength = 4680,                //record different mode's linelength
-        .framelength = 3220,            //record different mode's framelength
+        .pclk = 451200000,                //record different mode's pclk
+        .linelength = 4792,                //record different mode's linelength
+        .framelength = 3138,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 4208,        //record different mode's width of grabwindow
@@ -203,8 +435,6 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
         .max_framerate = 300,
-		//.mipi_pixel_rate = 454400000,
-		//.mipi_data_rate = 1136000000,
     },
     .margin = 8,            //sensor framelength & shutter margin
     .min_shutter = 0x3,        //min shutter
@@ -224,12 +454,13 @@ static imgsensor_info_struct imgsensor_info = {
 
     .isp_driving_current = ISP_DRIVING_8MA, //mclk driving current
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
-    .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
+    .mipi_sensor_type = MIPI_OPHY_CSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-    .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,//sensor output first pixel color
+    //.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,//sensor output first pixel color
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,//sensor output first pixel color
     .mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
     .mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
-    .i2c_addr_table = {0x6c, 0xff, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
+    .i2c_addr_table = {0x6c, 0x6e, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
 };
 
 
@@ -250,7 +481,7 @@ static imgsensor_struct imgsensor = {
 
 
 /* Sensor output window information */
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =	 
+static  struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 {{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120, 0000, 0000, 4208, 3120,      0,    0, 4208, 3120}, // Preview 
 	//{ 4208, 3120, 0, 0, 4208, 3120, 2104, 1560, 0, 0, 2104, 1560, 0, 0, 2096, 1552}, // Preview 
 	//{ 4208, 3120, 0, 0, 4208, 3120, 2104, 1560, 0, 0, 2104, 1560, 0, 0, 2096, 1552}, // Preview 
@@ -263,7 +494,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 };
 
 /*VC1 for HDR(DT=0X35) , VC2 for PDAF(DT=0X36), unit : 8bit*/
-static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
+static  struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 {/* Preview mode setting */
   {0x05, 0x0a,   0x00,   0x00, 0x00, 0x00, 
     0x00, 0x2b, 4208, 3120, 0x01, 0x0, 0, 0,
@@ -278,8 +509,8 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
     0x02, 0x00, 0x0000, 0x0000, 0x03, 0x00, 0x0000, 0x0000}
 };
 
-#define AR1337MIPI_MaxGainIndex (49)
-kal_uint16 AR1337MIPI_sensorGainMapping[AR1337MIPI_MaxGainIndex][2] ={	
+#define ar1337MIPI_MaxGainIndex (49)
+kal_uint16 ar1337MIPI_sensorGainMapping[ar1337MIPI_MaxGainIndex][2] ={	
 	{64 ,0x2010},
 	{68 ,0x2011},
 	{72 ,0x2012},
@@ -330,7 +561,7 @@ kal_uint16 AR1337MIPI_sensorGainMapping[AR1337MIPI_MaxGainIndex][2] ={
 	{496,0x203F},
 	{512,0x213F},
 };
-
+#if 0
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
     kal_uint16 get_byte=0;
@@ -340,6 +571,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 
     return get_byte;
 }
+#endif
 /*
 static kal_uint16 read_cmos_sensor_16bit(kal_uint32 addr)
 {
@@ -357,7 +589,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
     //kal_uint16 get_byte=0;
     //char pu_send_cmd_read[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
 
-	//kdSetI2CSpeed(100);
+	//kdSetI2CSpeed(400);
 
     iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
     //iReadRegI2C(pu_send_cmd_read, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
@@ -371,7 +603,7 @@ static void write_cmos_sensor_16bit(kal_uint32 addr, kal_uint32 para)
     //kal_uint16 get_byte=0;
     //char pu_send_cmd_read[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
 
-	//kdSetI2CSpeed(100);
+	//kdSetI2CSpeed(400);
 	
     //LOG_INF("addr = 0x%x, para = 0x%x \n", addr, para);
     iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
@@ -459,6 +691,8 @@ static void set_shutter(kal_uint16 shutter)
 
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 	LOG_INF("Enter! shutter =%d \n", shutter);
+	LOG_INF("SL0_DEBUG:Enter! shutter =%d, 0x0340 = 0x%x\n", shutter,read_cmos_sensor(0x0340));
+		LOG_INF("SL0_DEBUG:Enter! shutter =%d, 0x0341 = 0x%x\n", shutter,read_cmos_sensor(0x0341));
 
     //write_shutter(shutter);
     /* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
@@ -496,6 +730,8 @@ static void set_shutter(kal_uint16 shutter)
 		write_cmos_sensor_16bit(0x0340, imgsensor.frame_length);
 		write_cmos_sensor(0x0104, 0x00);
     }
+	LOG_INF("SL1_DEBUG:Exit! shutter =%d, framelength =%d, 0x0340 = 0x%x\n", shutter,imgsensor.frame_length,read_cmos_sensor(0x0340));
+	LOG_INF("SL1_DEBUG:Exit! shutter =%d, framelength =%d, 0x0341 = 0x%x\n", shutter,imgsensor.frame_length,read_cmos_sensor(0x0341));
 
     // Update Shutter
     write_cmos_sensor(0x0104, 0x01);
@@ -543,35 +779,37 @@ static void set_shutter(kal_uint16 shutter)
     write_cmos_sensor(0x0104, 0x00); 
 
     LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+	LOG_INF("SL2_DEBUG:Exit! shutter =%d, framelength =%d, 0x0202 = 0x%x\n", shutter,imgsensor.frame_length,read_cmos_sensor(0x0202));
+    LOG_INF("SL2_DEBUG:Exit! shutter =%d, framelength =%d, 0x0203 = 0x%x\n", shutter,imgsensor.frame_length,read_cmos_sensor(0x0203));
 
 }    /*    set_shutter */
 
 
-
+#if 0
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint8 iI;
-    LOG_INF("[AR1337MIPI]enter AR1337gain2reg function\n");
-    for (iI = 0; iI < AR1337MIPI_MaxGainIndex; iI++) 
+    LOG_INF("[ar1337MIPI]enter ar1337gain2reg function\n");
+    for (iI = 0; iI < ar1337MIPI_MaxGainIndex; iI++) 
 	{
-		if(gain < AR1337MIPI_sensorGainMapping[iI][0])
+		if(gain < ar1337MIPI_sensorGainMapping[iI][0])
 		{                
-			return AR1337MIPI_sensorGainMapping[iI][1];       
+			return ar1337MIPI_sensorGainMapping[iI][1];       
 		}
 			
 
     }
-	if(iI != AR1337MIPI_MaxGainIndex)
+	if(iI != ar1337MIPI_MaxGainIndex)
 	{
-    	if(gain != AR1337MIPI_sensorGainMapping[iI][0])
+    	if(gain != ar1337MIPI_sensorGainMapping[iI][0])
     	{
-        	 LOG_INF("Gain mapping don't correctly:%d %d \n", gain, AR1337MIPI_sensorGainMapping[iI][0]);
+        	 LOG_INF("Gain mapping don't correctly:%d %d \n", gain, ar1337MIPI_sensorGainMapping[iI][0]);
     	}
     }
-	LOG_INF("[AR1337MIPI]exit AR1337gain2reg function\n");
-    return AR1337MIPI_sensorGainMapping[iI-1][1];
+	LOG_INF("[ar1337MIPI]exit ar1337gain2reg function\n");
+    return ar1337MIPI_sensorGainMapping[iI-1][1];
 }
-
+#endif
 /*************************************************************************
 * FUNCTION
 *    set_gain
@@ -590,14 +828,76 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 *************************************************************************/
 static kal_uint16 set_gain(kal_uint16 gain)
 {
-    kal_uint16 reg_gain;
+   kal_uint16 reg_gain;
+	//kal_uint16 gain_value02;//Gain305E;
+	kal_uint16 digital_gain = 64;
+	kal_uint16 analog_coarse_gain =2;
+	kal_uint16 analog_fine_gain = 0;
+	/* 0x350A[0:1], 0x350B[0:7] AGC real gain */
+	/* [0:3] = N meams N /16 X    */
+	/* [4:9] = M meams M X         */
+	/* Total gain = M + N /16 X   */
+	LOG_INF("SL0_DEBUG: gain = %d \n ", gain);
 
-    /* 0x350A[0:1], 0x350B[0:7] AGC real gain */
-    /* [0:3] = N meams N /16 X    */
-    /* [4:9] = M meams M X         */
-    /* Total gain = M + N /16 X   */
+	//
+	if (gain < BASEGAIN || gain > 32 * BASEGAIN) 
+	{
+		LOG_INF("Error gain setting");
 
-    //
+		if (gain < BASEGAIN)
+		  gain = BASEGAIN;
+		else if (gain > 32 * BASEGAIN)
+		  gain = 32 * BASEGAIN;
+	}
+	/////not complete
+	if(gain<2*BASEGAIN)
+	{
+		digital_gain = 64;
+		analog_coarse_gain = 1;
+		analog_fine_gain = (gain*16)/BASEGAIN - 16;
+
+	}
+	else if(gain<4*BASEGAIN)
+	{
+		digital_gain = 64;
+		analog_coarse_gain = 2;
+		analog_fine_gain = (gain*16)/(BASEGAIN*2) - 16;
+	}
+	//  	else if(gain<7.75*BASEGAIN)
+	else if(gain<775*BASEGAIN/100)
+	{
+		digital_gain = 64;
+		analog_coarse_gain = 3;
+		analog_fine_gain = (gain*16)/(BASEGAIN*4) - 16;
+	}
+	else
+	{
+		analog_coarse_gain = 3;
+		analog_fine_gain = 0xf;
+		digital_gain =  (gain*16*64)/(BASEGAIN*4*(16+analog_fine_gain));
+	}
+
+	reg_gain= ((digital_gain & 0x1ff) << 7 )|((analog_coarse_gain & 0x7) << 4) | (analog_fine_gain & 0xf);
+	LOG_INF("SL1_DEBUG: gain = %d , reg_gain = 0x%x, 0x305E =0x%x\n ", gain,reg_gain,read_cmos_sensor(0x305e));
+	LOG_INF("SL1_DEBUG: gain = %d , reg_gain = 0x%x, 0x305f =0x%x\n ", gain,reg_gain,read_cmos_sensor(0x305f));
+	write_cmos_sensor(0x0104, 0x01);
+	write_cmos_sensor_16bit(0x305E, reg_gain);
+	write_cmos_sensor(0x0104, 0x00);
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.gain = reg_gain;
+	spin_unlock(&imgsensor_drv_lock);
+	LOG_INF("SL2_DEBUG: gain = %d , reg_gain = 0x%x, 0x305E =0x%x\n ", gain,reg_gain,read_cmos_sensor(0x305e));
+	LOG_INF("SL2_DEBUG: gain = %d , reg_gain = 0x%x, 0x305f =0x%x\n ", gain,reg_gain,read_cmos_sensor(0x305f));
+	//LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain,reg_gain);
+   
+   /* kal_uint16 reg_gain;
+
+     0x350A[0:1], 0x350B[0:7] AGC real gain 
+     [0:3] = N meams N /16 X    
+    [4:9] = M meams M X         
+     Total gain = M + N /16 X   
+
+    
 	if (gain < BASEGAIN || gain > 8 * BASEGAIN) {
         LOG_INF("Error gain setting");
 
@@ -606,7 +906,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		else if (gain > 8 * BASEGAIN)
 			gain = 8 * BASEGAIN;		 
     }
-	    
 
     reg_gain = gain2reg(gain);
     spin_lock(&imgsensor_drv_lock);
@@ -614,10 +913,10 @@ static kal_uint16 set_gain(kal_uint16 gain)
     spin_unlock(&imgsensor_drv_lock);
     LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
 
-	write_cmos_sensor(0x0104, 0x01);
+	//write_cmos_sensor(0x0104, 0x01);
     write_cmos_sensor_16bit(0x305E, reg_gain);
-    write_cmos_sensor(0x0104, 0x00);
-
+    //write_cmos_sensor(0x0104, 0x00);
+  */
     return gain;
 }    /*    set_gain  */
 
@@ -3313,7 +3612,8 @@ static void sensor_init(void)
 	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
 	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
 	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
-	write_cmos_sensor_16bit(0x3220, 0x0C13);  // PDAF_CONTROL
+	//	write_cmos_sensor_16bit(0x3220, 0x0C13);  // PDAF_CONTROL
+	write_cmos_sensor_16bit(0x3220, 0x0C12);  // PDAF_CONTROL
 	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA //Corn
 	//LOG_CORN("[Corn]PE 16BIT \n");	
 #endif
@@ -7978,12 +8278,13 @@ static void sensor_init(void)
 	write_cmos_sensor_16bit(0x32D4, 0x0000);
 	write_cmos_sensor_16bit(0x32D4, 0x0001);
 	write_cmos_sensor_16bit(0x32D4, 0x0000);
+	//write_cmos_sensor_16bit(0x3220, 0x0C13);  // PDAF_CONTROL
 	write_cmos_sensor_16bit(0x3220, 0x0C12);  // PDAF_CONTROL
-
 	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA //Corn
 	//PD
-	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
-	write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER 
+	//write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	write_cmos_sensor_16bit(0x034E, 0x0C30);  // Y_OUTPUT_SIZE
+	//write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER 
 	write_cmos_sensor_16bit(0x32CA, 0x04AA);  // PDAF_ODP_LLENGTH
 	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA  //Corn
 	//write_cmos_sensor_16bit(0x3124, 0x01BA);	// TEMPSENS_DATA_REG
@@ -7991,16 +8292,17 @@ static void sensor_init(void)
 	write_cmos_sensor_16bit(0x31D6, 0x3336);  // MIPI_JPEG_PN9_DATA_TYPE
 	write_cmos_sensor_16bit(0x32C2, 0x0);  // PDAF_DMA_START//0x03FC
 	write_cmos_sensor_16bit(0x32C4, 0x03C0);  // PDAF_DMA_SIZE //0x0F30
-	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	//write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	write_cmos_sensor_16bit(0x32C6, 0x0000);  // PDAF_DMA_Y
 	write_cmos_sensor_16bit(0x32C8, 0x0890);  // PDAF_SEQ_START
 	write_cmos_sensor_16bit(0x32D0, 0x0001);  // PE_PARAM_ADDR
 	write_cmos_sensor_16bit(0x32D4, 0x0000);  // PE_PARAM_VALUE //Corn
-	LOG_CORN("[Corn]PE test_pattern \n");
+	printk("[Corn]PE test_pattern \n");
 #endif
 	//write_cmos_sensor_16bit(0x3780, 0x8000);  // poly_sc_enable //Corn  //mark by scorpio20170629
-	
-#if 1	
-	write_cmos_sensor_16bit(0x3232, 0x0620);
+	//sc   20171218
+#if 0
+		write_cmos_sensor_16bit(0x3232, 0x0620);
 	write_cmos_sensor_16bit(0x3234, 0x0840);
 	write_cmos_sensor_16bit(0x3236, 0xA458);
 	write_cmos_sensor_16bit(0x3238, 0xB447);
@@ -8084,8 +8386,8 @@ static void sensor_init(void)
 	write_cmos_sensor_16bit(0x3CBC, 0x0402);
 	write_cmos_sensor_16bit(0x3CBE, 0x0604);
 #endif
-write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER 
-	write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
+	write_cmos_sensor(0x0101, 0x03);  // direction
+	write_cmos_sensor_16bit(0x301a, 0x0218);  // STREAM_OFF
 	mdelay(70);
 
 	LOG_INF("X\n");
@@ -8094,26 +8396,26 @@ write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER
 
 static void preview_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
+	write_cmos_sensor_16bit(0x301a, 0x0218);  // STREAM_OFF
 	mdelay(70);
         //PLL CONFIG
 	write_cmos_sensor_16bit(0x0300, 0x0005);  // VT_PIX_CLK_DIV
 	write_cmos_sensor_16bit(0x0302, 0x0001);  // VT_SYS_CLK_DIV
 	write_cmos_sensor_16bit(0x0304, 0x0303);  // PRE_PLL_CLK_DIV
-	write_cmos_sensor_16bit(0x0306, 0x8E8E);  // PLL_MULTIPLIER
+	write_cmos_sensor_16bit(0x0306, 0x8D8D);  // PLL_MULTIPLIER//0x8D8D
 	write_cmos_sensor_16bit(0x0308, 0x000A);  // OP_PIX_CLK_DIV
 	write_cmos_sensor_16bit(0x030A, 0x0001);  // OP_SYS_CLK_DIV
 	write_cmos_sensor_16bit(0x0112, 0x0A0A);  // CCP_DATA_FORMAT
 	write_cmos_sensor_16bit(0x3016, 0x0101);  // ROW_SPEED
 
         //MIPI CONFIG
-	write_cmos_sensor_16bit(0x31B0, 0x005F);  // FRAME_PREAMBLE
-	write_cmos_sensor_16bit(0x31B2, 0x002E);  // LINE_PREAMBLE
-	write_cmos_sensor_16bit(0x31B4, 0x33D4);  // MIPI_TIMING_0
-	write_cmos_sensor_16bit(0x31B6, 0x244B);  //  MIPI_TIMING_1
+	write_cmos_sensor_16bit(0x31B0, 0x005C);  // FRAME_PREAMBLE
+	write_cmos_sensor_16bit(0x31B2, 0x002D);  // LINE_PREAMBLE
+	write_cmos_sensor_16bit(0x31B4, 0x3392);  // MIPI_TIMING_0
+	write_cmos_sensor_16bit(0x31B6, 0x242B);  //  MIPI_TIMING_1
 	write_cmos_sensor_16bit(0x31B8, 0x2413);  // MIPI_TIMING_2
 	write_cmos_sensor_16bit(0x31BA, 0x2070); //  MIPI_TIMING_3
-	write_cmos_sensor_16bit(0x31BC, 0x870B);  // MIPI_TIMING_4
+	write_cmos_sensor_16bit(0x31BC, 0x868B);  // MIPI_TIMING_4
 
         //RESOLUTION MODE CONFIG
 	write_cmos_sensor_16bit(0x0344, 0x0008);  // X_ADDR_START
@@ -8122,19 +8424,13 @@ static void preview_setting(void)
 	write_cmos_sensor_16bit(0x034A, 0x0C37);  // Y_ADDR_END
 	write_cmos_sensor_16bit(0x034C,   4208);  // X_OUTPUT_SIZE
 	write_cmos_sensor_16bit(0x034E,   3120);  // Y_OUTPUT_SIZE
-	write_cmos_sensor_16bit(0x3040, 0x0041);  // READ_MODE
-	
-		//Binning Configuration
+	write_cmos_sensor_16bit(0x3040, 0xC041);  // READ_MODE
 	write_cmos_sensor_16bit(0x3172, 0x0206);  // ANALOG_CONTROL2 //Corn
 	write_cmos_sensor_16bit(0x317A, 0x416E);  // ANALOG_CONTROL6
 	write_cmos_sensor_16bit(0x3F3C, 0x0003);  // ANALOG_CONTROL9
-	
-		//Timing Configuration
-	write_cmos_sensor_16bit(0x0342, 0x1248);  // LINE_LENGTH_PCK 4672
-	write_cmos_sensor_16bit(0x0340, 0x0C94);  // FRAME_LENGTH_LINES 3140
-	write_cmos_sensor_16bit(0x0202, 0x0C84);  // COARSE_INTEGRATION_TIME
-	
-	
+	write_cmos_sensor_16bit(0x0342, 0x12B8);  // LINE_LENGTH_PCK 4792
+	write_cmos_sensor_16bit(0x0340, 0x0C42);  // FRAME_LENGTH_LINES 3138
+	write_cmos_sensor_16bit(0x0202, 0x0C3C);  // COARSE_INTEGRATION_TIME
 	write_cmos_sensor_16bit(0x3226, 0x00E0);  // PDAF ROW START 
 	write_cmos_sensor_16bit(0x3228, 0x0B60);  // PDAF ROW END
 	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF ROW CONTROL 
@@ -8148,17 +8444,24 @@ static void preview_setting(void)
 	write_cmos_sensor_16bit(0x31D6, 0x3336);  // MIPI_JPEG_PN9_DATA_TYPE
 	write_cmos_sensor_16bit(0x32C2, 0x03FC);  // PDAF_DMA_START
 	write_cmos_sensor_16bit(0x32C4, 0x3C0);  // PDAF_DMA_SIZE //0x0F30
-	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y      //0x0F00  modify by scorpio20170629
+	//write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	write_cmos_sensor_16bit(0x32C6, 0x0000);  // PDAF_DMA_Y
 	write_cmos_sensor_16bit(0x32C8, 0x0890);  // PDAF_SEQ_START
 	write_cmos_sensor_16bit(0x32D0, 0x0001);  // PE_PARAM_ADDR
 	write_cmos_sensor_16bit(0x32D4, 0x0000);  // PE_PARAM_VALUE //Corn
      
         //PDAF specific to 13M
-	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	//write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	write_cmos_sensor_16bit(0x034E, 0x0C30);  // Y_OUTPUT_SIZE	
 	write_cmos_sensor_16bit(0x32C8, 0x0840);  // PDAF_SEQ_START
-        write_cmos_sensor_16bit(0x3023, 0x0001); //  0x3023 is 16bit reg
-     write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER     
-	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
+    write_cmos_sensor_16bit(0x3023, 0x0001); //  0x3023 is 16bit reg
+
+// add
+
+                                    
+	write_cmos_sensor(0x0101, 0x03);  // direction		
+	write_cmos_sensor_16bit(0x301a, 0x021c);  // STREAM_ON
+
 }    /*    preview_setting  */
 
 //int capture_first_flag = 0;
@@ -8166,27 +8469,26 @@ static void preview_setting(void)
 static void capture_setting(kal_uint16 currefps)
 {
 	//kal_uint16 temp,i;
-
-	write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
+	write_cmos_sensor_16bit(0x301a, 0x0218);  // STREAM_OFF
 	mdelay(70);
         //PLL CONFIG
 	write_cmos_sensor_16bit(0x0300, 0x0005);  // VT_PIX_CLK_DIV
 	write_cmos_sensor_16bit(0x0302, 0x0001);  // VT_SYS_CLK_DIV
 	write_cmos_sensor_16bit(0x0304, 0x0303);  // PRE_PLL_CLK_DIV
-	write_cmos_sensor_16bit(0x0306, 0x8E8E);  // PLL_MULTIPLIER
+	write_cmos_sensor_16bit(0x0306, 0x8D8D);  // PLL_MULTIPLIER//0x8D8D
 	write_cmos_sensor_16bit(0x0308, 0x000A);  // OP_PIX_CLK_DIV
 	write_cmos_sensor_16bit(0x030A, 0x0001);  // OP_SYS_CLK_DIV
 	write_cmos_sensor_16bit(0x0112, 0x0A0A);  // CCP_DATA_FORMAT
 	write_cmos_sensor_16bit(0x3016, 0x0101);  // ROW_SPEED
 
         //MIPI CONFIG
-	write_cmos_sensor_16bit(0x31B0, 0x005F);  // FRAME_PREAMBLE
-	write_cmos_sensor_16bit(0x31B2, 0x002E);  // LINE_PREAMBLE
-	write_cmos_sensor_16bit(0x31B4, 0x33D4);  // MIPI_TIMING_0
-	write_cmos_sensor_16bit(0x31B6, 0x244B);  //  MIPI_TIMING_1
+	write_cmos_sensor_16bit(0x31B0, 0x005C);  // FRAME_PREAMBLE
+	write_cmos_sensor_16bit(0x31B2, 0x002D);  // LINE_PREAMBLE
+	write_cmos_sensor_16bit(0x31B4, 0x3392);  // MIPI_TIMING_0
+	write_cmos_sensor_16bit(0x31B6, 0x242B);   // MIPI_TIMING_1
 	write_cmos_sensor_16bit(0x31B8, 0x2413);  // MIPI_TIMING_2
-	write_cmos_sensor_16bit(0x31BA, 0x2070); //  MIPI_TIMING_3
-	write_cmos_sensor_16bit(0x31BC, 0x870B);  // MIPI_TIMING_4
+	write_cmos_sensor_16bit(0x31BA, 0x2070);  // MIPI_TIMING_3
+	write_cmos_sensor_16bit(0x31BC, 0x868B);  // MIPI_TIMING_4
 
         //RESOLUTION MODE CONFIG
 	write_cmos_sensor_16bit(0x0344, 0x0008);  // X_ADDR_START
@@ -8195,19 +8497,13 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_16bit(0x034A, 0x0C37);  // Y_ADDR_END
 	write_cmos_sensor_16bit(0x034C,   4208);  // X_OUTPUT_SIZE
 	write_cmos_sensor_16bit(0x034E,   3120);  // Y_OUTPUT_SIZE
-	write_cmos_sensor_16bit(0x3040, 0x0041);  // READ_MODE
-	
-	
-		//Binning Configuration
+	write_cmos_sensor_16bit(0x3040, 0xC041);  // READ_MODE
 	write_cmos_sensor_16bit(0x3172, 0x0206);  // ANALOG_CONTROL2 //Corn
 	write_cmos_sensor_16bit(0x317A, 0x416E);  // ANALOG_CONTROL6
 	write_cmos_sensor_16bit(0x3F3C, 0x0003);  // ANALOG_CONTROL9
-	
-		//Timing Configuration
-	write_cmos_sensor_16bit(0x0342, 0x1248);  // LINE_LENGTH_PCK 4672
-	write_cmos_sensor_16bit(0x0340, 0x0C94);  // FRAME_LENGTH_LINES 3140
-	write_cmos_sensor_16bit(0x0202, 0x0C84);  // COARSE_INTEGRATION_TIME
-	
+	write_cmos_sensor_16bit(0x0342, 0x12B8);  // LINE_LENGTH_PCK
+	write_cmos_sensor_16bit(0x0340, 0x0C42);  // FRAME_LENGTH_LINES
+	write_cmos_sensor_16bit(0x0202, 0x0C3C);  // COARSE_INTEGRATION_TIME
 	write_cmos_sensor_16bit(0x3226, 0x00E0);  // PDAF ROW START 
 	write_cmos_sensor_16bit(0x3228, 0x0B60);  // PDAF ROW END
 	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF ROW CONTROL 
@@ -8221,40 +8517,43 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_16bit(0x31D6, 0x3336);  // MIPI_JPEG_PN9_DATA_TYPE
 	write_cmos_sensor_16bit(0x32C2, 0x03FC);  // PDAF_DMA_START
 	write_cmos_sensor_16bit(0x32C4, 0x3C0);  // PDAF_DMA_SIZE //0x0F30
-	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y      //0x0F00  modify by scorpio20170629
+//	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	write_cmos_sensor_16bit(0x32C6, 0x0000);  // PDAF_DMA_Y
 	write_cmos_sensor_16bit(0x32C8, 0x0890);  // PDAF_SEQ_START
 	write_cmos_sensor_16bit(0x32D0, 0x0001);  // PE_PARAM_ADDR
 	write_cmos_sensor_16bit(0x32D4, 0x0000);  // PE_PARAM_VALUE //Corn
      
         //PDAF specific to 13M
-	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	//write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	write_cmos_sensor_16bit(0x034E, 0x0C30);  // Y_OUTPUT_SIZE	
 	write_cmos_sensor_16bit(0x32C8, 0x0840);  // PDAF_SEQ_START
         write_cmos_sensor_16bit(0x3023, 0x0001); //0x3023 is 16bit reg
-		write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER 
-	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
+			write_cmos_sensor(0x0101, 0x03);  // direction
+	write_cmos_sensor_16bit(0x301a, 0x021c);  // STREAM_ON
 }
 
 
 static void normal_video_setting(kal_uint16 currefps)
 {
         //PLL CONFIG
+	write_cmos_sensor_16bit(0x301a, 0x0218);  // STREAM_OFF
 	write_cmos_sensor_16bit(0x0300, 0x0005);  // VT_PIX_CLK_DIV
 	write_cmos_sensor_16bit(0x0302, 0x0001);  // VT_SYS_CLK_DIV
 	write_cmos_sensor_16bit(0x0304, 0x0303);  // PRE_PLL_CLK_DIV
-	write_cmos_sensor_16bit(0x0306, 0x8E8E);  // PLL_MULTIPLIER
+	write_cmos_sensor_16bit(0x0306, 0x8D8D);  // PLL_MULTIPLIER//0x8D8D
 	write_cmos_sensor_16bit(0x0308, 0x000A);  // OP_PIX_CLK_DIV
 	write_cmos_sensor_16bit(0x030A, 0x0001);  // OP_SYS_CLK_DIV
 	write_cmos_sensor_16bit(0x0112, 0x0A0A);  // CCP_DATA_FORMAT
 	write_cmos_sensor_16bit(0x3016, 0x0101);  // ROW_SPEED	
 
         //MIPI CONFIG
-	write_cmos_sensor_16bit(0x31B0, 0x005F);  // FRAME_PREAMBLE
-	write_cmos_sensor_16bit(0x31B2, 0x002E);  // LINE_PREAMBLE
-	write_cmos_sensor_16bit(0x31B4, 0x33D4);  // MIPI_TIMING_0
-	write_cmos_sensor_16bit(0x31B6, 0x244B);  //  MIPI_TIMING_1
+	write_cmos_sensor_16bit(0x31B0, 0x005C);  // FRAME_PREAMBLE
+	write_cmos_sensor_16bit(0x31B2, 0x002D);  // LINE_PREAMBLE
+	write_cmos_sensor_16bit(0x31B4, 0x3392);  // MIPI_TIMING_0
+	write_cmos_sensor_16bit(0x31B6, 0x242B);  // MIPI_TIMING_1
 	write_cmos_sensor_16bit(0x31B8, 0x2413);  // MIPI_TIMING_2
-	write_cmos_sensor_16bit(0x31BA, 0x2070); //  MIPI_TIMING_3
-	write_cmos_sensor_16bit(0x31BC, 0x870B);  // MIPI_TIMING_4
+	write_cmos_sensor_16bit(0x31BA, 0x2070);  // MIPI_TIMING_3
+	write_cmos_sensor_16bit(0x31BC, 0x868B);  // MIPI_TIMING_4
 
         //RESOLUTION MODE CONFIG
 	write_cmos_sensor_16bit(0x0344, 0x0008);  // X_ADDR_START
@@ -8263,17 +8562,13 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_16bit(0x034A, 0x0C37);  // Y_ADDR_END
 	write_cmos_sensor_16bit(0x034C,  4208);  // X_OUTPUT_SIZE
 	write_cmos_sensor_16bit(0x034E,  3120);  // Y_OUTPUT_SIZE
-	
-			//Binning Configuration
+	write_cmos_sensor_16bit(0x3040, 0xC041);  // READ_MODE
 	write_cmos_sensor_16bit(0x3172, 0x0206);  // ANALOG_CONTROL2 //Corn
 	write_cmos_sensor_16bit(0x317A, 0x416E);  // ANALOG_CONTROL6
 	write_cmos_sensor_16bit(0x3F3C, 0x0003);  // ANALOG_CONTROL9
-	
-		//Timing Configuration
-	write_cmos_sensor_16bit(0x0342, 0x1248);  // LINE_LENGTH_PCK 4672
-	write_cmos_sensor_16bit(0x0340, 0x0C94);  // FRAME_LENGTH_LINES 3140
-	write_cmos_sensor_16bit(0x0202, 0x0C84);  // COARSE_INTEGRATION_TIME
-	
+	write_cmos_sensor_16bit(0x0342, 0x12B8);  // LINE_LENGTH_PCK
+	write_cmos_sensor_16bit(0x0340, 0x0C42);  // FRAME_LENGTH_LINES
+	write_cmos_sensor_16bit(0x0202, 0x0C3C);  // COARSE_INTEGRATION_TIME
 	write_cmos_sensor_16bit(0x3226, 0x00E0);  // PDAF ROW START 
 	write_cmos_sensor_16bit(0x3228, 0x0B60);  // PDAF ROW END
 	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF ROW CONTROL 
@@ -8296,19 +8591,24 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
 	write_cmos_sensor_16bit(0x32C8, 0x0840);  // PDAF_SEQ_START
         write_cmos_sensor_16bit(0x3023, 0x0001); //0x3023 is 16bit reg
-		write_cmos_sensor_16bit(0x301A, 0x021C);  // RESET_REGISTER 
-	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
+		write_cmos_sensor(0x0101, 0x03);  // direction
+	write_cmos_sensor_16bit(0x301a, 0x021c);  // STREAM_ON
+	
 }
 
 static void hs_video_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
+	write_cmos_sensor(0x0101, 0x03);  // direction
+	write_cmos_sensor_16bit(0x301a, 0x021c);  // STREAM_ON
+
 }
 
 
 static void slim_video_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
+	write_cmos_sensor(0x0101, 0x03);  // direction
+	write_cmos_sensor_16bit(0x301a, 0x021c);  // STREAM_ON
+
 }
 
 
@@ -8361,10 +8661,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         spin_unlock(&imgsensor_drv_lock);
         do {
             *sensor_id = return_sensor_id();
+			printk("wenhui ar1337mipi_Sensor get_imgsensor_id *sensor_id = 0x%x\r\n",*sensor_id);
             if (*sensor_id == imgsensor_info.sensor_id) {
-				//iRead16Data_ar1337(AR1337_LSC_addr,AR1337_LSCOTP_SIZE,AR1337_OTPData);	
-	
-					
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 return ERROR_NONE;
             }
@@ -8515,25 +8813,9 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
-    set_mirror_flip(imgsensor.mirror);
+    //set_mirror_flip(imgsensor.mirror);
+	write_cmos_sensor(0x0101, 0x00);  // direction
 	//set_mirror_flip(sensor_config_data->SensorImageMirror);
-
-
-	if (0)
-	{
-		int i = 0;
-		
-		for (i = 0; i < 1864; i = i +8 )
-		{
-			printk("0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,\n", AR1337_OTPData[i],AR1337_OTPData[i +1], AR1337_OTPData[i +2], AR1337_OTPData[i +3], AR1337_OTPData[i +4],AR1337_OTPData[i +5], AR1337_OTPData[i +6], AR1337_OTPData[i +7]);
-				
-		}
-		
-		printk("0x%x,0x%x,0x%x,0x%x,\n", AR1337_OTPData[i],AR1337_OTPData[i +1], AR1337_OTPData[i +2], AR1337_OTPData[i +3]);
-	}
-
-
-
     return ERROR_NONE;
 }    /*    preview   */
 
@@ -8845,7 +9127,7 @@ static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 }
 
 
-static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 framerate) 
+static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 framerate)
 {
     kal_uint32 frame_length;
 
@@ -8924,8 +9206,28 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
     return ERROR_NONE;
 }
 
+#if 0
+BYTE ar1337_otp_data[8]= {0};
+bool load_ar1337_af_range( kal_uint16 addr, BYTE* data, kal_uint32 size)
+{
+	int i4RetValue = 0;
 
-static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate) 
+		
+	ar1337_otp_data[0] = read_eeprom(0x0010);
+	ar1337_otp_data[1]= read_eeprom(0x0011);
+	ar1337_otp_data[2] = read_eeprom(0x0012);
+	ar1337_otp_data[3]= read_eeprom(0x0013);
+	
+
+	memcpy(data, ar1337_otp_data , 8);
+
+	for(i4RetValue = 0; i4RetValue < 8; i4RetValue++){
+		LOG_CORN("[Corn]afparm:0x%x size:%d \n", data[i4RetValue], size);
+	}
+	return true;
+}
+#endif
+static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
     LOG_INF("scenario_id = %d\n", scenario_id);
 
@@ -8953,6 +9255,7 @@ static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM s
 }
 
 
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                              UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -8961,7 +9264,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     UINT32 *feature_return_para_32=(UINT32 *) feature_para;
     UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    //unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+//    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
     struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	struct SENSOR_VC_INFO_STRUCT *pvcinfo;	
@@ -9021,6 +9324,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case SENSOR_FEATURE_GET_PDAF_DATA:	
 			LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n"); 
 			//read_ar1337_DCC((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),(kal_uint32)(*(feature_data+2)));
+			//load_ar1337_af_range((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),(kal_uint32)(*(feature_data+2)));
       		break;
         case SENSOR_FEATURE_SET_TEST_PATTERN:
             set_test_pattern_mode((BOOL)*feature_data);
@@ -9051,7 +9355,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[1],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
                     break;
                 case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-                    memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[2],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+                    memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[2],sizeof( struct SENSOR_WINSIZE_INFO_STRUCT));
                     break;
                 case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[3],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
@@ -9073,14 +9377,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
       pvcinfo = (struct SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
       switch (*feature_data_32) {
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-          memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1],sizeof( struct SENSOR_VC_INFO_STRUCT));
+          memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1],sizeof(struct SENSOR_VC_INFO_STRUCT));
           break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
           memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[2],sizeof(struct SENSOR_VC_INFO_STRUCT));
           break;
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
         default:
-          memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof (struct SENSOR_VC_INFO_STRUCT));
+          memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(struct SENSOR_VC_INFO_STRUCT));
           break;
       }
       break;
@@ -9112,75 +9416,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     case SENSOR_FEATURE_SET_PDAF:
       //LOG_INF("PDAF mode :%d\n", *feature_data_16);
       imgsensor.pdaf_mode= *feature_data_16;
-      break;      
-	  /*End of PDAF*/
-	case SENSOR_FEATURE_GET_PIXEL_RATE:
-		switch (*feature_data) {
-		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.cap.pclk /
-			(imgsensor_info.cap.linelength - 80))*
-			imgsensor_info.cap.grabwindow_width;
-
-			break;
-		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.normal_video.pclk /
-			(imgsensor_info.normal_video.linelength - 80))*
-			imgsensor_info.normal_video.grabwindow_width;
-
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.hs_video.pclk /
-			(imgsensor_info.hs_video.linelength - 80))*
-			imgsensor_info.hs_video.grabwindow_width;
-
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.slim_video.pclk /
-			(imgsensor_info.slim_video.linelength - 80))*
-			imgsensor_info.slim_video.grabwindow_width;
-
-			break;
-		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-		
-		default:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.pre.pclk /
-			(imgsensor_info.pre.linelength - 80))*
-			imgsensor_info.pre.grabwindow_width;
-			break;
-		}
-		break;
-
-	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
-		switch (*feature_data) {
-		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.cap.mipi_pixel_rate;
-			break;
-		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.normal_video.mipi_pixel_rate;
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.hs_video.mipi_pixel_rate;
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.slim_video.mipi_pixel_rate;
-			break;
-		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-		
-		default:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.pre.mipi_pixel_rate;
-			break;
-		}
-		break;
+      break;
+      /*End of PDAF*/
         default:
             break;
     }
@@ -9201,6 +9438,9 @@ UINT32 AR1337_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
     /* To Do : Check Sensor status here */
     if (pfFunc!=NULL)
-        *pfFunc=&sensor_func;
+        *pfFunc = &sensor_func;
     return ERROR_NONE;
-}    /*    AR1337_MIPI_RAW_SensorInit    */
+}    /*    ar1337_MIPI_RAW_SensorInit    */
+
+
+
