@@ -40,7 +40,7 @@
 //#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
-#define LOG_INF(format, args...)	printk(" PFX [%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)	pr_debug(PFX"[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -298,7 +298,7 @@ static void s5k5e9_read_otp(struct s5k5e9_otp_struct *otp)
 
     // ---------------- Module Info ----------------
     otp->mi_flag = read_cmos_sensor_8(0x0A04);
-    printk("best--mi_flag=%x-\n",otp->mi_flag);
+    printk("s5k5e9_read_otp--mi_flag=%x-\n",otp->mi_flag);
     if( (otp->mi_flag & 0xF0) == 0x40)
     {
         group_id = 1;
@@ -327,7 +327,7 @@ static void s5k5e9_read_otp(struct s5k5e9_otp_struct *otp)
     // ---------------- AWB Info ----------------
     group_id = 0;
     otp->awb_flag = read_cmos_sensor_8(0x0A1B);
-    printk("best--otp->awb_flag=%x-\n",otp->awb_flag);
+    printk("s5k5e9_read_otp--otp->awb_flag=%x-\n",otp->awb_flag);
     if( (otp->awb_flag & 0xF0) == 0x40)
     {
         group_id = 1;
@@ -355,12 +355,12 @@ static void s5k5e9_read_otp(struct s5k5e9_otp_struct *otp)
         unsigned int Golden_Ratio_Gb = (read_cmos_sensor_8(temp_address+6));
         unsigned int Golden_Ratio_B = (read_cmos_sensor_8(temp_address+7));
 
-		otp->Unit_R_Ratio_Gr = (kal_uint16)(int)(((1024*Unit_Ratio_R/Unit_Ratio_Gr)*2+1)/2);
-		otp->Unit_B_Ratio_Gr = (kal_uint16)(int)(((1024*Unit_Ratio_B/Unit_Ratio_Gr)*2+1)/2);
-		otp->Unit_Gr_Ratio_Gb = (kal_uint16)(int)(((1024*Unit_Ratio_Gr/Unit_Ratio_Gb)*2+1)/2);
-		otp->Golden_R_Ratio_Gr = (kal_uint16)(int)(((1024*Golden_Ratio_R/Golden_Ratio_Gr)*2+1)/2);
-		otp->Golden_B_Ratio_Gr = (kal_uint16)(int)(((1024*Golden_Ratio_B/Golden_Ratio_Gr)*2+1)/2);
-		otp->Golden_Gr_Ratio_Gb = (kal_uint16)(int)(((1024*Golden_Ratio_Gr/Golden_Ratio_Gb)*2+1)/2);
+		otp->Unit_R_Ratio_Gr = (kal_uint16)(int)(((1024*2*Unit_Ratio_R/Unit_Ratio_Gr)+1)/2);
+		otp->Unit_B_Ratio_Gr = (kal_uint16)(int)(((1024*2*Unit_Ratio_B/Unit_Ratio_Gr)+1)/2);
+		otp->Unit_Gr_Ratio_Gb = (kal_uint16)(int)(((1024*2*Unit_Ratio_Gr/Unit_Ratio_Gb)+1)/2);
+		otp->Golden_R_Ratio_Gr = (kal_uint16)(int)(((1024*2*Golden_Ratio_R/Golden_Ratio_Gr)+1)/2);
+		otp->Golden_B_Ratio_Gr = (kal_uint16)(int)(((1024*2*Golden_Ratio_B/Golden_Ratio_Gr)+1)/2);
+		otp->Golden_Gr_Ratio_Gb = (kal_uint16)(int)(((1024*2*Golden_Ratio_Gr/Golden_Ratio_Gb)+1)/2);
 
 		LOG_INF("Unit_R_Ratio_Gr=0x%x, Unit_B_Ratio_Gr=0x%x, Unit_Gr_Ratio_Gb=0x%x \n",
 			otp->Unit_R_Ratio_Gr, otp->Unit_B_Ratio_Gr, otp->Unit_Gr_Ratio_Gb);
