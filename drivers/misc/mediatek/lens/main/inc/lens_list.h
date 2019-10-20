@@ -103,6 +103,17 @@ extern long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 extern int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int DW9714AF_GetFileName(unsigned char *pFileName);
 
+#define CN3927EAF_SetI2Cclient CN3927EAF_SetI2Cclient_Main
+#define CN3927EAF_Ioctl CN3927EAF_Ioctl_Main
+#define CN3927EAF_Release CN3927EAF_Release_Main
+#define CN3927EAF_GetFileName CN3927EAF_GetFileName_Main
+extern int CN3927EAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long CN3927EAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int CN3927EAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int CN3927EAF_GetFileName(unsigned char *pFileName);
+
 #define DW9763AF_SetI2Cclient DW9763AF_SetI2Cclient_Main
 #define DW9763AF_Ioctl DW9763AF_Ioctl_Main
 #define DW9763AF_Release DW9763AF_Release_Main
