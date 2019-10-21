@@ -4258,6 +4258,7 @@ static kal_uint16 read_module_id(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+extern char back_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -4278,6 +4279,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					deviceInfo_register_value = 0x01;
 				}
 				#endif
+				memset(back_cam_name, 0x00, sizeof(back_cam_name));
+				memcpy(back_cam_name, "0_s5k3p9sx_TXD", 64);
 				pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
