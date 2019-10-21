@@ -196,7 +196,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #if defined(GC8034_MIPI_RAW)
                  {SENSOR_DRVNAME_GC8034_MIPI_RAW,
                   {
-                   {SensorMCLK, Vol_High, 0},
+                   {SensorMCLK, Vol_Low, 0},
                    {RST, Vol_Low, 0},
                    {DOVDD, Vol_1800, 1},
                    {DVDD, Vol_1200, 1},
