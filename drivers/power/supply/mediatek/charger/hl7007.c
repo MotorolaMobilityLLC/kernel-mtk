@@ -86,6 +86,8 @@ static const unsigned int BOOST_CURRENT_LIMIT[] = {
 	500, 750, 1200, 1400, 1650, 1875, 2150,
 };
 
+static u32 max_charge_current=0;
+
 #include <ontim/ontim_dev_dgb.h>
 static  char charge_ic_vendor_name[50]="HL7007";
 DEV_ATTR_DECLARE(charge_ic)
@@ -629,6 +631,10 @@ static int hl7007_parse_dt(struct hl7007_info *info, struct device *dev)
 		info->chg_props.alias_name = "hl7007";
 		pr_warn("%s: no alias name\n", __func__);
 	}
+	if (!of_property_read_u32(np, "ichg", &max_charge_current)) {
+		pr_warn("%s: max_charge_current=%d;\n", __func__,max_charge_current);
+	}
+
 
 	return 0;
 }
@@ -717,6 +723,11 @@ static int hl7007_set_current(struct charger_device *chg_dev, u32 current_value)
 		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
 		hl7007_set_iocharge(register_value);
 	} else {
+		if(max_charge_current != 0  && current_value > max_charge_current)	
+		{
+			pr_info("%s;%d;%d;\n",__func__,current_value,max_charge_current);
+			current_value = max_charge_current;			
+		}
 		hl7007_set_io_level(0);
 		array_size = ARRAY_SIZE(CSTH);
 		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
