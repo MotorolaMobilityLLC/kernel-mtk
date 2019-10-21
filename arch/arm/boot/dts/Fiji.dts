@@ -257,6 +257,7 @@
 		compatible = "halo,hl7007";
 		reg = <0x6c>;
 		status = "okay";
+		ichg = <1050000>; /* uA */
 	};
 	externel-charger@6a{
 		compatible = "halo,hl7005";
@@ -268,6 +269,7 @@
                compatible = "ontim,eta6937";
                reg = <0x6b>;/*dumy addr,in fact ,the addr is 0x6b-1*/
                status = "okay";
+		ichg = <1050000>; /* uA */
        };
 
 };
