@@ -35,6 +35,8 @@
 #include <linux/kernel.h>
 #endif
 
+#include "tpd.h"
+
 #include "lcm_drv.h"
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>
@@ -271,8 +273,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 static void lcm_reset(void)
 {
-	SET_RESET_PIN(0);
-	MDELAY(5);
+	MDELAY(1);
+	tpd_gpio_output(0, 1);
 	SET_RESET_PIN(1);
 
 	MDELAY(50);
@@ -299,6 +301,9 @@ static void lcm_init(void)
 	unsigned char data = 0x12;  //up to +/-5.8V
 	int ret = 0;
 	LCM_LOGI("%s: ft8006P start\n",__func__);
+
+	tpd_gpio_output(0, 0);
+	SET_RESET_PIN(0);
 
 	set_gpio_lcd_enp(1);
 	set_gpio_lcd_enn(1);
