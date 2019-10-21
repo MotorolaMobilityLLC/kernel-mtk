@@ -711,7 +711,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-				memcpy(backaux_cam_name, "2_2375h", 64);
+				memcpy(backaux_cam_name, "2_gc2375h", 64);
 				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
