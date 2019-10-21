@@ -231,7 +231,7 @@ config MTK_COMBO_WIFI
 config MTK_WAPI_SUPPORT
 	bool "MTK_WAPI_SUPPORT"
 	depends on MTK_COMBO_WIFI
-	default y
+	default n
 	help
 	  if it is set to TRUE: Support WAPI (WLAN Authentication and
 	  Privacy Infrastructure)
