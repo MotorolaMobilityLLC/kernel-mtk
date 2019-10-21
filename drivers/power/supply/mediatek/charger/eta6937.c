@@ -99,9 +99,6 @@ DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
-
-
-
 #ifdef CONFIG_OF
 #else
 #define eta6937_SLAVE_ADDR_WRITE 0xD4
@@ -743,7 +740,6 @@ static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 	unsigned int set_cv_voltage;
 	unsigned short int register_value;
 	/*static kal_int16 pre_register_value; */
-	printk(KERN_ERR "at %s line %d cv=%u\n",__func__,__LINE__,cv);
 	array_size = ARRAY_SIZE(VBAT_CVTH);
 	/*pre_register_value = -1; */
 	set_cv_voltage = bmt_find_closest_level(VBAT_CVTH, array_size, cv);
@@ -778,23 +774,17 @@ static int eta6937_set_current(struct charger_device *chg_dev, u32 current_value
 	unsigned int register_value;
 
 
-       printk(KERN_ERR "at %s line %d current_value=%d\n",__func__,__LINE__,current_value);
 	if (current_value <= 500000) {
-       printk(KERN_ERR "at %s line %d current_value=%d\n",__func__,__LINE__,current_value);
-		eta6937_set_io_level(1);
-		array_size = ARRAY_SIZE(CSTH);
-		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
-		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
+		eta6937_set_io_level(0);
+		register_value = 3;
 		eta6937_set_iocharge(register_value);
 	} else {
 
 		if(max_charge_current != 0  && current_value > max_charge_current)	
 		{
-       printk(KERN_ERR "at %s line %d current_value=%d\n",__func__,__LINE__,current_value);
 			pr_info("%s;%d;%d;\n",__func__,current_value,max_charge_current);
 			current_value = max_charge_current;			
 		}
-       printk(KERN_ERR "at %s line %d current_value=%d\n",__func__,__LINE__,current_value);
 		eta6937_set_io_level(0);
 		array_size = ARRAY_SIZE(CSTH);
 		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
@@ -824,12 +814,10 @@ static int eta6937_set_input_current(struct charger_device *chg_dev, u32 current
 	unsigned int set_chr_current;
 	unsigned int array_size;
 	unsigned int register_value;
-       printk(KERN_ERR "at %s line %d current_value=%d\n",__func__,__LINE__,current_value);
 
 	if (current_value > 500000) {
 		register_value = 0x3;
 	} else {
-       printk(KERN_ERR "at %s line %d current_value=%d\n",__func__,__LINE__,current_value);
 		array_size = ARRAY_SIZE(INPUT_CSTH);
 		set_chr_current = bmt_find_closest_level(INPUT_CSTH, array_size, current_value);
 		register_value =
@@ -942,21 +930,26 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
         }
 //-add by hzb for ontim debug
 	new_client = client;
-       new_client->addr= new_client->addr-1;
 
 	ret = eta6937_get_vender_code();
-
+	pr_err("%s: get vendor id %x\n", __func__, ret);
 	if (ret != 2) {
 		pr_err("%s: get vendor id failed\n", __func__);
 		return -ENODEV;
 	}
-
 	ret=eta6937_get_pn();
-	if (ret != 2) {
+	if (ret != 0x02) {
 		pr_err("%s: get pn failed\n", __func__);
 		return -ENODEV;
 	}
 
+	ret=eta6937_get_revision();
+	if (ret != 0x04) {
+		pr_err("%s: get revision failed\n", __func__);
+		return -ENODEV;
+	}
+	
+	
 	info = devm_kzalloc(&client->dev, sizeof(struct eta6937_info), GFP_KERNEL);
 
 	if (!info)
@@ -987,7 +980,7 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 		return -EINVAL;
 	}
 
-	eta6937_reg_config_interface(0x06, 0x9a);	/* ISAFE = 1050mA, VSAFE = 4.4V */
+	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
 
 	eta6937_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
 	eta6937_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */

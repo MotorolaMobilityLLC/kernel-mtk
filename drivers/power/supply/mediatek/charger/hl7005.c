@@ -928,7 +928,7 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 		return -EINVAL;
 	}
 
-	hl7005_reg_config_interface(0x06, 0x4a);	/* ISAFE = 1050mA, VSAFE = 4.4V */
+	hl7005_reg_config_interface(0x06, 0x7c);	/* ISAFE = 2450mA, VSAFE = 4.4V */
 
 	hl7005_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
 	hl7005_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
