@@ -888,7 +888,7 @@ int cts_reset_test(struct cts_device *cts_dev)
 int cts_compensate_cap_test(struct cts_device *cts_dev, u8 min_thres, u8 max_thres)
 {
     u8 *cap = NULL;
-    int ret;
+    int ret = 0;
     bool data_valid = false;
     u8 r, c;
     int test_result = -1;

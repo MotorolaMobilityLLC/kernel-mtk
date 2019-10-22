@@ -1741,7 +1741,7 @@ int cts_suspend_device(struct cts_device *cts_dev)
 
 int cts_resume_device(struct cts_device *cts_dev)
 {
-    int ret;
+    int ret=0;
 	int retries = 3;
 	
     cts_info("Resume device");
