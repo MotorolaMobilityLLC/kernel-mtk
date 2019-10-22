@@ -40,6 +40,12 @@ KEYWORD(TYPEC_CC_STATUS)      //Typec  mfr
 KEYWORD(BACK_CAM_MFR)         //camera  mfr
 KEYWORD(BACKAUX_CAM_MFR)      //camera  mfr
 KEYWORD(BACKAUX2_CAM_MFR)	  //camera	mfr
+
+KEYWORD(BACKAUX2_CAM_OTP_STATUS)	  //camera	mfr
+KEYWORD(BACKAUX_CAM_OTP_STATUS)	  //camera	mfr
+KEYWORD(BACK_CAM_OTP_STATUS)	  //camera	mfr
+KEYWORD(FRONT_CAM_OTP_STATUS)	  //camera	mfr
+
 KEYWORD(FRONT_CAM_MFR)        //camera  mfr
 KEYWORD(FRONTAUX_CAM_MFR)        //camera  mfr
 KEYWORD(BACK_CAM_EFUSE)         //camera  efuse
