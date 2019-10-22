@@ -33,7 +33,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include "kd_camera_typedef.h"
-#include "s5k3p9sxmipiraw_Sensor.h"
+#include "s5k3p9sxtmipiraw_Sensor.h"
 #ifndef VENDOR_EDIT
 #define VENDOR_EDIT 1
 #endif
@@ -47,7 +47,7 @@
 #endif
 
 
-#define PFX "S5K3P9SX_camera_sensor"
+#define PFX "S5K3P9SXT_camera_sensor"
 //#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
@@ -55,7 +55,7 @@
 
 #if VENDOR_EDIT
 /*xxxx ,modify for different module*/
-#define MODULE_ID_OFFSET 0x0008
+#define MODULE_ID_OFFSET 0x0001
 static kal_uint32 streaming_control(kal_bool enable);
 #endif
 
@@ -71,7 +71,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K3P9SX_SENSOR_ID,
+	.sensor_id = S5K3P9SXT_SENSOR_ID,
 	#if VENDOR_EDIT
 	/*xxxx add */
 	.module_id = 0x01,	//
@@ -4271,23 +4271,24 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 			pr_err("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n", read_cmos_sensor_8(0x0000), read_cmos_sensor_8(0x0001), read_cmos_sensor(0x0000));
-			if (*sensor_id == imgsensor_info.sensor_id) {
+                  	//imgsensor_info.sensor_id
+			if (*sensor_id == 0x3109) {
 				//#if VENDOR_EDIT
 				#if 0
 				imgsensor_info.module_id = read_module_id();
 				if (deviceInfo_register_value == 0x00) {
-					register_imgsensor_deviceinfo("Cam_b", DEVICE_VERSION_S5K3P9SX, imgsensor_info.module_id);
+					register_imgsensor_deviceinfo("Cam_b", DEVICE_VERSION_S5K3P9SXT, imgsensor_info.module_id);
 					deviceInfo_register_value = 0x01;
 				}
 				#endif
 				imgsensor_info.module_id = read_module_id();
-				if(0x50 == imgsensor_info.module_id)
+				if(0x60 == imgsensor_info.module_id)
 				{
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
-					memcpy(back_cam_name, "0_s5k3p9sx", 64);
-					pr_err("i2c write id: 0x%x, sensor id: 0x%x, module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id,imgsensor_info.module_id);
+					memcpy(back_cam_name, "0_s5k3p9sx_TXD", 64);
+					pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
-				}else if(0x60 != imgsensor_info.module_id)
+				}else if(0x50 != imgsensor_info.module_id)
 				{
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5k3p9sx_nootp", 64);
@@ -5027,7 +5028,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_GET_PDAF_DATA:
 			LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
-			s5k3p9_read_eeprom((kal_uint16 )(*feature_data), (char*)(uintptr_t)(*(feature_data + 1)), (kal_uint32)(*(feature_data + 2)));
+			s5k3p9sxt_read_eeprom((kal_uint16 )(*feature_data), (char*)(uintptr_t)(*(feature_data + 1)), (kal_uint32)(*(feature_data + 2)));
 			break;
 		case SENSOR_FEATURE_SET_TEST_PATTERN:
 			set_test_pattern_mode((BOOL)*feature_data);
@@ -5203,7 +5204,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 };
 
 //kin0603
-UINT32 S5K3P9SX_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 S5K3P9SXT_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 //UINT32 xxxx_MIPI_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
