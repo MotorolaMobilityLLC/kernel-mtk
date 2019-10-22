@@ -28,6 +28,12 @@ char frontaux_cam_name[64] = "Unknown";
 char back_cam_name[64] = "Unknown";
 char backaux_cam_name[64] = "Unknown";
 char backaux2_cam_name[64] = "Unknown";
+
+char backaux2_cam_otp_status[64] = "Unknown";
+char backaux_cam_otp_status[64] = "Unknown";
+char back_cam_otp_status[64] = "Unknown";
+char front_cam_otp_status[64] = "Unknown";
+
 char front_cam_efuse_id[64] = {0};
 char frontaux_cam_efuse_id[64] = {0};
 char back_cam_efuse_id[64] = {0};
@@ -448,6 +454,41 @@ static int get_battery_input_suspend(void)
 
 	return 0;
 }
+
+static int set_backaux2_camera_otp_status(const char * buf, int n)
+{
+	strncpy(backaux2_cam_otp_status, buf, n);
+	printk(KERN_INFO  "buf = %s n = %d\n", buf, n);
+	backaux2_cam_otp_status[n] = '\0';
+	return 0;
+}
+static int set_backaux_camera_otp_status(const char * buf, int n)
+{
+	int i = 0;
+	strncpy(backaux_cam_otp_status, buf, n);
+	printk(KERN_INFO "buf = %s n = %d\n", buf, n);
+	backaux_cam_otp_status[n] = '\0';
+	for (; i< n+2; i++) 
+	{
+		printk("buf[%d] = %x\n", i, backaux_cam_otp_status[i]);
+	}
+	return 0;
+}
+static int set_back_camera_otp_status(const char * buf, int n)
+{
+	strncpy(back_cam_otp_status, buf, n);
+	printk(KERN_INFO "buf = %s n = %d\n", buf, n);
+	back_cam_otp_status[n] = '\0';
+	return 0;
+}
+static int set_front_camera_otp_status(const char * buf, int n)
+{
+	strncpy(front_cam_otp_status, buf, n);
+	printk(KERN_INFO "buf = %s n = %d\n", buf, n);
+	front_cam_otp_status[n] = '\0';
+	return 0;
+}
+
 static int put_battery_input_suspend(const char * buf, int n)
 {
 	int ret = 0;
@@ -496,7 +537,6 @@ static int put_battery_charging_enabled(const char * buf, int n)
 
 	return 0;
 }
-
 #define TYPEC_VENDOR_FILE "/sys/class/power_supply/usb/typec_mode"
 static ssize_t get_typec_vendor(void)
 {
@@ -702,7 +742,37 @@ static void get_backaux2_camera_id(void)
 		        ((strlen(backaux2_cam_name) >= sizeof(hwinfo[BACKAUX2_CAM_MFR].hwinfo_buf) ?
 		          sizeof(hwinfo[BACKAUX2_CAM_MFR].hwinfo_buf) : strlen(backaux2_cam_name))));
 }
+static void get_backaux2_camera_otp_status(void)
+{
+	if (backaux2_cam_otp_status != NULL)
+		strncpy(hwinfo[BACKAUX2_CAM_OTP_STATUS].hwinfo_buf, backaux2_cam_otp_status,
+		        ((strlen(backaux2_cam_otp_status) >= sizeof(hwinfo[BACKAUX2_CAM_OTP_STATUS].hwinfo_buf) ?
+		          sizeof(hwinfo[BACKAUX2_CAM_OTP_STATUS].hwinfo_buf) : strlen(backaux2_cam_otp_status))));
+}
+static void get_backaux_camera_otp_status(void)
+{
+         if (backaux_cam_otp_status != NULL)
+                 strncpy(hwinfo[BACKAUX_CAM_OTP_STATUS].hwinfo_buf, backaux_cam_otp_status,
+                        ((strlen(backaux_cam_otp_status) >= sizeof(hwinfo[BACKAUX_CAM_OTP_STATUS].hwinfo_buf) ?
+                           sizeof(hwinfo[BACKAUX_CAM_OTP_STATUS].hwinfo_buf) : strlen(backaux_cam_otp_status))));
+ }
 
+static void get_back_camera_otp_status(void)
+{
+         if (back_cam_otp_status != NULL)
+                 strncpy(hwinfo[BACK_CAM_OTP_STATUS].hwinfo_buf, back_cam_otp_status,
+                        ((strlen(back_cam_otp_status) >= sizeof(hwinfo[BACK_CAM_OTP_STATUS].hwinfo_buf) ?
+                           sizeof(hwinfo[BACK_CAM_OTP_STATUS].hwinfo_buf) : strlen(back_cam_otp_status))));
+ }
+
+
+static void get_front_camera_otp_status(void)
+{
+         if (front_cam_otp_status != NULL)
+                 strncpy(hwinfo[FRONT_CAM_OTP_STATUS].hwinfo_buf, front_cam_otp_status,
+                        ((strlen(front_cam_otp_status) >= sizeof(hwinfo[FRONT_CAM_OTP_STATUS].hwinfo_buf) ?
+                           sizeof(hwinfo[FRONT_CAM_OTP_STATUS].hwinfo_buf) : strlen(front_cam_otp_status))));
+ }
 static void get_front_camera_efuse_id(void)
 {
 	if (front_cam_efuse_id != NULL)
@@ -1196,6 +1266,18 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case BACKAUX2_CAM_MFR:
 		get_backaux2_camera_id();
 		break;
+	case BACKAUX2_CAM_OTP_STATUS:
+		get_backaux2_camera_otp_status();
+		break; 
+	case BACKAUX_CAM_OTP_STATUS:
+		get_backaux_camera_otp_status();
+		break;
+	case BACK_CAM_OTP_STATUS:
+		get_back_camera_otp_status();
+		break;
+	case FRONT_CAM_OTP_STATUS:
+		get_front_camera_otp_status();
+		break;
 	case FP_MFR:
 		get_fingerprint_id();
 		break;
@@ -1257,6 +1339,19 @@ static ssize_t hwinfo_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	case battery_charging_enabled:
 		put_battery_charging_enabled(buf, n);
 		break;
+	case BACKAUX2_CAM_OTP_STATUS:
+		set_backaux2_camera_otp_status(buf, n);
+		break; 
+	case BACKAUX_CAM_OTP_STATUS:
+		set_backaux_camera_otp_status(buf, n);
+		break;
+	case BACK_CAM_OTP_STATUS:
+		set_back_camera_otp_status(buf, n);
+		break;
+	case FRONT_CAM_OTP_STATUS:
+		set_front_camera_otp_status(buf, n);
+		break;
+
 	default:
 		break;
 	};
