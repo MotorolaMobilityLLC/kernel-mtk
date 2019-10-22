@@ -560,11 +560,6 @@
 	};
 };
 
-/* battery end */
-&bat_gm30 {
-	EMBEDDED_SEL = <(0)>;
-};
-/* battery end */
 
 /* IRTX GPIO end */
 &irtx_pwm {
