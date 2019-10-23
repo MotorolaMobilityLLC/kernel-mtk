@@ -141,7 +141,7 @@ static void fts_charger_notify_work(struct work_struct *work)
 		FTS_ERROR("%s:  parameter work are null!", __func__);
 		return;
 	}
-	FTS_INFO("enter");
+	FTS_DEBUG("enter");
 	if (USB_DETECT_IN == fts_usb_detect_flag) {
 		if (mutex_lock_interruptible(&input_dev->mutex)) {
 			FTS_ERROR("Failed to lock in mutex_lock_interruptible(&input_dev->mutex).");
@@ -183,8 +183,8 @@ static int charger_notifier_callback(struct notifier_block *nb,
 				return ret;
 			} else {
 				fts_usb_detect_flag = prop.intval;
-				FTS_INFO("prop.intval: %d", prop.intval);
-				FTS_INFO("charger_detection->usb_connected: %d", charger_detection->usb_connected);
+				FTS_DEBUG("prop.intval: %d", prop.intval);
+				FTS_DEBUG("charger_detection->usb_connected: %d", charger_detection->usb_connected);
 				if(fts_usb_detect_flag != charger_detection->usb_connected) {
 					if (USB_DETECT_IN == fts_usb_detect_flag)
 						  charger_detection->usb_connected = USB_DETECT_IN;
