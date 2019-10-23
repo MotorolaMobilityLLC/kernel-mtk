@@ -62,7 +62,7 @@
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
-#define LCM_ID 0x00
+#define LCM_ID 0x12
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 #define MDELAY(n)       (lcm_util.mdelay(n))
 #define UDELAY(n)       (lcm_util.udelay(n))
