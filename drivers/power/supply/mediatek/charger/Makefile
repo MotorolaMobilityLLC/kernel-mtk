@@ -41,11 +41,4 @@ ifeq ($(BUILD_SMT),true)
   subdir-ccflags-y += -DSMT_VERSION
 endif
 
-ifeq ($(BUILD_DUAL_85),true)
-  subdir-ccflags-y += -DDUAL_85_VERSION
-endif
-
-#dengxiaopeng add dual 85 macro
-subdir-ccflags-$(CONFIG_ONTIM_DUAL_85) += -DDUAL_85_VERSION
-
 obj-$(CONFIG_CHARGER_BQ25601) += bq25601.o

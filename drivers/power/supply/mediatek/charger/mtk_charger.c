@@ -389,6 +389,7 @@ int charger_manager_enable_charging(struct charger_consumer *consumer,
 	return ret;
 }
 
+
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
