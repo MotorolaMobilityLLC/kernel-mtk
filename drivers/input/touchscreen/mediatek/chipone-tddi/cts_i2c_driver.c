@@ -5,6 +5,21 @@
 #include "cts_core.h"
 #include "cts_sysfs.h"
 
+/* BEGIN, Ontim,  wzx, 19/10/23, St-result :PASS,LCD and TP Device information */
+extern char lcd_info_pr[256];
+u16  device_fw_ver = 0;
+#include <ontim/ontim_dev_dgb.h>
+static char version[40] = "0x00";
+static char vendor_name[50] = "truly-icnl9911s";
+static char lcdname[50] = "truly-icnl9911s";
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version", version)
+DEV_ATTR_DEFINE("vendor", vendor_name)
+DEV_ATTR_DEFINE("lcdvendor", lcdname)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+/* END */
+
 bool cts_show_debug_log = false;
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
@@ -89,6 +104,14 @@ int cts_resume(struct chipone_ts_data *cts_data)
     return 0;
 }
 
+static void cts_tp_fw(struct cts_device *cts_dev)
+{
+      cts_fw_reg_readw_retry(cts_dev,
+                    CTS_DEVICE_FW_REG_VERSION, &device_fw_ver, 5, 0);
+      snprintf(version, sizeof(version)," %d.0 VID:0x00", device_fw_ver);
+      pr_info("version:%s", version);
+}
+
 #ifdef CONFIG_CTS_I2C_HOST
 static int cts_driver_probe(struct i2c_client *client,
         const struct i2c_device_id *id)
@@ -99,6 +122,12 @@ static int cts_driver_probe(struct spi_device *client)
     struct chipone_ts_data *cts_data = NULL;
     int ret = 0;
     pr_err("wzx 111111111\n");
+    /* BEGIN, Ontim,  wzx, 19/010/23, St-result :PASS,LCD and TP Device information */
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+       return -EIO;
+    }
+    /* END */
 #ifdef CONFIG_CTS_I2C_HOST
     cts_info("Probe i2c client: name='%s' addr=0x%02x flags=0x%02x irq=%d",
         client->name, client->addr, client->flags, client->irq);
@@ -225,7 +254,11 @@ static int cts_driver_probe(struct spi_device *client)
         cts_err("Start device failed %d", ret);
         goto err_free_irq;
     }
-
+    if(strstr(lcd_info_pr, "icnl9911s")){
+	   snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s" );
+    }
+    cts_tp_fw(&cts_data->cts_dev);
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 #ifdef CONFIG_MTK_PLATFORM
     tpd_load_status = 1;
 #endif /* CONFIG_MTK_PLATFORM */
