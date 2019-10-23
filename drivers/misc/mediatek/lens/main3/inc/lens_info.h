@@ -59,6 +59,7 @@
 #define AFDRV_MT9P017AF "MT9P017AF"
 #define AFDRV_OV8825AF "OV8825AF"
 #define AFDRV_WV511AAF "WV511AAF"
+#define AFDRV_DW9714K "DW9714K"
 
 /* Structures */
 struct stAF_MotorInfo {
