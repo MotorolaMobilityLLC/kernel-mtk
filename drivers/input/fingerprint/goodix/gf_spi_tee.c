@@ -25,6 +25,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
+#include <linux/of_gpio.h>
 #endif
 
 #ifdef CONFIG_COMPAT
@@ -78,7 +79,8 @@
 #ifdef CONFIG_SPI_MT65XX
 u32 gf_spi_speed = 1*1000000;
 #endif
-
+//MMI_STOPSHIP fingerprint: add for Q FingerPrint bringup
+extern int fingerprint_hw_reset(void);
 /*************************************************************/
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
@@ -246,16 +248,20 @@ static int gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 //		hwPowerOn(MT6331_POWER_LDO_VIBR, VOL_2800, "fingerprint");
 		enable = 0;
 		#ifdef CONFIG_OF
-		rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
-		if (0 != rc) {
-			gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_low.\n", __func__);
-		}
-		mdelay(15);
+        if(fingerprint_hw_reset() != 0){
+            gf_debug(INFO_LOG, "%s, goodix reset\n", __func__);
+            rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
+            if (0 != rc) {
+                gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_low.\n", __func__);
+            }
+            mdelay(15);
 
-		rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
-		if (0 != rc) {
-			gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_high.\n", __func__);
-		}
+            rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
+            if (0 != rc) {
+                gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_high.\n", __func__);
+            }
+        }
+		;
 		#endif
 	}
 	else if (!onoff && !enable) {
@@ -299,12 +305,15 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 {
 #ifdef CONFIG_OF
 	struct device_node *node;
-
 	node = of_find_compatible_node(NULL, NULL, "mediatek,fingerprint");
-	if (node) {
-		gf_dev->irq = irq_of_parse_and_map(node, 0);
+	int gpio = of_get_named_gpio(node, "int-gpios", 0);
 
-		gf_debug(INFO_LOG, "requested irq=%d\n", gf_dev->irq);
+	if (node) {
+		//gpio_direction_input(gpio);
+
+		//gf_dev->irq = irq_of_parse_and_map(node, 0);
+		gf_dev->irq = gpio_to_irq(gpio);
+		gf_debug(INFO_LOG, "requested gpio=%d irq=%d\n", gpio, gf_dev->irq);
 #ifndef CONFIG_MTK_EIC
 		irq_set_irq_wake(gf_dev->irq, 1);
 #else
@@ -318,9 +327,12 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 static void gf_hw_reset(struct gf_device *gf_dev, u8 delay)
 {
 #ifdef CONFIG_OF
-	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
-	mdelay(15);
-	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
+    if(fingerprint_hw_reset() != 0){
+    	gf_debug(INFO_LOG, "%s, goodix reset\n", __func__);
+        pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
+        mdelay(15);
+        pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
+    }
 #endif
 
 	if (delay) {
