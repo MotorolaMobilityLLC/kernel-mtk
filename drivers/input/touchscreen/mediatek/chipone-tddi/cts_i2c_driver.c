@@ -106,10 +106,13 @@ int cts_resume(struct chipone_ts_data *cts_data)
 
 static void cts_tp_fw(struct cts_device *cts_dev)
 {
-      cts_fw_reg_readw_retry(cts_dev,
+	u8 cts_fw = 0;
+       cts_fw_reg_readw_retry(cts_dev,
                     CTS_DEVICE_FW_REG_VERSION, &device_fw_ver, 5, 0);
-      snprintf(version, sizeof(version)," %d.0 VID:0x00", device_fw_ver);
-      pr_info("version:%s", version);
+	cts_fw = be16_to_cpup(&device_fw_ver);
+	pr_info("wzxver:0x%x", cts_fw);
+	snprintf(version, sizeof(version)," %d.0 VID:0x00", cts_fw);
+	pr_info("wzxversion:%s", version);
 }
 
 #ifdef CONFIG_CTS_I2C_HOST
