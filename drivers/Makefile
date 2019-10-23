@@ -6,6 +6,10 @@
 #
 subdir-ccflags-y += -Werror
 
+ifeq ($(BUILD_D85), YES)
+subdir-ccflags-y += -DDUAL_85_VERSION
+endif
+
 obj-y				+= irqchip/
 obj-y				+= bus/
 
