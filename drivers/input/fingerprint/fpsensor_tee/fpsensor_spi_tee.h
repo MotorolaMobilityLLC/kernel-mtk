@@ -17,9 +17,11 @@
 #define INFO_LOG    (1)
 #define DEBUG_LOG   (2)
 /* debug log setting */
-//static u8 fpsensor_debug_level = ERR_LOG;
+static u8 fpsensor_debug_level = ERR_LOG;
 #define fpsensor_debug(level, fmt, args...) do { \
+        if (fpsensor_debug_level >= level) {\
             printk("[fpsensor][SN=%d] " fmt, g_cmd_sn, ##args); \
+        } \
     } while (0)
 #define FUNC_ENTRY()  fpsensor_debug(DEBUG_LOG, "%s, %d, entry\n", __func__, __LINE__)
 #define FUNC_EXIT()   fpsensor_debug(DEBUG_LOG, "%s, %d, exit\n", __func__, __LINE__)

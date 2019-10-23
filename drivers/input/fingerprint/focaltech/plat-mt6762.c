@@ -33,6 +33,7 @@
 extern struct spi_device *g_spidev;
 extern void mt_spi_disable_master_clk(struct spi_device *ms);
 extern void mt_spi_enable_master_clk(struct spi_device *spidev);
+extern void fpsensor_spi_clk_enable(u8 bonoff);
 
 #if !defined(CONFIG_MTK_CLKMGR)
 //struct clk *g_context_spiclk = NULL;
@@ -156,13 +157,15 @@ int ff_ctl_free_pins(void)
 int ff_ctl_enable_spiclk(bool on)
 {
 	FF_LOGD("clock: '%s'.", on ? "enable" : "disabled");
-#if 0
+#if 1
 	/* Control the clock source. */
 	if (on && !g_context_enabled) {
-		mt_spi_enable_master_clk(g_spidev);
+//		mt_spi_enable_master_clk(g_spidev);
+		fpsensor_spi_clk_enable(1);
 		g_context_enabled = true;
 	} else if (!on && g_context_enabled) {
-		mt_spi_disable_master_clk(g_spidev);
+//		mt_spi_disable_master_clk(g_spidev);
+		fpsensor_spi_clk_enable(0);
 		g_context_enabled = false;
 	}
 #endif
