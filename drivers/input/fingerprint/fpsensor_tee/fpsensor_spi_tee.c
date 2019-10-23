@@ -234,11 +234,11 @@ static void fpsensor_hw_reset(int delay)
     FUNC_EXIT();
     return;
 }
-static void fpsensor_spi_clk_enable(u8 bonoff)
+void fpsensor_spi_clk_enable(u8 bonoff)
 {
 #if defined(USE_SPI_BUS)
     if (bonoff == 0) {
-        //mt_spi_disable_master_clk(g_fpsensor->spi);
+        mt_spi_disable_master_clk(g_fpsensor_spidev);
     } else {
         mt_spi_enable_master_clk(g_fpsensor_spidev);
     }
@@ -250,6 +250,7 @@ static void fpsensor_spi_clk_enable(u8 bonoff)
     }
 #endif
 }
+EXPORT_SYMBOL_GPL(fpsensor_spi_clk_enable);
 
 static void setRcvIRQ(int val)
 {
@@ -594,7 +595,6 @@ static int fpsensor_dev_setup(fpsensor_data_t *fpsensor)
     int fpsensor_dev_minor = 0;
 
     FUNC_ENTRY();
-	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
 
     if (fpsensor_dev_major) {
         dev_no = MKDEV(fpsensor_dev_major, fpsensor_dev_minor);
@@ -703,7 +703,6 @@ static int fpsensor_probe(struct platform_device *spi)
     fpsensor_data_t *fpsensor_dev = NULL;
 
     FUNC_ENTRY();
-	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
 
     /* Allocate driver data */
     fpsensor_dev = kzalloc(sizeof(*fpsensor_dev), GFP_KERNEL);
@@ -712,7 +711,6 @@ static int fpsensor_probe(struct platform_device *spi)
         fpsensor_debug(ERR_LOG, "%s, Failed to alloc memory for fpsensor device.\n", __func__);
         goto out;
     }
-	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
 
     /* Initialize the driver data */
 	g_fpsensor_spidev = spi;
@@ -732,7 +730,6 @@ static int fpsensor_probe(struct platform_device *spi)
     }
     fpsensor_spi_clk_enable(1);
 	init_waitqueue_head(&fpsensor_dev->wq_irq_return);
-	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
 
 #ifdef CONFIG_PM_WAKELOCKS
 	wakeup_source_init(&g_fpsensor->ttw_wl, "fpsensor_ttw_wl");
@@ -748,9 +745,6 @@ static int fpsensor_probe(struct platform_device *spi)
 #endif
 
     fpsensor_debug(INFO_LOG, "%s finished, driver version: %s\n", __func__, FPSENSOR_SPI_VERSION);
-	printk("%s +%d, setup!!!!!\n", __func__, __LINE__);
-
-
     goto out;
 
 release_drv_data:
