@@ -68,10 +68,12 @@ static bool bNeedSetNormalMode = KAL_FALSE;
 
 #endif
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
+extern char back_cam_efuse_id[64];
+extern char back_cam_name[64];
+extern u32 dual_main_sensorid;
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K3P9SXT_SENSOR_ID,
+	.sensor_id = S5K3P9SX_SENSOR_ID,
 	#if VENDOR_EDIT
 	/*xxxx add */
 	.module_id = 0x01,	//
@@ -4242,6 +4244,25 @@ static kal_uint16 read_module_id(void)
 	return get_byte;
 }
 #endif
+static void get_back_cam_efuse_id(void)
+{
+	int i = 0;
+	kal_uint8 efuse_id;
+	write_cmos_sensor(0x0342, 0x13E0);
+	write_cmos_sensor(0x0100, 0x01);
+	mdelay(50);
+	//write_cmos_sensor(0x0000, 0x50);
+	write_cmos_sensor(0x0a02, 0x0000);
+	write_cmos_sensor(0x0a00, 0x01);
+	//write_cmos_sensor(0x0000, 0x10);
+	mdelay(10);
+	for(i=0;i<16;i++)
+	{
+		efuse_id = read_cmos_sensor(0x0a24+i);
+		sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
+		mdelay(1);
+	}
+}
 /*************************************************************************
 * FUNCTION
 *	get_imgsensor_id
@@ -4271,8 +4292,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 			pr_err("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n", read_cmos_sensor_8(0x0000), read_cmos_sensor_8(0x0001), read_cmos_sensor(0x0000));
-                  	//imgsensor_info.sensor_id
-			if (*sensor_id == 0x3109) {
+			if (*sensor_id == imgsensor_info.sensor_id) {
 				//#if VENDOR_EDIT
 				#if 0
 				imgsensor_info.module_id = read_module_id();
@@ -4284,12 +4304,18 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor_info.module_id = read_module_id();
 				if(0x60 == imgsensor_info.module_id)
 				{
+					*sensor_id = S5K3P9SXT_SENSOR_ID;
+					dual_main_sensorid = *sensor_id;
+					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5k3p9sx_TXD", 64);
 					pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 				}else if(0x50 != imgsensor_info.module_id)
 				{
+					*sensor_id = S5K3P9SXT_SENSOR_ID;
+					dual_main_sensorid = *sensor_id;
+					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5k3p9sx_nootp", 64);
 					pr_err("wrong module id, i2c write id: 0x%x, sensor id: 0x%x, module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id,imgsensor_info.module_id);
@@ -4302,7 +4328,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if (*sensor_id != imgsensor_info.sensor_id) {
+	if (*sensor_id != S5K3P9SXT_SENSOR_ID) {
 		// if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
