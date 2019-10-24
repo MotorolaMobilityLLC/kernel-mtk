@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     gc2375hmipi_Sensor.h
+ *     blackjack_tsp_gc2375hmipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,23 +26,23 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _GC2375HMIPI_SENSOR_H
-#define _GC2375HMIPI_SENSOR_H
+#ifndef _BLACKJACK_TSP_GC2375HMIPI_SENSOR_H
+#define _BLACKJACK_TSP_GC2375HMIPI_SENSOR_H
 
 /* SENSOR MIRROR FLIP INFO */
-#define GC2375H_MIRROR_FLIP_ENABLE    0
-#if GC2375H_MIRROR_FLIP_ENABLE
-#define GC2375H_MIRROR         0xd7
-#define GC2375H_BLK_Select1_H  0x3c
-#define GC2375H_BLK_Select1_L  0x00
-#define GC2375H_BLK_Select2_H  0xc0
-#define GC2375H_BLK_Select2_L  0x00
+#define BLACKJACK_TSP_GC2375H_MIRROR_FLIP_ENABLE    0
+#if BLACKJACK_TSP_GC2375H_MIRROR_FLIP_ENABLE
+#define BLACKJACK_TSP_GC2375H_MIRROR         0xd7
+#define BLACKJACK_TSP_GC2375H_BLK_Select1_H  0x3c
+#define BLACKJACK_TSP_GC2375H_BLK_Select1_L  0x00
+#define BLACKJACK_TSP_GC2375H_BLK_Select2_H  0xc0
+#define BLACKJACK_TSP_GC2375H_BLK_Select2_L  0x00
 #else
-#define GC2375H_MIRROR         0xd4
-#define GC2375H_BLK_Select1_H  0x00
-#define GC2375H_BLK_Select1_L  0x3c
-#define GC2375H_BLK_Select2_H  0x00
-#define GC2375H_BLK_Select2_L  0x03
+#define BLACKJACK_TSP_GC2375H_MIRROR         0xd4
+#define BLACKJACK_TSP_GC2375H_BLK_Select1_H  0x00
+#define BLACKJACK_TSP_GC2375H_BLK_Select1_L  0x3c
+#define BLACKJACK_TSP_GC2375H_BLK_Select2_H  0x00
+#define BLACKJACK_TSP_GC2375H_BLK_Select2_L  0x03
 #endif
 
 
