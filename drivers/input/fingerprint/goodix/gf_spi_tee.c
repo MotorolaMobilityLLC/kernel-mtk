@@ -79,8 +79,7 @@
 #ifdef CONFIG_SPI_MT65XX
 u32 gf_spi_speed = 1*1000000;
 #endif
-//MMI_STOPSHIP fingerprint: add for Q FingerPrint bringup
-extern int fingerprint_hw_reset(void);
+
 /*************************************************************/
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
@@ -248,20 +247,16 @@ static int gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 //		hwPowerOn(MT6331_POWER_LDO_VIBR, VOL_2800, "fingerprint");
 		enable = 0;
 		#ifdef CONFIG_OF
-        if(fingerprint_hw_reset() != 0){
-            gf_debug(INFO_LOG, "%s, goodix reset\n", __func__);
-            rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
-            if (0 != rc) {
-                gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_low.\n", __func__);
-            }
-            mdelay(15);
+		rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
+		if (0 != rc) {
+			gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_low.\n", __func__);
+		}
+		mdelay(15);
 
-            rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
-            if (0 != rc) {
-                gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_high.\n", __func__);
-            }
-        }
-		;
+		rc = pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
+		if (0 != rc) {
+			gf_debug(ERR_LOG, "%s, pinctrl_select_state failed:pins_reset_high.\n", __func__);
+		}
 		#endif
 	}
 	else if (!onoff && !enable) {
@@ -305,6 +300,7 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 {
 #ifdef CONFIG_OF
 	struct device_node *node;
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,fingerprint");
 	int gpio = of_get_named_gpio(node, "int-gpios", 0);
 
@@ -327,12 +323,9 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 static void gf_hw_reset(struct gf_device *gf_dev, u8 delay)
 {
 #ifdef CONFIG_OF
-    if(fingerprint_hw_reset() != 0){
-    	gf_debug(INFO_LOG, "%s, goodix reset\n", __func__);
-        pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
-        mdelay(15);
-        pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
-    }
+	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
+	mdelay(15);
+	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
 #endif
 
 	if (delay) {

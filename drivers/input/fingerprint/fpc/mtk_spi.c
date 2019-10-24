@@ -54,9 +54,6 @@ static const char * const pctl_names[] = {
 	"fingerprint_reset_high",
 };
 
-int fingerprint_hw_reset(void);
-// MMI_STOPSHIP fingerprint: add for Q FingerPrint bringup
-struct  fpc_data *m_fpc;
 struct fpc_data {
 	struct device *dev;
 	struct spi_device *spidev;
@@ -119,41 +116,37 @@ static int set_clks(struct fpc_data *fpc, bool enable)
 	return rc;
 }
 
-int fingerprint_hw_reset()
+static int hw_reset(struct  fpc_data *fpc)
 {
-    int irq_gpio;
-    struct device *dev = m_fpc->dev;
-    if (m_fpc == NULL || m_fpc->pinctrl_fpc == NULL || IS_ERR(m_fpc->pinctrl_fpc)) {
-        dev_err(dev, "fingerprint_hw_reset: Cannot find pinctrl_fpc .\n");
-        return -1;
-    }
-    dev_info(dev, "fingerprint_hw_reset\n");
-    select_pin_ctl(m_fpc, "fingerprint_reset_high");
-    usleep_range(FPC_RESET_HIGH1_US, FPC_RESET_HIGH1_US + 100);
+	int irq_gpio;
+	struct device *dev = fpc->dev;
 
-    select_pin_ctl(m_fpc, "fingerprint_reset_low");
-    usleep_range(FPC_RESET_LOW_US, FPC_RESET_LOW_US + 100);
+	select_pin_ctl(fpc, "fingerprint_reset_high");
+	usleep_range(FPC_RESET_HIGH1_US, FPC_RESET_HIGH1_US + 100);
 
-    select_pin_ctl(m_fpc, "fingerprint_reset_high");
-    usleep_range(FPC_RESET_HIGH2_US, FPC_RESET_HIGH2_US + 100);
+	select_pin_ctl(fpc, "fingerprint_reset_low");
+	usleep_range(FPC_RESET_LOW_US, FPC_RESET_LOW_US + 100);
 
-    irq_gpio = gpio_get_value(m_fpc->irq_gpio);
-    dev_info(dev, "IRQ after reset %d\n", irq_gpio);
+	select_pin_ctl(fpc, "fingerprint_reset_high");
+	usleep_range(FPC_RESET_HIGH2_US, FPC_RESET_HIGH2_US + 100);
 
-    dev_info(dev, "Using GPIO#%d as IRQ.\n", m_fpc->irq_gpio);
-    dev_info(dev, "Using GPIO#%d as RST.\n", m_fpc->rst_gpio);
+	irq_gpio = gpio_get_value(fpc->irq_gpio);
+	dev_info(dev, "IRQ after reset %d\n", irq_gpio);
 
-    return 0;
+	dev_info(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
+	dev_info(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
+
+	return 0;
 }
 
 static ssize_t hw_reset_set(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	int rc;
-	//struct  fpc_data *fpc = dev_get_drvdata(dev);
+	struct  fpc_data *fpc = dev_get_drvdata(dev);
 
 	if (!strncmp(buf, "reset", strlen("reset"))) {
-		rc = fingerprint_hw_reset();
+		rc = hw_reset(fpc);
 		return rc ? rc : count;
 	} else {
 		return -EINVAL;
@@ -316,18 +309,13 @@ static ssize_t hw_enable_set(struct device *dev,
 
 	if (!strncmp(buf, "enable", strlen("enable"))) {
 		dev_info(dev, "%s: enable\n", __func__);
-		struct pinctrl *pinctrl = devm_pinctrl_get(dev);
-		if (IS_ERR(pinctrl)) {
-					int rc = PTR_ERR(pinctrl);
-					dev_err(dev, "Cannot find pinctrl_fpc rc = %d.\n", rc);
-		}
 		fpc_dts_request(fpc);
 		fpc_irq_request(fpc);
-		fingerprint_hw_reset();
+		hw_reset(fpc);
 	} else if (!strncmp(buf, "disable", strlen("disable"))) {
 		dev_info(dev, "%s: disable\n", __func__);
 		fpc_irq_release(fpc);
-		//fpc_dts_release(fpc);
+		fpc_dts_release(fpc);
 	} else {
 		dev_info(dev, "%s: unkown!\n", __func__);
 		ret = -EINVAL;
@@ -445,7 +433,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 	fpc->spidev->irq = 0; /*SPI_MODE_0*/
 
 	wakeup_source_init(&fpc->ttw_wl, "fpc_ttw_wl");
-	m_fpc = fpc;
+
 	rc = sysfs_create_group(&dev->kobj, &fpc_attribute_group);
 	if (rc) {
 		dev_err(dev, "could not create sysfs\n");
