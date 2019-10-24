@@ -97,9 +97,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
 
+		.mipi_pixel_rate = 278000000,
 		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
-		.mipi_pixel_rate = 277000000,
 	},
 	.cap = {
 		.pclk = 433300000,	/* record different mode's pclk */
@@ -118,9 +118,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 * by different scenario
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 513000000,
 		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
-		.mipi_pixel_rate = 512000000,
 	},
 	.custom1 = {
 		.pclk = 320000000,	/* record different mode's pclk */
@@ -139,9 +139,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 * by different scenario
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 386000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 240,
-		.mipi_pixel_rate = 385000000,
 	},
 	.custom2 = {
 		.pclk = 300000000,	/* record different mode's pclk */
@@ -159,9 +159,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 * by different scenario
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 358000000,
 		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
-		.mipi_pixel_rate = 358000000,
 	},
 	.custom3 = {
 		.pclk = 233300000,	/* record different mode's pclk */
@@ -181,9 +181,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
 
+		.mipi_pixel_rate = 277000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 240,
-		.mipi_pixel_rate = 276000000,
 	},
 	.normal_video = {
 		.pclk = 433300000,	/* record different mode's pclk */
@@ -203,9 +203,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
 
+		.mipi_pixel_rate = 513000000,
 		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
-		.mipi_pixel_rate = 512000000,
 	},
 	.hs_video = {
 		.pclk = 594000000,	/* record different mode's pclk */
@@ -225,9 +225,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
 
+		.mipi_pixel_rate = 486000000,
 		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 482000000,
 	},
 	.slim_video = {
 		.pclk = 600000000,	/* record different mode's pclk */
@@ -247,9 +247,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
 
+		.mipi_pixel_rate = 484000000,
 		/* following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
-		.mipi_pixel_rate = 480000000,
 	},
 
 	.margin = 10,		/* sensor framelength & shutter margin */
@@ -275,17 +275,15 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	/* support sensor mode num ,don't support Slow motion */
 	.sensor_mode_num = 8,
-
-	.frame_time_delay_frame = 2,
-
-	.cap_delay_frame = 2,	/* enter capture delay frame num */
-	.pre_delay_frame = 2,	/* enter preview delay frame num */
-	.custom1_delay_frame = 2,
-	.custom2_delay_frame = 2,	/* enter capture delay frame num */
-	.custom3_delay_frame = 2,
-	.video_delay_frame = 2,	/* enter video delay frame num */
-	.hs_video_delay_frame = 2, /* enter high speed video  delay frame num */
-	.slim_video_delay_frame = 2,	/* enter slim video delay frame num */
+	.frame_time_delay_frame = 3,
+	.cap_delay_frame = 3,	/* enter capture delay frame num */
+	.pre_delay_frame = 3,	/* enter preview delay frame num */
+	.custom1_delay_frame = 3,
+	.custom2_delay_frame = 3,	/* enter capture delay frame num */
+	.custom3_delay_frame = 3,
+	.video_delay_frame = 3,	/* enter video delay frame num */
+	.hs_video_delay_frame = 3, /* enter high speed video  delay frame num */
+	.slim_video_delay_frame = 3,	/* enter slim video delay frame num */
 
 	.isp_driving_current = ISP_DRIVING_8MA,	/* mclk driving current */
 
@@ -727,27 +725,20 @@ static void set_shutter(kal_uint32 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 
-	/* Just should be called in capture case with long exposure */
-	if (shutter == 6) {
-		/*
-		 * return to normal mode from long exposure mode.
-		 */
-		write_cmos_sensor(0x0100, 0x00);
-		write_cmos_sensor(0x3004, 0x00);
-		write_cmos_sensor(0x0342, imgsensor.line_length >> 8);
-		write_cmos_sensor(0x0343, imgsensor.line_length & 0xFF);
-		write_cmos_sensor(0x0100, 0x01);
-	}
+	if (shutter >
+	    (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
+		long_exp_times = shutter /
+			(imgsensor_info.max_frame_length
+			 - imgsensor_info.margin);
 
-if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
-	long_exp_times =
-	    shutter / (imgsensor_info.max_frame_length - imgsensor_info.margin);
+		if (shutter %
+		    (imgsensor_info.max_frame_length - imgsensor_info.margin))
+			long_exp_times++;
 
-	if (shutter % (imgsensor_info.max_frame_length - imgsensor_info.margin))
-		long_exp_times++;
-
-	if (long_exp_times > 128)
-		long_exp_times = 128;
+		if (long_exp_times > 128)
+			long_exp_times = 128;
+		if (long_exp_times < 1)
+			long_exp_times = 1;
 
 	long_exp_shift = fls(long_exp_times) - 1;
 
@@ -760,44 +751,50 @@ if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
 		write_cmos_sensor(0x3004, long_exp_shift);
 		shutter = shutter / long_exp_times;
 
-if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
-	line_length =
-shutter * 4296 / (imgsensor_info.max_frame_length - imgsensor_info.margin);
+		if (shutter > (imgsensor_info.max_frame_length -
+			       imgsensor_info.margin)) {
+			line_length = shutter * 4296 /
+				(imgsensor_info.max_frame_length
+				 - imgsensor_info.margin);
 
 		line_length = (line_length + 1) / 2 * 2;
 }
 
-	spin_lock(&imgsensor_drv_lock);
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
+		spin_lock(&imgsensor_drv_lock);
+		if (shutter >
+		    imgsensor.min_frame_length - imgsensor_info.margin)
+			imgsensor.frame_length =
+				shutter + imgsensor_info.margin;
+		else
+			imgsensor.frame_length = imgsensor.min_frame_length;
+		if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+			imgsensor.frame_length =
+				imgsensor_info.max_frame_length;
+		spin_unlock(&imgsensor_drv_lock);
 
-	/* line_length range is 4296 <-> 32766 */
+		/* line_length range is 4296 <-> 32766 */
 
-	if (line_length > 32766) {
-		/* 20171116ken : fix for coding style */
-		line_length = 32766;
-	}
+		if (line_length > 32766) {
+			/* 20171116ken : fix for coding style */
+			line_length = 32766;
+		}
 
-	if (line_length < 4296) {
-		/* 20171116ken : fix for coding style */
-		line_length = 4296;
-	}
+		if (line_length < 4296) {
+			/* 20171116ken : fix for coding style */
+			line_length = 4296;
+		}
 
 		write_cmos_sensor(0x0342, line_length >> 8);
 		write_cmos_sensor(0x0343, line_length & 0xFF);
-}
+	}
 
-	shutter =
-(shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+	shutter = (shutter < imgsensor_info.min_shutter)
+		? imgsensor_info.min_shutter : shutter;
 
-	shutter =
-	  (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
-	  ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+	shutter = (shutter >
+		   (imgsensor_info.max_frame_length - imgsensor_info.margin))
+		? (imgsensor_info.max_frame_length - imgsensor_info.margin)
+		: shutter;
 
 	if (imgsensor.autoflicker_en) {
 		realtime_fps = imgsensor.pclk
@@ -811,7 +808,8 @@ shutter * 4296 / (imgsensor_info.max_frame_length - imgsensor_info.margin);
 			/* Extend frame length */
 			write_cmos_sensor(0x0104, 0x01);
 			write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
-		      write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
+			write_cmos_sensor(0x0341,
+					  imgsensor.frame_length & 0xFF);
 			write_cmos_sensor(0x0104, 0x00);
 		}
 
@@ -1672,7 +1670,6 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
 }				/* preview_setting */
 
 static void capture_setting(kal_uint16 currefps)
@@ -1760,8 +1757,6 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
-	write_cmos_sensor(0x0100, 0x01);	/* stream on? */
-	pr_info("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }				/* capture setting */
 
 static void custom1_setting(void)
@@ -1847,8 +1842,6 @@ static void custom1_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void hd_4k_setting(void)
@@ -1941,7 +1934,6 @@ static void hd_4k_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom3_setting(void)
@@ -2037,8 +2029,6 @@ static void custom3_setting(void)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend*/
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -2126,9 +2116,6 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
-
-	write_cmos_sensor(0x0100, 0x01);
-	pr_info("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }
 
 static void hs_video_setting(void)
@@ -2222,8 +2209,6 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void slim_video_setting(void)
@@ -2317,8 +2302,6 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 
@@ -2359,21 +2342,19 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 
 	do {
+		*sensor_id = return_sensor_id();
 		ret = imx386_read_otp(0x0004, &module_id);
-		if (ret >= 0) {
-			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				pr_info(
-				"Get imx386 sensor success!i2c write id: 0x%x, sensor id: 0x%x, module_id:0x%x\n",
-				imgsensor.i2c_write_id, *sensor_id, module_id);
+		if ((ret >= 0) && (*sensor_id == imgsensor_info.sensor_id)) {
+			pr_info(
+			"Get imx386 sensor success!i2c write id: 0x%x, sensor id: 0x%x, module_id:0x%x\n",
+			imgsensor.i2c_write_id, *sensor_id, module_id);
 
-				*sensor_id = IMX386_SENSOR_ID;
-				pdaf_cal_data_offset = PDAF_CAL_DATA_OFFSET_C1;
-				spc_start_addr = SPC_START_ADDR_C1;
+			*sensor_id = IMX386_SENSOR_ID;
+			pdaf_cal_data_offset = PDAF_CAL_DATA_OFFSET_C1;
+			spc_start_addr = SPC_START_ADDR_C1;
 
 				/* main_module_id = IMX386_SENSOR_ID; */
 				goto otp_read;
-			}
 		}
 
 		pr_info(
