@@ -149,6 +149,37 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
+/* GC */
+#if defined(GC5035_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_GC5035MIPI_RAW,
+		{
+			{PDN, Vol_High, 0},
+			{RST, Vol_Low, 0},
+			{AVDD, Vol_2800, 0},
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_1200, 0},
+			{SensorMCLK, Vol_High, 1},
+			{PDN, Vol_Low, 0},
+			{RST, Vol_High, 10}
+		},
+	},
+#endif
+#if defined(GC2375H_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_GC2375H_MIPI_RAW,
+		{
+			{PDN, Vol_High, 0},
+			{RST, Vol_Low, 0},
+			{AVDD, Vol_2800, 1},
+			{DOVDD, Vol_1800, 1},
+			{DVDD, Vol_1800, 0},
+			{SensorMCLK, Vol_High, 0},
+			{PDN, Vol_Low, 0},
+			{RST, Vol_High, 10},
+		},
+	},
+#endif
 #if defined(S5K3L6_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_S5K3L6_MIPI_RAW,
