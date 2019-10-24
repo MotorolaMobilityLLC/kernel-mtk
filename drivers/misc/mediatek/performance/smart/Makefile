@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 #
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763" "mt6757"))
 obj-y += $(MTK_PLATFORM)/
 else
 obj-y += common/
