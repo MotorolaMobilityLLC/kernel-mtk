@@ -606,11 +606,15 @@ static int tpd_probe(struct platform_device *pdev)
 #endif
 #endif
 	}
-
+/* zhangyunfeng [resolve 720*1600 resolution TP buttom key not work well issue] start*/
+/*hope to remove for resolve 720*1600 resolution TP buttom key not work well issue*/
+/*
 	if (2560 == TPD_RES_X)
 		TPD_RES_X = 2048;
 	if (1600 == TPD_RES_Y)
 		TPD_RES_Y = 1536;
+*/
+/* zhangyunfeng [resolve 720*1600 resolution TP buttom key not work well issue] end*/
 	pr_debug("mtk_tpd: TPD_RES_X = %lu, TPD_RES_Y = %lu\n",
 		TPD_RES_X, TPD_RES_Y);
 
