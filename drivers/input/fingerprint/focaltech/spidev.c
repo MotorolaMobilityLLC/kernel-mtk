@@ -726,8 +726,6 @@ static int spidev_probe(struct spi_device *spi)
 	struct spidev_data	*spidev;
 	int			status;
 	unsigned long		minor;
-	
-	printk("%s +%d, entry >>>>>\n", __func__, __LINE__);
 
 	/*
 	 * spidev should never be referenced in DT without a specific
@@ -739,13 +737,11 @@ static int spidev_probe(struct spi_device *spi)
 		WARN_ON(spi->dev.of_node &&
 			!of_match_device(spidev_dt_ids, &spi->dev));
 	}
-	printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 
 	/* Allocate driver data */
 	spidev = kzalloc(sizeof(*spidev), GFP_KERNEL);
 	if (!spidev)
 		return -ENOMEM;
-	printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 
 	/* Initialize the driver data */
 	spidev->spi = spi;
@@ -762,7 +758,6 @@ static int spidev_probe(struct spi_device *spi)
 	if (minor < N_SPI_MINORS) {
 		struct device *dev;
 
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 		spidev->devt = MKDEV(g_spidev_major, minor);
 		dev = device_create(spidev_class, &spi->dev, spidev->devt,
 				    spidev, "spidev%d.%d",
@@ -773,21 +768,17 @@ static int spidev_probe(struct spi_device *spi)
 		status = -ENODEV;
 	}
 	if (status == 0) {
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 		set_bit(minor, minors);
 		list_add(&spidev->device_entry, &device_list);
 	}
-	printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 	mutex_unlock(&device_list_lock);
 
 	spidev->speed_hz = spi->max_speed_hz;
 
 	if (status == 0) {
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 		spi_set_drvdata(spi, spidev);
 	} else {
 		kfree(spidev);
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 	}
 
 	/* Assign the spidev instance. */
@@ -795,7 +786,6 @@ static int spidev_probe(struct spi_device *spi)
     ff_spidev_info.bus = spi->master->bus_num;
     ff_spidev_info.cs  = spi->chip_select;
 
-	printk("%s +%d, exit <<<<<\n", __func__, __LINE__);
 
 	return status;
 }
@@ -851,32 +841,25 @@ static struct spi_driver spidev_spi_driver = {
 	 * that will key udev/mdev to add/remove /dev nodes.  Last, register
 	 * the driver which manages those device numbers.
 	 */
-	printk("%s +%d, entry >>>>>\n", __func__, __LINE__);
 	BUILD_BUG_ON(N_SPI_MINORS > 256);
 	status = register_chrdev(/* SPIDEV_MAJOR */0, "spi", &spidev_fops);
 	if (status < 0)
 		return status;
-
-	printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 
 	/* Assign the dynamic major number. */
 	g_spidev_major = status;
 
 	spidev_class = class_create(THIS_MODULE, "spidev");
 	if (IS_ERR(spidev_class)) {
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 		unregister_chrdev(g_spidev_major, spidev_spi_driver.driver.name);
 		return PTR_ERR(spidev_class);
 	}
-	printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 
 	status = spi_register_driver(&spidev_spi_driver);
 	if (status < 0) {
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 		class_destroy(spidev_class);
 		unregister_chrdev(g_spidev_major, spidev_spi_driver.driver.name);
 	}
-	printk("%s +%d, name=%s, exit <<<<<\n", __func__, __LINE__, spidev_spi_driver.driver.name);
 	return status;
 }
 /* module_init(spidev_init); */
