@@ -11,4 +11,4 @@
 # GNU General Public License for more details.
 #
 
-obj-y += gc2375hmipi_Sensor.o
+obj-y += blackjack_tsp_gc2375hmipi_Sensor.o

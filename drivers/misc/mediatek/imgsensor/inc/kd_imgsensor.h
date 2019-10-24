@@ -539,6 +539,11 @@
 #define SENSOR_DRVNAME_OV13870_MIPI_RAW_5MP     "ov13870_mipi_raw_5mp"
 #define SENSOR_DRVNAME_OV8856_MIPI_RAW_5MP      "ov8856_mipi_raw_5mp"
 
+/*blackjack*/
+#define SENSOR_DRVNAME_BLACKJACK_TSP_GC2375H_MIPI_RAW 	"blackjack_tsp_gc2375h_mipi_raw"
+
+#define BLACKJACK_TSP_GC2375H_SENSOR_ID 	0x2375
+
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
 #endif              /* _KD_IMGSENSOR_H */
