@@ -133,3 +133,13 @@ config CHARGER_BQ25601
 	  It depends on config MTK_SMART_BATTERY
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ25601 is used.
+
+config MTK_BQ25890_SUPPORT
+	bool "Charger driver for TI BQ25890 charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  This is to enable MediaTek support to BQ25890.
+	  It also supports BC1.2 function.
+	  It depends on config MTK_CHARGER.
+	  Say yes to enable BQ25890 charger driver.
