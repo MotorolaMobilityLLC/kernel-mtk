@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2017-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2017-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -141,6 +141,7 @@ end:
 }
 
 static const struct file_operations fops_string = {
+	.owner = THIS_MODULE,
 	.read = param_string_get,
 	.write = param_string_set,
 	.open = simple_open,

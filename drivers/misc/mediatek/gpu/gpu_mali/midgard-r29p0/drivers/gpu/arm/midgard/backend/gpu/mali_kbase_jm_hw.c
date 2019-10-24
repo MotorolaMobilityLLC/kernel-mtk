@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2010-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2010-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -714,32 +714,15 @@ void kbasep_job_slot_soft_or_hard_stop_do_action(struct kbase_device *kbdev,
 #endif
 }
 
-void kbase_backend_jm_kill_jobs_from_kctx(struct kbase_context *kctx)
+void kbase_backend_jm_kill_running_jobs_from_kctx(struct kbase_context *kctx)
 {
-	unsigned long flags;
-	struct kbase_device *kbdev;
+	struct kbase_device *kbdev = kctx->kbdev;
 	int i;
 
-	KBASE_DEBUG_ASSERT(kctx != NULL);
-	kbdev = kctx->kbdev;
-	KBASE_DEBUG_ASSERT(kbdev != NULL);
-
-	/* Cancel any remaining running jobs for this kctx  */
-	mutex_lock(&kctx->jctx.lock);
-	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
-
-	/* Invalidate all jobs in context, to prevent re-submitting */
-	for (i = 0; i < BASE_JD_ATOM_COUNT; i++) {
-		if (!work_pending(&kctx->jctx.atoms[i].work))
-			kctx->jctx.atoms[i].event_code =
-						BASE_JD_EVENT_JOB_CANCELLED;
-	}
+	lockdep_assert_held(&kbdev->hwaccess_lock);
 
 	for (i = 0; i < kbdev->gpu_props.num_job_slots; i++)
 		kbase_job_slot_hardstop(kctx, i, NULL);
-
-	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
-	mutex_unlock(&kctx->jctx.lock);
 }
 
 void kbase_job_slot_ctx_priority_check_locked(struct kbase_context *kctx,
@@ -1309,7 +1292,7 @@ static void kbasep_try_reset_gpu_early_locked(struct kbase_device *kbdev)
 	/* To prevent getting incorrect registers when dumping failed job,
 	 * skip early reset.
 	 */
-	if (kbdev->job_fault_debug != false)
+	if (atomic_read(&kbdev->job_fault_debug) > 0)
 		return;
 
 	/* Check that the reset has been committed to (i.e. kbase_reset_gpu has

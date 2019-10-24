@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2011-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2011-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -2343,6 +2343,8 @@ static void js_return_worker(struct work_struct *data)
 	mutex_unlock(&js_devdata->queue_mutex);
 
 	katom->atom_flags &= ~KBASE_KATOM_FLAG_HOLDING_CTX_REF;
+	WARN_ON(kbasep_js_has_atom_finished(&retained_state));
+
 	kbasep_js_runpool_release_ctx_and_katom_retained_state(kbdev, kctx,
 							&retained_state);
 
@@ -2701,7 +2703,6 @@ void kbase_js_zap_context(struct kbase_context *kctx)
 	struct kbase_device *kbdev = kctx->kbdev;
 	struct kbasep_js_device_data *js_devdata = &kbdev->js_data;
 	struct kbasep_js_kctx_info *js_kctx_info = &kctx->jctx.sched_info;
-	int js;
 
 	/*
 	 * Critical assumption: No more submission is possible outside of the
@@ -2757,6 +2758,7 @@ void kbase_js_zap_context(struct kbase_context *kctx)
 	 */
 	if (!kbase_ctx_flag(kctx, KCTX_SCHEDULED)) {
 		unsigned long flags;
+		int js;
 
 		spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
 		for (js = 0; js < kbdev->gpu_props.num_job_slots; js++) {
@@ -2822,8 +2824,7 @@ void kbase_js_zap_context(struct kbase_context *kctx)
 		/* Cancel any remaining running jobs for this kctx - if any.
 		 * Submit is disallowed which takes effect immediately, so no
 		 * more new jobs will appear after we do this. */
-		for (js = 0; js < kbdev->gpu_props.num_job_slots; js++)
-			kbase_job_slot_hardstop(kctx, js, NULL);
+		kbase_backend_jm_kill_running_jobs_from_kctx(kctx);
 
 		spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
 		mutex_unlock(&js_kctx_info->ctx.jsctx_mutex);

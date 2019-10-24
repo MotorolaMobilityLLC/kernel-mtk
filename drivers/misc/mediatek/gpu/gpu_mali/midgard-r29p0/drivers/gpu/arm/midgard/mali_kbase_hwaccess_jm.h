@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2014-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -247,14 +247,16 @@ void kbase_job_check_leave_disjoint(struct kbase_device *kbdev,
 		struct kbase_jd_atom *target_katom);
 
 /**
- * kbase_backend_jm_kill_jobs_from_kctx - Kill all jobs that are currently
- *                                        running from a context
+ * kbase_backend_jm_kill_running_jobs_from_kctx - Kill all jobs that are
+ *                               currently running on GPU from a context
  * @kctx: Context pointer
  *
  * This is used in response to a page fault to remove all jobs from the faulting
  * context from the hardware.
+ *
+ * Caller must hold hwaccess_lock.
  */
-void kbase_backend_jm_kill_jobs_from_kctx(struct kbase_context *kctx);
+void kbase_backend_jm_kill_running_jobs_from_kctx(struct kbase_context *kctx);
 
 /**
  * kbase_jm_wait_for_zero_jobs - Wait for context to have zero jobs running, and

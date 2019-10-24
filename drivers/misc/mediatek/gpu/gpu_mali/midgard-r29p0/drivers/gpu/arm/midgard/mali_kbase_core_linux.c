@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2010-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2010-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -82,6 +82,7 @@
 #include <mali_kbase_sync.h>
 #endif /* CONFIG_SYNC || CONFIG_SYNC_FILE */
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/delay.h>
 #include <linux/log2.h>
 
@@ -363,6 +364,7 @@ static ssize_t read_ctx_infinite_cache(struct file *f, char __user *ubuf, size_t
 }
 
 static const struct file_operations kbase_infinite_cache_fops = {
+	.owner = THIS_MODULE,
 	.open = simple_open,
 	.write = write_ctx_infinite_cache,
 	.read = read_ctx_infinite_cache,
@@ -412,6 +414,7 @@ static ssize_t read_ctx_force_same_va(struct file *f, char __user *ubuf,
 }
 
 static const struct file_operations kbase_force_same_va_fops = {
+	.owner = THIS_MODULE,
 	.open = simple_open,
 	.write = write_ctx_force_same_va,
 	.read = read_ctx_force_same_va,
@@ -3051,6 +3054,7 @@ static int kbasep_serialize_jobs_debugfs_open(struct inode *in,
 }
 
 static const struct file_operations kbasep_serialize_jobs_debugfs_fops = {
+	.owner = THIS_MODULE,
 	.open = kbasep_serialize_jobs_debugfs_open,
 	.read = seq_read,
 	.write = kbasep_serialize_jobs_debugfs_write,
@@ -3341,7 +3345,8 @@ static void power_control_term(struct kbase_device *kbdev)
 #endif
 
 	if (kbdev->clock) {
-		clk_disable_unprepare(kbdev->clock);
+		if (__clk_is_enabled(kbdev->clock))
+			clk_disable_unprepare(kbdev->clock);
 		clk_put(kbdev->clock);
 		kbdev->clock = NULL;
 	}
@@ -3431,6 +3436,7 @@ static ssize_t debugfs_protected_debug_mode_read(struct file *file,
  * Contains the file operations for the "protected_debug_mode" debugfs file
  */
 static const struct file_operations fops_protected_debug_mode = {
+	.owner = THIS_MODULE,
 	.open = simple_open,
 	.read = debugfs_protected_debug_mode_read,
 	.llseek = default_llseek,
@@ -3658,7 +3664,6 @@ static int kbase_platform_device_remove(struct platform_device *pdev)
 	}
 #endif
 
-
 	if (kbdev->inited_subsys & inited_dev_list) {
 		dev_list = kbase_dev_list_get();
 		list_del(&kbdev->entry);
@@ -3692,13 +3697,6 @@ static int kbase_platform_device_remove(struct platform_device *pdev)
 		kbase_debug_job_fault_dev_term(kbdev);
 		kbdev->inited_subsys &= ~inited_job_fault;
 	}
-
-#ifdef CONFIG_MALI_DEVFREQ
-	if (kbdev->inited_subsys & inited_devfreq) {
-		kbase_devfreq_term(kbdev);
-		kbdev->inited_subsys &= ~inited_devfreq;
-	}
-#endif
 
 
 	if (kbdev->inited_subsys & inited_backend_late) {
@@ -3799,6 +3797,29 @@ static int kbase_platform_device_remove(struct platform_device *pdev)
 	return 0;
 }
 
+void kbase_backend_devfreq_term(struct kbase_device *kbdev)
+{
+#ifdef CONFIG_MALI_DEVFREQ
+	if (kbdev->inited_subsys & inited_devfreq) {
+		kbase_devfreq_term(kbdev);
+		kbdev->inited_subsys &= ~inited_devfreq;
+	}
+#endif
+}
+
+int kbase_backend_devfreq_init(struct kbase_device *kbdev)
+{
+#ifdef CONFIG_MALI_DEVFREQ
+	/* Devfreq uses hardware counters, so must be initialized after it. */
+	int err = kbase_devfreq_init(kbdev);
+
+	if (!err)
+		kbdev->inited_subsys |= inited_devfreq;
+	else
+		dev_err(kbdev->dev, "Continuing without devfreq\n");
+#endif /* CONFIG_MALI_DEVFREQ */
+	return 0;
+}
 
 /* Number of register accesses for the buffer that we allocate during
  * initialization time. The buffer size can be changed later via debugfs. */
@@ -3997,6 +4018,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_vinstr;
 
+	/* The initialization of the devfreq is now embedded inside the
+	 * kbase_backend_late_init(), calling the kbase_backend_devfreq_init()
+	 * before the first trigger of pm_context_idle(). */
 	err = kbase_backend_late_init(kbdev);
 	if (err) {
 		dev_err(kbdev->dev, "Late backend initialization failed\n");
@@ -4005,16 +4029,6 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_backend_late;
 
-
-
-#ifdef CONFIG_MALI_DEVFREQ
-	/* Devfreq uses hardware counters, so must be initialized after it. */
-	err = kbase_devfreq_init(kbdev);
-	if (!err)
-		kbdev->inited_subsys |= inited_devfreq;
-	else
-		dev_err(kbdev->dev, "Continuing without devfreq\n");
-#endif /* CONFIG_MALI_DEVFREQ */
 
 #ifdef MALI_KBASE_BUILD
 	err = kbase_debug_job_fault_dev_init(kbdev);
@@ -4127,13 +4141,16 @@ static int kbase_device_suspend(struct device *dev)
 	if (!kbdev)
 		return -ENODEV;
 
+	kbase_pm_suspend(kbdev);
+
 #if defined(CONFIG_MALI_DEVFREQ) && \
 		(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
-	if (kbdev->inited_subsys & inited_devfreq)
-		devfreq_suspend_device(kbdev->devfreq);
+	dev_dbg(dev, "Callback %s\n", __func__);
+	if (kbdev->inited_subsys & inited_devfreq) {
+		kbase_devfreq_enqueue_work(kbdev, DEVFREQ_WORK_SUSPEND);
+		flush_workqueue(kbdev->devfreq_queue.workq);
+	}
 #endif
-
-	kbase_pm_suspend(kbdev);
 	return 0;
 }
 
@@ -4157,8 +4174,14 @@ static int kbase_device_resume(struct device *dev)
 
 #if defined(CONFIG_MALI_DEVFREQ) && \
 		(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
-	if (kbdev->inited_subsys & inited_devfreq)
-		devfreq_resume_device(kbdev->devfreq);
+	dev_dbg(dev, "Callback %s\n", __func__);
+	if (kbdev->inited_subsys & inited_devfreq) {
+		mutex_lock(&kbdev->pm.lock);
+		if (kbdev->pm.active_count > 0)
+			kbase_devfreq_enqueue_work(kbdev, DEVFREQ_WORK_RESUME);
+		mutex_unlock(&kbdev->pm.lock);
+		flush_workqueue(kbdev->devfreq_queue.workq);
+	}
 #endif
 	return 0;
 }
@@ -4182,10 +4205,11 @@ static int kbase_device_runtime_suspend(struct device *dev)
 	if (!kbdev)
 		return -ENODEV;
 
+	dev_dbg(dev, "Callback %s\n", __func__);
 #if defined(CONFIG_MALI_DEVFREQ) && \
 		(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
 	if (kbdev->inited_subsys & inited_devfreq)
-		devfreq_suspend_device(kbdev->devfreq);
+		kbase_devfreq_enqueue_work(kbdev, DEVFREQ_WORK_SUSPEND);
 #endif
 
 	if (kbdev->pm.backend.callback_power_runtime_off) {
@@ -4215,6 +4239,7 @@ static int kbase_device_runtime_resume(struct device *dev)
 	if (!kbdev)
 		return -ENODEV;
 
+	dev_dbg(dev, "Callback %s\n", __func__);
 	if (kbdev->pm.backend.callback_power_runtime_on) {
 		ret = kbdev->pm.backend.callback_power_runtime_on(kbdev);
 		dev_dbg(dev, "runtime resume\n");
@@ -4223,7 +4248,7 @@ static int kbase_device_runtime_resume(struct device *dev)
 #if defined(CONFIG_MALI_DEVFREQ) && \
 		(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
 	if (kbdev->inited_subsys & inited_devfreq)
-		devfreq_resume_device(kbdev->devfreq);
+		kbase_devfreq_enqueue_work(kbdev, DEVFREQ_WORK_RESUME);
 #endif
 
 	return ret;
@@ -4249,6 +4274,7 @@ static int kbase_device_runtime_idle(struct device *dev)
 	if (!kbdev)
 		return -ENODEV;
 
+	dev_dbg(dev, "Callback %s\n", __func__);
 	/* Use platform specific implementation if it exists. */
 	if (kbdev->pm.backend.callback_power_runtime_idle)
 		return kbdev->pm.backend.callback_power_runtime_idle(kbdev);

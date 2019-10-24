@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2016-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2016-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -64,6 +64,7 @@ static int kbase_as_fault_debugfs_open(struct inode *in, struct file *file)
 }
 
 static const struct file_operations as_fault_fops = {
+	.owner = THIS_MODULE,
 	.open = kbase_as_fault_debugfs_open,
 	.read = seq_read,
 	.llseek = seq_lseek,

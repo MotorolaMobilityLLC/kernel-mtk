@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2013-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2013-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -285,6 +285,7 @@ static int debug_mem_release(struct inode *inode, struct file *file)
 }
 
 static const struct file_operations kbase_debug_mem_view_fops = {
+	.owner = THIS_MODULE,
 	.open = debug_mem_open,
 	.release = debug_mem_release,
 	.read = seq_read,
