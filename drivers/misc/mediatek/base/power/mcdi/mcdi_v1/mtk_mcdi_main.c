@@ -215,7 +215,7 @@ static ssize_t mcdi_state_read(struct file *filp,
 	int len = 0;
 	int i;
 	char *p = dbg_buf;
-	unsigned long ac_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
+	unsigned long ac_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO] = {0};
 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
 
 	struct mcdi_feature_status feature_stat;
