@@ -48,6 +48,10 @@ static int emi_opp;
 #endif
 
 #ifdef VCORE_DVFS_OPP_SUPPORT
+#ifndef OPP_UNREQ
+#define OPP_UNREQ -1 /* OPPI_UNREQ */
+#endif
+
 static int vcore_now;
 #ifdef MTK_DRAM_CTRL_LP3_SUPPORT
 static int vcore_lp3_now;

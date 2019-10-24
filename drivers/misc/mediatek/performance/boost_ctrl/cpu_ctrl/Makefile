@@ -11,6 +11,10 @@
 # GNU General Public License for more details.
 #
 
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
+	ccflags-y += -DCPU_CTRL_CORE_SUPPORT
+endif
+
 obj-y += cpu_ctrl.o
 obj-$(CONFIG_MTK_CPU_CTRL_CFP) += cpu_ctrl_cfp.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
