@@ -77,6 +77,8 @@ config MACH_MT6757
 	select ARM_CRYPTO
 	select CRYPTO_SHA2_ARM_CE
 	select CRYPTO_AES_ARM_CE
+	select OVERLAY_FS
+	select DM_BOW
 	help
 	  This enables support for MediaTek Helio P20 - MT6757
 	  Highly power-efficient, performance-oriented 4G LTE processor
