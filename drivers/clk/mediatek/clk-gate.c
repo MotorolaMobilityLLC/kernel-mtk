@@ -23,6 +23,11 @@
 #include "clk-mtk.h"
 #include "clk-gate.h"
 
+#if defined(CONFIG_MACH_MT6757)
+#define CLK_GATE_INVERSE	BIT(0)
+#define CLK_GATE_NO_SETCLR_REG	BIT(1)
+#endif
+
 static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
@@ -55,25 +60,73 @@ static int mtk_cg_bit_is_set(struct clk_hw *hw)
 	return val != 0;
 }
 
+#if defined(CONFIG_MACH_MT6757)
+static void cg_set_mask(struct mtk_clk_gate *cg, u32 mask)
+{
+	u32 r;
+
+	if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
+		r = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
+						+ cg->sta_ofs));
+		r = r | mask;
+		writel_relaxed(r, (void __iomem *)((unsigned int)cg->regmap
+						+ cg->sta_ofs));
+
+		r = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
+						+ cg->sta_ofs));
+	} else
+		writel_relaxed(mask, (void __iomem *)((unsigned int)cg->regmap
+						+ cg->set_ofs));
+}
+
+static void cg_clr_mask(struct mtk_clk_gate *cg, u32 mask)
+{
+	u32 r;
+
+	if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
+		r = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
+						+ cg->sta_ofs));
+		r = r & ~mask;
+		writel_relaxed(r, (void __iomem *)((unsigned int)cg->regmap
+						+ cg->sta_ofs));
+
+		r = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
+						+ cg->sta_ofs));
+	} else
+		writel_relaxed(mask, (void __iomem *)((unsigned int)cg->regmap
+						+ cg->clr_ofs));
+}
+#endif
+
 static void mtk_cg_set_bit(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
+#if defined(CONFIG_MACH_MT6757)
+	u32 mask = BIT(cg->bit);
+#endif
 #if !defined(CONFIG_MACH_MT6757)
 	regmap_write(cg->regmap, cg->set_ofs, BIT(cg->bit));
 #else
-	writel_relaxed(BIT(cg->bit), (void __iomem *)((unsigned int)cg->regmap
-							+ cg->clr_ofs));
+	if (cg->flags & CLK_GATE_INVERSE)
+		cg_clr_mask(cg, mask);
+	else
+		cg_set_mask(cg, mask);
 #endif
 }
 
 static void mtk_cg_clr_bit(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
+#if defined(CONFIG_MACH_MT6757)
+	u32 mask = BIT(cg->bit);
+#endif
 #if !defined(CONFIG_MACH_MT6757)
 	regmap_write(cg->regmap, cg->clr_ofs, BIT(cg->bit));
 #else
-	writel_relaxed(BIT(cg->bit), (void __iomem *)((unsigned int)cg->regmap
-							+ cg->clr_ofs));
+	if (cg->flags & CLK_GATE_INVERSE)
+		cg_set_mask(cg, mask);
+	else
+		cg_clr_mask(cg, mask);
 #endif
 }
 
@@ -173,7 +226,11 @@ struct clk *mtk_clk_register_gate(
 		int clr_ofs,
 		int sta_ofs,
 		u8 bit,
-		const struct clk_ops *ops)
+		const struct clk_ops *ops
+#if defined(CONFIG_MACH_MT6757)
+		, u32 flags
+#endif
+		)
 {
 	struct mtk_clk_gate *cg;
 	struct clk *clk;
@@ -194,6 +251,9 @@ struct clk *mtk_clk_register_gate(
 	cg->clr_ofs = clr_ofs;
 	cg->sta_ofs = sta_ofs;
 	cg->bit = bit;
+#if defined(CONFIG_MACH_MT6757)
+	cg->flags = flags;
+#endif
 
 	cg->hw.init = &init;
 
