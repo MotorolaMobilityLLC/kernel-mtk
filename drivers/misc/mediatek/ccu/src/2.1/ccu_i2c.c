@@ -45,12 +45,19 @@
 #define CCU_I2C_APDMA_TXLEN 128
 #define CCU_I2C_2_HW_DRVNAME  "ccu_i2c_2_hwtrg"
 #define CCU_I2C_4_HW_DRVNAME  "ccu_i2c_4_hwtrg"
+#define CCU_I2C_6_HW_DRVNAME  "ccu_i2c_6_hwtrg"
+#define CCU_I2C_7_HW_DRVNAME  "ccu_i2c_7_hwtrg"
+
 
 /*i2c driver hook*/
 
 static int ccu_i2c_probe_2(struct i2c_client *client,
 	const struct i2c_device_id *id);
 static int ccu_i2c_probe_4(struct i2c_client *client,
+	const struct i2c_device_id *id);
+static int ccu_i2c_probe_6(struct i2c_client *client,
+	const struct i2c_device_id *id);
+static int ccu_i2c_probe_7(struct i2c_client *client,
 	const struct i2c_device_id *id);
 
 static int ccu_i2c_remove(struct i2c_client *client);
@@ -76,11 +83,18 @@ static inline void i2c_writew(u16 value, struct mt_i2c *i2c,
 
 static struct i2c_client *g_ccuI2cClient2;
 static struct i2c_client *g_ccuI2cClient4;
+static struct i2c_client *g_ccuI2cClient6;
+static struct i2c_client *g_ccuI2cClient7;
 
 static const struct i2c_device_id ccu_i2c_2_ids[]
 	= { {CCU_I2C_2_HW_DRVNAME, 0}, {} };
 static const struct i2c_device_id ccu_i2c_4_ids[]
 	= { {CCU_I2C_4_HW_DRVNAME, 0}, {} };
+static const struct i2c_device_id ccu_i2c_6_ids[]
+	= { {CCU_I2C_6_HW_DRVNAME, 0}, {} };
+static const struct i2c_device_id ccu_i2c_7_ids[]
+	= { {CCU_I2C_7_HW_DRVNAME, 0}, {} };
+
 static struct ion_handle *i2c_buffer_handle;
 static bool ccu_i2c_initialized[I2C_MAX_CHANNEL] = {0};
 
@@ -92,6 +106,16 @@ static const struct of_device_id ccu_i2c_2_driver_of_ids[] = {
 
 static const struct of_device_id ccu_i2c_4_driver_of_ids[] = {
 	{.compatible = "mediatek,ccu_sensor_i2c_4_hw",},
+	{}
+};
+
+static const struct of_device_id ccu_i2c_6_driver_of_ids[] = {
+	{.compatible = "mediatek,ccu_sensor_i2c_6_hw",},
+	{}
+};
+
+static const struct of_device_id ccu_i2c_7_driver_of_ids[] = {
+	{.compatible = "mediatek,ccu_sensor_i2c_7_hw",},
 	{}
 };
 #endif
@@ -122,6 +146,31 @@ struct i2c_driver ccu_i2c_4_driver = {
 	.id_table = ccu_i2c_4_ids,
 };
 
+struct i2c_driver ccu_i2c_6_driver = {
+	.probe = ccu_i2c_probe_6,
+	.remove = ccu_i2c_remove,
+	.driver = {
+		.name = CCU_I2C_6_HW_DRVNAME,
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = ccu_i2c_6_driver_of_ids,
+#endif
+	},
+	.id_table = ccu_i2c_6_ids,
+};
+
+struct i2c_driver ccu_i2c_7_driver = {
+	.probe = ccu_i2c_probe_7,
+	.remove = ccu_i2c_remove,
+	.driver = {
+		.name = CCU_I2C_7_HW_DRVNAME,
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = ccu_i2c_7_driver_of_ids,
+#endif
+	},
+	.id_table = ccu_i2c_7_ids,
+};
 /*---------------------------------------------------------------------------*/
 /* CCU Driver: i2c driver funcs                                              */
 /*---------------------------------------------------------------------------*/
@@ -155,6 +204,37 @@ static int ccu_i2c_probe_4(struct i2c_client *client,
 	return 0;
 }
 
+static int ccu_i2c_probe_6(struct i2c_client *client,
+			       const struct i2c_device_id *id)
+{
+	LOG_DBG_MUST(
+	"[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClient6 %p\n",
+	client);
+
+	/* get sensor i2c client */
+	g_ccuI2cClient6 = client;
+
+	LOG_DBG_MUST("[ccu_i2c_probe] Attached!!\n");
+
+	return 0;
+}
+
+static int ccu_i2c_probe_7(struct i2c_client *client,
+			       const struct i2c_device_id *id)
+{
+	LOG_DBG_MUST(
+	"[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClient7 %p\n",
+	client);
+
+	/* get sensor i2c client */
+	g_ccuI2cClient7 = client;
+
+	LOG_DBG_MUST("[ccu_i2c_probe] Attached!!\n");
+
+	return 0;
+}
+
+
 static int ccu_i2c_remove(struct i2c_client *client)
 {
 	return 0;
@@ -175,6 +255,14 @@ int ccu_i2c_register_driver(void)
 	i2c_ret = i2c_add_driver(&ccu_i2c_4_driver);
 	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_4_driver), ret: %d--\n",
 		i2c_ret);
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_6_driver)++\n");
+	i2c_ret = i2c_add_driver(&ccu_i2c_6_driver);
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_6_driver), ret: %d--\n",
+		i2c_ret);
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_7_driver)++\n");
+	i2c_ret = i2c_add_driver(&ccu_i2c_7_driver);
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_7_driver), ret: %d--\n",
+		i2c_ret);
 
 	return 0;
 }
@@ -183,6 +271,8 @@ int ccu_i2c_delete_driver(void)
 {
 	i2c_del_driver(&ccu_i2c_2_driver);
 	i2c_del_driver(&ccu_i2c_4_driver);
+	i2c_del_driver(&ccu_i2c_6_driver);
+	i2c_del_driver(&ccu_i2c_7_driver);
 	return 0;
 }
 
@@ -362,6 +452,14 @@ static struct i2c_client *get_ccu_i2c_client(uint32_t i2c_id)
 	case 4:
 	{
 		return g_ccuI2cClient4;
+	}
+	case 6:
+	{
+		return g_ccuI2cClient6;
+	}
+	case 7:
+	{
+		return g_ccuI2cClient7;
 	}
 	default:
 	{
