@@ -453,7 +453,6 @@ static int ff_ctl_init_driver(void)
 			break;
 		}
 #else 
-		printk("%s +%d, setup !!!!!\n", __func__, __LINE__);
 		if (g_config && g_config->enable_spidev) {
 			err = ff_spi_init();
 			if (err) {
