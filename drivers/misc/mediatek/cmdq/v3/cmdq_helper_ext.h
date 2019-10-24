@@ -766,6 +766,7 @@ struct cmdqRecStruct {
 	/* debug information */
 	u32 error_irq_pc;
 	bool dumpAllocTime;	/* flag to print static info to kernel log. */
+	bool profile_exec;
 	s32 reorder;
 	CMDQ_TIME submit;
 	CMDQ_TIME trigger;
