@@ -1673,8 +1673,8 @@ static void *lcm_switch_mode(int mode)
 }
 
 
-struct LCM_DRIVER nt35695_fhd_dsi_vdo_truly_rt5081_hdp_1560_lcm_drv = {
-	.name = "nt35695_fhd_dsi_vdo_truly_rt5081_hdp_1560_drv",
+struct LCM_DRIVER nt35695_fhd_dsi_vdo_truly_rt5081_hdp_1680_lcm_drv = {
+	.name = "nt35695_fhd_dsi_vdo_truly_rt5081_hdp_1680_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,

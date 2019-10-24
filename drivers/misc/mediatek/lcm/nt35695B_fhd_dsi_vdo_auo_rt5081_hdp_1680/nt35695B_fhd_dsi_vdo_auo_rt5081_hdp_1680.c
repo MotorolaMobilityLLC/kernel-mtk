@@ -1661,12 +1661,12 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 #endif
 
 #if (LCM_DSI_CMD_MODE)
-struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_1560_lcm_drv = {
-	.name = "nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_1560_drv",
+struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_1680_lcm_drv = {
+	.name = "nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_1680_drv",
 #else
 
-struct LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_1560_lcm_drv = {
-	.name = "nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_1560_drv",
+struct LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_1680_lcm_drv = {
+	.name = "nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_1680_drv",
 #endif
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
