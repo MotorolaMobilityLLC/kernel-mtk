@@ -815,13 +815,12 @@ static void get_card_present(void)
 	char card_holder_present[BUF_SIZE];
 
 	memset(card_holder_present, '\0', BUF_SIZE);
-	strncpy(card_holder_present, "truly", 5);
-	printk("fanxzh gpio(343+15) value = %d\n", gpio_get_value(343+15));
-	if (gpio_get_value(343+15) == 0)
-	{
-		memset(card_holder_present, '\0', BUF_SIZE);
+	printk("fanxzh gpio(333) value = %d\n", gpio_get_value(333));
+	if (gpio_get_value(333) == 1)
+		strncpy(card_holder_present, "truly", 5);
+	else
 		strncpy(card_holder_present, "false", 5);
-	}
+
 	memset(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, 0x00, sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf));
 	strncpy(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, card_holder_present,
 	        ((strlen(card_holder_present) >= sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf) ?
