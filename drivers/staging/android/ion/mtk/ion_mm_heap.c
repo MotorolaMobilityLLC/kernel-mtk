@@ -108,7 +108,6 @@ struct page_info {
 	struct list_head list;
 };
 
-static size_t mm_heap_total_memory;
 unsigned int caller_pid;
 unsigned int caller_tid;
 unsigned long long alloc_large_fail_ts;
@@ -156,6 +155,12 @@ static void free_buffer_page(struct ion_system_heap *heap,
 		ion_page_pool_free(pool, page);
 	} else {
 		__free_pages(page, order);
+		if (atomic64_sub_return((1 << order), &page_sz_cnt) < 0) {
+			IONMSG("underflow!, total_now[0x%llx]free[%d]\n",
+			       (u64)atomic64_read(&page_sz_cnt),
+			       (int)(1 << order));
+			atomic64_set(&page_sz_cnt, 0);
+		}
 	}
 }
 
@@ -391,7 +396,6 @@ map_mva_exit:
 		buffer->priv_virt = buffer_info;
 #endif
 
-	mm_heap_total_memory += size;
 	caller_pid = 0;
 	caller_tid = 0;
 
@@ -580,7 +584,6 @@ void ion_mm_heap_free(struct ion_buffer *buffer)
 	LIST_HEAD(pages);
 	int i;
 
-	mm_heap_total_memory -= buffer->size;
 #if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
 	if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) ||
 	    (heap->id == ION_HEAP_TYPE_MULTIMEDIA_PA2MVA)) {
@@ -1075,8 +1078,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 	current_ts = sched_clock();
 	do_div(current_ts, 1000000);
 	ION_PRINT_LOG_OR_SEQ(s,
-			     "current time %lld ms, total: %16zu!!\n",
-			     current_ts, mm_heap_total_memory);
+			     "current time %lld ms, total: %llu!!\n",
+		 current_ts,
+		 (u64)(atomic64_read(&page_sz_cnt) * 4096));
 #ifdef CONFIG_MTK_PSEUDO_M4U
 	mtk_iommu_log_dump(s);
 #endif
@@ -1364,18 +1368,18 @@ skip_client_entry:
 				     total_orphaned_size);
 		ION_PRINT_LOG_OR_SEQ(NULL, "mm total: %16zu, cam: %16zu\n",
 				     mm_size, cam_size);
-		ION_PRINT_LOG_OR_SEQ(NULL, "ion heap total memory: %16zu\n",
-				     mm_heap_total_memory);
+		ION_PRINT_LOG_OR_SEQ(NULL, "ion heap total memory: %llu\n",
+				     (u64)(atomic64_read(&page_sz_cnt) * 4096));
 		ION_PRINT_LOG_OR_SEQ(NULL, "------------------------------\n");
 	} else {
-		ION_PRINT_LOG_OR_SEQ(NULL, "ion heap total memory: %16zu\n",
-				     mm_heap_total_memory);
+		ION_PRINT_LOG_OR_SEQ(NULL, "ion heap total memory: %llu\n",
+				     (u64)(atomic64_read(&page_sz_cnt) * 4096));
 	}
 }
 
 size_t ion_mm_heap_total_memory(void)
 {
-	return mm_heap_total_memory;
+	return (size_t)(atomic64_read(&page_sz_cnt) * 4096);
 }
 
 struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
