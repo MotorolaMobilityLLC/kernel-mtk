@@ -26,11 +26,11 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "gc2375hmipi_Sensor.h"
+#include "blackjack_tsp_gc2375hmipi_Sensor.h"
 
 /**************** Modify Following Strings for Debug ******************/
-#define PFX "gc2375h_camera_sensor"
-#define LOG_1 cam_pr_debug("GC2375H, MIPI 1LANE\n")
+#define PFX "blackjack_tsp_gc2375h_camera_sensor"
+#define LOG_1 cam_pr_debug("BLACKJACK_TSP_GC2375H, MIPI 1LANE\n")
 /********************   Modify end    *********************************/
 
 #define cam_pr_debug(format, args...) \
@@ -39,7 +39,7 @@
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = GC2375H_SENSOR_ID,
+	.sensor_id = BLACKJACK_TSP_GC2375H_SENSOR_ID,
 	.checksum_value = 0x8726c936,
 	.pre = {
 		.pclk = 39000000,
@@ -133,7 +133,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
-#if GC2375H_MIRROR_FLIP_ENABLE
+#if BLACKJACK_TSP_GC2375H_MIRROR_FLIP_ENABLE
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 #else
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
@@ -539,7 +539,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0e, 0xb8);
 	write_cmos_sensor(0x0f, 0x06);
 	write_cmos_sensor(0x10, 0x48);
-	write_cmos_sensor(0x17, GC2375H_MIRROR);
+	write_cmos_sensor(0x17, BLACKJACK_TSP_GC2375H_MIRROR);
 	write_cmos_sensor(0x1c, 0x10);
 	write_cmos_sensor(0x1d, 0x13);
 	write_cmos_sensor(0x20, 0x0b);
@@ -589,10 +589,10 @@ static void sensor_init(void)
 	write_cmos_sensor(0x41, 0x00);
 	write_cmos_sensor(0x43, 0x03);
 	write_cmos_sensor(0x4a, 0x00);
-	write_cmos_sensor(0x4e, GC2375H_BLK_Select1_H);
-	write_cmos_sensor(0x4f, GC2375H_BLK_Select1_L);
-	write_cmos_sensor(0x66, GC2375H_BLK_Select2_H);
-	write_cmos_sensor(0x67, GC2375H_BLK_Select2_L);
+	write_cmos_sensor(0x4e, BLACKJACK_TSP_GC2375H_BLK_Select1_H);
+	write_cmos_sensor(0x4f, BLACKJACK_TSP_GC2375H_BLK_Select1_L);
+	write_cmos_sensor(0x66, BLACKJACK_TSP_GC2375H_BLK_Select2_H);
+	write_cmos_sensor(0x67, BLACKJACK_TSP_GC2375H_BLK_Select2_L);
 
 	/* Dark sun */
 	write_cmos_sensor(0x68, 0x00);
@@ -711,7 +711,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-				memcpy(backaux_cam_name, "3_gc2375h", 64);
+				memcpy(backaux_cam_name, "2_blackjack_tsp_gc2375h", 64);
 				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
@@ -1607,7 +1607,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 GC2375H_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 BLACKJACK_TSP_GC2375H_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
