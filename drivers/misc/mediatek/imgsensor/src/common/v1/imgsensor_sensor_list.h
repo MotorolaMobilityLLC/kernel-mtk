@@ -182,6 +182,9 @@ UINT32 T4KA7_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 UINT32 ISX012_MIPI_YUV_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 UINT32 T8EV5_YUV_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 
+/*blackjack*/
+UINT32 BLACKJACK_TSP_GC2375H_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+
 extern struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[];
 
 #endif
