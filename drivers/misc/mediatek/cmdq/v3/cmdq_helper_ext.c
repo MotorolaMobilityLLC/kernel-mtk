@@ -5231,23 +5231,30 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle),
 		handle->wakedUp - handle->beginWait);
 
-#if IS_ENABLED(CONFIG_MACH_MT6779)
+#if IS_ENABLED(CONFIG_MACH_MT6779) || IS_ENABLED(CONFIG_MACH_MT6765)
 	/* debug wpe hw not waiting issue */
-	if (CMDQ_ENG_ISP_PERF_FLAG(handle->engineFlag)) {
+	if (handle->profile_exec) {
 		u64 task_cost = handle->wakedUp - handle->trigger;
 		u32 *exec;
 		u64 diff;
 
 		do_div(task_cost, 1000);
-		if (task_cost <= 3000) {
-			exec = cmdq_pkt_get_perf_ret(handle->pkt);
-			diff = exec[1] > exec[0] ?
-				(exec[1] - exec[0]) : (~exec[1] + exec[0]);
-			do_div(diff, 26);
+		exec = cmdq_pkt_get_perf_ret(handle->pkt);
+		diff = exec[1] > exec[0] ?
+			(exec[1] - exec[0]) : (~exec[1] + exec[0]);
+		do_div(diff, 26);
 
-			CMDQ_LOG(
-				"[warn]isp task cost:%llu < 3ms hw begin:%u end:%u diff:%llu\n",
-				task_cost, exec[0], exec[1], diff);
+		if (exec[0] == 0xdeaddead && exec[1] == 0xdeaddead)
+			CMDQ_ERR(
+				"profile task may not execute handle:%p pkt:%p engine:%#llx cpu cost:%llu\n",
+					handle, handle->pkt,
+					handle->engineFlag, task_cost);
+
+		if (CMDQ_ENG_ISP_PERF_FLAG(handle->engineFlag)) {
+			if (task_cost <= 3000)
+				CMDQ_LOG(
+					"[warn]isp task cost:%llu < 3ms hw begin:%u end:%u diff:%llu\n",
+					task_cost, exec[0], exec[1], diff);
 		}
 	}
 #endif
