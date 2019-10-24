@@ -2373,11 +2373,12 @@ static void kbase_mmu_report_fault_and_kill(struct kbase_context *kctx,
 	 * out/rescheduled - this will occur on releasing the context's refcount */
 	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
 	kbasep_js_clear_submit_allowed(js_devdata, kctx);
-	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
 
 	/* Kill any running jobs from the context. Submit is disallowed, so no more jobs from this
 	 * context can appear in the job slots from this point on */
-	kbase_backend_jm_kill_jobs_from_kctx(kctx);
+	kbase_backend_jm_kill_running_jobs_from_kctx(kctx);
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+
 	/* AS transaction begin */
 	mutex_lock(&kbdev->mmu_hw_mutex);
 	if (kbase_hw_has_issue(kbdev, BASE_HW_ISSUE_8245)) {

@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2014-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -334,6 +334,105 @@ static int kbase_devfreq_init_core_mask_table(struct kbase_device *kbdev)
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+
+static const char *kbase_devfreq_req_type_name(enum kbase_devfreq_work_type type)
+{
+	const char *p;
+
+	switch (type) {
+	case DEVFREQ_WORK_NONE:
+		p = "devfreq_none";
+		break;
+	case DEVFREQ_WORK_SUSPEND:
+		p = "devfreq_suspend";
+		break;
+	case DEVFREQ_WORK_RESUME:
+		p = "devfreq_resume";
+		break;
+	default:
+		p = "Unknown devfreq_type";
+	}
+	return p;
+}
+
+static void kbase_devfreq_suspend_resume_worker(struct work_struct *work)
+{
+	struct kbase_devfreq_queue_info *info = container_of(work,
+			struct kbase_devfreq_queue_info, work);
+	struct kbase_device *kbdev = container_of(info, struct kbase_device,
+			devfreq_queue);
+	unsigned long flags;
+	enum kbase_devfreq_work_type type, acted_type;
+
+	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	type = kbdev->devfreq_queue.req_type;
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+
+	acted_type = kbdev->devfreq_queue.acted_type;
+	dev_dbg(kbdev->dev, "Worker handles queued req: %s (acted: %s)\n",
+		kbase_devfreq_req_type_name(type),
+		kbase_devfreq_req_type_name(acted_type));
+	switch (type) {
+	case DEVFREQ_WORK_SUSPEND:
+	case DEVFREQ_WORK_RESUME:
+		if (type != acted_type) {
+			if (type == DEVFREQ_WORK_RESUME)
+				devfreq_resume_device(kbdev->devfreq);
+			else
+				devfreq_suspend_device(kbdev->devfreq);
+			dev_dbg(kbdev->dev, "Devfreq transition occured: %s => %s\n",
+				kbase_devfreq_req_type_name(acted_type),
+				kbase_devfreq_req_type_name(type));
+			kbdev->devfreq_queue.acted_type = type;
+		}
+		break;
+	default:
+		WARN_ON(1);
+	}
+}
+
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0) */
+
+void kbase_devfreq_enqueue_work(struct kbase_device *kbdev,
+				       enum kbase_devfreq_work_type work_type)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+	unsigned long flags;
+
+	WARN_ON(work_type == DEVFREQ_WORK_NONE);
+	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	kbdev->devfreq_queue.req_type = work_type;
+	queue_work(kbdev->devfreq_queue.workq, &kbdev->devfreq_queue.work);
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+	dev_dbg(kbdev->dev, "Enqueuing devfreq req: %s\n",
+		kbase_devfreq_req_type_name(work_type));
+#endif
+}
+
+static int kbase_devfreq_work_init(struct kbase_device *kbdev)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+	kbdev->devfreq_queue.req_type = DEVFREQ_WORK_NONE;
+	kbdev->devfreq_queue.acted_type = DEVFREQ_WORK_RESUME;
+
+	kbdev->devfreq_queue.workq = alloc_ordered_workqueue("devfreq_workq", 0);
+	if (!kbdev->devfreq_queue.workq)
+		return -ENOMEM;
+
+	INIT_WORK(&kbdev->devfreq_queue.work,
+			kbase_devfreq_suspend_resume_worker);
+#endif
+	return 0;
+}
+
+static void kbase_devfreq_work_term(struct kbase_device *kbdev)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
+	destroy_workqueue(kbdev->devfreq_queue.workq);
+#endif
+}
+
 int kbase_devfreq_init(struct kbase_device *kbdev)
 {
 	struct devfreq_dev_profile *dp;
@@ -369,11 +468,19 @@ int kbase_devfreq_init(struct kbase_device *kbdev)
 	if (err)
 		return err;
 
+	/* Initialise devfreq suspend/resume workqueue */
+	err = kbase_devfreq_work_init(kbdev);
+	if (err) {
+		dev_err(kbdev->dev, "Devfreq initialization failed");
+		return err;
+	}
+
 	kbdev->devfreq = devfreq_add_device(kbdev->dev, dp,
 				"simple_ondemand", NULL);
 	if (IS_ERR(kbdev->devfreq)) {
 		kfree(dp->freq_table);
-		return PTR_ERR(kbdev->devfreq);
+		err = PTR_ERR(kbdev->devfreq);
+		goto add_device_failed;
 	}
 
 	/* devfreq_add_device only copies a few of kbdev->dev's fields, so
@@ -418,6 +525,8 @@ opp_notifier_failed:
 		dev_err(kbdev->dev, "Failed to terminate devfreq (%d)\n", err);
 	else
 		kbdev->devfreq = NULL;
+add_device_failed:
+	kbase_devfreq_work_term(kbdev);
 
 	return err;
 }
@@ -444,4 +553,6 @@ void kbase_devfreq_term(struct kbase_device *kbdev)
 		kbdev->devfreq = NULL;
 
 	kfree(kbdev->opp_table);
+
+	kbase_devfreq_work_term(kbdev);
 }

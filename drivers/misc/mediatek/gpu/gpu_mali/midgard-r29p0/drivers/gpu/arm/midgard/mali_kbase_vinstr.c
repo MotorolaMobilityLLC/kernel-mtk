@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2011-2018 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2011-2019 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -124,6 +124,7 @@ static int kbasep_vinstr_hwcnt_reader_release(
 
 /* Vinstr client file operations */
 static const struct file_operations vinstr_client_fops = {
+	.owner = THIS_MODULE,
 	.poll           = kbasep_vinstr_hwcnt_reader_poll,
 	.unlocked_ioctl = kbasep_vinstr_hwcnt_reader_ioctl,
 	.compat_ioctl   = kbasep_vinstr_hwcnt_reader_ioctl,
@@ -891,7 +892,7 @@ static long kbasep_vinstr_hwcnt_reader_ioctl(
 			cli, (enum base_hwcnt_reader_event)arg);
 		break;
 	default:
-		WARN_ON(true);
+		pr_warn("Unknown HWCNT ioctl 0x%x nr:%d", cmd, _IOC_NR(cmd));
 		rcode = -EINVAL;
 		break;
 	}

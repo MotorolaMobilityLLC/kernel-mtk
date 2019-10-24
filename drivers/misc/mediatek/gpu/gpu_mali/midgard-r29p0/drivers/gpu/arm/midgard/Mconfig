@@ -70,8 +70,6 @@ config MALI_DMA_FENCE
 config MALI_PLATFORM_NAME
 	depends on MALI_MIDGARD
 	string "Platform name"
-	default "arndale" if PLATFORM_ARNDALE
-	default "arndale_octa" if PLATFORM_ARNDALE_OCTA
 	default "rk" if PLATFORM_FIREFLY
 	default "hisilicon" if PLATFORM_HIKEY960
 	default "hisilicon" if PLATFORM_HIKEY970
