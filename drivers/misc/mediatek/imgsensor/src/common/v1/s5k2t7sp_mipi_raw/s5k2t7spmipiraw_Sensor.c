@@ -66,7 +66,7 @@ static const int I2C_BUFFER_LEN = 4;
  * PFX "[%s] " format, __func__, ##args)
  */
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
+static void sensor_init(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K2T7SP_SENSOR_ID,
@@ -616,7 +616,9 @@ static void check_streamoff(void)
 		else
 			break;
 	}
-	pr_debug(" check_streamoff exit! %d\n", i);
+	if (read_cmos_sensor_8(0x0005) != 0xFF)
+		sensor_init();
+	pr_debug("%s exit! %d\n", __func__, i);
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
@@ -1502,6 +1504,44 @@ static void slim_video_setting(void)
 
 }
 
+#define FOUR_CELL_SIZE 3072/*size = 3072 = 0xc00*/
+static int Is_Read_4Cell;
+static char Four_Cell_Array[FOUR_CELL_SIZE + 2];
+static void read_4cell_from_eeprom(char *data)
+{
+	int ret;
+	int addr = 0x763;/*Start of 4 cell data*/
+	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
+	char temp;
+
+	if (Is_Read_4Cell != 1) {
+		pr_debug("Need to read i2C\n");
+
+		pu_send_cmd[0] = (char)(addr >> 8);
+		pu_send_cmd[1] = (char)(addr & 0xFF);
+
+		/* Check I2C is normal */
+		ret = iReadRegI2C(pu_send_cmd, 2, &temp, 1, EEPROM_READ_ID);
+		if (ret != 0) {
+			pr_debug("iReadRegI2C error\n");
+			return;
+		}
+
+		Four_Cell_Array[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
+		Four_Cell_Array[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
+
+		/*Multi-Read*/
+		iReadRegI2C(pu_send_cmd, 2, &Four_Cell_Array[2],
+					FOUR_CELL_SIZE, EEPROM_READ_ID);
+		Is_Read_4Cell = 1;
+	}
+
+	if (data != NULL) {
+		pr_debug("return data\n");
+		memcpy(data, Four_Cell_Array, FOUR_CELL_SIZE);
+	}
+}
+
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -1538,7 +1578,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
-			return ERROR_NONE;
+				/* preload 4cell data */
+				read_4cell_from_eeprom(NULL);
+				return ERROR_NONE;
 
 		/* 4Cell version check, 2T7 And 2T7's checking is differet
 		 *	sp8spFlag = (((read_cmos_sensor(0x000C) & 0xFF) << 8)
@@ -2315,39 +2357,6 @@ static kal_uint32 get_sensor_temperature(void)
 	return temperature_convert;
 }
 
-#define FOUR_CELL_SIZE 3072/*size = 3072 = 0xc00*/
-static int Is_Read_4Cell;
-static char Four_Cell_Array[FOUR_CELL_SIZE + 2];
-static void read_4cell_from_eeprom(char *data)
-{
-	int ret;
-	int addr = 0x763;/*Start of 4 cell data*/
-	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
-
-	pu_send_cmd[0] = (char)(addr >> 8);
-	pu_send_cmd[1] = (char)(addr & 0xFF);
-
-	/* Check I2C is normal */
-	ret = iReadRegI2C(pu_send_cmd, 2, data, 1, EEPROM_READ_ID);
-	if (ret != 0) {
-		pr_debug("iReadRegI2C error");
-		return;
-	}
-
-	if (Is_Read_4Cell != 1) {
-		pr_debug("Need to read i2C");
-
-		Four_Cell_Array[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
-		Four_Cell_Array[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
-
-		/*Multi-Read*/
-		iReadRegI2C(pu_send_cmd, 2, &Four_Cell_Array[2],
-					FOUR_CELL_SIZE, EEPROM_READ_ID);
-		Is_Read_4Cell = 1;
-	}
-
-	memcpy(data, Four_Cell_Array, FOUR_CELL_SIZE);
-}
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)

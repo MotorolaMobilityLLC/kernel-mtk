@@ -53,6 +53,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 2016,
 		.grabwindow_height = 1508,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 278000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -65,23 +66,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4032,
 		.grabwindow_height = 3016,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 513000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-	},
-	/* capture1 mode must use same framelength,
-	 * linelength with Capture mode for shutter calculate
-	 */
-	.cap1 = {
-		.pclk = 400000000,
-		.linelength  = 4704,
-		.framelength = 3536,
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width  = 4208,
-		.grabwindow_height = 3120,
-		.mipi_data_lp2hs_settle_dc = 85,
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 240,
 	},
 	.custom1 = {
 	/*stereo camera bayer setting */
@@ -93,6 +80,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4032,
 		.grabwindow_height = 3016,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 513000000,
 		.max_framerate = 300,
 	},
 	.custom2 = {
@@ -105,6 +93,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4032,
 		.grabwindow_height = 3016,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 358000000,
 		.max_framerate = 300,
 	},
 	.custom3 = {
@@ -117,6 +106,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4032,
 		.grabwindow_height = 2256,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 358000000,
 		.max_framerate = 300,
 	},
 	.normal_video = {
@@ -128,6 +118,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4032,
 		.grabwindow_height = 3016,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 513000000,
 		.max_framerate = 300,
 	},
 	.hs_video = {
@@ -139,6 +130,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 1296,
 		.grabwindow_height = 736,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 486000000,
 		.max_framerate = 1200,
 	},
 	.slim_video = {
@@ -150,6 +142,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 1296,
 		.grabwindow_height = 736,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 484000000,
 		.max_framerate = 300,
 	},
 
@@ -159,19 +152,18 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
 	.ae_ispGain_delay_frame = 2,
-	.frame_time_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
 	.temperature_support = 1,
 	.sensor_mode_num = 8,
-
-	.cap_delay_frame = 2,
-	.pre_delay_frame = 2,
-	.custom1_delay_frame = 2,
-	.custom2_delay_frame = 2,
-	.video_delay_frame = 2,
-	.hs_video_delay_frame = 2,
-	.slim_video_delay_frame = 2,
+	.frame_time_delay_frame = 3,
+	.cap_delay_frame = 3,
+	.pre_delay_frame = 3,
+	.custom1_delay_frame = 3,
+	.custom2_delay_frame = 3,
+	.video_delay_frame = 3,
+	.hs_video_delay_frame = 3,
+	.slim_video_delay_frame = 3,
 
 	.isp_driving_current = ISP_DRIVING_8MA, /* mclk driving current */
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
@@ -406,26 +398,17 @@ static void set_shutter(kal_uint32 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 
-	/* Just should be called in capture case with long exposure */
-	if (shutter == 6) {
-		/*
-		 * return to normal mode from long exposure mode.
-		 */
-		write_cmos_sensor(0x0100, 0x00);
-		write_cmos_sensor(0x3004, 0x00);
-		write_cmos_sensor_w(0x0342,
-			imgsensor.line_length & 0xFFFF);
-		write_cmos_sensor(0x0100, 0x01);
-	}
 	if (shutter > (imgsensor_info.max_frame_length -
 		imgsensor_info.margin)) {
 		long_exp_times = shutter / (imgsensor_info.max_frame_length -
 			imgsensor_info.margin);
 		if (shutter % (imgsensor_info.max_frame_length -
 			imgsensor_info.margin))
-		long_exp_times++;
+			long_exp_times++;
 		if (long_exp_times > 128)
 			long_exp_times = 128;
+		if (long_exp_times < 1)
+			long_exp_times = 1;
 		long_exp_shift = fls(long_exp_times) - 1;
 		if (long_exp_times & (~(1 << long_exp_shift)))
 			long_exp_shift++;
@@ -527,23 +510,17 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 	spin_unlock(&imgsensor_drv_lock);
 
 	/* Just should be called in capture case with long exposure */
-	if (shutter == 6) {
-		/*return to normal mode from long exposure mode.*/
-		write_cmos_sensor(0x0100, 0x00);
-		write_cmos_sensor(0x3004, 0x00);
-		write_cmos_sensor_w(0x0342,
-			imgsensor.line_length & 0xFFFF);
-		write_cmos_sensor(0x0100, 0x01);
-	}
 	if (shutter > (imgsensor_info.max_frame_length -
 			imgsensor_info.margin)) {
 		long_exp_times = shutter / (imgsensor_info.max_frame_length -
 			imgsensor_info.margin);
 		if (shutter % (imgsensor_info.max_frame_length -
 			imgsensor_info.margin))
-		long_exp_times++;
+			long_exp_times++;
 		if (long_exp_times > 128)
 			long_exp_times = 128;
+		if (long_exp_times < 1)
+			long_exp_times = 1;
 		long_exp_shift = fls(long_exp_times) - 1;
 		if (long_exp_times & (~(1 << long_exp_shift)))
 			long_exp_shift++;
@@ -1200,14 +1177,12 @@ static void sensor_init(void)
 	write_cmos_sensor(0xBCB2, 0x01);
 
 	write_cmos_sensor(0x0138, 0x01);
-	write_cmos_sensor(0x0100, 0x00);
 }
 
 
 static void preview_setting(void)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1/2Binning@30fps
 	 * H: 2016
@@ -1297,13 +1272,11 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }	/* preview_setting */
 
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/* Mode Setting */
 	write_cmos_sensor(0x0112, 0x0A);
 	write_cmos_sensor(0x0113, 0x0A);
@@ -1384,14 +1357,11 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-	write_cmos_sensor(0x0100, 0x01);/* stream on? */
-	LOG_INF("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }	/* capture setting */
 
 static void hd_4k_setting(void)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * Full-reso (16:9)@30fps
 	 * H: 4032
@@ -1476,14 +1446,11 @@ static void hd_4k_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1/2Binning@30fps
 	 * H: 2016
@@ -1572,15 +1539,12 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-	write_cmos_sensor(0x0100, 0x01);
-	LOG_INF("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 
 }
 
 static void hs_video_setting(void)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1296X736@120fps
 	 * H: 1296
@@ -1667,14 +1631,11 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void slim_video_setting(void)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1296X736@30fps
 	 * H: 1296
@@ -1761,14 +1722,11 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom1_mode(void)
 {
 	LOG_INF("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
 	/* Mode Setting */
 	write_cmos_sensor(0x0112, 0x0A);
 	write_cmos_sensor(0x0113, 0x0A);
@@ -2900,6 +2858,45 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_shutter(*feature_data);
 		streaming_control(KAL_TRUE);
 		break;
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+	{
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.slim_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.custom1.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.custom2.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM3:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.custom3.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
+	}
+	break;
 	default:
 		break;
 	}

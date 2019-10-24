@@ -40,6 +40,7 @@ struct imgsensor_mode_struct {
 	kal_uint8 mipi_data_lp2hs_settle_dc;
 
 	kal_uint16 max_framerate;
+	kal_uint32 mipi_pixel_rate;
 
 };
 
@@ -71,7 +72,6 @@ struct imgsensor_info_struct {
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;
-	struct imgsensor_mode_struct cap1;
 	struct imgsensor_mode_struct normal_video;
 	struct imgsensor_mode_struct hs_video;
 	struct imgsensor_mode_struct slim_video;
