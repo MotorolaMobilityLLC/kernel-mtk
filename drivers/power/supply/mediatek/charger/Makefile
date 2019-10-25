@@ -42,3 +42,4 @@ ifeq ($(BUILD_SMT),true)
 endif
 
 obj-$(CONFIG_CHARGER_BQ25601) += bq25601.o
+obj-$(CONFIG_CHARGER_RT9471) += rt9471.o
