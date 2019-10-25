@@ -44,7 +44,8 @@ enum bq25601_part_no {
 };
 
 static int pn_data[] = {
-		[PN_BQ25600] = 0x00, [PN_BQ25600D] = 0x01, [PN_BQ25601] = 0x02,
+//		[PN_BQ25600] = 0x00, [PN_BQ25600D] = 0x01, [PN_BQ25601] = 0x02,
+		[PN_BQ25600] = 0x00, [PN_BQ25600D] = 0x01, [PN_BQ25601] = 0x09,
 		[PN_BQ25601D] = 0x07,
 };
 
@@ -52,6 +53,13 @@ static char *pn_str[] = {
 		[PN_BQ25600] = "bq25600", [PN_BQ25600D] = "bq25600d",
 		[PN_BQ25601] = "bq25601", [PN_BQ25601D] = "bq25601d",
 };
+
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="BQ25601";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
 struct bq25601 {
 	struct device *dev;
@@ -85,32 +93,72 @@ static const struct charger_properties bq25601_chg_props = {
 	.alias_name = "bq25601",
 };
 
+#define BQ25601_SLAVE_ADDR 0x6b
 static int __bq25601_read_reg(struct bq25601 *bq, u8 reg, u8 *data)
 {
-	s32 ret;
+	int ret = 0;
+	struct i2c_adapter *adap = bq->client->adapter;
+	struct i2c_msg msg[2];
+	u8 *w_buf = NULL;
+	u8 *r_buf = NULL;
 
-	ret = i2c_smbus_read_byte_data(bq->client, reg);
-	if (ret < 0) {
-		pr_info("i2c read fail: can't read from reg 0x%02X\n", reg);
-		return ret;
-	}
+	memset(msg, 0, 2 * sizeof(struct i2c_msg));
 
-	*data = (u8)ret;
+	w_buf = kzalloc(1, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+	r_buf = kzalloc(1, GFP_KERNEL);
+	if (r_buf == NULL)
+		return -1;
 
-	return 0;
+	*w_buf = reg;
+
+	msg[0].addr = BQ25601_SLAVE_ADDR;//new_client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 1;
+	msg[0].buf = w_buf;
+
+	msg[1].addr = BQ25601_SLAVE_ADDR;//new_client->addr;
+	msg[1].flags = 1;
+	msg[1].len = 1;
+	msg[1].buf = r_buf;
+
+	ret = i2c_transfer(adap, msg, 2);
+
+	memcpy(data, r_buf, 1);
+
+	kfree(w_buf);
+	kfree(r_buf);
+	return ret;
+
 }
 
 static int __bq25601_write_reg(struct bq25601 *bq, int reg, u8 val)
 {
-	s32 ret;
+	int ret = 0;
+	struct i2c_adapter *adap = bq->client->adapter;
+	struct i2c_msg msg;
+	u8 *w_buf = NULL;
 
-	ret = i2c_smbus_write_byte_data(bq->client, reg, val);
-	if (ret < 0) {
-		pr_info("i2c write fail: can't write 0x%02X to reg 0x%02X: %d\n",
-		       val, reg, ret);
-		return ret;
-	}
-	return 0;
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	w_buf = kzalloc(2, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+
+	w_buf[0] = reg;
+	memcpy(w_buf + 1, &val, 1);
+
+	msg.addr = BQ25601_SLAVE_ADDR;//new_client->addr;
+	msg.flags = 0;
+	msg.len = 2;
+	msg.buf = w_buf;
+
+	ret = i2c_transfer(adap, &msg, 1);
+
+	kfree(w_buf);
+	return ret;
+
 }
 
 static int bq25601_read_byte(struct bq25601 *bq, u8 reg, u8 *data)
@@ -120,6 +168,10 @@ static int bq25601_read_byte(struct bq25601 *bq, u8 reg, u8 *data)
 	mutex_lock(&bq->i2c_rw_lock);
 	ret = __bq25601_read_reg(bq, reg, data);
 	mutex_unlock(&bq->i2c_rw_lock);
+	if (ret<0)
+		pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+	else
+		ret =0;
 
 	return ret;
 }
@@ -132,8 +184,10 @@ static int bq25601_write_byte(struct bq25601 *bq, u8 reg, u8 data)
 	ret = __bq25601_write_reg(bq, reg, data);
 	mutex_unlock(&bq->i2c_rw_lock);
 
-	if (ret)
-		pr_info("Failed: reg=%02X, ret=%d\n", reg, ret);
+	if (ret<0)
+		pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+	else
+		ret =0;
 
 	return ret;
 }
@@ -145,7 +199,7 @@ static int bq25601_update_bits(struct bq25601 *bq, u8 reg, u8 mask, u8 data)
 
 	mutex_lock(&bq->i2c_rw_lock);
 	ret = __bq25601_read_reg(bq, reg, &tmp);
-	if (ret) {
+	if (ret<0) {
 		pr_info("Failed: reg=%02X, ret=%d\n", reg, ret);
 		goto out;
 	}
@@ -154,8 +208,10 @@ static int bq25601_update_bits(struct bq25601 *bq, u8 reg, u8 mask, u8 data)
 	tmp |= data & mask;
 
 	ret = __bq25601_write_reg(bq, reg, tmp);
-	if (ret)
+	if (ret<0)
 		pr_info("Failed: reg=%02X, ret=%d\n", reg, ret);
+	else
+		ret =0;
 
 out:
 	mutex_unlock(&bq->i2c_rw_lock);
@@ -770,6 +826,7 @@ static int bq25601_detect_device(struct bq25601 *bq)
 		bq->part_no = (data & REG0B_PN_MASK) >> REG0B_PN_SHIFT;
 		bq->revision =
 			(data & REG0B_DEV_REV_MASK) >> REG0B_DEV_REV_SHIFT;
+		pr_info("%s;part_no=%x;revision=%x;\n", __func__,bq->part_no,bq->revision);
 	}
 
 	return ret;
@@ -925,10 +982,12 @@ static int bq25601_is_charging_done(struct charger_device *chg_dev, bool *done)
 static int bq25601_set_ichg(struct charger_device *chg_dev, u32 curr)
 {
 	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
-
+       int ret;
 	pr_info("charge curr = %d\n", curr);
+       ret = bq25601_set_chargecurrent(bq, curr / 1000);
 
-	return bq25601_set_chargecurrent(bq, curr / 1000);
+	   bq25601_dump_regs(bq);
+	return ret;
 }
 
 static int bq25601_get_ichg(struct charger_device *chg_dev, u32 *curr)
@@ -958,10 +1017,11 @@ static int bq25601_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
 static int bq25601_set_vchg(struct charger_device *chg_dev, u32 volt)
 {
 	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
-
+        int ret=0;
 	pr_info("charge volt = %d\n", volt);
-
-	return bq25601_set_chargevolt(bq, volt / 1000);
+       ret = bq25601_set_chargevolt(bq, volt / 1000);
+	   bq25601_dump_regs(bq);
+	return ret;
 }
 
 static int bq25601_get_vchg(struct charger_device *chg_dev, u32 *volt)
@@ -993,10 +1053,13 @@ static int bq25601_set_ivl(struct charger_device *chg_dev, u32 volt)
 static int bq25601_set_icl(struct charger_device *chg_dev, u32 curr)
 {
 	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
-
+       int ret=0;
 	pr_info("indpm curr = %d\n", curr);
 
-	return bq25601_set_input_current_limit(bq, curr / 1000);
+	ret =bq25601_set_input_current_limit(bq, curr / 1000);
+
+	bq25601_dump_regs(bq);
+	return ret;
 }
 
 static int bq25601_get_icl(struct charger_device *chg_dev, u32 *curr)
@@ -1035,6 +1098,8 @@ static int bq25601_set_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s OTG %s\n", en ? "enable" : "disable",
 	       !ret ? "successfully" : "failed");
+
+	   bq25601_dump_regs(bq);
 
 	return ret;
 }
@@ -1148,6 +1213,13 @@ static int bq25601_charger_probe(struct i2c_client *client,
 
 	pr_info("bq25601 probe start\n");
 
+//+add by hzb for ontim debug
+        if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+        {
+           return -EIO;
+        }
+//-add by hzb for ontim debug
+
 	bq = devm_kzalloc(&client->dev, sizeof(struct bq25601), GFP_KERNEL);
 	if (!bq)
 		return -ENOMEM;
@@ -1200,6 +1272,14 @@ static int bq25601_charger_probe(struct i2c_client *client,
 		return ret;
 	}
 
+	bq->psy = power_supply_get_by_name("charger");
+
+	if (!bq->psy) {
+		pr_err("%s: get power supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+
 	ret = sysfs_create_group(&bq->dev->kobj, &bq25601_attr_group);
 	if (ret)
 		dev_info(bq->dev, "failed to register sysfs. err: %d\n", ret);
@@ -1210,6 +1290,10 @@ static int bq25601_charger_probe(struct i2c_client *client,
 
 	pr_info("bq25601 probe successfully, Part Num:%d, Revision:%d\n!",
 	       bq->part_no, bq->revision);
+
+//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
 
 	return 0;
 }
