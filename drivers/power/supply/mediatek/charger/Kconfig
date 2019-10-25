@@ -155,3 +155,7 @@ config MTK_BQ24296_SUPPORT
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ24296 is used.
 
+config CHARGER_RT9471
+	bool "CHARGER_RT9471"
+	default n
+	depends on MTK_CHARGER

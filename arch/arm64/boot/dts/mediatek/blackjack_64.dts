@@ -638,11 +638,6 @@
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
-&charger {
-	algorithm_name = "DualSwitchCharging";
-	chg1_ta_ac_charger_current = <2000000>;
-	chg2_ta_ac_charger_current = <2000000>;
-};
 
 &i2c3 {
 	rt9465@4b {
@@ -676,9 +671,9 @@
 		reg = <0x6c>;
 		status = "okay";
 	};
-       externel-eta-charger@6b{
+       externel-eta-charger@6e{
                compatible = "ontim,eta6937";
-               reg = <0x6b>;/*dumy addr,in fact ,the addr is 0x6b-1*/
+               reg = <0x6e>;/*dumy addr,in fact ,the addr is 0x6b-1*/
                status = "okay";
        };
 	externel-charger@6a{
@@ -686,6 +681,16 @@
 		reg = <0x6a>;
 		status = "okay";
 		ichg = <1050000>; /* uA */
+	};
+	externel-charger@6b{
+		compatible = "ti,bq25601";
+		reg = <0x6b>;
+		status = "okay";
+	};
+	externel-charger@53{
+		compatible = "richtek,rt9471";
+		reg = <0x53>;
+		status = "okay";
 	};
 };
 &pio {
