@@ -1,0 +1,80 @@
+/* Copyright (c) 2019, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include "mt6771-moto-overlay-lima.dtsi"
+
+/* Board match root node */
+/ {
+	fragment@model {
+		target-path = "/";
+		__overlay__ {
+			mot,model = "lima";
+			mot,board-id = <0x41 0xA200>;
+		};
+	};
+};
+
+/* Changes for lima EVT1 go here */
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 26 0>;
+};
+
+
+/* Changes for lima EVT1 CMA conifg here */
+&reserved_memory {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	ranges;
+
+#ifdef CONFIG_HIGHMEM
+	zmc-default {
+		compatible = "mediatek,zone_movable_cma";
+		size = <0 0x10000000>;
+		alignment = <0 0x10000000>;
+		alloc-ranges = <0 0x00000000 0 0xc0000000>;
+	};
+
+	consys-reserve-memory {
+		compatible = "mediatek,consys-reserve-memory";
+		no-map;
+		size = <0 0x200000>;
+		alignment = <0 0x200000>;
+		alloc-ranges = <0 0x40000000 0 0x70000000>;
+	};
+
+	reserve-memory-scp_share {
+		compatible = "mediatek,reserve-memory-scp_share";
+		no-map;
+		size = <0 0x00300000>;
+		alignment = <0 0x1000000>;
+		alloc-ranges = <0 0x40000000 0 0x50000000>;
+	};
+#else
+	zmc-default {
+		compatible = "mediatek,zone_movable_cma";
+		size = <0 0xffc00000>;
+		alignment = <0 0x10000000>;
+		alloc-ranges = <0 0xc0000000 1 0x00000000>;
+	};
+#endif
+};
+
+
+
+#include <lima/cust_evt1.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
+
+
