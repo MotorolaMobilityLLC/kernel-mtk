@@ -721,6 +721,7 @@ static ssize_t ilitek_proc_debug_message_read(struct file *filp, char __user *bu
 	if (!wait_event_interruptible_timeout(idev->inq, idev->debug_buf[idev->out_data_index].mark, msecs_to_jiffies(3000))) {
 		ipio_err("Error! get debug data fail\n");
 		*pos = send_data_len;
+		mutex_unlock(&idev->debug_read_mutex);
 		return send_data_len;
 	}
 	mutex_lock(&idev->debug_mutex);
