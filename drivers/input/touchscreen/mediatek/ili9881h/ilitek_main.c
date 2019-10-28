@@ -385,6 +385,7 @@ static void ilitek_tddi_wq_init(void)
 #endif
 }
 
+extern volatile int gesture_dubbleclick_en;
 int ilitek_tddi_sleep_handler(int mode)
 {
 	int ret = 0;
@@ -438,6 +439,11 @@ int ilitek_tddi_sleep_handler(int mode)
 		if (ilitek_tddi_ic_check_busy(50, 20) < 0)
 			ipio_err("Check busy timeout during deep suspend\n");
 
+		if (gesture_dubbleclick_en) {
+			idev->gesture = 1;
+		} else {
+			idev->gesture = 0;
+		}
 		if (idev->gesture) {
 			ilitek_tddi_switch_tp_mode(P5_X_FW_GESTURE_MODE);
 			enable_irq_wake(idev->irq_num);
