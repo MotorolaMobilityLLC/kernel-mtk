@@ -1955,6 +1955,7 @@ write_cmos_sensor(0x004C, 0x0100};
 #endif
 }
 
+extern char front_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -1967,9 +1968,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-			LOG_INF("i2c write id : 0x%x, sensor id: 0x%x\n",
-			imgsensor.i2c_write_id, *sensor_id);
-			return ERROR_NONE;
+                                memset(front_cam_name, 0x00, sizeof(front_cam_name));
+                                memcpy(front_cam_name, "1_hi846", 64);
+			        LOG_INF("i2c write id : 0x%x, sensor id: 0x%x\n",
+			        imgsensor.i2c_write_id, *sensor_id);
+			        return ERROR_NONE;
 			}
 
 			retry--;
