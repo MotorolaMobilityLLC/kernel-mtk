@@ -212,6 +212,7 @@
 #define S5K3P8SX_SENSOR_ID                      0x3108
 #define S5K2L7_SENSOR_ID                        0x20C7
 #define S5K3L8_SENSOR_ID                        0x30C8
+#define S5K3L6_SENSOR_ID                        0x30C6
 #define S5K3M3_SENSOR_ID                        0x30D3
 #define S5K2X8_SENSOR_ID                        0x2188
 #define S5K2P7_SENSOR_ID                        0x2107
@@ -440,6 +441,7 @@
 #define SENSOR_DRVNAME_S5K3P8SX_MIPI_RAW        "s5k3p8sx_mipi_raw"
 #define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7_mipi_raw"
 #define SENSOR_DRVNAME_S5K3L8_MIPI_RAW          "s5k3l8_mipi_raw"
+#define SENSOR_DRVNAME_S5K3L6_MIPI_RAW          "s5k3l6_mipi_raw"
 #define SENSOR_DRVNAME_S5K3M3_MIPI_RAW          "s5k3m3_mipi_raw"
 #define SENSOR_DRVNAME_S5K2X8_MIPI_RAW          "s5k2x8_mipi_raw"
 #define SENSOR_DRVNAME_S5K2P7_MIPI_RAW          "s5k2p7_mipi_raw"
