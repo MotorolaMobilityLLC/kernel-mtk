@@ -912,6 +912,10 @@ unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
 {
+#if 1
+	int id = platform_board_id;
+	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", id);
+#else
 	unsigned int gpio_base = 343;
 	unsigned int pin0 = 165;
 	unsigned int pin1 = 166;
@@ -925,6 +929,7 @@ static int get_version_id(void)
 	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
 
 	return sprintf(hwinfo[board_id].hwinfo_buf, "0x%x", pin_val);
+#endif
 }
 
 static int get_qcn_type(void)
