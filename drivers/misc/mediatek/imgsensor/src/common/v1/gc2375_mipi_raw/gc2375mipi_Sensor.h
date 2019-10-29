@@ -39,6 +39,8 @@ enum{
 	IMGSENSOR_MODE_VIDEO,
 	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
+        IMGSENSOR_MODE_CUSTOM1,
+        IMGSENSOR_MODE_CUSTOM2,
 };
 
 struct imgsensor_mode_struct {
@@ -84,6 +86,8 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct normal_video;
 	struct imgsensor_mode_struct hs_video;
 	struct imgsensor_mode_struct slim_video;
+	struct imgsensor_mode_struct custom1;
+	struct imgsensor_mode_struct custom2;
 	kal_uint8  ae_shut_delay_frame;
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame;
@@ -93,6 +97,11 @@ struct imgsensor_info_struct {
 	kal_uint8  cap_delay_frame;
 	kal_uint8  pre_delay_frame;
 	kal_uint8  video_delay_frame;
+	kal_uint8  custom1_delay_frame;     //enter custom1 delay frame num
+	kal_uint8  custom2_delay_frame;     //enter custom2 delay frame num
+	kal_uint8  custom3_delay_frame;     //enter custom3 delay frame num
+	kal_uint8  custom4_delay_frame;     //enter custom4 delay frame num
+	kal_uint8  custom5_delay_frame;     //enter custom5 delay frame num
 	kal_uint8  hs_video_delay_frame;
 	kal_uint8  slim_video_delay_frame;
 	kal_uint8  margin;
