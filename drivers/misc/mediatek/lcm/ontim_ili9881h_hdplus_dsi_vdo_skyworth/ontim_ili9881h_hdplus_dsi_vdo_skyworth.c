@@ -507,7 +507,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 }
 
 
-
+extern volatile int gesture_dubbleclick_en;
 static void lcm_reset(void)
 {
 	SET_RESET_PIN(0);
@@ -537,26 +537,24 @@ static void lcm_init(void)
 	int ret = 0;
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
 
-	set_gpio_lcd_enp(1);
-	MDELAY(2);//t2
-	set_gpio_lcd_enn(1);
+	if (!gesture_dubbleclick_en) {
+		set_gpio_lcd_enp(1);
+		MDELAY(2);//t2
+		set_gpio_lcd_enn(1);
 
-	ret = NT50358A_write_byte(cmd, data);
-	if (ret < 0)
-		LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
-	else
-		LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
-	cmd = 0x01;
-	data = 0x0E;
-	ret = NT50358A_write_byte(cmd, data);
-	if (ret < 0)
-		LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
-	else
-		LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
-
-
-
-
+		ret = NT50358A_write_byte(cmd, data);
+		if (ret < 0)
+			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
+		else
+			LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
+		cmd = 0x01;
+		data = 0x0E;
+		ret = NT50358A_write_byte(cmd, data);
+		if (ret < 0)
+			LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
+		else
+			LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
+	}
 	lcm_reset();
 
 	push_table(NULL, init_setting,
@@ -571,10 +569,11 @@ static void lcm_suspend(void)
 
 	LCM_LOGI("%s,ili9881h lcm_suspend start\n", __func__);
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-
-	set_gpio_lcd_enn(0);
-	MDELAY(2);
-	set_gpio_lcd_enp(0);
+	if (!gesture_dubbleclick_en) {
+		set_gpio_lcd_enn(0);
+		MDELAY(2);
+		set_gpio_lcd_enp(0);
+	}
 #endif
 	LCM_LOGI("%s,ili9881h lcm_suspend done\n", __func__);
 

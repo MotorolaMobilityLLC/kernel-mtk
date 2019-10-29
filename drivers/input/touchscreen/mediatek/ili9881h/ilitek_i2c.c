@@ -276,7 +276,7 @@ static int ilitek_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *
 	idev->info_from_hex = ENABLE;
 
 #if ENABLE_GESTURE
-	idev->gesture = ENABLE;
+	idev->gesture = DISABLE;
 #endif
 
 	return info->hwif->plat_probe();

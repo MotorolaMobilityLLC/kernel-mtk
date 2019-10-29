@@ -51,6 +51,7 @@
 #define KEY_GESTURE_V                           KEY_V
 #define KEY_GESTURE_C                           KEY_C
 #define KEY_GESTURE_Z                           KEY_Z
+#define KEY_GESTURE_DC                          KEY_POWER
 
 #define GESTURE_LEFT                            0x20
 #define GESTURE_RIGHT                           0x21
@@ -88,6 +89,7 @@ struct fts_gesture_st {
     u8 mode;
     u8 active;
 };
+extern volatile int gesture_dubbleclick_en;
 
 /*****************************************************************************
 * Static variables
@@ -227,7 +229,7 @@ static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
         gesture = KEY_GESTURE_DOWN;
         break;
     case GESTURE_DOUBLECLICK:
-        gesture = KEY_GESTURE_U;
+        gesture = KEY_GESTURE_DC;
         break;
     case GESTURE_O:
         gesture = KEY_GESTURE_O;
@@ -352,7 +354,11 @@ int fts_gesture_suspend(struct fts_ts_data *ts_data)
     int ret = 0;
     int i = 0;
     u8 state = 0xFF;
-
+    if (gesture_dubbleclick_en) {
+        fts_gesture_data.mode = ENABLE;
+    } else {
+        fts_gesture_data.mode = DISABLE;
+    }
     FTS_INFO("gesture suspend...");
     /* gesture not enable, return immediately */
     if (fts_gesture_data.mode == DISABLE) {
@@ -470,8 +476,8 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
     fts_create_gesture_sysfs(ts_data->dev);
 
     memset(&fts_gesture_data, 0, sizeof(struct fts_gesture_st));
-    fts_gesture_data.mode = ENABLE;
-    fts_gesture_data.active = DISABLE;
+    fts_gesture_data.mode = DISABLE;
+    fts_gesture_data.active = ENABLE;
 
     FTS_FUNC_EXIT();
     return 0;
