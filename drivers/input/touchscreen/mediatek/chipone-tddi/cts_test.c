@@ -178,12 +178,6 @@ static int wait_test_complete(struct cts_device *cts_dev, int skip_frames)
     for(i = 0; i < (skip_frames + 1); i++) {
         u8 ready;
 
-        ret = cts_clr_data_ready_flag(cts_dev);
-        if (ret) {
-            cts_err("Clear data ready flag failed %d", ret);
-            return ret;
-        }
-
         for (j = 0; j < 1000; j++) {
             mdelay(1);
 
@@ -201,6 +195,13 @@ static int wait_test_complete(struct cts_device *cts_dev, int skip_frames)
 
         if (ready == 0) {
             return -ETIMEDOUT;
+        }
+        if (i < skip_frames) {
+	        ret = cts_clr_data_ready_flag(cts_dev);
+	        if (ret) {
+	            cts_err("Clear data ready flag failed %d", ret);
+	            return ret;
+	        }
         }
     }
 
@@ -299,7 +300,7 @@ static void dump_test_data(struct cts_device *cts_dev,
     const char *desc, const u16 *data)
 {
 #define SPLIT_LINE_STR \
-        "----------------------------------------------------------------------------------------------------------------\n"
+        "----------------------------------------------------------------------------------------------------------------"
 #define ROW_NUM_FORMAT_STR  "%2d | "
 #define COL_NUM_FORMAT_STR  "%-5u "
 #define DATA_FORMAT_STR     "%-5u "
@@ -307,6 +308,8 @@ static void dump_test_data(struct cts_device *cts_dev,
     int r, c;
     u32 max, min, sum, average;
     int max_r, max_c, min_r, min_c;
+    char linebuf [128];
+    int count;
 
     max = min = data[0];
     sum = 0;
@@ -329,23 +332,34 @@ static void dump_test_data(struct cts_device *cts_dev,
     }
     average = sum / (cts_dev->fwdata.rows * cts_dev->fwdata.cols);
 
-    printk(SPLIT_LINE_STR
-           "%s test data MIN: [%u][%u]=%u, MAX: [%u][%u]=%u, AVG=%u\n"
-           SPLIT_LINE_STR
-           "   | ", desc, min_r, min_c, min, max_r, max_c, max, average);
+    cts_info(SPLIT_LINE_STR);
+    count = 0;
+    count += snprintf(linebuf + count, sizeof(linebuf) - count,
+           " %s test data MIN: [%u][%u]=%u, MAX: [%u][%u]=%u, AVG=%u",
+           desc, min_r, min_c, min, max_r, max_c, max, average);
+    cts_info("%s", linebuf);
+    cts_info(SPLIT_LINE_STR);
+
+    count = 0;
+    count += snprintf(linebuf + count, sizeof(linebuf) - count, "   | ");
     for (c = 0; c < cts_dev->fwdata.cols; c++) {
-        printk(COL_NUM_FORMAT_STR, c);
+        count += snprintf(linebuf + count, sizeof(linebuf) - count,
+			COL_NUM_FORMAT_STR, c);
     }
-    printk("\n" SPLIT_LINE_STR);
+    cts_info("%s", linebuf);
+    cts_info(SPLIT_LINE_STR);
 
     for (r = 0; r < cts_dev->fwdata.rows; r++) {
-        printk(ROW_NUM_FORMAT_STR, r);
+        count = 0;
+        count += snprintf(linebuf + count, sizeof(linebuf) - count,
+			ROW_NUM_FORMAT_STR, r);
         for (c = 0; c < cts_dev->fwdata.cols; c++) {
-            printk(DATA_FORMAT_STR, data[r * cts_dev->fwdata.cols + c]);
+            count += snprintf(linebuf + count, sizeof(linebuf) - count,
+				DATA_FORMAT_STR, data[r * cts_dev->fwdata.cols + c]);
         }
-        printk("\n");
+        cts_info("%s", linebuf);
     }
-    printk(SPLIT_LINE_STR);
+    cts_info(SPLIT_LINE_STR);
 
 #undef SPLIT_LINE_STR
 #undef ROW_NUM_FORMAT_STR
@@ -353,6 +367,75 @@ static void dump_test_data(struct cts_device *cts_dev,
 #undef DATA_FORMAT_STR
 }
 
+static void dump_comp_cap(struct cts_device *cts_dev, const u8 *data)
+{
+#define SPLIT_LINE_STR \
+        "----------------------------------------------------------------------------"
+#define ROW_NUM_FORMAT_STR  "%2d | "
+#define COL_NUM_FORMAT_STR  "%-3u "
+#define DATA_FORMAT_STR     "%-3u "
+
+    int r, c;
+    u32 max, min, sum, average;
+    int max_r, max_c, min_r, min_c;
+    char linebuf [128];
+    int count;
+
+    max = min = data[0];
+    sum = 0;
+    max_r = max_c = min_r = min_c = 0;
+    for (r = 0; r < cts_dev->fwdata.rows; r++) {
+        for (c = 0; c < cts_dev->fwdata.cols; c++) {
+            u8 val = data[r * cts_dev->fwdata.cols + c];
+
+            sum += val;
+            if (val > max) {
+                max = val;
+                max_r = r;
+                max_c = c;
+            } else if (val < min) {
+                min = val;
+                min_r = r;
+                min_c = c;
+            }
+        }
+    }
+    average = sum / (cts_dev->fwdata.rows * cts_dev->fwdata.cols);
+
+    cts_info(SPLIT_LINE_STR);
+    count = 0;
+    count += snprintf(linebuf + count, sizeof(linebuf) - count,
+           " Compensate Cap MIN: [%u][%u]=%u, MAX: [%u][%u]=%u, AVG=%u",
+           min_r, min_c, min, max_r, max_c, max, average);
+    cts_info("%s", linebuf);
+    cts_info(SPLIT_LINE_STR);
+
+    count = 0;
+    count += snprintf(linebuf + count, sizeof(linebuf) - count, "   | ");
+    for (c = 0; c < cts_dev->fwdata.cols; c++) {
+        count += snprintf(linebuf + count, sizeof(linebuf) - count,
+			COL_NUM_FORMAT_STR, c);
+    }
+    cts_info("%s", linebuf);
+    cts_info(SPLIT_LINE_STR);
+
+    for (r = 0; r < cts_dev->fwdata.rows; r++) {
+        count = 0;
+        count += snprintf(linebuf + count, sizeof(linebuf) - count,
+			ROW_NUM_FORMAT_STR, r);
+        for (c = 0; c < cts_dev->fwdata.cols; c++) {
+            count += snprintf(linebuf + count, sizeof(linebuf) - count,
+				DATA_FORMAT_STR, data[r * cts_dev->fwdata.cols + c]);
+        }
+        cts_info("%s", linebuf);
+    }
+    cts_info(SPLIT_LINE_STR);
+
+#undef SPLIT_LINE_STR
+#undef ROW_NUM_FORMAT_STR
+#undef COL_NUM_FORMAT_STR
+#undef DATA_FORMAT_STR
+}
 /* Return number of failed nodes */
 static int validate_test_result(struct cts_device *cts_dev,
         const char *desc, u16 *test_result, u16 threshold)
@@ -891,9 +974,9 @@ int cts_compensate_cap_test(struct cts_device *cts_dev, u8 min_thres, u8 max_thr
     int ret = 0;
     bool data_valid = false;
     u8 r, c;
-    int test_result = -1;
 
-    cts_info("cts_compensate_cap_test");
+    cts_info("Compensate Cap test, threshold [%u, %u]",
+		min_thres, max_thres);
 
     cap = kzalloc(cts_dev->hwdata->num_row * cts_dev->hwdata->num_col, GFP_KERNEL);
     if (cap == NULL) {
@@ -914,35 +997,32 @@ int cts_compensate_cap_test(struct cts_device *cts_dev, u8 min_thres, u8 max_thr
         goto unlock_device;
     }
 
-    ret = cts_disable_get_compensate_cap(cts_dev);
-    if (ret) {
-        cts_err("Disable get compensate cap failed %d", ret);
-        goto unlock_device;
-    }
-
     data_valid = true;
+
+    {
+	int r = cts_disable_get_compensate_cap(cts_dev);
+	if (r) {
+	    cts_err("Disable get compensate cap failed %d", r);
+	}
+    }
 unlock_device:
     cts_unlock_device(cts_dev);
 
     if (data_valid) {
-        test_result = 0;
+	dump_comp_cap(cts_dev, cap);
+        ret = 0;
         for (r = 0; r < cts_dev->fwdata.rows; r++) {
             for (c = 0; c < cts_dev->fwdata.cols; c++) {
-                if (cap[r * cts_dev->fwdata.cols + c] > max_thres 
-                    || cap[r * cts_dev->fwdata.cols + c] < min_thres)
+                if (cap[r * cts_dev->fwdata.cols + c] > max_thres ||
+                     cap[r * cts_dev->fwdata.cols + c] < min_thres)
                 {
-                    test_result = -1;
-                    break;    
+                    ret++;
                 }        
             }
-            if (test_result == -1)
-            {
-                break;    
-            }    
         }
-    }  
+    }
 	kfree(cap);
-    return test_result;  
+    return ret;
 } 
 
 int cts_rawdata_test(struct cts_device *cts_dev, u16 min_thres, u16 max_thres)
@@ -950,7 +1030,6 @@ int cts_rawdata_test(struct cts_device *cts_dev, u16 min_thres, u16 max_thres)
 	int ret;
 	bool data_valid = false;
 	u8 r, c;
-	int test_result = -1;
 	u16 *rawdata;
 	int i;
 	
@@ -964,30 +1043,29 @@ int cts_rawdata_test(struct cts_device *cts_dev, u16 min_thres, u16 max_thres)
 	cts_lock_device(cts_dev);
 	ret = cts_enable_get_rawdata(cts_dev);
 	if (ret) {
-		cts_err("can not enable get rawdata");
+		cts_err("Enable get rawdata failed %d", ret);
 		goto unlock_device;
 	}
 
 	ret = cts_send_command(cts_dev, CTS_CMD_QUIT_GESTURE_MONITOR);
 	if (ret) {
-		cts_err("send quit gesture monitor err");
+		cts_err("send quit gesture monitor failed %d", ret);
 	}
 
 	msleep(50);
 	for (i = 0; i < 3; i++) {
 		ret = cts_get_rawdata(cts_dev, rawdata);
 		if (ret) {
-			cts_err("get rawdata err");
-		}
-		else {
+			cts_err("get rawdata failed %d", ret);
+		} else {
 			break;
 		}	
 		mdelay(30);
 	}
 	ret = cts_disable_get_rawdata(cts_dev);
 	if (ret) {
-		cts_err("disable get rawdata err");
-		return -EPERM;
+		cts_err("Disable get rawdata failed %d", ret);
+		goto unlock_device;
 	}
 	if (i < 3) {
 		data_valid = true;
@@ -996,26 +1074,20 @@ unlock_device:
 	cts_unlock_device(cts_dev);
 
 	if (data_valid) {
-		test_result = 0;
+		dump_test_data(cts_dev, "Rawdata", rawdata);
+		ret = 0;
 		for (r = 0; r < cts_dev->fwdata.rows; r++) {
 			for (c = 0; c < cts_dev->fwdata.cols; c++) {
 				if (rawdata[r * cts_dev->fwdata.cols + c] > max_thres 
 					|| rawdata[r * cts_dev->fwdata.cols + c] < min_thres)
 				{
-					test_result = -1;
+					ret++;
 					break;	  
 				}		 
 			}
-			if (test_result == -1)
-			{
-				break;	  
-			}	 
 		}
 	}
 	kfree(rawdata);
-	return test_result;  
+	return ret;
 }
-
-
-
 

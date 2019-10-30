@@ -533,10 +533,6 @@ const struct cts_firmware *cts_request_firmware(
         hwid, fwid, curr_firmware_ver);
 #endif /* CFG_CTS_DRIVER_BUILTIN_FIRMWARE */
 
-#ifdef CFG_CTS_KERNEL_BUILTIN_FIRMWARE
-    
-#endif /* CFG_CTS_DRIVER_BUILTIN_FIRMWARE */
-
 #ifdef CFG_CTS_FIRMWARE_IN_FS
     /* Check firmware in file system when probe only when build to .ko */
     if (is_filesystem_mounted(CFG_CTS_FIRMWARE_FILEPATH)) {
