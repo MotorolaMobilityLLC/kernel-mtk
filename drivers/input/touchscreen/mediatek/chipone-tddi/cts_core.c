@@ -2648,10 +2648,30 @@ int cts_disable_get_compensate_cap(const struct cts_device *cts_dev)
 
 int cts_get_compensate_cap(const struct cts_device *cts_dev, u8 *cap)
 {
+	int i, ret;
 
     cts_info("Get compensate cap");
 
-    /* Use hardware row & col here */
-    return cts_fw_reg_readsb_delay_idle(cts_dev, CTS_DEVICE_FW_REG_COMPENSATE_CAP, cap,
-        cts_dev->hwdata->num_row *cts_dev->hwdata->num_col, 500);
+    /* Wait compensate cap ready */
+    for (i = 0; i < 100; i++) {
+        u8 ready;
+
+        ret = cts_fw_reg_readb(cts_dev, 0x4E, &ready);
+        if (ret) {
+            cts_err("Read compensate cap ready failed %d", ret);
+        } else {
+            if (ready) {
+                /* Use hardware row & col here */
+                return cts_fw_reg_readsb_delay_idle(cts_dev,
+                    CTS_DEVICE_FW_REG_COMPENSATE_CAP, cap,
+                    cts_dev->hwdata->num_row *cts_dev->hwdata->num_col, 500);
+            }
+        }
+        mdelay(1);
+    }
+
+    cts_err("Wait compensate cap ready timeout");
+
+    return -ETIMEDOUT;
 }
+

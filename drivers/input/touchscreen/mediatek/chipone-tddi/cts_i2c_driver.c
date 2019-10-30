@@ -24,11 +24,18 @@ bool cts_show_debug_log = false;
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
 
+extern volatile int gesture_dubbleclick_en;
 int cts_suspend(struct chipone_ts_data *cts_data)
 {
     int ret;
 
     cts_info("Suspend");
+
+    if (gesture_dubbleclick_en) {
+        cts_enable_gesture_wakeup(&cts_data->cts_dev);
+    } else {
+        cts_disable_gesture_wakeup(&cts_data->cts_dev);
+    }
 
     cts_lock_device(&cts_data->cts_dev);
     ret = cts_suspend_device(&cts_data->cts_dev);
