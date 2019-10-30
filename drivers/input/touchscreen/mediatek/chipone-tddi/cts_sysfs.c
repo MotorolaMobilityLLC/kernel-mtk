@@ -1182,6 +1182,119 @@ static ssize_t rawdata_test_store(struct device *dev,
 static DEVICE_ATTR(rawdata_test, S_IWUSR | S_IRUGO,
         rawdata_test_show, rawdata_test_store);
 
+static ssize_t self_test_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
+    struct cts_device *cts_dev = &cts_data->cts_dev;
+    u16 rawdata_min = 700, rawdata_max = 1500;
+    u16 open_threshold = 200;
+    u16 short_threshold = 200;
+    u8 compensate_cap_min = 20;
+    u8 compensate_cap_max = 100;
+    int ret;
+    int rawdata_test_result = 0;
+    int open_test_result = 0;
+    int short_test_result = 0;
+    int comp_cap_test_result = 0;
+
+    if (argc < 1 || argc > 7) {
+        return sprintf(buf, "Invalid num args\n"
+                "USAGE:\n"
+                "  1. echo 1 [rawdata_min] [rawdata_max] [open_threshold] [short_threshold] > self_test\n"
+                "  2. cat self_test\n");
+    }
+
+	if (argc > 1) {
+	    ret = kstrtou16(argv[1], 0, &rawdata_min);
+	    if (ret) {
+	        return sprintf(buf, "Invalid rawdata test min: %s\n", argv[1]);
+	    }
+	}
+
+	if (argc > 2) {
+		ret = kstrtou16(argv[2], 0, &rawdata_max);
+		if (ret) {
+			return sprintf(buf, "Invalid rawdata test max: %s\n", argv[2]);
+		}
+	}
+
+	if (argc > 3) {
+		ret = kstrtou16(argv[3], 0, &open_threshold);
+		if (ret) {
+			return sprintf(buf, "Invalid open test threshold: %s\n", argv[3]);
+		}
+	}
+
+	if (argc > 4) {
+		ret = kstrtou16(argv[4], 0, &short_threshold);
+		if (ret) {
+			return sprintf(buf, "Invalid short test threshold: %s\n", argv[4]);
+		}
+	}
+	if (argc > 5) {
+		ret = kstrtou8(argv[5], 0, &compensate_cap_min);
+		if (ret) {
+			return sprintf(buf, "Invalid compensate min: %s\n", argv[3]);
+		}
+	}
+
+	if (argc > 6) {
+		ret = kstrtou8(argv[6], 0, &compensate_cap_max);
+		if (ret) {
+			return sprintf(buf, "Invalid compensate max: %s\n", argv[4]);
+		}
+	}
+
+    cts_info("Selftest, rawdata: [%u, %d] open: %u, short: %u, comp_cap [%u, %u]",
+		rawdata_min, rawdata_max, open_threshold, short_threshold,
+		compensate_cap_min, compensate_cap_max);
+
+    rawdata_test_result = cts_rawdata_test(cts_dev, rawdata_min, rawdata_max);
+    if (rawdata_test_result) {
+		cts_err("Rawdata test failed %d", rawdata_test_result);
+        // Go through
+    }
+	open_test_result = cts_open_test(cts_dev, open_threshold);
+    if (open_test_result) {
+		cts_err("Open test failed %d", open_test_result);
+    }
+	short_test_result = cts_short_test(cts_dev, short_threshold);
+    if (short_test_result) {
+		cts_err("Short test failed %d", short_test_result);
+    }
+    comp_cap_test_result = cts_compensate_cap_test(cts_dev,
+		compensate_cap_min, compensate_cap_max);
+    if (comp_cap_test_result) {
+		cts_err("Compensate cap test failed %d", comp_cap_test_result);
+    }
+
+	ret = 0;
+	if (rawdata_test_result) {
+		ret += BIT(0);
+	}
+	if (open_test_result) {
+		ret += BIT(1);
+	}
+	if (short_test_result) {
+		ret += BIT(2);
+	}
+	if (comp_cap_test_result) {
+		ret += BIT(3);
+	}
+	return sprintf(buf, "%s\n", ret ? "fail" : "pass");
+}
+
+static ssize_t self_test_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t count)
+{
+    parse_arg(buf, count);
+
+    return count;
+}
+static DEVICE_ATTR(self_test, S_IWUSR | S_IRUGO,
+        self_test_show, self_test_store);
+
 static struct attribute *cts_dev_test_atts[] = {
     &dev_attr_open_test.attr,
     &dev_attr_short_test.attr,
@@ -1191,6 +1304,7 @@ static struct attribute *cts_dev_test_atts[] = {
 #endif
     &dev_attr_compensate_cap_test.attr,
     &dev_attr_rawdata_test.attr,
+    &dev_attr_self_test.attr,
     NULL
 };
 
@@ -1840,7 +1954,7 @@ unlock_device:
     cts_unlock_device(cts_dev);
 
     if (data_valid) {
-        count += sprintf(buf + count, SPLIT_LINE_STR "       ");
+        count += sprintf(buf + count, SPLIT_LINE_STR "      ");
 
         for (c = 0; c < cts_dev->fwdata.cols; c++) {
             count += sprintf(buf + count, COL_NUM_FORMAT_STR, c);
