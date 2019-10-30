@@ -218,7 +218,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 0, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0xff},
@@ -268,7 +268,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] =
 };
 
 #if 0
-//no mirror flip
+//mirror flip
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
 	.i4OffsetX = 16,
@@ -278,8 +278,8 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 	.i4PairNum  = 4,
 	.i4SubBlkW  = 16,
 	.i4SubBlkH  = 8,
-	.i4PosL = {{20, 19}, {36, 19}, {28, 31}, {44, 31}},
-	.i4PosR = {{28, 23}, {44, 23}, {20, 27}, {36, 27}},
+	.i4PosL = {{19, 16}, {35, 16}, {27, 28}, {43, 28}},
+	.i4PosR = {{27, 20}, {43, 20}, {19, 24}, {35, 24}},
 	.i4BlockNumX = 144,
 	.i4BlockNumY = 216,
 	.iMirrorFlip = 0,
@@ -295,8 +295,8 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info_16_9 =
 	.i4PairNum  = 4,
 	.i4SubBlkW  = 16,
 	.i4SubBlkH  = 8,
-	.i4PosL = {{20, 19}, {36, 19}, {28, 31}, {44, 31}},
-	.i4PosR = {{28, 23}, {44, 23}, {20, 27}, {36, 27}},
+	.i4PosL = {{19, 16}, {35, 16}, {27, 28}, {43, 28}},
+	.i4PosR = {{27, 20}, {43, 20}, {19, 24}, {35, 24}},
 	.i4BlockNumX = 144,
 	.i4BlockNumY = 162,
 	.iMirrorFlip = 0,
@@ -680,19 +680,19 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	switch (image_mirror) {
 
 			case IMAGE_NORMAL:
-				write_cmos_sensor(0x0101, itemp);
+				write_cmos_sensor_byte(0x0101, itemp);
 				break;
 
 			case IMAGE_V_MIRROR:
-				write_cmos_sensor(0x0101, itemp | 0x02);
+				write_cmos_sensor_byte(0x0101, itemp | 0x02);
 				break;
 
 			case IMAGE_H_MIRROR:
-				write_cmos_sensor(0x0101, itemp | 0x01);
+				write_cmos_sensor_byte(0x0101, itemp | 0x01);
 				break;
 
 			case IMAGE_HV_MIRROR:
-				write_cmos_sensor(0x0101, itemp | 0x03);
+				write_cmos_sensor_byte(0x0101, itemp | 0x03);
 				break;
 		}
 
