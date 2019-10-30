@@ -986,7 +986,6 @@ static int bq25601_set_ichg(struct charger_device *chg_dev, u32 curr)
 	pr_info("charge curr = %d\n", curr);
        ret = bq25601_set_chargecurrent(bq, curr / 1000);
 
-	   bq25601_dump_regs(bq);
 	return ret;
 }
 
@@ -1020,7 +1019,6 @@ static int bq25601_set_vchg(struct charger_device *chg_dev, u32 volt)
         int ret=0;
 	pr_info("charge volt = %d\n", volt);
        ret = bq25601_set_chargevolt(bq, volt / 1000);
-	   bq25601_dump_regs(bq);
 	return ret;
 }
 
@@ -1058,7 +1056,6 @@ static int bq25601_set_icl(struct charger_device *chg_dev, u32 curr)
 
 	ret =bq25601_set_input_current_limit(bq, curr / 1000);
 
-	bq25601_dump_regs(bq);
 	return ret;
 }
 
@@ -1099,7 +1096,6 @@ static int bq25601_set_otg(struct charger_device *chg_dev, bool en)
 	pr_info("%s OTG %s\n", en ? "enable" : "disable",
 	       !ret ? "successfully" : "failed");
 
-	   bq25601_dump_regs(bq);
 
 	return ret;
 }
@@ -1246,6 +1242,12 @@ static int bq25601_charger_probe(struct i2c_client *client,
 	if (bq->part_no != *(int *)match->data)
 		pr_info("part no mismatch, hw:%s, devicetree:%s\n",
 			pn_str[bq->part_no], pn_str[*(int *)match->data]);
+
+	if( bq->part_no == 0x09)
+	       strncpy(charge_ic_vendor_name,"SY6974",20);
+	else if ( bq->part_no == 0x0f)
+       	strncpy(charge_ic_vendor_name,"BQ25601",20);
+
 
 	bq->platform_data = bq25601_parse_dt(node, bq);
 
