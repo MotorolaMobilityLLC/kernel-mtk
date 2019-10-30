@@ -9,6 +9,9 @@ subdir-ccflags-y += -Werror
 ifeq ($(BUILD_D85), YES)
 subdir-ccflags-y += -DDUAL_85_VERSION
 endif
+ifeq ($(BUILD_SMT), YES)
+subdir-ccflags-y += -DCONFIG_MTK_DM_VERITY_OFF
+endif
 
 obj-y				+= irqchip/
 obj-y				+= bus/
