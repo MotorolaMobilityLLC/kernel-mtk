@@ -130,7 +130,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x42, 0xff},
@@ -789,7 +789,7 @@ kal_uint16 addr_data_pair_init_blackjack_txd_hi846[] = {
 0x005C, 0x2101, 
 0x0006, 0x09DE, 
 0x0008, 0x0ED8, 
-0x000E, 0x0100, 
+0x000E, 0x0200,
 0x000C, 0x0022, 
 0x0A22, 0x0000, 
 0x0A24, 0x0000, 
