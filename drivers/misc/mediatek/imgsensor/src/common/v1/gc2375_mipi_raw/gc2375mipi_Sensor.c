@@ -937,7 +937,7 @@ static kal_uint8 gc2375_read_otp(kal_uint8 addr)
 
 	return value;
 }
-extern char backaux2_cam_name[64];
+extern char backaux_cam_name[64];
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
@@ -955,8 +955,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                                 if(0x50 != imgsensor_info.module_id)
                                 {
 					*sensor_id = GC2375_SENSOR_ID;
-					memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
-					memcpy(backaux2_cam_name, "2_gc2375", 64);
+					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+					memcpy(backaux_cam_name, "2_gc2375", 64);
 					driver_registered = KAL_TRUE;
 					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
