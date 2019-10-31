@@ -35,3 +35,11 @@ config MTK_ADDITIONAL_BATTERY_TABLE
 	  Table number is five.
 	  Set No to disable the fifth battery table
 	  Table number is four.
+
+config MTK_DISABLE_BAT_HIGH_TEMP_PROTECT
+     	bool "Disable battery high temperature protect"
+     	default n
+     	help
+	  battery high temperature will poweroff phone
+	  Set YES to disable hight temperature protect
+	  set No to enable hight temperature protect
