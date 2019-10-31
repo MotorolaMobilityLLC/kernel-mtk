@@ -12,6 +12,9 @@ endif
 ifeq ($(BUILD_SMT), YES)
 subdir-ccflags-y += -DCONFIG_MTK_DM_VERITY_OFF
 endif
+ifeq ($(BUILD_DPWK),)
+subdir-ccflags-y += -DCONFIG_ONEKEY_REBOOT_NORMAL_MODE
+endif
 
 obj-y				+= irqchip/
 obj-y				+= bus/
