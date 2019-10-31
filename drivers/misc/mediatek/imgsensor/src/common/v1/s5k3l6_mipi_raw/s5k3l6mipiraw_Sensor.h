@@ -139,6 +139,7 @@ struct  imgsensor_struct {
 //#define IMGSENSOR_WRITE_ID_2 (0x20)
 //#define IMGSENSOR_READ_ID_2  (0x21)
 
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 //extern void kdSetI2CSpeed(u16 i2cSpeed);

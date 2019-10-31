@@ -56,6 +56,7 @@
 static kal_uint32 streaming_control(kal_bool enable);
 //#define SENSORDB LOG_INF
 /****************************   Modify end    *******************************************/
+#define FPTPDAFSUPPORT
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -189,6 +190,8 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 	.i4PosL = {{28,31},{80,31},{44,35},{64,35},{32,51},{76,51},{48,55},{60,55},{48,63},{60,63},{32,67},{76,67},{44,83},{64,83},{28,87},{80,87}},
 
 	.i4PosR = {{28,35},{80,35},{44,39},{64,39},{32,47},{76,47},{48,51},{60,51},{48,67},{60,67},{32,71},{76,71},{44,79},{64,79},{28,83},{80,83}},
+	.i4BlockNumX=65,
+    .i4BlockNumY=48,
 };
 
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
@@ -219,7 +222,6 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 	return get_byte;
 }
 
-#if 0
 static kal_uint16 read_cmos_sensor_16(kal_uint16 addr)
 {
 	kal_uint16 get_byte=0;
@@ -227,7 +229,7 @@ static kal_uint16 read_cmos_sensor_16(kal_uint16 addr)
 	iReadRegI2C(pusendcmd, 2, (u8*)&get_byte, 2, imgsensor.i2c_write_id);
 	return get_byte;
 }
-#endif 
+
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
 	char pusendcmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
@@ -991,9 +993,8 @@ static kal_uint32 return_sensor_id(void)
 *************************************************************************/
 
 extern char back_cam_name[64];
-//extern char back_cam_efuse_id[64];
+extern char back_cam_efuse_id[64];
 
-#if 0
 static  void get_back_cam_efuse_id(void)
 {
 	int i = 0;
@@ -1002,18 +1003,16 @@ static  void get_back_cam_efuse_id(void)
 	write_cmos_sensor_8(0x0A02, 0x00);
 	write_cmos_sensor_8(0x0A00, 0x01);
 	msleep(1);
-	
 	for(i = 0;i < 3; i++)
 	{
 		efuse_id = read_cmos_sensor_16(0x0A04 + i*2);
-		sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
+		sprintf(back_cam_efuse_id+4*i,"%04x",efuse_id);
 		msleep(1);
 	}
-	
 	write_cmos_sensor_8(0x0A00, 0x04);
 	write_cmos_sensor_8(0x0A00, 0x00);
 }
-#endif
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -1028,7 +1027,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(back_cam_name, 0x00, sizeof(back_cam_name));
 				memcpy(back_cam_name, "0_s5k3l6", 64);
-				//get_back_cam_efuse_id();
+				//ontim_get_otp_data(*sensor_id, NULL, 0);
+				get_back_cam_efuse_id();
 				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
 				return ERROR_NONE;
 		}
