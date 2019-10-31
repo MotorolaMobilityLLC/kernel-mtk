@@ -19,13 +19,13 @@
 /* SENSOR MIRROR FLIP INFO */
 #define GC2375_MIRROR_FLIP_ENABLE   0
 #if GC2375_MIRROR_FLIP_ENABLE
-#define GC2375_MIRROR         0xd5
+#define GC2375_MIRROR         0xd4
 #define GC2375_BLK_Select1_H  0x00
 #define GC2375_BLK_Select1_L  0x3c
 #define GC2375_BLK_Select2_H  0x00
 #define GC2375_BLK_Select2_L  0x03
 #else
-#define GC2375_MIRROR         0xd6
+#define GC2375_MIRROR         0xd7
 #define GC2375_BLK_Select1_H  0x3c
 #define GC2375_BLK_Select1_L  0x00
 #define GC2375_BLK_Select2_H  0xc0
