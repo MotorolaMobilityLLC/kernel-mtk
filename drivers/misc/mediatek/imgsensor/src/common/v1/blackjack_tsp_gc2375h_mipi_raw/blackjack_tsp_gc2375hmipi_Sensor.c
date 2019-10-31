@@ -35,11 +35,14 @@
 
 #define cam_pr_debug(format, args...) \
 	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define MODULE_ID_OFFSET 0x0008
 
+static bool gc2375_registered = 0;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = BLACKJACK_TSP_GC2375H_SENSOR_ID,
+        .module_id = 0x01,
 	.checksum_value = 0x8726c936,
 	.pre = {
 		.pclk = 39000000,
@@ -679,6 +682,16 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint16 read_module_id(void)
+{
+        kal_uint16 get_byte = 0;
+        char pusendcmd[2] = {(char)(MODULE_ID_OFFSET >> 8), (char)(MODULE_ID_OFFSET & 0xFF) };
+
+        iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, 0xA2);
+        pr_err("the module id is %d\n", get_byte);
+        return get_byte;
+}
+
 /*************************************************************************
  * FUNCTION
  *    get_imgsensor_id
@@ -709,12 +722,16 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-				memcpy(backaux_cam_name, "4_blackjack_tsp_gc2375h", 64);
-				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
-					imgsensor.i2c_write_id, *sensor_id);
-				return ERROR_NONE;
+			if ((*sensor_id == imgsensor_info.sensor_id) && (!gc2375_registered)) {
+                                imgsensor_info.module_id = read_module_id();
+                                if(0x50 == imgsensor_info.module_id)
+                                {
+					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+					memcpy(backaux_cam_name, "4_blackjack_tsp_gc2375h", 64);
+					gc2375_registered = 1;
+					cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+					return ERROR_NONE;
+				}
 			}
 			cam_pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);

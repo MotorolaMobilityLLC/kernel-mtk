@@ -41,12 +41,15 @@
 /****************************   Modify end    *******************************************/
 
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+#define MODULE_ID_OFFSET 0x08
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 kal_bool GC2375DuringTestPattern = KAL_FALSE;
+static kal_bool driver_registered = KAL_FALSE;
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = GC2375H_SENSOR_ID,
+	.module_id = 0x01,
 	.checksum_value = 0xf7375923,
 	.pre = {
 		.pclk = 39000000,
@@ -169,9 +172,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
 #if GC2375_MIRROR_FLIP_ENABLE
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 #else
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
 #endif
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,
@@ -911,6 +914,29 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+#if 0
+static kal_uint16 read_module_id(void)
+{
+        kal_uint16 get_byte = 0;
+        char pusendcmd[2] = {(char)(MODULE_ID_OFFSET >> 8), (char)(MODULE_ID_OFFSET & 0xFF) };
+
+        iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, 0xA0/*EEPROM_READ_ID*/);
+        pr_err("the module id is %d\n", get_byte);
+        return get_byte;
+}
+#endif
+
+static kal_uint8 gc2375_read_otp(kal_uint8 addr)
+{
+	kal_uint8 value;
+
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0xd5, addr);
+	write_cmos_sensor(0xf3, 0x20);
+	value = read_cmos_sensor(0xd7);
+
+	return value;
+}
 extern char backaux2_cam_name[64];
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
@@ -924,12 +950,17 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				*sensor_id = GC2375_SENSOR_ID;
-				memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
-				memcpy(backaux2_cam_name, "2_gc2375", 64);
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-				return ERROR_NONE;
+			if ((*sensor_id == imgsensor_info.sensor_id) && (!driver_registered)) {
+                                imgsensor_info.module_id = gc2375_read_otp(MODULE_ID_OFFSET);
+                                if(0x50 != imgsensor_info.module_id)
+                                {
+					*sensor_id = GC2375_SENSOR_ID;
+					memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
+					memcpy(backaux2_cam_name, "2_gc2375", 64);
+					driver_registered = KAL_TRUE;
+					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+					return ERROR_NONE;
+				}
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 			retry--;
