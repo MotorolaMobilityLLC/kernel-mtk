@@ -12,7 +12,7 @@ endif
 ifeq ($(BUILD_SMT), YES)
 subdir-ccflags-y += -DCONFIG_MTK_DM_VERITY_OFF
 endif
-ifeq ($(BUILD_DPWK),)
+ifneq ($(BUILD_DPWK), YES)
 subdir-ccflags-y += -DCONFIG_ONEKEY_REBOOT_NORMAL_MODE
 endif
 
