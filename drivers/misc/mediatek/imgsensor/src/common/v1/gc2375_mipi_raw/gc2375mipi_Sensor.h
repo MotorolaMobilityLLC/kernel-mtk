@@ -17,19 +17,19 @@
 #define _GC2375MIPI_SENSOR_H
 
 /* SENSOR MIRROR FLIP INFO */
-#define GC2375_MIRROR_FLIP_ENABLE    0
+#define GC2375_MIRROR_FLIP_ENABLE   0
 #if GC2375_MIRROR_FLIP_ENABLE
-#define GC2375_MIRROR         0xd7
-#define GC2375_BLK_Select1_H  0x3c
-#define GC2375_BLK_Select1_L  0x00
-#define GC2375_BLK_Select2_H  0xc0
-#define GC2375_BLK_Select2_L  0x00
-#else
-#define GC2375_MIRROR         0xd4
+#define GC2375_MIRROR         0xd5
 #define GC2375_BLK_Select1_H  0x00
 #define GC2375_BLK_Select1_L  0x3c
 #define GC2375_BLK_Select2_H  0x00
 #define GC2375_BLK_Select2_L  0x03
+#else
+#define GC2375_MIRROR         0xd6
+#define GC2375_BLK_Select1_H  0x3c
+#define GC2375_BLK_Select1_L  0x00
+#define GC2375_BLK_Select2_H  0xc0
+#define GC2375_BLK_Select2_L  0x00
 #endif
 
 enum{
@@ -79,6 +79,7 @@ struct imgsensor_struct {
 /* SENSOR PRIVATE STRUCT FOR CONSTANT */
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id;
+	kal_uint8 module_id;
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;

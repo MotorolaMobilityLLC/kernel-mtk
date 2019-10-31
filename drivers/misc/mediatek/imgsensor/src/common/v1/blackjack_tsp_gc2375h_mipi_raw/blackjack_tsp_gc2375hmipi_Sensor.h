@@ -92,6 +92,7 @@ struct imgsensor_struct {
 /* SENSOR PRIVATE STRUCT FOR CONSTANT */
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id;
+	kal_uint16 module_id;
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;
