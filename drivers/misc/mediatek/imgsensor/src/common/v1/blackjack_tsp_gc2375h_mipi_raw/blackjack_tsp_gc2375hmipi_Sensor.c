@@ -136,10 +136,10 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
-#if BLACKJACK_TSP_GC2375H_MIRROR_FLIP_ENABLE
+#if 0
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 #else
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr, //Gr,Gb,
 #endif
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,
@@ -460,7 +460,7 @@ static void ihdr_write_shutter_gain(
 }
 
 
-#if 0				/* not used function */
+#if 1				/* not used function */
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	cam_pr_debug("image_mirror = %d\n", image_mirror);
@@ -487,6 +487,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 		/* write_cmos_sensor(0x94, 0x0b); */
 		break;
 	}
+}
 #endif
 
 /*************************************************************************
@@ -542,7 +543,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0e, 0xb8);
 	write_cmos_sensor(0x0f, 0x06);
 	write_cmos_sensor(0x10, 0x48);
-	write_cmos_sensor(0x17, BLACKJACK_TSP_GC2375H_MIRROR);
+	write_cmos_sensor(0x17, 0x03); //0x03
 	write_cmos_sensor(0x1c, 0x10);
 	write_cmos_sensor(0x1d, 0x13);
 	write_cmos_sensor(0x20, 0x0b);
@@ -871,6 +872,7 @@ static kal_uint32 preview(
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
+	set_mirror_flip(IMAGE_H_MIRROR);
 	return ERROR_NONE;
 }			/*    preview   */
 
@@ -916,6 +918,7 @@ static kal_uint32 capture(
 	}
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps);
+	set_mirror_flip(IMAGE_H_MIRROR);
 	return ERROR_NONE;
 }			/* capture() */
 
