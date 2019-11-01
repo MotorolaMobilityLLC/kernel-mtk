@@ -32,4 +32,5 @@
 	/delete-property/ enable_pe_2;
 	/delete-property/ enable_pe_3;
 	/delete-property/ enable_pe_4;
+	/delete-property/ enable_dynamic_mivr;
 };
