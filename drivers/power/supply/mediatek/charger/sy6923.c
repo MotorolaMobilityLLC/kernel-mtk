@@ -892,6 +892,12 @@ static int sy6923_driver_probe(struct i2c_client *client, const struct i2c_devic
 		pr_err("%s: get pn failed\n", __func__);
 		return -ENODEV;
 	}
+
+	ret=sy6923_get_revision();
+	if (ret != 0x01) {
+		pr_err("%s: get revision failed\n", __func__);
+		return -ENODEV;
+	}
 	
 	info = devm_kzalloc(&client->dev, sizeof(struct sy6923_info), GFP_KERNEL);
 
