@@ -36,6 +36,7 @@
 #endif
 
 #include "lcm_drv.h"
+#include "tpd.h"
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>
 #include <platform/mt_gpio.h>
@@ -510,10 +511,18 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 extern volatile int gesture_dubbleclick_en;
 static void lcm_reset(void)
 {
-	SET_RESET_PIN(0);
-	MDELAY(2);//t3
-	SET_RESET_PIN(1);	
-	MDELAY(60);//t5
+	if (!gesture_dubbleclick_en) {
+		MDELAY(2);//t3
+		SET_RESET_PIN(1);
+		MDELAY(2);//t4
+		tpd_gpio_output(0, 1);
+	} else {
+		SET_RESET_PIN(0);
+		MDELAY(1);//t3
+		SET_RESET_PIN(1);
+		MDELAY(10);//t3
+		tpd_gpio_output(0, 1);
+	}
 
 	LCM_LOGI("ili9881h lcm reset end.\n");
 }
@@ -538,6 +547,9 @@ static void lcm_init(void)
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
 
 	if (!gesture_dubbleclick_en) {
+		SET_RESET_PIN(0);
+		tpd_gpio_output(0, 0);
+
 		set_gpio_lcd_enp(1);
 		MDELAY(2);//t2
 		set_gpio_lcd_enn(1);
@@ -571,7 +583,7 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
-		MDELAY(2);
+		MDELAY(2);//t11
 		set_gpio_lcd_enp(0);
 	}
 #endif
