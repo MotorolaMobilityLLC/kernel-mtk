@@ -273,12 +273,11 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 static void lcm_reset(void)
 {
-	MDELAY(1);
+	MDELAY(6);
 	tpd_gpio_output(0, 1);
 	SET_RESET_PIN(1);
 
-	MDELAY(50);
-
+	MDELAY(30);
 
 	LCM_LOGI("%s:ft8006p lcm reset done\n",__func__);
 }
@@ -321,6 +320,11 @@ static void lcm_init(void)
 			LCM_LOGI("--cmd=%0x--i2c write error----\n", cmd);
 		else
 			LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
+
+	} else {
+		tpd_gpio_output(0, 0);
+		MDELAY(6);
+		SET_RESET_PIN(0);
 	}
 	lcm_reset();
 
