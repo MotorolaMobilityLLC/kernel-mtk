@@ -1027,7 +1027,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(back_cam_name, 0x00, sizeof(back_cam_name));
 				memcpy(back_cam_name, "0_s5k3l6", 64);
-				//ontim_get_otp_data(*sensor_id, NULL, 0);
+				ontim_get_otp_data(*sensor_id, NULL, 0);
 				get_back_cam_efuse_id();
 				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
 				return ERROR_NONE;
