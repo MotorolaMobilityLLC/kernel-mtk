@@ -49,6 +49,7 @@
 
 #include "mtk_charger_intf.h"
 
+#undef CONFIG_TCPC_CLASS
 
 void __attribute__((weak)) fg_charger_in_handler(void)
 {
@@ -57,6 +58,7 @@ void __attribute__((weak)) fg_charger_in_handler(void)
 
 struct chg_type_info {
 	struct device *dev;
+#ifdef CONFIG_TCPC_CLASS
 	struct charger_consumer *chg_consumer;
 	struct tcpc_device *tcpc_dev;
 	struct notifier_block pd_nb;
@@ -69,6 +71,7 @@ struct chg_type_info {
 	struct task_struct *chgdet_task;
 	struct workqueue_struct *pwr_off_wq;
 	struct work_struct pwr_off_work;
+#endif
 	struct workqueue_struct *chg_in_wq;
 	struct work_struct chg_in_work;
 	bool ignore_usb;
@@ -296,11 +299,13 @@ static enum power_supply_property mt_usb_properties[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 };
 
+#ifdef CONFIG_TCPC_CLASS
 static void tcpc_power_off_work_handler(struct work_struct *work)
 {
 	pr_info("%s\n", __func__);
 	kernel_power_off();
 }
+#endif
 
 static void charger_in_work_handler(struct work_struct *work)
 {
@@ -365,7 +370,6 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	}
 	return NOTIFY_OK;
 }
-#endif
 
 static int chgdet_task_threadfn(void *data)
 {
@@ -401,6 +405,7 @@ static int chgdet_task_threadfn(void *data)
 	pr_info("%s: --\n", __func__);
 	return 0;
 }
+#endif
 
 static int mt_charger_probe(struct platform_device *pdev)
 {
@@ -489,7 +494,6 @@ static int mt_charger_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_get_tcpc_dev;
 	}
-#endif
 
 	cti->chg_consumer = charger_manager_get_by_name(cti->dev,
 							"charger_port1");
@@ -521,6 +525,7 @@ static int mt_charger_probe(struct platform_device *pdev)
 	/* Init power off work */
 	cti->pwr_off_wq = create_singlethread_workqueue("tcpc_power_off");
 	INIT_WORK(&cti->pwr_off_work, tcpc_power_off_work_handler);
+#endif
 
 	cti->chg_in_wq = create_singlethread_workqueue("charger_in");
 	INIT_WORK(&cti->chg_in_work, charger_in_work_handler);
@@ -532,8 +537,10 @@ static int mt_charger_probe(struct platform_device *pdev)
 	pr_info("%s done\n", __func__);
 	return 0;
 
+#ifdef CONFIG_TCPC_CLASS
 err_get_tcpc_dev:
 	devm_kfree(&pdev->dev, cti);
+#endif
 err_no_mem:
 	power_supply_unregister(mt_chg->usb_psy);
 err_usb_psy:
@@ -546,18 +553,22 @@ err_ac_psy:
 static int mt_charger_remove(struct platform_device *pdev)
 {
 	struct mt_charger *mt_charger = platform_get_drvdata(pdev);
+#ifdef CONFIG_TCPC_CLASS
 	struct chg_type_info *cti = mt_charger->cti;
+#endif
 
 	power_supply_unregister(mt_charger->chg_psy);
 	power_supply_unregister(mt_charger->ac_psy);
 	power_supply_unregister(mt_charger->usb_psy);
 
 	pr_info("%s\n", __func__);
+#ifdef CONFIG_TCPC_CLASS
 	if (cti->chgdet_task) {
 		kthread_stop(cti->chgdet_task);
 		atomic_inc(&cti->chgdet_cnt);
 		wake_up_interruptible(&cti->waitq);
 	}
+#endif
 
 	return 0;
 }

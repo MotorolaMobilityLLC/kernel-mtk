@@ -40,17 +40,9 @@
 
 #define RT_PD_MANAGER_VERSION	"1.0.5_MTK"
 
-static DEFINE_MUTEX(param_lock);
-
 static struct tcpc_device *tcpc_dev;
 static struct notifier_block pd_nb;
-static int pd_sink_voltage_new;
-static int pd_sink_voltage_old;
-static int pd_sink_current_new;
-static int pd_sink_current_old;
-static unsigned char pd_sink_type;
 static bool tcpc_kpoc = false;
-static unsigned char bc12_chr_type;
 #if 0 /* vconn is from vsys on mt6763 */
 /* vconn boost gpio pin */
 static int vconn_gpio;
@@ -183,80 +175,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			}
 		}
 #endif
-		break;
-	case TCP_NOTIFY_SINK_VBUS:
-		mutex_lock(&param_lock);
-		pd_sink_voltage_new = noti->vbus_state.mv;
-		pd_sink_current_new = noti->vbus_state.ma;
-
-		if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
-			pd_sink_type = SINK_TYPE_PD_CONNECTED;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_REMOVE)
-			pd_sink_type = SINK_TYPE_REMOVE;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_TYPEC)
-			pd_sink_type = SINK_TYPE_TYPEC;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_PD)
-			pd_sink_type = SINK_TYPE_PD_TRY;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_REQUEST)
-			pd_sink_type = SINK_TYPE_REQUEST;
-		pr_info("%s sink vbus %dmv %dma type(%d)\n", __func__,
-			pd_sink_voltage_new, pd_sink_current_new, pd_sink_type);
-		mutex_unlock(&param_lock);
-
-		if ((pd_sink_voltage_new != pd_sink_voltage_old) ||
-		    (pd_sink_current_new != pd_sink_current_old)) {
-			if (pd_sink_voltage_new) {
-				/* enable charger */
-#if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_manager_enable_power_path(chg_consumer,
-					MAIN_CHARGER, true);
-#else
-				mtk_chr_pd_enable_power_path(1);
-#endif
-				pd_sink_voltage_old = pd_sink_voltage_new;
-				pd_sink_current_old = pd_sink_current_new;
-			} else if (pd_sink_type == SINK_TYPE_REMOVE) {
-				if (tcpc_kpoc)
-					break;
-#if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_manager_enable_power_path(chg_consumer,
-					MAIN_CHARGER, false);
-#else
-				mtk_chr_pd_enable_power_path(0);
-#endif
-				pd_sink_voltage_old = pd_sink_voltage_new;
-				pd_sink_current_old = pd_sink_current_new;
-			} else {
-				bc12_chr_type = mt_get_charger_type();
-				if (bc12_chr_type >= STANDARD_HOST &&
-				    bc12_chr_type <= STANDARD_CHARGER)
-					break;
-				if (tcpc_kpoc)
-					break;
-				/* disable charge */
-#if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_manager_enable_power_path(chg_consumer,
-					MAIN_CHARGER, false);
-#else
-				mtk_chr_pd_enable_power_path(0);
-#endif
-				pd_sink_voltage_old = pd_sink_voltage_new;
-				pd_sink_current_old = pd_sink_current_new;
-			}
-		}
-		break;
-	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
-			noti->typec_state.new_state == TYPEC_ATTACHED_AUDIO) {
-			/* AUDIO plug in */
-			pr_info("%s audio plug in\n", __func__);
-
-		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_AUDIO
-			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			/* AUDIO plug out */
-			pr_info("%s audio plug out\n", __func__);
-
-		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
 		pr_info("%s pd state = %d\n",
