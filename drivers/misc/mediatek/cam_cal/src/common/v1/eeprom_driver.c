@@ -799,6 +799,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_s5k3p9sx_TXD_path  = "/data/vendor/camera_dump/TXD_s5k3p9sx.data";
     const char * str_s5k3p9sx_TSP_path  = "/data/vendor/camera_dump/TSP_s5k3p9sx.data";
     const char * str_gc8034_holitech_path  = "/data/vendor/camera_dump/holitech_gc8034.data";
+    const char * str_blackjack_tsp_gc2375h_path  = "/data/vendor/camera_dump/blackjack_tsp_gc2375h.data";
     const char * str_gc5035_path  = "/data/vendor/camera_dump/seansons_gc5035.data";
     const char * str_dump_path = NULL;
     
@@ -905,6 +906,13 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_gc8034_holitech_path;
             break;
         }
+        case BLACKJACK_TSP_GC2375H_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0806;
+            str_dump_path = str_blackjack_tsp_gc2375h_path;
+            break;
+        }
         
         default:
             pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
@@ -917,7 +925,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     }
     
     
-    if((sensorid == OV13855_SENSOR_ID) ||
+    if((sensorid == OV13855_SENSOR_ID) || (sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||
        (sensorid == AR1337_SENSOR_ID) || (sensorid == S5K3L6_SENSOR_ID) ||
 	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID))
    {
