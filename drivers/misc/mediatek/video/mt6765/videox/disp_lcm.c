@@ -1392,7 +1392,7 @@ int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 	return 0;
 }
 
-
+unsigned int g_last_backlight_level = 255;
 
 int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 {
@@ -1407,6 +1407,9 @@ int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 		} else {
 			disp_lcm_init(plcm, 1);
 		}
+
+		DISPCHECK("Firefly recover backlight = %d\n", g_last_backlight_level);
+		disp_lcm_set_backlight(plcm, NULL, g_last_backlight_level);
 
 		return 0;
 	}
@@ -1519,6 +1522,9 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
+
+	g_last_backlight_level = level;
+
 	if (!_is_lcm_inited(plcm)) {
 		DISPERR("lcm_drv is null\n");
 		return -1;
