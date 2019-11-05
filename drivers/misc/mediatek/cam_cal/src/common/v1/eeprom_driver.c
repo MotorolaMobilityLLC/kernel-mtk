@@ -796,6 +796,9 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_s5k5e9yx_path  = "/data/vendor/camera_dump/qunhui_s5k5e9yx.data";
     //const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
     const char * str_ar1337_path  = "/data/vendor/camera_dump/qunhui_ar1337.data";
+    const char * str_s5k3p9sx_TXD_path  = "/data/vendor/camera_dump/TXD_s5k3p9sx.data";
+    const char * str_s5k3p9sx_TSP_path  = "/data/vendor/camera_dump/TSP_s5k3p9sx.data";
+    const char * str_gc8034_holitech_path  = "/data/vendor/camera_dump/holitech_gc8034.data";
     const char * str_gc5035_path  = "/data/vendor/camera_dump/seansons_gc5035.data";
     const char * str_dump_path = NULL;
     
@@ -875,6 +878,33 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_ar1337_path;
             break;
         }
+        case S5K3P9SXT_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0D09;
+            str_dump_path = str_s5k3p9sx_TXD_path;
+            break;
+        }
+        case S5K3P9SX_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0D09;
+            str_dump_path = str_s5k3p9sx_TSP_path;
+            break;
+        }
+        case GC8034_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_gc8034_holitech_path;
+            break;
+        }
         
         default:
             pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
@@ -888,7 +918,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     
     
     if((sensorid == OV13855_SENSOR_ID) ||
-       (sensorid == AR1337_SENSOR_ID) || sensorid == S5K3L6_SENSOR_ID)
+       (sensorid == AR1337_SENSOR_ID) || (sensorid == S5K3L6_SENSOR_ID) ||
+	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID))
    {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
 	if (pu1Params == NULL) 
