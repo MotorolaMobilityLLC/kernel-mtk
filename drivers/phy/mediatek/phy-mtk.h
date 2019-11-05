@@ -21,6 +21,9 @@ struct mtk_phy_tuning {
 	s32 u2_vrt_ref;
 	s32 u2_term_ref;
 	s32 u2_enhance;
+	s32 u2_host_vrt_ref;
+	s32 u2_host_term_ref;
+	s32 u2_host_enhance;
 	bool inited;
 };
 
@@ -71,6 +74,7 @@ struct mtk_phy_interface {
 	unsigned int reg_offset;
 	char *name;
 	char *tuning_node_name;
+	char *tuning_host_node_name;
 	u8 port_num;
 	u8 port_type;
 };
@@ -107,6 +111,8 @@ struct mtk_phy_drv {
 #define K_DEBUG	(1<<0)
 
 extern u32 phy_debug_level;
+/* usb*/
+extern bool mt_usb_is_device(void);
 
 #define phy_printk(level, fmt, args...) do { \
 		if (phy_debug_level & level) { \
