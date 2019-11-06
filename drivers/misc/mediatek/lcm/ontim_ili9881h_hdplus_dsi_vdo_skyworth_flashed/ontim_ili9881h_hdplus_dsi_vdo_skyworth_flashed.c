@@ -267,7 +267,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count = 3;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x80;
 	params->dsi.lcm_esd_check_table[0].para_list[1] = 0x03;
-	params->dsi.lcm_esd_check_table[0].para_list[2] = 0x06;
+	params->dsi.lcm_esd_check_table[0].para_list[2] = 0x04;
 	params->dsi.lcm_esd_check_table[1].cmd = 0x54;
 	params->dsi.lcm_esd_check_table[1].count = 1;
 	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x2c;
