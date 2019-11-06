@@ -195,6 +195,10 @@
 	swtp1: swtp1 {
 		compatible = "mediatek, swtp1-eint";
 	};
+	drv_phy_cap: drv_phy_cap {
+		compatible = "mediatek,phy_drv_cap";
+		phy-driver-cap = <31>;
+	};
 };
 
 &spi0 {
@@ -406,8 +410,4 @@
 
 	#include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
 	#include "bat_setting/batterytable_kg40_scud_4000mah_ext.dtsi"
-};
-
-&usb3_phy {
-	phy-driver-cap = <31>;
 };
