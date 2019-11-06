@@ -360,6 +360,20 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		   },
 		  },
 #endif
+#if defined(BLACKJACK_TSP_GC2375_MIPI_RAW)
+                 {SENSOR_DRVNAME_BLACKJACK_TSP_GC2375_MIPI_RAW,
+                  {
+                   {SensorMCLK, Vol_High, 0},
+                   {PDN, Vol_High, 1},
+                   {RST, Vol_Low, 0},
+                   {DOVDD, Vol_1800, 0},
+                  // {DVDD, Vol_1800, 0}, dovdd same
+                   {AVDD, Vol_2800, 0},
+                   {PDN, Vol_Low, 1},
+                   {RST, Vol_High, 0},
+                   },
+                  },
+#endif
 #if defined(IMX398_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_IMX398_MIPI_RAW,

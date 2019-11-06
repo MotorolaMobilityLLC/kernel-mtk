@@ -292,6 +292,7 @@
 
 #define GC2375H_SENSOR_ID                       0x2375
 #define GC2375_SENSOR_ID                        0x237A
+#define BLACKJACK_TSP_GC2375_SENSOR_ID          0x237B
 #define GC5035_SENSOR_ID                        0x5035
 #define GC8034_SENSOR_ID                        0x8044
 #define GC2365_SENSOR_ID                        0x2365
@@ -494,6 +495,7 @@
 /*GC*/
 #define SENSOR_DRVNAME_GC2375H_MIPI_RAW         "gc2375h_mipi_raw"
 #define SENSOR_DRVNAME_GC2375_MIPI_RAW          "gc2375_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_TSP_GC2375_MIPI_RAW  "blackjack_tsp_gc2375_mipi_raw"
 #define SENSOR_DRVNAME_GC5035_MIPI_RAW          "gc5035_mipi_raw"
 #define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
 #define SENSOR_DRVNAME_GC2365_MIPI_RAW          "gc2365_mipi_raw"
