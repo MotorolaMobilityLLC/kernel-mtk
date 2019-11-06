@@ -366,6 +366,7 @@ struct i2c_driver EEPROM_HW_i2c_driver2 = {
 #ifdef CONFIG_OF
 static const struct of_device_id EEPROM_HW3_i2c_driver_of_ids[] = {
 	{.compatible = "mediatek,camera_main_two_eeprom",},
+	{.compatible = "mediatek,camera_main_three_eeprom",},
 	{}
 };
 #endif
@@ -806,6 +807,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
 	u32 u4Offset;
 	u32 u4Length;
+	u32 deviceid = 1;
 	u8 *pu1Params = NULL;
 	int i4RetValue = 0;
     
@@ -911,6 +913,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             u4Offset = 0;
             u4Length = 0x0806;
             str_dump_path = str_blackjack_tsp_gc2375h_path;
+            deviceid = 0x10;
             break;
         }
         
@@ -936,11 +939,11 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             __FUNCTION__, __LINE__);
             return -1;
         }
-        
-	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, 1);
+
+	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, deviceid);
 	if (pcmdInf != NULL && g_lastDevID != 1)
-        {
-		if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
+	{
+		if (EEPROM_set_i2c_bus(pcmdInf->deviceID, pcmdInf) != 0)
 		{
 			pr_debug("deviceID Error!\n");
 			kfree(pu1Params);
