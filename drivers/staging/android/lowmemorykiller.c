@@ -523,6 +523,14 @@ log_again:
 				continue;
 		}
 		selected = p;
+		//Don't kill update-binary when update running.
+                if ((strstr(p->comm, "update-binary") != NULL) && p->signal->oom_score_adj == 0)
+                {
+                        task_unlock(p);
+                        lowmem_print(1, "lowmem_shrink: do not kill recovery process;\n");
+                        continue;
+                }
+
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
 		lowmem_print(2, "select '%s' (%d), adj %hd, size %d, to kill\n",
