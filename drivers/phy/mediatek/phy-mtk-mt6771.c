@@ -116,14 +116,36 @@ static void phy_advance_settings(struct mtk_phy_instance *instance)
 static void phy_efuse_settings(struct mtk_phy_instance *instance)
 {
 	u32 evalue;
+	static bool inited;
+	static u32 phy_driver_capacity;
+	static struct device_node *of_node;
 
-	evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
-	if (evalue) {
-		phy_printk(K_INFO, "RG_USB20_INTR_CAL=0x%x\n",
-			evalue);
-		u3phywrite32(U3D_USBPHYACR1,
-			RG_USB20_INTR_CAL_OFST,
-			RG_USB20_INTR_CAL, evalue);
+	if (!inited) {
+		phy_driver_capacity = 0;
+		of_node = of_find_compatible_node(NULL, NULL,
+			"mediatek,phy_drv_cap");
+		if (of_node)
+			/* value won't be updated if property not being found */
+			of_property_read_u32(of_node, "phy-driver-cap",
+			&phy_driver_capacity);
+		inited = true;
+	}
+
+	if (phy_driver_capacity > 0 && mt_usb_is_device()) {
+		phy_printk(K_INFO, "use custom=0x%x\n",
+				phy_driver_capacity);
+			u3phywrite32(U3D_USBPHYACR1,
+				RG_USB20_INTR_CAL_OFST,
+				RG_USB20_INTR_CAL, phy_driver_capacity);
+	} else {
+		evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
+		if (evalue) {
+			phy_printk(K_INFO, "RG_USB20_INTR_CAL=0x%x\n",
+				evalue);
+			u3phywrite32(U3D_USBPHYACR1,
+				RG_USB20_INTR_CAL_OFST,
+				RG_USB20_INTR_CAL, evalue);
+		}
 	}
 	evalue = (get_devinfo_with_index(107) & (0x3f << 16)) >> 16;
 	if (evalue) {
