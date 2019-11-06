@@ -138,6 +138,18 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0x01, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
+	{0xF0, 0x02, {0x5A, 0x59}},
+    {0xF1, 0x02, {0xA5, 0xA6}},
+	{0xCC, 0x01, {0x01}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table lcm_suspend_setting_gesture[] = {
+	{0x28,0x01, {0x00} },
+	{REGFLAG_DELAY, 20, {} },
+	{0x10, 0x01, {0x00} },
+	{REGFLAG_DELAY, 120, {} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 static struct LCM_setting_table init_setting[] = {
@@ -337,9 +349,19 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
-#ifndef MACH_FPGA
-	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+	struct LCM_setting_table *setting_table = NULL;
+	size_t setting_table_size = 0;
 	LCM_LOGI("%s,icnl9911s start\n", __func__);
+
+    if (gesture_dubbleclick_en) {
+		setting_table = lcm_suspend_setting_gesture;
+		setting_table_size = ARRAY_SIZE(lcm_suspend_setting_gesture);
+	} else {
+		setting_table = lcm_suspend_setting;
+		setting_table_size = ARRAY_SIZE(lcm_suspend_setting);
+	}
+#ifndef MACH_FPGA
+	push_table(NULL, setting_table, setting_table_size, 1);
 	MDELAY(10);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
