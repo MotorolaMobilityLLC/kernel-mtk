@@ -78,15 +78,6 @@
  *   although ARP RX wins.  (That test was done with a full speed link.)
  */
 
-/*
- * Scnenario: FS USB Audio device attached to a HS Hub.
- * To fix playback/record issue with ISOC/INTR SSplit transaction scheduled
- * in the same SOF.
- */
-
-int isoc_tx_offset = 0x100;
-module_param(isoc_tx_offset, uint, 0644);
-MODULE_PARM_DESC(isoc_tx_offset, "ISOC TX OFFSET");
 
 /*
  * NOTE on endpoint usage:
@@ -326,6 +317,9 @@ void musb_host_free_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 
 	for (i = 0; i < fifo_unit_nr; i++)
 		musb_host_dynamic_fifo_usage_msk &= ~(1 << (idx_start + i));
+
+	if (mtk_host_audio_free_ep_udelay && qh->type == USB_ENDPOINT_XFER_ISOC)
+		udelay(mtk_host_audio_free_ep_udelay);
 
 	if (is_in) {
 		musb_write_rxfifosz(mbase, 0);
