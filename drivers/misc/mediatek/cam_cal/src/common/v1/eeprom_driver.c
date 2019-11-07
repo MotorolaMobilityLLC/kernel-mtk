@@ -941,7 +941,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
         }
 
 	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, deviceid);
-	if (pcmdInf != NULL && g_lastDevID != 1)
+	if (pcmdInf != NULL && g_lastDevID != deviceid)
 	{
 		if (EEPROM_set_i2c_bus(pcmdInf->deviceID, pcmdInf) != 0)
 		{
@@ -949,7 +949,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 			kfree(pu1Params);
 			return -1;
 		}
-		g_lastDevID = 1;
+		g_lastDevID = deviceid;
 	}
 
 	if (pcmdInf != NULL)
