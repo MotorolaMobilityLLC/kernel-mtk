@@ -189,7 +189,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ1*/
@@ -222,7 +222,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ4*/
@@ -233,7 +233,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ5*/
@@ -244,7 +244,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ6*/
@@ -255,7 +255,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ7*/
@@ -277,7 +277,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ9*/
@@ -288,7 +288,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ10*/
@@ -299,7 +299,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ11*/
@@ -310,7 +310,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ12*/
@@ -321,7 +321,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ_ACC1*/
@@ -332,7 +332,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 	{
 	/*IRQ_ACC2*/
@@ -343,7 +343,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq miss clear */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq status */
 	{AFE_REG_UNDEFINED, 0, 0x1},     /* irq enable */
-	Soc_Aud_IRQ_MCU			 /* irq use for specify purpose */
+	Soc_Aud_IRQ_PURPOSE_NUM		 /* irq use for specify purpose */
 	},
 };
 

@@ -67,8 +67,9 @@ unsigned int Ana_Get_Reg(unsigned int offset)
 #ifdef AUDIO_USING_WRAP_DRIVER
 	ret = pwrap_read(offset, &Rdata);
 #endif
-	pr_debug("Ana_Get_Reg offset=0x%x,Rdata=0x%x,ret=%d\n", offset,
-		       Rdata, ret);
+	/* pr_debug("Ana_Get_Reg offset=0x%x,Rdata=0x%x,ret=%d\n", offset,
+	 *	       Rdata, ret);
+	 */
 	return Rdata;
 }
 EXPORT_SYMBOL(Ana_Get_Reg);
@@ -80,8 +81,9 @@ void Ana_Set_Reg(unsigned int offset, unsigned int value, unsigned int mask)
 	unsigned int Reg_Value;
 	unsigned long flags = 0;
 
-	pr_debug("Ana_Set_Reg offset= 0x%x , value = 0x%x mask = 0x%x\n",
-		       offset, value, mask);
+	/* pr_debug("Ana_Set_Reg offset= 0x%x , value = 0x%x mask = 0x%x\n",
+	 *	       offset, value, mask);
+	 */
 #ifdef AUDIO_USING_WRAP_DRIVER
 	spin_lock_irqsave(&ana_set_reg_lock, flags);
 	Reg_Value = Ana_Get_Reg(offset);
