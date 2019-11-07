@@ -303,7 +303,11 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_pmic1.o
 ifneq (,$(findstring tb8768, $(CONFIG_ARCH_MTK_PROJECT)))
+ifneq ($(CONFIG_CHARGER_BQ25601),)
 obj-$(CONFIG_THERMAL) += mtk_ts_btscharger.o
+else
+obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
+endif
 else
 obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 endif
@@ -337,7 +341,11 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 ifneq (,$(findstring tb8766, $(CONFIG_ARCH_MTK_PROJECT)))
+ifneq ($(CONFIG_CHARGER_BQ25601),)
 obj-$(CONFIG_THERMAL) += mtk_ts_btscharger.o
+else
+obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
+endif
 else
 obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 endif
