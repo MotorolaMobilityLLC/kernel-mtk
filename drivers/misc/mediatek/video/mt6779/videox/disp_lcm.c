@@ -1502,6 +1502,86 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	return 0;
 }
 
+int disp_lcm_get_hbm_state(struct disp_lcm_handle *plcm)
+{
+	if (!_is_lcm_inited(plcm)) {
+		DISP_PR_ERR("lcm_drv is null\n");
+		return -1;
+	}
+
+	if (!plcm->drv->get_hbm_state) {
+		DISP_PR_ERR("FATAL ERROR, lcm_drv->get_hbm_state is null\n");
+		return -1;
+	}
+
+	return plcm->drv->get_hbm_state();
+}
+
+int disp_lcm_get_hbm_wait(struct disp_lcm_handle *plcm)
+{
+	if (!_is_lcm_inited(plcm)) {
+		DISP_PR_ERR("lcm_drv is null\n");
+		return -1;
+	}
+
+	if (!plcm->drv->get_hbm_wait) {
+		DISP_PR_ERR("FATAL ERROR, lcm_drv->get_hbm_wait is null\n");
+		return -1;
+	}
+
+	return plcm->drv->get_hbm_wait();
+}
+
+int disp_lcm_set_hbm_wait(bool wait, struct disp_lcm_handle *plcm)
+{
+	if (!_is_lcm_inited(plcm)) {
+		DISP_PR_ERR("lcm_drv is null\n");
+		return -1;
+	}
+
+	if (!plcm->drv->set_hbm_wait) {
+		DISP_PR_ERR("FATAL ERROR, lcm_drv->set_hbm_wait is null\n");
+		return -1;
+	}
+
+	plcm->drv->set_hbm_wait(wait);
+	return 0;
+}
+
+int disp_lcm_set_hbm(bool en, struct disp_lcm_handle *plcm, void *qhandle)
+{
+	if (!_is_lcm_inited(plcm)) {
+		DISP_PR_ERR("lcm_drv is null\n");
+		return -1;
+	}
+
+	if (!plcm->drv->set_hbm_cmdq) {
+		DISP_PR_ERR("FATAL ERROR, lcm_drv->set_hbm_cmdq is null\n");
+		return -1;
+	}
+
+	plcm->drv->set_hbm_cmdq(en, qhandle);
+
+	return 0;
+}
+
+unsigned int disp_lcm_get_hbm_time(bool en, struct disp_lcm_handle *plcm)
+{
+	unsigned int time = 0;
+
+	if (!_is_lcm_inited(plcm)) {
+		DISP_PR_ERR("lcm_drv is null\n");
+		return -1;
+	}
+
+	if (en)
+		time = plcm->params->hbm_en_time;
+	else
+		time = plcm->params->hbm_dis_time;
+
+	return time;
+}
+
 int disp_lcm_ioctl(struct disp_lcm_handle *plcm, enum LCM_IOCTL ioctl,
 		   unsigned int arg)
 {
