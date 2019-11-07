@@ -1137,10 +1137,20 @@ static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
 		/* create sec data task buffer for working */
 		p_metadatas = kzalloc(metadata_length, GFP_KERNEL);
 		if (p_metadatas) {
+			struct cmdqSecAddrMetadataStruct *addr;
+			const u32 cnt =
+				handle->pkt->cmd_buf_size / CMDQ_INST_SIZE;
+
 			memcpy(p_metadatas, CMDQ_U32_PTR(
 				desc->secData.addrMetadatas), metadata_length);
 			handle->secData.addrMetadatas =
 				(cmdqU32Ptr_t)(unsigned long)p_metadatas;
+
+			addr = (struct cmdqSecAddrMetadataStruct *)
+				(unsigned long)handle->secData.addrMetadatas;
+			for (i = 0; i < handle->secData.addrMetadataCount; i++)
+				addr[i].instrIndex += cnt;
+			CMDQ_MSG("add %u to instrIndex\n", cnt);
 		} else {
 			CMDQ_AEE("CMDQ",
 				"Can't alloc secData buffer count:%d alloacted_size:%d\n",
@@ -1171,6 +1181,11 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 		return err;
 	handle->pkt->buf_pool = &mdp_pool;
 
+#if IS_ENABLED(CONFIG_MACH_MT6779) || IS_ENABLED(CONFIG_MACH_MT6765)
+	cmdq_pkt_perf_begin(handle->pkt);
+	handle->profile_exec = true;
+#endif
+
 	/* set secure data */
 	handle->secStatus = NULL;
 	cmdq_mdp_setup_sec(desc, handle);
@@ -1178,11 +1193,6 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	handle->engineFlag = desc->engineFlag & ~inorder_mask;
 	handle->pkt->priority = desc->priority;
 	cmdq_mdp_store_debug(desc, handle);
-
-#if IS_ENABLED(CONFIG_MACH_MT6779) || IS_ENABLED(CONFIG_MACH_MT6765)
-	cmdq_pkt_perf_begin(handle->pkt);
-	handle->profile_exec = true;
-#endif
 
 	if (desc->engineFlag & inorder_mask)
 		handle->force_inorder = true;
