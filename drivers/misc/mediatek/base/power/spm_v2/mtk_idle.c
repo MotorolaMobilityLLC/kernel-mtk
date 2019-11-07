@@ -1745,7 +1745,7 @@ static int (*idle_select_handlers[NR_TYPES]) (int) = {
 
 
 
-int mtk_idle_select(int cpu)
+int mt_idle_select(int cpu)
 {
 	int i = NR_TYPES - 1;
 
