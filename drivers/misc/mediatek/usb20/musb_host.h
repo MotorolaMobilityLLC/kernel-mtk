@@ -120,6 +120,4 @@ enum {
 	QH_FREE_RESCUE_INTERRUPT,
 	QH_FREE_RESCUE_EP_DISABLE,
 };
-
-extern int isoc_tx_offset;
 #endif				/* _MUSB_HOST_H */

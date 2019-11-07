@@ -567,17 +567,8 @@ int mtk_kick_CmdQ(struct musb *musb,
 #ifdef CONFIG_USB_MTK_HDRC
 			if (musb->is_multipoint) {
 				DBG(4, "is_multipoint\n");
-				if ((urb->dev->parent !=
-					musb_to_hcd(musb)->self.root_hub) &&
-					(qh->type == USB_ENDPOINT_XFER_ISOC))
-					musb_write_txfunaddr_split(musb->mregs,
-								hw_ep->epnum,
-								qh->addr_reg,
-								isoc_tx_offset);
-				else
-					musb_write_txfunaddr(mbase,
-								hw_ep->epnum,
-								qh->addr_reg);
+				musb_write_txfunaddr(mbase, hw_ep->epnum,
+							qh->addr_reg);
 				musb_write_txhubaddr(mbase, hw_ep->epnum,
 							qh->h_addr_reg);
 				musb_write_txhubport(mbase, hw_ep->epnum,
