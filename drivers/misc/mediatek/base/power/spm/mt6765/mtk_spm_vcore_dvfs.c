@@ -46,8 +46,8 @@ u32 spm_get_dvfs_level(void)
 
 u32 spm_get_dvfs_final_level(void)
 {
-	int rsv9 = spm_read(SPM_SW_RSV_9) & 0xFFFF;
 	int event_sta = spm_read(SPM_DVFS_EVENT_STA) & 0xFFFF;
+	int rsv9 = spm_read(SPM_SW_RSV_9) & 0xFFFF;
 
 	if (event_sta != 0)
 		return min(rsv9, event_sta);
