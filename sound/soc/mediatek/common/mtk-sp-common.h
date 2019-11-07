@@ -20,5 +20,8 @@
 #else
 #define AUDIO_AEE(message) WARN_ON(true)
 #endif
+
+bool mtk_get_speech_status(void);
+
 #endif
 
