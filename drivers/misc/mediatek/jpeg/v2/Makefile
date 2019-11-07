@@ -17,6 +17,7 @@ ccflags-y = -DSDEBUG_T
 
 ifeq ($(CONFIG_MACH_MT6757),y)
   ccflags-y += -DJPEG_DEC_DRIVER
+  ccflags-y += -DPLATFORM_MT6757
 endif
 
 ifeq ($(CONFIG_MACH_MT6799),y)
