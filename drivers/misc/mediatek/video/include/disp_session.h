@@ -340,6 +340,8 @@ struct disp_frame_cfg_t {
 	int res_idx;
 	unsigned int hrt_weight;
 	unsigned int hrt_idx;
+
+	bool hbm_en;
 };
 
 struct disp_session_info {
