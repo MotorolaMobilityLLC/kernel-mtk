@@ -616,8 +616,7 @@ static void check_streamoff(void)
 		else
 			break;
 	}
-	if (read_cmos_sensor_8(0x0005) != 0xFF)
-		sensor_init();
+	sensor_init();
 	pr_debug("%s exit! %d\n", __func__, i);
 }
 
@@ -1673,7 +1672,6 @@ static kal_uint32 open(void)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
 	/* initail sequence write in  */
-	sensor_init();
 
 	spin_lock(&imgsensor_drv_lock);
 
