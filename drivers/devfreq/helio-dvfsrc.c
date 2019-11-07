@@ -115,6 +115,27 @@ static void dvfsrc_get_timestamp(char *p)
 	sprintf(p, "%llu.%llu", sec, usec);
 }
 
+int is_dvfsrc_opp_fixed(void)
+{
+	int ret;
+	unsigned long flags;
+
+	if (!is_dvfsrc_enabled())
+		return 1;
+
+	if (!(dvfsrc_read(DVFSRC_BASIC_CONTROL) & 0x100))
+		return 1;
+
+	if (helio_dvfsrc_flag_get() != 0)
+		return 1;
+
+	spin_lock_irqsave(&force_req_lock, flags);
+	ret = is_opp_forced();
+	spin_unlock_irqrestore(&force_req_lock, flags);
+
+	return ret;
+}
+
 static void dvfsrc_set_force_start(int data)
 {
 	dvfsrc->opp_forced = 1;
@@ -221,9 +242,9 @@ static int commit_data(int type, int data, int check_spmfw)
 
 		opp = data;
 		level = VCORE_OPP_NUM - data - 1;
-
+		mb(); /* make sure setting first */
 		dvfsrc_set_sw_req(level, VCORE_SW_AP_MASK, VCORE_SW_AP_SHIFT);
-
+		mb(); /* make sure checking then */
 		if (!is_opp_forced() && check_spmfw) {
 			udelay(1);
 			ret = dvfsrc_wait_for_completion(
@@ -239,7 +260,7 @@ static int commit_data(int type, int data, int check_spmfw)
 				vcore_uv = regulator_get_voltage(vcore_reg_id);
 				opp_uv = get_vcore_uv_table(opp);
 				if (vcore_uv < opp_uv) {
-					pr_info("DVFS FAIL = %d %d 0x%x\n",
+					pr_err("DVFS FAIL = %d %d 0x%x\n",
 				vcore_uv, opp_uv, dvfsrc_read(DVFSRC_LEVEL));
 					dvfsrc_dump_reg(NULL);
 					aee_kernel_warning("DVFSRC",
@@ -305,6 +326,7 @@ static int commit_data(int type, int data, int check_spmfw)
 		}
 		dvfsrc_set_force_start(1 << level);
 		if (check_spmfw) {
+			udelay(1);
 			ret = dvfsrc_wait_for_completion(
 					get_cur_vcore_dvfs_opp() == opp,
 					DVFSRC_TIMEOUT);
