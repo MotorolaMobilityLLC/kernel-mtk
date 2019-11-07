@@ -2279,7 +2279,7 @@ asmlinkage int vprintk_emit(int facility, int level,
 	local_irq_restore(flags);
 
 	/* If called from the scheduler, we can not call up(). */
-	if (!in_sched) {
+	if (!in_sched && cpu_online(raw_smp_processor_id())) {
 		lockdep_off();
 		/*
 		 * Try to acquire and then immediately release the console
