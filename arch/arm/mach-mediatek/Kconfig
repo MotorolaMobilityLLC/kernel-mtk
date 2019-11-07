@@ -60,7 +60,6 @@ config MACH_MT6757
 	select MTK_SYSTRACKER_V2
 	select MTK_GIC_V3_EXT
 	select ARM_GIC_V3
-	select HIE
 	select MTK_PLAT_SRAM_FLAG
 	select MTK_L2C_PARITY_CHECK
 	select ARM_HAS_SG_CHAIN
