@@ -346,15 +346,43 @@ void jpeg_drv_enc_power_on(void)
 			JPEG_ERR("enable clk_venc_jpgEnc fail!");
 	#else
 		#ifdef CONFIG_MTK_SMI_EXT
-			#ifdef PLATFORM_MT6779
+			#if defined(PLATFORM_MT6779)
 			smi_bus_prepare_enable(SMI_LARB3_REG_INDX,
 				"JPEG", true);
+
+			if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
+				JPEG_ERR("enable clk_venc_jpgDec fail!");
+
+			#elif defined(PLATFORM_MT6757)
+
+
+			if (clk_prepare_enable(gJpegClk.clk_scp_sys_mm0))
+				JPEG_ERR("enable clk_scp_sys_mm0 fail!");
+
+
+			if (clk_prepare_enable(gJpegClk.clk_smi_common))
+				JPEG_ERR("enable clk_smi_common fail!");
+
+
+			if (clk_prepare_enable(gJpegClk.clk_scp_sys_ven))
+				JPEG_ERR("enable clk_scp_sys_ven clk fail!");
+
+
+			if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
+				JPEG_ERR("enable clk_venc_jpgEnc fail!");
+
+
+			if (clk_prepare_enable(gJpegClk.clk_venc_larb))
+				JPEG_ERR("enable clk_venc_larb fail!");
+
 			#else
 			smi_bus_prepare_enable(SMI_LARB1_REG_INDX,
 				"JPEG", true);
-			#endif
+
 			if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 				JPEG_ERR("enable clk_venc_jpgDec fail!");
+			#endif
+
 		#else
 			if (clk_prepare_enable(gJpegClk.clk_scp_sys_mm0))
 				JPEG_ERR("enable clk_scp_sys_mm0 fail!");
@@ -393,11 +421,20 @@ void jpeg_drv_enc_power_off(void)
 		mtk_smi_larb_clock_off(3, true);
 	#else
 		#ifdef CONFIG_MTK_SMI_EXT
+
+			#if defined(PLATFORM_MT6779)
 			clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
-			#ifdef PLATFORM_MT6779
 			smi_bus_disable_unprepare(SMI_LARB3_REG_INDX,
 				"JPEG", true);
+			#elif defined(PLATFORM_MT6757)
+			clk_disable_unprepare(gJpegClk.clk_venc_larb);
+			clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
+			clk_disable_unprepare(gJpegClk.clk_scp_sys_ven);
+			clk_disable_unprepare(gJpegClk.clk_smi_common);
+			clk_disable_unprepare(gJpegClk.clk_scp_sys_mm0);
+
 			#else
+			clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
 			smi_bus_disable_unprepare(SMI_LARB1_REG_INDX,
 				"JPEG", true);
 			#endif
@@ -1469,23 +1506,25 @@ static int jpeg_probe(struct platform_device *pdev)
 		#ifdef JPEG_PM_DOMAIN_ENABLE
 			pjenc_dev = pdev;
 		#else
-			#ifndef CONFIG_MTK_SMI_EXT
-				/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
-				gJpegClk.clk_scp_sys_mm0 = of_clk_get_by_name(node, "MT_CG_SCP_SYS_MM0");
-				if (IS_ERR(gJpegClk.clk_scp_sys_mm0))
-					JPEG_ERR("get MT_CG_SCP_SYS_MM0 clk error!");
-				/* venc-mtcmos lead to venc power scpsys SCP_SYS_VEN */
-				gJpegClk.clk_scp_sys_ven = of_clk_get_by_name(node, "MT_CG_SCP_SYS_VEN");
-				if (IS_ERR(gJpegClk.clk_scp_sys_ven))
-					JPEG_ERR("get MT_CG_SCP_SYS_VEN clk error!");
+			/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
+			gJpegClk.clk_scp_sys_mm0 =
+				of_clk_get_by_name(node, "MT_CG_SCP_SYS_MM0");
+			if (IS_ERR(gJpegClk.clk_scp_sys_mm0))
+				JPEG_ERR("get MT_CG_SCP_SYS_MM0 clk error!");
+			/* venc-mtcmos lead to venc power scpsys SCP_SYS_VEN */
+			gJpegClk.clk_scp_sys_ven =
+				of_clk_get_by_name(node, "MT_CG_SCP_SYS_VEN");
+			if (IS_ERR(gJpegClk.clk_scp_sys_ven))
+				JPEG_ERR("get MT_CG_SCP_SYS_VEN clk error!");
 
-				gJpegClk.clk_smi_common = of_clk_get_by_name(node, "MT_CG_SMI_COMMON");
-				if (IS_ERR(gJpegClk.clk_smi_common))
-					JPEG_ERR("get MT_CG_SMI_COMMON clk error!");
-				gJpegClk.clk_venc_larb = of_clk_get_by_name(node, "MT_CG_VENC_LARB");
-				if (IS_ERR(gJpegClk.clk_venc_larb))
-					JPEG_ERR("get MT_CG_VENC_LARB clk error!");
-			#endif
+			gJpegClk.clk_smi_common =
+				of_clk_get_by_name(node, "MT_CG_SMI_COMMON");
+			if (IS_ERR(gJpegClk.clk_smi_common))
+				JPEG_ERR("get MT_CG_SMI_COMMON clk error!");
+			gJpegClk.clk_venc_larb =
+				of_clk_get_by_name(node, "MT_CG_VENC_LARB");
+			if (IS_ERR(gJpegClk.clk_venc_larb))
+				JPEG_ERR("get MT_CG_VENC_LARB clk error!");
 		#endif
 		gJpegClk.clk_venc_jpgEnc = of_clk_get_by_name(node, "MT_CG_VENC_JPGENC");
 		if (IS_ERR(gJpegClk.clk_venc_jpgEnc))
