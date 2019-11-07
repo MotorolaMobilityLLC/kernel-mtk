@@ -265,9 +265,9 @@
 		status = "okay";
 		ichg = <1050000>; /* uA */
 	};
-       externel-eta-charger@6b{
+       externel-eta-charger@6e{
                compatible = "ontim,eta6937";
-               reg = <0x6b>;/*dumy addr,in fact ,the addr is 0x6b-1*/
+               reg = <0x6e>;/*dumy addr,in fact ,the addr is 0x6b-1*/
                status = "okay";
 		ichg = <1050000>; /* uA */
        };
