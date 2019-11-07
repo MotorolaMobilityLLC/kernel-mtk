@@ -4344,11 +4344,12 @@ static void get_back_cam_efuse_id(void)
 	int i = 0;
 	kal_uint8 efuse_id;
 	//write_cmos_sensor(0x0342, 0x13E0);
-	write_cmos_sensor(0x0100, 0x01);
+        write_cmos_sensor(0x6028, 0x4000);
+	write_cmos_sensor(0x0100, 0x0100);
 	mdelay(50);
 	//write_cmos_sensor(0x0000, 0x50);
 	write_cmos_sensor(0x0a02, 0x0000);
-	write_cmos_sensor(0x0a00, 0x01);
+	write_cmos_sensor(0x0a00, 0x0100);
 	//write_cmos_sensor(0x0000, 0x10);
 	mdelay(10);
 	for(i=0;i<16;i++)
@@ -4409,7 +4410,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					ontim_get_otp_data(*sensor_id, NULL, 0);
 					pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
-				}else if(0x50 != imgsensor_info.module_id)
+				}
+#if 0
+				else if(0x50 != imgsensor_info.module_id)
 				{
 					*sensor_id = S5K3P9SXT_SENSOR_ID;
 					dual_main_sensorid = *sensor_id;
@@ -4419,6 +4422,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					pr_err("wrong module id, i2c write id: 0x%x, sensor id: 0x%x, module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id,imgsensor_info.module_id);
 					return ERROR_NONE;
 				}
+#endif
 			}
 			pr_err("Read sensor id fail, id: 0x%x ensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 			retry--;
@@ -4502,7 +4506,6 @@ static kal_uint32 open(void)
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
 
-	get_back_cam_efuse_id();
 	return ERROR_NONE;
 }	/*	open  */
 
@@ -4565,7 +4568,6 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 
-	get_back_cam_efuse_id();
 	preview_setting();
 	set_mirror_flip(imgsensor.mirror);
 
