@@ -351,7 +351,7 @@ static ssize_t ontim_iic_chipnum_show(struct kobject *kobj,
       int status;
       unsigned int i_chip_num=ontim_iic_dev_dbg_data.i_chip_num;
       mutex_lock(&sysfs_lock);
-      if(i_chip_num>=0&&i_chip_num<4)
+      if(i_chip_num>=0&&i_chip_num<8)
            status=sprintf(buf,"%s=0x%x\n","chip_num",i_chip_num);
       else
            status=sprintf(buf,"chip_num=error num!!!\n");
@@ -368,7 +368,7 @@ static ssize_t ontim_iic_chipnum_store(struct kobject *kobj, struct kobj_attribu
 	    res = kstrtouint(buf, 16, &i_chip_num);
 	else
 	    res = kstrtouint(buf, 10, &i_chip_num);
-        if(!res&&i_chip_num>=0&&i_chip_num<4)
+        if(!res&&i_chip_num>=0&&i_chip_num<8)
 	      ontim_iic_dev_dbg_data.i_chip_num=i_chip_num;
 	else
         {
