@@ -129,8 +129,8 @@ static struct rt9471_desc rt9471_default_desc = {
 	.ichg = 2000000,
 	.aicr = 500000,
 	.mivr = 4500000,
-	.cv = 4200000,
-	.ieoc = 200000,
+	.cv = 4400000,
+	.ieoc = 150000,
 	.safe_tmr = 10,
 	.wdt = 40,
 	.mivr_track = RT9471_MIVRTRACK_REG,
@@ -217,7 +217,7 @@ struct rt9471_chip {
 };
 
 #include <ontim/ontim_dev_dgb.h>
-static  char charge_ic_vendor_name[50]="HL7007";
+static  char charge_ic_vendor_name[50]="RT9471";
 DEV_ATTR_DECLARE(charge_ic)
 DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
 DEV_ATTR_DECLARE_END;
