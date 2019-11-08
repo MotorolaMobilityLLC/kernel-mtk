@@ -925,7 +925,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     
     if((sensorid == OV13855_SENSOR_ID) || (sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||
        (sensorid == AR1337_SENSOR_ID) || (sensorid == S5K3L6_SENSOR_ID) ||
-	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID))
+	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) ||
+	(sensorid == GC8034_SENSOR_ID))
    {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
 	if (pu1Params == NULL) 
