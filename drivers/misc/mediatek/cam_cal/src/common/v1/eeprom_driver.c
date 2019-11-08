@@ -891,21 +891,16 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
         case S5K3P9SX_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0x0D09;
+            u4Length = 0x0DC9;
             str_dump_path = str_s5k3p9sx_TSP_path;
             break;
         }
         case GC8034_SENSOR_ID:
         {
-            if((p_buf == NULL)|| (Length == 0))
-            {
-                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
-                __FUNCTION__, __LINE__, p_buf, Length);
-                return -1;
-            }
-            pu1Params = p_buf;
-            u4Length = Length;
+            pu1Params = 0;
+            u4Length = 0x0773;
             str_dump_path = str_gc8034_holitech_path;
+            deviceid = 0x02;
             break;
         }
         case BLACKJACK_TSP_GC2375H_SENSOR_ID:
