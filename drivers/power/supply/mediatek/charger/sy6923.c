@@ -802,6 +802,9 @@ static int sy6923_reset_watch_dog_timer(struct charger_device *chg_dev)
 static int sy6923_charger_enable_otg(struct charger_device *chg_dev, bool en)
 {
 	sy6923_set_opa_mode(en);
+	/* add liang */
+	sy6923_set_otg_en(en);
+	/* add end */
 	enable_boost_polling(en);
 	return 0;
 }
