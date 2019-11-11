@@ -70,6 +70,16 @@
 		vib_limit = <9>;
 		vib_vol= <0x0b>;
 	};
+	memory_ssmr: memory-ssmr {
+		compatible = "mediatek,memory-ssmr";
+		svp-size = <0 0x10000000>;
+		iris-recognition-size = <0 0>;
+		2d_fr-size = <0 0>;
+		tui-size = <0 0>;
+		wfd-size = <0 0>;
+		prot-sharedmem-size = <0 0>;
+	};
+
 };
 
 &i2c1 {
