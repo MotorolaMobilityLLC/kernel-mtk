@@ -2247,11 +2247,13 @@ static ssize_t store_input_current(struct device *dev,
 }
 static DEVICE_ATTR(input_current, 0664, show_input_current,
 		store_input_current);
-#ifdef SMT_VERSION
+
+#ifdef CONFIG_CHARGER_STOP_70PER
 static int ontim_runin_onoff_control = 1;
 #else
 static int ontim_runin_onoff_control = -200;
 #endif
+
 int ontim_get_ontim_runin_onoff_control(void)
 {
 	return ontim_runin_onoff_control;
