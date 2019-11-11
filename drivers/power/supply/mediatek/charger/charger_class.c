@@ -283,7 +283,7 @@ int charger_dev_set_constant_voltage(struct charger_device *chg_dev, u32 uV)
         {
                if(ontim_get_ontim_runin_onoff_control()==1)
                {
-                    uV = 4000000	;
+                    uV = 4020000	;
                }
 		return chg_dev->ops->set_constant_voltage(chg_dev, uV);
         }
