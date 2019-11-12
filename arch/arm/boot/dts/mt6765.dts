@@ -243,6 +243,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		#size-cells = <2>;
 		ranges;
 
+		zmc-default {
+			compatible = "mediatek,zone_movable_cma";
+			size = <0 0x10000000>;
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x0 1 0x00000000>;
+		};
+
 		ram_console-reserved-memory@47c80000 {
 			compatible = "mediatek,ram_console";
 			reg = <0 0x47c80000 0 0x10000>;
@@ -299,7 +306,14 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		soter-shared-mem {
 			compatible = "microtrust,shared_mem";
 			no-map;
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+			defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+			size = <0 0xA00000>;
+			alignment = <0 0x1000000>;
+#else
 			size = <0 0x200000>;
+			alignment = <0 0x200000>;
+#endif
 			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
 #endif
