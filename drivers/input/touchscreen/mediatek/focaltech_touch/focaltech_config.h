@@ -158,7 +158,7 @@
  * ESD check & protection
  * default: disable
  */
-#define FTS_ESDCHECK_EN                         0
+#define FTS_ESDCHECK_EN                         1
 
 /*
  * Production test enable
@@ -230,13 +230,13 @@
  * define your own fw_file, the sample one to be replaced is invalid
  * NOTE: if FTS_GET_MODULE_NUM > 1, it's the fw corresponding with FTS_VENDOR_ID
  */
-#define FTS_UPGRADE_FW_FILE                      "include/firmware/blackjack_ft8006p_ver10.i"
+#define FTS_UPGRADE_FW_FILE                      "include/firmware/blackjack_ft8006p_v11_all.i"
 
 /*
  * if FTS_GET_MODULE_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fiji_ft8006p_v05.i"
+#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fiji_ft8006p_v09_all.i"
 
 /*
  * if FTS_GET_MODULE_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
