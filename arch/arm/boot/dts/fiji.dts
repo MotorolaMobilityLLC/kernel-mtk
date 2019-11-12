@@ -296,6 +296,7 @@
 		compatible = "richtek,rt9471";
 		reg = <0x53>;
 		status = "okay";
+		ichg = <2000000>; /* uA */
 	};
 };
 &i2c6 {
