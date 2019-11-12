@@ -223,6 +223,8 @@ DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
+static u32 max_charge_current=0;
+
 static const u8 rt9471_reg_addr[] = {
 	RT9471_REG_OTGCFG,
 	RT9471_REG_TOP,
@@ -1622,6 +1624,10 @@ static int rt9471_parse_dt(struct rt9471_chip *chip)
 		dev_notice(chip->dev, "%s no device node\n", __func__);
 		return -EINVAL;
 	}
+	if (!of_property_read_u32(parent_np, "ichg", &max_charge_current)) {
+		pr_warn("%s: max_charge_current=%d;\n", __func__,max_charge_current);
+	}
+	
 	np = of_get_child_by_name(parent_np, "rt9471");
 	if (!np) {
 		dev_notice(chip->dev, "%s no rt9471 device node\n", __func__);
@@ -2077,6 +2083,12 @@ static int rt9471_get_ichg(struct charger_device *chg_dev, u32 *uA)
 static int rt9471_set_ichg(struct charger_device *chg_dev, u32 uA)
 {
 	struct rt9471_chip *chip = dev_get_drvdata(&chg_dev->dev);
+
+	if(max_charge_current != 0  && uA > max_charge_current)	
+	{
+		pr_warn("%s;%d;%d;\n",__func__,uA,max_charge_current);
+		uA = max_charge_current;			
+	}
 
 	return __rt9471_set_ichg(chip, uA);
 }
