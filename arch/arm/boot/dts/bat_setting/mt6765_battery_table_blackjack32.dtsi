@@ -11,10 +11,10 @@
 	jeita_temp_below_t0_cv = <4200000>;
 
 #ifdef CONFIG_CHARGE_STOP_DEGREE55
-	temp_t4_threshold = <55>;
+	temp_t4_thres = <55>;
 	temp_t4_thres_minus_x_degree = <52>;
 #else
-	temp_t4_threshold = <50>;
+	temp_t4_thres = <50>;
 	temp_t4_thres_minus_x_degree = <47>;
 #endif
 	temp_t3_thres = <45>;
