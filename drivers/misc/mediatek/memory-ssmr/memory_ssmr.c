@@ -73,7 +73,7 @@ struct page_change_data {
  * Use for zone-movable-cma callback
  */
 
-#define SSMR_FEATURES_DT_UNAME "memory-ssmr-features"
+#define SSMR_FEATURES_DT_UNAME "memory-ssmr"
 
 static void __init get_feature_size_by_dt_prop(unsigned long node,
 		const char *feature_name, u64 *fsize)
