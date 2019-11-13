@@ -26,11 +26,11 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "gc2375hmipi_Sensor.h"
+#include "fiji_jsl_gc2375hmipi_Sensor.h"
 
 /**************** Modify Following Strings for Debug ******************/
-#define PFX "gc2375h_camera_sensor"
-#define LOG_1 cam_pr_debug("GC2375H, MIPI 1LANE\n")
+#define PFX "fiji_jsl_gc2375h_camera_sensor"
+#define LOG_1 cam_pr_debug("FIJI_JSL_GC2375H, MIPI 1LANE\n")
 /********************   Modify end    *********************************/
 
 #define GC2375HMIPI_USE_OTP
@@ -41,7 +41,7 @@
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = GC2375H_SENSOR_ID,
+	.sensor_id = FIJI_JSL_GC2375H_SENSOR_ID,
 	.checksum_value = 0x8726c936,
 	.pre = {
 		.pclk = 39000000,
@@ -166,7 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
-#if GC2375H_MIRROR_FLIP_ENABLE
+#if FIJI_JSL_GC2375H_MIRROR_FLIP_ENABLE
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 #else
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
@@ -624,7 +624,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0e, 0xb8);
 	write_cmos_sensor(0x0f, 0x06);
 	write_cmos_sensor(0x10, 0x48);
-	write_cmos_sensor(0x17, GC2375H_MIRROR);
+	write_cmos_sensor(0x17, FIJI_JSL_GC2375H_MIRROR);
 	write_cmos_sensor(0x1c, 0x10);
 	write_cmos_sensor(0x1d, 0x13);
 	write_cmos_sensor(0x20, 0x0b);
@@ -674,10 +674,10 @@ static void sensor_init(void)
 	write_cmos_sensor(0x41, 0x00);
 	write_cmos_sensor(0x43, 0x03);
 	write_cmos_sensor(0x4a, 0x00);
-	write_cmos_sensor(0x4e, GC2375H_BLK_Select1_H);
-	write_cmos_sensor(0x4f, GC2375H_BLK_Select1_L);
-	write_cmos_sensor(0x66, GC2375H_BLK_Select2_H);
-	write_cmos_sensor(0x67, GC2375H_BLK_Select2_L);
+	write_cmos_sensor(0x4e, FIJI_JSL_GC2375H_BLK_Select1_H);
+	write_cmos_sensor(0x4f, FIJI_JSL_GC2375H_BLK_Select1_L);
+	write_cmos_sensor(0x66, FIJI_JSL_GC2375H_BLK_Select2_H);
+	write_cmos_sensor(0x67, FIJI_JSL_GC2375H_BLK_Select2_L);
 
 	/* Dark sun */
 	write_cmos_sensor(0x68, 0x00);
@@ -782,7 +782,8 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 }
 
 #if defined(GC2375HMIPI_USE_OTP)
-static kal_uint8 gc2375h_read_otp(kal_uint8 addr)
+
+static kal_uint8 fiji_jsl_gc2375h_read_otp(kal_uint8 addr)
 {
 	kal_uint8 value;
 
@@ -794,14 +795,14 @@ static kal_uint8 gc2375h_read_otp(kal_uint8 addr)
 	return value;
 }
 
-static kal_uint8 gc2375h_gcore_read_otp_info(void)
+static kal_uint8 fiji_jsl_gc2375h_gcore_read_otp_info(void)
 {
 	kal_uint8 flag;
 
 	//memset(&gc2375h_otp_info, 0, sizeof(gc2375h_otp_info));
 
-	flag = gc2375h_read_otp(0x00);
-	cam_pr_debug("GC2375H_OTP: flag = 0x%x\n", flag);
+	flag = fiji_jsl_gc2375h_read_otp(0x00);
+	cam_pr_debug("FIJI_KSL_GC2375H_OTP: flag = 0x%x\n", flag);
 	#if 0
 	gc2375h_otp_info.wb_flag = flag & 0x03;
 	gc2375h_otp_info.ob_flag = (flag >> 2) & 0x03;
@@ -847,7 +848,7 @@ static kal_uint8 gc2375h_gcore_read_otp_info(void)
 	return flag;
 }
 
-static void gc2375h_gcore_enable_otp(kal_uint8 state)
+static void fiji_jsl_gc2375h_gcore_enable_otp(kal_uint8 state)
 {
 	kal_uint8 otp_clk, otp_en;
 
@@ -872,7 +873,7 @@ static void gc2375h_gcore_enable_otp(kal_uint8 state)
 	}
 }
 
-static kal_uint8 gc2375h_gcore_identify_otp(void)
+static kal_uint8  fiji_jsl_gc2375h_gcore_identify_otp(void)
 {
 	kal_uint8 flag;
 	write_cmos_sensor(0xfe, 0x00);
@@ -883,9 +884,9 @@ static kal_uint8 gc2375h_gcore_identify_otp(void)
 	write_cmos_sensor(0xf9, 0x42);
 	write_cmos_sensor(0xfa, 0x88);
 	write_cmos_sensor(0xfc, 0x8e);
-	gc2375h_gcore_enable_otp(otp_open);
-	flag = gc2375h_gcore_read_otp_info();
-	gc2375h_gcore_enable_otp(otp_close);
+	fiji_jsl_gc2375h_gcore_enable_otp(otp_open);
+	flag = fiji_jsl_gc2375h_gcore_read_otp_info();
+	fiji_jsl_gc2375h_gcore_enable_otp(otp_close);
 	return flag;
 }
 #endif
@@ -909,6 +910,7 @@ static kal_uint8 gc2375h_gcore_identify_otp(void)
 
 extern char backaux_cam_name[64];
 
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -920,17 +922,18 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				//read model id
-				if(0x0 == gc2375h_gcore_identify_otp())
+			if ((*sensor_id+1) == imgsensor_info.sensor_id) {
+
+				//read mode id
+				if(0x0A == fiji_jsl_gc2375h_gcore_identify_otp())
 				{
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					memcpy(backaux_cam_name, "2_gc2375h", 64);
-					cam_pr_debug("gc2375h i2c write id: 0x%x, sensor id: 0x%x\n",
-					imgsensor.i2c_write_id, *sensor_id);
+					memcpy(backaux_cam_name, "2_fiji_jsl_gc2375h", 64);
+					cam_pr_debug("fiji_jsl_gc2375h i2c write id: 0x%x, sensor id: 0x%x\n",
+						imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 				}
-				else
+				else 
 				{
 					*sensor_id = 0xFFFFFFFF;
 					return ERROR_SENSOR_CONNECT_FAIL;
@@ -980,7 +983,7 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = return_sensor_id();
-			if (sensor_id == imgsensor_info.sensor_id) {
+			if ((sensor_id +1)  == imgsensor_info.sensor_id) {
 				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
 				break;
@@ -1917,7 +1920,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 GC2375H_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 FIJI_JSL_GC2375H_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
