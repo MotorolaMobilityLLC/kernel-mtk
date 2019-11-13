@@ -162,6 +162,29 @@ static void free_buffer_page(struct ion_system_heap *heap,
 	int order_idx = order_to_index(order);
 	unsigned long private_flags = buffer->private_flags;
 
+#ifdef CONFIG_MTK_ION_CAM_POOL_DIS
+	if (!cached &&
+	    (!(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) &&
+	    heap->heap.id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) {
+		struct ion_page_pool *pool = heap->pools[order_idx];
+
+		ion_page_pool_free(pool, page);
+	} else if (cached &&
+		   (!(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) &&
+		   (heap->heap.id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)) {
+		struct ion_page_pool *pool = heap->cached_pools[order_idx];
+
+		ion_page_pool_free(pool, page);
+	} else {
+		__free_pages(page, order);
+		if (atomic64_sub_return((1 << order), &page_sz_cnt) < 0) {
+			IONMSG("underflow!, total_now[%ld]free[%lu]\n",
+			       atomic64_read(&page_sz_cnt),
+			       (unsigned long)(1 << order));
+			atomic64_set(&page_sz_cnt, 0);
+		}
+	}
+#else
 	if (!cached && !(private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) {
 		struct ion_page_pool *pool = heap->pools[order_idx];
 
@@ -179,6 +202,7 @@ static void free_buffer_page(struct ion_system_heap *heap,
 			atomic64_set(&page_sz_cnt, 0);
 		}
 	}
+#endif
 }
 
 static struct page_info *alloc_largest_available(struct ion_system_heap *heap,

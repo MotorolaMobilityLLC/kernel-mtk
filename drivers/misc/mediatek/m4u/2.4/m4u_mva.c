@@ -821,7 +821,7 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 		|| (MVA_GET_NR(region_start) < nr + startIdx - region_start)) {
 		M4UMSG("mva is inuse index=0x%x, mvaGraph=0x%x\n",
 			region_start, mvaGraph[region_start]);
-		mva = 0;
+		mva = 1;
 		goto out;
 	}
 

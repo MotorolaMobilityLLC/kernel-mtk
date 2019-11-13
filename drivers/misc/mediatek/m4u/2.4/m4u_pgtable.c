@@ -1103,7 +1103,7 @@ int m4u_check_free_pte(struct m4u_domain *domain,
 
 	pte = imu_pte_map(pgd);
 	for (i = 0; i < IMU_PTRS_PER_PTE; i++) {
-		if (imu_pte_val(*pte) != 0)
+		if (imu_pte_val(pte[i]) != 0)
 			break;
 	}
 	if (i == IMU_PTRS_PER_PTE) {

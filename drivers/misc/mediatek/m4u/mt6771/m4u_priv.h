@@ -166,6 +166,7 @@ struct m4u_buf_info_t {
 	unsigned int size_align;
 	int seq_id;
 	unsigned long mapped_kernel_va_for_debug;
+	unsigned long long current_ts;
 };
 
 struct M4U_MAU_STRUCT {
