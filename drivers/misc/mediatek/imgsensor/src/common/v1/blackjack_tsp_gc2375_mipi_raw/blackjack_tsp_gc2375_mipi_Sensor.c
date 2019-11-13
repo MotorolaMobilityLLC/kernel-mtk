@@ -41,7 +41,7 @@
 /****************************   Modify end    *******************************************/
 
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
-#define MODULE_ID_OFFSET 0x08
+#define MODULE_ID_OFFSET 0x00
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static kal_bool BLACKJACK_TSP_GC2375DuringTestPattern = KAL_FALSE;
@@ -930,10 +930,14 @@ static kal_uint8 blackjack_tsp_gc2375_read_otp(kal_uint8 addr)
 {
 	kal_uint8 value;
 
-	write_cmos_sensor(0xfe, 0x00);
-	write_cmos_sensor(0xd5, addr);
-	write_cmos_sensor(0xf3, 0x20);
-	value = read_cmos_sensor(0xd7);
+        write_cmos_sensor(0xf7, 0x01);
+        write_cmos_sensor(0xf9, 0x42);
+        write_cmos_sensor(0xfc, 0x9e);
+        write_cmos_sensor(0xfa, 0x88);
+        write_cmos_sensor(0xd4, 0x81);
+        write_cmos_sensor(0xd5, addr);
+        write_cmos_sensor(0xf3, 0x20);
+        value = read_cmos_sensor(0xd7);
 
 	return value;
 }
@@ -952,13 +956,22 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if ((*sensor_id == imgsensor_info.sensor_id) && (!driver_registered)) {
                                 imgsensor_info.module_id = blackjack_tsp_gc2375_read_otp(MODULE_ID_OFFSET);
-                                if(0x50 != imgsensor_info.module_id)
+                                if(0x52 == imgsensor_info.module_id)
                                 {
 					*sensor_id = BLACKJACK_TSP_GC2375_SENSOR_ID;
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
 					memcpy(backaux_cam_name, "2_blackjack_tsp_gc2375", 64);
 					driver_registered = KAL_TRUE;
-					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+					printk("i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
+					return ERROR_NONE;
+				}
+				else if(0x50 != imgsensor_info.module_id)
+                                {
+					*sensor_id = BLACKJACK_TSP_GC2375_SENSOR_ID;
+					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+					memcpy(backaux_cam_name, "2_blackjack_tsp_gc2375_nootp", 64);
+					driver_registered = KAL_TRUE;
+					printk("wrong module id i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
 					return ERROR_NONE;
 				}
 			}

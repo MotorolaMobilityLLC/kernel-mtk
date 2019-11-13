@@ -38,6 +38,7 @@
 #define MODULE_ID_OFFSET 0x0008
 
 static bool gc2375_registered = 0;
+static kal_uint16 eeprom_module_id = 0;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -692,6 +693,22 @@ static kal_uint16 read_module_id(void)
         pr_err("the module id is %d\n", get_byte);
         return get_byte;
 }
+static kal_uint8 gc2375_read_otp(kal_uint8 addr)
+{
+        kal_uint8 value;
+
+        write_cmos_sensor(0xf7, 0x01);
+        write_cmos_sensor(0xf9, 0x42);
+        write_cmos_sensor(0xfc, 0x9e);
+        write_cmos_sensor(0xfa, 0x88);
+        write_cmos_sensor(0xd4, 0x81);
+        write_cmos_sensor(0xd5, addr);
+        write_cmos_sensor(0xf3, 0x20);
+        value = read_cmos_sensor(0xd7);
+
+        return value;
+}
+
 
 /*************************************************************************
  * FUNCTION
@@ -724,8 +741,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if ((*sensor_id == imgsensor_info.sensor_id) && (!gc2375_registered)) {
-                                imgsensor_info.module_id = read_module_id();
-                                if(0x50 == imgsensor_info.module_id)
+                                imgsensor_info.module_id = gc2375_read_otp(0x00);
+                                eeprom_module_id = read_module_id();
+                                if((0x50 == imgsensor_info.module_id) || (0x50 == eeprom_module_id))
                                 {
 					memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
 					memcpy(backaux2_cam_name, "3_blackjack_tsp_gc2375h", 64);
