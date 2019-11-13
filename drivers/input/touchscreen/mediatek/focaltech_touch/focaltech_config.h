@@ -242,7 +242,7 @@
  * if FTS_GET_MODULE_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW3_FILE                     "include/firmware/ft8006p_v02_all.i"
+#define FTS_UPGRADE_FW3_FILE                     "include/firmware/fw_sample.i"
 
 /*********************************************************/
 

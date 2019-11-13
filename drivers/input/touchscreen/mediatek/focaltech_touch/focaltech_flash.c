@@ -41,7 +41,9 @@
 #define FTS_FW_REQUEST_SUPPORT                      0
 /* Example: focaltech_ts_fw_tianma.bin */
 #define FTS_FW_NAME_PREX_WITH_REQUEST               "focaltech_ts_fw_"
-
+extern char lcd_info_pr[256];
+u8 old_module_flag=0;
+u8 new_module_flag=0;
 /*****************************************************************************
 * Global variable or extern global variabls/functions
 *****************************************************************************/
@@ -1571,7 +1573,7 @@ static bool fts_fwupg_need_upgrade(struct fts_upgrade *upg)
         }
 
         FTS_INFO("fw version in tp:%x, host:%x", fw_ver_in_tp, fw_ver_in_host);
-        if (fw_ver_in_tp != fw_ver_in_host) {
+        if (fw_ver_in_tp < fw_ver_in_host) {
             return true;
         }
     } else {
@@ -1609,8 +1611,10 @@ int fts_fwupg_upgrade(struct fts_upgrade *upg)
     }
 
     upgrade_flag = fts_fwupg_need_upgrade(upg);
+    if (new_module_flag != old_module_flag)
+        upgrade_flag=true;
     FTS_INFO("fw upgrade flag:%d", upgrade_flag);
-	
+
     do {
         upgrade_count++;
         if (upgrade_flag) {
@@ -1754,10 +1758,20 @@ static int fts_fwupg_get_module_info(struct fts_upgrade *upg)
             FTS_ERROR("get vendor id failed");
             return ret;
         }
-        FTS_INFO("module id:%04x", upg->module_id);
+	FTS_INFO("before module id:%04x", upg->module_id);
+	old_module_flag=upg->module_id;
+	if(strstr(lcd_info_pr,"truly")){
+	   upg->module_id=0x7070;
+	}
+	else if (strstr(lcd_info_pr,"hlt"))
+	   upg->module_id=0x8282;
+
+	new_module_flag=upg->module_id;
+	FTS_INFO("after module id:%04x", upg->module_id);
+
         for (i = 0; i < FTS_GET_MODULE_NUM; i++) {
             info = &module_list[i];
-            if (upg->module_id == info->id) {
+            if ((upg->module_id & 0xff) == (info->id & 0xff)) {
                 FTS_INFO("module id match, get module info pass");
                 break;
             }
