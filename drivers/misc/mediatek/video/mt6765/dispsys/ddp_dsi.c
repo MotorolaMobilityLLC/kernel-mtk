@@ -5053,6 +5053,7 @@ int DSI_esd_check_num(struct LCM_DSI_PARAMS *dsi_params)
 	return cnt;
 }
 
+int lcd_rst=0;
 int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module,
 	void *cmdq_trigger_handle, enum CMDQ_STATE state)
 {
@@ -5338,7 +5339,10 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module,
 				ret |= 0;/*esd pass*/
 				DISPDBG("[DSI]cmp pass cnt = %d\n", j);
 			}
-
+            if (lcd_rst) {
+                   ret |= 1;
+                   lcd_rst = 0;
+             }
 			if (ret)/*esd failed*/
 				break;
 		}
