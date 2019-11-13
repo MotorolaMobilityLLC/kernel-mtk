@@ -1113,15 +1113,15 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 			for (i = 0; i < _lcm_count(); i++) {
 				lcm_drv = lcm_driver_list[i];
 				if (!strcmp(lcm_drv->name, plcm_name)) {
-				//BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,add lcd information
-				   strlcpy(lcd_info_pr,plcm_name,strlen(plcm_name)+1);
-		                   len = strlen(plcm_name);
-		                   printk("[%s]:wzx plcm_name = %s,lcd_info = %s, %d\n",__func__,plcm_name,lcd_info_pr,len);
-				//END
-				isLCMFound = true;
-				isLCMInited = true;
-				lcmindex = i;
-				break;
+					//BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,add lcd information
+					len = strlen(plcm_name)+1;
+				   	strlcpy(lcd_info_pr, plcm_name, len);
+		                   	printk("[%s]:wzx plcm_name = %s,lcd_info = %s, %d\n",__func__,plcm_name,lcd_info_pr,len);
+					//END
+					isLCMFound = true;
+					isLCMInited = true;
+					lcmindex = i;
+					break;
 				}
 			}
 			if (!isLCMFound) {
