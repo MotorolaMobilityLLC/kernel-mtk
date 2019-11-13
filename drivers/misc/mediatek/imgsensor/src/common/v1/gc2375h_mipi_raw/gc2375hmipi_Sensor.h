@@ -47,6 +47,10 @@
 
 
 
+enum{
+	otp_close = 0,
+	otp_open,
+};
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
