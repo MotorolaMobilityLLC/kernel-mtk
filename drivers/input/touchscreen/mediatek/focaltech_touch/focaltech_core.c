@@ -1060,7 +1060,6 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
         cnt++;
         msleep(INTERVAL_READ_REG);
     } while (cnt  < 5);
-    snprintf(vendor_name, sizeof(vendor_name),"truly_focaltech" );
     mutex_unlock(&input_dev->mutex);
 }
 static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
@@ -1194,10 +1193,15 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
 
     tpd_load_status = 1;
-    
     /* BEGIN, Ontim,  wzx, 19/10/9, St-result :PASS,LCD and TP Device information */
-    if(strstr(lcd_info_pr,"ft8006p")){
-	   snprintf(lcdname, sizeof(lcdname),"%s ","truly-ft8006p" );
+    FTS_INFO("fts---%s-\n",lcd_info_pr);
+    if (strstr(lcd_info_pr,"truly")){
+        snprintf(lcdname, sizeof(lcdname),"%s ","truly-ft8006p" );
+        snprintf(vendor_name, sizeof(vendor_name),"truly_focaltech" );
+    }
+    else if (strstr(lcd_info_pr,"hlt")){
+        snprintf(lcdname, sizeof(lcdname),"%s ","holitek-ft8006p" );
+        snprintf(vendor_name, sizeof(vendor_name),"holitek-ft8006p" );
     }
     ontim_refresh_fw_ver( ts_data);
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
