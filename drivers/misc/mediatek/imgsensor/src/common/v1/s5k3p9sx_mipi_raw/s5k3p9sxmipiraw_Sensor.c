@@ -4341,25 +4341,45 @@ static kal_uint16 read_module_id(void)
 #endif
 static void get_back_cam_efuse_id(void)
 {
-	int i = 0;
+	int i = 0,temp = 0;
 	kal_uint8 efuse_id;
-	//write_cmos_sensor(0x0342, 0x13E0);
-        write_cmos_sensor(0x6028, 0x4000);
-	write_cmos_sensor(0x0100, 0x0100);
+	write_cmos_sensor(0x6010, 0x0001);
+	mdelay(3);
+	write_cmos_sensor(0x6214,0x7970);
+	write_cmos_sensor(0x6218,0x7150);
+	write_cmos_sensor(0x0136,0x1800);
+	write_cmos_sensor(0x0304,0x0006);
+	write_cmos_sensor(0x030C,0x0000);
+	write_cmos_sensor(0x0306,0x00F5);
+	write_cmos_sensor(0x0302,0x0001);
+	write_cmos_sensor(0x0300,0x0007);
+	write_cmos_sensor(0x030e,0x0004);
+	write_cmos_sensor(0x0312,0x0000);
+	write_cmos_sensor(0x0310,0x008B);
+	write_cmos_sensor(0x030A,0x0001);
+	write_cmos_sensor(0x0308,0x0008);
+
+	write_cmos_sensor_byte(0x0100, 0x01);
 	mdelay(50);
-	//write_cmos_sensor(0x0000, 0x50);
 	write_cmos_sensor(0x0a02, 0x0000);
-	write_cmos_sensor(0x0a00, 0x0100);
-	//write_cmos_sensor(0x0000, 0x10);
-	mdelay(10);
-	for(i=0;i<16;i++)
+	write_cmos_sensor_byte(0x0a00, 0x01);
+	mdelay(1);
+	for(temp=0;temp<3;temp++)
 	{
-		efuse_id = read_cmos_sensor(0x0a24+i);
-		sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
+		if(0x00 == read_cmos_sensor_8(0x0a00))
+		{
+			for(i=0;i<6;i++)
+			{
+				efuse_id = read_cmos_sensor_8(0x0a24+i);
+				sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
+				mdelay(1);
+				LOG_INF("get_back_cam_efuse_id- efuse_id = 0x%02x\n", efuse_id);
+			}
+			break;
+		}
 		mdelay(1);
-		pr_err("guozy efuse_id = 0x%02x\n", efuse_id);
 	}
-	pr_err("guozy efuse_id0x0A02 = 0x%02x, 0x%02x\n", read_cmos_sensor(0x0A02),read_cmos_sensor(0x0A03));
+	write_cmos_sensor_byte(0x0a00, 0x00);
 }
 /*************************************************************************
 * FUNCTION
