@@ -33,6 +33,8 @@
 #define LOG_1 cam_pr_debug("GC2375H, MIPI 1LANE\n")
 /********************   Modify end    *********************************/
 
+#define GC2375HMIPI_USE_OTP
+
 #define cam_pr_debug(format, args...) \
 	pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -779,6 +781,113 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+#if defined(GC2375HMIPI_USE_OTP)
+static kal_uint8 gc2375h_read_otp(kal_uint8 addr)
+{
+	kal_uint8 value;
+
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0xd5, addr);
+	write_cmos_sensor(0xf3, 0x20);
+	value = read_cmos_sensor(0xd7);
+
+	return value;
+}
+
+static kal_uint8 gc2375h_gcore_read_otp_info(void)
+{
+	kal_uint8 flag;
+
+	//memset(&gc2375h_otp_info, 0, sizeof(gc2375h_otp_info));
+
+	flag = gc2375h_read_otp(0x00);
+	cam_pr_debug("GC2375H_OTP: flag = 0x%x\n", flag);
+	#if 0
+	gc2375h_otp_info.wb_flag = flag & 0x03;
+	gc2375h_otp_info.ob_flag = (flag >> 2) & 0x03;
+
+	/* WB */
+	if (0x01 == gc2375h_otp_info.wb_flag) {
+		LOG_INF("GC2375H_OTP_WB: Valid");
+
+		gc2375h_otp_info.r_gain = gc2375h_read_otp(0x08);
+		gc2375h_otp_info.g_gain = gc2375h_read_otp(0x10);
+		gc2375h_otp_info.b_gain = gc2375h_read_otp(0x18);
+		gc2375h_otp_info.g_r_gain_l = gc2375h_read_otp(0x20);
+		gc2375h_otp_info.b_g_gain_l = gc2375h_read_otp(0x28);
+
+		LOG_INF("GC2375H_OTP_WB: r_gain = 0x%x\n", gc2375h_otp_info.r_gain);
+		LOG_INF("GC2375H_OTP_WB: g_gain = 0x%x\n", gc2375h_otp_info.g_gain);
+		LOG_INF("GC2375H_OTP_WB: b_gain = 0x%x\n", gc2375h_otp_info.b_gain);
+		LOG_INF("GC2375H_OTP_WB: g_r_gain_l = 0x%x\n", gc2375h_otp_info.g_r_gain_l);
+		LOG_INF("GC2375H_OTP_WB: b_g_gain_l = 0x%x\n", gc2375h_otp_info.b_g_gain_l);
+	} else {
+		LOG_INF("GC2375H_OTP_WB: Invalid!");
+	}
+
+	/* OB */
+	if (0x01 == gc2375h_otp_info.ob_flag) {
+		LOG_INF("GC2375H_OTP_OB:Valid");
+
+		gc2375h_otp_info.g1_slope = gc2375h_read_otp(0x30);
+		gc2375h_otp_info.r1_slope = gc2375h_read_otp(0x38);
+		gc2375h_otp_info.b2_slope = gc2375h_read_otp(0x40);
+		gc2375h_otp_info.g2_slope = gc2375h_read_otp(0x48);
+		gc2375h_otp_info.ob_slope = gc2375h_read_otp(0x50);
+
+		LOG_INF("GC2375H_OTP_OB: g1_slope = 0x%x\n", gc2375h_otp_info.g1_slope);
+		LOG_INF("GC2375H_OTP_OB: r1_slope = 0x%x\n", gc2375h_otp_info.r1_slope);
+		LOG_INF("GC2375H_OTP_OB: b2_slope = 0x%x\n", gc2375h_otp_info.b2_slope);
+		LOG_INF("GC2375H_OTP_OB: g2_slope = 0x%x\n", gc2375h_otp_info.g2_slope);
+		LOG_INF("GC2375H_OTP_OB: ob_slope = 0x%x\n", gc2375h_otp_info.ob_slope);
+	} else {
+		LOG_INF("GC2375H_OTP_OB:Invalid!");
+	}
+	#endif 
+	return flag;
+}
+
+static void gc2375h_gcore_enable_otp(kal_uint8 state)
+{
+	kal_uint8 otp_clk, otp_en;
+
+	otp_clk = read_cmos_sensor(0xfc);
+	otp_en = read_cmos_sensor(0xd4);
+	if (state) {
+		otp_clk = otp_clk | 0x10;
+		otp_en = otp_en | 0x80;
+		mdelay(5);
+		write_cmos_sensor(0xfc, otp_clk); /* 0xfc[4]: OTP_CLK_en */
+		write_cmos_sensor(0xd4, otp_en);  /* 0xd4[7]: OTP_en */
+
+		cam_pr_debug("GC2375H_OTP: Enable OTP!\n");
+	} else {
+		otp_en = otp_en & 0x7f;
+		otp_clk = otp_clk & 0xef;
+		mdelay(5);
+		write_cmos_sensor(0xd4, otp_en);
+		write_cmos_sensor(0xfc, otp_clk);
+
+		cam_pr_debug("GC2375H_OTP: Disable OTP!\n");
+	}
+}
+
+void gc2375h_gcore_identify_otp(void)
+{
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0xf7, 0x01);
+	write_cmos_sensor(0xf8, 0x0c);
+	write_cmos_sensor(0xf9, 0x42);
+	write_cmos_sensor(0xfa, 0x88);
+	write_cmos_sensor(0xfc, 0x8e);
+	gc2375h_gcore_enable_otp(otp_open);
+	gc2375h_gcore_read_otp_info();
+	gc2375h_gcore_enable_otp(otp_close);
+}
+#endif
+
 /*************************************************************************
  * FUNCTION
  *    get_imgsensor_id
@@ -810,11 +919,20 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-				memcpy(backaux_cam_name, "2_gc2375h", 64);
-				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
+				//read model id
+				if(0x0 == gc2375h_gcore_read_otp_info())
+				{
+					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+					memcpy(backaux_cam_name, "2_gc2375h", 64);
+					cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
-				return ERROR_NONE;
+					return ERROR_NONE;
+				}
+				else
+				{
+					*sensor_id = 0xFFFFFFFF;
+					return ERROR_SENSOR_CONNECT_FAIL;
+				}
 			}
 			cam_pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);

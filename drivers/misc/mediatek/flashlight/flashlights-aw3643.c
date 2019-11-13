@@ -480,7 +480,8 @@ static int sy7806_set_level_ch1(int level)
 	/* set torch brightness level */
 	reg = AW3643_REG_TORCH_LEVEL_LED1;
 
-	val = aw3643tt_torch_level[level]*2;  
+	val = aw3643tt_torch_level[level]*2;
+	val = 0x31;
         LOG_INF("ontim_flashlight sy7806  set_level_ch1 write torch reg val: 0x%02x\n",val);
 	ret = aw3643_write_reg(aw3643_i2c_client, reg, val);
 	aw3643_level_ch1 = level;
