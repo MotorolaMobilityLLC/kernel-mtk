@@ -358,7 +358,7 @@ void fgauge_get_profile_id(void)
 	gm.battery_id = 0;
 	}
 	
-	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],20);
+	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],32);
 
 	printk(KERN_ERR "[%s]Battery id (%d)\n",
 		__func__,
