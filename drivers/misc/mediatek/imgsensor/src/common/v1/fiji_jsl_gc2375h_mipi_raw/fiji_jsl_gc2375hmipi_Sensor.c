@@ -927,6 +927,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				//read mode id
 				if(0x0A == fiji_jsl_gc2375h_gcore_identify_otp())
 				{
+					*sensor_id = *sensor_id+1;
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
 					memcpy(backaux_cam_name, "2_fiji_jsl_gc2375h", 64);
 					cam_pr_debug("fiji_jsl_gc2375h i2c write id: 0x%x, sensor id: 0x%x\n",
@@ -993,12 +994,12 @@ static kal_uint32 open(void)
 			retry--;
 		} while (retry > 0);
 		i++;
-		if (sensor_id == imgsensor_info.sensor_id)
+		if ((sensor_id + 1)== imgsensor_info.sensor_id)
 			break;
 		retry = 2;
 	}
 
-	if (imgsensor_info.sensor_id != sensor_id)
+	if (imgsensor_info.sensor_id != (sensor_id+1))
 		return ERROR_SENSOR_CONNECT_FAIL;
 
 	/* initail sequence write in  */
