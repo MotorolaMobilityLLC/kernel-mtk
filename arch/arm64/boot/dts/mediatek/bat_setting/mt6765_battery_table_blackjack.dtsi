@@ -41,6 +41,7 @@
 
 
        ac_charger_current = <2050000>;
+       ac_charger_input_current = <2000000>;
 
 };
 
