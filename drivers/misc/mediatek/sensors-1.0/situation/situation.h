@@ -47,6 +47,7 @@ typedef enum {
 	flat,
 	sar,
 	chopchop_gesture,
+	twist_twice_gesture,
 	max_situation_support,
 } situation_index_table;
 

@@ -16,3 +16,4 @@ obj-$(CONFIG_MTK_FLAT_HUB)				+=	flat/
 obj-$(CONFIG_MTK_SAR_HUB)				+=	sar/
 obj-$(CONFIG_MTK_SX932x) += sx932x/
 obj-$(CONFIG_ONTIM_CHOPCHOPHUB)	+=	chopchop_gesture/
+obj-$(CONFIG_ONTIM_TWIST_TWICEHUB)	+=	twist_twice_gesture/
