@@ -1142,7 +1142,13 @@
 
 	status = "okay";
 };
+
+&bat_gm30{
+	battery_type_name = <0>;
+};
 #include "bat_setting/mt6765_battery_table_blackjack32.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack32_2.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack32_3.dtsi"
 
 #include <blackjack/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
