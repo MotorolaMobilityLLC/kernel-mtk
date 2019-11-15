@@ -277,11 +277,11 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 	.i4PairNum  = 4,
 	.i4SubBlkW  = 16,
 	.i4SubBlkH  = 8,
-	.i4PosL = {{20, 19}, {36, 19}, {28, 31}, {44, 31}},
-	.i4PosR = {{28, 23}, {44, 23}, {20, 27}, {36, 27}},
+	.i4PosL = {{27, 20}, {43, 20}, {19, 24}, {35, 24}},
+	.i4PosR = {{19, 16}, {35, 16}, {27, 28}, {43, 28}},
 	.i4BlockNumX = 144,
 	.i4BlockNumY = 216,
-	.iMirrorFlip = 0,
+	.iMirrorFlip = 3,
 	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 
