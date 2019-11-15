@@ -494,3 +494,4 @@ CONFIG_MICROTRUST_FP_FOCALTECH=y
 #endif
 #hezhigang: enable chopchop gesture sensor
 CONFIG_ONTIM_CHOPCHOPHUB=y
+CONFIG_ONTIM_TWIST_TWICEHUB=y
