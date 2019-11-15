@@ -152,7 +152,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.frame_time_delay_frame = 1,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 3,
+	.sensor_mode_num = 7,
 
 	.cap_delay_frame = 2,
 	.pre_delay_frame = 2,
