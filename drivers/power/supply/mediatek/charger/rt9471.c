@@ -2244,6 +2244,7 @@ static int rt9471_enable_otg(struct charger_device *chg_dev, bool en)
 	int ret = 0;
 	struct rt9471_chip *chip = dev_get_drvdata(&chg_dev->dev);
 
+#if 0
 	if (en) {
 		ret = __rt9471_set_wdt(chip, chip->desc->wdt);
 		if (ret < 0) {
@@ -2252,6 +2253,7 @@ static int rt9471_enable_otg(struct charger_device *chg_dev, bool en)
 			return ret;
 		}
 	}
+#endif
 
 	ret = __rt9471_enable_otg(chip, en);
 	if (ret < 0) {
@@ -2259,12 +2261,14 @@ static int rt9471_enable_otg(struct charger_device *chg_dev, bool en)
 		return ret;
 	}
 
+#if 0
 	if (!en) {
 		ret = __rt9471_set_wdt(chip, 0);
 		if (ret < 0)
 			dev_notice(chip->dev, "%s set wdt fail(%d)\n",
 					      __func__, ret);
 	}
+#endif
 
 	return ret;
 }
