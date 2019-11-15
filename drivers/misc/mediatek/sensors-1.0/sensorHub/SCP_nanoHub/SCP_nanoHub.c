@@ -906,6 +906,10 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].sensorType = SENSOR_TYPE_CHOPCHOP_GESTURE;
 	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].rate = SENSOR_RATE_ONESHOT;
 	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_TWIST_TWICE_GESTURE].sensorType = SENSOR_TYPE_TWIST_TWICE_GESTURE;
+	mSensorState[SENSOR_TYPE_TWIST_TWICE_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_TWIST_TWICE_GESTURE].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd,
@@ -1651,6 +1655,10 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->sar_event.data[2] = data_t->sar_event.data[2];
 		break;
 	case ID_CHOPCHOP_GESTURE:
+		data->time_stamp = data_t->time_stamp;
+		data->ontim_gesture_event.state = data_t->ontim_gesture_event.state;
+		break;
+	case ID_TWIST_TWICE_GESTURE:
 		data->time_stamp = data_t->time_stamp;
 		data->ontim_gesture_event.state = data_t->ontim_gesture_event.state;
 		break;
