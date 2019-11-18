@@ -7,6 +7,9 @@
 #include "cts_spi_flash.h"
 #include "cts_firmware.h"
 
+unsigned char g_lcm_info_flag;
+extern char lcd_info_pr[256];
+
 #ifdef CONFIG_CTS_I2C_HOST
 static int cts_i2c_writeb(const struct cts_device *cts_dev,
         u32 addr, u8 b, int retry, int delay)
@@ -2308,6 +2311,15 @@ init_hwdata:
     if (ret) {
         cts_err("Device hwid: %06x fwid: %04x not found", hwid, fwid);
         return -ENODEV;
+    }
+
+    g_lcm_info_flag = 0;
+    if (strstr(lcd_info_pr, "icnl9911s")) {
+        if (strstr(lcd_info_pr, "hjc")) {
+            g_lcm_info_flag = LCM_INFO_HJC_GLASS;
+        } else if (strstr(lcd_info_pr, "rs")) {
+            g_lcm_info_flag = LCM_INFO_RS_GLASS;
+        }
     }
 
 #ifdef CFG_CTS_FIRMWARE_FORCE_UPDATE

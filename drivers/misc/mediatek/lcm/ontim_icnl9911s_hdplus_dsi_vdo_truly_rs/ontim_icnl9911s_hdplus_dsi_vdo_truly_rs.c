@@ -28,7 +28,7 @@
  * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
  * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
  */
-#define LOG_TAG "LCM-icnl9911s-truly-hjc"
+#define LOG_TAG "LCM-icnl9911s-truly-rs"
 
 #ifndef BUILD_LK
 #include <linux/string.h>
@@ -60,8 +60,10 @@
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
-#define MP_LCM_ID1 (unsigned int)(0x00)
-#define MP_LCM_ID3 (unsigned int)(0x62)
+#define SAMPLE_LCM_ID1    (unsigned int)(0x10) //for the sample LCM
+#define SAMPLE_LCM_ID3    (unsigned int)(0x00) //for the sample LCM
+#define MP_LCM_ID1        (unsigned int)(0x10) //for the MP LCM
+#define MP_LCM_ID3        (unsigned int)(0x62) //for the MP LCM
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 #define MDELAY(n)       (lcm_util.mdelay(n))
 #define UDELAY(n)       (lcm_util.udelay(n))
@@ -254,13 +256,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 	params->dsi.vertical_sync_active = 4;
 	params->dsi.vertical_backporch = 12;
-	params->dsi.vertical_frontporch = 32;
+	params->dsi.vertical_frontporch = 124;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 4;
+	params->dsi.horizontal_sync_active = 24;
 	params->dsi.horizontal_backporch = 12;
 	params->dsi.horizontal_frontporch = 60;//old is 16,now is 60
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 253;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 273;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 #if 0
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
@@ -418,7 +420,7 @@ static unsigned int lcm_compare_id(void)
 
 	LCM_LOGI("%s,icnl9911s vendor id1 = 0x%08x,id3 = 0x%08x\n", __func__, id1, id3);
 
-	if (MP_LCM_ID1 == id1 && MP_LCM_ID3 == id3)
+	if ((SAMPLE_LCM_ID1 == id1 && SAMPLE_LCM_ID3 == id3) || (MP_LCM_ID1 == id1 && MP_LCM_ID3 == id3))
 		return 1;
 	else
 		return 0;
@@ -427,8 +429,8 @@ static unsigned int lcm_compare_id(void)
 
 
 
-struct LCM_DRIVER ontim_icnl9911s_hdplus_dsi_vdo_truly_lcm_drv = {
-	.name = "ontim_icnl9911s_hdplus_dsi_vdo_truly_hjc",
+struct LCM_DRIVER ontim_icnl9911s_hdplus_dsi_vdo_truly_rs_lcm_drv = {
+	.name = "ontim_icnl9911s_hdplus_dsi_vdo_truly_rs",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,

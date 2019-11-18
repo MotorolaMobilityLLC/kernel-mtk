@@ -17,7 +17,7 @@
 #include <lcm_drv.h>
 
 extern struct LCM_DRIVER ontim_icnl9911s_hdplus_dsi_vdo_truly_lcm_drv;
-
+extern struct LCM_DRIVER ontim_icnl9911s_hdplus_dsi_vdo_truly_rs_lcm_drv;
 extern struct LCM_DRIVER ontim_ili9881h_hdplus_dsi_vdo_skyworth_lcm_drv;
 extern struct LCM_DRIVER ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_lcm_drv;
 extern struct LCM_DRIVER ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv;

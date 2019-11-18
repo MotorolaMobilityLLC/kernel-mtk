@@ -5,6 +5,8 @@
 #include "cts_core.h"
 #include "cts_sysfs.h"
 
+extern unsigned char g_lcm_info_flag;
+
 /* BEGIN, Ontim,  wzx, 19/10/23, St-result :PASS,LCD and TP Device information */
 extern char lcd_info_pr[256];
 u16  device_fw_ver = 0;
@@ -264,9 +266,15 @@ static int cts_driver_probe(struct spi_device *client)
         cts_err("Start device failed %d", ret);
         goto err_free_irq;
     }
-    if(strstr(lcd_info_pr, "icnl9911s")){
-	   snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s" );
+
+    if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
+        snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s-hjc" );
+        snprintf(vendor_name, sizeof(vendor_name),"%s ", "truly-icnl9911s-hjc" );
+    } else if (LCM_INFO_RS_GLASS == g_lcm_info_flag) {
+        snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s-rs" );
+        snprintf(vendor_name, sizeof(vendor_name),"%s ", "truly-icnl9911s-rs" );
     }
+
     cts_tp_fw(&cts_data->cts_dev);
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 #ifdef CONFIG_MTK_PLATFORM

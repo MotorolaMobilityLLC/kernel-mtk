@@ -14,11 +14,13 @@
 
 #ifdef CFG_CTS_DRIVER_BUILTIN_FIRMWARE
 #include "cts_builtin_firmware.h"
-#define NUM_DRIVER_BUILTIN_FIRMWARE ARRAY_SIZE(cts_driver_builtin_firmwares)
+#define NUM_DRIVER_BUILTIN_FIRMWARE ARRAY_SIZE(cts_driver_builtin_firmwares_hjc)
 #endif /* CFG_CTS_DRIVER_BUILTIN_FIRMWARE */
 
 #define CTS_FIRMWARE_MULTI_SECTION_FILE_SIZE    (0x20000)
 #define CTS_SECTION_ENABLE_FLAG                 (0x0000C35A)
+
+extern unsigned char g_lcm_info_flag;
 
 enum cts_firmware_section_offset {
     CTS_FIRMWARE_SECTION_OFFSET = 0x00000000,
@@ -260,8 +262,12 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_name(const cha
     int i;
 
     cts_info("Request driver builtin by name '%s'", name);
-
-    firmware = cts_driver_builtin_firmwares;
+    if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
+        firmware = cts_driver_builtin_firmwares_hjc;
+    } else {
+        firmware = cts_driver_builtin_firmwares_rs;
+    }
+    //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < NUM_DRIVER_BUILTIN_FIRMWARE; i++, firmware++) {
         if (strcmp(firmware->name, name) == 0) {
             if (is_firmware_valid(firmware)) {
@@ -288,7 +294,12 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_index(u32 inde
     cts_info("Request driver builtin by index %u", index);
 
     if (index < NUM_DRIVER_BUILTIN_FIRMWARE) {
-        firmware = cts_driver_builtin_firmwares + index;
+        if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
+            firmware = cts_driver_builtin_firmwares_hjc + index;
+        } else {
+            firmware = cts_driver_builtin_firmwares_rs + index;
+        }
+        //firmware = cts_driver_builtin_firmwares + index;
         if (is_firmware_valid(firmware)) {
             cts_info("Found driver builtin '%s' "
                     "hwid: %06x fwid: %04x size: %zu ver: %04x",
@@ -322,8 +333,13 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
     cts_info("Request driver builtin if match hwid: %06x fwid: %04x && ver > %04x",
         hwid, fwid, device_fw_ver);
 
-    firmware = cts_driver_builtin_firmwares;
-    for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares); i++, firmware++) {
+    if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
+        firmware = cts_driver_builtin_firmwares_hjc;
+	} else {
+        firmware = cts_driver_builtin_firmwares_rs;
+    }
+    //firmware = cts_driver_builtin_firmwares;
+    for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares_hjc); i++, firmware++) {
         if (MATCH_HWID(firmware, hwid) && MATCH_FWID(firmware, fwid)) {
             if (!is_firmware_valid(firmware)) {
                 cts_err("Found driver builtin '%s' "
