@@ -412,7 +412,6 @@ static int aw3643_set_level_ch1(int level)
 	reg = AW3643_REG_FLASH_LEVEL_LED1;
 	val = aw3643_flash_level[level];
     //if(level == 11)val = 0x5d;// 1100mA
-    if(level == 11)val = 0x66;// 1200mA
         //level = 7-11
         //val: 0x0F, 0x11, 0x13,	0x15, 0x17,
         //i = val * 11.72 + 11.35 
@@ -490,7 +489,6 @@ static int sy7806_set_level_ch1(int level)
 	reg = AW3643_REG_FLASH_LEVEL_LED1;
 	val = aw3643_flash_level[level];
     //if(level == 11)val = 0x5d;// 1100mA
-    if(level == 11)val = 0x66;// 1200mA
         //level = 7-11
         //val: 0x0F, 0x11, 0x13,	0x15, 0x17,
         //i = (val +1)*11.725mA 
