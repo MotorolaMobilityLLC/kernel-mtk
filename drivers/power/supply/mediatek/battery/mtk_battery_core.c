@@ -80,7 +80,7 @@
 #include "simulator_kernel.h"
 #endif
 
-
+#define BATTERY_NAME_LEN 30
 
 /* ============================================================ */
 /* global variable */
@@ -363,7 +363,7 @@ void fgauge_get_profile_id(void)
 		}
 	}
 	
-	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],32);
+	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 
 	printk(KERN_ERR "[%s]Battery id (%d)\n",
 		__func__,
@@ -402,27 +402,27 @@ void fg_custom_init_from_header(struct platform_device *dev)
 		battery_total_number=val;
 		if (of_property_read_string(np, "battery0_name",
 			&battery_id_name) >= 0) {
-			strncpy(g_battery_id_vendor_name[0],battery_id_name,20);				
+			strncpy(g_battery_id_vendor_name[0],battery_id_name,BATTERY_NAME_LEN);
 				bm_debug("%s;battery name: %s\n",__func__
 				 ,g_battery_id_vendor_name[0]);		
 			}
 
 		if (of_property_read_string(np, "battery1_name",
 			&battery_id_name) >= 0) {
-			strncpy(g_battery_id_vendor_name[1],battery_id_name,20);				
+			strncpy(g_battery_id_vendor_name[1],battery_id_name,BATTERY_NAME_LEN);
 				bm_debug("%s;battery name: %s\n",__func__
 				 ,g_battery_id_vendor_name[1]);		
 			}
 		if (of_property_read_string(np, "battery2_name",
 			&battery_id_name) >= 0) {
-			strncpy(g_battery_id_vendor_name[2],battery_id_name,20);				
+			strncpy(g_battery_id_vendor_name[2],battery_id_name,BATTERY_NAME_LEN);
 				bm_debug("%s;battery name: %s\n",__func__
 				 ,g_battery_id_vendor_name[2]);		
 			}
 	      battery_id_name = g_battery_id_vendor_name[3];	
 		if (of_property_read_string(np, "battery3_name",
 			&battery_id_name) >= 0) {
-			strncpy(g_battery_id_vendor_name[3],battery_id_name,20);				
+			strncpy(g_battery_id_vendor_name[3],battery_id_name,BATTERY_NAME_LEN);
 				bm_debug("%s;battery name: %s\n",__func__
 				 ,g_battery_id_vendor_name[3]);		
 			}						
