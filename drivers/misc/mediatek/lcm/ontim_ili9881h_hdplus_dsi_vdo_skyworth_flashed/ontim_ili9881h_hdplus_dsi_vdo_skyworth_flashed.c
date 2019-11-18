@@ -144,7 +144,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0xFF, 0x03, {0x98, 0x81, 0x00}},//Page0
 	{0x51, 0x02, {0x00, 0x00}},
 	{0x53, 0x01, {0x2C}},
-	{0x55, 0x01, {0x00}},
+	{0x55, 0x01, {0x01}},
 	{0x11, 0x01, {0x00}},
 	{REGFLAG_DELAY, 60,{}},
 	{0x29, 0x01, {0x00}},
@@ -254,13 +254,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.CLK_HS_EXIT=10;
 	params->dsi.CLK_TRAIL=9;
 #endif
-	params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
-	params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
 
 	//params->dsi.clk_lp_per_line_enable = 0;
 	//params->dsi.esd_check_enable = 0;
 	//params->dsi.customization_esd_check_enable = 1;
-	params->dsi.clk_lp_per_line_enable = 0;
+	params->dsi.cont_clock = 0;
+	params->dsi.clk_lp_per_line_enable = 1;
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x09;
@@ -307,7 +306,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x0E;  //up to +/-5.4V
+	unsigned char data = 0x0F;  //up to +/-5.5V
 	int ret = 0;
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
 
@@ -325,7 +324,7 @@ static void lcm_init(void)
 		else
 			LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
 		cmd = 0x01;
-		data = 0x0E;
+		data = 0x0F;
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
@@ -389,7 +388,7 @@ static unsigned int lcm_compare_id(void)
 	return 1;
 #else
 	unsigned int id = 0;
-	unsigned int id_flashed = 0;
+	unsigned int id_flashed = 255;
 	unsigned char buffer[2];
 	unsigned int array[16];
 
