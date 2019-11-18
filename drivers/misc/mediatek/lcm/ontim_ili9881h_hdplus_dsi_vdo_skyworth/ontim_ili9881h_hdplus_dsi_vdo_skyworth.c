@@ -365,6 +365,7 @@ static struct LCM_setting_table init_setting[] = {
 
 	{0x51, 0x02, {0x00, 0x00}},
 	{0x53, 0x01, {0x2C}},
+	{0x55, 0x01, {0x01}},
 	{0x11, 0x01, {0x00}},
 	{REGFLAG_DELAY, 60,{}},
 	{0x29, 0x01, {0x00}}, 
@@ -484,15 +485,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.CLK_HS_PRPR = 6;
 	params->dsi.CLK_HS_POST = 36;
 	params->dsi.CLK_HS_EXIT=10;
-	params->dsi.CLK_TRAIL=9;	
+	params->dsi.CLK_TRAIL=9;
 #endif
-	params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
-	params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
 
 	//params->dsi.clk_lp_per_line_enable = 0;
 	//params->dsi.esd_check_enable = 0;
 	//params->dsi.customization_esd_check_enable = 1;
-	params->dsi.clk_lp_per_line_enable = 0;
+	params->dsi.cont_clock = 0;
+	params->dsi.clk_lp_per_line_enable = 1;
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x09;
@@ -503,10 +503,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[1].cmd = 0x54;
 	params->dsi.lcm_esd_check_table[1].count = 1;
 	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x2c;
-
-
 }
-
 
 extern volatile int gesture_dubbleclick_en;
 static void lcm_reset(void)
@@ -542,7 +539,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x0E;  //up to +/-5.4V
+	unsigned char data = 0x0F;  //up to +/-5.5V
 	int ret = 0;
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
 
@@ -560,7 +557,7 @@ static void lcm_init(void)
 		else
 			LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
 		cmd = 0x01;
-		data = 0x0E;
+		data = 0x0F;
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
@@ -605,7 +602,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 }
 
 static void lcm_setbacklight(void *handle, unsigned int level)
-{ 
+{
 	if (level > 255)
 		level = 255;
 #if 0
@@ -624,6 +621,7 @@ static unsigned int lcm_compare_id(void)
 	return 1;
 #else
 	unsigned int id = 0;
+	unsigned int id_flashed = 255;
 	unsigned char buffer[2];
 	unsigned int array[16];
 
@@ -639,10 +637,13 @@ static unsigned int lcm_compare_id(void)
 	read_reg_v2(0xDC, buffer, 1);
 	id = buffer[0];         /* we only need ID */
 
-	LCM_LOGI("%s,ili9881h vendor id=0x%08x\n", __func__, id);
+	read_reg_v2(0xDA, buffer, 1);
+	id_flashed = buffer[0];
+
+	LCM_LOGI("%s,ili9881h vendor id=0x%08x, id_flashed=%08x\n", __func__, id, id_flashed);
 
 
-	if (id == LCM_ID )
+	if (id == LCM_ID && id_flashed == 0x00)
 		return 1;
 	else
 		return 0;
