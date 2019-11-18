@@ -57,7 +57,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 972,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 84000000,
-		.max_framerate = 300,
+		.max_framerate = 280,
 	},
 	.cap = {
 		.pclk = 168000000,
@@ -69,7 +69,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 168000000,
-		.max_framerate = 300,
+		.max_framerate = 280,
 	},
 	.cap1 = {
 		.pclk = 168000000,
@@ -81,7 +81,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 141600000,
-		.max_framerate = 240,             /*less than 13M(include 13M)*/
+		.max_framerate = 280,             /*less than 13M(include 13M)*/
 	},
 	.normal_video = {
 		.pclk = 84000000,
@@ -93,7 +93,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 972,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 87600000,
-		.max_framerate = 300,
+		.max_framerate = 280,
 	},
 	.hs_video = {
 		.pclk = 175200000,
