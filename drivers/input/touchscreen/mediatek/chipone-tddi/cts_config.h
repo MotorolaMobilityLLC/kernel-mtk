@@ -104,6 +104,10 @@
 #endif /* CONFIG_CTS_LEGACY_TOOL */
 
 #define CFG_CTS_UPDATE_CRCCHECK
+
+#define LCM_INFO_HJC_GLASS (unsigned char)(0x01)
+#define LCM_INFO_RS_GLASS  (unsigned char)(0x02)
+
 /****************************************************************************
  * Platform configurations
  ****************************************************************************/
