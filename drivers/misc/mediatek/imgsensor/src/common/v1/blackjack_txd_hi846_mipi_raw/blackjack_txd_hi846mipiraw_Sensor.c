@@ -1959,8 +1959,9 @@ write_cmos_sensor(0x004C, 0x0100};
 #define HI846_LSC_DATA_OFFSET 32
 #define HI846_LSC_DATA_LEN    1868*2
 #define HI846_AWB_DATA_OFFSET 8
-#define HI846_AWB_DATA_LEN    8*2
-//#define HI846_DUMP_DATA_LEN   10
+#define HI846_AWB_DATA_LEN    40
+#define HI846_DUMP_DATA_LEN   40
+kal_uint16 hi846_awb_data[HI846_AWB_DATA_LEN] = {0};
 unsigned char hi846_otp_data[0x2000] = {0x00,0x00,0x08,0x46,0x00,0x00,0x00,0x00};
 
 unsigned int Hi846_read_cal_region(struct i2c_client *client, unsigned int addr,
@@ -2032,48 +2033,32 @@ static kal_uint16 hi846_get_otp_data(void)
 {
     kal_uint16 tt = 0;
 	unsigned int loop = 0;
-	//kal_uint16 checksum_value = 0;
-	//kal_uint32 checksum = 0;
-	//kal_uint16 checksum_addr = 0;
 	kal_uint16 flag = 0;
 	unsigned int hi846_lsc_addr = 0;
+    unsigned int hi846_awb_addr = 0;
 	unsigned char *hi846_lsc_data = hi846_otp_data+HI846_LSC_DATA_OFFSET;
 
-    /* sensor get awb
-    unsigned int hi846_awb_addr = 0;
-    unsigned char *hi846_awb_data = hi846_otp_data+HI846_AWB_DATA_OFFSET;
-
+    //sensor get awb
 	flag = HI846_Sensor_OTP_Read(0x021D);
 	LOG_INF("HI846_OTP_EEPROM_Read awb flags %d \n",flag);
 	if (flag == 0x1) {
 		hi846_awb_addr = 0x021E;
-		checksum_addr = 0x226;
 	} else if (flag == 0x13) {
 		hi846_awb_addr = 0x0227;
-		checksum_addr = 0x22F;
 	} else if (flag == 0x37) {
 		hi846_awb_addr = 0x0230;
-		checksum_addr = 0x238;
+	} else {
+		hi846_awb_addr = 0x021E;
 	}
-	for (loop = 0; loop < HI846_AWB_DATA_LEN; loop+=2)
-	{
-		tt = HI846_Sensor_OTP_Read(hi846_awb_addr);
-		hi846_awb_data[loop]  = (char)(tt & 0x00ff);
-		hi846_awb_data[loop+1]  = (char)((tt>>8) & 0x00ff);
-		hi846_awb_addr ++;
-	}
-	checksum_value = HI846_Sensor_OTP_Read(checksum_addr);
-	checksum = 0;
 	for (loop = 0; loop < HI846_AWB_DATA_LEN; loop++)
 	{
-		checksum += hi846_awb_data[loop];
+		tt = HI846_Sensor_OTP_Read(hi846_awb_addr);
+		hi846_awb_data[loop] = tt;
+		hi846_awb_addr ++;
 	}
-	if(checksum_value != checksum)
-	    return 0;
 
 	LOG_INF("read awb end checksum ok\n");
-    */
-    //get lsc
+	//get lsc
 	flag = HI846_Sensor_OTP_Read(0x0239);
 	LOG_INF("HI846_OTP_EEPROM_Read Read flags %d \n",flag);
 	if (flag == 0x1) {
@@ -2104,6 +2089,110 @@ static kal_uint16 hi846_get_otp_data(void)
     */
 	return 1;
 }
+static kal_uint16 dump_otp_data(void)
+{
+	kal_uint16 tt = 0;
+	kal_uint16 loop = 0;
+	unsigned int hi846_lsc_addr = 0;
+    kal_uint8 *otp_dump = NULL;
+    otp_dump = kmalloc(HI846_DUMP_DATA_LEN, GFP_KERNEL);
+	if (otp_dump == NULL)
+    {
+        LOG_INF("otp_dump is null\n");
+        return 0;
+    }
+	hi846_lsc_addr = 0x021D;
+	for (loop = 0; loop < HI846_DUMP_DATA_LEN; loop++)
+	{
+		tt = HI846_Sensor_OTP_Read(hi846_lsc_addr);
+		otp_dump[loop] = tt;
+		hi846_lsc_addr ++;
+	}
+
+	ontim_get_otp_data(0x0846, otp_dump, HI846_DUMP_DATA_LEN);
+	return 1;
+}
+
+static void awb_lsc_update(void)
+{
+	kal_uint16 flag = 0;
+	kal_uint8 i = 0;
+	kal_uint32 sum = 0;
+	kal_uint16 R_unit = 0;
+	kal_uint16 Gr_unit = 0;
+	kal_uint16 Gb_unit = 0;
+	kal_uint16 B_unit = 0;
+	kal_uint16 R_golden = 0;
+	kal_uint16 Gr_golden = 0;
+	kal_uint16 Gb_golden = 0;
+	kal_uint16 B_golden = 0;
+	kal_uint32 R_gain = 0X200;
+	kal_uint32 G_gain = 0X200;
+	kal_uint32 B_gain = 0X200;
+
+
+	for (i = 0; i < 8; i++) {
+		sum += hi846_awb_data[i];
+		//LOG_INF(" awb_all_data[%d] = 0x%x sum = 0x%x \n",i,awb_all_data[i],sum);
+	}
+	if ( ((sum %255) + 1) == hi846_awb_data[8]) {
+		LOG_INF(" awb read OK \n");
+	} else {
+		LOG_INF(" awb read fail");
+	}
+
+	R_unit  = hi846_awb_data[0];
+	Gr_unit = hi846_awb_data[1];
+	Gb_unit = hi846_awb_data[2];
+	B_unit  = hi846_awb_data[3];
+	LOG_INF(" R_unit = 0x%x Gr_unit = 0x%x Gb_unit = 0x%x B_unit = 0x%x   \n", R_unit, Gr_unit, Gb_unit, B_unit);
+
+	R_golden  = hi846_awb_data[4];
+	Gr_golden = hi846_awb_data[5];
+	Gb_golden = hi846_awb_data[6];
+	B_golden  = hi846_awb_data[7];
+
+	//R_golden  = 0x49;
+	//Gr_golden = 0x9a;
+	//Gb_golden = 0x9a;
+	//B_golden  = 0x5d;//#3478 module golden value (7BF810P1DA313036330100001923)
+	LOG_INF(" R_golden = 0x%x Gr_golden = 0x%x Gb_golden = 0x%x B_golden = 0x%x \n", R_golden, Gr_golden, Gb_golden, B_golden);
+
+	R_gain = 512 * R_golden * Gr_unit / Gr_golden / R_unit;
+	B_gain = 512 * B_golden * Gr_unit / Gr_golden / B_unit;
+	LOG_INF(" R_gain = %d G_gain = %d B_gain = %d  \n", R_gain, G_gain, B_gain);
+
+	if (R_gain < B_gain) {
+		if (R_gain < 0x200) {
+			B_gain = 0x200 * B_gain / R_gain;
+			G_gain = 0x200 * G_gain / R_gain;
+			R_gain = 0x200;
+		}
+	} else {
+		if (B_gain < 0x200) {
+			R_gain= 0x200 * R_gain / B_gain;
+			G_gain= 0x200 * G_gain / B_gain;
+			B_gain= 0x200;
+		}
+	}
+	LOG_INF(" R_gain_after = %d G_gain_after = %d B_gain_after = %d  \n", R_gain, G_gain, B_gain);
+
+	write_cmos_sensor_8(0x0078, (G_gain>>8));
+	write_cmos_sensor_8(0x0079, (G_gain&0xff));
+	write_cmos_sensor_8(0x007A, (G_gain>>8));
+	write_cmos_sensor_8(0x007B, (G_gain&0xff));
+	write_cmos_sensor_8(0x007C, (R_gain>>8));
+	write_cmos_sensor_8(0x007D, (R_gain&0xff));
+	write_cmos_sensor_8(0x007E, (B_gain>>8));
+	write_cmos_sensor_8(0x007F, (B_gain&0xff));
+
+	flag = read_cmos_sensor(0x0A05);
+	LOG_INF(" flag 0A05 = 0x%x \n", flag);
+	flag |= 0x10;
+	write_cmos_sensor_8(0x0A05, flag);
+	flag = read_cmos_sensor(0x0A05);
+	LOG_INF(" flag22 0A05 = 0x%x  \n", flag);
+}
 
 extern char front_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
@@ -2119,13 +2208,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
                                 memset(front_cam_name, 0x00, sizeof(front_cam_name));
-                                memcpy(front_cam_name, "1_hi846", 64);
+                                memcpy(front_cam_name, "1_blackjack_txd_hi846", 64);
 			        LOG_INF("i2c write id : 0x%x, sensor id: 0x%x\n",
 			        imgsensor.i2c_write_id, *sensor_id);
 					HI846_OTP_INIT();
 	    			hi846_get_otp_data();
-	                //ontim_get_otp_data(0x0846, hi846_otp_data, HI846_DUMP_DATA_LEN);
-	    			HI846_OTP_UNINIT();
+					dump_otp_data();
+					HI846_OTP_UNINIT();
 			        return ERROR_NONE;
 			}
 
@@ -2192,6 +2281,7 @@ static kal_uint32 open(void)
 	}
 	/* initail sequence write in  */
 	sensor_init();
+	awb_lsc_update();
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.autoflicker_en = KAL_FALSE;
 	imgsensor.sensor_mode = IMGSENSOR_MODE_INIT;
