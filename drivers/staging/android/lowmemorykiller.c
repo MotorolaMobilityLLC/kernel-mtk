@@ -359,8 +359,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 #endif
 
 	/* Promote its priority */
-	if (unreclaimable_zones > 0)
+	if (unreclaimable_zones > 0) {
 		min_score_adj = lowmem_adj[0];
+		lowmem_print(1, "Promote its priority unreclaimable_zones %d, min_score_adj %hd\n",
+			unreclaimable_zones, min_score_adj);
+
+	}
 
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 			sc->nr_to_scan, sc->gfp_mask, other_free,
@@ -521,6 +525,15 @@ log_again:
 			if (oom_score_adj == selected_oom_score_adj &&
 			    tasksize <= selected_tasksize)
 				continue;
+		}
+		//print lmk info about progress and the adj
+		lowmem_print(1, "debug select '%s' (%d), adj %hd, size %d, to kill\n",
+			     p->comm, p->pid, oom_score_adj, tasksize);
+		//Don't kill update-binary when update running.
+		 if (strstr(p->comm, "update-binary") != NULL) {
+			task_unlock(p);
+			lowmem_print(1, "lowmem_shrink: do not kill recovery process;\n");
+			continue;
 		}
 		selected = p;
 		//Don't kill update-binary when update running.
