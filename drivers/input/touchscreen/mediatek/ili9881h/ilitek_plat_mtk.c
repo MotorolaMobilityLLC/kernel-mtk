@@ -430,11 +430,19 @@ static struct tpd_driver_t tpd_device_driver = {
 	.resume = tpd_resume,
 };
 
+extern char *mtkfb_find_lcm_driver(void);
+
 static int __init ilitek_plat_dev_init(void)
 {
 	int ret = 0;
 
 	ipio_info("ILITEK TP driver init for MTK\n");
+
+	if (strstr(mtkfb_find_lcm_driver(), "ili9881h") == NULL){
+		ipio_err("Firefly:NO ilitek touch, not register!\n");
+		return -ENODEV;
+	}
+
 	tpd_get_dts_info();
 	ret = tpd_driver_add(&tpd_device_driver);
 	if (ret < 0) {
