@@ -695,6 +695,8 @@ done:
 	return ret;
 }
 
+
+int lcd_rst = 0;
 static int primary_display_check_recovery_worker_kthread(void *data)
 {
 	struct sched_param param = {.sched_priority = 87 };
@@ -737,6 +739,11 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 		i = 0; /* repeat */
 		do {
 			ret = primary_display_esd_check();
+			if (lcd_rst) {
+				ret = 1;
+				lcd_rst = 0;
+				DISPERR("wang lcd rst\n");
+			}
 			if (!ret) /* success */
 				break;
 
