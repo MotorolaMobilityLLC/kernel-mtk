@@ -118,7 +118,14 @@ void fpsensor_gpio_output_dts(int gpio, int level)
             pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_rst_low);
         }
     } else if (gpio == FPSENSOR_SPI_CS_PIN) {
-        pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_low);
+	if(level)
+	{
+             pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_high);
+	}
+	else
+	{
+    	    pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_low);
+	}
     } else if (gpio == FPSENSOR_SPI_MO_PIN) {
         pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_mo_low);
     } else if (gpio == FPSENSOR_SPI_CK_PIN) {
@@ -185,6 +192,13 @@ int fpsensor_spidev_dts_init(fpsensor_data_t *fpsensor)
             return ret;
         }
 
+        fpsensor->fp_cs_high = pinctrl_lookup_state(fpsensor->pinctrl1, "fpsensor_spi_cs_high");
+        if (IS_ERR(fpsensor->fp_cs_high)) {
+            ret = PTR_ERR(fpsensor->fp_cs_high);
+            fpsensor_debug(ERR_LOG,"fpsensor Cannot find fp pinctrl fp_cs_high!\n");
+            return ret;
+        }
+
         fpsensor->fp_mo_low = pinctrl_lookup_state(fpsensor->pinctrl1, "fpsensor_spi_mo_low");
         if (IS_ERR(fpsensor->fp_mo_low)) {
             ret = PTR_ERR(fpsensor->fp_mo_low);
@@ -209,7 +223,8 @@ int fpsensor_spidev_dts_init(fpsensor_data_t *fpsensor)
         fpsensor_gpio_output_dts(FPSENSOR_SPI_MO_PIN, 0);
         fpsensor_gpio_output_dts(FPSENSOR_SPI_MI_PIN, 0);
         fpsensor_gpio_output_dts(FPSENSOR_SPI_CK_PIN, 0);
-        fpsensor_gpio_output_dts(FPSENSOR_SPI_CS_PIN, 0);
+        fpsensor_gpio_output_dts(FPSENSOR_SPI_CS_PIN, 1);
+        fpsensor_gpio_wirte(FPSENSOR_RST_PIN, 1);
     } else {
         fpsensor_debug(ERR_LOG,"fpsensor Cannot find node!\n");
         return -ENODEV;
@@ -236,10 +251,17 @@ static void fpsensor_hw_reset(int delay)
 }
 void fpsensor_spi_clk_enable(u8 bonoff)
 {
+     static int mt_spi_clk_flag = 0;   // 0 mean clock is diasble
+     if(mt_spi_clk_flag == bonoff)
+     {
+	return;
+     }
 #if defined(USE_SPI_BUS)
     if (bonoff == 0) {
+	mt_spi_clk_flag = 0;
         mt_spi_disable_master_clk(g_fpsensor_spidev);
     } else {
+	mt_spi_clk_flag = 1;
         mt_spi_enable_master_clk(g_fpsensor_spidev);
     }
 #elif defined(USE_PLATFORM_BUS)
@@ -486,6 +508,7 @@ static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 		fpsensor_debug(ERR_LOG, "add fpvendor for hwinfo\n");
 		CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
 		REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	break;
     default:
         fpsensor_debug(ERR_LOG, "fpsensor doesn't support this command(0x%x)\n", cmd);
         break;
