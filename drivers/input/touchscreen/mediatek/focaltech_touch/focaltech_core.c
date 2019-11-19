@@ -1534,6 +1534,8 @@ static struct tpd_driver_t tpd_device_driver = {
     .resume = tpd_resume,
 };
 
+extern char *mtkfb_find_lcm_driver(void);
+
 /*****************************************************************************
 *  Name: tpd_driver_init
 *  Brief: 1. Get dts information
@@ -1546,6 +1548,12 @@ static int __init tpd_driver_init(void)
 {
     FTS_FUNC_ENTER();
     FTS_INFO("Driver version: %s", FTS_DRIVER_VERSION);
+
+    if (strstr(mtkfb_find_lcm_driver(), "ft8006p") == NULL) {
+        FTS_ERROR("Firefly:No focalTech touch, not register!");
+        return -ENODEV;
+    }
+
     tpd_get_dts_info();
     if (tpd_dts_data.touch_max_num < 2)
         tpd_dts_data.touch_max_num = 2;
