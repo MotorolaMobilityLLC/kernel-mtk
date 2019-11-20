@@ -916,7 +916,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
         case BLACKJACK_JSL_GC2375H_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0x0D15;
+            u4Length = 0x0774;
             str_dump_path = str_blackjack_jsl_gc2375h_path;
             deviceid = 0x10;
             break;
