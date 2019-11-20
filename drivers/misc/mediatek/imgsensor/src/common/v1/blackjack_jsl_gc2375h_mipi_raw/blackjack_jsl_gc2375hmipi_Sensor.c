@@ -211,7 +211,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor(0xf0) << 8) | read_cmos_sensor(0xf1));
+	return ((read_cmos_sensor(0xf0) << 8) | read_cmos_sensor(0xf1)) +2;
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -738,7 +738,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id() + 2;
+			*sensor_id = return_sensor_id();
 			eeprom_module_id = read_module_id();
 			cam_pr_debug("[lucas]i2c write id: 0x%x, sensor id: 0x%x , eeprom_module_id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id,eeprom_module_id);
 			if ((*sensor_id == imgsensor_info.sensor_id) && imgsensor_info.module_id == eeprom_module_id) {
