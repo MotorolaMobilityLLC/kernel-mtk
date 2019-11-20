@@ -26,13 +26,8 @@
 	enable_min_charge_temp;
 	min_charge_temp= <0>;
 	min_charge_temp_plus_x_degree = <2>;
-#ifdef CONFIG_CHARGE_STOP_DEGREE55
 	max_charge_temp = <55>;
 	max_charge_temp_minus_x_degree = <52>;
-#else
-	max_charge_temp = <50>;
-	max_charge_temp_minus_x_degree = <47>;
-#endif
 
 
        ac_charger_current = <2050000>;
