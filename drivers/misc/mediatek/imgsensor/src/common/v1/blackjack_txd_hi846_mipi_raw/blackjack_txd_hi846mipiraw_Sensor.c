@@ -1957,12 +1957,12 @@ write_cmos_sensor(0x004C, 0x0100};
 }
 //get hi846 inside otp
 #define HI846_LSC_DATA_OFFSET 32
-#define HI846_LSC_DATA_LEN    1868*2
+#define HI846_LSC_DATA_LEN    1868
 #define HI846_AWB_DATA_OFFSET 8
 #define HI846_AWB_DATA_LEN    40
 #define HI846_DUMP_DATA_LEN   40
 kal_uint16 hi846_awb_data[HI846_AWB_DATA_LEN] = {0};
-unsigned char hi846_otp_data[0x2000] = {0x00,0x00,0x08,0x46,0x00,0x00,0x00,0x00};
+unsigned char hi846_otp_data[0x1000] = {0x00,0x00,0x08,0x46,0x00,0x00,0x00,0x00};
 
 unsigned int Hi846_read_cal_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size)
@@ -2071,11 +2071,10 @@ static kal_uint16 hi846_get_otp_data(void)
 		hi846_lsc_addr = 0x10D4;
 		//checksum_addr = 0x1820;
 	}
-	for (loop = 0; loop < HI846_LSC_DATA_LEN; loop+=2)
+	for (loop = 0; loop < HI846_LSC_DATA_LEN; loop++)
 	{
 		tt = HI846_Sensor_OTP_Read(hi846_lsc_addr);
-		hi846_lsc_data[loop]  = (char)(tt & 0x00ff);
-		hi846_lsc_data[loop+1]  = (char)((tt>>8) & 0x00ff);
+		hi846_lsc_data[loop]  = tt;
 		hi846_lsc_addr ++;
 	}
 	/*
