@@ -26,8 +26,38 @@ enum LCM_DSI_MODE_CON lcm_dsi_mode;
 #define LCD_HW_ID_STATUS_HIGH     1
 #define LCD_HW_ID_STATUS_FLOAT 0x02
 #define LCD_HW_ID_STATUS_ERROR  0x03
+/*
+****************Warning*********************
+***********Ontim Firefly********************
+*Do not modify the order of lcm_driver_list*
+*Please append new driver as follow*********
+********************************************
+*Index             LCM name             ****
+********************************************
+>>>>For fiji
+*0*ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv
+*1*ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_lcm_drv
+*2*ontim_ili9881h_hdplus_dsi_vdo_skyworth_lcm_drv
+>>>>For bj/bj_64
+*3*ontim_icnl9911s_hdplus_dsi_vdo_truly_lcm_drv
+*4*ontim_ft8006p_hdplus_dsi_vdo_hlt_lcm_drv
+*X*............append new LCM driver
+*********************************************
+*/
 
 struct LCM_DRIVER *lcm_driver_list[] = {
+
+#if defined(ONTIM_FT8006P_HDPLUS_DSI_VDO_TRULY)
+	&ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv,
+#endif
+
+#if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH_FLASHED)
+	&ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_lcm_drv,
+#endif
+
+#if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH)
+	&ontim_ili9881h_hdplus_dsi_vdo_skyworth_lcm_drv,
+#endif
 
 #if defined(ONTIM_ICNL9911S_HDPLUS_DSI_VDO_TRULY_RS)
 	&ontim_icnl9911s_hdplus_dsi_vdo_truly_rs_lcm_drv,
@@ -39,18 +69,6 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(ONTIM_FT8006P_HDPLUS_DSI_VDO_HLT)
 	&ontim_ft8006p_hdplus_dsi_vdo_hlt_lcm_drv,
-#endif
-
-#if defined(ONTIM_FT8006P_HDPLUS_DSI_VDO_TRULY)
-	&ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv,
-#endif
-
-#if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH)
-	&ontim_ili9881h_hdplus_dsi_vdo_skyworth_lcm_drv,
-#endif
-
-#if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH_FLASHED)
-	&ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_lcm_drv,
 #endif
 
 #if defined(NT35521Z_HD_DSI_VDO_TRULY)
