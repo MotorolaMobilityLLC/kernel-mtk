@@ -651,7 +651,44 @@ type_show(struct device *dev, struct device_attribute *attr, char *buf)
 
 	return sprintf(buf, "%s\n", tz->type);
 }
+#if 1
+static int ontim_temp=-200;
+static ssize_t
+ontim_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", ontim_temp);
+}
+static ssize_t
+ontim_temp_store(struct device *dev, struct device_attribute *attr,
+	   const char *buf, size_t count)
+{
 
+	if (!sscanf(buf, "%d\n", &ontim_temp))
+	{
+		return -EINVAL;
+	}
+	return count;
+}
+static ssize_t
+temp_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int temperature, ret;
+       if(ontim_temp!=-200)
+       {
+           temperature=ontim_temp*1000;
+       }
+       else
+       {
+           ret = thermal_zone_get_temp(tz, &temperature);
+               if (ret)
+                   return ret;
+       }
+
+	return sprintf(buf, "%d\n", temperature);
+}
+static DEVICE_ATTR(ontim_temp, 0644, ontim_temp_show, ontim_temp_store);
+#else
 static ssize_t
 temp_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -665,6 +702,9 @@ temp_show(struct device *dev, struct device_attribute *attr, char *buf)
 
 	return sprintf(buf, "%d\n", temperature);
 }
+#endif
+
+
 
 static ssize_t
 mode_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -1167,6 +1207,7 @@ static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
 static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
 static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
 static DEVICE_ATTR(available_policies, S_IRUGO, available_policies_show, NULL);
+
 
 /* sys I/F for cooling device */
 #define to_cooling_device(_dev)	\
@@ -1925,6 +1966,12 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
 		if (result)
 			goto unregister;
 	}
+
+#if 1
+      	result = device_create_file(&tz->device, &dev_attr_ontim_temp);
+
+#endif
+
 
 	result = device_create_file(&tz->device, &dev_attr_temp);
 	if (result)
