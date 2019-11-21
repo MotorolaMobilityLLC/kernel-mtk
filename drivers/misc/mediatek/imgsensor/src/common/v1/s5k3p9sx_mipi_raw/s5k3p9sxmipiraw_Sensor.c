@@ -268,7 +268,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] =
 };
 
 //mirror flip
-#if 0
+#if 1
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
 	.i4OffsetX = 16,
@@ -282,11 +282,11 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 	.i4PosR = {{19, 16}, {35, 16}, {27, 28}, {43, 28}},
 	.i4BlockNumX = 144,
 	.i4BlockNumY = 216,
-	.iMirrorFlip = 3,
+	.iMirrorFlip = 0,
 	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 #endif
-
+#if 0
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
         .i4OffsetX = 16,
@@ -303,6 +303,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
         .iMirrorFlip = 0,
         .i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
+#endif
 
 #if 0
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info_16_9 =
