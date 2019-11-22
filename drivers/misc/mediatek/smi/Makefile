@@ -30,13 +30,17 @@ BUILD_ALL_FILES := true
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/devfreq
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(MTK_PLATFORM)/
 
 ifeq ($(CONFIG_MACH_MT6761),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
+else ifeq ($(CONFIG_MACH_MT6757),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 else
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 endif
 
@@ -52,8 +56,6 @@ SUPPORT_MET_SMI := false
 ccflags-y += -DSMI_OLY
 ccflags-y += -DSMI_MMU_V2
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(CONFIG_MTK_PLATFORM)/
 obj-y += mmdvfs_mgr_v2.o
