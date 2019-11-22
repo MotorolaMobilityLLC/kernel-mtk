@@ -170,7 +170,7 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname,
 		get_dram_info = (struct dram_info *)of_get_flat_dt_prop(
 		    node, "orig_dram_info", NULL);
 		if (get_dram_info == NULL) {
-			No_DummyRead = 0;
+			No_DummyRead = 1;
 			return 0;
 		}
 
@@ -192,7 +192,8 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname,
 			/* No dummy read address for rank1, try to fix it up */
 			if (dram_rank1_addr == 0 &&
 			    dram_dummy_read_fixup() != 0) {
-				No_DummyRead = 1;
+				No_DummyRead = 0;
+				dram_rank1_addr = dram_rank0_addr;
 				dramc_rsv_aee_warn("dram dummy read reserve "
 						   "fail on rank1 !!!\n");
 			}
