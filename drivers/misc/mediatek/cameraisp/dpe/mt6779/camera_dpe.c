@@ -1156,7 +1156,7 @@ signed int dpe_deque_cb(struct frame *frames, void *req)
 void DPEQOS_Init(void)
 {
 	s32 result = 0;
-	u64 dpe_freq_steps[MAX_FREQ_STEP];
+	u64 dpe_freq_steps[MAX_FREQ_STEP] = {0};
 	u32 step_size;
 
 	/* Call pm_qos_add_request when initialize module or driver prob */
@@ -2137,7 +2137,7 @@ static signed int DPE_WaitIrq(struct DPE_WAIT_IRQ_STRUCT *WaitIrq)
 {
 	signed int Ret = 0;
 	signed int Timeout = WaitIrq->Timeout;
-	pid_t ProcessID;
+	pid_t ProcessID = 0;
 	enum DPE_PROCESS_ID_ENUM whichReq = DPE_PROCESS_ID_NONE;
 
 	/*unsigned int i;*/
