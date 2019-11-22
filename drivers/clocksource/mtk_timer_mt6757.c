@@ -534,7 +534,7 @@ static int __init mt_gpt_init(struct device_node *node)
 	xgpt_timers.tmr_regs = of_iomap(node, 0);
 
 	/* freq=SYS_CLK_RATE */
-	clk = of_clk_get(node, 0);
+	clk = of_clk_get(node, 1);
 	if (IS_ERR(clk)) {
 		pr_debug("Can't get timer clock");
 		return -EINVAL;
