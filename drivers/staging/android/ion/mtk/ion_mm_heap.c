@@ -1548,6 +1548,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 				    ("config error:%d-%d,name %16.s!!!\n",
 				     param.config_buffer_param.module_id,
 				     buffer->heap->type, client->name);
+				ion_drv_put_kernel_handle(kernel_handle);
 				return -EFAULT;
 			}
 
@@ -1683,6 +1684,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 					"get iova error:%d-%d,name %16.s!!!\n",
 				     param.get_phys_param.module_id,
 				     buffer->heap->type, client->name);
+				ion_drv_put_kernel_handle(kernel_handle);
 				mutex_unlock(&buffer_info->lock);
 				return -EFAULT;
 			}
