@@ -39,7 +39,6 @@ struct route_info {
  * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
  */
 #define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
-
 extern int sysctl_optr;
 
 /*
@@ -135,9 +134,7 @@ struct rt6_info *ip6_dst_alloc(struct net *net, struct net_device *dev,
  */
 struct rt6_info *rt6_get_dflt_router(const struct in6_addr *addr,
 				     struct net_device *dev);
-#ifdef CONFIG_MTK_IPV6_VZW
 struct rt6_info *rt6_get_dflt_router_expires(struct net_device *dev);
-#endif
 int ip6_operator_isop12(void);
 struct rt6_info *rt6_add_dflt_router(const struct in6_addr *gwaddr,
 				     struct net_device *dev, unsigned int pref);
