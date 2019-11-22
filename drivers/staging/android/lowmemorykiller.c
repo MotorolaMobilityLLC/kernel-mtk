@@ -359,7 +359,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 #endif
 
 	/* Promote its priority */
-	if (unreclaimable_zones > 0) {
+	if ((lowmem_adj[0] == 0) && (lowmem_adj[1] == 1) &&
+		(lowmem_adj[2] == 6) && (lowmem_adj[3] == 16)) {
+		lowmem_print(1, "lowmem_adj has been initialized and has not been reset\n");
+	} else	if (unreclaimable_zones > 0) {
 		min_score_adj = lowmem_adj[0];
 		lowmem_print(1, "Promote its priority unreclaimable_zones %d, min_score_adj %hd\n",
 			unreclaimable_zones, min_score_adj);
