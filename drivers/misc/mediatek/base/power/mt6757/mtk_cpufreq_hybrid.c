@@ -1157,7 +1157,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 
 #ifdef CPUHVFS_HW_GOVERNOR
 			if (dvfsp->hw_gov_en)
-				stop_notify_trigger_timer();
+				RCU_NONIDLE(stop_notify_trigger_timer());
 #endif
 		}
 	}
