@@ -54,17 +54,17 @@
 #define IPC_L4C_MSG_ID_LEN (0x40)
 
 /* feature option, always try using platform info first! */
-#define JUST_FOR_BUILD
-#ifndef JUST_FOR_BUILD
 #define ENABLE_EMI_PROTECTION
-#endif
+
 #define ENABLE_32K_CLK_LESS
 #define ENABLE_FAST_HEADER
 #define FEATURE_BSI_BPI_SRAM_CFG
-#ifndef JUST_FOR_BUILD
+
+#ifdef ENABLE_EMI_PROTECTION
 #define SET_EMI_STEP_BY_STAGE
-#define FEATURE_RF_CLK_BUF
 #endif
+
+//#define FEATURE_RF_CLK_BUF
 #define ENABLE_GPIO_FORMAT_SPEC
 
 #endif

@@ -460,9 +460,7 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG,
 				"Call end clk_prepare_enable() ret=%d\n", ret);
 #endif
-#ifndef JUST_FOR_BUILD
 		kicker_pbm_by_md(KR_MD3, true);
-#endif
 		CCCI_NORMAL_LOG(md->index, TAG,
 				"Call end kicker_pbm_by_md(3,true)\n");
 		break;
@@ -494,9 +492,7 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int stop_type)
 #else
 		clk_disable_unprepare(clk_scp_sys_md3_main);
 #endif
-#ifndef JUST_FOR_BUILD
 		kicker_pbm_by_md(KR_MD3, false);
-#endif
 		CCCI_NORMAL_LOG(md->index, TAG,
 				"Call end kicker_pbm_by_md(3,false)\n");
 		break;

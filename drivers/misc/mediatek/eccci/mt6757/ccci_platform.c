@@ -251,7 +251,7 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 	struct ccci_mem_layout *md_layout;
 	unsigned int region_mpu_id, region_mpu_attr;
 	unsigned long long region_mpu_start, region_mpu_end;
-	mpu_cfg_t *mpu_cfg_inf;
+	struct _mpu_cfg *mpu_cfg_inf;
 
 	switch (md->index) {
 	case MD_SYS1:
