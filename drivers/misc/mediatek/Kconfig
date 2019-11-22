@@ -403,6 +403,7 @@ source "drivers/misc/mediatek/performance/Kconfig"
 source "drivers/misc/mediatek/usb2jtag/Kconfig"
 
 source "drivers/misc/mediatek/devmpu/Kconfig"
+source "drivers/misc/mediatek/xhci/Kconfig"
 
 endmenu # Peripheral
 

@@ -707,6 +707,7 @@ extern const char musb_driver_name[];
 
 extern void musb_start(struct musb *musb);
 extern void musb_stop(struct musb *musb);
+extern void musb_power_down(struct musb *musb);
 
 extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
 extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
@@ -839,8 +840,8 @@ extern u32 upmu_get_rgs_chrdet(void);
 
 #ifdef CONFIG_USB_MTK_DUALMODE
 extern bool mtk_is_host_mode(void);
-extern void mtk_enable_host(void);
-extern void mtk_disable_host(void);
+/* extern void mtk_enable_host(void); */
+/* extern void mtk_disable_host(void); */
 
 #else
 static inline int mtk_is_host_mode(void)
@@ -855,4 +856,12 @@ extern int typec_switch_usb_connect(void *data);
 extern int mu3d_force_on;
 extern void mt_usb_connect(void);
 extern void mt_usb_connect_test(int start);
+extern void mt_usb_dev_off(void);
+extern struct workqueue_struct *mt_usb_get_workqueue(void);
+
+struct mt_usb_work {
+	struct delayed_work dwork;
+	int ops;
+};
+
 #endif	/* __MUSB_CORE_H__ */
