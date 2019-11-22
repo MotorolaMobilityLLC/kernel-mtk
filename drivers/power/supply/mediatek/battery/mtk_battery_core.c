@@ -326,7 +326,7 @@ void fgauge_get_profile_id(void)
 	int id = 0;
 	int ret = 0;
 
-	if(battery_type_name != 0 && battery_type_name <= TOTAL_BATTERY_NUMBER) {
+	if(battery_type_name != 0 && battery_type_name <= battery_total_number) {
              gm.battery_id = battery_type_name - 1;
              printk("ontim battery_id = %d\n",gm.battery_id);
 	} else {
