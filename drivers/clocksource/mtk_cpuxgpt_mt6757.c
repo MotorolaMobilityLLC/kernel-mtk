@@ -32,6 +32,7 @@
 #include <linux/of_irq.h>
 
 #include "mt-plat/mt6757/include/mach/mtk_cpuxgpt.h"
+#include <mt-plat/sync_write.h>
 /*if ATF enable, MCUSYS register will be write protect*/
 #include <mt-plat/mtk_secure_api.h>
 
