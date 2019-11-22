@@ -1166,6 +1166,21 @@ static void get_emmc_mfr(void)
 	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 }
 //extern int  meta_camera_info(void);
+
+// get_current_cpuid for imie
+extern u32 get_devinfo_with_index(u32 index);
+#define CPUID_REG_INDEX 12
+#define CPUID_REG_NUM 4
+static void get_current_cpuid(void)
+{
+	u32 ontim_cpuid = 0 ;
+	int i = CPUID_REG_INDEX;
+	for(i;i<(CPUID_REG_INDEX+CPUID_REG_NUM);i++){
+		ontim_cpuid = get_devinfo_with_index(i);
+		sprintf(hwinfo[current_cpuid].hwinfo_buf+strlen(hwinfo[current_cpuid].hwinfo_buf),"%08x",ontim_cpuid);
+	}
+}
+
 extern unsigned int get_boot_mode(void);
 
 static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
@@ -1321,6 +1336,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		break;
 	case emmc_life:
 		get_emmc_lifetime();
+		break;
+	case current_cpuid:
+		get_current_cpuid();
 		break;
 	default:
 		break;
