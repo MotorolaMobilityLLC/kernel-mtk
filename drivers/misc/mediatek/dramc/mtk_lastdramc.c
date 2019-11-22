@@ -138,10 +138,11 @@ static int __init set_single_channel_test_angent(int channel)
 			}
 
 			temp = ((test_agent_base &
-				~(((0x1<<channel_width)-1)<<channel_position))
-				>> channel_width);
+				~((((phys_addr_t)0x1 << channel_width) - 1)
+				<< channel_position)) >> channel_width);
 			test_agent_base = temp |
-				(test_agent_base & ((0x1<<channel_position)-1));
+				(test_agent_base & (((phys_addr_t)0x1
+				<< channel_position) - 1));
 		}
 		/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", */
 		/* test_agent_base); */
