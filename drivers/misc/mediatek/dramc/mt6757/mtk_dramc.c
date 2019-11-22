@@ -170,7 +170,7 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname,
 		get_dram_info = (struct dram_info *)of_get_flat_dt_prop(
 		    node, "orig_dram_info", NULL);
 		if (get_dram_info == NULL) {
-			No_DummyRead = 1;
+			No_DummyRead = 0;
 			return 0;
 		}
 
@@ -1565,7 +1565,7 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
 			pr_debug("[DRAMC] Can NOT reserve memory for Rank1\n");
-			No_DummyRead = 1;
+			No_DummyRead = 0;
 			return 0;
 		}
 		dram_rank1_addr = rptr;
