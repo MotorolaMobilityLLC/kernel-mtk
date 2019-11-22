@@ -3115,8 +3115,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>, <&smi_larb3>,
 		<&smi_larb4>, <&smi_larb5>;
 		mmsys_config = <&mmsys>;
-		clocks = <&scpsys SCP_SYS_DIS>,<&mmsys MMSYS_SMI_COMMON>;
-		clock-names = "mtcmos-dis","smi-common";
+		clocks = <&scpsys SCP_SYS_DIS>,<&mmsys MMSYS_SMI_COMMON>,
+				<&mmsys MMSYS_SMI_LARB0>;
+		clock-names = "mtcmos-dis","smi-common","smi_larb0";
 	};
 
 	met_smi: met_smi@14028000 {
