@@ -3282,7 +3282,7 @@ static int power_control_init(struct platform_device *pdev)
 	}
 #endif /* LINUX_VERSION_CODE >= 3, 12, 0 */
 
-	kbdev->clock = of_clk_get(kbdev->dev->of_node, 0);
+	kbdev->clock = clk_get(kbdev->dev, "clk_mali");
 	if (IS_ERR_OR_NULL(kbdev->clock)) {
 		err = PTR_ERR(kbdev->clock);
 		kbdev->clock = NULL;
