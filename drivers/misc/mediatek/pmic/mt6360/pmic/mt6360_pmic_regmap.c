@@ -150,9 +150,9 @@ static struct rt_regmap_properties mt6360_pmic_regmap_props = {
 int mt6360_pmic_regmap_register(struct mt6360_pmic_info *mpi,
 				struct rt_regmap_fops *fops)
 {
-	mt6360_pmic_regmap_props.name = kasprintf(GFP_KERNEL,
-						 "mt6360_pmic.%s",
-						 dev_name(mpi->dev));
+	mt6360_pmic_regmap_props.name = devm_kasprintf(mpi->dev, GFP_KERNEL,
+						       "mt6360_pmic.%s",
+						       dev_name(mpi->dev));
 	mpi->regmap = rt_regmap_device_register(&mt6360_pmic_regmap_props, fops,
 						mpi->dev, mpi->i2c, mpi);
 	return mpi->regmap ? 0 : -EINVAL;

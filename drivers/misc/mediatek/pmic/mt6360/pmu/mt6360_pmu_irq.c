@@ -168,7 +168,7 @@ static int mt6360_pmu_gpio_irq_init(struct mt6360_pmu_info *mpi)
 	int ret;
 
 	ret = devm_gpio_request_one(mpi->dev, pdata->irq_gpio, GPIOF_IN,
-				    kasprintf(GFP_KERNEL,
+				    devm_kasprintf(mpi->dev, GFP_KERNEL,
 				    "%s.irq", dev_name(mpi->dev)));
 	if (ret < 0) {
 		dev_err(mpi->dev, "gpio reqeuest [%d] fail\n", pdata->irq_gpio);
