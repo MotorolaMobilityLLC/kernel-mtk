@@ -15,6 +15,7 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2 \
              -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
+             -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/iommu
 
 # Enable MET

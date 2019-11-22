@@ -27,6 +27,9 @@
 
 #include "cmdq_device.h"
 
+#include "smi_public.h"
+
+
 struct CmdqMdpModuleBaseVA {
 	long MDP_RDMA0;
 	long MDP_RDMA1;
@@ -455,16 +458,11 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 
 void cmdq_mdp_enable_larb4_clock(bool enable)
 {
+	CMDQ_MSG("cmdq_mdp_enable_larb4_clock:%d", enable);
 	if (enable) {
-		CMDQ_VERBOSE("[CLOCK] Enable SMI Larb4 %d\n",
-			     atomic_read(&gSMILarb4Usage));
-		if (atomic_inc_return(&gSMILarb4Usage) == 1)
-			cmdq_mdp_enable_clock_SMI_LARB4(enable);
+		smi_bus_prepare_enable(SMI_LARB4_REG_INDX, "MDPSRAM", true);
 	} else {
-		CMDQ_VERBOSE("[CLOCK] Disable SMI Larb4 %d\n",
-			     atomic_read(&gSMILarb4Usage));
-		if (atomic_dec_return(&gSMILarb4Usage) == 0)
-			cmdq_mdp_enable_clock_SMI_LARB4(enable);
+		smi_bus_disable_unprepare(SMI_LARB4_REG_INDX, "MDPSRAM", true);
 	}
 }
 
@@ -1129,6 +1127,7 @@ const char *cmdq_mdp_dispatch(uint64_t engineFlag)
 void cmdq_mdp_platform_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc = cmdq_mdp_get_func();
+
 
 	pFunc->dumpMMSYSConfig = cmdq_mdp_dump_mmsys_config;
 
