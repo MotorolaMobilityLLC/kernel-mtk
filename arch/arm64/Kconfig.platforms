@@ -91,6 +91,56 @@ config ARCH_MEDIATEK
 	help
 	  Support for Mediatek MT65xx & MT81xx ARMv8 SoCs
 
+config MACH_MT6757
+	bool "MediaTek MT6757"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select PINCTRL_MT6757
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select MTK_POWER_GS
+	select MTK_SYSTRACKER_V2
+	select MTK_GIC_V3_EXT
+	select MTK_PLAT_SRAM_FLAG
+	select ARM_HAS_SG_CHAIN
+	select POWER_SUPPLY
+	select MTK_TIMER
+	select COMMON_CLK if !MTK_CLKMGR
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_L2C_PARITY_CHECK
+	select MTK_LASTPC_V2
+	select ARM_ERRATA_855873
+	select MTK_SEC_DEINT_SUPPORT
+	select MTK_BOUNCING_CHECK
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE
+	select OVERLAY_FS
+	select DM_BOW
+	help
+	  This enables support for MediaTek Helio P20 - MT6757
+	  Highly power-efficient, performance-oriented 4G LTE processor
+	  for premium, thin-design smartphones. The MediaTek Helio P20
+	  is built on a 16nm process node and offers 25% better power
+	  efficiency, higher processing performance and our most advanced
+	  camera/video features to date. Helio P20 also offers significant
+	  multitasking and multimedia improvements thanks to its new
+	  LPDDR4X memory support.
+
 config MACH_MT6758
 	bool "MediaTek MT6758"
 	select GENERIC_CLOCKEVENTS
