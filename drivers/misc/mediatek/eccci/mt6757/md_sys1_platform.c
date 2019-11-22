@@ -26,13 +26,11 @@
 #endif
 #include "ccci_core.h"
 #include "ccci_platform.h"
-#ifndef JUST_FOR_BUILD
-#include "mtk_pmic_api_buck.h"
-#endif
 #include <mt-plat/upmu_common.h>
 #include <mtk_clkbuf_ctl.h>
 #include <mtk_spm_sleep.h>
 #include <pmic.h>
+#include "mtk_pmic_api_buck.h"
 
 #include "cldma_reg.h"
 #include "md_sys1_platform.h"
@@ -852,16 +850,12 @@ static void md1_pcore_sram_on(struct ccci_modem *md)
 
 void md1_pmic_setting_off(void)
 {
-#ifndef JUST_FOR_BUILD
 	vmd1_pmic_setting_off();
-#endif
 }
 
 void md1_pmic_setting_on(void)
 {
-#ifndef JUST_FOR_BUILD
 	vmd1_pmic_setting_on();
-#endif
 }
 
 /* callback for system power off*/
@@ -1115,12 +1109,10 @@ int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
 {
 	clk_buf_set_by_flightmode(true);
 #if !defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-#ifndef JUST_FOR_BUILD
 	pmic_config_interface(0x404, 3, 3, 4);
 	CCCI_NORMAL_LOG(md->index, TAG, "%s set pmic done\n", __func__);
 #else
 	CCCI_NORMAL_LOG(md->index, TAG, "%s not ready\n", __func__);
-#endif
 #endif
 	return 0;
 }
@@ -1129,12 +1121,10 @@ int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 {
 	clk_buf_set_by_flightmode(false);
 #if !defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-#ifndef JUST_FOR_BUILD
 	pmic_config_interface(0x404, 0, 3, 4);
 	CCCI_NORMAL_LOG(md->index, TAG, "%s set pmic done\n", __func__);
 #else
 	CCCI_NORMAL_LOG(md->index, TAG, "%s  not ready\n", __func__);
-#endif
 #endif
 	return 0;
 }
@@ -1156,11 +1146,9 @@ int md_cd_power_on(struct ccci_modem *md)
 		ret = clk_prepare_enable(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"enable md sys clk done,ret = %d\n", ret);
-#ifndef JUST_FOR_BUILD
 		kicker_pbm_by_md(KR_MD1, true);
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"Call end kicker_pbm_by_md(0,true)\n");
-#endif
 	} else {
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"md power on index error = %d\n", md->index);
@@ -1239,11 +1227,9 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type)
 		md_cd_soft_power_off(md, 0);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 		md1_pmic_setting_off();
-#ifndef JUST_FOR_BUILD
 		kicker_pbm_by_md(KR_MD1, false);
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"Call end kicker_pbm_by_md(0,false)\n");
-#endif
 	} else {
 		CCCI_BOOTUP_LOG(md->index, TAG,
 				"md power off wrong index error = %d\n",
