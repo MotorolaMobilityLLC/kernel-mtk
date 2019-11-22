@@ -96,9 +96,9 @@ static struct rt_regmap_properties mt6360_ldo_regmap_props = {
 int mt6360_ldo_regmap_register(struct mt6360_ldo_info *mli,
 			       struct rt_regmap_fops *fops)
 {
-	mt6360_ldo_regmap_props.name = kasprintf(GFP_KERNEL,
-						 "mt6360_ldo.%s",
-						 dev_name(mli->dev));
+	mt6360_ldo_regmap_props.name = devm_kasprintf(mli->dev, GFP_KERNEL,
+						      "mt6360_ldo.%s",
+						      dev_name(mli->dev));
 	mli->regmap = rt_regmap_device_register(&mt6360_ldo_regmap_props, fops,
 						mli->dev, mli->i2c, mli);
 	return mli->regmap ? 0 : -EINVAL;
