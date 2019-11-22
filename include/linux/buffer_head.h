@@ -200,6 +200,7 @@ void write_boundary_block(struct block_device *bdev,
 			sector_t bblock, unsigned blocksize);
 int bh_uptodate_or_lock(struct buffer_head *bh);
 int bh_submit_read(struct buffer_head *bh);
+int bh_submit_read_crypt(struct inode *inode, struct buffer_head *bh);
 
 extern int buffer_heads_over_limit;
 
