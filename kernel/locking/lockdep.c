@@ -4756,9 +4756,47 @@ static void get_lock_name(struct lock_class *class, char name[MAX_LOCK_NAME])
 	}
 }
 
+static void task_show_stack(struct task_struct *task, int output)
+{
+	struct stack_trace trace;
+	unsigned long entries[32];
+	char buf[256];
+	int i;
+
+	if (!mutex_trylock(&task->signal->cred_guard_mutex))
+		return;
+
+	trace.nr_entries = 0;
+	trace.max_entries = ARRAY_SIZE(entries);
+	trace.entries = entries;
+	trace.skip = 1;
+	save_stack_trace_tsk(task, &trace);
+
+	if (trace.nr_entries != 0 &&
+	    trace.entries[trace.nr_entries - 1] == ULONG_MAX)
+		trace.nr_entries--;
+
+	if (trace.nr_entries < 3) {
+		mutex_unlock(&task->signal->cred_guard_mutex);
+		return;
+	}
+
+	snprintf(buf, sizeof(buf), "  stack of %s/%d:",
+		 task->comm, task->pid);
+	lock_mon_msg(buf, output);
+
+	for (i = 0; i < trace.nr_entries; i++) {
+		snprintf(buf, sizeof(buf), "%*c%pS", 6, ' ',
+			 (void *)entries[i]);
+		lock_mon_msg(buf, output);
+	}
+
+	mutex_unlock(&task->signal->cred_guard_mutex);
+}
+
 static void lockdep_check_held_locks(struct task_struct *curr, bool en)
 {
-	int i;
+	int i, show_task_stack = 1;
 	struct held_lock *hlock;
 	unsigned long long timestamp_bak;
 
@@ -4824,6 +4862,11 @@ static void lockdep_check_held_locks(struct task_struct *curr, bool en)
 				output = TO_BOTH;
 
 			held_lock_show_trace(&hlock->trace, output);
+
+			if (show_task_stack) {
+				task_show_stack(curr, output);
+				show_task_stack = 0;
+			}
 		}
 	}
 }
