@@ -1068,6 +1068,36 @@ static void set_ssusb_ip_sleep(struct musb *musb)
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
 }
 
+/* add start for XHCI */
+void musb_power_down(struct musb *musb)
+{
+#ifdef EP_PROFILING
+		cancel_delayed_work_sync(&musb->ep_prof_work);
+#endif
+		/*
+		 * Note: musb_save_context() _MUST_ be called
+		 * _BEFORE_ setting SSUSB_IP_SW_RST.
+		 * Because when setting SSUSB_IP_SW_RST to reset the SSUSB IP,
+		 * All MAC regs can _NOT_ be read and be reset to
+		 * the default value.
+		 * So save the MUST-SAVED reg in the context structure.
+		 */
+		musb_save_context(musb);
+
+		set_ssusb_ip_sleep(musb);
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		/* Let PHY enter savecurrent mode. And turn off CLK. */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		phy_power_off(musb->mtk_phy);
+#else
+		usb_phy_savecurrent(musb->is_clk_on);
+#endif
+		musb->is_clk_on = 0;
+#endif
+}
+/* add end for XHCI */
+
 /*
  * Make the HDRC stop (disable interrupts, etc.);
  * reversible by musb_start
