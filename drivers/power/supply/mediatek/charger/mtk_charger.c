@@ -5235,7 +5235,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->enable_pp[i] = true;
 	}
 	/*work around for mt6768*/
-	atomic_set(&info->enable_kpoc_shdn, 0);
+	atomic_set(&info->enable_kpoc_shdn, 1);
 	info->charger_wakelock = wakeup_source_register(NULL, "charger suspend wakelock");
 	spin_lock_init(&info->slock);
 
