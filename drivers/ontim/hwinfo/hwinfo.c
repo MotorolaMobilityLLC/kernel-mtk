@@ -1175,10 +1175,12 @@ static void get_current_cpuid(void)
 {
 	u32 ontim_cpuid = 0 ;
 	int i = CPUID_REG_INDEX;
+	char temp_buffer[MAX_HWINFO_SIZE]={0};
 	for(i;i<(CPUID_REG_INDEX+CPUID_REG_NUM);i++){
 		ontim_cpuid = get_devinfo_with_index(i);
-		sprintf(hwinfo[current_cpuid].hwinfo_buf+strlen(hwinfo[current_cpuid].hwinfo_buf),"%08x",ontim_cpuid);
+		sprintf(temp_buffer+strlen(temp_buffer),"%08x",ontim_cpuid);
 	}
+	sprintf(hwinfo[current_cpuid].hwinfo_buf,"%s",temp_buffer);
 }
 
 extern unsigned int get_boot_mode(void);
