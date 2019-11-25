@@ -303,7 +303,9 @@ static enum power_supply_property mt_usb_properties[] = {
 static void tcpc_power_off_work_handler(struct work_struct *work)
 {
 	pr_info("%s\n", __func__);
+	#ifdef MTK_BASE
 	kernel_power_off();
+	#endif
 }
 #endif
 
