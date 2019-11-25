@@ -1174,9 +1174,9 @@ extern u32 get_devinfo_with_index(u32 index);
 static void get_current_cpuid(void)
 {
 	u32 ontim_cpuid = 0 ;
-	int i = CPUID_REG_INDEX;
+	int i =0 ;
 	char temp_buffer[MAX_HWINFO_SIZE]={0};
-	for(i;i<(CPUID_REG_INDEX+CPUID_REG_NUM);i++){
+	for(i = CPUID_REG_INDEX;i<(CPUID_REG_INDEX+CPUID_REG_NUM);i++){
 		ontim_cpuid = get_devinfo_with_index(i);
 		sprintf(temp_buffer+strlen(temp_buffer),"%08x",ontim_cpuid);
 	}
