@@ -549,10 +549,12 @@
 #define SENSOR_DRVNAME_BLACKJACK_TSP_GC2375H_MIPI_RAW 	"blackjack_tsp_gc2375h_mipi_raw"
 #define SENSOR_DRVNAME_BLACKJACK_JSL_GC2375H_MIPI_RAW 	"blackjack_jsl_gc2375h_mipi_raw"
 #define SENSOR_DRVNAME_BLACKJACK_TXD_HI846_MIPI_RAW 	"blackjack_txd_hi846_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_SEA_MT9D015_MIPI_RAW 	"blackjack_sea_mt9d015_mipi_raw"
 
 #define BLACKJACK_TSP_GC2375H_SENSOR_ID 	0x2375
 #define BLACKJACK_JSL_GC2375H_SENSOR_ID 	0x2375 + 2
-#define BLACKJACK_TXD_HI846_SENSOR_ID 	0x0846
+#define BLACKJACK_TXD_HI846_SENSOR_ID 0x0846
+#define BLACKJACK_SEA_MT9D015_SENSOR_ID 0x1501
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
