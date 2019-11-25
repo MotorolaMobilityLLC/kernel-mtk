@@ -2679,6 +2679,7 @@ void mmi_init(struct charger_manager *info)
 	info->mmi.init_done = true;
 }
 
+#ifdef MTK_BASE
 static void kpoc_power_off_check(struct charger_manager *info)
 {
 	unsigned int boot_mode = get_boot_mode();
@@ -2698,7 +2699,7 @@ static void kpoc_power_off_check(struct charger_manager *info)
 		}
 	}
 }
-
+#endif
 #ifdef CONFIG_PM
 static int charger_pm_event(struct notifier_block *notifier,
 			unsigned long pm_event, void *unused)
@@ -2838,8 +2839,9 @@ static int charger_routine_thread(void *arg)
 		check_dynamic_mivr(info);
 		mmi_charger_check_status(info);
 		charger_check_status(info);
+		#ifdef MTK_BASE
 		kpoc_power_off_check(info);
-
+		#endif
 		if (is_disable_charger() == false) {
 			if (is_charger_on == true) {
 				if (info->do_algorithm)
@@ -4905,7 +4907,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->force_disable_pp[i] = false;
 		info->enable_pp[i] = true;
 	}
-	atomic_set(&info->enable_kpoc_shdn, 0);
+	atomic_set(&info->enable_kpoc_shdn, 1);
 	wakeup_source_init(&info->charger_wakelock, "charger suspend wakelock");
 
 	spin_lock_init(&info->slock);
