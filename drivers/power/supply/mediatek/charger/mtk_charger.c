@@ -2636,6 +2636,7 @@ void mmi_init(struct charger_manager *info)
 	info->mmi.init_done = true;
 }
 
+#ifdef MTK_BASE
 static void kpoc_power_off_check(struct charger_manager *info)
 {
 	int vbus = 0;
@@ -2676,7 +2677,7 @@ static void kpoc_power_off_check(struct charger_manager *info)
 		}
 	}
 }
-
+#endif
 #ifdef CONFIG_PM
 static int charger_pm_event(struct notifier_block *notifier,
 			unsigned long pm_event, void *unused)
@@ -2816,8 +2817,9 @@ static int charger_routine_thread(void *arg)
 		check_dynamic_mivr(info);
 		mmi_charger_check_status(info);
 		charger_check_status(info);
+		#ifdef MTK_BASE
 		kpoc_power_off_check(info);
-
+		#endif
 		if (is_disable_charger() == false) {
 			if (is_charger_on == true) {
 				if (info->do_algorithm)
