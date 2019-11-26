@@ -5508,14 +5508,17 @@ int ddp_dsi_read_lcm_cmdq(enum DISP_MODULE_ENUM module,
 		/* 2. save RX data */
 		if (*read_Slot && dsi_i == 0) {
 			DSI_BACKUPREG32(cmdq_trigger_handle,
-				*read_Slot, i,
+				read_Slot[0], i,
 				&DSI_REG[dsi_i]->DSI_RX_DATA0);
+			DSI_BACKUPREG32(cmdq_trigger_handle,
+				read_Slot[1], i,
+				&DSI_REG[dsi_i]->DSI_RX_DATA1);
 		}
 
 		/* 3. write RX_RACK */
 		DSI_OUTREGBIT(cmdq_trigger_handle,
 			struct DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
-				    DSI_RACK, 1);
+			DSI_RACK, 1);
 
 		/* 4. polling not busy(no need clear) */
 		if (dsi_i == 0) {
