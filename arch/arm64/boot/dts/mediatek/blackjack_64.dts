@@ -1156,6 +1156,15 @@
 &bat_gm30{
 	battery_type_name = <0>;
 };
+
+&usb_phy_tuning{
+	u2_vrt_ref = <7>;
+	u2_term_ref = <6>;
+	u2_host_vrt_ref = <4>;
+	u2_host_term_ref = <4>;
+	status = "okay";
+};
+
 #include "bat_setting/mt6765_battery_table_blackjack.dtsi"
 #include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
 #include "bat_setting/mt6765_battery_table_blackjack_3.dtsi"
