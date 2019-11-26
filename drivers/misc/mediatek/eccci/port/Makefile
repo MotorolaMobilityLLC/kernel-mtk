@@ -22,6 +22,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/trng
 # port objects
 obj-$(CONFIG_MTK_ECCCI_DRIVER) := ccci_port.o
 ccci_port-y += port_cfg.o
