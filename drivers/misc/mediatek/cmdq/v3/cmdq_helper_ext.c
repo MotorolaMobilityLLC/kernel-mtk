@@ -5009,6 +5009,12 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	u32 count = 0;
 	const struct cmdq_controller *ctrl = handle->ctrl;
 
+	if (!handle->pkt) {
+		CMDQ_LOG("%s: pkt is NULL handle:%p thread:%d\n",
+			__func__, handle, handle->thread);
+		return -EINVAL;
+	}
+
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task,
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), handle->thread);
 
