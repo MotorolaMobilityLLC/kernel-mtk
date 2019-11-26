@@ -1178,7 +1178,8 @@ static void get_current_cpuid(void)
 	char temp_buffer[MAX_HWINFO_SIZE]={0};
 	for(i = CPUID_REG_INDEX;i<(CPUID_REG_INDEX+CPUID_REG_NUM);i++){
 		ontim_cpuid = get_devinfo_with_index(i);
-		sprintf(temp_buffer+strlen(temp_buffer),"%08x",ontim_cpuid);
+		sprintf(temp_buffer+strlen(temp_buffer),"%02x%02x%02x%02x", ontim_cpuid&0xFF, (ontim_cpuid>>8)&0xFF, 
+		    (ontim_cpuid>>16)&0xFF, (ontim_cpuid>>24)&0xFF);
 	}
 	sprintf(hwinfo[current_cpuid].hwinfo_buf,"%s",temp_buffer);
 }
