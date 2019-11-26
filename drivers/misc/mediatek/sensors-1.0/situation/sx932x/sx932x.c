@@ -53,6 +53,9 @@ static char sx932x_vendor_name[20]="sx932x";
 
 #define IDLE			0
 #define ACTIVE			1
+#ifdef MULTILEVEL
+#define BODY			2
+#endif
 
 #define SX932x_NIRQ		34
 
@@ -261,7 +264,11 @@ static int sx932x_global_variable_init(psx93XX_t this)
 {
 	this->irq_disabled = 0;
 	this->failStatusCode = 0;
+#ifdef MULTILEVEL
+	this->reg_in_dts = false;
+#else
 	this->reg_in_dts = true;
+#endif
 	return 0;
 }
 
@@ -453,6 +460,9 @@ static void touchProcess(psx93XX_t this)
 {
 	int counter = 0;
 	u8 i = 0;
+#ifdef MULTILEVEL
+	u8 j = 0;
+#endif
 	int numberOfButtons = 0;
 	psx932x_t pDevice = NULL;
 	struct _buttonInfo *buttons = NULL;
@@ -463,7 +473,9 @@ static void touchProcess(psx93XX_t this)
 	if (this && (pDevice = this->pDevice))
 	{
 		read_register(this, SX932x_STAT0_REG, &i);
-
+#ifdef MULTILEVEL
+		read_register(this, SX932x_STAT1_REG, &j);
+#endif
 		buttons = pDevice->pbuttonInformation->buttons;
 		input = pDevice->pbuttonInformation->input;
 		numberOfButtons = pDevice->pbuttonInformation->buttonSize;
@@ -482,6 +494,23 @@ static void touchProcess(psx93XX_t this)
 
 			switch (pCurrentButton->state) {
 				case IDLE: /* Button is not being touched! */
+#ifdef MULTILEVEL
+					if (((j & pCurrentButton->mask) == pCurrentButton->mask)) {
+                                                /* User pressed button */
+                                                SX932X_LOG("cap body %d touched\n", counter);
+                                                sar_report_interrupt_data(2);
+                                                pCurrentButton->state = BODY;
+
+                                        } else if (((i & pCurrentButton->mask) == pCurrentButton->mask)) {
+                                                /* User pressed button */
+                                                SX932X_LOG("cap button %d touched\n", counter);
+                                                sar_report_interrupt_data(1);
+                                                pCurrentButton->state = ACTIVE;
+
+                                        } else {
+                                                SX932X_LOG("Button %d already released.\n",counter);
+                                        }
+#else
 					if (((i & pCurrentButton->mask) == pCurrentButton->mask)) {
 						/* User pressed button */
 						SX932X_LOG("cap button %d touched\n", counter);
@@ -491,8 +520,26 @@ static void touchProcess(psx93XX_t this)
 					} else {
 						SX932X_LOG("Button %d already released.\n",counter);
 					}
+#endif
 					break;
 				case ACTIVE: /* Button is being touched! */ 
+#ifdef MULTILEVEL
+					if (((j & pCurrentButton->mask) == pCurrentButton->mask)) {
+                                                /* User pressed button */
+                                                SX932X_LOG("cap body %d touched\n", counter);
+                                                sar_report_interrupt_data(2);
+                                                pCurrentButton->state = BODY;
+
+                                        } else if (((i & pCurrentButton->mask) == pCurrentButton->mask)) {
+                                                /* User pressed button */
+						SX932X_LOG("Button %d still touched.\n",counter);
+                                        } else {
+						/* User released button */
+                                                SX932X_LOG("cap button %d released\n",counter);
+                                                sar_report_interrupt_data(0);
+                                                pCurrentButton->state = IDLE;
+                                        }
+#else
 					if (((i & pCurrentButton->mask) != pCurrentButton->mask)) {
 						/* User released button */
 						SX932X_LOG("cap button %d released\n",counter);
@@ -501,7 +548,27 @@ static void touchProcess(psx93XX_t this)
 					} else {
 						SX932X_LOG("Button %d still touched.\n",counter);
 					}
+#endif
 					break;
+#ifdef MULTILEVEL
+				case BODY: /* Body is being touched! */
+                                        if (((j & pCurrentButton->mask) == pCurrentButton->mask)) {
+                                                /* User pressed button */
+                                                SX932X_LOG("Body %d still touched\n", counter);
+                                        } else if (((i & pCurrentButton->mask) == pCurrentButton->mask)) {
+                                                /* User pressed button */
+                                                SX932X_LOG("cap button %d touched\n", counter);
+                                                sar_report_interrupt_data(1);
+                                                pCurrentButton->state = ACTIVE;
+
+                                        } else {
+                                                /* User released button */
+                                                SX932X_LOG("cap button %d released\n",counter);
+                                                sar_report_interrupt_data(0);
+                                                pCurrentButton->state = IDLE;
+                                        }
+                                        break;
+#endif
 				default: /* Shouldn't be here, device only allowed ACTIVE or IDLE */
 					break;
 			};
