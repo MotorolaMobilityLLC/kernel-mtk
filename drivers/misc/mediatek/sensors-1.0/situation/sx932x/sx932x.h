@@ -16,6 +16,7 @@
 #include <linux/suspend.h>
 #endif
 
+//#define MULTILEVEL 1
 /*
 *  I2C Registers
 */
@@ -116,8 +117,8 @@
 
 /*      SoftReset */
 #define SX932x_SOFTRESET				0xDE
-//#define SX932x_WHOAMI_VALUE				0x22  //just for sx9325
-#define SX932x_WHOAMI_VALUE				0x23  //just for sx9323
+#define SX932x_WHOAMI_VALUE				0x22  //just for sx9325
+//#define SX932x_WHOAMI_VALUE				0x23  //just for sx9323
 #define SX932x_REV_VALUE				0x22 //just for sx9325
 
 #define LGE_SENSOR
@@ -159,7 +160,11 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 //Interrupt and config
 	{
 		.reg = SX932x_IRQ_ENABLE_REG,	//0x05
+#ifdef MULTILEVEL
+		.val = 0x72,
+#else
 		.val = 0x70,					// Enavle Close and Far -> enable compensation interrupt
+#endif
 	},
 	{
 		.reg = SX932x_IRQCFG0_REG, 		//0x06
@@ -221,7 +226,11 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX932x_AFE_PH0_REG,   //0x28
+#ifdef MULTILEVEL
+		.val = 0x01,
+#else
 		.val = 0x04,       // CS2:HZ CS1:Input CS0 :HZ
+#endif
 	},
 	{
 		.reg = SX932x_AFE_PH1_REG,     //0x29
@@ -319,7 +328,11 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX932x_ADV_CTRL10_REG,
+#ifdef MULTILEVEL
+		.val = 0x10,
+#else
 		.val = 0x00,
+#endif
 	},
 	{
 		.reg = SX932x_ADV_CTRL11_REG,
@@ -364,11 +377,21 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	//--------Sensor enable
 	{
 		.reg = SX932x_CTRL1_REG,    //0x11
+#ifdef MULTILEVEL
+		.val = 0x21,
+#else
 		.val = 0x24,       //enable PH2
+#endif
 	},
 };
 
 static struct _buttonInfo psmtcButtons[] = {
+#ifdef MULTILEVEL
+	{
+                .keycode = KEY_0,
+                .mask = SX932x_PROXSTAT_PH0_FLAG,
+        },
+#else
 	{
 		.keycode = KEY_0,
 		.mask = SX932x_PROXSTAT_PH0_FLAG,
@@ -385,6 +408,7 @@ static struct _buttonInfo psmtcButtons[] = {
 		.keycode = KEY_3,
 		.mask = SX932x_PROXSTAT_PH3_FLAG,
 	},
+#endif
 };
 
 struct sx932x_platform_data {
