@@ -295,6 +295,13 @@
 		#size-cells = <2>;
 		ranges;
 
+		zmc-default {
+			compatible = "mediatek,zone_movable_cma";
+			size = <0 0x10000000>;
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x0 0 0xc0000000>;
+		};
+
 		/*TODO: add reserved memory node here*/
 		reserve-memory-sspm_share {
 			compatible = "mediatek,reserve-memory-sspm_share";
@@ -320,7 +327,7 @@
 			no-map;
 			size = <0 0x200000>;
 			alignment = <0 0x200000>;
-			alloc-ranges = <0 0x40000000 0 0x80000000>;
+			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
 #ifdef CONFIG_MICROTRUST_TEE_SUPPORT
 		soter-shared-mem {
@@ -3982,6 +3989,16 @@
 	odm: odm{
 		compatible = "simple-bus";
 		/* reserved for overlay by odm */
+	};
+
+	memory_ssmr_features: memory-ssmr-features {
+		compatible = "mediatek,memory-ssmr-features";
+		svp-size = <0 0x10000000>;
+		iris-recognition-size = <0 0>;
+		2d_fr-size = <0 0>;
+		tui-size = <0 0>;
+		wfd-size = <0 0>;
+		prot-sharedmem-size = <0 0>;
 	};
 
 	radio_md_cfg: radio_md_cfg {
