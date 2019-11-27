@@ -727,7 +727,6 @@
 #include <k71v1_64_bsp/cust.dtsi>
 #include "cust_mt6771_camera.dtsi"
 #include "mt6771-moto-audio-lima.dtsi"
-#include "mt6771-moto-overlay-lima.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
 
