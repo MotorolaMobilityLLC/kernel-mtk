@@ -206,10 +206,10 @@ static void bf_eint_handler_l(void)
 
 void work_func(struct work_struct *p_work)
 {
-    BF_LOG("  ++\n");
+    //BF_LOG("  ++\n");
     bf_eint_handler(g_bf_dev->irq_num, g_bf_dev);
     enable_irq(g_bf_dev->irq_num);
-    BF_LOG("  --\n");
+    //BF_LOG("  --\n");
 }
 
 
@@ -959,7 +959,7 @@ static irqreturn_t bf_eint_handler (int irq, void *data)
 #else
     wake_lock_timeout(&fp_suspend_lock, 2 * HZ);
 #endif
-    BF_LOG("++++irq_handler netlink send+++++,%d,%d", g_bf_dev->irq_count, bf_dev->doing_reset);
+    //BF_LOG("++++irq_handler netlink send+++++,%d,%d", g_bf_dev->irq_count, bf_dev->doing_reset);
     if(g_bf_dev->irq_count) {
         if(!bf_dev->doing_reset) {
             mutex_lock(&irq_count_lock);
@@ -968,7 +968,7 @@ static irqreturn_t bf_eint_handler (int irq, void *data)
         }
         bf_send_netlink_msg(bf_dev, BF_NETLINK_CMD_IRQ);
     }
-    BF_LOG("-----irq_handler netlink -----");
+    //BF_LOG("-----irq_handler netlink -----");
     return IRQ_HANDLED;
 }
 
@@ -1261,22 +1261,22 @@ static int bf_release (struct inode *inode, struct file *file)
 }
 static int bf_suspend (struct platform_device *pdev, pm_message_t state)
 {
-    BF_LOG("  ++\n");
+    //BF_LOG("  ++\n");
     mutex_lock(&g_dev_lock);
     if(g_bf_dev != NULL)
         g_bf_dev->need_report = 1;
     mutex_unlock(&g_dev_lock);
-    BF_LOG("\n");
+    //BF_LOG("\n");
     return 0;
 }
 static int bf_resume (struct platform_device *pdev)
 {
-    BF_LOG("  ++\n");
+    //BF_LOG("  ++\n");
     mutex_lock(&g_dev_lock);
     if(g_bf_dev != NULL)
         g_bf_dev->need_report = 0;
     mutex_unlock(&g_dev_lock);
-    BF_LOG("\n");
+    //BF_LOG("\n");
     return 0;
 }
 
