@@ -35,6 +35,7 @@
 
 #include "mtk_charger_intf.h"
 #include "rt9471.h"
+#include <mt-plat/mtk_boot.h>
 #define RT9471_DRV_VERSION	"1.0.6_MTK"
 
 #undef CONFIG_TCPC_CLASS
@@ -603,6 +604,17 @@ static void rt9471_set_usbsw_state(struct rt9471_chip *chip, int state)
 		Charger_Detect_Release();
 }
 
+static bool is_kpoc_mode(void)
+{
+	unsigned int boot_mode = get_boot_mode();
+
+	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT)
+		return true;
+	else
+		return false;
+}
+
 static int rt9471_bc12_en_kthread(void *data)
 {
 	int ret = 0, i = 0, en = 0;
@@ -613,7 +625,6 @@ static int rt9471_bc12_en_kthread(void *data)
 wait:
 	wait_for_completion(&chip->bc12_en_req);
 
-	__pm_stay_awake(&chip->bc12_en_ws);
 	mutex_lock(&chip->bc12_en_lock);
 	en = chip->bc12_en_buf[chip->bc12_en_buf_idx];
 	chip->bc12_en_buf[chip->bc12_en_buf_idx] = -1;
@@ -652,7 +663,6 @@ wait:
 		dev_notice(chip->dev, "%s en = %d fail(%d)\n",
 				      __func__, en, ret);
 relax_and_wait:
-	__pm_relax(&chip->bc12_en_ws);
 	goto wait;
 
 	return 0;
@@ -1240,6 +1250,8 @@ static void rt9471_bc12_done_handler(struct rt9471_chip *chip)
 		dev_info(chip->dev, "%s %d %s\n", __func__, chip->port,
 				    rt9471_port_name[chip->port]);
 		mutex_unlock(&chip->bc12_lock);
+		if (is_kpoc_mode())
+			__pm_relax(&chip->bc12_en_ws);
 	}
 }
 
@@ -2472,6 +2484,9 @@ static int rt9471_probe(struct i2c_client *client,
 					      __func__, ret);
 			goto err_kthread_run;
 		}
+
+		if (is_kpoc_mode())
+			__pm_stay_awake(&chip->bc12_en_ws);
 	}
 
 	ret = rt9471_parse_dt(chip);
