@@ -162,6 +162,19 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 /*blackjack*/
+#if defined(BLACKJACK_HLT_OV16A10_MIPI_RAW)
+		 {SENSOR_DRVNAME_BLACKJACK_HLT_OV16A10_MIPI_RAW,
+		  {
+			   {SensorMCLK, Vol_High, 0},
+			   {RST, Vol_Low, 0},
+			   {DOVDD, Vol_1800, 0},
+			   {AVDD, Vol_2800, 0},
+			   {DVDD, Vol_1200, 0},
+			   {AFVDD, Vol_2800, 5},
+			   {RST, Vol_High, 0},
+		  },
+		 },
+#endif
 #if defined(BLACKJACK_TSP_GC2375H_MIPI_RAW)
 		 {SENSOR_DRVNAME_BLACKJACK_TSP_GC2375H_MIPI_RAW,
 		  {
