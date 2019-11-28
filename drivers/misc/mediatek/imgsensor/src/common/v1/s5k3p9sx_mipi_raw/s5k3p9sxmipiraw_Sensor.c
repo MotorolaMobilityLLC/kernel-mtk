@@ -3722,8 +3722,8 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0202, 0x0100);
 	write_cmos_sensor(0x0200, 0x0100);
 	write_cmos_sensor(0x021E, 0x0000);
-	write_cmos_sensor(0x0D00, 0x0101);
-	write_cmos_sensor(0x0D02, 0x0101);
+	write_cmos_sensor(0x0D00, 0x0100);
+	write_cmos_sensor(0x0D02, 0x0001);
 	write_cmos_sensor(0x0D04, 0x0100);
 	write_cmos_sensor(0x0D06, 0x0120);
 	write_cmos_sensor(0x0D08, 0x0360);
@@ -3802,8 +3802,8 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0202, 0x0100);
 	write_cmos_sensor(0x0200, 0x0100);
 	write_cmos_sensor(0x021E, 0x0000);
-	write_cmos_sensor(0x0D00, 0x0101);
-	write_cmos_sensor(0x0D02, 0x0101);
+	write_cmos_sensor(0x0D00, 0x0100);
+	write_cmos_sensor(0x0D02, 0x0001);
 	write_cmos_sensor(0x0D04, 0x0102);
 	write_cmos_sensor(0x0D06, 0x0120);
 	write_cmos_sensor(0x0D08, 0x0360);
@@ -3882,8 +3882,8 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0202, 0x0100);
 	write_cmos_sensor(0x0200, 0x0100);
 	write_cmos_sensor(0x021E, 0x0000);
-	write_cmos_sensor(0x0D00, 0x0101);
-	write_cmos_sensor(0x0D02, 0x0101);
+	write_cmos_sensor(0x0D00, 0x0100);
+	write_cmos_sensor(0x0D02, 0x0001);
 	write_cmos_sensor(0x0D04, 0x0102);
 	write_cmos_sensor(0x0D06, 0x0120);
 	write_cmos_sensor(0x0D08, 0x028C);
@@ -4047,8 +4047,8 @@ static void custom1_setting(void)
 	write_cmos_sensor(0x0202, 0x0100);
 	write_cmos_sensor(0x0200, 0x0100);
 	write_cmos_sensor(0x021E, 0x0000);
-	write_cmos_sensor(0x0D00, 0x0101);
-	write_cmos_sensor(0x0D02, 0x0101);
+	write_cmos_sensor(0x0D00, 0x0100);
+	write_cmos_sensor(0x0D02, 0x0001);
 	write_cmos_sensor(0x0D04, 0x0102);
 	write_cmos_sensor(0x0D06, 0x0120);
 	write_cmos_sensor(0x0D08, 0x0360);
@@ -4126,8 +4126,8 @@ static void custom2_setting(void)
 	write_cmos_sensor(0x0202, 0x0100);
 	write_cmos_sensor(0x0200, 0x0100);
 	write_cmos_sensor(0x021E, 0x0000);
-	write_cmos_sensor(0x0D00, 0x0101);
-	write_cmos_sensor(0x0D02, 0x0101);
+	write_cmos_sensor(0x0D00, 0x0100);
+	write_cmos_sensor(0x0D02, 0x0001);
 	write_cmos_sensor(0x0D04, 0x0102);
 	write_cmos_sensor(0x0D06, 0x0120);
 	write_cmos_sensor(0x0D08, 0x0360);
@@ -4615,7 +4615,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 2;
+	sensor_info->PDAF_Support = 1;
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
 	sensor_info->SensorClockDividCount = 3; /* not use */
