@@ -722,7 +722,7 @@ static int sy6923_set_current(struct charger_device *chg_dev, u32 current_value)
 	unsigned int register_value;
 
 	if (current_value <= 500000) {
-		sy6923_set_io_level(1);
+		sy6923_set_io_level(0);
 		array_size = ARRAY_SIZE(CSTH);
 		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
 		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
