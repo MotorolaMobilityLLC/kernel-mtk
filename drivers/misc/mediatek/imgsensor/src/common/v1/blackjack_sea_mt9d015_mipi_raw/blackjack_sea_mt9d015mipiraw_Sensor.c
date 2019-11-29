@@ -59,7 +59,7 @@ static const int I2C_BUFFER_LEN = 1020;
 static const int I2C_BUFFER_LEN = 4;
 #endif
 
-
+extern kal_bool FF_driver_registered;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -942,6 +942,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
 				memcpy(backaux2_cam_name, "3_blackjack_sea_mt9d015", 64);
+				FF_driver_registered = KAL_FALSE;
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 			return ERROR_NONE;
