@@ -135,6 +135,7 @@ struct LCM_setting_table {
 };
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
+	{0x26,0x01,{0x08}},
 	{0x28,0x01, {0x00} },
 	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0x01, {0x00} },
@@ -146,6 +147,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table lcm_suspend_setting_gesture[] = {
+	{0x26,0x01,{0x08}},
 	{0x28,0x01, {0x00} },
 	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0x01, {0x00} },
@@ -169,6 +171,7 @@ static struct LCM_setting_table init_setting[] = {
     {REGFLAG_DELAY,120,{}},
     {0x29,0x01,{0x00}},
     {REGFLAG_DELAY,50,{}},
+    {0x26,0x01,{0x01}},
  #endif
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 
