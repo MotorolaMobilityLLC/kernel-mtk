@@ -176,7 +176,7 @@ static struct LCM_setting_table init_setting[] = {
 
 };
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 0x02,{0x0F,0xFF}},
+	{0x51, 0x02,{0x0F,0xF0}},
 	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -278,13 +278,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.CLK_HS_EXIT=10;
 	params->dsi.CLK_TRAIL=9;
 #endif
-	params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
-	params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
+	//params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
+	//params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
 
-	//params->dsi.clk_lp_per_line_enable = 0;
-	//params->dsi.esd_check_enable = 0;
-	//params->dsi.customization_esd_check_enable = 1;
-	params->dsi.clk_lp_per_line_enable = 0;
+	params->dsi.cont_clock = 0;
+	params->dsi.clk_lp_per_line_enable = 1;
+
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
