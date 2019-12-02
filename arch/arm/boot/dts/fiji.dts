@@ -279,7 +279,7 @@
                compatible = "ontim,eta6937";
                reg = <0x6e>;/*dumy addr,in fact ,the addr is 0x6b-1*/
                status = "okay";
-		ichg = <1050000>; /* uA */
+		ichg = <1150000>; /* uA */
        };
 	externel-charger@6d{
 		compatible = "halo,sy6923";
