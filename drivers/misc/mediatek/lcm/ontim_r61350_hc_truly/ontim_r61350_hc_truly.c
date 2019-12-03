@@ -245,7 +245,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	/* video mode timing */
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 	params->dsi.vertical_sync_active = 4;
-	params->dsi.vertical_backporch = 13;
+	params->dsi.vertical_backporch = 12;
 	params->dsi.vertical_frontporch = 13;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 	params->dsi.horizontal_sync_active = 30;
