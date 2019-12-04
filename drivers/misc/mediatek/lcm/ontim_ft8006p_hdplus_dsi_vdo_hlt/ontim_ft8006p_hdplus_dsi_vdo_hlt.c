@@ -151,7 +151,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x41, 0x02,{0x5A, 0x25}},
 	{0x98, 0x01,{0xDF}},
 	{0x8F, 0x01,{0x00}},
-	{0x90, 0x01,{0x00}},
+	//{0x90, 0x01,{0x00}},
 	{0x41, 0x02,{0x00, 0x2F}},
 	{REGFLAG_DELAY, 120,{}},
 	{0x29, 0x01,{0x00}},
@@ -242,10 +242,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_frontporch = 132; //old is 24,now is 124
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 	params->dsi.horizontal_sync_active = 20; //old is 20,now is 8
-	params->dsi.horizontal_backporch = 120;//old is 60,now is 12
-	params->dsi.horizontal_frontporch = 120;//old is 60,now is 16
+	params->dsi.horizontal_backporch = 108;//old is 60,now is 12
+	params->dsi.horizontal_frontporch = 108;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 335;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 336;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.ssc_disable = 0;
+	params->dsi.ssc_range = 3;
 #if 0
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
