@@ -705,6 +705,7 @@ static void eta6937_wirte_reg6(void)
 static int eta6937_enable_charging(struct charger_device *chg_dev, bool en)
 {
 	unsigned int status = 0;
+	pr_err("%s: %d;\n", __func__,en);
 
 	if (en) {
 
@@ -847,6 +848,21 @@ static int eta6937_get_charging_status(struct charger_device *chg_dev, bool *is_
 static int eta6937_reset_watch_dog_timer(struct charger_device *chg_dev)
 {
 	eta6937_set_tmr_rst(1);
+
+	eta6937_read_byte((unsigned char)(ETA6937_CON0), &eta6937_reg[0], 1);
+	eta6937_read_byte((unsigned char)(ETA6937_CON1), &eta6937_reg[1], 1);
+	
+	if(eta6937_reg[0] == 0xe0 && (eta6937_reg[1] & 0x04))
+	{
+		pr_err("%s;bc %x;%x;eta6937_wirte_reg1 again ;\n",__func__,eta6937_reg[0],eta6937_reg[1]);
+		
+		eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				0,
+				0x1,
+				2
+				);
+	}
+	
 	return 0;
 }
 
