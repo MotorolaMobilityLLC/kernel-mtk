@@ -654,8 +654,8 @@ static int eta6937_parse_dt(struct eta6937_info *info, struct device *dev)
 	if (!of_property_read_u32(np, "ichg", &max_charge_current)) {
 		pr_warn("%s: max_charge_current=%d;\n", __func__,max_charge_current);
 	}
-
-
+//			max_charge_current=1150000;
+	
 	return 0;
 }
 
@@ -741,6 +741,11 @@ static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 	unsigned int set_cv_voltage;
 	unsigned short int register_value;
 	/*static kal_int16 pre_register_value; */
+
+	if( cv ==4400000)
+	{
+		cv=4420000;
+	}
 	array_size = ARRAY_SIZE(VBAT_CVTH);
 	/*pre_register_value = -1; */
 	set_cv_voltage = bmt_find_closest_level(VBAT_CVTH, array_size, cv);
@@ -773,17 +778,33 @@ static int eta6937_set_current(struct charger_device *chg_dev, u32 current_value
 	unsigned int set_chr_current;
 	unsigned int array_size;
 	unsigned int register_value;
-
+	unsigned int vbat;
+       static unsigned char high =1;
 
 	if (current_value <= 500000) {
 		eta6937_set_io_level(0);
-		register_value = 3;
+		register_value = 1;
 		eta6937_set_iocharge(register_value);
 	} else {
 
+		vbat=battery_get_bat_voltage();
+
+		if (vbat >4100 && high == 1)
+		{
+			max_charge_current=950000;
+			high =0;
+		}
+		else if (vbat <4000 && high == 0)
+		{
+			high =1;
+			max_charge_current=1150000;
+		}
+			
+
+
 		if(max_charge_current != 0  && current_value > max_charge_current)	
 		{
-			pr_info("%s;%d;%d;\n",__func__,current_value,max_charge_current);
+			pr_info("%s;%d;%d;\n",__func__,high,max_charge_current);
 			current_value = max_charge_current;			
 		}
 		eta6937_set_io_level(0);
