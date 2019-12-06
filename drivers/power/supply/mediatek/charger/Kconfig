@@ -183,3 +183,8 @@ config CHARGER_RT9471
 config CHARGE_STOP_DEGREE55
 	bool "CHARGER_STOP_DEGREE55"
 	default n
+
+config CHARGER_BQ24157
+	bool "CHARGER_BQ24157"
+	default n
+	depends on MTK_CHARGER

@@ -287,6 +287,12 @@
 		status = "okay";
 		ichg = <1150000>; /* uA */
 	};
+	externel-charger@6f{
+		compatible = "halo,bq24157";
+		reg = <0x6f>;
+		status = "okay";
+		ichg = <1150000>; /* uA */
+	};
 	externel-charger@6b{
 		compatible = "ti,bq25601";
 		reg = <0x6b>;

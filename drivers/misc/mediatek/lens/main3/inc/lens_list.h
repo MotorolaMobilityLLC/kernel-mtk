@@ -44,6 +44,20 @@ extern int DW9714K_PowerDown(struct i2c_client *pstAF_I2Cclient,
                                int *pAF_Opened);
 extern int DW9714K_GetFileName(unsigned char *pFileName);
 
+#define DW9714KAF_SetI2Cclient DW9714KAF_SetI2Cclient_Main3
+#define DW9714KAF_Ioctl DW9714KAF_Ioctl_Main3
+#define DW9714KAF_Release DW9714KAF_Release_Main3
+#define DW9714KAF_PowerDown DW9714KAF_PowerDown_Main3
+#define DW9714KAF_GetFileName DW9714KAF_GetFileName_Main3
+extern int DW9714KAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+                                spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9714KAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+                          unsigned long a_u4Param);
+extern int DW9714KAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int DW9714KAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+                               int *pAF_Opened);
+extern int DW9714KAF_GetFileName(unsigned char *pFileName);
+
 #define CN3927EAF_SetI2Cclient CN3927EAF_SetI2Cclient_Main3
 #define CN3927EAF_Ioctl CN3927EAF_Ioctl_Main3
 #define CN3927EAF_Release CN3927EAF_Release_Main3
