@@ -3498,6 +3498,9 @@ firmware_class.path=/vendor/firmware";
 
 		algorithm_name = "Basic";
 		charger_configuration= <0>;
+		/*disable usb type C*/
+		/*enable_type_c;
+		power_path_support;*/
 
 		/* common */
 		battery_cv = <4350000>;
