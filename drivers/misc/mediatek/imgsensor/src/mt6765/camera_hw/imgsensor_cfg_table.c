@@ -190,6 +190,36 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		   },
 		  },
 #endif
+#if defined(GC2375_MIPI_RAW)
+		{
+			 SENSOR_DRVNAME_GC2375_MIPI_RAW,
+			 {
+				{RST, Vol_Low, 1},
+				{PDN, Vol_High, 6,Vol_Low, 0},
+				{DOVDD, Vol_1800, 0},
+				{AVDD, Vol_2800, 0},
+				{SensorMCLK, Vol_High, 0},
+				{PDN, Vol_Low,1,Vol_High, 0},
+				{RST, Vol_High, 0},
+				{PDN, Vol_Low, 1,Vol_High, 1},
+			},
+		},
+#endif
+#if defined(BLACKJACK_TSP_GC2375_MIPI_RAW)
+		{
+			 SENSOR_DRVNAME_BLACKJACK_TSP_GC2375_MIPI_RAW,
+			 {
+				{RST, Vol_Low, 1},
+				{PDN, Vol_High, 6,Vol_Low, 0},
+				{DOVDD, Vol_1800, 0},
+				{AVDD, Vol_2800, 0},
+				{SensorMCLK, Vol_High, 0},
+				{PDN, Vol_Low,1,Vol_High, 0},
+				{RST, Vol_High, 0},
+				{PDN, Vol_Low, 1,Vol_High, 1},
+			},
+		},
+#endif
 #if defined(BLACKJACK_JSL_GC2375H_MIPI_RAW)
 		 {SENSOR_DRVNAME_BLACKJACK_JSL_GC2375H_MIPI_RAW,
 		  {
@@ -226,7 +256,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         SENSOR_DRVNAME_BLACKJACK_SEA_MT9D015_MIPI_RAW,
         {
 			{RST, Vol_Low, 0},
-			{DVDD, Vol_1800, 500},
+			{DOVDD, Vol_1800, 500},
             {AVDD, Vol_2800, 0},
 			{SensorMCLK, Vol_High, 0},
 			{RST, Vol_High, 1},
@@ -401,34 +431,6 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {RST, Vol_High, 0},
                 },
         },
-#endif
-#if defined(GC2375_MIPI_RAW)
-		 {SENSOR_DRVNAME_GC2375_MIPI_RAW,
-		  {
-		   {SensorMCLK, Vol_High, 0},
-		   {PDN, Vol_High, 1},
-		   {RST, Vol_Low, 0},
-		   {DOVDD, Vol_1800, 0}, 
-		  // {DVDD, Vol_1800, 0}, dovdd same
-		   {AVDD, Vol_2800, 0},
-		   {PDN, Vol_Low, 1},
-		   {RST, Vol_High, 0},
-		   },
-		  },
-#endif
-#if defined(BLACKJACK_TSP_GC2375_MIPI_RAW)
-                 {SENSOR_DRVNAME_BLACKJACK_TSP_GC2375_MIPI_RAW,
-                  {
-                   {SensorMCLK, Vol_High, 0},
-                   {PDN, Vol_High, 1},
-                   {RST, Vol_Low, 0},
-                   {DOVDD, Vol_1800, 0},
-                  // {DVDD, Vol_1800, 0}, dovdd same
-                   {AVDD, Vol_2800, 0},
-                   {PDN, Vol_Low, 1},
-                   {RST, Vol_High, 0},
-                   },
-                  },
 #endif
 #if defined(IMX398_MIPI_RAW)
 	{

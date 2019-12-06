@@ -117,6 +117,30 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate = 30240000,
 	},
+	.custom1 = {
+		.pclk = 100000000,
+		.linelength = 850,
+		.framelength = 4868,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 4656,
+		.grabwindow_height = 3496,	
+		.mipi_data_lp2hs_settle_dc = 65,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 30240000,
+	},
+	.custom2 = {
+		.pclk = 100000000,
+		.linelength = 850,
+		.framelength = 4868,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 4656,
+		.grabwindow_height = 3496,	
+		.mipi_data_lp2hs_settle_dc = 65,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 30240000,
+	},
 	.margin = 8,		/* sensor framelength & shutter margin */
 	.min_shutter = 8,	/* min shutter */
 	.max_frame_length = 0x7ffe,	/* max framelength by sensor register's limitation */
@@ -129,14 +153,15 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,	/* isp gain delay frame for AE cycle */
 	.ihdr_support = 0,	/* 1, support; 0,not support */
 	.ihdr_le_firstline = 0,	/* 1,le first ; 0, se first */
-	.sensor_mode_num = 5,	/* support sensor mode num ,don't support Slow motion */
+	.sensor_mode_num = 8,	/* support sensor mode num ,don't support Slow motion */
 
 	.cap_delay_frame = 2,	/* enter capture delay frame num */
 	.pre_delay_frame = 2,	/* enter preview delay frame num */
 	.video_delay_frame = 2,	/* enter video delay frame num */
 	.hs_video_delay_frame = 2,	/* enter high speed video  delay frame num */
 	.slim_video_delay_frame = 2,	/* enter slim video delay frame num */
-
+	.custom1_delay_frame = 1,
+    .custom2_delay_frame = 1,
 	.isp_driving_current = ISP_DRIVING_8MA,	/* mclk driving current */
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,	/* sensor_interface_type */
 	.mipi_sensor_type = MIPI_OPHY_CSI2,	/* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
@@ -181,12 +206,14 @@ static struct imgsensor_struct imgsensor = {
 };
 
 /* Sensor output window information*/
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 	{4656, 3496,    0,    0,   4656, 3496, 2328, 1748,  0,  0,  2328, 1748, 0, 0, 2328, 1748,}, /* Preview check*/
 	{4656, 3496,    0,    0,   4656, 3496, 2328, 1748,  0,  0,  2328, 1748, 0, 0, 2328, 1748,}, /* capture */
 	{4656, 3496,    0,    0,   4656, 3496, 2328, 1748,  0,  0,  2328, 1748, 0, 0, 2328, 1748,}, /* video */
 	{4656, 3496, 	0,    0,   4656, 3496, 2328, 1748,  0,  0,  2328, 1748, 0, 0, 2328, 1748,}, /* hs vedio */
 	{4656, 3496,    0,    0,   4656, 3496, 2328, 1748,  0,  0,  2328, 1748, 0, 0, 2328, 1748,}, /* slim vedio */
+	{4656, 3496,    0,    0,   4656, 3496, 4656, 3496,  0,  0,  4656, 3496, 0, 0, 4656, 3496,},//custom1
+	{4656, 3496,    0,    0,   4656, 3496, 4656, 3496,  0,  0,  4656, 3496, 0, 0, 4656, 3496,},//custom2
 };
 
 /*PDAF START*/
@@ -1453,6 +1480,196 @@ static void capture_setting(kal_uint16 currefps)
 	}
 	return;
 }
+static void custom1_setting(void)
+{
+	LOG_INF("E\n");
+	write_cmos_sensor(0x0305,0x3a);
+	write_cmos_sensor(0x0307,0x00);
+	write_cmos_sensor(0x4837,0x0a);
+	write_cmos_sensor(0x0329,0x01);
+	write_cmos_sensor(0x0344,0x01);
+	write_cmos_sensor(0x0345,0x2c);
+	write_cmos_sensor(0x034a,0x07);
+	write_cmos_sensor(0x360a,0x69);
+	write_cmos_sensor(0x361a,0x8b);
+	write_cmos_sensor(0x3639,0xa6);
+	write_cmos_sensor(0x3654,0x8a);
+	write_cmos_sensor(0x3656,0x0c);
+	write_cmos_sensor(0x37d0,0x02);
+	write_cmos_sensor(0x37d1,0x10);
+	write_cmos_sensor(0x37db,0x08);
+	write_cmos_sensor(0x3808,0x12);
+	write_cmos_sensor(0x3809,0x30);
+	write_cmos_sensor(0x380a,0x0d);
+	write_cmos_sensor(0x380b,0xa8);
+	write_cmos_sensor(0x380c,0x03);
+	write_cmos_sensor(0x380d,0x52);
+	write_cmos_sensor(0x380e,0x13);
+	write_cmos_sensor(0x380f,0x04);
+	write_cmos_sensor(0x3814,0x11);
+	write_cmos_sensor(0x3815,0x11);
+	write_cmos_sensor(0x3820,0x00);
+	write_cmos_sensor(0x3821,0x06);
+	write_cmos_sensor(0x3822,0x00);
+	write_cmos_sensor(0x383c,0x22);
+	write_cmos_sensor(0x4015,0x04);
+	write_cmos_sensor(0x4016,0x1b);
+	write_cmos_sensor(0x4017,0x04);
+	write_cmos_sensor(0x4018,0x0b);
+	write_cmos_sensor(0x401e,0x01);
+	write_cmos_sensor(0x401f,0x38);
+	write_cmos_sensor(0x4500,0x20);
+	write_cmos_sensor(0x4501,0x6a);
+	write_cmos_sensor(0x4586,0x00);
+	write_cmos_sensor(0x4588,0x02);
+	write_cmos_sensor(0x4e05,0x04);
+	write_cmos_sensor(0x4e11,0x06);
+	write_cmos_sensor(0x4e1d,0x30);
+	write_cmos_sensor(0x4e26,0x39);
+	write_cmos_sensor(0x4e29,0x6d);
+	write_cmos_sensor(0x5000,0x0b);
+	write_cmos_sensor(0x5001,0x4b);
+	write_cmos_sensor(0x5002,0x57);
+	write_cmos_sensor(0x5820,0xc5);
+	write_cmos_sensor(0x5bd0,0x01);
+	write_cmos_sensor(0x5c0e,0x11);
+	write_cmos_sensor(0x5c21,0x10);
+	write_cmos_sensor(0x5c22,0x10);
+	write_cmos_sensor(0x5c23,0x02);
+	write_cmos_sensor(0x5c24,0x0a);
+	write_cmos_sensor(0x5c25,0x06);
+	write_cmos_sensor(0x5c26,0x0e);
+	write_cmos_sensor(0x5c27,0x02);
+	write_cmos_sensor(0x5c28,0x02);
+	write_cmos_sensor(0x5c29,0x0a);
+	write_cmos_sensor(0x5c2a,0x0a);
+	write_cmos_sensor(0x5d08,0x10);
+	write_cmos_sensor(0x5d09,0x10);
+	write_cmos_sensor(0x5d0a,0x02);
+	write_cmos_sensor(0x5d0b,0x0a);
+	write_cmos_sensor(0x5d0c,0x06);
+	write_cmos_sensor(0x5d0d,0x0e);
+	write_cmos_sensor(0x5d0e,0x02);
+	write_cmos_sensor(0x5d0f,0x02);
+	write_cmos_sensor(0x5d10,0x0a);
+	write_cmos_sensor(0x5d11,0x0a);
+	write_cmos_sensor(0x3501,0x0f);
+	write_cmos_sensor(0x3502,0x48);
+	write_cmos_sensor(0x3508,0x01);
+	write_cmos_sensor(0x3509,0x00);
+}
+
+static void custom2_setting(void)
+{
+	LOG_INF("E\n");
+	write_cmos_sensor(0x0305,0x3a);
+	write_cmos_sensor(0x0307,0x00);
+	write_cmos_sensor(0x4837,0x0a);
+	write_cmos_sensor(0x0329,0x01);
+	write_cmos_sensor(0x0344,0x01);
+	write_cmos_sensor(0x0345,0x2c);
+	write_cmos_sensor(0x034a,0x07);
+	write_cmos_sensor(0x360a,0x69);
+	write_cmos_sensor(0x361a,0x8b);
+	write_cmos_sensor(0x3639,0xa6);
+	write_cmos_sensor(0x3654,0x8a);
+	write_cmos_sensor(0x3656,0x0c);
+	write_cmos_sensor(0x37d0,0x02);
+	write_cmos_sensor(0x37d1,0x10);
+	write_cmos_sensor(0x37db,0x08);
+	write_cmos_sensor(0x3808,0x12);
+	write_cmos_sensor(0x3809,0x30);
+	write_cmos_sensor(0x380a,0x0d);
+	write_cmos_sensor(0x380b,0xa8);
+	write_cmos_sensor(0x380c,0x03);
+	write_cmos_sensor(0x380d,0x52);
+	write_cmos_sensor(0x380e,0x13);
+	write_cmos_sensor(0x380f,0x04);
+	write_cmos_sensor(0x3814,0x11);
+	write_cmos_sensor(0x3815,0x11);
+	write_cmos_sensor(0x3820,0x00);
+	write_cmos_sensor(0x3821,0x06);
+	write_cmos_sensor(0x3822,0x00);
+	write_cmos_sensor(0x383c,0x22);
+	write_cmos_sensor(0x4015,0x04);
+	write_cmos_sensor(0x4016,0x1b);
+	write_cmos_sensor(0x4017,0x04);
+	write_cmos_sensor(0x4018,0x0b);
+	write_cmos_sensor(0x401e,0x01);
+	write_cmos_sensor(0x401f,0x38);
+	write_cmos_sensor(0x4500,0x20);
+	write_cmos_sensor(0x4501,0x6a);
+	write_cmos_sensor(0x4586,0x00);
+	write_cmos_sensor(0x4588,0x02);
+	write_cmos_sensor(0x4e05,0x04);
+	write_cmos_sensor(0x4e11,0x06);
+	write_cmos_sensor(0x4e1d,0x30);
+	write_cmos_sensor(0x4e26,0x39);
+	write_cmos_sensor(0x4e29,0x6d);
+	write_cmos_sensor(0x5000,0x0b);
+	write_cmos_sensor(0x5001,0x4b);
+	write_cmos_sensor(0x5002,0x57);
+	write_cmos_sensor(0x5820,0xc5);
+	write_cmos_sensor(0x5bd0,0x01);
+	write_cmos_sensor(0x5c0e,0x11);
+	write_cmos_sensor(0x5c21,0x10);
+	write_cmos_sensor(0x5c22,0x10);
+	write_cmos_sensor(0x5c23,0x02);
+	write_cmos_sensor(0x5c24,0x0a);
+	write_cmos_sensor(0x5c25,0x06);
+	write_cmos_sensor(0x5c26,0x0e);
+	write_cmos_sensor(0x5c27,0x02);
+	write_cmos_sensor(0x5c28,0x02);
+	write_cmos_sensor(0x5c29,0x0a);
+	write_cmos_sensor(0x5c2a,0x0a);
+	write_cmos_sensor(0x5d08,0x10);
+	write_cmos_sensor(0x5d09,0x10);
+	write_cmos_sensor(0x5d0a,0x02);
+	write_cmos_sensor(0x5d0b,0x0a);
+	write_cmos_sensor(0x5d0c,0x06);
+	write_cmos_sensor(0x5d0d,0x0e);
+	write_cmos_sensor(0x5d0e,0x02);
+	write_cmos_sensor(0x5d0f,0x02);
+	write_cmos_sensor(0x5d10,0x0a);
+	write_cmos_sensor(0x5d11,0x0a);
+	write_cmos_sensor(0x3501,0x0f);
+	write_cmos_sensor(0x3502,0x48);
+	write_cmos_sensor(0x3508,0x01);
+	write_cmos_sensor(0x3509,0x00);
+}
+static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+                      MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+    LOG_INF("E\n");
+    spin_lock(&imgsensor_drv_lock);
+    imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
+    imgsensor.pclk = imgsensor_info.custom1.pclk;
+    //imgsensor.video_mode = KAL_FALSE;
+    imgsensor.line_length = imgsensor_info.custom1.linelength;
+    imgsensor.frame_length = imgsensor_info.custom1.framelength; 
+    imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
+    imgsensor.autoflicker_en = KAL_FALSE;
+    spin_unlock(&imgsensor_drv_lock);
+    custom1_setting();
+    return ERROR_NONE;
+}   /*  Custom1   */
+static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+                      MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+   LOG_INF("E\n");
+
+    spin_lock(&imgsensor_drv_lock);
+    imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM2;
+    imgsensor.pclk = imgsensor_info.custom2.pclk;
+    //imgsensor.video_mode = KAL_FALSE;
+    imgsensor.line_length = imgsensor_info.custom2.linelength;
+    imgsensor.frame_length = imgsensor_info.custom2.framelength; 
+    imgsensor.min_frame_length = imgsensor_info.custom2.framelength;
+    imgsensor.autoflicker_en = KAL_FALSE;
+    spin_unlock(&imgsensor_drv_lock);
+    custom2_setting();
+    return ERROR_NONE;
+}   /*  Custom2   */
 
 static void normal_video_setting(kal_uint16 currefps)
 {
@@ -1928,6 +2145,12 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 
 	sensor_resolution->SensorSlimVideoWidth = imgsensor_info.slim_video.grabwindow_width;
 	sensor_resolution->SensorSlimVideoHeight = imgsensor_info.slim_video.grabwindow_height;
+	
+	sensor_resolution->SensorCustom1Width  = imgsensor_info.custom1.grabwindow_width;
+	sensor_resolution->SensorCustom1Height = imgsensor_info.custom1.grabwindow_height;
+
+	sensor_resolution->SensorCustom2Width  = imgsensor_info.custom2.grabwindow_width;
+	sensor_resolution->SensorCustom2Height = imgsensor_info.custom2.grabwindow_height;
 	return ERROR_NONE;
 }				/*      get_resolution  */
 
@@ -2025,6 +2248,16 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
 		    imgsensor_info.slim_video.mipi_data_lp2hs_settle_dc;
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		sensor_info->SensorGrabStartX = imgsensor_info.custom1.startx;
+		sensor_info->SensorGrabStartY = imgsensor_info.custom1.starty;
+		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.custom1.mipi_data_lp2hs_settle_dc;
+	break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		sensor_info->SensorGrabStartX = imgsensor_info.custom2.startx;
+		sensor_info->SensorGrabStartY = imgsensor_info.custom2.starty;
+		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.custom1.mipi_data_lp2hs_settle_dc;
+	break;
 	default:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
 		sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
@@ -2062,6 +2295,12 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		slim_video(image_window, sensor_config_data);
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		Custom1(image_window, sensor_config_data); // Custom1
+	break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		Custom2(image_window, sensor_config_data); // Custom1
+	break;
 	default:
 		LOG_INF("Error ScenarioId setting");
 		preview(image_window, sensor_config_data);
@@ -2108,7 +2347,7 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 {
 	/* kal_int16 dummyLine; */
 	kal_uint32 frameHeight;
-
+	kal_uint32 frame_length;
 	LOG_INF("scenario_id = %d, framerate = %d\n", scenario_id, framerate);
 
 	if (framerate == 0)
@@ -2178,6 +2417,32 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		spin_unlock(&imgsensor_drv_lock);
 		set_dummy();
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		frame_length = imgsensor_info.custom1.pclk / framerate * 10 / imgsensor_info.custom1.linelength;
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.dummy_line = (frame_length > imgsensor_info.custom1.framelength) ? (frame_length - imgsensor_info.custom1.framelength) : 0;
+		if (imgsensor.dummy_line < 0)
+			imgsensor.dummy_line = 0;
+		imgsensor.frame_length = imgsensor_info.custom1.framelength + imgsensor.dummy_line;
+		imgsensor.min_frame_length = imgsensor.frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+		if(imgsensor.frame_length > imgsensor.shutter){
+					set_dummy();
+		}
+		break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+		frame_length = imgsensor_info.custom2.pclk / framerate * 10 / imgsensor_info.custom2.linelength;
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.dummy_line = (frame_length > imgsensor_info.custom2.framelength) ? (frame_length - imgsensor_info.custom2.framelength) : 0;
+			if (imgsensor.dummy_line < 0)
+				imgsensor.dummy_line = 0;
+		imgsensor.frame_length = imgsensor_info.custom2.framelength + imgsensor.dummy_line;
+		imgsensor.min_frame_length = imgsensor.frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+		if(imgsensor.frame_length > imgsensor.shutter){
+		set_dummy();
+		}
+		break;
 	default:		/* coding with  preview scenario by default */
 		frameHeight =
 		    imgsensor_info.pre.pclk / framerate * 10 / imgsensor_info.pre.linelength;
@@ -2217,6 +2482,12 @@ static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM s
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		*framerate = imgsensor_info.slim_video.max_framerate;
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+        *framerate = imgsensor_info.custom1.max_framerate;
+        break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+        *framerate = imgsensor_info.custom2.max_framerate;
+        break;
 	default:
 		break;
 	}
