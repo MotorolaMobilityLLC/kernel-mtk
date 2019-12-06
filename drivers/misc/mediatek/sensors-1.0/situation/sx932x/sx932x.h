@@ -17,6 +17,7 @@
 #endif
 
 //#define MULTILEVEL 1
+#define RFDEBUG
 /*
 *  I2C Registers
 */
@@ -161,9 +162,13 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	{
 		.reg = SX932x_IRQ_ENABLE_REG,	//0x05
 #ifdef MULTILEVEL
-		.val = 0x72,
+		.val = 0x64,
 #else
-		.val = 0x70,					// Enavle Close and Far -> enable compensation interrupt
+#ifdef RFDEBUG
+		.val = 0x68,					// Enavle Close and Far -> enable compensation interrupt
+#else
+		.val = 0x60,
+#endif
 #endif
 	},
 	{
@@ -181,7 +186,11 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	//--------General control
 	{
 		.reg = SX932x_CTRL0_REG,    //0x10
-		.val = 0x16,       // Scanperiod : 100ms(10110)
+#ifdef RFDEBUG
+		.val = 0x1a,       
+#else
+		.val = 0x16,	   // Scanperiod : 100ms(10110)
+#endif
 	},
 	{
 		.reg = SX932x_I2CADDR_REG,   //0x14
@@ -226,11 +235,7 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX932x_AFE_PH0_REG,   //0x28
-#ifdef MULTILEVEL
 		.val = 0x01,
-#else
-		.val = 0x04,       // CS2:HZ CS1:Input CS0 :HZ
-#endif
 	},
 	{
 		.reg = SX932x_AFE_PH1_REG,     //0x29
@@ -377,21 +382,16 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	//--------Sensor enable
 	{
 		.reg = SX932x_CTRL1_REG,    //0x11
-#ifdef MULTILEVEL
 		.val = 0x21,
-#else
-		.val = 0x24,       //enable PH2
-#endif
 	},
 };
 
 static struct _buttonInfo psmtcButtons[] = {
-#ifdef MULTILEVEL
 	{
                 .keycode = KEY_0,
                 .mask = SX932x_PROXSTAT_PH0_FLAG,
         },
-#else
+#if 0
 	{
 		.keycode = KEY_0,
 		.mask = SX932x_PROXSTAT_PH0_FLAG,

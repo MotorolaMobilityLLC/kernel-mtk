@@ -34,7 +34,7 @@
 #include <situation.h>
 
 #include "sx932x.h" 	/* main struct, interrupt,init,pointers */
-
+#include "../sar/sar_factory.h"
 /*****************************************************************************
  *** ontim gsensor hwinfo
  *****************************************************************************/
@@ -264,11 +264,9 @@ static int sx932x_global_variable_init(psx93XX_t this)
 {
 	this->irq_disabled = 0;
 	this->failStatusCode = 0;
-#ifdef MULTILEVEL
-	this->reg_in_dts = false;
-#else
-	this->reg_in_dts = true;
-#endif
+
+	this->reg_in_dts = false;/*false use .h and true use dts*/
+
 	return 0;
 }
 
@@ -317,8 +315,26 @@ static void read_rawData(psx93XX_t this)
 	s32 average;
 	s32 diff;
 	u16 offset;
+#ifdef RFDEBUG
+	u8 i = 0;
+	int32_t value[3] = {0};
+
+	read_register(this, SX932x_STAT0_REG, &i);
+                
+       	if ((i & 0x01) == 0x01) {
+               	value[0] = 1;
+      	} else {
+		value[0] = 0;
+	}
+	
+#endif
 	if(this){
-		for(csx =0; csx<4; csx++){
+#ifdef RFDEBUG
+		for(csx =0; csx<1; csx++)
+#else
+		for(csx =0; csx<4; csx++)
+#endif
+		{
 			write_register(this,SX932x_CPSRD,csx);//here to check the CS1, also can read other channel		
 			read_register(this,SX932x_USEMSB,&msb);
 			read_register(this,SX932x_USELSB,&lsb);
@@ -331,7 +347,10 @@ static void read_rawData(psx93XX_t this)
 			read_register(this,SX932x_DIFFMSB,&msb);
 			read_register(this,SX932x_DIFFLSB,&lsb);
 			diff = (s32)((msb << 8) | lsb);
-			
+#ifdef RFDEBUG
+                        value[1] = diff;
+                        sar_data_report(value);
+#endif		
 			read_register(this,SX932x_OFFSETMSB,&msb);
 			read_register(this,SX932x_OFFSETLSB,&lsb);
 			offset = (u16)((msb << 8) | lsb);
@@ -425,7 +444,7 @@ static int sx932x_initialize(psx93XX_t this)
 	if (this) {
 		/* prepare reset by disabling any irq handling */
 		this->irq_disabled = 1;
-		disable_irq(this->irq);
+		//disable_irq(this->irq);
 		/* perform a reset */
 		write_register(this,SX932x_SOFTRESET_REG,SX932x_SOFTRESET);
 		/* wait until the reset has finished by monitoring NIRQ */
@@ -764,6 +783,46 @@ static int sx932x_situation_get_data(int *probability, int *status)
 	return 0;
 }
 
+static int sar_factory_enable_sensor(bool enabledisable,
+                                         int64_t sample_periods_ms)
+{
+	SX932X_FUN();
+	return 0;
+}
+
+static int sar_factory_get_data(int32_t sensor_data[3])
+{
+	SX932X_FUN();
+	return 0;
+}
+
+static int sar_factory_enable_calibration(void)
+{
+	SX932X_FUN();
+	write_register(g_this,SX932x_CTRL1_REG,0x20);
+	msleep(10);
+	write_register(g_this,SX932x_CTRL1_REG,0x21);
+        return 0;
+}
+
+static int sar_factory_get_cali(int32_t data[3])
+{
+	return 0;
+}
+
+static struct sar_factory_fops sx932x_factory_fops = {
+        .enable_sensor = sar_factory_enable_sensor,
+        .get_data = sar_factory_get_data,
+        .enable_calibration = sar_factory_enable_calibration,
+        .get_cali = sar_factory_get_cali,
+};
+
+static struct sar_factory_public sx932x_factory_device = {
+        .gain = 1,
+        .sensitivity = 1,
+        .fops = &sx932x_factory_fops,
+};
+
 static int sx932x_situation_init(void)
 {
 	struct situation_control_path ctl = {0};
@@ -787,6 +846,12 @@ static int sx932x_situation_init(void)
 		SX932X_ERR("register situation data path err\n");
 		goto exit;
 	}
+
+	err = sar_factory_device_register(&sx932x_factory_device);
+        if (err) {
+                SX932X_ERR("sar_factory_device register failed\n");
+                goto exit;
+        }
 
 	return 0;
 
