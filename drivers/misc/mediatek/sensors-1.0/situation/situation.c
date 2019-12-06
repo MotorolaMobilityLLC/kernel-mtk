@@ -247,6 +247,7 @@ int sar_data_report(int32_t value[3])
 		__pm_wakeup_event(&cxt->ws[index], 250);
 	return err;
 }
+EXPORT_SYMBOL_GPL(sar_data_report);
 
 int situation_notify(int handle)
 {

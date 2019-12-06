@@ -133,6 +133,15 @@ static void sensorlist_get_deviceinfo(struct work_struct *work)
 		memset(&devinfo, 0, sizeof(struct sensorInfo_t));
 		err = sensor_set_cmd_to_hub(sensor,
 			CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+#ifdef CONFIG_MTK_SX932x
+		if(sensor == ID_SAR)
+		{
+			spin_lock(&sensorlist_info_lock);
+                	strlcpy(sensorlist_info[handle].name,"sx932x",6);
+                	spin_unlock(&sensorlist_info_lock);
+			continue;
+		}
+#endif
 		if (err < 0) {
 			pr_err("sensor(%d) not register\n", sensor);
 			continue;
