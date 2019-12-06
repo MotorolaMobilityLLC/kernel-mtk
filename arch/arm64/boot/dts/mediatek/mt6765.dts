@@ -671,7 +671,13 @@ firmware_class.path=/vendor/firmware";
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
-
+	fingerprint_fpsensor: fingerprint_fpsensor {
+        compatible = "mediatek,fpsensor_pinctrl";
+		//interrupt-parent = <&gic>;
+		//interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_LOW>;
+		debounce = <2 0>;
+	};
 	mt6357_gauge {
 		compatible = "mediatek,mt6357_gauge";
 		gauge_name = "gauge";
@@ -2165,6 +2171,13 @@ firmware_class.path=/vendor/firmware";
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	gpio_boardid:gpio_boardid {
+			compatible = "gpio,boardid";
+			gpio,boardid0 = <&pio 163 0>;
+			gpio,boardid1 = <&pio 164 0>;
+			gpio,boardid2 = <&pio 165 0>;
+			gpio,boardid3 = <&pio 166 0>;
+		};
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-rst = <172>;
@@ -2728,7 +2741,9 @@ firmware_class.path=/vendor/firmware";
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
-
+	flashlights_aw3643: flashlights_aw3643 {
+		compatible = "mediatek,flashlights_aw3643";
+	};
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
 		decouple = <0>;
@@ -2792,8 +2807,9 @@ firmware_class.path=/vendor/firmware";
 		enable_pe_2;
 		enable_pe_3;
 		enable_pe_4;
-		enable_type_c;
-		power_path_support;
+		/*disable usb type C*/
+		/*enable_type_c;
+		power_path_support;*/
 		enable_dynamic_mivr;
 		disable_pd_dual;
 
