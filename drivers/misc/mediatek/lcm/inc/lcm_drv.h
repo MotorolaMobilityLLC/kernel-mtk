@@ -865,6 +865,7 @@ struct LCM_UTIL_FUNCS {
 	int (*set_gpio_dir)(unsigned int pin, unsigned int dir);
 	int (*set_gpio_pull_enable)(unsigned int pin, unsigned char pull_en);
 	long (*set_gpio_lcd_enp_bias)(unsigned int value);
+	long (*set_gpio_lcd_enn_bias)(unsigned int value);
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata,
 			unsigned int queue_size, unsigned char force_update);
 	void (*dsi_set_cmdq_V22)(void *cmdq, unsigned int cmd,

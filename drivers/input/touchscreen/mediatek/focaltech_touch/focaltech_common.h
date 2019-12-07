@@ -2,7 +2,7 @@
  *
  * FocalTech fts TouchScreen driver.
  *
- * Copyright (c) 2010-2017, Focaltech Ltd. All rights reserved.
+ * Copyright (c) 2012-2019, Focaltech Ltd. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -36,14 +36,14 @@
 /*****************************************************************************
 * Macro definitions using #define
 *****************************************************************************/
-#define FTS_DRIVER_VERSION                  "Focaltech V2.0 20170919"
+#define FTS_DRIVER_VERSION                  "Focaltech V3.1 20190420"
 
 #define BYTE_OFF_0(x)           (u8)((x) & 0xFF)
 #define BYTE_OFF_8(x)           (u8)((x >> 8) & 0xFF)
 #define BYTE_OFF_16(x)          (u8)((x >> 16) & 0xFF)
 #define BYTE_OFF_24(x)          (u8)((x >> 24) & 0xFF)
 #define FLAGBIT(x)              (0x00000001 << (x))
-#define FLAGBITS(x, y)          ((0xFFFFFFFF >> (32 - (y) - 1)) << (x))
+#define FLAGBITS(x, y)          ((0xFFFFFFFF >> (32 - (y) - 1)) & (0xFFFFFFFF << (x)))
 
 #define FLAG_ICSERIALS_LEN      8
 #define FLAG_HID_BIT            10
@@ -54,9 +54,8 @@
 #define FTS_CHIP_IDC            ((FTS_CHIP_TYPE & FLAGBIT(FLAG_IDC_BIT)) == FLAGBIT(FLAG_IDC_BIT))
 #define FTS_HID_SUPPORTTED      ((FTS_CHIP_TYPE & FLAGBIT(FLAG_HID_BIT)) == FLAGBIT(FLAG_HID_BIT))
 
-#define FTS_CHIP_TYPE_MAPPING {{0x02,0x54, 0x22, 0x54, 0x22, 0x00, 0x00, 0x54, 0x2C}}
+#define FTS_CHIP_TYPE_MAPPING {{0x11, 0x86, 0x22, 0x86, 0x22, 0x86, 0xA2, 0x00, 0x00}}
 
-#define I2C_BUFFER_LENGTH_MAXINUM           256
 #define FILE_NAME_LENGTH                    128
 #define ENABLE                              1
 #define DISABLE                             0
@@ -64,7 +63,10 @@
 #define INVALID                             0
 #define FTS_CMD_START1                      0x55
 #define FTS_CMD_START2                      0xAA
+#define FTS_CMD_START_DELAY                 10
 #define FTS_CMD_READ_ID                     0x90
+#define FTS_CMD_READ_ID_LEN                 4
+#define FTS_CMD_READ_ID_LEN_INCELL          1
 /*register address*/
 #define FTS_REG_INT_CNT                     0x8F
 #define FTS_REG_FLOW_WORK_CNT               0x91
@@ -80,6 +82,7 @@
 #define FTS_REG_VENDOR_ID                   0xA8
 #define FTS_REG_LCD_BUSY_NUM                0xAB
 #define FTS_REG_FACE_DEC_MODE_EN            0xB0
+#define FTS_REG_FACTORY_MODE_DETACH_FLAG    0xB4
 #define FTS_REG_FACE_DEC_MODE_STATUS        0x01
 #define FTS_REG_IDE_PARA_VER_ID             0xB5
 #define FTS_REG_IDE_PARA_STATUS             0xB6
@@ -91,6 +94,8 @@
 #define FTS_REG_MODULE_ID                   0xE3
 #define FTS_REG_LIC_VER                     0xE4
 #define FTS_REG_ESD_SATURATE                0xED
+#define FTS_REG_ESD_DETECT                  0xC8
+#define FTS_REG_HOST_REPOWERED              0xC9
 
 #define FTS_SYSFS_ECHO_ON(buf)      (buf[0] == '1')
 #define FTS_SYSFS_ECHO_OFF(buf)     (buf[0] == '0')
@@ -135,22 +140,29 @@ struct ts_ic_info {
 /*****************************************************************************
 * DEBUG function define here
 *****************************************************************************/
-#if FTS_DEBUG_EN///1
-#define FTS_DEBUG_LEVEL     1
-#if (FTS_DEBUG_LEVEL == 2)////1
-#define FTS_DEBUG(fmt, args...) printk("[FTS][%s]"fmt"\n", __func__, ##args)
-#else
-#define FTS_DEBUG(fmt, args...) printk("[FTS]"fmt"\n", ##args)
-#endif
-#define FTS_FUNC_ENTER() printk("[FTS]%s: Enter\n", __func__)
-#define FTS_FUNC_EXIT()  printk("[FTS]%s: Exit(%d)\n", __func__, __LINE__)
+#if FTS_DEBUG_EN
+#define FTS_DEBUG(fmt, args...) do { \
+    printk("[FTS_TS]%s:"fmt"\n", __func__, ##args); \
+} while (0)
+
+#define FTS_FUNC_ENTER() do { \
+    printk("[FTS_TS]%s: Enter\n", __func__); \
+} while (0)
+
+#define FTS_FUNC_EXIT() do { \
+    printk("[FTS_TS]%s: Exit(%d)\n", __func__, __LINE__); \
+} while (0)
 #else /* #if FTS_DEBUG_EN*/
 #define FTS_DEBUG(fmt, args...)
 #define FTS_FUNC_ENTER()
 #define FTS_FUNC_EXIT()
 #endif
 
-#define FTS_INFO(fmt, args...) printk(KERN_INFO "[FTS][Info]"fmt"\n", ##args)
-#define FTS_ERROR(fmt, args...) printk(KERN_ERR "[FTS][Error]"fmt"\n", ##args)
+#define FTS_INFO(fmt, args...) do { \
+    printk(KERN_INFO "[FTS_TS/I]%s:"fmt"\n", __func__, ##args); \
+} while (0)
 
+#define FTS_ERROR(fmt, args...) do { \
+    printk(KERN_ERR "[FTS_TS/E]%s:"fmt"\n", __func__, ##args); \
+} while (0)
 #endif /* __LINUX_FOCALTECH_COMMON_H__ */
