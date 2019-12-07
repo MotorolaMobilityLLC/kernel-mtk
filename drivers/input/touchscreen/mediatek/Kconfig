@@ -43,7 +43,7 @@ config TOUCHSCREEN_MTK_SOLOMON
 
 source "drivers/input/touchscreen/mediatek/SOLOMON/Kconfig"
 
-config TOUCHSCREEN_MTK_FOCALTECH_TS
+config TOUCHSCREEN_FTS
 	bool "FOCALTECH_TS for Mediatek package"
 	default n
 	help
