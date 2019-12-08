@@ -2402,6 +2402,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				(void *)&imgsensor_winsize_info[4],
 				sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 		break;
+        case MSDK_SCENARIO_ID_CUSTOM1:
+            memcpy((void *)wininfo,
+            (void *)&imgsensor_winsize_info[1],
+            sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+        break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			memcpy((void *)wininfo,
