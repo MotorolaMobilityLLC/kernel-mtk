@@ -2771,6 +2771,10 @@ firmware_class.path=/vendor/firmware";
 		clock-names = "CCU_CLK_CAM_CCU";
 	};
 
+	led_simple: led_simple {
+		compatible = "leds-mt65xx";
+	};
+
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 	};
