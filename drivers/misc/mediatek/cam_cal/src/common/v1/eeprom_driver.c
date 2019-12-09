@@ -804,6 +804,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_blackjack_jsl_gc2375h_path  = "/data/vendor/camera_dump/blackjack_jsl_gc2375h.data";
     const char * str_gc5035_path  = "/data/vendor/camera_dump/seansons_gc5035.data";
     const char * str_hi846_path  = "/data/vendor/camera_dump/blackjack_txd_hi846.data";
+    const char * str_mt9d015_path  = "/data/vendor/camera_dump/blackjack_sea_mt9d015.data";
     const char * str_dump_path = NULL;
     
 	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
@@ -921,6 +922,14 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             deviceid = 0x10;
             break;
         }
+        case BLACKJACK_SEA_MT9D015_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0773;
+            str_dump_path = str_mt9d015_path;
+            deviceid = 0x10;
+            break;
+        }
         case BLACKJACK_TXD_HI846_SENSOR_ID:
         {
             if((p_buf == NULL)|| (Length == 0))
@@ -947,9 +956,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     
     
     if((sensorid == OV13855_SENSOR_ID) || (sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||
-		(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) ||
-       (sensorid == AR1337_SENSOR_ID) || (sensorid == S5K3L6_SENSOR_ID) ||
-	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) ||
+		(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == AR1337_SENSOR_ID) || (sensorid == S5K3L6_SENSOR_ID) ||
+	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
 	(sensorid == GC8034_SENSOR_ID))
    {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
