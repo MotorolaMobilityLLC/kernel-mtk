@@ -317,50 +317,59 @@ int gauge_get_nag_vbat(void)
 /* ============================================================ */
 /* custom setting */
 /* ============================================================ */
+static int battery_type_name = 0;
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+void fgauge_get_profile_id(void)
+{
+	if(battery_type_name != 0 && battery_type_name <= battery_total_number) {
+		gm.battery_id = battery_type_name - 1;
+		printk("ontim battery_id = %d\n",gm.battery_id);
+	} else {
+		gm.battery_id = 0;
+	}
+	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+	printk(KERN_ERR "[%s]Battery id (%d)\n",__func__,gm.battery_id);
+}
+#else
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
 extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);
-static int battery_type_name = 0;
 void fgauge_get_profile_id(void)
 {
 	int id_volt = 0;
 	int id = 0;
 	int ret = 0;
 
-	if(battery_type_name != 0 && battery_type_name <= battery_total_number) {
-             gm.battery_id = battery_type_name - 1;
-             printk("ontim battery_id = %d\n",gm.battery_id);
-	} else {
-		ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
-		if (ret != 0)
-			printk(KERN_ERR "[%s]id_volt read fail BATTERY_ID_CHANNEL_NUM=%d\n", __func__,BATTERY_ID_CHANNEL_NUM);
-		else
-			printk(KERN_ERR "[%s]id_volt = %d BATTERY_ID_CHANNEL_NUM=%d\n", __func__, id_volt,BATTERY_ID_CHANNEL_NUM);
+	ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
+	if (ret != 0)
+		printk(KERN_ERR "[%s]id_volt read fail BATTERY_ID_CHANNEL_NUM=%d\n", __func__,BATTERY_ID_CHANNEL_NUM);
+	else
+		printk(KERN_ERR "[%s]id_volt = %d BATTERY_ID_CHANNEL_NUM=%d\n", __func__, id_volt,BATTERY_ID_CHANNEL_NUM);
 
-		if ((sizeof(g_battery_id_voltage) /
-			sizeof(int)) != TOTAL_BATTERY_NUMBER) {
-			printk(KERN_ERR "[%s]error! voltage range incorrect!\n",
-				__func__);
-			return;
-		}
+	if ((sizeof(g_battery_id_voltage) /
+		sizeof(int)) != TOTAL_BATTERY_NUMBER) {
+		printk(KERN_ERR "[%s]error! voltage range incorrect!\n",
+			__func__);
+		return;
+	}
 
-		for (id = 0; id < TOTAL_BATTERY_NUMBER; id++) {
-			printk(KERN_ERR "[fgauge_get_profile_idg_battery_id_voltage[%d]=%d\n",id, g_battery_id_voltage[id]);
+	for (id = 0; id < TOTAL_BATTERY_NUMBER; id++) {
+		printk(KERN_ERR "[fgauge_get_profile_idg_battery_id_voltage[%d]=%d\n",id, g_battery_id_voltage[id]);
 		
-			if (id_volt < g_battery_id_voltage[id]) {
-				gm.battery_id = id;
-				break;
-			} else if (g_battery_id_voltage[id] == -1) {
-				gm.battery_id = id - 1;
-				break;
-			}
-		}
-	
-		if(id >(battery_total_number-1))
-		{
-			printk(KERN_ERR "[fgauge_get_profile_id]Battery id (%d) check error;\n", id);
+		if (id_volt < g_battery_id_voltage[id]) {
+			gm.battery_id = id;
+			break;
 
-			gm.battery_id = 0;
+		} else if (g_battery_id_voltage[id] == -1) {
+			gm.battery_id = id - 1;
+			break;
 		}
+	}
+	
+	if(id >(battery_total_number-1))
+	{
+		printk(KERN_ERR "[fgauge_get_profile_id]Battery id (%d) check error;\n", id);
+
+		gm.battery_id = 0;
 	}
 	
 	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
@@ -388,7 +397,7 @@ void fgauge_get_profile_id(void)
 		get_ec()->debug_bat_id_value);
 }
 #endif
-
+#endif
 void fg_custom_init_from_header(struct platform_device *dev)
 {
 	int i, j;
