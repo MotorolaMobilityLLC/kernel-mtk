@@ -17,7 +17,7 @@
 #endif
 
 //#define MULTILEVEL 1
-#define RFDEBUG
+//#define RFDEBUG
 /*
 *  I2C Registers
 */
