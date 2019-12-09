@@ -73,9 +73,9 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
+		led_mode = <4>;
 		data = <1>;
-		pwm_config = <0 3 0 0 0>;
+		pwm_config = <0 2 0 0 0>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
@@ -110,16 +110,39 @@
 	};
 };
 /* TOUCH start */
+&i2c0 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        clock-frequency = <400000>;
+        mediatek,use-open-drain;
+        focaltech_touch_mtk:focaltech_touch@38 {
+                compatible = "mediatek,focaltech_touch";
+                reg = <0x38>;
+                status = "okay";
+        };
+        ilitek_touch_mtk:ilitek_touch@41 {
+                compatible = "mediatek,ilitek_touch";
+                reg = <0x41>;
+                status = "okay";
+        };
+        chipone_tddi_mtk:chipone_touch@48 {
+                compatible = "mediatek,chipone_tddi";
+                reg = <0x48>;
+                status = "okay";
+        };
+
+};
+
 &touch {
-	tpd-resolution = <1080 1920>;
+	tpd-resolution = <720 1560>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
 	tpd-key-dim-local = <90 883 100 40 230
 				 883 100 40 370 883 100 40 0 0 0 0>;
-	tpd-max-touch-num = <5>;
+	tpd-max-touch-num = <10>;
 	tpd-filter-enable = <1>;
-	tpd-filter-pixel-density = <146>;
+	tpd-filter-pixel-density = <106>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
 	pinctrl-names = "default", "state_eint_as_int", "state_eint_output0",
@@ -173,6 +196,94 @@
 };
 /* TOUCH end */
 
+&i2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+
+	lcd_i2c_bias_enn_enp@3e{
+		compatible = "mediatek,I2C_LCD_BIAS";
+		reg = <0x3e>;
+		status = "okay";
+	};
+};
+
+/* DISPSYS GPIO standardization */
+&pio {
+	mtkfb_pins_mode_te_gpio: mode_te_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_mode_te_te: mode_te_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+};
+
+&mtkfb {
+	pinctrl-names = "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
+		"lcm_rst_out1_gpio","lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio", "lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
+	pinctrl-0 = <&mtkfb_pins_mode_te_gpio>;
+	pinctrl-1 = <&mtkfb_pins_mode_te_te>;
+	pinctrl-2 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn1>;
+	status = "okay";
+};
+/* DISPSYS GPIO standardization end */
 /* CONSYS GPIO standardization */
 &pio {
 	consys_pins_default: consys_default {
