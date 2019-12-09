@@ -2,7 +2,7 @@
  *
  * FocalTech TouchScreen driver.
  *
- * Copyright (c) 2010-2017, FocalTech Systems, Ltd., all rights reserved.
+ * Copyright (c) 2012-2019, FocalTech Systems, Ltd., all rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -15,17 +15,18 @@
  *
  */
 /************************************************************************
- * File Name: focaltech_config.h
- *
- *    Author: Focaltech Driver Team
- *
- *   Created: 2016-08-08
- *
- *  Abstract: global configurations
- *
- *   Version: v1.0
- *
- ************************************************************************/
+*
+* File Name: focaltech_config.h
+*
+* Author: Focaltech Driver Team
+*
+* Created: 2016-08-08
+*
+* Abstract: global configurations
+*
+* Version: v1.0
+*
+************************************************************************/
 #ifndef _LINUX_FOCLATECH_CONFIG_H_
 #define _LINUX_FOCLATECH_CONFIG_H_
 
@@ -35,13 +36,23 @@
 #define _FT8716             0x87160805
 #define _FT8736             0x87360806
 #define _FT8006M            0x80060807
-#define _FT8201             0x82010807
 #define _FT7250             0x72500807
-#define _FT8606             0x86060808
 #define _FT8607             0x86070809
-#define _FTE716             0xE716080A
 #define _FT8006U            0x8006D80B
+#define _FT8006S            0x8006A80B
 #define _FT8613             0x8613080C
+#define _FT8719             0x8719080D
+#define _FT8739             0x8739080E
+#define _FT8615             0x8615080F
+#define _FT8201             0x82010810
+#define _FT8006P            0x86220811
+#define _FT7251             0x72510812
+#define _FT7252             0x72520813
+#define _FT8613S            0x8613C814
+#define _FT8756             0x87560815
+#define _FT8302             0x83020816
+#define _FT8009             0x80090817
+#define _FT8656             0x86560818
 
 #define _FT5416             0x54160402
 #define _FT5426             0x54260402
@@ -82,15 +93,39 @@
 
 #define _FT3267             0x32670004
 #define _FT3367             0x33670004
-#define _FT5422U            0x5422D482
-#define _FT3327DQQ_001      0x3327D482
+
+#define _FT3327DQQ_XXX      0x3327D482
+#define _FT5446DQS_XXX      0x5446D482
+
+#define _FT3518             0x35180481
+#define _FT3558             0x35580481
+#define _FT3528             0x35280481
+#define _FT5536             0x55360481
+
+#define _FT5446U            0x5446D083
+#define _FT5456U            0x5456D083
+#define _FT3417U            0x3417D083
+#define _FT5426U            0x5426D083
+#define _FT3428             0x34280083
+#define _FT3437U            0x3437D083
+
+#define _FT7302             0x73020084
+#define _FT7202             0x72020084
+#define _FT3308             0x33080084
+
+#define _FT6346U            0x6346D085
+#define _FT6346G            0x6346A085
+#define _FT3067             0x30670085
+#define _FT3068             0x30680085
+#define _FT3168             0x31680085
+#define _FT3268             0x32680085
 
 /*************************************************/
 
 /*
  * choose your ic chip type of focaltech
  */
-#define FTS_CHIP_TYPE   _FT5446
+#define FTS_CHIP_TYPE   _FT8006P
 
 /******************* Enables *********************/
 /*********** 1 to enable, 0 to disable ***********/
@@ -99,7 +134,7 @@
  * show debug log info
  * enable it for debug, disable it for release
  */
-#define FTS_DEBUG_EN 0
+#define FTS_DEBUG_EN                            1
 
 /*
  * Linux MultiTouch Protocol
@@ -110,42 +145,26 @@
 /*
  * Report Pressure in multitouch
  * 1:enable(default),0:disable
- */
+*/
 #define FTS_REPORT_PRESSURE_EN                  1
 
 /*
  * Gesture function enable
  * default: disable
  */
-#define FTS_GESTURE_EN                          0
+#define FTS_GESTURE_EN                          1
 
 /*
  * ESD check & protection
  * default: disable
  */
-#define FTS_ESDCHECK_EN                         0
+#define FTS_ESDCHECK_EN                         1
 
 /*
  * Production test enable
  * 1: enable, 0:disable(default)
  */
-#define FTS_TEST_EN                             0//modify by cassy from 1 to 0
-
-/*
- * Glove mode enable
- * 1: enable, 0:disable(default)
- */
-#define FTS_GLOVE_EN                            0
-/*
- * cover enable
- * 1: enable, 0:disable(default)
- */
-#define FTS_COVER_EN                            0
-/*
- * Charger enable
- * 1: enable, 0:disable(default)
- */
-#define FTS_CHARGER_EN                          0
+#define FTS_TEST_EN                             1
 
 /*
  * Proximity sensor
@@ -163,16 +182,15 @@
  * enable it when customer need control TP power
  * default: disable
  */
-#define FTS_POWER_SOURCE_CUST_EN                0//modify by cassy from 0 to 1
-
+#define FTS_POWER_SOURCE_CUST_EN                0
 
 /****************************************************/
 
 /********************** Upgrade ****************************/
 /*
- * auto upgrade, please keep enable
+ * auto upgrade
  */
-#define FTS_AUTO_UPGRADE_EN                     0
+#define FTS_AUTO_UPGRADE_EN                     1
 
 /*
  * auto upgrade for lcd cfg
@@ -180,41 +198,51 @@
 #define FTS_AUTO_LIC_UPGRADE_EN                 0
 
 /*
- * Check vendor_id number
- * 0:No check vendor_id (default)
- * 1/2/3: Check vendor_id for vendor compatibility
+ * Numbers of modules support
  */
-#define FTS_GET_VENDOR_ID_NUM                   0
+#define FTS_GET_MODULE_NUM                      1
 
 /*
- * vendor_id(s) for vendor(s) to be compatible with.
- * a confirmation of vendor_id(s) is recommended.
- * FTS_VENDOR_ID = PANEL_ID << 8 + VENDOR_ID
- * FTS_GET_VENDOR_ID_NUM == 0/1, no check vendor id, you may ignore them
- * FTS_GET_VENDOR_ID_NUM > 1, compatible with FTS_VENDOR_ID
- * FTS_GET_VENDOR_ID_NUM >= 2, compatible with FTS_VENDOR_ID2
- * FTS_GET_VENDOR_ID_NUM >= 3, compatible with FTS_VENDOR_ID3
+ * module_id: mean vendor_id generally, also maybe gpio or lcm_id...
+ * If means vendor_id, the FTS_MODULE_ID = PANEL_ID << 8 + VENDOR_ID
+ * FTS_GET_MODULE_NUM == 0/1, no check module id, you may ignore them
+ * FTS_GET_MODULE_NUM >= 2, compatible with FTS_MODULE2_ID
+ * FTS_GET_MODULE_NUM >= 3, compatible with FTS_MODULE3_ID
  */
-#define FTS_VENDOR_ID                          0x0000
-#define FTS_VENDOR_ID2                         0x0000
-#define FTS_VENDOR_ID3                         0x0000
+#define FTS_MODULE_ID                          0x8282
+#define FTS_MODULE2_ID                         0x0000
+#define FTS_MODULE3_ID                         0x0000
+
+/*
+ * Need set the following when get firmware via firmware_request()
+ * For example: if module'vendor is tianma,
+ * #define FTS_MODULE_NAME                        "tianma"
+ * then file_name will be "focaltech_ts_fw_tianma"
+ * You should rename fw to "focaltech_ts_fw_tianma", and push it into
+ * etc/firmware or by customers
+ */
+#define FTS_MODULE_NAME                        "focal_fw_holitech"
+#define FTS_MODULE2_NAME                       ""
+#define FTS_MODULE3_NAME                       ""
 
 /*
  * FW.i file for auto upgrade, you must replace it with your own
  * define your own fw_file, the sample one to be replaced is invalid
- * NOTE: if FTS_GET_VENDOR_ID_NUM > 1,
- * it's the fw corresponding with FTS_VENDOR_ID
+ * NOTE: if FTS_GET_MODULE_NUM > 1, it's the fw corresponding with FTS_VENDOR_ID
  */
+#define FTS_UPGRADE_FW_FILE                      "include/firmware/blackjack_ft8006p_v14_all.i"
 
 /*
- * if FTS_GET_VENDOR_ID_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
+ * if FTS_GET_MODULE_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
  * define your own fw_file, the sample one is invalid
  */
+#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fw_sample.i"
 
 /*
- * if FTS_GET_VENDOR_ID_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
+ * if FTS_GET_MODULE_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
  * define your own fw_file, the sample one is invalid
  */
+#define FTS_UPGRADE_FW3_FILE                     "include/firmware/fw_sample.i"
 
 /*********************************************************/
 

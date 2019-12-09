@@ -3576,14 +3576,70 @@ unsigned int DSI_dcs_read_lcm_reg_v3_wrapper_DSIDUAL(char *out,
 	return DSI_dcs_read_lcm_reg_v3(DISP_MODULE_DSIDUAL, NULL,
 			out, cmds, len);
 }
+static DEFINE_MUTEX(lcm_bias_mutex);
 
 /* remove later */
+#if 0
 long lcd_enp_bias_setting(unsigned int value)
 {
 	long ret = 0;
 
 	return ret;
 }
+#endif
+long lcd_enp_bias_setting(unsigned int value)
+{
+	static long user_num_enp = 1;
+	long ret = 0;
+	DISPERR("lcd set enp value %d\n",value);
+
+	mutex_lock(&lcm_bias_mutex);
+	if (value) {
+		user_num_enp ++;
+		DISPCHECK("%s ontim enp user_num_enp on = %ld\n",
+				__func__, user_num_enp);
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
+	} else {
+		user_num_enp --;
+		DISPCHECK("%s ontim enp user_num_enp off = %ld\n",
+				__func__, user_num_enp);
+		if(user_num_enp <= 0) {
+			DISPCHECK(KERN_ERR "%s ontim enp off\n", __func__);
+			ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP0);
+			user_num_enp = 0;
+		}
+	}
+	mutex_unlock(&lcm_bias_mutex);
+	return ret;
+}
+
+long lcd_enn_bias_setting(unsigned int value)
+{
+	static long user_num_enn = 1;
+	long ret = 0;
+	DISPERR("lcd set enn value %d\n",value);
+
+	mutex_lock(&lcm_bias_mutex);
+	if (value) {
+		user_num_enn ++;
+		DISPCHECK("%s ontim enn user_num_enn on = %ld\n",
+				__func__, user_num_enn);
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
+	} else {
+		user_num_enn --;
+		DISPCHECK(KERN_ERR "%s ontim enn user_num_enn off = %ld\n",
+				__func__, user_num_enn);
+		if(user_num_enn <= 0) {
+			DISPCHECK("%s ontim enn off\n", __func__);
+			ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN0);
+			user_num_enn = 0;
+		}
+	}
+	mutex_unlock(&lcm_bias_mutex);
+	return ret;
+}
+//-add by mjh200811
+
 
 int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 	struct LCM_DRIVER *lcm_drv)
@@ -3716,6 +3772,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 		(int (*)(unsigned int, unsigned char))mt_set_gpio_pull_enable;
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+	utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
+
 #endif
 #endif
 
