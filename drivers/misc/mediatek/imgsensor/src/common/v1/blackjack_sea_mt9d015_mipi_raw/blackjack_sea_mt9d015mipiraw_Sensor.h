@@ -206,4 +206,6 @@ extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData,
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
 					u16 transfer_length, u16 timing);
 
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
+
 #endif				/* BLACKJACK_SEA_MT9D015MIPI_SENSOR_H */
