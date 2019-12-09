@@ -37,14 +37,14 @@
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -349,6 +349,32 @@
 	};
 };
 /* accdet end */
+
+&led_simple {
+	pinctrl-names = "default", "red_led_output0", "red_led_output1";
+	pinctrl-0 = <&red_led_default>;
+	pinctrl-1 = <&red_led_pull_down>;
+	pinctrl-2 = <&red_led_pull_up>;
+	status = "okay";
+};
+&pio {
+	red_led_default: led_default {
+				 };
+	red_led_pull_down: led_output0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	red_led_pull_up: led_output1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
 
 /* FINGERPRINT start */
 &spi0 {
