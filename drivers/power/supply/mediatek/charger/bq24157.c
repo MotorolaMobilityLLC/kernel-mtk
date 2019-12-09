@@ -995,7 +995,7 @@ static int bq24157_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	bq24157_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
 	bq24157_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
-	bq24157_reg_config_interface(0x05, 0x03);
+	bq24157_reg_config_interface(0x05, 0x83);
 
 	bq24157_reg_config_interface(0x04, 0x02);	
 
