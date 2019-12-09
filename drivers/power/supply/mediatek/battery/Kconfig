@@ -35,3 +35,9 @@ config MTK_ADDITIONAL_BATTERY_TABLE
 	  Table number is five.
 	  Set No to disable the fifth battery table
 	  Table number is four.
+config ONTIM_GET_BATTERY_ID_NV
+	bool "Enable get battery id"
+	default n
+	help
+	  Set Yes to enable the get battery id nv
+	  Set No to disable the get battery id nv
