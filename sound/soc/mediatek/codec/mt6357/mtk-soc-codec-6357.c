@@ -4440,7 +4440,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 				[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* phone mic */
 				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0021, 0xffff);
+				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0041, 0xffff);
 			} else if (mCodec_data->mAudio_Ana_Mux
 					[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
