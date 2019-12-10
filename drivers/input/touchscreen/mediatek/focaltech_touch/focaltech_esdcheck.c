@@ -43,7 +43,7 @@
 /*****************************************************************************
 * Private constant and macro definitions using #define
 *****************************************************************************/
-#define ESDCHECK_WAIT_TIME              1000    /* ms */
+#define ESDCHECK_WAIT_TIME              3000    /* ms */
 #define LCD_ESD_PATCH                   1
 
 /*****************************************************************************
@@ -89,7 +89,7 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
     static int lcd_reseting=0;
     static int tp_reseting=0;
 
-    FTS_DEBUG("[ESD]Check LCD ESD");
+    FTS_ERROR("[ESD]Check LCD ESD");
     if ((tp_need_recovery == 1) && (lcd_need_reset == 0)) {
         tp_need_recovery = 0;
         /* LCD reset, need recover TP state */
@@ -111,7 +111,7 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
 
     if (tp_reseting==1) {
         /* TP reseted, recover TP state */
-        ret = fts_read_reg(FTS_REG_HOST_REPOWERED, &val);;
+        ret = fts_read_reg(FTS_REG_HOST_REPOWERED, &val);
         if (ret < 0) {
             FTS_ERROR("[ESD]: Read ESD 0xC9 failed, ret=%d!", ret);
         return -EIO;
@@ -314,11 +314,12 @@ static int esdcheck_algorithm(struct fts_ts_data *ts_data)
 
 static void esdcheck_func(struct work_struct *work)
 {
-    u8 val = 0;
+    //u8 val = 0;
     struct fts_ts_data *ts_data = container_of(work,
                                   struct fts_ts_data, esdcheck_work.work);
 
     if (ENABLE == fts_esdcheck_data.mode) {
+        /*
         if (ts_data->ic_info.is_incell) {
             fts_read_reg(FTS_REG_ESDCHECK_DISABLE, &val);
             if (0xA5 == val) {
@@ -326,6 +327,7 @@ static void esdcheck_func(struct work_struct *work)
                 return;
             }
         }
+        */
         esdcheck_algorithm(ts_data);
         queue_delayed_work(ts_data->ts_workqueue, &ts_data->esdcheck_work,
                            msecs_to_jiffies(ESDCHECK_WAIT_TIME));
