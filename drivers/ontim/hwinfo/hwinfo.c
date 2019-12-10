@@ -15,8 +15,7 @@
 
 #include <linux/fs.h>
 #include <asm/system_misc.h>
-#include <mt-plat/mtk_boot_common.h>
-
+#include "../../misc/mediatek/include/mt-plat/mtk_boot_common.h"
 
 //#include <linux/qpnp/qpnp-adc.h>
 //#include "board_id_adc.h"

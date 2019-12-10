@@ -546,4 +546,7 @@ config MTK_DM_VERITY_OFF
 	bool "Disable dm-verity"
 	default n
 
+config ONTIM_HWINFO_SUPPORT
+	bool "add /sys/hwinfo"
+
 endmenu    # Misc
