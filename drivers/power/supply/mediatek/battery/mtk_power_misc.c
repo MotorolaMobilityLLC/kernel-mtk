@@ -491,7 +491,7 @@ int mtk_power_misc_psy_event(
 				bm_err(
 					"battery temperature >= %d,shutdown",
 					tmp);
-				kernel_power_off();
+				//kernel_power_off();
 			}
 		}
 	}
