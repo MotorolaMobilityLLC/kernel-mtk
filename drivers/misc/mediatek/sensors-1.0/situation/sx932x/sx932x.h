@@ -16,7 +16,7 @@
 #include <linux/suspend.h>
 #endif
 
-//#define MULTILEVEL 1
+#define MULTILEVEL 1
 //#define RFDEBUG
 /*
 *  I2C Registers
@@ -284,7 +284,7 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX932x_PROX_CTRL6_REG,  //0x36
-		.val = 0x1B,       // Prox Theshold(ph0/1) : 200
+		.val = 0x25,       // Prox Theshold(ph0/1) : 200
 	},
 	{
 		.reg = SX932x_PROX_CTRL7_REG,  //0x37
