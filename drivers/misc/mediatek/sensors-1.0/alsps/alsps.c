@@ -650,7 +650,7 @@ static int ps_enable_and_batch(void)
 		}
 #endif
 		/* turn off the ps_power */
-		pinctrl_select_state(pinctrl, pins_plv3vdisable);
+		//pinctrl_select_state(pinctrl, pins_plv3vdisable);
 		err = cxt->ps_ctl.enable_nodata(0);
 		if (err) {
 			pr_err("ps turn off ps_power err = %d\n", err);
@@ -666,7 +666,7 @@ static int ps_enable_and_batch(void)
 	/* ps_power off -> power on */
 	if (cxt->ps_power == 0 && cxt->ps_enable == 1) {
 		pr_debug("PS ps_power on\n");
-		pinctrl_select_state(pinctrl, pins_plv3venable);
+		//pinctrl_select_state(pinctrl, pins_plv3venable);
 		err = cxt->ps_ctl.enable_nodata(1);
 		if (err) {
 			pr_err("ps turn on ps_power err = %d\n", err);
@@ -736,10 +736,12 @@ static ssize_t ps_store_active(struct device *dev,
 		goto err_out;
 	}
 #if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
+/*
 	if(cxt->ps_enable)
 		pinctrl_select_state(pinctrl, pins_plv3venable);
 	else
    		pinctrl_select_state(pinctrl, pins_plv3vdisable);
+*/
 	err = cxt->ps_ctl.enable_nodata(cxt->ps_enable);
 #else
 	err = ps_enable_and_batch();
@@ -877,24 +879,26 @@ static int als_ps_probe(struct platform_device *pdev)
 	pltfm_dev = pdev;
 
 	pinctrl = devm_pinctrl_get(dev);
-        if (IS_ERR(pinctrl)) {
-                pr_err("No find pinctrl!\n");
-                return -1;
-        }
+	if (IS_ERR(pinctrl)) {
+		pr_err("No find pinctrl!\n");
+		return -1;
+	}
 
 	pins_plv3venable = pinctrl_lookup_state(pinctrl, "plv3v_enable");
 
-        if (IS_ERR(pins_plv3venable))
-        {
-                pr_err("Cannot find alsps pinctrl pin_v3venable!\n");
-        }
+	if (IS_ERR(pins_plv3venable))
+	{
+		pr_err("Cannot find alsps pinctrl pin_v3venable!\n");
+	}
 
-        pins_plv3vdisable = pinctrl_lookup_state(pinctrl, "plv3v_disable");
+	pins_plv3vdisable = pinctrl_lookup_state(pinctrl, "plv3v_disable");
 
-        if (IS_ERR(pins_plv3vdisable))
-        {
-                pr_err("Cannot find alsps pinctrl pin_v3vdisable!\n");
-        }
+	if (IS_ERR(pins_plv3vdisable))
+	{
+		pr_err("Cannot find alsps pinctrl pin_v3vdisable!\n");
+	}
+
+	pinctrl_select_state(pinctrl, pins_plv3venable);
 
 	return 0;
 }
