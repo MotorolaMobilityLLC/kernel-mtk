@@ -239,10 +239,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
     {
         SENSOR_DRVNAME_BLACKJACK_TXD_HI846_MIPI_RAW,
         {
-            {SensorMCLK, Vol_High, 0},
-            {AVDD, Vol_2800, 1},
             {DOVDD, Vol_1800, 1},
+            {AVDD, Vol_2800, 1},
             {DVDD, Vol_1200, 5},
+            {SensorMCLK, Vol_High, 0},
 //            {AFVDD, Vol_2800, 1},
 //            {PDN, Vol_Low, 0},
 //            {PDN, Vol_High, 0},
