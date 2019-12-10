@@ -23,6 +23,10 @@ config MTK_FINGERPRINT_SELECT
 	string "sensor type"
 	default "GF318M"
 
+source drivers/input/fingerprint/fpsensor_tee/Kconfig
+source drivers/input/fingerprint/focaltech/Kconfig
+
+
 
 if MTK_FINGERPRINT_SELECT = "FPC1145"
 config FPC_FINGERPRINT
