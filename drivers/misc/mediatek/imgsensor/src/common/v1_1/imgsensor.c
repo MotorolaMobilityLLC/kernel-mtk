@@ -61,6 +61,8 @@ static DEFINE_MUTEX(gimgsensor_mutex);
 struct IMGSENSOR gimgsensor;
 MUINT32 last_id;
 
+static int isOV2180 = 0;
+
 /*******************************************************************************
 * Profiling
 ********************************************************************************/
@@ -516,9 +518,26 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 #endif
 
 				if (!imgsensor_check_is_alive(psensor)) {
-					PK_INFO("[imgsensor_set_driver] :[%d][%s]\n",
+					PK_INFO("[imgsensor_set_driver] :[%d][%s][%d]\n",
 						psensor_inst->sensor_idx,
-						psensor_inst->psensor_list->name);
+						psensor_inst->psensor_list->name,
+						psensor_inst->psensor_list->id);
+
+					if( (psensor_inst->sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) &&
+						(psensor_inst->psensor_list->id == 0x2681) &&
+						(!strcmp(psensor_inst->psensor_list->name, "ov2180_mipi_raw")) ) {
+							isOV2180 = 1;
+							PK_INFO("[imgsensor_set_driver]: isOV2180 = %d...\n", isOV2180);
+					}
+
+					if( (psensor_inst->sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) &&
+						(psensor_inst->psensor_list->id == 0x30c6) &&
+						(!strcmp(psensor_inst->psensor_list->name, "s5k3l6_mipi_raw")) &&
+						(isOV2180 == 1)) {
+							PK_INFO("[imgsensor_set_driver]: it is s5k3l6_mipi_raw, continue\n");
+							i++;
+							continue;
+					}
 					ret = 0;
 					break;
 				}
