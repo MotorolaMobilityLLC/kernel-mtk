@@ -125,6 +125,13 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TEMP,
 };
 
+#include <ontim/ontim_dev_dgb.h>
+char battery_vendor_name[50]="MLP395976 2920mAh";
+DEV_ATTR_DECLARE(battery)
+DEV_ATTR_DEFINE("vendor",battery_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(battery,battery,8);
+
 /* weak function */
 int __attribute__ ((weak))
 	do_ptim_gauge(
@@ -334,6 +341,12 @@ static int battery_get_property(struct power_supply *psy,
 			val->intval = gm.fixed_uisoc;
 		else
 			val->intval = data->BAT_CAPACITY;
+#ifdef    DUAL_85_VERSION
+              if(data->BAT_CAPACITY<30)
+              {
+                   val->intval  = 30;    
+              }
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		b_ischarging = gauge_get_current(&fgcurrent);
@@ -2069,7 +2082,7 @@ void exec_BAT_EC(int cmd, int param)
 				bm_err(
 					"exe_BAT_EC cmd %d, param %d, enable\n",
 					cmd, param);
-				fg_custom_init_from_header();
+				//fg_custom_init_from_header();
 			}
 		}
 		break;
@@ -3893,6 +3906,12 @@ static int __init battery_probe(struct platform_device *dev)
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
 
+//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+//-add by hzb for ontim debug
 	wakeup_source_init(&battery_lock, "battery wakelock");
 	__pm_stay_awake(&battery_lock);
 
@@ -4051,6 +4070,9 @@ static int __init battery_probe(struct platform_device *dev)
 
 	gm.is_probe_done = true;
 
+//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
 	return 0;
 }
 

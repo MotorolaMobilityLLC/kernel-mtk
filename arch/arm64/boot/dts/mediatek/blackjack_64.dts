@@ -453,6 +453,45 @@
                 pinctrl-1 = <&aud_extamp_gpio_high>;
                 status = "okay";
         };
+&i2c5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+
+	externel-charger@6c{
+		compatible = "halo,hl7007";
+		reg = <0x6c>;
+		status = "okay";
+	};
+       externel-eta-charger@6e{
+               compatible = "ontim,eta6937";
+               reg = <0x6e>;/*dumy addr,in fact ,the addr is 0x6b-1*/
+               status = "okay";
+       };
+	externel-charger@6a{
+		compatible = "halo,hl7005";
+		reg = <0x6a>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+	externel-charger@6d{
+		compatible = "halo,sy6923";
+		reg = <0x6d>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+	externel-charger@6b{
+		compatible = "ti,bq25601";
+		reg = <0x6b>;
+		status = "okay";
+	};
+	externel-charger@53{
+		compatible = "richtek,rt9471";
+		reg = <0x53>;
+		status = "okay";
+		ichg = <2000000>; /* uA */
+	};
+};
 
         &pio {
 

@@ -88,16 +88,56 @@ config CHARGER_RT9465
 	  It is mainly used as slave IC for dual charger
 	  application.
 	  It depends on config MTK_CHARGER.
-
-config CHARGER_RT9471
-	bool "Charger Driver for Richtek RT9471 Charger IC"
+	  
+config CHARGER_HL7005
+	bool "Charger Driver for HL7005 Charger IC"
 	default n
 	depends on MTK_CHARGER
 	help
-	  Say Yes to enable Richtek RT9471 driver.
-	  It supports RT9470/RT9470D/RT9471/RT9471D,
-	  which RT9470D and RT9471D support BC1.2
+	  Say Yes to enable Richtek RT9465 driver.
+	  It is mainly used as slave IC for dual charger
+	  application.
 	  It depends on config MTK_CHARGER.
+
+config CHARGER_HL7007
+	bool "Charger Driver for HL7007 Charger IC"
+	default n
+	depends on MTK_CHARGER
+
+config CHARGER_ETA6937
+	bool "Charger Driver for ETA6937 Charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  Say Yes to enable Richtek RT9465 driver.
+	  It is mainly used as slave IC for dual charger
+	  application.
+	  It depends on config MTK_CHARGER.
+
+config CHARGER_SY6923
+	bool "Charger Driver for SY6923 Charger IC"
+	default n
+	depends on MTK_CHARGER
+
+config CHARGER_BQ25601
+	bool "Charger Driver for TI BQ25601 Charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  This is to enable MediaTek supports to BQ25601.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT
+	  Set to Yes if BQ25601 is used.
+
+config CHARGER_BQ25601
+	bool "Charger Driver for TI BQ25601 Charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  This is to enable MediaTek supports to BQ25601.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT
+	  Set to Yes if BQ25601 is used.
 
 config MTK_CHARGER_UNLIMITED
 	bool "MediaTek Charger Unlimited"
@@ -126,20 +166,11 @@ config MTK_BQ24296_SUPPORT
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ24296 is used.
 
-config CHARGER_BQ25601
-	bool "CHARGER_BQ25601"
-	help
-	  This is to enable MediaTek supports to BQ25601.
-	  It depends on config MTK_SMART_BATTERY
-	  and config MTK_SWCHR_SUPPORT
-	  Set to Yes if BQ25601 is used.
-
-config MTK_BQ25890_SUPPORT
-	bool "Charger driver for TI BQ25890 charger IC"
+config CHARGER_RT9471
+	bool "CHARGER_RT9471"
 	default n
 	depends on MTK_CHARGER
-	help
-	  This is to enable MediaTek support to BQ25890.
-	  It also supports BC1.2 function.
-	  It depends on config MTK_CHARGER.
-	  Say yes to enable BQ25890 charger driver.
+
+config CHARGE_STOP_DEGREE55
+	bool "CHARGER_STOP_DEGREE55"
+	default n
