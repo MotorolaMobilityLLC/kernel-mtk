@@ -11,1464 +11,1333 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/types.h>
-#include <linux/init.h>		/* For init/exit macros */
-#include <linux/module.h>	/* For MODULE_ marcros  */
-#include <linux/platform_device.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
+#define pr_fmt(fmt) "[bq25601]:%s: " fmt, __func__
+
+#include <linux/bitops.h>
 #include <linux/delay.h>
-#include <linux/interrupt.h>
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#include <linux/of_device.h>
-#endif
-#include <mt-plat/mtk_boot.h>
-#include <mt-plat/upmu_common.h>
-#include <mt-plat/charger_type.h>
+#include <linux/err.h>
 #include <linux/gpio.h>
+#include <linux/i2c.h>
+#include <linux/init.h>
+#include <linux/interrupt.h>
+#include <linux/kernel.h>
+#include <linux/kthread.h>
+#include <linux/math64.h>
+#include <linux/module.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/of_gpio.h>
-#include "bq25601.h"
-#include "mtk_charger_intf.h"
 #include <linux/power_supply.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <mt-plat/charger_type.h>
 
-/**********************************************************
- *
- *   [I2C Slave Setting]
- *
- *********************************************************/
+#include "bq25601.h"
+#include "bq25601_reg.h"
+#include "mtk_charger_intf.h"
 
-#define GETARRAYNUM(array) (ARRAY_SIZE(array))
-
-/*bq25601 REG06 VREG[5:0]*/
-const unsigned int VBAT_CV_VTH[] = {
-	3856000, 3888000, 3920000, 3952000,
-	3984000, 4016000, 4048000, 4080000,
-	4112000, 4144000, 4176000, 4208000,
-	4240000, 4272000, 4304000, 4336000,
-	4368000, 4400000, 4432000, 4464000,
-	4496000, 4528000, 4560000, 4592000,
-	4624000
-
+enum bq25601_part_no {
+	PN_BQ25600,
+	PN_BQ25600D,
+	PN_BQ25601,
+	PN_BQ25601D,
 };
 
-/*BQ25601 REG04 ICHG[6:0]*/
-const unsigned int CS_VTH[] = {
-	0, 6000, 12000, 18000, 24000,
-	30000, 36000, 42000, 48000, 54000,
-	60000, 66000, 72000, 78000, 84000,
-	90000, 96000, 102000, 108000, 114000,
-	120000, 126000, 132000, 138000, 144000,
-	150000, 156000, 162000, 168000, 174000,
-	180000, 186000, 192000, 198000, 204000,
-	210000, 216000, 222000, 228000
+static int pn_data[] = {
+//		[PN_BQ25600] = 0x00, [PN_BQ25600D] = 0x01, [PN_BQ25601] = 0x02,
+		[PN_BQ25600] = 0x00, [PN_BQ25600D] = 0x01, [PN_BQ25601] = 0x09,
+		[PN_BQ25601D] = 0x07,
 };
 
-/*BQ25601 REG00 IINLIM[5:0]*/
-const unsigned int INPUT_CS_VTH[] = {
-	10000, 20000, 30000, 40000,
-	50000, 60000, 70000, 80000,
-	90000, 100000, 110000, 120000,
-	130000, 140000, 150000, 160000,
-	170000, 180000, 190000, 200000,
-	210000, 220000, 230000, 250000,
-	260000, 270000, 280000, 290000,
-	300000, 310000, 320000
+static char *pn_str[] = {
+		[PN_BQ25600] = "bq25600", [PN_BQ25600D] = "bq25600d",
+		[PN_BQ25601] = "bq25601", [PN_BQ25601D] = "bq25601d",
 };
 
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="BQ25601";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
-const unsigned int VCDT_HV_VTH[] = {
-	4200000, 4250000, 4300000, 4350000,
-	4400000, 4450000, 4500000, 4550000,
-	4600000, 6000000, 6500000, 7000000,
-	7500000, 8500000, 9500000, 10500000
-
-};
-
-
-const unsigned int VINDPM_REG[] = {
-	3900, 4000, 4100, 4200, 4300, 4400,
-	4500, 4600, 4700, 4800, 4900, 5000,
-	5100, 5200, 5300, 5400, 5500, 5600,
-	5700, 5800, 5900, 6000, 6100, 6200,
-	6300, 6400
-};
-
-/* BQ25601 REG0A BOOST_LIM[2:0], mA */
-const unsigned int BOOST_CURRENT_LIMIT[] = {
-	500, 1200
-};
-
-struct bq25601_info {
-	struct charger_device *chg_dev;
-	struct charger_properties chg_props;
+struct bq25601 {
 	struct device *dev;
+	struct i2c_client *client;
+
+	enum bq25601_part_no part_no;
+	int revision;
+
 	const char *chg_dev_name;
 	const char *eint_name;
+
+	bool chg_det_enable;
+
 	enum charger_type chg_type;
+
+	int status;
 	int irq;
+
+	struct mutex i2c_rw_lock;
+
+	bool charge_enabled; /* Register bit status */
+	bool power_good;
+
+	struct bq25601_platform_data *platform_data;
+	struct charger_device *chg_dev;
+
+	struct power_supply *psy;
 };
 
-DEFINE_MUTEX(g_input_current_mutex);
-static struct i2c_client *new_client;
-static const struct i2c_device_id bq25601_i2c_id[] = { {"bq25601", 0}, {} };
+static const struct charger_properties bq25601_chg_props = {
+	.alias_name = "bq25601",
+};
 
-static int bq25601_driver_probe(struct i2c_client *client,
-				const struct i2c_device_id *id);
-
-unsigned int charging_value_to_parameter(const unsigned int
-		*parameter, const unsigned int array_size,
-		const unsigned int val)
+#define BQ25601_SLAVE_ADDR 0x6b
+static int __bq25601_read_reg(struct bq25601 *bq, u8 reg, u8 *data)
 {
-	if (val < array_size)
-		return parameter[val];
+	int ret = 0;
+	struct i2c_adapter *adap = bq->client->adapter;
+	struct i2c_msg msg[2];
+	u8 *w_buf = NULL;
+	u8 *r_buf = NULL;
 
-	pr_info("Can't find the parameter\n");
-	return parameter[0];
+	memset(msg, 0, 2 * sizeof(struct i2c_msg));
+
+	w_buf = kzalloc(1, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+	r_buf = kzalloc(1, GFP_KERNEL);
+	if (r_buf == NULL)
+		return -1;
+
+	*w_buf = reg;
+
+	msg[0].addr = BQ25601_SLAVE_ADDR;//new_client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 1;
+	msg[0].buf = w_buf;
+
+	msg[1].addr = BQ25601_SLAVE_ADDR;//new_client->addr;
+	msg[1].flags = 1;
+	msg[1].len = 1;
+	msg[1].buf = r_buf;
+
+	ret = i2c_transfer(adap, msg, 2);
+
+	memcpy(data, r_buf, 1);
+
+	kfree(w_buf);
+	kfree(r_buf);
+	return ret;
 
 }
 
-unsigned int charging_parameter_to_value(const unsigned int
-		*parameter, const unsigned int array_size,
-		const unsigned int val)
+static int __bq25601_write_reg(struct bq25601 *bq, int reg, u8 val)
 {
-	unsigned int i;
+	int ret = 0;
+	struct i2c_adapter *adap = bq->client->adapter;
+	struct i2c_msg msg;
+	u8 *w_buf = NULL;
 
-	pr_debug_ratelimited("array_size = %d\n", array_size);
+	memset(&msg, 0, sizeof(struct i2c_msg));
 
-	for (i = 0; i < array_size; i++) {
-		if (val == *(parameter + i))
-			return i;
+	w_buf = kzalloc(2, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+
+	w_buf[0] = reg;
+	memcpy(w_buf + 1, &val, 1);
+
+	msg.addr = BQ25601_SLAVE_ADDR;//new_client->addr;
+	msg.flags = 0;
+	msg.len = 2;
+	msg.buf = w_buf;
+
+	ret = i2c_transfer(adap, &msg, 1);
+
+	kfree(w_buf);
+	return ret;
+
+}
+
+static int bq25601_read_byte(struct bq25601 *bq, u8 reg, u8 *data)
+{
+	int ret;
+
+	mutex_lock(&bq->i2c_rw_lock);
+	ret = __bq25601_read_reg(bq, reg, data);
+	mutex_unlock(&bq->i2c_rw_lock);
+	if (ret<0)
+		pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+	else
+		ret =0;
+
+	return ret;
+}
+
+static int bq25601_write_byte(struct bq25601 *bq, u8 reg, u8 data)
+{
+	int ret;
+
+	mutex_lock(&bq->i2c_rw_lock);
+	ret = __bq25601_write_reg(bq, reg, data);
+	mutex_unlock(&bq->i2c_rw_lock);
+
+	if (ret<0)
+		pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+	else
+		ret =0;
+
+	return ret;
+}
+
+static int bq25601_update_bits(struct bq25601 *bq, u8 reg, u8 mask, u8 data)
+{
+	int ret;
+	u8 tmp;
+
+	mutex_lock(&bq->i2c_rw_lock);
+	ret = __bq25601_read_reg(bq, reg, &tmp);
+	if (ret<0) {
+		pr_info("Failed: reg=%02X, ret=%d\n", reg, ret);
+		goto out;
 	}
 
-	pr_info("NO register value match\n");
-	/* TODO: ASSERT(0);    // not find the value */
+	tmp &= ~mask;
+	tmp |= data & mask;
+
+	ret = __bq25601_write_reg(bq, reg, tmp);
+	if (ret<0)
+		pr_info("Failed: reg=%02X, ret=%d\n", reg, ret);
+	else
+		ret =0;
+
+out:
+	mutex_unlock(&bq->i2c_rw_lock);
+	return ret;
+}
+
+static int bq25601_enable_otg(struct bq25601 *bq)
+{
+	u8 val = REG01_OTG_ENABLE << REG01_OTG_CONFIG_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_01, REG01_OTG_CONFIG_MASK,
+				   val);
+}
+
+static int bq25601_disable_otg(struct bq25601 *bq)
+{
+	u8 val = REG01_OTG_DISABLE << REG01_OTG_CONFIG_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_01, REG01_OTG_CONFIG_MASK,
+				   val);
+}
+
+static int bq25601_enable_charger(struct bq25601 *bq)
+{
+	int ret;
+	u8 val = REG01_CHG_ENABLE << REG01_CHG_CONFIG_SHIFT;
+
+	ret = bq25601_update_bits(bq, BQ25601_REG_01, REG01_CHG_CONFIG_MASK,
+				  val);
+
+	return ret;
+}
+
+static int bq25601_disable_charger(struct bq25601 *bq)
+{
+	int ret;
+	u8 val = REG01_CHG_DISABLE << REG01_CHG_CONFIG_SHIFT;
+
+	ret = bq25601_update_bits(bq, BQ25601_REG_01, REG01_CHG_CONFIG_MASK,
+				  val);
+	return ret;
+}
+
+int bq25601_set_chargecurrent(struct bq25601 *bq, int curr)
+{
+	u8 ichg;
+
+	if (curr < REG02_ICHG_BASE)
+		curr = REG02_ICHG_BASE;
+
+	ichg = (curr - REG02_ICHG_BASE) / REG02_ICHG_LSB;
+	return bq25601_update_bits(bq, BQ25601_REG_02, REG02_ICHG_MASK,
+				   ichg << REG02_ICHG_SHIFT);
+}
+
+int bq25601_set_term_current(struct bq25601 *bq, int curr)
+{
+	u8 iterm;
+
+	if (curr < REG03_ITERM_BASE)
+		curr = REG03_ITERM_BASE;
+
+	iterm = (curr - REG03_ITERM_BASE) / REG03_ITERM_LSB;
+
+	return bq25601_update_bits(bq, BQ25601_REG_03, REG03_ITERM_MASK,
+				   iterm << REG03_ITERM_SHIFT);
+}
+EXPORT_SYMBOL_GPL(bq25601_set_term_current);
+
+int bq25601_set_prechg_current(struct bq25601 *bq, int curr)
+{
+	u8 iprechg;
+
+	if (curr < REG03_IPRECHG_BASE)
+		curr = REG03_IPRECHG_BASE;
+
+	iprechg = (curr - REG03_IPRECHG_BASE) / REG03_IPRECHG_LSB;
+
+	return bq25601_update_bits(bq, BQ25601_REG_03, REG03_IPRECHG_MASK,
+				   iprechg << REG03_IPRECHG_SHIFT);
+}
+EXPORT_SYMBOL_GPL(bq25601_set_prechg_current);
+
+int bq25601_set_chargevolt(struct bq25601 *bq, int volt)
+{
+	u8 val;
+
+	if (volt < REG04_VREG_BASE)
+		volt = REG04_VREG_BASE;
+
+	val = (volt - REG04_VREG_BASE) / REG04_VREG_LSB;
+	return bq25601_update_bits(bq, BQ25601_REG_04, REG04_VREG_MASK,
+				   val << REG04_VREG_SHIFT);
+}
+
+int bq25601_set_input_volt_limit(struct bq25601 *bq, int volt)
+{
+	u8 val;
+
+	if (volt < REG06_VINDPM_BASE)
+		volt = REG06_VINDPM_BASE;
+
+	val = (volt - REG06_VINDPM_BASE) / REG06_VINDPM_LSB;
+	return bq25601_update_bits(bq, BQ25601_REG_06, REG06_VINDPM_MASK,
+				   val << REG06_VINDPM_SHIFT);
+}
+
+int bq25601_set_input_current_limit(struct bq25601 *bq, int curr)
+{
+	u8 val;
+
+	if (curr < REG00_IINLIM_BASE)
+		curr = REG00_IINLIM_BASE;
+
+	val = (curr - REG00_IINLIM_BASE) / REG00_IINLIM_LSB;
+	return bq25601_update_bits(bq, BQ25601_REG_00, REG00_IINLIM_MASK,
+				   val << REG00_IINLIM_SHIFT);
+}
+
+int bq25601_set_watchdog_timer(struct bq25601 *bq, u8 timeout)
+{
+	u8 temp;
+
+	temp = (u8)(((timeout - REG05_WDT_BASE) / REG05_WDT_LSB)
+		    << REG05_WDT_SHIFT);
+
+	return bq25601_update_bits(bq, BQ25601_REG_05, REG05_WDT_MASK, temp);
+}
+EXPORT_SYMBOL_GPL(bq25601_set_watchdog_timer);
+
+int bq25601_disable_watchdog_timer(struct bq25601 *bq)
+{
+	u8 val = REG05_WDT_DISABLE << REG05_WDT_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_05, REG05_WDT_MASK, val);
+}
+EXPORT_SYMBOL_GPL(bq25601_disable_watchdog_timer);
+
+int bq25601_reset_watchdog_timer(struct bq25601 *bq)
+{
+	u8 val = REG01_WDT_RESET << REG01_WDT_RESET_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_01, REG01_WDT_RESET_MASK,
+				   val);
+}
+EXPORT_SYMBOL_GPL(bq25601_reset_watchdog_timer);
+
+int bq25601_reset_chip(struct bq25601 *bq)
+{
+	int ret;
+	u8 val = REG0B_REG_RESET << REG0B_REG_RESET_SHIFT;
+
+	ret = bq25601_update_bits(bq, BQ25601_REG_0B, REG0B_REG_RESET_MASK,
+				  val);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(bq25601_reset_chip);
+
+int bq25601_enter_hiz_mode(struct bq25601 *bq)
+{
+	u8 val = REG00_HIZ_ENABLE << REG00_ENHIZ_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_00, REG00_ENHIZ_MASK, val);
+}
+EXPORT_SYMBOL_GPL(bq25601_enter_hiz_mode);
+
+int bq25601_exit_hiz_mode(struct bq25601 *bq)
+{
+
+	u8 val = REG00_HIZ_DISABLE << REG00_ENHIZ_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_00, REG00_ENHIZ_MASK, val);
+}
+EXPORT_SYMBOL_GPL(bq25601_exit_hiz_mode);
+
+int bq25601_get_hiz_mode(struct bq25601 *bq, u8 *state)
+{
+	u8 val;
+	int ret;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_00, &val);
+	if (ret)
+		return ret;
+	*state = (val & REG00_ENHIZ_MASK) >> REG00_ENHIZ_SHIFT;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(bq25601_get_hiz_mode);
+
+static int bq25601_enable_term(struct bq25601 *bq, bool enable)
+{
+	u8 val;
+	int ret;
+
+	if (enable)
+		val = REG05_TERM_ENABLE << REG05_EN_TERM_SHIFT;
+	else
+		val = REG05_TERM_DISABLE << REG05_EN_TERM_SHIFT;
+
+	ret = bq25601_update_bits(bq, BQ25601_REG_05, REG05_EN_TERM_MASK, val);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(bq25601_enable_term);
+
+int bq25601_set_boost_current(struct bq25601 *bq, int curr)
+{
+	u8 val;
+
+	val = REG02_BOOST_LIM_0P5A;
+	if (curr == BOOSTI_1200)
+		val = REG02_BOOST_LIM_1P2A;
+
+	return bq25601_update_bits(bq, BQ25601_REG_02, REG02_BOOST_LIM_MASK,
+				   val << REG02_BOOST_LIM_SHIFT);
+}
+
+int bq25601_set_boost_voltage(struct bq25601 *bq, int volt)
+{
+	u8 val;
+
+	if (volt == BOOSTV_4850)
+		val = REG06_BOOSTV_4P85V;
+	else if (volt == BOOSTV_5150)
+		val = REG06_BOOSTV_5P15V;
+	else if (volt == BOOSTV_5300)
+		val = REG06_BOOSTV_5P3V;
+	else
+		val = REG06_BOOSTV_5V;
+
+	return bq25601_update_bits(bq, BQ25601_REG_06, REG06_BOOSTV_MASK,
+				   val << REG06_BOOSTV_SHIFT);
+}
+EXPORT_SYMBOL_GPL(bq25601_set_boost_voltage);
+
+static int bq25601_set_acovp_threshold(struct bq25601 *bq, int volt)
+{
+	u8 val;
+
+	if (volt == VAC_OVP_14000)
+		val = REG06_OVP_14P0V;
+	else if (volt == VAC_OVP_10500)
+		val = REG06_OVP_10P5V;
+	else if (volt == VAC_OVP_6500)
+		val = REG06_OVP_6P5V;
+	else
+		val = REG06_OVP_5P5V;
+
+	return bq25601_update_bits(bq, BQ25601_REG_06, REG06_OVP_MASK,
+				   val << REG06_OVP_SHIFT);
+}
+EXPORT_SYMBOL_GPL(bq25601_set_acovp_threshold);
+
+static int bq25601_set_stat_ctrl(struct bq25601 *bq, int ctrl)
+{
+	u8 val;
+
+	val = ctrl;
+
+	return bq25601_update_bits(bq, BQ25601_REG_00, REG00_STAT_CTRL_MASK,
+				   val << REG00_STAT_CTRL_SHIFT);
+}
+
+static int bq25601_set_int_mask(struct bq25601 *bq, int mask)
+{
+	u8 val;
+
+	val = mask;
+
+	return bq25601_update_bits(bq, BQ25601_REG_0A, REG0A_INT_MASK_MASK,
+				   val << REG0A_INT_MASK_SHIFT);
+}
+
+static int bq25601_enable_batfet(struct bq25601 *bq)
+{
+	const u8 val = REG07_BATFET_ON << REG07_BATFET_DIS_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_07, REG07_BATFET_DIS_MASK,
+				   val);
+}
+EXPORT_SYMBOL_GPL(bq25601_enable_batfet);
+
+static int bq25601_disable_batfet(struct bq25601 *bq)
+{
+	const u8 val = REG07_BATFET_OFF << REG07_BATFET_DIS_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_07, REG07_BATFET_DIS_MASK,
+				   val);
+}
+EXPORT_SYMBOL_GPL(bq25601_disable_batfet);
+
+static int bq25601_set_batfet_delay(struct bq25601 *bq, uint8_t delay)
+{
+	u8 val;
+
+	if (delay == 0)
+		val = REG07_BATFET_DLY_0S;
+	else
+		val = REG07_BATFET_DLY_10S;
+
+	val <<= REG07_BATFET_DLY_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_07, REG07_BATFET_DLY_MASK,
+				   val);
+}
+EXPORT_SYMBOL_GPL(bq25601_set_batfet_delay);
+
+static int bq25601_enable_safety_timer(struct bq25601 *bq)
+{
+	const u8 val = REG05_CHG_TIMER_ENABLE << REG05_EN_TIMER_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_05, REG05_EN_TIMER_MASK,
+				   val);
+}
+EXPORT_SYMBOL_GPL(bq25601_enable_safety_timer);
+
+static int bq25601_disable_safety_timer(struct bq25601 *bq)
+{
+	const u8 val = REG05_CHG_TIMER_DISABLE << REG05_EN_TIMER_SHIFT;
+
+	return bq25601_update_bits(bq, BQ25601_REG_05, REG05_EN_TIMER_MASK,
+				   val);
+}
+EXPORT_SYMBOL_GPL(bq25601_disable_safety_timer);
+
+static struct bq25601_platform_data *bq25601_parse_dt(struct device_node *np,
+						      struct bq25601 *bq)
+{
+	int ret;
+	struct bq25601_platform_data *pdata;
+
+	pdata = devm_kzalloc(bq->dev, sizeof(struct bq25601_platform_data),
+			     GFP_KERNEL);
+	if (!pdata)
+		return NULL;
+
+	if (of_property_read_string(np, "charger_name", &bq->chg_dev_name) <
+	    0) {
+		bq->chg_dev_name = "primary_chg";
+		pr_info("no charger name\n");
+	}
+
+	if (of_property_read_string(np, "eint_name", &bq->eint_name) < 0) {
+		bq->eint_name = "chr_stat";
+		pr_info("no eint name\n");
+	}
+
+	bq->chg_det_enable =
+		of_property_read_bool(np, "ti,bq25601,charge-detect-enable");
+
+	ret = of_property_read_u32(np, "ti,bq25601,usb-vlim", &pdata->usb.vlim);
+	if (ret) {
+		pdata->usb.vlim = 4500;
+		pr_info("Failed to read node of ti,bq25601,usb-vlim\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,usb-ilim", &pdata->usb.ilim);
+	if (ret) {
+		pdata->usb.ilim = 2000;
+		pr_info("Failed to read node of ti,bq25601,usb-ilim\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,usb-vreg", &pdata->usb.vreg);
+	if (ret) {
+		pdata->usb.vreg = 4200;
+		pr_info("Failed to read node of ti,bq25601,usb-vreg\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,usb-ichg", &pdata->usb.ichg);
+	if (ret) {
+		pdata->usb.ichg = 2000;
+		pr_info("Failed to read node of ti,bq25601,usb-ichg\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,stat-pin-ctrl",
+				   &pdata->statctrl);
+	if (ret) {
+		pdata->statctrl = 0;
+		pr_info("Failed to read node of ti,bq25601,stat-pin-ctrl\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,precharge-current",
+				   &pdata->iprechg);
+	if (ret) {
+		pdata->iprechg = 180;
+		pr_info("Failed to read node of ti,bq25601,precharge-current\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,termination-current",
+				   &pdata->iterm);
+	if (ret) {
+		pdata->iterm = 180;
+		pr_info("Failed to read node of ti,bq25601,termination-current\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,boost-voltage",
+				   &pdata->boostv);
+	if (ret) {
+		pdata->boostv = 5000;
+		pr_info("Failed to read node of ti,bq25601,boost-voltage\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,boost-current",
+				   &pdata->boosti);
+	if (ret) {
+		pdata->boosti = 1200;
+		pr_info("Failed to read node of ti,bq25601,boost-current\n");
+	}
+
+	ret = of_property_read_u32(np, "ti,bq25601,vac-ovp-threshold",
+				   &pdata->vac_ovp);
+	if (ret) {
+		pdata->vac_ovp = 6500;
+		pr_info("Failed to read node of ti,bq25601,vac-ovp-threshold\n");
+	}
+
+	return pdata;
+}
+
+#if 0
+static int bq25601_get_charger_type(struct bq25601 *bq, enum charger_type *type)
+{
+	int ret;
+
+	u8 reg_val = 0;
+	int vbus_stat = 0;
+	enum charger_type chg_type = CHARGER_UNKNOWN;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_08, &reg_val);
+
+	if (ret)
+		return ret;
+
+	vbus_stat = (reg_val & REG08_VBUS_STAT_MASK);
+	vbus_stat >>= REG08_VBUS_STAT_SHIFT;
+
+	switch (vbus_stat) {
+
+	case REG08_VBUS_TYPE_NONE:
+		chg_type = CHARGER_UNKNOWN;
+		break;
+	case REG08_VBUS_TYPE_SDP:
+		chg_type = STANDARD_HOST;
+		break;
+	case REG08_VBUS_TYPE_CDP:
+		chg_type = CHARGING_HOST;
+		break;
+	case REG08_VBUS_TYPE_DCP:
+		chg_type = STANDARD_CHARGER;
+		break;
+	case REG08_VBUS_TYPE_UNKNOWN:
+		chg_type = NONSTANDARD_CHARGER;
+		break;
+	case REG08_VBUS_TYPE_NON_STD:
+		chg_type = NONSTANDARD_CHARGER;
+		break;
+	default:
+		chg_type = NONSTANDARD_CHARGER;
+		break;
+	}
+
+	*type = chg_type;
+
 	return 0;
 }
 
-static unsigned int bmt_find_closest_level(const unsigned int *pList,
-		unsigned int number,
-		unsigned int level)
+static int bq25601_inform_charger_type(struct bq25601 *bq)
 {
-	unsigned int i;
-	unsigned int max_value_in_last_element;
+	int ret = 0;
+	union power_supply_propval propval;
 
-	if (pList[0] < pList[1])
-		max_value_in_last_element = 1;
+	if (!bq->psy) {
+		bq->psy = power_supply_get_by_name("charger");
+		if (!bq->psy)
+			return -ENODEV;
+	}
+
+	if (bq->chg_type != CHARGER_UNKNOWN)
+		propval.intval = 1;
 	else
-		max_value_in_last_element = 0;
+		propval.intval = 0;
 
-	if (max_value_in_last_element == 1) {
-		for (i = (number - 1); i != 0;
-		     i--) {	/* max value in the last element */
-			if (pList[i] <= level) {
-				pr_debug_ratelimited("zzf_%d<=%d, i=%d\n",
-					pList[i], level, i);
-				return pList[i];
-			}
-		}
+	ret = power_supply_set_property(bq->psy, POWER_SUPPLY_PROP_ONLINE,
+					&propval);
 
-		pr_info("Can't find closest level\n");
-		return pList[0];
-		/* return CHARGE_CURRENT_0_00_MA; */
+	if (ret < 0)
+		pr_notice("inform power supply online failed:%d\n", ret);
+
+	propval.intval = bq->chg_type;
+
+	ret = power_supply_set_property(bq->psy,
+					POWER_SUPPLY_PROP_CHARGE_TYPE,
+					&propval);
+
+	if (ret < 0)
+		pr_notice("inform power supply charge type failed:%d\n", ret);
+
+	return ret;
+}
+
+static irqreturn_t bq25601_irq_handler(int irq, void *data)
+{
+	int ret;
+	u8 reg_val;
+	bool prev_pg;
+	enum charger_type prev_chg_type;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_08, &reg_val);
+	if (ret)
+		return IRQ_HANDLED;
+
+	prev_pg = bq->power_good;
+
+	bq->power_good = !!(reg_val & REG08_PG_STAT_MASK);
+
+	if (!prev_pg && bq->power_good)
+		pr_notice("adapter/usb inserted\n");
+	else if (prev_pg && !bq->power_good)
+		pr_notice("adapter/usb removed\n");
+
+	prev_chg_type = bq->chg_type;
+
+	ret = bq25601_get_charger_type(bq, &bq->chg_type);
+	if (!ret && prev_chg_type != bq->chg_type && bq->chg_det_enable)
+		bq25601_inform_charger_type(bq);
+
+	return IRQ_HANDLED;
+}
+
+static int bq25601_register_interrupt(struct bq25601 *bq)
+{
+	int ret = 0;
+	struct device_node *np;
+
+	np = of_find_node_by_name(NULL, bq->eint_name);
+	if (np) {
+		bq->irq = irq_of_parse_and_map(np, 0);
 	} else {
-		/* max value in the first element */
-		for (i = 0; i < number; i++) {
-			if (pList[i] <= level)
-				return pList[i];
-		}
-
-		pr_info("Can't find closest level\n");
-		return pList[number - 1];
-		/* return CHARGE_CURRENT_0_00_MA; */
-	}
-}
-
-
-/**********************************************************
- *
- *   [Global Variable]
- *
- *********************************************************/
-unsigned char bq25601_reg[bq25601_REG_NUM] = { 0 };
-
-static DEFINE_MUTEX(bq25601_i2c_access);
-static DEFINE_MUTEX(bq25601_access_lock);
-
-int g_bq25601_hw_exist;
-
-/**********************************************************
- *
- *   [I2C Function For Read/Write bq25601]
- *
- *********************************************************/
-#ifdef CONFIG_MTK_I2C_EXTENSION
-unsigned int bq25601_read_byte(unsigned char cmd,
-			       unsigned char *returnData)
-{
-	char cmd_buf[1] = { 0x00 };
-	char readData = 0;
-	int ret = 0;
-
-	mutex_lock(&bq25601_i2c_access);
-
-	/* new_client->addr = ((new_client->addr) & I2C_MASK_FLAG) |
-	 * I2C_WR_FLAG;
-	 */
-	new_client->ext_flag =
-		((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG |
-		I2C_DIRECTION_FLAG;
-
-	cmd_buf[0] = cmd;
-	ret = i2c_master_send(new_client, &cmd_buf[0], (1 << 8 | 1));
-	if (ret < 0) {
-		/* new_client->addr = new_client->addr & I2C_MASK_FLAG; */
-		new_client->ext_flag = 0;
-		mutex_unlock(&bq25601_i2c_access);
-
-		return 0;
-	}
-
-	readData = cmd_buf[0];
-	*returnData = readData;
-
-	/* new_client->addr = new_client->addr & I2C_MASK_FLAG; */
-	new_client->ext_flag = 0;
-	mutex_unlock(&bq25601_i2c_access);
-
-	return 1;
-}
-
-unsigned int bq25601_write_byte(unsigned char cmd,
-				unsigned char writeData)
-{
-	char write_data[2] = { 0 };
-	int ret = 0;
-
-	mutex_lock(&bq25601_i2c_access);
-
-	write_data[0] = cmd;
-	write_data[1] = writeData;
-
-	new_client->ext_flag = ((new_client->ext_flag) & I2C_MASK_FLAG) |
-			       I2C_DIRECTION_FLAG;
-
-	ret = i2c_master_send(new_client, write_data, 2);
-	if (ret < 0) {
-		new_client->ext_flag = 0;
-		mutex_unlock(&bq25601_i2c_access);
-		return 0;
-	}
-
-	new_client->ext_flag = 0;
-	mutex_unlock(&bq25601_i2c_access);
-	return 1;
-}
-#else
-unsigned int bq25601_read_byte(unsigned char cmd,
-			       unsigned char *returnData)
-{
-	unsigned char xfers = 2;
-	int ret, retries = 1;
-
-	mutex_lock(&bq25601_i2c_access);
-
-	do {
-		struct i2c_msg msgs[2] = {
-			{
-				.addr = new_client->addr,
-				.flags = 0,
-				.len = 1,
-				.buf = &cmd,
-			},
-			{
-
-				.addr = new_client->addr,
-				.flags = I2C_M_RD,
-				.len = 1,
-				.buf = returnData,
-			}
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(new_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			pr_info("skipping non-existent adapter %s\n",
-				new_client->adapter->name);
-			break;
-		}
-	} while (ret != xfers && --retries);
-
-	mutex_unlock(&bq25601_i2c_access);
-
-	return ret == xfers ? 1 : -1;
-}
-
-unsigned int bq25601_write_byte(unsigned char cmd,
-				unsigned char writeData)
-{
-	unsigned char xfers = 1;
-	int ret, retries = 1;
-	unsigned char buf[8];
-
-	mutex_lock(&bq25601_i2c_access);
-
-	buf[0] = cmd;
-	memcpy(&buf[1], &writeData, 1);
-
-	do {
-		struct i2c_msg msgs[1] = {
-			{
-				.addr = new_client->addr,
-				.flags = 0,
-				.len = 1 + 1,
-				.buf = buf,
-			},
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(new_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			pr_info("skipping non-existent adapter %s\n",
-				new_client->adapter->name);
-			break;
-		}
-	} while (ret != xfers && --retries);
-
-	mutex_unlock(&bq25601_i2c_access);
-
-	return ret == xfers ? 1 : -1;
-}
-#endif
-/**********************************************************
- *
- *   [Read / Write Function]
- *
- *********************************************************/
-unsigned int bq25601_read_interface(unsigned char RegNum,
-				    unsigned char *val, unsigned char MASK,
-				    unsigned char SHIFT)
-{
-	unsigned char bq25601_reg = 0;
-	unsigned int ret = 0;
-
-	ret = bq25601_read_byte(RegNum, &bq25601_reg);
-
-	pr_debug_ratelimited("[%s] Reg[%x]=0x%x\n", __func__,
-			     RegNum, bq25601_reg);
-
-	bq25601_reg &= (MASK << SHIFT);
-	*val = (bq25601_reg >> SHIFT);
-
-	pr_debug_ratelimited("[%s] val=0x%x\n", __func__, *val);
-
-	return ret;
-}
-
-unsigned int bq25601_config_interface(unsigned char RegNum,
-				      unsigned char val, unsigned char MASK,
-				      unsigned char SHIFT)
-{
-	unsigned char bq25601_reg = 0;
-	unsigned char bq25601_reg_ori = 0;
-	unsigned int ret = 0;
-
-	mutex_lock(&bq25601_access_lock);
-	ret = bq25601_read_byte(RegNum, &bq25601_reg);
-
-	bq25601_reg_ori = bq25601_reg;
-	bq25601_reg &= ~(MASK << SHIFT);
-	bq25601_reg |= (val << SHIFT);
-
-	ret = bq25601_write_byte(RegNum, bq25601_reg);
-	mutex_unlock(&bq25601_access_lock);
-	pr_debug_ratelimited("[%s] write Reg[%x]=0x%x from 0x%x\n", __func__,
-			     RegNum,
-			     bq25601_reg, bq25601_reg_ori);
-
-	/* Check */
-	/* bq25601_read_byte(RegNum, &bq25601_reg); */
-	/* pr_info("[%s] Check Reg[%x]=0x%x\n", __func__,*/
-	/* RegNum, bq25601_reg); */
-
-	return ret;
-}
-
-/* write one register directly */
-unsigned int bq25601_reg_config_interface(unsigned char RegNum,
-		unsigned char val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_write_byte(RegNum, val);
-
-	return ret;
-}
-
-/**********************************************************
- *
- *   [Internal Function]
- *
- *********************************************************/
-/* CON0---------------------------------------------------- */
-void bq25601_set_en_hiz(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
-				       (unsigned char) (val),
-				       (unsigned char) (CON0_EN_HIZ_MASK),
-				       (unsigned char) (CON0_EN_HIZ_SHIFT)
-				      );
-}
-
-void bq25601_set_iinlim(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
-				       (unsigned char) (val),
-				       (unsigned char) (CON0_IINLIM_MASK),
-				       (unsigned char) (CON0_IINLIM_SHIFT)
-				      );
-}
-
-void bq25601_set_stat_ctrl(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
-				   (unsigned char) (val),
-				   (unsigned char) (CON0_STAT_IMON_CTRL_MASK),
-				   (unsigned char) (CON0_STAT_IMON_CTRL_SHIFT)
-				   );
-}
-
-/* CON1---------------------------------------------------- */
-
-void bq25601_set_reg_rst(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON11),
-				       (unsigned char) (val),
-				       (unsigned char) (CON11_REG_RST_MASK),
-				       (unsigned char) (CON11_REG_RST_SHIFT)
-				      );
-}
-
-void bq25601_set_pfm(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON1),
-				       (unsigned char) (val),
-				       (unsigned char) (CON1_PFM_MASK),
-				       (unsigned char) (CON1_PFM_SHIFT)
-				      );
-}
-
-void bq25601_set_wdt_rst(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON1),
-				       (unsigned char) (val),
-				       (unsigned char) (CON1_WDT_RST_MASK),
-				       (unsigned char) (CON1_WDT_RST_SHIFT)
-				      );
-}
-
-void bq25601_set_otg_config(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON1),
-				       (unsigned char) (val),
-				       (unsigned char) (CON1_OTG_CONFIG_MASK),
-				       (unsigned char) (CON1_OTG_CONFIG_SHIFT)
-				      );
-}
-
-
-void bq25601_set_chg_config(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON1),
-				       (unsigned char) (val),
-				       (unsigned char) (CON1_CHG_CONFIG_MASK),
-				       (unsigned char) (CON1_CHG_CONFIG_SHIFT)
-				      );
-}
-
-
-void bq25601_set_sys_min(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON1),
-				       (unsigned char) (val),
-				       (unsigned char) (CON1_SYS_MIN_MASK),
-				       (unsigned char) (CON1_SYS_MIN_SHIFT)
-				      );
-}
-
-void bq25601_set_batlowv(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON1),
-				       (unsigned char) (val),
-				       (unsigned char) (CON1_MIN_VBAT_SEL_MASK),
-				       (unsigned char) (CON1_MIN_VBAT_SEL_SHIFT)
-				      );
-}
-
-
-
-/* CON2---------------------------------------------------- */
-void bq25601_set_rdson(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON2),
-				       (unsigned char) (val),
-				       (unsigned char) (CON2_Q1_FULLON_MASK),
-				       (unsigned char) (CON2_Q1_FULLON_SHIFT)
-				      );
-}
-
-void bq25601_set_boost_lim(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON2),
-				       (unsigned char) (val),
-				       (unsigned char) (CON2_BOOST_LIM_MASK),
-				       (unsigned char) (CON2_BOOST_LIM_SHIFT)
-				      );
-}
-
-void bq25601_set_ichg(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON2),
-				       (unsigned char) (val),
-				       (unsigned char) (CON2_ICHG_MASK),
-				       (unsigned char) (CON2_ICHG_SHIFT)
-				      );
-}
-
-#if 0 //this function does not exist on bq25601
-void bq25601_set_force_20pct(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON2),
-				       (unsigned char) (val),
-				       (unsigned char) (CON2_FORCE_20PCT_MASK),
-				       (unsigned char) (CON2_FORCE_20PCT_SHIFT)
-				      );
-}
-#endif
-/* CON3---------------------------------------------------- */
-
-void bq25601_set_iprechg(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON3),
-				       (unsigned char) (val),
-				       (unsigned char) (CON3_IPRECHG_MASK),
-				       (unsigned char) (CON3_IPRECHG_SHIFT)
-				      );
-}
-
-void bq25601_set_iterm(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON3),
-				       (unsigned char) (val),
-				       (unsigned char) (CON3_ITERM_MASK),
-				       (unsigned char) (CON3_ITERM_SHIFT)
-				      );
-}
-
-/* CON4---------------------------------------------------- */
-
-void bq25601_set_vreg(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON4),
-				       (unsigned char) (val),
-				       (unsigned char) (CON4_VREG_MASK),
-				       (unsigned char) (CON4_VREG_SHIFT)
-				      );
-}
-
-void bq25601_set_topoff_timer(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON4),
-				       (unsigned char) (val),
-				       (unsigned char) (CON4_TOPOFF_TIMER_MASK),
-				       (unsigned char) (CON4_TOPOFF_TIMER_SHIFT)
-				      );
-
-}
-
-
-void bq25601_set_vrechg(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON4),
-				       (unsigned char) (val),
-				       (unsigned char) (CON4_VRECHG_MASK),
-				       (unsigned char) (CON4_VRECHG_SHIFT)
-				      );
-}
-
-/* CON5---------------------------------------------------- */
-
-void bq25601_set_en_term(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON5),
-				       (unsigned char) (val),
-				       (unsigned char) (CON5_EN_TERM_MASK),
-				       (unsigned char) (CON5_EN_TERM_SHIFT)
-				      );
-}
-
-
-
-void bq25601_set_watchdog(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON5),
-				       (unsigned char) (val),
-				       (unsigned char) (CON5_WATCHDOG_MASK),
-				       (unsigned char) (CON5_WATCHDOG_SHIFT)
-				      );
-}
-
-void bq25601_set_en_timer(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON5),
-				       (unsigned char) (val),
-				       (unsigned char) (CON5_EN_TIMER_MASK),
-				       (unsigned char) (CON5_EN_TIMER_SHIFT)
-				      );
-}
-
-void bq25601_set_chg_timer(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON5),
-				       (unsigned char) (val),
-				       (unsigned char) (CON5_CHG_TIMER_MASK),
-				       (unsigned char) (CON5_CHG_TIMER_SHIFT)
-				      );
-}
-
-/* CON6---------------------------------------------------- */
-
-void bq25601_set_treg(unsigned int val)
-{
-#if 0
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON6),
-				       (unsigned char) (val),
-				       (unsigned char) (CON6_BOOSTV_MASK),
-				       (unsigned char) (CON6_BOOSTV_SHIFT)
-				      );
-#endif
-}
-
-void bq25601_set_vindpm(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON6),
-				       (unsigned char) (val),
-				       (unsigned char) (CON6_VINDPM_MASK),
-				       (unsigned char) (CON6_VINDPM_SHIFT)
-				      );
-}
-
-
-void bq25601_set_ovp(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON6),
-				       (unsigned char) (val),
-				       (unsigned char) (CON6_OVP_MASK),
-				       (unsigned char) (CON6_OVP_SHIFT)
-				      );
-
-}
-
-void bq25601_set_boostv(unsigned int val)
-{
-
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON6),
-				       (unsigned char) (val),
-				       (unsigned char) (CON6_BOOSTV_MASK),
-				       (unsigned char) (CON6_BOOSTV_SHIFT)
-				      );
-}
-
-
-
-/* CON7---------------------------------------------------- */
-
-void bq25601_set_tmr2x_en(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON7),
-				       (unsigned char) (val),
-				       (unsigned char) (CON7_TMR2X_EN_MASK),
-				       (unsigned char) (CON7_TMR2X_EN_SHIFT)
-				      );
-}
-
-void bq25601_set_batfet_disable(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON7),
-				(unsigned char) (val),
-				(unsigned char) (CON7_BATFET_Disable_MASK),
-				(unsigned char) (CON7_BATFET_Disable_SHIFT)
-				);
-}
-
-
-void bq25601_set_batfet_delay(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON7),
-				       (unsigned char) (val),
-				       (unsigned char) (CON7_BATFET_DLY_MASK),
-				       (unsigned char) (CON7_BATFET_DLY_SHIFT)
-				      );
-}
-
-void bq25601_set_batfet_reset_enable(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON7),
-				(unsigned char) (val),
-				(unsigned char) (CON7_BATFET_RST_EN_MASK),
-				(unsigned char) (CON7_BATFET_RST_EN_SHIFT)
-				);
-}
-
-
-/* CON8---------------------------------------------------- */
-
-unsigned int bq25601_get_system_status(void)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25601_read_interface((unsigned char) (bq25601_CON8),
-				     (&val), (unsigned char) (0xFF),
-				     (unsigned char) (0x0)
-				    );
-	return val;
-}
-
-unsigned int bq25601_get_vbus_stat(void)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25601_read_interface((unsigned char) (bq25601_CON8),
-				     (&val),
-				     (unsigned char) (CON8_VBUS_STAT_MASK),
-				     (unsigned char) (CON8_VBUS_STAT_SHIFT)
-				    );
-	return val;
-}
-
-unsigned int bq25601_get_chrg_stat(void)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25601_read_interface((unsigned char) (bq25601_CON8),
-				     (&val),
-				     (unsigned char) (CON8_CHRG_STAT_MASK),
-				     (unsigned char) (CON8_CHRG_STAT_SHIFT)
-				    );
-	return val;
-}
-
-unsigned int bq25601_get_vsys_stat(void)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25601_read_interface((unsigned char) (bq25601_CON8),
-				     (&val),
-				     (unsigned char) (CON8_VSYS_STAT_MASK),
-				     (unsigned char) (CON8_VSYS_STAT_SHIFT)
-				    );
-	return val;
-}
-
-unsigned int bq25601_get_pg_stat(void)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25601_read_interface((unsigned char) (bq25601_CON8),
-				     (&val),
-				     (unsigned char) (CON8_PG_STAT_MASK),
-				     (unsigned char) (CON8_PG_STAT_SHIFT)
-				    );
-	return val;
-}
-
-
-/*CON10----------------------------------------------------------*/
-
-void bq25601_set_int_mask(unsigned int val)
-{
-	unsigned int ret = 0;
-
-	ret = bq25601_config_interface((unsigned char) (bq25601_CON10),
-				       (unsigned char) (val),
-				       (unsigned char) (CON10_INT_MASK_MASK),
-				       (unsigned char) (CON10_INT_MASK_SHIFT)
-				      );
-}
-
-/**********************************************************
- *
- *   [Internal Function]
- *
- *********************************************************/
-static int bq25601_dump_register(struct charger_device *chg_dev)
-{
-
-	unsigned char i = 0;
-	unsigned int ret = 0;
-
-	pr_info("[bq25601] ");
-	for (i = 0; i < bq25601_REG_NUM; i++) {
-		ret = bq25601_read_byte(i, &bq25601_reg[i]);
-		if (ret == 0) {
-			pr_info("[bq25601] i2c transfor error\n");
-			return 1;
-		}
-		pr_info("[0x%x]=0x%x ", i, bq25601_reg[i]);
-	}
-	pr_debug("\n");
-	return 0;
-}
-
-
-/**********************************************************
- *
- *   [Internal Function]
- *
- *********************************************************/
-static void bq25601_hw_component_detect(void)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25601_read_interface(0x0B, &val, 0xFF, 0x0);
-
-	if (val == 0)
-		g_bq25601_hw_exist = 0;
-	else
-		g_bq25601_hw_exist = 1;
-
-	pr_info("[%s] exist=%d, Reg[0x0B]=0x%x\n", __func__,
-		g_bq25601_hw_exist, val);
-}
-
-
-static int bq25601_enable_charging(struct charger_device *chg_dev,
-				   bool en)
-{
-	int status = 0;
-
-	pr_info("enable state : %d\n", en);
-	if (en) {
-		/* bq25601_config_interface(bq25601_CON3, 0x1, 0x1, 4); */
-		/* enable charging */
-		bq25601_set_en_hiz(0x0);
-		bq25601_set_chg_config(en);
-	} else {
-		/* bq25601_config_interface(bq25601_CON3, 0x0, 0x1, 4); */
-		/* enable charging */
-		bq25601_set_chg_config(en);
-		pr_info("[charging_enable] under test mode: disable charging\n");
-
-		/*bq25601_set_en_hiz(0x1);*/
-	}
-
-	return status;
-}
-
-static int bq25601_get_current(struct charger_device *chg_dev,
-			       u32 *ichg)
-{
-	unsigned int ret_val = 0;
-#if 0 //todo
-	unsigned char ret_force_20pct = 0;
-
-	/* Get current level */
-	bq25601_read_interface(bq25601_CON2, &ret_val, CON2_ICHG_MASK,
-			       CON2_ICHG_SHIFT);
-
-	/* Get Force 20% option */
-	bq25601_read_interface(bq25601_CON2, &ret_force_20pct,
-			       CON2_FORCE_20PCT_MASK,
-			       CON2_FORCE_20PCT_SHIFT);
-
-	/* Parsing */
-	ret_val = (ret_val * 64) + 512;
-
-#endif
-	return ret_val;
-}
-
-static int bq25601_set_current(struct charger_device *chg_dev,
-			       u32 current_value)
-{
-	unsigned int status = true;
-	unsigned int set_chr_current;
-	unsigned int array_size;
-	unsigned int register_value;
-
-	pr_info("&&&& charge_current_value = %d\n", current_value);
-	current_value /= 10;
-	array_size = GETARRAYNUM(CS_VTH);
-	set_chr_current = bmt_find_closest_level(CS_VTH, array_size,
-			  current_value);
-	register_value = charging_parameter_to_value(CS_VTH, array_size,
-			 set_chr_current);
-	//pr_info("&&&& charge_register_value = %d\n",register_value);
-	pr_info("&&&& %s register_value = %d\n", __func__,
-		register_value);
-	bq25601_set_ichg(register_value);
-
-	return status;
-}
-
-static int bq25601_get_input_current(struct charger_device *chg_dev,
-				     u32 *aicr)
-{
-	int ret = 0;
-#if 0
-	unsigned char val = 0;
-
-	bq25601_read_interface(bq25601_CON0, &val, CON0_IINLIM_MASK,
-			       CON0_IINLIM_SHIFT);
-	ret = (int)val;
-	*aicr = INPUT_CS_VTH[val];
-#endif
-	return ret;
-}
-
-
-static int bq25601_set_input_current(struct charger_device *chg_dev,
-				     u32 current_value)
-{
-	unsigned int status = true;
-	unsigned int set_chr_current;
-	unsigned int array_size;
-	unsigned int register_value;
-
-	current_value /= 10;
-	pr_info("&&&& current_value = %d\n", current_value);
-	array_size = GETARRAYNUM(INPUT_CS_VTH);
-	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size,
-			  current_value);
-	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size,
-			 set_chr_current);
-	pr_info("&&&& %s register_value = %d\n", __func__,
-		register_value);
-	bq25601_set_iinlim(register_value);
-
-	return status;
-}
-
-static int bq25601_set_cv_voltage(struct charger_device *chg_dev,
-				  u32 cv)
-{
-	unsigned int status = true;
-	unsigned int array_size;
-	unsigned int set_cv_voltage;
-	unsigned short register_value;
-
-	array_size = GETARRAYNUM(VBAT_CV_VTH);
-	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, cv);
-	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size,
-			 set_cv_voltage);
-	bq25601_set_vreg(register_value);
-	pr_info("&&&& cv reg value = %d\n", register_value);
-
-	return status;
-}
-
-static int bq25601_reset_watch_dog_timer(struct charger_device
-		*chg_dev)
-{
-	unsigned int status = true;
-
-	pr_info("charging_reset_watch_dog_timer\n");
-
-	bq25601_set_wdt_rst(0x1);	/* Kick watchdog */
-	bq25601_set_watchdog(0x3);	/* WDT 160s */
-
-	return status;
-}
-
-
-static int bq25601_set_vindpm_voltage(struct charger_device *chg_dev,
-				      u32 vindpm)
-{
-	int status = 0;
-	unsigned int array_size;
-
-	vindpm /= 1000;
-	array_size = ARRAY_SIZE(VINDPM_REG);
-	vindpm = bmt_find_closest_level(VINDPM_REG, array_size, vindpm);
-	vindpm = charging_parameter_to_value(VINDPM_REG, array_size, vindpm);
-
-	pr_info("%s vindpm =%d\r\n", __func__, vindpm);
-
-	//	charging_set_vindpm(vindpm);
-	/*bq25601_set_en_hiz(en);*/
-
-	return status;
-}
-
-static int bq25601_get_charging_status(struct charger_device *chg_dev,
-				       bool *is_done)
-{
-	unsigned int status = true;
-	unsigned int ret_val;
-
-	ret_val = bq25601_get_chrg_stat();
-
-	if (ret_val == 0x3)
-		*is_done = true;
-	else
-		*is_done = false;
-
-	return status;
-}
-
-static int bq25601_enable_otg(struct charger_device *chg_dev, bool en)
-{
-	int ret = 0;
-
-	pr_info("%s en = %d\n", __func__, en);
-	if (en) {
-		bq25601_set_chg_config(0);
-		bq25601_set_otg_config(1);
-		bq25601_set_watchdog(0x3);	/* WDT 160s */
-	} else {
-		bq25601_set_otg_config(0);
-		bq25601_set_chg_config(1);
-	}
-	return ret;
-}
-
-static int bq25601_set_boost_current_limit(struct charger_device
-		*chg_dev, u32 uA)
-{
-	int ret = 0;
-	u32 array_size = 0;
-	u32 boost_ilimit = 0;
-	u8 boost_reg = 0;
-
-	uA /= 1000;
-	array_size = ARRAY_SIZE(BOOST_CURRENT_LIMIT);
-	boost_ilimit = bmt_find_closest_level(BOOST_CURRENT_LIMIT, array_size,
-					      uA);
-	boost_reg = charging_parameter_to_value(BOOST_CURRENT_LIMIT,
-						array_size, boost_ilimit);
-	bq25601_set_boost_lim(boost_reg);
-
-	return ret;
-}
-
-static int bq25601_enable_safetytimer(struct charger_device *chg_dev,
-				      bool en)
-{
-	int status = 0;
-
-	if (en)
-		bq25601_set_en_timer(0x1);
-	else
-		bq25601_set_en_timer(0x0);
-	return status;
-}
-
-static int bq25601_get_is_safetytimer_enable(struct charger_device
-		*chg_dev, bool *en)
-{
-	unsigned char val = 0;
-
-	bq25601_read_interface(bq25601_CON5, &val, CON5_EN_TIMER_MASK,
-			       CON5_EN_TIMER_SHIFT);
-	*en = (bool)val;
-	return val;
-}
-
-
-static unsigned int charging_hw_init(void)
-{
-	unsigned int status = 0;
-
-	bq25601_set_en_hiz(0x0);
-	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.6V */
-	bq25601_set_wdt_rst(0x1);	/* Kick watchdog */
-	bq25601_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
-	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
-	bq25601_set_iterm(0x2);	/* Termination current 180mA */
-	bq25601_set_vreg(0x11);	/* VREG 4.4V */
-	bq25601_set_pfm(0x1);//disable pfm
-	bq25601_set_rdson(0x0);     /*close rdson*/
-	bq25601_set_batlowv(0x1);	/* BATLOWV 3.0V */
-	bq25601_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
-	bq25601_set_en_term(0x1);	/* Enable termination */
-	bq25601_set_watchdog(0x3);	/* WDT 160s */
-	bq25601_set_en_timer(0x0);	/* Enable charge timer */
-	bq25601_set_int_mask(0x0);	/* Disable fault interrupt */
-	pr_info("%s: hw_init down!\n", __func__);
-	return status;
-}
-
-static int bq25601_parse_dt(struct bq25601_info *info,
-			    struct device *dev)
-{
-	struct device_node *np = dev->of_node;
-	//int bq25601_en_pin = 0;
-
-	pr_info("%s\n", __func__);
-	if (!np) {
-		pr_info("%s: no of node\n", __func__);
+		pr_info("couldn't get irq node\n");
 		return -ENODEV;
 	}
 
-	if (of_property_read_string(np, "charger_name",
-				    &info->chg_dev_name) < 0) {
-		info->chg_dev_name = "primary_chg";
-		pr_info("%s: no charger name\n", __func__);
+	pr_info("irq = %d\n", bq->irq);
+
+	ret = devm_request_threaded_irq(bq->dev, bq->irq, NULL,
+					bq25601_irq_handler,
+					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+					bq->eint_name, bq);
+	if (ret < 0) {
+		pr_info("request thread irq failed:%d\n", ret);
+		return ret;
 	}
 
-	if (of_property_read_string(np, "alias_name",
-				    &(info->chg_props.alias_name)) < 0) {
-		info->chg_props.alias_name = "bq25601";
-		pr_info("%s: no alias name\n", __func__);
-	}
-	/*
-	 * bq25601_en_pin = of_get_named_gpio(np,"gpio_bq25601_en",0);
-	 * if(bq25601_en_pin < 0){
-	 * pr_info("%s: no bq25601_en_pin\n", __func__);
-	 * return -ENODATA;
-	 * }
-	 * gpio_request(bq25601_en_pin,"bq25601_en_pin");
-	 * gpio_direction_output(bq25601_en_pin,0);
-	 * gpio_set_value(bq25601_en_pin,0);
-	 */
-	/*
-	 * if (of_property_read_string(np, "eint_name", &info->eint_name) < 0) {
-	 * info->eint_name = "chr_stat";
-	 * pr_debug("%s: no eint name\n", __func__);
-	 * }
-	 */
+	enable_irq_wake(bq->irq);
+
+	return 0;
+}
+#endif
+
+static int bq25601_init_device(struct bq25601 *bq)
+{
+	int ret;
+
+	bq25601_disable_watchdog_timer(bq);
+
+	ret = bq25601_set_stat_ctrl(bq, bq->platform_data->statctrl);
+	if (ret)
+		pr_info("Failed to set stat pin control mode, ret = %d\n", ret);
+
+	ret = bq25601_set_prechg_current(bq, bq->platform_data->iprechg);
+	if (ret)
+		pr_info("Failed to set prechg current, ret = %d\n", ret);
+
+	ret = bq25601_set_term_current(bq, bq->platform_data->iterm);
+	if (ret)
+		pr_info("Failed to set termination current, ret = %d\n", ret);
+
+	ret = bq25601_set_boost_voltage(bq, bq->platform_data->boostv);
+	if (ret)
+		pr_info("Failed to set boost voltage, ret = %d\n", ret);
+
+	ret = bq25601_set_boost_current(bq, bq->platform_data->boosti);
+	if (ret)
+		pr_info("Failed to set boost current, ret = %d\n", ret);
+
+	ret = bq25601_set_acovp_threshold(bq, bq->platform_data->vac_ovp);
+	if (ret)
+		pr_info("Failed to set acovp threshold, ret = %d\n", ret);
+
+	ret = bq25601_set_int_mask(bq, REG0A_IINDPM_INT_MASK |
+					       REG0A_VINDPM_INT_MASK);
+	if (ret)
+		pr_info("Failed to set vindpm and iindpm int mask\n");
+
 	return 0;
 }
 
-static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
-			    u32 args)
+#if 0
+static void determine_initial_status(struct bq25601 *bq)
 {
-	if (chg_dev == NULL)
-		return -EINVAL;
+	bq25601_irq_handler(bq->irq, (void *) bq);
+}
+#endif
 
-	pr_info("%s: event = %d\n", __func__, event);
-	switch (event) {
-	case EVENT_EOC:
-		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
-		break;
-	case EVENT_RECHARGE:
-		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_RECHG);
-		break;
-	default:
-		break;
+static int bq25601_detect_device(struct bq25601 *bq)
+{
+	int ret;
+	u8 data;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_0B, &data);
+	if (!ret) {
+		bq->part_no = (data & REG0B_PN_MASK) >> REG0B_PN_SHIFT;
+		bq->revision =
+			(data & REG0B_DEV_REV_MASK) >> REG0B_DEV_REV_SHIFT;
+		pr_info("%s;part_no=%x;revision=%x;\n", __func__,bq->part_no,bq->revision);
 	}
 
+	return ret;
+}
+
+static void bq25601_dump_regs(struct bq25601 *bq)
+{
+	int addr;
+	u8 val;
+	int ret;
+
+	for (addr = 0x0; addr <= 0x0B; addr++) {
+		ret = bq25601_read_byte(bq, addr, &val);
+		if (!ret)
+			pr_info("Reg[%.2x] = 0x%.2x\n", addr, val);
+	}
+}
+
+static ssize_t bq25601_show_registers(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	struct bq25601 *bq = dev_get_drvdata(dev);
+	u8 addr;
+	u8 val;
+	u8 tmpbuf[200];
+	int len;
+	int idx = 0;
+	int ret;
+
+	idx = snprintf(buf, PAGE_SIZE, "%s:\n", "bq25601 Reg");
+	for (addr = 0x0; addr <= 0x0B; addr++) {
+		ret = bq25601_read_byte(bq, addr, &val);
+		if (ret == 0) {
+			len = snprintf(tmpbuf, PAGE_SIZE - idx,
+				       "Reg[%.2x] = 0x%.2x\n", addr, val);
+			memcpy(&buf[idx], tmpbuf, len);
+			idx += len;
+		}
+	}
+
+	return idx;
+}
+
+static ssize_t bq25601_store_registers(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t count)
+{
+	struct bq25601 *bq = dev_get_drvdata(dev);
+	int ret;
+	unsigned int reg;
+	unsigned int val;
+
+	ret = sscanf(buf, "%x %x", &reg, &val);
+	if (ret == 2 && reg < 0x0B)
+		bq25601_write_byte(bq, (unsigned char)reg, (unsigned char)val);
+
+	return count;
+}
+
+static DEVICE_ATTR(registers, 0644, bq25601_show_registers,
+		   bq25601_store_registers);
+
+static struct attribute *bq25601_attributes[] = {
+	&dev_attr_registers.attr, NULL,
+};
+
+static const struct attribute_group bq25601_attr_group = {
+	.attrs = bq25601_attributes,
+};
+
+static int bq25601_charging(struct charger_device *chg_dev, bool enable)
+{
+
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret = 0;
+	u8 val;
+
+	if (enable)
+		ret = bq25601_enable_charger(bq);
+	else
+		ret = bq25601_disable_charger(bq);
+
+	pr_info("%s charger %s\n", enable ? "enable" : "disable",
+	       !ret ? "successfully" : "failed");
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_01, &val);
+
+	if (!ret)
+		bq->charge_enabled = !!(val & REG01_CHG_CONFIG_MASK);
+
+	return ret;
+}
+
+static int bq25601_plug_in(struct charger_device *chg_dev)
+{
+
+	int ret;
+
+	ret = bq25601_charging(chg_dev, true);
+
+	if (ret)
+		pr_info("Failed to enable charging:%d\n", ret);
+
+	return ret;
+}
+
+static int bq25601_plug_out(struct charger_device *chg_dev)
+{
+	int ret;
+
+	ret = bq25601_charging(chg_dev, false);
+
+	if (ret)
+		pr_info("Failed to disable charging:%d\n", ret);
+
+	return ret;
+}
+
+static int bq25601_dump_register(struct charger_device *chg_dev)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+
+	bq25601_dump_regs(bq);
+
 	return 0;
+}
+
+static int bq25601_is_charging_enable(struct charger_device *chg_dev, bool *en)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+
+	*en = bq->charge_enabled;
+
+	return 0;
+}
+
+static int bq25601_is_charging_done(struct charger_device *chg_dev, bool *done)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+	u8 val;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_08, &val);
+	if (!ret) {
+		val = val & REG08_CHRG_STAT_MASK;
+		val = val >> REG08_CHRG_STAT_SHIFT;
+		*done = (val == REG08_CHRG_STAT_CHGDONE);
+	}
+
+	return ret;
+}
+
+static int bq25601_set_ichg(struct charger_device *chg_dev, u32 curr)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+       int ret;
+	pr_info("charge curr = %d\n", curr);
+       ret = bq25601_set_chargecurrent(bq, curr / 1000);
+
+	return ret;
+}
+
+static int bq25601_get_ichg(struct charger_device *chg_dev, u32 *curr)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	u8 reg_val;
+	int ichg;
+	int ret;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_02, &reg_val);
+	if (!ret) {
+		ichg = (reg_val & REG02_ICHG_MASK) >> REG02_ICHG_SHIFT;
+		ichg = ichg * REG02_ICHG_LSB + REG02_ICHG_BASE;
+		*curr = ichg * 1000;
+	}
+
+	return ret;
+}
+
+static int bq25601_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
+{
+	*curr = 60 * 1000;
+
+	return 0;
+}
+
+static int bq25601_set_vchg(struct charger_device *chg_dev, u32 volt)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+        int ret=0;
+	pr_info("charge volt = %d\n", volt);
+       ret = bq25601_set_chargevolt(bq, volt / 1000);
+	return ret;
+}
+
+static int bq25601_get_vchg(struct charger_device *chg_dev, u32 *volt)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	u8 reg_val;
+	int vchg;
+	int ret;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_04, &reg_val);
+	if (!ret) {
+		vchg = (reg_val & REG04_VREG_MASK) >> REG04_VREG_SHIFT;
+		vchg = vchg * REG04_VREG_LSB + REG04_VREG_BASE;
+		*volt = vchg * 1000;
+	}
+
+	return ret;
+}
+
+static int bq25601_set_ivl(struct charger_device *chg_dev, u32 volt)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+
+	pr_info("vindpm volt = %d\n", volt);
+
+	return bq25601_set_input_volt_limit(bq, volt / 1000);
+}
+
+static int bq25601_set_icl(struct charger_device *chg_dev, u32 curr)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+       int ret=0;
+	pr_info("indpm curr = %d\n", curr);
+
+	ret =bq25601_set_input_current_limit(bq, curr / 1000);
+
+	return ret;
+}
+
+static int bq25601_get_icl(struct charger_device *chg_dev, u32 *curr)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	u8 reg_val;
+	int icl;
+	int ret;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_00, &reg_val);
+	if (!ret) {
+		icl = (reg_val & REG00_IINLIM_MASK) >> REG00_IINLIM_SHIFT;
+		icl = icl * REG00_IINLIM_LSB + REG00_IINLIM_BASE;
+		*curr = icl * 1000;
+	}
+
+	return ret;
+}
+
+static int bq25601_kick_wdt(struct charger_device *chg_dev)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+
+	return bq25601_reset_watchdog_timer(bq);
+}
+
+static int bq25601_set_otg(struct charger_device *chg_dev, bool en)
+{
+	int ret;
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+
+	if (en)
+		ret = bq25601_enable_otg(bq);
+	else
+		ret = bq25601_disable_otg(bq);
+
+	pr_info("%s OTG %s\n", en ? "enable" : "disable",
+	       !ret ? "successfully" : "failed");
+
+
+	return ret;
+}
+
+static int bq25601_set_safety_timer(struct charger_device *chg_dev, bool en)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+
+	if (en)
+		ret = bq25601_enable_safety_timer(bq);
+	else
+		ret = bq25601_disable_safety_timer(bq);
+
+	return ret;
+}
+
+static int bq25601_is_safety_timer_enabled(struct charger_device *chg_dev,
+					   bool *en)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+	u8 reg_val;
+
+	ret = bq25601_read_byte(bq, BQ25601_REG_05, &reg_val);
+
+	if (!ret)
+		*en = !!(reg_val & REG05_EN_TIMER_MASK);
+
+	return ret;
+}
+
+static int bq25601_set_boost_ilmt(struct charger_device *chg_dev, u32 curr)
+{
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+
+	pr_info("otg curr = %d\n", curr);
+
+	ret = bq25601_set_boost_current(bq, curr / 1000);
+
+	return ret;
 }
 
 static struct charger_ops bq25601_chg_ops = {
-#if 0
-	.enable_hz = bq25601_enable_hz,
-#endif
-
 	/* Normal charging */
+	.plug_in = bq25601_plug_in,
+	.plug_out = bq25601_plug_out,
 	.dump_registers = bq25601_dump_register,
-	.enable = bq25601_enable_charging,
-	.get_charging_current = bq25601_get_current,
-	.set_charging_current = bq25601_set_current,
-	.get_input_current = bq25601_get_input_current,
-	.set_input_current = bq25601_set_input_current,
-	/*.get_constant_voltage = bq25601_get_battery_voreg,*/
-	.set_constant_voltage = bq25601_set_cv_voltage,
-	.kick_wdt = bq25601_reset_watch_dog_timer,
-	.set_mivr = bq25601_set_vindpm_voltage,
-	.is_charging_done = bq25601_get_charging_status,
+	.enable = bq25601_charging,
+	.is_enabled = bq25601_is_charging_enable,
+	.get_charging_current = bq25601_get_ichg,
+	.set_charging_current = bq25601_set_ichg,
+	.get_input_current = bq25601_get_icl,
+	.set_input_current = bq25601_set_icl,
+	.get_constant_voltage = bq25601_get_vchg,
+	.set_constant_voltage = bq25601_set_vchg,
+	.kick_wdt = bq25601_kick_wdt,
+	.set_mivr = bq25601_set_ivl,
+	.is_charging_done = bq25601_is_charging_done,
+	.get_min_charging_current = bq25601_get_min_ichg,
 
 	/* Safety timer */
-	.enable_safety_timer = bq25601_enable_safetytimer,
-	.is_safety_timer_enabled = bq25601_get_is_safetytimer_enable,
-
+	.enable_safety_timer = bq25601_set_safety_timer,
+	.is_safety_timer_enabled = bq25601_is_safety_timer_enabled,
 
 	/* Power path */
-	/*.enable_powerpath = bq25601_enable_power_path, */
-	/*.is_powerpath_enabled = bq25601_get_is_power_path_enable, */
-
+	.enable_powerpath = NULL,
+	.is_powerpath_enabled = NULL,
 
 	/* OTG */
-	.enable_otg = bq25601_enable_otg,
-	.set_boost_current_limit = bq25601_set_boost_current_limit,
-	.event = bq25601_do_event,
+	.enable_otg = bq25601_set_otg,
+	.set_boost_current_limit = bq25601_set_boost_ilmt,
+	.enable_discharge = NULL,
+
+	/* PE+/PE+20 */
+	.send_ta_current_pattern = NULL,
+	.set_pe20_efficiency_table = NULL,
+	.send_ta20_current_pattern = NULL,
+	.enable_cable_drop_comp = NULL,
+
+	/* ADC */
+	.get_tchg_adc = NULL,
 };
 
-
-static int bq25601_driver_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
-{
-	int ret = 0;
-	struct bq25601_info *info = NULL;
-
-	pr_info("[%s]\n", __func__);
-
-	info = devm_kzalloc(&client->dev, sizeof(struct bq25601_info),
-			    GFP_KERNEL);
-	if (!info)
-		return -ENOMEM;
-
-	new_client = client;
-	info->dev = &client->dev;
-
-	ret = bq25601_parse_dt(info, &client->dev);
-	if (ret < 0)
-		return ret;
-
-	bq25601_hw_component_detect();
-	charging_hw_init();
-
-	/* Register charger device */
-	info->chg_dev = charger_device_register(info->chg_dev_name,
-						&client->dev, info,
-						&bq25601_chg_ops,
-						&info->chg_props);
-	if (IS_ERR_OR_NULL(info->chg_dev)) {
-		pr_info("%s: register charger device  failed\n", __func__);
-		ret = PTR_ERR(info->chg_dev);
-		return ret;
-	}
-
-	bq25601_dump_register(info->chg_dev);
-
-	return 0;
-}
-
-/**********************************************************
- *
- *   [platform_driver API]
- *
- *********************************************************/
-unsigned char g_reg_value_bq25601;
-static ssize_t show_bq25601_access(struct device *dev,
-				   struct device_attribute *attr, char *buf)
-{
-	pr_info("[%s] 0x%x\n", __func__, g_reg_value_bq25601);
-	return sprintf(buf, "%u\n", g_reg_value_bq25601);
-}
-
-static ssize_t store_bq25601_access(struct device *dev,
-				    struct device_attribute *attr,
-				    const char *buf, size_t size)
-{
-	int ret = 0;
-	char *pvalue = NULL, *addr, *val;
-	unsigned int reg_value = 0;
-	unsigned int reg_address = 0;
-
-	pr_info("[%s]\n", __func__);
-
-	if (buf != NULL && size != 0) {
-		pr_info("[%s] buf is %s and size is %zu\n", __func__, buf,
-			size);
-
-		pvalue = (char *)buf;
-		if (size > 3) {
-			addr = strsep(&pvalue, " ");
-			ret = kstrtou32(addr, 16,
-				(unsigned int *)&reg_address);
-		} else
-			ret = kstrtou32(pvalue, 16,
-				(unsigned int *)&reg_address);
-
-		if (size > 3) {
-			val = strsep(&pvalue, " ");
-			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
-			pr_info(
-			"[%s] write bq25601 reg 0x%x with value 0x%x !\n",
-			__func__,
-			(unsigned int) reg_address, reg_value);
-			ret = bq25601_config_interface(reg_address,
-				reg_value, 0xFF, 0x0);
-		} else {
-			ret = bq25601_read_interface(reg_address,
-					     &g_reg_value_bq25601, 0xFF, 0x0);
-			pr_info(
-			"[%s] read bq25601 reg 0x%x with value 0x%x !\n",
-			__func__,
-			(unsigned int) reg_address, g_reg_value_bq25601);
-			pr_info(
-			"[%s] use \"cat bq25601_access\" to get value\n",
-			__func__);
-		}
-	}
-	return size;
-}
-
-static DEVICE_ATTR(bq25601_access, 0664, show_bq25601_access,
-		   store_bq25601_access);	/* 664 */
-
-static int bq25601_user_space_probe(struct platform_device *dev)
-{
-	int ret_device_file = 0;
-
-	pr_info("******** %s!! ********\n", __func__);
-
-	ret_device_file = device_create_file(&(dev->dev),
-					     &dev_attr_bq25601_access);
-
-	return 0;
-}
-
-struct platform_device bq25601_user_space_device = {
-	.name = "bq25601-user",
-	.id = -1,
-};
-
-static struct platform_driver bq25601_user_space_driver = {
-	.probe = bq25601_user_space_probe,
-	.driver = {
-		.name = "bq25601-user",
+static const struct of_device_id bq25601_charger_match_table[] = {
+	{
+		.compatible = "ti,bq25600", .data = &pn_data[PN_BQ25600],
 	},
-};
-
-#ifdef CONFIG_OF
-static const struct of_device_id bq25601_of_match[] = {
-	{.compatible = "mediatek,bq25601"},
+	{
+		.compatible = "ti,bq25600D", .data = &pn_data[PN_BQ25600D],
+	},
+	{
+		.compatible = "ti,bq25601", .data = &pn_data[PN_BQ25601],
+	},
+	{
+		.compatible = "ti,bq25601D", .data = &pn_data[PN_BQ25601D],
+	},
 	{},
 };
-#else
-static struct i2c_board_info i2c_bq25601 __initdata = {
-	I2C_BOARD_INFO("bq25601", (bq25601_SLAVE_ADDR_WRITE >> 1))
-};
-#endif
+// MODULE_DEVICE_TABLE(of, bq25601_charger_match_table);
 
-static struct i2c_driver bq25601_driver = {
-	.driver = {
-		.name = "bq25601",
-		.owner = THIS_MODULE,
-#ifdef CONFIG_OF
-		.of_match_table = bq25601_of_match,
-#endif
-	},
-	.probe = bq25601_driver_probe,
-	.id_table = bq25601_i2c_id,
-};
-
-static int __init bq25601_init(void)
+static int bq25601_charger_probe(struct i2c_client *client,
+				 const struct i2c_device_id *id)
 {
+	struct bq25601 *bq;
+	const struct of_device_id *match;
+	struct device_node *node = client->dev.of_node;
+
 	int ret = 0;
 
-	/* i2c registeration using DTS instead of boardinfo*/
-#ifdef CONFIG_OF
-	pr_info("[%s] init start with i2c DTS", __func__);
-#else
-	pr_info("[%s] init start. ch=%d\n", __func__, bq25601_BUSNUM);
-	i2c_register_board_info(bq25601_BUSNUM, &i2c_bq25601, 1);
-#endif
-	if (i2c_add_driver(&bq25601_driver) != 0) {
-		pr_info(
-			"[%s] failed to register bq25601 i2c driver.\n",
-			__func__);
-	} else {
-		pr_info(
-			"[%s] Success to register bq25601 i2c driver.\n",
-			__func__);
+	pr_info("bq25601 probe start\n");
+
+//+add by hzb for ontim debug
+        if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+        {
+           return -EIO;
+        }
+//-add by hzb for ontim debug
+
+	bq = devm_kzalloc(&client->dev, sizeof(struct bq25601), GFP_KERNEL);
+	if (!bq)
+		return -ENOMEM;
+
+	bq->dev = &client->dev;
+	bq->client = client;
+
+	i2c_set_clientdata(client, bq);
+
+	mutex_init(&bq->i2c_rw_lock);
+
+	ret = bq25601_detect_device(bq);
+	if (ret) {
+		pr_info("No bq25601 device found!\n");
+		return -ENODEV;
 	}
 
-	/* bq25601 user space access interface */
-	ret = platform_device_register(&bq25601_user_space_device);
+	match = of_match_node(bq25601_charger_match_table, node);
+	if (match == NULL) {
+		pr_info("device tree match not found\n");
+		return -EINVAL;
+	}
+
+	if (bq->part_no != *(int *)match->data)
+		pr_info("part no mismatch, hw:%s, devicetree:%s\n",
+			pn_str[bq->part_no], pn_str[*(int *)match->data]);
+
+	if( bq->part_no == 0x09)
+	       strncpy(charge_ic_vendor_name,"SY6974",20);
+	else if ( bq->part_no == 0x0f)
+       	strncpy(charge_ic_vendor_name,"BQ25601",20);
+
+
+	bq->platform_data = bq25601_parse_dt(node, bq);
+
+	if (!bq->platform_data) {
+		pr_info("No platform data provided.\n");
+		return -EINVAL;
+	}
+
+	ret = bq25601_init_device(bq);
 	if (ret) {
-		pr_info("****[%s] Unable to device register(%d)\n", __func__,
-			ret);
+		pr_info("Failed to init device\n");
 		return ret;
 	}
-	ret = platform_driver_register(&bq25601_user_space_driver);
-	if (ret) {
-		pr_info("****[%s] Unable to register driver (%d)\n", __func__,
-			ret);
+
+#if 0
+	bq25601_register_interrupt(bq);
+#endif
+
+	bq->chg_dev =
+		charger_device_register(bq->chg_dev_name, &client->dev, bq,
+					&bq25601_chg_ops, &bq25601_chg_props);
+	if (IS_ERR_OR_NULL(bq->chg_dev)) {
+		ret = PTR_ERR(bq->chg_dev);
 		return ret;
 	}
+
+	bq->psy = power_supply_get_by_name("charger");
+
+	if (!bq->psy) {
+		pr_err("%s: get power supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+
+	ret = sysfs_create_group(&bq->dev->kobj, &bq25601_attr_group);
+	if (ret)
+		dev_info(bq->dev, "failed to register sysfs. err: %d\n", ret);
+
+#if 0
+	determine_initial_status(bq);
+#endif
+
+	pr_info("bq25601 probe successfully, Part Num:%d, Revision:%d\n!",
+	       bq->part_no, bq->revision);
+
+//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
 
 	return 0;
 }
 
-static void __exit bq25601_exit(void)
+static int bq25601_charger_remove(struct i2c_client *client)
 {
-	i2c_del_driver(&bq25601_driver);
-}
-module_init(bq25601_init);
-module_exit(bq25601_exit);
+	struct bq25601 *bq = i2c_get_clientdata(client);
 
-MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("I2C bq25601 Driver");
-MODULE_AUTHOR("will cai <will.cai@mediatek.com>");
+	mutex_destroy(&bq->i2c_rw_lock);
+
+	sysfs_remove_group(&bq->dev->kobj, &bq25601_attr_group);
+
+	return 0;
+}
+
+static void bq25601_charger_shutdown(struct i2c_client *client)
+{
+}
+
+static const struct i2c_device_id bq25601_charger_id[] = {
+	{"bq25601", 0}, {},
+};
+
+MODULE_DEVICE_TABLE(i2c, bq25601_charger_id);
+
+static struct i2c_driver bq25601_charger_driver = {
+	.driver = {
+
+			.name = "bq25601-charger",
+			.owner = THIS_MODULE,
+			.of_match_table = bq25601_charger_match_table,
+		},
+
+	.probe = bq25601_charger_probe,
+	.remove = bq25601_charger_remove,
+	.shutdown = bq25601_charger_shutdown,
+	.id_table = bq25601_charger_id,
+
+};
+
+module_i2c_driver(bq25601_charger_driver);
+
+MODULE_DESCRIPTION("TI BQ25601 Charger Driver");
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Texas Instruments");
