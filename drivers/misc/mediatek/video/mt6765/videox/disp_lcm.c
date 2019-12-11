@@ -1028,12 +1028,16 @@ void load_lcm_resources_from_DT(struct LCM_DRIVER *lcm_drv)
 }
 #endif
 
+//BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,add lcd information
+char lcd_info_pr[255]={0};
+//END
 struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 	enum LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
 	int lcmindex = 0;
 	bool isLCMFound = false;
 	bool isLCMInited = false;
+	int len =0;
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	bool isLCMDtFound = false;
@@ -1109,6 +1113,11 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 			for (i = 0; i < _lcm_count(); i++) {
 				lcm_drv = lcm_driver_list[i];
 				if (!strcmp(lcm_drv->name, plcm_name)) {
+					//BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,add lcd information
+					len = strlen(plcm_name)+1;
+					strlcpy(lcd_info_pr, plcm_name, len);
+					printk("[%s]:wzx plcm_name = %s,lcd_info = %s, %d\n",__func__,plcm_name,lcd_info_pr,len);
+					//END
 					isLCMFound = true;
 					isLCMInited = true;
 					lcmindex = i;
@@ -1383,7 +1392,7 @@ int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 	return 0;
 }
 
-
+unsigned int g_last_backlight_level = 255;
 
 int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 {
@@ -1398,6 +1407,9 @@ int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 		} else {
 			disp_lcm_init(plcm, 1);
 		}
+
+		DISPCHECK("Firefly recover backlight = %d\n", g_last_backlight_level);
+		disp_lcm_set_backlight(plcm, NULL, g_last_backlight_level);
 
 		return 0;
 	}
@@ -1510,6 +1522,9 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
+
+	g_last_backlight_level = level;
+
 	if (!_is_lcm_inited(plcm)) {
 		DISPERR("lcm_drv is null\n");
 		return -1;
