@@ -444,7 +444,7 @@ static int sx932x_initialize(psx93XX_t this)
 	if (this) {
 		/* prepare reset by disabling any irq handling */
 		this->irq_disabled = 1;
-		//disable_irq(this->irq);
+		disable_irq(this->irq);
 		/* perform a reset */
 		write_register(this,SX932x_SOFTRESET_REG,SX932x_SOFTRESET);
 		/* wait until the reset has finished by monitoring NIRQ */
@@ -1126,10 +1126,10 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	sx932x_Hardware_Check(this);
 	pplatData->exit_platform_hw = sx932x_exit_platform_hw;
 	g_this = this;
-	disable_irq(this->irq);
+	//disable_irq(this->irq);
 
 	/* set sx932x to sleep mode */
-	write_register(this,SX932x_CTRL1_REG,0x20);
+	//write_register(this,SX932x_CTRL1_REG,0x20);
 
 	sx932x_situation_init();
 	sx932x_init_flag = 0;
