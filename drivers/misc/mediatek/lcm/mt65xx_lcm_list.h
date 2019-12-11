@@ -16,6 +16,8 @@
 
 #include <lcm_drv.h>
 
+extern struct LCM_DRIVER ontim_icnl9911s_hdplus_dsi_vdo_truly_lcm_drv;
+extern struct LCM_DRIVER ontim_icnl9911s_hdplus_dsi_vdo_truly_rs_lcm_drv;
 extern struct LCM_DRIVER ontim_ft8006p_hdplus_dsi_vdo_hlt_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
