@@ -1,0 +1,1041 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
+#include <linux/init.h>		/* For init/exit macros */
+#include <linux/module.h>	/* For MODULE_ marcros*/
+#include <linux/fs.h>
+#include <linux/device.h>
+#include <linux/interrupt.h>
+#include <linux/spinlock.h>
+#include <linux/platform_device.h>
+#include <linux/device.h>
+#include <linux/kdev_t.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/delay.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/types.h>
+#include <linux/wait.h>
+#include <linux/slab.h>
+#include <linux/fs.h>
+#include <linux/sched.h>
+#include <linux/poll.h>
+#include <linux/power_supply.h>
+//#include <linux/wakelock.h>
+#include <linux/time.h>
+#include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/proc_fs.h>
+#include <linux/platform_device.h>
+#include <linux/seq_file.h>
+#include <linux/scatterlist.h>
+#include <linux/suspend.h>
+#include <linux/version.h>
+#include <linux/i2c.h>
+
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/of_device.h>
+#endif
+#include "upmu_common.h"
+#include "eta6937.h"
+#include "mtk_charger_intf.h"
+
+static const unsigned int VBAT_CVTH[] = {
+	3500000, 3520000, 3540000, 3560000,
+	3580000, 3600000, 3620000, 3640000,
+	3660000, 3680000, 3700000, 3720000,
+	3740000, 3760000, 3780000, 3800000,
+	3820000, 3840000, 3860000, 3880000,
+	3900000, 3920000, 3940000, 3960000,
+	3980000, 4000000, 4020000, 4040000,
+	4060000, 4080000, 4100000, 4120000,
+	4140000, 4160000, 4180000, 4200000,
+	4220000, 4240000, 4260000, 4280000,
+	4300000, 4320000, 4340000, 4360000,
+	4380000, 4400000, 4420000, 4440000
+};
+
+static const unsigned int CSTH[] = {
+	550000, 650000, 750000, 850000,
+	950000, 1050000, 1150000, 1250000,
+	1350000, 1450000, 1550000, 1650000,
+	1750000, 1850000, 1950000, 2050000,
+	2150000, 2250000, 2350000, 2450000,
+	2550000, 2650000, 2750000, 2850000,
+	2950000, 3050000, 3050000, 3050000,
+	3050000, 3050000, 3050000, 3050000,
+};
+
+/*eta6937 REG00 IINLIM[5:0]*/
+static const unsigned int INPUT_CSTH[] = {
+	100000, 500000, 800000, 5000000
+};
+
+/* eta6937 REG0A BOOST_LIM[2:0], mA */
+static const unsigned int BOOST_CURRENT_LIMIT[] = {
+	500, 750, 1200, 1400, 1650, 1875, 2150,
+};
+
+static u32 max_charge_current=0;
+
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="ETA6937";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
+
+#ifdef CONFIG_OF
+#else
+#define eta6937_SLAVE_ADDR_WRITE 0xD4
+#define eta6937_SLAVE_ADDR_Read	0xD5
+#ifdef I2C_SWITHING_CHARGER_CHANNEL
+#define eta6937_BUSNUM I2C_SWITHING_CHARGER_CHANNEL
+#else
+#define eta6937_BUSNUM 0
+#endif
+#endif
+
+struct eta6937_info {
+	struct charger_device *chg_dev;
+	struct power_supply *psy;
+	struct charger_properties chg_props;
+	struct device *dev;
+	struct gtimer otg_kthread_gtimer;
+	struct workqueue_struct *otg_boost_workq;
+	struct work_struct kick_work;
+	unsigned int polling_interval;
+	bool polling_enabled;
+
+	const char *chg_dev_name;
+	const char *eint_name;
+	//CHARGER_TYPE chg_type;
+	int irq;
+};
+
+static struct eta6937_info *g_info;
+static struct i2c_client *new_client;
+static const struct i2c_device_id eta6937_i2c_id[] = { {"eta6937", 0}, {} };
+
+static void enable_boost_polling(bool poll_en);
+static void usbotg_boost_kick_work(struct work_struct *work);
+static int usbotg_gtimer_func(struct gtimer *data);
+
+static unsigned int charging_value_to_parameter(const unsigned int *parameter, const unsigned int array_size,
+					const unsigned int val)
+{
+	if (val < array_size)
+		return parameter[val];
+	pr_info("Can't find the parameter\n");
+	return parameter[0];
+}
+
+static unsigned int charging_parameter_to_value(const unsigned int *parameter, const unsigned int array_size,
+					const unsigned int val)
+{
+	unsigned int i;
+
+	pr_debug_ratelimited("array_size = %d\n", array_size);
+
+	for (i = 0; i < array_size; i++) {
+		if (val == *(parameter + i))
+			return i;
+	}
+
+	pr_info("NO register value match\n");
+	/* TODO: ASSERT(0);	// not find the value */
+	return 0;
+}
+
+static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned int number,
+					 unsigned int level)
+{
+	unsigned int i;
+	unsigned int max_value_in_last_element;
+
+	if (pList[0] < pList[1])
+		max_value_in_last_element = 1;
+	else
+		max_value_in_last_element = 0;
+
+	if (max_value_in_last_element == 1) {
+		for (i = (number - 1); i != 0; i--) {	/* max value in the last element */
+			if (pList[i] <= level) {
+				pr_debug_ratelimited("zzf_%d<=%d, i=%d\n", pList[i], level, i);
+				return pList[i];
+			}
+		}
+		pr_info("Can't find closest level\n");
+		return pList[0];
+		/* return 000; */
+	} else {
+		for (i = 0; i < number; i++) {	/* max value in the first element */
+			if (pList[i] <= level)
+				return pList[i];
+		}
+		pr_info("Can't find closest level\n");
+		return pList[number - 1];
+		/* return 000; */
+	}
+}
+
+unsigned char eta6937_reg[ETA6937_REG_NUM] = { 0 };
+static DEFINE_MUTEX(eta6937_i2c_access);
+static DEFINE_MUTEX(eta6937_access_lock);
+#define ETA6937_SLAVE_ADDR 0x6a
+static int eta6937_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
+{
+	int ret = 0;
+	struct i2c_adapter *adap = new_client->adapter;
+	struct i2c_msg msg[2];
+	u8 *w_buf = NULL;
+	u8 *r_buf = NULL;
+
+	memset(msg, 0, 2 * sizeof(struct i2c_msg));
+
+	w_buf = kzalloc(1, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+	r_buf = kzalloc(rd_len, GFP_KERNEL);
+	if (r_buf == NULL)
+		return -1;
+
+	*w_buf = reg_addr;
+
+	msg[0].addr = ETA6937_SLAVE_ADDR;//new_client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 1;
+	msg[0].buf = w_buf;
+
+	msg[1].addr = ETA6937_SLAVE_ADDR;//new_client->addr;
+	msg[1].flags = 1;
+	msg[1].len = rd_len;
+	msg[1].buf = r_buf;
+
+	ret = i2c_transfer(adap, msg, 2);
+
+	memcpy(rd_buf, r_buf, rd_len);
+
+	kfree(w_buf);
+	kfree(r_buf);
+	return ret;
+}
+
+int eta6937_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
+{
+	int ret = 0;
+	struct i2c_adapter *adap = new_client->adapter;
+	struct i2c_msg msg;
+	u8 *w_buf = NULL;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	w_buf = kzalloc(wr_len, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+
+	w_buf[0] = reg_num;
+	memcpy(w_buf + 1, wr_buf, wr_len);
+
+	msg.addr = ETA6937_SLAVE_ADDR;//new_client->addr;
+	msg.flags = 0;
+	msg.len = wr_len;
+	msg.buf = w_buf;
+
+	ret = i2c_transfer(adap, &msg, 1);
+
+	kfree(w_buf);
+	return ret;
+}
+
+unsigned int eta6937_read_interface(unsigned char reg_num, unsigned char *val, unsigned char MASK,
+				unsigned char SHIFT)
+{
+	unsigned char eta6937_reg = 0;
+	unsigned int ret = 0;
+
+	ret = eta6937_read_byte(reg_num, &eta6937_reg, 1);
+	pr_debug_ratelimited("[eta6937_read_interface] Reg[%x]=0x%x\n", reg_num, eta6937_reg);
+	eta6937_reg &= (MASK << SHIFT);
+	*val = (eta6937_reg >> SHIFT);
+	pr_debug_ratelimited("[eta6937_read_interface] val=0x%x\n", *val);
+
+	return ret;
+}
+
+unsigned int eta6937_config_interface(unsigned char reg_num, unsigned char val, unsigned char MASK,
+					unsigned char SHIFT)
+{
+	unsigned char eta6937_reg = 0;
+	unsigned char eta6937_reg_ori = 0;
+	unsigned int ret = 0;
+
+	mutex_lock(&eta6937_access_lock);
+	ret = eta6937_read_byte(reg_num, &eta6937_reg, 1);
+	eta6937_reg_ori = eta6937_reg;
+	eta6937_reg &= ~(MASK << SHIFT);
+	eta6937_reg |= (val << SHIFT);
+	if (reg_num == ETA6937_CON4)
+		eta6937_reg &= ~(1 << CON4_RESET_SHIFT);
+
+	ret = eta6937_write_byte(reg_num, &eta6937_reg, 2);
+	mutex_unlock(&eta6937_access_lock);
+	pr_debug_ratelimited("[eta6937_config_interface] write Reg[%x]=0x%x from 0x%x\n", reg_num,
+			eta6937_reg, eta6937_reg_ori);
+	/* Check */
+	/* eta6937_read_byte(reg_num, &eta6937_reg, 1); */
+	/* printk("[eta6937_config_interface] Check Reg[%x]=0x%x\n", reg_num, eta6937_reg); */
+
+	return ret;
+}
+
+/* write one register directly */
+unsigned int eta6937_reg_config_interface(unsigned char reg_num, unsigned char val)
+{
+	unsigned char eta6937_reg = val;
+
+	return eta6937_write_byte(reg_num, &eta6937_reg, 2);
+}
+
+void eta6937_set_tmr_rst(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON0),
+				(unsigned char)(val),
+				(unsigned char)(CON0_TMR_RST_MASK),
+				(unsigned char)(CON0_TMR_RST_SHIFT)
+				);
+}
+
+unsigned int eta6937_get_otg_status(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+				(unsigned char *)(&val),
+				(unsigned char)(CON0_OTG_MASK),
+				(unsigned char)(CON0_OTG_SHIFT)
+				);
+	return val;
+}
+
+void eta6937_set_en_stat(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON0),
+				(unsigned char)(val),
+				(unsigned char)(CON0_EN_STAT_MASK),
+				(unsigned char)(CON0_EN_STAT_SHIFT)
+				);
+}
+
+unsigned int eta6937_get_chip_status(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+				(unsigned char *)(&val),
+				(unsigned char)(CON0_STAT_MASK),
+				(unsigned char)(CON0_STAT_SHIFT)
+				);
+	return val;
+}
+
+unsigned int eta6937_get_boost_status(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+				(unsigned char *)(&val),
+				(unsigned char)(CON0_BOOST_MASK),
+				(unsigned char)(CON0_BOOST_SHIFT)
+				);
+	return val;
+
+}
+
+unsigned int eta6937_get_fault_status(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+				(unsigned char *)(&val),
+				(unsigned char)(CON0_FAULT_MASK),
+				(unsigned char)(CON0_FAULT_SHIFT)
+				);
+	return val;
+}
+
+void eta6937_set_input_charging_current(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char)(val),
+				(unsigned char)(CON1_LIN_LIMIT_MASK),
+				(unsigned char)(CON1_LIN_LIMIT_SHIFT)
+				);
+}
+
+unsigned int eta6937_get_input_charging_current(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char *)(&val),
+				(unsigned char)(CON1_LIN_LIMIT_MASK),
+				(unsigned char)(CON1_LIN_LIMIT_SHIFT)
+				);
+
+	return val;
+}
+
+void eta6937_set_v_low(unsigned int val)
+{
+
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char)(val),
+				(unsigned char)(CON1_LOW_V_MASK),
+				(unsigned char)(CON1_LOW_V_SHIFT)
+				);
+}
+
+void eta6937_set_te(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char)(val),
+				(unsigned char)(CON1_TE_MASK),
+				(unsigned char)(CON1_TE_SHIFT)
+				);
+}
+
+void eta6937_set_ce(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char)(val),
+				(unsigned char)(CON1_CE_MASK),
+				(unsigned char)(CON1_CE_SHIFT)
+				);
+}
+
+void eta6937_set_hz_mode(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char)(val),
+				(unsigned char)(CON1_HZ_MODE_MASK),
+				(unsigned char)(CON1_HZ_MODE_SHIFT)
+				);
+}
+
+void eta6937_set_opa_mode(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				(unsigned char)(val),
+				(unsigned char)(CON1_OPA_MODE_MASK),
+				(unsigned char)(CON1_OPA_MODE_SHIFT)
+				);
+}
+
+void eta6937_set_oreg(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON2),
+				(unsigned char)(val),
+				(unsigned char)(CON2_OREG_MASK),
+				(unsigned char)(CON2_OREG_SHIFT)
+				);
+}
+void eta6937_set_otg_pl(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON2),
+				(unsigned char)(val),
+				(unsigned char)(CON2_OTG_PL_MASK),
+				(unsigned char)(CON2_OTG_PL_SHIFT)
+				);
+}
+void eta6937_set_otg_en(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON2),
+				(unsigned char)(val),
+				(unsigned char)(CON2_OTG_EN_MASK),
+				(unsigned char)(CON2_OTG_EN_SHIFT)
+				);
+}
+
+unsigned int eta6937_get_vender_code(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON3),
+				(unsigned char *)(&val),
+				(unsigned char)(CON3_VENDER_CODE_MASK),
+				(unsigned char)(CON3_VENDER_CODE_SHIFT)
+				);
+	return val;
+}
+unsigned int eta6937_get_pn(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON3),
+				(unsigned char *)(&val),
+				(unsigned char)(CON3_PIN_MASK),
+				(unsigned char)(CON3_PIN_SHIFT)
+				);
+	return val;
+}
+
+unsigned int eta6937_get_revision(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON3),
+				(unsigned char *)(&val),
+				(unsigned char)(CON3_REVISION_MASK),
+				(unsigned char)(CON3_REVISION_SHIFT)
+				);
+	return val;
+}
+
+void eta6937_set_reset(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+				(unsigned char)(val),
+				(unsigned char)(CON4_RESET_MASK),
+				(unsigned char)(CON4_RESET_SHIFT)
+				);
+}
+
+void eta6937_set_iocharge(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+				(unsigned char)(val & 0x07),
+				(unsigned char)(CON4_I_CHR_MASK),
+				(unsigned char)(CON4_I_CHR_SHIFT)
+				);
+	eta6937_config_interface((unsigned char)(ETA6937_CON5),
+				(unsigned char)((val >> 3) & 0x03),
+				(unsigned char)(CON5_I_CHR_MASK),
+				(unsigned char)(CON5_I_CHR_SHIFT)
+				);
+
+}
+
+void eta6937_set_iterm(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+				(unsigned char)(val),
+				(unsigned char)(CON4_I_TERM_MASK),
+				(unsigned char)(CON4_I_TERM_SHIFT)
+				);
+}
+
+void eta6937_set_ioffset(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+				(unsigned char)(val),
+				(unsigned char)(CON4_I_OFFSET_MASK),
+				(unsigned char)(CON4_I_OFFSET_SHIFT)
+				);
+}
+
+void eta6937_set_dis_vreg(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON5),
+				(unsigned char)(val),
+				(unsigned char)(CON5_DIS_VREG_MASK),
+				(unsigned char)(CON5_DIS_VREG_SHIFT)
+				);
+}
+
+
+void eta6937_set_io_level(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON5),
+				(unsigned char)(val),
+				(unsigned char)(CON5_IO_LEVEL_MASK),
+				(unsigned char)(CON5_IO_LEVEL_SHIFT)
+				);
+}
+
+unsigned int eta6937_get_sp_status(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON5),
+				(unsigned char *)(&val),
+				(unsigned char)(CON5_SP_STATUS_MASK),
+				(unsigned char)(CON5_SP_STATUS_SHIFT)
+				);
+	return val;
+}
+
+unsigned int eta6937_get_en_level(void)
+{
+	unsigned char val = 0;
+
+	eta6937_read_interface((unsigned char)(ETA6937_CON5),
+				(unsigned char *)(&val),
+				(unsigned char)(CON5_EN_LEVEL_MASK),
+				(unsigned char)(CON5_EN_LEVEL_SHIFT)
+				);
+	return val;
+}
+
+void eta6937_set_vsp(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON5),
+				(unsigned char)(val),
+				(unsigned char)(CON5_VSP_MASK),
+				(unsigned char)(CON5_VSP_SHIFT)
+				);
+}
+
+void eta6937_set_i_safe(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON6),
+				(unsigned char)(val),
+				(unsigned char)(CON6_ISAFE_MASK),
+				(unsigned char)(CON6_ISAFE_SHIFT)
+				);
+}
+
+void eta6937_set_v_safe(unsigned int val)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON6),
+				(unsigned char)(val),
+				(unsigned char)(CON6_VSAFE_MASK),
+				(unsigned char)(CON6_VSAFE_SHIFT)
+				);
+}
+
+static int eta6937_dump_register(struct charger_device *chg_dev)
+{
+	int i;
+
+	for (i = 0; i < ETA6937_REG_NUM; i++) {
+		eta6937_read_byte(i, &eta6937_reg[i], 1);
+		printk(KERN_ERR "[0x%x]=0x%x ", i, eta6937_reg[i]);
+	}
+	pr_err("\n");
+
+	return 0;
+}
+
+static int eta6937_parse_dt(struct eta6937_info *info, struct device *dev)
+{
+	struct device_node *np = dev->of_node;
+
+	pr_info("%s\n", __func__);
+
+	if (!np) {
+		pr_err("%s: no of node\n", __func__);
+		return -ENODEV;
+	}
+
+	if (of_property_read_string(np, "charger_name", &info->chg_dev_name) < 0) {
+		info->chg_dev_name = "primary_chg";
+		pr_warn("%s: no charger name\n", __func__);
+	}
+
+	if (of_property_read_string(np, "alias_name", &(info->chg_props.alias_name)) < 0) {
+		info->chg_props.alias_name = "eta6937";
+		pr_warn("%s: no alias name\n", __func__);
+	}
+	if (!of_property_read_u32(np, "ichg", &max_charge_current)) {
+		pr_warn("%s: max_charge_current=%d;\n", __func__,max_charge_current);
+	}
+
+
+	return 0;
+}
+
+static int eta6937_do_event(struct charger_device *chg_dev, unsigned int event, unsigned int args)
+{
+	if (chg_dev == NULL)
+		return -EINVAL;
+
+	pr_info("%s: event = %d\n", __func__, event);
+
+	switch (event) {
+	case EVENT_EOC:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
+		break;
+	case EVENT_RECHARGE:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_RECHG);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+static void eta6937_wirte_reg6(void)
+{
+	eta6937_config_interface((unsigned char)(ETA6937_CON6),
+				0xac,
+				0xff,
+				0
+				);/* ISAFE = 2550mA, VSAFE = 4.44V */
+
+	eta6937_read_byte((unsigned char)(ETA6937_CON6), &eta6937_reg[0], 1);
+	
+	if(eta6937_reg[0] != 0xac)
+	{
+		eta6937_set_tmr_rst(1);
+		pr_err("eta6937_wirte_reg6 again =%x;\n",eta6937_reg[0]);
+		
+		eta6937_config_interface((unsigned char)(ETA6937_CON6),
+				0xac,
+				0xff,
+				0
+				);
+	}
+}
+
+static int eta6937_enable_charging(struct charger_device *chg_dev, bool en)
+{
+	unsigned int status = 0;
+
+	if (en) {
+
+	eta6937_wirte_reg6();
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				0x08,
+				0x0f,
+				0
+				);
+		eta6937_set_iterm(2);
+		eta6937_set_ioffset(0);
+		eta6937_set_vsp(3);
+	} else {
+		eta6937_set_ce(1);
+	}
+
+	return status;
+}
+
+static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
+{
+	int status = 0;
+	unsigned short int array_size;
+	unsigned int set_cv_voltage;
+	unsigned short int register_value;
+	/*static kal_int16 pre_register_value; */
+	array_size = ARRAY_SIZE(VBAT_CVTH);
+	/*pre_register_value = -1; */
+	set_cv_voltage = bmt_find_closest_level(VBAT_CVTH, array_size, cv);
+
+	register_value =
+	charging_parameter_to_value(VBAT_CVTH, array_size, set_cv_voltage);
+	pr_info("charging_set_cv_voltage register_value=0x%x %d %d\n",
+	 register_value, cv, set_cv_voltage);
+	eta6937_set_oreg(register_value);
+
+	return status;
+}
+
+static int eta6937_get_current(struct charger_device *chg_dev, u32 *ichg)
+{
+	int status = 0;
+	unsigned int array_size;
+	unsigned char reg_value;
+
+	array_size = ARRAY_SIZE(CSTH);
+	eta6937_read_interface(0x1, &reg_value, 0x3, 0x6);	/* IINLIM */
+	*ichg = charging_value_to_parameter(CSTH, array_size, reg_value);
+
+	return status;
+}
+
+static int eta6937_set_current(struct charger_device *chg_dev, u32 current_value)
+{
+	unsigned int status = 0;
+	unsigned int set_chr_current;
+	unsigned int array_size;
+	unsigned int register_value;
+
+
+	if (current_value <= 500000) {
+		eta6937_set_io_level(0);
+		register_value = 3;
+		eta6937_set_iocharge(register_value);
+	} else {
+
+		if(max_charge_current != 0  && current_value > max_charge_current)	
+		{
+			pr_info("%s;%d;%d;\n",__func__,current_value,max_charge_current);
+			current_value = max_charge_current;			
+		}
+		eta6937_set_io_level(0);
+		array_size = ARRAY_SIZE(CSTH);
+		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
+		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
+		eta6937_set_iocharge(register_value);
+	}
+
+	return status;
+}
+
+static int eta6937_get_input_current(struct charger_device *chg_dev, u32 *aicr)
+{
+	unsigned int status = 0;
+	unsigned int array_size;
+	unsigned int register_value;
+
+	array_size = ARRAY_SIZE(INPUT_CSTH);
+	register_value = eta6937_get_input_charging_current();
+	*aicr = charging_parameter_to_value(INPUT_CSTH, array_size, register_value);
+
+	return status;
+}
+
+static int eta6937_set_input_current(struct charger_device *chg_dev, u32 current_value)
+{
+	unsigned int status = 0;
+	unsigned int set_chr_current;
+	unsigned int array_size;
+	unsigned int register_value;
+
+	if (current_value > 500000) {
+		register_value = 0x3;
+	} else {
+		array_size = ARRAY_SIZE(INPUT_CSTH);
+		set_chr_current = bmt_find_closest_level(INPUT_CSTH, array_size, current_value);
+		register_value =
+	 charging_parameter_to_value(INPUT_CSTH, array_size, set_chr_current);
+	}
+
+	eta6937_set_input_charging_current(register_value);
+
+	return status;
+}
+
+static int eta6937_get_charging_status(struct charger_device *chg_dev, bool *is_done)
+{
+	unsigned int status = 0;
+	unsigned int ret_val;
+
+	ret_val = eta6937_get_chip_status();
+
+	if (ret_val == 0x2)
+		*is_done = true;
+	else
+		*is_done = false;
+
+	return status;
+}
+
+static int eta6937_reset_watch_dog_timer(struct charger_device *chg_dev)
+{
+	eta6937_set_tmr_rst(1);
+	return 0;
+}
+
+static int eta6937_charger_enable_otg(struct charger_device *chg_dev, bool en)
+{
+	eta6937_set_opa_mode(en);
+	enable_boost_polling(en);
+	return 0;
+}
+
+static void enable_boost_polling(bool poll_en)
+{
+	if (g_info) {
+		if (poll_en) {
+			gtimer_start(&g_info->otg_kthread_gtimer,
+				     g_info->polling_interval);
+			g_info->polling_enabled = true;
+		} else {
+			g_info->polling_enabled = false;
+			gtimer_stop(&g_info->otg_kthread_gtimer);
+		}
+	}
+}
+
+static void usbotg_boost_kick_work(struct work_struct *work)
+{
+
+	struct eta6937_info *boost_manager =
+		container_of(work, struct eta6937_info, kick_work);
+
+	pr_debug_ratelimited("usbotg_boost_kick_work\n");
+
+	eta6937_set_tmr_rst(1);
+
+	if (boost_manager->polling_enabled == true)
+		gtimer_start(&boost_manager->otg_kthread_gtimer,
+			     boost_manager->polling_interval);
+}
+
+static int usbotg_gtimer_func(struct gtimer *data)
+{
+	struct eta6937_info *boost_manager =
+		container_of(data, struct eta6937_info,
+			     otg_kthread_gtimer);
+
+	queue_work(boost_manager->otg_boost_workq,
+		   &boost_manager->kick_work);
+
+	return 0;
+}
+
+static struct charger_ops eta6937_chg_ops = {
+
+	/* Normal charging */
+	.dump_registers = eta6937_dump_register,
+	.enable = eta6937_enable_charging,
+	.get_charging_current = eta6937_get_current,
+	.set_charging_current = eta6937_set_current,
+	.get_input_current = eta6937_get_input_current,
+	.set_input_current = eta6937_set_input_current,
+	/*.get_constant_voltage = eta6937_get_battery_voreg,*/
+	.set_constant_voltage = eta6937_set_cv_voltage,
+	.kick_wdt = eta6937_reset_watch_dog_timer,
+	.is_charging_done = eta6937_get_charging_status,
+	/* OTG */
+	.enable_otg = eta6937_charger_enable_otg,
+	.event = eta6937_do_event,
+};
+
+static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+	int ret = 0;
+	struct eta6937_info *info = NULL;
+
+	pr_info("[eta6937_driver_probe]\n");
+
+//+add by hzb for ontim debug
+        if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+        {
+           return -EIO;
+        }
+//-add by hzb for ontim debug
+	new_client = client;
+
+	ret = eta6937_get_vender_code();
+	pr_err("%s: get vendor id %x\n", __func__, ret);
+	if (ret != 2) {
+		pr_err("%s: get vendor id failed\n", __func__);
+		return -ENODEV;
+	}
+	ret=eta6937_get_pn();
+	if (ret != 0x02) {
+		pr_err("%s: get pn failed\n", __func__);
+		return -ENODEV;
+	}
+
+	ret=eta6937_get_revision();
+	if (ret != 0x04) {
+		pr_err("%s: get revision failed\n", __func__);
+		return -ENODEV;
+	}
+	
+	
+	info = devm_kzalloc(&client->dev, sizeof(struct eta6937_info), GFP_KERNEL);
+
+	if (!info)
+		return -ENOMEM;
+
+	info->dev = &client->dev;
+	ret = eta6937_parse_dt(info, &client->dev);
+
+	if (ret < 0)
+		return ret;
+
+	/* Register charger device */
+	info->chg_dev = charger_device_register(info->chg_dev_name,
+		&client->dev, info, &eta6937_chg_ops, &info->chg_props);
+
+	if (IS_ERR_OR_NULL(info->chg_dev)) {
+		pr_err("%s: register charger device failed\n", __func__);
+		ret = PTR_ERR(info->chg_dev);
+		return ret;
+	}
+		
+
+	/* eta6937_hw_init(); //move to charging_hw_xxx.c */
+	info->psy = power_supply_get_by_name("charger");
+
+	if (!info->psy) {
+		pr_err("%s: get power supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
+
+	eta6937_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
+	eta6937_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
+	eta6937_reg_config_interface(0x05, 0x03);
+
+	eta6937_reg_config_interface(0x04, 0x1A);	/* 146mA */
+
+	eta6937_dump_register(info->chg_dev);
+
+	gtimer_init(&info->otg_kthread_gtimer, info->dev, "otg_boost");
+	info->otg_kthread_gtimer.callback = usbotg_gtimer_func;
+
+	info->otg_boost_workq = create_singlethread_workqueue("otg_boost_workq");
+	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
+	info->polling_interval = 20;
+	g_info = info;
+
+//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
+
+	return 0;
+}
+
+#ifdef CONFIG_OF
+static const struct of_device_id eta6937_of_match[] = {
+	{.compatible = "ontim,eta6937"},
+	{},
+};
+#else
+static struct i2c_board_info i2c_eta6937 __initdata = {
+	I2C_BOARD_INFO("eta6937", (eta6937_SLAVE_ADDR_WRITE >> 1))
+};
+#endif
+
+static struct i2c_driver eta6937_driver = {
+	.driver = {
+		.name = "eta6937",
+#ifdef CONFIG_OF
+		.of_match_table = eta6937_of_match,
+#endif
+		},
+	.probe = eta6937_driver_probe,
+	.id_table = eta6937_i2c_id,
+};
+
+static int __init eta6937_init(void)
+{
+
+	if (i2c_add_driver(&eta6937_driver) != 0)
+		pr_info("Failed to register eta6937 i2c driver.\n");
+	else
+		pr_info("Success to register eta6937 i2c driver.\n");
+
+	return 0;
+}
+
+static void __exit eta6937_exit(void)
+{
+	i2c_del_driver(&eta6937_driver);
+}
+
+module_init(eta6937_init);
+module_exit(eta6937_exit);
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("I2C eta6937 Driver");
+MODULE_AUTHOR("Henry Chen<henryc.chen@mediatek.com>");
