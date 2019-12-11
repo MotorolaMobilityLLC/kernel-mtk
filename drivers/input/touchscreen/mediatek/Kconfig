@@ -55,6 +55,15 @@ config TOUCHSCREEN_FTS
 	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/focaltech_touch/Kconfig"
+
+config TOUCHSCREEN_CHIPONE
+	tristate "Chipone TDDI touchscreen for Mediatek package"
+	default n
+	help
+	  Say y here if you have chipone TDDI touch panel.
+	  If unsure, say N.
+source "drivers/input/touchscreen/mediatek/chipone-tddi/Kconfig"
+
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
