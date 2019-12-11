@@ -402,7 +402,7 @@ static int aw3643_set_level_ch1(int level)
 		val = aw3643tt_torch_level[level];
 	else
 		val = aw3643_torch_level[level];
-    
+    val = 0x18;
 	LOG_INF("is_aw3643tt=%d  level=%d  val=%d\n", is_aw3643tt, level, val);
         LOG_INF("ontim_flashlight  set_level_ch1 write torch reg val: 0x%02x\n",val);
 	ret = aw3643_write_reg(aw3643_i2c_client, reg, val);
