@@ -68,6 +68,7 @@
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_boot.h>
+/* #include <musb_core.h> */ /* FIXME */
 #include <pmic.h>
 #include <mtk_gauge_time_service.h>
 
@@ -1479,6 +1480,7 @@ static void mtk_chg_get_tchg(struct charger_manager *info)
 	}
 }
 
+static int ontim_charge_onoff_control = 1;/*1=enable charge  0 or other=disable charge*/
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -1555,6 +1557,11 @@ static void charger_check_status(struct charger_manager *info)
 		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
+	if(ontim_charge_onoff_control  !=  1)	
+	{
+	    chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
+		charging = false;
+	}
 
 stop_charging:
 	mtk_battery_notify_check(info);
@@ -2539,6 +2546,84 @@ static ssize_t store_input_current(struct device *dev,
 static DEVICE_ATTR(input_current, 0664, show_input_current,
 		store_input_current);
 
+#ifdef CONFIG_CHARGER_STOP_70PER
+static int ontim_runin_onoff_control = 1;
+#else
+static int ontim_runin_onoff_control = -200;
+#endif
+
+int ontim_get_ontim_runin_onoff_control(void)
+{
+	return ontim_runin_onoff_control;
+}
+static ssize_t show_runin_onoff_ctrl(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_runin_onoff_control);
+}
+static ssize_t store_runin_onoff_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d", &ontim_runin_onoff_control);
+	return size;
+}
+static DEVICE_ATTR(runin_onoff_ctrl, 0664, show_runin_onoff_ctrl, store_runin_onoff_ctrl);
+
+
+static ssize_t show_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_charge_onoff_control);
+}
+static ssize_t store_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+       chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
+	sscanf(buf, "%d", &ontim_charge_onoff_control);
+	_wake_up_charger(pinfo);
+	return size;
+}
+static DEVICE_ATTR(charge_onoff_ctrl, 0664, show_charge_onoff_ctrl, store_charge_onoff_ctrl);
+
+
+static unsigned int ontim_charge_limit = 0;
+static ssize_t show_charge_current_limit(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    chr_info("[Battery] show_charge_current_limit %d;\n",ontim_charge_limit);
+    return sprintf(buf, "%d\n", ontim_charge_limit);
+}
+static ssize_t store_charge_current_limit(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	struct charger_data *pdata;
+
+	chr_info("[Battery] store_charge_current_limit\n");
+
+	if (pinfo != NULL) {
+		pdata = &pinfo->chg1_data;
+
+		if (kstrtoint(buf, 10, &ontim_charge_limit) == 0) {
+			if (ontim_charge_limit == 0)
+			{
+				pdata->thermal_charging_current_limit = -1;
+			}
+			else
+			{
+				pdata->thermal_charging_current_limit = 1050*1000;
+			}
+			chr_err("%s: dev:%s limit:%d cur:%d\n", __func__, dev_name(dev),
+			ontim_charge_limit, pdata->thermal_charging_current_limit);
+			_mtk_charger_change_current_setting(pinfo);
+			_wake_up_charger(pinfo);
+
+		} else {
+			chr_err("[Battery] store_charge_current_limit: format error!\n");
+		}
+
+	}
+
+	return size;
+}
+static DEVICE_ATTR(charge_current_limit, 0664, show_charge_current_limit, store_charge_current_limit);
+
+
 static ssize_t show_chg1_current(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -2846,6 +2931,18 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	if (ret)
 		goto _out;
 
+	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_charge_onoff_ctrl);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_charge_current_limit);
+	if (ret)
+		goto _out;
+	
 	ret = device_create_file(&(pdev->dev), &dev_attr_input_current);
 	if (ret)
 		goto _out;
