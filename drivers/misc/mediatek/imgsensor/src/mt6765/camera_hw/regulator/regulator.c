@@ -263,7 +263,8 @@ static enum IMGSENSOR_RETURN regulator_set(
 //add by guozy end 2
 
 	pr_debug("sensor_idx=%d  pin=%d  pin_state=%d\n", sensor_idx, pin, pin_state);
-	if (pin > IMGSENSOR_HW_PIN_DOVDD   ||
+//add by dengxp for ov16a10 eeprom AFVDD supply
+	if (pin > IMGSENSOR_HW_PIN_AFVDD   ||
 		pin < IMGSENSOR_HW_PIN_AVDD    ||
 		pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 		pin_state >= IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH)
