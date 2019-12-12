@@ -307,6 +307,9 @@ static int esdcheck_algorithm(struct fts_ts_data *ts_data)
                   fts_esdcheck_data.nack_cnt, fts_esdcheck_data.dataerror_cnt, \
                   fts_esdcheck_data.hardware_reset_cnt);
         fts_esdcheck_tp_reset(ts_data);
+        tp_need_recovery = 1;
+        lcd_rst = 1;
+
     }
 
     return 0;

@@ -328,7 +328,7 @@ static void lcm_init(void)
 			LCM_LOGI("--cmd=%0x--i2c write error----\n", cmd);
 		else
 			LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
-
+        MDELAY(200);
 	} else {
 		tpd_gpio_output(0, 0);
 		MDELAY(6);
