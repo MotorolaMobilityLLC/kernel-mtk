@@ -75,7 +75,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 240000000,
+		.mipi_pixel_rate = 227200000,
 	},
 
 	.cap = {
@@ -737,16 +737,16 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0100, 0x0000);
 	mdelay(30);
 	write_cmos_sensor(0x0344, 0x0008);
-	write_cmos_sensor(0x0346, 0x0180);
+	write_cmos_sensor(0x0346, 0x0008);
 	write_cmos_sensor(0x0348, 0x1077);
-	write_cmos_sensor(0x034A, 0x0ABF);
-	write_cmos_sensor(0x034C, 0x1070);
-	write_cmos_sensor(0x034E, 0x0940);
-	write_cmos_sensor(0x0900, 0x0000);
+	write_cmos_sensor(0x034A, 0x0C37);
+	write_cmos_sensor(0x034C, 0x0838);
+	write_cmos_sensor(0x034E, 0x0618);
+	write_cmos_sensor(0x0900, 0x0122);
 	write_cmos_sensor(0x0380, 0x0001);
 	write_cmos_sensor(0x0382, 0x0001);
 	write_cmos_sensor(0x0384, 0x0001);
-	write_cmos_sensor(0x0386, 0x0001);
+	write_cmos_sensor(0x0386, 0x0003);
 	write_cmos_sensor(0x0114, 0x0330);
 	write_cmos_sensor(0x0110, 0x0002);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -754,37 +754,37 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0306, 0x0078);
 	write_cmos_sensor(0x3C1E, 0x0000);
 	write_cmos_sensor(0x030C, 0x0003);
-	write_cmos_sensor(0x030E, 0x004B);
-	write_cmos_sensor(0x3C16, 0x0000);
+	write_cmos_sensor(0x030E, 0x0047);
+	write_cmos_sensor(0x3C16, 0x0001);
 	write_cmos_sensor(0x0300, 0x0006);
 	write_cmos_sensor(0x0342, 0x1320);
 	write_cmos_sensor(0x0340, 0x0CBC);
-	write_cmos_sensor(0x38C4, 0x0009);
-	write_cmos_sensor(0x38D8, 0x002A);
-	write_cmos_sensor(0x38DA, 0x000A);
-	write_cmos_sensor(0x38DC, 0x000B);
-	write_cmos_sensor(0x38C2, 0x000A);
-	write_cmos_sensor(0x38C0, 0x000F);
-	write_cmos_sensor(0x38D6, 0x000A);
-	write_cmos_sensor(0x38D4, 0x0009);
-	write_cmos_sensor(0x38B0, 0x000F);
+	write_cmos_sensor(0x38C4, 0x0004);
+	write_cmos_sensor(0x38D8, 0x0011);
+  write_cmos_sensor(0x38DA, 0x0005);
+  write_cmos_sensor(0x38DC, 0x0005);
+  write_cmos_sensor(0x38C2, 0x0005);
+  write_cmos_sensor(0x38C0, 0x0004);
+  write_cmos_sensor(0x38D6, 0x0004);
+  write_cmos_sensor(0x38D4, 0x0004);
+  write_cmos_sensor(0x38B0, 0x0007);
 	write_cmos_sensor(0x3932, 0x1000);
 	write_cmos_sensor(0x3938, 0x000C);
-	write_cmos_sensor(0x0820, 0x04b0);
-	write_cmos_sensor(0x380C, 0x0090);
-	write_cmos_sensor(0x3064, 0xEFCF);
+	write_cmos_sensor(0x0820, 0x0238);
+	write_cmos_sensor(0x380C, 0x0049);
+	write_cmos_sensor(0x3064, 0xFFCF);
 	write_cmos_sensor(0x309C, 0x0640);
-	write_cmos_sensor(0x3090, 0x8800);
-	write_cmos_sensor(0x3238, 0x000C);
-	write_cmos_sensor(0x314A, 0x5F00);
+	write_cmos_sensor(0x3090, 0x8000);
+	write_cmos_sensor(0x3238, 0x000B);
+	write_cmos_sensor(0x314A, 0x5F02);
 	write_cmos_sensor(0x3300, 0x0000);
 	write_cmos_sensor(0x3400, 0x0000);
-	write_cmos_sensor(0x3402, 0x4E42);
-	write_cmos_sensor(0x32B2, 0x0006);
-	write_cmos_sensor(0x32B4, 0x0006);
-	write_cmos_sensor(0x32B6, 0x0006);
-	write_cmos_sensor(0x32B8, 0x0006);
-	write_cmos_sensor(0x3C34, 0x0008);
+	write_cmos_sensor(0x3402, 0x4E46);
+	write_cmos_sensor(0x32B2, 0x0008);
+	write_cmos_sensor(0x32B4, 0x0008);
+	write_cmos_sensor(0x32B6, 0x0008);
+	write_cmos_sensor(0x32B8, 0x0008);
+	write_cmos_sensor(0x3C34, 0x0048);
 	write_cmos_sensor(0x3C36, 0x3000);
 	write_cmos_sensor(0x3C38, 0x0020);
 	write_cmos_sensor(0x393E, 0x4000);
@@ -830,11 +830,11 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x38D6, 0x000A);
 	write_cmos_sensor(0x38D4, 0x0009);
 	write_cmos_sensor(0x38B0, 0x000F);
-	write_cmos_sensor(0x3932, 0x1000);
+	write_cmos_sensor(0x3932, 0x1800);
 	write_cmos_sensor(0x3938, 0x000C);
 	write_cmos_sensor(0x0820, 0x04b0);
 	write_cmos_sensor(0x380C, 0x0090);
-	write_cmos_sensor(0x3064, 0xEFCF);
+	write_cmos_sensor(0x3064, 0xFFCF);
 	write_cmos_sensor(0x309C, 0x0640);
 	write_cmos_sensor(0x3090, 0x8800);
 	write_cmos_sensor(0x3238, 0x000C);
@@ -846,7 +846,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x32B4, 0x0006);
 	write_cmos_sensor(0x32B6, 0x0006);
 	write_cmos_sensor(0x32B8, 0x0006);
-	write_cmos_sensor(0x3C34, 0x0008);
+	write_cmos_sensor(0x3C34, 0x0048);
 	write_cmos_sensor(0x3C36, 0x3000);
 	write_cmos_sensor(0x3C38, 0x0020);
 	write_cmos_sensor(0x393E, 0x4000);
