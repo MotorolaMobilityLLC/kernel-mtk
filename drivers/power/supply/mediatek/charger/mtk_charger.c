@@ -391,6 +391,9 @@ int charger_manager_enable_charging(struct charger_consumer *consumer,
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
+#ifdef DUAL_85_VERSION
+	return 0;
+#else
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
@@ -421,11 +424,15 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 		return 0;
 	}
 	return -EBUSY;
+#endif
 }
 
 int charger_manager_set_charging_current_limit(
 	struct charger_consumer *consumer, int idx, int charging_current)
 {
+#ifdef DUAL_85_VERSION
+	return 0;
+#else
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
@@ -446,6 +453,7 @@ int charger_manager_set_charging_current_limit(
 		return 0;
 	}
 	return -EBUSY;
+#endif
 }
 
 int charger_manager_get_charger_temperature(struct charger_consumer *consumer,
@@ -1315,6 +1323,9 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+#ifdef DUAL_85_VERSION
+
+#else
 	if (info->battery_temp >= info->thermal.max_charge_temp) {
 		info->notify_code |= CHG_BAT_OT_STATUS;
 		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
@@ -1345,6 +1356,9 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 		}
 #endif
 	}
+
+#endif
+
 #endif
 }
 
@@ -1496,7 +1510,11 @@ static void charger_check_status(struct charger_manager *info)
 	if (info->enable_sw_jeita == true) {
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
+#ifdef DUAL_85_VERSION
+			charging = true;
+#else
 			charging = false;
+#endif
 			goto stop_charging;
 		}
 	} else {
@@ -1553,8 +1571,9 @@ static void charger_check_status(struct charger_manager *info)
 
 	if (info->cmd_discharging)
 		charging = false;
-	if (info->safety_timeout)
-		charging = false;
+//close charge timeout
+//	if (info->safety_timeout)
+//		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
 	if(ontim_charge_onoff_control  !=  1)	

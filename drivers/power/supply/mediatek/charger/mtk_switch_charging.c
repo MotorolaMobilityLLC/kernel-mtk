@@ -152,14 +152,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	if ((get_boot_mode() == META_BOOT) ||
 	    (get_boot_mode() == ADVMETA_BOOT)) {
-		pdata->input_current_limit = 200000; /* 200mA */
-		goto done;
+//		pdata->input_current_limit = 200000; /* 200mA */
+//		goto done;
 	}
 
 	if (info->atm_enabled == true && (info->chr_type == STANDARD_HOST ||
 	    info->chr_type == CHARGING_HOST)) {
-		pdata->input_current_limit = 100000; /* 100mA */
-		goto done;
+//		pdata->input_current_limit = 100000; /* 100mA */
+//		goto done;
 	}
 
 	if (mtk_is_TA_support_pd_pps(info)) {
