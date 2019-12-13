@@ -531,6 +531,29 @@
 #define SENSOR_DRVNAME_OV13870_MIPI_RAW_5MP     "ov13870_mipi_raw_5mp"
 #define SENSOR_DRVNAME_OV8856_MIPI_RAW_5MP      "ov8856_mipi_raw_5mp"
 
+/*blackjack*/
+#define SENSOR_DRVNAME_BLACKJACK_TSP_GC2375H_MIPI_RAW   "blackjack_tsp_gc2375h_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_JSL_GC2375H_MIPI_RAW   "blackjack_jsl_gc2375h_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_TXD_HI846_MIPI_RAW     "blackjack_txd_hi846_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_SEA_MT9D015_MIPI_RAW   "blackjack_sea_mt9d015_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_HLT_OV16A10_MIPI_RAW   "blackjack_hlt_ov16a10_mipi_raw"
+#define SENSOR_DRVNAME_GC2375_MIPI_RAW                  "gc2375_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_TSP_GC2375_MIPI_RAW    "blackjack_tsp_gc2375_mipi_raw"
+#define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
+#define SENSOR_DRVNAME_S5K3P9SX_MIPI_RAW        "s5k3p9sx_mipi_raw"
+#define SENSOR_DRVNAME_S5K3P9SXT_MIPI_RAW       "s5k3p9sxt_mipi_raw"
+
+#define BLACKJACK_TSP_GC2375H_SENSOR_ID         0x2375
+#define BLACKJACK_JSL_GC2375H_SENSOR_ID         0x2375 + 2
+#define BLACKJACK_TXD_HI846_SENSOR_ID           0x0846
+#define BLACKJACK_SEA_MT9D015_SENSOR_ID         0x1501
+#define BLACKJACK_HLT_OV16A10_SENSOR_ID         0x1641
+#define GC2375_SENSOR_ID                        0x237A
+#define BLACKJACK_TSP_GC2375_SENSOR_ID          0x237B
+#define GC8034_SENSOR_ID                        0x8044
+#define S5K3P9SX_SENSOR_ID                      0x3109
+#define S5K3P9SXT_SENSOR_ID                     0x310A
+
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
 #endif              /* _KD_IMGSENSOR_H */

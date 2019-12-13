@@ -178,7 +178,7 @@ void AFRegulatorCtrl(int Stage)
 					regVCAMAF = regulator_get(lens_device,
 								  "vldo28");
 				else {
-					#if defined(CONFIG_MACH_MT6761)
+					#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT6765)
 					regVCAMAF = regulator_get(lens_device,
 								  "vldo28");
 					#else

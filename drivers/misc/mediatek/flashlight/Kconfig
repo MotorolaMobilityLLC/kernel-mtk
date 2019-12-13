@@ -200,3 +200,15 @@ config MTK_FLASHLIGHT_DLPT
 	  the current of battary dynamicly. It will start by request
 	  and notice user by kernel notifier.
 
+config MTK_FLASHLIGHT_AW3643
+	tristate "Mediatek flashlight with driver IC (TI AW3643)"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+	  This is for the flashlight driver IC (TI AW3643).
+
+	  Say Y here if you want a flashlight driver IC AW3643.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
