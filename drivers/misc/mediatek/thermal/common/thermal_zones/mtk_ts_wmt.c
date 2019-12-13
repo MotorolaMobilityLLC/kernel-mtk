@@ -792,7 +792,9 @@ struct thermal_cooling_device *cool_dev, unsigned long v)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+#ifndef DUAL_85_VERSION
 		BUG();
+#endif
 	}
 
 	return 0;
