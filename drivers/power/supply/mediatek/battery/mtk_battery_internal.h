@@ -47,7 +47,7 @@
 /* ============================================================ */
 #define BAT_VOLTAGE_LOW_BOUND 3400
 #define BAT_VOLTAGE_HIGH_BOUND 3450
-#define LOW_TMP_BAT_VOLTAGE_LOW_BOUND 3350
+#define LOW_TMP_BAT_VOLTAGE_LOW_BOUND 3200
 #define SHUTDOWN_TIME 40
 #define AVGVBAT_ARRAY_SIZE 30
 #define INIT_VOLTAGE 3450

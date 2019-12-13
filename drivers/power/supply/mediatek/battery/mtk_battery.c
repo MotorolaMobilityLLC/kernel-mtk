@@ -372,7 +372,25 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef    DUAL_85_VERSION
+              if(gm.tbat_precise>=440)
+              {
+                  val->intval  = 440;
+              }
+              else
+              {
+                  if(gm.tbat_precise<=100)
+                  {
+                      val->intval  = 100;
+                  }
+                  else
+                  {
+                      val->intval = gm.tbat_precise;
+                  }
+              }
+#else
 		val->intval = gm.tbat_precise;
+#endif
 		break;
 
 	default:
@@ -1513,7 +1531,11 @@ int force_get_tbat_internal(bool update)
 					pre_fg_r_value,
 					pre_bat_temperature_val2);
 				/*pmic_auxadc_debug(1);*/
-				WARN_ON_ONCE(1);
+//BEGIN,ontim,shabei,2019.09.02,mask warning for D85 version to avoid to much stack dump
+#ifndef DUAL_85_VERSION
+				WARN_ON(1);
+#endif
+//ENDIF
 			}
 
 			pre_bat_temperature_volt_temp =
@@ -1598,13 +1620,29 @@ int force_get_tbat(bool update)
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
 
 		gm.tbat_precise = DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG * 10;
-		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
+		if(bat_temperature_val == -40)
+		{
+		bm_err("[force_get_tbat] think ntc dnp ;%d;\n", bat_temperature_val);
+			battery_main.BAT_CAPACITY = 50;
+			gm.ui_soc=50;
+			gm.soc=50;
+		strncpy(battery_vendor_name,"BATTERY NTC ERROR",20);
+			return 36;     //ntc dnp, so fix 36 degree
+		}
+
+                return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
 	}
 
 	gm.ntc_disable_nafg = false;
 	bm_debug("[%s] t:%d precise:%d\n", __func__,
 		bat_temperature_val, gm.tbat_precise);
 
+#ifdef DUAL_85_VERSION
+	if (bat_temperature_val > 59)
+		bat_temperature_val = 59;
+	if (bat_temperature_val < 10)
+		bat_temperature_val = 10;
+#endif
 	return bat_temperature_val;
 #endif
 }
