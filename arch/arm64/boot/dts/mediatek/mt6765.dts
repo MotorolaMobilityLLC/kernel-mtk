@@ -672,6 +672,9 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	sar_mtk: sar_mtk{
+		compatible = "mediatek,sar-eint";
+	};
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
@@ -2189,7 +2192,14 @@ firmware_class.path=/vendor/firmware";
 			gpio-irq = <10>;
 			gpio-irq-std = <&pio 10 0x0>;
 		};
+	als: als_ps@0 {
+                compatible = "mediatek,als_ps";
+		status = "okay";
 
+                pinctrl-names = "plv3v_enable", "plv3v_disable";
+                pinctrl-0 = <&pl_v3v_enable>;
+                pinctrl-1 = <&pl_v3v_disable>;
+        };
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
@@ -3183,6 +3193,23 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,dynamic_options";
 	};
 
+};
+
+&pio {
+        pl_v3v_enable: plv3venable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        pl_v3v_disable: plv3vdisable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
 };
 
 #include "cust_mt6765_msdc.dtsi"
