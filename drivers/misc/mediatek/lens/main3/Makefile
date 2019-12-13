@@ -36,6 +36,8 @@ else
 
 obj-y += main3_lens.o
 #obj-y += common/ak7371af/
-
+obj-y  += common/dw9714k/
+obj-y  += common/dw9714kaf/
+obj-y  += common/cn3927eaf/
 
 endif

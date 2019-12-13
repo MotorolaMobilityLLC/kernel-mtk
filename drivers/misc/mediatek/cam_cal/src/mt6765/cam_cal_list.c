@@ -15,9 +15,17 @@
 #include "eeprom_i2c_common_driver.h"
 #include "eeprom_i2c_custom_driver.h"
 #include "kd_imgsensor.h"
+extern unsigned int Hi846_read_cal_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size);
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+	{BLACKJACK_SEA_MT9D015_SENSOR_ID, 0xA0, Common_read_region},
+	{BLACKJACK_TSP_GC2375H_SENSOR_ID, 0xA2, Common_read_region},
+	{BLACKJACK_JSL_GC2375H_SENSOR_ID, 0xA4, Common_read_region},
+	{S5K3P9SXT_SENSOR_ID, 0xA0, Common_read_region},
+	{S5K3P9SX_SENSOR_ID, 0xA0, Common_read_region},
+	{GC8034_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX230_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K2T7SP_SENSOR_ID, 0xA4, Common_read_region},
 	{IMX338_SENSOR_ID, 0xA0, Common_read_region},

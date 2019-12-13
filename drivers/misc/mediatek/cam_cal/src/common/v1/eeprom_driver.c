@@ -36,7 +36,7 @@
 #include <linux/compat.h>
 #endif
 
-
+#include "kd_imgsensor.h"
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -53,11 +53,8 @@ static struct cdev *g_charDrv;
 static struct class *g_drvClass;
 static unsigned int g_drvOpened;
 static struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX] = { NULL };
-
-
+u32 dual_main_sensorid = 0;
 static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
-
-
 static unsigned int g_lastDevID;
 
 /***********************************************************
@@ -347,6 +344,7 @@ struct i2c_driver EEPROM_HW_i2c_driver2 = {
 #ifdef CONFIG_OF
 static const struct of_device_id EEPROM_HW3_i2c_driver_of_ids[] = {
 	{.compatible = "mediatek,camera_main_two_eeprom",},
+	{.compatible = "mediatek,camera_main_three_eeprom",},
 	{}
 };
 #endif
@@ -363,7 +361,6 @@ struct i2c_driver EEPROM_HW_i2c_driver3 = {
 		   },
 	.id_table = EEPROM_HW_i2c_id3,
 };
-
 
 /*******************************************************
  * EEPROM_HW_probe
@@ -761,6 +758,171 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 	spin_unlock(&g_spinLock);
 
 	return 0;
+}
+
+
+int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
+{
+    const char * str_s5k3p9sx_TXD_path  = "/data/vendor/camera_dump/TXD_s5k3p9sx.data";
+    const char * str_s5k3p9sx_TSP_path  = "/data/vendor/camera_dump/TSP_s5k3p9sx.data";
+    const char * str_gc8034_holitech_path  = "/data/vendor/camera_dump/holitech_gc8034.data";
+    const char * str_blackjack_tsp_gc2375h_path  = "/data/vendor/camera_dump/blackjack_tsp_gc2375h.data";
+    const char * str_blackjack_jsl_gc2375h_path  = "/data/vendor/camera_dump/blackjack_jsl_gc2375h.data";
+    const char * str_hi846_path  = "/data/vendor/camera_dump/blackjack_txd_hi846.data";
+    const char * str_mt9d015_path  = "/data/vendor/camera_dump/blackjack_sea_mt9d015.data";
+    const char * str_dump_path = NULL;
+
+    u32 u4Offset;
+    u32 u4Length;
+    u32 deviceid = 1;
+    u8 *pu1Params = NULL;
+    int i4RetValue = 0;
+    static mm_segment_t oldfs;
+    struct file *fp;
+    loff_t pos;
+    struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+
+    pr_debug("ontim_get_otp_data sensorid= %x  p_buf=%p  Length=%d\n", sensorid, p_buf, Length);
+
+    switch(sensorid)
+    {
+        case S5K3P9SXT_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0D09;
+            str_dump_path = str_s5k3p9sx_TXD_path;
+            break;
+        }
+        case S5K3P9SX_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0DC9;
+            str_dump_path = str_s5k3p9sx_TSP_path;
+            break;
+        }
+        case GC8034_SENSOR_ID:
+        {
+            pu1Params = 0;
+            u4Length = 0x0773;
+            str_dump_path = str_gc8034_holitech_path;
+            deviceid = 0x02;
+            break;
+        }
+        case BLACKJACK_TSP_GC2375H_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0806;
+            str_dump_path = str_blackjack_tsp_gc2375h_path;
+            deviceid = 0x10;
+            break;
+        }
+        case BLACKJACK_JSL_GC2375H_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0774;
+            str_dump_path = str_blackjack_jsl_gc2375h_path;
+            deviceid = 0x10;
+            break;
+        }
+        case BLACKJACK_SEA_MT9D015_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0773;
+            str_dump_path = str_mt9d015_path;
+            deviceid = 0x10;
+            break;
+        }
+        case BLACKJACK_TXD_HI846_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_hi846_path;
+            break;
+        }
+        default:
+            pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
+            __FUNCTION__, __LINE__,  sensorid);
+            if(p_buf != NULL)
+            {
+		kfree(p_buf);
+            }
+            return -1;
+    }
+
+    if( (sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) ||
+	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
+	(sensorid == GC8034_SENSOR_ID))
+    {
+	pu1Params = kmalloc(u4Length, GFP_KERNEL);
+	if (pu1Params == NULL)
+        {
+            pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+            __FUNCTION__, __LINE__);
+            return -1;
+        }
+
+	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, deviceid);
+	if (pcmdInf != NULL && g_lastDevID != deviceid)
+	{
+		if (EEPROM_set_i2c_bus(pcmdInf->deviceID, pcmdInf) != 0)
+		{
+			pr_debug("deviceID Error!\n");
+			kfree(pu1Params);
+			return -1;
+		}
+		g_lastDevID = deviceid;
+	}
+
+	if (pcmdInf != NULL)
+        {
+	    if (pcmdInf->readCMDFunc != NULL)
+            {
+                i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
+                u4Offset,
+                pu1Params,
+                u4Length);
+
+                pr_err("eeprom_driver.c[%s](%d)  readCMDFunc   i4RetValue=0x%x \n",
+                __FUNCTION__, __LINE__, i4RetValue);
+                pr_err("eeprom_driver.c[%s](%d)  0x%x  0x%x ... 0x%x 0x%x \n",
+                __FUNCTION__, __LINE__,
+                *pu1Params, *(pu1Params+1), *(pu1Params+u4Length - 2), *(pu1Params+u4Length - 1));
+
+            }
+	    else
+            {
+                pr_err("eeprom_driver.c[%s](%d)  pcmdInf->readCMDFunc == NULL \n",
+                __FUNCTION__, __LINE__);
+				kfree(pu1Params);
+				return -1;
+			}
+		}
+   }
+
+    oldfs = get_fs();
+    set_fs(KERNEL_DS);
+    fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
+    if (IS_ERR(fp))
+    {
+        pr_err("eeprom_driver.c[%s](%d)file open %s error",
+         __FUNCTION__, __LINE__, str_dump_path);
+    }
+    else
+    {
+        pos = 0;
+        vfs_write(fp, pu1Params, u4Length, &pos);
+        filp_close(fp, NULL);
+    }
+    set_fs(oldfs);
+    kfree(pu1Params);
+
+    return 0;
 }
 
 static const struct file_operations g_stCAM_CAL_fops1 = {
