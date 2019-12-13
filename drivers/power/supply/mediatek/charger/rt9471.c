@@ -2565,7 +2565,7 @@ static int rt9471_probe(struct i2c_client *client,
 //+add by hzb for ontim debug
         REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 //-add by hzb for ontim debug
-	dev_info(chip->dev, "%s aaaaaaaa successfully\n", __func__);
+	dev_info(chip->dev, "%s successfully\n", __func__);
 	return 0;
 
 err_create_file:

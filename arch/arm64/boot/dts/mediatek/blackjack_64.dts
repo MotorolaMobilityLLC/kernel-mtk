@@ -329,7 +329,7 @@
 	accdet-plugout-debounce = <1>;
 	accdet-mic-mode = <1>;
 	headset-eint-level-pol = <8>;
-	headset-three-key-threshold = <0 80 220 400>;
+	headset-three-key-threshold = <0 80 175 400>;
 	headset-three-key-threshold-CDD = <0 121 192 600>;
 	headset-four-key-threshold = <0 58 121 192 400>;
 	pinctrl-names = "default", "state_eint_as_int";
@@ -526,6 +526,20 @@
 	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
+&bat_gm30{
+	battery_type_name = <0>;
+};
+
+&usb_phy_tuning{
+	u2_vrt_ref = <7>;
+	u2_term_ref = <6>;
+	u2_host_vrt_ref = <4>;
+	u2_host_term_ref = <4>;
+	status = "okay";
+};
+
+#include "bat_setting/mt6765_battery_table_blackjack.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
 
 #include <blackjack_64/cust.dtsi>
 #include "cust_mt6765_camera.dtsi"
