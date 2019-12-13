@@ -112,6 +112,19 @@ config TOUCHSCREEN_ILI9881H
 
 source "drivers/input/touchscreen/mediatek/ili9881h/Kconfig"
 
+config TOUCHSCREEN_ILI9881H_BJ
+	bool "ilitek for Mediatek package"
+	default n
+	help
+	  Say Y here if you have ILI9881H_TS touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/ili9881h_bj/Kconfig"
+
 
 config TOUCHSCREEN_MTK_FOCALTECH_HD
 	bool "Focaltech Touchscreen"
