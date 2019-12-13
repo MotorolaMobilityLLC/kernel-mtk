@@ -1224,6 +1224,8 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	info->chr_type = CHARGER_UNKNOWN;
 	info->charger_thread_polling = false;
 
+	info->notify_code = 0x0000;
+
 	pdata1->disable_charging_count = 0;
 	pdata1->input_current_limit_by_aicl = -1;
 	pdata2->disable_charging_count = 0;
@@ -1402,6 +1404,8 @@ static void mtk_battery_notify_UI_test(struct charger_manager *info)
 
 static void mtk_battery_notify_check(struct charger_manager *info)
 {
+	info->notify_code = 0x0000;
+
 	if (info->notify_test_mode == 0x0000) {
 		mtk_battery_notify_VCharger_check(info);
 		mtk_battery_notify_VBatTemp_check(info);
@@ -1731,7 +1735,7 @@ static int charger_routine_thread(void *arg)
 		info->charger_thread_timeout = false;
 		bat_current = battery_get_bat_current();
 		chg_current = pmic_get_charging_current();
-		chr_err("Vbat=%d,Ibat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
+		chr_err("Vbat=%d,Ibat=%d,ChrI=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
 			battery_get_bat_voltage(), bat_current, chg_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_soc(), battery_get_uisoc(),
@@ -3258,6 +3262,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg2_data.thermal_input_current_limit = -1;
 
 	info->sw_jeita.error_recovery_flag = true;
+	info->sw_jeita.sm = TEMP_T2_TO_T3;
 
 	mtk_charger_init_timer(info);
 
