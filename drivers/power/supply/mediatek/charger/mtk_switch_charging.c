@@ -635,6 +635,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 			mtk_pe_check_charger(info);
 	}
 
+	charger_dev_kick_wdt(info->chg1_dev);
+	
 	do {
 		switch (swchgalg->state) {
 			chr_err("%s_2 [%d] %d\n", __func__, swchgalg->state,
