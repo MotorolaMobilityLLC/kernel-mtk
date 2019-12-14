@@ -329,22 +329,23 @@ static void lcm_init(void)
 	unsigned char data = 0x12;  //up to +/-5.8V
 	int ret = 0;
 	LCM_LOGI("%s: icnl9911s start\n",__func__);
+	LCM_LOGI("%s: gesture_dubbleclick_en=%d \n",__func__,gesture_dubbleclick_en);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enp(1);
 		set_gpio_lcd_enn(1);
-
+		MDELAY(50);
 		ret = NT50358A_write_byte(cmd, data);
-        if (ret < 0)
-			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
-        else
-			LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
+		if (ret < 0)
+			LCM_LOGI("%s:----cmd=%0x--i2c write error----\n",__func__, cmd);
+		else
+			LCM_LOGI("%s:---cmd=%0x--i2c write success----\n",__func__, cmd);
 		cmd = 0x01;
 		data = 0x12;
-        ret = NT50358A_write_byte(cmd, data);
+		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
-			LCM_LOGI("--cmd=%0x--i2c write error----\n", cmd);
+			LCM_LOGI("%s:--cmd=%0x--i2c write error----\n",__func__, cmd);
 		else
-			LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
+			LCM_LOGI("%s:----cmd=%0x--i2c write success----\n",__func__, cmd);
 	}
 	lcm_reset();
 
