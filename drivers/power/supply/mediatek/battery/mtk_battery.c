@@ -3512,6 +3512,34 @@ static const struct file_operations adc_cali_fops = {
 
 
 /*************************************/
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+static int battery_id_type = 0;
+int ontim_get_battery_type()
+{
+	return battery_id_type;
+}
+static void ontim_form_lk_get_battery_id()
+{
+	int battery_type_name_len = 0;
+	const char *battery_type = NULL;
+	char battery_type_name_tmp[10];
+
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		battery_type =
+		of_get_flat_dt_prop(
+					bat_node,"battery_type_name",
+					&battery_type_name_len);
+	if (battery_type == NULL){
+		bm_err("battery_type == NULL len = %d\n",battery_type_name_len);
+	} else {
+		snprintf(
+		battery_type_name_tmp,(battery_type_name_len + 1),
+		"%s",battery_type);
+		battery_id_type = (int)battery_type_name_tmp[0];
+		printk("ontim battery_id_type = %d  battery_type_name_len = %d\n",battery_id_type,battery_type_name_len);
+	}
+}
+#endif
 static struct wakeup_source battery_lock;
 static int __init battery_probe(struct platform_device *dev)
 {
@@ -3557,7 +3585,11 @@ static int __init battery_probe(struct platform_device *dev)
 					adc_cali_devno,
 					NULL, ADC_CALI_DEVNAME);
 /*****************************/
-
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+	/* add liang */
+	ontim_form_lk_get_battery_id();
+	/* add end */
+#endif
 	mtk_battery_init(dev);
 
 	/* Power supply class */
