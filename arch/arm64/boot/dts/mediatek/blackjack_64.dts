@@ -1153,9 +1153,6 @@
 
 	status = "okay";
 };
-&bat_gm30{
-	battery_type_name = <0>;
-};
 
 &usb_phy_tuning{
 	u2_vrt_ref = <7>;
