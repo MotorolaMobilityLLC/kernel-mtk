@@ -1,5 +1,5 @@
 static u8 icnl9911_driver_builtin_firmware_hjc[] = {
-#include"Moto-Blackjack-Chipone-ICNL9911S-MDT_Hmode_V010409_20191209_C.h"
+#include"Moto-Blackjack-Chipone-ICNL9911S-MDT_Hmode_V010509_20191216.h"
 };
 
 static u8 icnl9911_driver_builtin_firmware_rs[] = {
