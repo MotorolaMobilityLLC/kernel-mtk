@@ -47,6 +47,10 @@ enum LCM_DSI_MODE_CON lcm_dsi_mode;
 
 struct LCM_DRIVER *lcm_driver_list[] = {
 
+#if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_HLT)
+	&ontim_ili9881h_hdplus_dsi_vdo_hlt_lcm_drv,
+#endif
+
 #if defined(ONTIM_FT8006P_HDPLUS_DSI_VDO_TRULY)
 	&ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv,
 #endif
