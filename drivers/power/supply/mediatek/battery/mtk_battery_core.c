@@ -317,10 +317,13 @@ int gauge_get_nag_vbat(void)
 /* ============================================================ */
 /* custom setting */
 /* ============================================================ */
-static int battery_type_name = 0;
 #ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+extern int ontim_get_battery_type(void);
 void fgauge_get_profile_id(void)
 {
+	int battery_type_name = 0;
+	battery_type_name = ontim_get_battery_type();
+	printk("ontim battery_type_name = %d\n",battery_type_name);
 	if(battery_type_name != 0 && battery_type_name <= battery_total_number) {
 		gm.battery_id = battery_type_name - 1;
 		printk("ontim battery_id = %d\n",gm.battery_id);
@@ -439,15 +442,6 @@ void fg_custom_init_from_header(struct platform_device *dev)
 	} else {
 		bm_err("battery_total_number failed\n");
 	}
-	/* add liang */
-	printk("ontim battery_type_name =%d\n",battery_type_name);
-	if (of_property_read_u32(np,"battery_type_name",&val) >= 0) {
-		 battery_type_name = val;
-		 printk("ontim battery_type_name =%d\n",battery_type_name);
-	} else {
-		printk("not found battery_type_name\n");
-	}
-	/* add end */
 
 	fgauge_get_profile_id();
 
