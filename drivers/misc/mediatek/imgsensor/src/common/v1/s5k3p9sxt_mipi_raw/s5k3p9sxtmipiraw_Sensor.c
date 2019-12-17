@@ -4233,7 +4233,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5k3p9sx_TXD", 64);
-					//ontim_get_otp_data(*sensor_id, NULL, 0);
+					ontim_get_otp_data(*sensor_id, NULL, 0);
 					pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 				}
