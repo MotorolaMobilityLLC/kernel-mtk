@@ -29,7 +29,7 @@
 
 #define MULTI_WRITE 1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-//extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 
 #define per_frame 1
 
@@ -2108,7 +2108,7 @@ static kal_uint16 dump_otp_data(void)
 		hi846_lsc_addr ++;
 	}
 
-	//ontim_get_otp_data(0x0846, otp_dump, HI846_DUMP_DATA_LEN);
+	ontim_get_otp_data(0x0846, otp_dump, HI846_DUMP_DATA_LEN);
 	return 1;
 }
 
