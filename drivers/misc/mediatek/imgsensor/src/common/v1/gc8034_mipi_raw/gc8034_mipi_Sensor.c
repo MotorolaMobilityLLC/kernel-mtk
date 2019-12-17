@@ -1408,7 +1408,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				gc8034_otp_identify();
 				memset(front_cam_name, 0x00, sizeof(front_cam_name));
 				memcpy(front_cam_name, "1_gc8034", 64);
-				//ontim_get_otp_data(*sensor_id, NULL, 0);
+				ontim_get_otp_data(*sensor_id, NULL, 0);
 				pr_debug("[gc8034_camera_sensor]get_imgsensor_id:i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;

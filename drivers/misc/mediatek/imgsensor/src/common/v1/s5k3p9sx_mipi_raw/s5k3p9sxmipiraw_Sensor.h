@@ -146,7 +146,7 @@ extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
 extern bool s5k3p9_read_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size);
-//extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 
 #endif 
 
