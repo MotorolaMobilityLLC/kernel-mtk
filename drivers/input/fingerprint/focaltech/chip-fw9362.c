@@ -1,11 +1,11 @@
 /******************************************************************************
   Copyright (c), 1991-2007, My Company.
-  
+
   文件: chip-fw9362.c
-  描述: 
-  函数: 
+  描述:
+  函数:
   版本:
-         1. Author : 
+         1. Author :
             Date   : 2019-9-11
             Changes: First create file
  ******************************************************************************/
@@ -71,15 +71,15 @@ uint8_t const fw9362_WorkMode_Cmd[12][3] = {WorkMode_Idle_Cmd,\
                                    WorkMode_OscOn_Cmd,\
                                    WorkMode_OscOff_Cmd,\
                                    WorkMode_SpiWakeUp};
-                                   
+
 extern int ff_ctl_reset_device(void);
 
 int fw9362_wm_switch(E_WORKMODE_FW workmode)
 {
     int err = FF_SUCCESS;
     uint8_t ucBuffCmd[64];
-    
-    FF_LOGV("'%s' enter.", __func__);
+
+	FF_LOGV("'%s' enter.", __func__);
 
     ucBuffCmd[0] = fw9362_WorkMode_Cmd[workmode][0];
     ucBuffCmd[1] = fw9362_WorkMode_Cmd[workmode][1];
@@ -105,7 +105,7 @@ void fw9362_sram_write(uint16_t addr, uint16_t data)
     int tx_len,dlen;
     static uint8_t tx_buffer[MAX_XFER_BUF_SIZE] = {0, };
     ff_sram_buf_t *tx_buf = TYPE_OF(ff_sram_buf_t, tx_buffer);
-    
+
     //FF_LOGV("'%s' enter.", __func__);
 
     /* Sign the package.  */
@@ -119,7 +119,7 @@ void fw9362_sram_write(uint16_t addr, uint16_t data)
     tx_buf->addr = u16_swap_endian(addr | 0x8000); //×îžßbitÎª1
     tx_buf->dlen = u16_swap_endian((dlen/2)?(dlen/2-1):(dlen/2));
     tx_len = sizeof(ff_sram_buf_t)/2*2 + dlen;
-    tx_buf->data[0] = data >> 8; 
+    tx_buf->data[0] = data >> 8;
     tx_buf->data[1] = data & 0xff;
 
     /* Low-level transfer. */
@@ -131,7 +131,7 @@ void fw9362_sram_write(uint16_t addr, uint16_t data)
 uint16_t fw9362_read_sram(uint16_t addr)
 {
     int tx_len;
-    int dlen; 
+    int dlen;
     uint8_t ucbuff[8];
     uint16_t ustemp;
     ff_sram_buf_t tx_buffer, *tx_buf = &tx_buffer;
@@ -183,7 +183,7 @@ void fw9362_intflag_clear(uint16_t usdata)
 
     usAddr = 0x3500/2 + 0x04;
     fw9362_sram_write(usAddr, usdata);
-} 
+}
 
 void fw9362_sfr_write(uint8_t addr, uint8_t data)
 {

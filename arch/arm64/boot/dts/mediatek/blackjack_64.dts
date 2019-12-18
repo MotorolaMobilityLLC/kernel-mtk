@@ -419,7 +419,6 @@
 &pio{
      fpsensor_spi_default: fpsensor_spi_default {
      };
- 
      fpsensor_spi_cs_en0: fpsensor_spi_cs_low {
          pins_cmd_dat {
              pinmux = <PINMUX_GPIO26__FUNC_SPI1_A_CSB>;
@@ -491,10 +490,10 @@
      };
      fpsensor_finger_power_en0: fpsensor_finger_power_low {
      };
- 
+
      fpsensor_finger_power_en1: fpsensor_finger_power_high {
      };
- 
+
      fpsensor_fp_eint_as_int: fpsensor_eint_as_int {
          pins_cmd_dat {
              pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
@@ -547,7 +546,7 @@
      pinctrl-6 = <&fpsensor_spi_mo_mode_en1>;
      pinctrl-7 = <&fpsensor_spi_mclk_mode_en0>;
      pinctrl-8 = <&fpsensor_spi_mclk_mode_en1>;
- 
+
      pinctrl-9 = <&fpsensor_finger_rst_mode_en0>;
      pinctrl-10 = <&fpsensor_finger_rst_mode_en1>;
      pinctrl-11 = <&fpsensor_finger_power_en0>;
