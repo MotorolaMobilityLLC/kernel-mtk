@@ -55,10 +55,10 @@
 
 #include "ontim/ontim_dev_dgb.h"
 #define FPC_HW_INFO "FT9362L6"
-//DEV_ATTR_DECLARE(fingersensor)
-//DEV_ATTR_DEFINE("vendor", FPC_HW_INFO)
-//DEV_ATTR_DECLARE_END;
-//ONTIM_DEBUG_DECLARE_AND_INIT(fingersensor, fingersensor, 8);
+DEV_ATTR_DECLARE(fingersensor)
+DEV_ATTR_DEFINE("vendor", FPC_HW_INFO)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(fingersensor, fingersensor, 8);
 
 /*
  * Define the driver version string.
@@ -82,7 +82,7 @@ typedef struct {
 	struct notifier_block fb_notifier;
 #ifdef CONFIG_PM_WAKELOCKS
 	struct wakeup_source wake_lock;
-#else 
+#else
 	struct wake_lock wake_lock;
 #endif
 	bool b_driver_inited;
@@ -452,7 +452,7 @@ static int ff_ctl_init_driver(void)
 			FF_LOGE("ff_spi_init(..) = %d.", err);
 			break;
 		}
-#else 
+#else
 		if (g_config && g_config->enable_spidev) {
 			err = ff_spi_init();
 			if (err) {
@@ -532,9 +532,9 @@ static long ff_ctl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 
 	switch (cmd) {
-		case FF_IOC_INIT_DRIVER: 
+		case FF_IOC_INIT_DRIVER:
 		{
-			//struct TEEC_UUID vendor_uuid = {0x04190000, 0x0000, 0x0000, { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }};
+			struct TEEC_UUID vendor_uuid = {0x04190000, 0x0000, 0x0000, { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }};
 
 			if (g_context->b_driver_inited) {
 				err = ff_ctl_free_driver();
@@ -543,7 +543,7 @@ static long ff_ctl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				err = ff_ctl_init_driver();
 				// TODO: Sync the dirty configuration back to HAL.
 			}
-		//	memcpy(&uuid_fp, &vendor_uuid, sizeof(struct TEEC_UUID));
+			memcpy(&uuid_fp, &vendor_uuid, sizeof(struct TEEC_UUID));
 			break;
 		}
 		case FF_IOC_FREE_DRIVER:
@@ -604,8 +604,8 @@ static long ff_ctl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		case FF_IOC_SET_IC_INFORMATION:
 			FF_LOGD("only hwinfo for ontim\n");
-            //CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
-			//REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+			CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+			REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 #if 0
 			if (copy_from_user(&ic_information, (ic_information_t *)arg, sizeof(ic_information_t))) {
 				FF_LOGE("copy_from_user(..) failed.");

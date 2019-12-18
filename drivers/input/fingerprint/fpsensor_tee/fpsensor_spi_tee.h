@@ -71,7 +71,7 @@ typedef struct {
     //struct wake_lock ttw_wl;
 #ifdef CONFIG_PM_WAKELOCKS
 	struct wakeup_source ttw_wl;
-#else 
+#else
 	struct wake_lock ttw_wl;
 #endif
     wait_queue_head_t wq_irq_return;
@@ -85,10 +85,10 @@ typedef struct {
     int free_flag;
 } fpsensor_data_t;
 #define     FPSENSOR_RST_PIN      1  // not gpio, only macro,not need modified!!
-#define     FPSENSOR_SPI_CS_PIN   2  // not gpio, only macro,not need modified!!     
-#define     FPSENSOR_SPI_MO_PIN   3  // not gpio, only macro,not need modified!!   
-#define     FPSENSOR_SPI_MI_PIN   4  // not gpio, only macro,not need modified!!   
-#define     FPSENSOR_SPI_CK_PIN   5  // not gpio, only macro,not need modified!! 
+#define     FPSENSOR_SPI_CS_PIN   2  // not gpio, only macro,not need modified!!
+#define     FPSENSOR_SPI_MO_PIN   3  // not gpio, only macro,not need modified!!
+#define     FPSENSOR_SPI_MI_PIN   4  // not gpio, only macro,not need modified!!
+#define     FPSENSOR_SPI_CK_PIN   5  // not gpio, only macro,not need modified!!
 
 extern void mt_spi_enable_master_clk(struct spi_device *spidev);
 extern void mt_spi_disable_master_clk(struct spi_device *spidev);
