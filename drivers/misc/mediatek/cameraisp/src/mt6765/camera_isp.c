@@ -6139,6 +6139,14 @@ static signed int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 #endif
 		spin_lock(&(SpinLock_P2FrameList));
 		/* [2]check the buffer is dequeued or not */
+		if (idx ==  -1) {
+			pr_err(
+			"Do not find match buffer (pty/pid/cid: %d/0x%x/0x%x) to deque!",
+			    param.property, param.processID, param.callerID);
+			ret =  -EFAULT;
+			return ret;
+		}
+
 		if (P2_FramePackage_List[property][idx].dequedNum ==
 		    P2_FramePackage_List[property][idx].frameNum) {
 			ISP_P2_BufQue_Erase(property,
@@ -6159,7 +6167,7 @@ static signed int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 					property, param.processID,
 					param.callerID, idx, param.timeoutIns);
 
-			/* [3]if not,
+			/* [3] condition is not,
 			 *    goto wait event and wait for a signal to check
 			 */
 			restTime = wait_event_interruptible_timeout(
@@ -6174,8 +6182,7 @@ static signed int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 					param.processID, param.callerID);
 				ret =  -EFAULT;
 				break;
-			}
-			if (restTime == -512) {
+			} else if (restTime == -512) {
 				pr_err("be stopped, restime(%d)", restTime);
 				ret =  -EFAULT;
 				break;
