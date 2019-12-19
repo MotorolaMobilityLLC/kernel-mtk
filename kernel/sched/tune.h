@@ -43,6 +43,11 @@ mt_cpufreq_find_close_freq(unsigned int id, unsigned int freq) { return 0; }
 extern unsigned long boosted_cpu_util(int cpu);
 extern raw_spinlock_t stune_lock;
 
+#ifdef CONFIG_PROVE_LOCKING
+int close_lockdep_if_cpu_offline(void);
+void open_lockdep_if_need(int need);
+#endif
+
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 #ifdef CONFIG_UCLAMP_TASK_GROUP
 extern int uclamp_group_get(struct task_struct *p,
