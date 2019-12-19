@@ -1106,7 +1106,7 @@ int ccu_waitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq)
 	}
 
 	if (Timeout > 0) {
-		LOG_DBG("remain timeout:%d, task: %d\n", Timeout, g_LogBufIdx);
+		LOG_DBG("remain timeout:%ld, task: %d\n", Timeout, g_LogBufIdx);
 		/*send to user if not timeout*/
 		WaitIrq->EventInfo.TimeInfo.passedbySigcnt = (int)g_LogBufIdx;
 	}
