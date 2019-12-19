@@ -56,7 +56,7 @@ KEYWORD(FRONT_CAM_EFUSE)        //camera  efuse
 KEYWORD(FRONTAUX_CAM_EFUSE)        //camera  efuse
 KEYWORD(CARD_HOLDER_PRESENT)  //card hold detect
 KEYWORD(CHARGER_IC_MFR) //houzn add
-
+KEYWORD(RF_GPIO)
 KEYWORD(current_cpuid)// current cpuid
 
 #ifdef KEYWORD_ENUM
