@@ -4278,8 +4278,9 @@ bool _hwPowerDown(PowerType type)
 
 #ifdef CONFIG_COMPAT
 
-static int compat_get_acdk_sensor_getinfo_struct(COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32,
-						 ACDK_SENSOR_GETINFO_STRUCT __user *data)
+static int compat_get_acdk_sensor_getinfo_struct(
+			struct COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32,
+			struct ACDK_SENSOR_GETINFO_STRUCT __user *data)
 {
 	compat_uint_t i;
 	compat_uptr_t p;
@@ -4313,8 +4314,9 @@ static int compat_get_acdk_sensor_getinfo_struct(COMPAT_ACDK_SENSOR_GETINFO_STRU
 	return err;
 }
 
-static int compat_put_acdk_sensor_getinfo_struct(COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32,
-						 ACDK_SENSOR_GETINFO_STRUCT __user *data)
+static int compat_put_acdk_sensor_getinfo_struct(
+	struct COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32,
+	struct ACDK_SENSOR_GETINFO_STRUCT __user *data)
 {
 	compat_uint_t i;
 	int err;
@@ -4331,8 +4333,9 @@ static int compat_put_acdk_sensor_getinfo_struct(COMPAT_ACDK_SENSOR_GETINFO_STRU
 	return err;
 }
 
-static int compat_get_imagesensor_getinfo_struct(COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32,
-						 IMAGESENSOR_GETINFO_STRUCT __user *data)
+static int compat_get_imagesensor_getinfo_struct(
+	struct COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32,
+	struct IMAGESENSOR_GETINFO_STRUCT __user *data)
 {
 	compat_uptr_t p;
 	compat_uint_t i;
@@ -4347,8 +4350,9 @@ static int compat_get_imagesensor_getinfo_struct(COMPAT_IMAGESENSOR_GETINFO_STRU
 	return err;
 }
 
-static int compat_put_imagesensor_getinfo_struct(COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32,
-						 IMAGESENSOR_GETINFO_STRUCT __user *data)
+static int compat_put_imagesensor_getinfo_struct(
+	struct COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32,
+	struct IMAGESENSOR_GETINFO_STRUCT __user *data)
 {
 	/* compat_uptr_t p; */
 	compat_uint_t i;
@@ -4367,10 +4371,9 @@ static int compat_put_imagesensor_getinfo_struct(COMPAT_IMAGESENSOR_GETINFO_STRU
 		return err;
 }
 
-static int compat_get_acdk_sensor_featurecontrol_struct(COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT
-							__user *data32,
-							ACDK_SENSOR_FEATURECONTROL_STRUCT __user *
-							data)
+static int compat_get_acdk_sensor_featurecontrol_struct(
+	struct COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data32,
+	struct ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data)
 {
 	compat_uptr_t p;
 	compat_uint_t i;
@@ -4387,10 +4390,9 @@ static int compat_get_acdk_sensor_featurecontrol_struct(COMPAT_ACDK_SENSOR_FEATU
 	return err;
 }
 
-static int compat_put_acdk_sensor_featurecontrol_struct(COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT
-							__user *data32,
-							ACDK_SENSOR_FEATURECONTROL_STRUCT __user *
-							data)
+static int compat_put_acdk_sensor_featurecontrol_struct(
+	struct COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data32,
+	struct ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data)
 {
 	MUINT8 *p;
 	MUINT32 *q;
@@ -4411,8 +4413,9 @@ static int compat_put_acdk_sensor_featurecontrol_struct(COMPAT_ACDK_SENSOR_FEATU
 	return err;
 }
 
-static int compat_get_acdk_sensor_control_struct(COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32,
-						 ACDK_SENSOR_CONTROL_STRUCT __user *data)
+static int compat_get_acdk_sensor_control_struct(
+	struct COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32,
+	struct ACDK_SENSOR_CONTROL_STRUCT __user *data)
 {
 	compat_uptr_t p;
 	compat_uint_t i;
@@ -4429,8 +4432,9 @@ static int compat_get_acdk_sensor_control_struct(COMPAT_ACDK_SENSOR_CONTROL_STRU
 	return err;
 }
 
-static int compat_put_acdk_sensor_control_struct(COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32,
-						 ACDK_SENSOR_CONTROL_STRUCT __user *data)
+static int compat_put_acdk_sensor_control_struct(
+	struct COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32,
+	struct ACDK_SENSOR_CONTROL_STRUCT __user *data)
 {
 	/* compat_uptr_t p; */
 	compat_uint_t i;
@@ -4450,10 +4454,9 @@ static int compat_put_acdk_sensor_control_struct(COMPAT_ACDK_SENSOR_CONTROL_STRU
 	return err;
 }
 
-static int compat_get_acdk_sensor_resolution_info_struct(COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT
-							 __user *data32,
-							 ACDK_SENSOR_PRESOLUTION_STRUCT __user *
-							 data)
+static int compat_get_acdk_sensor_resolution_info_struct(
+	struct COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT __user *data32,
+	struct  ACDK_SENSOR_PRESOLUTION_STRUCT __user *data)
 {
 	int err;
 	compat_uptr_t p;
@@ -4467,21 +4470,15 @@ static int compat_get_acdk_sensor_resolution_info_struct(COMPAT_ACDK_SENSOR_PRES
 	err |= put_user(compat_ptr(p), &data->pResolution[2]);
 #endif
 
-	/* err = copy_from_user((void*)data, (void*)data32, sizeof(compat_uptr_t) * 2); */
-	/* err = copy_from_user((void*)data[0], (void*)data32[0], sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT)); */
-	/* err = copy_from_user((void*)data[1], (void*)data32[1], sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT)); */
 	return err;
 }
 
-static int compat_put_acdk_sensor_resolution_info_struct(COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT
-							 __user *data32,
-							 ACDK_SENSOR_PRESOLUTION_STRUCT __user *
-							 data)
+static int compat_put_acdk_sensor_resolution_info_struct(
+	struct COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT __user *data32,
+	struct ACDK_SENSOR_PRESOLUTION_STRUCT __user *data)
 {
 	int err = 0;
-	/* err = copy_to_user((void*)data, (void*)data32, sizeof(compat_uptr_t) * 2); */
-	/* err = copy_to_user((void*)data[0], (void*)data32[0], sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT)); */
-	/* err = copy_to_user((void*)data[1], (void*)data32[1], sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT)); */
+
 	return err;
 }
 
@@ -4497,8 +4494,8 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 	switch (cmd) {
 	case COMPAT_KDIMGSENSORIOC_X_GETINFO:
 		{
-			COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32;
-			ACDK_SENSOR_GETINFO_STRUCT __user *data;
+			struct COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32;
+			struct ACDK_SENSOR_GETINFO_STRUCT __user *data;
 			int err;
 
 			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO E\n");
@@ -4521,8 +4518,9 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL:
 		{
-			COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data32;
-			ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data;
+			struct COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT
+				__user *data32;
+			struct ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data;
 			int err;
 
 			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL\n");
@@ -4546,8 +4544,8 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_CONTROL:
 		{
-			COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32;
-			ACDK_SENSOR_CONTROL_STRUCT __user *data;
+			struct COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32;
+			struct ACDK_SENSOR_CONTROL_STRUCT __user *data;
 			int err;
 
 			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_CONTROL\n");
@@ -4569,8 +4567,8 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_GETINFO2:
 		{
-			COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32;
-			IMAGESENSOR_GETINFO_STRUCT __user *data;
+			struct COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32;
+			struct IMAGESENSOR_GETINFO_STRUCT __user *data;
 			int err;
 
 			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO2\n");
@@ -4592,8 +4590,10 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_GETRESOLUTION2:
 		{
-			COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT __user *data32;
-			ACDK_SENSOR_PRESOLUTION_STRUCT __user *data;
+			struct COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT
+				__user *data32;
+			struct ACDK_SENSOR_PRESOLUTION_STRUCT
+				__user *data;
 			int err;
 
 			PK_DBG("[CAMERA SENSOR] KDIMGSENSORIOC_X_GETRESOLUTION2\n");
