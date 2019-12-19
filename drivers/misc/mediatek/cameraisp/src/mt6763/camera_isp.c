@@ -84,6 +84,8 @@
 
 #if defined(ISP_MET_READY)
 /*MET:met mmsys profile*/
+#define CREATE_TRACE_POINTS
+#include "inc/met_events_camsys.h"
 #include <mt-plat/met_drv.h>
 #endif
 
@@ -92,8 +94,6 @@
 struct mmdvfs_pm_qos_request isp_qos;
 static unsigned int target_clk;
 
-#define CREATE_TRACE_POINTS
-#include "inc/met_events_camsys.h"
 
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
