@@ -343,11 +343,11 @@ int ccu_pop_command_from_queue(struct ccu_user_s *user, struct ccu_cmd_s **rcmd)
 
 	/* ret == 0, if timeout; ret == -ERESTARTSYS, if signal interrupt */
 	if (ret == 0) {
-		LOG_ERR("timeout: pop a command! ret=%d\n", ret);
+		LOG_ERR("timeout: pop a command! ret=%ld\n", ret);
 		*rcmd = NULL;
 		return -1;
 	} else if (ret < 0) {
-		LOG_ERR("interrupted by system signal: %d\n", ret);
+		LOG_ERR("interrupted by system signal: %ld\n", ret);
 
 		if (ret == -ERESTARTSYS)
 			LOG_ERR("interrupted as -ERESTARTSYS\n");
@@ -358,7 +358,7 @@ int ccu_pop_command_from_queue(struct ccu_user_s *user, struct ccu_cmd_s **rcmd)
 	/* This part should not be happened */
 	if (list_empty(&user->deque_ccu_cmd_list)) {
 		mutex_unlock(&user->data_mutex);
-		LOG_ERR("pop a command from empty queue! ret=%d\n", ret);
+		LOG_ERR("pop a command from empty queue! ret=%ld\n", ret);
 		*rcmd = NULL;
 		return -1;
 	};
