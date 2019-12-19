@@ -427,6 +427,7 @@ static int string_hash_put(struct string_struct *string)
 	if (!string->ref) {
 		hlist_del(&string->list);
 		kfree(string);
+		string = NULL;
 	}
 
 	spin_unlock(&ion_str_hash_lock);
@@ -590,11 +591,7 @@ static int ion_history_record(void *data)
 	size_t old_total_size = 0;
 	size_t total_size = 0;
 
-#ifdef CONFIG_MACH_MT6761
-	while (0) {
-#else
 	while (1) {
-#endif
 		if (kthread_should_stop()) {
 			IONMSG("stop ion history threak\n");
 			break;
