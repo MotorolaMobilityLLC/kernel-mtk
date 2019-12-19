@@ -20,6 +20,7 @@
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/power_supply.h>
+#include <linux/workqueue.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -146,6 +147,7 @@ struct bq25890_info {
 	struct power_supply *psy;
 	struct charger_properties chg_props;
 	struct device *dev;
+	struct delayed_work chrdet_dwork;
 	const char *chg_dev_name;
 	const char *eint_name;
 	enum charger_type chg_type;
@@ -524,21 +526,6 @@ void bq25890_set_force_dpdm(unsigned int val)
 				       (unsigned char) (val),
 				       (unsigned char) (CON2_FORCE_DPDM_MASK),
 				       (unsigned char) (CON2_FORCE_DPDM_SHIFT));
-}
-
-static int bq25890_get_force_dpdm(bool *force)
-{
-	unsigned int ret = 0;
-	unsigned char val = 0;
-
-	ret = bq25890_read_interface((unsigned char) (bq25890_CON2),
-				     &val,
-				     (unsigned char) (CON2_FORCE_DPDM_MASK),
-				     (unsigned char) (CON2_FORCE_DPDM_SHIFT)
-	);
-
-	*force = (val == 0 ? false : true);
-	return ret;
 }
 
 static void bq25890_set_auto_dpdm(unsigned int val)
@@ -1747,6 +1734,24 @@ static int bq25890_dump_register(struct charger_device *chg_dev)
 	return 0;
 }
 
+static void bq25890_chrdet_dwork(struct work_struct *work)
+{
+	unsigned int pg_stat = 0;
+
+	/* Force charger type detection */
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
+	Charger_Detect_Init();
+#endif
+	msleep(50);
+
+	pg_stat = bq25890_get_pg_state();
+	if (pg_stat) {
+		pr_info("%s: force charger type detection\n", __func__);
+		/* Force dpdm will become 0 after detecting is finished */
+		bq25890_set_force_dpdm(1);
+	}
+}
+
 static irqreturn_t bq25890_irq_handler(int irq, void *data)
 {
 	u8 pg_stat = 0;
@@ -1922,10 +1927,8 @@ static struct charger_ops bq25890_chg_ops = {
 static int bq25890_driver_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
-	int ret = 0, i = 0;
+	int ret = 0;
 	struct bq25890_info *info = NULL;
-	bool force_dpdm = false;
-	unsigned int pg_stat = 0;
 
 	pr_info("[%s]\n", __func__);
 
@@ -1953,26 +1956,8 @@ static int bq25890_driver_probe(struct i2c_client *client,
 	bq25890_hw_component_detect();
 	/* bq25890_hw_init(); //move to charging_hw_xxx.c */
 
-	/* Force charger type detection */
-#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
-	Charger_Detect_Init();
-#endif
-	msleep(50);
-
-	pg_stat = bq25890_get_pg_state();
-	if (pg_stat) {
-		pr_info("%s: force charger type detection\n", __func__);
-		/* Force dpdm will become 0 after detecting is finished */
-		bq25890_set_force_dpdm(1);
-		for (i = 0; i < 10; i++) {
-			msleep(500);
-			bq25890_get_force_dpdm(&force_dpdm);
-			if (!force_dpdm)
-				break;
-		}
-		info->chg_type = bq25890_get_charger_type(info);
-		bq25890_set_charger_type(info);
-	}
+	INIT_DELAYED_WORK(&info->chrdet_dwork, bq25890_chrdet_dwork);
+	schedule_delayed_work(&info->chrdet_dwork, msecs_to_jiffies(5000));
 
 	bq25890_set_auto_dpdm(1);
 	bq25890_register_irq(info);
