@@ -8927,7 +8927,9 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol,
 				if (gainNleDb < srcGainNleDb)
 					srcGainNleDb = srcCurGainNleDb;
 				else if (gainNleDb > srcCurGainNleDb)
-					srcGainNleDb = srcGainNleDb;
+					/* srcGainNleDb = srcGainNleDb
+					 */
+					;
 				else if ((gainNleDb - srcGainNleDb) <
 					 (srcCurGainNleDb - gainNleDb))
 					srcGainNleDb = srcCurGainNleDb;
@@ -8935,7 +8937,9 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol,
 				if (gainNleDb > srcGainNleDb)
 					srcGainNleDb = srcCurGainNleDb;
 				else if (gainNleDb < srcCurGainNleDb)
-					srcGainNleDb = srcGainNleDb;
+					/* srcGainNleDb = srcGainNleDb
+					 */
+					;
 				else if ((gainNleDb - srcCurGainNleDb) >
 					 (srcGainNleDb - gainNleDb))
 					srcGainNleDb = srcCurGainNleDb;
@@ -9016,7 +9020,9 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol,
 				if (gainNleDb < srcGainNleDb)
 					srcGainNleDb = srcCurGainNleDb;
 				else if (gainNleDb > srcCurGainNleDb)
-					srcGainNleDb = srcGainNleDb;
+					/* srcGainNleDb = srcGainNleDb
+					 */
+					;
 				else if ((gainNleDb - srcGainNleDb) <
 					 (srcCurGainNleDb - gainNleDb))
 					srcGainNleDb = srcCurGainNleDb;
@@ -9024,7 +9030,9 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol,
 				if (gainNleDb > srcGainNleDb)
 					srcGainNleDb = srcCurGainNleDb;
 				else if (gainNleDb < srcCurGainNleDb)
-					srcGainNleDb = srcGainNleDb;
+					/* srcGainNleDb = srcGainNleDb
+					 */
+					;
 				else if ((gainNleDb - srcCurGainNleDb) >
 					 (srcGainNleDb - gainNleDb))
 					srcGainNleDb = srcCurGainNleDb;

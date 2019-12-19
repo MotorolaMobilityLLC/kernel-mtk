@@ -135,7 +135,7 @@ enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM module)
 		DDPERR("invalid ovl module=%d, get cmdq event nonsecure fail\n",
 		       module);
 		ASSERT(0);
-		return DISP_MODULE_UNKNOWN;
+		return (unsigned long long int)DISP_MODULE_UNKNOWN;
 	}
 	return 0;
 }

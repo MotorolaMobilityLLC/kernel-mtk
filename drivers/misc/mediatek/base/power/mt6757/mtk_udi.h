@@ -90,6 +90,28 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1,
 
 /* dfine for UDI register service */
 #ifdef __KERNEL__
+#ifdef CONFIG_ARM64
+#define udi_reg_read(addr)                                                     \
+	mt_secure_call_udi(MTK_SIP_KERNEL_UDI_READ, addr, 0, 0)
+#define udi_reg_write(addr, val)                                               \
+	mt_secure_call_udi(MTK_SIP_KERNEL_UDI_WRITE, addr, val, 0)
+#define udi_reg_field(addr, range, val)                                        \
+	udi_reg_write(addr, (udi_reg_read(addr) & ~(BITMASK_UDI(range))) |     \
+				BITS_UDI(range, val))
+
+#define udi_jtag_clock(sw_tck, i_trst, i_tms, i_tdi, count)                    \
+	mt_secure_call_udi(MTK_SIP_KERNEL_UDI_JTAG_CLOCK,                      \
+			   (((1 << (sw_tck & 0x03)) << 3) |                    \
+			    ((i_trst & 0x01) << 2) | ((i_tms & 0x01) << 1) |   \
+			    (i_tdi & 0x01)),                                   \
+			   count, 0)
+
+#define udi_bit_ctrl(sw_tck, i_tdi, i_tms, i_trst)                             \
+	mt_secure_call_udi(MTK_SIP_KERNEL_UDI_BIT_CTRL,                        \
+			   ((sw_tck & 0x0f) << 3) | ((i_trst & 0x01) << 2) |   \
+			       ((i_tms & 0x01) << 1) | (i_tdi & 0x01),         \
+			   0, 0)
+#else
 #define udi_reg_read(addr)                                                     \
 	mt_secure_call_udi(MTK_SIP_KERNEL_UDI_READ, addr, 0, 0, 0)
 #define udi_reg_write(addr, val)                                               \
@@ -110,7 +132,7 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1,
 			   ((sw_tck & 0x0f) << 3) | ((i_trst & 0x01) << 2) |   \
 			       ((i_tms & 0x01) << 1) | (i_tdi & 0x01),         \
 			   0, 0, 0)
-
+#endif
 #else
 #define udi_reg_read(addr) ptp3_reg_read(addr)
 #define udi_reg_write(addr, val) ptp3_reg_write(addr, val)
