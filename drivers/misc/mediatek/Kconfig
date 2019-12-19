@@ -495,6 +495,7 @@ config MTK_ENABLE_AGO
 	select SWAP
 	select ZRAM
 	select ZRAM_LZ4_COMPRESS
+	select ZRAM_WRITEBACK
 	select MEMCG
 	select MEMCG_SWAP
 	select HZ_300
