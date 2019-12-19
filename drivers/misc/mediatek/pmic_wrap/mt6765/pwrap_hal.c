@@ -856,7 +856,7 @@ static void _pwrap_enable(void)
 	WRAP_WR32(PMIC_WRAP_INT1_EN, 0xffffd800);
 #elif defined(CONFIG_MACH_MT6765)
 	WRAP_WR32(PMIC_WRAP_INT0_EN, 0xffffffff);
-	WRAP_WR32(PMIC_WRAP_INT1_EN, 0xffffffff);
+	WRAP_WR32(PMIC_WRAP_INT1_EN, 0xffffdfff); /* Disable HW Monitor INT */
 #endif
 }
 
@@ -1500,30 +1500,30 @@ static void pwrap_reenable_pmic_logging(void)
 	unsigned int rdata = 0, sub_return = 0;
 
 	/* Read Last three command */
-	pwrap_read_nochk(PMIC_RECORD_CMD0_ADDR, &rdata);
+	pwrap_wacs2_read(PMIC_RECORD_CMD0_ADDR, &rdata);
 	pr_info("RECORD_CMD0:  0x%x (Last 1st cmd addr)\n", (rdata & 0x3fff));
-	pwrap_read_nochk(PMIC_RECORD_WDATA0_ADDR, &rdata);
+	pwrap_wacs2_read(PMIC_RECORD_WDATA0_ADDR, &rdata);
 	pr_info("RECORD_WDATA0:0x%x (Last 1st cmd wdata)\n", rdata);
-	pwrap_read_nochk(PMIC_RECORD_CMD1_ADDR, &rdata);
+	pwrap_wacs2_read(PMIC_RECORD_CMD1_ADDR, &rdata);
 	pr_info("RECORD_CMD1:  0x%x (Last 2nd cmd addr)\n", (rdata & 0x3fff));
-	pwrap_read_nochk(PMIC_RECORD_WDATA1_ADDR, &rdata);
+	pwrap_wacs2_read(PMIC_RECORD_WDATA1_ADDR, &rdata);
 	pr_info("RECORD_WDATA1:0x%x (Last 2nd cmd wdata)\n", rdata);
-	pwrap_read_nochk(PMIC_RECORD_CMD2_ADDR, &rdata);
+	pwrap_wacs2_read(PMIC_RECORD_CMD2_ADDR, &rdata);
 	pr_info("RECORD_CMD2:  0x%x (Last 3rd cmd addr)\n", (rdata & 0x3fff));
-	pwrap_read_nochk(PMIC_RECORD_WDATA2_ADDR, &rdata);
+	pwrap_wacs2_read(PMIC_RECORD_WDATA2_ADDR, &rdata);
 	pr_info("RECORD_WDATA2:0x%x (Last 3rd cmd wdata)\n", rdata);
 
 	/* Enable Command Recording */
-	sub_return = pwrap_write_nochk(PMIC_RG_SPI_RSV_ADDR, 0x3);
+	sub_return = pwrap_wacs2_write(PMIC_RG_SPI_RSV_ADDR, 0x3);
 	if (sub_return != 0)
 		pr_notice("enable spi debug fail, ret=%x\n", sub_return);
 	pr_info("enable spi debug ok\n");
 
 	/* Clear Last three record command */
-	sub_return = pwrap_write_nochk(PMIC_RG_SPI_RECORD_CLR_ADDR, 0x1);
+	sub_return = pwrap_wacs2_write(PMIC_RG_SPI_RECORD_CLR_ADDR, 0x1);
 	if (sub_return != 0)
 		pr_notice("clear record command fail, ret=%x\n", sub_return);
-	sub_return = pwrap_write_nochk(PMIC_RG_SPI_RECORD_CLR_ADDR, 0x0);
+	sub_return = pwrap_wacs2_write(PMIC_RG_SPI_RECORD_CLR_ADDR, 0x0);
 	if (sub_return != 0)
 		pr_notice("clear record command fail, ret=%x\n", sub_return);
 	pr_info("clear record command ok\n\r");
@@ -1668,7 +1668,6 @@ static int pwrap_ipi_register(void)
 }
 #endif
 
-#define WK_MONITOR_VCORE_HWCFG		1
 /* Interrupt handler function */
 static int g_wrap_wdt_irq_count;
 static int g_case_flag;
@@ -1676,9 +1675,7 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 {
 	unsigned int int0_flg = 0, int1_flg = 0, ret = 0;
 	unsigned char str[50] = "";
-#if WK_MONITOR_VCORE_HWCFG
-	unsigned int rdata = 0;
-#endif
+
 	int0_flg = WRAP_RD32(PMIC_WRAP_INT0_FLG);
 	int1_flg = WRAP_RD32(PMIC_WRAP_INT1_FLG);
 
@@ -1694,25 +1691,6 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		}
 #endif
 	}
-
-#if WK_MONITOR_VCORE_HWCFG
-	if ((int1_flg & 0x2000) == 0x2000) {
-		pr_notice("[PWRAP] Monitor catch a target transaction\n");
-		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(before)\n", int1_flg);
-		pwrap_logging_at_isr();
-		pwrap_reenable_pmic_logging();
-		pwrap_dump_ap_register();
-		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0x2000);
-		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(after)\n", int1_flg);
-
-		pwrap_read_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR, &rdata);
-		pr_notice("[PWRAP]BUCK_VCORE_HW0_OP_CFG=0x%x(before)\n", rdata);
-		pwrap_write_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR
-				  , rdata | 0x2);
-		pwrap_read_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR, &rdata);
-		pr_notice("[PWRAP]BUCK_VCORE_HW0_OP_CFG=0x%x(after)\n", rdata);
-	}
-#endif
 
 	if ((int1_flg & 0xffffffff) != 0) {
 		pr_notice("[PWRAP] INT1 error = 0x%x\n", int1_flg);
@@ -1734,13 +1712,13 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		WRAP_WR32(PMIC_WRAP_INT0_EN, 0xffffffff);
 
 		/* Clear spislv CRC sta */
-		ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x1);
+		ret = pwrap_wacs2_write(PMIC_DEW_CRC_SWRST_ADDR, 0x1);
 		if (ret != 0)
 			pr_notice("clear crc fail, ret=%x\n", ret);
-		ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x0);
+		ret = pwrap_wacs2_write(PMIC_DEW_CRC_SWRST_ADDR, 0x0);
 		if (ret != 0)
 			pr_notice("clear crc fail, ret=%x\n", ret);
-		ret = pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x0);
+		ret = pwrap_wacs2_write(PMIC_DEW_CRC_EN_ADDR, 0x0);
 		if (ret != 0)
 			pr_notice("enable crc fail, ret=%x\n", ret);
 		WRAP_WR32(PMIC_WRAP_CRC_EN, 0x0);
