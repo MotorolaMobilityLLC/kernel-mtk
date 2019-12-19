@@ -44,7 +44,8 @@ typedef enum {
     MSG_TO_APMCU_FLUSH_LOG, //CCU Request APMCU to print out CCU logs
     MSG_TO_APMCU_CCU_ASSERT, //CCU inform APMCU that CCU ASSERT occurs
     MSG_TO_APMCU_CCU_WARNING, //CCU inform APMCU that CCU WARNING occurs
-	MSG_TO_APMCU_CAM_AFO_i
+	MSG_TO_APMCU_CAM_AFO_i,
+	MSG_TO_APMCU_CAM_AFO_ABORT = 255
 } ccu_to_ap_msg_id;
 
 enum ccu_feature_type {
