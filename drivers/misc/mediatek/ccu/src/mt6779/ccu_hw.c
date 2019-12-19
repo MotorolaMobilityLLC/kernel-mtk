@@ -225,7 +225,7 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				LOG_DBG(
 					"wakeup ccuInfo.AFWaitQueueHead done\n");
 			} else if (receivedCcuCmd.sensor_idx ==
-				IMGSENSOR_SENSOR_IDX_MAX_NUM) {
+				MSG_TO_APMCU_CAM_AFO_ABORT) {
 				for (n = 0;
 					n < IMGSENSOR_SENSOR_IDX_MAX_NUM; n++) {
 
