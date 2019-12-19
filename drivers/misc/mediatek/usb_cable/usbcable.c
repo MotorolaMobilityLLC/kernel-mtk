@@ -38,6 +38,12 @@ static struct platform_driver usbcable_driver = {
 };
 //module_platform_driver(usbcable_driver);/*USB CABLE GPIO EINT19*/
 
+unsigned int get_rf_gpio_value(void)
+{
+	return last_eint_level;
+}
+EXPORT_SYMBOL(get_rf_gpio_value);
+
  static irqreturn_t usbcable_irq_handler(int irq, void *dev)
  {
 	int level = 0;
@@ -117,7 +123,15 @@ static int usbcable_probe(struct platform_device *pdev){
 		return ret;
 	}
 	//enable_irq_wake(usbcable_eint_num);
-	
+
+	ret = __gpio_get_value(usbcable_gpio_num);
+	if(ret!=last_eint_level){
+		printk("[USBCABLE]probe report key [%d]\n",ret);
+		input_report_key(cable_input_dev, KEY_TWEN, ret);
+		input_sync(cable_input_dev);
+		last_eint_level = ret;
+	}
+
 	return 0;
 }
 
