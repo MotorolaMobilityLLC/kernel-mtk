@@ -280,6 +280,12 @@ static struct early_suspend mt_gpufreq_early_suspend_handler = {
 static sampler_func g_pFreqSampler;
 static sampler_func g_pVoltSampler;
 
+
+/*****************
+ * input boost notification
+ ******************/
+typedef void (*gpufreq_input_boost_notify)(unsigned int);
+
 static gpufreq_power_limit_notify g_pGpufreq_power_limit_notify;
 #ifdef MT_GPUFREQ_INPUT_BOOST
 static gpufreq_input_boost_notify g_pGpufreq_input_boost_notify;

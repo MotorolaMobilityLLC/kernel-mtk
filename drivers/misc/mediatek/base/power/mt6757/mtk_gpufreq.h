@@ -108,9 +108,9 @@ mt_gpufreq_power_limit_notify_registerCB(gpufreq_power_limit_notify pCB);
 /*****************
  * input boost notification
  ******************/
-typedef void (*gpufreq_input_boost_notify)(unsigned int);
-extern void
-mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB);
+//typedef void (*gpufreq_input_boost_notify)(unsigned int);
+//extern void
+//mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB);
 
 /*****************
  * update voltage notification
