@@ -1526,6 +1526,7 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, unsigned int msg,
 	case DISP_IOCTL_SET_CCORR:
 	case DISP_IOCTL_CCORR_EVENTCTL:
 	case DISP_IOCTL_CCORR_GET_IRQ:
+	case DISP_IOCTL_SUPPORT_COLOR_TRANSFORM:
 		if (ddp_modules_driver[DISP_MODULE_CCORR0]->cmd != NULL)
 			ret = ddp_modules_driver[DISP_MODULE_CCORR0]->cmd(
 			    DISP_MODULE_CCORR0, msg, arg, cmdqhandle);
