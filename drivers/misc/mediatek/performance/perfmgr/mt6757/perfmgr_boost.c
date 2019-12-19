@@ -19,7 +19,7 @@
 #include <linux/uaccess.h>
 #include <linux/utsname.h>
 
-#include <legacy_controller.h>
+#include <cpu_ctrl.h>
 #include <linux/platform_device.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_vcorefs_manager.h>
@@ -64,8 +64,8 @@ void perfmgr_boost(int enable, int core, int freq)
 		vcorefs_request_dvfs_opp(KIR_FBT, -1);
 	}
 
-	update_userlimit_cpu_core(PPM_KIR_FBC, CLUSTER_NUM, core_to_set);
-	update_userlimit_cpu_freq(PPM_KIR_FBC, CLUSTER_NUM, freq_to_set);
+	update_userlimit_cpu_core(CPU_KIR_TOUCH, CLUSTER_NUM, core_to_set);
+	update_userlimit_cpu_freq(CPU_KIR_TOUCH, CLUSTER_NUM, freq_to_set);
 }
 
 /* redundant API */

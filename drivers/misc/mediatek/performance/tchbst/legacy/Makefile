@@ -1,4 +1,5 @@
-# Copyright (C) 2018 MediaTek Inc.
+#
+# Copyright (C) 2015 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -10,16 +11,10 @@
 # GNU General Public License for more details.
 #
 
+obj-y += touch_boost.o
 
-obj-y += tchbst_main.o
+ccflags-y += \
+	-I$(srctree)/drivers/misc/mediatek/base/power/include \
+	-I$(srctree)/kernel/trace/ \
+	-I$(srctree)/drivers/misc/mediatek/performance/perfmgr/$(CONFIG_MTK_PLATFORM)
 
-obj-$(CONFIG_MTK_FPSGO) += user/
-obj-$(CONFIG_MTK_FPSGO_V3) += user/
-
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
-	obj-y += legacy/
-endif
-
-#ifeq ($(CONFIG_MTK_PERFMGR_TOUCH_BOOST),y)
-obj-y += kernel/
-#endif # CONFIG_MTK_PERFMGR_TOUCH_BOOST
