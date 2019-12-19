@@ -2798,7 +2798,26 @@ static int fgauge_set_info(
 	if (ginfo == GAUGE_2SEC_REBOOT)
 		pmic_config_interface(
 		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
-	else
+	else if (ginfo == GAUGE_PL_CHARGING_STATUS)
+		pmic_config_interface(
+		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x1);
+	else if (ginfo == GAUGE_MONITER_PLCHG_STATUS)
+		pmic_config_interface(
+		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x2);
+	else if (ginfo == GAUGE_BAT_PLUG_STATUS)
+		pmic_config_interface(
+		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x3);
+	else if (ginfo == GAUGE_IS_NVRAM_FAIL_MODE)
+		pmic_config_interface(
+		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x4);
+	else if (ginfo == GAUGE_MONITOR_SOFF_VALIDTIME)
+		pmic_config_interface(
+		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x5);
+	else if (ginfo == GAUGE_CON0_SOC) {
+		value = value / 100;
+		pmic_config_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x007F, 0x9);
+	} else
 		ret = -1;
 
 	return 0;
@@ -2811,7 +2830,25 @@ static int fgauge_get_info(
 
 	if (ginfo == GAUGE_2SEC_REBOOT)
 		pmic_read_interface(
-		PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else if (ginfo == GAUGE_PL_CHARGING_STATUS)
+		pmic_read_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x1);
+	else if (ginfo == GAUGE_MONITER_PLCHG_STATUS)
+		pmic_read_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x2);
+	else if (ginfo == GAUGE_BAT_PLUG_STATUS)
+		pmic_read_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x3);
+	else if (ginfo == GAUGE_IS_NVRAM_FAIL_MODE)
+		pmic_read_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x4);
+	else if (ginfo == GAUGE_MONITOR_SOFF_VALIDTIME)
+		pmic_read_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x5);
+	else if (ginfo == GAUGE_CON0_SOC)
+		pmic_read_interface(
+			PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x007F, 0x9);
 	else
 		ret = -1;
 
