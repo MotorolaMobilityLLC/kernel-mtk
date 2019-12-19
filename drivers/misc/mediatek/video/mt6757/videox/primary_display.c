@@ -6987,7 +6987,10 @@ int primary_display_get_info(struct disp_session_info *info)
 	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
 	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
 
-	dispif_info->vsyncFPS = pgc->lcm_fps;
+	if (pgc->lcm_fps <= 6000)
+		dispif_info->vsyncFPS = pgc->lcm_fps;
+	else
+		dispif_info->vsyncFPS = 6000;
 
 	dispif_info->isConnected = 1;
 
