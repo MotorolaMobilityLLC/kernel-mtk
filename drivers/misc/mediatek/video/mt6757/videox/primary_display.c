@@ -2783,11 +2783,25 @@ static int init_decouple_buffers(void)
 
 	int buffer_size = width * height * Bpp;
 
-	for (i = 0; i < DISP_INTERNAL_BUFFER_COUNT;
-	     i++) { /* INTERNAL Buf 3 frames */
-		decouple_buffer_info[i] = allocat_decouple_buffer(buffer_size);
-		if (decouple_buffer_info[i] != NULL)
-			pgc->dc_buf[i] = decouple_buffer_info[i]->mva;
+	if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE)) {
+		decouple_buffer_info[0] = allocat_decouple_buffer(buffer_size);
+		if (decouple_buffer_info[0])
+			pgc->dc_buf[0] = decouple_buffer_info[0]->mva;
+		else
+			DISPERR("gmo alloc buf fail!\n");
+
+		for (i = 1; i < DISP_INTERNAL_BUFFER_COUNT; i++) {
+			decouple_buffer_info[i] = decouple_buffer_info[0];
+			pgc->dc_buf[i] = pgc->dc_buf[0];
+		}
+	} else {
+		for (i = 0; i < DISP_INTERNAL_BUFFER_COUNT;
+		     i++) { /* INTERNAL Buf 3 frames */
+			decouple_buffer_info[i] =
+				allocat_decouple_buffer(buffer_size);
+			if (decouple_buffer_info[i] != NULL)
+				pgc->dc_buf[i] = decouple_buffer_info[i]->mva;
+		}
 	}
 
 	/* initialize rdma config */
