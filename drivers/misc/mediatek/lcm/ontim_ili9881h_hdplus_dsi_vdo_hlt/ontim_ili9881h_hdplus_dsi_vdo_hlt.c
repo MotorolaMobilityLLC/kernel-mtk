@@ -141,7 +141,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x10, 0x01, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
 };
-#if 1
+#if 0
 static struct LCM_setting_table init_setting[] = {
 {0xFF,0x03,{0x98,0x81,0x01}},
 {0x00,0x01,{0x46}},
@@ -599,7 +599,7 @@ static unsigned int lcm_compare_id(void)
 #if 0
 	return 1;
 #else
-	unsigned int id_reg_DC = 0,id_reg_DB = 255,id_reg_DA = 0;
+	unsigned int id_reg_DC = 0,id_reg_DA = 0;
 	unsigned char buffer[2];
 	unsigned int array[16];
 
@@ -615,15 +615,12 @@ static unsigned int lcm_compare_id(void)
 	read_reg_v2(0xDC, buffer, 1);
 	id_reg_DC = buffer[0];         /* we only need ID */
 
-	read_reg_v2(0xDB, buffer, 1);
-	id_reg_DB = buffer[0];
-	
 	read_reg_v2(0xDA, buffer, 1);
 	id_reg_DA = buffer[0];
 
-	LCM_LOGI("%s,ili9881h vendor id_reg_DC=0x%08x, id_reg_DB=%08x, id_reg_DA=%08x\n", __func__, id_reg_DC, id_reg_DB, id_reg_DA);
+	LCM_LOGI("%s,ili9881h vendor id_reg_DC=0x%08x, id_reg_DA=%08x\n", __func__, id_reg_DC, id_reg_DA);
 
-	if ((LCM_ID_REG_DC == id_reg_DC) && (LCM_ID_REG_DC == id_reg_DB) && (LCM_ID_REG_DC == id_reg_DA))
+	if ((LCM_ID_REG_DC == id_reg_DC) && (LCM_ID_REG_DA == id_reg_DA))
 		return 1;
 	else
 		return 0;
