@@ -7791,6 +7791,9 @@ SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
 	int new_cpu = prev_cpu;
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
+#ifdef CONFIG_PROVE_LOCKING
+	int lockdep_off = 0;
+#endif
 
 	if (should_hmp(cpu) && p->mm && (sd_flag & SD_BALANCE_FORK)) {
 		int hmp_cpu;
@@ -7811,6 +7814,10 @@ SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
 
 	if (energy_aware() && !system_overutilized(cpu))
 		return LB_EAS | select_energy_cpu_brute(p, prev_cpu, sync);
+
+#ifdef CONFIG_PROVE_LOCKING
+	lockdep_off = close_lockdep_if_cpu_offline();
+#endif
 
 	rcu_read_lock();
 	for_each_domain(cpu, tmp) {
@@ -7855,6 +7862,9 @@ SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
 		new_cpu = find_idlest_cpu(sd, p, cpu, prev_cpu, sd_flag);
 	}
 	rcu_read_unlock();
+#ifdef CONFIG_PROVE_LOCKING
+	open_lockdep_if_need(lockdep_off);
+#endif
 
 	if (should_hmp(cpu))
 		new_cpu = LB_HMP | hmp_select_task_rq_fair(sd_flag,
