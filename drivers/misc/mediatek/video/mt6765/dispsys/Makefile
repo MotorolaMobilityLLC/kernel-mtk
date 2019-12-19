@@ -87,10 +87,7 @@ obj-y += ddp_info.o
 obj-y += ddp_color_format.o
 obj-y += ddp_pwm_mux.o
 
-
-ifeq ($(CONFIG_MMPROFILE), y)
 obj-y += ddp_mmp.o
-endif
 obj-y += ddp_met.o
 
 obj-y += display_recorder.o
