@@ -118,6 +118,25 @@ __schedtune_accept_deltas(int nrg_delta, int cap_delta,
 
 	return payoff;
 }
+#ifdef CONFIG_PROVE_LOCKING
+inline int close_lockdep_if_cpu_offline(void)
+{
+	int result = 0;
+
+	if (!cpu_online(raw_smp_processor_id())) {
+		lockdep_off();
+		result = 1;
+	}
+
+	return result;
+}
+
+inline void open_lockdep_if_need(int need)
+{
+	if (need)
+		lockdep_on();
+}
+#endif
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
@@ -712,15 +731,24 @@ int schedtune_task_boost(struct task_struct *p)
 {
 	struct schedtune *st;
 	int task_boost;
+#ifdef CONFIG_PROVE_LOCKING
+	int lockdep_off = 0;
+#endif
 
 	if (!unlikely(schedtune_initialized))
 		return 0;
 
 	/* Get task boost value */
+#ifdef CONFIG_PROVE_LOCKING
+	lockdep_off = close_lockdep_if_cpu_offline();
+#endif
 	rcu_read_lock();
 	st = task_schedtune(p);
 	task_boost = st->boost;
 	rcu_read_unlock();
+#ifdef CONFIG_PROVE_LOCKING
+	open_lockdep_if_need(lockdep_off);
+#endif
 
 	return task_boost;
 }
@@ -754,15 +782,24 @@ int schedtune_prefer_idle(struct task_struct *p)
 {
 	struct schedtune *st;
 	int prefer_idle;
+#ifdef CONFIG_PROVE_LOCKING
+	int lockdep_off = 0;
+#endif
 
 	if (!unlikely(schedtune_initialized))
 		return 0;
 
 	/* Get prefer_idle value */
+#ifdef CONFIG_PROVE_LOCKING
+	lockdep_off = close_lockdep_if_cpu_offline();
+#endif
 	rcu_read_lock();
 	st = task_schedtune(p);
 	prefer_idle = st->prefer_idle;
 	rcu_read_unlock();
+#ifdef CONFIG_PROVE_LOCKING
+	open_lockdep_if_need(lockdep_off);
+#endif
 
 	return prefer_idle;
 }
