@@ -333,7 +333,7 @@ int ccu_flush_commands_from_queue(struct ccu_user_s *user)
 
 int ccu_pop_command_from_queue(struct ccu_user_s *user, struct ccu_cmd_s **rcmd)
 {
-	int ret;
+	long ret;
 	struct ccu_cmd_s *cmd;
 
 	/* wait until condition is true */
@@ -730,76 +730,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 					IrqInfo.EventInfo.Status);
 
 				ret = ccu_waitirq(&IrqInfo);
-
-				if (copy_to_user((void *)arg, &IrqInfo,
-					sizeof(struct CCU_WAIT_IRQ_STRUCT))
-					!= 0) {
-					LOG_ERR("copy_to_user failed\n");
-					ret = -EFAULT;
-				}
-			} else {
-				LOG_ERR("copy_from_user failed\n");
-				ret = -EFAULT;
-			}
-
-			break;
-		}
-	case CCU_IOCTL_WAIT_AF_IRQ:
-		{
-			if (copy_from_user(&IrqInfo, (void *)arg,
-				sizeof(struct CCU_WAIT_IRQ_STRUCT)) == 0) {
-				if ((IrqInfo.Type >= CCU_IRQ_TYPE_AMOUNT) ||
-					(IrqInfo.Type < 0)) {
-					ret = -EFAULT;
-					LOG_ERR("invalid type(%d)\n",
-						IrqInfo.Type);
-					goto EXIT;
-				}
-
-				LOG_DBG("AFIRQ type(%d), userKey(%d), ",
-					IrqInfo.Type,
-					IrqInfo.EventInfo.UserKey);
-				LOG_DBG("timeout(%d), sttype(%d), st(%d)\n",
-					IrqInfo.EventInfo.Timeout,
-					IrqInfo.EventInfo.St_type,
-					IrqInfo.EventInfo.Status);
-
-				ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_1);
-
-				if (copy_to_user((void *)arg, &IrqInfo,
-					sizeof(struct CCU_WAIT_IRQ_STRUCT))
-					!= 0) {
-					LOG_ERR("copy_to_user failed\n");
-					ret = -EFAULT;
-				}
-			} else {
-				LOG_ERR("copy_from_user failed\n");
-				ret = -EFAULT;
-			}
-
-			break;
-		}
-	case CCU_IOCTL_WAIT_AFB_IRQ:
-		{
-			if (copy_from_user(&IrqInfo, (void *)arg,
-				sizeof(struct CCU_WAIT_IRQ_STRUCT)) == 0) {
-				if ((IrqInfo.Type >= CCU_IRQ_TYPE_AMOUNT) ||
-					(IrqInfo.Type < 0)) {
-					ret = -EFAULT;
-					LOG_ERR("invalid type(%d)\n",
-						IrqInfo.Type);
-					goto EXIT;
-				}
-
-				LOG_DBG("AFBIRQ type(%d), userKey(%d), ",
-					IrqInfo.Type,
-					IrqInfo.EventInfo.UserKey);
-				LOG_DBG("timeout(%d), sttype(%d), st(%d)\n",
-					IrqInfo.EventInfo.Timeout,
-					IrqInfo.EventInfo.St_type,
-					IrqInfo.EventInfo.Status);
-
-				ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_2);
 
 				if (copy_to_user((void *)arg, &IrqInfo,
 					sizeof(struct CCU_WAIT_IRQ_STRUCT))
