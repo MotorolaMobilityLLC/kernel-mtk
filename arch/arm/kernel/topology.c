@@ -63,12 +63,21 @@ static void set_capacity_scale(unsigned int cpu, unsigned long capacity)
  */
 static void update_cpu_capacity(unsigned int cpu)
 {
-	unsigned long capacity = SCHED_CAPACITY_SCALE;
-
+	u64 capacity = cpu_capacity(cpu);
+#ifndef CONFIG_MACH_MT6757
 	if (cpu_core_energy(cpu)) {
 		int max_cap_idx = cpu_core_energy(cpu)->nr_cap_states - 1;
 		capacity = cpu_core_energy(cpu)->cap_states[max_cap_idx].cap;
 	}
+#else
+	if (!capacity || !max_cpu_perf) {
+		cpu_capacity(cpu) = 0;
+		return;
+	}
+
+	capacity *= SCHED_CAPACITY_SCALE;
+	capacity = div64_u64(capacity, max_cpu_perf);
+#endif
 
 	set_capacity_scale(cpu, capacity);
 
