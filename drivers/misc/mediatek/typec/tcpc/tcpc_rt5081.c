@@ -1182,8 +1182,8 @@ static int rt5081_set_bist_carrier_mode(
 	return 0;
 }
 
-/* message header (2byte) + data object (7*4) */
-#define RT5081_TRANSMIT_MAX_SIZE	(sizeof(uint16_t) + sizeof(uint32_t)*7)
+/* transmit count (1byte) + message header (2byte) + data object (4byte * 7) */
+#define RT5081_TRANSMIT_MAX_SIZE (1 + sizeof(uint16_t) + sizeof(uint32_t) * 7)
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 static int rt5081_retransmit(struct tcpc_device *tcpc)
