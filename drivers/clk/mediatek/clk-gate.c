@@ -36,8 +36,13 @@ static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 #if !defined(CONFIG_MACH_MT6757)
 	regmap_read(cg->regmap, cg->sta_ofs, &val);
 #else
+#ifdef CONFIG_ARM64
+	val = readl_relaxed((void __iomem *)((unsigned long long int)cg->regmap
+						+ cg->sta_ofs));
+#else
 	val = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
 						+ cg->sta_ofs));
+#endif
 #endif
 
 	val &= BIT(cg->bit);
@@ -52,8 +57,13 @@ static int mtk_cg_bit_is_set(struct clk_hw *hw)
 #if !defined(CONFIG_MACH_MT6757)
 	regmap_read(cg->regmap, cg->sta_ofs, &val);
 #else
+#ifdef CONFIG_ARM64
+	val = readl_relaxed((void __iomem *)
+		((unsigned long long int)cg->regmap + cg->sta_ofs));
+#else
 	val = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
 						+ cg->sta_ofs));
+#endif
 #endif
 	val &= BIT(cg->bit);
 
@@ -65,6 +75,20 @@ static void cg_set_mask(struct mtk_clk_gate *cg, u32 mask)
 {
 	u32 r;
 
+#ifdef CONFIG_ARM64
+	if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
+		r = readl_relaxed((void __iomem *)
+			((unsigned long long int)cg->regmap + cg->sta_ofs));
+		r = r | mask;
+		writel_relaxed(r, (void __iomem *)
+			((unsigned long long int)cg->regmap + cg->sta_ofs));
+
+		r = readl_relaxed((void __iomem *)
+			((unsigned long long int)cg->regmap + cg->sta_ofs));
+	} else
+		writel_relaxed(mask, (void __iomem *)
+			((unsigned long long int)cg->regmap + cg->set_ofs));
+#else
 	if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
 		r = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
 						+ cg->sta_ofs));
@@ -77,12 +101,27 @@ static void cg_set_mask(struct mtk_clk_gate *cg, u32 mask)
 	} else
 		writel_relaxed(mask, (void __iomem *)((unsigned int)cg->regmap
 						+ cg->set_ofs));
+#endif
 }
 
 static void cg_clr_mask(struct mtk_clk_gate *cg, u32 mask)
 {
 	u32 r;
 
+#ifdef CONFIG_ARM64
+	if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
+		r = readl_relaxed((void __iomem *)
+			((unsigned long long int)cg->regmap + cg->sta_ofs));
+		r = r & ~mask;
+		writel_relaxed(r, (void __iomem *)
+			((unsigned long long int)cg->regmap + cg->sta_ofs));
+
+		r = readl_relaxed((void __iomem *)
+			((unsigned long long int)cg->regmap + cg->sta_ofs));
+	} else
+		writel_relaxed(mask, (void __iomem *)
+			((unsigned long long int)cg->regmap + cg->clr_ofs));
+#else
 	if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
 		r = readl_relaxed((void __iomem *)((unsigned int)cg->regmap
 						+ cg->sta_ofs));
@@ -95,6 +134,7 @@ static void cg_clr_mask(struct mtk_clk_gate *cg, u32 mask)
 	} else
 		writel_relaxed(mask, (void __iomem *)((unsigned int)cg->regmap
 						+ cg->clr_ofs));
+#endif
 }
 #endif
 

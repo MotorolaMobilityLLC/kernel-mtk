@@ -1623,7 +1623,7 @@ static int bmi160_factory_get_data(int32_t data[3], int *status)
 
 static int bmi160_factory_get_raw_data(int32_t data[3])
 {
-	s16 strbuf[3];
+	s16 strbuf[3] = {0};
 
 	LSM6DS3H_ReadAccRawData(lsm6ds3h_acc_i2c_client, strbuf);
 	data[0] = strbuf[0];
