@@ -33,6 +33,7 @@ const struct of_device_id swtp_of_match[] = {
 };
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
+static const char rf_name[] = "RF_cable";
 
 static int switch_Tx_Power(int md_id, unsigned int mode)
 {
@@ -88,6 +89,7 @@ static int swtp_switch_mode(struct swtp_t *swtp)
 	}
 	CCCI_LEGACY_ALWAYS_LOG(swtp->md_id, SYS, "%s mode %d\n",
 		__func__, swtp->curr_mode);
+	inject_pin_status_event(swtp->curr_mode, rf_name);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	return ret;

@@ -34,5 +34,6 @@ struct swtp_t {
 /* External API Region called by ccci_swtp object */
 /*****************************************************************************/
 extern int ccci_md_get_state_by_id(int md_id);
+extern void inject_pin_status_event(int pin_value, const char pin_name[]);
 extern int swtp_init(int md_id);
 #endif				/* __SWTP_H__ */
