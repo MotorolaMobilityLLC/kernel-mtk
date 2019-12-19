@@ -57,7 +57,7 @@
 
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE (PAGE_SIZE)
 #define CMDQ_INST_SIZE (2 * sizeof(uint32_t)) /* instruction is 64-bit */
-#define CMDQ_CMD_BUFFER_SIZE (PAGE_SIZE - 256)
+#define CMDQ_CMD_BUFFER_SIZE (PAGE_SIZE - 32 * CMDQ_INST_SIZE)
 
 #define CMDQ_MAX_LOOP_COUNT (1000000)
 #define CMDQ_MAX_INST_CYCLE (27)
