@@ -1766,11 +1766,11 @@ int dpidle_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
-	dpidle_pre_handler();
+	RCU_NONIDLE(dpidle_pre_handler());
 #ifndef CONFIG_MTK_FPGA
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log);
 #endif
-	dpidle_post_handler();
+	RCU_NONIDLE(dpidle_post_handler());
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 
@@ -1826,7 +1826,7 @@ int soidle3_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
-	soidle_pre_handler();
+	RCU_NONIDLE(soidle_pre_handler());
 	soidle3_update_flags();
 
 #ifdef DEFAULT_MMP_ENABLE
@@ -1842,7 +1842,7 @@ int soidle3_enter(int cpu)
 			 MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
-	soidle_post_handler();
+	RCU_NONIDLE(soidle_post_handler());
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
@@ -1882,7 +1882,7 @@ int soidle_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 
-	soidle_pre_handler();
+	RCU_NONIDLE(soidle_pre_handler());
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable,
@@ -1896,7 +1896,7 @@ int soidle_enter(int cpu)
 			 MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
-	soidle_post_handler();
+	RCU_NONIDLE(soidle_post_handler());
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 
