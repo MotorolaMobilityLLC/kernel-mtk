@@ -440,6 +440,74 @@ static int perfmgr_perfserv_freq_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 /***************************************/
+#if defined(CPU_CTRL_CORE_SUPPORT)
+#define MAX_NR_CORE 4
+
+static ssize_t perfmgr_boot_core_proc_write(struct file *filp,
+		const char __user *ubuf, size_t cnt, loff_t *pos)
+{
+	int i = 0, data;
+	struct ppm_limit_data *core_limit;
+	unsigned int arg_num = perfmgr_clusters * 2; /* for min and max */
+	char *tok, *tmp;
+	char *buf = perfmgr_copy_from_user_for_proc(ubuf, cnt);
+
+	core_limit = kcalloc(perfmgr_clusters,
+			sizeof(struct ppm_limit_data), GFP_KERNEL);
+	if (!core_limit)
+		goto out;
+
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
+		if (i == arg_num) {
+			pr_debug("@%s: number of arguments > %d!\n",
+					__func__, arg_num);
+			break;
+		}
+
+		if (kstrtoint(tok, 10, &data)) {
+			pr_debug("@%s: Invalid input: %s\n", __func__, tok);
+			goto out;
+		} else {
+			if (i % 2) /* max */
+				core_limit[i/2].max =
+					(data < 1 || data > MAX_NR_CORE)
+					? -1 : data;
+			else /* min */
+				core_limit[i/2].min =
+					(data < 1 || data > MAX_NR_CORE)
+					? -1 : data;
+			i++;
+		}
+	}
+
+	if (i < arg_num)
+		pr_debug("@%s: number of arguments < %d!\n",
+				__func__, arg_num);
+	else
+		update_userlimit_cpu_core(CPU_KIR_BOOT,
+				perfmgr_clusters, core_limit);
+
+out:
+	free_page((unsigned long)buf);
+	kfree(core_limit);
+	return cnt;
+
+}
+
+static int perfmgr_boot_core_proc_show(struct seq_file *m, void *v)
+{
+	int i;
+
+	for_each_perfmgr_clusters(i)
+		seq_printf(m, "cluster %d min:%d max:%d\n",
+				i, core_set[CPU_KIR_BOOT][i].min,
+				core_set[CPU_KIR_BOOT][i].max);
+
+	return 0;
+}
+#endif /* CPU_CTRL_CORE_SUPPORT */
+
 #define MAX_NR_FREQ 16
 static ssize_t perfmgr_boot_freq_proc_write(struct file *filp,
 		const char __user *ubuf, size_t cnt, loff_t *pos)
@@ -545,6 +613,7 @@ static int perfmgr_perfmgr_log_proc_show(struct seq_file *m, void *v)
 
 #if defined(CPU_CTRL_CORE_SUPPORT)
 PROC_FOPS_RW(perfserv_core);
+PROC_FOPS_RW(boot_core);
 #endif
 PROC_FOPS_RW(perfserv_freq);
 PROC_FOPS_RW(boot_freq);
@@ -565,6 +634,7 @@ int cpu_ctrl_init(struct proc_dir_entry *parent)
 	const struct pentry entries[] = {
 #if defined(CPU_CTRL_CORE_SUPPORT)
 		PROC_ENTRY(perfserv_core),
+		PROC_ENTRY(boot_core),
 #endif
 		PROC_ENTRY(perfserv_freq),
 		PROC_ENTRY(boot_freq),
