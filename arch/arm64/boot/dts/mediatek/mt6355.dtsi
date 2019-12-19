@@ -11,9 +11,50 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-/ {
-mt_pmic_regulator {
-	compatible = "mediatek,mt_pmic";
+&mt6355_pmic {
+	pmic_auxadc: mt635x-auxadc {
+		compatible = "mediatek,mt635x-auxadc";
+		#io-channel-cells = <1>;
+
+		batadc {
+			channel = <AUXADC_BATADC>;
+			resistance-ratio = <3 1>;
+			avg-num = <128>;
+		};
+		vcdt {
+			channel = <AUXADC_VCDT>;
+		};
+		bat_temp {
+			channel = <AUXADC_BAT_TEMP>;
+			resistance-ratio = <2 1>;
+		};
+		batid {
+			channel = <AUXADC_BATID>;
+			resistance-ratio = <2 1>;
+		};
+		chip_temp {
+			channel = <AUXADC_CHIP_TEMP>;
+		};
+		accdet {
+			channel = <AUXADC_ACCDET>;
+		};
+		tsx_temp {
+			channel = <AUXADC_TSX_TEMP>;
+			avg-num = <128>;
+		};
+		hpofs_cal {
+			channel = <AUXADC_HPOFS_CAL>;
+			avg-num = <256>;
+		};
+		dcxo_temp {
+			channel = <AUXADC_DCXO_TEMP>;
+			avg-num = <16>;
+		};
+		vbif {
+			channel = <AUXADC_VBIF>;
+			resistance-ratio = <2 1>;
+		};
+	};
 
 	buck_regulators {
 		compatible = "mediatek,mt_pmic_buck_regulators";
@@ -339,5 +380,4 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 	};	/* End of ldo_regulators */
-};/* End of mt_pmic_regulator */
-};
+};	/* End of main_pmic */
