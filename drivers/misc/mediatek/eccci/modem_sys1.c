@@ -365,7 +365,7 @@ static int ccci_md_hif_start(struct ccci_modem *md, int stage)
 	case 1:
 		/*enable clk: cldma & ccif */
 		ccci_set_clk_cg(md, 1);
-		if (md->hif_flag & (1 << CCIF_HIF_ID)) {
+		/* if (md->hif_flag & (1 << CCIF_HIF_ID)) { */
 #if (MD_GENERATION >= 6293)
 			md_ccif_sram_reset(CCIF_HIF_ID);
 			md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
@@ -379,7 +379,7 @@ static int ccci_md_hif_start(struct ccci_modem *md, int stage)
 			/* clear all ccif irq before enable it.*/
 			ccci_reset_ccif_hw(md->index, AP_MD1_CCIF,
 				md_info->ap_ccif_base, md_info->md_ccif_base);
-		}
+		/* } */
 		if (md->hif_flag & (1 << CLDMA_HIF_ID)) {
 			/* 2. clearring buffer, just in case */
 			md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
@@ -388,8 +388,9 @@ static int ccci_md_hif_start(struct ccci_modem *md, int stage)
 		}
 		break;
 	case 2:
-		if (md->hif_flag & (1 << CCIF_HIF_ID))
-			ccif_enable_irq(md);
+		/* if (md->hif_flag & (1 << CCIF_HIF_ID)) */
+		ccif_enable_irq(md);
+
 		if (md->hif_flag & (1 << CLDMA_HIF_ID)) {
 			/* 8. start CLDMA */
 			cldma_reset(CLDMA_HIF_ID);
