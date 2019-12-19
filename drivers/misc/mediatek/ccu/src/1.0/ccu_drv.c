@@ -446,7 +446,7 @@ static long ccu_compat_ioctl(
 	struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	/*<<<<<<<<<< debug 32/64 compat check*/
-	compat_struct ccu_power_s __user *ptr_power32;
+	struct compat_ccu_power_s __user *ptr_power32;
 	struct ccu_power_s __user *ptr_power64;
 
 	compat_uptr_t uptr_Addr32;
