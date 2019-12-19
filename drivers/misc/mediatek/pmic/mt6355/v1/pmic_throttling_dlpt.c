@@ -614,6 +614,21 @@ void pmic_dump_adc_impedance(void)
 	pr_info("[0x%x] 0x%x\n"
 		, MT6355_AUXADC_IMP_CG0
 		, upmu_get_reg_value(MT6355_AUXADC_IMP_CG0));
+	pr_info("[0x%x] 0x%x\n"
+		, MT6355_TOP_CKPDN_CON0
+		, upmu_get_reg_value(MT6355_TOP_CKPDN_CON0));
+	pr_info("[0x%x] 0x%x\n"
+		, MT6355_TOP_CKPDN_CON3
+		, upmu_get_reg_value(MT6355_TOP_CKPDN_CON3));
+	pr_info("[0x%x] 0x%x\n"
+		, MT6355_TOP_CKHWEN_CON0
+		, upmu_get_reg_value(MT6355_TOP_CKHWEN_CON0));
+	pr_info("[0x%x] 0x%x\n"
+		, MT6355_AUXADC_CON0
+		, upmu_get_reg_value(MT6355_AUXADC_CON0));
+	pr_info("[0x%x] 0x%x\n"
+		, MT6355_STRUP_CON6
+		, upmu_get_reg_value(MT6355_STRUP_CON6));
 }
 
 int do_ptim_internal(
@@ -623,18 +638,21 @@ int do_ptim_internal(
 	unsigned int count_adc_imp = 0;
 	int ret = 0;
 
-	pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x0006);
-
-	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 1);
-	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
-	/* For 55 */
+	/* initial setting */
+	pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x6);
+	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 0x6);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 1);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
 
-	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
+	/* enable setting */
+	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
+	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 1);
+
+	/* start setting */
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);
 
+	/* polling IRQ status */
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		if ((count_adc_imp++) > count_time_out_adc_imp) {
 			pr_info("do_ptim over %d times/ms\n", count_adc_imp);
@@ -646,25 +664,28 @@ int do_ptim_internal(
 	}
 	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP);
 
-	/*disable */
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 0);
-
 	/*clear irq */
 	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 1);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 1);
 	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 0);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
 
+	/* stop setting */
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 0);
 
+	/* disable setting */
 	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
 
-	/*ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768; */
-	*bat = (vbat_reg * 3 * 18000) / 32768;
+	/*disabled, may removed*/
+	/*pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 0);*/
+	/*pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);*/
+
+	if (count_adc_imp <= count_time_out_adc_imp)
+		*bat = (vbat_reg * 3 * 18000) >> 15;
+	else
+		*bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC) * 10;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	/*fgauge_read_IM_current((void *)cur);*/
 	gauge_get_ptim_current(cur, is_charging);
 #else
 	*cur = 0;
@@ -1081,6 +1102,7 @@ int get_dlpt_imix(void)
 			else if (count_do_ptim > 3) {
 				pr_info("do_ptim more than five times\n");
 				WARN_ON(1);
+				break;
 			} else
 				;
 			count_do_ptim++;
