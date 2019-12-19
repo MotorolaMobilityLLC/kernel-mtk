@@ -1467,7 +1467,7 @@ static int base_ops_mon_mode(struct eem_det *det)
  */
 
 #if (!defined(EARLY_PORTING))
-	ts_bank = det->ctrl_id;
+	ts_bank = (unsigned long long int)det->ctrl_id;
 	get_thermal_slope_intercept(&ts_info, ts_bank);
 	det->MTS = ts_info.ts_MTS;
 	det->BTS = ts_info.ts_BTS;
@@ -5452,7 +5452,7 @@ unsigned int get_vcore_ptp_volt(int index)
 
 void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 {
-	struct eem_det *det = id_to_eem_det(id);
+	struct eem_det *det = id_to_eem_det((unsigned long long int)id);
 
 	det->pi_offset = step;
 
@@ -5499,7 +5499,7 @@ static void eem_write_pi_efuse_aee(enum eem_ctrl_id id, unsigned int pi_efuse)
 
 void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
 {
-	struct eem_det *det = id_to_eem_det(id);
+	struct eem_det *det = id_to_eem_det((unsigned long long int)id);
 
 	det->pi_efuse = pi_efuse;
 
