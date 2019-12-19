@@ -896,8 +896,6 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr,
 	ret = count;
 
 out:
-	kfree(transfer.rx_buf);
-	kfree(transfer.tx_buf);
 	return ret;
 }
 
