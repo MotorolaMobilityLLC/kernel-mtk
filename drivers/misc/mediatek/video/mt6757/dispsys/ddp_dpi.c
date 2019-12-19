@@ -575,7 +575,7 @@ int ddp_dpi_config(enum DISP_MODULE_ENUM module,
 			 INREG32(&DPI_REG->STATUS), cmdq_handle);
 
 		ddp_dpi_ConfigPclk(cmdq_handle, dpi_config->dpi_clock,
-				   dpi_config->clk_pol);
+				   (unsigned long long int)dpi_config->clk_pol);
 		ddp_dpi_ConfigSize(cmdq_handle, dpi_config->width,
 				   dpi_config->height);
 		ddp_dpi_ConfigBG(cmdq_handle, true, dpi_config->bg_width,
@@ -586,12 +586,15 @@ int ddp_dpi_config(enum DISP_MODULE_ENUM module,
 			 "dpi_config->bg_height: %d\n",
 			 dpi_config->bg_width, dpi_config->bg_height);
 
-		ddp_dpi_ConfigDE(cmdq_handle, dpi_config->de_pol);
-		ddp_dpi_ConfigVsync(cmdq_handle, dpi_config->vsync_pol,
+		ddp_dpi_ConfigDE(cmdq_handle,
+				(unsigned long long int)dpi_config->de_pol);
+		ddp_dpi_ConfigVsync(cmdq_handle,
+				(unsigned long long int)dpi_config->vsync_pol,
 				    dpi_config->vsync_pulse_width,
 				    dpi_config->vsync_back_porch,
 				    dpi_config->vsync_front_porch);
-		ddp_dpi_ConfigHsync(cmdq_handle, dpi_config->hsync_pol,
+		ddp_dpi_ConfigHsync(cmdq_handle,
+				(unsigned long long int)dpi_config->hsync_pol,
 				    dpi_config->hsync_pulse_width,
 				    dpi_config->hsync_back_porch,
 				    dpi_config->hsync_front_porch);

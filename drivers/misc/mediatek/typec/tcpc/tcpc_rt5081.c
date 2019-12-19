@@ -375,8 +375,8 @@ static int rt5081_regmap_init(struct rt5081_chip *chip)
 	if ((!props->name) || (!props->aliases))
 		return -ENOMEM;
 
-	strlcpy((char *)props->name, name, strlen(name)+1);
-	strlcpy((char *)props->aliases, name, strlen(name)+1);
+	strlcpy((char *)props->name, name, strlen(props->name)+1);
+	strlcpy((char *)props->aliases, name, strlen(props->aliases)+1);
 	props->io_log_en = 0;
 
 	chip->m_dev = rt_regmap_device_register(props,
@@ -1432,7 +1432,7 @@ static int rt5081_tcpcdev_init(struct rt5081_chip *chip, struct device *dev)
 	if (!desc->name)
 		return -ENOMEM;
 
-	strlcpy((char *)desc->name, name, strlen(name)+1);
+	strlcpy((char *)desc->name, name, strlen(desc->name)+1);
 
 	chip->tcpc_desc = desc;
 
