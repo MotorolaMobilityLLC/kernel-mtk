@@ -52,6 +52,12 @@
 		highAddr = ((addr >> 32) & 0xffff);                            \
 	}
 #else
+#ifdef CONFIG_ARM64
+#define CMDQ_GET_HIGH_ADDR(addr, highAddr)                                     \
+	{                                                                      \
+		highAddr = ((addr >> 32) & 0xffff);                    \
+	}
+#else
 #define CMDQ_GET_HIGH_ADDR(addr, highAddr)                                     \
 	{                                                                      \
 		if (enable_4G())                                               \
@@ -59,6 +65,7 @@
 		else                                                           \
 			highAddr = ((addr >> 32) & 0xffff);                    \
 	}
+#endif
 #endif
 #else
 #define CMDQ_GET_HIGH_ADDR(addr, highAddr)                                     \
