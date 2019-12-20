@@ -744,6 +744,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					printk("i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
 					return ERROR_NONE;
 				}
+#if 0
 				else if(0x50 != imgsensor_info.module_id)
                                 {
 					*sensor_id = BLACKJACK_TSP_GC2375_SENSOR_ID;
@@ -753,6 +754,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					printk("wrong module id i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
 					return ERROR_NONE;
 				}
+#endif
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 			retry--;
