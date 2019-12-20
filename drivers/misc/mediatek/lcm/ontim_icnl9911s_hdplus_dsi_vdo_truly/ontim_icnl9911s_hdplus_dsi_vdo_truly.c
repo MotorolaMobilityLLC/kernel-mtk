@@ -333,7 +333,7 @@ static void lcm_init(void)
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enp(1);
 		set_gpio_lcd_enn(1);
-		MDELAY(50);
+		MDELAY(15);
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("%s:----cmd=%0x--i2c write error----\n",__func__, cmd);
