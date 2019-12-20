@@ -647,6 +647,14 @@ static void get_charger_ic(void)
 }
 //add end
 
+extern unsigned int get_rf_gpio_value(void);
+static void get_rfgpio_state(void)
+{
+	int ret = 0;
+	ret = get_rf_gpio_value();
+	strcpy(hwinfo[RF_GPIO].hwinfo_buf, ret?"1":"0");
+}
+
 #define FINGERPRINT_VENDOR_FILE "/sys/ontim_dev_debug/fingersensor/vendor"
 static ssize_t get_fingerprint_id(void)
 {
@@ -1314,6 +1322,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		break;
 	case CHARGER_IC_MFR: //houzn add
 		get_charger_ic();
+		break;
+	case RF_GPIO:
+		get_rfgpio_state();
 		break;
 	case pon_reason:
 		get_pon_reason();
