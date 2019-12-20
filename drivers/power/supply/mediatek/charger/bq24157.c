@@ -808,6 +808,9 @@ static int bq24157_reset_watch_dog_timer(struct charger_device *chg_dev)
 static int bq24157_charger_enable_otg(struct charger_device *chg_dev, bool en)
 {
 	bq24157_set_opa_mode(en);
+
+	bq24157_set_otg_en(en);
+
 	enable_boost_polling(en);
 	return 0;
 }
