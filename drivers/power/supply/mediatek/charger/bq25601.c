@@ -421,9 +421,7 @@ int bq25601_set_boost_current(struct bq25601 *bq, int curr)
 {
 	u8 val;
 
-	val = REG02_BOOST_LIM_0P5A;
-	if (curr == BOOSTI_1200)
-		val = REG02_BOOST_LIM_1P2A;
+	val = (curr <= BOOSTI_500 ? REG02_BOOST_LIM_0P5A : REG02_BOOST_LIM_1P2A);
 
 	return bq25601_update_bits(bq, BQ25601_REG_02, REG02_BOOST_LIM_MASK,
 				   val << REG02_BOOST_LIM_SHIFT);
