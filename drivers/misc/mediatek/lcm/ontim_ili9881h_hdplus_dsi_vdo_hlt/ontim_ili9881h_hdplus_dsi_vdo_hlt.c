@@ -529,7 +529,7 @@ static void lcm_init(void)
 		set_gpio_lcd_enp(1);
 		MDELAY(2);//t2
 		set_gpio_lcd_enn(1);
-
+		MDELAY(15);
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);

@@ -188,7 +188,7 @@ static struct LCM_setting_table init_setting[] = {
     {0xF0,0x02,{0xA5,0xA6}},
     {0x35,0x01,{0x00}},
     {0x51,0x02,{0x00,0x00}},//set lowest brigthness
-    {0x53,0x01,{0x2C}},
+    {0x53,0x01,{0x24}},//disable backlight diming
     {0x55,0x01,{0x00}},//close cabc
     {0x11,0x01,{0x00}},
     {REGFLAG_DELAY,120,{}},
@@ -349,7 +349,7 @@ static void lcm_init(void)
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enp(1);
 		set_gpio_lcd_enn(1);
-
+		MDELAY(15);
 		ret = NT50358A_write_byte(cmd, data);
         if (ret < 0)
 			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
