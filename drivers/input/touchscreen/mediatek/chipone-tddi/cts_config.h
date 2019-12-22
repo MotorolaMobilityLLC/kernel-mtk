@@ -33,7 +33,6 @@
 
 /** Use build in firmware or firmware file in fs*/
 #define CFG_CTS_DRIVER_BUILTIN_FIRMWARE
-#define CFG_CTS_KERNEL_BUILTIN_FIRMWARE
 #define CFG_CTS_FIRMWARE_IN_FS
 #ifdef CFG_CTS_FIRMWARE_IN_FS
     #define CFG_CTS_FIRMWARE_FILENAME       "ICNL9911.bin"
@@ -90,7 +89,7 @@
 //#define CONFIG_CTS_CHARGER_DETECT
 
 /* ESD protection */
-//#define CONFIG_CTS_ESD_PROTECTION
+#define CONFIG_CTS_ESD_PROTECTION
 #ifdef CONFIG_CTS_ESD_PROTECTION
     #define CFG_CTS_ESD_PROTECTION_CHECK_PERIOD         (2 * HZ)
 	#define CFG_CTS_ESD_FAILED_CONFIRM_CNT              3

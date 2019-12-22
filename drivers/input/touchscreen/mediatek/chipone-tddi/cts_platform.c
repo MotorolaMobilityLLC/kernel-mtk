@@ -607,9 +607,12 @@ static irqreturn_t cts_plat_irq_handler(int irq, void *dev_id)
 #else /* CONFIG_GENERIC_HARDIRQS */
     cts_data = container_of(pdata->cts_dev, struct chipone_ts_data, cts_dev);
 
-    cts_plat_disable_irq(pdata);
-
-    queue_work(cts_data->workqueue, &pdata->ts_irq_work);
+    if (queue_work(cts_data->workqueue, &pdata->ts_irq_work)) {
+        cts_dbg("IRQ queue work");
+        cts_plat_disable_irq(pdata);
+    } else {
+        cts_warn("IRQ handler queue work failed as already on the queue");
+    }
 #endif /* CONFIG_GENERIC_HARDIRQS */
 
     return IRQ_HANDLED;
@@ -846,7 +849,6 @@ int cts_plat_enable_irq(struct cts_platform_data *pdata)
     if (pdata->irq > 0) {
         spin_lock_irqsave(&pdata->irq_lock, irqflags);
         if (pdata->irq_is_disable)/* && !cts_is_device_suspended(pdata->chip)) */{  
-            cts_dbg("Real enable IRQ");
             enable_irq(pdata->irq);
             pdata->irq_is_disable = false;
         }
@@ -867,7 +869,6 @@ int cts_plat_disable_irq(struct cts_platform_data *pdata)
     if (pdata->irq > 0) {
         spin_lock_irqsave(&pdata->irq_lock, irqflags);
         if (!pdata->irq_is_disable) {
-            cts_dbg("Real disable IRQ");
             disable_irq_nosync(pdata->irq);
             pdata->irq_is_disable = true;
         }
@@ -904,6 +905,11 @@ int cts_plat_set_reset(struct cts_platform_data *pdata, int val)
     return 0;            
 }    
 #endif /* CFG_CTS_HAS_RESET_PIN */
+
+int cts_plat_get_int_pin(struct cts_platform_data *pdata)
+{
+    return -ENOTSUPP;
+}
 
 int cts_plat_power_up_device(struct cts_platform_data *pdata)
 {

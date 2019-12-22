@@ -33,11 +33,13 @@ enum cts_device_fw_reg {
     CTS_DEVICE_FW_REG_WORK_MODE = 0x0000,
     CTS_DEVICE_FW_REG_DATA_READY = 0x0002,
     CTS_DEVICE_FW_REG_CMD = 0x0004,
+    CTS_DEVICE_FW_REG_FW_LIB_MAIN_VERSION = 0x0009,
     CTS_DEVICE_FW_REG_CHIP_TYPE = 0x000A,
     CTS_DEVICE_FW_REG_VERSION = 0x000C,
-    CTS_DEVICE_FW_REG_FW_LIB_MAIN_VERSION = 0x09,
     CTS_DEVICE_FW_REG_DDI_VERSION = 0x0010,
-    CTS_DEVICE_FW_REG_FW_LIB_SUB_VERSION =  0x47,
+    CTS_DEVICE_FW_REG_GET_WORK_MODE = 0x003F,
+    CTS_DEVICE_FW_REG_FW_LIB_SUB_VERSION =  0x0047,
+    CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY =  0x004E,
 
     CTS_DEVICE_FW_REG_TOUCH_INFO = 0x1000,
     CTS_DEVICE_FW_REG_RAW_DATA = 0x2000,
@@ -45,10 +47,11 @@ enum cts_device_fw_reg {
     CTS_DEVICE_FW_REG_GESTURE_INFO = 0x7000,
 
     CTS_DEVICE_FW_REG_PANEL_PARAM = 0x8000,
-    CTS_DEVICE_FW_REG_X_RESOLUTION = 0x8090,
-    CTS_DEVICE_FW_REG_Y_RESOLUTION = 0x8092,
     CTS_DEVICE_FW_REG_NUM_TX = 0x8007,
     CTS_DEVICE_FW_REG_NUM_RX = 0x8008,
+    CTS_DEVICE_FW_REG_X_RESOLUTION = 0x8090,
+    CTS_DEVICE_FW_REG_Y_RESOLUTION = 0x8092,
+    CTS_DEVICE_FW_REG_ESD_PROTECTION = 0x8156, /* RW */
 
     CTS_DEVICE_FW_REG_COMPENSATE_CAP = 0xA000,
     CTS_DEVICE_FW_REG_DEBUG_INTF = 0xF000,
@@ -185,6 +188,7 @@ struct cts_device_hwdata {
 
     const struct cts_sfctrl *sfctrl;
 
+    int (*enable_access_ddi_reg)(struct cts_device *cts_dev, bool enable);
 };
 
 /** Chip firmware data */
@@ -531,6 +535,8 @@ extern int cts_get_x_resolution(const struct cts_device *cts_dev, u16 *resolutio
 extern int cts_get_y_resolution(const struct cts_device *cts_dev, u16 *resolution);
 extern int cts_get_num_rows(const struct cts_device *cts_dev, u8 *num_rows);
 extern int cts_get_num_cols(const struct cts_device *cts_dev, u8 *num_cols);
+extern int cts_get_dev_esd_protection(struct cts_device *cts_dev, bool *enable);
+extern int cts_set_dev_esd_protection(struct cts_device *cts_dev, bool enable);
 extern int cts_enable_get_rawdata(const struct cts_device *cts_dev);
 extern int cts_disable_get_rawdata(const struct cts_device *cts_dev);
 extern int cts_enable_get_compensate_cap(const struct cts_device *cts_dev);
