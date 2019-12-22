@@ -98,7 +98,9 @@ int cts_resume(struct chipone_ts_data *cts_data)
     }
 #endif /* CFG_CTS_GESTURE */
 
+    cts_lock_device(&cts_data->cts_dev);
     ret = cts_resume_device(&cts_data->cts_dev);
+    cts_unlock_device(&cts_data->cts_dev);
     if(ret) {
         cts_warn("Resume device failed %d", ret);
         return ret;
@@ -390,7 +392,7 @@ static int cts_driver_remove(struct spi_device *client)
 #ifdef CONFIG_CTS_SYSFS
 static ssize_t reset_pin_show(struct device_driver *driver, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_HAS_RESET_PIN: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_HAS_RESET_PIN: %c\n",
 #ifdef CFG_CTS_HAS_RESET_PIN
         'Y'
 #else
@@ -402,7 +404,7 @@ static DRIVER_ATTR(reset_pin, S_IRUGO, reset_pin_show, NULL);
 
 static ssize_t swap_xy_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_SWAP_XY: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_SWAP_XY: %c\n",
 #ifdef CFG_CTS_SWAP_XY
         'Y'
 #else
@@ -414,7 +416,7 @@ static DRIVER_ATTR(swap_xy, S_IRUGO, swap_xy_show, NULL);
 
 static ssize_t wrap_x_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_WRAP_X: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_WRAP_X: %c\n",
 #ifdef CFG_CTS_WRAP_X
         'Y'
 #else
@@ -426,7 +428,7 @@ static DRIVER_ATTR(wrap_x, S_IRUGO, wrap_x_show, NULL);
 
 static ssize_t wrap_y_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_WRAP_Y: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_WRAP_Y: %c\n",
 #ifdef CFG_CTS_WRAP_Y
         'Y'
 #else
@@ -438,7 +440,7 @@ static DRIVER_ATTR(wrap_y, S_IRUGO, wrap_y_show, NULL);
 
 static ssize_t force_update_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_HAS_RESET_PIN: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_HAS_RESET_PIN: %c\n",
 #ifdef CFG_CTS_FIRMWARE_FORCE_UPDATE
         'Y'
 #else
@@ -450,14 +452,14 @@ static DRIVER_ATTR(force_update, S_IRUGO, force_update_show, NULL);
 
 static ssize_t max_touch_num_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_MAX_TOUCH_NUM: %d\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_TOUCH_NUM: %d\n",
         CFG_CTS_MAX_TOUCH_NUM);
 }
 static DRIVER_ATTR(max_touch_num, S_IRUGO, max_touch_num_show, NULL);
 
 static ssize_t vkey_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CONFIG_CTS_VIRTUALKEY: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CONFIG_CTS_VIRTUALKEY: %c\n",
 #ifdef CONFIG_CTS_VIRTUALKEY
         'Y'
 #else
@@ -469,7 +471,7 @@ static DRIVER_ATTR(vkey, S_IRUGO, vkey_show, NULL);
 
 static ssize_t gesture_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_GESTURE: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_GESTURE: %c\n",
 #ifdef CFG_CTS_GESTURE
         'Y'
 #else
@@ -481,7 +483,7 @@ static DRIVER_ATTR(gesture, S_IRUGO, gesture_show, NULL);
 
 static ssize_t esd_protection_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CONFIG_CTS_ESD_PROTECTION: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CONFIG_CTS_ESD_PROTECTION: %c\n",
 #ifdef CONFIG_CTS_ESD_PROTECTION
         'Y'
 #else
@@ -493,7 +495,7 @@ static DRIVER_ATTR(esd_protection, S_IRUGO, esd_protection_show, NULL);
 
 static ssize_t slot_protocol_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CONFIG_CTS_SLOTPROTOCOL: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CONFIG_CTS_SLOTPROTOCOL: %c\n",
 #ifdef CONFIG_CTS_SLOTPROTOCOL
         'Y'
 #else
@@ -506,10 +508,10 @@ static DRIVER_ATTR(slot_protocol, S_IRUGO, slot_protocol_show, NULL);
 static ssize_t max_xfer_size_show(struct device_driver *dev, char *buf)
 {
 #ifdef CONFIG_CTS_I2C_HOST	
-	return sprintf(buf, "CFG_CTS_MAX_I2C_XFER_SIZE: %d\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_I2C_XFER_SIZE: %d\n",
         CFG_CTS_MAX_I2C_XFER_SIZE);
 #else
-	return sprintf(buf, "CFG_CTS_MAX_SPI_XFER_SIZE: %d\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_SPI_XFER_SIZE: %d\n",
         CFG_CTS_MAX_SPI_XFER_SIZE);
 #endif        
 }
@@ -517,7 +519,7 @@ static DRIVER_ATTR(max_xfer_size, S_IRUGO, max_xfer_size_show, NULL);
 
 static ssize_t driver_info_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "Driver version: %s\n", CFG_CTS_DRIVER_VERSION);
+    return scnprintf(buf, PAGE_SIZE, "Driver version: %s\n", CFG_CTS_DRIVER_VERSION);
 }
 static DRIVER_ATTR(driver_info, S_IRUGO, driver_info_show, NULL);
 

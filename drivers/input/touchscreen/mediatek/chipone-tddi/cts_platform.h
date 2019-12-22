@@ -66,17 +66,27 @@ extern struct chipone_ts_data *chipone_ts_data;
 #define LOG_TAG         ""
 #endif /* LOG_TAG */
 
+enum cts_driver_log_level {
+    CTS_DRIVER_LOG_ERROR,
+    CTS_DRIVER_LOG_WARN,
+    CTS_DRIVER_LOG_INFO,
+    CTS_DRIVER_LOG_DEBUG,
+};
+
+extern int cts_start_driver_log_redirect(const char *filepath, bool append_to_file,
+        char *log_buffer, int log_buf_size, int log_level);
+extern void cts_stop_driver_log_redirect(void);
+extern int cts_get_driver_log_redirect_size(void);
+extern void cts_log(int level, const char *fmt, ...);
+
 #define cts_err(fmt, ...)   \
-    printk("<E>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
+    cts_log(CTS_DRIVER_LOG_ERROR, "<E>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
 #define cts_warn(fmt, ...)  \
-    printk("<W>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
+    cts_log(CTS_DRIVER_LOG_WARN,  "<W>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
 #define cts_info(fmt, ...)  \
-    printk("<I>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
+    cts_log(CTS_DRIVER_LOG_INFO,  "<I>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
 #define cts_dbg(fmt, ...)   \
-    do {                                                    \
-        if (cts_show_debug_log)                                     \
-            printk("<D>CTS-" LOG_TAG " "fmt"\n", ##__VA_ARGS__);   \
-    } while(0)
+    cts_log(CTS_DRIVER_LOG_DEBUG, "<D>CTS-" LOG_TAG " " fmt"\n", ##__VA_ARGS__)
 
 struct cts_device;
 struct cts_device_touch_msg;
@@ -219,11 +229,13 @@ static inline int cts_plat_init_gesture(struct cts_platform_data *pdata) {return
 static inline void cts_plat_deinit_gesture(struct cts_platform_data *pdata)  {}
 #endif /* CFG_CTS_GESTURE */
 
-#endif /* CTS_PLATFORM_H */
-
 #ifdef CFG_CTS_FW_LOG_REDIRECT
 extern size_t cts_plat_get_max_fw_log_size(struct cts_platform_data *pdata);
 extern u8 *cts_plat_get_fw_log_buf(struct cts_platform_data *pdata, size_t size);
 #endif
 
 extern int cts_plat_set_reset(struct cts_platform_data *pdata, int val);
+extern int cts_plat_get_int_pin(struct cts_platform_data *pdata);
+
+#endif /* CTS_PLATFORM_H */
+
