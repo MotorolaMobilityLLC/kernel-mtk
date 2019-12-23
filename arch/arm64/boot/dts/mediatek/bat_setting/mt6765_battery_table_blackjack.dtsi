@@ -50,7 +50,7 @@
 
 &bat_gm30
 {
-	battery_total_number =<2>;
+	battery_total_number =<3>;
 	battery0_name ="JK50-SB18C28957-5000mah";
 	
 	battery0_profile_t0_num = <100>;
