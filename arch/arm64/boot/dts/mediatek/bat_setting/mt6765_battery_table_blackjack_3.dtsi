@@ -1,6 +1,6 @@
 &bat_gm30
 {
-	battery2_name ="JK50-SB18C28957-5000mah";
+	battery2_name ="JK50-EPCOS-SB18C47080-5000mah";
 	
 	battery2_profile_t0_num = <100>;
 	battery2_profile_t0 =
