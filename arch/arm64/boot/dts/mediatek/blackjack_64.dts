@@ -671,9 +671,6 @@
 	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
-&bat_gm30{
-	battery_type_name = <0>;
-};
 
 &usb_phy_tuning{
 	u2_vrt_ref = <7>;
@@ -685,6 +682,7 @@
 
 #include "bat_setting/mt6765_battery_table_blackjack.dtsi"
 #include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack_3.dtsi"
 
 #include <blackjack_64/cust.dtsi>
 #include "cust_mt6765_camera.dtsi"
