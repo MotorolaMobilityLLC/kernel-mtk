@@ -197,6 +197,7 @@
 #define OV02A10_SENSOR_ID                       0x2509
 #define OV02A10QT_SENSOR_ID                     (OV02A10_SENSOR_ID+QTECH_MID)
 #define OV02A10_MACRO_SENSOR_ID                 (OV02A10_SENSOR_ID+MACRO_MID)
+#define OV2180_SENSOR_ID                        0x2681
 /*S5K*/
 #define S5K2XASP_SENSOR_ID                      0x218A
 #define S5K3P8SP_SENSOR_ID                      0x3108
@@ -417,6 +418,7 @@
 #define SENSOR_DRVNAME_OV02A10_MIPI_RAW         "ov02a10_mipi_raw"
 #define SENSOR_DRVNAME_OV02A10QT_MIPI_RAW       "ov02a10qt_mipi_raw"
 #define SENSOR_DRVNAME_OV02A10_MACRO_MIPI_RAW   "ov02a10_macro_mipi_raw"
+#define SENSOR_DRVNAME_OV2180_MIPI_RAW          "ov2180_mipi_raw"
 /*S5K*/
 #define SENSOR_DRVNAME_S5K2XASP_MIPI_RAW        "s5k2xasp_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P8SP_MIPI_RAW        "s5k3p8sp_mipi_raw"
