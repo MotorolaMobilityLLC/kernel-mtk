@@ -1900,7 +1900,17 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 				imgsensor.frame_length = imgsensor_info.cap.framelength + imgsensor.dummy_line;
 				imgsensor.min_frame_length = imgsensor.frame_length;
 				spin_unlock(&imgsensor_drv_lock);
-			} else {
+			}
+			else if(framerate == 100)
+			{
+				frame_length = imgsensor_info.cap.pclk / framerate * 10 / imgsensor_info.cap.linelength;
+				spin_lock(&imgsensor_drv_lock);
+				imgsensor.dummy_line = (frame_length > imgsensor_info.cap.framelength) ? (frame_length - imgsensor_info.cap.framelength) : 0;
+				imgsensor.frame_length = imgsensor_info.cap.framelength + imgsensor.dummy_line;
+				imgsensor.min_frame_length = imgsensor.frame_length;
+				spin_unlock(&imgsensor_drv_lock);
+			}
+			else {
 				frame_length = imgsensor_info.cap1.pclk / framerate * 10 / imgsensor_info.cap1.linelength;
 				spin_lock(&imgsensor_drv_lock);
 				imgsensor.dummy_line = (frame_length > imgsensor_info.cap1.framelength) ? (frame_length - imgsensor_info.cap1.framelength) : 0;
