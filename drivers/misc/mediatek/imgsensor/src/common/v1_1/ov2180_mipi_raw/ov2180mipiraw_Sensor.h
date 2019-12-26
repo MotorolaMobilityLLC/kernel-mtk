@@ -97,9 +97,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint32 checksum_value;	/* checksum value for Camera Auto Test */
 	struct imgsensor_mode_struct pre;	/* preview scenario relative information */
 	struct imgsensor_mode_struct cap;	/* capture scenario relative information */
-	struct imgsensor_mode_struct cap1;	/* capture for PIP 24fps relative information */
 	struct imgsensor_mode_struct normal_video;	/* normal video  scenario relative information */
-	struct imgsensor_mode_struct hs_video;	/* high speed video scenario relative information */
 	struct imgsensor_mode_struct slim_video;	/* slim video for VT scenario relative information */
 	struct imgsensor_mode_struct custom1;	/* custom1 scenario relative information */
 	struct imgsensor_mode_struct custom2;	/* custom2 scenario relative information */
@@ -117,7 +115,6 @@ typedef struct imgsensor_info_struct {
 	kal_uint8 cap_delay_frame;	/* enter capture delay frame num */
 	kal_uint8 pre_delay_frame;	/* enter preview delay frame num */
 	kal_uint8 video_delay_frame;	/* enter video delay frame num */
-	kal_uint8 hs_video_delay_frame;	/* enter high speed video  delay frame num */
 	kal_uint8 slim_video_delay_frame;	/* enter slim video delay frame num */
 	kal_uint8 custom1_delay_frame;	/* enter custom1 delay frame num */
 	kal_uint8 custom2_delay_frame;	/* enter custom1 delay frame num */

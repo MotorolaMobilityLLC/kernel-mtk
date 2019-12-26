@@ -77,17 +77,6 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
 	},
-	.cap1 = {/*PIP capture*/ //capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
-		.pclk = 66000000,
-		.linelength = 1700,
-		.framelength = 1294,
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 1600,
-		.grabwindow_height = 1200,
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 240, //less than 13M(include 13M),cap1 max framerate is 24fps,16M max framerate is 20fps, 20M max framerate is 15fps
-	},
 	.normal_video = {
 		.pclk = 66000000,
 		.linelength = 1700,
@@ -98,17 +87,6 @@ static imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
-	},
-	.hs_video = {/*slow motion*/
-		.pclk = 66000000,
-		.linelength = 1446,
-		.framelength = 760,
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 600,
 	},
 	.slim_video = {/*VT Call*/
 		.pclk = 66000000,
@@ -135,7 +113,6 @@ static imgsensor_info_struct imgsensor_info = {
 	.cap_delay_frame = 1,		//enter capture delay frame num
 	.pre_delay_frame = 2,		//enter preview delay frame num
 	.video_delay_frame = 1, 	//enter video delay frame num
-	.hs_video_delay_frame = 2,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 2,//enter slim video delay frame num
 
 	.isp_driving_current = ISP_DRIVING_4MA, //mclk driving current
@@ -171,7 +148,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 {{ 1616, 1216,	  0,  0, 1615, 1215, 1615, 1215, 8, 8, 1600, 1200,	  0,	0, 1600, 1200}, // Preview
  { 1616, 1216,	  0,  0, 1615, 1215, 1615, 1215, 8, 8, 1600, 1200,	  0,	0, 1600, 1200}, // capture
  { 1616, 1216,	  0,  0, 1615, 1215, 1615, 1215, 8, 8, 1600, 1200,	  0,	0, 1600, 1200}, // video
- { 1616, 1216,	160,242, 1295,  731, 1295,  731, 8, 6, 1280,  720,	  0,	0, 1280,  720}, //hight speed video
+// { 1616, 1216,	160,242, 1295,  731, 1295,  731, 8, 6, 1280,  720,	  0,	0, 1280,  720}, //hight speed video
  { 1616, 1216,	  0,  0, 1615, 1215, 1615, 1215, 8, 8, 1600, 1200,	  0,	0, 1600, 1200}};// slim video
 
 
@@ -191,7 +168,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
-static void set_dummy()
+static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 	/* you can set dummy by imgsensor.dummy_line and imgsensor.dummy_pixel, or you can set dummy by imgsensor.frame_length and imgsensor.line_length */
@@ -208,7 +185,7 @@ static void set_dummy()
 
 }	/*	set_dummy  */
 
-static kal_uint32 return_sensor_id()
+static kal_uint32 return_sensor_id(void)
 {
     return ((read_cmos_sensor(0x300A) << 8) | read_cmos_sensor(0x300B)) + 1;
 }
@@ -218,7 +195,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 	kal_uint32 frame_length = imgsensor.frame_length;
 	//unsigned long flags;
 
-	LOG_INF("framerate = %d, min framelength should enable? \n", framerate,min_framelength_en);
+	LOG_INF("framerate = %d, min framelength should enable?%d \n", framerate,min_framelength_en);
 
 	frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
 	spin_lock(&imgsensor_drv_lock);
@@ -634,56 +611,8 @@ static void normal_video_setting(kal_uint16 currefps)
 	LOG_INF("E! currefps:%d\n",currefps);
 	preview_setting();
 }
-static void hs_video_setting()
-{
-	LOG_INF("E\n");
 
-	/*
-	 * @@Initial - MIPI 1-Lane 1280x720 10-bit 60fps
-	* 100 99 1280 720
-	*/
-	write_cmos_sensor(0x0100, 0x00);
-	write_cmos_sensor(0x3086, 0x00);
-	write_cmos_sensor(0x3501, 0x2d);
-	write_cmos_sensor(0x3502, 0x80);
-	write_cmos_sensor(0x3620, 0x26);
-	write_cmos_sensor(0x3621, 0x37);
-	write_cmos_sensor(0x3622, 0x04);
-	write_cmos_sensor(0x370a, 0x21);
-	write_cmos_sensor(0x370d, 0xc0);
-	write_cmos_sensor(0x3718, 0x88);
-	write_cmos_sensor(0x3721, 0x00);
-	write_cmos_sensor(0x3722, 0x00);
-	write_cmos_sensor(0x3723, 0x00);
-	write_cmos_sensor(0x3738, 0x00);
-	write_cmos_sensor(0x3801, 0xa0);
-	write_cmos_sensor(0x3803, 0xf2);
-	write_cmos_sensor(0x3804, 0x05);
-	write_cmos_sensor(0x3805, 0xaf);
-	write_cmos_sensor(0x3806, 0x03);
-	write_cmos_sensor(0x3807, 0xcd);
-	write_cmos_sensor(0x3808, 0x05);
-	write_cmos_sensor(0x3809, 0x00);
-	write_cmos_sensor(0x380a, 0x02);
-	write_cmos_sensor(0x380b, 0xd0);
-	write_cmos_sensor(0x380c, 0x05);
-	write_cmos_sensor(0x380d, 0xa6);
-	write_cmos_sensor(0x380e, 0x02);
-	write_cmos_sensor(0x380f, 0xf8);
-	write_cmos_sensor(0x3811, 0x08);
-	write_cmos_sensor(0x3813, 0x06);
-	write_cmos_sensor(0x3814, 0x11);
-	write_cmos_sensor(0x3815, 0x11);
-	write_cmos_sensor(0x3820, 0xc0);
-	write_cmos_sensor(0x3821, 0x00);
-	write_cmos_sensor(0x4008, 0x02);
-	write_cmos_sensor(0x4009, 0x09);
-	write_cmos_sensor(0x4837, 0x18);
-	write_cmos_sensor(0x0100, 0x01);
-	mdelay(60);
-}
-
-static void slim_video_setting()
+static void slim_video_setting(void)
 {
 	LOG_INF("E\n");
 	preview_setting();
@@ -889,13 +818,6 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
-    if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
-        imgsensor.pclk = imgsensor_info.cap1.pclk;
-        imgsensor.line_length = imgsensor_info.cap1.linelength;
-        imgsensor.frame_length = imgsensor_info.cap1.framelength;
-        imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
-        imgsensor.autoflicker_en = KAL_FALSE;
-    } else {
         if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
             LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",imgsensor.current_fps,imgsensor_info.cap.max_framerate/10);
 	imgsensor.pclk = imgsensor_info.cap.pclk;
@@ -903,7 +825,6 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.frame_length = imgsensor_info.cap.framelength;
 	imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 	imgsensor.autoflicker_en = KAL_FALSE;
-    }
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps);
 	mdelay(100);
@@ -927,28 +848,6 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	return ERROR_NONE;
 }	/*	normal_video   */
 
-static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
-{
-	LOG_INF("E\n");
-
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
-	imgsensor.pclk = imgsensor_info.hs_video.pclk;
-	//imgsensor.video_mode = KAL_TRUE;
-	imgsensor.line_length = imgsensor_info.hs_video.linelength;
-	imgsensor.frame_length = imgsensor_info.hs_video.framelength;
-	imgsensor.min_frame_length = imgsensor_info.hs_video.framelength;
-	imgsensor.dummy_line = 0;
-	imgsensor.dummy_pixel = 0;
-	//imgsensor.current_fps = 600;
-	imgsensor.autoflicker_en = KAL_FALSE;
-	spin_unlock(&imgsensor_drv_lock);
-	hs_video_setting();
-
-	return ERROR_NONE;
-}	/*	hs_video   */
-
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -969,9 +868,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	slim_video_setting();
 
 	return ERROR_NONE;
-}	/*	slim_video	 */
-
-
+}	/*      slim_video       */
 
 static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
@@ -984,10 +881,6 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 
 	sensor_resolution->SensorVideoWidth = imgsensor_info.normal_video.grabwindow_width;
 	sensor_resolution->SensorVideoHeight = imgsensor_info.normal_video.grabwindow_height;
-
-
-	sensor_resolution->SensorHighSpeedVideoWidth	 = imgsensor_info.hs_video.grabwindow_width;
-	sensor_resolution->SensorHighSpeedVideoHeight	 = imgsensor_info.hs_video.grabwindow_height;
 
 	sensor_resolution->SensorSlimVideoWidth	 = imgsensor_info.slim_video.grabwindow_width;
 	sensor_resolution->SensorSlimVideoHeight	 = imgsensor_info.slim_video.grabwindow_height;
@@ -1022,7 +915,6 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->CaptureDelayFrame = imgsensor_info.cap_delay_frame;
 	sensor_info->PreviewDelayFrame = imgsensor_info.pre_delay_frame;
 	sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
-	sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
@@ -1072,13 +964,6 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 			sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.normal_video.mipi_data_lp2hs_settle_dc;
 
 			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			sensor_info->SensorGrabStartX = imgsensor_info.hs_video.startx;
-			sensor_info->SensorGrabStartY = imgsensor_info.hs_video.starty;
-
-			sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.hs_video.mipi_data_lp2hs_settle_dc;
-
-			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			sensor_info->SensorGrabStartX = imgsensor_info.slim_video.startx;
 			sensor_info->SensorGrabStartY = imgsensor_info.slim_video.starty;
@@ -1114,9 +999,6 @@ static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSUR
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			normal_video(image_window, sensor_config_data);
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			hs_video(image_window, sensor_config_data);
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			slim_video(image_window, sensor_config_data);
@@ -1191,30 +1073,12 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 			//set_dummy();
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-        	  if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
-                frame_length = imgsensor_info.cap1.pclk / framerate * 10 / imgsensor_info.cap1.linelength;
-                spin_lock(&imgsensor_drv_lock);
-		            imgsensor.dummy_line = (frame_length > imgsensor_info.cap1.framelength) ? (frame_length - imgsensor_info.cap1.framelength) : 0;
-		            imgsensor.frame_length = imgsensor_info.cap1.framelength + imgsensor.dummy_line;
-		            imgsensor.min_frame_length = imgsensor.frame_length;
-		            spin_unlock(&imgsensor_drv_lock);
-            } else {
         		    if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
                     LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",framerate,imgsensor_info.cap.max_framerate/10);
 			frame_length = imgsensor_info.cap.pclk / framerate * 10 / imgsensor_info.cap.linelength;
 			spin_lock(&imgsensor_drv_lock);
 			imgsensor.dummy_line = (frame_length > imgsensor_info.cap.framelength) ? (frame_length - imgsensor_info.cap.framelength) : 0;
 			imgsensor.frame_length = imgsensor_info.cap.framelength + imgsensor.dummy_line;
-			imgsensor.min_frame_length = imgsensor.frame_length;
-			spin_unlock(&imgsensor_drv_lock);
-            }
-			//set_dummy();
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			frame_length = imgsensor_info.hs_video.pclk / framerate * 10 / imgsensor_info.hs_video.linelength;
-			spin_lock(&imgsensor_drv_lock);
-			imgsensor.dummy_line = (frame_length > imgsensor_info.hs_video.framelength) ? (frame_length - imgsensor_info.hs_video.framelength) : 0;
-			imgsensor.frame_length = imgsensor_info.hs_video.framelength + imgsensor.dummy_line;
 			imgsensor.min_frame_length = imgsensor.frame_length;
 			spin_unlock(&imgsensor_drv_lock);
 			//set_dummy();
@@ -1256,9 +1120,6 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			*framerate = imgsensor_info.cap.max_framerate;
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*framerate = imgsensor_info.hs_video.max_framerate;
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			*framerate = imgsensor_info.slim_video.max_framerate;
