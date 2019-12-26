@@ -101,6 +101,9 @@ static unsigned int extd_esd_check_mode;
 static unsigned int extd_esd_check_enable;
 #endif
 
+int lcd_rst = 0;
+int lcd_power = 0;
+
 unsigned int get_esd_check_mode(void)
 {
 	return esd_check_mode;
@@ -737,6 +740,12 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 		i = 0; /* repeat */
 		do {
 			ret = primary_display_esd_check();
+			if (lcd_rst) {
+				ret = 1;
+				lcd_power = 1;
+				lcd_rst = 0;
+				DISPERR("wang lcd rst\n");
+			}
 			if (!ret) /* success */
 				break;
 

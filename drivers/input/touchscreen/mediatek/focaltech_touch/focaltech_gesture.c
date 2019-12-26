@@ -89,7 +89,7 @@ struct fts_gesture_st {
     u8 mode;
     u8 active;
 };
-//extern volatile int gesture_dubbleclick_en;
+extern volatile int gesture_dubbleclick_en;
 
 /*****************************************************************************
 * Static variables
@@ -354,8 +354,7 @@ int fts_gesture_suspend(struct fts_ts_data *ts_data)
     int ret = 0;
     int i = 0;
     u8 state = 0xFF;
-    //if (gesture_dubbleclick_en) {
-	if (0) {
+    if (gesture_dubbleclick_en) {
         fts_gesture_data.mode = ENABLE;
     } else {
         fts_gesture_data.mode = DISABLE;
