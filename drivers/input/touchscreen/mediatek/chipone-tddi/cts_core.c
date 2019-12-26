@@ -1015,6 +1015,89 @@ const static struct cts_sfctrl icnl9911s_sfctrl = {
     .ops = &cts_sfctrlv2_ops
 };
 
+#define CTS_DEV_HW_REG_DDI_REG_CTRL     (0x3002Cu)
+
+static int icnl9911_set_access_ddi_reg(struct cts_device *cts_dev, bool enable)
+{
+    int ret;
+    u8  access_flag;
+
+    cts_info("ICNL9911 %s access ddi reg", enable ? "enable" : "disable");
+
+    ret = cts_hw_reg_readb(cts_dev, CTS_DEV_HW_REG_DDI_REG_CTRL, &access_flag);
+    if (ret) {
+        cts_err("Read HW_REG_DDI_REG_CTRL failed %d", ret);
+        return ret;
+    }
+
+    access_flag = enable ? (access_flag | 0x01) : (access_flag & (~0x01));
+    ret = cts_hw_reg_writeb(cts_dev, CTS_DEV_HW_REG_DDI_REG_CTRL, access_flag);
+    if (ret) {
+        cts_err("Write HW_REG_DDI_REG_CTRL %02x failed %d", access_flag, ret);
+        return ret;
+    }
+
+    ret = cts_hw_reg_writew(cts_dev, 0x3DFF0, enable ? 0x4BB4 : 0xB44B);
+    if (ret) {
+        cts_err("Write password failed %d");
+        goto disable_access_ddi_reg;
+    }
+
+    return 0;
+
+disable_access_ddi_reg: {
+        int r;
+
+        access_flag = enable ? (access_flag & (~0x01)) : (access_flag | 0x01);
+        r = cts_hw_reg_writeb(cts_dev, CTS_DEV_HW_REG_DDI_REG_CTRL, access_flag);
+        if (r) {
+            cts_err("");
+        }
+    }
+
+    return ret;
+}
+
+static int icnl9911s_set_access_ddi_reg(struct cts_device *cts_dev, bool enable)
+{
+    int ret;
+    u8  access_flag;
+
+    cts_info("ICNL9911S %s access ddi reg", enable ? "enable" : "disable");
+
+    ret = cts_hw_reg_readb(cts_dev, CTS_DEV_HW_REG_DDI_REG_CTRL, &access_flag);
+    if (ret) {
+        cts_err("Read HW_REG_DDI_REG_CTRL failed %d", ret);
+        return ret;
+    }
+
+    access_flag = enable ? (access_flag | 0x01) : (access_flag & (~0x01));
+    ret = cts_hw_reg_writeb(cts_dev, CTS_DEV_HW_REG_DDI_REG_CTRL, access_flag);
+    if (ret) {
+        cts_err("Write HW_REG_DDI_REG_CTRL %02x failed %d", access_flag, ret);
+        return ret;
+    }
+
+    ret = cts_hw_reg_writeb(cts_dev, 0x30074, enable ? 1 : 0);
+    if (ret) {
+        cts_err("Write 0x30074 failed %d", access_flag, ret);
+        return ret;
+    }
+
+    ret = cts_hw_reg_writew(cts_dev, 0x3DFF0, enable ? 0x595A : 0x5A5A);
+    if (ret) {
+        cts_err("Write password to F0 failed %d");
+        return ret;
+    }
+    ret = cts_hw_reg_writew(cts_dev, 0x3DFF4, enable ? 0xA6A5 : 0x5A5A);
+    if (ret) {
+        cts_err("Write password to F1 failed %d");
+        return ret;
+    }
+
+    return 0;
+}
+
 const static struct cts_device_hwdata cts_device_hwdatas[] = {
     {
         .name = "ICNL9911",
@@ -1027,6 +1110,7 @@ const static struct cts_device_hwdata cts_device_hwdatas[] = {
         .program_addr_width = 3,
 
         .sfctrl = &icnl9911_sfctrl,
+        .enable_access_ddi_reg = icnl9911_set_access_ddi_reg,
     },
     {
         .name = "ICNL9911S",
@@ -1039,6 +1123,7 @@ const static struct cts_device_hwdata cts_device_hwdatas[] = {
         .program_addr_width = 3,
 
         .sfctrl = &icnl9911s_sfctrl,
+        .enable_access_ddi_reg = icnl9911s_set_access_ddi_reg,
     }
 };
 
@@ -1219,6 +1304,30 @@ int cts_get_num_cols(const struct cts_device *cts_dev, u8 *num_cols)
     return cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_NUM_RX, num_cols);
 }
 
+#define CTS_DEV_FW_ESD_PROTECTION_ON    (3)
+#define CTS_DEV_FW_ESD_PROTECTION_OFF   (1)
+
+int cts_get_dev_esd_protection(struct cts_device *cts_dev, bool *enable)
+{
+    int ret;
+    u8  val;
+
+    ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_ESD_PROTECTION, &val);
+    if (ret == 0) {
+        *enable = (val == CTS_DEV_FW_ESD_PROTECTION_ON);
+    }
+
+    return ret;
+}
+
+int cts_set_dev_esd_protection(struct cts_device *cts_dev, bool enable)
+{
+    cts_info("%s ESD protection",  enable ? "Enable" : "Disable");
+
+    return cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_ESD_PROTECTION,
+        enable ? CTS_DEV_FW_ESD_PROTECTION_ON : CTS_DEV_FW_ESD_PROTECTION_OFF);
+}
+
 #ifdef CONFIG_CTS_LEGACY_TOOL
 int cts_enable_get_rawdata(const struct cts_device *cts_dev)
 {
@@ -1365,8 +1474,6 @@ static int cts_set_dev_boot_mode(const struct cts_device *cts_dev,
         return ret;
     }
 
-    cts_info("cts_set_dev_boot_mode exit");
-    
     return 0;
 }
 
@@ -1449,7 +1556,9 @@ static int cts_init_fwdata(struct cts_device *cts_dev)
 	if (ret) {
 		cts_err("Read firmware Lib version failed %d", ret);
 	}
-    cts_info("  %-16s: %04x", "Lib verion", cts_dev->fwdata.lib_version);
+    cts_info("  %-16s: v%x.%x", "Lib verion",
+        (u8)(cts_dev->fwdata.lib_version >> 8),
+        (u8)(cts_dev->fwdata.lib_version));
 
 	ret = cts_fw_reg_readb(cts_dev, 0x8000+342, &cts_dev->fwdata.esd_method);
 	if (ret) {
@@ -2071,10 +2180,6 @@ int cts_stop_device(struct cts_device *cts_dev)
 #ifdef CONFIG_CTS_ESD_PROTECTION
 int cts_start_device_esdrecover(struct cts_device *cts_dev)
 {
-#ifdef CONFIG_CTS_ESD_PROTECTION
-    struct chipone_ts_data *cts_data =
-        container_of(cts_dev, struct chipone_ts_data, cts_dev);
-#endif /* CONFIG_CTS_ESD_PROTECTION */
     int ret;
 
     cts_info("Start device...");
@@ -2461,9 +2566,7 @@ static void cts_esd_protection_work(struct work_struct *work)
         firmware = cts_request_firmware(cts_data->cts_dev.hwdata->hwid,
                 cts_data->cts_dev.hwdata->fwid, 0);
         if (firmware) {
-            cts_unlock_device(&cts_data->cts_dev);
             ret = cts_update_firmware(&cts_data->cts_dev, firmware, true);
-            cts_lock_device(&cts_data->cts_dev);
             cts_release_firmware(firmware);
 
             if (ret) {
@@ -2646,14 +2749,14 @@ int cts_fw_log_show_finish(struct cts_device *cts_dev)
 
 int cts_enable_get_compensate_cap(const struct cts_device *cts_dev)
 {
-    cts_info("cts_enable_get_compensate_cap");
+    cts_info("Enable get compensate cap");
 
     return cts_send_command(cts_dev,CTS_CMD_ENABLE_READ_CNEG);
 }
 
 int cts_disable_get_compensate_cap(const struct cts_device *cts_dev)
 {
-    cts_info("cts_disable_get_compensate_cap");
+    cts_info("Disable get compensate cap");
 
     return cts_send_command(cts_dev,CTS_CMD_DISABLE_READ_CNEG);
 }
@@ -2664,19 +2767,26 @@ int cts_get_compensate_cap(const struct cts_device *cts_dev, u8 *cap)
 
     cts_info("Get compensate cap");
 
-    /* Wait compensate cap ready */
+    if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911 &&
+        cts_dev->fwdata.lib_version < 0x0500) {
+        cts_err("ICNL9911 lib version < v5.0 NOT supported");
+        return -ENOTSUPP;
+    }
+
     for (i = 0; i < 100; i++) {
         u8 ready;
 
-        ret = cts_fw_reg_readb(cts_dev, 0x4E, &ready);
+        ret = cts_fw_reg_readb(cts_dev,
+                CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY, &ready);
         if (ret) {
-            cts_err("Read compensate cap ready failed %d", ret);
+            cts_err("Read compensate cap ready flag failed %d", ret);
         } else {
             if (ready) {
                 /* Use hardware row & col here */
                 return cts_fw_reg_readsb_delay_idle(cts_dev,
-                    CTS_DEVICE_FW_REG_COMPENSATE_CAP, cap,
-                    cts_dev->hwdata->num_row *cts_dev->hwdata->num_col, 500);
+                        CTS_DEVICE_FW_REG_COMPENSATE_CAP, cap,
+                        cts_dev->hwdata->num_row *cts_dev->hwdata->num_col,
+                        500);
             }
         }
         mdelay(1);
@@ -2687,3 +2797,146 @@ int cts_get_compensate_cap(const struct cts_device *cts_dev, u8 *cap)
     return -ETIMEDOUT;
 }
 
+static struct file *cts_log_filp = NULL;
+static int cts_log_to_file_level = 0;
+extern int cts_write_file(struct file *filp, const void *data, size_t size);
+
+static char *cts_log_buffer = NULL;
+static int cts_log_buf_size = 0;
+static int cts_log_buf_wr_size = 0;
+
+static bool cts_log_redirect = false;
+
+int cts_write_file(struct file *filp, const void *data, size_t size)
+{
+    loff_t  pos;
+    ssize_t ret;
+
+    pos = filp->f_pos;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+    ret = kernel_write(filp, data, size, &pos);
+#else
+    ret = kernel_write(filp, data, size, pos);
+#endif
+
+    if (ret >= 0) {
+        filp->f_pos += ret;
+    }
+
+    return ret;
+}
+
+int cts_start_driver_log_redirect(const char *filepath, bool append_to_file,
+    char *log_buffer, int log_buf_size, int log_level)
+{
+#define START_BANNER \
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
+
+    int ret = 0;
+
+    cts_info("Start driver log redirect");
+
+    cts_log_to_file_level = log_level;
+
+    if (log_buffer && log_buf_size) {
+        cts_info(" - Start driver log to buffer: %p size: %d level: %d",
+            log_buffer, log_buf_size, log_level);
+        cts_log_buffer = log_buffer;
+        cts_log_buf_size = log_buf_size;
+        cts_log_buf_wr_size = 0;
+    }
+
+    if (filepath && filepath[0]) {
+        cts_info(" - Start driver log to file  : '%s' level: %d",
+            filepath, log_level);
+        cts_log_filp = filp_open(filepath,
+            O_WRONLY | O_CREAT | (append_to_file ? O_APPEND : O_TRUNC),
+            S_IRUGO | S_IWUGO);
+        if (IS_ERR(cts_log_filp)) {
+            ret = PTR_ERR(cts_log_filp);
+            cts_log_filp = NULL;
+            cts_err("Open file '%s' for driver log failed %d",
+                filepath, ret);
+        } else {
+            cts_write_file(cts_log_filp, START_BANNER, strlen(START_BANNER));
+        }
+    }
+
+    cts_log_redirect = true;
+
+    return ret;
+#undef START_BANNER
+}
+
+void cts_stop_driver_log_redirect(void)
+{
+#define END_BANNER \
+        "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+
+    cts_log_redirect = false;
+
+    cts_info("Stop driver log redirect");
+
+    if (cts_log_filp) {
+        int ret;
+
+        cts_info(" - Stop driver log to file");
+
+        cts_write_file(cts_log_filp, END_BANNER, strlen(END_BANNER));
+        ret = filp_close(cts_log_filp, NULL);
+        if (ret) {
+            cts_err("Close driver log file failed %d", ret);
+        }
+        cts_log_filp = NULL;
+    }
+
+    if (cts_log_buffer) {
+        cts_info(" - Stop driver log to buffer");
+
+        cts_log_buffer = NULL;
+        cts_log_buf_size = 0;
+        cts_log_buf_wr_size = 0;
+    }
+
+#undef END_BANNER
+}
+
+int cts_get_driver_log_redirect_size(void)
+{
+    if (cts_log_redirect && cts_log_buffer && cts_log_buf_wr_size) {
+        return cts_log_buf_wr_size;
+    } else {
+        return 0;
+    }
+}
+
+void cts_log(int level, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+
+    if (cts_log_redirect) {
+        if (cts_log_buffer &&
+            cts_log_buf_wr_size < cts_log_buf_size &&
+            level <= cts_log_to_file_level)
+        {
+            cts_log_buf_wr_size += vscnprintf(cts_log_buffer + cts_log_buf_wr_size,
+                cts_log_buf_size - cts_log_buf_wr_size, fmt, args);
+        }
+
+        if (cts_log_filp != NULL && level <= cts_log_to_file_level) {
+            char buf[512];
+            int count = vscnprintf(buf, sizeof(buf), fmt, args);
+
+            cts_write_file(cts_log_filp, buf, count);
+        }
+    }
+
+    if (level < CTS_DRIVER_LOG_DEBUG || cts_show_debug_log) {
+        vprintk(fmt, args);
+    }
+
+    va_end(args);
+}

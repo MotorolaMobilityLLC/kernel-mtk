@@ -8,7 +8,6 @@
 extern unsigned char g_lcm_info_flag;
 
 /* BEGIN, Ontim,  wzx, 19/10/23, St-result :PASS,LCD and TP Device information */
-#ifdef ONTIM_DEV_DGB_TP_LCD
 extern char lcd_info_pr[256];
 u16  device_fw_ver = 0;
 #include <ontim/ontim_dev_dgb.h>
@@ -21,22 +20,20 @@ DEV_ATTR_DEFINE("vendor", vendor_name)
 DEV_ATTR_DEFINE("lcdvendor", lcdname)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
-#endif
 /* END */
 
 bool cts_show_debug_log = false;
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
 
-//extern volatile int gesture_dubbleclick_en;
+extern volatile int gesture_dubbleclick_en;
 int cts_suspend(struct chipone_ts_data *cts_data)
 {
     int ret;
 
     cts_info("Suspend");
 
-    //if (gesture_dubbleclick_en) {
-	if (0) {
+    if (gesture_dubbleclick_en) {
         cts_enable_gesture_wakeup(&cts_data->cts_dev);
     } else {
         cts_disable_gesture_wakeup(&cts_data->cts_dev);
@@ -101,7 +98,9 @@ int cts_resume(struct chipone_ts_data *cts_data)
     }
 #endif /* CFG_CTS_GESTURE */
 
+    cts_lock_device(&cts_data->cts_dev);
     ret = cts_resume_device(&cts_data->cts_dev);
+    cts_unlock_device(&cts_data->cts_dev);
     if(ret) {
         cts_warn("Resume device failed %d", ret);
         return ret;
@@ -115,7 +114,7 @@ int cts_resume(struct chipone_ts_data *cts_data)
 
     return 0;
 }
-#ifdef ONTIM_DEV_DGB_TP_LCD
+
 static void cts_tp_fw(struct cts_device *cts_dev)
 {
 	u8 cts_fw = 0;
@@ -126,7 +125,6 @@ static void cts_tp_fw(struct cts_device *cts_dev)
 	snprintf(version, sizeof(version)," %d.0 VID:0x00", cts_fw);
 	pr_info("wzxversion:%s", version);
 }
-#endif
 
 #ifdef CONFIG_CTS_I2C_HOST
 static int cts_driver_probe(struct i2c_client *client,
@@ -139,12 +137,10 @@ static int cts_driver_probe(struct spi_device *client)
     int ret = 0;
     pr_err("wzx 111111111\n");
     /* BEGIN, Ontim,  wzx, 19/010/23, St-result :PASS,LCD and TP Device information */
-	#ifdef ONTIM_DEV_DGB_TP_LCD
     if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
     {
        return -EIO;
     }
-	#endif
     /* END */
 #ifdef CONFIG_CTS_I2C_HOST
     cts_info("Probe i2c client: name='%s' addr=0x%02x flags=0x%02x irq=%d",
@@ -272,7 +268,7 @@ static int cts_driver_probe(struct spi_device *client)
         cts_err("Start device failed %d", ret);
         goto err_free_irq;
     }
-#ifdef ONTIM_DEV_DGB_TP_LCD
+
     if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
         snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s-hjc" );
         snprintf(vendor_name, sizeof(vendor_name),"%s ", "truly-icnl9911s-hjc" );
@@ -283,7 +279,6 @@ static int cts_driver_probe(struct spi_device *client)
 
     cts_tp_fw(&cts_data->cts_dev);
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-#endif
 #ifdef CONFIG_MTK_PLATFORM
     tpd_load_status = 1;
 #endif /* CONFIG_MTK_PLATFORM */
@@ -397,7 +392,7 @@ static int cts_driver_remove(struct spi_device *client)
 #ifdef CONFIG_CTS_SYSFS
 static ssize_t reset_pin_show(struct device_driver *driver, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_HAS_RESET_PIN: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_HAS_RESET_PIN: %c\n",
 #ifdef CFG_CTS_HAS_RESET_PIN
         'Y'
 #else
@@ -409,7 +404,7 @@ static DRIVER_ATTR(reset_pin, S_IRUGO, reset_pin_show, NULL);
 
 static ssize_t swap_xy_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_SWAP_XY: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_SWAP_XY: %c\n",
 #ifdef CFG_CTS_SWAP_XY
         'Y'
 #else
@@ -421,7 +416,7 @@ static DRIVER_ATTR(swap_xy, S_IRUGO, swap_xy_show, NULL);
 
 static ssize_t wrap_x_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_WRAP_X: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_WRAP_X: %c\n",
 #ifdef CFG_CTS_WRAP_X
         'Y'
 #else
@@ -433,7 +428,7 @@ static DRIVER_ATTR(wrap_x, S_IRUGO, wrap_x_show, NULL);
 
 static ssize_t wrap_y_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_WRAP_Y: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_WRAP_Y: %c\n",
 #ifdef CFG_CTS_WRAP_Y
         'Y'
 #else
@@ -445,7 +440,7 @@ static DRIVER_ATTR(wrap_y, S_IRUGO, wrap_y_show, NULL);
 
 static ssize_t force_update_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_HAS_RESET_PIN: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_HAS_RESET_PIN: %c\n",
 #ifdef CFG_CTS_FIRMWARE_FORCE_UPDATE
         'Y'
 #else
@@ -457,14 +452,14 @@ static DRIVER_ATTR(force_update, S_IRUGO, force_update_show, NULL);
 
 static ssize_t max_touch_num_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_MAX_TOUCH_NUM: %d\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_TOUCH_NUM: %d\n",
         CFG_CTS_MAX_TOUCH_NUM);
 }
 static DRIVER_ATTR(max_touch_num, S_IRUGO, max_touch_num_show, NULL);
 
 static ssize_t vkey_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CONFIG_CTS_VIRTUALKEY: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CONFIG_CTS_VIRTUALKEY: %c\n",
 #ifdef CONFIG_CTS_VIRTUALKEY
         'Y'
 #else
@@ -476,7 +471,7 @@ static DRIVER_ATTR(vkey, S_IRUGO, vkey_show, NULL);
 
 static ssize_t gesture_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CFG_CTS_GESTURE: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_GESTURE: %c\n",
 #ifdef CFG_CTS_GESTURE
         'Y'
 #else
@@ -488,7 +483,7 @@ static DRIVER_ATTR(gesture, S_IRUGO, gesture_show, NULL);
 
 static ssize_t esd_protection_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CONFIG_CTS_ESD_PROTECTION: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CONFIG_CTS_ESD_PROTECTION: %c\n",
 #ifdef CONFIG_CTS_ESD_PROTECTION
         'Y'
 #else
@@ -500,7 +495,7 @@ static DRIVER_ATTR(esd_protection, S_IRUGO, esd_protection_show, NULL);
 
 static ssize_t slot_protocol_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "CONFIG_CTS_SLOTPROTOCOL: %c\n",
+    return scnprintf(buf, PAGE_SIZE, "CONFIG_CTS_SLOTPROTOCOL: %c\n",
 #ifdef CONFIG_CTS_SLOTPROTOCOL
         'Y'
 #else
@@ -513,10 +508,10 @@ static DRIVER_ATTR(slot_protocol, S_IRUGO, slot_protocol_show, NULL);
 static ssize_t max_xfer_size_show(struct device_driver *dev, char *buf)
 {
 #ifdef CONFIG_CTS_I2C_HOST	
-	return sprintf(buf, "CFG_CTS_MAX_I2C_XFER_SIZE: %d\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_I2C_XFER_SIZE: %d\n",
         CFG_CTS_MAX_I2C_XFER_SIZE);
 #else
-	return sprintf(buf, "CFG_CTS_MAX_SPI_XFER_SIZE: %d\n",
+    return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_SPI_XFER_SIZE: %d\n",
         CFG_CTS_MAX_SPI_XFER_SIZE);
 #endif        
 }
@@ -524,7 +519,7 @@ static DRIVER_ATTR(max_xfer_size, S_IRUGO, max_xfer_size_show, NULL);
 
 static ssize_t driver_info_show(struct device_driver *dev, char *buf)
 {
-	return sprintf(buf, "Driver version: %s\n", CFG_CTS_DRIVER_VERSION);
+    return scnprintf(buf, PAGE_SIZE, "Driver version: %s\n", CFG_CTS_DRIVER_VERSION);
 }
 static DRIVER_ATTR(driver_info, S_IRUGO, driver_info_show, NULL);
 
