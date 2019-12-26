@@ -86,8 +86,14 @@ static int chopchop_recv_data(struct data_unit_t *event,
 
 	if (event->flush_action == FLUSH_ACTION)
 		pr_debug("chopchop_gesture do not support flush\n");
-	else if (event->flush_action == DATA_ACTION)
-		err = situation_notify(ID_CHOPCHOP_GESTURE);
+	else if (event->flush_action == DATA_ACTION) {
+		uint64_t ts = event->time_stamp;
+		do_div(ts, 1000000);
+		pr_info("chopchop_gesture: receive data=%d at %llu\n",
+			event->ontim_gesture_event.state, ts);
+		err = situation_data_report(ID_CHOPCHOP_GESTURE, event->ontim_gesture_event.state);
+	}
+
 	return err;
 }
 
