@@ -300,6 +300,7 @@ static void lcm_resume_power(void)
 {
 }
 
+extern int lcd_power;
 extern volatile int gesture_dubbleclick_en;
 static void lcm_init(void)
 {
@@ -307,7 +308,7 @@ static void lcm_init(void)
 	unsigned char data = 0x12;  //up to +/-5.8V
 	int ret = 0;
 	LCM_LOGI("%s: ft8006P start\n",__func__);
-	if (!gesture_dubbleclick_en) {
+	if ((gesture_dubbleclick_en == 0) || (lcd_power == 1)) {
 		tpd_gpio_output(0, 0);
 		SET_RESET_PIN(0);
 
@@ -326,6 +327,9 @@ static void lcm_init(void)
 			LCM_LOGI("--cmd=%0x--i2c write error----\n", cmd);
 		else
 			LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
+		if(lcd_power)
+	        MDELAY(200);
+		lcd_power = 0;
 
 	} else {
 		tpd_gpio_output(0, 0);
@@ -346,9 +350,11 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	LCM_LOGI("%s,ft8006P start\n", __func__);
 	MDELAY(10);
-	if (!gesture_dubbleclick_en) {
+	if ((gesture_dubbleclick_en == 0) || (lcd_power == 1)) {
 		set_gpio_lcd_enn(0);
 		set_gpio_lcd_enp(0);
+		if(lcd_power)
+		    MDELAY(300);
 	}
 #endif
 	LCM_LOGI("%s,ft8006p done\n", __func__);
