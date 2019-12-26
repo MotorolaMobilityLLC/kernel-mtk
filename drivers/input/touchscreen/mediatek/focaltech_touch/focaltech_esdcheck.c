@@ -43,7 +43,7 @@
 /*****************************************************************************
 * Private constant and macro definitions using #define
 *****************************************************************************/
-#define ESDCHECK_WAIT_TIME              1000    /* ms */
+#define ESDCHECK_WAIT_TIME              3000    /* ms */
 #define LCD_ESD_PATCH                   1
 
 /*****************************************************************************
@@ -78,7 +78,7 @@ static struct fts_esdcheck_st fts_esdcheck_data;
 /*****************************************************************************
 * functions body
 *****************************************************************************/
-//extern int lcd_rst;
+extern int lcd_rst;
 #if LCD_ESD_PATCH
 static int tp_need_recovery; /* LCD reset cause Tp reset */
 int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
@@ -89,7 +89,7 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
     static int lcd_reseting=0;
     static int tp_reseting=0;
 
-    FTS_DEBUG("[ESD]Check LCD ESD");
+    FTS_ERROR("[ESD]Check LCD ESD");
     if ((tp_need_recovery == 1) && (lcd_need_reset == 0)) {
         tp_need_recovery = 0;
         /* LCD reset, need recover TP state */
@@ -97,8 +97,7 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
         fts_tp_state_recovery(ts_data);
     }
 
-    //if ((lcd_rst == 0) && (lcd_reseting == 1)) {
-	if (lcd_reseting == 1) {
+    if ((lcd_rst == 0) && (lcd_reseting == 1)) {
 	    /* LCD reseted, tell TP to reset */
 		ret = fts_write_reg(FTS_REG_HOST_REPOWERED, 1);
 	    if (ret < 0) {
@@ -112,7 +111,7 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
 
     if (tp_reseting==1) {
         /* TP reseted, recover TP state */
-        ret = fts_read_reg(FTS_REG_HOST_REPOWERED, &val);;
+        ret = fts_read_reg(FTS_REG_HOST_REPOWERED, &val);
         if (ret < 0) {
             FTS_ERROR("[ESD]: Read ESD 0xC9 failed, ret=%d!", ret);
         return -EIO;
@@ -136,8 +135,8 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
         FTS_INFO("LCD ESD, Execute LCD reset!");
         lcd_need_reset = 1;
         tp_need_recovery = 1;
-        //lcd_rst =lcd_need_reset;
-        //pr_err("FTS wzx lcd_rst1=%d",lcd_rst);
+        lcd_rst =lcd_need_reset;
+        pr_err("FTS wzx lcd_rst1=%d",lcd_rst);
     }
 
     ret = fts_read_reg(FTS_REG_ESD_DETECT, &val);
@@ -148,8 +147,8 @@ int idc_esdcheck_lcderror(struct fts_ts_data *ts_data)
     if (val == 1) {
         FTS_INFO("TP ESD, Execute LCD reset!");
         lcd_reseting = 1;
-        //lcd_rst =1;
-        //pr_err("FTS wzx lcd_rst2=%d",lcd_rst);
+        lcd_rst =1;
+        pr_err("FTS wzx lcd_rst2=%d",lcd_rst);
     }
 
     return 0;
@@ -308,6 +307,9 @@ static int esdcheck_algorithm(struct fts_ts_data *ts_data)
                   fts_esdcheck_data.nack_cnt, fts_esdcheck_data.dataerror_cnt, \
                   fts_esdcheck_data.hardware_reset_cnt);
         fts_esdcheck_tp_reset(ts_data);
+        tp_need_recovery = 1;
+        lcd_rst = 1;
+
     }
 
     return 0;
@@ -315,11 +317,12 @@ static int esdcheck_algorithm(struct fts_ts_data *ts_data)
 
 static void esdcheck_func(struct work_struct *work)
 {
-    u8 val = 0;
+    //u8 val = 0;
     struct fts_ts_data *ts_data = container_of(work,
                                   struct fts_ts_data, esdcheck_work.work);
 
     if (ENABLE == fts_esdcheck_data.mode) {
+        /*
         if (ts_data->ic_info.is_incell) {
             fts_read_reg(FTS_REG_ESDCHECK_DISABLE, &val);
             if (0xA5 == val) {
@@ -327,6 +330,7 @@ static void esdcheck_func(struct work_struct *work)
                 return;
             }
         }
+        */
         esdcheck_algorithm(ts_data);
         queue_delayed_work(ts_data->ts_workqueue, &ts_data->esdcheck_work,
                            msecs_to_jiffies(ESDCHECK_WAIT_TIME));

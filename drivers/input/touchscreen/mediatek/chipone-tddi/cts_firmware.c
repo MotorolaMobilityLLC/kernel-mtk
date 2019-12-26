@@ -131,6 +131,7 @@ u32 tddicrc32(const u8 *data, size_t len)
     return crc;
 }
 
+#if defined(CFG_CTS_DRIVER_BUILTIN_FIRMWARE) || defined(CFG_CTS_FIRMWARE_IN_FS)
 static int calc_crc_in_flash(const struct cts_device *cts_dev,
     u32 flash_addr, size_t size, u32 *crc)
 {
@@ -477,6 +478,12 @@ const struct cts_firmware *cts_request_newer_firmware_from_fs(
         cts_warn("Close file '%s' failed %d", filepath, ret);
     }
 
+    if (!is_firmware_valid(firmware)) {
+        cts_err("Firmware is invalid");
+        vfree(firmware->data);
+        goto err_free_firmware;
+    }
+
     return firmware;
 
 err_free_firmware_data:
@@ -763,8 +770,6 @@ int cts_update_firmware(struct cts_device *cts_dev,
         return -EINVAL;
     }
 
-    cts_lock_device(cts_dev);
-
     cts_dev->rtdata.updating = true;
 
     ret = cts_enter_program_mode(cts_dev);
@@ -869,7 +874,7 @@ out:
             }
         }
     }
-    cts_unlock_device(cts_dev);
+
 #ifdef CONFIG_CTS_CHARGER_DETECT
     if (cts_is_charger_exist(cts_dev)) {
         cts_charger_plugin(cts_dev);
@@ -896,3 +901,4 @@ bool cts_is_firmware_updating(const struct cts_device *cts_dev)
     return cts_dev->rtdata.updating;
 }
 
+#endif /* defined(CFG_CTS_DRIVER_BUILTIN_FIRMWARE) || defined(CFG_CTS_FIRMWARE_IN_FS) */

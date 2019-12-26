@@ -4,6 +4,7 @@
 #include "cts_platform.h"
 #include "cts_core.h"
 #include "cts_firmware.h"
+#include "cts_test.h"
 
 #ifdef CONFIG_CTS_LEGACY_TOOL
 
@@ -49,9 +50,63 @@ enum cts_tool_cmd_code {
 
 };
 
+
+#define CTS_IOCTL_RDWR_REG_FLAG_RD          (0x0001)
+// TODO: Flags can specify DDI level 1/2/3, read/write flag
+
+struct cts_rdwr_reg {
+    __u32 addr;
+    __u32 flags;
+    __u8  __user *data;
+    __u32 len;
+    __u32 delay_ms;
+};
+
+#define CTS_IOCTL_RDWR_REG_TYPE_FW          (1)
+#define CTS_IOCTL_RDWR_REG_TYPE_HW          (2)
+#define CTS_IOCTL_RDWR_REG_TYPE_DDI         (3)
+
+#define CTS_RDWR_REG_IOCTL_MAX_REGS         (128)
+
+struct cts_rdwr_reg_ioctl_data {
+    __u8  reg_type;
+    __u32 nregs;
+    struct cts_rdwr_reg __user *regs;
+};
+
+#define CTS_IOCTL_UPGRADE_FW_FLAG_TO_FLASH  (0x00000001)
+#define CTS_IOCTL_UPGRADE_FW_FLAG_BUILTIN   (0x00000002)
+#define CTS_IOCTL_UPGRADE_FW_FLAG_FILE      (0x00000004)
+#define CTS_IOCTL_UPGRADE_FW_FLAG_FW_DATA   (0x00000008)
+
+struct cts_upgrade_fw_ioctl_data {
+    __u32 flags;
+    __u32 builtin_fw_index;
+    const char __user *filepath;
+    const __u8 __user *fw_data;
+    __u32 fw_data_size;
+    __u32 split_size;
+};
+
+#define CTS_TOOL_IOCTL_GET_DRIVER_VERSION   _IOR('C', 0x00, unsigned int *)
+#define CTS_TOOL_IOCTL_GET_DEVICE_TYPE      _IOR('C', 0x01, unsigned int *)
+#define CTS_TOOL_IOCTL_GET_FW_VERSION       _IOR('C', 0x02, unsigned short *)
+#define CTS_TOOL_IOCTL_GET_RESOLUTION       _IOR('C', 0x03, unsigned int *) /* X in LSW, Y in MSW */
+#define CTS_TOOL_IOCTL_GET_ROW_COL          _IOR('C', 0x04, unsigned int *) /* row in LSW, col in MSW */
+
+#define CTS_TOOL_IOCTL_TEST                 _IOWR('C', 0x10, struct cts_test_ioctl_data *)
+#define CTS_TOOL_IOCTL_RDWR_REG             _IOWR('C', 0x20, struct cts_rdwr_reg_ioctl_data *)
+#define CTS_TOOL_IOCTL_UPGRADE_FW           _IOWR('C', 0x21, struct cts_upgrade_fw_ioctl_data *)
+
+#define CTS_DRIVER_VERSION_CODE \
+    ((CFG_CTS_DRIVER_MAJOR_VERSION << 16) | \
+     (CFG_CTS_DRIVER_MINOR_VERSION << 8) | \
+     (CFG_CTS_DRIVER_PATCH_VERSION << 0))
+
 static struct cts_tool_cmd cts_tool_cmd;
+#ifdef CFG_CTS_FIRMWARE_IN_FS
 static char cts_tool_firmware_filepath[PATH_MAX];
-/* If CFG_CTS_MAX_I2C_XFER_SIZE < 58(PC tool length), this is neccessary */
+#endif /* CFG_CTS_FIRMWARE_IN_FS */
 #ifdef CONFIG_CTS_I2C_HOST
 static u32 cts_tool_direct_access_addr = 0;
 #endif
@@ -356,6 +411,7 @@ static ssize_t cts_tool_write(struct file *file,
 
         break;
 
+#ifdef CFG_CTS_FIRMWARE_IN_FS
     case CTS_TOOL_CMD_DOWNLOAD_FIRMWARE_WITH_FILENAME:
         cts_info("Write firmware path: '%.*s'",
             cmd->data_len, cmd->data);
@@ -375,13 +431,11 @@ static ssize_t cts_tool_write(struct file *file,
         }
 
         // TODO:  Use async mode such as thread, otherwise, host can not get update status.
-        cts_unlock_device(cts_dev);
         ret = cts_update_firmware_from_file(cts_dev, cts_tool_firmware_filepath, true);
         if (ret) {
             cts_err("Updata firmware failed %d", ret);
             //break;
         }
-        cts_lock_device(cts_dev);
 
         ret = cts_start_device(cts_dev);
         if (ret) {
@@ -389,6 +443,7 @@ static ssize_t cts_tool_write(struct file *file,
             break;
         }
         break;
+#endif /* CFG_CTS_FIRMWARE_IN_FS */
 
     case CTS_TOOL_CMD_WRITE_HOSTCOMM:
         cts_dbg("Write firmware reg addr: 0x%04x val=0x%02x",
@@ -507,11 +562,349 @@ static ssize_t cts_tool_write(struct file *file,
     return ret ? 0 : cmd->data_len + CTS_TOOL_CMD_HEADER_LENGTH;
 }
 
+
+static int cts_ioctl_rdwr_reg(struct cts_device *cts_dev,
+    u8 reg_type, u32 nregs, struct cts_rdwr_reg *regs)
+{
+    int i, ret = 0;
+    bool fw_esd_protect = false;
+
+    cts_info("ioctl RDWR_REG type: %u total %u regs", reg_type, nregs);
+
+    cts_lock_device(cts_dev);
+
+    if (reg_type == CTS_IOCTL_RDWR_REG_TYPE_DDI) {
+        ret = cts_get_dev_esd_protection(cts_dev, &fw_esd_protect);
+        if (ret) {
+            cts_err("Get fw esd protection failed %d", ret);
+            goto unlock_device;
+        }
+
+        if (fw_esd_protect) {
+            ret = cts_set_dev_esd_protection(cts_dev, false);
+            if (ret) {
+                cts_err("Set fw esd protection failed %d", ret);
+                goto unlock_device;
+            }
+        }
+
+        ret = cts_dev->hwdata->enable_access_ddi_reg(cts_dev, true);
+        if (ret) {
+            cts_err("Enable access ddi reg failed %d", ret);
+            goto recovery_fw_esd_protect;
+        }
+    }
+
+    for (i = 0; i < nregs; i++) {
+        struct cts_rdwr_reg *reg = regs + i;
+        u8 *data = NULL;
+
+        cts_dbg("  reg: %p flags: 0x%x data: %p len: %u delay: %u",
+            reg, reg->flags, reg->data, reg->len, reg->delay_ms);
+
+        if (reg->data == NULL || reg->len == 0) {
+            cts_err("Rdwr reg(addr: 0x%06x) with data: %p or len: %u",
+                reg->addr, reg->data, reg->len);
+            ret = -EINVAL;
+            goto disable_access_ddi_reg;
+        }
+
+        if (reg->flags & CTS_IOCTL_RDWR_REG_FLAG_RD) {
+            u8 __user *user_data = reg->data;
+
+            data = kmalloc(reg->len, GFP_KERNEL);
+            if (data == NULL) {
+                cts_err("Alloc mem for read reg(addr: 0x%06x len: %u) data failed",
+                    reg->addr, reg->len);
+                ret = -ENOMEM;
+                goto disable_access_ddi_reg;
+            }
+            if (reg_type == CTS_IOCTL_RDWR_REG_TYPE_FW) {
+                ret = cts_fw_reg_readsb(cts_dev,
+                    regs->addr, data, reg->len);
+            } else {
+                ret = cts_hw_reg_readsb(cts_dev,
+                    regs->addr, data, reg->len);
+            }
+            if (ret) {
+                kfree(data);
+                cts_err("Read reg from addr: 0x%06x len: %u failed %d",
+                    reg->addr, reg->len, ret);
+                goto disable_access_ddi_reg;
+            }
+            if (copy_to_user(user_data, data, reg->len)) {
+                kfree(data);
+                cts_err("Copy reg(addr: 0x%06x len: %u) data to user failed",
+                    reg->addr, reg->len);
+            }
+            kfree(data);
+        } else {
+            data = memdup_user(reg->data, reg->len);
+            if (IS_ERR(data)) {
+                ret = PTR_ERR(data);
+                cts_err("Memdup reg(addr: 0x%06x len: %u) data from user failed",
+                    reg->addr, reg->len);
+                goto disable_access_ddi_reg;
+            }
+            if (reg_type == CTS_IOCTL_RDWR_REG_TYPE_FW) {
+                ret = cts_fw_reg_writesb(cts_dev,
+                    regs->addr, data, reg->len);
+            } else {
+                ret = cts_hw_reg_writesb(cts_dev,
+                    regs->addr, data, reg->len);
+            }
+            kfree(data);
+            if (ret) {
+                cts_err("Write reg from addr 0x%06x len %u failed %d",
+                    reg->addr, reg->len, ret);
+                goto disable_access_ddi_reg;
+            }
+        }
+
+        if (reg->delay_ms) {
+            mdelay(reg->delay_ms);
+        }
+    }
+
+disable_access_ddi_reg:
+    if (reg_type == CTS_IOCTL_RDWR_REG_TYPE_DDI) {
+        int r = cts_dev->hwdata->enable_access_ddi_reg(cts_dev, false);
+        if (r) {
+            cts_err("Disable access ddi reg failed %d", r);
+        }
+    }
+
+recovery_fw_esd_protect:
+    if (reg_type == CTS_IOCTL_RDWR_REG_TYPE_DDI && fw_esd_protect) {
+        int r = cts_set_dev_esd_protection(cts_dev, true);
+        if (r) {
+            cts_err("Re-Enable fw esd protection failed %d", r);
+        }
+    }
+
+unlock_device:
+    cts_unlock_device(cts_dev);
+
+    kfree(regs);
+
+    return ret;
+}
+
+static int cts_ioctl_upgrade_fw(struct cts_device *cts_dev,
+    struct cts_upgrade_fw_ioctl_data *ioctl_data)
+{
+    bool to_flash;
+    int  ret;
+
+    cts_info("ioctl UPGRADE-FW flags: 0x%x "
+        "builtin fw index: %u filepath: %p data: %p size: %u",
+        ioctl_data->flags,
+        ioctl_data->builtin_fw_index, ioctl_data->filepath,
+        ioctl_data->fw_data, ioctl_data->fw_data_size);
+
+    to_flash = !!(ioctl_data->flags & CTS_IOCTL_UPGRADE_FW_FLAG_TO_FLASH);
+
+    if (!!(ioctl_data->flags & CTS_IOCTL_UPGRADE_FW_FLAG_BUILTIN)) {
+        const struct cts_firmware *firmware;
+
+        firmware = cts_request_driver_builtin_firmware_by_index(
+            ioctl_data->builtin_fw_index);
+        if (firmware) {
+            ret = cts_stop_device(cts_dev);
+            if (ret) {
+                cts_err("Stop device failed %d", ret);
+                return ret;
+            }
+
+            cts_lock_device(cts_dev);
+            ret = cts_update_firmware(cts_dev, firmware, to_flash);
+            cts_unlock_device(cts_dev);
+
+            if (ret) {
+                cts_err("Update firmware failed %d", ret);
+            }
+
+            cts_start_device(cts_dev);
+
+            return ret;
+        } else {
+            cts_err("Upgrade fw by builtin NOT found index %u",
+                ioctl_data->builtin_fw_index);
+            return -EINVAL;
+        }
+    }
+
+    if (!!(ioctl_data->flags & CTS_IOCTL_UPGRADE_FW_FLAG_FILE)) {
+        char *filepath;
+
+        if (ioctl_data->filepath == NULL) {
+            cts_err("Upgrade fw by file with filepath = NULL");
+            return -EINVAL;
+        }
+
+        filepath = strndup_user(ioctl_data->filepath, PATH_MAX);
+        if (IS_ERR(filepath)) {
+            int ret = PTR_ERR(filepath);
+            cts_err("Memdump filepath to kernel failed %d", ret);
+            return ret;
+        }
+
+        ret = cts_stop_device(cts_dev);
+        if (ret) {
+            cts_err("Stop device failed %d", ret);
+            return ret;
+        }
+
+        cts_lock_device(cts_dev);
+        ret = cts_update_firmware_from_file(cts_dev,
+            filepath, to_flash);
+        cts_unlock_device(cts_dev);
+
+        if (ret) {
+            cts_err("Upgrade fw from file '%s' failed %d", filepath);
+        }
+        kfree(filepath);
+
+        cts_start_device(cts_dev);
+
+        return ret;
+    }
+
+    if (!!(ioctl_data->flags & CTS_IOCTL_UPGRADE_FW_FLAG_FW_DATA)) {
+        struct cts_firmware firmware;
+
+        if (ioctl_data->fw_data == NULL ||
+            ioctl_data->fw_data_size < 0x102 ||
+            ioctl_data->fw_data_size > 0x20000) {
+            cts_err("Upgrade fw by data with "
+                    "data: %p or size: %u invalid",
+                ioctl_data->fw_data, ioctl_data->fw_data_size);
+            return -EINVAL;
+        }
+
+        memset(&firmware, 0, sizeof(firmware));
+        firmware.data = memdup_user(ioctl_data->fw_data,
+            ioctl_data->fw_data_size);
+        if (IS_ERR(firmware.data)) {
+            int ret = PTR_ERR(firmware.data);
+            cts_err("Memdump fw data to kernel failed %d", ret);
+            return ret;
+        }
+        firmware.size = ioctl_data->fw_data_size;
+
+        ret = cts_stop_device(cts_dev);
+        if (ret) {
+            cts_err("Stop device failed %d", ret);
+            return ret;
+        }
+
+        cts_lock_device(cts_dev);
+        ret = cts_update_firmware(cts_dev, &firmware, to_flash);
+        cts_unlock_device(cts_dev);
+
+        if (ret) {
+            cts_err("Upgrade firmware data failed %d", ret);
+        }
+        kfree(firmware.data);
+
+        cts_start_device(cts_dev);
+
+        return 0;
+    } else {
+        cts_err("ioctl UPGRADE-FW both filepath and data = NULL");
+        return -EINVAL;
+    }
+}
+
+static long cts_tool_ioctl(struct file *file, unsigned int cmd,
+        unsigned long arg)
+{
+    struct chipone_ts_data *cts_data;
+    struct cts_device *cts_dev;
+
+    cts_info("ioctl, cmd=0x%08x, arg=0x%08lx", cmd, arg);
+
+    cts_data = file->private_data;
+    if (cts_data == NULL) {
+        cts_err("IOCTL with private data = NULL");
+        return -EFAULT;
+    }
+
+    cts_dev = &cts_data->cts_dev;
+
+    switch (cmd) {
+    case CTS_TOOL_IOCTL_GET_DRIVER_VERSION:
+        return put_user(CTS_DRIVER_VERSION_CODE,
+                (unsigned int __user *)arg);
+    case CTS_TOOL_IOCTL_GET_DEVICE_TYPE:
+        return put_user(cts_dev->hwdata->hwid,
+                (unsigned int __user *)arg);
+    case CTS_TOOL_IOCTL_GET_FW_VERSION:
+        return put_user(cts_dev->fwdata.version,
+                (unsigned short __user *)arg);
+    case CTS_TOOL_IOCTL_GET_RESOLUTION:
+        return put_user((cts_dev->fwdata.res_y << 16) + cts_dev->fwdata.res_x,
+                (unsigned int __user *)arg);
+    case CTS_TOOL_IOCTL_GET_ROW_COL:
+        return put_user((cts_dev->fwdata.cols << 16) + cts_dev->fwdata.rows,
+                (unsigned int __user *)arg);
+
+    
+    case CTS_TOOL_IOCTL_RDWR_REG:{
+        struct cts_rdwr_reg_ioctl_data ioctl_data;
+        struct cts_rdwr_reg *regs_pa;
+
+        if (copy_from_user(&ioctl_data,
+                (struct cts_rdwr_reg_ioctl_data __user *)arg,
+                sizeof(ioctl_data))) {
+            cts_err("Copy ioctl rdwr_reg arg to kernel failed");
+            return -EFAULT;
+        }
+
+        if (ioctl_data.nregs > CTS_RDWR_REG_IOCTL_MAX_REGS) {
+            cts_err("ioctl rdwr_reg with too many regs %u",
+                ioctl_data.nregs);
+            return -EINVAL;
+        }
+
+        regs_pa = memdup_user(ioctl_data.regs,
+            ioctl_data.nregs * sizeof(struct cts_rdwr_reg));
+        if (IS_ERR(regs_pa)) {
+            int ret = PTR_ERR(regs_pa);
+            cts_err("Memdump cts_rdwr_reg to kernel failed %d", ret);
+            return ret;
+        }
+
+        return cts_ioctl_rdwr_reg(cts_dev,
+            ioctl_data.reg_type, ioctl_data.nregs, regs_pa);
+    }
+    case CTS_TOOL_IOCTL_UPGRADE_FW:{
+        struct cts_upgrade_fw_ioctl_data ioctl_data;
+
+        if (copy_from_user(&ioctl_data,
+                (struct cts_upgrade_fw_ioctl_data __user *)arg,
+                sizeof(ioctl_data))) {
+            cts_err("Copy ioctl UPGRADE-FW arg to kernel failed");
+            return -EFAULT;
+        }
+
+        return cts_ioctl_upgrade_fw(cts_dev, &ioctl_data);
+    }
+    default:
+        cts_err("Unsupported ioctl cmd=0x%08x, arg=0x%08lx", cmd, arg);
+        break;
+    }
+
+    return -ENOTSUPP;
+}
+
 static struct file_operations cts_tool_fops = {
     .owner = THIS_MODULE,
+    .llseek = no_llseek,
     .open  = cts_tool_open,
     .read  = cts_tool_read,
     .write = cts_tool_write,
+    .unlocked_ioctl = cts_tool_ioctl,
 };
 
 int cts_tool_init(struct chipone_ts_data *cts_data)

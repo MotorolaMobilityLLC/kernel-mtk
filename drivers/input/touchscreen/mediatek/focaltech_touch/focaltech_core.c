@@ -48,7 +48,6 @@
 #include "tpd.h"
 
 /* BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,LCD and TP Device information */
-#ifdef ONTIM_DEV_DGB_TP_LCD
 extern char lcd_info_pr[256];
 char ft_fw=0;
 #include <ontim/ontim_dev_dgb.h>
@@ -61,7 +60,7 @@ DEV_ATTR_DEFINE("vendor",vendor_name)
 DEV_ATTR_DEFINE("lcdvendor",lcdname)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
-#endif
+
 /* END */
 
 /*****************************************************************************
@@ -1031,7 +1030,7 @@ static void fts_platform_data_init(struct fts_ts_data *ts_data)
              pdata->x_max, pdata->y_max);
 }
 
-#ifdef ONTIM_DEV_DGB_TP_LCD
+
 static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
 {
     struct input_dev *input_dev = ts_data->input_dev;
@@ -1062,7 +1061,6 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
     } while (cnt  < 5);
     mutex_unlock(&input_dev->mutex);
 }
-#endif
 static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
 {
     int ret = 0;
@@ -1070,12 +1068,10 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
 
     FTS_FUNC_ENTER();
     /* BEGIN, Ontim,  wzx, 19/04/19, St-result :PASS,LCD and TP Device information */
-#ifdef ONTIM_DEV_DGB_TP_LCD
     if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
     {
 		return -EIO;
     }
-#endif
     /* END */
     FTS_INFO("%s", FTS_DRIVER_VERSION);
     ts_data->pdata = kzalloc(pdata_size, GFP_KERNEL);
@@ -1197,7 +1193,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
 
     tpd_load_status = 1;
     /* BEGIN, Ontim,  wzx, 19/10/9, St-result :PASS,LCD and TP Device information */
-#ifdef ONTIM_DEV_DGB_TP_LCD
     FTS_INFO("fts---%s-\n",lcd_info_pr);
     if (strstr(lcd_info_pr,"truly")){
         snprintf(lcdname, sizeof(lcdname),"%s ","truly-ft8006p" );
@@ -1209,7 +1204,6 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
     ontim_refresh_fw_ver( ts_data);
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-#endif
    //END
     FTS_FUNC_EXIT( );
     return 0;
