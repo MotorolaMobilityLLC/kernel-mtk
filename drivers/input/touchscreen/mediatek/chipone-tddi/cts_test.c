@@ -88,7 +88,8 @@ static int set_fw_work_mode(struct cts_device *cts_dev, u8 mode)
         ret = cts_fw_reg_readb(cts_dev, 0x01, &sys_busy);
         if (ret) {
             cts_err("Read firmware system busy register failed %d", ret);
-            return ret;
+            //return ret;
+			continue;
         }
         if (sys_busy)
             continue;
@@ -96,10 +97,11 @@ static int set_fw_work_mode(struct cts_device *cts_dev, u8 mode)
         ret = cts_fw_reg_readb(cts_dev, 0x3F, &curr_mode);
         if (ret) {
             cts_err("Read firmware current work mode failed %d", ret);
-            return ret;
+            //return ret;
+			continue;
         }
 
-        if (curr_mode == mode || curr_mode == 0xFF) {
+        if (curr_mode == mode/* || curr_mode == 0xFF*/) {
             break;
         }
     } while (retries++ < 1000);

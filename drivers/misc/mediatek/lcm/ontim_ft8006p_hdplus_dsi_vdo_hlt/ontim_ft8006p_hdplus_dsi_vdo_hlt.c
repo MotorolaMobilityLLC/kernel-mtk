@@ -241,11 +241,11 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_backporch = 108; //old is 8,now is 100
 	params->dsi.vertical_frontporch = 132; //old is 24,now is 124
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 20; //old is 20,now is 8
-	params->dsi.horizontal_backporch = 108;//old is 60,now is 12
-	params->dsi.horizontal_frontporch = 108;//old is 60,now is 16
+	params->dsi.horizontal_sync_active = 24; //old is 20,now is 8
+	params->dsi.horizontal_backporch = 130;//old is 60,now is 12
+	params->dsi.horizontal_frontporch = 130;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 336;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 348;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 	params->dsi.ssc_disable = 0;
 	params->dsi.ssc_range = 3;
 #if 0
@@ -300,21 +300,20 @@ static void lcm_resume_power(void)
 {
 }
 
-//extern volatile int gesture_dubbleclick_en;
+extern volatile int gesture_dubbleclick_en;
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
 	unsigned char data = 0x12;  //up to +/-5.8V
 	int ret = 0;
 	LCM_LOGI("%s: ft8006P start\n",__func__);
-	//if (!gesture_dubbleclick_en) {
-	if(1){
+	if (!gesture_dubbleclick_en) {
 		tpd_gpio_output(0, 0);
 		SET_RESET_PIN(0);
 
 		set_gpio_lcd_enp(1);
 		set_gpio_lcd_enn(1);
-
+		MDELAY(15);
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
@@ -347,8 +346,7 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	LCM_LOGI("%s,ft8006P start\n", __func__);
 	MDELAY(10);
-	//if (!gesture_dubbleclick_en) {
-	if(1){
+	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
 		set_gpio_lcd_enp(0);
 	}
