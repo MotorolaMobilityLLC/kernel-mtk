@@ -246,7 +246,9 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	      strcmp(curr_sensor_name,"ov02a10_mipi_raw")==0) && IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx){
 	      return IMGSENSOR_RETURN_ERROR;
 	}
-
+	if ((sensor_idx > IMGSENSOR_SENSOR_IDX_MAIN2) && strcmp(curr_sensor_name,"ov2180_mipi_raw")){
+	      return IMGSENSOR_RETURN_ERROR;
+	}
 	mipiswitch(phw, sensor_idx, pwr_status);
 #endif
 

@@ -37,6 +37,8 @@
 #include "kd_camera_typedef.h"
 #include "ov2180mipiraw_Sensor.h"
 
+#define OV2180_EEPROM_SIZE 2453
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/ov2180_eeprom_data.bin"
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "OV2180_camera_sensor"
 #define LOG_1 LOG_INF("OV2180,MIPI 1LANE\n")
@@ -618,6 +620,253 @@ static void slim_video_setting(void)
 	preview_setting();
 }
 
+#define OTP_2180 1
+#define INCLUDE_NO_OTP_2180 1
+
+#if OTP_2180
+#define OV2180_EEPROM_SLAVE_ADD 0xA0
+#define OV2180_SENSOR_IIC_SLAVE_ADD 0x7a
+#define OV2180_OFILM_MODULE_ID  0x4f46
+
+static uint8_t ov2180_eeprom[OV2180_EEPROM_SIZE] = {0};
+
+static calibration_status_t mnf_status;
+static calibration_status_t af_status;
+static calibration_status_t awb_status;
+static calibration_status_t lsc_status;
+static calibration_status_t pdaf_status;
+static calibration_status_t dual_status;
+
+static void ov2180_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+{
+	int i = 0;
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = slave;
+	spin_unlock(&imgsensor_drv_lock);
+
+	//read eeprom data
+	for (i = 0; i < size; i ++) {
+		ov2180_eeprom[i] = read_cmos_sensor(start_add);
+		LOG_INF("ov2180 eeprom[%d] = 0x%x; ", i, ov2180_eeprom[i]);
+		start_add ++;
+	}
+	LOG_ERR("eeprom: 0x%x, 0x%x, 0x%x!", ov2180_eeprom[0], ov2180_eeprom[1], ov2180_eeprom[2]);
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = OV2180_SENSOR_IIC_SLAVE_ADD;
+	spin_unlock(&imgsensor_drv_lock);
+}
+
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+
+static uint8_t crc_reverse_byte(uint32_t data)
+{
+	return ((data * 0x0802LU & 0x22110LU) |
+		(data * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+
+static void ov2180_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+	int32_t crc_match = 0;
+	uint16_t crc = 0x0000;
+	uint16_t crc_reverse = 0x0000;
+	uint32_t i, j;
+
+	uint32_t tmp;
+	uint32_t tmp_reverse;
+
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+		tmp_reverse = crc_reverse_byte(data[i]);
+		tmp = data[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+
+			if (((crc_reverse & 0x8000) >> 8) ^ (tmp_reverse & 0x80))
+				crc_reverse = (crc_reverse << 1) ^ 0x8005;
+			else
+				crc_reverse = crc_reverse << 1;
+
+			tmp_reverse <<= 1;
+		}
+	}
+
+	crc_reverse = (crc_reverse_byte(crc_reverse) << 8) |
+		crc_reverse_byte(crc_reverse >> 8);
+
+	if (crc == ref_crc || crc_reverse == ref_crc)
+		crc_match = 1;
+
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x CALC Reverse CRC 0x%x matches? %d\n",
+		ref_crc, crc, crc_reverse, crc_match);
+
+	return crc_match;
+}
+
+static calibration_status_t ov2180_check_manufacturing_data(void *data)
+{
+	struct ov2180_eeprom_t *eeprom = (struct ov2180_eeprom_t*)data;
+
+	if (!eeprom_util_check_crc16(data, OV2180_EEPROM_CRC_MANUFACTURING_SIZE,
+		convert_crc(eeprom->manufacture_crc16))) {
+		LOG_INF("Manufacturing CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+
+static void ov2180_eeprom_format_calibration_data(void *data)
+{
+	if (NULL == data) {
+		LOG_INF("data is NULL");
+		return;
+	}
+
+	mnf_status = ov2180_check_manufacturing_data(data);
+	af_status = 0;
+	awb_status = 0;
+	lsc_status = 0;
+	pdaf_status = 0;
+	dual_status = 0;
+
+	LOG_ERR("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+}
+
+static void ov2180_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+	struct ov2180_eeprom_t *eeprom = (struct ov2180_eeprom_t*)data;
+
+	LOG_INF("check crc start");
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		eeprom->eeprom_table_version[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+		eeprom->mpn[0], eeprom->mpn[1], eeprom->mpn[2], eeprom->mpn[3],
+		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+	LOG_INF("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+
+	if (eeprom->manufacturer_id[0] == 'S' && eeprom->manufacturer_id[1] == 'U') {
+	ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	} else if (eeprom->manufacturer_id[0] == 'O' && eeprom->manufacturer_id[1] == 'F') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "OFilm");
+	} else if (eeprom->manufacturer_id[0] == 'Q' && eeprom->manufacturer_id[1] == 'T') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown manufacturer_id");
+	}
+
+    if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+
+	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+		eeprom->factory_id[0], eeprom->factory_id[1]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->factory_id failed");
+		mnf->factory_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
+		eeprom->manufacture_line[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_line failed");
+		mnf->manufacture_line[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		eeprom->serial_number[0], eeprom->serial_number[1],
+		eeprom->serial_number[2], eeprom->serial_number[3],
+		eeprom->serial_number[4], eeprom->serial_number[5],
+		eeprom->serial_number[6], eeprom->serial_number[7],
+		eeprom->serial_number[8], eeprom->serial_number[9],
+		eeprom->serial_number[10], eeprom->serial_number[11],
+		eeprom->serial_number[12], eeprom->serial_number[13],
+		eeprom->serial_number[14], eeprom->serial_number[15]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+	LOG_INF("check crc success");
+}
+#endif
 
 /*************************************************************************
 * FUNCTION
@@ -647,6 +896,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
             *sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+#if OTP_2180
+				ov2180_read_data_from_eeprom(OV2180_EEPROM_SLAVE_ADD, 0x0000, OV2180_EEPROM_SIZE);
+				ov2180_eeprom_dump_bin(EEPROM_DATA_PATH, OV2180_EEPROM_SIZE, (void *)ov2180_eeprom);
+				ov2180_eeprom_format_calibration_data((void *)ov2180_eeprom);
+#endif
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 				return ERROR_NONE;
 			}
@@ -940,7 +1194,9 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
 	sensor_info->SensorHightSampling = 0;	// 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
-
+#if OTP_2180
+	ov2180_eeprom_get_mnf_data((void *)ov2180_eeprom, &sensor_info->mnf_calibration);
+#endif
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
