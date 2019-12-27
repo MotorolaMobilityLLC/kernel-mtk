@@ -647,10 +647,9 @@ static void ov2180_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, 
 	//read eeprom data
 	for (i = 0; i < size; i ++) {
 		ov2180_eeprom[i] = read_cmos_sensor(start_add);
-		LOG_INF("ov2180 eeprom[%d] = 0x%x; ", i, ov2180_eeprom[i]);
+	//	LOG_INF("ov2180 eeprom[%d] = 0x%x; ", i, ov2180_eeprom[i]);
 		start_add ++;
 	}
-	LOG_ERR("eeprom: 0x%x, 0x%x, 0x%x!", ov2180_eeprom[0], ov2180_eeprom[1], ov2180_eeprom[2]);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.i2c_write_id = OV2180_SENSOR_IIC_SLAVE_ADD;
 	spin_unlock(&imgsensor_drv_lock);
