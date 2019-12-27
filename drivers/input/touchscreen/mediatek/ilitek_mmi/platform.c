@@ -1667,36 +1667,40 @@ static struct spi_driver tp_spi_driver = {
 #if (TP_PLATFORM == PT_MTK)
 static int tpd_local_init(void)
 {
-	ipio_info("TPD init device driver\n");
-	if (mode_chose == I2C_MODE) {
-		if (i2c_add_driver(&tp_i2c_driver) != 0) {
-			ipio_err("Unable to add i2c driver\n");
+	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+		ipio_info("TPD init device driver\n");
+		if (mode_chose == I2C_MODE) {
+			if (i2c_add_driver(&tp_i2c_driver) != 0) {
+				ipio_err("Unable to add i2c driver\n");
+				return -1;
+			}
+		} else {
+			if (spi_register_driver(&tp_spi_driver) < 0) {
+				ipio_err("Failed to add ilitek driver\n");
+				spi_unregister_driver(&tp_spi_driver);
+				return -ENODEV;
+			}
+		}
+		if (tpd_load_status == 0) {
+			ipio_err("Add error touch panel driver\n");
+			if (mode_chose == I2C_MODE)
+				i2c_del_driver(&tp_i2c_driver);
+			else
+				spi_unregister_driver(&tp_spi_driver);
 			return -1;
 		}
-	} else {
-		if (spi_register_driver(&tp_spi_driver) < 0) {
-			ipio_err("Failed to add ilitek driver\n");
-			spi_unregister_driver(&tp_spi_driver);
-			return -ENODEV;
+
+		if (tpd_dts_data.use_tpd_button) {
+			tpd_button_setting(tpd_dts_data.tpd_key_num, tpd_dts_data.tpd_key_local,
+					   tpd_dts_data.tpd_key_dim_local);
 		}
-	}
-	if (tpd_load_status == 0) {
-		ipio_err("Add error touch panel driver\n");
-		if (mode_chose == I2C_MODE)
-			i2c_del_driver(&tp_i2c_driver);
-		else
-			spi_unregister_driver(&tp_spi_driver);
+
+		tpd_type_cap = 1;
+
+		return 0;
+	} else
 		return -1;
-	}
-
-	if (tpd_dts_data.use_tpd_button) {
-		tpd_button_setting(tpd_dts_data.tpd_key_num, tpd_dts_data.tpd_key_local,
-				   tpd_dts_data.tpd_key_dim_local);
-	}
-
-	tpd_type_cap = 1;
-
-	return 0;
 }
 
 static struct tpd_driver_t tpd_device_driver = {
