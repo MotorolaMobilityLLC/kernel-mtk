@@ -678,6 +678,11 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
+
+	usb_cable: usb_cable {
+		compatible = "mediatek,usb_cable_eint";
+	};
+
 	alsps_mtk: alsps_mtk{
 		compatible = "mediatek,als-eint";
 	};
