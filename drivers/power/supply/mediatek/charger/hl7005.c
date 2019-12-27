@@ -605,9 +605,10 @@ static int hl7005_dump_register(struct charger_device *chg_dev)
 
 	for (i = 0; i < HL7005_REG_NUM; i++) {
 		hl7005_read_byte(i, &hl7005_reg[i], 1);
-		printk(KERN_ERR "[0x%x]=0x%x\n ", i, hl7005_reg[i]);
 	}
-	pr_err("\n");
+	pr_err("hl7005 [0x0]=0x%x [0x1]=0x%x [0x2]=0x%x  [0x3]=0x%x [0x4]=0x%x [0x5]=0x%x [0x6]=0x%x \n",
+		                      hl7005_reg[0],hl7005_reg[1],hl7005_reg[2],
+		                      hl7005_reg[3],hl7005_reg[4],hl7005_reg[5],hl7005_reg[6]);
 
 	return 0;
 }

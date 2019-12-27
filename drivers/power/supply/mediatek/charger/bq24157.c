@@ -606,9 +606,10 @@ static int bq24157_dump_register(struct charger_device *chg_dev)
 
 	for (i = 0; i < BQ24157_REG_NUM; i++) {
 		bq24157_read_byte(i, &bq24157_reg[i], 1);
-		pr_debug("[0x%x]=0x%x ", i, bq24157_reg[i]);
 	}
-	pr_debug("\n");
+	pr_err("bq24157 [0x0]=0x%x [0x1]=0x%x [0x2]=0x%x  [0x3]=0x%x [0x4]=0x%x [0x5]=0x%x [0x6]=0x%x \n",
+		                      bq24157_reg[0],bq24157_reg[1],bq24157_reg[2],
+		                      bq24157_reg[3],bq24157_reg[4],bq24157_reg[5],bq24157_reg[6]);
 
 	return 0;
 }

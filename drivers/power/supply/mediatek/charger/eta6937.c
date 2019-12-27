@@ -624,9 +624,10 @@ static int eta6937_dump_register(struct charger_device *chg_dev)
 
 	for (i = 0; i < ETA6937_REG_NUM; i++) {
 		eta6937_read_byte(i, &eta6937_reg[i], 1);
-		printk(KERN_ERR "[0x%x]=0x%x ", i, eta6937_reg[i]);
 	}
-	pr_err("\n");
+	pr_err("eta6937 [0x0]=0x%x [0x1]=0x%x [0x2]=0x%x  [0x3]=0x%x [0x4]=0x%x [0x5]=0x%x [0x6]=0x%x \n",
+		                      eta6937_reg[0],eta6937_reg[1],eta6937_reg[2],
+		                      eta6937_reg[3],eta6937_reg[4],eta6937_reg[5],eta6937_reg[6]);
 
 	return 0;
 }

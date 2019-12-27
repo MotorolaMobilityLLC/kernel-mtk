@@ -605,9 +605,10 @@ static int sy6923_dump_register(struct charger_device *chg_dev)
 
 	for (i = 0; i < SY6923_REG_NUM; i++) {
 		sy6923_read_byte(i, &sy6923_reg[i], 1);
-		pr_err("[0x%x]=0x%x ", i, sy6923_reg[i]);
 	}
-	pr_err("\n");
+	pr_err("sy6923 [0x0]=0x%x [0x1]=0x%x [0x2]=0x%x  [0x3]=0x%x [0x4]=0x%x [0x5]=0x%x [0x6]=0x%x \n",
+		                      sy6923_reg[0],sy6923_reg[1],sy6923_reg[2],
+		                      sy6923_reg[3],sy6923_reg[4],sy6923_reg[5],sy6923_reg[6]);
 
 	return 0;
 }
