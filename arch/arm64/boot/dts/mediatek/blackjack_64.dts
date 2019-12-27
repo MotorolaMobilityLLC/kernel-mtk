@@ -509,6 +509,24 @@
 };
 /* accdet end */
 
+/*usb cable start*/
+&usb_cable {
+	usbcable-gpio = <&pio 19 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usbcable_pins_default>;
+	status = "okay";
+};
+&pio {
+	usbcable_pins_default:usbcableeint@0{
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/*usb cable end*/
+
 &led_simple {
 	pinctrl-names = "default", "red_led_output0", "red_led_output1";
 	pinctrl-0 = <&red_led_default>;
