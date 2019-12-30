@@ -1941,7 +1941,7 @@ static int __rt9471_dump_registers(struct rt9471_chip *chip)
 						   &regval);
 			if (ret < 0)
 				continue;
-			dev_info(chip->dev, "%s reg0x%02X = 0x%02X\n", __func__,
+			dev_err(chip->dev, "%s reg0x%02X = 0x%02X\n", __func__,
 					    rt9471_reg_addr[i], regval);
 		}
 	}
@@ -1956,13 +1956,10 @@ static int __rt9471_dump_registers(struct rt9471_chip *chip)
 	dev_info(chip->dev, "%s CHG_EN = %d, IC_STAT = %s\n",
 		 __func__, chg_en, rt9471_ic_stat_name[ic_stat]);
 
-	dev_info(chip->dev,
-		 "%s STAT0 = 0x%02X, STAT1 = 0x%02X\n", __func__,
-		 stats[RT9471_STATIDX_STAT0], stats[RT9471_STATIDX_STAT1]);
+	dev_err(chip->dev,
+		 "%s STAT0 = 0x%02X, STAT1 = 0x%02X, STAT2 = 0x%02X, STAT3 = 0x%02X\n", __func__,
+		 stats[RT9471_STATIDX_STAT0], stats[RT9471_STATIDX_STAT1],stats[RT9471_STATIDX_STAT2], stats[RT9471_STATIDX_STAT3]);
 
-	dev_info(chip->dev,
-		 "%s STAT2 = 0x%02X, STAT3 = 0x%02X\n", __func__,
-		 stats[RT9471_STATIDX_STAT2], stats[RT9471_STATIDX_STAT3]);
 
 	return 0;
 }
