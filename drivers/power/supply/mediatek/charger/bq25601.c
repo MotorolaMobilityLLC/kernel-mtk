@@ -833,14 +833,16 @@ static int bq25601_detect_device(struct bq25601 *bq)
 static void bq25601_dump_regs(struct bq25601 *bq)
 {
 	int addr;
-	u8 val;
+	u8 val[0x0c];
 	int ret;
 
 	for (addr = 0x0; addr <= 0x0B; addr++) {
-		ret = bq25601_read_byte(bq, addr, &val);
-		if (!ret)
-			pr_info("Reg[%.2x] = 0x%.2x\n", addr, val);
+		ret = bq25601_read_byte(bq, addr, &val[addr]);
 	}
+	pr_err("bq25601 [0x0]=0x%.2x [0x1]=0x%.2x [0x2]=0x%.2x  [0x3]=0x%.2x [0x4]=0x%.2x [0x5]=0x%.2x [0x6]=0x%.2x \n",
+		                      val[0],val[1],val[2],val[3],val[4],val[5],val[6]);
+	pr_err("bq25601 [0x7]=0x%.2x [0x8]=0.2x%x [0x9]=0x%.2x  [0xa]=0x%.2x [0xb]=0x%.2x  \n",
+		                      val[7],val[8],val[9],val[0xa],val[0xb]);
 }
 
 static ssize_t bq25601_show_registers(struct device *dev,
