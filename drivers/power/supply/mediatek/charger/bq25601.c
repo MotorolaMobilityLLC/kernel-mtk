@@ -1042,11 +1042,26 @@ static int bq25601_get_vchg(struct charger_device *chg_dev, u32 *volt)
 static int bq25601_set_ivl(struct charger_device *chg_dev, u32 volt)
 {
 	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
-
 	pr_info("vindpm volt = %d\n", volt);
 
 	return bq25601_set_input_volt_limit(bq, volt / 1000);
 }
+
+static int  bq25601_enable_powerpath(struct charger_device *chg_dev, bool en)
+{
+	int ret;
+	struct bq25601 *bq = dev_get_drvdata(&chg_dev->dev);
+
+	pr_info("%s; %d;\n", __func__,en);
+
+	if(en)
+		ret=bq25601_set_input_volt_limit(bq, 4500);
+	else	
+		ret=bq25601_set_input_volt_limit(bq, 5400);
+
+	return ret;
+}
+
 
 static int bq25601_set_icl(struct charger_device *chg_dev, u32 curr)
 {
@@ -1163,7 +1178,7 @@ static struct charger_ops bq25601_chg_ops = {
 	.is_safety_timer_enabled = bq25601_is_safety_timer_enabled,
 
 	/* Power path */
-	.enable_powerpath = NULL,
+	.enable_powerpath = bq25601_enable_powerpath,
 	.is_powerpath_enabled = NULL,
 
 	/* OTG */
