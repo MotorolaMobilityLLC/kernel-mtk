@@ -2277,8 +2277,12 @@ static ssize_t show_charge_onoff_ctrl(struct device *dev,struct device_attribute
 static ssize_t store_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct charger_manager *pinfo = dev->driver_data;
+	struct charger_device *chg_dev;
+	chg_dev = pinfo->chg1_dev;
+	
        chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
 	sscanf(buf, "%d", &ontim_charge_onoff_control);
+	charger_dev_enable_powerpath(chg_dev, ontim_charge_onoff_control);
 	_wake_up_charger(pinfo);
 	return size;
 }
