@@ -2842,7 +2842,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		/* common */
 /*		battery_cv = <4440000>;*/
 		max_charger_voltage = <6100000>;
-		min_charger_voltage = <4600000>;
+		min_charger_voltage = <4500000>;
 
 		/* charging current */
 		usb_charger_current_suspend = <0>;
