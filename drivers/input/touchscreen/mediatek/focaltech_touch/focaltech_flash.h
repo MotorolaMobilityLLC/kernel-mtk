@@ -156,6 +156,7 @@ struct upgrade_func {
 
 struct upgrade_module {
     int id;
+    int version_id;
     char vendor_name[MAX_MODULE_VENDOR_NAME_LEN];
     u8 *fw_file;
     u32 fw_len;
@@ -166,6 +167,7 @@ struct fts_upgrade {
     struct upgrade_module *module_info;
     struct upgrade_func *func;
     int module_id;
+    int ic_version_id;
     bool fw_from_request;
     u8 *fw;
     u32 fw_length;
