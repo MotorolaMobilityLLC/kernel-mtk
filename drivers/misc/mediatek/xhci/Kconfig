@@ -21,7 +21,7 @@ config MTK_TEST_XHCI
 
 config USB_MTK_OTG_SWITCH
 	tristate "MediaTek OTG IDDIG Function Switch"
-	depends on USB_MTK_IDDIG
+	depends on USB_XHCI_MTK_IDDIG
 	---help---
 	  Enable Mediatek OTG function Switch mechanism.
 	  The default OTG DUALROLE function is disabled.
@@ -40,8 +40,18 @@ config USB_XHCI_MTK_SUSPEND_SUPPORT
 
 config USB_VBUS_GPIO
 	tristate "MediaTek OTG VBUS GPIO control support"
-	depends on USB_MTK_IDDIG
+	depends on USB_XHCI_MTK_IDDIG
 	---help---
 	  Enable Mediatek USB OTG VBUS GPIO control mechanism.
 	  Say Y here if your want to use mechanism.
 	  If unsure, say N.
+
+config USB_XHCI_MTK_IDDIG
+	bool "MediaTek OTG IDDIG support"
+	default n
+	depends on USB_MTK_DUALMODE
+	---help---
+	  Enable Mediatek USB Host OTG detection mechanism
+	  IDDIG - OTG cable attachment detection.
+	  Say Y here if your system support OTG IDDIG detection.
+	  If unsure, say N.
