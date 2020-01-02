@@ -420,7 +420,8 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 					 INFRA_TOPAXI_PROTECTEN_1) &
 				 (0xFE3FFFFF));
 
-		while (ccif_read32(md_info->c2k_cgbr1_addr, 0) != 0xFE8)
+		while ((ccif_read32(md_info->c2k_cgbr1_addr, 0) & 0xFFF)
+			!= 0xFE8)
 			;
 		CCCI_BOOTUP_LOG(md->index, TAG, "[C2K] C2K_CGBR1 = 0x%x\n",
 				ccif_read32(md_info->c2k_cgbr1_addr, 0));
