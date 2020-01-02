@@ -5127,10 +5127,16 @@ static void ufshcd_err_handler(struct work_struct *work)
 	int err = 0;
 	int tag;
 	bool needs_reset = false;
+	bool rpm_put = false;
 
 	hba = container_of(work, struct ufs_hba, eh_work);
 
-	pm_runtime_get_sync(hba->dev);
+	/* Error is happened in suspend/resume, bypass rpm get else deadlock */
+	if (!hba->pm_op_in_progress) {
+		pm_runtime_get_sync(hba->dev);
+		rpm_put = true;
+	}
+
 	ufshcd_hold(hba, false);
 
 	spin_lock_irqsave(hba->host->host_lock, flags);
@@ -5244,7 +5250,9 @@ out:
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 	ufshcd_scsi_unblock_requests(hba);
 	ufshcd_release(hba);
-	pm_runtime_put_sync(hba->dev);
+
+	if (rpm_put == true)
+		pm_runtime_put_sync(hba->dev);
 }
 
 static void ufshcd_update_uic_reg_hist(struct ufs_uic_err_reg_hist *reg_hist,
