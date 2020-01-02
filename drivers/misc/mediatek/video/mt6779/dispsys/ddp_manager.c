@@ -930,7 +930,11 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	if (!dp_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
@@ -942,7 +946,11 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	if (!dp_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
@@ -1352,7 +1360,11 @@ int dpmgr_path_mutex_sof(disp_path_handle dp_handle, void *trigger_loop_handle,
 	int *list;
 	int m_num;
 
-	ASSERT(dp_handle != NULL);
+	if (!dp_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	phandle = (struct ddp_path_handle *)dp_handle;
 	DISP_LOG_I("%s scenario %s\n", __func__,
 		   ddp_get_scenario_name(phandle->scenario));
@@ -1374,7 +1386,11 @@ int dpmgr_path_trigger_no_mutex(disp_path_handle dp_handle,
 	int i;
 	int m_n;
 
-	ASSERT(dp_handle != NULL);
+	if (!dp_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	phandle = (struct ddp_path_handle *)dp_handle;
 	DISP_LOG_I("%s on scenario %s\n", __func__,
 		   ddp_get_scenario_name(phandle->scenario));
@@ -1494,7 +1510,11 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle,
 	struct DDP_MANAGER_CONTEXT *c = _get_context();
 	struct DDP_MODULE_DRIVER *m_drv;
 
-	ASSERT(dp_handle != NULL);
+	if (!dp_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	phandle = (struct ddp_path_handle *)dp_handle;
 	list = ddp_get_scenario_list(phandle->scenario);
 	m_num = ddp_get_module_num(phandle->scenario);
@@ -1882,7 +1902,11 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	struct ddp_path_handle *handle;
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
 
-	ASSERT(dp_handle != NULL);
+	if (!dp_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	handle = kmalloc(sizeof(struct ddp_path_handle), GFP_ATOMIC);
 	if (IS_ERR_OR_NULL(handle)) {
 		DISP_PR_INFO("%s:%d alloc path handle fail!\n",
