@@ -18,7 +18,6 @@
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <linux/irq.h>
-#include <linux/switch.h>
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/of.h>
