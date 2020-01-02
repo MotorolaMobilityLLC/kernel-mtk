@@ -2588,9 +2588,11 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	xhci0:usb3_xhci@11270000 {
 		compatible = "mediatek,mt67xx-xhci";
 		reg = <0 0x11270000 0 0x1000>, <0 0x11280700 0 0x100>;
-		reg-names = "ssusb_base", "ssusb_sif";
+		reg-names = "mac", "ippc";
 		interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-names = "xhci";
+		clocks = <&clk26m>;
+		clock-names = "sys_ck";
 	};
 
 	mfgsys: g3d_config@13000000 {
