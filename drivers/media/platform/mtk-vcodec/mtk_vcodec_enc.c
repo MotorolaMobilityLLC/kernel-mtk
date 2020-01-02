@@ -1891,8 +1891,7 @@ static void mtk_venc_worker(struct work_struct *work)
 
 			dst_vb2_v4l2->flags |= V4L2_BUF_FLAG_LAST;
 			dst_buf->planes[0].bytesused = 0;
-			v4l2_m2m_buf_done(dst_vb2_v4l2,
-				VB2_BUF_STATE_DONE);
+
 
 			if (ret) {
 				mtk_v4l2_err("last venc_if_encode failed=%d",
@@ -1911,6 +1910,8 @@ static void mtk_venc_worker(struct work_struct *work)
 				}
 				return_free_buffers(ctx);
 			}
+			v4l2_m2m_buf_done(dst_vb2_v4l2,
+				VB2_BUF_STATE_DONE);
 		}
 		mtk_vdec_queue_stop_enc_event(ctx);
 
