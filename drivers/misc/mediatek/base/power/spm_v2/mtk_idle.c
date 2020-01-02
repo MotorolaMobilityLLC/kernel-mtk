@@ -1768,7 +1768,8 @@ int dpidle_enter(int cpu)
 
 	RCU_NONIDLE(dpidle_pre_handler());
 #ifndef CONFIG_MTK_FPGA
-	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log);
+	RCU_NONIDLE(spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu,
+			dpidle_dump_log));
 #endif
 	RCU_NONIDLE(dpidle_post_handler());
 
@@ -1834,8 +1835,8 @@ int soidle3_enter(int cpu)
 			 MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu,
-			sodi3_flags|SODI_FLAG_3P0);
+	RCU_NONIDLE(spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu,
+			sodi3_flags|SODI_FLAG_3P0));
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable,
@@ -1889,7 +1890,7 @@ int soidle_enter(int cpu)
 			 MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
+	RCU_NONIDLE(spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags));
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable,
