@@ -349,7 +349,7 @@ int do_esd_check_eint(void)
 
 	DISPINFO("[ESD]ESD check eint\n");
 	mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
-		primary_display_is_video_mode(), GPIO_EINT_MODE);
+		(primary_display_is_video_mode() > 0), GPIO_EINT_MODE);
 	primary_display_switch_esd_mode(GPIO_EINT_MODE);
 
 	if (wait_event_interruptible_timeout(esd_ext_te_wq,
@@ -388,7 +388,7 @@ int do_esd_check_read(void)
 
 	DISPCHECK("[ESD]ESD check read\n");
 	mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
-		primary_display_is_video_mode(), GPIO_DSI_MODE);
+		(primary_display_is_video_mode() > 0), GPIO_DSI_MODE);
 
 	/* only cmd mode read & with disable mmsys clk will kick */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) &&

@@ -432,6 +432,10 @@ static void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &qhandle);
+	if (qhandle == NULL) {
+		ASSERT(0);
+		return;
+	}
 	cmdqRecReset(qhandle);
 
 	/* 2.wait EOF */
