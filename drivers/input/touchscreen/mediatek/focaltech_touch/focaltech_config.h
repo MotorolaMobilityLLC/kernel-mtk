@@ -247,7 +247,7 @@
  */
 #define FTS_UPGRADE_FW3_FILE                     "include/firmware/blackjack_ft8006p_new_ic_0xa1_all.i"
 
-#define FTS_UPGRADE_FW4_FILE                     "include/firmware/fiji_ft8006p_v10_all.i"
+#define FTS_UPGRADE_FW4_FILE                     "include/firmware/fiji_ft8006p_vb1_all.i"
 
 /*********************************************************/
 
