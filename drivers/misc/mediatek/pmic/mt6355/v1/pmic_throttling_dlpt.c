@@ -88,6 +88,7 @@
 #include "mtk_idle.h"
 #endif
 #endif
+#include "include/mt635x-auxadc-internal.h"
 
 /****************************************************************************
  * PMIC related define
@@ -682,6 +683,8 @@ int do_ptim_internal(
 
 	if (count_adc_imp <= count_time_out_adc_imp)
 		*bat = (vbat_reg * 3 * 18000) >> 15;
+	else if (isSuspend)
+		*bat = auxadc_priv_read_channel(AUXADC_BATADC) * 10;
 	else
 		*bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC) * 10;
 
@@ -690,6 +693,10 @@ int do_ptim_internal(
 #else
 	*cur = 0;
 #endif
+	if (ret) {
+		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+	}
 	pr_info("%s : bat %d cur %d\n", __func__, *bat, *cur);
 
 	return ret;
