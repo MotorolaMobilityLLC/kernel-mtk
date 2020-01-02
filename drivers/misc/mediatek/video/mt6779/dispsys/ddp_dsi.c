@@ -2774,7 +2774,7 @@ UINT32 DSI_dcs_read_lcm_reg_v4(enum DISP_MODULE_ENUM module,
 	/* Just read 10 bytes valid each time */
 	UINT32 VALID_DATA_SIZE = 10;
 	int dsi_i, i, ret = 0;
-	UINT8 buffer[30];
+	UINT8 buffer[30] = {0};
 	struct DSI_RX_DATA_REG read_data[4];
 	UINT32 recv_data_cnt = 0;
 	UINT32 read_data_cnt = 0;
