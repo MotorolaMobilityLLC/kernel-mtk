@@ -1,60 +1,9 @@
-&charger
-{
-
-	battery_cv = <4400000>;
-
-	jeita_temp_above_t4_cv = <4200000>;
-	jeita_temp_t3_to_t4_cv = <4200000>;
-	jeita_temp_t2_to_t3_cv = <4400000>;
-	jeita_temp_t1_to_t2_cv = <4400000>;
-	jeita_temp_t0_to_t1_cv = <4400000>;
-	jeita_temp_below_t0_cv = <4200000>;
-
-	temp_t4_thres = <55>;
-	temp_t4_thres_minus_x_degree = <52>;
-	temp_t3_thres = <45>;
-	temp_t3_thres_minus_x_degree = <39>;
-	temp_t2_thres = <15>;
-	temp_t2_thres_plus_x_degree = <18>;
-	temp_t1_thres = <15>;
-	temp_t1_thres_plus_x_degree = <18>;
-	temp_t0_thres = <0>;
-	temp_t0_thres_plus_x_degree = <2>;
-	temp_neg_10_thres = <0>;
-
-	/* battery temperature protection */
-	enable_min_charge_temp;
-	min_charge_temp= <0>;
-	min_charge_temp_plus_x_degree = <2>;
-	max_charge_temp = <55>;
-	max_charge_temp_minus_x_degree = <52>;
-
-
-       ac_charger_current = <2050000>;
-
-};
-
 &bat_gm30
 {
-	TEMPERATURE_T0 = <(50)>;	/*	Battery temperature T0*/
-	TEMPERATURE_T1 = <(25)>;	/*	Battery temperature T1*/
-	TEMPERATURE_T2 = <(0)>;	/*	Battery temperature T2*/
-	TEMPERATURE_T3 = <(-10)>;	/*	Battery temperature T3*/
-	g_FG_PSEUDO100_T0 = <(97)>;	/*	Pseudo 100% percentage at T0.*/
-	g_FG_PSEUDO100_T1 = <(97)>;	/*	Pseudo 100% percentage at T1.*/
-	g_FG_PSEUDO100_T2 = <(95)>;	/*	Pseudo 100% percentage at T2.*/
-	g_FG_PSEUDO100_T3 = <(90)>;	/*	Pseudo 100% percentage at T3.*/
+	battery3_name ="JK50-SB18C46718-5000mah";
 
-};
-
-
-&bat_gm30
-{
-	battery_total_number =<4>;
-	battery0_name ="JK50-SB18C28957-5000mah";
-	
-	battery0_profile_t0_num = <100>;
-	battery0_profile_t0 =
+	battery3_profile_t0_num = <100>;
+	battery3_profile_t0 =
 	<
 	0	43730	1030
 	497	43591	1030
@@ -157,8 +106,8 @@
 	48735	33680	1330
 	49232	33680	1330
 	>;
-	battery0_profile_t1_num = <100>;
-	battery0_profile_t1 =
+	battery3_profile_t1_num = <100>;
+	battery3_profile_t1 =
 	<
 	0	43980	1250
 	497	43831	1250
@@ -261,8 +210,8 @@
 	48735	34830	1493
 	49232	34390	1530
 	>;
-	battery0_profile_t2_num = <100>;
-	battery0_profile_t2 =
+	battery3_profile_t2_num = <100>;
+	battery3_profile_t2 =
 	<
 	0	43700	2620
 	497	43580	2620
@@ -365,8 +314,8 @@
 	48735	34581	5832
 	49232	34230	6280
 	>;
-	battery0_profile_t3_num = <100>;
-	battery0_profile_t3 =
+	battery3_profile_t3_num = <100>;
+	battery3_profile_t3 =
 	<
 	0	43910	7080
 	497	43731	7080
