@@ -1183,6 +1183,7 @@
 #include "bat_setting/mt6765_battery_table_blackjack.dtsi"
 #include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
 #include "bat_setting/mt6765_battery_table_blackjack_3.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack_4.dtsi"
 
 #include <blackjack_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
