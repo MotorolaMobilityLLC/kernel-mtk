@@ -256,7 +256,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         SENSOR_DRVNAME_BLACKJACK_SEA_MT9D015_MIPI_RAW,
         {
 			{RST, Vol_Low, 0},
-			{DOVDD, Vol_1800, 500},
+			{DOVDD, Vol_1800, 0},
             {AVDD, Vol_2800, 0},
 			{SensorMCLK, Vol_High, 0},
 			{RST, Vol_High, 1},
