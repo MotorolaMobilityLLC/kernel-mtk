@@ -564,42 +564,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
     return gain;
 }
 
-static void set_mirror_flip(kal_uint8 image_mirror)
-{
-    LOG_INF("image_mirror = %d\n", image_mirror);
-#if 0
-    /********************************************************
-       *
-       *   0x3820[2] ISP Vertical flip
-       *   0x3820[1] Sensor Vertical flip
-       *
-       *   0x3821[2] ISP Horizontal mirror
-       *   0x3821[1] Sensor Horizontal mirror
-       *
-       *   ISP and Sensor flip or mirror register bit should be the same!!
-       *
-       ********************************************************/
-
-    switch (image_mirror) {
-        case IMAGE_NORMAL:
-            write_cmos_sensor(0x0101,((read_cmos_sensor(0x0101) & 0xFC) | 0x00));
-            break;
-        case IMAGE_H_MIRROR:
-            write_cmos_sensor(0x0101,((read_cmos_sensor(0x0101) & 0xFC) | 0x01));
-            break;
-        case IMAGE_V_MIRROR:
-            write_cmos_sensor(0x0101,((read_cmos_sensor(0x0101) & 0xFC) | 0x02));
-            write_cmos_sensor(0x0102,0x3);
-            break;
-        case IMAGE_HV_MIRROR:
-            write_cmos_sensor(0x0101,((read_cmos_sensor(0x0101) & 0xFC) | 0x03));
-            break;
-        default:
-            LOG_INF("Error image_mirror setting\n");
-    }
-#endif
-}
-
 /*************************************************************************
  * FUNCTION
  *	night_mode
@@ -622,7 +586,7 @@ static void sensor_init(void)
 {
 	pr_debug("sensor_init() E\n");
 	write_cmos_sensor(0x301A, 0x0001);	// RESET_REGISTER
-	mdelay(500);
+	mdelay(50);
 	write_cmos_sensor(0x301A, 0x0110);	// RESET_REGISTER
 	write_cmos_sensor(0x3064, 0x0805);	// SMIA_TEST
 
@@ -823,32 +787,32 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	pr_debug("preview_setting() E\n");
-	mDELAY(10);
+	//mDELAY(10);
 
 }
 
 static void capture_setting(kal_uint16 currefps)
 {
 	pr_debug("capture_setting() E! currefps:%d\n", currefps);
-	mDELAY(10);
+	//mDELAY(10);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	pr_debug("normal_video_setting() E! currefps:%d\n", currefps);
-	mDELAY(10);
+	//mDELAY(10);
 }
 
 static void hs_video_setting(void)
 {
 	pr_debug("hs_video_setting() E\n");
-	mDELAY(10);
+	//mDELAY(10);
 }
 
 static void slim_video_setting(void)
 {
 	pr_debug("slim_video_setting() E\n");
-	mDELAY(10);
+	//mDELAY(10);
 }
 
 /*************************************************************************
@@ -1036,7 +1000,6 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	preview_setting();
-	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }
 
@@ -1076,7 +1039,6 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	capture_setting(imgsensor.current_fps);
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }				
@@ -1097,7 +1059,6 @@ static kal_uint32 normal_video(
 	spin_unlock(&imgsensor_drv_lock);
 
 	normal_video_setting(imgsensor.current_fps);
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }				
@@ -1120,7 +1081,6 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	hs_video_setting();
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }				
@@ -1144,7 +1104,6 @@ static kal_uint32 slim_video(
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	slim_video_setting();
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }				
