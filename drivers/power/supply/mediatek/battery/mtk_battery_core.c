@@ -324,13 +324,20 @@ void fgauge_get_profile_id(void)
 	int battery_type_name = 0;
 	battery_type_name = ontim_get_battery_type();
 	printk("ontim battery_type_name = %d\n",battery_type_name);
-	if(battery_type_name != 0 && battery_type_name <= battery_total_number) {
-		gm.battery_id = battery_type_name - 1;
+	if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
+		if (battery_type_name > 2) {
+			gm.battery_id = battery_type_name - 1;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+			gm.battery_id = 0;
+		} else {
+			gm.battery_id = battery_type_name - 1;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+		}
 		printk("ontim battery_id = %d\n",gm.battery_id);
 	} else {
 		gm.battery_id = 0;
+		strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 	}
-	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 	printk(KERN_ERR "[%s]Battery id (%d)\n",__func__,gm.battery_id);
 }
 #else
