@@ -285,7 +285,7 @@
 		compatible = "halo,sy6923";
 		reg = <0x6d>;
 		status = "okay";
-		ichg = <1050000>; /* uA */
+		ichg = <1150000>; /* uA */
 	};
 	externel-charger@6f{
 		compatible = "halo,bq24157";
