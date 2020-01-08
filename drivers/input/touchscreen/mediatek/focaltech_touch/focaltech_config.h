@@ -236,7 +236,7 @@
  * if FTS_GET_MODULE_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fiji_ft8006p_v10_all.i"
+#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fiji_ft8006p_vb1_all.i"
 
 /*
  * if FTS_GET_MODULE_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
