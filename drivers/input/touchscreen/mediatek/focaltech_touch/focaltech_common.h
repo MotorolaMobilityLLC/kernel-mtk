@@ -97,8 +97,6 @@
 #define FTS_REG_ESD_DETECT                  0xC8
 #define FTS_REG_HOST_REPOWERED              0xC9
 
-#define FTS_REG_IC_VERSION_ID    0xA0
-
 #define FTS_SYSFS_ECHO_ON(buf)      (buf[0] == '1')
 #define FTS_SYSFS_ECHO_OFF(buf)     (buf[0] == '0')
 

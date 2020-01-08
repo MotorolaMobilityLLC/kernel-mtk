@@ -59,15 +59,10 @@ u8 fw_file3[] = {
 #include FTS_UPGRADE_FW3_FILE
 };
 
-u8 fw_file4[] = {
-#include FTS_UPGRADE_FW4_FILE
-};
-
 struct upgrade_module module_list[] = {
-    {FTS_MODULE_ID, FTS_IC_VERSION_ID, FTS_MODULE_NAME, fw_file, sizeof(fw_file)},
-    {FTS_MODULE_ID, FTS_IC_VERSION2_ID, FTS_MODULE_NAME, fw_file3, sizeof(fw_file3)},
-    {FTS_MODULE2_ID, FTS_IC_VERSION_ID, FTS_MODULE2_NAME, fw_file2, sizeof(fw_file2)},
-    {FTS_MODULE2_ID, FTS_IC_VERSION2_ID, FTS_MODULE2_NAME, fw_file4, sizeof(fw_file4)},
+    {FTS_MODULE_ID, FTS_MODULE_NAME, fw_file, sizeof(fw_file)},
+    {FTS_MODULE2_ID, FTS_MODULE2_NAME, fw_file2, sizeof(fw_file2)},
+    {FTS_MODULE3_ID, FTS_MODULE3_NAME, fw_file3, sizeof(fw_file3)},
 };
 
 struct upgrade_func *upgrade_func_list[] = {
@@ -1705,21 +1700,6 @@ static void fts_fwupg_auto_upgrade(struct fts_upgrade *upg)
     FTS_INFO("********************FTS exit upgrade********************");
 }
 
-static int fts_fwupg_get_ic_version_id(int *ver_id)
-{
-    int ret = 0;
-    u8 ic_version_id = 0;
-
-    ret = fts_read_reg(FTS_REG_IC_VERSION_ID, &ic_version_id);
-    if (ret < 0) {
-        FTS_ERROR("fail to read ic version id from tp");
-        return ret;
-    }
-    FTS_INFO("read ic version id from tp:0x%02x",ic_version_id);
-    *ver_id = (int)ic_version_id;
-    return 0;
-}
-
 static int fts_fwupg_get_vendorid(struct fts_upgrade *upg, int *vid)
 {
     int ret = 0;
@@ -1778,12 +1758,6 @@ static int fts_fwupg_get_module_info(struct fts_upgrade *upg)
             FTS_ERROR("get vendor id failed");
             return ret;
         }
-        ret = fts_fwupg_get_ic_version_id(&upg->ic_version_id);
-        if (ret < 0) {
-            FTS_ERROR("get ic version id failed");
-            return ret;
-        }
-
 	FTS_INFO("before module id:%04x", upg->module_id);
 	old_module_flag=upg->module_id;
 	if(strstr(lcd_info_pr,"truly")){
@@ -1797,9 +1771,8 @@ static int fts_fwupg_get_module_info(struct fts_upgrade *upg)
 
         for (i = 0; i < FTS_GET_MODULE_NUM; i++) {
             info = &module_list[i];
-            if ((upg->module_id & 0xff) == (info->id & 0xff) && \
-		(upg->ic_version_id & 0xff) == (info->version_id & 0xff)) {
-                FTS_INFO("module id match, get module info pass ,i = %d",i);
+            if ((upg->module_id & 0xff) == (info->id & 0xff)) {
+                FTS_INFO("module id match, get module info pass");
                 break;
             }
         }

@@ -200,7 +200,7 @@
 /*
  * Numbers of modules support
  */
-#define FTS_GET_MODULE_NUM                      4
+#define FTS_GET_MODULE_NUM                      2
 
 /*
  * module_id: mean vendor_id generally, also maybe gpio or lcm_id...
@@ -212,9 +212,6 @@
 #define FTS_MODULE_ID                          0x8282
 #define FTS_MODULE2_ID                         0x7070
 #define FTS_MODULE3_ID                         0x0000
-
-#define FTS_IC_VERSION_ID                           0x01
-#define FTS_IC_VERSION2_ID                         0x05
 
 /*
  * Need set the following when get firmware via firmware_request()
@@ -245,9 +242,7 @@
  * if FTS_GET_MODULE_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW3_FILE                     "include/firmware/blackjack_ft8006p_new_ic_0xa1_all.i"
-
-#define FTS_UPGRADE_FW4_FILE                     "include/firmware/fiji_ft8006p_v10_all.i"
+#define FTS_UPGRADE_FW3_FILE                     "include/firmware/fw_sample.i"
 
 /*********************************************************/
 
