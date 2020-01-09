@@ -1118,7 +1118,7 @@ int fts_upgrade_bin(char *fw_name, bool force)
             goto err_bin;
         }
     } else {
-#if FTS_AUTO_LIC_UPGRADE_EN
+#ifdef CONFIG_FTS_AUTO_LIC_UPGRADE_EN
         if (upg->func->lic_upgrade) {
             ret = upg->func->lic_upgrade(fw_file_buf, fw_file_len);
         } else {
@@ -1159,7 +1159,7 @@ int fts_enter_test_environment(bool test_state)
 {
     return 0;
 }
-#if FTS_AUTO_LIC_UPGRADE_EN
+#ifdef CONFIG_FTS_AUTO_LIC_UPGRADE_EN
 static int fts_lic_get_vid_in_tp(u16 *vid)
 {
     int ret = 0;
@@ -1341,7 +1341,7 @@ static int fts_lic_upgrade(struct fts_upgrade *upg)
 
     return ret;
 }
-#endif /* FTS_AUTO_LIC_UPGRADE_EN */
+#endif /* CONFIG_FTS_AUTO_LIC_UPGRADE_EN */
 
 
 static int fts_param_get_ver_in_tp(u8 *ver)
@@ -1689,7 +1689,7 @@ static void fts_fwupg_auto_upgrade(struct fts_upgrade *upg)
     else
         FTS_INFO("**********tp fw(app/param) no upgrade/upgrade success**********");
 
-#if FTS_AUTO_LIC_UPGRADE_EN
+#ifdef CONFIG_FTS_AUTO_LIC_UPGRADE_EN
     ret = fts_lic_upgrade(upg);
     if (ret < 0)
         FTS_ERROR("**********lcd init code upgrade failed**********");
