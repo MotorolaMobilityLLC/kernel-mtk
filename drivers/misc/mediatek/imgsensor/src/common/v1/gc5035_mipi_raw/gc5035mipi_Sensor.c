@@ -84,15 +84,15 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 280,             /*less than 13M(include 13M)*/
 	},
 	.normal_video = {
-		.pclk = 84000000,
-		.linelength = 1448,
+		.pclk = 168000000,
+		.linelength = 2896,
 		.framelength = 2008,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1296,
-		.grabwindow_height = 972,
+		.grabwindow_width = 2592,
+		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 87600000,
+		.mipi_pixel_rate = 168000000,
 		.max_framerate = 280,
 	},
 	.hs_video = {
@@ -170,8 +170,8 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 		1296,  972, 0, 0, 1296,  972 },
 	{ 2592, 1944,   0,   0, 2592, 1944, 2592, 1944, 0, 0,
 		2592, 1944, 0, 0, 2592, 1944 },
-	{ 2592, 1944,   0,   0, 2592, 1944, 1296,  972, 0, 0,
-		1296,  972, 0, 0, 1296,  972 },
+	{ 2592, 1944,   0,   0, 2592, 1944, 2592, 1944, 0, 0,
+		2592, 1944, 0, 0, 2592, 1944 },
 	{ 2592, 1944, 656, 492, 1280,  960,  640,  480, 0, 0,
 		640,  480, 0, 0,  640,  480 },
 	{ 2592, 1944,  16, 252, 2560, 1440, 1280,  720, 0, 0,
@@ -1378,6 +1378,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0xfe, 0x00);
 	write_cmos_sensor(0x3e, 0x91);
 }
+#if 0
 static void normal_video_setting(kal_uint16 currefps)
 {
 	cam_pr_debug("E! currefps: %d\n", currefps);
@@ -1490,7 +1491,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0xfe, 0x00);
 	write_cmos_sensor(0x3e, 0x91);
 }
-
+#endif
 static void hs_video_setting(void)
 {
 	cam_pr_debug("E\n");
@@ -1909,7 +1910,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_TRUE;
 	spin_unlock(&imgsensor_drv_lock);
 
-	normal_video_setting(imgsensor.current_fps);
+	capture_setting(imgsensor.current_fps);
 	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
 	return ERROR_NONE;
 }
