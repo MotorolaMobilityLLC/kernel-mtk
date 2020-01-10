@@ -35,13 +35,7 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
 	IMGSENSOR_MODE_VIDEO,
-	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
-	IMGSENSOR_MODE_CUSTOM1,
-	IMGSENSOR_MODE_CUSTOM2,
-	IMGSENSOR_MODE_CUSTOM3,
-	IMGSENSOR_MODE_CUSTOM4,
-	IMGSENSOR_MODE_CUSTOM5,
 };
 
 typedef struct imgsensor_mode_struct {
@@ -108,6 +102,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint8 ae_shut_delay_frame;	/* shutter delay frame for AE cycle */
 	kal_uint8 ae_sensor_gain_delay_frame;	/* sensor gain delay frame for AE cycle */
 	kal_uint8 ae_ispGain_delay_frame;	/* isp gain delay frame for AE cycle */
+	kal_uint8  frame_time_delay_frame;
 	kal_uint8 ihdr_support;	/* 1, support; 0,not support */
 	kal_uint8 ihdr_le_firstline;	/* 1,le first ; 0, se first */
 	kal_uint8 sensor_mode_num;	/* support sensor mode num */
@@ -116,11 +111,6 @@ typedef struct imgsensor_info_struct {
 	kal_uint8 pre_delay_frame;	/* enter preview delay frame num */
 	kal_uint8 video_delay_frame;	/* enter video delay frame num */
 	kal_uint8 slim_video_delay_frame;	/* enter slim video delay frame num */
-	kal_uint8 custom1_delay_frame;	/* enter custom1 delay frame num */
-	kal_uint8 custom2_delay_frame;	/* enter custom1 delay frame num */
-	kal_uint8 custom3_delay_frame;	/* enter custom1 delay frame num */
-	kal_uint8 custom4_delay_frame;	/* enter custom1 delay frame num */
-	kal_uint8 custom5_delay_frame;	/* enter custom1 delay frame num */
 
 	kal_uint8 margin;	/* sensor framelength & shutter margin */
 	kal_uint32 min_shutter;	/* min shutter */
