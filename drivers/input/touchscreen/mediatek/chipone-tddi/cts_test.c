@@ -1043,6 +1043,9 @@ int cts_rawdata_test(struct cts_device *cts_dev, u16 min_thres, u16 max_thres)
     }
 
 	cts_lock_device(cts_dev);
+
+	cts_plat_reset_device(cts_dev->pdata);
+
 	ret = cts_enable_get_rawdata(cts_dev);
 	if (ret) {
 		cts_err("Enable get rawdata failed %d", ret);
