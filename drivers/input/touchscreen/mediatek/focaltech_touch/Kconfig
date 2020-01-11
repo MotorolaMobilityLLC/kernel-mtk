@@ -13,4 +13,9 @@ config TOUCHSCREEN_FTS_DIRECTORY
     string "Focaltech ts directory name"
     default "focaltech_touch"
     depends on TOUCHSCREEN_FTS
+
+config FTS_AUTO_LIC_UPGRADE_EN
+      default n
+      bool "FTS"
+      depends on TOUCHSCREEN_FTS
     
