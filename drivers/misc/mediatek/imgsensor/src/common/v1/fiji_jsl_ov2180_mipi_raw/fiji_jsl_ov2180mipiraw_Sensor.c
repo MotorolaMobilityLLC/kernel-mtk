@@ -537,8 +537,8 @@ static void preview_setting(void)
 	write_cmos_sensor(0x3814, 0x11);
 	write_cmos_sensor(0x3815, 0x11);
 	write_cmos_sensor(0x3819, 0x04);
-	write_cmos_sensor(0x3820, 0xc0);
-	write_cmos_sensor(0x3821, 0x00);
+	write_cmos_sensor(0x3820, 0xc4);
+	write_cmos_sensor(0x3821, 0x04);
 	write_cmos_sensor(0x4000, 0x81);
 	write_cmos_sensor(0x4001, 0x40);
 	write_cmos_sensor(0x4008, 0x02);
@@ -756,8 +756,8 @@ static void capture_setting(kal_uint16 curretfps)
 	write_cmos_sensor(0x3814, 0x11);
 	write_cmos_sensor(0x3815, 0x11);
 	write_cmos_sensor(0x3819, 0x04);
-	write_cmos_sensor(0x3820, 0xc0);
-	write_cmos_sensor(0x3821, 0x00);
+	write_cmos_sensor(0x3820, 0xc4);
+	write_cmos_sensor(0x3821, 0x04);
 	write_cmos_sensor(0x4000, 0x81);
 	write_cmos_sensor(0x4001, 0x40);
 	write_cmos_sensor(0x4008, 0x02);
