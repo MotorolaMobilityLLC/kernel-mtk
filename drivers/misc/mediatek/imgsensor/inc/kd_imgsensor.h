@@ -198,6 +198,7 @@
 #define OV2722MIPI_SENSOR_ID                    0x2722
 //#define OV2680MIPI_SENSOR_ID                    0x2680
 #define OV2680_SENSOR_ID                        0x2680
+#define FIJI_JSL_OV2180_SENSOR_ID               0x2680
 #define OV2659_SENSOR_ID                        0x2656
 #define OV2655_SENSOR_ID                        0x2656
 #define OV2650_SENSOR_ID                        0x2652
@@ -431,6 +432,7 @@
 #define SENSOR_DRVNAME_OV2724_MIPI_RAW          "ov2724_mipi_raw"
 #define SENSOR_DRVNAME_OV2722_MIPI_RAW          "ov2722_mipi_raw"
 #define SENSOR_DRVNAME_OV2680_MIPI_RAW          "ov2680_mipi_raw"
+#define SENSOR_DRVNAME_FIJI_JSL_OV2180_MIPI_RAW "fiji_jsl_ov2180_mipi_raw"
 #define SENSOR_DRVNAME_OV2659_YUV               "ov2659_yuv"
 #define SENSOR_DRVNAME_OV2655_YUV               "ov2655_yuv"
 #define SENSOR_DRVNAME_OV2650_RAW               "ov265x_raw"

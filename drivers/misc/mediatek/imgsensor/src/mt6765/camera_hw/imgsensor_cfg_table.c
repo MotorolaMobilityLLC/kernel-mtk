@@ -388,8 +388,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		   },
 		  },
 #endif
-#if defined(OV2680_MIPI_RAW)
-		 {SENSOR_DRVNAME_OV2680_MIPI_RAW,
+#if defined(FIJI_JSL_OV2180_MIPI_RAW)
+		 {SENSOR_DRVNAME_FIJI_JSL_OV2180_MIPI_RAW,
 		  {
 		   {SensorMCLK, Vol_High, 0},
 		   {RST, Vol_Low, 1},
