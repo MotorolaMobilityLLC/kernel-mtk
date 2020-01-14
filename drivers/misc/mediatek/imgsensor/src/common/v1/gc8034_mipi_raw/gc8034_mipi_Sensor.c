@@ -74,7 +74,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 253440000,
+		.mipi_pixel_rate = 249600000,
 		.max_framerate = 300,
 	},
 	.cap1 = {
@@ -86,7 +86,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 253440000,
+		.mipi_pixel_rate = 249600000,
 		.max_framerate = 240,
 	},
 	.normal_video = {
@@ -98,7 +98,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 253440000,
+		.mipi_pixel_rate = 249600000,
 		.max_framerate = 300,
 	},
 	.hs_video = {
@@ -151,7 +151,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 #else
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
 #endif
-	.mclk = 26,
+	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x6e, 0xff},
 };
@@ -723,7 +723,7 @@ static void gc8034_otp_identify(void)
 	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
 	write_cmos_sensor(0xf8, 0x59);
-	write_cmos_sensor(0xfa, 0x41);
+	write_cmos_sensor(0xfa, 0x40);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -737,7 +737,7 @@ static void gc8034_otp_identify(void)
 	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
 	write_cmos_sensor(0xf8, 0x59);
-	write_cmos_sensor(0xfa, 0x41);
+	write_cmos_sensor(0xfa, 0x40);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -972,7 +972,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
 	write_cmos_sensor(0xf8, 0x59);
-	write_cmos_sensor(0xfa, 0x41);
+	write_cmos_sensor(0xfa, 0x40);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -1254,7 +1254,7 @@ static void fullsize_setting(void)
 	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
 	write_cmos_sensor(0xf8, 0x59);
-	write_cmos_sensor(0xfa, 0x41);
+	write_cmos_sensor(0xfa, 0x40);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -1371,7 +1371,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		write_cmos_sensor(0xf4, 0x90);
 		write_cmos_sensor(0xf5, 0x3d);
 		write_cmos_sensor(0xf8, 0x59);
-		write_cmos_sensor(0xfa, 0x41);
+		write_cmos_sensor(0xfa, 0x40);
 		write_cmos_sensor(0xfc, 0x00);
 		write_cmos_sensor(0xfc, 0xee);
 		write_cmos_sensor(0xfe, 0x03);
