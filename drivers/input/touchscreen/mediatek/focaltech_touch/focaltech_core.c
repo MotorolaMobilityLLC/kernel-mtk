@@ -1036,7 +1036,7 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
 {
     struct input_dev *input_dev = ts_data->input_dev;
     int cnt=0;
-    u8 focal_vendor_id = 0;
+    u8 focal_vendor_id = 0,ic_version_id = 0;
     mutex_lock(&input_dev->mutex);
     do {
         if (fts_read_reg( FTS_REG_FW_VER, &ft_fw) >= 0) {
@@ -1049,9 +1049,12 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
         msleep(INTERVAL_READ_REG);
     } while (cnt  < 5);
     do {
+        if(fts_read_reg( FTS_REG_IC_VERSION_ID, &ic_version_id) >= 0){
+            FTS_INFO("read ic version from tp:0x%02x",ic_version_id);
+        }
         if (fts_read_reg( FTS_REG_VENDOR_ID, &focal_vendor_id) >= 0) {
             if ((focal_vendor_id != 0xFF) && (focal_vendor_id != 0x00)) {
-                snprintf(version, sizeof(version)," %d.0 VID:0x%x", ft_fw, focal_vendor_id);
+                snprintf(version, sizeof(version)," %d.0 VID:0x%x_0x%x", ft_fw, focal_vendor_id,ic_version_id);
 		 pr_info("version:%s", version);
                 break;
             }
