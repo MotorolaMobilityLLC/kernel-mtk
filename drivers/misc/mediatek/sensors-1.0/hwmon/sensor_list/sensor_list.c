@@ -40,6 +40,8 @@ enum {
 	ps,
 	baro,
 	sar,
+	accel_uncal,
+	gyro_uncal,
 	maxhandle,
 };
 
@@ -106,6 +108,16 @@ static inline int handle_to_sensor(int handle)
 	case sar:
 		sensor = ID_SAR;
 		break;
+#ifdef CONFIG_CUSTOM_KERNEL_UNCALI_ACC_SENSOR
+	case accel_uncal:
+		sensor = ID_ACCELEROMETER_UNCALIBRATED;
+		break;
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_UNCALI_GYRO_SENSOR
+	case gyro_uncal:
+		sensor = ID_GYROSCOPE_UNCALIBRATED;
+		break;
+#endif
 	}
 	return sensor;
 }
@@ -131,8 +143,15 @@ static void sensorlist_get_deviceinfo(struct work_struct *work)
 		if (sensor < 0)
 			continue;
 		memset(&devinfo, 0, sizeof(struct sensorInfo_t));
-		err = sensor_set_cmd_to_hub(sensor,
-			CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+
+		if (sensor == ID_ACCELEROMETER_UNCALIBRATED) {
+			err = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+		} else if (sensor == ID_GYROSCOPE_UNCALIBRATED) {
+			err = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+		} else {
+			err = sensor_set_cmd_to_hub(sensor, CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+		}
+
 #ifdef CONFIG_MTK_SX932x
 		if(sensor == ID_SAR)
 		{
