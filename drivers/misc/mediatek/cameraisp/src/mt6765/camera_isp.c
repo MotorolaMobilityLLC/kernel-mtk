@@ -123,7 +123,6 @@ static u32 target_clk;
 #endif
 
 #include <archcounter_timesync.h>
-#include <ccu_inc.h>
 
 /*  */
 #ifndef MTRUE
@@ -8034,34 +8033,38 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 	case ISP_TRANSFOR_CCU_REG:
 		{
-			uint32_t hwTickCnt_ccu_direct[2];
+			unsigned int hwTickCnt[2];
 			unsigned int globaltime[2];
 			unsigned long long reg_trans_Time;
 			unsigned long long sum;
-			ccu_get_timestamp(&hwTickCnt_ccu_direct[0],
-				&hwTickCnt_ccu_direct[1]);
-			pr_debug("hwTickCnt_ccu_direct[0]:%u,hwTickCnt_ccu_direct[1]:%u",
-				hwTickCnt_ccu_direct[0],
-				hwTickCnt_ccu_direct[1]);
-			sum =
-			(unsigned long long)hwTickCnt_ccu_direct[0] +
-			((unsigned long long)hwTickCnt_ccu_direct[1]<<32);
-			pr_debug("sum of hwTickCnt:%llu", sum);
-			if (sum == 0) {
-				globaltime[0] = 0;
-				globaltime[1] = 0;
-			} else {
+
+			if (copy_from_user(hwTickCnt, (void *)Param,
+				sizeof(unsigned int)*2) == 0) {
+
+				pr_debug("hwTickCnt[0]:%u , hwTickCnt[1]:%u",
+					hwTickCnt[0], hwTickCnt[1]);
+
+				sum =
+				(unsigned long long)hwTickCnt[0] +
+				((unsigned long long)hwTickCnt[1]<<32);
+
+				pr_debug("sum of hwTickCnt:%llu", sum);
 				reg_trans_Time =
-					archcounter_timesync_to_boot(sum);
+				archcounter_timesync_to_boot(sum);
+
 				globaltime[1] =
-					do_div(reg_trans_Time, 1000000000);
-				globaltime[1] =
-					globaltime[1]/1000;
-				globaltime[0] =
-					reg_trans_Time;
-			}
-			if (copy_to_user((void *)Param, globaltime,
-				sizeof(unsigned int)*2) != 0) {
+				do_div(reg_trans_Time, 1000000000);
+				globaltime[1] = globaltime[1]/1000;
+				globaltime[0] = reg_trans_Time;
+				pr_debug("sec:%u , usec:%u",
+					globaltime[0], globaltime[1]);
+
+				if (copy_to_user((void *)Param,
+					globaltime,
+					sizeof(unsigned int)*2) != 0) {
+					Ret = -EFAULT;
+				}
+			} else {
 				Ret = -EFAULT;
 			}
 		}

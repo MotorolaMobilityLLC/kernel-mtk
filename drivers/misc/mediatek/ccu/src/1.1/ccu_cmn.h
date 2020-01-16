@@ -298,7 +298,4 @@ void ccu_clock_disable(void);
 		ccu_name, CCU_TAG "error" format, ##args); \
 		LOG_ERR(CCU_TAG " error:" format, ##args);  \
 	} while (0)
-
-
-#define IS_KERNEL_32 ((sizeof(uint32_t *) == 4))
 #endif
