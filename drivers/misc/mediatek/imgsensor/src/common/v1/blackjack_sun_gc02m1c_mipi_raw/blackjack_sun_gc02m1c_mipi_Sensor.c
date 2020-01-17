@@ -40,7 +40,7 @@
 #define LOG_1 LOG_INF("SUN GC02M1B OV16A10, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    printk(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
 #define MODULE_ID_OFFSET 17
@@ -147,7 +147,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_MONO,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,
-	.i2c_addr_table = {0x6e, 0x20, 0xff},
+	.i2c_addr_table = {0x20, 0xff},
 	.i2c_speed = 400,
 };
 
@@ -705,8 +705,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
 static kal_uint8 sun_gc02m1b_read_otp(kal_uint8 addr)
 {
-
-	kal_uint8 otp_info;
+	kal_uint8 otp_info[32];
 
 	write_cmos_sensor(0xfe, 0x00);
 	write_cmos_sensor(0xfc, 0x01);
@@ -725,15 +724,16 @@ static kal_uint8 sun_gc02m1b_read_otp(kal_uint8 addr)
 	write_cmos_sensor(0xfc, 0x8e);
 	write_cmos_sensor(0xf3, 0x30);
 	write_cmos_sensor(0xfe, 0x02);
-
-	write_cmos_sensor(0x17, addr*8);
-	write_cmos_sensor(0xf3, 0x34);
-	otp_info = read_cmos_sensor(0x19);
-	LOG_INF("otp_info = 0x&x\n", otp_info);
-
+	for(int i = 0; i < 32; i++){
+		write_cmos_sensor(0x17, i*8);
+		write_cmos_sensor(0xf3, 0x34);
+		otp_info[i] = read_cmos_sensor(0x19);
+		LOG_INF("otp_info[%d] = 0x%x\n", i, otp_info[i]);
+	}
 	write_cmos_sensor(0xf7, 0x00);
 	write_cmos_sensor(0xfe, 0x00);
-        return otp_info;
+
+	return otp_info[16];
 }
 extern char back_cam_name[64];
 extern char backaux_cam_name[64];
@@ -748,6 +748,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
+			LOG_INF("gc02m1b sensorid = 0x%x\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				imgsensor_info.module_id = sun_gc02m1b_read_otp(MODULE_ID_OFFSET);
 				if((0x0C == imgsensor_info.module_id) && (strncmp(back_cam_name, "0_ov16a10_HLT",strlen("0_ov16a10_HLT"))) == 0)
@@ -765,7 +766,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if (*sensor_id != BLACKJACK_SUN_GC02M1C_SENSOR_ID) {
+	if ((*sensor_id != imgsensor_info.sensor_id) || (0x0C != imgsensor_info.module_id) || (strncmp(back_cam_name, "0_ov16a10_HLT",strlen("0_ov16a10_HLT")))) {
 		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
