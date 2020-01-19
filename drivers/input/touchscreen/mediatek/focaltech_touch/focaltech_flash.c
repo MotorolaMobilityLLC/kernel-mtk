@@ -1944,6 +1944,7 @@ static void fts_fwupg_work(struct work_struct *work)
         /* run auto upgrade */
         fts_fwupg_auto_upgrade(upg);
     }
+    ontim_refresh_fw_ver( upg->ts_data);
 
 #if FTS_ESDCHECK_EN
     fts_esdcheck_switch(ENABLE);

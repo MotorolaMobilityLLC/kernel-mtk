@@ -247,6 +247,7 @@ int fts_fwupg_init(struct fts_ts_data *ts_data);
 int fts_fwupg_exit(struct fts_ts_data *ts_data);
 int fts_upgrade_bin(char *fw_name, bool force);
 int fts_enter_test_environment(bool test_state);
+void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data);
 
 /* Other */
 int fts_reset_proc(int hdelayms);

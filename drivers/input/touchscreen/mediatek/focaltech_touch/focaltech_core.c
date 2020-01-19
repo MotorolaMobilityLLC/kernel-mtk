@@ -1032,7 +1032,7 @@ static void fts_platform_data_init(struct fts_ts_data *ts_data)
 }
 
 
-static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
+void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
 {
     struct input_dev *input_dev = ts_data->input_dev;
     int cnt=0;
