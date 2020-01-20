@@ -1681,6 +1681,7 @@ static int mt6360_alert_vendor_defined_handler(struct tcpc_device *tcpc)
 		if (!alert[i])
 			continue;
 		MT6360_INFO("Vend INT%d:0x%02X\n", i + 1, alert[i]);
+		alert[i] &= mask[i];
 	}
 
 	mt6360_vend_alert_status_clear(tcpc, alert);
