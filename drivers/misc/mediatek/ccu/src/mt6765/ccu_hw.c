@@ -792,7 +792,8 @@ int ccu_power(struct ccu_power_s *power)
 		ccuInfo.IsCcuPoweredOn = 1;
 	} else if (power->bON == 0) {
 		/*CCU Power off*/
-		ret = _ccu_powerdown();
+		if (ccuInfo.IsCcuPoweredOn == 1)
+			ret = _ccu_powerdown();
 	} else if (power->bON == 2) {
 		/*Restart CCU, no need to release CG*/
 
@@ -839,10 +840,10 @@ int ccu_power(struct ccu_power_s *power)
 		_ccu_deallocate_mva(&ccu_ion_client, &i2c_buffer_handle);
 	} else if (power->bON == 4) {
 		/*CCU boot fail, just enable CG*/
-
-		ccu_clock_disable();
-		ccuInfo.IsCcuPoweredOn = 0;
-
+		if (ccuInfo.IsCcuPoweredOn == 1) {
+			ccu_clock_disable();
+			ccuInfo.IsCcuPoweredOn = 0;
+		}
 	} else {
 	}
 
