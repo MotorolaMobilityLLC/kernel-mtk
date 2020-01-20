@@ -13,6 +13,19 @@ config MTK_PLATFORM
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
+config MTK_HAVE_EXTERNAL_VENDOR_PATH
+	bool "Support building external vendor path"
+	help
+	  MediaTek config for supporting customer driver integration.
+	  Y means we can include MTK_EXTERNAL_VENDOR_PATH into kernel build.
+	  Cannot be y for MediaTek internal project.
+	  Only can be y for customer project.
+	  If unsure, set n.
+
+config MTK_EXTERNAL_VENDOR_PATH
+	string "Extra vendor subdirs to built"
+	depends on MTK_HAVE_EXTERNAL_VENDOR_PATH
+
 config FPGA_EARLY_PORTING
 	bool "MTK FPGA EARLY PORTING"
 	help
