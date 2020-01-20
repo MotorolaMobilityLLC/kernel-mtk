@@ -771,7 +771,7 @@ int ccu_run(void)
 			ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
 	LOG_DBG_MUST("ccu log test debug info: %x\n", ccu_read_reg(ccu_base, CCU_INFO29));
 
-	LOG_DBG_MUST("-:%s(1230)\n", __func__);
+	LOG_DBG_MUST("-:%s(0110)\n", __func__);
 
 	return 0;
 }
