@@ -53,15 +53,11 @@ static struct trusted_mem_configs mchunk_general_configs = {
 #ifdef MTEE_MCHUNKS_SESSION_KEEP_ALIVE
 	.session_keep_alive_enable = true,
 #endif
-	.minimal_chunk_size = MTEE_MCHUNKS_MIN_ALLOC_CHUNK_SIZE,
+	.minimal_chunk_size = SIZE_2M,
 	.phys_mem_shift_bits = MTEE_64BIT_PHYS_SHIFT,
 	.phys_limit_min_alloc_size = (1 << MTEE_64BIT_PHYS_SHIFT),
-#if defined(MTEE_MCHUNKS_MIN_SIZE_CHECK)
 	.min_size_check_enable = true,
-#endif
-#if defined(MTEE_MCHUNKS_ALIGNMENT_CHECK)
 	.alignment_check_enable = true,
-#endif
 	.caps = 0,
 };
 
