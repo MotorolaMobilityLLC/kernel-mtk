@@ -367,8 +367,6 @@ void adsp_set_clock_freq(enum adsp_clk clk)
 		adsp_set_top_mux(clk);
 		break;
 	case CLK_TOP_ADSPPLL_D4:
-		if (adspreg.segment == ADSP_SEGMENT_P95)
-			mclk_div_val |= CLK_DIV_2;
 		writel(mclk_div_val, ADSP_MCLK_DIV_REG);
 		adsp_set_top_mux(clk);
 		break;
@@ -743,11 +741,7 @@ int __init adsp_dvfs_init(void)
 {
 	adsp_is_force_freq = 0;
 	adsp_is_force_trigger_latmon = 0;
-
-	if (adspreg.segment == ADSP_SEGMENT_P95)
-		adspreg.active_clksrc = CLK_TOP_ADSPPLL_D4;
-	else
-		adspreg.active_clksrc = CLK_TOP_ADSPPLL_D6;
+	adspreg.active_clksrc = CLK_TOP_ADSPPLL_D6;
 	return 0;
 }
 void __exit adsp_dvfs_exit(void)
