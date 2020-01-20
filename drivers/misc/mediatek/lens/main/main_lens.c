@@ -177,6 +177,10 @@ void AFRegulatorCtrl(int Stage)
 					    "tb8766", 6) == 0)
 					regVCAMAF = regulator_get(lens_device,
 								  "vldo28");
+				else if (strncmp(CONFIG_ARCH_MTK_PROJECT,
+					    "tb8768", 6) == 0)
+					regVCAMAF = regulator_get(lens_device,
+								  "vldo28");
 				else {
 					#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT6765)
 					regVCAMAF = regulator_get(lens_device,
