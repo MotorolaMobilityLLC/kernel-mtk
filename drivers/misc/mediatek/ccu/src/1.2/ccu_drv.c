@@ -124,6 +124,7 @@ static int ccu_suspend(struct platform_device *dev, pm_message_t mesg);
 
 static int ccu_resume(struct platform_device *dev);
 
+static int32_t _clk_count;
 /*---------------------------------------------------------------------------*/
 /* CCU Driver: pm operations                                                 */
 /*---------------------------------------------------------------------------*/
@@ -420,6 +421,8 @@ static int ccu_open(struct inode *inode, struct file *flip)
 
 	struct ccu_user_s *user;
 
+	_clk_count = 0;
+
 	ccu_create_user(&user);
 	if (IS_ERR_OR_NULL(user)) {
 		LOG_ERR("fail to create user\n");
@@ -560,7 +563,9 @@ int ccu_clock_enable(void)
 {
 	int ret;
 
-	LOG_DBG_MUST("%s.\n", __func__);
+	LOG_DBG_MUST("%s %d.\n", __func__, _clk_count);
+
+	_clk_count++;
 
 	ret = clk_prepare_enable(ccu_clock_ctrl);
 	if (ret)
@@ -571,8 +576,12 @@ int ccu_clock_enable(void)
 
 void ccu_clock_disable(void)
 {
-	LOG_DBG_MUST("%s.\n", __func__);
-	clk_disable_unprepare(ccu_clock_ctrl);
+	LOG_DBG_MUST("%s %d.\n", __func__, _clk_count);
+
+	if (_clk_count > 0) {
+		clk_disable_unprepare(ccu_clock_ctrl);
+		_clk_count--;
+	}
 }
 
 static MBOOL _is_fast_cmd(enum ccu_msg_id msg_id)
