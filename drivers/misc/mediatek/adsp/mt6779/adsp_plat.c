@@ -156,17 +156,6 @@ void adsp_way_en_ctrl(uint32_t enable)
 			adsp_reg_read(ADSP_WAY_EN_CTRL) & ~ADSP_WAY_EN_MASK);
 }
 
-void adsp_get_devinfo(void)
-{
-	unsigned int val = (get_devinfo_with_index(7) & 0xFF);
-
-	if ((val == 0x09) || (val == 0x90) || (val == 0x08) || (val == 0x10)
-	|| (val == 0x06) || (val == 0x60) || (val == 0x04) || (val == 0x20))
-		adspreg.segment = ADSP_SEGMENT_P95;
-	else
-		adspreg.segment = ADSP_SEGMENT_P90;
-}
-
 #define SEMAPHORE_TIMEOUT 5000
 /*
  * acquire a hardware semaphore
