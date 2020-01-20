@@ -651,7 +651,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 	    (cmd != CCU_IOCTL_WAIT_IRQ) && (cmd != CCU_IOCTL_IMPORT_MEM)) {
 		powert_stat = ccu_query_power_status();
 		if (powert_stat == 0) {
-			LOG_WARN("ccuk: ioctl without powered on\n");
+			LOG_WARN("ccuk: ioctl(%d) without powered on\n", cmd);
 			return -EFAULT;
 		}
 	}
