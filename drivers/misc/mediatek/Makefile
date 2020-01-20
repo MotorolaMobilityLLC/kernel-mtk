@@ -161,3 +161,7 @@ obj-y += perf/
 
 #io boost
 obj-y += io_boost/
+
+ifeq ($(CONFIG_MTK_HAVE_EXTERNAL_VENDOR_PATH),y)
+obj-y += ../../../../$(subst $\",,$(CONFIG_MTK_EXTERNAL_VENDOR_PATH))
+endif
