@@ -742,8 +742,6 @@ static int adsp_device_probe(struct platform_device *pdev)
 #endif
 	adsp_dts_mapping();
 
-	adsp_get_devinfo();
-
 	return 0;
 ERROR:
 	return -ENODEV;
@@ -822,7 +820,6 @@ static int __init adsp_module_init(void)
 	/* adsp initialize */
 	adsp_dvfs_init();
 	adsp_power_on(true);
-	writel(adspreg.segment, ADSP_SEGMENT_CON);
 	adsp_update_memory_protect_info();
 	adsp_awake_init();
 
