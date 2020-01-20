@@ -689,10 +689,7 @@ static int vpu_set_clock_source(struct clk *clk, uint8_t step)
 
 	switch (step) {
 	case 0:
-		if (segment_index == SEGMENT_95)
-			clk_src = clk_top_adsppll_d5;
-		else
-			clk_src = clk_top_adsppll_d4;
+		clk_src = clk_top_adsppll_d4;
 		break;
 	case 1:
 		clk_src = clk_top_univpll_d2;
@@ -704,10 +701,7 @@ static int vpu_set_clock_source(struct clk *clk, uint8_t step)
 		clk_src = clk_top_tvdpll_ck;
 		break;
 	case 4:
-		if (segment_index == SEGMENT_95)
-			clk_src = clk_top_tvdpll_ck;
-		else
-			clk_src = clk_top_adsppll_d5;
+		clk_src = clk_top_adsppll_d5;
 		break;
 	case 5:
 		clk_src = clk_top_mmpll_d6;

@@ -237,16 +237,10 @@ static inline int Map_MDLA_Freq_Table(int freq_opp)
 	switch (freq_opp) {
 	case 0:
 	default:
-		if (segment_index == SEGMENT_95)
-			freq_value = 884;
-		else
-			freq_value = 788;
+		freq_value = 788;
 		break;
 	case 1:
-		if (segment_index == SEGMENT_95)
-			freq_value = 788;
-		else
-			freq_value = 700;
+		freq_value = 700;
 		break;
 	case 2:
 		freq_value = 624;
@@ -328,16 +322,10 @@ static int mdla_set_clock_source(struct clk *clk, uint8_t step)
 
 	switch (step) {
 	case 0:
-		if (segment_index == SEGMENT_95)
-			clk_src = clk_top_adsppll_d4;
-		else
-			clk_src = clk_top_mmpll_d4;
+		clk_src = clk_top_mmpll_d4;
 		break;
 	case 1:
-		if (segment_index == SEGMENT_95)
-			clk_src = clk_top_mmpll_d4;
-		else
-			clk_src = clk_top_adsppll_d4;
+		clk_src = clk_top_adsppll_d4;
 		break;
 	case 2:
 		clk_src = clk_top_univpll_d2;
@@ -540,16 +528,10 @@ int get_mdla_opp_to_freq(uint8_t step)
 
 	switch (step) {
 	case 0:
-		if (segment_index == SEGMENT_95)
-		freq = 884;
-		else
 		freq = 788;
 		break;
 	case 1:
-		if (segment_index == SEGMENT_95)
-			freq = 788;
-		else
-			freq = 700;
+		freq = 700;
 		break;
 	case 2:
 		freq = 606;
