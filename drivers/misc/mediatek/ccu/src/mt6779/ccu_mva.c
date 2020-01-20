@@ -23,6 +23,8 @@ static int _ccu_ion_get_mva(struct ion_client *client, struct ion_handle *handle
 		unsigned int *mva, int port);
 static void _ccu_ion_free_handle(struct ion_client *client, struct ion_handle *handle);
 
+static int ccu_ion_init_result;
+
 int ccu_ion_init(void)
 {
 	MBOOL need_init = MFALSE;
@@ -31,14 +33,26 @@ int ccu_ion_init(void)
 	if (!_ccu_ion_client && g_ion_device) {
 		LOG_INF_MUST("CCU ION_client need init\n");
 		need_init = MTRUE;
+		ccu_ion_init_result = 1;
+	} else if (_ccu_ion_client) {
+		LOG_INF_MUST("ION Client exist: 0x%p\n",
+		_ccu_ion_client);
+		ccu_ion_init_result = 2;
 	} else {
-		LOG_INF_MUST("ION Client exist: 0x%p | Device NULL: 0x%p\n",
-			_ccu_ion_client, g_ion_device);
+		LOG_INF_MUST("Device NULL: 0x%p\n",
+			g_ion_device);
+		ccu_ion_init_result = 3;
 	}
 
 	if (need_init == MTRUE) {
 		_ccu_ion_client = ion_client_create(g_ion_device, "ccu");
 		LOG_INF_MUST("CCU ION_client create success: 0x%p\n", _ccu_ion_client);
+	}
+
+	if (!_ccu_ion_client) {
+		LOG_INF_MUST("ION Client NULL: 0x%p\n",
+		_ccu_ion_client);
+		ccu_ion_init_result = 4;
 	}
 
 	ccu_unlock_ion_client_mutex();
@@ -50,6 +64,8 @@ int ccu_ion_uninit(void)
 	MBOOL need_uninit = MFALSE;
 
 	ccu_lock_ion_client_mutex();
+	ccu_ion_init_result = 0;
+
 	if (_ccu_ion_client && g_ion_device) {
 		LOG_INF_MUST("CCU ION_client need uninit\n");
 		need_uninit = MTRUE;
@@ -69,7 +85,8 @@ int ccu_deallocate_mva(struct ion_handle **handle)
 {
 	LOG_DBG("X-:%s\n", __func__);
 	if (_ccu_ion_client == NULL) {
-		LOG_ERR("%s: _ccu_ion_client is null!\n", __func__);
+		LOG_ERR("%s: _ccu_ion_client(%d) is null!\n",
+			__func__, ccu_ion_init_result);
 		return -1;
 	}
 
@@ -86,7 +103,8 @@ int ccu_allocate_mva(uint32_t *mva, void *va, struct ion_handle **handle, int bu
 	/*int buffer_size = 4096;*/
 
 	if (_ccu_ion_client == NULL) {
-		LOG_ERR("%s: _ccu_ion_client is null!\n", __func__);
+		LOG_ERR("%s: _ccu_ion_client(%d) is null!\n",
+			__func__, ccu_ion_init_result);
 		return -1;
 	}
 
@@ -203,8 +221,9 @@ static void _ccu_ion_free_handle(struct ion_client *client, struct ion_handle *h
 
 void ccu_ion_free_import_handle(struct ion_handle *handle)
 {
-	if (!_ccu_ion_client) {
-		LOG_ERR("invalid ion client!\n");
+	if (_ccu_ion_client == NULL) {
+		LOG_ERR("%s: _ccu_ion_client(%d) is null!\n",
+			__func__, ccu_ion_init_result);
 		return;
 	}
 	if (handle == NULL) {
@@ -219,8 +238,9 @@ struct ion_handle *ccu_ion_import_handle(int fd)
 {
 	struct ion_handle *handle = NULL;
 
-	if (!_ccu_ion_client) {
-		LOG_ERR("ccu invalid ion client!\n");
+	if (_ccu_ion_client == NULL) {
+		LOG_ERR("%s: _ccu_ion_client(%d) is null!\n",
+			__func__, ccu_ion_init_result);
 		return handle;
 	}
 	if (fd == -1) {
