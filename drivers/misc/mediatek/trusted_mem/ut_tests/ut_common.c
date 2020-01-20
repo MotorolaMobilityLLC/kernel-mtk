@@ -664,9 +664,9 @@ mem_alloc_mixed_size_test_with_alignment(enum TRUSTED_MEM_TYPE mem_type,
 		next_free_pos = 0;
 
 		/* Allocate one chunk of 4KB size */
-		ret = tmem_core_alloc_chunk(mem_type, alignment, SIZE_4K,
-					    &ref_count, &handle, mem_owner, 0,
-					    0);
+		ret = tmem_core_alloc_chunk_priv(mem_type, alignment, SIZE_4K,
+						 &ref_count, &handle, mem_owner,
+						 0, 0);
 		ASSERT_EQ(0, ret, "alloc 4KB chunk memory");
 		ASSERT_EQ(1, ref_count, "reference count check");
 		ASSERT_NE(0, handle, "handle check");
@@ -684,7 +684,7 @@ mem_alloc_mixed_size_test_with_alignment(enum TRUSTED_MEM_TYPE mem_type,
 			if (alignment && (next_free_pos % alignment))
 				used_size += alignment;
 
-			ret = tmem_core_alloc_chunk(
+			ret = tmem_core_alloc_chunk_priv(
 				mem_type, alignment, chunk_size, &ref_count,
 				&g_mem_handle_list[chunk_idx], mem_owner, 0, 0);
 			if (used_size <= remained_free_size) {
@@ -704,7 +704,7 @@ mem_alloc_mixed_size_test_with_alignment(enum TRUSTED_MEM_TYPE mem_type,
 		}
 
 		/* Should be failed for one more chunk */
-		ret = tmem_core_alloc_chunk(
+		ret = tmem_core_alloc_chunk_priv(
 			mem_type, alignment, chunk_size, &ref_count,
 			&g_mem_handle_list[chunk_idx], mem_owner, 0, 0);
 		ASSERT_NE(0, ret, "alloc chunk memory");
@@ -714,7 +714,7 @@ mem_alloc_mixed_size_test_with_alignment(enum TRUSTED_MEM_TYPE mem_type,
 		if (alignment && (next_free_pos % alignment))
 			used_size += alignment;
 
-		ret = tmem_core_alloc_chunk(
+		ret = tmem_core_alloc_chunk_priv(
 			mem_type, alignment, SIZE_4K, &ref_count,
 			&g_mem_handle_list[chunk_idx], mem_owner, 0, 0);
 		if (used_size <= remained_free_size) {
