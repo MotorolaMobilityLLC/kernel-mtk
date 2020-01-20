@@ -43,8 +43,6 @@
 #define SECMEM_SDSP_DEVICE_NAME "SECMEM_SDSP"
 
 static struct trusted_mem_configs sdsp_smem_configs = {
-	.mock_peer_enable = false,
-	.mock_ssmr_enable = false,
 #if defined(SDSP_SMEM_TEE_SESSION_KEEP_ALIVE)
 	.session_keep_alive_enable = true,
 #endif
