@@ -257,6 +257,9 @@ int ccu_create_user(struct ccu_user_s **user)
 {
 	struct ccu_user_s *u;
 
+	LOG_INF_MUST("%s+\n",
+		__func__);
+
 	u = kmalloc(sizeof(vlist_type(struct ccu_user_s)), GFP_ATOMIC);
 	if (!u)
 		return -1;
@@ -277,6 +280,9 @@ int ccu_create_user(struct ccu_user_s **user)
 	list_add_tail(vlist_link(u, struct ccu_user_s),
 		      &g_ccu_device->user_list);
 	mutex_unlock(&g_ccu_device->user_mutex);
+
+	LOG_INF_MUST("%s-\n",
+		__func__);
 
 	*user = u;
 	return 0;
@@ -441,9 +447,12 @@ static int ccu_open(struct inode *inode, struct file *flip)
 {
 	int ret = 0, i;
 
-	struct ccu_user_s *user;
+	struct ccu_user_s *user = NULL;
 
-	ccu_create_user(&user);
+	LOG_INF_MUST("%s+\n",
+		__func__);
+
+	ret = ccu_create_user(&user);
 	if (IS_ERR_OR_NULL(user)) {
 		LOG_ERR("fail to create user\n");
 		return -ENOMEM;
@@ -455,6 +464,9 @@ static int ccu_open(struct inode *inode, struct file *flip)
 	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++)
 		import_buffer_handle[i] = (struct ion_handle *)
 					  CCU_IMPORT_BUF_UNDEF;
+
+	LOG_INF_MUST("%s-\n",
+		__func__);
 
 	return ret;
 }
