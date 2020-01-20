@@ -44,8 +44,6 @@
 #define SECMEM_2DFR_DEVICE_NAME "SECMEM_2DFR"
 
 static struct trusted_mem_configs secmem_configs = {
-	.mock_peer_enable = false,
-	.mock_ssmr_enable = false,
 #if defined(SECMEM_TEE_SESSION_KEEP_ALIVE)
 	.session_keep_alive_enable = true,
 #endif
