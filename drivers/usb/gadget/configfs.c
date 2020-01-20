@@ -105,6 +105,8 @@ struct gadget_info {
 	bool use_os_desc;
 	char b_vendor_code;
 	char qw_sign[OS_STRING_QW_SIGN_LEN];
+	spinlock_t spinlock;
+	bool unbind;
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
 	bool connected;
 	bool sw_connected;
@@ -1339,6 +1341,7 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 	pr_info("%s\n", __func__);
 
 	/* the gi->lock is hold by the caller */
+	gi->unbind = 0;
 	cdev->gadget = gadget;
 	set_gadget_data(gadget, cdev);
 	ret = composite_dev_prepare(composite, cdev);
@@ -1544,6 +1547,7 @@ static void configfs_composite_unbind(struct usb_gadget *gadget)
 {
 	struct usb_composite_dev	*cdev;
 	struct gadget_info		*gi;
+	unsigned long flags;
 
 	pr_info("%s\n", __func__);
 
@@ -1551,14 +1555,18 @@ static void configfs_composite_unbind(struct usb_gadget *gadget)
 
 	cdev = get_gadget_data(gadget);
 	gi = container_of(cdev, struct gadget_info, cdev);
-
+	spin_lock_irqsave(&gi->spinlock, flags);
+	gi->unbind = 1;
+	spin_unlock_irqrestore(&gi->spinlock, flags);
 	kfree(otg_desc[0]);
 	otg_desc[0] = NULL;
 	purge_configs_funcs(gi);
 	composite_dev_cleanup(cdev);
 	usb_ep_autoconfig_reset(cdev->gadget);
+	spin_lock_irqsave(&gi->spinlock, flags);
 	cdev->gadget = NULL;
 	set_gadget_data(gadget, NULL);
+	spin_unlock_irqrestore(&gi->spinlock, flags);
 }
 
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
@@ -1577,6 +1585,13 @@ static int android_setup(struct usb_gadget *gadget,
 		schedule_work(&gi->work);
 	}
 	spin_unlock_irqrestore(&cdev->lock, flags);
+
+	spin_lock_irqsave(&gi->spinlock, flags);
+	if (gi->unbind) {
+		spin_unlock_irqrestore(&gi->spinlock, flags);
+		return 0;
+	}
+
 	list_for_each_entry(fi, &gi->available_func, cfs_list) {
 		if (fi != NULL && fi->f != NULL && fi->f->setup != NULL) {
 			value = fi->f->setup(fi->f, c);
@@ -1592,6 +1607,7 @@ static int android_setup(struct usb_gadget *gadget,
 
 	if (value < 0)
 		value = composite_setup(gadget, c);
+	spin_unlock_irqrestore(&gi->spinlock, flags);
 
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (c->bRequest == USB_REQ_SET_CONFIGURATION &&
@@ -1858,6 +1874,7 @@ static struct config_group *gadgets_make(
 	gi->composite.max_speed = USB_SPEED_SUPER;
 
 	mutex_init(&gi->lock);
+	spin_lock_init(&gi->spinlock);
 	INIT_LIST_HEAD(&gi->string_list);
 	INIT_LIST_HEAD(&gi->available_func);
 
