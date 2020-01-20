@@ -39,6 +39,7 @@ struct ccu_device_s {
 	unsigned int irq_num;
 	struct mutex user_mutex;
 	struct mutex ion_client_mutex;
+	struct mutex dev_mutex;
 	u8 *i2c_dma_vaddr;
 	dma_addr_t i2c_dma_paddr;
 	uint32_t i2c_dma_mva;
