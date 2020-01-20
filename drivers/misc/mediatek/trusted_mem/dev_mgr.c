@@ -217,12 +217,6 @@ static bool is_invalid_ssmr_ops(struct ssmr_operations *ops)
 
 static bool is_invalid_ops_hooks(struct trusted_mem_device *mem_device)
 {
-	if (mem_device->configs.mock_peer_enable
-	    && is_invalid_peer_ops(mem_device->mock_peer_ops))
-		return true;
-	if (mem_device->configs.mock_ssmr_enable
-	    && is_invalid_ssmr_ops(mem_device->mock_ssmr_ops))
-		return true;
 	if (is_invalid_peer_ops(mem_device->peer_ops))
 		return true;
 	if (is_invalid_ssmr_ops(mem_device->ssmr_ops))
@@ -252,12 +246,6 @@ int register_trusted_mem_device(enum TRUSTED_MEM_TYPE register_type,
 
 	if (is_virt_mem_type(register_type))
 		goto exit;
-
-	if (tmem_device->configs.mock_peer_enable)
-		tmem_device->peer_ops = tmem_device->mock_peer_ops;
-
-	if (tmem_device->configs.mock_ssmr_enable)
-		tmem_device->ssmr_ops = tmem_device->mock_ssmr_ops;
 
 #ifdef TCORE_PROFILING_SUPPORT
 	install_profiler(tmem_device);

@@ -43,8 +43,6 @@
 #define SECMEM_WFD_DEVICE_NAME "SECMEM_WFD"
 
 static struct trusted_mem_configs wfd_smem_configs = {
-	.mock_peer_enable = false,
-	.mock_ssmr_enable = false,
 #if defined(WFD_SMEM_TEE_SESSION_KEEP_ALIVE)
 	.session_keep_alive_enable = true,
 #endif
