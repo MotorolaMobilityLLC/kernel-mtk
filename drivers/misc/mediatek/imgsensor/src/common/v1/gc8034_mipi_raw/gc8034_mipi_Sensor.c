@@ -74,7 +74,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 234200000,
+		.mipi_pixel_rate = 253440000,
 		.max_framerate = 300,
 	},
 	.cap1 = {
@@ -86,7 +86,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 234200000,
+		.mipi_pixel_rate = 253440000,
 		.max_framerate = 240,
 	},
 	.normal_video = {
@@ -98,7 +98,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 234200000,
+		.mipi_pixel_rate = 253440000,
 		.max_framerate = 300,
 	},
 	.hs_video = {
@@ -719,13 +719,13 @@ static void gc8034_otp_identify(void)
 {
 	memset(&gc8034_otp_info, 0, sizeof(gc8034_otp_info));
 	write_cmos_sensor(0xf2, 0x01);
-	write_cmos_sensor(0xf4, 0x88);
-	write_cmos_sensor(0xf5, 0x19);
+	write_cmos_sensor(0xf4, 0x90);
+	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
-	write_cmos_sensor(0xf8, 0x63);
-	write_cmos_sensor(0xfa, 0x45);
+	write_cmos_sensor(0xf8, 0x59);
+	write_cmos_sensor(0xfa, 0x41);
 	write_cmos_sensor(0xf9, 0x00);
-	write_cmos_sensor(0xf7, 0x97);
+	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
 	write_cmos_sensor(0xfc, 0x00);
 	write_cmos_sensor(0xfc, 0xea);
@@ -733,11 +733,11 @@ static void gc8034_otp_identify(void)
 	gc8034_read_otp_group(0, GC8034_OTP_ID_DATA_OFFSET, &gc8034_otp_info.otp_id[0], GC8034_OTP_ID_SIZE);
 	gc8034_gcore_read_otp_info();
 	write_cmos_sensor(0xf2, 0x00);
-	write_cmos_sensor(0xf4, 0x80);
-	write_cmos_sensor(0xf5, 0x19);
+	write_cmos_sensor(0xf4, 0x90);
+	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
-	write_cmos_sensor(0xf8, 0x63);
-	write_cmos_sensor(0xfa, 0x45);
+	write_cmos_sensor(0xf8, 0x59);
+	write_cmos_sensor(0xfa, 0x41);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -753,7 +753,7 @@ static void gc8034_otp_function(void)
 
 	memset(&otp_id, 0, GC8034_OTP_ID_SIZE);
 	write_cmos_sensor(0xfc, 0x00);
-	write_cmos_sensor(0xf7, 0x97);
+	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
 	write_cmos_sensor(0xfc, 0x00);
 	write_cmos_sensor(0xfc, 0xee);
@@ -776,7 +776,7 @@ static void gc8034_otp_function(void)
 
 	gc8034_gcore_update_otp();
 	write_cmos_sensor(0xf2, 0x00);
-	write_cmos_sensor(0xf4, 0x80);
+	write_cmos_sensor(0xf4, 0x90);
 	write_cmos_sensor(0xfc, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -972,7 +972,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
 	write_cmos_sensor(0xf8, 0x59);
-	write_cmos_sensor(0xfa, 0x3c);
+	write_cmos_sensor(0xfa, 0x41);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -1184,7 +1184,7 @@ static void binning_setting(void)
 	write_cmos_sensor(0xf4, 0x80);
 	write_cmos_sensor(0xf5, 0x19);
 	write_cmos_sensor(0xf6, 0x44);
-	write_cmos_sensor(0xf8, 0x63);
+	write_cmos_sensor(0xf8, 0x59);
 	write_cmos_sensor(0xfa, 0x45);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
@@ -1254,7 +1254,7 @@ static void fullsize_setting(void)
 	write_cmos_sensor(0xf5, 0x3d);
 	write_cmos_sensor(0xf6, 0x44);
 	write_cmos_sensor(0xf8, 0x59);
-	write_cmos_sensor(0xfa, 0x3c);
+	write_cmos_sensor(0xfa, 0x41);
 	write_cmos_sensor(0xf9, 0x00);
 	write_cmos_sensor(0xf7, 0x95);
 	write_cmos_sensor(0xfc, 0x00);
@@ -1349,9 +1349,9 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
 	if (enable) {
 		write_cmos_sensor(0xfc, 0x00);
-		write_cmos_sensor(0xf4, 0x80);
+		write_cmos_sensor(0xf4, 0x90);
 		write_cmos_sensor(0xf5, 0x19);
-		write_cmos_sensor(0xf8, 0x63);
+		write_cmos_sensor(0xf8, 0x59);
 		write_cmos_sensor(0xfa, 0x45);
 		write_cmos_sensor(0xfc, 0x00);
 		write_cmos_sensor(0xfc, 0xfe);
@@ -1371,7 +1371,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		write_cmos_sensor(0xf4, 0x90);
 		write_cmos_sensor(0xf5, 0x3d);
 		write_cmos_sensor(0xf8, 0x59);
-		write_cmos_sensor(0xfa, 0x3c);
+		write_cmos_sensor(0xfa, 0x41);
 		write_cmos_sensor(0xfc, 0x00);
 		write_cmos_sensor(0xfc, 0xee);
 		write_cmos_sensor(0xfe, 0x03);
