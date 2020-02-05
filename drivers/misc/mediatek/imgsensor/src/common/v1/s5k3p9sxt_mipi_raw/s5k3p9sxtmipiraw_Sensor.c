@@ -4057,7 +4057,8 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0202, 0x0100);
 	write_cmos_sensor(0x0200, 0x0100);
 	write_cmos_sensor(0x021E, 0x0000);
-	write_cmos_sensor(0x0D00, 0x0101);
+	write_cmos_sensor(0x0D00, 0x0100);//output pd
+	//write_cmos_sensor(0x0D00, 0x0101);//output nothing
 	write_cmos_sensor(0x0D02, 0x0001);
 	write_cmos_sensor(0x0D04, 0x0102);
 	write_cmos_sensor(0x0D06, 0x0120);
@@ -5259,6 +5260,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
 					break;
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+					memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
 					//memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info_16_9,sizeof(SET_PD_BLOCK_INFO_T));
 					break;
 				case MSDK_SCENARIO_ID_CUSTOM1:
