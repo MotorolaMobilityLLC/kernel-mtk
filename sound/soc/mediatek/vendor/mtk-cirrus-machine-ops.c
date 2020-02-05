@@ -87,7 +87,7 @@ static int cirrus_amp_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_card *card = rtd->card;
 	struct snd_soc_dai **codec_dais = rtd->codec_dais;
-	int ret, i;
+	int ret = 0, i;
 	unsigned int clk_freq;
 
 	dev_info(card->dev, "+%s, mclk refcount = %d\n", __func__,

@@ -421,7 +421,7 @@ static ssize_t ilitek_proc_debug_message_write(struct file *filp, const char *bu
 		size = 512;
 	}
 
-	ret = copy_from_user(buffer, buff, size - 1);
+	ret = copy_from_user(buffer, buff, ( 512 > strlen(buff)) ? strlen(buff) : 512 - 1  );
 	if (ret < 0) {
 		ipio_err("copy data from user space, failed");
 		return -1;
@@ -1012,7 +1012,7 @@ static ssize_t ilitek_proc_gesture_write(struct file *filp, const char *buff, si
 	char cmd[10] = { 0 };
 
 	if (buff != NULL) {
-		ret = copy_from_user(cmd, buff, size - 1);
+		ret = copy_from_user(cmd, buff, ( 10 > strlen(buff)) ? strlen(buff) : 10 - 1);
 		if (ret < 0) {
 			ipio_info("copy data from user space, failed\n");
 			return -1;
@@ -1079,7 +1079,7 @@ static ssize_t ilitek_proc_check_battery_write(struct file *filp, const char *bu
 	}
 
 	if (buff != NULL) {
-		ret = copy_from_user(cmd, buff, size - 1);
+		ret = copy_from_user(cmd, buff, (10 > strlen(buff)) ? strlen(buff) : 10 - 1);
 		if (ret < 0) {
 			ipio_info("copy data from user space, failed\n");
 			return -1;
@@ -1143,7 +1143,7 @@ static ssize_t ilitek_proc_check_esd_write(struct file *filp, const char *buff, 
 	}
 
 	if (buff != NULL) {
-		ret = copy_from_user(cmd, buff, size - 1);
+		ret = copy_from_user(cmd, buff, ( 10 > strlen(buff)) ? strlen(buff) : 10 - 1);
 		if (ret < 0) {
 			ipio_info("copy data from user space, failed\n");
 			return -1;
@@ -2037,7 +2037,7 @@ static DEVICE_ATTR(flashprog, 0444, drv_flash_prog_show, NULL);
 
 static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute *pAttr, const char *pBuf, size_t nSize)
 {
-	int ret;
+	int ret = 0;
 	char prefix[128] = "ILITEK";
 	const char *chip_name = ipd->TP_IC_TYPE;
 
