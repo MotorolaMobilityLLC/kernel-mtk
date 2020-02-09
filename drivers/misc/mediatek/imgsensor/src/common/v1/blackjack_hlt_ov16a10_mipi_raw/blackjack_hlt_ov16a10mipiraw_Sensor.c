@@ -51,7 +51,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1960,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2308,
+		.grabwindow_width = 2304,
 		.grabwindow_height = 1728,
 		.mipi_data_lp2hs_settle_dc = 65,
 		.max_framerate = 300,
@@ -100,8 +100,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1960,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2328,
-		.grabwindow_height = 1748,
+		.grabwindow_width = 2304,
+		.grabwindow_height = 1728,
 		.mipi_data_lp2hs_settle_dc = 65,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 30240000,
@@ -112,7 +112,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1960,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2308,
+		.grabwindow_width = 2304,
 		.grabwindow_height = 1728,
 		.mipi_data_lp2hs_settle_dc = 65,
 		.max_framerate = 300,
@@ -144,7 +144,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.margin = 8,		/* sensor framelength & shutter margin */
 	.min_shutter = 8,	/* min shutter */
-	.max_frame_length = 0x7ffe,	/* max framelength by sensor register's limitation */
+	.max_frame_length = 0x7fff,	/* max framelength by sensor register's limitation */
 	.ae_shut_delay_frame = 0,	/* shutter delay frame for AE cycle,
 					 * 2 frame with ispGain_delay-shut_delay=2-0=2
 					 */
@@ -626,8 +626,8 @@ static void sensor_init(void)
 	write_cmos_sensor(0x034a, 0x07);
 	write_cmos_sensor(0x300e, 0x22);
 	write_cmos_sensor(0x3012, 0x41);
-	write_cmos_sensor(0x3016, 0xd2);
-	write_cmos_sensor(0x3018, 0x70);
+	write_cmos_sensor(0x3016, 0xf0);
+	write_cmos_sensor(0x3018, 0xf0);
 	write_cmos_sensor(0x301e, 0x98);
 	write_cmos_sensor(0x3025, 0x03);
 	write_cmos_sensor(0x3026, 0x10);
@@ -686,8 +686,8 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3656, 0x0c);
 	write_cmos_sensor(0x3657, 0x8e);
 	write_cmos_sensor(0x3660, 0x80);
-	write_cmos_sensor(0x3663, 0x00);
-	write_cmos_sensor(0x3664, 0x00);
+	write_cmos_sensor(0x3663, 0x02);
+	write_cmos_sensor(0x3664, 0x07);
 	write_cmos_sensor(0x3668, 0x05);
 	write_cmos_sensor(0x3669, 0x05);
 	write_cmos_sensor(0x370d, 0x10);
@@ -770,12 +770,15 @@ static void sensor_init(void)
 	write_cmos_sensor(0x4643, 0x08);
 	write_cmos_sensor(0x4645, 0x04);
 	write_cmos_sensor(0x4806, 0x40);
-	write_cmos_sensor(0x480e, 0x00);
+	write_cmos_sensor(0x480e, 0x04);
 	write_cmos_sensor(0x4815, 0x2b);
-	write_cmos_sensor(0x481b, 0x3c);
+//	write_cmos_sensor(0x4819, 0x90);
+	write_cmos_sensor(0x481b, 0x3c); //0x50);
+//	write_cmos_sensor(0x4826, 0x50);
+//	write_cmos_sensor(0x4827, 0x52);
 	write_cmos_sensor(0x4833, 0x18);
 	write_cmos_sensor(0x4837, 0x08);
-	write_cmos_sensor(0x484b, 0x07);
+	write_cmos_sensor(0x484b, 0x27);
 	write_cmos_sensor(0x4850, 0x41);
 	write_cmos_sensor(0x4860, 0x00);
 	write_cmos_sensor(0x4861, 0xec);
@@ -1078,8 +1081,8 @@ static void sensor_init(void)
 	write_cmos_sensor(0x5001, 0x4b);
 	write_cmos_sensor(0x5002, 0x57);
 	write_cmos_sensor(0x5003, 0x42);
-	write_cmos_sensor(0x5005, 0x00);
-	write_cmos_sensor(0x5038, 0x00);
+	write_cmos_sensor(0x5005, 0x40);
+	write_cmos_sensor(0x5038, 0x40);
 	write_cmos_sensor(0x5081, 0x00);
 	write_cmos_sensor(0x5180, 0x00);
 	write_cmos_sensor(0x5181, 0x10);
@@ -1088,7 +1091,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x5820, 0xc5);
 	write_cmos_sensor(0x5854, 0x00);
 	write_cmos_sensor(0x58cb, 0x03);
-	write_cmos_sensor(0x5bd0, 0x01);
+	write_cmos_sensor(0x5bd0, 0x41);
 	write_cmos_sensor(0x5bd1, 0x06);	//for mirror[on]& flip[on]
 	write_cmos_sensor(0x5c0e, 0x11);
 	write_cmos_sensor(0x5c11, 0x01);
@@ -1314,7 +1317,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x5001, 0xcb);
 	write_cmos_sensor(0x5002, 0x17);
 	write_cmos_sensor(0x5820, 0xc1);
-	write_cmos_sensor(0x5bd0, 0x09);
+	write_cmos_sensor(0x5bd0, 0x49);
 	write_cmos_sensor(0x5c0e, 0x11);
 	write_cmos_sensor(0x5c21, 0x10);
 	write_cmos_sensor(0x5c22, 0x08);
@@ -1472,7 +1475,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x5001, 0x4b);
 	write_cmos_sensor(0x5002, 0x57);
 	write_cmos_sensor(0x5820, 0xc5);
-	write_cmos_sensor(0x5bd0, 0x01);
+	write_cmos_sensor(0x5bd0, 0x41);
 	write_cmos_sensor(0x5c0e, 0x11);
 	write_cmos_sensor(0x5c21, 0x10);
 	write_cmos_sensor(0x5c22, 0x10);
@@ -1553,7 +1556,7 @@ static void custom1_setting(void)
 	write_cmos_sensor(0x5001, 0x4b);
 	write_cmos_sensor(0x5002, 0x57);
 	write_cmos_sensor(0x5820, 0xc5);
-	write_cmos_sensor(0x5bd0, 0x01);
+	write_cmos_sensor(0x5bd0, 0x41);
 	write_cmos_sensor(0x5c0e, 0x11);
 	write_cmos_sensor(0x5c21, 0x10);
 	write_cmos_sensor(0x5c22, 0x10);
@@ -1632,7 +1635,7 @@ static void custom2_setting(void)
 	write_cmos_sensor(0x5001, 0x4b);
 	write_cmos_sensor(0x5002, 0x57);
 	write_cmos_sensor(0x5820, 0xc5);
-	write_cmos_sensor(0x5bd0, 0x01);
+	write_cmos_sensor(0x5bd0, 0x41);
 	write_cmos_sensor(0x5c0e, 0x11);
 	write_cmos_sensor(0x5c21, 0x10);
 	write_cmos_sensor(0x5c22, 0x10);
@@ -1751,7 +1754,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x5001, 0xcb);
 	write_cmos_sensor(0x5002, 0x17);
 	write_cmos_sensor(0x5820, 0xc1);
-	write_cmos_sensor(0x5bd0, 0x09);
+	write_cmos_sensor(0x5bd0, 0x49);
 	write_cmos_sensor(0x5c0e, 0x11);
 	write_cmos_sensor(0x5c21, 0x10);
 	write_cmos_sensor(0x5c22, 0x08);
