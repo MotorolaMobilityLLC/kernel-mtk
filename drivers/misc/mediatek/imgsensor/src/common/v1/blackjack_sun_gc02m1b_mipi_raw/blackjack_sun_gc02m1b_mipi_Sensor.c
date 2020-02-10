@@ -792,7 +792,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			LOG_INF("gc02m1b sensorid = 0x%x\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				imgsensor_info.module_id = sun_gc02m1b_read_otp(MODULE_ID_OFFSET);
-				if((0x0C == imgsensor_info.module_id) && ((strncmp(back_cam_name, "0_s5k3p9sx_TXD",strlen("0_s5k3p9sx_TXD"))) == 0))
+				if((0x0C == imgsensor_info.module_id) && ((strncmp(back_cam_name, "0_s5k3p9sx_TSP",strlen("0_s5k3p9sx_TSP"))) == 0))
 				{
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
 					memcpy(backaux_cam_name, "2_blackjack_sun_gc02m1b", 64);
@@ -806,7 +806,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if ((*sensor_id != imgsensor_info.sensor_id) || (0x0C != imgsensor_info.module_id) || (strncmp(back_cam_name, "0_s5k3p9sx_TXD",strlen("0_s5k3p9sx_TXD")))) {
+	if ((*sensor_id != imgsensor_info.sensor_id) || (0x0C != imgsensor_info.module_id) || (strncmp(back_cam_name, "0_s5k3p9sx_TSP",strlen("0_s5k3p9sx_TSP")))) {
 		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
