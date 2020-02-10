@@ -468,10 +468,12 @@ void do_raw_spin_lock(raw_spinlock_t *lock)
 #ifdef MTK_DEBUG_SPINLOCK_V1
 	if (unlikely(!arch_spin_trylock(&lock->raw_lock)))
 		__spin_lock_debug(lock);
-#else
+#elif MTK_DEBUG_SPINLOCK_V2
 	spin_lock_get_timestamp(&ts);
 	arch_spin_lock(&lock->raw_lock);
 	spin_lock_check_spinning_time(lock, ts);
+#else
+	arch_spin_lock(&lock->raw_lock);
 #endif
 	debug_spin_lock_after(lock);
 #ifdef CONFIG_MTK_SCHED_MONITOR
