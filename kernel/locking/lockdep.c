@@ -188,6 +188,9 @@ static const char * const held_lock_white_list[] = {
 };
 #endif
 
+static inline int get_lock_depth(struct lock_list *child);
+static inline struct lock_list *get_lock_parent(struct lock_list *child);
+
 static unsigned long long sec_high(unsigned long long nsec)
 {
 	do_div(nsec, 1000000000);
