@@ -24,7 +24,10 @@
 
 #include "../inc/mt6360_pmu.h"
 #include "../inc/mt6360_pmu_fled.h"
+#include "../inc/mt6360_pmu_chg.h"
 #include "../../../flashlight/richtek/rtfled.h"
+
+#define MT6360_PMU_FLED_DRV_VERSION	"1.0.1_MTK"
 
 
 static DEFINE_MUTEX(fled_lock);
@@ -338,6 +341,24 @@ static int mt6360_fled_resume(struct rt_fled_dev *fled)
 	return 0;
 }
 
+static inline int mt6360_pmu_reg_test_bit(struct mt6360_pmu_info *mpi,
+					  u8 addr, u8 shift, bool *is_one)
+{
+	int ret = 0;
+	u8 data = 0;
+
+	ret = mt6360_pmu_reg_read(mpi, addr);
+	if (ret < 0) {
+		*is_one = false;
+		return ret;
+	}
+
+	data = ret & (1 << shift);
+	*is_one = (data == 0 ? false : true);
+
+	return 0;
+}
+
 static int mt6360_fled_set_mode(struct rt_fled_dev *fled,
 				enum flashlight_mode mode)
 {
@@ -346,7 +367,32 @@ static int mt6360_fled_set_mode(struct rt_fled_dev *fled,
 	int ret = 0;
 	u8 en_bit = (fi->id == MT6360_FLED1) ? MT6360_FLCS1_EN_MASK :
 		    MT6360_FLCS2_EN_MASK;
+	bool hz_en = false, cfo_en = true;
 
+	switch (mode) {
+	case FLASHLIGHT_MODE_FLASH:
+	case FLASHLIGHT_MODE_DUAL_FLASH:
+		ret = mt6360_pmu_reg_test_bit(fi->mpi, MT6360_PMU_CHG_CTRL1,
+					      MT6360_SHFT_HZ_EN, &hz_en);
+		if (ret >= 0 && hz_en) {
+			dev_err(fi->dev, "%s WARNING\n", __func__);
+			dev_err(fi->dev, "%s set %s mode with HZ=1\n",
+					 __func__, flashlight_mode_str[mode]);
+		}
+		ret = mt6360_pmu_reg_test_bit(fi->mpi, MT6360_PMU_CHG_CTRL2,
+					      MT6360_SHFT_CFO_EN, &cfo_en);
+		if (ret >= 0 && !cfo_en) {
+			dev_err(fi->dev, "%s WARNING\n", __func__);
+			dev_err(fi->dev, "%s set %s mode with CFO=0\n",
+					 __func__, flashlight_mode_str[mode]);
+		}
+		break;
+	default:
+		break;
+	}
+
+	dev_info(fi->dev, "%s set %s mutex_lock +\n", __func__,
+		flashlight_mode_str[mode]);
 	mutex_lock(&fled_lock);
 	switch (mode) {
 	case FLASHLIGHT_MODE_TORCH:
