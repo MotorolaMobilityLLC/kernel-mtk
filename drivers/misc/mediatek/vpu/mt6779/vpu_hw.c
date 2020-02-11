@@ -2774,6 +2774,25 @@ irqreturn_t vpu1_isr_handler(int irq, void *dev_id)
 }
 #endif
 
+static void vpu_err_msg(int core, const char *msg)
+{
+	LOG_ERR("%s(%d)(%d)(%d)(%d.%d.%d.%d)(%d/%d)(%d/%d/%d)%d\n",
+		msg,
+		core,
+		is_power_debug_lock,
+		opps.vvpu.index,
+		opps.dsp.index,
+		opps.dspcore[0].index,
+		opps.dspcore[1].index,
+		opps.ipu_if.index,
+		max_vvpu_opp,
+		max_dsp_freq,
+		force_change_vvpu_opp[core],
+		force_change_dsp_freq[core],
+		change_freq_first[core],
+		opp_keep_flag);
+}
+
 static int pools_are_empty(int core)
 {
 	return (vpu_pool_is_empty(&vpu_dev->pool[core]) &&
@@ -4497,10 +4516,10 @@ int vpu_hw_boot_sequence(int core)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		if (is_hw_fail == true) {
+		apu_get_power_info();
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
 		vpu_aee("VPU Timeout", "timeout to external boot\n");
-		apu_get_power_info();
 		}
 		goto out;
 	}
@@ -4638,27 +4657,13 @@ int vpu_hw_set_debug(int core)
 			vpu_service_cores[core].is_cmd_done, ret);
 
 		vvpu_vmdla_vcore_checker();
-	LOG_INF("%s(%d)(%d)(%d)(%d.%d.%d.%d)(%d/%d)(%d/%d/%d)%d\n",
-		"set-debug timeout ",
-		core,
-		is_power_debug_lock,
-		opps.vvpu.index,
-		opps.dsp.index,
-		opps.dspcore[0].index,
-		opps.dspcore[1].index,
-		opps.ipu_if.index,
-		max_vvpu_opp,
-		max_dsp_freq,
-		force_change_vvpu_opp[core],
-		force_change_dsp_freq[core],
-		change_freq_first[core],
-		opp_keep_flag);
+		vpu_err_msg(core, "set-debug timeout ");
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		if (is_hw_fail == true) {
+		apu_get_power_info();
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
-		apu_get_power_info();
 		vpu_aee("VPU Timeout",
 			"core_%d timeout to do set_debug, (%d/%d), ret(%d)\n",
 			core,
@@ -5085,6 +5090,7 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		if (is_hw_fail == true) {
+		apu_get_power_info();
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
 		vpu_dump_algo_segment(core, algo->id[core], 0x0);
@@ -5229,6 +5235,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		if (is_hw_fail == true) {
+		apu_get_power_info();
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
 		vpu_aee("VPU Timeout",
@@ -5564,26 +5571,13 @@ if (g_vpu_log_level > Log_STATE_MACHINE) {
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		if (is_hw_fail == true) {
+		apu_get_power_info();
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
 			vpu_dump_algo_segment(core,
 				request->algo_id[core], 0x0);
 		vvpu_vmdla_vcore_checker();
-	LOG_INF("%s(%d)(%d)(%d)(%d.%d.%d.%d)(%d/%d)(%d/%d/%d)%d\n",
-		"timeout to do d2d ",
-		core,
-		is_power_debug_lock,
-		opps.vvpu.index,
-		opps.dsp.index,
-		opps.dspcore[0].index,
-		opps.dspcore[1].index,
-		opps.ipu_if.index,
-		max_vvpu_opp,
-		max_dsp_freq,
-		force_change_vvpu_opp[core],
-		force_change_dsp_freq[core],
-		change_freq_first[core],
-		opp_keep_flag);
+		vpu_err_msg(core, "timeout to do d2d ");
 		vpu_aee("VPU Timeout",
 			"core_%d timeout to do d2d, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
@@ -5701,6 +5695,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		if (is_hw_fail == true) {
+		apu_get_power_info();
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
 		vpu_aee("VPU Timeout",
