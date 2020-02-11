@@ -63,6 +63,9 @@
 #define AFDRV_DW9714KAF "DW9714KAF"
 #define AFDRV_CN3927EAF "CN3927E_GC2375HAF"
 
+
+#define CONVERT_CCU_TIMESTAMP 0x1000
+
 /* Structures */
 struct stAF_MotorInfo {
 	/* current position */
@@ -99,6 +102,12 @@ struct stAF_MotorName {
 struct stAF_MotorCmd {
 	u32 u4CmdID;
 	u32 u4Param;
+};
+
+/* Structures */
+struct stAF_CtrlCmd {
+	long long i8CmdID;
+	long long i8Param[2];
 };
 
 /* Structures */
@@ -157,5 +166,7 @@ struct stAF_DrvList {
 #define AFIOC_S_SETDRVINIT _IOW(AF_MAGIC, 16, u32)
 
 #define AFIOC_G_GETDRVNAME _IOWR(AF_MAGIC, 17, struct stAF_MotorName)
+
+#define AFIOC_X_CTRLPARA _IOWR(AF_MAGIC, 18, struct stAF_CtrlCmd)
 
 #endif
