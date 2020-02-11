@@ -564,10 +564,12 @@ int ccu_clock_enable(void)
 	int ret;
 
 	LOG_DBG_MUST("%s %d.\n", __func__, _clk_count);
+	mutex_lock(&g_ccu_device->clk_mutex);
 
 	_clk_count++;
-
 	ret = clk_prepare_enable(ccu_clock_ctrl);
+
+	mutex_unlock(&g_ccu_device->clk_mutex);
 	if (ret)
 		LOG_ERR("clock enable fail.\n");
 
@@ -577,11 +579,12 @@ int ccu_clock_enable(void)
 void ccu_clock_disable(void)
 {
 	LOG_DBG_MUST("%s %d.\n", __func__, _clk_count);
-
+	mutex_lock(&g_ccu_device->clk_mutex);
 	if (_clk_count > 0) {
 		clk_disable_unprepare(ccu_clock_ctrl);
 		_clk_count--;
 	}
+	mutex_unlock(&g_ccu_device->clk_mutex);
 }
 
 static MBOOL _is_fast_cmd(enum ccu_msg_id msg_id)
@@ -1308,6 +1311,7 @@ static int __init CCU_INIT(void)
 
 	INIT_LIST_HEAD(&g_ccu_device->user_list);
 	mutex_init(&g_ccu_device->user_mutex);
+	mutex_init(&g_ccu_device->clk_mutex);
 	init_waitqueue_head(&g_ccu_device->cmd_wait);
 
 	/* Register M4U callback */
