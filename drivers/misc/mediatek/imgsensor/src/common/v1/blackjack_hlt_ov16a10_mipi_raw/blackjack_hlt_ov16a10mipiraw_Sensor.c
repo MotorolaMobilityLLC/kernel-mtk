@@ -81,18 +81,17 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate = 628800000,
 	},
-	.normal_video = {
+	.normal_video = {		/* 95:line 5312, 52/35:line 5336 */
 		.pclk = 100000000,
-		.linelength = 1700,
-		.framelength = 1960,
+		.linelength = 850,
+		.framelength = 3920,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2304,
-		.grabwindow_height = 1728,
-		.mipi_data_lp2hs_settle_dc = 65,
+		.grabwindow_width = 4608,
+		.grabwindow_height = 3456,
+		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
-		.mipi_pixel_rate = 302400000,
-
+		.mipi_pixel_rate = 628800000,
 	},
 	.hs_video = {
 		.pclk = 100000000,
@@ -1695,7 +1694,7 @@ static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     custom2_setting();
     return ERROR_NONE;
 }   /*  Custom2   */
-
+/*
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
@@ -1703,7 +1702,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	preview_setting();
 
 }
-
+*/
 static void hs_video_setting(void)
 {
   	write_cmos_sensor(0x0305, 0x7a);
@@ -2123,7 +2122,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	/* imgsensor.current_fps = 300; */
 	/* imgsensor.autoflicker_en = KAL_FALSE; */
 	spin_unlock(&imgsensor_drv_lock);
-	normal_video_setting(30);
+	capture_setting(30);
 	
 	set_mirror_flip(imgsensor.mirror); ////GIONEE:malp modify
 
@@ -2687,7 +2686,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			       sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[2],
+			memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[1],
 			       sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -2781,7 +2780,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			       sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[2],
+			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[1],
 			       sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
