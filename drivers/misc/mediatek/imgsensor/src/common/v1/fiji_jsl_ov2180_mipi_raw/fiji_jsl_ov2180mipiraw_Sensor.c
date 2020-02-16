@@ -131,7 +131,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.custom2 = {/*normal capture*/
 		.pclk = 66400000,
-		.linelength = 1748,
+		.linelength = 1708,
 		.framelength = 1618,
 		.startx = 0,
 		.starty = 0,
