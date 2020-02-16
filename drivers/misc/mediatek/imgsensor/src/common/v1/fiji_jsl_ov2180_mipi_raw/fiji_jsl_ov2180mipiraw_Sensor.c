@@ -46,99 +46,99 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = 0x2680, //FIJI_JSL_OV2180MIPI_SENSOR_ID,  /*sensor_id = 0x2680*/ //record sensor id defined in Kd_imgsensor.h
 	.checksum_value = 0x64d5ee2e, //checksum value for Camera Auto Test
 	.pre = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700, 
+		.pclk = 66400000,
+		.linelength = 1708, 
 		.framelength = 1294,			//record different mode's framelength
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 300,
 		},
 		.cap = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700, 
+		.pclk = 66400000,
+		.linelength = 1708, 
 		.framelength = 1618,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 240,
 	},
 	.cap1 = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700, 
+		.pclk = 66400000,
+		.linelength = 1708, 
 		.framelength = 1618,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 240, //less than 13M(include 13M),cap1 max framerate is 24fps,16M max framerate is 20fps, 20M max framerate is 15fps  
 	},
 	.normal_video = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700, 
+		.pclk = 66400000,
+		.linelength = 1708, 
 		.framelength = 1294,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 300,
 	},
 	.hs_video = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1446,
+		.pclk = 66400000,
+		.linelength = 1708,
 		.framelength = 760,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1280,
 		.grabwindow_height = 720,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 600,
 	},
 	.slim_video = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700,
+		.pclk = 66400000,
+		.linelength = 1708,
 		.framelength = 1294,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 300,
 	},
 	.custom1 = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700,
+		.pclk = 66400000,
+		.linelength = 1708,
 		.framelength = 1618,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 240,
 	},
 	.custom2 = {/*normal capture*/
-		.pclk = 66000000,
-		.linelength = 1700,
+		.pclk = 66400000,
+		.linelength = 1748,
 		.framelength = 1618,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
 		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 65,//unit , ns
-		.mipi_pixel_rate = 66000000,
+		.mipi_pixel_rate = 66400000,
 		.max_framerate = 240,
 	},
 	.margin = 4,			//sensor framelength & shutter margin
@@ -545,8 +545,8 @@ static void preview_setting(void)
 	write_cmos_sensor(0x3016, 0x1c);
 	write_cmos_sensor(0x3018, 0x44);
 	write_cmos_sensor(0x3020, 0x00);
-	write_cmos_sensor(0x3080, 0x02);
-	write_cmos_sensor(0x3082, 0x37);
+	write_cmos_sensor(0x3080, 0x04);
+	write_cmos_sensor(0x3082, 0x53);
 	write_cmos_sensor(0x3084, 0x09);
 	write_cmos_sensor(0x3085, 0x04);
 	write_cmos_sensor(0x3086, 0x00);
@@ -590,7 +590,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x380a, 0x04);
 	write_cmos_sensor(0x380b, 0xb0);
 	write_cmos_sensor(0x380c, 0x06);
-	write_cmos_sensor(0x380d, 0xa4);
+	write_cmos_sensor(0x380d, 0xac);
 	write_cmos_sensor(0x380e, 0x05);
 	write_cmos_sensor(0x380f, 0x0e);
 	write_cmos_sensor(0x3810, 0x00);
@@ -656,8 +656,8 @@ static void sensor_init(void)
    write_cmos_sensor(0x3016, 0x1c);  
    write_cmos_sensor(0x3018, 0x44);
    write_cmos_sensor(0x3020, 0x00);
-   write_cmos_sensor(0x3080, 0x02);  
-   write_cmos_sensor(0x3082, 0x37);  
+   write_cmos_sensor(0x3080, 0x04);  
+   write_cmos_sensor(0x3082, 0x53);  
    write_cmos_sensor(0x3084, 0x09);  
    write_cmos_sensor(0x3085, 0x04);  
    write_cmos_sensor(0x3086, 0x00);   
@@ -701,7 +701,7 @@ static void sensor_init(void)
    write_cmos_sensor(0x380a, 0x04);   
    write_cmos_sensor(0x380b, 0xb0);   
    write_cmos_sensor(0x380c, 0x06);   
-   write_cmos_sensor(0x380d, 0xa4);   
+   write_cmos_sensor(0x380d, 0xac);   
    write_cmos_sensor(0x380e, 0x05);   
    write_cmos_sensor(0x380f, 0x0e);
    write_cmos_sensor(0x3810, 0x00);  
@@ -764,8 +764,8 @@ static void capture_setting(kal_uint16 curretfps)
 	write_cmos_sensor(0x3016, 0x1c);
 	write_cmos_sensor(0x3018, 0x44);
 	write_cmos_sensor(0x3020, 0x00);
-	write_cmos_sensor(0x3080, 0x02);
-	write_cmos_sensor(0x3082, 0x37);
+	write_cmos_sensor(0x3080, 0x04);
+	write_cmos_sensor(0x3082, 0x53);
 	write_cmos_sensor(0x3084, 0x09);
 	write_cmos_sensor(0x3085, 0x04);
 	write_cmos_sensor(0x3086, 0x00);
@@ -809,7 +809,7 @@ static void capture_setting(kal_uint16 curretfps)
 	write_cmos_sensor(0x380a, 0x04);
 	write_cmos_sensor(0x380b, 0xb0);
 	write_cmos_sensor(0x380c, 0x06);
-	write_cmos_sensor(0x380d, 0xa4);
+	write_cmos_sensor(0x380d, 0xac);
 	write_cmos_sensor(0x380e, 0x06);
 	write_cmos_sensor(0x380f, 0x52);
 	write_cmos_sensor(0x3810, 0x00);
@@ -894,8 +894,8 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x3809, 0x00);
 	write_cmos_sensor(0x380a, 0x02);
 	write_cmos_sensor(0x380b, 0xd0);
-	write_cmos_sensor(0x380c, 0x05);
-	write_cmos_sensor(0x380d, 0xa6);
+	write_cmos_sensor(0x380c, 0x06);
+	write_cmos_sensor(0x380d, 0xac);
 	write_cmos_sensor(0x380e, 0x02);
 	write_cmos_sensor(0x380f, 0xf8);
 	write_cmos_sensor(0x3811, 0x08);
@@ -943,7 +943,7 @@ static void custom1_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x380a, 0x04);
 	write_cmos_sensor(0x380b, 0xb0);
 	write_cmos_sensor(0x380c, 0x06);
-	write_cmos_sensor(0x380d, 0xa4);
+	write_cmos_sensor(0x380d, 0xac);
 	write_cmos_sensor(0x380e, 0x06);
 	write_cmos_sensor(0x380f, 0x52);
 	write_cmos_sensor(0x3811, 0x08);
@@ -984,7 +984,7 @@ static void custom2_setting(void)
 	write_cmos_sensor(0x380a, 0x04);
 	write_cmos_sensor(0x380b, 0xb0);
 	write_cmos_sensor(0x380c, 0x06);
-	write_cmos_sensor(0x380d, 0xa4);
+	write_cmos_sensor(0x380d, 0xac);
 	write_cmos_sensor(0x380e, 0x06);
 	write_cmos_sensor(0x380f, 0x52);
 	write_cmos_sensor(0x3811, 0x08);
