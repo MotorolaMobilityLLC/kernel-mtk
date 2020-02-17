@@ -1,4 +1,4 @@
 static unsigned char CTPM_FW[] = {
-	#include "MDT_6_517_LongV_V0xA1.0x40.0x01_AP_0x01_MP_20191113.ili"
+	#include "firmware/HLT_MDT_6517_LongV_M6206_0xA1_0x45_0x02(AP)_0x01(MP)_20200120.ili"
 };
 
