@@ -762,7 +762,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0300,0x0007);
 	write_cmos_sensor(0x0302,0x0001);
 	write_cmos_sensor(0x0304,0x0003);
-	write_cmos_sensor(0x0306,0x0050);
+	write_cmos_sensor(0x0306,0x005f);
 	write_cmos_sensor(0x0308,0x000a);
 	write_cmos_sensor(0x030a,0x0001);
 	write_cmos_sensor(0xffff,0x0050);
