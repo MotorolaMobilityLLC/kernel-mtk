@@ -494,8 +494,17 @@ struct isp_device {
 	int irq;
 };
 
+struct isp_sec_dapc_reg {
+	unsigned int CAM_REG_CTL_EN[ISP_DEV_NODE_NUM];
+	unsigned int CAM_REG_CTL_DMA_EN[ISP_DEV_NODE_NUM];
+	unsigned int CAM_REG_CTL_SEL[ISP_DEV_NODE_NUM];
+	unsigned int CAM_REG_CTL_EN2[ISP_DEV_NODE_NUM];
+};
+
 static struct isp_device *isp_devs;
 static int nr_isp_devs;
+static struct isp_sec_dapc_reg lock_reg;
+static unsigned int sec_on;
 #endif
 
 #define AEE_DUMP_BY_USING_ION_MEMORY
@@ -834,7 +843,7 @@ struct UserKeyInfo {
 static struct UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
 
 struct ISP_IRQ_INFO_STRUCT {
-	/* Add an extra index for status type in Everest -> signal or dma */
+	/* Add an extra index for status type in mt6797 -> signal or dma */
 	unsigned int    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT]
 				[IRQ_USER_NUM_MAX];
 	unsigned int    Mask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
@@ -7005,6 +7014,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	/*    bool   HoldEnable = MFALSE;*/
 	unsigned int DebugFlag[3] = {0};
+	unsigned int Dapc_Reg[6] = {0};
 	/*    unsigned int pid = 0;*/
 	struct ISP_REG_IO_STRUCT       RegIo;
 	struct ISP_DUMP_BUFFER_STRUCT DumpBufStruct;
@@ -7593,9 +7603,20 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					hds2_sel = ((ISP_RD32(
 						CAM_UNI_REG_TOP_PATH_SEL(
 						  ISP_UNI_A_IDX))) & 0x3);
-					pr_info("CAM_A viewFinder is ON\n");
-					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(
+					pr_info("CAM_A viewFinder is ON (SecOn:0x%x)\n",
+						sec_on);
+
+					if (sec_on) {
+						cam_dmao =
+						    lock_reg.CAM_REG_CTL_DMA_EN
+						    [ISP_CAM_A_IDX];
+					} else {
+						cam_dmao =
+						    ISP_RD32(
+						    CAM_REG_CTL_DMA_EN(
 							ISP_CAM_A_IDX));
+					}
+
 					pr_info("CAM_A:[DMA_EN]:0x%x\n",
 						cam_dmao);
 					vf = ISP_RD32(CAM_REG_TG_VF_CON(
@@ -8298,6 +8319,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	#ifdef ENABLE_KEEP_ION_HANDLE
 	case ISP_ION_IMPORT:
+		pr_info("ISP_ION_IMPORT: %d\n", ISP_ION_IMPORT);
 		if (copy_from_user(&IonNode, (void *)Param,
 		    sizeof(struct ISP_DEV_ION_NODE_STRUCT)) == 0) {
 			struct T_ION_TBL *ptbl = NULL;
@@ -8370,6 +8392,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			handle = ISP_ion_import_handle(
 					pIon_client, IonNode.memID);
 			if (!handle) {
+				pr_info(
+					"ISP_ION_IMPORT: %d handle == NULL\n",
+					ISP_ION_IMPORT);
 				Ret = -EFAULT;
 				break;
 			}
@@ -8659,6 +8684,46 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	}
+	case  ISP_SET_SEC_DAPC_REG:
+		pr_info("ISP_SET_SEC_DAPC_REG = %d\n", ISP_SET_SEC_DAPC_REG);
+		if (copy_from_user(
+		    Dapc_Reg,
+		    (void *)Param,
+		    sizeof(unsigned int) * 6) != 0) {
+			pr_err("get DAPC_REG from user fail\n");
+			Ret = -EFAULT;
+		} else {
+			if (Dapc_Reg[0] < ISP_CAMSYS_CONFIG_IDX ||
+				Dapc_Reg[0] >= ISP_DEV_NODE_NUM) {
+				pr_err("module index(0x%x) error\n",
+					Dapc_Reg[0]);
+				Ret = -EFAULT;
+				break;
+			}
+
+			if (Dapc_Reg[1] == MTRUE) {
+				sec_on = Dapc_Reg[1];
+				lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]] =
+								Dapc_Reg[2];
+				lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]] =
+								Dapc_Reg[3];
+				lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]] =
+								Dapc_Reg[4];
+				lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]] =
+								Dapc_Reg[5];
+
+				pr_info(
+				"[DAPC]EN:0x%x DMA_EN:0x%x SEL:0x%x\n",
+				    lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]],
+				    lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]],
+				    lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]]);
+			} else {
+				pr_err("get wrong sec status (0x%x)\n",
+					Dapc_Reg[1]);
+				Ret = -EFAULT;
+			}
+		}
+		break;
 	default:
 	{
 		pr_err("Unknown Cmd(%d)\n", Cmd);
@@ -9144,6 +9209,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_GET_CUR_ISP_CLOCK:
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
+	case ISP_SET_SEC_DAPC_REG:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -9562,14 +9628,15 @@ static signed int ISP_release(
 	 * It will encounter err when run single path
 	 * and other module dmx_sel = 1
 	 */
-	Reg = ISP_RD32(CAM_REG_CTL_SEL(ISP_CAM_A_IDX));
-	Reg &= 0xfffffff8;/* set dmx to 0 */
-	ISP_WR32(CAM_REG_CTL_SEL(ISP_CAM_A_IDX), Reg);
+	if (!sec_on) {
+		Reg = ISP_RD32(CAM_REG_CTL_SEL(ISP_CAM_A_IDX));
+		Reg &= 0xfffffff8;/* set dmx to 0 */
+		ISP_WR32(CAM_REG_CTL_SEL(ISP_CAM_A_IDX), Reg);
 
-	Reg = ISP_RD32(CAM_REG_CTL_SEL(ISP_CAM_B_IDX));
-	Reg &= 0xfffffff8;/* set dmx to 0 */
-	ISP_WR32(CAM_REG_CTL_SEL(ISP_CAM_B_IDX), Reg);
-
+		Reg = ISP_RD32(CAM_REG_CTL_SEL(ISP_CAM_B_IDX));
+		Reg &= 0xfffffff8;/* set dmx to 0 */
+		ISP_WR32(CAM_REG_CTL_SEL(ISP_CAM_B_IDX), Reg);
+	}
 	/* Reset Twin status.
 	 * If previous camera run in twin mode,
 	 * then mediaserver died, no one clear this status.
@@ -9676,6 +9743,12 @@ static signed int ISP_release(
 #endif
 	/* reset backup regs*/
 	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
+
+	/* reset secure cam info*/
+	if (sec_on) {
+		memset(&lock_reg, 0, sizeof(struct isp_sec_dapc_reg));
+		sec_on = 0;
+	}
 
 	/*  */
 	ISP_StopHW(ISP_CAM_A_IDX);
@@ -11710,7 +11783,10 @@ enum CAM_FrameST Irq_CAM_FrameStatus(enum ISP_DEV_NODE_ENUM module,
 		return CAM_FST_DROP_FRAME;
 	}
 
-	dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
+	if (sec_on)
+		dma_en = lock_reg.CAM_REG_CTL_DMA_EN[module];
+	else
+		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
 
 	if (dma_en & 0x1) {
 		fbc_ctrl1[dma_arry_map[_imgo_]].Raw =
@@ -11960,7 +12036,10 @@ static enum CAM_FrameST Irq_CAM_SttFrameStatus(enum ISP_DEV_NODE_ENUM module,
 	fbc_ctrl1.Raw = 0x0;
 	fbc_ctrl2.Raw = 0x0;
 
-	dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
+	if (sec_on)
+		dma_en = lock_reg.CAM_REG_CTL_DMA_EN[module];
+	else
+		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
 
 	if (_aao_ == dma_id) {
 		if (dma_en & 0x20) {
