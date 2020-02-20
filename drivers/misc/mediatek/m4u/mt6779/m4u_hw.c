@@ -2593,7 +2593,10 @@ int m4u_reg_init(struct m4u_domain_t *m4u_domain,
 			REG_MMU_IVRP_PADDR));
 
 		/* enable DCM */
-		M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_DCM_DIS, 0);
+		if (m4u_id != 1) {
+			M4U_WriteReg32(gM4UBaseAddr[m4u_id],
+			REG_MMU_DCM_DIS, 0);
+		}
 
 		m4u_invalid_tlb_all(m4u_id);
 
