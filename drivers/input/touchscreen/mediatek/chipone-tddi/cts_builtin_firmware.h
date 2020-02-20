@@ -3,7 +3,7 @@ static u8 icnl9911_driver_builtin_firmware_hjc[] = {
 };
 
 static u8 icnl9911_driver_builtin_firmware_rs[] = {
-#include"firmware/truly/Moto-Blackjack-Chipone-ICNL9911S-TRULY_Vmode_V0105_20200214.h"
+#include"firmware/truly/Moto-Blackjack-Chipone-ICNL9911S-TRULY_Vmode_V0106_20200219.h"
 };
 
 const static struct cts_firmware cts_driver_builtin_firmwares_hjc[] = {
