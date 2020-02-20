@@ -309,7 +309,7 @@ static int hiddev_open(struct inode *inode, struct file *file)
 
 	mutex_lock(&hiddev->existancelock);
 	/*
-	 * recheck exist with existance lock held to
+	 * recheck exist with existence lock held to
 	 * avoid opening a disconnected device
 	 */
 	if (!list->hiddev->exist) {
