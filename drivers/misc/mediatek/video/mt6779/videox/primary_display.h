@@ -278,6 +278,7 @@ struct display_primary_path_context {
 struct lcm_fps_ctx_t {
 	int is_inited;
 	spinlock_t lock;
+	atomic_t skip_update;
 	unsigned int dsi_mode;
 	unsigned int head_idx;
 	unsigned int num;
