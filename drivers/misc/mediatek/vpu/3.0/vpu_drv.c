@@ -44,6 +44,7 @@
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
 #include "vpu_dbg.h"
+#include "vpu_dump.h"
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */
@@ -1898,6 +1899,8 @@ out:
 			vpu_unreg_chardev();
 	}
 
+	vpu_dmp_init(core);
+
 	LOG_DBG("probe vpu driver\n");
 
 	return ret;
@@ -1934,6 +1937,9 @@ static int vpu_remove(struct platform_device *pDev)
 	device_destroy(vpu_class, vpu_devt);
 	class_destroy(vpu_class);
 	vpu_class = NULL;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++)
+		vpu_dmp_exit(i);
 	return 0;
 }
 
@@ -1950,6 +1956,29 @@ static int vpu_suspend(struct platform_device *pdev, pm_message_t mesg)
 static int vpu_resume(struct platform_device *pdev)
 {
 	return 0;
+}
+
+unsigned long vpu_bin_base(void)
+{
+	return (vpu_device) ? vpu_device->bin_base : 0;
+}
+
+unsigned long vpu_ctl_base(int core)
+{
+	if (core < 0 || core >= MTK_VPU_CORE || !vpu_device)
+		return 0;
+
+	return vpu_device->vpu_base[core];
+}
+
+unsigned long vpu_syscfg_base(void)
+{
+	return vpu_device->vpu_syscfg_base;
+}
+
+unsigned long vpu_vcore_base(void)
+{
+	return vpu_device->vpu_vcorecfg_base;
 }
 
 static int __init VPU_INIT(void)
