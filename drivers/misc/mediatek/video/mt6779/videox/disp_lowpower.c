@@ -819,7 +819,6 @@ static void _vdo_mode_enter_idle(void)
 	disp_pm_qos_set_ovl_bw(in_fps, out_fps, &bandwidth);
 	disp_pm_qos_update_bw(bandwidth);
 #endif
-	lcm_fps_ctx_reset(&lcm_fps_ctx);
 }
 
 static void _vdo_mode_leave_idle(void)
@@ -879,7 +878,6 @@ static void _vdo_mode_leave_idle(void)
 	disp_pm_qos_set_ovl_bw(in_fps, out_fps, &bandwidth);
 	disp_pm_qos_update_bw(bandwidth);
 #endif
-	lcm_fps_ctx_reset(&lcm_fps_ctx);
 }
 
 static void _cmd_mode_enter_idle(void)
@@ -912,7 +910,6 @@ static void _cmd_mode_enter_idle(void)
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
 					  HRT_LEVEL_LEVEL0);
 #endif
-	lcm_fps_ctx_reset(&lcm_fps_ctx);
 }
 
 static void _cmd_mode_leave_idle(void)
@@ -954,7 +951,6 @@ static void _cmd_mode_leave_idle(void)
 	disp_pm_qos_set_ovl_bw(in_fps, out_fps, &bandwidth);
 	disp_pm_qos_update_bw(bandwidth);
 #endif
-	lcm_fps_ctx_reset(&lcm_fps_ctx);
 }
 
 void primary_display_idlemgr_enter_idle_nolock(void)
@@ -1082,6 +1078,13 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		}
 
 		if (primary_display_is_idle()) {
+			primary_display_manual_unlock();
+			continue;
+		}
+
+		/* Do not enter idle when we needs calculate FPS */
+		if (atomic_read(&lcm_fps_ctx.skip_update) == 0) {
+			DISPMSG("skip idle due to fps calculation\n");
 			primary_display_manual_unlock();
 			continue;
 		}
