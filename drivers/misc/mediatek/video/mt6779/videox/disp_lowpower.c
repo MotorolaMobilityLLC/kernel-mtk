@@ -1041,6 +1041,26 @@ static int get_rsz_ratio(void)
 	return (ratio_w >= ratio_h) ? ratio_w : ratio_h;
 }
 
+static bool check_dim_layer(void)
+{
+	struct disp_ddp_path_config *config =
+		dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+	struct OVL_CONFIG_STRUCT *cfg;
+	int i = 0;
+	bool exist = 0;
+
+	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
+		cfg = &config->ovl_config[i];
+		if (cfg->layer_en &&
+			cfg->source == OVL_LAYER_SOURCE_RESERVED) {
+			exist = 1;
+			break;
+		}
+	}
+
+	return exist;
+}
+
 static int _primary_path_idlemgr_monitor_thread(void *data)
 {
 	int ret = 0;
@@ -1098,6 +1118,11 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 
 		if (primary_display_is_video_mode() &&
 			get_rsz_ratio() >= MAX_IDLE_RSZ_RATIO) {
+			primary_display_manual_unlock();
+			continue;
+		}
+
+		if (primary_display_is_video_mode() && check_dim_layer()) {
 			primary_display_manual_unlock();
 			continue;
 		}
