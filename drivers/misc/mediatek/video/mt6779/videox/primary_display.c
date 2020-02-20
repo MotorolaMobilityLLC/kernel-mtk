@@ -1094,12 +1094,15 @@ int lcm_fps_ctx_init(struct lcm_fps_ctx_t *fps_ctx)
 		return 0;
 
 	memset(fps_ctx, 0, sizeof(*fps_ctx));
-	mutex_init(&fps_ctx->lock);
-	fps_ctx->is_inited = 1;
+
+	spin_lock_init(&fps_ctx->lock);
+
 	if (primary_display_is_video_mode())
 		fps_ctx->dsi_mode = 1;
 	else
 		fps_ctx->dsi_mode = 0;
+
+	fps_ctx->is_inited = 1;
 
 	DISPINFO("%s done", __func__);
 
@@ -1108,13 +1111,25 @@ int lcm_fps_ctx_init(struct lcm_fps_ctx_t *fps_ctx)
 
 int lcm_fps_ctx_reset(struct lcm_fps_ctx_t *fps_ctx)
 {
-	memset(fps_ctx, 0, sizeof(*fps_ctx));
-	mutex_init(&fps_ctx->lock);
-	fps_ctx->is_inited = 1;
+	unsigned long flags = 0;
+
+	/* skip before lcm_fps_ctx_init */
+	if (!fps_ctx->is_inited)
+		return 0;
+
+	spin_lock_irqsave(&fps_ctx->lock, flags);
+
 	if (primary_display_is_video_mode())
 		fps_ctx->dsi_mode = 1;
 	else
 		fps_ctx->dsi_mode = 0;
+
+	fps_ctx->head_idx = 0;
+	fps_ctx->num = 0;
+	fps_ctx->last_ns = 0;
+	memset(fps_ctx->array, 0, sizeof(fps_ctx->array));
+
+	spin_unlock_irqrestore(&fps_ctx->lock, flags);
 
 	DISPINFO("%s done", __func__);
 
@@ -1125,21 +1140,21 @@ int lcm_fps_ctx_update(struct lcm_fps_ctx_t *fps_ctx, unsigned long long cur_ns)
 {
 	unsigned int idx;
 	unsigned long long delta;
+	unsigned long flags = 0;
 
+	/* skip before lcm_fps_ctx_init */
 	if (!fps_ctx->is_inited)
-		lcm_fps_ctx_init(fps_ctx);
+		return 0;
+
+	spin_lock_irqsave(&fps_ctx->lock, flags);
 
 	delta = cur_ns - fps_ctx->last_ns;
 	if (delta == 0 || fps_ctx->last_ns == 0) {
 		fps_ctx->last_ns = cur_ns;
+		spin_unlock_irqrestore(&fps_ctx->lock, flags);
 		return 0;
 	}
 
-	if (mutex_trylock(&fps_ctx->lock) == 0) {
-		DISPMSG("%s try lock fail", __func__);
-		fps_ctx->last_ns = cur_ns;
-		return 0;
-	}
 	idx = (fps_ctx->head_idx + fps_ctx->num) % LCM_FPS_ARRAY_SIZE;
 	fps_ctx->array[idx] = delta;
 
@@ -1151,7 +1166,7 @@ int lcm_fps_ctx_update(struct lcm_fps_ctx_t *fps_ctx, unsigned long long cur_ns)
 
 	fps_ctx->last_ns = cur_ns;
 
-	mutex_unlock(&fps_ctx->lock);
+	spin_unlock_irqrestore(&fps_ctx->lock, flags);
 
 	DISPINFO("%s update %lld to index %d", __func__, delta, idx);
 
@@ -1166,21 +1181,34 @@ unsigned int lcm_fps_ctx_get(struct lcm_fps_ctx_t *fps_ctx)
 	unsigned long long duration_max = 0;
 	unsigned long long duration_sum = 0;
 	unsigned long long fps = 100000000000;
+	unsigned long flags = 0;
+	static int cnt;
+	static unsigned long long last_fps = 6000;
 
+	/* skip before lcm_fps_ctx_init */
 	if (!fps_ctx->is_inited)
-		lcm_fps_ctx_init(fps_ctx);
+		return 6000;
 
+	/* Update fps per 100 frame update */
+	cnt = (cnt + 1) % 100;
+	if (cnt)
+		return last_fps;
+
+	spin_lock_irqsave(&fps_ctx->lock, flags);
 	if (fps_ctx->num <= 3) {
+		unsigned int ret;
+
 		DISPMSG("%s num is %d which is < 3, so return fix fps",
 			__func__, fps_ctx->num);
-		if (primary_display_is_idle() &&
-			fps_ctx->dsi_mode == 1)
-			return 4500;
-		else
-			return 6000;
-	}
 
-	mutex_lock(&fps_ctx->lock);
+		if (primary_display_is_idle() && fps_ctx->dsi_mode == 1)
+			ret = 4500;
+		else
+			ret = 6000;
+
+		spin_unlock_irqrestore(&fps_ctx->lock, flags);
+		return ret;
+	}
 
 	for (i = 0; i < fps_ctx->num; i++) {
 		duration_sum += fps_ctx->array[i];
@@ -1191,13 +1219,14 @@ unsigned int lcm_fps_ctx_get(struct lcm_fps_ctx_t *fps_ctx)
 	duration_avg = duration_sum / (fps_ctx->num - 2);
 	do_div(fps, duration_avg);
 
-	DISPINFO("%s remove max = %lld, min = %lld, sum = %lld, num = %d",
-		__func__,
-		duration_max, duration_min, duration_sum, fps_ctx->num);
+	DISPINFO("%s drop max=%lld, min=%lld, sum=%lld, num=%d fps=%d\n",
+		__func__, duration_max, duration_min, duration_sum,
+		fps_ctx->num, fps);
 
-	DISPINFO("%s fps = %d", __func__, fps);
+	spin_unlock_irqrestore(&fps_ctx->lock, flags);
 
-	mutex_unlock(&fps_ctx->lock);
+	last_fps = fps;
+
 	return (unsigned int)fps;
 }
 
