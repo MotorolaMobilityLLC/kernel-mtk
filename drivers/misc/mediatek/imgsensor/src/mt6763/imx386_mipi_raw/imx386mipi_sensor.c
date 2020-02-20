@@ -1581,7 +1581,7 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1/2Binning@30fps
 	 * H: 2016
@@ -1657,11 +1657,13 @@ static void preview_setting(void)
 	write_cmos_sensor(0xA0CE, 0x19);
 	write_cmos_sensor(0xA0CF, 0x19);
 	/* Integration Time Setting */
-	write_cmos_sensor(0x0202, 0x06);
-	write_cmos_sensor(0x0203, 0xEA);
+	//write_cmos_sensor(0x0202, 0x06);
+	//write_cmos_sensor(0x0203, 0xEA);
 	/* Gain Setting */
-	write_cmos_sensor(0x0204, 0x00);
-	write_cmos_sensor(0x0205, 0x00);
+
+	//write_cmos_sensor(0x0204, 0x00);
+	//write_cmos_sensor(0x0205, 0x00);
+
 	write_cmos_sensor(0x020E, 0x01);
 	write_cmos_sensor(0x020F, 0x00);
 	write_cmos_sensor(0x0210, 0x01);
@@ -1672,13 +1674,13 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 }				/* preview_setting */
 
 static void capture_setting(kal_uint16 currefps)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/* Mode Setting */
 	write_cmos_sensor(0x0112, 0x0A);
 	write_cmos_sensor(0x0113, 0x0A);
@@ -1746,11 +1748,13 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0xA0CE, 0x19);
 	write_cmos_sensor(0xA0CF, 0x19);
 	/* Integration Time Setting */
-	write_cmos_sensor(0x0202, 0x0C);
-	write_cmos_sensor(0x0203, 0xDA);
+	//write_cmos_sensor(0x0202, 0x0C);
+	//write_cmos_sensor(0x0203, 0xDA);
+
 	/* Gain Setting */
-	write_cmos_sensor(0x0204, 0x00);
-	write_cmos_sensor(0x0205, 0x00);
+	//write_cmos_sensor(0x0204, 0x00);
+	//write_cmos_sensor(0x0205, 0x00);
+
 	write_cmos_sensor(0x020E, 0x01);
 	write_cmos_sensor(0x020F, 0x00);
 	write_cmos_sensor(0x0210, 0x01);
@@ -1760,14 +1764,14 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
-	write_cmos_sensor(0x0100, 0x01);	/* stream on? */
+	//write_cmos_sensor(0x0100, 0x01);	/* stream on? */
 	pr_info("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }				/* capture setting */
 
 static void custom1_setting(void)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/* Mode Setting */
 	write_cmos_sensor(0x0112, 0x0A);
 	write_cmos_sensor(0x0113, 0x0A);
@@ -1848,7 +1852,7 @@ static void custom1_setting(void)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 }
 
 static void hd_4k_setting(void)
@@ -1941,13 +1945,13 @@ static void hd_4k_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom3_setting(void)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1/2Binning@24fps
 	 * H: 2016
@@ -2038,13 +2042,13 @@ static void custom3_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend*/
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/* Mode Setting */
 	write_cmos_sensor(0x0112, 0x0A);
 	write_cmos_sensor(0x0113, 0x0A);
@@ -2127,14 +2131,14 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 	pr_info("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }
 
 static void hs_video_setting(void)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1296X736@120fps
 	 * H: 1296
@@ -2223,13 +2227,13 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 }
 
 static void slim_video_setting(void)
 {
 	pr_info("%s.\n", __func__);
-	write_cmos_sensor(0x0100, 0x00);
+	//write_cmos_sensor(0x0100, 0x00);
 	/*
 	 * 1296X736@30fps
 	 * H: 1296
@@ -2318,7 +2322,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0215, 0x00);
 	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 
-	write_cmos_sensor(0x0100, 0x01);
+	//write_cmos_sensor(0x0100, 0x01);
 }
 
 
