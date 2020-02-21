@@ -45,8 +45,6 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static kal_bool BLACKJACK_TSP_GC2375DuringTestPattern = KAL_FALSE;
-extern kal_bool FF_driver_registered;
-
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = GC2375H_SENSOR_ID,
 	.module_id = 0x01,
@@ -738,14 +736,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if ((*sensor_id == imgsensor_info.sensor_id) && (!FF_driver_registered)) {
-                                imgsensor_info.module_id = blackjack_tsp_gc2375_read_otp(MODULE_ID_OFFSET);
-                                if(0x52 == imgsensor_info.module_id)
-                                {
+			if (*sensor_id == imgsensor_info.sensor_id){
+                imgsensor_info.module_id = blackjack_tsp_gc2375_read_otp(MODULE_ID_OFFSET);
+                if(0x52 == imgsensor_info.module_id)
+                {
 					*sensor_id = BLACKJACK_TSP_GC2375_SENSOR_ID;
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
 					memcpy(backaux_cam_name, "2_blackjack_tsp_gc2375", 64);
-					FF_driver_registered = KAL_TRUE;
 					printk("i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
 					return ERROR_NONE;
 				}
