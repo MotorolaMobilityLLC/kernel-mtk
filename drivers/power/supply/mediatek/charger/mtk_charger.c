@@ -2202,12 +2202,7 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	} else if (mmi->demo_mode) {
 		bool voltage_full;
 		static int demo_full_soc = 100;
-		int usb_suspend = 0;
-		charger_dev_get_input_current(info->chg1_dev, &usb_suspend);
-		if (usb_suspend == 0)
-			usb_suspend = 1;
-		else
-			usb_suspend = 0;
+		static int usb_suspend = 0;
 
 		mmi->pres_chrg_step = STEP_DEMO;
 		pr_info("[%s]Battery in Demo Mode charging Limited %dper\n",
@@ -2231,6 +2226,11 @@ static void mmi_charger_check_status(struct charger_manager *info)
 			usb_suspend = 0;
 			mmi->chrg_taper_cnt = 0;
 		}
+		if (usb_suspend)
+			charger_dev_set_input_current(info->chg1_dev, 0);
+
+		pr_info("Charge Demo Mode:us = %d, vf = %d, dfs = %d,bs = %d\n",
+				usb_suspend, voltage_full, demo_full_soc, batt_soc);
 	} else if ((mmi->pres_chrg_step == STEP_NONE) ||
 		   (mmi->pres_chrg_step == STEP_STOP)) {
 		if (zone->norm_mv && (batt_mv >= zone->norm_mv)) {
