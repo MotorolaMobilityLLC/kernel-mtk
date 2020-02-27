@@ -369,7 +369,14 @@ static void set_shutter(kal_uint16 shutter)
 
 	write_shutter(shutter);
 }				
-#define BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex (119)
+
+
+#define GAINMAX 8
+#if (GAINMAX == 16)
+#define BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex (117)
+#else
+#define BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex 54
+#endif
 kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex][2] ={
 //{72	,   0x1024},
 //{80	,   0x1028},
@@ -427,6 +434,7 @@ kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI
 {496,	0x10FC},
 {504,	0x10FE},
 {512,	0x11C0},
+#if (GAINMAX == 16)
 {520,	0x11C1},
 {528,	0x11C2},
 {536,	0x11C3},
@@ -490,17 +498,17 @@ kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI
 {1000,	0x11FD},
 {1008,	0x11FE},
 {1016,	0x11FF},
-
+#endif
 };
 
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint8 iI;
-    LOG_INF("[BLACKJACK_SEA_MT9D015MIPI]enter BLACKJACK_SEA_MT9D015MIPIGain2Reg function\n");
+    LOG_INF("[BLACKJACK_SEA_MT9D015MIPI]enter BLACKJACK_SEA_MT9D015MIPIGain2Reg function : %d\n",BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex);
     for (iI = 0; iI < BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex; iI++)
 	{
-		if(gain < BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[iI][0])
+		if(gain <= BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[iI][0])
 		{
 			return BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[iI][1];
 		}
@@ -539,13 +547,13 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
        kal_uint16 reg_gain;
   //BASEGAIN 64
-	if (gain < BASEGAIN || gain > 15 * BASEGAIN) {
+	if (gain < BASEGAIN || gain > GAINMAX * BASEGAIN) {
         LOG_INF("Error gain setting");
 
         if (gain < BASEGAIN)
             gain = BASEGAIN;
-	else if (gain > 15* BASEGAIN)
-		gain = 15 * BASEGAIN;
+	else if (gain > GAINMAX * BASEGAIN)
+		gain = GAINMAX * BASEGAIN;
     }
 
     reg_gain = gain2reg(gain);
