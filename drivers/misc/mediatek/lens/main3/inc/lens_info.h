@@ -66,6 +66,9 @@
 
 #define CONVERT_CCU_TIMESTAMP 0x1000
 
+
+#define CONVERT_CCU_TIMESTAMP 0x1000
+
 /* Structures */
 struct stAF_MotorInfo {
 	/* current position */
