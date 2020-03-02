@@ -371,12 +371,8 @@ static void set_shutter(kal_uint16 shutter)
 }				
 
 
-#define GAINMAX 8
-#if (GAINMAX == 16)
+#define GAINMAX 16
 #define BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex (117)
-#else
-#define BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex 54
-#endif
 kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex][2] ={
 //{72	,   0x1024},
 //{80	,   0x1028},
@@ -434,7 +430,6 @@ kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI
 {496,	0x10FC},
 {504,	0x10FE},
 {512,	0x11C0},
-#if (GAINMAX == 16)
 {520,	0x11C1},
 {528,	0x11C2},
 {536,	0x11C3},
@@ -498,7 +493,6 @@ kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI
 {1000,	0x11FD},
 {1008,	0x11FE},
 {1016,	0x11FF},
-#endif
 };
 
 
