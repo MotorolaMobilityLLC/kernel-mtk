@@ -527,14 +527,15 @@ static void lcm_init(void)
 		tpd_gpio_output(0, 0);
 
 		set_gpio_lcd_enp(1);
-		MDELAY(2);//t2
-		set_gpio_lcd_enn(1);
-		MDELAY(15);
+		MDELAY(6);//for bias IC and tr2
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
 		else
 			LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
+		MDELAY(2);//t2
+		set_gpio_lcd_enn(1);
+		MDELAY(7);//for bias IC and tr2
 		cmd = 0x01;
 		data = 0x0F;
 		ret = NT50358A_write_byte(cmd, data);
