@@ -329,7 +329,11 @@
                 reg = <0x41>;
                 status = "okay";
         };
-
+        chipone_tddi_mtk:chipone_touch@48 {
+                compatible = "mediatek,chipone_tddi";
+                reg = <0x48>;
+                status = "okay";
+        };
 };
 
 &touch {
