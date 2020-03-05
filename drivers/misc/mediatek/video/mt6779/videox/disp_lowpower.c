@@ -1061,6 +1061,46 @@ static bool check_dim_layer(void)
 	return exist;
 }
 
+static int has_yuv_layer(void)
+{
+	struct disp_ddp_path_config *config =
+		dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+	struct OVL_CONFIG_STRUCT *ovl_cfg;
+	enum UNIFIED_COLOR_FMT fmt;
+	int i = 0;
+
+	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
+		ovl_cfg = &config->ovl_config[i];
+		if (ovl_cfg->layer_en == 0)
+			continue;
+
+		fmt = ovl_cfg->fmt;
+		if (fmt == UFMT_UYVY || fmt == UFMT_VYUY ||
+		    fmt == UFMT_YUYV || fmt == UFMT_YVYU)
+			return 1;
+	}
+
+	return 0;
+}
+
+/* small video would shake due to low resolution */
+static int rsz_skip_idle(void)
+{
+	int ratio = get_rsz_ratio();
+
+	if (ratio >= MAX_IDLE_RSZ_RATIO) {
+		DISPINFO("%s ratio:%d\n", __func__, ratio);
+		return 1;
+	}
+
+	if (ratio > 100 && has_yuv_layer()) {
+		DISPINFO("%s ratio:%d, has yuv\n", __func__, ratio);
+		return 1;
+	}
+
+	return 0;
+}
+
 static int _primary_path_idlemgr_monitor_thread(void *data)
 {
 	int ret = 0;
@@ -1117,7 +1157,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 #endif
 
 		if (primary_display_is_video_mode() &&
-			get_rsz_ratio() >= MAX_IDLE_RSZ_RATIO) {
+			rsz_skip_idle()) {
 			primary_display_manual_unlock();
 			continue;
 		}
