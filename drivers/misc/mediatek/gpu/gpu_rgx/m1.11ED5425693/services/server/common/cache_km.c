@@ -2564,6 +2564,7 @@ static PVRSRV_ERROR CacheOpBatchExecRangeBased(PVRSRV_DEVICE_NODE *psDevNode,
 			OSLockRelease(gsCwq.hDeferredLock);
 			bCacheOpConfigKDF = IMG_FALSE;
 			psCacheOpWorkItem = NULL;
+			PMRUnlockSysPhysAddresses(ppsPMR[ui32Idx]);
 			ui32Idx = ui32Idx - 1;
 			continue;
 		}
