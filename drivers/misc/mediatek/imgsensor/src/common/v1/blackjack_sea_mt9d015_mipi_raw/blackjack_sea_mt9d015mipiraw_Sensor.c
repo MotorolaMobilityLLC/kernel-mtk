@@ -371,7 +371,7 @@ static void set_shutter(kal_uint16 shutter)
 }				
 
 
-#define GAINMAX 16
+#define GAINMAX 8
 #define BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex (117)
 kal_uint16 BLACKJACK_SEA_MT9D015MIPI_sensorGainMapping[BLACKJACK_SEA_MT9D015MIPI_MaxGainIndex][2] ={
 //{72	,   0x1024},
