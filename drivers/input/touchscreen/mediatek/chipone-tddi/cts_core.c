@@ -2424,6 +2424,8 @@ init_hwdata:
             g_lcm_info_flag = LCM_INFO_HJC_GLASS;
         } else if (strstr(lcd_info_pr, "rs")) {
             g_lcm_info_flag = LCM_INFO_RS_GLASS;
+        } else if (strstr(lcd_info_pr, "601")) {
+            g_lcm_info_flag = LCM_INFO_601_GLASS;
         }
     }
 
@@ -2534,7 +2536,7 @@ int cts_get_gesture_info(const struct cts_device *cts_dev,
 static void cts_esd_protection_work(struct work_struct *work)
 {
     struct chipone_ts_data *cts_data;
-    int ret;
+    int ret = 0;
 
     cts_info("ESD protection work");
     cts_data = container_of(work, struct chipone_ts_data, esd_work.work);

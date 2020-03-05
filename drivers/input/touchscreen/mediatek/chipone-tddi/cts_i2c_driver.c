@@ -275,6 +275,9 @@ static int cts_driver_probe(struct spi_device *client)
     } else if (LCM_INFO_RS_GLASS == g_lcm_info_flag) {
         snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s-rs" );
         snprintf(vendor_name, sizeof(vendor_name),"%s ", "truly-icnl9911s-rs" );
+    } else if (LCM_INFO_601_GLASS == g_lcm_info_flag) {
+        snprintf(lcdname, sizeof(lcdname),"%s ", "truly-icnl9911s-601" );
+        snprintf(vendor_name, sizeof(vendor_name),"%s ", "truly-icnl9911s-601" );
     }
 
     cts_tp_fw(&cts_data->cts_dev);

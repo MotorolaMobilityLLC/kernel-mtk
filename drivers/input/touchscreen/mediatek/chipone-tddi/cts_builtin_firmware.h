@@ -2,8 +2,22 @@ static u8 icnl9911_driver_builtin_firmware_hjc[] = {
 #include"firmware/mdt/Moto-Blackjack-Chipone-ICNL9911S-MDT_Hmode_V0112_20200206.h"
 };
 
+static u8 icnl9911_driver_builtin_firmware_truly_601[] = {
+#include"firmware/truly/Moto-FIJI-Chipone-ICNL9911S-TRULY_Vmode_V0100.h"
+};
+
 static u8 icnl9911_driver_builtin_firmware_rs[] = {
 #include"firmware/truly/Moto-Blackjack-Chipone-ICNL9911S-TRULY_Vmode_V0106_20200219.h"
+};
+
+const static struct cts_firmware cts_driver_builtin_firmwares_truly_601[] = {
+    {
+        .name = "Ontim-Moto FIJI truly 601",      /* MUST set non-NULL */
+        .hwid = CTS_DEV_HWID_ICNL9911S,
+        .fwid = CTS_DEV_FWID_ICNL9911S,
+        .data = icnl9911_driver_builtin_firmware_truly_601,
+        .size = ARRAY_SIZE(icnl9911_driver_builtin_firmware_truly_601),
+    },
 };
 
 const static struct cts_firmware cts_driver_builtin_firmwares_hjc[] = {
