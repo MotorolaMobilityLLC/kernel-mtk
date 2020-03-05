@@ -5819,6 +5819,12 @@ int vpu_dump_mesg_seq(struct seq_file *s, int core)
 			break;
 	} while (!jump_out);
 
+	seq_printf(s, "\n======== vpu%d: logbuf @0x%x ========\n",
+		core, vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG);
+	seq_hex_dump(s, "logbuf ", DUMP_PREFIX_OFFSET, 32, 4,
+		(void *)(vpu_service_cores[core].work_buf->va + VPU_OFFSET_LOG),
+		VPU_SIZE_LOG_BUF, true);
+
 	return 0;
 }
 
