@@ -183,7 +183,53 @@
 		vsel_pin = <1>;
 	};
 };
+&i2c5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
 
+	externel-charger@6c{
+		compatible = "halo,hl7007";
+		reg = <0x6c>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+	externel-charger@6a{
+		compatible = "halo,hl7005";
+		reg = <0x6a>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+       externel-eta-charger@6e{
+               compatible = "ontim,eta6937";
+               reg = <0x6e>;/*dumy addr,in fact ,the addr is 0x6b-1*/
+               status = "okay";
+		ichg = <1150000>; /* uA */
+       };
+	externel-charger@6d{
+		compatible = "halo,sy6923";
+		reg = <0x6d>;
+		status = "okay";
+		ichg = <1150000>; /* uA */
+	};
+	externel-charger@6f{
+		compatible = "halo,bq24157";
+		reg = <0x6f>;
+		status = "okay";
+		ichg = <1150000>; /* uA */
+	};
+	externel-charger@6b{
+		compatible = "ti,bq25601";
+		reg = <0x6b>;
+		status = "okay";
+	};
+	externel-charger@53{
+		compatible = "richtek,rt9471";
+		reg = <0x53>;
+		status = "okay";
+		ichg = <2000000>; /* uA */
+	};
+};
 &i2c6 {
 	ext_buck_vgpu@55 {
 		regulator-name ="ext_buck_vgpu";
@@ -530,6 +576,7 @@
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 	cd-gpios = <&pio 0 0>;
 };
+#include "bat_setting/mt6761_battery_table_fiji.dtsi"
 
 #include <fiji/cust.dtsi>
 #include <cust_mt6761_project_camera.dtsi>
