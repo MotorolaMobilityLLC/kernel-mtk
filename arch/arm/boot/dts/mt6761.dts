@@ -2785,7 +2785,7 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		/* common */
 		battery_cv = <4350000>;
 		max_charger_voltage = <6500000>;
-		min_charger_voltage = <4600000>;
+		min_charger_voltage = <4500000>;
 
 		/* dynamic mivr */
 		min_charger_voltage_1 = <4400000>;
