@@ -2122,7 +2122,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	/* imgsensor.current_fps = 300; */
 	/* imgsensor.autoflicker_en = KAL_FALSE; */
 	spin_unlock(&imgsensor_drv_lock);
-	capture_setting(30);
+	capture_setting(300);
 	
 	set_mirror_flip(imgsensor.mirror); ////GIONEE:malp modify
 
