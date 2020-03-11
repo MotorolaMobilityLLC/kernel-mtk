@@ -98,7 +98,7 @@ static struct pinctrl_state *aw3643_hwen_high;
 static struct pinctrl_state *aw3643_hwen_low;
 
 int cam_fill_en = 0;
-int fill_level = 0;
+int fill_level = 24;
 /* aw3643 revision */
 static int is_aw3643tt;
 
