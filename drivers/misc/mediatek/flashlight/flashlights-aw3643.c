@@ -97,6 +97,8 @@ static struct pinctrl *aw3643_pinctrl;
 static struct pinctrl_state *aw3643_hwen_high;
 static struct pinctrl_state *aw3643_hwen_low;
 
+int cam_fill_en = 0;
+int fill_level = 0;
 /* aw3643 revision */
 static int is_aw3643tt;
 
@@ -216,6 +218,62 @@ static const unsigned char aw3643_flash_level[AW3643_LEVEL_NUM] = {
 	0x63, 0x67, 0x6B, 0x6F, 0x73, 0x77, 0x7B, 0x7F, 0x83
 }; //[lihehe] Modify flash current code
 
+
+static const unsigned char aw3643_fill_level[25] = {
+	0x00,
+	0x01,
+	0x02,
+	0x03,
+	0x04,
+	0x05,
+	0x06,
+	0x07,
+	0x08,
+	0x09,
+	0x0A,
+	0x0B,
+	0x0C,
+	0x0D,
+	0x0E,
+	0x0F,
+	0x10,
+	0x11,
+	0x12,
+	0x13,
+	0x14,
+	0x15,
+	0x16,
+	0x17,
+	0x18
+};
+
+static const unsigned char sy7806_fill_level[25] = {
+	0x01,
+	0x03,
+	0x05,
+	0x07,
+	0x09,
+	0x0C,
+	0x0E,
+	0x0F,
+	0x11,
+	0x13,
+	0x15,
+	0x18,
+	0x1A,
+	0x1C,
+	0x1E,
+	0x20,
+	0x22,
+	0x24,
+	0x26,
+	0x28,
+	0x2A,
+	0x2C,
+	0x2F,
+	0x31,
+	0x32
+};
 static unsigned char aw3643_reg_enable;
 static int aw3643_level_ch1 = -1;
 static int aw3643_level_ch2 = -1;
@@ -226,6 +284,14 @@ static int aw3643_is_torch(int level)
 		return -1;
 
 	return 0;
+}
+
+static int aw3643_is_torch_fill(int level)
+{
+	if (level >= 0x80 && level <= 0x98)// 7
+		return 0;
+
+	return -1;
 }
 
 static int aw3643_verify_level(int level)
@@ -276,7 +342,7 @@ static int aw3643_enable_ch1(void)
 
 	reg = AW3643_REG_ENABLE;
 
-	if (!aw3643_is_torch(aw3643_level_ch1)) 
+	if ((!aw3643_is_torch(aw3643_level_ch1)) || (!aw3643_is_torch_fill(aw3643_level_ch1))) 
     {
 		LOG_INF("ontim_flashlight enable ch1 torch mode\n");
 		/* torch mode */
@@ -386,6 +452,29 @@ static int aw3643_disable(int channel)
 	return 0;
 }
 
+static int torch_set_fill_level_ch1(int level)
+{
+	int ret;
+	unsigned char val;
+	if ((level < 0x80) || (level > 0x98))
+	{
+
+		LOG_INF("fill light level < 0x80 or level >0x98 is err\n");
+		return -1;
+	}
+	LOG_INF("fill light  level=%d\n", level);
+	if(!is_SY7806)
+		val = aw3643_fill_level[level & 0x7F];
+	else
+		val = sy7806_fill_level[level & 0x7F];
+	
+	LOG_INF("fill light  val=%d\n", val);
+	ret = aw3643_write_reg(aw3643_i2c_client, AW3643_REG_TORCH_LEVEL_LED1, val);
+	aw3643_level_ch1 = level;
+	ret |= aw3643_write_reg(aw3643_i2c_client, AW3643_REG_TIMING_CONF, 0x00);
+	return ret;
+}
+
 /* set flashlight level */
 static int aw3643_set_level_ch1(int level)
 {
@@ -402,7 +491,14 @@ static int aw3643_set_level_ch1(int level)
 		val = aw3643tt_torch_level[level];
 	else
 		val = aw3643_torch_level[level];
-    val = 0x18;
+
+	LOG_INF("[fill-debug] cam_fill_en=%d fill_level=%d\n", cam_fill_en,fill_level);
+	if (cam_fill_en)
+		val = aw3643_fill_level[fill_level];
+	else
+    	val = 0x18;
+
+
 	LOG_INF("is_aw3643tt=%d  level=%d  val=%d\n", is_aw3643tt, level, val);
         LOG_INF("ontim_flashlight  set_level_ch1 write torch reg val: 0x%02x\n",val);
 	ret = aw3643_write_reg(aw3643_i2c_client, reg, val);
@@ -480,8 +576,14 @@ static int sy7806_set_level_ch1(int level)
 	reg = AW3643_REG_TORCH_LEVEL_LED1;
 
 	val = aw3643tt_torch_level[level]*2;
-	val = 0x31;
-        LOG_INF("ontim_flashlight sy7806  set_level_ch1 write torch reg val: 0x%02x\n",val);
+
+	LOG_INF("[fill-debug] cam_fill_en=%d fill_level=%d\n", cam_fill_en,fill_level);
+	if (cam_fill_en)
+		val = aw3643_fill_level[fill_level];
+	else
+		val = 0x31;
+
+    LOG_INF("ontim_flashlight sy7806  set_level_ch1 write torch reg val: 0x%02x\n",val);
 	ret = aw3643_write_reg(aw3643_i2c_client, reg, val);
 	aw3643_level_ch1 = level;
 
@@ -552,7 +654,10 @@ static int flashlight_set_level(int channel, int level)
     if(is_SY7806)
         {
             if (channel == AW3643_CHANNEL_CH1)// 0
-                sy7806_set_level_ch1(level);
+				if((level & 0x80))
+					torch_set_fill_level_ch1(level);
+				else
+                	sy7806_set_level_ch1(level);
             else if (channel == AW3643_CHANNEL_CH2)// 1
                 sy7806_set_level_ch2(level);
             else
@@ -560,7 +665,10 @@ static int flashlight_set_level(int channel, int level)
     }
     else{
             if (channel == AW3643_CHANNEL_CH1)// 0
-                aw3643_set_level_ch1(level);
+				if((level & 0x80))
+					torch_set_fill_level_ch1(level);
+				else
+                	aw3643_set_level_ch1(level);
             else if (channel == AW3643_CHANNEL_CH2)// 1
                 aw3643_set_level_ch2(level);
             else
@@ -1052,37 +1160,44 @@ static ssize_t store_torch_status(struct device *dev, struct device_attribute *a
 	if (buf != NULL && size != 0) {
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
-		if (val) {
-			/* Torch LED ON */
-			switch (val) {
-			case 1:
-				aw3643_set_driver(1);
-				if(is_SY7806) {
-					sy7806_set_level_ch1(6);
+		if(val & 0x80)
+		{
+			fill_level = val & 0x7F;
+		}else {	
+			if (val) 
+			{
+				/* Torch LED ON */
+
+				switch (val) {
+				case 1:
+					aw3643_set_driver(1);
+					if(is_SY7806) {
+						sy7806_set_level_ch1(6);
+					}
+					else {
+						aw3643_set_level_ch1(6);// 163mA
+					}
+					aw3643_enable_ch1();
+					break;
+				default:
+					aw3643_set_driver(1);
+					if(is_SY7806) {
+						sy7806_set_level_ch1(6);
+					}
+					else {
+						aw3643_set_level_ch1(6);// 163mA
+					}
+					aw3643_enable_ch1();
+					break;
 				}
-				else {
-					aw3643_set_level_ch1(6);// 163mA
-				}
-				aw3643_enable_ch1();
-				break;
-			default:
-				aw3643_set_driver(1);
-				if(is_SY7806) {
-					sy7806_set_level_ch1(6);
-				}
-				else {
-					aw3643_set_level_ch1(6);// 163mA
-				}
-				aw3643_enable_ch1();
-				break;
+				torch_led_status = val;
+			}else {
+				aw3643_disable_ch1();
+				aw3643_set_driver(0);
+				torch_led_status = 0;
 			}
-			torch_led_status = val;
-		}else {
-			aw3643_disable_ch1();
-			aw3643_set_driver(0);
-			torch_led_status = 0;
+			LOG_INF("Set torch val:%d", val);
 		}
-		LOG_INF("Set torch val:%d", val);
 	}
 	return size;
 }

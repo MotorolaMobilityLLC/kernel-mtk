@@ -160,6 +160,7 @@ static void imgsensor_mutex_unlock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 #endif
 }
 
+extern int cam_fill_en;
 MINT32
 imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 {
@@ -211,6 +212,9 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 			pr_err("SensorOpen fail");
 		} else {
+			if((psensor->inst.sensor_idx) == 4)
+				cam_fill_en = 1;
+
 			psensor_inst->state = IMGSENSOR_STATE_OPEN;
 #ifdef CONFIG_MTK_CCU
 			ccuSensorInfo.slave_addr =
