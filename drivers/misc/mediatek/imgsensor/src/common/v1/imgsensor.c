@@ -214,6 +214,8 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 		} else {
 			if((psensor->inst.sensor_idx) == 4)
 				cam_fill_en = 1;
+			else
+				cam_fill_en = 0;
 
 			psensor_inst->state = IMGSENSOR_STATE_OPEN;
 #ifdef CONFIG_MTK_CCU
@@ -400,6 +402,8 @@ imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 	struct SENSOR_FUNCTION_STRUCT *psensor_func =  psensor->pfunc;
 
 	IMGSENSOR_FUNCTION_ENTRY();
+
+	cam_fill_en = 0;
 
 	if (psensor_func &&
 	    psensor_func->SensorClose &&
