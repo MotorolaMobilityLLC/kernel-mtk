@@ -579,7 +579,7 @@ static int sy7806_set_level_ch1(int level)
 
 	LOG_INF("[fill-debug] cam_fill_en=%d fill_level=%d\n", cam_fill_en,fill_level);
 	if (cam_fill_en)
-		val = aw3643_fill_level[fill_level];
+		val = sy7806_fill_level[fill_level];
 	else
 		val = 0x31;
 
