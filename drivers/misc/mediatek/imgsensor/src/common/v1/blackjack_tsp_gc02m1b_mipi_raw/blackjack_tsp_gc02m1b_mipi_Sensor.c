@@ -48,13 +48,13 @@
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = BLACKJACK_TSP_GC02M1B_SENSOR_ID,
+	.sensor_id = BLACKJACK_SUN_GC02M1B_SENSOR_ID,
 	.module_id = 0x01,
 	.checksum_value = 0xf7375923,
 	.pre = {
-		.pclk = 84000000,
-		.linelength = 2192,
-		.framelength = 1276,
+		.pclk = 90000000,
+		.linelength = 2280,
+		.framelength = 1306,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
@@ -64,9 +64,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.cap = {
-		.pclk = 84000000,
-		.linelength = 2192,
-		.framelength = 1276,
+		.pclk = 90000000,
+		.linelength = 2280,
+		.framelength = 1306,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
@@ -76,9 +76,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.cap1 = {
-		.pclk = 84000000,
-		.linelength = 2192,
-		.framelength = 1276,
+		.pclk = 90000000,
+		.linelength = 2280,
+		.framelength = 1306,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
@@ -88,9 +88,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.normal_video = {
-		.pclk = 84000000,
-		.linelength = 2192,
-		.framelength = 1276,
+		.pclk = 90000000,
+		.linelength = 2280,
+		.framelength = 1306,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
@@ -100,9 +100,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.hs_video = {
-		.pclk = 84000000,
-		.linelength = 2192,
-		.framelength = 1276,
+		.pclk = 90000000,
+		.linelength = 2280,
+		.framelength = 1306,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
@@ -112,9 +112,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.slim_video = {
-		.pclk = 84000000,
-		.linelength = 2192,
-		.framelength = 1276,
+		.pclk = 90000000,
+		.linelength = 2280,
+		.framelength = 1306,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1600,
@@ -147,7 +147,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_MONO,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,
-	.i2c_addr_table = {0x6e, 0x20, 0xff},
+	.i2c_addr_table = {0x20, 0xff},
 	.i2c_speed = 400,
 };
 
@@ -303,6 +303,47 @@ static void set_shutter(kal_uint16 shutter)
 	write_cmos_sensor(0x04, shutter  & 0xff);
 	LOG_INF("shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
 }
+static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
+{
+	unsigned long flags;
+	kal_int32 dummy_line = 0;
+
+	spin_lock_irqsave(&imgsensor_drv_lock, flags);
+	imgsensor.shutter = shutter;
+	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
+	spin_lock(&imgsensor_drv_lock);
+	/*Change frame time */
+	if (frame_length > 1)
+		dummy_line = frame_length - imgsensor.frame_length;
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
+	/*  */
+	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	spin_unlock(&imgsensor_drv_lock);
+
+	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+	set_dummy();
+
+	// Update Shutter
+	if (shutter == (imgsensor.frame_length-1))
+		shutter += 1;
+
+	if(shutter > 16383) shutter = 16383;
+	if(shutter < 1) shutter = 1;
+
+	//Update Shutter
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0x03, (shutter>>8) & 0x3F);
+	write_cmos_sensor(0x04, shutter & 0xFF);
+
+	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+}
+
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -380,7 +421,7 @@ static kal_uint16 addr_data_pair_init_gc02m1b[] = {
 	0xf4, 0x41,
 	0xf5, 0xc0,
 	0xf6, 0x44,
-	0xf8, 0x38,
+	0xf8, 0x3c,
 	0xf9, 0x82, 
 	0xfa, 0x00, 
 	0xfd, 0x80,
@@ -402,14 +443,14 @@ static kal_uint16 addr_data_pair_init_gc02m1b[] = {
 	0xfe, 0x00,
 	0x90, 0x00, 
 	0x03, 0x04, 
-	0x04, 0x7d,
-	0x41, 0x04,
-	0x42, 0xf4, 
+	0x04, 0xa1,
+	0x41, 0x05,
+	0x42, 0x1a, 
 	0x05, 0x04,
-	0x06, 0x48,
+	0x06, 0x74,
 	0x07, 0x00,
-	0x08, 0x18,
-	0x9d, 0x18,
+	0x08, 0x3e,
+	0x9d, 0x3e,
 	0x09, 0x00,
 	0x0a, 0x02,
 	0x0d, 0x04,
@@ -422,8 +463,11 @@ static kal_uint16 addr_data_pair_init_gc02m1b[] = {
 	0x5e, 0x01,
 	
 	/*analog Register width*/
-	0x21, 0x3c,
-	0x44, 0x20,
+	0x21, 0x40,
+	0x29, 0x44,
+	0x44, 0x22,
+	0x4b, 0x11,
+	0x55, 0x1c,
 	0xcc, 0x01,
 	
 	/*analog mode*/
@@ -589,7 +633,7 @@ static kal_uint16 addr_data_pair_init_gc02m1b[] = {
 	0x04, 0x48, 
 	0x15, 0x00, 
 	0x21, 0x10,
-	0x22, 0x05,
+	0x22, 0x06,
 	0x23, 0x20,
 	0x25, 0x20,
 	0x26, 0x08,
@@ -1218,6 +1262,21 @@ static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM s
 	}
 	return ERROR_NONE;
 }
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n",enable);
+	if (enable) {
+		/* MIPI// */
+		write_cmos_sensor(0xfe, 0x00);
+		write_cmos_sensor(0x3e, 0x90);	/*Stream on */
+	} else {
+		/* MIPI// */
+		write_cmos_sensor(0xfe, 0x00);
+		write_cmos_sensor(0x3e, 0x00);	/*Stream off */
+	}
+	mdelay(10);
+	return ERROR_NONE;
+}
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT8 *feature_para, UINT32 *feature_para_len)
@@ -1350,6 +1409,20 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n",
+			*feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
+	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+			set_shutter_frame_length((UINT16) *feature_data, (UINT16) *(feature_data + 1));
+			break;
 	case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
 		LOG_INF("SENSOR_SET_SENSOR_IHDR LE = %d, SE = %d, Gain = %d\n",
 			(UINT16)*feature_data, (UINT16)*(feature_data + 1), (UINT16)*(feature_data + 2));
