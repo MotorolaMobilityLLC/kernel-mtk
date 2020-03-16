@@ -129,6 +129,8 @@ extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
 #define FALSE 0
 #endif
 
+static unsigned int is_bl_delay;
+
 struct LCM_setting_table {
 	unsigned int cmd;
 	unsigned char count;
@@ -490,7 +492,7 @@ static void lcm_reset(void)
 	if (!gesture_dubbleclick_en) {
 		MDELAY(2);//t3
 		SET_RESET_PIN(1);
-		MDELAY(2);//t4
+		MDELAY(10);//t4 LCD RESET to first command in display sleep in mode time
 		tpd_gpio_output(0, 1);
 	} else {
 		SET_RESET_PIN(0);
@@ -548,7 +550,7 @@ static void lcm_init(void)
 
 	push_table(NULL, init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-
+	is_bl_delay = TRUE;
 	LCM_LOGI("%s: ili9881h  init done\n",__func__);
 }
 
@@ -589,6 +591,12 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	if (level < 2 && level !=0)
 		level = 2;
 #endif
+	if (TRUE == is_bl_delay)
+	{
+		is_bl_delay = FALSE;
+		LCM_LOGI("delay 15ms to set backlight %d\n",is_bl_delay);
+		MDELAY(15);//t7
+	}
 	bl_level[0].para_list[0] = (level & 0xF0)>>4;
 	bl_level[0].para_list[1] = (level & 0x0F)<<4;
 	LCM_LOGI("%s, backlight set level = %d \n", __func__, level);
