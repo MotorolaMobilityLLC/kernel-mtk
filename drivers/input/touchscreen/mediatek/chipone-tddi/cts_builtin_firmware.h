@@ -3,7 +3,7 @@ static u8 icnl9911_driver_builtin_firmware_hjc[] = {
 };
 
 static u8 icnl9911_driver_builtin_firmware_truly_601[] = {
-#include"firmware/truly/Moto-FIJI-Chipone-ICNL9911S-TRULY_Vmode_V0100.h"
+#include"firmware/truly/Moto-FIJI-Chipone-ICNL9911S-TRULY_Vmode_V0102.h"
 };
 
 static u8 icnl9911_driver_builtin_firmware_rs[] = {
