@@ -139,7 +139,7 @@ static struct EARA_NN_JOB *eara_update_job_collect(int pid, int tid,
 		struct EARA_NN_JOB *new_nn_job;
 
 		new_nn_job = kmalloc(sizeof(struct EARA_NN_JOB), GFP_KERNEL);
-		if (!new_nn_job)
+		if (!new_nn_job || !arr_length)
 			goto out;
 
 		new_nn_job->pid = pid;
