@@ -627,8 +627,10 @@ static kal_uint32 streaming_control(kal_bool enable)
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
 	} else {
-		write_cmos_sensor_8(0x0100, 0x00);
-		check_streamoff();
+		if (read_cmos_sensor_8(0x0100) != 0)
+			write_cmos_sensor_8(0x0100, 0x00);
+		else
+			pr_debug("streaming already off\n");
 	}
 	return ERROR_NONE;
 }
@@ -2048,6 +2050,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			  MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
+	check_streamoff();
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.current_scenario_id = scenario_id;
 	spin_unlock(&imgsensor_drv_lock);
