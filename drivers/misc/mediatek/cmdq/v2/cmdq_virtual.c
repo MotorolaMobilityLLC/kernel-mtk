@@ -845,7 +845,7 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 #ifdef CMDQ_CG_M4U_LARB0
 		m4u_larb0_enable("CMDQ_MDP");
 #else
-		cmdq_dev_enable_clock_SMI_LARB0(enable);
+		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "CMDQ_MDP", true);
 #endif
 #if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
 		cmdq_mdp_get_func()->mdpSmiLarbEnableClock(enable);
@@ -860,7 +860,7 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 #ifdef CMDQ_CG_M4U_LARB0
 		m4u_larb0_disable("CMDQ_MDP");
 #else
-		cmdq_dev_enable_clock_SMI_LARB0(enable);
+		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "CMDQ_MDP", true);
 #endif
 		cmdq_dev_enable_clock_SMI_COMMON(enable);
 #ifdef CMDQ_USE_LEGACY
