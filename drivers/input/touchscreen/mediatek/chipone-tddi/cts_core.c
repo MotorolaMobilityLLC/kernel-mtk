@@ -2426,6 +2426,8 @@ init_hwdata:
             g_lcm_info_flag = LCM_INFO_RS_GLASS;
         } else if (strstr(lcd_info_pr, "601")) {
             g_lcm_info_flag = LCM_INFO_601_GLASS;
+        } else if ( strstr(lcd_info_pr,"easyquick_608")){
+            g_lcm_info_flag = LCM_INFO_EASYQUICK_608;
         }
     }
 
