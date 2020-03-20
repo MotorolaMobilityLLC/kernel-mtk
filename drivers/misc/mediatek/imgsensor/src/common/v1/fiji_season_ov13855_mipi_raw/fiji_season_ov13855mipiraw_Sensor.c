@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     OV13855mipi_Sensor.c
+ *     FIJI_SEASON_OV13855mipi_Sensor.c
  *
  * Project:
  * --------
@@ -27,13 +27,13 @@
  *
  * Setting version:
  * ------------
- *   update full pd setting for OV13855EB_03B
+ *   update full pd setting for FIJI_SEASON_OV13855EB_03B
  *------------------------------------------------------------------------------
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
 
-#define PFX "OV13855_camera_sensor"
+#define PFX "FIJI_SEASON_OV13855_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
 #include <linux/videodev2.h>
@@ -46,7 +46,7 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 
-#include "ov13855mipiraw_Sensor.h"
+#include "fiji_season_ov13855mipiraw_Sensor.h"
 #define LOG_INF(format, args...)    \
 	pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -55,7 +55,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define MODULE_ID_OFFSET 0x0004
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = OV13855_SENSOR_ID,
+	.sensor_id = FIJI_SEASON_OV13855_SENSOR_ID,
 
 	.checksum_value = 0x78779e1c,
 
@@ -254,7 +254,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 #define I2C_BUFFER_LEN 3
 #endif
 
-static kal_uint16 ov13855_table_write_cmos_sensor(
+static kal_uint16 fiji_season_ov13855_table_write_cmos_sensor(
 					kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -523,7 +523,7 @@ static void night_mode(kal_bool enable)
 }
 
 #if MULTI_WRITE
-kal_uint16 addr_data_pair_init_ov13855[] = {
+kal_uint16 addr_data_pair_init_fiji_season_ov13855[] = {
 	0x0300, 0x02,
 	0x0301, 0x00,
 	0x0302, 0x5a,
@@ -696,9 +696,9 @@ static void sensor_init(void)
 	mdelay(10);
 #if MULTI_WRITE
 	LOG_INF("sensor_init MULTI_WRITE\n");
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_init_ov13855,
-		sizeof(addr_data_pair_init_ov13855) / sizeof(kal_uint16));
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_init_fiji_season_ov13855,
+		sizeof(addr_data_pair_init_fiji_season_ov13855) / sizeof(kal_uint16));
 #else
 	LOG_INF("sensor_init\n");
 	write_cmos_sensor(0x0300, 0x02);
@@ -871,7 +871,7 @@ static void sensor_init(void)
 }
 
 #if MULTI_WRITE
-kal_uint16 addr_data_pair_preview_ov13855[] = {
+kal_uint16 addr_data_pair_preview_fiji_season_ov13855[] = {
 	0x0303, 0x01,
 	0x3501, 0x40,
 	0x3662, 0x10,
@@ -917,9 +917,9 @@ static void preview_setting(void)
 {
 	LOG_INF("preview_setting RES_2112x1568_30fps\n");
 #if MULTI_WRITE
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_preview_ov13855,
-		sizeof(addr_data_pair_preview_ov13855) / sizeof(kal_uint16));
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_preview_fiji_season_ov13855,
+		sizeof(addr_data_pair_preview_fiji_season_ov13855) / sizeof(kal_uint16));
 #else
 	write_cmos_sensor(0x0303, 0x01);
 	write_cmos_sensor(0x3501, 0x40);
@@ -963,7 +963,7 @@ static void preview_setting(void)
 }
 
 #if MULTI_WRITE
-kal_uint16 addr_data_pair_capture_15fps_ov13855[] = {
+kal_uint16 addr_data_pair_capture_15fps_fiji_season_ov13855[] = {
 	0x0303, 0x00,
 	0x3501, 0x80,
 	0x3662, 0x12,
@@ -1004,7 +1004,7 @@ kal_uint16 addr_data_pair_capture_15fps_ov13855[] = {
 	0x4902, 0x01
 };
 
-kal_uint16 addr_data_pair_capture_30fps_ov13855[] = {
+kal_uint16 addr_data_pair_capture_30fps_fiji_season_ov13855[] = {
 	0x0303, 0x00,
 	0x3501, 0x80,
 	0x3662, 0x12,
@@ -1110,7 +1110,7 @@ static void custom2_setting(void)
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(10);
 	
-	ov13855_MIPI_table_write_cmos_sensor(addr_data_pair_prv, sizeof(addr_data_pair_prv)/sizeof(kal_uint16));
+	fiji_season_ov13855_MIPI_table_write_cmos_sensor(addr_data_pair_prv, sizeof(addr_data_pair_prv)/sizeof(kal_uint16));
 	
 	write_cmos_sensor(0x0100,0x01);
 #else
@@ -1213,14 +1213,14 @@ static void capture_setting(kal_uint16 currefps)
 		currefps);
 #if MULTI_WRITE
 	if (currefps == 150) {
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_capture_15fps_ov13855,
-		sizeof(addr_data_pair_capture_15fps_ov13855) /
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_capture_15fps_fiji_season_ov13855,
+		sizeof(addr_data_pair_capture_15fps_fiji_season_ov13855) /
 		sizeof(kal_uint16));
 	} else {
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_capture_30fps_ov13855,
-		sizeof(addr_data_pair_capture_30fps_ov13855) /
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_capture_30fps_fiji_season_ov13855,
+		sizeof(addr_data_pair_capture_30fps_fiji_season_ov13855) /
 		sizeof(kal_uint16));
 	}
 #else
@@ -1311,7 +1311,7 @@ if (currefps == 150) {
 }
 
 #if MULTI_WRITE
-kal_uint16 addr_data_pair_video_ov13855[] = {
+kal_uint16 addr_data_pair_video_fiji_season_ov13855[] = {
 	0x0303, 0x00,
 	0x3501, 0x80,
 	0x3662, 0x12,
@@ -1357,9 +1357,9 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("normal_video_setting RES_4224x3136_zsl_30fps\n");
 #if MULTI_WRITE
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_video_ov13855,
-		sizeof(addr_data_pair_video_ov13855) /
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_video_fiji_season_ov13855,
+		sizeof(addr_data_pair_video_fiji_season_ov13855) /
 		sizeof(kal_uint16));
 #else
 	write_cmos_sensor(0x0303, 0x00);
@@ -1404,7 +1404,7 @@ static void normal_video_setting(kal_uint16 currefps)
 }
 
 #if MULTI_WRITE
-kal_uint16 addr_data_pair_hs_video_ov13855[] = {
+kal_uint16 addr_data_pair_hs_video_fiji_season_ov13855[] = {
 	0x0303, 0x03,
 	0x3501, 0x20,
 	0x3662, 0x08,
@@ -1454,9 +1454,9 @@ static void hs_video_setting(void)
 {
 	LOG_INF("hs_video_setting RES_640x480_120fps\n");
 #if MULTI_WRITE
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_hs_video_ov13855,
-		sizeof(addr_data_pair_hs_video_ov13855) /
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_hs_video_fiji_season_ov13855,
+		sizeof(addr_data_pair_hs_video_fiji_season_ov13855) /
 		sizeof(kal_uint16));
 #else
 	write_cmos_sensor(0x0303, 0x03);//PLL
@@ -1519,7 +1519,7 @@ static void hs_video_setting(void)
 }
 
 #if MULTI_WRITE
-kal_uint16 addr_data_pair_slim_video_ov13855[] = {
+kal_uint16 addr_data_pair_slim_video_fiji_season_ov13855[] = {
 	0x0303, 0x03,
 	0x3501, 0x20,
 	0x3662, 0x08,
@@ -1565,9 +1565,9 @@ static void slim_video_setting(void)
 {
 	LOG_INF("slim_video_setting\n");
 #if MULTI_WRITE
-	ov13855_table_write_cmos_sensor(
-		addr_data_pair_slim_video_ov13855,
-		sizeof(addr_data_pair_slim_video_ov13855) /
+	fiji_season_ov13855_table_write_cmos_sensor(
+		addr_data_pair_slim_video_fiji_season_ov13855,
+		sizeof(addr_data_pair_slim_video_fiji_season_ov13855) /
 		sizeof(kal_uint16));
 #else
 	write_cmos_sensor(0x0303, 0x03);//PLL
@@ -1660,12 +1660,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	spin_unlock(&imgsensor_drv_lock);
 	do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				if(0x10==read_module_id()){
+			if ((*sensor_id+1) == imgsensor_info.sensor_id) {
+				if(0x20==read_module_id()){
 					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
-					memcpy(back_cam_name, "0_ov13855", 64);
+					memcpy(back_cam_name, "0_fiji_season_ov13855", 64);
 					dual_main_sensorid = *sensor_id;
 					ontim_get_otp_data(*sensor_id, NULL, 0);
 					get_back_cam_efuse_id();
@@ -1682,7 +1682,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	i++;
 	retry = 1;
 	}
-	if (*sensor_id != imgsensor_info.sensor_id) {
+	if ((*sensor_id+1) != imgsensor_info.sensor_id) {
 		LOG_INF("get_imgsensor_id: 0x%x fail\n", *sensor_id);
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
@@ -1703,7 +1703,7 @@ static kal_uint32 open(void)
 	spin_unlock(&imgsensor_drv_lock);
 	do {
 		sensor_id = return_sensor_id();
-	if (sensor_id == imgsensor_info.sensor_id) {
+	if ((sensor_id+1) == imgsensor_info.sensor_id) {
 		LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 			imgsensor.i2c_write_id, sensor_id);
 		break;
@@ -1711,11 +1711,11 @@ static kal_uint32 open(void)
 		retry--;
 	} while (retry > 0);
 	i++;
-	if (sensor_id == imgsensor_info.sensor_id)
+	if ((sensor_id+1) == imgsensor_info.sensor_id)
 	break;
 	retry = 2;
 	}
-	if (imgsensor_info.sensor_id != sensor_id) {
+	if (imgsensor_info.sensor_id != (sensor_id+1)) {
 		LOG_INF("Open sensor id: 0x%x fail\n", sensor_id);
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
@@ -2516,7 +2516,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 OV13855_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 FIJI_SEASON_OV13855_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
