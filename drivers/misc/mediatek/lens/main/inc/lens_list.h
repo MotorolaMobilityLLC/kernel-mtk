@@ -103,6 +103,17 @@ extern long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 extern int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int DW9714AF_GetFileName(unsigned char *pFileName);
 
+#define DW9714_OV13855AF_SetI2Cclient DW9714_OV13855AF_SetI2Cclient_Main
+#define DW9714_OV13855AF_Ioctl DW9714_OV13855AF_Ioctl_Main
+#define DW9714_OV13855AF_Release DW9714_OV13855AF_Release_Main
+#define DW9714_OV13855AF_GetFileName DW9714_OV13855AF_GetFileName_Main
+extern int DW9714_OV13855AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9714_OV13855AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int DW9714_OV13855AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int DW9714_OV13855AF_GetFileName(unsigned char *pFileName);
+
 #define FM24VS64RAF_SetI2Cclient FM24VS64RAF_SetI2Cclient_Main
 #define FM24VS64RAF_Ioctl FM24VS64RAF_Ioctl_Main
 #define FM24VS64RAF_Release FM24VS64RAF_Release_Main
