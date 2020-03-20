@@ -474,6 +474,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		   },
 		  },
 #endif
+#if defined(FIJI_SEASON_OV13855_MIPI_RAW)
+			 {SENSOR_DRVNAME_FIJI_SEASON_OV13855_MIPI_RAW,
+			  {
+			   {SensorMCLK, Vol_High, 0},
+			   {RST, Vol_Low, 0},
+			   {DOVDD, Vol_1800, 0},
+			   {AVDD, Vol_2800, 0},
+			   {DVDD, Vol_1200, 0},
+			   {AFVDD, Vol_2800, 2},
+			   {RST, Vol_High, 0},
+			   },
+			  },
+#endif
 /*Fiji end*/
 
 #if defined(IMX398_MIPI_RAW)
