@@ -269,6 +269,8 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_name(const cha
         firmware = cts_driver_builtin_firmwares_rs;
     } else if (LCM_INFO_601_GLASS == g_lcm_info_flag){
         firmware = cts_driver_builtin_firmwares_truly_601;
+    } else if (LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_easyquick_608;
     }
     //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < NUM_DRIVER_BUILTIN_FIRMWARE; i++, firmware++) {
@@ -303,6 +305,8 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_index(u32 inde
             firmware = cts_driver_builtin_firmwares_rs + index;
         }else if ((LCM_INFO_601_GLASS == g_lcm_info_flag)) {
 	    firmware = cts_driver_builtin_firmwares_truly_601 + index;
+	} else if ( LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
+             firmware = cts_driver_builtin_firmwares_easyquick_608 + index;
 	}
         //firmware = cts_driver_builtin_firmwares + index;
         if (is_firmware_valid(firmware)) {
@@ -344,6 +348,8 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
         firmware = cts_driver_builtin_firmwares_rs;
     } else if (LCM_INFO_601_GLASS == g_lcm_info_flag){
         firmware = cts_driver_builtin_firmwares_truly_601;
+    } else if(LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_easyquick_608;
     }
     //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares_hjc); i++, firmware++) {
