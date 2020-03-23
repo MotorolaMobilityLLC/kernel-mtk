@@ -79,6 +79,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ontim_ft8006p_hdplus_dsi_vdo_hlt_lcm_drv,
 #endif
 
+#if defined(ONTIM_ICNL9911S_HDPLUS_DSI_VDO_EASYQUICK_608)
+	&ontim_icnl9911s_hdplus_dsi_vdo_easyquick_608_lcm_drv,
+#endif
+
 #if defined(NT35521Z_HD_DSI_VDO_TRULY)
 	&nt35521z_hd_dsi_vdo_truly_lcm_drv,
 #endif

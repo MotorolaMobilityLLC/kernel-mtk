@@ -10,6 +10,10 @@ static u8 icnl9911_driver_builtin_firmware_rs[] = {
 #include"firmware/truly/Moto-Blackjack-Chipone-ICNL9911S-TRULY_Vmode_V0106_20200219.h"
 };
 
+static u8 icnl9911_driver_builtin_firmware_easyquick_608[] = {
+#include"firmware/easyquick_608/ICNL9911S_MDT_6.088_V_V0100_MLAF061WE21_20190717_all.h"
+};
+
 const static struct cts_firmware cts_driver_builtin_firmwares_truly_601[] = {
     {
         .name = "Ontim-Moto FIJI truly 601",      /* MUST set non-NULL */
@@ -17,6 +21,16 @@ const static struct cts_firmware cts_driver_builtin_firmwares_truly_601[] = {
         .fwid = CTS_DEV_FWID_ICNL9911S,
         .data = icnl9911_driver_builtin_firmware_truly_601,
         .size = ARRAY_SIZE(icnl9911_driver_builtin_firmware_truly_601),
+    },
+};
+
+const static struct cts_firmware cts_driver_builtin_firmwares_easyquick_608[] = {
+    {
+        .name = "Ontim-Moto FIJI easyquick 608",      /* MUST set non-NULL */
+        .hwid = CTS_DEV_HWID_ICNL9911S,
+        .fwid = CTS_DEV_FWID_ICNL9911S,
+        .data = icnl9911_driver_builtin_firmware_easyquick_608,
+        .size = ARRAY_SIZE(icnl9911_driver_builtin_firmware_easyquick_608),
     },
 };
 
