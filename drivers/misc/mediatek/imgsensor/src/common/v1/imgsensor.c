@@ -160,7 +160,10 @@ static void imgsensor_mutex_unlock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 #endif
 }
 
+#ifdef CONFIG_MTK_FLASHLIGHT_AW3643
 extern int cam_fill_en;
+#endif
+
 MINT32
 imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 {
@@ -212,11 +215,12 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 			pr_err("SensorOpen fail");
 		} else {
+#ifdef CONFIG_MTK_FLASHLIGHT_AW3643
 			if((psensor->inst.sensor_idx) == 4)
 				cam_fill_en = 1;
 			else
 				cam_fill_en = 0;
-
+#endif
 			psensor_inst->state = IMGSENSOR_STATE_OPEN;
 #ifdef CONFIG_MTK_CCU
 			ccuSensorInfo.slave_addr =
@@ -402,8 +406,9 @@ imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 	struct SENSOR_FUNCTION_STRUCT *psensor_func =  psensor->pfunc;
 
 	IMGSENSOR_FUNCTION_ENTRY();
-
+#ifdef CONFIG_MTK_FLASHLIGHT_AW3643
 	cam_fill_en = 0;
+#endif
 
 	if (psensor_func &&
 	    psensor_func->SensorClose &&
