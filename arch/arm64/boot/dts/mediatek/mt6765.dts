@@ -671,6 +671,9 @@ firmware_class.path=/vendor/firmware";
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
+	usb_cable: usb_cable {
+		compatible = "mediatek,usb_cable_eint";
+	};
 
 	sar_mtk: sar_mtk{
 		compatible = "mediatek,sar-eint";
