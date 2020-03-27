@@ -55,6 +55,15 @@ config MTK_AB_OTA_UPDATER
 config MTK_DTB_CHECK
 	bool "MTK dtb check"
 
+config TARGET_COPY_OUT_PRODUCT
+	bool "Support PRODUCT partition"
+	default n
+	help
+	  This config decide to enable product partition
+	  PRODUCT partition is defined in new android version
+	  OTA project will disable it to prevent exception
+	  If you are not sure about this, do not set it to y
+
 config SYSTEM_AS_ROOT
 	bool "Support system-as-root"
 	default y

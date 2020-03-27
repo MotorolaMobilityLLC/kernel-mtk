@@ -512,3 +512,4 @@ CONFIG_ONTIM_GET_BATTERY_ID_NV=y
 #add by shabei for usb cable detect begin
 CONFIG_USB_CABLE=y
 #add by shabei for usb cable detect end
+CONFIG_TARGET_COPY_OUT_PRODUCT=y

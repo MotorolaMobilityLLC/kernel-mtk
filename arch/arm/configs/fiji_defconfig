@@ -506,3 +506,4 @@ CONFIG_MTK_TEE_GP_SUPPORT=y
 #add by shabei for usb cable detect begin
 CONFIG_USB_CABLE=y
 #add by shabei for usb cable detect end
+CONFIG_TARGET_COPY_OUT_PRODUCT=y
