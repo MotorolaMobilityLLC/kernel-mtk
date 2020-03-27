@@ -473,6 +473,7 @@ CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT,PROJECT,harvey.huang,new config in this co
 CONFIG_MTK_AUXADC_INTF,PLATFORM,jeter.chen,,y,y,y,y,y,y,y,y,
 CONFIG_MTK_AUXADC,PLATFORM,qiangming.xia,,y,y,y,y,y,y,y,y,
 CONFIG_MTK_AVB20_SUPPORT,PROJECT,PROJECT,,,,,,,,,,
+CONFIG_TARGET_COPY_OUT_PRODUCT,PROJECT,PROJECT,,,,,,,,,,
 CONFIG_MTK_BAROHUB,PROJECT,weiqi.fu,new config in this commit ddc5d59450d236e7d3732ebd43a19c5056787cc0,,,,,,,,,
 CONFIG_MTK_BIF_SUPPORT,PROJECT,elvin.lin,,,,,,,,,,
 CONFIG_MTK_BLOCK_TAG,PROJECT,stanley.chu,,,,,,,,,,

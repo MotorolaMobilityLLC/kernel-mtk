@@ -3200,7 +3200,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				};
 #endif
 #endif
-
+#ifdef CONFIG_TARGET_COPY_OUT_PRODUCT
 				product {
 					compatible = "android,product";
 					dev = "/dev/block/platform/bootdevice/by-name/product";
@@ -3228,6 +3228,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #endif
 #endif
 				};
+#endif /* CONFIG_TARGET_COPY_OUT_PRODUCT */
 
 			};
 		};
