@@ -24,14 +24,14 @@
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -70,6 +70,17 @@
 		vib_limit = <9>;
 		vib_vol= <0x0b>;
 	};
+
+	memory_ssmr_features: memory-ssmr-features {
+		compatible = "mediatek,memory-ssmr-features";
+		svp-size = <0 0x10000000>;
+		iris-recognition-size = <0 0>;
+		2d_fr-size = <0 0>;
+		tui-size = <0 0>;
+		wfd-size = <0 0>;
+		prot-sharedmem-size = <0 0>;
+	};
+
 };
 
 &i2c3 {
@@ -373,62 +384,60 @@
 	accdet_pins_default: accdetdefault {
 	};
 	accdet_pins_eint_as_int: accdeteint@0 {
+#if 0
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
 			slew-rate = <0>;
 			bias-disable;
 		};
+#endif
 	};
 };
 /* accdet end */
 
-/* FINGERPRINT start */
-&spi0 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	fingerprint@0 {
-		compatible = "goodix,goodix-fp";
-		reg = <0>;
-		spi-max-frequency = <8000000>;
-		netlink-event = <30>;
-		status = "okay";
-	};
-};
-
-&goodix_fp {
-	pinctrl-names = "default", "reset_high", "reset_low";
-	pinctrl-0 = <&fingerprint_default>;
-	pinctrl-1 = <&fingerprint_reset_high>;
-	pinctrl-2 = <&fingerprint_reset_low>;
+/*usb cable start*/
+&usb_cable {
+	usbcable-gpio = <&pio 19 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usbcable_pins_default>;
 	status = "okay";
 };
-
 &pio {
-	fingerprint_default: state_default {
-	};
-	fingerprint_reset_high: state_reset_high {
+	usbcable_pins_default:usbcableeint@0{
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
-			slew-rate = <1>;
-			output-high;
+			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <0>;
+			bias-disable;
 		};
 	};
-	fingerprint_reset_low: state_reset_low {
+};
+/*usb cable end*/
+
+&led_simple {
+	pinctrl-names = "default", "red_led_output0", "red_led_output1";
+	pinctrl-0 = <&red_led_default>;
+	pinctrl-1 = <&red_led_pull_down>;
+	pinctrl-2 = <&red_led_pull_up>;
+	status = "okay";
+};
+&pio {
+	red_led_default: led_default {
+				 };
+	red_led_pull_down: led_output0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
+	red_led_pull_up: led_output1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 };
-/* FINGERPRINT end */
-
-/* battery end */
-&bat_gm30 {
-	EMBEDDED_SEL = <(0)>;
-};
-/* battery end */
-
 /* IRTX GPIO end */
 &irtx_pwm {
 	pinctrl-names = "irtx_gpio_led_default", "irtx_gpio_led_set";
@@ -459,129 +468,32 @@
 
 /* AUDIO GPIO standardization */
 &audgpio {
-	pinctrl-names = "aud_clk_mosi_off",
-			"aud_clk_mosi_on",
-			"aud_clk_miso_off",
-			"aud_clk_miso_on",
-			"aud_dat_mosi_off",
-			"aud_dat_mosi_on",
-			"aud_dat_miso_off",
-			"aud_dat_miso_on",
-			"aud_smartpa_off",
-			"aud_smartpa_on";
-	pinctrl-0 = <&aud_clk_mosi_off>;
-	pinctrl-1 = <&aud_clk_mosi_on>;
-	pinctrl-2 = <&aud_clk_miso_off>;
-	pinctrl-3 = <&aud_clk_miso_on>;
-	pinctrl-4 = <&aud_dat_mosi_off>;
-	pinctrl-5 = <&aud_dat_mosi_on>;
-	pinctrl-6 = <&aud_dat_miso_off>;
-	pinctrl-7 = <&aud_dat_miso_on>;
-	pinctrl-8 = <&aud_pins_smartpa_off>;
-	pinctrl-9 = <&aud_pins_smartpa_on>;
+	pinctrl-names = "extamp-pulllow",
+			"extamp-pullhigh";
+	pinctrl-0 = <&aud_extamp_gpio_low>;
+	pinctrl-1 = <&aud_extamp_gpio_high>;
 	status = "okay";
 };
 
 &pio {
-	aud_clk_mosi_off: aud_clk_mosi_off {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO136__FUNC_GPIO136>;
-		};
-	};
 
-	aud_clk_mosi_on: aud_clk_mosi_on {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO136__FUNC_AUD_CLK_MOSI>;
-		};
-	};
-
-	aud_clk_miso_off: aud_clk_miso_off {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO140__FUNC_GPIO140>;
-		};
-	};
-
-	aud_clk_miso_on: aud_clk_miso_on {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO140__FUNC_AUD_CLK_MISO>;
-		};
-	};
-
-	aud_dat_mosi_off: aud_dat_mosi_off {
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO138__FUNC_GPIO138>;
-			input-enable;
-			slew-rate = <0>;
+	aud_extamp_gpio_low: aud_extamp_gpio_low {
+		pins_gpio_low {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			out-enable;
+			slew-rate = <2>;
 			bias-disable;
+			output-low;
 		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO139__FUNC_GPIO139>;
-			input-enable;
-			slew-rate = <0>;
+	};
+
+	aud_extamp_gpio_high: aud_extamp_gpio_high {
+		pins_gpio_high {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			out-enable;
+			slew-rate = <2>;
 			bias-disable;
-		};
-	};
-
-	aud_dat_mosi_on: aud_dat_mosi_on {
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO138__FUNC_AUD_DAT_MOSI0>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO139__FUNC_AUD_DAT_MOSI1>;
-		};
-	};
-
-	aud_dat_miso_off: aud_dat_miso_off {
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO142__FUNC_GPIO142>;
-			input-enable;
-			slew-rate = <0>;
-			bias-disable;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO143__FUNC_GPIO143>;
-			input-enable;
-			slew-rate = <0>;
-			bias-disable;
-		};
-	};
-
-	aud_dat_miso_on: aud_dat_miso_on {
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO142__FUNC_AUD_DAT_MISO0>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO143__FUNC_AUD_DAT_MISO1>;
-		};
-	};
-
-	aud_pins_smartpa_off: aud_pins_smartpa_off {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
-		};
-		pins_cmd3_dat {
-			pinmux = <PINMUX_GPIO20__FUNC_GPIO20>;
-		};
-	};
-
-	aud_pins_smartpa_on: aud_pins_smartpa_on {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_I2S0_DI>;
-		};
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_I2S3_BCK>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_I2S3_LRCK>;
-		};
-		pins_cmd3_dat {
-			pinmux = <PINMUX_GPIO20__FUNC_I2S3_DO>;
+			output-high;
 		};
 	};
 };
@@ -854,6 +766,13 @@
 	pinctrl-26 = <&camera_pins_cam2_mclk_off>;
 	status = "okay";
 
+};
+&usb_phy_tuning{
+	u2_vrt_ref = <7>;
+	u2_term_ref = <6>;
+	u2_host_vrt_ref = <4>;
+	u2_host_term_ref = <4>;
+	status = "okay";
 };
 #include "bat_setting/mt6765_battery_table_fiji64.dtsi"
 
