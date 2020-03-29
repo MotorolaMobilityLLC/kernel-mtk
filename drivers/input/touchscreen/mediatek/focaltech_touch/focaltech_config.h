@@ -200,7 +200,7 @@
 /*
  * Numbers of modules support
  */
-#define FTS_GET_MODULE_NUM                      1
+#define FTS_GET_MODULE_NUM                      2
 
 /*
  * module_id: mean vendor_id generally, also maybe gpio or lcm_id...
@@ -210,7 +210,7 @@
  * FTS_GET_MODULE_NUM >= 3, compatible with FTS_MODULE3_ID
  */
 #define FTS_MODULE_ID                          0x8282
-#define FTS_MODULE2_ID                         0x0000
+#define FTS_MODULE2_ID                         0x7070
 #define FTS_MODULE3_ID                         0x0000
 
 /*
@@ -222,7 +222,7 @@
  * etc/firmware or by customers
  */
 #define FTS_MODULE_NAME                        "focal_fw_holitech"
-#define FTS_MODULE2_NAME                       ""
+#define FTS_MODULE2_NAME                       "focal_fw_truly"
 #define FTS_MODULE3_NAME                       ""
 
 /*
@@ -236,7 +236,7 @@
  * if FTS_GET_MODULE_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fw_sample.i"
+#define FTS_UPGRADE_FW2_FILE                     "include/firmware/fiji_ft8006p_vb1_all.i"
 
 /*
  * if FTS_GET_MODULE_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
