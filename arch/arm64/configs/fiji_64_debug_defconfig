@@ -509,3 +509,4 @@ CONFIG_USB_CABLE=y
 #add by shabei for usb cable detect end
 CONFIG_TARGET_COPY_OUT_PRODUCT=y
 
+CONFIG_MICROTRUST_TEE_SUPPORT=y
