@@ -38,7 +38,7 @@
 #include <trace/events/fpsgo.h>
 
 #define TIME_1S  1000000000ULL
-#define TIME_10S  10000000000ULL
+#define TIME_90S  90000000000ULL
 
 static struct rb_root render_pid_tree;
 static struct rb_root BQ_id_list;
@@ -261,10 +261,10 @@ void fpsgo_traverse_linger(unsigned long long cur_ts)
 
 	fpsgo_lockprove(__func__);
 
-	if (cur_ts < TIME_10S)
+	if (cur_ts < TIME_90S)
 		return;
 
-	expire_ts = cur_ts - TIME_10S;
+	expire_ts = cur_ts - TIME_90S;
 
 	n = rb_first(&linger_tree);
 	while (n) {
