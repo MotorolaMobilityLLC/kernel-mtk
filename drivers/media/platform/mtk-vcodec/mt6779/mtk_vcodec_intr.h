@@ -55,4 +55,8 @@ int mtk_vcodec_enc_irq_setup(struct platform_device *pdev,
 	struct mtk_vcodec_dev *dev);
 extern void dump_emi_outstanding(void);
 
+enum m4u_callback_ret_t mtk_vcodec_m4u_translation_fault_dump(
+	int port, unsigned int mva, void *data);
+void mtk_vcodec_m4u_tf_vld_dump(void *ctx);
+
 #endif /* _MTK_VCODEC_INTR_H_ */

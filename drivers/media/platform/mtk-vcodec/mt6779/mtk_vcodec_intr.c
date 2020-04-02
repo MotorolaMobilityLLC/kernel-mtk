@@ -236,3 +236,52 @@ int mtk_vcodec_enc_irq_setup(struct platform_device *pdev,
 }
 EXPORT_SYMBOL(mtk_vcodec_enc_irq_setup);
 
+
+enum m4u_callback_ret_t mtk_vcodec_m4u_translation_fault_dump(
+	int port, unsigned int mva, void *data)
+{
+	switch (port) {
+	case M4U_PORT_HW_VDEC_VLD_EXT:
+		mtk_vcodec_m4u_tf_vld_dump(data);
+		break;
+	default:
+		break;
+	}
+	return M4U_CALLBACK_HANDLED;
+}
+EXPORT_SYMBOL(mtk_vcodec_m4u_translation_fault_dump);
+
+void mtk_vcodec_m4u_tf_vld_dump(void *data)
+{
+	struct mtk_vcodec_dev *dev = data;
+	unsigned int reg_val;
+	unsigned int sram_r, sram_w, sram_c;
+	unsigned int sram_data, dram_r;
+	void __iomem *vdec_vld_addr = dev->dec_reg_base[VDEC_VLD];
+
+	mtk_v4l2_err("VLD[%d] = 0x%08x, VLD[%d] = 0x%08x",
+		0xB4  >> 2, readl(vdec_vld_addr + 0xB4),
+		0xB8  >> 2, readl(vdec_vld_addr + 0xB8));
+	mtk_v4l2_err("VLD[%d] = 0x%08x, VLD[%d] = 0x%08x",
+		0xB0  >> 2, readl(vdec_vld_addr + 0xB0),
+		0x110 >> 2, readl(vdec_vld_addr + 0x110));
+	reg_val = readl(vdec_vld_addr + 0xF4);
+	if ((reg_val&(1<<15)) || !(reg_val&1)) {
+		mtk_v4l2_err("SRAM not stable (0x%08x)!!", reg_val);
+	} else {
+		dram_r  = readl(vdec_vld_addr + 0xFC);
+		reg_val = readl(vdec_vld_addr + 0xEC);
+		mtk_v4l2_err(
+			"VLD[%d] = 0x%08x, VLD[%d] = 0x%08x, VLD[%d] = 0x%08x",
+			0xF8 >> 2, readl(vdec_vld_addr + 0xF8),
+			0xFC >> 2, dram_r,
+			0xEC >> 2, reg_val);
+		sram_r = reg_val & 0x1F;
+		sram_w = (reg_val >>  8) & 0x1F;
+		sram_c = (reg_val >> 24) & 0x3;
+		sram_data = (sram_w - sram_r + 32) % 32;
+		mtk_v4l2_err("vld rptr = 0x%08x",
+			dram_r - sram_data*16 + sram_c*4 - 7*4);
+	}
+}
+
