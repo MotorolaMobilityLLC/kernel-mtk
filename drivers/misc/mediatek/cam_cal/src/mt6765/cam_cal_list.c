@@ -21,6 +21,7 @@ extern unsigned int Hi846_read_cal_region(struct i2c_client *client, unsigned in
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 	{BLACKJACK_SEA_MT9D015_SENSOR_ID, 0xA0, Common_read_region},
+	{BLACKJACK_HLT_OV16A10_SENSOR_ID, 0xA0, Common_read_region},
 	{BLACKJACK_TSP_GC2375H_SENSOR_ID, 0xA2, Common_read_region},
 	{BLACKJACK_JSL_GC2375H_SENSOR_ID, 0xA4, Common_read_region},
 	{S5K3P9SXT_SENSOR_ID, 0xA0, Common_read_region},

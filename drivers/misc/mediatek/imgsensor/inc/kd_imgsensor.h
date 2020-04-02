@@ -288,6 +288,7 @@
 #define MT9T113MIPI_SENSOR_ID                   0x4680
 /*GC*/
 #define GC2375H_SENSOR_ID                       0x2375
+#define BJ_TSPGC2375_TXD3P9_SENSOR_ID			(0x2375 + 3)
 #define GC2365_SENSOR_ID                        0x2365
 #define GC2366_SENSOR_ID                        0x2366
 #define GC2355_SENSOR_ID                        0x2355
@@ -485,6 +486,7 @@
 #define SENSOR_DRVNAME_MT9T113_MIPI_YUV         "mt9t113_mipi_yuv"
 /*GC*/
 #define SENSOR_DRVNAME_GC2375H_MIPI_RAW         "gc2375h_mipi_raw"
+#define SENSOR_DRVNAME_BJ_TSPGC2375_TXD3P9_MIPI_RAW	 "bj_tspgc2375_txd3p9_mipi_raw"
 #define SENSOR_DRVNAME_GC2365_MIPI_RAW          "gc2365_mipi_raw"
 #define SENSOR_DRVNAME_GC2366_MIPI_RAW          "gc2366_mipi_raw"
 #define SENSOR_DRVNAME_GC2035_YUV               "gc2035_yuv"
@@ -542,9 +544,12 @@
 #define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P9SX_MIPI_RAW        "s5k3p9sx_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P9SXT_MIPI_RAW       "s5k3p9sxt_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_SUN_GC02M1B_MIPI_RAW 	"blackjack_sun_gc02m1b_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_SUN_GC02M1C_MIPI_RAW 	"blackjack_sun_gc02m1c_mipi_raw"
+#define SENSOR_DRVNAME_BLACKJACK_TSP_GC02M1B_MIPI_RAW 	"blackjack_tsp_gc02m1b_mipi_raw"
 
 #define BLACKJACK_TSP_GC2375H_SENSOR_ID         0x2375
-#define BLACKJACK_JSL_GC2375H_SENSOR_ID         0x2375 + 2
+#define BLACKJACK_JSL_GC2375H_SENSOR_ID         (0x2375 + 2)
 #define BLACKJACK_TXD_HI846_SENSOR_ID           0x0846
 #define BLACKJACK_SEA_MT9D015_SENSOR_ID         0x1501
 #define BLACKJACK_HLT_OV16A10_SENSOR_ID         0x1641
@@ -553,6 +558,9 @@
 #define GC8034_SENSOR_ID                        0x8044
 #define S5K3P9SX_SENSOR_ID                      0x3109
 #define S5K3P9SXT_SENSOR_ID                     0x310A
+#define BLACKJACK_SUN_GC02M1B_SENSOR_ID 	0x02e0
+#define BLACKJACK_SUN_GC02M1C_SENSOR_ID 	0x02e1
+#define BLACKJACK_TSP_GC02M1B_SENSOR_ID 	0x02e2
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
