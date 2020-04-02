@@ -8616,41 +8616,55 @@ unsigned int primary_display_get_option(const char *option)
 
 int primary_display_lcm_ATA(void)
 {
-	enum DISP_STATUS ret = DISP_STATUS_OK;
+	struct dsi_cmd_desc cmd_tab[3];
+	unsigned int i;
+	unsigned int ret = 0;
 
 	DISPFUNC();
-	_primary_path_switch_dst_lock();
-	primary_display_esd_check_enable(0);
-	_primary_path_lock(__func__);
-	disp_irq_esd_cust_bycmdq(0);
-	if (pgc->state == 0) {
-		DISPCHECK(
-			"ATA_LCM, primary display path is already sleep, skip\n");
-		goto done;
+	if (!primary_display_is_video_mode()) {
+		_primary_path_switch_dst_lock();
+		primary_display_esd_check_enable(0);
+		_primary_path_lock(__func__);
+		disp_irq_esd_cust_bycmdq(0);
+		if (pgc->state == 0) {
+			DISPCHECK(
+				"path is already sleep, skip ata lcm read\n");
+			goto done;
+		}
+		ret = disp_lcm_ATA(pgc->plcm);
+		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+	} else {
+		memset(&cmd_tab, 0, 3 * sizeof(struct dsi_cmd_desc));
+
+		/*read display power mode*/
+		cmd_tab[0].dtype = 0x0A;
+		cmd_tab[0].payload = vmalloc(4 * sizeof(unsigned char));
+		memset(cmd_tab[0].payload, 0, 4);
+		cmd_tab[0].dlen = 4;
+
+		do_lcm_vdo_lp_read(cmd_tab, 1);
+
+		DISPINFO("read lcm addr:0x%x--dlen:%d\n",
+			cmd_tab[0].dtype, cmd_tab[0].dlen);
+		for (i = 0; i < cmd_tab[0].dlen; i++) {
+			DISPINFO("read lcm addr:0x%x--byte:%d,val:0x%x\n",
+			cmd_tab[0].dtype, i, *(cmd_tab[0].payload + i));
+		}
+
+		if (*(cmd_tab[0].payload) == 0x9C) {
+			DISPINFO("[LCM ATA Check] [0x0A]=0x%02x\n",
+				*(cmd_tab[0].payload));
+			ret = 1;
+		}
+		vfree(cmd_tab[0].payload);
 	}
-
-	DISPCHECK("dxs [ATA_LCM]primary display path stop[begin]\n");
-	if (primary_display_is_video_mode())
-		dpmgr_path_ioctl(pgc->dpmgr_handle, NULL,
-			DDP_STOP_VIDEO_MODE, NULL);
-
-	DISPCHECK("[ATA_LCM]primary display path stop[end]\n");
-	ret = disp_lcm_ATA(pgc->plcm);
-	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
-	if (primary_display_is_video_mode()) {
-		/*
-		 * for video mode, we need to force trigger here
-		 * for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when
-		 * trigger loop start
-		 */
-		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
-	}
-
 done:
-	disp_irq_esd_cust_bycmdq(1);
-	_primary_path_unlock(__func__);
-	primary_display_esd_check_enable(1);
-	_primary_path_switch_dst_unlock();
+	if (!primary_display_is_video_mode()) {
+		disp_irq_esd_cust_bycmdq(1);
+		_primary_path_unlock(__func__);
+		primary_display_esd_check_enable(1);
+		_primary_path_switch_dst_unlock();
+	}
 	return ret;
 }
 
