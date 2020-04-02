@@ -33,18 +33,18 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "blackjack_tsp_gc2375_mipi_Sensor.h"
+#include "bj_tspgc2375_txd3p9_mipi_Sensor.h"
 
 /************************** Modify Following Strings for Debug **************************/
-#define PFX "blackjack_tsp_gc2375_camera_sensor"
-#define LOG_1 LOG_INF("BLACKJACK_TSP_GC2375, MIPI 1LANE\n")
+#define PFX "bj_tspgc2375_txd3p9_mipi_Sensor"
+#define LOG_1 LOG_INF("bj_tspgc2375_txd3p9_mipi_Sensor, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #define MODULE_ID_OFFSET 0x00
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-static kal_bool BLACKJACK_TSP_GC2375DuringTestPattern = KAL_FALSE;
+
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = GC2375H_SENSOR_ID,
 	.module_id = 0x01,
@@ -153,7 +153,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 3,
+	.sensor_mode_num = 8,
 
 	.cap_delay_frame = 2,
 	.pre_delay_frame = 2,
@@ -720,13 +720,14 @@ static kal_uint8 blackjack_tsp_gc2375_read_otp(kal_uint8 addr)
 }
 extern char backaux_cam_name[64];
 extern char back_cam_name[64];
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
-	if(strncmp(back_cam_name, "0_s5k3p9sx_TSP",strlen("0_s5k3p9sx_TSP")))
+	if(strncmp(back_cam_name, "0_s5k3p9sx_TXD",strlen("0_s5k3p9sx_TXD")))
 	{
-		LOG_INF("main camera is not 0_s5k3p9sx_TSP\n");
+		 LOG_INF("main camera is not 0_s5k3p9sx_TXD\n");
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_NONE;
 	}
@@ -736,27 +737,17 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id){
+			if (*sensor_id == imgsensor_info.sensor_id)
+			{
                 imgsensor_info.module_id = blackjack_tsp_gc2375_read_otp(MODULE_ID_OFFSET);
                 if(0x52 == imgsensor_info.module_id)
-                {
-					*sensor_id = BLACKJACK_TSP_GC2375_SENSOR_ID;
+				{
+					*sensor_id = BJ_TSPGC2375_TXD3P9_SENSOR_ID;
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					memcpy(backaux_cam_name, "2_blackjack_tsp_gc2375", 64);
-					printk("i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
+					memcpy(backaux_cam_name, "2_bj_TspGc2375_MainTXD3P9", 64);
+					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x back_cam_name=%s\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id,back_cam_name);
 					return ERROR_NONE;
 				}
-#if 0
-				else if(0x50 != imgsensor_info.module_id)
-                                {
-					*sensor_id = BLACKJACK_TSP_GC2375_SENSOR_ID;
-					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					memcpy(backaux_cam_name, "2_blackjack_tsp_gc2375_nootp", 64);
-					FF_driver_registered = KAL_TRUE;
-					printk("wrong module id i2c write id: 0x%x, sensor id: 0x%x,module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
-					return ERROR_NONE;
-				}
-#endif
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 			retry--;
@@ -764,8 +755,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if (*sensor_id != BLACKJACK_TSP_GC2375_SENSOR_ID) {
+	LOG_INF("main camera *sensor_id =%x %x\n",*sensor_id,BJ_TSPGC2375_TXD3P9_SENSOR_ID);
+	if (*sensor_id != BJ_TSPGC2375_TXD3P9_SENSOR_ID) {
 		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
+		LOG_INF("main 1 camera *sensor_id =%x %x\n",*sensor_id,BJ_TSPGC2375_TXD3P9_SENSOR_ID);
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
@@ -819,7 +812,6 @@ static kal_uint32 open(void)
 	imgsensor.test_pattern = KAL_FALSE;
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
-	BLACKJACK_TSP_GC2375DuringTestPattern = KAL_FALSE;
 	return ERROR_NONE;
 }
 
@@ -1445,7 +1437,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 BLACKJACK_TSP_GC2375_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 BJ_TSPGC2375_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
