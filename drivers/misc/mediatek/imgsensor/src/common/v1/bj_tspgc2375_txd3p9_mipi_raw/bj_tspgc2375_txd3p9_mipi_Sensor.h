@@ -1,21 +1,8 @@
-/*
- * Copyright (C) 2018 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 /*****************************************************************************
  *
  * Filename:
  * ---------
- *     blackjack_sea_mt9d015mipi_Sensor.h
+ *     gc2375mipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,20 +13,34 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _A2030MIPI_SENSOR_H
-#define _A2030MIPI_SENSOR_H
+#ifndef _BLACKJACK_TSP_GC2375MIPI_SENSOR_H
+#define _BLACKJACK_TSP_GC2375MIPI_SENSOR_H
 
 /* SENSOR MIRROR FLIP INFO */
+#define BLACKJACK_TSP_GC2375_MIRROR_FLIP_ENABLE   0
+#if BLACKJACK_TSP_GC2375_MIRROR_FLIP_ENABLE
+#define BLACKJACK_TSP_GC2375_MIRROR         0xd4
+#define BLACKJACK_TSP_GC2375_BLK_Select1_H  0x00
+#define BLACKJACK_TSP_GC2375_BLK_Select1_L  0x3c
+#define BLACKJACK_TSP_GC2375_BLK_Select2_H  0x00
+#define BLACKJACK_TSP_GC2375_BLK_Select2_L  0x03
+#else
+#define BLACKJACK_TSP_GC2375_MIRROR         0xd7
+#define BLACKJACK_TSP_GC2375_BLK_Select1_H  0x3c
+#define BLACKJACK_TSP_GC2375_BLK_Select1_L  0x00
+#define BLACKJACK_TSP_GC2375_BLK_Select2_H  0xc0
+#define BLACKJACK_TSP_GC2375_BLK_Select2_L  0x00
+#endif
 
-
-
-enum IMGSENSOR_MODE {
+enum{
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
 	IMGSENSOR_MODE_VIDEO,
 	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
+        IMGSENSOR_MODE_CUSTOM1,
+        IMGSENSOR_MODE_CUSTOM2,
 };
 
 struct imgsensor_mode_struct {
@@ -78,6 +79,7 @@ struct imgsensor_struct {
 /* SENSOR PRIVATE STRUCT FOR CONSTANT */
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id;
+	kal_uint8 module_id;
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;
@@ -85,6 +87,8 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct normal_video;
 	struct imgsensor_mode_struct hs_video;
 	struct imgsensor_mode_struct slim_video;
+	struct imgsensor_mode_struct custom1;
+	struct imgsensor_mode_struct custom2;
 	kal_uint8  ae_shut_delay_frame;
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame;
@@ -94,6 +98,11 @@ struct imgsensor_info_struct {
 	kal_uint8  cap_delay_frame;
 	kal_uint8  pre_delay_frame;
 	kal_uint8  video_delay_frame;
+	kal_uint8  custom1_delay_frame;     //enter custom1 delay frame num
+	kal_uint8  custom2_delay_frame;     //enter custom2 delay frame num
+	kal_uint8  custom3_delay_frame;     //enter custom3 delay frame num
+	kal_uint8  custom4_delay_frame;     //enter custom4 delay frame num
+	kal_uint8  custom5_delay_frame;     //enter custom5 delay frame num
 	kal_uint8  hs_video_delay_frame;
 	kal_uint8  slim_video_delay_frame;
 	kal_uint8  margin;
@@ -109,10 +118,8 @@ struct imgsensor_info_struct {
 	kal_uint8  i2c_addr_table[5];
 };
 
-extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
-	u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
-extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 
 #endif

@@ -1,21 +1,8 @@
-/*
- * Copyright (C) 2018 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 /*****************************************************************************
  *
  * Filename:
  * ---------
- *     blackjack_sea_mt9d015mipi_Sensor.h
+ *     gc02m1bmipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,14 +13,37 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _A2030MIPI_SENSOR_H
-#define _A2030MIPI_SENSOR_H
+#ifndef _TSP_GC02M1BMIPI_SENSOR_H
+#define _TSP_GC02M1BMIPI_SENSOR_H
+
 
 /* SENSOR MIRROR FLIP INFO */
+#define GC02M1B_MIRROR_NORMAL    1
+#define GC02M1B_MIRROR_H         0
+#define GC02M1B_MIRROR_V         0
+#define GC02M1B_MIRROR_HV        0
+
+#if GC02M1B_MIRROR_NORMAL
+#define GC02M1B_MIRROR	        0x80
+#elif GC02M1B_MIRROR_H
+#define GC02M1B_MIRROR	        0x81
+#elif GC02M1B_MIRROR_V
+#define GC02M1B_MIRROR	        0x82
+#elif GC02M1B_MIRROR_HV
+#define GC02M1B_MIRROR	        0x83
+#else
+#define GC02M1B_MIRROR	        0x80
+#endif
 
 
+/* SENSOR PRIVATE INFO FOR GAIN SETTING */
+#define GC02M1B_SENSOR_GAIN_BASE             0x400
+#define GC02M1B_SENSOR_GAIN_MAX              (12 * GC02M1B_SENSOR_GAIN_BASE)
+#define GC02M1B_SENSOR_GAIN_MAX_VALID_INDEX  16
+#define GC02M1B_SENSOR_GAIN_MAP_SIZE         16
+#define GC02M1B_SENSOR_DGAIN_BASE            0x400
 
-enum IMGSENSOR_MODE {
+enum{
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
@@ -78,6 +88,7 @@ struct imgsensor_struct {
 /* SENSOR PRIVATE STRUCT FOR CONSTANT */
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id;
+	kal_uint8 module_id;
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;
@@ -107,12 +118,15 @@ struct imgsensor_info_struct {
 	kal_uint8  mclk;
 	kal_uint8  mipi_lane_num;
 	kal_uint8  i2c_addr_table[5];
+	kal_uint32 i2c_speed;
 };
 
-extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
-	u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
-extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
+extern void kdSetI2CSpeed(u16 i2cSpeed);
+extern int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId);
+extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
+extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId, u16 timing);
 
 #endif

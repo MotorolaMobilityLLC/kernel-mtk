@@ -45,8 +45,6 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 kal_bool GC2375DuringTestPattern = KAL_FALSE;
-kal_bool FF_driver_registered = KAL_FALSE;
-
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = GC2375H_SENSOR_ID,
 	.module_id = 0x01,
@@ -612,20 +610,18 @@ static void custom2_setting(void)
 static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-   LOG_INF("E\n");
-
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
-	if (imgsensor.current_fps != imgsensor_info.custom1.max_framerate)
-		LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",imgsensor.current_fps,imgsensor_info.cap.max_framerate/10);
-	imgsensor.pclk = imgsensor_info.custom1.pclk;
-	imgsensor.line_length = imgsensor_info.custom1.linelength;
-	imgsensor.frame_length = imgsensor_info.custom1.framelength;
-	imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
-	imgsensor.autoflicker_en = KAL_FALSE;
-	spin_unlock(&imgsensor_drv_lock);
-	custom1_setting();
-	return ERROR_NONE;
+    LOG_INF("E\n");
+    spin_lock(&imgsensor_drv_lock);
+    imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
+    imgsensor.pclk = imgsensor_info.custom1.pclk;
+    //imgsensor.video_mode = KAL_FALSE;
+    imgsensor.line_length = imgsensor_info.custom1.linelength;
+    imgsensor.frame_length = imgsensor_info.custom1.framelength; 
+    imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
+    imgsensor.autoflicker_en = KAL_FALSE;
+    spin_unlock(&imgsensor_drv_lock);
+    custom1_setting();
+    return ERROR_NONE;
 }   /*  Custom1   */
 
 static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -737,17 +733,23 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if ((*sensor_id == imgsensor_info.sensor_id) && (!FF_driver_registered)) {
-                                imgsensor_info.module_id = gc2375_read_otp(MODULE_ID_OFFSET);
-                                if(0x23 == imgsensor_info.module_id)
-                                {
-					*sensor_id = GC2375_SENSOR_ID;
-					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					memcpy(backaux_cam_name, "2_gc2375_TXD", 64);
-					FF_driver_registered = KAL_TRUE;
-					printk("i2c write id: 0x%x, sensor id: 0x%x, module id : 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
-					return ERROR_NONE;
-				}
+			if (*sensor_id == imgsensor_info.sensor_id){
+                    imgsensor_info.module_id = gc2375_read_otp(MODULE_ID_OFFSET);
+                    if(0x23 == imgsensor_info.module_id) 
+                    {
+						*sensor_id = GC2375_SENSOR_ID;
+						memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+						memcpy(backaux_cam_name, "2_gc2375_TXD", 64);
+						printk("i2c write id: 0x%x, sensor id: 0x%x, module id : 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
+						return ERROR_NONE;
+				   }else if(0x34== imgsensor_info.module_id)
+				   	{
+				   		*sensor_id = GC2375_SENSOR_ID;
+						memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+						memcpy(backaux_cam_name, "2_gc2375_TXD_NewModule", 64);
+						printk("i2c write id: 0x%x, sensor id: 0x%x, module id : 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
+						return ERROR_NONE;
+				   }
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x, module id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id, imgsensor_info.module_id);
 			retry--;
@@ -970,7 +972,6 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
 	sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
-	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;/*add custom1*/
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -1191,17 +1192,17 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM1:
-		if (imgsensor.current_fps != imgsensor_info.custom1.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",framerate,imgsensor_info.custom1.max_framerate/10);
 		frame_length = imgsensor_info.custom1.pclk / framerate * 10 / imgsensor_info.custom1.linelength;
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.dummy_line = (frame_length > imgsensor_info.custom1.framelength) ?
-			(frame_length - imgsensor_info.custom1.framelength) : 0;
+		imgsensor.dummy_line = (frame_length > imgsensor_info.custom1.framelength) ? (frame_length - imgsensor_info.custom1.framelength) : 0;
+		if (imgsensor.dummy_line < 0)
+			imgsensor.dummy_line = 0;
 		imgsensor.frame_length = imgsensor_info.custom1.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		if (imgsensor.frame_length > imgsensor.shutter)
-		set_dummy();
+	if(imgsensor.frame_length > imgsensor.shutter){
+				set_dummy();
+	}
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM2:
 		frame_length = imgsensor_info.custom2.pclk / framerate * 10 / imgsensor_info.custom2.linelength;
@@ -1397,9 +1398,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[4], sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
-			break;
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
