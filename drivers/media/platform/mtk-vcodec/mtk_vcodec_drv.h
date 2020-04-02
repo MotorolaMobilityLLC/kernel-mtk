@@ -32,6 +32,12 @@
 #include "mtkbuf-dma-cache-sg.h"
 #endif
 
+#ifdef COFNIG_MTK_IOMMU
+#include "mtk_iommu.h"
+#elif defined(CONFIG_MTK_M4U)
+#include "m4u.h"
+#endif
+
 #define MTK_VCODEC_DRV_NAME     "mtk_vcodec_drv"
 #define MTK_VCODEC_DEC_NAME     "mtk-vcodec-dec"
 #define MTK_VCODEC_ENC_NAME     "mtk-vcodec-enc"

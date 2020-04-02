@@ -3176,7 +3176,8 @@ firmware_class.path=/vendor/firmware";
 	vdec_gcon: vdec_gcon@16000000 {
 		compatible = "mediatek,vdec_gcon", "syscon";
 		reg = <0 0x16000000 0 0x1000>,		/* VDEC_SYS */
-			 <0 0x16025000 0 0x1000>;		/* VDEC_MISC */
+			 <0 0x16025000 0 0x1000>,		/* VDEC_MISC */
+			 <0 0x16020000 0 0x1000>;		/* VDEC_VLD */
 		mediatek,larb = <&smi_larb1>;
 		interrupts = <GIC_SPI 324 IRQ_TYPE_LEVEL_LOW>;
 		mediatek,vcu = <&vcu>;

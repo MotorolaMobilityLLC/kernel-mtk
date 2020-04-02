@@ -357,6 +357,14 @@ static int mtk_vcodec_dec_probe(struct platform_device *pdev)
 	dev->is_codec_suspending = 0;
 	vdec_dev = dev;
 
+#ifdef COFNIG_MTK_IOMMU
+	mtk_iommu_register_fault_callback(M4U_PORT_HW_VDEC_VLD_EXT,
+		mtk_vcodec_m4u_translation_fault_dump, (void *)dev);
+#elif defined(CONFIG_MTK_M4U)
+	m4u_register_fault_callback(M4U_PORT_HW_VDEC_VLD_EXT,
+		mtk_vcodec_m4u_translation_fault_dump, (void *)dev);
+#endif
+
 	return 0;
 
 err_dec_reg:
