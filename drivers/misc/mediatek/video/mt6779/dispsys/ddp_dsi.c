@@ -913,10 +913,12 @@ void DSI_Calc_VDO_Timing(enum DISP_MODULE_ENUM module,
 			dsi_params->mode == BURST_VDO_MODE ||
 			dsi_params->switch_mode == SYNC_EVENT_VDO_MODE ||
 			dsi_params->switch_mode == BURST_VDO_MODE) {
-		t_hsa = ALIGN_TO(t_hsa * dsiTmpBufBpp - 4, 4);
 		ASSERT((t_hbp +	t_hsa) * dsiTmpBufBpp > 9);
 
 		t_hbp = ALIGN_TO((t_hbp + t_hsa) * dsiTmpBufBpp - 10, 4);
+
+		/* calculate t_hsa in byte after calculating hbp */
+		t_hsa = ALIGN_TO(t_hsa * dsiTmpBufBpp - 4, 4);
 	} else {
 		ASSERT(t_hsa * dsiTmpBufBpp > 9);
 
