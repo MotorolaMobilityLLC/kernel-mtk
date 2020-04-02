@@ -76,6 +76,7 @@ struct notifier_block;
 #define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
 #define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
 					* lock is dropped */
+#define CPU_STARTING		0x000A
 #define CPU_BROKEN		0x000B /* CPU (unsigned)v did not die properly,
 					* perhaps due to preemption. */
 

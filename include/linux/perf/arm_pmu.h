@@ -16,6 +16,7 @@
 #include <linux/perf_event.h>
 #include <linux/sysfs.h>
 #include <asm/cputype.h>
+#include <linux/notifier.h>
 
 /*
  * struct arm_pmu_platdata - ARM PMU platform data
@@ -90,6 +91,7 @@ struct arm_pmu {
 	cpumask_t	supported_cpus;
 	int		*irq_affinity;
 	char		*name;
+	int		ppi_irq;
 	irqreturn_t	(*handle_irq)(int irq_num, void *dev);
 	void		(*enable)(struct perf_event *event);
 	void		(*disable)(struct perf_event *event);
@@ -118,6 +120,7 @@ struct arm_pmu {
 	struct pmu_hw_events	__percpu *hw_events;
 	struct hlist_node	node;
 	struct notifier_block	cpu_pm_nb;
+	struct notifier_block   hotplug_nb;
 	/* the attr_groups array must be NULL-terminated */
 	const struct attribute_group *attr_groups[ARMPMU_NR_ATTR_GROUPS + 1];
 };
