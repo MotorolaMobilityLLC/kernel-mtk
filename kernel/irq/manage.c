@@ -1848,6 +1848,19 @@ void disable_percpu_irq(unsigned int irq)
 }
 EXPORT_SYMBOL_GPL(disable_percpu_irq);
 
+void _disable_percpu_irq(unsigned int irq, unsigned int cpu)
+{
+	unsigned long flags;
+	struct irq_desc *desc = irq_get_desc_lock(irq, &flags,
+					IRQ_GET_DESC_CHECK_PERCPU);
+	if (!desc)
+		return;
+
+	irq_percpu_disable(desc, cpu);
+	irq_put_desc_unlock(desc, flags);
+}
+EXPORT_SYMBOL_GPL(_disable_percpu_irq);
+
 /*
  * Internal function to unregister a percpu irqaction.
  */
