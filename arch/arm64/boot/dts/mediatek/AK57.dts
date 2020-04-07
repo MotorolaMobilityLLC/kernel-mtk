@@ -649,6 +649,13 @@
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
+&usb_phy_tuning{
+	u2_vrt_ref = <7>;
+	u2_term_ref = <6>;
+	u2_host_vrt_ref = <4>;
+	u2_host_term_ref = <4>;
+	status = "okay";
+};
 
 &i2c3 {
 	rt9465@4b {
