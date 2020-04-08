@@ -447,7 +447,7 @@
 	};
 };
 
-&goodix_fp {
+/*&goodix_fp {
 	pinctrl-names = "default", "reset_high", "reset_low";
 	pinctrl-0 = <&fingerprint_default>;
 	pinctrl-1 = <&fingerprint_reset_high>;
@@ -472,7 +472,7 @@
 			output-low;
 		};
 	};
-};
+};*/
 /* FINGERPRINT end */
 
 /* battery end */
@@ -683,4 +683,5 @@
 
 #include <AK57/cust.dtsi>
 #include "cust_mt6765_camera.dtsi"
+#include "AK57-fpsensor.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
