@@ -98,7 +98,7 @@ static int fpsensor_irq_gpio_cfg(fpsensor_data_t *fpsensor)
             return -EINVAL;
         }
         fpsensor_debug(DEBUG_LOG," [fpsensor]fpsensor->irq= %d,fpsensor>irq_gpio = %d\n", fpsensor->irq,
-                       fpsensor->irq_gpio);
+                fpsensor->irq_gpio);
     } else {
         fpsensor_debug(ERR_LOG,"fpsensor null irq node!!\n");
         return -EINVAL;
@@ -118,14 +118,14 @@ void fpsensor_gpio_output_dts(int gpio, int level)
             pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_rst_low);
         }
     } else if (gpio == FPSENSOR_SPI_CS_PIN) {
-	if(level)
-	{
-             pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_high);
-	}
-	else
-	{
-    	    pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_low);
-	}
+        if(level)
+        {
+            pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_high);
+        }
+        else
+        {
+            pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_cs_low);
+        }
     } else if (gpio == FPSENSOR_SPI_MO_PIN) {
         pinctrl_select_state(g_fpsensor->pinctrl1, g_fpsensor->fp_mo_low);
     } else if (gpio == FPSENSOR_SPI_CK_PIN) {
@@ -251,17 +251,17 @@ static void fpsensor_hw_reset(int delay)
 }
 void fpsensor_spi_clk_enable(u8 bonoff)
 {
-     static int mt_spi_clk_flag = 0;   // 0 mean clock is diasble
-     if(mt_spi_clk_flag == bonoff)
-     {
-	return;
-     }
+    static int mt_spi_clk_flag = 0;   // 0 mean clock is diasble
+    if(mt_spi_clk_flag == bonoff)
+    {
+        return;
+    }
 #if defined(USE_SPI_BUS)
     if (bonoff == 0) {
-	mt_spi_clk_flag = 0;
+        mt_spi_clk_flag = 0;
         mt_spi_disable_master_clk(g_fpsensor_spidev);
     } else {
-	mt_spi_clk_flag = 1;
+        mt_spi_clk_flag = 1;
         mt_spi_enable_master_clk(g_fpsensor_spidev);
     }
 #elif defined(USE_PLATFORM_BUS)
@@ -321,19 +321,19 @@ out:
 
 static irqreturn_t fpsensor_irq2(int irq, void *handle)
 {
-	return  IRQ_HANDLED;
+    return  IRQ_HANDLED;
 }
 static irqreturn_t fpsensor_irq(int irq, void *handle)
 {
     fpsensor_data_t *fpsensor_dev = (fpsensor_data_t *)handle;
 
     /* Make sure 'wakeup_enabled' is updated before using it
-    ** since this is interrupt context (other thread...) */
+     ** since this is interrupt context (other thread...) */
     smp_rmb();
 #ifdef CONFIG_PM_WAKELOCKS
-	__pm_wakeup_event(&fpsensor_dev->ttw_wl, jiffies_to_msecs(1*HZ));
+    __pm_wakeup_event(&fpsensor_dev->ttw_wl, jiffies_to_msecs(1*HZ));
 #else
-	wake_lock_timeout(&fpsensor_dev->ttw_wl, msecs_to_jiffies(1000)); // 2 seconds.
+    wake_lock_timeout(&fpsensor_dev->ttw_wl, msecs_to_jiffies(1000)); // 2 seconds.
 #endif
 
 
@@ -358,7 +358,7 @@ static void fpsensor_dev_cleanup(fpsensor_data_t *fpsensor)
 
 static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	struct TEEC_UUID vendor_uuid = { 0x7778c03f, 0xc30c, 0x4dd0, { 0xa3, 0x19, 0xea, 0x29, 0x64, 0x3d, 0x4d, 0xc0 }};
+    struct TEEC_UUID vendor_uuid = { 0x7778c03f, 0xc30c, 0x4dd0, { 0xa3, 0x19, 0xea, 0x29, 0x64, 0x3d, 0x4d, 0xc0 }};
     fpsensor_data_t *fpsensor_dev = NULL;
     int retval = 0;
     uint32_t val = 0;
@@ -368,150 +368,150 @@ static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
     fpsensor_dev = (fpsensor_data_t *)filp->private_data;
     fpsensor_dev->cancel = 0 ;
     switch (cmd) {
-    case FPSENSOR_IOC_INIT:
+        case FPSENSOR_IOC_INIT:
 
-        fpsensor_debug(INFO_LOG, "%s: fpsensor init started======\n", __func__);
-        retval = fpsensor_spidev_dts_init(fpsensor_dev);
-        if (retval) {
+            fpsensor_debug(INFO_LOG, "%s: fpsensor init started======\n", __func__);
+            retval = fpsensor_spidev_dts_init(fpsensor_dev);
+            if (retval) {
+                break;
+            }
+            if(fpsensor_irq_gpio_cfg(fpsensor_dev) != 0) {
+                break;
+            }
+            //regist irq
+            irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
+            retval = request_threaded_irq(fpsensor_dev->irq, fpsensor_irq, NULL,
+                    irqf, FPSENSOR_DEV_NAME, fpsensor_dev);
+            if (retval == 0) {
+                fpsensor_debug(INFO_LOG, " irq thread reqquest success!\n");
+            } else {
+                fpsensor_debug(ERR_LOG, " irq thread request failed , retval =%d \n", retval);
+                break;
+            }
+            enable_irq_wake(g_fpsensor->irq);
+            fpsensor_dev->device_available = 1;
+            // fix Unbalanced enable for IRQ, disable irq at first
+            fpsensor_dev->irq_enabled = 1;
+            fpsensor_disable_irq(fpsensor_dev);
+            fpsensor_debug(INFO_LOG, "%s: fpsensor init finished======\n", __func__);
+
+            memcpy(&uuid_fp, &vendor_uuid, sizeof(struct TEEC_UUID));
             break;
-        }
-        if(fpsensor_irq_gpio_cfg(fpsensor_dev) != 0) {
+
+        case FPSENSOR_IOC_EXIT:
+            fpsensor_disable_irq(fpsensor_dev);
+            if (fpsensor_dev->irq) {
+                free_irq(fpsensor_dev->irq, fpsensor_dev);
+                fpsensor_dev->irq_enabled = 0;
+            }
+            fpsensor_dev->device_available = 0;
+            fpsensor_debug(INFO_LOG, "%s: fpsensor exit finished======\n", __func__);
             break;
-        }
-        //regist irq
-        irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
-        retval = request_threaded_irq(fpsensor_dev->irq, fpsensor_irq, NULL,
-                                      irqf, FPSENSOR_DEV_NAME, fpsensor_dev);
-        if (retval == 0) {
-            fpsensor_debug(INFO_LOG, " irq thread reqquest success!\n");
-        } else {
-            fpsensor_debug(ERR_LOG, " irq thread request failed , retval =%d \n", retval);
+
+        case FPSENSOR_IOC_RESET:
+            fpsensor_debug(INFO_LOG, "%s: chip reset command\n", __func__);
+            fpsensor_hw_reset(1250);
             break;
-        }
-        enable_irq_wake(g_fpsensor->irq);
-        fpsensor_dev->device_available = 1;
-        // fix Unbalanced enable for IRQ, disable irq at first
-        fpsensor_dev->irq_enabled = 1;
-        fpsensor_disable_irq(fpsensor_dev);
-        fpsensor_debug(INFO_LOG, "%s: fpsensor init finished======\n", __func__);
 
-		memcpy(&uuid_fp, &vendor_uuid, sizeof(struct TEEC_UUID));
-        break;
-
-    case FPSENSOR_IOC_EXIT:
-        fpsensor_disable_irq(fpsensor_dev);
-        if (fpsensor_dev->irq) {
-            free_irq(fpsensor_dev->irq, fpsensor_dev);
-            fpsensor_dev->irq_enabled = 0;
-        }
-        fpsensor_dev->device_available = 0;
-        fpsensor_debug(INFO_LOG, "%s: fpsensor exit finished======\n", __func__);
-        break;
-
-    case FPSENSOR_IOC_RESET:
-        fpsensor_debug(INFO_LOG, "%s: chip reset command\n", __func__);
-        fpsensor_hw_reset(1250);
-        break;
-
-    case FPSENSOR_IOC_ENABLE_IRQ:
-        fpsensor_debug(INFO_LOG, "%s: chip ENable IRQ command\n", __func__);
-        fpsensor_enable_irq(fpsensor_dev);
-        break;
-
-    case FPSENSOR_IOC_DISABLE_IRQ:
-        fpsensor_debug(INFO_LOG, "%s: chip disable IRQ command\n", __func__);
-        fpsensor_disable_irq(fpsensor_dev);
-        break;
-    case FPSENSOR_IOC_GET_INT_VAL:
-        val = gpio_get_value(fpsensor_dev->irq_gpio);
-        if (copy_to_user((void __user *)arg, (void *)&val, sizeof(uint32_t))) {
-            fpsensor_debug(ERR_LOG, "Failed to copy data to user\n");
-            retval = -EFAULT;
+        case FPSENSOR_IOC_ENABLE_IRQ:
+            fpsensor_debug(INFO_LOG, "%s: chip ENable IRQ command\n", __func__);
+            fpsensor_enable_irq(fpsensor_dev);
             break;
-        }
-        retval = 0;
-        break;
-    case FPSENSOR_IOC_ENABLE_SPI_CLK:
-        fpsensor_debug(INFO_LOG, "%s: ENABLE_SPI_CLK ======\n", __func__);
-        fpsensor_spi_clk_enable(1);
-        break;
-    case FPSENSOR_IOC_DISABLE_SPI_CLK:
-        fpsensor_debug(INFO_LOG, "%s: DISABLE_SPI_CLK ======\n", __func__);
-        fpsensor_spi_clk_enable(0);
-        break;
-    case FPSENSOR_IOC_ENABLE_POWER:
-        fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_ENABLE_POWER ======\n", __func__);
-        break;
-    case FPSENSOR_IOC_DISABLE_POWER:
-        fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_DISABLE_POWER ======\n", __func__);
-        break;
-    case FPSENSOR_IOC_REMOVE:
-        fpsensor_disable_irq(fpsensor_dev);
-        if (fpsensor_dev->irq) {
-            free_irq(fpsensor_dev->irq, fpsensor_dev);
-            fpsensor_dev->irq_enabled = 0;
-        }
+
+        case FPSENSOR_IOC_DISABLE_IRQ:
+            fpsensor_debug(INFO_LOG, "%s: chip disable IRQ command\n", __func__);
+            fpsensor_disable_irq(fpsensor_dev);
+            break;
+        case FPSENSOR_IOC_GET_INT_VAL:
+            val = gpio_get_value(fpsensor_dev->irq_gpio);
+            if (copy_to_user((void __user *)arg, (void *)&val, sizeof(uint32_t))) {
+                fpsensor_debug(ERR_LOG, "Failed to copy data to user\n");
+                retval = -EFAULT;
+                break;
+            }
+            retval = 0;
+            break;
+        case FPSENSOR_IOC_ENABLE_SPI_CLK:
+            fpsensor_debug(INFO_LOG, "%s: ENABLE_SPI_CLK ======\n", __func__);
+            fpsensor_spi_clk_enable(1);
+            break;
+        case FPSENSOR_IOC_DISABLE_SPI_CLK:
+            fpsensor_debug(INFO_LOG, "%s: DISABLE_SPI_CLK ======\n", __func__);
+            fpsensor_spi_clk_enable(0);
+            break;
+        case FPSENSOR_IOC_ENABLE_POWER:
+            fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_ENABLE_POWER ======\n", __func__);
+            break;
+        case FPSENSOR_IOC_DISABLE_POWER:
+            fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_DISABLE_POWER ======\n", __func__);
+            break;
+        case FPSENSOR_IOC_REMOVE:
+            fpsensor_disable_irq(fpsensor_dev);
+            if (fpsensor_dev->irq) {
+                free_irq(fpsensor_dev->irq, fpsensor_dev);
+                fpsensor_dev->irq_enabled = 0;
+            }
 #if  1
-        irqf = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
-		retval = request_threaded_irq(fpsensor_dev->irq, fpsensor_irq2, NULL,
-				irqf, FPSENSOR_DEV_NAME, fpsensor_dev);
-		if (retval == 0) {
-			fpsensor_debug(ERR_LOG, " irq thread reqquest success!\n");
-		} else {
-			fpsensor_debug(ERR_LOG, " irq thread request failed , retval =%d \n", retval);
-		}
-		free_irq(fpsensor_dev->irq, fpsensor_dev);
+            irqf = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
+            retval = request_threaded_irq(fpsensor_dev->irq, fpsensor_irq2, NULL,
+                    irqf, FPSENSOR_DEV_NAME, fpsensor_dev);
+            if (retval == 0) {
+                fpsensor_debug(ERR_LOG, " irq thread reqquest success!\n");
+            } else {
+                fpsensor_debug(ERR_LOG, " irq thread request failed , retval =%d \n", retval);
+            }
+            free_irq(fpsensor_dev->irq, fpsensor_dev);
 #endif
-        fpsensor_dev->device_available = 0;
-        fpsensor_dev_cleanup(fpsensor_dev);
+            fpsensor_dev->device_available = 0;
+            fpsensor_dev_cleanup(fpsensor_dev);
 #if FP_NOTIFY
-        fb_unregister_client(&fpsensor_dev->notifier);
+            fb_unregister_client(&fpsensor_dev->notifier);
 #endif
-        fpsensor_dev->free_flag = 1;
-        fpsensor_debug(INFO_LOG, "%s remove finished\n", __func__);
-        break;
-    case FPSENSOR_IOC_CANCEL_WAIT:
-        fpsensor_debug(INFO_LOG, "%s: FPSENSOR CANCEL WAIT\n", __func__);
-        wake_up_interruptible(&fpsensor_dev->wq_irq_return);
-        fpsensor_dev->cancel = 1;
-        break;
+            fpsensor_dev->free_flag = 1;
+            fpsensor_debug(INFO_LOG, "%s remove finished\n", __func__);
+            break;
+        case FPSENSOR_IOC_CANCEL_WAIT:
+            fpsensor_debug(INFO_LOG, "%s: FPSENSOR CANCEL WAIT\n", __func__);
+            wake_up_interruptible(&fpsensor_dev->wq_irq_return);
+            fpsensor_dev->cancel = 1;
+            break;
 #if FP_NOTIFY
-    case FPSENSOR_IOC_GET_FP_STATUS :
-        val = fpsensor_dev->fb_status;
-        fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_GET_FP_STATUS  %d \n",__func__, fpsensor_dev->fb_status);
-        if (copy_to_user((void __user *)arg, (void *)&val, sizeof(uint32_t))) {
-            fpsensor_debug(ERR_LOG, "Failed to copy data to user\n");
-            retval = -EFAULT;
+        case FPSENSOR_IOC_GET_FP_STATUS :
+            val = fpsensor_dev->fb_status;
+            fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_GET_FP_STATUS  %d \n",__func__, fpsensor_dev->fb_status);
+            if (copy_to_user((void __user *)arg, (void *)&val, sizeof(uint32_t))) {
+                fpsensor_debug(ERR_LOG, "Failed to copy data to user\n");
+                retval = -EFAULT;
+                break;
+            }
+            retval = 0;
             break;
-        }
-        retval = 0;
-        break;
 #endif
-    case FPSENSOR_IOC_ENABLE_REPORT_BLANKON:
-        if (copy_from_user(&val, (void __user *)arg, sizeof(uint32_t))) {
-            retval = -EFAULT;
+        case FPSENSOR_IOC_ENABLE_REPORT_BLANKON:
+            if (copy_from_user(&val, (void __user *)arg, sizeof(uint32_t))) {
+                retval = -EFAULT;
+                break;
+            }
+            fpsensor_dev->enable_report_blankon = val;
+            fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_ENABLE_REPORT_BLANKON: %d\n", __func__, val);
             break;
-        }
-        fpsensor_dev->enable_report_blankon = val;
-        fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_ENABLE_REPORT_BLANKON: %d\n", __func__, val);
-        break;
-    case FPSENSOR_IOC_UPDATE_DRIVER_SN:
-        if (copy_from_user(&g_cmd_sn, (void __user *)arg, sizeof(uint32_t))) {
-            fpsensor_debug(ERR_LOG, "Failed to copy g_cmd_sn from user to kernel\n");
-            retval = -EFAULT;
+        case FPSENSOR_IOC_UPDATE_DRIVER_SN:
+            if (copy_from_user(&g_cmd_sn, (void __user *)arg, sizeof(uint32_t))) {
+                fpsensor_debug(ERR_LOG, "Failed to copy g_cmd_sn from user to kernel\n");
+                retval = -EFAULT;
+                break;
+            }
+            //fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_UPDATE_DRIVER_SN: %d\n", __func__, g_cmd_sn);
             break;
-        }
-        //fpsensor_debug(INFO_LOG, "%s: FPSENSOR_IOC_UPDATE_DRIVER_SN: %d\n", __func__, g_cmd_sn);
-        break;
-    case FPSENSOR_IOC_SET_HARDWARE_INFO:
-		//add fpvendor for chipone by song.li
-		fpsensor_debug(ERR_LOG, "add fpvendor for hwinfo\n");
-		CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
-		REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-	break;
-    default:
-        fpsensor_debug(ERR_LOG, "fpsensor doesn't support this command(0x%x)\n", cmd);
-        break;
+        case FPSENSOR_IOC_SET_HARDWARE_INFO:
+            //add fpvendor for chipone by song.li
+            fpsensor_debug(ERR_LOG, "add fpvendor for hwinfo\n");
+            CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+            REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+            break;
+        default:
+            fpsensor_debug(ERR_LOG, "fpsensor doesn't support this command(0x%x)\n", cmd);
+            break;
     }
 
     //FUNC_EXIT();
@@ -590,7 +590,7 @@ static ssize_t fpsensor_read(struct file *filp, char __user *buf, size_t count, 
 }
 
 static ssize_t fpsensor_write(struct file *filp, const char __user *buf, size_t count,
-                              loff_t *f_pos)
+        loff_t *f_pos)
 {
     fpsensor_debug(ERR_LOG, "Not support write opertion in TEE version\n");
     return -EFAULT;
@@ -627,7 +627,7 @@ static int fpsensor_dev_setup(fpsensor_data_t *fpsensor)
         fpsensor_dev_major = MAJOR(dev_no);
         fpsensor_dev_minor = MINOR(dev_no);
         fpsensor_debug(INFO_LOG, "fpsensor device major is %d, minor is %d\n",
-                       fpsensor_dev_major, fpsensor_dev_minor);
+                fpsensor_dev_major, fpsensor_dev_minor);
     }
 
     if (ret < 0) {
@@ -691,25 +691,25 @@ static int fpsensor_fb_notifier_callback(struct notifier_block* self, unsigned l
     fpsensor_debug(INFO_LOG,"%s enter, blank=0x%x\n", __func__, blank);
 
     switch (blank) {
-    case FB_BLANK_UNBLANK:
-        fpsensor_debug(INFO_LOG,"%s: lcd on notify\n", __func__);
-        sprintf(screen_status, "SCREEN_STATUS=%s", "ON");
-        fpsensor_dev->fb_status = 1;
-        if( fpsensor_dev->enable_report_blankon) {
-            fpsensor_dev->RcvIRQ = 2;
-            wake_up_interruptible(&fpsensor_dev->wq_irq_return);
-        }
-        break;
+        case FB_BLANK_UNBLANK:
+            fpsensor_debug(INFO_LOG,"%s: lcd on notify\n", __func__);
+            sprintf(screen_status, "SCREEN_STATUS=%s", "ON");
+            fpsensor_dev->fb_status = 1;
+            if( fpsensor_dev->enable_report_blankon) {
+                fpsensor_dev->RcvIRQ = 2;
+                wake_up_interruptible(&fpsensor_dev->wq_irq_return);
+            }
+            break;
 
-    case FB_BLANK_POWERDOWN:
-        fpsensor_debug(INFO_LOG,"%s: lcd off notify\n", __func__);
-        sprintf(screen_status, "SCREEN_STATUS=%s", "OFF");
-        fpsensor_dev->fb_status = 0;
-        break;
+        case FB_BLANK_POWERDOWN:
+            fpsensor_debug(INFO_LOG,"%s: lcd off notify\n", __func__);
+            sprintf(screen_status, "SCREEN_STATUS=%s", "OFF");
+            fpsensor_dev->fb_status = 0;
+            break;
 
-    default:
-        fpsensor_debug(INFO_LOG,"%s: other notifier, ignore\n", __func__);
-        break;
+        default:
+            fpsensor_debug(INFO_LOG,"%s: other notifier, ignore\n", __func__);
+            break;
     }
 
     fpsensor_debug(INFO_LOG,"%s %s leave.\n", screen_status, __func__);
@@ -736,7 +736,7 @@ static int fpsensor_probe(struct platform_device *spi)
     }
 
     /* Initialize the driver data */
-	g_fpsensor_spidev = spi;
+    g_fpsensor_spidev = spi;
     g_fpsensor = fpsensor_dev;
     fpsensor_dev->spi               = spi ;
     fpsensor_dev->device_available  = 0;
@@ -752,12 +752,12 @@ static int fpsensor_probe(struct platform_device *spi)
         goto release_drv_data;
     }
     fpsensor_spi_clk_enable(1);
-	init_waitqueue_head(&fpsensor_dev->wq_irq_return);
+    init_waitqueue_head(&fpsensor_dev->wq_irq_return);
 
 #ifdef CONFIG_PM_WAKELOCKS
-	wakeup_source_init(&g_fpsensor->ttw_wl, "fpsensor_ttw_wl");
+    wakeup_source_init(&g_fpsensor->ttw_wl, "fpsensor_ttw_wl");
 #else
-	wake_lock_init(&g_fpsensor->ttw_wl, WAKE_LOCK_SUSPEND, "fpsensor_ttw_wl");
+    wake_lock_init(&g_fpsensor->ttw_wl, WAKE_LOCK_SUSPEND, "fpsensor_ttw_wl");
 #endif
 
 
@@ -796,9 +796,9 @@ static int fpsensor_remove(struct platform_device *spi)
     fpsensor_dev_cleanup(fpsensor_dev);
 
 #ifdef CONFIG_PM_WAKELOCKS
-	wakeup_source_trash(&fpsensor_dev->ttw_wl);
+    wakeup_source_trash(&fpsensor_dev->ttw_wl);
 #else
-	wake_lock_destroy(&fpsensor_dev->ttw_wl);
+    wake_lock_destroy(&fpsensor_dev->ttw_wl);
 #endif
     kfree(fpsensor_dev);
     g_fpsensor = NULL;
