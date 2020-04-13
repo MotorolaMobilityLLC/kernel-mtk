@@ -682,6 +682,6 @@
 #include "bat_setting/mt6765_battery_table_AK57.dtsi"
 
 #include <AK57/cust.dtsi>
-#include "cust_mt6765_camera.dtsi"
+#include "cust_mt6765_camera_AK57.dtsi"
 #include "AK57-fpsensor.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
