@@ -1721,6 +1721,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+extern char front_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -1735,8 +1736,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				memset(front_cam_name, 0x00, sizeof(front_cam_name));
+				memcpy(front_cam_name, "1_ak57_season_gc5035", 64);
 				gc5035_otp_identify();
-				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
+				cam_pr_debug("ak57_season_gc5035 i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
@@ -2543,7 +2546,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 GC5035MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 GC5035_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	cam_pr_debug("E\n");
 	/* To Do : Check Sensor status here */

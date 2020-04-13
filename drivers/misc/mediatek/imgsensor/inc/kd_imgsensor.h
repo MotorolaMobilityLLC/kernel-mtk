@@ -500,7 +500,7 @@
 #define SENSOR_DRVNAME_GC0310_YUV               "gc0310_yuv"
 #define SENSOR_DRVNAME_GC0312_YUV               "gc0312_yuv"
 #define SENSOR_DRVNAME_GC0313MIPI_YUV           "gc0313_mipi_yuv"
-#define SENSOR_DRVNAME_GC5035MIPI_RAW           "gc5035_mipi_raw"
+#define SENSOR_DRVNAME_GC5035_MIPI_RAW           "gc5035_mipi_raw"
 #define SENSOR_DRVNAME_GC8C34_MIPI_RAW          "gc8c34_mipi_raw"
 #define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
 /*SP*/
