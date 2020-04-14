@@ -105,6 +105,18 @@
 	#size-cells = <0>;
 	clock-frequency = <400000>;
 
+	externel-charger@6b{
+		compatible = "ti,bq25601";
+		reg = <0x6b>;
+		status = "okay";
+	};
+	externel-charger@53{
+		compatible = "richtek,rt9471";
+		reg = <0x53>;
+		status = "okay";
+		ichg = <2000000>; /* uA */
+	};
+
 	externel-charger@6c{
 		compatible = "halo,hl7007";
 		reg = <0x6c>;
@@ -134,17 +146,6 @@
 		reg = <0x6f>;
 		status = "okay";
 		ichg = <1150000>; /* uA */
-	};
-	externel-charger@6b{
-		compatible = "ti,bq25601";
-		reg = <0x6b>;
-		status = "okay";
-	};
-	externel-charger@53{
-		compatible = "richtek,rt9471";
-		reg = <0x53>;
-		status = "okay";
-		ichg = <2000000>; /* uA */
 	};
 };
 &i2c6 {
@@ -679,7 +680,8 @@
 	};
 };
 
-#include "bat_setting/mt6765_battery_table_AK57.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
 
 #include <AK57/cust.dtsi>
 #include "cust_mt6765_camera_AK57.dtsi"
