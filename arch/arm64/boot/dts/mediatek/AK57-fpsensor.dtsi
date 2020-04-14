@@ -73,14 +73,14 @@
     };
     fpsensor_finger_rst_mode_en0: fpsensor_finger_rst_low {
         pins_cmd_dat {
-            pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+            pinmux = <PINMUX_GPIO175__FUNC_GPIO175>;
             slew-rate = <1>;
             output-low;
         };
     };
     fpsensor_finger_rst_mode_en1: fpsensor_finger_rst_high {
         pins_cmd_dat {
-            pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+            pinmux = <PINMUX_GPIO175__FUNC_GPIO175>;
             slew-rate = <1>;
             output-high;
         };
