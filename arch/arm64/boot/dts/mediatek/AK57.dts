@@ -157,6 +157,24 @@
 	};
 };
 /* TOUCH start */
+&spi2 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        status = "okay";
+        focaltech_spi@1{
+            compatible = "mediatek,focaltech_touch_spi";
+            reg = <1>;
+            spi-max-frequency = <6000000>;
+            status = "okay";
+        };
+        himax_spi@0{
+            compatible = "mediatek,himax_touch_spi";
+            reg = <0>;
+            spi-max-frequency = <6000000>;
+            status = "okay";
+        };
+};
+
 &i2c0 {
         #address-cells = <1>;
         #size-cells = <0>;
@@ -604,33 +622,9 @@
 	};
 
 	aud_pins_smartpa_off: aud_pins_smartpa_off {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
-		};
-		pins_cmd3_dat {
-			pinmux = <PINMUX_GPIO20__FUNC_GPIO20>;
-		};
 	};
 
 	aud_pins_smartpa_on: aud_pins_smartpa_on {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_I2S0_DI>;
-		};
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_I2S3_BCK>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_I2S3_LRCK>;
-		};
-		pins_cmd3_dat {
-			pinmux = <PINMUX_GPIO20__FUNC_I2S3_DO>;
-		};
 	};
 };
 /* AUDIO end */
