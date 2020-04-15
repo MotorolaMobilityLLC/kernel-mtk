@@ -1348,6 +1348,25 @@ static kal_uint32 return_sensor_id(void)
 		(read_cmos_sensor(0x300b) << 8) | read_cmos_sensor(0x300c));
 }
 extern char back_cam_name[64];
+extern char back_cam_efuse_id[64];
+static  void get_back_cam_efuse_id(void)
+{
+	int i = 0;
+	kal_uint8 efuse_id;
+	write_cmos_sensor(0x0100, 0x01);
+	write_cmos_sensor(0x3D84, 0x40);
+	write_cmos_sensor(0x3D88, 0x00);
+	write_cmos_sensor(0x3D89, 0x70);
+	write_cmos_sensor(0x3D8A, 0x0F);
+	write_cmos_sensor(0x3D8B, 0x70);
+	write_cmos_sensor(0x0100, 0x01);
+	for(i=0;i<16;i++)
+	{
+		efuse_id = read_cmos_sensor(0x7000+i);
+		sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
+		msleep(1);
+	}
+}
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -1364,6 +1383,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			imgsensor.i2c_write_id, *sensor_id);
 				memset(back_cam_name, 0x00, sizeof(back_cam_name));
 				memcpy(back_cam_name, "0_ak57_season_ov13855", 64);
+				ontim_get_otp_data(*sensor_id, NULL, 0);
+				get_back_cam_efuse_id();
 		return ERROR_NONE;
 	}
 		retry--;
