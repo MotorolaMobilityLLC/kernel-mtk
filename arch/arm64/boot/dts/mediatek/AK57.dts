@@ -684,4 +684,5 @@
 #include <AK57/cust.dtsi>
 #include "cust_mt6765_camera.dtsi"
 #include "AK57-fpsensor.dtsi"
+#include "aw87519.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
