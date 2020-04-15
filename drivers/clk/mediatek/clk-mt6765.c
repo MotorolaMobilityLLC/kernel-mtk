@@ -15,8 +15,10 @@
 #include <linux/delay.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/of_device.h>
 #include <linux/slab.h>
 #include <linux/mfd/syscon.h>
+#include <linux/platform_device.h>
 
 #include "clk-mtk.h"
 #include "clk-gate.h"
@@ -1378,14 +1380,14 @@ static const struct mtk_pll_data plls_no_armpll_ll[] = {
 
 static void __init mtk_apmixedsys_init(struct device_node *node)
 {
+	int project_id = get_devinfo_with_index(30);
 	struct clk_onecell_data *clk_data;
 	void __iomem *base;
 	int r;
-	int project_id = get_devinfo_with_index(30);
 
 	base = of_iomap(node, 0);
-	if (!base) {
-		pr_notice("%s(): ioremap failed\n", __func__);
+	if (IS_ERR(base)) {
+		pr_err("%s(): ioremap failed\n", __func__);
 		return;
 	}
 
@@ -1416,36 +1418,35 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 CLK_OF_DECLARE_DRIVER(mtk_apmixedsys, "mediatek,apmixed",
 		mtk_apmixedsys_init);
 
-
-/* TODO: why disable critical */
-static struct clk_onecell_data *mt6765_top_clk_data;
-
-static void __init mtk_topckgen_init(struct device_node *node)
+static int __init clk_mt6765_top_probe(struct platform_device *pdev)
 {
+	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	struct device_node *node = pdev->dev.of_node;
+	struct clk_onecell_data *clk_data;
 	void __iomem *base;
 	int r;
 
-	base = of_iomap(node, 0);
-	if (!base) {
-		pr_notice("%s(): ioremap failed\n", __func__);
-		return;
+	base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(base)) {
+		pr_err("%s(): ioremap failed\n", __func__);
+		return PTR_ERR(base);
 	}
 
-	mt6765_top_clk_data = mtk_alloc_clk_data(CLK_TOP_NR_CLK);
+	clk_data = mtk_alloc_clk_data(CLK_TOP_NR_CLK);
 
 	mtk_clk_register_fixed_clks(fixed_clks,
-		ARRAY_SIZE(fixed_clks), mt6765_top_clk_data);
+		ARRAY_SIZE(fixed_clks), clk_data);
 
 	mtk_clk_register_factors(top_divs,
-		ARRAY_SIZE(top_divs), mt6765_top_clk_data);
+		ARRAY_SIZE(top_divs), clk_data);
 	mtk_clk_register_mux_clr_set_upds(top_muxes,
 		ARRAY_SIZE(top_muxes), base,
-		&mt6765_clk_lock, mt6765_top_clk_data);
+		&mt6765_clk_lock, clk_data);
 	mtk_clk_register_gates(node, top_clks,
-		ARRAY_SIZE(top_clks), mt6765_top_clk_data);
+		ARRAY_SIZE(top_clks), clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get,
-		mt6765_top_clk_data);
+		clk_data);
 
 	if (r)
 		pr_info("%s(): could not register clock provider: %d\n",
@@ -1457,12 +1458,13 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3EF);
 	/*[1,2,3,8]: no need*/
 	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x1);
-}
-CLK_OF_DECLARE_DRIVER(mtk_topckgen, "mediatek,topckgen",
-	mtk_topckgen_init);
 
-static void __init mtk_infracfg_ao_init(struct device_node *node)
+	return r;
+}
+
+static int __init clk_mt6765_ifr_probe(struct platform_device *pdev)
 {
+	struct device_node *node = pdev->dev.of_node;
 	struct clk_onecell_data *clk_data;
 	int r;
 
@@ -1475,9 +1477,9 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 	if (r)
 		pr_notice("%s(): could not register clock provider: %d\n",
 			__func__, r);
+
+	return r;
 }
-CLK_OF_DECLARE_DRIVER(mtk_infracfg_ao, "mediatek,infracfg_ao",
-	mtk_infracfg_ao_init);
 
 static void __init mtk_audio_init(struct device_node *node)
 {
@@ -1959,9 +1961,50 @@ int mtk_is_mtcmos_enable(void)
 #endif
 }
 
+static const struct of_device_id of_match_clk_mt6765[] = {
+	{
+		.compatible = "mediatek,topckgen",
+		.data = clk_mt6765_top_probe,
+	}, {
+		.compatible = "mediatek,infracfg_ao",
+		.data = clk_mt6765_ifr_probe,
+	}, {
+		/* sentinel */
+	}
+};
+
+static int clk_mt6765_probe(struct platform_device *pdev)
+{
+	int (*clk_probe)(struct platform_device *d);
+	int r;
+
+	pr_notice("%s: start\n", __func__);
+	clk_probe = of_device_get_match_data(&pdev->dev);
+	if (!clk_probe)
+		return -EINVAL;
+
+	r = clk_probe(pdev);
+	if (r)
+		dev_err(&pdev->dev,
+			"could not register clock provider: %s: %d\n",
+			pdev->name, r);
+
+	return r;
+}
+
+static struct platform_driver clk_mt6765_drv = {
+	.probe = clk_mt6765_probe,
+	.driver = {
+		.name = "clk-mt6765",
+		.owner = THIS_MODULE,
+		.of_match_table = of_match_clk_mt6765,
+	},
+};
+
 static int __init clk_mt6765_init(void)
 {
-	return 0;
+	return platform_driver_register(&clk_mt6765_drv);
 }
+
 arch_initcall(clk_mt6765_init);
 
