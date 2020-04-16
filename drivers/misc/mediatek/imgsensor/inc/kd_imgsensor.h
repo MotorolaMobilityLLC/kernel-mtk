@@ -544,6 +544,7 @@
 #define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P9SX_MIPI_RAW        "s5k3p9sx_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P9SXT_MIPI_RAW       "s5k3p9sxt_mipi_raw"
+#define SENSOR_DRVNAME_GC02M1_MIPI_RAW 	    "gc02m1_mipi_raw"
 #define SENSOR_DRVNAME_BLACKJACK_SUN_GC02M1B_MIPI_RAW 	"blackjack_sun_gc02m1b_mipi_raw"
 #define SENSOR_DRVNAME_BLACKJACK_SUN_GC02M1C_MIPI_RAW 	"blackjack_sun_gc02m1c_mipi_raw"
 #define SENSOR_DRVNAME_BLACKJACK_TSP_GC02M1B_MIPI_RAW 	"blackjack_tsp_gc02m1b_mipi_raw"
@@ -558,6 +559,7 @@
 #define GC8034_SENSOR_ID                        0x8044
 #define S5K3P9SX_SENSOR_ID                      0x3109
 #define S5K3P9SXT_SENSOR_ID                     0x310A
+#define GC02M1_SENSOR_ID 	0x02e0
 #define BLACKJACK_SUN_GC02M1B_SENSOR_ID 	0x02e0
 #define BLACKJACK_SUN_GC02M1C_SENSOR_ID 	0x02e1
 #define BLACKJACK_TSP_GC02M1B_SENSOR_ID 	0x02e2
