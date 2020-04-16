@@ -22,3 +22,4 @@ obj-$(CONFIG_TOUCHSCREEN_ILI9881H_BJ) +=  ili9881h_bj/
 obj-$(CONFIG_TOUCHSCREEN_CHIPONE) += chipone-tddi/
 obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_HD)	+=  focaltech_hd_touch/
 obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_FHD)	+=  focaltech_fhd_touch/
+obj-$(CONFIG_TOUCHSCREEN_HIMAX_CHIPSET) += hxchipset/
