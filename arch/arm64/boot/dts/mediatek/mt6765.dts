@@ -2767,6 +2767,9 @@ firmware_class.path=/vendor/firmware";
 	flashlights_aw3643: flashlights_aw3643 {
 		compatible = "mediatek,flashlights_aw3643";
 	};
+	flashlights_aw36514: flashlights_aw36514 {
+		compatible = "mediatek,flashlights_aw36514";
+	};
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
 		decouple = <0>;
