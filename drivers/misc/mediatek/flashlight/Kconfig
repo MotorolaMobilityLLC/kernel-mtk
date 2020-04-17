@@ -60,6 +60,18 @@ config MTK_FLASHLIGHT_AW36514
 
 	  Say M here if you want to compile this driver as a module.
 
+config AK57_FLASHLIGHT
+	tristate "Mediatek flashlight with driver IC (AW36514) to distingush subproject"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+	  This is for the flashlight driver IC (AW3644).
+
+	  Say Y here if you want a flashlight driver IC AW3644.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_LM3643
 	tristate "Mediatek flashlight with driver IC (TI LM3643)"
 	depends on MTK_FLASHLIGHT
