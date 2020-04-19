@@ -53,6 +53,10 @@
 #define HX_RW_REG_FAIL			(-1)
 #define HX_DRIVER_MAX_IC_NUM	12
 
+#ifndef ONTIM_DEV_HIMAX_INFO
+#define ONTIM_DEV_HIMAX_INFO
+#endif
+
 #if defined(__HIMAX_HX852xG_MOD__)
 #define HX_MOD_KSYM_HX852xG HX_MOD_KSYM_HX852xG
 #endif
