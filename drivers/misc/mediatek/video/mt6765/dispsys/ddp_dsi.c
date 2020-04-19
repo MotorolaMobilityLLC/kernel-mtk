@@ -3591,7 +3591,7 @@ long lcd_enp_bias_setting(unsigned int value)
 {
 	static long user_num_enp = 1;
 	long ret = 0;
-	DISPERR("lcd set enp value %d\n",value);
+	pr_info("lcd set enp value %d\n",value);
 
 	mutex_lock(&lcm_bias_mutex);
 	if (value) {
@@ -3617,7 +3617,7 @@ long lcd_enn_bias_setting(unsigned int value)
 {
 	static long user_num_enn = 1;
 	long ret = 0;
-	DISPERR("lcd set enn value %d\n",value);
+	pr_info("lcd set enn value %d\n",value);
 
 	mutex_lock(&lcm_bias_mutex);
 	if (value) {
