@@ -14,6 +14,9 @@
  */
 
 #include "himax_ic_core.h"
+#ifdef ONTIM_DEV_HIMAX_INFO
+#include <ontim/ontim_dev_dgb.h>
+#endif
 
 struct himax_core_command_operation *g_core_cmd_op;
 struct ic_operation *pic_op;
@@ -48,6 +51,21 @@ static uint8_t *g_internal_buffer;
 uint32_t dbg_reg_ary[4] = {fw_addr_fw_dbg_msg_addr, fw_addr_chk_fw_status,
 	fw_addr_chk_dd_status, fw_addr_flag_reset_event};
 
+#ifdef ONTIM_DEV_HIMAX_INFO
+extern char *mtkfb_find_lcm_driver(void);
+
+static char version[30]="unknown";
+static char vendor_name[30]="unknown";
+static char lcdname[30]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+#endif
 /* CORE_IC */
 /* IC side start*/
 static void himax_mcu_burst_enable(uint8_t auto_add_4_byte)
@@ -1612,6 +1630,20 @@ static void himax_mcu_read_FW_ver(void)
 	g_core_fp.fp_register_read(pfw_op->addr_proj_info, 12, data, 0);
 	memcpy(ic_data->vendor_proj_info, data, 12);
 	I("Project ID = %s\n", ic_data->vendor_proj_info);
+
+#ifdef ONTIM_DEV_HIMAX_INFO
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return;
+	}
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	if (strstr(mtkfb_find_lcm_driver(), "hx83102d") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "hlt-hx83102d");
+		snprintf(vendor_name, sizeof(vendor_name), "hlt-hx83102d");
+	}
+	snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x67 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
+#endif
 
 END:
 	return;
