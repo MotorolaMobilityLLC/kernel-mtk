@@ -56,6 +56,19 @@ config TOUCHSCREEN_FTS
 
 source "drivers/input/touchscreen/mediatek/focaltech_touch/Kconfig"
 
+config TOUCHSCREEN_FTS_SPI
+	bool "FOCALTECH_TS_SPI for Mediatek package"
+	default n
+	help
+	  Say Y here if you have focaltech_touch_spi touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/focaltech_touch_spi/Kconfig"
+
 config TOUCHSCREEN_HIMAX_CHIPSET
 	bool "HIMAX_TS for Mediatek package"
 	default n
