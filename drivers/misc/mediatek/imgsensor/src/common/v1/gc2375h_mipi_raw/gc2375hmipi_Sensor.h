@@ -47,6 +47,10 @@
 
 
 
+enum{
+	otp_close = 0,
+	otp_open,
+};
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
@@ -54,6 +58,8 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_VIDEO,
 	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
+	IMGSENSOR_MODE_CUSTOM1,
+	IMGSENSOR_MODE_CUSTOM2,
 };
 
 struct imgsensor_mode_struct {
@@ -99,9 +105,12 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct normal_video;
 	struct imgsensor_mode_struct hs_video;
 	struct imgsensor_mode_struct slim_video;
+	struct imgsensor_mode_struct custom1;
+	struct imgsensor_mode_struct custom2;
 	kal_uint8  ae_shut_delay_frame;
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame;
+	kal_uint8 frame_time_delay_frame;
 	kal_uint8  ihdr_support;
 	kal_uint8  ihdr_le_firstline;
 	kal_uint8  sensor_mode_num;
@@ -121,6 +130,8 @@ struct imgsensor_info_struct {
 	kal_uint8  mclk;
 	kal_uint8  mipi_lane_num;
 	kal_uint8  i2c_addr_table[5];
+	kal_uint8 custom1_delay_frame;
+	kal_uint8 custom2_delay_frame;
 };
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
