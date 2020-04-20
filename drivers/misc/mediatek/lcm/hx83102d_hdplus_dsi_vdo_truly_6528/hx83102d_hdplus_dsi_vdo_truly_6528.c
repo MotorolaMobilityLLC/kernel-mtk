@@ -173,12 +173,10 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
-	//{0x11, 0x01,{0x00}},
-	//{REGFLAG_DELAY, 150,{}},
-	//{0xB9, 0x03,{0x83,0x10,0x2D}},
-	//{0xBA, 0x01,{0x71}},
-	//{0xCD, 0x01,{0x01}},
-	{0x51, 0x02,{0x0F,0x00}},
+	{0xB9, 0x03,{0x83,0x10,0x2D}},
+	{0xBD, 0x01,{0x00}},
+	{0x35, 0x00,{0x00}},
+	{0x51, 0x02,{0x00,0x00}},
 	{0x53, 0x01,{0x24}},
 	{0x55, 0x01,{0x00}},
 	{0x11, 0x01,{0x00}},
@@ -272,32 +270,17 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 30;//old is 60,now is 12
 	params->dsi.horizontal_frontporch = 12;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 280;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
-	params->dsi.ssc_disable = 0;
-	params->dsi.ssc_range = 3;
-#if 0
-	params->dsi.HS_TRAIL = 7;
-	params->dsi.HS_ZERO = 12;
-	params->dsi.CLK_HS_PRPR = 6;
-	params->dsi.LPX = 5;
-	params->dsi.TA_GET = 25;
-	params->dsi.TA_SURE = 7;
-	params->dsi.TA_GO = 20;
-	params->dsi.CLK_TRAIL = 9;
-	params->dsi.CLK_ZERO = 33;
-	params->dsi.CLK_HS_PRPR = 6;
-	params->dsi.CLK_HS_POST = 36;
-	params->dsi.CLK_HS_EXIT=10;
-	params->dsi.CLK_TRAIL=9;
-#endif
+	params->dsi.PLL_CLOCK = 271;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.ssc_disable = 1;
+
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 1;
 
-	params->dsi.esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 1;
-	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9D;
 }
 #ifdef BUILD_LK
 static int NT50358A_write_byte(kal_uint8 addr, kal_uint8 value)
@@ -336,16 +319,13 @@ static void i2c_send_data_lcd(unsigned char cmd, unsigned char data)
 static void lcm_reset(void)
 {
 	if (!gesture_dubbleclick_en) {
-		MDELAY(2);//t3
 		SET_RESET_PIN(1);
-		MDELAY(10);//t4 LCD RESET to first command in display sleep in mode time
-		tpd_gpio_output(0, 1);
-	} else {
+		MDELAY(2);//T2
 		SET_RESET_PIN(0);
-		MDELAY(1);//t3
+		MDELAY(2);//T3
 		SET_RESET_PIN(1);
-		MDELAY(10);//t3
 		tpd_gpio_output(0, 1);
+		MDELAY(50);//T4
 	}
 
 	LCM_LOGI("%s: lcm reset done\n",__func__);
@@ -366,7 +346,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x0F;  //up to +/-5.5V
+	unsigned char data = 0x13;  //up to +/-5.9V
 	LCM_LOGI("%s: start init\n",__func__);
 
 	if (!gesture_dubbleclick_en) {
@@ -377,11 +357,11 @@ static void lcm_init(void)
 		MDELAY(6);//for bias IC and tr2
 		i2c_send_data_lcd(cmd, data);
 
-		MDELAY(2);//t2
+		MDELAY(2);//T1
 		set_gpio_lcd_enn(1);
 		MDELAY(7);//for bias IC and tr2
 		cmd = 0x01;
-		data = 0x0F;
+		data = 0x13;
 		i2c_send_data_lcd(cmd, data);
 	}
 	lcm_reset();
@@ -398,7 +378,7 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
-		MDELAY(2);//t11
+		MDELAY(2);
 		set_gpio_lcd_enp(0);
 	}
 #endif
