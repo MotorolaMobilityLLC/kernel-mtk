@@ -49,7 +49,7 @@
 #define GC5035_SENSOR_DGAIN_BASE            0x100
 
 /* SENSOR PRIVATE INFO FOR OTP SETTINGS */
-#define GC5035_OTP_FOR_CUSTOMER            0
+#define GC5035_OTP_FOR_CUSTOMER            1
 #define GC5035_OTP_DEBUG                   0
 
 /* DEBUG */
@@ -247,6 +247,7 @@ extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 	u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 
 #endif
 

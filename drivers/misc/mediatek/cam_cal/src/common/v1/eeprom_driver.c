@@ -765,6 +765,7 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 {
     const char * str_ak57_season_ov13855_path = "/data/vendor/camera_dump/ak57_season_ov13855.data";
+	const char * str_ak57_season_gc5035_path  = "/data/vendor/camera_dump/ak57_season_gc5035.data";
     const char * str_ov16a10_path = "/data/vendor/camera_dump/seansons_ov16a10.data";
     const char * str_s5k3p9sx_TXD_path  = "/data/vendor/camera_dump/TXD_s5k3p9sx.data";
     const char * str_s5k3p9sx_TSP_path  = "/data/vendor/camera_dump/TSP_s5k3p9sx.data";
@@ -794,6 +795,19 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             u4Offset = 0;
             u4Length = 0x1FFF;
             str_dump_path = str_ak57_season_ov13855_path;
+            break;
+        }
+	  case GC5035_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_ak57_season_gc5035_path;
             break;
         }
 	case BLACKJACK_HLT_OV16A10_SENSOR_ID:
