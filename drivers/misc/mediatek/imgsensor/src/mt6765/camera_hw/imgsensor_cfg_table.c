@@ -310,6 +310,20 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         },
     },
 #endif
+#if defined(BJ_SUN_GC02M1B_16880_MIPI_RAW)
+    {SENSOR_DRVNAME_BJ_SUN_GC02M1B_16880_MIPI_RAW,
+        {
+            {RST, Vol_Low, 1},
+            {PDN, Vol_High, 6,Vol_Low, 0},
+            {DOVDD, Vol_1800, 0},
+            {AVDD, Vol_2800, 0},
+            {SensorMCLK, Vol_High, 0},
+            {PDN, Vol_Low,1,Vol_High, 0},
+            {RST, Vol_High, 0},
+            {PDN, Vol_Low, 1,Vol_High, 1},
+        },
+    },
+#endif
 #if defined(BLACKJACK_TSP_GC02M1B_MIPI_RAW)
     {SENSOR_DRVNAME_BLACKJACK_TSP_GC02M1B_MIPI_RAW,
         {
