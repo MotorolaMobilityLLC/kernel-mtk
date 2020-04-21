@@ -795,6 +795,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_ov13855_path = "/data/vendor/camera_dump/seansons_ov13855.data";
 	const char * str_fiji_season_ov13855_path = "/data/vendor/camera_dump/fiji_season_ov13855.data";
     const char * str_ov16a10_path = "/data/vendor/camera_dump/seansons_ov16a10.data";
+    const char * str_OV16880_TSP_path = "/data/vendor/camera_dump/TSP_ov16880.data";
     const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
     const char * str_s5k5e9yx_path  = "/data/vendor/camera_dump/qunhui_s5k5e9yx.data";
     //const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
@@ -914,6 +915,13 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_s5k3p9sx_TSP_path;
             break;
         }
+        case BLACKJACK_TSP_OV16880_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0D9F;
+            str_dump_path = str_OV16880_TSP_path;
+            break;
+        }
         case GC8034_SENSOR_ID:
         {
             pu1Params = 0;
@@ -974,7 +982,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     if((sensorid == OV13855_SENSOR_ID) ||(sensorid == FIJI_SEASON_OV13855_SENSOR_ID)|| (sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||
 		(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == AR1337_SENSOR_ID) || (sensorid == S5K3L6_SENSOR_ID) ||
 	(sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
-	(sensorid == GC8034_SENSOR_ID) || (sensorid ==BLACKJACK_HLT_OV16A10_SENSOR_ID))
+	(sensorid == GC8034_SENSOR_ID) || (sensorid ==BLACKJACK_HLT_OV16A10_SENSOR_ID) || (sensorid == BLACKJACK_TSP_OV16880_SENSOR_ID))
    {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
 	if (pu1Params == NULL) 
