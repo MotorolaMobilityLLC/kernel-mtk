@@ -1805,7 +1805,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	isoc_ep_end_idx = 1;
-	isoc_ep_gpd_count = 248; /* 30 ms for HS, at most (30*8 + 1) */
+	isoc_ep_gpd_count = 550; /* 30 ms for HS, at most (30*8 + 1) */
 
 	mtk_host_qmu_force_isoc_restart = 0;
 #endif
