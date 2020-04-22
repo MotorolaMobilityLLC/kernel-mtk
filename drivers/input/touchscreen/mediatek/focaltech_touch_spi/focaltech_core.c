@@ -1103,6 +1103,12 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
         FTS_ERROR("init gesture fail");
     }
 
+#if FTS_TEST_EN
+    ret = fts_test_init(ts_data);
+    if (ret) {
+        FTS_ERROR("init production test fail");
+    }
+#endif
 
 #if FTS_ESDCHECK_EN
     ret = fts_esdcheck_init(ts_data);
@@ -1166,6 +1172,9 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 
     fts_fwupg_exit(ts_data);
 
+#if FTS_TEST_EN
+    fts_test_exit(ts_data);
+#endif
 
 #if FTS_ESDCHECK_EN
     fts_esdcheck_exit(ts_data);

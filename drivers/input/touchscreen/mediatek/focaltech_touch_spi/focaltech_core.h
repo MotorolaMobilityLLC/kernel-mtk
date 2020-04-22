@@ -101,6 +101,9 @@
 #define FTX_MAX_COMPATIBLE_TYPE             4
 #define FTX_MAX_COMMMAND_LENGTH             16
 
+#ifndef ONTIM_DEV_FTS_INFO
+#define ONTIM_DEV_FTS_INFO
+#endif
 
 /*****************************************************************************
 * Private enumerations, structures and unions using typedef
@@ -223,6 +226,11 @@ int fts_esdcheck_suspend(void);
 int fts_esdcheck_resume(void);
 #endif
 
+/* Production test */
+#if FTS_TEST_EN
+int fts_test_init(struct fts_ts_data *ts_data);
+int fts_test_exit(struct fts_ts_data *ts_data);
+#endif
 
 /* Point Report Check*/
 #if FTS_POINT_REPORT_CHECK_EN

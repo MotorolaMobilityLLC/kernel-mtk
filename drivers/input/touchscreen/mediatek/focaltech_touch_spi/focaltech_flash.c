@@ -34,6 +34,9 @@
 *****************************************************************************/
 #include "focaltech_core.h"
 #include "focaltech_flash.h"
+#ifdef ONTIM_DEV_FTS_INFO
+#include <ontim/ontim_dev_dgb.h>
+#endif
 
 /*****************************************************************************
 * Private constant and macro definitions using #define
@@ -77,6 +80,22 @@ struct upgrade_setting_nf upgrade_setting_list[] = {
     {0x80, 0x09, 0, (88 * 1024), 32766,        0xA5, 0x01, 8,  0, 1, 0, 1},
     {0x86, 0x32, 0, (64 * 1024), (128 * 1024), 0xA5, 0x01, 12, 0, 0, 0, 0},
 };
+
+#ifdef ONTIM_DEV_FTS_INFO
+extern char *mtkfb_find_lcm_driver(void);
+
+static char version[30]="unknown";
+static char vendor_name[30]="unknown";
+static char lcdname[30]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+#endif
 
 struct fts_upgrade *fwupgrade;
 
@@ -1092,6 +1111,48 @@ static int fts_fwupg_get_fw_file(struct fts_upgrade *upg)
     return ret;
 }
 
+#ifdef ONTIM_DEV_FTS_INFO
+static int fts_get_firmware_version(u8 *fwver)
+{
+    struct fts_ts_data *ts_data = fts_data;
+    struct input_dev *input_dev = ts_data->input_dev;
+
+    mutex_lock(&input_dev->mutex);
+
+#if 0//FTS_ESDCHECK_EN
+    fts_esdcheck_proc_busy(1);
+#endif
+    fts_read_reg(FTS_REG_FW_VER, fwver);
+#if 0//FTS_ESDCHECK_EN
+    fts_esdcheck_proc_busy(0);
+#endif
+
+	mutex_unlock(&input_dev->mutex);
+	FTS_INFO("fts_get_firmware_version:fwver=0x%02x",*fwver);
+
+    if ((*fwver == 0xFF) || (*fwver == 0x00))
+        return -1;
+    else
+        return 0;
+}
+static void ontim_dev_get_fts_fw_ver(void)
+{
+	u8 fwver = 0;
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return;
+	}
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	if (strstr(mtkfb_find_lcm_driver(), "ft8006s") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "truly-ft8006s");
+		snprintf(vendor_name, sizeof(vendor_name), "truly-ft8006s");
+	}
+	if(!fts_get_firmware_version(&fwver))
+	snprintf(version, sizeof(version),"FW:%02x,VID:0x17 ",fwver);
+}
+#endif
+
 static void fts_fwupg_work(struct work_struct *work)
 {
     int ret = 0;
@@ -1129,6 +1190,10 @@ static void fts_fwupg_work(struct work_struct *work)
         ret = fts_read_reg(FTS_REG_CHIP_ID, &chip_id);
         FTS_INFO("read chip id:0x%02x", chip_id);
     }
+#ifdef ONTIM_DEV_FTS_INFO
+	ontim_dev_get_fts_fw_ver();
+#endif
+
 }
 
 int fts_fwupg_init(struct fts_ts_data *ts_data)
