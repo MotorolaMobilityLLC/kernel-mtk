@@ -18,6 +18,7 @@ obj-$(CONFIG_TOUCHSCREEN_FTS_SPI)	+=  focaltech_gesture.o
 obj-$(CONFIG_TOUCHSCREEN_FTS_SPI)	+=  focaltech_esdcheck.o
 obj-$(CONFIG_TOUCHSCREEN_FTS_SPI)   +=  focaltech_point_report_check.o
 obj-$(CONFIG_TOUCHSCREEN_FTS_SPI)   +=  focaltech_proximity.o
+obj-$(CONFIG_TOUCHSCREEN_FTS_SPI)   +=  focaltech_test/
 
 
 obj-$(CONFIG_TOUCHSCREEN_FTS_SPI)   +=  focaltech_spi.o
