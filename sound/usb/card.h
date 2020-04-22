@@ -8,7 +8,7 @@
 #define SYNC_URBS	4	/* always four urbs for sync */
 #define MAX_QUEUE	32	/* try not to exceed this queue length, in ms */
 #define MAX_QUEUE_HS	30	/* try not to exceed this queue length, in ms */
-#define LOW_LATENCY_MAX_QUEUE   3 /* for low latency case queue length */
+#define LOW_LATENCY_MAX_QUEUE   6 /* for low latency case queue length */
 
 struct audioformat {
 	struct list_head list;
