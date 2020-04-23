@@ -1145,8 +1145,8 @@ static void ontim_dev_get_fts_fw_ver(void)
 	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 	if (strstr(mtkfb_find_lcm_driver(), "ft8006s") != NULL)
 	{
-		snprintf(lcdname, sizeof(lcdname), "truly-ft8006s");
-		snprintf(vendor_name, sizeof(vendor_name), "truly-ft8006s");
+		snprintf(lcdname, sizeof(lcdname), "hlt-ft8006s");
+		snprintf(vendor_name, sizeof(vendor_name), "hlt-ft8006s");
 	}
 	if(!fts_get_firmware_version(&fwver))
 	snprintf(version, sizeof(version),"FW:%02x,VID:0x17 ",fwver);
