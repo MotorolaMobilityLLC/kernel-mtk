@@ -1120,7 +1120,7 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 					//END
 					isLCMFound = true;
 					isLCMInited = true;
-					lcmindex = i;
+					lcmindex = lcm_drv->lcm_id;
 					break;
 				}
 			}

@@ -442,6 +442,7 @@ static unsigned int lcm_compare_id(void)
 
 struct LCM_DRIVER ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_lcm_drv = {
 	.name = "ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed",
+	.lcm_id = 1,
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
