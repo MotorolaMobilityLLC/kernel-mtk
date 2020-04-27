@@ -415,6 +415,7 @@ static unsigned int lcm_compare_id(void)
 
 struct LCM_DRIVER ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv = {
 	.name = "ontim_ft8006p_hdplus_dsi_vdo_truly",
+	.lcm_id = 0,
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
