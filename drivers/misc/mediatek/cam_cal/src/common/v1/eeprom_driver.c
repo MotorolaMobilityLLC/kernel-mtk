@@ -766,7 +766,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 {
     const char * str_ak57_season_ov13855_path = "/data/vendor/camera_dump/ak57_season_ov13855.data";
 	const char * str_ak57_season_gc5035_path  = "/data/vendor/camera_dump/ak57_season_gc5035.data";
-    const char * str_ov16a10_path = "/data/vendor/camera_dump/seansons_ov16a10.data";
+    const char * str_ov16a10_path = "/data/vendor/camera_dump/blackjack_hlt_ov16a10.data";
     const char * str_s5k3p9sx_TXD_path  = "/data/vendor/camera_dump/TXD_s5k3p9sx.data";
     const char * str_s5k3p9sx_TSP_path  = "/data/vendor/camera_dump/TSP_s5k3p9sx.data";
     const char * str_gc8034_holitech_path  = "/data/vendor/camera_dump/holitech_gc8034.data";

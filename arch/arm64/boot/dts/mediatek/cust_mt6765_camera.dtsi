@@ -359,5 +359,6 @@
     cam1_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
     cam2_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
     cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
+    cam0_vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
     status = "okay";
 };
