@@ -331,7 +331,6 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 
-	int ret = 0;
 
 	if (!aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare ||
 	    !aud_clks[CLOCK_TOP_SYSPLL1_D4].clk_prepare ||
@@ -339,27 +338,10 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		pr_debug("%s(), clk_prepare = false\n", __func__);
 		goto EXIT;
 	}
-
-	/* pr_debug("+AudDrv_AUDINTBUS_Sel, parentidx = %d\n", parentidx); */
-	if (parentidx == 1) {
-		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock,
-				     aud_clks[CLOCK_TOP_SYSPLL1_D4].clock);
-		if (ret) {
-			pr_debug("%s clk_set_parent %s-%s fail %d\n", __func__,
-				 aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
-				 aud_clks[CLOCK_TOP_SYSPLL1_D4].name, ret);
-			goto EXIT;
-		}
-	} else if (parentidx == 0) {
-		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock,
-				     aud_clks[CLOCK_CLK26M].clock);
-		if (ret) {
-			pr_debug("%s clk_set_parent %s-%s fail %d\n", __func__,
-				 aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
-				 aud_clks[CLOCK_CLK26M].name, ret);
-			goto EXIT;
-		}
-	}
+	clksys_set_reg(AUDIO_CLK_CFG_4_CLR, 0x3, 0x3);
+	clksys_set_reg(AUDIO_CLK_CFG_4_SET, parentidx, 0x3);
+	pr_info("%s(), parentidx = %d, CLK_CFG_4 = 0x%08x\r\n",
+		__func__, parentidx, clksys_get_reg(AUDIO_CLK_CFG_4));
 EXIT:
 	/* pr_debug("-%s()\n", __func__); */
 	return;
