@@ -154,9 +154,9 @@
 		pinctrl-8 = <&pcfg_combo_pcm_daisync_pull_dis_cfgs>;
 		pinctrl-9 = <&pcfg_combo_gps_lna_pull_dis_cfgs>;
 		pinctrl-10 = <&pcfg_combo_gps_sync_pull_dis_cfgs>;
-		interrupt-parent = <&eintc>;
-		interrupts = < 7 IRQ_TYPE_LEVEL_LOW >;	/* WIFI EINT num is 1 active low level-sensitive */
-		debounce = <7 0>;
+		interrupt-parent = <&pio>;
+		/* WIFI EINT num is 1 active low level-sensitive */
+		interrupts = < 7 IRQ_TYPE_LEVEL_LOW 7 0 >;
 		status = "okay";
 	};
 };
