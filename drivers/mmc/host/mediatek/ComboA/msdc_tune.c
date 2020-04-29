@@ -28,10 +28,35 @@
 
 void msdc_sdio_restore_after_resume(struct msdc_host *host)
 {
+	void __iomem *base = host->base;
+
+	if (host->saved_para.hz) {
+		if ((host->saved_para.suspend_flag)
+		 || ((host->saved_para.msdc_cfg != 0) &&
+		    ((host->saved_para.msdc_cfg&0x0FFFFF9F) !=
+				(MSDC_READ32(MSDC_CFG)&0x0FFFFF9F)))) {
+			ERR_MSG("sdio resume[ns] cur_cfg=%x, save_cfg=%x\n",
+				MSDC_READ32(MSDC_CFG),
+				host->saved_para.msdc_cfg);
+			ERR_MSG("cur_hz=%d, save_hz=%d\n",
+				host->mclk, host->saved_para.hz);
+
+			host->saved_para.suspend_flag = 0;
+			#ifdef SDIO_EARLY_SETTING_RESTORE
+			msdc_reset_hw(host->id);
+			host->saved_para.msdc_cfg &= 0x0FFFFFDF;
+			MSDC_WRITE32(MSDC_CFG, host->saved_para.msdc_cfg);
+			#endif
+			msdc_restore_timing_setting(host);
+		}
+	}
 }
 
-void msdc_save_timing_setting(struct msdc_host *host)
+void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 {
+	/* save_mode: 1 emmc
+	 *	      2 sdio_suspend
+	 */
 	struct msdc_hw *hw = host->hw;
 	void __iomem *base = host->base, *base_top;
 	int i;
@@ -40,10 +65,37 @@ void msdc_save_timing_setting(struct msdc_host *host)
 	MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL, hw->rdata_edge);
 	MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_W_D_SMPL, hw->wdata_edge);
 
-	// this is for suspend only
-	host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
-	host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
-	host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
+	if (save_mode == 2) {
+		host->saved_para.hz = host->mclk;
+		host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
+		host->saved_para.timing = host->timing;
+		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG) & 0x0FFFFFFF;
+		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
+		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
+
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
+			host->saved_para.ds_dly1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3,
+			host->saved_para.ds_dly3);
+		host->saved_para.emmc50_pad_cmd_tune =
+			MSDC_READ32(EMMC50_PAD_CMD_TUNE);
+		host->saved_para.emmc50_dat01 =
+			MSDC_READ32(EMMC50_PAD_DAT01_TUNE);
+		host->saved_para.emmc50_dat23 =
+			MSDC_READ32(EMMC50_PAD_DAT23_TUNE);
+		host->saved_para.emmc50_dat45 =
+			MSDC_READ32(EMMC50_PAD_DAT45_TUNE);
+		host->saved_para.emmc50_dat67 =
+			MSDC_READ32(EMMC50_PAD_DAT67_TUNE);
+
+		MSDC_GET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
+			host->saved_para.inten_sdio_irq);
+	} else {
+		// this is for suspend only
+		host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
+		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
+		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
+	}
 
 	host->saved_para.pb0 = MSDC_READ32(MSDC_PATCH_BIT0);
 	host->saved_para.pb1 = MSDC_READ32(MSDC_PATCH_BIT1);
@@ -316,13 +368,53 @@ done:
 	return ret;
 }
 
+/*
+ * register as callback function of WIFI(combo_sdio_register_pm) .
+ * can called by msdc_drv_suspend/resume too.
+ */
 void msdc_restore_timing_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;
 	int emmc = (host->hw->host_function == MSDC_EMMC) ? 1 : 0;
+	int sdio = (host->hw->host_function == MSDC_SDIO) ? 1 : 0;
 	int i;
+#ifdef CONFIG_MACH_MT6763
+	int retry = 3, cnt, vcore;
 
-	autok_path_sel(host);
+	if (sdio) {
+		msdc_reset_hw(host->id); /* force bit5(BV18SDT) to 0 */
+		host->saved_para.msdc_cfg =
+			host->saved_para.msdc_cfg & 0x0FFFFFDF;
+		MSDC_WRITE32(MSDC_CFG, host->saved_para.msdc_cfg);
+
+		do {
+			msdc_set_mclk(host, host->saved_para.timing,
+					host->saved_para.hz);
+
+			if ((MSDC_READ32(MSDC_CFG) & 0x0FFFFF9F) ==
+			    (host->saved_para.msdc_cfg & 0x0FFFFF9F))
+				break;
+			ERR_MSG("set_mclk unstabl cur_cfg=%x, save_cfg=%x, cur_hz=%d, save_hz=%d)",
+				MSDC_READ32(MSDC_CFG),
+				host->saved_para.msdc_cfg, host->mclk,
+				host->saved_para.hz);
+			retry--;
+		} while (retry);
+
+		/* try to clear fifo if clock still not stable */
+		if (retry == 0) {
+			retry = 3;
+			cnt = 1000;
+			MSDC_SET_BIT32(MSDC_FIFOCS, MSDC_FIFOCS_CLR);
+			msdc_retry(MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR,
+				retry, cnt, host->id);
+			ERR_MSG("MSDC_CFG = %x, MSDC_FICOCS = %x after clear FIFO",
+				MSDC_READ32(MSDC_CFG),
+				MSDC_READ32(MSDC_FIFOCS));
+		}
+	} else
+#endif
+		autok_path_sel(host);
 
 	MSDC_WRITE32(SDC_CFG, host->saved_para.sdc_cfg);
 
@@ -339,8 +431,25 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	MSDC_WRITE32(SDC_FIFO_CFG, host->saved_para.sdc_fifo_cfg);
 	MSDC_WRITE32(SDC_ADV_CFG0, host->saved_para.sdc_adv_cfg0);
 
+#ifdef CONFIG_MACH_MT6763
+	if (sdio) {
+		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
+			host->saved_para.inten_sdio_irq);
 
-	if (emmc && !host->base_top) {
+		if (host->hw->flags & MSDC_SDIO_DDR208)
+			autok_init_ddr208(host);
+		else
+			autok_init_sdr104(host);
+
+		vcore = msdc_vcorefs_get_hw_opp(host);
+		autok_tuning_parameter_init(host, host->autok_res[vcore]);
+
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
+#endif
+
+	if ((emmc || sdio) && !host->base_top) {
 		/* FIX ME: sdio shall add extra check for sdio3.0+ */
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
 			host->saved_para.ds_dly1);
@@ -358,7 +467,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.emmc50_dat67);
 	}
 
-	if (emmc)
+	if ((emmc) || (sdio))
 		MSDC_WRITE32(EMMC50_CFG0, host->saved_para.emmc50_cfg0);
 
 	if (host->base_top) {

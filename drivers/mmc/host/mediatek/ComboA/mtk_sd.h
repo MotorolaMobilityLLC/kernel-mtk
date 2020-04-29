@@ -366,6 +366,7 @@ struct msdc_host {
 	struct completion       autok_done;
 
 	struct completion       xfer_done;
+	struct pm_message       pm_state;
 
 	u32                     mclk;           /* mmc subsystem clock */
 	u32                     hclk;           /* host clock speed */
@@ -374,6 +375,7 @@ struct msdc_host {
 	u8                      power_mode;     /* host power mode */
 	u8                      bus_width;
 	u8                      card_inserted;  /* card inserted ? */
+	u8                      suspend;        /* host suspended ? */
 	u8                      autocmd;
 	u8                      app_cmd;        /* for app command */
 	u32                     app_cmd_arg;
@@ -698,7 +700,7 @@ int sdcard_hw_reset(struct mmc_host *mmc);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
 void msdc_restore_timing_setting(struct msdc_host *host);
-void msdc_save_timing_setting(struct msdc_host *host);
+void msdc_save_timing_setting(struct msdc_host *host, int save_mode);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 unsigned int msdc_do_cmdq_command(struct msdc_host *host,
