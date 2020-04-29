@@ -24,6 +24,7 @@
 #include <linux/of_irq.h>
 
 extern const struct of_device_id msdc_of_ids[];
+extern const struct of_device_id msdc2_of_ids[];
 extern unsigned int cd_gpio;
 
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
