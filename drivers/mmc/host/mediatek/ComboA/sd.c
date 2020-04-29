@@ -1137,7 +1137,6 @@ static void msdc_pm(pm_message_t state, void *data)
 	unsigned long flags;
 
 	int evt = state.event;
-
 	msdc_clk_enable_and_stable(host);
 
 	if (evt == PM_EVENT_SUSPEND || evt == PM_EVENT_USER_SUSPEND) {
@@ -1160,6 +1159,9 @@ static void msdc_pm(pm_message_t state, void *data)
 		//}
 
 	} else if (evt == PM_EVENT_RESUME || evt == PM_EVENT_USER_RESUME) {
+		pr_info("sdio: msdc_pm_resume host->suspend = %d,host->power_mode = %d",
+			host->suspend, host->power_mode);
+
 		if (!host->suspend)
 			goto end;
 
@@ -1195,17 +1197,28 @@ end:
 		}
 		msdc_clk_disable(host);
 		spin_lock_irqsave(&msdc_cg_lock, flags);
+		pr_info("sdio:  suspend msdc_cg_cnt = %d", msdc_cg_cnt);
 		msdc_cg_cnt--;
 		if (msdc_cg_cnt == 0)
 			spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
 		spin_unlock_irqrestore(&msdc_cg_lock, flags);
 	} else {
-		if ((host->hw->host_function == MSDC_SDIO) &&
-		    (evt == PM_EVENT_USER_RESUME)) {
-			pr_info("msdc%d -> MSDC Device Request Resume",
-				host->id);
+		if ((evt == PM_EVENT_RESUME) || (evt == PM_EVENT_USER_RESUME)) {
+
+			if ((host->hw->host_function == MSDC_SDIO) &&
+			    (evt == PM_EVENT_USER_RESUME)) {
+				pr_info("msdc%d -> MSDC Device Request Resume",
+					host->id);
+			}
+			msdc_clk_enable_and_stable(host);
+			spin_lock_irqsave(&msdc_cg_lock, flags);
+			pr_info("sdio: resume msdc_cg_cnt = %d", msdc_cg_cnt);
+			msdc_cg_cnt++;
+			if (msdc_cg_cnt == 1)
+				spm_resource_req(SPM_RESOURCE_USER_MSDC,
+					SPM_RESOURCE_ALL);
+			spin_unlock_irqrestore(&msdc_cg_lock, flags);
 		}
-		msdc_clk_disable(host);
 	}
 
 	if (host->hw->host_function == MSDC_SDIO) {
@@ -5764,12 +5777,23 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 	struct msdc_host *host;
 	void __iomem *base;
 
+	if (mmc == NULL) {
+		ERR_MSG("sdio: msdc_drv_suspend mmc is null ");
+		return 0;
+	}
+
 	host = mmc_priv(mmc);
+	if (host == NULL || host->base == NULL) {
+		ERR_MSG("sdio: msdc_drv_suspend host is null");
+		return 0;
+	}
+
 	base = host->base;
 
 	if (state.event == PM_EVENT_SUSPEND) {
 		/* WIFI slot should be off when enter suspend */
 		msdc_clk_disable(host);
+
 		if (host->error == -EBUSY) {
 			ret = host->error;
 			host->error = 0;
@@ -5803,6 +5827,11 @@ static int msdc_drv_resume(struct platform_device *pdev)
 	struct pm_message state;
 
 	state.event = PM_EVENT_RESUME;
+	if (mmc == NULL || host == NULL ||
+		host->hw == NULL || host->mmc == NULL) {
+		ERR_MSG("[%s]: parameter is null", __func__);
+		return 0;
+	}
 
 	/* This mean WIFI not controller by PM */
 	if (host->hw->host_function == MSDC_SDIO) {
