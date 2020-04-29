@@ -69,7 +69,7 @@ firmware_class.path=/vendor/firmware";
 	};
 
 	msdc2:msdc@11250000 {
-		compatible = "mediatek,msdc";
+		compatible = "mediatek,msdc2";
 		reg = <0x0 0x11250000 0x0 0x10000>;
 		interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
 	};
