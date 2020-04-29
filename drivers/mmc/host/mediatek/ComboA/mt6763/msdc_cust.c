@@ -87,6 +87,11 @@ const struct of_device_id msdc_of_ids[] = {
 	{ },
 };
 
+const struct of_device_id msdc2_of_ids[] = {
+	{   .compatible = DT_COMPATIBLE_NAME2, },
+	{ },
+};
+
 #if !defined(FPGA_PLATFORM)
 static void __iomem *gpio_base;
 
@@ -1296,6 +1301,16 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	if (host->base_top)
 		pr_debug("of_iomap for MSDC%d TOP base @ 0x%p\n",
 			host->id, host->base_top);
+#endif
+
+#if defined(CFG_DEV_SDIO)
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
+		host->hw->request_sdio_eirq = mt_sdio_ops[CFG_DEV_SDIO].sdio_request_eirq;
+		host->hw->enable_sdio_eirq = mt_sdio_ops[CFG_DEV_SDIO].sdio_enable_eirq;
+		host->hw->disable_sdio_eirq = mt_sdio_ops[CFG_DEV_SDIO].sdio_disable_eirq;
+		host->hw->register_pm = mt_sdio_ops[CFG_DEV_SDIO].sdio_register_pm;
+	}
 #endif
 
 	/* fix uaf(use afer free) issue:backup pdev->name,
