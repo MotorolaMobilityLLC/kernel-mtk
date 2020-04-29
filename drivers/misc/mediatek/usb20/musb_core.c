@@ -2124,7 +2124,8 @@ irqreturn_t musb_interrupt(struct musb *musb)
 				static DEFINE_RATELIMIT_STATE(rlmt, HZ, 2);
 				static int skip_cnt;
 
-				if (musb_host_db_enable && host_tx_refcnt_dec(ep_num) < 0) {
+				if (musb_host_db_enable &&
+					host_tx_refcnt_dec(ep_num) < 0) {
 					int ref_cnt;
 
 					musb_host_db_workaround_cnt++;
