@@ -344,6 +344,11 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9D;
+	params->dsi.lcm_esd_check_table[1].cmd = 0x09;
+	params->dsi.lcm_esd_check_table[1].count = 3;
+	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x80;
+	params->dsi.lcm_esd_check_table[1].para_list[1] = 0x73;
+	params->dsi.lcm_esd_check_table[1].para_list[2] = 0x06;
 }
 #ifdef BUILD_LK
 static int NT50358A_write_byte(kal_uint8 addr, kal_uint8 value)
