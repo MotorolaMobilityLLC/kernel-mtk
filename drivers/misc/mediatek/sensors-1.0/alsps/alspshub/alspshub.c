@@ -86,6 +86,8 @@ enum {
 #define BJ_TP_VENDOR_TRULY 1
 #define FIJI_TP_VENDOR_SKYWORTH 0
 #define FIJI_TP_VENDOR_TRULY 1
+#define FIJI_TP_VENDOR_EASYQUICK 2
+
 
 static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 {
@@ -139,11 +141,13 @@ static int get_tp_vendor(void)
 			vendor = BJ_TP_VENDOR_HLT;
 		else if (strncmp(buf,"truly",5) == 0)
 			vendor = BJ_TP_VENDOR_TRULY;
-	} else if (strcmp(CONFIG_ARCH_MTK_PROJECT, "fiji") == 0) {
+	} else if ((strcmp(CONFIG_ARCH_MTK_PROJECT, "fiji") == 0) || (strcmp(CONFIG_ARCH_MTK_PROJECT, "fiji_64") == 0)) {
 		if (strncmp(buf,"skyworth",8) == 0)
 			vendor = FIJI_TP_VENDOR_SKYWORTH;
 		else if (strncmp(buf,"truly",5) == 0)
 			vendor = FIJI_TP_VENDOR_TRULY;
+		else if (strncmp(buf,"easyquick",9) == 0)
+			vendor = FIJI_TP_VENDOR_EASYQUICK;
 	}
 
 	printk(KERN_INFO "[ALS/PS]: tp vendor:(%d)%s\n", vendor, buf);
