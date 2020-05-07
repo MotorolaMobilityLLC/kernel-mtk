@@ -302,47 +302,6 @@ static void set_shutter(kal_uint16 shutter)
 	write_cmos_sensor(0x04, shutter  & 0xff);
 	LOG_INF("shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
 }
-static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
-{
-	unsigned long flags;
-	kal_int32 dummy_line = 0;
-
-	spin_lock_irqsave(&imgsensor_drv_lock, flags);
-	imgsensor.shutter = shutter;
-	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
-	spin_lock(&imgsensor_drv_lock);
-	/*Change frame time */
-	if (frame_length > 1)
-		dummy_line = frame_length - imgsensor.frame_length;
-	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-
-	/*  */
-	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-
-	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
-	set_dummy();
-
-	// Update Shutter
-	if (shutter == (imgsensor.frame_length-1))
-		shutter += 1;
-
-	if(shutter > 16383) shutter = 16383;
-	if(shutter < 1) shutter = 1;
-
-	//Update Shutter
-	write_cmos_sensor(0xfe, 0x00);
-	write_cmos_sensor(0x03, (shutter>>8) & 0x3F);
-	write_cmos_sensor(0x04, shutter & 0xFF);
-
-	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
-}
-
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -629,7 +588,7 @@ static kal_uint16 addr_data_pair_init_gc02m1[] = {
 	0x04, 0x48, 
 	0x15, 0x00, 
 	0x21, 0x10,
-	0x22, 0x05,
+	0x22, 0x06,
 	0x23, 0x20,
 	0x25, 0x20,
 	0x26, 0x08,
@@ -1221,21 +1180,6 @@ static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM s
 	}
 	return ERROR_NONE;
 }
-static kal_uint32 streaming_control(kal_bool enable)
-{
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n",enable);
-	if (enable) {
-		/* MIPI// */
-		write_cmos_sensor(0xfe, 0x00);
-		write_cmos_sensor(0x3e, 0x90);	/*Stream on */
-	} else {
-		/* MIPI// */
-		write_cmos_sensor(0xfe, 0x00);
-		write_cmos_sensor(0x3e, 0x00);	/*Stream off */
-	}
-	mdelay(10);
-	return ERROR_NONE;
-}
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT8 *feature_para, UINT32 *feature_para_len)
@@ -1368,20 +1312,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
-	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
-		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
-		streaming_control(KAL_FALSE);
-		break;
-	case SENSOR_FEATURE_SET_STREAMING_RESUME:
-		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n",
-			*feature_data);
-		if (*feature_data != 0)
-			set_shutter(*feature_data);
-		streaming_control(KAL_TRUE);
-		break;
-	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
-			set_shutter_frame_length((UINT16) *feature_data, (UINT16) *(feature_data + 1));
-			break;
 	case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
 		LOG_INF("SENSOR_SET_SENSOR_IHDR LE = %d, SE = %d, Gain = %d\n",
 			(UINT16)*feature_data, (UINT16)*(feature_data + 1), (UINT16)*(feature_data + 2));
