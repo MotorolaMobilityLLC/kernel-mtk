@@ -600,7 +600,7 @@ static int himax_common_probe_spi(struct spi_device *spi)
 	ret = himax_chip_common_init();
 	if (ret < 0)
 		goto err_common_init_failed;
-
+	tpd_load_status = 1;
 	return ret;
 
 err_common_init_failed:
