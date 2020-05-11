@@ -182,7 +182,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0xCB,0x01,{0x00}},
 	{0xD0,0x05,{0x80,0x0D,0xFF,0x0F,0x63}},
 	{0xD2,0x01,{0x42}},
-
+	{0xD7,0x01,{0xDE}},//3lane
 	{0x51,0x02,{0x00,0x00}},
 	{0x53,0x01,{0x24}},
 	{0x55,0x01,{0x00}},
@@ -265,7 +265,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.switch_mode_enable = 0;
 	/* DSI */
 	/* Command mode setting */
-	params->dsi.LANE_NUM = LCM_FOUR_LANE;
+	params->dsi.LANE_NUM = LCM_THREE_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -280,12 +280,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_backporch = 12;
 	params->dsi.vertical_frontporch = 124;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 12;
-	params->dsi.horizontal_frontporch = 16;
+	params->dsi.horizontal_sync_active = 28;
+	params->dsi.horizontal_backporch = 94;
+	params->dsi.horizontal_frontporch = 94;//old is 16,now is 60
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 276;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
-
+	params->dsi.PLL_CLOCK = 410;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.ssc_disable = 1;
 	//params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
 	//params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
 
