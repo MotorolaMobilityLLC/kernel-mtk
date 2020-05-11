@@ -42,7 +42,7 @@
 #define GC02M1_SENSOR_GAIN_MAX_VALID_INDEX  16
 #define GC02M1_SENSOR_GAIN_MAP_SIZE         16
 #define GC02M1_SENSOR_DGAIN_BASE            0x400
-
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 enum{
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
