@@ -187,7 +187,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint32 addr)
 static void write_cmos_sensor_8(kal_uint32 addr, kal_uint32 para)
 {
     char puSendCmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
-    iWriteRegI2C(puSendCmd , 3,imgsensor.i2c_write_id);
+    iWriteRegI2C(puSendCmd , 3, imgsensor.i2c_write_id);
 }
 
 #if 0
