@@ -64,7 +64,7 @@
 #define HX_RESUME_SEND_CMD	/*Need to enable on TDDI chipset*/
 /*#define HX_HIGH_SENSE*/
 /*#define HX_PALM_REPORT*/
-/*#define HX_USB_DETECT_GLOBAL*/
+#define HX_USB_DETECT_GLOBAL
 
 /* for MTK special platform.If turning on,
  * it will report to system by using specific format.
@@ -125,6 +125,7 @@
 #define BOOT_UPGRADE_FWNAME "Himax_firmware.bin"
 #if defined(HX_ZERO_FLASH)
 #define HX_RESUME_SET_FW
+#define HX_UPDATE_FW_FROM_DISPLAY
 /*#define HX_CODE_OVERLAY*/
 /*Independent threads run the notification chain notification function resume*/
 /*#define HX_CONTAINER_SPEED_UP*/
@@ -484,7 +485,6 @@ struct himax_ts_data {
 
 	struct workqueue_struct *himax_diag_wq;
 	struct delayed_work himax_diag_delay_wrok;
-
 #if defined(HX_SMART_WAKEUP)
 	uint8_t SMWP_enable;
 	uint8_t gesture_cust_en[26];
@@ -493,6 +493,13 @@ struct himax_ts_data {
 	bool psensor_flag;
 #endif
 #endif
+#ifdef HX_UPDATE_FW_FROM_DISPLAY
+struct work_struct notifie_resume_work_queue;
+
+struct workqueue_struct *ts_recovery_workqueue;
+struct delayed_work recovery_work_queue;
+#endif
+struct mutex fw_update_lock;
 
 #if defined(HX_HIGH_SENSE)
 	uint8_t HSEN_enable;
@@ -575,5 +582,7 @@ int himax_report_data_init(void);
 
 int himax_dev_set(struct himax_ts_data *ts);
 int himax_input_register_device(struct input_dev *input_dev);
-
+#ifdef HX_UPDATE_FW_FROM_DISPLAY
+extern int himax_notifie_update_fw(unsigned long value);
+#endif
 #endif

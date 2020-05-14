@@ -372,12 +372,11 @@ int himax_gpio_power_config(struct himax_i2c_platform_data *pdata)
 	if (error != 0)
 		I("Failed to enable reg-vgp6: %d\n", error);
 
-	msleep(100);
 #if defined(HX_RST_PIN_FUNC)
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
-	msleep(20);
+	msleep(5);
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 0);
-	msleep(20);
+	msleep(5);
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
 #endif
 	I("mtk_tpd: himax reset over\n");
@@ -637,11 +636,13 @@ static void himax_common_suspend(struct device *dev)
 
 static void himax_common_resume(struct device *dev)
 {
+#if !defined(HX_UPDATE_FW_FROM_DISPLAY)
 	struct himax_ts_data *ts = private_ts;
 
 	I("%s: enter\n", __func__);
 	himax_chip_common_resume(ts);
 	I("%s: END\n", __func__);
+#endif
 }
 
 
@@ -671,7 +672,11 @@ int fb_notifier_callback(struct notifier_block *self,
 				&ts->ts_int_work,
 				msecs_to_jiffies(DELAY_TIME));
 #else
+
+#if !defined(HX_UPDATE_FW_FROM_DISPLAY)
 			himax_common_resume(ts->dev);
+#endif
+
 #endif
 			break;
 
