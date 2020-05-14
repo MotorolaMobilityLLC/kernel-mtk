@@ -62,7 +62,7 @@ static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
 
 #define LCM_ID_DA_MP		0x00
-#define LCM_ID_DC_MP		0x00
+#define LCM_ID_DC_MP		0x17
 
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 #define MDELAY(n)       (lcm_util.mdelay(n))
@@ -478,16 +478,32 @@ static void i2c_send_data_lcd(unsigned char cmd, unsigned char data)
 static void lcm_reset(void)
 {
 	if (!gesture_dubbleclick_en) {
-		MDELAY(2);//t3
-		SET_RESET_PIN(1);
-		MDELAY(10);//t4 LCD RESET to first command in display sleep in mode time
-		tpd_gpio_output(0, 1);
-	} else {
+		tpd_gpio_output(0, 0);
+		MDELAY(6);//T12
 		SET_RESET_PIN(0);
-		MDELAY(1);//t3
-		SET_RESET_PIN(1);
-		MDELAY(10);//t3
+		MDELAY(5);// >3ms
+
+		set_gpio_lcd_enp(1);
+		MDELAY(6);//for bias IC and tr2
+		i2c_send_data_lcd(0x00, 0x12);
+		set_gpio_lcd_enn(1);
+		MDELAY(7);//for bias IC and tr2
+		i2c_send_data_lcd(0x01, 0x12);
+
+		MDELAY(6);//T13
 		tpd_gpio_output(0, 1);
+		MDELAY(1);//T5
+		SET_RESET_PIN(1);
+		MDELAY(40);//T6
+	} else {
+		tpd_gpio_output(0, 0);
+		MDELAY(6);//T12
+		SET_RESET_PIN(0);
+		MDELAY(6);//T13
+		tpd_gpio_output(0, 1);
+		MDELAY(1);//T5
+		SET_RESET_PIN(1);
+		MDELAY(40);//T6
 	}
 
 	LCM_LOGI("%s: lcm reset done\n",__func__);
@@ -507,25 +523,8 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
-	unsigned char cmd = 0x0;
-	unsigned char data = 0x0F;  //up to +/-5.5V
 	LCM_LOGI("%s: start init\n",__func__);
 
-	if (!gesture_dubbleclick_en) {
-		SET_RESET_PIN(0);
-		tpd_gpio_output(0, 0);
-
-		set_gpio_lcd_enp(1);
-		MDELAY(6);//for bias IC and tr2
-		i2c_send_data_lcd(cmd, data);
-
-		MDELAY(2);//t2
-		set_gpio_lcd_enn(1);
-		MDELAY(7);//for bias IC and tr2
-		cmd = 0x01;
-		data = 0x0F;
-		i2c_send_data_lcd(cmd, data);
-	}
 	lcm_reset();
 
 	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
@@ -540,7 +539,6 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
-		MDELAY(2);//t11
 		set_gpio_lcd_enp(0);
 	}
 #endif

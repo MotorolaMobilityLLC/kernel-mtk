@@ -392,7 +392,7 @@ static void lcm_reset(void)
 		SET_RESET_PIN(0);
 		MDELAY(2);//T3
 		SET_RESET_PIN(1);
-		tpd_gpio_output(0, 1);
+		//tpd_gpio_output(0, 1);
 		MDELAY(50);//T4
 	}
 
@@ -414,12 +414,13 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x0F;  //up to +/-5.5V
+	unsigned char data = 0x13;  //up to +/-5.9V
 	LCM_LOGI("%s: start init\n",__func__);
 
 	if (!gesture_dubbleclick_en) {
 		SET_RESET_PIN(0);
-		tpd_gpio_output(0, 0);
+		//tpd_gpio_output(0, 0);
+		MDELAY(1);
 
 		set_gpio_lcd_enp(1);
 		MDELAY(6);//for bias IC and tr2
@@ -429,7 +430,7 @@ static void lcm_init(void)
 		set_gpio_lcd_enn(1);
 		MDELAY(7);//for bias IC and tr2
 		cmd = 0x01;
-		data = 0x0F;
+		data = 0x13;
 		i2c_send_data_lcd(cmd, data);
 	}
 	lcm_reset();
