@@ -145,6 +145,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #ifndef BUILD_LK
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
 extern volatile int gesture_dubbleclick_en;
+extern int himax_notifie_update_fw(unsigned long value);
 //static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 #else
 #define I2C_I2C_LCD_BIAS_CHANNEL 6    /* for I2C channel 0 */
@@ -434,7 +435,7 @@ static void lcm_init(void)
 		i2c_send_data_lcd(cmd, data);
 	}
 	lcm_reset();
-
+	himax_notifie_update_fw(1);// for normal download fw
 	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 	LCM_LOGI("%s: init done\n",__func__);
 }
@@ -462,6 +463,36 @@ static void lcm_resume(void)
 	LCM_LOGI("%s, done\n",__func__);
 }
 
+static unsigned int lcm_esd_recover(void)
+{
+	unsigned char cmd = 0x0;
+	unsigned char data = 0x13;  //up to +/-5.5V
+	LCM_LOGI("%s: enter \n",__func__);
+
+	if (!gesture_dubbleclick_en) {
+		SET_RESET_PIN(0);
+		//tpd_gpio_output(0, 0);
+		MDELAY(1);
+
+		set_gpio_lcd_enp(1);
+		MDELAY(6);//for bias IC and tr2
+		i2c_send_data_lcd(cmd, data);
+
+		MDELAY(2);//T1
+		set_gpio_lcd_enn(1);
+		MDELAY(7);//for bias IC and tr2
+		cmd = 0x01;
+		data = 0x13;
+		i2c_send_data_lcd(cmd, data);
+	}
+	lcm_reset();
+
+	himax_notifie_update_fw(2);// for ESD recovery
+	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+
+	LCM_LOGI("%s: exit\n",__func__);
+	return 0;
+}
 
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
@@ -518,5 +549,5 @@ struct LCM_DRIVER hx83102d_hdplus_dsi_vdo_truly_6528_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.set_backlight_cmdq = lcm_setbacklight,
 	.ata_check = lcm_ata_check,
-
+	.esd_recover = lcm_esd_recover,
 };

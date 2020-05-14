@@ -147,9 +147,9 @@ static void hx83102_pin_reset(void)
 {
 	I("%s: Now reset the Touch chip.\n", __func__);
 	kp_himax_rst_gpio_set((*kp_private_ts)->rst_gpio, 0);
-	msleep(20);
+	msleep(5);
 	kp_himax_rst_gpio_set((*kp_private_ts)->rst_gpio, 1);
-	msleep(50);
+	msleep(5);
 }
 #endif
 
@@ -177,8 +177,8 @@ static bool hx83102_sense_off(bool check_en)
 			tmp_writ[0] = 0xA5;
 			hx83102_flash_write_burst(tmp_addr, tmp_writ);
 		}
-		msleep(20);
 
+		msleep(1);
 		/* check fw status */
 		tmp_addr[3] = 0x90;
 		tmp_addr[2] = 0x00;
@@ -191,7 +191,7 @@ static bool hx83102_sense_off(bool check_en)
 				__func__, tmp_data[0]);
 			break;
 		}
-
+		msleep(10);
 		tmp_addr[3] = 0x90;
 		tmp_addr[2] = 0x00;
 		tmp_addr[1] = 0x00;
@@ -631,7 +631,7 @@ static bool hx83102d_sense_off(bool check_en)
 				(*kp_pfw_op)->data_fw_stop,
 				0);
 		/*msleep(20);*/
-		usleep_range(10000, 10001);
+		usleep_range(1000, 1001);
 
 		/* check fw status */
 		kp_g_core_fp->fp_register_read(
@@ -645,7 +645,7 @@ static bool hx83102d_sense_off(bool check_en)
 				__func__, tmp_data[0]);
 			break;
 		}
-
+		usleep_range(10000, 10001);
 		kp_g_core_fp->fp_register_read((*kp_pfw_op)->addr_ctrl_fw_isr,
 			4, tmp_data, false);
 		I("%s: cnt = %d, data[0] = 0x%02X!\n", __func__,

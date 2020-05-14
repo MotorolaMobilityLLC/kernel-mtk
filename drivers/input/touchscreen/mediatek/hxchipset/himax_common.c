@@ -195,6 +195,10 @@ static int gest_width, gest_height, gest_mid_x, gest_mid_y;
 static int hx_gesture_coor[16];
 #endif
 
+#ifdef HX_UPDATE_FW_FROM_DISPLAY
+static void himax_notifie_resume_workqueue(struct work_struct *work);
+static void himax_recovery_work_func(struct work_struct *work);
+#endif
 int g_ts_dbg;
 EXPORT_SYMBOL(g_ts_dbg);
 
@@ -2913,6 +2917,8 @@ found_hx_chip:
 	g_core_fp.fp_power_on_init();
 	calculate_point_number();
 
+	mutex_init(&ts->fw_update_lock);
+
 #if defined(CONFIG_OF)
 	ts->power = pdata->power;
 #endif
@@ -2976,6 +2982,18 @@ found_hx_chip:
 #if defined(HX_HIGH_SENSE)
 	ts->HSEN_enable = 0;
 #endif
+#ifdef HX_UPDATE_FW_FROM_DISPLAY
+	INIT_WORK(&ts->notifie_resume_work_queue, himax_notifie_resume_workqueue);
+
+	ts->ts_recovery_workqueue =
+			create_singlethread_workqueue("himax_recovery_wq");
+	if (!ts->ts_recovery_workqueue) {
+		E("%s: create ts_recovery workqueue failed\n", __func__);
+		goto err_create_ts_recovery_wq_failed;
+	}
+	INIT_DELAYED_WORK(&ts->recovery_work_queue, himax_recovery_work_func);
+
+#endif
 
 	/*touch data init*/
 	err = himax_report_data_init();
@@ -3005,6 +3023,12 @@ found_hx_chip:
 err_creat_proc_file_failed:
 	himax_report_data_deinit();
 err_report_data_init_failed:
+
+#if defined(HX_UPDATE_FW_FROM_DISPLAY)
+	cancel_delayed_work_sync(&ts->recovery_work_queue);
+	destroy_workqueue(ts->ts_recovery_workqueue);
+err_create_ts_recovery_wq_failed:
+#endif
 #if defined(HX_SMART_WAKEUP)
 	wakeup_source_trash(&ts->ts_SMWP_wake_lock);
 #endif
@@ -3123,6 +3147,61 @@ void himax_chip_common_deinit(void)
 	I("%s: Common section deinited!\n", __func__);
 }
 
+
+#ifdef HX_UPDATE_FW_FROM_DISPLAY
+static void himax_notifie_resume_workqueue(struct work_struct *work)
+{
+	I("%s: Entering! \n", __func__);
+	himax_chip_common_resume(private_ts);
+	return;
+}
+
+static void himax_lcd_resume_func(void)
+{
+	schedule_work(&private_ts->notifie_resume_work_queue);
+	return;
+}
+
+static void himax_recovery_work_func(struct work_struct *work)
+{
+	I("%s: Entering! \n", __func__);
+#if defined(HX_EXCP_RECOVERY)
+	if (!mutex_trylock(&private_ts->fw_update_lock))
+	{
+		I("%s: already in esd resume! \n", __func__);
+		return;
+	}
+	himax_excp_hw_reset();
+	mutex_unlock(&private_ts->fw_update_lock);
+#endif
+	return;
+
+}
+
+static void himax_esd_resume_func(void)
+{
+
+	I("%s: Entering! \n", __func__);
+	queue_delayed_work(private_ts->ts_recovery_workqueue, &private_ts->recovery_work_queue,
+			msecs_to_jiffies(50));
+	I("%s: end! \n", __func__);
+}
+
+int himax_notifie_update_fw(unsigned long value)
+{
+	unsigned long update_fw_state = value;
+	I("update_fw_state == %ld \n",update_fw_state);
+	if(update_fw_state == 1) {
+		himax_lcd_resume_func();
+	}else if(update_fw_state == 2){
+		himax_esd_resume_func();
+	}else
+		E("invalid update_fw_state == %ld \n",update_fw_state);
+	return 0;
+}
+
+#endif
+
 int himax_chip_common_suspend(struct himax_ts_data *ts)
 {
 	if (ts->suspended) {
@@ -3138,10 +3217,7 @@ int himax_chip_common_suspend(struct himax_ts_data *ts)
 				__func__);
 		goto END;
 	}
-	/*
-	if (g_core_fp._clr_sts_excpt != NULL)
-		g_core_fp._clr_sts_excpt(1);
-	*/
+
 
 #if defined(HX_SMART_WAKEUP)\
 	|| defined(HX_HIGH_SENSE)\
@@ -3197,6 +3273,7 @@ END:
 
 int himax_chip_common_resume(struct himax_ts_data *ts)
 {
+//#if !defined(HX_UPDATE_FW_FROM_DISPLAY)
 #if defined(HX_ZERO_FLASH) && defined(HX_RESUME_SET_FW)
 	int result = 0;
 #endif
@@ -3220,51 +3297,38 @@ int himax_chip_common_resume(struct himax_ts_data *ts)
 	if (ts->pdata)
 		if (ts->pdata->powerOff3V3 && ts->pdata->power)
 			ts->pdata->power(1);
-	if (g_core_fp._clr_sts_excpt != NULL)
-		g_core_fp._clr_sts_excpt(0);
+	I("%s: enter 2\n", __func__);
 #if defined(HX_RST_PIN_FUNC) && defined(HX_RESUME_HW_RESET)
 	if (g_core_fp.fp_ic_reset != NULL)
 		g_core_fp.fp_ic_reset(false, false);
 #endif
 
 #if defined(HX_ZERO_FLASH) && defined(HX_RESUME_SET_FW)
-#if defined(HX_SMART_WAKEUP)
-	if (!ts->SMWP_enable) {
-#endif
+		mutex_lock(&private_ts->fw_update_lock);
 		I("It will update fw after resume in zero flash mode!\n");
 		if (g_core_fp.fp_0f_operation_dirly != NULL) {
 			result = g_core_fp.fp_0f_operation_dirly();
 			if (result) {
 				E("Something wrong! Skip Update zero flash!\n");
+				mutex_unlock(&private_ts->fw_update_lock);
 				goto ESCAPE_0F_UPDATE;
 			}
 		}
-		if (g_core_fp._fw_sts_clear != NULL)
-			g_core_fp._fw_sts_clear();
 		if (g_core_fp.fp_reload_disable != NULL)
 			g_core_fp.fp_reload_disable(0);
 		if (g_core_fp.fp_sense_on != NULL)
 			g_core_fp.fp_sense_on(0x00);
-#if defined(HX_SMART_WAKEUP)
-	}
+		mutex_unlock(&private_ts->fw_update_lock);
 #endif
-#endif
+	I("%s: enter 3\n", __func__);
 #if defined(HX_SMART_WAKEUP)\
 	|| defined(HX_HIGH_SENSE)\
 	|| defined(HX_USB_DETECT_GLOBAL)
 	if (g_core_fp.fp_resend_cmd_func != NULL)
 		g_core_fp.fp_resend_cmd_func(ts->suspended);
-
-#if defined(HX_CODE_OVERLAY)
-	if (ts->SMWP_enable && ts->in_self_test == 0)
-		g_core_fp.fp_0f_overlay(3, 0);
-#endif
 #endif
 	himax_report_all_leave_event(ts);
-
-	if (g_core_fp.fp_resume_ic_action != NULL)
-		g_core_fp.fp_resume_ic_action();
-
+	I("%s: enter 4\n", __func__);
 	himax_int_enable(1);
 #if defined(HX_ZERO_FLASH) && defined(HX_RESUME_SET_FW)
 ESCAPE_0F_UPDATE:
@@ -3272,7 +3336,7 @@ ESCAPE_0F_UPDATE:
 END:
 	if (ts->in_self_test == 1)
 		ts->suspend_resume_done = 1;
-
+//#endif
 	I("%s: END\n", __func__);
 	return 0;
 }
