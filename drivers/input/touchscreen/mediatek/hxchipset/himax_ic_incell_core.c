@@ -587,9 +587,9 @@ static void himax_mcu_power_on_init(void)
 			pfw_op->data_clear, 0);
 	/*DSRAM func initial*/
 	g_core_fp.fp_assign_sorting_mode(pfw_op->data_clear);
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
+#if !defined(HX_ZERO_FLASH)
 	g_core_fp.fp_sense_on(0x00);
+#endif
 }
 
 static bool himax_mcu_dd_clk_set(bool enable)
@@ -2555,9 +2555,9 @@ static void himax_mcu_pin_reset(void)
 {
 	I("%s: Now reset the Touch chip.\n", __func__);
 	himax_rst_gpio_set(private_ts->rst_gpio, 0);
-	msleep(20);
+	msleep(5);
 	himax_rst_gpio_set(private_ts->rst_gpio, 1);
-	msleep(50);
+	msleep(5);
 }
 
 static void himax_mcu_ic_reset(uint8_t loadconfig, uint8_t int_off)
