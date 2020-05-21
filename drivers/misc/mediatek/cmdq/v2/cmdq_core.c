@@ -4012,10 +4012,24 @@ static struct TaskStruct *cmdq_core_acquire_task(
 				pTask = NULL;
 				break;
 			}
-			memcpy(p_metadatas,
-			       CMDQ_U32_PTR(
-				       pCommandDesc->secData.addrMetadatas),
-			       metadata_length);
+
+			if (copy_from_user(p_metadatas,
+				CMDQ_U32_PTR(
+					pCommandDesc->secData.addrMetadatas),
+				metadata_length)) {
+				kfree(p_metadatas);
+				pTask->secData.addrMetadatas =
+					(cmdqU32Ptr_t)(unsigned long)NULL;
+				pTask->secData.addrMetadataCount = 0;
+
+				/* raise AEE first */
+				CMDQ_AEE("CMDQ", "Failed to copy from user\n");
+
+				/* then release task */
+				cmdq_core_release_task(pTask);
+				pTask = NULL;
+				break;
+			}
 		}
 		pTask->secData.addrMetadatas =
 			(cmdqU32Ptr_t)(unsigned long)p_metadatas;
