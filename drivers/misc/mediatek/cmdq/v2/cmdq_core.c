@@ -1910,7 +1910,14 @@ static void cmdq_task_init_profile_marker_data(
 	uint32_t i;
 
 	pTask->profileMarker.count = pCommandDesc->profileMarker.count;
+	if (pTask->profileMarker.count > CMDQ_MAX_PROFILE_MARKER_IN_TASK)
+		pTask->profileMarker.count = CMDQ_MAX_PROFILE_MARKER_IN_TASK;
+
 	pTask->profileMarker.hSlot = pCommandDesc->profileMarker.hSlot;
+	if (pTask->profileMarker.hSlot & 0x3) {
+		CMDQ_ERR("hSlot is not aligned to 4 byte, reset to 0LL\n");
+		pTask->profileMarker.hSlot = 0LL;
+	}
 	for (i = 0; i < CMDQ_MAX_PROFILE_MARKER_IN_TASK; i++)
 		pTask->profileMarker.tag[i] =
 			pCommandDesc->profileMarker.tag[i];
