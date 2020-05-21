@@ -752,6 +752,8 @@ struct ContextStruct {
 	/* Resource manager information */
 	struct list_head resourceList; /* all resource list */
 
+	void *inst_check_buffer;
+
 #ifdef CMDQ_INSTRUCTION_COUNT
 	/* GCE instructions count information */
 	int32_t instructionCountLevel;
