@@ -1242,6 +1242,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	CMDQ_TRACE_FORCE_BEGIN("%s check copy %u\n", __func__, copy_size);
 	if (user_space && !cmdq_core_check_user_valid(
 		(void *)(unsigned long)desc->pVABase, copy_size, handle)) {
+		cmdq_task_destroy(handle);
 		CMDQ_TRACE_FORCE_END();
 		return -EFAULT;
 	}
