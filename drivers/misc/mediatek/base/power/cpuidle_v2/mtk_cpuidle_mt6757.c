@@ -15,7 +15,7 @@
 #include <mtk_spm.h>
 
 char *irq_match[] = {
-	"mediatek,mt6757-keypad",
+	"mediatek,kp",
 	"mediatek,mt6757-consys",
 	"mediatek,mt6757-auxadc",
 	"mediatek,mdcldma",
