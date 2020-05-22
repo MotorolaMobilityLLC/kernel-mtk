@@ -338,26 +338,6 @@ submit_io:
 static void __f2fs_submit_read_bio(struct f2fs_sb_info *sbi,
 				struct bio *bio, enum page_type type)
 {
-	if (trace_android_fs_dataread_start_enabled() && (type == DATA)) {
-		struct page *first_page = bio->bi_io_vec[0].bv_page;
-
-		if (first_page != NULL &&
-			__read_io_type(first_page) == F2FS_RD_DATA) {
-			char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
-
-			path = android_fstrace_get_pathname(pathbuf,
-						MAX_TRACE_PATHBUF_LEN,
-						first_page->mapping->host);
-
-			trace_android_fs_dataread_start(
-				first_page->mapping->host,
-				page_offset(first_page),
-				bio->bi_iter.bi_size,
-				current->pid,
-				path,
-				current->comm);
-		}
-	}
 	__submit_bio(sbi, bio, type);
 }
 
