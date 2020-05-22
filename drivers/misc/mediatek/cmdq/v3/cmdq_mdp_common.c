@@ -1108,7 +1108,7 @@ static void cmdq_mdp_store_debug(struct cmdqCommandStruct *desc,
 }
 
 static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
-	struct cmdqRecStruct *handle)
+	struct cmdqRecStruct *handle, bool user_space)
 {
 	u32 i;
 
@@ -1140,9 +1140,25 @@ static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
 			struct cmdqSecAddrMetadataStruct *addr;
 			const u32 cnt =
 				handle->pkt->cmd_buf_size / CMDQ_INST_SIZE;
+			if (user_space) {
+				if (copy_from_user(p_metadatas,
+					CMDQ_U32_PTR(
+						desc->secData.addrMetadatas),
+					metadata_length)) {
+					kfree(p_metadatas);
+					CMDQ_AEE("CMDQ",
+						"Failed to copy from user\n");
+					handle->secData.addrMetadatas = 0;
+					handle->secData.addrMetadataCount = 0;
 
-			memcpy(p_metadatas, CMDQ_U32_PTR(
-				desc->secData.addrMetadatas), metadata_length);
+					return -EINVAL;
+				}
+			} else {
+				memcpy(p_metadatas, CMDQ_U32_PTR(
+					desc->secData.addrMetadatas),
+					metadata_length);
+			}
+
 			handle->secData.addrMetadatas =
 				(cmdqU32Ptr_t)(unsigned long)p_metadatas;
 
@@ -1188,7 +1204,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 
 	/* set secure data */
 	handle->secStatus = NULL;
-	cmdq_mdp_setup_sec(desc, handle);
+	cmdq_mdp_setup_sec(desc, handle, user_space);
 
 	handle->engineFlag = desc->engineFlag & ~inorder_mask;
 	handle->pkt->priority = desc->priority;
@@ -1204,11 +1220,21 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	if (desc->prop_size && desc->prop_addr &&
 		desc->prop_size < CMDQ_MAX_USER_PROP_SIZE) {
 		handle->prop_addr = kzalloc(desc->prop_size, GFP_KERNEL);
-		if (handle->prop_addr) {
+
+		handle->prop_size = desc->prop_size;
+		if (handle->prop_addr && user_space) {
+			if (copy_from_user(handle->prop_addr,
+				(void *)CMDQ_U32_PTR(
+					desc->prop_addr),
+				desc->prop_size)) {
+				kfree(handle->prop_addr);
+				handle->prop_addr = NULL;
+				handle->prop_size = 0;
+			}
+		} else if (handle->prop_addr) {
 			memcpy(handle->prop_addr,
 				(void *)CMDQ_U32_PTR(desc->prop_addr),
-				desc->prop_size);
-			handle->prop_size = desc->prop_size;
+				 desc->prop_size);
 		} else {
 			handle->prop_addr = NULL;
 			handle->prop_size = 0;
