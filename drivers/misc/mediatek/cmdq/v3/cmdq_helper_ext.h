@@ -827,7 +827,8 @@ u32 cmdq_event_get_table_size(void);
 
 /* CMDQ core feature functions */
 
-bool cmdq_core_check_user_valid(void *src, u32 size);
+bool cmdq_core_check_user_valid(void *src, u32 size,
+	struct cmdqRecStruct *handle);
 
 void cmdq_core_deinit_group_cb(void);
 
