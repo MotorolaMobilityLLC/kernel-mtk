@@ -1241,7 +1241,7 @@ static struct mt_chip_conf fts_mt_chip_conf = {
 #endif
 static int fts_spi_parse_dt(struct device *dev, struct fts_ts_data *data)
 {
-    int ret;
+    int ret = 0;
 #if 0
 
     FTS_FUNC_ENTER();
