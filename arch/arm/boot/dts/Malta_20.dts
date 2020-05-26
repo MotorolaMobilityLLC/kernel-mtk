@@ -37,14 +37,14 @@
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -73,15 +73,15 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
+		led_mode = <4>;
 		data = <1>;
-		pwm_config = <0 3 0 0 0>;
+		pwm_config = <0 2 0 0 0>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <9>;
+		vib_vol= <0x0b>;
 	};
 };
 
@@ -100,7 +100,54 @@
 		vsel_pin = <1>;
 	};
 };
+&i2c5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
 
+	externel-charger@6b{
+		compatible = "ti,bq25601";
+		reg = <0x6b>;
+		status = "okay";
+	};
+	externel-charger@53{
+		compatible = "richtek,rt9471";
+		reg = <0x53>;
+		status = "okay";
+		ichg = <2000000>; /* uA */
+	};
+
+	externel-charger@6c{
+		compatible = "halo,hl7007";
+		reg = <0x6c>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+	externel-charger@6a{
+		compatible = "halo,hl7005";
+		reg = <0x6a>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+       externel-eta-charger@6e{
+               compatible = "ontim,eta6937";
+               reg = <0x6e>;/*dumy addr,in fact ,the addr is 0x6b-1*/
+               status = "okay";
+		ichg = <1150000>; /* uA */
+       };
+	externel-charger@6d{
+		compatible = "halo,sy6923";
+		reg = <0x6d>;
+		status = "okay";
+		ichg = <1150000>; /* uA */
+	};
+	externel-charger@6f{
+		compatible = "halo,bq24157";
+		reg = <0x6f>;
+		status = "okay";
+		ichg = <1150000>; /* uA */
+	};
+};
 &i2c6 {
 	ext_buck_vgpu@55 {
 		regulator-name ="ext_buck_vgpu";
@@ -110,16 +157,28 @@
 	};
 };
 /* TOUCH start */
+&spi2 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        status = "okay";
+        touch_spi@0{
+            compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi";
+            reg = <0>;
+            spi-max-frequency = <10000000>;
+            status = "okay";
+        };
+};
+
 &touch {
-	tpd-resolution = <1080 1920>;
+	tpd-resolution = <720 1560>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
 	tpd-key-dim-local = <90 883 100 40 230
 				 883 100 40 370 883 100 40 0 0 0 0>;
-	tpd-max-touch-num = <5>;
+	tpd-max-touch-num = <10>;
 	tpd-filter-enable = <1>;
-	tpd-filter-pixel-density = <146>;
+	tpd-filter-pixel-density = <106>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
 	pinctrl-names = "default", "state_eint_as_int", "state_eint_output0",
@@ -173,6 +232,94 @@
 };
 /* TOUCH end */
 
+&i2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+
+	lcd_i2c_bias_enn_enp@3e{
+		compatible = "mediatek,I2C_LCD_BIAS";
+		reg = <0x3e>;
+		status = "okay";
+	};
+};
+
+/* DISPSYS GPIO standardization */
+&pio {
+	mtkfb_pins_mode_te_gpio: mode_te_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_mode_te_te: mode_te_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+};
+
+&mtkfb {
+	pinctrl-names = "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
+		"lcm_rst_out1_gpio","lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio", "lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
+	pinctrl-0 = <&mtkfb_pins_mode_te_gpio>;
+	pinctrl-1 = <&mtkfb_pins_mode_te_te>;
+	pinctrl-2 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn1>;
+	status = "okay";
+};
+/* DISPSYS GPIO standardization end */
 /* CONSYS GPIO standardization */
 &pio {
 	consys_pins_default: consys_default {
@@ -218,7 +365,7 @@
 	accdet-plugout-debounce = <1>;
 	accdet-mic-mode = <1>;
 	headset-eint-level-pol = <8>;
-	headset-three-key-threshold = <0 80 220 400>;
+	headset-three-key-threshold = <0 80 175 400>;
 	headset-three-key-threshold-CDD = <0 121 192 600>;
 	headset-four-key-threshold = <0 58 121 192 400>;
 	pinctrl-names = "default", "state_eint_as_int";
@@ -239,6 +386,50 @@
 };
 /* accdet end */
 
+/*usb cable start*/
+&usb_cable {
+	usbcable-gpio = <&pio 19 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usbcable_pins_default>;
+	status = "okay";
+};
+&pio {
+	usbcable_pins_default:usbcableeint@0{
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/*usb cable end*/
+
+&led_simple {
+	pinctrl-names = "default", "red_led_output0", "red_led_output1";
+	pinctrl-0 = <&red_led_default>;
+	pinctrl-1 = <&red_led_pull_down>;
+	pinctrl-2 = <&red_led_pull_up>;
+	status = "okay";
+};
+&pio {
+	red_led_default: led_default {
+				 };
+	red_led_pull_down: led_output0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	red_led_pull_up: led_output1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
 /* FINGERPRINT start */
 &spi0 {
 	#address-cells = <1>;
@@ -252,7 +443,7 @@
 	};
 };
 
-&goodix_fp {
+/*&goodix_fp {
 	pinctrl-names = "default", "reset_high", "reset_low";
 	pinctrl-0 = <&fingerprint_default>;
 	pinctrl-1 = <&fingerprint_reset_high>;
@@ -277,7 +468,7 @@
 			output-low;
 		};
 	};
-};
+};*/
 /* FINGERPRINT end */
 
 /* IRTX GPIO end */
@@ -407,33 +598,9 @@
 	};
 
 	aud_pins_smartpa_off: aud_pins_smartpa_off {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
-		};
-		pins_cmd3_dat {
-			pinmux = <PINMUX_GPIO20__FUNC_GPIO20>;
-		};
 	};
 
 	aud_pins_smartpa_on: aud_pins_smartpa_on {
-		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_I2S0_DI>;
-		};
-		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_I2S3_BCK>;
-		};
-		pins_cmd2_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_I2S3_LRCK>;
-		};
-		pins_cmd3_dat {
-			pinmux = <PINMUX_GPIO20__FUNC_I2S3_DO>;
-		};
 	};
 };
 /* AUDIO end */
@@ -448,12 +615,41 @@
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
+&usb_phy_tuning{
+	u2_vrt_ref = <7>;
+	u2_term_ref = <6>;
+	u2_host_vrt_ref = <4>;
+	u2_host_term_ref = <4>;
+	status = "okay";
+};
 
+&i2c3 {
+	rt9465@4b {
+		compatible = "richtek,rt9465";
+		reg = <0x4b>;
+		status = "okay";
+		rt,en_gpio_num = <176>;
+		rt,en_gpio = <&pio 176 0x0>;
+		rt,intr_gpio_num = <23>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 23 0x0>;
+		interrupt-names = "wdtmri";
+		charger_name = "secondary_chg";
+		ichg = <1500000>; /* uA */
+		mivr = <4500000>; /* uV */
+		cv = <4550000>; /* uV */
+		ieoc = <700000>; /* uA */
+		safety_timer = <12>; /* hour */
+		en_st; /* safety timer */
+		/* en_te; */
+		en_wdt;
+	};
+};
 
-
-
-
+#include "bat_setting/mt6765_battery_table_blackjack.dtsi"
+#include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
 
 #include <Malta_20/cust.dtsi>
-#include "cust_mt6765_camera.dtsi"
+#include "cust_mt6765_camera_Malta_20.dtsi"
+#include "Malta_20-fpsensor.dtsi"
+#include "aw87519.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
