@@ -3927,11 +3927,11 @@ static const struct file_operations adc_cali_fops = {
 /*************************************/
 #ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
 static int battery_id_type = 0;
-int ontim_get_battery_type()
+int ontim_get_battery_type(void)
 {
 	return battery_id_type;
 }
-static void ontim_form_lk_get_battery_id()
+static void ontim_form_lk_get_battery_id(void)
 {
 	int battery_type_name_len = 0;
 	const char *battery_type = NULL;
