@@ -1365,7 +1365,7 @@ static int hx83102d_0f_overlay(int ovl_type, int mode)
 
 static bool hx83102e_read_event_stack(uint8_t *buf, uint8_t length)
 {
-	struct timespec t_start, t_end, t_delta;
+	struct timespec t_start = {0}, t_end = {0}, t_delta = {0};
 	int len = length;
 	int i2c_speed = 0;
 
