@@ -1652,7 +1652,7 @@ END:
 static bool himax_mcu_read_event_stack(uint8_t *buf, uint8_t length)
 {
 	uint8_t cmd[DATA_LEN_4];
-	struct timespec t_start, t_end, t_delta;
+	struct timespec t_start = {0}, t_end = {0}, t_delta = {0};
 	int len = length;
 	int i2c_speed = 0;
 	int ret = 0;
