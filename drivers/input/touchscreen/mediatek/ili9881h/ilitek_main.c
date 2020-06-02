@@ -518,10 +518,16 @@ int ilitek_tddi_fw_upgrade_handler(void *data)
 	ipio_info("idev->chip->fw_ver  = 0x%02x \n",(idev->chip->fw_ver >> 8) & 0xff);
 	if(strstr(mtkfb_find_lcm_driver(),"ili9881h") != NULL)
 	{
-        snprintf(lcdname, sizeof(lcdname), "skyworth-ili9881h");
+		if(strstr(mtkfb_find_lcm_driver(),"b26ts") != NULL)
+		{
+			snprintf(lcdname, sizeof(lcdname), "skyworth-b26ts-ili9881h");
+			snprintf(vendor_name, sizeof(vendor_name), "skyworth-b26ts-ili9881h");
+		}else{
+			snprintf(lcdname, sizeof(lcdname), "skyworth-ili9881h");
+			snprintf(vendor_name, sizeof(vendor_name),"skyworth-ili9881h");
+		}
 	}
 	snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(idev->chip->fw_ver >> 8) & 0xff);
-	snprintf(vendor_name, sizeof(vendor_name),"skyworth-ili9881h");
     /* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
 
 
@@ -872,10 +878,16 @@ int ilitek_tddi_init(void)
 	ipio_info("idev->chip->fw_ver  = 0x%02x \n",(idev->chip->fw_ver >> 8) & 0xff);
 	if(strstr(mtkfb_find_lcm_driver(),"ili9881h") != NULL)
 	{
-        snprintf(lcdname, sizeof(lcdname), "skyworth-ili9881h");
+		if(strstr(mtkfb_find_lcm_driver(),"b26ts") != NULL)
+		{
+			snprintf(lcdname, sizeof(lcdname), "skyworth-b26ts-ili9881h");
+			snprintf(vendor_name, sizeof(vendor_name), "skyworth-b26ts-ili9881h");
+		}else{
+			snprintf(lcdname, sizeof(lcdname), "skyworth-ili9881h");
+			snprintf(vendor_name, sizeof(vendor_name),"skyworth-ili9881h");
+		}
 	}
 	snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(idev->chip->fw_ver >> 8) & 0xff);
-	snprintf(vendor_name, sizeof(vendor_name),"skyworth-ili9881h");
 	/* zhangyunfeng <add LCD and CTP hardware infomation node> end*/
 #endif
 
