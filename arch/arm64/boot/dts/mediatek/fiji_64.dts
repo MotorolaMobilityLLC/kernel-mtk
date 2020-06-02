@@ -157,15 +157,25 @@
 	};
 };
 /* TOUCH start */
-&spi2 {
+&i2c0 {
         #address-cells = <1>;
         #size-cells = <0>;
-        status = "okay";
-        touch_spi@0{
-            compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi";
-            reg = <0>;
-            spi-max-frequency = <10000000>;
-            status = "okay";
+        clock-frequency = <400000>;
+        mediatek,use-open-drain;
+        focaltech_touch_mtk:focaltech_touch@38 {
+                compatible = "mediatek,focaltech_touch";
+                reg = <0x38>;
+                status = "okay";
+        };
+        ilitek_touch_mtk:ilitek_touch@41 {
+                compatible = "mediatek,ilitek_touch";
+                reg = <0x41>;
+                status = "okay";
+        };
+        chipone_tddi_mtk:chipone_touch@48 {
+                compatible = "mediatek,chipone_tddi";
+                reg = <0x48>;
+                status = "okay";
         };
 };
 

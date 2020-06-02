@@ -29,6 +29,10 @@ enum LCM_DSI_MODE_CON lcm_dsi_mode;
 
 struct LCM_DRIVER *lcm_driver_list[] = {
 
+#if defined(ONTIM_ICNL9911S_HDPLUS_DSI_VDO_TRULY_601)
+	&ontim_icnl9911s_hdplus_dsi_vdo_truly_601_lcm_drv,
+#endif
+
 #if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_HLT)
 	&ontim_ili9881h_hdplus_dsi_vdo_hlt_lcm_drv,
 #endif
@@ -39,6 +43,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH_FLASHED)
 	&ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_lcm_drv,
+#endif
+
+#if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH_FLASHED_B26TS)
+	&ontim_ili9881h_hdplus_dsi_vdo_skyworth_flashed_b26ts_lcm_drv,
 #endif
 
 #if defined(ONTIM_ILI9881H_HDPLUS_DSI_VDO_SKYWORTH)
@@ -55,6 +63,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(ONTIM_FT8006P_HDPLUS_DSI_VDO_HLT)
 	&ontim_ft8006p_hdplus_dsi_vdo_hlt_lcm_drv,
+#endif
+
+#if defined(ONTIM_ICNL9911S_HDPLUS_DSI_VDO_EASYQUICK_608)
+	&ontim_icnl9911s_hdplus_dsi_vdo_easyquick_608_lcm_drv,
 #endif
 
 #if defined(FT8006S_HDPLUS_DSI_VDO_HOLITECH_6528)

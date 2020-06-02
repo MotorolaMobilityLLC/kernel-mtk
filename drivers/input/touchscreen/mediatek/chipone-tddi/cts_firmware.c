@@ -259,14 +259,18 @@ int cts_get_num_driver_builtin_firmware(void)
 
 const struct cts_firmware *cts_request_driver_builtin_firmware_by_name(const char *name)
 {
-    const struct cts_firmware *firmware;
-    int i;
+    const struct cts_firmware *firmware = NULL;
+    int i = 0;
 
     cts_info("Request driver builtin by name '%s'", name);
     if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
         firmware = cts_driver_builtin_firmwares_hjc;
-    } else {
+    } else if (LCM_INFO_RS_GLASS == g_lcm_info_flag){
         firmware = cts_driver_builtin_firmwares_rs;
+    } else if (LCM_INFO_601_GLASS == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_truly_601;
+    } else if (LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_easyquick_608;
     }
     //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < NUM_DRIVER_BUILTIN_FIRMWARE; i++, firmware++) {
@@ -290,16 +294,20 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_name(const cha
 
 const struct cts_firmware *cts_request_driver_builtin_firmware_by_index(u32 index)
 {
-    const struct cts_firmware *firmware;
+    const struct cts_firmware *firmware = NULL;
 
     cts_info("Request driver builtin by index %u", index);
 
     if (index < NUM_DRIVER_BUILTIN_FIRMWARE) {
         if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
             firmware = cts_driver_builtin_firmwares_hjc + index;
-        } else {
+        } else if (LCM_INFO_RS_GLASS == g_lcm_info_flag) {
             firmware = cts_driver_builtin_firmwares_rs + index;
-        }
+        }else if ((LCM_INFO_601_GLASS == g_lcm_info_flag)) {
+	    firmware = cts_driver_builtin_firmwares_truly_601 + index;
+	} else if ( LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
+             firmware = cts_driver_builtin_firmwares_easyquick_608 + index;
+	}
         //firmware = cts_driver_builtin_firmwares + index;
         if (is_firmware_valid(firmware)) {
             cts_info("Found driver builtin '%s' "
@@ -336,8 +344,12 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
 
     if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
         firmware = cts_driver_builtin_firmwares_hjc;
-	} else {
+    } else  if (LCM_INFO_RS_GLASS == g_lcm_info_flag) {
         firmware = cts_driver_builtin_firmwares_rs;
+    } else if (LCM_INFO_601_GLASS == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_truly_601;
+    } else if(LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_easyquick_608;
     }
     //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares_hjc); i++, firmware++) {
