@@ -963,7 +963,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 {
 	struct device_node *np = dev->dev.of_node;
 	unsigned int val;
-	int bat_id, multi_battery, active_table, i, j, ret, column;
+	int bat_id, multi_battery=0, active_table=0, i, j, ret, column;
 	char node_name[128];
 
 	fgauge_get_profile_id();
