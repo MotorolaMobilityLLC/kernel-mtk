@@ -589,5 +589,4 @@
 #include <fiji_64/cust.dtsi>
 #include "cust_mt6765_camera_fiji_64.dtsi"
 #include "fiji_64-fpsensor.dtsi"
-#include "aw87519.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
