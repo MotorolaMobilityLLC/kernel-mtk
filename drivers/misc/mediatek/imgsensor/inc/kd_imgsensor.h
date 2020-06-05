@@ -246,6 +246,8 @@
 #define S5K5E8YX_SENSOR_ID                      0x5e80
 #define S5K5E8YXREAR2_SENSOR_ID                 0x5e81
 #define S5K5E9_SENSOR_ID                        0x559b
+#define MELTA_S5KGM1ST_SENSOR_ID                0xF8D1
+
 /*HI*/
 #define HI841_SENSOR_ID                         0x0841
 #define HI707_SENSOR_ID                         0x00b8
@@ -301,6 +303,10 @@
 #define GC0313MIPI_YUV_SENSOR_ID                0xD0
 #define GC0312_SENSOR_ID                        0xb310
 #define GC5035_SENSOR_ID                        0x5035
+#define MELTA_SEA_GC5035_SENSOR_ID              (0x5035 + 1)
+#define MELTA_SUN_GC5035_SENSOR_ID             	(0x5035 + 2)
+
+
 #define GC8034_SENSOR_ID                        0x8044
 #define GC8C34_SENSOR_ID                        0x80C4
 /*SP*/
@@ -501,6 +507,10 @@
 #define SENSOR_DRVNAME_GC0312_YUV               "gc0312_yuv"
 #define SENSOR_DRVNAME_GC0313MIPI_YUV           "gc0313_mipi_yuv"
 #define SENSOR_DRVNAME_GC5035_MIPI_RAW           "gc5035_mipi_raw"
+#define SENSOR_DRVNAME_MELTA_SEA_GC5035_MIPI_RAW         "melta_sea_gc5035_mipi_raw"
+#define SENSOR_DRVNAME_MELTA_SUN_GC5035_MIPI_RAW         "melta_sun_gc5035_mipi_raw"
+#define SENSOR_DRVNAME_MELTA_S5KGM1ST_MIPI_RAW           "melta_s5kgm1st_mipi_raw"
+
 #define SENSOR_DRVNAME_GC8C34_MIPI_RAW          "gc8c34_mipi_raw"
 #define SENSOR_DRVNAME_GC8034_MIPI_RAW          "gc8034_mipi_raw"
 /*SP*/
