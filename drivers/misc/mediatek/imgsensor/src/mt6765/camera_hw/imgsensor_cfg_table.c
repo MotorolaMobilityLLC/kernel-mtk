@@ -413,7 +413,44 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
     },
 #endif
 /*AK57 end*/
-
+/* melta start*/
+#if defined(MELTA_S5KGM1ST_MIPI_RAW)
+	{SENSOR_DRVNAME_MELTA_S5KGM1ST_MIPI_RAW,
+	 {
+	  {RST, Vol_Low, 0},
+	  {DVDD, Vol_1200, 0},
+	  {AVDD, Vol_2800, 0},
+	  {DOVDD, Vol_1800, 0},
+	  {RST, Vol_High, 1},
+	  {SensorMCLK, Vol_High, 0},
+	  },
+	 },
+#endif
+#if defined(MELTA_SEA_GC5035_MIPI_RAW) 
+		 {SENSOR_DRVNAME_MELTA_SEA_GC5035_MIPI_RAW,
+		  {
+		   {SensorMCLK, Vol_High, 0},
+		   {RST, Vol_Low, 0},
+		   {DOVDD, Vol_1800, 0}, 
+		   {DVDD, Vol_1200, 0},
+		   {AVDD, Vol_2800, 1},
+		   {RST, Vol_High, 0},
+		   },
+		  },
+#endif
+#if defined(MELTA_SUN_GC5035_MIPI_RAW) 
+		 {SENSOR_DRVNAME_MELTA_SUN_GC5035_MIPI_RAW,
+		  {
+		   {SensorMCLK, Vol_High, 0},
+		   {RST, Vol_Low, 0},
+		   {DOVDD, Vol_1800, 0}, 
+		   {DVDD, Vol_1200, 0},
+		   {AVDD, Vol_2800, 1},
+		   {RST, Vol_High, 0},
+		   },
+		  },
+#endif
+/* melta end*/
 #if defined(IMX398_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_IMX398_MIPI_RAW,
