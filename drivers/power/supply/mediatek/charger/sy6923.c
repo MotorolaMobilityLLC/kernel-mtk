@@ -662,26 +662,6 @@ static int sy6923_do_event(struct charger_device *chg_dev, unsigned int event, u
 	return 0;
 }
 
-static int sy6923_enable_charging(struct charger_device *chg_dev, bool en)
-{
-	unsigned int status = 0;
-
-	if (en) {
-		sy6923_set_ce(0);
-		sy6923_set_hz_mode(0);
-		sy6923_set_opa_mode(0);
-		sy6923_set_te(1);
-
-		sy6923_set_iterm(2);
-		sy6923_set_vsp(3);
-
-	} else {
-		sy6923_set_ce(1);
-	}
-
-	return status;
-}
-
 static int sy6923_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 {
 	int status = 0;
@@ -702,6 +682,26 @@ static int sy6923_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 	return status;
 }
 
+static int sy6923_enable_charging(struct charger_device *chg_dev, bool en)
+{
+	unsigned int status = 0;
+
+	if (en) {
+		sy6923_set_ce(0);
+		sy6923_set_hz_mode(0);
+		sy6923_set_opa_mode(0);
+		sy6923_set_te(1);
+
+		sy6923_set_iterm(2);
+		sy6923_set_vsp(3);
+
+	} else {
+//		sy6923_set_ce(1);
+		sy6923_set_cv_voltage(chg_dev,3500000);
+	}
+
+	return status;
+}
 static int sy6923_get_current(struct charger_device *chg_dev, u32 *ichg)
 {
 	int status = 0;
@@ -943,10 +943,12 @@ static int sy6923_driver_probe(struct i2c_client *client, const struct i2c_devic
 	sy6923_reg_config_interface(0x06, 0x7c);	/* ISAFE = 1550mA, VSAFE = 4.44V */
 
 	sy6923_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	sy6923_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
+	sy6923_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
 	sy6923_reg_config_interface(0x05, 0x03);
 
 	sy6923_reg_config_interface(0x04, 0x1A);	/* 146mA */
+
+       sy6923_reg_config_interface(0x02, 0x02);//cccv 3.5v
 
 	sy6923_dump_register(info->chg_dev);
 
