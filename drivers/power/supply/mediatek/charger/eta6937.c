@@ -702,28 +702,6 @@ static void eta6937_wirte_reg6(void)
 	}
 }
 
-static int eta6937_enable_charging(struct charger_device *chg_dev, bool en)
-{
-	unsigned int status = 0;
-
-	if (en) {
-
-	eta6937_wirte_reg6();
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
-				0x08,
-				0x0f,
-				0
-				);
-		eta6937_set_iterm(2);
-		eta6937_set_ioffset(0);
-		eta6937_set_vsp(3);
-	} else {
-		eta6937_set_ce(1);
-	}
-
-	return status;
-}
-
 static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 {
 	int status = 0;
@@ -740,6 +718,29 @@ static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 	pr_info("charging_set_cv_voltage register_value=0x%x %d %d\n",
 	 register_value, cv, set_cv_voltage);
 	eta6937_set_oreg(register_value);
+
+	return status;
+}
+
+static int eta6937_enable_charging(struct charger_device *chg_dev, bool en)
+{
+	unsigned int status = 0;
+
+	if (en) {
+
+	eta6937_wirte_reg6();
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				0x08,
+				0x0f,
+				0
+				);
+		eta6937_set_iterm(2);
+		eta6937_set_ioffset(0);
+		eta6937_set_vsp(3);
+	} else {
+//		eta6937_set_ce(1);
+		eta6937_set_cv_voltage(chg_dev,3500000);
+	}
 
 	return status;
 }
@@ -974,10 +975,12 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
 
 	eta6937_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	eta6937_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
+	eta6937_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
 	eta6937_reg_config_interface(0x05, 0x03);
 
 	eta6937_reg_config_interface(0x04, 0x1A);	/* 146mA */
+
+       eta6937_reg_config_interface(0x02, 0x02);//cccv 3.5v
 
 	eta6937_dump_register(info->chg_dev);
 
