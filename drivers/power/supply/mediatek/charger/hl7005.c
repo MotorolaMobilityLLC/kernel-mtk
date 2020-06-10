@@ -662,22 +662,6 @@ static int hl7005_do_event(struct charger_device *chg_dev, unsigned int event, u
 	return 0;
 }
 
-static int hl7005_enable_charging(struct charger_device *chg_dev, bool en)
-{
-	unsigned int status = 0;
-
-	if (en) {
-		hl7005_set_ce(0);
-		hl7005_set_hz_mode(0);
-		hl7005_set_opa_mode(0);
-		hl7005_set_te(1);
-	} else {
-		hl7005_set_ce(1);
-	}
-
-	return status;
-}
-
 static int hl7005_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 {
 	int status = 0;
@@ -698,6 +682,24 @@ static int hl7005_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 
 	return status;
 }
+
+static int hl7005_enable_charging(struct charger_device *chg_dev, bool en)
+{
+	unsigned int status = 0;
+
+	if (en) {
+		hl7005_set_ce(0);
+		hl7005_set_hz_mode(0);
+		hl7005_set_opa_mode(0);
+		hl7005_set_te(1);
+	} else {
+//		hl7005_set_ce(1);
+		hl7005_set_cv_voltage(chg_dev,3500000);
+	}
+
+	return status;
+}
+
 
 static int hl7005_get_current(struct charger_device *chg_dev, u32 *ichg)
 {
@@ -932,10 +934,12 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 	hl7005_reg_config_interface(0x06, 0x7c);	/* ISAFE = 2450mA, VSAFE = 4.4V */
 
 	hl7005_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	hl7005_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
+	hl7005_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
 	hl7005_reg_config_interface(0x05, 0x03);
 
 	hl7005_reg_config_interface(0x04, 0x1A);	/* 146mA */
+
+       hl7005_reg_config_interface(0x02, 0x02);//cccv 3.5v
 
 	hl7005_dump_register(info->chg_dev);
 
