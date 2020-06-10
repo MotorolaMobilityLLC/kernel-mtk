@@ -663,27 +663,6 @@ static int bq24157_do_event(struct charger_device *chg_dev, unsigned int event, 
 	return 0;
 }
 
-static int bq24157_enable_charging(struct charger_device *chg_dev, bool en)
-{
-	unsigned int status = 0;
-
-	if (en) {
-		bq24157_set_ce(0);
-		bq24157_set_hz_mode(0);
-		bq24157_set_opa_mode(0);
-		bq24157_set_te(1);
-
-		bq24157_set_iterm(2);
-		bq24157_set_vsp(3);
-		
-	} else {
-		bq24157_set_ce(1);
-		bq24157_set_hz_mode(1);
-}
-
-	return status;
-}
-
 static int bq24157_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 {
 	int status = 0;
@@ -707,6 +686,28 @@ static int bq24157_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 	pr_info("charging_set_cv_voltage register_value=0x%x %d %d\n",
 	 register_value, cv, set_cv_voltage);
 	bq24157_set_oreg(register_value);
+
+	return status;
+}
+
+static int bq24157_enable_charging(struct charger_device *chg_dev, bool en)
+{
+	unsigned int status = 0;
+
+	if (en) {
+		bq24157_set_ce(0);
+		bq24157_set_hz_mode(0);
+		bq24157_set_opa_mode(0);
+		bq24157_set_te(1);
+
+		bq24157_set_iterm(2);
+		bq24157_set_vsp(3);
+		
+	} else {
+//		bq24157_set_ce(1);
+//		bq24157_set_hz_mode(1);
+		bq24157_set_cv_voltage(chg_dev,3500000);
+}
 
 	return status;
 }
@@ -1003,12 +1004,14 @@ static int bq24157_driver_probe(struct i2c_client *client, const struct i2c_devi
 	bq24157_reg_config_interface(0x06, 0xac);	/* ISAFE = 1550mA, VSAFE = 4.4V */
 
 	bq24157_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	bq24157_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
+	bq24157_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
 	bq24157_reg_config_interface(0x05, 0x83);
 
 	bq24157_reg_config_interface(0x04, 0x02);	
 
 	bq24157_set_otg_pl(1);
+
+       bq24157_reg_config_interface(0x02, 0x02);//cccv 3.5v
 
 	bq24157_dump_register(info->chg_dev);
 
