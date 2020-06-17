@@ -266,6 +266,13 @@ int bq25601_set_chargecurrent(struct bq25601 *bq, int curr)
 	return bq25601_update_bits(bq, BQ25601_REG_02, REG02_ICHG_MASK,
 				   ichg << REG02_ICHG_SHIFT);
 }
+int bq25601_set_topoff_timer(struct bq25601 *bq, int time)
+{
+
+	return bq25601_update_bits(bq, BQ25601_REG_04, REG04_TOPOFF_TIMER_MASK,
+				   time << REG04_TOPOFF_TIMER_SHIFT);
+}
+
 
 int bq25601_set_term_current(struct bq25601 *bq, int curr)
 {
@@ -786,6 +793,9 @@ static int bq25601_init_device(struct bq25601 *bq)
 	ret = bq25601_set_term_current(bq, bq->platform_data->iterm);
 	if (ret)
 		pr_info("Failed to set termination current, ret = %d\n", ret);
+
+	ret = bq25601_set_topoff_timer(bq, 0);
+
 
 	ret = bq25601_set_boost_voltage(bq, bq->platform_data->boostv);
 	if (ret)
