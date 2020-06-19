@@ -1272,6 +1272,8 @@ static int bq25601_charger_probe(struct i2c_client *client,
 	       strncpy(charge_ic_vendor_name,"SY6974",20);
 	else if ( bq->part_no == 0x0f)
        	strncpy(charge_ic_vendor_name,"BQ25601",20);
+	else if ( bq->part_no == 0x02)
+       	strncpy(charge_ic_vendor_name,"SGM41511",20);
 
 
 	bq->platform_data = bq25601_parse_dt(node, bq);
