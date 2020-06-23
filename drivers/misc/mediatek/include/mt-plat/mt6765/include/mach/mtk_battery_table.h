@@ -88,6 +88,17 @@ int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {
 	400000, 1100000, 1500000, -1};
 
 int battery_total_number=1;
+/* battery PN number for malta */
+#ifdef CONFIG_MALTA_BATTERY_PN_NUMBER
+#define BATTERY_TOTAL_NUM 4
+char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
+	"KG50-SB18C77666-4000mah",
+	"KG50-SB18C77667-4000mah",
+	"KG50-nobattery-4000mah",
+	"KG50-nobattery-4000mah",
+};
+#else
+/* battery PN number for blackjackQ */
 #define BATTERY_TOTAL_NUM 6
 char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
 	"JK50-SB18C28957-5000mah",
@@ -97,6 +108,7 @@ char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
 	"JK50-SB18C44581-5000mah",
 	"JK50-SB18C45530-5000mah",
 };
+#endif
 
 int g_FG_PSEUDO1[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	/*bat1,   bat2,   bat3,    bat4*/
