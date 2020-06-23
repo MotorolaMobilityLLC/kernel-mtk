@@ -1756,16 +1756,16 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == 0x5035) {	
 				ModuleId = gc5035_otp_identify(*sensor_id);		
 				cam_pr_debug("ModuleId=0x%x, sensor id: 0x%x\n",ModuleId, *sensor_id);
-				//if (ModuleId == 0xaa) //seasuns module
-				//{
+				if (ModuleId == 0x50) //seasuns module
+				{
 					memset(front_cam_name, 0x00, sizeof(front_cam_name));
 					memcpy(front_cam_name, "1_seasons_gc5035", 64);
 					*sensor_id = MELTA_SEA_GC5035_SENSOR_ID;
 					cam_pr_debug("Now using seasons module,ModuleId = 0x%x sensor_id=0x%x\n",ModuleId,*sensor_id);
 					return ERROR_NONE;
-				//}
-				//else
-				//	cam_pr_debug("Now using module isnot seasons,ModuleId = 0x%x\n",ModuleId);
+				}
+				else
+					cam_pr_debug("Now using module isnot seasons,ModuleId = 0x%x\n",ModuleId);
 			}
 			cam_pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",imgsensor.i2c_write_id, *sensor_id);
 			retry--;
