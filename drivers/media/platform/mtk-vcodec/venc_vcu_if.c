@@ -186,7 +186,7 @@ static int vcu_enc_send_msg(struct venc_vcu_inst *vcu, void *msg,
 	if (vcu->abort)
 		return -EIO;
 
-	status = vcu_ipi_send(vcu->dev, vcu->id, msg, len);
+	status = vcu_ipi_send(vcu->dev, vcu->id, msg, len, vcu);
 	if (status) {
 		mtk_vcodec_err(vcu, "vcu_ipi_send msg_id %x len %d fail %d",
 					   *(uint32_t *)msg, len, status);
