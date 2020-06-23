@@ -12,7 +12,12 @@
  */
 
 #include "mdp_m4u.h"
+#include "cmdq_record.h"
+#ifndef MDP_META_IN_LEGACY_V2
 #include "cmdq_helper_ext.h"
+#else
+#include "cmdq_core.h"
+#endif
 #include <ion_drv.h>
 #ifdef CONFIG_MTK_IOMMU_V2
 #include "mach/mt_iommu.h"

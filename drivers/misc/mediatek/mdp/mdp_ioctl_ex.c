@@ -454,6 +454,7 @@ static s32 cmdq_mdp_handle_setup(struct mdp_submit *user_job,
 				struct task_private *desc_private,
 				struct cmdqRecStruct *handle)
 {
+#ifndef MDP_META_IN_LEGACY_V2
 	const u64 inorder_mask = 1ll << CMDQ_ENG_INORDER;
 
 	handle->engineFlag = user_job->engine_flag & ~inorder_mask;
@@ -480,7 +481,10 @@ static s32 cmdq_mdp_handle_setup(struct mdp_submit *user_job,
 		handle->prop_addr = NULL;
 		handle->prop_size = 0;
 	}
-
+#else
+	handle->engineFlag = user_job->engine_flag;
+	handle->priority = user_job->priority;
+#endif
 	return 0;
 }
 
@@ -598,12 +602,13 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 	exec_cost = sched_clock();
 	status = translate_user_job(&user_job, mapping_job, handle);
 	exec_cost = div_s64(sched_clock() - exec_cost, 1000);
-	if (exec_cost > 3000)
+	if (exec_cost > 3000) {
 		CMDQ_ERR("[warn]translate job[%d] cost:%lluus\n",
 			user_job.meta_count, exec_cost);
-	else
+	} else {
 		CMDQ_MSG("[log]translate job[%d] cost:%lluus\n",
 			user_job.meta_count, exec_cost);
+	}
 	if (status < 0) {
 		CMDQ_ERR("%s translate fail:%d\n", __func__, status);
 		cmdq_task_destroy(handle);
@@ -625,8 +630,10 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 	if (status < 0) {
 		CMDQ_ERR("%s flush fail:%d\n", __func__, status);
 		if (handle) {
+#ifndef MDP_META_IN_LEGACY_V2
 			if (handle->thread != CMDQ_INVALID_THREAD)
 				cmdq_mdp_unlock_thread(handle);
+#endif
 			cmdq_task_destroy(handle);
 		}
 
