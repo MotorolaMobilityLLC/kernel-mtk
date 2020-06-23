@@ -19,6 +19,8 @@
 #include "cmdq_sec.h"
 #include "cmdq_struct.h"
 #include "cmdq_virtual.h"
+#include "mdp_ioctl_ex.h"
+#include "mdp_def_ex.h"
 
 #include <linux/cdev.h>
 #include <linux/errno.h>
@@ -64,11 +66,12 @@ static const struct of_device_id cmdq_of_ids[] = {
 	{} };
 #endif
 
-#define CMDQ_MAX_DUMP_REG_COUNT (2048)
-
 static dev_t gCmdqDevNo;
 static struct cdev *gCmdqCDev;
 static struct class *gCMDQClass;
+
+void cmdq_driver_dump_readback(u32 *addrs, u32 count, u32 *values)
+{}
 
 static ssize_t cmdq_driver_dummy_write(struct device *dev,
 				       struct device_attribute *attr,
@@ -148,7 +151,9 @@ static const struct file_operations cmdqDebugInstructionCountOp = {
 };
 #endif
 
+#if 0
 static u64 job_mapping_idx = 1;
+#endif
 static struct list_head job_mapping_list;
 struct cmdq_job_mapping_struct {
 	u64 id;
@@ -436,7 +441,7 @@ static long cmdq_driver_create_secure_medadata(
 	return 0;
 }
 
-static long cmdq_driver_process_command_request(
+long cmdq_driver_process_command_request(
 	struct cmdqCommandStruct *pCommand)
 {
 	int32_t status = 0;
@@ -550,24 +555,81 @@ bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
 #endif
 }
 
+s32 cmdq_driver_ioctl_query_usage(struct file *pf, unsigned long param)
+{
+	int count[CMDQ_MAX_ENGINE_COUNT] = {0};
+
+	if (cmdqCoreQueryUsage(count))
+		return -EFAULT;
+
+	if (copy_to_user((void *)param, count,
+		sizeof(int32_t) * CMDQ_MAX_ENGINE_COUNT)) {
+		CMDQ_ERR("CMDQ_IOCTL_QUERY_USAGE copy_to_user failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+s32 cmdq_driver_ioctl_query_cap_bits(unsigned long param)
+{
+	int capBits = 0;
+
+	if (cmdq_driver_support_wait_and_receive_event_in_same_tick())
+		capBits |= (1L << CMDQ_CAP_WFE);
+	else
+		capBits &= ~(1L << CMDQ_CAP_WFE);
+
+	if (copy_to_user((void *)param, &capBits, sizeof(int))) {
+		CMDQ_ERR("Copy capacity bits to user space failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+s32 cmdq_driver_ioctl_query_dts(unsigned long param)
+{
+	struct cmdqDTSDataStruct *pDtsData;
+
+	pDtsData = cmdq_core_get_whole_DTS_Data();
+
+	if (copy_to_user((void *)param, pDtsData,
+		sizeof(struct cmdqDTSDataStruct))) {
+		CMDQ_ERR("Copy device tree to user space failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+s32 cmdq_driver_ioctl_notify_engine(unsigned long param)
+{
+	uint64_t engineFlag;
+
+	if (copy_from_user(&engineFlag, (void *)param, sizeof(uint64_t))) {
+		CMDQ_ERR("CMDQ_IOCTL_NOTIFY_ENGINE copy_from_user failed\n");
+		return -EFAULT;
+	}
+	cmdqCoreLockResource(engineFlag, true);
+	return true;
+}
+
 static long cmdq_ioctl(struct file *pFile, unsigned int code,
 		       unsigned long param)
 {
+	int32_t status;
+
+#if 0
 	struct cmdqCommandStruct command;
 	struct cmdqJobStruct job;
-	int count[CMDQ_MAX_ENGINE_COUNT];
-	struct TaskStruct *pTask;
-	int32_t status;
+	struct TaskStruct *pTask = NULL;
 	struct cmdqJobResultStruct jobResult;
 	uint32_t *userRegValue = NULL;
 	uint32_t userRegCount = 0;
 	/* backup value after task release */
 	uint32_t regCount = 0, regCountUserSpace = 0, regUserToken = 0;
-	int capBits = 0;
-
 	struct cmdq_job_mapping_struct *mapping_job = NULL, *tmp = NULL;
-
+#endif
 	switch (code) {
+#if 0
 	case CMDQ_IOCTL_EXEC_COMMAND:
 		if (copy_from_user(&command, (void *)param,
 				   sizeof(struct cmdqCommandStruct)))
@@ -579,17 +641,6 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code,
 
 		if (cmdq_driver_process_command_request(&command))
 			return -EFAULT;
-		break;
-	case CMDQ_IOCTL_QUERY_USAGE:
-		if (cmdqCoreQueryUsage(count))
-			return -EFAULT;
-
-		if (copy_to_user((void *)param, count,
-				 sizeof(int32_t) * CMDQ_MAX_ENGINE_COUNT)) {
-			CMDQ_ERR(
-				"CMDQ_IOCTL_QUERY_USAGE copy_to_user failed\n");
-			return -EFAULT;
-		}
 		break;
 	case CMDQ_IOCTL_ASYNC_JOB_EXEC:
 		if (copy_from_user(&job,
@@ -858,43 +909,38 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code,
 
 		} while (0);
 		break;
+#endif
+	case CMDQ_IOCTL_QUERY_USAGE:
+		status = cmdq_driver_ioctl_query_usage(pFile, param);
+		break;
 	case CMDQ_IOCTL_QUERY_CAP_BITS:
-		if (cmdq_driver_support_wait_and_receive_event_in_same_tick())
-			capBits |= (1L << CMDQ_CAP_WFE);
-		else
-			capBits &= ~(1L << CMDQ_CAP_WFE);
-
-		if (copy_to_user((void *)param, &capBits, sizeof(int))) {
-			CMDQ_ERR("Copy capacity bits to user space failed\n");
-			return -EFAULT;
-		}
+		status = cmdq_driver_ioctl_query_cap_bits(param);
 		break;
 	case CMDQ_IOCTL_QUERY_DTS:
-		do {
-			struct cmdqDTSDataStruct *pDtsData;
-
-			pDtsData = cmdq_core_get_whole_DTS_Data();
-
-			if (copy_to_user((void *)param, pDtsData,
-					 sizeof(struct cmdqDTSDataStruct))) {
-				CMDQ_ERR(
-					"Copy device tree information to user space failed\n");
-				return -EFAULT;
-			}
-		} while (0);
+		status = cmdq_driver_ioctl_query_dts(param);
 		break;
 	case CMDQ_IOCTL_NOTIFY_ENGINE:
-		do {
-			uint64_t engineFlag;
-
-			if (copy_from_user(&engineFlag, (void *)param,
-					   sizeof(uint64_t))) {
-				CMDQ_ERR(
-					"CMDQ_IOCTL_NOTIFY_ENGINE copy_from_user failed\n");
-				return -EFAULT;
-			}
-			cmdqCoreLockResource(engineFlag, true);
-		} while (0);
+		status = cmdq_driver_ioctl_notify_engine(param);
+		break;
+	case CMDQ_IOCTL_ASYNC_EXEC:
+		CMDQ_MSG("ioctl CMDQ_IOCTL_ASYNC_EXEC\n");
+		status = mdp_ioctl_async_exec(pFile, param);
+		break;
+	case CMDQ_IOCTL_ASYNC_WAIT:
+		CMDQ_MSG("ioctl CMDQ_IOCTL_ASYNC_WAIT\n");
+		status = mdp_ioctl_async_wait(param);
+		break;
+	case CMDQ_IOCTL_ALLOC_READBACK_SLOTS:
+		CMDQ_MSG("ioctl CMDQ_IOCTL_ALLOC_READBACK_SLOTS\n");
+		status = mdp_ioctl_alloc_readback_slots(pFile, param);
+		break;
+	case CMDQ_IOCTL_FREE_READBACK_SLOTS:
+		CMDQ_MSG("ioctl CMDQ_IOCTL_FREE_READBACK_SLOTS\n");
+		status = mdp_ioctl_free_readback_slots(param);
+		break;
+	case CMDQ_IOCTL_READ_READBACK_SLOTS:
+		CMDQ_MSG("ioctl CMDQ_IOCTL_READ_READBACK_SLOTS\n");
+		status = mdp_ioctl_read_readback_slots(param);
 		break;
 	default:
 		CMDQ_ERR("unrecognized ioctl 0x%08x\n", code);
@@ -919,6 +965,11 @@ static long cmdq_ioctl_compat(struct file *pFile, unsigned int code,
 	case CMDQ_IOCTL_QUERY_CAP_BITS:
 	case CMDQ_IOCTL_QUERY_DTS:
 	case CMDQ_IOCTL_NOTIFY_ENGINE:
+	case CMDQ_IOCTL_ASYNC_EXEC:
+	case CMDQ_IOCTL_ASYNC_WAIT:
+	case CMDQ_IOCTL_ALLOC_READBACK_SLOTS:
+	case CMDQ_IOCTL_FREE_READBACK_SLOTS:
+	case CMDQ_IOCTL_READ_READBACK_SLOTS:
 		/* All ioctl structures should be the same size in 32-bit and
 		 * 64-bit linux.
 		 */
@@ -1126,6 +1177,7 @@ static int cmdq_probe(struct platform_device *pDevice)
 
 	INIT_LIST_HEAD(&job_mapping_list);
 
+	mdp_limit_dev_create(pDevice);
 	CMDQ_MSG("CMDQ driver probe end\n");
 
 	return 0;
@@ -1271,6 +1323,7 @@ static void __exit cmdq_exit(void)
 
 	/* De-Initialize cmdq dev related data */
 	cmdq_dev_deinit();
+	mdp_limit_dev_destroy();
 
 	CMDQ_MSG("CMDQ driver exit end\n");
 }
@@ -1283,12 +1336,25 @@ static int __init cmdq_init_allocate_WSM(void)
 	CMDQ_MSG("CMDQ driver late init begin\n");
 
 	status = cmdqCoreLateInitialize();
+	status = mdp_limit_late_init();
 
 	CMDQ_MSG("CMDQ driver late init end\n");
 
 	return 0;
 }
 late_initcall(cmdq_init_allocate_WSM);
+#else
+static int __init mdp_late_init(void)
+{
+	int status;
+
+	CMDQ_LOG("%s begin\n", __func__);
+	status = mdp_limit_late_init();
+	CMDQ_LOG("%s end\n", __func__);
+
+	return 0;
+}
+late_initcall(mdp_late_init);
 #endif
 
 subsys_initcall(cmdq_init);
