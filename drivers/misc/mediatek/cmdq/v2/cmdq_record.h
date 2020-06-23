@@ -663,6 +663,11 @@ int32_t cmdqRecWriteAndReleaseResource(cmdqRecHandle handle,
 				       uint32_t mask);
 
 /* MDP META use */
+	struct op_meta;
+	struct mdp_submit;
+
+	s32 cmdq_op_write_reg_ex(struct cmdqRecStruct *handle, u32 addr,
+		CMDQ_VARIABLE argument, u32 mask);
 	s32 cmdq_op_acquire(struct cmdqRecStruct *handle,
 		enum CMDQ_EVENT_ENUM event);
 	s32 cmdq_op_write_from_reg(struct cmdqRecStruct *handle,
@@ -678,6 +683,11 @@ int32_t cmdqRecWriteAndReleaseResource(cmdqRecHandle handle,
 		struct cmdqRecStruct *handle);
 	void cmdq_mdp_release_task_by_file_node(void *file_node);
 	void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out);
+	s32 cmdq_mdp_update_sec_addr_index(struct cmdqRecStruct *handle,
+		u32 sec_handle, u32 index, u32 instr_index);
+	u32 cmdq_mdp_handle_get_instr_count(struct cmdqRecStruct *handle);
+	void cmdq_mdp_meta_replace_sec_addr(struct op_meta *metas,
+		struct mdp_submit *user_job, struct cmdqRecStruct *handle);
 
 #define CMDQ_CLT_MDP 0
 #define CMDQ_MAX_USER_PROP_SIZE		(1024)

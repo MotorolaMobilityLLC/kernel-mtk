@@ -16,6 +16,7 @@
 #include <linux/cdev.h>
 #include <linux/errno.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <linux/spinlock.h>
 #include <linux/sched.h>
 
@@ -119,7 +120,7 @@ struct mdp_job_mapping {
 };
 static DEFINE_MUTEX(mdp_job_mapping_list_mutex);
 
-#define SLOT_GROUP_NUM 12
+#define SLOT_GROUP_NUM 64
 #define MAX_RB_SLOT_NUM (SLOT_GROUP_NUM*64)
 #define MAX_COUNT_IN_RB_SLOT 0x1000 /* 4KB */
 #define SLOT_ID_SHIFT 16
@@ -317,14 +318,14 @@ static s32 translate_meta(struct op_meta *meta,
 		reg_addr = cmdq_mdp_get_hw_reg(meta->engine, meta->offset);
 		if (!reg_addr || !mva)
 			return -EINVAL;
-		status = cmdq_op_write_reg(handle, reg_addr, mva, ~0);
+		status = cmdq_op_write_reg_ex(handle, reg_addr, mva, ~0);
 		break;
 	}
 	case CMDQ_MOP_WRITE:
 		reg_addr = cmdq_mdp_get_hw_reg(meta->engine, meta->offset);
 		if (!reg_addr)
 			return -EINVAL;
-		status = cmdq_op_write_reg(handle, reg_addr,
+		status = cmdq_op_write_reg_ex(handle, reg_addr,
 					meta->value, meta->mask);
 		break;
 	case CMDQ_MOP_READ:
@@ -381,6 +382,18 @@ static s32 translate_meta(struct op_meta *meta,
 		status = cmdq_op_write_from_reg(handle, reg_addr, from_reg);
 		break;
 	}
+	case CMDQ_MOP_WRITE_SEC:
+	{
+		reg_addr = cmdq_mdp_get_hw_reg(meta->engine, meta->offset);
+		if (!reg_addr)
+			return -EINVAL;
+		status = cmdq_op_write_reg_ex(handle, reg_addr,
+					meta->value, ~0);
+		if (!status)
+			status = cmdq_mdp_update_sec_addr_index(handle,
+				meta->sec_handle, meta->sec_index,
+				cmdq_mdp_handle_get_instr_count(handle) - 1);
+	}
 	case CMDQ_MOP_NOP:
 		break;
 	default:
@@ -408,7 +421,7 @@ static s32 translate_user_job(struct mdp_submit *user_job,
 	u64 exec_cost;
 
 	exec_cost = sched_clock();
-	metas = kmalloc(copy_size, GFP_KERNEL);
+	metas = vmalloc(copy_size);
 	if (!metas) {
 		CMDQ_ERR("allocate metas fail size:%u\n", copy_size);
 		return -ENOMEM;
@@ -418,12 +431,13 @@ static s32 translate_user_job(struct mdp_submit *user_job,
 	exec_cost = sched_clock();
 	if (copy_from_user(metas, CMDQ_U32_PTR(user_job->metas), copy_size)) {
 		CMDQ_ERR("copy metas from user fail size:%u\n", copy_size);
-		kfree(metas);
+		vfree(metas);
 		return -EINVAL;
 	}
 	exec_cost = div_s64(sched_clock() - exec_cost, 1000);
 	CMDQ_MSG("[log]%s copy from user cost:%lluus\n", __func__, exec_cost);
 
+	cmdq_mdp_meta_replace_sec_addr(metas, user_job, handle);
 #ifdef TRACK_PERF_MON
 	memset(trans_perf_mon_cost, 0, sizeof(u64)*CMDQ_MOP_NOP);
 	memset(trans_perf_mon_count, 0, sizeof(u32)*CMDQ_MOP_NOP);
@@ -446,7 +460,7 @@ static s32 translate_user_job(struct mdp_submit *user_job,
 				div_s64(trans_perf_mon_cost[i], 1000));
 	}
 #endif
-	kfree(metas);
+	vfree(metas);
 	return status;
 }
 
@@ -624,6 +638,7 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 		return status;
 	}
 
+	/* cmdq_pkt_dump_command(handle); */
 	/* flush */
 	status = cmdq_mdp_handle_flush(handle);
 
@@ -835,12 +850,13 @@ s32 mdp_ioctl_free_readback_slots(unsigned long param)
 	}
 	if (!(alloc_slot[free_slot_group] & (1LL << free_slot))) {
 		mutex_unlock(&rb_slot_list_mutex);
-		CMDQ_ERR("%s group[%d]:%llx\n", __func__,
-			free_slot_group, alloc_slot[free_slot_group]);
+		CMDQ_ERR("%s %d not in group[%d]:%llx\n", __func__,
+			free_req.start_id, free_slot_group,
+			alloc_slot[free_slot_group]);
 		return -EINVAL;
 	}
 	alloc_slot[free_slot_group] &= ~(1LL << free_slot);
-	if (!ffz(alloc_slot[free_slot_group]))
+	if (ffz(alloc_slot[free_slot_group]) != 64)
 		alloc_slot_group &= ~(1LL << free_slot_group);
 
 	paStart = rb_slot[free_slot_index].pa_start;
