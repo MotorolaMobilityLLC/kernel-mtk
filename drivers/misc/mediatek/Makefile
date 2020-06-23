@@ -118,6 +118,7 @@ obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_MLOG) += mlog/
 obj-y += cameraisp/
 obj-$(CONFIG_MTK_CMDQ) += cmdq/
+obj-$(CONFIG_MTK_CMDQ) += mdp/
 obj-$(CONFIG_MTK_CMDQ_TAB) += cmdq/
 obj-$(CONFIG_MTK_CQDMA) += cqdma/
 obj-$(CONFIG_MTK_LCM) += lcm/
