@@ -41,3 +41,10 @@ config ONTIM_GET_BATTERY_ID_NV
 	help
 	Set Yes to enable the get battery id nv
 	Set No to disable the get battery id nv
+
+config MALTA_BATTERY_PN_NUMBER
+	bool "Enable Malta PN number"
+	default n
+	help
+	Set Yes to enable the malta pn number
+	Set No to disable the malta pn number

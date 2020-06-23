@@ -572,8 +572,8 @@
 	};
 };
 
-#include "bat_setting/mt6765_battery_table_blackjack.dtsi"
-#include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
+#include "bat_setting/mt6765_battery_table_malta.dtsi"
+#include "bat_setting/mt6765_battery_table_malta_2.dtsi"
 
 #include <malta/cust.dtsi>
 #include "cust_mt6765_camera_malta.dtsi"
