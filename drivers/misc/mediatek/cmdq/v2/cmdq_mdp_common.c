@@ -989,11 +989,19 @@ u32 cmdq_mdp_get_hw_reg(enum MDP_ENG_BASE base, u16 offset)
 		CMDQ_ERR("%s: invalid offset:%#x\n", __func__, offset);
 		return 0;
 	}
+	offset &= ~0x3;
 	if (base >= ENGBASE_COUNT) {
 		CMDQ_ERR("%s: invalid engine:%u, offset:%#x\n",
 			__func__, base, offset);
 		return 0;
 	}
+	if (mdp_base[base] == cmdq_dev_get_module_base_PA_GCE() &&
+		offset != 0x90) {
+		CMDQ_ERR("%s: invalid engine:%u, offset:%#x\n",
+			__func__, base, offset);
+		return 0;
+	}
+
 	return mdp_base[base] + offset;
 }
 

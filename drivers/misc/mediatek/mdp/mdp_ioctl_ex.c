@@ -129,6 +129,7 @@ static DEFINE_MUTEX(mdp_job_mapping_list_mutex);
 struct mdp_readback_slot {
 	u32 count;
 	dma_addr_t pa_start;
+	void *fp;
 };
 
 static struct mdp_readback_slot rb_slot[MAX_RB_SLOT_NUM];
@@ -804,6 +805,7 @@ s32 mdp_ioctl_alloc_readback_slots(void *fp, unsigned long param)
 	alloc_slot_index = free_slot + free_slot_group * 64;
 	rb_slot[alloc_slot_index].count = rb_req.count;
 	rb_slot[alloc_slot_index].pa_start = paStart;
+	rb_slot[alloc_slot_index].fp = fp;
 	CMDQ_MSG("%s get 0x%pa in %d\n", __func__, &paStart, alloc_slot_index);
 	CMDQ_MSG("%s alloc slot[%d] %#llx, %#llx\n", __func__, free_slot_group,
 		alloc_slot[free_slot_group], alloc_slot_group);
@@ -820,7 +822,7 @@ s32 mdp_ioctl_alloc_readback_slots(void *fp, unsigned long param)
 	return 0;
 }
 
-s32 mdp_ioctl_free_readback_slots(unsigned long param)
+s32 mdp_ioctl_free_readback_slots(void *fp, unsigned long param)
 {
 	struct mdp_readback free_req;
 	u32 free_slot_index, free_slot_group, free_slot;
@@ -853,6 +855,12 @@ s32 mdp_ioctl_free_readback_slots(unsigned long param)
 		CMDQ_ERR("%s %d not in group[%d]:%llx\n", __func__,
 			free_req.start_id, free_slot_group,
 			alloc_slot[free_slot_group]);
+		return -EINVAL;
+	}
+	if (rb_slot[free_slot_index].fp != fp) {
+		mutex_unlock(&rb_slot_list_mutex);
+		CMDQ_ERR("%s fp %p different:%p\n", __func__,
+			fp, rb_slot[free_slot_index].fp);
 		return -EINVAL;
 	}
 	alloc_slot[free_slot_group] &= ~(1LL << free_slot);
@@ -925,7 +933,7 @@ static long mdp_limit_ioctl(struct file *pf, unsigned int code,
 		break;
 	case CMDQ_IOCTL_FREE_READBACK_SLOTS:
 		CMDQ_MSG("ioctl CMDQ_IOCTL_FREE_READBACK_SLOTS\n");
-		status = mdp_ioctl_free_readback_slots(param);
+		status = mdp_ioctl_free_readback_slots(pf, param);
 		break;
 	case CMDQ_IOCTL_READ_READBACK_SLOTS:
 		CMDQ_MSG("ioctl CMDQ_IOCTL_READ_READBACK_SLOTS\n");
