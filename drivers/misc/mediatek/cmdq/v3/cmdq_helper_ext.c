@@ -138,7 +138,8 @@ enum xpr_id {
 	xpr_total = 32,
 };
 
-#include "mdp_base.h"
+static u32 mdp_base[1] = {0};
+static u32 mdp_sub_base[1] = {0};
 
 static bool cmdq_mdp_is_reg_valid(const unsigned long pa)
 {
