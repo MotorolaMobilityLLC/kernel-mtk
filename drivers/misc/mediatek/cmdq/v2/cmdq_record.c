@@ -146,6 +146,13 @@ int32_t cmdq_task_create(
 	handle->prefetchCount = 0;
 	handle->finalized = false;
 	handle->pRunningTask = NULL;
+	handle->reg_count = 0;
+	handle->reg_values = NULL;
+	handle->reg_values_pa = 0;
+	handle->user_reg_count = 0;
+	handle->user_token = 0;
+	handle->mdp_meta_task = NULL;
+	handle->get_meta_task = false;
 
 	/* secure path */
 	handle->secData.is_secure = false;
@@ -830,6 +837,90 @@ int32_t cmdq_op_write_from_data_register(cmdqRecHandle handle,
 #endif /* CMDQ_GPR_SUPPORT */
 }
 
+#define CMDQ_WFE_UPDATE			BIT(31)
+#define CMDQ_WFE_UPDATE_VALUE		BIT(16)
+#define CMDQ_WFE_WAIT			BIT(15)
+s32 cmdq_op_acquire(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event)
+{
+	int32_t status;
+	uint32_t *p_command;
+	s32 arg_a = cmdq_core_get_event_value(event);
+
+	if (arg_a < 0 || arg_a >= CMDQ_SYNC_TOKEN_MAX || !handle)
+		return -EINVAL;
+
+	status = cmdq_check_before_append(handle);
+	if (status < 0) {
+		CMDQ_ERR("%s fail (arg_a:0x%08x)\n", __func__, arg_a);
+		return status;
+	}
+
+	/* we must re-calculate current PC. */
+	p_command =
+		(uint32_t *)((uint8_t *)handle->pBuffer + handle->blockSize);
+
+	CMDQ_VERBOSE("%s:0x%p,CMD:0x%p,arg_a:0x%08x\n",
+		__func__, handle, p_command, arg_a);
+
+	*p_command++ = CMDQ_WFE_UPDATE | CMDQ_WFE_UPDATE_VALUE | CMDQ_WFE_WAIT;
+	*p_command++ = (CMDQ_CODE_WFE << 24) | arg_a;
+
+	handle->blockSize += CMDQ_INST_SIZE;
+	return 0;
+}
+
+s32 cmdq_op_write_from_reg(struct cmdqRecStruct *handle,
+	u32 write_reg, u32 from_reg)
+{
+	s32 status;
+
+	if (!handle)
+		return -EINVAL;
+
+	do {
+		status = cmdq_op_read_to_data_register(handle, from_reg,
+			CMDQ_DATA_REG_JPEG);
+		if (status < 0)
+			break;
+
+		status = cmdq_op_write_from_data_register(handle,
+			CMDQ_DATA_REG_JPEG, write_reg);
+	} while (0);
+
+	return status;
+}
+
+s32 cmdq_alloc_write_addr(u32 count, dma_addr_t *paStart, u32 clt, void *fp)
+{
+	return cmdqCoreAllocWriteAddress(count, paStart);
+}
+
+s32 cmdq_free_write_addr(dma_addr_t paStart, u32 clt)
+{
+	return cmdqCoreFreeWriteAddress(paStart);
+}
+
+s32 cmdq_free_write_addr_by_node(u32 clt, void *fp)
+{
+	return 0;
+}
+
+void cmdq_mdp_release_task_by_file_node(void *file_node)
+{
+	cmdq_core_release_task_by_file_node(file_node);
+}
+
+void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out)
+{
+	dma_addr_t pa = 0;
+	int i;
+
+	for (i = 0; i < count; ++i) {
+		pa = (0xFFFFFFFF & addrs[i]);
+		CMDQ_MSG("[READ_PA] req read dma address 0x%pa\n", &pa);
+		val_out[i] = cmdqCoreReadWriteAddress(pa);
+	}
+}
 /**
  *  Allocate 32-bit register backup slot
  *
@@ -1252,6 +1343,10 @@ int32_t cmdq_task_flush_async(cmdqRecHandle handle)
 		"[Auto Release] Submit ASYNC task scenario: %d, priority: %d, engine: 0x%llx, buffer: 0x%p, size: %d\n",
 		handle->scenario, handle->priority, handle->engineFlag,
 		handle->pBuffer, handle->blockSize);
+	if (handle->get_meta_task) {
+		handle->mdp_meta_task = pTask;
+		return status;
+	}
 
 	if (pTask) {
 		pTask->flushCallback = NULL;
@@ -1528,6 +1623,18 @@ int32_t cmdq_task_destroy(cmdqRecHandle handle)
 	/* Free command buffer */
 	vfree(handle->pBuffer);
 	handle->pBuffer = NULL;
+
+	/* backup register buffer */
+	if (handle->reg_values_pa) {
+		cmdq_core_free_hw_buffer(cmdq_dev_get(),
+			handle->reg_count * sizeof(handle->reg_values[0]),
+			handle->reg_values,
+			handle->reg_values_pa);
+		handle->reg_count = 0;
+		handle->reg_values = NULL;
+		handle->reg_values_pa = 0;
+	}
+	handle->mdp_meta_task = NULL;
 
 	/* Free command handle */
 	kfree(handle);
@@ -2043,4 +2150,64 @@ int32_t cmdqRecWriteAndReleaseResource(cmdqRecHandle handle,
 {
 	return cmdq_resource_release_and_write(handle, resourceEvent, addr,
 					       value, mask);
+}
+
+s32 cmdq_mdp_handle_create(struct cmdqRecStruct **handle_out)
+{
+	struct cmdqRecStruct *handle = NULL;
+	s32 status;
+
+	status = cmdq_task_create(CMDQ_SCENARIO_USER_MDP, &handle);
+	if (status < 0) {
+		CMDQ_ERR("%s task create fail: %d\n", __func__, status);
+		return status;
+	}
+
+	/* assign handle for mdp */
+	*handle_out = handle;
+
+	return 0;
+}
+
+s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
+			struct cmdqRecStruct *handle)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+
+#else
+	return 0;
+#endif
+}
+
+s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
+{
+	s32 status;
+
+	CMDQ_MSG("%s %llx\n", __func__, handle->engineFlag);
+	handle->get_meta_task = true;
+	status = cmdqRecFlushAsync(handle);
+	return status;
+}
+
+s32 cmdq_mdp_wait(struct cmdqRecStruct *handle, void *temp)
+{
+	s32 status;
+	u64 exec_cost;
+
+	CMDQ_MSG("%s wait handle:0x%p\n", __func__, handle);
+
+	/* wait handle flush done */
+	exec_cost = sched_clock();
+	/* make sure the task is running and wait for it */
+	status = cmdqCoreWaitResultAndReleaseTask(handle->mdp_meta_task,
+			NULL, msecs_to_jiffies(CMDQ_DEFAULT_TIMEOUT_MS));
+	if (status < 0) {
+		CMDQ_ERR("waitResultAndReleaseTask fail=%d\n", status);
+		return status;
+	}
+	exec_cost = div_s64(sched_clock() - exec_cost, 1000);
+	if (exec_cost > 150000)
+		CMDQ_LOG("[warn]wait flush result cost:%lluus handle:0x%p\n",
+			exec_cost, handle);
+	return status;
 }
