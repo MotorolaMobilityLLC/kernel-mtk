@@ -3831,10 +3831,12 @@ firmware_class.path=/vendor/firmware";
 
 		clocks = <&camsys CAMSYS_CCU_CGPDN>,
 			 <&mmsys_config MMSYS_GALS_CCU2MM>,
-			 <&topckgen TOP_MUX_CCU>;
+			 <&topckgen TOP_MUX_CCU>,
+			 <&scpsys SCP_SYS_CAM>;
 		clock-names = "CCU_CLK_CAM_CCU",
 			      "CCU_CLK_MMSYS_CCU",
-			      "CCU_CLK_TOP_MUX";
+			      "CCU_CLK_TOP_MUX",
+			      "CAM_PWR";
 	};
 
 	ipesys_config: ipesys_config@1b000000 {
