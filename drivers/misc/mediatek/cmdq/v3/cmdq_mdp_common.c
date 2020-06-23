@@ -37,6 +37,7 @@
 #endif
 
 #include "cmdq_helper_ext.h"
+#include "mdp_def_ex.h"
 
 #include <linux/kernel.h>
 #include <linux/uaccess.h>
@@ -1182,9 +1183,109 @@ s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
 			struct cmdqRecStruct *handle)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
+	u32 i;
+	u32 metadata_length;
+	void *p_metadatas;
+
+	if (!secData || !secData->is_secure)
+		return 0;
+
+	cmdq_task_set_secure(handle, secData->is_secure);
+	handle->secData.enginesNeedDAPC = secData->enginesNeedDAPC;
+	handle->secData.enginesNeedPortSecurity =
+		secData->enginesNeedPortSecurity;
+	handle->secData.addrMetadataCount = secData->addrMetadataCount;
+
+	/* copy isp meta */
+	handle->secData.ispMeta = secData->ispMeta;
+
+	/* clear isp buf since free in task destroy */
+	for (i = 0; i < ARRAY_SIZE(secData->ispMeta.ispBufs); i++)
+		secData->ispMeta.ispBufs[i].va = 0;
+
+	if (!handle->secData.addrMetadataCount)
+		return 0;
+
+	metadata_length = (handle->secData.addrMetadataCount) *
+		sizeof(struct cmdqSecAddrMetadataStruct);
+	/* create sec data task buffer for working */
+	p_metadatas = kzalloc(metadata_length, GFP_KERNEL);
+	if (!p_metadatas) {
+		CMDQ_AEE("CMDQ",
+			"Can't alloc secData buffer count:%d alloacted_size:%d\n",
+			 handle->secData.addrMetadataCount,
+			 metadata_length);
+		return -ENOMEM;
+	}
+	copy_from_user(p_metadatas, CMDQ_U32_PTR(secData->addrMetadatas),
+		metadata_length);
+	handle->secData.addrMetadatas =
+		(cmdqU32Ptr_t)(unsigned long)p_metadatas;
 	return 0;
 #else
 	return 0;
+#endif
+}
+
+s32 cmdq_mdp_update_sec_addr_index(struct cmdqRecStruct *handle,
+	u32 sec_handle, u32 index, u32 instr_index)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	struct cmdqSecAddrMetadataStruct *addr;
+
+	if (!handle->secData.is_secure) {
+		CMDQ_ERR("%s invalid index %d, handle no sec\n",
+			__func__, index);
+		return -EINVAL;
+	}
+	if (index >= handle->secData.addrMetadataCount) {
+		CMDQ_ERR("%s invalid index %d >= %d\n", __func__,
+			index, handle->secData.addrMetadataCount);
+		return -EINVAL;
+	}
+	addr = (struct cmdqSecAddrMetadataStruct *)
+		(unsigned long)handle->secData.addrMetadatas;
+	addr[index].instrIndex = instr_index;
+	CMDQ_MSG("%s update %x[%d] to:%d\n", __func__,
+		sec_handle, index, instr_index);
+#endif
+	return 0;
+}
+
+u32 cmdq_mdp_handle_get_instr_count(struct cmdqRecStruct *handle)
+{
+	return handle->pkt->cmd_buf_size / CMDQ_INST_SIZE;
+}
+
+void cmdq_mdp_meta_replace_sec_addr(struct op_meta *metas,
+			struct mdp_submit *user_job,
+			struct cmdqRecStruct *handle)
+{
+#if 0
+	struct iwcCmdqAddrMetadata_t *addr;
+	int i;
+
+	CMDQ_LOG("%s start:%d, %d\n", __func__,
+		user_job->secData.is_secure,
+		user_job->secData.addrMetadataCount);
+
+	if (!user_job->secData.is_secure)
+		return;
+
+	addr = (struct iwcCmdqAddrMetadata_t *)
+		(unsigned long)handle->secData.addrMetadatas;
+	for (i = 0; i < handle->secData.addrMetadataCount; i++) {
+		u32 idx = addr[i].instrIndex;
+
+		CMDQ_LOG("sec[%u](i:%u,t:%u,h:%#llx,b:%#x,o:%#x,s:%d,p:%d)\n",
+			i, addr[i].instrIndex, addr[i].type,
+			addr[i].baseHandle, addr[i].blockOffset,
+			addr[i].offset, addr[i].size, addr[i].port);
+
+		CMDQ_LOG("[M] change meta[%u] (%u, %u, %#x, %#x, %#x)\n", idx,
+			metas[idx].op, metas[idx].engine, metas[idx].offset,
+			metas[idx].value, metas[idx].mask);
+	}
 #endif
 }
 
