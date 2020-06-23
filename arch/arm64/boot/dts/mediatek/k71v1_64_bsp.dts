@@ -74,13 +74,9 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <4>;
+		led_mode = <5>;
 		data = <1>;
 		pwm_config = <0 1 0 0 0>;
-	};
-	led7:led@7 {
-		compatible = "mediatek,charging";
-		led_mode = <5>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
@@ -126,35 +122,35 @@
 	};
 	ctp_pins_eint_as_int: eint@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
 			slew-rate = <0>;
 			bias-disable;
 		};
 	};
 	ctp_pins_eint_output0: eintoutput0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	ctp_pins_eint_output1: eintoutput1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	ctp_pins_rst_output0: rstoutput0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO70__FUNC_GPIO70>;
+			pinmux = <PINMUX_GPIO2__FUNC_GPIO2>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	ctp_pins_rst_output1: rstoutput1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO70__FUNC_GPIO70>;
+			pinmux = <PINMUX_GPIO2__FUNC_GPIO2>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -632,22 +628,6 @@
 	};
 };
 
-&i2c5 {
-	i2c_lcd_bias@3e {
-		compatible = "mediatek,i2c_lcd_bias";
-		reg = <0x3e>;
-		bias_gpio_enn = <&pio 151 0>;
-		bias_gpio_enp = <&pio 150 0>;
-		status = "okay";
-	};
-
-	sm5306@36 {
-		compatible = "mediatek,sm5306";
-		reg = <0x36>;
-		status = "okay";
-	};
-};
-
 &i2c6 {
 	rt9465@4b {
 		compatible = "richtek,rt9465";
@@ -670,60 +650,20 @@
 	};
 };
 
-/* LCM BACKLIGHT START */
-&mtkfb{
-	pinctrl-names = "lcm_bl_enable", "lcm_bl_disable", "lcm_rst_out0_gpio", "lcm_rst_out1_gpio";
-	pinctrl-0 = <&lcm_bl_enable>;
-	pinctrl-1 = <&lcm_bl_disable>;
-	pinctrl-2 = <&lcm_rst_out0_gpio>;
-	pinctrl-3 = <&lcm_rst_out1_gpio>;
+&pio {
+	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+};
+
+&mtkfb {
+	pinctrl-names = "mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
 };
 
-&pio {
-	lcm_bl_enable:lcm_bl_enable {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO176__FUNC_GPIO176>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	lcm_bl_disable:lcm_bl_disable {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO176__FUNC_GPIO176>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	lcm_rst_out0_gpio: lcm_rst_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	lcm_rst_out1_gpio: lcm_rst_out1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-};
-/* LCM BACKLIGHT END */
-
-&spi2{
-	cap_touch_mtk_spi:cap_touch_spi@0{
-		compatible= "mediatek,cap_touch_spi";
-		spi-max-frequency = <10000000>;
-		reg = <0x0>;
-		status = "okay";
-		ilitek,usb_charger;
-	};
-};
 #include <k71v1_64_bsp/cust.dtsi>
 #include "cust_mt6771_camera.dtsi"
 #include "mt6771-moto-audio-lima.dtsi"
