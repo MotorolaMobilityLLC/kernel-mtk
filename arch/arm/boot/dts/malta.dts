@@ -162,7 +162,8 @@
         #size-cells = <0>;
         status = "okay";
         touch_spi@0{
-            compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi";
+            compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi",
+                         "mediatek,ilitek_touch_spi";
             reg = <0>;
             spi-max-frequency = <10000000>;
             status = "okay";
@@ -170,7 +171,7 @@
 };
 
 &touch {
-	tpd-resolution = <720 1560>;
+	tpd-resolution = <720 1640>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
