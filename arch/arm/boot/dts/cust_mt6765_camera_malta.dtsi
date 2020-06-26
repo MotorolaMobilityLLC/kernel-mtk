@@ -14,12 +14,12 @@
 &pio {
 	camera_pins_cam0_mclk_on: camera_pins_cam0_mclk_on {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO99__FUNC_CMMCLK0>;
+			pinmux = <PINMUX_GPIO108__FUNC_CMMCLK2>;
 		};
 	};
 	camera_pins_cam0_mclk_off: camera_pins_cam0_mclk_off {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO99__FUNC_GPIO99>;
+			pinmux = <PINMUX_GPIO108__FUNC_GPIO108>;
 		};
 	};
 	camera_pins_cam1_mclk_on: camera_pins_cam1_mclk_on {
@@ -34,12 +34,12 @@
 	};
 	camera_pins_cam2_mclk_on: camera_pins_cam2_mclk_on {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO108__FUNC_CMMCLK2>;
+			pinmux = <PINMUX_GPIO99__FUNC_CMMCLK0>;
 		};
 	};
 	camera_pins_cam2_mclk_off: camera_pins_cam2_mclk_off {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO108__FUNC_GPIO108>;
+			pinmux = <PINMUX_GPIO99__FUNC_GPIO99>;
 		};
 	};
 	camera_pins_cam4_mclk_on: camera_pins_cam4_mclk_on {
@@ -54,14 +54,14 @@
 	};
 	camera_pins_cam0_rst0: cam0@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_GPIO101>;
+			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam0_rst1: cam0@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_GPIO101>;
+			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -110,14 +110,14 @@
 	};
 	camera_pins_cam2_rst0: cam2@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
+			pinmux = <PINMUX_GPIO101__FUNC_GPIO101>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_rst1: cam2@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
+			pinmux = <PINMUX_GPIO101__FUNC_GPIO101>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -180,14 +180,14 @@
 	};
 	camera_pins_cam_ldo_sub_vcamd_0: cam1@vcamd0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO171__FUNC_GPIO171>;
+			pinmux = <PINMUX_GPIO24__FUNC_GPIO24>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam_ldo_sub_vcamd_1: cam1@vcama1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO171__FUNC_GPIO171>;
+			pinmux = <PINMUX_GPIO24__FUNC_GPIO24>;
 			slew-rate = <1>;
 			output-high;
 		};
