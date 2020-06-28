@@ -49,10 +49,12 @@ static int pn_data[] = {
 		[PN_BQ25601D] = 0x07,
 };
 
+#if 0
 static char *pn_str[] = {
 		[PN_BQ25600] = "bq25600", [PN_BQ25600D] = "bq25600d",
 		[PN_BQ25601] = "bq25601", [PN_BQ25601D] = "bq25601d",
 };
+#endif
 
 #include <ontim/ontim_dev_dgb.h>
 static  char charge_ic_vendor_name[50]="BQ25601";
