@@ -25,7 +25,8 @@ config MTK_FINGERPRINT_SELECT
 
 source drivers/input/fingerprint/fpsensor_tee/Kconfig
 source drivers/input/fingerprint/focaltech/Kconfig
-
+source drivers/input/fingerprint/fps_chipone_M00/Kconfig
+source drivers/input/fingerprint/fps_fpc_M00/Kconfig
 
 
 if MTK_FINGERPRINT_SELECT = "FPC1145"
