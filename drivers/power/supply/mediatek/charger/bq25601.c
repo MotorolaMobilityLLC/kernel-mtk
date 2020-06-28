@@ -1264,9 +1264,6 @@ static int bq25601_charger_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	if (bq->part_no != *(int *)match->data)
-		pr_info("part no mismatch, hw:%s, devicetree:%s\n",
-			pn_str[bq->part_no], pn_str[*(int *)match->data]);
 
 	if( bq->part_no == 0x09)
 	       strncpy(charge_ic_vendor_name,"SY6974",20);
