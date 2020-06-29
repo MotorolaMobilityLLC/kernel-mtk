@@ -303,7 +303,7 @@
 #define REG0B_PN_MASK 0x78
 #define REG0B_PN_SHIFT 3
 
-#define REG0B_DEV_REV_MASK 0x03
+#define REG0B_DEV_REV_MASK 0x07
 #define REG0B_DEV_REV_SHIFT 0
 
 #endif

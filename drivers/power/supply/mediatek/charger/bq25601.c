@@ -1269,9 +1269,9 @@ static int bq25601_charger_probe(struct i2c_client *client,
 
 	if( bq->part_no == 0x09)
 	       strncpy(charge_ic_vendor_name,"SY6974",20);
-	else if ( bq->part_no == 0x0f)
+	else if ( bq->part_no == 0x02  && bq->revision == 0x01)
        	strncpy(charge_ic_vendor_name,"BQ25601",20);
-	else if ( bq->part_no == 0x02)
+	else if ( bq->part_no == 0x02  && bq->revision == 0x04)
        	strncpy(charge_ic_vendor_name,"SGM41511",20);
 
 
