@@ -106,7 +106,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_DSI_CMD_MODE                                    0
 #define FRAME_WIDTH                                     (720)
-#define FRAME_HEIGHT                                    (1640)
+#define FRAME_HEIGHT                                    (1600)
 #define LCM_DENSITY		(320)
 
 #define LCM_PHYSICAL_WIDTH                  (67932)
@@ -346,16 +346,15 @@ static struct LCM_setting_table init_setting[] = {
 };
 #else
 static struct LCM_setting_table init_setting[] = {
-	{0xFF, 0x03, {0x98, 0x81, 0x03}},
-	{0x83, 0x01, {0x30}},
-	{0x84, 0x01, {0x00}},
+
 	{0xFF, 0x03, {0x98, 0x81, 0x00}},//Page0
 	{0x51, 0x02, {0x0F, 0xFF} },
 	{0x53, 0x01, {0x24}},
 	{0x55, 0x01, {0x00}},
 	{0x11, 0x01, {0x00}},
-	{REGFLAG_DELAY, 80,{}},
+	{REGFLAG_DELAY, 120,{}},
 	{0x29, 0x01, {0x00}},
+	{REGFLAG_DELAY, 20,{}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 
 };
@@ -428,7 +427,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.switch_mode_enable = 0;
 	/* DSI */
 	/* Command mode setting */
-	params->dsi.LANE_NUM = LCM_THREE_LANE;
+	params->dsi.LANE_NUM = LCM_FOUR_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -439,15 +438,15 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.packet_size = 256;
 	/* video mode timing */
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
-	params->dsi.vertical_sync_active = 2; //old is 2,now is 4
-	params->dsi.vertical_backporch = 16; //old is 8,now is 100
-	params->dsi.vertical_frontporch = 240; //old is 24,now is 124
+	params->dsi.vertical_sync_active = 4; //old is 2,now is 4
+	params->dsi.vertical_backporch = 24; //old is 8,now is 100
+	params->dsi.vertical_frontporch = 44; //old is 24,now is 124
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 40; //old is 20,now is 8
-	params->dsi.horizontal_backporch = 16;//old is 60,now is 12
-	params->dsi.horizontal_frontporch = 12;//old is 60,now is 16
+	params->dsi.horizontal_sync_active = 12; //old is 20,now is 8
+	params->dsi.horizontal_backporch = 34;//old is 60,now is 12
+	params->dsi.horizontal_frontporch = 51;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 366;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 263;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 3;
