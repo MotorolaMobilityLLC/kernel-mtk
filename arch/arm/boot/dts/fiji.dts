@@ -324,6 +324,11 @@
                 reg = <0x38>;
                 status = "okay";
         };
+        ili9881x_touch:ili9881x_touch@42 {
+                compatible = "mediatek,ili9881x_touch";
+                reg = <0x42>;
+                status = "okay";
+        };
         ilitek_touch_mtk:ilitek_touch@41 {
                 compatible = "mediatek,ilitek_touch";
                 reg = <0x41>;
