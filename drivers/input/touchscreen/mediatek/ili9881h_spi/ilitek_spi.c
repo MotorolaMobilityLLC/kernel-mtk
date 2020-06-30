@@ -986,7 +986,7 @@ static int ilitek_spi_probe(struct spi_device *spi)
 		idev->reset = TP_HW_RST_ONLY;
 
 	idev->rst_edge_delay = 5;
-	idev->fw_open = REQUEST_FIRMWARE;
+	idev->fw_open = FILP_OPEN;
 	idev->fw_upgrade_mode = UPGRADE_IRAM;
 	idev->mp_move_code = ilitek_tddi_move_mp_code_iram;
 	idev->gesture_move_code = ilitek_tddi_move_gesture_code_iram;

@@ -22,6 +22,10 @@
 #include "firmware/ilitek_fw.h"
 #include "ilitek.h"
 
+#ifdef ONTIM_DEV_ILLTEK_INFO
+#include <ontim/ontim_dev_dgb.h>
+#endif
+
 /* Debug level */
 bool ipio_debug_level = DEBUG_OUTPUT;
 EXPORT_SYMBOL(ipio_debug_level);
@@ -30,6 +34,24 @@ static struct workqueue_struct *esd_wq;
 static struct workqueue_struct *bat_wq;
 static struct delayed_work esd_work;
 static struct delayed_work bat_work;
+
+#ifdef ONTIM_DEV_ILLTEK_INFO
+extern char *mtkfb_find_lcm_driver(void);
+static void ontim_dev_get_ilitek_info(void);
+
+static char version[30]="unknown";
+static char vendor_name[30]="unknown";
+static char lcdname[30]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+#endif
+
 
 #if RESUME_BY_DDI
 static struct workqueue_struct	*resume_by_ddi_wq;
@@ -486,6 +508,11 @@ int ilitek_tddi_fw_upgrade_handler(void *data)
 #endif
 	}
 
+#ifdef ONTIM_DEV_ILLTEK_INFO
+	ontim_dev_get_ilitek_info();
+#endif
+
+
 	if (!idev->boot) {
 		idev->boot = true;
 		ipio_info("Registre touch to input subsystem\n");
@@ -814,8 +841,10 @@ static int ilitek_get_tp_module(void)
 	 * TODO: users should implement this function
 	 * if there are various tp modules been used in projects.
 	 */
-
-	return 0;
+	if (strstr(mtkfb_find_lcm_driver(), "ili9881h_hdplus_dsi_vdo_tianma_6517") != NULL)
+		return MODEL_TM;
+	else
+		return 0;
 }
 
 static void ilitek_update_tp_module_info(void)
@@ -912,6 +941,26 @@ static void ilitek_update_tp_module_info(void)
 
 	idev->tp_module = module;
 }
+
+#ifdef ONTIM_DEV_ILLTEK_INFO
+static void ontim_dev_get_ilitek_info(void)
+{
+	u8 fw_ver = 0;
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return;
+	}
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	if (strstr(mtkfb_find_lcm_driver(), "ili9881h_hdplus_dsi_vdo_tianma_6517") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "tianma-ili9881h");
+		snprintf(vendor_name, sizeof(vendor_name), "tianma-ili9881h");
+	}
+	fw_ver = (idev->chip->fw_ver >> 8) & 0xFF;
+	ipio_info("fw_ver = %d\n",fw_ver);
+	snprintf(version, sizeof(version),"FW:%02x,VID:0x90 ",fw_ver);
+}
+#endif
 
 int ilitek_tddi_init(void)
 {
