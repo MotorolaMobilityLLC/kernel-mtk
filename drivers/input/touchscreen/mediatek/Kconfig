@@ -125,6 +125,14 @@ config TOUCHSCREEN_ILI9881H_BJ
 
 source "drivers/input/touchscreen/mediatek/ili9881h_bj/Kconfig"
 
+config TOUCHSCREEN_ILI988X
+    bool "ilitek Touchscreen"
+    default n
+    help
+      Say Y here if you have ilitek touch panel.
+      If unsure, say N.
+
+source "drivers/input/touchscreen/mediatek/ili9881x/Kconfig"
 
 config TOUCHSCREEN_MTK_FOCALTECH_HD
 	bool "Focaltech Touchscreen"
