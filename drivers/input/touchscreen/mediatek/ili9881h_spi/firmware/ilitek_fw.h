@@ -29,7 +29,7 @@
 #define DEF_INI_REQUEST_PATH		"mp.ini"
 #define DEF_FW_REQUEST_PATH		"ILITEK_FW"
 static unsigned char CTPM_FW_DEF[] = {
-	#include "tianma/Malta_TM_6517_LongH_V0x10.0x28.0x01_AP_0x01_MP_20200629.ili"
+	0xFF,
 };
 
 #define CSOT_INI_NAME_PATH		"/sdcard/mp_csot.ini"
@@ -85,7 +85,7 @@ static unsigned char CTPM_FW_TXD[] = {
 #define TM_INI_REQUEST_PATH		"mp_tm.ini"
 #define TM_FW_REQUEST_PATH		"ILITEK_FW_TM"
 static unsigned char CTPM_FW_TM[] = {
-	0xFF,
+	#include "tianma/Malta_TM_6517_LongH_V0x10.0x28.0x01_AP_0x01_MP_20200629.ili"
 };
 
 #endif

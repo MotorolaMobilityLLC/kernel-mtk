@@ -762,6 +762,9 @@ struct gesture_symbol {
 #define RAWDATA_NO_BK_SHIFT_9881H			8192
 #define RAWDATA_NO_BK_SHIFT_9881F			4096
 
+#ifndef ONTIM_DEV_ILLTEK_INFO
+#define ONTIM_DEV_ILLTEK_INFO
+#endif
 struct ilitek_tddi_dev {
 	struct i2c_client *i2c;
 	struct spi_device *spi;
