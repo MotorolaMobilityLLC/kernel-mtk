@@ -1753,10 +1753,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == 0x5035) {	
+			if ((*sensor_id + 1) == imgsensor_info.sensor_id) {
 				ModuleId = gc5035_otp_identify(*sensor_id);		
 				cam_pr_debug("ModuleId=0x%x, sensor id: 0x%x\n",ModuleId, *sensor_id);
-				if (ModuleId == 0x50) //seasuns module
+				if (ModuleId == 0x2) //seasuns module
 				{
 					memset(front_cam_name, 0x00, sizeof(front_cam_name));
 					memcpy(front_cam_name, "1_seasons_gc5035", 64);
