@@ -403,10 +403,14 @@ static struct ilitek_hwif_info hwif = {
 	.plat_remove = ilitek_plat_remove,
 };
 
+extern char *mtkfb_find_lcm_driver(void);
 static int tpd_local_init(void)
 {
 	ipio_info("TPD init device driver\n");
-
+    if (strstr(mtkfb_find_lcm_driver(), "ili9881h") == NULL) {
+        ipio_err("Firefly:No ili9881h touch, not register!");
+        return -ENODEV;
+    }
 	if (ilitek_tddi_dev_init(&hwif) < 0) {
 		ipio_err("Failed to register i2c/spi bus driver\n");
 		return -ENODEV;
