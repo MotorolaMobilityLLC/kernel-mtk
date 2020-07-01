@@ -81,6 +81,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ili9881h_hdplus_dsi_vdo_tianma_6517_lcm_drv,
 #endif
 
+#if defined(ILI9882H_HDPLUS_DSI_VDO_HLT_6517)
+	&ili9882h_hdplus_dsi_vdo_hlt_6517_lcm_drv,
+#endif
+
 #if defined(NT36672AH_HDP_DSI_VDO_TCL_CSOT)
 	&nt36672ah_hdp_dsi_vdo_tcl_csot_lcm_drv,
 #endif
