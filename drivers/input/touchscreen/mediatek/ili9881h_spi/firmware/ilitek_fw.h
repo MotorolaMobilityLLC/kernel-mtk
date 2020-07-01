@@ -80,7 +80,7 @@ static unsigned char CTPM_FW_TXD[] = {
 	0xFF,
 };
 
-#define TM_INI_NAME_PATH		"/sdcard/mp_tm.ini"
+#define TM_INI_NAME_PATH		"/system/etc/mp_tm.ini"
 #define TM_FW_FILP_PATH                 "/sdcard/ILITEK_FW_TM"
 #define TM_INI_REQUEST_PATH		"mp_tm.ini"
 #define TM_FW_REQUEST_PATH		"ILITEK_FW_TM"
