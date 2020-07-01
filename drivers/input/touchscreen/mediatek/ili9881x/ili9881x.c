@@ -31,6 +31,24 @@ static struct workqueue_struct *bat_wq;
 static struct delayed_work esd_work;
 static struct delayed_work bat_work;
 
+/* senter <add LCD and CTP hardware infomation node> start*/
+#include <ontim/ontim_dev_dgb.h>
+
+static char version[30]="unknown";
+static char vendor_name[30]="unknown";
+static char lcdname[30]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+
+extern char *mtkfb_find_lcm_driver(void);
+/* senter <add LCD and CTP hardware infomation node> end*/
+
 #if RESUME_BY_DDI
 static struct workqueue_struct	*resume_by_ddi_wq;
 static struct work_struct	resume_by_ddi_work;
@@ -919,6 +937,12 @@ int ili_tddi_init(void)
 #endif
 
 	ILI_INFO("driver version = %s\n", DRIVER_VERSION);
+	/* center <add LCD and CTP hardware infomation node> start*/
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+    /* center <add LCD and CTP hardware infomation node> end*/
 
 	mutex_init(&ilits->touch_mutex);
 	mutex_init(&ilits->debug_mutex);
@@ -991,6 +1015,15 @@ int ili_tddi_init(void)
 	ili_ic_get_fw_ver();
 	ili_ic_get_tp_info();
 	ili_ic_get_panel_info();
+	/* center <add LCD and CTP hardware infomation node> start*/
+	ILI_ERR("ilits->chip->fw_ver  = 0x%02x \n",(ilits->chip->fw_ver >> 8) & 0xff);
+	if(strstr(mtkfb_find_lcm_driver(),"ili9882n") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "skyworth-ili9882n");
+		snprintf(vendor_name, sizeof(vendor_name), "skyworth-ili9882n");
+	}
+	snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(ilits->chip->fw_ver >> 8) & 0xff);
+	/* center <add LCD and CTP hardware infomation node> end*/
 
 #if (TDDI_INTERFACE == BUS_I2C)
 	ilits->info_from_hex = ENABLE;
@@ -1006,6 +1039,9 @@ int ili_tddi_init(void)
 	ilits->ws = wakeup_source_register("ili_wakelock");
 	if (!ilits->ws)
 		ILI_ERR("wakeup source request failed\n");
+	/* center <add LCD and CTP hardware infomation node> start*/
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+    /* center <add LCD and CTP hardware infomation node> end*/
 
 	return 0;
 }

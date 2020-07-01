@@ -909,7 +909,7 @@ static ssize_t ilitek_proc_get_debug_mode_data_write(struct file *filp, const ch
 
 static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *buff, size_t size, loff_t *pos)
 {
-	int ret = 0, len = 2;
+	int ret = 0;
 	bool esd_en = ilits->wq_esd_ctrl, bat_en = ilits->wq_bat_ctrl;
 
 	if (*pos != 0)
@@ -933,7 +933,7 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 
 	ret = ili_mp_test_handler(g_user_buf, ON);
 	ILI_INFO("MP TEST %s, Error code = %d\n", (ret < 0) ? "FAIL" : "PASS", ret);
-
+#if 0
 	g_user_buf[0] = 3;
 	g_user_buf[1] = (ret < 0) ? -ret : ret;
 	len += ilits->mp_ret_len;
@@ -956,8 +956,16 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 	} else if (g_user_buf[1] == EMP_PARA_NULL) {
 		len += snprintf(g_user_buf + len, USER_STR_BUFF - len, "%s\n", "Failed to get mp parameter, abort!");
 	}
-
-	if (copy_to_user((char *)buff, g_user_buf, len))
+ #endif
+	if(ret <0){
+		size = sprintf(g_user_buf, "%s\n", "FAIL");
+               ILI_ERR("fail wzx \n");
+	}
+	else{
+		size = sprintf(g_user_buf, "%s\n", "PASS");
+               ILI_ERR("pass wzx \n");
+		}
+	if (copy_to_user((char *)buff, g_user_buf, size))
 		ILI_ERR("Failed to copy data to user space\n");
 
 	if (esd_en)
@@ -965,9 +973,9 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 	if (bat_en)
 		ili_wq_ctrl(WQ_BAT, ENABLE);
 
-	*pos += len;
+	*pos += size;
 	mutex_unlock(&ilits->touch_mutex);
-	return len;
+	return size;
 }
 
 static ssize_t ilitek_node_mp_lcm_off_test_read(struct file *filp, char __user *buff, size_t size, loff_t *pos)
