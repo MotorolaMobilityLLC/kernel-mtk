@@ -73,9 +73,9 @@ typedef struct board_id {
 } boardid_match_t;
 
 static boardid_match_t board_table[] = {
-	{ .index = 0,  .hw_version = "PVT-SPLIT",  .qcn_type = "no-ca-split", .model = "advanced1"  },
-	{ .index = 1,  .hw_version = "DVT1",       .qcn_type = "no-ca"      , .model = "primary"    },
-	{ .index = 2,  .hw_version = "DVT2",       .qcn_type = "no-ca-del"  , .model = "primary"    },
+	{ .index = 0,  .hw_version = "DVT1",       .qcn_type = "no-ca-split", .model = "advanced1"  },
+	{ .index = 1,  .hw_version = "DVT2",       .qcn_type = "no-ca"      , .model = "primary"    },
+	{ .index = 2,  .hw_version = "PVT",        .qcn_type = "no-ca-del"  , .model = "primary"    },
 	{ .index = 3,  .hw_version = "REL",        .qcn_type = "no-ca-del"  , .model = "primary"    },
 	{ .index = 4,  .hw_version = "DVT2",       .qcn_type = "no-ca-del"  , .model = "standard"   },
 	{ .index = 5,  .hw_version = "DVT2",       .qcn_type = "no-ca"      , .model = "advanced1"  },
@@ -939,6 +939,14 @@ static int get_qcn_type(void)
 	return sprintf(hwinfo[qcn_type].hwinfo_buf, "%s", board_table[id].qcn_type);
 }
 
+static int get_hw_version(void)
+{
+  int id = platform_board_id;
+  if (id > (sizeof(board_table) / sizeof(boardid_match_t) - 1))
+    id = sizeof(board_table) / sizeof(boardid_match_t) - 1;
+  return sprintf(hwinfo[hw_version].hwinfo_buf, "%s", board_table[id].hw_version);
+}
+
 char NFC_BUF[MAX_HWINFO_SIZE] = {"Unknow"};
 EXPORT_SYMBOL(NFC_BUF);
 static void get_nfc_deviceinfo(void)
@@ -1238,6 +1246,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	//	break;
 	case board_id:
 		get_version_id();
+		break;
+	case hw_version:
+		get_hw_version();
 		break;
 	case qcn_type:
 		get_qcn_type();
