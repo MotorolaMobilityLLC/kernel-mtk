@@ -1753,7 +1753,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {	
+			if ((*sensor_id + 2) == imgsensor_info.sensor_id) {
 				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",imgsensor.i2c_write_id, *sensor_id);
 				ModuleId = gc5035_otp_identify(*sensor_id);
 				if (ModuleId == 0x0C) //seasuns module
