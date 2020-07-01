@@ -2189,10 +2189,9 @@ firmware_class.path=/vendor/firmware";
 
 	gpio_boardid:gpio_boardid {
 			compatible = "gpio,boardid";
-			gpio,boardid0 = <&pio 163 0>;
-			gpio,boardid1 = <&pio 164 0>;
-			gpio,boardid2 = <&pio 165 0>;
-			gpio,boardid3 = <&pio 166 0>;
+			gpio,boardid0 = <&pio 165 0>;
+			gpio,boardid1 = <&pio 166 0>;
+			gpio,boardid2 = <&pio 168 0>;
 		};
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
