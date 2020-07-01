@@ -28,7 +28,7 @@
  * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
  * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
  */
-#define LOG_TAG "LCM-ili9881H TIANMA"
+#define LOG_TAG "LCM-ili9882h hlt"
 
 #ifndef BUILD_LK
 #include <linux/string.h>
@@ -60,7 +60,7 @@
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
-#define LCM_ID_REG_DC (unsigned int)(0x90)
+#define LCM_ID_REG_DC (unsigned int)(0x11)
 #define LCM_ID_REG_DB (unsigned int)(0x00)
 #define LCM_ID_REG_DA (unsigned int)(0x00)
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
@@ -145,7 +145,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
-	{0xFF, 0x03, {0x98, 0x81, 0x00}},//Page0
+	{0xFF, 0x03, {0x98, 0x82, 0x00}},//Page0
 	{0x51, 0x02, {0x00, 0x00} },
 	{0x53, 0x01, {0x24}},
 	{0x55, 0x01, {0x00}},
@@ -153,6 +153,7 @@ static struct LCM_setting_table init_setting[] = {
 	{REGFLAG_DELAY, 120,{}},
 	{0x29, 0x01, {0x00}},
 	{REGFLAG_DELAY, 20,{}},
+	{0x35, 0x01, {0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 
 };
@@ -236,14 +237,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* video mode timing */
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 	params->dsi.vertical_sync_active = 4; //old is 2,now is 4
-	params->dsi.vertical_backporch = 24; //old is 8,now is 100
-	params->dsi.vertical_frontporch = 44; //old is 24,now is 124
+	params->dsi.vertical_backporch = 16; //old is 8,now is 100
+	params->dsi.vertical_frontporch = 47; //old is 24,now is 124
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 12; //old is 20,now is 8
-	params->dsi.horizontal_backporch = 34;//old is 60,now is 12
-	params->dsi.horizontal_frontporch = 51;//old is 60,now is 16
+	params->dsi.horizontal_sync_active = 16; //old is 20,now is 8
+	params->dsi.horizontal_backporch = 56;//old is 60,now is 12
+	params->dsi.horizontal_frontporch = 58;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 263;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 288;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 3;
@@ -311,7 +312,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x12;  //up to +/-5.5V
+	unsigned char data = 0x14;  //up to +/-5.5V
 	int ret = 0;
 	LCM_LOGI("%s:  start init\n",__func__);
 
@@ -330,7 +331,7 @@ static void lcm_init(void)
 		set_gpio_lcd_enn(1);
 		MDELAY(7);//for bias IC and tr2
 		cmd = 0x01;
-		data = 0x12;
+		data = 0x14;
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
@@ -428,8 +429,8 @@ static unsigned int lcm_compare_id(void)
 }
 
 
-struct LCM_DRIVER ili9881h_hdplus_dsi_vdo_tianma_6517_lcm_drv = {
-	.name = "ili9881h_hdplus_dsi_vdo_tianma_6517",
+struct LCM_DRIVER ili9882h_hdplus_dsi_vdo_hlt_6517_lcm_drv = {
+	.name = "ili9882h_hdplus_dsi_vdo_hlt_6517",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
