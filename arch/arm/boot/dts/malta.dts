@@ -164,7 +164,7 @@
         status = "okay";
         touch_spi@0{
             compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi",
-                         "mediatek,ilitek_touch_spi";
+                         "mediatek,ilitek_touch_spi","mediatek,ili9882h_touch_spi";
             reg = <0>;
             spi-max-frequency = <10000000>;
             status = "okay";
