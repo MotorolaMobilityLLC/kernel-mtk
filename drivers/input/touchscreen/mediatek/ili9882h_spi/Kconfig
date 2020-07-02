@@ -1,0 +1,6 @@
+config TOUCHSCREEN_ILI9882H
+    bool "ilitek Touchscreen"
+    default n
+    help
+      Say Y here if you have ilitek touch panel.
+      If unsure, say N.
