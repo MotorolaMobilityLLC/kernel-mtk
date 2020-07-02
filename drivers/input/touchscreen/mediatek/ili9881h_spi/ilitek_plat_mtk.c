@@ -30,6 +30,7 @@
 #define MTK_INT_GPIO	GTP_INT_PORT
 
 extern struct tpd_device *tpd;
+extern char *mtkfb_find_lcm_driver(void);
 
 void ilitek_plat_tp_reset(void)
 {
@@ -410,6 +411,11 @@ static struct ilitek_hwif_info hwif = {
 static int tpd_local_init(void)
 {
 	ipio_info("TPD init device driver\n");
+
+	if (strstr(mtkfb_find_lcm_driver(), "ili9881h_hdplus_dsi_vdo_tianma_6517") == NULL){
+		ipio_info("this is not ili9881h device, return\n");
+		return -ENODEV;
+	}
 
 	if (ilitek_tddi_dev_init(&hwif) < 0) {
 		ipio_err("Failed to register i2c/spi bus driver\n");
