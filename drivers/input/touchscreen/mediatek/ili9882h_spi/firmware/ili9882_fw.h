@@ -88,7 +88,7 @@ static unsigned char CTPM_FW_TM[] = {
 	0xFF,
 };
 
-#define HLT_INI_NAME_PATH		"/sdcard/mp_hlt.ini"
+#define HLT_INI_NAME_PATH		"/system/etc/mp_hlt.ini"
 #define HLT_FW_FILP_PATH                 "/sdcard/ILITEK_FW_HLT"
 #define HLT_INI_REQUEST_PATH		"mp_hlt.ini"
 #define HLT_FW_REQUEST_PATH		"ILITEK_FW_HLT"

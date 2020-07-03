@@ -340,7 +340,7 @@ out:
 
 static int dev_mkdir(char *name, umode_t mode)
 {
-#if 1
+#if 0
 	struct dentry *dentry;
 	struct path path;
 	int err;
