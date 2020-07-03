@@ -314,6 +314,21 @@ static ssize_t alspshub_show_alsval(struct device_driver *ddri, char *buf)
 	return res;
 }
 
+static ssize_t alspshub_show_ps_noise(struct device_driver *ddri, char *buf)
+{
+	ssize_t res = 0;
+	struct data_unit_t data_t;
+
+	res = sensor_get_data_from_hub(ID_PROXIMITY, &data_t);
+	if (res < 0) {
+		pr_err("sensor_get_data_from_hub fail, (ID: %d)\n",
+			ID_PROXIMITY);
+		return 0;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", data_t.proximity_t.steps);
+}
+
 static DRIVER_ATTR(als, 0644, alspshub_show_als, NULL);
 static DRIVER_ATTR(ps, 0644, alspshub_show_ps, NULL);
 static DRIVER_ATTR(alslv, 0644, alspshub_show_alslv, NULL);
@@ -321,6 +336,7 @@ static DRIVER_ATTR(alsval, 0644, alspshub_show_alsval, NULL);
 static DRIVER_ATTR(trace, 0644, alspshub_show_trace,
 					alspshub_store_trace);
 static DRIVER_ATTR(reg, 0644, alspshub_show_reg, NULL);
+static DRIVER_ATTR(ps_noise, 0644, alspshub_show_ps_noise, NULL);
 static struct driver_attribute *alspshub_attr_list[] = {
 	&driver_attr_als,
 	&driver_attr_ps,
@@ -328,6 +344,7 @@ static struct driver_attribute *alspshub_attr_list[] = {
 	&driver_attr_alslv,
 	&driver_attr_alsval,
 	&driver_attr_reg,
+	&driver_attr_ps_noise,
 };
 
 static int alspshub_create_attr(struct device_driver *driver)
