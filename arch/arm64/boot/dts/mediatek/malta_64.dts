@@ -575,7 +575,7 @@
 #include "bat_setting/mt6765_battery_table_blackjack.dtsi"
 #include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
 
-#include <Malta_20_64/cust.dtsi>
-#include "cust_mt6765_camera_Malta_20_64.dtsi"
-#include "Malta_20_64-fpsensor.dtsi"
+#include <malta_64/cust.dtsi>
+#include "cust_mt6765_camera_malta_64.dtsi"
+#include "malta_64-fpsensor.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
