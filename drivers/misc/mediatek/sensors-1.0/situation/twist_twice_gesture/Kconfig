@@ -1,0 +1,8 @@
+config ONTIM_TWIST_TWICEHUB
+	bool "twist_twicehub for Ontim package"
+	default n
+	help
+		A twist_twice gesture is a device,
+		usually portable and electronic
+		or electromechanical,
+		that detect device is twist twice.
