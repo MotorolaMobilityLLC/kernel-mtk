@@ -1,0 +1,11 @@
+/* AWINIC AW87519 Smart PA */
+&i2c3 {
+	aw87519_pa@58 {
+		compatible = "awinic,aw87519_pa";
+		reg = <0x58>;
+		reset-gpio = <&pio 153 0>;
+		status = "okay";
+	};
+};
+
+/* AWINIC AW87519 Smart PA End */

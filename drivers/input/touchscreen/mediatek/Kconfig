@@ -43,7 +43,7 @@ config TOUCHSCREEN_MTK_SOLOMON
 
 source "drivers/input/touchscreen/mediatek/SOLOMON/Kconfig"
 
-config TOUCHSCREEN_MTK_FOCALTECH_TS
+config TOUCHSCREEN_FTS
 	bool "FOCALTECH_TS for Mediatek package"
 	default n
 	help
@@ -55,6 +55,41 @@ config TOUCHSCREEN_MTK_FOCALTECH_TS
 	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/focaltech_touch/Kconfig"
+
+config TOUCHSCREEN_FTS_SPI
+	bool "FOCALTECH_TS_SPI for Mediatek package"
+	default n
+	help
+	  Say Y here if you have focaltech_touch_spi touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/focaltech_touch_spi/Kconfig"
+
+config TOUCHSCREEN_HIMAX_CHIPSET
+	bool "HIMAX_TS for Mediatek package"
+	default n
+	help
+	  Say Y here if you have focaltech_touch touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/hxchipset/Kconfig"
+
+config TOUCHSCREEN_CHIPONE
+	tristate "Chipone TDDI touchscreen for Mediatek package"
+	default n
+	help
+	  Say y here if you have chipone TDDI touch panel.
+	  If unsure, say N.
+source "drivers/input/touchscreen/mediatek/chipone-tddi/Kconfig"
+
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
@@ -99,6 +134,58 @@ config TOUCHSCREEN_MTK_NT36572_COMMON
            module will be called.
 
 source "drivers/input/touchscreen/mediatek/nt36572_common/Kconfig"
+
+config TOUCHSCREEN_ILI9881H
+	bool "ilitek for Mediatek package"
+	default n
+	help
+	  Say Y here if you have MSG28XX_TS touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/ili9881h/Kconfig"
+
+config TOUCHSCREEN_ILI9881H_BJ
+	bool "ilitek for Mediatek package"
+	default n
+	help
+	  Say Y here if you have ILI9881H_TS touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/ili9881h_bj/Kconfig"
+
+config TOUCHSCREEN_ILI9881H_SPI
+	bool "ilitek for Mediatek package"
+	default n
+	help
+	  Say Y here if you have ILI9881H_TS touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/ili9881h_spi/Kconfig"
+
+config TOUCHSCREEN_ILI9882H_SPI
+	bool "ilitek for Mediatek package"
+	default n
+	help
+	  Say Y here if you have ILI9882H_TS touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/ili9882h_spi/Kconfig"
 
 config TOUCHSCREEN_MTK_FOCALTECH_HD
 	bool "Focaltech Touchscreen"
