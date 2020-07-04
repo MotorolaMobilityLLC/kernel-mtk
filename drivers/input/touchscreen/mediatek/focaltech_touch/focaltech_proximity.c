@@ -2,7 +2,7 @@
  *
  * FocalTech TouchScreen driver.
  *
- * Copyright (c) 2010-2017, FocalTech Systems, Ltd., all rights reserved.
+ * Copyright (c) 2012-2019, FocalTech Systems, Ltd., all rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -14,11 +14,12 @@
  * GNU General Public License for more details.
  *
  */
+
 /*****************************************************************************
 *
 * File Name: focaltech_proximity.c
 *
-*    Author: luoguojin
+*    Author: Focaltech Driver Team
 *
 *   Created: 2016-09-19
 *
@@ -35,15 +36,25 @@
 * Included header files
 *****************************************************************************/
 #include "focaltech_core.h"
+#include "focaltech_common.h"
 
 #if FTS_PSENSOR_EN
 #include <hwmsensor.h>
 #include <hwmsen_dev.h>
 #include <sensors_io.h>
+#include <alsps.h>
 
 /*****************************************************************************
 * Private constant and macro definitions using #define
 *****************************************************************************/
+/*
+ * FTS_ALSPS_SUPPORT is choose structure hwmsen_object or control_path, data_path
+ * FTS_ALSPS_SUPPORT = 1, is control_path, data_path
+ * FTS_ALSPS_SUPPORT = 0, hwmsen_object
+ */
+#define FTS_ALSPS_SUPPORT    1
+#define PS_FAR_AWAY          1
+#define PS_NEAR              0
 
 /*****************************************************************************
 * Private enumerations, structures and unions using typedef
@@ -66,59 +77,6 @@ static struct fts_proximity_st fts_proximity_data;
 /*****************************************************************************
 * Static function prototypes
 *****************************************************************************/
-static int fts_enter_proximity_mode(struct i2c_client *client, int mode);
-static ssize_t fts_touch_proximity_show(struct device *dev, struct device_attribute *attr, char *buf);
-static ssize_t fts_touch_proximity_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
-/*****************************************************************************
-* functions body
-*****************************************************************************/
-
-
-/* read and write proximity mode
-*   read example: cat  fts_touch_proximity_mode---read  proximity mode
-*   write example:echo 01 > fts_touch_proximity_mode ---write proximity mode to 01
-*/
-static DEVICE_ATTR (fts_touch_proximity_mode, S_IRUGO | S_IWUSR, fts_touch_proximity_show, fts_touch_proximity_store);
-static struct attribute *fts_touch_proximity_attrs[] = {
-    &dev_attr_fts_touch_proximity_mode.attr,
-    NULL,
-};
-
-static struct attribute_group fts_touch_proximity_group = {
-    .attrs = fts_touch_proximity_attrs,
-};
-
-
-static ssize_t fts_touch_proximity_show(struct device *dev, struct device_attribute *attr, char *buf)
-{
-    mutex_lock(&fts_data->input_dev->mutex);
-    return snprintf(buf, PAGE_SIZE, "Proximity: %s\n", fts_proximity_data.mode ? "On" : "Off");
-    mutex_unlock(&fts_data->input_dev->mutex);
-}
-
-static ssize_t fts_touch_proximity_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-    unsigned long val;
-    int ret;
-    struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-
-    mutex_lock(&fts_data->input_dev->mutex);
-    val = simple_strtoul(buf, 0, 10);
-    if (val == 1) {
-        if (!fts_proximity_data.mode) {
-            fts_proximity_data.mode = 1;
-            ret = fts_enter_proximity_mode(client, 1);
-        }
-    } else {
-        if (fts_proximity_data.mode) {
-            fts_proximity_data.mode = 0;
-            ret = fts_enter_proximity_mode(client, 0);
-        }
-    }
-    mutex_unlock(&fts_data->input_dev->mutex);
-
-    return count;
-}
 
 /************************************************************************
 * Name: fts_enter_proximity_mode
@@ -127,7 +85,7 @@ static ssize_t fts_touch_proximity_store(struct device *dev, struct device_attri
 * Output: no
 * Return: success =0
 ***********************************************************************/
-static int fts_enter_proximity_mode(struct i2c_client *client, int mode)
+static int fts_enter_proximity_mode(int mode)
 {
     int ret = 0;
     u8 buf_addr = 0;
@@ -139,16 +97,15 @@ static int fts_enter_proximity_mode(struct i2c_client *client, int mode)
     else
         buf_value = 0x00;
 
-    ret = fts_i2c_write_reg(client, buf_addr, buf_value);
+    ret = fts_write_reg(buf_addr, buf_value);
     if (ret < 0) {
         FTS_ERROR("[PROXIMITY] Write proximity register(0xB0) fail!");
         return ret;
     }
 
-    fts_proximity_data.mode = buf_value ? 1 : 0;
+    fts_proximity_data.mode = buf_value ? ENABLE : DISABLE;
     FTS_DEBUG("[PROXIMITY] proximity mode = %d", fts_proximity_data.mode);
-
-    return ret ;
+    return 0 ;
 }
 
 /*****************************************************************************
@@ -158,15 +115,87 @@ static int fts_enter_proximity_mode(struct i2c_client *client, int mode)
 *  Output:
 *  Return:
 *****************************************************************************/
-int fts_proximity_recovery(struct i2c_client *client)
+int fts_proximity_recovery(struct fts_ts_data *ts_data)
 {
     int ret = 0;
 
     if (fts_proximity_data.mode)
-        ret = fts_enter_proximity_mode(client, 1);
+        ret = fts_enter_proximity_mode(ENABLE);
 
     return ret;
 }
+
+#if FTS_ALSPS_SUPPORT
+/* if use  this typ of enable , Gsensor should report inputEvent(x, y, z ,stats, div) to HAL */
+static int ps_open_report_data(int open)
+{
+    /* should queue work to report event if  is_report_input_direct=true */
+    return 0;
+}
+
+/* if use  this type of enable , Psensor only enabled but not report inputEvent to HAL */
+static int ps_enable_nodata(int en)
+{
+    int err = 0;
+
+    FTS_DEBUG("[PROXIMITY]SENSOR_ENABLE value = %d", en);
+    /* Enable proximity */
+    mutex_lock(&fts_data->input_dev->mutex);
+    err = fts_enter_proximity_mode(en);
+    mutex_unlock(&fts_data->input_dev->mutex);
+    return err;
+}
+
+static int ps_set_delay(u64 ns)
+{
+    return 0;
+}
+
+static int ps_get_data(int *value, int *status)
+{
+    *value = (int)fts_proximity_data.detect;
+    FTS_DEBUG("fts_proximity_data.detect = %d\n", *value);
+    *status = SENSOR_STATUS_ACCURACY_MEDIUM;
+    return 0;
+}
+int ps_local_init(void)
+{
+    int err = 0;
+    struct ps_control_path ps_ctl = { 0 };
+    struct ps_data_path ps_data = { 0 };
+
+    ps_ctl.is_use_common_factory = false;
+    ps_ctl.open_report_data = ps_open_report_data;
+    ps_ctl.enable_nodata = ps_enable_nodata;
+    ps_ctl.set_delay = ps_set_delay;
+    ps_ctl.is_report_input_direct = false;
+    ps_ctl.is_support_batch = false;
+
+    err = ps_register_control_path(&ps_ctl);
+    if (err) {
+        FTS_ERROR("register fail = %d\n", err);
+    }
+    ps_data.get_data = ps_get_data;
+    ps_data.vender_div = 100;
+    err = ps_register_data_path(&ps_data);
+    if (err) {
+        FTS_ERROR("tregister fail = %d\n", err);
+    }
+
+    return err;
+}
+int ps_local_uninit(void)
+{
+    return 0;
+}
+
+struct alsps_init_info ps_init_info = {
+    .name = "fts_ts",
+    .init = ps_local_init,
+    .uninit = ps_local_uninit,
+};
+
+#else
 
 /*****************************************************************************
 *  Name: fts_ps_operate
@@ -198,7 +227,7 @@ static int fts_ps_operate(void *self, uint32_t command, void *buff_in, int size_
             value = *(int *)buff_in;
             FTS_DEBUG("[PROXIMITY]SENSOR_ENABLE value = %d", value);
             /* Enable proximity */
-            err = fts_enter_proximity_mode(fts_data->client, value);
+            err = fts_enter_proximity_mode(value);
         }
         break;
 
@@ -222,6 +251,7 @@ static int fts_ps_operate(void *self, uint32_t command, void *buff_in, int size_
 
     return err;
 }
+#endif
 
 /*****************************************************************************
 *  Name: fts_proximity_readdata
@@ -230,37 +260,44 @@ static int fts_ps_operate(void *self, uint32_t command, void *buff_in, int size_
 *  Output:
 *  Return: 0 - need return in suspend
 *****************************************************************************/
-int fts_proximity_readdata(struct i2c_client *client)
+int fts_proximity_readdata(struct fts_ts_data *ts_data)
 {
     int ret;
     int proximity_status = 1;
     u8  regvalue;
+#if !FTS_ALSPS_SUPPORT
     struct hwm_sensor_data sensor_data;
-
-    if (fts_proximity_data.mode == 0)
+#endif
+    if (fts_proximity_data.mode == DISABLE)
         return -EPERM;
 
-    fts_i2c_read_reg(client, FTS_REG_FACE_DEC_MODE_STATUS, &regvalue);
+    fts_read_reg(FTS_REG_FACE_DEC_MODE_STATUS, &regvalue);
 
     if (regvalue == 0xC0) {
         /* close. need lcd off */
-        proximity_status = 0;
+        proximity_status = PS_NEAR;
     } else if (regvalue == 0xE0) {
         /* far away */
-        proximity_status = 1;
+        proximity_status = PS_FAR_AWAY;
     }
+
+    FTS_INFO("fts_proximity_data.detect is %d", fts_proximity_data.detect);
 
     if (proximity_status != (int)fts_proximity_data.detect) {
         FTS_DEBUG("[PROXIMITY] p-sensor state:%s", proximity_status ? "AWAY" : "NEAR");
-        fts_proximity_data.detect = proximity_status ? 1 : 0;
+        fts_proximity_data.detect = proximity_status ? PS_FAR_AWAY : PS_NEAR;
+#if FTS_ALSPS_SUPPORT
+        ret = ps_report_interrupt_data(fts_proximity_data.detect);
+#else
         sensor_data.values[0] = proximity_status;
         sensor_data.value_divide = 1;
         sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;
         ret = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data);
         if (ret) {
-            FTS_ERROR("[PROXIMITY] call hwmsen_get_interrupt_data failed, ret=%d", ret);
+            FTS_ERROR("[PROXIMITY] Call hwmsen_get_interrupt_data failed, ret=%d", ret);
             return ret;
         }
+#endif
         return 0;
     }
 
@@ -276,7 +313,7 @@ int fts_proximity_readdata(struct i2c_client *client)
 *****************************************************************************/
 int fts_proximity_suspend(void)
 {
-    if (fts_proximity_data.mode == 1)
+    if (fts_proximity_data.mode == ENABLE)
         return 0;
     else
         return -1;
@@ -291,36 +328,27 @@ int fts_proximity_suspend(void)
 *****************************************************************************/
 int fts_proximity_resume(void)
 {
-    if (fts_proximity_data.mode == 1)
+    if (fts_proximity_data.mode == ENABLE)
         return 0;
     else
         return -1;
 }
 
-/*****************************************************************************
-*  Name: fts_proximity_init
-*  Brief:
-*  Input:
-*  Output:
-*  Return:
-*****************************************************************************/
-int fts_proximity_init(struct i2c_client *client)
+int fts_proximity_init(void)
 {
+#if !FTS_ALSPS_SUPPORT
     int err = 0;
     struct hwmsen_object obj_ps;
+#endif
 
     FTS_FUNC_ENTER();
 
     memset((u8 *)&fts_proximity_data, 0, sizeof(struct fts_proximity_st));
-    fts_proximity_data.detect = 1;  /* defalut far awway */
+    fts_proximity_data.detect = PS_FAR_AWAY;  /* defalut far awway */
 
-    err = sysfs_create_group(&client->dev.kobj, &fts_touch_proximity_group);
-    if (0 != err) {
-        FTS_ERROR("[PROXIMITY] Create sysfs node failed,ret=%d", err);
-        sysfs_remove_group(&client->dev.kobj, &fts_touch_proximity_group);
-        return err;
-    }
-
+#if FTS_ALSPS_SUPPORT
+    alsps_driver_add(&ps_init_info);
+#else
     obj_ps.polling = 0; /* interrupt mode */
     obj_ps.sensor_operate = fts_ps_operate;
     err = hwmsen_attach(ID_PROXIMITY, &obj_ps);
@@ -328,21 +356,14 @@ int fts_proximity_init(struct i2c_client *client)
         FTS_ERROR("[PROXIMITY]fts proximity attach fail = %d!", err);
     else
         FTS_INFO("[PROXIMITY]fts proximity attach ok = %d\n", err);
+#endif
 
     FTS_FUNC_EXIT();
     return 0;
 }
 
-/*****************************************************************************
-*  Name: fts_proximity_exit
-*  Brief:
-*  Input:
-*  Output:
-*  Return:
-*****************************************************************************/
-int fts_proximity_exit(struct i2c_client *client)
+int fts_proximity_exit(void)
 {
-    sysfs_remove_group(&client->dev.kobj, &fts_touch_proximity_group);
     return 0;
 }
 #endif /* FTS_PSENSOR_EN */

@@ -653,6 +653,10 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,usb_iddig_bi_eint";
 	};
 
+	usb_phy_tuning:usb_phy_tuning {
+		compatible = "mediatek,phy_tuning";
+	};
+
 	mrdump_ext_rst: mrdump_ext_rst {
 		compatible = "mediatek, mrdump_ext_rst-eint";
 		force_mode = "EINT";
@@ -667,11 +671,23 @@ firmware_class.path=/vendor/firmware";
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
+	usb_cable: usb_cable {
+		compatible = "mediatek,usb_cable_eint";
+	};
 
+	sar_mtk: sar_mtk{
+		compatible = "mediatek,sar-eint";
+	};
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
-
+	fingerprint_fpsensor: fingerprint_fpsensor {
+        compatible = "mediatek,fpsensor_pinctrl";
+		//interrupt-parent = <&gic>;
+		//interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_LOW>;
+		debounce = <2 0>;
+	};
 	mt6357_gauge {
 		compatible = "mediatek,mt6357_gauge";
 		gauge_name = "gauge";
@@ -1876,6 +1892,12 @@ firmware_class.path=/vendor/firmware";
 				<&topckgen CLK_TOP_SPI_SEL>,
 				<&infracfg_ao CLK_IFR_SPI1>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
+         spidev@0 {
+             compatible = "mediatek,fpsensor";
+             spi-max-frequency = <500000>;
+             reg = <0>;
+             status = "ok";
+         };
 	};
 
 	spi2: spi@11012000 {
@@ -2165,6 +2187,13 @@ firmware_class.path=/vendor/firmware";
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	gpio_boardid:gpio_boardid {
+			compatible = "gpio,boardid";
+			gpio,boardid0 = <&pio 163 0>;
+			gpio,boardid1 = <&pio 164 0>;
+			gpio,boardid2 = <&pio 165 0>;
+			gpio,boardid3 = <&pio 166 0>;
+		};
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-rst = <172>;
@@ -2172,7 +2201,14 @@ firmware_class.path=/vendor/firmware";
 			gpio-irq = <10>;
 			gpio-irq-std = <&pio 10 0x0>;
 		};
+	als: als_ps@0 {
+                compatible = "mediatek,als_ps";
+		status = "okay";
 
+                pinctrl-names = "plv3v_enable", "plv3v_disable";
+                pinctrl-0 = <&pl_v3v_enable>;
+                pinctrl-1 = <&pl_v3v_disable>;
+        };
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
@@ -2728,7 +2764,12 @@ firmware_class.path=/vendor/firmware";
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
-
+	flashlights_aw3643: flashlights_aw3643 {
+		compatible = "mediatek,flashlights_aw3643";
+	};
+	flashlights_aw36514: flashlights_aw36514 {
+		compatible = "mediatek,flashlights_aw36514";
+	};
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
 		decouple = <0>;
@@ -2754,6 +2795,10 @@ firmware_class.path=/vendor/firmware";
 		interrupts = <GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&camsys CLK_CAM_CCU>;
 		clock-names = "CCU_CLK_CAM_CCU";
+	};
+
+	led_simple: led_simple {
+		compatible = "leds-mt65xx";
 	};
 
 	mt_charger: mt_charger {
@@ -2787,20 +2832,21 @@ firmware_class.path=/vendor/firmware";
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
-		/* enable_sw_jeita; */
+		 enable_sw_jeita; 
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
 		enable_pe_4;
-		enable_type_c;
-		power_path_support;
+		/*disable usb type C*/
+		/*enable_type_c;
+		power_path_support;*/
 		enable_dynamic_mivr;
 		disable_pd_dual;
 
 		/* common */
-		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
-		min_charger_voltage = <4600000>;
+/*		battery_cv = <4440000>;*/
+		max_charger_voltage = <6100000>;
+		min_charger_voltage = <4500000>;
 
 		/* dynamic mivr */
 		min_charger_voltage_1 = <4400000>;
@@ -2812,16 +2858,16 @@ firmware_class.path=/vendor/firmware";
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
+		/*ac_charger_current = <2050000>;*/
 		ac_charger_input_current = <3200000>;
 		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <1500000>;
+		charging_host_charger_current = <500000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
 		ta_ac_charger_current = <3000000>;
 
 		/* sw jeita */
-		jeita_temp_above_t4_cv = <4240000>;
+/*		jeita_temp_above_t4_cv = <4240000>;
 		jeita_temp_t3_to_t4_cv = <4240000>;
 		jeita_temp_t2_to_t3_cv = <4340000>;
 		jeita_temp_t1_to_t2_cv = <4240000>;
@@ -2837,14 +2883,14 @@ firmware_class.path=/vendor/firmware";
 		temp_t1_thres_plus_x_degree = <6>;
 		temp_t0_thres = <0>;
 		temp_t0_thres_plus_x_degree = <0>;
-		temp_neg_10_thres = <0>;
+		temp_neg_10_thres = <0>;*/
 
 		/* battery temperature protection */
-		enable_min_charge_temp;
+/*		enable_min_charge_temp;
 		min_charge_temp = <0>;
 		min_charge_temp_plus_x_degree = <6>;
 		max_charge_temp = <50>;
-		max_charge_temp_minus_x_degree = <47>;
+		max_charge_temp_minus_x_degree = <47>;*/
 
 		/* PE */
 		ta_12v_support;
@@ -3159,6 +3205,23 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,dynamic_options";
 	};
 
+};
+
+&pio {
+        pl_v3v_enable: plv3venable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        pl_v3v_disable: plv3vdisable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
 };
 
 #include "cust_mt6765_msdc.dtsi"

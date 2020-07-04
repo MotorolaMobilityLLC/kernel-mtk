@@ -903,6 +903,14 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
 	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].sensorType = SENSOR_TYPE_CHOPCHOP_GESTURE;
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_TWIST_TWICE_GESTURE].sensorType = SENSOR_TYPE_TWIST_TWICE_GESTURE;
+	mSensorState[SENSOR_TYPE_TWIST_TWICE_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_TWIST_TWICE_GESTURE].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd,
@@ -1731,6 +1739,14 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->sar_event.data[1] = data_t->sar_event.data[1];
 		data->sar_event.data[2] = data_t->sar_event.data[2];
 		break;
+	case ID_CHOPCHOP_GESTURE:
+		data->time_stamp = data_t->time_stamp;
+		data->ontim_gesture_event.state = data_t->ontim_gesture_event.state;
+		break;
+	case ID_TWIST_TWICE_GESTURE:
+		data->time_stamp = data_t->time_stamp;
+		data->ontim_gesture_event.state = data_t->ontim_gesture_event.state;
+		break;
 	default:
 		err = -1;
 		break;
@@ -1859,6 +1875,13 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 				CUST_ACTION_GET_SENSOR_INFO;
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 				+ sizeof(req.set_cust_req.getInfo);
+			break;
+		case CUST_ACTION_SET_TRACE:
+			req.set_cust_req.setTrace.action =
+				CUST_ACTION_SET_TRACE;
+			req.set_cust_req.setTrace.trace = *((int32_t *) data);
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+				+ sizeof(req.set_cust_req.setTrace);
 			break;
 		default:
 			return -1;

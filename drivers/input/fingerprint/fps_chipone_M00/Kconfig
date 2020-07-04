@@ -1,0 +1,6 @@
+config MICROTRUST_FPSENSOR_M00
+    tristate "Chipone Finger Print Driver"
+    help
+        Chipone Finger Print Supported
+
+

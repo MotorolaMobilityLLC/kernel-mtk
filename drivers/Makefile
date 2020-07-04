@@ -6,6 +6,17 @@
 #
 subdir-ccflags-y += -Werror
 
+ifeq ($(BUILD_D85), YES)
+subdir-ccflags-y += -DDUAL_85_VERSION
+endif
+ifeq ($(BUILD_SMT), YES)
+subdir-ccflags-y += -DCONFIG_MTK_DM_VERITY_OFF
+subdir-ccflags-y += -DCONFIG_CHARGER_STOP_70PER
+endif
+ifneq ($(BUILD_DPWK), YES)
+subdir-ccflags-y += -DCONFIG_ONEKEY_REBOOT_NORMAL_MODE
+endif
+
 obj-y				+= irqchip/
 obj-y				+= bus/
 
@@ -176,5 +187,6 @@ obj-$(CONFIG_STM)		+= hwtracing/stm/
 obj-$(CONFIG_ANDROID)		+= android/
 obj-$(CONFIG_NVMEM)		+= nvmem/
 obj-$(CONFIG_FPGA)		+= fpga/
+obj-y                           += ontim/
 obj-$(CONFIG_TEE)		+= tee/
 obj-$(CONFIG_TRUSTY)	+= trusty/
