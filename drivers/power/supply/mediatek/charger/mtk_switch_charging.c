@@ -152,14 +152,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	if ((get_boot_mode() == META_BOOT) ||
 	    (get_boot_mode() == ADVMETA_BOOT)) {
-		pdata->input_current_limit = 200000; /* 200mA */
-		goto done;
+//		pdata->input_current_limit = 200000; /* 200mA */
+//		goto done;
 	}
 
 	if (info->atm_enabled == true && (info->chr_type == STANDARD_HOST ||
 	    info->chr_type == CHARGING_HOST)) {
-		pdata->input_current_limit = 100000; /* 100mA */
-		goto done;
+//		pdata->input_current_limit = 100000; /* 100mA */
+//		goto done;
 	}
 
 	if (mtk_is_TA_support_pd_pps(info)) {
@@ -262,17 +262,19 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 				info->data.apple_2_1a_charger_current;
 	}
 
+#ifndef  DUAL_85_VERSION
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
 		    && info->chr_type == STANDARD_HOST)
 			pr_debug("USBIF & STAND_HOST skip current check\n");
 		else {
 			if (info->sw_jeita.sm == TEMP_T0_TO_T1) {
-				pdata->input_current_limit = 500000;
-				pdata->charging_current_limit = 350000;
+			//	pdata->input_current_limit = 800000;
+				pdata->charging_current_limit = 1050000;
 			}
 		}
 	}
+#endif
 
 	if (pdata->thermal_charging_current_limit != -1) {
 		if (pdata->thermal_charging_current_limit <
@@ -633,6 +635,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 			mtk_pe_check_charger(info);
 	}
 
+	charger_dev_kick_wdt(info->chg1_dev);
+	
 	do {
 		switch (swchgalg->state) {
 			chr_err("%s_2 [%d] %d\n", __func__, swchgalg->state,

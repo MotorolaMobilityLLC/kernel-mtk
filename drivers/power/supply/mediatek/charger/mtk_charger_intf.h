@@ -38,7 +38,7 @@ struct charger_manager;
 #include "adapter_class.h"
 
 #define CHARGING_INTERVAL 10
-#define CHARGING_FULL_INTERVAL 20
+#define CHARGING_FULL_INTERVAL 15
 
 #define CHRLOG_ERROR_LEVEL   1
 #define CHRLOG_DEBUG_LEVEL   2
