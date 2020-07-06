@@ -15,6 +15,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
+#include <dt-bindings/mmc/mt6765-msdc.h>
 
 /dts-v1/;
 /plugin/;
@@ -162,7 +163,8 @@
         #size-cells = <0>;
         status = "okay";
         touch_spi@0{
-            compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi";
+            compatible = "mediatek,focaltech_touch_spi","mediatek,himax_touch_spi",
+                         "mediatek,ilitek_touch_spi","mediatek,ili9882h_touch_spi";
             reg = <0>;
             spi-max-frequency = <10000000>;
             status = "okay";
@@ -170,14 +172,14 @@
 };
 
 &touch {
-	tpd-resolution = <720 1560>;
+	tpd-resolution = <720 1600>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
 	tpd-key-dim-local = <90 883 100 40 230
 				 883 100 40 370 883 100 40 0 0 0 0>;
 	tpd-max-touch-num = <10>;
-	tpd-filter-enable = <1>;
+	tpd-filter-enable = <0>;
 	tpd-filter-pixel-density = <106>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
@@ -572,8 +574,15 @@
 	};
 };
 
-#include "bat_setting/mt6765_battery_table_blackjack.dtsi"
-#include "bat_setting/mt6765_battery_table_blackjack_2.dtsi"
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 1 0>;
+
+	status = "okay";
+};
+
+#include "bat_setting/mt6765_battery_table_malta_64.dtsi"
+#include "bat_setting/mt6765_battery_table_malta_64_2.dtsi"
 
 #include <malta_64/cust.dtsi>
 #include "cust_mt6765_camera_malta_64.dtsi"
