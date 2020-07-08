@@ -69,20 +69,20 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ontim_icnl9911s_hdplus_dsi_vdo_easyquick_608_lcm_drv,
 #endif
 
-#if defined(FT8006S_HDPLUS_DSI_VDO_HOLITECH_6528)
-	&ft8006s_hdplus_dsi_vdo_holitech_6528_lcm_drv,
-#endif
-
-#if defined(HX83102D_HDPLUS_DSI_VDO_TRULY_6528)
-	&hx83102d_hdplus_dsi_vdo_truly_6528_lcm_drv,
-#endif
-
 #if defined(ILI9881H_HDPLUS_DSI_VDO_TIANMA_6517)
 	&ili9881h_hdplus_dsi_vdo_tianma_6517_lcm_drv,
 #endif
 
 #if defined(ILI9882H_HDPLUS_DSI_VDO_HLT_6517)
 	&ili9882h_hdplus_dsi_vdo_hlt_6517_lcm_drv,
+#endif
+
+#if defined(FT8006S_HDPLUS_DSI_VDO_HOLITECH_6528)
+	&ft8006s_hdplus_dsi_vdo_holitech_6528_lcm_drv,
+#endif
+
+#if defined(HX83102D_HDPLUS_DSI_VDO_TRULY_6528)
+	&hx83102d_hdplus_dsi_vdo_truly_6528_lcm_drv,
 #endif
 
 #if defined(NT36672AH_HDP_DSI_VDO_TCL_CSOT)
