@@ -118,8 +118,10 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_RESET_HIGH  0xFFFF
 #ifndef BUILD_LK
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
+extern int ili_sleep_handler(int mode);
 #endif
 //static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
+#define ILITEK_TP_DEEP_SLEEP    1
 
 #ifndef TRUE
 #define TRUE 1
@@ -349,7 +351,9 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 #ifndef MACH_FPGA
-
+	LCM_LOGI("%s, tpd suspend in lcm func start\n", __func__);
+	ili_sleep_handler(ILITEK_TP_DEEP_SLEEP);
+	LCM_LOGI("%s, tpd suspend in lcm func done\n", __func__);
 	LCM_LOGI("%s, lcm_suspend start\n", __func__);
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	if (!gesture_dubbleclick_en) {
