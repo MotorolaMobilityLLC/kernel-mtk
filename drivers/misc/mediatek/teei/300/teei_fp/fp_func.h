@@ -16,7 +16,11 @@
 #define TEEI_FUNC_H
 
 #include <teei_ioc.h>
+#ifdef CONFIG_MICROTRUST_EXTEND_TRANSFER_BUFFER
+#define MICROTRUST_FP_SIZE  (0x100000 + 200*1024)
+#else
 #define MICROTRUST_FP_SIZE	0x80000
+#endif
 #define FP_MAJOR		254
 #define SHMEM_ENABLE		0
 #define SHMEM_DISABLE		1
