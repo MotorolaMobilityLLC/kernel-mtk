@@ -332,8 +332,12 @@ static void tpd_resume(struct device *h)
 
 static void tpd_suspend(struct device *h)
 {
+#ifndef ILI9881H_SUSPEND_BY_DDI
 	if (ilitek_tddi_sleep_handler(TP_SUSPEND) < 0)
 		ipio_err("TP suspend failed\n");
+#else
+	ipio_info("ilitek_tddi_sleep_handler() callback by ddi\n");
+#endif
 }
 
 static int ilitek_tp_pm_suspend(struct device *dev)
