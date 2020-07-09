@@ -124,7 +124,7 @@
 #define MT_PRESSURE			DISABLE
 #define ENABLE_WQ_ESD			DISABLE
 #define ENABLE_WQ_BAT			DISABLE
-#define ENABLE_GESTURE			ENABLE
+#define ENABLE_GESTURE			DISABLE
 #define REGULATOR_POWER			DISABLE
 #define TP_SUSPEND_PRIO			ENABLE
 #define RESUME_BY_DDI			DISABLE
@@ -765,6 +765,8 @@ struct gesture_symbol {
 #ifndef ONTIM_DEV_ILLTEK_INFO
 #define ONTIM_DEV_ILLTEK_INFO
 #endif
+#define ILI9881H_SUSPEND_BY_DDI
+
 struct ilitek_tddi_dev {
 	struct i2c_client *i2c;
 	struct spi_device *spi;
