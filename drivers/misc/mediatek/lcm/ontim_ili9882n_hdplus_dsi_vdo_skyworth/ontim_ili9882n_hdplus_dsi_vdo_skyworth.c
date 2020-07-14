@@ -141,15 +141,18 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
-
 	{0xFF, 0x03, {0x98, 0x82, 0x00}},//Page0
 	{0x51, 0x02, {0x00,0x00}},
-	{0x53, 0x01, {0x24}},
-	{0x55, 0x01, {0x00}},
+	{0x53, 0x01, {0x2c}},
+	{0x55, 0x01, {0x01}},
 	{0x11, 0x01, {0x00}},
 	{REGFLAG_DELAY, 120,{}},
+	{0xFF, 0x03, {0x98, 0x82, 0x03}},//Page3
+	{0x83, 0x01, {0x60}},
+	{0x84, 0x01, {0x03}},
+	{0xFF, 0x03, {0x98, 0x82, 0x00}},//Page0
 	{0x29, 0x01, {0x00}},
-    {REGFLAG_DELAY, 20,{}},
+	{REGFLAG_DELAY, 20,{}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -240,7 +243,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 24;
 	params->dsi.horizontal_frontporch = 24;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 275;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 310;   /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 3;
