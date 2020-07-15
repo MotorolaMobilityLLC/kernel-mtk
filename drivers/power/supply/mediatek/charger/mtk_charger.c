@@ -1226,6 +1226,8 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 
 	info->notify_code = 0x0000;
 
+	info->dynamic_charge_current = -1;
+	
 	pdata1->disable_charging_count = 0;
 	pdata1->input_current_limit_by_aicl = -1;
 	pdata2->disable_charging_count = 0;
@@ -1294,12 +1296,36 @@ static int mtk_chgstat_notify(struct charger_manager *info)
 static bool mtk_chg_check_vbus(struct charger_manager *info)
 {
 	int vchr = 0;
+	static int low_vbus=0;
 
 	vchr = battery_get_vbus() * 1000; /* uV */
 	if (vchr > info->data.max_charger_voltage) {
 		chr_err("%s: vbus(%d mV) > %d mV\n", __func__, vchr / 1000,
 			info->data.max_charger_voltage / 1000);
 		return false;
+	}
+	
+	if (info->enable_dynamic_charge_current ){
+		
+	if(info->charger_thread_polling == true && 
+		vchr < (info->data.min_charger_voltage-20000)){
+		
+		low_vbus ++;
+		if(low_vbus >5)
+		{
+		      // low_vbus =0;
+		if (info->dynamic_charge_current == -1)
+			info->dynamic_charge_current = info->data.ac_charger_current - 100000;
+		else if( info->dynamic_charge_current  > 1000000)
+			info->dynamic_charge_current -= 100000;
+		}
+		chr_err("%s: vbus(%d mV) < %d mV ; current=%d;%d;\n", __func__, vchr / 1000,
+			info->data.min_charger_voltage / 1000 -20 ,
+			info->dynamic_charge_current ,
+			low_vbus);
+	}
+	else
+		low_vbus	= 0;
 	}
 
 	return true;
@@ -1823,6 +1849,8 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 
 	info->enable_hv_charging = true;
 
+	info->enable_dynamic_charge_current = of_property_read_bool(np, "enable_dynamic_charge_current");
+	info->dynamic_charge_current = -1;
 	/* common */
 	if (of_property_read_u32(np, "battery_cv", &val) >= 0)
 		info->data.battery_cv = val;
