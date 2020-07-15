@@ -245,7 +245,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 34;//old is 60,now is 12
 	params->dsi.horizontal_frontporch = 51;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 263;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 278;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 3;
@@ -325,7 +325,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x12;
+	unsigned char data = 0x14;
 	LCM_LOGI("%s:  start init\n",__func__);
 
 	if (!gesture_dubbleclick_en) {
@@ -341,7 +341,7 @@ static void lcm_init(void)
 		set_gpio_lcd_enn(1);
 		MDELAY(7);//for bias IC and tr2
 		cmd = 0x01;
-		data = 0x12;
+		data = 0x14;
 		i2c_send_data_lcd(cmd,data);
 	}
 	lcm_reset();
