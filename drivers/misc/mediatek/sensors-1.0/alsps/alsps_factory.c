@@ -296,6 +296,22 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 			return -EINVAL;
 		}
 		return 0;
+	case ALSPS_IOCTL_ALS_GET_TARGET_LUX:
+		if (alsps_factory.fops != NULL &&
+			alsps_factory.fops->als_get_target_lux != NULL) {
+			err = alsps_factory.fops->als_get_target_lux(&data);
+			if (err < 0) {
+				pr_err("ALSPS_IOCTL_ALS_GET_TARGET_LUX FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("ALSPS_IOCTL_ALS_GET_TARGET_LUX NULL\n");
+			return -EINVAL;
+		}
+		if (copy_to_user(ptr, &data, sizeof(data)))
+			return -EFAULT;
+		return 0;
+
 	default:
 		pr_err("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
