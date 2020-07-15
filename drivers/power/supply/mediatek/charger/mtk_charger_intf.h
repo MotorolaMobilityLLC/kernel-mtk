@@ -392,6 +392,9 @@ struct charger_manager {
 
 	/* dynamic mivr */
 	bool enable_dynamic_mivr;
+
+	bool enable_dynamic_charge_current;
+	int dynamic_charge_current;
 };
 
 /* charger related module interface */
