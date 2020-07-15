@@ -5088,9 +5088,9 @@ extern char back_cam_name[64];
 static kal_uint16 read_module_id(void)
 {
 	kal_uint16 get_byte = 0;
-	char pusendcmd[2] = {(char)(0x0008 >> 8), (char)(0x0008 & 0xFF) };
+	char pusendcmd[2] = {(char)(0x000d >> 8), (char)(0x000d & 0xFF) };
 
-	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, 0xA0/*EEPROM_READ_ID*/);
+	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, 0xB0/*EEPROM_READ_ID*/);
 	PK_DBG("the module id is %d\n", get_byte);
 	return get_byte;
 }
@@ -5152,7 +5152,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				module_id = read_module_id();
 				PK_DBG("module_id 0x%x \n",module_id);			
-				if(0xaa == module_id) //ofilm module
+				if(0x4f == module_id) //ofilm module
 				{
 					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
@@ -5161,7 +5161,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					PK_DBG("TSP i2c write id: 0x%x, sensor id: 0x%x\n", module_id, *sensor_id);
 					return ERROR_NONE;
 				}
-				else if(0xbb == module_id)//qtech module
+				else if(0x51 == module_id)//qtech module
 				{
 					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
