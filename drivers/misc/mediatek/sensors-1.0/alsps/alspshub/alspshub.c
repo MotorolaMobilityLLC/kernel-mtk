@@ -40,6 +40,7 @@ struct alspshub_ipi_data {
 	atomic_t	als_cali;
 	atomic_t	ps_thd_val_high;
 	atomic_t	ps_thd_val_low;
+	atomic_t	als_target_lux;
 	ulong		enable;
 	ulong		pending_intr;
 	bool als_factory_enable;
@@ -329,6 +330,42 @@ static ssize_t alspshub_show_ps_noise(struct device_driver *ddri, char *buf)
 	return snprintf(buf, PAGE_SIZE, "%d\n", data_t.proximity_t.steps);
 }
 
+static ssize_t alspshub_show_als_target_lux(struct device_driver *ddri, char *buf)
+{
+	ssize_t res = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	if (!obj_ipi_data) {
+		pr_err("obj_ipi_data is null!!\n");
+		return 0;
+	}
+
+	res = snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&obj->als_target_lux));
+	return res;
+}
+
+static ssize_t alspshub_store_als_target_lux(struct device_driver *ddri,
+				const char *buf, size_t count)
+{
+	int lux = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int ret = 0;
+
+	if (!obj) {
+		pr_err("obj_ipi_data is null!!\n");
+		return 0;
+	}
+	ret = sscanf(buf, "%d", &lux);
+	if (ret != 1) {
+		pr_err("invalid content: '%s', length = %zu\n", buf, count);
+		return count;
+	}
+	atomic_set(&obj->als_target_lux, lux);
+
+	return count;
+}
+
+
 static DRIVER_ATTR(als, 0644, alspshub_show_als, NULL);
 static DRIVER_ATTR(ps, 0644, alspshub_show_ps, NULL);
 static DRIVER_ATTR(alslv, 0644, alspshub_show_alslv, NULL);
@@ -337,6 +374,7 @@ static DRIVER_ATTR(trace, 0644, alspshub_show_trace,
 					alspshub_store_trace);
 static DRIVER_ATTR(reg, 0644, alspshub_show_reg, NULL);
 static DRIVER_ATTR(ps_noise, 0644, alspshub_show_ps_noise, NULL);
+static DRIVER_ATTR(als_target_lux, 0644, alspshub_show_als_target_lux, alspshub_store_als_target_lux);
 static struct driver_attribute *alspshub_attr_list[] = {
 	&driver_attr_als,
 	&driver_attr_ps,
@@ -345,6 +383,7 @@ static struct driver_attribute *alspshub_attr_list[] = {
 	&driver_attr_alsval,
 	&driver_attr_reg,
 	&driver_attr_ps_noise,
+	&driver_attr_als_target_lux,
 };
 
 static int alspshub_create_attr(struct device_driver *driver)
@@ -682,6 +721,16 @@ static int pshub_factory_get_threshold(int32_t threshold[2])
 	return 0;
 }
 
+static int alshub_factory_get_target_lux(int32_t *lux)
+{
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	*lux = atomic_read(&obj->als_target_lux);
+
+	return 0;
+}
+
+
 static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_enable_sensor = alshub_factory_enable_sensor,
 	.als_get_data = alshub_factory_get_data,
@@ -690,6 +739,7 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_clear_cali = alshub_factory_clear_cali,
 	.als_set_cali = alshub_factory_set_cali,
 	.als_get_cali = alshub_factory_get_cali,
+	.als_get_target_lux = alshub_factory_get_target_lux,
 
 	.ps_enable_sensor = pshub_factory_enable_sensor,
 	.ps_get_data = pshub_factory_get_data,
@@ -1000,6 +1050,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	WRITE_ONCE(obj->als_android_enable, false);
 	WRITE_ONCE(obj->ps_factory_enable, false);
 	WRITE_ONCE(obj->ps_android_enable, false);
+	atomic_set(&obj->als_target_lux, 0);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
