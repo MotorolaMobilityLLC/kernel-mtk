@@ -32,6 +32,8 @@
 
        ac_charger_current = <2050000>;
 
+       enable_dynamic_charge_current;
+
 };
 
 &bat_gm30
