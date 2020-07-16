@@ -910,7 +910,7 @@ static void ilitek_update_tp_module_info(void)
 		break;
 	case MODEL_TM:
 		idev->md_name = "TM";
-		idev->md_fw_filp_path = TM_FW_REQUEST_PATH;
+		idev->md_fw_filp_path = TM_FW_FILP_PATH;
 		idev->md_fw_rq_path = TM_FW_REQUEST_PATH;
 		idev->md_ini_path = TM_INI_NAME_PATH;
 		idev->md_ini_rq_path = TM_INI_REQUEST_PATH;
