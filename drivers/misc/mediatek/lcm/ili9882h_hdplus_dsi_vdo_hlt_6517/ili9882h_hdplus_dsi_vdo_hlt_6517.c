@@ -152,7 +152,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x53, 0x01, {0x24}},
 	{0x55, 0x01, {0x00}},
 	{0x11, 0x01, {0x00}},
-	{REGFLAG_DELAY, 120,{}},
+	{REGFLAG_DELAY, 80,{}},
 	{0x29, 0x01, {0x00}},
 	{REGFLAG_DELAY, 20,{}},
 	{0x35, 0x01, {0x00}},
@@ -286,8 +286,8 @@ static void lcm_reset(void)
 	if (!gesture_dubbleclick_en) {
 		MDELAY(2);//t3
 		SET_RESET_PIN(1);
-		MDELAY(10);//t4 LCD RESET to first command in display sleep in mode time
 		tpd_gpio_output(0, 1);
+		MDELAY(20);//Tcmd
 	} else {
 		SET_RESET_PIN(0);
 		MDELAY(1);//t3
@@ -297,6 +297,18 @@ static void lcm_reset(void)
 	}
 
 	LCM_LOGI(" lcm reset end.\n");
+}
+
+static void i2c_send_data_lcd(unsigned char cmd, unsigned char data)
+{
+	int ret = 0;
+
+	ret = NT50358A_write_byte(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
+	else{
+		LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
+	}
 }
 
 static void lcm_init_power(void)
@@ -314,8 +326,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x14;  //up to +/-5.5V
-	int ret = 0;
+	unsigned char data = 0x14;
 	LCM_LOGI("%s:  start init\n",__func__);
 
 	if (!gesture_dubbleclick_en) {
@@ -324,26 +335,20 @@ static void lcm_init(void)
 
 		set_gpio_lcd_enp(1);
 		MDELAY(6);//for bias IC and tr2
-		ret = NT50358A_write_byte(cmd, data);
-		if (ret < 0)
-			LCM_LOGI("----cmd=%0x--i2c write error----\n", cmd);
-		else
-			LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
+		i2c_send_data_lcd(cmd,data);
+
 		MDELAY(2);//t2
+
 		set_gpio_lcd_enn(1);
 		MDELAY(7);//for bias IC and tr2
 		cmd = 0x01;
 		data = 0x14;
-		ret = NT50358A_write_byte(cmd, data);
-		if (ret < 0)
-			LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
-		else
-			LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
+		i2c_send_data_lcd(cmd,data);
 	}
 	lcm_reset();
 
-	push_table(NULL, init_setting,
-			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+
 	is_bl_delay = TRUE;
 	LCM_LOGI("%s:   init done\n",__func__);
 }
@@ -390,7 +395,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	if (TRUE == is_bl_delay)
 	{
 		is_bl_delay = FALSE;
-		LCM_LOGI("delay 15ms to set backlight %d\n",is_bl_delay);
+		LCM_LOGI("delay 15ms to set backlight, is_bl_delay = %d\n",is_bl_delay);
 		MDELAY(15);//t7
 	}
 	bl_level[0].para_list[0] = (level & 0xF0)>>4;
