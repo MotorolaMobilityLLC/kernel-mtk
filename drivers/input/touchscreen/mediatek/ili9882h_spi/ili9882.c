@@ -917,7 +917,7 @@ static void ili_update_tp_module_info(void)
 		break;
 	case MODEL_HLT:
 		ilits->md_name = "HLT";
-		ilits->md_fw_filp_path = HLT_FW_REQUEST_PATH;
+		ilits->md_fw_filp_path = HLT_FW_FILP_PATH;
 		ilits->md_fw_rq_path = HLT_FW_REQUEST_PATH;
 		ilits->md_ini_path = HLT_INI_NAME_PATH;
 		ilits->md_ini_rq_path = HLT_INI_REQUEST_PATH;

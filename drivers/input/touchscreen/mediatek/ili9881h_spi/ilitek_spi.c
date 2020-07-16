@@ -32,7 +32,7 @@ static u8 spi_ice_buf[1*K];
 
 #if SPI_DMA_TRANSFER_SPLIT
 #define DMA_TRANSFER_MAX_CHUNK		64   // number of chunks to be transferred.
-#define DMA_TRANSFER_MAX_LEN		1024 // length of a chunk.
+#define DMA_TRANSFER_MAX_LEN		4096 // length of a chunk.
 
 int ilitek_spi_write_then_read_split(struct spi_device *spi,
 		const void *txbuf, unsigned n_tx,
@@ -135,7 +135,7 @@ int ilitek_spi_write_then_read_direct(struct spi_device *spi,
 	u8 cmd;
 	struct spi_message	message;
 	struct spi_transfer	xfer;
-	int index = 0;
+	//int index = 0;
 
 	if (n_rx > SPI_RX_BUF_SIZE) {
 		ipio_err("Rx length is over than dma buf, abort\n");
@@ -1004,7 +1004,7 @@ static int ilitek_spi_probe(struct spi_device *spi)
 	idev->wait_int_timeout = AP_INT_TIMEOUT;
 
 #if ENABLE_GESTURE
-	idev->gesture = ENABLE;
+	idev->gesture = DISABLE;
 	idev->ges_sym.double_tap = DOUBLE_TAP;
 	idev->ges_sym.alphabet_line_2_top = ALPHABET_LINE_2_TOP;
 	idev->ges_sym.alphabet_line_2_bottom = ALPHABET_LINE_2_BOTTOM;
