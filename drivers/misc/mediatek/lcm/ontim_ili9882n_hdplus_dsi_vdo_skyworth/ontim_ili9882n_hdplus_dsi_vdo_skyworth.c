@@ -150,6 +150,8 @@ static struct LCM_setting_table init_setting[] = {
 	{0xFF, 0x03, {0x98, 0x82, 0x03}},//Page3
 	{0x83, 0x01, {0x60}},
 	{0x84, 0x01, {0x03}},
+	{0xFF, 0x03, {0x98, 0x82, 0x06}},//Page6
+	{0xD9, 0x01, {0x10}},
 	{0xFF, 0x03, {0x98, 0x82, 0x00}},//Page0
 	{0x29, 0x01, {0x00}},
 	{REGFLAG_DELAY, 20,{}},
@@ -224,7 +226,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.switch_mode_enable = 0;
 	/* DSI */
 	/* Command mode setting */
-	params->dsi.LANE_NUM = LCM_FOUR_LANE;
+	params->dsi.LANE_NUM = LCM_THREE_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -243,7 +245,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 24;
 	params->dsi.horizontal_frontporch = 24;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 310;   /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 410;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 3;
