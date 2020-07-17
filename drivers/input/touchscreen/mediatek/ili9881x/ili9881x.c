@@ -48,6 +48,7 @@ ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
 
 extern char *mtkfb_find_lcm_driver(void);
 /* senter <add LCD and CTP hardware infomation node> end*/
+extern volatile int gesture_dubbleclick_en;
 
 #if RESUME_BY_DDI
 static struct workqueue_struct	*resume_by_ddi_wq;
@@ -385,7 +386,7 @@ int ili_sleep_handler(int mode)
 
 	mutex_lock(&ilits->touch_mutex);
 	atomic_set(&ilits->tp_sleep, START);
-	ILI_ERR("w------sleep handle \n");
+	ILI_INFO("w------sleep handle \n");
 	if (atomic_read(&ilits->fw_stat) ||
 		atomic_read(&ilits->mp_stat)) {
 		ILI_INFO("fw upgrade or mp still running, ignore sleep requst\n");
@@ -398,7 +399,7 @@ int ili_sleep_handler(int mode)
 	ili_wq_ctrl(WQ_BAT, DISABLE);
 	ili_irq_disable();
 
-	ILI_ERR("Sleep Mode = %d\n", mode);
+	ILI_INFO("Sleep Mode = %d\n", mode);
 
 	if (ilits->ss_ctrl)
 		sense_stop = true;
@@ -407,6 +408,11 @@ int ili_sleep_handler(int mode)
 	else
 		sense_stop = true;
 
+	if (gesture_dubbleclick_en) {
+		ilits->gesture = ENABLE;
+	} else {
+		ilits->gesture = DISABLE;
+	}
 	switch (mode) {
 	case TP_SUSPEND:
 		ILI_INFO("TP suspend start\n");
@@ -842,8 +848,11 @@ static int ilitek_get_tp_module(void)
 	 * TODO: users should implement this function
 	 * if there are various tp modules been used in projects.
 	 */
-
-	return 0;
+	if (strstr(mtkfb_find_lcm_driver(),"ontim_ili9882n_hdplus_dsi_vdo_hlt") != NULL){
+		return MODEL_HLT;
+	} else {
+		return 0;
+	}
 }
 
 static void ili_update_tp_module_info(void)
@@ -915,6 +924,15 @@ static void ili_update_tp_module_info(void)
 		ilits->md_ini_rq_path = TM_INI_REQUEST_PATH;
 		ilits->md_fw_ili = CTPM_FW_TM;
 		ilits->md_fw_ili_size = sizeof(CTPM_FW_TM);
+		break;
+	case MODEL_HLT:
+		ilits->md_name = "HLT";
+		ilits->md_fw_filp_path = HLT_FW_FILP_PATH;
+		ilits->md_fw_rq_path = HLT_FW_REQUEST_PATH;
+		ilits->md_ini_path = HLT_INI_NAME_PATH;
+		ilits->md_ini_rq_path = HLT_INI_REQUEST_PATH;
+		ilits->md_fw_ili = CTPM_FW_HLT;
+		ilits->md_fw_ili_size = sizeof(CTPM_FW_HLT);
 		break;
 	default:
 		break;

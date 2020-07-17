@@ -32,6 +32,14 @@ static unsigned char CTPM_FW_DEF[] = {
 	#include "skyworth/M6102_MDT_6088_LongV_V0xA0.0x02.0x00_AP_0x01.0x00_MP_20200717.ili"
 };
 
+#define HLT_INI_NAME_PATH		"/system/etc/ili988x_mp_hlt.ini"
+#define HLT_FW_FILP_PATH		"/sdcard/ILITEK_FW_HLT"
+#define HLT_INI_REQUEST_PATH		"ili988x_mp_hlt.ini"
+#define HLT_FW_REQUEST_PATH		"ILITEK_FW_HLT"
+static unsigned char CTPM_FW_HLT[] = {
+	#include "holitech/FW_TDDI_TRUNK_FB_BJ.ili"
+};
+
 #define CSOT_INI_NAME_PATH		"/sdcard/mp_csot.ini"
 #define CSOT_FW_FILP_PATH		"/sdcard/ILITEK_FW_CSOT"
 #define CSOT_INI_REQUEST_PATH		"mp_csot.ini"
