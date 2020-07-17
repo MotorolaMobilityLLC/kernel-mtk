@@ -514,6 +514,17 @@ int ili_fw_upgrade_handler(void *data)
 		ilits->fw_update_stat = FW_UPDATE_PASS;
 	}
 
+	/* center <add LCD and CTP hardware infomation node> start*/
+	ILI_INFO("ilits->chip->fw_ver  = 0x%02x \n",(ilits->chip->fw_ver >> 8) & 0xff);
+	if(strstr(mtkfb_find_lcm_driver(),"ontim_ili9882n_hdplus_dsi_vdo_skyworth") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "skyworth-ili9882n");
+		snprintf(vendor_name, sizeof(vendor_name), "skyworth-ili9882n");
+		snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(ilits->chip->fw_ver >> 8) & 0xff);
+	}
+
+	/* center <add LCD and CTP hardware infomation node> end*/
+
 	if (!ilits->boot) {
 		ilits->boot = true;
 		ILI_INFO("Registre touch to input subsystem\n");

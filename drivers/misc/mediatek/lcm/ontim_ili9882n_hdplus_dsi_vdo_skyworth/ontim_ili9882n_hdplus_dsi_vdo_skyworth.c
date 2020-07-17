@@ -269,16 +269,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	//params->dsi.customization_esd_check_enable = 1;
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 1;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd = 0x09;
-	params->dsi.lcm_esd_check_table[0].count = 3;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x80;
-	params->dsi.lcm_esd_check_table[0].para_list[1] = 0x03;
-	params->dsi.lcm_esd_check_table[0].para_list[2] = 0x04;
-	params->dsi.lcm_esd_check_table[1].cmd = 0x54;
-	params->dsi.lcm_esd_check_table[1].count = 1;
-	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x2c;
+
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
+	params->dsi.lcm_esd_check_table[0].count = 1;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
 }
 
 extern volatile int gesture_dubbleclick_en;
