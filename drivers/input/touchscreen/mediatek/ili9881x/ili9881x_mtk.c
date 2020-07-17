@@ -477,7 +477,7 @@ static int tpd_local_init(void)
 {
 	ILI_INFO("TPD init device driver\n");
 	if (strstr(mtkfb_find_lcm_driver(), "ili9882n") == NULL) {
-        ILI_ERR("Firefly:No ili9881h touch, not register!");
+        ILI_INFO("Firefly:No ili9882n touch, not register!");
         return -ENODEV;
     }
 	if (ili_dev_init(&hwif) < 0) {
