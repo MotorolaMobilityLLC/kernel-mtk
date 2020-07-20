@@ -1,0 +1,11 @@
+config TOUCHSCREEN_ILI988X
+    bool "ilitek Touchscreen"
+    default n
+    help
+      Say Y here if you have ilitek touch panel.
+      If unsure, say N.
+      
+config TOUCHSCREEN_ILI988X_DEBUG
+    bool "ilitek touch is or not debug "
+    default n
+    depends on TOUCHSCREEN_ILI988X

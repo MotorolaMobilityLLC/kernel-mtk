@@ -439,7 +439,7 @@ static int __init ilitek_plat_dev_init(void)
 	ipio_info("ILITEK TP driver init for MTK\n");
 
 	if (strstr(mtkfb_find_lcm_driver(), "ili9881h") == NULL){
-		ipio_err("Firefly:NO ilitek touch, not register!\n");
+		ipio_err("Firefly:NO ili9881h touch, not register!\n");
 		return -ENODEV;
 	}
 
