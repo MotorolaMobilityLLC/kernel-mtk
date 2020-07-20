@@ -125,6 +125,11 @@
                 reg = <0x41>;
                 status = "okay";
         };
+        ili9881x_touch:ili9881x_touch@42 {
+                compatible = "mediatek,ili9881x_touch";
+                reg = <0x42>;
+                status = "okay";
+        };
         chipone_tddi_mtk:chipone_touch@48 {
                 compatible = "mediatek,chipone_tddi";
                 reg = <0x48>;
