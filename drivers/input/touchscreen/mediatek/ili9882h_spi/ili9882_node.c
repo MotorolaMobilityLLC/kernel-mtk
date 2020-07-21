@@ -946,7 +946,7 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 
 	ret = ili_mp_test_handler(g_user_buf, ON);
 	ILI_INFO("MP TEST %s, Error code = %d\n", (ret < 0) ? "FAIL" : "PASS", ret);
-
+#if 0
 	g_user_buf[0] = 3;
 	g_user_buf[1] = (ret < 0) ? -ret : ret;
 	len += ilits->mp_ret_len;
@@ -969,7 +969,9 @@ static ssize_t ilitek_node_mp_lcm_on_test_read(struct file *filp, char __user *b
 	} else if (g_user_buf[1] == EMP_PARA_NULL) {
 		len += snprintf(g_user_buf + len, USER_STR_BUFF - len, "%s\n", "Failed to get mp parameter, abort!");
 	}
-
+#else
+	len = sprintf(g_user_buf, "%s\n", (ret < 0) ? "FAIL" : "PASS");
+#endif
 	if (copy_to_user((char *)buff, g_user_buf, len))
 		ILI_ERR("Failed to copy data to user space\n");
 
