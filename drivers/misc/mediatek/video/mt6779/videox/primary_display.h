@@ -410,6 +410,7 @@ int primary_display_hbm_wait(bool en);
 int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback,
 			  unsigned int user_data);
 int primary_display_switch_dst_mode(int mode);
+int primary_display_switch_aod_mode(int mode);
 int primary_display_get_lcm_index(void);
 int primary_display_force_set_fps(unsigned int keep, unsigned int skip);
 int primary_display_set_fps(int fps);

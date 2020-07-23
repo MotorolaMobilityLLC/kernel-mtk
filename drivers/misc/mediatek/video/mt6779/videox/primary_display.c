@@ -104,6 +104,9 @@
 #include "mtk_ovl.h"
 #include "ddp_ovl_wcg.h"
 
+#include "debug.h"
+
+
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 
@@ -202,6 +205,9 @@ static int get_sw_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
 				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
 				unsigned int *pitch, unsigned int *height);
 #endif
+
+#define RAMLESS_AOD_PAYLOAD_SIZE	100
+unsigned char aod_area_cmd[RAMLESS_AOD_PAYLOAD_SIZE] = {0};
 
 static bool g_mmclk_450;
 
@@ -500,8 +506,9 @@ enum mtkfb_power_mode primary_display_get_prev_power_mode_nolock(void)
 
 bool primary_is_aod_supported(void)
 {
-	if (disp_helper_get_option(DISP_OPT_AOD) &&
-	    !disp_lcm_is_video_mode(pgc->plcm))
+	if ((disp_helper_get_option(DISP_OPT_AOD) &&
+	    !disp_lcm_is_video_mode(pgc->plcm)) ||
+	     disp_helper_get_option(DISP_OPT_AOD_RAMLESS))
 		return 1;
 
 	return 0;
@@ -1570,6 +1577,9 @@ static void _cmdq_build_trigger_loop(void)
 {
 	int ret = 0;
 	unsigned long dsi_vfp_addr[2] = {0, 0};
+	unsigned int i;
+	unsigned int doze_wait = 0;
+	enum mtkfb_power_mode cur_pm;
 
 	if (primary_display_is_video_mode() &&
 	    disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
@@ -1658,10 +1668,22 @@ static void _cmdq_build_trigger_loop(void)
 		 * such as waiting for DSI TE
 		 */
 #ifndef CONFIG_FPGA_EARLY_PORTING /* fpga has no TE signal */
-		if (islcmconnected)
-			dpmgr_path_build_cmdq(pgc->dpmgr_handle,
+		if (islcmconnected) {
+			cur_pm = primary_display_get_power_mode_nolock();
+			if (disp_helper_get_option(DISP_OPT_AOD_RAMLESS) &&
+				(cur_pm == DOZE)) {
+				doze_wait = disp_lcm_get_doze_delay(pgc->plcm);
+				for (i = 0; i < doze_wait; i++) {
+					dpmgr_path_build_cmdq(pgc->dpmgr_handle,
+					     pgc->cmdq_handle_trigger,
+					     CMDQ_WAIT_LCM_TE, 0);
+				}
+			} else {
+				dpmgr_path_build_cmdq(pgc->dpmgr_handle,
 					      pgc->cmdq_handle_trigger,
 					      CMDQ_WAIT_LCM_TE, 0);
+			}
+		}
 #endif
 		ret = cmdqRecWaitNoClear(pgc->cmdq_handle_trigger,
 					 CMDQ_SYNC_TOKEN_CABC_EOF);
@@ -4352,8 +4374,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	}
 	if (!ret)
 		primary_display_set_lcm_power_state_nolock(LCM_ON);
-
-	primary_display_cur_dst_mode = primary_display_is_video_mode();
+	if (disp_helper_get_option(DISP_OPT_AOD_RAMLESS)) {
+		primary_display_cur_dst_mode = pgc->plcm->params->dsi.mode;
+		primary_display_def_dst_mode = pgc->plcm->params->dsi.mode;
+	} else {
+		primary_display_cur_dst_mode = primary_display_is_video_mode();
+	}
 
 	DISPCHECK("%s: dpmgr_path_start\n", __func__);
 	/*
@@ -4450,8 +4476,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	}
 
 	if (primary_display_is_video_mode()) {
-		if (disp_helper_get_option(DISP_OPT_SWITCH_DST_MODE))
-			primary_display_def_dst_mode = 1;
+		if (!disp_helper_get_option(DISP_OPT_AOD_RAMLESS)) {
+			if (disp_helper_get_option(DISP_OPT_SWITCH_DST_MODE))
+				primary_display_def_dst_mode = 1;
+		}
 		if (_need_lfr_check()) {
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle,
 					       DISP_PATH_EVENT_IF_VSYNC,
@@ -4807,6 +4835,8 @@ int primary_display_wait_for_vsync(void *config)
 				(struct disp_session_vsync_config *)config;
 	int ret = 0, has_vsync = 1;
 	unsigned long long ts = 0ULL;
+	unsigned int doze_wait = 0;
+	unsigned int i = 0;
 
 	/*
 	 * kick idle manager here to ensure SODI is disabled
@@ -4853,8 +4883,18 @@ int primary_display_wait_for_vsync(void *config)
 		g_skip = 0;
 	}
 
-	ret = dpmgr_wait_event_ts(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
-				  &ts);
+	if ((!primary_display_is_video_mode()) &&
+		disp_helper_get_option(DISP_OPT_AOD_RAMLESS) &&
+		(primary_display_get_power_mode_nolock() == DOZE)) {
+		doze_wait = disp_lcm_get_doze_delay(pgc->plcm);
+		for (i = 0; i < doze_wait; i++) {
+			ret = dpmgr_wait_event_ts(pgc->dpmgr_handle,
+						DISP_PATH_EVENT_IF_VSYNC, &ts);
+		}
+	} else {
+		ret = dpmgr_wait_event_ts(pgc->dpmgr_handle,
+						DISP_PATH_EVENT_IF_VSYNC, &ts);
+	}
 
 	if (ret == -2) {
 		DISP_PR_INFO("vsync for primary display path not enabled yet\n");
@@ -5070,7 +5110,13 @@ int primary_display_suspend(void)
 	}
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
-	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
+	if (disp_helper_get_option(DISP_OPT_AOD_RAMLESS)) {
+		/*only use for internal demo Phone debug*/
+		dpmgr_path_power_off_bypass_pwm(
+			pgc->dpmgr_handle, CMDQ_DISABLE);
+	} else {
+		dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
+	}
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(1);
 
@@ -5186,28 +5232,66 @@ static int check_switch_lcm_mode_for_debug(void)
 int primary_display_lcm_power_on_state(int alive)
 {
 	int skip_update = 0;
+	enum mtkfb_power_mode cur_pm;
+	enum mtkfb_power_mode prev_pm;
+	enum lcm_power_state cur_ps;
+	int ramless_aod_opt_sta = 0;
 
-	if (primary_display_get_power_mode_nolock() == DOZE) {
-		if (primary_display_get_lcm_power_state_nolock() !=
-			LCM_ON_LOW_POWER) {
-			if (pgc->plcm->drv->aod)
-				disp_lcm_aod(pgc->plcm, 1);
+	cur_pm = primary_display_get_power_mode_nolock();
+	cur_ps = primary_display_get_lcm_power_state_nolock();
+	prev_pm = primary_display_get_prev_power_mode_nolock();
+	ramless_aod_opt_sta =
+		disp_helper_get_option(DISP_OPT_AOD_RAMLESS);
+
+	if (cur_pm == DOZE) {
+		if (cur_ps != LCM_ON_LOW_POWER) {
+			if (pgc->plcm->drv->aod) {
+				if (ramless_aod_opt_sta) {
+					if (cur_ps  == LCM_ON) {
+					/*resume->doze*/
+					primary_display_switch_aod_mode(0);
+					} else {
+						/*suspend->doze*/
+						disp_lcm_aod(pgc->plcm, 1);
+						disp_lcm_set_aod_area(pgc->plcm,
+							NULL, aod_area_cmd);
+					}
+				} else {
+					disp_lcm_aod(pgc->plcm, 1);
+				}
+			}
 			else if (!alive)
 				disp_lcm_resume(pgc->plcm);
 
 			primary_display_set_lcm_power_state_nolock(
 				LCM_ON_LOW_POWER);
-		} else
+		} else {
 			skip_update = 1;
-	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
-		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
-			DISPDBG("[POWER]lcm resume[begin]\n");
 
-			if (primary_display_get_lcm_power_state_nolock() !=
-				LCM_ON_LOW_POWER) {
+			if (ramless_aod_opt_sta) {
+				/*doze_suspend->doze*/
+				disp_lcm_set_aod_area(pgc->plcm,
+					NULL, aod_area_cmd);
+			}
+		}
+	} else if (cur_pm == FB_RESUME) {
+		if (cur_ps != LCM_ON) {
+			DISPDBG("[POWER]lcm resume[begin]\n");
+			if (cur_ps != LCM_ON_LOW_POWER) {
+				/*2.suspend->resume*/
 				disp_lcm_resume(pgc->plcm);
 			} else {
-				disp_lcm_aod(pgc->plcm, 0);
+				if (ramless_aod_opt_sta) {
+					if (prev_pm == DOZE) {
+					/*doze->resume*/
+					primary_display_switch_aod_mode(1);
+					} else {
+						/*doze_suspend->resume*/
+						disp_lcm_aod(pgc->plcm, 0);
+					}
+				} else {
+					disp_lcm_aod(pgc->plcm, 0);
+				}
 				skip_update = 1;
 			}
 			DISPCHECK("[POWER]lcm resume[end]\n");
@@ -5228,6 +5312,14 @@ int primary_display_resume(void)
 	unsigned int in_fps = 60;
 	unsigned int out_fps = 60;
 #endif
+	enum mtkfb_power_mode cur_pm;
+	enum lcm_power_state cur_ps;
+	int ramless_aod_opt_sta = 0;
+
+	cur_pm = primary_display_get_power_mode_nolock();
+	cur_ps = primary_display_get_lcm_power_state_nolock();
+	ramless_aod_opt_sta =
+		disp_helper_get_option(DISP_OPT_AOD_RAMLESS);
 
 	DISPCHECK("%s begin\n", __func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
@@ -5270,7 +5362,12 @@ int primary_display_resume(void)
 	}
 
 	DISPDBG("dpmanager path power on[begin]\n");
-	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
+	if (ramless_aod_opt_sta) {
+		/*only use for internal demo Phone debug*/
+		dpmgr_path_power_on_bypass_pwm(pgc->dpmgr_handle, CMDQ_DISABLE);
+	} else
+		dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
+
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(0);
 
@@ -5298,10 +5395,24 @@ int primary_display_resume(void)
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP,
 				    NULL);
-		DISPCHECK("cmd/video mode=%d\n",
-			  primary_display_is_video_mode());
-		dpmgr_path_set_video_mode(pgc->dpmgr_handle,
-					  primary_display_is_video_mode());
+
+		if (ramless_aod_opt_sta) {
+			if (cur_pm == DOZE) {
+				pgc->plcm->params->dsi.mode = CMD_MODE;
+				dpmgr_path_set_video_mode(pgc->dpmgr_handle,
+					primary_display_is_video_mode());
+			} else if (cur_pm == FB_RESUME) {
+				pgc->plcm->params->dsi.mode =
+					primary_display_def_dst_mode;
+				dpmgr_path_set_video_mode(pgc->dpmgr_handle,
+					primary_display_is_video_mode());
+			}
+		} else {
+			DISPCHECK("cmd/video mode=%d\n",
+				primary_display_is_video_mode());
+			dpmgr_path_set_video_mode(pgc->dpmgr_handle,
+				primary_display_is_video_mode());
+		}
 
 		dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
 		if (primary_display_is_decouple_mode()) {
@@ -5375,6 +5486,15 @@ int primary_display_resume(void)
 			data_config->ovl_config[i].layer_en = 0;
 		}
 		data_config->ovl_dirty = 1;
+
+		if (ramless_aod_opt_sta) {
+			if (cur_pm == DOZE)
+				data_config->dispif_config.dsi.mode =
+					pgc->plcm->params->dsi.mode;
+			else if (cur_pm == FB_RESUME)
+				data_config->dispif_config.dsi.mode =
+					pgc->plcm->params->dsi.mode;
+		}
 
 		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
@@ -5544,6 +5664,15 @@ int primary_display_resume(void)
 	}
 
 done:
+	if (ramless_aod_opt_sta) {
+		if (cur_pm == FB_RESUME)
+			display_set_wait_idle_time(50);
+		if (cur_pm == DOZE)
+			display_set_wait_idle_time(200);
+
+		primary_display_idlemgr_kick(__func__, 0);
+	}
+
 	primary_set_state(DISP_ALIVE);
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	switch_set_state(&disp_switch_data, DISP_ALIVE);
@@ -8423,7 +8552,10 @@ int primary_display_hbm_wait(bool en)
 int primary_display_setbacklight_nolock(unsigned int level)
 {
 	static unsigned int last_level;
+	int ramless_aod_opt_sta = 0;
 
+	ramless_aod_opt_sta =
+		disp_helper_get_option(DISP_OPT_AOD_RAMLESS);
 	DISPFUNC();
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
 		DISPMSG("%s skip due to stage %s\n", __func__,
@@ -8446,10 +8578,15 @@ int primary_display_setbacklight_nolock(unsigned int level)
 				mmprofile_log_ex(
 					ddp_mmp_get_events()->primary_set_bl,
 					MMPROFILE_FLAG_PULSE, 0, 7);
-				disp_lcm_set_backlight(pgc->plcm, NULL, level);
-			} else {
+
+				if (ramless_aod_opt_sta)
+					_set_backlight_by_cmdq(level);
+				else
+					disp_lcm_set_backlight(pgc->plcm,
+						NULL, level);
+			} else
 				_set_backlight_by_cmdq(level);
-			}
+
 			atomic_set(&delayed_trigger_kick, 1);
 		} else {
 			_set_backlight_by_cpu(level);
@@ -9512,6 +9649,142 @@ done:
 	_primary_path_switch_dst_unlock();
 	return ret;
 }
+
+
+/* mode: 0, switch to cmd mode; 1, switch to vdo mode */
+int primary_display_switch_aod_mode(int mode)
+{
+	enum DISP_STATUS ret = DISP_STATUS_ERROR;
+	disp_path_handle disp_handle = NULL;
+	struct disp_ddp_path_config *pconfig = NULL;
+	int switch_mode = 0;
+
+	DISPFUNC();
+
+	primary_display_cur_dst_mode = pgc->plcm->params->dsi.mode;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			 MMPROFILE_FLAG_START, primary_display_cur_dst_mode,
+			 mode);
+	DISPCHECK("[C2V]aod cur_mode:%d, dst_mode:%d\n",
+		primary_display_cur_dst_mode, mode);
+
+	if (pgc->plcm->params->type != LCM_TYPE_DSI) {
+		mmprofile_log_ex(
+			ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			MMPROFILE_FLAG_PULSE, 5, pgc->plcm->params->type);
+		DISPCHECK("[C2V]dst mode switch only support DSI IF\n");
+		goto done;
+	}
+	if (pgc->state == DISP_SLEPT) {
+		mmprofile_log_ex(
+			ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			MMPROFILE_FLAG_PULSE, 6, pgc->state);
+		DISPCHECK("%s: primary display path is already slept, skip\n",
+			  __func__);
+		goto done;
+	}
+
+	primary_display_idlemgr_kick(__func__, 0);
+	/*
+	 * When switch to VDO mode, go back to DL mode
+	 * if display path changes to DC mode by SMART OVL
+	 */
+	if (disp_helper_get_option(DISP_OPT_SMART_OVL) &&
+	    !primary_display_is_video_mode()) {
+		/* switch to the mode before idle */
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+					primary_get_sess_id(), 0, NULL, 0);
+
+		set_is_dc(0);
+		DISPMSG("switch to the mode before idle\n");
+	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			 MMPROFILE_FLAG_PULSE, 4, 0);
+	_cmdq_reset_config_handle();
+
+	/* 1.modify lcm mode - sw */
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			 MMPROFILE_FLAG_PULSE, 4, 1);
+
+	DISPCHECK("%s  primary_display_def_dst_mode = %d\n",
+		__func__, primary_display_def_dst_mode);
+
+	if (mode) {
+		pgc->plcm->params->dsi.mode = primary_display_def_dst_mode;
+		switch_mode = primary_display_def_dst_mode;
+	} else {
+		pgc->plcm->params->dsi.mode = CMD_MODE;
+		switch_mode = CMD_MODE;
+	}
+	DISPCHECK("%s  mode = %d\n", __func__, primary_display_is_video_mode());
+
+	dpmgr_path_set_video_mode(pgc->dpmgr_handle,
+			  primary_display_is_video_mode());
+
+	/* 2.Change PLL CLOCK parameter and build fps lcm command */
+#if 0
+	disp_lcm_adjust_fps(pgc->cmdq_handle_config, pgc->plcm,
+			    pgc->lcm_refresh_rate);
+#endif
+	disp_handle = pgc->dpmgr_handle;
+	pconfig = dpmgr_path_get_last_config(disp_handle);
+	pconfig->dispif_config.dsi.PLL_CLOCK = pgc->plcm->params->dsi.PLL_CLOCK;
+	pconfig->dispif_config.dsi.mode = pgc->plcm->params->dsi.mode;
+
+	/*3.send aod to normal cmd*/
+	if (primary_display_is_video_mode()) {
+		disp_lcm_aod(pgc->plcm, 0);
+	} else {
+		disp_lcm_aod(pgc->plcm, 1);
+		disp_lcm_set_aod_area(pgc->plcm, NULL, aod_area_cmd);
+	}
+
+	/* 4.re-config RDMA golden setting */
+	/* RDMA golden setting would change depend on VDO/CMD mode */
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
+		DDP_RDMA_GOLDEN_SETTING, pconfig);
+
+	/* 5.Switch mode and change DSI clock */
+	if (dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
+		DDP_SWITCH_AOD_MODE, (void *)&switch_mode) != 0) {
+		mmprofile_log_ex(
+			ddp_mmp_get_events()->primary_display_switch_dst_mode,
+			MMPROFILE_FLAG_PULSE, 9, 0);
+		ret = -1;
+	}
+
+	/* 6. rebuild trigger loop */
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			 MMPROFILE_FLAG_PULSE, 4, 2);
+	_cmdq_stop_trigger_loop();
+	_cmdq_build_trigger_loop();
+	_cmdq_start_trigger_loop();
+	_cmdq_reset_config_handle();
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			 MMPROFILE_FLAG_PULSE, 4, 3);
+	primary_display_cur_dst_mode = switch_mode;
+	DISPMSG("primary_display_cur_dst_mode %d\n",
+		primary_display_cur_dst_mode);
+	if (primary_display_is_video_mode())
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle,
+				       DISP_PATH_EVENT_IF_VSYNC,
+				       DDP_IRQ_RDMA0_DONE);
+	else
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle,
+				       DISP_PATH_EVENT_IF_VSYNC,
+				       DDP_IRQ_DSI0_EXT_TE);
+
+	ret = DISP_STATUS_OK;
+done:
+	primary_display_idlemgr_kick(__func__, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_aod_mode,
+			MMPROFILE_FLAG_END, primary_display_cur_dst_mode, mode);
+	return ret;
+}
+
 
 /***********************************************************************
  * Below code is for Efuse test in Android Load.
