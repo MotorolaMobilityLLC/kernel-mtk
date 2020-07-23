@@ -363,20 +363,32 @@ void fgauge_get_profile_id(void)
 {
 	int battery_type_name = 0;
 	battery_type_name = ontim_get_battery_type();
-	printk("ontim battery_type_name = %d\n",battery_type_name);
-	if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
-		if (battery_type_name > 2) {
+	printk("ontim battery_type_name = %d battery_pn_flag = %d\n",battery_type_name,battery_pn_flag);
+	if(!battery_pn_flag) {
+		if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
+			if (battery_type_name > 2) {
+				gm.battery_id = battery_type_name - 1;
+				strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+				gm.battery_id = 0;
+			} else {
+				gm.battery_id = battery_type_name - 1;
+				strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+			}
+			printk("ontim battery_id = %d\n",gm.battery_id);
+		} else {
+			gm.battery_id = 0;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+		}
+	/* malta PN logic */
+	} else {
+		if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
 			gm.battery_id = battery_type_name - 1;
 			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 			gm.battery_id = 0;
 		} else {
-			gm.battery_id = battery_type_name - 1;
+			gm.battery_id = 0;
 			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 		}
-		printk("ontim battery_id = %d\n",gm.battery_id);
-	} else {
-		gm.battery_id = 0;
-		strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 	}
 	printk(KERN_ERR "[%s]Battery id (%d)\n",__func__,gm.battery_id);
 }
@@ -452,7 +464,7 @@ void fg_custom_init_from_header(struct platform_device *dev)
 {
 	int i, j;
 	struct device_node *np = dev->dev.of_node;
-	unsigned int val;
+	unsigned int val,value;
 
        const char *battery_id_name = NULL ;
 	if (!of_property_read_u32(np, "battery_total_number", &val)) {
@@ -488,6 +500,10 @@ void fg_custom_init_from_header(struct platform_device *dev)
 		
 	} else {
 		bm_err("battery_total_number failed\n");
+	}
+	if (!of_property_read_u32(np,"enable_battery_pn_malta",&value)) {
+		bm_err("%s:enable_battery_pn_malta:%d\n",__func__,value);
+		battery_pn_flag=value;
 	}
 
 	fgauge_get_profile_id();
