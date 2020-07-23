@@ -5773,18 +5773,18 @@ static const struct dev_pm_ops msdc_pmops = {
 static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	int ret = 0;
-	struct mmc_host *mmc = platform_get_drvdata(pdev);
-	struct msdc_host *host;
+	struct msdc_host *host = platform_get_drvdata(pdev);
+	struct mmc_host *mmc;
 	void __iomem *base;
 
-	if (mmc == NULL) {
-		ERR_MSG("sdio: msdc_drv_suspend mmc is null ");
+	if (host == NULL || host->base == NULL) {
+		ERR_MSG("sdio: host is null");
 		return 0;
 	}
 
-	host = mmc_priv(mmc);
-	if (host == NULL || host->base == NULL) {
-		ERR_MSG("sdio: msdc_drv_suspend host is null");
+	mmc = host->mmc;
+	if (mmc == NULL) {
+		ERR_MSG("sdio: mmc is null ");
 		return 0;
 	}
 
@@ -5822,8 +5822,8 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int msdc_drv_resume(struct platform_device *pdev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(pdev);
-	struct msdc_host *host = mmc_priv(mmc);
+	struct msdc_host *host = platform_get_drvdata(pdev);
+	struct mmc_host *mmc = host->mmc;
 	struct pm_message state;
 
 	state.event = PM_EVENT_RESUME;
