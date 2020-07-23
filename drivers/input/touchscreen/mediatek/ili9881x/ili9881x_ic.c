@@ -758,7 +758,7 @@ int ili_ic_get_fw_ver(void)
 
 	}
 
-	if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->fw_ver_len, ON, OFF)) {
+	if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->fw_ver_len, ON, OFF) < 0) {
 		ILI_ERR("Write fw version cmd failed\n");
 		ret = -EINVAL;
 		goto out;
@@ -921,7 +921,7 @@ int ili_ic_get_protocl_ver(void)
 
 	}
 
-	if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->pro_ver_len, ON, OFF)) {
+	if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->pro_ver_len, ON, OFF) < 0) {
 		ILI_ERR("Read protocol version error\n");
 		ret = -EINVAL;
 		goto out;
