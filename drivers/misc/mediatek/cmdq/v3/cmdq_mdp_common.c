@@ -1294,7 +1294,7 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
 	s32 status;
 
 	CMDQ_TRACE_FORCE_BEGIN("%s %llx\n", __func__, handle->engineFlag);
-	CMDQ_LOG("%s %llx\n", __func__, handle->engineFlag);
+	CMDQ_MSG("%s %llx\n", __func__, handle->engineFlag);
 	if (handle->profile_exec)
 		cmdq_pkt_perf_end(handle->pkt);
 
@@ -1306,7 +1306,7 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
 #endif
 
 	/* finalize it */
-	CMDQ_LOG("%s finalize\n", __func__);
+	CMDQ_MSG("%s finalize\n", __func__);
 	handle->finalized = true;
 	cmdq_pkt_finalize(handle->pkt);
 
@@ -1314,7 +1314,7 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
 	 * Task may flush directly if no engine conflict and no waiting task
 	 * holds same engines.
 	 */
-	CMDQ_LOG("%s flush impl\n", __func__);
+	CMDQ_MSG("%s flush impl\n", __func__);
 	status = cmdq_mdp_flush_async_impl(handle);
 	CMDQ_TRACE_FORCE_END();
 	return status;
