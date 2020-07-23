@@ -8656,6 +8656,8 @@ int primary_display_lcm_ATA(void)
 			DISPINFO("[LCM ATA Check] [0x0A]=0x%02x\n",
 				*(cmd_tab[0].payload));
 			ret = 1;
+		} else {
+			ret = disp_lcm_ATA(pgc->plcm);
 		}
 		vfree(cmd_tab[0].payload);
 	}
