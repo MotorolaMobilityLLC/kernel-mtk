@@ -793,8 +793,8 @@ static int bmp_get_pressure(struct i2c_client *client, char *buf, int bufsize)
 					     BMP_BUFSIZE); /* update t_fine */
 		if (status != 0)
 			goto exit;
-		if (kstrtos32(temp_buf, 16, &temperature) != 1)
-			pr_err("sscanf parsing fail\n");
+		if (kstrtos32(temp_buf, 16, &temperature) != 0)
+			pr_err("%s,sscanf parsing fail\n", __func__);
 	}
 
 	status = bmp_read_raw_pressure(client, &upressure);
@@ -974,8 +974,8 @@ static int bmp_check_pt(struct bmp_i2c_data *obj)
 
 	/* check ut and t */
 	bmp_get_temperature(obj->client, t, BMP_BUFSIZE);
-	if (kstrtoint(t, 16, &temperature) != 1)
-		pr_err("sscanf parsing fail\n");
+	if (kstrtoint(t, 16, &temperature) != 0)
+		pr_err("%s temp,sscanf parsing fail\n", __func__);
 	if (temperature <= -40 * 100 || temperature >= 85 * 100) {
 		pr_err("temperature value is out of range:%d*0.01degree\n",
 			temperature);
@@ -984,8 +984,8 @@ static int bmp_check_pt(struct bmp_i2c_data *obj)
 
 	/* check up and p */
 	bmp_get_pressure(obj->client, p, BMP_BUFSIZE);
-	if (kstrtoint(p, 16, &pressure) != 1)
-		pr_err("sscanf parsing fail\n");
+	if (kstrtoint(p, 16, &pressure) != 0)
+		pr_err("%s press,sscanf parsing fail\n", __func__);
 	if (pressure <= 800 * 100 || pressure >= 1100 * 100) {
 		pr_err("pressure value is out of range:%d Pa\n", pressure);
 		return -17;
@@ -1263,8 +1263,8 @@ int temperature_operate(void *self, uint32_t command, void *buff_in,
 				return -1;
 			}
 			if (kstrtoint(buff, 16, &temperature_data->values[0]) !=
-			    1)
-				pr_err("sscanf parsing fail\n");
+			    0)
+				pr_err("%s,sscanf parsing fail\n", __func__);
 			temperature_data->values[1] =
 				temperature_data->values[2] = 0;
 			temperature_data->status = SENSOR_STATUS_ACCURACY_HIGH;
@@ -1413,8 +1413,8 @@ static int bmp_get_data(int *value, int *status)
 			err);
 		return -1;
 	}
-	if (kstrtoint(buff, 16, value) != 1)
-		pr_err("sscanf parsing fail\n");
+	if (kstrtoint(buff, 16, value) != 0)
+		pr_err("%s,sscanf parsing fail\n", __func__);
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 
 	return 0;
