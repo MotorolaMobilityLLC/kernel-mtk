@@ -598,9 +598,12 @@ static void ilitek_tddi_flash_protect(bool enable)
 static int ilitek_fw_check_ddi_chunk(u8 *pfw)
 {
 	int ret = 0;
+	int get_fw_ver_ret = 0;
 	u8 cmd[7] = {0x0};
 	u32 start = 0x0, end = 0x0, len = 0x0;
 	bool hex_info = ilits->info_from_hex;
+
+	get_fw_ver_ret = ili_ic_get_fw_ver();
 
 	if (!fbi[DDI].start || !fbi[DDI].end)
 		return UPDATE_PASS;
@@ -609,7 +612,7 @@ static int ilitek_fw_check_ddi_chunk(u8 *pfw)
 	if (hex_info)
 		ilits->info_from_hex = DISABLE;
 
-	if (ili_ic_get_fw_ver() < 0) {
+	if (get_fw_ver_ret < 0) {
 		ILI_INFO("Failed to get fw ver, reading flash by dma instead\n");
 		goto dma;
 	}
