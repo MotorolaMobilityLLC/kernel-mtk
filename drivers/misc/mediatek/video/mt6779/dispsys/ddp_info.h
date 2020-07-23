@@ -426,6 +426,7 @@ enum DDP_IOCTL_NAME {
 	DDP_DSI_ENABLE_TE,
 	DDP_DSI_ENTER_IDLE,
 	DDP_DSI_EXIT_IDLE,
+	DDP_SWITCH_AOD_MODE,
 };
 
 struct ddp_io_golden_setting_arg {

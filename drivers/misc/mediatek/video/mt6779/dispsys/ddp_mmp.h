@@ -44,6 +44,7 @@ struct DDP_MMP_Events {
 	mmp_event POSTMASK_IRQ;
 	mmp_event primary_Parent;
 	mmp_event primary_display_switch_dst_mode;
+	mmp_event primary_display_switch_aod_mode;
 	mmp_event primary_trigger;
 	mmp_event primary_suspend;
 	mmp_event primary_resume;

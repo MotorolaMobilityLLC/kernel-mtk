@@ -14,6 +14,8 @@
 #ifndef __MTKFB_DEBUG_H
 #define __MTKFB_DEBUG_H
 
+int display_set_wait_idle_time(unsigned int idleMs);
+
 void DBG_Init(void);
 void DBG_Deinit(void);
 

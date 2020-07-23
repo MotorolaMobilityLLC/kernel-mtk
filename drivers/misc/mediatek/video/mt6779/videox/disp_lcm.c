@@ -1450,6 +1450,43 @@ int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter)
 	return -1;
 }
 
+int disp_lcm_set_aod_area(struct disp_lcm_handle *plcm,
+			void *handle, unsigned char *area)
+{
+	struct LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_aod_area_cmdq) {
+			lcm_drv->set_aod_area_cmdq(handle, area);
+		} else {
+			DISPMSG("lcm_drv->set_aod_area_cmdq is null\n");
+			return -1;
+		}
+
+		return 0;
+	}
+	DISPMSG("lcm_drv is null\n");
+	return -1;
+}
+
+int disp_lcm_get_doze_delay(struct disp_lcm_handle *plcm)
+{
+	if (!_is_lcm_inited(plcm)) {
+		DISPMSG("lcm_drv is null\n");
+		return -1;
+	}
+
+	if (!plcm->drv->get_doze_delay) {
+		DISPMSG("lcm_drv->get_doze_delay is null\n");
+		return -1;
+	}
+
+	return plcm->drv->get_doze_delay();
+}
+
+
 int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm)
 {
 	struct LCM_DRIVER *lcm_drv = NULL;
