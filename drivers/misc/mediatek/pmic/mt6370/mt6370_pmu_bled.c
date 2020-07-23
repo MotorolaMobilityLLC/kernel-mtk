@@ -22,6 +22,8 @@
 #include "inc/mt6370_pmu.h"
 #include "inc/mt6370_pmu_bled.h"
 
+#define MT6370_PMU_BLED_DRV_VERSION	"1.0.2_MTK"
+
 struct mt6370_pmu_bled_data {
 	struct rt_fled_dev base;
 	struct mt6370_pmu_chip *chip;
@@ -38,9 +40,9 @@ static uint8_t bled_init_data[] = {
 	0x00, /* MT6370_PMU_REG_BLDIM1 */
 	0x00, /* MT6370_PMU_REG_BLAFH */
 	0x00, /* MT6370_PMU_REG_BLFL */
-	0x8c, /* MT6370_PMU_REG_BLFLTO */
+	0x8C, /* MT6370_PMU_REG_BLFLTO */
 	0x80, /* MT6370_PMU_REG_BLTORCTRL */
-	0xff, /* MT6370_PMU_REG_BLSTRBCTRL */
+	0xFF, /* MT6370_PMU_REG_BLSTRBCTRL */
 	0x00, /* MT6370_PMU_REG_BLAVG */
 };
 
@@ -288,13 +290,22 @@ static void mt6370_pmu_bled_bright_set(struct led_classdev *led_cdev,
 				dev_get_drvdata(led_cdev->dev->parent);
 	struct mt6370_pmu_bled_platdata *pdata =
 				dev_get_platdata(bled_data->dev);
+	uint8_t chip_vid = bled_data->chip->chip_vid;
 	uint32_t bright = (pdata->max_bled_brightness << 8) / 255;
 	int ret = 0;
 
 	dev_dbg(led_cdev->dev, "%s: %d\n", __func__, brightness);
 	bright = (bright * brightness) >> 8;
-	ret = mt6370_pmu_reg_update_bits(bled_data->chip, MT6370_PMU_REG_BLDIM2,
-					 MT6370_DIM2_MASK, bright & 0x7);
+	if (chip_vid == MT6372_VENDOR_ID || chip_vid == MT6372C_VENDOR_ID)
+		ret = mt6370_pmu_reg_update_bits(bled_data->chip,
+						 MT6370_PMU_REG_BLDIM2,
+						 0x3F,
+						 (bright & 0x7) << 3);
+	else
+		ret = mt6370_pmu_reg_update_bits(bled_data->chip,
+						 MT6370_PMU_REG_BLDIM2,
+						 MT6370_DIM2_MASK,
+						 (bright & 0x7));
 	if (ret < 0)
 		goto out_bright_set;
 	ret = mt6370_pmu_reg_write(bled_data->chip, MT6370_PMU_REG_BLDIM1,
@@ -364,13 +375,34 @@ static void mt6370_pmu_bled_irq_register(struct platform_device *pdev)
 	}
 }
 
+static int mt6370_pmu_bled_init_blmode_ctrl(
+	struct mt6370_pmu_bled_data *bled_data)
+{
+	struct mt6370_pmu_bled_platdata *pdata = dev_get_platdata(
+							bled_data->dev);
+	u8 data = 0;
+
+	data |= (pdata->bled_curr_scale
+				<< MT6370_BLED_CURR_SCALESHFT);
+	data |= (pdata->pwm_lpf_coef << MT6370_PWM_LPF_COEFSHFT);
+	data |= (pdata->pwm_lpf_en << MT6370_PWM_LPF_ENSHFT);
+	data |= (pdata->bled_curr_mode
+				<< MT6370_BLED_CURR_MODESHFT);
+	return mt6370_pmu_reg_write(bled_data->chip,
+		MT6370_PMU_REG_BLMODECTRL, data);
+}
 static inline int mt6370_pmu_bled_init_register(
 	struct mt6370_pmu_bled_data *bled_data)
 {
+	int ret = 0;
+
 	if (bled_data->chip->chip_rev <= 1)
 		bled_init_data[1] |= MT6370_BLED_OVOCSHDNDIS;
-	return mt6370_pmu_reg_block_write(bled_data->chip, MT6370_PMU_REG_BLEN,
+	ret = mt6370_pmu_reg_block_write(bled_data->chip, MT6370_PMU_REG_BLEN,
 			ARRAY_SIZE(bled_init_data), bled_init_data);
+	ret |= mt6370_pmu_bled_init_blmode_ctrl(bled_data);
+
+	return ret;
 }
 
 static inline int mt6370_pmu_bled_parse_initdata(
@@ -378,6 +410,7 @@ static inline int mt6370_pmu_bled_parse_initdata(
 {
 	struct mt6370_pmu_bled_platdata *pdata = dev_get_platdata(
 							bled_data->dev);
+	uint8_t chip_vid = bled_data->chip->chip_vid;
 	uint32_t bright = (pdata->max_bled_brightness << 8) / 255;
 
 	if (pdata->ext_en_pin) {
@@ -396,8 +429,12 @@ static inline int mt6370_pmu_bled_parse_initdata(
 	bled_init_data[2] |= (pdata->pwm_hys << MT6370_BLED_PWMHSHFT);
 	bled_init_data[3] |= (pdata->bled_ramptime << MT6370_BLED_RAMPTSHFT);
 	bright = (bright * 255) >> 8;
-	bled_init_data[4] |= (bright & 0x7);
-	bled_init_data[5] |= ((bright >> 3) & 0xff);
+	/* Set bled dimension 11 or 14 bits */
+	if (chip_vid == MT6372_VENDOR_ID || chip_vid == MT6372C_VENDOR_ID)
+		bled_init_data[4] |= ((bright & 0x7) << 3);
+	else
+		bled_init_data[4] |= (bright & 0x7);
+	bled_init_data[5] |= ((bright >> 3) & 0xFF);
 	bled_init_data[7] |= (pdata->bled_flash_ramp << MT6370_BLFLRAMP_SHFT);
 	bled_init_data[10] |= (pdata->pwm_avg_cycle);
 	if (pdata->bled_name)
@@ -409,6 +446,7 @@ static inline int mt_parse_dt(struct device *dev)
 {
 	struct mt6370_pmu_bled_platdata *pdata = dev_get_platdata(dev);
 	struct device_node *np = dev->of_node;
+	const char *name;
 	u32 tmp = 0;
 
 	if (of_property_read_bool(np, "mt,ext_en_pin"))
@@ -461,9 +499,25 @@ static inline int mt_parse_dt(struct device *dev)
 		pdata->max_bled_brightness = 1024;
 	else
 		pdata->max_bled_brightness = tmp;
-	if (of_property_read_string(np, "mt,bled_name",
-			&(pdata->bled_name)) <	0)
+	if (of_property_read_u32(np, "mt,bled_curr_scale", &tmp) < 0)
+		pdata->bled_curr_scale = 0x0;
+	else
+		pdata->bled_curr_scale = tmp;
+	pr_info("bled_curr_scale = %d\n", pdata->bled_curr_scale);
+	if (of_property_read_u32(np, "mt,pwm_lpf_coef", &tmp) < 0)
+		pdata->pwm_lpf_coef = 0x0;
+	else
+		pdata->pwm_lpf_coef = tmp;
+
+	if (of_property_read_bool(np, "mt,pwm_lpf_en"))
+		pdata->pwm_lpf_en = 1;
+	if (of_property_read_bool(np, "mt,bled_curr_mode"))
+		pdata->bled_curr_mode = 1;
+
+	if (of_property_read_string(np, "mt,bled_name", &name) < 0)
 		pdata->bled_name = "mt6370_pmu_bled";
+	else
+		pdata->bled_name = name;
 	return 0;
 }
 
@@ -473,6 +527,8 @@ static int mt6370_pmu_bled_probe(struct platform_device *pdev)
 	struct mt6370_pmu_bled_data *bled_data;
 	bool use_dt = pdev->dev.of_node;
 	int ret = 0;
+
+	pr_info("%s: (%s)\n", __func__, MT6370_PMU_BLED_DRV_VERSION);
 
 	bled_data = devm_kzalloc(&pdev->dev, sizeof(*bled_data), GFP_KERNEL);
 	if (!bled_data)
@@ -581,4 +637,16 @@ module_platform_driver(mt6370_pmu_bled);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek MT6370 PMU Bled");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION(MT6370_PMU_BLED_DRV_VERSION);
+
+/*
+ * Release Note
+ * 1.0.2_MTK
+ * (1) Add support for MT6372
+ *
+ * 1.0.1_MTK
+ * (1) Remove typedef
+ *
+ * 1.0.0_MTK
+ * (1) Initial Release
+ */
