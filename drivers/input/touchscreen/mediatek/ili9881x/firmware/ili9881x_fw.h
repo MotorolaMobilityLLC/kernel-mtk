@@ -29,7 +29,7 @@
 #define DEF_INI_REQUEST_PATH		"ili988x_mp.ini"
 #define DEF_FW_REQUEST_PATH		"ILITEK_FW"
 static unsigned char CTPM_FW_DEF[] = {
-	#include "skyworth/M6102_MDT_6088_LongV_V0xA0.0x03.0x00_AP_0x01.0x00_MP_20200722.ili"
+	#include "skyworth/M6102_MDT_6088_LongV_V0xA0.0x04.0x00_AP_0x01.0x00_MP_20200723.ili"
 };
 
 #define HLT_INI_NAME_PATH		"/system/etc/ili988x_mp_hlt.ini"
