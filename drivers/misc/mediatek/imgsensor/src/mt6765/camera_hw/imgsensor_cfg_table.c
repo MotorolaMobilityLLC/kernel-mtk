@@ -198,6 +198,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		  },
 		 },
 #endif
+#if defined(BLACKJACK_TSP_OV16880_MIPI_RAW)
+		 {SENSOR_DRVNAME_BLACKJACK_TSP_OV16880_MIPI_RAW,
+		  {
+			   {SensorMCLK, Vol_High, 3},
+			   {RST, Vol_Low, 3},
+			   {DOVDD, Vol_1800, 1},
+			   {AVDD, Vol_2800, 1},
+			   {DVDD, Vol_1200, 1},
+			   {AFVDD, Vol_2800, 5},
+			   {RST, Vol_High, 0},
+		  },
+		 },
+#endif
 #if defined(GC8034_MIPI_RAW)
                  {SENSOR_DRVNAME_GC8034_MIPI_RAW,
                   {
@@ -275,6 +288,20 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #endif
 #if defined(BLACKJACK_SUN_GC02M1B_MIPI_RAW)
     {SENSOR_DRVNAME_BLACKJACK_SUN_GC02M1B_MIPI_RAW,
+        {
+            {RST, Vol_Low, 1},
+            {PDN, Vol_High, 6,Vol_Low, 0},
+            {DOVDD, Vol_1800, 0},
+            {AVDD, Vol_2800, 0},
+            {SensorMCLK, Vol_High, 0},
+            {PDN, Vol_Low,1,Vol_High, 0},
+            {RST, Vol_High, 0},
+            {PDN, Vol_Low, 1,Vol_High, 1},
+        },
+    },
+#endif
+#if defined(BJ_SUN_GC02M1B_16880_MIPI_RAW)
+    {SENSOR_DRVNAME_BJ_SUN_GC02M1B_16880_MIPI_RAW,
         {
             {RST, Vol_Low, 1},
             {PDN, Vol_High, 6,Vol_Low, 0},
