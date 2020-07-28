@@ -514,3 +514,6 @@ CONFIG_MTK_FINGERPRINT_SUPPORT=y
 CONFIG_MICROTRUST_FPSENSOR_M00=y
 CONFIG_MICROTRUST_FPC_M00=y
 #end,fps,fingerprint config
+#add by shabei for usb cable detect begin
+CONFIG_USB_CABLE=y
+#add by shabei for usb cable detect end

@@ -54,6 +54,7 @@ obj-$(CONFIG_MTPROF)	+= mtprof/
 obj-$(CONFIG_MTK_PMIC_WRAP_HAL) += pmic_wrap/
 obj-$(CONFIG_MTK_USBFSH) += usb11/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
+obj-$(CONFIG_USB_CABLE) += usb_cable/
 obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
 obj-$(CONFIG_MTK_LEDS)	+= leds/
 obj-$(CONFIG_MTK_BOOT) += boot/
