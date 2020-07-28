@@ -1,0 +1,4 @@
+config USB_CABLE
+	tristate "USB cable detect driver"
+	help
+	  USE a gpio to detect usb calbe, then control the cpu frequency
