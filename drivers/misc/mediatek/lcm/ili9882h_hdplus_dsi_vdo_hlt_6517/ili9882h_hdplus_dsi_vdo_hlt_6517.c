@@ -119,6 +119,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #ifndef BUILD_LK
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
 extern int ili_sleep_handler(int mode);
+extern void ili_resume_by_ddi(void);
 #endif
 //static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 #define ILITEK_TP_DEEP_SLEEP    1
@@ -287,7 +288,9 @@ static void lcm_reset(void)
 		MDELAY(2);//t3
 		SET_RESET_PIN(1);
 		tpd_gpio_output(0, 1);
-		MDELAY(20);//Tcmd
+		MDELAY(5);
+		ili_resume_by_ddi();
+		MDELAY(15);//Tcmd
 	} else {
 		SET_RESET_PIN(0);
 		MDELAY(1);//t3

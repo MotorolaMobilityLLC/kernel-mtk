@@ -117,7 +117,7 @@
 #define TDDI_INTERFACE			BUS_SPI /* BUS_I2C(0x18) or BUS_SPI(0x1C) */
 #define VDD_VOLTAGE			1800000
 #define VCC_VOLTAGE			1800000
-#define SPI_CLK                         9      /* follow by clk list */
+#define SPI_CLK                         10      /* follow by clk list */
 #define SPI_RETRY			5
 #define IRQ_GPIO_NUM			66
 #define TR_BUF_SIZE			(2*K) /* Buffer size of touch report */
@@ -136,7 +136,7 @@
 #define ENABLE_GESTURE			DISABLE
 #define REGULATOR_POWER			DISABLE
 #define TP_SUSPEND_PRIO			ENABLE
-#define RESUME_BY_DDI			DISABLE
+#define RESUME_BY_DDI			ENABLE
 #define BOOT_FW_UPDATE			DISABLE //ENABLE
 #define MP_INT_LEVEL			DISABLE
 #define PLL_CLK_WAKEUP_TP_RESUME	DISABLE
