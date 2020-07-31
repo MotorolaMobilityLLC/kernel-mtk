@@ -1308,7 +1308,8 @@ static bool mtk_chg_check_vbus(struct charger_manager *info)
 	if (info->enable_dynamic_charge_current ){
 		
 	if(info->charger_thread_polling == true && 
-		vchr < (info->data.min_charger_voltage-20000)){
+		vchr < (info->data.min_charger_voltage-20000) &&
+		vchr > 4400000){
 		
 		low_vbus ++;
 		if(low_vbus >5)
@@ -1316,16 +1317,17 @@ static bool mtk_chg_check_vbus(struct charger_manager *info)
 		      // low_vbus =0;
 		if (info->dynamic_charge_current == -1)
 			info->dynamic_charge_current = info->data.ac_charger_current - 100000;
-		else if( info->dynamic_charge_current  > 1000000)
+		else if( info->dynamic_charge_current  > 1050000)
 			info->dynamic_charge_current -= 100000;
 		}
-		chr_err("%s: vbus(%d mV) < %d mV ; current=%d;%d;\n", __func__, vchr / 1000,
-			info->data.min_charger_voltage / 1000 -20 ,
-			info->dynamic_charge_current ,
-			low_vbus);
 	}
 	else
 		low_vbus	= 0;
+
+	chr_err("%s: vbus(%d mV)  min(%d mV) ; current=%d;%d;\n", __func__, vchr / 1000,
+		info->data.min_charger_voltage / 1000 -20 ,
+		info->dynamic_charge_current ,
+		low_vbus);
 	}
 
 	return true;
