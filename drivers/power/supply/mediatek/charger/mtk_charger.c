@@ -3340,8 +3340,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 #ifdef CONFIG_MTK_CHARGER_UNLIMITED
 	info->usb_unlimited = true;
 	info->enable_sw_safety_timer = false;
-	charger_dev_enable_safety_timer(info->chg1_dev, false);
 #endif
+	charger_dev_enable_safety_timer(info->chg1_dev, false);
 
 	charger_debug_init();
 
