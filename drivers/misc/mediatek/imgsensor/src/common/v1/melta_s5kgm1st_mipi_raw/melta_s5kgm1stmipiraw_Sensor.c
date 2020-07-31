@@ -355,6 +355,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 	char pusendcmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF),(char)(para >> 8), (char)(para & 0xFF)};
 	iWriteRegI2C(pusendcmd, 4, imgsensor.i2c_write_id);
 }
+/*
 static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
@@ -362,7 +363,7 @@ static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 	//kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
-
+*/
 #define MULTI_WRITE 1
 
 #if MULTI_WRITE
@@ -2235,8 +2236,8 @@ static kal_uint16 addr_data_pair_capture[] = {
 0x6F12, 0x0100,
 0x6028, 0x4000,
 0x0D00, 0x0101,
-//0x0D02, 0x0101,
-//0x0114, 0x0301,
+0x0D02, 0x0101,   //PDAF
+0x0114, 0x0301,
 0xF486, 0x0000,
 0xF488, 0x0000,
 0xF48A, 0x0000,
@@ -5096,45 +5097,38 @@ static kal_uint16 read_module_id(void)
 }
 static void get_back_cam_efuse_id(void)
 {
-	int i = 0,temp = 0;
+	//int i = 0,temp = 0;
 	kal_uint8 efuse_id;
-	write_cmos_sensor(0x6010, 0x0001);
-	mdelay(3);
-	write_cmos_sensor(0x6214,0x7970);
-	write_cmos_sensor(0x6218,0x7150);
-	write_cmos_sensor(0x0136,0x1800);
-	write_cmos_sensor(0x0304,0x0006);
-	write_cmos_sensor(0x030C,0x0000);
-	write_cmos_sensor(0x0306,0x00F5);
-	write_cmos_sensor(0x0302,0x0001);
-	write_cmos_sensor(0x0300,0x0007);
-	write_cmos_sensor(0x030e,0x0004);
-	write_cmos_sensor(0x0312,0x0000);
-	write_cmos_sensor(0x0310,0x008B);
-	write_cmos_sensor(0x030A,0x0001);
-	write_cmos_sensor(0x0308,0x0008);
 
-	write_cmos_sensor_byte(0x0100, 0x01);
-	mdelay(50);
+	write_cmos_sensor(0x0136, 0x1800);
+	write_cmos_sensor(0x0304, 0x0006);
+	write_cmos_sensor(0x0306, 0x00F1);
+	write_cmos_sensor(0x0300, 0x0008);
+	write_cmos_sensor(0x030E, 0x0003);
+	write_cmos_sensor(0x0310, 0x005a);
+	
+	write_cmos_sensor(0x0100, 0x0100);
+	mdelay(3);
+	write_cmos_sensor(0x0A02,0x0000);
+	
+	mdelay(3);
 	write_cmos_sensor(0x0a02, 0x0000);
-	write_cmos_sensor_byte(0x0a00, 0x01);
+	write_cmos_sensor(0x0a00, 0x0100);
 	mdelay(1);
-	for(temp=0;temp<3;temp++)
-	{
-		if(0x00 == read_cmos_sensor_16_8(0x0a00))
-		{
-			for(i=0;i<6;i++)
-			{
-				efuse_id = read_cmos_sensor_16_8(0x0a24+i);
-				sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
-				mdelay(1);
-				PK_DBG("get_back_cam_efuse_id- efuse_id = 0x%02x\n", efuse_id);
-			}
-			break;
-		}
-		mdelay(1);
-	}
-	write_cmos_sensor_byte(0x0a00, 0x00);
+
+efuse_id = read_cmos_sensor_16_16(0x0a24);
+
+sprintf(back_cam_efuse_id,"%02x",efuse_id);
+
+efuse_id = read_cmos_sensor_16_16(0x0a26);
+
+sprintf(back_cam_efuse_id+2,"%02x",efuse_id);
+
+efuse_id = read_cmos_sensor_16_16(0x0a28);
+
+sprintf(back_cam_efuse_id+4,"%02x",efuse_id);
+PK_DBG("get_back_cam_efuse_id- efuse_id = 0x%02x\n", efuse_id);
+	write_cmos_sensor(0x0a00, 0x0000);
 }
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
@@ -5604,7 +5598,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 
 	/* change pdaf support mode to pdaf VC mode */
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode */
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = 2;
 	
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
