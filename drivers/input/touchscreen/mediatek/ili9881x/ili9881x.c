@@ -778,14 +778,15 @@ int ili_report_handler(void)
 	default:
 		ILI_ERR("Unknown packet id, %x\n", pid);
 #if ( TDDI_INTERFACE == BUS_I2C )
+		msleep(50);
 		ili_ic_get_pc_counter(DO_I2C_RECOVER);
 		if (ilits->fw_latch !=0){
-			msleep(100);
+			msleep(50);
 			ili_ic_func_ctrl_reset();
 			ILI_ERR("I2C func_ctrl_reset\n");
 		}
 		if ((ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE) && ilits->fw_latch !=0){
-			msleep(100);
+			msleep(50);
 			ili_set_gesture_symbol();
 			ILI_ERR("I2C gesture_symbol\n");
 		}
