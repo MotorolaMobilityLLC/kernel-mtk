@@ -331,7 +331,7 @@ static void tpd_resume(struct device *h)
 
 static void tpd_suspend(struct device *h)
 {
-	if (ili_sleep_handler(TP_SUSPEND) < 0)
+	if (ili_sleep_handler(TP_DEEP_SLEEP) < 0)
 		ILI_ERR("TP suspend failed\n");
 }
 
