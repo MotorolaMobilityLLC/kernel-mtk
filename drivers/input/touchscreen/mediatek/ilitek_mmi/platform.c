@@ -299,20 +299,6 @@ static void ilitek_platform_esd_check(struct work_struct *pWork)
 }
 #endif /* ESD_CHECK */
 
-static void ilitek_platform_fw_update(struct work_struct *work)
-{
-	int ret = 0;
-
-	mutex_lock(&ipd->touch_mutex);
-	ret = core_config_switch_fw_mode(&protocol->demo_mode);
-	if (ret < 0) {
-		ipio_err("core_config_switch_fw_mode failed\n");
-	}
-	mutex_unlock(&ipd->touch_mutex);
-	ipd->sys_boot_fw = true;
-	ilitek_platform_enable_irq();
-}
-
 void load_touch_firmware(void)
 {
 	int err;
@@ -1028,11 +1014,6 @@ static int ilitek_platform_remove_spi(struct spi_device *spi)
 		destroy_workqueue(ipd->check_esd_status_queue);
 	}
 
-	if (ipd->vesd_reg_nb) {
-		cancel_delayed_work_sync(&ipd->fw_update_work);
-		destroy_workqueue(ipd->fw_update_queue);
-	}
-
 	ilitek_proc_remove();
 	ilitek_sys_remove();
 	ipio_vfree((void **)&ilitek_hex_buffer);
@@ -1544,21 +1525,8 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	}
 #endif
 
-	INIT_DELAYED_WORK(&ipd->fw_update_work, ilitek_platform_fw_update);
-	ipd->fw_update_queue = create_workqueue("ili_fw_update");
-	if (!ipd->fw_update_queue) {
-		ipio_err("Failed to create a work thread to update firmware\n");
-		ipd->vesd_reg_nb = false;
-		goto fail_fw_update_queue;
-	} else	{
-		queue_delayed_work(ipd->fw_update_queue, &ipd->fw_update_work,msecs_to_jiffies(FW_UPDATE_TIME));
-		ipd->vesd_reg_nb = true;
-	}
-
 	return 0;
 
-fail_fw_update_queue:
-		cancel_delayed_work_sync(&ipd->fw_update_work);
 fail_init_sys:
 		ilitek_proc_remove();
 

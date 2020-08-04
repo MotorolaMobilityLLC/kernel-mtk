@@ -151,6 +151,9 @@ extern int core_config_get_protocol_ver(void);
 extern int core_config_get_fw_ver(void);
 extern int core_config_get_chip_id(void);
 extern int core_check_ilitek_ic_exist(void);
+extern void core_config_goto_sleep_mode(void);
+extern void core_config_goto_active_mode(void);
+extern void core_config_goto_monitor_mode(void);
 
 extern int core_config_init(void);
 #endif /* __CONFIG_H */
