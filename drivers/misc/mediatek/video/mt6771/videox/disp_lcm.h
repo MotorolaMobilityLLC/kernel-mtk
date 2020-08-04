@@ -70,5 +70,5 @@ int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm);
 int disp_lcm_validate_roi(struct disp_lcm_handle *plcm, int *x, int *y,
 			  int *w, int *h);
 int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter);
-
+char* disp_lcm_get_supplier(struct disp_lcm_handle *plcm);
 #endif /* _DISP_LCM_H_ */

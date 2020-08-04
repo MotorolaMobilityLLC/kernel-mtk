@@ -894,6 +894,7 @@ enum LCM_DRV_IOCTL_CMD {
 
 struct LCM_DRIVER {
 	const char *name;
+	char *supplier;
 	void (*set_util_funcs)(const struct LCM_UTIL_FUNCS *util);
 	void (*get_params)(struct LCM_PARAMS *params);
 
@@ -902,6 +903,7 @@ struct LCM_DRIVER {
 	void (*resume)(void);
 
 	void (*set_gpio_reset)(void);
+	void (*set_recovery_backlight)(void);
 
 	/* for power-on sequence refinement */
 	void (*init_power)(void);

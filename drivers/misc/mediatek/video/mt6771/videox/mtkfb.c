@@ -80,6 +80,7 @@
 #endif
 #include <mt-plat/mtk_ccci_common.h>
 #include "ddp_dsi.h"
+#include "mtkfb_params.h"
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -203,6 +204,113 @@ void mtkfb_log_enable(int enable)
 {
 	mtkfb_log_on = enable;
 	MTKFB_LOG("mtkfb log %s\n", enable ? "enabled" : "disabled");
+}
+
+static ssize_t panel_supplier_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", primary_display_get_lcm_supplier());
+}
+
+static DEVICE_ATTR(panel_supplier, S_IRUGO,
+					panel_supplier_show, NULL);
+static struct attribute *panel_id_attrs[] = {
+	&dev_attr_panel_supplier.attr,
+	NULL,
+};
+
+int last_level;
+int hbm_state = 0;
+char cabc[5] = "UI";
+#if defined(CONFIG_BACKLIGHT_SUPPORT_SGM37604A)
+extern int sgm_last_level;
+extern int sgm37604a_set_backlight_level(unsigned int level);
+#endif
+
+void mtkfb_set_cabc(int cabc_state)
+{
+	primary_display_setlcm_cmd(NULL, NULL, &cabc_state);
+	return;
+}
+
+static ssize_t hbm_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", hbm_state);
+}
+static ssize_t hbm_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	if (!strncmp(buf, "1", 1)) {
+		hbm_state = 1;
+		mtkfb_set_backlight_level(0xFF);
+	} else {
+		hbm_state = 0;
+		mtkfb_set_backlight_level(last_level);
+	}
+	return count;
+}
+
+static ssize_t cabc_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", cabc);
+}
+static ssize_t cabc_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	if (!strncmp(buf, "DIS", 3)) {
+		strcpy(cabc, "DIS");
+		mtkfb_set_cabc(CABC_DIS_MODE);
+	} else if (!strncmp(buf, "MV", 2)) {
+		strcpy(cabc, "MV");
+		mtkfb_set_cabc(CABC_MV_MODE);
+	} else {
+		strcpy(cabc, "UI");
+		mtkfb_set_cabc(CABC_UI_MODE);
+	}
+	return count;
+}
+
+static struct device_attribute param_attrs[PARAM_ID_NUM] = {
+	__ATTR(hbm, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP, hbm_show, hbm_store),
+	__ATTR(cabc, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP,
+		cabc_show, cabc_store),
+};
+
+static int mtk_fb_create_param_sysfs(void)
+{
+	int i, rc = 0;
+
+	for (i = 0; i < PARAM_ID_NUM; i++) {
+		rc = device_create_file(mtkfb_fbi->dev, &param_attrs[i]);
+		if (rc) {
+			pr_err("failed to create sysfs for id %d\n", i);
+			break;
+		}
+	}
+	return rc;
+}
+
+static struct attribute_group panel_id_attr_group = {
+	.attrs = panel_id_attrs,
+};
+
+static int mtk_fb_create_sysfs(void)
+{
+	int rc;
+
+	rc = sysfs_create_group(&mtkfb_fbi->dev->kobj, &panel_id_attr_group);
+	if (rc)
+		pr_err("panel id group creation failed, rc=%d\n", rc);
+
+	rc = mtk_fb_create_param_sysfs();
+	if (rc)
+		pr_err("panel parameter sysfs creation failed, rc=%d\n", rc);
+
+	return rc;
 }
 
 /*
@@ -360,15 +468,66 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 
+#if defined(CONFIG_HBM_DCS_ONLY)
+int mtkfb_set_backlight_level(unsigned int level)
+{
+	unsigned int temp_level;
+	MTKFB_FUNC();
+	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
+	last_level = level;
+	if (hbm_state) {
+	       primary_display_setbacklight(0xFF);
+	} else {
+		temp_level = level * 8 / 10;
+		if ((level > 0) && (temp_level < 1))
+			temp_level = 1;
+		primary_display_setbacklight(temp_level);
+	}
+	DISPDBG("mtkfb_set_backlight_level End\n");
+	return 0;
+}
+#elif defined(CONFIG_HBM_DCS_GPIO)
 int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
-	DISPDBG("%s:%d Start\n",
-		__func__, level);
-	primary_display_setbacklight(level);
-	DISPDBG("%s End\n", __func__);
+	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
+	if (hbm_state) {
+		if (level < 0xFF)
+			last_level = level;
+	       primary_display_setbacklight(0x100);
+	} else {
+		last_level = level;
+		primary_display_setbacklight(level);
+	}
+	DISPDBG("mtkfb_set_backlight_level End\n");
 	return 0;
 }
+#elif defined(CONFIG_HBM_DCS_WLED)
+int mtkfb_set_backlight_level(unsigned int level)
+{
+	MTKFB_FUNC();
+	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
+	if (hbm_state)
+	       primary_display_setbacklight(0xFF);
+	else
+		primary_display_setbacklight(0xCC);
+
+#if defined(CONFIG_BACKLIGHT_SUPPORT_SGM37604A)
+	sgm37604a_set_backlight_level(sgm_last_level);
+#endif
+	DISPDBG("mtkfb_set_backlight_level End\n");
+	return 0;
+}
+#else
+int mtkfb_set_backlight_level(unsigned int level)
+{
+	MTKFB_FUNC();
+	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
+	primary_display_setbacklight(level);
+	DISPDBG("mtkfb_set_backlight_level End\n");
+	return 0;
+}
+#endif
 EXPORT_SYMBOL(mtkfb_set_backlight_level);
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
@@ -2648,6 +2807,8 @@ static int mtkfb_probe(struct platform_device *pdev)
 	register_framebuffer(fb1);
 	DISPMSG("register_ext_framebuffer done\n");
 #endif
+
+	mtk_fb_create_sysfs();
 
 #ifdef FPGA_DEBUG_PAN
 	test_task = kthread_create(update_test_kthread, NULL,

@@ -483,6 +483,9 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 			DDPPR_ERR("[ESD]esd check fail, will do esd recovery. try=%d\n",
 				i);
 			primary_display_esd_recovery();
+			if (pgc->plcm->drv->set_recovery_backlight) {
+				pgc->plcm->drv->set_recovery_backlight();
+			}
 			recovery_done = 1;
 		} while (++i < esd_try_cnt);
 

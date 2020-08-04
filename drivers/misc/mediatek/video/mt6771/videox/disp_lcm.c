@@ -1663,3 +1663,14 @@ int disp_lcm_validate_roi(struct disp_lcm_handle *plcm, int *x, int *y,
 	DISPPR_ERROR("validate roi lcm_drv is null\n");
 	return -1;
 }
+
+char* disp_lcm_get_supplier(struct disp_lcm_handle *plcm)
+{
+	struct LCM_DRIVER *lcm_drv = NULL;
+
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		return lcm_drv->supplier ? lcm_drv->supplier : "null";
+	}
+	return "null";
+}
