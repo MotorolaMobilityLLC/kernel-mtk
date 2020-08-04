@@ -134,7 +134,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 
 static struct LCM_setting_table init_setting_vdo[] = {
 	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },/* Page0 */
-	{ 0x51, 0x02, {0x0c, 0xcc} },
+	{ 0x51, 0x02, {0x00, 0x00} },
 	{ 0x53, 0x01, {0x2c} },
 	{ 0x55, 0x01, {0x01} },
 
@@ -172,6 +172,12 @@ static struct LCM_setting_table init_setting_vdo[] = {
 static struct LCM_setting_table bl_level[] = {
 	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
 	{ 0x51, 0x02, {0x0c, 0xcc} },
+	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table cabc_array[] = {
+	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
+	{ 0x55, 0x01, {0x01} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -483,15 +489,25 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,ili9881h backlight: level = %d\n", __func__, level);
-
-	LCM_LOGI("%s,ili9881h backlight: get default level = %d\n", __func__, bl_level[1].para_list[0]);
+	pr_info("%s,ili9881h backlight: level = %d\n", __func__, level);
 
 	//for 12bit switch to 8bit
 	bl_level[1].para_list[0] = (level&0xF0)>>4;
 	bl_level[1].para_list[1] = (level&0xF)<<4;
 
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+
+static void lcm_set_recovery_backlight(void)
+{
 	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+
+static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
+		unsigned int *lcm_value)
+{
+	cabc_array[1].para_list[0] = *lcm_value;
+	push_table(handle, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void *lcm_switch_mode(int mode)
@@ -513,6 +529,7 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 
 struct LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv = {
 	.name = "mipi_mot_vid_tianma_720p_622",
+	.supplier = "tianma",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
@@ -530,5 +547,6 @@ struct LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
-
+	.set_lcm_cmd = set_lcm_cmd,
+	.set_recovery_backlight = lcm_set_recovery_backlight,
 };

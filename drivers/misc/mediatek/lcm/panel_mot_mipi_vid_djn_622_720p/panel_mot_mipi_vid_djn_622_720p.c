@@ -150,7 +150,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{ REGFLAG_DELAY, 10, {} },
 	{ 0xFB, 0x01, {0x01} },
 	{ 0xBA, 0x01, {0x03} },
-	{ 0x51, 0x01, {0xCC} },
+	{ 0x51, 0x01, {0x00} },
 	{ 0x53, 0x01, {0x2C} },
 	{ 0x55, 0x01, {0x01} },/* CABC ON  Still-Mode   20KHZ */
 	/* { 0x35, 0x01, {0x01} }, TE ON   60HZ */
@@ -162,6 +162,11 @@ static struct LCM_setting_table init_setting_vdo[] = {
 
 static struct LCM_setting_table bl_level[] = {
 	{ 0x51, 1, {0xCC} },
+	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table cabc_array[] = {
+	{ 0x55, 0x01, {0x01} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -477,19 +482,32 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,nt35695 backlight: level = %d\n", __func__, level);
+	pr_info("%s,nt35695 backlight: level = %d\n", __func__, level);
 
 	bl_level[0].para_list[0] = level;
 
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+
+static void lcm_set_recovery_backlight(void)
+{
 	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
-static void nvt_set_reset(void)
+static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
+		unsigned int *lcm_value)
+{
+	cabc_array[0].para_list[0] = *lcm_value;
+	push_table(handle, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
+}
+
+static void lcm_set_reset(void)
 {
 	SET_RESET_PIN(0);
 	MDELAY(5);
 	SET_RESET_PIN(1);
 }
+
 static void *lcm_switch_mode(int mode)
 {
 	return NULL;
@@ -509,6 +527,7 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 
 struct LCM_DRIVER mipi_mot_vid_djn_720p_622_lcm_drv = {
 	.name = "mipi_mot_vid_djn_720p_622",
+	.supplier = "djn",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
@@ -526,6 +545,7 @@ struct LCM_DRIVER mipi_mot_vid_djn_720p_622_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
-	.set_gpio_reset = nvt_set_reset,
-
+	.set_lcm_cmd = set_lcm_cmd,
+	.set_gpio_reset = lcm_set_reset,
+	.set_recovery_backlight = lcm_set_recovery_backlight,
 };
