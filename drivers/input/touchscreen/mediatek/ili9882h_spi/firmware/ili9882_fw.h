@@ -93,7 +93,7 @@ static unsigned char CTPM_FW_TM[] = {
 #define HLT_INI_REQUEST_PATH		"mp_hlt.ini"
 #define HLT_FW_REQUEST_PATH		"ILITEK_FW_HLT"
 static unsigned char CTPM_FW_HLT[] = {
-	#include "hlt/Malata_PANDA_6517_LongH_V0x00.0x03_AP_0x01_MP_2020716.ili"
+	#include "hlt/9882H_Panda6517_LNV_MALTA_LH_SPI_V0x1c.0x00.0x02.ili"
 };
 
 #endif
