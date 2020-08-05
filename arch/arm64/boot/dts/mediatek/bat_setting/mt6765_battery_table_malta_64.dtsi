@@ -45,6 +45,7 @@
 	g_FG_PSEUDO100_T2 = <(95)>;	/*	Pseudo 100% percentage at T2.*/
 	g_FG_PSEUDO100_T3 = <(90)>;	/*	Pseudo 100% percentage at T3.*/
 
+	enable_battery_pn_malta = <1>;
 };
 
 
