@@ -299,15 +299,16 @@ static int32_t update_firmware_request(char *filename)
 	while (1) {
 		NVT_LOG("filename is %s\n", filename);
 
-		if ((strcmp(filename, BOOT_UPDATE_FIRMWARE_NAME)) &&
-			(strcmp(filename, MP_UPDATE_FIRMWARE_NAME))) {
+		if ((strcmp(filename, ts->normal_firmware_name)) &&
+			(strcmp(filename, ts->mp_firmware_name))) {
 			NVT_ERR("filename %s not support\n", filename);
+			ret = -1;
 			goto request_fail;
 		}
 
 		/* request NORMAL firmware on the first time. */
 		if ((request_and_download_normal_complete == false) &&
-				(!strcmp(filename, BOOT_UPDATE_FIRMWARE_NAME))) {
+				(!strcmp(filename, ts->normal_firmware_name))) {
 			NVT_LOG("request normal firmware\n");
 			ret = request_firmware(&fw_entry_normal, filename, &ts->client->dev);
 			if (ret) {
@@ -318,7 +319,7 @@ static int32_t update_firmware_request(char *filename)
 
 		/* request MP firmware on the first time. */
 		if ((request_and_download_mp_complete == false) &&
-			(!strcmp(filename, MP_UPDATE_FIRMWARE_NAME))) {
+			(!strcmp(filename, ts->mp_firmware_name))) {
 			NVT_LOG("request mp firmware\n");
 			ret = request_firmware(&fw_entry_mp, filename, &ts->client->dev);
 			if (ret) {
@@ -328,7 +329,7 @@ static int32_t update_firmware_request(char *filename)
 		}
 
 		/* choice backup firmware data */
-		if (!strcmp(filename, MP_UPDATE_FIRMWARE_NAME)) {
+		if (!strcmp(filename, ts->mp_firmware_name)) {
 			fw_entry = fw_entry_mp;
 			if (request_and_download_mp_complete) {
 				NVT_LOG("use backup mp fw\n");
@@ -929,9 +930,9 @@ int32_t nvt_update_firmware(char *firmware_name)
 		NVT_ERR("nvt_get_fw_info failed. (%d)\n", ret);
 	}
 
-	if (!strcmp(firmware_name, BOOT_UPDATE_FIRMWARE_NAME)) {
+	if (!strcmp(firmware_name, ts->normal_firmware_name)) {
 		request_and_download_normal_complete = true;
-	} else if (!strcmp(firmware_name, MP_UPDATE_FIRMWARE_NAME)) {
+	} else if (!strcmp(firmware_name, ts->mp_firmware_name)) {
 		request_and_download_mp_complete = true;
 	}
 
@@ -958,7 +959,7 @@ return:
 void Boot_Update_Firmware(struct work_struct *work)
 {
 	mutex_lock(&ts->lock);
-	nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
+	nvt_update_firmware(ts->normal_firmware_name);
 	complete(ts->load_fw_completion);
 	mutex_unlock(&ts->lock);
 }
@@ -969,31 +970,7 @@ static ssize_t nvt_build_id_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 /* Update script use for comparing $str_cfg_id_latest in fw name */
-	uint8_t tmp_buf[4] = {0};
-	uint8_t fw_version = 0;
-	uint8_t date_Y = 0;
-	uint8_t date_M = 0;
-	uint8_t date_D = 0;
-
-	mutex_lock(&ts->lock);
-
-	nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_FWINFO);
-	//---read fw info---
-	buf[0] = EVENT_MAP_FWINFO;
-	CTP_SPI_READ(ts->client, buf, 2);
-	fw_version= buf[1];
-
-	nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_FWDATE);
-	tmp_buf[0] = EVENT_MAP_FWDATE; // year , month,day  ,
-	CTP_SPI_WRITE(ts->client, buf, 4);
-	date_Y = tmp_buf[1];
-	date_M = tmp_buf[2];
-	date_D = tmp_buf[3];
-
-	mutex_unlock(&ts->lock);
-
-	return scnprintf(buf, PAGE_SIZE, "%02x-%02d%02d%02d\n",
-		fw_version, date_Y, date_M, date_D);
+	return scnprintf(buf, PAGE_SIZE, "00-ffffff\n");
 }
 
 static ssize_t nvt_poweron_show(struct device *dev,
@@ -1041,6 +1018,15 @@ static ssize_t nvt_do_reflash_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	int retval;
+	char *str, *tok;
+
+	NVT_LOG("++\n");
+
+	if (count > FW_NAME_MAX_LEN) {
+		NVT_ERR("FW filename is too long\n");
+		retval = -EINVAL;
+		goto exit;
+	}
 
 	if (ts->suspended) {
 		NVT_ERR("In suspend state, try again later\n");
@@ -1054,27 +1040,37 @@ static ssize_t nvt_do_reflash_store(struct device *dev,
 		goto exit;
 	}
 
+	if (ts->force_reflash) {
+		strlcpy(ts->normal_firmware_name, buf, count);
+		str = ts->normal_firmware_name;
+		tok = strsep(&str, ".");
+		if(tok) {
+			strcat(tok, "-mp.bin");
+			strlcpy(ts->mp_firmware_name, tok, count+3);
+			request_and_download_mp_complete = false;
+		} else {
+			NVT_ERR("using default mp fw\n");
+		}
+		strlcpy(ts->normal_firmware_name, buf, count);
+		request_and_download_normal_complete = false;
+	}
+
+	NVT_LOG("normal filename: %s, mp filename: %s\n", ts->normal_firmware_name, ts->mp_firmware_name);
+
 	mutex_lock(&ts->lock);
 #if NVT_TOUCH_ESD_PROTECT
 	nvt_esd_check_enable(false);
 #endif
 	ts->loading_fw = 1;
 
-	if (ts->force_reflash) {//release backup fw and request new fw
-		request_and_download_normal_complete = false;
-		request_and_download_mp_complete = false;
-		update_firmware_release();
-	}
+	update_firmware_release();
 
-	nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
-
+	nvt_update_firmware(ts->normal_firmware_name);
 
 	nvt_check_fw_reset_state(RESET_STATE_REK);
 
 	ts->loading_fw = 0;
 	mutex_unlock(&ts->lock);
-
-	update_firmware_release();
 
 	retval = count;
 exit:
@@ -1215,3 +1211,42 @@ void nvt_fw_sysfs_deinit(void)
 	nvt_fw_class_init(false);
 }
 #endif
+
+int nvt_reset_store_proc(void)
+{
+	int retval;
+	NVT_LOG("%s enter\n", __func__);
+	NVT_LOG("++\n");
+
+	if (ts->suspended) {
+		NVT_ERR("In suspend state, try again later\n");
+		retval = -EINVAL;
+		goto exit;
+	}
+
+	if (ts->loading_fw) {
+		NVT_ERR("In FW flashing state, try again later\n");
+		retval = -EINVAL;
+		goto exit;
+	}
+
+	NVT_LOG("normal filename: %s, mp filename: %s\n", ts->normal_firmware_name, ts->mp_firmware_name);
+
+	mutex_lock(&ts->lock);
+#if NVT_TOUCH_ESD_PROTECT
+	nvt_esd_check_enable(false);
+#endif
+	ts->loading_fw = 1;
+
+	update_firmware_release();
+
+	nvt_update_firmware(ts->normal_firmware_name);
+
+	nvt_check_fw_reset_state(RESET_STATE_REK);
+
+	ts->loading_fw = 0;
+	mutex_unlock(&ts->lock);
+
+exit:
+	return retval;
+}

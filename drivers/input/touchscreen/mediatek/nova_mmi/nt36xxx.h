@@ -144,6 +144,7 @@ struct nvt_ts_data {
 	uint8_t hw_crc;
 	uint16_t nvt_pid;
 	uint8_t rbuf[1025];
+	uint8_t *xbuf;
 	struct mutex xbuf_lock;
 	bool irq_enabled;
 	struct completion *load_fw_completion;
@@ -160,6 +161,8 @@ struct nvt_ts_data {
 	uint8_t suspended;
 	uint8_t force_reflash;
 	uint8_t loading_fw;
+	char normal_firmware_name[80];
+	char mp_firmware_name[80];
 #endif
 };
 
@@ -223,6 +226,8 @@ int32_t nvt_clear_fw_status(void);
 int32_t nvt_check_fw_status(void);
 int32_t nvt_set_page(uint32_t addr);
 int32_t nvt_write_addr(uint32_t addr, uint8_t data);
+void nvt_ts_sleep_proc(void);
+extern int nvt_reset_store_proc(void);
 #if NVT_TOUCH_ESD_PROTECT
 extern void nvt_esd_check_enable(uint8_t enable);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */

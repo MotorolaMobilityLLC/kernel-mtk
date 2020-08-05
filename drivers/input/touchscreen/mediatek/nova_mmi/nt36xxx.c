@@ -25,6 +25,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <mt-plat/mtk_boot_common.h>
+#include <linux/power_supply.h>
 
 #if defined(CONFIG_FB)
 #ifdef CONFIG_DRM_MSM
@@ -35,7 +36,6 @@
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
-#include <linux/power_supply.h>
 
 #include "nt36xxx.h"
 #if NVT_TOUCH_ESD_PROTECT
@@ -163,7 +163,7 @@ int32_t nvt_set_charger(uint8_t charger_on_off)
 	NVT_LOG("set charger: %d\n", charger_on_off);
 
 	msleep(20);
-	//---set xdata index to EVENT BUF ADDR---
+	/* ---set xdata index to EVENT BUF ADDR--- */
 	ret = nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_HOST_CMD);
 	if (ret < 0) {
 		NVT_ERR("Set event buffer index fail!\n");
@@ -235,28 +235,29 @@ static int charger_notifier_callback(struct notifier_block *nb,
 		NVT_ERR("Couldn't get usbpsy\n");
 	}
 
-	if (!strcmp(psy->desc->name, "charger")){
+	if (!strcmp(psy->desc->name, "charger")) {
 		if (psy && charger_detection && val == POWER_SUPPLY_PROP_STATUS) {
 			ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
 			if (ret < 0) {
 				NVT_ERR("Couldn't get POWER_SUPPLY_PROP_ONLINE rc=%d\n", ret);
 				return ret;
-			}else{
+			} else {
 				usb_detect_flag = prop.intval;
+				NVT_LOG("prop.intval: %d\n", prop.intval);
+				NVT_LOG("charger_detection->usb_connected: %d\n", charger_detection->usb_connected);
 				if(usb_detect_flag != charger_detection->usb_connected) {
-					 if (USB_DETECT_IN == usb_detect_flag) {
+					if (USB_DETECT_IN == usb_detect_flag)
 						  charger_detection->usb_connected = USB_DETECT_IN;
-					 }else{
+					else
 						  charger_detection->usb_connected = USB_DETECT_OUT;
-					 }
-					 if (bTouchIsAwake){
+					if (bTouchIsAwake)
 						 queue_work(charger_detection->nvt_charger_notify_wq,
 								&charger_detection->charger_notify_work);
-					}
 				}
 			}
 		}
 	}
+
 	return 0;
 }
 
@@ -301,15 +302,17 @@ static inline int32_t spi_read_write(struct spi_device *client, uint8_t *buf, si
 		.len    = len,
 	};
 
+	memcpy(ts->xbuf, buf, len + DUMMY_BYTES);
+
 	switch (rw) {
 		case NVTREAD:
-			t.tx_buf = &buf[0];
+			t.tx_buf = ts->xbuf;
 			t.rx_buf = ts->rbuf;
-			t.len    = (len + DUMMY_BYTES);
+			t.len = (len + DUMMY_BYTES);
 			break;
 
 		case NVTWRITE:
-			t.tx_buf = buf;
+			t.tx_buf = ts->xbuf;
 			break;
 	}
 
@@ -1141,9 +1144,8 @@ static int32_t nvt_parse_dt(struct device *dev)
 		NVT_LOG("novatek,usb_charger set");
 		ts->charger_detection_enable = 1;
 	}
-	else {
+	else
 		ts->charger_detection_enable = 0;
-	}
 
 	return ret;
 }
@@ -1253,7 +1255,7 @@ static void nvt_esd_check_func(struct work_struct *work)
 		mutex_lock(&ts->lock);
 		NVT_ERR("do ESD recovery, timer = %d, retry = %d\n", timer, esd_retry);
 		/* do esd recovery, reload fw */
-		nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
+		nvt_update_firmware(ts->normal_firmware_name);
 		mutex_unlock(&ts->lock);
 		/* update interrupt timer */
 		irq_timer = jiffies;
@@ -1335,7 +1337,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
    /* ESD protect by WDT */
    if (nvt_wdt_fw_recovery(point_data)) {
        NVT_ERR("Recover for fw reset, %02X\n", point_data[1]);
-       nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
+       nvt_update_firmware(ts->normal_firmware_name);
        goto XFER_ERROR;
    }
 #endif /* #if NVT_TOUCH_WDT_RECOVERY */
@@ -1559,6 +1561,16 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 		return -ENOMEM;
 	}
 
+	ts->xbuf = (uint8_t *)kzalloc((NVT_TRANSFER_LEN + 1), GFP_KERNEL);
+	if (ts->xbuf == NULL) {
+		NVT_ERR("kzalloc for xbuf failed!\n");
+		if (ts) {
+			kfree(ts);
+			ts = NULL;
+		}
+		return -ENOMEM;
+	}
+
 	ts->client = client;
 	spi_set_drvdata(client, ts);
 
@@ -1715,7 +1727,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 
 	ts->charger_detection = NULL;
 
-	if (ts->charger_detection_enable){
+	if (ts->charger_detection_enable) {
 		ts->charger_detection = kzalloc(sizeof(struct usb_charger_detection), GFP_KERNEL);
 		if (ts->charger_detection == NULL) {
 			NVT_ERR("failed to allocated memory for usb_charger_detection\n");
@@ -1754,15 +1766,15 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 			if (ret < 0) {
 				NVT_ERR("Couldn't get POWER_SUPPLY_PROP_ONLINE rc=%d\n", ret);
 				goto err_register_charger_notify_failed;
-			}
-			else{
+			} else {
 				usb_detect_flag = prop.intval;
+				NVT_LOG("prop.intval: %d\n", prop.intval);
+				NVT_LOG("ts->charger_detection->usb_connected: %d\n", ts->charger_detection->usb_connected);
 				if(usb_detect_flag != ts->charger_detection->usb_connected) {
-					 if (USB_DETECT_IN == usb_detect_flag) {
+					 if (USB_DETECT_IN == usb_detect_flag)
 						  ts->charger_detection->usb_connected = USB_DETECT_IN;
-					 }else{
+					 else
 						  ts->charger_detection->usb_connected = USB_DETECT_OUT;
-					 }
 					 nvt_set_charger(ts->charger_detection->usb_connected);
 				}
 			}
@@ -1779,7 +1791,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	INIT_DELAYED_WORK(&ts->nvt_fwu_work, Boot_Update_Firmware);
 	/* please make sure boot update start after display reset(RESX) sequence */
 	//queue_delayed_work(nvt_fwu_wq, &ts->nvt_fwu_work, msecs_to_jiffies(14000));
-	nvt_nvt_update_firmware_work(&load_fw_completion);
+	/* nvt_nvt_update_firmware_work(&load_fw_completion); */
 #endif
 
 	NVT_LOG("NVT_TOUCH_ESD_PROTECT is %d\n", NVT_TOUCH_ESD_PROTECT);
@@ -1822,8 +1834,10 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 
 #if NVT_TOUCH_FW
 	ts->suspended = 0;
-	ts->force_reflash = 0;
+	ts->force_reflash = 1;
 	ts->loading_fw = 0;
+	strlcpy(ts->normal_firmware_name, BOOT_UPDATE_FIRMWARE_NAME, sizeof(BOOT_UPDATE_FIRMWARE_NAME));
+	strlcpy(ts->mp_firmware_name, MP_UPDATE_FIRMWARE_NAME, sizeof(MP_UPDATE_FIRMWARE_NAME));
 
 	ret = nvt_fw_sysfs_init();
 	if (ret != 0) {
@@ -2160,6 +2174,12 @@ static int32_t nvt_ts_suspend(struct device *dev)
 	NVT_LOG("end\n");
 
 	return 0;
+}
+
+void nvt_ts_sleep_proc(void)
+{
+	NVT_LOG("%s enter\n", __func__);
+	nvt_ts_suspend(&ts->client->dev);
 }
 
 void nvt_nvt_update_firmware_work(struct completion *load_fw_completion) {
