@@ -169,8 +169,8 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 		1296,  972, 0, 0, 1296,  972 },
 	{ 2592, 1944,   0,   0, 2592, 1944, 2592, 1944, 0, 0,
 		2592, 1944, 0, 0, 2592, 1944 },
-	{ 2592, 1944,   0,   0, 2592, 1944, 2592, 1944, 0, 0,
-		2592, 1944, 0, 0, 2592, 1944 },
+	{ 2592, 1944,   0,   0, 2592, 1944, 1296,  972, 0, 0,
+		1296,  972, 0, 0, 1296,  972 },
 	{ 2592, 1944, 656, 492, 1280,  960,  640,  480, 0, 0,
 		640,  480, 0, 0,  640,  480 },
 	{ 2592, 1944,  16, 252, 2560, 1440, 1280,  720, 0, 0,
@@ -1126,7 +1126,7 @@ static void sensor_init(void)
 
 	/* MIPI */
 	write_cmos_sensor(0xfe, 0x03);
-	write_cmos_sensor(0x02, 0x59);
+	write_cmos_sensor(0x02, 0x57);
 	write_cmos_sensor(0x03, 0xb7);
 	write_cmos_sensor(0x15, 0x14);
 	write_cmos_sensor(0x18, 0x0f);
@@ -1366,7 +1366,7 @@ static void capture_setting(kal_uint16 currefps)
 
 	/* MIPI */
 	write_cmos_sensor(0xfe, 0x03);
-	write_cmos_sensor(0x02, 0x58);
+	write_cmos_sensor(0x02, 0x57);
 	write_cmos_sensor(0x22, 0x06);
 	write_cmos_sensor(0x26, 0x08);
 	write_cmos_sensor(0x29, 0x06);
@@ -1377,7 +1377,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0xfe, 0x00);
 	write_cmos_sensor(0x3e, 0x91);
 }
-#if 0
+#if 1
 static void normal_video_setting(kal_uint16 currefps)
 {
 	cam_pr_debug("E! currefps: %d\n", currefps);
@@ -1911,7 +1911,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_TRUE;
 	spin_unlock(&imgsensor_drv_lock);
 
-	capture_setting(imgsensor.current_fps);
+	normal_video_setting(imgsensor.current_fps);
 	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
 	return ERROR_NONE;
 }
