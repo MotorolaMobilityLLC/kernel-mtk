@@ -156,6 +156,7 @@ config TOUCHSCREEN_MTK_GT911
 
 source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
 source "drivers/input/touchscreen/mediatek/nova_mmi/Kconfig"
+source "drivers/input/touchscreen/mediatek/focaltech_spi_mmi/Kconfig"
 
 config TOUCHSCREEN_MTK_FOCALTECH_FHD
 	bool "Focaltech FHD Touchscreen"

@@ -12,6 +12,7 @@ obj-y   +=  tpd_misc.o
 obj-y   +=  tpd_setting.o
 obj-$(CONFIG_TOUCHSCREEN_ILITEK_MMI)	+=  ilitek_mmi/
 obj-$(CONFIG_TOUCHSCREEN_NOVA_MMI)	+=  nova_mmi/
+obj-$(CONFIG_TOUCHSCREEN_FTS_MMI)	+=  focaltech_spi_mmi/
 obj-$(CONFIG_TOUCHSCREEN_MTK_SOLOMON)	+=  SOLOMON/
 obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_TS)	+=  focaltech_touch/
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151)	+=  GT1151/
