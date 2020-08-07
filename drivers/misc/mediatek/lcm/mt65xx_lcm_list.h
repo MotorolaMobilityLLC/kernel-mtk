@@ -335,7 +335,7 @@ extern struct LCM_DRIVER nt51021h_wuxga_vdo_oncell_boe_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_ilitek_720p_622_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_djn_720p_622_lcm_drv;
-
+extern struct LCM_DRIVER mipi_mot_vid_holi_720p_622_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
