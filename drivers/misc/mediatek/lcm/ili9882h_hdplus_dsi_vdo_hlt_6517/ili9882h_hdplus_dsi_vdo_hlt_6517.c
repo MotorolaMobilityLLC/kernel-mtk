@@ -148,12 +148,19 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
-	{0xFF, 0x03, {0x98, 0x82, 0x00}},//Page0
-	{0x51, 0x02, {0x00, 0x00} },
-	{0x53, 0x01, {0x24}},
-	{0x55, 0x01, {0x00}},
 	{0x11, 0x01, {0x00}},
 	{REGFLAG_DELAY, 80,{}},
+
+	{0xFF, 0x03, {0x98, 0x82, 0x00}},//Page0
+	{0x51, 0x02, {0x00, 0x00} },
+	{0x53, 0x01, {0x2C}},
+	{0x55, 0x01, {0x00}},
+
+	{0xFF, 0x03, {0x98,0x82,0x03}},
+	{0x83, 0x01, {0xE8}},                // DBV[7:0]
+	{0x84, 0x01, {0x00}},
+
+	{0xFF, 0x03, {0x98,0x82,0x00}},//Page0
 	{0x29, 0x01, {0x00}},
 	{REGFLAG_DELAY, 20,{}},
 	{0x35, 0x01, {0x00}},
@@ -161,7 +168,7 @@ static struct LCM_setting_table init_setting[] = {
 
 };
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 0x02, {0x0F, 0xFF} },
+	{0x51, 0x02, {0x00, 0xFF} },
 	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -401,9 +408,8 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		LCM_LOGI("delay 15ms to set backlight, is_bl_delay = %d\n",is_bl_delay);
 		MDELAY(15);//t7
 	}
-	bl_level[0].para_list[0] = (level & 0xF0)>>4;
-	bl_level[0].para_list[1] = (level & 0x0F)<<4;
-	LCM_LOGI("%s, backlight set level = %d \n", __func__, level);
+	bl_level[0].para_list[1] = (level * 8 / 10);
+	LCM_LOGI("%s, backlight set level = %d \n", __func__, bl_level[0].para_list[1]);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
