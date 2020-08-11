@@ -30,4 +30,10 @@ struct stCAM_CAL_LIST_STRUCT {
 unsigned int cam_cal_get_sensor_list
 		(struct stCAM_CAL_LIST_STRUCT **ppCamcalList);
 
+unsigned int  __attribute__((weak)) Hi846_read_cal_region(struct i2c_client *client, unsigned int addr,
+				unsigned char *data, unsigned int size)
+{
+	return 0;
+}
+
 #endif				/* __CAM_CAL_LIST_H */

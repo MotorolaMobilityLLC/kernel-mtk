@@ -125,6 +125,13 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TEMP,
 };
 
+#include <ontim/ontim_dev_dgb.h>
+char battery_vendor_name[50]="MLP395976 2920mAh";
+DEV_ATTR_DECLARE(battery)
+DEV_ATTR_DEFINE("vendor",battery_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(battery,battery,8);
+
 /* weak function */
 int __attribute__ ((weak))
 	do_ptim_gauge(
@@ -334,6 +341,12 @@ static int battery_get_property(struct power_supply *psy,
 			val->intval = gm.fixed_uisoc;
 		else
 			val->intval = data->BAT_CAPACITY;
+#ifdef    DUAL_85_VERSION
+              if(data->BAT_CAPACITY<30)
+              {
+                   val->intval  = 30;    
+              }
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		b_ischarging = gauge_get_current(&fgcurrent);
@@ -359,7 +372,25 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef    DUAL_85_VERSION
+              if(gm.tbat_precise>=440)
+              {
+                  val->intval  = 440;
+              }
+              else
+              {
+                  if(gm.tbat_precise<=100)
+                  {
+                      val->intval  = 100;
+                  }
+                  else
+                  {
+                      val->intval = gm.tbat_precise;
+                  }
+              }
+#else
 		val->intval = gm.tbat_precise;
+#endif
 		break;
 
 	default:
@@ -1500,7 +1531,11 @@ int force_get_tbat_internal(bool update)
 					pre_fg_r_value,
 					pre_bat_temperature_val2);
 				/*pmic_auxadc_debug(1);*/
-				WARN_ON_ONCE(1);
+//BEGIN,ontim,shabei,2019.09.02,mask warning for D85 version to avoid to much stack dump
+#ifndef DUAL_85_VERSION
+				WARN_ON(1);
+#endif
+//ENDIF
 			}
 
 			pre_bat_temperature_volt_temp =
@@ -1585,13 +1620,29 @@ int force_get_tbat(bool update)
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
 
 		gm.tbat_precise = DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG * 10;
-		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
+		if(bat_temperature_val == -40)
+		{
+		bm_err("[force_get_tbat] think ntc dnp ;%d;\n", bat_temperature_val);
+			battery_main.BAT_CAPACITY = 50;
+			gm.ui_soc=50;
+			gm.soc=50;
+		strncpy(battery_vendor_name,"BATTERY NTC ERROR",20);
+			return 36;     //ntc dnp, so fix 36 degree
+		}
+
+                return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
 	}
 
 	gm.ntc_disable_nafg = false;
 	bm_debug("[%s] t:%d precise:%d\n", __func__,
 		bat_temperature_val, gm.tbat_precise);
 
+#ifdef DUAL_85_VERSION
+	if (bat_temperature_val > 59)
+		bat_temperature_val = 59;
+	if (bat_temperature_val < 10)
+		bat_temperature_val = 10;
+#endif
 	return bat_temperature_val;
 #endif
 }
@@ -2069,7 +2120,7 @@ void exec_BAT_EC(int cmd, int param)
 				bm_err(
 					"exe_BAT_EC cmd %d, param %d, enable\n",
 					cmd, param);
-				fg_custom_init_from_header();
+				//fg_custom_init_from_header();
 			}
 		}
 		break;
@@ -3874,6 +3925,34 @@ static const struct file_operations adc_cali_fops = {
 
 
 /*************************************/
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+static int battery_id_type = 0;
+int ontim_get_battery_type(void)
+{
+	return battery_id_type;
+}
+static void ontim_form_lk_get_battery_id(void)
+{
+	int battery_type_name_len = 0;
+	const char *battery_type = NULL;
+	char battery_type_name_tmp[10];
+
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		battery_type =
+		of_get_flat_dt_prop(
+					bat_node,"battery_type_name",
+					&battery_type_name_len);
+	if (battery_type == NULL){
+		bm_err("battery_type == NULL len = %d\n",battery_type_name_len);
+	} else {
+		snprintf(
+		battery_type_name_tmp,(battery_type_name_len + 1),
+		"%s",battery_type);
+		battery_id_type = (int)battery_type_name_tmp[0];
+		printk("ontim battery_id_type = %d  battery_type_name_len = %d\n",battery_id_type,battery_type_name_len);
+	}
+}
+#endif
 static struct wakeup_source battery_lock;
 static int __init battery_probe(struct platform_device *dev)
 {
@@ -3893,6 +3972,12 @@ static int __init battery_probe(struct platform_device *dev)
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
 
+//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+//-add by hzb for ontim debug
 	wakeup_source_init(&battery_lock, "battery wakelock");
 	__pm_stay_awake(&battery_lock);
 
@@ -3913,7 +3998,11 @@ static int __init battery_probe(struct platform_device *dev)
 					adc_cali_devno,
 					NULL, ADC_CALI_DEVNAME);
 /*****************************/
-
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+	/* add liang */
+	ontim_form_lk_get_battery_id();
+	/* add end */
+#endif
 	mtk_battery_init(dev);
 
 	/* Power supply class */
@@ -4051,6 +4140,9 @@ static int __init battery_probe(struct platform_device *dev)
 
 	gm.is_probe_done = true;
 
+//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
 	return 0;
 }
 

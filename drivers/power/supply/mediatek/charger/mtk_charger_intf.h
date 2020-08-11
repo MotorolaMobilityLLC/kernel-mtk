@@ -38,7 +38,7 @@ struct charger_manager;
 #include "adapter_class.h"
 
 #define CHARGING_INTERVAL 10
-#define CHARGING_FULL_INTERVAL 20
+#define CHARGING_FULL_INTERVAL 15
 
 #define CHRLOG_ERROR_LEVEL   1
 #define CHRLOG_DEBUG_LEVEL   2
@@ -392,6 +392,9 @@ struct charger_manager {
 
 	/* dynamic mivr */
 	bool enable_dynamic_mivr;
+
+	bool enable_dynamic_charge_current;
+	int dynamic_charge_current;
 };
 
 /* charger related module interface */

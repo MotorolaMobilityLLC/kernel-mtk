@@ -21,6 +21,15 @@ config MICROTRUST_TEE_SUPPORT
 	  Say Y if you would like to enable this feature.
 	  If unsure, say N.
 
+config MICROTRUST_EXTEND_TRANSFER_BUFFER
+    bool "Enable Microtrust TEEI FP Big Data Support"
+    default n
+    ---help---
+      Enables the support of Microtrust TEE fp transfer big data.
+      All Microtrust related TEE drivers will depend on this option.
+      Say Y if you would like to enable this feature.
+      If unsure, say N.
+
 config MICROTRUST_TEE_VERSION
 	string "MICROTRUST TEE Version"
 	depends on MICROTRUST_TEE_SUPPORT

@@ -90,6 +90,8 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	{1, AFDRV_DW9767AF, DW9767AF_SetI2Cclient, DW9767AF_Ioctl,
+	 DW9767AF_Release, DW9767AF_GetFileName, NULL},
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
 	 AK7371AF_Release, AK7371AF_GetFileName, NULL},
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl,
@@ -109,6 +111,10 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	},
 	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl,
 	 DW9714AF_Release, DW9714AF_GetFileName, NULL},
+	{1, AFDRV_FM24VS64RAF, FM24VS64RAF_SetI2Cclient, FM24VS64RAF_Ioctl,
+	 FM24VS64RAF_Release, FM24VS64RAF_GetFileName, NULL},
+	{1, AFDRV_CN3927EAF, CN3927EAF_SetI2Cclient, CN3927EAF_Ioctl,
+	 CN3927EAF_Release, CN3927EAF_GetFileName, NULL},
 	{1, AFDRV_DW9718SAF, DW9718SAF_SetI2Cclient, DW9718SAF_Ioctl,
 	 DW9718SAF_Release, DW9718SAF_GetFileName, NULL},
 	{1, AFDRV_DW9719TAF, DW9719TAF_SetI2Cclient, DW9719TAF_Ioctl,
@@ -184,7 +190,7 @@ void AFRegulatorCtrl(int Stage)
 					regVCAMAF = regulator_get(lens_device,
 								  "vldo28");
 				else {
-					#if defined(CONFIG_MACH_MT6761)
+					#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT6765)
 					regVCAMAF = regulator_get(lens_device,
 								  "vldo28");
 					#else

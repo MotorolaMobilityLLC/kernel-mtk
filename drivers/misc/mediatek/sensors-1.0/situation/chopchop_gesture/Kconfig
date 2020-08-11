@@ -1,0 +1,9 @@
+
+config ONTIM_CHOPCHOPHUB
+	bool "chopchophub for Ontim package"
+	default n
+	help
+	  A chopchop gesture is a device,
+	  usually portable and electronic
+	  or electromechanical,
+	  that detect device is chop-chop-ed.

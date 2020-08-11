@@ -467,12 +467,11 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 
 	if (err != ERROR_NONE)
 		pr_info("ERROR: No imgsensor alive\n");
-
+    
 	imgsensor_hw_power(&pgimgsensor->hw,
 	    psensor,
 	    psensor_inst->psensor_name,
 	    IMGSENSOR_HW_POWER_STATUS_OFF);
-
 	IMGSENSOR_PROFILE(&psensor_inst->profile_time, "CheckIsAlive");
 
 	return err ? -EIO:err;
