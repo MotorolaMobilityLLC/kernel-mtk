@@ -40,6 +40,7 @@ struct alspshub_ipi_data {
 	atomic_t	als_cali;
 	atomic_t	ps_thd_val_high;
 	atomic_t	ps_thd_val_low;
+	atomic_t	als_target_lux;
 	ulong		enable;
 	ulong		pending_intr;
 	bool als_factory_enable;
@@ -79,6 +80,87 @@ enum {
 	CMC_TRC_CVT_PS = 0x0040,
 	CMC_TRC_DEBUG = 0x8000,
 } CMC_TRC;
+
+
+#define BUF_SIZE 64
+#define BJ_TP_VENDOR_HLT 0
+#define BJ_TP_VENDOR_TRULY 1
+#define FIJI_TP_VENDOR_SKYWORTH 0
+#define FIJI_TP_VENDOR_TRULY 1
+#define FIJI_TP_VENDOR_EASYQUICK 2
+
+
+static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
+{
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos = 0;
+	ssize_t len = 0;
+
+	if (file_name == NULL || buf == NULL)
+		return -1;
+
+	fp = filp_open(file_name, O_RDONLY, 0);
+	if (IS_ERR(fp)) {
+		pr_err("file not found/n");
+		return -1;
+	}
+
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	memset(buf, 0x00, buf_size);
+	len = vfs_read(fp, buf, buf_size, &pos);
+	buf[buf_size - 1] = '\n';
+	filp_close(fp, NULL);
+	set_fs(fs);
+
+	return 0;
+}
+
+static int get_tp_vendor(void)
+{
+	char file_path[BUF_SIZE] = "/sys/ontim_dev_debug/touch_screen/vendor";
+	char buf[BUF_SIZE] = {0};
+	char str[BUF_SIZE] = {0};
+	int  ret = 0;
+	int vendor = 0;
+
+	ret = hwinfo_read_file(file_path, buf, sizeof(buf));
+	if (ret != 0)
+	{
+		pr_err("hwinfo_read_file failed.");
+		return -1;
+	}
+
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+
+	sprintf(str, "%s", buf);
+
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "blackjack", 9) == 0) {
+		if (strncmp(buf,"holitek",7) == 0)
+			vendor = BJ_TP_VENDOR_HLT;
+		else if (strncmp(buf,"truly",5) == 0)
+			vendor = BJ_TP_VENDOR_TRULY;
+	} else if ((strcmp(CONFIG_ARCH_MTK_PROJECT, "fiji") == 0) || (strcmp(CONFIG_ARCH_MTK_PROJECT, "fiji_64") == 0)) {
+		if (strncmp(buf,"skyworth",8) == 0)
+			vendor = FIJI_TP_VENDOR_SKYWORTH;
+		else if (strncmp(buf,"truly",5) == 0)
+			vendor = FIJI_TP_VENDOR_TRULY;
+		else if (strncmp(buf,"easyquick",9) == 0)
+			vendor = FIJI_TP_VENDOR_EASYQUICK;
+	}
+
+	printk(KERN_INFO "[ALS/PS]: tp vendor:(%d)%s\n", vendor, buf);
+	ret = sensor_set_cmd_to_hub(ID_LIGHT, CUST_ACTION_SET_TRACE, &vendor);
+	if (ret < 0) {
+            pr_err("sensor_set_cmd_to_hub fail,(ID: %d),(action: %d),(ret: %d)\n",
+                    ID_LIGHT, CUST_ACTION_SET_TRACE, ret);
+            return -1;
+    }
+
+	return 0;
+}
 
 long alspshub_read_ps(u8 *ps)
 {
@@ -233,6 +315,57 @@ static ssize_t alspshub_show_alsval(struct device_driver *ddri, char *buf)
 	return res;
 }
 
+static ssize_t alspshub_show_ps_noise(struct device_driver *ddri, char *buf)
+{
+	ssize_t res = 0;
+	struct data_unit_t data_t;
+
+	res = sensor_get_data_from_hub(ID_PROXIMITY, &data_t);
+	if (res < 0) {
+		pr_err("sensor_get_data_from_hub fail, (ID: %d)\n",
+			ID_PROXIMITY);
+		return 0;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", data_t.proximity_t.steps);
+}
+
+static ssize_t alspshub_show_als_target_lux(struct device_driver *ddri, char *buf)
+{
+	ssize_t res = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	if (!obj_ipi_data) {
+		pr_err("obj_ipi_data is null!!\n");
+		return 0;
+	}
+
+	res = snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&obj->als_target_lux));
+	return res;
+}
+
+static ssize_t alspshub_store_als_target_lux(struct device_driver *ddri,
+				const char *buf, size_t count)
+{
+	int lux = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int ret = 0;
+
+	if (!obj) {
+		pr_err("obj_ipi_data is null!!\n");
+		return 0;
+	}
+	ret = sscanf(buf, "%d", &lux);
+	if (ret != 1) {
+		pr_err("invalid content: '%s', length = %zu\n", buf, count);
+		return count;
+	}
+	atomic_set(&obj->als_target_lux, lux);
+
+	return count;
+}
+
+
 static DRIVER_ATTR(als, 0644, alspshub_show_als, NULL);
 static DRIVER_ATTR(ps, 0644, alspshub_show_ps, NULL);
 static DRIVER_ATTR(alslv, 0644, alspshub_show_alslv, NULL);
@@ -240,6 +373,8 @@ static DRIVER_ATTR(alsval, 0644, alspshub_show_alsval, NULL);
 static DRIVER_ATTR(trace, 0644, alspshub_show_trace,
 					alspshub_store_trace);
 static DRIVER_ATTR(reg, 0644, alspshub_show_reg, NULL);
+static DRIVER_ATTR(ps_noise, 0644, alspshub_show_ps_noise, NULL);
+static DRIVER_ATTR(als_target_lux, 0644, alspshub_show_als_target_lux, alspshub_store_als_target_lux);
 static struct driver_attribute *alspshub_attr_list[] = {
 	&driver_attr_als,
 	&driver_attr_ps,
@@ -247,6 +382,8 @@ static struct driver_attribute *alspshub_attr_list[] = {
 	&driver_attr_alslv,
 	&driver_attr_alsval,
 	&driver_attr_reg,
+	&driver_attr_ps_noise,
+	&driver_attr_als_target_lux,
 };
 
 static int alspshub_create_attr(struct device_driver *driver)
@@ -584,6 +721,16 @@ static int pshub_factory_get_threshold(int32_t threshold[2])
 	return 0;
 }
 
+static int alshub_factory_get_target_lux(int32_t *lux)
+{
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	*lux = atomic_read(&obj->als_target_lux);
+
+	return 0;
+}
+
+
 static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_enable_sensor = alshub_factory_enable_sensor,
 	.als_get_data = alshub_factory_get_data,
@@ -592,6 +739,7 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_clear_cali = alshub_factory_clear_cali,
 	.als_set_cali = alshub_factory_set_cali,
 	.als_get_cali = alshub_factory_get_cali,
+	.als_get_target_lux = alshub_factory_get_target_lux,
 
 	.ps_enable_sensor = pshub_factory_enable_sensor,
 	.ps_get_data = pshub_factory_get_data,
@@ -634,9 +782,13 @@ static int als_enable_nodata(int en)
 	}
 
 	mutex_lock(&alspshub_mutex);
-	if (en)
+	if (en) {
+		res = get_tp_vendor();
+		if (res < 0) {
+			pr_err("get_tp_vendor failed!\n");
+		}
 		set_bit(CMC_BIT_ALS, &obj_ipi_data->enable);
-	else
+	} else
 		clear_bit(CMC_BIT_ALS, &obj_ipi_data->enable);
 	mutex_unlock(&alspshub_mutex);
 	return 0;
@@ -898,6 +1050,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	WRITE_ONCE(obj->als_android_enable, false);
 	WRITE_ONCE(obj->ps_factory_enable, false);
 	WRITE_ONCE(obj->ps_android_enable, false);
+	atomic_set(&obj->als_target_lux, 0);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);

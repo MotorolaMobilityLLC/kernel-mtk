@@ -250,3 +250,12 @@ config SND_SOC_MTK_AUDIO_DSP
 	  that can be used with other platforms
 	  Select Y if you have such device.
 	  If unsure select "N".
+
+config AUDIO_PA_S
+	bool "Audio PA enable"
+	default n
+	help
+	  Enable Audio PA enable
+
+source "sound/soc/mediatek/audio_pa/Kconfig"
+

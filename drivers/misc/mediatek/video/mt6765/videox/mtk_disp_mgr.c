@@ -1533,7 +1533,17 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
-			return primary_display_get_lcm_index();
+			unsigned long lcm_index = -1;
+			void __user *argp = (void __user *)arg;
+			lcm_index = primary_display_get_lcm_index();
+			DISPMSG("Firefly:the lcm index = %lu\n", lcm_index);
+			if (copy_to_user(argp, &lcm_index, sizeof(unsigned long))) {
+				DISPERR("[FB]: copy_to_user failed! line:%d\n",
+						__LINE__);
+				ret = -EFAULT;
+			} else {
+				return 0;
+			}
 		}
 	case DISP_IOCTL_QUERY_VALID_LAYER:
 		{

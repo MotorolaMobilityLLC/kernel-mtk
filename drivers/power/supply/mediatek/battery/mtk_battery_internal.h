@@ -47,7 +47,7 @@
 /* ============================================================ */
 #define BAT_VOLTAGE_LOW_BOUND 3400
 #define BAT_VOLTAGE_HIGH_BOUND 3450
-#define LOW_TMP_BAT_VOLTAGE_LOW_BOUND 3350
+#define LOW_TMP_BAT_VOLTAGE_LOW_BOUND 3200
 #define SHUTDOWN_TIME 40
 #define AVGVBAT_ARRAY_SIZE 30
 #define INIT_VOLTAGE 3450
@@ -948,7 +948,7 @@ extern void mtk_battery_last_init(struct platform_device *dev);
 extern void fg_bat_temp_int_internal(void);
 extern void fgauge_get_profile_id(void);
 extern void battery_update(struct battery_data *bat_data);
-extern void fg_custom_init_from_header(void);
+extern void fg_custom_init_from_header(struct platform_device *dev);
 extern void notify_fg_chr_full(void);
 extern void fg_update_sw_iavg(void);
 extern void fg_bat_temp_int_sw_check(void);
