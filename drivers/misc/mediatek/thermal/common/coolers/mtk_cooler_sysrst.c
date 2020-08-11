@@ -84,7 +84,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+#ifndef DUAL_85_VERSION
 		BUG();
+#endif
 
 
 	}
@@ -122,7 +124,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+#ifndef DUAL_85_VERSION
 		BUG();
+#endif
 
 	}
 	return 0;
@@ -159,8 +163,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+#ifndef DUAL_85_VERSION
 		BUG();
-
+#endif
 	}
 	return 0;
 }
@@ -196,8 +201,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+#ifndef DUAL_85_VERSION
 		BUG();
-
+#endif
 	}
 	return 0;
 }

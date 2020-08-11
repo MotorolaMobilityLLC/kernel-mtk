@@ -14,3 +14,5 @@ obj-$(CONFIG_MTK_MOTION_DETECT_HUB)			+=	motion_detect/
 obj-$(CONFIG_MTK_TILTDETECTHUB)				+=	tilt_detector/
 obj-$(CONFIG_MTK_FLAT_HUB)				+=	flat/
 obj-$(CONFIG_MTK_SAR_HUB)				+=	sar/
+obj-$(CONFIG_ONTIM_CHOPCHOPHUB)	+=	chopchop_gesture/
+obj-$(CONFIG_ONTIM_TWIST_TWICEHUB)	+=	twist_twice_gesture/
