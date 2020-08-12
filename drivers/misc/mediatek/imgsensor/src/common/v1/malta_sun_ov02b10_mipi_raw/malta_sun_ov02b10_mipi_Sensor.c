@@ -649,6 +649,7 @@ static void slim_video_setting(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
+ extern char backaux_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -662,6 +663,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			write_cmos_sensor(0xfd, 0x00);
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+				memcpy(backaux_cam_name, "2_malta_sun_ov02b10", 64);
 				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
