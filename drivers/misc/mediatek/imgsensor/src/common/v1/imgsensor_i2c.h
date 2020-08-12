@@ -13,7 +13,6 @@
 
 #ifndef __IMGSENSOR_I2C_H__
 #define __IMGSENSOR_I2C_H__
-#include "imgsensor_common.h"
 
 #include <linux/i2c.h>
 #include <linux/mutex.h>
@@ -21,6 +20,7 @@
 #include "i2c-mtk.h"
 
 #include "imgsensor_cfg_table.h"
+#include "imgsensor_common.h"
 
 #define IMGSENSOR_I2C_MSG_SIZE_READ      2
 #define IMGSENSOR_I2C_BURST_WRITE_LENGTH MAX_DMA_TRANS_SIZE

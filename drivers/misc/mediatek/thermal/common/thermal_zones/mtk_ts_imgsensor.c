@@ -29,9 +29,9 @@
 #include "mtk_thermal_timer.h"
 #include <linux/uidgid.h>
 #include <linux/slab.h>
-#include "kd_camera_feature.h"
-#include "kd_imgsensor_define.h"
-#include "kd_imgsensor_api.h"
+#include "kd_camera_feature_q.h"
+#include "kd_imgsensor_define_q.h"
+#include "kd_imgsensor_api_q.h"
 
 /*=============================================================
  * Weak function

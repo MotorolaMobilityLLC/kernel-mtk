@@ -14,7 +14,6 @@
 #ifndef _KD_CAMERA_FEATURE_H_
 #define _KD_CAMERA_FEATURE_H_
 
-
 #include "kd_camera_feature_id.h"
 #include "kd_camera_feature_enum.h"
 
@@ -29,7 +28,7 @@ enum IMGSENSOR_SENSOR_IDX {
 	IMGSENSOR_SENSOR_IDX_NONE,
 };
 
-enum CAMERA_DUAL_CAMERA_SENSOR_ENUM {
+typedef enum {
 	DUAL_CAMERA_NONE_SENSOR        = 0,
 	DUAL_CAMERA_MAIN_SENSOR        = 1,
 	DUAL_CAMERA_SUB_SENSOR         = 2,
@@ -40,15 +39,15 @@ enum CAMERA_DUAL_CAMERA_SENSOR_ENUM {
 	/* for backward compatible */
 	DUAL_CAMERA_MAIN_SECOND_SENSOR = DUAL_CAMERA_MAIN_2_SENSOR,
 
-};
+} CAMERA_DUAL_CAMERA_SENSOR_ENUM;
 
 #define IMGSENSOR_SENSOR_DUAL2IDX(idx) ((ffs(idx) - 1))
 #define IMGSENSOR_SENSOR_IDX2DUAL(idx) (1<<(idx))
 
 #define IMGSENSOR_SENSOR_IDX_MAP(idx) \
-	(((idx) > DUAL_CAMERA_NONE_SENSOR && (idx) < DUAL_CAMERA_SENSOR_MAX) \
-	? (enum IMGSENSOR_SENSOR_IDX)IMGSENSOR_SENSOR_DUAL2IDX(idx) \
-	: IMGSENSOR_SENSOR_IDX_NONE)
+    ((idx) > DUAL_CAMERA_NONE_SENSOR && (idx) < DUAL_CAMERA_SENSOR_MAX) ? \
+    (enum IMGSENSOR_SENSOR_IDX)IMGSENSOR_SENSOR_DUAL2IDX(idx) : \
+    IMGSENSOR_SENSOR_IDX_NONE
 
 #endif              /* _KD_IMGSENSOR_DATA_H */
 

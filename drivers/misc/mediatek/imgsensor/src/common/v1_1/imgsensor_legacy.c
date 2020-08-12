@@ -20,8 +20,7 @@ void kdSetI2CSpeed(u16 i2cSpeed)
 
 }
 
-int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
-		u8 *a_pRecvData, u16 a_sizeRecvData,
+int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData,
 		u16 i2cId)
 {
 	return imgsensor_i2c_read(
@@ -34,8 +33,8 @@ int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 			IMGSENSOR_I2C_SPEED);
 }
 
-int iReadRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
-			u16 a_sizeRecvData, u16 i2cId, u16 timing)
+int iReadRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData,
+		      u16 i2cId, u16 timing)
 {
 	return imgsensor_i2c_read(
 			pgi2c_cfg_legacy,
@@ -58,8 +57,7 @@ int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId)
 			IMGSENSOR_I2C_SPEED);
 }
 
-int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData,
-			u16 i2cId, u16 timing)
+int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId, u16 timing)
 {
 	return imgsensor_i2c_write(
 			pgi2c_cfg_legacy,
@@ -81,8 +79,7 @@ int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId)
 			IMGSENSOR_I2C_SPEED);
 }
 
-int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
-				u16 transfer_length, u16 timing)
+int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing)
 {
 	return imgsensor_i2c_write(
 			pgi2c_cfg_legacy,

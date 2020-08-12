@@ -1,21 +1,21 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
+#include <linux/fs.h>
+#include <linux/delay.h>
 #include "bu64748_function.h"
 #include "OIS_coef.h"
 #include "OIS_prog.h"
-#include <linux/delay.h>
-#include <linux/fs.h>
 
 static void I2C_func_PER_WRITE(unsigned char u08_adr,
 			unsigned short u16_dat)
@@ -73,6 +73,7 @@ static unsigned short I2C_func_MEM_READ(unsigned char u08_adr)
 	return u16_dat;
 }
 
+
 static void I2C_func_PON______(void)
 {
 	I2C_func_PER_WRITE(0xEF, 0x0080);
@@ -98,7 +99,7 @@ static void Set_Close_Mode(void)
 
 static void download(int type)
 {
-#define DWNLD_TRNS_SIZE (32)
+	#define		DWNLD_TRNS_SIZE		(32)
 
 	unsigned char temp[DWNLD_TRNS_SIZE + 1];
 	int block_cnt;
@@ -110,7 +111,7 @@ static void download(int type)
 	if (type == 0)
 		n = MAIN2_DOWNLOAD_BIN_LEN;
 	else
-		n = MAIN2_DOWNLOAD_COEF_LEN;
+		n = MAIN2_DOWNLOAD_COEF_LEN;	/* RHM_HT 2013/07/10    Modified */
 
 	block_cnt = n / DWNLD_TRNS_SIZE + 1;
 	total_cnt = block_cnt;
@@ -127,17 +128,13 @@ static void download(int type)
 			if (type == 0) {
 				temp[0] = _OP_FIRM_DWNLD;
 				for (u16_i = 1; u16_i <= lp; u16_i += 1)
-					temp[u16_i] = MAIN2_DOWNLOAD_BIN
-						[(total_cnt - block_cnt) *
-							 DWNLD_TRNS_SIZE +
-						 u16_i - 1];
+					temp[u16_i] = MAIN2_DOWNLOAD_BIN[(total_cnt - block_cnt) *
+					DWNLD_TRNS_SIZE + u16_i - 1];
 			} else {
 				temp[0] = _OP_COEF_DWNLD;
 				for (u16_i = 1; u16_i <= lp; u16_i += 1)
-					temp[u16_i] = MAIN2_DOWNLOAD_COEF
-						[(total_cnt - block_cnt) *
-							 DWNLD_TRNS_SIZE +
-						 u16_i - 1];
+					temp[u16_i] = MAIN2_DOWNLOAD_COEF[(total_cnt - block_cnt) *
+					DWNLD_TRNS_SIZE + u16_i - 1];
 			}
 
 			/* Data Transfer */
@@ -164,7 +161,7 @@ static int func_PROGRAM_DOWNLOAD(void)
 	ver_check = I2C_func_MEM_READ(_M_F7_FBAF_STS);
 	pr_debug("[bu64748af]ver_check : 0x%x\n", ver_check);
 
-	if ((ver_check & 0x0004) == 0x0004) {
+	if ((ver_check & 0x0004) == 0x0004)	{
 		u16_dat = I2C_func_MEM_READ(_M_FIRMVER);
 
 		pr_debug("[bu64748af]FW Ver : %d\n", u16_dat);
@@ -205,7 +202,7 @@ void main2_AF_TARGET(unsigned short target)
 	unsigned char out[3] = {0};
 
 	out[0] = 0xF2;
-	out[1] = (target >> 8) & 0xFF;
+	out[1] = (target>>8)&0xFF;
 	out[2] = target & 0xFF;
 
 	main2_SOutEx(_SLV_FBAF_, out, 3);
@@ -250,19 +247,4 @@ unsigned short bu64748_main2_af_cur_pos(void)
 
 	u16_dat = (read[0] * 256) + read[1];
 	return u16_dat;
-}
-
-void BU64748_main2_soft_power_ctrl(int On)
-{
-	if (On) {
-		I2C_func_MEM_WRITE(0x59, 0x000C);
-		I2C_func_MEM_WRITE(0x3D, 0x0080);
-		I2C_func_MEM_WRITE(0x72, 0x1111);
-		I2C_func_MEM_WRITE(0x30, 0x000D);
-	} else {
-		I2C_func_MEM_WRITE(0x30, 0x0000);
-		I2C_func_MEM_WRITE(0x59, 0x0000);
-		I2C_func_MEM_WRITE(0x3D, 0x0000);
-		I2C_func_MEM_WRITE(0x72, 0x0000);
-	}
 }

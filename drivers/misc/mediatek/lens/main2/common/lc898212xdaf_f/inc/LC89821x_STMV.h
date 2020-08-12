@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2016 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
-
 #ifndef __LC89821x_STMV__
 #define	__LC89821x_STMV__
 
@@ -20,15 +7,15 @@
 /* ************************** */
 /* Convergence Judgement */
 #define INI_MSSET_211		((unsigned char)0x00)
-#define CHTGX_THRESHOLD		((unsigned short)0x0200)
-#define CHTGOKN_TIME		((unsigned char)0x80)
-#define CHTGOKN_WAIT		3
+#define CHTGX_THRESHOLD		((unsigned short)0x0200)	/* Convergence Judge Threshold */
+#define CHTGOKN_TIME		((unsigned char)0x80)	/* 64 Sampling Time 1.365msec( EQCLK=12MHz ) */
+#define CHTGOKN_WAIT		3	/* CHTGOKN_WAIT(3ms) > CHTGOKN_TIME(2.732msec) */
 
 /* StepMove */
-#define STMV_SIZE		((unsigned short)0x0180)
-#define STMV_INTERVAL		((unsigned char)0x01)
+#define STMV_SIZE		((unsigned short)0x0180)	/* StepSize(MS1Z12) */
+#define STMV_INTERVAL		((unsigned char)0x01)	/* Step Interval(STMVINT) */
 
-#define STMCHTG_ON		((unsigned char)0x08)
+#define STMCHTG_ON		((unsigned char)0x08)	/* STMVEN Register Set */
 #define STMSV_ON		((unsigned char)0x04)
 #define STMLFF_ON		((unsigned char)0x02)
 #define STMVEN_ON		((unsigned char)0x01)
@@ -37,11 +24,12 @@
 #define STMLFF_OFF		((unsigned char)0x00)
 #define STMVEN_OFF		((unsigned char)0x00)
 
-#define STMCHTG_SET		STMCHTG_ON
-#define STMSV_SET		STMSV_ON
+#define STMCHTG_SET		STMCHTG_ON	/* Convergence Judgement On */
+#define STMSV_SET		STMSV_ON	/* Setting Target Position = End Position */
 #define STMLFF_SET		STMLFF_OFF
 
-#define	WAIT			0xFF
+#define	WAIT			0xFF	/* Wait command */
+
 
 #define	ADHXI_211H	0x00
 #define	ADHXI_211L	0x01
@@ -283,7 +271,9 @@ const struct INIDATA Init_Table_F[] = {
 
 	{0x0086, 0x60},
 
-	{0x0087, 0x85} };
+	{0x0087, 0x85}
+};
+
 
 struct stSmvPar {
 	unsigned short UsSmvSiz;
@@ -291,10 +281,8 @@ struct stSmvPar {
 	unsigned char UcSmvEnb;
 };
 
-extern int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData,
-					u16 i2cId);
-extern int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData,
-				       u8 *a_pRecvData, u16 a_sizeRecvData,
-				       u16 i2cId);
+extern int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
+extern int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
+				       u16 a_sizeRecvData, u16 i2cId);
 
 #endif

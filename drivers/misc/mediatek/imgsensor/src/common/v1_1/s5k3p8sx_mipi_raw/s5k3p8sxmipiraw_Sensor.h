@@ -69,7 +69,7 @@ struct imgsensor_struct {
 	kal_bool test_pattern;		/*record test pattern mode or not*/
 
 	/*current scenario id*/
-	enum MSDK_SCENARIO_ID_ENUM current_scenario_id;
+	MSDK_SCENARIO_ID_ENUM current_scenario_id;
 
 	/*ihdr mode 0: disable, 1: ihdr, 2:mVHDR, 9:zigzag*/
 	kal_uint8  ihdr_mode;
@@ -144,8 +144,8 @@ struct imgsensor_info_struct {
 
 	kal_uint8  i2c_addr_table[5];
 	/*record sensor support all write id addr,
-	 * only supprt 4must end with 0xff
-	 */
+	* only supprt 4must end with 0xff
+	*/
 };
 
 /* SENSOR READ/WRITE ID */

@@ -14,37 +14,61 @@
 #ifndef _CAMERA_TYPEDEFS_H
 #define _CAMERA_TYPEDEFS_H
 
-
 /* ------------------------*/
 /* Basic Type Definitions */
 /* -----------------------*/
 
+typedef long LONG;
+typedef unsigned char UBYTE;
+typedef short SHORT;
+
+typedef signed char kal_int8;
+typedef signed short kal_int16;
+typedef signed int kal_int32;
+typedef long long kal_int64;
+typedef unsigned char kal_uint8;
+typedef unsigned short kal_uint16;
+typedef unsigned int kal_uint32;
+typedef unsigned long long kal_uint64;
+typedef char kal_char;
+
+typedef unsigned int *UINT32P;
+typedef volatile unsigned short *UINT16P;
+typedef volatile unsigned char *UINT8P;
+typedef unsigned char *U8P;
 
 
-#define kal_int8 signed char
-#define kal_int16 signed short
-#define kal_int32 signed int
-#define kal_uint8 unsigned char
-#define kal_uint16 unsigned short
-#define kal_uint32 unsigned int
+typedef unsigned char U8;
+typedef signed char S8;
+typedef unsigned short U16;
+typedef signed short S16;
+typedef unsigned int U32;
+typedef signed int S32;
+typedef unsigned long long U64;
+typedef signed long long S64;
+/* typedef unsigned char       bool; */
 
+typedef unsigned char UINT8;
+typedef unsigned short UINT16;
+typedef unsigned int UINT32;
+typedef unsigned short USHORT;
+typedef signed char INT8;
+typedef signed short INT16;
+typedef signed int INT32;
+typedef unsigned int DWORD;
+typedef void VOID;
+typedef unsigned char BYTE;
+typedef float FLOAT;
 
-
-
-#define UINT8 unsigned char
-#define UINT16 unsigned short
-#define UINT32 unsigned int
-#define INT8 signed char
-#define INT32 signed int
-#define BYTE unsigned char
-
+typedef char *LPCSTR;
+typedef short *LPWSTR;
 
 
 /* -----------*/
 /* Constants */
 /* ----------*/
 #ifndef FALSE
-  #define FALSE (0)
+#define FALSE (0)
 #endif
 
 #ifndef TRUE
@@ -59,11 +83,12 @@
 enum { RX, TX, NONE };
 
 #ifndef BOOL
-#define BOOL unsigned char
+typedef unsigned char BOOL;
 #endif
-#define kal_bool bool
-#define	KAL_FALSE 0
-#define KAL_TRUE 1
 
+typedef enum {
+	KAL_FALSE = 0,
+	KAL_TRUE = 1,
+} kal_bool;
 
 #endif				/* _CAMERA_TYPEDEFS_H */

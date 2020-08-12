@@ -34,7 +34,7 @@ sub2af-objs := $(SUB2_CFILES:.c=.o)
 
 else
 
-obj-y += sub2_lens.o
+obj-y  += sub2_lens.o
 #obj-y += common/ak7371af/
 
 

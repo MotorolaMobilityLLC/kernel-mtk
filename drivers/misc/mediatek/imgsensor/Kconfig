@@ -1,7 +1,19 @@
 config MTK_IMGSENSOR
-	bool CONFIG_MTK_IMGSENSOR
-	default n
-	help
-	  CONFIG_MTK_IMGSENSOR
+  bool CONFIG_MTK_IMGSENSOR
+  default n
+  help
+    CONFIG_MTK_IMGSENSOR
+
+config CAMERA_PROJECT_LIMA
+  default n
+  bool "Use to distinguish camera config for lima"
+  help
+    Use to Use to distinguish camera config for lima
+
+config CAMERA_PROJECT_BINGO
+  default n
+  bool "Use to distinguish camera config for bingo"
+  help
+    Use to Use to distinguish camera config for bingo
 
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"

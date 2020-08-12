@@ -23,8 +23,7 @@ struct command_params {
 };
 
 unsigned int imgsensor_ca_open(void);
-unsigned int imgsensor_ca_invoke_command(enum IMGSENSOR_TEE_CMD cmd,
-		struct command_params parms, MUINT32 *ret);
+unsigned int imgsensor_ca_invoke_command(enum IMGSENSOR_TEE_CMD cmd, struct command_params parms, MUINT32 *ret);
 void imgsensor_ca_close(void);
 void imgsensor_ca_release(void);
 extern int i2c_tui_enable_clock(int id);

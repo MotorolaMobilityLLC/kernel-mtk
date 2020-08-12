@@ -1,17 +1,13 @@
-/*
- * Copyright (C) 2016 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
+/* ******************************************************************************** */
+/*  */
+/* LC89821x Initialize Data Table */
+/*  */
+/* Program Name        : AfData.h */
+/* Modify for TVC-820                2015.1.10 ziyu jiang */
+/* Description             : AF Initialize Table Defination */
+/* ******************************************************************************** */
 
-#define WAIT 0xFF /* Wait command */
+#define	WAIT				0xFF	/* Wait command */
 
 struct INIDATA {
 	unsigned short addr;
@@ -25,16 +21,16 @@ const struct INIDATA Init_Table_TVC820[] = {
 	/* Addr,   Data */
 
 	/* TDK_CL-ACT_ 212_SPtype_Ini_130114 */
-	{0x0080, 0x34}, /* CLKSEL 1/1, CLKON */
-	{0x0081, 0x20}, /* AD 4Time */
-	{0x0084, 0xE0}, /* STBY   AD ON,DA ON,OP ON */
-	{0x0087, 0x05}, /* PIDSW OFF,AF ON,MS2 ON */
-	{0x00A4, 0x24}, /* Internal OSC Setup (No01=24.18MHz) */
+	{0x0080, 0x34},		/* CLKSEL 1/1, CLKON */
+	{0x0081, 0x20},		/* AD 4Time */
+	{0x0084, 0xE0},		/* STBY   AD ON,DA ON,OP ON */
+	{0x0087, 0x05},		/* PIDSW OFF,AF ON,MS2 ON */
+	{0x00A4, 0x24},		/* Internal OSC Setup (No01=24.18MHz) */
 
-	{0x003A, 0x0000}, /* OFFSET Clear */
-	{0x0004, 0x0000}, /* RZ Clear(Target Value) */
-	{0x0002, 0x0000}, /* PIDZO Clear */
-	{0x0018, 0x0000}, /* MS1Z22 Clear(STMV Target Value) */
+	{0x003A, 0x0000},	/* OFFSET Clear */
+	{0x0004, 0x0000},	/* RZ Clear(Target Value) */
+	{0x0002, 0x0000},	/* PIDZO Clear */
+	{0x0018, 0x0000},	/* MS1Z22 Clear(STMV Target Value) */
 
 	/* Filter Setting: ST140911-1.h For TVC-820 */
 	{0x0088, 0x68},
@@ -42,7 +38,7 @@ const struct INIDATA Init_Table_TVC820[] = {
 	{0x004C, 0x4000},
 	{0x0083, 0x2C},
 	{0x0085, 0xC0},
-	{WAIT, 1}, /* Wait 1 ms */
+	{WAIT, 1},		/* Wait 1 ms */
 
 	{0x0085, 0x00},
 	{0x0084, 0xE3},
@@ -83,9 +79,10 @@ const struct INIDATA Init_Table_TVC820[] = {
 	{0x0030, 0x0000},
 	{0x0076, 0x0C50},
 	{0x0078, 0x4000},
-	{WAIT, 5}, /* Wait 5 ms */
+	{WAIT, 5},		/* Wait 5 ms */
 
 	{0x0086, 0x60},
+
 
 	{0x0087, 0x85}
 
@@ -98,16 +95,16 @@ const struct INIDATA Init_Table_TVC651[] = {
 	/* Addr,   Data */
 
 	/* TDK_CL-ACT_ 212_SPtype_Ini_130114 */
-	{0x0080, 0x34}, /* CLKSEL 1/1, CLKON */
-	{0x0081, 0x20}, /* AD 4Time */
-	{0x0084, 0xE0}, /* STBY   AD ON,DA ON,OP ON */
-	{0x0087, 0x05}, /* PIDSW OFF,AF ON,MS2 ON */
-	{0x00A4, 0x24}, /* Internal OSC Setup (No01=24.18MHz) */
+	{0x0080, 0x34},		/* CLKSEL 1/1, CLKON */
+	{0x0081, 0x20},		/* AD 4Time */
+	{0x0084, 0xE0},		/* STBY   AD ON,DA ON,OP ON */
+	{0x0087, 0x05},		/* PIDSW OFF,AF ON,MS2 ON */
+	{0x00A4, 0x24},		/* Internal OSC Setup (No01=24.18MHz) */
 
-	{0x003A, 0x0000}, /* OFFSET Clear */
-	{0x0004, 0x0000}, /* RZ Clear(Target Value) */
-	{0x0002, 0x0000}, /* PIDZO Clear */
-	{0x0018, 0x0000}, /* MS1Z22 Clear(STMV Target Value) */
+	{0x003A, 0x0000},	/* OFFSET Clear */
+	{0x0004, 0x0000},	/* RZ Clear(Target Value) */
+	{0x0002, 0x0000},	/* PIDZO Clear */
+	{0x0018, 0x0000},	/* MS1Z22 Clear(STMV Target Value) */
 
 	/* Filter Setting: ST140911-1.h For TVC-651 */
 	{0x0088, 0x70},
@@ -115,7 +112,7 @@ const struct INIDATA Init_Table_TVC651[] = {
 	{0x004C, 0x4000},
 	{0x0083, 0x2C},
 	{0x0085, 0xC0},
-	{WAIT, 1}, /* Wait 1 ms */
+	{WAIT, 1},		/* Wait 1 ms */
 
 	{0x0085, 0x00},
 	{0x0084, 0xE3},
@@ -156,9 +153,10 @@ const struct INIDATA Init_Table_TVC651[] = {
 	{0x0030, 0x0000},
 	{0x0076, 0x0C50},
 	{0x0078, 0x4000},
-	{WAIT, 5}, /* Wait 5 ms */
+	{WAIT, 5},		/* Wait 5 ms */
 
 	{0x0086, 0x60},
+
 
 	{0x0087, 0x85}
 

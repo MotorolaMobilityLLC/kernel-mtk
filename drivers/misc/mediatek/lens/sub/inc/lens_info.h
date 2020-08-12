@@ -15,18 +15,12 @@
 
 #define _MAIN_LENS_H
 
-#include "lens_list.h"
 #include <linux/ioctl.h>
+#include "lens_list.h"
 
 #define MAX_NUM_OF_LENS 32
 
 #define AF_MAGIC 'A'
-
-#ifdef CONFIG_MACH_MT6761
-#define SUPPORT_GETTING_LENS_FOLDER_NAME 0
-#else
-#define SUPPORT_GETTING_LENS_FOLDER_NAME 1
-#endif
 
 /* AFDRV_XXXX be the same as AF_DRVNAME in (*af).c */
 #define AFDRV_AD5820AF "AD5820AF"
@@ -57,34 +51,31 @@
 
 /* Structures */
 struct stAF_MotorInfo {
-	/* current position */
+/* current position */
 	u32 u4CurrentPosition;
-	/* macro position */
+/* macro position */
 	u32 u4MacroPosition;
-	/* Infinity position */
+/* Infinity position */
 	u32 u4InfPosition;
-	/* Motor Status */
+/* Motor Status */
 	bool bIsMotorMoving;
-	/* Motor Open? */
+/* Motor Open? */
 	bool bIsMotorOpen;
-	/* Support SR? */
+/* Support SR? */
 	bool bIsSupportSR;
 };
 
 /* Structures */
 struct stAF_MotorCalPos {
-	/* macro position */
+/* macro position */
 	u32 u4MacroPos;
-	/* Infinity position */
+/* Infinity position */
 	u32 u4InfPos;
 };
 
-#define STRUCT_MOTOR_NAME 32
-#define AF_MOTOR_NAME 31
-
 /* Structures */
 struct stAF_MotorName {
-	u8 uMotorName[STRUCT_MOTOR_NAME];
+	u8 uMotorName[32];
 };
 
 /* Structures */
@@ -106,14 +97,12 @@ struct stAF_OisPosInfo {
 struct stAF_DrvList {
 	u8 uEnable;
 	u8 uDrvName[32];
-	int (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient,
-				spinlock_t *pAF_SpinLock, int *pAF_Opened);
-	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command,
-			  unsigned long a_u4Param);
+	int (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
-	int (*pAF_GetFileName)(unsigned char *pFileName);
 	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
 };
+
 
 /* Control commnad */
 /* S means "set through a ptr" */
@@ -142,12 +131,8 @@ struct stAF_DrvList {
 
 #define AFIOC_S_SETPOWERCTRL _IOW(AF_MAGIC, 13, u32)
 
-#define AFIOC_S_SETLENSTEST _IOW(AF_MAGIC, 14, u32)
+#define AFIOC_S_SETLENSTEST  _IOW(AF_MAGIC, 14, u32)
 
 #define AFIOC_G_OISPOSINFO _IOR(AF_MAGIC, 15, struct stAF_OisPosInfo)
-
-#define AFIOC_S_SETDRVINIT _IOW(AF_MAGIC, 16, u32)
-
-#define AFIOC_G_GETDRVNAME _IOWR(AF_MAGIC, 17, struct stAF_MotorName)
 
 #endif

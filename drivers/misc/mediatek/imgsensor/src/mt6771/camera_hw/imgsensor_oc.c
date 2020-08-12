@@ -21,7 +21,7 @@ static void imgsensor_oc_handler(void)
 {
 	struct IMGSENSOR *pimgsensor = &gimgsensor;
 
-	PK_DBG("[regulator]%s\n", __func__);
+	PK_DBG("[regulator]imgsensor_oc_handler\n");
 	pimgsensor->status.oc = 1;
 }
 
@@ -40,8 +40,7 @@ enum IMGSENSOR_RETURN imgsensor_oc_init(void)
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
-enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
-	enum IMGSENSOR_HW_POWER_STATUS pwr_status)
+enum IMGSENSOR_RETURN imgsensor_oc_interrupt(enum IMGSENSOR_HW_POWER_STATUS pwr_status)
 {
 	struct IMGSENSOR *pimgsensor = &gimgsensor;
 

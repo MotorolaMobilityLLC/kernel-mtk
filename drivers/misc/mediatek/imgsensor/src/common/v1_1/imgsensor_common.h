@@ -19,9 +19,9 @@
 
 /******************************************************************************
  * Debug configuration
- ******************************************************************************/
+******************************************************************************/
 #define PREFIX "[imgsensor]"
-#define PLATFORM_POWER_SEQ_NAME "platform_power_seq"
+
 #define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG(fmt, arg...)  pr_debug(PREFIX fmt, ##arg)
@@ -49,6 +49,5 @@ enum IMGSENSOR_RETURN {
 	IMGSENSOR_RETURN_ERROR   = -1,
 };
 
-#define LENGTH_FOR_SNPRINTF 256
 #endif
 

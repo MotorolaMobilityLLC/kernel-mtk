@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2015 MediaTek Inc.
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #ifndef _KD_CAMERA_FEATURE_ID_H_
 #define _KD_CAMERA_FEATURE_ID_H_
-enum FEATURE_ID {
+typedef enum {
 	FID_PRE_BEGIN = 0,
 	FID_PRE_BEGIN_SI = FID_PRE_BEGIN,
 	FID_PRE_BEGIN_MISC_SI = FID_PRE_BEGIN_SI,
@@ -73,5 +73,5 @@ enum FEATURE_ID {
 	FID_OVER_LAST_YUV_ONLY_SD,
 	FID_OVER_LAST_SD = FID_OVER_LAST_YUV_ONLY_SD,
 	FID_OVER_LAST = FID_OVER_LAST_SD
-};
+} FEATURE_ID;
 #endif

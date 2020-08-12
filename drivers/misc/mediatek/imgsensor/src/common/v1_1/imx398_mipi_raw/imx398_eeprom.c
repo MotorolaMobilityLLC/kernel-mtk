@@ -10,8 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-#define PFX "imx398_pdafotp"
-#define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
@@ -26,7 +24,8 @@
 
 
 
-
+#define PFX "imx398_pdafotp"
+#define LOG_INF(format, args...)		pr_debug(PFX "[%s] " format, __func__, ##args)
 
 
 #include "kd_imgsensor.h"
@@ -60,12 +59,8 @@ static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
 
 	if (addr > imx398_MAX_OFFSET)
 		return false;
-
-if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data, 1, imx398_EEPROM_READ_ID) < 0) {
-	/* 20171116 ken : fix coding style */
-	return false;
-}
-
+	if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data, 1, imx398_EEPROM_READ_ID) < 0)
+		return false;
 	return true;
 }
 
@@ -74,13 +69,12 @@ static bool _read_imx398_eeprom(kal_uint16 addr, BYTE *data, int size)
 	int i = 0;
 	int offset = addr;
 
-	pr_debug("enter _read_eeprom size = %d\n", size);
-
+	LOG_INF("enter _read_eeprom size = %d\n", size);
 	for (i = 0; i < size; i++) {
 		if (!selective_read_eeprom(offset, &data[i]))
 			return false;
 
-		pr_debug("read_eeprom 0x%0x %d\n", offset, data[i]);
+		LOG_INF("read_eeprom 0x%0x %d\n", offset, data[i]);
 		offset++;
 	}
 	get_done = true;
@@ -94,7 +88,7 @@ void read_imx398_SPC(BYTE *data)
 {
 	int size = 252;
 
-	pr_debug("read imx398 SPC, size = %d\n", size);
+	LOG_INF("read imx398 SPC, size = %d\n", size);
 	/**********************************************************
 	 * if(!get_done || last_size != size || last_offset != addr) {
 	 * if(!_read_imx398_eeprom(addr, imx398_SPC_data, size)){
@@ -115,7 +109,7 @@ void read_imx398_DCC(kal_uint16 addr, BYTE *data, kal_uint32 size)
 	addr = 0x960;
 	size = 96;
 
-	pr_debug("read imx398 DCC, size = %d\n", size);
+	LOG_INF("read imx398 DCC, size = %d\n", size);
 
 	if (!get_done || last_size != size || last_offset != addr) {
 		if (!_read_imx398_eeprom(addr, imx398_DCC_data, size)) {
