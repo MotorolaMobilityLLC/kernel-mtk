@@ -413,7 +413,7 @@ static kal_uint16 addr_data_pair_init_gc02m1[] = {
 	0x0a, 0x02,
 	0x0d, 0x04,
 	0x0e, 0xbc,
-	0x17, GC02M1_MIRROR,
+	0x17, 0x80,
 	0x19, 0x04,
 	0x24, 0x00,
 	0x56, 0x20,
@@ -702,7 +702,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
-extern char backaux2_cam_name[64];
+extern char backaux_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -716,8 +716,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			LOG_INF("gc02m1 sensorid = 0x%x\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-					memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
-					memcpy(backaux2_cam_name, "2_malta_season_gc02m1", 64);
+					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+					memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
 					ontim_get_otp_data(*sensor_id, NULL, 0);
 					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
