@@ -37,7 +37,7 @@ static unsigned char CTPM_FW_DEF[] = {
 #define HLT_INI_REQUEST_PATH		"ili988x_mp_hlt.ini"
 #define HLT_FW_REQUEST_PATH		"ILITEK_FW_HLT"
 static unsigned char CTPM_FW_HLT[] = {
-	#include "holitech/M6206_MDT_6517_LongV_V0xA0.0x00.0x01.0x02_AP_0x01.MP_20200807.ili"
+	#include "holitech/M6206_MDT_6517_LongV_V0xA0.0x00.0x01.0x03_AP_0x01.MP_20200813.ili"
 };
 
 #define CSOT_INI_NAME_PATH		"/sdcard/mp_csot.ini"

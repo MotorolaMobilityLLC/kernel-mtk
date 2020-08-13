@@ -526,12 +526,12 @@ int ili_fw_upgrade_handler(void *data)
 	{
 		snprintf(lcdname, sizeof(lcdname), "skyworth-ili9882n");
 		snprintf(vendor_name, sizeof(vendor_name), "skyworth-ili9882n");
-		snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(ilits->chip->fw_ver >> 8) & 0xff);
+		snprintf(version, sizeof(version),"fw:0x%02x VID:0x31",(ilits->chip->fw_ver) & 0x0f);
 	} else if (strstr(mtkfb_find_lcm_driver(),"ontim_ili9882n_hdplus_dsi_vdo_hlt") != NULL)
 	{
 		snprintf(lcdname, sizeof(lcdname), "hlt-ili9882n");
 		snprintf(vendor_name, sizeof(vendor_name), "hlt-ili9882n");
-		snprintf(version, sizeof(version),"fw:0x%02x VID:0x23",(ilits->chip->fw_ver >> 8) & 0xff);
+		snprintf(version, sizeof(version),"fw:0x%02x VID:0x23",(ilits->chip->fw_ver) & 0x0f);
 	}
 
 	/* center <add LCD and CTP hardware infomation node> end*/
