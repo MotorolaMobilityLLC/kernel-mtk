@@ -271,7 +271,12 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_name(const cha
         firmware = cts_driver_builtin_firmwares_truly_601;
     } else if (LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
         firmware = cts_driver_builtin_firmwares_easyquick_608;
+    } else if (LCM_INFO_EASYQUICK_608_9911C == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_easyquick_608_9911c;
+    } else {
+        return NULL;
     }
+
     //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < NUM_DRIVER_BUILTIN_FIRMWARE; i++, firmware++) {
         if (strcmp(firmware->name, name) == 0) {
@@ -307,7 +312,12 @@ const struct cts_firmware *cts_request_driver_builtin_firmware_by_index(u32 inde
 	    firmware = cts_driver_builtin_firmwares_truly_601 + index;
 	} else if ( LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
              firmware = cts_driver_builtin_firmwares_easyquick_608 + index;
-	}
+	} else if ( LCM_INFO_EASYQUICK_608_9911C == g_lcm_info_flag){
+             firmware = cts_driver_builtin_firmwares_easyquick_608_9911c + index;
+	} else {
+             return NULL;
+        }
+
         //firmware = cts_driver_builtin_firmwares + index;
         if (is_firmware_valid(firmware)) {
             cts_info("Found driver builtin '%s' "
@@ -350,7 +360,12 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
         firmware = cts_driver_builtin_firmwares_truly_601;
     } else if(LCM_INFO_EASYQUICK_608 == g_lcm_info_flag){
         firmware = cts_driver_builtin_firmwares_easyquick_608;
+    } else if(LCM_INFO_EASYQUICK_608_9911C == g_lcm_info_flag){
+        firmware = cts_driver_builtin_firmwares_easyquick_608_9911c;
+    } else {
+        return NULL;
     }
+
     //firmware = cts_driver_builtin_firmwares;
     for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares_hjc); i++, firmware++) {
         if (MATCH_HWID(firmware, hwid) && MATCH_FWID(firmware, fwid)) {
@@ -806,7 +821,8 @@ int cts_update_firmware(struct cts_device *cts_dev,
             cts_err("Write firmware section to sram failed %d", ret);
         }
 #ifdef CFG_CTS_UPDATE_CRCCHECK
-		if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911S) {
+		if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911S ||
+		    cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911C) {
         	cts_sram_writesb_boot_crc_retry(cts_dev, 
 				firmware_info.firmware_sect_size, 
 				firmware_info.firmware_sect_crc, 

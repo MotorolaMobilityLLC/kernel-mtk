@@ -61,6 +61,7 @@ enum cts_device_fw_reg {
 enum cts_dev_hwid {
     CTS_DEV_HWID_ICNL9911 = 0x990100u,
     CTS_DEV_HWID_ICNL9911S = 0x990110u,
+    CTS_DEV_HWID_ICNL9911C = 0x991110u,
 
     CTS_DEV_HWID_ANY = 0,
     CTS_DEV_HWID_INVALID = 0xFFFFFFFFu,
@@ -71,6 +72,7 @@ enum cts_dev_hwid {
 enum cts_dev_fwid {
     CTS_DEV_FWID_ICNL9911 = 0x9911u,
     CTS_DEV_FWID_ICNL9911S = 0x9964u,
+    CTS_DEV_FWID_ICNL9911C = 0x9954u,
 
     CTS_DEV_FWID_ANY = 0u,
     CTS_DEV_FWID_INVALID = 0xFFFFu

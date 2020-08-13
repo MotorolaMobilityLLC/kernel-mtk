@@ -108,6 +108,7 @@
 #define LCM_INFO_RS_GLASS  (unsigned char)(0x02)
 #define LCM_INFO_601_GLASS  (unsigned char)(0x03)
 #define LCM_INFO_EASYQUICK_608  (unsigned char)(0x04)
+#define LCM_INFO_EASYQUICK_608_9911C  (unsigned char)(0x05)
 
 /****************************************************************************
  * Platform configurations
