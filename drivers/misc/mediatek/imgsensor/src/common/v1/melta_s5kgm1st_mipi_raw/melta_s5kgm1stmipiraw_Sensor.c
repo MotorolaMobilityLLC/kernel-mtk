@@ -350,12 +350,12 @@ static void write_cmos_sensor_16_8(kal_uint16 addr, kal_uint8 para)
 	 /* kdSetI2CSpeed(imgsensor_info.i2c_speed);Add this func to set i2c speed by each sensor*/
 	iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
 }
+/*
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
 	char pusendcmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF),(char)(para >> 8), (char)(para & 0xFF)};
 	iWriteRegI2C(pusendcmd, 4, imgsensor.i2c_write_id);
 }
-/*
 static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
@@ -5095,42 +5095,6 @@ static kal_uint16 read_module_id(void)
 	PK_DBG("the module id is %d\n", get_byte);
 	return get_byte;
 }
-static void get_back_cam_efuse_id(void)
-{
-	//int i = 0,temp = 0;
-	kal_uint8 efuse_id;
-
-	write_cmos_sensor(0x0136, 0x1800);
-	write_cmos_sensor(0x0304, 0x0006);
-	write_cmos_sensor(0x0306, 0x00F1);
-	write_cmos_sensor(0x0300, 0x0008);
-	write_cmos_sensor(0x030E, 0x0003);
-	write_cmos_sensor(0x0310, 0x005a);
-	
-	write_cmos_sensor(0x0100, 0x0100);
-	mdelay(3);
-	write_cmos_sensor(0x0A02,0x0000);
-	
-	mdelay(3);
-	write_cmos_sensor(0x0a02, 0x0000);
-	write_cmos_sensor(0x0a00, 0x0100);
-	mdelay(1);
-
-efuse_id = read_cmos_sensor_16_16(0x0a24);
-
-sprintf(back_cam_efuse_id,"%02x",efuse_id);
-
-efuse_id = read_cmos_sensor_16_16(0x0a26);
-
-sprintf(back_cam_efuse_id+2,"%02x",efuse_id);
-
-efuse_id = read_cmos_sensor_16_16(0x0a28);
-
-sprintf(back_cam_efuse_id+4,"%02x",efuse_id);
-PK_DBG("get_back_cam_efuse_id- efuse_id = 0x%02x\n", efuse_id);
-	write_cmos_sensor(0x0a00, 0x0000);
-}
-
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -5148,7 +5112,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				PK_DBG("module_id 0x%x \n",module_id);			
 				if(0x4f == module_id) //ofilm module
 				{
-					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5kgm1st_ofilm", 64);
 					ontim_get_otp_data(*sensor_id, NULL, 0);
@@ -5157,15 +5120,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				}
 				else if(0x51 == module_id)//qtech module
 				{
-					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5kgm1st_qtech", 64);
+					ontim_get_otp_data(*sensor_id, NULL, 0);
 					PK_DBG("TSP i2c write id: 0x%x, sensor id: 0x%x\n", module_id, *sensor_id);
 					return ERROR_NONE;
 				}
 				else
 				{
-					get_back_cam_efuse_id();
 					memset(back_cam_name, 0x00, sizeof(back_cam_name));
 					memcpy(back_cam_name, "0_s5kgm1st_nootp", 64);
 					PK_DBG("0_s5kgm1st_nootp i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);

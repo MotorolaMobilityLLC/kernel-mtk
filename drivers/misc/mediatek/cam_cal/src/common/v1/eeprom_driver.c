@@ -764,9 +764,6 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 
 int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 {
-    const char * str_ak57_season_ov13855_path = "/data/vendor/camera_dump/ak57_season_ov13855.data";
-    const char * str_ak57_union_gc02m1_path = "/data/vendor/camera_dump/ak57_union_gc02m1.data";
-	const char * str_ak57_season_gc5035_path  = "/data/vendor/camera_dump/ak57_season_gc5035.data";
     const char * str_OV16880_TSP_path = "/data/vendor/camera_dump/TSP_ov16880.data";
     const char * str_ov16a10_path = "/data/vendor/camera_dump/blackjack_hlt_ov16a10.data";
     const char * str_s5k3p9sx_TXD_path  = "/data/vendor/camera_dump/TXD_s5k3p9sx.data";
@@ -776,6 +773,9 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_blackjack_jsl_gc2375h_path  = "/data/vendor/camera_dump/blackjack_jsl_gc2375h.data";
     const char * str_hi846_path  = "/data/vendor/camera_dump/blackjack_txd_hi846.data";
     const char * str_mt9d015_path  = "/data/vendor/camera_dump/blackjack_sea_mt9d015.data";
+	const char * str_malta_s5kgm1st_path  = "/data/vendor/camera_dump/malta_s5kgm1st.data";
+	const char * str_malta_sea_gc02m1_path  = "/data/vendor/camera_dump/malta_sea_gc02m1.data";
+	const char * str_malta_sun_ov02b10_path  = "/data/vendor/camera_dump/malta_sun_ov02b10.data";
     const char * str_dump_path = NULL;
 
     u32 u4Offset;
@@ -792,31 +792,19 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 
     switch(sensorid)
     {
-	case OV13855_SENSOR_ID:
+	case MALTA_SEA_GC02M1_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0x1FFF;
-            str_dump_path = str_ak57_season_ov13855_path;
+            u4Length = 0x076a;
+            str_dump_path = str_malta_sea_gc02m1_path;
+	    deviceid = 0x10;
             break;
         }
-	  case GC5035_SENSOR_ID:
-        {
-            if((p_buf == NULL)|| (Length == 0))
-            {
-                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
-                __FUNCTION__, __LINE__, p_buf, Length);
-                return -1;
-            }
-            pu1Params = p_buf;
-            u4Length = Length;
-            str_dump_path = str_ak57_season_gc5035_path;
-            break;
-        }
-	case GC02M1_SENSOR_ID:
+	case MALTA_SUN_OV02B10_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0x0769;
-            str_dump_path = str_ak57_union_gc02m1_path;
+            u4Length = 0x076a;
+            str_dump_path = str_malta_sun_ov02b10_path;
 	    deviceid = 0x10;
             break;
         }
@@ -825,6 +813,13 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             u4Offset = 0;
             u4Length = 0x0ECA;
             str_dump_path = str_ov16a10_path;
+            break;
+        }
+		case MELTA_S5KGM1ST_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x18F6;
+            str_dump_path = str_malta_s5kgm1st_path;
             break;
         }
         case S5K3P9SXT_SENSOR_ID:
@@ -903,7 +898,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             return -1;
     }
 
-    if((sensorid == GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
+    if((sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
 	(sensorid == GC8034_SENSOR_ID) || (sensorid ==BLACKJACK_HLT_OV16A10_SENSOR_ID) || (sensorid == BLACKJACK_TSP_OV16880_SENSOR_ID))
     {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
