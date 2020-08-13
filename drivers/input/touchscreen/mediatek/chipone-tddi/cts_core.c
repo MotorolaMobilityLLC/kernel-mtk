@@ -1124,6 +1124,19 @@ const static struct cts_device_hwdata cts_device_hwdatas[] = {
 
         .sfctrl = &icnl9911s_sfctrl,
         .enable_access_ddi_reg = icnl9911s_set_access_ddi_reg,
+    },
+    {
+        .name = "ICNL9911C",
+        .hwid = CTS_DEV_HWID_ICNL9911C,
+        .fwid = CTS_DEV_FWID_ICNL9911C,
+        .num_row = 32,
+        .num_col = 18,
+        .sram_size = 64 * 1024,
+
+        .program_addr_width = 3,
+
+        .sfctrl = &icnl9911s_sfctrl,
+        .enable_access_ddi_reg = icnl9911s_set_access_ddi_reg,
     }
 };
 
@@ -2037,7 +2050,8 @@ int cts_enter_normal_mode(struct cts_device *cts_dev)
 		auto_boot = 1;
 	}	
 #ifdef CFG_CTS_UPDATE_CRCCHECK
-	if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911S) {
+	if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911S ||
+	    cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911C) {
 		auto_boot = 1;
 	}	
 #endif
@@ -2428,6 +2442,10 @@ init_hwdata:
             g_lcm_info_flag = LCM_INFO_601_GLASS;
         } else if ( strstr(lcd_info_pr,"easyquick_608")){
             g_lcm_info_flag = LCM_INFO_EASYQUICK_608;
+        }
+    } else if (strstr(lcd_info_pr, "icnl9911c")) {
+        if ( strstr(lcd_info_pr,"easyquick_608")){
+            g_lcm_info_flag = LCM_INFO_EASYQUICK_608_9911C;
         }
     }
 
