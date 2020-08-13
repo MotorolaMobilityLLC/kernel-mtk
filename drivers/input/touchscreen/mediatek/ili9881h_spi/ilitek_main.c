@@ -957,8 +957,8 @@ static void ontim_dev_get_ilitek_info(void)
 		snprintf(vendor_name, sizeof(vendor_name), "tianma-ili9881h");
 	}
 	fw_ver = (idev->chip->fw_ver >> 8) & 0xFF;
-	ipio_info("fw_ver = %d\n",fw_ver);
-	snprintf(version, sizeof(version),"FW:%02x,VID:0x90 ",fw_ver);
+	ipio_info("fw_ver = %d.%d\n",fw_ver,(idev->chip->fw_ver & 0xFF));
+	snprintf(version, sizeof(version),"FW:%d.%d,VID:0x90 ",fw_ver,(idev->chip->fw_ver & 0xFF));
 }
 #endif
 
