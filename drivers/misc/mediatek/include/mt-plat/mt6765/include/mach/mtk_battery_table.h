@@ -94,11 +94,11 @@ int battery_pn_flag = 0;
 #ifdef CONFIG_MALTA_BATTERY_PN_NUMBER
 #define BATTERY_TOTAL_NUM 5
 char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
-	"KG50-SB18C77666-4000mah",
-	"KG50-SB18C77667-4000mah",
-	"KG50-SB18C51711-4000mah",
-	"KG50-SB18C51712-4000mah",
-	"KG50-SB18C55376-4000mah",
+	"KG40-SB18C77666-4000mah",
+	"KG40-SB18C77667-4000mah",
+	"KG40-SB18C51711-4000mah",
+	"KG40-SB18C51712-4000mah",
+	"KG40-SB18C55376-4000mah",
 };
 #else
 /* battery PN number for blackjackQ */
