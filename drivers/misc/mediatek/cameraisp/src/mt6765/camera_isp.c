@@ -13001,7 +13001,7 @@ irqreturn_t ISP_Irq_CAMSV_1(signed int  Irq, void *DeviceId)
 			(unsigned int)(usec);
 		IspInfo.IrqInfo.LastestSigTime_sec[module][10] =
 			(unsigned int)(sec);
-
+#if 0
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 				"CAMSV1 P1_DON_%d(0x%08x_0x%08x) ts[0x%08x]\n",
@@ -13011,7 +13011,7 @@ irqreturn_t ISP_Irq_CAMSV_1(signed int  Irq, void *DeviceId)
 				(unsigned int)(fbc_ctrl2[0].Raw),
 				time_stamp);
 		}
-
+#endif
 		/* for dbg log only */
 		if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 			pstRTBuf[module]->ring_buf[_camsv_imgo_].img_cnt =
@@ -13053,7 +13053,7 @@ irqreturn_t ISP_Irq_CAMSV_1(signed int  Irq, void *DeviceId)
 				gSTime[module].sec = sec;
 				gSTime[module].usec = usec;
 			}
-
+#if 0
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 				"CAMSV1 P1_SOF_%d_%d(0x%08x_0x%08x,0x%08x),int_us:0x%08x, timestamp[0x%08x]\n",
 				sof_count[module], cur_v_cnt,
@@ -13063,6 +13063,7 @@ irqreturn_t ISP_Irq_CAMSV_1(signed int  Irq, void *DeviceId)
 				(unsigned int)((sec * 1000000 + usec) -
 					(1000000 * m_sec + m_usec)),
 				time_stamp);
+#endif
 			/* keep current time */
 			m_sec = sec;
 			m_usec = usec;
@@ -14198,7 +14199,7 @@ irqreturn_t ISP_Irq_CAM_A(signed int Irq, void *DeviceId)
 			(unsigned int)(usec);
 		IspInfo.IrqInfo.LastestSigTime_sec[module][10] =
 			(unsigned int)(sec);
-
+#if 0
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			/*SW p1_don is not reliable*/
 			if (FrameStatus[module] != CAM_FST_DROP_FRAME) {
@@ -14213,7 +14214,7 @@ irqreturn_t ISP_Irq_CAM_A(signed int Irq, void *DeviceId)
 					(unsigned int)(fbc_ctrl2[1].Raw));
 			}
 		}
-
+#endif
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
 		if (g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp =
@@ -14519,7 +14520,7 @@ irqreturn_t ISP_Irq_CAM_A(signed int Irq, void *DeviceId)
 
 			}
 			#endif /* (TIMESTAMP_QUEUE_EN == 1) */
-
+#if 0
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 				"CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
 				   sof_count[module], cur_v_cnt,
@@ -14534,7 +14535,7 @@ irqreturn_t ISP_Irq_CAM_A(signed int Irq, void *DeviceId)
 					(1000000 * m_sec + m_usec)),
 				   ISP_RD32(
 				       CAM_REG_CQ_THR0_BASEADDR(reg_module)));
-
+#endif
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 				"CAMA_aa(0x%x_0x%x_0x%x)af(0x%x_0x%x_0x%x),pd(0x%x_0x%x_0x%x),ps(0x%x_0x%x_0x%x)\n",
