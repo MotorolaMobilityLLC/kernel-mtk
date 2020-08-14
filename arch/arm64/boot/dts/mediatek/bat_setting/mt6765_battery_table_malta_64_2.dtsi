@@ -1,7 +1,7 @@
 
 &bat_gm30
 {
-	battery1_name ="KG50-SB18C77667-4000mah";
+	battery1_name ="KG40-SB18C77667-4000mah";
 
 	battery1_profile_t0_num = <100>;
 	battery1_profile_t0 =
