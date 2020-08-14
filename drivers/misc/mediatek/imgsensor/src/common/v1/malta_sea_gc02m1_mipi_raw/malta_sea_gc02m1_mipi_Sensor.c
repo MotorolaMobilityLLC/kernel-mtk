@@ -40,7 +40,8 @@
 #define LOG_1 LOG_INF("SEASUNS GC02M1, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    printk(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+#define cam_pr_debug_1(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
 #define MODULE_ID_OFFSET 17
@@ -630,7 +631,7 @@ static kal_uint16 addr_data_pair_slim_video_gc02m1[] = {
 
 static void sensor_init(void)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 
 	gc02m1_table_write_cmos_sensor(
 		addr_data_pair_init_gc02m1,
@@ -640,7 +641,7 @@ static void sensor_init(void)
 
 static void preview_setting(void)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 	gc02m1_table_write_cmos_sensor(
 		addr_data_pair_preview_gc02m1,
 		sizeof(addr_data_pair_preview_gc02m1) /
@@ -649,7 +650,7 @@ static void preview_setting(void)
 
 static void capture_setting(void)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 	gc02m1_table_write_cmos_sensor(
 		addr_data_pair_capture_gc02m1,
 		sizeof(addr_data_pair_capture_gc02m1) /
@@ -658,7 +659,7 @@ static void capture_setting(void)
 
 static void normal_video_setting(void)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 	gc02m1_table_write_cmos_sensor(
 		addr_data_pair_normal_video_gc02m1,
 		sizeof(addr_data_pair_normal_video_gc02m1) /
@@ -667,7 +668,7 @@ static void normal_video_setting(void)
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 	gc02m1_table_write_cmos_sensor(
 		addr_data_pair_hs_video_gc02m1,
 		sizeof(addr_data_pair_hs_video_gc02m1) /
@@ -676,7 +677,7 @@ static void hs_video_setting(void)
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 	gc02m1_table_write_cmos_sensor(
 		addr_data_pair_slim_video_gc02m1,
 		sizeof(addr_data_pair_slim_video_gc02m1) /
@@ -685,7 +686,7 @@ static void slim_video_setting(void)
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
-	LOG_INF("enable: %d\n", enable);
+	cam_pr_debug_1("enable: %d\n", enable);
 
 	if (enable) {
 		write_cmos_sensor(0xfe, 0x01);
@@ -714,15 +715,15 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			LOG_INF("gc02m1 sensorid = 0x%x\n", *sensor_id);
+			cam_pr_debug_1("gc02m1 sensorid = 0x%x\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
 					memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
 					ontim_get_otp_data(*sensor_id, NULL, 0);
-					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+					cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 			}
-			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -741,9 +742,6 @@ static kal_uint32 open(void)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
-
-	LOG_1;
-
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -751,10 +749,10 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+				cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
-			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -797,7 +795,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -815,7 +813,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
@@ -827,7 +825,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+			cam_pr_debug_1("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 				imgsensor.current_fps, imgsensor_info.cap.max_framerate / 10);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
 		imgsensor.line_length = imgsensor_info.cap.linelength;
@@ -843,7 +841,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -861,7 +859,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -881,7 +879,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;

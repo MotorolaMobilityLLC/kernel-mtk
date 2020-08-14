@@ -55,7 +55,9 @@
 
 
 #define cam_pr_debug(format, args...) \
-	pr_info(PFX "[%s] " format, __func__, ##args)
+	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define cam_pr_debug_1(format, args...) \
+		pr_info(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -471,7 +473,7 @@ static void night_mode(kal_bool enable)
 
 static void sensor_init(void)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	/*
 	 * @@Initial - MIPI 1-Lane 1600x1200 10-bit 30fps
@@ -586,7 +588,7 @@ static void sensor_init(void)
 
 static void preview_setting(void)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	/*
 	 * @@Initial - MIPI 1-Lane 1600x1200 10-bit 30fps
@@ -602,7 +604,7 @@ static void preview_setting(void)
 
 static void capture_setting(kal_uint16 curretfps)
 {
-	cam_pr_debug("E! currefps:%d\n", curretfps);
+	cam_pr_debug_1("E! currefps:%d\n", curretfps);
 	write_cmos_sensor(0xfd, 0x01);
 	write_cmos_sensor(0x14, 0x00);
 	write_cmos_sensor(0x15, 0x01);
@@ -612,13 +614,13 @@ static void capture_setting(kal_uint16 curretfps)
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	cam_pr_debug("E! currefps:%d\n", currefps);
+	cam_pr_debug_1("E! currefps:%d\n", currefps);
 	preview_setting();
 }
 
 static void hs_video_setting(void)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	/*
 	 * @@Initial - MIPI 1-Lane 1280x720 10-bit 60fps
@@ -629,7 +631,7 @@ static void hs_video_setting(void)
 
 static void slim_video_setting(void)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 	preview_setting();
 }
 
@@ -666,11 +668,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
 				memcpy(backaux_cam_name, "2_malta_sun_ov02b10", 64);
 				ontim_get_otp_data(*sensor_id, NULL, 0);
-				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
+				cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
-			cam_pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
+			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);
 			retry_cnt--;
 		} while (retry_cnt > 0);
@@ -716,11 +718,11 @@ static kal_uint32 open(void)
 			write_cmos_sensor(0xfd, 0x00);
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
+				cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
-			cam_pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
+			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, sensor_id);
 			retry--;
 		} while (retry > 0);
@@ -803,7 +805,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -836,7 +838,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
@@ -847,7 +849,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			cam_pr_debug("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+			cam_pr_debug_1("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 			     imgsensor.current_fps,
 			     imgsensor_info.cap.max_framerate / 10);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
@@ -865,7 +867,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -883,7 +885,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			   MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -905,7 +907,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			     MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
@@ -1310,7 +1312,7 @@ static kal_uint32 get_default_framerate_by_scenario(
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
-	cam_pr_debug("enable: %d\n", enable);
+	cam_pr_debug_1("enable: %d\n", enable);
 
 	if (enable)
 		write_cmos_sensor(0x5080, 0x80);
