@@ -35,6 +35,8 @@
 
 #define cam_pr_debug(format, args...) \
 	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define cam_pr_debug_1(format, args...) \
+		pr_info(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 /* used for shutter compensation */
@@ -966,7 +968,7 @@ static void night_mode(kal_bool enable)
 
 static void sensor_init(void)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 	/* SYSTEM */
 	write_cmos_sensor(0xfc, 0x01);
 	write_cmos_sensor(0xf4, 0x40);
@@ -1723,7 +1725,7 @@ static void slim_video_setting(void)
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
-	cam_pr_debug("enable: %d\n", enable);
+	cam_pr_debug_1("enable: %d\n", enable);
 
 	write_cmos_sensor(0xfe, 0x01);
 	if (enable)
@@ -1745,7 +1747,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint8 ModuleId = 0;
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1754,27 +1756,25 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if ((*sensor_id + 2) == imgsensor_info.sensor_id) {
-				cam_pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",imgsensor.i2c_write_id, *sensor_id);
+				cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n",imgsensor.i2c_write_id, *sensor_id);
 				ModuleId = gc5035_otp_identify(*sensor_id);
 				if (ModuleId == 0x0C) //seasuns module
 				{
 					memset(front_cam_name, 0x00, sizeof(front_cam_name));
 					memcpy(front_cam_name, "1_sun_gc5035", 64);
 					*sensor_id = MELTA_SUN_GC5035_SENSOR_ID;
-					cam_pr_debug("Now using seasons module,ModuleId = 0x%x sensor_id=0x%x\n",ModuleId,*sensor_id);
+					cam_pr_debug_1("Now using seasons module,ModuleId = 0x%x sensor_id=0x%x\n",ModuleId,*sensor_id);
 					return ERROR_NONE;
 				}
 				else
-					cam_pr_debug("Now using module isnot sunrise module,ModuleId = 0x%x\n",ModuleId);
+					cam_pr_debug_1("Now using module isnot sunrise module,ModuleId = 0x%x\n",ModuleId);
 			}
-			cam_pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",imgsensor.i2c_write_id, *sensor_id);
+			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n",imgsensor.i2c_write_id, *sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
 		retry = 2;
 	}
-
-	cam_pr_debug("sensor_id: %d\n", *sensor_id);
 
 	if (*sensor_id != imgsensor_info.sensor_id) {
 		/*if Sensor ID is not correct, set *sensor_id to 0xFFFFFFFF*/
@@ -1790,7 +1790,7 @@ static kal_uint32 open(void)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
-	cam_pr_debug("sun module gc5035_open\n");
+	cam_pr_debug_1("sun module gc5035_open\n");
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1799,11 +1799,11 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = (return_sensor_id() + 2);  //sun module
 			if (sensor_id == imgsensor_info.sensor_id) {
-				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
+				cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
-			pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
+			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, sensor_id);
 			retry--;
 		} while (retry > 0);
@@ -1849,7 +1849,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -1870,7 +1870,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
@@ -1882,7 +1882,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_TRUE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			cam_pr_debug("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+			cam_pr_debug_1("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 				imgsensor.current_fps,
 				imgsensor_info.cap.max_framerate / 10);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
@@ -1899,7 +1899,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -1919,7 +1919,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -1939,7 +1939,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	cam_pr_debug("E\n");
+	cam_pr_debug_1("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
