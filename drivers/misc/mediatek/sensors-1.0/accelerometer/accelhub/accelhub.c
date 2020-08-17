@@ -365,7 +365,7 @@ static ssize_t show_sensorinfo_value(struct device_driver *ddri, char *buf)
 				ID_ACCELEROMETER, CUST_ACTION_GET_SENSOR_INFO);
 		return 0;
 	}
-	return snprintf(buf, PAGE_SIZE, "A-Sensor:%s\n", devinfo.name);
+	return snprintf(buf, PAGE_SIZE, "A-Sensor=%s\n", devinfo.name);
 }
 
 static DRIVER_ATTR(chipinfo, 0444, show_chipinfo_value, NULL);
