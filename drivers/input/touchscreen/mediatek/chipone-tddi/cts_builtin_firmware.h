@@ -15,7 +15,7 @@ static u8 icnl9911_driver_builtin_firmware_easyquick_608[] = {
 };
 
 static u8 icnl9911c_driver_builtin_firmware_easyquick_608[] = {
-#include"firmware/easyquick_608/Moto-Fiji-Chipone-ICNL9911C-MDT_Long-V_20200702_V0201.h"
+#include"firmware/easyquick_608/Moto-Fiji-Lite-Easyquick-ICNL9911C_Long-V_V0205_20200817.h"
 };
 
 const static struct cts_firmware cts_driver_builtin_firmwares_truly_601[] = {
