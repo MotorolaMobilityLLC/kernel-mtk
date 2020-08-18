@@ -841,6 +841,8 @@ static int ilitek_get_tp_module(void)
 
 	if (strstr(mtkfb_find_lcm_driver(), "ili9882h_hdplus_dsi_vdo_hlt_6517") != NULL)
 		return MODEL_HLT;
+	else if (strstr(mtkfb_find_lcm_driver(), "ontim_ili9882n_hdplus_dsi_vdo_tianma") != NULL)
+		return MODEL_TM;
 	else
 		return 0;
 }
@@ -962,10 +964,18 @@ static void ontim_dev_get_ilitek_info(void)
 	{
 		snprintf(lcdname, sizeof(lcdname), "hlt-ili9882h");
 		snprintf(vendor_name, sizeof(vendor_name), "hlt-ili9882h");
+		fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
+		ILI_INFO("fw_ver = %d\n",fw_ver);
+		snprintf(version, sizeof(version),"fw:%d.%d VID:0x11",fw_ver,((ilits->chip->fw_ver) & 0xff));
 	}
-	fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
-	ILI_INFO("fw_ver = %d\n",fw_ver);
-	snprintf(version, sizeof(version),"FW:%02x,VID:0x11 ",fw_ver);
+	else if (strstr(mtkfb_find_lcm_driver(), "ontim_ili9882n_hdplus_dsi_vdo_tianma") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "tianma-ili9882n");
+		snprintf(vendor_name, sizeof(vendor_name), "tianma-ili9882n");
+		fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
+		ILI_INFO("fw_ver = %d\n",fw_ver);
+		snprintf(version, sizeof(version),"fw:%d.%d VID:0x01",fw_ver,((ilits->chip->fw_ver) & 0xff));
+	}
 }
 #endif
 

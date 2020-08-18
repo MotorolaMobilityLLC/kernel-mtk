@@ -29,6 +29,7 @@ extern struct LCM_DRIVER ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv;
 extern struct LCM_DRIVER ontim_ft8006p_hdplus_dsi_vdo_hlt_lcm_drv;
 extern struct LCM_DRIVER ontim_ili9881h_hdplus_dsi_vdo_hlt_lcm_drv;
 extern struct LCM_DRIVER ontim_ili9882n_hdplus_dsi_vdo_hlt_lcm_drv;
+extern struct LCM_DRIVER ontim_ili9882n_hdplus_dsi_vdo_tianma_lcm_drv;
 extern struct LCM_DRIVER ili9881h_hdplus_dsi_vdo_tianma_6517_lcm_drv;
 extern struct LCM_DRIVER ili9882h_hdplus_dsi_vdo_hlt_6517_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
