@@ -294,7 +294,7 @@ static void lcm_reset(void)
 	if (!gesture_dubbleclick_en) {
 		MDELAY(2);//t3
 		SET_RESET_PIN(1);
-		tpd_gpio_output(0, 1);
+		//tpd_gpio_output(0, 1);
 		MDELAY(5);
 		ili_resume_by_ddi();
 		MDELAY(15);//Tcmd
@@ -303,7 +303,7 @@ static void lcm_reset(void)
 		MDELAY(1);//t3
 		SET_RESET_PIN(1);
 		MDELAY(10);//t3
-		tpd_gpio_output(0, 1);
+		//tpd_gpio_output(0, 1);
 	}
 
 	LCM_LOGI(" lcm reset end.\n");
@@ -341,7 +341,7 @@ static void lcm_init(void)
 
 	if (!gesture_dubbleclick_en) {
 		SET_RESET_PIN(0);
-		tpd_gpio_output(0, 0);
+		//tpd_gpio_output(0, 0);
 
 		set_gpio_lcd_enp(1);
 		MDELAY(6);//for bias IC and tr2
