@@ -80,12 +80,12 @@ static unsigned char CTPM_FW_TXD[] = {
 	0xFF,
 };
 
-#define TM_INI_NAME_PATH		"/sdcard/mp_tm.ini"
+#define TM_INI_NAME_PATH		"/system/etc/mp_tm_9882n.ini"
 #define TM_FW_FILP_PATH                 "/sdcard/ILITEK_FW_TM"
-#define TM_INI_REQUEST_PATH		"mp_tm.ini"
+#define TM_INI_REQUEST_PATH		"mp_tm_9882n.ini"
 #define TM_FW_REQUEST_PATH		"ILITEK_FW_TM"
 static unsigned char CTPM_FW_TM[] = {
-	0xFF,
+	#include "tianma/ILI9882N_MDT_6517_LH_SPI_Cap_SVN22309.ili"
 };
 
 #define HLT_INI_NAME_PATH		"/system/etc/mp_hlt.ini"
