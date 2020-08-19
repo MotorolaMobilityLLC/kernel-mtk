@@ -34,7 +34,7 @@
 /********************   Modify end    *********************************/
 
 #define cam_pr_debug(format, args...) \
-	pr_debug(PFX "[%s] " format, __func__, ##args)
+	pr_info(PFX "[%s] " format, __func__, ##args)
 #define cam_pr_debug_1(format, args...) \
 		pr_info(PFX "[%s] " format, __func__, ##args)
 
@@ -61,7 +61,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.cap = {
-		.pclk = 175200000,
+		.pclk = 168000000,
 		.linelength = 2920,
 		.framelength = 2008,
 		.startx = 0,
@@ -69,7 +69,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 175200000,
+		.mipi_pixel_rate = 168000000,
 		.max_framerate = 300,
 	},
 	.cap1 = {
@@ -678,7 +678,7 @@ static kal_uint8 gc5035_otp_identify(kal_uint32  sensorid)
 	write_cmos_sensor(0xf4, 0x40);
 	write_cmos_sensor(0xf5, 0xe9);
 	write_cmos_sensor(0xf6, 0x14);
-	write_cmos_sensor(0xf8, 0x49);
+	write_cmos_sensor(0xf8, 0x46);
 	write_cmos_sensor(0xf9, 0x82);
 	write_cmos_sensor(0xfa, 0x00);
 	write_cmos_sensor(0xfc, 0x81);
@@ -1128,7 +1128,7 @@ static void sensor_init(void)
 
 	/* MIPI */
 	write_cmos_sensor(0xfe, 0x03);
-	write_cmos_sensor(0x02, 0x57);
+	write_cmos_sensor(0x02, 0x59);
 	write_cmos_sensor(0x03, 0xb7);
 	write_cmos_sensor(0x15, 0x14);
 	write_cmos_sensor(0x18, 0x0f);
@@ -1158,7 +1158,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0xf4, 0x40);
 	write_cmos_sensor(0xf5, 0xe4);
 	write_cmos_sensor(0xf6, 0x14);
-	write_cmos_sensor(0xf8, 0x49);
+	write_cmos_sensor(0xf8, 0x46);
 	write_cmos_sensor(0xf9, 0x12);
 	write_cmos_sensor(0xfa, 0x01);
 	write_cmos_sensor(0xfc, 0x81);
@@ -1276,7 +1276,7 @@ static void capture_setting(kal_uint16 currefps)
 	} else {
 		write_cmos_sensor(0xf5, 0xe9);
 		write_cmos_sensor(0xf6, 0x14);
-		write_cmos_sensor(0xf8, 0x49);
+		write_cmos_sensor(0xf8, 0x46);
 	}
 	write_cmos_sensor(0xf9, 0x82);
 	write_cmos_sensor(0xfa, 0x00);
@@ -1368,7 +1368,7 @@ static void capture_setting(kal_uint16 currefps)
 
 	/* MIPI */
 	write_cmos_sensor(0xfe, 0x03);
-	write_cmos_sensor(0x02, 0x57);
+	write_cmos_sensor(0x02, 0x58);
 	write_cmos_sensor(0x22, 0x06);
 	write_cmos_sensor(0x26, 0x08);
 	write_cmos_sensor(0x29, 0x06);
