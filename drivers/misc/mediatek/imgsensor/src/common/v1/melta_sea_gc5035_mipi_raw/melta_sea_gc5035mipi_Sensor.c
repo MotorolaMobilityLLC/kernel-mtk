@@ -34,7 +34,7 @@
 /********************   Modify end    *********************************/
 
 #define cam_pr_debug(format, args...) \
-	pr_info(PFX "[%s] " format, __func__, ##args)
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 #define cam_pr_debug_1(format, args...) \
 		pr_info(PFX "[%s] " format, __func__, ##args)
 
