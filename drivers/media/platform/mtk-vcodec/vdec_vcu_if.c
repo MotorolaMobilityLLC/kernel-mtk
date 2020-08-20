@@ -71,15 +71,12 @@ static void handle_query_cap_ack_msg(struct vdec_vcu_ipi_query_cap_ack *msg)
 inline int get_mapped_fd(struct dma_buf *dmabuf)
 {
 	int target_fd = 0;
-
 #ifndef CONFIG_MTK_IOMMU_V2
 	unsigned long rlim_cur;
 	unsigned long irqs;
 	struct task_struct *task = NULL;
 	struct files_struct *f = NULL;
-	struct sighand_struct *sighand;
-	spinlock_t      siglock;
-	struct fdtable fdt;
+	unsigned long flags = 0;
 
 	if (dmabuf == NULL || dmabuf->file == NULL)
 		return 0;
@@ -87,40 +84,53 @@ inline int get_mapped_fd(struct dma_buf *dmabuf)
 	vcu_get_file_lock();
 
 	vcu_get_task(&task, &f, 0);
-	if (task == NULL || f == NULL ||
-		probe_kernel_address(&task->sighand, sighand) ||
-		probe_kernel_address(&task->sighand->siglock, siglock)) {
+	if (task == NULL || f == NULL) {
 		vcu_put_file_lock();
 		return -EMFILE;
 	}
 
-	spin_lock(&f->file_lock);
-	if (probe_kernel_address(files_fdtable(f), fdt)) {
-		spin_unlock(&f->file_lock);
+	if (vcu_get_sig_lock(&flags) <= 0) {
+		pr_info("%s() Failed to try lock...VPUD may die", __func__);
 		vcu_put_file_lock();
 		return -EMFILE;
 	}
-	spin_unlock(&f->file_lock);
+
+	if (vcu_check_vpud_alive() == 0) {
+		pr_info("%s() Failed to check vpud alive. VPUD died", __func__);
+		vcu_put_file_lock();
+		vcu_put_sig_lock(flags);
+		return -EMFILE;
+	}
+	vcu_put_sig_lock(flags);
 
 	if (!lock_task_sighand(task, &irqs)) {
 		vcu_put_file_lock();
 		return -EMFILE;
 	}
 
+	// get max number of open files
 	rlim_cur = task_rlimit(task, RLIMIT_NOFILE);
 	unlock_task_sighand(task, &irqs);
+
+	f = get_files_struct(task);
+	if (!f) {
+		vcu_put_file_lock();
+		return -EMFILE;
+	}
 
 	target_fd = __alloc_fd(f, 0, rlim_cur, O_CLOEXEC);
 
 	get_file(dmabuf->file);
 
 	if (target_fd < 0) {
+		put_files_struct(f);
 		vcu_put_file_lock();
 		return -EMFILE;
 	}
 
 	__fd_install(f, target_fd, dmabuf->file);
 
+	put_files_struct(f);
 	vcu_put_file_lock();
 
 	/* pr_info("get_mapped_fd: %d", target_fd); */
@@ -133,14 +143,39 @@ inline void close_mapped_fd(unsigned int target_fd)
 #ifndef CONFIG_MTK_IOMMU_V2
 	struct task_struct *task = NULL;
 	struct files_struct *f = NULL;
+	unsigned long flags = 0;
 
 	vcu_get_file_lock();
 	vcu_get_task(&task, &f, 0);
-	vcu_put_file_lock();
-	if (task == NULL || f == NULL)
+	if (task == NULL || f == NULL) {
+		vcu_put_file_lock();
 		return;
+	}
+
+	if (vcu_get_sig_lock(&flags) <= 0) {
+		pr_info("%s() Failed to try lock...VPUD may die", __func__);
+		vcu_put_file_lock();
+		return;
+	}
+
+	if (vcu_check_vpud_alive() == 0) {
+		pr_info("%s() Failed to check vpud alive. VPUD died", __func__);
+		vcu_put_file_lock();
+		vcu_put_sig_lock(flags);
+		return;
+	}
+	vcu_put_sig_lock(flags);
+
+	f = get_files_struct(task);
+	if (!f) {
+		vcu_put_file_lock();
+		return;
+	}
 
 	__close_fd(f, target_fd);
+
+	put_files_struct(f);
+	vcu_put_file_lock();
 #endif
 }
 
