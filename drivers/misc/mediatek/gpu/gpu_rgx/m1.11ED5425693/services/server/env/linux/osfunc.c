@@ -191,6 +191,12 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 	IMG_UINT32	ui32Order=0;
 	gfp_t gfp_flags;
 
+	/* avoid 64K Pages in 0x5FBF0000 ~ 0x5FC03000 */
+	struct page *pasPage[2];
+	IMG_UINT32 ui32Enter = 0;
+	int i;
+
+
 	PVR_ASSERT(uiSize != 0);
 	/*Align the size to the page granularity */
 	uiSize = PAGE_ALIGN(uiSize);
@@ -220,6 +226,7 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 #endif
 
 	/*allocate the pages */
+RETRY:
 	psPage = alloc_pages(gfp_flags, ui32Order);
 	if (psPage == NULL)
 	{
@@ -227,9 +234,33 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 	}
 	uiSize = (1 << ui32Order) * PAGE_SIZE;
 
+
 	psMemHandle->u.pvHandle = psPage;
 	psMemHandle->ui32Order = ui32Order;
 	sCpuPAddr.uiAddr = IMG_CAST_TO_CPUPHYADDR_UINT(page_to_phys(psPage));
+
+
+	if (gFWALLOC < 2 && uiSize == 65536) { // 0x10000
+		if(sCpuPAddr.uiAddr >= 0x5FBF0000 &&
+			sCpuPAddr.uiAddr < 0x5FC03000) {
+			/* you won't enter this 3 times during boot-up */
+			pasPage[ui32Enter] = psPage;
+			ui32Enter++;
+#if defined(__arm64__) || defined(__aarch64__)
+			PVR_DPF((PVR_DBG_ERROR,
+			"[PVR_K] MMU can't use 0x%llx + (%llu) [Retry: %d]\n",
+			sCpuPAddr.uiAddr, uiSize, ui32Enter));
+#else
+			PVR_DPF((PVR_DBG_ERROR,
+			"[PVR_K] MMU can't use 0x%x + (%u) [Retry: %d]\n",
+			sCpuPAddr.uiAddr, uiSize, ui32Enter));
+#endif
+			goto RETRY;
+		}
+
+		for(i=0; i<ui32Enter;i++)
+			__free_pages(pasPage[i], ui32Order);
+	}
 
 	/*
 	 * Even when more pages are allocated as base MMU object we still need one single physical address because

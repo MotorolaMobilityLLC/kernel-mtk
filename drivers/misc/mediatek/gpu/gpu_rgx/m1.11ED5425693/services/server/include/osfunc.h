@@ -86,6 +86,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #define KERNEL_ID			0xffffffffL
 
+extern int gFWALLOC;
+
 #if defined(LINUX) && defined(__KERNEL__)
 #define OSConfineArrayIndexNoSpeculation(index, size) array_index_nospec((index), (size))
 #elif defined(__QNXNTO__)
