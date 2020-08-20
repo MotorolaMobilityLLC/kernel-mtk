@@ -29,6 +29,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
 #include <linux/sched.h>
+#include <linux/semaphore.h>
 #include <linux/suspend.h>
 #include <linux/uaccess.h>
 #include <linux/compat.h>
@@ -37,6 +38,9 @@
 #include <linux/pm_wakeup.h>
 #include <linux/soc/mediatek/mtk-cmdq.h>
 #include <linux/mailbox/mtk-cmdq-mailbox.h>
+#include <linux/signal.h>
+#include <trace/events/signal.h>
+#include <linux/string.h>
 
 #ifdef CONFIG_MTK_IOMMU_V2
 #include <linux/iommu.h>
@@ -123,6 +127,11 @@ static const unsigned long vcu_map_hw_type[VCU_MAP_HW_REG_NUM] = {
 	0x71000000,     /* VENC */
 	0x72000000      /* VENC_LT */
 };
+
+#define vcu_dbg_log(fmt, arg...) do { \
+		if (vcu_ptr->enable_vcu_dbg_log) \
+			pr_info(fmt, ##arg); \
+	} while (0)
 
 /* Default vcu_mtkdev[0] handle vdec, vcu_mtkdev[1] handle mdp */
 static struct mtk_vcu *vcu_mtkdev[MTK_VCU_NR_MAX];
@@ -284,7 +293,15 @@ struct mtk_vcu {
 	unsigned long flags[VCU_CODEC_MAX];
 	int open_cnt;
 	bool abort;
+	struct semaphore vpud_killed;
 	bool is_entering_suspend;
+
+	/* for vpud sig check */
+	spinlock_t vpud_sig_lock;
+	int vpud_is_going_down;
+
+	/* for vcu dbg log*/
+	int enable_vcu_dbg_log;
 };
 
 struct gce_callback_data {
@@ -364,13 +381,19 @@ int vcu_ipi_send(struct platform_device *pdev,
 		return -EPERM;
 	}
 
-	if (vcu_ptr->abort) {
-		dev_info(&pdev->dev, "[VCU] vpud killed\n");
-		return -EIO;
-	}
-
 	i = ipi_id_to_inst_id(id);
 
+	mutex_lock(&vcu->vcu_mutex[i]);
+	if (vcu_ptr->abort) {
+		if (vcu_ptr->open_cnt > 0) {
+			dev_info(vcu->dev, "wait for vpud killed %d\n",
+				vcu_ptr->vpud_killed.count);
+			ret = down_interruptible(&vcu_ptr->vpud_killed);
+		}
+		dev_info(&pdev->dev, "[VCU] vpud killed\n");
+		mutex_unlock(&vcu->vcu_mutex[i]);
+		return -EIO;
+	}
 	if (!vcu->fuse_bypass) {
 		memcpy((void *)send_obj.share_buf, buf, len);
 		send_obj.len = len;
@@ -390,7 +413,6 @@ int vcu_ipi_send(struct platform_device *pdev,
 		mutex_unlock(&vcu->vcu_share);
 	}
 
-	mutex_lock(&vcu->vcu_mutex[i]);
 	vcu->ipi_id_ack[id] = false;
 
 	if (id >= IPI_VCU_INIT && id < IPI_MAX) {
@@ -432,25 +454,33 @@ int vcu_ipi_send(struct platform_device *pdev,
 	timeout = msecs_to_jiffies(IPI_TIMEOUT_MS);
 	ret = wait_event_timeout(vcu->ack_wq[i], vcu->ipi_id_ack[id], timeout);
 	vcu->ipi_id_ack[id] = false;
-	mutex_unlock(&vcu->vcu_mutex[i]);
 
 	if (vcu_ptr->abort || ret == 0) {
 		dev_err(&pdev->dev, "vcu ipi %d ack time out !", id);
 		if (!vcu_ptr->abort) {
 			task_lock(vcud_task);
 			send_sig(SIGTERM, vcud_task, 0);
-			send_sig(SIGKILL, vcud_task, 0);
 			task_unlock(vcud_task);
 		}
+		if (vcu_ptr->open_cnt > 0) {
+			dev_info(vcu->dev, "wait for vpud killed %d\n",
+				vcu_ptr->vpud_killed.count);
+			ret = down_interruptible(&vcu_ptr->vpud_killed);
+		}
+		dev_info(&pdev->dev, "[VCU] vpud killed\n");
 		ret = -EIO;
+		mutex_unlock(&vcu->vcu_mutex[i]);
 		goto end;
 	} else if (-ERESTARTSYS == ret) {
 		dev_err(&pdev->dev, "vcu ipi %d ack wait interrupted by a signal",
 			id);
 		ret = -ERESTARTSYS;
+		mutex_unlock(&vcu->vcu_mutex[i]);
 		goto end;
-	} else
+	} else {
 		ret = 0;
+		mutex_unlock(&vcu->vcu_mutex[i]);
+	}
 
 	/* Waiting ipi_done, success means the daemon receiver thread
 	 * dispatchs ipi msg done and returns to kernel for get next
@@ -591,7 +621,6 @@ static void vcu_gce_flush_callback(struct cmdq_cb_data data)
 				&vcu->flags[i]);
 	}
 	mutex_unlock(&vcu->vcu_gce_mutex[i]);
-
 }
 
 static int vcu_gce_cmd_flush(struct mtk_vcu *vcu, unsigned long arg)
@@ -863,6 +892,24 @@ void vcu_put_file_lock(void)
 }
 EXPORT_SYMBOL_GPL(vcu_put_file_lock);
 
+int vcu_get_sig_lock(unsigned long *flags)
+{
+	return spin_trylock_irqsave(&vcu_ptr->vpud_sig_lock, *flags);
+}
+EXPORT_SYMBOL_GPL(vcu_get_sig_lock);
+
+void vcu_put_sig_lock(unsigned long flags)
+{
+	spin_unlock_irqrestore(&vcu_ptr->vpud_sig_lock, flags);
+}
+EXPORT_SYMBOL_GPL(vcu_put_sig_lock);
+
+int vcu_check_vpud_alive(void)
+{
+	return (vcu_ptr->vpud_is_going_down > 0) ? 0:1;
+}
+EXPORT_SYMBOL_GPL(vcu_check_vpud_alive);
+
 void vcu_get_task(struct task_struct **task, struct files_struct **f,
 		int reset)
 {
@@ -1007,8 +1054,11 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 	vcu_queue->vcu = vcu_mtkdev[vcuid];
 	file->private_data = vcu_queue;
 
+	vcu_ptr->vpud_killed.count = 0;
 	vcu_ptr->open_cnt++;
 	vcu_ptr->abort = false;
+	vcu_ptr->vpud_is_going_down = 0;
+
 	pr_info("[VCU] %s name: %s pid %d open_cnt %d\n", __func__,
 		current->comm, current->tgid, vcu_ptr->open_cnt);
 
@@ -1019,6 +1069,7 @@ static int mtk_vcu_release(struct inode *inode, struct file *file)
 {
 	struct task_struct *task = NULL;
 	struct files_struct *f = NULL;
+	unsigned long flags;
 
 	mtk_vcu_dec_release((struct mtk_vcu_queue *)file->private_data);
 	pr_info("[VCU] %s name: %s pid %d open_cnt %d\n", __func__,
@@ -1030,7 +1081,15 @@ static int mtk_vcu_release(struct inode *inode, struct file *file)
 		vcu_get_file_lock();
 		vcu_get_task(&task, &f, 1);
 		vcu_put_file_lock();
+		up(&vcu_ptr->vpud_killed);  /* vdec worker */
+		up(&vcu_ptr->vpud_killed);  /* venc worker */
+
+		/* reset vpud_is_going_down only on abnormal situations */
+		spin_lock_irqsave(&vcu_ptr->vpud_sig_lock, flags);
+		vcu_ptr->vpud_is_going_down = 0;
+		spin_unlock_irqrestore(&vcu_ptr->vpud_sig_lock, flags);
 	}
+
 	return 0;
 }
 
@@ -1520,6 +1579,15 @@ static int mtk_vcu_write(const char *val, const struct kernel_param *kp)
 	} else
 		return -EFAULT;
 
+	// check if need to enable VCU debug log
+	if (strstr(vcu_ptr->vdec_log_info->log_info, "vcu_log 1")) {
+		vcu_ptr->enable_vcu_dbg_log = 1;
+		return 0;
+	} else if (strstr(vcu_ptr->vdec_log_info->log_info, "vcu_log 0")) {
+		vcu_ptr->enable_vcu_dbg_log = 0;
+		return 0;
+	}
+
 	pr_info("[log wakeup VPUD] log_info %p vcu_ptr %p val %p: %s %lu\n",
 		(char *)vcu_ptr->vdec_log_info->log_info,
 		vcu_ptr, val, val, (unsigned long)strlen(val));
@@ -1618,6 +1686,27 @@ static int mtk_vcu_suspend_notifier(struct notifier_block *nb,
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_DONE;
+}
+
+static const char stat_nam[] = "OOXX";
+static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
+		struct task_struct *task, int _group, int result)
+{
+	unsigned long flags;
+
+	if (strstr(task->comm, "vpud") && sig == SIGKILL) {
+		pr_info("[VPUD_PROBE_DEATH][signal][%d:%s]send death sig %d to[%d:%s]\n",
+				current->pid, current->comm,
+				sig, task->pid, task->comm);
+
+		spin_lock_irqsave(&vcu_ptr->vpud_sig_lock, flags);
+		vcu_ptr->vpud_is_going_down = 1;
+		spin_unlock_irqrestore(&vcu_ptr->vpud_sig_lock, flags);
+
+		// VPUD is going to be killed. stop next map/unmap fd
+		vcud_task = NULL;
+		files = NULL;
+	}
 }
 
 static int mtk_vcu_probe(struct platform_device *pdev)
@@ -1811,6 +1900,7 @@ static int mtk_vcu_probe(struct platform_device *pdev)
 		cmdq_dev_get_event(dev, "venc_128B_cnt_done");
 	vcu->codec_ctx[VCU_VDEC] = NULL;
 	vcu->codec_ctx[VCU_VENC] = NULL;
+	sema_init(&vcu->vpud_killed, 1);
 	vcu->is_entering_suspend = 0;
 	pm_notifier(mtk_vcu_suspend_notifier, 0);
 
@@ -1819,6 +1909,12 @@ static int mtk_vcu_probe(struct platform_device *pdev)
 		dev_dbg(dev, "[VCU] allocate SHMEM failed\n");
 		goto err_device;
 	}
+
+	register_trace_signal_generate(probe_death_signal, NULL);
+	spin_lock_init(&vcu_ptr->vpud_sig_lock);
+	vcu_ptr->vpud_is_going_down = 0;
+
+	vcu_ptr->enable_vcu_dbg_log = 0;
 
 	dev_dbg(dev, "[VCU] initialization completed\n");
 	return 0;
