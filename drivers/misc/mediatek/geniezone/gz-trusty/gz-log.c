@@ -89,7 +89,7 @@ static int __init gz_log_context_init(struct reserved_mem *rmem)
 	glctx.paddr = rmem->base;
 	glctx.size = rmem->size;
 	glctx.flag = STATIC;
-	pr_info("[%s] rmem:%s base(0x%llx) size(0x%zx)\n",
+	pr_info("[%s] rmem:%s base(%pa) size(0x%zx)\n",
 		__func__, rmem->name, glctx.paddr, glctx.size);
 	return 0;
 }
