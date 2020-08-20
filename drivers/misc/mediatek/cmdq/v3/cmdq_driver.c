@@ -419,7 +419,8 @@ static long cmdq_driver_create_secure_medadata(
 	/* always clear to prevent free unknown memory */
 	pCommand->secData.addrMetadatas = 0;
 	for (i = 0; i < ARRAY_SIZE(pCommand->secData.ispMeta.ispBufs); i++) {
-		isp_bufs[i] = (void *)pCommand->secData.ispMeta.ispBufs[i].va;
+		isp_bufs[i] = (void *)(unsigned long)
+			pCommand->secData.ispMeta.ispBufs[i].va;
 		pCommand->secData.ispMeta.ispBufs[i].va = 0;
 	}
 
