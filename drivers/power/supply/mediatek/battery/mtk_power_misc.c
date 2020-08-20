@@ -20,6 +20,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/alarmtimer.h>
+#include <linux/suspend.h>
 
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
@@ -187,7 +188,9 @@ int set_shutdown_cond(int shutdown_cond)
 		sdc.shutdown_status.is_overheat = true;
 		mutex_unlock(&sdc.lock);
 		bm_err("[%s]OVERHEAT shutdown!\n", __func__);
+		mutex_lock(&pm_mutex);
 		kernel_power_off();
+		mutex_unlock(&pm_mutex);
 		break;
 	case SOC_ZERO_PERCENT:
 		if (sdc.shutdown_status.is_soc_zero_percent != true) {
@@ -304,7 +307,9 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			polling++;
 			if (duraction.tv_sec >= SHUTDOWN_TIME) {
 				bm_err("soc zero shutdown\n");
+				mutex_lock(&pm_mutex);
 				kernel_power_off();
+				mutex_unlock(&pm_mutex);
 				return next_waketime(polling);
 
 			}
@@ -326,7 +331,9 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			polling++;
 			if (duraction.tv_sec >= SHUTDOWN_TIME) {
 				bm_err("uisoc one percent shutdown\n");
+				mutex_lock(&pm_mutex);
 				kernel_power_off();
+				mutex_unlock(&pm_mutex);
 				return next_waketime(polling);
 			}
 		} else if (now_current > 0 && current_soc > 0) {
@@ -413,7 +420,9 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 				if (duraction.tv_sec >= SHUTDOWN_TIME) {
 					bm_err("low bat shutdown, over %d second\n",
 						SHUTDOWN_TIME);
+					mutex_lock(&pm_mutex);
 					kernel_power_off();
+					mutex_unlock(&pm_mutex);
 					return next_waketime(polling);
 				}
 			}
@@ -499,7 +508,9 @@ static int power_misc_routine_thread(void *arg)
 			sdd->overheat = false;
 			bm_err("%s battery overheat~ power off\n",
 				__func__);
+			mutex_lock(&pm_mutex);
 			kernel_power_off();
+			mutex_unlock(&pm_mutex);
 			return 1;
 		}
 	}
