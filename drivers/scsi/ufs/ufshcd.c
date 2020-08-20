@@ -5654,6 +5654,8 @@ static int ufshcd_issue_tm_cmd(struct ufs_hba *hba, int lun_id, int task_id,
 	task_req_upiup->input_param1 = cpu_to_be32(lun_id);
 	task_req_upiup->input_param2 = cpu_to_be32(task_id);
 
+	ufs_mtk_auto_hiber8_quirk_handler(hba, false);
+
 	/* MTK PATCH for Deepidle & SODI */
 	/* Only get resources at first outstanding tasks&&reqs */
 	if (!hba->outstanding_tasks && !hba->outstanding_reqs)
