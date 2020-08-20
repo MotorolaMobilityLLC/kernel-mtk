@@ -58,6 +58,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
 
+#include <linux/of_address.h>
+#include <linux/platform_device.h>
+
+#include <linux/of_reserved_mem.h>
+
 struct platform_device *gpsPVRCfgDev;
 #endif
 
@@ -73,6 +78,31 @@ static PVRSRV_DEVICE_CONFIG     gsDevices[1];
 
 static PHYS_HEAP_FUNCTIONS      gsPhysHeapFuncs;
 static PHYS_HEAP_CONFIG         gsPhysHeapConfig;
+
+int gFWALLOC = 2;
+#if defined(CONFIG_MACH_MT6761)
+struct reserved_mem gpu_fw_rmem;
+static int __init gpu_fw_memory_init(struct reserved_mem *rmem)
+{
+		gpu_fw_rmem = *rmem;
+
+		PVR_LOG(("[PVR_K]: %s, name: %s, base: 0x%x, size: 0x%x",
+			__func__, gpu_fw_rmem.name, gpu_fw_rmem.base,
+			gpu_fw_rmem.size));
+
+		if (gpu_fw_rmem.base == 0x5fc00000)
+			PVR_LOG(("[PVR_K]: 0x5fc00000+0x3000 reserved"));
+		else {
+			gFWALLOC = 0;
+			PVR_LOG(("[PVR_K]: 0x5fc00000+0x3000 NOT reserved"));
+			PVR_LOG(("[PVR_K]: Enable 2nd level workaround"));
+		}
+		return 0;
+}
+
+RESERVEDMEM_OF_DECLARE(gpu_fw_memory
+			, "mediatek,gpu-fw-reserve-memory", gpu_fw_memory_init);
+#endif
 
 #if  defined(SUPPORT_PDVFS)
 /* Dummy DVFS configuration used purely for testing purposes */
