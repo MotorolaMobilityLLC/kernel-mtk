@@ -1217,8 +1217,12 @@ s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
 			 metadata_length);
 		return -ENOMEM;
 	}
-	copy_from_user(p_metadatas, CMDQ_U32_PTR(secData->addrMetadatas),
-		metadata_length);
+	if (copy_from_user(p_metadatas, CMDQ_U32_PTR(secData->addrMetadatas),
+		metadata_length)) {
+		CMDQ_ERR("[MDP] fail to copy user metadata\n");
+		kfree(p_metadatas);
+		return -EFAULT;
+	}
 	handle->secData.addrMetadatas =
 		(cmdqU32Ptr_t)(unsigned long)p_metadatas;
 	return 0;
