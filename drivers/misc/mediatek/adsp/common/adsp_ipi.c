@@ -199,7 +199,7 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 {
 	struct ipi_msg_t *p_ipi_msg = NULL;
 	ktime_t start_time;
-	s64     time_ipc_us;
+	s64     time_ipc_us = -1;
 	static bool busy_log_flag;
 	static u8 share_buf[SHARE_BUF_SIZE - 16];
 
@@ -267,6 +267,8 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 		}
 	}
 
+	if (wait && time_ipc_us < 0)
+		pr_err("%s swint is not set. ipi_id=%d\n", __func__, id);
 #ifdef Liang_Check
 	if (adsp_awake_unlock(adsp_id) == -1)
 		pr_debug("adsp_ipi_send: awake unlock fail");
