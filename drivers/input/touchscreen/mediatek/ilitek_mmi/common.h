@@ -260,7 +260,6 @@ enum ili7807_types {
 #define DUMP_FLASH_PATH		"/sdcard/flash_dump"
 #define CHECK_BATTERY_TIME  2000
 #define CHECK_ESD_TIME		4000
-#define FW_UPDATE_TIME		5000
 #define VDD_VOLTAGE			1800000
 #define VDD_I2C_VOLTAGE		1800000
 

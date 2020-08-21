@@ -82,10 +82,8 @@ struct ilitek_platform_data {
 	/* check battery & ESD workqueue functions */
 	struct delayed_work check_power_status_work;
 	struct delayed_work check_esd_status_work;
-	struct delayed_work fw_update_work;
 	struct workqueue_struct *check_power_status_queue;
 	struct workqueue_struct *check_esd_status_queue;
-	struct workqueue_struct *fw_update_queue;
 	struct work_struct esd_recovery;
 	struct work_struct ilitek_resume_work;
 	struct workqueue_struct *ilitek_resume_workqueue;
