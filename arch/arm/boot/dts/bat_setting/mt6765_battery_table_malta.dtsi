@@ -42,10 +42,10 @@
 	TEMPERATURE_T1 = <(25)>;	/*	Battery temperature T1*/
 	TEMPERATURE_T2 = <(0)>;	/*	Battery temperature T2*/
 	TEMPERATURE_T3 = <(-10)>;	/*	Battery temperature T3*/
-	g_FG_PSEUDO100_T0 = <(97)>;	/*	Pseudo 100% percentage at T0.*/
-	g_FG_PSEUDO100_T1 = <(97)>;	/*	Pseudo 100% percentage at T1.*/
-	g_FG_PSEUDO100_T2 = <(95)>;	/*	Pseudo 100% percentage at T2.*/
-	g_FG_PSEUDO100_T3 = <(90)>;	/*	Pseudo 100% percentage at T3.*/
+	g_FG_PSEUDO100_T0 = <(99)>;	/*	Pseudo 100% percentage at T0.*/
+	g_FG_PSEUDO100_T1 = <(99)>;	/*	Pseudo 100% percentage at T1.*/
+	g_FG_PSEUDO100_T2 = <(97)>;	/*	Pseudo 100% percentage at T2.*/
+	g_FG_PSEUDO100_T3 = <(92)>;	/*	Pseudo 100% percentage at T3.*/
 
 	enable_battery_pn_malta = <1>;
 };
