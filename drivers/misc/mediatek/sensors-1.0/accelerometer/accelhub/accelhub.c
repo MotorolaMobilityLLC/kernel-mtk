@@ -365,6 +365,8 @@ static ssize_t show_sensorinfo_value(struct device_driver *ddri, char *buf)
 				ID_ACCELEROMETER, CUST_ACTION_GET_SENSOR_INFO);
 		return 0;
 	}
+	pr_err("%s: A-Sensor=%s\n", __func__, devinfo.name);
+
 	return snprintf(buf, PAGE_SIZE, "A-Sensor=%s\n", devinfo.name);
 }
 
