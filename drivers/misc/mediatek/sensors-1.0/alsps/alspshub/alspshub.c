@@ -88,6 +88,9 @@ enum {
 #define FIJI_TP_VENDOR_SKYWORTH 0
 #define FIJI_TP_VENDOR_TRULY 1
 #define FIJI_TP_VENDOR_EASYQUICK 2
+#define MALTA_TP_VENDOR_TIANMA 0
+#define MALTA_TP_VENDOR_HLT 1
+
 
 
 static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
@@ -149,6 +152,11 @@ static int get_tp_vendor(void)
 			vendor = FIJI_TP_VENDOR_TRULY;
 		else if (strncmp(buf,"easyquick",9) == 0)
 			vendor = FIJI_TP_VENDOR_EASYQUICK;
+	} else if ((strcmp(CONFIG_ARCH_MTK_PROJECT, "malta") == 0) || (strcmp(CONFIG_ARCH_MTK_PROJECT, "malta_64") == 0)) {
+		if (strncmp(buf,"tianma",6) == 0)
+			vendor = MALTA_TP_VENDOR_TIANMA;
+		else if (strncmp(buf,"hlt",3) == 0)
+			vendor = MALTA_TP_VENDOR_HLT;
 	}
 
 	printk(KERN_INFO "[ALS/PS]: tp vendor:(%d)%s\n", vendor, buf);
