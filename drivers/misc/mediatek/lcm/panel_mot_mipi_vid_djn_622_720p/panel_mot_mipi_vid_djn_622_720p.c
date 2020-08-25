@@ -96,8 +96,8 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FRAME_WIDTH									(720)
 #define FRAME_HEIGHT									(1520)
 
-#define LCM_PHYSICAL_WIDTH								(64800)
-#define LCM_PHYSICAL_HEIGHT								(129600)
+#define LCM_PHYSICAL_WIDTH								(68000)
+#define LCM_PHYSICAL_HEIGHT								(143000)
 
 
 #define REGFLAG_DELAY		0xFFFC
