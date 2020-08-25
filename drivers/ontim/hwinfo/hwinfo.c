@@ -1201,6 +1201,44 @@ static void get_current_cpuid(void)
 	sprintf(hwinfo[current_cpuid].hwinfo_buf,"%s",temp_buffer);
 }
 
+#ifdef CONFIG_HBM_SUPPORT
+static bool hbm_enable = false;
+extern unsigned int g_last_level;
+extern int mtkfb_set_backlight_level(unsigned int level);
+
+static int set_hbm_status(const char * buf, int n)
+{
+	printk("hbm user buf:%s\n", buf);
+
+	switch (buf[0]){
+		case '0':
+			hbm_enable = false;
+			mtkfb_set_backlight_level(g_last_level);
+			break;
+		case '3':
+			hbm_enable = true;
+			mtkfb_set_backlight_level(256);
+			break;
+		default:
+			hbm_enable = false;
+			break;
+	}
+
+	return 0;
+}
+
+static void get_hbm_status(void)
+{
+	char hbm_str_st[8] = {0};
+	if (hbm_enable){
+	    strcpy(hbm_str_st, "hbm:on");
+	}else{
+	    strcpy(hbm_str_st, "hbm:off");
+	}
+	sprintf(hwinfo[hbm].hwinfo_buf,"%s",hbm_str_st);
+}
+#endif
+
 extern unsigned int get_boot_mode(void);
 
 static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
@@ -1368,6 +1406,11 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case current_cpuid:
 		get_current_cpuid();
 		break;
+#ifdef CONFIG_HBM_SUPPORT
+	case hbm:
+		get_hbm_status();
+		break;
+#endif
 	default:
 		break;
 	}
@@ -1401,7 +1444,11 @@ static ssize_t hwinfo_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	case FRONT_CAM_OTP_STATUS:
 		set_front_camera_otp_status(buf, n);
 		break;
-
+#ifdef CONFIG_HBM_SUPPORT 
+	case hbm:
+		set_hbm_status(buf, n);
+		break;
+#endif
 	default:
 		break;
 	};
@@ -1454,6 +1501,9 @@ static int __init hwinfo_init(void)
 	if ( sysfs_create_group(k_hwinfo, &attr_group) ) {
 		printk(KERN_ERR "%s: sysfs_create_group failed\n", __func__);
 	}
+#ifdef CONFIG_HBM_SUPPORT
+	ontim_hwinfo_register(hbm, "hbm");
+#endif
 	//arch_read_hardware_id = msm_read_hardware_id;
 	return 0;
 }
