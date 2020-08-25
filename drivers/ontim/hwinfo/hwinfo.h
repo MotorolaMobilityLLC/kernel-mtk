@@ -56,6 +56,11 @@ KEYWORD(FRONT_CAM_EFUSE)        //camera  efuse
 KEYWORD(FRONTAUX_CAM_EFUSE)        //camera  efuse
 KEYWORD(CARD_HOLDER_PRESENT)  //card hold detect
 KEYWORD(CHARGER_IC_MFR) //houzn add
+
+#ifdef CONFIG_HBM_SUPPORT
+KEYWORD(hbm)
+#endif
+
 #ifdef CONFIG_USB_CABLE
 KEYWORD(RF_GPIO)
 #endif
