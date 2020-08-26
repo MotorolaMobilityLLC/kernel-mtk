@@ -154,7 +154,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	g_u4TargetPosition = a_u4Position;
 	spin_unlock(g_pAF_SpinLock);
 
-	//LOG_INF("move [curr] %d [target] %d\n", g_u4CurrPosition, g_u4TargetPosition); 
+	//LOG_INF("move [curr] %ld [target] %ld\n", g_u4CurrPosition, g_u4TargetPosition);
 
 	if (s4AF_WriteReg((unsigned short)g_u4TargetPosition) == 0) {
 		spin_lock(g_pAF_SpinLock);
@@ -187,38 +187,6 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	if (copy_to_user(pstMotorInfo, &stMotorInfo,
 			 sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
-
-	return 0;
-}
-
-/* initAF include driver initialization and standby mode */
-static int initAF(void)
-{
-	//LOG_INF("+\n");
-
-	int temp_Position;
-	int ret=0;
-	unsigned short InitPos;
-	ret = s4AF_ReadReg(&InitPos);
-	temp_Position = (unsigned long)InitPos;
-	LOG_INF("Start initAF temp_Position=%ld\n",temp_Position);
-	if(temp_Position > 511)
-		temp_Position = 500;
-	while(temp_Position + 1 > 0)
-	{
-		moveAF(temp_Position);
-		temp_Position = temp_Position - 10;
-		mdelay(8);
-	}
-
-	if (*g_pAF_Opened == 1) {
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
-	}
-
-	LOG_INF("-\n");
 
 	return 0;
 }
@@ -304,9 +272,6 @@ int DW9767AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
-
-	initAF();
-
 	return 1;
 }
 
