@@ -1202,7 +1202,7 @@ static void get_current_cpuid(void)
 }
 
 #ifdef CONFIG_HBM_SUPPORT
-static bool hbm_enable = false;
+bool g_hbm_enable = false;
 extern unsigned int g_last_level;
 extern int mtkfb_set_backlight_level(unsigned int level);
 
@@ -1212,15 +1212,15 @@ static int set_hbm_status(const char * buf, int n)
 
 	switch (buf[0]){
 		case '0':
-			hbm_enable = false;
+			g_hbm_enable = false;
 			mtkfb_set_backlight_level(g_last_level);
 			break;
 		case '3':
-			hbm_enable = true;
+			g_hbm_enable = true;
 			mtkfb_set_backlight_level(256);
 			break;
 		default:
-			hbm_enable = false;
+			g_hbm_enable = false;
 			break;
 	}
 
@@ -1230,7 +1230,7 @@ static int set_hbm_status(const char * buf, int n)
 static void get_hbm_status(void)
 {
 	char hbm_str_st[8] = {0};
-	if (hbm_enable){
+	if (g_hbm_enable){
 	    strcpy(hbm_str_st, "hbm:on");
 	}else{
 	    strcpy(hbm_str_st, "hbm:off");
