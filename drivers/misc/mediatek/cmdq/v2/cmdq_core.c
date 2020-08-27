@@ -3424,8 +3424,7 @@ static int32_t cmdq_core_insert_read_reg_command(
 	enum CMDQ_DATA_REGISTER_ENUM valueRegId;
 	enum CMDQ_DATA_REGISTER_ENUM destRegId;
 	enum CMDQ_EVENT_ENUM regAccessToken;
-	const bool userSpaceRequest = cmdq_core_is_request_from_user_space(
-		pTask->scenario);
+	const bool userSpaceRequest = false;
 	bool postInstruction = false;
 
 	int32_t subsysCode;
