@@ -131,6 +131,11 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 
 	/*write clear mode*/
 	LOG_DBG("write clear mode\n");
+	if (!ccuInfo.IsCcuPoweredOn) {
+		LOG_DBG_MUST("CCU off no need to service isr (%d)",
+			ccuInfo.IsCcuPoweredOn);
+		return IRQ_HANDLED;
+	}
 	ccu_write_reg(ccu_base, EINTC_CLR, 0xFF);
 	LOG_DBG("read clear mode\n");
 	ccu_read_reg(ccu_base, EINTC_ST);
@@ -559,7 +564,6 @@ int ccu_power(struct ccu_power_s *power)
 
 		/*1. Enable CCU CAMSYS_CG_CON bit12 CCU_CGPDN=0*/
 		ccu_clock_enable();
-		ccu_irq_enable();
 		LOG_DBG("CCU CG released\n");
 
 		/*use user space buffer*/
@@ -573,6 +577,7 @@ int ccu_power(struct ccu_power_s *power)
 
 		ccuInfo.IsI2cPoweredOn = 1;
 		ccuInfo.IsCcuPoweredOn = 1;
+		ccu_irq_enable();
 
 	} else if (power->bON == 0) {
 		/*CCU Power off*/
