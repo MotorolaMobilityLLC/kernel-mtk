@@ -1153,8 +1153,11 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	}
 
 	if (user_space && !cmdq_core_check_user_valid(
-		(void *)(unsigned long)desc->pVABase, copy_size))
+		(void *)(unsigned long)desc->pVABase, copy_size)) {
+		cmdq_task_destroy(handle);
+		CMDQ_SYSTRACE_END();
 		return -EFAULT;
+	}
 
 	if (desc->regRequest.count &&
 			desc->regRequest.count <= CMDQ_MAX_DUMP_REG_COUNT &&
@@ -1344,7 +1347,7 @@ s32 cmdq_mdp_flush(struct cmdqCommandStruct *desc, bool user_space)
 	s32 status;
 
 	status = cmdq_mdp_flush_async(desc, user_space, &handle);
-	if (!handle) {
+	if (!handle || status < 0) {
 		CMDQ_ERR("mdp flush async failed:%d\n", status);
 		return status;
 	}
