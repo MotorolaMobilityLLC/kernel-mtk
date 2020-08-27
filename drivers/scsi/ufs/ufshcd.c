@@ -8756,20 +8756,8 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	 * 3. Manually enter h8.
 	 */
 	ufshcd_vops_auto_hibern8(hba, false);
-	timeout = jiffies + msecs_to_jiffies(H8_POLL_TOUT_MS);
-	do {
-		ret = ufshcd_dme_get(hba, UIC_ARG_MIB(VENDOR_POWERSTATE), &reg);
-		if (ret != 0)
-			dev_err(hba->dev,
-				"ufshcd_dme_get_ 0x%x fail, ret = %d!\n",
-				VENDOR_POWERSTATE, ret);
-
-		if (reg != VENDOR_POWERSTATE_HIBERNATE)
-			break;
-
-		/* sleep for max. 200us */
-		usleep_range(100, 200);
-	} while (time_before(jiffies, timeout));
+	reg = VENDOR_POWERSTATE_LINKUP;
+	ufs_mtk_wait_link_state(hba, &reg, 100);
 
 	/* Device is stuck in H8 state */
 	if (reg == VENDOR_POWERSTATE_HIBERNATE) {
