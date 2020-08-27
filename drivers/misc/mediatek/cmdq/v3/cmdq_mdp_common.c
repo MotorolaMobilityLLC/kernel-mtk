@@ -1100,6 +1100,71 @@ static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
 	return 0;
 }
 
+s32 cmdq_mdp_handle_create(struct cmdqRecStruct **handle_out)
+{
+	struct cmdqRecStruct *handle = NULL;
+	s32 status;
+
+	status = cmdq_task_create(CMDQ_SCENARIO_USER_MDP, &handle);
+	if (status < 0) {
+		CMDQ_ERR("%s task create fail: %d\n", __func__, status);
+		return status;
+	}
+
+	handle->pkt->buf_pool = &mdp_pool;
+
+	/* assign handle for mdp */
+	*handle_out = handle;
+
+	return 0;
+}
+
+s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
+			struct cmdqRecStruct *handle)
+{
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	return 0;
+#else
+	return 0;
+#endif
+}
+
+s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
+{
+	s32 status;
+
+	CMDQ_TRACE_FORCE_BEGIN("%s %llx\n", __func__, handle->engineFlag);
+	CMDQ_LOG("%s %llx\n", __func__, handle->engineFlag);
+	if (handle->profile_exec)
+		cmdq_pkt_perf_end(handle->pkt);
+
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	if (handle->secData.is_secure) {
+		/* insert backup cookie cmd */
+		cmdq_sec_insert_backup_cookie_instr(handle, handle->thread);
+
+		/* prevent flush directly since engine conflict with normal */
+		handle->thread = CMDQ_INVALID_THREAD;
+	}
+#endif
+
+	/* finalize it */
+	CMDQ_LOG("%s finalize\n", __func__);
+	handle->finalized = true;
+	cmdq_pkt_finalize(handle->pkt);
+
+	/* Dispatch handle to get correct thread or wait in list.
+	 * Task may flush directly if no engine conflict and no waiting task
+	 * holds same engines.
+	 */
+	CMDQ_LOG("%s flush impl\n", __func__);
+	status = cmdq_mdp_flush_async_impl(handle);
+	CMDQ_TRACE_FORCE_END();
+	return status;
+}
+
 s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	struct cmdqRecStruct **handle_out)
 {
@@ -3451,6 +3516,30 @@ const char *cmdq_mdp_parse_handle_error_module_by_hwflag(
 	const struct cmdqRecStruct *handle)
 {
 	return cmdq_mdp_get_func()->parseHandleErrModByEngFlag(handle);
+}
+
+#include "mdp_base.h"
+u32 cmdq_mdp_get_hw_reg(enum MDP_ENG_BASE base, u16 offset)
+{
+	if (offset > 0x1000) {
+		CMDQ_ERR("%s: invalid offset:%#x\n", __func__, offset);
+		return 0;
+	}
+	if (base >= ENGBASE_COUNT) {
+		CMDQ_ERR("%s: invalid engine:%u, offset:%#x\n",
+			__func__, base, offset);
+		return 0;
+	}
+	return mdp_base[base] + offset;
+}
+
+u32 cmdq_mdp_get_hw_port(enum MDP_ENG_BASE base)
+{
+	if (base >= ENGBASE_COUNT) {
+		CMDQ_ERR("%s: invalid engine:%u\n", __func__, base);
+		return 0;
+	}
+	return mdp_engine_port[base];
 }
 
 #ifdef CMDQ_COMMON_ENG_SUPPORT
