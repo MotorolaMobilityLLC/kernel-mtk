@@ -3629,21 +3629,33 @@ static void Ext_Speaker_Amp_Change(bool enable)
 	#if defined(CONFIG_SND_SOC_AW87519)
 		aw87519_audio_select(false, 1);
 	#else
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
+		#if defined(SMT_VERSION)
+			AudDrv_GPIO_EXTAMP_Select(false, 3);
+		#else
+			AudDrv_GPIO_EXTAMP_Select(false, 2);
+		#endif
 	#endif
 		/*udelay(1000); */
 		usleep_range(1 * 1000, 2 * 1000);
 	#if defined(CONFIG_SND_SOC_AW87519)
 		aw87519_audio_select(true, 1);
 	#else
-		AudDrv_GPIO_EXTAMP_Select(true, 3);
+		#if defined(SMT_VERSION)
+			AudDrv_GPIO_EXTAMP_Select(true, 3);
+		#else
+			AudDrv_GPIO_EXTAMP_Select(true, 2);
+		#endif
 	#endif
 		usleep_range(5 * 1000, 10 * 1000);
 	} else {
 	#if defined(CONFIG_SND_SOC_AW87519)
 		aw87519_audio_select(false, 1);
 	#else
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
+		#if defined(SMT_VERSION)
+			AudDrv_GPIO_EXTAMP_Select(false, 3);
+		#else
+			AudDrv_GPIO_EXTAMP_Select(false, 2);
+		#endif
 	#endif
 		udelay(500);
 	}
