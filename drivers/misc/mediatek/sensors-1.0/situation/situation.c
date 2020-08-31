@@ -80,6 +80,12 @@ static int handle_to_index(int handle)
 	case ID_SAR:
 		index = sar;
 		break;
+	case ID_CHOPCHOP_GESTURE:
+		index = chopchop_gesture;
+		break;
+	case ID_TWIST_TWICE_GESTURE:
+		index = twist_twice_gesture;
+		break;
 	default:
 		index = -1;
 		pr_err("handle_to_index invalid handle:%d,index:%d\n",

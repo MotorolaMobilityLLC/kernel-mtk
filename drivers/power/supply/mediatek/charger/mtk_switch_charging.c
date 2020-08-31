@@ -152,14 +152,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	if ((get_boot_mode() == META_BOOT) ||
 	    (get_boot_mode() == ADVMETA_BOOT)) {
-		pdata->input_current_limit = 200000; /* 200mA */
-		goto done;
+//		pdata->input_current_limit = 200000; /* 200mA */
+//		goto done;
 	}
 
 	if (info->atm_enabled == true && (info->chr_type == STANDARD_HOST ||
 	    info->chr_type == CHARGING_HOST)) {
-		pdata->input_current_limit = 100000; /* 100mA */
-		goto done;
+//		pdata->input_current_limit = 100000; /* 100mA */
+//		goto done;
 	}
 
 	if (mtk_is_TA_support_pd_pps(info)) {
@@ -262,17 +262,27 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 				info->data.apple_2_1a_charger_current;
 	}
 
+	if (info->dynamic_charge_current != -1) {
+		if (info->dynamic_charge_current <
+		    pdata->charging_current_limit)
+			pdata->charging_current_limit =
+					info->dynamic_charge_current;
+	}
+
+
+#ifndef  DUAL_85_VERSION
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
 		    && info->chr_type == STANDARD_HOST)
 			pr_debug("USBIF & STAND_HOST skip current check\n");
 		else {
 			if (info->sw_jeita.sm == TEMP_T0_TO_T1) {
-				pdata->input_current_limit = 500000;
-				pdata->charging_current_limit = 350000;
+			//	pdata->input_current_limit = 800000;
+				pdata->charging_current_limit = 1050000;
 			}
 		}
 	}
+#endif
 
 	if (pdata->thermal_charging_current_limit != -1) {
 		if (pdata->thermal_charging_current_limit <
@@ -321,7 +331,7 @@ done:
 	if (ret != -ENOTSUPP && pdata->input_current_limit < aicr1_min)
 		pdata->input_current_limit = 0;
 
-	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
+	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d;%d;\n",
 		_uA_to_mA(pdata->force_charging_current),
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
@@ -332,7 +342,8 @@ done:
 		_uA_to_mA(pdata->charging_current_limit),
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
-		pdata->input_current_limit_by_aicl, info->atm_enabled);
+		pdata->input_current_limit_by_aicl, info->atm_enabled,
+		_uA_to_mA(info->dynamic_charge_current));
 
 	charger_dev_set_input_current(info->chg1_dev,
 					pdata->input_current_limit);
@@ -633,6 +644,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 			mtk_pe_check_charger(info);
 	}
 
+	charger_dev_kick_wdt(info->chg1_dev);
+	
 	do {
 		switch (swchgalg->state) {
 			chr_err("%s_2 [%d] %d\n", __func__, swchgalg->state,

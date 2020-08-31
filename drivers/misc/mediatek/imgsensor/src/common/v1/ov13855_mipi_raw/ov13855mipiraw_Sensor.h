@@ -33,7 +33,7 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
@@ -116,6 +116,7 @@ struct imgsensor_info_struct {
 	//sensor gain delay frame for AE cycle
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame; //ispgaindelayframe for AEcycle
+	kal_uint8 frame_time_delay_frame;
 	kal_uint8  ihdr_support;		//1, support; 0,not support
 	kal_uint8  ihdr_le_firstline;	//1,le first ; 0, se first
 	kal_uint8  sensor_mode_num;		//support sensor mode num

@@ -498,21 +498,10 @@ static int power_misc_routine_thread(void *arg)
 	struct shutdown_controller *sdd = arg;
 
 	while (1) {
-		wait_event(sdd->wait_que, (sdd->timeout == true)
-			|| (sdd->overheat == true));
-		if (sdd->timeout == true) {
+		wait_event(sdd->wait_que, (sdd->timeout == true));
 		sdd->timeout = false;
+
 		power_misc_handler(arg);
-	}
-		if (sdd->overheat == true) {
-			sdd->overheat = false;
-			bm_err("%s battery overheat~ power off\n",
-				__func__);
-			mutex_lock(&pm_mutex);
-			kernel_power_off();
-			mutex_unlock(&pm_mutex);
-			return 1;
-		}
 	}
 
 	return 0;

@@ -7900,6 +7900,10 @@ int _set_backlight_by_cpu(unsigned int level)
 	return ret;
 }
 
+#ifdef CONFIG_HBM_SUPPORT
+unsigned int g_last_level;
+#endif
+
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
@@ -7943,6 +7947,10 @@ int primary_display_setbacklight(unsigned int level)
 			_set_backlight_by_cpu(level);
 		}
 		last_level = level;
+	#ifdef CONFIG_HBM_SUPPORT
+		if (level != 256)
+			g_last_level = level;
+	#endif
 	}
 
 	if (aal_is_support == false) {

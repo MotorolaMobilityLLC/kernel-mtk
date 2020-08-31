@@ -279,4 +279,140 @@ MODULE_AUTHOR("Joey Pan");
 MODULE_DESCRIPTION("MTK LCM I2C Driver");
 MODULE_LICENSE("GPL");
 #endif
+#else  //add by ontim for lcd backlight driver I2C
+
+#ifndef BUILD_LK
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/fs.h>
+#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/list.h>
+#include <linux/i2c.h>
+#include <linux/irq.h>
+/* #include <linux/jiffies.h> */
+/* #include <linux/delay.h> */
+#include <linux/uaccess.h>
+#include <linux/interrupt.h>
+#include <linux/io.h>
+#include <linux/platform_device.h>
+
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+
+#define LCD_BIAS_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL    /* for I2C channel 0 */
+#define LCD_BIAS_I2C_ID_NAME "NT50358A"
+#define LCD_BIAS_ADDR 0x3E
+
+#if defined(CONFIG_MTK_LEGACY)
+static struct i2c_board_info NT50358A_board_info __initdata = { I2C_BOARD_INFO(LCD_BIAS_I2C_ID_NAME, LCD_BIAS_ADDR) };
+#endif
+#if !defined(CONFIG_MTK_LEGACY)
+static const struct of_device_id lcm_of_match[] = {
+		{.compatible = "mediatek,i2c_lcd_bias"},
+		{},
+};
+#endif
+
+static struct i2c_client *NT50358A_i2c_client;
+
+/*****************************************************************************
+ * Function Prototype
+ *****************************************************************************/
+static int NT50358A_probe(struct i2c_client *client, const struct i2c_device_id *id);
+static int NT50358A_remove(struct i2c_client *client);
+/*****************************************************************************
+ * Data Structure
+ *****************************************************************************/
+
+struct NT50358A_dev {
+	struct i2c_client *client;
+
+};
+
+static const struct i2c_device_id NT50358A_id[] = {
+	{LCD_BIAS_I2C_ID_NAME, 0},
+	{}
+};
+
+/* #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36)) */
+/* static struct i2c_client_address_data addr_data = { .forces = forces,}; */
+/* #endif */
+static struct i2c_driver NT50358A_iic_driver = {
+	.id_table = NT50358A_id,
+	.probe = NT50358A_probe,
+	.remove = NT50358A_remove,
+	/* .detect               = mt6605_detect, */
+	.driver = {
+		.owner = THIS_MODULE,
+		.name = "NT50358A",
+#if !defined(CONFIG_MTK_LEGACY)
+			.of_match_table = lcm_of_match,
+#endif
+	},
+};
+
+static int NT50358A_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+	printk(KERN_ERR "NT50358A_iic_probe\n");
+	printk(KERN_ERR "LCD_BIAS: info==>name=%s addr=0x%x\n", client->name, client->addr);
+	NT50358A_i2c_client = client;
+	return 0;
+}
+
+static int NT50358A_remove(struct i2c_client *client)
+{
+	printk(KERN_ERR "NT50358A_remove\n");
+	NT50358A_i2c_client = NULL;
+	i2c_unregister_device(client);
+	return 0;
+}
+
+ int NT50358A_write_byte(unsigned char addr, unsigned char value)
+{
+	int ret = 0;
+	struct i2c_client *client = NT50358A_i2c_client;
+	char write_data[2] = { 0 };
+	if (NULL==client)
+	{
+		printk(KERN_ERR "%s: ERR----NT50358A not prob!!!\n",__func__);
+		return -1;
+	}
+	write_data[0] = addr;
+	write_data[1] = value;
+	ret = i2c_master_send(client, write_data, 2);
+	if (ret < 0)
+		printk(KERN_ERR "NT50358A write data fail !!\n");
+	return ret;
+}
+
+static int __init NT50358A_iic_init(void)
+{
+	int ret;
+	printk(KERN_ERR "NT50358A_iic_init\n");
+#if defined(CONFIG_MTK_LEGACY)
+	i2c_register_board_info(LCD_BIAS_I2C_BUSNUM, &NT50358A_board_info, 1);
+#endif
+	printk(KERN_ERR "NT50358A_iic_init2\n");
+	ret=i2c_add_driver(&NT50358A_iic_driver);
+	printk(KERN_ERR "NT50358A_iic_init success\n");
+	return 0;
+}
+
+static void __exit NT50358A_iic_exit(void)
+{
+	printk(KERN_ERR "NT50358A_iic_exit\n");
+	i2c_del_driver(&NT50358A_iic_driver);
+}
+
+
+module_init(NT50358A_iic_init);
+module_exit(NT50358A_iic_exit);
+
+MODULE_AUTHOR("Mike Liu");
+MODULE_DESCRIPTION("MTK NT50358A I2C Driver");
+MODULE_LICENSE("GPL");
+#endif
+#endif
+
 #endif
