@@ -1,0 +1,6 @@
+config MICROTRUST_FP_FOCALTECH
+	tristate "Focaltech Finger Print Driver"
+   	help
+		Focaltech Finger Print Supported
+
+
