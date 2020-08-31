@@ -372,7 +372,7 @@ static void ilitek_tddi_wq_init(void)
 	INIT_WORK(&resume_by_ddi_work, ilitek_resume_by_ddi_work);
 #endif
 }
-
+extern volatile int gesture_dubbleclick_en;
 int ilitek_tddi_sleep_handler(int mode)
 {
 	int ret = 0;
@@ -400,6 +400,12 @@ int ilitek_tddi_sleep_handler(int mode)
 		sense_stop = false;
 	else
 		sense_stop = true;
+
+	if (gesture_dubbleclick_en) {
+			idev->gesture = 1;
+		} else {
+			idev->gesture = 0;
+		}
 
 	switch (mode) {
 	case TP_SUSPEND:
