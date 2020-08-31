@@ -1,0 +1,16 @@
+menuconfig AUDIO_PA_S
+	bool "Audio PA enable"
+	help
+	  Support Audio PA Enable
+
+if AUDIO_PA_S
+
+config SND_SOC_AW87519
+	bool "Awinic smart k pa aw87519"
+	default n
+	help
+          Support awinic as87519 smart K pa
+
+source "sound/soc/mediatek/audio_pa/aw87519/Kconfig"
+
+endif

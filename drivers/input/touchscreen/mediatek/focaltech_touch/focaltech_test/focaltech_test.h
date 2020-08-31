@@ -1,9 +1,9 @@
 /************************************************************************
-* Copyright (C) 2012-2017, Focaltech Systems (R)£¬All Rights Reserved.
+* Copyright (C) 2012-2019, Focaltech Systems (R)£¬All Rights Reserved.
 *
 * File Name: focaltech_test.h
 *
-* Author: Software Development Team, AE
+* Author: Focaltech Driver Team
 *
 * Created: 2016-08-01
 *
@@ -29,36 +29,26 @@
 #include <linux/vmalloc.h>
 
 #include "../focaltech_core.h"
-#include "focaltech_test_detail_threshold.h"
-#include "focaltech_test_config.h"
 #include "focaltech_test_ini.h"
 
 /*****************************************************************************
 * Macro definitions using #define
 *****************************************************************************/
-#define IC_TEST_VERSION                 "V2.0.0 20170811"
-#define FTS_INI_FILE_PATH           "/mnt/sdcard/"   // Define the configuration file storage directory
+#define FTS_DATA_FILE_PATH                       "/mnt/sdcard/"
+#define FTS_INI_FILE_PATH                       "/system/etc/"
+#define FTS_CSV_FILE_NAME                       "testdata.csv"
+#define FTS_TXT_FILE_NAME                       "testresult.txt"
 #define false 0
 #define true  1
-#define MAX_TEST_ITEM                           20
-#define BYTES_PER_TIME                          128
-#define FTS_TEST_STORE_DATA_SIZE                80*1024
-/*buff length*/
-#define BUFF_LEN_STORE_MSG_AREA                 1024*10
-#define BUFF_LEN_MSG_AREA_LINE2                 1024*4
-#define BUFF_LEN_STORE_DATA_AREA                1024*80
-#define BUFF_LEN_TMP_BUFFER                     1024*16
-#define BUFF_LEN_TESTRESULT_BUFFER              1024*80*5
+#define TEST_ICSERIES_LEN                       (8)
+#define TEST_ICSERIES(x)                        ((x) >> TEST_ICSERIES_LEN)
 
-/*-----------------------------------------------------------
-Error Code for Comm
------------------------------------------------------------*/
-#define ERROR_CODE_OK                           0x00
-#define ERROR_CODE_INVALID_COMMAND              0x02
-#define ERROR_CODE_INVALID_PARAM                0x03
-#define ERROR_CODE_WAIT_RESPONSE_TIMEOUT        0x07
-#define ERROR_CODE_COMM_ERROR                   0x0c
-#define ERROR_CODE_ALLOCATE_BUFFER_ERROR        0x0d
+#define TEST_OPEN_MAX_VALUE                     (255)
+#define BYTES_PER_TIME                          (32)  /* max:128 */
+/* CSV & TXT */
+#define CSV_LINE2_BUFFER_LEN                    (1024)
+#define CSV_BUFFER_LEN                          (1024*80*5)
+#define TXT_BUFFER_LEN                          (1024*80*5)
 
 /*-----------------------------------------------------------
 Test Status
@@ -67,11 +57,25 @@ Test Status
 #define RESULT_PASS                             1
 #define RESULT_NG                               2
 
-#define ENTER_WORK_FACTORY_RETRIES              5
+#define TX_NUM_MAX                              60
+#define RX_NUM_MAX                              60
+#define NUM_MAX                     ((TX_NUM_MAX)*(RX_NUM_MAX))
+#define NUM_MAX_SC                              (144)
 #define KEY_NUM_MAX                             6
+#define TEST_ITEM_COUNT_MAX                     32
+#define TEST_ITEM_NAME_MAX                      32
+#define TEST_SHORT_RES_MAX                      0xFFFF
+
+/*
+ * factory test registers
+ */
+#define ENTER_WORK_FACTORY_RETRIES              5
 
 #define START_SCAN_RETRIES_INCELL               20
 #define START_SCAN_RETRIES_DELAY_INCELL         16
+#define FACTORY_TEST_RETRY                      50
+#define FACTORY_TEST_DELAY                      18
+#define FACTORY_TEST_RETRY_DELAY                100
 
 #define DEVIDE_MODE_ADDR                        0x00
 #define REG_FW_VERSION                          0xA6
@@ -82,210 +86,465 @@ Test Status
 #define FACTORY_REG_CHX_NUM                     0x02
 #define FACTORY_REG_CHY_NUM                     0x03
 #define FACTORY_REG_CLB                         0x04
-
 #define FACTORY_REG_DATA_SELECT                 0x06
+#define FACTORY_REG_RAWBUF_SELECT               0x09
 #define FACTORY_REG_KEY_CBWIDTH                 0x0B
 #define FACTORY_REG_PARAM_UPDATE_STATE          0x0E
 #define FACTORY_REG_SHORT_TEST_EN               0x0F
 #define FACTORY_REG_SHORT_TEST_STATE            0x10
 #define FACTORY_REG_LCD_NOISE_START             0x11
 #define FACTORY_REG_LCD_NOISE_FRAME             0x12
-#define FACTORY_REG_LCD_NOISE_NUMBER            0x13
+#define FACTORY_REG_LCD_NOISE_TEST_STATE        0x13
+#define FACTORY_REG_LCD_NOISE_TTHR              0x14
+#define FACTORY_REG_OPEN_START                  0x15
+#define FACTORY_REG_OPEN_STATE                  0x16
+#define FACTORY_REG_OPEN_IDLE                   0x03
+#define FACTORY_REG_OPEN_BUSY                   0x01
 #define FACTORY_REG_CB_ADDR_H                   0x18
 #define FACTORY_REG_CB_ADDR_L                   0x19
+#define FACTORY_REG_ORDER_ADDR_H                0x1A
+#define FACTORY_REG_ORDER_ADDR_L                0x1B
+#define FACTORY_REG_LCD_NOISE_STATE             0x1E
+#define FACTORY_REG_KEYSHORT_EN                 0x2E
+#define FACTORY_REG_KEYSHORT_STATE              0x2F
 
 #define FACTORY_REG_LEFT_KEY                    0x1E
 #define FACTORY_REG_RIGHT_KEY                   0x1F
-#define FACTORY_REG_GIP_DRIVER_MODE             0x20
-#define FACTORY_REG_SOURCE_DRIVER_MODE          0x21
+#define FACTORY_REG_OPEN_REG20                  0x20
+#define FACTORY_REG_OPEN_REG21                  0x21
+#define FACTORY_REG_OPEN_REG22                  0x22
+#define FACTORY_REG_OPEN_REG23                  0x23
+#define FACTORY_REG_OPEN_REG2E                  0x2E
+#define FACTORY_REG_OPEN_REG86                  0x86
 #define FACTORY_REG_K1                          0x31
 #define FACTORY_REG_K2                          0x32
 #define FACTORY_REG_RAWDATA_ADDR                0x6A
+#define FACTORY_REG_ORDER_ADDR                  0x6C
 #define FACTORY_REG_CB_ADDR                     0x6E
 #define FACTORY_REG_SHORT_ADDR                  0x89
+#define FACTORY_REG_RAWDATA_TEST_EN             0x9E
+#define FACTORY_REG_CB_TEST_EN                  0x9F
+#define FACTORY_REG_OPEN_TEST_EN                0xA0
+
+/* mc_sc */
+#define FACTORY_REG_FRE_LIST                    0x0A
+#define FACTORY_REG_NORMALIZE                   0x16
+#define FACTORY_REG_RAWDATA_ADDR_MC_SC          0x36
+#define FACTORY_REG_PATTERN                     0x53
+#define FACTORY_REG_NOMAPPING                   0x54
+#define FACTORY_REG_CHX_NUM_NOMAP               0x55
+#define FACTORY_REG_CHY_NUM_NOMAP               0x56
+#define FACTORY_REG_WC_SEL                      0x09
+#define FACTORY_REG_MC_SC_MODE                  0x44
+#define FACTORY_REG_MC_SC_CB_ADDR_OFF           0x45
+#define FACTORY_REG_MC_SC_CB_ADDR               0x4E
+#define FACTROY_REG_SHORT_TEST_EN               0x07
+#define FACTROY_REG_SHORT_CA                    0x01
+#define FACTROY_REG_SHORT_CC                    0x02
+#define FACTROY_REG_SHORT_CG                    0x03
+#define FACTROY_REG_SHORT_OFFSET                0x04
+#define FACTROY_REG_SHORT_AB_CH                 0x58
+#define FACTROY_REG_SHORT_DELAY                 0x5A
+#define FACTORY_REG_SHORT_ADDR_MC               0xF4
+#define FACTORY_REG_FIR                         0xFB
+
+/* sc */
+#define FACTORY_REG_SCAN_ADDR2                  0x08
+#define FACTORY_REG_CH_NUM_SC                   0x0A
+#define FACTORY_REG_KEY_NUM_SC                  0x0B
+#define FACTORY_REG_SC_CB_ADDR_OFF              0x33
+#define FACTORY_REG_SC_CB_ADDR                  0x39
+#define FACTORY_REG_RAWDATA_SADDR_SC            0x34
+#define FACTORY_REG_RAWDATA_ADDR_SC             0x35
+#define FACTORY_REG_CB_SEL                      0x41
+#define FACTORY_REG_FMODE                       0xAE
+
+#define TEST_RETVAL_00                          0x00
+#define TEST_RETVAL_AA                          0xAA
 
 /*****************************************************************************
 * enumerations, structures and unions
 *****************************************************************************/
-struct test_funcs {
-    void (*init_testitem)(char *);
-    void (*init_basicthreshold)(char *);
-    void (*init_detailthreshold)(char *);
-    void (*set_testitem_sequence)(void);
-    bool (*start_test)(void);
+struct item_info {
+    char name[TEST_ITEM_NAME_MAX];
+    int code;
+    int *data;
+    int datalen;
+    int result;
+    int mc_sc;
+    int key_support;
 };
 
-struct screen_setting {
-    int selected_ic;// The current selection of IC
-    int normalize;  // auto normalize or overall normalize
+struct fts_test_data {
+    int item_count;
+    struct item_info info[TEST_ITEM_COUNT_MAX];
+};
+
+/* incell */
+struct incell_testitem {
+    u32 short_test                  : 1;
+    u32 open_test                   : 1;
+    u32 cb_test                     : 1;
+    u32 rawdata_test                : 1;
+    u32 lcdnoise_test               : 1;
+    u32 keyshort_test               : 1;
+    u32 mux_open_test               : 1;
+};
+
+struct incell_threshold_b {
+    int short_res_min;
+    int short_res_vk_min;
+    int open_cb_min;
+    int open_k1_check;
+    int open_k1_value;
+    int open_k2_check;
+    int open_k2_value;
+    int cb_min;
+    int cb_max;
+    int cb_vkey_check;
+    int cb_min_vk;
+    int cb_max_vk;
+    int rawdata_min;
+    int rawdata_max;
+    int rawdata_vkey_check;
+    int rawdata_min_vk;
+    int rawdata_max_vk;
+    int lcdnoise_frame;
+    int lcdnoise_coefficient;
+    int lcdnoise_coefficient_vkey;
+    int open_nmos;
+    int keyshort_k1;
+    int keyshort_cb_max;
+    int rawdata2_min;
+    int rawdata2_max;
+    int mux_open_cb_min;
+};
+
+struct incell_threshold {
+    struct incell_threshold_b basic;
+    int *rawdata_min;
+    int *rawdata_max;
+    int *rawdata2_min;
+    int *rawdata2_max;
+    int *cb_min;
+    int *cb_max;
+};
+
+struct incell_test {
+    struct incell_threshold thr;
+    union {
+        int tmp;
+        struct incell_testitem item;
+    } u;
+};
+
+/* mc_sc */
+enum mapping_type {
+    MAPPING = 0,
+    NO_MAPPING = 1,
+};
+
+struct mc_sc_testitem {
+    u32 rawdata_test                : 1;
+    u32 rawdata_uniformity_test     : 1;
+    u32 scap_cb_test                : 1;
+    u32 scap_rawdata_test           : 1;
+    u32 short_test                  : 1;
+    u32 panel_differ_test           : 1;
+};
+
+struct mc_sc_threshold_b {
+    int rawdata_h_min;
+    int rawdata_h_max;
+    int rawdata_set_hfreq;
+    int rawdata_l_min;
+    int rawdata_l_max;
+    int rawdata_set_lfreq;
+    int uniformity_check_tx;
+    int uniformity_check_rx;
+    int uniformity_check_min_max;
+    int uniformity_tx_hole;
+    int uniformity_rx_hole;
+    int uniformity_min_max_hole;
+    int scap_cb_off_min;
+    int scap_cb_off_max;
+    int scap_cb_wp_off_check;
+    int scap_cb_on_min;
+    int scap_cb_on_max;
+    int scap_cb_wp_on_check;
+    int scap_rawdata_off_min;
+    int scap_rawdata_off_max;
+    int scap_rawdata_wp_off_check;
+    int scap_rawdata_on_min;
+    int scap_rawdata_on_max;
+    int scap_rawdata_wp_on_check;
+    int short_cg;
+    int short_cc;
+    int panel_differ_min;
+    int panel_differ_max;
+
+};
+
+struct mc_sc_threshold {
+    struct mc_sc_threshold_b basic;
+    int *rawdata_h_min;
+    int *rawdata_h_max;
+    int *rawdata_l_min;
+    int *rawdata_l_max;
+    int *tx_linearity_max;
+    int *tx_linearity_min;
+    int *rx_linearity_max;
+    int *rx_linearity_min;
+    int *scap_cb_off_min;
+    int *scap_cb_off_max;
+    int *scap_cb_on_min;
+    int *scap_cb_on_max;
+    int *scap_rawdata_off_min;
+    int *scap_rawdata_off_max;
+    int *scap_rawdata_on_min;
+    int *scap_rawdata_on_max;
+    int *panel_differ_min;
+    int *panel_differ_max;
+};
+
+struct mc_sc_test {
+    struct mc_sc_threshold thr;
+    union {
+        u32 tmp;
+        struct mc_sc_testitem item;
+    } u;
+};
+
+/* sc */
+struct sc_testitem {
+    u32 rawdata_test                : 1;
+    u32 cb_test                     : 1;
+    u32 delta_cb_test               : 1;
+    u32 short_test                  : 1;
+};
+
+struct sc_threshold_b {
+    int rawdata_min;
+    int rawdata_max;
+    int cb_min;
+    int cb_max;
+    int dcb_base;
+    int dcb_differ_max;
+    int dcb_key_check;
+    int dcb_key_differ_max;
+    int dcb_ds1;
+    int dcb_ds2;
+    int dcb_ds3;
+    int dcb_ds4;
+    int dcb_ds5;
+    int dcb_ds6;
+    int dcb_critical_check;
+    int dcb_cs1;
+    int dcb_cs2;
+    int dcb_cs3;
+    int dcb_cs4;
+    int dcb_cs5;
+    int dcb_cs6;
+    int short_min;
+};
+
+struct sc_threshold {
+    struct sc_threshold_b basic;
+    int *rawdata_min;
+    int *rawdata_max;
+    int *cb_min;
+    int *cb_max;
+    int *dcb_sort;
+    int *dcb_base;
+};
+
+struct sc_test {
+    struct sc_threshold thr;
+    union {
+        u32 tmp;
+        struct sc_testitem item;
+    } u;
+};
+
+enum test_hw_type {
+    IC_HW_INCELL = 1,
+    IC_HW_MC_SC,
+    IC_HW_SC,
+};
+
+enum test_scan_mode {
+    SCAN_NORMAL = 0,
+    SCAN_SC,
+};
+
+struct fts_test_node {
+    int channel_num;
     int tx_num;
     int rx_num;
-    unsigned char key_num;
-    int used_max_tx_num;//tx_num <= used_max_tx_num
-    int used_max_rx_num;//rx_num <= used_max_rx_num
-    unsigned char key_num_total;
-    unsigned char channels_num;//add for ft6x36
-
-    bool left_key1;  //add for IDC
-    bool left_key2;
-    bool left_key3;
-    bool right_key1;
-    bool right_key2;
-    bool right_key3;
+    int node_num;
+    int key_num;
 };
 
-struct test_item {
-    u8 itemtype;//Classification of test items   CfgItem, DataTestItem, GraphTest Item,
-    u8 testnum;// Test number
-    u8 testresult;//Test result, NG\PASS\TESTING
-    u8 itemcode;//Test project name
-};
+struct fts_test {
+    struct fts_ts_data *ts_data;
+    struct fts_test_node node;
+    struct fts_test_node sc_node;
+    u8 fw_ver;
+    u8 va_touch_thr;
+    u8 vk_touch_thr;
+    bool key_support;
+    bool v3_pattern;
+    u8 mapping;
+    u8 normalize;
+    int test_num;
+    int *buffer;
+    int buffer_length;
+    int *node_valid;
+    int *node_valid_sc;
+    int basic_thr_count;
+    int code1;
+    int code2;
+    int offset;
+    union {
+        struct incell_test incell;
+        struct mc_sc_test mc_sc;
+        struct sc_test sc;
+    } ic;
 
-/*
- * test_num - test item numbers
- * testresult - test result write to testresult.txt
- * testresult_len - length of testresult
- * va_touch_thr - touch threshold in va
- * key_touch_thr - touch threshold in key
- * buffer - save detail data temporary
- * ini_ic_name - ic name of ini file
- * ini_keyword_num - keyword line number of ini file
- * ini_data - save ini data as struct _ini_data
- * func - test main function
- * test_item - save whole test item
- * screen_param - test basic parameter: tx/rx/key num...
- */
-struct fts_test_data {
-    int test_num;                                           // test item num
-    char *store_all_data;                                      // store all data in  testdata.csv
-    char *tmp_buffer;                                            // store temp buff in testdata.csv
-    char *store_msg_area;                                    // store message  in testdata.csv
-    int len_store_msg_area;                                      // store message len in testdata.csv
-    char *msg_area_line2;                                    // strore second line in testdata.csv
-    int len_msg_area_line2;                                      //strore second line len in testdata.csv
-    char *store_data_area;                                     // store data  in testdata.csv
-    int len_store_data_area;                                     // store data len in testdata.csv
-    u8 test_item_code;                        //TestItemCode in testdata.csv
-    int start_line;                                               //The Start Line of Data Area
-    int test_data_count;                                       // test data count in testdata.csv
+    struct test_funcs *func;
+    struct fts_test_data testdata;
     char *testresult;
     int testresult_len;
-    u8 va_touch_thr;
-    u8 key_touch_thr;
-    int *buffer;
-    char ini_ic_name[20];
-    int ini_keyword_num;
-    struct _ini_data *ini_data;
-    struct test_funcs *func;
-    struct test_item test_item[MAX_TEST_ITEM];
-    struct screen_setting screen_param;
-    struct detailthreshold_mcap mcap_detail_thr;  // detailthreshold of MCap
-    struct detailthreshold_scap scap_detail_thr;   // detailthreshold of SCap
-    struct detailthreshold_incell incell_detail_thr;   // detailthreshold of Incell
+    struct ini_data ini;
 };
 
-/*-----------------------------------------------------------
-IC corresponding code, each of the IC code is 8 bit, high 4 bit on behalf of the same series, low 4 bit on behalf of the specific IC
------------------------------------------------------------*/
-enum ic_type {
-    IC_FT5X36 = 0x10,
-    IC_FT5X36i = 0x11,
-    IC_FT3X16 = 0x12,
-    IC_FT3X26 = 0x13,
-    IC_FT5X46 = 0x21,
-    IC_FT5X46i = 0x22,
-    IC_FT5526 = 0x23,
-    IC_FT3X17 = 0x24,
-    IC_FT5436 = 0x25,
-    IC_FT3X27 = 0x26,
-    IC_FT5526I = 0x27,
-    IC_FT5416 = 0x28,
-    IC_FT5426 = 0x29,
-    IC_FT5435 = 0x2A,
-    IC_FT7681 = 0x2B,
-    IC_FT7661 = 0x2C,
-    IC_FT7511 = 0x2D,
-    IC_FT7421 = 0x2E,
-    IC_FT7311 = 0x2F,
-    IC_FT6X06 = 0x30,
-    IC_FT3X06 = 0x31,
-    IC_FT6X36 = 0x40,
-    IC_FT3X07 = 0x41,
-    IC_FT6416 = 0x42,   //6X16 series
-    IC_FT6426 = 0x43,   //6X26 series
-    IC_FT7401 = 0x44,
-    IC_FT3407U = 0x45,  //6X16 series
-    IC_FT6236U = 0x46,
-    IC_FT6436U = 0x47,
-    IC_FT3267 = 0x48,
-    IC_FT3367 = 0x49,
-    IC_FT5X16 = 0x50,
-    IC_FT5X12 = 0x51,
-    IC_FT5506 = 0x60,
-    IC_FT5606 = 0x61,
-    IC_FT5816 = 0x62,
-    IC_FT5822 = 0x70,
-    IC_FT5626 = 0x71,
-    IC_FT5726 = 0x72,
-    IC_FT5826B = 0x73,
-    IC_FT3617 = 0x74,
-    IC_FT3717 = 0x75,
-    IC_FT7811 = 0x76,
-    IC_FT5826S = 0x77,
-    IC_FT3517U = 0x78,
-    IC_FT5306  = 0x80,
-    IC_FT5406  = 0x81,
-    IC_FT8606  = 0x90,
-    IC_FT8716  = 0xA0,
-    IC_FT8716U = 0xA1,
-    IC_FT8613 = 0xA2,
-    IC_FT3C47U  = 0xB0,
-    IC_FT8607  = 0xC0,
-    IC_FT8607U  = 0xC1,
-    IC_FT8707  = 0xD0,
-    IC_FT8736  = 0xE0,
-    IC_FT3D47  = 0xF0,
-    IC_FTE716  = 0x100,
-    IC_FT5442  = 0x110,
-    IC_FT3428U = 0x120,
-    IC_FT8006M = 0x130,
-    IC_FTE736  = 0x140,
-    IC_FT8006U = 0x150,
-    IC_FT8201  = 0x160,
+struct test_funcs {
+    u64 ctype[FTX_MAX_COMPATIBLE_TYPE];
+    enum test_hw_type hwtype;
+    int startscan_mode;
+    int key_num_total;
+    bool rawdata2_support;
+    bool force_touch;
+    int (*param_init)(void);
+    int (*init)(void);
+    int (*start_test)(void);
 };
 
+enum byte_mode {
+    DATA_ONE_BYTE,
+    DATA_TWO_BYTE,
+};
+/* mc_sc */
 enum normalize_type {
-    OVERALL_NORMALIZE = 0,
-    AUTO_NORMALIZE = 1,
+    NORMALIZE_OVERALL,
+    NORMALIZE_AUTO,
 };
 
-enum NodeType {
-    NODE_INVALID_TYPE = 0,
-    NODE_VALID_TYPE = 1,
-    NODE_KEY_TYPE = 2,
-    NODE_AST_TYPE = 3,
+enum wp_type {
+    WATER_PROOF_OFF = 0,
+    WATER_PROOF_ON = 1,
+    WATER_PROOF_ON_TX,
+    WATER_PROOF_ON_RX,
+    WATER_PROOF_OFF_TX,
+    WATER_PROOF_OFF_RX,
+};
+/* mc end */
+
+/* sc */
+enum factory_mode {
+    FACTORY_NORMAL,
+    FACTORY_TESTMODE_1,
+    FACTORY_TESTMODE_2,
+};
+
+enum dcb_sort_num {
+    DCB_SORT_MIN = 1,
+    DCB_SORT_MAX = 6,
+};
+
+struct dcb_sort_d {
+    int ch_num;
+    int deviation;
+    int critical;
+    int min;
+    int max;
+};
+/* sc end */
+
+enum csv_itemcode_incell {
+    CODE_ENTER_FACTORY_MODE = 0,
+    CODE_RAWDATA_TEST = 7,
+    CODE_CB_TEST = 12,
+    CODE_SHORT_TEST = 15,
+    CODE_OPEN_TEST = 25,
+    CODE_LCD_NOISE_TEST = 27,
+    CODE_MUX_OPEN_TEST = 41,
+};
+
+enum csv_itemcode_mc_sc {
+    CODE_M_RAWDATA_TEST = 7,
+    CODE_M_SCAP_CB_TEST = 9,
+    CODE_M_SCAP_RAWDATA_TEST = 10,
+    CODE_M_WEAK_SHORT_CIRCUIT_TEST = 15,
+    CODE_M_RAWDATA_UNIFORMITY_TEST = 16,
+    CODE_M_PANELDIFFER_TEST = 20,
+};
+
+enum csv_itemcode_sc {
+    CODE_S_RAWDATA_TEST = 7,
+    CODE_S_CB_TEST = 13,
+    CODE_S_DCB_TEST = 14,
 };
 
 /*****************************************************************************
 * Global variable or extern global variabls/functions
 *****************************************************************************/
-extern struct test_funcs test_func;
-extern struct fts_test_data test_data;
+extern struct test_funcs test_func_ft8006p;
+
+extern struct fts_test *fts_ftest;
 
 void sys_delay(int ms);
 int focal_abs(int value);
-unsigned char fts_i2c_read_write(unsigned char *writebuf, int  writelen, unsigned char *readbuf, int readlen);
-int fts_test_i2c_read(u8 *writebuf, int writelen, u8 *readbuf, int readlen);
-int fts_test_i2c_write(u8 *writebuf, int writelen);
-int read_reg(u8 addr, u8 *val);
-int write_reg(u8 addr, u8 val);
+void print_buffer(int *buffer, int length, int line_num);
+int fts_test_read_reg(u8 addr, u8 *val);
+int fts_test_write_reg(u8 addr, u8 val);
+int fts_test_read(u8 addr, u8 *readbuf, int readlen);
+int fts_test_write(u8 addr, u8 *writebuf, int writelen);
 int enter_work_mode(void);
 int enter_factory_mode(void);
-void fts_set_testitem(unsigned char ucitemcode);
+int read_mass_data(u8 addr, int byte_num, int *buf);
+int chip_clb(void);
+int wait_state_update(u8 retval);
+int get_cb_incell(u16 saddr, int byte_num, int *cb_buf);
+int short_get_adcdata_incell(u8 retval, u8 ch_num, int byte_num, int *adc_buf);
+int start_scan(void);
+int get_rawdata(int *data);
+int get_cb_sc(int byte_num, int *cb_buf, enum byte_mode mode);
+bool compare_data(int *data, int min, int max, int min_vk, int max_vk, bool key);
+bool compare_array(int *data, int *min, int *max, bool key);
+void show_data(int *data, bool key);
+/* mc_sc */
+int mapping_switch(u8 mapping);
+bool get_fw_wp(u8 wp_channel_select, enum wp_type water_proof_type);
+int get_cb_mc_sc(u8 wp, int byte_num, int *cb_buf, enum byte_mode mode);
+int get_rawdata_mc_sc(enum wp_type wp, int *data);
+int get_rawdata_mc(u8 fre, u8 fir, int *rawdata);
+int short_get_adc_data_mc(u8 retval, int byte_num, int *adc_buf, u8 mode);
+bool compare_mc_sc(bool, bool, int *, int *, int *);
+void show_data_mc_sc(int *data);
 void *fts_malloc(size_t size);
 void fts_free_proc(void *p);
-int init_test(void);
-void finish_test(void);
+void fts_test_save_data(char *name, int code, int *data, int datacnt,
+                        bool mc_sc, bool key, bool result);
+
+#define fts_malloc_r(p, size) do {\
+    if (NULL == p) {\
+        p = fts_malloc(size);\
+        if (NULL == p) {\
+            return -ENOMEM;\
+        }\
+    }\
+} while(0)
 
 #define fts_free(p) do {\
     if (p) {\
@@ -294,28 +553,45 @@ void finish_test(void);
     }\
 } while(0)
 
+#define CSV_SUPPORT             1
+#define TXT_SUPPORT             1
 
-#define FOCAL_TEST_DEBUG_EN     1
-#if (FOCAL_TEST_DEBUG_EN)
-#define FTS_TEST_DBG(fmt, args...) do {printk(KERN_ERR "[FTS] [TEST]%s. line: %d.  "fmt"\n",  __FUNCTION__, __LINE__, ##args);} while (0)
-#define FTS_TEST_FUNC_ENTER() printk(KERN_ERR "[FTS][TEST]%s: Enter(%d)\n", __func__, __LINE__)
-#define FTS_TEST_FUNC_EXIT()  printk(KERN_ERR "[FTS][TEST]%s: Exit(%d)\n", __func__, __LINE__)
-#else
-#define FTS_TEST_DBG(fmt, args...) do{}while(0)
-#define FTS_TEST_FUNC_ENTER()
-#define FTS_TEST_FUNC_EXIT()
-#endif
-
-#define FTS_TEST_INFO(fmt, args...) do { printk(KERN_ERR "[FTS][TEST][Info]%s. line: %d.  "fmt"\n",  __FUNCTION__, __LINE__, ##args);} while (0)
-#define FTS_TEST_ERROR(fmt, args...) do { printk(KERN_ERR "[FTS][TEST][Error]%s. line: %d.  "fmt"\n",  __FUNCTION__, __LINE__, ##args);} while (0)
-
-#define FTS_TEST_SAVE_INFO(fmt, args...)  do { \
-    if (test_data.testresult) { \
-        test_data.testresult_len += snprintf( \
-        test_data.testresult + test_data.testresult_len, \
-        BUFF_LEN_TESTRESULT_BUFFER, \
-        fmt, ##args);\
-    }; \
+#define FTS_TEST_DBG(fmt, args...) do { \
+printk("[FTS_TS][TEST]%s:"fmt"\n",  __func__, ##args); \
 } while (0)
 
+#define FTS_TEST_FUNC_ENTER() do { \
+    printk("[FTS_TS][TEST]%s: Enter\n", __func__); \
+} while (0)
+
+#define FTS_TEST_FUNC_EXIT()  do { \
+    printk("[FTS_TS][TEST]%s: Exit(%d)\n", __func__, __LINE__); \
+} while (0)
+
+#define FTS_TEST_INFO(fmt, args...) do { \
+    printk(KERN_ERR "[FTS_TS/I][TEST]%s:"fmt"\n", __func__, ##args); \
+} while (0)
+
+#define FTS_TEST_ERROR(fmt, args...) do { \
+    printk(KERN_ERR "[FTS_TS/E][TEST]%s:"fmt"\n", __func__, ##args); \
+} while (0)
+
+#define FTS_TEST_SAVE_INFO(fmt, args...) do { \
+    if (fts_ftest->testresult) { \
+        fts_ftest->testresult_len += snprintf( \
+        fts_ftest->testresult + fts_ftest->testresult_len, \
+        TXT_BUFFER_LEN, \
+        fmt, ##args);\
+    } \
+} while (0)
+
+#define FTS_TEST_SAVE_ERR(fmt, args...)  do { \
+    if (fts_ftest->testresult && (fts_ftest->testresult_len < TXT_BUFFER_LEN)) { \
+        fts_ftest->testresult_len += snprintf( \
+        fts_ftest->testresult + fts_ftest->testresult_len, \
+        TXT_BUFFER_LEN, \
+        fmt, ##args);\
+    } \
+    printk(KERN_ERR "[FTS_TS/E][TEST]%s:"fmt"\n", __func__, ##args);\
+} while (0)
 #endif

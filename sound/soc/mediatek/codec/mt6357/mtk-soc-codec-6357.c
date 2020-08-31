@@ -3618,18 +3618,45 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol,
 	}
 	return 0;
 }
+
+extern unsigned char aw87519_audio_select(bool enable, int mode);
+
 static void Ext_Speaker_Amp_Change(bool enable)
 {
 	pr_debug("%s(), enable %d\n", __func__, enable);
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 	if (enable) {
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
+	#if defined(CONFIG_SND_SOC_AW87519)
+		aw87519_audio_select(false, 1);
+	#else
+		#if defined(SMT_VERSION)
+			AudDrv_GPIO_EXTAMP_Select(false, 3);
+		#else
+			AudDrv_GPIO_EXTAMP_Select(false, 2);
+		#endif
+	#endif
 		/*udelay(1000); */
 		usleep_range(1 * 1000, 2 * 1000);
-		AudDrv_GPIO_EXTAMP_Select(true, 3);
+	#if defined(CONFIG_SND_SOC_AW87519)
+		aw87519_audio_select(true, 1);
+	#else
+		#if defined(SMT_VERSION)
+			AudDrv_GPIO_EXTAMP_Select(true, 3);
+		#else
+			AudDrv_GPIO_EXTAMP_Select(true, 2);
+		#endif
+	#endif
 		usleep_range(5 * 1000, 10 * 1000);
 	} else {
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
+	#if defined(CONFIG_SND_SOC_AW87519)
+		aw87519_audio_select(false, 1);
+	#else
+		#if defined(SMT_VERSION)
+			AudDrv_GPIO_EXTAMP_Select(false, 3);
+		#else
+			AudDrv_GPIO_EXTAMP_Select(false, 2);
+		#endif
+	#endif
 		udelay(500);
 	}
 }
@@ -4440,7 +4467,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 				[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* phone mic */
 				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0021, 0xffff);
+				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0041, 0xffff);
 			} else if (mCodec_data->mAudio_Ana_Mux
 					[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
