@@ -332,7 +332,7 @@ static void tpd_resume(struct device *h)
 static void tpd_suspend(struct device *h)
 {
 #ifndef ILI9882H_SUSPEND_BY_DDI
-	if (ili_sleep_handler(TP_SUSPEND) < 0)
+	if (ili_sleep_handler(TP_DEEP_SLEEP) < 0)
 		ILI_ERR("TP suspend failed\n");
 #else
 	ILI_INFO("ili_sleep_handler() callback by ddi\n");
