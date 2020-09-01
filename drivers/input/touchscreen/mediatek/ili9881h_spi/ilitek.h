@@ -765,7 +765,7 @@ struct gesture_symbol {
 #ifndef ONTIM_DEV_ILLTEK_INFO
 #define ONTIM_DEV_ILLTEK_INFO
 #endif
-#define ILI9881H_SUSPEND_BY_DDI
+//#define ILI9881H_SUSPEND_BY_DDI
 
 struct ilitek_tddi_dev {
 	struct i2c_client *i2c;
