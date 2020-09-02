@@ -1202,13 +1202,22 @@ static void get_current_cpuid(void)
 }
 
 #ifdef CONFIG_HBM_SUPPORT
+#include <primary_display.h>
+
 bool g_hbm_enable = false;
 extern unsigned int g_last_level;
 extern int mtkfb_set_backlight_level(unsigned int level);
+extern enum DISP_POWER_STATE primary_get_state(void);
 
 static int set_hbm_status(const char * buf, int n)
 {
 	printk("hbm user buf:%s\n", buf);
+
+	if (primary_get_state() == DISP_SLEPT) {
+		printk("Sleep State, Do Not Set hbm\n");
+		g_hbm_enable = false;
+		return 0;
+	}
 
 	switch (buf[0]){
 		case '0':
