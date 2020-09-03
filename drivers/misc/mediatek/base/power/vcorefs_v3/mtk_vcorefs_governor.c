@@ -231,7 +231,7 @@ void vcorefs_update_opp_table(void)
 bool is_vcorefs_feature_enable(void)
 {
 	if (!dram_can_support_fh()) {
-		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
+		vcorefs_debug("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 		return false;
 	}
 
