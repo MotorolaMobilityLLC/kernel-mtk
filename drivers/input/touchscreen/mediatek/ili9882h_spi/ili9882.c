@@ -460,7 +460,7 @@ int ili_sleep_handler(int mode)
 		ilits->tp_suspend = true;
 		break;
 	case TP_RESUME:
-#if !RESUME_BY_DDI
+	if (gesture_dubbleclick_en) {
 		ILI_INFO("TP resume start\n");
 
 		if (ilits->gesture)
@@ -480,7 +480,7 @@ int ili_sleep_handler(int mode)
 		ili_wq_ctrl(WQ_BAT, ENABLE);
 		ilits->tp_suspend = false;
 		ILI_INFO("TP resume end\n");
-#endif
+	}
 		ili_irq_enable();
 		break;
 	default:

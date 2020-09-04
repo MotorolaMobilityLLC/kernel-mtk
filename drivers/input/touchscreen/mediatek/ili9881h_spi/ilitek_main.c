@@ -451,7 +451,7 @@ int ilitek_tddi_sleep_handler(int mode)
 		ipio_info("TP deep suspend end\n");
 		break;
 	case TP_RESUME:
-#if !RESUME_BY_DDI
+	if (gesture_dubbleclick_en) {
 		ipio_info("TP resume start\n");
 
 		if (idev->gesture)
@@ -471,7 +471,7 @@ int ilitek_tddi_sleep_handler(int mode)
 		ilitek_tddi_wq_ctrl(WQ_BAT, ENABLE);
 		idev->tp_suspend = false;
 		ipio_info("TP resume end\n");
-#endif
+	}
 		ilitek_plat_irq_enable();
 		break;
 	default:
