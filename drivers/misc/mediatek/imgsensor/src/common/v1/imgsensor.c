@@ -2649,22 +2649,29 @@ CAMERA_HW_Ioctl_EXIT:
 
 static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0)
-		imgsensor_clk_enable_all(&pgimgsensor->clk);
-
-	atomic_inc(&pgimgsensor->imgsensor_open_cnt);
+      mutex_lock(&pgimgsensor->imgsensor_clk_mutex);
+      if (0 == pgimgsensor->imgsensor_open_cnt_mux)
+      {
+        	imgsensor_clk_enable_all(&pgimgsensor->clk);      
+      }
+     (pgimgsensor->imgsensor_open_cnt_mux)++;
 	pr_info(
-	    "%s %d\n",
+	    "patch-%s-%d\n",
 	    __func__,
-	    atomic_read(&pgimgsensor->imgsensor_open_cnt));
+	    (pgimgsensor->imgsensor_open_cnt_mux));
+	
+    mutex_unlock(&pgimgsensor->imgsensor_clk_mutex);
 	return 0;
 }
 
 static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	enum IMGSENSOR_SENSOR_IDX i = IMGSENSOR_SENSOR_IDX_MIN_NUM;
-	atomic_dec(&pgimgsensor->imgsensor_open_cnt);
-	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
+
+	  mutex_lock(&pgimgsensor->imgsensor_clk_mutex);
+
+	(pgimgsensor->imgsensor_open_cnt_mux)--;
+	if (0  == pgimgsensor->imgsensor_open_cnt_mux) {
 		imgsensor_clk_disable_all(&pgimgsensor->clk);
 
 		if (pgimgsensor->imgsensor_oc_irq_enable != NULL) {
@@ -2678,9 +2685,11 @@ static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 #endif
 	}
 	pr_info(
-	    "%s %d\n",
+	    "patch-%s-%d\n",
 	    __func__,
-	    atomic_read(&pgimgsensor->imgsensor_open_cnt));
+	    (pgimgsensor->imgsensor_open_cnt_mux));
+      mutex_unlock(&pgimgsensor->imgsensor_clk_mutex);
+
 	return 0;
 }
 
@@ -2783,8 +2792,8 @@ static int imgsensor_probe(struct platform_device *pdev)
 	imgsensor_hw_init(&pgimgsensor->hw);
 	imgsensor_i2c_create();
 	imgsensor_proc_init();
-
-	atomic_set(&pgimgsensor->imgsensor_open_cnt, 0);
+	mutex_init(&pgimgsensor->imgsensor_clk_mutex);
+	pgimgsensor->imgsensor_open_cnt_mux = 0;
 #ifdef CONFIG_MTK_SMI_EXT
 	mmdvfs_register_mmclk_switch_cb(
 	    mmsys_clk_change_cb,
