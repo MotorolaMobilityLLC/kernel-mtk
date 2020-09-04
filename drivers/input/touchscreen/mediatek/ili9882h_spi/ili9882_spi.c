@@ -531,7 +531,7 @@ static int ilitek_spi_probe(struct spi_device *spi)
 	ilits->wait_int_timeout = AP_INT_TIMEOUT;
 
 #if ENABLE_GESTURE
-	ilits->gesture = DISABLE;
+	ilits->gesture = ENABLE;
 	ilits->ges_sym.double_tap = DOUBLE_TAP;
 	ilits->ges_sym.alphabet_line_2_top = ALPHABET_LINE_2_TOP;
 	ilits->ges_sym.alphabet_line_2_bottom = ALPHABET_LINE_2_BOTTOM;
