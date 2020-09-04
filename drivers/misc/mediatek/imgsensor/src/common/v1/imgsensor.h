@@ -19,6 +19,7 @@
 #include "imgsensor_i2c.h"
 #include "imgsensor_hw.h"
 #include "imgsensor_clk.h"
+#include <linux/mutex.h>
 
 struct IMGSENSOR_STATUS {
 	u32 reserved:31;
@@ -29,7 +30,8 @@ struct IMGSENSOR {
 	struct IMGSENSOR_HW     hw;
 	struct IMGSENSOR_CLK    clk;
 	struct IMGSENSOR_SENSOR sensor[IMGSENSOR_SENSOR_IDX_MAX_NUM];
-	atomic_t imgsensor_open_cnt;
+	struct mutex imgsensor_clk_mutex;
+	int imgsensor_open_cnt_mux;
 	enum IMGSENSOR_RETURN (*imgsensor_oc_irq_enable)
 			(enum IMGSENSOR_SENSOR_IDX sensor_idx, bool enable);
 };
