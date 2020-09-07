@@ -366,6 +366,8 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 		atomic_set(&obj->als_cali, event->data[0]);
 		spin_unlock(&calibration_lock);
 		err = als_cali_report(event->data);
+		//moto add
+		complete(&obj->als_cali_done);
 	}
 	return err;
 }
