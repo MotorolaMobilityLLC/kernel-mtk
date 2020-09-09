@@ -7,7 +7,7 @@
  *
  ********************************************************/
 //#if LINUX_VERSION_CODE <= KERNEL_VERSION(4, 4, 1)
-//#define TIMED_OUTPUT
+#define TIMED_OUTPUT
 //#endif
 /*********************************************************
  *
