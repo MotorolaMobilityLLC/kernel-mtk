@@ -118,6 +118,10 @@ static mid_match_t emmc_table[] = {
 		.name = "Samsung"
 	},
 	{
+		.index = 0x88,
+		.name = "FORESEE"
+	},
+	{
 		.index = 0x90,
 		.name = "Hynix"
 	},
@@ -1103,7 +1107,7 @@ static void get_ddr_cap(void)
 		lpddr_cap = 6;
 	else if (lpddr_cap < 8 && lpddr_cap >= 7)
 		lpddr_cap = 8;
-	sprintf(hwinfo[lpddr_capacity].hwinfo_buf, "%dGb", lpddr_cap);
+	sprintf(hwinfo[lpddr_capacity].hwinfo_buf, "%dGB", lpddr_cap);
 }
 
 #define EMMC_LIFE_TIME_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/life_time"
@@ -1176,9 +1180,10 @@ static void get_emmc_mfr(void)
 	emmc_mid = _atoi(buf);
 
 	emmc_mid_name = foreach_emmc_table(emmc_mid);
-	WARN((emmc_mid_name == NULL), "cannot recognize emmc mid=0x%x", emmc_mid);
-	if (emmc_mid_name == NULL)
+	if (emmc_mid_name == NULL) {
+		printk(KERN_CRIT "cannot recognize emmc mid=0x%x", emmc_mid);
 		emmc_mid_name = "Unknown";
+	}
 	strncpy(hwinfo[emmc_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 }
