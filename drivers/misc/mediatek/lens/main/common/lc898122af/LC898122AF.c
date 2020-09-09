@@ -17,42 +17,39 @@
  *
  */
 
-#include <linux/i2c.h>
-#include <linux/delay.h>
-#include <linux/uaccess.h>
-#include <linux/fs.h>
 #include "Ois.h"
 #include "OisDef.h"
+#include <linux/delay.h>
+#include <linux/fs.h>
+#include <linux/i2c.h>
+#include <linux/uaccess.h>
 
 #include "lens_info.h"
 
-
 #define AF_DRVNAME "LC898122AF_DRV"
-#define AF_I2C_SLAVE_ADDR        0x48
+#define AF_I2C_SLAVE_ADDR 0x48
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
-#define LOG_INF(format, args...) pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)                                               \
+	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
-
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
 
-
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
-
 
 void RegWriteA_LC898122AF(unsigned short RegAddr, unsigned char RegData)
 {
 	int i4RetValue = 0;
-	char puSendCmd[3] = { (char)((RegAddr >> 8) & 0xFF), (char)(RegAddr & 0xFF), RegData };
+	char puSendCmd[3] = {(char)((RegAddr >> 8) & 0xFF),
+			     (char)(RegAddr & 0xFF), RegData};
 	/* LOG_INF("I2C w (%x %x)\n", RegAddr, RegData); */
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
@@ -66,7 +63,7 @@ void RegWriteA_LC898122AF(unsigned short RegAddr, unsigned char RegData)
 void RegReadA_LC898122AF(unsigned short RegAddr, unsigned char *RegData)
 {
 	int i4RetValue = 0;
-	char pBuff[2] = { (char)(RegAddr >> 8), (char)(RegAddr & 0xFF) };
+	char pBuff[2] = {(char)(RegAddr >> 8), (char)(RegAddr & 0xFF)};
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
 
@@ -76,7 +73,7 @@ void RegReadA_LC898122AF(unsigned short RegAddr, unsigned char *RegData)
 		return;
 	}
 
-	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (u8 *) RegData, 1);
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (u8 *)RegData, 1);
 
 	/* LOG_INF("I2C r (%x %x)\n", RegAddr, *RegData); */
 	if (i4RetValue != 1) {
@@ -88,11 +85,9 @@ void RegReadA_LC898122AF(unsigned short RegAddr, unsigned char *RegData)
 void RamWriteA_LC898122AF(unsigned short RamAddr, unsigned short RamData)
 {
 	int i4RetValue = 0;
-	char puSendCmd[4] = { (char)((RamAddr >> 8) & 0xFF),
-		(char)(RamAddr & 0xFF),
-		(char)((RamData >> 8) & 0xFF),
-		(char)(RamData & 0xFF)
-	};
+	char puSendCmd[4] = {
+		(char)((RamAddr >> 8) & 0xFF), (char)(RamAddr & 0xFF),
+		(char)((RamData >> 8) & 0xFF), (char)(RamData & 0xFF)};
 	/* LOG_INF("I2C w2 (%x %x)\n", RamAddr, RamData); */
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
@@ -106,7 +101,7 @@ void RamWriteA_LC898122AF(unsigned short RamAddr, unsigned short RamData)
 void RamReadA_LC898122AF(unsigned short RamAddr, void *ReadData)
 {
 	int i4RetValue = 0;
-	char pBuff[2] = { (char)(RamAddr >> 8), (char)(RamAddr & 0xFF) };
+	char pBuff[2] = {(char)(RamAddr >> 8), (char)(RamAddr & 0xFF)};
 	unsigned short vRcvBuff = 0;
 	unsigned long *pRcvBuff;
 
@@ -120,7 +115,7 @@ void RamReadA_LC898122AF(unsigned short RamAddr, void *ReadData)
 		return;
 	}
 
-	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (u8 *) &vRcvBuff, 2);
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (u8 *)&vRcvBuff, 2);
 	if (i4RetValue != 2) {
 		LOG_INF("[CAMERA SENSOR] I2C read failed!!\n");
 		return;
@@ -133,13 +128,10 @@ void RamReadA_LC898122AF(unsigned short RamAddr, void *ReadData)
 void RamWrite32A_LC898122AF(unsigned short RamAddr, unsigned long RamData)
 {
 	int i4RetValue = 0;
-	char puSendCmd[6] = { (char)((RamAddr >> 8) & 0xFF),
-		(char)(RamAddr & 0xFF),
-		(char)((RamData >> 24) & 0xFF),
-		(char)((RamData >> 16) & 0xFF),
-		(char)((RamData >> 8) & 0xFF),
-		(char)(RamData & 0xFF)
-	};
+	char puSendCmd[6] = {
+		(char)((RamAddr >> 8) & 0xFF),  (char)(RamAddr & 0xFF),
+		(char)((RamData >> 24) & 0xFF), (char)((RamData >> 16) & 0xFF),
+		(char)((RamData >> 8) & 0xFF),  (char)(RamData & 0xFF)};
 	/* LOG_INF("I2C w4 (%x %x)\n", RamAddr, (unsigned int)RamData); */
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
@@ -153,7 +145,7 @@ void RamWrite32A_LC898122AF(unsigned short RamAddr, unsigned long RamData)
 void RamRead32A_LC898122AF(unsigned short RamAddr, void *ReadData)
 {
 	int i4RetValue = 0;
-	char pBuff[2] = { (char)(RamAddr >> 8), (char)(RamAddr & 0xFF) };
+	char pBuff[2] = {(char)(RamAddr >> 8), (char)(RamAddr & 0xFF)};
 	unsigned long *pRcvBuff, vRcvBuff = 0;
 
 	pRcvBuff = (unsigned long *)ReadData;
@@ -166,15 +158,14 @@ void RamRead32A_LC898122AF(unsigned short RamAddr, void *ReadData)
 		return;
 	}
 
-	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (u8 *) &vRcvBuff, 4);
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (u8 *)&vRcvBuff, 4);
 	if (i4RetValue != 4) {
 		LOG_INF("[CAMERA SENSOR] I2C read failed!!\n");
 		return;
 	}
-	*pRcvBuff = ((vRcvBuff & 0xFF) << 24)
-	    + (((vRcvBuff >> 8) & 0xFF) << 16)
-	    + (((vRcvBuff >> 16) & 0xFF) << 8)
-	    + (((vRcvBuff >> 24) & 0xFF));
+	*pRcvBuff =
+		((vRcvBuff & 0xFF) << 24) + (((vRcvBuff >> 8) & 0xFF) << 16) +
+		(((vRcvBuff >> 16) & 0xFF) << 8) + (((vRcvBuff >> 24) & 0xFF));
 
 	/* LOG_INF("I2C r4 (%x %x)\n", RamAddr, (unsigned int)*pRcvBuff); */
 }
@@ -188,7 +179,7 @@ void LC898prtvalue(unsigned short prtvalue)
 {
 	LOG_INF("printvalue ======%x\n", prtvalue);
 }
-
+#if 0
 static unsigned char s4LC898OTP_ReadReg(unsigned short RegAddr)
 {
 	int i4RetValue = 0;
@@ -210,9 +201,8 @@ static unsigned char s4LC898OTP_ReadReg(unsigned short RegAddr)
 		return 0xff;
 	}
 	return RegData;
-
 }
-
+#endif
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
 	struct stAF_MotorInfo stMotorInfo;
@@ -229,61 +219,77 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo,
+			 sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
 }
 
-static void LC898122AF_init_drv(void)
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
 {
-	unsigned short addrotp;
-	unsigned long dataotp = 0;
+	LOG_INF("+\n");
 
-	IniSetAf();
-	IniSet();
-	RamAccFixMod(ON);	/* 16bit Fix mode */
+	if (*g_pAF_Opened == 1) {
+
+		/* unsigned short addrotp; */
+		/* unsigned long dataotp = 0; */
+
+		IniSetAf();
+		IniSet();
+		RamAccFixMod(ON); /* 16bit Fix mode */
+#if 0
 	addrotp = 0x30;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x1479,dataotp);  //Hall offset X */
 
 	addrotp = 0x32;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x14F9,dataotp);  //Hall offset Y */
 
 	addrotp = 0x34;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x147A,dataotp);  //Hall bias X */
 
 	addrotp = 0x36;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x14FA,dataotp);  //Hall bias Y */
 
 	addrotp = 0x38;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x1450,dataotp);  //Hall AD offset X */
 
 	addrotp = 0x3A;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x14D0,dataotp);  //Hall AD offset Y */
 
 	addrotp = 0x3C;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x10D3,dataotp);  //Loop gain X */
 
 	addrotp = 0x3E;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x11D3,dataotp);  //Loop gain Y */
-
-	RamAccFixMod(OFF);	/* 32bit Float mode */
+#endif
+	RamAccFixMod(OFF); /* 32bit Float mode */
+#if 0
 	addrotp = 0x44;
 	dataotp = s4LC898OTP_ReadReg(addrotp);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
@@ -307,81 +313,70 @@ static void LC898122AF_init_drv(void)
 	/* RegWriteA_LC898122AF(0x0257,dataotp);//OSC */
 
 	addrotp = 0x49;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 24)
-	    + (s4LC898OTP_ReadReg(addrotp + 1) << 16)
-	    + (s4LC898OTP_ReadReg(addrotp + 2) << 8)
-	    + s4LC898OTP_ReadReg(addrotp + 3);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 24) +
+		  (s4LC898OTP_ReadReg(addrotp + 1) << 16) +
+		  (s4LC898OTP_ReadReg(addrotp + 2) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 3);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWrite32A_LC898122AF(0x1020,dataotp);  //Gyro gain X */
 
 	addrotp = 0x4D;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 24)
-	    + (s4LC898OTP_ReadReg(addrotp + 1) << 16)
-	    + (s4LC898OTP_ReadReg(addrotp + 2) << 8)
-	    + s4LC898OTP_ReadReg(addrotp + 3);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 24) +
+		  (s4LC898OTP_ReadReg(addrotp + 1) << 16) +
+		  (s4LC898OTP_ReadReg(addrotp + 2) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 3);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWrite32A_LC898122AF(0x1120,dataotp);  //Gyro gain Y */
-
-	RamWriteA_LC898122AF(TCODEH, 100);	/* focus position */
+#endif
+	RamWriteA_LC898122AF(TCODEH, 100); /* focus position */
 	RtnCen(0);
 	msleep(100);
 	SetPanTiltMode(ON);
 	msleep(20);
 	OisEna();
-	SetH1cMod(MOVMODE);	/* movie mode */
+	SetH1cMod(MOVMODE); /* movie mode */
 	/* SetH1cMod(0);          //still mode */
-
+#if 0
 	addrotp = 0x20;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
-	LOG_INF("[OTP]AF start current 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
-	LOG_INF("[OTP]AF start current 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
-	LOG_INF("[OTP]AF start current 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
+	LOG_INF("[OTP]AF start current 0x%x 0x%x\n", addrotp,
+		(unsigned int)dataotp);
+	LOG_INF("[OTP]AF start current 0x%x 0x%x\n", addrotp,
+		(unsigned int)dataotp);
+	LOG_INF("[OTP]AF start current 0x%x 0x%x\n", addrotp,
+		(unsigned int)dataotp);
 
 	addrotp = 0x22;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]AF Infinit 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("[OTP]AF Infinit 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("[OTP]AF Infinit 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 
 	addrotp = 0x24;
-	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) + s4LC898OTP_ReadReg(addrotp + 1);
+	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
+		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]AF Macro 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("[OTP]AF Macro 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("[OTP]AF Macro 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("LC898122AF_Open - End\n");
-}
-
-static inline int moveAF(unsigned long a_u4Position)
-{
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
-
-	if (*g_pAF_Opened == 1) {
-
-		LC898122AF_init_drv();
-
+#endif
 		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = 0;
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}
 
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
+	LOG_INF("-\n");
 
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
+	return 0;
+}
 
-	/* LOG_INF("move [curr] %d [target] %d\n", g_u4CurrPosition, g_u4TargetPosition); */
-
-	RamWriteA_LC898122AF(TCODEH, g_u4TargetPosition);
-
-	spin_lock(g_pAF_SpinLock);
-	g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-	spin_unlock(g_pAF_SpinLock);
+/* moveAF only use to control moving the motor */
+static inline int moveAF(unsigned long a_u4Position)
+{
+	RamWriteA_LC898122AF(TCODEH, a_u4Position);
+	g_u4CurrPosition = a_u4Position;
 
 	return 0;
 }
@@ -403,13 +398,15 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long LC898122AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long LC898122AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+		      unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
+		i4RetValue =
+			getAFInfo((__user struct stAF_MotorInfo *)(a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -444,9 +441,9 @@ int LC898122AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
-		RamWriteA_LC898122AF(TCODEH, 100);	/* focus position */
+		RamWriteA_LC898122AF(TCODEH, 100); /* focus position */
 		msleep(20);
-		RamWriteA_LC898122AF(TCODEH, 50);	/* focus position */
+		RamWriteA_LC898122AF(TCODEH, 50); /* focus position */
 		msleep(20);
 
 		RtnCen(0);
@@ -467,11 +464,32 @@ int LC898122AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-int LC898122AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int LC898122AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+			    spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
 
+	initAF();
+
+	return 1;
+}
+
+int LC898122AF_GetFileName(unsigned char *pFileName)
+{
+	#if SUPPORT_GETTING_LENS_FOLDER_NAME
+	char FilePath[256];
+	char *FileString;
+
+	sprintf(FilePath, "%s", __FILE__);
+	FileString = strrchr(FilePath, '/');
+	*FileString = '\0';
+	FileString = (strrchr(FilePath, '/') + 1);
+	strncpy(pFileName, FileString, AF_MOTOR_NAME);
+	LOG_INF("FileName : %s\n", pFileName);
+	#else
+	pFileName[0] = '\0';
+	#endif
 	return 1;
 }

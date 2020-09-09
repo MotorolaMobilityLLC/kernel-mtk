@@ -11,6 +11,9 @@
  * GNU General Public License for more details.
  */
 
+#define PFX "s5k2l7_camera_pdaf"
+#define pr_fmt(fmt) PFX "[%s] " fmt, __func__
+
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -34,15 +37,17 @@
 
 
 #include "s5k2l7mipiraw_Sensor.h"
-/****************************Modify Following Strings for Debug****************************/
-#define PFX "s5k2l7_camera_pdaf"
-/* #define LOG_1 LOG_INF("s5k2l7,MIPI 4LANE\n") */
-/* #define LOG_2 LOG_INF
- * ("preview 2096*1552@30fps,640Mbps/lane; video 4192*3104@30fps,1.2Gbps/lane; capture 13M@30fps,1.2Gbps/lane\n")
- */
-/****************************   Modify end    *******************************************/
+/*********************Modify Following Strings for Debug***********************/
 
-#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __func__, ##args)
+
+/* #define LOG_1 pr_debug("s5k2l7,MIPI 4LANE\n") */
+/* #define LOG_2 pr_debug
+ * ("preview 2096*1552@30fps,640Mbps/lane; video 4192*3104@30fps,1.2Gbps/lane;
+ * capture 13M@30fps,1.2Gbps/lane\n")
+ */
+/****************************   Modify end  ***********************************/
+
+
 
 /* #include "ov13850_otp.h" */
 struct otp_pdaf_struct {
@@ -50,7 +55,9 @@ struct otp_pdaf_struct {
 	unsigned char data1[496];	/* output data1 */
 	unsigned char data2[806];	/* output data2 */
 	unsigned char data3[102];	/* output data3 */
-	unsigned char pdaf_checksum;	/* checksum of pd, SUM(0x0801~0x0D7C)%255+1 */
+
+	/* checksum of pd, SUM(0x0801~0x0D7C)%255+1 */
+	unsigned char pdaf_checksum;
 
 };
 
@@ -95,10 +102,12 @@ static bool s5k2l7_read_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
 	/* for(i = 0; i < 1404; i++) { */
 	for (i = 0; i < 2048; i++) {
 		if (!s5k2l7_selective_read_eeprom(offset, &data[i])) {
-			LOG_INF("read_eeprom 0x%0x %d fail\n", offset, data[i]);
+			pr_debug("read_eeprom 0x%0x %d fail\n",
+				offset, data[i]);
+
 			return false;
 		}
-		LOG_INF("read_eeprom 0x%0x 0x%x.\n", offset, data[i]);
+		pr_debug("read_eeprom 0x%0x 0x%x.\n", offset, data[i]);
 		offset++;
 	}
 	get_done = true;
@@ -107,10 +116,11 @@ static bool s5k2l7_read_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
 	return true;
 }
 
-bool s5k2l7_read_otp_pdaf_data(kal_uint16 addr, BYTE *data, kal_uint32 size, kal_uint32 sensor_id)
+bool s5k2l7_read_otp_pdaf_data(kal_uint16 addr, BYTE *data,
+					  kal_uint32 size, kal_uint32 sensor_id)
 {
 
-	LOG_INF("read_otp_pdaf_data enter [%x]", sensor_id);
+	pr_debug("read_otp_pdaf_data enter [%x]", sensor_id);
 
 	if (sensor_id == 0x20C7)
 		eeprom_rd_id = 0xA1;
@@ -122,11 +132,11 @@ bool s5k2l7_read_otp_pdaf_data(kal_uint16 addr, BYTE *data, kal_uint32 size, kal
 			get_done = 0;
 			last_size = 0;
 			last_offset = 0;
-			LOG_INF("read_otp_pdaf_data fail");
+			pr_debug("read_otp_pdaf_data fail");
 			return false;
 		}
 	}
 	/* memcpy(data, eeprom_data, size); */
-	LOG_INF("read_otp_pdaf_data end");
+	pr_debug("read_otp_pdaf_data end");
 	return true;
 }

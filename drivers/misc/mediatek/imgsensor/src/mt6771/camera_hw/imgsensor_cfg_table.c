@@ -20,7 +20,8 @@
 #include "imgsensor_hw.h"
 #include "imgsensor_cfg_table.h"
 
-enum IMGSENSOR_RETURN (*hw_open[IMGSENSOR_HW_ID_MAX_NUM])(struct IMGSENSOR_HW_DEVICE **) = {
+enum IMGSENSOR_RETURN
+(*hw_open[IMGSENSOR_HW_ID_MAX_NUM])(struct IMGSENSOR_HW_DEVICE **) = {
 	imgsensor_hw_mclk_open,
 	imgsensor_hw_regulator_open,
 	imgsensor_hw_gpio_open
@@ -250,7 +251,7 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 };
 
 /* Legacy design */
-struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {	
+struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 /* main */
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
 #if defined(S5K3L6_MIPI_RAW)

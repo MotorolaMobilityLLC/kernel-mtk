@@ -15,12 +15,18 @@
 
 #define _MAIN_LENS_H
 
-#include <linux/ioctl.h>
 #include "lens_list.h"
+#include <linux/ioctl.h>
 
 #define MAX_NUM_OF_LENS 32
 
 #define AF_MAGIC 'A'
+
+#ifdef CONFIG_MACH_MT6761
+#define SUPPORT_GETTING_LENS_FOLDER_NAME 0
+#else
+#define SUPPORT_GETTING_LENS_FOLDER_NAME 1
+#endif
 
 /* AFDRV_XXXX be the same as AF_DRVNAME in (*af).c */
 
@@ -42,8 +48,8 @@
 #define AFDRV_DW9718AF "DW9718AF"
 #define AFDRV_DW9718SAF "DW9718SAF"
 #define AFDRV_DW9719TAF "DW9719TAF"
-#define AFDRV_DW9800WAF "DW9800WAF"
 #define AFDRV_DW9814AF "DW9814AF"
+#define AFDRV_FP5510E2AF "FP5510E2AF"
 #define AFDRV_FM50AF "FM50AF"
 #define AFDRV_GAF001AF "GAF001AF"
 #define AFDRV_GAF002AF "GAF002AF"
@@ -59,49 +65,45 @@
 #define AFDRV_LC898217AFB "LC898217AFB"
 #define AFDRV_LC898217AFC "LC898217AFC"
 #define AFDRV_MT9P017AF "MT9P017AF"
-#define AFDRV_OV5645AF "OV5645AF"
 #define AFDRV_OV8825AF "OV8825AF"
 #define AFDRV_WV511AAF "WV511AAF"
 
 /* Structures */
 struct stAF_MotorInfo {
-/* current position */
+	/* current position */
 	u32 u4CurrentPosition;
-/* macro position */
+	/* macro position */
 	u32 u4MacroPosition;
-/* Infinity position */
+	/* Infinity position */
 	u32 u4InfPosition;
-/* Motor Status */
+	/* Motor Status */
 	bool bIsMotorMoving;
-/* Motor Open? */
+	/* Motor Open? */
 	bool bIsMotorOpen;
-/* Support SR? */
+	/* Support SR? */
 	bool bIsSupportSR;
 };
 
 /* Structures */
 struct stAF_MotorCalPos {
-/* macro position */
+	/* macro position */
 	u32 u4MacroPos;
-/* Infinity position */
+	/* Infinity position */
 	u32 u4InfPos;
 };
 
+#define STRUCT_MOTOR_NAME 32
+#define AF_MOTOR_NAME 31
+
 /* Structures */
 struct stAF_MotorName {
-	u8 uMotorName[32];
+	u8 uMotorName[STRUCT_MOTOR_NAME];
 };
 
 /* Structures */
 struct stAF_MotorCmd {
 	u32 u4CmdID;
 	u32 u4Param;
-};
-
-/* Structures */
-struct stAF_CtrlCmd {
-	long long i8CmdID;
-	long long i8Param[2];
 };
 
 /* Structures */
@@ -125,9 +127,12 @@ struct stAF_OisPosInfo {
 struct stAF_DrvList {
 	u8 uEnable;
 	u8 uDrvName[32];
-	int (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
-	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+	int (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient,
+				spinlock_t *pAF_SpinLock, int *pAF_Opened);
+	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command,
+			  unsigned long a_u4Param);
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
+	int (*pAF_GetFileName)(unsigned char *pFileName);
 	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
 };
 
@@ -144,7 +149,6 @@ struct stAF_DrvI2CFormat {
 	/* Addr Format */
 	u8 Addr[I2CDATA_MAXSIZE];
 	u8 AddrNum;
-	/* Data Format : CtrlBits | ( ( Data >> BitRR ) & Mask1 ) << BitRL ) & Mask2 */
 	u8 CtrlData[I2CDATA_MAXSIZE]; /* Control Data */
 	u8 BitRR[I2CDATA_MAXSIZE];
 	u8 Mask1[I2CDATA_MAXSIZE];
@@ -192,10 +196,12 @@ struct stAF_MotorI2CSendCmd {
 
 #define AFIOC_S_SETPOWERCTRL _IOW(AF_MAGIC, 13, u32)
 
-#define AFIOC_S_SETLENSTEST  _IOW(AF_MAGIC, 14, u32)
+#define AFIOC_S_SETLENSTEST _IOW(AF_MAGIC, 14, u32)
 
 #define AFIOC_G_OISPOSINFO _IOR(AF_MAGIC, 15, struct stAF_OisPosInfo)
 
-#define AFIOC_X_CTRLPARA _IOWR(AF_MAGIC, 18, struct stAF_CtrlCmd)
+#define AFIOC_S_SETDRVINIT _IOW(AF_MAGIC, 16, u32)
+
+#define AFIOC_G_GETDRVNAME _IOWR(AF_MAGIC, 17, struct stAF_MotorName)
 
 #endif

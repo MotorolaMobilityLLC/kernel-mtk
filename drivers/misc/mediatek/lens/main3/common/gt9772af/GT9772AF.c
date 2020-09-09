@@ -327,3 +327,20 @@ int GT9772AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_Sp
 	return 1;
 }
 
+int GT9772AF_GetFileName(unsigned char *pFileName)
+{
+	#if SUPPORT_GETTING_LENS_FOLDER_NAME
+	char FilePath[256];
+	char *FileString;
+
+	sprintf(FilePath, "%s", __FILE__);
+	FileString = strrchr(FilePath, '/');
+	*FileString = '\0';
+	FileString = (strrchr(FilePath, '/') + 1);
+	strncpy(pFileName, FileString, AF_MOTOR_NAME);
+	LOG_INF("FileName : %s\n", pFileName);
+	#else
+	pFileName[0] = '\0';
+	#endif
+	return 1;
+}

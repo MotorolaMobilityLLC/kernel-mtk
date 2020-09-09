@@ -1,8 +1,8 @@
 config MTK_IMGSENSOR
-  bool CONFIG_MTK_IMGSENSOR
-  default n
-  help
-    CONFIG_MTK_IMGSENSOR
+	bool CONFIG_MTK_IMGSENSOR
+	default n
+	help
+	  CONFIG_MTK_IMGSENSOR
 
 config CAMERA_PROJECT_LIMA
   default n

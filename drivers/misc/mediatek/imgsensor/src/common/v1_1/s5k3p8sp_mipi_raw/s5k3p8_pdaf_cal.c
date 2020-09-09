@@ -34,13 +34,14 @@
 
 
 #include "s5k3p8spmipiraw_Sensor.h"
-/****************************Modify Following Strings for Debug****************************/
+/*********************Modify Following Strings for Debug**********************/
 #define PFX "s5k3p8_camera_pdaf"
 /* #define LOG_1 LOG_INF("s5k3p8,MIPI 4LANE\n") */
 /* #define LOG_2 \
- * LOG_INF("preview 2096*1552@30fps,640Mbps/lane; video 4192*3104@30fps,1.2Gbps/lane; capture 13M@30fps,1.2Gbps/lane\n")
+ * LOG_INF("preview 2096*1552@30fps,640Mbps/lane; video 4192*3104@30fps,
+ * 1.2Gbps/lane; capture 13M@30fps,1.2Gbps/lane\n")
  */
-/****************************   Modify end    *******************************************/
+/****************************   Modify end   *********************************/
 
 #define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __func__, ##args)
 
@@ -49,7 +50,9 @@ struct otp_pdaf_struct {
 	unsigned char data1[496];	/* output data1 */
 	unsigned char data2[806];	/* output data2 */
 	unsigned char data3[102];	/* output data3 */
-	unsigned char pdaf_checksum;	/* checksum of pd, SUM(0x0801~0x0D7C)%255+1 */
+
+	/* checksum of pd, SUM(0x0801~0x0D7C)%255+1 */
+	unsigned char pdaf_checksum;
 };
 
 
@@ -75,12 +78,14 @@ static int last_offset;
 static bool s5k3p8_selective_read_eeprom(kal_uint16 addr, BYTE *data)
 {
 	char pu_send_cmd0[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
-	char pu_send_cmd1[2] = { (char)((addr + 1) >> 8), (char)((addr + 1) & 0xFF) };
+	char pu_send_cmd1[2] = { (char)((addr + 1) >> 8),
+				 (char)((addr + 1) & 0xFF) };
 
 	if (addr > MAX_OFFSET)
 		return false;
 
-	if (iReadRegI2C(pu_send_cmd0, 2, (u8 *) (data + 1), 1, EEPROM_READ_ID) < 0)
+	if (iReadRegI2C(pu_send_cmd0, 2, (u8 *) (data + 1),
+			1, EEPROM_READ_ID) < 0)
 		return false;
 	if (iReadRegI2C(pu_send_cmd1, 2, (u8 *) data, 1, EEPROM_READ_ID) < 0)
 		return false;
@@ -108,7 +113,10 @@ static bool s5k3p8_read_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
 	return true;
 }
 
-bool s5k3p8_read_otp_pdaf_data(kal_uint16 addr, BYTE *data, kal_uint32 size)
+bool s5k3p8_read_otp_pdaf_data(
+	kal_uint16 addr,
+	BYTE *data,
+	kal_uint32 size)
 {
 
 	LOG_INF("read_otp_pdaf_data enter");

@@ -39,8 +39,8 @@ struct IMGSENSOR_SENSOR_INST {
 };
 
 struct IMGSENSOR_SENSOR {
-	struct IMGSENSOR_SENSOR_INST inst;
-	SENSOR_FUNCTION_STRUCT      *pfunc;
+	struct IMGSENSOR_SENSOR_INST  inst;
+	struct SENSOR_FUNCTION_STRUCT *pfunc;
 };
 
 #endif

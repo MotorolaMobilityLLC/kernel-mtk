@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
@@ -23,7 +23,7 @@
 #include "kd_camera_typedef.h"
 
 #define PFX "imx350_pdafotp"
-#define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -59,7 +59,8 @@ static bool imx350_selective_read_eeprom(kal_uint16 addr, BYTE *data)
 
 	if (addr > imx350_MAX_OFFSET)
 		return false;
-	if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data, 1, imx350_EEPROM_READ_ID) < 0)
+	if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data,
+			1, imx350_EEPROM_READ_ID) < 0)
 		return false;
 	return true;
 }

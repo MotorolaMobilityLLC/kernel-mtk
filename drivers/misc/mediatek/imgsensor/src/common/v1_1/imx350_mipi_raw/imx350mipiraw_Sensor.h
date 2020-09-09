@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 /*****************************************************************************
  *
@@ -90,7 +90,7 @@ struct imgsensor_struct {
 	kal_uint16 current_fps;	/* current max fps */
 	kal_bool autoflicker_en; /* record autoflicker enable or disable */
 	kal_bool test_pattern;	/* record test pattern mode or not */
-	MSDK_SCENARIO_ID_ENUM current_scenario_id; /* current scenario id */
+	enum MSDK_SCENARIO_ID_ENUM current_scenario_id; /* current scenario id*/
 	kal_uint8 hdr_mode;	/* HDR mode */
 	kal_uint8 pdaf_mode;	/* ihdr enable or disable */
 	kal_uint8 i2c_write_id;	/* record current sensor's i2c write id */
@@ -124,7 +124,7 @@ struct imgsensor_info_struct {
 	kal_uint8 ihdr_le_firstline;	/* 1,le first ; 0, se first */
 	kal_uint8 temperature_support;	/* 1, support; 0,not support */
 	kal_uint8 sensor_mode_num;	/* support sensor mode num */
-
+	kal_uint8 frame_time_delay_frame;
 	kal_uint8 cap_delay_frame;	/* enter capture delay frame num */
 	kal_uint8 pre_delay_frame;	/* enter preview delay frame num */
 	kal_uint8 video_delay_frame;	/* enter video delay frame num */
@@ -146,8 +146,8 @@ struct imgsensor_info_struct {
 	 */
 	kal_uint8 mipi_settle_delay_mode;
 	/* 0, high speed signal auto detect; 1, use settle delay,unit is ns,
-	*default is auto detect, don't modify this para
-	*/
+	 *default is auto detect, don't modify this para
+	 */
 	kal_uint8 sensor_output_dataformat;/* sensor output first pixel color */
 	kal_uint8 mclk;	/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	kal_uint32 i2c_speed;	/* i2c speed */

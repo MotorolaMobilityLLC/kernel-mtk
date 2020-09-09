@@ -21,7 +21,8 @@
 #define IMGSENSOR_OC_ENABLE
 
 enum IMGSENSOR_RETURN imgsensor_oc_init(void);
-enum IMGSENSOR_RETURN imgsensor_oc_interrupt(enum IMGSENSOR_HW_POWER_STATUS pwr_status);
+enum IMGSENSOR_RETURN
+	imgsensor_oc_interrupt(enum IMGSENSOR_HW_POWER_STATUS pwr_status);
 
 extern struct IMGSENSOR gimgsensor;
 

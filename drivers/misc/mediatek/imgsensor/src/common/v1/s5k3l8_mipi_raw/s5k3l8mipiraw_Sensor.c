@@ -586,7 +586,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	LOG_INF("set_gain %d\n", gain);
+	LOG_INF("%s %d\n", gain, __func__);
 	/* gain = 64 = 1x real gain. */
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
 		LOG_INF("Error gain setting");

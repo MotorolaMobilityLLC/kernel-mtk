@@ -14,12 +14,12 @@
 #ifndef _OV13870MIPI_SETTING_H_
 #define _OV13870MIPI_SETTING_H_
 
-
 /*******************************************************************************
  * Log
  *******************************************************************************/
 #define PFX "OV13870"
-#define LOG_INF_NEW(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF_NEW(format, args...)                                           \
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 #define LOG_INF LOG_INF_NEW
 #define LOG_1 LOG_INF("OV13870,MIPI 4LANE\n")
 #define SENSORDB LOG_INF
@@ -34,10 +34,7 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 /*******************************************************************************
  *
  *******************************************************************************/
-static void KD_SENSOR_PROFILE_INIT(void)
-{
-	do_gettimeofday(&tv1);
-}
+static void KD_SENSOR_PROFILE_INIT(void) { do_gettimeofday(&tv1); }
 
 /*******************************************************************************
  *
@@ -49,27 +46,24 @@ static void KD_SENSOR_PROFILE(char *tag)
 	spin_lock(&kdsensor_drv_lock);
 
 	do_gettimeofday(&tv2);
-	TimeIntervalUS = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+	TimeIntervalUS =
+	    (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
 	tv1 = tv2;
 
 	spin_unlock(&kdsensor_drv_lock);
 	LOG_INF("[%s]Profile = %lu us\n", tag, TimeIntervalUS);
 }
 #else
-static void KD_SENSOR_PROFILE_INIT(void)
-{
-}
+static void KD_SENSOR_PROFILE_INIT(void) {}
 
-static void KD_SENSOR_PROFILE(char *tag)
-{
-}
+static void KD_SENSOR_PROFILE(char *tag) {}
 #endif
 
 /* Sensor defines */
 
 #define MULTI_WRITE 1
 #if MULTI_WRITE
-#define I2C_BUFFER_LEN 765	/* trans# max is 255, each 3 bytes */
+#define I2C_BUFFER_LEN 765 /* trans# max is 255, each 3 bytes */
 #else
 #define I2C_BUFFER_LEN 3
 #endif
@@ -77,16 +71,9 @@ static void KD_SENSOR_PROFILE(char *tag)
 /* Sensor module version setting */
 #include "ov13870_setting_v1.h"
 
-enum {
-	OV13870_VERSION_ID_V1 = 0,
-	OV13870_VERSION_NUM
-};
+enum { OV13870_VERSION_ID_V1 = 0, OV13870_VERSION_NUM };
 
-enum {
-	PDAF_NO_PDAF = 1,
-	PDAF_VC_TYPE,
-	PDAF_RAW_TYPE
-};
+enum { PDAF_NO_PDAF = 1, PDAF_VC_TYPE, PDAF_RAW_TYPE };
 
 #define DEFAULT_PDAF_TYPE PDAF_VC_TYPE
 

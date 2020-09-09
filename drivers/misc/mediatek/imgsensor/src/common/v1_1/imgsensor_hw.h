@@ -33,7 +33,8 @@ struct IMGSENSOR_HW_CUSTOM_POWER_INFO {
 struct IMGSENSOR_HW_CFG {
 	enum IMGSENSOR_SENSOR_IDX sensor_idx;
 	enum IMGSENSOR_I2C_DEV i2c_dev;
-	struct IMGSENSOR_HW_CUSTOM_POWER_INFO pwr_info[IMGSENSOR_HW_POWER_INFO_MAX];
+	struct IMGSENSOR_HW_CUSTOM_POWER_INFO
+					pwr_info[IMGSENSOR_HW_POWER_INFO_MAX];
 };
 
 struct IMGSENSOR_HW_POWER_INFO {
@@ -45,8 +46,9 @@ struct IMGSENSOR_HW_POWER_INFO {
 };
 
 struct IMGSENSOR_HW_POWER_SEQ {
-	char *idx;
+	char *name;
 	struct IMGSENSOR_HW_POWER_INFO pwr_info[IMGSENSOR_HW_POWER_INFO_MAX];
+	u32 _idx;
 };
 
 struct IMGSENSOR_HW_DEVICE_COMMON {
@@ -57,12 +59,15 @@ struct IMGSENSOR_HW_DEVICE_COMMON {
 struct IMGSENSOR_HW_DEVICE {
 	enum IMGSENSOR_HW_ID id;
 	void *pinstance;
-	enum IMGSENSOR_RETURN (*init)(void *, struct IMGSENSOR_HW_DEVICE_COMMON *);
-	enum IMGSENSOR_RETURN (*set)(void *,
+	enum IMGSENSOR_RETURN (*init)(
+			void *pinstance,
+			struct IMGSENSOR_HW_DEVICE_COMMON *pcommon);
+	enum IMGSENSOR_RETURN (*set)(
+			void *pinstance,
 			enum IMGSENSOR_SENSOR_IDX,
 			enum IMGSENSOR_HW_PIN, enum IMGSENSOR_HW_PIN_STATE);
-	enum IMGSENSOR_RETURN (*release)(void *);
-	enum IMGSENSOR_RETURN (*dump)(void *);
+	enum IMGSENSOR_RETURN (*release)(void *pinstance);
+	enum IMGSENSOR_RETURN (*dump)(void *pintance);
 };
 
 struct IMGSENSOR_HW_SENSOR_POWER {
@@ -73,7 +78,9 @@ struct IMGSENSOR_HW_SENSOR_POWER {
 struct IMGSENSOR_HW {
 	struct IMGSENSOR_HW_DEVICE_COMMON common;
 	struct IMGSENSOR_HW_DEVICE       *pdev[IMGSENSOR_HW_ID_MAX_NUM];
-	struct IMGSENSOR_HW_SENSOR_POWER  sensor_pwr[IMGSENSOR_SENSOR_IDX_MAX_NUM];
+	struct IMGSENSOR_HW_SENSOR_POWER
+				sensor_pwr[IMGSENSOR_SENSOR_IDX_MAX_NUM];
+	const char *enable_sensor_by_index[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw);
@@ -83,11 +90,12 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 		struct IMGSENSOR_SENSOR *psensor,
 		enum IMGSENSOR_HW_POWER_STATUS pwr_status);
 enum IMGSENSOR_RETURN imgsensor_hw_dump(struct IMGSENSOR_HW *phw);
-struct IMGSENSOR_HW_CFG *imgsensor_hw_get_cfg(enum IMGSENSOR_SENSOR_IDX sensor_idx);
 
+extern struct IMGSENSOR_HW_CFG imgsensor_custom_config[];
 extern struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[];
 extern struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[];
-extern enum IMGSENSOR_RETURN (*hw_open[IMGSENSOR_HW_ID_MAX_NUM]) (struct IMGSENSOR_HW_DEVICE **);
-extern struct IMGSENSOR_HW_CFG imgsensor_custom_config[];
+extern enum IMGSENSOR_RETURN (*hw_open[IMGSENSOR_HW_ID_MAX_NUM])
+					(struct IMGSENSOR_HW_DEVICE **);
+
 #endif
 

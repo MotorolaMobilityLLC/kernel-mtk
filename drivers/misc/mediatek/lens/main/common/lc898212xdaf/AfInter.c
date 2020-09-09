@@ -1,23 +1,24 @@
-/* ******************************************************************************* */
-/*                                                                                 */
-/*              LC89821x Interface module                                          */
-/*                                                                                 */
-/*          Program Name        : AfInter.c                                        */
-/*          Design              : Rex.Tang                                         */
-/*          History             : First edition           2013.07.13 Rex.Tang      */
-/*                                                                                 */
-/*          Description         : User needs to complete the interface functions   */
-/* ******************************************************************************* */
-
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #ifdef DEBUG_LOG
 #include <linux/fs.h>
 #endif
-#include <linux/i2c.h>
 #include <linux/delay.h>
-#define		DeviceAddr		0xE4
+#include <linux/i2c.h>
+#define DeviceAddr 0xE4
 
-#include	"AfSTMV.h"
+#include "AfSTMV.h"
 
 #ifdef DEBUG_LOG
 #define AF_REGDUMP "REGDUMP"
@@ -26,7 +27,8 @@
 
 void RamWriteA(unsigned short addr, unsigned short data)
 {
-	u8 puSendCmd[3] = { (u8) (addr & 0xFF), (u8) (data >> 8), (u8) (data & 0xFF) };
+	u8 puSendCmd[3] = {(u8)(addr & 0xFF), (u8)(data >> 8),
+			   (u8)(data & 0xFF)};
 
 	s4AF_WriteReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), DeviceAddr);
 
@@ -38,9 +40,10 @@ void RamWriteA(unsigned short addr, unsigned short data)
 void RamReadA(unsigned short addr, unsigned short *data)
 {
 	u8 buf[2];
-	u8 puSendCmd[1] = { (u8) (addr & 0xFF) };
+	u8 puSendCmd[1] = {(u8)(addr & 0xFF)};
 
-	s4AF_ReadReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), buf, 2, DeviceAddr);
+	s4AF_ReadReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), buf, 2,
+				  DeviceAddr);
 	*data = (buf[0] << 8) | (buf[1] & 0x00FF);
 
 #ifdef DEBUG_LOG
@@ -50,7 +53,7 @@ void RamReadA(unsigned short addr, unsigned short *data)
 
 void RegWriteA(unsigned short addr, unsigned char data)
 {
-	u8 puSendCmd[2] = { (u8) (addr & 0xFF), (u8) (data & 0xFF) };
+	u8 puSendCmd[2] = {(u8)(addr & 0xFF), (u8)(data & 0xFF)};
 
 	s4AF_WriteReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), DeviceAddr);
 
@@ -61,15 +64,15 @@ void RegWriteA(unsigned short addr, unsigned char data)
 
 void RegReadA(unsigned short addr, unsigned char *data)
 {
-	u8 puSendCmd[1] = { (u8) (addr & 0xFF) };
+	u8 puSendCmd[1] = {(u8)(addr & 0xFF)};
 
-	s4AF_ReadReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), data, 1, DeviceAddr);
+	s4AF_ReadReg_LC898212XDAF(puSendCmd, sizeof(puSendCmd), data, 1,
+				  DeviceAddr);
 
 #ifdef DEBUG_LOG
 	LOG_INF("REGR\t%x\t%x\n", addr, *data);
 #endif
 }
-
 
 void WaitTime(unsigned short msec)
 {

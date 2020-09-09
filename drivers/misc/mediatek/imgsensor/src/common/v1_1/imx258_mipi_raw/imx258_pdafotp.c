@@ -25,7 +25,8 @@
 
 #ifdef IMX258_PDAFOTP_DEBUG
 #define PFX "IMX258_pdafotp"
-#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...) \
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -60,7 +61,8 @@ static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
 	if (addr > IMX258_MAX_OFFSET)
 		return false;
 
-	if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data, 1, IMX258_EEPROM_READ_ID) < 0)
+	if (iReadRegI2C(pu_send_cmd, 2,
+		(u8 *) data, 1, IMX258_EEPROM_READ_ID) < 0)
 		return false;
 	return true;
 }

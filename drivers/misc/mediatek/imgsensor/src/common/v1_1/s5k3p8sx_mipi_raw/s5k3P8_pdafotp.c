@@ -57,15 +57,15 @@ static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
 		return false;
 	kdSetI2CSpeed(S5K3P8_I2C_SPEED);
 
-	if (iReadRegI2C(pu_send_cmd, 2, (u8 *)data, 1, S5K3P8_EEPROM_WRITE_ID) < 0)
+	if (iReadRegI2C(pu_send_cmd, 2, (u8 *)data, 1,
+		S5K3P8_EEPROM_WRITE_ID) < 0)
 		return false;
 
 
 	return true;
 }
 
-static bool _read_S5K3P8_eeprom(kal_uint16 addr,
-						BYTE *data, kal_uint32 size)
+static bool _read_S5K3P8_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
 {
 	int i = 0;
 	int offset = addr;

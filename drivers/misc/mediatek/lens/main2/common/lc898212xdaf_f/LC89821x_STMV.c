@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #include <linux/delay.h>
 #include "LC89821x_STMV.h"
 
@@ -13,11 +26,12 @@
 
 #define	ABS_STMV(x)	((x) < 0 ? -(x) : (x))
 
-#define		DeviceAddr		0xE4	/* Device address of driver IC */
+#define		DeviceAddr		0xE4
 
 static void RamWriteA(unsigned short addr, unsigned short data)
 {
-	u8 puSendCmd[3] = {(u8)(addr & 0xFF), (u8)(data >> 8), (u8)(data & 0xFF)};
+	u8 puSendCmd[3] = {(u8)(addr & 0xFF), (u8)(data >> 8),
+			   (u8)(data & 0xFF)};
 
 	s4AF_WriteReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), DeviceAddr);
 
@@ -31,7 +45,8 @@ static void RamReadA(unsigned short addr, unsigned short *data)
 	u8 buf[2];
 	u8 puSendCmd[1] = { (u8)(addr & 0xFF)};
 
-	s4AF_ReadReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), buf, 2, DeviceAddr);
+	s4AF_ReadReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), buf, 2,
+				    DeviceAddr);
 	*data = (buf[0] << 8) | (buf[1] & 0x00FF);
 
 	#ifdef DEBUG_LOG
@@ -54,7 +69,8 @@ static void RegReadA(unsigned short addr, unsigned char *data)
 {
 	u8 puSendCmd[1] = {(u8)(addr & 0xFF) };
 
-	s4AF_ReadReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), data, 1, DeviceAddr);
+	s4AF_ReadReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), data, 1,
+				    DeviceAddr);
 
 	#ifdef DEBUG_LOG
 	LOG_INF("REGR\t%x\t%x\n", addr, *data);
@@ -102,8 +118,8 @@ static void StmvSet(struct stSmvPar StSetSmv)
 	UsParSiz = StSetSmv.UsSmvSiz;	/* Get StepSize */
 	UcParItv = StSetSmv.UcSmvItv;	/* Get StepInterval */
 
-	RamWriteA(ms11a_211H, (unsigned short)0x0800);	/* Set Coefficient Value For StepMove */
-	RamWriteA(MS1Z22_211H, (unsigned short)SsParStt);	/* Set Start Position */
+	RamWriteA(ms11a_211H, (unsigned short)0x0800);
+	RamWriteA(MS1Z22_211H, (unsigned short)SsParStt);
 	RamWriteA(MS1Z12_211H, UsParSiz);	/* Set StepSize */
 	RegWriteA(STMINT_211, UcParItv);	/* Set StepInterval */
 
@@ -121,12 +137,15 @@ static unsigned char StmvTo(short SsSmvEnd)
 	RamReadA(RZ_211H, (unsigned short *)&SsParStt);	/* Get Start Position */
 	UsSmvDpl = ABS_STMV(SsParStt - SsSmvEnd);
 
-	if ((UsSmvDpl <= StSmvPar.UsSmvSiz) && ((StSmvPar.UcSmvEnb & STMSV_ON) == STMSV_ON)) {
+	if ((UsSmvDpl <= StSmvPar.UsSmvSiz) &&
+	    ((StSmvPar.UcSmvEnb & STMSV_ON) == STMSV_ON)) {
 		if (StSmvPar.UcSmvEnb & STMCHTG_ON)
-			RegWriteA(MSSET_211, INI_MSSET_211 | (unsigned char)0x01);
+			RegWriteA(MSSET_211,
+				  INI_MSSET_211 | (unsigned char)0x01);
 
-		RamWriteA(MS1Z22_211H, SsSmvEnd);	/* Handling Single Step For ES1 */
-		StSmvPar.UcSmvEnb |= STMVEN_ON;	/* Combine StepMove Enable Bit & StepMove Mode Bit */
+		RamWriteA(MS1Z22_211H,
+			  SsSmvEnd); /* Handling Single Step For ES1 */
+		StSmvPar.UcSmvEnb |= STMVEN_ON;
 	} else {
 		if (SsParStt < SsSmvEnd) {	/* Check StepMove Direction */
 			RamWriteA(MS1Z12_211H, StSmvPar.UsSmvSiz);
@@ -134,9 +153,10 @@ static unsigned char StmvTo(short SsSmvEnd)
 			RamWriteA(MS1Z12_211H, -StSmvPar.UsSmvSiz);
 		}
 
-		RamWriteA(STMVENDH_211, SsSmvEnd);	/* Set StepMove Target Position */
-		StSmvPar.UcSmvEnb |= STMVEN_ON;	/* Combine StepMove Enable Bit & StepMove Mode Bit */
-		RegWriteA(STMVEN_211, StSmvPar.UcSmvEnb);	/* Start StepMove */
+		RamWriteA(STMVENDH_211,
+			  SsSmvEnd); /* Set StepMove Target Position */
+		StSmvPar.UcSmvEnb |= STMVEN_ON;
+		RegWriteA(STMVEN_211, StSmvPar.UcSmvEnb);
 	}
 
 	return 0;
@@ -158,7 +178,8 @@ static void AfInit(unsigned char hall_off, unsigned char hall_bias)
 		}
 
 		if (Init_Table_F[i].addr >= REG_ADDR_START)
-			RegWriteA(Init_Table_F[i].addr,
+			RegWriteA(
+				Init_Table_F[i].addr,
 				(unsigned char)(Init_Table_F[i].data & 0x00ff));
 		else
 			RamWriteA(Init_Table_F[i].addr,

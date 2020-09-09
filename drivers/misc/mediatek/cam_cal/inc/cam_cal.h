@@ -9,8 +9,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- ***************/
-
+ */
 #ifndef _CAM_CAL_H
 #define _CAM_CAL_H
 

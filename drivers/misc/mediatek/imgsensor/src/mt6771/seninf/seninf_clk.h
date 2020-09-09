@@ -28,6 +28,11 @@
 
 #include "seninf_common.h"
 
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define SENINF_CLK_CONTROL 0
+#else
+#define SENINF_CLK_CONTROL 1
+#endif
 enum SENINF_CLK_IDX_SYS {
 	SENINF_CLK_IDX_SYS_MIN_NUM = 0,
 	SENINF_CLK_IDX_SYS_SCP_SYS_DIS = SENINF_CLK_IDX_SYS_MIN_NUM,
@@ -78,7 +83,8 @@ enum SENINF_CLK_MCLK_FREQ {
 #define SENINF_CLK_MCLK_FREQ_MIN    SENINF_CLK_MCLK_FREQ_6MHZ
 #define SENINF_CLK_IDX_MIN_NUM      SENINF_CLK_IDX_SYS_MIN_NUM
 #define SENINF_CLK_IDX_MAX_NUM      SENINF_CLK_IDX_FREQ_MAX_NUM
-#define SENINF_CLK_IDX_FREQ_IDX_NUM (SENINF_CLK_IDX_FREQ_MAX_NUM - SENINF_CLK_IDX_FREQ_MIN_NUM)
+#define SENINF_CLK_IDX_FREQ_IDX_NUM \
+	(SENINF_CLK_IDX_FREQ_MAX_NUM - SENINF_CLK_IDX_FREQ_MIN_NUM)
 
 struct SENINF_CLK_CTRL {
 	char *pctrl;
@@ -88,7 +94,6 @@ struct SENINF_CLK {
 	struct platform_device *pplatform_device;
 	struct clk *mclk_sel[SENINF_CLK_IDX_MAX_NUM];
 	atomic_t enable_cnt[SENINF_CLK_IDX_MAX_NUM];
-	atomic_t wakelock_cnt;
 
 #ifdef CONFIG_PM_WAKELOCKS
 	struct wakeup_source seninf_wake_lock;
@@ -98,7 +103,8 @@ struct SENINF_CLK {
 };
 
 enum SENINF_RETURN seninf_clk_init(struct SENINF_CLK *pclk);
-int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk);
+int seninf_clk_set(struct SENINF_CLK *pclk,
+		   struct ACDK_SENSOR_MCLK_STRUCT *pmclk);
 void seninf_clk_open(struct SENINF_CLK *pclk);
 void seninf_clk_release(struct SENINF_CLK *pclk);
 unsigned int seninf_clk_get_meter(struct SENINF_CLK *pclk, unsigned int clk);

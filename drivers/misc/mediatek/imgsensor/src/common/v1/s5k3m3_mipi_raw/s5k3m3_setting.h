@@ -29,11 +29,11 @@
 #ifndef _s5k3m3MIPI_SETTING_H_
 #define _s5k3m3MIPI_SETTING_H_
 
-/*===FEATURE SWITH===*/
+/*===FEATURE SWITCH===*/
 /* #define FPTPDAFSUPPORT   //for pdaf switch */
 
 /* #define NONCONTINUEMODE */
-/*===FEATURE SWITH===*/
+/*===FEATURE SWITCH===*/
 #define VCPDAF
 /* Open VCPDAF_PRE when preview mode need PDAF VC */
 /* #define VCPDAF_PRE */
