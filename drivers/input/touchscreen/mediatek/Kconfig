@@ -209,4 +209,13 @@ config TOUCHSCREEN_MTK_FOCALTECH_FHD
 	help
 	  Say Y here if you have Focaltech touch panel.
 	  If unsure, say N.
+
+config TOUCHSCREEN_CHIPONE_V131
+	tristate "Chipone TDDI touchscreen"
+	default n
+	help
+	  Say y here if you have chipone TDDI touch panel.
+
+source "drivers/input/touchscreen/mediatek/chipone_tddi_v131/Kconfig"
+
 endif
