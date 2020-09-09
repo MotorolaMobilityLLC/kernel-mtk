@@ -1,0 +1,17 @@
+config TOUCHSCREEN_CHIPONE_V131
+	tristate "Chipone TDDI touchscreen for Mediatek package"
+	default n
+	help
+	  Say y here if you have chipone TDDI touch panel.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called chipone-tddi.
+
+config CTS_I2C_HOST
+       tristate "Chipone TDDI I2C or SPI touchscreen for Mediatek package"
+       depends on I2C
+       default n
+       help 
+         Say y here, use I2C, or use SPI
