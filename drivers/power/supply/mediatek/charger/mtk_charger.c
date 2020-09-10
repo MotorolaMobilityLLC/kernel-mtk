@@ -75,6 +75,16 @@
 #include "mtk_charger_intf.h"
 #include "mtk_charger_init.h"
 
+#include <linux/module.h>
+
+#ifdef CONFIG_CHARGER_STOP_70PER
+unsigned int capacity_control= 1;
+#else
+unsigned int capacity_control= 0;
+#endif
+module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
+
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
@@ -1594,6 +1604,17 @@ static void charger_check_status(struct charger_manager *info)
 		}
 	}
 
+	/* add limit soc max 70% */
+	 if(capacity_control) {
+		if (battery_get_uisoc() >= 70) {
+			chr_err("%s;soc is 70 disable charger\n",__func__);
+			charger_dev_enable_powerpath(info->chg1_dev, false);
+			_wake_up_charger(info);
+			charging = false;
+		}
+	}
+	/* add end */
+
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
@@ -2601,8 +2622,10 @@ static DEVICE_ATTR(input_current, 0664, show_input_current,
 
 #ifdef CONFIG_CHARGER_STOP_70PER
 static int ontim_runin_onoff_control = 1;
+static int limit_display_control = -1;
 #else
 static int ontim_runin_onoff_control = -200;
+static int limit_display_control = -200;
 #endif
 
 int ontim_get_ontim_runin_onoff_control(void)
@@ -2620,6 +2643,21 @@ static ssize_t store_runin_onoff_ctrl(struct device *dev,struct device_attribute
 }
 static DEVICE_ATTR(runin_onoff_ctrl, 0664, show_runin_onoff_ctrl, store_runin_onoff_ctrl);
 
+/* add limit soc 70% for display */
+extern void kpd_pwrkey_pmic_handler(unsigned long pressed);
+static ssize_t show_soc_limit_display_ctrl(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", limit_display_control);
+}
+static ssize_t store_soc_limit_display_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	kpd_pwrkey_pmic_handler(1);
+	msleep(10);
+	kpd_pwrkey_pmic_handler(0);
+	return size;
+}
+static DEVICE_ATTR(display_ctrl, 0664, show_soc_limit_display_ctrl,store_soc_limit_display_ctrl);
+/* add end */
 
 static ssize_t show_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr,char *buf)
 {
@@ -2987,6 +3025,12 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_ADC_Charger_Voltage);
 	if (ret)
 		goto _out;
+
+	/* add limit soc 70% for display */
+	ret = device_create_file(&(pdev->dev), &dev_attr_display_ctrl);
+	if (ret)
+		goto _out;
+	/* add end */
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
 	if (ret)
