@@ -158,7 +158,7 @@ static struct LCM_setting_table init_setting[] = {
 {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 0x02, {0x3F, 0xFF} },
+	{0x51, 0x02, {0x00, 0xFF} },
 	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -240,13 +240,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_backporch = 12; //old is 8,now is 100
 	params->dsi.vertical_frontporch = 44; //old is 24,now is 124
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 16; //old is 20,now is 8
-	params->dsi.horizontal_backporch = 28;//old is 60,now is 12
-	params->dsi.horizontal_frontporch = 28;//old is 60,now is 16
+	params->dsi.horizontal_sync_active = 88; //old is 20,now is 8
+	params->dsi.horizontal_backporch = 120;//old is 60,now is 12
+	params->dsi.horizontal_frontporch = 120;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 273;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 329;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 
-	params->dsi.ssc_disable = 0;
+	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 3;
 
 #if 0
@@ -395,8 +395,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		LCM_LOGI("delay 15ms to set backlight %d\n",is_bl_delay);
 		MDELAY(15);//t7
 	}
-	bl_level[0].para_list[0] = (level & 0xF0)>>4;
-	bl_level[0].para_list[1] = (level & 0x0F)<<4;
+	bl_level[0].para_list[1] = (level * 8 / 10);
 	LCM_LOGI("%s, backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
