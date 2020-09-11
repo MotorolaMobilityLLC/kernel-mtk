@@ -1218,18 +1218,29 @@ static int set_hbm_status(const char * buf, int n)
 {
 	printk("hbm user buf:%s\n", buf);
 
+#ifdef SMT_VERSION
+	printk("SMT version,No hbm");
+#else
 	if (primary_get_state() == DISP_SLEPT) {
-		printk("Sleep State, Do Not Set hbm\n");
+		printk("Sleep State, Do not set hbm\n");
 		g_hbm_enable = false;
 		return 0;
 	}
 
 	switch (buf[0]){
 		case '0':
+			if (!g_hbm_enable) {
+				printk("Have been disabled hbm, exit!\n");
+				break;
+			}
 			g_hbm_enable = false;
 			mtkfb_set_backlight_level(g_last_level);
 			break;
 		case '3':
+			if (g_hbm_enable) {
+				printk("Have been enabled hbm, exit!\n");
+				break;
+			}
 			g_hbm_enable = true;
 			mtkfb_set_backlight_level(256);
 			break;
@@ -1237,7 +1248,7 @@ static int set_hbm_status(const char * buf, int n)
 			g_hbm_enable = false;
 			break;
 	}
-
+#endif
 	return 0;
 }
 
