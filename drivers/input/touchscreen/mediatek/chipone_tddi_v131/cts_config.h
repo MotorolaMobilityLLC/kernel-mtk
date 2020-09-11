@@ -59,7 +59,7 @@
 #endif /* CONFIG_CTS_VIRTUALKEY */
 
 /* Gesture wakeup */
-//#define CFG_CTS_GESTURE
+#define CFG_CTS_GESTURE
 #ifdef CFG_CTS_GESTURE
 #define GESTURE_UP                          0x11
 #define GESTURE_C                           0x12
@@ -81,7 +81,7 @@
         {{GESTURE_C, KEY_C,},       \
          {GESTURE_W, KEY_W,},       \
          {GESTURE_V, KEY_V,},       \
-         {GESTURE_D_TAP, KEY_F1,},  \
+         {GESTURE_D_TAP, KEY_POWER,},  \
          {GESTURE_Z, KEY_Z,},       \
          {GESTURE_M, KEY_M,},       \
          {GESTURE_O, KEY_O,},       \
@@ -120,7 +120,7 @@
 /****************************************************************************
  * Platform configurations
  ****************************************************************************/
-
+#define LCM_INFO_HLT_GLASS (unsigned char)(0x01)
 #include "cts_plat_mtk_config.h"
 
 #endif /* CTS_CONFIG_H */

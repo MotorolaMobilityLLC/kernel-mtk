@@ -80,6 +80,8 @@ u32 cts_crc32(const u8 *data, size_t len)
 #define CTS_FIRMWARE_MULTI_SECTION_FILE_SIZE    (0x20000)
 #define CTS_SECTION_ENABLE_FLAG                 (0x0000C35A)
 
+extern unsigned char g_lcm_info_flag;
+
 enum cts_firmware_section_offset {
     CTS_FIRMWARE_SECTION_OFFSET = 0x00000000,
     CTS_FIRMWARE_CRC_SECTION_OFFSET = 0x17000,
@@ -324,7 +326,10 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
     cts_info("Request driver builtin if match hwid: %06x fwid: %04x && ver > %04x",
         hwid, fwid, device_fw_ver);
 
-    firmware = cts_driver_builtin_firmwares;
+    //firmware = cts_driver_builtin_firmwares;
+    if (LCM_INFO_HLT_GLASS == g_lcm_info_flag) {
+        firmware = cts_driver_builtin_firmwares;
+    }
     for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares); i++, firmware++) {
         if (MATCH_HWID(firmware, hwid) && MATCH_FWID(firmware, fwid)) {
             if (!is_firmware_valid(firmware)) {

@@ -8,15 +8,36 @@
 #include "cts_earjack_detect.h"
 #include "cts_strerror.h"
 
+extern unsigned char g_lcm_info_flag;
+extern char lcd_info_pr[256];
+u16  device_fw_ver = 0;
+#include <ontim/ontim_dev_dgb.h>
+static char version[40] = "0x00";
+static char vendor_name[50] = "unknow";
+static char lcdname[50] = "unknow";
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version", version)
+DEV_ATTR_DEFINE("vendor", vendor_name)
+DEV_ATTR_DEFINE("lcdvendor", lcdname)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+
 bool cts_show_debug_log = false;
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
 
+extern volatile int gesture_dubbleclick_en;
 int cts_suspend(struct chipone_ts_data *cts_data)
 {
     int ret;
 
     cts_info("Suspend");
+
+    if (gesture_dubbleclick_en) {
+        cts_enable_gesture_wakeup(&cts_data->cts_dev);
+    } else {
+        cts_disable_gesture_wakeup(&cts_data->cts_dev);
+    }
 
     cts_lock_device(&cts_data->cts_dev);
     ret = cts_suspend_device(&cts_data->cts_dev);
@@ -94,6 +115,17 @@ int cts_resume(struct chipone_ts_data *cts_data)
     return 0;
 }
 
+static void cts_tp_fw(struct cts_device *cts_dev)
+{
+	u8 cts_fw = 0;
+       cts_fw_reg_readw_retry(cts_dev,
+                    CTS_DEVICE_FW_REG_VERSION, &device_fw_ver, 5, 0);
+	cts_fw = be16_to_cpup(&device_fw_ver);
+	pr_info("wzxver:0x%x", cts_fw);
+	snprintf(version, sizeof(version)," %d.0 VID:0x00", cts_fw);
+	pr_info("wzxversion:%s", version);
+}
+
 #ifdef CONFIG_CTS_I2C_HOST
 static int cts_driver_probe(struct i2c_client *client,
         const struct i2c_device_id *id)
@@ -104,6 +136,10 @@ static int cts_driver_probe(struct spi_device *client)
     struct chipone_ts_data *cts_data = NULL;
     int ret = 0;
 
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+       return -EIO;
+    }
 #ifdef CONFIG_CTS_I2C_HOST
     cts_info("Probe i2c client: name='%s' addr=0x%02x flags=0x%02x irq=%d",
         client->name, client->addr, client->flags, client->irq);
@@ -244,6 +280,12 @@ static int cts_driver_probe(struct spi_device *client)
         goto err_deinit_earjack_detect;
     }
 
+    if (LCM_INFO_HLT_GLASS == g_lcm_info_flag) {
+        snprintf(lcdname, sizeof(lcdname),"%s ", "hlt-icnl9911c" );
+        snprintf(vendor_name, sizeof(vendor_name),"%s ", "hlt-icnl9911c" );
+    }
+    cts_tp_fw(&cts_data->cts_dev);
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 #ifdef CONFIG_MTK_PLATFORM
     tpd_load_status = 1;
 #endif /* CONFIG_MTK_PLATFORM */
