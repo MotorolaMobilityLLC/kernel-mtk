@@ -704,6 +704,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 }
 
 extern char backaux_cam_name[64];
+extern unsigned int platform_board_id;
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -715,10 +716,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			cam_pr_debug_1("gc02m1 sensorid = 0x%x\n", *sensor_id);
+			cam_pr_debug_1("gc02m1 sensorid = 0x%x platform_board_id=%d\n", *sensor_id,platform_board_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
+					if(platform_board_id == 0 || platform_board_id == 1 || platform_board_id == 2)
+						memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
+					else
+						memcpy(backaux_cam_name, "2_maltalite_season_gc02m1", 64);
 					ontim_get_otp_data(*sensor_id, NULL, 0);
 					cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;

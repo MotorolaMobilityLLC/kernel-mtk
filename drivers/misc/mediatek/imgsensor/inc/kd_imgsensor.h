@@ -582,6 +582,12 @@
 #define BLACKJACK_SUN_GC02M1C_SENSOR_ID 	0x02e1
 #define BLACKJACK_TSP_GC02M1B_SENSOR_ID 	0x02e2
 #define BJ_SUN_GC02M1B_16880_SENSOR_ID 		0x02e3
+#define MALTALITE_TXD_S5K3L6_SENSOR_ID          0x30C6
+#define SENSOR_DRVNAME_MALTALITE_TXD_S5K3L6_MIPI_RAW    "maltalite_txd_s5k3l6_mipi_raw"
+#define MALTALITE_WIN_OV13B10_SENSOR_ID                       0x560D42
+#define SENSOR_DRVNAME_MALTALITE_WIN_OV13B10_MIPI_RAW         "maltalite_win_ov13b10_mipi_raw"
+#define MALTALITE_SEA_GC5035_SENSOR_ID          (0x5035 + 3)
+#define SENSOR_DRVNAME_MALTALITE_SEA_GC5035_MIPI_RAW         "maltalite_sea_gc5035_mipi_raw"
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)

@@ -26,11 +26,11 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "melta_sea_gc5035mipi_Sensor.h"
+#include "maltalite_sea_gc5035mipi_Sensor.h"
 #include <linux/slab.h>
 
 /**************** Modify Following Strings for Debug ******************/
-#define PFX "melta_sea_gc5035_camera_sensor"
+#define PFX "maltalite_sea_gc5035_camera_sensor"
 /********************   Modify end    *********************************/
 
 #define cam_pr_debug(format, args...) \
@@ -45,7 +45,7 @@ static kal_uint32 Dgain_ratio = GC5035_SENSOR_DGAIN_BASE;
 static struct gc5035_otp_t gc5035_otp_data;
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MELTA_SEA_GC5035_SENSOR_ID,
+	.sensor_id = MALTALITE_SEA_GC5035_SENSOR_ID,
 	.checksum_value = 0xcde448ca,
 
 	.pre = {
@@ -147,7 +147,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 #endif
 	.mclk = 26,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
-	.i2c_addr_table = {0x6e,0xff},
+	.i2c_addr_table = {0x7e,0xff},
 };
 
 static struct imgsensor_struct imgsensor = {
@@ -162,7 +162,7 @@ static struct imgsensor_struct imgsensor = {
 	.test_pattern = KAL_FALSE,
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,
-	.i2c_write_id = 0x6e,
+	.i2c_write_id = 0x7e,
 };
 
 /* Sensor output window information */
@@ -1755,14 +1755,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if ((*sensor_id + 1) == imgsensor_info.sensor_id) {
+			if ((*sensor_id + 3) == imgsensor_info.sensor_id) {
 				ModuleId = gc5035_otp_identify(*sensor_id);		
 				cam_pr_debug_1("ModuleId=0x%x, sensor id: 0x%x\n",ModuleId, *sensor_id);
 				if (ModuleId == 0x2) //seasuns module
 				{
 					memset(front_cam_name, 0x00, sizeof(front_cam_name));
-					memcpy(front_cam_name, "1_seasons_gc5035", 64);
-					*sensor_id = MELTA_SEA_GC5035_SENSOR_ID;
+					memcpy(front_cam_name, "1_maltalite_seasons_gc5035", 64);
+					*sensor_id = MALTALITE_SEA_GC5035_SENSOR_ID;
 					cam_pr_debug_1("Now using seasons module,ModuleId = 0x%x sensor_id=0x%x\n",ModuleId,*sensor_id);
 					return ERROR_NONE;
 				}
@@ -1790,14 +1790,14 @@ static kal_uint32 open(void)
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
 
-	cam_pr_debug_1("seasons module gc5035_open\n");
+	cam_pr_debug_1("maltalite seasons module gc5035_open\n");
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = (return_sensor_id() + 1);//seasons module
+			sensor_id = (return_sensor_id() + 3);//seasons module
 			if (sensor_id == imgsensor_info.sensor_id) {
 				cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
@@ -2567,7 +2567,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 MELTA_SEA_GC5035_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MALTALITE_SEA_GC5035_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	cam_pr_debug("E\n");
 	/* To Do : Check Sensor status here */
