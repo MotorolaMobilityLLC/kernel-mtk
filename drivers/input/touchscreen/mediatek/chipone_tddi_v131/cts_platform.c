@@ -398,6 +398,7 @@ int cts_plat_spi_write(struct cts_platform_data *pdata, u8 dev_addr,
     	put_unaligned_le16(crc, &pdata->spi_tx_buf[7+data_len]);
         do {
             ret = cts_spi_send_recv(pdata, len + 7, pdata->spi_tx_buf, pdata->spi_rx_buf);
+            udelay(10 * data_len);
             if (ret) {
                 if (delay) {
                     mdelay(delay);
