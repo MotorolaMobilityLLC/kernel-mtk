@@ -313,7 +313,7 @@ int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
 #ifdef CONFIG_HBM_SUPPORT
-	if (g_hbm_enable)
+	if (g_hbm_enable && level != 0)
 		level = 256;
 #endif
 	DISPDBG("mtkfb_set_backlight_level:%d Start\n",
