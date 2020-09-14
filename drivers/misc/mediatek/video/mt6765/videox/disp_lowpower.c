@@ -1219,6 +1219,7 @@ int primary_display_is_idle(void)
 	return idlemgr_pgc->is_primary_idle;
 }
 
+DEFINE_MUTEX(LeaveIdleLock);
 void primary_display_idlemgr_kick(const char *source, int need_lock)
 {
 	char log[128] = "";
@@ -1239,6 +1240,8 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 	/* update kick timestamp */
 	idlemgr_pgc->idlemgr_last_kick_time = sched_clock();
 
+	mutex_lock(&LeaveIdleLock);
+
 	if (primary_display_is_idle()) {
 		primary_display_idlemgr_leave_idle_nolock();
 		primary_display_set_idle_stat(0);
@@ -1248,6 +1251,8 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 		/* wake up idlemgr process to monitor next idle stat */
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
 	}
+
+	mutex_unlock(&LeaveIdleLock);
 
 	if (need_lock)
 		primary_display_manual_unlock();
