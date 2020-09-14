@@ -9,6 +9,9 @@
 #include "cts_charger_detect.h"
 #include "cts_earjack_detect.h"
 
+unsigned char g_lcm_info_flag;
+extern char lcd_info_pr[256];
+
 #ifdef CONFIG_CTS_I2C_HOST
 static int cts_i2c_writeb(const struct cts_device *cts_dev,
         u32 addr, u8 b, int retry, int delay)
@@ -2415,6 +2418,13 @@ init_hwdata:
     if (ret) {
         cts_err("Device hwid: %06x fwid: %04x not found", hwid, fwid);
         return -ENODEV;
+    }
+
+    g_lcm_info_flag = 0;
+    if (strstr(lcd_info_pr, "icnl9911c")) {
+        if (strstr(lcd_info_pr, "hlt")) {
+            g_lcm_info_flag = LCM_INFO_HLT_GLASS;
+        }
     }
 
 #ifdef CFG_CTS_FIRMWARE_FORCE_UPDATE
