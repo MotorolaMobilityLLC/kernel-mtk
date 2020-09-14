@@ -1342,6 +1342,187 @@ static ssize_t noise_test_store(struct device *dev,
 static DEVICE_ATTR(noise_test, S_IWUSR | S_IRUGO,
         noise_test_show, noise_test_store);
 
+static ssize_t self_test_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
+    struct cts_device *cts_dev = &cts_data->cts_dev;
+    struct cts_rawdata_test_priv_param rawdata_test_priv_param = {
+        .frames = 16,
+        //.work_mode = 0,
+    };
+    struct cts_test_param rawdata_test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_VALIDATE_MAX |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE,
+        .test_data_filepath = "/sdcard/chipone-tddi-rawdata-test-data.txt",
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+        .priv_param = &rawdata_test_priv_param,
+        .priv_param_size = sizeof(rawdata_test_priv_param),
+    };
+    struct cts_noise_test_priv_param noise_test_priv_param = {
+        .frames = 50,
+        //.work_mode = 0,
+    };
+    struct cts_test_param noise_test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MAX |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE,
+        .test_data_filepath = "/sdcard/chipone-tddi-rawdata-test-data.txt",
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+        .priv_param = &noise_test_priv_param,
+        .priv_param_size = sizeof(noise_test_priv_param),
+    };
+    struct cts_test_param open_test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE,
+        .test_data_filepath = "/sdcard/chipone-tddi-open-test-data.txt",
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+    };
+    struct cts_test_param short_test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE,
+        .test_data_filepath = "/sdcard/chipone-tddi-short-test-data.txt",
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+    };
+    struct cts_test_param compensate_cap_test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_VALIDATE_MAX |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE,
+        .test_data_filepath = "/sdcard/chipone-tddi-comp-cap-test-data.txt",
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+    };
+    u16 rawdata_min = 700, rawdata_max = 1500;
+    u16 open_threshold = 200;
+    u16 short_threshold = 200;
+    u8  compensate_cap_min = 20;
+    u8  compensate_cap_max = 100;
+    int ret;
+    int rawdata_test_result = 0;
+    int noise_test_result = 0;
+    int open_test_result = 0;
+    int short_test_result = 0;
+    int comp_cap_test_result = 0;
+
+    if (argc < 1 || argc > 7) {
+        return scnprintf(buf, PAGE_SIZE,
+            "Invalid num args\n\n"
+            "USAGE:\n"
+            "  1. echo 1 [rawdata_min] [rawdata_max] "
+                        "[open_threshold] [short_threshold] "
+                        "[compensate_cap_min] [compensate_cap_max] "
+                        "> self_test\n"
+            "  2. cat self_test\n");
+    }
+
+    /* Ignore argv[0] */
+
+    if (argc > 1) {
+        ret = kstrtou16(argv[1], 0, &rawdata_min);
+        if (ret) {
+            return sprintf(buf, "Invalid rawdata test min: %s\n", argv[1]);
+        }
+    }
+    if (argc > 2) {
+        ret = kstrtou16(argv[2], 0, &rawdata_max);
+        if (ret) {
+            return sprintf(buf, "Invalid rawdata test max: %s\n", argv[2]);
+        }
+    }
+    if (argc > 3) {
+        ret = kstrtou16(argv[3], 0, &open_threshold);
+        if (ret) {
+            return sprintf(buf, "Invalid open test threshold: %s\n", argv[3]);
+        }
+    }
+    if (argc > 4) {
+        ret = kstrtou16(argv[4], 0, &short_threshold);
+        if (ret) {
+            return sprintf(buf, "Invalid short test threshold: %s\n", argv[4]);
+        }
+    }
+    if (argc > 5) {
+        ret = kstrtou8(argv[5], 0, &compensate_cap_min);
+        if (ret) {
+            return sprintf(buf, "Invalid compensate min: %s\n", argv[3]);
+        }
+    }
+    if (argc > 6) {
+        ret = kstrtou8(argv[6], 0, &compensate_cap_max);
+        if (ret) {
+            return sprintf(buf, "Invalid compensate max: %s\n", argv[4]);
+        }
+    }
+
+    cts_info("Selftest, rawdata: [%u, %u] open: %u, short: %u, comp_cap: [%u, %u]",
+        rawdata_min, rawdata_max, open_threshold, short_threshold,
+        compensate_cap_min, compensate_cap_max);
+
+    rawdata_test_result = cts_test_rawdata(cts_dev, &rawdata_test_param);
+    if (rawdata_test_result) {
+        cts_err("Rawdata test failed %d", rawdata_test_result);
+        // Go through
+    }
+    noise_test_result = cts_test_noise(cts_dev, &noise_test_param);
+    if (noise_test_result) {
+        cts_err("Noise test failed %d", noise_test_result);
+    }
+    open_test_result = cts_test_open(cts_dev, &open_test_param);
+    if (open_test_result) {
+        cts_err("Open test failed %d", open_test_result);
+    }
+    short_test_result = cts_test_short(cts_dev, &short_test_param);
+    if (short_test_result) {
+        cts_err("Short test failed %d", short_test_result);
+    }
+    comp_cap_test_result = cts_test_compensate_cap(cts_dev,
+        &compensate_cap_test_param);
+    if (comp_cap_test_result) {
+        cts_err("Compensate cap test failed %d", comp_cap_test_result);
+    }
+
+    return scnprintf(buf, PAGE_SIZE,
+        "Rawdata  test: %s\n"
+        "Noise    test: %s\n"
+        "Open     test: %s\n"
+        "Short    test: %s\n"
+        "Comp cap test: %s\n",
+        rawdata_test_result ? "fail" : "pass",
+        noise_test_result ? "fail" : "pass",
+        open_test_result ? "fail" : "pass",
+        short_test_result ? "fail" : "pass",
+        comp_cap_test_result ? "fail" : "pass");
+}
+
+static ssize_t self_test_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t count)
+{
+    parse_arg(buf, count);
+
+    return count;
+}
+static DEVICE_ATTR(self_test, S_IWUSR | S_IRUGO,
+        self_test_show, self_test_store);
+
 static struct attribute *cts_dev_test_atts[] = {
     &dev_attr_testing.attr,
     &dev_attr_reset_pin_test.attr,
@@ -1351,6 +1532,7 @@ static struct attribute *cts_dev_test_atts[] = {
     &dev_attr_open_test.attr,
     &dev_attr_short_test.attr,
     &dev_attr_compensate_cap_test.attr,
+    &dev_attr_self_test.attr,
     NULL
 };
 
