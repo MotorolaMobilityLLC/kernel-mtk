@@ -24,13 +24,14 @@
 #define MAX_ARG_LENGTH              (1024)
 
 static char cmdline_param[MAX_ARG_LENGTH + 1];
-static int  argc;
-static char *argv[MAX_ARG_NUM];
+int  argc;
+char *argv[MAX_ARG_NUM];
 
-static int jitter_test_frame = 10;         
-static s16 *manualdiff_base = NULL;       
+static int jitter_test_frame = 10;
+static s16 *manualdiff_base = NULL;
+u16 cts_spi_speed = 1000;
 
-static int parse_arg(const char *buf, size_t count)
+int parse_arg(const char *buf, size_t count)
 {
     char *p;
 
@@ -138,9 +139,9 @@ static ssize_t read_firmware_register_show(struct device *dev,
     }
 
     cts_info("Read firmware register from 0x%04x size %u", addr, size);
-    cts_lock_device(cts_dev);    
+    cts_lock_device(cts_dev);
     ret = cts_fw_reg_readsb(cts_dev, addr, data, (size_t)size);
-    cts_unlock_device(cts_dev);    
+    cts_unlock_device(cts_dev);
     if (ret) {
         count = scnprintf(buf, PAGE_SIZE,
             "Read firmware register from 0x%04x size %u failed %d\n",
@@ -300,7 +301,7 @@ static ssize_t write_hw_reg_store(struct device *dev,
         cts_err("Allocate buffer for write data failed\n");
         return -ENOMEM;
     }
-    
+
     for (i = 1; i < argc; i++) {
         ret = kstrtou8(argv[i], 0, data + i - 1);
         if (ret) {
@@ -397,10 +398,12 @@ static ssize_t esd_protection_show(struct device *dev,
     u8 esd_protection;
 
     cts_lock_device(cts_dev);
-    ret = cts_fw_reg_readb(&cts_data->cts_dev, 0x8000 + 342, &esd_protection);
+    ret = cts_fw_reg_readb(&cts_data->cts_dev,
+        CTS_DEVICE_FW_REG_ESD_PROTECTION, &esd_protection);
     cts_unlock_device(cts_dev);
     if (ret) {
-        return scnprintf(buf, PAGE_SIZE, "Read firmware ESD protection register failed %d\n", ret);
+        return scnprintf(buf, PAGE_SIZE,
+            "Read firmware ESD protection register failed %d\n", ret);
     }
 
     return scnprintf(buf, PAGE_SIZE, "ESD protection: %u\n", esd_protection);
@@ -416,10 +419,12 @@ static ssize_t monitor_mode_show(struct device *dev,
     u8  value;
 
     cts_lock_device(cts_dev);
-    ret = cts_fw_reg_readb(&cts_data->cts_dev, 0x8000 + 344, &value);
+    ret = cts_fw_reg_readb(&cts_data->cts_dev,
+        CTS_DEVICE_FW_REG_FLAG_BITS, &value);
     cts_unlock_device(cts_dev);
     if (ret) {
-        return scnprintf(buf, PAGE_SIZE, "Read firmware monitor enable register failed %d\n", ret);
+        return scnprintf(buf, PAGE_SIZE,
+            "Read firmware monitor enable register failed %d\n", ret);
     }
 
     return scnprintf(buf, PAGE_SIZE, "Monitor mode: %s\n",
@@ -442,7 +447,8 @@ static ssize_t monitor_mode_store(struct device *dev,
         buf[0], enable ? "Enable" : "Disable");
 
     cts_lock_device(cts_dev);
-    ret = cts_fw_reg_readb(&cts_data->cts_dev, 0x8000 + 344, &value);
+    ret = cts_fw_reg_readb(&cts_data->cts_dev,
+        CTS_DEVICE_FW_REG_FLAG_BITS, &value);
     cts_unlock_device(cts_dev);
     if (ret) {
         cts_err("Write firmware monitor enable register failed %d", ret);
@@ -461,7 +467,8 @@ static ssize_t monitor_mode_store(struct device *dev,
         }
 
         cts_lock_device(cts_dev);
-        ret = cts_fw_reg_writeb(&cts_data->cts_dev, 0x8000 + 344, value);
+        ret = cts_fw_reg_writeb(&cts_data->cts_dev,
+            CTS_DEVICE_FW_REG_FLAG_BITS, value);
         cts_unlock_device(cts_dev);
         if (ret) {
             cts_err("Write firmware monitor enable register failed %d", ret);
@@ -482,13 +489,16 @@ static ssize_t auto_compensate_show(struct device *dev,
     u8  value;
 
     cts_lock_device(cts_dev);
-    ret = cts_fw_reg_readb(&cts_data->cts_dev, 0x8000 + 276, &value);
+    ret = cts_fw_reg_readb(&cts_data->cts_dev,
+        CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_ENABLE, &value);
     cts_unlock_device(cts_dev);
     if (ret) {
-        return scnprintf(buf, PAGE_SIZE, "Read auto compensate enable register failed %d\n", ret);
+        return scnprintf(buf, PAGE_SIZE,
+            "Read auto compensate enable register failed %d\n", ret);
     }
 
-    return scnprintf(buf, PAGE_SIZE, "Auto compensate: %s\n", value ? "Enable" : "Disable");
+    return scnprintf(buf, PAGE_SIZE,
+        "Auto compensate: %s\n", value ? "Enable" : "Disable");
 }
 static DEVICE_ATTR(auto_compensate, S_IRUGO, auto_compensate_show, NULL);
 
@@ -715,7 +725,7 @@ static ssize_t flash_info_show(struct device *dev,
 
         program_mode = cts_is_device_program_mode(cts_dev);
         enabled = cts_is_device_enabled(cts_dev);
-        
+
         ret = cts_prepare_flash_operation(cts_dev);
         if (ret) {
             return scnprintf(buf, PAGE_SIZE, "Prepare flash operation failed %d", ret);
@@ -821,7 +831,7 @@ static ssize_t read_flash_show(struct device *dev,
         ret = kernel_write(file, data, size, &pos);
 #else
         ret = kernel_write(file, data, size, pos);
-#endif                
+#endif
         if (ret != size) {
             count += scnprintf(buf, PAGE_SIZE, "Write flash data to file '%s' failed %d",
                 argv[2], ret);
@@ -973,36 +983,47 @@ static ssize_t open_test_show(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    u16 threshold;
+    struct cts_test_param test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE,
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+    };
+    int min = 0;
     int ret;
 
     if (argc != 1) {
         return scnprintf(buf, PAGE_SIZE, "Invalid num args %d\n", argc);
     }
 
-    ret = kstrtou16(argv[0], 0, &threshold);
+    ret = kstrtoint(argv[0], 0, &min);
     if (ret) {
-        return sprintf(buf, "Invalid threshold: %s\n", argv[0]);
+        return scnprintf(buf, PAGE_SIZE, "Invalid min thres: %s\n", argv[0]);
     }
 
-    cts_info("Open test, threshold = %u", threshold);
+    cts_info("Open test, threshold = %u", min);
 
-    ret = cts_open_test(cts_dev, threshold);
+    test_param.min = &min;
+
+    ret = cts_test_open(cts_dev, &test_param);
     if (ret) {
-        return sprintf(buf, "Open test FAILED %d, threshold = %u\n",
-            ret, threshold);
+        return scnprintf(buf, PAGE_SIZE,
+            "Open test FAILED %d, threshold = %u\n", ret, min);
     } else {
-        return sprintf(buf, "Open test PASSED, threshold = %u\n",
-            threshold);
+        return scnprintf(buf, PAGE_SIZE,
+            "Open test PASSED, threshold = %u\n", min);
     }
 }
+
 
 /* echo threshod > open_test */
 static ssize_t open_test_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count)
 {
     parse_arg(buf, count);
-    
+
     return count;
 }
 static DEVICE_ATTR(open_test, S_IWUSR | S_IRUGO, open_test_show, open_test_store);
@@ -1012,29 +1033,40 @@ static ssize_t short_test_show(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    u16 threshold;
+    struct cts_test_param test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE,
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+    };
+    int min = 0;
     int ret;
 
     if (argc != 1) {
-        return sprintf(buf, "Invalid num args %d\n", argc);
+        return scnprintf(buf, PAGE_SIZE, "Invalid num args %d\n", argc);
     }
 
-    ret = kstrtou16(argv[0], 0, &threshold);
+    ret = kstrtoint(argv[0], 0, &min);
     if (ret) {
-        return sprintf(buf, "Invalid threshold: %s\n", argv[0]);
+        return scnprintf(buf, PAGE_SIZE, "Invalid min thres: %s\n", argv[0]);
     }
 
-    cts_info("Short test, threshold = %u", threshold);
+    cts_info("Short test, threshold = %u", min);
 
-    ret = cts_short_test(cts_dev, threshold);
+    test_param.min = &min;
+
+    ret = cts_test_short(cts_dev, &test_param);
     if (ret) {
-        return sprintf(buf, "Short test FAILED %d, threshold = %u\n",
-            ret, threshold);
+        return scnprintf(buf, PAGE_SIZE,
+            "Short test FAILED %d, threshold = %u\n", ret, min);
     } else {
-        return sprintf(buf, "Short test PASSED, threshold = %u\n",
-            threshold);
+        return scnprintf(buf, PAGE_SIZE,
+            "Short test PASSED, threshold = %u\n", min);
     }
 }
+
 
 /* echo threshod > short_test */
 static ssize_t short_test_store(struct device *dev,
@@ -1052,69 +1084,108 @@ static ssize_t testing_show(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
 
-    return sprintf(buf, "Testting: %s\n",
+    return scnprintf(buf, PAGE_SIZE, "Testting: %s\n",
         cts_data->cts_dev.rtdata.testing ? "Y" : "N");
 }
 static DEVICE_ATTR(testing, S_IRUGO, testing_show, NULL);
 
+static ssize_t reset_pin_test_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
 #ifdef CFG_CTS_HAS_RESET_PIN
-static ssize_t reset_test_show(struct device *dev,
+    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
+    struct cts_device *cts_dev = &cts_data->cts_dev;
+    struct cts_test_param test_param = {
+        .flags = 0,
+    };
+    int ret;
+
+    ret = cts_test_reset_pin(cts_dev, &test_param);
+    if (ret) {
+        return scnprintf(buf, PAGE_SIZE,
+            "Reset-Pin test FAIL %d\n", ret);
+    } else {
+        return scnprintf(buf, PAGE_SIZE,
+            "Reset-Pin test PASS\n");
+    }
+#else /* CFG_CTS_HAS_RESET_PIN */
+    return scnprintf(buf, PAGE_SIZE,
+        "Reset-Pin test NOT supported(CFG_CTS_HAS_RESET_PIN not defined)\n");
+#endif
+}
+static DEVICE_ATTR(reset_pin_test, S_IRUGO, reset_pin_test_show, NULL);
+
+static ssize_t int_pin_test_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
+    struct cts_test_param test_param = {
+        .flags = 0,
+    };
     int ret;
-    int count;
 
-    ret = cts_reset_test(cts_dev);
-    if (ret == 0) {
-        count = sprintf(buf, "reset pin test sucessful\n");  
-    }    
-    else { 
-        count = sprintf(buf, "reset pin test failed\n");  
-    }          
-
-    return count;
+    ret = cts_test_int_pin(cts_dev, &test_param);
+    if (ret) {
+        return scnprintf(buf, PAGE_SIZE,
+            "Int-Pin test FAIL %d\n", ret);
+    } else {
+        return scnprintf(buf, PAGE_SIZE,
+            "Int-Pin test PASS\n");
+    }
 }
-static DEVICE_ATTR(reset_test, S_IRUGO, reset_test_show, NULL);
-#endif
+static DEVICE_ATTR(int_pin_test, S_IRUGO, int_pin_test_show, NULL);
 
 static ssize_t compensate_cap_test_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    u8 min_thres, max_thres;
+    struct cts_test_param test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_VALIDATE_MAX |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE,
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+    };
+    int min = 0, max = 0;
     int ret;
 
     if (argc != 2) {
-        return sprintf(buf, "Invalid num args\n"
-                "USAGE:\n"
-                "  1. echo min max > compensate_cap_test\n"
-                "  2. cat compensate_cap_test\n");
+        return scnprintf(buf, PAGE_SIZE, "Invalid num args\n"
+                   "USAGE:\n"
+                   "  1. echo min max > compensate_cap_test\n"
+                   "  2. cat compensate_cap_test\n");
     }
 
-    ret = kstrtou8(argv[0], 0, &min_thres);
+    ret = kstrtoint(argv[0], 0, &min);
     if (ret) {
-        return sprintf(buf, "Invalid min_thres: %s\n", argv[0]);
+        return scnprintf(buf, PAGE_SIZE, "Invalid min thres: %s\n", argv[0]);
     }
 
-    ret = kstrtou8(argv[1], 0, &max_thres);
+    ret = kstrtoint(argv[1], 0, &max);
     if (ret) {
-        return sprintf(buf, "Invalid max_thres: %s\n", argv[1]);
+        return scnprintf(buf, PAGE_SIZE, "Invalid max thres: %s\n", argv[1]);
     }
 
-    cts_info("Compensate cap test, min_thres = %u, max_thres = %u", min_thres, max_thres);
+    cts_info("Compensate cap test, min: %u, max: %u",
+         min, max);
 
-    ret = cts_compensate_cap_test(cts_dev, min_thres, max_thres);
+    test_param.min = &min;
+    test_param.max = &max;
+
+    ret = cts_test_compensate_cap(cts_dev, &test_param);
     if (ret) {
-        return sprintf(buf, "Compensate cap test FAILED, min_thres = %u, max_thres=%u\n",
-            min_thres, max_thres);
+        return scnprintf(buf, PAGE_SIZE,
+           "Compensate cap test FAILED, min: %u, max: %u\n", min, max);
     } else {
-        return sprintf(buf, "Compensate cap test PASSED, min_thres = %u, max_thres=%u\n",
-            min_thres, max_thres);
+        return scnprintf(buf, PAGE_SIZE,
+           "Compensate cap test PASSED, min: %u, max: %u\n", min, max);
     }
 }
+
 
 /* echo threshod > short_test */
 static ssize_t compensate_cap_test_store(struct device *dev,
@@ -1132,39 +1203,67 @@ static ssize_t rawdata_test_show(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    u16 min_thres, max_thres;
+    struct cts_rawdata_test_priv_param priv_param = {
+        .frames = 16,
+        //.work_mode = 0,
+    };
+    struct cts_test_param test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MIN |
+                 CTS_TEST_FLAG_VALIDATE_MAX |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE,
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+        .priv_param = &priv_param,
+        .priv_param_size = sizeof(priv_param),
+    };
+
+    int min_thres, max_thres;
     int ret;
 
-    if (argc != 2) {
-        return sprintf(buf, "Invalid num args\n"
-                "USAGE:\n"
-                "  1. echo min max > rawdata_test\n"
-                "  2. cat rawdata_test\n");
+    if (argc < 2 || argc > 3) {
+        return scnprintf(buf, PAGE_SIZE, "Invalid num args\n"
+                   "USAGE:\n"
+                   "  1. echo min max [frames] > rawdata_test\n"
+                   "  2. cat rawdata_test\n");
     }
 
-    ret = kstrtou16(argv[0], 0, &min_thres);
+    ret = kstrtoint(argv[0], 0, &min_thres);
     if (ret) {
-        return sprintf(buf, "Invalid min_thres: %s\n", argv[0]);
+        return scnprintf(buf, PAGE_SIZE, "Invalid min thres: %s\n", argv[0]);
     }
 
-    ret = kstrtou16(argv[1], 0, &max_thres);
+    ret = kstrtoint(argv[1], 0, &max_thres);
     if (ret) {
-        return sprintf(buf, "Invalid max_thres: %s\n", argv[1]);
+        return scnprintf(buf, PAGE_SIZE, "Invalid max thres: %s\n", argv[1]);
     }
 
-    cts_info("Rawdata test, min_thres = %u, max_thres = %u", min_thres, max_thres);
+    if (argc > 2) {
+        ret = kstrtou32(argv[2], 0, &priv_param.frames);
+        if (ret) {
+            return scnprintf(buf, PAGE_SIZE, "Invalid frames: %s\n", argv[2]);
+        }
 
-    ret = cts_rawdata_test(cts_dev, min_thres, max_thres);
+    }
+    cts_info("Rawdata test, frames: %u min: %d, max: %d",
+        priv_param.frames, min_thres, max_thres);
+
+    test_param.min = &min_thres;
+    test_param.max = &max_thres;
+
+    ret = cts_test_rawdata(cts_dev, &test_param);
     if (ret) {
-        return sprintf(buf, "Rawdata test FAILED, min_thres = %u, max_thres=%u\n",
-            min_thres, max_thres);
+        return scnprintf(buf, PAGE_SIZE,
+           "Rawdata test FAILED ret: %d, threshold: [%u, %u]\n",
+           ret, min_thres, max_thres);
     } else {
-        return sprintf(buf, "Rawdata test PASSED, min_thres = %u, max_thres=%u\n",
-            min_thres, max_thres);
+        return scnprintf(buf, PAGE_SIZE,
+           "Rawdata test PASSED, threshold: [%u, %u]\n",
+           min_thres, max_thres);
     }
 }
 
-/* echo threshod > short_test */
 static ssize_t rawdata_test_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -1175,129 +1274,83 @@ static ssize_t rawdata_test_store(struct device *dev,
 static DEVICE_ATTR(rawdata_test, S_IWUSR | S_IRUGO,
         rawdata_test_show, rawdata_test_store);
 
-static ssize_t self_test_show(struct device *dev,
+static ssize_t noise_test_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    u16 rawdata_min = 700, rawdata_max = 1500;
-    u16 open_threshold = 200;
-    u16 short_threshold = 200;
-    u8 compensate_cap_min = 20;
-    u8 compensate_cap_max = 100;
+    struct cts_noise_test_priv_param priv_param = {
+        .frames = 16,
+        //.work_mode = 0,
+    };
+    struct cts_test_param test_param = {
+        .flags = CTS_TEST_FLAG_VALIDATE_DATA |
+                 CTS_TEST_FLAG_VALIDATE_MAX |
+                 CTS_TEST_FLAG_STOP_TEST_IF_VALIDATE_FAILED |
+                 CTS_TEST_FLAG_DUMP_TEST_DATA_TO_CONSOLE,
+        .num_invalid_node = 0,
+        .invalid_nodes = NULL,
+        .priv_param = &priv_param,
+        .priv_param_size = sizeof(priv_param),
+    };
+
+    int threshlod;
     int ret;
-    int rawdata_test_result = 0;
-    int open_test_result = 0;
-    int short_test_result = 0;
-    int comp_cap_test_result = 0;
 
-    if (argc < 1 || argc > 7) {
-        return sprintf(buf, "Invalid num args\n"
-                "USAGE:\n"
-                "  1. echo 1 [rawdata_min] [rawdata_max] [open_threshold] [short_threshold] > self_test\n"
-                "  2. cat self_test\n");
+    if (argc < 1 || argc > 2) {
+        return scnprintf(buf, PAGE_SIZE, "Invalid num args\n"
+                   "USAGE:\n"
+                   "  1. echo threshold [frames] > noise_test\n"
+                   "  2. cat noise_test\n");
     }
 
-	if (argc > 1) {
-	    ret = kstrtou16(argv[1], 0, &rawdata_min);
-	    if (ret) {
-	        return sprintf(buf, "Invalid rawdata test min: %s\n", argv[1]);
-	    }
-	}
-
-	if (argc > 2) {
-		ret = kstrtou16(argv[2], 0, &rawdata_max);
-		if (ret) {
-			return sprintf(buf, "Invalid rawdata test max: %s\n", argv[2]);
-		}
-	}
-
-	if (argc > 3) {
-		ret = kstrtou16(argv[3], 0, &open_threshold);
-		if (ret) {
-			return sprintf(buf, "Invalid open test threshold: %s\n", argv[3]);
-		}
-	}
-
-	if (argc > 4) {
-		ret = kstrtou16(argv[4], 0, &short_threshold);
-		if (ret) {
-			return sprintf(buf, "Invalid short test threshold: %s\n", argv[4]);
-		}
-	}
-	if (argc > 5) {
-		ret = kstrtou8(argv[5], 0, &compensate_cap_min);
-		if (ret) {
-			return sprintf(buf, "Invalid compensate min: %s\n", argv[3]);
-		}
-	}
-
-	if (argc > 6) {
-		ret = kstrtou8(argv[6], 0, &compensate_cap_max);
-		if (ret) {
-			return sprintf(buf, "Invalid compensate max: %s\n", argv[4]);
-		}
-	}
-
-    cts_info("Selftest, rawdata: [%u, %d] open: %u, short: %u, comp_cap [%u, %u]",
-		rawdata_min, rawdata_max, open_threshold, short_threshold,
-		compensate_cap_min, compensate_cap_max);
-
-    rawdata_test_result = cts_rawdata_test(cts_dev, rawdata_min, rawdata_max);
-    if (rawdata_test_result) {
-		cts_err("Rawdata test failed %d", rawdata_test_result);
-        // Go through
-    }
-	open_test_result = cts_open_test(cts_dev, open_threshold);
-    if (open_test_result) {
-		cts_err("Open test failed %d", open_test_result);
-    }
-	short_test_result = cts_short_test(cts_dev, short_threshold);
-    if (short_test_result) {
-		cts_err("Short test failed %d", short_test_result);
-    }
-    comp_cap_test_result = cts_compensate_cap_test(cts_dev,
-		compensate_cap_min, compensate_cap_max);
-    if (comp_cap_test_result) {
-		cts_err("Compensate cap test failed %d", comp_cap_test_result);
+    ret = kstrtoint(argv[0], 0, &threshlod);
+    if (ret) {
+        return scnprintf(buf, PAGE_SIZE, "Invalid min thres: %s\n", argv[0]);
     }
 
-	ret = 0;
-	if (rawdata_test_result) {
-		ret += BIT(0);
-	}
-	if (open_test_result) {
-		ret += BIT(1);
-	}
-	if (short_test_result) {
-		ret += BIT(2);
-	}
-	if (comp_cap_test_result) {
-		ret += BIT(3);
-	}
-	return sprintf(buf, "%s\n", ret ? "fail" : "pass");
+    if (argc > 1) {
+        ret = kstrtou32(argv[1], 0, &priv_param.frames);
+        if (ret) {
+            return scnprintf(buf, PAGE_SIZE, "Invalid frames: %s\n", argv[1]);
+        }
+
+    }
+    cts_info("Noise test, frames: %u threshold: %d",
+        priv_param.frames, threshlod);
+
+    test_param.max = &threshlod;
+
+    ret = cts_test_noise(cts_dev, &test_param);
+    if (ret) {
+        return scnprintf(buf, PAGE_SIZE,
+           "Noise test FAIL ret: %d, threshold: %u\n",
+           ret, threshlod);
+    } else {
+        return scnprintf(buf, PAGE_SIZE,
+           "Noise test PASS, threshold: %u\n", threshlod);
+    }
 }
 
-static ssize_t self_test_store(struct device *dev,
+static ssize_t noise_test_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count)
 {
     parse_arg(buf, count);
 
     return count;
 }
-static DEVICE_ATTR(self_test, S_IWUSR | S_IRUGO,
-        self_test_show, self_test_store);
+static DEVICE_ATTR(noise_test, S_IWUSR | S_IRUGO,
+        noise_test_show, noise_test_store);
 
 static struct attribute *cts_dev_test_atts[] = {
+    &dev_attr_testing.attr,
+    &dev_attr_reset_pin_test.attr,
+    &dev_attr_int_pin_test.attr,
+    &dev_attr_rawdata_test.attr,
+    &dev_attr_noise_test.attr,
     &dev_attr_open_test.attr,
     &dev_attr_short_test.attr,
-    &dev_attr_testing.attr,
-#ifdef CFG_CTS_HAS_RESET_PIN
-    &dev_attr_reset_test.attr,
-#endif
     &dev_attr_compensate_cap_test.attr,
-    &dev_attr_rawdata_test.attr,
-    &dev_attr_self_test.attr,
     NULL
 };
 
@@ -1450,7 +1503,7 @@ err_free_rawdata:
     kfree(rawdata);
 
     return (data_valid ? count : ret);
-    
+
 #undef RAWDATA_BUFFER_SIZE
 }
 static DEVICE_ATTR(rawdata, S_IRUGO, rawdata_show, NULL);
@@ -1561,10 +1614,10 @@ static ssize_t manualdiffdata_show(struct device *dev,
     int max_r, max_c, min_r, min_c;
     bool data_valid = true;
     int frame;
-    struct file *file=NULL;
+    struct file *file = NULL;
     int i;
     loff_t pos = 0;
-    
+
     cts_info("Show manualdiff");
 
     if (argc != 1 && argc != 2) {
@@ -1575,7 +1628,7 @@ static ssize_t manualdiffdata_show(struct device *dev,
                 "  or\n"
                 "  1. echo updatebase > manualdiff\n"
                 "  2. echo frame file > manualdiff\n"
-                "  3. cat manualdiff\n");  
+                "  3. cat manualdiff\n");
     }
 
     if (argc == 2) {
@@ -1587,10 +1640,10 @@ static ssize_t manualdiffdata_show(struct device *dev,
         if (IS_ERR(file)) {
             return scnprintf(buf, PAGE_SIZE, "Can't open file:%s", argv[1]);
         }
-    } 
+    }
     else {
-        frame = 1;        
-    }       
+        frame = 1;
+    }
 
     rawdata = (s16 *)kmalloc(DIFFDATA_BUFFER_SIZE(cts_dev), GFP_KERNEL);
     if (rawdata == NULL) {
@@ -1613,7 +1666,7 @@ static ssize_t manualdiffdata_show(struct device *dev,
     }
     msleep(50);
 
-    cts_info("frame %d, file:%s", frame, argv[1]);  
+    cts_info("frame %d, file:%s", frame, argv[1]);
     for (i = 0; i < frame; i++) {
         ret = cts_get_rawdata(cts_dev, rawdata);
         if(ret) {
@@ -1624,7 +1677,7 @@ static ssize_t manualdiffdata_show(struct device *dev,
             data_valid = true;
         }
         msleep(50);
-        
+
         if (data_valid) {
             max = -32768;
             min = 32767;
@@ -1632,10 +1685,10 @@ static ssize_t manualdiffdata_show(struct device *dev,
             max_r = max_c = min_r = min_c = 0;
             for (r = 0; r < cts_dev->fwdata.rows; r++) {
                 for (c = 0; c < cts_dev->fwdata.cols; c++) {
-                    s16 val; 
-                    
+                    s16 val;
+
                     rawdata[r * cts_dev->fwdata.cols + c] -= manualdiff_base[r * cts_dev->fwdata.cols + c];
-                    val = rawdata[r * cts_dev->fwdata.cols + c];                    
+                    val = rawdata[r * cts_dev->fwdata.cols + c];
                     sum += val;
                     if (val > max) {
                         max = val;
@@ -1674,19 +1727,19 @@ static ssize_t manualdiffdata_show(struct device *dev,
                 ret = kernel_write(file, buf, count, &pos);
 #else
                 ret = kernel_write(file, buf, count, pos);
-#endif                
+#endif
                 if (ret != count) {
                     cts_err("Write data to file '%s' failed %d", argv[1], ret);
                 }
                 file->f_pos += count;
-                count = 0;       
-            }    
+                count = 0;
+            }
         }
     }
     if (argc == 2) {
-        filp_close(file, NULL);   
-    }            
-            
+        filp_close(file, NULL);
+    }
+
     ret = cts_disable_get_rawdata(cts_dev);
     if (ret) {
         cts_err("Disable read raw data failed %d", ret);
@@ -1706,7 +1759,7 @@ static ssize_t manualdiffdata_store(struct device *dev,
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
     int ret;
-    
+
     parse_arg(buf, count);
 
     cts_lock_device(cts_dev);
@@ -1716,15 +1769,15 @@ static ssize_t manualdiffdata_store(struct device *dev,
             cts_err("Enable read raw data failed %d", ret);
             goto err_manual_diff_store;
         }
-    
+
         ret = cts_send_command(cts_dev, CTS_CMD_QUIT_GESTURE_MONITOR);
         if (ret) {
             cts_err("Send cmd QUIT_GESTURE_MONITOR failed %d", ret);
             goto err_manual_diff_store;
         }
         msleep(50);
-    
-        if (manualdiff_base != NULL) {    
+
+        if (manualdiff_base != NULL) {
             ret = cts_get_rawdata(cts_dev, manualdiff_base);
             if(ret) {
                 cts_err("Get raw data failed %d", ret);
@@ -1760,12 +1813,12 @@ static ssize_t jitter_store(struct device *dev,
     if (ret == 0) {
         if (cnt > 2 || cnt < 10000) {
             jitter_test_frame = cnt;
-        }        
+        }
     }
-    
-    cts_info("jitter test frame: %d", jitter_test_frame);    
+
+    cts_info("jitter test frame: %d", jitter_test_frame);
     return count;
-}    
+}
 
 static ssize_t jitter_show(struct device *dev,
         struct device_attribute *attr, char *buf)
@@ -1804,8 +1857,8 @@ static ssize_t jitter_show(struct device *dev,
 
     for (i = 0; i < DIFFDATA_BUFFER_SIZE(cts_dev)/2; i++) {
         rawdata_min[i] = 32767;
-        rawdata_max[i] = -32768;    
-    }    
+        rawdata_max[i] = -32768;
+    }
 
     ret = cts_enable_get_rawdata(cts_dev);
     if (ret) {
@@ -1836,9 +1889,9 @@ static ssize_t jitter_show(struct device *dev,
                 else if (rawdata_max[index] < rawdata[index])
                     rawdata_max[index] = rawdata[index];
             }
-        }      
+        }
         msleep(1);
-    }    
+    }
     ret = cts_disable_get_rawdata(cts_dev);
     if (ret) {
         cts_err("Disable read raw data failed %d", ret);
@@ -1851,9 +1904,9 @@ static ssize_t jitter_show(struct device *dev,
         max_r = max_c = min_r = min_c = 0;
         for (r = 0; r < cts_dev->fwdata.rows; r++) {
             for (c = 0; c < cts_dev->fwdata.cols; c++) {
-                s16 val; 
+                s16 val;
                 int index = r * cts_dev->fwdata.cols + c;
-                
+
                 val = rawdata_max[index] - rawdata_min[index];
                 rawdata[index] = val;
                 sum += val;
@@ -1889,7 +1942,7 @@ static ssize_t jitter_show(struct device *dev,
            buf[count++] = '\n';
         }
     }
-    
+
 err_free_rawdata_max:
     kfree(rawdata_max);
 err_free_rawdata_min:
@@ -1899,7 +1952,7 @@ err_free_rawdata:
 err_jitter_show_exit:
     cts_unlock_device(cts_dev);
     return (data_valid ? count : ret);
-}    
+}
 
 static DEVICE_ATTR(jitter, S_IRUSR|S_IWUSR, jitter_show, jitter_store);
 
@@ -1911,132 +1964,121 @@ static ssize_t compensate_cap_show(struct device *dev,
     u8 *cap = NULL;
     int ret;
     ssize_t count = 0;
-    bool data_valid = false;
+    int r, c, min, max, max_r, max_c, min_r, min_c, sum, average;
 
     cts_info("Read '%s'", attr->attr.name);
 
-    cts_lock_device(cts_dev);
-    ret = cts_enable_get_compensate_cap(cts_dev);
-    if (ret) {
-        count = scnprintf(buf, PAGE_SIZE,
-                "Enable get compensate cap failed %d\n", ret);
-        goto unlock_device;
-    }
-
-    cap = kzalloc(cts_dev->hwdata->num_row * cts_dev->hwdata->num_col, GFP_KERNEL);
+    cap = kzalloc(cts_dev->hwdata->num_row * cts_dev->hwdata->num_col,
+        GFP_KERNEL);
     if (cap == NULL) {
-        count = scnprintf(buf, PAGE_SIZE,
-                "Allocate mem for cap failed\n");
-        goto unlock_device;
+        return scnprintf(buf, PAGE_SIZE,
+            "Allocate mem for compensate cap failed\n");
     }
 
+    cts_lock_device(cts_dev);
     ret = cts_get_compensate_cap(cts_dev, cap);
-    if (ret) {
-        count = scnprintf(buf, PAGE_SIZE,
-                "Get compensate cap failed %d\n", ret);
-        goto unlock_device;
-    }
-
-    data_valid = true;
-
-    ret = cts_disable_get_compensate_cap(cts_dev);
-    if (ret) {
-        count = scnprintf(buf, PAGE_SIZE,
-                "Disable get compensate cap failed %d\n", ret);
-        goto unlock_device;
-    }
-
-unlock_device:
     cts_unlock_device(cts_dev);
+    if (ret) {
+        kfree(cap);
+        return scnprintf(buf, PAGE_SIZE,
+            "Get compensate cap failed %d\n", ret);
+    }
 
-    if (data_valid) {
-        int r, c, min, max, max_r, max_c, min_r, min_c, sum, average;
-
-        max = min = cap[0];
-        sum = 0;
-        max_r = max_c = min_r = min_c = 0;
-        for (r = 0; r < cts_dev->hwdata->num_row; r++) {
-            for (c = 0; c < cts_dev->hwdata->num_col; c++) {
-                u16 val = cap[r * cts_dev->hwdata->num_col + c];
-                sum += val;
-                if (val > max) {
-                    max = val;
-                    max_r = r;
-                    max_c = c;
-                } else if (val < min) {
-                    min = val;
-                    min_r = r;
-                    min_c = c;
-                }
+    max = min = cap[0];
+    sum = 0;
+    max_r = max_c = min_r = min_c = 0;
+    for (r = 0; r < cts_dev->hwdata->num_row; r++) {
+        for (c = 0; c < cts_dev->hwdata->num_col; c++) {
+            u16 val = cap[r * cts_dev->hwdata->num_col + c];
+            sum += val;
+            if (val > max) {
+                max = val;
+                max_r = r;
+                max_c = c;
+            } else if (val < min) {
+                min = val;
+                min_r = r;
+                min_c = c;
             }
         }
-        average = sum / (cts_dev->hwdata->num_row * cts_dev->hwdata->num_col);
+    }
+    average = sum / (cts_dev->hwdata->num_row * cts_dev->hwdata->num_col);
 
-        count += scnprintf(buf + count, PAGE_SIZE - count,
-            "----------------------------------------------------------------------------\n"
-            " Compensatete Cap MIN: [%d][%d]=%u, MAX: [%d][%d]=%u, AVG=%u\n"
-            "---+------------------------------------------------------------------------\n"
-            "   |", min_r, min_c, min, max_r, max_c, max, average);
+    count += scnprintf(buf + count, PAGE_SIZE - count,
+        "----------------------------------------------------------------------------\n"
+        " Compensatete Cap MIN: [%d][%d]=%u, MAX: [%d][%d]=%u, AVG=%u\n"
+        "---+------------------------------------------------------------------------\n"
+        "   |", min_r, min_c, min, max_r, max_c, max, average);
+    for (c = 0; c < cts_dev->hwdata->num_col; c++) {
+        count += scnprintf(buf + count, PAGE_SIZE - count, " %3u", c);
+    }
+    count += scnprintf(buf + count, PAGE_SIZE - count,
+        "\n"
+        "---+------------------------------------------------------------------------\n");
+
+    for (r = 0; r < cts_dev->hwdata->num_row; r++) {
+        count += scnprintf(buf + count, PAGE_SIZE - count, "%2u |", r);
         for (c = 0; c < cts_dev->hwdata->num_col; c++) {
-            count += scnprintf(buf + count, PAGE_SIZE - count, " %3u", c);
-        }
-        count += scnprintf(buf + count, PAGE_SIZE - count,
-            "\n"
-            "---+------------------------------------------------------------------------\n");
-
-        for (r = 0; r < cts_dev->hwdata->num_row; r++) {
-            count += scnprintf(buf + count, PAGE_SIZE - count, "%2u |", r);
-            for (c = 0; c < cts_dev->hwdata->num_col; c++) {
-                count += scnprintf(buf + count, PAGE_SIZE - count,
-                    " %3u", cap[r * cts_dev->hwdata->num_col + c]);
-           }
-           buf[count++] = '\n';
-        }
-        count += scnprintf(buf + count, PAGE_SIZE - count,
-            "---+------------------------------------------------------------------------\n");
+            count += scnprintf(buf + count, PAGE_SIZE - count,
+                " %3u", cap[r * cts_dev->hwdata->num_col + c]);
+       }
+       buf[count++] = '\n';
     }
+    count += scnprintf(buf + count, PAGE_SIZE - count,
+        "---+------------------------------------------------------------------------\n");
 
-    if (cap) {
-        kfree(cap);
-    }
-
-    cts_info("Read '%s' done, ret = %zd", attr->attr.name, count);
+    kfree(cap);
 
     return count;
 }
 static DEVICE_ATTR(compensate_cap, S_IRUGO, compensate_cap_show, NULL);
 
 #ifdef CFG_CTS_HAS_RESET_PIN
+#if 0
 static ssize_t reset_pin_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
+    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
+
     cts_info("Read RESET-PIN");
 
-    return sprintf(buf, "Read RESET-PIN TBD\n");        
+    return scnprintf(buf, PAGE_SIZE,
+        "Reset pin: %d, status: %d\n",
+        cts_data->pdata->rst_gpio,
+        gpio_get_value(cts_data->pdata->rst_gpio));
 }
+#endif
 
 static ssize_t reset_pin_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count)
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    
+
     cts_info("Write RESET-PIN");
     cts_info("Chip staus maybe changed");
+
     cts_plat_set_reset(cts_dev->pdata, (buf[0] == '1') ? 1 : 0);
     return count;
 }
-static DEVICE_ATTR(reset_pin, S_IRUSR | S_IWUSR, reset_pin_show, reset_pin_store);
-#endif        
+static DEVICE_ATTR(reset_pin, S_IWUSR, NULL, reset_pin_store);
+#endif
 
+#if 0
 static ssize_t irq_pin_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
+    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
+
     cts_info("Read IRQ-PIN");
 
-    return sprintf(buf, "Read IRQ-PIN TBD\n");        
+    return scnprintf(buf, PAGE_SIZE,
+        "IRQ pin: %d, status: %d\n",
+        cts_data->pdata->int_gpio,
+        gpio_get_value(cts_data->pdata->int_gpio));
 }
 static DEVICE_ATTR(irq_pin, S_IRUGO, irq_pin_show, NULL);
+#endif
 
 static ssize_t irq_info_show(struct device *dev,
         struct device_attribute *attr, char *buf)
@@ -2078,7 +2120,7 @@ static ssize_t fw_log_redirect_store(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    u8  enable = 0;
+    u8 enable = 0;
 
     if (buf[0] == 'Y' || buf[0] == 'y' || buf[0] == '1') {
         enable = 1;
@@ -2095,6 +2137,43 @@ static ssize_t fw_log_redirect_store(struct device *dev,
 static DEVICE_ATTR(fw_log_redirect, S_IRUSR | S_IWUSR,
     fw_log_redirect_show, fw_log_redirect_store);
 #endif
+
+static ssize_t debug_spi_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+    //struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
+    //struct cts_device *cts_dev = &cts_data->cts_dev;
+
+    return scnprintf(buf, PAGE_SIZE, "spi_speed=%d\n", cts_spi_speed);
+}
+
+static ssize_t debug_spi_store(struct device *dev,
+        struct device_attribute *attr,
+        const char *buf, size_t count)
+{
+    u16 s = 0;
+    int ret = 0;
+
+    parse_arg(buf, count);
+
+    if (argc != 1) {
+        cts_err("Invalid num args %d", argc);
+        return -EFAULT;
+    }
+
+    ret = kstrtou16(argv[0], 0, &s);
+    if (ret) {
+        cts_err("Invalid spi cts_spi_speed: %s", argv[0]);
+        return -EINVAL;
+    }
+
+    cts_spi_speed = s;
+
+    return count;
+}
+
+static DEVICE_ATTR(debug_spi, S_IRUSR | S_IWUSR,
+    debug_spi_show, debug_spi_store);
 
 #ifdef CFG_CTS_GESTURE
 static ssize_t gesture_en_show(struct device *dev,
@@ -2118,48 +2197,16 @@ static ssize_t gesture_en_store(struct device *dev,
         enable = 1;
     }
     if (enable) {
-        cts_enable_gesture_wakeup(cts_dev);    
+        cts_enable_gesture_wakeup(cts_dev);
     }
     else {
-        cts_disable_gesture_wakeup(cts_dev);    
-    }    
-    
-    return count;    
-}        
-static DEVICE_ATTR(gesture_en, S_IRUSR|S_IWUSR, gesture_en_show, gesture_en_store);
-#endif    
+        cts_disable_gesture_wakeup(cts_dev);
+    }
 
-#ifdef CONFIG_CTS_ESD_PROTECTION
-static ssize_t driver_esd_protection_show(struct device *dev,
-        struct device_attribute *attr, char *buf)
-{
-    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
- 
-    return scnprintf(buf, PAGE_SIZE, "ESD protection: %s\n",
-        cts_data->esd_enabled ? "ENABLED":"DISABLED");
+    return count;
 }
-
-static ssize_t driver_esd_protection_store(struct device *dev,
-        struct device_attribute *attr, const char *buf, size_t count)
-{
-    struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
-     u8  enable = 0;
-
-    if (buf[0] == 'Y' || buf[0] == 'y' || buf[0] == '1') {
-        enable = 1;
-    }
-    if (enable) {
-        cts_enable_esd_protection(cts_data);    
-    }
-    else {
-        cts_disable_esd_protection(cts_data);    
-    }    
-    
-    return count;    
-}        
-static DEVICE_ATTR(driver_esd_protection, S_IRUSR|S_IWUSR,
-	driver_esd_protection_show, driver_esd_protection_store);
-#endif /* CONFIG_CTS_ESD_PROTECTION */
+static DEVICE_ATTR(gesture_en, S_IRUSR|S_IWUSR, gesture_en_show, gesture_en_store);
+#endif
 
 static struct attribute *cts_dev_misc_atts[] = {
     &dev_attr_ic_type.attr,
@@ -2168,12 +2215,12 @@ static struct attribute *cts_dev_misc_atts[] = {
     &dev_attr_diffdata.attr,
     &dev_attr_manualdiff.attr,
     &dev_attr_jitter.attr,
-#ifdef CFG_CTS_HAS_RESET_PIN    
+#ifdef CFG_CTS_HAS_RESET_PIN
     &dev_attr_reset_pin.attr,
-#endif    
-    &dev_attr_irq_pin.attr,
+#endif
+    //&dev_attr_irq_pin.attr,
     &dev_attr_irq_info.attr,
-#ifdef CFG_CTS_FW_LOG_REDIRECT    
+#ifdef CFG_CTS_FW_LOG_REDIRECT
     &dev_attr_fw_log_redirect.attr,
 #endif
     &dev_attr_compensate_cap.attr,
@@ -2181,13 +2228,10 @@ static struct attribute *cts_dev_misc_atts[] = {
     &dev_attr_write_reg.attr,
     &dev_attr_read_hw_reg.attr,
     &dev_attr_write_hw_reg.attr,
+    &dev_attr_debug_spi.attr,
 #ifdef CFG_CTS_GESTURE
     &dev_attr_gesture_en.attr,
-#endif 
-#ifdef CONFIG_CTS_ESD_PROTECTION
-    &dev_attr_driver_esd_protection.attr,
-#endif /* CONFIG_CTS_ESD_PROTECTION */
-
+#endif /* CFG_CTS_GESTURE */
     NULL
 };
 
@@ -2208,7 +2252,7 @@ int cts_sysfs_add_device(struct device *dev)
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_device *cts_dev = &cts_data->cts_dev;
-    int ret=0, i;
+    int ret = 0, i;
 
     cts_info("Add device attr groups");
 
@@ -2231,13 +2275,13 @@ int cts_sysfs_add_device(struct device *dev)
     manualdiff_base = (s16 *)kzalloc(DIFFDATA_BUFFER_SIZE(cts_dev), GFP_KERNEL);
     if (manualdiff_base == NULL) {
         cts_err("Malloc manualdiff_base failed");
-        return -ENOMEM;        
-    } 
+        return -ENOMEM;
+    }
 
     ret = sysfs_create_link(NULL, &dev->kobj, "chipone-tddi");
     if (ret) {
-	cts_err("Create sysfs link error:%d", ret);
-    }	
+        cts_err("Create sysfs link error:%d", ret);
+    }
     return 0;
 }
 
@@ -2249,7 +2293,7 @@ void cts_sysfs_remove_device(struct device *dev)
 
     if (manualdiff_base != NULL) {
         kfree(manualdiff_base);
-        manualdiff_base = NULL;    
+        manualdiff_base = NULL;
     }
 
     sysfs_remove_link(NULL, "chipone-tddi");

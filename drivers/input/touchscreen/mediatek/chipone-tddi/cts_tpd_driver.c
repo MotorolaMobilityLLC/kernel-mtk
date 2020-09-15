@@ -107,6 +107,10 @@ static void __exit chipone_tpd_driver_exit(void)
 module_init(chipone_tpd_driver_init);
 module_exit(chipone_tpd_driver_exit);
 
+#ifdef CFG_CTS_KERNEL_BUILTIN_FIRMWARE
+MODULE_FIRMWARE(CFG_CTS_FIRMWARE_FILENAME);
+#endif /* CFG_CTS_KERNEL_BUILTIN_FIRMWARE */
+
 MODULE_DESCRIPTION("Chipone TDDI TPD Driver for MTK platform");
 MODULE_VERSION(CFG_CTS_DRIVER_VERSION);
 MODULE_AUTHOR("Miao Defang <dfmiao@chiponeic.com>");

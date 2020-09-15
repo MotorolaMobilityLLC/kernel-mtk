@@ -180,7 +180,7 @@ static int sfctrlv2_transfer(const struct cts_device *cts_dev,
     if (flags & SFCTRLv2_OPFLAG_SRAM_DATA_XCHG) {
         sfctrl_write_reg_check_ret(writel, rSFCTRLv2_SRAM_ADDR, sram_addr);
 
-        /** - Write data to exchange SRAM if operation is write and 
+        /** - Write data to exchange SRAM if operation is write and
          *        data != NULL(data not in SRAM) */
         if ((!(flags & SFCTRLv2_OPFLAG_READ)) && data) {
             ret = cts_sram_writesb(cts_dev, sram_addr, data, size);
@@ -304,7 +304,7 @@ int sfctrlv2_calc_flash_crc(const struct cts_device *cts_dev,
     int ret;
 
     cts_info("Calc crc from flash 0x%06x size %zu", flash_addr, size);
- 
+
     sfctrl_write_reg_check_ret(writel, rSFCTRLv2_FLASH_ADDR, flash_addr);
     sfctrl_write_reg_check_ret(writel, rSFCTRLv2_DATA_LENGTH, (u32)size);
     sfctrl_write_reg_check_ret(writeb, rSFCTRLv2_FLASH_CRC_START, 1);

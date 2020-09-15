@@ -16,7 +16,7 @@ size_t cts_plat_get_max_fw_log_size(struct cts_platform_data *pdata)
     return CTS_FW_LOG_BUF_LEN;
 }
 
-u8 *cts_plat_get_fw_log_buf(struct cts_platform_data *pdata, 
+u8 *cts_plat_get_fw_log_buf(struct cts_platform_data *pdata,
     size_t size)
 {
     return pdata->fw_log_buf;
@@ -37,7 +37,7 @@ size_t cts_plat_get_max_i2c_xfer_size(struct cts_platform_data *pdata)
 #endif /* TPD_SUPPORT_I2C_DMA */
 }
 
-u8 *cts_plat_get_i2c_xfer_buf(struct cts_platform_data *pdata, 
+u8 *cts_plat_get_i2c_xfer_buf(struct cts_platform_data *pdata,
     size_t xfer_size)
 {
 #ifdef TPD_SUPPORT_I2C_DMA
@@ -119,7 +119,7 @@ int cts_plat_i2c_read(struct cts_platform_data *pdata, u8 i2c_addr,
             .timing   = 300,
         },
     };
-    
+
     if (pdata->dma_available && rlen > CFG_CTS_MAX_I2C_FIFO_XFER_SIZE) {
         msgs[1].ext_flag = (pdata->i2c_client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
         msgs[1].buf      = (u8 *)pdata->i2c_dma_buff_pa;
@@ -166,7 +166,7 @@ int cts_plat_i2c_read(struct cts_platform_data *pdata, u8 i2c_addr,
 #ifdef TPD_SUPPORT_I2C_DMA
     if (pdata->dma_available && rlen > CFG_CTS_MAX_I2C_FIFO_XFER_SIZE) {
             memcpy(rbuf, pdata->i2c_dma_buff_va, rlen);
-    }            
+    }
 #endif /* TPD_SUPPORT_I2C_DMA */
 
             return 0;
@@ -295,7 +295,7 @@ int cts_plat_spi_setup(struct cts_platform_data *pdata)
     if(pdata->spi_client->max_speed_hz > 6000000)
     {
         pdata->spi_client->max_speed_hz = 6000000;
-    }	
+    }
     spi_setup(pdata->spi_client);
     return 0;
 }
@@ -305,14 +305,14 @@ int cts_plat_spi_setup(struct cts_platform_data *pdata)
 #ifdef CFG_CTS_MANUAL_CS
 int cts_plat_set_cs(struct cts_platform_data *pdata, u8 val)
 {
-    if (val) {      
+    if (val) {
         pinctrl_select_state(pdata->pinctrl1, pdata->spi_cs_high);
-    } 
+    }
     else {
         pinctrl_select_state(pdata->pinctrl1, pdata->spi_cs_low);
-    }    
+    }
     return 0;
-}    
+}
 #endif
 
 int cts_spi_send_recv(struct cts_platform_data *pdata, size_t len , u8 *tx_buffer, u8 *rx_buffer)
@@ -352,7 +352,7 @@ size_t cts_plat_get_max_spi_xfer_size(struct cts_platform_data *pdata)
     return CFG_CTS_MAX_SPI_XFER_SIZE;
 }
 
-u8 *cts_plat_get_spi_xfer_buf(struct cts_platform_data *pdata, 
+u8 *cts_plat_get_spi_xfer_buf(struct cts_platform_data *pdata,
     size_t xfer_size)
 {
     return pdata->spi_cache_buf;
@@ -370,10 +370,10 @@ int cts_plat_spi_write(struct cts_platform_data *pdata, u8 dev_addr,
 		return -EIO;
 	}
 
-    if (pdata->cts_dev->rtdata.program_mode) {	
+    if (pdata->cts_dev->rtdata.program_mode) {
     	pdata->spi_tx_buf[0] = dev_addr;
     	memcpy(&pdata->spi_tx_buf[1], src, len);
-    	
+
         do {
             ret = cts_spi_send_recv(pdata, len + 1, pdata->spi_tx_buf, pdata->spi_rx_buf);
             if (ret) {
@@ -391,10 +391,10 @@ int cts_plat_spi_write(struct cts_platform_data *pdata, u8 dev_addr,
         pdata->spi_tx_buf[1] = *((u8 *)src + 1);
         pdata->spi_tx_buf[2] = *((u8 *)src);
         put_unaligned_le16(data_len, &pdata->spi_tx_buf[3]);
-        crc = (u16)crc32(pdata->spi_tx_buf, 5);
+        crc = (u16)cts_crc32(pdata->spi_tx_buf, 5);
     	put_unaligned_le16(crc, &pdata->spi_tx_buf[5]);
     	memcpy(&pdata->spi_tx_buf[7], (char *)src + 2, data_len);
-    	crc = (u16)crc32((char *)src + 2, data_len);
+    	crc = (u16)cts_crc32((char *)src + 2, data_len);
     	put_unaligned_le16(crc, &pdata->spi_tx_buf[7+data_len]);
         do {
             ret = cts_spi_send_recv(pdata, len + 7, pdata->spi_tx_buf, pdata->spi_rx_buf);
@@ -406,7 +406,7 @@ int cts_plat_spi_write(struct cts_platform_data *pdata, u8 dev_addr,
                 return 0;
             }
         } while (++retries < retry);
-    }        
+    }
     return ret;
 }
 
@@ -420,7 +420,7 @@ int cts_plat_spi_read(struct cts_platform_data *pdata, u8 dev_addr,
 	if (wlen > CFG_CTS_MAX_SPI_XFER_SIZE || rlen > CFG_CTS_MAX_SPI_XFER_SIZE) {
 		cts_err("write/read too much data:wlen=%zd, rlen=%zd", wlen, rlen);
 		return -EIO;
-	}	
+	}
 
 	if (pdata->cts_dev->rtdata.program_mode)
 	{
@@ -445,7 +445,7 @@ int cts_plat_spi_read(struct cts_platform_data *pdata, u8 dev_addr,
                 pdata->spi_tx_buf[1] = wbuf[1];
                 pdata->spi_tx_buf[2] = wbuf[0];
                 put_unaligned_le16(rlen, &pdata->spi_tx_buf[3]);
-                crc = (u16)crc32(pdata->spi_tx_buf, 5);
+                crc = (u16)cts_crc32(pdata->spi_tx_buf, 5);
                 put_unaligned_le16(crc, &pdata->spi_tx_buf[5]);
 		        ret = cts_spi_send_recv(pdata, 7, pdata->spi_tx_buf, pdata->spi_rx_buf);
 				if (ret) {
@@ -453,11 +453,11 @@ int cts_plat_spi_read(struct cts_platform_data *pdata, u8 dev_addr,
 						mdelay(delay);
 					}
 					continue;
-				}	
+				}
 			}
 			memset(pdata->spi_tx_buf, 0, 7);
-			pdata->spi_tx_buf[0] = dev_addr | 0x01;	
-			udelay(100);		
+			pdata->spi_tx_buf[0] = dev_addr | 0x01;
+			udelay(100);
  			ret = cts_spi_send_recv(pdata, rlen + 2, pdata->spi_tx_buf, pdata->spi_rx_buf);
 			if (ret) {
 				if (delay) {
@@ -466,17 +466,17 @@ int cts_plat_spi_read(struct cts_platform_data *pdata, u8 dev_addr,
 				continue;
 			}
 			memcpy(rbuf, pdata->spi_rx_buf, rlen);
-			crc = (u16)crc32(pdata->spi_rx_buf, rlen);
-			if (get_unaligned_le16(&pdata->spi_rx_buf[rlen]) != crc) {	
-			    continue;       
-			}			     
+			crc = (u16)cts_crc32(pdata->spi_rx_buf, rlen);
+			if (get_unaligned_le16(&pdata->spi_rx_buf[rlen]) != crc) {
+			    continue;
+			}
 			return 0;
-		} while (++retries < retry);		
+		} while (++retries < retry);
 	}
 	if (retries >= retry) {
-		cts_err("cts_plat_spi_read error");	
+		cts_err("cts_plat_spi_read error");
 	}
-	
+
     return -ENODEV;
 }
 
@@ -490,7 +490,7 @@ int cts_plat_spi_read_delay_idle(struct cts_platform_data *pdata, u8 dev_addr,
 	if (wlen > CFG_CTS_MAX_SPI_XFER_SIZE || rlen > CFG_CTS_MAX_SPI_XFER_SIZE) {
 		cts_err("write/read too much data:wlen=%zd, rlen=%zd", wlen, rlen);
 		return -EIO;
-	}	
+	}
 
 	if (pdata->cts_dev->rtdata.program_mode)
 	{
@@ -515,7 +515,7 @@ int cts_plat_spi_read_delay_idle(struct cts_platform_data *pdata, u8 dev_addr,
                 pdata->spi_tx_buf[1] = wbuf[1];
                 pdata->spi_tx_buf[2] = wbuf[0];
                 put_unaligned_le16(rlen, &pdata->spi_tx_buf[3]);
-                crc = (u16)crc32(pdata->spi_tx_buf, 5);
+                crc = (u16)cts_crc32(pdata->spi_tx_buf, 5);
                 put_unaligned_le16(crc, &pdata->spi_tx_buf[5]);
 		        ret = cts_spi_send_recv(pdata, 7, pdata->spi_tx_buf, pdata->spi_rx_buf);
 				if (ret) {
@@ -523,11 +523,11 @@ int cts_plat_spi_read_delay_idle(struct cts_platform_data *pdata, u8 dev_addr,
 						mdelay(delay);
 					}
 					continue;
-				}	
+				}
 			}
 			memset(pdata->spi_tx_buf, 0, 7);
-			pdata->spi_tx_buf[0] = dev_addr | 0x01;	
-			udelay(idle);		
+			pdata->spi_tx_buf[0] = dev_addr | 0x01;
+			udelay(idle);
  			ret = cts_spi_send_recv(pdata, rlen + 2, pdata->spi_tx_buf, pdata->spi_rx_buf);
 			if (ret) {
 				if (delay) {
@@ -536,17 +536,17 @@ int cts_plat_spi_read_delay_idle(struct cts_platform_data *pdata, u8 dev_addr,
 				continue;
 			}
 			memcpy(rbuf, pdata->spi_rx_buf, rlen);
-			crc = (u16)crc32(pdata->spi_rx_buf, rlen);
-			if (get_unaligned_le16(&pdata->spi_rx_buf[rlen]) != crc) {	
-			    continue;       
-			}			     
+			crc = (u16)cts_crc32(pdata->spi_rx_buf, rlen);
+			if (get_unaligned_le16(&pdata->spi_rx_buf[rlen]) != crc) {
+			    continue;
+			}
 			return 0;
-		} while (++retries < retry);		
+		} while (++retries < retry);
 	}
 	if (retries >= retry) {
-		cts_err("cts_plat_spi_read error");	
+		cts_err("cts_plat_spi_read error");
 	}
-	
+
     return -ENODEV;
 }
 
@@ -557,7 +557,7 @@ int cts_plat_is_normal_mode(struct cts_platform_data *pdata)
 	u16 fwid;
 	u32 addr;
 	int ret;
-	
+
 	pdata->cts_dev->rtdata.addr_width = 2;
 	pdata->cts_dev->rtdata.program_mode = false;
 	cts_data = container_of(pdata->cts_dev, struct chipone_ts_data, cts_dev);
@@ -607,12 +607,9 @@ static irqreturn_t cts_plat_irq_handler(int irq, void *dev_id)
 #else /* CONFIG_GENERIC_HARDIRQS */
     cts_data = container_of(pdata->cts_dev, struct chipone_ts_data, cts_dev);
 
-    if (queue_work(cts_data->workqueue, &pdata->ts_irq_work)) {
-        cts_dbg("IRQ queue work");
-        cts_plat_disable_irq(pdata);
-    } else {
-        cts_warn("IRQ handler queue work failed as already on the queue");
-    }
+    cts_plat_disable_irq(pdata);
+
+    queue_work(cts_data->workqueue, &pdata->ts_irq_work);
 #endif /* CONFIG_GENERIC_HARDIRQS */
 
     return IRQ_HANDLED;
@@ -636,7 +633,7 @@ static void cts_plat_touch_dev_irq_work(struct work_struct *work)
 static void cts_plat_touch_event_timeout(unsigned long arg)
 {
     cts_warn("Touch event timeout");
- 
+
     cts_plat_release_all_touch((struct cts_platform_data *)arg);
 }
 #endif
@@ -662,12 +659,12 @@ static int cts_plat_init_dts(struct cts_platform_data *pdata,
             return -1;
         }
         return 0;
-    }  
+    }
     return -1;
 #else
     return 0;
 #endif
-}          
+}
 #endif
 
 #ifdef CONFIG_CTS_I2C_HOST
@@ -749,7 +746,7 @@ int cts_init_platform_data(struct cts_platform_data *pdata,
 #endif /* TPD_SUPPORT_I2C_DMA */
 
 #ifdef CFG_CTS_FORCE_UP
-    setup_timer(&pdata->touch_event_timeout_timer, 
+    setup_timer(&pdata->touch_event_timeout_timer,
         cts_plat_touch_event_timeout, (unsigned long)pdata);
 #endif
 
@@ -784,15 +781,15 @@ int cts_plat_request_irq(struct cts_platform_data *pdata)
 		int_mode==0?"falling" : "rising");
 #ifdef CONFIG_GENERIC_HARDIRQS
 	if (int_mode) {
-	    ret = request_threaded_irq(pdata->irq, NULL, 
+	    ret = request_threaded_irq(pdata->irq, NULL,
 			cts_plat_irq_handler, IRQF_TRIGGER_RISING | IRQF_ONESHOT,
 	            CFG_CTS_DRIVER_NAME, pdata);
 	}
 	else {
-	    ret = request_threaded_irq(pdata->irq, NULL, 
+	    ret = request_threaded_irq(pdata->irq, NULL,
 			cts_plat_irq_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 	            CFG_CTS_DRIVER_NAME, pdata);
-	}	
+	}
 #else /* CONFIG_GENERIC_HARDIRQS */
 	if (int_mode) {
 	    ret = request_irq(pdata->irq,
@@ -803,7 +800,7 @@ int cts_plat_request_irq(struct cts_platform_data *pdata)
 	    ret = request_irq(pdata->irq,
 	        cts_plat_irq_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 	            CFG_CTS_DRIVER_NAME, pdata);
-	}	
+	}
 #endif /* CONFIG_GENERIC_HARDIRQS */
     if (ret) {
         cts_err("Request IRQ failed %d", ret);
@@ -829,7 +826,7 @@ void cts_plat_free_resource(struct cts_platform_data *pdata)
      *    If resource request without managed, should free all resource
      *    requested in cts_plat_request_resource().
      */
-     
+
 #ifdef TPD_SUPPORT_I2C_DMA
     if (pdata->i2c_dma_buff_va) {
         dma_free_coherent(&tpd->dev->dev, CFG_CTS_MAX_I2C_XFER_SIZE,
@@ -848,7 +845,8 @@ int cts_plat_enable_irq(struct cts_platform_data *pdata)
 
     if (pdata->irq > 0) {
         spin_lock_irqsave(&pdata->irq_lock, irqflags);
-        if (pdata->irq_is_disable)/* && !cts_is_device_suspended(pdata->chip)) */{  
+        if (pdata->irq_is_disable)/* && !cts_is_device_suspended(pdata->chip)) */{
+            cts_dbg("Real enable IRQ");
             enable_irq(pdata->irq);
             pdata->irq_is_disable = false;
         }
@@ -869,6 +867,7 @@ int cts_plat_disable_irq(struct cts_platform_data *pdata)
     if (pdata->irq > 0) {
         spin_lock_irqsave(&pdata->irq_lock, irqflags);
         if (!pdata->irq_is_disable) {
+            cts_dbg("Real disable IRQ");
             disable_irq_nosync(pdata->irq);
             pdata->irq_is_disable = true;
         }
@@ -902,27 +901,14 @@ int cts_plat_set_reset(struct cts_platform_data *pdata, int val)
     else {
         tpd_gpio_output(tpd_rst_gpio_index, 0);
     }
-    return 0;            
-}    
+    return 0;
+}
 #endif /* CFG_CTS_HAS_RESET_PIN */
 
 int cts_plat_get_int_pin(struct cts_platform_data *pdata)
 {
+    /* MTK platform can not get INT pin value */
     return -ENOTSUPP;
-}
-
-int cts_plat_power_up_device(struct cts_platform_data *pdata)
-{
-    cts_info("Power up device");
-
-    return 0;
-}
-
-int cts_plat_power_down_device(struct cts_platform_data *pdata)
-{
-    cts_info("Power down device");
-
-    return 0;
 }
 
 int cts_plat_init_touch_device(struct cts_platform_data *pdata)
@@ -931,8 +917,8 @@ int cts_plat_init_touch_device(struct cts_platform_data *pdata)
 
     return input_mt_init_slots(pdata->ts_input_dev,
         tpd_dts_data.touch_max_num, INPUT_MT_DIRECT);
-	
-    return 0;	
+
+    return 0;
 }
 
 void cts_plat_deinit_touch_device(struct cts_platform_data *pdata)
@@ -956,14 +942,14 @@ int cts_plat_process_touch_msg(struct cts_platform_data *pdata,
     int i;
     int contact = 0;
 #ifdef CONFIG_CTS_SLOTPROTOCOL
-    static unsigned char finger_last[CFG_CTS_MAX_TOUCH_NUM] = {0};	
-    unsigned char finger_current[CFG_CTS_MAX_TOUCH_NUM] = {0};	
+    static unsigned char finger_last[CFG_CTS_MAX_TOUCH_NUM] = {0};
+    unsigned char finger_current[CFG_CTS_MAX_TOUCH_NUM] = {0};
 #endif
 
     cts_dbg("Process touch %d msgs", num);
     if (num ==0 || num > CFG_CTS_MAX_TOUCH_NUM) {
-        return 0;    
-    }    
+        return 0;
+    }
     for (i = 0; i < num; i++) {
         u16 x, y;
 
@@ -984,12 +970,12 @@ int cts_plat_process_touch_msg(struct cts_platform_data *pdata,
             i, msgs[i].id, msgs[i].event, x, y, msgs[i].pressure);
 
 #ifdef CONFIG_CTS_SLOTPROTOCOL
-	if (msgs[i].event == CTS_DEVICE_TOUCH_EVENT_DOWN 
-		|| msgs[i].event == CTS_DEVICE_TOUCH_EVENT_MOVE 
+	if (msgs[i].event == CTS_DEVICE_TOUCH_EVENT_DOWN
+		|| msgs[i].event == CTS_DEVICE_TOUCH_EVENT_MOVE
 		|| msgs[i].event == CTS_DEVICE_TOUCH_EVENT_STAY) {
 		if (msgs[i].id < CFG_CTS_MAX_TOUCH_NUM) {
 			finger_current[msgs[i].id] = 1;
-		}		
+		}
         	input_mt_slot(input_dev, msgs[i].id);
 	}
         switch (msgs[i].event) {
@@ -1070,8 +1056,8 @@ int cts_plat_process_touch_msg(struct cts_platform_data *pdata,
 	for (i = 0; i < CFG_CTS_MAX_TOUCH_NUM; i++) {
 		if (finger_last[i] != 0 && finger_current[i] == 0) {
 			input_mt_slot(input_dev, i);
-			input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);	
-		}		
+			input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
+		}
 		finger_last[i] = finger_current[i];
 	}
 	input_report_key(input_dev, BTN_TOUCH, contact > 0);
@@ -1079,16 +1065,16 @@ int cts_plat_process_touch_msg(struct cts_platform_data *pdata,
 	if (contact == 0) {
 		input_report_key(input_dev, BTN_TOUCH, 0);
 		input_mt_sync(input_dev);
-	}	
+	}
 #endif
     input_sync(input_dev);
-#ifdef CFG_CTS_FORCE_UP    
+#ifdef CFG_CTS_FORCE_UP
     if (contact) {
         mod_timer(&pdata->touch_event_timeout_timer, jiffies + msecs_to_jiffies(100));
     } else {
         del_timer(&pdata->touch_event_timeout_timer);
     }
-#endif	
+#endif
     return 0;
 }
 

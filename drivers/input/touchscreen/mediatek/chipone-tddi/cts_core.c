@@ -6,6 +6,8 @@
 #include "cts_sfctrl.h"
 #include "cts_spi_flash.h"
 #include "cts_firmware.h"
+#include "cts_charger_detect.h"
+#include "cts_earjack_detect.h"
 
 unsigned char g_lcm_info_flag;
 extern char lcd_info_pr[256];
@@ -266,9 +268,8 @@ static int cts_spi_writeb(const struct cts_device *cts_dev,
     }
     buff[cts_dev->rtdata.addr_width] = b;
 
-    return cts_plat_spi_write(cts_dev->pdata, cts_dev->rtdata.slave_addr, buff, 
+    return cts_plat_spi_write(cts_dev->pdata, cts_dev->rtdata.slave_addr, buff,
         cts_dev->rtdata.addr_width + 1, retry ,delay);
-	return 0;
 }
 
 static int cts_spi_writew(const struct cts_device *cts_dev,
@@ -293,7 +294,6 @@ static int cts_spi_writew(const struct cts_device *cts_dev,
 
     return cts_plat_spi_write(cts_dev->pdata, cts_dev->rtdata.slave_addr,
             buff, cts_dev->rtdata.addr_width + 2, retry, delay);
-	return 0;
 }
 
 static int cts_spi_writel(const struct cts_device *cts_dev,
@@ -318,7 +318,6 @@ static int cts_spi_writel(const struct cts_device *cts_dev,
 
     return cts_plat_spi_write(cts_dev->pdata, cts_dev->rtdata.slave_addr,
             buff, cts_dev->rtdata.addr_width + 4, retry, delay);
-	return 0;
 }
 
 static int cts_spi_writesb(const struct cts_device *cts_dev, u32 addr,
@@ -446,7 +445,6 @@ static int cts_spi_readl(const struct cts_device *cts_dev,
     }
 
     return ret;
-	return 0;
 }
 
 static int cts_spi_readsb(const struct cts_device *cts_dev,
@@ -635,7 +633,7 @@ int cts_sram_writesb_boot_crc_retry(const struct cts_device *cts_dev,
             cts_err("SRAM writesb failed %d", ret);
             continue;
         }
-    
+
         if ((ret = cts_dev_writel(cts_dev, 0x08fff8, len, 3, 1)) != 0) {
             cts_err("SRAM writesb failed %d", ret);
             continue;
@@ -657,7 +655,7 @@ static int cts_write_sram_normal_mode(const struct cts_device *cts_dev,
     for (i = 0; i < len; i++) {
         put_unaligned_le32(addr, buff);
         buff[4] = *(u8 *)src;
-        
+
         addr++;
         src++;
 
@@ -745,7 +743,7 @@ int cts_sram_writesb_check_crc_retry(const struct cts_device *cts_dev,
             cts_err("SRAM writesb failed %d", ret);
             continue;
         }
-    
+
         if ((ret = cts_calc_sram_crc(cts_dev, 0, len, &crc_sram)) != 0) {
             cts_err("Get CRC for sram writesb failed %d retries %d",
                 ret, retries);
@@ -828,7 +826,7 @@ int cts_sram_readl_retry(const struct cts_device *cts_dev,
 {
     int ret;
     u8 buff[4];
-    
+
     if (cts_dev->rtdata.program_mode) {
         return cts_dev_readl(cts_dev, addr, l, retry, delay);
     } else {
@@ -1015,6 +1013,13 @@ const static struct cts_sfctrl icnl9911s_sfctrl = {
     .ops = &cts_sfctrlv2_ops
 };
 
+const static struct cts_sfctrl icnl9911c_sfctrl = {
+    .reg_base = 0x34000,
+    .xchg_sram_base = (64 - 1) * 1024,
+    .xchg_sram_size = 1024, /* For non firmware programming */
+    .ops = &cts_sfctrlv2_ops
+};
+
 #define CTS_DEV_HW_REG_DDI_REG_CTRL     (0x3002Cu)
 
 static int icnl9911_set_access_ddi_reg(struct cts_device *cts_dev, bool enable)
@@ -1135,7 +1140,7 @@ const static struct cts_device_hwdata cts_device_hwdatas[] = {
 
         .program_addr_width = 3,
 
-        .sfctrl = &icnl9911s_sfctrl,
+        .sfctrl = &icnl9911c_sfctrl,
         .enable_access_ddi_reg = icnl9911s_set_access_ddi_reg,
     }
 };
@@ -1203,9 +1208,9 @@ int cts_get_ddi_version(const struct cts_device *cts_dev, u8 *version)
 
     if (ret) {
         *version = 0;
-    } 
+    }
     return ret;
-}	
+}
 
 int cts_get_lib_version(const struct cts_device *cts_dev, u16 *lib_version)
 {
@@ -1241,8 +1246,6 @@ int cts_clr_data_ready_flag(const struct cts_device *cts_dev)
 
 int cts_send_command(const struct cts_device *cts_dev, u8 cmd)
 {
-    cts_info("Send command 0x%02x", cmd);
-
     if (cts_dev->rtdata.program_mode) {
         cts_warn("Send command %u while chip in program mode", cmd);
         return -ENODEV;
@@ -1354,6 +1357,34 @@ int cts_disable_get_rawdata(const struct cts_device *cts_dev)
     return cts_send_command(cts_dev, CTS_CMD_DISABLE_READ_RAWDATA);
 }
 
+static void tsdata_flip_x(void *tsdata, u8 fw_rows, u8 fw_cols)
+{
+    u8 r, c;
+    u16 *data;
+
+    data = (u16 *)tsdata;
+    for (r = 0; r < fw_rows; r++) {
+        for (c = 0; c < fw_cols / 2; c++) {
+            swap(data[r * fw_cols + c],
+                 data[r * fw_cols + wrap(fw_cols, c)]);
+        }
+    }
+}
+
+static void tsdata_flip_y(void *tsdata, u8 fw_rows, u8 fw_cols)
+{
+    u8 r, c;
+    u16 *data;
+
+    data = (u16 *)tsdata;
+    for (r = 0; r < fw_rows / 2; r++) {
+        for (c = 0; c < fw_cols; c++) {
+            swap(data[r * fw_cols + c],
+                 data[wrap(fw_rows, r) * fw_cols + c]);
+        }
+    }
+}
+
 int cts_get_rawdata(const struct cts_device *cts_dev, void *buf)
 {
     int i, ret;
@@ -1378,19 +1409,25 @@ int cts_get_rawdata(const struct cts_device *cts_dev, void *buf)
         goto get_raw_exit;
     }
     do {
-        ret = cts_fw_reg_readsb_delay_idle(cts_dev, CTS_DEVICE_FW_REG_RAW_DATA, 
+        ret = cts_fw_reg_readsb_delay_idle(cts_dev, CTS_DEVICE_FW_REG_RAW_DATA,
             buf,cts_dev->fwdata.rows*cts_dev->fwdata.cols*2, 500);
         if (ret) {
             cts_err("Read rawdata failed %d", ret);
         }
     } while (--retries > 0 && ret != 0);
 
+    if (cts_dev->fwdata.flip_x) {
+        tsdata_flip_x(buf, cts_dev->fwdata.rows, cts_dev->fwdata.cols);
+    }
+    if (cts_dev->fwdata.flip_y) {
+        tsdata_flip_y(buf, cts_dev->fwdata.rows, cts_dev->fwdata.cols);
+    }
 
     if (cts_clr_data_ready_flag(cts_dev)) {
         cts_err("Clear data ready flag failed");
         ret = -ENODEV;
     }
-get_raw_exit:    
+get_raw_exit:
     return ret;
 }
 
@@ -1406,9 +1443,9 @@ int cts_get_diffdata(const struct cts_device *cts_dev, void *buf)
       (cts_dev->fwdata.rows + 2) * (cts_dev->fwdata.cols + 2) * 2, GFP_KERNEL);
     if (cache_buf == NULL) {
         cts_err("Get diffdata: malloc error");
-        ret = -ENOMEM;  
-        goto get_diff_exit; 
-    }      
+        ret = -ENOMEM;
+        goto get_diff_exit;
+    }
     /** - Wait data ready flag set */
     for (i = 0; i < 1000; i++) {
         mdelay(1);
@@ -1426,7 +1463,7 @@ int cts_get_diffdata(const struct cts_device *cts_dev, void *buf)
         goto get_diff_free_buf;
     }
     do {
-        ret = cts_fw_reg_readsb_delay_idle(cts_dev, CTS_DEVICE_FW_REG_DIFF_DATA, 
+        ret = cts_fw_reg_readsb_delay_idle(cts_dev, CTS_DEVICE_FW_REG_DIFF_DATA,
             cache_buf,(cts_dev->fwdata.rows+2)*(cts_dev->fwdata.cols+2)*2, 500);
         if (ret) {
             cts_err("Read diffdata failed %d", ret);
@@ -1435,18 +1472,25 @@ int cts_get_diffdata(const struct cts_device *cts_dev, void *buf)
 
     for (i = 0; i < cts_dev->fwdata.rows; i++) {
         for (j = 0; j < cts_dev->fwdata.cols; j++) {
-            ((u8 *)buf)[2 * (i * cts_dev->fwdata.cols + j)]  = 
+            ((u8 *)buf)[2 * (i * cts_dev->fwdata.cols + j)]  =
                 cache_buf[2 * ((i+1)*(cts_dev->fwdata.cols+2)+j+1)];
-            ((u8 *)buf)[2*(i*cts_dev->fwdata.cols + j)+1] = 
+            ((u8 *)buf)[2*(i*cts_dev->fwdata.cols + j)+1] =
                 cache_buf[2*((i+1)*(cts_dev->fwdata.cols+2)+j+1)+1];
         }
-    }    
+    }
+
+    if (cts_dev->fwdata.flip_x) {
+        tsdata_flip_x(buf, cts_dev->fwdata.rows, cts_dev->fwdata.cols);
+    }
+    if (cts_dev->fwdata.flip_y) {
+        tsdata_flip_y(buf, cts_dev->fwdata.rows, cts_dev->fwdata.cols);
+    }
 
     if (cts_clr_data_ready_flag(cts_dev)) {
         cts_err("Clear data ready flag failed");
         ret = -ENODEV;
     }
-get_diff_free_buf:   
+get_diff_free_buf:
     kfree(cache_buf);
 get_diff_exit:
     return ret;
@@ -1456,19 +1500,19 @@ get_diff_exit:
 static int cts_get_dev_boot_mode(const struct cts_device *cts_dev,
         u8 *boot_mode)
 {
-	int ret;
+    int ret;
 
-	ret = cts_hw_reg_readb_retry(cts_dev,
-		CTS_DEV_HW_REG_CURRENT_MODE, boot_mode, 5, 10);
-	if (ret) {
-		cts_err("Read boot mode failed %d", ret);
-		return ret;
-	}
+    ret = cts_hw_reg_readb_retry(cts_dev,
+        CTS_DEV_HW_REG_CURRENT_MODE, boot_mode, 5, 10);
+    if (ret) {
+        cts_err("Read boot mode failed %d", ret);
+        return ret;
+    }
 
-	*boot_mode &= CTS_DEV_BOOT_MODE_MASK;
+    *boot_mode &= CTS_DEV_BOOT_MODE_MASK;
 
-	cts_info("Curr dev boot mode: %u(%s)", *boot_mode, 
-		cts_dev_boot_mode2str(*boot_mode));
+    cts_info("Curr dev boot mode: %u(%s)", *boot_mode,
+        cts_dev_boot_mode2str(*boot_mode));
     return 0;
 }
 
@@ -1477,7 +1521,7 @@ static int cts_set_dev_boot_mode(const struct cts_device *cts_dev,
 {
     int ret;
 
-    cts_info("Set dev boot mode to %u(%s)", boot_mode, 
+    cts_info("Set dev boot mode to %u(%s)", boot_mode,
         cts_dev_boot_mode2str(boot_mode));
 
     ret = cts_hw_reg_writeb_retry(cts_dev, CTS_DEV_HW_REG_BOOT_MODE,
@@ -1492,6 +1536,8 @@ static int cts_set_dev_boot_mode(const struct cts_device *cts_dev,
 
 static int cts_init_fwdata(struct cts_device *cts_dev)
 {
+    struct cts_device_fwdata *fwdata = &cts_dev->fwdata;
+    u8  val;
     int ret;
 
     cts_info("Init firmware data");
@@ -1501,217 +1547,124 @@ static int cts_init_fwdata(struct cts_device *cts_dev)
         return -EINVAL;
     }
 
-    ret = cts_get_firmware_version(cts_dev, &cts_dev->fwdata.version);
+    ret = cts_get_firmware_version(cts_dev, &fwdata->version);
     if (ret) {
         cts_err("Read firmware version failed %d", ret);
         return ret;
     }
-    cts_info("  %-16s: %04x", "Firmware version", cts_dev->fwdata.version);
-    
-    ret = cts_get_ddi_version(cts_dev, &cts_dev->fwdata.ddi_version);
+    cts_info("  %-24s: %04x", "Firmware version", fwdata->version);
+
+    ret = cts_get_lib_version(cts_dev, &fwdata->lib_version);
+    if (ret) {
+        cts_err("Read firmware Lib version failed %d", ret);
+    }
+    cts_info("  %-24s: v%x.%x", "Fimrware lib verion",
+        (u8)(fwdata->lib_version >> 8),
+        (u8)(fwdata->lib_version));
+
+    ret = cts_get_ddi_version(cts_dev, &fwdata->ddi_version);
     if (ret) {
         cts_err("Read ddi version failed %d", ret);
         return ret;
     }
-    cts_info("  %-16s: %02x", "Ddi verion", cts_dev->fwdata.ddi_version);
+    cts_info("  %-24s: %02x", "DDI init code verion", fwdata->ddi_version);
 
-    ret = cts_get_x_resolution(cts_dev, &cts_dev->fwdata.res_x);
+    ret = cts_get_x_resolution(cts_dev, &fwdata->res_x);
     if (ret) {
         cts_err("Read firmware X resoltion failed %d", ret);
         return ret;
     }
-    cts_info("  %-16s: %u", "X resolution", cts_dev->fwdata.res_x);
+    cts_info("  %-24s: %u", "X resolution", fwdata->res_x);
 
-    ret = cts_get_y_resolution(cts_dev, &cts_dev->fwdata.res_y);
+    ret = cts_get_y_resolution(cts_dev, &fwdata->res_y);
     if (ret) {
-        cts_err("Read firmware Y resoltion failed %d", ret);
+        cts_err("Read firmware Y resolution failed %d", ret);
         return ret;
     }
-    cts_info("  %-16s: %u", "Y resolution", cts_dev->fwdata.res_y);
+    cts_info("  %-24s: %u", "Y resolution", fwdata->res_y);
 
-    ret = cts_get_num_rows(cts_dev, &cts_dev->fwdata.rows);
+    ret = cts_get_num_rows(cts_dev, &fwdata->rows);
     if (ret) {
         cts_err("Read firmware num TX failed %d", ret);
         return ret;
     }
-    cts_info("  %-16s: %u", "Num rows", cts_dev->fwdata.rows);
+    cts_info("  %-24s: %u", "Num rows", fwdata->rows);
 
-    ret = cts_get_num_cols(cts_dev, &cts_dev->fwdata.cols);
+    ret = cts_get_num_cols(cts_dev, &fwdata->cols);
     if (ret) {
         cts_err("Read firmware num RX failed %d", ret);
         return ret;
     }
-    cts_info("  %-16s: %u", "Num cols", cts_dev->fwdata.cols);
+    cts_info("  %-24s: %u", "Num cols", fwdata->cols);
 
-	ret = cts_fw_reg_readb(cts_dev, 0x8000+216, &cts_dev->fwdata.int_mode);
-	if (ret) {
-		cts_err("Read firmware Int mode failed %d", ret);
-		return ret;
-	}
-    cts_info("  %-16s: %s", "Int mode", (cts_dev->fwdata.int_mode==0)?
-		"LOW" : "HIGH");
-
-	ret = cts_fw_reg_readw(cts_dev, 0x8000+71, &cts_dev->fwdata.int_keep_time);
-	if (ret) {
-		cts_err("Read firmware Int keep time failed %d", ret);
-		return ret;
-	}
-    cts_info("  %-16s: %d", "Int keep time", cts_dev->fwdata.int_keep_time);
-
-	ret = cts_fw_reg_readw(cts_dev, 0x8000+73, &cts_dev->fwdata.rawdata_target);
-	if (ret) {
-		cts_err("Read firmware Raw dest value failed %d", ret);
-		return ret;
-	}
-    cts_info("  %-16s: %d", "Raw dest value", cts_dev->fwdata.rawdata_target);
-
-	ret = cts_get_lib_version(cts_dev, &cts_dev->fwdata.lib_version);
-	if (ret) {
-		cts_err("Read firmware Lib version failed %d", ret);
-	}
-    cts_info("  %-16s: v%x.%x", "Lib verion",
-        (u8)(cts_dev->fwdata.lib_version >> 8),
-        (u8)(cts_dev->fwdata.lib_version));
-
-	ret = cts_fw_reg_readb(cts_dev, 0x8000+342, &cts_dev->fwdata.esd_method);
-	if (ret) {
-		cts_err("Read firmware Esd method failed %d", ret);
-		return ret;
-	}
-    cts_info("  %-16s: %d", "Esd method", cts_dev->fwdata.esd_method);
-	
-    return 0;
-}
-
-#if 0
-static int cts_post_reset_device(struct cts_device *cts_dev)
-{
-    int ret;
-
-    /* Reset all flags */
-    cts_dev->rtdata.program_mode = false;
-    cts_dev->rtdata.suspended    = false;
-    cts_dev->rtdata.updating     = false;
-    cts_dev->rtdata.testing      = false;
-
-#if 0
-#ifdef CONFIG_CTS_I2C_HOST
-    /* Check whether device is in normal mode */
-    if (!cts_plat_is_i2c_online(cts_dev->pdata,
-        CTS_DEV_NORMAL_MODE_I2CADDR)) {
-#else
-	if (!cts_plat_is_normal_mode(cts_dev->pdata)) {
-#endif /* CONFIG_CTS_I2C_HOST */
-        const struct cts_firmware *firmware;
-
-        cts_err("Normal mode i2c addr is offline");
-
-#ifdef CONFIG_CTS_I2C_HOST
-        if (!cts_plat_is_i2c_online(cts_dev->pdata,
-            CTS_DEV_PROGRAM_MODE_I2CADDR)) {
-            cts_err("Program mode i2c addr is offline");
-            return -EFAULT;
-        }
-#endif
-
-#ifdef CONFIG_CTS_I2C_HOST
-        cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_I2CADDR;
-#endif
-        cts_dev->rtdata.addr_width   = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
-        cts_dev->rtdata.program_mode = true;
-
-        firmware = cts_request_firmware(cts_dev->hwdata->hwid,
-                cts_dev->hwdata->fwid, 0);
-        if (firmware) {
-            ret = cts_update_firmware(cts_dev, firmware, true);
-            cts_release_firmware(firmware);
-        
-            if (ret) {
-                cts_err("Update default firmware failed %d", ret);
-                return ret;
-            }
-        } else {
-            cts_err("Request default firmware failed %d, "
-                    "please update manually!!", ret);
-
-            return ret;
-        }
-
-        return -ENODEV;
-    }
-
-    ret = cts_init_fwdata(cts_dev);
+    ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS, &val);
     if (ret) {
-        cts_err("Init fwdata failed %d", ret);
+        cts_err("Read FW_REG_FLIP_X/Y failed %d", ret);
         return ret;
     }
-#endif
+    cts_dev->fwdata.flip_x = !!(val & BIT(2));
+    cts_dev->fwdata.flip_y = !!(val & BIT(3));
+    cts_info("  %-24s: %s", "Flip X",
+        cts_dev->fwdata.flip_x ? "True" : "Flase");
+    cts_info("  %-24s: %s", "Flip Y",
+        cts_dev->fwdata.flip_y ? "True" : "Flase");
 
-#ifdef CONFIG_CTS_CHARGER_DETECT
-    if (cts_is_charger_exist(cts_dev)) {
-        int r = cts_set_dev_charger_state(cts_dev, true);
-        if (r) {
-            cts_err("Set charger state ATTACHED failed %d", r);
-            // Ignore
-        }
+    ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_SWAP_AXES, &val);
+    if (ret) {
+        cts_err("Read FW_REG_SWAP_AXES failed %d", ret);
+        return ret;
     }
-#endif /* CONFIG_CTS_CHARGER_DETECT */
+    cts_info("  %-24s: %s", "Swap axes",
+        cts_dev->fwdata.swap_axes ? "True" : "Flase");
 
-#ifdef CONFIG_CTS_GLOVE_MODE
-    if (cts_is_glove_mode_enabled(cts_dev)) {
-        int r = cts_set_dev_glove_mode(cts_dev, true);
-        if (r) {
-            cts_err("Enable glove mode failed %d", r);
-            // Ignore
-        }
+    ret = cts_fw_reg_readb(cts_dev,
+        CTS_DEVICE_FW_REG_INT_MODE, &fwdata->int_mode);
+    if (ret) {
+        cts_err("Read firmware Int mode failed %d", ret);
+        return ret;
     }
-#endif /* CONFIG_CTS_GLOVE_MODE */
+    cts_info("  %-24s: %s", "Int polarity",
+        (fwdata->int_mode == 0) ? "LOW" : "HIGH");
 
-#ifdef CONFIG_CTS_FW_LOG_REDIRECT
-    if (cts_is_fw_log_redirect_enabled(cts_dev)) {
-        int r = cts_set_dev_fw_log_redirect(cts_dev, true);
-        if (r) {
-            cts_err("Enable fw log redirect failed %d", r);
-            // Ignore
-        }
+    ret = cts_fw_reg_readw(cts_dev,
+        CTS_DEVICE_FW_REG_INT_KEEP_TIME, &fwdata->int_keep_time);
+    if (ret) {
+        cts_err("Read firmware Int keep time failed %d", ret);
+        return ret;
     }
-#endif /* CONFIG_CTS_FW_LOG_REDIRECT */
-    
+    cts_info("  %-24s: %d", "Int keep time", fwdata->int_keep_time);
+
+    ret = cts_fw_reg_readw(cts_dev,
+        CTS_DEVICE_FW_REG_RAWDATA_TARGET, &fwdata->rawdata_target);
+    if (ret) {
+        cts_err("Read firmware Raw dest value failed %d", ret);
+        return ret;
+    }
+    cts_info("  %-24s: %d", "Raw target value", fwdata->rawdata_target);
+
+
+    ret = cts_fw_reg_readb(cts_dev,
+        CTS_DEVICE_FW_REG_ESD_PROTECTION, &fwdata->esd_method);
+    if (ret) {
+        cts_err("Read firmware Esd method failed %d", ret);
+        return ret;
+    }
+    cts_info("  %-24s: %d", "Esd method", fwdata->esd_method);
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    ret = cts_fw_reg_readb(cts_dev,
+        CTS_DEVICE_FW_REG_EARJACK_DETECT_SUPP, &val);
+    if (ret) {
+        cts_err("Read firmware earjack detect support failed %d", ret);
+        return ret;
+    }
+    fwdata->supp_headphone_cable_reject = !!(val & BIT(0));
+    cts_info("  %-24s: %s", "Headphone cable reject",
+        fwdata->supp_headphone_cable_reject ? "True" : "False");
+#endif /* CONFIG_CTS_EARJACK_DETECT */
+
     return 0;
 }
-
-int cts_reset_device(struct cts_device *cts_dev)
-{
-    cts_info("Reset device");
-
-#ifdef CFG_CTS_HAS_RESET_PIN
-    cts_plat_reset_device(cts_dev->pdata);
-#else /* CFG_CTS_HAS_RESET_PIN */
-#ifdef CONFIG_CTS_I2C_HOST
-    if (cts_plat_is_i2c_online(cts_dev->pdata, CTS_DEV_NORMAL_MODE_I2CADDR)) {
-        cts_dev->rtdata.program_mode = false;
-        cts_dev->rtdata.slave_addr     = CTS_DEV_NORMAL_MODE_I2CADDR;
-        cts_dev->rtdata.addr_width   = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
-    } else if (cts_plat_is_i2c_online(cts_dev->pdata, CTS_DEV_PROGRAM_MODE_I2CADDR)) {
-        cts_dev->rtdata.program_mode = true;
-        cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_I2CADDR;
-        cts_dev->rtdata.addr_width   = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
-    } else {
-        cts_err("Both i2c addr is offline");
-        return -ENODEV;
-    }
-#else
-
-#endif /* CONFIG_CTS_I2C_HOST */
-
-    /* Ignore return value, as I2C will always response NAK */
-    cts_hw_reg_writew(cts_dev, CTS_DEV_HW_REG_RESET_CONFIG, 0x0101);
-    mdelay(50);
-#endif /* CFG_CTS_HAS_RESET_PIN */
-
-    return cts_post_reset_device(cts_dev);
-}
-#endif
 
 #ifdef CFG_CTS_FW_LOG_REDIRECT
 void cts_show_fw_log(struct cts_device *cts_dev)
@@ -1722,23 +1675,23 @@ void cts_show_fw_log(struct cts_device *cts_dev)
 
     max_len = cts_plat_get_max_fw_log_size(cts_dev->pdata);
     data = cts_plat_get_fw_log_buf(cts_dev->pdata, max_len);
-    ret = cts_fw_reg_readsb(cts_dev, CTS_DEVICE_FW_REG_TOUCH_INFO+1, &len, 1); 
+    ret = cts_fw_reg_readsb(cts_dev, CTS_DEVICE_FW_REG_TOUCH_INFO+1, &len, 1);
     if (ret) {
         cts_err("Get i2c print buf len error");
         return;
-    }	
+    }
     if (len >= max_len) {
-        len = max_len - 1;    
-    }    
+        len = max_len - 1;
+    }
     ret = cts_fw_reg_readsb(cts_dev, CTS_DEVICE_FW_REG_TOUCH_INFO+2, data, len);
     if (ret) {
         cts_err("Get i2c print buf error");
         return;
-    }	
+    }
     data[len] = '\0';
-    printk("CTS-FW_LOG %s", data);    
+    printk("CTS-FW_LOG %s", data);
     cts_fw_log_show_finish(cts_dev);
-}    
+}
 #endif
 
 int cts_irq_handler(struct cts_device *cts_dev)
@@ -1757,6 +1710,7 @@ int cts_irq_handler(struct cts_device *cts_dev)
         if (cts_dev->rtdata.gesture_wakeup_enabled) {
             struct cts_device_gesture_info gesture_info;
 
+            cts_info("Get gesture info");
             ret = cts_get_gesture_info(cts_dev,
                     &gesture_info, CFG_CTS_GESTURE_REPORT_TRACE);
             if (ret) {
@@ -1765,8 +1719,9 @@ int cts_irq_handler(struct cts_device *cts_dev)
             }
 
             /** - Issure another suspend with gesture wakeup command to device
-             		* after get gesture info.
-             		*/
+             * after get gesture info.
+             */
+            cts_info("Set device enter gesture mode");
             cts_send_command(cts_dev, CTS_CMD_SUSPEND_WITH_GESTURE);
 
             ret = cts_plat_process_gesture_info(cts_dev->pdata, &gesture_info);
@@ -1781,28 +1736,28 @@ int cts_irq_handler(struct cts_device *cts_dev)
 #endif /* CFG_CTS_GESTURE */
     } else {
         struct cts_device_touch_info *touch_info;
-        
+
         touch_info = &cts_dev->pdata->touch_info;
 #ifdef CFG_CTS_FW_LOG_REDIRECT
         ret = cts_fw_reg_readsb(cts_dev, CTS_DEVICE_FW_REG_TOUCH_INFO, touch_info, 1);
         if (ret) {
             cts_err("Get vkey_state failed %d", ret);
-            return ret;    
+            return ret;
         }
-            
+
         if (touch_info->vkey_state == CTS_FW_LOG_REDIRECT_SIGN) {
             if (cts_is_fw_log_redirect(cts_dev)) {
                 cts_show_fw_log(cts_dev);
             }
-            return 0;               
+            return 0;
         }
-#endif            
+#endif /* CFG_CTS_FW_LOG_REDIRECT */
         ret = cts_get_touchinfo(cts_dev, touch_info);
         if (ret) {
             cts_err("Get touch info failed %d", ret);
             return ret;
         }
-            
+
         cts_dbg("Touch info: vkey_state %x, num_msg %u",
             touch_info->vkey_state, touch_info->num_msg);
 
@@ -1845,19 +1800,19 @@ int cts_suspend_device(struct cts_device *cts_dev)
         ret = cts_enter_normal_mode(cts_dev);
         if (ret) {
               cts_err("Failed to exit program mode before suspend:%d", ret);
-              return ret;  
-        }       
-    }    
+              return ret;
+        }
+    }
     ret = cts_send_command(cts_dev,
-        cts_dev->rtdata.gesture_wakeup_enabled ? 
+        cts_dev->rtdata.gesture_wakeup_enabled ?
             CTS_CMD_SUSPEND_WITH_GESTURE : CTS_CMD_SUSPEND);
 
-    if (ret){    
+    if (ret){
         cts_err("Suspend device failed %d", ret);
-       
+
         return ret;
     }
-    
+
     cts_info("Device suspended ...");
     cts_dev->rtdata.suspended = true;
 
@@ -1866,28 +1821,28 @@ int cts_suspend_device(struct cts_device *cts_dev)
 
 int cts_resume_device(struct cts_device *cts_dev)
 {
-    int ret=0;
-	int retries = 3;
-	
+    int ret = 0;
+    int retries = 3;
+
     cts_info("Resume device");
-    
+
     /* Check whether device is in normal mode */
-	while (--retries >= 0) {
+    while (--retries >= 0) {
 #ifdef CFG_CTS_HAS_RESET_PIN
-	    cts_plat_reset_device(cts_dev->pdata);
-#endif				
-		cts_set_normal_addr(cts_dev);
+        cts_plat_reset_device(cts_dev->pdata);
+#endif /* CFG_CTS_HAS_RESET_PIN */
+        cts_set_normal_addr(cts_dev);
 #ifdef CONFIG_CTS_I2C_HOST
-		if (cts_plat_is_i2c_online(cts_dev->pdata, CTS_DEV_NORMAL_MODE_I2CADDR))
+        if (cts_plat_is_i2c_online(cts_dev->pdata, CTS_DEV_NORMAL_MODE_I2CADDR))
 #else
-	    if (cts_plat_is_normal_mode(cts_dev->pdata))
+        if (cts_plat_is_normal_mode(cts_dev->pdata))
 #endif
         {
-			break;
-		}
-	}	
+            break;
+        }
+    }
 
-	if (retries < 0) {
+    if (retries < 0) {
         const struct cts_firmware *firmware;
 
         cts_info("Need update firmware when resume");
@@ -1911,20 +1866,33 @@ int cts_resume_device(struct cts_device *cts_dev)
 
 #ifdef CONFIG_CTS_CHARGER_DETECT
     if (cts_is_charger_exist(cts_dev)) {
-        cts_charger_plugin(cts_dev);
+        int r = cts_set_dev_charger_attached(cts_dev, true);
+        if (r) {
+            cts_err("Set dev charger attached failed %d", r);
+        }
     }
 #endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    if (cts_dev->fwdata.supp_headphone_cable_reject &&
+        cts_is_earjack_exist(cts_dev)) {
+        int r = cts_set_dev_earjack_attached(cts_dev, true);
+        if (r) {
+            cts_err("Set dev earjack attached failed %d", r);
+        }
+    }
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 
 #ifdef CONFIG_CTS_GLOVE
     if (cts_is_glove_enabled(cts_dev)) {
         cts_enter_glove_mode(cts_dev);
-    }    
+    }
 #endif
 
 #ifdef CFG_CTS_FW_LOG_REDIRECT
     if (cts_is_fw_log_redirect(cts_dev)) {
-        cts_enable_fw_log_redirect(cts_dev);    
-    }    	
+        cts_enable_fw_log_redirect(cts_dev);
+    }
 #endif
 
     cts_dev->rtdata.suspended = false;
@@ -1932,7 +1900,7 @@ int cts_resume_device(struct cts_device *cts_dev)
 
 err_set_program_mode:
     cts_dev->rtdata.program_mode = true;
-    cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_I2CADDR;
+    cts_dev->rtdata.slave_addr   = CTS_DEV_PROGRAM_MODE_I2CADDR;
     cts_dev->rtdata.addr_width   = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
 
     return ret;
@@ -1986,14 +1954,14 @@ int cts_enter_program_mode(struct cts_device *cts_dev)
     }
 #else
     cts_set_program_addr(cts_dev);
-	cts_plat_reset_device(cts_dev->pdata); 
-	ret = cts_plat_spi_write(cts_dev->pdata,
-			0xcc, &magic_num[1], 3, 5, 10);
-	if (ret) {
-		cts_err("Write magic number to i2c_dev: 0x%02x failed %d",
-			CTS_DEV_PROGRAM_MODE_SPIADDR, ret);
-		return ret;
-	}
+    cts_plat_reset_device(cts_dev->pdata);
+    ret = cts_plat_spi_write(cts_dev->pdata,
+            0xcc, &magic_num[1], 3, 5, 10);
+    if (ret) {
+        cts_err("Write magic number to i2c_dev: 0x%02x failed %d",
+            CTS_DEV_PROGRAM_MODE_SPIADDR, ret);
+        return ret;
+    }
 #endif /* CONFIG_CTS_I2C_HOST */
     ret = cts_get_dev_boot_mode(cts_dev, &boot_mode);
     if (ret) {
@@ -2002,9 +1970,9 @@ int cts_enter_program_mode(struct cts_device *cts_dev)
     }
 
 #ifdef CONFIG_CTS_I2C_HOST
-    if (boot_mode != CTS_DEV_BOOT_MODE_I2C_PROGRAM) 
+    if (boot_mode != CTS_DEV_BOOT_MODE_I2C_PROGRAM)
 #else
-	if (boot_mode != CTS_DEV_BOOT_MODE_SPI_PROGRAM)
+    if (boot_mode != CTS_DEV_BOOT_MODE_SPI_PROGRAM)
 #endif
     {
         cts_err("BOOT_MODE readback %u != I2C/SPI PROMGRAM mode", boot_mode);
@@ -2023,7 +1991,7 @@ const char *cts_dev_boot_mode2str(u8 boot_mode)
         case_boot_mode(FLASH);
         case_boot_mode(I2C_PROGRAM);
         case_boot_mode(SRAM);
-		case_boot_mode(SPI_PROGRAM);
+        case_boot_mode(SPI_PROGRAM);
         default: return "INVALID";
     }
 
@@ -2034,11 +2002,11 @@ int cts_enter_normal_mode(struct cts_device *cts_dev)
 {
     int ret = 0;
     u8  boot_mode;
-	int retries;
-	u16  fwid = CTS_DEV_FWID_INVALID;
-	u8  auto_boot = 0;
-	u8  first_boot = 1;
-	
+    int retries;
+    u16  fwid = CTS_DEV_FWID_INVALID;
+    u8  auto_boot = 0;
+    u8  first_boot = 1;
+
     cts_info("Enter normal mode");
 
     if (!cts_dev->rtdata.program_mode) {
@@ -2046,31 +2014,31 @@ int cts_enter_normal_mode(struct cts_device *cts_dev)
         return 0;
     }
 
-	if (cts_dev->rtdata.has_flash) {
-		auto_boot = 1;
-	}	
+    if (cts_dev->rtdata.has_flash) {
+        auto_boot = 1;
+    }
 #ifdef CFG_CTS_UPDATE_CRCCHECK
-	if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911S ||
-	    cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911C) {
-		auto_boot = 1;
-	}	
+    if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911S ||
+        cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911C) {
+        auto_boot = 1;
+    }
 #endif
-	for(retries = 5; retries >= 0; retries--) {
-    	if (first_boot == 1 || auto_boot == 0) {
-		    cts_set_program_addr(cts_dev);
-	        ret = cts_set_dev_boot_mode(cts_dev, CTS_DEV_BOOT_MODE_SRAM);
-	        if (ret) {
-	            cts_err("Set BOOT_MODE to SRAM failed %d, try to reset device", ret);
-	        }
-	        mdelay(30);
-    	}	
-		first_boot = 0;
+    for(retries = 5; retries >= 0; retries--) {
+        if (first_boot == 1 || auto_boot == 0) {
+            cts_set_program_addr(cts_dev);
+            ret = cts_set_dev_boot_mode(cts_dev, CTS_DEV_BOOT_MODE_SRAM);
+            if (ret) {
+                cts_err("Set BOOT_MODE to SRAM failed %d, try to reset device", ret);
+            }
+            mdelay(30);
+        }
+        first_boot = 0;
 #ifdef CONFIG_CTS_I2C_HOST
         if (cts_plat_is_i2c_online(cts_dev->pdata, CTS_DEV_NORMAL_MODE_I2CADDR)) {
             cts_set_normal_addr(cts_dev);
         }
 #else
-	    cts_set_normal_addr(cts_dev);
+        cts_set_normal_addr(cts_dev);
 #endif
         ret = cts_get_dev_boot_mode(cts_dev, &boot_mode);
         if (ret) {
@@ -2083,19 +2051,19 @@ int cts_enter_normal_mode(struct cts_device *cts_dev)
         else {
             break;
         }
-		ret = cts_get_fwid(cts_dev, &fwid);
-		if (ret) {
-			cts_err("Get firmware id failed %d, retries %d", ret, retries);
-		} else {
-			if (fwid == CTS_DEV_FWID_ICNL9911 || fwid == CTS_DEV_FWID_ICNL9911S) 
-			{
-				cts_info("Get firmware id successful 0x%02x", fwid);
-				break;
-			}
-		}	  
+        ret = cts_get_fwid(cts_dev, &fwid);
+        if (ret) {
+            cts_err("Get firmware id failed %d, retries %d", ret, retries);
+        } else {
+            if (fwid == CTS_DEV_FWID_ICNL9911 || fwid == CTS_DEV_FWID_ICNL9911S)
+            {
+                cts_info("Get firmware id successful 0x%02x", fwid);
+                break;
+            }
+        }
         cts_plat_reset_device(cts_dev->pdata);
-	}
-	if (retries >= 0) {
+    }
+    if (retries >= 0) {
         ret = cts_init_fwdata(cts_dev);
         if (ret) {
             cts_err("Device init firmware data failed %d", ret);
@@ -2114,10 +2082,10 @@ bool cts_is_device_enabled(const struct cts_device *cts_dev)
 
 int cts_start_device(struct cts_device *cts_dev)
 {
-#ifdef CONFIG_CTS_ESD_PROTECTION
+#if defined(CONFIG_CTS_ESD_PROTECTION) || defined(CONFIG_CTS_CHARGER_DETECT) || defined(CONFIG_CTS_EARJACK_DETECT)
     struct chipone_ts_data *cts_data =
         container_of(cts_dev, struct chipone_ts_data, cts_dev);
-#endif /* CONFIG_CTS_ESD_PROTECTION */
+#endif
     int ret;
 
     cts_info("Start device...");
@@ -2130,6 +2098,16 @@ int cts_start_device(struct cts_device *cts_dev)
 #ifdef CONFIG_CTS_ESD_PROTECTION
     cts_enable_esd_protection(cts_data);
 #endif /* CONFIG_CTS_ESD_PROTECTION */
+
+#ifdef CONFIG_CTS_CHARGER_DETECT
+    cts_start_charger_detect(cts_data);
+#endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    if (cts_dev->fwdata.supp_headphone_cable_reject) {
+        cts_start_earjack_detect(cts_data);
+    }
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 
     if ((ret = cts_plat_enable_irq(cts_dev->pdata)) < 0) {
         cts_err("Enable IRQ failed %d", ret);
@@ -2171,6 +2149,16 @@ int cts_stop_device(struct cts_device *cts_dev)
 #ifdef CONFIG_CTS_ESD_PROTECTION
     cts_disable_esd_protection(cts_data);
 #endif /* CONFIG_CTS_ESD_PROTECTION */
+
+#ifdef CONFIG_CTS_CHARGER_DETECT
+    cts_stop_charger_detect(cts_data);
+#endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    if (cts_dev->fwdata.supp_headphone_cable_reject) {
+        cts_stop_earjack_detect(cts_data);
+    }
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 
     flush_workqueue(cts_data->workqueue);
 
@@ -2406,9 +2394,9 @@ read_fwid:
                 cts_info("Device firmware version: %04x", device_fw_ver);
             }
             goto init_hwdata;
-        }     
+        }
     }
-    
+
     /** - Try to read hardware id,
         it will enter program mode as normal */
     ret = cts_get_hwid(cts_dev, &hwid);
@@ -2564,7 +2552,7 @@ static void cts_esd_protection_work(struct work_struct *work)
 #ifdef CONFIG_CTS_I2C_HOST
     if (!cts_plat_is_i2c_online(cts_data->pdata, CTS_DEV_NORMAL_MODE_I2CADDR))
 #else
-    if (!cts_plat_is_normal_mode(cts_data->pdata)) 
+    if (!cts_plat_is_normal_mode(cts_data->pdata))
 #endif
     {
         cts_data->esd_check_fail_cnt++;
@@ -2575,7 +2563,7 @@ static void cts_esd_protection_work(struct work_struct *work)
             if (ret) {
                 cts_err("ESD protection reset chip failed %d", ret);
             }
-        }        
+        }
     } else {
         cts_data->esd_check_fail_cnt = 0;
     }
@@ -2601,8 +2589,8 @@ static void cts_esd_protection_work(struct work_struct *work)
         cts_start_device_esdrecover(&cts_data->cts_dev);
         cts_data->esd_check_fail_cnt = 0;
     }
-	queue_delayed_work(cts_data->esd_workqueue,
-		&cts_data->esd_work, CFG_CTS_ESD_PROTECTION_CHECK_PERIOD);
+    queue_delayed_work(cts_data->esd_workqueue,
+        &cts_data->esd_work, CFG_CTS_ESD_PROTECTION_CHECK_PERIOD);
 
     cts_unlock_device(&cts_data->cts_dev);
 }
@@ -2655,168 +2643,323 @@ void cts_deinit_esd_protection(struct chipone_ts_data *cts_data)
 int cts_enter_glove_mode(const struct cts_device *cts_dev)
 {
     cts_info("Enter glove mode");
-    
-    ret = cts_fw_reg_writeb(cts_dev, 0x8000 + 149, 1);
+
+    ret = cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_GLOVE_MODE, 1);
     if (ret) {
-        cts_err("Enable Glove mode err");    
+        cts_err("Enable Glove mode err");
     }
     else {
         cts_dev->rtdata.glove_mode_enabled = true;
-    } 
-    return ret;       
+    }
+    return ret;
 }
 
 int cts_exit_glove_mode(const struct cts_device *cts_dev)
 {
     cts_info("Exit glove mode");
-    
-    ret = cts_fw_reg_writeb(cts_dev, 0x8000 + 149, 0);
+
+    ret = cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_GLOVE_MODE, 0);
     if (ret) {
-        cts_err("Exit Glove mode err");    
+        cts_err("Exit Glove mode err");
     }
     else {
         cts_dev->rtdata.glove_mode_enabled = false;
-    } 
-    return ret;   
+    }
+    return ret;
 }
 
 int cts_is_glove_enabled(const struct cts_device *cts_dev)
 {
-    return cts_dev->rtdata.glove_mode_enabled;    
-}    
+    return cts_dev->rtdata.glove_mode_enabled;
+}
 
 #endif /* CONFIG_CTS_GLOVE */
 
 #ifdef CONFIG_CTS_CHARGER_DETECT
 bool cts_is_charger_exist(struct cts_device *cts_dev)
 {
-    return cts_dev->rtdata.charger_exist;
+    struct chipone_ts_data *cts_data;
+    bool attached = false;
+    int  ret;
+
+    cts_data = container_of(cts_dev, struct chipone_ts_data, cts_dev);
+
+    ret = cts_is_charger_attached(cts_data, &attached);
+    if (ret) {
+        cts_err("Get charger state failed %d", ret);
+    }
+
+    cts_dev->rtdata.charger_exist = attached;
+
+    return attached;
 }
 
-int cts_charger_plugin(struct cts_device *cts_dev)
+int cts_set_dev_charger_attached(struct cts_device *cts_dev, bool attached)
 {
     int ret;
 
-    cts_info("Charger plugin");
-    ret = cts_send_command(cts_dev, CTS_CMD_CHARGER_PLUG_IN);
+    cts_info("Set dev charger %s", attached ? "ATTACHED" : "DETATCHED");
+    ret = cts_send_command(cts_dev,
+        attached ? CTS_CMD_CHARGER_ATTACHED : CTS_CMD_CHARGER_DETACHED);
     if (ret) {
-        cts_err("Send CMD_CHARGER_PLUG_IN failed %d", ret);
-    } else {
-        cts_dev->rtdata.charger_exist = true;
+        if (ret) {
+            cts_err("Send CMD_CHARGER_%s failed %d",
+                attached ? "ATTACHED" : "DETACHED", ret);
+        }
     }
-    return 0;
-}
 
-int cts_charger_plugout(struct cts_device *cts_dev)
-{
-    int ret;
-
-    cts_info("Charger plugout");
-    ret = cts_send_command(cts_dev, CTS_CMD_CHARGER_PLUG_OUT);
-    if (ret) {
-        cts_err("Send CMD_CHARGER_PLUG_OUT failed %d", ret);
-    } else {
-        cts_dev->rtdata.charger_exist = false;
-    }
-    return 0;
+    return ret;
 }
 #endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+bool cts_is_earjack_exist(struct cts_device *cts_dev)
+{
+    struct chipone_ts_data *cts_data;
+    bool attached = false;
+    int  ret;
+
+    cts_data = container_of(cts_dev, struct chipone_ts_data, cts_dev);
+
+    ret = cts_is_earjack_attached(cts_data, &attached);
+    if (ret) {
+        cts_err("Get earjack state failed %d", ret);
+    }
+
+    return attached;
+}
+
+int cts_set_dev_earjack_attached(struct cts_device *cts_dev, bool attached)
+{
+    int ret;
+
+    cts_info("Set dev earjack %s", attached ? "ATTACHED" : "DETATCHED");
+    ret = cts_send_command(cts_dev,
+        attached ? CTS_CMD_EARJACK_ATTACHED : CTS_CMD_EARJACK_DETACHED);
+    if (ret) {
+        cts_err("Send CMD_EARJACK_%s failed %d",
+            attached ? "ATTACHED" : "DETACHED", ret);
+    }
+
+    return ret;
+}
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 
 int cts_enable_fw_log_redirect(struct cts_device *cts_dev)
 {
     int ret;
-    
+
     cts_info("Fw log redirect enable");
     ret = cts_send_command(cts_dev, CTS_CMD_ENABLE_FW_LOG_REDIRECT);
     if (ret) {
-        cts_err("Send CTS_CMD_ENABLE_FW_LOG_REDIRECT failed %d", ret);  
+        cts_err("Send CTS_CMD_ENABLE_FW_LOG_REDIRECT failed %d", ret);
+    } else {
+        cts_dev->rtdata.fw_log_redirect_enabled = true;
     }
-    else {
-        cts_dev->rtdata.fw_log_redirect_enabled = true;       
-    }        
-    return 0;
-}    
+    return ret;
+}
 
 int cts_disable_fw_log_redirect(struct cts_device *cts_dev)
 {
     int ret;
-    
+
     cts_info("Fw log redirect disable");
     ret = cts_send_command(cts_dev, CTS_CMD_DISABLE_FW_LOG_REDIRECT);
     if (ret) {
-        cts_err("Send CTS_CMD_DISABLE_FW_LOG_REDIRECT failed %d", ret);  
+        cts_err("Send CTS_CMD_DISABLE_FW_LOG_REDIRECT failed %d", ret);
+    } else {
+        cts_dev->rtdata.fw_log_redirect_enabled = false;
     }
-    else {
-        cts_dev->rtdata.fw_log_redirect_enabled = false;       
-    }        
-    return 0;
-}   
+    return ret;
+}
 
 bool cts_is_fw_log_redirect(struct cts_device *cts_dev)
 {
-    return cts_dev->rtdata.fw_log_redirect_enabled;    
-}    
- 
+    return cts_dev->rtdata.fw_log_redirect_enabled;
+}
+
 int cts_fw_log_show_finish(struct cts_device *cts_dev)
 {
     int ret;
-    
+
     ret = cts_send_command(cts_dev, CTS_CMD_FW_LOG_SHOW_FINISH);
     if (ret) {
-        cts_err("Send CTS_CMD_FW_LOG_SHOW_FINISH failed %d", ret);  
+        cts_err("Send CTS_CMD_FW_LOG_SHOW_FINISH failed %d", ret);
     }
 
-    return ret;    
-}     
-
-int cts_enable_get_compensate_cap(const struct cts_device *cts_dev)
-{
-    cts_info("Enable get compensate cap");
-
-    return cts_send_command(cts_dev,CTS_CMD_ENABLE_READ_CNEG);
+    return ret;
 }
 
-int cts_disable_get_compensate_cap(const struct cts_device *cts_dev)
+int cts_get_compensate_cap(struct cts_device *cts_dev, u8 *cap)
 {
-    cts_info("Disable get compensate cap");
+    int i, ret;
+    u8  auto_calib_comp_cap_enabled;
 
-    return cts_send_command(cts_dev,CTS_CMD_DISABLE_READ_CNEG);
-}
-
-int cts_get_compensate_cap(const struct cts_device *cts_dev, u8 *cap)
-{
-	int i, ret;
-
-    cts_info("Get compensate cap");
+    if (cts_dev == NULL || cap == NULL) {
+        cts_err("Get compensate cap with cts_dev(%p) or cap(%p) = NULL",
+            cts_dev, cap);
+        return -EINVAL;
+    }
 
     if (cts_dev->hwdata->hwid == CTS_DEV_HWID_ICNL9911 &&
         cts_dev->fwdata.lib_version < 0x0500) {
-        cts_err("ICNL9911 lib version < v5.0 NOT supported");
+        cts_err("ICNL9911 lib version 0x%04x < v5.0 "
+                "NOT supported get compensate cap",
+                cts_dev->fwdata.lib_version);
         return -ENOTSUPP;
     }
 
-    for (i = 0; i < 100; i++) {
-        u8 ready;
+    cts_info("Get compensate cap");
 
-        ret = cts_fw_reg_readb(cts_dev,
-                CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY, &ready);
-        if (ret) {
-            cts_err("Read compensate cap ready flag failed %d", ret);
-        } else {
-            if (ready) {
-                /* Use hardware row & col here */
-                return cts_fw_reg_readsb_delay_idle(cts_dev,
-                        CTS_DEVICE_FW_REG_COMPENSATE_CAP, cap,
-                        cts_dev->hwdata->num_row *cts_dev->hwdata->num_col,
-                        500);
-            }
-        }
-        mdelay(1);
+    /* Check whether auto calibrate compensate cap enabled */
+    cts_info(" - Get auto calib comp cap enable");
+    ret = cts_fw_reg_readb(cts_dev,
+        CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_ENABLE,
+        &auto_calib_comp_cap_enabled);
+    if (ret) {
+        cts_err("Get auto calib comp cap enable failed %d", ret);
+        return ret;
     }
 
-    cts_err("Wait compensate cap ready timeout");
+    /* Wait auto calibrate compensate cap done if enabled */
+    if (auto_calib_comp_cap_enabled) {
+        u8 auto_calib_comp_cap_done;
 
+        cts_info(" - Wait auto calib comp cap done...");
+
+        i = 0;
+        do {
+            ret = cts_fw_reg_readb(cts_dev,
+                CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_DONE,
+                &auto_calib_comp_cap_done);
+            if (ret) {
+                cts_err("Get auto calib comp cap done failed %d", ret);
+            } else {
+                if (auto_calib_comp_cap_done) {
+                    goto enable_read_compensate_cap;
+                }
+            }
+
+            mdelay(5);
+        } while (++i < 100);
+
+        cts_err("Wait auto calib comp cap done timeout");
+        return -ETIMEDOUT;
+    }
+
+enable_read_compensate_cap:
+    cts_info(" - Enable read comp cap");
+    ret = cts_send_command(cts_dev, CTS_CMD_ENABLE_READ_CNEG);
+    if (ret) {
+        cts_err("Enable read comp cap failed %d",ret);
+        return ret;
+    }
+
+    /* Wait compensate cap ready */
+    cts_info(" - Wait comp cap ready...");
+    i = 0;
+    do {
+        u8 ready;
+
+        mdelay(5);
+
+        ret = cts_fw_reg_readb(cts_dev,
+            CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY, &ready);
+        if (ret) {
+            cts_err("Read comp cap ready failed %d", ret);
+        } else {
+            if (ready) {
+                goto read_compensate_cap;
+            }
+        }
+    } while (++i < 100);
+
+    cts_err("Wait comp cap ready timeout");
     return -ETIMEDOUT;
+
+read_compensate_cap:
+    /* Use hardware row & col here */
+    cts_info(" - Read comp cap");
+    ret = cts_fw_reg_readsb_delay_idle(cts_dev,
+        CTS_DEVICE_FW_REG_COMPENSATE_CAP, cap,
+        cts_dev->hwdata->num_row * cts_dev->hwdata->num_col,
+        500);
+    if (ret) {
+        cts_err("Read comp cap failed %d",ret);
+        // Fall through to disable read compensate cap
+    }
+
+    cts_info(" - Clear comp cap ready");
+    i = 0;
+    do {
+        int r;
+        u8  ready;
+
+        r = cts_send_command(cts_dev, CTS_CMD_DISABLE_READ_CNEG);
+        if (r) {
+            cts_err("Send cmd DISABLE_READ_CNEG failed %d", r);
+            continue;
+        }
+
+        mdelay(5);
+        r = cts_fw_reg_readb(cts_dev,
+                CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY, &ready);
+        if (r) {
+            cts_err("Re-Check comp cap ready failed %d", r);
+            continue;
+        }
+
+        if (ready) {
+            cts_warn("Comp cap ready is still set");
+            continue;
+        } else {
+            return ret;
+        }
+    }while (++i < 100);
+
+    cts_warn("Clr comp cap ready failed, try to do reset!");
+
+    /* Try to do hardware reset */
+    cts_plat_reset_device(cts_dev->pdata);
+
+#ifdef CONFIG_CTS_CHARGER_DETECT
+    if (cts_is_charger_exist(cts_dev)) {
+        int r = cts_set_dev_charger_attached(cts_dev, true);
+        if (r) {
+            cts_err("Set dev charger attached failed %d", r);
+        }
+    }
+#endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    if (cts_dev->fwdata.supp_headphone_cable_reject &&
+        cts_is_earjack_exist(cts_dev)) {
+        int r = cts_set_dev_earjack_attached(cts_dev, true);
+        if (r) {
+            cts_err("Set dev earjack attached failed %d", r);
+        }
+    }
+#endif /* CONFIG_CTS_EARJACK_DETECT */
+
+#ifdef CONFIG_CTS_GLOVE
+    if (cts_is_glove_enabled(cts_dev)) {
+        int r = cts_enter_glove_mode(cts_dev);
+        if (r) {
+            cts_err("Enter dev glove mode failed %d", r);
+        }
+    }
+#endif /* CONFIG_CTS_GLOVE */
+
+#ifdef CFG_CTS_FW_LOG_REDIRECT
+    if (cts_is_fw_log_redirect(cts_dev)) {
+        int r = cts_enable_fw_log_redirect(cts_dev);
+        if (r) {
+            cts_err("Enable fw log redirect failed %d", r);
+        }
+    }
+#endif /* CONFIG_CTS_GLOVE */
+
+    return ret;
 }
 
 static struct file *cts_log_filp = NULL;
@@ -2828,26 +2971,6 @@ static int cts_log_buf_size = 0;
 static int cts_log_buf_wr_size = 0;
 
 static bool cts_log_redirect = false;
-
-int cts_write_file(struct file *filp, const void *data, size_t size)
-{
-    loff_t  pos;
-    ssize_t ret;
-
-    pos = filp->f_pos;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
-    ret = kernel_write(filp, data, size, &pos);
-#else
-    ret = kernel_write(filp, data, size, pos);
-#endif
-
-    if (ret >= 0) {
-        filp->f_pos += ret;
-    }
-
-    return ret;
-}
 
 int cts_start_driver_log_redirect(const char *filepath, bool append_to_file,
     char *log_buffer, int log_buf_size, int log_level)
@@ -2962,3 +3085,4 @@ void cts_log(int level, const char *fmt, ...)
 
     va_end(args);
 }
+

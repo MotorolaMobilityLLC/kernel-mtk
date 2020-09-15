@@ -3,10 +3,10 @@
 
 /** Driver version */
 #define CFG_CTS_DRIVER_MAJOR_VERSION        1
-#define CFG_CTS_DRIVER_MINOR_VERSION        2
-#define CFG_CTS_DRIVER_PATCH_VERSION        5
+#define CFG_CTS_DRIVER_MINOR_VERSION        3
+#define CFG_CTS_DRIVER_PATCH_VERSION        1
 
-#define CFG_CTS_DRIVER_VERSION              "v1.2.5"
+#define CFG_CTS_DRIVER_VERSION              "v1.3.1"
 
 /** Whether reset pin is used */
 #define CFG_CTS_HAS_RESET_PIN
@@ -86,8 +86,9 @@
 
 //#define CONFIG_CTS_GLOVE
 
-//#define CONFIG_CTS_CHARGER_DETECT
+#define CONFIG_CTS_CHARGER_DETECT
 
+#define CONFIG_CTS_EARJACK_DETECT
 /* ESD protection */
 #define CONFIG_CTS_ESD_PROTECTION
 #ifdef CONFIG_CTS_ESD_PROTECTION
