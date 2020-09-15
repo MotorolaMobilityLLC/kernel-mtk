@@ -5,6 +5,8 @@
 
 struct device;
 
+extern u16 cts_spi_speed;
+
 #ifdef CONFIG_CTS_SYSFS
 extern int cts_sysfs_add_device(struct device *dev);
 extern void cts_sysfs_remove_device(struct device *dev);

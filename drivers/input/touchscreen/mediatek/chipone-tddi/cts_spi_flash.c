@@ -12,40 +12,60 @@
  */
 static const struct cts_flash cts_flashes[] = {
     /* Winbond */
-    { "W25Q10EW",         0xEF6011, 256, 0x1000, 0x8000, 0x20000},
-    { "W25Q20EW",         0xEF6012, 256, 0x1000, 0x8000, 0x40000},
-    { "W25Q40EW",         0xEF6013, 256, 0x1000, 0x8000, 0x80000},
-    { "W25Q20BW",         0xEF5012, 256, 0x1000, 0x8000, 0x40000},
-    { "W25Q40BW",         0xEF5013, 256, 0x1000, 0x8000, 0x80000},
+    { "Winbond,W25Q10EW",
+      0xEF6011, 256, 0x1000, 0x8000, 0x20000},
+    { "Winbond,W25Q20EW",
+      0xEF6012, 256, 0x1000, 0x8000, 0x40000},
+    { "Winbond,W25Q40EW",
+      0xEF6013, 256, 0x1000, 0x8000, 0x80000},
+    { "Winbond,W25Q20BW",
+      0xEF5012, 256, 0x1000, 0x8000, 0x40000},
+    { "Winbond,W25Q40BW",
+      0xEF5013, 256, 0x1000, 0x8000, 0x80000},
 
     /* Giga device */
-    { "GD25LQ10B",        0xC86011, 256, 0x1000, 0x8000, 0x20000},
-    { "GD25LD20CEIGR",    0xC86012, 256, 0x1000, 0x8000, 0x40000},
-    { "GD25LD40CEIGR",    0xC86013, 256, 0x1000, 0x8000, 0x80000},
+    { "Giga,GD25LQ10B",
+      0xC86011, 256, 0x1000, 0x8000, 0x20000},
+    { "Giga,GD25LD20CEIGR",
+      0xC86012, 256, 0x1000, 0x8000, 0x40000},
+    { "Giga,GD25LD40CEIGR",
+      0xC86013, 256, 0x1000, 0x8000, 0x80000},
 
     /* Macronix */
-    { "MX25U1001E",       0xC22531,  32, 0x1000, 0x10000, 0x20000},
-    { "MX25R2035F",       0xC22812, 256, 0x1000,  0x8000, 0x40000},
+    { "Macronix,MX25U1001E",
+      0xC22531,  32, 0x1000, 0x10000, 0x20000},
+    { "Macronix,MX25R2035F",
+      0xC22812, 256, 0x1000,  0x8000, 0x40000},
 
     /* Puya-Semi */
-    { "P25Q20LUVHIR",     0x856012, 256, 0x1000, 0x8000, 0x40000},
-    { "P25Q40LUXHIR",     0x856013, 256, 0x1000, 0x8000, 0x80000},
-    { "P25Q11L",          0x854011, 256, 0x1000, 0x8000, 0x20000},	
-    { "P25Q21L",          0x854012, 256, 0x1000, 0x8000, 0x40000},	
+    { "Puya-Semi,P25Q20LUVHIR",
+      0x856012, 256, 0x1000, 0x8000, 0x40000},
+    { "Puya-Semi,P25Q40LUXHIR",
+      0x856013, 256, 0x1000, 0x8000, 0x80000},
+    { "Puya-Semi,P25Q11L",
+      0x854011, 256, 0x1000, 0x8000, 0x20000},
+    { "Puya-Semi,P25Q21L",
+      0x854012, 256, 0x1000, 0x8000, 0x40000},
 
     /* Boya */
-    { "BY25D10",          0x684011, 256, 0x1000, 0x8000, 0x20000},
-	
+    { "Boya,BY25D10",
+      0x684011, 256, 0x1000, 0x8000, 0x20000},
+
     /* EON */
-    { "EN25S20A",         0x1C3812, 256, 0x1000, 0x8000, 0x40000},    
+    { "EoN,EN25S20A",
+      0x1C3812, 256, 0x1000, 0x8000, 0x40000},
 
     /* XTXTECH */
-    { "XT25Q01",          0x0B6011, 256, 0x1000,      0, 0x20000},    
-    { "XT25Q02",          0x0B6012, 256, 0x1000,      0, 0x40000},    
+    { "XTX,XT25Q01",
+      0x0B6011, 256, 0x1000,      0, 0x20000},
+    { "XTX,XT25Q02",
+      0x0B6012, 256, 0x1000,      0, 0x40000},
 
     /* Xinxin-Semi */
-    { "XM25QU20B",        0x205012, 256, 0x1000, 0x8000, 0x40000},
-    { "XM25QU40B",        0x205013, 256, 0x1000, 0x8000, 0x80000},
+    { "Xinxin-Semi,XM25QU20B",
+      0x205012, 256, 0x1000, 0x8000, 0x40000},
+    { "Xinxin-Semi,XM25QU40B",
+      0x205013, 256, 0x1000, 0x8000, 0x80000},
 };
 
 static const struct cts_flash *find_flash_by_jedec_id(u32 jedec_id)
@@ -222,13 +242,13 @@ init_flash:
     if (cts_dev->flash == NULL) {
         cts_info("Flash is not initialized, try to probe...");
         if ((ret = probe_flash(cts_dev)) != 0) {
-			cts_dev->rtdata.has_flash = false;
+            cts_dev->rtdata.has_flash = false;
             cts_warn("Probe flash failed %d", ret);
             //dzy goto err_enter_normal_mode;
             return 0;
         }
     }
-	cts_dev->rtdata.has_flash = true;
+    cts_dev->rtdata.has_flash = true;
     return 0;
 
 err_enter_normal_mode:
@@ -557,29 +577,29 @@ int cts_erase_flash(const struct cts_device *cts_dev, u32 addr, size_t size)
     cts_info("Erase actually from 0x%06x size %zu", addr, size);
 
     if (flash->block_size) {
-	    while (addr != ALIGN(addr, flash->block_size) &&
-	           size >= flash->sector_size) {
-	        ret = erase_sector(cts_dev, addr);
-	        if (ret) {
-	            cts_err("Erase sector 0x%06x size 0x%04zx failed %d",
-	                addr, flash->sector_size, ret);
-	            return ret;
-	        }
-	        addr += flash->sector_size;
-	        size -= flash->sector_size;
-	    }
-	
-	    while (size >= flash->block_size) {
-	        ret = erase_block(cts_dev, addr);
-	        if (ret) {
-	            cts_err("Erase block 0x%06x size 0x%04zx failed %d",
-	                addr, flash->block_size, ret);
-	            return ret;
-	        }
-	        addr += flash->block_size;
-	        size -= flash->block_size;
-	    }
-	}    
+        while (addr != ALIGN(addr, flash->block_size) &&
+               size >= flash->sector_size) {
+            ret = erase_sector(cts_dev, addr);
+            if (ret) {
+                cts_err("Erase sector 0x%06x size 0x%04zx failed %d",
+                    addr, flash->sector_size, ret);
+                return ret;
+            }
+            addr += flash->sector_size;
+            size -= flash->sector_size;
+        }
+
+        while (size >= flash->block_size) {
+            ret = erase_block(cts_dev, addr);
+            if (ret) {
+                cts_err("Erase block 0x%06x size 0x%04zx failed %d",
+                    addr, flash->block_size, ret);
+                return ret;
+            }
+            addr += flash->block_size;
+            size -= flash->block_size;
+        }
+    }
 
     while (size >= flash->sector_size) {
         ret = erase_sector(cts_dev, addr);

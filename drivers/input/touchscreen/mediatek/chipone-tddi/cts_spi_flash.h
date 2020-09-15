@@ -6,7 +6,7 @@ struct cts_flash {
     u32     jedec_id;         /* Device ID by command 0x9F */
     size_t  page_size;        /* Page size by command 0x02 */
     size_t  sector_size;      /* Sector size by command 0x20 */
-    size_t  block_size;       /* Block size by command 0x52, 
+    size_t  block_size;       /* Block size by command 0x52,
                                  if 0 means block erase NOT supported */
     size_t  total_size;
 

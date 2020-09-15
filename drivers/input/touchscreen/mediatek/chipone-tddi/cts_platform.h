@@ -8,6 +8,7 @@
 #include <linux/unaligned/access_ok.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/fs.h>
@@ -28,11 +29,6 @@
 #include <linux/timer.h>
 #include <linux/string.h>
 #include <linux/suspend.h>
-#ifdef CONFIG_PM_WAKELOCKS
-#include <linux/pm_wakeup.h>
-#else
-#include <linux/wakelock.h>
-#endif
 #include <linux/firmware.h>
 
 #ifdef CONFIG_OF
@@ -124,12 +120,12 @@ struct cts_platform_data {
 #endif /* TPD_SUPPORT_I2C_DMA */
 
 #ifdef CFG_CTS_FORCE_UP
-	struct timer_list touch_event_timeout_timer;
+    struct timer_list touch_event_timeout_timer;
 #endif
 
 #ifdef CFG_CTS_FW_LOG_REDIRECT
-    u8 fw_log_buf[CTS_FW_LOG_BUF_LEN];  
-#endif      
+    u8 fw_log_buf[CTS_FW_LOG_BUF_LEN];
+#endif
 
 #ifdef CONFIG_CTS_I2C_HOST
     struct i2c_client *i2c_client;
@@ -152,7 +148,7 @@ struct cts_platform_data {
 
 #ifdef CONFIG_CTS_I2C_HOST
 extern size_t cts_plat_get_max_i2c_xfer_size(struct cts_platform_data *pdata);
-extern u8 *cts_plat_get_i2c_xfer_buf(struct cts_platform_data *pdata, 
+extern u8 *cts_plat_get_i2c_xfer_buf(struct cts_platform_data *pdata,
         size_t xfer_size);
 extern int cts_plat_i2c_write(struct cts_platform_data *pdata, u8 i2c_addr,
         const void *src, size_t len, int retry, int delay);
@@ -163,8 +159,8 @@ extern int cts_plat_is_i2c_online(struct cts_platform_data *pdata, u8 i2c_addr);
 #else /* CONFIG_CTS_I2C_HOST */
 extern size_t cts_plat_get_max_spi_xfer_size(struct cts_platform_data *pdata);
 extern u8 *cts_plat_get_spi_xfer_buf(struct cts_platform_data *pdata, size_t xfer_size);
-extern int cts_plat_spi_write(struct cts_platform_data *pdata, u8 i2c_addr, const void *src, 
-		size_t len, int retry, int delay);
+extern int cts_plat_spi_write(struct cts_platform_data *pdata, u8 i2c_addr, const void *src,
+        size_t len, int retry, int delay);
 extern int cts_plat_spi_read(struct cts_platform_data *pdata, u8 i2c_addr,
         const u8 *wbuf, size_t wlen, void *rbuf, size_t rlen,
         int retry, int delay);

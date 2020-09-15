@@ -4,6 +4,9 @@
 #include "cts_platform.h"
 #include "cts_core.h"
 #include "cts_sysfs.h"
+#include "cts_charger_detect.h"
+#include "cts_earjack_detect.h"
+#include "cts_strerror.h"
 
 extern unsigned char g_lcm_info_flag;
 
@@ -135,7 +138,7 @@ static int cts_driver_probe(struct spi_device *client)
 {
     struct chipone_ts_data *cts_data = NULL;
     int ret = 0;
-    pr_err("wzx 111111111\n");
+
     /* BEGIN, Ontim,  wzx, 19/010/23, St-result :PASS,LCD and TP Device information */
     if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
     {
@@ -150,7 +153,6 @@ static int cts_driver_probe(struct spi_device *client)
     if (client->addr != CTS_DEV_NORMAL_MODE_I2CADDR) {
         cts_err("Probe i2c addr 0x%02x != driver config addr 0x%02x",
             client->addr, CTS_DEV_NORMAL_MODE_I2CADDR);
-	pr_err("wzx 2222222222\n");
         return -ENODEV;
     };
 #endif
@@ -180,15 +182,17 @@ static int cts_driver_probe(struct spi_device *client)
 #ifdef CONFIG_CTS_I2C_HOST
     i2c_set_clientdata(client, cts_data);
     cts_data->i2c_client = client;
+    cts_data->device = &client->dev;
 #else
 	spi_set_drvdata(client, cts_data);
 	cts_data->spi_client = client;
+    cts_data->device = &client->dev;
 #endif
 
     ret = cts_init_platform_data(cts_data->pdata, client);
     if (ret) {
         cts_err("cts_init_platform_data err");
-        goto err_free_cts_data;
+        goto err_free_pdata;
     }    
 
     cts_data->cts_dev.pdata = cts_data->pdata;
@@ -263,10 +267,18 @@ static int cts_driver_probe(struct spi_device *client)
         goto err_deinit_sysfs;
     }
 
+    ret = cts_init_charger_detect(cts_data);
+    if (ret) {
+        cts_err("Init charger detect failed %d", ret);
+    }
+    ret = cts_init_earjack_detect(cts_data);
+    if (ret) {
+        cts_err("Init earjack detect failed %d", ret);
+    }
     ret = cts_start_device(&cts_data->cts_dev);
     if (ret) {
         cts_err("Start device failed %d", ret);
-        goto err_free_irq;
+        goto err_deinit_earjack_detect;
     }
 
     if (LCM_INFO_HJC_GLASS == g_lcm_info_flag) {
@@ -295,7 +307,9 @@ static int cts_driver_probe(struct spi_device *client)
 
     return 0;
 
-err_free_irq:
+err_deinit_earjack_detect:
+    cts_deinit_earjack_detect(cts_data);
+    cts_deinit_charger_detect(cts_data);
     cts_plat_free_irq(cts_data->pdata);
 err_deinit_sysfs:
     cts_sysfs_remove_device(&client->dev);
@@ -361,6 +375,8 @@ static int cts_driver_remove(struct spi_device *client)
             cts_warn("Stop device failed %d", ret);
         }
 
+        cts_deinit_charger_detect(cts_data);
+        cts_deinit_earjack_detect(cts_data);
         cts_plat_free_irq(cts_data->pdata);
 
         cts_tool_deinit(cts_data);
@@ -410,7 +426,11 @@ static ssize_t reset_pin_show(struct device_driver *driver, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(reset_pin, S_IRUGO, reset_pin_show, NULL);
+#else
+static DRIVER_ATTR_RO(reset_pin);
+#endif
 
 static ssize_t swap_xy_show(struct device_driver *dev, char *buf)
 {
@@ -422,7 +442,11 @@ static ssize_t swap_xy_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(swap_xy, S_IRUGO, swap_xy_show, NULL);
+#else
+static DRIVER_ATTR_RO(swap_xy);
+#endif
 
 static ssize_t wrap_x_show(struct device_driver *dev, char *buf)
 {
@@ -434,7 +458,11 @@ static ssize_t wrap_x_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(wrap_x, S_IRUGO, wrap_x_show, NULL);
+#else
+static DRIVER_ATTR_RO(wrap_x);
+#endif
 
 static ssize_t wrap_y_show(struct device_driver *dev, char *buf)
 {
@@ -446,7 +474,11 @@ static ssize_t wrap_y_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(wrap_y, S_IRUGO, wrap_y_show, NULL);
+#else
+static DRIVER_ATTR_RO(wrap_y);
+#endif
 
 static ssize_t force_update_show(struct device_driver *dev, char *buf)
 {
@@ -458,14 +490,22 @@ static ssize_t force_update_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(force_update, S_IRUGO, force_update_show, NULL);
+#else
+static DRIVER_ATTR_RO(force_update);
+#endif
 
 static ssize_t max_touch_num_show(struct device_driver *dev, char *buf)
 {
     return scnprintf(buf, PAGE_SIZE, "CFG_CTS_MAX_TOUCH_NUM: %d\n",
         CFG_CTS_MAX_TOUCH_NUM);
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(max_touch_num, S_IRUGO, max_touch_num_show, NULL);
+#else
+static DRIVER_ATTR_RO(max_touch_num);
+#endif
 
 static ssize_t vkey_show(struct device_driver *dev, char *buf)
 {
@@ -477,7 +517,11 @@ static ssize_t vkey_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(vkey, S_IRUGO, vkey_show, NULL);
+#else
+static DRIVER_ATTR_RO(vkey);
+#endif
 
 static ssize_t gesture_show(struct device_driver *dev, char *buf)
 {
@@ -489,7 +533,11 @@ static ssize_t gesture_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(gesture, S_IRUGO, gesture_show, NULL);
+#else
+static DRIVER_ATTR_RO(gesture);
+#endif
 
 static ssize_t esd_protection_show(struct device_driver *dev, char *buf)
 {
@@ -501,7 +549,11 @@ static ssize_t esd_protection_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(esd_protection, S_IRUGO, esd_protection_show, NULL);
+#else
+static DRIVER_ATTR_RO(esd_protection);
+#endif
 
 static ssize_t slot_protocol_show(struct device_driver *dev, char *buf)
 {
@@ -513,7 +565,11 @@ static ssize_t slot_protocol_show(struct device_driver *dev, char *buf)
 #endif
 	    );
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(slot_protocol, S_IRUGO, slot_protocol_show, NULL);
+#else
+static DRIVER_ATTR_RO(slot_protocol);
+#endif
 
 static ssize_t max_xfer_size_show(struct device_driver *dev, char *buf)
 {
@@ -525,13 +581,21 @@ static ssize_t max_xfer_size_show(struct device_driver *dev, char *buf)
         CFG_CTS_MAX_SPI_XFER_SIZE);
 #endif        
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(max_xfer_size, S_IRUGO, max_xfer_size_show, NULL);
+#else
+static DRIVER_ATTR_RO(max_xfer_size);
+#endif
 
 static ssize_t driver_info_show(struct device_driver *dev, char *buf)
 {
     return scnprintf(buf, PAGE_SIZE, "Driver version: %s\n", CFG_CTS_DRIVER_VERSION);
 }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static DRIVER_ATTR(driver_info, S_IRUGO, driver_info_show, NULL);
+#else
+static DRIVER_ATTR_RO(driver_info);
+#endif
 
 static struct attribute *cts_i2c_driver_config_attrs[] = {
     &driver_attr_reset_pin.attr,
@@ -602,13 +666,16 @@ static struct spi_driver cts_spi_driver = {
 
 int cts_driver_init(void)
 {
+    int ret = 0;
     cts_info("Init");
 
 #ifdef CONFIG_CTS_I2C_HOST
-    return i2c_add_driver(&cts_i2c_driver);
+    ret = i2c_add_driver(&cts_i2c_driver);
 #else
-	return spi_register_driver(&cts_spi_driver);
+    ret = spi_register_driver(&cts_spi_driver);
 #endif
+    cts_info("Init return "CTS_ERR_FMT_STR, CTS_ERR_ARG(ret));
+    return ret;
 }
 
 void cts_driver_exit(void)

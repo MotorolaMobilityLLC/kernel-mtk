@@ -19,7 +19,7 @@ struct cts_firmware {
 
 struct cts_device;
 
-extern u32 tddicrc32(const u8 *data, size_t len);
+extern u32 cts_crc32(const u8 *data, size_t len);
 
 #if defined(CFG_CTS_DRIVER_BUILTIN_FIRMWARE) || defined(CFG_CTS_FIRMWARE_IN_FS)
 extern const struct cts_firmware *cts_request_firmware(

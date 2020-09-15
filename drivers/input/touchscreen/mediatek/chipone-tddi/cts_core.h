@@ -3,13 +3,12 @@
 
 #include "cts_config.h"
 
-
 enum cts_dev_hw_reg {
     CTS_DEV_HW_REG_HARDWARE_ID = 0x30000u,
     CTS_DEV_HW_REG_CLOCK_GATING = 0x30004u,
     CTS_DEV_HW_REG_RESET_CONFIG = 0x30008u,
     CTS_DEV_HW_REG_BOOT_MODE = 0x30010u,
-	CTS_DEV_HW_REG_CURRENT_MODE = 0x30011u,
+    CTS_DEV_HW_REG_CURRENT_MODE = 0x30011u,
 };
 
 enum cts_dev_boot_mode {
@@ -31,13 +30,16 @@ enum cts_dev_boot_mode {
 /** Chipone firmware register addresses under normal mode */
 enum cts_device_fw_reg {
     CTS_DEVICE_FW_REG_WORK_MODE = 0x0000,
+    CTS_DEVICE_FW_REG_SYS_BUSY = 0x0001,
     CTS_DEVICE_FW_REG_DATA_READY = 0x0002,
     CTS_DEVICE_FW_REG_CMD = 0x0004,
+    CTS_DEVICE_FW_REG_POWER_MODE = 0x0005,
     CTS_DEVICE_FW_REG_FW_LIB_MAIN_VERSION = 0x0009,
     CTS_DEVICE_FW_REG_CHIP_TYPE = 0x000A,
     CTS_DEVICE_FW_REG_VERSION = 0x000C,
     CTS_DEVICE_FW_REG_DDI_VERSION = 0x0010,
     CTS_DEVICE_FW_REG_GET_WORK_MODE = 0x003F,
+    CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_DONE = 0x0046, /* RO */
     CTS_DEVICE_FW_REG_FW_LIB_SUB_VERSION =  0x0047,
     CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY =  0x004E,
 
@@ -49,9 +51,18 @@ enum cts_device_fw_reg {
     CTS_DEVICE_FW_REG_PANEL_PARAM = 0x8000,
     CTS_DEVICE_FW_REG_NUM_TX = 0x8007,
     CTS_DEVICE_FW_REG_NUM_RX = 0x8008,
+    CTS_DEVICE_FW_REG_INT_KEEP_TIME = 0x8047,   /* Unit us */
+    CTS_DEVICE_FW_REG_RAWDATA_TARGET = 0x8049,
     CTS_DEVICE_FW_REG_X_RESOLUTION = 0x8090,
     CTS_DEVICE_FW_REG_Y_RESOLUTION = 0x8092,
+    CTS_DEVICE_FW_REG_SWAP_AXES = 0x8094,
+    CTS_DEVICE_FW_REG_GLOVE_MODE = 0x8095,
+    CTS_DEVICE_FW_REG_TEST_WITH_DISPLAY_ON = 0x80A3,
+    CTS_DEVICE_FW_REG_INT_MODE = 0x80D8,
+    CTS_DEVICE_FW_REG_EARJACK_DETECT_SUPP = 0x8113,
+    CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_ENABLE = 0x8114,
     CTS_DEVICE_FW_REG_ESD_PROTECTION = 0x8156, /* RW */
+    CTS_DEVICE_FW_REG_FLAG_BITS = 0x8158,
 
     CTS_DEVICE_FW_REG_COMPENSATE_CAP = 0xA000,
     CTS_DEVICE_FW_REG_DEBUG_INTF = 0xF000,
@@ -98,14 +109,16 @@ enum cts_firmware_cmd {
     CTS_CMD_DISABLE_READ_RAWDATA = 0x21,
     CTS_CMD_SUSPEND_WITH_GESTURE = 0x40,
     CTS_CMD_QUIT_GESTURE_MONITOR = 0x41,
-    CTS_CMD_CHARGER_PLUG_IN = 0x55,
-    CTS_CMD_CHARGER_PLUG_OUT = 0x66,
-    CTS_CMD_ENABLE_FW_LOG_REDIRECT = 0x86,    
+    CTS_CMD_CHARGER_ATTACHED = 0x55,
+    CTS_CMD_EARJACK_ATTACHED = 0x57,
+    CTS_CMD_EARJACK_DETACHED = 0x58,
+    CTS_CMD_CHARGER_DETACHED = 0x66,
+    CTS_CMD_ENABLE_FW_LOG_REDIRECT = 0x86,
     CTS_CMD_DISABLE_FW_LOG_REDIRECT = 0x87,
     CTS_CMD_ENABLE_READ_CNEG   = 0x88,
     CTS_CMD_DISABLE_READ_CNEG  = 0x89,
     CTS_CMD_FW_LOG_SHOW_FINISH = 0xE0,
-        
+
 };
 
 #pragma pack(1)
@@ -200,12 +213,18 @@ struct cts_device_fwdata {
     u16 res_y;
     u8  rows;
     u8  cols;
+    bool flip_x;
+    bool flip_y;
+    bool swap_axes;
     u8  ddi_version;
-	u8  int_mode;
-	u8  esd_method;
-	u16 lib_version;
-	u16 int_keep_time;
-	u16 rawdata_target;
+    u8  int_mode;
+    u8  esd_method;
+    u16 lib_version;
+    u16 int_keep_time;
+    u16 rawdata_target;
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    bool supp_headphone_cable_reject;
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 };
 
 /** Chip runtime data */
@@ -242,8 +261,10 @@ struct chipone_ts_data {
 #ifdef CONFIG_CTS_I2C_HOST
     struct i2c_client *i2c_client;
 #else
-	struct spi_device *spi_client;
+    struct spi_device *spi_client;
 #endif /* CONFIG_CTS_I2C_HOST */
+
+    struct device *device;
 
     struct cts_device cts_dev;
 
@@ -257,6 +278,14 @@ struct chipone_ts_data {
     bool                esd_enabled;
     int                 esd_check_fail_cnt;
 #endif /* CONFIG_CTS_ESD_PROTECTION */
+
+#ifdef CONFIG_CTS_CHARGER_DETECT
+    void *charger_detect_data;
+#endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+    void *earjack_detect_data;
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 
 #ifdef CONFIG_CTS_LEGACY_TOOL
     struct proc_dir_entry *procfs_entry;
@@ -279,7 +308,7 @@ static inline u32 get_unaligned_be24(const void *p)
 static inline void put_unaligned_be24(u32 v, void *p)
 {
     u8 *puc = (u8 *)p;
-    
+
     puc[0] = (v >> 16) & 0xFF;
     puc[1] = (v >> 8 ) & 0xFF;
     puc[2] = (v >> 0 ) & 0xFF;
@@ -486,28 +515,28 @@ static inline void cts_set_program_addr(struct cts_device *cts_dev)
     cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_I2CADDR;
     cts_dev->rtdata.program_mode = true;
     cts_dev->rtdata.addr_width   = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
-}    
+}
 
 static inline void cts_set_normal_addr(struct cts_device *cts_dev)
 {
     cts_dev->rtdata.slave_addr     = CTS_DEV_NORMAL_MODE_I2CADDR;
     cts_dev->rtdata.program_mode = false;
     cts_dev->rtdata.addr_width   = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
-}    
+}
 #else
 static inline void cts_set_program_addr(struct cts_device *cts_dev)
 {
     cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_SPIADDR;
     cts_dev->rtdata.program_mode   = true;
     cts_dev->rtdata.addr_width     = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
-}    
+}
 
 static inline void cts_set_normal_addr(struct cts_device *cts_dev)
 {
     cts_dev->rtdata.slave_addr     = CTS_DEV_NORMAL_MODE_SPIADDR;
     cts_dev->rtdata.program_mode   = false;
     cts_dev->rtdata.addr_width     = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
-}    
+}
 #endif
 
 extern int cts_irq_handler(struct cts_device *cts_dev);
@@ -541,11 +570,9 @@ extern int cts_get_dev_esd_protection(struct cts_device *cts_dev, bool *enable);
 extern int cts_set_dev_esd_protection(struct cts_device *cts_dev, bool enable);
 extern int cts_enable_get_rawdata(const struct cts_device *cts_dev);
 extern int cts_disable_get_rawdata(const struct cts_device *cts_dev);
-extern int cts_enable_get_compensate_cap(const struct cts_device *cts_dev);
-extern int cts_disable_get_compensate_cap(const struct cts_device *cts_dev);
 extern int cts_get_rawdata(const struct cts_device *cts_dev, void *buf);
 extern int cts_get_diffdata(const struct cts_device *cts_dev, void *buf);
-extern int cts_get_compensate_cap(const struct cts_device *cts_dev, u8 *cap);
+extern int cts_get_compensate_cap(struct cts_device *cts_dev, u8 *cap);
 extern int cts_get_fwid(struct cts_device *cts_dev, u16 *fwid);
 extern int cts_get_hwid(struct cts_device *cts_dev, u32 *hwid);
 
@@ -581,13 +608,19 @@ static inline int cts_is_glove_enabled(const struct cts_device *cts_dev)  {retur
 
 #ifdef CONFIG_CTS_CHARGER_DETECT
 extern bool cts_is_charger_exist(struct cts_device *cts_dev);
-extern int cts_charger_plugin(struct cts_device *cts_dev);
-extern int cts_charger_plugout(struct cts_device *cts_dev);
+extern int cts_set_dev_charger_attached(struct cts_device *cts_dev, bool attached);
 #else /* CONFIG_CTS_CHARGER_DETECT */
 static inline bool cts_is_charger_exist(struct cts_device *cts_dev) {return false;}
-static inline int cts_charger_plugin(struct cts_device *cts_dev) {return 0;}
-static inline int cts_charger_plugout(struct cts_device *cts_dev) {return 0;}
+static inline int cts_dev_charger_attached(struct cts_device *cts_dev, bool attached) {return 0;}
 #endif /* CONFIG_CTS_CHARGER_DETECT */
+
+#ifdef CONFIG_CTS_EARJACK_DETECT
+extern bool cts_is_earjack_exist(struct cts_device *cts_dev);
+extern int cts_set_dev_earjack_attached(struct cts_device *cts_dev, bool attached);
+#else /* CONFIG_CTS_EARJACK_DETECT */
+static inline bool cts_is_earjack_exist(struct cts_device *cts_dev) {return false;}
+static inline int cts_set_dev_earjack_attached(struct cts_device *cts_dev, bool attached) {return 0;}
+#endif /* CONFIG_CTS_EARJACK_DETECT */
 
 #ifdef CONFIG_CTS_LEGACY_TOOL
 extern int  cts_tool_init(struct chipone_ts_data *cts_data);
@@ -603,7 +636,7 @@ extern int cts_stop_device(struct cts_device *cts_dev);
 
 #ifdef CFG_CTS_FW_LOG_REDIRECT
 extern int cts_enable_fw_log_redirect(struct cts_device *cts_dev);
-extern int cts_disable_fw_log_redirect(struct cts_device *cts_dev); 
+extern int cts_disable_fw_log_redirect(struct cts_device *cts_dev);
 extern bool cts_is_fw_log_redirect(struct cts_device *cts_dev);
 extern int cts_fw_log_show_finish(struct cts_device *cts_dev);
 #endif
@@ -611,8 +644,8 @@ extern int cts_fw_log_show_finish(struct cts_device *cts_dev);
 #ifdef CFG_CTS_UPDATE_CRCCHECK
 extern int cts_sram_writesb_boot_crc_retry(const struct cts_device *cts_dev,
         size_t len, u32 crc, int retry);
-#endif    
-    
+#endif
+
 extern const char *cts_dev_boot_mode2str(u8 boot_mode);
 extern bool cts_is_fwid_valid(u16 fwid);
 
