@@ -588,6 +588,8 @@
 #define SENSOR_DRVNAME_MALTALITE_WIN_OV13B10_MIPI_RAW         "maltalite_win_ov13b10_mipi_raw"
 #define MALTALITE_SEA_GC5035_SENSOR_ID          (0x5035 + 3)
 #define SENSOR_DRVNAME_MALTALITE_SEA_GC5035_MIPI_RAW         "maltalite_sea_gc5035_mipi_raw"
+#define sp5506MIPI_SENSOR_ID	0x5675
+#define SENSOR_DRVNAME_MALTALITE_SUN_SP5506_MIPI_RAW         "maltalite_sun_sp5506_mipi_raw"
 
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)

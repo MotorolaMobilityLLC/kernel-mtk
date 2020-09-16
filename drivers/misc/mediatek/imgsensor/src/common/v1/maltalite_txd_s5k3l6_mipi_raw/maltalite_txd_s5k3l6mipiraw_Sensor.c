@@ -75,7 +75,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K3L6_SENSOR_ID,
+	.sensor_id = MALTALITE_TXD_S5K3L6_SENSOR_ID,
 	.checksum_value = 0x44724ea1,
 	.pre = {
 		.pclk = 480000000,				//record different mode's pclk
