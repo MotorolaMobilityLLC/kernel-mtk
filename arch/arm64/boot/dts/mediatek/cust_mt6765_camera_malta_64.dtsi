@@ -343,7 +343,7 @@
 
 &kd_camera_hw1 {
     cam0_enable_sensor = "melta_s5kgm1st_mipi_raw maltalite_txd_s5k3l6_mipi_raw maltalite_win_ov13b10_mipi_raw";
-    cam1_enable_sensor = "melta_sea_gc5035_mipi_raw melta_sun_gc5035_mipi_raw maltalite_sea_gc5035_mipi_raw";
+    cam1_enable_sensor = "melta_sea_gc5035_mipi_raw melta_sun_gc5035_mipi_raw maltalite_sea_gc5035_mipi_raw maltalite_sun_sp5506_mipi_raw";
     cam2_enable_sensor = "malta_sea_gc02m1_mipi_raw malta_sun_ov02b10_mipi_raw";
     /*cam4_enable_sensor = "gc02m1_mipi_raw";*/
     cam0_vcama-supply = <&mt_pmic_vcama_ldo_reg>;
