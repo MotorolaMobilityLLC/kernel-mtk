@@ -2797,8 +2797,8 @@
 		enable_pe_4;
 		/*disable usb type C*/
 		/*enable_type_c;
-		power_path_support;*/
-		enable_dynamic_mivr;
+		power_path_support;
+		enable_dynamic_mivr;*/
 		disable_pd_dual;
 
 		/* common */
