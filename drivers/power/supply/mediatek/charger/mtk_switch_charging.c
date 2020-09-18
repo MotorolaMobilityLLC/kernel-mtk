@@ -267,6 +267,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		    pdata->charging_current_limit)
 			pdata->charging_current_limit =
 					info->dynamic_charge_current;
+			pdata->input_current_limit =
+				info->dynamic_charge_current;
 	}
 
 

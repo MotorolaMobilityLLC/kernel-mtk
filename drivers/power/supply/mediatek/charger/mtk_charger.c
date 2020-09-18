@@ -1315,7 +1315,7 @@ static bool mtk_chg_check_vbus(struct charger_manager *info)
 		return false;
 	}
 	
-	if (info->enable_dynamic_charge_current ){
+	if (info->enable_dynamic_charge_current  && info->chr_type == STANDARD_CHARGER){
 		
 	if(info->charger_thread_polling == true && 
 		vchr < (info->data.min_charger_voltage+90000) &&
@@ -1327,8 +1327,10 @@ static bool mtk_chg_check_vbus(struct charger_manager *info)
 		      // low_vbus =0;
 		if (info->dynamic_charge_current == -1)
 			info->dynamic_charge_current = info->data.ac_charger_current - 100000;
-		else if( info->dynamic_charge_current  > 1050000)
+		else if( info->dynamic_charge_current  > 1600000)
 			info->dynamic_charge_current -= 100000;
+		else
+			info->dynamic_charge_current = 1000000;
 		}
 	}
 	else
