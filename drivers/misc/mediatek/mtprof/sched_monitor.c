@@ -1119,10 +1119,10 @@ void MT_trace_hardirqs_off(void)
 		if (current->pid == 0)	/* Ignore swap thread */
 			return;
 		if (__raw_get_cpu_var(MT_tracing_cpu) == 0) {
+			__raw_get_cpu_var(MT_tracing_cpu) = 1;
 			MT_trace_irq_off();
 			__raw_get_cpu_var(t_irq_off) = sched_clock();
 		}
-		__raw_get_cpu_var(MT_tracing_cpu) = 1;
 	}
 }
 EXPORT_SYMBOL(MT_trace_hardirqs_off);
