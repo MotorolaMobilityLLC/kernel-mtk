@@ -1330,7 +1330,9 @@ static bool mtk_chg_check_vbus(struct charger_manager *info)
 		else if( info->dynamic_charge_current  > 1600000)
 			info->dynamic_charge_current -= 100000;
 		else
-			info->dynamic_charge_current = 1000000;
+//			info->dynamic_charge_current = 1150000;  //set 1.15A for normal use
+			info->dynamic_charge_current = 1100000;  //set 1.1A for normal use
+//			info->dynamic_charge_current = 1000000;   // set 1.0a for safty test
 		}
 	}
 	else
