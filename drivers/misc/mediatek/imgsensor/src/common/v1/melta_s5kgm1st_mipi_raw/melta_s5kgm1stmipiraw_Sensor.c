@@ -84,15 +84,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.normal_video = {
 		.pclk =482000000,
-		.linelength = 2512,
-		.framelength = 6392,
+		.linelength = 5024,
+		.framelength = 3194,
 		.startx =0,
 		.starty = 0,
-		.grabwindow_width = 2000,
-		.grabwindow_height = 1500,
+		.grabwindow_width = 4000,
+		.grabwindow_height = 3000,
 		.mipi_data_lp2hs_settle_dc = 85,
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.mipi_pixel_rate = 240000000,
+		.mipi_pixel_rate = 460800000,
 		.max_framerate = 300,
 	},
 	.hs_video = { /*hs_video 120fps*/
@@ -233,7 +232,7 @@ static struct imgsensor_struct imgsensor = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {  
 	{ 4000, 3000, 0,  0,   4000, 3000, 2000, 1500, 0000, 0000, 2000, 1500,      0,  0, 2000,  1500}, /*Preview*/
 	{ 4000, 3000,	0,	0,   4000, 3000, 4000,  3000, 0000, 0000, 4000,  3000,	  0,	0, 4000,  3000}, /*capture*/
-	{ 4000, 3000,   0,      0,   4000, 3000, 2000,  1500, 0000, 0000,  2000, 1500,    0,    0, 2000,  1500}, /*video*/
+	{ 4000, 3000,	0,	0,   4000, 3000, 4000,  3000, 0000, 0000, 4000,  3000,	  0,	0, 4000,  3000}, /*video*/
 	{ 4000, 3000,	80,	420,   3840, 2160, 1920,  1080, 0000, 0000, 1920,  1080,	  0,	0, 1920,  1080}, /*hight speed video 120fps*/
 	{ 4000, 3000,	80,	420,   3840, 2160, 1280,  720, 0000, 0000, 1280,  720,	  0,	0, 1280,  720}, /*slim video  hs_video 240fps*/
 	{ 4000, 3000, 0,  0,   4000, 3000, 2000, 1500, 0000, 0000, 2000, 1500,      0,  0, 2000,  1500},  /*custom1*/
@@ -258,7 +257,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
     .i4BlockNumX = 124,
     .i4BlockNumY = 90,
     .i4LeFirst = 0,
-	.i4Crop = { {0, 0}, {0, 0}, {0, 372}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 	.iMirrorFlip = 0,
 };
 #if 0
@@ -2446,6 +2445,7 @@ static kal_uint16 addr_data_pair_capture[] = {
 0x602A,	0x25D6,
 0x6F12,	0x0020,
 };
+#if 0
 static kal_uint16 addr_data_pair_normal_video[] = {
 0x6028,	0x4000,
 0x6214,	0x7971,
@@ -2807,7 +2807,7 @@ static kal_uint16 addr_data_pair_normal_video[] = {
 0x6F12,	0x0020,
 
 };
-
+#endif
 static kal_uint16 addr_data_pair_hs_video[] = {
 0x6028, 0x4000,
 0x6214, 0x7971,
@@ -5011,7 +5011,7 @@ static void capture_setting(kal_uint16 currefps)
 	cam_pr_debug_1("end \n");
 }
 
-
+#if 0
 static void normal_video_setting(kal_uint16 currefps)
 {
 	cam_pr_debug_1("start \n");
@@ -5019,7 +5019,7 @@ static void normal_video_setting(kal_uint16 currefps)
 		   sizeof(addr_data_pair_normal_video) / sizeof(kal_uint16));
 	cam_pr_debug_1("end \n");
 }
-
+#endif
 
 static void hs_video_setting(void)
 {
@@ -5334,7 +5334,7 @@ static kal_uint32 normal_video(
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 
-	normal_video_setting(imgsensor.current_fps);
+	capture_setting(imgsensor.current_fps);
 	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
@@ -6308,7 +6308,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		    memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[1], sizeof(struct SENSOR_VC_INFO_STRUCT));
 		    break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-		    memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[2], sizeof(struct SENSOR_VC_INFO_STRUCT));
+		    memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[1], sizeof(struct SENSOR_VC_INFO_STRUCT));
 		    break;
 
 		case MSDK_SCENARIO_ID_CUSTOM3:
