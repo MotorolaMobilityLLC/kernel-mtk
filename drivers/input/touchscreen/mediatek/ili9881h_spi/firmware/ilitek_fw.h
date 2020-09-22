@@ -85,7 +85,7 @@ static unsigned char CTPM_FW_TXD[] = {
 #define TM_INI_REQUEST_PATH		"mp_tm.ini"
 #define TM_FW_REQUEST_PATH		"ILITEK_FW_TM"
 static unsigned char CTPM_FW_TM[] = {
-	#include "tianma/M6210_9881H_TM6517_LongH_V0x10.0x20.0x04.0x00.AP_0x01.0x00_MP_20200817.ili"
+	#include "tianma/Malta_9881H_TM6517_LongH_V0x10.0x20.0x04.0x01.AP_0x01.0x00_MP.ili"
 };
 
 #endif
