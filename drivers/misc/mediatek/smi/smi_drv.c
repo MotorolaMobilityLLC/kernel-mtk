@@ -32,9 +32,7 @@
 #include <smi_conf.h>
 #include <smi_public.h>
 #include <smi_pmqos.h>
-#if IS_ENABLED(CONFIG_MTK_MMDVFS)
 #include <mmdvfs_pmqos.h>
-#endif
 #if IS_ENABLED(CONFIG_MTK_EMI)
 #include <plat_debug_api.h>
 #elif IS_ENABLED(CONFIG_MTK_EMI_BWL)
@@ -602,8 +600,15 @@ static s32 smi_bwc_conf(const struct MTK_SMI_BWC_CONF *conf)
 			smi_drv.scen, smi_scen);
 		return 0;
 	}
-	for (i = 0; i < SMI_DEV_NUM; i++)
+	for (i = 0; i < SMI_DEV_NUM; i++) {
+#if IS_ENABLED(CONFIG_MACH_MT6768)
+		smi_bus_prepare_enable(i, DEV_NAME);
 		mtk_smi_conf_set(smi_dev[i], smi_scen);
+		smi_bus_disable_unprepare(i, DEV_NAME);
+#else
+		mtk_smi_conf_set(smi_dev[i], smi_scen);
+#endif
+	}
 
 	SMIDBG("ioctl=%s:%s, curr=%s(%d), SMI_SCEN=%d\n",
 		smi_bwc_scen_name_get(conf->scen), conf->b_on ? "ON" : "OFF",
@@ -647,7 +652,6 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ret = smi_bwc_conf(&conf);
 		break;
 	}
-#if IS_ENABLED(CONFIG_MTK_MMDVFS)
 	case MTK_IOC_MMDVFS_QOS_CMD:
 	{
 		struct MTK_MMDVFS_QOS_CMD config;
@@ -671,7 +675,6 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		break;
 	}
-#endif
 #ifdef MMDVFS_HOOK
 	case MTK_IOC_SMI_BWC_INFO_SET:
 	{
