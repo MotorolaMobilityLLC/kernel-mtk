@@ -120,83 +120,6 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 	return 0;
 }
 
-static int katoi(char *str)
-{
-	int result = 0;
-	unsigned int digit;
-	int sign;
-
-	if (*str == '-') {
-		sign = 1;
-		str += 1;
-	} else {
-		sign = 0;
-		if (*str == '+') {
-			str += 1;
-		}
-	}
-
-	for (;; str += 1) {
-		digit = *str - '0';
-		if (digit > 9)
-			break;
-		result = (10 * result) + digit;
-	}
-
-	if (sign) {
-		return -result;
-	}
-
-	return result;
-}
-
-static char *str_split(char *src,char *dst, int n)
-{
-	char *p = src;
-	char *q = dst;
-	int len = strlen(src);
-
-	if(n>len) n = len;
-	p += (len-n);
-	while((*(q++) = *(p++)));
-
-	return dst;
-}
-
-static int get_board_id(void)
-{
-	char file_path[BUF_SIZE] = "/sys/hwinfo/board_id";
-	char buf[BUF_SIZE] = {0};
-	int  ret = 0;
-	int board_id = 0;
-	char dst[5] = {0};
-
-	ret = hwinfo_read_file(file_path, buf, sizeof(buf));
-	if (ret != 0)
-	{
-		pr_err("hwinfo_read_file failed.");
-		return -1;
-	}
-
-	if (buf[strlen(buf) - 1] == '\n')
-		buf[strlen(buf) - 1] = '\0';
-
-	str_split(buf, dst, 4);
-	board_id = katoi(dst);
-
-	printk(KERN_INFO "[ACCEL]: board id:(0x%x)  buf(%s)  dst(%s)\n", board_id, buf, dst);
-	board_id &= 0x04;
-
-	ret = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_SET_TRACE, &board_id);
-	if (ret < 0) {
-		pr_err("sensor_set_cmd_to_hub fail,(ID: %d),(action: %d),(ret: %d)\n",
-				ID_ACCELEROMETER, CUST_ACTION_SET_TRACE, ret);
-		return -1;
-	}
-
-	return 0;
-}
-
 static int get_tp_vendor(void)
 {
 	char file_path[BUF_SIZE] = "/sys/ontim_dev_debug/touch_screen/vendor";
@@ -234,10 +157,6 @@ static int get_tp_vendor(void)
 			vendor = MALTA_TP_VENDOR_TIANMA;
 		else if (strncmp(buf,"hlt",3) == 0)
 			vendor = MALTA_TP_VENDOR_HLT;
-
-		ret = get_board_id();
-		if (ret < 0)
-			pr_err("[ALS/PS]: get board id failed\n");
 	}
 
 	printk(KERN_INFO "[ALS/PS]: tp vendor:(%d)%s\n", vendor, buf);
