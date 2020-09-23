@@ -1252,7 +1252,8 @@ static void custom1_setting(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
- extern char back_cam_name[64];
+extern char back_cam_name[64];
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -1272,6 +1273,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(back_cam_name, 0x00, sizeof(back_cam_name));
 				memcpy(back_cam_name, "0_maltalite_txd_s5k3l6", 64);
+				ontim_get_otp_data(*sensor_id, NULL, 0);
 				pr_info("i2c write id: 0x%x, sensor id: 0x%x\n",
 					 imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
