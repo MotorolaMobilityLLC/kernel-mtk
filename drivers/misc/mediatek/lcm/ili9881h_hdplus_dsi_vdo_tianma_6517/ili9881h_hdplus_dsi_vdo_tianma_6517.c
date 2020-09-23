@@ -462,7 +462,11 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		if (level > 256 )
 		level = 255;
 
-		level = (level * 40) / 51;
+		if (1 == level) {
+			level = 1;
+		} else {
+			level = (level * 40) / 51;
+		}
 	}
 #if 0
 	if (level < 2 && level !=0)
