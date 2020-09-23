@@ -776,7 +776,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 	const char * str_malta_s5kgm1st_path  = "/data/vendor/camera_dump/malta_s5kgm1st.data";
 	const char * str_malta_sea_gc02m1_path  = "/data/vendor/camera_dump/malta_sea_gc02m1.data";
 	const char * str_malta_sun_ov02b10_path  = "/data/vendor/camera_dump/malta_sun_ov02b10.data";
-    const char * str_dump_path = NULL;
+	const char * str_maltalite_txd_s5k3l6_path  = "/data/vendor/camera_dump/maltalite_txd_s5k3l6.data";
+	const char * str_dump_path = NULL;
 
     u32 u4Offset;
     u32 u4Length;
@@ -820,6 +821,13 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             u4Offset = 0;
             u4Length = 0x18F6;
             str_dump_path = str_malta_s5kgm1st_path;
+            break;
+        }
+		case MALTALITE_TXD_S5K3L6_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0x0CF1;
+            str_dump_path = str_maltalite_txd_s5k3l6_path;
             break;
         }
         case S5K3P9SXT_SENSOR_ID:
@@ -898,7 +906,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             return -1;
     }
 
-    if((sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
+    if((sensorid == MALTALITE_TXD_S5K3L6_SENSOR_ID)||(sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
 	(sensorid == GC8034_SENSOR_ID) || (sensorid ==BLACKJACK_HLT_OV16A10_SENSOR_ID) || (sensorid == BLACKJACK_TSP_OV16880_SENSOR_ID))
     {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
