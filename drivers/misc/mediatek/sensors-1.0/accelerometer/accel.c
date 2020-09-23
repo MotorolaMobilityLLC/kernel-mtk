@@ -588,8 +588,16 @@ int acc_driver_add(struct acc_init_info *obj)
 }
 EXPORT_SYMBOL_GPL(acc_driver_add);
 
+extern int get_board_id(void);
 static int accel_open(struct inode *inode, struct file *file)
 {
+	int ret = 0;
+
+	if ((strcmp(CONFIG_ARCH_MTK_PROJECT, "malta") == 0) || (strcmp(CONFIG_ARCH_MTK_PROJECT, "malta_64") == 0)) {
+		ret = get_board_id();
+		if (ret < 0)
+			pr_err("[ALS/PS]: get board id failed\n");
+	}
 	nonseekable_open(inode, file);
 	return 0;
 }

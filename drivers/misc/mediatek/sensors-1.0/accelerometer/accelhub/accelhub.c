@@ -64,6 +64,112 @@ static DEFINE_SPINLOCK(calibration_lock);
 
 static int gsensor_get_data(int *x, int *y, int *z, int *status);
 
+#define BUF_SIZE 64
+static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
+{
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos = 0;
+	ssize_t len = 0;
+
+	if (file_name == NULL || buf == NULL)
+		return -1;
+
+	fp = filp_open(file_name, O_RDONLY, 0);
+	if (IS_ERR(fp)) {
+		pr_err("file not found/n");
+		return -1;
+	}
+
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	memset(buf, 0x00, buf_size);
+	len = vfs_read(fp, buf, buf_size, &pos);
+	buf[buf_size - 1] = '\n';
+	filp_close(fp, NULL);
+	set_fs(fs);
+
+	return 0;
+}
+
+static int katoi(char *str)
+{
+	int result = 0;
+	unsigned int digit;
+	int sign;
+
+	if (*str == '-') {
+		sign = 1;
+		str += 1;
+	} else {
+		sign = 0;
+		if (*str == '+') {
+			str += 1;
+		}
+	}
+
+	for (;; str += 1) {
+		digit = *str - '0';
+		if (digit > 9)
+			break;
+		result = (10 * result) + digit;
+	}
+
+	if (sign) {
+		return -result;
+	}
+
+	return result;
+}
+
+static char *str_split(char *src,char *dst, int n)
+{
+	char *p = src;
+	char *q = dst;
+	int len = strlen(src);
+
+	if(n>len) n = len;
+	p += (len-n);
+	while((*(q++) = *(p++)));
+
+	return dst;
+}
+
+int get_board_id(void)
+{
+	char file_path[BUF_SIZE] = "/sys/hwinfo/board_id";
+	char buf[BUF_SIZE] = {0};
+	int  ret = 0;
+	int board_id = 0;
+	char dst[5] = {0};
+
+	ret = hwinfo_read_file(file_path, buf, sizeof(buf));
+	if (ret != 0)
+	{
+		pr_err("hwinfo_read_file failed.");
+		return -1;
+	}
+
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+
+	str_split(buf, dst, 4);
+	board_id = katoi(dst);
+
+	printk(KERN_INFO "[ACCEL]: board id:(0x%x)  buf(%s)  dst(%s)\n", board_id, buf, dst);
+	board_id &= 0x04;
+
+	ret = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_SET_TRACE, &board_id);
+	if (ret < 0) {
+		pr_err("sensor_set_cmd_to_hub fail,(ID: %d),(action: %d),(ret: %d)\n",
+				ID_ACCELEROMETER, CUST_ACTION_SET_TRACE, ret);
+		return -1;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(get_board_id);
+
 int accelhub_SetPowerMode(bool enable)
 {
 	int err = 0;
@@ -72,6 +178,12 @@ int accelhub_SetPowerMode(bool enable)
 	if (err < 0) {
 		pr_err("SCP_sensorHub_req_send fail!\n");
 		return err;
+	}
+
+	if ((strcmp(CONFIG_ARCH_MTK_PROJECT, "malta") == 0) || (strcmp(CONFIG_ARCH_MTK_PROJECT, "malta_64") == 0)) {
+		err = get_board_id();
+		if (err < 0)
+			pr_err("[ALS/PS]: get board id failed\n");
 	}
 	return err;
 }
