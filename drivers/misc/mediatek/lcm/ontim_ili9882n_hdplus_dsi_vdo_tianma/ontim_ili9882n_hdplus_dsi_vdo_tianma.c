@@ -383,8 +383,18 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight(void *handle, unsigned int level)
 {
-	if (level > 255)
+	if (level == 256) {
 		level = 255;
+	}else {
+		if (level > 256 )
+		level = 255;
+
+		if (1 == level) {
+			level = 1;
+		} else {
+			level = (level * 8) / 10;
+		}
+	}
 #if 0
 	if (level < 2 && level !=0)
 		level = 2;
@@ -395,7 +405,6 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		LCM_LOGI("delay 15ms to set backlight %d\n",is_bl_delay);
 		MDELAY(15);//t7
 	}
-	level = (level * 8 / 10);
 	bl_level[0].para_list[0] = (level & 0xF0)>>4;
 	bl_level[0].para_list[1] = (level & 0x0F)<<4;
 	LCM_LOGI("%s, backlight set level = %d \n", __func__, level);
