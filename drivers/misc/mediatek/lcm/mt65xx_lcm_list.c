@@ -89,6 +89,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ili9882h_hdplus_dsi_vdo_hlt_6517_lcm_drv,
 #endif
 
+#if defined(ILI9882H_HDPLUS_DSI_VDO_SKW_6517)
+	&ili9882h_hdplus_dsi_vdo_skw_6517_lcm_drv,
+#endif
+
 #if defined(FT8006S_HDPLUS_DSI_VDO_HOLITECH_6528)
 	&ft8006s_hdplus_dsi_vdo_holitech_6528_lcm_drv,
 #endif
