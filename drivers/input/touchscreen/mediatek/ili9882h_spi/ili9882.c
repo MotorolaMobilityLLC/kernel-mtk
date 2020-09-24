@@ -849,6 +849,8 @@ static int ilitek_get_tp_module(void)
 		return MODEL_HLT;
 	else if (strstr(mtkfb_find_lcm_driver(), "ontim_ili9882n_hdplus_dsi_vdo_tianma") != NULL)
 		return MODEL_TM;
+	else if (strstr(mtkfb_find_lcm_driver(), "ili9882h_hdplus_dsi_vdo_skw_6517") != NULL)
+		return MODEL_SKW;
 	else
 		return 0;
 }
@@ -932,6 +934,15 @@ static void ili_update_tp_module_info(void)
 		ilits->md_fw_ili = CTPM_FW_HLT;
 		ilits->md_fw_ili_size = sizeof(CTPM_FW_HLT);
 		break;
+	case MODEL_SKW:
+		ilits->md_name = "SKW";
+		ilits->md_fw_filp_path = SKW_FW_FILP_PATH;
+		ilits->md_fw_rq_path = SKW_FW_REQUEST_PATH;
+		ilits->md_ini_path = SKW_INI_NAME_PATH;
+		ilits->md_ini_rq_path = SKW_INI_REQUEST_PATH;
+		ilits->md_fw_ili = CTPM_FW_SKW;
+		ilits->md_fw_ili_size = sizeof(CTPM_FW_SKW);
+		break;
 	default:
 		break;
 	}
@@ -981,6 +992,14 @@ static void ontim_dev_get_ilitek_info(void)
 		fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
 		ILI_INFO("fw_ver = %d\n",fw_ver);
 		snprintf(version, sizeof(version),"fw:%d.%d VID:0x01",fw_ver,((ilits->chip->fw_ver) & 0xff));
+	}
+	else if (strstr(mtkfb_find_lcm_driver(), "ili9882h_hdplus_dsi_vdo_skw_6517") != NULL)
+	{
+		snprintf(lcdname, sizeof(lcdname), "skw-ili9882h");
+		snprintf(vendor_name, sizeof(vendor_name), "skw-ili9882h");
+		fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
+		ILI_INFO("fw_ver = %d\n",fw_ver);
+		snprintf(version, sizeof(version),"fw:%d.%d VID:0x32",fw_ver,((ilits->chip->fw_ver) & 0xff));
 	}
 }
 #endif
