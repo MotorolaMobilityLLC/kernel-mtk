@@ -96,4 +96,11 @@ static unsigned char CTPM_FW_HLT[] = {
 	#include "hlt/Malta_9882H_PANDA6517_LongH_V0x1C.0x00.0x04.0x03.AP_0x01.0x00_MP.ili"
 };
 
+#define SKW_INI_NAME_PATH		"/system/etc/mp_skw.ini"
+#define SKW_FW_FILP_PATH                 "/sdcard/ILITEK_FW_SKW"
+#define SKW_INI_REQUEST_PATH		"mp_skw.ini"
+#define SKW_FW_REQUEST_PATH		"ILITEK_FW_SKW"
+static unsigned char CTPM_FW_SKW[] = {
+	#include "skyworth/SPI_9882H_PANDA6517_LongV_V0x00.0x01_AP_0x01_MP_20200818.ili"
+};
 #endif
