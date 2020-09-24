@@ -337,7 +337,7 @@ typedef struct GED_BRIDGE_OUT_GE_ALLOC_TAG {
 } GED_BRIDGE_OUT_GE_ALLOC;
 
 /* Bridge in structure for GE_GET */
-typedef struct GED_BRIDGE_IN_GE_GET_TAG {
+struct GED_BRIDGE_IN_GE_GET {
 	int ge_fd;
 	int region_id;
 	/* Here uint32_* means that the unit is 32bit.
@@ -345,16 +345,16 @@ typedef struct GED_BRIDGE_IN_GE_GET_TAG {
 	 */
 	int uint32_offset;
 	int uint32_size;
-} GED_BRIDGE_IN_GE_GET;
+};
 
 /* Bridge out structure for GE_GET */
-typedef struct GED_BRIDGE_OUT_GE_GET_TAG {
+struct GED_BRIDGE_OUT_GE_GET {
 	GED_ERROR eError;
 	uint32_t data[0];
-} GED_BRIDGE_OUT_GE_GET;
+};
 
 /* Bridge in structure for GE_SET */
-typedef struct GED_BRIDGE_IN_GE_SET_TAG {
+struct GED_BRIDGE_IN_GE_SET {
 	int ge_fd;
 	int region_id;
 	/* Here uint32_* means that the unit is 32bit.
@@ -363,12 +363,12 @@ typedef struct GED_BRIDGE_IN_GE_SET_TAG {
 	int uint32_offset;
 	int uint32_size;
 	uint32_t data[0];
-} GED_BRIDGE_IN_GE_SET;
+};
 
 /* Bridge out structure for GE_SET */
-typedef struct GED_BRIDGE_OUT_GE_SET_TAG {
+struct GED_BRIDGE_OUT_GE_SET {
 	GED_ERROR eError;
-} GED_BRIDGE_OUT_GE_SET;
+};
 
 /* Bridge in structure for GE_INFO */
 typedef struct GED_BRIDGE_IN_GE_INFO_TAG {
