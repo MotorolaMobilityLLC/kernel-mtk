@@ -41,7 +41,6 @@ enum TYPEC_WAIT_PS_STATE {
 	TYPEC_WAIT_PS_SNK_VSAFE5V,
 	TYPEC_WAIT_PS_SRC_VSAFE0V,
 	TYPEC_WAIT_PS_SRC_VSAFE5V,
-	TYPEC_WAIT_PS_DBG_VSAFE5V,
 };
 
 enum TYPEC_ROLE_SWAP_STATE {
@@ -56,7 +55,6 @@ static const char *const typec_wait_ps_name[] = {
 	"SNK_VSafe5V",
 	"SRC_VSafe0V",
 	"SRC_VSafe5V",
-	"DBG_VSafe5V",
 };
 #endif	/* TYPEC_INFO2_ENABLE */
 
@@ -571,13 +569,6 @@ static inline void typec_unattached_cc_entry(struct tcpc_device *tcpc_dev)
 			tcpci_set_cc(tcpc_dev, TYPEC_CC_RP);
 			tcpc_enable_timer(tcpc_dev, TYPEC_TIMER_DRP_SRC_TOGGLE);
 			break;
-	#ifdef CONFIG_TCPC_RT1711
-		case typec_attached_src:
-			TYPEC_NEW_STATE(typec_unattached_snk);
-			tcpci_set_cc(tcpc_dev, TYPEC_CC_RD);
-			tcpc_enable_timer(tcpc_dev, TYPEC_TIMER_DRP_SRC_TOGGLE);
-			return;
-	#endif
 		default:
 			TYPEC_NEW_STATE(typec_unattached_snk);
 			tcpci_set_cc(tcpc_dev, TYPEC_CC_DRP);
@@ -1320,22 +1311,12 @@ static inline int typec_legacy_handle_cc_change(struct tcpc_device *tcpc_dev)
 /*
  * [BLOCK] CC Change (after debounce)
  */
-static inline void typec_debug_acc_attached_with_vbus_entry(
-		struct tcpc_device *tcpc_dev)
-{
-	tcpc_dev->typec_attach_new = TYPEC_ATTACHED_DEBUG;
-	typec_wait_ps_change(tcpc_dev, TYPEC_WAIT_PS_DISABLE);
-}
 
 static inline bool typec_debug_acc_attached_entry(struct tcpc_device *tcpc_dev)
 {
 	TYPEC_NEW_STATE(typec_debugaccessory);
 	TYPEC_DBG("[Debug] CC1&2 Both Rd\r\n");
-	typec_wait_ps_change(tcpc_dev, TYPEC_WAIT_PS_DBG_VSAFE5V);
-
-	tcpci_report_power_control(tcpc_dev, true);
-	tcpci_source_vbus(tcpc_dev,
-			TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, -1);
+	tcpc_dev->typec_attach_new = TYPEC_ATTACHED_DEBUG;
 	return true;
 }
 
@@ -2111,7 +2092,7 @@ static inline int typec_handle_debounce_timeout(struct tcpc_device *tcpc_dev)
 #ifdef CONFIG_TYPEC_CAP_NORP_SRC
 	if (typec_is_cc_no_res() && tcpci_check_vbus_valid(tcpc_dev)
 		&& (tcpc_dev->typec_state == typec_unattached_snk))
-		return typec_norp_src_attached_entry(tcpc_dev);
+		typec_norp_src_attached_entry(tcpc_dev);
 #endif
 
 	if (typec_is_drp_toggling()) {
@@ -2185,11 +2166,7 @@ static inline int typec_handle_src_toggle_timeout(struct tcpc_device *tcpc_dev)
 		return 0;
 #endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
 
-	if (tcpc_dev->typec_state == typec_unattached_src
-#ifdef CONFIG_TCPC_RT1711
-		|| tcpc_dev->typec_state == typec_unattached_snk
-#endif
-	   ) {
+	if (tcpc_dev->typec_state == typec_unattached_src) {
 		TYPEC_NEW_STATE(typec_unattached_snk);
 		tcpci_set_cc(tcpc_dev, TYPEC_CC_DRP);
 		typec_wait_ps_change(tcpc_dev, TYPEC_WAIT_PS_DISABLE);
