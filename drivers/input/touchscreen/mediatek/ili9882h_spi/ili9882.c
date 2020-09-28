@@ -999,7 +999,7 @@ static void ontim_dev_get_ilitek_info(void)
 		snprintf(vendor_name, sizeof(vendor_name), "skw-ili9882h");
 		fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
 		ILI_INFO("fw_ver = %d\n",fw_ver);
-		snprintf(version, sizeof(version),"fw:%d.%d VID:0x32",fw_ver,((ilits->chip->fw_ver) & 0xff));
+		snprintf(version, sizeof(version),"fw:%d.%d VID:0x64",fw_ver,((ilits->chip->fw_ver) & 0xff));
 	}
 }
 #endif

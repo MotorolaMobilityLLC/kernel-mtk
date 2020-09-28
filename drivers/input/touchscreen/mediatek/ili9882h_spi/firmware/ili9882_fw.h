@@ -93,7 +93,7 @@ static unsigned char CTPM_FW_TM[] = {
 #define HLT_INI_REQUEST_PATH		"mp_hlt.ini"
 #define HLT_FW_REQUEST_PATH		"ILITEK_FW_HLT"
 static unsigned char CTPM_FW_HLT[] = {
-	#include "hlt/Malta_9882H_PANDA6517_LongH_V0x1C.0x00.0x04.0x03.AP_0x01.0x00_MP.ili"
+	#include "hlt/Malta_9882H_PANDA6517_LongH_V0x1C.0x00.0x05.0x01.AP_0x01.0x00_MP.ili"
 };
 
 #define SKW_INI_NAME_PATH		"/system/etc/mp_skw.ini"
