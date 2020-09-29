@@ -379,12 +379,21 @@ void fgauge_get_profile_id(void)
 			gm.battery_id = 0;
 			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
 		}
-	/* malta PN logic */
+	/* malta and malta lite PN logic */
 	} else {
 		if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
-			gm.battery_id = battery_type_name - 1;
-			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
-			gm.battery_id = 0;
+			/* malta lite PN logic */
+			if (battery_type_name > 5) {
+				gm.battery_id = battery_type_name - 5;
+				strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+				printk("ontim malta lite battery_id = %d\n",gm.battery_id);
+			/* malta PN logic */
+			} else {
+				gm.battery_id = battery_type_name - 1;
+				strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+				gm.battery_id = 0;
+				printk("ontim malta battery_id = %d\n",gm.battery_id);
+			}
 		} else {
 			gm.battery_id = 0;
 			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
