@@ -583,7 +583,10 @@
 };
 
 #include "bat_setting/mt6765_battery_table_malta_64.dtsi"
-#include "bat_setting/mt6765_battery_table_malta_64_2.dtsi"
+//#include "bat_setting/mt6765_battery_table_malta_64_2.dtsi"
+#include "bat_setting/mt6765_battery_table_malta_lite_1.dtsi"
+#include "bat_setting/mt6765_battery_table_malta_lite_2.dtsi"
+#include "bat_setting/mt6765_battery_table_malta_lite_3.dtsi"
 
 #include <malta_64/cust.dtsi>
 #include "cust_mt6765_camera_malta_64.dtsi"
