@@ -71,7 +71,7 @@
 #define MAX_HANG_INFO_SIZE (2*1024*1024) /* 2M info */
 #endif
 
-/* #define BOOT_UP_HANG */
+#define BOOT_UP_HANG
 
 static int MaxHangInfoSize = MAX_HANG_INFO_SIZE;
 #define MAX_STRING_SIZE 256
@@ -1686,10 +1686,10 @@ static int hang_detect_thread(void *arg)
 		pr_info(
 			"[Hang_Detect] hang_detect thread counts down %d:%d, status %d.\n",
 			hang_detect_counter, hd_timeout, hd_detect_enabled);
+		system_server_pid = FindTaskByName("system_server");
 #ifdef BOOT_UP_HANG
 		if (reboot_flag || (hd_detect_enabled == 1))
 #else
-		system_server_pid = FindTaskByName("system_server");
 		if (reboot_flag || ((hd_detect_enabled == 1) &&
 			(system_server_pid != -1)))
 #endif
