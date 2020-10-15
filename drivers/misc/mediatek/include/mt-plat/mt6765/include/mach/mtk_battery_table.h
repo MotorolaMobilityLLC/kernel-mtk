@@ -99,9 +99,9 @@ char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
 	"KG40-SB18C51711-4000mah",
 	"KG40-SB18C51712-4000mah",
 	"KG40-SB18C55376-4000mah",
-	"JK50-error-5000mah",
-	"JK50-error-5000mah",
-	"JK50-error-5000mah",
+	"JK50-SUN-SB18C85291-5000mah",
+	"JK50-SCUD-SB18C77226-5000mah",
+	"JK50-ATL-SB18C77591-5000mah",
 };
 #else
 /* battery PN number for blackjackQ */
