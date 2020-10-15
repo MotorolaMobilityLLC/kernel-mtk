@@ -1,6 +1,6 @@
 &bat_gm30
 {
-	battery1_name ="JK50-SUN-SB18C85291-5000mah";
+	/*battery1_name ="JK50-SUN-SB18C85291-5000mah";*/
 
 	battery1_profile_t0_num = <100>;
 	battery1_profile_t0 =

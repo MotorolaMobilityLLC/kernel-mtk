@@ -1,6 +1,6 @@
 &bat_gm30
 {
-	battery3_name ="JK50-ATL-SB18C77591-5000mah";
+	/*battery3_name ="JK50-ATL-SB18C77591-5000mah";*/
 	
 	battery3_profile_t0_num = <100>;
 	battery3_profile_t0 =

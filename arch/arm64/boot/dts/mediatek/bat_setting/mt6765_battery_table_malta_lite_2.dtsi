@@ -1,7 +1,7 @@
 
 &bat_gm30
 {
-	battery2_name ="JK50-SCUD-SB18C77226-5000mah";
+	/*battery2_name ="JK50-SCUD-SB18C77226-5000mah";*/
 
 	battery2_profile_t0_num = <100>;
 	battery2_profile_t0 =
