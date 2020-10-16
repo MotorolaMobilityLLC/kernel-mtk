@@ -92,13 +92,18 @@ static int moto_ltv_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRe
 	return sensor_batch_to_hub(ID_LTV, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 
+static int moto_ltv_flush(void)
+{
+	return sensor_flush_to_hub(ID_LTV);
+}
+
 static int moto_ltv_recv_data(struct data_unit_t *event, void *reserved)
 {
     int ret;
 	int32_t value[3] = {0};
     //MOTO_LTV_PR_ERR("%s : \n", __func__);
 	if (event->flush_action == FLUSH_ACTION)
-		MOTO_LTV_PR_ERR("moto_ltv do not support flush\n");
+		situation_flush_report(ID_LTV);
 	else if (event->flush_action == DATA_ACTION) {
 		//__pm_wakeup_event(&ltv_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_LTV);
@@ -120,6 +125,7 @@ static int moto_ltv_local_init(void)
 
 	ctl.open_report_data = moto_ltv_open_report_data;
 	ctl.batch = moto_ltv_batch;
+	ctl.flush = moto_ltv_flush;
 	ctl.is_support_wake_lock = true;
 	err = situation_register_control_path(&ctl, ID_LTV);
 	if (err) {

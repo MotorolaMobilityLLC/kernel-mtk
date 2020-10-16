@@ -175,5 +175,6 @@ extern int situation_register_data_path(struct situation_data_path *data,
 extern int sar_data_report(int32_t value[3]);
 extern int sar_data_report_t(int32_t value[3], int64_t time_stamp);
 extern int moto_sar_data_report(int32_t value,int32_t sar_id);
+extern int moto_sar_flush_report(int32_t sar_id);
 extern int mot_ltv_data_report(int32_t value[3]);
 #endif

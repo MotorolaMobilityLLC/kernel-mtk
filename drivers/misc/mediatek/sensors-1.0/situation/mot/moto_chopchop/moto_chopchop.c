@@ -95,10 +95,15 @@ static int moto_chopchop_batch(int flag, int64_t samplingPeriodNs, int64_t maxBa
 	return sensor_batch_to_hub(ID_CHOPCHOP, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 
+static int moto_chopchop_flush(void)
+{
+	return sensor_flush_to_hub(ID_CHOPCHOP);
+}
+
 static int moto_chopchop_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
-		MOTO_CHOPCHOP_PR_ERR("moto_chopchop do not support flush\n");
+		situation_flush_report(ID_CHOPCHOP);
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&chopchop_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_CHOPCHOP);
@@ -115,6 +120,7 @@ static int moto_chopchop_local_init(void)
 
 	ctl.open_report_data = moto_chopchop_open_report_data;
 	ctl.batch = moto_chopchop_batch;
+	ctl.flush = moto_chopchop_flush;
 	ctl.is_support_wake_lock = true;
 	err = situation_register_control_path(&ctl, ID_CHOPCHOP);
 	if (err) {

@@ -228,6 +228,33 @@ int moto_sar_data_report(int32_t value, int32_t sar_id)
 	return err;
 }
 
+int moto_sar_flush_report(int32_t sar_id)
+{
+	int err = 0, index = -1;
+	struct sensor_event event;
+	//struct situation_context *cxt = situation_context_obj;
+
+	if (situation_context_obj == NULL) {
+		pr_err("[%s] probe not Ok\n", __func__);
+		return -1;
+	}
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	index = handle_to_index(sar_id);
+	if (index < 0) {
+		pr_err("[%s] invalid index\n", __func__);
+		return -1;
+	}
+
+	event.handle = sar_id;
+	event.flush_action = FLUSH_ACTION;
+	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
+	pr_debug_ratelimited("flush\n");
+	return err;
+}
+
+
 int mot_ltv_data_report(int32_t value[3])
 {
 	int err = 0, index = -1;

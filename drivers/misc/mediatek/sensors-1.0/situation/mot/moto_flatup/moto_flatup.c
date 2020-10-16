@@ -95,10 +95,15 @@ static int moto_flatup_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatc
 	return sensor_batch_to_hub(ID_FLATUP, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 
+static int moto_flatup_flush(void)
+{
+	return sensor_flush_to_hub(ID_FLATUP);
+}
+
 static int moto_flatup_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
-		MOTO_FLATUP_PR_ERR("moto_flatup do not support flush\n");
+		situation_flush_report(ID_FLATUP);
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&flatup_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_FLATUP);
@@ -115,6 +120,7 @@ static int moto_flatup_local_init(void)
 
 	ctl.open_report_data = moto_flatup_open_report_data;
 	ctl.batch = moto_flatup_batch;
+	ctl.flush = moto_flatup_flush;
 	ctl.is_support_wake_lock = true;
 	err = situation_register_control_path(&ctl, ID_FLATUP);
 	if (err) {

@@ -1788,15 +1788,15 @@ static int sar_bottom_nb_batch(int flag,
 }
 static int sar_top_flush(void)
 {
-	return 0;
+	return moto_sar_flush_report(ID_SAR_TOP);
 }
 static int sar_bottom_lmb_flush(void)
 {
-	return 0;
+	return moto_sar_flush_report(ID_SAR_BOTTOM_LEFT);
 }
 static int sar_bottom_nb_flush(void)
 {
-	return 0;
+	return moto_sar_flush_report(ID_SAR_BOTTOM_RIGHT);
 }
 
 static int sar_top_get_data(int *probability, int *status)

@@ -95,12 +95,17 @@ static int moto_offbody_batch(int flag, int64_t samplingPeriodNs, int64_t maxBat
 	return sensor_batch_to_hub(ID_OFFBODY, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 
+static int moto_offbody_flush(void)
+{
+	return sensor_flush_to_hub(ID_OFFBODY);
+}
+
 static int moto_offbody_recv_data(struct data_unit_t *event, void *reserved)
 {
     int ret;
     MOTO_OFFBODY_LOG("%s : \n", __func__);
 	if (event->flush_action == FLUSH_ACTION)
-		MOTO_OFFBODY_PR_ERR("moto_offbody do not support flush\n");
+		situation_flush_report(ID_OFFBODY);
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&offbody_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_OFFBODY);
@@ -119,6 +124,7 @@ static int moto_offbody_local_init(void)
 
 	ctl.open_report_data = moto_offbody_open_report_data;
 	ctl.batch = moto_offbody_batch;
+	ctl.flush = moto_offbody_flush;
 	ctl.is_support_wake_lock = true;
 	err = situation_register_control_path(&ctl, ID_OFFBODY);
 	if (err) {
