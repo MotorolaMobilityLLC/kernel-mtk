@@ -591,7 +591,11 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		if (level > 256 )
 		level = 255;
 
-		level = (level * 8) / 10;
+		if (1 == level) {
+			level = 1;
+		} else {
+			level = (level * 8) / 10;
+		}
 	}
 #if 0
 	if (level < 2 && level !=0)
@@ -637,7 +641,7 @@ static unsigned int lcm_compare_id(void)
 
 	LCM_LOGI("%s, vendor id_reg_DC=0x%08x, id_reg_DA=%08x,id_reg_DB=%08x\n", __func__, id_reg_DC, id_reg_DA, id_reg_DB);
 
-	if ((LCM_ID_REG_DC == id_reg_DC))
+	if ((LCM_ID_REG_DC == id_reg_DC) && (LCM_ID_REG_DA == id_reg_DA))
 		return 1;
 	else
 		return 0;
