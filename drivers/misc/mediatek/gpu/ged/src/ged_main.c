@@ -113,10 +113,13 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 	void *pvIn = NULL, *pvOut = NULL;
 	typedef int (ged_bridge_func_type)(void *, void *);
 	ged_bridge_func_type *pFunc = NULL;
+	int bridge_id = -1;
 
 	/* We make sure the both size are GE 0 integer.
 	 */
-	if (psBridgePackageKM->i32InBufferSize >= 0 && psBridgePackageKM->i32OutBufferSize >= 0) {
+	bridge_id = GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID);
+	if (psBridgePackageKM->i32InBufferSize > 0 &&
+		psBridgePackageKM->i32OutBufferSize > 0) {
 
 		if (psBridgePackageKM->i32InBufferSize > 0) {
 			int32_t inputBufferSize =
@@ -230,8 +233,16 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			break;
 		}
 
-		if (pFunc)
-			ret = pFunc(pvIn, pvOut);
+		if (pFunc) {
+			if (bridge_id == GED_BRIDGE_COMMAND_GE_GET)
+				ret = ged_bridge_ge_get(pvIn, pvOut,
+					psBridgePackageKM->i32OutBufferSize);
+			else if (bridge_id == GED_BRIDGE_COMMAND_GE_SET)
+				ret = ged_bridge_ge_set(pvIn, pvOut,
+					psBridgePackageKM->i32InBufferSize);
+			else
+				ret = pFunc(pvIn, pvOut);
+		}
 
 		if (psBridgePackageKM->i32OutBufferSize > 0) {
 			if (0 != ged_copy_to_user(psBridgePackageKM->pvParamOut, pvOut, psBridgePackageKM->i32OutBufferSize)) {

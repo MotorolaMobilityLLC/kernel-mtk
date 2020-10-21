@@ -370,8 +370,23 @@ int ged_bridge_ge_alloc(
 
 int ged_bridge_ge_get(
 	struct GED_BRIDGE_IN_GE_GET *psGET_IN,
-	struct GED_BRIDGE_OUT_GE_GET *psGET_OUT)
+	struct GED_BRIDGE_OUT_GE_GET *psGET_OUT,
+	int output_package_size)
 {
+	/* in gpu_ext/ged/lib/ged_ge.cpp. ged_ge_get()
+	 * iOutSize will show the header size and data size.
+	 */
+	int header_size = sizeof(struct GED_BRIDGE_OUT_GE_GET);
+
+	if ((output_package_size - header_size) !=
+		psGET_IN->uint32_size * sizeof(uint32_t)) {
+		pr_info("[%s] data (%d byte) != u32_size (%d byte)",
+			__func__,
+			(int)(output_package_size - header_size),
+			(int)(psGET_IN->uint32_size * sizeof(uint32_t)));
+		return -EFAULT;
+	}
+
 	psGET_OUT->eError = ged_ge_get(
 			psGET_IN->ge_fd,
 			psGET_IN->region_id,
@@ -383,8 +398,21 @@ int ged_bridge_ge_get(
 
 int ged_bridge_ge_set(
 	struct GED_BRIDGE_IN_GE_SET *psSET_IN,
-	struct GED_BRIDGE_OUT_GE_SET *psSET_OUT)
+	struct GED_BRIDGE_OUT_GE_SET *psSET_OUT,
+	int input_package_size)
 {
+
+	int header_size = sizeof(struct GED_BRIDGE_IN_GE_SET);
+
+	if ((input_package_size - header_size) !=
+		psSET_IN->uint32_size * sizeof(uint32_t)) {
+		pr_info("[%s] data (%d byte) != u32_size (%d byte)",
+			__func__,
+			(int)(input_package_size - header_size),
+			(int)(psSET_IN->uint32_size * sizeof(uint32_t)));
+		return -EFAULT;
+	}
+
 	psSET_OUT->eError = ged_ge_set(
 			psSET_IN->ge_fd,
 			psSET_IN->region_id,
