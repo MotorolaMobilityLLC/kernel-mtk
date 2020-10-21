@@ -110,10 +110,13 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 	void *pvIn = NULL, *pvOut = NULL;
 	typedef int (ged_bridge_func_type)(void *, void *);
 	ged_bridge_func_type* pFunc = NULL;
+	int bridge_id = -1;
 
 	/* We make sure the both size are GE 0 integer.
 	 */
-	if (psBridgePackageKM->i32InBufferSize >= 0 && psBridgePackageKM->i32OutBufferSize >= 0) {
+	bridge_id = GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID);
+	if (psBridgePackageKM->i32InBufferSize > 0 &&
+		psBridgePackageKM->i32OutBufferSize > 0) {
 
 		if (psBridgePackageKM->i32InBufferSize > 0) {
 			pvIn = kmalloc(psBridgePackageKM->i32InBufferSize, GFP_KERNEL);
@@ -139,6 +142,21 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		/* Make sure that the UM will never break the KM.
 		 * Check IO size are both matched the size of IO sturct.
 		 */
+#define SET_FUNC_AND_CHECK_FOR_NO_TYPEDEF(func, struct_name) do { \
+		pFunc = (ged_bridge_func_type *) func; \
+		if (sizeof(struct GED_BRIDGE_IN_##struct_name) > \
+			psBridgePackageKM->i32InBufferSize || \
+			sizeof(struct GED_BRIDGE_OUT_##struct_name) > \
+			psBridgePackageKM->i32OutBufferSize) { \
+			GED_LOGE("%s fail io_size:%d/%d, expected: %zu/%zu", \
+				"GED_BRIDGE_COMMAND_##cmd", \
+				psBridgePackageKM->i32InBufferSize, \
+				psBridgePackageKM->i32OutBufferSize, \
+				sizeof(struct GED_BRIDGE_IN_##struct_name), \
+				sizeof(struct GED_BRIDGE_OUT_##struct_name)); \
+			goto dispatch_exit; \
+		} } while (0)
+
 #define SET_FUNC_AND_CHECK(func, struct_name) do { \
 		pFunc = (ged_bridge_func_type *) func; \
 		if (sizeof(GED_BRIDGE_IN_##struct_name) > psBridgePackageKM->i32InBufferSize || \
@@ -185,10 +203,12 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			SET_FUNC_AND_CHECK(ged_bridge_ge_alloc, GE_ALLOC);
 			break;
 		case GED_BRIDGE_COMMAND_GE_GET:
-			SET_FUNC_AND_CHECK(ged_bridge_ge_get, GE_GET);
+			SET_FUNC_AND_CHECK_FOR_NO_TYPEDEF(
+				ged_bridge_ge_get, GE_GET);
 			break;
 		case GED_BRIDGE_COMMAND_GE_SET:
-			SET_FUNC_AND_CHECK(ged_bridge_ge_set, GE_SET);
+			SET_FUNC_AND_CHECK_FOR_NO_TYPEDEF(
+				ged_bridge_ge_set, GE_SET);
 			break;
 		case GED_BRIDGE_COMMAND_GE_INFO:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_info, GE_INFO);
@@ -202,8 +222,16 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			break;
 		}
 
-		if (pFunc)
-			ret = pFunc(pvIn, pvOut);
+		if (pFunc) {
+			if (bridge_id == GED_BRIDGE_COMMAND_GE_GET)
+				ret = ged_bridge_ge_get(pvIn, pvOut,
+					psBridgePackageKM->i32OutBufferSize);
+			else if (bridge_id == GED_BRIDGE_COMMAND_GE_SET)
+				ret = ged_bridge_ge_set(pvIn, pvOut,
+					psBridgePackageKM->i32InBufferSize);
+			else
+				ret = pFunc(pvIn, pvOut);
+		}
 
 		if (psBridgePackageKM->i32OutBufferSize > 0)
 		{
