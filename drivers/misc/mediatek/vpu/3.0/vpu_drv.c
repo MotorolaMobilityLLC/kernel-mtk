@@ -52,6 +52,7 @@
 #endif
 
 #define VPU_DEV_NAME            "vpu"
+//#define VPU_LOAD_FW_SUPPORT
 
 static struct vpu_device *vpu_device;
 static struct wakeup_source vpu_wake_lock;
@@ -1328,6 +1329,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	}
 		case VPU_IOCTL_CREATE_ALGO:
 	{
+#ifdef VPU_LOAD_FW_SUPPORT
 		struct vpu_create_algo *u_create_algo;
 		struct vpu_create_algo create_algo = {0};
 
@@ -1369,11 +1371,15 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 
 		vpu_add_algo_to_user(user, &create_algo);
-
+#else
+		ret = -EINVAL;
+		LOG_WRN("[CREATE_ALGO] was not support!\n");
+#endif
 		break;
 	}
 	case VPU_IOCTL_FREE_ALGO:
 	{
+#ifdef VPU_LOAD_FW_SUPPORT
 		struct vpu_create_algo *u_create_algo;
 		struct vpu_create_algo create_algo = {0};
 
@@ -1399,7 +1405,10 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		create_algo.name[(sizeof(char)*32) - 1] = '\0';
 
 		vpu_free_algo_from_user(user, &create_algo);
-
+#else
+		ret = -EINVAL;
+		LOG_WRN("[FREE_ALGO] was not support!\n");
+#endif
 		break;
 	}
 
