@@ -374,8 +374,8 @@ int ged_bridge_ge_get(
 		psGET_IN->uint32_size * sizeof(uint32_t)) {
 		GED_PDEBUG("[%s] data (%d byte) != u32_size (%d byte)",
 			__func__,
-			(output_package_size - header_size),
-			psGET_IN->uint32_size * sizeof(uint32_t));
+			(int)(output_package_size - header_size),
+			(int)(psGET_IN->uint32_size * sizeof(uint32_t)));
 		return -EFAULT;
 	}
 
@@ -400,8 +400,8 @@ int ged_bridge_ge_set(
 		psSET_IN->uint32_size * sizeof(uint32_t)) {
 		GED_PDEBUG("[%s] data (%d byte) != u32_size (%d byte)",
 			__func__,
-			(input_package_size - header_size),
-			psSET_IN->uint32_size * sizeof(uint32_t));
+			(int)(input_package_size - header_size),
+			(int)(psSET_IN->uint32_size * sizeof(uint32_t)));
 		return -EFAULT;
 	}
 
