@@ -34,6 +34,11 @@
 #define SPI_WRITE_BUFF_MAXSIZE (1024 * DMA_TRANSFER_MAX_TIMES + 5)//plus 5 for IC Mode :(Head + Address) 0x82,0x25,Addr_L,Addr_M,Addr_H
 #define SPI_READ_BUFF_MAXSIZE  (1024 * DMA_TRANSFER_MAX_TIMES)
 
+
+#define SPI_TX_BUF_SIZE  		4096
+#define SPI_RX_BUF_SIZE  		4096
+#define SPI_DMA_TRANSFER_SPLIT		1
+
 struct core_spi_data {
 	struct spi_device *spi;
 	int (*spi_write_then_read)(struct spi_device *spi,

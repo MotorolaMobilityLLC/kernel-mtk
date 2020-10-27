@@ -39,6 +39,7 @@ struct core_spi_data *core_spi;
  * can change it by request.
  */
 #if (TP_PLATFORM == PT_MTK)
+#if 0
 static int core_mtk_spi_write_then_read(struct spi_device *spi,
 		const void *txbuf, unsigned n_tx,
 		void *rxbuf, unsigned n_rx)
@@ -147,6 +148,172 @@ out:
 	ipio_kfree((void **)&dma_txbuf);
 	return status;
 }
+#else
+#if SPI_DMA_TRANSFER_SPLIT
+#define DMA_TRANSFER_MAX_CHUNK		64   // number of chunks to be transferred.
+#define DMA_TRANSFER_MAX_LEN		1024 // length of a chunk.
+
+int ilitek_spi_write_then_read_split(struct spi_device *spi,
+		const void *txbuf, unsigned n_tx,
+		void *rxbuf, unsigned n_rx)
+{
+	int status = -1;
+	int xfercnt = 0, xferlen = 0, xferloop = 0;
+	int duplex_len = 0;
+	u8 cmd = 0x0;
+	struct spi_message	message;
+	struct spi_transfer *xfer;
+
+	xfer = kzalloc(DMA_TRANSFER_MAX_CHUNK * sizeof(struct spi_transfer), GFP_KERNEL);
+
+	spi_message_init(&message);
+	memset(ipd->spi_tx, 0x0, SPI_TX_BUF_SIZE);
+	memset(ipd->spi_rx, 0x0, SPI_RX_BUF_SIZE);
+
+	if (n_rx > SPI_RX_BUF_SIZE) {
+		ipio_err("Rx length is over than dma buf, abort\n");
+		status = -ENOMEM;
+		goto out;
+	}
+
+	if ((n_tx > 0) && (n_rx > 0))
+		cmd = SPI_READ;
+	else
+		cmd = SPI_WRITE;
+
+	switch (cmd) {
+	case SPI_WRITE:
+		if (n_tx % DMA_TRANSFER_MAX_LEN)
+			xferloop = (n_tx / DMA_TRANSFER_MAX_LEN) + 1;
+		else
+			xferloop = n_tx / DMA_TRANSFER_MAX_LEN;
+
+		xferlen = n_tx;
+		memcpy(ipd->spi_tx, (u8 *)txbuf, xferlen);
+
+		for (xfercnt = 0; xfercnt < xferloop; xfercnt++) {
+			if (xferlen > DMA_TRANSFER_MAX_LEN)
+				xferlen = DMA_TRANSFER_MAX_LEN;
+
+			xfer[xfercnt].len = xferlen;
+			xfer[xfercnt].tx_buf = ipd->spi_tx + xfercnt * DMA_TRANSFER_MAX_LEN;
+			spi_message_add_tail(&xfer[xfercnt], &message);
+			xferlen = n_tx - (xfercnt+1) * DMA_TRANSFER_MAX_LEN;
+		}
+		status = spi_sync(spi, &message);
+		break;
+	case SPI_READ:
+		if (n_tx > DMA_TRANSFER_MAX_LEN) {
+			ipio_err("Tx length must be lower than transfer length (%d).\n", DMA_TRANSFER_MAX_LEN);
+			status = -EINVAL;
+			break;
+		}
+
+		memcpy(ipd->spi_tx, txbuf, n_tx);
+
+		duplex_len = n_tx + n_rx;
+
+		if (duplex_len % DMA_TRANSFER_MAX_LEN)
+			xferloop = (duplex_len / DMA_TRANSFER_MAX_LEN) + 1;
+		else
+			xferloop = duplex_len / DMA_TRANSFER_MAX_LEN;
+
+		xferlen = duplex_len;
+		for (xfercnt = 0; xfercnt < xferloop; xfercnt++) {
+			if (xferlen > DMA_TRANSFER_MAX_LEN)
+				xferlen = DMA_TRANSFER_MAX_LEN;
+
+			xfer[xfercnt].len = xferlen;
+			xfer[xfercnt].tx_buf = ipd->spi_tx;
+			xfer[xfercnt].rx_buf = ipd->spi_rx + xfercnt * DMA_TRANSFER_MAX_LEN;
+			spi_message_add_tail(&xfer[xfercnt], &message);
+			xferlen = duplex_len - (xfercnt + 1) * DMA_TRANSFER_MAX_LEN;
+		}
+		status = spi_sync(spi, &message);
+		if (status == 0)
+			memcpy((u8 *)rxbuf, &ipd->spi_rx[1], n_rx);
+		break;
+	default:
+		ipio_info("Unknown command 0x%x\n", cmd);
+		break;
+	}
+
+out:
+	ipio_kfree((void **)&xfer);
+	if (status != 0)
+		ipio_err("spi transfer failed\n");
+	return status;
+}
+#else
+int ilitek_spi_write_then_read_direct(struct spi_device *spi,
+		const void *txbuf, unsigned n_tx,
+		void *rxbuf, unsigned n_rx)
+{
+	int status = -1;
+	int duplex_len = 0;
+	u8 cmd;
+	struct spi_message	message;
+	struct spi_transfer	xfer;
+
+	if (n_rx > SPI_RX_BUF_SIZE) {
+		ipio_err("Rx length is over than dma buf, abort\n");
+		status = -ENOMEM;
+		goto out;
+	}
+
+	spi_message_init(&message);
+	memset(&xfer, 0, sizeof(xfer));
+
+	if ((n_tx > 0) && (n_rx > 0))
+		cmd = SPI_READ;
+	else
+		cmd = SPI_WRITE;
+
+	switch (cmd) {
+	case SPI_WRITE:
+		xfer.len = n_tx;
+		xfer.tx_buf = txbuf;
+		spi_message_add_tail(&xfer, &message);
+		status = spi_sync(spi, &message);
+		break;
+	case SPI_READ:
+		duplex_len = n_tx + n_rx;
+		if ((duplex_len > SPI_TX_BUF_SIZE) ||
+			(duplex_len > SPI_RX_BUF_SIZE)) {
+			ipio_err("duplex_len is over than dma buf, abort\n");
+			status = -ENOMEM;
+			break;
+		}
+
+		memset(ipd->spi_tx, 0x0, SPI_TX_BUF_SIZE);
+		memset(ipd->spi_rx, 0x0, SPI_RX_BUF_SIZE);
+
+		xfer.len = duplex_len;
+		memcpy(ipd->spi_tx, txbuf, n_tx);
+		xfer.tx_buf = ipd->spi_tx;
+		xfer.rx_buf = ipd->spi_rx;
+
+		spi_message_add_tail(&xfer, &message);
+		status = spi_sync(spi, &message);
+		if (status != 0)
+			break;
+
+		memcpy((u8 *)rxbuf, &ipd->spi_rx[1], n_rx);
+		break;
+	default:
+		ipio_info("Unknown command 0x%x\n", cmd);
+		break;
+	}
+
+out:
+	if (status != 0)
+		ipio_err("spi transfer failed\n");
+
+	return status;
+}
+#endif
+
+#endif
 #endif
 
 int core_rx_lock_check(int *ret_size)
@@ -381,7 +548,7 @@ int core_spi_ice_mode_enable(void)
 	return ret;
 }
 
-int core_spi_ice_mode_read(uint8_t *pBuf)
+int core_spi_ice_mode_read(uint8_t *pBuf, int len)
 {
 	int ret = 0, size = 0;
 
@@ -395,6 +562,10 @@ int core_spi_ice_mode_read(uint8_t *pBuf)
 	if (ret < 0) {
 		ipio_err("Rx lock check error\n");
 		goto out;
+	}
+	if (len < size) {
+		ipio_info("WARRING! size(%d) > len(%d), use len to get data\n", size, len);
+		size = len;
 	}
 
 	ret = core_spi_ice_mode_unlock_read(pBuf, size);
@@ -495,7 +666,7 @@ int core_spi_read(uint8_t *pBuf, uint16_t nSize)
 
 	if (core_config->icemodeenable == false) {
 		do {
-			ret = core_spi_ice_mode_read(pBuf);
+			ret = core_spi_ice_mode_read(pBuf, nSize);
 			if (ret >= 0)
 				break;
 
@@ -559,7 +730,14 @@ static int core_spi_setup(struct spi_device *spi, uint32_t frequency)
 	spi->controller_data = chip_config;
 	core_spi->spi_write_then_read = core_mtk_spi_write_then_read;
 #else
-	core_spi->spi_write_then_read = core_mtk_spi_write_then_read;//spi_write_then_read; // provided by kernel API
+
+	/*core_spi->spi_write_then_read = core_mtk_spi_write_then_read;*///spi_write_then_read; // provided by kernel API
+#if SPI_DMA_TRANSFER_SPLIT
+	core_spi->spi_write_then_read = ilitek_spi_write_then_read_split;
+#else
+	core_spi->spi_write_then_read = ilitek_spi_write_then_read_direct;
+#endif
+
 #endif
 
 	ipio_info("spi clock = %d\n", frequency);
@@ -612,6 +790,18 @@ int core_spi_init(struct spi_device *spi)
 	core_spi = devm_kmalloc(ipd->dev, sizeof(struct core_spi_data), GFP_KERNEL);
 	if (ERR_ALLOC_MEM(core_spi)) {
 		ipio_err("Failed to alllocate core_i2c mem %ld\n", PTR_ERR(core_spi));
+		return -ENOMEM;
+	}
+
+	ipd->spi_tx = kzalloc(SPI_TX_BUF_SIZE, GFP_KERNEL | GFP_DMA);
+	if (ERR_ALLOC_MEM(ipd->spi_tx)) {
+		ipio_err("Failed to allocate spi tx buffer\n");
+		return -ENOMEM;
+	}
+
+	ipd->spi_rx = kzalloc(SPI_RX_BUF_SIZE, GFP_KERNEL | GFP_DMA);
+	if (ERR_ALLOC_MEM(ipd->spi_rx)) {
+		ipio_err("Failed to allocate spi rx buffer\n");
 		return -ENOMEM;
 	}
 

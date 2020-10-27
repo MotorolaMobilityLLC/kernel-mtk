@@ -91,6 +91,8 @@ struct ilitek_platform_data {
 	unsigned long esd_check_time;
 	bool vpower_reg_nb;
 	bool vesd_reg_nb;
+	u8 *spi_tx;
+	u8 *spi_rx;
 
 	/* Sending report data to users for the debug */
 	bool debug_node_open;
