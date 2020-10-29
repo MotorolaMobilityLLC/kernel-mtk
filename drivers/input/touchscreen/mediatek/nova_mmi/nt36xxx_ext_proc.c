@@ -118,7 +118,7 @@ void nvt_read_mdata(uint32_t xdata_addr, uint32_t xdata_btn_addr)
 	int32_t i = 0;
 	int32_t j = 0;
 	int32_t k = 0;
-	uint8_t buf[SPI_TANSFER_LENGTH + 1] = {0};
+	uint8_t buf[SPI_TANSFER_LENGTH + 2] = {0};
 	uint32_t head_addr = 0;
 	int32_t dummy_len = 0;
 	int32_t data_len = 0;
