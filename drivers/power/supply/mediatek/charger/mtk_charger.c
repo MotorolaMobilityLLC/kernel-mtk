@@ -78,7 +78,7 @@
 #include <linux/module.h>
 
 #ifdef CONFIG_CHARGER_STOP_70PER
-unsigned int capacity_control= 1;
+unsigned int capacity_control= 0;
 #else
 unsigned int capacity_control= 0;
 #endif
@@ -1545,6 +1545,7 @@ static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
 	int temperature;
+	static int tire = 1;
 	struct battery_thermal_protection_data *thermal;
 
 	if (mt_get_charger_type() == CHARGER_UNKNOWN)
@@ -1610,13 +1611,32 @@ static void charger_check_status(struct charger_manager *info)
 
 	/* add limit soc max 70% */
 	 if(capacity_control) {
-		if (battery_get_uisoc() >= 70) {
-			chr_err("%s;soc is 70 disable charger\n",__func__);
-			charger_dev_enable_powerpath(info->chg1_dev, false);
+		if ((battery_get_uisoc() >= 70) && (tire > 0)) {
+			tire ++;
+			if (tire > 4) {
+				tire = 0;
+				chr_err("%s;soc is higher 70 disable charger\n",__func__);
+				charger_dev_enable_powerpath(info->chg1_dev, false);
+				_wake_up_charger(info);
+				charging = false;
+			}
+		} else if ((battery_get_uisoc() <= 60) && (!tire)) {
+			chr_err("%s;soc is lower 60 enable charger\n",__func__);
+			charger_dev_enable_powerpath(info->chg1_dev, true);
 			_wake_up_charger(info);
-			charging = false;
+			charging = true;
+			tire = 1;
+		} else {
+			if(!tire) {
+				chr_err("%s:soc is 60~70 disable charger\n",__func__);
+				charger_dev_enable_powerpath(info->chg1_dev, false);
+				_wake_up_charger(info);
+				charging = false;
+			}
 		}
+		chr_err("%s;charge status:%d tire:%d\n",__func__,charging,tire);
 	}
+
 	/* add end */
 
 	mtk_chg_get_tchg(info);
