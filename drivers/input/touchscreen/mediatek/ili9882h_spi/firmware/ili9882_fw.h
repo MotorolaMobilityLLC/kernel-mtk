@@ -85,7 +85,7 @@ static unsigned char CTPM_FW_TXD[] = {
 #define TM_INI_REQUEST_PATH		"mp_tm_9882n.ini"
 #define TM_FW_REQUEST_PATH		"ILITEK_FW_TM"
 static unsigned char CTPM_FW_TM[] = {
-	#include "tianma/MALTA_MDT_6517_LongH_V0x9C.0x20.0x02_AP_0x01_MP_20201013.ili"
+	#include "tianma/MATTA_MDT_6517_LongH_V0x9C.0x20.0x02_AP_0x01_MP_20201028.ili"
 };
 
 #define HLT_INI_NAME_PATH		"/system/etc/mp_hlt.ini"
