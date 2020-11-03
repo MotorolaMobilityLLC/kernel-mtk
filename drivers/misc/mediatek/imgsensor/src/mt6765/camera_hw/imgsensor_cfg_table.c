@@ -543,6 +543,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         },
     },
 #endif
+#if defined(MALTALITE_SEA_GC02M1_MIPI_RAW)
+    {SENSOR_DRVNAME_MALTALITE_SEA_GC02M1_MIPI_RAW,
+        {
+            {PDN,Vol_Low, 0},
+            {RST,Vol_Low, 0},
+            {DOVDD, Vol_1800, 9},
+            {AVDD, Vol_2800, 0},
+            {SensorMCLK, Vol_High, 1},
+            {PDN,Vol_High, 0},
+            {RST, Vol_High, 0},
+        },
+    },
+#endif
 #if defined(MALTA_SUN_OV02B10_MIPI_RAW)
     {SENSOR_DRVNAME_MALTA_SUN_OV02B10_MIPI_RAW,
         {
