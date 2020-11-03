@@ -591,6 +591,10 @@
 #define sp5506MIPI_SENSOR_ID	0x5675
 #define SENSOR_DRVNAME_MALTALITE_SUN_SP5506_MIPI_RAW         "maltalite_sun_sp5506_mipi_raw"
 
+#define MALTALITE_SEA_GC02M1_SENSOR_ID				0x02e0 + 4
+#define SENSOR_DRVNAME_MALTALITE_SEA_GC02M1_MIPI_RAW			"maltalite_sea_gc02m1_mipi_raw"
+
+
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
 #endif              /* _KD_IMGSENSOR_H */
