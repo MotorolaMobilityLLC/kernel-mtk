@@ -185,7 +185,7 @@ static int gpio_boardid_probe(struct platform_device *pdev)
 	}
 
 	platform_board_id = data->value;
-	dev_dbg(&pdev->dev, "jiangfuxiong %s ok boardid= %04d,value = %04d\n",__func__,platform_board_id,data->value);
+	dev_err(&pdev->dev, "jiangfuxiong %s ok boardid= %04d,value = %04d\n",__func__,platform_board_id,data->value);
 
 #if 0
 	err = gpio_boardid_pinctrl_init(&pdev->dev, data);
@@ -261,7 +261,7 @@ static int __init gpio_boardid_init(void)
 {
 	    return platform_driver_register(&gpio_boardid_driver);
 }
-module_init(gpio_boardid_init);
+subsys_initcall(gpio_boardid_init);
 
 static void __exit gpio_boardid_exit(void)
 {

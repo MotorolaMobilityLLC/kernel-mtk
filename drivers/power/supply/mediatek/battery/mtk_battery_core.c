@@ -983,6 +983,7 @@ static void fg_custom_parse_table(const struct device_node *np,
 }
 
 
+extern unsigned int platform_board_id;
 
 void fg_custom_init_from_dts(struct platform_device *dev)
 {
@@ -1428,12 +1429,26 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 	}
 
 	if (active_table == 0 && multi_battery == 0) {
+
+		if( platform_board_id &0x04) //malta lite
+		{
+			bm_err("%s;malta lite\n",__func__);
+			fg_table_cust_data.fg_profile[0].pseudo100 =97;
+			fg_table_cust_data.fg_profile[1].pseudo100 =97;
+		}
+		else
+		{
+
+			bm_err("%s;malta\n",__func__);
 		fg_read_dts_val(np, "g_FG_PSEUDO100_T0",
 			&(fg_table_cust_data.fg_profile[0].pseudo100),
 			UNIT_TRANS_100);
 		fg_read_dts_val(np, "g_FG_PSEUDO100_T1",
 			&(fg_table_cust_data.fg_profile[1].pseudo100),
 			UNIT_TRANS_100);
+		}
+		bm_err("%s;g_FG_PSEUDO100_T0=%d;\n",__func__,fg_table_cust_data.fg_profile[0].pseudo100);
+
 		fg_read_dts_val(np, "g_FG_PSEUDO100_T2",
 			&(fg_table_cust_data.fg_profile[2].pseudo100),
 			UNIT_TRANS_100);
