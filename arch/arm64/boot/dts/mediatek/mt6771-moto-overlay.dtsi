@@ -26,7 +26,7 @@
 	zmc-default {
 		compatible = "mediatek,zone_movable_cma";
 		size = <0 0x10000000>;
-		alignment = <0 0x10000000>;
+		alignment = <0 0x1000000>;
 		alloc-ranges = <0 0x00000000 0 0xc0000000>;
 	};
 
@@ -35,7 +35,7 @@
 		no-map;
 		size = <0 0x200000>;
 		alignment = <0 0x200000>;
-		alloc-ranges = <0 0x40000000 0 0x70000000>;
+		alloc-ranges = <0 0x40000000 0 0x60000000>;
 	};
 
 	reserve-memory-scp_share {
@@ -49,7 +49,7 @@
 	zmc-default {
 		compatible = "mediatek,zone_movable_cma";
 		size = <0 0xffc00000>;
-		alignment = <0 0x10000000>;
+		alignment = <0 0x1000000>;
 		alloc-ranges = <0 0xc0000000 1 0x00000000>;
 	};
 #endif
