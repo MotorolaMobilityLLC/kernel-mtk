@@ -1227,7 +1227,7 @@ s32 cmdq_sec_insert_backup_cookie_instr(struct cmdqRecStruct *task, s32 thread)
 	err = cmdq_pkt_read(task->pkt, cmdq_helper_mbox_base(), regAddr,
 		CMDQ_THR_SPR_IDX1);
 	if (err != 0) {
-		CMDQ_ERR("fail to read pkt:%#p reg:%#x err:%d\n",
+		CMDQ_ERR("fail to read pkt:%p reg:%#x err:%d\n",
 			task->pkt, regAddr, err);
 		return err;
 	}
@@ -1244,7 +1244,7 @@ s32 cmdq_sec_insert_backup_cookie_instr(struct cmdqRecStruct *task, s32 thread)
 	err = cmdq_pkt_write_indriect(task->pkt, cmdq_helper_mbox_base(),
 		WSMCookieAddr, CMDQ_THR_SPR_IDX1, ~0);
 	if (err < 0) {
-		CMDQ_ERR("fail to write pkt:%#p wsm:%#llx err:%d\n",
+		CMDQ_ERR("fail to write pkt:%p wsm:%#llx err:%d\n",
 			task->pkt, WSMCookieAddr, err);
 		return err;
 	}
