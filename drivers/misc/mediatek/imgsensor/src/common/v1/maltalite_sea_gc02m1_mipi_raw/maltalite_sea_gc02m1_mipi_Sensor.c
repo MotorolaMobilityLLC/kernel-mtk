@@ -240,7 +240,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor(0xf0) << 8) | read_cmos_sensor(0xf1));
+	return ((read_cmos_sensor(0xf0) << 8) | read_cmos_sensor(0xf1)) + 4;
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -716,30 +716,38 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			cam_pr_debug_1("gc02m1 sensorid = 0x%x platform_board_id=%d\n", *sensor_id,platform_board_id);
-            *sensor_id += 4;
-			if (*sensor_id == imgsensor_info.sensor_id) {
-					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					if(platform_board_id == 0 || platform_board_id == 1 || platform_board_id == 2)
-						memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
-					else
-						memcpy(backaux_cam_name, "2_maltalite_season_gc02m1", 64);
-					ontim_get_otp_data(*sensor_id, NULL, 0);
-					cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-					return ERROR_NONE;
-			}
-			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-			retry--;
-		} while (retry > 0);
-		i++;
-		retry = 2;
+			cam_pr_debug_1("read sensorid =0x%x    platform_board_id =%d\n", 
+            *sensor_id,platform_board_id);
+			if (*sensor_id == imgsensor_info.sensor_id)
+            {
+                if((platform_board_id == 0) || (platform_board_id == 1) || (platform_board_id == 2))
+                {
+                    *sensor_id -= 4;
+                    cam_pr_debug_1("  may be  2_malta_season_gc02m1 not 2_maltalite_season_gc02m1   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                }
+                else
+                {
+                    memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+                    memcpy(backaux_cam_name, "2_maltalite_season_gc02m1", 64);
+                    ontim_get_otp_data(*sensor_id, NULL, 0);
+
+                    cam_pr_debug_1(" return ERROR_NONE find 2_maltalite_season_gc02m1 ok   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                    return ERROR_NONE;
+                }
+            }
+            retry--;
+        } while (retry > 0);
+        i++;
+        retry = 2;
 	}
-	if (*sensor_id != imgsensor_info.sensor_id) {
+	if (*sensor_id != imgsensor_info.sensor_id) 
+    {
 		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
 		*sensor_id = 0xFFFFFFFF;
+        cam_pr_debug_1("  return ERROR_SENSOR_CONNECT_FAIL ");
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
-	return ERROR_NONE;
+    return ERROR_NONE;
 }
 
 static kal_uint32 open(void)
