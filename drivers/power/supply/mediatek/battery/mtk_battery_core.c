@@ -358,6 +358,7 @@ bool __attribute__ ((weak)) mt_usb_is_device(void)
 /* custom setting */
 /* ============================================================ */
 #ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+extern unsigned int platform_board_id;
 extern int ontim_get_battery_type(void);
 void fgauge_get_profile_id(void)
 {
@@ -394,9 +395,14 @@ void fgauge_get_profile_id(void)
 				gm.battery_id = 0;
 				printk("ontim malta battery_id = %d\n",gm.battery_id);
 			}
-		} else {
+		} else if (platform_board_id & 0x04) { //malta lite PN logic
+			gm.battery_id = 1;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id + 4],BATTERY_NAME_LEN);
+			printk("ontim malta lite witre error,use default battery_id = %d\n",gm.battery_id);
+		} else { //malta PN logic
 			gm.battery_id = 0;
 			strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],BATTERY_NAME_LEN);
+			printk("ontim malta witre error,use default battery_id = %d\n",gm.battery_id);
 		}
 	}
 	printk(KERN_ERR "[%s]Battery id (%d)\n",__func__,gm.battery_id);
@@ -981,9 +987,6 @@ static void fg_custom_parse_table(const struct device_node *np,
 		idx = idx + column;
 	}
 }
-
-
-extern unsigned int platform_board_id;
 
 void fg_custom_init_from_dts(struct platform_device *dev)
 {
