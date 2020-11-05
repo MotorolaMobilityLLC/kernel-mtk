@@ -1436,8 +1436,8 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		if( platform_board_id &0x04) //malta lite
 		{
 			bm_err("%s;malta lite\n",__func__);
-			fg_table_cust_data.fg_profile[0].pseudo100 =97;
-			fg_table_cust_data.fg_profile[1].pseudo100 =97;
+			fg_table_cust_data.fg_profile[0].pseudo100 =97 * UNIT_TRANS_100;
+			fg_table_cust_data.fg_profile[1].pseudo100 =97 * UNIT_TRANS_100;
 		}
 		else
 		{
