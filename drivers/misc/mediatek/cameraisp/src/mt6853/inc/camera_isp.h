@@ -707,6 +707,7 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_SET_SEC_DAPC_REG,
 	ISP_CMD_GET_CUR_HWP1DONE,
 	ISP_CMD_NOTE_CQTHR0_BASE,
+	ISP_CMD_SET_VIR_CQCNT,
 	ISP_CMD_ION_MAP_PA, /* AOSP ION: map physical address from fd */
 	ISP_CMD_ION_UNMAP_PA, /* AOSP ION: unmap physical address from fd */
 	ISP_CMD_ION_UNMAP_PA_BY_MODULE,
@@ -797,6 +798,9 @@ enum ISP_HALT_DMA_ENUM {
 
 #define ISP_NOTE_CQTHR0_BASE                      \
 	_IOWR(ISP_MAGIC, ISP_CMD_NOTE_CQTHR0_BASE, unsigned int*)
+
+#define ISP_SET_VIR_CQCNT \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_VIR_CQCNT, unsigned int*)
 
 #define ISP_SET_PM_QOS                           \
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
