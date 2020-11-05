@@ -36,12 +36,12 @@
 #include "malta_sea_gc02m1_mipi_Sensor.h"
 
 /************************** Modify Following Strings for Debug **************************/
-#define PFX "malta_sea_gc02m1_camera_sensor"
+#define PFX "malta_sea_gc02m1_mipi_Sensor.c"
 #define LOG_1 LOG_INF("SEASUNS GC02M1, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
-#define cam_pr_debug_1(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s](%d) " format, __func__,__LINE__, ##args)
+#define cam_pr_debug_1(format, args...)    pr_info(PFX "[%s](%d) " format, __func__,__LINE__, ##args)
 
 #define MULTI_WRITE    1
 #define MODULE_ID_OFFSET 17
@@ -716,26 +716,35 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			cam_pr_debug_1("gc02m1 sensorid = 0x%x platform_board_id=%d\n", *sensor_id,platform_board_id);
-			if (*sensor_id == imgsensor_info.sensor_id) {
-					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-					if(platform_board_id == 0 || platform_board_id == 1 || platform_board_id == 2)
-						memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
-					else
-						memcpy(backaux_cam_name, "2_maltalite_season_gc02m1", 64);
-					ontim_get_otp_data(*sensor_id, NULL, 0);
-					cam_pr_debug_1("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-					return ERROR_NONE;
-			}
-			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+			cam_pr_debug_1("read sensorid =0x%x    platform_board_id =%d\n", 
+            *sensor_id,platform_board_id);
+			if (*sensor_id == imgsensor_info.sensor_id)
+            {
+                if((platform_board_id == 0) || (platform_board_id == 1) || (platform_board_id == 2))
+                {
+                    memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+                    memcpy(backaux_cam_name, "2_malta_season_gc02m1", 64);
+                    ontim_get_otp_data(*sensor_id, NULL, 0);
+
+                    cam_pr_debug_1(" return ERROR_NONE find 2_malta_season_gc02m1 ok   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                    return ERROR_NONE;
+                }
+                else
+                {
+                    *sensor_id += 4;
+                    cam_pr_debug_1("  may be  2_maltalite_season_gc02m1 not 2_malta_season_gc02m1   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                }
+            }
 			retry--;
 		} while (retry > 0);
 		i++;
 		retry = 2;
 	}
-	if (*sensor_id != imgsensor_info.sensor_id) {
+	if (*sensor_id != imgsensor_info.sensor_id) 
+    {
 		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
 		*sensor_id = 0xFFFFFFFF;
+        cam_pr_debug_1("  return ERROR_SENSOR_CONNECT_FAIL ");
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
 	return ERROR_NONE;

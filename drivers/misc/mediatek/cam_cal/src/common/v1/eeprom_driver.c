@@ -777,6 +777,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 	const char * str_malta_sea_gc02m1_path  = "/data/vendor/camera_dump/malta_sea_gc02m1.data";
 	const char * str_malta_sun_ov02b10_path  = "/data/vendor/camera_dump/malta_sun_ov02b10.data";
 	const char * str_maltalite_txd_s5k3l6_path  = "/data/vendor/camera_dump/maltalite_txd_s5k3l6.data";
+	const char * str_maltalite_sea_gc5035_path  = "/data/vendor/camera_dump/maltalite_sea_gc5035.data";
 	const char * str_dump_path = NULL;
 
     u32 u4Offset;
@@ -794,6 +795,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     switch(sensorid)
     {
 	case MALTA_SEA_GC02M1_SENSOR_ID:
+	case MALTALITE_SEA_GC02M1_SENSOR_ID:
         {
             u4Offset = 0;
             u4Length = 0x076a;
@@ -826,7 +828,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 		case MALTALITE_TXD_S5K3L6_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0x0CF1;
+            //u4Length = 0x0CF1;// old
+            u4Length = 0x1A66;// new
             str_dump_path = str_maltalite_txd_s5k3l6_path;
             break;
         }
@@ -896,8 +899,21 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             str_dump_path = str_hi846_path;
             break;
         }
+        case MALTALITE_SEA_GC5035_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_maltalite_sea_gc5035_path;
+            break;
+        }
         default:
-            pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
+            pr_err("eeprom_driver.c[%s](%d)  not found this sensor   sensorid=0x%x \n",
             __FUNCTION__, __LINE__,  sensorid);
             if(p_buf != NULL)
             {
@@ -906,7 +922,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             return -1;
     }
 
-    if((sensorid == MALTALITE_TXD_S5K3L6_SENSOR_ID)||(sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
+    if((sensorid == MALTALITE_TXD_S5K3L6_SENSOR_ID)||(sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == MALTALITE_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
 	(sensorid == GC8034_SENSOR_ID) || (sensorid ==BLACKJACK_HLT_OV16A10_SENSOR_ID) || (sensorid == BLACKJACK_TSP_OV16880_SENSOR_ID))
     {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
