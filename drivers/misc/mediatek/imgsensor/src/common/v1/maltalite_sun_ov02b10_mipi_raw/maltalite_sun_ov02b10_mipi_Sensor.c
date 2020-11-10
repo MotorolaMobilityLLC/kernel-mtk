@@ -45,22 +45,22 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "malta_sun_ov02b10_mipi_Sensor.h"
+#include "maltalite_sun_ov02b10_mipi_Sensor.h"
 
 /*********************Modify Following Strings for Debug********************/
-#define PFX "malta_sun_ov02b10_mipi_Sensor.c"
+#define PFX "maltalite_sun_ov02b10_mipi_Sensor.c"
 #define LOG_1 cam_pr_debug("OV02B10macro,MIPI 1LANE\n")
 #define LOG_2 cam_pr_debug("prv/vdo 1600*1200@30fps,600Mbps/lane\n")
 /***************************   Modify end    *******************************/
 
-
-#define cam_pr_debug(format, args...)    pr_debug(PFX "[%s](%d) " format"\n",  __func__, __LINE__, ##args)
+//pr_debug
+#define cam_pr_debug(format, args...)    pr_info(PFX "[%s](%d) " format"\n",  __func__, __LINE__, ##args)
 #define cam_pr_debug_1(format, args...)   pr_info(PFX "[%s](%d) " format"\n",  __func__, __LINE__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MALTA_SUN_OV02B10_SENSOR_ID,
+	.sensor_id = MALTALITE_SUN_OV02B10_SENSOR_ID,
 
 	.checksum_value = 0xb1893b4f,
 
@@ -226,7 +226,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor(0x02) << 8) | read_cmos_sensor(0x03));
+	return (( (read_cmos_sensor(0x02) << 8) | read_cmos_sensor(0x03)) + 1);
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -656,6 +656,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry_total = 3;
 	kal_uint8 retry_cnt = retry_total;
+    
+    pr_info(PFX"[%s](%d)  begin   \n", __func__, __LINE__);
+    
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -663,23 +666,29 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			write_cmos_sensor(0xfd, 0x00);
 			*sensor_id = return_sensor_id();
+            pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
 			if (*sensor_id == imgsensor_info.sensor_id) 
             {
-				
+                pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
 				if(platform_board_id == 0 || platform_board_id == 1 || platform_board_id == 2)
                 {
-                    memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
-                    memcpy(backaux_cam_name, "2_malta_sun_ov02b10", 64);
-                    ontim_get_otp_data(*sensor_id, NULL, 0);
-
-                    cam_pr_debug_1(" return ERROR_NONE find 2_malta_sun_ov02b10 ok   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
-                    return ERROR_NONE;
+                    *sensor_id -= 1;
+                    cam_pr_debug_1("  may be  2_malta__sun_ov02b10 not 2_maltalite_sun_ov02b10   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
                 }
 				else
                 {
-                    *sensor_id += 1;
-                    cam_pr_debug_1("  may be  2_maltalite_sun_ov02b10 not 2_malta_sun_ov02b10   i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                    pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
+                    memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+                    pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
+					memcpy(backaux_cam_name, "2_maltalite_sun_ov02b10", 64);
+                    pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
+                    ontim_get_otp_data(*sensor_id, NULL, 0);
+                    
+                    cam_pr_debug_1(" return ERROR_NONE find 2_maltalite_sun_ov02b10 ok  i2c write id: 0x%x, sensor id: 0x%x\n",
+                    imgsensor.i2c_write_id, *sensor_id);
+                    return ERROR_NONE;
                 }
+                pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
 			}
 			cam_pr_debug_1("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);
@@ -687,11 +696,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		} while (retry_cnt > 0);
 		i++;
 		retry_cnt = retry_total;
+        pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
 	}
 	if (*sensor_id != imgsensor_info.sensor_id) {
 		*sensor_id = 0xFFFFFFFF;
+        pr_info(PFX"[%s](%d) return ERROR_SENSOR_CONNECT_FAIL   \n", __func__, __LINE__);
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
+    pr_info(PFX"[%s](%d) return ERROR_NONE   \n", __func__, __LINE__);
 	return ERROR_NONE;
 }
 
@@ -1402,6 +1414,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		set_video_mode(*feature_data);
 		break;
 	case SENSOR_FEATURE_CHECK_SENSOR_ID:
+        pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
 		get_imgsensor_id(feature_return_para_32);
 		break;
 	case SENSOR_FEATURE_SET_AUTO_FLICKER_MODE:
@@ -1534,7 +1547,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 OV02B10MacroMIPISensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MALTALITE_OV02B10MacroMIPISensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)

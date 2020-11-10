@@ -27,6 +27,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MALTALITE_TXD_S5K3L6_SENSOR_ID, 0xA4, Common_read_region},
     {MALTALITE_SEA_GC02M1_SENSOR_ID, 0xA4, Common_read_region},
 	{MALTA_SUN_OV02B10_SENSOR_ID, 0xA0, Common_read_region},
+	{MALTALITE_SUN_OV02B10_SENSOR_ID, 0xA0, Common_read_region},
 	{BLACKJACK_TSP_GC2375H_SENSOR_ID, 0xA2, Common_read_region},
 	{BLACKJACK_JSL_GC2375H_SENSOR_ID, 0xA4, Common_read_region},
 	{S5K3P9SXT_SENSOR_ID, 0xA0, Common_read_region},
