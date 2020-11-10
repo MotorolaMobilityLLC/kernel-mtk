@@ -774,8 +774,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_hi846_path  = "/data/vendor/camera_dump/blackjack_txd_hi846.data";
     const char * str_mt9d015_path  = "/data/vendor/camera_dump/blackjack_sea_mt9d015.data";
 	const char * str_malta_s5kgm1st_path  = "/data/vendor/camera_dump/malta_s5kgm1st.data";
-	const char * str_malta_sea_gc02m1_path  = "/data/vendor/camera_dump/malta_sea_gc02m1.data";
-	const char * str_malta_sun_ov02b10_path  = "/data/vendor/camera_dump/malta_sun_ov02b10.data";
+	const char * str_malta_sea_gc02m1_path  = "/data/vendor/camera_dump/malta_maltalite_sea_gc02m1.data";
+	const char * str_malta_sun_ov02b10_path  = "/data/vendor/camera_dump/malta_maltalite_sun_ov02b10.data";
 	const char * str_maltalite_txd_s5k3l6_path  = "/data/vendor/camera_dump/maltalite_txd_s5k3l6.data";
 	const char * str_maltalite_sea_gc5035_path  = "/data/vendor/camera_dump/maltalite_sea_gc5035.data";
 	const char * str_dump_path = NULL;
@@ -790,7 +790,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     loff_t pos;
     struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
 
-    pr_debug("ontim_get_otp_data sensorid= %x  p_buf=%p  Length=%d\n", sensorid, p_buf, Length);
+    pr_info("[%s](%d)  begin  sensorid=%x  p_buf=%p  Length=%d\n", 
+    __func__, __LINE__, sensorid, p_buf, Length);
 
     switch(sensorid)
     {
@@ -804,6 +805,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             break;
         }
 	case MALTA_SUN_OV02B10_SENSOR_ID:
+	case MALTALITE_SUN_OV02B10_SENSOR_ID:
         {
             u4Offset = 0;
             u4Length = 0x076a;
@@ -922,7 +924,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             return -1;
     }
 
-    if((sensorid == MALTALITE_TXD_S5K3L6_SENSOR_ID)||(sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == MALTALITE_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
+    if((sensorid == MALTALITE_TXD_S5K3L6_SENSOR_ID)||(sensorid == MELTA_S5KGM1ST_SENSOR_ID)||(sensorid == MALTA_SUN_OV02B10_SENSOR_ID)||(sensorid == MALTALITE_SUN_OV02B10_SENSOR_ID) ||(sensorid == MALTA_SEA_GC02M1_SENSOR_ID)||(sensorid == MALTALITE_SEA_GC02M1_SENSOR_ID)||(sensorid == OV13855_SENSOR_ID)||(sensorid == BLACKJACK_TSP_GC2375H_SENSOR_ID) ||(sensorid == BLACKJACK_JSL_GC2375H_SENSOR_ID) || (sensorid == S5K3P9SXT_SENSOR_ID) || (sensorid == S5K3P9SX_SENSOR_ID) || (sensorid == BLACKJACK_SEA_MT9D015_SENSOR_ID) ||
 	(sensorid == GC8034_SENSOR_ID) || (sensorid ==BLACKJACK_HLT_OV16A10_SENSOR_ID) || (sensorid == BLACKJACK_TSP_OV16880_SENSOR_ID))
     {
 	pu1Params = kmalloc(u4Length, GFP_KERNEL);
@@ -982,6 +984,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     else
     {
         pos = 0;
+        pr_info("[%s](%d)  pu1Params=%p   \n", __func__, __LINE__, pu1Params);
         vfs_write(fp, pu1Params, u4Length, &pos);
         filp_close(fp, NULL);
     }
