@@ -859,7 +859,16 @@ int cts_test_short(struct cts_device *cts_dev,
     if (dump_test_date_to_user) {
         *param->test_data_wr_size += tsdata_frame_size;
     }
-
+/* BEGIN Ontim, 11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		ret = cts_start_dump_test_data_to_file(param->test_data_filepath,
+			!!(param->flags & CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE_APPEND));
+		if (ret) {
+			cts_err("Start dump test data to file failed %d", ret);
+			// Go through
+		}
+	}
+/* END 9987208 */
     if (dump_test_date_to_console || dump_test_date_to_file) {
         cts_dump_tsdata(cts_dev, "GND-short", test_result,
             dump_test_date_to_console);
@@ -1038,7 +1047,11 @@ int cts_test_short(struct cts_device *cts_dev,
         loopcnt += loopcnt % 2;
         loopcnt = loopcnt >> 1;
     }
-
+/* BEGIN Ontim, 11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		cts_stop_dump_test_data_to_file();
+	}
+/* END 9987208 */
 err_recovery_display_state:
     if (recovery_display_state) {
         int r = set_display_state(cts_dev, true);
@@ -1180,12 +1193,25 @@ int cts_test_open(struct cts_device *cts_dev,
     if (dump_test_date_to_user) {
         *param->test_data_wr_size += tsdata_frame_size;
     }
+/* BEGIN Ontim 11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		ret = cts_start_dump_test_data_to_file(param->test_data_filepath,
+			!!(param->flags & CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE_APPEND));
+		if (ret) {
+			cts_err("Start dump test data to file failed %d", ret);
+			// Go through
+		}
+	}
 
     if (dump_test_date_to_console || dump_test_date_to_file) {
         cts_dump_tsdata(cts_dev, "Open-circuit", test_result,
             dump_test_date_to_console);
     }
 
+	if (dump_test_date_to_file) {
+        cts_stop_dump_test_data_to_file();
+	}
+/* END 9987208 */
     if (driver_validate_data) {
         ret = validate_tsdata(cts_dev, "Open-circuit",
             test_result, param->invalid_nodes, param->num_invalid_node,
@@ -1536,6 +1562,14 @@ int cts_test_compensate_cap(struct cts_device *cts_dev,
     }
 
     cts_lock_device(cts_dev);
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+    if (param->flags & CTS_TEST_FLAG_RESET_BEFORE_TEST) {
+        ret = cts_plat_reset_device(cts_dev->pdata);
+        if (ret) {
+            cts_err("Do plat reset failed %d", ret);
+        }
+    }
+/* END 9987208 */
     ret = cts_get_compensate_cap(cts_dev, cap);
     cts_unlock_device(cts_dev);
     if (ret) {
@@ -1546,12 +1580,25 @@ int cts_test_compensate_cap(struct cts_device *cts_dev,
     if (dump_test_date_to_user) {
         *param->test_data_wr_size = num_nodes;
     }
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		ret = cts_start_dump_test_data_to_file(param->test_data_filepath,
+			!!(param->flags & CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE_APPEND));
+		if (ret) {
+			cts_err("Start dump test data to file failed %d", ret);
+			// Go through
+		}
+	}
 
     if (dump_test_date_to_console || dump_test_date_to_file) {
         cts_dump_comp_cap(cts_dev, cap,
             dump_test_date_to_console);
     }
 
+	if (dump_test_date_to_file) {
+        cts_stop_dump_test_data_to_file();
+	}
+/* END 9987208 */
     if (driver_validate_data) {
         ret = validate_comp_cap(cts_dev, "Compensate-Cap",
             cap, param->invalid_nodes, param->num_invalid_node,
@@ -1642,7 +1689,15 @@ int cts_test_rawdata(struct cts_device *cts_dev,
     }
 
     cts_lock_device(cts_dev);
-
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+    if (param->flags & CTS_TEST_FLAG_RESET_BEFORE_TEST) {
+        ret = cts_plat_reset_device(cts_dev->pdata);
+        if (ret) {
+            cts_err("Do plat reset failed %d", ret);
+            return ret;
+        }
+    }
+/* END 9987208 */
     for (i = 0; i < 5; i++) {
         int r;
         u8 val;
@@ -1667,7 +1722,16 @@ int cts_test_rawdata(struct cts_device *cts_dev,
         ret = -EIO;
         goto unlock_device;
     }
-
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		ret = cts_start_dump_test_data_to_file(param->test_data_filepath,
+			!!(param->flags & CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE_APPEND));
+		if (ret) {
+			cts_err("Start dump test data to file failed %d", ret);
+			// Go through
+		}
+	}
+/* END 9987208 */
     for (frame = 0; frame < priv_param->frames; frame++) {
         bool data_valid = false;
 
@@ -1720,7 +1784,11 @@ int cts_test_rawdata(struct cts_device *cts_dev,
             rawdata += num_nodes;
         }
     }
-
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+        cts_stop_dump_test_data_to_file();
+	}
+/* END 9987208 */
     for (i = 0; i < 5; i++) {
         int r = cts_disable_get_rawdata(cts_dev);
         if (r) {
@@ -1837,7 +1905,15 @@ int cts_test_noise(struct cts_device *cts_dev,
     }
 
     cts_lock_device(cts_dev);
-
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+    if (param->flags & CTS_TEST_FLAG_RESET_BEFORE_TEST) {
+        ret = cts_plat_reset_device(cts_dev->pdata);
+        if (ret) {
+            cts_err("Do plat reset failed %d", ret);
+            return ret;
+        }
+    }
+/* END 9987208 */
     for (i = 0; i < 5; i++) {
         int r;
         u8 val;
@@ -1862,7 +1938,16 @@ int cts_test_noise(struct cts_device *cts_dev,
         ret = -EIO;
         goto unlock_device;
     }
-
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		ret = cts_start_dump_test_data_to_file(param->test_data_filepath,
+			!!(param->flags & CTS_TEST_FLAG_DUMP_TEST_DATA_TO_FILE_APPEND));
+		if (ret) {
+			cts_err("Start dump test data to file failed %d", ret);
+			// Go through
+		}
+	}
+/* END 9987208 */
     msleep(50);
 
     for (frame = 0; frame < priv_param->frames; frame++) {
@@ -1931,7 +2016,11 @@ disable_get_tsdata:
             break;
         }
     }
-
+/* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
+	if (dump_test_date_to_file) {
+		cts_stop_dump_test_data_to_file();
+	}
+/* END 9987208 */
 unlock_device:
     cts_unlock_device(cts_dev);
 
