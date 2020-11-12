@@ -35,14 +35,31 @@
 #include "sp5506mipi_Sensor.h"
 #include <linux/slab.h>
 
-#define PFX "sp5506_camera_sensor"
-//#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
-//#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
-//#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
-#define LOG_INF(format, args...)	pr_info(PFX "[%s] " format, __func__, ##args)
+#define PFX "sp5506mipi_Sensor.c"
+
+#define LOG_DBG(format, args...)	pr_debug(PFX "[%s](%d) " format"\n", __func__,__LINE__, ##args)
+#define LOG_INF(format, args...)	 pr_info(PFX "[%s](%d) " format"\n", __func__,__LINE__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
+
+#define USE_OTP 1
+
+#if USE_OTP 
+struct otp_struct {
+    int flag; // bit[7]: info, bit[6]:wb
+    int module_integrator_id;
+    int lens_id;
+    int production_year;
+    int production_month;
+    int production_day;
+    int rg_ratio;
+    int bg_ratio;
+};
+
+static struct otp_struct   g_otp_data;
+
+#endif
 
 
 static imgsensor_info_struct imgsensor_info = { 
@@ -207,6 +224,170 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
+
+#if USE_OTP
+
+// return value:
+// bit[7]: 0 no otp info,   1 valid otp info
+// bit[6]: 0 no otp wb,     1 valid otp wb
+// if((g_otp_data.flag & 0x80) == 0) no otp info
+// if((g_otp_data.flag & 0x40) == 0) no otp awb
+
+static int read_otp(struct otp_struct  *otp_ptr)
+{
+    int otp_flag, addr, temp, i;
+    //set 0x5001 to ¡°0x02¡±
+    int temp1;
+    temp1 = read_cmos_sensor(0x5001);
+    write_cmos_sensor(0x5001, 0x02);
+    // read OTP into buffer
+    write_cmos_sensor(0x3d84, 0xC0);
+    write_cmos_sensor(0x3d88, 0x70); // OTP start address
+    write_cmos_sensor(0x3d89, 0x10);
+    write_cmos_sensor(0x3d8A, 0x70); // OTP end address
+    write_cmos_sensor(0x3d8B, 0x29);
+    write_cmos_sensor(0x3d81, 0x01); // load otp into buffer
+    mDELAY(5);
+    
+    // OTP info
+    otp_flag = read_cmos_sensor(0x7010);
+    addr = 0;
+    if((otp_flag & 0xc0) == 0x40) {
+        addr = 0x7011; // base address of info group 1
+        LOG_INF(" OTP info use group 1 ");
+    }
+    else if((otp_flag & 0x30) == 0x10) {
+        addr = 0x7016; // base address of info group 2
+        LOG_INF(" OTP info use group 2 ");
+    }
+    else if((otp_flag & 0x0c) == 0x04) {
+        addr = 0x701b; // base address of info group 3
+        LOG_INF(" OTP info use group 3 ");
+    }
+    
+    if(addr != 0) {
+        (*otp_ptr).flag = 0x80; // valid base info in OTP
+        (*otp_ptr).module_integrator_id = read_cmos_sensor( addr );
+        (*otp_ptr).lens_id = read_cmos_sensor( addr + 1);
+        (*otp_ptr).production_year = read_cmos_sensor( addr + 2);
+        (*otp_ptr).production_month = read_cmos_sensor( addr + 3);
+        (*otp_ptr).production_day = read_cmos_sensor( addr + 4);
+        LOG_INF(" module_integrator_id =%d  lens_id =%d    year month day =%d %d %d ", 
+        (*otp_ptr).module_integrator_id, (*otp_ptr).lens_id, 
+        (*otp_ptr).production_year, (*otp_ptr).production_month, (*otp_ptr).production_day);
+        
+    }
+    else {
+        LOG_INF(" error!!! OTP info no group can use  otp_flag =%d", otp_flag);
+        (*otp_ptr).flag = 0x00; // not info in OTP
+        (*otp_ptr).module_integrator_id = 0;
+        (*otp_ptr).lens_id = 0;
+        (*otp_ptr).production_year = 0;
+        (*otp_ptr).production_month = 0;
+        (*otp_ptr).production_day = 0;
+    }
+    
+    // OTP WB Calibration
+    otp_flag = read_cmos_sensor(0x7020);
+    addr = 0;
+    if((otp_flag & 0xc0) == 0x40) {
+        addr = 0x7021; // base address of WB Calibration group 1
+        LOG_INF(" OTP awb use group 1 ");
+    }
+    else if((otp_flag & 0x30) == 0x10) {
+        addr = 0x7024; // base address of WB Calibration group 2
+        LOG_INF(" OTP awb use group 2 ");
+    }
+    else if((otp_flag & 0x0c) == 0x04) {
+        addr = 0x7027; // base address of WB Calibration group 3
+        LOG_INF(" OTP awb use group 3 ");
+    }
+
+    if(addr != 0) {
+        (*otp_ptr).flag |= 0x40;
+        temp = read_cmos_sensor( addr + 2);
+        (*otp_ptr).rg_ratio = (read_cmos_sensor(addr)<<2) + ((temp>>6) & 0x03);
+        (*otp_ptr).bg_ratio = (read_cmos_sensor( addr + 1)<<2) + ((temp>>4) & 0x03);
+        
+        LOG_INF(" get   rg_ratio =%d  bg_ratio =%d", 
+        (*otp_ptr).rg_ratio, (*otp_ptr).bg_ratio);
+    }
+    else {
+        LOG_INF(" error!!! OTP awb no group can use ");
+        (*otp_ptr).rg_ratio = 0;
+        (*otp_ptr).bg_ratio = 0;
+    }
+
+    for(i=0x7010; i<=0x7029; i++) {
+        write_cmos_sensor(i,0); // clear OTP buffer, recommended use continuous write to accelarate
+    }
+    //set 0x5001 to ¡°0x0a¡±
+    temp1 = read_cmos_sensor(0x5001);
+    write_cmos_sensor(0x5001, 0x0a);
+    return (*otp_ptr).flag;
+}
+
+#define RG_Ratio_Typical   	    641	//modified when write WB !!!
+#define BG_Ratio_Typical		640	//modified when write WB !!!
+
+
+// return value:
+// 0 apply ok, -1 apply fail
+static int apply_otp(struct otp_struct *otp_ptr)
+{
+    int rg, bg, R_gain, G_gain, B_gain, Base_gain;
+    // apply OTP WB Calibration
+    if ((*otp_ptr).flag & 0x40) 
+    {
+        rg = (*otp_ptr).rg_ratio;
+        bg = (*otp_ptr).bg_ratio;
+        //calculate G gain
+        R_gain = (RG_Ratio_Typical*1000) / rg;
+        B_gain = (BG_Ratio_Typical*1000) / bg;
+        G_gain = 1000;
+        if (R_gain < 1000 || B_gain < 1000)
+        {
+            if (R_gain < B_gain)
+                Base_gain = R_gain;
+            else
+                Base_gain = B_gain;
+        }
+        else
+        {
+            Base_gain = G_gain;
+        }
+    
+        R_gain = 0x400 * R_gain / (Base_gain);
+        B_gain = 0x400 * B_gain / (Base_gain);
+        G_gain = 0x400 * G_gain / (Base_gain);
+        
+        LOG_INF(" cal gain    R B G =%d %d %d", R_gain, B_gain, G_gain);
+        // update sensor WB gain
+        if (R_gain>0x400) {
+            write_cmos_sensor(0x5019, R_gain>>8);
+            write_cmos_sensor(0x501a, R_gain & 0x00ff);
+        }
+        if (G_gain>0x400) {
+            write_cmos_sensor(0x501b, G_gain>>8);
+            write_cmos_sensor(0x501c, G_gain & 0x00ff);
+        }
+        if (B_gain>0x400) {
+            write_cmos_sensor(0x501d, B_gain>>8);
+            write_cmos_sensor(0x501e, B_gain & 0x00ff);
+        }
+        LOG_INF(" OTP awb apply ok !!! ");
+    }
+    else
+    {
+        LOG_INF(" error!!! OTP awb no group can use ");
+        return -1;
+    }
+    
+    return 0;
+}
+
+
+#endif
 
 
 static void set_dummy(void)
@@ -886,7 +1067,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				memset(front_cam_name, 0x00, sizeof(front_cam_name));
 				memcpy(front_cam_name, "1_maltalite_sunrise_sp5506", 64);				
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  
+				LOG_INF(" find ok !!   i2c write id: 0x%x, sensor id: 0x%x\n", 
+                imgsensor.i2c_write_id,*sensor_id);
+
 				return ERROR_NONE;
 			}	
 			LOG_INF("Read sensor id fail i2c_write_id=0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
@@ -956,6 +1139,15 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
+    #if USE_OTP
+    if(g_otp_data.flag == 0)
+    {
+        read_otp(&g_otp_data);
+    }
+    apply_otp(&g_otp_data);
+    #endif
+    
+    
 	spin_lock(&imgsensor_drv_lock);
 
 	imgsensor.autoflicker_en= KAL_FALSE;
