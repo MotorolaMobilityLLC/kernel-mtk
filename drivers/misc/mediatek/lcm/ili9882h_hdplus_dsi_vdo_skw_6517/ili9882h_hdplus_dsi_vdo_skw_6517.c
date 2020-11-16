@@ -350,7 +350,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x84, 1, {0x0F}},
 
 	{0xFF, 3, {0x98, 0x82, 0x00}},
-	{0x51, 2, {0x00, 0xFF}},
+	{0x51, 2, {0x00, 0x00}},
 	{0x53, 0x01, {0x2C}},
 	{0x11, 1, {0x00}},
 	{REGFLAG_DELAY, 120, {}},
@@ -605,7 +605,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	{
 		is_bl_delay = FALSE;
 		LCM_LOGI("delay 15ms to set backlight, is_bl_delay = %d\n",is_bl_delay);
-		MDELAY(15);//t7
+		MDELAY(55);//t7
 	}
 	bl_level[0].para_list[1] = level;
 	LCM_LOGI("%s, backlight set level = %d \n", __func__, bl_level[0].para_list[1]);
