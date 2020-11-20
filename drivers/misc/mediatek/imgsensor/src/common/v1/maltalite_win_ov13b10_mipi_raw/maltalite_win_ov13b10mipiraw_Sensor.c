@@ -1826,7 +1826,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 
 #if ENABLE_PDAF
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = 1;
 #endif
 
 	switch (scenario_id) {
