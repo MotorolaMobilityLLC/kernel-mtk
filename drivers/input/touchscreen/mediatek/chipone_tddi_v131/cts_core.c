@@ -1822,10 +1822,9 @@ int cts_suspend_device(struct cts_device *cts_dev)
 int cts_resume_device(struct cts_device *cts_dev)
 {
     int ret = 0;
-    //int retries = 3;
-    const struct cts_firmware *firmware;
+    int retries = 3;
     cts_info("Resume device");
-#if 0
+
     /* Check whether device is in normal mode */
     while (--retries >= 0) {
 #ifdef CFG_CTS_HAS_RESET_PIN
@@ -1863,24 +1862,7 @@ int cts_resume_device(struct cts_device *cts_dev)
             goto err_set_program_mode;
         }
     }
-#endif
-    cts_info("Need update firmware when resume");
-    firmware = cts_request_firmware(cts_dev->hwdata->hwid,
-            cts_dev->hwdata->fwid, 0);
-    if (firmware) {
-        ret = cts_update_firmware(cts_dev, firmware, true);
-        cts_release_firmware(firmware);
 
-        if (ret) {
-            cts_err("Update default firmware failed %d", ret);
-            goto err_set_program_mode;
-        }
-    } else {
-        cts_err("Request default firmware failed %d, "
-                "please update manually!!", ret);
-
-        goto err_set_program_mode;
-    }
 #ifdef CONFIG_CTS_CHARGER_DETECT
     if (cts_is_charger_exist(cts_dev)) {
         int r = cts_set_dev_charger_attached(cts_dev, true);

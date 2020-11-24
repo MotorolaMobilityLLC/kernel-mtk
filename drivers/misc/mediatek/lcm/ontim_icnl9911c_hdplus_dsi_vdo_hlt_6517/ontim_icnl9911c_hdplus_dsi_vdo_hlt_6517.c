@@ -120,7 +120,6 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
 #endif
 //static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
-static unsigned int is_bl_delay;
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -141,9 +140,6 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0x01, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
-	{0xF0, 0x02, {0x5A, 0x59}},
-	{0xF1, 0x02, {0xA5, 0xA6}},
-	{0xCC, 0x01, {0x01}},
 #if 0
 	{0xF0, 0x02, {0x5A, 0x59}},
     {0xF1, 0x02, {0xA5, 0xA6}},
@@ -364,7 +360,6 @@ static void lcm_init(void)
 
 	push_table(NULL, init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-	is_bl_delay = TRUE;
 	LCM_LOGI("%s: icnl9911c done\n",__func__);
 }
 
@@ -417,12 +412,6 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		} else {
 			level = (level * 8) / 10;
 		}
-	}
-	if (TRUE == is_bl_delay)
-	{
-		is_bl_delay = FALSE;
-		LCM_LOGI("delay 15ms to set backlight %d\n",is_bl_delay);
-		MDELAY(55);
 	}
 	bl_level[0].para_list[0] = (level & 0xF0) >> 4;
 	bl_level[0].para_list[1] = (level & 0x0F) << 4;
