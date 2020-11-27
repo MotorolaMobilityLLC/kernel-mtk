@@ -808,9 +808,9 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 	case MALTALITE_SUN_OV02B10_SENSOR_ID:
         {
             u4Offset = 0;
-            u4Length = 0x076a;
+            u4Length = 0x1769;
             str_dump_path = str_malta_sun_ov02b10_path;
-	    deviceid = 0x10;
+            deviceid = 0x10;
             break;
         }
 	case BLACKJACK_HLT_OV16A10_SENSOR_ID:
