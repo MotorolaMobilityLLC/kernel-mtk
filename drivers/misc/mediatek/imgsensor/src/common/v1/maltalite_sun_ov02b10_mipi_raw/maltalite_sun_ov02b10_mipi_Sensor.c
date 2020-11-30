@@ -649,6 +649,14 @@ static void slim_video_setting(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
+ static kal_uint16 read_cmos_sensor_16_8(kal_uint16 addr)
+{
+	kal_uint16 get_byte= 0;
+	char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+	/*kdSetI2CSpeed(imgsensor_info.i2c_speed);  Add this func to set i2c speed by each sensor*/
+	iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,0xA1);
+	return get_byte;
+}
 extern char backaux_cam_name[64];
 extern unsigned int platform_board_id;
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
@@ -656,9 +664,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry_total = 3;
 	kal_uint8 retry_cnt = retry_total;
-    
+
     pr_info(PFX"[%s](%d)  begin   \n", __func__, __LINE__);
-    
+
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -680,10 +688,15 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                     pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
                     memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
                     pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
-					memcpy(backaux_cam_name, "2_maltalite_sun_ov02b10", 64);
+					pr_info ("get_imgsensor_id =%x ",read_cmos_sensor_16_8(0x1001));
+					if(0x49 == read_cmos_sensor_16_8(0x1001))
+						memcpy(backaux_cam_name, "2_maltalite_unionimage_ov02b10", 64);
+					else
+						memcpy(backaux_cam_name, "2_maltalite_sun_ov02b10", 64);
+
                     pr_info(PFX"[%s](%d)    \n", __func__, __LINE__);
                     ontim_get_otp_data(*sensor_id, NULL, 0);
-                    
+
                     cam_pr_debug_1(" return ERROR_NONE find 2_maltalite_sun_ov02b10 ok  i2c write id: 0x%x, sensor id: 0x%x\n",
                     imgsensor.i2c_write_id, *sensor_id);
                     return ERROR_NONE;
