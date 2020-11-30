@@ -1434,7 +1434,7 @@ static ssize_t self_test_show(struct device *dev,
         .invalid_nodes = NULL,
     };
 /* BEGIN Ontim 11/11/2020, 9985054, St-result:PASS, update icnl9911c  test function. */
-    int rawdata_min = 700, rawdata_max = 1500;
+    int rawdata_min = 1650, rawdata_max = 2750;
     int noise_max = 50;
     int open_min = 200;
     int short_min = 200;
