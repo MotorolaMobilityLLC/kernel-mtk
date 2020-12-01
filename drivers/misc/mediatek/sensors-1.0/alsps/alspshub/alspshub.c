@@ -90,7 +90,9 @@ enum {
 #define FIJI_TP_VENDOR_EASYQUICK 2
 #define MALTA_TP_VENDOR_TIANMA 0
 #define MALTA_TP_VENDOR_HLT 1
-
+#define MALTA_L_TP_VENDOR_HLT 2
+#define MALTA_L_TP_VENDOR_SKYWORTH 3
+#define MALTA_L_TP_VENDOR_TIANMA 4
 
 
 static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
@@ -120,6 +122,75 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 	return 0;
 }
 
+static int katoi(char *str)
+{
+	int result = 0;
+	unsigned int digit;
+	int sign;
+
+	if (*str == '-') {
+		sign = 1;
+		str += 1;
+	} else {
+		sign = 0;
+		if (*str == '+') {
+			str += 1;
+		}
+	}
+
+	for (;; str += 1) {
+		digit = *str - '0';
+		if (digit > 9)
+			break;
+		result = (10 * result) + digit;
+	}
+
+	if (sign) {
+		return -result;
+	}
+
+	return result;
+}
+
+static char *str_split(char *src,char *dst, int n)
+{
+	char *p = src;
+	char *q = dst;
+	int len = strlen(src);
+
+	if(n>len) n = len;
+	p += (len-n);
+	while((*(q++) = *(p++)));
+
+	return dst;
+}
+
+static int get_hw_board_id(void)
+{
+	char file_path[BUF_SIZE] = "/sys/hwinfo/board_id";
+	char buf[BUF_SIZE] = {0};
+	int  ret = 0;
+	int board_id = 0;
+	char dst[5] = {0};
+
+	ret = hwinfo_read_file(file_path, buf, sizeof(buf));
+	if (ret != 0)
+	{
+		pr_err("hwinfo_read_file failed.");
+		return -1;
+	}
+
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+
+	str_split(buf, dst, 4);
+	board_id = katoi(dst);
+
+	printk(KERN_INFO "[ALS/PS]: board id:(0x%x)  buf(%s)  dst(%s)\n", board_id, buf, dst);
+
+	return board_id;
+}
+
 static int get_tp_vendor(void)
 {
 	char file_path[BUF_SIZE] = "/sys/ontim_dev_debug/touch_screen/vendor";
@@ -127,6 +198,7 @@ static int get_tp_vendor(void)
 	char str[BUF_SIZE] = {0};
 	int  ret = 0;
 	int vendor = 0;
+	int board_id = 0;
 
 	ret = hwinfo_read_file(file_path, buf, sizeof(buf));
 	if (ret != 0)
@@ -153,13 +225,23 @@ static int get_tp_vendor(void)
 		else if (strncmp(buf,"easyquick",9) == 0)
 			vendor = FIJI_TP_VENDOR_EASYQUICK;
 	} else if ((strcmp(CONFIG_ARCH_MTK_PROJECT, "malta") == 0) || (strcmp(CONFIG_ARCH_MTK_PROJECT, "malta_64") == 0)) {
-		if (strncmp(buf,"tianma",6) == 0)
-			vendor = MALTA_TP_VENDOR_TIANMA;
-		else if (strncmp(buf,"hlt",3) == 0)
-			vendor = MALTA_TP_VENDOR_HLT;
+		board_id = get_hw_board_id();
+		if (board_id & 0x04) {
+			if (strncmp(buf,"hlt",3) == 0)
+				vendor = MALTA_L_TP_VENDOR_HLT;
+			else if (strncmp(buf,"skw",3) == 0)
+				vendor = MALTA_L_TP_VENDOR_SKYWORTH;
+			if (strncmp(buf,"tianma",6) == 0)
+				vendor = MALTA_L_TP_VENDOR_TIANMA;
+		} else {
+			if (strncmp(buf,"tianma",6) == 0)
+				vendor = MALTA_TP_VENDOR_TIANMA;
+			else if (strncmp(buf,"hlt",3) == 0)
+				vendor = MALTA_TP_VENDOR_HLT;
+		}
 	}
 
-	printk(KERN_INFO "[ALS/PS]: tp vendor:(%d)%s\n", vendor, buf);
+	printk(KERN_INFO "[ALS/PS]: tp vendor:(0x%x)%s\n", vendor, buf);
 	ret = sensor_set_cmd_to_hub(ID_LIGHT, CUST_ACTION_SET_TRACE, &vendor);
 	if (ret < 0) {
             pr_err("sensor_set_cmd_to_hub fail,(ID: %d),(action: %d),(ret: %d)\n",
