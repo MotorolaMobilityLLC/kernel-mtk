@@ -1,5 +1,5 @@
 static u8 icnl9911_driver_builtin_firmware[] = {
-#include"firmware/hlt/ICNL9911C_HLT_MOTO_MALTA_20201120_V0209.h"
+#include"firmware/hlt/ICNL9911C_HLT_MOTO_MALTA_20201120_V020A.h"
 };
 const static struct cts_firmware cts_driver_builtin_firmwares[] = {
     {
