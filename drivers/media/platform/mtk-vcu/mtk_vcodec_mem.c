@@ -122,7 +122,8 @@ int mtk_vcu_free_buffer(struct mtk_vcu_queue *vcu_queue,
 				vcu_queue->mem_ops->cookie(
 				    vcu_buffer->mem_priv);
 
-			if (mem_buff_data->va == (unsigned long)cook &&
+			if (mem_buff_data->va ==
+			CODEC_MSK((unsigned long)cook) &&
 			mem_buff_data->iova == *(dma_addr_t *)dma_addr &&
 				mem_buff_data->len == vcu_buffer->size) {
 				pr_debug("Free buff = %d iova = %x va = %llx, queue_num = %d\n",
