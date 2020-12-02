@@ -385,9 +385,15 @@ void fgauge_get_profile_id(void)
 		if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
 			/* malta lite PN logic */
 			if (battery_type_name > 5) {
-				gm.battery_id = battery_type_name - 5;
-				strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id + 4],BATTERY_NAME_LEN);
-				printk("ontim malta lite battery_id = %d\n",gm.battery_id);
+				if (battery_type_name > 8) {
+					gm.battery_id = battery_type_name - 5;
+					strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id + 4],BATTERY_NAME_LEN);
+					gm.battery_id = 3;
+				} else {
+					gm.battery_id = battery_type_name - 5;
+					strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id + 4],BATTERY_NAME_LEN);
+					printk("ontim malta lite battery_id = %d\n",gm.battery_id);
+				}
 			/* malta PN logic */
 			} else {
 				gm.battery_id = battery_type_name - 1;

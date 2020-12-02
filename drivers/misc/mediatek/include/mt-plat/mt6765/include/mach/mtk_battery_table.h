@@ -92,7 +92,7 @@ int battery_total_number=1;
 int battery_pn_flag = 0;
 /* battery PN number for malta and malta lite */
 #ifdef CONFIG_MALTA_BATTERY_PN_NUMBER
-#define BATTERY_TOTAL_NUM 8
+#define BATTERY_TOTAL_NUM 9
 char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
 	"KG40-SB18C77666-4000mah",
 	"KG40-SB18C77667-4000mah",
@@ -102,6 +102,7 @@ char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
 	"JK50-SUN-SB18C85291-5000mah",
 	"JK50-SCUD-SB18C77226-5000mah",
 	"JK50-ATL-SB18C77591-5000mah",
+	"JK50-ATL-SB18C47080-5000mah",
 };
 #else
 /* battery PN number for blackjackQ */
