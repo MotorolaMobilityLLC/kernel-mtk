@@ -72,7 +72,7 @@ static void handle_enc_waitisr_msg(struct venc_vcu_inst *vcu,
 	msg->timeout = timeout;
 }
 
-static int vcu_enc_ipi_handler(void *data, unsigned int len, void *priv)
+int vcu_enc_ipi_handler(void *data, unsigned int len, void *priv)
 {
 	struct venc_vcu_ipi_msg_common *msg = data;
 	struct venc_vcu_inst *vcu;
@@ -94,6 +94,11 @@ static int vcu_enc_ipi_handler(void *data, unsigned int len, void *priv)
 	}
 
 	vcu = (struct venc_vcu_inst *)(unsigned long)msg->venc_inst;
+	if ((vcu != priv) && (msg->msg_id < VCU_IPIMSG_VENC_SEND_BASE)) {
+		pr_info("%s, vcu:%p != priv:%p\n", __func__, vcu, priv);
+		return 1;
+	}
+
 	mtk_vcodec_debug(vcu, "msg_id %x inst %p status %d",
 					 msg->msg_id, vcu, msg->status);
 
@@ -187,6 +192,7 @@ static int vcu_enc_send_msg(struct venc_vcu_inst *vcu, void *msg,
 		return -EIO;
 
 	status = vcu_ipi_send(vcu->dev, vcu->id, msg, len, vcu);
+
 	if (status) {
 		mtk_vcodec_err(vcu, "vcu_ipi_send msg_id %x len %d fail %d",
 					   *(uint32_t *)msg, len, status);
@@ -201,6 +207,22 @@ static int vcu_enc_send_msg(struct venc_vcu_inst *vcu, void *msg,
 
 	return 0;
 }
+
+
+void vcu_enc_set_pid(struct venc_vcu_inst *vcu)
+{
+	struct task_struct *task = NULL;
+	struct files_struct *f = NULL;
+
+	vcu_get_file_lock();
+	vcu_get_task(&task, &f, 0);
+	vcu_put_file_lock();
+	if (task != NULL)
+		vcu->daemon_pid = task->tgid;
+	else
+		vcu->daemon_pid = -1;
+}
+
 
 int vcu_enc_init(struct venc_vcu_inst *vcu)
 {
@@ -219,8 +241,8 @@ int vcu_enc_init(struct venc_vcu_inst *vcu)
 	vcu->signaled = 0;
 	vcu->failure = 0;
 
-	status = vcu_ipi_register(vcu->dev, vcu->id, vcu_enc_ipi_handler,
-							  NULL, NULL);
+	status = vcu_ipi_register(vcu->dev, vcu->id, vcu->handler,
+							  NULL, vcu);
 	if (status) {
 		mtk_vcodec_err(vcu, "vcu_ipi_register fail %d", status);
 		return -EINVAL;
@@ -229,11 +251,12 @@ int vcu_enc_init(struct venc_vcu_inst *vcu)
 	memset(&out, 0, sizeof(out));
 	out.msg_id = AP_IPIMSG_ENC_INIT;
 	out.venc_inst = (unsigned long)vcu;
+
+	vcu_enc_set_pid(vcu);
 	if (vcu_enc_send_msg(vcu, &out, sizeof(out))) {
 		mtk_vcodec_err(vcu, "AP_IPIMSG_ENC_INIT fail");
 		return -EINVAL;
 	}
-
 	mtk_vcodec_debug_leave(vcu);
 
 	return 0;
@@ -253,9 +276,10 @@ int vcu_enc_query_cap(struct venc_vcu_inst *vcu, unsigned int id, void *out)
 	mtk_vcodec_debug(vcu, "+ id=%X", AP_IPIMSG_ENC_QUERY_CAP);
 	vcu->dev = vcu_get_plat_device(vcu->ctx->dev->plat_dev);
 	vcu->id = (vcu->id == IPI_VCU_INIT) ? IPI_VENC_COMMON : vcu->id;
+	vcu->handler = vcu_enc_ipi_handler;
 
 	err = vcu_ipi_register(vcu->dev,
-		vcu->id, vcu_enc_ipi_handler, NULL, NULL);
+		vcu->id, vcu->handler, NULL, vcu);
 	if (err != 0) {
 		mtk_vcodec_err(vcu, "vcu_ipi_register fail status=%d", err);
 		return err;
@@ -267,6 +291,7 @@ int vcu_enc_query_cap(struct venc_vcu_inst *vcu, unsigned int id, void *out)
 	msg.ap_inst_addr = (uintptr_t)vcu;
 	msg.ap_data_addr = (uintptr_t)out;
 
+	vcu_enc_set_pid(vcu);
 	err = vcu_enc_send_msg(vcu, &msg, sizeof(msg));
 	mtk_vcodec_debug(vcu, "- id=%X ret=%d", msg.msg_id, err);
 
