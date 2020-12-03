@@ -101,6 +101,6 @@ static unsigned char CTPM_FW_HLT[] = {
 #define SKW_INI_REQUEST_PATH		"mp_skw.ini"
 #define SKW_FW_REQUEST_PATH		"ILITEK_FW_SKW"
 static unsigned char CTPM_FW_SKW[] = {
-	#include "skyworth/SPI_9882H_PANDA6517_LongV_V0x00.0x01_AP_0x01_MP_20200818.ili"
+	#include "skyworth/Malta_9882H_PANDA6517_LongH_V0x1C.0x00.0x05.0x01.AP_0x01.0x00_MP.ili"
 };
 #endif
