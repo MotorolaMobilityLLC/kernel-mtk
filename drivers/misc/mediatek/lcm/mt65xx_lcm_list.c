@@ -97,6 +97,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ft8006s_hdplus_dsi_vdo_holitech_6528_lcm_drv,
 #endif
 
+#if defined(ONTIM_HX83102D_HDPLUS_DSI_VDO_KD_6517)
+	&ontim_hx83102d_hdplus_dsi_vdo_kd_6517_lcm_drv,
+#endif
+
 #if defined(HX83102D_HDPLUS_DSI_VDO_TRULY_6528)
 	&hx83102d_hdplus_dsi_vdo_truly_6528_lcm_drv,
 #endif
