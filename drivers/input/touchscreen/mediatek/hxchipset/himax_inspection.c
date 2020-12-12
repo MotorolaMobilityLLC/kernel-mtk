@@ -1978,6 +1978,9 @@ static int himax_self_test_data_init(void)
 	 * 5: one value will not over than 99999, so get this size of string
 	 * 2: get twice size
 	 */
+#if defined(__LCM_ID_KD_FLAG__)
+	file_name_2 = "hx_kd_criteria.csv";
+#endif
 	g_1kind_raw_size = 5 * ic_data->HX_RX_NUM * ic_data->HX_TX_NUM * 2;
 
 	/* get test item and its items of criteria*/
@@ -2160,7 +2163,11 @@ static int himax_chip_self_test(struct seq_file *s, void *v)
 	}
 
 #if defined(HX_ZERO_FLASH)
+#if defined(__LCM_ID_KD_FLAG__)
+	g_core_fp.fp_0f_op_file_dirly(KD_MPAP_FWNAME);
+#else
 	g_core_fp.fp_0f_op_file_dirly(MPAP_FWNAME);
+#endif
 	g_core_fp.fp_reload_disable(0);
 	if (g_core_fp._fw_sts_clear != NULL)
 		g_core_fp._fw_sts_clear();

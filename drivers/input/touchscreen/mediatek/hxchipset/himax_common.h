@@ -59,7 +59,7 @@
 
 /*#define HX_NEW_EVENT_STACK_FORMAT*/
 /*#define HX_BOOT_UPGRADE*/
-/*#define HX_SMART_WAKEUP*/
+#define HX_SMART_WAKEUP
 /*#define HX_GESTURE_TRACK*/
 #define HX_RESUME_SEND_CMD	/*Need to enable on TDDI chipset*/
 /*#define HX_HIGH_SENSE*/
@@ -122,7 +122,11 @@
 /* FW Auto upgrade case, you need to setup the fix_touch_info of module
  */
 #define HX_FIX_TOUCH_INFO
+#if defined(__LCM_ID_KD_FLAG__)
+#define BOOT_UPGRADE_FWNAME "Himax_kd_firmware.bin"
+#else
 #define BOOT_UPGRADE_FWNAME "Himax_firmware.bin"
+#endif
 #if defined(HX_ZERO_FLASH)
 #define HX_RESUME_SET_FW
 #define HX_UPDATE_FW_FROM_DISPLAY
@@ -130,6 +134,7 @@
 /*Independent threads run the notification chain notification function resume*/
 /*#define HX_CONTAINER_SPEED_UP*/
 #define MPAP_FWNAME "Himax_mpfw.bin"
+#define KD_MPAP_FWNAME "Himax_kd_mpfw.bin"
 #endif
 #endif
 

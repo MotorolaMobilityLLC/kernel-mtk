@@ -115,3 +115,8 @@ config HMX_DB
 	help
 	  This enables support for HIMAX driver test over Dragon Board.
 
+config TOUCHSCREEN_HIMAX_KD_FLAG
+        tristate "HIMAX chipset HX83102_kd function"
+		depends on TOUCHSCREEN_HIMAX_COMMON
+		help
+		This enables support for HIMAX CHIPSET of HX83102_kd.
