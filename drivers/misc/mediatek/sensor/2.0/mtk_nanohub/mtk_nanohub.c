@@ -680,6 +680,76 @@ static void mtk_nanohub_init_sensor_info(void)
 	strlcpy(p->name, "ois", sizeof(p->name));
 	strlcpy(p->vendor, "mtk", sizeof(p->vendor));
 
+//moto add
+	p = &sensor_state[SENSOR_TYPE_FLAT_UP];
+	p->sensorType = SENSOR_TYPE_FLAT_UP;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Flat Up", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_FLAT_DOWN];
+	p->sensorType = SENSOR_TYPE_FLAT_DOWN;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Flat Down", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_STOWED];
+	p->sensorType = SENSOR_TYPE_STOWED;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Stowed", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_CAMERA_ACTIVATE];
+	p->sensorType = SENSOR_TYPE_CAMERA_ACTIVATE;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Camera Gesture", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_CHOPCHOP_GESTURE];
+	p->sensorType = SENSOR_TYPE_CHOPCHOP_GESTURE;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "ChopChop", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_MOTO_GLANCE_GESTURE];
+	p->sensorType = SENSOR_TYPE_MOTO_GLANCE_GESTURE;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Moto Glance", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_LTS];
+	p->sensorType = SENSOR_TYPE_LTS;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "lift to Silence", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_FTM];
+	p->sensorType = SENSOR_TYPE_FTM;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Flip to Mute", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_LTV];
+	p->sensorType = SENSOR_TYPE_LTV;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Lift to View", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
+
+	p = &sensor_state[SENSOR_TYPE_OFFBODY];
+	p->sensorType = SENSOR_TYPE_OFFBODY;
+	p->rate = SENSOR_RATE_ONCHANGE;
+	p->gain = 1;
+	strlcpy(p->name, "Off Body", sizeof(p->name));
+	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd,
@@ -2293,6 +2363,30 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			event.word[0] = data->sar_event.data[0];
 			event.word[1] = data->sar_event.data[1];
 			event.word[2] = data->sar_event.data[2];
+			break;
+/*moto algo ID type*/
+		case ID_STOWED:
+		case ID_FLATUP:
+		case ID_FLATDOWN:
+		case ID_CAMGEST:
+		case ID_CHOPCHOP:
+		case ID_MOT_GLANCE:
+		case ID_OFFBODY:
+		case ID_FTM:
+		case ID_LTS:
+			event.timestamp = data->time_stamp;
+			event.sensor_type = id_to_type(data->sensor_type);
+			event.action = data->flush_action;
+			event.word[0] = data->gesture_data_t.probability;
+			pr_err("Oscar kernel data %d\n", event.word[0]);
+			break;
+		case ID_LTV:
+			event.timestamp = data->time_stamp;
+			event.sensor_type = id_to_type(data->sensor_type);
+			event.action = data->flush_action;
+			event.word[0]  = data->data[0];
+			event.word[1] = data->data[1];
+			event.word[2] = data->data[2];
 			break;
 		default:
 			event.timestamp = data->time_stamp;
