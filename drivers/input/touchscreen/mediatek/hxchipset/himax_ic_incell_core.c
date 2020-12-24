@@ -1644,8 +1644,8 @@ static void himax_mcu_read_FW_ver(void)
 		snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x67 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
 	} else if (strstr(mtkfb_find_lcm_driver(), "kd") != NULL)
 	{
-		snprintf(lcdname, sizeof(lcdname), "kd-hx83102d");
-		snprintf(vendor_name, sizeof(vendor_name), "kd-hx83102d");
+		snprintf(lcdname, sizeof(lcdname), "skw-hx83102d");
+		snprintf(vendor_name, sizeof(vendor_name), "skw-hx83102d");
 		snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x64 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
 	}
 #endif
