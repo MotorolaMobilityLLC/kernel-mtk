@@ -59,9 +59,9 @@ enum cts_charger_detect_type {
 #define CFG_CTS_DEF_CHGR_DET_TYPE               CTS_CHGR_DET_TYPE_POLL_PSP
 #endif /* CFG_CTS_CHARGER_DETECT_PSY_NOTIFY */
 
-#define CFG_CTS_DEF_CHGR_DET_PSY_NAME           "usb"
+#define CFG_CTS_DEF_CHGR_DET_PSY_NAME           "charger"
 #define CFG_CTS_DEF_CHGR_DET_PSY_PROP           POWER_SUPPLY_PROP_ONLINE
-#define CFG_CTS_DEF_CHGR_DET_PSP_POLL_INTERVAL  2000u
+#define CFG_CTS_DEF_CHGR_DET_PSP_POLL_INTERVAL  1000u
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 /* Lower version has no power_supply_get_property() */

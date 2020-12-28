@@ -99,7 +99,7 @@
 
 #define CONFIG_CTS_CHARGER_DETECT
 
-#define CONFIG_CTS_EARJACK_DETECT
+/* #define CONFIG_CTS_EARJACK_DETECT */
 
 
 /* ESD protection */

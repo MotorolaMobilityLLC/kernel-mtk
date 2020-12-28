@@ -176,7 +176,7 @@
             chipone,touch-charger-detect-psp = "POWER_SUPPLY_PROP_ONLINE";
             chipone,touch-charger-detect-psp-poll-interval = <1000>;
             /* Earjack detect */
-            chipone,touch-earjack-detect-enable;
+            //chipone,touch-earjack-detect-enable;
             /* MTK:  /sys/bus/platform/drivers/Accdet_Driver/state,
             Sprd: /sys/kernel/headset/state
             QCOM: None, and disable it */
