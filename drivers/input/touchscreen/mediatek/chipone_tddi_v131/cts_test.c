@@ -4,7 +4,7 @@
 #include "cts_platform.h"
 #include "cts_core.h"
 #include "cts_test.h"
-
+#include "cts_strerror.h"
 const char *cts_test_item_str(int test_item)
 {
 #define case_test_item(item) \
@@ -1631,6 +1631,8 @@ int cts_test_rawdata(struct cts_device *cts_dev,
     u16 *rawdata = NULL;
     int  i;
     int  ret;
+    u8   idle_mode_reg_val;
+    bool idle_mode_enabled = false;
 
     if (cts_dev == NULL || param == NULL ||
         param->priv_param_size != sizeof(*priv_param) ||
@@ -1694,10 +1696,58 @@ int cts_test_rawdata(struct cts_device *cts_dev,
         ret = cts_plat_reset_device(cts_dev->pdata);
         if (ret) {
             cts_err("Do plat reset failed %d", ret);
-            return ret;
+            goto unlock_device;
         }
     }
 /* END 9987208 */
+    ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS,
+        &idle_mode_reg_val);
+    if (ret) {
+        cts_err("Get idle mode enable register failed %d(%s)",
+            ret, cts_strerror(ret));
+        goto unlock_device;
+    }
+
+    idle_mode_enabled = !!(idle_mode_reg_val & BIT(0));
+    if (idle_mode_enabled) {
+        cts_info("Disable idle mode");
+        ret = cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS,
+            idle_mode_reg_val & (~BIT(0)));
+        if (ret) {
+            cts_err("Disable idle mode failed %d(%s)",
+                ret, cts_strerror(ret));
+            goto unlock_device;
+        }
+
+        ret = cts_send_command(cts_dev, CTS_CMD_QUIT_GESTURE_MONITOR);
+        if (ret) {
+            cts_err("Send exit idle mode command failed %d(%s)",
+                ret, cts_strerror(ret));
+            goto unlock_device;
+        }
+        for (i = 0; i < 100; i++) {
+            u8 pwr_mode = 0xFF;
+
+            ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_POWER_MODE,
+                &pwr_mode);
+            if (ret) {
+                cts_err("Read firmware power mode failed %d(%s)",
+                    ret, cts_strerror(ret));
+            } else {
+                if (pwr_mode == 0) {
+                    goto enable_get_touch_data;
+                }
+            }
+
+            mdelay(10);
+        }
+
+        cts_err("Exit idle mode timeout");
+        ret = -ETIMEDOUT;
+        goto enable_idle_mode;
+    }
+
+enable_get_touch_data:
     for (i = 0; i < 5; i++) {
         int r;
         u8 val;
@@ -1799,6 +1849,18 @@ int cts_test_rawdata(struct cts_device *cts_dev,
         }
     }
 
+enable_idle_mode:
+    if (idle_mode_enabled) {
+        cts_info("Re-Enable idle mode");
+        ret = cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS,
+            idle_mode_reg_val);
+        if (ret) {
+            cts_err("Re-Enable idle mode failed %d(%s)",
+                ret, cts_strerror(ret));
+            goto unlock_device;
+        }
+    }
+
 unlock_device:
     cts_unlock_device(cts_dev);
 
@@ -1839,6 +1901,8 @@ int cts_test_noise(struct cts_device *cts_dev,
     bool data_valid = false;
     int  i;
     int  ret;
+    u8   idle_mode_reg_val;
+    bool idle_mode_enabled = false;
 
     if (cts_dev == NULL || param == NULL ||
         param->priv_param_size != sizeof(*priv_param) ||
@@ -1914,6 +1978,54 @@ int cts_test_noise(struct cts_device *cts_dev,
         }
     }
 /* END 9987208 */
+    ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS,
+        &idle_mode_reg_val);
+    if (ret) {
+        cts_err("Get idle mode enable register failed %d(%s)",
+            ret, cts_strerror(ret));
+        goto unlock_device;
+    }
+
+    idle_mode_enabled = !!(idle_mode_reg_val & BIT(0));
+    if (idle_mode_enabled) {
+        cts_info("Disable idle mode");
+        ret = cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS,
+            idle_mode_reg_val & (~BIT(0)));
+        if (ret) {
+            cts_err("Disable idle mode failed %d(%s)",
+                ret, cts_strerror(ret));
+            goto unlock_device;
+        }
+
+        ret = cts_send_command(cts_dev, CTS_CMD_QUIT_GESTURE_MONITOR);
+        if (ret) {
+            cts_err("Send exit idle mode command failed %d(%s)",
+                ret, cts_strerror(ret));
+            goto unlock_device;
+        }
+        for (i = 0; i < 100; i++) {
+            u8 pwr_mode = 0xFF;
+
+            ret = cts_fw_reg_readb(cts_dev, CTS_DEVICE_FW_REG_POWER_MODE,
+                &pwr_mode);
+            if (ret) {
+                cts_err("Read firmware power mode failed %d(%s)",
+                    ret, cts_strerror(ret));
+            } else {
+                if (pwr_mode == 0) {
+                    goto enable_get_touch_data;
+                }
+            }
+
+            mdelay(10);
+        }
+
+        cts_err("Exit idle mode timeout");
+        ret = -ETIMEDOUT;
+        goto enable_idle_mode;
+    }
+
+enable_get_touch_data:
     for (i = 0; i < 5; i++) {
         int r;
         u8 val;
@@ -2016,6 +2128,19 @@ disable_get_tsdata:
             break;
         }
     }
+
+enable_idle_mode:
+    if (idle_mode_enabled) {
+        cts_info("Re-Enable idle mode");
+        ret = cts_fw_reg_writeb(cts_dev, CTS_DEVICE_FW_REG_FLAG_BITS,
+            idle_mode_reg_val);
+        if (ret) {
+            cts_err("Re-Enable idle mode failed %d(%s)",
+                ret, cts_strerror(ret));
+            goto unlock_device;
+        }
+    }
+
 /* BEGIN Ontim,11/11/2020, 9987208, St-result:PASS, update icnl9911c-hlt self test function. */
 	if (dump_test_date_to_file) {
 		cts_stop_dump_test_data_to_file();
