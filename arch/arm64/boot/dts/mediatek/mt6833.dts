@@ -6474,3 +6474,5 @@
 &mt6360_typec {
 	charger = <&mt_charger>;
 };
+/* Motorola base dts override */
+#include "mediatek/mt6833-moto-base.dtsi"
