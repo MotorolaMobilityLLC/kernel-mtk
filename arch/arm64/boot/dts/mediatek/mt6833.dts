@@ -5944,3 +5944,5 @@ page_owner=on loop.max_part=7";
 #include "mediatek/trusty.dtsi"
 #endif
 #include "mediatek/mt6360_pd.dtsi"
+/* Motorola base dts override */
+#include "mediatek/mt6833-moto-base.dtsi"
