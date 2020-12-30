@@ -111,6 +111,7 @@ static DEFINE_SPINLOCK(config_data_lock);
 static uint8_t scp_system_ready;
 static uint8_t scp_chre_ready;
 static struct mtk_nanohub_device *mtk_nanohub_dev;
+static struct mot_params *motparams;//moto add
 
 static int mtk_nanohub_send_timestamp_to_hub(void);
 static int mtk_nanohub_server_dispatch_data(uint32_t *currWp);
@@ -1851,6 +1852,40 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_OIS, data, length);
 		vfree(data);
 	}
+//moto add restore algo params when scp reboot
+//#ifdef CONFIG_MOTO_CHOPCHOP
+	length = sizeof(struct mot_chopchop);
+	data = vzalloc(length);
+	if (data) {
+		spin_lock(&config_data_lock);
+		memcpy(data, &motparams->chopchop_params, length);
+		spin_unlock(&config_data_lock);
+		mtk_nanohub_cfg_to_hub(ID_CHOPCHOP, data, length);
+		vfree(data);
+	}
+//#endif
+//#ifdef CONFIG_MOTO_GLANCE
+	length = sizeof(struct mot_glance);
+	data = vzalloc(length);
+	if (data) {
+		spin_lock(&config_data_lock);
+		memcpy(data, &motparams->glance_params, length);
+		spin_unlock(&config_data_lock);
+		mtk_nanohub_cfg_to_hub(ID_MOT_GLANCE, data, length);
+		vfree(data);
+	}
+//#endif
+//#ifdef CONFIG_MOTO_LTV
+	length = sizeof(struct mot_ltv);
+	data = vzalloc(length);
+	if (data) {
+		spin_lock(&config_data_lock);
+		memcpy(data, &motparams->ltv_params, length);
+		spin_unlock(&config_data_lock);
+		mtk_nanohub_cfg_to_hub(ID_LTV, data, length);
+		vfree(data);
+	}
+//#endif
 }
 
 static void mtk_nanohub_start_timesync(void)
@@ -2667,10 +2702,43 @@ err_out:
 	return count;
 }
 
-static DRIVER_ATTR_RW(trace);
+#if 1
+static ssize_t algo_params_store(struct device_driver *ddri,
+		const char *buf, size_t count)
+{
+	int err = 0;
+	//SITUATION_PR_ERR("situation_store_params count=%d\n", count);
 
+	memcpy(motparams, buf, sizeof(struct mot_params));
+//#ifdef CONFIG_MOTO_CHOPCHOP
+	err = mtk_nanohub_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&motparams->chopchop_params, sizeof(struct mot_chopchop));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
+//#endif
+//#ifdef CONFIG_MOTO_GLANCE
+	err = mtk_nanohub_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&motparams->glance_params, sizeof(struct mot_glance));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub GLANCE fail\n");
+//#endif
+//#ifdef CONFIG_MOTO_LTV
+	err = mtk_nanohub_cfg_to_hub(ID_LTV, (uint8_t *)&motparams->ltv_params, sizeof(struct mot_ltv));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub LTV fail\n");
+//#endif
+	//SITUATION_PR_ERR("situation_store_params done\n");
+//kfree(motparams);
+	return count;
+}
+#endif
+
+static DRIVER_ATTR_RW(trace);
+//moto add
+//#ifdef CONFIG_MOTO_ALGO_PARAMS
+static DRIVER_ATTR_WO(algo_params);
+//#endif
 static struct driver_attribute *mtk_nanohub_attrs[] = {
 	&driver_attr_trace,
+	&driver_attr_algo_params,//moto add
 };
 
 static int mtk_nanohub_create_attr(struct device_driver *driver)
@@ -2828,6 +2896,8 @@ static int mtk_nanohub_probe(struct platform_device *pdev)
 		pr_err("register PM notifier fail, err:%d\n", err);
 		goto exit_attr;
 	}
+//moto add
+	motparams = kzalloc(sizeof(struct mot_params), GFP_KERNEL);
 
 	pr_info("init done, data_unit_t:%d, SCP_SENSOR_HUB_DATA:%d\n",
 		(int)sizeof(struct data_unit_t),
@@ -2866,6 +2936,7 @@ static int mtk_nanohub_remove(struct platform_device *pdev)
 	scp_ipi_unregistration(IPI_SENSOR);
 	vfree(device->wp_queue.ringbuffer);
 	hf_device_unregister(&device->hf_dev);
+	kfree(motparams); //moto add
 	kfree(device);
 	return 0;
 }
