@@ -521,4 +521,48 @@ union SCP_SENSOR_HUB_DATA {
 	struct SCP_SENSOR_HUB_SET_CUST_RSP set_cust_rsp;
 	struct SCP_SENSOR_HUB_NOTIFY_RSP notify_rsp;
 };
+
+/*moto add for sensor algo params*/
+//#ifdef CONFIG_MOTO_ALGO_PARAMS
+struct mot_chopchop {
+    float max_gyro_rotation;
+    uint32_t max_chop_duration_ms;
+    float first_accel_threshold;
+    float second_accel_threshold;
+    float min_magnitude_percentage;
+    float max_xy_percentage;
+    bool gyroless;
+};
+struct mot_glance {
+    float motion_threshold;
+    uint64_t cool_time;
+    uint16_t gesture_allow;
+    uint64_t uncover_timeout;
+};
+struct mot_ltv {
+    float min_accel_rotation;
+    float accel_fast_alpha;
+    float accel_slow_alpha;
+    uint8_t land_conv_cnt;
+    float min_accel_rotation_wake;
+    float non_accel_rotation_ff;
+    float rearm_non_rotation;
+    float rearm_min_accel_rotation;
+    float rearm_forced_accel_rotation;
+    uint8_t rearm_conv_cnt;
+    float raw_accel_margin;
+};
+struct mot_params {
+//#ifdef CONFIG_MOTO_CHOPCHOP
+	struct mot_chopchop chopchop_params;
+//#endif
+//#ifdef CONFIG_MOTO_GLANCE
+    struct mot_glance glance_params;
+//#endif
+//#ifdef CONFIG_MOTO_LTV
+    struct mot_ltv ltv_params;
+//#endif
+};
+//#endif
+
 #endif
