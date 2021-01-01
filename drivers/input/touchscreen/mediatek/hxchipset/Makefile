@@ -167,3 +167,7 @@ $(src)/Himax_firmware.o: $(src)/Himax_firmware.bin FORCE
 	$(OBJCOPY) --redefine-sym $(ld_array_end_sym)=$(obj_array_end_sym) $(objtree)/$(obj)/Himax_firmware.o
 
 endif
+
+ifneq ($(filter y m, $(CONFIG_TOUCHSCREEN_HIMAX_KD_FLAG)),)
+ccflags-y += -D__LCM_ID_KD_FLAG__
+endif

@@ -1217,8 +1217,15 @@ static int hx83102d_0f_overlay(int ovl_type, int mode)
 	uint8_t send_data[4] = {0};
 	uint8_t recv_data[4] = {0};
 
-	ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME,
-		(*kp_private_ts)->dev);
+	if (1 == g_fw_flag) {
+		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME,(*kp_private_ts)->dev);
+	} else if (2 == g_fw_flag) {
+		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME1,(*kp_private_ts)->dev);
+	} else if (3 == g_fw_flag) {
+		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME2,(*kp_private_ts)->dev);
+	} else {
+		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME,(*kp_private_ts)->dev);
+	}
 	if (ret < 0) {
 		E("%s: request firmware FAIL!!!\n", __func__);
 		return ret;
@@ -1350,7 +1357,15 @@ static int hx83102d_0f_overlay(int ovl_type, int mode)
 
 	/* rescue mechanism */
 	if (count >= 10) {
-		kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME);
+		if (1 == g_fw_flag) {
+			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME);
+		} else if (2 == g_fw_flag) {
+			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME1);
+		} else if (3 == g_fw_flag) {
+			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME2);
+		} else {
+			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME);
+		}
 		kp_g_core_fp->fp_reload_disable(0);
 		if (kp_g_core_fp->_fw_sts_clear != NULL)
 			kp_g_core_fp->_fw_sts_clear();

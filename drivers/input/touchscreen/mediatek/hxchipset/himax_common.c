@@ -958,14 +958,31 @@ static int himax_auto_update_check(void)
 
 	return ret;
 }
-
+int g_fw_flag;
 static int i_get_FW(void)
 {
 	int ret = -1;
 	int result = NO_ERR;
 
-	I("%s: file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-	ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME, private_ts->dev);
+	if (strstr(lcd_info_pr, "hx83102d")) {
+		if (strstr(lcd_info_pr, "truly")){
+			I("%s: file name 1= %s\n", __func__, BOOT_UPGRADE_FWNAME);
+			g_fw_flag = 1;
+			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME, private_ts->dev);
+		} else if (strstr(lcd_info_pr, "kd")) {
+			I("%s: file name 2= %s\n", __func__, BOOT_UPGRADE_FWNAME1);
+			g_fw_flag = 2;
+			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME1, private_ts->dev);
+		} else if (strstr(lcd_info_pr, "kingdly")) {
+			I("%s: file name 3= %s\n", __func__, BOOT_UPGRADE_FWNAME2);
+			g_fw_flag = 3;
+			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME2, private_ts->dev);
+		} else {
+			I("%s: file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+			g_fw_flag = 0;
+			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME, private_ts->dev);
+		}
+	}
 	if (ret < 0) {
 #if defined(__EMBEDDED_FW__)
 		hxfw = &g_embedded_fw;

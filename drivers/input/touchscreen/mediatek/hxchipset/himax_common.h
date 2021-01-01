@@ -59,7 +59,7 @@
 
 /*#define HX_NEW_EVENT_STACK_FORMAT*/
 /*#define HX_BOOT_UPGRADE*/
-/*#define HX_SMART_WAKEUP*/
+#define HX_SMART_WAKEUP
 /*#define HX_GESTURE_TRACK*/
 #define HX_RESUME_SEND_CMD	/*Need to enable on TDDI chipset*/
 /*#define HX_HIGH_SENSE*/
@@ -123,6 +123,8 @@
  */
 #define HX_FIX_TOUCH_INFO
 #define BOOT_UPGRADE_FWNAME "Himax_firmware.bin"
+#define BOOT_UPGRADE_FWNAME1 "Himax_kd_firmware.bin"	//for skw_hx83102d lcm
+#define BOOT_UPGRADE_FWNAME2 "Himax_kingdly_firmware.bin"	//for kingdisplay hx83102d lcm
 #if defined(HX_ZERO_FLASH)
 #define HX_RESUME_SET_FW
 #define HX_UPDATE_FW_FROM_DISPLAY
@@ -130,6 +132,8 @@
 /*Independent threads run the notification chain notification function resume*/
 /*#define HX_CONTAINER_SPEED_UP*/
 #define MPAP_FWNAME "Himax_mpfw.bin"
+#define KD_MPAP_FWNAME "Himax_kd_mpfw.bin"	//for skw_hx83102d lcm
+#define KINGDLY_MPAP_FWNAME "Himax_kingdly_mpfw.bin"	//for kingdisplay hx83102d lcm
 #endif
 #endif
 
@@ -549,6 +553,8 @@ extern uint8_t *wake_event_buffer;
 extern int g_mmi_refcnt;
 extern int *g_inspt_crtra_flag;
 extern uint32_t g_hx_chip_inited;
+extern char lcd_info_pr[256];
+extern int g_fw_flag;
 /*void himax_HW_reset(uint8_t loadconfig,uint8_t int_off);*/
 
 int himax_chip_common_suspend(struct himax_ts_data *ts);

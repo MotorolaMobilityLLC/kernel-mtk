@@ -1637,12 +1637,22 @@ static void himax_mcu_read_FW_ver(void)
 		return;
 	}
 	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-	if (strstr(mtkfb_find_lcm_driver(), "hx83102d") != NULL)
-	{
-		snprintf(lcdname, sizeof(lcdname), "truly-hx83102d");
-		snprintf(vendor_name, sizeof(vendor_name), "truly-hx83102d");
+	if (strstr(mtkfb_find_lcm_driver(), "hx83102d") != NULL) {
+		if (strstr(mtkfb_find_lcm_driver(), "truly") != NULL)
+		{
+			snprintf(lcdname, sizeof(lcdname), "truly-hx83102d");
+			snprintf(vendor_name, sizeof(vendor_name), "truly-hx83102d");
+			snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x67 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
+		} else if (strstr(mtkfb_find_lcm_driver(), "kd") != NULL) {
+			snprintf(lcdname, sizeof(lcdname), "skw-hx83102d");
+			snprintf(vendor_name, sizeof(vendor_name), "skw-hx83102d");
+			snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x64 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
+		} else if (strstr(mtkfb_find_lcm_driver(), "kingdly") != NULL) {
+			snprintf(lcdname, sizeof(lcdname), "kingdly-hx83102d");
+			snprintf(vendor_name, sizeof(vendor_name), "kingdly-hx83102d");
+			snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0xA3 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
+		}
 	}
-	snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x67 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
 #endif
 
 END:
@@ -3648,11 +3658,19 @@ int himax_mcu_0f_operation_dirly(void)
 {
 	int err = NO_ERR, ret;
 	const struct firmware *fw_entry = NULL;
-
-	I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-
-	ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,
-		private_ts->dev);
+	if (1 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
+	} else if (2 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME1);
+		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME1,private_ts->dev);
+	} else if (3 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME2);
+		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME2,private_ts->dev);
+	}else {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
+	}
 	if (ret < 0) {
 #if defined(__EMBEDDED_FW__)
 		fw_entry = &g_embedded_fw;
@@ -3690,11 +3708,19 @@ void himax_mcu_0f_operation(struct work_struct *work)
 {
 	int err = NO_ERR;
 	const struct firmware *fw_entry = NULL;
-
-	I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-
-	err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,
-		private_ts->dev);
+	if (1 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
+	} else if (2 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME1);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME1,private_ts->dev);
+	} else if (3 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME2);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME2,private_ts->dev);
+	} else {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
+	}
 	if (err < 0) {
 #if defined(__EMBEDDED_FW__)
 		fw_entry = &g_embedded_fw;
@@ -4026,11 +4052,19 @@ void himax_mcu_0f_operation_check(int type)
 	int err = NO_ERR;
 	const struct firmware *fw_entry = NULL;
 	/* char *firmware_name = "himax.bin"; */
-
-	I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-
-	err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,
-		private_ts->dev);
+	if (1 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
+	} else if (2 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME1);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME1,private_ts->dev);
+	} else if (3 == g_fw_flag) {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME2);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME2,private_ts->dev);
+	} else {
+		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
+		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
+	}
 	if (err < 0) {
 #if defined(__EMBEDDED_FW__)
 		fw_entry = &g_embedded_fw;
