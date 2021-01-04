@@ -481,7 +481,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 		if (1 == level) {
 			level = 1;
 		} else {
-			level = (level * 8) / 10;
+			level = (level * 230) / 255;
 		}
 	}
 	bl_level[0].para_list[0] = (level & 0xF0)>>4;
