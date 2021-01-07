@@ -1501,6 +1501,10 @@ page_owner=on loop.max_part=7";
 		compatible = "mediatek,goodix-fp";
 	};
 
+	chipone_fp: chipone_fp {
+		compatible = "mediatek,chipone-fingerprint";
+	};
+
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
