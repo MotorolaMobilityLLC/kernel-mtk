@@ -16,3 +16,137 @@
 	mt6360pd,intr_gpio_num = <9>; /* direct defined GPIO num */
 	mt6360pd,intr_gpio = <&pio 9 0x0>;
 };
+
+&pio {
+	fpsensor_spi_cs_en0: fpsensor_spi_cs_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO36__FUNC_SPI5_CSB>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fpsensor_spi_cs_en1: fpsensor_spi_cs_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO36__FUNC_SPI5_CSB>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fpsensor_spi_mi_mode_en0: fpsensor_spi_mi_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO38__FUNC_SPI5_MI>;
+			slew-rate = <0>;
+			bias-pull-down;
+		};
+	};
+	fpsensor_spi_mi_mode_en1: fpsensor_spi_mi_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO38__FUNC_SPI5_MI>;
+			bias-disable;
+		};
+	};
+
+	fpsensor_spi_mo_mode_en0: fpsensor_spi_mo_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_MO>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fpsensor_spi_mo_mode_en1: fpsensor_spi_mo_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_MO>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fpsensor_spi_mclk_mode_en0: fpsensor_spi_mclk_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_SPI5_CLK>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fpsensor_spi_mclk_mode_en1: fpsensor_spi_mclk_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_SPI5_CLK>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fpsensor_finger_rst_mode_en0: fpsensor_finger_rst_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fpsensor_finger_rst_mode_en1: fpsensor_finger_rst_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fpsensor_fp_eint_as_int: fpsensor_eint_as_int {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <0>;
+			bias-disable;
+			input-enable;
+		};
+	};
+
+	fpsensor_fp_eint_in_low: fpsensor_eint_in_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <0>;
+			output-low;
+		};
+	};
+
+	fpsensor_fp_eint_in_float: fpsensor_eint_in_float {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+
+&mt_pmic_vfp_ldo_reg {
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-always-on;
+};
+
+&chipone_fp {
+	interrupt-parent = <&pio>;
+	interrupts = <22 IRQ_TYPE_EDGE_RISING>;
+	debounce = <22 0>;
+	pinctrl-names = "fpsensor_spi_cs_low","fpsensor_spi_cs_high","fpsensor_spi_mi_low","fpsensor_spi_mi_high","fpsensor_spi_mo_low",
+			"fpsensor_spi_mo_high","fpsensor_spi_mclk_low","fpsensor_spi_mclk_high","fpsensor_finger_rst_low",
+			"fpsensor_finger_rst_high","fpsensor_eint_as_int","fpsensor_eint_in_low","fpsensor_eint_in_float";
+	pinctrl-0 = <&fpsensor_spi_cs_en0>;
+	pinctrl-2 = <&fpsensor_spi_cs_en1>;
+	pinctrl-3 = <&fpsensor_spi_mi_mode_en0>;
+	pinctrl-4 = <&fpsensor_spi_mi_mode_en1>;
+	pinctrl-5 = <&fpsensor_spi_mo_mode_en0>;
+	pinctrl-6 = <&fpsensor_spi_mo_mode_en1>;
+	pinctrl-7 = <&fpsensor_spi_mclk_mode_en0>;
+	pinctrl-8 = <&fpsensor_spi_mclk_mode_en1>;
+	pinctrl-9 = <&fpsensor_finger_rst_mode_en0>;
+	pinctrl-10 = <&fpsensor_finger_rst_mode_en1>;
+	pinctrl-13 = <&fpsensor_fp_eint_as_int>;
+	pinctrl-14 = <&fpsensor_fp_eint_in_low>;
+	pinctrl-15 = <&fpsensor_fp_eint_in_float>;
+	status = "okay";
+};
