@@ -2638,6 +2638,33 @@ static void mtk_drm_kms_deinit(struct drm_device *drm)
 	PanelMaster_Deinit();
 }
 
+static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
+		struct drm_file *file_priv)
+{
+	struct panel_param_info *param_info = data;
+	struct mtk_drm_private *private = dev->dev_private;
+	struct drm_crtc *crtc = private->crtc[0];
+	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
+	int ret = 0;
+
+	DDPMSG("%s: set param_idx %d to %d\n", param_info->param_idx, param_info->value);
+
+	switch (param_info->param_idx) {
+		case PARAM_CABC:
+		case PARAM_ACL:
+			ret = mtk_drm_crtc_set_panel_cabc(crtc, param_info->value);
+			break;
+		case PARAM_HBM:
+			if (panel_ext->panel_hbm_mode == HBM_MODE_GPIO)
+				ret = mtk_drm_crtc_set_panel_hbm_gpio(crtc, param_info->value);
+			break;
+		default:
+			DDPMSG("%s: param_idx %d can not supported\n", param_info->param_idx);
+			break;
+	}
+	return ret;
+}
+
 static const struct drm_ioctl_desc mtk_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MTK_GEM_CREATE, mtk_gem_create_ioctl,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
@@ -2720,6 +2747,8 @@ static const struct drm_ioctl_desc mtk_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MTK_HDMI_GET_CAPABILITY, mtk_drm_dp_get_cap,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 #endif
+	DRM_IOCTL_DEF_DRV(SET_PANEL_FEATURE, mtk_drm_ioctl_set_panel_feature,
+			  DRM_UNLOCKED),
 };
 
 #if IS_ENABLED(CONFIG_COMPAT)
@@ -2771,6 +2800,7 @@ static const struct drm_ioctl32_desc mtk_compat_ioctls[] = {
 	DRM_IOCTL32_DEF_DRV(MTK_HDMI_AUDIO_CONFIG, NULL),
 	DRM_IOCTL32_DEF_DRV(MTK_HDMI_GET_CAPABILITY, NULL),
 #endif
+	DRM_IOCTL32_DEF_DRV(SET_PANEL_FEATURE, NULL),
 };
 
 long mtk_drm_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
