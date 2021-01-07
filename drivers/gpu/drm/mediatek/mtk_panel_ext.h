@@ -220,6 +220,12 @@ struct dynamic_fps_params {
 	struct dfps_switch_cmd dfps_cmd_table[MAX_DYN_CMD_NUM];
 };
 
+enum hbm_mode {
+	HBM_MODE_GPIO = 0,
+	HBM_MODE_DCS_ONLY,
+	HBM_MODE_DCS_GPIO,
+};
+
 struct mtk_panel_params {
 	unsigned int pll_clk;
 	unsigned int data_rate;
@@ -260,6 +266,7 @@ struct mtk_panel_params {
 	unsigned int lcm_index;
 	unsigned int wait_sof_before_dec_vfp;
 	unsigned int doze_delay;
+	enum hbm_mode panel_hbm_mode;
 
 	//Settings for LFR Function:
 	unsigned int lfr_enable;
@@ -352,6 +359,10 @@ struct mtk_panel_funcs {
 	void (*hbm_get_state)(struct drm_panel *panel, bool *state);
 	void (*hbm_get_wait_state)(struct drm_panel *panel, bool *wait);
 	bool (*hbm_set_wait_state)(struct drm_panel *panel, bool wait);
+
+	int (*cabc_set_cmdq)(struct drm_panel *panel, void *dsi_drv,
+			    dcs_write_gce cb, void *handle, unsigned int cabc_mode);
+	void (*cabc_get_state)(struct drm_panel *panel, unsigned int *state);
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);

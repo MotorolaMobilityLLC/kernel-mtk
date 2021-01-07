@@ -6707,6 +6707,28 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 		mtk_dsi_LFR_status_check(dsi);
 	}
 		break;
+	case DSI_CABC_SET:
+	{
+		panel_ext = mtk_dsi_get_panel_ext(comp);
+		if (!(panel_ext && panel_ext->funcs &&
+		      panel_ext->funcs->cabc_set_cmdq))
+			break;
+
+		panel_ext->funcs->cabc_set_cmdq(dsi->panel, dsi,
+					       mipi_dsi_dcs_write_gce, handle,
+					       *(unsigned int *)params);
+		break;
+	}
+	case DSI_CABC_GET_STATE:
+	{
+		panel_ext = mtk_dsi_get_panel_ext(comp);
+		if (!(panel_ext && panel_ext->funcs &&
+		      panel_ext->funcs->cabc_get_state))
+			break;
+
+		panel_ext->funcs->cabc_get_state(dsi->panel, (unsigned int *)params);
+		break;
+	}
 
 	default:
 		break;
