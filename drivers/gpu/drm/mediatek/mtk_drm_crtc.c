@@ -973,6 +973,29 @@ int mtk_drm_aod_setbacklight(struct drm_crtc *crtc, unsigned int level)
 	return 0;
 }
 
+int mtk_drm_crtc_set_panel_hbm_gpio(struct drm_crtc *crtc, bool en)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
+	bool state = false;
+
+	if (!(comp && comp->funcs && comp->funcs->io_cmd))
+		return -EINVAL;
+
+	comp->funcs->io_cmd(comp, NULL, DSI_HBM_GET_STATE, &state);
+	if (state == en)
+		return 0;
+
+	if (!(mtk_crtc->enabled)) {
+		DDPINFO("%s: skip, slept\n", __func__);
+		return -EINVAL;
+	}
+
+	comp->funcs->io_cmd(comp, NULL, DSI_HBM_SET, &en);
+	DDPINFO("%s:set LCM hbm en:%d success\n", __func__, en);
+	return 0;
+}
+
 int mtk_drm_crtc_set_panel_hbm(struct drm_crtc *crtc, bool en)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -1058,6 +1081,70 @@ int mtk_drm_crtc_hbm_wait(struct drm_crtc *crtc, bool en)
 
 	wait = false;
 	comp->funcs->io_cmd(comp, NULL, DSI_HBM_SET_WAIT_STATE, &wait);
+
+	return 0;
+}
+
+static void cabc_cmdq_cb(struct cmdq_cb_data data)
+{
+	struct mtk_cmdq_cb_data *cb_data = data.data;
+
+	cmdq_pkt_destroy(cb_data->cmdq_handle);
+	kfree(cb_data);
+}
+
+int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct cmdq_pkt *cmdq_handle;
+	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
+	struct mtk_cmdq_cb_data *cb_data;
+	unsigned int cabc_state;
+
+
+	if (!(mtk_crtc->enabled)) {
+		DDPINFO("Sleep State set backlight stop --crtc not ebable\n");
+		return -EINVAL;
+	}
+
+	if (!(comp && comp->funcs && comp->funcs->io_cmd)) {
+		DDPINFO("%s no output comp\n", __func__);
+		return -EINVAL;
+	}
+
+	comp->funcs->io_cmd(comp, cmdq_handle, DSI_CABC_GET_STATE, &cabc_state);
+	if (cabc_state == cabc_mode) {
+		DDPINFO("%s: the same value, skip!\n", __func__);
+		return 0;
+	}
+
+	cb_data = kmalloc(sizeof(*cb_data), GFP_KERNEL);
+	if (!cb_data) {
+		DDPPR_ERR("cb data creation failed\n");
+		return 0;
+	}
+
+	mtk_drm_idlemgr_kick(__func__, crtc, 0);
+
+	cmdq_handle =
+		cmdq_pkt_create(mtk_crtc->gce_obj.client[CLIENT_DSI_CFG]);
+
+	if (mtk_crtc_with_sub_path(crtc, mtk_crtc->ddp_mode))
+		mtk_crtc_wait_frame_done(mtk_crtc, cmdq_handle,
+			DDP_SECOND_PATH, 0);
+	else
+		mtk_crtc_wait_frame_done(mtk_crtc, cmdq_handle,
+			DDP_FIRST_PATH, 0);
+
+	comp->funcs->io_cmd(comp, cmdq_handle, DSI_CABC_SET, &cabc_mode);
+
+	cb_data->crtc = crtc;
+	cb_data->cmdq_handle = cmdq_handle;
+
+	if (cmdq_pkt_flush_threaded(cmdq_handle, cabc_cmdq_cb, cb_data) < 0)
+		DDPPR_ERR("failed to flush bl_cmdq_cb\n");
+
+	DDPINFO("%s set cabc to %d, success!\n", __func__, cabc_mode);
 
 	return 0;
 }
