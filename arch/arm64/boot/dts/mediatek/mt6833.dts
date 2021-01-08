@@ -1447,7 +1447,7 @@ page_owner=on loop.max_part=7";
 	};
 
 	touch:touch {
-		compatible = "goodix,touch";
+		compatible = "mediatek,touch"; //EKSAIPAN-15,lilianxu.wt,ADD,20210107,TP bringup
 	};
 
 	ap_ccif0@10209000 {

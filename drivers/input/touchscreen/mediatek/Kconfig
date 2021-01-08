@@ -168,4 +168,16 @@ config TOUCHSCREEN_MTK_GT9157
 
 source "drivers/input/touchscreen/mediatek/GT9157/Kconfig"
 
+config TOUCHSCREEN_CHIPONE
+	tristate "Chipone TDDI touchscreen for Mediatek package"
+	depends on SPI
+	default y
+	help
+	  Say y here if you have chipone TDDI touch panel.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called chipone-tddi.
+
 endif
