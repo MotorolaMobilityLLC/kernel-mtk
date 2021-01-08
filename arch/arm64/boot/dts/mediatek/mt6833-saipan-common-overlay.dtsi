@@ -16,7 +16,3 @@
 	mt6360pd,intr_gpio_num = <9>; /* direct defined GPIO num */
 	mt6360pd,intr_gpio = <&pio 9 0x0>;
 };
-
-&msdc1 {
-	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
-};
