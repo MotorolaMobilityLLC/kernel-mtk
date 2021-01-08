@@ -155,3 +155,21 @@
 &msdc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
+
+&sound {
+	mediatek,speaker-codec {
+		sound-dai = <&aw881xx_smartpa>;
+	};
+};
+
+&i2c6 {
+       aw881xx_smartpa: aw881xx_smartpa@34 {
+		compatible = "awinic,aw881xx_smartpa";
+		reg = <0x34>;
+		reset-gpio = <&pio 169 0>;
+		irq-gpio = <&pio 39 0>;
+		monitor-flag = <1>;
+		monitor-timer-val = <30000>;
+		status = "okay";
+	};
+};
