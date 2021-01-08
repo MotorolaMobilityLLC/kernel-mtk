@@ -136,63 +136,8 @@
 	status = "okay";
 };
 
-&dsi0 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	panel1@0 {
-		compatible = "nt35695b,auo,vdo";
-		reg = <0>;
-		pm-enable-gpios = <&pio 136 0>;
-		reset-gpios = <&pio 86 0>;
-		bias-gpios = <&pio 137 0>,
-			<&pio 138 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in1: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-	panel2@0 {
-		compatible = "truly,td4330,vdo";
-		reg = <1>;
-		pm-enable-gpios = <&pio 136 0>;
-		reset-gpios = <&pio 86 0>;
-		bias-gpios = <&pio 137 0>,
-			<&pio 138 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in2: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-	panel3@0 {
-		compatible = "truly,ft8756,vdo";
-		reg = <2>;
-		pm-enable-gpios = <&pio 136 0>;
-		reset-gpios = <&pio 86 0>;
-		bias-gpios = <&pio 137 0>,
-			<&pio 138 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in3: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-	ports {
-		port {
-			dsi_out: endpoint {
-				remote-endpoint = <&panel_in1>;
-			};
-		};
-	};
-};
 #endif
 
-#include "mediatek/cust_mt6833_touch_1080x2300.dtsi"
 /* accdet start */
 &accdet {
 	/* accdet micbias voltage: 0x09:2.85v 0x08:2.8v 0x07,
