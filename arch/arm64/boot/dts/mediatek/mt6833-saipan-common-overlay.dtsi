@@ -12,6 +12,7 @@
 
 #include "mediatek/mt6833-moto-common-overlay.dtsi"
 #include <dt-bindings/mmc/mt6833-msdc.h>
+#include "mediatek/mt6833-saipan-sensor-overlay.dtsi"
 
 &mt6360_typec {
 	mt6360pd,intr_gpio_num = <9>; /* direct defined GPIO num */
