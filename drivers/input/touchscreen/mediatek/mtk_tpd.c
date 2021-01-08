@@ -40,10 +40,9 @@ struct tpd_dts_info tpd_dts_data;
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
 struct pinctrl_state *eint_as_int, *eint_output0,
-		*eint_output1, *rst_output0, *rst_output1;
+		*eint_output1, *rst_output0, *rst_output1, *pin_spi_mode_default;
 const struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,touch", },
-	{ .compatible = "mediatek,mt8167-touch", },
 	{ .compatible = "mediatek,touch-himax", },
 	{ .compatible = "goodix,touch", },
 	{},
@@ -104,6 +103,7 @@ void tpd_get_dts_info(void)
 
 	TPD_DMESG("enter\n");
 	node1 = of_find_matching_node(node1, touch_of_match);
+    TPD_DMESG("node1\n");
 	if (node1) {
 		of_property_read_u32(node1,
 			"tpd-max-touch-num", &tpd_dts_data.touch_max_num);
@@ -229,6 +229,7 @@ void tpd_gpio_output(int pin, int level)
 int tpd_get_gpio_info(struct platform_device *pdev)
 {
 	int ret;
+    int r;
 
 	TPD_DEBUG("[tpd %d] mt_tpd_pinctrl+++++++++++++++++\n", pdev->id);
 	pinctrl1 = devm_pinctrl_get(&pdev->dev);
@@ -278,6 +279,19 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 			return ret;
 		}
 	}
+
+    //+EKSAIPAN-15,lilianxu.wt,ADD,20210107,TP bringup
+    pin_spi_mode_default = pinctrl_lookup_state(pinctrl1, "state_spi_mode");
+	if (IS_ERR(pin_spi_mode_default)) {
+		ret = PTR_ERR(pin_spi_mode_default);
+		TPD_DMESG("Cannot find pinctrl pin_spi_mode_default!\n");
+		return ret;
+	}
+	r = pinctrl_select_state(pinctrl1,pin_spi_mode_default);
+    if (r < 0)
+	    TPD_DMESG("Failed to select default pinstate, r:%d", r);
+    //-EKSAIPAN-15,lilianxu.wt,ADD,20210107,TP bringup
+
 	TPD_DEBUG("[tpd%d] mt_tpd_pinctrl----------\n", pdev->id);
 	return 0;
 }
@@ -697,7 +711,7 @@ static int tpd_probe(struct platform_device *pdev)
 	if (2560 == TPD_RES_X)
 		TPD_RES_X = 2048;
 	if (1600 == TPD_RES_Y)
-		TPD_RES_Y = 1536;
+		TPD_RES_Y = 1600;
 	pr_debug("mtk_tpd: TPD_RES_X = %lu, TPD_RES_Y = %lu\n",
 		TPD_RES_X, TPD_RES_Y);
 

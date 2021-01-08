@@ -236,4 +236,16 @@ config TOUCHSCREEN_GOODIX_GTX8
 
 source "drivers/input/touchscreen/mediatek/goodix-ts-sunrise/Kconfig"
 
+config TOUCHSCREEN_CHIPONE
+	tristate "Chipone TDDI touchscreen for Mediatek package"
+	depends on SPI
+	default y
+	help
+	  Say y here if you have chipone TDDI touch panel.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called chipone-tddi.
+
 endif
