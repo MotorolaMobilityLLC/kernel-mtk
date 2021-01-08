@@ -3024,6 +3024,25 @@
 		io-channels = <&auxadc 2>;
 		io-channel-names = "thermistor-ch2";
 	};
+
+	tboard_thermistor4: thermal-sensor4 {
+		compatible = "mediatek,mtboard-thermistor4";
+		io-channels = <&auxadc 3>;
+		io-channel-names = "thermistor-ch3";
+	};
+
+	tboard_thermistor5: thermal-sensor5 {
+		compatible = "mediatek,mtboard-thermistor5";
+		io-channels = <&auxadc 4>;
+		io-channel-names = "thermistor-ch4";
+	};
+
+	tboard_thermistor7: thermal-sensor7 {
+		compatible = "mediatek,mtboard-thermistor7";
+		io-channels = <&auxadc 6>;
+		io-channel-names = "thermistor-ch6";
+	};
+
 	usb: usb0@11200000 {
 		compatible = "mediatek,mt6833-usb20";
 		reg = <0 0x11200000 0 0x10000>,
