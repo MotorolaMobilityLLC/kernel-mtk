@@ -28,4 +28,4 @@ obj-$(CONFIG_TOUCHSCREEN_GOODIX_BRL) += goodix_berlin_driver/
 obj-$(CONFIG_TOUCHSCREEN_MTK_ILITEK_V3_ILI7806S)	+= ilitek_v3/
 obj-$(CONFIG_TOUCHSCREEN_FT3519)        +=  FT3519/
 obj-$(CONFIG_TOUCHSCREEN_GOODIX_GTX8)    +=  goodix-ts-sunrise/
-
+obj-$(CONFIG_TOUCHSCREEN_CHIPONE) += chipone_tddi/
