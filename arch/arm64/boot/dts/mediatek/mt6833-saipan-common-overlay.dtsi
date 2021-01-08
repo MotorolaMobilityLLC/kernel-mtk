@@ -11,6 +11,7 @@
  */
 
 #include "mediatek/mt6833-moto-common-overlay.dtsi"
+#include <dt-bindings/mmc/mt6833-msdc.h>
 
 &mt6360_typec {
 	mt6360pd,intr_gpio_num = <9>; /* direct defined GPIO num */
@@ -149,4 +150,8 @@
 	pinctrl-14 = <&fpsensor_fp_eint_in_low>;
 	pinctrl-15 = <&fpsensor_fp_eint_in_float>;
 	status = "okay";
+};
+
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
