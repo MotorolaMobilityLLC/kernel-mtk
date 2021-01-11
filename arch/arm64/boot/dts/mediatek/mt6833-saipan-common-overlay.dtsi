@@ -84,7 +84,7 @@
 
 	fpsensor_finger_rst_mode_en0: fpsensor_finger_rst_low {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -92,7 +92,7 @@
 
 	fpsensor_finger_rst_mode_en1: fpsensor_finger_rst_high {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -100,7 +100,7 @@
 
 	fpsensor_fp_eint_as_int: fpsensor_eint_as_int {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
 			slew-rate = <0>;
 			bias-disable;
 			input-enable;
@@ -109,7 +109,7 @@
 
 	fpsensor_fp_eint_in_low: fpsensor_eint_in_low {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
 			slew-rate = <0>;
 			output-low;
 		};
@@ -117,7 +117,7 @@
 
 	fpsensor_fp_eint_in_float: fpsensor_eint_in_float {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
 			slew-rate = <0>;
 			bias-disable;
 		};
@@ -132,24 +132,24 @@
 
 &chipone_fp {
 	interrupt-parent = <&pio>;
-	interrupts = <22 IRQ_TYPE_EDGE_RISING>;
-	debounce = <22 0>;
+	interrupts = <11 IRQ_TYPE_EDGE_RISING>;
+	debounce = <11 0>;
 	pinctrl-names = "fpsensor_spi_cs_low","fpsensor_spi_cs_high","fpsensor_spi_mi_low","fpsensor_spi_mi_high","fpsensor_spi_mo_low",
 			"fpsensor_spi_mo_high","fpsensor_spi_mclk_low","fpsensor_spi_mclk_high","fpsensor_finger_rst_low",
 			"fpsensor_finger_rst_high","fpsensor_eint_as_int","fpsensor_eint_in_low","fpsensor_eint_in_float";
 	pinctrl-0 = <&fpsensor_spi_cs_en0>;
-	pinctrl-2 = <&fpsensor_spi_cs_en1>;
-	pinctrl-3 = <&fpsensor_spi_mi_mode_en0>;
-	pinctrl-4 = <&fpsensor_spi_mi_mode_en1>;
-	pinctrl-5 = <&fpsensor_spi_mo_mode_en0>;
-	pinctrl-6 = <&fpsensor_spi_mo_mode_en1>;
-	pinctrl-7 = <&fpsensor_spi_mclk_mode_en0>;
-	pinctrl-8 = <&fpsensor_spi_mclk_mode_en1>;
-	pinctrl-9 = <&fpsensor_finger_rst_mode_en0>;
-	pinctrl-10 = <&fpsensor_finger_rst_mode_en1>;
-	pinctrl-13 = <&fpsensor_fp_eint_as_int>;
-	pinctrl-14 = <&fpsensor_fp_eint_in_low>;
-	pinctrl-15 = <&fpsensor_fp_eint_in_float>;
+	pinctrl-1 = <&fpsensor_spi_cs_en1>;
+	pinctrl-2 = <&fpsensor_spi_mi_mode_en0>;
+	pinctrl-3 = <&fpsensor_spi_mi_mode_en1>;
+	pinctrl-4 = <&fpsensor_spi_mo_mode_en0>;
+	pinctrl-5 = <&fpsensor_spi_mo_mode_en1>;
+	pinctrl-6 = <&fpsensor_spi_mclk_mode_en0>;
+	pinctrl-7 = <&fpsensor_spi_mclk_mode_en1>;
+	pinctrl-8 = <&fpsensor_finger_rst_mode_en0>;
+	pinctrl-9 = <&fpsensor_finger_rst_mode_en1>;
+	pinctrl-10 = <&fpsensor_fp_eint_as_int>;
+	pinctrl-11 = <&fpsensor_fp_eint_in_low>;
+	pinctrl-12 = <&fpsensor_fp_eint_in_float>;
 	status = "okay";
 };
 
