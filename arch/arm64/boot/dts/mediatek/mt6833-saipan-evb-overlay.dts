@@ -56,5 +56,36 @@
 	};
 };
 
+&pio {
+	fpsensor_finger_rst_mode_en0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
+		};
+	};
+
+	fpsensor_finger_rst_mode_en1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
+		};
+	};
+
+	fpsensor_fp_eint_as_int {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+		};
+	};
+
+	fpsensor_fp_eint_in_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+		};
+	};
+};
+
+&chipone_fp {
+	interrupts = <18 IRQ_TYPE_EDGE_RISING>;
+	debounce = <18 0>;
+};
+
 #include <saipan_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
