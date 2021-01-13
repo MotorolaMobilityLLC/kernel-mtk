@@ -1876,7 +1876,7 @@
 	};
 
 	touch:touch {
-		compatible = "mediatek,touch"; //EKSAIPAN-15,lilianxu.wt,ADD,20210107,TP bringup
+		compatible = "goodix,touch";
 	};
 
 	ap_ccif0@10209000 {

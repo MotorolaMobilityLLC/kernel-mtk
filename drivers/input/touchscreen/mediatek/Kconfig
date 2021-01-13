@@ -239,7 +239,7 @@ source "drivers/input/touchscreen/mediatek/goodix-ts-sunrise/Kconfig"
 config TOUCHSCREEN_CHIPONE
 	tristate "Chipone TDDI touchscreen for Mediatek package"
 	depends on SPI
-	default y
+	default n
 	help
 	  Say y here if you have chipone TDDI touch panel.
 
