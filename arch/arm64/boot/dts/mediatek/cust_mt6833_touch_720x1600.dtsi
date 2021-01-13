@@ -87,11 +87,19 @@
 &spi4 {
    #address-cells = <1>;
    #size-cells = <0>;
-	fts_touch_mtk:fts_touch@0{
+	chipone_tddi@0 {
 		compatible = "chipone-tddi";
-                spi-max-frequency = <10000000>;
-                reg = <0x0>;
-                status = "okay";
-        };
+		reg = <0x0>;
+		spi-max-frequency = <4800000>;
+		interrupt-parent = <&pio>;
+		interrupts = <14 0x2008>;
+		chipone,rst-gpio = <&pio 15 0x00>;
+		chipone,irq-gpio = <&pio 14 0x2008>;
+		chipone,x-res = <720>;
+		chipone,y-res = <1600>;
+		chipone,def-build-id = <0x0101>;
+		chipone,def-config-id = <0x0001>;
+		status = "ok";
+	};
 };
 /* TOUCH end */
