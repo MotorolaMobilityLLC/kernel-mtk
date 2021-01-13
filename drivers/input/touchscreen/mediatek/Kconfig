@@ -171,7 +171,7 @@ source "drivers/input/touchscreen/mediatek/GT9157/Kconfig"
 config TOUCHSCREEN_CHIPONE
 	tristate "Chipone TDDI touchscreen for Mediatek package"
 	depends on SPI
-	default y
+	default n
 	help
 	  Say y here if you have chipone TDDI touch panel.
 
