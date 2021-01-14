@@ -27,34 +27,5 @@
 	};
 };
 
-&dsi0 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-    //+EKSAIPAN-15,lilianxu.wt,ADD,20210107,LCD bringup
-    panel1@0 {
-		compatible = "icnl9911c,lide,vdo";
-		reg = <0>;
-		//pm-enable-gpios = <&pio 136 0>;
-		reset-gpios = <&pio 86 0>;
-		bias-gpios = <&pio 137 0>,
-			<&pio 138 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in1: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-    //-EKSAIPAN-15,lilianxu.wt,ADD,20210107,LCD bringup
-	ports {
-		port {
-			dsi_out: endpoint {
-				remote-endpoint = <&panel_in1>;
-			};
-		};
-	};
-};
-
 #include <saipan_evt/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
