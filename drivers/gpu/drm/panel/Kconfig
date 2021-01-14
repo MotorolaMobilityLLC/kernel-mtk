@@ -752,3 +752,14 @@ config DRM_RT4831A_I2C
 	depends on OF
 	help
 	  Say Y here if you want to enable support for rt4831a.
+
+config DRM_PANEL_TRULY_ICNL9911C_VDO
+	tristate "truly HD+ vdo mode panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for TRULY ICNL9911C VDO
+	  mode HD Plus panel. The panel has a 720x1600 resolution
+	  and uses 24-bits RGB per pixel. It provides a MIPI DSI interface
+	  to host.
