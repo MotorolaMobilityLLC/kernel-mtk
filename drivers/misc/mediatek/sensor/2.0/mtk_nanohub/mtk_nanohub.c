@@ -87,7 +87,7 @@ struct mtk_nanohub_device {
 	int32_t acc_config_data[6];
 	int32_t gyro_config_data[12];
 	int32_t mag_config_data[9];
-	int32_t light_config_data[1];
+	int32_t light_config_data[2];//moto
 	int32_t proximity_config_data[2];
 	int32_t pressure_config_data[2];
 	int32_t sar_config_data[4];
@@ -2102,6 +2102,7 @@ static int mtk_nanohub_config(struct hf_device *hfdev,
 		spin_lock(&config_data_lock);
 		memcpy(device->light_config_data, data, length);
 		spin_unlock(&config_data_lock);
+		pr_err("oscar cfg %d %d\n", __func__, device->light_config_data[0],device->light_config_data[1]);
 		break;
 	case ID_PROXIMITY:
 		if (sizeof(device->proximity_config_data) < length)
@@ -2136,6 +2137,7 @@ static int mtk_nanohub_config(struct hf_device *hfdev,
 		pr_err("%s type(%d) length fail\n", __func__, sensor_type);
 		return 0;
 	}
+
 	return mtk_nanohub_cfg_to_hub(type_to_id(sensor_type),
 		(uint8_t *)data, length);
 }
@@ -2515,6 +2517,9 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			event.sensor_type = id_to_type(data->sensor_type);
 			event.action = data->flush_action;
 			event.word[0] = data->data[0];
+			event.word[1] = data->data[1];//moto add
+			event.word[2] = data->data[2];
+			pr_err("oscar kernel light read: %d %d %d\n", event.word[0], event.word[1], event.word[2]);
 			break;
 		case ID_PRESSURE:
 			event.timestamp = data->time_stamp;
@@ -2725,6 +2730,10 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub LTV fail\n");
 //#endif
+	err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->als_cali, sizeof(struct als_cal));
+	pr_err("sensor_cfg_to_hub light type8 %d scale %d\n",motparams->als_cali.alscfg, (uint32_t)(motparams->als_cali.light_scale*1000));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub LTV fail\n");
 	//SITUATION_PR_ERR("situation_store_params done\n");
 //kfree(motparams);
 	return count;
