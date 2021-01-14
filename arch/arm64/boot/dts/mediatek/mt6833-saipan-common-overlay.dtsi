@@ -130,6 +130,18 @@
 	regulator-always-on;
 };
 
+&spi5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	fingerprint@0 {
+		status = "okay";
+		compatible = "mediatek,fingerprintchipone";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		netlink-event = <30>;
+	};
+};
+
 &chipone_fp {
 	interrupt-parent = <&pio>;
 	interrupts = <11 IRQ_TYPE_EDGE_RISING>;
