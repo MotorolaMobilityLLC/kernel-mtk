@@ -560,6 +560,13 @@ struct mot_ltv {
     uint8_t rearm_conv_cnt;
     float raw_accel_margin;
 };
+
+struct als_cal {
+	uint32_t alscfg;
+    float hascali;
+    float light_scale;
+    float target_lux;
+};
 struct mot_params {
 //#ifdef CONFIG_MOTO_CHOPCHOP
 	struct mot_chopchop chopchop_params;
@@ -570,6 +577,7 @@ struct mot_params {
 //#ifdef CONFIG_MOTO_LTV
     struct mot_ltv ltv_params;
 //#endif
+    struct als_cal als_cali;
 };
 //#endif
 
