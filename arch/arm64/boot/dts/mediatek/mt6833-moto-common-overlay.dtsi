@@ -16,6 +16,7 @@
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #include <dt-bindings/pinctrl/mt6833-pinfunc.h>
 #endif
+#include "mediatek/carrier-channel-ids.dtsi"
 
 &odm {
 	utags {
