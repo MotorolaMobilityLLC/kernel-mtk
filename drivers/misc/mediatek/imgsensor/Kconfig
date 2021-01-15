@@ -7,6 +7,11 @@ config MTK_IMGSENSOR
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
+config CAMERA_DVDD_SWITCH
+	default n
+	bool "Use to distinguish camera config for saipan"
+	help
+	    Use to Use to distinguish camera config for saipan
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
 
 config ARCH_MOTO_PROJECT
