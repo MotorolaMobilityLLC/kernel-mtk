@@ -4,4 +4,9 @@ config MTK_IMGSENSOR
 	help
 	  CONFIG_MTK_IMGSENSOR
 
+config CAMERA_DVDD_SWITCH
+	default n
+	bool "Use to distinguish camera config for saipan"
+	help
+	    Use to Use to distinguish camera config for saipan
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
