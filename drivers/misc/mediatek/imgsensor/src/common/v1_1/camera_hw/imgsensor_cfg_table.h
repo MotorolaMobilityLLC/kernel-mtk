@@ -31,6 +31,12 @@ enum IMGSENSOR_HW_PIN {
 	IMGSENSOR_HW_PIN_AVDD,
 	IMGSENSOR_HW_PIN_DVDD,
 	IMGSENSOR_HW_PIN_DOVDD,
+#ifdef CONFIG_CAMERA_DVDD_SWITCH
+	//+EKSAIPAN,add it for saipan main and front camera bringup
+	IMGSENSOR_HW_PIN_DVDD_1V1,
+	IMGSENSOR_HW_PIN_DVDD_1V2,
+	//-EKSAIPAN,add it for saipan main and front camera bringup
+#endif
 #ifdef MIPI_SWITCH
 	IMGSENSOR_HW_PIN_MIPI_SWITCH_EN,
 	IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL,
@@ -65,6 +71,12 @@ enum IMGSENSOR_HW_PIN_STATE {
 #define AVDD        IMGSENSOR_HW_PIN_AVDD
 #define DVDD        IMGSENSOR_HW_PIN_DVDD
 #define DOVDD       IMGSENSOR_HW_PIN_DOVDD
+#ifdef CONFIG_CAMERA_DVDD_SWITCH
+//+EKSAIPAN,add it for saipan main and front camera bringup
+#define DVDD_1V1    IMGSENSOR_HW_PIN_DVDD_1V1
+#define DVDD_1V2    IMGSENSOR_HW_PIN_DVDD_1V2
+//-EKSAIPAN,add it for saipan main and front camera bringup
+#endif
 #define VDD_None    IMGSENSOR_HW_PIN_NONE
 
 	/* For backward compatible */
