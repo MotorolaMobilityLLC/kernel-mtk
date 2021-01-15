@@ -245,6 +245,14 @@
 	mmi,vfloat-comp-uv = <20000>;
 };
 
+&bat_gm30 {
+	EMBEDDED_SEL = <(1)>;	/* embedded battery.*/
+	DIFFERENCE_FULLOCV_ITH = <(244)>;	/*Charging termination current.*/
+
+	df-serialnum = "SB18C51711";
+	#include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
+};
+
 &led6 {
 	led_mode = <4>;
 };
