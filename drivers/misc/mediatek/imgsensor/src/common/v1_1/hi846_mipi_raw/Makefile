@@ -1,0 +1,1 @@
+obj-y += hi846_mipiraw_Sensor.o
