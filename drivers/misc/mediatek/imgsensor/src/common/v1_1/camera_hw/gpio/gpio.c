@@ -22,6 +22,14 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcamd_0"},
 	{"ldo_vcamio_1"},
 	{"ldo_vcamio_0"},
+#ifdef CONFIG_CAMERA_DVDD_SWITCH
+	//+EKSAIPANM,add it for saipan main and front camera bringup
+	{"ldo_vcamd_1v1_1"},
+	{"ldo_vcamd_1v1_0"},
+	{"ldo_vcamd_1v2_1"},
+	{"ldo_vcamd_1v2_0"},
+	//-EKSAIPAN,add it for saipan main and front camera bringup
+#endif
 };
 
 #ifdef MIPI_SWITCH
