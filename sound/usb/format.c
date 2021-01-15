@@ -209,6 +209,10 @@ static int parse_audio_format_rates_v1(struct snd_usb_audio *chip, struct audiof
 			    chip->usb_id == USB_ID(0x12d1, 0x3a07) &&
 			    le16_to_cpu(udev->descriptor.bcdDevice) == 0x49)
 				continue;
+			/* AudioBox 22 VSL */
+			if (rate > 48000 &&
+			    (chip->usb_id == USB_ID(0x194f, 0x0101)))
+				continue;
 
 			fp->rate_table[fp->nr_rates] = rate;
 			if (!fp->rate_min || rate < fp->rate_min)

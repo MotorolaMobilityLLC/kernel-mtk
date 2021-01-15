@@ -179,7 +179,7 @@ u32 dma_channel_setting, qmu_ioc_setting;
 int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
 int isoc_ep_end_idx = 3;
-int isoc_ep_gpd_count = 260;
+int isoc_ep_gpd_count = 550;
 module_param(mtk_qmu_dbg_level, int, 0644);
 module_param(mtk_qmu_max_gpd_num, int, 0644);
 module_param(isoc_ep_end_idx, int, 0644);
@@ -2140,7 +2140,7 @@ irqreturn_t musb_interrupt(struct musb *musb)
 				static DEFINE_RATELIMIT_STATE(rlmt, HZ, 2);
 				static int skip_cnt;
 
-				if (host_tx_refcnt_dec(ep_num) < 0) {
+				if (musb_host_db_enable && host_tx_refcnt_dec(ep_num) < 0) {
 					int ref_cnt;
 
 					musb_host_db_workaround_cnt++;
