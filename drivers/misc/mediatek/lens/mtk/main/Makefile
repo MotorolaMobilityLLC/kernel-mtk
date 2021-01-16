@@ -43,6 +43,7 @@ else
 obj-$(CONFIG_MTK_LENS)    += mainaf.o
 
 mainaf-y  += main_lens.o
+mainaf-y  += common/cn3938aaf/CN3938AAF.o
 mainaf-y  += common/fp5510e2af/FP5510E2AF.o
 mainaf-y  += common/bu6424af/BU6424AF.o
 mainaf-y  += common/bu6429af/BU6429AF.o
