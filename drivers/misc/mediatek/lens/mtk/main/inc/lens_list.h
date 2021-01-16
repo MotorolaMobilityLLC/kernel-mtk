@@ -12,6 +12,20 @@
 
 extern void MAIN2AF_PowerDown(void);
 
+#define CN3938AAF_SetI2Cclient CN3938AAF_SetI2Cclient_Main
+#define CN3938AAF_Ioctl CN3938AAF_Ioctl_Main
+#define CN3938AAF_Release CN3938AAF_Release_Main
+#define CN3938AAF_PowerDown CN3938AAF_PowerDown_Main
+#define CN3938AAF_GetFileName CN3938AAF_GetFileName_Main
+extern int CN3938AAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long CN3938AAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int CN3938AAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int CN3938AAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int CN3938AAF_GetFileName(unsigned char *pFileName);
+
 #define AK7371AF_SetI2Cclient AK7371AF_SetI2Cclient_Main
 #define AK7371AF_Ioctl AK7371AF_Ioctl_Main
 #define AK7371AF_Release AK7371AF_Release_Main
