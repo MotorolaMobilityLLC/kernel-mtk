@@ -159,28 +159,28 @@
 	};
 	camera_pins_cam4_vcamd_0: cam4@vcam0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO93__FUNC_GPIO93>;
+			pinmux = <PINMUX_GPIO94__FUNC_GPIO94>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam4_vcamd_1: cam4@vcam1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO93__FUNC_GPIO93>;
+			pinmux = <PINMUX_GPIO94__FUNC_GPIO94>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam4_vcama_0: cam4@vcam2 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO80__FUNC_GPIO80>;
+			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam4_vcama_1: cam4@vcam3 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO80__FUNC_GPIO80>;
+			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -277,31 +277,31 @@
 	};
 	camera_pins_cam4_mclk_off: camera_pins_cam4_mclk_off {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO52__FUNC_GPIO52>;
+			pinmux = <PINMUX_GPIO51__FUNC_GPIO51>;
 			drive-strength = <1>;
 		};
 	};
 	camera_pins_cam4_mclk_2ma: camera_pins_cam4_mclk_2ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO52__FUNC_CMMCLK3>;
+			pinmux = <PINMUX_GPIO51__FUNC_CMMCLK2>;
 			drive-strength = <0>;
 		};
 	};
 	camera_pins_cam4_mclk_4ma: camera_pins_cam4_mclk_4ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO52__FUNC_CMMCLK3>;
+			pinmux = <PINMUX_GPIO51__FUNC_CMMCLK2>;
 			drive-strength = <1>;
 		};
 	};
 	camera_pins_cam4_mclk_6ma: camera_pins_cam4_mclk_6ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO52__FUNC_CMMCLK3>;
+			pinmux = <PINMUX_GPIO51__FUNC_CMMCLK2>;
 			drive-strength = <2>;
 		};
 	};
 	camera_pins_cam4_mclk_8ma: camera_pins_cam4_mclk_8ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO52__FUNC_CMMCLK3>;
+			pinmux = <PINMUX_GPIO51__FUNC_CMMCLK2>;
 			drive-strength = <3>;
 		};
 	};
@@ -395,9 +395,7 @@
 			"cam0_ldo_vcamd_1v1_0","cam0_ldo_vcamd_1v1_1",
 			"cam0_ldo_vcamd_1v2_0","cam0_ldo_vcamd_1v2_1",
 			"cam1_ldo_vcamd_1v1_0","cam1_ldo_vcamd_1v1_1",
-			"cam1_ldo_vcamd_1v2_0","cam1_ldo_vcamd_1v2_1",
-			"cam4_ldo_vcamd_1v1_0","cam4_ldo_vcamd_1v1_1",
-			"cam4_ldo_vcamd_1v2_0","cam4_ldo_vcamd_1v2_1";
+			"cam1_ldo_vcamd_1v2_0","cam1_ldo_vcamd_1v2_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
