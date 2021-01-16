@@ -563,10 +563,20 @@ struct mot_ltv {
 
 struct als_cal {
 	uint32_t alscfg;
-    float hascali;
+    uint8_t hascali;
     float light_scale;
     float target_lux;
 };
+
+struct ps_cal {
+    uint32_t pscfg;
+    uint8_t  hascali;
+    uint32_t ps_cover;
+    uint32_t ps_uncover;
+    uint32_t ps_high_thresold;
+    uint32_t ps_low_thresold;
+};
+
 struct mot_params {
 //#ifdef CONFIG_MOTO_CHOPCHOP
 	struct mot_chopchop chopchop_params;
@@ -578,6 +588,7 @@ struct mot_params {
     struct mot_ltv ltv_params;
 //#endif
     struct als_cal als_cali;
+    struct ps_cal ps_cali;
 };
 //#endif
 
