@@ -88,7 +88,7 @@ struct mtk_nanohub_device {
 	int32_t gyro_config_data[12];
 	int32_t mag_config_data[9];
 	int32_t light_config_data[2];//moto
-	int32_t proximity_config_data[2];
+	int32_t proximity_config_data[3];
 	int32_t pressure_config_data[2];
 	int32_t sar_config_data[4];
 	int32_t ois_config_data[2];
@@ -2102,13 +2102,14 @@ static int mtk_nanohub_config(struct hf_device *hfdev,
 		spin_lock(&config_data_lock);
 		memcpy(device->light_config_data, data, length);
 		spin_unlock(&config_data_lock);
-		pr_err("oscar cfg %d %d\n", __func__, device->light_config_data[0],device->light_config_data[1]);
+		pr_err("oscar als cfg %s %d %d\n", __func__, device->light_config_data[0],device->light_config_data[1]);
 		break;
 	case ID_PROXIMITY:
 		if (sizeof(device->proximity_config_data) < length)
 			length = sizeof(device->proximity_config_data);
 		spin_lock(&config_data_lock);
 		memcpy(device->proximity_config_data, data, length);
+	    pr_err("oscar ps cfg %s %d %d %d\n", __func__, device->proximity_config_data[0],device->proximity_config_data[1],device->proximity_config_data[2]);
 		spin_unlock(&config_data_lock);
 		break;
 	case ID_PRESSURE:
@@ -2511,6 +2512,8 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			event.action = data->flush_action;
 			event.word[0] = data->data[0];
 			event.word[1] = data->data[1];
+			event.word[2] = data->data[2];//moto add
+			pr_err("oscar kernel proximity read: %d %d %d\n", event.word[0], event.word[1], event.word[2]);
 			break;
 		case ID_LIGHT:
 			event.timestamp = data->time_stamp;
@@ -2734,6 +2737,10 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	pr_err("sensor_cfg_to_hub light type8 %d scale %d\n",motparams->als_cali.alscfg, (uint32_t)(motparams->als_cali.light_scale*1000));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub LTV fail\n");
+
+	err = mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->ps_cali, sizeof(struct ps_cal));
+	pr_err("sensor_cfg_to_hub proximity type %d cover %d\n",motparams->ps_cali.pscfg, motparams->ps_cali.ps_cover);
+
 	//SITUATION_PR_ERR("situation_store_params done\n");
 //kfree(motparams);
 	return count;
