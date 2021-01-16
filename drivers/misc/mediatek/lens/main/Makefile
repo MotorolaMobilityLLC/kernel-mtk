@@ -83,6 +83,7 @@ mainaf-objs := $(MAIN_CFILES:.c=.o)
 else
 
 obj-y  += main_lens.o
+obj-y  += common/cn3938aaf/
 obj-y  += common/fp5510e2af/
 obj-y  += common/bu6424af/
 obj-y  += common/bu6429af/

@@ -88,6 +88,9 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	{1, AFDRV_CN3938AAF, CN3938AAF_SetI2Cclient, CN3938AAF_Ioctl,
+	 CN3938AAF_Release, CN3938AAF_GetFileName, NULL},
+	 #if 0
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
@@ -149,6 +152,7 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	 LC898122AF_Release, LC898122AF_GetFileName, NULL},
 	{1, AFDRV_WV511AAF, WV511AAF_SetI2Cclient, WV511AAF_Ioctl,
 	 WV511AAF_Release, WV511AAF_GetFileName, NULL},
+	 #endif
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -297,8 +301,8 @@ static void AFRegulatorCtrl(int Stage)
 					LOG_INF("regulator_get(%s)\n", "mt6317-ldo3");
 					#else
 					regVCAMAF =
-					regulator_get(lens_device, "vcamio");
-					LOG_INF("regulator_get(%s)\n", "vcamio");
+					regulator_get(lens_device, "vtp");
+					LOG_INF("regulator_get(%s)\n", "vtp");
 					#endif
 				}
 				#elif defined(CONFIG_MACH_MT6853)
