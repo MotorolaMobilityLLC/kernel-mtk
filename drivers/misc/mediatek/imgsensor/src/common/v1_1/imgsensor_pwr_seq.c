@@ -75,6 +75,18 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(GC02M1_MIPI_RAW)
+       {
+               SENSOR_DRVNAME_GC02M1_MIPI_RAW,
+               {
+                       {RST, Vol_Low, 15},
+                       {DOVDD, Vol_1800, 1},
+                       {AVDD, Vol_2800, 1},
+                       {RST, Vol_High, 1},
+                       {SensorMCLK, Vol_High, 1}
+               },
+       },
+#endif
 //-EKSAIPAN,add it for saipan main and front camera bringup
 #endif
 #if defined(S5KJD1_MIPI_RAW)
