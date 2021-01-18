@@ -2733,13 +2733,13 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub LTV fail\n");
 //#endif
-	err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->als_cali, sizeof(struct als_cal));
-	pr_err("sensor_cfg_to_hub light type8 %d scale %d\n",motparams->als_cali.alscfg, (uint32_t)(motparams->als_cali.light_scale*1000));
+	err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->alscustom, sizeof(struct als_custom));
+	pr_err("sensor_cfg_to_hub light type8 %d scale %d\n",motparams->alscustom.als_cali.alscfg, (uint32_t)(motparams->alscustom.als_cali.light_scale*1000));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub LTV fail\n");
 
-	err = mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->ps_cali, sizeof(struct ps_cal));
-	pr_err("sensor_cfg_to_hub proximity type %d cover %d\n",motparams->ps_cali.pscfg, motparams->ps_cali.ps_cover);
+	err = mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->pscustom, sizeof(struct ps_custom));
+	pr_err("sensor_cfg_to_hub proximity type %d cover %d\n",motparams->pscustom.ps_cali.pscfg, motparams->pscustom.ps_cali.ps_cover);
 
 	//SITUATION_PR_ERR("situation_store_params done\n");
 //kfree(motparams);
