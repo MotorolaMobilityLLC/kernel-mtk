@@ -569,6 +569,61 @@ struct ps_cal {
     uint32_t ps_low_thresold;
 };
 
+struct alsparams {
+    uint32_t als_offset;
+    uint32_t ratio_c;
+    uint32_t ratio_d;
+    uint32_t ratio_a;
+    float window_c;
+    float window_d;
+    float window_a;
+    float window_h;
+    uint32_t min_c_data;
+    uint32_t min_g_data;
+    uint32_t max_als_data;
+    uint32_t min_als_data;
+    uint32_t ratio_h;
+    float scale;
+    float default_scale;
+    uint32_t target_lux;
+};
+
+struct psparams
+{
+    uint8_t wait;
+    uint8_t prst_ps;
+    uint8_t gain_ps;
+    uint8_t gain_ps_dx16;
+    uint8_t it_ps;
+    uint8_t irdr_led;
+    uint8_t prst_als;
+    uint8_t gain_als;
+    uint8_t gain_als_dx128;
+    uint8_t gain_c;
+    uint8_t gain_c_dx128;
+    uint8_t it_als;
+    uint32_t near_threshold;
+    uint32_t far_threshold;
+    uint32_t default_near_threshold;
+    uint32_t default_far_threshold;
+    uint32_t cover;
+    uint32_t uncover;
+    uint32_t default_cover;
+    uint32_t default_uncover;
+    float high_coeff;
+    float low_coeff;
+};
+
+struct als_custom {
+    struct als_cal als_cali;
+    struct alsparams als_params;
+};
+
+struct ps_custom {
+    struct ps_cal ps_cali;
+    struct psparams ps_params;
+};
+
 struct mot_params {
 //#ifdef CONFIG_MOTO_CHOPCHOP
 	struct mot_chopchop chopchop_params;
@@ -579,8 +634,10 @@ struct mot_params {
 //#ifdef CONFIG_MOTO_LTV
     struct mot_ltv ltv_params;
 //#endif
-    struct als_cal als_cali;
-    struct ps_cal ps_cali;
+    struct als_custom alscustom;
+
+    struct ps_custom pscustom;
+
 };
 //#endif
 
