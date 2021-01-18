@@ -39,14 +39,14 @@
 #define hx83102d_adr_osc_en               0x9000009C
 #define hx83102d_adr_osc_pw               0x90000280
 #define hx83102d_data_adc_num             48
-#define hx83102d_notouch_frame            2
+#define hx83102d_notouch_frame            0
 
 #define hx83102e_fw_addr_raw_out_sel 0x100072EC
 #define hx83102e_ic_adr_tcon_rst     0x80020004
 #define hx83102e_data_df_rx          48
 #define hx83102e_data_df_tx          30
 #define hx83102e_data_adc_num        100
-#define hx83102e_notouch_frame            2
+#define hx83102e_notouch_frame            0
 
 #if defined(HX_EXCP_RECOVERY)
 extern u8 HX_EXCP_RESET_ACTIVATE;

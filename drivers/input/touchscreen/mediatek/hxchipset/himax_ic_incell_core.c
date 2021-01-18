@@ -16,6 +16,17 @@
 #include "himax_ic_core.h"
 #ifdef ONTIM_DEV_HIMAX_INFO
 #include <ontim/ontim_dev_dgb.h>
+static char version[30]="unknown";
+static char vendor_name[30]="unknown";
+static char lcdname[30]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
 #endif
 
 struct himax_core_command_operation *g_core_cmd_op;
@@ -40,32 +51,21 @@ uint8_t *ovl_idx;
 EXPORT_SYMBOL(ovl_idx);
 #endif
 #endif
+extern char *normal_fw;
 #define Arr4_to_Arr4(A, B) {\
 	A[3] = B[3];\
 	A[2] = B[2];\
 	A[1] = B[1];\
 	A[0] = B[0];\
 	}
+
+int HX_TOUCH_INFO_POINT_CNT;
+
 void (*himax_mcu_cmd_struct_free)(void);
 static uint8_t *g_internal_buffer;
 uint32_t dbg_reg_ary[4] = {fw_addr_fw_dbg_msg_addr, fw_addr_chk_fw_status,
 	fw_addr_chk_dd_status, fw_addr_flag_reset_event};
 
-#ifdef ONTIM_DEV_HIMAX_INFO
-extern char *mtkfb_find_lcm_driver(void);
-
-static char version[30]="unknown";
-static char vendor_name[30]="unknown";
-static char lcdname[30]="unknown";
-
-DEV_ATTR_DECLARE(touch_screen)
-DEV_ATTR_DEFINE("version",version)
-DEV_ATTR_DEFINE("vendor",vendor_name)
-DEV_ATTR_DEFINE("lcdvendor",lcdname)
-DEV_ATTR_DECLARE_END;
-
-ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
-#endif
 /* CORE_IC */
 /* IC side start*/
 static void himax_mcu_burst_enable(uint8_t auto_add_4_byte)
@@ -299,28 +299,26 @@ static int himax_write_read_reg(uint8_t *tmp_addr, uint8_t *tmp_data,
 		uint8_t hb, uint8_t lb)
 {
 	int cnt = 0;
+	uint8_t r_data[ADDR_LEN_4] = {0};
 
-	I("[Start]addr:0x%02X%02X%02X%02X, write to 0x%02X%02X\n",
-		tmp_addr[3], tmp_addr[2], tmp_addr[1], tmp_addr[0],
-		tmp_data[1], tmp_data[0]);
 	do {
-		g_core_fp.fp_register_write(tmp_addr, DATA_LEN_4, tmp_data, 0);
+		if (r_data[1] != lb || r_data[0] != hb)
+			g_core_fp.fp_register_write(tmp_addr, DATA_LEN_4,
+			tmp_data, 0);
 		usleep_range(10000, 11000);
-		g_core_fp.fp_register_read(tmp_addr, DATA_LEN_4, tmp_data, 0);
-		/* I("%s:Now tmp_data[0]=0x%02X,[1]=0x%02X,
+		g_core_fp.fp_register_read(tmp_addr, DATA_LEN_4, r_data, 0);
+		/* I("%s:Now r_data[0]=0x%02X,[1]=0x%02X,
 		 *	[2]=0x%02X,[3]=0x%02X\n",
-		 *	__func__, tmp_data[0],
-		 *	tmp_data[1], tmp_data[2], tmp_data[3]);
+		 *	__func__, r_data[0],
+		 *	r_data[1], r_data[2], r_data[3]);
 		 */
-	} while ((tmp_data[1] != hb && tmp_data[0] != lb) && cnt++ < 100);
+	} while ((r_data[1] != hb || r_data[0] != lb) && cnt++ < 100);
 
-	I("[END]addr:0x%02X%02X%02X%02X=0x%02X%02X, excepted=0x%02X%02X\n",
-		tmp_addr[3], tmp_addr[2], tmp_addr[1], tmp_addr[0],
-		tmp_data[1], tmp_data[0],
-		hb, lb);
-
-	if (cnt >= 100)
+	if (cnt >= 100) {
+		g_core_fp.fp_read_FW_status();
 		return HX_RW_REG_FAIL;
+	}
+
 	return NO_ERR;
 }
 
@@ -442,13 +440,6 @@ static void himax_mcu_sense_on(uint8_t FlashMode)
 #endif
 	} else {
 		do {
-			g_core_fp.fp_register_write(
-				pfw_op->addr_safe_mode_release_pw,
-				sizeof(pfw_op->
-				data_safe_mode_release_pw_active),
-				pfw_op->data_safe_mode_release_pw_active,
-				0);
-
 			g_core_fp.fp_register_read(
 				pfw_op->addr_flag_reset_event,
 				DATA_LEN_4,
@@ -482,12 +473,6 @@ static void himax_mcu_sense_on(uint8_t FlashMode)
 					tmp_data, 1, HIMAX_I2C_RETRY_TIMES);
 			if (ret < 0)
 				E("%s: i2c access fail!\n", __func__);
-
-			g_core_fp.fp_register_write(
-				pfw_op->addr_safe_mode_release_pw,
-				sizeof(pfw_op->data_safe_mode_release_pw_reset),
-				pfw_op->data_safe_mode_release_pw_reset,
-				0);
 		}
 	}
 }
@@ -579,16 +564,50 @@ static void himax_mcu_suspend_ic_action(void)
 
 static void himax_mcu_power_on_init(void)
 {
-	I("%s:\n", __func__);
+	uint8_t data[4] = {0};
+	uint8_t retry = 0;
+
+	/*RawOut select initial*/
+	g_core_fp.fp_register_write(pfw_op->addr_raw_out_sel,
+		sizeof(pfw_op->data_clear), pfw_op->data_clear, 0);
+	/*DSRAM func initial*/
+	g_core_fp.fp_assign_sorting_mode(pfw_op->data_clear);
+	/*FW reload done initial*/
+	g_core_fp.fp_register_write(pdriver_op->addr_fw_define_2nd_flash_reload,
+		DATA_LEN_4, data, 0);
+
+	g_core_fp.fp_sense_on(0x00);
+
+	I("%s: waiting for FW reload done", __func__);
+
+	while (retry++ < 30) {
+		g_core_fp.fp_register_read(
+			pdriver_op->addr_fw_define_2nd_flash_reload,
+			DATA_LEN_4, data, 0);
+
+		/* use all 4 bytes to compare */
+		if ((data[3] == 0x00 && data[2] == 0x00 &&
+			data[1] == 0x72 && data[0] == 0xC0)) {
+			I("%s: FW finish reload done\n", __func__);
+			break;
+		}
+		I("%s: wait reload done %d times\n", __func__, retry);
+		g_core_fp.fp_read_FW_status();
+		usleep_range(10000, 11000);
+	}
+
+#if 0
+	g_core_fp.fp_read_FW_ver();
 	g_core_fp.fp_touch_information();
+	g_core_fp.fp_calc_touch_data_size();
+
 	/*RawOut select initial*/
 	g_core_fp.fp_register_write(pfw_op->addr_raw_out_sel,
 			sizeof(pfw_op->data_clear),
 			pfw_op->data_clear, 0);
 	/*DSRAM func initial*/
 	g_core_fp.fp_assign_sorting_mode(pfw_op->data_clear);
-#if !defined(HX_ZERO_FLASH)
-	g_core_fp.fp_sense_on(0x00);
+	/* g_core_fp.fp_sense_on(0x00); */
 #endif
 }
 
@@ -794,13 +813,13 @@ static void diag_mcu_parse_raw_data(struct himax_report_data *hx_touch_data,
 
 static void himax_mcu_system_reset(void)
 {
-	int ret = 0;
 #if defined(HX_PON_PIN_SUPPORT)
 	g_core_fp.fp_register_write(pfw_op->addr_system_reset,
 		sizeof(pfw_op->data_system_reset),
 		pfw_op->data_system_reset,
 		0);
 #else
+	int ret = 0;
 	uint8_t tmp_data[DATA_LEN_4];
 	int retry = 0;
 
@@ -1171,8 +1190,6 @@ static int himax_mcu_black_gest_ctrl(bool enable)
 			g_core_fp.fp_ulpm_in();
 		}
 	} else {
-		if (g_core_fp._fw_sts_clear != NULL)
-			g_core_fp._fw_sts_clear();
 		g_core_fp.fp_sense_on(0);
 	}
 	return ret;
@@ -1367,8 +1384,6 @@ static int himax_mcu_chip_self_test(struct seq_file *s, void *v)
 	g_core_fp.fp_idle_mode(1);
 	/*Diable Flash Reload*/
 	g_core_fp.fp_reload_disable(1);
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
 	/*start selftest // leave safe mode*/
 	g_core_fp.fp_sense_on(0x01);
 
@@ -1436,8 +1451,6 @@ static int himax_mcu_chip_self_test(struct seq_file *s, void *v)
 	/* Enable Flash Reload //recovery*/
 	g_core_fp.fp_reload_disable(0);
 #endif
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
 	g_core_fp.fp_sense_on(0x00);
 	msleep(120);
 
@@ -1551,9 +1564,11 @@ static int himax_mcu_read_i2c_status(void)
 	return i2c_error_count;
 }
 
+/* Please call this function after FW finish reload done */
 static void himax_mcu_read_FW_ver(void)
 {
 	uint8_t data[12] = {0};
+#if 0
 	uint8_t retry = 0;
 	uint8_t reload_status = 0;
 
@@ -1563,8 +1578,6 @@ static void himax_mcu_read_FW_ver(void)
 	data,
 	0);
 
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
 	g_core_fp.fp_sense_on(0x00);
 
 	I("%s: waiting for FW reload done\n", __func__);
@@ -1604,6 +1617,8 @@ static void himax_mcu_read_FW_ver(void)
 	 * Read FW version
 	 */
 	g_core_fp.fp_sense_off(true);
+#endif
+
 	g_core_fp.fp_register_read(pfw_op->addr_fw_ver_addr, DATA_LEN_4,
 		data, 0);
 	ic_data->vendor_panel_ver =  data[0];
@@ -1630,16 +1645,13 @@ static void himax_mcu_read_FW_ver(void)
 	g_core_fp.fp_register_read(pfw_op->addr_proj_info, 12, data, 0);
 	memcpy(ic_data->vendor_proj_info, data, 12);
 	I("Project ID = %s\n", ic_data->vendor_proj_info);
-
 #ifdef ONTIM_DEV_HIMAX_INFO
 	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
 	{
 		return;
 	}
-	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 	if (strstr(mtkfb_find_lcm_driver(), "hx83102d") != NULL) {
-		if (strstr(mtkfb_find_lcm_driver(), "truly") != NULL)
-		{
+		if (strstr(mtkfb_find_lcm_driver(), "truly") != NULL) {
 			snprintf(lcdname, sizeof(lcdname), "truly-hx83102d");
 			snprintf(vendor_name, sizeof(vendor_name), "truly-hx83102d");
 			snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x67 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
@@ -1652,11 +1664,19 @@ static void himax_mcu_read_FW_ver(void)
 			snprintf(vendor_name, sizeof(vendor_name), "kingdly-hx83102d");
 			snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0xA3 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
 		}
+	} else if ((strstr(mtkfb_find_lcm_driver(), "hx83112a") != NULL)) {
+		if (strstr(mtkfb_find_lcm_driver(), "tianma") != NULL) {
+			snprintf(lcdname, sizeof(lcdname), "tm-hx83112a");
+			snprintf(vendor_name, sizeof(vendor_name), "tm-hx83112a");
+			snprintf(version, sizeof(version),"FW:%02x_%02x,VID:0x93 ",ic_data->vendor_touch_cfg_ver,ic_data->vendor_display_cfg_ver);
+		}
 	}
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 #endif
-
+#if 0
 END:
 	return;
+#endif
 }
 
 static bool himax_mcu_read_event_stack(uint8_t *buf, uint8_t length)
@@ -1850,7 +1870,7 @@ FINALIZE:
 			req_size, tmp_data, 0);
 	return NO_ERR;
 }
-static void hx_fw_sts_clear(void)
+static void hx_clr_fw_reord_dd_sts(void)
 {
 	uint8_t tmp_data[DATA_LEN_4] = {0};
 
@@ -1865,7 +1885,7 @@ static void hx_fw_sts_clear(void)
 			__func__);
 		return;
 	}
-	g_core_fp.fp_register_read(pfw_op->addr_clear_fw_sts,
+	g_core_fp.fp_register_read(pfw_op->addr_clr_fw_record_dd_sts,
 		DATA_LEN_4, tmp_data, 0);
 	I("%s,Before Write :Now 10007FCC=0x%02X%02X%02X%02X\n",
 		__func__, tmp_data[0], tmp_data[1], tmp_data[2], tmp_data[3]);
@@ -1873,32 +1893,32 @@ static void hx_fw_sts_clear(void)
 
 	tmp_data[2] = 0x00;
 	tmp_data[3] = 0x00;
-	g_core_fp.fp_register_write(pfw_op->addr_clear_fw_sts,
+	g_core_fp.fp_register_write(pfw_op->addr_clr_fw_record_dd_sts,
 		DATA_LEN_4, tmp_data, 0);
 	usleep_range(10000, 10001);
 
-	g_core_fp.fp_register_read(pfw_op->addr_clear_fw_sts,
+	g_core_fp.fp_register_read(pfw_op->addr_clr_fw_record_dd_sts,
 		DATA_LEN_4, tmp_data, 0);
 	I("%s,After Write :Now 10007FCC=0x%02X%02X%02X%02X\n",
 		__func__, tmp_data[0], tmp_data[1], tmp_data[2], tmp_data[3]);
 
 }
 
-static void hx_clr_sts_excpt(int suspend)
+static void hx_ap_notify_fw_sus(int suspend)
 {
 	int retry = 0;
 	uint8_t read_tmp[DATA_LEN_4] = {0};
 	uint8_t addr_tmp[DATA_LEN_4] = {0};
 	uint8_t data_tmp[DATA_LEN_4] = {0};
 
-	Arr4_to_Arr4(addr_tmp, pfw_op->addr_excpt_notfy_fw);
+	Arr4_to_Arr4(addr_tmp, pfw_op->addr_ap_notify_fw_sus);
 
 	if (suspend) {
 		I("%s,Suspend mode!\n", __func__);
-		Arr4_to_Arr4(data_tmp, pfw_op->data_excpt_notfy_fw_en);
+		Arr4_to_Arr4(data_tmp, pfw_op->data_ap_notify_fw_sus_en);
 	} else {
 		I("%s,NonSuspend mode!\n", __func__);
-		Arr4_to_Arr4(data_tmp, pfw_op->data_excpt_notfy_fw_dis);
+		Arr4_to_Arr4(data_tmp, pfw_op->data_ap_notify_fw_sus_dis);
 	}
 
 	I("%s: R%02X%02X%02X%02XH<-0x%02X%02X%02X%02X\n",
@@ -1917,17 +1937,6 @@ static void hx_clr_sts_excpt(int suspend)
 	} while ((retry++ < 10) &&
 		(read_tmp[3] != data_tmp[3] && read_tmp[2] != data_tmp[2] &&
 		read_tmp[1] != data_tmp[1] && read_tmp[0] != data_tmp[0]));
-	if (suspend) {
-#if defined(HX_RST_PIN_FUNC)
-		g_core_fp.fp_ic_reset(false, true);
-#else
-		g_core_fp.fp_system_reset();
-#endif
-#if defined(HX_ZERO_FLASH)
-		if (g_core_fp.fp_0f_reload_to_active != NULL)
-			g_core_fp.fp_0f_reload_to_active();
-#endif
-	}
 }
 /* FW side end*/
 /* CORE_FW */
@@ -2223,8 +2232,7 @@ static void himax_mcu_flash_dump_func(uint8_t local_flash_command,
 	}
 
 	g_core_fp.fp_burst_enable(0);
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
+
 	g_core_fp.fp_sense_on(0x01);
 }
 
@@ -2332,7 +2340,7 @@ static bool hx_bin_desc_data_get(uint32_t addr, uint8_t *flash_buf)
 				CFG_VER_MAJ_FLASH_ADDR = flash_addr;
 				CFG_VER_MIN_FLASH_ADDR = flash_addr + 1;
 				I("%s: CFG_VER in = %08lX\n", __func__,
-				FW_VER_MAJ_FLASH_ADDR);
+				CFG_VER_MAJ_FLASH_ADDR);
 				break;
 			case TP_CONFIG_TABLE:
 				CFG_TABLE_FLASH_ADDR = flash_addr;
@@ -2565,9 +2573,9 @@ static void himax_mcu_pin_reset(void)
 {
 	I("%s: Now reset the Touch chip.\n", __func__);
 	himax_rst_gpio_set(private_ts->rst_gpio, 0);
-	msleep(5);
+	usleep_range(RST_LOW_PERIOD_S, RST_LOW_PERIOD_E);
 	himax_rst_gpio_set(private_ts->rst_gpio, 1);
-	msleep(5);
+	usleep_range(RST_HIGH_PERIOD_S, RST_HIGH_PERIOD_E);
 }
 
 static void himax_mcu_ic_reset(uint8_t loadconfig, uint8_t int_off)
@@ -2584,8 +2592,8 @@ static void himax_mcu_ic_reset(uint8_t loadconfig, uint8_t int_off)
 
 		g_core_fp.fp_pin_reset();
 
-		if (loadconfig)
-			g_core_fp.fp_reload_config();
+		/* if (loadconfig) */
+		/*	g_core_fp.fp_reload_config(); */
 
 		if (int_off)
 			g_core_fp.fp_irq_switch(1);
@@ -2677,8 +2685,13 @@ static void himax_mcu_touch_information(void)
 	if (err_cnt > 0)
 		E("TP Info from IC is wrong, err_cnt = 0x%X", err_cnt);
 #else
-	ic_data->HX_RX_NUM = FIX_HX_RX_NUM;
-	ic_data->HX_TX_NUM = FIX_HX_TX_NUM;
+	if(strcmp(HX_83102D_SERIES_PWON, private_ts->chip_name) == 0 ){
+		ic_data->HX_RX_NUM = FIX_HX_RX_NUM;
+		ic_data->HX_TX_NUM = FIX_HX_TX_NUM;
+	}else {
+		ic_data->HX_RX_NUM = FIX_HX_RX_NUM_112A;
+		ic_data->HX_TX_NUM = FIX_HX_TX_NUM_112A;
+	}
 	ic_data->HX_BT_NUM = FIX_HX_BT_NUM;
 	ic_data->HX_MAX_PT = FIX_HX_MAX_PT;
 	ic_data->HX_XY_REVERSE = FIX_HX_XY_REVERSE;
@@ -2686,7 +2699,7 @@ static void himax_mcu_touch_information(void)
 	ic_data->HX_PEN_FUNC = FIX_HX_PEN_FUNC;
 #endif
 	ic_data->HX_Y_RES = private_ts->pdata->screenHeight;
-	ic_data->HX_X_RES	= private_ts->pdata->screenWidth;
+	ic_data->HX_X_RES = private_ts->pdata->screenWidth;
 
 	g_core_fp.fp_ic_id_read();
 	I("%s:HX_RX_NUM =%d,HX_TX_NUM =%d\n", __func__,
@@ -2699,14 +2712,68 @@ static void himax_mcu_touch_information(void)
 	ic_data->HX_INT_IS_EDGE, ic_data->HX_PEN_FUNC);
 }
 
+static void himax_mcu_calcTouchDataSize(void)
+{
+	struct himax_ts_data *ts_data = private_ts;
+
+	ts_data->x_channel = ic_data->HX_RX_NUM;
+	ts_data->y_channel = ic_data->HX_TX_NUM;
+	ts_data->nFinger_support = ic_data->HX_MAX_PT;
+
+#if 0
+	ts_data->coord_data_size = 4 * ts_data->nFinger_support;
+	ts_data->area_data_size = ((ts_data->nFinger_support / 4)
+				+ (ts_data->nFinger_support % 4 ? 1 : 0)) * 4;
+	ts_data->coordInfoSize = ts_data->coord_data_size
+				+ ts_data->area_data_size + 4;
+	ts_data->raw_data_frame_size = 128 - ts_data->coord_data_size
+				- ts_data->area_data_size - 4 - 4 - 2;
+
+	if (ts_data->raw_data_frame_size == 0) {
+		E("%s: could NOT calculate!\n", __func__);
+		return;
+	}
+
+	ts_data->raw_data_nframes = ((uint32_t)ts_data->x_channel
+					* ts_data->y_channel
+					+ ts_data->x_channel
+					+ ts_data->y_channel)
+					/ ts_data->raw_data_frame_size
+					+ (((uint32_t)ts_data->x_channel
+					* ts_data->y_channel
+					+ ts_data->x_channel
+					+ ts_data->y_channel)
+					% ts_data->raw_data_frame_size) ? 1 : 0;
+
+	I("%s: coord_dsz:%d,area_dsz:%d,raw_data_fsz:%d,raw_data_nframes:%d",
+		__func__,
+		ts_data->coord_data_size,
+		ts_data->area_data_size,
+		ts_data->raw_data_frame_size,
+		ts_data->raw_data_nframes);
+#endif
+
+	HX_TOUCH_INFO_POINT_CNT = ic_data->HX_MAX_PT * 4;
+	if ((ic_data->HX_MAX_PT % 4) == 0)
+		HX_TOUCH_INFO_POINT_CNT +=
+			(ic_data->HX_MAX_PT / 4) * 4;
+	else
+		HX_TOUCH_INFO_POINT_CNT +=
+			((ic_data->HX_MAX_PT / 4) + 1) * 4;
+
+	if (himax_report_data_init())
+		E("%s: allocate data fail\n", __func__);
+
+}
+
+#if 0
 static void himax_mcu_reload_config(void)
 {
 	if (himax_report_data_init())
 		E("%s: allocate data fail\n", __func__);
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
 	g_core_fp.fp_sense_on(0x00);
 }
+#endif
 
 static int himax_mcu_get_touch_data_size(void)
 {
@@ -2734,13 +2801,13 @@ static int himax_mcu_cal_data_len(int raw_cnt_rmd, int HX_MAX_PT,
 		int raw_cnt_max)
 {
 	int RawDataLen;
-
+	/* rawdata checksum is 2 bytes */
 	if (raw_cnt_rmd != 0x00)
 		RawDataLen = MAX_I2C_TRANS_SZ
-			- ((HX_MAX_PT + raw_cnt_max + 3) * 4) - 1;
+			- ((HX_MAX_PT + raw_cnt_max + 3) * 4) - 2;
 	else
 		RawDataLen = MAX_I2C_TRANS_SZ
-			- ((HX_MAX_PT + raw_cnt_max + 2) * 4) - 1;
+			- ((HX_MAX_PT + raw_cnt_max + 2) * 4) - 2;
 
 	return RawDataLen;
 }
@@ -3007,8 +3074,6 @@ static int hx_read_guest_info(void)
 		 */
 	}
 	/* himax_burst_enable(private_ts->client, 0); */
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
 	g_core_fp.fp_sense_on(0x01);
 
 	kfree(flash_tmp_buffer);
@@ -3398,6 +3463,7 @@ int himax_zf_part_info(const struct firmware *fw_entry)
 
 #if defined(HX_CODE_OVERLAY)
 		/*overlay section*/
+
 		if (allovlidx & (1<<i)) {
 			I("%s: skip overlay section %d\n", __func__, i);
 			continue;
@@ -3467,6 +3533,9 @@ int himax_zf_part_info(const struct firmware *fw_entry)
 			g_core_fp.fp_resend_cmd_func(private_ts->suspended);
 #endif
 		}
+		I("%s: upgrade overlay section or not, allovlidx = %d\n",
+				__func__, allovlidx);
+	if (allovlidx != 0) {
 		I("%s: prepare upgrade overlay section = %d\n",
 				__func__, ovl_idx_t);
 
@@ -3498,6 +3567,7 @@ int himax_zf_part_info(const struct firmware *fw_entry)
 				|| send_data[1] != recv_data[1]
 				|| send_data[0] != recv_data[0])
 				&& retry < HIMAX_REG_RETRY_TIMES);
+	}
 #endif
 
 	} else {
@@ -3658,19 +3728,11 @@ int himax_mcu_0f_operation_dirly(void)
 {
 	int err = NO_ERR, ret;
 	const struct firmware *fw_entry = NULL;
-	if (1 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
-	} else if (2 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME1);
-		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME1,private_ts->dev);
-	} else if (3 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME2);
-		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME2,private_ts->dev);
-	}else {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-		ret = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
-	}
+
+	I("%s, Entering,file name = %s\n", __func__, normal_fw);
+
+	ret = request_firmware(&fw_entry, normal_fw,
+		private_ts->dev);
 	if (ret < 0) {
 #if defined(__EMBEDDED_FW__)
 		fw_entry = &g_embedded_fw;
@@ -3708,19 +3770,11 @@ void himax_mcu_0f_operation(struct work_struct *work)
 {
 	int err = NO_ERR;
 	const struct firmware *fw_entry = NULL;
-	if (1 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
-	} else if (2 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME1);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME1,private_ts->dev);
-	} else if (3 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME2);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME2,private_ts->dev);
-	} else {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
-	}
+
+	I("%s, Entering,file name = %s\n", __func__, normal_fw);
+
+	err = request_firmware(&fw_entry, normal_fw,
+		private_ts->dev);
 	if (err < 0) {
 #if defined(__EMBEDDED_FW__)
 		fw_entry = &g_embedded_fw;
@@ -3748,14 +3802,12 @@ void himax_mcu_0f_operation(struct work_struct *work)
 		release_firmware(fw_entry);
 
 	g_core_fp.fp_reload_disable(0);
+
+	g_core_fp.fp_power_on_init();
 	g_core_fp.fp_read_FW_ver();
 	/*msleep (10);*/
 	g_core_fp.fp_touch_information();
-	/*msleep (10);*/
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
-	g_core_fp.fp_sense_on(0x00);
-	/*msleep (10);*/
+	g_core_fp.fp_calc_touch_data_size();
 	I("%s:End\n", __func__);
 	himax_int_enable(1);
 
@@ -4052,19 +4104,11 @@ void himax_mcu_0f_operation_check(int type)
 	int err = NO_ERR;
 	const struct firmware *fw_entry = NULL;
 	/* char *firmware_name = "himax.bin"; */
-	if (1 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
-	} else if (2 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME1);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME1,private_ts->dev);
-	} else if (3 == g_fw_flag) {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME2);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME2,private_ts->dev);
-	} else {
-		I("%s, Entering,file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-		err = request_firmware(&fw_entry, BOOT_UPGRADE_FWNAME,private_ts->dev);
-	}
+
+	I("%s, Entering,file name = %s\n", __func__, normal_fw);
+
+	err = request_firmware(&fw_entry, normal_fw,
+		private_ts->dev);
 	if (err < 0) {
 #if defined(__EMBEDDED_FW__)
 		fw_entry = &g_embedded_fw;
@@ -4167,8 +4211,8 @@ static void himax_mcu_fp_init(void)
 	g_core_fp.fp_assign_sorting_mode = himax_mcu_assign_sorting_mode;
 	g_core_fp.fp_check_sorting_mode = himax_mcu_check_sorting_mode;
 	g_core_fp.fp_read_DD_status = himax_mcu_read_DD_status;
-	g_core_fp._fw_sts_clear = hx_fw_sts_clear;
-	g_core_fp._clr_sts_excpt = hx_clr_sts_excpt;
+	g_core_fp._clr_fw_reord_dd_sts = hx_clr_fw_reord_dd_sts;
+	g_core_fp._ap_notify_fw_sus = hx_ap_notify_fw_sus;
 /* CORE_FW */
 /* CORE_FLASH */
 	g_core_fp.fp_chip_erase = himax_mcu_chip_erase;
@@ -4206,7 +4250,8 @@ static void himax_mcu_fp_init(void)
 	g_core_fp.fp_ic_reset = himax_mcu_ic_reset;
 #endif
 	g_core_fp.fp_touch_information = himax_mcu_touch_information;
-	g_core_fp.fp_reload_config = himax_mcu_reload_config;
+	g_core_fp.fp_calc_touch_data_size = himax_mcu_calcTouchDataSize;
+	/*g_core_fp.fp_reload_config = himax_mcu_reload_config;*/
 	g_core_fp.fp_get_touch_data_size = himax_mcu_get_touch_data_size;
 	g_core_fp.fp_hand_shaking = himax_mcu_hand_shaking;
 	g_core_fp.fp_determin_diag_rawdata = himax_mcu_determin_diag_rawdata;
@@ -4434,9 +4479,6 @@ void himax_mcu_in_cmd_init(void)
 	himax_parse_assign_cmd(fw_addr_system_reset,
 		pfw_op->addr_system_reset,
 		sizeof(pfw_op->addr_system_reset));
-	himax_parse_assign_cmd(fw_addr_safe_mode_release_pw,
-		pfw_op->addr_safe_mode_release_pw,
-		sizeof(pfw_op->addr_safe_mode_release_pw));
 	himax_parse_assign_cmd(fw_addr_ctrl_fw,
 		pfw_op->addr_ctrl_fw_isr,
 		sizeof(pfw_op->addr_ctrl_fw_isr));
@@ -4524,18 +4566,18 @@ void himax_mcu_in_cmd_init(void)
 	himax_parse_assign_cmd(fw_addr_dd_data_addr,
 		pfw_op->addr_dd_data_addr,
 		sizeof(pfw_op->addr_dd_data_addr));
-	himax_parse_assign_cmd(fw_addr_sts_clear,
-		pfw_op->addr_clear_fw_sts,
-		sizeof(pfw_op->addr_clear_fw_sts));
-	himax_parse_assign_cmd(fw_addr_excpt_notfy,
-		pfw_op->addr_excpt_notfy_fw,
-		sizeof(pfw_op->addr_excpt_notfy_fw));
-	himax_parse_assign_cmd(fw_data_excpt_notfy_en,
-		pfw_op->data_excpt_notfy_fw_en,
-		sizeof(pfw_op->data_excpt_notfy_fw_en));
-	himax_parse_assign_cmd(fw_data_excpt_notfy_dis,
-		pfw_op->data_excpt_notfy_fw_dis,
-		sizeof(pfw_op->data_excpt_notfy_fw_dis));
+	himax_parse_assign_cmd(fw_addr_clr_fw_record_dd_sts,
+		pfw_op->addr_clr_fw_record_dd_sts,
+		sizeof(pfw_op->addr_clr_fw_record_dd_sts));
+	himax_parse_assign_cmd(fw_addr_ap_notify_fw_sus,
+		pfw_op->addr_ap_notify_fw_sus,
+		sizeof(pfw_op->addr_ap_notify_fw_sus));
+	himax_parse_assign_cmd(fw_data_ap_notify_fw_sus_en,
+		pfw_op->data_ap_notify_fw_sus_en,
+		sizeof(pfw_op->data_ap_notify_fw_sus_en));
+	himax_parse_assign_cmd(fw_data_ap_notify_fw_sus_dis,
+		pfw_op->data_ap_notify_fw_sus_dis,
+		sizeof(pfw_op->data_ap_notify_fw_sus_dis));
 	himax_parse_assign_cmd(fw_data_system_reset,
 		pfw_op->data_system_reset,
 		sizeof(pfw_op->data_system_reset));

@@ -21,6 +21,8 @@
 /*#define HX_INSP_LP_TEST*/
 /*#define HX_ACT_IDLE_TEST*/
 
+/*#define HX_INSPT_DBG*/
+
 #define HX_RSLT_OUT_PATH "/sdcard/"
 #define HX_RSLT_OUT_FILE "hx_test_result.txt"
 #define PI(x...) pr_cont(x)
@@ -122,6 +124,7 @@ extern char *g_himax_inspection_mode[];
 /*Inspection register*/
 #define addr_normal_noise_thx   0x1000708C
 #define addr_lpwug_noise_thx    0x10007090
+#define addr_noise_scale        0x10007094
 #define addr_recal_thx          0x10007090
 #define addr_palm_num           0x100070A8
 #define addr_weight_sup         0x100072C8
@@ -139,28 +142,29 @@ enum THP_INSPECTION_ENUM {
 	HX_OPEN,
 	HX_MICRO_OPEN,
 	HX_SHORT,
-	HX_RAWDATA,
-	HX_BPN_RAWDATA,
 	HX_SC,
 	HX_WT_NOISE,
 	HX_ABS_NOISE,
+	HX_RAWDATA,
+	HX_BPN_RAWDATA,
 	HX_SORTING,
 
 	HX_GAPTEST_RAW,
 	/*HX_GAPTEST_RAW_X,*/
 	/*HX_GAPTEST_RAW_Y,*/
 
+	HX_ACT_IDLE_NOISE,
 	HX_ACT_IDLE_RAWDATA,
 	HX_ACT_IDLE_BPN_RAWDATA,
-	HX_ACT_IDLE_NOISE,
 /*LPWUG test must put after Normal test*/
-	HX_LP_RAWDATA,
-	HX_LP_BPN_RAWDATA,
 	HX_LP_WT_NOISE,
 	HX_LP_ABS_NOISE,
+	HX_LP_RAWDATA,
+	HX_LP_BPN_RAWDATA,
+
+	HX_LP_IDLE_NOISE,
 	HX_LP_IDLE_RAWDATA,
 	HX_LP_IDLE_BPN_RAWDATA,
-	HX_LP_IDLE_NOISE,
 
 	HX_BACK_NORMAL,/*Must put in the end*/
 };

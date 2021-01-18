@@ -44,7 +44,7 @@
 	#include <linux/of_gpio.h>
 #endif
 
-#define HIMAX_DRIVER_VER "2.0.0.63_A57_01"
+#define HIMAX_DRIVER_VER "2.0.0.70_HIMAX_02"
 
 #define FLASH_DUMP_FILE "/sdcard/HX_Flash_Dump.bin"
 
@@ -59,7 +59,7 @@
 
 /*#define HX_NEW_EVENT_STACK_FORMAT*/
 /*#define HX_BOOT_UPGRADE*/
-#define HX_SMART_WAKEUP
+/*#define HX_SMART_WAKEUP*/
 /*#define HX_GESTURE_TRACK*/
 #define HX_RESUME_SEND_CMD	/*Need to enable on TDDI chipset*/
 /*#define HX_HIGH_SENSE*/
@@ -90,7 +90,7 @@
 
 /* Enable it if driver go into suspend/resume twice */
 /*#undef HX_CONFIG_DRM*/
-
+#define HX_CONFIG_FB
 #if defined(HX_CONFIG_FB)
 #include <linux/notifier.h>
 #include <linux/fb.h>
@@ -109,11 +109,10 @@
 /*zero flash case, you need to setup the fix_touch_info of module*/
 /*Please set the size according to IC*/
 #define DSRAM_SIZE HX_32K_SZ
-#define HX_FIX_TOUCH_INFO
 #define HX_RESUME_SET_FW
 #define HX_CODE_OVERLAY
 /*Independent threads run the notification chain notification function resume*/
-/*#define HX_CONTAINER_SPEED_UP*/
+#define HX_CONTAINER_SPEED_UP
 #else
 #define HX_TP_PROC_GUEST_INFO
 #endif
@@ -122,19 +121,6 @@
 /* FW Auto upgrade case, you need to setup the fix_touch_info of module
  */
 #define HX_FIX_TOUCH_INFO
-#define BOOT_UPGRADE_FWNAME "Himax_firmware.bin"
-#define BOOT_UPGRADE_FWNAME1 "Himax_kd_firmware.bin"	//for skw_hx83102d lcm
-#define BOOT_UPGRADE_FWNAME2 "Himax_kingdly_firmware.bin"	//for kingdisplay hx83102d lcm
-#if defined(HX_ZERO_FLASH)
-#define HX_RESUME_SET_FW
-#define HX_UPDATE_FW_FROM_DISPLAY
-/*#define HX_CODE_OVERLAY*/
-/*Independent threads run the notification chain notification function resume*/
-/*#define HX_CONTAINER_SPEED_UP*/
-#define MPAP_FWNAME "Himax_mpfw.bin"
-#define KD_MPAP_FWNAME "Himax_kd_mpfw.bin"	//for skw_hx83102d lcm
-#define KINGDLY_MPAP_FWNAME "Himax_kingdly_mpfw.bin"	//for kingdisplay hx83102d lcm
-#endif
 #endif
 
 #if defined(HX_SMART_WAKEUP)
@@ -142,10 +128,28 @@
 /*#define HX_ULTRA_LOW_POWER*/
 #endif
 
+#if defined(HX_SMART_WAKEUP) && defined(HX_RESUME_SET_FW)
+/* decide whether reload FW after Smart Wake Up */
+#define HX_SWU_RESUME_SET_FW
+#endif
+
 #if defined(HX_CONTAINER_SPEED_UP)
 /*Resume queue delay work time after LCM RST (unit:ms)
  */
 #define DELAY_TIME 40
+#endif
+
+#if defined(HX_RST_PIN_FUNC)
+/* origin is 20/50 */
+#define RST_LOW_PERIOD_S 5000
+#define RST_LOW_PERIOD_E 5100
+#if defined(HX_ZERO_FLASH)
+#define RST_HIGH_PERIOD_S 5000
+#define RST_HIGH_PERIOD_E 5100
+#else
+#define RST_HIGH_PERIOD_S 50000
+#define RST_HIGH_PERIOD_E 50100
+#endif
 #endif
 
 #if defined(HX_CONFIG_FB)
@@ -204,6 +208,7 @@ int drm_notifier_callback(struct notifier_block *self,
 #define NO_ERR 0
 #define READY_TO_SERVE 1
 #define WORK_OUT	2
+#define HX_EMBEDDED_FW 3
 #define I2C_FAIL -1
 #define HX_INIT_FAIL -1
 #define MEM_ALLOC_FAIL -2
@@ -294,14 +299,16 @@ enum cell_type {
 enum fix_touch_info {
 	FIX_HX_RX_NUM = 32,
 	FIX_HX_TX_NUM = 18,
+	FIX_HX_RX_NUM_112A = 36,
+	FIX_HX_TX_NUM_112A = 18,
 	FIX_HX_BT_NUM = 0,
 	FIX_HX_MAX_PT = 10,
 	FIX_HX_XY_REVERSE = false,
 	FIX_HX_INT_IS_EDGE = true,
 	FIX_HX_PEN_FUNC = false,
 #if defined(HX_TP_PROC_2T2R)
-	FIX_HX_RX_NUM_2 = 0,
-	FIX_HX_TX_NUM_2 = 0,
+	FIX_HX_RX_NUM_2 = 36,
+	FIX_HX_TX_NUM_2 = 18,
 #endif
 };
 #endif
@@ -489,6 +496,7 @@ struct himax_ts_data {
 
 	struct workqueue_struct *himax_diag_wq;
 	struct delayed_work himax_diag_delay_wrok;
+
 #if defined(HX_SMART_WAKEUP)
 	uint8_t SMWP_enable;
 	uint8_t gesture_cust_en[26];
@@ -497,13 +505,6 @@ struct himax_ts_data {
 	bool psensor_flag;
 #endif
 #endif
-#ifdef HX_UPDATE_FW_FROM_DISPLAY
-struct work_struct notifie_resume_work_queue;
-
-struct workqueue_struct *ts_recovery_workqueue;
-struct delayed_work recovery_work_queue;
-#endif
-struct mutex fw_update_lock;
 
 #if defined(HX_HIGH_SENSE)
 	uint8_t HSEN_enable;
@@ -524,6 +525,7 @@ struct mutex fw_update_lock;
 
 struct himax_debug {
 	bool flash_dump_going;
+	bool is_checking_irq;
 	void (*fp_ts_dbg_func)(struct himax_ts_data *ts, int start);
 	int (*fp_set_diag_cmd)(struct himax_ic_data *ic_data,
 				struct himax_report_data *hx_touch_data);
@@ -553,14 +555,13 @@ extern uint8_t *wake_event_buffer;
 extern int g_mmi_refcnt;
 extern int *g_inspt_crtra_flag;
 extern uint32_t g_hx_chip_inited;
-extern char lcd_info_pr[256];
-extern int g_fw_flag;
 /*void himax_HW_reset(uint8_t loadconfig,uint8_t int_off);*/
 
 int himax_chip_common_suspend(struct himax_ts_data *ts);
 int himax_chip_common_resume(struct himax_ts_data *ts);
 
 extern struct filename* (*kp_getname_kernel)(const char *filename);
+extern void (*kp_putname_kernel)(struct filename *name);
 extern struct file * (*kp_file_open_name)(struct filename *name,
 			int flags, umode_t mode);
 
@@ -569,7 +570,7 @@ extern struct himax_core_fp g_core_fp;
 extern struct himax_ts_data *private_ts;
 extern struct himax_ic_data *ic_data;
 extern struct device *g_device;
-
+extern char *mtkfb_find_lcm_driver(void);
 #if defined(CONFIG_TOUCHSCREEN_HIMAX_DEBUG)
 	int himax_debug_init(void);
 	int himax_debug_remove(void);
@@ -580,6 +581,8 @@ extern struct device *g_device;
 	extern void (*fp_himax_self_test_init)(void);
 #endif
 
+extern int HX_TOUCH_INFO_POINT_CNT;
+
 int himax_parse_dt(struct himax_ts_data *ts,
 			struct himax_i2c_platform_data *pdata);
 int himax_report_data(struct himax_ts_data *ts, int ts_path, int ts_status);
@@ -588,7 +591,5 @@ int himax_report_data_init(void);
 
 int himax_dev_set(struct himax_ts_data *ts);
 int himax_input_register_device(struct input_dev *input_dev);
-#ifdef HX_UPDATE_FW_FROM_DISPLAY
-extern int himax_notifie_update_fw(unsigned long value);
-#endif
+
 #endif

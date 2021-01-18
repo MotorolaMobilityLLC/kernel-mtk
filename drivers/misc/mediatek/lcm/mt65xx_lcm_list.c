@@ -105,6 +105,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ontim_hx83102d_hdplus_dsi_vdo_kingdly_6517_lcm_drv,
 #endif
 
+#if defined(ONTIM_HX83112A_HDPLUS_DSI_VDO_TIANMA_6517)
+	&ontim_hx83112a_hdplus_dsi_vdo_tianma_6517_lcm_drv,
+#endif
+
 #if defined(HX83102D_HDPLUS_DSI_VDO_TRULY_6528)
 	&hx83102d_hdplus_dsi_vdo_truly_6528_lcm_drv,
 #endif

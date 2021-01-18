@@ -27,9 +27,6 @@ extern int hx_EC_event_flag;
 extern int hx_ED_event_flag;
 #endif
 
-#define HIMAX_PROC_VENDOR_FILE "vendor"
-extern struct proc_dir_entry *himax_proc_vendor_file;
-
 #define HIMAX_PROC_PEN_POS_FILE "pen_pos"
 
 int himax_touch_proc_init(void);

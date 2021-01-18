@@ -201,9 +201,9 @@ int himax_parse_dt(struct himax_ts_data *ts,
 	/* Set device tree data */
 	/* Set panel coordinates */
 	pdata->abs_x_min = hx_panel_coords[0];
-	pdata->abs_x_max = hx_panel_coords[1]-1;
+	pdata->abs_x_max = hx_panel_coords[1];
 	pdata->abs_y_min = hx_panel_coords[2];
-	pdata->abs_y_max = hx_panel_coords[3]-1;
+	pdata->abs_y_max = hx_panel_coords[3];
 	I(" %s:panel-coords = %d, %d, %d, %d\n", __func__,
 			pdata->abs_x_min,
 			pdata->abs_x_max,
@@ -372,11 +372,12 @@ int himax_gpio_power_config(struct himax_i2c_platform_data *pdata)
 	if (error != 0)
 		I("Failed to enable reg-vgp6: %d\n", error);
 
+	msleep(100);
 #if defined(HX_RST_PIN_FUNC)
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
-	msleep(5);
+	msleep(20);
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 0);
-	msleep(5);
+	msleep(20);
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
 #endif
 	I("mtk_tpd: himax reset over\n");
@@ -505,6 +506,7 @@ int himax_ts_register_interrupt(void)
 		I("%s: polling mode enabled\n", __func__);
 	}
 
+	tpd_load_status = 1;
 	return ret;
 }
 
@@ -559,8 +561,8 @@ static int himax_common_probe_spi(struct spi_device *spi)
 	} else {
 		ret = pinctrl_select_state(himax_spi_pinctrl, spi_all);
 		I("%s: state_spi_all select ret = %d\n", __func__, ret);
-	}  */
-
+	}
+*/
 	gBuffer = kzalloc(sizeof(uint8_t) * HX_MAX_WRITE_SZ, GFP_KERNEL);
 	if (gBuffer == NULL) {
 		E("%s: allocate gBuffer failed\n", __func__);
@@ -599,7 +601,7 @@ static int himax_common_probe_spi(struct spi_device *spi)
 	ret = himax_chip_common_init();
 	if (ret < 0)
 		goto err_common_init_failed;
-	tpd_load_status = 1;
+
 	return ret;
 
 err_common_init_failed:
@@ -636,13 +638,11 @@ static void himax_common_suspend(struct device *dev)
 
 static void himax_common_resume(struct device *dev)
 {
-#if !defined(HX_UPDATE_FW_FROM_DISPLAY)
 	struct himax_ts_data *ts = private_ts;
 
 	I("%s: enter\n", __func__);
 	himax_chip_common_resume(ts);
 	I("%s: END\n", __func__);
-#endif
 }
 
 
@@ -672,11 +672,7 @@ int fb_notifier_callback(struct notifier_block *self,
 				&ts->ts_int_work,
 				msecs_to_jiffies(DELAY_TIME));
 #else
-
-#if !defined(HX_UPDATE_FW_FROM_DISPLAY)
 			himax_common_resume(ts->dev);
-#endif
-
 #endif
 			break;
 

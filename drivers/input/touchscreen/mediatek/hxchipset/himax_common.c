@@ -23,6 +23,10 @@ int (*hx_msm_drm_register_client)(struct notifier_block *nb);
 int (*hx_msm_drm_unregister_client)(struct notifier_block *nb);
 #endif
 
+char *normal_fw;
+char *mp_fw;
+char *file_name_2;
+
 #if defined(HX_SMART_WAKEUP)
 #define GEST_SUP_NUM 26
 /* Setting cust key define (DF = double finger) */
@@ -126,9 +130,9 @@ EXPORT_SYMBOL(g_target_report_data);
 
 static void himax_report_all_leave_event(struct himax_ts_data *ts);
 /*ts_work about end*/
-static int		HX_TOUCH_INFO_POINT_CNT;
 
 struct filename* (*kp_getname_kernel)(const char *filename);
+void (*kp_putname_kernel)(struct filename *name);
 struct file* (*kp_file_open_name)(struct filename *name,
 		int flags, umode_t mode);
 
@@ -225,6 +229,9 @@ struct proc_dir_entry *himax_proc_psensor_file;
 #define HIMAX_PROC_HSEN_FILE "HSEN"
 struct proc_dir_entry *himax_proc_HSEN_file;
 #endif
+
+#define HIMAX_PROC_VENDOR_FILE "vendor"
+struct proc_dir_entry *himax_proc_vendor_file;
 
 #if defined(HX_PALM_REPORT)
 static int himax_palm_detect(uint8_t *buf)
@@ -630,6 +637,82 @@ static const struct file_operations himax_proc_psensor_ops = {
 #endif
 #endif
 
+static ssize_t himax_vendor_read(struct file *file, char *buf,
+				size_t len, loff_t *pos)
+{
+	ssize_t ret = 0;
+	char *temp_buf = NULL;
+
+	if (!HX_PROC_SEND_FLAG) {
+		temp_buf = kcalloc(len, sizeof(char), GFP_KERNEL);
+		ret += snprintf(temp_buf + ret, len - ret,
+				"IC = %s\n", private_ts->chip_name);
+
+		ret += snprintf(temp_buf + ret, len - ret,
+				"FW_VER = 0x%2.2X\n", ic_data->vendor_fw_ver);
+
+		if (private_ts->chip_cell_type == CHIP_IS_ON_CELL) {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"CONFIG_VER = 0x%2.2X\n",
+					ic_data->vendor_config_ver);
+		} else {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"TOUCH_VER = 0x%2.2X\n",
+					ic_data->vendor_touch_cfg_ver);
+			ret += snprintf(temp_buf + ret, len - ret,
+					"DISPLAY_VER = 0x%2.2X\n",
+					ic_data->vendor_display_cfg_ver);
+		}
+
+		if (ic_data->vendor_cid_maj_ver < 0
+		&& ic_data->vendor_cid_min_ver < 0) {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"CID_VER = NULL\n");
+		} else {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"CID_VER = 0x%2.2X\n",
+					(ic_data->vendor_cid_maj_ver << 8 |
+					ic_data->vendor_cid_min_ver));
+		}
+
+		if (ic_data->vendor_panel_ver < 0) {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"PANEL_VER = NULL\n");
+		} else {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"PANEL_VER = 0x%2.2X\n",
+					ic_data->vendor_panel_ver);
+		}
+		if (private_ts->chip_cell_type == CHIP_IS_IN_CELL) {
+			ret += snprintf(temp_buf + ret, len - ret,
+					"Cusomer = %s\n",
+					ic_data->vendor_cus_info);
+			ret += snprintf(temp_buf + ret, len - ret,
+					"Project = %s\n",
+					ic_data->vendor_proj_info);
+		}
+		ret += snprintf(temp_buf + ret, len - ret, "\n");
+		ret += snprintf(temp_buf + ret, len - ret,
+				"Himax Touch Driver Version:\n");
+		ret += snprintf(temp_buf + ret, len - ret, "%s\n",
+				HIMAX_DRIVER_VER);
+
+		if (copy_to_user(buf, temp_buf, len))
+			I("%s,here:%d\n", __func__, __LINE__);
+
+		kfree(temp_buf);
+		HX_PROC_SEND_FLAG = 1;
+	} else {
+		HX_PROC_SEND_FLAG = 0;
+	}
+
+	return ret;
+}
+static const struct file_operations himax_proc_vendor_ops = {
+	.owner = THIS_MODULE,
+	.read = himax_vendor_read,
+};
+
 int himax_common_proc_init(void)
 {
 	himax_touch_proc_dir = proc_mkdir(HIMAX_PROC_TOUCH_FOLDER, NULL);
@@ -686,7 +769,17 @@ int himax_common_proc_init(void)
 	}
 #endif
 #endif
+	himax_proc_vendor_file = proc_create(HIMAX_PROC_VENDOR_FILE, 0444,
+		himax_touch_proc_dir, &himax_proc_vendor_ops);
+	if (himax_proc_vendor_file == NULL) {
+		E(" %s: proc vendor file create failed!\n", __func__);
+		goto fail_6;
+	}
+
 	return 0;
+
+	remove_proc_entry(HIMAX_PROC_VENDOR_FILE, himax_touch_proc_dir);
+fail_6:
 #if defined(HX_SMART_WAKEUP)
 #if defined(HX_ULTRA_LOW_POWER)
 	remove_proc_entry(HIMAX_PROC_PSENSOR_FILE, himax_touch_proc_dir);
@@ -708,10 +801,7 @@ fail_1:
 
 void himax_common_proc_deinit(void)
 {
-	remove_proc_entry(HIMAX_PROC_SELF_TEST_FILE, himax_touch_proc_dir);
-#if defined(HX_HIGH_SENSE)
-	remove_proc_entry(HIMAX_PROC_HSEN_FILE, himax_touch_proc_dir);
-#endif
+	remove_proc_entry(HIMAX_PROC_VENDOR_FILE, himax_touch_proc_dir);
 #if defined(HX_SMART_WAKEUP)
 #if defined(HX_ULTRA_LOW_POWER)
 	remove_proc_entry(HIMAX_PROC_PSENSOR_FILE, himax_touch_proc_dir);
@@ -719,6 +809,11 @@ void himax_common_proc_deinit(void)
 	remove_proc_entry(HIMAX_PROC_GESTURE_FILE, himax_touch_proc_dir);
 	remove_proc_entry(HIMAX_PROC_SMWP_FILE, himax_touch_proc_dir);
 #endif
+#if defined(HX_HIGH_SENSE)
+	remove_proc_entry(HIMAX_PROC_HSEN_FILE, himax_touch_proc_dir);
+#endif
+	remove_proc_entry(HIMAX_PROC_SELF_TEST_FILE, himax_touch_proc_dir);
+
 	remove_proc_entry(HIMAX_PROC_TOUCH_FOLDER, NULL);
 }
 
@@ -790,7 +885,7 @@ int himax_input_register(struct himax_ts_data *ts)
 	set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit);
 #if defined(HX_PROTOCOL_A)
 	/*ts->input_dev->mtsize = ts->nFinger_support;*/
-	input_set_abs_params(ts->input_dev, ABS_MT_TRACKING_ID, 0, 3, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_MT_TRACKING_ID, 1, 10, 0, 0);
 #else
 	set_bit(MT_TOOL_FINGER, ts->input_dev->keybit);
 #if defined(HX_PROTOCOL_B_3PA)
@@ -886,56 +981,6 @@ input_device_fail:
 }
 EXPORT_SYMBOL(himax_input_register);
 
-static void calcDataSize(void)
-{
-	struct himax_ts_data *ts_data = private_ts;
-
-	ts_data->x_channel = ic_data->HX_RX_NUM;
-	ts_data->y_channel = ic_data->HX_TX_NUM;
-	ts_data->nFinger_support = ic_data->HX_MAX_PT;
-
-	ts_data->coord_data_size = 4 * ts_data->nFinger_support;
-	ts_data->area_data_size = ((ts_data->nFinger_support / 4)
-				+ (ts_data->nFinger_support % 4 ? 1 : 0)) * 4;
-	ts_data->coordInfoSize = ts_data->coord_data_size
-				+ ts_data->area_data_size + 4;
-	ts_data->raw_data_frame_size = 128 - ts_data->coord_data_size
-				- ts_data->area_data_size - 4 - 4 - 1;
-
-	if (ts_data->raw_data_frame_size == 0) {
-		E("%s: could NOT calculate!\n", __func__);
-		return;
-	}
-
-	ts_data->raw_data_nframes = ((uint32_t)ts_data->x_channel
-					* ts_data->y_channel
-					+ ts_data->x_channel
-					+ ts_data->y_channel)
-					/ ts_data->raw_data_frame_size
-					+ (((uint32_t)ts_data->x_channel
-					* ts_data->y_channel
-					+ ts_data->x_channel
-					+ ts_data->y_channel)
-					% ts_data->raw_data_frame_size) ? 1 : 0;
-
-	I("%s: coord_dsz:%d,area_dsz:%d,raw_data_fsz:%d,raw_data_nframes:%d",
-		__func__,
-		ts_data->coord_data_size,
-		ts_data->area_data_size,
-		ts_data->raw_data_frame_size,
-		ts_data->raw_data_nframes);
-}
-
-static void calculate_point_number(void)
-{
-	HX_TOUCH_INFO_POINT_CNT = ic_data->HX_MAX_PT * 4;
-
-	if ((ic_data->HX_MAX_PT % 4) == 0)
-		HX_TOUCH_INFO_POINT_CNT += (ic_data->HX_MAX_PT / 4) * 4;
-	else
-		HX_TOUCH_INFO_POINT_CNT += ((ic_data->HX_MAX_PT / 4) + 1) * 4;
-}
-
 #if defined(HX_BOOT_UPGRADE) || defined(HX_ZERO_FLASH)
 static int himax_auto_update_check(void)
 {
@@ -958,36 +1003,31 @@ static int himax_auto_update_check(void)
 
 	return ret;
 }
-int g_fw_flag;
+
 static int i_get_FW(void)
 {
 	int ret = -1;
 	int result = NO_ERR;
 
-	if (strstr(lcd_info_pr, "hx83102d")) {
-		if (strstr(lcd_info_pr, "truly")){
-			I("%s: file name 1= %s\n", __func__, BOOT_UPGRADE_FWNAME);
-			g_fw_flag = 1;
-			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME, private_ts->dev);
-		} else if (strstr(lcd_info_pr, "kd")) {
-			I("%s: file name 2= %s\n", __func__, BOOT_UPGRADE_FWNAME1);
-			g_fw_flag = 2;
-			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME1, private_ts->dev);
-		} else if (strstr(lcd_info_pr, "kingdly")) {
-			I("%s: file name 3= %s\n", __func__, BOOT_UPGRADE_FWNAME2);
-			g_fw_flag = 3;
-			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME2, private_ts->dev);
-		} else {
-			I("%s: file name = %s\n", __func__, BOOT_UPGRADE_FWNAME);
-			g_fw_flag = 0;
-			ret = request_firmware(&hxfw, BOOT_UPGRADE_FWNAME, private_ts->dev);
-		}
+	if (strstr(mtkfb_find_lcm_driver(), "truly") != NULL) {
+		normal_fw =  "Himax_firmware.bin";
+	} else if (strstr(mtkfb_find_lcm_driver(), "kd") != NULL) {
+		normal_fw =  "Himax_kd_firmware.bin";
+	} else if (strstr(mtkfb_find_lcm_driver(), "kingdly") != NULL) {
+		normal_fw =  "Himax_kingdly_firmware.bin";
+	} else if (strstr(mtkfb_find_lcm_driver(), "hx83112a") != NULL) {
+		normal_fw =  "Himax_tm_firmware_hx83112.bin";
+	} else {
+		normal_fw =  "Himax_firmware.bin";
 	}
+	I("%s: file name = %s\n", __func__, normal_fw);
+	ret = request_firmware(&hxfw, normal_fw, private_ts->dev);
 	if (ret < 0) {
 #if defined(__EMBEDDED_FW__)
 		hxfw = &g_embedded_fw;
 		I("%s: Not find FW in userspace, use embedded FW(size:%zu)",
 			__func__, g_embedded_fw.size);
+		result = HX_EMBEDDED_FW;
 #else
 		E("%s,%d: error code = %d\n", __func__, __LINE__, ret);
 		return OPEN_FILE_FAIL;
@@ -1013,9 +1053,13 @@ static int i_update_FW(void)
 
 	g_core_fp.fp_reload_disable(0);
 
+	g_core_fp.fp_power_on_init();
+
 	g_core_fp.fp_read_FW_ver();
 
 	g_core_fp.fp_touch_information();
+
+	g_core_fp.fp_calc_touch_data_size();
 
 	result = 1;/*upgrade success*/
 
@@ -1050,19 +1094,13 @@ update_retry:
 
 
 	} else {
+		g_core_fp.fp_power_on_init();
 		g_core_fp.fp_read_FW_ver();
 		g_core_fp.fp_touch_information();
+		g_core_fp.fp_calc_touch_data_size();
 		result = 1;/*upgrade success*/
 		I("%s: TP upgrade OK\n", __func__);
 	}
-#endif
-
-#if defined(HX_RST_PIN_FUNC)
-	g_core_fp.fp_ic_reset(true, false);
-#else
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
-	g_core_fp.fp_sense_on(0x00);
 #endif
 
 	himax_int_enable(1);
@@ -1104,8 +1142,6 @@ static void himax_excp_hw_reset(void)
 		goto ESCAPE_0F_UPDATE;
 	}
 	g_core_fp.fp_reload_disable(0);
-	if (g_core_fp._fw_sts_clear != NULL)
-		g_core_fp._fw_sts_clear();
 	g_core_fp.fp_sense_on(0x00);
 	himax_report_all_leave_event(private_ts);
 	himax_int_enable(1);
@@ -1339,6 +1375,43 @@ int himax_report_data_init(void)
 	}
 
 #endif
+
+	if (g_target_report_data != NULL) {
+		if (ic_data->HX_PEN_FUNC) {
+			kfree(g_target_report_data->p_on);
+			g_target_report_data->p_on = NULL;
+			kfree(g_target_report_data->p_tilt_y);
+			g_target_report_data->p_tilt_y = NULL;
+			kfree(g_target_report_data->p_btn2);
+			g_target_report_data->p_btn2 = NULL;
+			kfree(g_target_report_data->p_btn);
+			g_target_report_data->p_btn = NULL;
+			kfree(g_target_report_data->p_tilt_x);
+			g_target_report_data->p_tilt_x = NULL;
+			kfree(g_target_report_data->p_hover);
+			g_target_report_data->p_hover = NULL;
+			kfree(g_target_report_data->pen_id);
+			g_target_report_data->pen_id = NULL;
+			kfree(g_target_report_data->p_w);
+			g_target_report_data->p_w = NULL;
+			kfree(g_target_report_data->p_y);
+			g_target_report_data->p_y = NULL;
+			kfree(g_target_report_data->p_x);
+			g_target_report_data->p_x = NULL;
+		}
+
+		kfree(g_target_report_data->finger_id);
+		g_target_report_data->finger_id = NULL;
+		kfree(g_target_report_data->w);
+		g_target_report_data->w = NULL;
+		kfree(g_target_report_data->y);
+		g_target_report_data->y = NULL;
+		kfree(g_target_report_data->x);
+		g_target_report_data->x = NULL;
+		kfree(g_target_report_data);
+		g_target_report_data = NULL;
+	}
+
 	hx_touch_data->touch_all_size = g_core_fp.fp_get_touch_data_size();
 	hx_touch_data->raw_cnt_max = ic_data->HX_MAX_PT / 4;
 	hx_touch_data->raw_cnt_rmd = ic_data->HX_MAX_PT % 4;
@@ -1861,9 +1934,10 @@ static int himax_ts_event_check(struct himax_ts_data *ts,
 		I("Now Path=%d, Now status=%d, length=%d\n",
 				ts_path, ts_status, length);
 
-	for (loop_i = 0; loop_i < length; loop_i++) {
-		if (ts_path == HX_REPORT_COORD
-		|| ts_path == HX_REPORT_COORD_RAWDATA) {
+	if (ts_path == HX_REPORT_COORD || ts_path == HX_REPORT_COORD_RAWDATA) {
+		if (ic_data->HX_PEN_FUNC)
+			length -= PEN_INFO_SZ;
+		for (loop_i = 0; loop_i < length; loop_i++) {
 			/* case 1 EXCEEPTION recovery flow */
 			if (buf[loop_i] == 0xEB) {
 				hx_EB_event++;
@@ -1876,11 +1950,8 @@ static int himax_ts_event_check(struct himax_ts_data *ts,
 			} else if (buf[loop_i] == 0x00) {
 				hx_zero_event++;
 			} else {
-				hx_EB_event = 0;
-				hx_EC_event = 0;
-				hx_ED_event = 0;
-				hx_zero_event = 0;
 				g_zero_event_count = 0;
+				break;
 			}
 		}
 	}
@@ -1913,8 +1984,6 @@ static int himax_ts_event_check(struct himax_ts_data *ts,
  *	}
  *#endif
  */
-	else
-		hx_excp_event = 0;
 
 	if ((hx_excp_event == length || hx_zero_event == length)
 		&& (HX_HW_RESET_ACTIVATE == 0)
@@ -2071,12 +2140,13 @@ int himax_parse_report_points(struct himax_ts_data *ts,
 	if (g_ts_dbg != 0)
 		I("%s: start!\n", __func__);
 
+	base = hx_touch_data->touch_info_size;
 
 	if (!ic_data->HX_PEN_FUNC)
 		goto skip_pen_operation;
 
 	p_p_on = 0;
-	base = hx_touch_data->touch_info_size - PEN_INFO_SZ;
+	base -= PEN_INFO_SZ;
 
 	p_x = hx_touch_data->hx_coord_buf[base] << 8
 		| hx_touch_data->hx_coord_buf[base + 1];
@@ -2143,15 +2213,14 @@ skip_pen_operation:
 	}
 	ts->pre_finger_mask = 0;
 	hx_touch_data->finger_num =
-			hx_touch_data->hx_coord_buf[ts->coordInfoSize - 4]
-			& 0x0F;
+		hx_touch_data->hx_coord_buf[base - 4] & 0x0F;
 	hx_touch_data->finger_on = 1;
 	AA_press = 1;
 
 	g_target_report_data->finger_num = hx_touch_data->finger_num;
 	g_target_report_data->finger_on = hx_touch_data->finger_on;
 	g_target_report_data->ig_count =
-			hx_touch_data->hx_coord_buf[ts->coordInfoSize - 5];
+		hx_touch_data->hx_coord_buf[base - 5];
 
 	if (g_ts_dbg != 0)
 		I("%s:finger_num = 0x%2X, finger_on = %d\n", __func__,
@@ -2340,7 +2409,8 @@ static void himax_finger_report(struct himax_ts_data *ts)
 			input_report_abs(ts->input_dev, ABS_MT_PRESSURE,
 					g_target_report_data->w[i]);
 #else
-			input_report_abs(ts->input_dev, ABS_MT_TRACKING_ID, i);
+			input_report_abs(ts->input_dev, ABS_MT_TRACKING_ID,
+					i + 1);
 #endif
 			input_report_abs(ts->input_dev, ABS_MT_POSITION_X,
 					g_target_report_data->x[i]);
@@ -2621,8 +2691,14 @@ void himax_ts_work(struct himax_ts_data *ts)
 	int ts_status = HX_TS_NORMAL_END;
 	int ts_path = 0;
 
-	if (debug_data != NULL)
+	if (debug_data != NULL) {
+		if (debug_data->is_checking_irq) {
+			if (g_ts_dbg != 0)
+				I("Now checking IRQ, skip it!\n");
+			return;
+		}
 		debug_data->fp_ts_dbg_func(ts, HX_FINGER_ON);
+	}
 	if (ts->notouch_frame > 0) {
 		if (g_ts_dbg != 0)
 			I("Skipit=%d\n", ts->notouch_frame--);
@@ -2687,7 +2763,10 @@ enum hrtimer_restart himax_ts_timer_func(struct hrtimer *timer)
 #if defined(HX_BOOT_UPGRADE) || defined(HX_ZERO_FLASH)
 static void himax_boot_upgrade(struct work_struct *work)
 {
-	if (i_get_FW() != 0)
+	int fw_sts = -1;
+
+	fw_sts = i_get_FW();
+	if (fw_sts < NO_ERR)
 		return;
 
 	g_core_fp.fp_bin_desc_get((unsigned char *)hxfw->data, HX1K);
@@ -2707,7 +2786,8 @@ UPDATE_FW:
 		I("%s: Update FW success\n", __func__);
 
 SKIP_UPDATE_FW:
-	release_firmware(hxfw);
+	if (fw_sts == NO_ERR)
+		release_firmware(hxfw);
 	hxfw = NULL;
 
 }
@@ -2781,15 +2861,22 @@ int himax_chip_common_init(void)
 		E("prepare kp_getname_kernel failed!\n");
 		/*goto err_xfer_buff_fail;*/
 	}
+	kp_putname_kernel = (void *)kallsyms_lookup_name("putname");
+	if (!kp_putname_kernel) {
+		E("prepare kp_putname_kernel failed!\n");
+		/*goto err_xfer_buff_fail;*/
+	}
 	kp_file_open_name = (void *)kallsyms_lookup_name("file_open_name");
 	if (!kp_file_open_name) {
 		E("prepare kp_file_open_name failed!\n");
 		goto err_xfer_buff_fail;
 	}
+
 #if defined(__EMBEDDED_FW__)
 	g_embedded_fw.size = (size_t)_binary___Himax_firmware_bin_end -
 			(size_t)_binary___Himax_firmware_bin_start;
 #endif
+
 	ts->xfer_buff = devm_kzalloc(ts->dev, 128 * sizeof(uint8_t),
 			GFP_KERNEL);
 	if (ts->xfer_buff == NULL) {
@@ -2826,12 +2913,16 @@ int himax_chip_common_init(void)
 		goto err_alloc_dt_pdata_failed;
 	}
 
+	if (pdata->virtual_key)
+		ts->button = pdata->virtual_key;
+
 #if defined(HX_RST_PIN_FUNC)
 	ts->rst_gpio = pdata->gpio_reset;
 #endif
-	himax_gpio_power_config(pdata);
-#if !defined(CONFIG_OF)
 
+	himax_gpio_power_config(pdata);
+
+#if !defined(CONFIG_OF)
 	if (pdata->power) {
 		ret = pdata->power(1);
 
@@ -2840,7 +2931,10 @@ int himax_chip_common_init(void)
 			goto err_power_failed;
 		}
 	}
+#endif
 
+#if defined(CONFIG_OF)
+	ts->power = pdata->power;
 #endif
 
 	g_hx_chip_inited = 0;
@@ -2885,9 +2979,6 @@ found_hx_chip:
 		goto error_ic_detect_failed;
 	}
 
-	if (pdata->virtual_key)
-		ts->button = pdata->virtual_key;
-
 #if defined(HX_ZERO_FLASH)
 	g_boot_upgrade_flag = 1;
 #else
@@ -2896,10 +2987,19 @@ found_hx_chip:
 	#if defined(HX_BOOT_UPGRADE)
 		g_boot_upgrade_flag = 1;
 	#endif
-	} else {
-		g_core_fp.fp_read_FW_ver();
 	}
 #endif
+
+#if defined(HX_ZERO_FLASH) || defined(HX_BOOT_UPGRADE)
+	if (!g_boot_upgrade_flag) {
+#endif
+		g_core_fp.fp_power_on_init();
+		g_core_fp.fp_read_FW_ver();
+#if defined(HX_ZERO_FLASH) || defined(HX_BOOT_UPGRADE)
+	}
+#endif
+	g_core_fp.fp_touch_information();
+	g_core_fp.fp_calc_touch_data_size();
 
 #if defined(HX_BOOT_UPGRADE) || defined(HX_ZERO_FLASH)
 	ts->himax_boot_upgrade_wq =
@@ -2931,18 +3031,6 @@ found_hx_chip:
  *		goto err_detect_failed;
  *	}
  */
-	g_core_fp.fp_power_on_init();
-	calculate_point_number();
-
-	mutex_init(&ts->fw_update_lock);
-
-#if defined(CONFIG_OF)
-	ts->power = pdata->power;
-#endif
-
-	/*calculate the i2c data size*/
-	calcDataSize();
-	I("%s: calcDataSize complete\n", __func__);
 
 #if defined(CONFIG_OF)
 	ts->pdata->abs_pressure_min        = 0;
@@ -2999,24 +3087,6 @@ found_hx_chip:
 #if defined(HX_HIGH_SENSE)
 	ts->HSEN_enable = 0;
 #endif
-#ifdef HX_UPDATE_FW_FROM_DISPLAY
-	INIT_WORK(&ts->notifie_resume_work_queue, himax_notifie_resume_workqueue);
-
-	ts->ts_recovery_workqueue =
-			create_singlethread_workqueue("himax_recovery_wq");
-	if (!ts->ts_recovery_workqueue) {
-		E("%s: create ts_recovery workqueue failed\n", __func__);
-		goto err_create_ts_recovery_wq_failed;
-	}
-	INIT_DELAYED_WORK(&ts->recovery_work_queue, himax_recovery_work_func);
-
-#endif
-
-	/*touch data init*/
-	err = himax_report_data_init();
-
-	if (err)
-		goto err_report_data_init_failed;
 
 	if (himax_common_proc_init()) {
 		E(" %s: himax_common proc_init failed!\n", __func__);
@@ -3038,14 +3108,6 @@ found_hx_chip:
 	return 0;
 
 err_creat_proc_file_failed:
-	himax_report_data_deinit();
-err_report_data_init_failed:
-
-#if defined(HX_UPDATE_FW_FROM_DISPLAY)
-	cancel_delayed_work_sync(&ts->recovery_work_queue);
-	destroy_workqueue(ts->ts_recovery_workqueue);
-err_create_ts_recovery_wq_failed:
-#endif
 #if defined(HX_SMART_WAKEUP)
 	wakeup_source_trash(&ts->ts_SMWP_wake_lock);
 #endif
@@ -3164,7 +3226,6 @@ void himax_chip_common_deinit(void)
 	I("%s: Common section deinited!\n", __func__);
 }
 
-
 #ifdef HX_UPDATE_FW_FROM_DISPLAY
 static void himax_notifie_resume_workqueue(struct work_struct *work)
 {
@@ -3235,7 +3296,6 @@ int himax_chip_common_suspend(struct himax_ts_data *ts)
 		goto END;
 	}
 
-
 #if defined(HX_SMART_WAKEUP)\
 	|| defined(HX_HIGH_SENSE)\
 	|| defined(HX_USB_DETECT_GLOBAL)
@@ -3250,7 +3310,8 @@ int himax_chip_common_suspend(struct himax_ts_data *ts)
 		if (ts->in_self_test == 0)
 			g_core_fp.fp_0f_overlay(2, 0);
 #endif
-
+		if (g_core_fp._ap_notify_fw_sus != NULL)
+			g_core_fp._ap_notify_fw_sus(1);
 		atomic_set(&ts->suspend_mode, 1);
 		ts->pre_finger_mask = 0;
 		I("[himax] %s: SMART_WAKEUP enable, reject suspend\n",
@@ -3291,8 +3352,7 @@ END:
 
 int himax_chip_common_resume(struct himax_ts_data *ts)
 {
-//#if !defined(HX_UPDATE_FW_FROM_DISPLAY)
-#if defined(HX_ZERO_FLASH) && defined(HX_RESUME_SET_FW)
+#if defined(HX_RESUME_SET_FW)
 	int result = 0;
 #endif
 	I("%s: enter\n", __func__);
@@ -3315,20 +3375,20 @@ int himax_chip_common_resume(struct himax_ts_data *ts)
 	if (ts->pdata)
 		if (ts->pdata->powerOff3V3 && ts->pdata->power)
 			ts->pdata->power(1);
-	I("%s: enter 2\n", __func__);
 #if defined(HX_RST_PIN_FUNC) && defined(HX_RESUME_HW_RESET)
 	if (g_core_fp.fp_ic_reset != NULL)
 		g_core_fp.fp_ic_reset(false, false);
 #endif
 
-#if defined(HX_ZERO_FLASH) && defined(HX_RESUME_SET_FW)
-		mutex_lock(&private_ts->fw_update_lock);
+#if defined(HX_RESUME_SET_FW)
+#if defined(HX_SMART_WAKEUP) && !defined(HX_SWU_RESUME_SET_FW)
+	if (!ts->SMWP_enable) {
+#endif
 		I("It will update fw after resume in zero flash mode!\n");
 		if (g_core_fp.fp_0f_operation_dirly != NULL) {
 			result = g_core_fp.fp_0f_operation_dirly();
 			if (result) {
 				E("Something wrong! Skip Update zero flash!\n");
-				mutex_unlock(&private_ts->fw_update_lock);
 				goto ESCAPE_0F_UPDATE;
 			}
 		}
@@ -3336,17 +3396,29 @@ int himax_chip_common_resume(struct himax_ts_data *ts)
 			g_core_fp.fp_reload_disable(0);
 		if (g_core_fp.fp_sense_on != NULL)
 			g_core_fp.fp_sense_on(0x00);
-		mutex_unlock(&private_ts->fw_update_lock);
+#if defined(HX_SMART_WAKEUP) && !defined(HX_SWU_RESUME_SET_FW)
+	}
 #endif
-	I("%s: enter 3\n", __func__);
+#endif
 #if defined(HX_SMART_WAKEUP)\
 	|| defined(HX_HIGH_SENSE)\
 	|| defined(HX_USB_DETECT_GLOBAL)
 	if (g_core_fp.fp_resend_cmd_func != NULL)
 		g_core_fp.fp_resend_cmd_func(ts->suspended);
+
+#if defined(HX_CODE_OVERLAY)\
+	&& defined(HX_SMART_WAKEUP)
+	if (ts->SMWP_enable && ts->in_self_test == 0)
+		g_core_fp.fp_0f_overlay(3, 0);
+#endif
+	if (g_core_fp._ap_notify_fw_sus != NULL)
+		g_core_fp._ap_notify_fw_sus(0);
 #endif
 	himax_report_all_leave_event(ts);
-	I("%s: enter 4\n", __func__);
+
+	if (g_core_fp.fp_resume_ic_action != NULL)
+		g_core_fp.fp_resume_ic_action();
+
 	himax_int_enable(1);
 #if defined(HX_ZERO_FLASH) && defined(HX_RESUME_SET_FW)
 ESCAPE_0F_UPDATE:
@@ -3354,7 +3426,7 @@ ESCAPE_0F_UPDATE:
 END:
 	if (ts->in_self_test == 1)
 		ts->suspend_resume_done = 1;
-//#endif
+
 	I("%s: END\n", __func__);
 	return 0;
 }

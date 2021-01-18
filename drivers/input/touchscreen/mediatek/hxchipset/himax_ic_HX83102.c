@@ -15,7 +15,9 @@
 
 #include "himax_ic_HX83102.h"
 #include "himax_modular.h"
-
+extern char *normal_fw;
+extern char *mp_fw;
+extern char *file_name_2;
 static void hx83102_chip_init(void)
 {
 	(*kp_private_ts)->chip_cell_type = CHIP_IS_IN_CELL;
@@ -147,9 +149,9 @@ static void hx83102_pin_reset(void)
 {
 	I("%s: Now reset the Touch chip.\n", __func__);
 	kp_himax_rst_gpio_set((*kp_private_ts)->rst_gpio, 0);
-	msleep(5);
+	usleep_range(RST_LOW_PERIOD_S, RST_LOW_PERIOD_E);
 	kp_himax_rst_gpio_set((*kp_private_ts)->rst_gpio, 1);
-	msleep(5);
+	usleep_range(RST_HIGH_PERIOD_S, RST_HIGH_PERIOD_E);
 }
 #endif
 
@@ -177,8 +179,8 @@ static bool hx83102_sense_off(bool check_en)
 			tmp_writ[0] = 0xA5;
 			hx83102_flash_write_burst(tmp_addr, tmp_writ);
 		}
+		msleep(20);
 
-		msleep(1);
 		/* check fw status */
 		tmp_addr[3] = 0x90;
 		tmp_addr[2] = 0x00;
@@ -191,7 +193,7 @@ static bool hx83102_sense_off(bool check_en)
 				__func__, tmp_data[0]);
 			break;
 		}
-		msleep(10);
+
 		tmp_addr[3] = 0x90;
 		tmp_addr[2] = 0x00;
 		tmp_addr[1] = 0x00;
@@ -516,6 +518,7 @@ static uint8_t hx83102ab_read_DD_status(uint8_t *cmd_set, uint8_t *tmp_data)
 
 static void hx83102ab_power_on_init(void)
 {
+#if 0
 	uint8_t tmp_data[DATA_LEN_4];
 
 	I("%s:\n", __func__);
@@ -526,7 +529,42 @@ static void hx83102ab_power_on_init(void)
 	kp_g_core_fp->fp_register_write((*kp_pfw_op)->addr_sorting_mode_en,
 			DATA_LEN_4, tmp_data, 0);
 	kp_g_core_fp->fp_touch_information();
+	kp_g_core_fp->fp_calc_touch_data_size();
+	/*kp_g_core_fp->fp_sense_on(0x00);*/
+#endif
+
+	uint8_t data[4] = {0};
+	uint8_t retry = 0;
+
+	/*RawOut select initial*/
+	kp_g_core_fp->fp_register_write((*kp_pfw_op)->addr_raw_out_sel,
+		DATA_LEN_4, data, 0);
+	/*DSRAM func initial*/
+	kp_g_core_fp->fp_assign_sorting_mode(data);
+	/*FW reload done initial*/
+	kp_g_core_fp->fp_register_write(
+		(*kp_pdriver_op)->addr_fw_define_2nd_flash_reload,
+		DATA_LEN_4, data, 0);
+
 	kp_g_core_fp->fp_sense_on(0x00);
+
+	I("%s: waiting for FW reload done\n", __func__);
+
+	while (retry++ <= 30) {
+		kp_g_core_fp->fp_register_read(
+			(*kp_pdriver_op)->addr_fw_define_2nd_flash_reload,
+			DATA_LEN_4, data, 0);
+
+		/* use all 4 bytes to compare */
+		if ((data[3] == 0x00 && data[2] == 0x00 &&
+			data[1] == 0x72 && data[0] == 0xC0)) {
+			I("%s: FW finish reload done\n", __func__);
+			break;
+		}
+		I("%s: wait reload done %d times\n", __func__, retry);
+		kp_g_core_fp->fp_read_FW_status();
+		usleep_range(10000, 11000);
+	}
 }
 
 static int hx83102ab_fts_ctpm_fw_upgrade_with_sys_fs_64k(unsigned char *fw,
@@ -631,7 +669,7 @@ static bool hx83102d_sense_off(bool check_en)
 				(*kp_pfw_op)->data_fw_stop,
 				0);
 		/*msleep(20);*/
-		usleep_range(1000, 1001);
+		usleep_range(10000, 10001);
 
 		/* check fw status */
 		kp_g_core_fp->fp_register_read(
@@ -645,7 +683,7 @@ static bool hx83102d_sense_off(bool check_en)
 				__func__, tmp_data[0]);
 			break;
 		}
-		usleep_range(10000, 10001);
+
 		kp_g_core_fp->fp_register_read((*kp_pfw_op)->addr_ctrl_fw_isr,
 			4, tmp_data, false);
 		I("%s: cnt = %d, data[0] = 0x%02X!\n", __func__,
@@ -986,17 +1024,8 @@ static void himax_hx83102d_sense_on(uint8_t FlashMode)
 #else
 		kp_g_core_fp->fp_system_reset();
 #endif
-		himax_hx83102d_reload_to_active();
 	} else {
-		himax_hx83102d_reload_to_active();
 		do {
-			kp_g_core_fp->fp_register_write(
-				(*kp_pfw_op)->addr_safe_mode_release_pw,
-				sizeof((*kp_pfw_op)->
-				data_safe_mode_release_pw_active),
-				(*kp_pfw_op)->data_safe_mode_release_pw_active,
-				0);
-
 			kp_g_core_fp->fp_register_read(
 				(*kp_pfw_op)->addr_flag_reset_event,
 				DATA_LEN_4, tmp_data, 0);
@@ -1013,7 +1042,6 @@ static void himax_hx83102d_sense_on(uint8_t FlashMode)
 #else
 			kp_g_core_fp->fp_system_reset();
 #endif
-			himax_hx83102d_reload_to_active();
 		} else {
 			I("%s:OK and Read status from IC = %X,%X\n", __func__,
 				tmp_data[0], tmp_data[1]);
@@ -1031,15 +1059,9 @@ static void himax_hx83102d_sense_on(uint8_t FlashMode)
 					tmp_data, 1, HIMAX_I2C_RETRY_TIMES);
 			if (ret < 0)
 				E("%s: i2c access fail!\n", __func__);
-
-			kp_g_core_fp->fp_register_write(
-				(*kp_pfw_op)->addr_safe_mode_release_pw,
-				sizeof((*kp_pfw_op)->
-				data_safe_mode_release_pw_reset),
-				(*kp_pfw_op)->data_safe_mode_release_pw_reset,
-				0);
 		}
 	}
+	himax_hx83102d_reload_to_active();
 }
 
 static void hx83102ab_firmware_update_0f(const struct firmware *fw_entry)
@@ -1217,15 +1239,8 @@ static int hx83102d_0f_overlay(int ovl_type, int mode)
 	uint8_t send_data[4] = {0};
 	uint8_t recv_data[4] = {0};
 
-	if (1 == g_fw_flag) {
-		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME,(*kp_private_ts)->dev);
-	} else if (2 == g_fw_flag) {
-		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME1,(*kp_private_ts)->dev);
-	} else if (3 == g_fw_flag) {
-		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME2,(*kp_private_ts)->dev);
-	} else {
-		ret = request_firmware(&fwp, BOOT_UPGRADE_FWNAME,(*kp_private_ts)->dev);
-	}
+	ret = request_firmware(&fwp, normal_fw,
+		(*kp_private_ts)->dev);
 	if (ret < 0) {
 		E("%s: request firmware FAIL!!!\n", __func__);
 		return ret;
@@ -1357,18 +1372,8 @@ static int hx83102d_0f_overlay(int ovl_type, int mode)
 
 	/* rescue mechanism */
 	if (count >= 10) {
-		if (1 == g_fw_flag) {
-			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME);
-		} else if (2 == g_fw_flag) {
-			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME1);
-		} else if (3 == g_fw_flag) {
-			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME2);
-		} else {
-			kp_g_core_fp->fp_0f_op_file_dirly(BOOT_UPGRADE_FWNAME);
-		}
+		kp_g_core_fp->fp_0f_op_file_dirly(normal_fw);
 		kp_g_core_fp->fp_reload_disable(0);
-		if (kp_g_core_fp->_fw_sts_clear != NULL)
-			kp_g_core_fp->_fw_sts_clear();
 		kp_g_core_fp->fp_sense_on(0x00);
 		kp_himax_int_enable(1);
 	}
@@ -1608,6 +1613,27 @@ static bool hx83102_chip_detect(void)
 					hx83102d_data_adc_num;
 				I("%s:detect IC HX83102D successfully\n",
 					__func__);
+				if (strstr(mtkfb_find_lcm_driver(), "truly") != NULL) {
+					normal_fw =  "Himax_firmware.bin";
+					mp_fw = "Himax_mpfw.bin";
+					file_name_2 = "hx_criteria.csv";
+				} else if (strstr(mtkfb_find_lcm_driver(), "kd") != NULL) {
+					normal_fw =  "Himax_kd_firmware.bin";
+					mp_fw = "Himax_kd_mpfw.bin";
+					file_name_2 = "hx_kd_criteria.csv";
+				} else if (strstr(mtkfb_find_lcm_driver(), "kingdly") != NULL) {
+					normal_fw =  "Himax_kingdly_firmware.bin";
+					mp_fw = "Himax_kingdly_mpfw.bin";
+					file_name_2 = "hx_kingdly_criteria.csv";
+				} else if (strstr(mtkfb_find_lcm_driver(), "tianma") != NULL) {
+					normal_fw =  "Himax_tm_firmware_hx83112.bin";
+					mp_fw = "Himax_tm_mpfw_hx83112.bin";
+					file_name_2 = "hx_tm_criteria_hx83112.csv";
+				} else {
+					normal_fw =  "Himax_firmware.bin";
+					mp_fw = "Himax_mpfw.bin";
+					file_name_2 = "hx_criteria.csv";
+				}	
 			} else {
 				strlcpy((*kp_private_ts)->chip_name,
 					HX_83102E_SERIES_PWON, 30);

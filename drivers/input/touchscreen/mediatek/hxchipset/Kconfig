@@ -114,3 +114,4 @@ config HMX_DB
 	depends on TOUCHSCREEN_HIMAX_COMMON
 	help
 	  This enables support for HIMAX driver test over Dragon Board.
+

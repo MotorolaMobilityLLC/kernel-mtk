@@ -62,7 +62,10 @@ do { \
 #endif
 
 #define HIMAX_I2C_RETRY_TIMES 10
-#define HIMAX_common_NAME "himax_tp"
+/*use for MTK platform bring up more easily*/
+#define HIMAX_common_NAME "generic"
+/*suggest for real project, change to the name*/
+/* #define HIMAX_common_NAME "himax_tp" */
 
 extern struct tpd_device *tpd;
 extern struct himax_ic_data *ic_data;

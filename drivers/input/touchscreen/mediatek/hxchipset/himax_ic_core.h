@@ -20,6 +20,9 @@
 #include "himax_common.h"
 #include <linux/slab.h>
 
+#ifndef ONTIM_DEV_HIMAX_INFO
+#define ONTIM_DEV_HIMAX_INFO
+#endif
 #define DATA_LEN_8				8
 #define DATA_LEN_4				4
 #define ADDR_LEN_4				4
@@ -52,10 +55,6 @@
 #define HX_CHANGE_MODE_FAIL		(-1)
 #define HX_RW_REG_FAIL			(-1)
 #define HX_DRIVER_MAX_IC_NUM	12
-
-#ifndef ONTIM_DEV_HIMAX_INFO
-#define ONTIM_DEV_HIMAX_INFO
-#endif
 
 #if defined(__HIMAX_HX852xG_MOD__)
 #define HX_MOD_KSYM_HX852xG HX_MOD_KSYM_HX852xG
@@ -231,7 +230,6 @@ struct hx_guest_info {
 
 /* CORE_FW */
 	#define fw_addr_system_reset                0x90000018
-	#define fw_addr_safe_mode_release_pw        0x90000098
 	#define fw_addr_ctrl_fw                     0x9000005c
 	#define fw_addr_flag_reset_event            0x900000e4
 	#define fw_addr_hsen_enable                 0x10007F14
@@ -288,10 +286,10 @@ struct hx_guest_info {
 	#define fw_addr_chk_dd_status               0x900000E8
 	#define fw_addr_dd_handshak_addr            0x900000fc
 	#define fw_addr_dd_data_addr                0x10007f80
-	#define fw_addr_sts_clear                	  0x10007FCC
-	#define fw_addr_excpt_notfy					  0x10007FD0
-	#define fw_data_excpt_notfy_en				  0xA55AA55A
-	#define fw_data_excpt_notfy_dis				  0x00000000
+	#define fw_addr_clr_fw_record_dd_sts        0x10007FCC
+	#define fw_addr_ap_notify_fw_sus            0x10007FD0
+	#define fw_data_ap_notify_fw_sus_en         0xA55AA55A
+	#define fw_data_ap_notify_fw_sus_dis        0x00000000
 	#define fw_data_dd_request                  0xaa
 	#define fw_data_dd_ack                      0xbb
 	#define fw_data_rawdata_ready_hb            0xa3
@@ -485,13 +483,22 @@ struct zf_info {
 	uint32_t cfg_addr;
 };
 #endif
-
+/* New Version 1K*/
 enum bin_desc_map_table {
-	TP_CONFIG_TABLE = 0x0000000A,
+	TP_CONFIG_TABLE = 0x00000A00,
 	FW_CID = 0x10000000,
-	FW_VER = 0x10000001,
-	CFG_VER = 0x10000005,
+	FW_VER = 0x10000100,
+	CFG_VER = 0x10000600,
 };
+
+/*Old Version 1K
+ *enum bin_desc_map_table {
+ *TP_CONFIG_TABLE = 0x0000000A,
+ *FW_CID = 0x10000000,
+ *FW_VER = 0x10000001,
+ *CFG_VER = 0x10000005,
+ *};
+ **/
 
 extern uint32_t dbg_reg_ary[4];
 
@@ -519,7 +526,6 @@ struct ic_operation {
 
 struct fw_operation {
 	uint8_t addr_system_reset[4];
-	uint8_t addr_safe_mode_release_pw[4];
 	uint8_t addr_ctrl_fw_isr[4];
 	uint8_t addr_flag_reset_event[4];
 	uint8_t addr_hsen_enable[4];
@@ -549,10 +555,10 @@ struct fw_operation {
 	uint8_t addr_chk_fw_status[4];
 	uint8_t addr_dd_handshak_addr[4];
 	uint8_t addr_dd_data_addr[4];
-	uint8_t addr_clear_fw_sts[4];
-	uint8_t addr_excpt_notfy_fw[4];
-	uint8_t data_excpt_notfy_fw_en[4];
-	uint8_t data_excpt_notfy_fw_dis[4];
+	uint8_t addr_clr_fw_record_dd_sts[4];
+	uint8_t addr_ap_notify_fw_sus[4];
+	uint8_t data_ap_notify_fw_sus_en[4];
+	uint8_t data_ap_notify_fw_sus_dis[4];
 	uint8_t data_system_reset[4];
 	uint8_t data_safe_mode_release_pw_active[4];
 	uint8_t data_safe_mode_release_pw_reset[4];
@@ -871,8 +877,8 @@ struct himax_core_fp {
 	void (*fp_set_HSEN_enable)(uint8_t HSEN_enable, bool suspended);
 	void (*fp_diag_register_set)(uint8_t diag_command,
 			uint8_t storage_type, bool is_dirly);
-	void (*_fw_sts_clear)(void);
-	void (*_clr_sts_excpt)(int suspend);
+	void (*_clr_fw_reord_dd_sts)(void);
+	void (*_ap_notify_fw_sus)(int suspend);
 #if defined(HX_TP_SELF_TEST_DRIVER)
 	void (*fp_control_reK)(bool enable);
 #endif
@@ -941,6 +947,7 @@ struct himax_core_fp {
 #endif
 	void (*fp_pin_reset)(void);
 	void (*fp_touch_information)(void);
+	void (*fp_calc_touch_data_size)(void);
 	void (*fp_reload_config)(void);
 	int (*fp_get_touch_data_size)(void);
 	void (*fp_usb_detect_set)(uint8_t *cable_config);
