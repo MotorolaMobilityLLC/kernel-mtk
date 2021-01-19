@@ -2513,6 +2513,9 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			event.word[0] = data->data[0];
 			event.word[1] = data->data[1];
 			event.word[2] = data->data[2];//moto add
+			event.word[3] = data->data[3];
+			event.word[4] = data->data[4];
+			event.word[5] = data->data[5];
 			pr_err("oscar kernel proximity read: %d %d %d\n", event.word[0], event.word[1], event.word[2]);
 			break;
 		case ID_LIGHT:
@@ -2522,7 +2525,8 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			event.word[0] = data->data[0];
 			event.word[1] = data->data[1];//moto add
 			event.word[2] = data->data[2];
-			pr_err("oscar kernel light read: %d %d %d\n", event.word[0], event.word[1], event.word[2]);
+			event.word[3] = data->data[3];
+			pr_err("oscar kernel light read: %d %d %d %d\n", event.word[0], event.word[1], event.word[2],event.word[3]);
 			break;
 		case ID_PRESSURE:
 			event.timestamp = data->time_stamp;
