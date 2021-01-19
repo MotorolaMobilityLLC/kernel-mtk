@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="01.15.2021.11:53:01"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="01.19.2021.10:31:43"-->
 <dct_cfg>
     <general chip="MT6833">
         <proj>P21_Phone1</proj>
@@ -58,9 +58,9 @@
                 <debounce_en>Disable</debounce_en>
             </eint14>
             <eint18>
-                <varName>GOODIX_FP</varName>
+                <varName>CHIPONE_FP</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint18>
