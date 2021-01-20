@@ -146,6 +146,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #ifndef BUILD_LK
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
 extern volatile int gesture_dubbleclick_en;
+extern void himax_esd_resume_func(void);
 #else
 #define I2C_I2C_LCD_BIAS_CHANNEL 6    /* for I2C channel 0 */
 static struct mt_i2c_t NT50358A_i2c;
@@ -454,6 +455,7 @@ static unsigned int lcm_esd_recover(void)
 		i2c_send_data_lcd(cmd, data);
 	}
 	lcm_reset();
+	himax_esd_resume_func();
 	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 
 	LCM_LOGI("%s: exit\n",__func__);

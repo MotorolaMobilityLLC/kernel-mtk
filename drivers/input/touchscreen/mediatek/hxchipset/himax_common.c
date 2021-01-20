@@ -3042,6 +3042,7 @@ found_hx_chip:
 #endif
 
 	ts->suspended                      = false;
+	ts->hx_esd_flag                    = false;
 
 #if defined(HX_USB_DETECT_GLOBAL)
 	ts->usb_connected = 0x00;
@@ -3280,6 +3281,14 @@ int himax_notifie_update_fw(unsigned long value)
 
 #endif
 
+void himax_esd_resume_func(void)
+{
+	I("%s: Entering! \n", __func__);
+	private_ts->hx_esd_flag = true;
+	queue_delayed_work(private_ts->ts_int_workqueue,&private_ts->ts_int_work,msecs_to_jiffies(DELAY_TIME));
+	I("%s: end! \n", __func__);
+}
+
 int himax_chip_common_suspend(struct himax_ts_data *ts)
 {
 	if (ts->suspended) {
@@ -3356,7 +3365,10 @@ int himax_chip_common_resume(struct himax_ts_data *ts)
 	int result = 0;
 #endif
 	I("%s: enter\n", __func__);
-
+	if (ts->hx_esd_flag == true) {
+		ts->suspended = true;
+		ts->hx_esd_flag = false;
+	}
 	if (ts->suspended == false) {
 		I("%s: It had entered resume, skip this step\n", __func__);
 		goto END;

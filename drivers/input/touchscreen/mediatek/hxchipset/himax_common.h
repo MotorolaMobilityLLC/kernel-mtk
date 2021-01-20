@@ -405,6 +405,7 @@ struct himax_report_data {
 struct himax_ts_data {
 	bool initialized;
 	bool suspended;
+	bool hx_esd_flag;
 	int notouch_frame;
 	int ic_notouch_frame;
 	atomic_t suspend_mode;
