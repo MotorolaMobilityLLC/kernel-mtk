@@ -105,7 +105,7 @@ int ccu_deallocate_mva(uint32_t mva)
 int ccu_allocate_mva(uint32_t *mva, void *va, int buffer_size)
 {
 	int ret = 0;
-	struct sg_table *sg_table;
+	struct sg_table *sg_table = NULL;
 	unsigned int flag;
 	/*int buffer_size = 4096;*/
 

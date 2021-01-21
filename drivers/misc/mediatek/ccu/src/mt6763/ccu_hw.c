@@ -135,7 +135,7 @@ static int _ccu_allocate_mva(uint32_t *mva, void *va)
 {
 	int ret = 0;
 	int buffer_size = 4096;
-	struct sg_table *sg_table;
+	struct sg_table *sg_table = NULL;
 	unsigned int flag;
 
 	if (!m4u_client)
