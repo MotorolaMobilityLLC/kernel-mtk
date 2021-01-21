@@ -1505,6 +1505,10 @@ page_owner=on loop.max_part=7";
 		compatible = "mediatek,chipone-fingerprint";
 	};
 
+	fp_egistec: fp_egistec {
+		compatible = "fp-egistec";
+	};
+
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
