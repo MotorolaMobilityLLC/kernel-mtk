@@ -59,17 +59,6 @@ struct compat_ion_sys_get_phys_param {
 	compat_size_t len;
 };
 
-struct compat_ion_dma_param {
-	union {
-		compat_int_t handle;
-		compat_uptr_t kernel_handle;
-	};
-	compat_uptr_t va;
-	compat_size_t size;
-	compat_uint_t dma_type;
-	compat_uint_t dma_dir;
-};
-
 struct compat_ion_sys_client_name {
 	char name[ION_MM_DBG_NAME_LEN];
 };
@@ -85,7 +74,6 @@ struct compat_ion_sys_data {
 		struct compat_ion_sys_get_phys_param   get_phys_param;
 		struct compat_ion_sys_get_client_param get_client_param;
 		struct compat_ion_sys_client_name client_name_param;
-		struct compat_ion_dma_param dma_param;
 	};
 };
 
@@ -556,32 +544,6 @@ static int compat_get_ion_sys_cache_sync_param(
 	return err;
 }
 
-static int compat_get_ion_sys_dma_op_param(
-			struct compat_ion_dma_param __user *data32,
-			struct ion_dma_param __user *data)
-{
-	compat_int_t handle;
-	compat_uptr_t va;
-	compat_size_t size;
-	compat_uint_t dma_type;
-	compat_uint_t dma_dir;
-
-	int err;
-
-	err = get_user(handle, &data32->handle);
-	err |= put_user(handle, &data->handle);
-	err |= get_user(va, &data32->va);
-	err |= put_user(compat_ptr(va), &data->va);
-	err |= get_user(size, &data32->size);
-	err |= put_user(size, &data->size);
-	err |= get_user(dma_type, &data32->dma_type);
-	err |= put_user(dma_type, &data->dma_type);
-	err |= get_user(dma_dir, &data32->dma_dir);
-	err |= put_user(dma_dir, &data->dma_dir);
-
-	return err;
-}
-
 static int compat_get_ion_sys_get_phys_param(
 			struct compat_ion_sys_get_phys_param __user *data32,
 			struct ion_sys_get_phys_param __user *data)
@@ -703,12 +665,6 @@ static int compat_get_ion_sys_data(
 		err |= compat_get_ion_sys_client_name(
 			&data32->client_name_param,
 			&data->client_name_param);
-		break;
-	}
-	case ION_SYS_DMA_OP:
-	{
-		err |= compat_get_ion_sys_dma_op_param(
-			&data32->dma_param, &data->dma_param);
 		break;
 	}
 	}
