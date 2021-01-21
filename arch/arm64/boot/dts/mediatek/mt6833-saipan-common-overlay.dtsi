@@ -75,17 +75,97 @@
 		};
 	};
 
+
+	finger_rst_high: finger_rst_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	finger_rst_low: finger_rst_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	finger_irq_active: finger_irq_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	finger_spi_active: finger_spi_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO36__FUNC_SPI5_CSB>;
+			drive-strength = <2>;
+		};
+
+		pins_cmd2_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_SPI5_CLK>;
+			drive-strength = <2>;
+		};
+
+		pins_cmd3_dat {
+			pinmux = <PINMUX_GPIO38__FUNC_SPI5_MI>;
+			drive-strength = <2>;
+		};
+
+		pins_cmd4_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_MO>;
+			drive-strength = <2>;
+		};
+	};
+
+	finger_spi_default: finger_spi_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO36__FUNC_SPI5_CSB>;
+			slew-rate = <1>;
+			output-low;
+		};
+
+		pins_cmd2_dat {
+			pinmux = <PINMUX_GPIO35__FUNC_SPI5_CLK>;
+			slew-rate = <1>;
+			output-low;
+		};
+
+		pins_cmd3_dat {
+			pinmux = <PINMUX_GPIO38__FUNC_SPI5_MI>;
+			slew-rate = <1>;
+			output-low;
+		};
+
+		pins_cmd4_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_MO>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 
 &spi5 {
 	#address-cells = <1>;
 	#size-cells = <0>;
+	mediatek,pad-select = <0>, <1>;
 	fingerprint@0 {
 		status = "okay";
 		compatible = "mediatek,finger-chipone";
 		reg = <0>;
 		spi-max-frequency = <8000000>;
 		netlink-event = <30>;
+	};
+	fingerprintegis@1 {
+		compatible = "mediatek,egis-fingerprint";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		netlink-event = <30>;
+		status = "okay";
 	};
 };
 
@@ -102,6 +182,31 @@
 	pinctrl-4 = <&fingerprint_pins_default>;
 	status = "okay";
 };
+
+&fp_egistec {
+	interrupt-parent = <&pio>;
+	interrupts = <11 IRQ_TYPE_EDGE_RISING 11 0>;
+
+	fp-ctrl-power;
+
+	egistec,gpio_reset = <&pio 88 0x0>;
+	egistec,gpio_irq = <&pio 11 0x0>;
+
+	vcc_fp-supply = <&mt_pmic_vfp_ldo_reg>;
+	egis-fp,vcc-voltage = <3000000 3000000>;
+	egis-fp,vcc-current = <100000>;
+
+	pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active",
+			"egis_spi_active", "egis_spi_default";
+	pinctrl-0 = <&finger_rst_high>;
+	pinctrl-1 = <&finger_rst_low>;
+	pinctrl-2 = <&finger_irq_active>;
+	pinctrl-3 = <&finger_spi_active>;
+	pinctrl-4 = <&finger_spi_default>;
+
+	status="okay";
+};
+
 
 &msdc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
