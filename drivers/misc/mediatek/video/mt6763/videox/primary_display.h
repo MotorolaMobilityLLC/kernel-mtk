@@ -333,6 +333,7 @@ int primary_display_diagnose(void);
 int primary_display_get_info(struct disp_session_info *info);
 int primary_display_capture_framebuffer(unsigned long pbuf);
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
+					    unsigned int buf_sz,
 					    unsigned int format);
 
 int primary_display_is_video_mode(void);

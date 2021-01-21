@@ -1204,7 +1204,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 				dprec_logger_start(DPREC_LOGGER_WDMA_DUMP, 0,
 						0);
 				r = primary_display_capture_framebuffer_ovl(
-				    (unsigned long)src_pbuf, UFMT_BGRA8888);
+				    (unsigned long)src_pbuf,
+				    fbsize, UFMT_BGRA8888);
 				if (r < 0)
 					pr_debug(
 					"primary display capture framebuffer failed!\n");
@@ -1267,7 +1268,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 			}
 
 			r = primary_display_capture_framebuffer_ovl(
-			    (unsigned long)src_pbuf, format);
+			    (unsigned long)src_pbuf, fbsize, format);
 			if (r < 0)
 			pr_debug(
 			"primary display capture framebuffer failed!\n");
@@ -2472,11 +2473,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 	int init_state;
 	int r = 0;
 
-#ifdef CONFIG_MTK_IOMMU
-	struct ion_client *ion_display_client = NULL;
-	struct ion_handle *ion_display_handle = NULL;
-	size_t temp_va = 0;
-#endif
 	/* struct platform_device *pdev; */
 	long dts_gpio_state = 0;
 
@@ -2508,33 +2504,9 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	DISPMSG("%s: fb_pa = %pa\n", __func__, &fb_base);
 
-#ifdef CONFIG_MTK_IOMMU
-	temp_va =
-	    (size_t)ioremap_nocache(fb_base, (fb_base + vramsize - fb_base));
-	fbdev->fb_va_base = (void *)temp_va;
-	ion_display_client = disp_ion_create("disp_fb0");
-	if (ion_display_client == NULL) {
-		pr_debug("%s: fail to create ion\n", __func__);
-		r = -1;
-		goto cleanup;
-	}
-
-	ion_display_handle = disp_ion_alloc(
-	    ion_display_client, ION_HEAP_MULTIMEDIA_MAP_MVA_MASK, temp_va,
-	    (fb_base + vramsize - fb_base));
-	if (r != 0) {
-		pr_debug("%s: fail to allocate buffer\n", __func__);
-		r = -1;
-		goto cleanup;
-	}
-
-	disp_ion_get_mva(ion_display_client, ion_display_handle,
-			 (unsigned int *)&fb_pa, DISP_M4U_PORT_DISP_OVL0);
-#else
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 				      (unsigned long *)(&fbdev->fb_va_base),
 				      &fb_pa);
-#endif
 	fbdev->fb_pa_base = fb_base;
 
 	primary_display_set_frame_buffer_address(
