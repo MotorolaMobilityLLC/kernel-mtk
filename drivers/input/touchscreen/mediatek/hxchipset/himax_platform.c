@@ -51,6 +51,17 @@ void (*kp_tpd_gpio_output)(int pinnum, int value);
 int (*kp_tpd_driver_remove)(struct tpd_driver_t *drv);
 const struct of_device_id *kp_touch_of_match;
 struct tpd_device **kp_tpd;
+static struct mtk_chip_config hx_mtk_chip_conf = {
+	.rx_mlsb = 1,
+	.tx_mlsb = 1,
+	.cs_pol = 0,
+	.sample_sel = 0,
+
+	.cs_setuptime = 45,
+	.cs_holdtime = 45,
+	.cs_idletime = 3500,
+	.deassert_mode = 0,
+ };
 
 #if !defined(HX_USE_KSYM)
 #define setup_symbol(sym) ({kp_##sym = &(sym); kp_##sym; })
@@ -589,7 +600,16 @@ static int himax_common_probe_spi(struct spi_device *spi)
 	}
 	hx_spi->mode = SPI_MODE_3;
 	hx_spi->bits_per_word = 8;
+	hx_spi->max_speed_hz = 10000000;
 
+	spi->controller_data = (void *)&hx_mtk_chip_conf;
+
+   ret = spi_setup(spi);
+   if (ret) {
+		E("spi setup fail\n");
+		ret = -EIO;
+		goto err_spi_setup;
+   }
 	ts->hx_irq = 0;
 	spi_set_drvdata(spi, ts);
 
