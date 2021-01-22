@@ -4,4 +4,7 @@
  * 	Delete nodes or properties
 */
 
-
+/ {
+	moto_chg_tcmd: moto_chg_tcmd {
+	};
+};
