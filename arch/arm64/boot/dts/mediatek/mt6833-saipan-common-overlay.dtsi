@@ -125,8 +125,7 @@
 	};
 };
 
-&odm {
-	moto_chg_tcmd: moto_chg_tcmd {
+&moto_chg_tcmd {
 		compatible = "mmi,moto-chg-tcmd";
 		status = "okay";
 
@@ -142,7 +141,6 @@
 		mmi,adc-channel-pa = <1>;
 		mmi,adc-channel-batid = <3>;
 		mmi,adc-channel-vbat = <100>;
-	};
 };
 
 &charger {
