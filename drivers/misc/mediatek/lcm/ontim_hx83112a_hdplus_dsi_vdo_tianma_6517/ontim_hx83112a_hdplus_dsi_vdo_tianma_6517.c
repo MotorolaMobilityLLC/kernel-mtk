@@ -430,7 +430,7 @@ static unsigned int lcm_esd_recover(void)
 	lcm_reset();
 	himax_esd_resume_func();
 	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-
+	MDELAY(50);
 	LCM_LOGI("%s: exit\n",__func__);
 	return 0;
 }
