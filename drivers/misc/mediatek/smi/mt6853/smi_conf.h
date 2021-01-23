@@ -169,8 +169,8 @@ struct mtk_smi_pair smi_larb4_init_pair[SMI_LARB4_PORT_NUM] = {
 	{SMI_LARB_OSTDL_PORT(7), 0x1},
 	{SMI_LARB_OSTDL_PORT(8), 0x1},
 	{SMI_LARB_OSTDL_PORT(9), 0x4},
-	{SMI_LARB_OSTDL_PORT(10), 0x1},
-	{SMI_LARB_OSTDL_PORT(11), 0x16},
+	{SMI_LARB_OSTDL_PORT(10), 0x16},
+	{SMI_LARB_OSTDL_PORT(11), 0x1},
 };
 
 struct mtk_smi_pair smi_larb5_init_pair[SMI_LARB5_PORT_NUM] = { };
