@@ -361,7 +361,7 @@ void mtk_vdec_dvfs_begin(struct mtk_vcodec_ctx *ctx)
 		target_freq_64 = match_freq(target_freq, &vdec_freq_steps[0],
 					vdec_freq_step_size);
 		if (target_freq > 0) {
-			vdec_freq = target_freq;
+			vdec_freq = target_freq_64;
 			if (vdec_freq > target_freq_64)
 				vdec_freq = target_freq_64;
 			vdec_cur_job->mhz = (int)target_freq_64;
@@ -414,8 +414,8 @@ void mtk_vdec_emi_bw_begin(struct mtk_vcodec_ctx *ctx)
 		b_freq_idx = vdec_freq_step_size - 1;
 
 	emi_bw = 8L * 1920 * 1080 * 2 * 10 * vdec_freq;
-	emi_bw_input = 8 * vdec_freq / STD_VDEC_FREQ;
-	emi_bw_output = 1920 * 1088 * 3 * 20 * 10 * vdec_freq /
+	emi_bw_input = 25L * vdec_freq / STD_VDEC_FREQ;
+	emi_bw_output = 1920L * 1088 * 3 * 20 * 10 * vdec_freq /
 			2 / 3 / STD_VDEC_FREQ / 1024 / 1024;
 
 	switch (ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc) {
@@ -452,33 +452,31 @@ void mtk_vdec_emi_bw_begin(struct mtk_vcodec_ctx *ctx)
 			(1920 * 1080)) ? 1 : 0;
 
 	/* bits/s to MBytes/s */
-	emi_bw = emi_bw / (1024 * 1024) / 8;
-
+	emi_bw = emi_bw * 4 / 3 / (1024 * 1024) / 8;
+	emi_bw_output = emi_bw_output * 4 / 3;
+	emi_bw_input = emi_bw_input * 4 / 3;
 	if (is_ufo_on == 1) {    /* UFO */
-		emi_bw = emi_bw * 6 / 10;
-		emi_bw_output = emi_bw_output * 6 / 10;
+		emi_bw = emi_bw * 7 / 10;
+		emi_bw_output = emi_bw_output * 7 / 10;
 	}
 
-	emi_bw = emi_bw - emi_bw_output - (emi_bw_input * 2);
-	if (emi_bw < 0)
-		emi_bw = 0;
-
 	if (is_ufo_on == 1) {    /* UFO */
-		mm_qos_set_request(&vdec_ufo, emi_bw, 0, BW_COMP_DEFAULT);
+		mm_qos_set_request(&vdec_ufo, 10, 0, BW_COMP_DEFAULT);
 		mm_qos_set_request(&vdec_ufo_enc, emi_bw_output, 0,
 					BW_COMP_DEFAULT);
 	} else {
+		/* non-UFO */
 		mm_qos_set_request(&vdec_pp, emi_bw_output, 0, BW_COMP_NONE);
 	}
 	mm_qos_set_request(&vdec_mc, emi_bw, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_pred_rd, 1, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_pred_wr, 1, 0, BW_COMP_NONE);
-	mm_qos_set_request(&vdec_ppwrap, 0, 0, BW_COMP_NONE);
-	mm_qos_set_request(&vdec_tile, 0, 0, BW_COMP_NONE);
+	mm_qos_set_request(&vdec_ppwrap, 1, 0, BW_COMP_NONE);
+	mm_qos_set_request(&vdec_tile, 1, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_vld, emi_bw_input, 0, BW_COMP_NONE);
-	mm_qos_set_request(&vdec_vld2, 0, 0, BW_COMP_NONE);
+	mm_qos_set_request(&vdec_vld2, emi_bw_input, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_avc_mv, emi_bw_input * 2, 0, BW_COMP_NONE);
-	mm_qos_set_request(&vdec_rg_ctrl_dma, 0, 0, BW_COMP_NONE);
+	mm_qos_set_request(&vdec_rg_ctrl_dma, 1, 0, BW_COMP_NONE);
 	mm_qos_update_all_request(&vdec_rlist);
 #endif
 }
