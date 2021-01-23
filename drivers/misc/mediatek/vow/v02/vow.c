@@ -80,6 +80,7 @@ static struct file *file_vffp_data;
 static uint32_t vffp_dump_data_routine_cnt_pass;
 static struct file *file_recog_data;
 static uint32_t recog_dump_data_routine_cnt_pass;
+static uint32_t inputmic_dump_data_routine_cnt_pass;
 static struct wakeup_source pcm_dump_wake_lock;
 static struct dump_queue_t *dump_queue;
 static struct task_struct *pcm_dump_task;
@@ -202,6 +203,7 @@ static struct
 	bool                 vow_recovering;
 	unsigned int         recog_dump_cnt1;
 	unsigned int         vffp_dump_cnt1;
+	unsigned int         inputmic_dump_cnt1;
 	bool                 split_dumpfile_flag;
 	bool                 mcps_flag;
 	unsigned int         scp_dual_mic_switch;
@@ -314,8 +316,8 @@ void vow_ipi_rx_internal(unsigned int msg_id,
 #endif  /* #ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT */
 			ret = queue_work(dump_workqueue[idx],
 					 &dump_work[idx].work);
-			//if (ret == 0)
-				//bargein_dump_data_routine_cnt_pass++;
+			if (ret > 0)
+				inputmic_dump_data_routine_cnt_pass++;
 		}
 		/* IPIMSG_VOW_BARGEIN_PCMDUMP_OK */
 		if ((ipi_ptr->ipi_type_flag & BARGEIN_DUMP_IDX_MASK) &&
@@ -329,7 +331,7 @@ void vow_ipi_rx_internal(unsigned int msg_id,
 
 			ret = queue_work(dump_workqueue[idx],
 					 &dump_work[idx].work);
-			if (ret == 0)
+			if (ret > 0)
 				bargein_dump_data_routine_cnt_pass++;
 		}
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
@@ -351,7 +353,7 @@ void vow_ipi_rx_internal(unsigned int msg_id,
 #endif  /* #ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT */
 			ret = queue_work(dump_workqueue[idx],
 					 &dump_work[idx].work);
-			if (ret == 0)
+			if (ret > 0)
 				recog_dump_data_routine_cnt_pass++;
 		}
 		if ((ipi_ptr->ipi_type_flag & VFFP_DUMP_IDX_MASK) &&
@@ -366,7 +368,7 @@ void vow_ipi_rx_internal(unsigned int msg_id,
 				ipi_ptr->vffp_dump_offset;
 			ret = queue_work(dump_workqueue[idx],
 					 &dump_work[idx].work);
-			if (ret == 0)
+			if (ret > 0)
 				vffp_dump_data_routine_cnt_pass++;
 		}
 		break;
@@ -1542,6 +1544,8 @@ static void vow_service_OpenDumpFile(void)
 	vowserv.bargein_dump_cnt1 = 0;
 	vowserv.bargein_dump_cnt2 = 0;
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
+	inputmic_dump_data_routine_cnt_pass = 0;
+	vowserv.inputmic_dump_cnt1 = 0;
 	recog_dump_data_routine_cnt_pass = 0;
 	vowserv.recog_dump_cnt1 = 0;
 	vffp_dump_data_routine_cnt_pass = 0;
@@ -1568,6 +1572,10 @@ static void vow_service_CloseDumpFile(void)
 		     vowserv.bargein_dump_cnt1,
 		     vowserv.bargein_dump_cnt2);
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
+	VOWDRV_DEBUG("[input] input_pass: %d\n",
+		inputmic_dump_data_routine_cnt_pass);
+	VOWDRV_DEBUG("[input] input dump cnt %d\n",
+		     vowserv.inputmic_dump_cnt1);
 	VOWDRV_DEBUG("[Recog] recog_pass: %d\n",
 		recog_dump_data_routine_cnt_pass);
 	VOWDRV_DEBUG("[Recog] recog dump cnt %d\n",
@@ -1838,7 +1846,7 @@ static int vow_pcm_dump_kthread(void *data)
 					}
 				}
 				size -= writedata;
-				pcm_dump++;
+				//pcm_dump++;
 			}
 #else  /* #ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT */
 			/* Bargein dump Mic input data */
@@ -1960,7 +1968,7 @@ static int vow_pcm_dump_kthread(void *data)
 					}
 				}
 				size -= writedata;
-				pcm_dump++;
+				//pcm_dump++;
 			}
 #else  /* #ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT */
 			/* Recog dump data */
@@ -2132,7 +2140,7 @@ static void input_dump_routine(struct work_struct *ws)
 
 	dump_queue->idx_w++;
 	spin_unlock(&vowdrv_lock);
-	//vowserv.bargein_dump_cnt1++;
+	vowserv.inputmic_dump_cnt1++;
 
 	wake_up_interruptible(&wq_dump_pcm);
 }
