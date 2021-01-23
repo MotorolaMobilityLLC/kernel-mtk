@@ -3850,7 +3850,6 @@ int dpmaif_start(unsigned char hif_id)
 	/* cg set */
 	ccci_set_clk_by_id(1, 1);
 #ifdef MT6297
-
 	ccci_set_clk_by_id(2, 1);
 
 	reg_value = ccci_read32(infra_ao_mem_base, 0);
