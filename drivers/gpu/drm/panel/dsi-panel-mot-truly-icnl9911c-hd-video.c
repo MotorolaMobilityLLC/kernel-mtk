@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #include <drm/drmP.h>
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_panel.h>
@@ -455,14 +468,14 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	pr_info("%s backlight = %d\n", __func__, level);
 
 	if (level > 255)
-	level = 255;
+		level = 255;
 
 	level = level * 4095 / 255;
 	bl_tb0[1] = ((level >> 8) & 0xf);
 	bl_tb0[2] = (level & 0xff);
 
 	if (!cb)
-	return -1;
+		return -1;
 
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 	return 0;
@@ -492,7 +505,6 @@ static struct mtk_panel_params ext_params = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
-
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -509,7 +521,6 @@ static struct mtk_panel_params ext_params_90hz = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
-
 };
 
 static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
@@ -603,7 +614,7 @@ static int lcm_get_modes(struct drm_panel *panel)
 	drm_mode_probed_add(panel->connector, mode2);
 
 	panel->connector->display_info.width_mm = 67;
-	panel->connector->display_info.height_mm = 142;
+	panel->connector->display_info.height_mm = 150;
 
 	return 1;
 }
