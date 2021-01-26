@@ -697,6 +697,7 @@ EXPORT_SYMBOL(usb_phy_savecurrent);
 void usb_phy_recover(void)
 {
 	unsigned int efuse_val = 0;
+	struct device_node *of_node;
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
@@ -790,8 +791,14 @@ void usb_phy_recover(void)
 	/* force enter device mode */
 	set_usb_phy_mode(PHY_DEV_ACTIVE);
 
-	/* M_ANALOG8[4:0] => RG_USB20_INTR_CAL[4:0] */
-	efuse_val = (get_devinfo_with_index(107) & (0x1f<<0)) >> 0;
+	of_node = of_find_compatible_node(NULL,NULL, "mediatek,phy_drv_cap");
+	if (of_node) {
+		/* value won't be updated if property not being found */
+		of_property_read_u32(of_node,"phy-drv-cap", (u32 *) &efuse_val);
+	} else {
+		/* M_ANALOG8[4:0] => RG_USB20_INTR_CAL[4:0] */
+		efuse_val = (get_devinfo_with_index(107) & (0x1f<<0)) >> 0;
+	}
 	if (efuse_val) {
 		DBG(0, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n",
 			efuse_val);
