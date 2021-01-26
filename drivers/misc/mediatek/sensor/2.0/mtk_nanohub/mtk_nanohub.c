@@ -28,6 +28,7 @@
 #include "hf_manager.h"
 #include "sensor_list.h"
 #include "mtk_nanohub_ipi.h"
+#include <mt-plat/mtk_boot.h> //moto add
 
 extern int __init nanohub_init(void);
 
@@ -2745,20 +2746,38 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	err = mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->pscustom, sizeof(struct ps_custom));
 	pr_err("sensor_cfg_to_hub proximity type %d cover %d\n",motparams->pscustom.ps_cali.pscfg, motparams->pscustom.ps_cali.ps_cover);
 
+	if(get_boot_mode() == FACTORY_BOOT)
+		mtk_nanohub_selftest_to_hub(ID_PROXIMITY);
 	//SITUATION_PR_ERR("situation_store_params done\n");
 //kfree(motparams);
 	return count;
 }
 #endif
 
+//moto prox cal
+static ssize_t proxcal_store(struct device_driver *ddri,
+		const char *buf, size_t count)
+{
+	int err = 0;
+	uint8_t type = (uint8_t)buf[0];
+	pr_err("sensor_cfg_to_hub proxcal type = %d\n",type);
+	err = mtk_nanohub_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub proxcal fail\n");
+
+	return count;
+}
+
 static DRIVER_ATTR_RW(trace);
 //moto add
 //#ifdef CONFIG_MOTO_ALGO_PARAMS
 static DRIVER_ATTR_WO(algo_params);
+static DRIVER_ATTR_WO(proxcal);
 //#endif
 static struct driver_attribute *mtk_nanohub_attrs[] = {
 	&driver_attr_trace,
 	&driver_attr_algo_params,//moto add
+	&driver_attr_proxcal,
 };
 
 static int mtk_nanohub_create_attr(struct device_driver *driver)
