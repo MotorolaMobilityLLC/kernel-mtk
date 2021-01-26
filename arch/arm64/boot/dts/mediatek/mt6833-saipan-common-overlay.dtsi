@@ -323,3 +323,11 @@
 		};
 	};
 };
+
+&odm {
+	/* set usb phy drv voltage for thunder3 port */
+	drv_phy_cap: drv_phy_cap {
+		compatible = "mediatek,phy_drv_cap";
+		phy-driver-cap = <0x13>;
+	};
+};
