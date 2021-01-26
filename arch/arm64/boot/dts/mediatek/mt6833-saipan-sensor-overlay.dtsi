@@ -9,6 +9,13 @@
     };
 };
 
+&mt_pmic_vio28_ldo_reg {
+	regulator-name = "vio28";
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-enable-ramp-delay = <1920>;
+};
+
 &i2c7 {
     status = "ok";
     abov_sar@20 {
