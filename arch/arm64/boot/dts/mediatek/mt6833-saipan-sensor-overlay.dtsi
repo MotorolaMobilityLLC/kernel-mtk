@@ -28,11 +28,11 @@
         cap,use_channel_ch2 = <0x02>;
         cap,use_channel_ch3 = <0x03>;
         cap,use_channel_ch4 = <0x04>;
-        ch0_name = "capsense_bottom_left";
-        ch1_name = "capsense_bottom_right";
-        ch2_name = "capsense_top_right";
-        ch3_name = "capsense_top";
-        ch4_name = "capsense_top_left";
+        ch0_name = "capsense_bottom_right";
+        ch1_name = "capsense_bottom_left";
+        ch2_name = "capsense_top_left";
+        ch3_name = "capsense_top_mid";
+        ch4_name = "capsense_top_right";
         label = "AbovCapSense";
         cap,channel_number = <0x05>;
         cap,fw_mode_ret = <0x70>;
