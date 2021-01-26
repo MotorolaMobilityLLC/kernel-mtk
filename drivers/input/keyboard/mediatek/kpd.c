@@ -145,7 +145,7 @@ void vol_down_long_press(unsigned long pressed)
 #ifdef CONFIG_KPD_PWRKEY_USE_PMIC
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {
-	kpd_print("Power Key generate, pressed=%ld\n", pressed);
+	kpd_notice("Power Key generate, pressed=%ld\n", pressed);
 	if (!kpd_input_dev) {
 		kpd_print("KPD input device not ready\n");
 		return;
@@ -156,7 +156,7 @@ void kpd_pwrkey_pmic_handler(unsigned long pressed)
 
 void kpd_pmic_rstkey_handler(unsigned long pressed)
 {
-	kpd_print("PMIC reset Key generate, pressed=%ld\n", pressed);
+	kpd_notice("PMIC reset Key generate, pressed=%ld\n", pressed);
 	if (!kpd_input_dev) {
 		kpd_print("KPD input device not ready\n");
 		return;
