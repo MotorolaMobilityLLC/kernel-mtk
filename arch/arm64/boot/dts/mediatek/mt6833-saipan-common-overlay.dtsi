@@ -330,4 +330,12 @@
 		compatible = "mediatek,phy_drv_cap";
 		phy-driver-cap = <0x13>;
 	};
+	/* usb phy tuning parameter*/
+	usb_phy_init:usb_phy_init {
+		compatible = "mediatek,phy_tuning";
+		u2_vrt_ref = <7>;
+		u2_term_ref = <7>;
+		u2_enhance = <2>;
+		status = "okay";
+       };
 };
