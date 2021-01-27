@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *     gc02m1mipi_Sensor.h
+ *     saipan_cxt_gc02m1mipi_Sensor.h
  *
  * Project:
  * --------
@@ -13,35 +13,35 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef __GC02M1MIPI_SENSOR_H__
-#define __GC02M1MIPI_SENSOR_H__
+#ifndef __SAIPAN_CXT_GC02M1MIPI_SENSOR_H__
+#define __SAIPAN_CXT_GC02M1MIPI_SENSOR_H__
 
 
 /* SENSOR MIRROR FLIP INFO */
-#define GC02M1_MIRROR_NORMAL    1
-#define GC02M1_MIRROR_H         0
-#define GC02M1_MIRROR_V         0
-#define GC02M1_MIRROR_HV        0
+#define SAIPAN_CXT_GC02M1_MIRROR_NORMAL    1
+#define SAIPAN_CXT_GC02M1_MIRROR_H         0
+#define SAIPAN_CXT_GC02M1_MIRROR_V         0
+#define SAIPAN_CXT_GC02M1_MIRROR_HV        0
 
-#if GC02M1_MIRROR_NORMAL
-#define GC02M1_MIRROR	        0x80
-#elif GC02M1_MIRROR_H
-#define GC02M1_MIRROR	        0x81
-#elif GC02M1_MIRROR_V
-#define GC02M1_MIRROR	        0x82
-#elif GC02M1_MIRROR_HV
-#define GC02M1_MIRROR	        0x83
+#if SAIPAN_CXT_GC02M1_MIRROR_NORMAL
+#define SAIPAN_CXT_GC02M1_MIRROR	        0x80
+#elif SAIPAN_CXT_GC02M1_MIRROR_H
+#define SAIPAN_CXT_GC02M1_MIRROR	        0x81
+#elif SAIPAN_CXT_GC02M1_MIRROR_V
+#define SAIPAN_CXT_GC02M1_MIRROR	        0x82
+#elif SAIPAN_CXT_GC02M1_MIRROR_HV
+#define SAIPAN_CXT_GC02M1_MIRROR	        0x83
 #else
-#define GC02M1_MIRROR	        0x80
+#define SAIPAN_CXT_GC02M1_MIRROR	        0x80
 #endif
 
 
 /* SENSOR PRIVATE INFO FOR GAIN SETTING */
-#define GC02M1_SENSOR_GAIN_BASE             0x400
-#define GC02M1_SENSOR_GAIN_MAX              (12 * GC02M1_SENSOR_GAIN_BASE)
-#define GC02M1_SENSOR_GAIN_MAX_VALID_INDEX  16
-#define GC02M1_SENSOR_GAIN_MAP_SIZE         16
-#define GC02M1_SENSOR_DGAIN_BASE            0x400
+#define SAIPAN_CXT_GC02M1_SENSOR_GAIN_BASE             0x400
+#define SAIPAN_CXT_GC02M1_SENSOR_GAIN_MAX              (12 * SAIPAN_CXT_GC02M1_SENSOR_GAIN_BASE)
+#define SAIPAN_CXT_GC02M1_SENSOR_GAIN_MAX_VALID_INDEX  16
+#define SAIPAN_CXT_GC02M1_SENSOR_GAIN_MAP_SIZE         16
+#define SAIPAN_CXT_GC02M1_SENSOR_DGAIN_BASE            0x400
 
 enum{
 	IMGSENSOR_MODE_INIT,
@@ -106,6 +106,11 @@ struct imgsensor_info_struct {
 	kal_uint8  video_delay_frame;
 	kal_uint8  hs_video_delay_frame;
 	kal_uint8  slim_video_delay_frame;
+	kal_uint32 min_gain;
+	kal_uint32 max_gain;
+	kal_uint32 min_gain_iso;
+	kal_uint32 gain_step;
+	kal_uint8  gain_type;
 	kal_uint8  margin;
 	kal_uint32 min_shutter;
 	kal_uint32 max_frame_length;
