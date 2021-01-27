@@ -32,9 +32,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #endif
 #ifdef CONFIG_CAMERA_DVDD_SWITCH
 //+EKSAIPAN,add it for saipan main and front camera bringup
-#if defined(HI4821Q_MIPI_RAW)
-        {
-		SENSOR_DRVNAME_HI4821Q_MIPI_RAW,
+#if defined(SAIPAN_SUNNY_HI4821Q_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_SAIPAN_SUNNY_HI4821Q_MIPI_RAW,
 		{
 			{RST, Vol_Low, 1},
 			{AVDD, Vol_High, 1},
@@ -47,9 +47,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-#if defined(HI846_MIPI_RAW)
+#if defined(SAIPAN_SHINE_HI846_MIPI_RAW)
 	{
-		SENSOR_DRVNAME_HI846_MIPI_RAW,
+		SENSOR_DRVNAME_SAIPAN_SHINE_HI846_MIPI_RAW,
 		{
                         {DOVDD, Vol_1800, 1},
                         {DVDD_1V1, Vol_High, 1},
@@ -63,9 +63,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-#if defined(GC02M1B_MIPI_MONO)
+#if defined(SAIPAN_CXT_GC02M1B_MIPI_MONO)
 	{
-		SENSOR_DRVNAME_GC02M1B_MIPI_MONO,
+		SENSOR_DRVNAME_SAIPAN_CXT_GC02M1B_MIPI_MONO,
 		{
 			{RST, Vol_Low, 15},
 			{DOVDD, Vol_1800, 1},
@@ -75,17 +75,17 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-#if defined(GC02M1_MIPI_RAW)
-       {
-               SENSOR_DRVNAME_GC02M1_MIPI_RAW,
-               {
-                       {RST, Vol_Low, 15},
-                       {DOVDD, Vol_1800, 1},
-                       {AVDD, Vol_2800, 1},
-                       {RST, Vol_High, 1},
-                       {SensorMCLK, Vol_High, 1}
-               },
-       },
+#if defined(SAIPAN_CXT_GC02M1_MIPI_RAW)
+	{
+ 		SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW,
+ 		{
+ 			{RST, Vol_Low, 15},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
+			{RST, Vol_High, 1},
+			{SensorMCLK, Vol_High, 1}
+		},
+	},
 #endif
 //-EKSAIPAN,add it for saipan main and front camera bringup
 #endif
