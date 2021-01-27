@@ -6,7 +6,7 @@
  *
  * Filename:
  * ---------
- *     w1_gc02m1b_dep_cxtmipi_Sensor.h
+ *     w1_saipan_cxt_gc02m1b_dep_cxtmipi_Sensor.h
  *
  * Project:
  * --------
@@ -17,37 +17,37 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _GC02M1BMIPI_SENSOR_H
-#define _GC02M1BMIPI_SENSOR_H
+#ifndef _SAIPAN_CXT_GC02M1BMIPI_SENSOR_H
+#define _SAIPAN_CXT_GC02M1BMIPI_SENSOR_H
 
 
 /* SENSOR MIRROR FLIP INFO */
 //+gc20m1b depth camera mirror and flip
-#define GC02M1B_MIRROR_NORMAL    1   //+depth gc02m1b mirror
-#define GC02M1B_MIRROR_H         0
-#define GC02M1B_MIRROR_V         0
-#define GC02M1B_MIRROR_HV        0
+#define SAIPAN_CXT_GC02M1B_MIRROR_NORMAL    1   //+depth saipan_cxt_gc02m1b mirror
+#define SAIPAN_CXT_GC02M1B_MIRROR_H         0
+#define SAIPAN_CXT_GC02M1B_MIRROR_V         0
+#define SAIPAN_CXT_GC02M1B_MIRROR_HV        0
 //-gc20m1b depth camera mirror and flip
 
-#if GC02M1B_MIRROR_NORMAL
-#define GC02M1B_MIRROR	        0x80
-#elif GC02M1B_MIRROR_H
-#define GC02M1B_MIRROR	        0x81
-#elif GC02M1B_MIRROR_V
-#define GC02M1B_MIRROR	        0x82
-#elif GC02M1B_MIRROR_HV
-#define GC02M1B_MIRROR	        0x83
+#if SAIPAN_CXT_GC02M1B_MIRROR_NORMAL
+#define SAIPAN_CXT_GC02M1B_MIRROR	        0x80
+#elif SAIPAN_CXT_GC02M1B_MIRROR_H
+#define SAIPAN_CXT_GC02M1B_MIRROR	        0x81
+#elif SAIPAN_CXT_GC02M1B_MIRROR_V
+#define SAIPAN_CXT_GC02M1B_MIRROR	        0x82
+#elif SAIPAN_CXT_GC02M1B_MIRROR_HV
+#define SAIPAN_CXT_GC02M1B_MIRROR	        0x83
 #else
-#define GC02M1B_MIRROR	        0x80
+#define SAIPAN_CXT_GC02M1B_MIRROR	        0x80
 #endif
 
 
 /* SENSOR PRIVATE INFO FOR GAIN SETTING */
-#define GC02M1B_SENSOR_GAIN_BASE             0x400
-#define GC02M1B_SENSOR_GAIN_MAX              (12 * GC02M1B_SENSOR_GAIN_BASE)
-#define GC02M1B_SENSOR_GAIN_MAX_VALID_INDEX  16
-#define GC02M1B_SENSOR_GAIN_MAP_SIZE         16
-#define GC02M1B_SENSOR_DGAIN_BASE            0x400
+#define SAIPAN_CXT_GC02M1B_SENSOR_GAIN_BASE             0x400
+#define SAIPAN_CXT_GC02M1B_SENSOR_GAIN_MAX              (12 * SAIPAN_CXT_GC02M1B_SENSOR_GAIN_BASE)
+#define SAIPAN_CXT_GC02M1B_SENSOR_GAIN_MAX_VALID_INDEX  16
+#define SAIPAN_CXT_GC02M1B_SENSOR_GAIN_MAP_SIZE         16
+#define SAIPAN_CXT_GC02M1B_SENSOR_DGAIN_BASE            0x400
 
 enum{
 	IMGSENSOR_MODE_INIT,
@@ -112,9 +112,7 @@ struct imgsensor_info_struct {
 	//sensor gain delay frame for AE cycle
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame; //ispgaindelayframe for AEcycle
-	//+first supply dualcam(s5k3l6+gc02m1b) bring up
         kal_uint8  frame_time_delay_frame;
-        //-first supply dualcam(s5k3l6+gc02m1b) bring up
 	kal_uint8  ihdr_support;		//
 	kal_uint8  ihdr_le_firstline;	//
 	kal_uint8  sensor_mode_num;		//support sensor mode num
@@ -167,9 +165,7 @@ struct imgsensor_info_struct {
 	kal_uint8  ae_shut_delay_frame;
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame;
-        //first supply dualcam(s5k3l6+gc02m1b) bring up
         kal_uint8  frame_time_delay_frame;
-        //first supply dualcam(s5k3l6+gc02m1b) bring up
 	kal_uint8  ihdr_support;
 	kal_uint8  ihdr_le_firstline;
 	kal_uint8  sensor_mode_num;
