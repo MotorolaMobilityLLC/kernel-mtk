@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *	 hi4821qmipi_Sensor.h
+ *	 saipan_shine_hi846mipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,8 +26,8 @@
  *	 CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _HI4821QMIPI_SENSOR_H
-#define _HI4821QMIPI_SENSOR_H
+#ifndef _SAIPAN_SHINE_HI846MIPI_SENSOR_H
+#define _SAIPAN_SHINE_HI846MIPI_SENSOR_H
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
@@ -46,7 +46,7 @@ enum IMGSENSOR_MODE{
 	IMGSENSOR_MODE_CUSTOM3,
 	IMGSENSOR_MODE_CUSTOM4,
 	IMGSENSOR_MODE_CUSTOM5,
-};
+} ;
 
 struct imgsensor_mode_struct {
 	kal_uint32 pclk;
@@ -64,7 +64,6 @@ struct imgsensor_mode_struct {
 	/*	 following for GetDefaultFramerateByScenario()	*/
 	kal_uint16 max_framerate;
 	kal_uint32 mipi_pixel_rate;
-
 };
 
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
@@ -92,7 +91,6 @@ struct imgsensor_struct {
 	kal_bool  ihdr_en;				//ihdr enable or disable
 
 	kal_uint8 i2c_write_id; //record current sensor's i2c write id
-	kal_uint8 pdaf_mode;
 };
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
@@ -132,16 +130,12 @@ struct imgsensor_info_struct {
 
 	kal_uint8  margin; //sensor framelength & shutter margin
 	kal_uint32 min_shutter; //min shutter
-	kal_uint32 max_frame_length; //maxframelengthbysensor reg's limitation
-
-	//+for factory mode of photo black screen
 	kal_uint32 min_gain;
 	kal_uint32 max_gain;
 	kal_uint32 min_gain_iso;
 	kal_uint32 gain_step;
-	kal_uint32 exp_step;
 	kal_uint32 gain_type;
-	//-for factory mode of photo black screen
+	kal_uint32 max_frame_length; //maxframelengthbysensor reg's limitation
 
 	kal_uint8  isp_driving_current; //mclk driving current
 	kal_uint8  sensor_interface_type;//sensor_interface_type
