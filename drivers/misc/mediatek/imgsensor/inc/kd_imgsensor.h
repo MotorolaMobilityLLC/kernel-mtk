@@ -269,7 +269,6 @@
 #define HI251_SENSOR_ID                         0x0084
 #define HI191MIPI_SENSOR_ID                     0x0191
 #define HIVICF_SENSOR_ID                        0x0081
-#define HI4821Q_SENSOR_ID                       0x4821
 /*MT*/
 #define MT9D011_SENSOR_ID                       0x1511
 #define MT9D111_SENSOR_ID                       0x1511
@@ -366,9 +365,8 @@
 #define GC02M0_SENSOR_ID2                       0x02d2
 #define GC02K0_SENSOR_ID                        0x2385
 #define OV16A10_SENSOR_ID                       0x561641
-#define GC02M1B_SENSOR_ID                       0x02e0
 
-#define GC02M1_SENSOR_ID                        (0x02e0+1)
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -512,7 +510,6 @@
 #define SENSOR_DRVNAME_HI544_MIPI_RAW           "hi544_mipi_raw"
 #define SENSOR_DRVNAME_HI253_YUV                "hi253_yuv"
 #define SENSOR_DRVNAME_HI191_MIPI_RAW           "hi191_mipi_raw"
-#define SENSOR_DRVNAME_HI4821Q_MIPI_RAW         "hi4821q_mipi_raw"
 /*MT*/
 #define SENSOR_DRVNAME_MT9P012_RAW              "mt9p012_raw"
 #define SENSOR_DRVNAME_MT9P015_RAW              "mt9p015_raw"
@@ -585,12 +582,20 @@
 #define SENSOR_DRVNAME_GC02M0B_MIPI_MONO2       "gc02m0b_mipi_mono2"
 #define SENSOR_DRVNAME_GC02K0B_MIPI_MONO        "gc02k0b_mipi_mono"
 #define SENSOR_DRVNAME_OV16A10_MIPI_RAW         "ov16a10_mipi_raw"
-#define SENSOR_DRVNAME_GC02M1B_MIPI_MONO        "gc02m1b_mipi_mono"
-#define SENSOR_DRVNAME_GC02M1_MIPI_RAW          "gc02m1_mipi_raw"
+
 #define SENSOR_DRVNAME_OV48C_MIPI_RAW           "ov48c_mipi_raw"
 #define SENSOR_DRVNAME_IMX355_MIPI_RAW          "imx355_mipi_raw"
 #define SENSOR_DRVNAME_OV13B10_MIPI_RAW         "ov13b10_mipi_raw"
 #define SENSOR_DRVNAME_OV02B10_MIPI_RAW         "ov02b10_mipi_raw"
+
+#define SAIPAN_SUNNY_HI4821Q_SENSOR_ID                     0x4821
+#define SAIPAN_SHINE_HI846_SENSOR_ID                       0x0846
+#define SAIPAN_CXT_GC02M1B_SENSOR_ID                       0x02e0
+#define SAIPAN_CXT_GC02M1_SENSOR_ID                        (0x02e0+1)
+#define SENSOR_DRVNAME_SAIPAN_SUNNY_HI4821Q_MIPI_RAW       "saipan_sunny_hi4821q_mipi_raw"
+#define SENSOR_DRVNAME_SAIPAN_SHINE_HI846_MIPI_RAW         "saipan_shine_hi846_mipi_raw"
+#define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1B_MIPI_MONO        "saipan_cxt_gc02m1b_mipi_mono"
+#define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW          "saipan_cxt_gc02m1_mipi_raw"
 
 /******************************************************************************
  *

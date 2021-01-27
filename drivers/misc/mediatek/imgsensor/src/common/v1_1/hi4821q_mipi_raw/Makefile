@@ -1,1 +1,0 @@
-obj-y += hi4821q_mipiraw_Sensor.o
