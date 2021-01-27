@@ -23,6 +23,10 @@
 #include "eeprom_i2c_common_driver.h"
 #include "cam_cal_list.h"
 
+#include "kd_camera_feature.h"
+#include <linux/file.h>
+#include <linux/unistd.h>
+#include "kd_imgsensor.h"
 #include "cam_cal.h"
 
 #define DEV_NODE_NAME_PREFIX "camera_eeprom"
@@ -30,6 +34,11 @@
 #define DEV_CLASS_NAME_FMT "camera_eepromdrv%u"
 #define EEPROM_DEVICE_NNUMBER 255
 
+#define DEV_NAME_FMT_DEV "/dev/camera_eeprom%u"
+
+#define LOG_INF(format, args...) pr_info(PFX "[%s] " format, __func__, ##args)
+#define LOG_DBG(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
 static struct EEPROM_DRV ginst_drv[MAX_EEPROM_NUMBER];
 
 static struct stCAM_CAL_LIST_STRUCT *get_list(struct CAM_CAL_SENSOR_INFO *sinfo)
@@ -116,6 +125,190 @@ static unsigned int write_region(struct EEPROM_DRV_FD_DATA *pdata,
 	return ret;
 }
 
+#define MAIN_OTP_DUMP 1
+struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainData = NULL;
+struct stCAM_CAL_DATAINFO_STRUCT *g_eepromSubData = NULL;
+struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainMicroData = NULL;
+
+#if MAIN_OTP_DUMP
+void dumpEEPROMData(int u4Length,u8* pu1Params)
+{
+	int i = 0;
+	for(i = 0; i < u4Length; i += 16){
+		if(u4Length - i  >= 16){
+			LOG_INF("eeprom[%d-%d]:0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x 0x%2x ",
+			i,i+15,pu1Params[i],pu1Params[i+1],pu1Params[i+2],pu1Params[i+3],pu1Params[i+4],pu1Params[i+5],pu1Params[i+6]
+			,pu1Params[i+7],pu1Params[i+8],pu1Params[i+9],pu1Params[i+10],pu1Params[i+11],pu1Params[i+12],pu1Params[i+13],pu1Params[i+14]
+			,pu1Params[i+15]);
+		}else{
+			int j = i;
+			for(;j < u4Length;j++)
+			LOG_INF("eeprom[%d] = 0x%2x ",j,pu1Params[j]);
+		}
+	}
+	LOG_INF("\n");
+}
+#endif
+
+int imgSensorCheckEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData, struct stCAM_CAL_CHECKSUM_STRUCT* cData){
+	int i = 0;
+	int length = 0;
+	int count;
+	u32 sum = 0;
+
+	if((pData != NULL)&&(pData->dataBuffer != NULL)&&(cData != NULL)){
+		u8* buffer = pData->dataBuffer;
+		for((count = 0);count < MAX_ITEM;count++){
+			if(cData[count].item < MAX_ITEM) {
+				if(buffer[cData[count].flagAdrees]!= cData[count].validFlag){
+					LOG_ERR("invalid otp data cItem=%d,flag=%d failed\n", cData[count].item,buffer[cData[count].flagAdrees]);
+					return -ENODEV;
+				} else {
+					LOG_INF("check cTtem=%d,flag=%d otp flag data successful!\n", cData[count].item,buffer[cData[count].flagAdrees]);
+				}
+				sum = 0;
+				length = cData[count].endAdress - cData[count].startAdress;
+				for(i = 0;i <= length;i++){
+					sum += buffer[cData[count].startAdress+i];
+				}
+				if(((sum%0xff)+1)!= buffer[cData[count].checksumAdress]){
+					LOG_ERR("checksum cItem=%d,0x%x,length = 0x%x failed\n",cData[count].item,sum,length);
+					return -ENODEV;
+				} else {
+					LOG_INF("checksum cItem=%d,0x%x,length = 0x%x successful!\n",cData[count].item,sum,length);
+				}
+			} else {
+				break;
+			}
+		}
+	} else {
+		LOG_ERR("some data not inited!\n");
+		return -ENODEV;
+	}
+
+	LOG_INF("sensor[0x%x][0x%x] eeprom checksum success\n", pData->sensorID, pData->deviceID);
+
+	return 0;
+}
+
+int imgSensorReadEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData, struct stCAM_CAL_CHECKSUM_STRUCT* checkData){
+	struct EEPROM_DRV_FD_DATA *fd_pdata = NULL;
+	int i4RetValue = -1;
+	u32 vendorID = 0;
+	u8 tmpBuf[4] = {0};
+	struct file *f = NULL;
+	unsigned int index = 0;
+	char device_drv_name[DEV_NAME_STR_LEN_MAX] = { 0 };
+
+	if((pData == NULL)||(checkData == NULL)){
+		LOG_ERR("pData or checkData not inited!\n");
+		return -EFAULT;
+	}
+
+	LOG_INF("SensorID=%x DeviceID=%x\n",pData->sensorID, pData->deviceID);
+	index = IMGSENSOR_SENSOR_IDX_MAP(pData->deviceID);
+	if (index >= MAX_EEPROM_NUMBER) {
+			LOG_ERR("node index out of bound\n");
+			return -EINVAL;
+	}
+
+	i4RetValue = snprintf(device_drv_name, DEV_NAME_STR_LEN_MAX - 1,
+		DEV_NAME_FMT_DEV, index);
+	LOG_INF("zyk device_drv_name=%s",device_drv_name);
+	if (i4RetValue < 0) {
+			LOG_ERR(
+			"[eeprom]%s error, ret = %d", __func__, i4RetValue);
+			return -EFAULT;
+	}
+
+	if (f == NULL){
+		f = filp_open(device_drv_name, O_RDWR, 0);
+	}
+	if (IS_ERR(f)){
+		LOG_ERR("fail to open %s\n", device_drv_name);
+		return -EFAULT;
+	}
+
+	fd_pdata = (struct EEPROM_DRV_FD_DATA *) f->private_data;
+	if(NULL == fd_pdata){
+		LOG_ERR("fp_pdata is null %s\n");
+		filp_close(f,NULL);
+		return -EFAULT;
+	}
+	fd_pdata->sensor_info.sensor_id = pData->sensorID;
+	LOG_INF("zyk read vendorId!\n");
+	i4RetValue = read_region(fd_pdata, &tmpBuf[0], 1, 1);
+	if (i4RetValue != 1) {
+		LOG_ERR("vendorID read failed 0x%x != 0x%x,i4RetValue=%d\n",tmpBuf[0], pData->sensorVendorid >> 24,i4RetValue);
+		filp_close(f,NULL);
+		return -EFAULT;
+	}
+	vendorID = tmpBuf[0];
+	if(vendorID != pData->sensorVendorid >> 24){
+		LOG_ERR("vendorID cmp failed 0x%x != 0x%x\n",vendorID, pData->sensorVendorid >> 24);
+		filp_close(f,NULL);
+		return -EFAULT;
+	}
+	if (pData->dataBuffer == NULL){
+		pData->dataBuffer = kmalloc(pData->dataLength, GFP_KERNEL);
+		if (pData->dataBuffer == NULL) {
+			LOG_ERR("pData->dataBuffer is malloc fail\n");
+			return -EFAULT;
+		}
+	}
+	i4RetValue = read_region(fd_pdata, pData->dataBuffer, 0x0, pData->dataLength);
+	if (i4RetValue != pData->dataLength) {
+		kfree(pData->dataBuffer);
+		pData->dataBuffer = NULL;
+		LOG_ERR("all eeprom data read failed\n");
+		filp_close(f,NULL);
+		return -EFAULT;
+	}else{
+		//4th do checksum
+		LOG_DBG("all eeprom data read ok\n");
+		if(imgSensorCheckEepromData(pData,checkData) != 0){
+			kfree(pData->dataBuffer);
+			pData->dataBuffer = NULL;
+			LOG_ERR("checksum failed\n");
+			filp_close(f,NULL);
+			return -EFAULT;
+		}
+		LOG_INF("SensorID=%x DeviceID=%x read otp data success\n",pData->sensorID, pData->deviceID);
+	}
+	filp_close(f,NULL);
+	return i4RetValue;
+}
+
+int imgSensorSetEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData){
+	int i4RetValue = 0;
+	LOG_INF("pData->deviceID = %d\n",pData->deviceID);
+	if(pData->deviceID == 0x01){
+		if(g_eepromMainData != NULL){
+			return -ETXTBSY;
+		}
+		g_eepromMainData = pData;
+	}else if(pData->deviceID == 0x02){
+		if(g_eepromSubData != NULL){
+			return -ETXTBSY;
+		}
+		LOG_DBG("zyk set eepromSubData successed\n");
+		g_eepromSubData= pData;
+	}else if(pData->deviceID == 0x08){
+		if(g_eepromMainMicroData != NULL){
+			return -ETXTBSY;
+		}
+		g_eepromMainMicroData= pData;
+	}else{
+		LOG_ERR("we don't have this devices\n");
+		return -ENODEV;
+	}
+#if MAIN_OTP_DUMP
+	if(pData->dataBuffer)
+		dumpEEPROMData(pData->dataLength,pData->dataBuffer);
+#endif
+	return i4RetValue;
+}
+
 static int eeprom_open(struct inode *a_inode, struct file *a_file)
 {
 	struct EEPROM_DRV_FD_DATA *pdata;
@@ -160,11 +353,37 @@ static ssize_t eeprom_read(struct file *a_file, char __user *user_buffer,
 
 	if (kbuf == NULL)
 		return -ENOMEM;
+	LOG_INF("SensorID=%x\n", pdata->sensor_info.sensor_id);
+	LOG_DBG("%d,1CAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+	   *offset, size);
 
-	if (read_region(pdata, kbuf, *offset, size) != size ||
-	    copy_to_user(user_buffer, kbuf, size)) {
-		kfree(kbuf);
-		return -EFAULT;
+	if((g_eepromMainData != NULL)&&(SAIPAN_SUNNY_HI4821Q_SENSOR_ID == pdata->sensor_info.sensor_id)){
+		u32 totalLength = (u32)*offset+ (u32)size;
+		if((g_eepromMainData->dataBuffer)&&(totalLength <= g_eepromMainData->dataLength)){
+			if(*offset == 1){//check id
+				if(copy_to_user(user_buffer, (u8*)&g_eepromMainData->sensorVendorid, 4)){
+					return -EFAULT;
+				}
+				LOG_DBG("%d,zyk1:ifCAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+					*offset,size);
+			} else {//read otp data
+				if(copy_to_user(user_buffer, g_eepromMainData->dataBuffer+(u32)*offset, size)){
+					return -EFAULT;
+				}
+				LOG_DBG("%d,zyk2:ifCAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+					*offset, size);
+			}
+		} else {
+			LOG_INF("maybe some error buf(%p)read(%d)have(%d) \n",g_eepromMainData->dataBuffer,totalLength,g_eepromMainData->dataLength);
+			kfree(kbuf);
+			return -EFAULT;
+		}
+	} else {
+		if (read_region(pdata, kbuf, *offset, size) != size ||
+			copy_to_user(user_buffer, kbuf, size)) {
+			kfree(kbuf);
+			return -EFAULT;
+		}
 	}
 
 	*offset += size;
