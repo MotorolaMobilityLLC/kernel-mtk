@@ -455,12 +455,10 @@
 	cam1_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam2_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
-
-	cam0_enable_sensor = "hi4821q_mipi_raw";
-	cam1_enable_sensor = "hi846_mipi_raw";
-	cam2_enable_sensor = "gc02m1b_mipi_mono";
-	cam4_enable_sensor = "gc02m1_mipi_raw";
-
+	cam0_enable_sensor = "saipan_sunny_hi4821q_mipi_raw";
+	cam1_enable_sensor = "saipan_shine_hi846_mipi_raw";
+	cam2_enable_sensor = "saipan_cxt_gc02m1b_mipi_mono";
+	cam4_enable_sensor = "saipan_cxt_gc02m1_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
