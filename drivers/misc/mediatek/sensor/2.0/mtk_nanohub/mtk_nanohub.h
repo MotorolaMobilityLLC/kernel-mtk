@@ -563,10 +563,10 @@ struct als_cal {
 struct ps_cal {
     uint32_t pscfg;
     uint8_t  hascali;
-    uint32_t ps_cover;
-    uint32_t ps_uncover;
-    uint32_t ps_high_thresold;
-    uint32_t ps_low_thresold;
+    uint16_t ps_cover;
+    uint16_t ps_uncover;
+    uint16_t ps_high_thresold;
+    uint16_t ps_low_thresold;
 };
 
 struct alsparams {
@@ -602,16 +602,34 @@ struct psparams
     uint8_t gain_c;
     uint8_t gain_c_dx128;
     uint8_t it_als;
-    uint32_t near_threshold;
-    uint32_t far_threshold;
-    uint32_t default_near_threshold;
-    uint32_t default_far_threshold;
-    uint32_t cover;
-    uint32_t uncover;
-    uint32_t default_cover;
-    uint32_t default_uncover;
+    uint16_t near_threshold;
+    uint16_t far_threshold;
+    uint16_t default_near_threshold;
+    uint16_t default_far_threshold;
+    uint16_t cover;
+    uint16_t uncover;
+    uint16_t default_cover;
+    uint16_t default_uncover;
     float high_coeff;
     float low_coeff;
+    uint16_t min_delta;
+    uint8_t pUseOilAlgo;
+};
+
+struct MotAlgoPsPrams
+{
+    uint8_t pUseOilAlgo;
+    uint8_t WTime;
+    uint16_t pLowTH;
+    uint16_t pHighTH;
+    float high_coef;
+    float low_coef;
+};
+
+struct PsOilParams {
+    uint16_t smudge_nt;
+    uint16_t smudge_ft;
+    uint16_t smudge_diff;
 };
 
 struct als_custom {
@@ -622,6 +640,8 @@ struct als_custom {
 struct ps_custom {
     struct ps_cal ps_cali;
     struct psparams ps_params;
+    struct MotAlgoPsPrams motalgopsprams;
+    struct PsOilParams    psoilparams;
 };
 
 struct mot_params {
@@ -637,8 +657,7 @@ struct mot_params {
     struct als_custom alscustom;
 
     struct ps_custom pscustom;
-
 };
 //#endif
-
+int mtk_nanohub_cfg_to_hub(uint8_t sensor_id, uint8_t *data, uint8_t count);
 #endif

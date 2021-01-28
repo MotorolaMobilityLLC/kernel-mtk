@@ -1029,6 +1029,7 @@ int mtk_nanohub_enable_to_hub(uint8_t sensor_id, int enabledisable)
 	uint8_t sensor_type = id_to_type(sensor_id);
 	struct ConfigCmd cmd;
 	int ret = 0;
+	uint32_t apopen[3] = {0};//moto add
 
 	if (enabledisable == 1 && (READ_ONCE(scp_system_ready)))
 		scp_register_feature(SENS_FEATURE_ID);
@@ -1043,6 +1044,18 @@ int mtk_nanohub_enable_to_hub(uint8_t sensor_id, int enabledisable)
 		mutex_unlock(&sensor_state_mtx);
 		return -1;
 	}
+
+	//moto add:AP open ps send message to tell scp
+	if(sensor_type == SENSOR_TYPE_PROXIMITY) {
+		apopen[0] = 22;
+		if (1 == enabledisable) {
+			apopen[1] = 1;
+		} else if(0 == enabledisable){
+			apopen[1] = 0;
+		}
+		mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)apopen, sizeof(apopen));
+	}
+
 	sensor_state[sensor_type].enable = enabledisable;
 	init_sensor_config_cmd(&cmd, sensor_type);
 	if (atomic_read(&power_status) == SENSOR_POWER_UP) {
@@ -2738,6 +2751,8 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub LTV fail\n");
 //#endif
+	pr_err("sensor_cfg_to_hub  als_custom %d ps_custom %d\n",sizeof(struct als_custom),sizeof(struct ps_custom));
+
 	err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->alscustom, sizeof(struct als_custom));
 	pr_err("sensor_cfg_to_hub light type8 %d scale %d\n",motparams->alscustom.als_cali.alscfg, (uint32_t)(motparams->alscustom.als_cali.light_scale*1000));
 	if (err < 0)
