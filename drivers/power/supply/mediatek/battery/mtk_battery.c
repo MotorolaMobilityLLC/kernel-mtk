@@ -65,6 +65,7 @@
 #include <pmic_lbat_service.h>
 
 #include <linux/power/moto_chg_tcmd.h>
+#include <linux/iio/consumer.h>
 
 
 /* ============================================================ */
@@ -4404,10 +4405,6 @@ static const struct file_operations adc_cali_fops = {
 /*===================moto chg tcmd interface========================*/
 extern int gauge_get_hwocv(void);
 
-#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
-unsigned int g_fg_battery_id;
-#endif
-
 static int battery_tcmd_read_bat_temp(void *input, int* val)
 {
 	*val = battery_get_bat_temperature() * 10;
@@ -4417,13 +4414,47 @@ static int battery_tcmd_read_bat_temp(void *input, int* val)
 
 static int battery_tcmd_read_bat_id(void *input, int* val)
 {
-#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
-	*val = g_fg_battery_id;
-#else
-	pr_info("%s not implemented now\n", __func__);
-	*val = -EINVAL;
-#endif
+	int id_volt = 0;
+	int ret = -1;
+	int auxadc_voltage = 0;
+	struct iio_channel *channel;
+	struct device_node *batterty_node;
+	struct platform_device *battery_dev;
 
+	batterty_node = of_find_node_by_name(NULL, "battery");
+	if (!batterty_node) {
+		bm_err("[%s] of_find_node_by_name fail\n", __func__);
+		return ret;
+	}
+
+	battery_dev = of_find_device_by_node(batterty_node);
+	if (!battery_dev) {
+		bm_err("[%s] of_find_device_by_node fail\n", __func__);
+		return ret;
+	}
+
+	channel = iio_channel_get(&(battery_dev->dev), "batteryID-channel");
+	if (IS_ERR(channel)) {
+		ret = PTR_ERR(channel);
+		bm_err("[%s] iio channel not found %d\n",
+		__func__, ret);
+		return ret;
+	}
+
+	if (channel)
+		ret = iio_read_channel_processed(channel, &auxadc_voltage);
+
+
+	if (ret <= 0) {
+		bm_err("[%s] iio_read_channel_processed failed\n", __func__);
+		return ret;
+	}
+
+	bm_err("[%s]auxadc_voltage is %d\n", __func__, auxadc_voltage);
+	id_volt = auxadc_voltage * 1500 / 4096;
+	bm_err("[%s]battery_id_voltage is %d\n", __func__, id_volt);
+
+	*val = id_volt;
 	return 0;
 }
 
