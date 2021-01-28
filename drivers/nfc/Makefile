@@ -7,6 +7,7 @@ obj-$(CONFIG_NFC_FDP)		+= fdp/
 obj-$(CONFIG_NFC_PN544)		+= pn544/
 obj-$(CONFIG_NFC_MICROREAD)	+= microread/
 obj-$(CONFIG_NFC_PN533)		+= pn533/
+obj-$(CONFIG_NXP_NFC_ESE_DEVICE)	+= pn557/
 obj-$(CONFIG_NFC_MEI_PHY)	+= mei_phy.o
 obj-$(CONFIG_NFC_SIM)		+= nfcsim.o
 obj-$(CONFIG_NFC_PORT100)	+= port100.o
