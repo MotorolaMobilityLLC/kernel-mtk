@@ -218,6 +218,19 @@
 	};
 };
 
+&i2c3 {
+       nfc_pn5xx: nfc_pn5xx@28 {
+		compatible = "nxp,pn5xx";
+		reg = <0x28>;
+		interrupt-parent = <&pio>;
+		interrupts = <5 IRQ_TYPE_LEVEL_HIGH 5 0>;
+		nxp,pn544-irq = <&pio 5 0>;
+		nxp,pn544-ven = <&pio 90 0>;
+		nxp,pn544-fd = <&pio 6 0>;
+		status = "okay";
+	};
+};
+
 &i2c6 {
        aw881xx_smartpa: aw881xx_smartpa@34 {
 		compatible = "awinic,aw881xx_smartpa";
