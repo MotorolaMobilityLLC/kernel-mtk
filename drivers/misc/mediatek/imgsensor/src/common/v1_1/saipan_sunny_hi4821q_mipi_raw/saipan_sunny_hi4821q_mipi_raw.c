@@ -543,6 +543,7 @@ static void write_shutter(kal_uint32 shutter)
 			write_cmos_sensor(0x0210, imgsensor.frame_length);
 	}
 
+	write_cmos_sensor(0x020E, (shutter & 0xFFFF0000) >> 16);
 	write_cmos_sensor(0x020C, shutter);
 
 	LOG_INF("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
