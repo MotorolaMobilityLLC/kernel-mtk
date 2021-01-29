@@ -22,65 +22,16 @@
 
 #include "saipan_sunny_hi4821q_mipi_raw.h"
 #include "saipan_sunny_hi4821q_mipi_raw_setting.h"
+#include "saipan_sunny_hi4821q_otp.h"
 
 #define PFX "saipan_sunny_hi4821q_camera_sensor"
 #define LOG_INF(format, args...)    \
 	pr_info(PFX "[%s] " format, __func__, ##args)
 
-#define SAIPAN_SUNNY_HI4821Q_OTP_ENABLE 1
-
-#if SAIPAN_SUNNY_HI4821Q_OTP_ENABLE
-
-#define EEPROM_BL24SA64D_ID 0xA0
-
-static kal_uint16 saipan_sunny_hi4821q_read_eeprom(kal_uint32 addr)
-{
-	kal_uint16 get_byte=0;
-
-	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
-	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, EEPROM_BL24SA64D_ID);
-
-	return get_byte;
-}
-
-#endif
-
 //PDAF
 #define ENABLE_PDAF 1
 
 #define per_frame 1
-
-#define SAIPAN_SUNNY_HI4821Q_XGC_QGC_PGC_CALIB 0
-
-#define SAIPAN_SUNNY_HI4821Q_OTP_DUMP 0
-
-#if SAIPAN_SUNNY_HI4821Q_XGC_QGC_PGC_CALIB
-//  OTP information setting
-#define XGC_BLOCK_X  9
-#define XGC_BLOCK_Y  7
-#define QGC_BLOCK_X  9
-#define QGC_BLOCK_Y  7
-#define PGC_BLOCK_X  13
-#define PGC_BLOCK_Y  11
-
-// SRAM Information
-#define SRAM_XGC_START_ADDR_48M     0x43F0
-#define SRAM_QGC_START_ADDR_48M     0x4000
-#define SRAM_PGC_START_ADDR_48M     0x4000  //0x8980 (2020.9.14)
-
-u8* pgc_data_buffer = NULL;
-u8* qgc_data_buffer = NULL;
-u8* xgc_data_buffer = NULL;
-
-#define PGC_DATA_SIZE 572
-#define QGC_DATA_SIZE 1008
-#define XGC_DATA_SIZE 693
-
-#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
-extern void dumpEEPROMData(int u4Length,u8* pu1Params);
-#endif
-
-#endif
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -362,109 +313,6 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 
 	iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
 }
-
-#if SAIPAN_SUNNY_HI4821Q_XGC_QGC_PGC_CALIB
-//XGC,QGC,PGC Calibration data are applied here
-static void apply_sensor_Cali(void)
-{
-	kal_uint16 idx = 0;
-	kal_uint16 sensor_qgc_addr;
-	kal_uint16 sensor_pgc_addr;
-	kal_uint16 sensor_xgc_addr;
-
-	kal_uint16 hi4821_xgc_data;
-	kal_uint16 hi4821_qgc_data;
-	kal_uint16 hi4821_pgc_data;
-
-	int i;
-	int isp_reg_en;
-	sensor_xgc_addr = SRAM_XGC_START_ADDR_48M + 2;
-
-	write_cmos_sensor(0x0b00,0x0000);
-	isp_reg_en = read_cmos_sensor(0x0b04);
-	write_cmos_sensor(0x0b04,isp_reg_en|0x000E); //XGC, QGC, PGC enable
-	LOG_INF("[Start]:apply_sensor_Cali finish\n");
-	//XGC data apply
-	{
-		write_cmos_sensor(0x301c,0x0002);
-		for(i = 0; i < XGC_BLOCK_X*XGC_BLOCK_Y*10; i += 2) //9(BLOCK_X)* 7 (BLCOK_Y)*10(channel)
-		{
-			hi4821_xgc_data = ((((xgc_data_buffer[i+1]) & (0x00ff)) << 8) + ((xgc_data_buffer[i]) & (0x00ff)));
-
-			if(idx == XGC_BLOCK_X*XGC_BLOCK_Y){
-				sensor_xgc_addr = SRAM_XGC_START_ADDR_48M;
-			}
-
-			else if(idx == XGC_BLOCK_X*XGC_BLOCK_Y*2){
-				sensor_xgc_addr += 2;
-			}
-
-			else if(idx == XGC_BLOCK_X*XGC_BLOCK_Y*3){
-				sensor_xgc_addr = SRAM_XGC_START_ADDR_48M + XGC_BLOCK_X * XGC_BLOCK_Y * 4;
-			}
-
-			else if(idx == XGC_BLOCK_X*XGC_BLOCK_Y*4){
-				sensor_xgc_addr += 2;
-			}
-
-			else{
-				LOG_INF("sensor_xgc_addr:0x%x,[ERROR]:no XGC data need apply\n",sensor_xgc_addr);
-			}
-			idx++;
-			write_cmos_sensor(sensor_xgc_addr,hi4821_xgc_data);
-			#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
-				pr_info("sensor_xgc_addr:0x%x,xgc_data_buffer[%d]:0x%x,xgc_data_buffer[%d]:0x%x,hi4821_xgc_data:0x%x\n",
-					sensor_xgc_addr,i,xgc_data_buffer[i],i+1,xgc_data_buffer[i+1],hi4821_xgc_data);
-			#endif
-
-			sensor_xgc_addr += 4;
-		}
-	}
-
-	//QGC data apply
-	{
-		idx = 0;
-		write_cmos_sensor(0x301c,0x0002);
-		sensor_qgc_addr = SRAM_QGC_START_ADDR_48M;
-		for(i = 0; i < QGC_BLOCK_X*QGC_BLOCK_Y*16;i += 2) //9(BLOCK_X)* 7 (BLCOK_Y)*16(channel)
-		{
-			hi4821_qgc_data = ((((qgc_data_buffer[i+1]) & (0x00ff)) << 8) + ((qgc_data_buffer[i]) & (0x00ff)));
-			write_cmos_sensor(sensor_qgc_addr,hi4821_qgc_data);
-
-			#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
-				pr_info("sensor_qgc_addr:0x%x,qgc_data_buffer[%d]:0x%x,qgc_data_buffer[%d]:0x%x,hi4821_qgc_data:0x%x\n",
-					sensor_qgc_addr,i,qgc_data_buffer[i],i+1,qgc_data_buffer[i+1],hi4821_qgc_data);
-			#endif
-			sensor_qgc_addr += 2;
-			idx++;
-		}
-	}
-
-	//PGC data apply
-	{
-		idx = 0;
-		write_cmos_sensor(0x301c,0x0002);
-		sensor_pgc_addr = SRAM_PGC_START_ADDR_48M;
-		for(i = 0; i < PGC_BLOCK_X*PGC_BLOCK_Y*2;i += 2) //33(BLOCK_X)* 25(BLCOK_Y)*1(channel)*2bytes
-		{
-			hi4821_pgc_data = ((((pgc_data_buffer[i+1]) & (0x00ff)) << 8) + ((pgc_data_buffer[i]) & (0x00ff)));
-			write_cmos_sensor(sensor_pgc_addr,hi4821_pgc_data);
-
-			#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
-				pr_info("sensor_pgc_addr:0x%x,pgc_data_buffer[%d]:0x%x,pgc_data_buffer[%d]:0x%x,hi4821_pgc_data:0x%x\n",
-					sensor_pgc_addr,i,pgc_data_buffer[i],i+1,pgc_data_buffer[i+1],hi4821_pgc_data);
-			#endif
-			sensor_pgc_addr += 2;
-			idx++;
-		}
-	}
-
-	//write_cmos_sensor(0x0b00,0x0100);
-	//mdelay(10);
-	write_cmos_sensor(0x0b00,0x0100);
-	LOG_INF("[End]:apply_sensor_Cali finish\n");
-}
-#endif
 
 static void set_dummy(void)
 {
@@ -820,40 +668,6 @@ static void custom1_setting(void)
 		sizeof(addr_data_pair_custom1_saipan_sunny_hi4821q) /
 		sizeof(kal_uint16));
 }
-
-#if SAIPAN_SUNNY_HI4821Q_OTP_ENABLE
-
-#include "cam_cal_define.h"
-#include <linux/slab.h>
-static struct stCAM_CAL_DATAINFO_STRUCT st_rear_saipan_sunny_hi4821q_eeprom_data ={
-	.sensorID= SAIPAN_SUNNY_HI4821Q_SENSOR_ID,
-	.deviceID = 0x01,
-	.dataLength = 0x1638,
-	.sensorVendorid = 0x0B000000,
-	.vendorByte = {1,2,3,4},
-	.dataBuffer = NULL,
-};
-
-static struct stCAM_CAL_CHECKSUM_STRUCT st_rear_saipan_sunny_hi4821q_Checksum[11] =
-{
-	{MODULE_ITEM,0x0000,0x0000,0x0007,0x0008,0x55},
-	{AWB_ITEM,0x0009,0x0009,0x0019,0x001A,0x55},
-	{AF_ITEM,0x001B,0x001B,0x0020,0x0021,0x55},
-	{LSC_ITEM,0x0022,0x0022,0x076E,0x076F,0x55},
-	{PDAF_ITEM,0x0770,0x0770,0x0960,0x0961,0x55},
-	{PDAF_PROC2_ITEM,0x0962,0x0962,0x0D4E,0x0D4F,0x55},
-	{SAIPAN_SUNNY_HI4821Q_XGC,0x0D50,0x0D50,0x1005,0x1006,0x55},
-	{SAIPAN_SUNNY_HI4821Q_QGC,0x1007,0x1007,0x13F7,0x13F8,0x55},
-	{SAIPAN_SUNNY_HI4821Q_PGC,0x13F9,0x13F9,0x1635,0x1636,0x55},
-	{TOTAL_ITEM,0x0000,0x0000,0x1636,0x1637,0x55},
-	{MAX_ITEM,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0x55},  // this line must haved
-};
-extern int imgSensorReadEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData,
-	struct stCAM_CAL_CHECKSUM_STRUCT* checkData);
-extern int imgSensorSetEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData);
-
-
-#endif
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {

@@ -35,6 +35,7 @@
 
 #include "saipan_cxt_gc02m1_mipi_raw.h"
 #include "saipan_cxt_gc02m1_mipi_raw_setting.h"
+#include "saipan_cxt_gc02m1_otp.h"
 
 /************************** Modify Following Strings for Debug **************************/
 #define PFX "saipan_cxt_gc02m1_mipiraw_sensor"
@@ -397,7 +398,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
-
+	kal_int32 size = 0;
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -405,6 +406,19 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				size = imgSensorReadEepromData(&st_rear_saipan_cxt_gc02m1_eeprom_data,st_rear_saipan_cxt_gc02m1_Checksum);
+				if(size != st_rear_saipan_cxt_gc02m1_eeprom_data.dataLength || (st_rear_saipan_cxt_gc02m1_eeprom_data.sensorVendorid >> 24)!= read_eeprom(0x0001)) {
+					pr_err("get eeprom data failed\n");
+					if(st_rear_saipan_cxt_gc02m1_eeprom_data.dataBuffer != NULL) {
+						kfree(st_rear_saipan_cxt_gc02m1_eeprom_data.dataBuffer);
+						st_rear_saipan_cxt_gc02m1_eeprom_data.dataBuffer = NULL;
+					}
+					//*sensor_id = 0xFFFFFFFF;
+					//return ERROR_SENSOR_CONNECT_FAIL;
+				} else {
+					pr_debug("get eeprom data success\n");
+					imgSensorSetEepromData(&st_rear_saipan_cxt_gc02m1_eeprom_data);
+				}
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
