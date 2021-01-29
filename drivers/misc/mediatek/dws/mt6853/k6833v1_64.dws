@@ -2292,9 +2292,9 @@
                 <address>0x10</address>
             </device29>
             <device31>
-                <varName>CAMERA_MAIN_THREE_AF</varName>
-                <channel>I2C_CHANNEL_2</channel>
-                <address>0x0C</address>
+                <varName>CAMERA_MAIN_THREE_EEPROM</varName>
+                <channel>I2C_CHANNEL_8</channel>
+                <address>0xA4</address>
             </device31>
         </module>
         <module name="md1_eint">
