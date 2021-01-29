@@ -251,6 +251,12 @@
 };
 /* CONSYS end */
 
+/* CAMERA specify sensor */
+&kd_camera_hw1 {
+	cam2_enable_sensor = "imx350_mipi_raw imx386_mipi_mono";
+};
+/* CAMERA specify sensor end */
 
 
+#include "mediatek/cust_mt6785_camera.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
