@@ -2700,7 +2700,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	DISPMSG("%s: fb_pa = %pa\n", __func__, &fb_base);
 
-#ifdef CONFIG_MTK_IOMMU
+#if 0 /*#ifdef CONFIG_MTK_IOMMU*/
 	temp_va = (size_t)ioremap_nocache(fb_base, vramsize);
 	fbdev->fb_va_base = (void *)temp_va;
 	ion_display_client = disp_ion_create("disp_fb0");
@@ -2710,9 +2710,11 @@ static int mtkfb_probe(struct platform_device *pdev)
 		goto cleanup;
 	}
 
-	ion_display_handle = disp_ion_alloc(ion_display_client,
-					    ION_HEAP_MULTIMEDIA_MAP_MVA_MASK,
-					    temp_va, vramsize);
+	/*
+	 * TODO: legacy ion_handle allocate API phase out,
+	 *	need develop another method allocate MVA
+	 */
+
 	if (ret) {
 		DDPPR_ERR("%s: fail to allocate buffer\n", __func__);
 		ret = -1;
