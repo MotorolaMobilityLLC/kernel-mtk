@@ -381,6 +381,16 @@
         mmi,vfloat-comp-uv = <20000>;
 };
 
+&bat_gm30 {
+        io-channels = <&auxadc 5>;
+        io-channel-names = "batteryID-channel";
+        EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
+        DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
+
+        df-serialnum = "SB18C51711";
+        #include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
+};
+
 #include "mediatek/cust_mt6785_camera.dtsi"
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
