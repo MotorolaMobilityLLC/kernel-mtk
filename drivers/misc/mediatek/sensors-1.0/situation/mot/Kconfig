@@ -1,0 +1,19 @@
+
+config MOTO_ALGO
+	bool "algo for moto package"
+	default n
+	help
+	  A stationary is a device, usually portable
+	  and electronic or electromechanical, that detect device is kept static.
+
+
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_flatup/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_flatdown/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_stowed/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_camgest/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_chopchop/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_glance/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_ltv/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_ftm/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_offbody/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/moto_lts/Kconfig"
