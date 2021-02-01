@@ -1545,6 +1545,19 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return 0;
 			}
 		}
+	case DISP_IOCTL_GET_LCMNAME:
+		{
+			char lcm_name[256] = { 0 };
+			void __user *argp = (void __user *)arg;
+			strcpy(lcm_name,mtkfb_find_lcm_driver());
+			if (copy_to_user(argp, lcm_name, sizeof(lcm_name))) {
+				DISPERR("[FB]: copy_to_user failed! line:%d\n",
+						__LINE__);
+				ret = -EFAULT;
+			} else {
+				return 0;
+			}
+		}
 	case DISP_IOCTL_QUERY_VALID_LAYER:
 		{
 			return _ioctl_query_valid_layer(arg);

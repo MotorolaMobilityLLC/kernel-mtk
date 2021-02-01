@@ -162,6 +162,8 @@ struct disp_iommu_device *disp_get_iommu_dev(void);
 #define DISP_IOCTL_GET_LCMINDEX \
 	_IOR(DISP_IOCTL_MAGIC, 56, int)
 
+#define DISP_IOCTL_GET_LCMNAME \
+	_IOR(DISP_IOCTL_MAGIC, 57, char)
 /* PQ setting */
 #define DISP_IOCTL_SET_PQPARAM \
 	_IOW(DISP_IOCTL_MAGIC, 60, struct DISP_PQ_PARAM)
