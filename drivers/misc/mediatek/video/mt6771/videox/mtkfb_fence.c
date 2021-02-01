@@ -347,8 +347,8 @@ static struct ion_handle *mtkfb_ion_import_handle(struct ion_client *client,
 	mm_data.config_buffer_param.coherent = 0;
 
 	if (ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA,
-			     (unsigned long)&mm_data))
-		MTKFB_FENCE_PR_ERR("configure ion buffer failed!\n");
+		(unsigned long)&mm_data))
+		pr_info("configure ion buffer failed!\n");
 
 	MTKFB_FENCE_LOG("import ion handle fd=%d,hnd=0x%p\n", fd, handle);
 
