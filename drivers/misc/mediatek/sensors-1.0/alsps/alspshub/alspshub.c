@@ -47,6 +47,7 @@ struct alspshub_ipi_data {
 	bool als_android_enable;
 	bool ps_android_enable;
 	struct wakeup_source ps_wake_lock;
+	struct completion als_cali_done;/*moto add for als cali sync*/
 };
 
 static struct alspshub_ipi_data *obj_ipi_data;
@@ -365,6 +366,8 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 		atomic_set(&obj->als_cali, event->data[0]);
 		spin_unlock(&calibration_lock);
 		err = als_cali_report(event->data);
+		//moto add
+		complete(&obj->als_cali_done);
 	}
 	return err;
 }
@@ -412,7 +415,23 @@ static int alshub_factory_enable_sensor(bool enable_disable,
 	mutex_unlock(&alspshub_mutex);
 	return 0;
 }
+
+//moto modify
 static int alshub_factory_get_data(int32_t *data)
+{
+	int err = 0;
+	struct data_unit_t data_t;
+
+	err = sensor_get_data_from_hub(ID_LIGHT, &data_t);
+	if (err < 0)
+		return -1;
+	data[0] = data_t.data[0];
+	data[1] = data_t.data[1];
+	data[2] = data_t.data[2];
+	pr_err("als get data[0]=%d data[1]=%d data[2]=%d \n",data[0],data[1],data[2]);
+	return 0;
+}
+static int alshub_factory_get_raw_data(int32_t *data)
 {
 	int err = 0;
 	struct data_unit_t data_t;
@@ -423,13 +442,20 @@ static int alshub_factory_get_data(int32_t *data)
 	*data = data_t.light;
 	return 0;
 }
-static int alshub_factory_get_raw_data(int32_t *data)
-{
-	return alshub_factory_get_data(data);
-}
+
+//moto modify
 static int alshub_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_LIGHT);
+	int ret = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	ret = sensor_calibration_to_hub(ID_LIGHT);
+	if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->als_cali_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
 static int alshub_factory_clear_cali(void)
 {
@@ -459,6 +485,23 @@ static int alshub_factory_get_cali(int32_t *offset)
 	*offset = atomic_read(&obj->als_cali);
 	return 0;
 }
+
+static int alshub_factory_set_cali_data(int32_t data[3])
+{
+	int err = 0;
+	int32_t cali_data[3] = {0};
+
+	cali_data[0] = data[0];
+	cali_data[1] = data[1];
+	cali_data[2] = data[2];
+	err = sensor_cali_data_to_hub(ID_LIGHT,
+		(uint8_t *)&cali_data, sizeof(cali_data));
+	if (err < 0)
+		pr_err("sensor_cali_data_to_hub fail\n");
+	return err;
+
+}
+
 static int pshub_factory_enable_sensor(bool enable_disable,
 			int64_t sample_periods_ms)
 {
@@ -591,6 +634,11 @@ static int pshub_factory_get_threshold(int32_t threshold[2])
 	spin_unlock(&calibration_lock);
 	return 0;
 }
+static int pshub_factory_do_self_test(void)
+{
+
+	return sensor_selftest_to_hub(ID_PROXIMITY);
+}
 
 static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_enable_sensor = alshub_factory_enable_sensor,
@@ -600,6 +648,7 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_clear_cali = alshub_factory_clear_cali,
 	.als_set_cali = alshub_factory_set_cali,
 	.als_get_cali = alshub_factory_get_cali,
+	.als_set_cali_data = alshub_factory_set_cali_data,
 
 	.ps_enable_sensor = pshub_factory_enable_sensor,
 	.ps_get_data = pshub_factory_get_data,
@@ -610,6 +659,7 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.ps_get_cali = pshub_factory_get_cali,
 	.ps_set_threshold = pshub_factory_set_threshold,
 	.ps_get_threshold = pshub_factory_get_threshold,
+	.do_self_test        = pshub_factory_do_self_test,
 };
 
 static struct alsps_factory_public alspshub_factory_device = {
@@ -906,6 +956,8 @@ static int alspshub_probe(struct platform_device *pdev)
 	WRITE_ONCE(obj->als_android_enable, false);
 	WRITE_ONCE(obj->ps_factory_enable, false);
 	WRITE_ONCE(obj->ps_android_enable, false);
+	//moto add
+	init_completion(&obj->als_cali_done);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
