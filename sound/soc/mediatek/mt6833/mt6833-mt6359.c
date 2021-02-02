@@ -779,8 +779,8 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
 	{
 		.name = "I2S3",
 		.cpu_dai_name = "I2S3",
-		.codec_dai_name = "aw881xx-aif",
-		.codec_name = "aw881xx_smartpa",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.ignore_suspend = 1,
@@ -789,8 +789,8 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
 	{
 		.name = "I2S0",
 		.cpu_dai_name = "I2S0",
-		.codec_dai_name = "aw881xx-aif",
-		.codec_name = "aw881xx_smartpa",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.ignore_suspend = 1,
