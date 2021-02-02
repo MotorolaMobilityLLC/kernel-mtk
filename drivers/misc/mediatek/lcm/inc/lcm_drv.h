@@ -936,6 +936,8 @@ struct LCM_UTIL_FUNCS {
 	void (*set_chip_select)(unsigned int value);
 	int (*set_gpio_out)(unsigned int gpio, unsigned int value);
 	void (*set_te_pin)(void);
+	void (*set_lcd_ldo_en) (unsigned int value);
+	void (*set_lcd_backlight_en) (unsigned int value);
 
 	void (*udelay)(unsigned int us);
 	void (*mdelay)(unsigned int ms);
