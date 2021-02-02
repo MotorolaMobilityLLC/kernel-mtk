@@ -240,10 +240,15 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 			pled_dtsi[i].data =
 			   (long)chargepump_set_backlight_level;
 			LEDS_DEBUG("BL set by chargepump\n");
+#elif defined(CONFIG_LEDS_AW99703)
+			pled_dtsi[i].data =
+			   (long)chargepump_set_backlight_level;
+			LEDS_DEBUG("BL set by chargepump\n");
 #else
 			pled_dtsi[i].data = (long)mtkfb_set_backlight_level;
-#endif
 			LEDS_DEBUG("kernel:the BL hw mode is LCM.\n");
+#endif
+
 			break;
 		case MT65XX_LED_MODE_CUST_BLS_PWM:
 			pled_dtsi[i].data = (long)disp_bls_set_backlight;
