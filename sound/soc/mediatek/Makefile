@@ -37,9 +37,6 @@ obj-$(CONFIG_SND_SOC_MT6873) += mt6873/
 obj-$(CONFIG_SND_SOC_MT6885) += mt6885/
 obj-$(CONFIG_SND_SOC_MT8167) += mt8167/
 
-# aw881xx smart pa
-obj-$(CONFIG_SND_SMARTPA_AW881XX) += codec/aw881xx/
-
 #mtk new arch
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),)
 # MTK Codec Chip Support
