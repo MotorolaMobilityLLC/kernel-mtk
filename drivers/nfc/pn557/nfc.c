@@ -232,6 +232,19 @@ long nfc_dev_ioctl(struct file *filep, unsigned int cmd,
     return ret;
 }
 
+#ifdef CONFIG_COMPAT
+long nfc_compat_dev_ioctl(struct file *filep, unsigned int cmd,
+        unsigned long arg)
+{
+    long ret = 0;
+    struct nfc_dev *nfc_dev = filep->private_data;
+    ret = func(NFC_PLATFORM, _nfc_ioctl)(nfc_dev, cmd, arg);
+    if (ret != 0)
+        pr_err("%s: ioctl: cmd = %u, arg = %lu\n", __func__, cmd, arg);
+    return ret;
+}
+#endif
+
 static const struct file_operations nfc_dev_fops = {
         .owner  = THIS_MODULE,
         .llseek = no_llseek,
@@ -239,6 +252,9 @@ static const struct file_operations nfc_dev_fops = {
         .write  = nfc_dev_write,
         .open   = nfc_dev_open,
         .unlocked_ioctl  = nfc_dev_ioctl,
+#ifdef CONFIG_COMPAT
+        .compat_ioctl = nfc_compat_dev_ioctl,
+#endif
 };
 
 struct nfc_platform_data {
