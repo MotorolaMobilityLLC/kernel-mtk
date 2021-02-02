@@ -175,7 +175,7 @@ static int trigger_onoff(struct pn8xt_dev *pn8xt_dev, pn8xt_access_st_t state)
  * (arg = 2):FW_DL GPIO = 1, KEEP VEN down/up - firmware download mode
  * Return: 0 on success and error on failure
  */
-static long pn8xt_nfc_pwr(struct nfc_dev *nfc_dev, unsigned long arg)
+static long pn8xt_nfc_pwr(struct nfc_dev *nfc_dev, unsigned int arg)
 {
     struct pn8xt_dev *pn8xt_dev = (struct pn8xt_dev *)nfc_dev->pdata_op;
     pn8xt_access_st_t *cur_state = pn8xt_get_state(pn8xt_dev);
@@ -183,6 +183,7 @@ static long pn8xt_nfc_pwr(struct nfc_dev *nfc_dev, unsigned long arg)
         pr_err("%s: pn8xt_dev doesn't exist anymore\n", __func__);
         return -ENODEV;
     }
+
     switch(arg) {
         case 0:
             /* power off */
@@ -267,7 +268,7 @@ static long pn8xt_nfc_pwr(struct nfc_dev *nfc_dev, unsigned long arg)
     return 0;
 }
 
-static long pn8xt_ese_pwr(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned long arg)
+static long pn8xt_ese_pwr(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned int arg)
 {
     bool isSignalTriggerReqd = !(arg & 0x10);/*5th bit to/not trigger signal*/
     unsigned long pwrLevel = arg & 0x0F;
@@ -277,6 +278,7 @@ static long pn8xt_ese_pwr(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned lo
         pr_err("%s: pn8xt_dev doesn't exist anymore\n", __func__);
         return -ENODEV;
     }
+
     switch(pwrLevel) {
         case 0:
             pr_debug("%s: power off ese\n", __func__);
@@ -500,7 +502,7 @@ static long pn8xt_ese_pwr(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned lo
     return 0;
 }
 
-static long set_jcop_download_state(struct pn8xt_dev *pn8xt_dev, unsigned long arg)
+static long set_jcop_download_state(struct pn8xt_dev *pn8xt_dev, unsigned int arg)
 {
     long ret = 0;
     pn8xt_access_st_t *cur_state = pn8xt_get_state(pn8xt_dev);
@@ -539,7 +541,7 @@ static long set_jcop_download_state(struct pn8xt_dev *pn8xt_dev, unsigned long a
     return ret;
 }
 
-static int set_wired_access(struct nfc_dev *nfc_dev, unsigned long arg)
+static int set_wired_access(struct nfc_dev *nfc_dev, unsigned int arg)
 {
     struct pn8xt_dev *pn8xt_dev = (struct pn8xt_dev *)nfc_dev->pdata_op;
     pn8xt_access_st_t *cur_state = pn8xt_get_state(pn8xt_dev);
@@ -653,7 +655,7 @@ static void secure_timer_workqueue(struct work_struct *wq)
 }
 
 
-static long secure_timer_operation(struct pn8xt_dev *pn8xt_dev, unsigned long arg)
+static long secure_timer_operation(struct pn8xt_dev *pn8xt_dev, unsigned int arg)
 {
     long ret = -EINVAL;
     unsigned long timer_value =  arg;
@@ -675,7 +677,7 @@ static long secure_timer_operation(struct pn8xt_dev *pn8xt_dev, unsigned long ar
     return ret;
 }
 
-long pn8xt_nfc_ese_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned long arg)
+long pn8xt_nfc_ese_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned int arg)
 {
     long ret = 0;
     struct pn8xt_dev *pn8xt_dev = (struct pn8xt_dev *)nfc_dev->pdata_op;
@@ -714,7 +716,7 @@ long pn8xt_nfc_ese_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned lon
     return ret;
 }
 
-long pn8xt_nfc_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned long arg)
+long pn8xt_nfc_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned int arg)
 {
     long ret = 0;
     struct pn8xt_dev *pn8xt_dev = (struct pn8xt_dev *)nfc_dev->pdata_op;
