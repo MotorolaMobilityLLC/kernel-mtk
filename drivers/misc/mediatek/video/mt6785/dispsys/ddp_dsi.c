@@ -5328,6 +5328,24 @@ static void lcm1_set_te_pin(void)
 #endif
 }
 
+void lcm_set_lcd_ldo_en(UINT32 value)
+{
+	if (value) {
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_LDO_EN1);
+	} else {
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_LDO_EN0);
+	}
+}
+
+void lcd_set_backlight_en(UINT32 value)
+{
+	if (value) {
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BACKLIGHT_EN1);
+	} else {
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BACKLIGHT_EN0);
+	}
+}
+
 static void lcm_udelay(UINT32 us)
 {
 	udelay(us);
@@ -5570,6 +5588,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 #endif
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+	utils->set_lcd_ldo_en = lcm_set_lcd_ldo_en;
+	utils->set_lcd_backlight_en = lcd_set_backlight_en;
 #endif
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	utils->dsi_dynfps_send_cmd = DSI_dynfps_send_cmd;
