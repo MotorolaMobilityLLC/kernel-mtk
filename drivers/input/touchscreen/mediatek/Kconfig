@@ -182,6 +182,14 @@ config TOUCHSCREEN_MTK_GT9157
 	  To compile this dirver as a module, choose M here: the
 	  module will be called
 
+config TOUCHSCREEN_MTK_ILI7807
+        bool "Ili7807 for Mediatek package"
+        default n
+        help
+          Say Y here if you have Ili7807 touch panel.
+
+          if unsure, say N.
+
 source "drivers/input/touchscreen/mediatek/GT9157/Kconfig"
 source "drivers/input/touchscreen/mediatek/nova_tddi/Kconfig"
 source "drivers/input/touchscreen/mediatek/chipone_v2_tddi/Kconfig"
