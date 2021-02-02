@@ -1340,6 +1340,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(R66451_FHDP_DSI_CMD_TIANMA)
 	&r66451_fhdp_dsi_cmd_tianma_lcm_drv,
 #endif
+#if defined(PANEL_MOT_MIPI_VID_TIANMA_ILI7807S_678_FHD)
+        &mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
