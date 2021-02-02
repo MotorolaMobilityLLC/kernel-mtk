@@ -597,7 +597,7 @@ static int aw99703_bl_update_status(struct backlight_device *bl_dev)
 		struct aw99703_data *drvdata = bl_get_data(bl_dev);
 		int brt;
 
-		if (bl_dev->props.state & BL_CORE_SUSPENDED)
+		if (bl_dev->props.state & (BL_CORE_SUSPENDED << 1))
 				bl_dev->props.brightness = 0;
 
 		brt = bl_dev->props.brightness;
@@ -1072,7 +1072,7 @@ static struct i2c_driver aw99703_i2c_driver = {
 		.name = AW99703_NAME,
 		.owner = THIS_MODULE,
 		.of_match_table = match_table,
-		.pm = &aw99703_pm_ops,
+		//.pm = &aw99703_pm_ops,
 	},
 };
 
