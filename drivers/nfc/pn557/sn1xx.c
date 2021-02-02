@@ -51,7 +51,7 @@
 /*
  * Power management of the eSE
  */
-long sn1xx_nfc_ese_ioctl(struct nfc_dev *nfc_dev,  unsigned int cmd, unsigned long arg)
+long sn1xx_nfc_ese_ioctl(struct nfc_dev *nfc_dev,  unsigned int cmd, unsigned int arg)
 {
     int ret = 0;
     pr_debug("%s: cmd = %u, arg = %lu\n", __func__, cmd, arg);
@@ -80,7 +80,7 @@ long sn1xx_nfc_ese_ioctl(struct nfc_dev *nfc_dev,  unsigned int cmd, unsigned lo
  *
  * Return: -ENOIOCTLCMD if arg is not supported, 0 in any other case
  */
-static long sn1xx_nfc_pwr(struct nfc_dev *nfc_dev, unsigned long arg)
+static long sn1xx_nfc_pwr(struct nfc_dev *nfc_dev, unsigned int arg)
 {
     pr_info("%s: %lu\n", __func__, arg);
     switch(arg) {
@@ -124,7 +124,7 @@ static long sn1xx_nfc_pwr(struct nfc_dev *nfc_dev, unsigned long arg)
 
 
 long  sn1xx_nfc_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd,
-        unsigned long arg)
+        unsigned int arg)
 {
     int ret = 0;
     pr_info("%s: cmd = %u, arg = %lu\n", __func__, cmd, arg);
