@@ -40,5 +40,7 @@ extern struct cust_mt65xx_led *mt_get_cust_led_list(void);
 #if defined(CONFIG_BACKLIGHT_SUPPORT_LM3697)
 extern int chargepump_set_backlight_level(unsigned int level);
 #endif
-
+#if defined(CONFIG_LEDS_AW99703)
+extern int chargepump_set_backlight_level(unsigned int level);
+#endif
 #endif

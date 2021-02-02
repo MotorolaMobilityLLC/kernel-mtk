@@ -709,6 +709,14 @@ config LEDS_NIC78BX
 	  To compile this driver as a module, choose M here: the module
 	  will be called leds-nic78bx.
 
+config LEDS_AW99703
+	tristate "LED Support for AW 99703
+	depends on LEDS_CLASS && I2C
+	help
+	  this option enables support for the AW 99703 LED connected
+	  through I2C. Say Y to enable support for the AW 99703 LED
+	  light automatically.
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
