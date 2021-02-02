@@ -40,8 +40,8 @@
  */
 #define SN1XX_SET_PWR      _IOW(NXP_NFC_MAGIC, 0x01, long)
 
-long sn1xx_nfc_ese_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned long arg);
-long sn1xx_nfc_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned long arg);
+long sn1xx_nfc_ese_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned int arg);
+long sn1xx_nfc_ioctl(struct nfc_dev *nfc_dev, unsigned int cmd, unsigned int arg);
 int sn1xx_nfc_probe(struct nfc_dev *nfc_dev);
 int sn1xx_nfc_remove(struct nfc_dev *nfc_dev);
 #endif //_NXP_NFC_SN1XX_H_
