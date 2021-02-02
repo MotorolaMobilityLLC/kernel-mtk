@@ -1,0 +1,1672 @@
+ilitek_v3_touch.c:238:	ret = ilits->wrapper(cmd, sizeof(u8), data, ilits->protocol->mp_info_len, ON, OFF);
+ilitek_v3_touch.c:239:	ili_dump_data(data, 8, ilits->protocol->mp_info_len, 0, "MP overlay info");
+ilitek_v3_touch.c:262:	ret = ilits->wrapper(cmd, 2, NULL, 0, ON, OFF);
+ilitek_v3_touch.c:267:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3_touch.c:314:	ilits->actual_tp_mode = P5_X_FW_TEST_MODE; /* set busy as 0x51 */
+ilitek_v3_touch.c:333:	ilits->prox_near = true;
+ilitek_v3_touch.c:361:	if (!ilits->prox_near) {
+ilitek_v3_touch.c:383:		ret = ilits->wrapper(cmd, 2, NULL, 0, ON, OFF);
+ilitek_v3_touch.c:399:	ilits->prox_near = false;
+ilitek_v3_touch.c:422:	struct gesture_symbol *ptr_sym = &ilits->ges_sym;
+ilitek_v3_touch.c:436:	if (ilits->wrapper(cmd, 2, NULL, 0, ON, OFF) < 0) {
+ilitek_v3_touch.c:442:	if (ilits->wrapper(&cmd[1], (sizeof(cmd) - 1), NULL, 0, ON, OFF)) {
+ilitek_v3_touch.c:447:	ILI_DBG(" double_tap = %d\n", ilits->ges_sym.double_tap);
+ilitek_v3_touch.c:448:	ILI_DBG(" alphabet_line_2_top = %d\n", ilits->ges_sym.alphabet_line_2_top);
+ilitek_v3_touch.c:449:	ILI_DBG(" alphabet_line_2_bottom = %d\n", ilits->ges_sym.alphabet_line_2_bottom);
+ilitek_v3_touch.c:450:	ILI_DBG(" alphabet_line_2_left = %d\n", ilits->ges_sym.alphabet_line_2_left);
+ilitek_v3_touch.c:451:	ILI_DBG(" alphabet_line_2_right = %d\n", ilits->ges_sym.alphabet_line_2_right);
+ilitek_v3_touch.c:452:	ILI_DBG(" alphabet_w = %d\n", ilits->ges_sym.alphabet_w);
+ilitek_v3_touch.c:453:	ILI_DBG(" alphabet_c = %d\n", ilits->ges_sym.alphabet_c);
+ilitek_v3_touch.c:454:	ILI_DBG(" alphabet_E = %d\n", ilits->ges_sym.alphabet_E);
+ilitek_v3_touch.c:455:	ILI_DBG(" alphabet_V = %d\n", ilits->ges_sym.alphabet_V);
+ilitek_v3_touch.c:456:	ILI_DBG(" alphabet_O = %d\n", ilits->ges_sym.alphabet_O);
+ilitek_v3_touch.c:457:	ILI_DBG(" alphabet_S = %d\n", ilits->ges_sym.alphabet_S);
+ilitek_v3_touch.c:458:	ILI_DBG(" alphabet_Z = %d\n", ilits->ges_sym.alphabet_Z);
+ilitek_v3_touch.c:459:	ILI_DBG(" alphabet_V_down = %d\n", ilits->ges_sym.alphabet_V_down);
+ilitek_v3_touch.c:460:	ILI_DBG(" alphabet_V_left = %d\n", ilits->ges_sym.alphabet_V_left);
+ilitek_v3_touch.c:461:	ILI_DBG(" alphabet_V_right = %d\n", ilits->ges_sym.alphabet_V_right);
+ilitek_v3_touch.c:462:	ILI_DBG(" alphabet_two_line_2_bottom= %d\n", ilits->ges_sym.alphabet_two_line_2_bottom);
+ilitek_v3_touch.c:463:	ILI_DBG(" alphabet_F= %d\n", ilits->ges_sym.alphabet_F);
+ilitek_v3_touch.c:464:	ILI_DBG(" alphabet_AT= %d\n", ilits->ges_sym.alphabet_AT);
+ilitek_v3_touch.c:479:	ILI_INFO("Gesture code loaded by %s\n", ilits->gesture_load_code ? "driver" : "firmware");
+ilitek_v3_touch.c:481:	if (!ilits->gesture_load_code) {
+ilitek_v3_touch.c:489:	ret = ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF);
+ilitek_v3_touch.c:511:	ret = ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF);
+ilitek_v3_touch.c:519:		ret = ilits->wrapper(cmd_write, sizeof(cmd_write), cmd, sizeof(u8), ON, OFF);
+ilitek_v3_touch.c:571:	if (ilits->chip->core_ver < CORE_VER_1460) {
+ilitek_v3_touch.c:585:		ges_pwd_addr, ges_pwd, ges_run, ilits->chip->core_ver);
+ilitek_v3_touch.c:595:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3_touch.c:596:	ret = ili_reset_ctrl(ilits->reset);
+ilitek_v3_touch.c:636:		ilits->actual_tp_mode = P5_X_FW_GESTURE_MODE;
+ilitek_v3_touch.c:637:		ili_set_tp_data_len(ilits->gesture_mode, false, NULL);
+ilitek_v3_touch.c:652:	if (ilits->chip->core_ver < CORE_VER_1460) {
+ilitek_v3_touch.c:653:		if (ilits->chip->core_ver >= CORE_VER_1420)
+ilitek_v3_touch.c:663:		ges_pwd_addr, ges_pwd, ges_run, ilits->chip->core_ver);
+ilitek_v3_touch.c:679:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3_touch.c:687:	if (ilits->info_from_hex || (ilits->chip->core_ver >= CORE_VER_1410))
+ilitek_v3_touch.c:725:	ILI_INFO("Gesture code loaded by %s\n", ilits->gesture_load_code ? "driver" : "firmware");
+ilitek_v3_touch.c:727:	if (!ilits->gesture_load_code) {
+ilitek_v3_touch.c:728:		ilits->actual_tp_mode = P5_X_FW_GESTURE_MODE;
+ilitek_v3_touch.c:729:		ili_set_tp_data_len(ilits->gesture_mode, false, NULL);
+ilitek_v3_touch.c:734:	ilits->actual_tp_mode = P5_X_FW_GESTURE_MODE;
+ilitek_v3_touch.c:735:	ili_set_tp_data_len(ilits->gesture_mode, false, NULL);
+ilitek_v3_touch.c:810:	if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:812:	} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:822:		ilits->demo_debug_info[info_id](&info_ptr[1], info_len);
+ilitek_v3_touch.c:832:	mutex_lock(&ilits->debug_mutex);
+ilitek_v3_touch.c:834:	if (!ilits->netlink && !ilits->dnp)
+ilitek_v3_touch.c:838:	if (ilits->netlink) {
+ilitek_v3_touch.c:844:	if (ilits->dnp) {
+ilitek_v3_touch.c:845:		index = ilits->dbf;
+ilitek_v3_touch.c:846:		if (!ilits->dbl[ilits->dbf].mark) {
+ilitek_v3_touch.c:847:			ilits->dbf = ((ilits->dbf + 1) % TR_BUF_LIST_SIZE);
+ilitek_v3_touch.c:849:			if (ilits->dbf == 0)
+ilitek_v3_touch.c:852:				index = ilits->dbf - 1;
+ilitek_v3_touch.c:854:		if (ilits->dbl[index].data == NULL) {
+ilitek_v3_touch.c:858:		ipio_memcpy(ilits->dbl[index].data, buf, len, 2048);
+ilitek_v3_touch.c:859:		ilits->dbl[index].mark = true;
+ilitek_v3_touch.c:860:		wake_up(&(ilits->inq));
+ilitek_v3_touch.c:865:	mutex_unlock(&ilits->debug_mutex);
+ilitek_v3_touch.c:875:	ilits->finger = 0;
+ilitek_v3_touch.c:876:	if (ilits->rib.nCustomerType == POSITION_CUSTOMER_TYPE_ON && ilits->tp_data_format == DATA_FORMAT_DEMO) {
+ilitek_v3_touch.c:877:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:883:				axis_info[ilits->finger].degree = buf[(5 * i) + index];
+ilitek_v3_touch.c:884:				axis_info[ilits->finger].width_major = (((buf[(5 * i) + 1 + index]) << 8) | (buf[(5 * i) + 2 + index]));
+ilitek_v3_touch.c:885:				axis_info[ilits->finger].width_minor = (((buf[(5 * i) + 3 + index]) << 8) | (buf[(5 * i) + 4 + index]));
+ilitek_v3_touch.c:886:				ILI_DBG("finger = %d, degree = %d, width_major = %d, width_minor = %d\n", ilits->finger, axis_info[ilits->finger].degree, axis_info[ilits->finger].width_major, axis_info[ilits->finger].width_minor);
+ilitek_v3_touch.c:887:				ilits->finger++;
+ilitek_v3_touch.c:895:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:902:				axis_info[ilits->finger].degree = buf[(5 * i) + index];
+ilitek_v3_touch.c:903:				axis_info[ilits->finger].width_major = (((buf[(5 * i) + 1 + index]) << 8) | (buf[(5 * i) + 2 + index]));
+ilitek_v3_touch.c:904:				axis_info[ilits->finger].width_minor = (((buf[(5 * i) + 3 + index]) << 8) | (buf[(5 * i) + 4 + index]));
+ilitek_v3_touch.c:905:				ILI_DBG("finger = %d, degree = %d, width_major = %d, width_minor = %d\n", ilits->finger, axis_info[ilits->finger].degree, axis_info[ilits->finger].width_major, axis_info[ilits->finger].width_minor);
+ilitek_v3_touch.c:906:				ilits->finger++;
+ilitek_v3_touch.c:915:	} else if (ilits->rib.nCustomerType == POSITION_CUSTOMER_TYPE_ON && ilits->tp_data_format == DATA_FORMAT_DEBUG) {
+ilitek_v3_touch.c:916:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:917:			index = P5_X_DEBUG_LOW_RESOLUTION_FINGER_DATA_LENGTH + (2 * ilits->xch_num * ilits->ych_num) + (ilits->stx * 2) + (ilits->srx * 2) + (2 * 2);
+ilitek_v3_touch.c:922:				axis_info[ilits->finger].degree = buf[(5 * i) + index];
+ilitek_v3_touch.c:923:				axis_info[ilits->finger].width_major = (((buf[(5 * i) + 1 + index]) << 8) | (buf[(5 * i) + 2 + index]));
+ilitek_v3_touch.c:924:				axis_info[ilits->finger].width_minor = (((buf[(5 * i) + 3 + index]) << 8) | (buf[(5 * i) + 4 + index]));
+ilitek_v3_touch.c:925:				ILI_DBG("finger = %d, degree = %d, width_major = %d, width_minor = %d\n", ilits->finger, axis_info[ilits->finger].degree, axis_info[ilits->finger].width_major, axis_info[ilits->finger].width_minor);
+ilitek_v3_touch.c:926:				ilits->finger++;
+ilitek_v3_touch.c:934:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:935:			index = P5_X_DEBUG_HIGH_RESOLUTION_FINGER_DATA_LENGTH + (2 * ilits->xch_num * ilits->ych_num) + (ilits->stx * 2) + (ilits->srx * 2) + (2 * 2);
+ilitek_v3_touch.c:941:				axis_info[ilits->finger].degree = buf[(5 * i) + index];
+ilitek_v3_touch.c:942:				axis_info[ilits->finger].width_major = (((buf[(5 * i) + 1 + index]) << 8) | (buf[(5 * i) + 2 + index]));
+ilitek_v3_touch.c:943:				axis_info[ilits->finger].width_minor = (((buf[(5 * i) + 3 + index]) << 8) | (buf[(5 * i) + 4 + index]));
+ilitek_v3_touch.c:944:				ILI_DBG("finger = %d, degree = %d, width_major = %d, width_minor = %d\n", ilits->finger, axis_info[ilits->finger].degree, axis_info[ilits->finger].width_major, axis_info[ilits->finger].width_minor);
+ilitek_v3_touch.c:945:				ilits->finger++;
+ilitek_v3_touch.c:963:		input_mt_slot(ilits->input, id);
+ilitek_v3_touch.c:964:		input_mt_report_slot_state(ilits->input, MT_TOOL_FINGER, true);
+ilitek_v3_touch.c:965:		input_report_abs(ilits->input, ABS_MT_POSITION_X, x);
+ilitek_v3_touch.c:966:		input_report_abs(ilits->input, ABS_MT_POSITION_Y, y);
+ilitek_v3_touch.c:968:			input_report_abs(ilits->input, ABS_MT_PRESSURE, pressure);
+ilitek_v3_touch.c:970:		input_report_key(ilits->input, BTN_TOUCH, 1);
+ilitek_v3_touch.c:971:		input_report_abs(ilits->input, ABS_MT_TRACKING_ID, id);
+ilitek_v3_touch.c:972:		input_report_abs(ilits->input, ABS_MT_TOUCH_MAJOR, 1);
+ilitek_v3_touch.c:973:		input_report_abs(ilits->input, ABS_MT_WIDTH_MAJOR, 1);
+ilitek_v3_touch.c:974:		input_report_abs(ilits->input, ABS_MT_POSITION_X, x);
+ilitek_v3_touch.c:975:		input_report_abs(ilits->input, ABS_MT_POSITION_Y, y);
+ilitek_v3_touch.c:977:			input_report_abs(ilits->input, ABS_MT_PRESSURE, pressure);
+ilitek_v3_touch.c:979:		input_mt_sync(ilits->input);
+ilitek_v3_touch.c:988:		input_mt_slot(ilits->input, id);
+ilitek_v3_touch.c:989:		input_mt_report_slot_state(ilits->input, MT_TOOL_FINGER, false);
+ilitek_v3_touch.c:991:		input_report_key(ilits->input, BTN_TOUCH, 0);
+ilitek_v3_touch.c:992:		input_mt_sync(ilits->input);
+ilitek_v3_touch.c:1004:		input_report_key(ilits->input, BTN_TOUCH, 0);
+ilitek_v3_touch.c:1005:		input_report_key(ilits->input, BTN_TOOL_FINGER, 0);
+ilitek_v3_touch.c:1009:	input_sync(ilits->input);
+ilitek_v3_touch.c:1021:	ilits->finger = 0;
+ilitek_v3_touch.c:1025:		if (ilits->rib.nCustomerType == POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1028:					ilits->curt_touch[i] = 0;
+ilitek_v3_touch.c:1033:		} else if (ilits->rib.nCustomerType != POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1036:					ilits->curt_touch[i] = 0;
+ilitek_v3_touch.c:1041:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1045:					ilits->curt_touch[i] = 0;
+ilitek_v3_touch.c:1052:		if (ilits->trans_xy) {
+ilitek_v3_touch.c:1053:			touch_info[ilits->finger].x = xop;
+ilitek_v3_touch.c:1054:			touch_info[ilits->finger].y = yop;
+ilitek_v3_touch.c:1056:			if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1057:				touch_info[ilits->finger].x = xop * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1058:				touch_info[ilits->finger].y = yop * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1059:			} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1060:				touch_info[ilits->finger].x = xop * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1061:				touch_info[ilits->finger].y = yop * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1065:		touch_info[ilits->finger].id = i;
+ilitek_v3_touch.c:1068:			if (ilits->rib.nCustomerType == POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1069:				touch_info[ilits->finger].pressure = buf[(4 * i) + 4];
+ilitek_v3_touch.c:1070:			} else if (ilits->rib.nCustomerType != POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1071:				touch_info[ilits->finger].pressure = buf[(4 * i) + 4 + P5_X_DEMO_MODE_PACKET_INFO_LEN];
+ilitek_v3_touch.c:1072:			} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1073:				touch_info[ilits->finger].pressure = buf[(5 * i) + 5 + P5_X_DEMO_MODE_PACKET_INFO_LEN];
+ilitek_v3_touch.c:1076:			touch_info[ilits->finger].pressure = 1;
+ilitek_v3_touch.c:1080:		ilits->finger++;
+ilitek_v3_touch.c:1082:			ilits->curt_touch[i] = 1;
+ilitek_v3_touch.c:1088:	ILI_DBG("figner number = %d, LastTouch = %d\n", ilits->finger, ilits->last_touch);
+ilitek_v3_touch.c:1090:	if (ilits->finger) {
+ilitek_v3_touch.c:1092:			for (i = 0; i < ilits->finger; i++) {
+ilitek_v3_touch.c:1093:				input_report_key(ilits->input, BTN_TOUCH, 1);
+ilitek_v3_touch.c:1095:				input_report_key(ilits->input, BTN_TOOL_FINGER, 1);
+ilitek_v3_touch.c:1098:				if (ilits->curt_touch[i] == 0 && ilits->prev_touch[i] == 1)
+ilitek_v3_touch.c:1100:				ilits->prev_touch[i] = ilits->curt_touch[i];
+ilitek_v3_touch.c:1103:			for (i = 0; i < ilits->finger; i++)
+ilitek_v3_touch.c:1106:		input_sync(ilits->input);
+ilitek_v3_touch.c:1107:		ilits->last_touch = ilits->finger;
+ilitek_v3_touch.c:1109:		if (ilits->last_touch) {
+ilitek_v3_touch.c:1112:					if (ilits->curt_touch[i] == 0 && ilits->prev_touch[i] == 1)
+ilitek_v3_touch.c:1114:					ilits->prev_touch[i] = ilits->curt_touch[i];
+ilitek_v3_touch.c:1116:				input_report_key(ilits->input, BTN_TOUCH, 0);
+ilitek_v3_touch.c:1117:				input_report_key(ilits->input, BTN_TOOL_FINGER, 0);
+ilitek_v3_touch.c:1121:			input_sync(ilits->input);
+ilitek_v3_touch.c:1122:			ilits->last_touch = 0;
+ilitek_v3_touch.c:1137:	ilits->finger = 0;
+ilitek_v3_touch.c:1140:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1143:					ilits->curt_touch[i] = 0;
+ilitek_v3_touch.c:1148:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1151:					ilits->curt_touch[i] = 0;
+ilitek_v3_touch.c:1158:		if (ilits->trans_xy) {
+ilitek_v3_touch.c:1159:			touch_info[ilits->finger].x = xop;
+ilitek_v3_touch.c:1160:			touch_info[ilits->finger].y = yop;
+ilitek_v3_touch.c:1162:			if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1163:				touch_info[ilits->finger].x = xop * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1164:				touch_info[ilits->finger].y = yop * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1165:			} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1166:				touch_info[ilits->finger].x = xop * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1167:				touch_info[ilits->finger].y = yop * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1171:		touch_info[ilits->finger].id = i;
+ilitek_v3_touch.c:1178:			if (p[ilits->finger] == 1)
+ilitek_v3_touch.c:1179:				touch_info[ilits->finger].pressure = p[ilits->finger] = 2;
+ilitek_v3_touch.c:1181:				touch_info[ilits->finger].pressure = p[ilits->finger] = 1;
+ilitek_v3_touch.c:1183:			touch_info[ilits->finger].pressure = 1;
+ilitek_v3_touch.c:1187:		ilits->finger++;
+ilitek_v3_touch.c:1189:			ilits->curt_touch[i] = 1;
+ilitek_v3_touch.c:1192:	ILI_DBG("figner number = %d, LastTouch = %d\n", ilits->finger, ilits->last_touch);
+ilitek_v3_touch.c:1194:	if (ilits->finger) {
+ilitek_v3_touch.c:1196:			for (i = 0; i < ilits->finger; i++) {
+ilitek_v3_touch.c:1197:				input_report_key(ilits->input, BTN_TOUCH, 1);
+ilitek_v3_touch.c:1199:				input_report_key(ilits->input, BTN_TOOL_FINGER, 1);
+ilitek_v3_touch.c:1202:				if (ilits->curt_touch[i] == 0 && ilits->prev_touch[i] == 1)
+ilitek_v3_touch.c:1204:				ilits->prev_touch[i] = ilits->curt_touch[i];
+ilitek_v3_touch.c:1207:			for (i = 0; i < ilits->finger; i++)
+ilitek_v3_touch.c:1210:		input_sync(ilits->input);
+ilitek_v3_touch.c:1211:		ilits->last_touch = ilits->finger;
+ilitek_v3_touch.c:1213:		if (ilits->last_touch) {
+ilitek_v3_touch.c:1216:					if (ilits->curt_touch[i] == 0 && ilits->prev_touch[i] == 1)
+ilitek_v3_touch.c:1218:					ilits->prev_touch[i] = ilits->curt_touch[i];
+ilitek_v3_touch.c:1220:				input_report_key(ilits->input, BTN_TOUCH, 0);
+ilitek_v3_touch.c:1221:				input_report_key(ilits->input, BTN_TOOL_FINGER, 0);
+ilitek_v3_touch.c:1225:			input_sync(ilits->input);
+ilitek_v3_touch.c:1226:			ilits->last_touch = 0;
+ilitek_v3_touch.c:1250:	struct input_dev *input = ilits->input;
+ilitek_v3_touch.c:1251:	ilits->proxmity_face = 0;
+ilitek_v3_touch.c:1253:	if (!ilits->prox_face_mode) {
+ilitek_v3_touch.c:1260:	ilits->proxmity_face = buf[1];
+ilitek_v3_touch.c:1261:	ILI_DBG("TP mode (0x%x)\n", ilits->actual_tp_mode);
+ilitek_v3_touch.c:1262:	ILI_DBG("proximity %s, cmd : %X\n", ilits->proxmity_face ? "Near" : "Far", buf[1]);
+ilitek_v3_touch.c:1263:	ILI_DBG("power_status %s\n", ilits->power_status ? "true" : "false");
+ilitek_v3_touch.c:1264:	if ((ilits->actual_tp_mode == P5_X_FW_AP_MODE) && (ilits->proxmity_face == true) && (ilits->power_status == true)) {
+ilitek_v3_touch.c:1269:	} else if ((ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE) && (ilits->proxmity_face == false) && (ilits->power_status == false)) {
+ilitek_v3_touch.c:1282:	struct gesture_coordinate *gc = ilits->gcoord;
+ilitek_v3_touch.c:1283:	struct input_dev *input = ilits->input;
+ilitek_v3_touch.c:1284:	bool transfer = ilits->trans_xy;
+ilitek_v3_touch.c:1287:	if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1289:	} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1298:	if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1312:	} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1359:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1365:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1413:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1418:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1431:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3_touch.c:1432:			gc->pos_start.x	= gc->pos_start.x * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1433:			gc->pos_start.y = gc->pos_start.y * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1434:			gc->pos_end.x   = gc->pos_end.x * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1435:			gc->pos_end.y   = gc->pos_end.y * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1436:			gc->pos_1st.x   = gc->pos_1st.x * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1437:			gc->pos_1st.y   = gc->pos_1st.y * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1438:			gc->pos_2nd.x   = gc->pos_2nd.x * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1439:			gc->pos_2nd.y   = gc->pos_2nd.y * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1440:			gc->pos_3rd.x   = gc->pos_3rd.x * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1441:			gc->pos_3rd.y   = gc->pos_3rd.y * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1442:			gc->pos_4th.x   = gc->pos_4th.x * ilits->panel_wid / TPD_WIDTH;
+ilitek_v3_touch.c:1443:			gc->pos_4th.y   = gc->pos_4th.y * ilits->panel_hei / TPD_HEIGHT;
+ilitek_v3_touch.c:1444:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3_touch.c:1445:			gc->pos_start.x	= gc->pos_start.x * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1446:			gc->pos_start.y = gc->pos_start.y * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1447:			gc->pos_end.x   = gc->pos_end.x * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1448:			gc->pos_end.y   = gc->pos_end.y * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1449:			gc->pos_1st.x   = gc->pos_1st.x * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1450:			gc->pos_1st.y   = gc->pos_1st.y * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1451:			gc->pos_2nd.x   = gc->pos_2nd.x * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1452:			gc->pos_2nd.y   = gc->pos_2nd.y * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1453:			gc->pos_3rd.x   = gc->pos_3rd.x * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1454:			gc->pos_3rd.y   = gc->pos_3rd.y * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1455:			gc->pos_4th.x   = gc->pos_4th.x * ilits->panel_wid / TPD_HIGH_RESOLUTION_WIDTH;
+ilitek_v3_touch.c:1456:			gc->pos_4th.y   = gc->pos_4th.y * ilits->panel_hei / TPD_HIGH_RESOLUTION_HEIGHT;
+ilitek_v3_touch.c:1511:	if (ilits->wrapper(NULL, 0, uart_buf, uart_len, OFF, OFF) < 0) {
+ilitek_v3_touch.c:1537:	struct ts_kit_device_data *ts_dev_data = ilits->ts_dev_data;
+ilitek_v3_touch.c:1544:		ilits->last_touch,
+ilitek_v3_touch.c:1545:		ilits->finger);
+ilitek_v3_touch.c:1548:		if (ilits->last_touch != ilits->finger && ilits->finger <= ILITEK_KNUCKLE_ROI_FINGERS) {
+ilitek_v3_touch.c:1555:			ret = ilits->wrapper(NULL, 0, ilits->knuckle_roi_data, ROI_DATA_READ_LENGTH, OFF, OFF);
+ilitek_v3_touch.c:1562:				ilits->knuckle_roi_data[0],
+ilitek_v3_touch.c:1563:				ilits->knuckle_roi_data[1],
+ilitek_v3_touch.c:1564:				ilits->knuckle_roi_data[2],
+ilitek_v3_touch.c:1565:				ilits->knuckle_roi_data[3]);
+ilitek_v3_touch.c:1569:				printk(KERN_CONT "%3d ", ilits->knuckle_roi_data[i]);
+ilitek_v3_node.c:236:	ilits->dnp = open;
+ilitek_v3_node.c:238:	ILI_INFO("Debug buf ctrl = %s\n", ilits->dnp ? "Enabled" : "Disabled");
+ilitek_v3_node.c:241:		ilits->dbf = 0;
+ilitek_v3_node.c:242:		ilits->odi = 0;
+ilitek_v3_node.c:243:		ipio_kfree((void **)&ilits->dbl);
+ilitek_v3_node.c:244:		ilits->dbl = kzalloc(TR_BUF_LIST_SIZE * sizeof(*ilits->dbl), GFP_KERNEL);
+ilitek_v3_node.c:245:		if (ERR_ALLOC_MEM(ilits->dbl)) {
+ilitek_v3_node.c:246:			ILI_ERR("Failed to allocate ilits->dbl mem, %ld\n", PTR_ERR(ilits->dbl));
+ilitek_v3_node.c:252:			ilits->dbl[i].mark = false;
+ilitek_v3_node.c:253:			ipio_kfree((void **)&ilits->dbl[i].data);
+ilitek_v3_node.c:254:			ilits->dbl[i].data = kzalloc(TR_BUF_SIZE * sizeof(unsigned char), GFP_KERNEL);
+ilitek_v3_node.c:255:			if (ERR_ALLOC_MEM(ilits->dbl[i].data)) {
+ilitek_v3_node.c:256:				ILI_ERR("Failed to allocate dbl[%d] mem, %ld\n", i, PTR_ERR(ilits->dbl[i].data));
+ilitek_v3_node.c:265:	if (!ERR_ALLOC_MEM(ilits->dbl)) {
+ilitek_v3_node.c:267:			ilits->dbl[i].mark = false;
+ilitek_v3_node.c:268:			ipio_kfree((void **)&ilits->dbl[i].data);
+ilitek_v3_node.c:271:	ipio_kfree((void **)&ilits->dbl);
+ilitek_v3_node.c:286:	ilits->dbf = 0;
+ilitek_v3_node.c:287:	row = ilits->ych_num;
+ilitek_v3_node.c:288:	col = ilits->xch_num;
+ilitek_v3_node.c:289:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:293:	ret = ilits->wrapper(cmd, 2, NULL, 0, ON, OFF);
+ilitek_v3_node.c:301:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:310:		ILI_INFO("frame = %d,index = %d,count = %d\n", write_index, ilits->odi, ilits->dbf);
+ilitek_v3_node.c:311:		if (!wait_event_interruptible_timeout(ilits->inq, ilits->dbl[ilits->odi].mark, msecs_to_jiffies(3000))) {
+ilitek_v3_node.c:316:		mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:322:		ptr = &ilits->dbl[ilits->odi].data[35];
+ilitek_v3_node.c:339:		mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:341:		ilits->dbl[ilits->odi].mark = false;
+ilitek_v3_node.c:342:		ilits->odi = ((ilits->odi + 1) % TR_BUF_LIST_SIZE);
+ilitek_v3_node.c:379:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:381:	row = ilits->ych_num;
+ilitek_v3_node.c:382:	col = ilits->xch_num;
+ilitek_v3_node.c:401:	ret = ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF);
+ilitek_v3_node.c:410:	ret = ilits->wrapper(NULL, 0, data, read_length, OFF, OFF);
+ilitek_v3_node.c:417:	ret = ilits->wrapper(cmd, sizeof(cmd), NULL, 0, ON, OFF);
+ilitek_v3_node.c:453:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:477:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:479:	row = ilits->ych_num;
+ilitek_v3_node.c:480:	col = ilits->xch_num;
+ilitek_v3_node.c:499:	ret = ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF);
+ilitek_v3_node.c:508:	ret = ilits->wrapper(NULL, 0, data, read_length, OFF, OFF);
+ilitek_v3_node.c:515:	ret = ilits->wrapper(cmd, sizeof(cmd), NULL, 0, ON, OFF);
+ilitek_v3_node.c:551:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:569:	len = snprintf(g_user_buf, PAGE_SIZE, "pc = 0x%x, latch = 0x%x\n", ilits->fw_pc, ilits->fw_latch);
+ilitek_v3_node.c:584:	bool esd_en = ilits->wq_esd_ctrl, bat_en = ilits->wq_bat_ctrl;
+ilitek_v3_node.c:602:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:653:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:668:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:685:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:698:	mutex_lock(&ilits->debug_read_mutex);
+ilitek_v3_node.c:700:	open = !ilits->dnp;
+ilitek_v3_node.c:704:	size = snprintf(g_user_buf, USER_STR_BUFF * sizeof(unsigned char), "dnp : %s\n", ilits->dnp ? "Enabled" : "Disabled");
+ilitek_v3_node.c:710:	mutex_unlock(&ilits->debug_read_mutex);
+ilitek_v3_node.c:731:	if (!ilits->dnp) {
+ilitek_v3_node.c:732:		ILI_ERR("Debug flag isn't enabled (%d)\n", ilits->dnp);
+ilitek_v3_node.c:736:	mutex_lock(&ilits->debug_read_mutex);
+ilitek_v3_node.c:737:	ILI_DBG("f_count= %d, index = %d, mark = %d\n", ilits->dbf, ilits->odi, ilits->dbl[ilits->odi].mark);
+ilitek_v3_node.c:738:	if (!wait_event_interruptible_timeout(ilits->inq, ilits->dbl[ilits->odi].mark, msecs_to_jiffies(3000))) {
+ilitek_v3_node.c:740:		mutex_unlock(&ilits->debug_read_mutex);
+ilitek_v3_node.c:744:	mutex_lock(&ilits->debug_mutex);
+ilitek_v3_node.c:750:		ret = copy_to_user(buff, tmpbufback, send_data_len); /*ilits->dbl[0] */
+ilitek_v3_node.c:754:	if (ilits->dbl[ilits->odi].mark) {
+ilitek_v3_node.c:755:		if (ilits->dbl[ilits->odi].data[0] == P5_X_DEMO_PACKET_ID) {
+ilitek_v3_node.c:757:		} else if (ilits->dbl[ilits->odi].data[0] == P5_X_DEMO_HIGH_RESOLUTION_PACKET_ID) {
+ilitek_v3_node.c:759:			if (ilits->rib.nCustomerType != POSITION_CUSTOMER_TYPE_OFF) {
+ilitek_v3_node.c:762:		} else if (ilits->dbl[ilits->odi].data[0] == P5_X_I2CUART_PACKET_ID) {
+ilitek_v3_node.c:763:			type = ilits->dbl[ilits->odi].data[3] & 0x0F;
+ilitek_v3_node.c:765:			data_count = ilits->dbl[ilits->odi].data[1] * ilits->dbl[ilits->odi].data[2];
+ilitek_v3_node.c:775:		} else if (ilits->dbl[ilits->odi].data[0] == P5_X_DEBUG_PACKET_ID || ilits->dbl[ilits->odi].data[0] == P5_X_DEBUG_LITE_PACKET_ID) {
+ilitek_v3_node.c:776:			send_data_len = 0;	/* ilits->dbl[0][1] - 2; */
+ilitek_v3_node.c:778:		} else if (ilits->dbl[ilits->odi].data[0] == P5_X_I2CUART_PACKET_ID) {
+ilitek_v3_node.c:780:		}  else if (ilits->dbl[ilits->odi].data[0] == P5_X_DEBUG_HIGH_RESOLUTION_PACKET_ID) {
+ilitek_v3_node.c:781:			send_data_len = 0;	/* ilits->dbl[0][1] - 2; */
+ilitek_v3_node.c:786:			send_data_len += snprintf(tmpbuf + send_data_len, sizeof(tmpbufback), "%02X", ilits->dbl[ilits->odi].data[i]);
+ilitek_v3_node.c:797:			ilits->dbl[ilits->odi].mark = false;
+ilitek_v3_node.c:798:			ilits->odi = ((ilits->odi + 1) % TR_BUF_LIST_SIZE);
+ilitek_v3_node.c:824:	mutex_unlock(&ilits->debug_mutex);
+ilitek_v3_node.c:825:	mutex_unlock(&ilits->debug_read_mutex);
+ilitek_v3_node.c:852:	ILI_INFO("Get Raw data %d frame\n", ilits->raw_count);
+ilitek_v3_node.c:853:	ILI_INFO("Get Delta data %d frame\n", ilits->delta_count);
+ilitek_v3_node.c:854:	csv.wlen += snprintf(csv.ptr + csv.wlen, (csv.max_size - csv.wlen), "Get Raw data %d frame\n", ilits->raw_count);
+ilitek_v3_node.c:855:	csv.wlen += snprintf(csv.ptr + csv.wlen, (csv.max_size - csv.wlen), "Get Delta data %d frame\n", ilits->delta_count);
+ilitek_v3_node.c:871:	ret = debug_mode_get_data(&csv, P5_X_FW_RAW_DATA_MODE, ilits->raw_count);
+ilitek_v3_node.c:881:	ret = debug_mode_get_data(&csv, P5_X_FW_DELTA_DATA_MODE, ilits->delta_count);
+ilitek_v3_node.c:920:	ilits->raw_count = ((temp[0] << 8) | temp[1]);
+ilitek_v3_node.c:921:	ilits->delta_count = ((temp[2] << 8) | temp[3]);
+ilitek_v3_node.c:922:	ilits->bg_count = ((temp[4] << 8) | temp[5]);
+ilitek_v3_node.c:924:	ILI_INFO("Raw_count = %d, Delta_count = %d, BG_count = %d\n", ilits->raw_count, ilits->delta_count, ilits->bg_count);
+ilitek_v3_node.c:931:	bool esd_en = ilits->wq_esd_ctrl, bat_en = ilits->wq_bat_ctrl;
+ilitek_v3_node.c:938:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:950:	ilits->mp_ret_len = 0;
+ilitek_v3_node.c:957:	len += ilits->mp_ret_len;
+ilitek_v3_node.c:987:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:994:	bool esd_en = ilits->wq_esd_ctrl, bat_en = ilits->wq_bat_ctrl;
+ilitek_v3_node.c:1001:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:1013:	ilits->mp_ret_len = 0;
+ilitek_v3_node.c:1020:	len += ilits->mp_ret_len;
+ilitek_v3_node.c:1050:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:1061:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:1065:	len += snprintf(g_user_buf + len, USER_STR_BUFF - len, "CHIP ID = %x\n", ilits->chip->id);
+ilitek_v3_node.c:1067:			ilits->chip->fw_ver >> 24, (ilits->chip->fw_ver >> 16) & 0xFF,
+ilitek_v3_node.c:1068:			(ilits->chip->fw_ver >> 8) & 0xFF, ilits->chip->fw_ver & 0xFF);
+ilitek_v3_node.c:1070:			ilits->chip->fw_mp_ver >> 24, (ilits->chip->fw_mp_ver >> 16) & 0xFF,
+ilitek_v3_node.c:1071:			(ilits->chip->fw_mp_ver >> 8) & 0xFF, ilits->chip->fw_mp_ver & 0xFF);
+ilitek_v3_node.c:1073:	if (ilits->protocol->core_ver_len == P5_X_CORE_VER_THREE_LENGTH)
+ilitek_v3_node.c:1075:			(ilits->chip->core_ver >> 24) & 0xFF, (ilits->chip->core_ver >> 16) & 0xFF,
+ilitek_v3_node.c:1076:			(ilits->chip->core_ver >> 8) & 0xFF);
+ilitek_v3_node.c:1079:			(ilits->chip->core_ver >> 24) & 0xFF, (ilits->chip->core_ver >> 16) & 0xFF,
+ilitek_v3_node.c:1080:			(ilits->chip->core_ver >> 8) & 0xFF, ilits->chip->core_ver & 0xFF);
+ilitek_v3_node.c:1083:			ilits->protocol->ver >> 16, (ilits->protocol->ver >> 8) & 0xFF,
+ilitek_v3_node.c:1084:			ilits->protocol->ver & 0xFF);
+ilitek_v3_node.c:1091:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:1102:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:1115:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:1128:	len = snprintf(g_user_buf, USER_STR_BUFF * sizeof(unsigned char), "%02d\n", ilits->fw_update_stat);
+ilitek_v3_node.c:1130:	ILI_INFO("update status = %d\n", ilits->fw_update_stat);
+ilitek_v3_node.c:1132:	if (copy_to_user((char *)buff, &ilits->fw_update_stat, len))
+ilitek_v3_node.c:1142:	bool esd_en = ilits->wq_esd_ctrl, bat_en = ilits->wq_bat_ctrl;
+ilitek_v3_node.c:1149:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:1158:	ilits->force_fw_update = ENABLE;
+ilitek_v3_node.c:1159:	ilits->node_update = true;
+ilitek_v3_node.c:1163:	ilits->node_update = false;
+ilitek_v3_node.c:1164:	ilits->force_fw_update = DISABLE;
+ilitek_v3_node.c:1203:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:1327:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_node.c:1329:	if (ilits->wrapper(NULL, 0, buf, sizeof(buf), OFF, OFF) < 0) {
+ilitek_v3_node.c:1359:	if (ilits->wrapper(buf, 4, NULL, 0, ON, OFF)) {
+ilitek_v3_node.c:1364:	if (ilits->wrapper(NULL, 0, (u8 *)raw, len, ON, OFF)) {
+ilitek_v3_node.c:1373:		ili_dump_data(raw_ptr, 16, frame_len, ilits->xch_num, "recore_data");
+ilitek_v3_node.c:1413:	if ((ilits->wrapper(cmd, 6, NULL, 0, ON, OFF)) < 0)
+ilitek_v3_node.c:1422:	if ((ilits->wrapper(cmd, 24, NULL, 0, ON, OFF)) < 0)
+ilitek_v3_node.c:1430:	if ((ilits->wrapper(cmd, 4, NULL, 0, ON, OFF)) < 0)
+ilitek_v3_node.c:1440:		if (ilits->tp_suspend) {
+ilitek_v3_node.c:1446:			if (ilits->actual_tp_mode == P5_X_FW_TEST_MODE) {
+ilitek_v3_node.c:1466:		if (!ilits->tp_suspend && (ilits->actual_tp_mode != P5_X_FW_AP_MODE)) {
+ilitek_v3_node.c:1473:		if (ilits->tp_suspend) {
+ilitek_v3_node.c:1508:	ilits->tp_data_mode = cmd[0];
+ilitek_v3_node.c:1519:			ilits->esd_func_ctrl = ENABLE;
+ilitek_v3_node.c:1528:			ilits->esd_func_ctrl = DISABLE;
+ilitek_v3_node.c:1531:		ilits->gesture = ENABLE;
+ilitek_v3_node.c:1550:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:1591:			ilits->gesture_demo_ctrl = DISABLE;
+ilitek_v3_node.c:1593:			ilits->gesture_demo_ctrl = ENABLE;
+ilitek_v3_node.c:1615:		ilits->info_from_hex = data[1];
+ilitek_v3_node.c:1627:		ILI_INFO("TP module = %s\n", ilits->md_name);
+ilitek_v3_node.c:1634:		ilits->wq_ctrl = !ilits->wq_ctrl;
+ilitek_v3_node.c:1635:		ILI_INFO("wq_ctrl flag= %d\n", ilits->wq_ctrl);
+ilitek_v3_node.c:1647:		ilits->gesture = !ilits->gesture;
+ilitek_v3_node.c:1648:		ILI_INFO("gesture = %d\n", ilits->gesture);
+ilitek_v3_node.c:1662:			atomic_set(&ilits->ice_stat, ENABLE);
+ilitek_v3_node.c:1664:			atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3_node.c:1665:		ILI_INFO("ice mode flag = %d\n", atomic_read(&ilits->ice_stat));
+ilitek_v3_node.c:1667:		ilits->gesture_mode = DATA_FORMAT_GESTURE_NORMAL;
+ilitek_v3_node.c:1668:		ILI_INFO("gesture mode = %d\n", ilits->gesture_mode);
+ilitek_v3_node.c:1670:		ilits->gesture_mode = DATA_FORMAT_GESTURE_INFO;
+ilitek_v3_node.c:1671:		ILI_INFO("gesture mode = %d\n", ilits->gesture_mode);
+ilitek_v3_node.c:1673:		ilits->netlink = !ilits->netlink;
+ilitek_v3_node.c:1674:		ILI_INFO("netlink flag= %d\n", ilits->netlink);
+ilitek_v3_node.c:1684:		ilits->dnp = !ilits->dnp;
+ilitek_v3_node.c:1685:		ILI_INFO("debug flag message = %d\n", ilits->dnp);
+ilitek_v3_node.c:1691:		ilits->ss_ctrl = data[1];
+ilitek_v3_node.c:1701:		ilits->wrapper(temp, w_len, NULL, 0, ON, OFF);
+ilitek_v3_node.c:1706:		ilits->wrapper(NULL, 0, temp, r_len, ON, OFF);
+ilitek_v3_node.c:1721:		ret = ilits->wrapper(temp, w_len, NULL, 0, ON, OFF);
+ilitek_v3_node.c:1724:		ilits->wrapper(NULL, 0, temp, r_len, ON, OFF);
+ilitek_v3_node.c:1738:		ret = ilits->wrapper(temp, w_len, temp, r_len, ON, ON);
+ilitek_v3_node.c:1750:		ilits->fw_update_stat = FW_STAT_INIT;
+ilitek_v3_node.c:1753:		ilits->fw_update_stat = (ret < 0) ? FW_UPDATE_FAIL : FW_UPDATE_PASS;
+ilitek_v3_node.c:1754:		ILI_INFO("ilits->fw_update_stat = %d\n", ilits->fw_update_stat);
+ilitek_v3_node.c:1757:		ilits->fw_update_stat = FW_STAT_INIT;
+ilitek_v3_node.c:1759:		ilits->fw_update_stat = (ret < 0) ? FW_UPDATE_FAIL : FW_UPDATE_PASS;
+ilitek_v3_node.c:1760:		ILI_INFO("ilits->fw_update_stat = %d\n", ilits->fw_update_stat);
+ilitek_v3_node.c:1778:		ilits->spi_write_then_read(ilits->spi, temp, wlen, NULL, 0);
+ilitek_v3_node.c:1790:		ilits->spi_write_then_read(ilits->spi, temp, 1, rbuf, rlen);
+ilitek_v3_node.c:1811:		ilits->spi_write_then_read(ilits->spi, temp, wlen, rbuf, rlen);
+ilitek_v3_node.c:1818:		struct gesture_symbol *ptr_sym = &ilits->ges_sym;
+ilitek_v3_node.c:1833:		ilits->mp_retry = !ilits->mp_retry;
+ilitek_v3_node.c:1834:		ILI_INFO("switchmpretry = %d\n", ilits->mp_retry);
+ilitek_v3_node.c:1836:		ilits->edge_palm_para[0] = P5_X_EDGE_PLAM_CTRL_1;
+ilitek_v3_node.c:1837:		ilits->edge_palm_para[1] = P5_X_EDGE_PALM_TUNING_PARA;
+ilitek_v3_node.c:1839:			ilits->edge_palm_para[i * 2 + 2] = (data[i + 1] & 0xFF00) >> 8;
+ilitek_v3_node.c:1840:			ilits->edge_palm_para[i * 2 + 3] = data[i + 1] & 0xFF;
+ilitek_v3_node.c:1842:		ilits->edge_palm_para[30] = ili_calc_packet_checksum(ilits->edge_palm_para
+ilitek_v3_node.c:1846:			ILI_INFO("edge_palm_para[%d] = 0x%2x\n", i, ilits->edge_palm_para[i]);
+ilitek_v3_node.c:1852:		ilits->knuckle = !ilits->knuckle;
+ilitek_v3_node.c:1853:		if (ilits->knuckle == true) {
+ilitek_v3_node.c:1858:		ILI_INFO("knuckle = %s\n", ilits->knuckle ? "ENABLE" : "DISABLE");
+ilitek_v3_node.c:1861:		ilits->prox_face_mode = !ilits->prox_face_mode;
+ilitek_v3_node.c:1862:		if (ilits->prox_face_mode == true) {
+ilitek_v3_node.c:1871:		ilits->power_status = true;
+ilitek_v3_node.c:1872:		ILI_INFO("switch proximity face mode = %s\n", (ilits->prox_face_mode ? "ON" : "OFF"));//prox_face_mode
+ilitek_v3_node.c:1881:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:2031:	bool esd_en = ilits->wq_esd_ctrl, bat_en = ilits->wq_bat_ctrl;
+ilitek_v3_node.c:2048:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_node.c:2079:		ret = ilits->wrapper(szBuf, i2c_rw_length, NULL, 0, OFF, OFF);
+ilitek_v3_node.c:2093:		ret = ilits->wrapper(NULL, 0, szBuf, i2c_rw_length, OFF, OFF);
+ilitek_v3_node.c:2110:		ili_reset_ctrl(ilits->reset);
+ilitek_v3_node.c:2124:			ilits->report = ENABLE;
+ilitek_v3_node.c:2127:			ilits->report = DISABLE;
+ilitek_v3_node.c:2161:		ret = ilits->wrapper(szBuf, 3, NULL, 0, ON, OFF);
+ilitek_v3_node.c:2165:		szBuf[7] = ilits->chip->fw_mp_ver & 0xFF;
+ilitek_v3_node.c:2166:		szBuf[6] = (ilits->chip->fw_mp_ver >> 8) & 0xFF;
+ilitek_v3_node.c:2167:		szBuf[5] = (ilits->chip->fw_mp_ver >> 16) & 0xFF;
+ilitek_v3_node.c:2168:		szBuf[4] = ilits->chip->fw_mp_ver >> 24;
+ilitek_v3_node.c:2169:		szBuf[3] = ilits->chip->fw_ver & 0xFF;
+ilitek_v3_node.c:2170:		szBuf[2] = (ilits->chip->fw_ver >> 8) & 0xFF;
+ilitek_v3_node.c:2171:		szBuf[1] = (ilits->chip->fw_ver >> 16) & 0xFF;
+ilitek_v3_node.c:2172:		szBuf[0] = ilits->chip->fw_ver >> 24;
+ilitek_v3_node.c:2183:		szBuf[2] = ilits->protocol->ver & 0xFF;
+ilitek_v3_node.c:2184:		szBuf[1] = (ilits->protocol->ver >> 8) & 0xFF;
+ilitek_v3_node.c:2185:		szBuf[0] = ilits->protocol->ver >> 16;
+ilitek_v3_node.c:2195:		if (ilits->protocol->core_ver_len == P5_X_CORE_VER_THREE_LENGTH)
+ilitek_v3_node.c:2198:			szBuf[3] = ilits->chip->core_ver & 0xFF;
+ilitek_v3_node.c:2199:		szBuf[2] = (ilits->chip->core_ver >> 8) & 0xFF;
+ilitek_v3_node.c:2200:		szBuf[1] = (ilits->chip->core_ver >> 16) & 0xFF;
+ilitek_v3_node.c:2201:		szBuf[0] = ilits->chip->core_ver >> 24;
+ilitek_v3_node.c:2203:			szBuf[0], szBuf[1], szBuf[2], szBuf[3], ilits->protocol->core_ver_len);
+ilitek_v3_node.c:2221:		id_to_user[0] = ilits->chip->pid;
+ilitek_v3_node.c:2222:		id_to_user[1] = ilits->chip->otp_id;
+ilitek_v3_node.c:2223:		id_to_user[2] = ilits->chip->ana_id;
+ilitek_v3_node.c:2238:			ilits->netlink = ENABLE;
+ilitek_v3_node.c:2241:			ilits->netlink = DISABLE;
+ilitek_v3_node.c:2246:		ILI_DBG("ioctl: get netlink stat = %d\n", ilits->netlink);
+ilitek_v3_node.c:2247:		if (copy_to_user((int *)arg, &ilits->netlink, sizeof(int))) {
+ilitek_v3_node.c:2263:		ILI_DBG("ioctl: current firmware mode = %d", ilits->tp_data_mode);
+ilitek_v3_node.c:2264:		if (copy_to_user((int *)arg, &ilits->tp_data_mode, sizeof(int))) {
+ilitek_v3_node.c:2285:		if_to_user = ilits->hwif->bus_type;
+ilitek_v3_node.c:2317:		id_to_user[0] = ilits->panel_wid;
+ilitek_v3_node.c:2318:		id_to_user[1] = ilits->panel_hei;
+ilitek_v3_node.c:2319:		id_to_user[2] = (ilits->trans_xy) ? 0x1 : 0x0;
+ilitek_v3_node.c:2328:		id_to_user[0] = ilits->min_x;
+ilitek_v3_node.c:2329:		id_to_user[1] = ilits->min_y;
+ilitek_v3_node.c:2330:		id_to_user[2] = ilits->max_x;
+ilitek_v3_node.c:2331:		id_to_user[3] = ilits->max_y;
+ilitek_v3_node.c:2332:		id_to_user[4] = ilits->xch_num;
+ilitek_v3_node.c:2333:		id_to_user[5] = ilits->ych_num;
+ilitek_v3_node.c:2334:		id_to_user[6] = ilits->stx;
+ilitek_v3_node.c:2335:		id_to_user[7] = ilits->srx;
+ilitek_v3_node.c:2393:		ilits->wrapper(szBuf + 5, wrap_wlen, wrap_rbuf, wrap_rlen, spi_irq, i2c_irq);
+ilitek_v3_node.c:2468:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_node.c:2584:	ILI_INFO("Netlink is enable = %d\n", ilits->netlink);
+ilitek_v3_node.c:2586:	if (ilits->netlink) {
+ilitek_v3_node.c:2610:	ILI_INFO("Netlink = %d\n", ilits->netlink);
+ilitek_v3_node.c:2625:		ilits->netlink = ENABLE;
+ilitek_v3_node.c:2628:		ilits->netlink = DISABLE;
+ilitek_v3_flash.c:119:		if (ilits->wrapper(cmd, 4, NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_flash.c:124:		if (ilits->wrapper(NULL, 0, buf + cnt * limit, tmp_len, OFF, OFF) < 0) {
+ilitek_v3_flash.c:130:		ilits->fw_update_stat = ((len - tmp_len) * 100) / len;
+ilitek_v3_flash.c:131:		ILI_DBG("Reading iram data .... %d%c", ilits->fw_update_stat, '%');
+ilitek_v3_flash.c:367:	if (write_len > ilits->chip->max_count) {
+ilitek_v3_flash.c:369:			write_len, ilits->chip->max_count);
+ilitek_v3_flash.c:478:		ilits->fw_update_stat = (j * 100) / len;
+ilitek_v3_flash.c:479:		ILI_DBG("Reading flash data .... %d%c", ilits->fw_update_stat, '%');
+ilitek_v3_flash.c:563:	switch (ilits->flash_mid) {
+ilitek_v3_flash.c:565:		if (ilits->flash_devid == 0x6012 || ilits->flash_devid == 0x6011) {
+ilitek_v3_flash.c:576:		if (ilits->flash_devid == 0x6012 || ilits->flash_devid == 0x6013) {
+ilitek_v3_flash.c:588:		ILI_ERR("Can't find flash id(0x%x), ignore protection\n", ilits->flash_mid);
+ilitek_v3_flash.c:601:	bool hex_info = ilits->info_from_hex;
+ilitek_v3_flash.c:608:		ilits->info_from_hex = DISABLE;
+ilitek_v3_flash.c:627:	if (ilits->wrapper(cmd, sizeof(cmd), fw_flash_tmp, sizeof(fw_flash_tmp), OFF, ON) < 0) {
+ilitek_v3_flash.c:640:	if (ilits->wrapper(cmd, sizeof(cmd), fw_flash_tmp, sizeof(fw_flash_tmp), OFF, ON) < 0) {
+ilitek_v3_flash.c:686:		ilits->info_from_hex = ENABLE;
+ilitek_v3_flash.c:688:	atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_flash.c:699:	bool hex_info = ilits->info_from_hex;
+ilitek_v3_flash.c:735:			ilits->info_from_hex = DISABLE;
+ilitek_v3_flash.c:741:			ilits->info_from_hex = ENABLE;
+ilitek_v3_flash.c:743:		ILI_INFO("New FW ver = 0x%x, Current FW ver = 0x%x\n", tfd.new_fw_cb, ilits->chip->fw_ver);
+ilitek_v3_flash.c:744:		if (tfd.new_fw_cb != ilits->chip->fw_ver) {
+ilitek_v3_flash.c:782:	int page = ilits->program_page;
+ilitek_v3_flash.c:829:			if (ilits->wrapper(buf, page + 4, NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_flash.c:840:			if (ilits->flash_mid == 0xEF) {
+ilitek_v3_flash.c:846:			if (ilits->fw_update_stat != ((j * 100) / tfd.end_addr)) {
+ilitek_v3_flash.c:847:				ilits->fw_update_stat = (j * 100) / tfd.end_addr;
+ilitek_v3_flash.c:848:				ILI_DBG("Program flahse data .... %d%c", ilits->fw_update_stat, '%');
+ilitek_v3_flash.c:860:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_flash.c:873:		for (addr = fbi[i].start; addr <= fbi[i].end; addr += ilits->flash_sector) {
+ilitek_v3_flash.c:930:	if (ili_reset_ctrl(ilits->reset) < 0) {
+ilitek_v3_flash.c:945:			if (ili_reset_ctrl(ilits->reset) < 0) {
+ilitek_v3_flash.c:969:	if (ili_reset_ctrl(ilits->reset) < 0) {
+ilitek_v3_flash.c:1020:	ipio_memcpy(ilits->fw_info, (pfw + fw_info_addr), sizeof(ilits->fw_info), sizeof(ilits->fw_info));
+ilitek_v3_flash.c:1025:	ipio_memcpy(ilits->fw_mp_ver, pfw + fw_mp_ver_addr, sizeof(ilits->fw_mp_ver), sizeof(ilits->fw_mp_ver));
+ilitek_v3_flash.c:1028:	ilits->chip->core_ver = (ilits->fw_info[68] << 24) | (ilits->fw_info[69] << 16) |
+ilitek_v3_flash.c:1029:			(ilits->fw_info[70] << 8) | ilits->fw_info[71];
+ilitek_v3_flash.c:1030:	ILI_INFO("New FW Core version = %x\n", ilits->chip->core_ver);
+ilitek_v3_flash.c:1033:	tfd.new_fw_cb = (ilits->fw_info[48] << 24) | (ilits->fw_info[49] << 16) |
+ilitek_v3_flash.c:1034:			(ilits->fw_info[50] << 8) | ilits->fw_info[51];
+ilitek_v3_flash.c:1037:	ipio_memcpy(&ilits->rib, ilits->fw_info, sizeof(ilits->rib), sizeof(ilits->rib));
+ilitek_v3_flash.c:1038:	ilits->rib.nReportResolutionMode = (ilits->chip->core_ver >= CORE_VER_1470) ? (ilits->rib.nReportResolutionMode & 0x07) : POSITION_LOW_RESOLUTION;
+ilitek_v3_flash.c:1039:	ilits->rib.nCustomerType = (ilits->chip->core_ver >= CORE_VER_1470) ? ilits->rib.nCustomerType : POSITION_CUSTOMER_TYPE_OFF;
+ilitek_v3_flash.c:1041:		ilits->rib.nReportByPixel, ilits->rib.nIsHostDownload, ilits->rib.nIsSPIICE, ilits->rib.nIsSPISLAVE);
+ilitek_v3_flash.c:1043:		ilits->rib.nIsI2C, ilits->rib.nReserved00, ilits->rib.nCustomerType, ilits->rib.nReportResolutionMode, ilits->rib.nReserved02, ilits->rib.nReserved03);
+ilitek_v3_flash.c:1055:	if (ERR_ALLOC_MEM(ilits->md_fw_ili))
+ilitek_v3_flash.c:1058:	CTPM_FW = ilits->md_fw_ili;
+ilitek_v3_flash.c:1059:	size = ilits->md_fw_ili_size;
+ilitek_v3_flash.c:1219:		op ? ilits->md_fw_filp_path : ilits->md_fw_rq_path);
+ilitek_v3_flash.c:1223:		if (request_firmware(&fw, ilits->md_fw_rq_path, ilits->dev) < 0) {
+ilitek_v3_flash.c:1225:			if (request_firmware(&fw, ilits->md_fw_rq_path, ilits->dev) < 0) {
+ilitek_v3_flash.c:1241:		ilits->tp_fw.size = 0;
+ilitek_v3_flash.c:1242:		ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_flash.c:1243:		if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_flash.c:1245:			ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_flash.c:1246:			if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_flash.c:1255:		ipio_memcpy((u8 *)ilits->tp_fw.data, fw->data, fsize * sizeof(*fw->data), fsize);
+ilitek_v3_flash.c:1256:		ilits->tp_fw.size = fsize;
+ilitek_v3_flash.c:1260:		f = filp_open(ilits->md_fw_filp_path, O_RDONLY, 0644);
+ilitek_v3_flash.c:1276:		ipio_vfree((void **)&(ilits->tp_fw.data));
+ilitek_v3_flash.c:1277:		ilits->tp_fw.size = 0;
+ilitek_v3_flash.c:1278:		ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_flash.c:1279:		if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_flash.c:1281:			ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_flash.c:1282:			if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_flash.c:1294:		vfs_read(f, (u8 *)ilits->tp_fw.data, fsize, &pos);
+ilitek_v3_flash.c:1297:		ilits->tp_fw.size = fsize;
+ilitek_v3_flash.c:1304:	if (ERR_ALLOC_MEM(ilits->tp_fw.data) || ilits->tp_fw.size <= 0) {
+ilitek_v3_flash.c:1311:	if (ilitek_tddi_fw_hex_convert((u8 *)ilits->tp_fw.data, ilits->tp_fw.size, pfw) < 0) {
+ilitek_v3_flash.c:1317:	ipio_vfree((void **)&(ilits->tp_fw.data));
+ilitek_v3_flash.c:1325:	if (!ilits->boot || ilits->force_fw_update || ERR_ALLOC_MEM(pfw)) {
+ilitek_v3_flash.c:1348:			if (ilits->node_update) {
+ilitek_v3_flash.c:1362:		if (ilits->chip->core_ver >= CORE_VER_1470 && ilits->rib.nIsHostDownload == 1) {
+ilitek_v3_flash.c:1370:	if (!ilits->eng_flow) {
+ilitek_v3_flash.c:1383:			if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3_flash.c:1388:		ili_reset_ctrl(ilits->reset);
+ilitek_v3_flash.c:1403:		if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3_flash.c:1410:		ilits->info_from_hex = DISABLE;
+ilitek_v3_flash.c:1412:	if (atomic_read(&ilits->ice_stat))
+ilitek_v3_flash.c:1422:	if (!ilits->info_from_hex)
+ilitek_v3_flash.c:1423:		ilits->info_from_hex = ENABLE;
+ilitek_v3_flash.c:1452:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_flash.c:1489:			ilits->flash_mid = flash_t[i].mid;
+ilitek_v3_flash.c:1490:			ilits->flash_devid = flash_t[i].dev_id;
+ilitek_v3_flash.c:1491:			ilits->program_page = flash_t[i].program_page;
+ilitek_v3_flash.c:1492:			ilits->flash_sector = flash_t[i].sector;
+ilitek_v3_flash.c:1499:		ilits->flash_mid = flash_t[0].mid;
+ilitek_v3_flash.c:1500:		ilits->flash_devid = flash_t[0].dev_id;
+ilitek_v3_flash.c:1501:		ilits->program_page = flash_t[0].program_page;
+ilitek_v3_flash.c:1502:		ilits->flash_sector = flash_t[0].sector;
+ilitek_v3_flash.c:1505:	ILI_INFO("Flash MID = %x, Flash DEV_ID = %x\n", ilits->flash_mid, ilits->flash_devid);
+ilitek_v3_flash.c:1506:	ILI_INFO("Flash program page = %d\n", ilits->program_page);
+ilitek_v3_flash.c:1507:	ILI_INFO("Flash sector = %d\n", ilits->flash_sector);
+ilitek_v3_qcom.c:31:	ILI_INFO("edge delay = %d\n", ilits->rst_edge_delay);
+ilitek_v3_qcom.c:34:	gpio_direction_output(ilits->tp_rst, 1);
+ilitek_v3_qcom.c:36:	gpio_set_value(ilits->tp_rst, 0);
+ilitek_v3_qcom.c:38:	gpio_set_value(ilits->tp_rst, 1);
+ilitek_v3_qcom.c:39:	mdelay(ilits->rst_edge_delay);
+ilitek_v3_qcom.c:46:	ilits->input = input_allocate_device();
+ilitek_v3_qcom.c:47:	if (ERR_ALLOC_MEM(ilits->input)) {
+ilitek_v3_qcom.c:49:		input_free_device(ilits->input);
+ilitek_v3_qcom.c:53:	ilits->input->name = ilits->hwif->name;
+ilitek_v3_qcom.c:54:	ilits->input->phys = ilits->phys;
+ilitek_v3_qcom.c:55:	ilits->input->dev.parent = ilits->dev;
+ilitek_v3_qcom.c:56:	ilits->input->id.bustype = ilits->hwif->bus_type;
+ilitek_v3_qcom.c:59:	set_bit(EV_ABS, ilits->input->evbit);
+ilitek_v3_qcom.c:60:	set_bit(EV_SYN, ilits->input->evbit);
+ilitek_v3_qcom.c:61:	set_bit(EV_KEY, ilits->input->evbit);
+ilitek_v3_qcom.c:62:	set_bit(BTN_TOUCH, ilits->input->keybit);
+ilitek_v3_qcom.c:63:	set_bit(BTN_TOOL_FINGER, ilits->input->keybit);
+ilitek_v3_qcom.c:64:	set_bit(INPUT_PROP_DIRECT, ilits->input->propbit);
+ilitek_v3_qcom.c:66:	input_set_abs_params(ilits->input, ABS_MT_POSITION_X, TOUCH_SCREEN_X_MIN, ilits->panel_wid - 1, 0, 0);
+ilitek_v3_qcom.c:67:	input_set_abs_params(ilits->input, ABS_MT_POSITION_Y, TOUCH_SCREEN_Y_MIN, ilits->panel_hei - 1, 0, 0);
+ilitek_v3_qcom.c:68:	input_set_abs_params(ilits->input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
+ilitek_v3_qcom.c:69:	input_set_abs_params(ilits->input, ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
+ilitek_v3_qcom.c:72:		input_set_abs_params(ilits->input, ABS_MT_PRESSURE, 0, 255, 0, 0);
+ilitek_v3_qcom.c:76:		input_mt_init_slots(ilits->input, MAX_TOUCH_NUM, INPUT_MT_DIRECT);
+ilitek_v3_qcom.c:78:		input_mt_init_slots(ilits->input, MAX_TOUCH_NUM);
+ilitek_v3_qcom.c:81:		input_set_abs_params(ilits->input, ABS_MT_TRACKING_ID, 0, MAX_TOUCH_NUM, 0, 0);
+ilitek_v3_qcom.c:85:	input_set_capability(ilits->input, EV_KEY, KEY_POWER);
+ilitek_v3_qcom.c:86:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_UP);
+ilitek_v3_qcom.c:87:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_DOWN);
+ilitek_v3_qcom.c:88:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_LEFT);
+ilitek_v3_qcom.c:89:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_RIGHT);
+ilitek_v3_qcom.c:90:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_O);
+ilitek_v3_qcom.c:91:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_E);
+ilitek_v3_qcom.c:92:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_M);
+ilitek_v3_qcom.c:93:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_W);
+ilitek_v3_qcom.c:94:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_S);
+ilitek_v3_qcom.c:95:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_V);
+ilitek_v3_qcom.c:96:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_Z);
+ilitek_v3_qcom.c:97:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_C);
+ilitek_v3_qcom.c:98:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_F);
+ilitek_v3_qcom.c:100:	__set_bit(KEY_GESTURE_POWER, ilits->input->keybit);
+ilitek_v3_qcom.c:101:	__set_bit(KEY_GESTURE_UP, ilits->input->keybit);
+ilitek_v3_qcom.c:102:	__set_bit(KEY_GESTURE_DOWN, ilits->input->keybit);
+ilitek_v3_qcom.c:103:	__set_bit(KEY_GESTURE_LEFT, ilits->input->keybit);
+ilitek_v3_qcom.c:104:	__set_bit(KEY_GESTURE_RIGHT, ilits->input->keybit);
+ilitek_v3_qcom.c:105:	__set_bit(KEY_GESTURE_O, ilits->input->keybit);
+ilitek_v3_qcom.c:106:	__set_bit(KEY_GESTURE_E, ilits->input->keybit);
+ilitek_v3_qcom.c:107:	__set_bit(KEY_GESTURE_M, ilits->input->keybit);
+ilitek_v3_qcom.c:108:	__set_bit(KEY_GESTURE_W, ilits->input->keybit);
+ilitek_v3_qcom.c:109:	__set_bit(KEY_GESTURE_S, ilits->input->keybit);
+ilitek_v3_qcom.c:110:	__set_bit(KEY_GESTURE_V, ilits->input->keybit);
+ilitek_v3_qcom.c:111:	__set_bit(KEY_GESTURE_Z, ilits->input->keybit);
+ilitek_v3_qcom.c:112:	__set_bit(KEY_GESTURE_C, ilits->input->keybit);
+ilitek_v3_qcom.c:113:	__set_bit(KEY_GESTURE_F, ilits->input->keybit);
+ilitek_v3_qcom.c:116:	if (input_register_device(ilits->input) < 0) {
+ilitek_v3_qcom.c:118:		input_unregister_device(ilits->input);
+ilitek_v3_qcom.c:119:		input_free_device(ilits->input);
+ilitek_v3_qcom.c:129:		if (ilits->vdd) {
+ilitek_v3_qcom.c:130:			if (regulator_enable(ilits->vdd) < 0)
+ilitek_v3_qcom.c:133:		if (ilits->vcc) {
+ilitek_v3_qcom.c:134:			if (regulator_enable(ilits->vcc) < 0)
+ilitek_v3_qcom.c:138:		if (ilits->vdd) {
+ilitek_v3_qcom.c:139:			if (regulator_disable(ilits->vdd) < 0)
+ilitek_v3_qcom.c:142:		if (ilits->vcc) {
+ilitek_v3_qcom.c:143:			if (regulator_disable(ilits->vcc) < 0)
+ilitek_v3_qcom.c:147:	atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3_qcom.c:156:	ilits->vdd = regulator_get(ilits->dev, vdd_name);
+ilitek_v3_qcom.c:157:	if (ERR_ALLOC_MEM(ilits->vdd)) {
+ilitek_v3_qcom.c:159:		ilits->vdd = NULL;
+ilitek_v3_qcom.c:161:	if (regulator_set_voltage(ilits->vdd, VDD_VOLTAGE, VDD_VOLTAGE) < 0)
+ilitek_v3_qcom.c:164:	ilits->vcc = regulator_get(ilits->dev, vcc_name);
+ilitek_v3_qcom.c:165:	if (ERR_ALLOC_MEM(ilits->vcc)) {
+ilitek_v3_qcom.c:167:		ilits->vcc = NULL;
+ilitek_v3_qcom.c:169:	if (regulator_set_voltage(ilits->vcc, VCC_VOLTAGE, VCC_VOLTAGE) < 0)
+ilitek_v3_qcom.c:180:	struct device_node *dev_node = ilits->dev->of_node;
+ilitek_v3_qcom.c:182:	ilits->tp_int = of_get_named_gpio_flags(dev_node, DTS_INT_GPIO, 0, &flag);
+ilitek_v3_qcom.c:183:	ilits->tp_rst = of_get_named_gpio_flags(dev_node, DTS_RESET_GPIO, 0, &flag);
+ilitek_v3_qcom.c:185:	ILI_INFO("TP INT: %d\n", ilits->tp_int);
+ilitek_v3_qcom.c:186:	ILI_INFO("TP RESET: %d\n", ilits->tp_rst);
+ilitek_v3_qcom.c:188:	if (!gpio_is_valid(ilits->tp_int)) {
+ilitek_v3_qcom.c:189:		ILI_ERR("Invalid INT gpio: %d\n", ilits->tp_int);
+ilitek_v3_qcom.c:193:	if (!gpio_is_valid(ilits->tp_rst)) {
+ilitek_v3_qcom.c:194:		ILI_ERR("Invalid RESET gpio: %d\n", ilits->tp_rst);
+ilitek_v3_qcom.c:198:	ret = gpio_request(ilits->tp_int, "TP_INT");
+ilitek_v3_qcom.c:201:		gpio_free(ilits->tp_int);
+ilitek_v3_qcom.c:202:		ret = gpio_request(ilits->tp_int, "TP_INT");
+ilitek_v3_qcom.c:209:	ret = gpio_request(ilits->tp_rst, "TP_RESET");
+ilitek_v3_qcom.c:212:		gpio_free(ilits->tp_rst);
+ilitek_v3_qcom.c:213:		ret = gpio_request(ilits->tp_rst, "TP_RESET");
+ilitek_v3_qcom.c:221:	gpio_direction_input(ilits->tp_int);
+ilitek_v3_qcom.c:229:	spin_lock_irqsave(&ilits->irq_spin, flag);
+ilitek_v3_qcom.c:231:	if (atomic_read(&ilits->irq_stat) == DISABLE)
+ilitek_v3_qcom.c:234:	if (!ilits->irq_num) {
+ilitek_v3_qcom.c:235:		ILI_ERR("gpio_to_irq (%d) is incorrect\n", ilits->irq_num);
+ilitek_v3_qcom.c:239:	disable_irq_nosync(ilits->irq_num);
+ilitek_v3_qcom.c:240:	atomic_set(&ilits->irq_stat, DISABLE);
+ilitek_v3_qcom.c:244:	spin_unlock_irqrestore(&ilits->irq_spin, flag);
+ilitek_v3_qcom.c:251:	spin_lock_irqsave(&ilits->irq_spin, flag);
+ilitek_v3_qcom.c:253:	if (atomic_read(&ilits->irq_stat) == ENABLE)
+ilitek_v3_qcom.c:256:	if (!ilits->irq_num) {
+ilitek_v3_qcom.c:257:		ILI_ERR("gpio_to_irq (%d) is incorrect\n", ilits->irq_num);
+ilitek_v3_qcom.c:261:	enable_irq(ilits->irq_num);
+ilitek_v3_qcom.c:262:	atomic_set(&ilits->irq_stat, ENABLE);
+ilitek_v3_qcom.c:266:	spin_unlock_irqrestore(&ilits->irq_spin, flag);
+ilitek_v3_qcom.c:271:	if (irq != ilits->irq_num) {
+ilitek_v3_qcom.c:276:	if (atomic_read(&ilits->cmd_int_check) == ENABLE) {
+ilitek_v3_qcom.c:277:		atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_qcom.c:279:		wake_up(&(ilits->inq));
+ilitek_v3_qcom.c:283:	if (ilits->prox_near) {
+ilitek_v3_qcom.c:289:			ilits->report,
+ilitek_v3_qcom.c:290:			atomic_read(&ilits->tp_reset),
+ilitek_v3_qcom.c:291:			atomic_read(&ilits->fw_stat),
+ilitek_v3_qcom.c:292:			atomic_read(&ilits->tp_sw_mode),
+ilitek_v3_qcom.c:293:			atomic_read(&ilits->mp_stat),
+ilitek_v3_qcom.c:294:			atomic_read(&ilits->tp_sleep),
+ilitek_v3_qcom.c:295:			atomic_read(&ilits->esd_stat),
+ilitek_v3_qcom.c:296:			atomic_read(&ilits->ignore_report));
+ilitek_v3_qcom.c:298:	if (!ilits->report || atomic_read(&ilits->tp_reset) ||  atomic_read(&ilits->ignore_report) ||
+ilitek_v3_qcom.c:299:		atomic_read(&ilits->fw_stat) || atomic_read(&ilits->tp_sw_mode) ||
+ilitek_v3_qcom.c:300:		atomic_read(&ilits->mp_stat) || atomic_read(&ilits->tp_sleep) ||
+ilitek_v3_qcom.c:301:		atomic_read(&ilits->esd_stat)) {
+ilitek_v3_qcom.c:311:	if (mutex_is_locked(&ilits->touch_mutex)) {
+ilitek_v3_qcom.c:315:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_qcom.c:317:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_qcom.c:323:	devm_free_irq(ilits->dev, ilits->irq_num, NULL);
+ilitek_v3_qcom.c:331:	atomic_set(&ilits->irq_stat, DISABLE);
+ilitek_v3_qcom.c:334:		ilits->irq_num  = gpio_to_irq(ilits->tp_int);
+ilitek_v3_qcom.c:338:	ILI_INFO("ilits->irq_num = %d\n", ilits->irq_num);
+ilitek_v3_qcom.c:340:	ret = devm_request_threaded_irq(ilits->dev, ilits->irq_num,
+ilitek_v3_qcom.c:351:		ILI_ERR("Failed to register irq handler, irq = %d, ret = %d\n", ilits->irq_num, ret);
+ilitek_v3_qcom.c:353:	atomic_set(&ilits->irq_stat, ENABLE);
+ilitek_v3_qcom.c:361:	return sprintf(buf, "%s\n", ilits->tp_suspend ? "true" : "false");
+ilitek_v3_qcom.c:366:	if ((buf[0] == '1') && !ilits->tp_suspend)
+ilitek_v3_qcom.c:368:	else if ((buf[0] == '0') && ilits->tp_suspend)
+ilitek_v3_qcom.c:508:	ilits->notifier_fb.notifier_call = ilitek_plat_notifier_fb;
+ilitek_v3_qcom.c:510:		if (msm_drm_register_client(&ilits->notifier_fb)) {
+ilitek_v3_qcom.c:515:	if (adf_register_client(&ilits->notifier_fb))
+ilitek_v3_qcom.c:518:	if (fb_register_client(&ilits->notifier_fb))
+ilitek_v3_qcom.c:524:	ilits->early_suspend.suspend = ilitek_plat_early_suspend;
+ilitek_v3_qcom.c:525:	ilits->early_suspend.resume = ilitek_plat_late_resume;
+ilitek_v3_qcom.c:526:	ilits->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+ilitek_v3_qcom.c:527:	register_early_suspend(&ilits->early_suspend);
+ilitek_v3_qcom.c:543:	ili_irq_register(ilits->irq_tirgger_type);
+ilitek_v3_qcom.c:552:	ili_sysfs_add_device(ilits->dev);
+ilitek_v3_qcom.c:553:	if (sysfs_create_link(NULL, &ilits->dev->kobj, "touchscreen") < 0)
+ilitek_v3_qcom.c:558:	ilits->pm_suspend = false;
+ilitek_v3_qcom.c:559:	init_completion(&ilits->pm_completion);
+ilitek_v3_qcom.c:574:	ilits->pm_suspend = true;
+ilitek_v3_qcom.c:576:	ilits->pm_completion.done = 0;
+ilitek_v3_qcom.c:578:	reinit_completion(&ilits->pm_completion);
+ilitek_v3_qcom.c:586:	ilits->pm_suspend = false;
+ilitek_v3_qcom.c:587:	complete(&ilits->pm_completion);
+ilitek_v3_qcom.c:595:	ili_sysfs_remove_device(ilits->dev);
+ilitek_v3.c:43:	if (ilits->fw_update_stat != 100)
+ilitek_v3.c:58:				if (ilits->usb_plug_status == 2)
+ilitek_v3.c:59:					ilits->usb_plug_status = prop.intval;
+ilitek_v3.c:60:				if (ilits->usb_plug_status != prop.intval) {
+ilitek_v3.c:62:					ilits->usb_plug_status = prop.intval;
+ilitek_v3.c:63:					if (!ilits->tp_suspend && (ilits->charger_notify_wq != NULL))
+ilitek_v3.c:64:						queue_work(ilits->charger_notify_wq, &ilits->update_charger);
+ilitek_v3.c:74:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3.c:75:	ret = ili_ic_func_ctrl("plug", !ilits->usb_plug_status);// plug in
+ilitek_v3.c:79:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3.c:84:	ilits->usb_plug_status = 2;
+ilitek_v3.c:85:	ilits->charger_notify_wq = create_singlethread_workqueue("ili_charger_wq");
+ilitek_v3.c:86:	if (!ilits->charger_notify_wq) {
+ilitek_v3.c:90:	INIT_WORK(&ilits->update_charger, ilitek_update_charger);
+ilitek_v3.c:91:	ilits->notifier_charger.notifier_call = ilitek_charger_notifier_callback;
+ilitek_v3.c:92:	ret = power_supply_reg_notifier(&ilits->notifier_charger);
+ilitek_v3.c:106:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3.c:108:	if (ilits->gesture)
+ilitek_v3.c:109:		disable_irq_wake(ilits->irq_num);
+ilitek_v3.c:112:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3.c:113:	if (ilits->fw_upgrade_mode == UPGRADE_IRAM)
+ilitek_v3.c:116:		ili_reset_ctrl(ilits->reset);
+ilitek_v3.c:122:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3.c:132:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3.c:135:	ilits->tp_suspend = false;
+ilitek_v3.c:141:	if (!ilits->eng_flow) {
+ilitek_v3.c:142:		atomic_set(&ilits->fw_stat, ENABLE);
+ilitek_v3.c:143:		ili_reset_ctrl(ilits->reset);
+ilitek_v3.c:145:		ilits->ddi_rest_done = true;
+ilitek_v3.c:149:	atomic_set(&ilits->fw_stat, ENABLE);
+ilitek_v3.c:150:	ili_reset_ctrl(ilits->reset);
+ilitek_v3.c:152:	ilits->ddi_rest_done = true;
+ilitek_v3.c:157:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3.c:214:				ilits->knuckle_roi_data[i] = 0;
+ilitek_v3.c:230:	return ilits->knuckle_roi_data;
+ilitek_v3.c:238:	if (atomic_read(&ilits->fw_stat)) {
+ilitek_v3.c:243:	atomic_set(&ilits->mp_stat, ENABLE);
+ilitek_v3.c:245:	if (ilits->actual_tp_mode != P5_X_FW_TEST_MODE) {
+ilitek_v3.c:263:		atomic_set(&ilits->mp_stat, DISABLE);
+ilitek_v3.c:267:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3.c:268:	if (ilits->fw_upgrade_mode == UPGRADE_IRAM) {
+ilitek_v3.c:272:		if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3.c:276:	atomic_set(&ilits->mp_stat, DISABLE);
+ilitek_v3.c:285:	atomic_set(&ilits->tp_sw_mode, START);
+ilitek_v3.c:287:	ilits->actual_tp_mode = mode;
+ilitek_v3.c:290:	if (ilits->tp_data_format == DATA_FORMAT_DEBUG &&
+ilitek_v3.c:291:		ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE)
+ilitek_v3.c:294:	switch (ilits->actual_tp_mode) {
+ilitek_v3.c:297:		ilits->wait_int_timeout = AP_INT_TIMEOUT;
+ilitek_v3.c:298:		if (ilits->fw_upgrade_mode == UPGRADE_IRAM) {
+ilitek_v3.c:302:			ret = ili_reset_ctrl(ilits->reset);
+ilitek_v3.c:310:		ilits->wait_int_timeout = AP_INT_TIMEOUT;
+ilitek_v3.c:311:		ret = ilits->gesture_move_code(ilits->gesture_mode);
+ilitek_v3.c:321:		ilits->wait_int_timeout = MP_INT_TIMEOUT;
+ilitek_v3.c:322:		ret = ilits->mp_move_code();
+ilitek_v3.c:333:	ILI_DBG("Actual TP mode = %d\n", ilits->actual_tp_mode);
+ilitek_v3.c:334:	atomic_set(&ilits->tp_sw_mode, END);
+ilitek_v3.c:342:	atomic_set(&ilits->esd_stat, START);
+ilitek_v3.c:345:	ret = ilits->ges_recover();
+ilitek_v3.c:347:	atomic_set(&ilits->esd_stat, END);
+ilitek_v3.c:353:	atomic_set(&ilits->esd_stat, START);
+ilitek_v3.c:359:	atomic_set(&ilits->esd_stat, END);
+ilitek_v3.c:367:	ret = ilits->spi_write_then_read(ilits->spi, &tx, 1, &rx, 1);
+ilitek_v3.c:384:	if (mutex_is_locked(&ilits->touch_mutex)) {
+ilitek_v3.c:388:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3.c:389:	if (ilits->esd_recover() < 0) {
+ilitek_v3.c:393:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3.c:394:	complete_all(&ilits->esd_done);
+ilitek_v3.c:456:		if (ilits->esd_func_ctrl || ilits->wq_ctrl) {
+ilitek_v3.c:461:			ilits->wq_esd_ctrl = ctrl;
+ilitek_v3.c:474:		if (ENABLE_WQ_BAT || ilits->wq_ctrl) {
+ilitek_v3.c:479:			ilits->wq_bat_ctrl = ctrl;
+ilitek_v3.c:520:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3.c:521:	atomic_set(&ilits->tp_sleep, START);
+ilitek_v3.c:523:	if (atomic_read(&ilits->fw_stat) ||
+ilitek_v3.c:524:		atomic_read(&ilits->mp_stat)) {
+ilitek_v3.c:526:		atomic_set(&ilits->tp_sleep, END);
+ilitek_v3.c:527:		mutex_unlock(&ilits->touch_mutex);
+ilitek_v3.c:537:	if (ilits->ss_ctrl)
+ilitek_v3.c:539:	else if ((ilits->chip->core_ver >= CORE_VER_1430))
+ilitek_v3.c:547:		ilits->tp_suspend = true;
+ilitek_v3.c:548:		ilits->power_status = false;
+ilitek_v3.c:557:		if ((ilits->gesture) || (ilits->prox_face_mode == true)) {
+ilitek_v3.c:559:			enable_irq_wake(ilits->irq_num);
+ilitek_v3.c:569:		ilits->tp_suspend = true;
+ilitek_v3.c:570:		ilits->power_status = false;
+ilitek_v3.c:579:		if ((ilits->gesture) || (ilits->prox_face_mode == true)) {
+ilitek_v3.c:581:			enable_irq_wake(ilits->irq_num);
+ilitek_v3.c:592:		ilits->tp_suspend = false;
+ilitek_v3.c:593:		if (ilits->gesture)
+ilitek_v3.c:594:			disable_irq_wake(ilits->irq_num);
+ilitek_v3.c:597:		ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3.c:598:		if ((ilits->proxmity_face == false) && (ilits->power_status == false) && (ilits->prox_face_mode == true)) {
+ilitek_v3.c:603:		} else if (ilits->fw_upgrade_mode == UPGRADE_IRAM) {
+ilitek_v3.c:607:			if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3.c:611:		ilits->power_status = true;
+ilitek_v3.c:613:		ilits->proxmity_face = false;
+ilitek_v3.c:628:	atomic_set(&ilits->tp_sleep, END);
+ilitek_v3.c:629:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3.c:637:	atomic_set(&ilits->fw_stat, START);
+ilitek_v3.c:639:	ilits->fw_update_stat = FW_STAT_INIT;
+ilitek_v3.c:640:	ret = ili_fw_upgrade(ilits->fw_open);
+ilitek_v3.c:643:		ilits->fw_update_stat = FW_UPDATE_FAIL;
+ilitek_v3.c:649:		if ((ilits->usb_plug_status) && (ilits->actual_tp_mode != P5_X_FW_TEST_MODE)) {
+ilitek_v3.c:650:			ret = ili_ic_func_ctrl("plug", !ilits->usb_plug_status);// plug in
+ilitek_v3.c:658:		ilits->fw_update_stat = FW_UPDATE_PASS;
+ilitek_v3.c:661:	if (!ilits->boot) {
+ilitek_v3.c:662:		ilits->boot = true;
+ilitek_v3.c:669:	atomic_set(&ilits->fw_stat, END);
+ilitek_v3.c:677:	int ret = 0, tp_mode = ilits->actual_tp_mode, len = 0, geture_info_length = 0, demo_mode_packet_len = 0;
+ilitek_v3.c:679:	if (ilits->rib.nCustomerType == POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3.c:682:	} else if (ilits->rib.nCustomerType != POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3.c:685:	} else if (ilits->rib.nCustomerType != POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3.c:688:	} else if (ilits->rib.nCustomerType == POSITION_CUSTOMER_TYPE_OFF && ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3.c:703:		if (ilits->rib.nReportResolutionMode == POSITION_LOW_RESOLUTION) {
+ilitek_v3.c:705:		} else if (ilits->rib.nReportResolutionMode == POSITION_HIGH_RESOLUTION) {
+ilitek_v3.c:709:		len += (2 * ilits->xch_num * ilits->ych_num) + (ilits->stx * 2) + (ilits->srx * 2) + (2 * self_key) + 16;
+ilitek_v3.c:712:		if (ilits->rib.nCustomerType != POSITION_CUSTOMER_TYPE_OFF) {
+ilitek_v3.c:718:		len = (2 * ilits->xch_num * ilits->ych_num) + (ilits->stx * 2) + (ilits->srx * 2);
+ilitek_v3.c:737:		if (ilits->gesture_demo_ctrl == ENABLE) {
+ilitek_v3.c:738:			if (ilits->gesture_mode == DATA_FORMAT_GESTURE_INFO)
+ilitek_v3.c:743:			if (ilits->gesture_mode == DATA_FORMAT_GESTURE_INFO)
+ilitek_v3.c:748:		ILI_INFO("Gesture demo mode control = %d\n",  ilits->gesture_demo_ctrl);
+ilitek_v3.c:749:		ili_ic_func_ctrl("gesture_demo_en", ilits->gesture_demo_ctrl);
+ilitek_v3.c:783:		ret = ilits->wrapper(cmd, 10, NULL, 0, ON, OFF);
+ilitek_v3.c:796:		ret = ilits->wrapper(cmd, 2, NULL, 0, ON, OFF);
+ilitek_v3.c:808:			if (ilits->proxmity_face == true) {
+ilitek_v3.c:818:	ilits->tp_data_format = format;
+ilitek_v3.c:819:	ilits->tp_data_len = len;
+ilitek_v3.c:821:		tp_mode, ilits->tp_data_format, ilits->tp_data_len);
+ilitek_v3.c:835:	if (!ilits->boot || !ilits->report || atomic_read(&ilits->tp_reset) || atomic_read(&ilits->ignore_report) ||
+ilitek_v3.c:836:		atomic_read(&ilits->fw_stat) || atomic_read(&ilits->tp_sw_mode) ||
+ilitek_v3.c:837:		atomic_read(&ilits->mp_stat) || atomic_read(&ilits->tp_sleep)) {
+ilitek_v3.c:842:	if (ilits->irq_after_recovery) {
+ilitek_v3.c:850:	if (ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE) {
+ilitek_v3.c:851:		__pm_stay_awake(ilits->ws);
+ilitek_v3.c:853:		if (ilits->pm_suspend) {
+ilitek_v3.c:855:			ret = wait_for_completion_timeout(&ilits->pm_completion, msecs_to_jiffies(700));
+ilitek_v3.c:862:	rlen = ilits->tp_data_len;
+ilitek_v3.c:870:	memset(ilits->tr_buf, 0x0, TR_BUF_SIZE);
+ilitek_v3.c:872:	ret = ilits->wrapper(NULL, 0, ilits->tr_buf, rlen, OFF, OFF);
+ilitek_v3.c:875:	if (ilits->tr_buf[0] == P5_X_DEMO_PROXIMITY_ID) {
+ilitek_v3.c:877:		ili_report_proximity_mode(ilits->tr_buf, 1);
+ilitek_v3.c:879:		ILI_DBG("proximity %s, cmd : %X\n", ilits->tr_buf[1] ? "Near" : "Far", ilits->tr_buf[1]);
+ilitek_v3.c:888:			ilits->irq_after_recovery = true;
+ilitek_v3.c:890:			if (ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE && ilits->gesture && !ilits->prox_near) {
+ilitek_v3.c:899:			ilits->irq_after_recovery = false;
+ilitek_v3.c:904:	ili_dump_data(ilits->tr_buf, 8, rlen, 0, "finger report");
+ilitek_v3.c:906:	checksum = ili_calc_packet_checksum(ilits->tr_buf, rlen - 1);
+ilitek_v3.c:907:	pack_checksum = ilits->tr_buf[rlen-1];
+ilitek_v3.c:908:	trdata = ilits->tr_buf;
+ilitek_v3.c:922:		trdata = ilits->tr_buf + P5_X_INFO_HEADER_LENGTH;
+ilitek_v3.c:959:		if ((ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE) && ilits->fw_latch != 0) {
+ilitek_v3.c:963:		if (ilits->fw_latch != 0) {
+ilitek_v3.c:968:		if ((ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE) && ilits->fw_latch != 0) {
+ilitek_v3.c:978:	if (ilits->actual_tp_mode != P5_X_FW_GESTURE_MODE) {
+ilitek_v3.c:983:	if (ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE)
+ilitek_v3.c:984:		__pm_relax(ilits->ws);
+ilitek_v3.c:992:	atomic_set(&ilits->tp_reset, START);
+ilitek_v3.c:1028:		atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3.c:1032:	ilits->pll_clk_wakeup = true;
+ilitek_v3.c:1033:	atomic_set(&ilits->tp_reset, END);
+ilitek_v3.c:1055:		ilits->md_name = "CSOT";
+ilitek_v3.c:1056:		ilits->md_fw_filp_path = CSOT_FW_FILP_PATH;
+ilitek_v3.c:1057:		ilits->md_fw_rq_path = CSOT_FW_REQUEST_PATH;
+ilitek_v3.c:1058:		ilits->md_ini_path = CSOT_INI_NAME_PATH;
+ilitek_v3.c:1059:		ilits->md_ini_rq_path = CSOT_INI_REQUEST_PATH;
+ilitek_v3.c:1060:		ilits->md_fw_ili = CTPM_FW_CSOT;
+ilitek_v3.c:1061:		ilits->md_fw_ili_size = sizeof(CTPM_FW_CSOT);
+ilitek_v3.c:1064:		ilits->md_name = "AUO";
+ilitek_v3.c:1065:		ilits->md_fw_filp_path = AUO_FW_FILP_PATH;
+ilitek_v3.c:1066:		ilits->md_fw_rq_path = AUO_FW_REQUEST_PATH;
+ilitek_v3.c:1067:		ilits->md_ini_path = AUO_INI_NAME_PATH;
+ilitek_v3.c:1068:		ilits->md_ini_rq_path = AUO_INI_REQUEST_PATH;
+ilitek_v3.c:1069:		ilits->md_fw_ili = CTPM_FW_AUO;
+ilitek_v3.c:1070:		ilits->md_fw_ili_size = sizeof(CTPM_FW_AUO);
+ilitek_v3.c:1073:		ilits->md_name = "BOE";
+ilitek_v3.c:1074:		ilits->md_fw_filp_path = BOE_FW_FILP_PATH;
+ilitek_v3.c:1075:		ilits->md_fw_rq_path = BOE_FW_REQUEST_PATH;
+ilitek_v3.c:1076:		ilits->md_ini_path = BOE_INI_NAME_PATH;
+ilitek_v3.c:1077:		ilits->md_ini_rq_path = BOE_INI_REQUEST_PATH;
+ilitek_v3.c:1078:		ilits->md_fw_ili = CTPM_FW_BOE;
+ilitek_v3.c:1079:		ilits->md_fw_ili_size = sizeof(CTPM_FW_BOE);
+ilitek_v3.c:1082:		ilits->md_name = "INX";
+ilitek_v3.c:1083:		ilits->md_fw_filp_path = INX_FW_FILP_PATH;
+ilitek_v3.c:1084:		ilits->md_fw_rq_path = INX_FW_REQUEST_PATH;
+ilitek_v3.c:1085:		ilits->md_ini_path = INX_INI_NAME_PATH;
+ilitek_v3.c:1086:		ilits->md_ini_rq_path = INX_INI_REQUEST_PATH;
+ilitek_v3.c:1087:		ilits->md_fw_ili = CTPM_FW_INX;
+ilitek_v3.c:1088:		ilits->md_fw_ili_size = sizeof(CTPM_FW_INX);
+ilitek_v3.c:1091:		ilits->md_name = "DJ";
+ilitek_v3.c:1092:		ilits->md_fw_filp_path = DJ_FW_FILP_PATH;
+ilitek_v3.c:1093:		ilits->md_fw_rq_path = DJ_FW_REQUEST_PATH;
+ilitek_v3.c:1094:		ilits->md_ini_path = DJ_INI_NAME_PATH;
+ilitek_v3.c:1095:		ilits->md_ini_rq_path = DJ_INI_REQUEST_PATH;
+ilitek_v3.c:1096:		ilits->md_fw_ili = CTPM_FW_DJ;
+ilitek_v3.c:1097:		ilits->md_fw_ili_size = sizeof(CTPM_FW_DJ);
+ilitek_v3.c:1100:		ilits->md_name = "TXD";
+ilitek_v3.c:1101:		ilits->md_fw_filp_path = TXD_FW_FILP_PATH;
+ilitek_v3.c:1102:		ilits->md_fw_rq_path = TXD_FW_REQUEST_PATH;
+ilitek_v3.c:1103:		ilits->md_ini_path = TXD_INI_NAME_PATH;
+ilitek_v3.c:1104:		ilits->md_ini_rq_path = TXD_INI_REQUEST_PATH;
+ilitek_v3.c:1105:		ilits->md_fw_ili = CTPM_FW_TXD;
+ilitek_v3.c:1106:		ilits->md_fw_ili_size = sizeof(CTPM_FW_TXD);
+ilitek_v3.c:1109:		ilits->md_name = "TM";
+ilitek_v3.c:1110:		ilits->md_fw_filp_path = TM_FW_FILP_PATH;
+ilitek_v3.c:1111:		ilits->md_fw_rq_path = TM_FW_REQUEST_PATH;
+ilitek_v3.c:1112:		ilits->md_ini_path = TM_INI_NAME_PATH;
+ilitek_v3.c:1113:		ilits->md_ini_rq_path = TM_INI_REQUEST_PATH;
+ilitek_v3.c:1114:		ilits->md_fw_ili = CTPM_FW_TM;
+ilitek_v3.c:1115:		ilits->md_fw_ili_size = sizeof(CTPM_FW_TM);
+ilitek_v3.c:1121:	if (module == 0 || ilits->md_fw_ili_size < ILI_FILE_HEADER) {
+ilitek_v3.c:1123:		ilits->md_name = "DEF";
+ilitek_v3.c:1124:		ilits->md_fw_filp_path = DEF_FW_FILP_PATH;
+ilitek_v3.c:1125:		ilits->md_fw_rq_path = DEF_FW_REQUEST_PATH;
+ilitek_v3.c:1126:		ilits->md_ini_path = DEF_INI_NAME_PATH;
+ilitek_v3.c:1127:		ilits->md_ini_rq_path = DEF_INI_REQUEST_PATH;
+ilitek_v3.c:1128:		ilits->md_fw_ili = CTPM_FW_DEF;
+ilitek_v3.c:1129:		ilits->md_fw_ili_size = sizeof(CTPM_FW_DEF);
+ilitek_v3.c:1133:			ilits->md_name,
+ilitek_v3.c:1134:			ilits->md_ini_path,
+ilitek_v3.c:1135:			ilits->md_fw_filp_path,
+ilitek_v3.c:1136:			ilits->md_fw_rq_path,
+ilitek_v3.c:1137:			ilits->md_fw_ili_size);
+ilitek_v3.c:1139:	ilits->tp_module = module;
+ilitek_v3.c:1150:	mutex_init(&ilits->touch_mutex);
+ilitek_v3.c:1151:	mutex_init(&ilits->debug_mutex);
+ilitek_v3.c:1152:	mutex_init(&ilits->debug_read_mutex);
+ilitek_v3.c:1153:	init_waitqueue_head(&(ilits->inq));
+ilitek_v3.c:1154:	spin_lock_init(&ilits->irq_spin);
+ilitek_v3.c:1155:	init_completion(&ilits->esd_done);
+ilitek_v3.c:1157:	atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3.c:1158:	atomic_set(&ilits->tp_reset, END);
+ilitek_v3.c:1159:	atomic_set(&ilits->fw_stat, END);
+ilitek_v3.c:1160:	atomic_set(&ilits->mp_stat, DISABLE);
+ilitek_v3.c:1161:	atomic_set(&ilits->tp_sleep, END);
+ilitek_v3.c:1162:	atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3.c:1163:	atomic_set(&ilits->esd_stat, END);
+ilitek_v3.c:1164:	atomic_set(&ilits->tp_sw_mode, END);
+ilitek_v3.c:1165:	atomic_set(&ilits->ignore_report, END);
+ilitek_v3.c:1172:	if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3.c:1176:	ilits->demo_debug_info[0] = ili_demo_debug_info_id0;
+ilitek_v3.c:1177:	ilits->tp_data_format = DATA_FORMAT_DEMO;
+ilitek_v3.c:1178:	ilits->boot = false;
+ilitek_v3.c:1214:	ilits->info_from_hex = DISABLE;
+ilitek_v3.c:1225:	ilits->info_from_hex = ENABLE;
+ilitek_v3.c:1232:	ilits->boot = true;
+ilitek_v3.c:1236:	ilits->ws = wakeup_source_register(ilits->dev, "ili_wakelock");
+ilitek_v3.c:1238:	ilits->ws = wakeup_source_register(ilits->dev, "ili_wakelock");
+ilitek_v3.c:1240:	if (!ilits->ws)
+ilitek_v3.c:1255:	gpio_free(ilits->tp_int);
+ilitek_v3.c:1256:	gpio_free(ilits->tp_rst);
+ilitek_v3.c:1269:	if (ilits->ws)
+ilitek_v3.c:1270:		wakeup_source_unregister(ilits->ws);
+ilitek_v3.c:1272:	kfree(ilits->tr_buf);
+ilitek_v3.c:1273:	kfree(ilits->gcoord);
+ilitek_v3_mtk.c:36:	ILI_INFO("edge delay = %d\n", ilits->rst_edge_delay);
+ilitek_v3_mtk.c:39:	tpd_gpio_output(ilits->tp_rst, 1);
+ilitek_v3_mtk.c:41:	tpd_gpio_output(ilits->tp_rst, 0);
+ilitek_v3_mtk.c:43:	tpd_gpio_output(ilits->tp_rst, 1);
+ilitek_v3_mtk.c:44:	mdelay(ilits->rst_edge_delay);
+ilitek_v3_mtk.c:51:	ilits->input = tpd->dev;
+ilitek_v3_mtk.c:55:			input_set_capability(ilits->input, EV_KEY, tpd_dts_data.tpd_key_local[i]);
+ilitek_v3_mtk.c:59:	set_bit(EV_ABS, ilits->input->evbit);
+ilitek_v3_mtk.c:60:	set_bit(EV_SYN, ilits->input->evbit);
+ilitek_v3_mtk.c:61:	set_bit(EV_KEY, ilits->input->evbit);
+ilitek_v3_mtk.c:62:	set_bit(BTN_TOUCH, ilits->input->keybit);
+ilitek_v3_mtk.c:63:	set_bit(BTN_TOOL_FINGER, ilits->input->keybit);
+ilitek_v3_mtk.c:64:	set_bit(INPUT_PROP_DIRECT, ilits->input->propbit);
+ilitek_v3_mtk.c:67:		input_set_abs_params(ilits->input, ABS_MT_PRESSURE, 0, 255, 0, 0);
+ilitek_v3_mtk.c:71:		input_mt_init_slots(ilits->input, MAX_TOUCH_NUM, INPUT_MT_DIRECT);
+ilitek_v3_mtk.c:73:		input_mt_init_slots(ilits->input, MAX_TOUCH_NUM);
+ilitek_v3_mtk.c:76:		input_set_abs_params(ilits->input, ABS_MT_TRACKING_ID, 0, MAX_TOUCH_NUM, 0, 0);
+ilitek_v3_mtk.c:80:	input_set_capability(ilits->input, EV_KEY, KEY_POWER);
+ilitek_v3_mtk.c:81:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_UP);
+ilitek_v3_mtk.c:82:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_DOWN);
+ilitek_v3_mtk.c:83:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_LEFT);
+ilitek_v3_mtk.c:84:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_RIGHT);
+ilitek_v3_mtk.c:85:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_O);
+ilitek_v3_mtk.c:86:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_E);
+ilitek_v3_mtk.c:87:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_M);
+ilitek_v3_mtk.c:88:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_W);
+ilitek_v3_mtk.c:89:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_S);
+ilitek_v3_mtk.c:90:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_V);
+ilitek_v3_mtk.c:91:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_Z);
+ilitek_v3_mtk.c:92:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_C);
+ilitek_v3_mtk.c:93:	input_set_capability(ilits->input, EV_KEY, KEY_GESTURE_F);
+ilitek_v3_mtk.c:95:	__set_bit(KEY_GESTURE_POWER, ilits->input->keybit);
+ilitek_v3_mtk.c:96:	__set_bit(KEY_GESTURE_UP, ilits->input->keybit);
+ilitek_v3_mtk.c:97:	__set_bit(KEY_GESTURE_DOWN, ilits->input->keybit);
+ilitek_v3_mtk.c:98:	__set_bit(KEY_GESTURE_LEFT, ilits->input->keybit);
+ilitek_v3_mtk.c:99:	__set_bit(KEY_GESTURE_RIGHT, ilits->input->keybit);
+ilitek_v3_mtk.c:100:	__set_bit(KEY_GESTURE_O, ilits->input->keybit);
+ilitek_v3_mtk.c:101:	__set_bit(KEY_GESTURE_E, ilits->input->keybit);
+ilitek_v3_mtk.c:102:	__set_bit(KEY_GESTURE_M, ilits->input->keybit);
+ilitek_v3_mtk.c:103:	__set_bit(KEY_GESTURE_W, ilits->input->keybit);
+ilitek_v3_mtk.c:104:	__set_bit(KEY_GESTURE_S, ilits->input->keybit);
+ilitek_v3_mtk.c:105:	__set_bit(KEY_GESTURE_V, ilits->input->keybit);
+ilitek_v3_mtk.c:106:	__set_bit(KEY_GESTURE_Z, ilits->input->keybit);
+ilitek_v3_mtk.c:107:	__set_bit(KEY_GESTURE_C, ilits->input->keybit);
+ilitek_v3_mtk.c:108:	__set_bit(KEY_GESTURE_F, ilits->input->keybit);
+ilitek_v3_mtk.c:117:		if (ilits->vdd) {
+ilitek_v3_mtk.c:118:			if (regulator_enable(ilits->vdd) < 0)
+ilitek_v3_mtk.c:121:		if (ilits->vcc) {
+ilitek_v3_mtk.c:122:			if (regulator_enable(ilits->vcc) < 0)
+ilitek_v3_mtk.c:126:		if (ilits->vdd) {
+ilitek_v3_mtk.c:127:			if (regulator_disable(ilits->vdd) < 0)
+ilitek_v3_mtk.c:130:		if (ilits->vcc) {
+ilitek_v3_mtk.c:131:			if (regulator_disable(ilits->vcc) < 0)
+ilitek_v3_mtk.c:135:	atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3_mtk.c:144:	ilits->vdd = regulator_get(tpd->tpd_dev, vdd_name);
+ilitek_v3_mtk.c:145:	if (ERR_ALLOC_MEM(ilits->vdd)) {
+ilitek_v3_mtk.c:147:		ilits->vdd = NULL;
+ilitek_v3_mtk.c:150:	tpd->reg = ilits->vdd;
+ilitek_v3_mtk.c:152:	if (regulator_set_voltage(ilits->vdd, VDD_VOLTAGE, VDD_VOLTAGE) < 0)
+ilitek_v3_mtk.c:155:	ilits->vcc = regulator_get(ilits->dev, vcc_name);
+ilitek_v3_mtk.c:156:	if (ERR_ALLOC_MEM(ilits->vcc)) {
+ilitek_v3_mtk.c:158:		ilits->vcc = NULL;
+ilitek_v3_mtk.c:160:	if (regulator_set_voltage(ilits->vcc, VCC_VOLTAGE, VCC_VOLTAGE) < 0)
+ilitek_v3_mtk.c:171:	ilits->tp_int = MTK_INT_GPIO;
+ilitek_v3_mtk.c:172:	ilits->tp_rst = MTK_RST_GPIO;
+ilitek_v3_mtk.c:174:	ILI_INFO("TP INT: %d\n", ilits->tp_int);
+ilitek_v3_mtk.c:175:	ILI_INFO("TP RESET: %d\n", ilits->tp_rst);
+ilitek_v3_mtk.c:177:	if (!gpio_is_valid(ilits->tp_int)) {
+ilitek_v3_mtk.c:178:		ILI_ERR("Invalid INT gpio: %d\n", ilits->tp_int);
+ilitek_v3_mtk.c:182:	if (!gpio_is_valid(ilits->tp_rst)) {
+ilitek_v3_mtk.c:183:		ILI_ERR("Invalid RESET gpio: %d\n", ilits->tp_rst);
+ilitek_v3_mtk.c:187:	gpio_direction_input(ilits->tp_int);
+ilitek_v3_mtk.c:195:	spin_lock_irqsave(&ilits->irq_spin, flag);
+ilitek_v3_mtk.c:197:	if (atomic_read(&ilits->irq_stat) == DISABLE)
+ilitek_v3_mtk.c:200:	if (!ilits->irq_num) {
+ilitek_v3_mtk.c:201:		ILI_ERR("gpio_to_irq (%d) is incorrect\n", ilits->irq_num);
+ilitek_v3_mtk.c:205:	disable_irq_nosync(ilits->irq_num);
+ilitek_v3_mtk.c:206:	atomic_set(&ilits->irq_stat, DISABLE);
+ilitek_v3_mtk.c:210:	spin_unlock_irqrestore(&ilits->irq_spin, flag);
+ilitek_v3_mtk.c:217:	spin_lock_irqsave(&ilits->irq_spin, flag);
+ilitek_v3_mtk.c:219:	if (atomic_read(&ilits->irq_stat) == ENABLE)
+ilitek_v3_mtk.c:222:	if (!ilits->irq_num) {
+ilitek_v3_mtk.c:223:		ILI_ERR("gpio_to_irq (%d) is incorrect\n", ilits->irq_num);
+ilitek_v3_mtk.c:227:	enable_irq(ilits->irq_num);
+ilitek_v3_mtk.c:228:	atomic_set(&ilits->irq_stat, ENABLE);
+ilitek_v3_mtk.c:232:	spin_unlock_irqrestore(&ilits->irq_spin, flag);
+ilitek_v3_mtk.c:237:	if (irq != ilits->irq_num) {
+ilitek_v3_mtk.c:242:	if (atomic_read(&ilits->cmd_int_check) == ENABLE) {
+ilitek_v3_mtk.c:243:		atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_mtk.c:245:		wake_up(&(ilits->inq));
+ilitek_v3_mtk.c:249:	if (ilits->prox_near) {
+ilitek_v3_mtk.c:255:			ilits->report,
+ilitek_v3_mtk.c:256:			atomic_read(&ilits->tp_reset),
+ilitek_v3_mtk.c:257:			atomic_read(&ilits->fw_stat),
+ilitek_v3_mtk.c:258:			atomic_read(&ilits->tp_sw_mode),
+ilitek_v3_mtk.c:259:			atomic_read(&ilits->mp_stat),
+ilitek_v3_mtk.c:260:			atomic_read(&ilits->tp_sleep),
+ilitek_v3_mtk.c:261:			atomic_read(&ilits->esd_stat),
+ilitek_v3_mtk.c:262:			atomic_read(&ilits->ignore_report));
+ilitek_v3_mtk.c:264:	if (!ilits->report || atomic_read(&ilits->tp_reset) ||  atomic_read(&ilits->ignore_report) ||
+ilitek_v3_mtk.c:265:		atomic_read(&ilits->fw_stat) || atomic_read(&ilits->tp_sw_mode) ||
+ilitek_v3_mtk.c:266:		atomic_read(&ilits->mp_stat) || atomic_read(&ilits->tp_sleep) ||
+ilitek_v3_mtk.c:267:		atomic_read(&ilits->esd_stat)) {
+ilitek_v3_mtk.c:277:	if (mutex_is_locked(&ilits->touch_mutex)) {
+ilitek_v3_mtk.c:281:	mutex_lock(&ilits->touch_mutex);
+ilitek_v3_mtk.c:283:	mutex_unlock(&ilits->touch_mutex);
+ilitek_v3_mtk.c:289:	devm_free_irq(ilits->dev, ilits->irq_num, NULL);
+ilitek_v3_mtk.c:298:	atomic_set(&ilits->irq_stat, DISABLE);
+ilitek_v3_mtk.c:303:			ilits->irq_num = irq_of_parse_and_map(node, 0);
+ilitek_v3_mtk.c:305:		ILI_INFO("ilits->irq_num = %d\n", ilits->irq_num);
+ilitek_v3_mtk.c:309:	ret = devm_request_threaded_irq(ilits->dev, ilits->irq_num,
+ilitek_v3_mtk.c:320:		ILI_ERR("Failed to register irq handler, irq = %d, ret = %d\n", ilits->irq_num, ret);
+ilitek_v3_mtk.c:322:	atomic_set(&ilits->irq_stat, ENABLE);
+ilitek_v3_mtk.c:342:	ilits->pm_suspend = true;
+ilitek_v3_mtk.c:343:	reinit_completion(&ilits->pm_completion);
+ilitek_v3_mtk.c:350:	ilits->pm_suspend = false;
+ilitek_v3_mtk.c:351:	complete(&ilits->pm_completion);
+ilitek_v3_mtk.c:366:	ili_irq_register(ilits->irq_tirgger_type);
+ilitek_v3_mtk.c:375:	ilits->pm_suspend = false;
+ilitek_v3_mtk.c:376:	init_completion(&ilits->pm_completion);
+ilitek_v3_mp.c:810:		path = ilits->md_ini_rq_path;
+ilitek_v3_mp.c:812:		if (request_firmware(&ini, path, ilits->dev) < 0) {
+ilitek_v3_mp.c:1559:	ret = ilits->wrapper(cmd, sizeof(cmd), ori, len, ON, ON);
+ilitek_v3_mp.c:1703:	if (!ilits->eng_flow) {
+ilitek_v3_mp.c:1704:		if (ilits->wrapper(cmd, core_mp.cdc_len, ori, len, ON, ON) < 0) {
+ilitek_v3_mp.c:1711:		if (ilits->wrapper(cmd, core_mp.cdc_len, ori, len, OFF, OFF) < 0) {
+ilitek_v3_mp.c:1716:	if (ilits->wrapper(cmd, core_mp.cdc_len, ori, len, ON, ON) < 0) {
+ilitek_v3_mp.c:1827:		if (!ilits->eng_flow) {
+ilitek_v3_mp.c:1828:			if (ilits->wrapper(cmd, cmd_len, ori, len, ON, ON) < 0) {
+ilitek_v3_mp.c:1835:			if (ilits->wrapper(cmd, cmd_len, ori, len, OFF, OFF) < 0) {
+ilitek_v3_mp.c:1840:		if (ilits->wrapper(cmd, cmd_len, ori, len, ON, ON) < 0) {
+ilitek_v3_mp.c:1917:	if (!ilits->eng_flow) {
+ilitek_v3_mp.c:1918:		if (ilits->wrapper(cmd, core_mp.cdc_len, ori, len, ON, ON) < 0) {
+ilitek_v3_mp.c:1925:		if (ilits->wrapper(cmd, core_mp.cdc_len, ori, len, OFF, OFF) < 0) {
+ilitek_v3_mp.c:1930:	if (ilits->wrapper(cmd, core_mp.cdc_len, ori, len, ON, ON) < 0) {
+ilitek_v3_mp.c:2197:		ret = ilits->wrapper(cmd, 2, NULL, 0, OFF, OFF);
+ilitek_v3_mp.c:2204:		ret =  ilits->detect_int_stat(false);
+ilitek_v3_mp.c:2212:		ret = ilits->wrapper(cmd, 2, NULL, 0, OFF, OFF);
+ilitek_v3_mp.c:2219:		ret =  ilits->detect_int_stat(false);
+ilitek_v3_mp.c:2239:		atomic_set(&ilits->cmd_int_check, ENABLE);
+ilitek_v3_mp.c:2240:		ret = ilits->wrapper(cmd, 3, NULL, 0, OFF, OFF);
+ilitek_v3_mp.c:2247:		ret = ilits->detect_int_stat(false);
+ilitek_v3_mp.c:2261:		atomic_set(&ilits->cmd_int_check, ENABLE);
+ilitek_v3_mp.c:2263:		ret = ilits->wrapper(cmd, 3, NULL, 0, OFF, OFF);
+ilitek_v3_mp.c:2270:		ret = ilits->detect_int_stat(false);
+ilitek_v3_mp.c:2285:	ili_irq_register(ilits->irq_tirgger_type);
+ilitek_v3_mp.c:2286:	atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_mp.c:3086:	if (ilits->eng_flow == true) {
+ilitek_v3_mp.c:3385:	core_mp.chip_pid = ilits->chip->pid;
+ilitek_v3_mp.c:3386:	core_mp.chip_id = ilits->chip->id;
+ilitek_v3_mp.c:3387:	core_mp.chip_type = ilits->chip->type;
+ilitek_v3_mp.c:3388:	core_mp.chip_ver = ilits->chip->ver;
+ilitek_v3_mp.c:3389:	core_mp.fw_ver = ilits->chip->fw_ver;
+ilitek_v3_mp.c:3390:	core_mp.protocol_ver = ilits->protocol->ver;
+ilitek_v3_mp.c:3391:	core_mp.core_ver = ilits->chip->core_ver;
+ilitek_v3_mp.c:3392:	core_mp.cdc_len = ilits->protocol->cdc_len;
+ilitek_v3_mp.c:3393:	core_mp.no_bk_shift = ilits->chip->no_bk_shift;
+ilitek_v3_mp.c:3394:	core_mp.xch_len = ilits->xch_num;
+ilitek_v3_mp.c:3395:	core_mp.ych_len = ilits->ych_num;
+ilitek_v3_mp.c:3403:	core_mp.retry = ilits->mp_retry;
+ilitek_v3_mp.c:3411:	ILI_INFO("TP Module = %s\n", ilits->md_name);
+ilitek_v3_mp.c:3724:	ilits->mp_ret_len = len;
+ilitek_v3_mp.c:3762:	if (ilits->xch_num <= 0 || ilits->ych_num <= 0) {
+ilitek_v3_mp.c:3763:		ILI_ERR("Invalid frame length (%d, %d)\n", ilits->xch_num, ilits->ych_num);
+ilitek_v3_mp.c:3779:	ret = ilitek_tddi_mp_ini_parser(ilits->md_ini_path);
+ilitek_v3_hostdl.c:98:	if (ilits->chip->dma_reset) {
+ilitek_v3_hostdl.c:187:		if (ilits->wrapper(cmd, 4, NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_hostdl.c:192:		if (ilits->wrapper(NULL, 0, buf + cnt * limit, tmp_len, OFF, OFF) < 0) {
+ilitek_v3_hostdl.c:198:		ilits->fw_update_stat = ((len - tmp_len) * 100) / len;
+ilitek_v3_hostdl.c:199:		ILI_INFO("Reading iram data .... %d%c", ilits->fw_update_stat, '%');
+ilitek_v3_hostdl.c:211:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_hostdl.c:230:		ilits->update_buf[i] = 0xFF;
+ilitek_v3_hostdl.c:232:	ret = ilitek_tddi_fw_iram_read(ilits->update_buf, start, len);
+ilitek_v3_hostdl.c:249:		vfs_write(f, ilits->update_buf, len, &pos);
+ilitek_v3_hostdl.c:255:		ili_dump_data(ilits->update_buf, 8, len, 0, "IRAM");
+ilitek_v3_hostdl.c:286:			ilits->update_buf[0] = SPI_WRITE;
+ilitek_v3_hostdl.c:287:			ilits->update_buf[1] = 0x25;
+ilitek_v3_hostdl.c:288:			ilits->update_buf[2] = (char)((addr & 0x000000FF));
+ilitek_v3_hostdl.c:289:			ilits->update_buf[3] = (char)((addr & 0x0000FF00) >> 8);
+ilitek_v3_hostdl.c:290:			ilits->update_buf[4] = (char)((addr & 0x00FF0000) >> 16);
+ilitek_v3_hostdl.c:293:				ilits->update_buf[5 + j] = w_buf[i + j];
+ilitek_v3_hostdl.c:297:				ILI_INFO("idev->update_buf[5 + 0x%X] = 0x%X\n", split_len - 4, ilits->update_buf[5 + split_len - 4]);
+ilitek_v3_hostdl.c:298:				ILI_INFO("idev->update_buf[5 + 0x%X] = 0x%X\n", split_len - 3, ilits->update_buf[5 + split_len - 3]);
+ilitek_v3_hostdl.c:299:				ILI_INFO("idev->update_buf[5 + 0x%X] = 0x%X\n", split_len - 2, ilits->update_buf[5 + split_len - 2]);
+ilitek_v3_hostdl.c:300:				ILI_INFO("idev->update_buf[5 + 0x%X] = 0x%X\n", split_len - 1, ilits->update_buf[5 + split_len - 1]);
+ilitek_v3_hostdl.c:302:					ilits->update_buf[5 + j + split_len] = 0xFF;
+ilitek_v3_hostdl.c:303:					ILI_INFO("idev->update_buf[5 + 0x%X] = 0x%X\n", j + split_len, ilits->update_buf[5 + j + split_len]);
+ilitek_v3_hostdl.c:310:			if (ilits->spi_write_then_read(ilits->spi, ilits->update_buf, split_len + 5, NULL, 0)) {
+ilitek_v3_hostdl.c:314:			ilits->fw_update_stat = (i * 100) / w_len;
+ilitek_v3_hostdl.c:318:			ilits->update_buf[i] = 0xFF;
+ilitek_v3_hostdl.c:320:		ilits->update_buf[0] = SPI_WRITE;
+ilitek_v3_hostdl.c:321:		ilits->update_buf[1] = 0x25;
+ilitek_v3_hostdl.c:322:		ilits->update_buf[2] = (char)((start & 0x000000FF));
+ilitek_v3_hostdl.c:323:		ilits->update_buf[3] = (char)((start & 0x0000FF00) >> 8);
+ilitek_v3_hostdl.c:324:		ilits->update_buf[4] = (char)((start & 0x00FF0000) >> 16);
+ilitek_v3_hostdl.c:326:		memcpy(&ilits->update_buf[5], w_buf, w_len);
+ilitek_v3_hostdl.c:333:		if (ilits->spi_write_then_read(ilits->spi, ilits->update_buf, w_len + 5, NULL, 0) < 0) {
+ilitek_v3_hostdl.c:348:	if (!ilits->ddi_rest_done) {
+ilitek_v3_hostdl.c:349:		if (ilits->actual_tp_mode != P5_X_FW_GESTURE_MODE)
+ilitek_v3_hostdl.c:350:			ili_reset_ctrl(ilits->reset);
+ilitek_v3_hostdl.c:357:		ilits->ddi_rest_done = false;
+ilitek_v3_hostdl.c:362:	if (ilits->actual_tp_mode == P5_X_FW_TEST_MODE) {
+ilitek_v3_hostdl.c:365:	} else if (ilits->actual_tp_mode == P5_X_FW_GESTURE_MODE) {
+ilitek_v3_hostdl.c:402:	if (ilits->actual_tp_mode != P5_X_FW_GESTURE_MODE) {
+ilitek_v3_hostdl.c:506:	ipio_memcpy(ilits->fw_info, (pfw + fw_info_addr), sizeof(ilits->fw_info), sizeof(ilits->fw_info));
+ilitek_v3_hostdl.c:511:	ipio_memcpy(ilits->fw_mp_ver, pfw + fw_mp_ver_addr, sizeof(ilits->fw_mp_ver), sizeof(ilits->fw_mp_ver));
+ilitek_v3_hostdl.c:514:	ilits->chip->core_ver = (ilits->fw_info[68] << 24) | (ilits->fw_info[69] << 16) |
+ilitek_v3_hostdl.c:515:			(ilits->fw_info[70] << 8) | ilits->fw_info[71];
+ilitek_v3_hostdl.c:516:	ILI_INFO("New FW Core version = %x\n", ilits->chip->core_ver);
+ilitek_v3_hostdl.c:519:	tfd.new_fw_cb = (ilits->fw_info[48] << 24) | (ilits->fw_info[49] << 16) |
+ilitek_v3_hostdl.c:520:			(ilits->fw_info[50] << 8) | ilits->fw_info[51];
+ilitek_v3_hostdl.c:523:	ipio_memcpy(&ilits->rib, ilits->fw_info, sizeof(ilits->rib), sizeof(ilits->rib));
+ilitek_v3_hostdl.c:524:	ilits->rib.nReportResolutionMode = (ilits->chip->core_ver >= CORE_VER_1470) ? (ilits->rib.nReportResolutionMode & 0x07) : POSITION_LOW_RESOLUTION;
+ilitek_v3_hostdl.c:525:	ilits->rib.nCustomerType = (ilits->chip->core_ver >= CORE_VER_1470) ? ilits->rib.nCustomerType : POSITION_CUSTOMER_TYPE_OFF;
+ilitek_v3_hostdl.c:527:		ilits->rib.nReportByPixel, ilits->rib.nIsHostDownload, ilits->rib.nIsSPIICE, ilits->rib.nIsSPISLAVE);
+ilitek_v3_hostdl.c:529:		ilits->rib.nIsI2C, ilits->rib.nReserved00, ilits->rib.nCustomerType, ilits->rib.nReportResolutionMode, ilits->rib.nReserved02, ilits->rib.nReserved03);
+ilitek_v3_hostdl.c:543:	if (ERR_ALLOC_MEM(ilits->md_fw_ili))
+ilitek_v3_hostdl.c:546:	CTPM_FW = ilits->md_fw_ili;
+ilitek_v3_hostdl.c:547:	size = ilits->md_fw_ili_size;
+ilitek_v3_hostdl.c:599:				ilits->gesture_load_code = true;
+ilitek_v3_hostdl.c:655:				ilits->gesture_load_code = true;
+ilitek_v3_hostdl.c:713:		op ? ilits->md_fw_filp_path : ilits->md_fw_rq_path);
+ilitek_v3_hostdl.c:717:		if (request_firmware(&fw, ilits->md_fw_rq_path, ilits->dev) < 0) {
+ilitek_v3_hostdl.c:719:			if (request_firmware(&fw, ilits->md_fw_rq_path, ilits->dev) < 0) {
+ilitek_v3_hostdl.c:735:		ilits->tp_fw.size = 0;
+ilitek_v3_hostdl.c:736:		ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_hostdl.c:737:		if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_hostdl.c:739:			ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_hostdl.c:740:			if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_hostdl.c:749:		ipio_memcpy((u8 *)ilits->tp_fw.data, fw->data, fsize * sizeof(*fw->data), fsize);
+ilitek_v3_hostdl.c:750:		ilits->tp_fw.size = fsize;
+ilitek_v3_hostdl.c:754:		f = filp_open(ilits->md_fw_filp_path, O_RDONLY, 0644);
+ilitek_v3_hostdl.c:770:		ipio_vfree((void **)&(ilits->tp_fw.data));
+ilitek_v3_hostdl.c:771:		ilits->tp_fw.size = 0;
+ilitek_v3_hostdl.c:772:		ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_hostdl.c:773:		if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_hostdl.c:775:			ilits->tp_fw.data = vmalloc(fsize);
+ilitek_v3_hostdl.c:776:			if (ERR_ALLOC_MEM(ilits->tp_fw.data)) {
+ilitek_v3_hostdl.c:788:		vfs_read(f, (u8 *)ilits->tp_fw.data, fsize, &pos);
+ilitek_v3_hostdl.c:791:		ilits->tp_fw.size = fsize;
+ilitek_v3_hostdl.c:798:	if (ERR_ALLOC_MEM(ilits->tp_fw.data) || ilits->tp_fw.size <= 0) {
+ilitek_v3_hostdl.c:805:	if (ilitek_tddi_fw_hex_convert((u8 *)ilits->tp_fw.data, ilits->tp_fw.size, pfw) < 0) {
+ilitek_v3_hostdl.c:811:	ipio_vfree((void **)&(ilits->tp_fw.data));
+ilitek_v3_hostdl.c:819:	if (!ilits->boot || ilits->force_fw_update || ERR_ALLOC_MEM(pfw)) {
+ilitek_v3_hostdl.c:820:		ilits->gesture_load_code = false;
+ilitek_v3_hostdl.c:844:			if (ilits->node_update) {
+ilitek_v3_hostdl.c:862:		if (ilits->chip->core_ver >= CORE_VER_1470 && ilits->rib.nIsHostDownload == 0) {
+ilitek_v3_hostdl.c:868:	if (!ilits->eng_flow) {
+ilitek_v3_hostdl.c:879:			if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3_hostdl.c:881:			ilits->xch_num = 0;
+ilitek_v3_hostdl.c:882:			ilits->ych_num = 0;
+ilitek_v3_hostdl.c:887:		ili_reset_ctrl(ilits->reset);
+ilitek_v3_hostdl.c:901:		if (ili_reset_ctrl(ilits->reset) < 0)
+ilitek_v3_hostdl.c:903:		ilits->xch_num = 0;
+ilitek_v3_hostdl.c:904:		ilits->ych_num = 0;
+ilitek_v3_hostdl.c:909:	if (!ilits->info_from_hex)
+ilitek_v3_i2c.c:71:		 .addr = ilits->i2c->addr,
+ilitek_v3_i2c.c:80:		msgs[0].addr = (ilits->client->addr & I2C_MASK_FLAG);
+ilitek_v3_i2c.c:81:		msgs[0].ext_flag = (ilits->client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
+ilitek_v3_i2c.c:92:	if (atomic_read(&ilits->mp_stat) && txbuf[0] == P5_X_SET_CDC_INIT) {
+ilitek_v3_i2c.c:106:	if (i2c_transfer(ilits->i2c->adapter, msgs, 1) != 1)
+ilitek_v3_i2c.c:120:		 .addr = ilits->i2c->addr,
+ilitek_v3_i2c.c:130:		msgs[0].addr = (ilits->client->addr & I2C_MASK_FLAG);
+ilitek_v3_i2c.c:131:		msgs[0].ext_flag = (ilits->client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
+ilitek_v3_i2c.c:139:	ret = i2c_transfer(ilits->i2c->adapter, msgs, 1);
+ilitek_v3_i2c.c:164:		if (atomic_read(&ilits->tp_reset) == START) {
+ilitek_v3_i2c.c:186:		if (atomic_read(&ilits->tp_reset) == START) {
+ilitek_v3_i2c.c:202:	if (ilits->pll_clk_wakeup == true) {
+ilitek_v3_i2c.c:204:	if ((ilits->pll_clk_wakeup == true) && (ilits->tp_suspend == true)) {
+ilitek_v3_i2c.c:238:	if (ilits->int_pulse)
+ilitek_v3_i2c.c:239:		ilits->detect_int_stat = ili_ic_check_int_pulse;
+ilitek_v3_i2c.c:241:		ilits->detect_int_stat = ili_ic_check_int_level;
+ilitek_v3_i2c.c:244:		atomic_set(&ilits->cmd_int_check, ENABLE);
+ilitek_v3_i2c.c:255:			if (ilits->detect_int_stat(false) < 0) {
+ilitek_v3_i2c.c:283:			if (ilits->detect_int_stat(false) < 0) {
+ilitek_v3_i2c.c:303:		atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_i2c.c:344:	ilits->tr_buf = kzalloc(TR_BUF_SIZE, GFP_ATOMIC);
+ilitek_v3_i2c.c:345:	if (ERR_ALLOC_MEM(ilits->tr_buf)) {
+ilitek_v3_i2c.c:350:	ilits->gcoord = kzalloc(sizeof(struct gesture_coordinate), GFP_KERNEL);
+ilitek_v3_i2c.c:351:	if (ERR_ALLOC_MEM(ilits->gcoord)) {
+ilitek_v3_i2c.c:356:	ilits->i2c = i2c;
+ilitek_v3_i2c.c:357:	ilits->spi = NULL;
+ilitek_v3_i2c.c:358:	ilits->dev = &i2c->dev;
+ilitek_v3_i2c.c:359:	ilits->hwif = info->hwif;
+ilitek_v3_i2c.c:360:	ilits->phys = "I2C";
+ilitek_v3_i2c.c:361:	ilits->wrapper = ili_i2c_wrapper;
+ilitek_v3_i2c.c:362:	ilits->detect_int_stat = ili_ic_check_int_pulse;
+ilitek_v3_i2c.c:363:	ilits->int_pulse = true;
+ilitek_v3_i2c.c:364:	ilits->mp_retry = false;
+ilitek_v3_i2c.c:367:	if (dma_i2c_alloc(ilits->i2c) < 0)
+ilitek_v3_i2c.c:368:		ILI_ERR("Failed to alllocate DMA mem %ld\n", PTR_ERR(ilits->i2c));
+ilitek_v3_i2c.c:371:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3_i2c.c:372:	ilits->tp_data_mode = AP_MODE;
+ilitek_v3_i2c.c:375:		ilits->reset = TP_IC_WHOLE_RST;
+ilitek_v3_i2c.c:377:		ilits->reset = TP_HW_RST_ONLY;
+ilitek_v3_i2c.c:379:	ilits->rst_edge_delay = 40;
+ilitek_v3_i2c.c:380:	ilits->fw_open = FILP_OPEN;
+ilitek_v3_i2c.c:381:	ilits->fw_upgrade_mode = UPGRADE_FLASH;
+ilitek_v3_i2c.c:382:	ilits->mp_move_code = ili_move_mp_code_flash;
+ilitek_v3_i2c.c:383:	ilits->gesture_move_code = ili_move_gesture_code_flash;
+ilitek_v3_i2c.c:384:	ilits->esd_recover = ili_wq_esd_i2c_check;
+ilitek_v3_i2c.c:385:	ilits->esd_func_ctrl = ENABLE_WQ_ESD;
+ilitek_v3_i2c.c:386:	ilits->ges_recover = ili_touch_esd_gesture_flash;
+ilitek_v3_i2c.c:387:	ilits->gesture_mode = DATA_FORMAT_GESTURE_INFO;
+ilitek_v3_i2c.c:388:	ilits->gesture_demo_ctrl = DISABLE;
+ilitek_v3_i2c.c:389:	ilits->wtd_ctrl = OFF;
+ilitek_v3_i2c.c:390:	ilits->report = ENABLE;
+ilitek_v3_i2c.c:391:	ilits->netlink = DISABLE;
+ilitek_v3_i2c.c:392:	ilits->dnp = DISABLE;
+ilitek_v3_i2c.c:393:	ilits->irq_tirgger_type = IRQF_TRIGGER_FALLING;
+ilitek_v3_i2c.c:394:	ilits->info_from_hex = DISABLE;
+ilitek_v3_i2c.c:395:	ilits->wait_int_timeout = AP_INT_TIMEOUT;
+ilitek_v3_i2c.c:397:	ilits->current_report_rate_mode = DDI60_TP120; /*Default report mode*/
+ilitek_v3_i2c.c:401:	ilits->gesture = DISABLE;
+ilitek_v3_i2c.c:402:	ilits->ges_sym.double_tap = DOUBLE_TAP;
+ilitek_v3_i2c.c:403:	ilits->ges_sym.alphabet_line_2_top = ALPHABET_LINE_2_TOP;
+ilitek_v3_i2c.c:404:	ilits->ges_sym.alphabet_line_2_bottom = ALPHABET_LINE_2_BOTTOM;
+ilitek_v3_i2c.c:405:	ilits->ges_sym.alphabet_line_2_left = ALPHABET_LINE_2_LEFT;
+ilitek_v3_i2c.c:406:	ilits->ges_sym.alphabet_line_2_right = ALPHABET_LINE_2_RIGHT;
+ilitek_v3_i2c.c:407:	ilits->ges_sym.alphabet_m = ALPHABET_M;
+ilitek_v3_i2c.c:408:	ilits->ges_sym.alphabet_w = ALPHABET_W;
+ilitek_v3_i2c.c:409:	ilits->ges_sym.alphabet_c = ALPHABET_C;
+ilitek_v3_i2c.c:410:	ilits->ges_sym.alphabet_E = ALPHABET_E;
+ilitek_v3_i2c.c:411:	ilits->ges_sym.alphabet_V = ALPHABET_V;
+ilitek_v3_i2c.c:412:	ilits->ges_sym.alphabet_O = ALPHABET_O;
+ilitek_v3_i2c.c:413:	ilits->ges_sym.alphabet_S = ALPHABET_S;
+ilitek_v3_i2c.c:414:	ilits->ges_sym.alphabet_Z = ALPHABET_Z;
+ilitek_v3_i2c.c:415:	ilits->ges_sym.alphabet_V_down = ALPHABET_V_DOWN;
+ilitek_v3_i2c.c:416:	ilits->ges_sym.alphabet_V_left = ALPHABET_V_LEFT;
+ilitek_v3_i2c.c:417:	ilits->ges_sym.alphabet_V_right = ALPHABET_V_RIGHT;
+ilitek_v3_i2c.c:418:	ilits->ges_sym.alphabet_two_line_2_bottom = ALPHABET_TWO_LINE_2_BOTTOM;
+ilitek_v3_i2c.c:419:	ilits->ges_sym.alphabet_F = ALPHABET_F;
+ilitek_v3_i2c.c:420:	ilits->ges_sym.alphabet_AT = ALPHABET_AT;
+ilitek_v3_i2c.c:470:	struct touch_bus_info *info = (struct touch_bus_info *)ilits->hwif->info;
+ilitek_v3_spi.c:57:	memset(ilits->spi_tx, 0x0, SPI_TX_BUF_SIZE);
+ilitek_v3_spi.c:58:	memset(ilits->spi_rx, 0x0, SPI_RX_BUF_SIZE);
+ilitek_v3_spi.c:73:		memcpy(ilits->spi_tx, (u8 *)txbuf, xferlen);
+ilitek_v3_spi.c:80:			xfer[xfercnt].tx_buf = ilits->spi_tx + xfercnt * DMA_TRANSFER_MAX_LEN;
+ilitek_v3_spi.c:93:		if (!atomic_read(&ilits->ice_stat))
+ilitek_v3_spi.c:96:		memcpy(ilits->spi_tx, txbuf, n_tx);
+ilitek_v3_spi.c:110:			xfer[xfercnt].tx_buf = ilits->spi_tx;
+ilitek_v3_spi.c:111:			xfer[xfercnt].rx_buf = ilits->spi_rx + xfercnt * DMA_TRANSFER_MAX_LEN;
+ilitek_v3_spi.c:118:			if (ilits->spi_rx[1] != SPI_ACK && !atomic_read(&ilits->ice_stat)) {
+ilitek_v3_spi.c:120:				ILI_ERR("Do spi recovery: rxbuf[1] = 0x%x, ice = %d\n", ilits->spi_rx[1], atomic_read(&ilits->ice_stat));
+ilitek_v3_spi.c:124:			memcpy((u8 *)rxbuf, ilits->spi_rx + offset + 1, n_rx);
+ilitek_v3_spi.c:161:	memset(ilits->spi_tx, 0x0, SPI_TX_BUF_SIZE);
+ilitek_v3_spi.c:162:	memset(ilits->spi_rx, 0x0, SPI_RX_BUF_SIZE);
+ilitek_v3_spi.c:183:		memcpy(ilits->spi_tx, (u8 *)txbuf, xferlen);
+ilitek_v3_spi.c:190:			xfer[xfercnt].tx_buf = ilits->spi_tx + xfercnt * DMA_TRANSFER_MAX_LEN;
+ilitek_v3_spi.c:203:		if (!atomic_read(&ilits->ice_stat))
+ilitek_v3_spi.c:206:		memcpy(ilits->spi_tx, txbuf, n_tx);
+ilitek_v3_spi.c:226:			xfer[xfercnt].tx_buf = ilits->spi_tx;
+ilitek_v3_spi.c:227:			xfer[xfercnt].rx_buf = ilits->spi_rx + xfercnt * DMA_TRANSFER_MAX_LEN;
+ilitek_v3_spi.c:234:			if (ilits->spi_rx[1] != SPI_ACK && !atomic_read(&ilits->ice_stat)) {
+ilitek_v3_spi.c:236:				ILI_ERR("Do spi recovery: rxbuf[1] = 0x%x, ice = %d\n", ilits->spi_rx[1], atomic_read(&ilits->ice_stat));
+ilitek_v3_spi.c:240:			memcpy((u8 *)rxbuf, ilits->spi_rx + offset + 1, n_rx);
+ilitek_v3_spi.c:287:		if (!atomic_read(&ilits->ice_stat))
+ilitek_v3_spi.c:298:		memset(ilits->spi_tx, 0x0, SPI_TX_BUF_SIZE);
+ilitek_v3_spi.c:299:		memset(ilits->spi_rx, 0x0, SPI_RX_BUF_SIZE);
+ilitek_v3_spi.c:302:		memcpy(ilits->spi_tx, txbuf, n_tx);
+ilitek_v3_spi.c:303:		xfer.tx_buf = ilits->spi_tx;
+ilitek_v3_spi.c:304:		xfer.rx_buf = ilits->spi_rx;
+ilitek_v3_spi.c:309:			if (ilits->spi_rx[1] != SPI_ACK && !atomic_read(&ilits->ice_stat)) {
+ilitek_v3_spi.c:311:				ILI_ERR("Do spi recovery: rxbuf[1] = 0x%x, ice = %d\n", ilits->spi_rx[1], atomic_read(&ilits->ice_stat));
+ilitek_v3_spi.c:315:			memcpy((u8 *)rxbuf, ilits->spi_rx + offset + 1, n_rx);
+ilitek_v3_spi.c:334:	if (!atomic_read(&ilits->mp_stat) || cdc != P5_X_SET_CDC_INIT ||
+ilitek_v3_spi.c:335:		ilits->chip->core_ver >= CORE_VER_1430)
+ilitek_v3_spi.c:345:	if (ilits->spi_write_then_read(ilits->spi, pre, 5, NULL, 0) < 0) {
+ilitek_v3_spi.c:354:	if (ilits->spi_write_then_read(ilits->spi, pre, 4, NULL, 0) < 0) {
+ilitek_v3_spi.c:378:	if (ilits->spi_write_then_read(ilits->spi, wdata, wlen, NULL, 0) < 0) {
+ilitek_v3_spi.c:392:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_spi.c:419:	if (ilits->int_pulse)
+ilitek_v3_spi.c:420:		ilits->detect_int_stat = ili_ic_check_int_pulse;
+ilitek_v3_spi.c:422:		ilits->detect_int_stat = ili_ic_check_int_level;
+ilitek_v3_spi.c:425:		atomic_set(&ilits->cmd_int_check, ENABLE);
+ilitek_v3_spi.c:429:		atomic_set(&ilits->ignore_report, START);
+ilitek_v3_spi.c:431:		if (ilits->pll_clk_wakeup == true) {
+ilitek_v3_spi.c:433:		if ((ilits->pll_clk_wakeup == true) && (ilits->tp_suspend == true)) {
+ilitek_v3_spi.c:459:		if (atomic_read(&ilits->mp_stat) && wdata[index] == P5_X_SET_CDC_INIT) {
+ilitek_v3_spi.c:468:		ret = ilits->spi_write_then_read(ilits->spi, wdata, wlen, txbuf, 0);
+ilitek_v3_spi.c:480:			if (ilits->detect_int_stat(false) < 0) {
+ilitek_v3_spi.c:493:		ret = ilits->spi_write_then_read(ilits->spi, wdata, 1, rxbuf, rlen);
+ilitek_v3_spi.c:504:	atomic_set(&ilits->ignore_report, END);
+ilitek_v3_spi.c:507:		atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_spi.c:539:	ilits->spi->mode = SPI_MODE_0;
+ilitek_v3_spi.c:540:	ilits->spi->bits_per_word = 8;
+ilitek_v3_spi.c:541:	ilits->spi->max_speed_hz = freq[num];
+ilitek_v3_spi.c:543:	if (spi_setup(ilits->spi) < 0) {
+ilitek_v3_spi.c:549:			ilits->spi->modalias,
+ilitek_v3_spi.c:550:			ilits->spi->master->bus_num,
+ilitek_v3_spi.c:551:			ilits->spi->chip_select,
+ilitek_v3_spi.c:552:			ilits->spi->mode,
+ilitek_v3_spi.c:553:			ilits->spi->max_speed_hz);
+ilitek_v3_spi.c:581:	ilits->update_buf = kzalloc(MAX_HEX_FILE_SIZE, GFP_KERNEL | GFP_DMA);
+ilitek_v3_spi.c:582:	if (ERR_ALLOC_MEM(ilits->update_buf)) {
+ilitek_v3_spi.c:588:	ilits->tr_buf = kzalloc(TR_BUF_SIZE, GFP_ATOMIC);
+ilitek_v3_spi.c:589:	if (ERR_ALLOC_MEM(ilits->tr_buf)) {
+ilitek_v3_spi.c:594:	ilits->spi_tx = kzalloc(SPI_TX_BUF_SIZE, GFP_KERNEL | GFP_DMA);
+ilitek_v3_spi.c:595:	if (ERR_ALLOC_MEM(ilits->spi_tx)) {
+ilitek_v3_spi.c:600:	ilits->spi_rx = kzalloc(SPI_RX_BUF_SIZE, GFP_KERNEL | GFP_DMA);
+ilitek_v3_spi.c:601:	if (ERR_ALLOC_MEM(ilits->spi_rx)) {
+ilitek_v3_spi.c:606:	ilits->gcoord = kzalloc(sizeof(struct gesture_coordinate), GFP_KERNEL);
+ilitek_v3_spi.c:607:	if (ERR_ALLOC_MEM(ilits->gcoord)) {
+ilitek_v3_spi.c:612:	ilits->i2c = NULL;
+ilitek_v3_spi.c:613:	ilits->spi = spi;
+ilitek_v3_spi.c:614:	ilits->dev = &spi->dev;
+ilitek_v3_spi.c:615:	ilits->hwif = info->hwif;
+ilitek_v3_spi.c:616:	ilits->phys = "SPI";
+ilitek_v3_spi.c:617:	ilits->wrapper = ili_spi_wrapper;
+ilitek_v3_spi.c:618:	ilits->detect_int_stat = ili_ic_check_int_pulse;
+ilitek_v3_spi.c:619:	ilits->int_pulse = true;
+ilitek_v3_spi.c:620:	ilits->mp_retry = false;
+ilitek_v3_spi.c:623:	ilits->spi_write_then_read = ili_spi_write_then_read_split;
+ilitek_v3_spi.c:625:	ilits->spi_write_then_read = ili_spi_write_then_read_direct;
+ilitek_v3_spi.c:628:	ilits->actual_tp_mode = P5_X_FW_AP_MODE;
+ilitek_v3_spi.c:629:	ilits->tp_data_format = DATA_FORMAT_DEMO;
+ilitek_v3_spi.c:630:	ilits->tp_data_len = P5_X_DEMO_MODE_PACKET_LEN;
+ilitek_v3_spi.c:631:	ilits->tp_data_mode = AP_MODE;
+ilitek_v3_spi.c:634:		ilits->reset = TP_IC_WHOLE_RST;
+ilitek_v3_spi.c:636:		ilits->reset = TP_HW_RST_ONLY;
+ilitek_v3_spi.c:638:	ilits->rst_edge_delay = 10;
+ilitek_v3_spi.c:639:	ilits->fw_open = FILP_OPEN;
+ilitek_v3_spi.c:640:	ilits->fw_upgrade_mode = UPGRADE_IRAM;
+ilitek_v3_spi.c:641:	ilits->mp_move_code = ili_move_mp_code_iram;
+ilitek_v3_spi.c:642:	ilits->gesture_move_code = ili_move_gesture_code_iram;
+ilitek_v3_spi.c:643:	ilits->esd_recover = ili_wq_esd_spi_check;
+ilitek_v3_spi.c:644:	ilits->esd_func_ctrl = ENABLE_WQ_ESD;
+ilitek_v3_spi.c:645:	ilits->ges_recover = ili_touch_esd_gesture_iram;
+ilitek_v3_spi.c:646:	ilits->gesture_mode = DATA_FORMAT_GESTURE_INFO;
+ilitek_v3_spi.c:647:	ilits->gesture_demo_ctrl = DISABLE;
+ilitek_v3_spi.c:648:	ilits->wtd_ctrl = OFF;
+ilitek_v3_spi.c:649:	ilits->report = ENABLE;
+ilitek_v3_spi.c:650:	ilits->netlink = DISABLE;
+ilitek_v3_spi.c:651:	ilits->dnp = DISABLE;
+ilitek_v3_spi.c:652:	ilits->irq_tirgger_type = IRQF_TRIGGER_FALLING;
+ilitek_v3_spi.c:653:	ilits->info_from_hex = ENABLE;
+ilitek_v3_spi.c:654:	ilits->wait_int_timeout = AP_INT_TIMEOUT;
+ilitek_v3_spi.c:656:	ilits->current_report_rate_mode = DDI60_TP120; 	/*Default report mode*/
+ilitek_v3_spi.c:660:	ilits->gesture = DISABLE;
+ilitek_v3_spi.c:661:	ilits->ges_sym.double_tap = DOUBLE_TAP;
+ilitek_v3_spi.c:662:	ilits->ges_sym.alphabet_line_2_top = ALPHABET_LINE_2_TOP;
+ilitek_v3_spi.c:663:	ilits->ges_sym.alphabet_line_2_bottom = ALPHABET_LINE_2_BOTTOM;
+ilitek_v3_spi.c:664:	ilits->ges_sym.alphabet_line_2_left = ALPHABET_LINE_2_LEFT;
+ilitek_v3_spi.c:665:	ilits->ges_sym.alphabet_line_2_right = ALPHABET_LINE_2_RIGHT;
+ilitek_v3_spi.c:666:	ilits->ges_sym.alphabet_m = ALPHABET_M;
+ilitek_v3_spi.c:667:	ilits->ges_sym.alphabet_w = ALPHABET_W;
+ilitek_v3_spi.c:668:	ilits->ges_sym.alphabet_c = ALPHABET_C;
+ilitek_v3_spi.c:669:	ilits->ges_sym.alphabet_E = ALPHABET_E;
+ilitek_v3_spi.c:670:	ilits->ges_sym.alphabet_V = ALPHABET_V;
+ilitek_v3_spi.c:671:	ilits->ges_sym.alphabet_O = ALPHABET_O;
+ilitek_v3_spi.c:672:	ilits->ges_sym.alphabet_S = ALPHABET_S;
+ilitek_v3_spi.c:673:	ilits->ges_sym.alphabet_Z = ALPHABET_Z;
+ilitek_v3_spi.c:674:	ilits->ges_sym.alphabet_V_down = ALPHABET_V_DOWN;
+ilitek_v3_spi.c:675:	ilits->ges_sym.alphabet_V_left = ALPHABET_V_LEFT;
+ilitek_v3_spi.c:676:	ilits->ges_sym.alphabet_V_right = ALPHABET_V_RIGHT;
+ilitek_v3_spi.c:677:	ilits->ges_sym.alphabet_two_line_2_bottom = ALPHABET_TWO_LINE_2_BOTTOM;
+ilitek_v3_spi.c:678:	ilits->ges_sym.alphabet_F = ALPHABET_F;
+ilitek_v3_spi.c:679:	ilits->ges_sym.alphabet_AT = ALPHABET_AT;
+ilitek_v3_spi.c:732:	struct touch_bus_info *info = (struct touch_bus_info *)ilits->hwif->info;
+ilitek_v3_spi.c:735:	kfree(ilits->update_buf);
+ilitek_v3_spi.c:736:	kfree(ilits->spi_tx);
+ilitek_v3_spi.c:737:	kfree(ilits->spi_rx);
+ilitek_v3_ic.c:91:	switch (ilits->chip->id) {
+ilitek_v3_ic.c:93:		if (ilits->chip->type == 0x1D) {
+ilitek_v3_ic.c:107:		if (ilits->chip->type == 0x1F) {
+ilitek_v3_ic.c:204:	ret = ilits->wrapper(NULL, 0, &roi_status, sizeof(roi_status), OFF, OFF);
+ilitek_v3_ic.c:231:	ilits->chip->pid = pid;
+ilitek_v3_ic.c:233:	ilits->chip->reset_key = 0x00019878;
+ilitek_v3_ic.c:234:	ilits->chip->wtd_key = 0x9881;
+ilitek_v3_ic.c:237:		ilits->chip->dma_reset = ENABLE;
+ilitek_v3_ic.c:239:		ilits->chip->dma_reset = DISABLE;
+ilitek_v3_ic.c:242:	ilits->chip->no_bk_shift = RAWDATA_NO_BK_SHIFT;
+ilitek_v3_ic.c:243:	ilits->chip->max_count = 0x1FFFF;
+ilitek_v3_ic.c:274:	if (!atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:287:	ret = ilits->wrapper(txbuf, len + 4, NULL, 0, OFF, OFF);
+ilitek_v3_ic.c:300:	if (!atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:310:	ret = ilits->wrapper(txbuf, sizeof(txbuf), NULL, 0, OFF, OFF);
+ilitek_v3_ic.c:321:	ret = ilits->wrapper(NULL, 0, rxbuf, len, OFF, OFF);
+ilitek_v3_ic.c:350:		if (atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:358:		atomic_set(&ilits->ice_stat, ENABLE);
+ilitek_v3_ic.c:360:		if (ilits->wrapper(cmd_open, sizeof(cmd_open), NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_ic.c:362:			atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3_ic.c:364:		ilits->pll_clk_wakeup = false;
+ilitek_v3_ic.c:371:		if (!atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:376:		ret = ilits->wrapper(cmd_close, sizeof(cmd_close), NULL, 0, OFF, OFF);
+ilitek_v3_ic.c:379:			atomic_set(&ilits->ice_stat, ENABLE);
+ilitek_v3_ic.c:381:			atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3_ic.c:382:			ilits->pll_clk_wakeup = true;
+ilitek_v3_ic.c:383:			atomic_set(&ilits->ignore_report, END);
+ilitek_v3_ic.c:396:	ilits->edge_palm_para[0] = P5_X_EDGE_PLAM_CTRL_1;
+ilitek_v3_ic.c:397:	ilits->edge_palm_para[1] = P5_X_EDGE_PALM_TUNING_PARA;
+ilitek_v3_ic.c:398:	ilits->edge_palm_para[2] = (ZONE_A_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:399:	ilits->edge_palm_para[3] = ZONE_A_W & 0xFF;
+ilitek_v3_ic.c:400:	ilits->edge_palm_para[4] = (ZONE_B_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:401:	ilits->edge_palm_para[5] = ZONE_B_W & 0xFF;
+ilitek_v3_ic.c:402:	ilits->edge_palm_para[6] = (ZONE_A_ROTATION_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:403:	ilits->edge_palm_para[7] = ZONE_A_ROTATION_W & 0xFF;
+ilitek_v3_ic.c:404:	ilits->edge_palm_para[8] = (ZONE_B_ROTATION_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:405:	ilits->edge_palm_para[9] = ZONE_B_ROTATION_W & 0xFF;
+ilitek_v3_ic.c:406:	ilits->edge_palm_para[10] = (ZONE_C_WIDTH & 0xFF00) >> 8;
+ilitek_v3_ic.c:407:	ilits->edge_palm_para[11] = ZONE_C_WIDTH & 0xFF;
+ilitek_v3_ic.c:408:	ilits->edge_palm_para[12] = (ZONE_C_HEIGHT & 0xFF00) >> 8;
+ilitek_v3_ic.c:409:	ilits->edge_palm_para[13] = ZONE_C_HEIGHT & 0xFF;
+ilitek_v3_ic.c:410:	ilits->edge_palm_para[14] = (ZONE_C_HEIGHT_LITTLE & 0xFF00) >> 8;
+ilitek_v3_ic.c:411:	ilits->edge_palm_para[15] = ZONE_C_HEIGHT_LITTLE & 0xFF;
+ilitek_v3_ic.c:412:	ilits->edge_palm_para[16] = (ZONE_A_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:413:	ilits->edge_palm_para[17] = ZONE_A_W & 0xFF;
+ilitek_v3_ic.c:414:	ilits->edge_palm_para[18] = (ZONE_B_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:415:	ilits->edge_palm_para[19] = ZONE_B_W & 0xFF;
+ilitek_v3_ic.c:416:	ilits->edge_palm_para[20] = (ZONE_A_ROTATION_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:417:	ilits->edge_palm_para[21] = ZONE_A_ROTATION_W & 0xFF;
+ilitek_v3_ic.c:418:	ilits->edge_palm_para[22] = (ZONE_B_ROTATION_W & 0xFF00) >> 8;
+ilitek_v3_ic.c:419:	ilits->edge_palm_para[23] = ZONE_B_ROTATION_W & 0xFF;
+ilitek_v3_ic.c:420:	ilits->edge_palm_para[24] = (ZONE_C_WIDTH & 0xFF00) >> 8;
+ilitek_v3_ic.c:421:	ilits->edge_palm_para[25] = ZONE_C_WIDTH & 0xFF;
+ilitek_v3_ic.c:422:	ilits->edge_palm_para[26] = (ZONE_C_HEIGHT & 0xFF00) >> 8;
+ilitek_v3_ic.c:423:	ilits->edge_palm_para[27] = ZONE_C_HEIGHT & 0xFF;
+ilitek_v3_ic.c:424:	ilits->edge_palm_para[28] = (ZONE_C_HEIGHT_LITTLE & 0xFF00) >> 8;
+ilitek_v3_ic.c:425:	ilits->edge_palm_para[29] = ZONE_C_HEIGHT_LITTLE & 0xFF;
+ilitek_v3_ic.c:426:	ilits->edge_palm_para[30] = ili_calc_packet_checksum(ilits->edge_palm_para, P5_X_EDGE_PALM_PARA_LENGTH - 1);
+ilitek_v3_ic.c:429:		ILI_DBG("edge_palm_para[%d] = 0x%2x\n", i, ilits->edge_palm_para[i]);
+ilitek_v3_ic.c:440:	ret = ilits->wrapper(ilits->edge_palm_para, P5_X_EDGE_PALM_PARA_LENGTH, NULL, 0, OFF, OFF);
+ilitek_v3_ic.c:464:	if (ilits->protocol->ver == PROTOCOL_VER_500) {
+ilitek_v3_ic.c:470:	if (ilits->protocol->ver >= PROTOCOL_VER_560) {
+ilitek_v3_ic.c:484:	ret = ilits->wrapper(func_ctrl[i].cmd, func_ctrl[i].len, NULL, 0, OFF, OFF);
+ilitek_v3_ic.c:521:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_ic.c:540:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_ic.c:547:		ilits->chip->reset_key, ilits->rst_edge_delay);
+ilitek_v3_ic.c:549:	ret = ili_ice_mode_write(ilits->chip->reset_addr, ilits->chip->reset_key, sizeof(u32));
+ilitek_v3_ic.c:556:	mdelay(ilits->rst_edge_delay);
+ilitek_v3_ic.c:622:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_ic.c:648:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_ic.c:683:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_ic.c:684:	u32 pc = 0, pc_addr = ilits->chip->pc_counter_addr;
+ilitek_v3_ic.c:685:	u32 latch = 0, latch_addr = ilits->chip->pc_latch_addr;
+ilitek_v3_ic.c:700:	if (ili_ice_mode_read(ilits->chip->pc_counter_addr, &pc, sizeof(u32)) < 0)
+ilitek_v3_ic.c:703:	if (ili_ice_mode_read(ilits->chip->pc_latch_addr, &latch, sizeof(u32)) < 0)
+ilitek_v3_ic.c:706:	ilits->fw_pc = pc;
+ilitek_v3_ic.c:707:	ilits->fw_latch = latch;
+ilitek_v3_ic.c:709:		pc_addr, ilits->fw_pc, latch_addr, ilits->fw_latch);
+ilitek_v3_ic.c:713:	// 	atomic_set(&ilits->ice_stat, DISABLE);
+ilitek_v3_ic.c:727:		ILI_ERR("Write CMD error, set back to <%s> trigger\n", ilits->int_pulse ? "Level" : "Pulse");
+ilitek_v3_ic.c:731:	ilits->int_pulse = pulse;
+ilitek_v3_ic.c:732:	ILI_INFO("INT Trigger = %s\n", ilits->int_pulse ? "Level" : "Pulse");
+ilitek_v3_ic.c:739:	int gpio = IRQ_GPIO_NUM; //ilits->tp_int
+ilitek_v3_ic.c:766:	if (!wait_event_interruptible_timeout(ilits->inq, !atomic_read(&ilits->cmd_int_check), msecs_to_jiffies(ilits->wait_int_timeout))) {
+ilitek_v3_ic.c:767:		ILI_ERR("Error! INT pulse no detected. Timeout = %d ms\n", ilits->wait_int_timeout);
+ilitek_v3_ic.c:768:		atomic_set(&ilits->cmd_int_check, DISABLE);
+ilitek_v3_ic.c:783:	if (ilits->actual_tp_mode == P5_X_FW_AP_MODE)
+ilitek_v3_ic.c:785:	else if (ilits->actual_tp_mode == P5_X_FW_TEST_MODE)
+ilitek_v3_ic.c:788:		ILI_ERR("Unknown TP mode (0x%x)\n", ilits->actual_tp_mode);
+ilitek_v3_ic.c:795:		if (ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF) < 0)
+ilitek_v3_ic.c:798:		if (ilits->wrapper(&cmd[1], sizeof(u8), &busy, sizeof(u8), irq, OFF) < 0)
+ilitek_v3_ic.c:820:	bool ice = atomic_read(&ilits->ice_stat);
+ilitek_v3_ic.c:874:	ilits->protocol->core_ver_len = P5_X_CORE_VER_FOUR_LENGTH;
+ilitek_v3_ic.c:876:	if (ilits->info_from_hex) {
+ilitek_v3_ic.c:877:		buf[1] = ilits->fw_info[68];
+ilitek_v3_ic.c:878:		buf[2] = ilits->fw_info[69];
+ilitek_v3_ic.c:879:		buf[3] = ilits->fw_info[70];
+ilitek_v3_ic.c:880:		buf[4] = ilits->fw_info[71];
+ilitek_v3_ic.c:891:			ilits->protocol->core_ver_len = P5_X_CORE_VER_THREE_LENGTH;
+ilitek_v3_ic.c:894:		if (ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF) < 0)
+ilitek_v3_ic.c:897:		if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->core_ver_len, ON, OFF) < 0)
+ilitek_v3_ic.c:918:	ilits->chip->core_ver = buf[1] << 24 | buf[2] << 16 | buf[3] << 8 | buf[4];
+ilitek_v3_ic.c:938:	if (ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_ic.c:950:	if (ilits->info_from_hex) {
+ilitek_v3_ic.c:951:		buf[1] = ilits->fw_info[48];
+ilitek_v3_ic.c:952:		buf[2] = ilits->fw_info[49];
+ilitek_v3_ic.c:953:		buf[3] = ilits->fw_info[50];
+ilitek_v3_ic.c:954:		buf[4] = ilits->fw_info[51];
+ilitek_v3_ic.c:955:		buf[5] = ilits->fw_mp_ver[0];
+ilitek_v3_ic.c:956:		buf[6] = ilits->fw_mp_ver[1];
+ilitek_v3_ic.c:957:		buf[7] = ilits->fw_mp_ver[2];
+ilitek_v3_ic.c:958:		buf[8] = ilits->fw_mp_ver[3];
+ilitek_v3_ic.c:965:	if (ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_ic.c:972:	if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->fw_ver_len, ON, OFF) < 0) {
+ilitek_v3_ic.c:986:	ilits->chip->fw_ver = buf[1] << 24 | buf[2] << 16 | buf[3] << 8 | buf[4];
+ilitek_v3_ic.c:987:	ilits->chip->fw_mp_ver = buf[5] << 24 | buf[6] << 16 | buf[7] << 8 | buf[8];
+ilitek_v3_ic.c:996:	u8 len = ilits->protocol->panel_info_len;
+ilitek_v3_ic.c:998:	if (ilits->info_from_hex && (ilits->chip->core_ver >= CORE_VER_1410)) {
+ilitek_v3_ic.c:999:		buf[1] = ilits->fw_info[16];
+ilitek_v3_ic.c:1000:		buf[2] = ilits->fw_info[17];
+ilitek_v3_ic.c:1001:		buf[3] = ilits->fw_info[18];
+ilitek_v3_ic.c:1002:		buf[4] = ilits->fw_info[19];
+ilitek_v3_ic.c:1003:		ilits->panel_wid = buf[2] << 8 | buf[1];
+ilitek_v3_ic.c:1004:		ilits->panel_hei = buf[4] << 8 | buf[3];
+ilitek_v3_ic.c:1005:		ilits->trans_xy = (ilits->chip->core_ver >= CORE_VER_1430
+ilitek_v3_ic.c:1006:			&& (ilits->rib.nReportByPixel > 0)) ? ON : OFF;
+ilitek_v3_ic.c:1010:	len = (ilits->chip->core_ver >= CORE_VER_1430) ? 6 : len;
+ilitek_v3_ic.c:1012:	ret = ilits->wrapper(&cmd, sizeof(cmd), buf, len, ON, OFF);
+ilitek_v3_ic.c:1018:		ilits->panel_wid = TOUCH_SCREEN_X_MAX;
+ilitek_v3_ic.c:1019:		ilits->panel_hei = TOUCH_SCREEN_Y_MAX;
+ilitek_v3_ic.c:1020:		ilits->trans_xy = OFF;
+ilitek_v3_ic.c:1022:		ilits->panel_wid = buf[1] << 8 | buf[2];
+ilitek_v3_ic.c:1023:		ilits->panel_hei = buf[3] << 8 | buf[4];
+ilitek_v3_ic.c:1024:		ilits->trans_xy = (ilits->chip->core_ver >= CORE_VER_1430) ? buf[5] : OFF;
+ilitek_v3_ic.c:1027:	if (ilits->chip->core_ver >= CORE_VER_1470) {
+ilitek_v3_ic.c:1029:		ret = ilits->wrapper(&cmd, sizeof(cmd), buf, 2, ON, OFF);
+ilitek_v3_ic.c:1035:			ilits->rib.nReportResolutionMode = POSITION_LOW_RESOLUTION;
+ilitek_v3_ic.c:1036:			ilits->rib.nCustomerType = POSITION_CUSTOMER_TYPE_OFF;
+ilitek_v3_ic.c:1038:			ilits->rib.nReportResolutionMode = buf[1] & 0x07;
+ilitek_v3_ic.c:1039:			ilits->rib.nCustomerType = buf[1] >> 3;
+ilitek_v3_ic.c:1042:		ilits->rib.nReportResolutionMode = POSITION_LOW_RESOLUTION;
+ilitek_v3_ic.c:1043:		ilits->rib.nCustomerType = POSITION_CUSTOMER_TYPE_OFF;
+ilitek_v3_ic.c:1047:	ILI_INFO("Panel info: width = %d, height = %d\n", ilits->panel_wid, ilits->panel_hei);
+ilitek_v3_ic.c:1048:	ILI_INFO("Transfer touch coordinate = %s\n", ilits->trans_xy ? "ON" : "OFF");
+ilitek_v3_ic.c:1049:	ILI_INFO("Customer Type = %X\n", ilits->rib.nCustomerType);
+ilitek_v3_ic.c:1050:	ILI_INFO("Report Resolution Format Mode = %X\n", ilits->rib.nReportResolutionMode);
+ilitek_v3_ic.c:1060:	if (ilits->info_from_hex  && (ilits->chip->core_ver >= CORE_VER_1410)) {
+ilitek_v3_ic.c:1061:		buf[1] = ilits->fw_info[5];
+ilitek_v3_ic.c:1062:		buf[2] = ilits->fw_info[7];
+ilitek_v3_ic.c:1063:		buf[3] = ilits->fw_info[8];
+ilitek_v3_ic.c:1064:		buf[4] = ilits->fw_info[9];
+ilitek_v3_ic.c:1065:		buf[5] = ilits->fw_info[10];
+ilitek_v3_ic.c:1066:		buf[6] = ilits->fw_info[11];
+ilitek_v3_ic.c:1067:		buf[7] = ilits->fw_info[12];
+ilitek_v3_ic.c:1068:		buf[8] = ilits->fw_info[14];
+ilitek_v3_ic.c:1077:	if (ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_ic.c:1084:	ret = ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->tp_info_len, ON, OFF);
+ilitek_v3_ic.c:1097:	ilits->min_x = buf[1];
+ilitek_v3_ic.c:1098:	ilits->min_y = buf[2];
+ilitek_v3_ic.c:1099:	ilits->max_x = buf[4] << 8 | buf[3];
+ilitek_v3_ic.c:1100:	ilits->max_y = buf[6] << 8 | buf[5];
+ilitek_v3_ic.c:1101:	ilits->xch_num = buf[7];
+ilitek_v3_ic.c:1102:	ilits->ych_num = buf[8];
+ilitek_v3_ic.c:1103:	ilits->stx = buf[11];
+ilitek_v3_ic.c:1104:	ilits->srx = buf[12];
+ilitek_v3_ic.c:1106:	ILI_INFO("TP Info: min_x = %d, min_y = %d, max_x = %d, max_y = %d\n", ilits->min_x, ilits->min_y, ilits->max_x, ilits->max_y);
+ilitek_v3_ic.c:1107:	ILI_INFO("TP Info: xch = %d, ych = %d, stx = %d, srx = %d\n", ilits->xch_num, ilits->ych_num, ilits->stx, ilits->srx);
+ilitek_v3_ic.c:1115:	if (ilits->protocol->ver == pver) {
+ilitek_v3_ic.c:1122:			ilits->protocol = &protocol_info[i];
+ilitek_v3_ic.c:1123:			ILI_INFO("update protocol version = %x\n", ilits->protocol->ver);
+ilitek_v3_ic.c:1129:	ilits->protocol = &protocol_info[PROTOCL_VER_NUM - 1];
+ilitek_v3_ic.c:1139:	if (ilits->info_from_hex) {
+ilitek_v3_ic.c:1140:		buf[1] = ilits->fw_info[72];
+ilitek_v3_ic.c:1141:		buf[2] = ilits->fw_info[73];
+ilitek_v3_ic.c:1142:		buf[3] = ilits->fw_info[74];
+ilitek_v3_ic.c:1149:	if (ilits->wrapper(cmd, sizeof(cmd), NULL, 0, OFF, OFF) < 0) {
+ilitek_v3_ic.c:1156:	if (ilits->wrapper(&cmd[1], sizeof(u8), buf, ilits->protocol->pro_ver_len, ON, OFF) < 0) {
+ilitek_v3_ic.c:1173:	ILI_INFO("Protocol version = %d.%d.%d\n", ilits->protocol->ver >> 16,
+ilitek_v3_ic.c:1174:		(ilits->protocol->ver >> 8) & 0xFF, ilits->protocol->ver & 0xFF);
+ilitek_v3_ic.c:1182:	if (!atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:1188:	if (ili_ice_mode_read(ilits->chip->pid_addr, &ilits->chip->pid, sizeof(u32)) < 0)
+ilitek_v3_ic.c:1191:	if (ili_ice_mode_read(ilits->chip->otp_addr, &ilits->chip->otp_id, sizeof(u32)) < 0)
+ilitek_v3_ic.c:1193:	if (ili_ice_mode_read(ilits->chip->ana_addr, &ilits->chip->ana_id, sizeof(u32)) < 0)
+ilitek_v3_ic.c:1196:	ilits->chip->id = ilits->chip->pid >> 16;
+ilitek_v3_ic.c:1197:	ilits->chip->type = (ilits->chip->pid & 0x0000FF00) >> 8;
+ilitek_v3_ic.c:1198:	ilits->chip->ver = ilits->chip->pid & 0xFF;
+ilitek_v3_ic.c:1199:	ilits->chip->otp_id &= 0xFF;
+ilitek_v3_ic.c:1200:	ilits->chip->ana_id &= 0xFF;
+ilitek_v3_ic.c:1202:	ILI_INFO("CHIP: PID = %x\n", (ilits->chip->pid >> 8));
+ilitek_v3_ic.c:1204:	ret = ilitek_tddi_ic_check_support(ilits->chip->pid, ilits->chip->id);
+ilitek_v3_ic.c:1215:	if (!atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:1230:				ilits->eng_flow = true;
+ilitek_v3_ic.c:1232:				ilits->eng_flow = false;
+ilitek_v3_ic.c:1242:	ILI_INFO("Ilitek IC check successe ilits->eng_flow = %d\n", ilits->eng_flow);
+ilitek_v3_ic.c:1244:	if (!atomic_read(&ilits->ice_stat)) {
+ilitek_v3_ic.c:1269:	ILI_INFO("current report rate mode = %x\n", ilits->current_report_rate_mode);
+ilitek_v3_ic.c:1271:	if (mode == ilits->current_report_rate_mode) {
+ilitek_v3_ic.c:1272:		ILI_INFO("set mode = %x, same as current mode = %x\n", mode, ilits->current_report_rate_mode);
+ilitek_v3_ic.c:1281:	ret = ilits->wrapper(cmd, 4, NULL, 0, OFF, OFF);
+ilitek_v3_ic.c:1286:	ilits->current_report_rate_mode = mode;
+ilitek_v3_ic.c:1299:	ret = ilits->wrapper(cmd, 3, rxbuf, 4, OFF, OFF);
+ilitek_v3_ic.c:1315:	ILI_INFO("current_report_rate_mode: %X when reset\n", ilits->current_report_rate_mode);
+ilitek_v3_ic.c:1316:	ret = ili_ice_mode_write(0x4005E, (0x5A00 | (ilits->current_report_rate_mode & 0xFF)), 2);
+ilitek_v3_ic.c:1334:	ilits->protocol = &protocol_info[PROTOCL_VER_NUM - 1];
+ilitek_v3_ic.c:1335:	ilits->chip = &chip;
