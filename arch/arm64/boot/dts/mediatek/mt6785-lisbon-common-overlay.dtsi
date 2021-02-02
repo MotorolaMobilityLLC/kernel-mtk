@@ -68,6 +68,12 @@
 		aw99703,efuse-config = <0x1C 0x61 0x61 0x4C 0x2C 0xC0 0x08 0x00 0x01 0xC0 0x00 0x00 0x50>;
 		status = "okay";
 	};
+	i2c_lcd_bias@3e {
+		compatible = "mediatek,i2c_lcd_bias";
+		reg = <0x3E>;
+		id = <6>;
+		status = "okay";
+	};
 };
 
 /* accdet start */
@@ -209,13 +215,42 @@
 			pinmux = <PINMUX_GPIO43__FUNC_DSI_TE>;
 		};
 	};
+	mtkfb_pins_lcd_ldo_en0_gpio: lcd_ldo_en1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	mtkfb_pins_lcd_ldo_en1_gpio: lcd_ldo_en0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_backlight_en0_gpio: lcd_backlight_en1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	mtkfb_pins_lcd_backlight_en1_gpio: lcd_backlight_en0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 
 &mtkfb {
 	pinctrl-names = "lcd_bias_enp1_gpio", "lcd_bias_enp0_gpio",
 		"lcd_bias_enn1_gpio", "lcd_bias_enn0_gpio",
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te";
+		"mode_te_te", "lcd_ldo_en1_gpio", "lcd_ldo_en0_gpio",
+		"lcd_backlight_en1_gpio","lcd_backlight_en0_gpio";
 	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
 	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
 	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
@@ -223,6 +258,10 @@
 	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
 	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-7 = <&mtkfb_pins_lcd_ldo_en1_gpio>;
+	pinctrl-8 = <&mtkfb_pins_lcd_ldo_en0_gpio>;
+	pinctrl-9 = <&mtkfb_pins_lcd_backlight_en1_gpio>;
+	pinctrl-10 = <&mtkfb_pins_lcd_backlight_en0_gpio>;
 	status = "okay";
 };
 
