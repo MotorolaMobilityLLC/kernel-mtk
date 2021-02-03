@@ -161,6 +161,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_TLV320AIC32X4_SPI if SPI_MASTER
 	select SND_SOC_TLV320AIC3X if I2C
 	select SND_SOC_TPA6130A2 if I2C
+	select SND_SMARTPA_AW882XX
 	select SND_SOC_TLV320DAC33 if I2C
 	select SND_SOC_TS3A227E if I2C
 	select SND_SOC_TWL4030 if TWL4030_CORE
@@ -1237,6 +1238,12 @@ config SND_SOC_NAU8825
 config SND_SOC_TPA6130A2
 	tristate "Texas Instruments TPA6130A2 headphone amplifier"
 	depends on I2C
+
+config SND_SMARTPA_AW882XX
+	tristate "SoC Audio for awinic aw882xxseries"
+	depends on I2C
+	help
+		This option enables support for aw882xxseries Smart PA.
 
 config SND_SOC_RT5509
 	tristate "Richtek RT5509 Smart AMP"
