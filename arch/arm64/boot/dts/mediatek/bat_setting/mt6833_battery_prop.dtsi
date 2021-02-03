@@ -64,6 +64,6 @@ bat_gm30: battery{
 /* Table numbers per battery*/
 	MULTI_TEMP_GAUGE0 = <(1)>;
 /* Multi gauge0 enable*/
-#include "mt6833_battery_table.dtsi"
+//#include "mt6833_battery_table.dtsi"
 #include "mt6833_battery_prop_dim2_ext.dtsi"
 };
