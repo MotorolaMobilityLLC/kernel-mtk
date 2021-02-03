@@ -559,6 +559,9 @@ obj-$(CONFIG_SND_SOC_FS16XX_KERNEL) +=foursemi/
 obj-$(CONFIG_SND_SOC_AW882XX_KERNEL) +=aw8882xx/
 obj-$(CONFIG_SND_SMARTPA_AW883XX) += aw883xx/
 
+#for AWINIC AW882XX Smart PA
+obj-$(CONFIG_SND_SMARTPA_AW882XX) += awinic/
+
 ifneq (, $(filter y,$(CONFIG_SND_SOC_MT6358) $(CONFIG_SND_SOC_MT6366)))
   MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
   subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
