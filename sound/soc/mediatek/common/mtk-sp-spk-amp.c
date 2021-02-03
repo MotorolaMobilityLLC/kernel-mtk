@@ -38,6 +38,9 @@
 #include "aw87339.h"
 #endif
 
+#ifdef CONFIG_SND_SMARTPA_AW882XX
+#include "../../codecs/awinic/aw882xx.h"
+#endif
 #define MTK_SPK_NAME "Speaker Codec"
 #define MTK_SPK_REF_NAME "Speaker Codec Ref"
 static unsigned int mtk_spk_type;
@@ -81,14 +84,23 @@ static struct mtk_spk_i2c_ctrl mtk_spk_list[MTK_SPK_TYPE_NUM] = {
 		.codec_name = "tfa98xx",
 	},
 #endif /* CONFIG_SND_SOC_TFA9874 */
+
+#ifdef CONFIG_SND_SMARTPA_AW882XX
+   // [MTK_SPK_AWINIC_AW882XX] = {
+    [MTK_SPK_AW_AWINIC] = {
+        .i2c_probe = aw882xx_i2c_probe,
+        .i2c_remove = aw882xx_i2c_remove,
+        .codec_dai_name = "aw882xx-aif",
+        .codec_name = "aw882xx_smartpa",
+    },
+#endif
 };
 
 static int mtk_spk_i2c_probe(struct i2c_client *client,
 			     const struct i2c_device_id *id)
 {
 	int i, ret = 0;
-
-	dev_info(&client->dev, "%s()\n", __func__);
+	pr_err("%s:   spk amp enter\n",__func__);
 
 	mtk_spk_type = MTK_SPK_NOT_SMARTPA;
 	for (i = 0; i < MTK_SPK_TYPE_NUM; i++) {
@@ -472,6 +484,7 @@ int mtk_spk_recv_ipi_buf_from_dsp(int8_t *buffer,
 EXPORT_SYMBOL(mtk_spk_recv_ipi_buf_from_dsp);
 
 static const struct i2c_device_id mtk_spk_i2c_id[] = {
+	{ "aw882xx_smartpa", 0},
 	{ "tfa98xx", 0},
 	{ "speaker_amp", 0},
 	{}
@@ -480,6 +493,7 @@ MODULE_DEVICE_TABLE(i2c, mtk_spk_i2c_id);
 
 #ifdef CONFIG_OF
 static const struct of_device_id mtk_spk_match_table[] = {
+	{.compatible = "awinic,aw882xx_smartpa",},
 	{.compatible = "nxp,tfa98xx",},
 	{.compatible = "mediatek,speaker_amp",},
 	{},

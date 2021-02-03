@@ -627,7 +627,7 @@ static struct mtk_panel_params ext_params = {
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 90,
 	},
-	.panel_hbm_mode = HBM_MODE_DCS_ONLY,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -678,7 +678,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 90,
 	},
-	.panel_hbm_mode = HBM_MODE_DCS_ONLY,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 
 static int panel_ext_reset(struct drm_panel *panel, int on)
