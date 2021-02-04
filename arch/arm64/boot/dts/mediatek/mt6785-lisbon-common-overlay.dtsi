@@ -413,4 +413,5 @@
 
 #include "mediatek/cust_mt6785_camera.dtsi"
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
+#include "mediatek/mt6785-moto-lisbon-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
