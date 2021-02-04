@@ -1,0 +1,87 @@
+
+
+&pio {
+	fingerprint_irq: fingerprint_irq {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO75__FUNC_GPIO75>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerprint_reset_high: fingerprint_reset_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO105__FUNC_GPIO105>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: fingerprint_reset_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO105__FUNC_GPIO105>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	fingerprint_ldo1p8_high: fingerprint_ldo1p8_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO79__FUNC_GPIO79>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_ldo1p8_low: fingerprint_ldo1p8_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO79__FUNC_GPIO79>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerprint_ldo3p3_high: fingerprint_ldo3p3_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_ldo3p3_low: fingerprint_ldo3p3_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&odm {
+	fingerprint_int: fingerprint_int {
+		compatible = "mediatek,fingerprint-fpc";
+		fpc,enable-wakeup;
+		interrupts = <GIC_SPI 75 IRQ_TYPE_EDGE_RISING>;
+		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+		pinctrl-0 = <&fingerprint_irq>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_reset_low>;
+		fpc,vdd= <&pio 79 0>;
+		fpc,irq = <&pio 75 0>;
+		/* clock-names = "parent-clk", "sel-clk", "spi-clk"; */
+		status = "okay";
+	};
+};
+
+&spi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	fps_tee@0 {
+		compatible = "fpc,fpc_spi";
+		reg = <0>;
+		fpc,enable-wakeup;
+		spi-max-frequency = <10000000>;
+		netlink-event = <31>;
+		status = "okay";
+	};
+};
