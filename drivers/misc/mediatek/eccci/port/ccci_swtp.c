@@ -31,13 +31,16 @@
 const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
 	{ .compatible = SWTP1_COMPATIBLE_DEVICE_ID,},
+	{ .compatible = SWTP2_COMPATIBLE_DEVICE_ID, }, /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp */
+	{ .compatible = SWTP3_COMPATIBLE_DEVICE_ID,},  /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp */
 	{},
 };
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
-#define MAX_RETRY_CNT 3
-
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
+#define MAX_RETRY_CNT 30
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end*/
 static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
@@ -54,7 +57,11 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
 	power_mode = swtp->tx_power_mode;
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
-
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start */
+        CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"%s to MD%d,state=%d,ret=%d wttest\n",
+			__func__, swtp->md_id + 1, power_mode, ret);
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end*/
 	if (ret != 0)
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"%s to MD%d,state=%d,ret=%d\n",
@@ -67,7 +74,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 {
 	unsigned long flags;
 	int i;
-
+    CCCI_LEGACY_ERR_LOG(-1, SYS, "%s:test-2\n", __func__); /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp */
 	if (swtp == NULL) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS, "%s:data is null\n", __func__);
 		return -1;
@@ -99,16 +106,46 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		swtp->gpio_state[i] = SWTP_EINT_PIN_PLUG_IN;
 
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
+         /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
+         //CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,"wttest1-swtp->tx_power_mode = %d\n", swtp->tx_power_mode);
+         CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest12-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[0]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[0]);
+         CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest13-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[1]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[1]);
+         CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest14-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[2]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[2]);
+        CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest15-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[3]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[3]);
+
+       if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT))
+       {
+               swtp->tx_power_mode = SWTP_DO_TX_POWER;
+               CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest15-swtp-%s>>tx_power_mode =SWTP_DO_TX_POWER= %d\n", __func__,swtp->tx_power_mode);
+        }
+        else
+        {
+               swtp->tx_power_mode = SWTP_NO_TX_POWER;
+                CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest16-swtp-%s>>tx_power_mode =SWTP_NO_TX_POWER= %d\n", __func__,swtp->tx_power_mode);
+        }
+       /*
 	for (i = 0; i < MAX_PIN_NUM; i++) {
+        CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest2-i = %d\n", i);
+
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
 			swtp->tx_power_mode = SWTP_DO_TX_POWER;
+        CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest3-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[%d]=%d\n", __func__,swtp->tx_power_mode,i,swtp->gpio_state[i]);
 			break;
 		}
 	}
-
-	inject_pin_status_event(swtp->tx_power_mode, rf_name);
+        */
+        inject_pin_status_event(swtp->tx_power_mode, rf_name);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
-
+        //CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,"wttest4-swtp->tx_power_mode = %d\n", swtp->tx_power_mode);
+        /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end*/
 	return swtp->tx_power_mode;
 }
 
@@ -195,7 +232,10 @@ int swtp_init(int md_id)
 #endif
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
-
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start */
+        char irq_name[12];
+        int has_write = 0;
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end */
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS,
 			"invalid md_id = %d\n", md_id);
@@ -211,6 +251,9 @@ int swtp_init(int md_id)
 		swtp_data[md_id].gpio_state[i] = SWTP_EINT_PIN_PLUG_OUT;
 
 	for (i = 0; i < MAX_PIN_NUM; i++) {
+				CCCI_LEGACY_ERR_LOG(md_id, SYS,
+				"%s:read swtp number%d counts%d pin num\n",
+				__func__, i, MAX_PIN_NUM);
 		node = of_find_matching_node(NULL, &swtp_of_match[i]);
 		if (node) {
 			ret = of_property_read_u32_array(node, "debounce",
@@ -242,11 +285,19 @@ int swtp_init(int md_id)
 				swtp_data[md_id].setdebounce[i]);
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
-
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
+            memset(irq_name, 0, sizeof(irq_name));
+            has_write = snprintf(irq_name, 12, "swtp%d-eint", i);
+            if (has_write <= 0 || has_write > 12) {
+                CCCI_LEGACY_ERR_LOG(md_id, SYS,
+                    "get swtp%d-eint fail\n",
+                    i);
+                break;
+            }
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
-				(i == 0 ? "swtp0-eint" : "swtp1-eint"),
-				&swtp_data[md_id]);
+            irq_name, &swtp_data[md_id]);
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end */
 			if (ret) {
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"swtp%d-eint IRQ LINE NOT AVAILABLE\n",
