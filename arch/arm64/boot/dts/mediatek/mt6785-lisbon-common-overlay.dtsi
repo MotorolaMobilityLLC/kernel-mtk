@@ -173,6 +173,21 @@
 	usb_c_pinctrl:usb_c_pinctrl {
 		compatible = "mediatek,usb_c_pinctrl";
 	};
+
+	gpio_keys_polled {
+		compatible = "gpio-keys-polled";
+		poll-interval = <100>;
+		autorepeat;
+
+		button21 {
+			label = "GPIO Key UP";
+			linux,code = <217>;
+			gpios = <&pio 15 0>;
+			interrupt-parent = <&pio>;
+			interrupts = <15 IRQ_TYPE_EDGE_FALLING 15 0>;
+			status = "okay";
+		};
+	};
 };
 
 /* DISPSYS GPIO standardization */
