@@ -31,6 +31,7 @@
 #define DEV_CLASS_NAME_FMT "camera_eepromdrv%u"
 #define EEPROM_DEVICE_NNUMBER 255
 extern struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainData;
+extern struct stCAM_CAL_DATAINFO_STRUCT *g_eepromSubData;
 extern struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainMicroData;
 
 static struct EEPROM_DRV ginst_drv[MAX_EEPROM_NUMBER];
@@ -213,6 +214,27 @@ static ssize_t eeprom_read(struct file *a_file, char __user *user_buffer,
 			}
 		} else {
 			LOG_INF("maybe some error buf(%p)read(%d)have(%d) \n",g_eepromMainMicroData->dataBuffer,totalLength,g_eepromMainMicroData->dataLength);
+			kfree(kbuf);
+			return -EFAULT;
+		}
+	}else if((g_eepromSubData != NULL)&&(SAIPAN_DMEGC_HI1336_SENSOR_ID== pdata->sensor_info.sensor_id)){
+		u32 totalLength = (u32)*offset+ (u32)size;
+		if((g_eepromSubData->dataBuffer)&&(totalLength <= g_eepromSubData->dataLength)){
+			if(*offset == 1){//check id
+				if(copy_to_user(user_buffer, (u8*)&g_eepromSubData->sensorVendorid, 4)){
+					return -EFAULT;
+				}
+				LOG_DBG("%d,ifCAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+					*offset,size);
+			} else {//read otp data
+				if(copy_to_user(user_buffer, g_eepromSubData->dataBuffer+(u32)*offset, size)){
+					return -EFAULT;
+				}
+				LOG_DBG("%d,ifCAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+					*offset, size);
+			}
+		} else {
+			LOG_INF("maybe some error buf(%p)read(%d)have(%d) \n",g_eepromSubData->dataBuffer,totalLength,g_eepromSubData->dataLength);
 			kfree(kbuf);
 			return -EFAULT;
 		}
