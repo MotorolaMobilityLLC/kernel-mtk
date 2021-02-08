@@ -2241,6 +2241,11 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x1A</address>
             </device11>
+            <device12>
+                <varName>CAMERA_SUB_EEPROM</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0xA2</address>
+            </device12>
             <device14>
                 <varName>SUBPMIC</varName>
                 <channel>I2C_CHANNEL_5</channel>
