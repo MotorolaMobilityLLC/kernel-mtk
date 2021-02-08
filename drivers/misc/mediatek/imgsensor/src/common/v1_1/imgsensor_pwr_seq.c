@@ -51,20 +51,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_SAIPAN_SHINE_HI846_MIPI_RAW,
 		{
-                        {DOVDD, Vol_1800, 1},
-                        {DVDD_1V1, Vol_High, 1},
-                        {DVDD_1V2, Vol_Low, 1},
-                        {DVDD, Vol_High, 1},
-                        {AVDD, Vol_High, 1},
-                        {SensorMCLK, Vol_High, 10},
-                        {RST, Vol_Low, 10},
-                        {RST, Vol_High, 1},
-
+			{DOVDD, Vol_1800, 1},
+			{DVDD_1V1, Vol_High, 1},
+			{DVDD_1V2, Vol_Low, 1},
+			{DVDD, Vol_High, 1},
+			{AVDD, Vol_High, 1},
+			{SensorMCLK, Vol_High, 10},
+			{RST, Vol_Low, 10},
+			{RST, Vol_High, 1},
 		},
 	},
 #endif
 #if defined(SAIPAN_DMEGC_HI1336_MIPI_RAW)
-        {
+	{
 		SENSOR_DRVNAME_SAIPAN_DMEGC_HI1336_MIPI_RAW,
 		{
 			{DOVDD, Vol_1800, 1},
@@ -92,9 +91,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #endif
 #if defined(SAIPAN_CXT_GC02M1_MIPI_RAW)
 	{
- 		SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW,
- 		{
- 			{RST, Vol_Low, 15},
+		SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW,
+		{
+			{RST, Vol_Low, 15},
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 1},
 			{RST, Vol_High, 1},
