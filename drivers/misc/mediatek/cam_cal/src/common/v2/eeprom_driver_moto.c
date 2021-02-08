@@ -3,6 +3,7 @@
 #include "eeprom_driver_moto.h"
 
 struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainData = NULL;
+struct stCAM_CAL_DATAINFO_STRUCT *g_eepromSubData = NULL;
 struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainMicroData = NULL;
 
 extern unsigned int read_region_fun(struct EEPROM_DRV_FD_DATA *pdata,unsigned char *buf,unsigned int offset, unsigned int size);
@@ -179,6 +180,11 @@ int imgSensorSetEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData){
 			return -ETXTBSY;
 		}
 		g_eepromMainData = pData;
+	}else if(pData->deviceID == 0x02){
+		if(g_eepromSubData != NULL){
+			return -ETXTBSY;
+		}
+		g_eepromSubData= pData;
 	}else if(pData->deviceID == 0x10){
 		if(g_eepromMainMicroData != NULL){
 			return -ETXTBSY;
