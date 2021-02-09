@@ -96,6 +96,8 @@
 			output-high;
 		};
 	};
+/* lisbon: gpio12 is set to irq for sar sensor */
+/*
 	camera0_vcamd_off: camera0_vcamd_output_low@gpio12 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
@@ -109,6 +111,7 @@
 			output-high;
 		};
 	};
+*/
 	camera1_vcama_off: camera1_vcama_output_low@gpio197 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO197__FUNC_GPIO197>;
@@ -291,8 +294,11 @@
 	pinctrl-12 = <&camera2_pdn_high>;
 	pinctrl-13 = <&camera0_vcama_off>;
 	pinctrl-14 = <&camera0_vcama_on>;
+/* lisbon: gpio12 is set to irq for sar sensor */
+/*
 	pinctrl-15 = <&camera0_vcamd_off>;
 	pinctrl-16 = <&camera0_vcamd_on>;
+*/
 	pinctrl-17 = <&camera1_vcama_off>;
 	pinctrl-18 = <&camera1_vcama_on>;
 	pinctrl-19 = <&camera1_vcamd_off>;
