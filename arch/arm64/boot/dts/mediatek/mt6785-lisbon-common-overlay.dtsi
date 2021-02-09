@@ -12,6 +12,7 @@
 
 #include "mediatek/mt6785-moto-common-overlay.dtsi"
 #include "mediatek/mt6785-lisbon-audio-overlay.dtsi"
+#include "mediatek/mt6785-lisbon-sensor-overlay.dtsi"
 
 &reserved_memory {
 };
