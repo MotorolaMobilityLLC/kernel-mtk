@@ -2406,6 +2406,8 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			event.timestamp = data->time_stamp;
 			event.sensor_type = id_to_type(data->sensor_type);
 			event.action = data->flush_action;
+			if (data->tilt_event.state == 16)//moto
+				data->tilt_event.state = -1;
 			event.word[0] = data->tilt_event.state;
 			break;
 		case ID_SAR:
