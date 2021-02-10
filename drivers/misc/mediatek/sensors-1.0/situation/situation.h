@@ -125,6 +125,67 @@ struct mot_offbody {
     float theta_high;
     bool qual_mode;
 };
+
+#ifdef CONFIG_MOTO_ALSPS
+struct MotAlspsDefConfig {
+  uint16_t pgain;
+  uint16_t ptime;
+  uint16_t pwtime;
+  uint16_t ppulse;
+  uint16_t pldrive;
+  uint16_t ppulse_len;
+  uint16_t ppers;
+  uint16_t pBinSearch;
+  float pOffsetStep;
+  float pOffsetStepCoef;
+  float low_coef;
+  float high_coef;
+  uint16_t min_delta;
+  bool pUseOilAlgo;
+};
+
+struct MotAlspsVariableConfig {
+  float pLowCoef;
+  float pHighCoef;
+  uint16_t pWTime;
+  bool pUseOilAlgo;
+};
+
+struct MotAlspsPsAlgoConfig {
+  uint16_t veryNearTh;
+  uint16_t veryNearCnt;
+  uint16_t contaminatedTh;
+  uint16_t contaminatedCnt;
+  uint16_t jitterTh;
+};
+
+struct MotAlspsAlsCoefficient {
+  float v[12];
+};
+
+struct MotAlspsFacGoldenValue {
+  uint16_t near_threshold;
+  uint16_t far_threshold;
+  float lux_scale;
+};
+
+struct MotAlsspsParams {
+      struct MotAlspsDefConfig def_config;
+      struct MotAlspsVariableConfig variable_config;
+      struct MotAlspsPsAlgoConfig ps_algo_config;
+      struct MotAlspsAlsCoefficient als_coefficient;
+      struct MotAlspsFacGoldenValue fac_golden_value;
+};
+
+struct MotAlspsCfgData {
+    int32_t cfg_type;
+    union {
+        struct MotAlsspsParams params;
+        int32_t caliCfgData[8];
+    };
+};
+#endif
+
 struct mot_params {
 #ifdef CONFIG_MOTO_CHOPCHOP
 	struct mot_chopchop chopchop_params;
@@ -137,6 +198,9 @@ struct mot_params {
 #endif
 #ifdef CONFIG_MOTO_OFFBODY
     struct mot_offbody offbody_params;
+#endif
+#ifdef CONFIG_MOTO_ALSPS
+    struct MotAlspsCfgData alsps_params;
 #endif
 };
 #endif

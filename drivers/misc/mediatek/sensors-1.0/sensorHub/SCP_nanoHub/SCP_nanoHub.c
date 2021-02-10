@@ -1563,7 +1563,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 {
 	union SCP_SENSOR_HUB_DATA req;
 	struct data_unit_t *data_t;
-	int len = 0, err = 0;
+	int len = 0, err = 0, i;
 
 	if (atomic_read(&power_status) == SENSOR_POWER_DOWN) {
 		pr_err("scp power down, we can not access scp\n");
@@ -1616,16 +1616,16 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_LIGHT:
 		data->time_stamp = data_t->time_stamp;
-		data->light = data_t->light;
-		/*moto add:transfer als ch0/ch1/lux data to AP*/
-		data->data[0] = data_t->data[0];
-		data->data[1] = data_t->data[1];
-		data->data[2] = data_t->data[2];
+		//data->light = data_t->light;
+		for (i = 0; i ++; i < 8)
+			data->data[i] = data_t->data[i];
 		break;
 	case ID_PROXIMITY:
 		data->time_stamp = data_t->time_stamp;
-		data->proximity_t.steps = data_t->proximity_t.steps;
-		data->proximity_t.oneshot = data_t->proximity_t.oneshot;
+		//data->proximity_t.steps = data_t->proximity_t.steps;
+		//data->proximity_t.oneshot = data_t->proximity_t.oneshot;
+		for (i = 0; i ++; i < 8)
+			data->data[i] = data_t->data[i];
 		break;
 	case ID_PRESSURE:
 		data->time_stamp = data_t->time_stamp;
