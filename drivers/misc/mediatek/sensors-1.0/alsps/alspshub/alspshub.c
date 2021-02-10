@@ -40,6 +40,8 @@ struct alspshub_ipi_data {
 	atomic_t	als_cali;
 	atomic_t	ps_thd_val_high;
 	atomic_t	ps_thd_val_low;
+	atomic_t	ps_cover;
+	atomic_t	ps_uncover;
 	ulong		enable;
 	ulong		pending_intr;
 	bool als_factory_enable;
@@ -287,7 +289,7 @@ static void alspshub_init_done_work(struct work_struct *work)
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
 #ifndef MTK_OLD_FACTORY_CALIBRATION
-	int32_t cfg_data[2] = {0};
+	int32_t cfg_data[5] = {0};
 #endif
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
@@ -304,8 +306,11 @@ static void alspshub_init_done_work(struct work_struct *work)
 			ID_PROXIMITY, CUST_ACTION_SET_CALI);
 #else
 	spin_lock(&calibration_lock);
-	cfg_data[0] = atomic_read(&obj->ps_thd_val_high);
-	cfg_data[1] = atomic_read(&obj->ps_thd_val_low);
+	cfg_data[0] = 0;
+	cfg_data[1] = atomic_read(&obj->ps_thd_val_high);
+	cfg_data[2] = atomic_read(&obj->ps_thd_val_low);
+	cfg_data[3] = atomic_read(&obj->ps_cover);
+	cfg_data[4] = atomic_read(&obj->ps_uncover);
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_PROXIMITY,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
@@ -313,7 +318,8 @@ static void alspshub_init_done_work(struct work_struct *work)
 		pr_err("sensor_cfg_to_hub ps fail\n");
 
 	spin_lock(&calibration_lock);
-	cfg_data[0] = atomic_read(&obj->als_cali);
+	cfg_data[0] = 0;
+	cfg_data[1] = atomic_read(&obj->als_cali);
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_LIGHT,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
@@ -341,6 +347,8 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 		spin_lock(&calibration_lock);
 		atomic_set(&obj->ps_thd_val_high, event->data[0]);
 		atomic_set(&obj->ps_thd_val_low, event->data[1]);
+		atomic_set(&obj->ps_cover, event->data[2]);
+		atomic_set(&obj->ps_uncover, event->data[3]);
 		spin_unlock(&calibration_lock);
 		err = ps_cali_report(event->data);
 	}
@@ -465,15 +473,16 @@ static int alshub_factory_set_cali(int32_t offset)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
-	int32_t cfg_data;
+	int32_t cfg_data[2];
 
-	cfg_data = offset;
+	cfg_data[0] = 0;
+	cfg_data[1] = offset;
 	err = sensor_cfg_to_hub(ID_LIGHT,
 		(uint8_t *)&cfg_data, sizeof(cfg_data));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub fail\n");
 	atomic_set(&obj->als_cali, offset);
-	als_cali_report(&cfg_data);
+	als_cali_report(&cfg_data[1]);
 
 	return err;
 
@@ -486,20 +495,22 @@ static int alshub_factory_get_cali(int32_t *offset)
 	return 0;
 }
 
-static int alshub_factory_set_cali_data(int32_t data[3])
+static int alshub_factory_get_data_mot(int32_t data[8])
 {
-	int err = 0;
-	int32_t cali_data[3] = {0};
+	int err = 0, i;
+	struct data_unit_t data_t;
 
-	cali_data[0] = data[0];
-	cali_data[1] = data[1];
-	cali_data[2] = data[2];
-	err = sensor_cali_data_to_hub(ID_LIGHT,
-		(uint8_t *)&cali_data, sizeof(cali_data));
+	err = sensor_get_data_from_hub(ID_LIGHT, &data_t);
 	if (err < 0)
-		pr_err("sensor_cali_data_to_hub fail\n");
-	return err;
+		return err;
+	for (i = 0; i < 8; i ++)
+		data[i] = data_t.data[i];
+	return 0;
+}
 
+static int alshub_factory_set_data_mot(int32_t data[3])
+{
+	return sensor_cfg_to_hub(ID_LIGHT, (uint8_t *)data, 3*sizeof(int32_t));
 }
 
 static int pshub_factory_enable_sensor(bool enable_disable,
@@ -611,15 +622,16 @@ static int pshub_factory_set_threshold(int32_t threshold[2])
 			ID_PROXIMITY, CUST_ACTION_SET_PS_THRESHOLD);
 #else
 	spin_lock(&calibration_lock);
-	cfg_data[0] = atomic_read(&obj->ps_thd_val_high);
-	cfg_data[1] = atomic_read(&obj->ps_thd_val_low);
+	cfg_data[0] = 0;
+	cfg_data[1] = atomic_read(&obj->ps_thd_val_high);
+	cfg_data[2] = atomic_read(&obj->ps_thd_val_low);
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_PROXIMITY,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub fail\n");
 
-	ps_cali_report(cfg_data);
+	ps_cali_report(&cfg_data[1]);
 #endif
 	return err;
 }
@@ -636,8 +648,25 @@ static int pshub_factory_get_threshold(int32_t threshold[2])
 }
 static int pshub_factory_do_self_test(void)
 {
-
 	return sensor_selftest_to_hub(ID_PROXIMITY);
+}
+
+static int pshub_factory_get_data_mot(int32_t data[8])
+{
+	int err = 0, i;
+	struct data_unit_t data_t;
+
+	err = sensor_get_data_from_hub(ID_PROXIMITY, &data_t);
+	if (err < 0)
+		return err;
+	for (i = 0; i < 8; i ++)
+		data[i] = data_t.data[i];
+	return 0;
+}
+
+static int pshub_factory_set_data_mot(int32_t data[3])
+{
+	return sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)data, 3*sizeof(int32_t));
 }
 
 static struct alsps_factory_fops alspshub_factory_fops = {
@@ -648,7 +677,8 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_clear_cali = alshub_factory_clear_cali,
 	.als_set_cali = alshub_factory_set_cali,
 	.als_get_cali = alshub_factory_get_cali,
-	.als_set_cali_data = alshub_factory_set_cali_data,
+	.als_set_data_mot = alshub_factory_set_data_mot,
+	.als_get_data_mot = alshub_factory_get_data_mot,
 
 	.ps_enable_sensor = pshub_factory_enable_sensor,
 	.ps_get_data = pshub_factory_get_data,
@@ -659,7 +689,9 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.ps_get_cali = pshub_factory_get_cali,
 	.ps_set_threshold = pshub_factory_set_threshold,
 	.ps_get_threshold = pshub_factory_get_threshold,
-	.do_self_test        = pshub_factory_do_self_test,
+	.do_self_test = pshub_factory_do_self_test,
+	.ps_set_data_mot = pshub_factory_set_data_mot,
+	.ps_get_data_mot = pshub_factory_get_data_mot,
 };
 
 static struct alsps_factory_public alspshub_factory_device = {
@@ -737,13 +769,23 @@ static int als_flush(void)
 
 static int als_set_cali(uint8_t *data, uint8_t count)
 {
-	int32_t *buf = (int32_t *)data;
+	int32_t *buf;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int ret = 0;
+
+	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+1), GFP_KERNEL);
+	if (!buf) {
+		return -ENOMEM;
+	}
+	memcpy((void*)(buf + 1), (void*)data, count);
+	buf[0] = 0;
 
 	spin_lock(&calibration_lock);
-	atomic_set(&obj->als_cali, buf[0]);
+	atomic_set(&obj->als_cali, buf[1]);
 	spin_unlock(&calibration_lock);
-	return sensor_cfg_to_hub(ID_LIGHT, data, count);
+	ret = sensor_cfg_to_hub(ID_LIGHT, (uint8_t *)buf, (count+1));
+	kfree(buf);
+	return ret;
 }
 
 static int rgbw_enable(int en)
@@ -885,14 +927,25 @@ static int ps_get_data(int *value, int *status)
 
 static int ps_set_cali(uint8_t *data, uint8_t count)
 {
-	int32_t *buf = (int32_t *)data;
+	int32_t *buf;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int ret = 0;
 
+	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+1), GFP_KERNEL);
+	if (!buf) {
+		return -ENOMEM;
+	}
+	memcpy((void*)(buf + 1), (void*)data, count);
+	buf[0] = 0;
 	spin_lock(&calibration_lock);
 	atomic_set(&obj->ps_thd_val_high, buf[0]);
 	atomic_set(&obj->ps_thd_val_low, buf[1]);
+	atomic_set(&obj->ps_cover, buf[2]);
+	atomic_set(&obj->ps_uncover, buf[3]);
 	spin_unlock(&calibration_lock);
-	return sensor_cfg_to_hub(ID_PROXIMITY, data, count);
+	ret =  sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)buf, (count+1));
+	kfree(buf);
+	return ret;
 }
 
 static int scp_ready_event(uint8_t event, void *ptr)
