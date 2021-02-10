@@ -519,6 +519,12 @@ static ssize_t situation_store_params(struct device *dev, struct device_attribut
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub OFFBODY fail\n");
 #endif
+#ifdef CONFIG_MOTO_ALSPS
+	err = sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&cxt->motparams.alsps_params, sizeof(struct MotAlspsCfgData));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub PROXIMITY fail\n");
+#endif
+
 	//SITUATION_PR_ERR("situation_store_params done\n");
 
 	return count;
