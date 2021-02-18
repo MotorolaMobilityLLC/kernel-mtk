@@ -61,27 +61,57 @@
 	fingerprint_int: fingerprint_int {
 		compatible = "mediatek,fingerprint-fpc";
 		fpc,enable-wakeup;
-		interrupts = <GIC_SPI 75 IRQ_TYPE_EDGE_RISING>;
+		interrupt-parent = <&pio>;
+		interrupts = <75 IRQ_TYPE_EDGE_RISING 75 0>;
 		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
 		pinctrl-0 = <&fingerprint_irq>;
 		pinctrl-1 = <&fingerprint_reset_high>;
 		pinctrl-2 = <&fingerprint_reset_low>;
 		fpc,vdd= <&pio 79 0>;
 		fpc,irq = <&pio 75 0>;
-		/* clock-names = "parent-clk", "sel-clk", "spi-clk"; */
+		status = "okay";
+	};
+	chipone_int: chipone_int {
+		compatible = "mediatek,chipone-fingerprint";
+		interrupt-parent = <&pio>;
+		interrupts = <75 IRQ_TYPE_EDGE_RISING 75 0>;
+		pinctrl-names = "fingerprint_reset_low", "fingerprint_reset_high" , "fingerprint_irq";
+		pinctrl-0 = <&fingerprint_reset_low>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_irq>;
+		chipone,irq = <&pio 75 0>;
 		status = "okay";
 	};
 };
-
+/* 1.8v */
+&mt_pmic_vio18_ldo_reg {
+	regulator-boot-on;
+	regulator-always-on;
+};
+/* 3.3v */
+&mt_pmic_vfp_ldo_reg {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-boot-on;
+	regulator-always-on;
+};
 &spi0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
-	fps_tee@0 {
+	mediatek,pad-select = <0>, <1>;
+	fpc_tee@0 {
 		compatible = "fpc,fpc_spi";
 		reg = <0>;
 		fpc,enable-wakeup;
 		spi-max-frequency = <10000000>;
 		netlink-event = <31>;
 		status = "okay";
+	};
+	chipone_tee@1 {
+		status = "okay";
+		compatible = "mediatek,finger-chipone";
+		reg = <1>;
+		spi-max-frequency = <10000000>;
+		netlink-event = <30>;
 	};
 };
