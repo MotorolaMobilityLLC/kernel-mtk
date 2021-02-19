@@ -2464,6 +2464,30 @@ page_owner=on loop.max_part=7";
 		io-channel-names = "thermistor-ch1";
 	};
 
+	tboard_thermistor3: thermal-sensor3 {
+                compatible = "mediatek,mtboard-thermistor3";
+                io-channels = <&auxadc 2>;
+                io-channel-names = "thermistor-ch2";
+        };
+
+	tboard_thermistor4: thermal-sensor4 {
+                compatible = "mediatek,mtboard-thermistor4";
+                io-channels = <&auxadc 3>;
+                io-channel-names = "thermistor-ch3";
+        };
+
+	tboard_thermistor5: thermal-sensor5 {
+                compatible = "mediatek,mtboard-thermistor5";
+                io-channels = <&auxadc 4>;
+                io-channel-names = "thermistor-ch4";
+        };
+
+	tboard_thermistor6: thermal-sensor6 {
+                compatible = "mediatek,mtboard-thermistor6";
+                io-channels = <&auxadc 5>;
+                io-channel-names = "thermistor-ch5";
+        };
+
 	drcc: drcc {
 		compatible = "mediatek,drcc";
 		state = <255>;
