@@ -691,12 +691,12 @@ static int get_hw_flashlight_temp(void)
 #if defined(APPLY_AUXADC_CALI_DATA)
 		ret += auxadc_cali_temp;
 		mtkts_flashlight_dprintk(
-			"[thermal_auxadc_get_data(AUX_IN4_NTC)]: ret_temp=%d\n",
+			"[thermal_auxadc_get_data(AUX_IN5_NTC)]: ret_temp=%d\n",
 			auxadc_cali_temp);
 #else
 		ret += ret_temp;
 		mtkts_flashlight_dprintk(
-			"[thermal_auxadc_get_data(AUX_IN4_NTC)]: ret_temp=%d\n",
+			"[thermal_auxadc_get_data(AUX_IN5_NTC)]: ret_temp=%d\n",
 			ret_temp);
 #endif
 	}
@@ -1314,7 +1314,7 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 			/* check unsupport pin value, if unsupport,
 			 * set channel = 1 as default setting.
 			 */
-			g_RAP_ADC_channel = AUX_IN4_NTC;
+			g_RAP_ADC_channel = AUX_IN5_NTC;
 		else {
 			g_RAP_ADC_channel = adc_channel;
 		}
@@ -1446,7 +1446,7 @@ static int mtkts_flashlight_probe(struct platform_device *pdev)
 	if (!thermistor_ch4)
 		return -ENOMEM;
 
-	thermistor_ch4 = iio_channel_get(&pdev->dev, "thermistor-ch4");
+	thermistor_ch4 = iio_channel_get(&pdev->dev, "thermistor-ch5");
 	ret = IS_ERR(thermistor_ch4);
 	if (ret) {
 		mtkts_flashlight_printk("[%s] fail to get auxadc iio ch0: %d\n",
@@ -1464,12 +1464,12 @@ static int mtkts_flashlight_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 const struct of_device_id mt_thermistor_of_match5[2] = {
-	{.compatible = "mediatek,mtboard-thermistor5",},
+	{.compatible = "mediatek,mtboard-thermistor6",},
 	{},
 };
 #endif
 
-#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor5"
+#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor6"
 static struct platform_driver mtk_thermal_flashlight_driver = {
 	.remove = NULL,
 	.shutdown = NULL,
