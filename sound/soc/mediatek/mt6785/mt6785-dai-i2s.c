@@ -53,8 +53,10 @@ struct mtk_afe_i2s_priv {
 
 static unsigned int get_i2s_wlen(snd_pcm_format_t format)
 {
-	return snd_pcm_format_physical_width(format) <= 16 ?
-	       I2S_WLEN_16_BIT : I2S_WLEN_32_BIT;
+	//return snd_pcm_format_physical_width(format) <= 16 ?
+	//       I2S_WLEN_16_BIT : I2S_WLEN_32_BIT;
+
+	return I2S_WLEN_16_BIT;
 }
 
 #define MTK_AFE_I2S0_KCONTROL_NAME "I2S0_HD_Mux"
