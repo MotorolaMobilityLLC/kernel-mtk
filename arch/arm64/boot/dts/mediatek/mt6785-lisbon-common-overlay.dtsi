@@ -13,7 +13,7 @@
 #include "mediatek/mt6785-moto-common-overlay.dtsi"
 #include "mediatek/mt6785-lisbon-audio-overlay.dtsi"
 #include "mediatek/mt6785-lisbon-sensor-overlay.dtsi"
-
+#include "mediatek/mt6785-lisbon-camera-sensor-overlay.dtsi"
 &reserved_memory {
 };
 
@@ -358,7 +358,7 @@
 
 /* CAMERA specify sensor */
 &kd_camera_hw1 {
-	cam2_enable_sensor = "imx350_mipi_raw imx386_mipi_mono";
+
 };
 /* CAMERA specify sensor end */
 
@@ -435,7 +435,6 @@
 	regulator-always-on;
 };
 
-#include "mediatek/cust_mt6785_camera.dtsi"
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
 #include "mediatek/mt6785-moto-lisbon-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/

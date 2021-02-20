@@ -390,7 +390,7 @@
 
 /* CAMERA specify sensor */
 &kd_camera_hw1 {
-	cam2_enable_sensor = "imx350_mipi_raw imx386_mipi_mono";
+
 };
 /* CAMERA specify sensor end */
 
@@ -424,6 +424,6 @@
 }; /* IRTX GPIO Settings -End */
 
 #include <k85v1_64/cust.dtsi>
-#include "mediatek/cust_mt6785_camera.dtsi"
+//#include "mediatek/cust_mt6785_camera.dtsi"
 #include "mediatek/cust_mt6785_touch_1080x2160.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
