@@ -398,6 +398,14 @@
 #define MOT_COFUD_S5KJN1_SENSOR_ID       0x38E1
 //add cofud sensor id end
 
+//add lisbon sensor id begin
+#define OV64B40_SENSOR_ID               0x6442
+#define OV16A1Q_SENSOR_ID               0x1641
+#define OV02B1B_SENSOR_ID               0x002b
+#define S5K5E9YX04_SENSOR_ID            0x559b
+#define S5K4H7YX03_SENSOR_ID            0x487B
+//add lisbon sensor id end
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -662,6 +670,14 @@
 #define SENSOR_DRVNAME_MOT_COFUD_GC02M1_MIPI_RAW               "mot_cofud_gc02m1_mipi_raw"
 #define SENSOR_DRVNAME_MOT_COFUD_S5KJN1_MIPI_RAW               "mot_cofud_s5kjn1_mipi_raw"
 //add cofud sensor drvname end
+
+//add lisbon sensor drvname begin
+#define SENSOR_DRVNAME_MOT_LISBON_OV64B40_MIPI_RAW          "mot_lisbon_ov64b40_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LISBON_OV16A1Q_MIPI_RAW          "mot_lisbon_ov16a1q_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LISBON_OV02B1B_MIPI_RAW          "mot_lisbon_ov02b1b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LISBON_S5K5E9_MIPI_RAW           "mot_lisbon_s5k5e9_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LISBON_S5K4H7_MIPI_RAW           "mot_lisbon_s5k4h7_mipi_raw"
+//add lisbon sensor drvname end
 
 /******************************************************************************
  *
