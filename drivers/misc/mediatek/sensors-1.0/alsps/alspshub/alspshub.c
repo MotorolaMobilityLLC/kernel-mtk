@@ -50,6 +50,7 @@ struct alspshub_ipi_data {
 	bool ps_android_enable;
 	struct wakeup_source ps_wake_lock;
 	struct completion als_cali_done;/*moto add for als cali sync*/
+	struct completion ps_cali_done;/*moto add for ps cali sync*/
 };
 
 static struct alspshub_ipi_data *obj_ipi_data;
@@ -351,6 +352,7 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 		atomic_set(&obj->ps_uncover, event->data[3]);
 		spin_unlock(&calibration_lock);
 		err = ps_cali_report(event->data);
+		complete(&obj->ps_cali_done);
 	}
 	return err;
 }
@@ -561,8 +563,19 @@ static int pshub_factory_get_raw_data(int32_t *data)
 }
 static int pshub_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_PROXIMITY);
+	int ret = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	ret = sensor_calibration_to_hub(ID_PROXIMITY);
+	if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->ps_cali_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
+
+
 static int pshub_factory_clear_cali(void)
 {
 #ifdef MTK_OLD_FACTORY_CALIBRATION
@@ -1011,6 +1024,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	WRITE_ONCE(obj->ps_android_enable, false);
 	//moto add
 	init_completion(&obj->als_cali_done);
+	init_completion(&obj->ps_cali_done);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
