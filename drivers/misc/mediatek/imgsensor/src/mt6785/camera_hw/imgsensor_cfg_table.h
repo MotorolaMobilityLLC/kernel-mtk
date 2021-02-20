@@ -13,7 +13,7 @@
 
 #include <linux/atomic.h>
 #include "imgsensor_common.h"
-
+#define MIPI_SWITCH
 #ifndef __IMGSENSOR_CFG_TABLE_H__
 #define __IMGSENSOR_CFG_TABLE_H__
 
@@ -121,16 +121,32 @@ enum IMGSENSOR_HW_ID {
 
 #define IMGSENSOR_I2C_DRV_NAME_0  "kd_camera_hw"
 #define IMGSENSOR_I2C_DRV_NAME_1  "kd_camera_hw_bus2"
-#define IMGSENSOR_I2C_DRV_NAME_2  "kd_camera_hw_trigger"
+#define IMGSENSOR_I2C_DRV_NAME_2  "kd_camera_hw_bus3"
+#define IMGSENSOR_I2C_DRV_NAME_3  "kd_camera_hw_bus4"
+#define IMGSENSOR_I2C_DRV_NAME_4  "kd_camera_hw_bus5"
+#define IMGSENSOR_I2C_DRV_NAME_5  "kd_camera_hw_bus6"
+#define IMGSENSOR_I2C_DRV_NAME_6  "kd_camera_hw_bus7"
+#define IMGSENSOR_I2C_DRV_NAME_7  "kd_camera_hw_bus8"
+#define IMGSENSOR_I2C_DRV_NAME_8  "kd_camera_hw_trigger"
 
 #define IMGSENSOR_I2C_OF_DRV_NAME_0 "mediatek,camera_main"
 #define IMGSENSOR_I2C_OF_DRV_NAME_1 "mediatek,camera_sub"
-#define IMGSENSOR_I2C_OF_DRV_NAME_2 "mediatek,camera_main_hw"
+#define IMGSENSOR_I2C_OF_DRV_NAME_2 "mediatek,camera_main_two"
+#define IMGSENSOR_I2C_OF_DRV_NAME_3 "mediatek,camera_sub_two"
+#define IMGSENSOR_I2C_OF_DRV_NAME_4 "mediatek,camera_main_three"
+#define IMGSENSOR_I2C_OF_DRV_NAME_5 "mediatek,camera_sub_three"
+#define IMGSENSOR_I2C_OF_DRV_NAME_6 "mediatek,camera_main_four"
+#define IMGSENSOR_I2C_OF_DRV_NAME_7 "mediatek,camera_sub_four"
 
 enum IMGSENSOR_I2C_DEV {
 	IMGSENSOR_I2C_DEV_0,
 	IMGSENSOR_I2C_DEV_1,
 	IMGSENSOR_I2C_DEV_2,
+	IMGSENSOR_I2C_DEV_3,
+	IMGSENSOR_I2C_DEV_4,
+	IMGSENSOR_I2C_DEV_5,
+	IMGSENSOR_I2C_DEV_6,
+	IMGSENSOR_I2C_DEV_7,
 	IMGSENSOR_I2C_DEV_MAX_NUM,
 };
 

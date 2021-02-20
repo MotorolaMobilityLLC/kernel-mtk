@@ -217,6 +217,14 @@ UINT32 OV02B10_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 /*moto*/
 #include "mot_sensor_list.h"
 
+//add lisbon sensor init begin
+UINT32 MOT_LISBON_OV64B40_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+UINT32 MOT_LISBON_OV16A1Q_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+UINT32 MOT_LISBON_OV02B1B_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+UINT32 MOT_LISBON_S5K5E9_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+UINT32 MOT_LISBON_S5K4H7_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+//add lisbon sensor init end
+
 extern struct IMGSENSOR_SENSOR_LIST gimgsensor_sensor_list[];
 
 #endif
