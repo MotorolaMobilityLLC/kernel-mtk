@@ -1563,7 +1563,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 {
 	union SCP_SENSOR_HUB_DATA req;
 	struct data_unit_t *data_t;
-	int len = 0, err = 0, i;
+	int len = 0, err = 0;
 
 	if (atomic_read(&power_status) == SENSOR_POWER_DOWN) {
 		pr_err("scp power down, we can not access scp\n");
@@ -1617,15 +1617,13 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 	case ID_LIGHT:
 		data->time_stamp = data_t->time_stamp;
 		//data->light = data_t->light;
-		for (i = 0; i ++; i < 8)
-			data->data[i] = data_t->data[i];
+		memcpy((void*)&data->data[0], (void*)&data_t->data[0], sizeof(data_t->data));
 		break;
 	case ID_PROXIMITY:
 		data->time_stamp = data_t->time_stamp;
 		//data->proximity_t.steps = data_t->proximity_t.steps;
 		//data->proximity_t.oneshot = data_t->proximity_t.oneshot;
-		for (i = 0; i ++; i < 8)
-			data->data[i] = data_t->data[i];
+		memcpy((void*)&data->data[0], (void*)&data_t->data[0], sizeof(data_t->data));
 		break;
 	case ID_PRESSURE:
 		data->time_stamp = data_t->time_stamp;
