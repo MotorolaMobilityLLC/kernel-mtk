@@ -183,7 +183,7 @@
 		button21 {
 			label = "GPIO Key UP";
 			linux,code = <217>;
-			gpios = <&pio 15 0>;
+			gpios = <&pio 15 1>;
 			interrupt-parent = <&pio>;
 			interrupts = <15 IRQ_TYPE_EDGE_FALLING 15 0>;
 			status = "okay";
