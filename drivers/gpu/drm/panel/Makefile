@@ -58,3 +58,4 @@ obj-$(CONFIG_DRM_PANEL_TRULY_FT8756_VDO) += panel-truly-ft8756-vdo.o
 obj-$(CONFIG_DRM_PANEL_TRULY_NT35595_CMD) += panel-truly-nt35595-cmd.o
 obj-$(CONFIG_DRM_PANEL_TRULY_NT35595_VDO) += panel-truly-nt35595-vdo.o
 obj-$(CONFIG_DRM_PANEL_TRULY_ILI9881H_VDO) += panel-truly-ili9881h-rt4801-vdo.o
+obj-$(CONFIG_DRM_PANEL_VISIONOX_RM692DX_VDO) += panel-visionox-rm692dx-vdo.o
