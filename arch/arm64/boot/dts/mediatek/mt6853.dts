@@ -7301,3 +7301,6 @@ page_owner=on loop.max_part=7";
 #ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #include "mediatek/trusty.dtsi"
 #endif
+
+/* Motorola base dts override */
+#include "mediatek/mt6853-moto-base.dtsi"
