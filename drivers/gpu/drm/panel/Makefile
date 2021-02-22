@@ -79,3 +79,4 @@ obj-$(CONFIG_DRM_PANEL_DJN_ILI9882Q_VDO) += dsi-panel-mot-djn-ili9882q-hd-video.
 obj-$(CONFIG_DRM_PANEL_BOE_NT37701A_655_FHD_VDO_144HZ) += dsi-panel-mot-boe-nt37701a-655-fhdp-video-144hz.o
 obj-$(CONFIG_DRM_PANEL_TM_VTDR6115_655_FHD_VDO_144HZ) += dsi-panel-mot-tm-vtdr6115-655-fhdp-video-144hz.o
 obj-$(CONFIG_DRM_PANEL_TM_VTDR6115_655_FHD_VDO_144HZ_V1) += dsi-panel-mot-tm-vtdr6115-655-fhdp-video-144hz-v1.o
+obj-$(CONFIG_DRM_PANEL_VISIONOX_RM692DX_VDO) += panel-visionox-rm692dx-vdo.o
