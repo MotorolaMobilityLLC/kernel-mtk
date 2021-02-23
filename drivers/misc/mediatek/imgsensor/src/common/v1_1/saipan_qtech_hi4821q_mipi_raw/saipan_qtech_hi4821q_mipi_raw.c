@@ -20,11 +20,11 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 
-#include "saipan_sunny_hi4821q_mipi_raw.h"
-#include "saipan_sunny_hi4821q_mipi_raw_setting.h"
-#include "saipan_sunny_hi4821q_otp.h"
+#include "saipan_qtech_hi4821q_mipi_raw.h"
+#include "saipan_qtech_hi4821q_mipi_raw_setting.h"
+#include "saipan_qtech_hi4821q_otp.h"
 
-#define PFX "saipan_sunny_hi4821q_camera_sensor"
+#define PFX "saipan_qtech_hi4821q_camera_sensor"
 #define LOG_INF(format, args...)    \
 	pr_info(PFX "[%s] " format, __func__, ##args)
 
@@ -36,7 +36,7 @@
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = SAIPAN_SUNNY_HI4821Q_SENSOR_ID,
+	.sensor_id = SAIPAN_QTECH_HI4821Q_SENSOR_ID,
 	.checksum_value = 0x4f1b1d5e,       //0x6d01485c // Auto Test Mode
 	.pre = {
 		.pclk = 108000000,				//record different mode's pclk
@@ -261,7 +261,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 
 #define I2C_BUFFER_LEN 1020
 
-static kal_uint16 saipan_sunny_hi4821q_table_write_cmos_sensor(
+static kal_uint16 saipan_qtech_hi4821q_table_write_cmos_sensor(
 					kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -609,63 +609,63 @@ static void night_mode(kal_bool enable)
 static void sensor_init(void)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_init_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_init_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_init_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_init_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
 static void preview_setting(void)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_preview_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_preview_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_preview_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_preview_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_capture_30fps_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_capture_30fps_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_capture_30fps_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_capture_30fps_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
 static void video_setting(void)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_video_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_video_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_video_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_video_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
 static void hs_video_setting(void)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_hs_video_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_hs_video_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_hs_video_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_hs_video_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
 static void slim_video_setting(void)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_slim_video_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_slim_video_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_slim_video_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_slim_video_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
 static void custom1_setting(void)
 {
 	LOG_INF("E\n");
-	saipan_sunny_hi4821q_table_write_cmos_sensor(
-		addr_data_pair_custom1_saipan_sunny_hi4821q,
-		sizeof(addr_data_pair_custom1_saipan_sunny_hi4821q) /
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+		addr_data_pair_custom1_saipan_qtech_hi4821q,
+		sizeof(addr_data_pair_custom1_saipan_qtech_hi4821q) /
 		sizeof(kal_uint16));
 }
 
@@ -685,43 +685,43 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
     			pr_info("i2c write id : 0x%x, sensor id: 0x%x\n",
     			imgsensor.i2c_write_id, *sensor_id);
 
-#if SAIPAN_SUNNY_HI4821Q_OTP_ENABLE
-			size = imgSensorReadEepromData(&st_rear_saipan_sunny_hi4821q_eeprom_data,st_rear_saipan_sunny_hi4821q_Checksum);
-			if(size != st_rear_saipan_sunny_hi4821q_eeprom_data.dataLength || (st_rear_saipan_sunny_hi4821q_eeprom_data.sensorVendorid >> 24)!= saipan_sunny_hi4821q_read_eeprom(0x0001)) {
+#if SAIPAN_QTECH_HI4821Q_OTP_ENABLE
+			size = imgSensorReadEepromData(&st_rear_saipan_qtech_hi4821q_eeprom_data,st_rear_saipan_qtech_hi4821q_Checksum);
+			if(size != st_rear_saipan_qtech_hi4821q_eeprom_data.dataLength || (st_rear_saipan_qtech_hi4821q_eeprom_data.sensorVendorid >> 24)!= saipan_qtech_hi4821q_read_eeprom(0x0001)) {
 				pr_err("get eeprom data failed\n");
-				if(st_rear_saipan_sunny_hi4821q_eeprom_data.dataBuffer != NULL) {
-					kfree(st_rear_saipan_sunny_hi4821q_eeprom_data.dataBuffer);
-					st_rear_saipan_sunny_hi4821q_eeprom_data.dataBuffer = NULL;
+				if(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer != NULL) {
+					kfree(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer);
+					st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer = NULL;
 				}
 				//*sensor_id = 0xFFFFFFFF;
 				//return ERROR_SENSOR_CONNECT_FAIL;
 			} else {
 				pr_info("get eeprom data success\n");
-				imgSensorSetEepromData(&st_rear_saipan_sunny_hi4821q_eeprom_data);
+				imgSensorSetEepromData(&st_rear_saipan_qtech_hi4821q_eeprom_data);
 
-				#if SAIPAN_SUNNY_HI4821Q_XGC_QGC_PGC_CALIB
+				#if SAIPAN_QTECH_HI4821Q_XGC_QGC_PGC_CALIB
 					//get the pgc qgc xgc buffer
-					pgc_data_buffer = &(st_rear_saipan_sunny_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_sunny_hi4821q_Checksum[SAIPAN_SUNNY_HI4821Q_PGC - 1].startAdress + 3]);
-					qgc_data_buffer = &(st_rear_saipan_sunny_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_sunny_hi4821q_Checksum[SAIPAN_SUNNY_HI4821Q_QGC - 1].startAdress + 3]);
-					xgc_data_buffer = &(st_rear_saipan_sunny_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_sunny_hi4821q_Checksum[SAIPAN_SUNNY_HI4821Q_XGC - 1].startAdress + 3]);
+					pgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_PGC - 1].startAdress + 3]);
+					qgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 3]);
+					xgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 3]);
 
-					#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
+					#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 
-						pr_info("saipan_sunny_hi4821q_eeprom:pgc_addr:0x%x\n",st_rear_saipan_sunny_hi4821q_Checksum[SAIPAN_SUNNY_HI4821Q_PGC - 1].startAdress + 3);
-						pr_info("saipan_sunny_hi4821q_eeprom:qgc_addr:0x%x\n",st_rear_saipan_sunny_hi4821q_Checksum[SAIPAN_SUNNY_HI4821Q_QGC - 1].startAdress + 3);
-						pr_info("saipan_sunny_hi4821q_eeprom:xgc_addr:0x%x\n",st_rear_saipan_sunny_hi4821q_Checksum[SAIPAN_SUNNY_HI4821Q_XGC - 1].startAdress + 3);
+						pr_info("saipan_qtech_hi4821q_eeprom:pgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_PGC - 1].startAdress + 3);
+						pr_info("saipan_qtech_hi4821q_eeprom:qgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 3);
+						pr_info("saipan_qtech_hi4821q_eeprom:xgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 3);
 
-						pr_info("=====================saipan_sunny_hi4821q dump pgc eeprom data start====================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump pgc eeprom data start====================\n");
 						dumpEEPROMData(PGC_DATA_SIZE,pgc_data_buffer);
-						pr_info("=====================saipan_sunny_hi4821q dump pgc eeprom data end======================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump pgc eeprom data end======================\n");
 
-						pr_info("=====================saipan_sunny_hi4821q dump qgc eeprom data start====================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump qgc eeprom data start====================\n");
 						dumpEEPROMData(QGC_DATA_SIZE,qgc_data_buffer);
-						pr_info("=====================saipan_sunny_hi4821q dump qgc eeprom data end======================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump qgc eeprom data end======================\n");
 
-						pr_info("=====================saipan_sunny_hi4821q dump xgc eeprom data start====================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump xgc eeprom data start====================\n");
 						dumpEEPROMData(XGC_DATA_SIZE,xgc_data_buffer);
-						pr_info("=====================saipan_sunny_hi4821q dump xgc eeprom data end======================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump xgc eeprom data end======================\n");
 					#endif
 				#endif
 			}
@@ -1758,10 +1758,10 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 SAIPAN_SUNNY_HI4821Q_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 SAIPAN_QTECH_HI4821Q_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc =  &sensor_func;
 	return ERROR_NONE;
-}	/*	saipan_sunny_hi4821q_MIPI_RAW_SensorInit	*/
+}	/*	saipan_qtech_hi4821q_MIPI_RAW_SensorInit	*/
