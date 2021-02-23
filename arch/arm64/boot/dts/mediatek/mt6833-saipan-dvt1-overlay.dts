@@ -27,5 +27,5 @@
 	};
 };
 
-#include <saipan_evt/cust.dtsi>
+#include <saipan_dvt1/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
