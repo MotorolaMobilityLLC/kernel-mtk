@@ -175,7 +175,7 @@ static ssize_t eeprom_read(struct file *a_file, char __user *user_buffer,
 	LOG_DBG("%d,1CAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
 	   *offset, size);
 
-	if((g_eepromMainData != NULL)&&(SAIPAN_SUNNY_HI4821Q_SENSOR_ID == pdata->sensor_info.sensor_id)){
+	if((g_eepromMainData != NULL)&&(SAIPAN_QTECH_HI4821Q_SENSOR_ID == pdata->sensor_info.sensor_id)){
 		u32 totalLength = (u32)*offset+ (u32)size;
 		if((g_eepromMainData->dataBuffer)&&(totalLength <= g_eepromMainData->dataLength)){
 			if(*offset == 1){//check id
