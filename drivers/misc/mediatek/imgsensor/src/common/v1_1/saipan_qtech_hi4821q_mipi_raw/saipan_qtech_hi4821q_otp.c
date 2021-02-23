@@ -19,7 +19,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include "kd_camera_typedef.h"
-#include "saipan_sunny_hi4821q_otp.h"
+#include "saipan_qtech_hi4821q_otp.h"
 
 #define PFX "HI4821Q_otp"
 
@@ -27,8 +27,8 @@
 #define LOG_DBG(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
 #define LOG_ERR(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
 
-#if SAIPAN_SUNNY_HI4821Q_OTP_ENABLE
-kal_uint16 saipan_sunny_hi4821q_read_eeprom(kal_uint32 addr)
+#if SAIPAN_QTECH_HI4821Q_OTP_ENABLE
+kal_uint16 saipan_qtech_hi4821q_read_eeprom(kal_uint32 addr)
 {
 	kal_uint16 get_byte=0;
 	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
@@ -37,7 +37,7 @@ kal_uint16 saipan_sunny_hi4821q_read_eeprom(kal_uint32 addr)
 }
 #endif
 
-#if SAIPAN_SUNNY_HI4821Q_XGC_QGC_PGC_CALIB
+#if SAIPAN_QTECH_HI4821Q_XGC_QGC_PGC_CALIB
 //XGC,QGC,PGC Calibration data are applied here
 static void apply_sensor_Cali(void)
 {
@@ -86,7 +86,7 @@ static void apply_sensor_Cali(void)
 			}
 			idx++;
 			write_cmos_sensor(sensor_xgc_addr,hi4821_xgc_data);
-			#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
+			#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 				pr_info("sensor_xgc_addr:0x%x,xgc_data_buffer[%d]:0x%x,xgc_data_buffer[%d]:0x%x,hi4821_xgc_data:0x%x\n",
 					sensor_xgc_addr,i,xgc_data_buffer[i],i+1,xgc_data_buffer[i+1],hi4821_xgc_data);
 			#endif
@@ -105,7 +105,7 @@ static void apply_sensor_Cali(void)
 			hi4821_qgc_data = ((((qgc_data_buffer[i+1]) & (0x00ff)) << 8) + ((qgc_data_buffer[i]) & (0x00ff)));
 			write_cmos_sensor(sensor_qgc_addr,hi4821_qgc_data);
 
-			#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
+			#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 				pr_info("sensor_qgc_addr:0x%x,qgc_data_buffer[%d]:0x%x,qgc_data_buffer[%d]:0x%x,hi4821_qgc_data:0x%x\n",
 					sensor_qgc_addr,i,qgc_data_buffer[i],i+1,qgc_data_buffer[i+1],hi4821_qgc_data);
 			#endif
@@ -124,7 +124,7 @@ static void apply_sensor_Cali(void)
 			hi4821_pgc_data = ((((pgc_data_buffer[i+1]) & (0x00ff)) << 8) + ((pgc_data_buffer[i]) & (0x00ff)));
 			write_cmos_sensor(sensor_pgc_addr,hi4821_pgc_data);
 
-			#if SAIPAN_SUNNY_HI4821Q_OTP_DUMP
+			#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 				pr_info("sensor_pgc_addr:0x%x,pgc_data_buffer[%d]:0x%x,pgc_data_buffer[%d]:0x%x,hi4821_pgc_data:0x%x\n",
 					sensor_pgc_addr,i,pgc_data_buffer[i],i+1,pgc_data_buffer[i+1],hi4821_pgc_data);
 			#endif
