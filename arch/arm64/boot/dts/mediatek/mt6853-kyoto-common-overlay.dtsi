@@ -11,6 +11,7 @@
  */
 
 #include "mediatek/mt6853-moto-common-overlay.dtsi"
+#include "mediatek/cust_mt6853_camera.dtsi"
 
 &reserved_memory {
 };
