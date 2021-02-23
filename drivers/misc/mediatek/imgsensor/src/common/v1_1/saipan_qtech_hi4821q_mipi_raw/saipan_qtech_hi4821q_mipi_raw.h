@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *	 saipan_sunny_hi4821qmipi_Sensor.h
+ *	 saipan_qtech_hi4821qmipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,8 +26,8 @@
  *	 CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _SAIPAN_SUNNY_HI4821QMIPI_SENSOR_H
-#define _SAIPAN_SUNNY_HI4821QMIPI_SENSOR_H
+#ifndef _SAIPAN_QTECH_HI4821QMIPI_SENSOR_H
+#define _SAIPAN_QTECH_HI4821QMIPI_SENSOR_H
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
