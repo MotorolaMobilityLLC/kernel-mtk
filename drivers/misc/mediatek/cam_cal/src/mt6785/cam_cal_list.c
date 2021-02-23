@@ -32,6 +32,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX386_MONO_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX586_SENSOR_ID, 0xA0, Common_read_region, IMX586_MAX_EEPROM_SIZE},
 	{IMX499_SENSOR_ID, 0xA0, Common_read_region},
+        {OV16A1Q_SENSOR_ID, 0xA2, Common_read_region},
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };

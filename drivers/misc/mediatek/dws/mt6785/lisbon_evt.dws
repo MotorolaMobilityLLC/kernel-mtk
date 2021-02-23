@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.07.2021.10:17:48"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.23.2021.10:17:58"-->
 <dct_cfg>
     <general chip="MT6785">
         <proj>MT6785_Phone</proj>
@@ -1984,6 +1984,11 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x2D</address>
             </device10>
+            <device11>
+                <varName>CAMERA_SUB_EEPROM</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x1D</address>
+            </device11>
             <device12>
                 <varName>CAMERA_MAIN_TWO</varName>
                 <channel>I2C_CHANNEL_7</channel>
