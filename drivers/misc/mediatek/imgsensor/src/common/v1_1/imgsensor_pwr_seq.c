@@ -32,9 +32,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #endif
 #ifdef CONFIG_CAMERA_DVDD_SWITCH
 //+EKSAIPAN,add it for saipan main and front camera bringup
-#if defined(SAIPAN_SUNNY_HI4821Q_MIPI_RAW)
+#if defined(SAIPAN_QTECH_HI4821Q_MIPI_RAW)
 	{
-		SENSOR_DRVNAME_SAIPAN_SUNNY_HI4821Q_MIPI_RAW,
+		SENSOR_DRVNAME_SAIPAN_QTECH_HI4821Q_MIPI_RAW,
 		{
 			{RST, Vol_Low, 1},
 			{AVDD, Vol_High, 1},
