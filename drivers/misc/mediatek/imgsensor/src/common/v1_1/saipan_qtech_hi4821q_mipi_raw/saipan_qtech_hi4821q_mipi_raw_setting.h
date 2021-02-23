@@ -1,10 +1,10 @@
-#ifndef _SAIPAN_SUNNY_HI4821QMIPI_SETTING_H
-#define _SAIPAN_SUNNY_HI4821QMIPI_SETTING_H
+#ifndef _SAIPAN_QTECH_HI4821QMIPI_SETTING_H
+#define _SAIPAN_QTECH_HI4821QMIPI_SETTING_H
 
 #include "kd_camera_typedef.h"
 
 /*********************************init setting*****************************/
-kal_uint16 addr_data_pair_init_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_init_saipan_qtech_hi4821q[] = {
 	0x0790, 0x0100,
 	0x9000, 0x706F,
 	0x9002, 0x0000,
@@ -1408,7 +1408,7 @@ kal_uint16 addr_data_pair_init_saipan_sunny_hi4821q[] = {
 };
 
 /*********************************preview setting*****************************/
-kal_uint16 addr_data_pair_preview_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_preview_saipan_qtech_hi4821q[] = {
 	/********************************
 	*preview setting
 	*4000x3000@30fps[1400Mbps]
@@ -1617,7 +1617,7 @@ kal_uint16 addr_data_pair_preview_saipan_sunny_hi4821q[] = {
 };
 
 /*********************************capture setting*****************************/
-kal_uint16 addr_data_pair_capture_30fps_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_capture_30fps_saipan_qtech_hi4821q[] = {
 	/********************************
 	*capture setting
 	*8000x6000@15fps[2344Mbps]
@@ -1826,7 +1826,7 @@ kal_uint16 addr_data_pair_capture_30fps_saipan_sunny_hi4821q[] = {
 };
 
 /*********************************video setting*****************************/
-kal_uint16 addr_data_pair_video_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_video_saipan_qtech_hi4821q[] = {
 	/********************************
 	*video setting
 	*4000x3000@30fps[1400Mbps]
@@ -2035,7 +2035,7 @@ kal_uint16 addr_data_pair_video_saipan_sunny_hi4821q[] = {
 };
 
 /*********************************hs video setting*****************************/
-kal_uint16 addr_data_pair_hs_video_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_hs_video_saipan_qtech_hi4821q[] = {
 	/********************************
 	*hs video setting
 	*1280x720@120fps[1400Mbps]
@@ -2244,7 +2244,7 @@ kal_uint16 addr_data_pair_hs_video_saipan_sunny_hi4821q[] = {
 };
 
 /*********************************slim video setting*****************************/
-kal_uint16 addr_data_pair_slim_video_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_slim_video_saipan_qtech_hi4821q[] = {
 	/********************************
 	*slim viedo setting
 	*4000x3000@30fps[1400Mbps]
@@ -2453,7 +2453,7 @@ kal_uint16 addr_data_pair_slim_video_saipan_sunny_hi4821q[] = {
 };
 
 /*********************************custom1 setting*****************************/
-kal_uint16 addr_data_pair_custom1_saipan_sunny_hi4821q[] = {
+kal_uint16 addr_data_pair_custom1_saipan_qtech_hi4821q[] = {
 	/********************************
 	*custom1 setting
 	*1920x10800@60fps[1400Mbps]
