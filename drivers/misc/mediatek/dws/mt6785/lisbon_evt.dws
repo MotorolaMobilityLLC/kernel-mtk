@@ -811,6 +811,16 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio72>
+	    <gpio73>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio73>
             <gpio75>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -895,7 +905,7 @@
             </gpio82>
             <gpio83>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
