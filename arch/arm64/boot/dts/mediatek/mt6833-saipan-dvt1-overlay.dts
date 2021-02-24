@@ -31,6 +31,11 @@
 	reset-gpio = <&pio 139 0>;
 };
 
+&abov_int_default {
+            /* active state */
+            pinmux = <PINMUX_GPIO65__FUNC_GPIO65>;
+};
+
 &i2c7 {
     abov_sar@20 {
         interrupts = <65 IRQ_TYPE_EDGE_FALLING 65 0>;
