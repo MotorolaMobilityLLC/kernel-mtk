@@ -370,6 +370,12 @@ config MTK_HP_ANASWITCH
 	  Only enable this when you have headphone analog switch
 	  If you say Y, enable MTK_HP_ANASWITCH
 
+config SND_SMARTPA_AW881XX
+	tristate "SoC Audio for awinic aw881xx series"
+	depends on I2C
+	help
+          This option enables support for aw881xx series Smart PA.
+
 config SND_SOC_MTK_BTCVSD
 	bool "MTK BT CVSD ALSA ARICHITECTURE"
 	help
