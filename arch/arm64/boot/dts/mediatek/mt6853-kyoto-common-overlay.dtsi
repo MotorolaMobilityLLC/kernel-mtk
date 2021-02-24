@@ -13,6 +13,7 @@
 #include "mediatek/mt6853-moto-common-overlay.dtsi"
 #include "mediatek/cust_mt6853_camera.dtsi"
 #include "mediatek/mt6853-kyoto-charger.dtsi"
+#include "mediatek/cust_mt6853_touch_ft3518u.dtsi"
 
 &reserved_memory {
 };
@@ -270,6 +271,9 @@
 };
 /* CONSYS end */
 
+&touch {
+	compatible = "mediatek,touch";
+};
 /* DISPSYS GPIO standardization */
 
 &pio {
