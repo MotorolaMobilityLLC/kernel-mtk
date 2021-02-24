@@ -786,7 +786,7 @@ static int als_set_cali(uint8_t *data, uint8_t count)
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int ret = 0;
 
-	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+1), GFP_KERNEL);
+	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+sizeof(int32_t)), GFP_KERNEL);
 	if (!buf) {
 		return -ENOMEM;
 	}
@@ -796,7 +796,7 @@ static int als_set_cali(uint8_t *data, uint8_t count)
 	spin_lock(&calibration_lock);
 	atomic_set(&obj->als_cali, buf[1]);
 	spin_unlock(&calibration_lock);
-	ret = sensor_cfg_to_hub(ID_LIGHT, (uint8_t *)buf, (count+1));
+	ret = sensor_cfg_to_hub(ID_LIGHT, (uint8_t *)buf, (count+sizeof(int32_t)));
 	kfree(buf);
 	return ret;
 }
@@ -944,7 +944,7 @@ static int ps_set_cali(uint8_t *data, uint8_t count)
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int ret = 0;
 
-	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+1), GFP_KERNEL);
+	buf = (int32_t *)kzalloc(sizeof(uint8_t)*(count+sizeof(int32_t)), GFP_KERNEL);
 	if (!buf) {
 		return -ENOMEM;
 	}
@@ -956,7 +956,7 @@ static int ps_set_cali(uint8_t *data, uint8_t count)
 	atomic_set(&obj->ps_cover, buf[2]);
 	atomic_set(&obj->ps_uncover, buf[3]);
 	spin_unlock(&calibration_lock);
-	ret =  sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)buf, (count+1));
+	ret =  sensor_cfg_to_hub(ID_PROXIMITY, (uint8_t *)buf, (count+sizeof(int32_t)));
 	kfree(buf);
 	return ret;
 }
