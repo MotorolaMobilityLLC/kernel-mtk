@@ -237,8 +237,8 @@
 		reg = <0x34>;
 		reset-gpio = <&pio 169 0>;
 		irq-gpio = <&pio 39 0>;
-		monitor-flag = <1>;
-		monitor-timer-val = <30000>;
+		fade-enable = <0>;
+		pa-syn-enable = <0>;
 		status = "okay";
 	};
 };
