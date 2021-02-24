@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.24.2021.11:22:16"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.24.2021.14:45:45"-->
 <dct_cfg>
     <general chip="MT6833">
         <proj>P21_Phone1</proj>
@@ -113,15 +113,7 @@
                 <ies>true</ies>
             </gpio0>
             <gpio1>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_EINT_SAR_PIN</varName0>
                 <smt>true</smt>
-                <ies>true</ies>
             </gpio1>
             <gpio2>
                 <eint_mode>true</eint_mode>
@@ -783,14 +775,14 @@
                 <ies>true</ies>
             </gpio64>
             <gpio65>
-                <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_INIT_NO_COVER</varName0>
-                <smt>false</smt>
+                <varName0>GPIO_EINT_SAR_PIN</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio65>
             <gpio66>
