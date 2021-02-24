@@ -394,7 +394,10 @@ struct subprocess_info *call_usermodehelper_setup(const char *path, char **argv,
 	INIT_WORK(&sub_info->work, call_usermodehelper_exec_work);
 
 #ifdef CONFIG_STATIC_USERMODEHELPER
-	sub_info->path = CONFIG_STATIC_USERMODEHELPER_PATH;
+	if ((path != NULL) && !strcmp(path, "/system/bin/reboot"))
+		sub_info->path = path;
+	else
+		sub_info->path = CONFIG_STATIC_USERMODEHELPER_PATH;
 #else
 	sub_info->path = path;
 #endif
