@@ -189,25 +189,6 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	return get_byte;
 }
 
-static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
-{
-	kal_uint16 get_byte = 0;
-	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
-
-	 /* Add this func to set i2c speed by each sensor */
-	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
-	return get_byte;
-}
-
-static int write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
-{
-	char pusendcmd[4] = {(char)(addr >> 8),
-			     (char)(addr & 0xFF),
-			     (char)(para & 0xFF)};
-
-	return iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
-}
-
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[2] = {(char)(addr & 0xff), (char)(para & 0xff)};
@@ -795,32 +776,16 @@ static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM s
 	return ERROR_NONE;
 }
 
-static void check_stream_is_on(void)
-{
-	int i = 0;
-	UINT32 framecnt;
-	int timeout = (10000/imgsensor.current_fps)+1;
-
-	for (i = 0; i < timeout; i++) {
-
-		framecnt = read_cmos_sensor_8(0x0005);
-		if (framecnt != 0xFF) {
-			pr_debug("GC02M1 stream is on, %d \\n", framecnt);
-			break;
-		}
-		pr_debug("GC02M1 stream is not on %d \\n", framecnt);
-		mdelay(1);
-	}
-}
-
 static kal_uint32 streaming_control(kal_bool enable)
 {
 	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
-		write_cmos_sensor_8(0x0100, 0x01);
-		check_stream_is_on();
-	} else
-		write_cmos_sensor_8(0x0100, 0x00);
+		write_cmos_sensor(0xfe, 0x00);
+		write_cmos_sensor(0x3e, 0x90);
+	} else {
+		write_cmos_sensor(0xfe, 0x00);
+		write_cmos_sensor(0x3e, 0x00);
+	}
 	return ERROR_NONE;
 }
 
@@ -915,6 +880,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = rate;
 		}
 		break;
+	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
+		*(feature_data + 1) = 0;
+		*(feature_data + 2) = imgsensor_info.margin;
+		break;
 	case SENSOR_FEATURE_SET_ESHUTTER:
 		set_shutter(*feature_data);
 		break;
@@ -998,17 +967,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*feature_return_para_32 = 1; /*BINNING_NONE*/
-			break;
-		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			if (*(feature_data + 2))/* HDR on */
-				*feature_return_para_32 = 1;/*BINNING_NONE*/
-			else
-				*feature_return_para_32 = 2;/*BINNING_AVERAGED*/
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			*feature_return_para_32 = 2; /*BINNING_AVERAGED*/
 			break;
