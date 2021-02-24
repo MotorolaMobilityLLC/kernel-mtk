@@ -31,5 +31,12 @@
 	reset-gpio = <&pio 139 0>;
 };
 
+&i2c7 {
+    abov_sar@20 {
+        interrupts = <65 IRQ_TYPE_EDGE_FALLING 65 0>;
+        abov,irq-gpio-std = <&pio 65 0>;
+    };
+};
+
 #include <saipan_dvt1/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
