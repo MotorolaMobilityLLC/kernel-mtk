@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.24.2021.10:21:50"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.24.2021.11:22:16"-->
 <dct_cfg>
     <general chip="MT6833">
         <proj>P21_Phone1</proj>
@@ -959,13 +959,12 @@
                 <ies>true</ies>
             </gpio80>
             <gpio81>
-                <eint_mode>false</eint_mode>
-                <def_mode>3</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_SRCLKENAI_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio81>
