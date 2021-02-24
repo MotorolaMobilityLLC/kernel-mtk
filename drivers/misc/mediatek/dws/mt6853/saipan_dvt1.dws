@@ -1024,11 +1024,12 @@
             </gpio86>
             <gpio87>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_GPS_LNA_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio87>
@@ -1997,11 +1998,11 @@
             </gpio179>
             <gpio180>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio180>
