@@ -12,6 +12,7 @@
 
 #include "mediatek/mt6853-moto-common-overlay.dtsi"
 #include "mediatek/cust_mt6853_camera.dtsi"
+#include "mediatek/mt6853-kyoto-charger.dtsi"
 
 &reserved_memory {
 };
