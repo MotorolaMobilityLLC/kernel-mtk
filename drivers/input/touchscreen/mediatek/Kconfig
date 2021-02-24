@@ -22,6 +22,7 @@ config TOUCHSCREEN_MTK
 	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/FT3519/Kconfig"
+source "drivers/input/touchscreen/mediatek/FT3518U/Kconfig"
 
 config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
 	bool "MediaTek Touch Panel Rotation With LCM"
