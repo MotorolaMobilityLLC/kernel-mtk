@@ -27,5 +27,9 @@
 	};
 };
 
+&aw881xx_smartpa {
+	reset-gpio = <&pio 139 0>;
+};
+
 #include <saipan_dvt1/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
