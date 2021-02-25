@@ -42,6 +42,7 @@ struct alspshub_ipi_data {
 	atomic_t	ps_thd_val_low;
 	atomic_t	ps_cover;
 	atomic_t	ps_uncover;
+	atomic_t	ps_cali_result;
 	ulong		enable;
 	ulong		pending_intr;
 	bool als_factory_enable;
@@ -346,12 +347,23 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 			(int64_t)event->time_stamp);
 	} else if (event->flush_action == CALI_ACTION) {
 		spin_lock(&calibration_lock);
-		atomic_set(&obj->ps_thd_val_high, event->data[0]);
-		atomic_set(&obj->ps_thd_val_low, event->data[1]);
-		atomic_set(&obj->ps_cover, event->data[2]);
-		atomic_set(&obj->ps_uncover, event->data[3]);
-		spin_unlock(&calibration_lock);
-		err = ps_cali_report(event->data);
+		//cali type 0:ct, 1:factory threshold, 2:irq line, 3:undo calibration
+		if (event->data[0] == 0) {
+			atomic_set(&obj->ps_cali_result, event->data[1]);
+			spin_unlock(&calibration_lock);
+		} else if ((event->data[0] == 1) || (event->data[0] == 3)) {
+			atomic_set(&obj->ps_cali_result, event->data[1]);
+			atomic_set(&obj->ps_thd_val_high, event->data[2]);
+			atomic_set(&obj->ps_thd_val_low, event->data[3]);
+			atomic_set(&obj->ps_cover, event->data[4]);
+			atomic_set(&obj->ps_uncover, event->data[5]);
+			spin_unlock(&calibration_lock);
+			err = ps_cali_report(event->data);
+		} else if (event->data[0] == 2) {
+			atomic_set(&obj->ps_cali_result, event->data[1]);
+			spin_unlock(&calibration_lock);
+		} else
+			spin_unlock(&calibration_lock);
 		complete(&obj->ps_cali_done);
 	}
 	return err;
@@ -572,7 +584,7 @@ static int pshub_factory_enable_calibration(void)
 					  msecs_to_jiffies(3000));
 	if (!ret)
 		return -1;
-	return 0;
+	return atomic_read(&obj->ps_cali_result);
 }
 
 
