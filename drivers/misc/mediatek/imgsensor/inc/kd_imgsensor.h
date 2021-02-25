@@ -721,6 +721,8 @@
 #define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1B_MIPI_MONO "saipan_cxt_gc02m1b_mipi_mono"
 #define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW "saipan_cxt_gc02m1_mipi_raw"
 
+/*moto */
+#include "mot_imgsensor.h"
 /******************************************************************************
  *
  ******************************************************************************/

@@ -213,6 +213,9 @@ UINT32 OV02B10_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 UINT32 OV13B10LN_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 UINT32 S5K4H7LN_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 
+/*moto*/
+#include "mot_sensor_list.h"
+
 extern struct IMGSENSOR_SENSOR_LIST gimgsensor_sensor_list[];
 
 #endif

@@ -16,7 +16,12 @@ endif
 
 CONFIG_MTK_PLATFORM_SENSOR := $(subst ",,$(CONFIG_MTK_PLATFORM))
 
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"")
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+else
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
+ccflags-y += -D$(MTK_PLATFORM) -D$(ARCH_MTK_PROJECT)
+endif
 IMGSENSOR_DRIVER_PATH  := $(srctree)/drivers/misc/mediatek/imgsensor/src
 MTK_DRIVER_PATH  := $(srctree)/drivers/misc/mediatek
 COMMON_VERSION := v1_1
@@ -31,10 +36,18 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_hw.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_i2c.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_legacy.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_proc.o
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"")
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_sensor_list.o
+else
+obj-y				+= ./camera_project/$(ARCH_MTK_PROJECT)/imgsensor_sensor_list.o
+endif
 obj-y				+= ../common/$(COMMON_VERSION)/seninf.o
 ifneq ($(ARCH_MTK_PROJECT), k6833v1_64_mt6317)
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"")
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_pwr_seq.o
+else
+obj-y				+= ./camera_project/$(ARCH_MTK_PROJECT)/imgsensor_pwr_seq.o
+endif
 endif
 
 define FILTER_DRV
@@ -60,6 +73,9 @@ endif
 
 $(info imgsensor drv by platform $(project_drv))
 
+ifneq ($(ARCH_MTK_PROJECT),)
+obj-y				+= $(project_drv)
+endif
 obj-y				+= $(platform_drv)
 
 ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw))
@@ -75,13 +91,19 @@ ifneq ($(project_drv),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
 endif
 else
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"")
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
+else
+obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
+endif
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw_$(MTK_DERIVED_PLATFORM)
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw
 endif
 
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/common/$(COMMON_VERSION)/camera_hw
+
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
 
 # Enable parallelism
 # subdir-ccflags-y += -DSENSOR_PARALLEISM
