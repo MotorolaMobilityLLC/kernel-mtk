@@ -15,7 +15,12 @@ MTK_CUSTOM_PATH := $(srctree)/drivers/misc/mediatek
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 CAM_CAL_SRC_PATH := $(MTK_CUSTOM_PATH)/cam_cal/src
 CAM_CAL_PLATFORM_SRC_PATH := $(CAM_CAL_SRC_PATH)/$(MTK_PLATFORM)
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),)
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+else
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
+ccflags-y += -D$(MTK_PLATFORM) -D$(ARCH_MTK_PROJECT)
+endif
 COMMON_VERSION := v2
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
@@ -33,7 +38,6 @@ obj-y += ../common/$(COMMON_VERSION)/eeprom_utils.o
 # Platform code
 obj-y += eeprom_i2c_custom_driver.o
 
-
 define INC_CUSTOM_SRC
 ifeq ($(wildcard $(CAM_CAL_PLATFORM_SRC_PATH)/camera_project/$(ARCH_MTK_PROJECT)/$(1).c),)
 obj-y += $(1).o
@@ -43,5 +47,6 @@ endif
 endef
 
 # Project or platform code
-CUSTOM_SRC_LIST := cam_cal_list
+CUSTOM_SRC_LIST := cam_cal_list custom_eeprom_driver
 $(foreach src,$(CUSTOM_SRC_LIST),$(eval $(call INC_CUSTOM_SRC,$(src))))
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))

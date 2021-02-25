@@ -5,3 +5,7 @@ config MTK_IMGSENSOR
 	  CONFIG_MTK_IMGSENSOR
 
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
+config ARCH_MOTO_PROJECT
+	string CONFIG_ARCH_MOTO_PROJECT
+	help
+	  CONFIG_ARCH_MOTO_PROJECT

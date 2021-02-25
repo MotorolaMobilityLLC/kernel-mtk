@@ -594,6 +594,8 @@
 #define SENSOR_DRVNAME_MOT_LISBON_S5K4H7_MIPI_RAW           "mot_lisbon_s5k4h7_mipi_raw"
 //add lisbon sensor drvname end
 
+/*moto */
+#include "mot_imgsensor.h"
 /******************************************************************************
  *
  ******************************************************************************/
