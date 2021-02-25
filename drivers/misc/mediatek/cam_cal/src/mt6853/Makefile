@@ -4,7 +4,14 @@ MTK_CUSTOM_PATH := $(srctree)/drivers/misc/mediatek
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 CAM_CAL_SRC_PATH := $(MTK_CUSTOM_PATH)/cam_cal/src
 CAM_CAL_PLATFORM_SRC_PATH := $(CAM_CAL_SRC_PATH)/$(MTK_PLATFORM)
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"")
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+CUSTOM_SRC_LIST := cam_cal_list
+else
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
+ccflags-y += -D$(MTK_PLATFORM) -D$(ARCH_MTK_PROJECT)
+CUSTOM_SRC_LIST := cam_cal_list custom_eeprom_driver
+endif
 COMMON_VERSION := v2
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
@@ -37,5 +44,5 @@ endif
 endef
 
 # Project or platform code
-CUSTOM_SRC_LIST := cam_cal_list
 $(foreach src,$(CUSTOM_SRC_LIST),$(eval $(call INC_CUSTOM_SRC,$(src))))
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
