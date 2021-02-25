@@ -376,6 +376,7 @@ void himax_rst_gpio_set(int pinnum, uint8_t value)
 
 int himax_gpio_power_config(struct himax_i2c_platform_data *pdata)
 {
+#if 0
 	int error = 0;
 
 	error = regulator_enable((*kp_tpd)->reg);
@@ -384,6 +385,7 @@ int himax_gpio_power_config(struct himax_i2c_platform_data *pdata)
 		I("Failed to enable reg-vgp6: %d\n", error);
 
 	msleep(100);
+#endif
 #if defined(HX_RST_PIN_FUNC)
 	kp_tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
 	msleep(20);
@@ -735,13 +737,13 @@ static int himax_common_local_init(void)
 	int retval;
 
 	I("[Himax] Himax_ts SPI Touchscreen Driver local init\n");
-
+#if 0
 	(*kp_tpd)->reg = regulator_get((*kp_tpd)->tpd_dev, "vtouch");
 	retval = regulator_set_voltage((*kp_tpd)->reg, 2800000, 2800000);
 
 	if (retval != 0)
 		E("Failed to set voltage 2V8: %d\n", retval);
-
+#endif
 	retval = spi_register_driver(&himax_common_driver);
 	if (retval < 0) {
 		E("unable to add SPI driver.\n");
