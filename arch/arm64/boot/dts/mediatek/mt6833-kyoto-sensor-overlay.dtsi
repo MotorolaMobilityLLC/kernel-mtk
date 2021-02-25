@@ -1,0 +1,50 @@
+&pio {
+    abov_int_pin {
+        abov_int_default: abov_int_default {
+            /* active state */
+            pinmux = <PINMUX_GPIO48__FUNC_GPIO48>;
+            slew-rate = <2>;
+            input-enable;
+            bias-pull-up;
+        };
+    };
+};
+
+&mt_pmic_vio28_ldo_reg {
+	regulator-name = "vio28";
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-enable-ramp-delay = <1920>;
+};
+
+&i2c9 {
+    status = "ok";
+    abov_sar@20 {
+        status = "ok";
+        compatible = "abov,abov_sar_mmi_overlay_7ch";
+        reg = <0x20>;
+        cap_vdd-supply = <&mt_pmic_vio28_ldo_reg>;
+        interrupt-parent = <&pio>;
+        interrupts = <48 IRQ_TYPE_EDGE_FALLING 48 0>;
+        abov,irq-gpio-std = <&pio 48 0>;
+        pinctrl-names = "abov_int_default";
+        pinctrl-0 = <&abov_int_default>;
+        reg_array_len = <0x03>;
+        reg_array_val = <0x07 0x00 0x08 0x7F 0xFB 0x01>;
+        cap,use_channel_ch0 = <0x00>;
+        cap,use_channel_ch1 = <0x01>;
+        cap,use_channel_ch2 = <0x02>;
+        cap,use_channel_ch3 = <0x03>;
+        cap,use_channel_ch4 = <0x04>;
+        ch0_name = "capsense_bottom_right";
+        ch1_name = "capsense_bottom_left";
+        ch2_name = "capsense_top_left";
+        ch3_name = "capsense_top_mid";
+        ch4_name = "capsense_top_right";
+        label = "AbovCapSense";
+        cap,channel_number = <0x05>;
+        cap,fw_mode_ret = <0x70>;
+        button_mask = <0x155>;
+        cap,flash_erase_time = <3000>;
+    };
+};
