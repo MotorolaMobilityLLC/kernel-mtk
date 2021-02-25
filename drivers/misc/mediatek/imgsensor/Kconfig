@@ -10,3 +10,7 @@ config CAMERA_DVDD_SWITCH
 	help
 	    Use to Use to distinguish camera config for saipan
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
+config ARCH_MOTO_PROJECT
+	string CONFIG_ARCH_MOTO_PROJECT
+	help
+	  CONFIG_ARCH_MOTO_PROJECT
