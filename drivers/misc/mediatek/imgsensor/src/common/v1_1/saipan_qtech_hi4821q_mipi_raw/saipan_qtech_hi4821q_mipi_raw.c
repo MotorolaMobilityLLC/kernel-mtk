@@ -507,13 +507,13 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	/* [4:9] = M meams M X         */
 	/* Total gain = M + N /16 X   */
 
-	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
+	if (gain < BASEGAIN || gain > 64 * BASEGAIN) {
 		LOG_INF("Error gain setting");
 
 		if (gain < BASEGAIN)
 			gain = BASEGAIN;
-		else if (gain > 16 * BASEGAIN)
-			gain = 16 * BASEGAIN;
+		else if (gain > 64 * BASEGAIN)
+			gain = 64 * BASEGAIN;
 	}
 
 	reg_gain = gain2reg(gain);
