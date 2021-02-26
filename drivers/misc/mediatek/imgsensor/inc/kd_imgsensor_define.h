@@ -675,6 +675,7 @@ struct ACDK_SENSOR_INFO_STRUCT {
 	MUINT16 SensorVerFOV;
 	MUINT16 SensorOrientation;
 	MUINT32 SensorModuleID;
+	MUINT8  efuseID[64];
 /* IKSWR-45543 Begin*/
 	mot_calibration_status_t calibration_status;
 	mot_calibration_mnf_t mnf_calibration;
