@@ -20,7 +20,7 @@
 #include <linux/fs.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
-
+#include "cam_cal_define.h"
 #include "saipan_dmegc_hi1336_mipi_raw_Sensor.h"
 #include "saipan_dmegc_hi1336_mipi_raw_Setting.h"
 #include "saipan_dmegc_hi1336_otp.h"
@@ -36,7 +36,7 @@
 
 //extern bool read_saipan_dmegc_hi1336_eeprom( kal_uint16 addr, BYTE *data, kal_uint32 size);
 //extern bool read_eeprom( kal_uint16 addr, BYTE * data, kal_uint32 size);
-
+extern void imgSensorSetDataEfuseID(u8 * buf,u32 deviceID,u32 length);
 
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -231,6 +231,44 @@ static void write_cmos_sensor_8(kal_uint32 addr, kal_uint32 para)
 		(char)(addr & 0xFF), (char)(para & 0xFF)};
 
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
+
+static struct stCAM_CAL_DATAINFO_STRUCT st_rear_saipan_dmegc_hi1336_eeprom_data ={
+	.sensorID= SAIPAN_DMEGC_HI1336_SENSOR_ID,
+	.deviceID = 0x02,
+	.dataLength = 0x1638,
+	.sensorVendorid = 0x0B000000,
+	.vendorByte = {1,2,3,4},
+	.dataBuffer = NULL,
+};
+
+
+void ImgSensor_FuseIDRead_hi1336(struct stCAM_CAL_DATAINFO_STRUCT*pData){
+	int i;
+	kal_uint8 data[10] = {0x00, };
+	write_cmos_sensor_8(0x0b02, 0x01);
+	write_cmos_sensor_8(0x0809, 0x00);
+	write_cmos_sensor_8(0x0b00, 0x00);
+	mdelay(10);
+	write_cmos_sensor_8(0x0260, 0x10);
+	write_cmos_sensor_8(0x0809, 0x01);
+	write_cmos_sensor_8(0x0b00, 0x01);
+	mdelay(1);
+	write_cmos_sensor_8(0x030a, 0x00);
+	write_cmos_sensor_8(0x030b, 0x01);
+	write_cmos_sensor_8(0x0302, 0x01);
+	for(i = 0; i < 9; i++){
+		data[i] = read_cmos_sensor(0x0308);
+		pr_info("%2x",data[i]);
+	}
+	imgSensorSetDataEfuseID(data,pData->deviceID,9);
+	write_cmos_sensor_8(0x0809, 0x00);
+	write_cmos_sensor_8(0x0b00, 0x00);
+	mdelay(10);
+	write_cmos_sensor_8(0x0260, 0x00);
+	write_cmos_sensor_8(0x0809, 0x01);
+	write_cmos_sensor_8(0x0b00, 0x01);
+	mdelay(1);
 }
 
 static void set_dummy(void)
@@ -482,6 +520,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_int32 size = 0;
+
+	saipan_dmegc_hi1336_table_write_cmos_sensor(
+			addr_data_pair_init_saipan_dmegc_hi1336,
+			sizeof(addr_data_pair_init_saipan_dmegc_hi1336) /
+			sizeof(kal_uint16));
+	ImgSensor_FuseIDRead_hi1336(&st_rear_saipan_dmegc_hi1336_eeprom_data);
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
