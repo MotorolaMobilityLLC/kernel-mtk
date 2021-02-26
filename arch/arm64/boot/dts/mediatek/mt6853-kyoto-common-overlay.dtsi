@@ -11,7 +11,7 @@
  */
 
 #include "mediatek/mt6853-moto-common-overlay.dtsi"
-#include "mediatek/cust_mt6853_camera.dtsi"
+#include "mediatek/mt6853-kyoto-camera-overlay.dtsi"
 #include "mediatek/mt6853-kyoto-charger.dtsi"
 #include "mediatek/cust_mt6853_touch_ft3518u.dtsi"
 #include "mediatek/mt6833-kyoto-sensor-overlay.dtsi"

@@ -797,12 +797,11 @@
             </gpio67>
             <gpio68>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>false</inpull_en>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_INIT_NO_COVER</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio68>
@@ -1006,13 +1005,12 @@
                 <ies>true</ies>
             </gpio87>
             <gpio88>
-                <eint_mode>true</eint_mode>
+                <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_EINT_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio88>
@@ -1028,16 +1026,23 @@
             </gpio89>
             <gpio90>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>false</inpull_en>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio90>
             <gpio91>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
                 <smt>true</smt>
+                <ies>true</ies>
             </gpio91>
             <gpio92>
                 <eint_mode>false</eint_mode>
@@ -1046,7 +1051,6 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_RST_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio92>
@@ -2256,11 +2260,6 @@
                 <channel>I2C_CHANNEL_0</channel>
                 <address>0x65</address>
             </device0>
-            <device5>
-                <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_2</channel>
-                <address>0x10</address>
-            </device5>
             <device7>
                 <varName>CAP_TOUCH</varName>
                 <channel>I2C_CHANNEL_7</channel>
@@ -2271,11 +2270,6 @@
                 <channel>I2C_CHANNEL_3</channel>
                 <address>0x08</address>
             </device10>
-            <device11>
-                <varName>CAMERA_SUB</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x1A</address>
-            </device11>
             <device14>
                 <varName>SUBPMIC</varName>
                 <channel>I2C_CHANNEL_5</channel>
@@ -2298,29 +2292,24 @@
             </device17>
             <device24>
                 <varName>CAMERA_MAIN</varName>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x7A</address>
+            </device24>
+            <device25>
+                <varName>CAMERA_SUB</varName>
                 <channel>I2C_CHANNEL_8</channel>
                 <address>0x1A</address>
-            </device24>
+            </device25>
             <device26>
-                <varName>CAMERA_MAIN_AF</varName>
+                <varName>CAMERA_MAIN_TWO</varName>
                 <channel>I2C_CHANNEL_8</channel>
-                <address>0x72</address>
+                <address>0x1B</address>
             </device26>
             <device27>
-                <varName>CAMERA_MAIN_TWO_AF</varName>
-                <channel>I2C_CHANNEL_2</channel>
-                <address>0x0C</address>
-            </device27>
-            <device29>
                 <varName>CAMERA_MAIN_THREE</varName>
-                <channel>I2C_CHANNEL_9</channel>
-                <address>0x10</address>
-            </device29>
-            <device31>
-                <varName>CAMERA_MAIN_THREE_AF</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address>0x0C</address>
-            </device31>
+                <address>0x1A</address>
+            </device27>
         </module>
         <module name="md1_eint">
             <count>5</count>
