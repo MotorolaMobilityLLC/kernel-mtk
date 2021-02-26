@@ -93,7 +93,7 @@ static struct stCAM_CAL_CHECKSUM_STRUCT st_rear_saipan_qtech_hi4821q_Checksum[11
 extern int imgSensorReadEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData,
 	struct stCAM_CAL_CHECKSUM_STRUCT* checkData);
 extern int imgSensorSetEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData);
-
+extern void imgSensorSetDataEfuseID(u8 * buf,u32 deviceID,u32 length);
 #endif
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);

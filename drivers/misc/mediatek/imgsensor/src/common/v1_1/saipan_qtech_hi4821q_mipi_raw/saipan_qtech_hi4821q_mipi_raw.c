@@ -314,6 +314,14 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
 }
 
+static void write_cmos_sensor_8(kal_uint32 addr, kal_uint32 para)
+{
+	char pu_send_cmd[4] = {(char)(addr >> 8),
+		(char)(addr & 0xFF),(char)(para & 0xFF)};
+
+	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
+
 static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d\n",
@@ -329,6 +337,34 @@ static kal_uint32 return_sensor_id(void)
 
 }
 
+void ImgSensor_FuseIDRead(struct stCAM_CAL_DATAINFO_STRUCT*pData){
+	int i;
+	kal_uint8 data[10] = {0x00, };
+	write_cmos_sensor_8(0x0b00, 0x00);
+	mdelay(10);
+	write_cmos_sensor_8(0x0260, 0x10);
+	write_cmos_sensor_8(0x034C, 0xAA);
+	write_cmos_sensor_8(0x034D, 0x55);
+	write_cmos_sensor_8(0x0b00, 0x01);
+	mdelay(1);
+	write_cmos_sensor_8(0x030C, 0x00);
+	write_cmos_sensor_8(0x030D, 0x01);
+	write_cmos_sensor_8(0x0302, 0x01);
+	for(i = 0; i < 9; i++){
+		data[i] = read_cmos_sensor(0x0308);
+		pr_info("%2x",data[i]);
+	}
+	imgSensorSetDataEfuseID(data,pData->deviceID,9);
+	write_cmos_sensor_8(0x0b00, 0x00);
+	mdelay(10);
+	write_cmos_sensor_8(0x034C, 0x00);
+	write_cmos_sensor_8(0x034D, 0x00);
+	write_cmos_sensor_8(0x0303, 0x00);
+	write_cmos_sensor_8(0x0302, 0x00);
+	write_cmos_sensor_8(0x0260, 0x00);
+	write_cmos_sensor_8(0x0b00, 0x01);
+	mdelay(1);
+}
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 {
@@ -674,6 +710,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_int32 size = 0;
+
+	saipan_qtech_hi4821q_table_write_cmos_sensor(
+			addr_data_pair_init_saipan_qtech_hi4821q,
+			sizeof(addr_data_pair_init_saipan_qtech_hi4821q) /
+			sizeof(kal_uint16));
+	ImgSensor_FuseIDRead(&st_rear_saipan_qtech_hi4821q_eeprom_data);
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);

@@ -1,4 +1,6 @@
 #define PFX "CAM_CAL_OTP"
+#define MAX_EFUSE_ID_LENGTH  (64)
+#define CAM_CAL_I2C_MAX_SENSOR 4
 
 #include "eeprom_driver_moto.h"
 
@@ -27,6 +29,39 @@ void dumpEEPROMData(int u4Length,u8* pu1Params)
 	LOG_INF("\n");
 }
 #endif
+
+static u8 imgSensorStaticEfuseID[CAM_CAL_I2C_MAX_SENSOR][MAX_EFUSE_ID_LENGTH] ={{0},{0},{0},{0}};
+void imgSensorSetDataEfuseID(u8*buf,u32 deviceID, u32 length)
+{
+	u8 efuseIDStr[MAX_EFUSE_ID_LENGTH] = {0};
+	int index = 0;
+	int len = 0;
+	if(buf == NULL){
+		LOG_ERR("invalid buffer,please check your driver\n");
+		return ;
+	}
+	if((deviceID != 1)&&(deviceID != 2)&&(deviceID != 4)){
+		LOG_ERR("invalid deviceID(%d),please check your driver\n",deviceID);
+		return ;
+	}
+	memset(efuseIDStr,0,MAX_EFUSE_ID_LENGTH);
+	for(index = 0;(index < length)&&(index < MAX_EFUSE_ID_LENGTH);index++){
+		len += snprintf(efuseIDStr+len,sizeof(efuseIDStr),"%02x",buf[index]);
+	}
+	LOG_INF("deviceID = %d,efuseIDStr = %s\n",deviceID,efuseIDStr);
+	index = deviceID/2;
+	memset((char*)&imgSensorStaticEfuseID[index][0],0,MAX_EFUSE_ID_LENGTH);
+	strncpy((char*)&imgSensorStaticEfuseID[index][0],(char*)efuseIDStr,strlen((char*)efuseIDStr));
+	LOG_INF("[getImgSensorEfuseID]|efuse id = %d , index = %d\n",imgSensorStaticEfuseID[index][0],index);
+}
+u8 *getImgSensorEfuseID(u32 sensorID){ /*deviceID is match the SensorId,0,1,2,3*/
+	if(sensorID > (CAM_CAL_I2C_MAX_SENSOR - 1)){
+		LOG_ERR("invalid deviceID = %d\n",sensorID);
+		return NULL;
+	}
+	LOG_INF("[getImgSensorEfuseID]|efuse id = %d , sensor id = %d\n",imgSensorStaticEfuseID[sensorID][0],sensorID);
+	return &imgSensorStaticEfuseID[sensorID][0];
+}
 
 int imgSensorCheckEepromData(struct stCAM_CAL_DATAINFO_STRUCT* pData, struct stCAM_CAL_CHECKSUM_STRUCT* cData){
 	int i = 0;
