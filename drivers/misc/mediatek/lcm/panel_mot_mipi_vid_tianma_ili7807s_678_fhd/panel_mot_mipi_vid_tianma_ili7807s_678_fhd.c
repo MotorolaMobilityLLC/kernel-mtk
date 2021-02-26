@@ -144,7 +144,12 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 
 static struct LCM_setting_table init_setting_cmd[] = {
 	{0xFF, 3, {0x78, 0x07, 0x00} },	//Page0
-	{0x11, 1, {00} },
+	{0x11, 1, {0x00} },
+	{0xFF, 3, {0x78, 0x07, 0x06} },
+	{0x5F, 1, {0x24} },
+	{0x4E, 1, {0x60} },
+	{0x4D, 1, {0x01} },
+	{0x48, 1, {0x09} },
 	{REGFLAG_DELAY, 120, {} },
 
 	{0xFF, 3, {0x78,0x07,0x01}},
@@ -631,17 +636,17 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 25;
-	params->dsi.horizontal_frontporch = 25;
+	params->dsi.horizontal_backporch = 46;
+	params->dsi.horizontal_frontporch = 46;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
-	params->dsi.PLL_CLOCK = 540;
+	params->dsi.PLL_CLOCK = 560;
 	params->physical_height = 161;
 	params->physical_width = 70;
 
 	params->density = 480;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
@@ -652,8 +657,8 @@ static void lcm_init_power(void)
 	lcm_util.set_lcd_ldo_en(1);
 	if(lcm_util.set_gpio_lcd_enp_bias) {
 		lcm_util.set_gpio_lcd_enp_bias(1);
-		_lcm_i2c_write_bytes(0x00, 0xf);
-		_lcm_i2c_write_bytes(0x01, 0xf);
+		_lcm_i2c_write_bytes(0x00, 0x12);
+		_lcm_i2c_write_bytes(0x01, 0x12);
 	}
 	else
 		pr_debug("[LCM]set_gpio_lcd_enp_bias not defined\n");
