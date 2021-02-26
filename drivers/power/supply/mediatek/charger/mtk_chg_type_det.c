@@ -811,7 +811,11 @@ static int mt_charger_probe(struct platform_device *pdev)
 	//ret = get_boot_mode();
 	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT ||
 	    boot_mode == LOW_POWER_OFF_CHARGING_BOOT)
+#ifdef MTK_BASE
 		cti->tcpc_kpoc = true;
+#else
+		cti->tcpc_kpoc = false;
+#endif
 	pr_info("%s KPOC(%d)\n", __func__, cti->tcpc_kpoc);
 
 	/* Init Charger Detection */
