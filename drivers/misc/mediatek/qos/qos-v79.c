@@ -28,10 +28,6 @@ static const struct qos_ipi_cmd mt6779_qos_ipi_pin[] = {
 			.id = 0,
 			.valid = true,
 		},
-	[QOS_IPI_DVFSRC_ENABLE] = {
-			.id = 16,
-			.valid = true,
-		},
 	[QOS_IPI_QOS_BOUND] = {
 			.id = 10,
 			.valid = true,
@@ -176,32 +172,11 @@ static const struct qos_sram_addr mt6779_qos_sram_pin[] = {
 			.offset = 0x7C,
 			.valid = true,
 		},
+	[QOS_TOTAL_BW] = {
+			.offset = 0x100,
+			.valid = false,
+		},
 };
-
-static int mt6779_qos_dvfsrc_init(struct mtk_qos *qos)
-{
-	struct qos_ipi_data qos_ipi_d;
-	struct arm_smccc_res ares;
-
-	arm_smccc_smc(MTK_SIP_VCOREFS_CONTROL, 2,
-		0, 0, 0, 0, 0, 0,
-		&ares);
-	if (!ares.a0) {
-		qos->dram_type = ares.a1;
-	} else {
-		pr_info("mtkqos:%s dram type fails: %lu\n",
-			__func__, ares.a0);
-		return ares.a0;
-	}
-
-	qos_ipi_d.cmd = QOS_IPI_DVFSRC_ENABLE;
-	qos_ipi_d.u.dvfsrc_enable.dvfsrc_en = 1;
-	qos_ipi_d.u.dvfsrc_enable.dram_type = qos->dram_type;
-
-	qos_ipi_to_sspm_command(&qos_ipi_d, 3);
-
-	return 0;
-}
 
 static int mt6779_qos_sspm_init(void)
 {
@@ -215,6 +190,7 @@ static int mt6779_qos_sspm_init(void)
 
 static int mt6779_qos_ipi_recv_handler(void *arg)
 {
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	struct ipi_action qos_isr;
 	struct qos_ipi_data qos_ipi_d;
 	struct mtk_qos *qos = arg;
@@ -243,6 +219,7 @@ static int mt6779_qos_ipi_recv_handler(void *arg)
 				__func__, qos_ipi_d.cmd);
 
 	} while (!kthread_should_stop());
+#endif
 
 	return 0;
 }
@@ -251,7 +228,6 @@ static const struct mtk_qos_soc mt6779_qos_data = {
 	.ipi_pin = mt6779_qos_ipi_pin,
 	.sram_pin = mt6779_qos_sram_pin,
 	.qos_sspm_init = mt6779_qos_sspm_init,
-	.qos_dvfsrc_init = mt6779_qos_dvfsrc_init,
 	.qos_ipi_recv_handler = mt6779_qos_ipi_recv_handler,
 };
 
