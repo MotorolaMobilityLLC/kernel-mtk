@@ -92,6 +92,40 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 	},
 	{
 		IMGSENSOR_SENSOR_IDX_MAIN3,
+		IMGSENSOR_I2C_DEV_3,
+		{
+			{IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+			{IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+			{IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+			{IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+			{IMGSENSOR_HW_PIN_PDN,   IMGSENSOR_HW_ID_GPIO},
+			{IMGSENSOR_HW_PIN_RST,   IMGSENSOR_HW_ID_GPIO},
+#ifdef MIPI_SWITCH
+			{IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL,	 IMGSENSOR_HW_ID_GPIO},
+#endif
+
+			{IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+		},
+	},
+	{
+		IMGSENSOR_SENSOR_IDX_SUB3,
+		IMGSENSOR_I2C_DEV_4,
+		{
+			{IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
+			{IMGSENSOR_HW_PIN_AVDD,  IMGSENSOR_HW_ID_GPIO},
+			{IMGSENSOR_HW_PIN_DOVDD, IMGSENSOR_HW_ID_REGULATOR},
+			{IMGSENSOR_HW_PIN_DVDD,  IMGSENSOR_HW_ID_GPIO},
+			{IMGSENSOR_HW_PIN_PDN,	 IMGSENSOR_HW_ID_GPIO},
+			{IMGSENSOR_HW_PIN_RST,	 IMGSENSOR_HW_ID_GPIO},
+#ifdef MIPI_SWITCH
+			{IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL,	 IMGSENSOR_HW_ID_GPIO},
+#endif
+
+			{IMGSENSOR_HW_PIN_NONE,  IMGSENSOR_HW_ID_NONE},
+		},
+	},
+	{
+		IMGSENSOR_SENSOR_IDX_MAIN4,
 		IMGSENSOR_I2C_DEV_4,
 		{
 			{IMGSENSOR_HW_PIN_MCLK,  IMGSENSOR_HW_ID_MCLK},
@@ -145,13 +179,13 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 			},
 			{
 				IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL,
-				IMGSENSOR_HW_PIN_STATE_LEVEL_0,
+				IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH,
 				0,
 				IMGSENSOR_HW_PIN_STATE_LEVEL_0,
 				0
 			},
 		},
-		IMGSENSOR_SENSOR_IDX_SUB2,
+		IMGSENSOR_SENSOR_IDX_MAIN3,
 	},
 	{
 		PLATFORM_POWER_SEQ_NAME,
@@ -167,8 +201,8 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 				IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL,
 				IMGSENSOR_HW_PIN_STATE_LEVEL_0,
 				0,
-				//IMGSENSOR_HW_PIN_STATE_LEVEL_0,
-				IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH,
+				IMGSENSOR_HW_PIN_STATE_LEVEL_0,
+				//IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH,
 
 				0
 			},
@@ -193,7 +227,7 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 				0
 			},
 		},
-		IMGSENSOR_SENSOR_IDX_MAIN3,
+		IMGSENSOR_SENSOR_IDX_MAIN4,
 	},
 #endif
 
@@ -208,11 +242,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
             SENSOR_DRVNAME_MOT_LISBON_OV64B40_MIPI_RAW,
             {
                 {SensorMCLK, Vol_High, 4},
-                {PDN, Vol_Low, 5},
+                //{PDN, Vol_Low, 5},
                 {RST, Vol_Low, 5},
                 {AVDD, Vol_2800, 0},
                 {DOVDD, Vol_1800, 0},
-                {PDN, Vol_High, 0},
+                {RST, Vol_High, 0},
                 {DVDD, Vol_1100, 1},
                 {AFVDD, Vol_2800, 5},
                 {RST, Vol_High, 0},
@@ -271,14 +305,14 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			SENSOR_DRVNAME_MOT_LISBON_S5K4H7_MIPI_RAW,
 			{
 				{PDN, Vol_Low, 1},
-				{RST, Vol_Low, 1},
+				//{RST, Vol_Low, 1},
 				{AVDD, Vol_2800, 0},
 				{DVDD, Vol_1200, 1},
 				{DOVDD, Vol_1800, 0},
 				{SensorMCLK, Vol_High, 1},
 				//{AFVDD, Vol_2800, 5},
 				{PDN, Vol_High, 0},
-				{RST, Vol_High, 0},
+				//{RST, Vol_High, 0},
 			},
 		},
 #endif
