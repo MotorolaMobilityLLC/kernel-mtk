@@ -6,6 +6,7 @@
 #ifndef __CCIF_HIF_PLATFORM_H__
 #define __CCIF_HIF_PLATFORM_H__
 #include "ccci_config.h"
+#include "ccci_common_config.h"
 
 #include <linux/io.h>
 
@@ -47,19 +48,12 @@ do {\
 #define APCCIF_ACK    (0x14)
 #define APCCIF_CHDATA (0x100)
 
-#if (MD_GENERATION <= 6292)
-#define RINGQ_BASE (8)
-#define RINGQ_SRAM (7)
-#define RINGQ_EXP_BASE (0)
-#define CCIF_CH_NUM 16
-#define AP_MD_CCB_WAKEUP (8)
-#else
 #define RINGQ_BASE (0)
 #define RINGQ_SRAM (15)
 #define RINGQ_EXP_BASE (15)
 #define CCIF_CH_NUM 24
 #define AP_MD_CCB_WAKEUP (7)
-#endif
+
 
 /*AP to MD*/
 #define H2D_EXCEPTION_ACK        (RINGQ_EXP_BASE+1)
@@ -97,5 +91,7 @@ do {\
 
 /* peer */
 #define AP_MD_PEER_WAKEUP	(RINGQ_EXP_BASE+5)
+#define MD_PCORE_PCCIF_BASE 0x20510000
 
+#define CCIF_SRAM_SIZE 512
 #endif /*__CCIF_HIF_PLATFORM_H__*/
