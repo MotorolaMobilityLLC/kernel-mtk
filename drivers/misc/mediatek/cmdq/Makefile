@@ -12,7 +12,9 @@
 #
 
 # common driver code for CMDQ
-obj-y += v3/
+ifeq ($(CONFIG_MTK_CMDQ_V3),y)
+	obj-y += v3/
+endif
 # mdp_sw_sync
 obj-y += mdp_sync/
 # EOF
