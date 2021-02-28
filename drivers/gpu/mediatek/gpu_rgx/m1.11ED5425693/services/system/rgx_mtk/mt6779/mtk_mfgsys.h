@@ -94,7 +94,7 @@ extern unsigned int (*mtk_get_gpu_idle_fp)(void);
 extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
 extern void (*mtk_enable_gpu_dvfs_timer_fp)(bool bEnable);
 extern void (*mtk_boost_gpu_freq_fp)(void);
-extern void (*mtk_set_bottom_gpu_freq_fp)(unsigned int);
+extern void (*mtk_set_bottom_gpu_freq_fp)(unsigned int ui32FreqLevel);
 
 extern unsigned int (*mtk_custom_get_gpu_freq_level_count_fp)(void);
 extern void (*mtk_custom_boost_gpu_freq_fp)(unsigned int ui32FreqLevel);
