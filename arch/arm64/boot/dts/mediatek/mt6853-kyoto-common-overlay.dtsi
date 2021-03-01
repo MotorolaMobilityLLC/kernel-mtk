@@ -97,6 +97,10 @@
 	pwr_off_seq = [04 00 00 02];
 };
 
+&mt6315_3_regulator {
+	interrupts = <11 IRQ_TYPE_LEVEL_HIGH 11 0>;
+};
+
 &mt6360_typec {
 	mt6360pd,intr_gpio_num = <9>; /* direct defined GPIO num */
 	mt6360pd,intr_gpio = <&pio 9 0x0>;
