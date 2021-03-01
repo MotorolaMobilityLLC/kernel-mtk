@@ -265,6 +265,8 @@
 	/* common */
 	battery_cv = <4400000>;
 
+	enable_pe_2;
+
 	/* charging current */
 	usb_charger_current_suspend = <0>;
 	usb_charger_current_unconfigured = <70000>;
