@@ -3301,7 +3301,8 @@ int mt_accdet_probe(struct platform_device *dev)
 	}
 
 	__set_bit(EV_KEY, accdet_input_dev->evbit);
-	__set_bit(KEY_PLAYPAUSE, accdet_input_dev->keybit);
+	//__set_bit(KEY_PLAYPAUSE, accdet_input_dev->keybit);
+	__set_bit(KEY_MEDIA, accdet_input_dev->keybit);
 	__set_bit(KEY_VOLUMEDOWN, accdet_input_dev->keybit);
 	__set_bit(KEY_VOLUMEUP, accdet_input_dev->keybit);
 	__set_bit(KEY_VOICECOMMAND, accdet_input_dev->keybit);
