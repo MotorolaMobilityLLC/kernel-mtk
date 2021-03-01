@@ -32,6 +32,7 @@
 #define AW_I2C_RETRY_DELAY	2
 
 struct aw99703_data *g_aw99703_data;
+static unsigned char chipid;
 
 static int platform_read_i2c_block(struct i2c_client *client, char *writebuf,
 	int writelen, char *readbuf, int readlen)
@@ -629,6 +630,7 @@ static int aw99703_read_chipid(struct aw99703_data *drvdata)
 		switch (value) {
 		case 0x03:
 			pr_info("%s aw99703 detected\n", __func__);
+			chipid = value;
 			return 0;
 		default:
 			pr_info("%s unsupported device revision (0x%x)\n",
@@ -641,6 +643,14 @@ static int aw99703_read_chipid(struct aw99703_data *drvdata)
 	}
 
 	return -EINVAL;
+}
+
+int is_aw99703_chip_exist(void)
+{
+	if (chipid == 0x3)
+		return 1;
+	else
+		return 0;
 }
 
 int chargepump_set_backlight_level(unsigned int level)
