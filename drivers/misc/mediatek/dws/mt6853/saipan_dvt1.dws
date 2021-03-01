@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.24.2021.14:45:45"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.01.2021.09:57:33"-->
 <dct_cfg>
     <general chip="MT6833">
         <proj>P21_Phone1</proj>
@@ -1888,22 +1888,22 @@
             </gpio169>
             <gpio170>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <smt>true</smt>
-                <ies>true</ies>
-            </gpio170>
-            <gpio171>
-                <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>true</out_high>
                 <varName0>GPIO_RF_PWREN_RST_PIN</varName0>
+                <smt>true</smt>
+                <ies>true</ies>
+            </gpio170>
+            <gpio171>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio171>
