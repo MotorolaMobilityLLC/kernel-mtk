@@ -702,11 +702,30 @@ static void lcm_resume(void)
 	lcm_init();
 }
 
-extern int chargepump_set_backlight_level(int level);
+#if defined(CONFIG_LEDS_AW99703)
+extern int is_aw99703_chip_exist(void);
+extern int chargepump_set_backlight_level(unsigned int level);
+#endif
+#if defined(CONFIG_LEDS_LM3697)
+extern int is_lm3697_chip_exist(void);
+extern int lm3697_set_brightness_level(unsigned int level);
+#endif
+
 static void lcm_setbacklight(/*void *handle, */unsigned int level)
 {
 	pr_debug("lcm_setbacklight.");
-	chargepump_set_backlight_level(level);
+#if defined(CONFIG_LEDS_AW99703)
+	if (is_aw99703_chip_exist()) {
+		chargepump_set_backlight_level(level);
+		return;
+	}
+#endif
+#if defined(CONFIG_LEDS_LM3697)
+	if (is_lm3697_chip_exist()) {
+		lm3697_set_brightness_level(level);
+		return;
+    }
+#endif
 }
 
 struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv = {

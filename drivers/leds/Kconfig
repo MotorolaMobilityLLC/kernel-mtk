@@ -717,6 +717,12 @@ config LEDS_AW99703
 	  through I2C. Say Y to enable support for the AW 99703 LED
 	  light automatically.
 
+config LEDS_LM3697
+	tristate "LED driver for LM3697"
+	depends on I2C && OF
+	help
+	  Say Y to enable the LM3697 LED driver for TI LMU devices.
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
