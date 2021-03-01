@@ -240,10 +240,20 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 			pled_dtsi[i].data =
 			   (long)chargepump_set_backlight_level;
 			LEDS_DEBUG("BL set by chargepump\n");
-#elif defined(CONFIG_LEDS_AW99703)
-			pled_dtsi[i].data =
-			   (long)chargepump_set_backlight_level;
-			LEDS_DEBUG("BL set by chargepump\n");
+#elif defined(CONFIG_LEDS_AW99703) || defined(CONFIG_LEDS_LM3697)
+			#if defined CONFIG_LEDS_AW99703
+				if (is_aw99703_chip_exist()) {
+					pled_dtsi[i].data = (long)chargepump_set_backlight_level;
+					break;
+				}
+			#endif
+			#if defined CONFIG_LEDS_LM3697
+				if (is_lm3697_chip_exist()) {
+					pled_dtsi[i].data = (long)lm3697_set_brightness_level;
+					break;
+				}
+			#endif
+			LEDS_DEBUG("[LEDS]LK:The backlight control mode is cust_set_backlight_level.\n");
 #else
 			pled_dtsi[i].data = (long)mtkfb_set_backlight_level;
 			LEDS_DEBUG("kernel:the BL hw mode is LCM.\n");
