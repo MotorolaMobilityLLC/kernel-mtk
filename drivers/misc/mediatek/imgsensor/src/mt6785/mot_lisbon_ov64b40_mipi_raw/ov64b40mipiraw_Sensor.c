@@ -843,14 +843,17 @@ static void custom4_setting(void)
 #define OV64B40_EEPROM_CRC_LSC_SIZE 1868
 #define OV64B40_EEPROM_CRC_PDAF_OUTPUT1_SIZE 496
 #define OV64B40_EEPROM_CRC_PDAF_OUTPUT2_SIZE 1004
+#define OV64B40_EEPROM_CRC_MANUFACTURING_SIZE 37
+#define OV64B40_MANUFACTURE_PART_NUMBER "28D00877"
+#define OV64B40_MPN_LENGTH 8
 
 static uint8_t ov64b40_eeprom[OV64B40_EEPROM_SIZE] = {0};
-static calibration_status_t mnf_status;
-static calibration_status_t af_status;
-static calibration_status_t awb_status;
-static calibration_status_t lsc_status;
-static calibration_status_t pdaf_status;
-static calibration_status_t dual_status;
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t af_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t pdaf_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -1233,6 +1236,24 @@ static calibration_status_t ov64b40_check_pdaf_data(void *data)
 	return NO_ERRORS;
 }
 
+static calibration_status_t ov64b40_check_manufacturing_data(void *data)
+{
+	struct ov64b40_eeprom_t *eeprom = (struct ov64b40_eeprom_t*)data;
+
+	if(strncmp(eeprom->mpn, OV64B40_MANUFACTURE_PART_NUMBER, OV64B40_MPN_LENGTH) != 0) {
+		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
+		return CRC_FAILURE;
+	}
+
+	if (!eeprom_util_check_crc16(data, OV64B40_EEPROM_CRC_MANUFACTURING_SIZE,
+		convert_crc(eeprom->manufacture_crc16))) {
+		LOG_INF("Manufacturing CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+
 static void ov64b40_eeprom_format_calibration_data(void *data)
 {
 	if (NULL == data) {
@@ -1240,7 +1261,7 @@ static void ov64b40_eeprom_format_calibration_data(void *data)
 		return;
 	}
 
-	mnf_status = 0;
+	mnf_status = ov64b40_check_manufacturing_data(data);
 	af_status = ov64b40_check_af_data(data);
 	awb_status = ov64b40_check_awb_data(data);;
 	lsc_status = ov64b40_check_lsc_data_mtk(data);;

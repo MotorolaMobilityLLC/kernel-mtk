@@ -1427,14 +1427,17 @@ static void slim_video_setting(void)
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/ov16a1q_eeprom_data.bin"
 #define OV16A1Q_EEPROM_CRC_AWB_CAL_SIZE 43
 #define OV16A1Q_EEPROM_CRC_LSC_SIZE 1868
+#define OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE 37
+#define OV16A1Q_MANUFACTURE_PART_NUMBER "28C85521"
+#define OV16A1Q_MPN_LENGTH 8
 
 static uint8_t ov16a1q_eeprom[OV16A1Q_EEPROM_SIZE] = {0};
-static calibration_status_t mnf_status;
-static calibration_status_t af_status;
-static calibration_status_t awb_status;
-static calibration_status_t lsc_status;
-static calibration_status_t pdaf_status;
-static calibration_status_t dual_status;
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t af_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t pdaf_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -1784,6 +1787,24 @@ static void ov16a1q_eeprom_get_mnf_data(void *data,
 	}
 }
 
+static calibration_status_t ov16a1q_check_manufacturing_data(void *data)
+{
+	struct ov16a1q_eeprom_t *eeprom = (struct ov16a1q_eeprom_t*)data;
+
+	if(strncmp(eeprom->mpn, OV16A1Q_MANUFACTURE_PART_NUMBER, OV16A1Q_MPN_LENGTH) != 0) {
+		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
+		return CRC_FAILURE;
+	}
+
+	if (!eeprom_util_check_crc16(data, OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE,
+		convert_crc(eeprom->manufacture_crc16))) {
+		LOG_INF("Manufacturing CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+
 static void ov16a1q_eeprom_format_calibration_data(void *data)
 {
 	if (NULL == data) {
@@ -1791,7 +1812,7 @@ static void ov16a1q_eeprom_format_calibration_data(void *data)
 		return;
 	}
 
-	mnf_status = 0;
+	mnf_status = ov16a1q_check_manufacturing_data(data);
 	af_status = 0;
 	awb_status = ov16a1q_check_awb_data(data);;
 	lsc_status = ov16a1q_check_lsc_data_mtk(data);;
@@ -1835,7 +1856,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				ov16a1q_read_data_from_eeprom(OV16A1Q_EEPROM_SLAVE_ADDR, 0x0000, OV16A1Q_EEPROM_SIZE);
 				ov16a1q_eeprom_dump_bin(EEPROM_DATA_PATH, OV16A1Q_EEPROM_SIZE, (void *)ov16a1q_eeprom);
 				ov16a1q_eeprom_format_calibration_data((void *)ov16a1q_eeprom);
-
 				LOG_INF("probe success, i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
