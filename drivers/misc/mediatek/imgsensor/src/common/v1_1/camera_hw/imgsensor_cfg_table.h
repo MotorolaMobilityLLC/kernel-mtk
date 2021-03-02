@@ -34,6 +34,7 @@ enum IMGSENSOR_HW_PIN {
 	IMGSENSOR_HW_PIN_DVDD_1V1,
 	IMGSENSOR_HW_PIN_DVDD_1V2,
 	//-EKSAIPAN,add it for saipan main and front camera bringup
+	IMGSENSOR_HW_PIN_DVDD_1V2_IN,
 #endif
 #ifdef MIPI_SWITCH
 	IMGSENSOR_HW_PIN_MIPI_SWITCH_EN,
@@ -77,6 +78,7 @@ enum IMGSENSOR_HW_PIN_STATE {
 #define DVDD_1V1    IMGSENSOR_HW_PIN_DVDD_1V1
 #define DVDD_1V2    IMGSENSOR_HW_PIN_DVDD_1V2
 //-EKSAIPAN,add it for saipan main and front camera bringup
+#define DVDD_1V2_IN    IMGSENSOR_HW_PIN_DVDD_1V2_IN
 #endif
 #define VDD_None    IMGSENSOR_HW_PIN_NONE
 
