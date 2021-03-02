@@ -153,6 +153,8 @@ enum drm_mode_status {
 #define DRM_MODE_MATCH_3D_FLAGS (1 << 3)
 #define DRM_MODE_MATCH_ASPECT_RATIO (1 << 4)
 
+#define DRM_DISPLAY_NAME_LEN 128
+
 /**
  * struct drm_display_mode - DRM kernel-internal display mode structure
  * @hdisplay: horizontal display size
@@ -337,6 +339,11 @@ struct drm_display_mode {
 	 * 0.
 	 */
 	int height_mm;
+
+	u64 panel_id;
+	u64 panel_ver;
+	char panel_name[DRM_DISPLAY_NAME_LEN];
+	char panel_supplier[DRM_DISPLAY_NAME_LEN];
 
 	/**
 	 * @crtc_clock:
