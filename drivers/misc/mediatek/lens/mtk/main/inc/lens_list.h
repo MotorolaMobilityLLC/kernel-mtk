@@ -458,4 +458,15 @@ extern long MOT_LYRIQ_GT9764AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Co
                            unsigned long a_u4Param);
 extern int MOT_LYRIQ_GT9764AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int MOT_LYRIQ_GT9764AF_GetFileName(unsigned char *pFileName);
+
+#define MOT_DW9800VAF_SetI2Cclient MOT_DW9800VAF_SetI2Cclient_Main
+#define MOT_DW9800VAF_Ioctl MOT_DW9800VAF_Ioctl_Main
+#define MOT_DW9800VAF_Release MOT_DW9800VAF_Release_Main
+#define MOT_DW9800VAF_GetFileName MOT_DW9800VAF_GetFileName_Main
+extern int MOT_DW9800VAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_DW9800VAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int MOT_DW9800VAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_DW9800VAF_GetFileName(unsigned char *pFileName);
 #endif

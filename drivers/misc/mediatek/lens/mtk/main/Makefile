@@ -87,5 +87,6 @@ mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
 mainaf-y  += common/gt9768af/GT9768AF.o
 mainaf-y  += common/gt9772af/GT9772AF.o
+mainaf-y  += common/mot_dw9800vaf/MOT_DW9800VAF.o
 
 endif # CONFIG_ARCH_MOTO_PROJECT == corfu

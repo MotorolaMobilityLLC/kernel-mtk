@@ -34,3 +34,4 @@ obj-$(CONFIG_MTK_LENS)    += main3af.o
 main3af-y  += main3_lens.o
 main3af-y  += common/bu24253af/BU24253AF.o
 main3af-y  += common/gt9772af/GT9772AF.o
+main3af-y  += common/mot_dw9714vaf/MOT_DW9714VAF.o

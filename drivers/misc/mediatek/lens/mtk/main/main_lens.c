@@ -91,6 +91,8 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	MOT_AUSTIN_DW9800VAF_Release_Main, MOT_AUSTIN_DW9800VAF_GetFileName_Main, NULL},
 	{1, AFDRV_MOT_LYRIQ_GT9764AF, MOT_LYRIQ_GT9764AF_SetI2Cclient, MOT_LYRIQ_GT9764AF_Ioctl,
         MOT_LYRIQ_GT9764AF_Release, MOT_LYRIQ_GT9764AF_GetFileName, NULL},
+	{1, "MOT_DW9800VAF", MOT_DW9800VAF_SetI2Cclient, MOT_DW9800VAF_Ioctl,
+	MOT_DW9800VAF_Release, MOT_DW9800VAF_GetFileName, NULL},
 	#if 0
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
@@ -185,6 +187,12 @@ static struct pinctrl_state *vcamaf_pio_off;
 #define CAMAF_PMIC     "camaf_m1_pmic"
 #define CAMAF_GPIO_ON  "camaf_m1_gpio_on"
 #define CAMAF_GPIO_OFF "camaf_m1_gpio_off"
+
+void mot_af_poweron(int state)
+{
+	af_pinctrl_set(AF_PINCTRL_PIN_HWEN, state);
+}
+EXPORT_SYMBOL(mot_af_poweron);
 
 static void camaf_power_init(void)
 {
