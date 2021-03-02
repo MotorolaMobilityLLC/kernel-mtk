@@ -358,7 +358,7 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 			atomic_set(&obj->ps_cover, event->data[4]);
 			atomic_set(&obj->ps_uncover, event->data[5]);
 			spin_unlock(&calibration_lock);
-			err = ps_cali_report(event->data);
+			err = ps_cali_report(&event->data[2]);
 		} else if (event->data[0] == 2) {
 			atomic_set(&obj->ps_cali_result, event->data[1]);
 			spin_unlock(&calibration_lock);
