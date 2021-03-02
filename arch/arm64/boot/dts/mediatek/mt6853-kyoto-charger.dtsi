@@ -65,6 +65,8 @@
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
         mmi,vfloat-comp-uv = <20000>;
+        max_charger_voltage = <11000000>;
+	enable_cp;
 };
 
 &bat_gm30 {
@@ -75,4 +77,103 @@
 
         df-serialnum = "SB18C51711";
         #include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
+};
+
+&pio {
+	bq2597x_int_default: bq2597x_int_default {
+		pinmux = <PINMUX_GPIO2__FUNC_GPIO2>;
+		slew-rate= <0>;
+		bias-disable;
+	};
+};
+
+&odm {
+	mmi_chrg_manager {
+		compatible = "mmi,chrg-manager";
+		mmi,pps-volt-steps = <20000>;
+		mmi,pps-curr-steps = <100000>;
+		mmi,pd-volt-max = <10000000>;
+		mmi,pd-curr-max = <3000000>;
+		mmi,batt-curr-boost = <300000>;
+		mmi,batt-ovp-lmt = <4550000>;
+		mmi,pl-chrg-vbatt-min = <3600000>;
+		mmi,typec-middle-current = <1500000>;
+		mmi,step-first-current-comp = <0>;
+		mmi,dont-rerun-aicl;
+		mmi,chrg-temp-zones-num = <5>;
+		mmi,mmi-chrg-temp-zones =
+					<0 4200 1000  0 0>,
+					<10 4200 2500 4450 1000>,
+					<15 4450 2500 0 0>,
+					<45 4250 5800 4450 4000>,
+					<60 4200 3600 0 0>;
+		mmi,thermal-mitigation =
+					<5800000>,
+					<5000000>,
+					<4000000>,
+					<3000000>,
+					<2000000>;
+		charger_device_0 {
+			chrg-name = "pmic-sw";
+			psy-name = "battery";
+			charging-curr-limited = <500000>;
+		};
+		charger_device_1 {
+			chrg-name = "cp-master";
+			psy-name = "bq2597x-standalone";
+			charging-curr-min = <2000000>;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+
+	bq2597x-standalone@65 {
+		compatible = "ti,bq2597x-standalone";
+		reg = <0x65>;
+
+		/delete-property/ interrupts;
+		interrupt-parent = <&pio>;
+		interrupts = <2 IRQ_TYPE_EDGE_FALLING 2 0>;
+		interrupt-names = "bq2597x_irq";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bq2597x_int_default>;
+		ti,bq2597x,bat-ovp-disable;
+		ti,bq2597x,bat-ovp-alarm-disable;
+		ti,bq2597x,bat-ucp-alarm-disable;
+		ti,bq2597x,bat-ocp-disable;
+		ti,bq2597x,bat-ocp-alarm-disable;
+
+		ti,bq2597x,bat-ucp-disable;
+
+		ti,bq2597x,bus-ovp-alarm-disable;
+		ti,bq2597x,bus-ocp-disable;
+		ti,bq2597x,bus-ocp-alarm-disable;
+
+
+		ti,bq2597x,bat-therm-disable;
+		ti,bq2597x,bus-therm-disable;
+		ti,bq2597x,die-therm-disable;
+
+		ti,bq2597x,bat-ovp-threshold = <4575>;
+		ti,bq2597x,bat-ovp-alarm-threshold = <4450>;
+		ti,bq2597x,bat-ocp-threshold = <8000>;
+		ti,bq2597x,bat-ocp-alarm-threshold = <6500>;
+
+		ti,bq2597x,bus-ovp-threshold = <12000>;
+		ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
+		ti,bq2597x,bus-ocp-threshold = <3750>;
+		ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
+
+		ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
+
+		ti,bq2597x,bat-therm-threshold = <0x15>;/*4.1%*/
+		ti,bq2597x,bus-therm-threshold = <0x15>;/*4.1%*/
+		ti,bq2597x,die-therm-threshold = <125>;
+
+		ti,bq2597x,ac-ovp-threshold = <17>;
+		ti,bq2597x,sense-resistor-mohm = <5>;
+
+	};
 };
