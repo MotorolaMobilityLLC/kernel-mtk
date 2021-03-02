@@ -28,6 +28,7 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcamd_1v1_0"},
 	{"ldo_vcamd_1v2_1"},
 	{"ldo_vcamd_1v2_0"},
+	{"ldo_vcamd_1v2_in"},
 	//-EKSAIPAN,add it for saipan main and front camera bringup
 #endif
 };
