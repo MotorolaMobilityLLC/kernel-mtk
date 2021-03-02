@@ -117,7 +117,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
         CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"wttest15-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[3]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[3]);
 
-       if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT))
+       if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT))
        {
                swtp->tx_power_mode = SWTP_DO_TX_POWER;
                CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
