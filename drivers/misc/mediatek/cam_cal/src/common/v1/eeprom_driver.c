@@ -62,6 +62,10 @@ static struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX] = { NULL };
 
 static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
+#ifdef CONFIG_PROJECT_LISBON
+extern unsigned int S5K4H7QT_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
+extern unsigned int s5k5e9_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
+#endif
 
 static unsigned int g_lastDevID;
 
@@ -666,6 +670,15 @@ static long EEPROM_drv_ioctl(struct file *file,
 		pr_debug("CAM_CALIOC_G_READ start! offset=%d, length=%d\n",
 			ptempbuf->u4Offset, ptempbuf->u4Length);
 
+#ifdef CONFIG_PROJECT_LISBON
+		if ((ptempbuf->deviceID == 16)&&(ptempbuf->sensorID == 0x487b)) {
+			i4RetValue = S5K4H7QT_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+			pr_err("s5k4h7 offset = 0x%x, parm = %d, i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
+		} else if ((ptempbuf->deviceID == 64)&&(ptempbuf->sensorID == 0x559b)) {
+                       i4RetValue = s5k5e9_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+                       pr_err("s5k5e9 offset = 0x%x, parm = %d, i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
+		} else {
+#endif
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
@@ -722,6 +735,9 @@ static long EEPROM_drv_ioctl(struct file *file,
 
 		pr_debug("Read data %d bytes take %lu us\n",
 			ptempbuf->u4Length, TimeIntervalUS);
+#endif
+#ifdef CONFIG_PROJECT_LISBON
+		}
 #endif
 		break;
 

@@ -36,7 +36,7 @@
 
 #include "s5k4h7mipiraw_Sensor.h"
 
-#define OTP_4H7 0
+#define OTP_4H7 1
 
 #if OTP_4H7
 #define FLAG_VALUE_PAGE 0x40
@@ -209,7 +209,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
 
-#if 0
+#if OTP_4H7
 static void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
@@ -893,7 +893,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor_8(0x0100, 0x01);
 }
 
-#if 0
+#if OTP_4H7
 typedef struct s5k4h7qt_otp_data {
 	unsigned char page_flag;
 	unsigned char module_id[2];
@@ -1084,7 +1084,7 @@ static int s5k4h7qt_read_data_from_otp(void)
 
 unsigned int S5K4H7QT_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
 {
-	if (size == 2) { //read module id
+	if (size == 4) { //read module id
 		memcpy(data, s5k4h7qt_otp_data.module_id, size);
 		LOGE("add = 0x%x,read module id\n",addr);
 	} else if (size == 8) { //read single awb data
@@ -1547,8 +1547,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			LOG_INF("s5k4h7qtmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
+#if OTP_4H7
+				s5k4h7qt_read_data_kernel();
+				s5k4h7qt_read_data_from_otp();
+				s5k4h7qt_eeprom_dump_bin(EEPROM_DATA_PATH, S5K4H7YX_EEPROM_SIZE, (void *)s5k4h7qt_eeprom);
+				s5k4h7qt_eeprom_format_calibration_data((void *)s5k4h7qt_eeprom);
+#endif
 #if 0
-				s5k4h7qt_read_data_kernel();1280*960@30fps,864Mb
+				s5k4h7qt_read_data_kernel();
 #if INCLUDE_NO_OTP_4H7
 				if ((s5k4h7qt_otp_data.moduleid > 0) && (s5k4h7qt_otp_data.moduleid < 0xFFFF)) {
 #endif
@@ -1871,7 +1877,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0;	/* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
-#if 0
+#if OTP_4H7
 	sensor_info->calibration_status.mnf = mnf_status;
 	sensor_info->calibration_status.af = af_status;
 	sensor_info->calibration_status.awb = awb_status;

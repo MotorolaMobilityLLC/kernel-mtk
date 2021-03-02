@@ -9,6 +9,13 @@ config CAMERA_DVDD_SWITCH
 	bool "Use to distinguish camera config for saipan"
 	help
 	    Use to Use to distinguish camera config for saipan
+
+config PROJECT_LISBON
+	bool CONFIG_PROJECT_LISBON
+	default n
+	help
+	  CONFIG_PROJECT_LISBON
+
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
 config ARCH_MOTO_PROJECT
 	string CONFIG_ARCH_MOTO_PROJECT
