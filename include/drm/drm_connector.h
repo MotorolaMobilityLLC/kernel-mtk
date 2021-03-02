@@ -177,6 +177,8 @@ enum drm_link_status {
 	DRM_LINK_STATUS_BAD = DRM_MODE_LINK_STATUS_BAD,
 };
 
+#define DRM_DISPLAY_NAME_LEN 128
+
 /**
  * enum drm_panel_orientation - panel_orientation info for &drm_display_info
  *
@@ -265,6 +267,11 @@ struct drm_display_info {
 	 * @height_mm: Physical height in mm.
 	 */
 	unsigned int height_mm;
+
+	u64 panel_id;
+	u64 panel_ver;
+	char panel_name[DRM_DISPLAY_NAME_LEN];
+	char panel_supplier[DRM_DISPLAY_NAME_LEN];
 
 	/**
 	 * @pixel_clock: Maximum pixel clock supported by the sink, in units of
