@@ -38,6 +38,7 @@ enum GPIO_CTRL_STATE_CAM {
 	GPIO_CTRL_STATE_LDO_VCAMD_1V2_H,
 	GPIO_CTRL_STATE_LDO_VCAMD_1V2_L,
 	//-EKSAIPAN,add it for saipan main and front camera bringup
+	GPIO_CTRL_STATE_LDO_VCAMD_1V2_IN,
 #endif
 	GPIO_CTRL_STATE_MAX_NUM_CAM,
 };
