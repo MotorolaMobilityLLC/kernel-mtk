@@ -84,10 +84,14 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	{1, "MOT_DW9714VAF", MOT_DW9714VAF_SetI2Cclient, MOT_DW9714VAF_Ioctl,
+	 MOT_DW9714VAF_Release, MOT_DW9714VAF_GetFileName, NULL},
+#if 0
 	{1, AFDRV_BU24253AF, BU24253AF_SetI2Cclient, BU24253AF_Ioctl,
 	 BU24253AF_Release, BU24253AF_GetFileName, NULL},
 	{1, AFDRV_GT9772AF, GT9772AF_SetI2Cclient, GT9772AF_Ioctl,
 	 GT9772AF_Release, GT9772AF_GetFileName, NULL},
+#endif
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -479,6 +483,8 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	camaf_power_init();
 	camaf_power_on();
 
+	mot_af_poweron(1);
+
 	/* OIS/EIS Timer & Workqueue */
 	/* init work queue */
 	INIT_WORK(&ois_work, ois_pos_polling);
@@ -514,6 +520,8 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	}
 
 	camaf_power_off();
+
+	mot_af_poweron(0);
 
 	/* OIS/EIS Timer & Workqueue */
 	/* Cancel Timer */

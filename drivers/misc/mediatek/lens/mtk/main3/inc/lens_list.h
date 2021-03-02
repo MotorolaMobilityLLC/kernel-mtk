@@ -38,4 +38,21 @@ extern int GT9772AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int GT9772AF_GetFileName(unsigned char *pFileName);
 
+
+#define MOT_DW9714VAF_SetI2Cclient MOT_DW9714VAF_SetI2Cclient_Main3
+#define MOT_DW9714VAF_Ioctl MOT_DW9714VAF_Ioctl_Main3
+#define MOT_DW9714VAF_Release MOT_DW9714VAF_Release_Main3
+#define MOT_DW9714VAF_PowerDown MOT_DW9714VAF_PowerDown_Main3
+#define MOT_DW9714VAF_GetFileName MOT_DW9714VAF_GetFileName_Main3
+extern int MOT_DW9714VAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_DW9714VAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int MOT_DW9714VAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_DW9714VAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int MOT_DW9714VAF_GetFileName(unsigned char *pFileName);
+
+extern void mot_af_poweron(int state);
+
 #endif
