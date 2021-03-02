@@ -88,6 +88,8 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	{1, "MOT_DW9714VAF", MOT_DW9714VAF_SetI2Cclient, MOT_DW9714VAF_Ioctl,
+	 MOT_DW9714VAF_Release, MOT_DW9714VAF_GetFileName, NULL},
 #if 0
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
 	 AK7371AF_Release, AK7371AF_GetFileName, NULL},
@@ -492,6 +494,7 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	g_s4AF_Opened = 1;
 	spin_unlock(&g_AF_SpinLock);
 
+	mot_af_poweron(1);
 #if !defined(CONFIG_MTK_LEGACY)
 	AFRegulatorCtrl(0);
 	AFRegulatorCtrl(1);
@@ -536,6 +539,7 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		spin_unlock(&g_AF_SpinLock);
 	}
 
+	mot_af_poweron(0);
 #if !defined(CONFIG_MTK_LEGACY)
 	AFRegulatorCtrl(2);
 #endif
