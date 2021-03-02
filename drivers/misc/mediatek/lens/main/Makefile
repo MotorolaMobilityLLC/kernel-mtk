@@ -119,5 +119,6 @@ else
   obj-y  += common/bu63169af/
 endif
 obj-y  += common/bu64253gwzaf/
+obj-y  += common/mot_dw9800vaf/
 
 endif
