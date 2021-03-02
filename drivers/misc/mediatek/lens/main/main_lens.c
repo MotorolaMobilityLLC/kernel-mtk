@@ -59,7 +59,8 @@
 #define I2C_REGISTER_ID 0x28
 #endif
 
-#define PLATFORM_DRIVER_NAME "lens_actuator_main_af"
+//#define PLATFORM_DRIVER_NAME "lens_actuator_main_af"
+#define PLATFORM_DRIVER_NAME "camera_af_hw_node"
 #define AF_DRIVER_CLASS_NAME "actuatordrv_main_af"
 
 #if I2C_CONFIG_SETTING == 1
@@ -90,8 +91,8 @@ static struct stAF_OisPosInfo OisPosInfo;
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_CN3938AAF, CN3938AAF_SetI2Cclient, CN3938AAF_Ioctl,
 	 CN3938AAF_Release, CN3938AAF_GetFileName, NULL},
-	{1, AFDRV_MOT_AUSTIN_DW9800VAF, MOT_AUSTIN_DW9800VAF_SetI2Cclient_Main, MOT_AUSTIN_DW9800VAF_Ioctl_Main,
-	MOT_AUSTIN_DW9800VAF_Release_Main, MOT_AUSTIN_DW9800VAF_GetFileName_Main, NULL},
+	{1, "MOT_DW9800VAF", MOT_DW9800VAF_SetI2Cclient, MOT_DW9800VAF_Ioctl,
+	MOT_DW9800VAF_Release, MOT_DW9800VAF_GetFileName, NULL},
 	 #if 0
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
@@ -264,6 +265,12 @@ static int af_pinctrl_set(int pin, int state)
 
 	return ret;
 }
+
+void mot_af_poweron(int state)
+{
+	af_pinctrl_set(AF_PINCTRL_PIN_HWEN, state);
+}
+EXPORT_SYMBOL(mot_af_poweron);
 
 /* PMIC */
 #if !defined(CONFIG_MTK_LEGACY)
