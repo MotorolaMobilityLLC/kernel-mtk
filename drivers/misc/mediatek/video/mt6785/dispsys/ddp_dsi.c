@@ -5482,7 +5482,7 @@ long lcd_enp_bias_setting(unsigned int value)
 		ret |=
 		    disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
 
-		lcm_mdelay(2);
+		lcm_mdelay(4);
 
 		ret |=
 		    disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
