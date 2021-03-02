@@ -342,6 +342,61 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_SLIM_VIDEO,
 };
 
+typedef struct {
+	uint8_t flag_sensor_lsc[1];
+	uint8_t lsc_table_data[360];
+	uint8_t lsc_crc_data[2];
+
+	uint8_t flag_basic_info[1];
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
+
+	uint8_t flag_source_awb[1];
+	uint8_t cie_ev[2];
+	uint8_t cie_u[2];
+	uint8_t cie_v[2];
+	uint8_t awb_r_g_golden_min_limit[1];
+	uint8_t awb_r_g_golden_max_limit[1];
+	uint8_t awb_b_g_golden_min_limit[1];
+	uint8_t awb_b_g_golden_max_limit[1];
+	uint8_t awb_src_1_golden_r[2];
+	uint8_t awb_src_1_golden_gr[2];
+	uint8_t awb_src_1_golden_gb[2];
+	uint8_t awb_src_1_golden_b[2];
+	uint8_t awb_src_1_golden_rg_ratio[2];
+	uint8_t awb_src_1_golden_bg_ratio[2];
+	uint8_t awb_src_1_golden_gr_gb_ratio[2];
+	uint8_t awb_src_1_r[2];
+	uint8_t awb_src_1_gr[2];
+	uint8_t awb_src_1_gb[2];
+	uint8_t awb_src_1_b[2];
+	uint8_t awb_src_1_rg_ratio[2];
+	uint8_t awb_src_1_bg_ratio[2];
+	uint8_t awb_src_1_gr_gb_ratio[2];
+	uint8_t awb_reserve[5];
+	uint8_t awb_crc16[2];
+
+	uint8_t flag_mtk_necessary[1];
+	uint8_t module_check_flag[1];
+	uint8_t otp_calibration_type[4];
+	uint8_t sensor_type[1];
+	uint8_t awb_af_calibration_type[1];
+	uint8_t new_mtk_format_ver[1];
+	uint8_t new_mtk_format_flag[3];
+	uint8_t mtk_necessary_crc16[2];
+}s5k5e9_otp_t;
+
+
 struct imgsensor_mode_struct {
 	kal_uint32 pclk;	//record different mode's pclk
 	kal_uint32 linelength;	//record different mode's linelength

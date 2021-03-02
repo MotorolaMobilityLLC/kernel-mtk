@@ -695,6 +695,472 @@ static void slim_video_setting(void)
 		sizeof(s5k5e9_slim_video_setting) / sizeof(kal_uint16));
 }
 
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	NO_LSC,
+	NO_BASIC_INFO,
+	NO_AWB,
+	NO_MTK_NECESSARY
+} calibration_status_t;
+
+static calibration_status_t lsc_status;
+static calibration_status_t basic_info_status;
+static calibration_status_t awb_status;
+static calibration_status_t mtk_necessary_status;
+
+#define S5K5E9_OTP_SIZE 463
+#define S5K5E9_LSC_SIZE 360
+#define S5K5E9_BASIC_INFO_SIZE 38
+#define S5K5E9_AWB_SIZE 44
+#define S5K5E9_MTK_NECESSARY_SIZE 12
+#define S5K5E9_EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k5e9_otp_data.bin"
+
+static s5k5e9_otp_t s5k5e9_otp_data;
+
+static uint8_t crc_reverse_byte(uint32_t data)
+{
+	return ((data * 0x0802LU & 0x22110LU) |
+		(data * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+	int32_t crc_match = 0;
+	uint16_t crc = 0x0000;
+	uint16_t crc_reverse = 0x0000;
+	uint32_t i, j;
+
+	uint32_t tmp;
+	uint32_t tmp_reverse;
+
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+		tmp_reverse = crc_reverse_byte(data[i]);
+		tmp = data[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+
+			if (((crc_reverse & 0x8000) >> 8) ^ (tmp_reverse & 0x80))
+				crc_reverse = (crc_reverse << 1) ^ 0x8005;
+			else
+				crc_reverse = crc_reverse << 1;
+
+			tmp_reverse <<= 1;
+		}
+	}
+
+	crc_reverse = (crc_reverse_byte(crc_reverse) << 8) |
+		crc_reverse_byte(crc_reverse >> 8);
+
+	if (crc == ref_crc || crc_reverse == ref_crc)
+		crc_match = 1;
+
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x CALC Reverse CRC 0x%x matches %d\n",
+		ref_crc, crc, crc_reverse, crc_match);
+
+	return crc_match;
+}
+
+unsigned int s5k5e9_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
+{
+	if (size == 4) { //read module id
+		memcpy(data, &s5k5e9_otp_data.mpn[0], size);
+		LOG_INF("read module id  0x%x 0x%x 0x%x 0x%x ",
+			s5k5e9_otp_data.mpn[0],s5k5e9_otp_data.mpn[1],s5k5e9_otp_data.mpn[2],s5k5e9_otp_data.mpn[3]);
+		if(basic_info_status != NO_ERRORS)
+			return 0 ;
+	} else if (size == 8) { //read single awb data
+		if (addr >= 0x0a3D) {
+			memcpy(data, (&s5k5e9_otp_data.awb_src_1_golden_r[0]), size);
+			LOG_INF("read golden  0x%x 0x%x 0x%x 0x%x ",
+			s5k5e9_otp_data.awb_src_1_golden_r[0],s5k5e9_otp_data.awb_src_1_golden_r[1],
+			s5k5e9_otp_data.awb_src_1_golden_gr[0],s5k5e9_otp_data.awb_src_1_golden_gr[1]);
+
+			if(awb_status != NO_ERRORS)
+				return 0 ;
+		} else {
+			memcpy(data,(&s5k5e9_otp_data.awb_src_1_r[0]), size);
+			LOG_INF("read unint  0x%x 0x%x 0x%x 0x%x ",
+			s5k5e9_otp_data.awb_src_1_r[0],s5k5e9_otp_data.awb_src_1_r[1],
+			s5k5e9_otp_data.awb_src_1_gr[0],s5k5e9_otp_data.awb_src_1_gr[1]);
+
+			if(awb_status != NO_ERRORS)
+				return 0 ;
+		}
+	}
+	else
+	{
+		int data_size = S5K5E9_OTP_SIZE-S5K5E9_LSC_SIZE-3;/* 3 is flag_sensor_lsc+lsc_crc_data*/
+		if(data_size>size)
+			data_size = size;
+		memcpy(data,(&s5k5e9_otp_data.flag_basic_info[0]), data_size);
+	}
+	return size;
+}
+
+static void s5k5e9_eeprom_get_mnf_data(mot_calibration_mnf_t *mnf)
+{
+	int ret;
+
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		s5k5e9_otp_data.eeprom_table_version[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+		s5k5e9_otp_data.mpn[0], s5k5e9_otp_data.mpn[1], s5k5e9_otp_data.mpn[2], s5k5e9_otp_data.mpn[3],
+		s5k5e9_otp_data.mpn[4], s5k5e9_otp_data.mpn[5], s5k5e9_otp_data.mpn[6], s5k5e9_otp_data.mpn[7]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", s5k5e9_otp_data.actuator_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", s5k5e9_otp_data.lens_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+
+	if (s5k5e9_otp_data.manufacturer_id[0] == 'S' && s5k5e9_otp_data.manufacturer_id[1] == 'U') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	} else if (s5k5e9_otp_data.manufacturer_id[0] == 'O' && s5k5e9_otp_data.manufacturer_id[1] == 'F') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "OFilm");
+	} else if (s5k5e9_otp_data.manufacturer_id[0] == 'Q' && s5k5e9_otp_data.manufacturer_id[1] == 'T') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown manufacturer_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+
+	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+		s5k5e9_otp_data.factory_id[0], s5k5e9_otp_data.factory_id[1]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->factory_id failed");
+		mnf->factory_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
+		s5k5e9_otp_data.manufacture_line[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_line failed");
+		mnf->manufacture_line[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		s5k5e9_otp_data.manufacture_date[0], s5k5e9_otp_data.manufacture_date[1], s5k5e9_otp_data.manufacture_date[2]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		s5k5e9_otp_data.serial_number[0], s5k5e9_otp_data.serial_number[1],
+		s5k5e9_otp_data.serial_number[2], s5k5e9_otp_data.serial_number[3],
+		s5k5e9_otp_data.serial_number[4], s5k5e9_otp_data.serial_number[5],
+		s5k5e9_otp_data.serial_number[6], s5k5e9_otp_data.serial_number[7],
+		s5k5e9_otp_data.serial_number[8], s5k5e9_otp_data.serial_number[9],
+		s5k5e9_otp_data.serial_number[10], s5k5e9_otp_data.serial_number[11],
+		s5k5e9_otp_data.serial_number[12], s5k5e9_otp_data.serial_number[13],
+		s5k5e9_otp_data.serial_number[14], s5k5e9_otp_data.serial_number[15]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
+
+static int s5k5e9_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
+{
+	unsigned short stram_flag = 0;
+	unsigned short val = 0;
+	int i = 0;
+	if (NULL == Buff) return 0;
+
+	stram_flag = read_cmos_sensor_8(0x0100); //3
+	if (stram_flag == 0) {
+		write_cmos_sensor_8(0x0100,0x01);   //3
+		mdelay(50);
+	}
+	write_cmos_sensor_8(0x0a02,page);    //3
+	write_cmos_sensor_8(0x0a00,0x01); //4 otp enable and read start
+
+	for (i = 0; i <= 100; i++)
+	{
+		mdelay(1);
+		val = read_cmos_sensor_8(0x0A01);
+		if (val == 0x01)
+			break;
+	}
+
+	for ( i = 0; i < size; i++ ) {
+		Buff[i] = read_cmos_sensor_8(start_add+i); //3
+		LOG_INF("s5k5e9  cur page = %d, start_add=[0x%x] Buff[%d] = 0x%x\n",page,start_add,i,Buff[i]);
+	}
+	write_cmos_sensor_8(0x0a00,0x04);
+	write_cmos_sensor_8(0x0a00,0x00); //4 //otp enable and read end
+
+	return 0;
+}
+
+static void s5k5e9_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+            ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+
+static void s5k5e9_otp_lsc_update(void)
+{
+	//LSC auto apply
+	if(lsc_status == NO_ERRORS)
+	{
+		write_cmos_sensor_8(0x3400,0x00); //auto load
+		write_cmos_sensor_8(0x0B00,0x01); //lsc on
+		LOG_INF("LSC Auto Correct OK!\n");
+	}
+}
+
+static int s5k5e9_get_mtk_necessary(void)
+{
+	uint8_t flag_mtk_necessary=0;
+	s5k5e9_read_otp_page_data(18,0x0A1E,&s5k5e9_otp_data.flag_mtk_necessary[0],1);
+	flag_mtk_necessary = s5k5e9_otp_data.flag_mtk_necessary[0]>>6;
+	if (flag_mtk_necessary == 0x01)
+	{
+		s5k5e9_read_otp_page_data(18,0x0A1F,&s5k5e9_otp_data.module_check_flag[0],13);
+	}
+	else
+	{
+		s5k5e9_otp_data.flag_mtk_necessary[0] =0;
+		s5k5e9_read_otp_page_data(19,0x0A42,&s5k5e9_otp_data.flag_mtk_necessary[0],2);
+		flag_mtk_necessary = s5k5e9_otp_data.flag_mtk_necessary[0]>>6;
+		if (flag_mtk_necessary == 0x01)
+		{
+			s5k5e9_read_otp_page_data(20,0x0A04,&s5k5e9_otp_data.otp_calibration_type[0],12);
+		}
+		else
+		{
+			mtk_necessary_status=NO_MTK_NECESSARY;
+			return NO_MTK_NECESSARY;
+		}
+	}
+
+	if (!eeprom_util_check_crc16(&s5k5e9_otp_data.flag_mtk_necessary[0], S5K5E9_MTK_NECESSARY_SIZE,
+		convert_crc(&s5k5e9_otp_data.mtk_necessary_crc16[0]))) {
+		LOG_INF("MTK_NECESSARY CRC Fails!");
+		mtk_necessary_status=CRC_FAILURE;
+		return CRC_FAILURE;
+	}
+
+	mtk_necessary_status=NO_ERRORS;
+	return NO_ERRORS;
+}
+
+static int s5k5e9_get_awb(void)
+{
+	uint8_t flag_source_awb=0;
+	s5k5e9_read_otp_page_data(17,0x0A30,&s5k5e9_otp_data.flag_source_awb[0],1);
+	flag_source_awb = s5k5e9_otp_data.flag_source_awb[0]>>6;
+	if (flag_source_awb == 0x01)
+	{
+		s5k5e9_read_otp_page_data(17,0x0A31,&s5k5e9_otp_data.cie_ev[0],19);
+		s5k5e9_read_otp_page_data(18,0x0A04,&s5k5e9_otp_data.cie_ev[0]+19,26);
+	}
+	else
+	{
+		s5k5e9_otp_data.flag_source_awb[0] =0;
+		s5k5e9_read_otp_page_data(19,0x0A14,&s5k5e9_otp_data.flag_source_awb[0],1);
+		flag_source_awb = s5k5e9_otp_data.flag_source_awb[0]>>6;
+		if (flag_source_awb == 0x01)
+		{
+			s5k5e9_read_otp_page_data(19,0x0A15,&s5k5e9_otp_data.cie_ev[0],45);
+		}
+		else
+		{
+			awb_status=NO_AWB;
+			return NO_AWB;
+		}
+	}
+
+	if (!eeprom_util_check_crc16(&s5k5e9_otp_data.flag_source_awb[0], S5K5E9_AWB_SIZE,
+		convert_crc(&s5k5e9_otp_data.awb_crc16[0]))) {
+		LOG_INF("AWB CRC Fails!");
+		awb_status=CRC_FAILURE;
+		return CRC_FAILURE;
+	}
+
+	awb_status=NO_ERRORS;
+	return NO_ERRORS;
+}
+
+static int s5k5e9_get_basic_info(void)
+{
+	uint8_t flag_basic_info=0;
+	s5k5e9_read_otp_page_data(17,0x0A08,&s5k5e9_otp_data.flag_basic_info[0],1);
+	flag_basic_info = s5k5e9_otp_data.flag_basic_info[0]>>6;
+	if (flag_basic_info == 0x01)
+	{
+		s5k5e9_read_otp_page_data(17,0x0A09,&s5k5e9_otp_data.eeprom_table_version[0],39);
+	}
+	else
+	{
+		s5k5e9_otp_data.flag_basic_info[0] =0;
+		s5k5e9_read_otp_page_data(18,0x0A2C,&s5k5e9_otp_data.flag_basic_info[0],1);
+		flag_basic_info = s5k5e9_otp_data.flag_basic_info[0]>>6;
+		if (flag_basic_info == 0x01)
+		{
+			s5k5e9_read_otp_page_data(18,0x0A2D,&s5k5e9_otp_data.eeprom_table_version[0],23);
+			s5k5e9_read_otp_page_data(19,0x0A04,&s5k5e9_otp_data.eeprom_table_version[0]+23,16);
+		}
+		else
+		{
+			basic_info_status=NO_BASIC_INFO;
+			return NO_BASIC_INFO;
+		}
+	}
+
+	if (!eeprom_util_check_crc16(&s5k5e9_otp_data.flag_basic_info[0], S5K5E9_BASIC_INFO_SIZE,
+		convert_crc(&s5k5e9_otp_data.manufacture_crc16[0]))) {
+		LOG_INF("BASIC_INFO CRC Fails!");
+		basic_info_status=CRC_FAILURE;
+		return CRC_FAILURE;
+	}
+
+	basic_info_status=NO_ERRORS;
+	return NO_ERRORS;
+}
+
+static int s5k5e9_get_lsc_data(void)
+{
+	int s5k5e9_lsc_index=0;
+	s5k5e9_read_otp_page_data(0,0x0A3D,&s5k5e9_otp_data.flag_sensor_lsc[0],1);
+	if (s5k5e9_otp_data.flag_sensor_lsc[0] == 0x01)
+	{
+		s5k5e9_read_otp_page_data(1,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index = s5k5e9_lsc_index+64;
+		s5k5e9_read_otp_page_data(2,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(3,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(4,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(5,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(6,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],40);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(17,0x0A04,&s5k5e9_otp_data.lsc_crc_data[0],2);
+	}
+	else if(s5k5e9_otp_data.flag_sensor_lsc[0] == 0x03)
+	{
+		s5k5e9_read_otp_page_data(6,0x0A2C,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],24);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +24;
+		s5k5e9_read_otp_page_data(7,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(8,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(9,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(10,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(11,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],64);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +64;
+		s5k5e9_read_otp_page_data(12,0x0A04,&s5k5e9_otp_data.lsc_table_data[s5k5e9_lsc_index],16);
+		s5k5e9_lsc_index  = s5k5e9_lsc_index +16;
+		s5k5e9_read_otp_page_data(17,0x0A06,&s5k5e9_otp_data.lsc_crc_data[0],2);
+	}
+	else
+	{
+		lsc_status=NO_LSC;
+		return NO_LSC;
+	}
+
+	if (!eeprom_util_check_crc16(&s5k5e9_otp_data.lsc_table_data[0], S5K5E9_LSC_SIZE,
+		convert_crc(&s5k5e9_otp_data.lsc_crc_data[0]))) {
+		LOG_INF("LSC CRC Fails!");
+		lsc_status=CRC_FAILURE;
+		return CRC_FAILURE;
+	}
+
+	lsc_status=NO_ERRORS;
+	return NO_ERRORS;
+
+}
+
+static void s5k5e9_read_sensor_otp(void)
+{
+
+	memset(&s5k5e9_otp_data,0,sizeof(s5k5e9_otp_data));
+	LOG_INF("s5k5e9_read_sensor_otp   sizeof(s5k5e9_otp_data)  = %d",sizeof(s5k5e9_otp_data));
+	s5k5e9_get_lsc_data();
+
+	s5k5e9_get_basic_info();
+
+	s5k5e9_get_awb();
+
+	s5k5e9_get_mtk_necessary();
+
+	write_cmos_sensor_8(0x0a00,0x04); //clear error bits
+	write_cmos_sensor_8(0x0a00,0x00); //initial command
+	write_cmos_sensor_8(0x0100,0x00);
+}
+
+
+
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -724,6 +1190,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				s5k5e9_read_sensor_otp();
+				s5k5e9_eeprom_dump_bin(S5K5E9_EEPROM_DATA_PATH, S5K5E9_OTP_SIZE, (void *)&s5k5e9_otp_data);
 				LOG_INF(
 					"i2c write id: 0x%x, sensor id: 0x%x module_id 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id,
@@ -799,7 +1267,7 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
-
+	s5k5e9_otp_lsc_update();//apply lsc otp
 	spin_lock(&imgsensor_drv_lock);
 
 	imgsensor.autoflicker_en = KAL_FALSE;
@@ -1074,6 +1542,11 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;	// 0 is default 1x
 	sensor_info->SensorHightSampling = 0;	// 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.mnf = basic_info_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
+	s5k5e9_eeprom_get_mnf_data( &sensor_info->mnf_calibration);
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
