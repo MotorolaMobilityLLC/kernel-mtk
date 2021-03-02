@@ -1699,13 +1699,17 @@ void himax_report_data_deinit(void)
 
 /*start ts_work*/
 #if defined(HX_USB_DETECT_GLOBAL)
+extern bool upmu_is_chr_det(void);
 void himax_cable_detect_func(bool force_renew)
 {
 	struct himax_ts_data *ts;
 
 	/*u32 connect_status = 0;*/
 	uint8_t connect_status = 0;
-
+	if (upmu_is_chr_det() == true)
+		USB_detect_flag = true;
+	else
+		USB_detect_flag = false;
 	connect_status = USB_detect_flag;/* upmu_is_chr_det(); */
 	ts = private_ts;
 
