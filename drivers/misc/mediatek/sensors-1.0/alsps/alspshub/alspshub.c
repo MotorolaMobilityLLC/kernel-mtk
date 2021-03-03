@@ -866,6 +866,7 @@ static int ps_enable_nodata(int en)
 {
 	int res = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int32_t cfg_data[2];
 
 	pr_debug("obj_ipi_data als enable value = %d\n", en);
 	if (en == true)
@@ -874,6 +875,12 @@ static int ps_enable_nodata(int en)
 		WRITE_ONCE(obj->ps_android_enable, false);
 
 	res = sensor_enable_to_hub(ID_PROXIMITY, en);
+
+	cfg_data[0] = 6;
+	cfg_data[1] = en;
+	res |= sensor_cfg_to_hub(ID_PROXIMITY,
+		(uint8_t *)cfg_data, sizeof(cfg_data));
+
 	if (res < 0) {
 		pr_err("als_enable_nodata is failed!!\n");
 		return -1;
