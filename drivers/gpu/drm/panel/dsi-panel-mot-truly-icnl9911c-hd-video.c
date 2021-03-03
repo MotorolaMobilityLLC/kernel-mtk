@@ -693,6 +693,11 @@ static int lcm_get_modes(struct drm_panel *panel)
 	panel->connector->display_info.width_mm = 67;
 	panel->connector->display_info.height_mm = 150;
 
+	panel->connector->display_info.panel_ver = 0x01;
+	panel->connector->display_info.panel_id = 0xFF0A1C91;
+	strcpy(panel->connector->display_info.panel_name, "mipi_mot_vid_truly_hdp_681");
+	strcpy(panel->connector->display_info.panel_supplier, "truly_chipone");
+
 	return 1;
 }
 
