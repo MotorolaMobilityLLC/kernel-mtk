@@ -87,7 +87,9 @@ struct tag_bootmode {
 
 bool mtk_is_TA_support_pd_pps(struct charger_manager *pinfo)
 {
-	if (pinfo->enable_pe_4 == false && pinfo->enable_pe_5 == false)
+	if (pinfo->enable_pe_4 == false
+		&& pinfo->enable_pe_5 == false
+		&& pinfo->enable_cp == false)
 		return false;
 
 	if (pinfo->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO)
@@ -678,6 +680,91 @@ int charger_manager_enable_chg_type_det(struct charger_consumer *consumer,
 
 
 	return 0;
+}
+
+int charger_manager_cp_set_ichg(
+	struct charger_consumer *consumer, int idx, int charging_current)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+		struct charger_data *pdata;
+
+		if (idx == MAIN_CHARGER)
+			pdata = &info->chg1_data;
+		else if (idx == SLAVE_CHARGER)
+			pdata = &info->chg2_data;
+		else
+			return -ENOTSUPP;
+
+		pdata->cp_ichg_limit= charging_current;
+		chr_err("%s: dev:%s idx:%d en:%d\n", __func__,
+			dev_name(consumer->dev), idx, charging_current);
+		_mtk_charger_change_current_setting(info);
+		_wake_up_charger(info);
+		return 0;
+	}
+	return -EBUSY;
+}
+
+int charger_manager_is_enabled(struct charger_consumer *consumer,
+	int idx, bool *en)
+{
+	int ret = 0;
+	struct charger_manager *info = consumer->cm;
+	struct charger_device *chg_dev = NULL;
+
+
+	if (!info)
+		return -EINVAL;
+
+	switch (idx) {
+	case MAIN_CHARGER:
+		chg_dev = info->chg1_dev;
+		break;
+	case SLAVE_CHARGER:
+		chg_dev = info->chg2_dev;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	ret = charger_dev_is_enabled(chg_dev, en);
+	if (ret < 0)
+		chr_err("%s: charger_dev_is_enabled failed\n", __func__);
+
+
+	return ret;
+}
+
+int charger_manager_get_ibus(struct charger_consumer *consumer,
+	int idx, u32 *ibus)
+{
+	int ret = 0;
+	struct charger_manager *info = consumer->cm;
+	struct charger_device *chg_dev = NULL;
+
+
+	if (!info)
+		return -EINVAL;
+
+	switch (idx) {
+	case MAIN_CHARGER:
+		chg_dev = info->chg1_dev;
+		break;
+	case SLAVE_CHARGER:
+		chg_dev = info->chg2_dev;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	ret = charger_dev_get_ibus(chg_dev, ibus);
+	if (ret < 0)
+		chr_err("%s: charger_manager_get_ibus failed\n", __func__);
+
+
+	return ret;
 }
 
 int register_charger_manager_notifier(struct charger_consumer *consumer,
@@ -2880,6 +2967,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_4 = of_property_read_bool(np, "enable_pe_4");
 	info->enable_pe_5 = of_property_read_bool(np, "enable_pe_5");
+	info->enable_cp = of_property_read_bool(np, "enable_cp");
 	info->enable_type_c = of_property_read_bool(np, "enable_type_c");
 	info->enable_dynamic_mivr =
 			of_property_read_bool(np, "enable_dynamic_mivr");
@@ -4966,6 +5054,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->dvchg2_data.thermal_input_current_limit = -1;
 	info->chg1_data.moto_chg_tcmd_ibat = -1;
 	info->chg1_data.moto_chg_tcmd_ichg = -1;
+	info->chg1_data.cp_ichg_limit= -1;
 
 	info->sw_jeita.error_recovery_flag = true;
 

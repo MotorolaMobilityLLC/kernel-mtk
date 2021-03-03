@@ -44,6 +44,7 @@
 #include <tcpm.h>
 
 #include "mtk_charger_intf.h"
+#include "mtk_intf.h"
 
 struct tag_bootmode {
 	u32 size;
@@ -161,6 +162,7 @@ struct mt_charger {
 	#endif
 	bool chg_online; /* Has charger in or not */
 	enum charger_type chg_type;
+	int ichg_limit;
 };
 
 static int mt_charger_online(struct mt_charger *mtk_chg)
@@ -208,6 +210,10 @@ static int mt_charger_get_property(struct power_supply *psy,
 	enum power_supply_property psp, union power_supply_propval *val)
 {
 	struct mt_charger *mtk_chg = power_supply_get_drvdata(psy);
+	struct chg_type_info *cti = mtk_chg->cti;
+	bool en;
+	u32 tmp;
+	int rc;
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
@@ -244,6 +250,26 @@ static int mt_charger_get_property(struct power_supply *psy,
 		default:
 		break;
 	}
+	case POWER_SUPPLY_PROP_CHARGE_ENABLED:
+		rc = charger_manager_is_enabled(cti->chg_consumer, MAIN_CHARGER, &en);
+		if (rc < 0)
+			val->intval = 0;
+		else
+		       val->intval = !!en;
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+		 val->intval  = battery_get_vbus() * 1000; /* uV */
+		 break;
+	case POWER_SUPPLY_PROP_INPUT_CURRENT_NOW:
+		rc = charger_manager_get_ibus(cti->chg_consumer, MAIN_CHARGER, &tmp);
+		if (rc < 0)
+			val->intval = 0;
+		else
+			val->intval = tmp;
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		val->intval = mtk_chg->ichg_limit;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -285,6 +311,7 @@ static int mt_charger_set_property(struct power_supply *psy,
 #ifdef CONFIG_EXTCON_USB_CHG
 	info = mtk_chg->extcon_info;
 #endif
+	cti = mtk_chg->cti;
 
 	cti = mtk_chg->cti;
 	switch (psp) {
@@ -301,6 +328,11 @@ static int mt_charger_set_property(struct power_supply *psy,
 			charger_manager_force_disable_power_path(
 				cti->chg_consumer, MAIN_CHARGER, true);
 		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		charger_manager_cp_set_ichg(cti->chg_consumer, MAIN_CHARGER, val->intval);
+		mtk_chg->ichg_limit =  val->intval;
+		return 0;
+
 	default:
 		return -EINVAL;
 	}
@@ -395,6 +427,11 @@ static int mt_usb_get_property(struct power_supply *psy,
 
 static enum power_supply_property mt_charger_properties[] = {
 	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_CHARGE_TYPE,
+	POWER_SUPPLY_PROP_CHARGE_ENABLED,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_INPUT_CURRENT_NOW,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
 };
 
 static enum power_supply_property mt_ac_properties[] = {
