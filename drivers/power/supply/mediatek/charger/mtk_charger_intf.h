@@ -284,6 +284,7 @@ struct charger_data {
 	int moto_chg_tcmd_ichg;
 	int moto_chg_tcmd_ibat;
 	int typec_input_current_limit;
+	int cp_ichg_limit;
 };
 
 struct mmi_temp_zone {
@@ -445,6 +446,9 @@ struct charger_manager {
 	bool enable_pe_5;
 	bool leave_pe5;
 	struct mtk_pe50 pe5;
+
+	/* 3rd charge pump */
+	bool enable_cp;
 
 	/* type-C*/
 	bool enable_type_c;
