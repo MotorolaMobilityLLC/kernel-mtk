@@ -450,4 +450,8 @@
 	};
 }; /* IRTX GPIO Settings -End */
 
+
+&msdc1 {
+        cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+}
 /*End of this file, DO NOT ADD ANYTHING HERE*/
