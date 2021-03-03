@@ -146,6 +146,7 @@ uint8_t tcpm_inquire_typec_attach_state(struct tcpc_device *tcpc)
 {
 	return tcpc->typec_attach_new;
 }
+EXPORT_SYMBOL(tcpm_inquire_typec_attach_state);
 
 uint8_t tcpm_inquire_typec_role(struct tcpc_device *tcpc)
 {
@@ -298,6 +299,7 @@ bool tcpm_inquire_pd_connected(struct tcpc_device *tcpc)
 
 	return pd_port->pe_data.pd_connected;
 }
+EXPORT_SYMBOL(tcpm_inquire_pd_connected);
 
 bool tcpm_inquire_pd_prev_connected(struct tcpc_device *tcpc)
 {
@@ -333,6 +335,7 @@ uint8_t tcpm_inquire_pd_pe_ready(struct tcpc_device *tcpc)
 
 	return pd_port->pe_data.pe_ready;
 }
+EXPORT_SYMBOL(tcpm_inquire_pd_pe_ready);
 
 uint8_t tcpm_inquire_cable_current(struct tcpc_device *tcpc)
 {
@@ -798,6 +801,7 @@ int tcpm_dpm_pd_request(struct tcpc_device *tcpc,
 	return tcpm_put_tcp_dpm_event_cbk1(
 		tcpc, &tcp_event, cb_data, TCPM_BK_REQUEST_TOUT);
 }
+EXPORT_SYMBOL(tcpm_dpm_pd_request);
 
 int tcpm_dpm_pd_request_ex(struct tcpc_device *tcpc,
 	uint8_t pos, uint32_t max, uint32_t oper,
@@ -1334,6 +1338,7 @@ int tcpm_reset_pd_charging_policy(struct tcpc_device *tcpc,
 	return tcpm_set_pd_charging_policy(
 		tcpc, tcpc->pd_port.dpm_charging_policy_default, cb_data);
 }
+EXPORT_SYMBOL(tcpm_reset_pd_charging_policy);
 
 int tcpm_set_pd_charging_policy_default(
 	struct tcpc_device *tcpc, uint8_t policy)
@@ -1459,6 +1464,7 @@ int tcpm_set_apdo_charging_policy(struct tcpc_device *tcpc,
 	return tcpm_put_tcp_dpm_event_cbk1(
 		tcpc, &tcp_event, cb_data, TCPM_BK_REQUEST_TOUT);
 }
+EXPORT_SYMBOL(tcpm_set_apdo_charging_policy);
 
 int tcpm_inquire_pd_source_apdo(struct tcpc_device *tcpc,
 	uint8_t apdo_type, uint8_t *cap_i, struct tcpm_power_cap_val *cap_val)
@@ -1487,6 +1493,7 @@ int tcpm_inquire_pd_source_apdo(struct tcpc_device *tcpc,
 
 	return TCPM_ERROR_NOT_FOUND;
 }
+EXPORT_SYMBOL(tcpm_inquire_pd_source_apdo);
 
 bool tcpm_inquire_during_pps_charge(struct tcpc_device *tcpc)
 {
