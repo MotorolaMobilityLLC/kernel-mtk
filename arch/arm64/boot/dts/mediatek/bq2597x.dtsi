@@ -1,4 +1,6 @@
 &odm {
+	 status = "okay";
+
         mmi_chrg_manager {
                 status = "ok";
                 compatible = "mmi,chrg-manager";
@@ -48,31 +50,31 @@
         };
 };
 
-&pio {
-	bq2597x_int_default: bq2597x_int_default {
-		pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
-		slew-rate= <0>;
-		bias-disable;
-	};
-	bq2597x_int_default_slave: bq2597x_int_default_slave {
-                pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
-                slew-rate= <0>;
-                bias-disable;
-        };
-
-};
+//&pio {
+//	bq2597x_int_default: bq2597x_int_default {
+//		pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
+//		slew-rate= <0>;
+//		bias-disable;
+//	};
+//	bq2597x_int_default_slave: bq2597x_int_default_slave {
+//                pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+//                slew-rate= <0>;
+//                bias-disable;
+//        };
+//
+//};
 
 &i2c3 {
 	status = "okay";
 	bq2597x-charger@65 {
 		compatible = "ti,bq2597x-master";
 		reg = <0x65>;
-		//ti,bq2597x,interrupt_gpios = <&pio 34 0>;
+		/*ti,bq2597x,interrupt_gpios = <&pio 34 0>;
 		interrupt-parent = <&pio>;
 		interrupts = <2 IRQ_TYPE_EDGE_FALLING 2 0>;
 		interrupt-names = "bq2597x_irq";
 		pinctrl-names = "default";
-		pinctrl-0 = <&bq2597x_int_default>;
+		pinctrl-0 = <&bq2597x_int_default>;*/
 		ti,bq2597x,bat-ovp-disable = <0>;
 		ti,bq2597x,bat-ocp_disable = <0>;
 		ti,bq2597x,bat-ovp-alarm-disable = <0>;
@@ -106,12 +108,12 @@
 	bq2597x-charger@66 {
 		compatible = "ti,bq2597x-slave";
 		reg = <0x66>;
-		//ti,bq2597x,interrupt_gpios = <&pio 30 0>;
+		/*ti,bq2597x,interrupt_gpios = <&pio 30 0>;
 		interrupt-parent = <&pio>;
 		interrupts = <2 IRQ_TYPE_EDGE_FALLING 2 0>;
 		interrupt-names = "bq2597x_irq";
 		pinctrl-names = "default_slave";
-		pinctrl-0 = <&bq2597x_int_default_slave>;
+		pinctrl-0 = <&bq2597x_int_default_slave>;*/
 		ti,bq2597x,bat-ovp-disable = <0>;
 		ti,bq2597x,bat-ocp_disable = <0>;
 		ti,bq2597x,bat-ovp-alarm-disable = <0>;
@@ -142,3 +144,4 @@
 		ti,bq2597x,sense-resistor-mohm = <5>;
 	};
 };
+
