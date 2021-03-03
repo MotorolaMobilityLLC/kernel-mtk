@@ -17,6 +17,7 @@
 #include "mediatek/mt6833-kyoto-sensor-overlay.dtsi"
 #include "mediatek/mt6853-kyoto-audio-overlay.dtsi"
 #include "mediatek/mt6853-moto-kyoto-fps.dtsi"
+#include "dt-bindings/mmc/mt6853-msdc.h"
 
 &reserved_memory {
 };
