@@ -120,6 +120,7 @@ static bool mtk_is_pdc_ready(struct charger_manager *info)
 
 	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO &&
 		info->enable_pe_4 == false &&
+		info->enable_cp == false  &&
 		info->enable_pe_5 == false)
 		return true;
 

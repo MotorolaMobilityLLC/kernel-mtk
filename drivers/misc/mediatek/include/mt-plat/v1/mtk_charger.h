@@ -108,6 +108,12 @@ extern int charger_manager_get_zcv(
 extern int charger_manager_enable_chg_type_det(
 	struct charger_consumer *consumer,
 	bool en);
+extern  int charger_manager_cp_set_ichg(
+	struct charger_consumer *consumer, int idx, int charging_current);
+extern int charger_manager_is_enabled(struct charger_consumer *consumer,
+	int idx, bool *en);
+extern int charger_manager_get_ibus(struct charger_consumer *consumer,
+	int idx, u32 *ibus);
 extern int mtk_chr_is_charger_exist(unsigned char *exist);
 extern bool is_power_path_supported(void);
 extern int charger_get_vbus(void);
