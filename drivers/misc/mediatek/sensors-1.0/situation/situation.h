@@ -140,13 +140,15 @@ struct MotAlspsDefConfig {
   float pOffsetStepCoef;
   float low_coef;
   float high_coef;
+  uint16_t farTh;
+  uint16_t NearTh;
   uint16_t min_delta;
   bool pUseOilAlgo;
 };
 
 struct MotAlspsVariableConfig {
-  float pLowCoef;
-  float pHighCoef;
+  uint16_t farTh;
+  uint16_t NearTh;
   uint16_t pWTime;
   bool pUseOilAlgo;
 };
