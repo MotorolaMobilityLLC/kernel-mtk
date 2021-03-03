@@ -241,9 +241,6 @@ kal_uint16 addr_data_pair_preview_saipan_cxt_gc02m1b[] = {
 	*1600x1200@30fps[672Mbps]
 	*****************************/
 	0xfe, 0x00,
-	0x41, 0x04,
-	0x42, 0xf4,
-	0xfe, 0x00,
 	0x3e, 0x90,
 };
 
@@ -253,9 +250,6 @@ kal_uint16 addr_data_pair_capture_saipan_cxt_gc02m1b[] = {
 	*custom1 setting
 	*1600x1200@30fps[672Mbps]
 	*****************************/
-	0xfe, 0x00,
-	0x41, 0x04,
-	0x42, 0xf4,
 	0xfe, 0x00,
 	0x3e, 0x90,
 };
