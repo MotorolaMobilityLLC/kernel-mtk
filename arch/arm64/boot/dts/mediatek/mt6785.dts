@@ -5303,7 +5303,7 @@ page_owner=on loop.max_part=7";
 
 		/* common */
 		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
+		max_charger_voltage = <11000000>;
 		min_charger_voltage = <4600000>;
 
 		/* dynamic mivr */
@@ -5407,6 +5407,7 @@ page_owner=on loop.max_part=7";
 
 		ibus_err = <14>;
 		vsys_watt = <5000000>;
+		enable_cp;
 	};
 
 	pd_adapter: pd_adapter {
@@ -5698,3 +5699,5 @@ page_owner=on loop.max_part=7";
 #endif
 /* Motorola base dts override */
 #include "mediatek/mt6785-moto-base.dtsi"
+/* Charge Pump */
+#include "mediatek/bq2597x.dtsi"
