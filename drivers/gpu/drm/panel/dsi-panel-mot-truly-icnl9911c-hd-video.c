@@ -45,11 +45,14 @@ struct lcm {
 	struct backlight_device *backlight;
 	struct gpio_desc *reset_gpio;
 	struct gpio_desc *bias_pos, *bias_neg;
+	struct gpio_desc *bl_iset_en_gpio;
 
 	bool prepared;
 	bool enabled;
 
 	int error;
+	bool hbm_en;
+	unsigned int cabc_mode;
 };
 
 #define lcm_dcs_write_seq(ctx, seq...)						\
@@ -251,7 +254,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,0x35,0x00);
 	//lcm_dcs_write_seq_static(ctx,0x51,0x0F,0xFF);
 	lcm_dcs_write_seq_static(ctx,0x53,0x2C);
-	lcm_dcs_write_seq_static(ctx,0x55,0x00);
+	lcm_dcs_write_seq_static(ctx,0x55,0x01);
 	lcm_dcs_write_seq_static(ctx,0x11);
 	msleep(120);
 	lcm_dcs_write_seq_static(ctx,0x29);
@@ -372,6 +375,9 @@ static int lcm_prepare(struct drm_panel *panel)
 		lcm_unprepare(panel);
 
 	ctx->prepared = true;
+
+	ctx->cabc_mode = 0; //UI mode
+	ctx->hbm_en = 0;
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 	mtk_panel_tch_rst(panel);
@@ -505,6 +511,7 @@ static struct mtk_panel_params ext_params = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
+	.panel_hbm_mode = HBM_MODE_GPIO,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -521,6 +528,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
+	.panel_hbm_mode = HBM_MODE_GPIO,
 };
 
 static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
@@ -554,6 +562,71 @@ static int mtk_panel_ext_param_get(struct mtk_panel_params *ext_para,
 
 }
 
+static int panel_cabc_set_cmdq(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, unsigned int cabc_mode)
+{
+	char cabc_tb[2] = {0x55, 0x01};
+	const unsigned int cabc_value_map[3] = {1, 2, 0};
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (ctx->cabc_mode == cabc_mode)
+		goto done;
+
+	cabc_tb[1] = cabc_value_map[cabc_mode];
+
+	if (!cb)
+		return -1;
+
+	cb(dsi, handle, cabc_tb, ARRAY_SIZE(cabc_tb));
+
+	ctx->cabc_mode = cabc_mode;
+done:
+	return 0;
+}
+
+static void panel_cabc_get_state(struct drm_panel *panel, unsigned int *cabc_mode)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	*cabc_mode = ctx->cabc_mode;
+}
+
+static int panel_hbm_set(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, bool hbm_en)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (hbm_en) {
+		ctx->bl_iset_en_gpio =
+		devm_gpiod_get(ctx->dev, "bl-iset-en", GPIOD_OUT_LOW);
+		if (IS_ERR(ctx->bl_iset_en_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get bl_iset_en_gpio %ld\n",
+				__func__, PTR_ERR(ctx->bl_iset_en_gpio));
+			return -1;
+		}
+		devm_gpiod_put(ctx->dev, ctx->bl_iset_en_gpio);
+	} else {
+		ctx->bl_iset_en_gpio =
+		devm_gpiod_get(ctx->dev, "bl-iset-en", GPIOD_IN);
+		if (IS_ERR(ctx->bl_iset_en_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get bl_iset_en_gpio %ld\n",
+				__func__, PTR_ERR(ctx->bl_iset_en_gpio));
+			return -1;
+		}
+		devm_gpiod_put(ctx->dev, ctx->bl_iset_en_gpio);
+	}
+	ctx->hbm_en = hbm_en;
+	pr_info("%s set HBM to %d\n", __func__, hbm_en);
+	return 0;
+}
+
+static void panel_hbm_get_state(struct drm_panel *panel, bool *state)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	*state = ctx->hbm_en;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
@@ -562,6 +635,10 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ata_check = panel_ata_check,
 	.get_virtual_heigh = lcm_get_virtual_heigh,
 	.get_virtual_width = lcm_get_virtual_width,
+	.hbm_set_cmdq = panel_hbm_set,
+	.hbm_get_state = panel_hbm_get_state,
+	.cabc_set_cmdq = panel_cabc_set_cmdq,
+	.cabc_get_state = panel_cabc_get_state,
 };
 #endif
 
@@ -697,6 +774,14 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 		return PTR_ERR(ctx->bias_neg);
 	}
 	devm_gpiod_put(dev, ctx->bias_neg);
+
+	ctx->bl_iset_en_gpio = devm_gpiod_get(dev, "bl-iset-en", GPIOD_IN);
+	if (IS_ERR(ctx->bl_iset_en_gpio)) {
+		dev_err(dev, "%s: cannot get bl_iset_en_gpio %ld\n",
+			__func__, PTR_ERR(ctx->bl_iset_en_gpio));
+		return PTR_ERR(ctx->bl_iset_en_gpio);
+	}
+	devm_gpiod_put(dev, ctx->bl_iset_en_gpio);
 
 	ctx->prepared = true;
 	ctx->enabled = true;
