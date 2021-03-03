@@ -7,4 +7,7 @@
 / {
 	moto_chg_tcmd: moto_chg_tcmd {
 	};
+
+        msdc1_ins:msdc1_ins {
+        };
 };
