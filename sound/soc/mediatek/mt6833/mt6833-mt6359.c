@@ -800,6 +800,16 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
 		.ignore_suspend = 1,
 		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
 	},
+	{
+		.name = "I2S0",
+		.cpu_dai_name = "I2S0",
+		.codec_dai_name = "aw881xx-aif-6-34",
+		.codec_name = "aw881xx_smartpa.6-0034",
+		.no_pcm = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
+	},
 #else
 	{
 		.name = "I2S3",
@@ -811,7 +821,6 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
 		.ignore_suspend = 1,
 		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
 	},
-#endif
 	{
 		.name = "I2S0",
 		.cpu_dai_name = "I2S0",
@@ -822,6 +831,7 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
 		.ignore_suspend = 1,
 		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
 	},
+#endif
 	{
 		.name = "I2S1",
 		.cpu_dai_name = "I2S1",
