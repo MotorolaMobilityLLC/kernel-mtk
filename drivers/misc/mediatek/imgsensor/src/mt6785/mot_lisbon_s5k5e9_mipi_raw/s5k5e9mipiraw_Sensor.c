@@ -698,6 +698,7 @@ static void slim_video_setting(void)
 typedef enum {
 	NO_ERRORS,
 	CRC_FAILURE,
+	LIMIT_FAILURE,
 	NO_LSC,
 	NO_BASIC_INFO,
 	NO_AWB,
@@ -727,6 +728,13 @@ static uint8_t crc_reverse_byte(uint32_t data)
 static uint32_t convert_crc(uint8_t *crc_ptr)
 {
 	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+
+static uint16_t to_uint16_swap(uint8_t *data)
+{
+	uint16_t converted;
+	memcpy(&converted, data, sizeof(uint16_t));
+	return ntohs(converted);
 }
 
 static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
@@ -1011,9 +1019,126 @@ static int s5k5e9_get_mtk_necessary(void)
 	return NO_ERRORS;
 }
 
+
+static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
+{
+	uint8_t result = 0;
+
+	if (unit.r < AWB_R_MIN || unit.r > AWB_R_MAX) {
+		LOG_INF("unit r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, unit.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (unit.gr < AWB_GR_MIN || unit.gr > AWB_GR_MAX) {
+		LOG_INF("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, unit.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (unit.gb < AWB_GB_MIN || unit.gb > AWB_GB_MAX) {
+		LOG_INF("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, unit.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (unit.b < AWB_B_MIN || unit.b > AWB_B_MAX) {
+		LOG_INF("unit b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, unit.b, AWB_B_MAX);
+		result = 1;
+	}
+
+	if (golden.r < AWB_R_MIN || golden.r > AWB_R_MAX) {
+		LOG_INF("golden r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, golden.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (golden.gr < AWB_GR_MIN || golden.gr > AWB_GR_MAX) {
+		LOG_INF("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, golden.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (golden.gb < AWB_GB_MIN || golden.gb > AWB_GB_MAX) {
+		LOG_INF("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, golden.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (golden.b < AWB_B_MIN || golden.b > AWB_B_MAX) {
+		LOG_INF("golden b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, golden.b, AWB_B_MAX);
+		result = 1;
+	}
+
+	return result;
+}
+
+static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t golden,
+		awb_limit_t limit)
+{
+	uint32_t r_g;
+	uint32_t b_g;
+	uint32_t golden_rg, golden_bg;
+	uint32_t gr_gb;
+	uint32_t golden_gr_gb;
+	uint32_t r_g_golden_min;
+	uint32_t r_g_golden_max;
+	uint32_t b_g_golden_min;
+	uint32_t b_g_golden_max;
+
+	LOG_INF("unit.r_g = 0x%x, unit.b_g=0x%x,unit.gr_gb=0x%x \n",unit.r_g,unit.b_g,unit.gr_gb);
+	LOG_INF("golden.r_g = 0x%x, golden.b_g=0x%x,golden.gr_gb=0x%x \n",golden.r_g,golden.b_g,golden.gr_gb);
+
+
+	LOG_INF("limit golden  0x%x, 0x%x ,0x%x 0x%x \n",limit.r_g_golden_min,limit.r_g_golden_max,
+		limit.b_g_golden_min,limit.b_g_golden_max);
+
+
+	r_g = unit.r_g *1000;
+	b_g = unit.b_g*1000;
+	gr_gb = unit.gr_gb*100;
+
+	golden_rg = golden.r_g*1000;
+	golden_bg = golden.b_g*1000;
+	golden_gr_gb = golden.gr_gb*100;
+
+	r_g_golden_min = limit.r_g_golden_min*16384;
+	r_g_golden_max = limit.r_g_golden_max*16384;
+	b_g_golden_min = limit.b_g_golden_min*16384;
+	b_g_golden_max = limit.b_g_golden_max*16384;
+
+	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,r_g_golden_min,r_g_golden_max);
+	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,golden_bg,b_g_golden_min,b_g_golden_max);
+
+	if (r_g < (golden_rg - r_g_golden_min) || r_g > (golden_rg + r_g_golden_max)) {
+		LOG_INF("Final RG calibration factors out of range!");
+		return 1;
+	}
+
+	if (b_g < (golden_bg - b_g_golden_min) || b_g > (golden_bg + b_g_golden_max)) {
+		LOG_INF("Final BG calibration factors out of range!");
+		return 1;
+	}
+
+	LOG_INF("gr_gb = %d, golden_gr_gb=%d \n",gr_gb,golden_gr_gb);
+
+	if (gr_gb < AWB_GR_GB_MIN || gr_gb > AWB_GR_GB_MAX) {
+		LOG_INF("Final gr_gb calibration factors out of range!!!");
+		return 1;
+	}
+
+	if (golden_gr_gb < AWB_GR_GB_MIN || golden_gr_gb > AWB_GR_GB_MAX) {
+		LOG_INF("Final golden_gr_gb calibration factors out of range!!!");
+		return 1;
+	}
+
+	return 0;
+}
+
+
 static int s5k5e9_get_awb(void)
 {
 	uint8_t flag_source_awb=0;
+	awb_t unit;
+	awb_t golden;
+	awb_limit_t golden_limit;
+
 	s5k5e9_read_otp_page_data(17,0x0A30,&s5k5e9_otp_data.flag_source_awb[0],1);
 	flag_source_awb = s5k5e9_otp_data.flag_source_awb[0]>>6;
 	if (flag_source_awb == 0x01)
@@ -1042,6 +1167,39 @@ static int s5k5e9_get_awb(void)
 		LOG_INF("AWB CRC Fails!");
 		awb_status=CRC_FAILURE;
 		return CRC_FAILURE;
+	}
+
+
+	unit.r = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_r[0]);
+	unit.gr = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_gr[0]);
+	unit.gb = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_gb[0]);
+	unit.b = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_b[0]);
+	unit.r_g = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_rg_ratio[0]);
+	unit.b_g = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_bg_ratio[0]);
+	unit.gr_gb = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_gr_gb_ratio[0]);
+
+	golden.r = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_r[0]);
+	golden.gr = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_gr[0]);
+	golden.gb = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_gb[0]);
+	golden.b = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_b[0]);
+	golden.r_g = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_rg_ratio[0]);
+	golden.b_g = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_bg_ratio[0]);
+	golden.gr_gb = to_uint16_swap(&s5k5e9_otp_data.awb_src_1_golden_gr_gb_ratio[0]);
+	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
+		LOG_INF("AWB CRC limit Fails!");
+		awb_status = LIMIT_FAILURE;
+		return LIMIT_FAILURE;
+	}
+
+	golden_limit.r_g_golden_min = s5k5e9_otp_data.awb_r_g_golden_min_limit[0];
+	golden_limit.r_g_golden_max = s5k5e9_otp_data.awb_r_g_golden_max_limit[0];
+	golden_limit.b_g_golden_min = s5k5e9_otp_data.awb_b_g_golden_min_limit[0];
+	golden_limit.b_g_golden_max = s5k5e9_otp_data.awb_b_g_golden_max_limit[0];
+
+	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
+		LOG_INF("AWB CRC factor limit Fails!");
+		awb_status = LIMIT_FAILURE;
+		return LIMIT_FAILURE;
 	}
 
 	awb_status=NO_ERRORS;

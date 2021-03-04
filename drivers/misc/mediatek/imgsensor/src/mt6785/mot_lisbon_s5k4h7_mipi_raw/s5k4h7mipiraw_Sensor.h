@@ -124,14 +124,21 @@ typedef struct imgsensor_info_struct {
 
 #define BLACK_LEVEL_SAMSUNG_10B_64 0x40
 
-#define AWB_R_MIN 200
-#define AWB_R_MAX 880
-#define AWB_GR_MIN 760
-#define AWB_GR_MAX 880
-#define AWB_GB_MIN 760
-#define AWB_GB_MAX 880
-#define AWB_B_MIN 200
-#define AWB_B_MAX 880
+#define AWB_R_MIN 200*64
+#define AWB_R_MAX 880*64
+#define AWB_GR_MIN 760*64
+#define AWB_GR_MAX 880*64
+#define AWB_GB_MIN 760*64
+#define AWB_GB_MAX 880*64
+#define AWB_B_MIN 200*64
+#define AWB_B_MAX 880*64
+/*
+0.97 * 100* 16384
+1.03 * 100* 16384
+*/
+#define AWB_GR_GB_MIN 1589248
+#define AWB_GR_GB_MAX 1687552
+
 
 #define EMPTY_FLAG 0x00
 #define VALID_FLAG 0x01
