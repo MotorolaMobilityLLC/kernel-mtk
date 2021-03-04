@@ -73,10 +73,10 @@
         io-channels = <&auxadc 5>;
         io-channel-names = "batteryID-channel";
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
-        DIFFERENCE_FULLOCV_ITH = <(243)>;       /*Charging termination current.*/
+        DIFFERENCE_FULLOCV_ITH = <(320)>;       /*Charging termination current.*/
 
-        df-serialnum = "SB18C51711";
-        #include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
+        df-serialnum = "SB18D11784";
+        #include "bat_setting/batterytable_nt50_atl_5000mah_ext.dtsi"
 };
 
 &pio {
