@@ -532,6 +532,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x05, 0x10);
 	write_cmos_sensor(0x07, 0x20);
 	write_cmos_sensor(0x09, 0xb0);
+	write_cmos_sensor(0x12, 0x03);
 	write_cmos_sensor(0xfb, 0x01);
 	write_cmos_sensor(0xfd, 0x01);
 
@@ -643,6 +644,7 @@ write_cmos_sensor(0xfd, 0x00);
 	write_cmos_sensor(0x05, 0x10);
 	write_cmos_sensor(0x07, 0x20);
 	write_cmos_sensor(0x09, 0xb0);
+	write_cmos_sensor(0x12, 0x03);
 	write_cmos_sensor(0xfb, 0x01);
 	write_cmos_sensor(0xfd, 0x01);
 
@@ -753,6 +755,7 @@ write_cmos_sensor(0xfd, 0x00);
 	write_cmos_sensor(0x05, 0x10);
 	write_cmos_sensor(0x07, 0x20);
 	write_cmos_sensor(0x09, 0xb0);
+	write_cmos_sensor(0x12, 0x03);
 	write_cmos_sensor(0xfb, 0x01);
 	write_cmos_sensor(0xfd, 0x01);
 }    /*    capture_setting  */
@@ -859,6 +862,7 @@ static void normal_video_setting(void)
 	write_cmos_sensor(0x05, 0x10);
 	write_cmos_sensor(0x07, 0x20);
 	write_cmos_sensor(0x09, 0xb0);
+	write_cmos_sensor(0x12, 0x03);
 	write_cmos_sensor(0xfb, 0x01);
 	write_cmos_sensor(0xfd, 0x01);
 }
@@ -965,6 +969,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x05, 0x10);
 	write_cmos_sensor(0x07, 0x20);
 	write_cmos_sensor(0x09, 0xb0);
+	write_cmos_sensor(0x12, 0x03);
 	write_cmos_sensor(0xfb, 0x01);
 	write_cmos_sensor(0xfd, 0x01);
 
@@ -1072,6 +1077,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x05, 0x10);
 	write_cmos_sensor(0x07, 0x20);
 	write_cmos_sensor(0x09, 0xb0);
+	write_cmos_sensor(0x12, 0x03);
 	write_cmos_sensor(0xfb, 0x01);
 	write_cmos_sensor(0xfd, 0x01);
 
