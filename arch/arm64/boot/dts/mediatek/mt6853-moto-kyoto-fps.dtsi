@@ -79,7 +79,7 @@
 		pinctrl-0 = <&fingerprint_irq>;
 		pinctrl-1 = <&fingerprint_reset_high>;
 		pinctrl-2 = <&fingerprint_reset_low>;
-		int-gpios = <&pio 1 0>;
+		int-gpios = <&pio 15 0>;
 		status = "okay";
 	};
 };
