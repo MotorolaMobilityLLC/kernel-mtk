@@ -1255,23 +1255,37 @@ static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t gol
 	uint32_t r_g;
 	uint32_t b_g;
 	uint32_t golden_rg, golden_bg;
+	uint32_t gr_gb;
+	uint32_t golden_gr_gb;
 	uint32_t r_g_golden_min;
 	uint32_t r_g_golden_max;
 	uint32_t b_g_golden_min;
 	uint32_t b_g_golden_max;
 
-	r_g = unit.r_g * 1000;
-	b_g = unit.b_g*1000;
+	LOG_INF("unit.r_g = 0x%x, unit.b_g=0x%x,unit.gr_gb=0x%x \n",unit.r_g,unit.b_g,unit.gr_gb);
+	LOG_INF("golden.r_g = 0x%x, golden.b_g=0x%x,golden.gr_gb=0x%x \n",golden.r_g,golden.b_g,golden.gr_gb);
 
-	golden_rg = golden.r_g* 1000;
-	golden_bg = golden.b_g* 1000;
+
+	LOG_INF("limit golden  0x%x, 0x%x ,0x%x 0x%x \n",limit.r_g_golden_min,limit.r_g_golden_max,
+		limit.b_g_golden_min,limit.b_g_golden_max);
+
+
+	r_g = unit.r_g *1000;
+	b_g = unit.b_g*1000;
+	gr_gb = unit.gr_gb*100;
+
+	golden_rg = golden.r_g*1000;
+	golden_bg = golden.b_g*1000;
+	golden_gr_gb = golden.gr_gb*100;
 
 	r_g_golden_min = limit.r_g_golden_min*16384;
 	r_g_golden_max = limit.r_g_golden_max*16384;
 	b_g_golden_min = limit.b_g_golden_min*16384;
 	b_g_golden_max = limit.b_g_golden_max*16384;
+
 	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,r_g_golden_min,r_g_golden_max);
 	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,golden_bg,b_g_golden_min,b_g_golden_max);
+
 	if (r_g < (golden_rg - r_g_golden_min) || r_g > (golden_rg + r_g_golden_max)) {
 		LOG_INF("Final RG calibration factors out of range!");
 		return 1;
@@ -1281,6 +1295,19 @@ static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t gol
 		LOG_INF("Final BG calibration factors out of range!");
 		return 1;
 	}
+
+	LOG_INF("gr_gb = %d, golden_gr_gb=%d \n",gr_gb,golden_gr_gb);
+
+	if (gr_gb < AWB_GR_GB_MIN || gr_gb > AWB_GR_GB_MAX) {
+		LOG_INF("Final gr_gb calibration factors out of range!!!");
+		return 1;
+	}
+
+	if (golden_gr_gb < AWB_GR_GB_MIN || golden_gr_gb > AWB_GR_GB_MAX) {
+		LOG_INF("Final golden_gr_gb calibration factors out of range!!!");
+		return 1;
+	}
+
 	return 0;
 }
 
