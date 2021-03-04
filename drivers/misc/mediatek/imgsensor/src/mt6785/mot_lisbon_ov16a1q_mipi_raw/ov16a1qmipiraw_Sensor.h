@@ -885,6 +885,14 @@ typedef struct imgsensor_info_struct {
 #define AWB_B_MIN 200
 #define AWB_B_MAX 880
 
+/*
+0.97 * 100* 16384
+1.03 * 100* 16384
+*/
+#define AWB_GR_GB_MIN 1589248
+#define AWB_GR_GB_MAX 1687552
+
+
 typedef enum {
 	NO_ERRORS,
 	CRC_FAILURE,
