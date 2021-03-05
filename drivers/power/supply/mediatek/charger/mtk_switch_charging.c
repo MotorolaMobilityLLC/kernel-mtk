@@ -193,13 +193,13 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->input_current_limit = 200000; /* 200mA */
 		goto done;
 	}
-
+#ifdef MTK_BASE
 	if (info->atm_enabled == true && (info->chr_type == STANDARD_HOST ||
 	    info->chr_type == CHARGING_HOST)) {
 		pdata->input_current_limit = 100000; /* 100mA */
 		goto done;
 	}
-
+#endif
 	if (mtk_is_TA_support_pd_pps(info)) {
 		pdata->input_current_limit =
 			info->data.pe40_single_charger_input_current;
@@ -208,8 +208,15 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (is_typec_adapter(info)) {
 		if (adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL)
 			== 3000) {
-			pdata->input_current_limit = 3000000;
+			if (pdata->typec_input_current_limit > 1500000
+				&& pdata->typec_input_current_limit < 3000000)
+				pdata->input_current_limit =
+					pdata->typec_input_current_limit;
+			else
+				pdata->input_current_limit = 3000000;
+
 			pdata->charging_current_limit = 3000000;
+			chr_err("type-C:aicr:%d\n", pdata->input_current_limit);
 		} else if (adapter_dev_get_property(info->pd_adapter,
 			TYPEC_RP_LEVEL) == 1500) {
 			pdata->input_current_limit = 1500000;
@@ -312,6 +319,9 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		}
 	}
 
+	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
+
+	info->mmi.target_usb = pdata->input_current_limit;
 	if (pdata->thermal_charging_current_limit != -1) {
 		if (pdata->thermal_charging_current_limit <
 		    pdata->charging_current_limit)
@@ -350,6 +360,13 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pdata->input_current_limit =
 					pdata->input_current_limit_by_aicl;
 	}
+
+	if (pdata->moto_chg_tcmd_ibat != -1)
+		pdata->charging_current_limit = pdata->moto_chg_tcmd_ibat;
+
+	if (pdata->moto_chg_tcmd_ichg != -1)
+		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
+
 done:
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
@@ -376,6 +393,8 @@ done:
 					pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev,
 					pdata->charging_current_limit);
+
+	charger_dev_enable_hz(info->chg1_dev, info->mmi.demo_discharging);
 
 	/* If AICR < 300mA, stop PE+/PE+20 */
 	if (pdata->input_current_limit < 300000) {
@@ -417,6 +436,7 @@ static void swchg_select_cv(struct charger_manager *info)
 	constant_voltage = info->data.battery_cv;
 	mtk_get_dynamic_cv(info, &constant_voltage);
 
+	constant_voltage = info->mmi.target_fv;
 	charger_dev_set_constant_voltage(info->chg1_dev, constant_voltage);
 }
 
@@ -663,7 +683,12 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 
 	swchg_turn_on_charging(info);
 
+	#ifdef MTK_BASE
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+	#else
+	if (info->mmi.pres_chrg_step == STEP_FULL)
+		chg_done = true;
+	#endif
 	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
 		charger_dev_do_event(info->chg1_dev, EVENT_EOC, 0);
@@ -728,7 +753,12 @@ int mtk_switch_chr_full(struct charger_manager *info)
 	 */
 	swchg_select_cv(info);
 	info->polling_interval = CHARGING_FULL_INTERVAL;
+	#ifdef MTK_BASE
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+	#else
+	if (info->mmi.pres_chrg_step == STEP_FULL)
+		chg_done = true;
+	#endif
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
