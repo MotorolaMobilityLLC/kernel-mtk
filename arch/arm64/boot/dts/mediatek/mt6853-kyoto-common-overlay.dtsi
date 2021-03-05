@@ -392,6 +392,18 @@
 	};
 };
 
+&i2c3 {
+       nfc_pn5xx: nfc_pn5xx@28 {
+		compatible = "nxp,pn5xx";
+		reg = <0x28>;
+		interrupt-parent = <&pio>;
+		interrupts = <71 IRQ_TYPE_LEVEL_HIGH 71 0>;
+		nxp,pn544-irq = <&pio 71 0>;
+		nxp,pn544-ven = <&pio 13 0>;
+		nxp,pn544-fd = <&pio 70 0>;
+		status = "okay";
+	};
+};
 /* accdet start */
 &accdet {
 	/* accdet micbias voltage: 0x09:2.85v 0x08:2.8v 0x07,
