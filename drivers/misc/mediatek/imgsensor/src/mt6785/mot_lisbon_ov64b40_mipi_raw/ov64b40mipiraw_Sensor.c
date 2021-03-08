@@ -1269,7 +1269,7 @@ static calibration_status_t ov64b40_check_manufacturing_data(void *data)
 
 	if(strncmp(eeprom->mpn, OV64B40_MANUFACTURE_PART_NUMBER, OV64B40_MPN_LENGTH) != 0) {
 		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
-		return CRC_FAILURE;
+		//return CRC_FAILURE;
 	}
 
 	if (!eeprom_util_check_crc16(data, OV64B40_EEPROM_CRC_MANUFACTURING_SIZE,
