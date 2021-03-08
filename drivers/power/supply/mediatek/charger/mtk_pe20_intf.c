@@ -531,6 +531,14 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 
 	pe20->to_check_chr_type = false;
 
+	if (pe20->is_connect == true) {
+		ret = pe20_set_ta_vchr(pinfo, 5500000);
+		if (ret == 0)
+			pe20_set_mivr(pinfo, pinfo->data.min_charger_voltage);
+		else
+			pe20_leave(pinfo);
+	}
+
 	chr_info("%s: OK, to_check_chr_type = %d\n",
 		__func__, pe20->to_check_chr_type);
 	__pm_relax(pe20->suspend_lock);
