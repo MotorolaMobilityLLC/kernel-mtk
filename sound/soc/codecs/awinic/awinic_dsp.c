@@ -262,10 +262,11 @@ static int aw_mtk_send_module_enable(void *buf, uint8_t type)
 
 	switch (type) {
 	case AW_RX_MODULE:
-		ret = aw_mtk_write_data_to_dsp(AFE_PARAM_ID_AWDSP_RX_SET_ENABLE,
+		ret = aw_mtk_write_data_to_dsp(INDEX_PARAMS_ID_RX_ENBALE,
 					buf, sizeof(uint32_t), 0);
+		break;
 	case AW_TX_MODULE:
-		ret = aw_mtk_write_data_to_dsp(AFE_PARAM_ID_AWDSP_TX_SET_ENABLE,
+		ret = aw_mtk_write_data_to_dsp(INDEX_PARAMS_ID_TX_ENABLE,
 					buf, sizeof(uint32_t), 0);
 		break;
 	default:
