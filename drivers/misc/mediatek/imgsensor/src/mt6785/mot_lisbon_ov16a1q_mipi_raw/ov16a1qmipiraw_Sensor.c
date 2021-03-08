@@ -1820,7 +1820,7 @@ static calibration_status_t ov16a1q_check_manufacturing_data(void *data)
 
 	if(strncmp(eeprom->mpn, OV16A1Q_MANUFACTURE_PART_NUMBER, OV16A1Q_MPN_LENGTH) != 0) {
 		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
-		return CRC_FAILURE;
+		//return CRC_FAILURE;
 	}
 
 	if (!eeprom_util_check_crc16(data, OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE,
