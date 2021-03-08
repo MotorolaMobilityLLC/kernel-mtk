@@ -322,6 +322,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
 	info->mmi.target_usb = pdata->input_current_limit;
+
+	if (pdata->cp_ichg_limit!= -1) {
+		if (pdata->cp_ichg_limit <
+		    pdata->charging_current_limit)
+			pdata->charging_current_limit =
+					pdata->cp_ichg_limit;
+	}
+
 	if (pdata->thermal_charging_current_limit != -1) {
 		if (pdata->thermal_charging_current_limit <
 		    pdata->charging_current_limit)
@@ -376,7 +384,7 @@ done:
 	if (ret != -ENOTSUPP && pdata->input_current_limit < aicr1_min)
 		pdata->input_current_limit = 0;
 
-	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
+	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
 		_uA_to_mA(pdata->force_charging_current),
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
@@ -385,6 +393,7 @@ done:
 		_uA_to_mA(info->pe4.input_current_limit),
 		_uA_to_mA(pdata->input_current_limit),
 		_uA_to_mA(pdata->charging_current_limit),
+		_uA_to_mA(pdata->cp_ichg_limit),
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
 		pdata->input_current_limit_by_aicl, info->atm_enabled);
