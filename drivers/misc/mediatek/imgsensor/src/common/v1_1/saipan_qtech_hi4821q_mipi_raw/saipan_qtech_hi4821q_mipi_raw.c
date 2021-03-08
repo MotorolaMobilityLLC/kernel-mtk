@@ -33,6 +33,10 @@
 
 #define per_frame 1
 
+extern u8* bpgc_data_buffer;
+extern u8* qgc_data_buffer;
+extern u8* xgc_data_buffer;
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -305,7 +309,12 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 
 	return get_byte;
 }
-
+kal_uint16 read_cmos_sensor_fun(kal_uint32 addr)
+{
+	kal_uint16 get_byte = 0;
+	get_byte = read_cmos_sensor(addr);
+	return get_byte;
+}
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[4] = {(char)(addr >> 8),
@@ -313,7 +322,10 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 
 	iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
 }
-
+void write_cmos_sensor_fun(kal_uint32 addr, kal_uint32 para)
+{
+	write_cmos_sensor(addr,para);
+}
 static void write_cmos_sensor_8(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[4] = {(char)(addr >> 8),
@@ -741,21 +753,21 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				pr_info("get eeprom data success\n");
 				imgSensorSetEepromData(&st_rear_saipan_qtech_hi4821q_eeprom_data);
 
-				#if SAIPAN_QTECH_HI4821Q_XGC_QGC_PGC_CALIB
-					//get the pgc qgc xgc buffer
-					pgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_PGC - 1].startAdress + 3]);
-					qgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 3]);
-					xgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 3]);
+				#if SAIPAN_QTECH_HI4821Q_XGC_QGC_BPGC_CALIB
+					//get the bpgc qgc xgc buffer
+					bpgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_BPGC - 1].startAdress + 1]);
+					qgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 1]);
+					xgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 1]);
 
 					#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 
-						pr_info("saipan_qtech_hi4821q_eeprom:pgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_PGC - 1].startAdress + 3);
-						pr_info("saipan_qtech_hi4821q_eeprom:qgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 3);
-						pr_info("saipan_qtech_hi4821q_eeprom:xgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 3);
+						pr_info("saipan_qtech_hi4821q_eeprom:bpgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_BPGC - 1].startAdress + 1);
+						pr_info("saipan_qtech_hi4821q_eeprom:qgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 1);
+						pr_info("saipan_qtech_hi4821q_eeprom:xgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 1);
 
-						pr_info("=====================saipan_qtech_hi4821q dump pgc eeprom data start====================\n");
-						dumpEEPROMData(PGC_DATA_SIZE,pgc_data_buffer);
-						pr_info("=====================saipan_qtech_hi4821q dump pgc eeprom data end======================\n");
+						pr_info("=====================saipan_qtech_hi4821q dump bpgc eeprom data start====================\n");
+						dumpEEPROMData(BPGC_DATA_SIZE,bpgc_data_buffer);
+						pr_info("=====================saipan_qtech_hi4821q dump bpgc eeprom data end======================\n");
 
 						pr_info("=====================saipan_qtech_hi4821q dump qgc eeprom data start====================\n");
 						dumpEEPROMData(QGC_DATA_SIZE,qgc_data_buffer);
@@ -834,7 +846,10 @@ static kal_uint32 open(void)
 	}
 	/* initail sequence write in  */
 	sensor_init();
-
+#if SAIPAN_QTECH_HI4821Q_XGC_QGC_BPGC_CALIB
+	apply_sensor_BPGC_Cali();
+	apply_sensor_XGC_QGC_Cali();
+#endif
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.autoflicker_en = KAL_FALSE;
 	imgsensor.sensor_mode = IMGSENSOR_MODE_INIT;
