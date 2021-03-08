@@ -231,6 +231,9 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			info->pd_type,
 			adapter_dev_get_property(info->pd_adapter,
 				TYPEC_RP_LEVEL));
+	} else if (mtk_pe20_get_is_connect(info) == true) {
+			pdata->input_current_limit = 3000000;
+			pdata->charging_current_limit = 3000000;
 	} else if (mtk_pdc_check_charger(info)) {
 		int vbus = 0, cur = 0, idx = 0;
 		info->is_pdc_run = true;
@@ -489,10 +492,11 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 					info->chg1_data.input_current_limit);
 		chr_err("In meta mode, disable charging and set input current limit to 200mA\n");
 	} else {
+		#ifdef MTK_BASE
 		mtk_pe20_start_algorithm(info);
 		if (mtk_pe20_get_is_connect(info) == false)
 			mtk_pe_start_algorithm(info);
-
+		#endif
 		swchg_select_charging_current_limit(info);
 		if (info->chg1_data.input_current_limit == 0
 		    || info->chg1_data.charging_current_limit == 0) {
