@@ -289,6 +289,14 @@
 &touch {
 	compatible = "mediatek,touch";
 };
+
+&mt6360_pmu {
+	rgbled {
+		mt,led_name = "charging", "mt6360_pmu_led2",
+		"mt6360_pmu_led3", "mt6360_pmu_led4";
+	};
+};
+
 /* DISPSYS GPIO standardization */
 
 &pio {
