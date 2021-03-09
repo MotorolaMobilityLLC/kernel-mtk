@@ -208,9 +208,9 @@ static ssize_t vibr_duration_store(struct device *dev,
 	return ret;
 }
 
-static DEVICE_ATTR(activate, 0644, vibr_activate_show, vibr_activate_store);
-static DEVICE_ATTR(state, 0644, vibr_state_show, vibr_state_store);
-static DEVICE_ATTR(duration, 0644, NULL, vibr_duration_store);
+static DEVICE_ATTR(activate, 0664, vibr_activate_show, vibr_activate_store);
+static DEVICE_ATTR(state, 0664, vibr_state_show, vibr_state_store);
+static DEVICE_ATTR(duration, 0664, NULL, vibr_duration_store);
 
 static struct attribute *activate_attrs[] = {
 	&dev_attr_activate.attr,
