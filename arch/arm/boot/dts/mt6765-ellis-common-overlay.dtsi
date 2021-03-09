@@ -11,9 +11,9 @@
  */
 
 #include "mt6765-moto-common-overlay.dtsi"
-#include "mt6765-ellis-audio-overlay.dtsi"
-#include "mt6765-ellis-sensor-overlay.dtsi"
-#include "mt6765-ellis-camera-sensor-overlay.dtsi"
+//#include "mt6765-ellis-audio-overlay.dtsi"
+//#include "mt6765-ellis-sensor-overlay.dtsi"
+//#include "mt6765-ellis-camera-sensor-overlay.dtsi"
 #include "dt-bindings/mmc/mt6765-msdc.h"
 &reserved_memory {
 };
@@ -179,10 +179,10 @@
 	};
 };
 
-&mt6360_pmu {
+&mt6370_pmu {
 	rgbled {
-		mt,led_name = "red", "mt6360_pmu_led2",
-		"mt6360_pmu_led3", "mt6360_pmu_led4";
+		mt,led_name = "red", "mt6370_pmu_led2",
+		"mt6370_pmu_led3", "mt6370_pmu_led4";
 	};
 };
 
@@ -203,7 +203,7 @@
 			output-low;
 		};
 	};
-
+/*
 	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO202__FUNC_GPIO202>;
@@ -219,7 +219,7 @@
 			output-low;
 		};
 	};
-
+*/
 	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO44__FUNC_GPIO44>;
@@ -235,11 +235,13 @@
 			output-low;
 		};
 	};
+/*	
 	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO43__FUNC_DSI_TE>;
 		};
 	};
+*/
 	mtkfb_pins_lcd_ldo_en0_gpio: lcd_ldo_en1_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
@@ -278,11 +280,11 @@
 		"lcd_backlight_en1_gpio","lcd_backlight_en0_gpio";
 	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
 	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
-	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
-	pinctrl-3 = <&mtkfb_pins_lcd_bias_enn0>;
+//	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
+//	pinctrl-3 = <&mtkfb_pins_lcd_bias_enn0>;
 	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+//	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
 	pinctrl-7 = <&mtkfb_pins_lcd_ldo_en1_gpio>;
 	pinctrl-8 = <&mtkfb_pins_lcd_ldo_en0_gpio>;
 	pinctrl-9 = <&mtkfb_pins_lcd_backlight_en1_gpio>;
@@ -291,17 +293,17 @@
 };
 
 /* DISPSYS GPIO standardization end */
-&mt6360_pmu {
-	mt6360,intr_gpio_num = <16>; /* direct defined GPIO num */
-	mt6360,intr_gpio = <&pio 16 0x0>;
+&mt6370_pmu {
+	mt6370,intr_gpio_num = <16>; /* direct defined GPIO num */
+	mt6370,intr_gpio = <&pio 16 0x0>;
 };
 
-&mt6360_typec {
-	mt6360pd,intr_gpio_num = <7>; /* direct defined GPIO num */
-	mt6360pd,intr_gpio = <&pio 7 0x0>;
-	mt6360pd,pcb_gpio = <&pio 5 0x0>;
-	mt6360pd,pcb_gpio_num = <5>;
-	mt6360pd,pcb_gpio_polarity = <1>;
+&mt6370_typec {
+	mt6370pd,intr_gpio_num = <7>; /* direct defined GPIO num */
+	mt6370pd,intr_gpio = <&pio 7 0x0>;
+	mt6370pd,pcb_gpio = <&pio 5 0x0>;
+	mt6370pd,pcb_gpio_num = <5>;
+	mt6370pd,pcb_gpio_polarity = <1>;
 };
 
 
@@ -406,11 +408,12 @@
         mmi,vfloat-comp-uv = <20000>;
 };
 
+/*
 &bat_gm30 {
         io-channels = <&auxadc 5>;
         io-channel-names = "batteryID-channel";
-        EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
-        DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
+        EMBEDDED_SEL = <(1)>;
+        DIFFERENCE_FULLOCV_ITH = <(244)>;
 
         df-serialnum = "SB18C51711";
         #include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
@@ -422,11 +425,12 @@
 	regulator-boot-on;
 	regulator-always-on;
 };
+*/
 
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
 
 #include "cust_mt6765_touch_720x1280.dtsi"
-#include "mt6765-moto-ellis-fps.dtsi"
+//#include "mt6765-moto-ellis-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
