@@ -67,7 +67,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0xf16e8197,
 
 	.pre = {
-	.pclk = 292800000,              /* record different mode's pclk */
+	.pclk = 280000000,              /* record different mode's pclk */
 	.linelength = 3688,				/* record different mode's linelength */
 	.framelength = 2530,         /* record different mode's framelength */
 		.startx = 0,					/* record different mode's startx of grabwindow */
@@ -81,7 +81,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 292800000,
 	},
 	.cap = {
-		.pclk = 292800000,
+		.pclk = 280000000,
 		.linelength = 3688,
 		.framelength = 2530,
 		.startx = 0,
@@ -93,7 +93,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 292800000,
 	},
 	.normal_video = {	/* Full 30fps */
-		.pclk = 292800000,
+		.pclk = 280000000,
 		.linelength = 3688,
 		.framelength = 2530,
 		.startx = 0,
@@ -105,7 +105,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 292800000,
 	},
 	.slim_video = {
-		.pclk = 292800000,				/* record different mode's pclk */
+		.pclk = 280000000,				/* record different mode's pclk */
 		.linelength = 3688,			/* record different mode's linelength */
 		.framelength = 2530,		   /* record different mode's framelength */
 		.startx = 0,					/* record different mode's startx of grabwindow */
@@ -138,7 +138,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,        /* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
 	.mipi_settle_delay_mode = 0,                /* 0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL */
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
-	.mclk = 12,
+	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x5A,0xff},
 	.i2c_speed = 400,
@@ -578,6 +578,10 @@ static void sensor_init(void)
 	LOG_INF("sensor_init() E\n");
 	/* Base on S5K4H7_EVT0_Reference_setfile_v0.91 */
 	write_cmos_sensor_8(0X0100, 0X00);
+	write_cmos_sensor_8(0x0000, 0X12);
+	write_cmos_sensor_8(0x0000, 0X48);
+	write_cmos_sensor_8(0x0A02, 0X15);
+	write_cmos_sensor_8(0x0100, 0X00);
 	write_cmos_sensor_8(0X0B05, 0X01);
 	write_cmos_sensor_8(0X3074, 0X06);
 	write_cmos_sensor_8(0X3075, 0X2F);
@@ -642,7 +646,7 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XB7);
+	write_cmos_sensor_8(0X030F, 0XAF);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -683,6 +687,7 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0X0201, 0XD8);
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
+	write_cmos_sensor_8(0x3400, 0x01);
 	write_cmos_sensor_8(0x0100, 0x01);
 
 }	/*	preview_setting  */
@@ -710,7 +715,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XB7);
+	write_cmos_sensor_8(0X030F, 0XAF);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -783,7 +788,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XB7);
+	write_cmos_sensor_8(0X030F, 0XAF);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -824,6 +829,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0201, 0XD8);
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
+	write_cmos_sensor_8(0x3400, 0x01);
 	write_cmos_sensor_8(0x0100, 0x01);
 }
 
@@ -849,7 +855,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XB7);
+	write_cmos_sensor_8(0X030F, 0XAF);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -890,6 +896,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor_8(0X0201, 0XD8);
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
+	write_cmos_sensor_8(0x3400, 0x01);
 	write_cmos_sensor_8(0x0100, 0x01);
 }
 
