@@ -463,6 +463,23 @@
 	};
 }; /* IRTX GPIO Settings -End */
 
+&tboard_thermistor4 {
+		compatible = "mediatek,mtboard-thermistor4";
+		io-channels = <&auxadc 3>;
+		io-channel-names = "thermistor-ch3";
+};
+
+&tboard_thermistor5 {
+		compatible = "mediatek,mtboard-thermistor5";
+		io-channels = <&auxadc 4>;
+		io-channel-names = "thermistor-ch4";
+};
+
+&tboard_thermistor7 {
+		compatible = "mediatek,mtboard-thermistor7";
+		io-channels = <&auxadc 6>;
+		io-channel-names = "thermistor-ch6";
+};
 
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
