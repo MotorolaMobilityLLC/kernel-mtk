@@ -3819,6 +3819,8 @@
 #include "bat_setting/mt6765_battery_prop.dtsi"
 #include "mt6370.dtsi"
 #include "mt6370_pd.dtsi"
+/* Motorola base dts override */
+#include "mt6765-moto-base.dtsi"
 #ifdef CONFIG_CHARGER_RT9471
 #include "rt9471.dtsi"
 #endif
