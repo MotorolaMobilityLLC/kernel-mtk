@@ -83,7 +83,30 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate = 679680000,
 	},
-
+       .hs_video = {
+           .pclk = 115200000,
+           .linelength  = 504,
+           .framelength = 1904,
+           .startx = 0,
+           .starty = 0,
+           .grabwindow_width  = 1920,
+           .grabwindow_height = 1080,
+           .mipi_data_lp2hs_settle_dc = 85,
+           .max_framerate = 1200,
+           .mipi_pixel_rate = 679680000,
+       },
+       .slim_video = {//video same as preview
+           .pclk = 115200000,
+           .linelength  = 936,
+           .framelength = 4102,
+           .startx = 0,
+           .starty = 0,
+           .grabwindow_width  = 4624,
+           .grabwindow_height = 3472,
+           .mipi_data_lp2hs_settle_dc = 85,
+           .max_framerate = 300,
+           .mipi_pixel_rate = 679680000,
+       },
 	.margin = 31,			//sensor framelength & shutter margin
 	.min_shutter = 16,		//min shutter
 	.min_gain = 64, // 1x gain
@@ -101,7 +124,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,   //1,le first ; 0, se first
 	.temperature_support = 0, //1, support; 0,not support
 
-	.sensor_mode_num = 3,	  //support sensor mode num ,don't support Slow motion
+	.sensor_mode_num = 5,	  //support sensor mode num ,don't support Slow motion
 
 	.cap_delay_frame = 3,		//enter capture delay frame num
 	.pre_delay_frame = 3, 		//enter preview delay frame num
@@ -118,7 +141,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_CSI2,//MIPI_CPHY, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_B,//sensor output first pixel color
-	.mclk = 12,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
+	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	.i2c_addr_table = {0x44,0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
 	.i2c_speed = 400,
@@ -146,7 +169,10 @@ static struct imgsensor_struct imgsensor = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
  { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // Preview
  { 9248, 6944,	  0,	0,	  9248, 6944, 4624, 3472,	0,	   0, 4624, 3472,	  0, 0, 4624, 3472}, // capture
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // capture
+ { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // normal_video
+ { 9248, 6944,   796,   1328, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // hs_video 1920x1080_120fps_1699
+ { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // slim video 4624x3472_30fps_1699
+
 #if 0
  { 9248, 6944,    0,    872,  9248, 5200, 4624, 2600,   0,     0, 4624, 2600,     0, 0, 4624, 2600}, // video
  { 9248, 6944,   784,   1312, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // high speed video 240fps
@@ -774,18 +800,19 @@ static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E\n");
 
-	preview_setting();
+	table_write_cmos_sensor(ov64b40_capture_setting,
+		sizeof(ov64b40_capture_setting) / sizeof(kal_uint16));
 }	/*	preview_setting  */
 
 
 static void normal_video_setting()
 {
 	LOG_INF("E!\n");
-#if 0
+
 	table_write_cmos_sensor(ov64b40_normal_video_setting,
 		sizeof(ov64b40_normal_video_setting) / sizeof(kal_uint16));
-#endif
-	preview_setting();
+
+	//preview_setting();
 }
 
 static void hs_video_setting(void)
@@ -799,14 +826,16 @@ static void hs_video_setting(void)
 static void slim_video_setting(void)
 {
 	LOG_INF("E\n");
-	preview_setting();
+	table_write_cmos_sensor(ov64b40_slim_video_setting,
+		sizeof(ov64b40_slim_video_setting) / sizeof(kal_uint16));
 }
 
 static void custom1_setting(void)
 {
 	LOG_INF("E\n");
 
-	preview_setting();
+	table_write_cmos_sensor(ov64b40_custom1_setting,
+			sizeof(ov64b40_custom1_setting) / sizeof(kal_uint16));
 }
 
 static void custom2_setting(void)
