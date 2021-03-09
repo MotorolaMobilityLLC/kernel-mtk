@@ -27,7 +27,7 @@
 
 #define PFX "[imgsensor] mot_ov02b1bmipiraw"
 #define LOG_INF(format, args...)     \
-	pr_debug(PFX "[%s] " format, \
+	pr_info(PFX "[%s] " format, \
 	__func__, ##args)
 
 #define I2C_ADDR (0x7a)
@@ -39,6 +39,8 @@
 #elif MULTI_WRITE_REGISTER_VALUE == 4
 #define I2C_BUFFER_LEN 500
 #endif
+
+unsigned char OV02B1B_Buff[32];
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -478,6 +480,20 @@ static void slim_video_setting(void)
 	LOG_INF("E\n");
 }
 
+int ov02b1b_otp_data()
+{
+	int i;
+	write_cmos_sensor(0xfd, 0x06);
+
+	for(i=0; i < 32; i++)
+	{
+		OV02B1B_Buff[i]=read_cmos_sensor(i);
+		LOG_INF("buff[%d]=0x%2x\n",i,OV02B1B_Buff[i]);
+	}
+
+	return 0;
+}
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -493,6 +509,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				ov02b1b_otp_data();
+
 				return ERROR_NONE;
 			}
 			retry--;
