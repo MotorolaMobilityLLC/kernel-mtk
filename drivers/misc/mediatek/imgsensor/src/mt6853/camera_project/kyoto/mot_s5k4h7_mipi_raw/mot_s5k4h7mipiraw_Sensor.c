@@ -24,10 +24,11 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include "mot_s5k4h7mipiraw_Sensor.h"
+#include "mot_s5k4h7mipiraw_otp.h"
 
 #define PFX "[imgsensor] mot_s5k4h7mipiraw"
 #define LOG_INF(format, args...)     \
-	pr_debug(PFX "[%s] " format, \
+	pr_info(PFX "[%s] " format, \
 	__func__, ##args)
 
 #define MULTI_WRITE_REGISTER_VALUE  (8)
@@ -617,6 +618,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				s5k4h7_otp_data();
 				return ERROR_NONE;
 			}
 			retry--;
