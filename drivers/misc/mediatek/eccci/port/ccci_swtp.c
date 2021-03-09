@@ -31,12 +31,18 @@
 const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
 	{ .compatible = SWTP1_COMPATIBLE_DEVICE_ID,},
+	// modify by wt.changtingting for swtp start
+	{ .compatible = SWTP2_COMPATIBLE_DEVICE_ID, },
+	{ .compatible = SWTP3_COMPATIBLE_DEVICE_ID, },
+	// modify by wt.changtingting for swtp end
 	{},
 };
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
-#define MAX_RETRY_CNT 3
+// modify by wt.changtingting for swtp start
+#define MAX_RETRY_CNT 30
+// modify by wt.changtingting for swtp end
 
 static int swtp_send_tx_power(struct swtp_t *swtp)
 {
@@ -99,6 +105,14 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		swtp->gpio_state[i] = SWTP_EINT_PIN_PLUG_IN;
 
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
+
+	// modify by wt.changtingting for swtp start
+	/* show gpio state */
+	CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"wttest:%s>>tx_power_mode = %d,gpio_state:[0]=%d,[1]=%d,[2]=%d,[3]=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
+
+	// modify by wt.changtingting for swtp end
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
 			swtp->tx_power_mode = SWTP_DO_TX_POWER;
@@ -196,6 +210,11 @@ int swtp_init(int md_id)
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
 
+	// modify by wt.changtingting for swtp start
+	char irq_name[12];
+	int has_write = 0;
+	// modify by wt.changtingting for swtp end
+
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS,
 			"invalid md_id = %d\n", md_id);
@@ -219,7 +238,10 @@ int swtp_init(int md_id)
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"%s:swtp%d get debounce fail\n",
 					__func__, i);
-				break;
+				// modify by wt.changtingting for swtp start
+				// break;
+				ints[0] = 512000;
+				// modify by wt.changtingting for swtp end
 			}
 
 			ret = of_property_read_u32_array(node, "interrupts",
@@ -243,10 +265,21 @@ int swtp_init(int md_id)
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
 
-			ret = request_irq(swtp_data[md_id].irq[i],
+			// modify by wt.changtingting for swtp start
+			/*ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
 				(i == 0 ? "swtp0-eint" : "swtp1-eint"),
-				&swtp_data[md_id]);
+				&swtp_data[md_id]);*/
+			memset(irq_name, 0, sizeof(irq_name));
+			has_write = snprintf(irq_name, 12, "swtp%d-eint", i);
+			if (has_write <= 0 || has_write > 12) {
+				CCCI_LEGACY_ERR_LOG(md_id, SYS, "get swtp%d-eint fail\n", i);
+				break;
+			}
+			ret = request_irq(swtp_data[md_id].irq[i],
+				swtp_irq_handler, IRQF_TRIGGER_NONE,
+				irq_name, &swtp_data[md_id]);
+			// modify by wt.changtingting for swtp end
 			if (ret) {
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"swtp%d-eint IRQ LINE NOT AVAILABLE\n",

@@ -1278,8 +1278,11 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned int offset,
 
 	set_offset = (eint_num / 4) * 4 + pctl->devdata->eint_offsets.dbnc_set;
 	clr_offset = (eint_num / 4) * 4 + pctl->devdata->eint_offsets.dbnc_clr;
-	if (!mtk_eint_can_en_debounce(pctl, eint_num))
-		return -EINVAL;
+	// modify by wt.changtingting for swtp start
+	/*if (!mtk_eint_can_en_debounce(pctl, eint_num))
+		return -EINVAL;*/
+	mtk_eint_can_en_debounce(pctl, eint_num);
+	// modify by wt.changtingting for swtp end
 
 	if (pctl->devdata->spec_debounce_select)
 		dbnc = pctl->devdata->spec_debounce_select(debounce);
