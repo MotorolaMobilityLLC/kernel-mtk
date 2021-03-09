@@ -17,9 +17,13 @@
 #include "kd_imgsensor.h"
 
 #define MAX_EEPROM_SIZE_16K 0x4000
-
+extern unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned int addr,
+			unsigned char *data, unsigned int size);
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+	{MOT_S5KHM2_SENSOR_ID, 0xA0, Common_read_region},  //eeprom
+	{MOT_OV32B40_SENSOR_ID, 0xA2, Common_read_region}, //eeprom
+	{MOT_S5K4H7_SENSOR_ID, 0x5A, mot_s5k4h7_read_region},  // otp
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };
@@ -33,5 +37,6 @@ unsigned int cam_cal_get_sensor_list(
 	*ppCamcalList = &g_camCalList[0];
 	return 0;
 }
+
 
 
