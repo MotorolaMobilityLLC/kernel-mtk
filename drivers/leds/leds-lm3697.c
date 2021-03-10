@@ -19,6 +19,7 @@
 #define LM3697_REV			0x0
 #define LM3697_RESET			0x1
 #define LM3697_OUTPUT_CONFIG		0x10
+#define LM3697_CTRL_A_B_BRT_CFG		0x16
 #define LM3697_FEEDBACK_ENABLE		0x19
 #define LM3697_BOOST_CTRL		0x1a
 
@@ -247,6 +248,7 @@ int is_lm3697_chip_exist(void)
 static int lm3697_gpio_init(struct lm3697 *priv)
 {
 	int ret = -1;
+
 	if (gpio_is_valid(priv->enable_gpio)) {
 		ret = gpio_request(priv->enable_gpio, "lm3697_gpio");
 		if (ret < 0) {
@@ -268,15 +270,13 @@ static int lm3697_gpio_init(struct lm3697 *priv)
 static int lm3697_init(struct lm3697 *priv)
 {
 	int ret = -1;
-	ret = lm3697_i2c_write(priv->client, LM3697_CTRL_ENABLE, 0x1);
+
+	/* Change BLK to Linear mode. 0x00 = exponential, 0x01 = Linear */
+	ret = lm3697_i2c_write(priv->client, LM3697_CTRL_A_B_BRT_CFG, 0x01);
 	if (ret) {
-		pr_err("Cannot write ctrl enable\n");
+		pr_err("Cannot write LM3697_CTRL_A_B_BRT_CFG\n");
 		goto out;
 	}
-
-	ret = lm3697_i2c_write(priv->client, LM3697_OUTPUT_CONFIG, 0x0);
-	if (ret)
-		pr_err("Cannot write OUTPUT config\n");
 
 out:
 	return ret;
@@ -306,6 +306,7 @@ static int lm3697_probe(struct i2c_client *client,
 	mutex_init(&led->lock);
 	lm3697_probe_dt(&client->dev, led);
 	i2c_set_clientdata(client, led);
+	lm3697_init(led);
 	lm3697_gpio_init(led);
 
 	ret = lm3697_read_chipid(led);
