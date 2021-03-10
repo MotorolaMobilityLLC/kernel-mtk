@@ -18,6 +18,11 @@
 
 #define MAX_EEPROM_LAYOUT_NUM 4
 
+#define CHECK_SNPRINTF_RET(ret, str, msg)           \
+    if (ret < 0 || ret >= MAX_CALIBRATION_STRING) { \
+        LOG_ERR(msg);                               \
+        str[0] = 0;                                 \
+    }
 
 MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 {
@@ -25,36 +30,36 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 		{
 			.sensorID= MOT_S5KHM2_SENSOR_ID,
 			.deviceID = 0x01,
-			.dataLength = 0x1638,
+			.dataLength = 0x1925,
 			.sensorVendorid = 0x16020000,
 			.vendorByte = {1,2,3,4},
 			.dataBuffer = NULL
 		},
 		{
-			{0x00000000, 0x00000000, 0x00000000, mot_check_mnf_data },
-			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
-			{0x00000000, 0x00000017, 0x0000074C, mot_check_awb_data },
-			{0x00000000, 0x00000007, 0x0000000E, mot_check_lsc_data },
-			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data}
+			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
+			{0x00000001, 0x18F60027, 0x00180018, mot_check_af_data  },//High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
+			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
+			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },
+			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data}//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
 		}
 	},
 	{
 		{
 			.sensorID= MOT_OV32B40_SENSOR_ID,
 			.deviceID = 0x02,
-			.dataLength = 0x0770,
+			.dataLength = 0x1065,
 			.sensorVendorid = 0x16020000,
 			.vendorByte = {1,2,3,4},
 			.dataBuffer = NULL
 		},
 		{
-			{0x00000000, 0x00000000, 0x00000000, mot_check_mnf_data },
+			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
 			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
-			{0x00000000, 0x00000017, 0x0000074C, mot_check_awb_data },
-			{0x00000000, 0x00000007, 0x0000000E, mot_check_lsc_data },
+			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
+			{0x00000001, 0x00000903, 0x0000074C, mot_check_lsc_data },
 			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data}
-        }
-    },
+        	}
+	},
 	{
 		{
 			.sensorID= MOT_OV02B1B_SENSOR_ID,
@@ -246,50 +251,50 @@ static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
 
 	if (unit.r < AWB_R_MIN || unit.r > AWB_R_MAX)
 	{
-		LOG_INF("unit r out of range! MIN: %d, r: %d, MAX: %d",
+		LOG_ERR("unit r out of range! MIN: %d, r: %d, MAX: %d",
 			AWB_R_MIN, unit.r, AWB_R_MAX);
 		result = 1;
 	}
 	if (unit.gr < AWB_GR_MIN || unit.gr > AWB_GR_MAX)
 	{
-		LOG_INF("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
+		LOG_ERR("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
 			AWB_GR_MIN, unit.gr, AWB_GR_MAX);
 		result = 1;
 	}
 	if (unit.gb < AWB_GB_MIN || unit.gb > AWB_GB_MAX)
 	{
-		LOG_INF("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
+		LOG_ERR("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
 			AWB_GB_MIN, unit.gb, AWB_GB_MAX);
 		result = 1;
 	}
 	if (unit.b < AWB_B_MIN || unit.b > AWB_B_MAX)
 	{
-		LOG_INF("unit b out of range! MIN: %d, b: %d, MAX: %d",
+		LOG_ERR("unit b out of range! MIN: %d, b: %d, MAX: %d",
 			AWB_B_MIN, unit.b, AWB_B_MAX);
 		result = 1;
 	}
 
 	if (golden.r < AWB_R_MIN || golden.r > AWB_R_MAX)
 	{
-		LOG_INF("golden r out of range! MIN: %d, r: %d, MAX: %d",
+		LOG_ERR("golden r out of range! MIN: %d, r: %d, MAX: %d",
 			AWB_R_MIN, golden.r, AWB_R_MAX);
 		result = 1;
 	}
 	if (golden.gr < AWB_GR_MIN || golden.gr > AWB_GR_MAX)
 	{
-		LOG_INF("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
+		LOG_ERR("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
 			AWB_GR_MIN, golden.gr, AWB_GR_MAX);
 		result = 1;
 	}
 	if (golden.gb < AWB_GB_MIN || golden.gb > AWB_GB_MAX)
 	{
-		LOG_INF("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
+		LOG_ERR("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
 			AWB_GB_MIN, golden.gb, AWB_GB_MAX);
 		result = 1;
 	}
 	if (golden.b < AWB_B_MIN || golden.b > AWB_B_MAX)
 	{
-		LOG_INF("golden b out of range! MIN: %d, b: %d, MAX: %d",
+		LOG_ERR("golden b out of range! MIN: %d, b: %d, MAX: %d",
 			AWB_B_MIN, golden.b, AWB_B_MAX);
 		result = 1;
 	}
@@ -303,43 +308,171 @@ static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit,
 	uint32_t r_g;
 	uint32_t b_g;
 	uint32_t golden_rg, golden_bg;
+	uint32_t gr_gb;
+	uint32_t golden_gr_gb;
 	uint32_t r_g_golden_min;
 	uint32_t r_g_golden_max;
 	uint32_t b_g_golden_min;
 	uint32_t b_g_golden_max;
 
-	r_g = unit.r_g * 1000;
-	b_g = unit.b_g*1000;
+	LOG_INF("unit: r_g = 0x%x, b_g=0x%x, gr_gb=0x%x \n", unit.r_g, unit.b_g, unit.gr_gb);
+	LOG_INF("golden: r_g = 0x%x, b_g=0x%x, gr_gb=0x%x \n", golden.r_g, golden.b_g, golden.gr_gb);
+	LOG_INF("limit golden  0x%x, 0x%x ,0x%x 0x%x \n",limit.r_g_golden_min,limit.r_g_golden_max,
+							limit.b_g_golden_min,limit.b_g_golden_max);
 
-	golden_rg = golden.r_g* 1000;
-	golden_bg = golden.b_g* 1000;
+	r_g = unit.r_g*1000;
+	b_g = unit.b_g*1000;
+	gr_gb = unit.gr_gb*100;
+
+	golden_rg = golden.r_g*1000;
+	golden_bg = golden.b_g*1000;
+	golden_gr_gb = golden.gr_gb*100;
 
 	r_g_golden_min = limit.r_g_golden_min*16384;
 	r_g_golden_max = limit.r_g_golden_max*16384;
 	b_g_golden_min = limit.b_g_golden_min*16384;
 	b_g_golden_max = limit.b_g_golden_max*16384;
-	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,
-				r_g_golden_min,r_g_golden_max);
-	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,
-				golden_bg,b_g_golden_min,b_g_golden_max);
+
+	LOG_INF("r_g=%d, b_g=%d, r_g_golden_min=%d, r_g_golden_max =%d\n", r_g, b_g, r_g_golden_min, r_g_golden_max);
+	LOG_INF("golden_rg=%d, golden_bg=%d, b_g_golden_min=%d, b_g_golden_max =%d\n", golden_rg, golden_bg, b_g_golden_min, b_g_golden_max);
+
 	if (r_g < (golden_rg - r_g_golden_min) ||
 		r_g > (golden_rg + r_g_golden_max))
 	{
-		LOG_INF("Final RG calibration factors out of range!");
+		LOG_ERR("Final RG calibration factors out of range!");
 		return 1;
 	}
 
 	if (b_g < (golden_bg - b_g_golden_min) ||
 		b_g > (golden_bg + b_g_golden_max))
 	{
-		LOG_INF("Final BG calibration factors out of range!");
+		LOG_ERR("Final BG calibration factors out of range!");
 		return 1;
 	}
+
+	LOG_INF("gr_gb = %d, golden_gr_gb=%d \n", gr_gb, golden_gr_gb);
+
+	if (gr_gb < AWB_GR_GB_MIN || gr_gb > AWB_GR_GB_MAX) {
+		LOG_INF("Final gr_gb calibration factors out of range!!!");
+		return 1;
+	}
+
+	if (golden_gr_gb < AWB_GR_GB_MIN || golden_gr_gb > AWB_GR_GB_MAX) {
+		LOG_INF("Final golden_gr_gb calibration factors out of range!!!");
+		return 1;
+	}
+
 	return 0;
 }
 
+static void get_manufacture_data(u8 *data,UINT32 StartAddr,
+					UINT32 BlockSize, mot_calibration_mnf_t *pMnfData)
+{
+	int ret = 0;
+	manufacture_info *pEeprom = (manufacture_info *)(data + StartAddr);
+
+	memset(pMnfData, 0, sizeof(mot_calibration_mnf_t));
+
+	if (BlockSize != sizeof(manufacture_info))
+	{
+		LOG_ERR("manufacture info blockSize is incorrect: BlockSize %d, expected %d",
+			BlockSize, sizeof(manufacture_info));
+		return;
+	}
+
+	// tableRevision
+	ret = snprintf(pMnfData->table_revision, MAX_CALIBRATION_STRING, "0x%x", pEeprom->table_revision[0]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->table_revision, "failed to fill table revision string");
+
+	// moto part number
+	ret = snprintf(pMnfData->mot_part_number, MAX_CALIBRATION_STRING, "SC%c%c%c%c%c%c%c%c",
+			pEeprom->mot_part_number[0], pEeprom->mot_part_number[1],
+			pEeprom->mot_part_number[2], pEeprom->mot_part_number[3],
+			pEeprom->mot_part_number[4], pEeprom->mot_part_number[5],
+			pEeprom->mot_part_number[6], pEeprom->mot_part_number[7]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->mot_part_number, "failed to fill part number string");
+
+	// actuator ID
+	switch (pEeprom->actuator_id[0])
+	{
+		case 0xFF: ret = snprintf(pMnfData->actuator_id, MAX_CALIBRATION_STRING, "N/A");	break;
+		case 0x30: ret = snprintf(pMnfData->actuator_id, MAX_CALIBRATION_STRING, "Dongwoo");	break;
+		default:   ret = snprintf(pMnfData->actuator_id, MAX_CALIBRATION_STRING, "Unknown");	break;
+	}
+	CHECK_SNPRINTF_RET(ret, pMnfData->actuator_id, "failed to fill actuator id string");
+
+	// lens ID
+	switch (pEeprom->lens_id[0])
+	{
+		case 0x00: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "XuYe");		break;
+		case 0x20: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Sunnys");		break;
+		case 0x29: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Sunny 39292A-400");break;
+		case 0x40: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Largan");		break;
+		case 0x42: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Largan 50281A3");	break;
+		case 0x60: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "SEMCO");		break;
+		case 0x80: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Genius");		break;
+		case 0x84: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "AAC 325174A01");	break;
+		case 0xA0: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Sunnys");		break;
+		case 0xA1: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Sunnys 39390A-400");break;
+		case 0xC0: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "AAC");		break;
+		case 0xE0: ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Kolen");		break;
+		default:   ret = snprintf(pMnfData->lens_id, MAX_CALIBRATION_STRING, "Unknown");	break;
+	}
+	CHECK_SNPRINTF_RET(ret, pMnfData->lens_id, "failed to fill lens id string");
+
+	// manufacturer ID
+	if (pEeprom->manufacturer_id[0] == 'S' && pEeprom->manufacturer_id[1] == 'U')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	else if (pEeprom->manufacturer_id[0] == 'O' && pEeprom->manufacturer_id[1] == 'F')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "OFilm");
+	else if (pEeprom->manufacturer_id[0] == 'H' && pEeprom->manufacturer_id[1] == 'O')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Holitech");
+	else if (pEeprom->manufacturer_id[0] == 'T' && pEeprom->manufacturer_id[1] == 'S')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Tianshi");
+	else if (pEeprom->manufacturer_id[0] == 'S' && pEeprom->manufacturer_id[1] == 'W')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Sunwin");
+	else if (pEeprom->manufacturer_id[0] == 'S' && pEeprom->manufacturer_id[1] == 'E')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Semco");
+	else if (pEeprom->manufacturer_id[0] == 'Q' && pEeprom->manufacturer_id[1] == 'T')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	else
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Unknown");
+
+	CHECK_SNPRINTF_RET(ret, pMnfData->integrator, "failed to fill integrator string");
+
+	// factory ID
+	ret = snprintf(pMnfData->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+			pEeprom->factory_id[0], pEeprom->factory_id[1]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->factory_id, "failed to fill factory id string");
+
+	// manufacture line
+	ret = snprintf(pMnfData->manufacture_line, MAX_CALIBRATION_STRING, "%u", pEeprom->manufacture_line[0]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->manufacture_line, "failed to fill manufature line string");
+
+	// manufacture date
+	ret = snprintf(pMnfData->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+			pEeprom->manufacture_date[0], pEeprom->manufacture_date[1], pEeprom->manufacture_date[2]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->manufacture_date, "failed to fill manufature date");
+
+	// serialNumber
+	ret = snprintf(pMnfData->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		pEeprom->serial_number[0],  pEeprom->serial_number[1],
+		pEeprom->serial_number[2],  pEeprom->serial_number[3],
+		pEeprom->serial_number[4],  pEeprom->serial_number[5],
+		pEeprom->serial_number[6],  pEeprom->serial_number[7],
+		pEeprom->serial_number[8],  pEeprom->serial_number[9],
+		pEeprom->serial_number[10], pEeprom->serial_number[11],
+		pEeprom->serial_number[12], pEeprom->serial_number[13],
+		pEeprom->serial_number[14], pEeprom->serial_number[15]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->serial_number, "failed to fill serial number");
+
+	LOG_INF("integrator: %s, lens_id: %s, actuator_id: %s, manufacture_date: %s, serial_number: %s",
+		pMnfData->integrator, pMnfData->lens_id, pMnfData->actuator_id,
+		pMnfData->manufacture_date, pMnfData->serial_number);
+}
+
 static void mot_check_mnf_data(u8 *data,UINT32 StartAddr,
-				UINT32 BlockSize,RetStatus *rStatus)
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
 {
 	uint8_t manufacture_crc16[2] = {*(data+StartAddr+BlockSize),
 					*(data+StartAddr+BlockSize+1)};
@@ -348,56 +481,85 @@ static void mot_check_mnf_data(u8 *data,UINT32 StartAddr,
 		convert_crc(manufacture_crc16)))
 	{
 		LOG_INF("Manufacturing CRC Fails!");
-		rStatus->mnf_status = CRC_FAILURE;
+		mot_cal_info->mnf_status = STATUS_CRC_FAIL;
 	}
 	else
 	{
 		LOG_INF("Manufacturing CRC Pass");
-		rStatus->mnf_status = NO_ERRORS;
+		mot_cal_info->mnf_status = STATUS_OK;
 	}
 }
 
 static void mot_check_af_data(u8 *data, UINT32 StartAddr,
-				UINT32 BlockSize,RetStatus *rStatus)
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
 {
-	uint8_t af_cal_crc16[2] = {*(data+StartAddr+BlockSize),
-					*(data+StartAddr+BlockSize+1)};
+	// High 16 bit: AF sync data
+	UINT16 StartAddr1 = 0xFFFF & (StartAddr>>16);
+	UINT16 BlockSize1 = 0xFFFF & (BlockSize>>16);
+	UINT8 af_crc1[2] = {*(data+StartAddr1+BlockSize1), *(data+StartAddr1+BlockSize1+1)};
 
-	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
-					convert_crc(af_cal_crc16)))
+	// Low 16 bit: AF inf/macro data.
+	UINT16 StartAddr2 = 0xFFFF & StartAddr;
+	UINT16 BlockSize2 = 0xFFFF & BlockSize;
+	UINT8 af_crc2[2] = {*(data+StartAddr2+BlockSize2), *(data+StartAddr2+BlockSize2+1)};
+
+	mot_cal_info->af_status = STATUS_OK;
+
+	LOG_INF("StartAddr = 0x%x, BlockSize = 0x%x", StartAddr, BlockSize);
+	LOG_INF("StartAddr1 = 0x%x, BlockSize1 = 0x%x", StartAddr1, BlockSize1);
+	LOG_INF("StartAddr2 = 0x%x, BlockSize2 = 0x%x", StartAddr2, BlockSize2);
+
+	if (BlockSize1 != 0)
 	{
-		LOG_INF("Autofocus CRC Fails!");
-		rStatus->af_status = CRC_FAILURE;
+		if (!eeprom_util_check_crc16(data+StartAddr1, BlockSize1, convert_crc(af_crc1)))
+		{
+			LOG_INF("AF sync data CRC Fails!");
+			mot_cal_info->af_status = STATUS_CRC_FAIL;
+		}
+		else
+		{
+			LOG_INF("AF sync data CRC Pass");
+		}
 	}
-	else
+
+	if (BlockSize2 != 0)
 	{
-		LOG_INF("Autofocus CRC Pass");
-		rStatus->af_status = NO_ERRORS;
+		if (!eeprom_util_check_crc16(data+StartAddr2, BlockSize2, convert_crc(af_crc2)))
+		{
+			LOG_INF("AF inf/macro data CRC Fails!");
+			mot_cal_info->af_status = STATUS_CRC_FAIL;
+		}
+		else
+		{
+			LOG_INF("AF inf/macro data CRC Pass");
+		}
 	}
 }
 
 static void mot_check_awb_data(u8 *data,UINT32 StartAddr,
-				UINT32 BlockSize,RetStatus *rStatus)
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
 {
 	uint8_t awb_crc16[2] = {*(data+StartAddr+BlockSize),
 				*(data+StartAddr+BlockSize+1)};
-	char awb_dat[39] = {0};
-	camcal_awb *eeprom = NULL;
+	camcal_awb awb_data = {0};
+	camcal_awb *eeprom = &awb_data;
 	awb_t unit;
 	awb_t golden;
 	awb_limit_t golden_limit;
-	calibration_status_t mstatus;
+	MotCalibrationStatus mstatus;
 
-	memcpy(awb_dat, data+StartAddr, sizeof(camcal_awb));
+	memcpy(eeprom, data+StartAddr, sizeof(camcal_awb));
 
 	if(!eeprom_util_check_crc16(data+StartAddr,BlockSize,
 					convert_crc(awb_crc16)))
 	{
-		LOG_INF("AWB CRC Fails!");
-		mstatus = CRC_FAILURE;
+		LOG_ERR("AWB CRC Fails!");
+		mstatus = STATUS_CRC_FAIL;
 		goto endfun;
 	}
-	eeprom = (camcal_awb *)awb_dat;
+	else
+		LOG_INF("AWB CRC Pass");
+
 	unit.r = to_uint16_swap(eeprom->awb_src_1_r);
 	unit.gr = to_uint16_swap(eeprom->awb_src_1_gr);
 	unit.gb = to_uint16_swap(eeprom->awb_src_1_gb);
@@ -413,9 +575,10 @@ static void mot_check_awb_data(u8 *data,UINT32 StartAddr,
 	golden.r_g = to_uint16_swap(eeprom->awb_src_1_golden_rg_ratio);
 	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
 	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
+
 	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
-		LOG_INF("AWB CRC limit Fails!");
-		mstatus = LIMIT_FAILURE;
+		LOG_ERR("AWB CRC limit Fails!");
+		mstatus = STATUS_LIMIT_FAIL;
 		goto endfun;
 	}
 
@@ -426,18 +589,19 @@ static void mot_check_awb_data(u8 *data,UINT32 StartAddr,
 
 	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit))
 	{
-		LOG_INF("AWB CRC factor limit Fails!");
-		mstatus = LIMIT_FAILURE;
+		LOG_ERR("AWB CRC factor limit Fails!");
+		mstatus = STATUS_LIMIT_FAIL;
 		goto endfun;
 	}
-	LOG_INF("AWB CRC Pass");
-	mstatus = NO_ERRORS;
+
+	LOG_INF("AWB Limit Pass");
+	mstatus = STATUS_OK;
 endfun:
-	rStatus->awb_status = mstatus;
+	mot_cal_info->awb_status = mstatus;
 }
 
 static void mot_check_lsc_data( u8 *data, UINT32 StartAddr,
-				UINT32 BlockSize, RetStatus *rStatus)
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
 {
 	uint8_t lsc_crc16[2] = {*(data+StartAddr+BlockSize),
 				*(data+StartAddr+BlockSize+1)};
@@ -446,45 +610,73 @@ static void mot_check_lsc_data( u8 *data, UINT32 StartAddr,
 		convert_crc(lsc_crc16)))
 	{
 		LOG_INF("LSC CRC Fails!");
-		rStatus->lsc_status = CRC_FAILURE;
+		mot_cal_info->lsc_status = STATUS_CRC_FAIL;
 	}
 	else
 	{
 		LOG_INF("LSC CRC Pass");
-		rStatus->lsc_status = NO_ERRORS;
+		mot_cal_info->lsc_status = STATUS_OK;
 	}
 }
 
 static void  mot_check_pdaf_data( u8 *data, UINT32 StartAddr,
-				UINT32 BlockSize,RetStatus *rStatus)
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
 {
-	uint8_t pdaf_output1_crc16[2] = {*(data+StartAddr+BlockSize),
-					*(data+StartAddr+BlockSize+1)};
+	// High 16 bit: pdaf output1 data;
+	UINT16 StartAddr1 = 0xFFFF & (StartAddr>>16);
+	UINT16 BlockSize1 = 0xFFFF & (BlockSize>>16);
 
+	// Low 16 bit: pdaf output2 data
+	UINT16 StartAddr2 = 0xFFFF & StartAddr;
+	UINT16 BlockSize2 = 0xFFFF & BlockSize;
 
-	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
-		convert_crc(pdaf_output1_crc16)))
+	/*** 	PDAF eeprom map:
+	*	MTK PDAF calibration output1 data
+	*	MTK PDAF calibration output2 data
+	*	MTK PDAF calibration output1 data CRC
+	*	MTK PDAF calibration output2 data CRC
+	***/
+	// pdaf output1 data crc
+	UINT8 pdaf_crc1[2] = {*(data+StartAddr1+BlockSize1+BlockSize2), *(data+StartAddr1+BlockSize1+BlockSize2+1)};
+
+	// pdaf output2 data crc
+	UINT8 pdaf_crc2[2] = {*(data+StartAddr2+BlockSize2+2), *(data+StartAddr2+BlockSize2+2+1)};
+
+	mot_cal_info->pdaf_status = STATUS_OK;
+
+	LOG_INF("StartAddr = 0x%x, BlockSize = 0x%x", StartAddr, BlockSize);
+	LOG_INF("StartAddr1 = 0x%x, BlockSize1 = 0x%x", StartAddr1, BlockSize1);
+	LOG_INF("StartAddr2 = 0x%x, BlockSize2 = 0x%x", StartAddr2, BlockSize2);
+
+	if (BlockSize1 != 0)
 	{
-		LOG_INF("PDAF OUTPUT1 CRC Fails!");
-		rStatus->pdaf_status = CRC_FAILURE;
+		if (!eeprom_util_check_crc16(data+StartAddr1, BlockSize1, convert_crc(pdaf_crc1)))
+		{
+			LOG_INF("PDAF OUTPUT1 CRC Fails!");
+			mot_cal_info->pdaf_status = STATUS_CRC_FAIL;
+		}
+		else
+		{
+			LOG_INF("PDAF OUTPUT1 CRC Pass");
+		}
 	}
-	else
+
+	if (BlockSize2 != 0)
 	{
-		LOG_INF("PDAF CRC Pass");
-		rStatus->pdaf_status = NO_ERRORS;
+		if (!eeprom_util_check_crc16(data+StartAddr2, BlockSize2, convert_crc(pdaf_crc2)))
+		{
+			LOG_INF("PDAF OUTPUT2 CRC Fails!");
+			mot_cal_info->pdaf_status = STATUS_CRC_FAIL;
+		}
+		else
+		{
+			LOG_INF("PDAF OUTPUT2 CRC Pass");
+		}
 	}
-#if 0
-	u8 pdaf_crc16[2] = {0,0}; //need fix XXXXXXXX
-	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
-		convert_crc(pdaf_crc16))) {
-		LOG_INF("PDAF OUTPUT2 CRC Fails!");
-		return CRC_FAILURE;
-	}
-#endif
 }
 
 int imgread_cam_cal_data(int sensorid, const char* dump_file ,
-						RetStatus *rStatus)
+				mot_calibration_info_t *mot_cal_info)
 {
 	struct EEPROM_DRV_FD_DATA *fd_pdata = NULL;
 	struct stCAM_CAL_DATAINFO_STRUCT* pData;
@@ -517,7 +709,8 @@ int imgread_cam_cal_data(int sensorid, const char* dump_file ,
 		return -EFAULT;
 	}
 
-	LOG_INF("SensorID=%x DeviceID=%x\n",pData->sensorID, pData->deviceID);
+	LOG_INF("Start Read: SensorID=0x%x DeviceID=0x%x\n",pData->sensorID, pData->deviceID);
+
 	index = IMGSENSOR_SENSOR_IDX_MAP(pData->deviceID);
 	if (MAX_EEPROM_NUMBER <= index ) {
 		LOG_ERR("node index out of bound\n");
@@ -591,15 +784,22 @@ int imgread_cam_cal_data(int sensorid, const char* dump_file ,
 			{
 				CalcheckTbl[match_index].CalItemTbl[i].doCalDataCheck(pData->dataBuffer,
 					CalcheckTbl[match_index].CalItemTbl[i].StartAddr,
-					CalcheckTbl[match_index].CalItemTbl[i].BlockSize,rStatus);
+					CalcheckTbl[match_index].CalItemTbl[i].BlockSize,mot_cal_info);
+
+				if ( i == EEPROM_CRC_MANUFACTURING)
+				{
+					get_manufacture_data(pData->dataBuffer,
+						CalcheckTbl[match_index].CalItemTbl[i].StartAddr,
+						CalcheckTbl[match_index].CalItemTbl[i].BlockSize,
+						&mot_cal_info->mnf_cal_data);
+				}
 			}
 		}
 		kfree(pData->dataBuffer);
 		pData->dataBuffer = NULL;
-		LOG_INF("SensorID=%x DeviceID=%x read success\n",pData->sensorID, pData->deviceID);
+		LOG_INF("Finish Read: SensorID=0x%x DeviceID=0x%x read success\n",pData->sensorID, pData->deviceID);
 	}
 
 	filp_close(fdata,NULL);
 	return 0;
 }
-
