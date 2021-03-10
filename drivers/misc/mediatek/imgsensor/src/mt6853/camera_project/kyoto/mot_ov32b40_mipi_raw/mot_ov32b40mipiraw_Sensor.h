@@ -16,7 +16,7 @@
  *
  * Filename:
  * ---------
- *     S5KHM2mipi_Sensor.h
+ *     OV32B40mipi_Sensor.h
  *
  * Project:
  * --------
@@ -27,8 +27,8 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _S5KHM2MIPI_SENSOR_H
-#define _S5KHM2MIPI_SENSOR_H
+#ifndef _OV32B40MIPI_SENSOR_H
+#define _OV32B40MIPI_SENSOR_H
 
 
 enum IMGSENSOR_MODE {
