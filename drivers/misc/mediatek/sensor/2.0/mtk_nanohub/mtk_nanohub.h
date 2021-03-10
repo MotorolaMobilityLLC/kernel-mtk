@@ -523,7 +523,7 @@ union SCP_SENSOR_HUB_DATA {
 };
 
 /*moto add for sensor algo params*/
-//#ifdef CONFIG_MOTO_ALGO_PARAMS
+#ifdef CONFIG_MOTO_ALGO_PARAMS
 struct mot_chopchop {
     float max_gyro_rotation;
     uint32_t max_chop_duration_ms;
@@ -586,6 +586,7 @@ struct alsparams {
     float scale;
     float default_scale;
     uint32_t target_lux;
+    uint8_t polling_mode_als;
 };
 
 struct psparams
@@ -614,6 +615,7 @@ struct psparams
     float low_coeff;
     uint16_t min_delta;
     uint8_t pUseOilAlgo;
+    uint8_t polling_mode_ps;
 };
 
 struct MotAlgoPsPrams
@@ -645,19 +647,21 @@ struct ps_custom {
 };
 
 struct mot_params {
-//#ifdef CONFIG_MOTO_CHOPCHOP
+#ifdef CONFIG_MOTO_CHOPCHOP_PARAMS
 	struct mot_chopchop chopchop_params;
-//#endif
-//#ifdef CONFIG_MOTO_GLANCE
+#endif
+#ifdef CONFIG_MOTO_GLANCE_PARAMS
     struct mot_glance glance_params;
-//#endif
-//#ifdef CONFIG_MOTO_LTV
+#endif
+#ifdef CONFIG_MOTO_LTV_PARAMS
     struct mot_ltv ltv_params;
-//#endif
+#endif
+#ifdef CONFIG_MOTO_ALSPS_PARAMS
     struct als_custom alscustom;
 
     struct ps_custom pscustom;
+#endif
 };
-//#endif
+#endif
 int mtk_nanohub_cfg_to_hub(uint8_t sensor_id, uint8_t *data, uint8_t count);
 #endif
