@@ -3234,9 +3234,18 @@ vm_fault_t do_swap_page(struct vm_fault *vmf)
 
 	if (!page) {
 		struct swap_info_struct *si = swp_swap_info(entry);
+		bool skip_swapcache = false;
 
-		if (si->flags & SWP_SYNCHRONOUS_IO &&
-				__swap_count(si, entry) == 1) {
+		/* Moto huangzq2: check sync_io on each page if we enabled Zram wb.
+		 * Zram writeback will remove SWP_SYNCHRONOUS_IO flag as it has disk
+		 * IO operation on writeback page during swap in.
+		 */
+		if (si->flags & SWP_SYNCHRONOUS_IO && __swap_count(si, entry) == 1)
+			skip_swapcache = true;
+		else if (__swap_count(si, entry) == 1 && swap_slot_has_sync_io(entry))
+			skip_swapcache = true;
+
+		if (skip_swapcache) {
 			/* skip swapcache */
 			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma,
 							vmf->address);
