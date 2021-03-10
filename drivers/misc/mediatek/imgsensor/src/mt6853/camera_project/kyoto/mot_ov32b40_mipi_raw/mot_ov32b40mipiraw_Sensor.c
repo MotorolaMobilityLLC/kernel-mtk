@@ -26,9 +26,9 @@
 #include "mot_ov32b40mipiraw_Sensor.h"
 
 #define PFX "[imgsensor] mot_ov32b40mipiraw"
-#define LOG_INF(format, args...)     \
-	pr_debug(PFX "[%s] " format, \
-	__func__, ##args)
+#define LOG_INF(format, args...) pr_info("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_DEBUG(format, args...) pr_debug("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
 
 #define I2C_ADDR (0x20)
 #define MULTI_WRITE_REGISTER_VALUE  (8)
@@ -37,6 +37,11 @@
 #elif MULTI_WRITE_REGISTER_VALUE == 16
 #define I2C_BUFFER_LEN 1020
 #endif
+
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/ov32b40_eeprom_data.bin"
+
+static mot_calibration_info_t ov32b40_cal_info = {0};
+int imgread_cam_cal_data(int sensorid, const char* dump_file , mot_calibration_info_t *mot_cal_info);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -447,7 +452,7 @@ static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
 
-	LOG_INF("s shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+	LOG_DEBUG("s shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
@@ -470,12 +475,12 @@ static void write_shutter(kal_uint32 shutter)
 		}
 	} else {
 		extend_frame_length(imgsensor.frame_length);
-		LOG_INF("(else)imgsensor.frame_length = %d\n",
+		LOG_DEBUG("(else)imgsensor.frame_length = %d\n",
 			imgsensor.frame_length);
 	}
 
 	updat_shutter(shutter);
-	LOG_INF("e shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+	LOG_DEBUG("e shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }
 
@@ -536,7 +541,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	LOG_INF("gain setting");
+	LOG_DEBUG("gain setting");
 
 	if (gain < imgsensor_info.min_gain)
 		gain = imgsensor_info.min_gain;
@@ -547,7 +552,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
+	LOG_DEBUG("gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
 
 	update_gain(reg_gain);
 	return gain;
@@ -577,6 +582,7 @@ static void sensor_init(void)
 		write_cmos_sensor_8(0x0100, 0x00);
 	table_write_cmos_sensor(sensor_init_setting_array,
 		sizeof(sensor_init_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void preview_setting(void)
@@ -592,6 +598,7 @@ static void capture_setting(kal_uint16 currefps)
 	LOG_INF(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(capture_setting_array,
 		sizeof(capture_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -599,6 +606,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	LOG_INF(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(normal_video_setting_array,
 		sizeof(normal_video_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void hs_video_setting(void)
@@ -606,6 +614,7 @@ static void hs_video_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(hs_video_setting_array,
 		sizeof(hs_video_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void slim_video_setting(void)
@@ -613,6 +622,7 @@ static void slim_video_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(slim_video_setting_array,
 		sizeof(slim_video_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void custom1_setting(void)
@@ -620,6 +630,7 @@ static void custom1_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(custom1_setting_array,
 		sizeof(custom1_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void custom2_setting(void)
@@ -627,6 +638,7 @@ static void custom2_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(custom2_setting_array,
 		sizeof(custom2_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void custom3_setting(void)
@@ -634,6 +646,7 @@ static void custom3_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(custom3_setting_array,
 		sizeof(custom3_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static kal_uint32 return_sensor_id(void)
@@ -656,6 +669,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				// get calibration status and mnf data.
+				imgread_cam_cal_data(*sensor_id, EEPROM_DATA_PATH, &ov32b40_cal_info);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -840,7 +855,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s.\n", __func__);
+	LOG_INF("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
@@ -861,7 +876,7 @@ static kal_uint32 custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s.\n", __func__);
+	LOG_INF("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM2;
@@ -882,7 +897,7 @@ static kal_uint32 custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 custom3(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s.\n", __func__);
+	LOG_INF("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM3;
@@ -1005,6 +1020,15 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.mnf   = ov32b40_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = ov32b40_cal_info.af_status;
+	sensor_info->calibration_status.awb   = ov32b40_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = ov32b40_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = ov32b40_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = ov32b40_cal_info.dual_status;
+
+	memcpy(&sensor_info->mnf_calibration, &ov32b40_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -1152,7 +1176,7 @@ static kal_uint32 set_video_mode(UINT16 framerate)
 
 static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 {
-	LOG_INF("enable = %d, framerate = %d\n", enable, framerate);
+	LOG_DEBUG("enable = %d, framerate = %d\n", enable, framerate);
 	spin_lock(&imgsensor_drv_lock);
 	if (enable)
 		imgsensor.autoflicker_en = KAL_TRUE;
@@ -1369,7 +1393,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data
 		= (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-	LOG_INF("feature_id = %d\n", feature_id);
+	LOG_DEBUG("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
