@@ -238,7 +238,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,0xBE,0x73,0x73,0x50,0x32,0x0C,0x77,0x43,0x06,0x0E,0x0E);//VOP=5.3V; VGH=15V; VGL=-10V
 	lcm_dcs_write_seq_static(ctx,0xBF,0x07,0x25,0x07,0x25,0x7F,0x00,0x11,0x04);
 	lcm_dcs_write_seq_static(ctx,0xC0,0x10,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0xFF,0x00);
-	lcm_dcs_write_seq_static(ctx,0xC1,0xC0,0x0C,0x20,0x96,0x04,0x32,0x32,0x04,0x2A,0x40,0x36,0x00,0x07,0xCF,0xFF,0xFF,0xC0,0x00,0xC0);
+	lcm_dcs_write_seq_static(ctx,0xC1,0xC0,0x0C,0x20,0x96,0x04,0x32,0x32,0x04,0x2A,0x40,0x36,0x00,0x07,0xCF,0xFF,0xFF,0x7D,0x00,0xC0);
 	lcm_dcs_write_seq_static(ctx,0xC2,0x00);
 	lcm_dcs_write_seq_static(ctx,0xC3,0x06,0x00,0xFF,0x00,0xFF,0x00,0x00,0x81,0x01,0x00);
 	lcm_dcs_write_seq_static(ctx,0xC4,0x84,0x01,0x2B,0x41,0x00,0x3C,0x00,0x03,0x03,0x2E);
@@ -406,9 +406,9 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-#define HFP (90)
+#define HFP (50)
 #define HSA (4)
-#define HBP (80)
+#define HBP (50)
 #define VFP_45HZ (1900)
 #define VFP_60HZ (1040)
 #define VFP_90HZ (150)
@@ -418,7 +418,7 @@ static int lcm_enable(struct drm_panel *panel)
 #define HAC (720)
 
 static struct drm_display_mode default_mode = {
-	.clock = 142467,
+	.clock = 131312,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -431,7 +431,7 @@ static struct drm_display_mode default_mode = {
 };
 
 static struct drm_display_mode performance_mode = {
-	.clock = 142092,
+	.clock = 130966,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -498,7 +498,7 @@ static int lcm_get_virtual_width(void)
 }
 
 static struct mtk_panel_params ext_params = {
-	.pll_clk = 449,
+	.pll_clk = 415,
 	.vfp_low_power = VFP_45HZ,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
@@ -515,7 +515,7 @@ static struct mtk_panel_params ext_params = {
 };
 
 static struct mtk_panel_params ext_params_90hz = {
-	.pll_clk = 449,
+	.pll_clk = 415,
 	.vfp_low_power = VFP_60HZ,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
