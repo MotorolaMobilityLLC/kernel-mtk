@@ -14,24 +14,6 @@
 #ifndef _MOT_IMGSENSOR_H
 #define _MOT_IMGSENSOR_H
 
-#if defined(kyoto)
-typedef enum {
-        NO_ERRORS,
-        CRC_FAILURE,
-        LIMIT_FAILURE
-} calibration_status_t;
-
-typedef struct {
-        calibration_status_t mnf_status;
-        calibration_status_t af_status;
-        calibration_status_t awb_status;
-        calibration_status_t lsc_status;
-        calibration_status_t pdaf_status;
-        calibration_status_t dual_status;
-} RetStatus;
-int imgread_cam_cal_data(int sensorid,
-			const char* dump_file ,RetStatus *rStatus);
-#endif
 /*kyoto*/
 #define MOT_S5KHM2_SENSOR_ID                               (0x1ad2)
 #define MOT_OV32B40_SENSOR_ID                              (0x3242)
