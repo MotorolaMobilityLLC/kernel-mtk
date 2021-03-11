@@ -35,9 +35,9 @@
 #include "kd_imgsensor_define.h"
 
 #define DEV_NAME_FMT_DEV "/dev/camera_eeprom%u"
-#define LOG_INF(format, args...) pr_info(PFX "[%s] " format, __func__, ##args)
-#define LOG_DBG(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
-#define LOG_ERR(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_DBG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 
 #define BLACK_LEVEL_SAMSUNG_10B_64 0x40
