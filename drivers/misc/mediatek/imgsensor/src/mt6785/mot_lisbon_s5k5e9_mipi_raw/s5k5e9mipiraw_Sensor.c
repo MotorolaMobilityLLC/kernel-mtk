@@ -708,6 +708,7 @@ typedef enum {
 static calibration_status_t lsc_status;
 static calibration_status_t basic_info_status;
 static calibration_status_t awb_status;
+static calibration_status_t mnf_status;
 static calibration_status_t mtk_necessary_status;
 
 #define S5K5E9_OTP_SIZE 463
@@ -718,6 +719,10 @@ static calibration_status_t mtk_necessary_status;
 #define S5K5E9_EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k5e9_otp_data.bin"
 
 static s5k5e9_otp_t s5k5e9_otp_data;
+
+#define S5K5E9_MPN_NUM    2
+#define S5K5E9_MPN_LENGTH 8
+static const char mnf_part_num[S5K5E9_MPN_NUM][S5K5E9_MPN_LENGTH] = {"28D00382", "28D00878"};
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -1209,6 +1214,7 @@ static int s5k5e9_get_awb(void)
 static int s5k5e9_get_basic_info(void)
 {
 	uint8_t flag_basic_info=0;
+        uint8_t i = 0;
 	s5k5e9_read_otp_page_data(17,0x0A08,&s5k5e9_otp_data.flag_basic_info[0],1);
 	flag_basic_info = s5k5e9_otp_data.flag_basic_info[0]>>6;
 	if (flag_basic_info == 0x01)
@@ -1231,6 +1237,15 @@ static int s5k5e9_get_basic_info(void)
 			return NO_BASIC_INFO;
 		}
 	}
+
+        mnf_status = CRC_FAILURE;
+        for (i = 0; i < S5K5E9_MPN_NUM; i++) {
+            if(strncmp(s5k5e9_otp_data.mpn, mnf_part_num[i], S5K5E9_MPN_LENGTH) == 0) {
+                mnf_status = NO_ERRORS;
+	        LOG_INF("Match Manufacturing part number (%d - %s), mnf_status(%d)!", i, s5k5e9_otp_data.mpn, mnf_status);
+                break;
+	     }
+        }
 
 	if (!eeprom_util_check_crc16(&s5k5e9_otp_data.flag_basic_info[0], S5K5E9_BASIC_INFO_SIZE,
 		convert_crc(&s5k5e9_otp_data.manufacture_crc16[0]))) {
@@ -1704,6 +1719,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->calibration_status.mnf = basic_info_status;
 	sensor_info->calibration_status.awb = awb_status;
 	sensor_info->calibration_status.lsc = lsc_status;
+        sensor_info->calibration_status.mnf = mnf_status;
 	s5k5e9_eeprom_get_mnf_data( &sensor_info->mnf_calibration);
 
 	switch (scenario_id) {

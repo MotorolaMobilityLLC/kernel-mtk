@@ -1428,9 +1428,10 @@ static void slim_video_setting(void)
 #define OV16A1Q_EEPROM_CRC_AWB_CAL_SIZE 43
 #define OV16A1Q_EEPROM_CRC_LSC_SIZE 1868
 #define OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE 37
-#define OV16A1Q_MANUFACTURE_PART_NUMBER "28C85521"
+#define OV16A1Q_MPN_NUM    2
 #define OV16A1Q_MPN_LENGTH 8
 
+static const char mnf_part_num[OV16A1Q_MPN_NUM][OV16A1Q_MPN_LENGTH] = {"28C85521", "28D06703"};
 static uint8_t ov16a1q_eeprom[OV16A1Q_EEPROM_SIZE] = {0};
 static calibration_status_t mnf_status = CRC_FAILURE;
 static calibration_status_t af_status = CRC_FAILURE;
@@ -1816,20 +1817,25 @@ static void ov16a1q_eeprom_get_mnf_data(void *data,
 
 static calibration_status_t ov16a1q_check_manufacturing_data(void *data)
 {
+        int i = 0;
+        calibration_status_t status = CRC_FAILURE;
 	struct ov16a1q_eeprom_t *eeprom = (struct ov16a1q_eeprom_t*)data;
 
-	if(strncmp(eeprom->mpn, OV16A1Q_MANUFACTURE_PART_NUMBER, OV16A1Q_MPN_LENGTH) != 0) {
-		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
-		//return CRC_FAILURE;
-	}
+        for (i = 0; i < OV16A1Q_MPN_NUM; i++) {
+	     if(strncmp(eeprom->mpn, mnf_part_num[i], OV16A1Q_MPN_LENGTH) == 0) {
+	        status =  NO_ERRORS;
+                LOG_INF("Match Manufacturing part number (%d - %s).", i, eeprom->mpn);
+                break;
+	     }
+        }
 
 	if (!eeprom_util_check_crc16(data, OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_INF("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
 	}
-	LOG_INF("Manufacturing CRC Pass");
-	return NO_ERRORS;
+	LOG_INF("Manufacturing CRC status(%d)", status);
+	return status;
 }
 
 static void ov16a1q_eeprom_format_calibration_data(void *data)
