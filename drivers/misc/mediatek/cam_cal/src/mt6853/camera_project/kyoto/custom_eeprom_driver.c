@@ -122,13 +122,13 @@ static unsigned int read_region(struct EEPROM_DRV_FD_DATA *pdata,
 
 	if (offset + size > size_limit)
 	{
-		pr_debug("Error! not support address >= 0x%x!!\n", size_limit);
+		LOG_ERR("Error! not support address >= 0x%x!!\n", size_limit);
 		return 0;
 	}
 
 	if (plist && plist->readCamCalData)
 	{
-		pr_debug("i2c addr 0x%x\n", plist->slaveID);
+		LOG_INF("i2c addr 0x%x\n", plist->slaveID);
 		mutex_lock(&pdata->pdrv->eeprom_mutex);
 		dts_addr = pdata->pdrv->pi2c_client->addr;
 		pdata->pdrv->pi2c_client->addr = (plist->slaveID >> 1);
@@ -139,7 +139,7 @@ static unsigned int read_region(struct EEPROM_DRV_FD_DATA *pdata,
 	}
 	else
 	{
-		pr_debug("no customized\n");
+		LOG_INF("no customized\n");
 		mutex_lock(&pdata->pdrv->eeprom_mutex);
 		ret = Common_read_region(pdata->pdrv->pi2c_client,
 					 offset, buf, size);

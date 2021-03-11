@@ -26,9 +26,9 @@
 #include "mot_ov32b40mipiraw_Sensor.h"
 
 #define PFX "[imgsensor] mot_ov32b40mipiraw"
-#define LOG_INF(format, args...) pr_info("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
-#define LOG_DEBUG(format, args...) pr_debug("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
-#define LOG_ERR(format, args...) pr_err("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_DEBUG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define I2C_ADDR (0x20)
 #define MULTI_WRITE_REGISTER_VALUE  (8)
