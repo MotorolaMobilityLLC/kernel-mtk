@@ -1,0 +1,12 @@
+#
+# ILITEK Touchscreen driver configuration
+#
+
+config TOUCHSCREEN_MTK_ILITEK_V3_ILI7806S
+    bool "ILITEK Touchscreen"
+    depends on spi
+    default n
+    help
+      Say Y here if you have ILITEK touch panel.
+      If unsure, say N.
+
