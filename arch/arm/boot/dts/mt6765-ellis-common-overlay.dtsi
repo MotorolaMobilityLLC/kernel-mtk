@@ -44,37 +44,10 @@
 	};
 };
 
-&i2c6 {
-	aw99703-bl@36 {
-		compatible = "awinic,aw99703-bl";
-		reg = <0x36>;
-		aw99703,hwen-gpio = <&pio 22 0>;
-		/* brightness map level 1:256,2:1024,3:2048 */
-		aw99703,bl-map = <1>;
-		aw99703,using-lsb;
-		aw99703,ovp-level = <2>; /* 31V */
-		aw99703,ocp-level = <1>; /* 1.8A */
-		aw99703,switch-freq = <1>; /* 1000kHz(default) */
-		aw99703,auto-freq-high = <0x10>;
-		aw99703,auto-freq-low = <0x05>;
-		aw99703,bl-fscal-led = <0x15>; /* 21.6mA */
-		aw99703,bl-channel = <3>;
-		aw99703,turn-on-ramp = <0x09>; /* 256ms */
-		aw99703,turn-off-ramp = <0x09>; /* 256ms */
-		aw99703,pwm-trans-dim = <0>; /* 2ms */
-		aw99703,i2c-trans-dim = <0x07>; /* 512ms */
-		aw99703,pwm-mode = <1>; /* 0 pwm enable,1 PWM disable */
-		aw99703,map-type = <1>; /* linear */
-		aw99703,work-mode = <1>; /* backlight */
-		aw99703,flash-timeout-time = <0x05>; /* 500ms(default) */
-		aw99703,flash-current = <0x08>; /* 59.2mA(default) */
-		aw99703,efuse-config = <0x1C 0x61 0x61 0x4C 0x2C 0xC0 0x08 0x00 0x01 0xC0 0x00 0x00 0x50>;
-		status = "okay";
-	};
-	i2c_lcd_bias@3e {
-		compatible = "mediatek,i2c_lcd_bias";
-		reg = <0x3E>;
-		id = <6>;
+&i2c0 {
+	lcd_bias@3e {
+		compatible = "mediatek,I2C_LCD_BIAS";
+		reg = <0x3e>;
 		status = "okay";
 	};
 };
@@ -186,113 +159,85 @@
 	};
 };
 
-/* DISPSYS GPIO standardization */
-&pio {
-	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
+/*LCM start*/
 
-	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-/*
-	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO202__FUNC_GPIO202>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO202__FUNC_GPIO202>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-*/
-	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO44__FUNC_GPIO44>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO44__FUNC_GPIO44>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-/*	
-	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO43__FUNC_DSI_TE>;
-		};
-	};
-*/
-	mtkfb_pins_lcd_ldo_en0_gpio: lcd_ldo_en1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	mtkfb_pins_lcd_ldo_en1_gpio: lcd_ldo_en0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	mtkfb_pins_lcd_backlight_en0_gpio: lcd_backlight_en1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	mtkfb_pins_lcd_backlight_en1_gpio: lcd_backlight_en0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-};
-
-&mtkfb {
-	pinctrl-names = "lcd_bias_enp1_gpio", "lcd_bias_enp0_gpio",
-		"lcd_bias_enn1_gpio", "lcd_bias_enn0_gpio",
-		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te", "lcd_ldo_en1_gpio", "lcd_ldo_en0_gpio",
-		"lcd_backlight_en1_gpio","lcd_backlight_en0_gpio";
-	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
-	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
-//	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
-//	pinctrl-3 = <&mtkfb_pins_lcd_bias_enn0>;
-	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-//	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
-	pinctrl-7 = <&mtkfb_pins_lcd_ldo_en1_gpio>;
-	pinctrl-8 = <&mtkfb_pins_lcd_ldo_en0_gpio>;
-	pinctrl-9 = <&mtkfb_pins_lcd_backlight_en1_gpio>;
-	pinctrl-10 = <&mtkfb_pins_lcd_backlight_en0_gpio>;
+&lcm {
+	pinctrl-names = "state_enp_output0", "state_enp_output1",
+					"state_enn_output0", "state_enn_output1",
+					"state_reset_output0", "state_reset_output1",
+					"state_pwr_en_output0", "state_pwr_en_output1";
+	pinctrl-0 = <&lcm_pins_enp_output0>;
+	pinctrl-1 = <&lcm_pins_enp_output1>;
+	pinctrl-2 = <&lcm_pins_enn_output0>;
+	pinctrl-3 = <&lcm_pins_enn_output1>;
+	pinctrl-4 = <&lcm_pins_rst_output0>;
+	pinctrl-5 = <&lcm_pins_rst_output1>;
+	pinctrl-6 = <&lcm_pins_pwr_en_output0>;
+	pinctrl-7 = <&lcm_pins_pwr_en_output1>;
 	status = "okay";
 };
 
-/* DISPSYS GPIO standardization end */
+&pio {
+	lcm_pins_enp_output0: enpoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO16__FUNC_GPIO16>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	lcm_pins_enp_output1: enpoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO16__FUNC_GPIO16>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	lcm_pins_enn_output0: ennoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO13__FUNC_GPIO13>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	lcm_pins_enn_output1: ennoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO13__FUNC_GPIO13>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	lcm_pins_rst_output0: resetoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	lcm_pins_rst_output1: resetoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	lcm_pins_pwr_en_output0: pwroutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	lcm_pins_pwr_en_output1: pwroutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+/*LCM end*/
+
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <16>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 16 0x0>;
