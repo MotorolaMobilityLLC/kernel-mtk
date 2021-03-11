@@ -1193,6 +1193,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_RT5081)
 	&oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv,
 #endif
+
+#if defined(DSI_PANEL_MOT_MIPI_VID_TXD_ILI7806S_652_HDP)
+	&mipi_mot_vid_txd_ili7806s_hdp_652_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
