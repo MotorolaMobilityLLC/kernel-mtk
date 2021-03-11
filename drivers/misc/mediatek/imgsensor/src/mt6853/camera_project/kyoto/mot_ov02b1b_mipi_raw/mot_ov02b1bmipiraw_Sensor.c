@@ -26,9 +26,10 @@
 #include "mot_ov02b1bmipiraw_Sensor.h"
 
 #define PFX "[imgsensor] mot_ov02b1bmipiraw"
-#define LOG_INF(format, args...)     \
-	pr_info(PFX "[%s] " format, \
-	__func__, ##args)
+
+#define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_DBG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define I2C_ADDR (0x7a)
 #define MULTI_WRITE_REGISTER_VALUE  4
@@ -40,7 +41,7 @@
 #define I2C_BUFFER_LEN 500
 #endif
 
-unsigned char OV02B1B_Buff[32];
+static mot_calibration_info_t ov02b_cal_info = {0};
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -480,20 +481,6 @@ static void slim_video_setting(void)
 	LOG_INF("E\n");
 }
 
-int ov02b1b_otp_data()
-{
-	int i;
-	write_cmos_sensor(0xfd, 0x06);
-
-	for(i=0; i < 32; i++)
-	{
-		OV02B1B_Buff[i]=read_cmos_sensor(i);
-		LOG_INF("buff[%d]=0x%2x\n",i,OV02B1B_Buff[i]);
-	}
-
-	return 0;
-}
-
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -509,8 +496,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				ov02b1b_otp_data();
-
+				ov02b1b_format_otp(&ov02b_cal_info);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -754,6 +740,15 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.mnf   = ov02b_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = ov02b_cal_info.af_status;
+	sensor_info->calibration_status.awb   = ov02b_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = ov02b_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = ov02b_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = ov02b_cal_info.dual_status;
+
+	memcpy(&sensor_info->mnf_calibration, &ov02b_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -1030,7 +1025,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data
 		= (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-	LOG_INF("feature_id = %d\n", feature_id);
+	LOG_DBG("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
