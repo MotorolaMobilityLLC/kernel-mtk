@@ -66,7 +66,7 @@ struct tag_bootmode {
 	u32 boottype;
 };
 
-static char atm_mode[10];
+char atm_mode[10];
 int __init atm_mode_init(char *s)
 {
 	strlcpy(atm_mode, s, 10);
