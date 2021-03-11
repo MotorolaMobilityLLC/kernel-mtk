@@ -1756,7 +1756,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 	fg_read_dts_val(np, "TEMPERATURE_TB1",
 		&(fg_table_cust_data.temperature_tb1), 1);
 
-	for (i = 0; i < MAX_TABLE; i++) {
+	for (i = 0; i < fg_table_cust_data.active_table_number; i++) {
 		struct FUELGAUGE_PROFILE_STRUCT *p;
 
 		p = &fg_table_cust_data.fg_profile[i].fg_profile[0];
