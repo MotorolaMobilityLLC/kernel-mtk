@@ -927,6 +927,10 @@ static calibration_status_t dual_status;
 static struct s5k4h7yx_basic_info_t *basic_info_group = NULL;
 static struct s5k4h7yx_awb_info_t *awb_info_group = NULL;
 static struct s5k4h7yx_light_source_t *light_source_group = NULL;
+
+#define S5K4H7_MPN_NUM    2
+#define S5K4H7_MPN_LENGTH 8
+static const char mnf_part_num[S5K4H7_MPN_NUM][S5K4H7_MPN_LENGTH] = {"28D09473", "28D09807"};
 #if 0
 static struct s5k4h7yx_lsc_info_t *lsc_info_group = NULL;
 #endif
@@ -1323,6 +1327,8 @@ static calibration_status_t s5k4h7qt_check_manufacturing_data(void *data)
 	struct s5k4h7yx_eeprom_t *eeprom = (struct s5k4h7yx_eeprom_t*)data;
 
 	uint8_t *crc_start;
+        uint8_t i = 0;
+        calibration_status_t status = CRC_FAILURE;
 
 	LOG_INF("Check Manufacturing Data Enter basic_info_flag1=%d", eeprom->basic_info_flag1);
 	/*Get valid group and check data crc*/
@@ -1347,8 +1353,16 @@ static calibration_status_t s5k4h7qt_check_manufacturing_data(void *data)
 		return CRC_FAILURE;
 	}
 
-	LOG_INF("Manufacturing CRC Pass");
-	return NO_ERRORS;
+        for (i = 0; i < S5K4H7_MPN_NUM; i++) {
+	     if(strncmp(basic_info_group->mpn, mnf_part_num[i], S5K4H7_MPN_LENGTH) == 0) {
+	        status = NO_ERRORS;
+                LOG_INF("Match manufacturing part number (%d - %s) !", i, basic_info_group->mpn);
+                break;
+	     }
+        }
+
+	LOG_INF("Manufacturing CRC status(%d)", status);
+	return status;
 }
 
 static calibration_status_t s5k4h7qt_check_awb_data(void *data)
