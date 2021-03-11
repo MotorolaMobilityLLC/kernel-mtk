@@ -107,12 +107,7 @@
 					<15 4450 2500 0 0>,
 					<45 4250 5800 4450 4000>,
 					<60 4200 3600 0 0>;
-		mmi,thermal-mitigation =
-					<5800000>,
-					<5000000>,
-					<4000000>,
-					<3000000>,
-					<2000000>;
+		mmi,thermal-min-level = <2000000>;
 		charger_device_0 {
 			chrg-name = "pmic-sw";
 			psy-name = "battery";
