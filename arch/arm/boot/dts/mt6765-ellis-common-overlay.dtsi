@@ -376,6 +376,6 @@
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
 
-#include "cust_mt6765_touch_720x1280.dtsi"
+#include "cust_mt6765_touch_ili7806s_720x1600.dtsi"
 //#include "mt6765-moto-ellis-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
