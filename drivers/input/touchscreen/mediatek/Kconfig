@@ -202,4 +202,15 @@ config TOUCHSCREEN_GOODIX_BRL
 	  If unsure, say N.
 source "drivers/input/touchscreen/mediatek/goodix_berlin_driver/Kconfig"
 
+config TOUCHSCREEN_MTK_ILITEK_V3_ILI7806S
+	bool "ILITEK_V3_ILI7806S for Mediatek package"
+	default n
+	help
+	  Say Y here if you have ilitek_touch touch panel.
+
+          If unsure, say N.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+source "drivers/input/touchscreen/mediatek/ilitek_v3/Kconfig"
+
 endif
