@@ -29,6 +29,8 @@
 #include "mtk_battery.h"
 #include "mtk_battery_table.h"
 
+#include <linux/power/moto_chg_tcmd.h>
+
 
 struct tag_bootmode {
 	u32 size;
@@ -3101,6 +3103,52 @@ void fg_check_lk_swocv(struct device *dev,
 		gm->ptim_lk_v, gm->ptim_lk_i, gm->pl_shutdown_time);
 }
 
+/*===================moto chg tcmd interface========================*/
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+unsigned int g_fg_battery_id;
+#endif
+
+static int battery_tcmd_read_bat_temp(void *input, int* val)
+{
+	*val = force_get_tbat(input, true) * 10;
+	return 0;
+}
+
+static int battery_tcmd_read_bat_id(void *input, int* val)
+{
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+	*val = g_fg_battery_id;
+#else
+	pr_info("%s not implemented now\n", __func__);
+	*val = -EINVAL;
+#endif
+
+	return 0;
+}
+
+static int battery_tcmd_read_bat_voltage(void *input, int* val)
+{
+	gauge_get_property(GAUGE_PROP_BATTERY_VOLTAGE, val);
+	return 0;
+}
+
+static int battery_tcmd_register_tcmd(struct mtk_battery *data)
+{
+	int ret;
+
+	data->bat_tcmd_client.data = data;
+	data->bat_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_BAT;
+
+	data->bat_tcmd_client.get_bat_temp = battery_tcmd_read_bat_temp;
+	data->bat_tcmd_client.get_bat_id = battery_tcmd_read_bat_id;
+	data->bat_tcmd_client.get_bat_voltage = battery_tcmd_read_bat_voltage;
+
+	ret = moto_chg_tcmd_register(&data->bat_tcmd_client);
+
+	return ret;
+}
+/*===================moto chg tcmd interface end======================*/
+
 
 int battery_init(struct platform_device *pdev)
 {
@@ -3168,6 +3216,7 @@ int battery_init(struct platform_device *pdev)
 		bm_err("[%s]: kernel mode DONE\n", __func__);
 	}
 
+        battery_tcmd_register_tcmd(gm);
+
 	return 0;
 }
-
