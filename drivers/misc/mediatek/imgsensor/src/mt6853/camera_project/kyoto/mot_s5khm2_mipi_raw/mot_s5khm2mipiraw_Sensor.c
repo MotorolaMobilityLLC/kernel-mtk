@@ -26,9 +26,9 @@
 #include "mot_s5khm2mipiraw_Sensor.h"
 
 #define PFX "[imgsensor] mot_s5khm2mipiraw"
-#define LOG_INF(format, args...) pr_info("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
-#define LOG_DEBUG(format, args...) pr_debug("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
-#define LOG_ERR(format, args...) pr_err("[PFX] [%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_DEBUG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE_REGISTER_VALUE  (16)
 #if MULTI_WRITE_REGISTER_VALUE == 8
