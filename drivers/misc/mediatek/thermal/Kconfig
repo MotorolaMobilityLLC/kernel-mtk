@@ -5,3 +5,8 @@ config MTK_THERMAL_PA_VIA_ATCMD
 	  to query modem RF temperature
 	  via AT command.
 	  (RIL sockets)
+
+config THERMAL_CP_SUPPORT
+      bool "Thermal charge pump support"
+      help
+         3rd charge pump thermal limit charge current
