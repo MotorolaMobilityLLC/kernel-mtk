@@ -1028,8 +1028,9 @@
 	};
 
 	touch: touch {
-		compatible = "goodix,touch";
+		compatible = "mediatek,touch";
 	};
+
 	lcm: lcm_gpio {
 		compatible = "mediatek,lcm_gpio";
 	};
