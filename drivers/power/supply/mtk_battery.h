@@ -16,6 +16,8 @@
 #include <linux/wait.h>
 #include "mtk_gauge.h"
 
+#include <linux/power/moto_chg_tcmd.h>
+
 
 #define NETLINK_FGD 26
 #define UNIT_TRANS_10	10
@@ -125,6 +127,8 @@ struct battery_data {
 	/* Add for Battery Service */
 	int bat_batt_vol;
 	int bat_batt_temp;
+
+	struct moto_chg_tcmd_client bat_tcmd_client;
 };
 
 enum fg_daemon_cmds {
