@@ -23,3 +23,8 @@ config MTK_LEGACY_THERMAL_PLATFORM
 	  drivers. Config platform name for your
 	  selection. It's used for legacy thermal
 	  drivers only.
+
+config THERMAL_CP_SUPPORT
+      bool "Thermal charge pump support"
+      help
+         3rd charge pump thermal limit charge current
