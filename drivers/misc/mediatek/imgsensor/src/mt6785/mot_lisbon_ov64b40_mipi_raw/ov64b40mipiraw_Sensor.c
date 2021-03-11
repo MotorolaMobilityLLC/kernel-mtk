@@ -873,9 +873,10 @@ static void custom4_setting(void)
 #define OV64B40_EEPROM_CRC_PDAF_OUTPUT1_SIZE 496
 #define OV64B40_EEPROM_CRC_PDAF_OUTPUT2_SIZE 1004
 #define OV64B40_EEPROM_CRC_MANUFACTURING_SIZE 37
-#define OV64B40_MANUFACTURE_PART_NUMBER "28D00877"
+#define OV64B40_MPN_NUM    2
 #define OV64B40_MPN_LENGTH 8
 
+static const char mnf_part_num[OV64B40_MPN_NUM][OV64B40_MPN_LENGTH] = {"28D00877", "28D00879"};
 static uint8_t ov64b40_eeprom[OV64B40_EEPROM_SIZE] = {0};
 static calibration_status_t mnf_status = CRC_FAILURE;
 static calibration_status_t af_status = CRC_FAILURE;
@@ -1294,20 +1295,25 @@ static calibration_status_t ov64b40_check_pdaf_data(void *data)
 
 static calibration_status_t ov64b40_check_manufacturing_data(void *data)
 {
+        int i = 0;
+        calibration_status_t status = CRC_FAILURE;
 	struct ov64b40_eeprom_t *eeprom = (struct ov64b40_eeprom_t*)data;
 
-	if(strncmp(eeprom->mpn, OV64B40_MANUFACTURE_PART_NUMBER, OV64B40_MPN_LENGTH) != 0) {
-		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
-		//return CRC_FAILURE;
-	}
+        for (i = 0; i < OV64B40_MPN_NUM; i++) {
+	     if(strncmp(eeprom->mpn, mnf_part_num[i], OV64B40_MPN_LENGTH) == 0) {
+	        status =  NO_ERRORS;
+                LOG_INF("Match manufacturing part number (%d - %s) !", i, eeprom->mpn);
+                break;
+	     }
+        }
 
 	if (!eeprom_util_check_crc16(data, OV64B40_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_INF("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
 	}
-	LOG_INF("Manufacturing CRC Pass");
-	return NO_ERRORS;
+	LOG_INF("Manufacturing CRC status(%d)", status);
+	return status;
 }
 
 static void ov64b40_eeprom_format_calibration_data(void *data)
