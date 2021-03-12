@@ -380,15 +380,15 @@
 
 &mtk_charger_type {
         bc12_active = <1>;
-}
+};
 
 &mtk_gauge {
         charger = <&mtk_charger_type>;
-}
+};
 
 &usb {
         charger = <&mtk_charger_type>;
-}
+};
 
 //#include "mt6765-moto-ellis-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
