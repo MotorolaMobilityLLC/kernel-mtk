@@ -1687,10 +1687,7 @@ static void charger_check_status(struct charger_manager *info)
 		charging = false;
 		goto stop_charging;
 	}
-	if (!charging_enable_flag) {
-		charging = false;
-		goto stop_charging;
-	}
+
 	if (info->cmd_discharging)
 		charging = false;
 	if (info->safety_timeout)
@@ -1705,6 +1702,12 @@ static void charger_check_status(struct charger_manager *info)
 	if (info->mmi.demo_discharging)
 		charging = false;
 
+	if (info->mmi.factory_mode) {
+		if (charging_enable_flag)
+			charging = true;
+		else
+			charging = false;
+	}
 stop_charging:
 	mtk_battery_notify_check(info);
 
