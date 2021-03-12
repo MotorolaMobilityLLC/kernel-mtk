@@ -377,5 +377,18 @@
 };
 
 #include "cust_mt6765_touch_ili7806s_720x1600.dtsi"
+
+&mtk_charger_type {
+        bc12_active = <1>;
+}
+
+&mtk_gauge {
+        charger = <&mtk_charger_type>;
+}
+
+&usb {
+        charger = <&mtk_charger_type>;
+}
+
 //#include "mt6765-moto-ellis-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
