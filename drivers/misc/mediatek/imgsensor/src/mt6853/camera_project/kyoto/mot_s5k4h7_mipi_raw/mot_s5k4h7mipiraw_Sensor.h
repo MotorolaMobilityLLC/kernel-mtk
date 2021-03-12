@@ -16,7 +16,7 @@
  *
  * Filename:
  * ---------
- *     S5KHM2mipi_Sensor.h
+ *     S5K4H7mipi_Sensor.h
  *
  * Project:
  * --------
@@ -27,8 +27,8 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _S5KHM2MIPI_SENSOR_H
-#define _S5KHM2MIPI_SENSOR_H
+#ifndef _S5K4H7MIPI_SENSOR_H
+#define _S5K4H7MIPI_SENSOR_H
 
 
 enum IMGSENSOR_MODE {
@@ -144,4 +144,5 @@ extern int iReadReg(u16 a_u2Addr, u8 *a_puBuff, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
 				u16 transfer_length, u16 timing);
+int s5k4h7_get_cal_info(mot_calibration_info_t * pOtpCalInfo);
 #endif
