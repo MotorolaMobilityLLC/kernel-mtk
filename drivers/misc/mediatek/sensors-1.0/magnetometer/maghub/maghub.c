@@ -467,6 +467,12 @@ static int maghub_factory_enable_sensor(bool enabledisable,
 	int err = 0;
 	struct maghub_ipi_data *obj = mag_ipi_data;
 
+	/* Do not actually disable sensor if android is using it.
+	Todo: for continous sensor, need to restore sample
+	rate and report rate */
+	if (!enabledisable && obj->android_enable)
+		return 0;
+
 	if (enabledisable == true)
 		WRITE_ONCE(obj->factory_enable, true);
 	else
