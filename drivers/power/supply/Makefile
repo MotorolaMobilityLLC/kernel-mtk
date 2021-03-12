@@ -136,3 +136,6 @@ obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
 ifeq ($(CONFIG_CUSTOM_BATTERY_EXTERNAL_CHANNEL),y)
 	obj-y += k6885v1_64_alpha/
 endif
+
+obj-$(CONFIG_MOTO_CHG_TCMD_SUPPORT) += moto_chg_tcmd.o
+
