@@ -425,8 +425,10 @@
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
 
-        df-serialnum = "SB18D11784";
-        #include "bat_setting/batterytable_nt50_atl_5000mah_ext.dtsi"
+        //df-serialnum = "SB18D11784";
+        //#include "bat_setting/batterytable_nt50_atl_5000mah_ext.dtsi"
+	df-serialnum = "SB18C77773";
+	#include "bat_setting/mt6785_battery_table_SB18C77773_ext.dtsi"
 };
 
 &mt_pmic_vtp_ldo_reg {
