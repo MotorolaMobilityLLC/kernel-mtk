@@ -3146,7 +3146,7 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
 	int ret = 0;
 
-	DDPMSG("%s: set param_idx %d to %d\n", param_info->param_idx, param_info->value);
+	DDPMSG("%s: set param_idx %d to %d\n", __func__, param_info->param_idx, param_info->value);
 
 	switch (param_info->param_idx) {
 		case PARAM_CABC:
