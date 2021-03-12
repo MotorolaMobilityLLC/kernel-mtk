@@ -807,6 +807,12 @@ config CHARGER_BQ25601
 	  It depends on
 	  the config MTK_CHARGER.
 
+config MOTO_CHG_TCMD_SUPPORT
+	bool "MOTO TCMD interface driver for charger"
+	default n
+	help
+	  This is to enable MOTO supports of charger TCMD INTERFACE.
+
 if MACH_MT6768
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
