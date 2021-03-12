@@ -1101,26 +1101,30 @@ int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode)
 	struct mtk_cmdq_cb_data *cb_data;
 	unsigned int cabc_state;
 
-
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 	if (!(mtk_crtc->enabled)) {
 		DDPINFO("Sleep State set backlight stop --crtc not ebable\n");
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	if (!(comp && comp->funcs && comp->funcs->io_cmd)) {
 		DDPINFO("%s no output comp\n", __func__);
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return -EINVAL;
 	}
 
-	comp->funcs->io_cmd(comp, cmdq_handle, DSI_CABC_GET_STATE, &cabc_state);
+	comp->funcs->io_cmd(comp, NULL, DSI_CABC_GET_STATE, &cabc_state);
 	if (cabc_state == cabc_mode) {
 		DDPINFO("%s: the same value, skip!\n", __func__);
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return 0;
 	}
 
 	cb_data = kmalloc(sizeof(*cb_data), GFP_KERNEL);
 	if (!cb_data) {
 		DDPPR_ERR("cb data creation failed\n");
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return 0;
 	}
 
@@ -1146,6 +1150,7 @@ int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode)
 
 	DDPINFO("%s set cabc to %d, success!\n", __func__, cabc_mode);
 
+	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 	return 0;
 }
 
