@@ -27,9 +27,9 @@
 #include "mot_s5k4h7mipiraw_otp.h"
 
 #define PFX "[imgsensor] mot_s5k4h7mipiraw"
-#define LOG_INF(format, args...)     \
-	pr_info(PFX "[%s] " format, \
-	__func__, ##args)
+#define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_DBG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE_REGISTER_VALUE  (8)
 #if MULTI_WRITE_REGISTER_VALUE == 8
@@ -38,6 +38,8 @@
 #define I2C_BUFFER_LEN 1020
 #endif
 #define I2C_ADDR (0x5A)
+
+static mot_calibration_info_t s5k4h7_cal_info = {0};
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -414,14 +416,14 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0340, imgsensor.frame_length >> 8);
 		write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
 
-		LOG_INF("(else)imgsensor.frame_length = %d\n",
+		LOG_DBG("(else)imgsensor.frame_length = %d\n",
 			imgsensor.frame_length);
 	}
 
 	/* Update Shutter */
 	write_cmos_sensor_8(0x0202, shutter >> 8);
 	write_cmos_sensor_8(0x0203, shutter & 0xFF);
-	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+	LOG_DBG("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }
 
@@ -491,7 +493,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	kal_uint16 reg_gain;
 
 	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
-		LOG_INF("Error gain setting");
+		LOG_ERR("Error gain setting");
 
 		if (gain < imgsensor_info.min_gain)
 			gain = imgsensor_info.min_gain;
@@ -503,7 +505,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
+	LOG_DBG("gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
 
 	write_cmos_sensor_8(0x0204, (reg_gain>>8));
 	write_cmos_sensor_8(0x0205, (reg_gain&0xff));
@@ -560,6 +562,7 @@ static void sensor_init(void)
 	LOG_INF("E \n");
 	table_write_cmos_sensor(sensor_init_setting_array,
 		sizeof(sensor_init_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void preview_setting(void)
@@ -575,6 +578,7 @@ static void capture_setting(kal_uint16 currefps)
 	LOG_INF(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(capture_setting_array,
 		sizeof(capture_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -582,6 +586,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	LOG_INF(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(normal_video_setting_array,
 		sizeof(normal_video_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void hs_video_setting(void)
@@ -589,6 +594,7 @@ static void hs_video_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(hs_video_setting_array,
 		sizeof(hs_video_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static void slim_video_setting(void)
@@ -596,6 +602,7 @@ static void slim_video_setting(void)
 	LOG_INF("E\n");
 	table_write_cmos_sensor(slim_video_setting_array,
 		sizeof(slim_video_setting_array)/sizeof(kal_uint16));
+	LOG_INF("X");
 }
 
 static kal_uint32 return_sensor_id(void)
@@ -619,6 +626,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				s5k4h7_otp_data();
+				s5k4h7_get_cal_info(&s5k4h7_cal_info);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -879,6 +887,15 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorHightSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
 
+	sensor_info->calibration_status.mnf   = s5k4h7_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = s5k4h7_cal_info.af_status;
+	sensor_info->calibration_status.awb   = s5k4h7_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = s5k4h7_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = s5k4h7_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = s5k4h7_cal_info.dual_status;
+
+	memcpy(&sensor_info->mnf_calibration, &s5k4h7_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
+
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
@@ -997,7 +1014,7 @@ static kal_uint32 set_video_mode(UINT16 framerate)
 /*not nedd check*/
 static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 {
-	LOG_INF("enable = %d, framerate = %d\n", enable, framerate);
+	LOG_DBG("enable = %d, framerate = %d\n", enable, framerate);
 	spin_lock(&imgsensor_drv_lock);
 	if (enable)
 		imgsensor.autoflicker_en = KAL_TRUE;
