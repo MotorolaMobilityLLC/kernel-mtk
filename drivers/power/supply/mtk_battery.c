@@ -3110,7 +3110,9 @@ unsigned int g_fg_battery_id;
 
 static int battery_tcmd_read_bat_temp(void *input, int* val)
 {
-	*val = force_get_tbat(input, true) * 10;
+        struct mtk_battery *bat = (struct mtk_battery *)input;
+
+	*val = force_get_tbat(bat, true) * 10;
 	return 0;
 }
 
