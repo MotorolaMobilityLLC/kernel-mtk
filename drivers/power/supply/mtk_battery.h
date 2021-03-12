@@ -127,8 +127,6 @@ struct battery_data {
 	/* Add for Battery Service */
 	int bat_batt_vol;
 	int bat_batt_temp;
-
-	struct moto_chg_tcmd_client bat_tcmd_client;
 };
 
 enum fg_daemon_cmds {
@@ -955,6 +953,8 @@ struct mtk_battery {
 	int (*resume)(struct mtk_battery *gm);
 
 	int log_level;
+
+	struct moto_chg_tcmd_client bat_tcmd_client;
 };
 
 struct mtk_battery_sysfs_field_info {
