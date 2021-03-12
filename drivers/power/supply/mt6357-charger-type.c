@@ -66,8 +66,6 @@
 #define R_CHARGER_1	330
 #define R_CHARGER_2	39
 
-extern char atm_mode[10];
-
 struct mtk_charger_type {
 	struct mt6397_chip *chip;
 	struct regmap *regmap;
@@ -691,10 +689,6 @@ static int mt_ac_get_property(struct power_supply *psy,
 	info = (struct mtk_charger_type *)power_supply_get_drvdata(psy);
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		if (!strcmp(atm_mode, "enable")) {
-			val->intval = 0;
-			return 0;
-		}
 		val->intval = 0;
 		/* Force to 1 in all charger type */
 		if (info->type != POWER_SUPPLY_USB_TYPE_UNKNOWN)
@@ -720,10 +714,6 @@ static int mt_usb_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		if (!strcmp(atm_mode, "enable")) {
-			val->intval = 0;
-			return 0;
-		}
 		if ((info->type == POWER_SUPPLY_USB_TYPE_SDP) ||
 			(info->type == POWER_SUPPLY_USB_TYPE_CDP))
 			val->intval = 1;
