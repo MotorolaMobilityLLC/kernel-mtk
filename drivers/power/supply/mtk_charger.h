@@ -11,6 +11,8 @@
 #include "adapter_class.h"
 #include "mtk_charger_algorithm_class.h"
 
+#include <linux/power/moto_chg_tcmd.h>
+
 #define CHARGING_INTERVAL 10
 #define CHARGING_FULL_INTERVAL 20
 
@@ -317,6 +319,8 @@ struct mtk_charger {
 	bool water_detected;
 
 	bool enable_dynamic_mivr;
+
+	struct moto_chg_tcmd_client chg_tcmd_client;
 };
 
 /* functions which framework needs*/
