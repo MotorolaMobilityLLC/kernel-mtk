@@ -826,6 +826,12 @@ config CUSTOM_BATTERY_EXTERNAL_CHANNEL
           It depends on MTK_PMIC_CHIP_MT6359P
           Added for Battery System test
 
+config MOTO_CHG_TCMD_SUPPORT
+	bool "MOTO TCMD interface driver for charger"
+	default n
+	help
+	  This is to enable MOTO supports of charger TCMD INTERFACE.
+
 if MACH_MT6768
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
