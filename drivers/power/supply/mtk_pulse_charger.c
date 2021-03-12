@@ -246,10 +246,8 @@ static void linear_chg_turn_on_charging(struct mtk_charger *info)
 		chr_err("[charger]Charger Error, turn OFF charging !\n");
 #ifdef SUPPORT_BOOTMODE
 	} else if ((get_boot_mode() == META_BOOT) ||
-			((get_boot_mode() == ADVMETA_BOOT)) ||
-			(!strcmp(atm_mode, "enable"))) {
+			((get_boot_mode() == ADVMETA_BOOT))) {
 		charging_enable = false;
-                //charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 		chr_err("[charger]In meta or advanced meta mode, disable charging\n");
 #endif
 	} else {
