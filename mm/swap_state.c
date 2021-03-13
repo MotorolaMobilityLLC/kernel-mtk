@@ -567,6 +567,10 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 	struct blk_plug plug;
 	bool do_poll = true, page_allocated;
 
+	/* Moto huangzq2: don't readahead sync io pages */
+	if (swap_slot_has_sync_io(entry))
+		goto skip;
+
 	mask = swapin_nr_pages(offset) - 1;
 	if (!mask)
 		goto skip;
@@ -580,6 +584,9 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 
 	blk_start_plug(&plug);
 	for (offset = start_offset; offset <= end_offset ; offset++) {
+		/* Moto huangzq2: don't readahead sync io pages */
+		if (swap_slot_has_sync_io(swp_entry(swp_type(entry), offset)))
+			continue;
 		/* Ok, do the async read-ahead now */
 		page = __read_swap_cache_async(
 			swp_entry(swp_type(entry), offset),
@@ -731,6 +738,12 @@ struct page *do_swap_page_readahead(swp_entry_t fentry, gfp_t gfp_mask,
 	unsigned int i;
 	bool page_allocated;
 
+	/* Moto huangzq2: don't readahead sync io pages */
+	if (swap_slot_has_sync_io(fentry)) {
+		swap_ra->win = 1;
+		goto skip;
+	}
+
 	if (swap_ra->win == 1)
 		goto skip;
 
@@ -744,6 +757,9 @@ struct page *do_swap_page_readahead(swp_entry_t fentry, gfp_t gfp_mask,
 			continue;
 		entry = pte_to_swp_entry(pentry);
 		if (unlikely(non_swap_entry(entry)))
+			continue;
+		/* Moto huangzq2: don't readahead sync io pages */
+		if (swap_slot_has_sync_io(entry))
 			continue;
 		page = __read_swap_cache_async(entry, gfp_mask, vma,
 					       vmf->address, &page_allocated);
