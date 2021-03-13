@@ -40,7 +40,8 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			{0x00000001, 0x18F60027, 0x00180018, mot_check_af_data  },//High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
 			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
 			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },
-			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data}//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
+			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data},//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
+			{0x00000001, 0x00000015, 0x00000010, NULL},//dump serial number.
 		}
 	},
 	{
@@ -57,43 +58,10 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
 			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
 			{0x00000001, 0x00000903, 0x0000074C, mot_check_lsc_data },
-			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data}
+			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data},
+			{0x00000001, 0x00000015, 0x00000010, NULL},//dump serial number.
         	}
 	},
-	{
-		{
-			.sensorID= MOT_OV02B1B_SENSOR_ID,
-			.deviceID = 0x04,
-			.dataLength = 0x0770,
-			.sensorVendorid = 0x16020000,
-			.vendorByte = {1,2,3,4},
-			.dataBuffer = NULL
-		},
-		{
-			{0x00000000, 0x00000000, 0x00000000, mot_check_mnf_data },
-			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
-			{0x00000000, 0x00000017, 0x0000074C, mot_check_awb_data },
-			{0x00000000, 0x00000007, 0x0000000E, mot_check_lsc_data },
-			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data}
-		}
-	},
-	{
-		{
-			.sensorID= MOT_S5K4H7_SENSOR_ID,
-			.deviceID = 0x10,
-			.dataLength = 0x0770,
-			.sensorVendorid = 0x16020000,
-			.vendorByte = {1,2,3,4},
-			.dataBuffer = NULL
-		},
-		{
-			{0x00000000, 0x00000000, 0x00000000, mot_check_mnf_data },
-			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
-			{0x00000000, 0x00000017, 0x0000074C, mot_check_awb_data },
-			{0x00000000, 0x00000007, 0x0000000E, mot_check_lsc_data },
-			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data}
-		}
-     }
 };
 
 static struct stCAM_CAL_LIST_STRUCT *get_list(struct CAM_CAL_SENSOR_INFO *sinfo)
@@ -675,8 +643,7 @@ static void  mot_check_pdaf_data( u8 *data, UINT32 StartAddr,
 	}
 }
 
-int imgread_cam_cal_data(int sensorid, const char* dump_file ,
-				mot_calibration_info_t *mot_cal_info)
+int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info)
 {
 	struct EEPROM_DRV_FD_DATA *fd_pdata = NULL;
 	struct stCAM_CAL_DATAINFO_STRUCT* pData;
@@ -775,16 +742,30 @@ int imgread_cam_cal_data(int sensorid, const char* dump_file ,
 	}
 	else
 	{
-		eeprom_dump_bin(dump_file, pData->dataLength,pData->dataBuffer);
+		if (dump_file != NULL && dump_file[0] != NULL)
+			eeprom_dump_bin(dump_file[0], pData->dataLength, pData->dataBuffer);
 
 		for (i =0 ; i < EEPROM_CRC_LIST; i++)
 		{
-			if ((0 != CalcheckTbl[match_index].CalItemTbl[i].Include)
-				&& (CalcheckTbl[match_index].CalItemTbl[i].doCalDataCheck != NULL))
+			if ((0 != CalcheckTbl[match_index].CalItemTbl[i].Include))
 			{
-				CalcheckTbl[match_index].CalItemTbl[i].doCalDataCheck(pData->dataBuffer,
-					CalcheckTbl[match_index].CalItemTbl[i].StartAddr,
-					CalcheckTbl[match_index].CalItemTbl[i].BlockSize,mot_cal_info);
+				if ( i == EEPROM_DUMP_SERIAL_NUMBER &&
+					dump_file != NULL &&
+					dump_file[1] != NULL)
+				{
+					eeprom_dump_bin(dump_file[1],
+							CalcheckTbl[match_index].CalItemTbl[i].BlockSize,
+							pData->dataBuffer + CalcheckTbl[match_index].CalItemTbl[i].StartAddr);
+					continue;
+				}
+
+				if (CalcheckTbl[match_index].CalItemTbl[i].doCalDataCheck != NULL)
+				{
+					CalcheckTbl[match_index].CalItemTbl[i].doCalDataCheck(pData->dataBuffer,
+						CalcheckTbl[match_index].CalItemTbl[i].StartAddr,
+						CalcheckTbl[match_index].CalItemTbl[i].BlockSize,
+						mot_cal_info);
+				}
 
 				if ( i == EEPROM_CRC_MANUFACTURING)
 				{
