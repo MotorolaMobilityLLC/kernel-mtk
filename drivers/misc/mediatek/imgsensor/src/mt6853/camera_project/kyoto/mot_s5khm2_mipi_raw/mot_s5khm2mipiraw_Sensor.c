@@ -39,9 +39,12 @@
 #define I2C_ADDR (0xac)
 
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5khm2_eeprom_data.bin"
+#define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
+
+static const char *s5khm2_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
 
 static mot_calibration_info_t s5khm2_cal_info = {0};
-int imgread_cam_cal_data(int sensorid, const char* dump_file , mot_calibration_info_t *mot_cal_info);
+int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -683,7 +686,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
-				imgread_cam_cal_data(*sensor_id, EEPROM_DATA_PATH, &s5khm2_cal_info);
+				imgread_cam_cal_data(*sensor_id, s5khm2_dump_file, &s5khm2_cal_info);
 				return ERROR_NONE;
 			}
 			retry--;
