@@ -39,9 +39,12 @@
 #endif
 
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/ov32b40_eeprom_data.bin"
+#define SERIAL_FRONT_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
+
+static const char *ov32b40_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_FRONT_DATA_PATH};
 
 static mot_calibration_info_t ov32b40_cal_info = {0};
-int imgread_cam_cal_data(int sensorid, const char* dump_file , mot_calibration_info_t *mot_cal_info);
+int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -670,7 +673,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
-				imgread_cam_cal_data(*sensor_id, EEPROM_DATA_PATH, &ov32b40_cal_info);
+				imgread_cam_cal_data(*sensor_id, ov32b40_dump_file, &ov32b40_cal_info);
 				return ERROR_NONE;
 			}
 			retry--;
