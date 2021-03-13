@@ -39,7 +39,6 @@
 #define LOG_DBG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
-
 #define BLACK_LEVEL_SAMSUNG_10B_64 0x40
 
 #define AWB_R_MIN 200*64
@@ -112,6 +111,7 @@ typedef enum {
 	EEPROM_CRC_AWB_CAL,
 	EEPROM_CRC_LSC,
 	EEPROM_CRC_PDAF_OUTPUT,
+	EEPROM_DUMP_SERIAL_NUMBER,
 	EEPROM_CRC_LIST
 }EEPROM_CRC_TYPE_ENUM;
 
