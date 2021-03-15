@@ -50,6 +50,12 @@
 		reg = <0x3e>;
 		status = "okay";
 	};
+
+	fs16xx@34 {
+		compatible = "foursemi,fs16xx";
+		reg = <0x34>;
+		status = "okay";
+	};
 };
 
 /* accdet start */
