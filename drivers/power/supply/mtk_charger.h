@@ -220,6 +220,73 @@ enum chg_data_idx_enum {
 	CHGS_SETTING_MAX,
 };
 
+struct mmi_temp_zone {
+	int		temp_c;
+	int		norm_mv;
+	int		fcc_max_ma;
+	int		fcc_norm_ma;
+};
+
+#define MAX_NUM_STEPS 10
+enum mmi_temp_zones {
+	ZONE_FIRST = 0,
+	/* states 0-9 are reserved for zones */
+	ZONE_LAST = MAX_NUM_STEPS + ZONE_FIRST - 1,
+	ZONE_HOT,
+	ZONE_COLD,
+	ZONE_NONE = 0xFF,
+};
+
+enum mmi_chrg_step {
+	STEP_MAX,
+	STEP_NORM,
+	STEP_FULL,
+	STEP_FLOAT,
+	STEP_DEMO,
+	STEP_STOP,
+	STEP_NONE = 0xFF,
+};
+
+enum charging_limit_modes {
+	CHARGING_LIMIT_OFF,
+	CHARGING_LIMIT_RUN,
+	CHARGING_LIMIT_UNKNOWN,
+};
+
+struct mmi_params {
+	bool			init_done;
+	bool			factory_mode;
+	int			demo_mode;
+	bool			demo_discharging;
+
+	bool			factory_kill_armed;
+
+	/* Charge Profile */
+	int			num_temp_zones;
+	struct mmi_temp_zone	*temp_zones;
+	enum mmi_temp_zones	pres_temp_zone;
+	enum mmi_chrg_step	pres_chrg_step;
+	int			chrg_taper_cnt;
+	int			temp_state;
+	int			chrg_iterm;
+
+	bool			enable_charging_limit;
+	bool			is_factory_image;
+	enum charging_limit_modes	charging_limit_modes;
+	int			upper_limit_capacity;
+	int			lower_limit_capacity;
+	int			base_fv_mv;
+	int			vfloat_comp_mv;
+	int			batt_health;
+	int			max_chrg_temp;
+
+	/*target parameter*/
+	int			target_fv;
+	bool			chg_disable;
+	int			target_fcc;
+	int			target_usb;
+};
+
 struct mtk_charger {
 	struct platform_device *pdev;
 	struct charger_device *chg1_dev;
@@ -321,6 +388,9 @@ struct mtk_charger {
 	bool enable_dynamic_mivr;
 
 	struct moto_chg_tcmd_client chg_tcmd_client;
+	struct power_supply		*battery_psy;
+	struct power_supply 		*charger_psy;
+	struct mmi_params	mmi;
 };
 
 /* functions which framework needs*/
