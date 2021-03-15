@@ -414,7 +414,8 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 
 	spin_lock(&imgsensor_drv_lock);
 	/*Change frame time*/
-	dummy_line = frame_length - imgsensor.frame_length;
+       if (frame_length > 1)
+	    dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
 	imgsensor.min_frame_length = imgsensor.frame_length;
 
@@ -454,8 +455,7 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 	write_cmos_sensor(0x3500, (shutter >> 16) & 0xFF);
 	write_cmos_sensor(0x3502, (shutter) & 0xFF);
 	write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
-	printk("[OV48BII]Add for N3D! shutter =%d, framelength =%d\n",
-		shutter, imgsensor.frame_length);
+	LOG_INF("Add for N3D! shutter =%d, framelength =%d\n",shutter, imgsensor.frame_length);
 }
 
 #define FACTOR 992.0f//(15.5f　* 64.0f)
@@ -1996,7 +1996,8 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.frame_length = imgsensor_info.pre.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		set_dummy();
+               if (imgsensor.frame_length > imgsensor.shutter)
+		    set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		if (framerate == 0)
@@ -2007,7 +2008,8 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.frame_length = imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		set_dummy();
+               if (imgsensor.frame_length > imgsensor.shutter)
+                    set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 	//case MSDK_SCENARIO_ID_CAMERA_ZSD:
@@ -2017,7 +2019,8 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.frame_length = imgsensor_info.cap.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		set_dummy();
+                if (imgsensor.frame_length > imgsensor.shutter)
+                     set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		frame_length = imgsensor_info.hs_video.pclk / framerate * 10 / imgsensor_info.hs_video.linelength;
@@ -2026,7 +2029,8 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.frame_length = imgsensor_info.hs_video.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		set_dummy();
+                if (imgsensor.frame_length > imgsensor.shutter)
+                     set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		frame_length = imgsensor_info.slim_video.pclk / framerate * 10 / imgsensor_info.slim_video.linelength;
@@ -2035,7 +2039,8 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.frame_length = imgsensor_info.slim_video.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		set_dummy();
+                if (imgsensor.frame_length > imgsensor.shutter)
+                     set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM1:
 		frame_length = imgsensor_info.custom1.pclk / framerate * 10 / imgsensor_info.custom1.linelength;
@@ -2107,7 +2112,8 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.frame_length = imgsensor_info.pre.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		set_dummy();
+                if (imgsensor.frame_length > imgsensor.shutter)
+                     set_dummy();
 		LOG_INF("error scenario_id = %d, we use preview scenario \n", scenario_id);
 		break;
 	}
@@ -2202,6 +2208,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_shutter;
 		break;
+        case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
+            /*
+             * 1, if driver support new sw frame sync
+             * set_shutter_frame_length() support third para auto_extend_en
+             */
+            *(feature_data + 1) = 1;
+            /* margin info by scenario */
+            *(feature_data + 2) = imgsensor_info.margin;
+            break;
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
 		*feature_return_para_16 = imgsensor.frame_length;
