@@ -1486,6 +1486,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		imgsensor_info.ae_sensor_gain_delay_frame;
 	sensor_info->AEISPGainDelayFrame =
 		imgsensor_info.ae_ispGain_delay_frame;
+	sensor_info->FrameTimeDelayFrame = 2;
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine =
 		imgsensor_info.ihdr_le_firstline;
@@ -1917,6 +1918,25 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
+        case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
+            *(feature_data + 1) = imgsensor_info.min_shutter;
+            break;
+        case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
+            /*
+             * 1, if driver support new sw frame sync
+             * set_shutter_frame_length() support third para auto_extend_en
+             */
+            *(feature_data + 1) = 1;
+            /* margin info by scenario */
+            *(feature_data + 2) = imgsensor_info.margin;
+            break;
+       case SENSOR_FEATURE_GET_PERIOD_BY_SCENARIO:
+            *(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+                = (imgsensor_info.pre.framelength << 16)+ imgsensor_info.pre.linelength;
+            break;
+        case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ_BY_SCENARIO:
+            *(MUINT32 *)(uintptr_t)(*(feature_data + 1))= imgsensor_info.pre.pclk;
+            break;
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
 		*feature_return_para_16 = imgsensor.frame_length;
