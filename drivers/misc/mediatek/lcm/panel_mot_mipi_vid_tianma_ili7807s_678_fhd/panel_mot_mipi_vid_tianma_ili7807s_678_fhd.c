@@ -145,12 +145,12 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 static struct LCM_setting_table init_setting_cmd[] = {
 	{0xFF, 3, {0x78, 0x07, 0x00} },	//Page0
 	{0x11, 1, {0x00} },
+	{REGFLAG_DELAY, 60, {} },
 	{0xFF, 3, {0x78, 0x07, 0x06} },
 	{0x5F, 1, {0x24} },
 	{0x4E, 1, {0x60} },
 	{0x4D, 1, {0x01} },
 	{0x48, 1, {0x09} },
-	{REGFLAG_DELAY, 120, {} },
 
 	{0xFF, 3, {0x78,0x07,0x01}},
 	{0x00, 1, {0x44} },			//0226 blue
@@ -650,6 +650,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
+        params->dsi.lcm_esd_check_table[1].cmd = 0x0d;
+        params->dsi.lcm_esd_check_table[1].count = 1;
+        params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
 }
 
 static void lcm_init_power(void)
