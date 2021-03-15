@@ -1031,10 +1031,6 @@
 		compatible = "mediatek,touch";
 	};
 
-	lcm: lcm_gpio {
-		compatible = "mediatek,lcm_gpio";
-	};
-
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
