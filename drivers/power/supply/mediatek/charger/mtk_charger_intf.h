@@ -295,6 +295,11 @@ struct charger_data {
 	int cp_ichg_limit;
 };
 
+struct mmi_ffc_zone  {
+	int		ffc_max_mv;
+	int		ffc_chg_iterm;
+};
+
 struct mmi_temp_zone {
 	int		temp_c;
 	int		norm_mv;
@@ -350,6 +355,8 @@ struct mmi_params {
 	int			chrg_taper_cnt;
 	int			temp_state;
 	int			chrg_iterm;
+
+	struct mmi_ffc_zone	*ffc_zones;
 
 	bool			enable_charging_limit;
 	bool			is_factory_image;
