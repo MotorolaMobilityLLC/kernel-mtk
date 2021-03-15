@@ -41,6 +41,13 @@
 
 #define DRIVERNAME	"moto_chg_tcmd"
 
+enum MOTO_ADC_TCMD_CHANNEL {
+	MOTO_ADC_TCMD_CHANNEL_CPU = 0,
+	MOTO_ADC_TCMD_CHANNEL_CHG,
+	MOTO_ADC_TCMD_CHANNEL_PA,
+	MOTO_ADC_TCMD_CHANNEL_MAX
+};
+
 struct moto_chg_tcmd_data {
 	struct platform_device *pdev;
 	struct power_supply *bat_psy;
@@ -64,6 +71,9 @@ struct moto_chg_tcmd_data {
 	int bat_voltage;
 	int bat_ocv;
 	int bat_id;
+
+	int adc_channel_list[MOTO_ADC_TCMD_CHANNEL_MAX];
+	int cur_adc_channel;
 };
 
 /*Struct pointer's work efficiency may be bester than list head*/
@@ -74,7 +84,35 @@ static LIST_HEAD(client_list);
 #else
 static struct moto_chg_tcmd_client* chg_client;
 static struct moto_chg_tcmd_client* bat_client;
+static struct moto_chg_tcmd_client* adc_client;
 #endif
+
+static int moto_chg_get_adc_value(struct  moto_chg_tcmd_data *data, int channel, int* val)
+{
+	int ret;
+
+	if (channel < 0) {
+		ret = channel;
+		pr_err("%s adc channel %d is not defined\n", __func__, ret);
+		goto end;
+	}
+
+	pr_info("%s read adc channel %d\n", __func__, channel);
+	ret = adc_client->get_adc_value(adc_client->data,
+							channel,
+							val);
+	if (ret) {
+		*val = ret;
+		pr_err("%s read adc %d error %d\n",
+			__func__,
+			channel,
+			ret);
+		goto end;
+	}
+
+end:
+	return ret;
+}
 
 static ssize_t moto_chg_tcmd_addr_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -633,6 +671,141 @@ end:
 static DEVICE_ATTR(factory_kill_disable, S_IWUSR | S_IRUGO,
 	factory_kill_disable_show, factory_kill_disable_store);
 
+static ssize_t adc_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int ret;
+
+	if (!adc_client) {
+		pr_err("%s bat_client is null\n", __func__);
+		ret = -ENODEV;
+		goto end;
+	}
+
+	moto_chg_get_adc_value(data, data->cur_adc_channel, &ret);
+
+end:
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int val;
+	int ret;
+
+	if (!adc_client) {
+		pr_err("%s chg_client is null\n", __func__);
+		goto end;
+	}
+
+	ret = kstrtoint(buf, 10, &val);
+	if (ret) {
+		pr_info("%s, %s not a valide buf(%d)\n", __func__, buf, ret);
+		goto end;
+	}
+
+	data->cur_adc_channel = data->adc_channel_list[val];
+
+end:
+	return count;
+}
+
+static DEVICE_ATTR(adc, S_IWUSR | S_IRUGO, adc_show, adc_store);
+
+static ssize_t cpu_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int channel;
+	int ret;
+
+	if (!adc_client) {
+		pr_err("%s bat_client is null\n", __func__);
+		ret = -ENODEV;
+		goto end;
+	}
+
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_CPU];
+	moto_chg_get_adc_value(data, channel, &ret);
+
+end:
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+static ssize_t cpu_temp_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	pr_info("%s do not support store\n", __func__);
+	return count;
+}
+
+static DEVICE_ATTR(cpu_temp, S_IWUSR | S_IRUGO,
+				cpu_temp_show, cpu_temp_store);
+
+static ssize_t pa_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int channel;
+	int ret;
+
+	if (!adc_client) {
+		pr_err("%s bat_client is null\n", __func__);
+		ret = -ENODEV;
+		goto end;
+	}
+
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_PA];
+	moto_chg_get_adc_value(data, channel, &ret);
+
+end:
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+static ssize_t pa_temp_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	pr_info("%s do not support store\n", __func__);
+	return count;
+}
+
+static DEVICE_ATTR(pa_temp, S_IWUSR | S_IRUGO,
+				pa_temp_show, pa_temp_store);
+
+static ssize_t charger_temp_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int channel;
+	int ret;
+
+	if (!adc_client) {
+		pr_err("%s bat_client is null\n", __func__);
+		ret = -ENODEV;
+		goto end;
+	}
+
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_CHG];
+	moto_chg_get_adc_value(data, channel, &ret);
+
+end:
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+static ssize_t charger_temp_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	pr_info("%s do not support store\n", __func__);
+	return count;
+}
+
+static DEVICE_ATTR(charger_temp, S_IWUSR | S_IRUGO,
+				charger_temp_show, charger_temp_store);
+
 
 static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_address.attr,
@@ -648,6 +821,10 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_bat_ocv.attr,
 	&dev_attr_bat_id.attr,
 	&dev_attr_factory_kill_disable.attr,
+	&dev_attr_adc.attr,
+	&dev_attr_cpu_temp.attr,
+	&dev_attr_charger_temp.attr,
+	&dev_attr_pa_temp.attr,
 	NULL,
 };
 
@@ -703,6 +880,9 @@ int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 		case MOTO_CHG_TCMD_CLIENT_BAT:
 			bat_client = client;
 			break;
+		case MOTO_CHG_TCMD_CLIENT_ADC:
+			adc_client = client;
+			break;
 		default :
 			pr_err("%s invalide client id %d\n",
 				__func__,
@@ -717,6 +897,11 @@ int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 static int moto_chg_tcmd_parse_dt(struct moto_chg_tcmd_data *data)
 {
 	struct device_node *node = data->pdev->dev.of_node;
+	char* channel_dt_list[MOTO_ADC_TCMD_CHANNEL_MAX] = {"mmi,adc-channel-cpu",
+							"mmi,adc-channel-charger",
+							"mmi,adc-channel-pa"};
+	int i;
+	int val;
 	int ret = 0;
 
 	if (!node) {
@@ -729,6 +914,15 @@ static int moto_chg_tcmd_parse_dt(struct moto_chg_tcmd_data *data)
 	if (ret) {
 		pr_info("%s do not define battery psy name, used default\n", __func__);
 		data->bat_psy_name = "battery";
+	}
+
+	for (i = 0; i < MOTO_ADC_TCMD_CHANNEL_MAX; i++) {
+		ret = of_property_read_u32(node, channel_dt_list[i], &val);
+		if (ret) {
+			pr_err("%s donot find %s in dt\n", __func__, channel_dt_list[i]);
+			val = -ENODEV;
+		}
+		data->adc_channel_list[i] = val;
 	}
 
 	return 0;
