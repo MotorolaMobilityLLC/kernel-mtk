@@ -41,16 +41,27 @@
 
 #define DRIVERNAME	"moto_chg_tcmd"
 
+/*-20 ~ 80 num is 2*10 + 1*/
+#define NTC_TABLE_VALID_NUM	21
+
 enum MOTO_ADC_TCMD_CHANNEL {
 	MOTO_ADC_TCMD_CHANNEL_CPU = 0,
 	MOTO_ADC_TCMD_CHANNEL_CHG,
 	MOTO_ADC_TCMD_CHANNEL_PA,
+	MOTO_ADC_TCMD_CHANNEL_BATID,
+	MOTO_ADC_TCMD_CHANNEL_VBAT,
 	MOTO_ADC_TCMD_CHANNEL_MAX
+};
+
+struct CHARGER_TEMPERATURE {
+	__s32 CHARGER_Temp;
+	__s32 TemperatureR;
 };
 
 struct moto_chg_tcmd_data {
 	struct platform_device *pdev;
 	struct power_supply *bat_psy;
+	struct CHARGER_TEMPERATURE* ntc_table;
 
 	bool	factory_mode;
 	const char* bat_psy_name;
@@ -72,6 +83,10 @@ struct moto_chg_tcmd_data {
 	int bat_ocv;
 	int bat_id;
 
+	int batid_v_ref;
+	int batid_r_pull;
+	int ntc_v_ref;
+	int ntc_r_pull;
 	int adc_channel_list[MOTO_ADC_TCMD_CHANNEL_MAX];
 	int cur_adc_channel;
 };
@@ -84,21 +99,88 @@ static LIST_HEAD(client_list);
 #else
 static struct moto_chg_tcmd_client* chg_client;
 static struct moto_chg_tcmd_client* bat_client;
-static struct moto_chg_tcmd_client* adc_client;
+static struct moto_chg_tcmd_client* pm_adc_client;
+static struct moto_chg_tcmd_client* ap_adc_client;
 #endif
 
-static int moto_chg_get_adc_value(struct  moto_chg_tcmd_data *data, int channel, int* val)
+/* NCP15WF104F03RC(100K) */
+static struct CHARGER_TEMPERATURE ntc_table1[] = {
+	{-40, 4397119},
+	{-35, 3088599},
+	{-30, 2197225},
+	{-25, 1581881},
+	{-20, 1151037},
+	{-15, 846579},
+	{-10, 628988},
+	{-5, 471632},
+	{0, 357012},
+	{5, 272500},
+	{10, 209710},
+	{15, 162651},
+	{20, 127080},
+	{25, 100000},		/* 100K */
+	{30, 79222},
+	{35, 63167},
+#if defined(APPLY_PRECISE_NTC_TABLE)
+	{40, 50677},
+	{41, 48528},
+	{42, 46482},
+	{43, 44533},
+	{44, 42675},
+	{45, 40904},
+	{46, 39213},
+	{47, 37601},
+	{48, 36063},
+	{49, 34595},
+	{50, 33195},
+	{51, 31859},
+	{52, 30584},
+	{53, 29366},
+	{54, 28203},
+	{55, 27091},
+	{56, 26028},
+	{57, 25013},
+	{58, 24042},
+	{59, 23113},
+	{60, 22224},
+#else
+	{40, 50677},
+	{45, 40904},
+	{50, 33195},
+	{55, 27091},
+	{60, 22224},
+#endif
+	{65, 18323},
+	{70, 15184},
+	{75, 12635},
+	{80, 10566},
+	{85, 8873},
+	{90, 7481},
+	{95, 6337},
+	{100, 5384},
+	{105, 4594},
+	{110, 3934},
+	{115, 3380},
+	{120, 2916},
+	{125, 2522}
+};
+
+static int moto_chg_tcmd_res_to_temp(struct moto_chg_tcmd_data *data,
+					int vol, int vol_ntc, int r_pull);
+
+static int moto_chg_get_adc_value(struct  moto_chg_tcmd_data *data,
+				struct moto_chg_tcmd_client* client, int channel, int* val)
 {
 	int ret;
 
-	if (channel < 0) {
+	if ((channel < 0) || (client==NULL)) {
 		ret = channel;
-		pr_err("%s adc channel %d is not defined\n", __func__, ret);
+		pr_err("%s adc client or channel %d is not defined\n", __func__, ret);
 		goto end;
 	}
 
 	pr_info("%s read adc channel %d\n", __func__, channel);
-	ret = adc_client->get_adc_value(adc_client->data,
+	ret = client->get_adc_value(client->data,
 							channel,
 							val);
 	if (ret) {
@@ -598,24 +680,30 @@ static ssize_t bat_id_show(struct device *dev, struct device_attribute *attr, ch
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct moto_chg_tcmd_client *client;
+	int channel;
 	int val;
 	int ret;
 
-	if (!bat_client) {
-		pr_err("%s bat_client is null\n", __func__);
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_BATID];
+	if (channel < 100) {
+		client = ap_adc_client;
+	} else {
+		client = pm_adc_client;
+		channel -= 100;
+	}
+
+	if (!client) {
+		pr_err("%s adc_client(%d) is null\n", __func__, channel);
+		ret = -ENODEV;
 		goto end;
 	}
 
-	ret = bat_client->get_bat_id(bat_client->data,
-					&val);
-	if (ret) {
-		pr_err("%s get bat id fail %d\n", __func__, ret);
-		val = -EINVAL;
-		goto end;
-	}
+	moto_chg_get_adc_value(data, client, channel, &val);
+	ret = (val * 1000 / (data->batid_v_ref- val) ) * data->batid_r_pull/ 1000;
 
 end:
-	data->bat_voltage = val;
+	data->bat_id = ret;
 
 	return snprintf(buf, PAGE_SIZE, "%d\n", data->bat_voltage);
 }
@@ -675,15 +763,25 @@ static ssize_t adc_show(struct device *dev, struct device_attribute *attr, char 
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct moto_chg_tcmd_client *client;
+	int channel;
 	int ret;
 
-	if (!adc_client) {
+	channel = data->cur_adc_channel;
+	if (channel < 100) {
+		client = ap_adc_client;
+	} else {
+		client = pm_adc_client;
+		channel -= 100;
+	}
+
+	if (!client) {
 		pr_err("%s bat_client is null\n", __func__);
 		ret = -ENODEV;
 		goto end;
 	}
 
-	moto_chg_get_adc_value(data, data->cur_adc_channel, &ret);
+	moto_chg_get_adc_value(data, client, data->cur_adc_channel, &ret);
 
 end:
 	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
@@ -696,11 +794,6 @@ static ssize_t adc_store(struct device *dev, struct device_attribute *attr,
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
 	int val;
 	int ret;
-
-	if (!adc_client) {
-		pr_err("%s chg_client is null\n", __func__);
-		goto end;
-	}
 
 	ret = kstrtoint(buf, 10, &val);
 	if (ret) {
@@ -720,17 +813,26 @@ static ssize_t cpu_temp_show(struct device *dev, struct device_attribute *attr, 
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct moto_chg_tcmd_client *client;
 	int channel;
 	int ret;
 
-	if (!adc_client) {
-		pr_err("%s bat_client is null\n", __func__);
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_CPU];
+	if (channel < 100) {
+		client = ap_adc_client;
+	} else {
+		client = pm_adc_client;
+		channel -= 100;
+	}
+
+	if (!client) {
+		pr_err("%s adc_client(%d) is null\n", __func__, channel);
 		ret = -ENODEV;
 		goto end;
 	}
 
-	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_CPU];
-	moto_chg_get_adc_value(data, channel, &ret);
+	moto_chg_get_adc_value(data, client, channel, &ret);
+	ret = moto_chg_tcmd_res_to_temp(data, data->ntc_v_ref, ret, data->ntc_r_pull);
 
 end:
 	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
@@ -750,17 +852,26 @@ static ssize_t pa_temp_show(struct device *dev, struct device_attribute *attr, c
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct moto_chg_tcmd_client *client;
 	int channel;
 	int ret;
 
-	if (!adc_client) {
-		pr_err("%s bat_client is null\n", __func__);
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_PA];
+	if (channel < 100) {
+		client = ap_adc_client;
+	} else {
+		client = pm_adc_client;
+		channel -= 100;
+	}
+
+	if (!client) {
+		pr_err("%s pa_client(%d) is null\n", __func__, channel);
 		ret = -ENODEV;
 		goto end;
 	}
 
-	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_PA];
-	moto_chg_get_adc_value(data, channel, &ret);
+	moto_chg_get_adc_value(data, client, channel, &ret);
+	ret = moto_chg_tcmd_res_to_temp(data, data->ntc_v_ref, ret, data->ntc_r_pull);
 
 end:
 	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
@@ -780,17 +891,26 @@ static ssize_t charger_temp_show(struct device *dev, struct device_attribute *at
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct moto_chg_tcmd_client *client;
 	int channel;
 	int ret;
 
-	if (!adc_client) {
-		pr_err("%s bat_client is null\n", __func__);
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_CHG];
+	if (channel < 100) {
+		client = ap_adc_client;
+	} else {
+		client = pm_adc_client;
+		channel -= 100;
+	}
+
+	if (!client) {
+		pr_err("%s adc client(%d) is null\n", __func__, channel);
 		ret = -ENODEV;
 		goto end;
 	}
 
-	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_CHG];
-	moto_chg_get_adc_value(data, channel, &ret);
+	moto_chg_get_adc_value(data, client, channel, &ret);
+	ret = moto_chg_tcmd_res_to_temp(data, data->ntc_v_ref, ret, data->ntc_r_pull);
 
 end:
 	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
@@ -806,6 +926,44 @@ static ssize_t charger_temp_store(struct device *dev, struct device_attribute *a
 static DEVICE_ATTR(charger_temp, S_IWUSR | S_IRUGO,
 				charger_temp_show, charger_temp_store);
 
+static ssize_t adc_vbat_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	struct moto_chg_tcmd_client *client;
+	int channel;
+	int ret;
+
+	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_VBAT];
+	if (channel < 100) {
+		client = ap_adc_client;
+	} else {
+		client = pm_adc_client;
+		channel -= 100;
+	}
+
+	if (!client) {
+		pr_err("%s adc client(%s) is null\n", __func__,
+			channel < 100 ? "ap" : "pm");
+		ret = -ENODEV;
+		goto end;
+	}
+
+	moto_chg_get_adc_value(data, client, channel, &ret);
+
+end:
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+static ssize_t adc_vbat_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	pr_info("%s do not support store\n", __func__);
+	return count;
+}
+
+static DEVICE_ATTR(adc_vbat, S_IWUSR | S_IRUGO,
+				adc_vbat_show, adc_vbat_store);
 
 static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_address.attr,
@@ -825,6 +983,7 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_cpu_temp.attr,
 	&dev_attr_charger_temp.attr,
 	&dev_attr_pa_temp.attr,
+	&dev_attr_adc_vbat.attr,
 	NULL,
 };
 
@@ -880,8 +1039,11 @@ int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 		case MOTO_CHG_TCMD_CLIENT_BAT:
 			bat_client = client;
 			break;
-		case MOTO_CHG_TCMD_CLIENT_ADC:
-			adc_client = client;
+		case MOTO_CHG_TCMD_CLIENT_PM_ADC:
+			pm_adc_client = client;
+			break;
+		case MOTO_CHG_TCMD_CLIENT_AP_ADC:
+			ap_adc_client = client;
 			break;
 		default :
 			pr_err("%s invalide client id %d\n",
@@ -894,12 +1056,57 @@ int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 	return 0;
 }
 
+static int moto_chg_tcmd_res_to_temp(struct moto_chg_tcmd_data *data,
+					int vol, int vol_ntc, int r_pull)
+{
+	struct CHARGER_TEMPERATURE* table;
+	int t_ntc = 80;
+	int r_ntc;
+	int i;
+
+	table = data->ntc_table;
+	if (table == NULL) {
+		pr_err("%s no ntc table\n", __func__);
+		return -20;
+	}
+
+	//(vol - vol_ntc) / vol_ntc = r_pull / r_ntc
+	r_ntc = (vol_ntc * 1000 / (vol - vol_ntc) ) * r_pull / 1000;
+	pr_info("%s r_ntc %d, v_ntc %d, v_ref %d, r_pull %d\n", __func__,
+		r_ntc, vol_ntc, vol, r_pull);
+	for(i=0;i<NTC_TABLE_VALID_NUM;i++) {
+		if (r_ntc > table[i].TemperatureR) {
+			t_ntc = table[i].CHARGER_Temp;
+			break;
+		}
+	}
+
+	return t_ntc;
+}
+
+static int moto_chg_tcmd_get_ntc_table(struct moto_chg_tcmd_data *data, int id)
+{
+	switch (id) {
+		case 1:
+			data->ntc_table = ntc_table1;
+			break;
+		default:
+			data->ntc_table = ntc_table1;
+			pr_info("%s do not find id %d. Using default ntc table\n", __func__, id);
+			break;
+	}
+
+	return 0;
+}
+
 static int moto_chg_tcmd_parse_dt(struct moto_chg_tcmd_data *data)
 {
 	struct device_node *node = data->pdev->dev.of_node;
 	char* channel_dt_list[MOTO_ADC_TCMD_CHANNEL_MAX] = {"mmi,adc-channel-cpu",
 							"mmi,adc-channel-charger",
-							"mmi,adc-channel-pa"};
+							"mmi,adc-channel-pa",
+							"mmi,adc-channel-batid",
+							"mmi,adc-channel-vbat"};
 	int i;
 	int val;
 	int ret = 0;
@@ -924,6 +1131,41 @@ static int moto_chg_tcmd_parse_dt(struct moto_chg_tcmd_data *data)
 		}
 		data->adc_channel_list[i] = val;
 	}
+
+	ret = of_property_read_u32(node, "mmi,ntc_table", &val);
+	if (ret) {
+		pr_err("%s donot find ntc_table in dt\n", __func__);
+		val = -ENODEV;
+	}
+	moto_chg_tcmd_get_ntc_table(data, val);
+
+	ret = of_property_read_u32(node, "mmi,ntc_v_ref", &val);
+	if (ret) {
+		pr_err("%s donot find ntc v ref in dt\n", __func__);
+		val = -ENODEV;
+	}
+	data->ntc_v_ref = val;
+
+	ret = of_property_read_u32(node, "mmi,ntc_r_pull", &val);
+	if (ret) {
+		pr_err("%s donot find ntc r pull in dt\n", __func__);
+		val = -ENODEV;
+	}
+	data->ntc_r_pull = val;
+
+	ret = of_property_read_u32(node, "mmi,batid_v_ref", &val);
+	if (ret) {
+		pr_err("%s donot find batid v ref in dt\n", __func__);
+		val = -ENODEV;
+	}
+	data->batid_v_ref = val;
+
+	ret = of_property_read_u32(node, "mmi,batid_r_pull", &val);
+	if (ret) {
+		pr_err("%s donot find batid r pull in dt\n", __func__);
+		val = -ENODEV;
+	}
+	data->batid_r_pull = val;
 
 	return 0;
 }
