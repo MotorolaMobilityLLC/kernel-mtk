@@ -58,12 +58,21 @@
         mmi,mmi-temp-zones = <0 4200 1000 0>,
                         <10 4200 2500 1000>,
                         <15 0 2500 2500>,
+			<25 0 3000 3000>,
+			<35 0 3000 3000>,
                         <45 0 3000 3000>,
                         <60 4200 3000 0>;
+	mmi,mmi-ffc-zones = <4450 243>,
+				<4450 243>,
+				<4450 243>,
+				<4480 509>,
+				<4480 548>,
+				<4480 563>,
+				<4450 243>;
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
-        mmi,vfloat-comp-uv = <20000>;
+        mmi,vfloat-comp-uv = <0>;
         max_charger_voltage = <11000000>;
 	enable_cp;
 };
@@ -72,7 +81,7 @@
         io-channels = <&auxadc 5>;
         io-channel-names = "batteryID-channel";
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
-        DIFFERENCE_FULLOCV_ITH = <(320)>;       /*Charging termination current.*/
+        DIFFERENCE_FULLOCV_ITH = <(630)>;       /*Charging termination current.*/
 
         df-serialnum = "SB18D11784";
         #include "bat_setting/batterytable_nt50_atl_5000mah_ext.dtsi"
