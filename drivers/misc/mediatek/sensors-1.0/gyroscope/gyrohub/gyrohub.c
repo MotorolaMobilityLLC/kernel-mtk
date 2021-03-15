@@ -577,7 +577,19 @@ static int gyrohub_factory_get_raw_data(int32_t data[3])
 }
 static int gyrohub_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_GYROSCOPE);
+	int ret = 0;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
+
+	ret = sensor_calibration_to_hub(ID_GYROSCOPE);
+
+	if (ret < 0)
+		return -1;
+
+	ret = wait_for_completion_timeout(&obj->calibration_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
 static int gyrohub_factory_clear_cali(void)
 {
@@ -620,6 +632,7 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 		return -1;
 	}
 #else
+	init_completion(&obj->calibration_done);
 	err = wait_for_completion_timeout(&obj->calibration_done,
 		msecs_to_jiffies(3000));
 	if (!err) {
