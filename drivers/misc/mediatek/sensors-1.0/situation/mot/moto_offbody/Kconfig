@@ -1,0 +1,6 @@
+
+config MOTO_OFFBODY
+	bool "off body for moto package"
+	default n
+	help
+	  Put the device lie on the table.
