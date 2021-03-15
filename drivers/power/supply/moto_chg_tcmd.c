@@ -592,6 +592,49 @@ static ssize_t bat_id_store(struct device *dev, struct device_attribute *attr,
 static DEVICE_ATTR(bat_id, S_IWUSR | S_IRUGO,
 	bat_id_show, bat_id_store);
 
+static ssize_t factory_kill_disable_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int ret;
+
+	if (!chg_client) {
+		pr_err("%s bat_client is null\n", __func__);
+		ret = -ENODEV;
+		goto end;
+	}
+
+	ret = chg_client->factory_kill_disable;
+
+end:
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
+}
+
+static ssize_t factory_kill_disable_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	int val;
+	int ret;
+
+	if (!chg_client) {
+		pr_err("%s chg_client is null\n", __func__);
+		goto end;
+	}
+
+	ret = kstrtoint(buf, 10, &val);
+	if (ret) {
+		pr_info("%s, %s not a valide buf(%d)\n", __func__, buf, ret);
+		goto end;
+	}
+
+	chg_client->factory_kill_disable = !!val;
+
+end:
+	return count;
+}
+static DEVICE_ATTR(factory_kill_disable, S_IWUSR | S_IRUGO,
+	factory_kill_disable_show, factory_kill_disable_store);
+
+
 static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_address.attr,
 	&dev_attr_data.attr,
@@ -605,6 +648,7 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_bat_voltage.attr,
 	&dev_attr_bat_ocv.attr,
 	&dev_attr_bat_id.attr,
+	&dev_attr_factory_kill_disable.attr,
 	NULL,
 };
 
