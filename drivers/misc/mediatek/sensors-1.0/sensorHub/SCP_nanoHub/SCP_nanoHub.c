@@ -907,6 +907,50 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
 	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
+/*add for moto algo*/
+	mSensorState[SENSOR_TYPE_STOWED].sensorType = SENSOR_TYPE_STOWED;
+	mSensorState[SENSOR_TYPE_STOWED].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_STOWED].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_FLAT_UP].sensorType = SENSOR_TYPE_FLAT_UP;
+	mSensorState[SENSOR_TYPE_FLAT_UP].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_FLAT_UP].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_FLAT_DOWN].sensorType = SENSOR_TYPE_FLAT_DOWN;
+	mSensorState[SENSOR_TYPE_FLAT_DOWN].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_FLAT_DOWN].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_CAMERA_ACTIVATE].sensorType = SENSOR_TYPE_CAMERA_ACTIVATE;
+	mSensorState[SENSOR_TYPE_CAMERA_ACTIVATE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_CAMERA_ACTIVATE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].sensorType = SENSOR_TYPE_CHOPCHOP_GESTURE;
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_MOTO_GLANCE_GESTURE].sensorType = SENSOR_TYPE_MOTO_GLANCE_GESTURE;
+	mSensorState[SENSOR_TYPE_MOTO_GLANCE_GESTURE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_MOTO_GLANCE_GESTURE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_LTV].sensorType = SENSOR_TYPE_LTV;
+	mSensorState[SENSOR_TYPE_LTV].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_LTV].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_FTM].sensorType = SENSOR_TYPE_FTM;
+	mSensorState[SENSOR_TYPE_FTM].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_FTM].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_OFFBODY].sensorType = SENSOR_TYPE_OFFBODY;
+	mSensorState[SENSOR_TYPE_OFFBODY].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_OFFBODY].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_LTS].sensorType = SENSOR_TYPE_LTS;
+	mSensorState[SENSOR_TYPE_LTS].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_LTS].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_PROXCAL].sensorType = SENSOR_TYPE_PROXCAL;
+	mSensorState[SENSOR_TYPE_PROXCAL].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_PROXCAL].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd,
@@ -1435,6 +1479,32 @@ int sensor_cfg_to_hub(uint8_t handle, uint8_t *data, uint8_t count)
 	}
 	return ret;
 }
+int sensor_cali_data_to_hub(uint8_t handle, uint8_t *data, uint8_t count)
+{
+	struct ConfigCmd *cmd = NULL;
+	int ret = 0;
+
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		pr_err("invalid handle %d\n", handle);
+		ret = -1;
+	} else {
+		cmd = vzalloc(sizeof(struct ConfigCmd) + count);
+		if (cmd == NULL)
+			return -1;
+		cmd->evtType = EVT_NO_SENSOR_CONFIG_EVENT;
+		cmd->sensorType = handle + ID_OFFSET;
+		cmd->cmd = CONFIG_CMD_CALI_DATA;
+		memcpy(cmd->data, data, count);
+		ret = nanohub_external_write((const uint8_t *)cmd, sizeof(struct ConfigCmd) + count);
+		if (ret < 0) {
+			pr_err("failed cfg data handle:%d, cmd:%d\n",
+				handle, cmd->cmd);
+			ret =  -1;
+		}
+		vfree(cmd);
+	}
+	return ret;
+}
 
 int sensor_calibration_to_hub(uint8_t handle)
 {
@@ -1540,12 +1610,14 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_LIGHT:
 		data->time_stamp = data_t->time_stamp;
-		data->light = data_t->light;
+		//data->light = data_t->light;
+		memcpy((void*)&data->data[0], (void*)&data_t->data[0], sizeof(data_t->data));
 		break;
 	case ID_PROXIMITY:
 		data->time_stamp = data_t->time_stamp;
-		data->proximity_t.steps = data_t->proximity_t.steps;
-		data->proximity_t.oneshot = data_t->proximity_t.oneshot;
+		//data->proximity_t.steps = data_t->proximity_t.steps;
+		//data->proximity_t.oneshot = data_t->proximity_t.oneshot;
+		memcpy((void*)&data->data[0], (void*)&data_t->data[0], sizeof(data_t->data));
 		break;
 	case ID_PRESSURE:
 		data->time_stamp = data_t->time_stamp;
@@ -1735,6 +1807,53 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->sar_event.data[0] = data_t->sar_event.data[0];
 		data->sar_event.data[1] = data_t->sar_event.data[1];
 		data->sar_event.data[2] = data_t->sar_event.data[2];
+		break;
+/*moto algo ID type*/
+	case ID_STOWED:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_FLATUP:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_FLATDOWN:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_CAMGEST:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_CHOPCHOP:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_MOT_GLANCE:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_LTV:
+		data->time_stamp = data_t->time_stamp;
+		data->data[0] = data_t->data[0];
+		data->data[1] = data_t->data[1];
+		data->data[2] = data_t->data[2];
+		break;
+	case ID_FTM:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_OFFBODY:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_LTS:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_DEVICE_ORIENTATION:
+		data->time_stamp = data_t->time_stamp;
+		data->tilt_event.state = data_t->tilt_event.state;
 		break;
 	default:
 		err = -1;
