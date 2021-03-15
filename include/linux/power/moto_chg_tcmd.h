@@ -35,6 +35,8 @@ struct moto_chg_tcmd_client {
 	int (*get_bat_voltage)(void *input, int* val);//unit mV
 	int (*get_bat_ocv)(void *input, int* val);//unit mV
 	int (*get_bat_id)(void *input, int* val);
+
+        int (*get_adc_value)(void *input, int channel, int* val);
 };
 
 int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client);
