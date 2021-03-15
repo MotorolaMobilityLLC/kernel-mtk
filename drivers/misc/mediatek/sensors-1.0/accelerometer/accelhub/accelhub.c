@@ -520,7 +520,17 @@ static int gsensor_factory_get_raw_data(int32_t data[3])
 }
 static int gsensor_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_ACCELEROMETER);
+       int ret = 0;
+	struct accelhub_ipi_data *obj = obj_ipi_data;
+
+	 ret = sensor_calibration_to_hub(ID_ACCELEROMETER);
+	 if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->calibration_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
 static int gsensor_factory_clear_cali(void)
 {
@@ -563,6 +573,7 @@ static int gsensor_factory_get_cali(int32_t data[3])
 		return -1;
 	}
 #else
+	init_completion(&obj->calibration_done);
 	err = wait_for_completion_timeout(&obj->calibration_done,
 					  msecs_to_jiffies(3000));
 	if (!err) {
@@ -580,6 +591,18 @@ static int gsensor_factory_get_cali(int32_t data[3])
 		return -2;
 	}
 #endif
+	return 0;
+}
+static int gsensor_factory_get_cali_nowait(int32_t data[4])
+{
+	struct accelhub_ipi_data *obj = obj_ipi_data;
+
+	spin_lock(&calibration_lock);
+	data[ACCELHUB_AXIS_X] = obj->static_cali[ACCELHUB_AXIS_X];
+	data[ACCELHUB_AXIS_Y] = obj->static_cali[ACCELHUB_AXIS_Y];
+	data[ACCELHUB_AXIS_Z] = obj->static_cali[ACCELHUB_AXIS_Z];
+	data[ACCELHUB_AXIS_Z+1] = obj->static_cali_status;
+	spin_unlock(&calibration_lock);
 	return 0;
 }
 static int gsensor_factory_do_self_test(void)
@@ -606,6 +629,7 @@ static struct accel_factory_fops gsensor_factory_fops = {
 	.clear_cali = gsensor_factory_clear_cali,
 	.set_cali = gsensor_factory_set_cali,
 	.get_cali = gsensor_factory_get_cali,
+	.get_cali_nowait = gsensor_factory_get_cali_nowait,
 	.do_self_test = gsensor_factory_do_self_test,
 };
 
