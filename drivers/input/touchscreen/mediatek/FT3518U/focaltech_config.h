@@ -175,6 +175,7 @@
  * choose your ic chip type of focaltech
  */
 #define FTS_CHIP_TYPE   _FT3518U
+#define FTS_CHIP_NAME   "ft3518u"
 
 /******************* Enables *********************/
 /*********** 1 to enable, 0 to disable ***********/
