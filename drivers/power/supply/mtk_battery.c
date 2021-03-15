@@ -3104,6 +3104,8 @@ void fg_check_lk_swocv(struct device *dev,
 }
 
 /*===================moto chg tcmd interface========================*/
+//extern int boot_zcv_get(void);
+
 #ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
 unsigned int g_fg_battery_id;
 #endif
@@ -3134,6 +3136,14 @@ static int battery_tcmd_read_bat_voltage(void *input, int* val)
 	return 0;
 }
 
+static int battery_tcmd_read_bat_ocv(void *input, int* val)
+{
+	//*val = gauge_get_hwocv() / 10;//gauge_get_hwocv unit mV * 10
+        *val = gauge_get_int_property(GAUGE_PROP_BOOT_ZCV) / 10;//gauge_get_hwocv unit mV * 10
+
+	return 0;
+}
+
 static int battery_tcmd_register_tcmd(struct mtk_battery *data)
 {
 	int ret;
@@ -3144,8 +3154,8 @@ static int battery_tcmd_register_tcmd(struct mtk_battery *data)
 	data->bat_tcmd_client.get_bat_temp = battery_tcmd_read_bat_temp;
 	data->bat_tcmd_client.get_bat_id = battery_tcmd_read_bat_id;
 	data->bat_tcmd_client.get_bat_voltage = battery_tcmd_read_bat_voltage;
-
-	//ret = moto_chg_tcmd_register(&data->bat_tcmd_client);
+	data->bat_tcmd_client.get_bat_ocv = battery_tcmd_read_bat_ocv;
+	//ret = moto_chg_tcmd_register(&data->bat_tcmd_client);//TODO
 
 	return ret;
 }
