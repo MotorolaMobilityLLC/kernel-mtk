@@ -2041,6 +2041,22 @@ int mmi_batt_health_check(void)
 	return pinfo->mmi.batt_health;
 }
 
+static int mmi_get_ffc_fv(struct charger_manager *info, int zone)
+{
+	int ffc_max_fv;
+
+	if (info->mmi.ffc_zones == NULL
+		|| zone >= info->mmi.num_temp_zones)
+		return 0;
+
+	info->mmi.chrg_iterm = info->mmi.ffc_zones[zone].ffc_chg_iterm;
+	ffc_max_fv = info->mmi.ffc_zones[zone].ffc_max_mv;
+	pr_info("FFC temp zone %d, fv %d mV, chg iterm %d mA\n",
+		  zone, ffc_max_fv, info->mmi.chrg_iterm);
+
+	return ffc_max_fv;
+}
+
 #define MIN_TEMP_C -20
 #define MAX_TEMP_C 60
 #define MIN_MAX_TEMP_C 47
@@ -2272,7 +2288,9 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	if (mmi->base_fv_mv == 0) {
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
 	}
-	max_fv_mv = mmi->base_fv_mv;
+	max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
+	if (max_fv_mv == 0)
+		max_fv_mv = mmi->base_fv_mv;
 
 	/* Determine Next State */
 	prev_step = info->mmi.pres_chrg_step;
@@ -2495,6 +2513,37 @@ static int parse_mmi_dt(struct charger_manager *info, struct device *dev)
 		info->mmi.num_temp_zones = 0;
 		pr_err("[%s]mmi temp zones is not set\n", __func__);
 	}
+
+	if (of_find_property(node, "mmi,mmi-ffc-zones", &byte_len)) {
+		if ((byte_len / sizeof(struct mmi_ffc_zone)
+			!= info->mmi.num_temp_zones)
+			|| ((byte_len / sizeof(u32)) % 2)) {
+			pr_err("DT error wrong mmi ffc zones\n");
+			return -ENODEV;
+		}
+
+		info->mmi.ffc_zones = (struct mmi_ffc_zone *)
+			devm_kzalloc(dev, byte_len, GFP_KERNEL);
+
+		if (info->mmi.ffc_zones == NULL)
+			return -ENOMEM;
+
+		rc = of_property_read_u32_array(node,
+				"mmi,mmi-ffc-zones",
+				(u32 *)info->mmi.ffc_zones,
+				byte_len / sizeof(u32));
+		if (rc < 0) {
+			pr_err("Couldn't read mmi ffc zones rc = %d\n", rc);
+			return rc;
+		}
+
+		for (i = 0; i < info->mmi.num_temp_zones; i++) {
+			pr_err("FFC:Zone %d,Volt %d,Ich %d", i,
+				 info->mmi.ffc_zones[i].ffc_max_mv,
+				 info->mmi.ffc_zones[i].ffc_chg_iterm);
+		}
+	} else
+		info->mmi.ffc_zones = NULL;
 
 	rc = of_property_read_u32(node, "mmi,iterm-ma",
 				  &info->mmi.chrg_iterm);
