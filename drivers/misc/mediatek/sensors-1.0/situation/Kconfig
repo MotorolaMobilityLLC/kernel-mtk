@@ -6,6 +6,17 @@ config CUSTOM_KERNEL_SITUATION
 	  configuration should be configured, and the situation
 	  driver configuration should be configured as well.
 
+config MOTO_ALGO_PARAMS
+	bool "algo params for moto sensor algo"
+	default n
+	help
+	  This feature Option is used for open/close moto sensor algo parms.
+config MOTO_ALSPS
+        bool "alsps for moto package"
+        default n
+        help
+          Put the device lie on the table.
+
 source "drivers/misc/mediatek/sensors-1.0/situation/stationary/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/inpocket/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/wake_gesture/Kconfig"
@@ -17,3 +28,4 @@ source "drivers/misc/mediatek/sensors-1.0/situation/motion_detect/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/tilt_detector/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/flat/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/situation/sar/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/situation/mot/Kconfig"
