@@ -24,6 +24,13 @@ struct SENSOR_DATA {
 	int z;
 };
 
+struct SENSOR_CALI_DATA {
+  int x;
+  int y;
+  int z;
+  int status;
+};
+
 struct biometric_cali {
 	unsigned int pga6;
 	unsigned int ambdac5_5;
@@ -40,6 +47,13 @@ struct biometric_threshold {
 	int ppg_r_threshold;
 	int ekg_threshold;
 };
+
+typedef struct {
+  int32_t data[8];
+} MOT_ALSPS_DATA_GET;
+typedef struct {
+  int32_t data[3];
+} MOT_ALSPS_DATA_SET;
 
 #ifdef CONFIG_COMPAT
 
@@ -72,6 +86,7 @@ struct compat_biometric_threshold {
 #define GSENSOR_IOCTL_CLR_CALI _IO(GSENSOR, 0x08)
 #define GSENSOR_IOCTL_ENABLE_CALI _IO(GSENSOR, 0x09)
 #define GSENSOR_IOCTL_SELF_TEST _IO(GSENSOR, 0x0A)
+#define GSENSOR_IOCTL_GET_CALI_NOWAIT _IOW(GSENSOR, 0x0B, struct SENSOR_CALI_DATA)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_GSENSOR_IOCTL_INIT _IO(GSENSOR, 0x01)
@@ -100,8 +115,12 @@ struct compat_biometric_threshold {
 
 #define ALSPS 0x84
 #define ALSPS_SET_PS_MODE _IOW(ALSPS, 0x01, int)
+#define ALSPS_GET_PS_MODE _IOR(ALSPS, 0x02, int)
+#define ALSPS_GET_PS_DATA _IOR(ALSPS, 0x03, int)
 #define ALSPS_GET_PS_RAW_DATA _IOR(ALSPS, 0x04, int)
 #define ALSPS_SET_ALS_MODE _IOW(ALSPS, 0x05, int)
+#define ALSPS_GET_ALS_MODE _IOR(ALSPS, 0x06, int)
+#define ALSPS_GET_ALS_DATA _IOR(ALSPS, 0x07, int)
 #define ALSPS_GET_ALS_RAW_DATA _IOR(ALSPS, 0x08, int)
 
 /*-------------------MTK add-------------------------------------------*/
@@ -117,13 +136,22 @@ struct compat_biometric_threshold {
 #define AAL_GET_ALS_DATA _IOR(ALSPS, 0x16, int)
 #define ALSPS_ALS_ENABLE_CALI _IO(ALSPS, 0x17)
 #define ALSPS_PS_ENABLE_CALI _IO(ALSPS, 0x18)
-#define ALSPS_IOCTL_ALS_GET_CALI _IOW(ALSPS, 0x19, int)
+#define ALSPS_IOCTL_ALS_GET_CALI			_IOR(ALSPS, 0x19, int)//moto modify
 #define ALSPS_ALS_SET_CALI _IOW(ALSPS, 0x20, int)
+#define ALSPS_IOCTL_SELF_TEST				_IO(ALSPS, 0x21)
+//moto add
+#define ALSPS_GET_ALS_DATA_MOT _IOR(ALSPS, 0x22, MOT_ALSPS_DATA_GET)
+#define ALSPS_SET_ALS_DATA_MOT _IOW(ALSPS, 0x23, MOT_ALSPS_DATA_SET)
+#define ALSPS_GET_PS_DATA_MOT _IOR(ALSPS, 0x24, MOT_ALSPS_DATA_GET)
+#define ALSPS_SET_PS_DATA_MOT _IOW(ALSPS, 0x25, MOT_ALSPS_DATA_SET)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ALSPS_SET_PS_MODE _IOW(ALSPS, 0x01, compat_int_t)
 #define COMPAT_ALSPS_GET_PS_RAW_DATA _IOR(ALSPS, 0x04, compat_int_t)
 #define COMPAT_ALSPS_SET_ALS_MODE _IOW(ALSPS, 0x05, compat_int_t)
+//moto add
+#define COMPAT_ALSPS_GET_ALS_DATA		_IOR(ALSPS, 0x22, int)
+#define COMPAT_ALSPS_SET_ALS_CALIDATA _IOW(ALSPS, 0x23, int)
 #define COMPAT_ALSPS_GET_ALS_RAW_DATA _IOR(ALSPS, 0x08, compat_int_t)
 
 /*-------------------MTK add-------------------------------------------*/
@@ -141,6 +169,7 @@ struct compat_biometric_threshold {
 #define COMPAT_ALSPS_PS_ENABLE_CALI _IO(ALSPS, 0x18)
 #define COMPAT_ALSPS_IOCTL_ALS_GET_CALI _IOR(ALSPS, 0x19, compat_int_t)
 #define COMPAT_ALSPS_IOCTL_ALS_SET_CALI _IOR(ALSPS, 0x20, compat_int_t)
+#define COMPAT_ALSPS_IOCTL_SELF_TEST               _IO(ALSPS, 0x21)
 
 #endif
 

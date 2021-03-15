@@ -19,6 +19,7 @@ struct accel_factory_fops {
 	int (*clear_cali)(void);
 	int (*set_cali)(int32_t offset[3]);
 	int (*get_cali)(int32_t offset[3]);
+	int (*get_cali_nowait)(int32_t result[4]);
 	int (*do_self_test)(void);
 };
 
