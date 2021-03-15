@@ -1359,4 +1359,10 @@ config SND_SOC_RT5509
 	  multi-band DRC, equalizer function. It would
 	  be set to yes if device with RT5509 on it.
 
+config SND_SOC_FS16XX
+	tristate "Support fs16xx/fs16xx"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver
+
 endmenu
