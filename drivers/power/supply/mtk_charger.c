@@ -2134,7 +2134,8 @@ static int  mtk_charger_tcmd_get_usb_voltage(void *input, int* val)
 {
 	int ret = 0;
 
-	//*val = pmic_get_vbus(); /* mV */
+	//*val = pmic_get_vbus(); /* mV */ //TODO
+        //*val *= 1000; /*convert to uV*/  
 
 	return ret;
 }
