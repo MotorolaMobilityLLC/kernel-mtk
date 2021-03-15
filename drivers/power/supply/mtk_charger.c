@@ -1254,6 +1254,7 @@ static void mtk_chg_get_tchg(struct mtk_charger *info)
 	}
 }
 
+int charging_enable_flag = 1;
 static void charger_check_status(struct mtk_charger *info)
 {
 	bool charging = true;
@@ -1320,6 +1321,10 @@ static void charger_check_status(struct mtk_charger *info)
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
+		charging = false;
+		goto stop_charging;
+	}
+	if (!charging_enable_flag) {
 		charging = false;
 		goto stop_charging;
 	}
@@ -2164,6 +2169,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	char *name = NULL;
 
 	chr_err("%s: starts\n", __func__);
+
+	/* Disable charging when enter ATM mode(factory mode) */
+	if (!strcmp(atm_mode, "enable"))
+		charging_enable_flag = 0;
 
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
 	if (!info)
