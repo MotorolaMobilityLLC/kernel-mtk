@@ -27,5 +27,12 @@
 		mmi,dir-name = "hw";
 		mmi,main-utags = "/dev/block/by-name/hw";
 	};
+	phy_tuning {
+                compatible = "mediatek,phy_tuning";
+                u2_vrt_ref = <7>;
+                u2_term_ref = <7>;
+                u2_enhance = <2>;
+		status = "okay";
+        };
 };
 
