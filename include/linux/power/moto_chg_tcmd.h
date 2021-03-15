@@ -11,6 +11,8 @@ struct moto_chg_tcmd_client {
 	void *data;
 	int client_id;
 
+	bool factory_kill_disable;
+
 #ifdef USE_LIST_HEAD
 	struct list_head list;
 #endif
