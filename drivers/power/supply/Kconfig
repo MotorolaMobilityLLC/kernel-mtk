@@ -844,6 +844,12 @@ config MTK_BAT_NTC_100
 	help
 	  Battery NTC 100K support.
 
+config CHARGER_PD_ET7303
+	bool "Define for cclogic driver Etek ET7303"
+        default n
+	help
+	  Say Y here to enable Etek ET7303 driver
+
 if MACH_MT6768
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
