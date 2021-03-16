@@ -13,6 +13,9 @@
  * ============================================================
  */
 
+/* Default use moto serial number feature */
+#define MTK_GET_BATTERY_ID_BY_SERIALNUMBER
+
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST			1
