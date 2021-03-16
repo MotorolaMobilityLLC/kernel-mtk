@@ -716,8 +716,14 @@ static int select_pdc_charging_current_limit(struct charger_manager *info)
 
 	pdata->input_current_limit =
 		info->data.pd_charger_current;
+
+#ifdef MTK_BASE
 	pdata->charging_current_limit =
 		info->data.pd_charger_current;
+#else
+	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
+	info->mmi.target_usb = pdata->input_current_limit;
+#endif
 
 	sc_select_charging_current(info, pdata);
 
@@ -770,11 +776,15 @@ static int mtk_switch_chr_pdc_run(struct charger_manager *info)
 	data->pd_vbus_low_bound = pdata->pd_vbus_low_bound;
 	data->pd_vbus_upper_bound = pdata->pd_vbus_upper_bound;
 
+#ifdef MTK_BASE
 	data->battery_cv = pdata->battery_cv;
 	if (info->enable_sw_jeita) {
 		if (info->sw_jeita.cv != 0)
 			data->battery_cv = info->sw_jeita.cv;
 	}
+#else
+	data->battery_cv = info->mmi.target_fv;
+#endif
 
 	if (info->enable_hv_charging == false)
 		goto stop;
