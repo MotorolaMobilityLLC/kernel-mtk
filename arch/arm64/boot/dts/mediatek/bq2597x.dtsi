@@ -17,11 +17,11 @@
                 mmi,dont-rerun-aicl;
                 mmi,chrg-temp-zones-num = <5>;
                 mmi,mmi-chrg-temp-zones =
-                                        <0 4200 700 0 0 0 0 0 0>,
-                                        <10 4200 2000 4400 700 0 0 0 0>,
-                                        <15 4200 6000 4400 2000 0 0 0 0>,
-                                        <45 4350 9800 4300 6000 4350 4000 4400 2000>,
-                                        <60 4200 2000 0 0 0 0 0 0>;
+					<0 4200 1000  0 0>,
+					<10 4200 2500 4450 1000>,
+					<15 4450 6500 0 0>,
+					<45 4350 9800 4450 4000>,
+					<60 4200 2000 0 0>;
 		mmi,thermal-min-level = <2000000>;
                 charger_device_0 {
                         chrg-name = "pmic-sw";
@@ -42,40 +42,40 @@
         };
 };
 
-//&pio {
-//	bq2597x_int_default: bq2597x_int_default {
-//		pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
-//		slew-rate= <0>;
-//		bias-disable;
-//	};
-//	bq2597x_int_default_slave: bq2597x_int_default_slave {
-//                pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
-//                slew-rate= <0>;
-//                bias-disable;
-//        };
-//
-//};
+&pio {
+	bq2597x_int_default: bq2597x_int_default {
+		pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
+		slew-rate= <0>;
+		bias-disable;
+	};
+	bq2597x_int_default_slave: bq2597x_int_default_slave {
+                pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+                slew-rate= <0>;
+                bias-disable;
+        };
+
+};
 
 &i2c3 {
 	status = "okay";
 	bq2597x-charger@65 {
 		compatible = "ti,bq2597x-master";
 		reg = <0x65>;
-		/*ti,bq2597x,interrupt_gpios = <&pio 34 0>;
+		//ti,bq2597x,interrupt_gpios = <&pio 34 0>;
 		interrupt-parent = <&pio>;
-		interrupts = <2 IRQ_TYPE_EDGE_FALLING 2 0>;
+		interrupts = <34 IRQ_TYPE_EDGE_FALLING 34 0>;
 		interrupt-names = "bq2597x_irq";
 		pinctrl-names = "default";
-		pinctrl-0 = <&bq2597x_int_default>;*/
-		ti,bq2597x,bat-ovp-disable = <0>;
-		ti,bq2597x,bat-ocp_disable = <0>;
-		ti,bq2597x,bat-ovp-alarm-disable = <0>;
-		ti,bq2597x,bus-ocp-disable = <0>;
-		ti,bq2597x,bus-ovp-alarm-disable = <0>;
-		ti,bq2597x,bus-ocp-alarm-disable = <0>;
-		ti,bq2597x,bat-ucp-alarm-disable = <0>;
-		ti,bq2597x,bat-therm-disable = <0>;
-		ti,bq2597x,bus-therm-disable = <0>;
+		pinctrl-0 = <&bq2597x_int_default>;
+		ti,bq2597x,bat-ovp-disable;
+		ti,bq2597x,bat-ocp_disable;
+		ti,bq2597x,bat-ovp-alarm-disable;
+		ti,bq2597x,bus-ocp-disable;
+		ti,bq2597x,bus-ovp-alarm-disable;
+		ti,bq2597x,bus-ocp-alarm-disable;
+		ti,bq2597x,bat-ucp-alarm-disable;
+		ti,bq2597x,bat-therm-disable;
+		ti,bq2597x,bus-therm-disable;
 
 		ti,bq2597x,bat-ovp-threshold = <4500>;
 		ti,bq2597x,bat-ovp-alarm-threshold = <4450>;
@@ -100,21 +100,21 @@
 	bq2597x-charger@66 {
 		compatible = "ti,bq2597x-slave";
 		reg = <0x66>;
-		/*ti,bq2597x,interrupt_gpios = <&pio 30 0>;
+		//ti,bq2597x,interrupt_gpios = <&pio 30 0>;
 		interrupt-parent = <&pio>;
-		interrupts = <2 IRQ_TYPE_EDGE_FALLING 2 0>;
+		interrupts = <30 IRQ_TYPE_EDGE_FALLING 30 0>;
 		interrupt-names = "bq2597x_irq";
 		pinctrl-names = "default_slave";
-		pinctrl-0 = <&bq2597x_int_default_slave>;*/
-		ti,bq2597x,bat-ovp-disable = <0>;
-		ti,bq2597x,bat-ocp_disable = <0>;
-		ti,bq2597x,bat-ovp-alarm-disable = <0>;
-		ti,bq2597x,bus-ocp-disable = <0>;
-		ti,bq2597x,bus-ovp-alarm-disable = <0>;
-		ti,bq2597x,bus-ocp-alarm-disable = <0>;
-		ti,bq2597x,bat-ucp-alarm-disable = <0>;
-		ti,bq2597x,bat-therm-disable = <0>;
-		ti,bq2597x,bus-therm-disable = <0>;
+		pinctrl-0 = <&bq2597x_int_default_slave>;
+		ti,bq2597x,bat-ovp-disable;
+		ti,bq2597x,bat-ocp_disable;
+		ti,bq2597x,bat-ovp-alarm-disable;
+		ti,bq2597x,bus-ocp-disable;
+		ti,bq2597x,bus-ovp-alarm-disable;
+		ti,bq2597x,bus-ocp-alarm-disable;
+		ti,bq2597x,bat-ucp-alarm-disable;
+		ti,bq2597x,bat-therm-disable;
+		ti,bq2597x,bus-therm-disable;
 
 		ti,bq2597x,bat-ovp-threshold = <4500>;
 		ti,bq2597x,bat-ovp-alarm-threshold = <4450>;
