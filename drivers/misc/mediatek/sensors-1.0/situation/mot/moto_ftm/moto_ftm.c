@@ -50,7 +50,7 @@
 #define MOTO_FTM_PR_ERR(fmt, args...)    pr_err(MOTO_FTM_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define MOTO_FTM_LOG(fmt, args...)    pr_debug(MOTO_FTM_TAG fmt, ##args)
 
-static struct wakeup_source ftm_wake_lock;
+static struct wakeup_source *ftm_wake_lock;
 
 static int  moto_ftm_get_data(int *probability, int *status)
 {
@@ -107,7 +107,7 @@ static int moto_ftm_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_FTM);
 	else if (event->flush_action == DATA_ACTION) {
-		__pm_wakeup_event(&ftm_wake_lock, msecs_to_jiffies(100));
+		__pm_wakeup_event(ftm_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_FTM);
     MOTO_FTM_LOG("%s : %d\n", __func__,event->gesture_data_t.probability);
     ret=situation_data_report(ID_FTM, event->gesture_data_t.probability);
@@ -144,6 +144,7 @@ static int moto_ftm_local_init(void)
 		goto exit_create_attr_failed;
 	}
 	//wakeup_source_init(&ftm_wake_lock, "moto_ftm_wake_lock");
+        ftm_wake_lock = wakeup_source_register(NULL, "moto_ftm_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:
@@ -168,6 +169,9 @@ static int __init moto_ftm_init(void)
 
 static void __exit moto_ftm_exit(void)
 {
+        if (ftm_wake_lock)
+            wakeup_source_unregister(ftm_wake_lock);
+
 	MOTO_FTM_LOG();
 }
 
