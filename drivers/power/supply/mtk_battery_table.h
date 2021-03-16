@@ -429,9 +429,16 @@ int g_temperature[MAX_TABLE] = {
 	-45/*TEMPERATURE_T9*/
 };
 
-
+//BAT NTC 100K
+#ifdef CONFIG_MTK_BAT_NTC_100
+#define BAT_NTC_10 0
+#define BAT_NTC_47 0
+#define BAT_NTC_100 1
+#else
 #define BAT_NTC_10 1
 #define BAT_NTC_47 0
+#define BAT_NTC_100 0
+#endif
 
 #if (BAT_NTC_10 == 1)
 #define RBAT_PULL_UP_R             24000
@@ -439,6 +446,13 @@ int g_temperature[MAX_TABLE] = {
 
 #if (BAT_NTC_47 == 1)
 #define RBAT_PULL_UP_R             61900
+#endif
+
+//BAT NTC 100K
+#ifdef CONFIG_MTK_BAT_NTC_100
+#if (BAT_NTC_100 == 1)
+#define RBAT_PULL_UP_R             16900
+#endif
 #endif
 
 #define RBAT_PULL_UP_VOLT          2800
@@ -497,7 +511,34 @@ struct fuelgauge_temperature Fg_Temperature_Table[21] = {
 };
 #endif
 
-
+//BAT NTC 100K
+#if (BAT_NTC_100 == 1)
+struct fuelgauge_temperature Fg_Temperature_Table[23] = {
+		{-40, 4397119},
+		{-35, 3088598},
+		{-30, 2197225},
+		{-25, 1581880},
+		{-20, 1151036},
+		{-15, 846578},
+		{-10, 628988},
+		{-5, 471632},
+		{0, 357011},
+		{5, 272499},
+		{10, 209709},
+		{15, 162650},
+		{20, 127080},
+		{25, 100000},
+		{30, 79221},
+		{35, 63167},
+		{40, 50676},
+		{45, 40903},
+		{50, 33194},
+		{55, 27090},
+		{60, 22224},
+		{65, 18322},
+		{70, 15184}
+};
+#endif
 
 /* ============================================================
  * <DOD, Battery_Voltage> Table
