@@ -369,7 +369,6 @@ static ssize_t force_chg_auto_enable_store(struct device *dev, struct device_att
 	struct  moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
 	int ret;
 	int val;
-	int cur;
 
 	if (!chg_client) {
 		pr_err("%s chg_client is null\n", __func__);
@@ -398,7 +397,7 @@ static ssize_t force_chg_auto_enable_store(struct device *dev, struct device_att
 	/*Or if charger driver do not have chg enable interface*/
 	if (!val) {
 		ret = chg_client->get_chg_current(chg_client->data,
-						&cur);
+						&val);
 		if (ret) {
 			pr_err("%s get chg cur fail %d\n", __func__, ret);
 			goto end;
@@ -468,7 +467,21 @@ static ssize_t force_chg_ibatt_show(struct device *dev, struct device_attribute 
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
+	int ret;
+	int val;
 
+	val = data->chg_current;
+	if (val <= 0) {
+		ret = chg_client->get_chg_current(chg_client->data,
+						&val);
+		if (ret) {
+			pr_err("%s get chg cur fail %d\n", __func__, ret);
+			goto end;
+		}
+		data->chg_current = val;
+	}
+
+end:
 	return snprintf(buf, PAGE_SIZE, "%d\n", data->chg_current);
 }
 
