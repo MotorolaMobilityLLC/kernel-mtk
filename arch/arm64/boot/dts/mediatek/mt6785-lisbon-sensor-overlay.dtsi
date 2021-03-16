@@ -30,6 +30,7 @@
         pinctrl-0 = <&sar_int_default>;
         /*use PH3/4 as the reference sensor
         set it to 0xff if the ref-phases-x is not used*/
+        reinit-on-i2c-failure;
         Semtech,button-flag = <0x07>;
         Semtech,ref-phases-a = <3>;
         Semtech,ref-phases-b = <4>;
