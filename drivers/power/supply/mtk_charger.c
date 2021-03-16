@@ -2846,7 +2846,7 @@ static int  mtk_charger_tcmd_set_chg_current(void *input, int  val)
 	struct mtk_charger *cm = (struct mtk_charger *)input;
 	int ret;
 
-	cm->chg_data[0].thermal_charging_current_limit = val;
+	cm->chg_data[0].moto_chg_tcmd_ibat = val * 1000;
 	//ret = _mtk_charger_change_current_setting(cm);
         ret = charger_dev_set_input_current(cm->chg1_dev, val);//TODO
 
@@ -2858,7 +2858,7 @@ static int  mtk_charger_tcmd_get_chg_current(void *input, int* val)
 	struct mtk_charger *cm = (struct mtk_charger *)input;
 	int ret = 0;
 
-	*val = cm->chg_data[0].thermal_charging_current_limit;
+	*val = cm->chg_data[0].moto_chg_tcmd_ibat / 1000;
 
 	return ret;
 }
@@ -2868,7 +2868,7 @@ static int  mtk_charger_tcmd_set_usb_current(void *input, int  val)
 	struct mtk_charger *cm = (struct mtk_charger *)input;
 	int ret;
 
-	cm->chg_data[0].thermal_input_current_limit = val;
+	cm->chg_data[0].moto_chg_tcmd_ichg = val * 1000;
 	//ret = _mtk_charger_change_current_setting(cm);
 	ret = charger_dev_set_input_current(cm->chg1_dev, val);//TODO
 
@@ -2880,7 +2880,7 @@ static int  mtk_charger_tcmd_get_usb_current(void *input, int* val)
 	struct mtk_charger *cm = (struct mtk_charger *)input;
 	int ret = 0;
 
-	*val = cm->chg_data[0].thermal_input_current_limit;
+	*val = cm->chg_data[0].moto_chg_tcmd_ichg / 1000;
 
 	return ret;
 }
@@ -2976,6 +2976,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->chg_data[i].thermal_charging_current_limit = -1;
 		info->chg_data[i].thermal_input_current_limit = -1;
 		info->chg_data[i].input_current_limit_by_aicl = -1;
+	        info->chg_data[i].moto_chg_tcmd_ibat = -1;
+	        info->chg_data[i].moto_chg_tcmd_ichg = -1;
 	}
 	info->enable_hv_charging = true;
 
