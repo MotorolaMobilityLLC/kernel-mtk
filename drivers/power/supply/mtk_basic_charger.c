@@ -299,6 +299,12 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			pdata->input_current_limit =
 					pdata->input_current_limit_by_aicl;
 	}
+
+	if (pdata->moto_chg_tcmd_ibat != -1)
+		pdata->charging_current_limit = pdata->moto_chg_tcmd_ibat;
+
+	if (pdata->moto_chg_tcmd_ichg != -1)
+		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
 done:
 
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
