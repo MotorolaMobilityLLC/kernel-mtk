@@ -832,6 +832,18 @@ config MOTO_CHG_TCMD_SUPPORT
 	help
 	  This is to enable MOTO supports of charger TCMD INTERFACE.
 
+config MTK_BQ2560x_SUPPORT
+	bool "Charger Driver for BQ 2560x Charger IC"
+        default n
+	help
+	  BQ 2560x.
+
+config MTK_BAT_NTC_100
+	bool "Battery NTC 100K"
+        default n
+	help
+	  Battery NTC 100K support.
+
 if MACH_MT6768
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
