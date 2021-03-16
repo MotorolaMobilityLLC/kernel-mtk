@@ -106,3 +106,4 @@ obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pe.o mtk_pe_hal.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_40_SUPPORT) += mtk_pe4.o mtk_pe4_hal.o
 obj-$(CONFIG_CHARGER_MT6357) += mt6357-pulse-charger.o
 obj-$(CONFIG_MOTO_CHG_TCMD_SUPPORT) += moto_chg_tcmd.o
+obj-$(CONFIG_MTK_BQ2560x_SUPPORT) += bq2560x_charger.o
