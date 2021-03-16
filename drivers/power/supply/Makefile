@@ -138,4 +138,5 @@ ifeq ($(CONFIG_CUSTOM_BATTERY_EXTERNAL_CHANNEL),y)
 endif
 
 obj-$(CONFIG_MOTO_CHG_TCMD_SUPPORT) += moto_chg_tcmd.o
+obj-$(CONFIG_MTK_BQ2560x_SUPPORT) += bq2560x_charger.o
 
