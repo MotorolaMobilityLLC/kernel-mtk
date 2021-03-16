@@ -59,6 +59,7 @@ void tpd_get_dts_info(void)
 {
 	struct device_node *node1 = NULL;
 	int key_dim_local[16] = {0}, i = 0;
+	int ret = 0;
 
 	node1 = of_find_matching_node(node1, touch_of_match);
     TPD_DMESG("node1\n");
@@ -140,6 +141,10 @@ void tpd_get_dts_info(void)
 		of_property_read_u32(node1,
 			"tpd-rst-ext-gpio-num",
 			&tpd_dts_data.rst_ext_gpio_num);
+		of_property_read_string(node1, "panel-supplier",
+			&tpd_dts_data.panel_supplier);
+		if (ret < 0)
+			tpd_dts_data.panel_supplier = NULL;
 
 	} else {
 		TPD_DMESG("can't find touch compatible custom node\n");
