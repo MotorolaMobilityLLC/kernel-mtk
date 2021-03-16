@@ -2218,7 +2218,7 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 
         chr_err("lenovo mtk_charger_plug_out, atm_mode=%s\n", atm_mode);
 	if (!strcmp(atm_mode, "enable") && !info->chg_tcmd_client.factory_kill_disable)
-		kernel_power_off();
+		orderly_poweroff(true);
 
 	return 0;
 }
