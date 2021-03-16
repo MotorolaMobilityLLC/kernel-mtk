@@ -15,7 +15,12 @@
 #include <linux/power_supply.h>
 #include <mtk_musb.h>
 #include <linux/reboot.h>
-
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+/* TYPE-C/PD */
+#include <tcpm.h>
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 /* ============================================================ */
 /* pmic control start*/
 /* ============================================================ */
@@ -91,6 +96,14 @@ struct mtk_charger_type {
 	int bc12_active;
 	u32 bootmode;
 	u32 boottype;
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+	struct tcpc_device *tcpc;
+	struct notifier_block pd_nb;
+	struct mutex attach_lock;
+	bool attach;
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 };
 
 struct tag_bootmode {
@@ -577,9 +590,19 @@ static void do_charger_detection_work(struct work_struct *data)
 		PMIC_RGS_CHRDET_SHIFT);
 
 	pr_notice("%s: chrdet:%d\n", __func__, chrdet);
+
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+	mutex_lock(&info->attach_lock);
+	do_charger_detect(info, info->attach);
+	mutex_unlock(&info->attach_lock);
+#else
 	if (chrdet)
 		do_charger_detect(info, chrdet);
-	else {
+#endif
+	//else {
+	if (!chrdet) {
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 		hw_bc11_done(info);
 		/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
 		/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
@@ -627,6 +650,55 @@ irqreturn_t chrdet_int_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+static void hadle_typec_attach(struct mtk_charger_type *info, bool en)
+{
+	mutex_lock(&info->attach_lock);
+	info->attach = en;
+	schedule_work(&info->chr_work);
+	mutex_unlock(&info->attach_lock);
+}
+
+static int mt6357_tcp_notifier_call(struct notifier_block *pnb,
+					unsigned long event, void *data)
+{
+	struct tcp_notify *noti = data;
+	struct mtk_charger_type *info;
+	info = container_of(pnb, struct mtk_charger_type, pd_nb);
+	switch (event) {
+	case TCP_NOTIFY_TYPEC_STATE:
+		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
+		    (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
+			pr_info("%s USB Plug in, pol = %d\n", __func__,
+					noti->typec_state.polarity);
+			hadle_typec_attach(info, true);
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
+			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			pr_info("%s USB Plug out\n", __func__);
+			hadle_typec_attach(info, false);
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
+			pr_info("%s Source_to_Sink\n", __func__);
+			hadle_typec_attach(info, true);
+		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
+			pr_info("%s Sink_to_Source\n", __func__);
+			hadle_typec_attach(info, false);
+		}
+
+		break;
+	default:
+		break;
+	};
+	return NOTIFY_OK;
+}
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 
 static int psy_chr_type_get_property(struct power_supply *psy,
 	enum power_supply_property psp, union power_supply_propval *val)
@@ -788,6 +860,12 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 	struct device_node *np = dev->of_node;
 	int ret = 0;
 
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+	static bool is_deferred;
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+
 	pr_notice("%s: starts\n", __func__);
 
 	chan_vbus = devm_iio_channel_get(
@@ -843,8 +921,16 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 	info->usb_desc.get_property = mt_usb_get_property;
 	info->usb_cfg.drv_data = info;
 
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+	mutex_init(&info->attach_lock);
+	info->psy = devm_power_supply_register(&pdev->dev, &info->psy_desc,
+			&info->psy_cfg);
+#else
 	info->psy = power_supply_register(&pdev->dev, &info->psy_desc,
 			&info->psy_cfg);
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 
 	if (IS_ERR(info->psy)) {
 		pr_notice("%s Failed to register power supply: %ld\n",
@@ -865,9 +951,17 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 
 	pr_notice("%s: bc12_active:%d\n", __func__, info->bc12_active);
 
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if !defined(CONFIG_CHARGER_PD_ET7303)
 	if (info->bc12_active) {
+#endif
+#if defined(CONFIG_CHARGER_PD_ET7303)
+		info->ac_psy = devm_power_supply_register(&pdev->dev,
+				&info->ac_desc, &info->ac_cfg);
+#else
 		info->ac_psy = power_supply_register(&pdev->dev,
 				&info->ac_desc, &info->ac_cfg);
+#endif
 
 		if (IS_ERR(info->ac_psy)) {
 			pr_notice("%s Failed to register power supply: %ld\n",
@@ -875,8 +969,13 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 			return PTR_ERR(info->ac_psy);
 		}
 
+#if defined(CONFIG_CHARGER_PD_ET7303)
+		info->usb_psy = devm_power_supply_register(&pdev->dev,
+				&info->usb_desc, &info->usb_cfg);
+#else
 		info->usb_psy = power_supply_register(&pdev->dev,
 				&info->usb_desc, &info->usb_cfg);
+#endif
 
 		if (IS_ERR(info->usb_psy)) {
 			pr_notice("%s Failed to register power supply: %ld\n",
@@ -885,6 +984,7 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 		}
 
 		INIT_WORK(&info->chr_work, do_charger_detection_work);
+#if !defined(CONFIG_CHARGER_PD_ET7303)
 		schedule_work(&info->chr_work);
 
 		ret = devm_request_threaded_irq(&pdev->dev,
@@ -893,7 +993,43 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 		if (ret < 0)
 			pr_notice("%s request chrdet irq fail\n", __func__);
 	}
+#endif
 
+#if defined(CONFIG_CHARGER_PD_ET7303)
+	info->tcpc = tcpc_dev_get_by_name("type_c_port0");
+	pr_info("%s: liujun5 111 tcpc device check if is ready, defer\n", __func__);
+	if (info->tcpc == NULL) {
+		if (is_deferred == false) {
+			pr_info("%s: tcpc device not ready, defer\n", __func__);
+			is_deferred = true;
+
+			schedule_work(&info->chr_work);
+
+			ret = devm_request_threaded_irq(&pdev->dev,
+				platform_get_irq_byname(pdev, "chrdet"), NULL,
+				chrdet_int_handler, IRQF_TRIGGER_HIGH, "chrdet", info);
+			if (ret < 0) {
+				pr_notice("%s request chrdet irq fail\n", __func__);
+				return ret;
+			}
+			goto out;
+		} else {
+			pr_info("%s: failed to get tcpc device\n", __func__);
+			ret = -EINVAL;
+		}
+		return ret;
+	}
+
+	info->pd_nb.notifier_call = mt6357_tcp_notifier_call;
+	ret = register_tcp_dev_notifier(info->tcpc, &info->pd_nb,
+						TCP_NOTIFY_TYPE_ALL);
+	if (ret < 0) {
+		pr_info("%s: register tcpc notifier fail(%d)\n", __func__, ret);
+		return -EINVAL;
+	}
+out:
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 	info->first_connect = true;
 
 	pr_notice("%s: done\n", __func__);
