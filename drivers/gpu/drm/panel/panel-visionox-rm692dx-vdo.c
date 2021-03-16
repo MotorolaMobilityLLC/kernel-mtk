@@ -852,6 +852,11 @@ static int lcm_get_modes(struct drm_panel *panel)
 	panel->connector->display_info.width_mm = 69;
 	panel->connector->display_info.height_mm = 154;
 
+	panel->connector->display_info.panel_ver = 0x01;
+	panel->connector->display_info.panel_id = 0x12082A93;
+	strcpy(panel->connector->display_info.panel_name, "mipi_mot_cmd_visionox_fhdp_667");
+	strcpy(panel->connector->display_info.panel_supplier, "visionox");
+
 	return 1;
 }
 
