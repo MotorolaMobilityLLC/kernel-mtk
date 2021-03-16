@@ -123,6 +123,7 @@ struct tpd_dts_info {
 	int rst_ext_gpio_num;
 	struct tpd_key_dim_local tpd_key_dim_local[4];
 	struct tpd_filter_t touch_filter;
+	const char *panel_supplier;
 };
 extern struct tpd_dts_info tpd_dts_data;
 struct tpd_attrs {
