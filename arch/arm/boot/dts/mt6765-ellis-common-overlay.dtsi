@@ -369,7 +369,7 @@
 };
 
 &mtk_charger_type {
-        bc12_active = <1>;
+        bc12_active = <0>;
 };
 
 &mtk_gauge {
@@ -383,6 +383,12 @@
 &usb {
         charger = <&mtk_charger_type>;
 };
+
+&rt1711_typec {
+       rt-tcpc,vconn_supply  = <0>;
+       charger = <&mtk_charger_type>;
+};
+
 
 &key_google {
 	compatible = "mediatek, key_google_key-eint";

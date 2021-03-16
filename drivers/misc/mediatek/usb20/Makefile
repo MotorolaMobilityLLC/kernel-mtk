@@ -39,6 +39,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 # for phy and vbus settings
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb20/$(usb20plat)
 
+# for logic ic ET7303 bringup
+ccflags-y += -I$(srctree)/drivers/power/supply/
+
 ifeq ($(CONFIG_TCPC_CLASS),y)
 	ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 endif
