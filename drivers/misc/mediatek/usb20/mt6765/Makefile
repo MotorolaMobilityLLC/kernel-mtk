@@ -22,6 +22,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 # for SPM control usage
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
+# for logic ic ET7303 bringup
+ccflags-y += -I$(srctree)/drivers/power/supply/
+
 # for TYPEC connection management
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/inc
 ifeq ($(CONFIG_TCPC_CLASS),y)
