@@ -88,10 +88,10 @@
 	regulator-boot-on;
 	regulator-always-on;
 };
-/* 3.3v */
+/* 3.0v */
 &mt_pmic_vfp_ldo_reg {
-	regulator-min-microvolt = <3300000>;
-	regulator-max-microvolt = <3300000>;
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
 	regulator-boot-on;
 	regulator-always-on;
 };
