@@ -50,7 +50,7 @@
 #define MOTO_CHOPCHOP_PR_ERR(fmt, args...)    pr_err(MOTO_CHOPCHOP_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define MOTO_CHOPCHOP_LOG(fmt, args...)    pr_debug(MOTO_CHOPCHOP_TAG fmt, ##args)
 
-static struct wakeup_source chopchop_wake_lock;
+static struct wakeup_source *chopchop_wake_lock;
 
 static int  moto_chopchop_get_data(int *probability, int *status)
 {
@@ -105,7 +105,7 @@ static int moto_chopchop_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_CHOPCHOP);
 	else if (event->flush_action == DATA_ACTION) {
-		__pm_wakeup_event(&chopchop_wake_lock, msecs_to_jiffies(100));
+		__pm_wakeup_event(chopchop_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_CHOPCHOP);
     situation_data_report(ID_CHOPCHOP, event->gesture_data_t.probability);
 	}
@@ -140,6 +140,7 @@ static int moto_chopchop_local_init(void)
 		goto exit_create_attr_failed;
 	}
 	//wakeup_source_init(&chopchop_wake_lock, "moto_chopchop_wake_lock");
+        chopchop_wake_lock = wakeup_source_register(NULL, "moto_chopchop_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:
@@ -164,6 +165,9 @@ static int __init moto_chopchop_init(void)
 
 static void __exit moto_chopchop_exit(void)
 {
+        if (chopchop_wake_lock)
+            wakeup_source_unregister(chopchop_wake_lock);
+
 	MOTO_CHOPCHOP_LOG();
 }
 
