@@ -152,10 +152,95 @@ bool is_algo_active(struct mtk_battery *gm)
 	return gm->algo.active;
 }
 
+static const char *get_battery_serialnumber(void)
+{
+	struct device_node *np = of_find_node_by_path("/chosen");
+	const char *battsn_buf;
+	int retval;
+
+	battsn_buf = NULL;
+
+	if (np)
+		retval = of_property_read_string(np, "mmi,battid",
+						 &battsn_buf);
+	else
+		return NULL;
+
+	if ((retval == -EINVAL) || !battsn_buf) {
+		pr_err("Battsn unused\n");
+		of_node_put(np);
+		return NULL;
+
+	} else
+		pr_err("Battsn = %s\n", battsn_buf);
+
+	of_node_put(np);
+
+	return battsn_buf;
+}
+
+static int get_batid_by_serialnumber(void)
+{
+	struct device_node  *batt_node;
+	const char *sn_buf, *df_sn, *dev_sn;
+	int i, rc;
+	char string[12];
+
+	dev_sn = NULL;
+	df_sn = NULL;
+	sn_buf = NULL;
+	batt_node = NULL;
+
+	batt_node = of_find_node_by_name(NULL, "battery");
+	if (!batt_node) {
+		pr_err("Batterydata not available\n");
+		return 0;
+	}
+
+	dev_sn = get_battery_serialnumber();
+
+	rc = of_property_read_string(batt_node, "df-serialnum",
+				     &df_sn);
+	if (rc)
+		pr_warn("No Default Serial Number defined\n");
+	else if (df_sn)
+		pr_info("Default Serial Number %s\n", df_sn);
+
+	for (i = 0; i < TOTAL_BATTERY_NUMBER; i++) {
+		snprintf(string, sizeof(string), "serialnum_%d", i);
+		rc = of_property_read_string(batt_node, string,
+					     &sn_buf);
+		pr_warn("string=%s, sn_buf=%s, i=%d, rc=%d\n",
+			string, sn_buf, i ,rc);
+		if (!rc && sn_buf) {
+			if (dev_sn) {
+				if (strnstr(dev_sn, sn_buf, 32)) {
+					pr_warn("using dev_sn battid=%d\n", i);
+					return i;
+				}
+			} else if (df_sn) {
+				if (strnstr(df_sn, sn_buf, 32)) {
+					pr_warn("using df_sn battid=%d\n", i);
+					return i;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+#ifdef MTK_GET_BATTERY_ID_BY_SERIALNUMBER
+int fgauge_get_profile_id(void)
+{
+	return get_batid_by_serialnumber();
+}
+#else
 int fgauge_get_profile_id(void)
 {
 	return 0;
 }
+#endif
 
 int wakeup_fg_algo_cmd(
 	struct mtk_battery *gm, unsigned int flow_state, int cmd, int para1)
@@ -831,7 +916,7 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 	fg_cust_data = &gm->fg_cust_data;
 	fg_table_cust_data = &gm->fg_table_cust_data;
 
-	fgauge_get_profile_id();
+	gm->battery_id = fgauge_get_profile_id();
 
 	fg_cust_data->versionID1 = FG_DAEMON_CMD_FROM_USER_NUMBER;
 	fg_cust_data->versionID2 = sizeof(gm->fg_cust_data);
