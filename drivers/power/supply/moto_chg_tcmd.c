@@ -963,7 +963,9 @@ static ssize_t adc_vbat_show(struct device *dev, struct device_attribute *attr, 
 	}
 
 	moto_chg_get_adc_value(data, client, channel, &ret);
-
+	/*if ret is valid and its value is < 2500000 uv(the lowest battery voltage threshold)*/
+	if ((ret > 0) && (ret < 2500000))
+		ret *= 1000;
 end:
 	return snprintf(buf, PAGE_SIZE, "%d\n", ret);
 }
