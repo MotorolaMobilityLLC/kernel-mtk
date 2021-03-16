@@ -5,6 +5,7 @@
 */
 
 #include "mt6765-moto-base.dtsi"
+#include "tcpc_config.dtsi"
 
 / {
 	key_google: key_google {
