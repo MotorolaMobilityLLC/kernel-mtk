@@ -50,7 +50,7 @@
 #define MOTO_STOWED_PR_ERR(fmt, args...)    pr_err(MOTO_STOWED_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define MOTO_STOWED_LOG(fmt, args...)    pr_debug(MOTO_STOWED_TAG fmt, ##args)
 
-static struct wakeup_source stowed_wake_lock;
+static struct wakeup_source *stowed_wake_lock;
 
 static int  moto_stowed_get_data(int *probability, int *status)
 {
@@ -106,7 +106,7 @@ static int moto_stowed_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_STOWED);
 	else if (event->flush_action == DATA_ACTION) {
-		__pm_wakeup_event(&stowed_wake_lock, msecs_to_jiffies(100));
+		__pm_wakeup_event(stowed_wake_lock, msecs_to_jiffies(100));
 		MOTO_STOWED_PR_ERR("%s : %d\n", __func__,event->gesture_data_t.probability);
 		ret=situation_data_report(ID_STOWED, event->gesture_data_t.probability);
 		MOTO_STOWED_LOG(" %d\n",ret);
@@ -142,6 +142,7 @@ static int moto_stowed_local_init(void)
 		goto exit_create_attr_failed;
 	}
 	//wakeup_source_init(&stowed_wake_lock, "moto_stowed_wake_lock");
+        stowed_wake_lock =  wakeup_source_register(NULL, "moto_stowed_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:
@@ -166,6 +167,9 @@ static int __init moto_stowed_init(void)
 
 static void __exit moto_stowed_exit(void)
 {
+        if (stowed_wake_lock)
+            wakeup_source_unregister(stowed_wake_lock);
+
 	MOTO_STOWED_LOG();
 }
 
