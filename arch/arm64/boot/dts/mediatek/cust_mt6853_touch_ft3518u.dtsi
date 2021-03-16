@@ -43,6 +43,7 @@
 	pinctrl-3 = <&ctp_pins_eint_output1>;
 	pinctrl-4 = <&ctp_pins_rst_output0>;
 	pinctrl-5 = <&ctp_pins_rst_output1>;
+	panel-supplier = "visionox";
 	status = "okay";
 };
 &pio {
