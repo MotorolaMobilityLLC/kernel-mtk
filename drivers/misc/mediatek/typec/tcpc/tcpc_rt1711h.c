@@ -1528,6 +1528,7 @@ static int rt1711_tcpcdev_init(struct rt1711_chip *chip, struct device *dev)
 	return 0;
 }
 
+#define LOGIC_ET7303_VID	0x6dcf
 #define RICHTEK_1711_VID	0x29cf
 #define RICHTEK_1711_PID	0x1711
 
@@ -1543,7 +1544,7 @@ static inline int rt1711h_check_revision(struct i2c_client *client)
 		return -EIO;
 	}
 
-	if (vid != RICHTEK_1711_VID) {
+	if ((vid != RICHTEK_1711_VID) && (vid != LOGIC_ET7303_VID)) {
 		pr_info("%s failed, VID=0x%04x\n", __func__, vid);
 		return -ENODEV;
 	}
