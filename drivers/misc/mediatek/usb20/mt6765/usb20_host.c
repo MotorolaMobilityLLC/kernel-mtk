@@ -62,12 +62,26 @@ static void do_register_otg_work(struct work_struct *data)
 static void mt_usb_host_connect(int delay);
 static void mt_usb_host_disconnect(int delay);
 
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+#ifdef CONFIG_MTK_CHARGER
+#include <charger_class.h>
+static struct charger_device *primary_charger;
+#endif
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+
 #include <mt-plat/mtk_boot_common.h>
 
 struct device_node		*usb_node;
 static int iddig_eint_num;
 static ktime_t ktime_start, ktime_end;
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+#else
 static struct regulator *reg_vbus;
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
 { .hw_ep_num = 1, .style = MUSB_FIFO_TX,
@@ -124,6 +138,20 @@ bool usb20_check_vbus_on(void)
 
 static void _set_vbus(int is_on)
 {
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+#ifdef CONFIG_MTK_CHARGER
+	if (!primary_charger) {
+		DBG(0, "vbus_init<%d>\n", vbus_on);
+
+		primary_charger = get_charger_by_name("primary_chg");
+		if (!primary_charger) {
+			DBG(0, "get primary charger device failed\n");
+			return;
+	}
+	}
+#endif
+#else
 	if (!reg_vbus) {
 		DBG(0, "vbus_init\n");
 		reg_vbus = regulator_get(mtk_musb->controller, "usb-otg-vbus");
@@ -132,6 +160,8 @@ static void _set_vbus(int is_on)
 			return;
 		}
 	}
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 
 	DBG(0, "op<%d>, status<%d>\n", is_on, vbus_on);
 	if (is_on && !vbus_on) {
@@ -139,7 +169,14 @@ static void _set_vbus(int is_on)
 		 * host mode correct used by PMIC
 		 */
 		vbus_on = true;
-
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+#ifdef CONFIG_MTK_CHARGER
+		charger_dev_enable_otg(primary_charger, true);
+  //ROG-2359 xuweijiang.wt, Modify, 20201217, change charger boost current
+		charger_dev_set_boost_current_limit(primary_charger, 1200000);
+#endif
+#else
 		if (regulator_set_voltage(reg_vbus, 5000000, 5000000))
 			DBG(0, "vbus regulator set voltage failed\n");
 
@@ -148,13 +185,22 @@ static void _set_vbus(int is_on)
 
 		if (regulator_enable(reg_vbus))
 			DBG(0, "vbus regulator enable failed\n");
-
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 	} else if (!is_on && vbus_on) {
 		/* disable VBUS 1st then update flag
 		 * to make host mode correct used by PMIC
 		 */
 		vbus_on = false;
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#if defined(CONFIG_CHARGER_PD_ET7303)
+#ifdef CONFIG_MTK_CHARGER
+		charger_dev_enable_otg(primary_charger, false);
+#endif
+#else
 		regulator_disable(reg_vbus);
+#endif
+//EKELLIS-5, ET&RT logic ic bringup, for ET7303
 	}
 }
 
