@@ -50,7 +50,7 @@
 #define MOTO_GLANCE_PR_ERR(fmt, args...)    pr_err(MOTO_GLANCE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define MOTO_GLANCE_LOG(fmt, args...)    pr_debug(MOTO_GLANCE_TAG fmt, ##args)
 
-static struct wakeup_source moto_glance_wake_lock;
+static struct wakeup_source *moto_glance_wake_lock;
 
 static int  moto_glance_get_data(int *probability, int *status)
 {
@@ -105,7 +105,7 @@ static int moto_glance_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_MOT_GLANCE);
 	else if (event->flush_action == DATA_ACTION) {
-		__pm_wakeup_event(&moto_glance_wake_lock, msecs_to_jiffies(100));
+		__pm_wakeup_event(moto_glance_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_MOT_GLANCE);
 		MOTO_GLANCE_PR_ERR("event = %x \n",event->gesture_data_t.probability);
 		situation_data_report(ID_MOT_GLANCE, event->gesture_data_t.probability);
@@ -141,6 +141,7 @@ static int moto_glance_local_init(void)
 		goto exit_create_attr_failed;
 	}
 	//wakeup_source_init(&moto_glance_wake_lock, "moto_glance_wake_lock");
+        moto_glance_wake_lock = wakeup_source_register(NULL, "moto_glance_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:
@@ -165,6 +166,9 @@ static int __init moto_glance_init(void)
 
 static void __exit moto_glance_exit(void)
 {
+        if (moto_glance_wake_lock)
+            wakeup_source_unregister(moto_glance_wake_lock);
+
 	MOTO_GLANCE_LOG();
 }
 
