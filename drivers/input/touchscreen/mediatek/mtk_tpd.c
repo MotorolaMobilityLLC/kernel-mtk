@@ -100,6 +100,7 @@ void tpd_get_dts_info(void)
 {
 	struct device_node *node1 = NULL;
 	int key_dim_local[16] = {0}, i = 0;
+	int ret = 0;
 
 	TPD_DMESG("enter\n");
 	node1 = of_find_matching_node(node1, touch_of_match);
@@ -182,6 +183,10 @@ void tpd_get_dts_info(void)
 		of_property_read_u32(node1,
 			"tpd-rst-ext-gpio-num",
 			&tpd_dts_data.rst_ext_gpio_num);
+		of_property_read_string(node1, "panel-supplier",
+			&tpd_dts_data.panel_supplier);
+		if (ret < 0)
+			tpd_dts_data.panel_supplier = NULL;
 
 		tpd_dts_data.tpd_panel_match =
 			of_property_read_bool(node1, "tpd-panel-match");
