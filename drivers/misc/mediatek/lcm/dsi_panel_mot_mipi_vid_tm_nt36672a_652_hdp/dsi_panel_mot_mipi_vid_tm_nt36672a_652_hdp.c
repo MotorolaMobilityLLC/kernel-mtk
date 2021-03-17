@@ -43,10 +43,10 @@
 #define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #endif
 
-#define LCM_ID_0			0x10
-#define LCM_ID_1 			0x05
-#define LCM_ID_2	 		0x06
-#define LCM_ID_3 			0x92
+#define LCM_ID_0			0x01
+#define LCM_ID_1 			0x01
+#define LCM_ID_2	 		0x72
+#define LCM_ID_3 			0x91
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
@@ -124,7 +124,6 @@ struct LCM_setting_table {
 };
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
-	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
 	{0x28, 0, {} },
 	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0, {} },
@@ -133,23 +132,24 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting_vdo[] = {
-	{0xFF,3,{0x78,0x07,0x06}}, //Page0
-	{0xCD,1,{0x68}},
-	{0xFF,3,{0x78,0x07,0x00}}, //Page0
-	{0x53,1,{0x2C}},
-	{0x51,2,{0x00,0x00}},
-	{0x55,1,{0x03}}, 	//0x02 ui 	0x03 mv 	0x00 off
+	{0xFF,1,{0xF0}},
+	{0xFB,1,{0x01}},
+	{0xA2,1,{0x00}},
+	{0xFF,1,{0x10}},
+	{0xFB,1,{0x01}},
+	{0x3B,5,{0x03,0x14,0x36,0x04,0x04}},
+	{0x35,1,{0x00}},
+	{0x51,1,{0x00}},
+	{0x53,1,{0x24}},
+	{0x55,1,{0x00}},
 	{0x11,1,{0x00}},
 	{REGFLAG_DELAY, 120, {}},
 	{0x29,1,{0x00}},
-	{REGFLAG_DELAY, 20, {}},
-	{0x35,1,{0x00}}
+	{REGFLAG_DELAY, 20, {}}
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
-	{ 0x51, 0x02, {0x07, 0xFF} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+	{ 0x51, 0x01, {0xFF} }
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -270,15 +270,15 @@ static void lcm_init_power(void)
 {
 	LCM_LOGI("[LCM] lcm_init_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
-	MDELAY(5);
-	lcm_set_bias_init(18,2);
+	MDELAY(1);
+	lcm_set_bias_init(15,1);
 	MDELAY(10);
 }
 
 static void lcm_suspend_power(void)
 {
 	LCM_LOGI("[LCM] lcm_suspend_power\n");
-	lcm_set_bias_pin_disable(2);
+	lcm_set_bias_pin_disable(1);
 	MDELAY(5);
 	SET_RESET_PIN(0);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT0);
@@ -289,8 +289,8 @@ static void lcm_resume_power(void)
 {
 	LCM_LOGI("[LCM] lcm_resume_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
-	MDELAY(5);
-	lcm_set_bias_pin_enable(18,2);
+	MDELAY(1);
+	lcm_set_bias_pin_enable(15,1);
 	MDELAY(10);
 }
 
@@ -300,9 +300,9 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	SET_RESET_PIN(0);
-	MDELAY(1);
+	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(10);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -328,16 +328,16 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	SET_RESET_PIN(0);
-	MDELAY(1);
+	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(10);
 
 	array[0] = 0x00043700;	// read id return four byte
 	dsi_set_cmdq(array, 1, 1);
 
 	read_reg_v2(0xA1, buffer, 4);
 
-	LCM_LOGI("%s,ili7806s_id=0x%02x%02x%02x%02x\n", __func__,buffer[0], buffer[1],buffer[2],buffer[3]);
+	LCM_LOGI("%s,nt36672a_id=0x%02x%02x%02x%02x\n", __func__,buffer[0], buffer[1],buffer[2],buffer[3]);
 
 	if (LCM_ID_0 == buffer[0] && LCM_ID_1 == buffer[1] && LCM_ID_2 == buffer[2] && LCM_ID_3 == buffer[3])
 		return 1;
@@ -423,16 +423,18 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-		// set 12bit
-		unsigned int bl_lvl;
-		bl_lvl =(2047 * level)/255;
-		LCM_LOGI("%s,ili7806s backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
-		//for 12bit
-		bl_level[1].para_list[0] = (bl_lvl&0xF00)>>8;
-		bl_level[1].para_list[1] = (bl_lvl&0xFF);
-		LCM_LOGI("%s,ili7806s_txd : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
+	// for 8bit
+	unsigned int bl_lvl;
+	if(level > 255 || level < 0){
+		bl_lvl = 0;
+		LCM_LOGI("%s,nt36672a backlight: level error\n", __func__);
+	}else
+		bl_lvl = level;
+	// set 8bit
+	bl_level[0].para_list[0] = (bl_lvl&0xFF);
+	LCM_LOGI("%s,nt36672a_TM : bl_level[0].para_list[0]=0x%x\n",__func__,bl_level[0].para_list[0]);
 
-		push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
 /*
@@ -510,28 +512,28 @@ static struct LCM_setting_table set_cabc[] = {
 static int cabc_status = 0;
 static void lcm_set_cabc_cmdq(void *handle, unsigned int enable)
 {
-	pr_err("[ili7806s] cabc set to %d\n", enable);
+	pr_err("[nt36672a] cabc set to %d\n", enable);
 	if (enable==1){
 		set_cabc[1].para_list[0]=0x02;
 		push_table(handle, set_cabc, sizeof(set_cabc) / sizeof(struct LCM_setting_table), 1);
-		pr_err("[ili7806s] cabc set enable, set_cabc[0x%2x]=%x \n",set_cabc[1].cmd,set_cabc[1].para_list[0]);
+		pr_err("[nt36672a] cabc set enable, set_cabc[0x%2x]=%x \n",set_cabc[1].cmd,set_cabc[1].para_list[0]);
 	}else if (enable == 0){
 		set_cabc[1].para_list[0]=0x00;
 		push_table(handle, set_cabc, sizeof(set_cabc) / sizeof(struct LCM_setting_table), 1);
-		pr_err("[ili7806s] cabc set disable, set_cabc[0x%2x]=%x \n",set_cabc[1].cmd,set_cabc[1].para_list[0]);
+		pr_err("[nt36672a] cabc set disable, set_cabc[0x%2x]=%x \n",set_cabc[1].cmd,set_cabc[1].para_list[0]);
 	}
 	cabc_status = enable;
 }
 
 static void lcm_get_cabc_status(int *status)
 {
-	pr_err("[ili7806s] cabc get to %d\n", cabc_status);
+	pr_err("[nt36672a] cabc get to %d\n", cabc_status);
 	*status = cabc_status;
 }
 */
 
-struct LCM_DRIVER mipi_mot_vid_txd_ili7806s_hdp_652_lcm_drv = {
-	.name = "mipi_mot_vid_txd_ili7806s_hdp_652",
+struct LCM_DRIVER mipi_mot_vid_tm_nt36672a_hdp_652_lcm_drv = {
+	.name = "mipi_mot_vid_tm_nt36672a_hdp_652",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
