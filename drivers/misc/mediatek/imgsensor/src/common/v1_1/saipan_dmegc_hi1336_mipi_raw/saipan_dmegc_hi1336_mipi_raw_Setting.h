@@ -1123,60 +1123,55 @@ kal_uint16 addr_data_pair_video_saipan_dmegc_hi1336[] = {
 kal_uint16 addr_data_pair_hs_video_saipan_dmegc_hi1336[] = {
           /********************************
 	*hs_video setting
-	*640x480@120fps[720Mbps]
+	*1280x720@120fps[720Mbps]
 	*****************************/
-	0x3250, 0xa470, //sreg8 - RAMP,B[15:10]:d2a_ramp_rng_ctrl
+	0x3250, 0xa060, //sreg8 - RAMP,B[15:10]:d2a_ramp_rng_ctrl
 	0x0730, 0x770f, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
-	0x0732, 0xe4b0, //pll_cfg_mipi_b b13-11:100_isp_div1(1/5) b10-8:100_mipi_div1(1/6) b1-0:00_mipi_div2(1/1)
-	0x1118, 0x0072, //LSC r_win_y B[11]: Bit8 of y offset in start block when cropping. B[10:8] y start index of block when cropping. B[7:0] y offset in start block when cropping.
+	0x0732, 0xe2b0, //pll_cfg_mipi_b b13-11:100_isp_div1(1/5) b10-8:010_mipi_div1(1/3) b1-0:00_mipi_div2(1/1)
+	0x1118, 0x01a8, //LSC r_win_y B[11]: Bit8 of y offset in start block when cropping. B[10:8] y start index of block when cropping. B[7:0] y offset in start block when cropping.
 	0x1200, 0x011f, //PDPC BYPASS : Dyna-DPC ON, PDEN flag OFF, PD-DPC ON
 	0x1204, 0x1c01, //PDPC DC Counting OFF, PD Around BYPASS OFF
 	0x1240, 0x0100, //pdpc_pd_cnt_max_value
-	0x0b20, 0x8600, //HBIN mode
-	0x0f00, 0x1400, //fmt ctrl
-	0x103e, 0x0500, //mipi_tx_col_read_ctrl
-	0x1020, 0xc102, //mipi_exit_seq, tlpx
-	0x1022, 0x0209, //mipi_tclk_prepare, tclk_zero
-	0x1024, 0x0303, //mipi_tclk_pre, ths_prepare
-	0x1026, 0x0305, //mipi_ths_zero, ths_trail
-	0x1028, 0x0903, //mipi_tclk_post, tclk_trail
-	0x102a, 0x0404, //mipi_texit, tsync
-	0x102c, 0x0400, //mipi_tpd_sync
+	0x0b20, 0x8300, //HBIN mode
+	0x0f00, 0x0800, //fmt ctrl
+	0x1002, 0xc319,
+	0x103e, 0x0200, //mipi_tx_col_read_ctrl
+	0x1020, 0xc104, //mipi_exit_seq, tlpx
+	0x1022, 0x0410, //mipi_tclk_prepare, tclk_zero
+	0x1024, 0x0304, //mipi_tclk_pre, ths_prepare
+	0x1026, 0x0507, //mipi_ths_zero, ths_trail
+	0x1028, 0x0d05, //mipi_tclk_post, tclk_trail
+	0x102a, 0x0704, //mipi_texit, tsync
+	0x102c, 0x1400, //mipi_tpd_sync
 	0x1010, 0x07d0, //mipi_vblank_delay
-	0x1012, 0x0040, //mipi_ch0_hblank_delay
-	0x1014, 0xffea, //mipi_hblank_short_delay1
-	0x1016, 0xffea, //mipi_hblank_short_delay2
-	0x101a, 0xffea, //mipi_pd_hblank_delay
-	0x1038, 0x0000, //mipi_virtual_channel_ctrl
-	0x1042, 0x0008, //mipi_pd_sep_ctrl_h, mipi_pd_sep_ctrl_l
-	0x1048, 0x0080, //mipi_pd_max_col_size
-	0x1044, 0x0100, //mipi_pd_col_size
-	0x1046, 0x0004, //mipi_pd_row_size
+	0x1012, 0x009c, //mipi_ch0_hblank_delay
+	0x1014, 0x0013, //mipi_hblank_short_delay1
+	0x1016, 0x0013, //mipi_hblank_short_delay2
+	0x101a, 0x0013, //mipi_pd_hblank_delay
 	0x0404, 0x0008, //x addr start active
 	0x0406, 0x1087, //x addr end active
-	0x0220, 0x000c, //y addr start fobp
-	0x022a, 0x0013, //y addr end fobp
+	0x0220, 0x0008, //y addr start fobp
+	0x022a, 0x0017, //y addr end fobp
 	0x0222, 0x0c80, //y addr start dummy
 	0x022c, 0x0c89, //y addr end dummy
-	0x0224, 0x009c, //y addr start active
-	0x022e, 0x0bed, //y addr end active
-	0x0f04, 0x0020, //fmt x cropping
+	0x0224, 0x020a, //y addr start active
+	0x022e, 0x0a83, //y addr end active
+	0x0f04, 0x0040, //fmt x cropping
 	0x0f06, 0x0000, //fmt y cropping
-	0x023a, 0x6666, //y dummy size
-	0x0234, 0x7755, //y even/odd inc tobp
-	0x0238, 0x7755, //y even/odd inc active
+	0x023a, 0x3333, //y dummy size
+	0x0234, 0x3333, //y even/odd inc tobp
+	0x0238, 0x3333, //y even/odd inc active
 	0x0246, 0x0020, //y read dummy address
-	0x020a, 0x0339, //coarse integ time
+	0x020a, 0x033c, //coarse integ time
 	0x021c, 0x0008, //coarse integ time short for iHDR
 	0x0206, 0x05dd, //line length pck
 	0x020e, 0x0340, //frame length lines
-	0x0b12, 0x0280, //x output size
-	0x0b14, 0x01e0, //y output size
-	0x0204, 0x0200, //d2a_row_binning_en
+	0x0b12, 0x0500, //x output size
+	0x0b14, 0x02d0, //y output size
+	0x0204, 0x0000, //d2a_row_binning_en
 	0x041c, 0x0048, //pdaf patch start x-address
 	0x041e, 0x1047, //pdaf patch end x-address
-	0x0b04, 0x037e, //isp enable
-	0x027e, 0x0100, //tg enable
+	0x0b04, 0x037c, //isp enable
 };
 /*********************************slim video setting*****************************/
 kal_uint16 addr_data_pair_slim_video_saipan_dmegc_hi1336[] = {
