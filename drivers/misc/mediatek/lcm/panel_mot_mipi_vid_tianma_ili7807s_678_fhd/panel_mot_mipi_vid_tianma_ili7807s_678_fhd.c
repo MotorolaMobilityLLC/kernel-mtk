@@ -23,6 +23,8 @@
 #include <linux/i2c-dev.h>
 #include "lcm_i2c.h"
 
+#include "mtkfb_params.h"
+
 static struct LCM_UTIL_FUNCS lcm_util;
 
 #define SET_RESET_PIN(v) (lcm_util.set_reset_pin(v))
@@ -583,10 +585,31 @@ static struct LCM_setting_table init_setting_cmd[] = {
 	{0x41, 1, {0x44} }, 		// 60hz TSVD position
 	{0x4B, 1, {0x1F} },
 
+	{0xFF, 3, {0x78, 0x07, 0x03} },	//pwm 12bit, 28.32k
+	{0x83, 1, {0x20} },
+	{0x84, 1, {0x00} },
+
+	{0xFF, 3, {0x78, 0x07, 0x06} },
+	{0x08, 1, {0x20} },
+
 	{0xFF, 3, {0x78, 0x07, 0x00} },	//Page0
+	{0x51, 2, {0x0c, 0xcc}},
+	{0x53, 1, {0x2c} },
+	{0x55, 1, {0x01} },	//CABC:UI
 	{0x29, 1, {0x00} },
 	{REGFLAG_DELAY, 20, {} },
 	{0x35, 1, {0x00} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting[] = {
+	{0x55, 1, {0x01} },	//UI
+	{0x55, 1, {0x03} },	//MV
+	{0x55, 1, {0x00} },	//DISABLE
+};
+
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x0C, 0XCC} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -718,8 +741,30 @@ static void lcm_setbacklight(/*void *handle, */unsigned int level)
 	return;
 }
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	pr_info("%s,ili7807s cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			break;
+		case PARAM_CABC:
+			push_table(handle, &lcm_cabc_setting[*lcm_value], 1, 1);
+			break;
+		default:
+			pr_err("%s,ili7807s cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_info("%s,ili7807s cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+
+}
+
 struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv = {
 	.name = "mipi_mot_vid_tianma_ili7807s_fhd_678",
+	.supplier = "tianma",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
@@ -730,4 +775,5 @@ struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.set_backlight = lcm_setbacklight,
 //	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+        .set_lcm_cmd = lcm_set_cmdq,
 };
