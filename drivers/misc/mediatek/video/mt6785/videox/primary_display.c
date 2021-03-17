@@ -11153,3 +11153,12 @@ void _primary_display_fps_change_callback(void)
 #endif
 
 
+char* primary_display_get_lcm_supplier(void)
+{
+	return (char *)pgc->plcm->drv->supplier ? (char *)pgc->plcm->drv->supplier  : "null";
+}
+
+char* primary_display_get_lcm_name(void)
+{
+	return (char *)pgc->plcm->drv->name ? (char *)pgc->plcm->drv->name  : "null";
+}
