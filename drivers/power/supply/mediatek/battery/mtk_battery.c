@@ -514,7 +514,7 @@ static int battery_get_property(struct power_supply *psy,
 			* 1000 / 100;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		val->intval = data->BAT_batt_vol * 1000;
+		val->intval = battery_get_bat_voltage()* 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = gm.tbat_precise;
