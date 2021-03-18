@@ -130,6 +130,11 @@
 
 
 /* SENSOR CHIP VERSION */
+//add ellis sensor id begin
+#define MOT_ELLIS_HI1336_SENSOR_ID 0x1336
+#define MOT_ELLIS_SC500CS_SENSOR_ID 0xee27
+#define MOT_ELLIS_OV02B1B_SENSOR_ID 0x002b
+//add ellis sensor id end
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
 #define IMX499_SENSOR_ID                        0x0499
@@ -603,7 +608,11 @@
 #define SENSOR_DRVNAME_IMX355_MIPI_RAW          "imx355_mipi_raw"
 #define SENSOR_DRVNAME_OV13B10_MIPI_RAW         "ov13b10_mipi_raw"
 #define SENSOR_DRVNAME_OV02B10_MIPI_RAW         "ov02b10_mipi_raw"
-
+//add ellis sensor drvname begin
+#define SENSOR_DRVNAME_MOT_ELLIS_HI1336_MIPI_RAW "mot_ellis_hi1336_mipi_raw"
+#define SENSOR_DRVNAME_MOT_ELLIS_SC500CS_MIPI_RAW "mot_ellis_sc500cs_mipi_raw"
+#define SENSOR_DRVNAME_MOT_ELLIS_OV02B1B_MIPI_RAW "mot_ellis_ov02b1b_mipi_raw"
+//add ellis sensor drvname end
 /******************************************************************************
  *
  ******************************************************************************/
