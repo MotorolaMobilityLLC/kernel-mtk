@@ -147,4 +147,7 @@ static void mot_check_af_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_
 static void mot_check_awb_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_lsc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_pdaf_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+
+extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
+	u8 *a_pRecvData, u16 a_sizeRecvData,u16 i2cId);
 #endif
