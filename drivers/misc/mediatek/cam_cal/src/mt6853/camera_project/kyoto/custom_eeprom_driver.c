@@ -78,6 +78,15 @@ static struct stCAM_CAL_LIST_STRUCT *get_list(struct CAM_CAL_SENSOR_INFO *sinfo)
 	return plist;
 }
 
+static kal_uint16 read_cmos_sensor(kal_uint8 eeprom_i2c_addr, kal_uint32 addr)
+{
+	kal_uint16 get_byte = 0;
+	char pusendcmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+
+	iReadRegI2C(pusendcmd, 2, (u8 *)&get_byte, 1, eeprom_i2c_addr);
+	return get_byte;
+}
+
 static unsigned int read_region(struct EEPROM_DRV_FD_DATA *pdata,
 				unsigned char *buf,
 				unsigned int offset, unsigned int size)
@@ -784,3 +793,72 @@ int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_i
 	filp_close(fdata,NULL);
 	return 0;
 }
+
+int get_ov_cross_talk_data(uint8_t eeprom_i2c_addr, uint32_t cross_talk_data_start_addr,
+				uint32_t cross_talk_data_size, ov_cross_talk_cal_t *p_cross_talk_data)
+{
+	int i;
+	uint8_t cross_talk_data[OV_CROSS_TALK_GROUP_SIZE] = {0};
+
+	memset(p_cross_talk_data, 0, sizeof(ov_cross_talk_cal_t));
+
+	for (i = 0; i < cross_talk_data_size; i++)
+	{
+		cross_talk_data[i]			   = read_cmos_sensor(eeprom_i2c_addr, cross_talk_data_start_addr + i);
+		p_cross_talk_data->cross_talk_data[i].addr = 0x5A40 + i;
+		p_cross_talk_data->cross_talk_data[i].data = cross_talk_data[i];
+	}
+
+	if (i == OV_CROSS_TALK_GROUP_SIZE)
+	{
+		p_cross_talk_data->cross_talk_crc[0] = read_cmos_sensor(eeprom_i2c_addr, cross_talk_data_start_addr + i);
+		p_cross_talk_data->cross_talk_crc[1] = read_cmos_sensor(eeprom_i2c_addr, cross_talk_data_start_addr + i + 1);
+	}
+
+	p_cross_talk_data->height[0].addr 		= 0x5A1A; //H 6528
+	p_cross_talk_data->height[0].data 		= 0x19;
+	p_cross_talk_data->height[1].addr 		= 0x5A1B;
+	p_cross_talk_data->height[1].data 		= 0x80;
+
+	p_cross_talk_data->width[0].addr  		= 0x5A1C; //W 4896
+	p_cross_talk_data->width[0].data  		= 0x13;
+	p_cross_talk_data->width[1].addr  		= 0x5A1D;
+	p_cross_talk_data->width[1].data  		= 0x20;
+
+	p_cross_talk_data->cross_talk_enable[0].addr  	= 0x5000; //bit[3] = 1
+	p_cross_talk_data->cross_talk_enable[0].data  	= 0x5d;
+	p_cross_talk_data->cross_talk_enable[1].addr  	= 0x5a12; //bt[0]  = 1
+	p_cross_talk_data->cross_talk_enable[1].data  	= 0x0f;
+
+	if (!eeprom_util_check_crc16(cross_talk_data, cross_talk_data_size,
+		convert_crc(p_cross_talk_data->cross_talk_crc)))
+	{
+		LOG_INF("Cross Talk Data CRC Fail!");
+		p_cross_talk_data->is_valid = 0;
+	}
+	else
+	{
+		LOG_INF("Cross Talk Data CRC Pass");
+		p_cross_talk_data->is_valid = 1;
+	}
+
+#if 0 //for debug
+	LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->height[0].addr, 			p_cross_talk_data->height[0].data);
+	LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->height[1].addr, 			p_cross_talk_data->height[1].data);
+	LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->width[0].addr,  			p_cross_talk_data->width[0].data);
+	LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->width[1].addr,  			p_cross_talk_data->width[1].data);
+	LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->cross_talk_enable[0].addr, 	p_cross_talk_data->cross_talk_enable[0].data);
+	LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->cross_talk_enable[1].addr, 	p_cross_talk_data->cross_talk_enable[1].data);
+
+	LOG_INF("******* cross talk data *******");
+	for (i = 0; i < cross_talk_data_size; i++)
+		LOG_INF("0x%04x: 0x%02x", p_cross_talk_data->cross_talk_data[i].addr, p_cross_talk_data->cross_talk_data[i].data);
+	LOG_INF("******* cross talk data *******");
+
+	LOG_INF("CRC: 0x%04x", convert_crc(p_cross_talk_data->cross_talk_crc));
+#endif
+
+	return 1;
+}
+
+
