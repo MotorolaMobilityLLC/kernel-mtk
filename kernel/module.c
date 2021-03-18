@@ -4519,7 +4519,7 @@ int save_modules(char *mbuf, int mbufsize)
 	unsigned long text_addr = 0;
 	unsigned long init_addr = 0;
 	int i, search_nm;
-
+	static int loop = 0;
 	if (mbuf == NULL || mbufsize <= 0) {
 		pr_info("mrdump: module info buffer wrong(sz:%d)\n", mbufsize);
 		return 0;
@@ -4527,6 +4527,8 @@ int save_modules(char *mbuf, int mbufsize)
 
 	memset(mbuf, '\0', mbufsize);
 	sz += snprintf(mbuf + sz, mbufsize - sz, "Modules linked in:");
+	/* Most callers should already have preempt disabled, but make sure */
+	preempt_disable();
 	list_for_each_entry_rcu(mod, &modules, list) {
 		if (mod->state == MODULE_STATE_UNFORMED)
 			continue;
@@ -4539,10 +4541,17 @@ int save_modules(char *mbuf, int mbufsize)
 		text_addr = (unsigned long)mod->core_layout.base;
 		init_addr = (unsigned long)mod->init_layout.base;
 		search_nm = 2;
+
 		if (!mod->sect_attrs) {
 			pr_cont("mrdump:module %s was interrupt when init,just ignore it here\n",mod->name);
 			continue;
 		}
+
+		if(mod->sect_attrs == NULL) {
+			pr_cont("save_modules : %s sect_attrs is NULL    %d", mod->name,loop);
+			continue;
+		}
+		loop++;
 		for (i = 0; i < mod->sect_attrs->nsections; i++) {
 			if (!strcmp(mod->sect_attrs->attrs[i].battr.attr.name, ".text")) {
 				text_addr = mod->sect_attrs->attrs[i].address;
@@ -4565,6 +4574,7 @@ int save_modules(char *mbuf, int mbufsize)
 				mod->init_layout.size,
 				module_flags(mod, buf));
 	}
+	preempt_enable();
 	if (last_unloaded_module[0] && sz < mbufsize)
 		sz += snprintf(mbuf + sz, mbufsize - sz, " [last unloaded: %s]",
 				last_unloaded_module);
