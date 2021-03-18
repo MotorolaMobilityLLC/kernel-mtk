@@ -488,6 +488,22 @@ typedef struct {
 	mot_calibration_mnf_t mnf_cal_data;
 } mot_calibration_info_t;
 
+#define OV_CROSS_TALK_GROUP_SIZE   288
+
+typedef struct {
+       MUINT16 addr;
+       MUINT16 data;
+} ov_cross_talk_addr_data_t;
+
+typedef struct {
+       ov_cross_talk_addr_data_t height[2];
+       ov_cross_talk_addr_data_t width[2];
+       ov_cross_talk_addr_data_t cross_talk_data[OV_CROSS_TALK_GROUP_SIZE];
+       ov_cross_talk_addr_data_t cross_talk_enable[2];
+       MUINT8 cross_talk_crc[2];
+       MUINT8 is_valid;
+} ov_cross_talk_cal_t;
+
 struct ACDK_SENSOR_RESOLUTION_INFO_STRUCT {
 	MUINT16 SensorPreviewWidth;
 	MUINT16 SensorPreviewHeight;
