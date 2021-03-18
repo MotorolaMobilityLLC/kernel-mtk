@@ -577,13 +577,13 @@ int BattThermistorConverTemp(struct mtk_battery *gm, int Res)
 	ptable = gm->tmp_table;
 	if (Res >= ptable[0].TemperatureR) {
 		TBatt_Value = -400;
-	} else if (Res <= ptable[20].TemperatureR) {
-		TBatt_Value = 600;
+	} else if (Res <= ptable[22].TemperatureR) {
+		TBatt_Value = 700;
 	} else {
 		RES1 = ptable[0].TemperatureR;
 		TMP1 = ptable[0].BatteryTemp;
 
-		for (i = 0; i <= 20; i++) {
+		for (i = 0; i <= 22; i++) {
 			if (Res >= ptable[i].TemperatureR) {
 				RES2 = ptable[i].TemperatureR;
 				TMP2 = ptable[i].BatteryTemp;
@@ -2717,7 +2717,9 @@ int set_shutdown_cond(struct mtk_battery *gm, int shutdown_cond)
 		sdc->shutdown_status.is_overheat = true;
 		mutex_unlock(&sdc->lock);
 		bm_debug("[%s]OVERHEAT shutdown!\n", __func__);
+	#ifdef MTK_BASE
 		kernel_power_off();
+	#endif
 		break;
 	case SOC_ZERO_PERCENT:
 		if (sdc->shutdown_status.is_soc_zero_percent != true) {
