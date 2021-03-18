@@ -87,7 +87,9 @@ static unsigned int mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = {
 	48000, 48000, 48000};
 #define MAX_DL_SAMPLE_RATE (192000)
 #define MAX_UL_SAMPLE_RATE (192000)
-//static DEFINE_MUTEX(Ana_Ctrl_Mutex);
+#ifdef CONFIG_SND_HAC_AW8155
+static DEFINE_MUTEX(Ana_Ctrl_Mutex);
+#endif
 static DEFINE_MUTEX(Ana_buf_Ctrl_Mutex);
 static DEFINE_MUTEX(Ana_Clk_Mutex);
 static DEFINE_MUTEX(Ana_Power_Mutex);
@@ -4368,6 +4370,37 @@ static int apply_n12db_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_SND_HAC_AW8155
+static int HAC_Amp_Get(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] =
+		mCodec_data->mAudio_Ana_DevicePower
+			[AUDIO_ANALOG_DEVICE_OUT_RECEIVER_HAC];
+	return 0;
+}
+
+static int HAC_Amp_Set(struct snd_kcontrol *kcontrol,
+			  struct snd_ctl_elem_value *ucontrol)
+{
+	mutex_lock(&Ana_Ctrl_Mutex);
+
+	if (ucontrol->value.integer.value[0] == true) {
+		HAC_Amp_Change(true);
+		mCodec_data->mAudio_Ana_DevicePower
+			[AUDIO_ANALOG_DEVICE_OUT_RECEIVER_HAC] =
+			ucontrol->value.integer.value[0];
+	} else if (ucontrol->value.integer.value[0] == false) {
+		mCodec_data->mAudio_Ana_DevicePower
+			[AUDIO_ANALOG_DEVICE_OUT_RECEIVER_HAC] =
+			ucontrol->value.integer.value[0];
+		HAC_Amp_Change(false);
+	}
+	mutex_unlock(&Ana_Ctrl_Mutex);
+	return 0;
+}
+#endif
+
 static int hp_plugged;
 static int hp_plugged_in_get(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
@@ -4420,6 +4453,9 @@ static const struct soc_enum Audio_DL_Enum[] = {
 			    dctrim_control_state),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(apply_n12db_setting),
 			    apply_n12db_setting),
+#ifdef CONFIG_SND_HAC_AW8155
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
+#endif
 };
 static const struct snd_kcontrol_new mt6357_snd_controls[] = {
 	SOC_ENUM_EXT("Audio_Amp_R_Switch", Audio_DL_Enum[0], Audio_AmpR_Get,
@@ -4473,6 +4509,10 @@ static const struct snd_kcontrol_new mt6357_snd_controls[] = {
 		     hp_plugged_in_get, hp_plugged_in_set),
 	SOC_ENUM_EXT("Apply_N12DB_Gain", Audio_DL_Enum[14],
 		     apply_n12db_get, apply_n12db_set),
+#ifdef CONFIG_SND_HAC_AW8155
+	SOC_ENUM_EXT("HAC_Amp_Switch", Audio_DL_Enum[15], HAC_Amp_Get,
+		     HAC_Amp_Set),
+#endif
 };
 void SetMicPGAGain(void)
 {

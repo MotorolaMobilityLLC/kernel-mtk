@@ -68,4 +68,9 @@ int AudDrv_GPIO_RCVSPK_Select(int bEnable);
 int AudDrv_GPIO_HPDEPOP_Select(int bEnable);
 
 int audio_drv_gpio_aud_clk_pull(bool high);
+
+#ifdef CONFIG_SND_HAC_AW8155
+int HAC_Amp_Change(int bEnable);
+#endif
+
 #endif
