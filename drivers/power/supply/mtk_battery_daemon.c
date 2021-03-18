@@ -3736,15 +3736,15 @@ unsigned int TempConverBattThermistor(struct mtk_battery *gm, int temp)
 	ptable = gm->tmp_table;
 
 
-	if (temp >= ptable[20].BatteryTemp) {
-		TBatt_R_Value = ptable[20].TemperatureR;
+	if (temp >= ptable[22].BatteryTemp) {
+		TBatt_R_Value = ptable[22].TemperatureR;
 	} else if (temp <= ptable[0].BatteryTemp) {
 		TBatt_R_Value = ptable[0].TemperatureR;
 	} else {
 		RES1 = ptable[0].TemperatureR;
 		TMP1 = ptable[0].BatteryTemp;
 
-		for (i = 0; i <= 20; i++) {
+		for (i = 0; i <= 22; i++) {
 			if (temp <= ptable[i].BatteryTemp) {
 				RES2 = ptable[i].TemperatureR;
 				TMP2 = ptable[i].BatteryTemp;
