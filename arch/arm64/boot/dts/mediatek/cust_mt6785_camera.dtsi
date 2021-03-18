@@ -96,6 +96,19 @@
 			output-high;
 		};
 	};
+	camera0_vcamaf_off: camera0_vcamaf_output_low@gpio21 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera0_vcamaf_on: camera0_vcamaf_output_high@gpio21 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			output-high;
+		};
+	};
 /* lisbon: gpio12 is set to irq for sar sensor */
 /*
 	camera0_vcamd_off: camera0_vcamd_output_low@gpio12 {
