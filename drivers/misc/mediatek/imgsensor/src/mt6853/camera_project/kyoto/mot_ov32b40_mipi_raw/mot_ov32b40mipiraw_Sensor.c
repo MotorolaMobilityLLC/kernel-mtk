@@ -43,8 +43,14 @@
 
 static const char *ov32b40_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_FRONT_DATA_PATH};
 
+static ov_cross_talk_cal_t ov_cross_talk_data = {{0}};
+
 static mot_calibration_info_t ov32b40_cal_info = {0};
+
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
+
+int get_ov_cross_talk_data(uint8_t eeprom_i2c_addr, uint32_t cross_talk_data_start_addr,
+				uint32_t cross_talk_data_size, ov_cross_talk_cal_t *p_cross_talk_data);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -385,7 +391,7 @@ static kal_int32 get_sensor_temperature(void)
 
 static void set_dummy(void)
 {
-	LOG_INF("dummyline = %d, dummypixels = %d\n",	imgsensor.dummy_line, imgsensor.dummy_pixel);
+	LOG_DEBUG("dummyline = %d, dummypixels = %d\n",	imgsensor.dummy_line, imgsensor.dummy_pixel);
 	write_cmos_sensor_8(0x380c, imgsensor.line_length >> 8);
 	write_cmos_sensor_8(0x380d, imgsensor.line_length & 0xFF);
 	write_cmos_sensor_8(0x380e, imgsensor.frame_length >> 8);
@@ -644,6 +650,34 @@ static void custom2_setting(void)
 	LOG_INF("X");
 }
 
+static void write_cross_talk_data(void)
+{
+	uint16_t write_table[(OV_CROSS_TALK_GROUP_SIZE + 6)*2] = {0};
+
+	LOG_INF("E\n");
+
+	memcpy(write_table, &ov_cross_talk_data.height[0].addr, sizeof(write_table));
+
+#if 0 //for debug
+	for (i = 0; i < sizeof(write_table)/sizeof(uint16_t); i+=2)
+		LOG_INF("0x%04x: 0x%02x", write_table[i], write_table[i+1]);
+
+	LOG_INF("write_table[586]=0x%04x: write_table[587]=0x%02x", write_table[586], write_table[587]);
+#endif
+
+	if (ov_cross_talk_data.is_valid != 1)
+	{
+		LOG_ERR("cross talk data is not valid, applied fail.");
+		return;
+	}
+
+	table_write_cmos_sensor(write_table,
+		sizeof(write_table)/sizeof(uint16_t));
+
+	LOG_INF("apply cross talk calibration data success.");
+	LOG_INF("X");
+}
+
 static void custom3_setting(void)
 {
 	LOG_INF("E\n");
@@ -674,6 +708,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
 				imgread_cam_cal_data(*sensor_id, ov32b40_dump_file, &ov32b40_cal_info);
+				get_ov_cross_talk_data(0xA2, 0x07E1, OV_CROSS_TALK_GROUP_SIZE, &ov_cross_talk_data);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -914,6 +949,10 @@ static kal_uint32 custom3(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	custom3_setting();
+
+	// apply cross talk calibration data after resolution settings.
+	write_cross_talk_data();
+	mdelay(100);
 
 	return ERROR_NONE;
 }
