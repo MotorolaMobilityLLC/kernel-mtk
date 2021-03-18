@@ -1012,7 +1012,6 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>true</out_high>
-                <varName0>GPIO_CAMERA_2_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio87>
@@ -1061,12 +1060,12 @@
             </gpio91>
             <gpio92>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_KPD_KROW0_PIN</varName0>
+                <varName0>GPIO_CAMERA_VCAMA_ENABLE_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio92>
@@ -1247,11 +1246,12 @@
             </gpio108>
             <gpio109>
                 <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>true</out_high>
+                <varName0>GPIO_CAMERA_2_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio109>
@@ -2012,7 +2012,7 @@
             <device4>
                 <varName>CAMERA_MAIN</varName>
                 <channel>I2C_CHANNEL_2</channel>
-                <address>0x1A</address>
+                <address>0x40</address>
             </device4>
             <device5>
                 <varName>CAMERA_MAIN_EEPROM</varName>
@@ -2026,8 +2026,8 @@
             </device6>
             <device7>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x2D</address>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x7A</address>
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
@@ -2129,7 +2129,6 @@
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_POWER_A</varName0>
             </pmic0>
             <pmic1>
                 <ldoVar>VSIM1</ldoVar>
