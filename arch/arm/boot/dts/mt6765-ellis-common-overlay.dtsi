@@ -13,7 +13,7 @@
 #include "mt6765-moto-common-overlay.dtsi"
 //#include "mt6765-ellis-audio-overlay.dtsi"
 //#include "mt6765-ellis-sensor-overlay.dtsi"
-//#include "mt6765-ellis-camera-sensor-overlay.dtsi"
+#include "mt6762-ellis-camera-sensor-overlay.dtsi"
 #include "dt-bindings/mmc/mt6765-msdc.h"
 &reserved_memory {
 };
