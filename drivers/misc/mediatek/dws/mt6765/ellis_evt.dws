@@ -1029,12 +1029,11 @@
             </gpio88>
             <gpio89>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_OSC_EN_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio89>
