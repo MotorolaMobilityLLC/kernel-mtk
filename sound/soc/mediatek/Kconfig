@@ -253,3 +253,9 @@ config SND_SOC_MTK_AUDIO_DSP
 	  that can be used with other platforms
 	  Select Y if you have such device.
 	  If unsure select "N".
+
+config SND_HAC_AW8155
+	bool "Support for HAC AW8155"
+	help
+	 Select Y if you have such device.
+	 If unsure select "N".
