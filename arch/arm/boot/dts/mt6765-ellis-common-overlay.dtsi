@@ -32,6 +32,25 @@
 		"nt35695_fhd_dsi_cmd_truly_rt5081_drv";
 };
 
+&i2c5 {
+	bq25601@6B {
+		compatible = "ti,bq25601";
+		reg = <0x6B>;
+		ti,bq2560x,usb-vlim = <4600>;
+		ti,bq2560x,usb-ilim = <2000>;
+		ti,bq2560x,usb-vreg = <4400>;
+		ti,bq2560x,usb-ichg = <2000>;
+		ti,bq2560x,precharge-current = <256>;
+		ti,bq2560x,termination-current = <180>;
+		ti,bq2560x,boost-voltage = <4998>;
+		ti,bq2560x,boost-current = <1200>;
+		ti,bq2560x,enable_term;
+		ti,bq2560x,stat-pin-ctrl = <0>;
+		ti,bq2560x,vac-ovp-threshold = <6500>;
+
+	};
+};
+
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
@@ -324,44 +343,6 @@
                 mmi,adc-channel-vbat = <100>;
 };
 
-&charger {
-        /* common */
-        battery_cv = <4400000>;
-
-        /* charging current */
-        usb_charger_current_suspend = <0>;
-        usb_charger_current_unconfigured = <70000>;
-        usb_charger_current_configured = <500000>;
-        usb_charger_current = <500000>;
-        ac_charger_current = <2000000>;
-        ac_charger_input_current = <2000000>;
-        non_std_ac_charger_current = <1000000>;
-        charging_host_charger_current = <1500000>;
-        apple_1_0a_charger_current = <650000>;
-        apple_2_1a_charger_current = <800000>;
-        ta_ac_charger_current = <2000000>;
-        typec_limit_aicr = <2000000>;
-
-        /* battery temperature protection */
-        enable_min_charge_temperature;
-        min_charge_temperature = <0>;
-        min_charge_temperature_plus_x_degree = <10>;
-        max_charge_temperature = <60>;
-        max_charge_temperature_minus_x_degree = <45>;
-
-        /*mmi config*/
-        mmi,iterm-ma = <243>;
-        mmi,mmi-temp-zones = <0 4200 1000 0>,
-                        <10 0 1000 1000>,
-                        <15 4200 2500 1000>,
-                        <45 0 4000 4000>,
-                        <60 4200 3600 0>;
-        mmi,enable-charging-limit;
-        mmi,upper-limit-capacity = <65>;
-        mmi,lower-limit-capacity = <60>;
-        mmi,vfloat-comp-uv = <20000>;
-};
-
 /*
 &bat_gm30 {
         io-channels = <&auxadc 5>;
@@ -390,7 +371,11 @@
 };
 
 &mtk_gauge {
-        charger = <&mtk_charger_type>;
+	charger = <&mtk_charger_type>;
+	/* battery prop */
+	g_FG_PSEUDO100 = <100 100 100 100 100 100 100 100 100 100>;
+	ACTIVE_TABLE = <(5)>;
+
 };
 
 &usb {
@@ -562,6 +547,56 @@
 	mt6370,intr_gpio = <&pio 11 0x0>;
 };
 
+/*
+&lk_charger {
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <500000>;
+	charging_host_charger_current = <1500000>;
+	ta_ac_charger_current = <2000000>;
+};
+*/
+
+&charger {
+	charger = <&mtk_charger_type>;
+	/* common */
+	battery_cv = <4400000>;
+	max_charger_voltage = <6500000>;
+	min_charger_voltage = <4600000>;
+
+	/* charging current */
+        usb_charger_current_suspend = <0>;
+        usb_charger_current_unconfigured = <70000>;
+        usb_charger_current_configured = <500000>;
+	usb_charger_current = <500000>;
+	ac_charger_current = <2000000>;
+	ac_charger_input_current = <2000000>;
+        non_std_ac_charger_current = <1000000>;
+	charging_host_charger_current = <1500000>;
+        apple_1_0a_charger_current = <650000>;
+        apple_2_1a_charger_current = <800000>;
+        ta_ac_charger_current = <2000000>;
+        typec_limit_aicr = <2000000>;
+
+        /* battery temperature protection */
+        enable_min_charge_temperature;
+        min_charge_temperature = <0>;
+        min_charge_temperature_plus_x_degree = <10>;
+        max_charge_temperature = <60>;
+        max_charge_temperature_minus_x_degree = <45>;
+
+        /*mmi config*/
+        mmi,iterm-ma = <80>;
+        mmi,mmi-temp-zones = <0 4200 804 0>,
+                        <10 0 804 804>,
+                        <15 4200 804 804>,
+                        <45 0 3000 2800>,
+                        <60 4200 2010 0>;
+        mmi,enable-charging-limit;
+        mmi,upper-limit-capacity = <65>;
+        mmi,lower-limit-capacity = <60>;
+        mmi,vfloat-comp-uv = <20000>;
+};
+
 &mt6370_typec {
 	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
@@ -572,7 +607,7 @@
 };
 
 &pdc {
-	pd_vbus_upper_bound = <12000000>;
+	pd_vbus_upper_bound = <5000000>;
 };
 
 #include "cust_mt6765_touch_ili7806s_720x1600.dtsi"
