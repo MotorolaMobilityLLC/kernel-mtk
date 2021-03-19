@@ -764,5 +764,13 @@ config KEYBOARD_MTK
 	  To compile this driver as a module, choose M here: the
 	  module will be called mtk-kpd.
 
+config WT_GOOGLE_KEY
+	tristate "WingTech Google Key Support"
+	help
+	  Say Y here if you want to use the keypad.
+	  If unuse, say N.
+	  To compile this driver as a module, choose M here: the
+	  module will be called mtk-kpd.
+
 source "drivers/input/keyboard/mediatek/Kconfig"
 endif
