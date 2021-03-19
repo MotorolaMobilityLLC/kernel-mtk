@@ -1,0 +1,21 @@
+/*
+ * Things can done here:
+ * 	Add nodes or properties to root node
+ * 	Delete nodes or properties
+*/
+
+#include "mt6765-moto-base.dtsi"
+
+/ {
+	key_google: key_google {
+	};
+
+        lk_charger: lk_charger {
+             /delete-property/ enable_pe_plus;
+             /delete-property/ enable_pd20_reset;
+        };
+
+        charger: charger {
+             /delete-property/ enable_dynamic_mivr;
+        };
+};
