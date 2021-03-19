@@ -2452,6 +2452,8 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 		case PARAM_HBM:
 			if (panel_ext->panel_hbm_mode == HBM_MODE_GPIO)
 				ret = mtk_drm_crtc_set_panel_hbm_gpio(crtc, param_info->value);
+			else if (panel_ext->panel_hbm_mode == HBM_MODE_DCS_ONLY)
+				ret = mtk_drm_crtc_set_panel_hbm(crtc, param_info->value);
 			break;
 		default:
 			DDPMSG("%s: param_idx %d can not supported\n", param_info->param_idx);
