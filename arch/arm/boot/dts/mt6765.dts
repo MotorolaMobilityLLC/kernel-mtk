@@ -3820,7 +3820,11 @@
 #include "mt6370.dtsi"
 #include "mt6370_pd.dtsi"
 /* Motorola base dts override */
+#ifdef CONFIG_ELLIS_DTB
+#include "mt6765-moto-base-ellis.dtsi"
+#else
 #include "mt6765-moto-base.dtsi"
+#endif
 #ifdef CONFIG_CHARGER_RT9471
 #include "rt9471.dtsi"
 #endif
