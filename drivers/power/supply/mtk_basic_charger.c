@@ -87,6 +87,9 @@ static bool is_typec_adapter(struct mtk_charger *info)
 {
 	int rp;
 
+	if (info == NULL || info->pd_adapter == NULL)
+		return false;
+
 	rp = adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL);
 	if (info->pd_type == MTK_PD_CONNECT_TYPEC_ONLY_SNK &&
 			rp != 500 &&
