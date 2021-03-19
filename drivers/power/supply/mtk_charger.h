@@ -214,6 +214,7 @@ struct charger_data {
 	int junction_temp_max;
 	int moto_chg_tcmd_ichg;
 	int moto_chg_tcmd_ibat;
+	int typec_input_current_limit;
 };
 
 enum chg_data_idx_enum {
