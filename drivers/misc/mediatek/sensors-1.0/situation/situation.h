@@ -94,6 +94,12 @@ struct mot_chopchop {
     float max_xy_percentage;
     bool gyroless;
 };
+
+struct mot_camgest {
+    float y_orient_down_thres;
+    float y_orient_up_thres;
+};
+
 struct mot_glance {
     float motion_threshold;
     uint64_t cool_time;
@@ -192,6 +198,9 @@ struct mot_params {
 #ifdef CONFIG_MOTO_CHOPCHOP
 	struct mot_chopchop chopchop_params;
 #endif
+#ifdef CONFIG_MOTO_CAMGEST
+    struct mot_camgest camgest_params;
+#endif
 #ifdef CONFIG_MOTO_GLANCE
     struct mot_glance glance_params;
 #endif
@@ -237,4 +246,5 @@ extern int situation_register_data_path(struct situation_data_path *data,
 extern int sar_data_report(int32_t value[3]);
 extern int sar_data_report_t(int32_t value[3], int64_t time_stamp);
 extern int mot_ltv_data_report(int32_t value[3]);
+extern int mot_camgest_data_report(int32_t value[3]);
 #endif
