@@ -12,6 +12,12 @@ config MOTO_CHOPCHOP_PARAMS
 	help
 	  This feature Option is used for open/close moto chopchop algo parms.
 
+config MOTO_CAMGEST_PARAMS
+	bool "algo params for moto camgest algo"
+	default n
+	help
+	  This feature Option is used for open/close moto camgest algo parms.
+
 config MOTO_GLANCE_PARAMS
 	bool "algo params for moto glance algo"
 	default n
