@@ -7,4 +7,7 @@
 / {
 	moto_chg_tcmd: moto_chg_tcmd {
 	};
+
+	key_google: key_google {
+	};
 };
