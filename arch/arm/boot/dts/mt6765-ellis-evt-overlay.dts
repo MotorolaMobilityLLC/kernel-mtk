@@ -24,15 +24,5 @@
 		};
 	};
 };
-
-&lk_charger {
-             /delete-property/ enable_pe_plus;
-             /delete-property/ enable_pd20_reset;
-};
-
-&charger {
-             /delete-property/ enable_dynamic_mivr;
-};
-
 #include <ellis_evt/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
