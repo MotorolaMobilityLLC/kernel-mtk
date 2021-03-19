@@ -602,7 +602,7 @@ static int panel_cabc_set_cmdq(struct drm_panel *panel, void *dsi,
 
 	if (cabc_value == 3) {
 		cb(dsi, handle, cabc_movie_tb3, ARRAY_SIZE(cabc_movie_tb3));
-		cb(dsi, handle, cabc_movie_tb3, ARRAY_SIZE(cabc_movie_tb4));
+		cb(dsi, handle, cabc_movie_tb4, ARRAY_SIZE(cabc_movie_tb4));
 	}else {
 		cb(dsi, handle, cabc_ui_tb3, ARRAY_SIZE(cabc_ui_tb3));
 		cb(dsi, handle, cabc_ui_tb4, ARRAY_SIZE(cabc_ui_tb4));
@@ -610,6 +610,8 @@ static int panel_cabc_set_cmdq(struct drm_panel *panel, void *dsi,
 
 	cb(dsi, handle, cabc_tb1, ARRAY_SIZE(cabc_tb5));
 	cb(dsi, handle, cabc_tb2, ARRAY_SIZE(cabc_tb6));
+	pr_info(" set cabc to %d\n", cabc_value);
+
 done:
 	ctx->cabc_mode = cabc_mode;
 	return 0;
