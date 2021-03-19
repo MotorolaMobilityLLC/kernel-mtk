@@ -433,6 +433,15 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 					CHARGING_HOST_CHARGER_CURRENT;
 	}
 
+	if (of_property_read_u32(np, "typec_limit_aicr", &val) >= 0) {
+		info->chg_data[CHG1_SETTING].typec_input_current_limit = val;
+		chr_debug("%s: typec_input_current_limit: %d\n", __func__,
+			info->chg_data[CHG1_SETTING].typec_input_current_limit);
+	} else {
+		chr_err("Dont limit type C aicr\n");
+		info->chg_data[CHG1_SETTING].typec_input_current_limit = -1;
+	}
+
 	/* dynamic mivr */
 	info->enable_dynamic_mivr =
 			of_property_read_bool(np, "enable_dynamic_mivr");
