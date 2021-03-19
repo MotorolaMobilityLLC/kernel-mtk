@@ -195,14 +195,14 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 	{8032, 6032, 0,	  12, 8032, 6008, 4016, 3004,   8, 2, 4000, 3000, 0, 0, 4000, 3000}, // VIDEO (4000 x 3000)
 	{8032, 6032, 0, 1568, 8032, 2896, 2008,  724, 364, 2, 1280,  720, 0, 0, 1280,  720}, // hight speed video (1280 x 720)
 	{8032, 6032, 0,	  12, 8032, 6008, 4016, 3004,   8, 2, 4000, 3000, 0, 0, 4000, 3000}, // slim video (1280 x 720)
-	{8032, 6032, 0,	 848, 8032, 4336, 2008, 1084,  44, 2, 1920, 1080, 0, 0, 1920, 1080}, // custom1 (1920x 1080)
+	{8032, 6032, 2080,   1932, 3872, 2168, 1936, 1084, 8, 2, 1920, 1080,0,  0, 1920, 1080}, // custom1 (1920x 1080)
 	{8032, 6032, 0,	  14, 8032, 6004, 8032, 6004,  16, 2, 8000, 6000, 0, 0, 8000, 6000}, //remosaic (8000 x 6000)
 };
 
 
 #if ENABLE_PDAF
 
-static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
+static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4]=
 {
 	/* Preview mode setting */
 	 {0x02, //VC_Num
@@ -238,16 +238,16 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 	  0x01, 0x30, 0x026C, 0x05D0,   // VC2 PDAF
 	  0x00, 0x00, 0x0000, 0x0000},	// VC3 ??
 	  /* Custom1 mode setting */
-	 //{0x02, //VC_Num
-	  //0x0a, //VC_PixelNum
-	 // 0x00, //ModeSelect	/* 0:auto 1:direct */
-	  //0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
-	  //0x00, //0DValue		/* 0D Value */
-	  //0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
-	  //0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
-	  //0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
-	  //0x01, 0x30, 0x026C, 0x05D0,   // VC2 PDAF
-	  //0x00, 0x00, 0x0000, 0x0000},	// VC3 ??
+	 {0x02, //VC_Num
+	  0x0a, //VC_PixelNum
+	  0x00, //ModeSelect	/* 0:auto 1:direct */
+	  0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
+	  0x00, //0DValue		/* 0D Value */
+	  0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
+	  0x00, 0x2B, 0x0780, 0x0438,	// VC0 Maybe image data?
+	  0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
+	  0x01, 0x30, 0x012C, 0x0218,   // VC2 PDAF
+	  0x00, 0x00, 0x0000, 0x0000},	// VC3 ??
 
 };
 
@@ -271,8 +271,29 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 						{17,13}, {25,13}, {21,17}, {29,17},
 						{17,21}, {25,21}, {21,25}, {29,25},
 				}
+};
 
-
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_1920_1080 =
+{
+	.i4OffsetX	= 16,
+	.i4OffsetY	= 12,
+	.i4PitchX	= 16,
+	.i4PitchY	= 16,
+	.i4PairNum	= 8,
+	.i4SubBlkW	= 8,
+	.i4SubBlkH	= 4,
+	.i4BlockNumX = 120,
+	.i4BlockNumY = 67,
+	.iMirrorFlip = 0,
+	.i4PosR =	{
+				{16,13}, {24,13}, {20,17}, {28,17},
+				{16,21}, {24,21}, {20,25}, {28,25},
+			 },
+	.i4PosL =	{
+				{17,13}, {25,13}, {21,17}, {29,17},
+				{17,21}, {25,21}, {21,25}, {29,25},
+			 },
+	.i4Crop = { {0, 0}, {0, 0}, {1040, 960}, {0, 0}, {0, 0}, {1040,960},{0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 #endif
 
@@ -1787,6 +1808,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			break;
 		case MSDK_SCENARIO_ID_CUSTOM2:
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
@@ -1812,6 +1836,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
 				sizeof(struct SET_PD_BLOCK_INFO_T));
                         break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info_1920_1080,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
 		default:
 			break;
 		}
@@ -1831,6 +1859,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			pr_debug("Jesse+ VIDEO_PREVIEW \n");
 			memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[2],
+			       sizeof(struct SENSOR_VC_INFO_STRUCT));
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			pr_debug("Jesse+ Custom1 \n");
+			memcpy((void *)pvcinfo, (void *)&SENSOR_VC_INFO[3],
 			       sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
