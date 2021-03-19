@@ -1880,6 +1880,17 @@ static void mtk_nanohub_restoring_config(void)
 		vfree(data);
 	}
 #endif
+#ifdef CONFIG_MOTO_CAMGEST_PARAMS
+	length = sizeof(struct mot_camgest);
+	data = vzalloc(length);
+	if (data) {
+		spin_lock(&config_data_lock);
+		memcpy(data, &motparams->camgest_params, length);
+		spin_unlock(&config_data_lock);
+		mtk_nanohub_cfg_to_hub(ID_CAMGEST, data, length);
+		vfree(data);
+	}
+#endif
 #ifdef CONFIG_MOTO_GLANCE_PARAMS
 	length = sizeof(struct mot_glance);
 	data = vzalloc(length);
@@ -2424,7 +2435,6 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 		case ID_STOWED:
 		case ID_FLATUP:
 		case ID_FLATDOWN:
-		case ID_CAMGEST:
 		case ID_CHOPCHOP:
 		case ID_MOT_GLANCE:
 		case ID_OFFBODY:
@@ -2437,6 +2447,7 @@ static int mtk_nanohub_report_to_manager(struct data_unit_t *data)
 			pr_err("Oscar kernel data %d\n", event.word[0]);
 			break;
 		case ID_LTV:
+		case ID_CAMGEST:
 			event.timestamp = data->time_stamp;
 			event.sensor_type = id_to_type(data->sensor_type);
 			event.action = data->flush_action;
@@ -2744,6 +2755,11 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	err = mtk_nanohub_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&motparams->chopchop_params, sizeof(struct mot_chopchop));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
+#endif
+#ifdef CONFIG_MOTO_CAMGEST_PARAMS
+	err = mtk_nanohub_cfg_to_hub(ID_CAMGEST, (uint8_t *)&motparams->camgest_params, sizeof(struct mot_camgest));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CAMGEST fail\n");
 #endif
 #ifdef CONFIG_MOTO_GLANCE_PARAMS
 	err = mtk_nanohub_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&motparams->glance_params, sizeof(struct mot_glance));

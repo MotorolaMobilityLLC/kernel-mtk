@@ -533,6 +533,12 @@ struct mot_chopchop {
     float max_xy_percentage;
     bool gyroless;
 };
+
+struct mot_camgest {
+    float y_orient_down_thres;
+    float y_orient_up_thres;
+};
+
 struct mot_glance {
     float motion_threshold;
     uint64_t cool_time;
@@ -649,6 +655,9 @@ struct ps_custom {
 struct mot_params {
 #ifdef CONFIG_MOTO_CHOPCHOP_PARAMS
 	struct mot_chopchop chopchop_params;
+#endif
+#ifdef CONFIG_MOTO_CAMGEST_PARAMS
+	struct mot_camgest camgest_params;
 #endif
 #ifdef CONFIG_MOTO_GLANCE_PARAMS
     struct mot_glance glance_params;
