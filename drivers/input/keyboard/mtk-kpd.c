@@ -27,6 +27,10 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 
+#if defined(CONFIG_WT_GOOGLE_KEY)
+#include <linux/of_gpio.h>
+#endif
+
 #define KPD_NAME	"mtk-kpd"
 
 #define KP_STA			(0x0000)
@@ -197,6 +201,60 @@ static int kpd_gpio_init(struct device *dev)
 				kpd_default);
 }
 
+#if defined(CONFIG_WT_GOOGLE_KEY)
+static int kpd_gpio_google_key_eint_state;
+static int kpd_gpio_google_key_irq;
+static struct tasklet_struct kpd_gpio_google_key_tasklet;
+
+static void kpd_gpio_google_key_hal(unsigned long data)
+{
+	struct mtk_keypad *keypad = (struct mtk_keypad *)data;
+
+	if (kpd_gpio_google_key_eint_state == 0) {
+		irq_set_irq_type(kpd_gpio_google_key_irq, IRQ_TYPE_LEVEL_HIGH);
+		kpd_gpio_google_key_eint_state = 1;
+	} else {
+		irq_set_irq_type(kpd_gpio_google_key_irq, IRQ_TYPE_LEVEL_LOW);
+		kpd_gpio_google_key_eint_state = 0;
+	}
+
+	pr_info("kpd_gpio_google_key_hal state = %d\n",kpd_gpio_google_key_eint_state);
+
+	input_report_key(keypad->input_dev, KEY_SEARCH, kpd_gpio_google_key_eint_state);
+	input_sync(keypad->input_dev);
+	enable_irq(kpd_gpio_google_key_irq);
+}
+
+static irqreturn_t kpd_gpio_google_key_eint_handler(int irq, void *dev_id)
+{
+	disable_irq_nosync(kpd_gpio_google_key_irq);
+	tasklet_schedule(&kpd_gpio_google_key_tasklet);
+	return IRQ_HANDLED;
+}
+
+void kpd_gpio_google_eint_register(void)
+{
+	int ints[2] = {0, 0};
+	int ret;
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek, key_google_key-eint");
+	if (!node)
+		pr_notice("can't find compatible google key node\n");
+	else {
+		ints[0]=of_get_named_gpio(node, "deb-gpios", 0);
+		of_property_read_u32(node, "debounce", &ints[1]);
+		gpio_set_debounce(ints[0], ints[1]);
+		kpd_gpio_google_key_irq = irq_of_parse_and_map(node, 0);
+
+		ret = request_irq(kpd_gpio_google_key_irq, kpd_gpio_google_key_eint_handler,
+				  IRQF_TRIGGER_NONE, "kpd_gpio_google_key_eint", NULL);
+		if (ret)
+			pr_notice("GOOGLE KEY EINT IRQ LINE NOT AVAILABLE\n");
+	}
+}
+#endif /* CONFIG_WT_GOOGLE_KEY */
+
 static int kpd_pdrv_probe(struct platform_device *pdev)
 {
 	struct mtk_keypad *keypad;
@@ -270,6 +328,10 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 
 	__set_bit(EV_KEY, keypad->input_dev->evbit);
 
+#if defined(CONFIG_WT_GOOGLE_KEY)
+	__set_bit(KEY_SEARCH, keypad->input_dev->keybit);
+#endif
+
 	for (i = 0; i < KPD_NUM_KEYS; i++) {
 		if (keypad->hw_init_map[i])
 			__set_bit(keypad->hw_init_map[i],
@@ -293,6 +355,10 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	tasklet_init(&keypad->tasklet, kpd_keymap_handler,
 					(unsigned long)keypad);
 
+#if defined(CONFIG_WT_GOOGLE_KEY)
+	tasklet_init(&kpd_gpio_google_key_tasklet, kpd_gpio_google_key_hal, (unsigned long)keypad);
+#endif
+
 	writew((u16)(keypad->key_debounce & KPD_DEBOUNCE_MASK),
 			keypad->base + KP_DEBOUNCE);
 
@@ -303,6 +369,10 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 		pr_notice("register IRQ failed (%d)\n", err);
 		goto err_irq;
 	}
+
+#if defined(CONFIG_WT_GOOGLE_KEY)
+	kpd_gpio_google_eint_register();
+#endif
 
 	pr_info("kpd_probe OK.\n");
 
