@@ -35,7 +35,7 @@
 #endif
 
 #define ESD_TRY_CNT 5
-#define ESD_CHECK_PERIOD 2000 /* ms */
+#define ESD_CHECK_PERIOD 8000 /* ms */
 
 /* pinctrl implementation */
 long _set_state(struct drm_crtc *crtc, const char *name)
