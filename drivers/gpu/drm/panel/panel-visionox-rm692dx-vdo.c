@@ -51,6 +51,8 @@ struct lcm {
 	bool enabled;
 
 	int error;
+	bool hbm_en;
+	unsigned int cabc_mode;
 };
 
 #define lcm_dcs_write_seq(ctx, seq...) \
@@ -232,6 +234,40 @@ static void lcm_panel_init(struct lcm *ctx)
 	udelay(10 * 1000);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
+	lcm_dcs_write_seq_static(ctx, 0xFE, 0x16),
+	lcm_dcs_write_seq_static(ctx, 0x88, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0xFE, 0x16),
+	lcm_dcs_write_seq_static(ctx, 0x8D, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x8C, 0x03),
+	lcm_dcs_write_seq_static(ctx, 0x00, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x66, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x67, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x68, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x6A, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x69, 0x70),
+	lcm_dcs_write_seq_static(ctx, 0x6B, 0xF8),
+	lcm_dcs_write_seq_static(ctx, 0x6C, 0x77),
+	lcm_dcs_write_seq_static(ctx, 0x6D, 0xF8),
+	lcm_dcs_write_seq_static(ctx, 0x6E, 0xF8),
+	lcm_dcs_write_seq_static(ctx, 0x75, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x76, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x77, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x78, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x79, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x7A, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x7B, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x7C, 0xCC),
+	lcm_dcs_write_seq_static(ctx, 0x7D, 0x02),
+	lcm_dcs_write_seq_static(ctx, 0x7E, 0x66),
+	lcm_dcs_write_seq_static(ctx, 0x7F, 0x04),
+	lcm_dcs_write_seq_static(ctx, 0x80, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x81, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x82, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x83, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x84, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x85, 0x00),
+	lcm_dcs_write_seq_static(ctx, 0x86, 0x00),
+
 	lcm_dcs_write_seq_static(ctx, 0xFE, 0x60);
 	lcm_dcs_write_seq_static(ctx, 0x1B, 0xCC);
 	lcm_dcs_write_seq_static(ctx, 0x24, 0xCC);
@@ -347,12 +383,12 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xFA, 0x01); // 07 VESAo ff, 01 VESA on
 	lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);//08 cmd, 03 video
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
-	//lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xFF);
+	lcm_dcs_write_seq_static(ctx,0x53,0x28);
+	lcm_dcs_write_seq_static(ctx,0x55,0x01);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x11);
 	msleep(120);
 	lcm_dcs_write_seq_static(ctx, 0x29);
-	//msleep(40);
 }
 
 static int lcm_disable(struct drm_panel *panel)
@@ -446,6 +482,9 @@ static int lcm_prepare(struct drm_panel *panel)
 		lcm_unprepare(panel);
 
 	ctx->prepared = true;
+
+	ctx->cabc_mode = 0; /*UI mode*/
+	ctx->hbm_en = 0;
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 	mtk_panel_tch_rst(panel);
@@ -563,6 +602,7 @@ static struct mtk_panel_params ext_params = {
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 90,
 	},
+	.panel_hbm_mode = HBM_MODE_DCS_ONLY,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -613,6 +653,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 90,
 	},
+	.panel_hbm_mode = HBM_MODE_DCS_ONLY,
 };
 
 static int panel_ext_reset(struct drm_panel *panel, int on)
@@ -634,6 +675,7 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 
 static int panel_ata_check(struct drm_panel *panel)
 {
+#if 0
 	struct lcm *ctx = panel_to_lcm(panel);
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 	unsigned char data[3];
@@ -641,7 +683,7 @@ static int panel_ata_check(struct drm_panel *panel)
 	ssize_t ret;
 
 	pr_info("%s success\n", __func__);
-#if 0
+
 	ret = mipi_dsi_dcs_read(dsi, 0x4, data, 3);
 	if (ret < 0)
 		dev_info("%s error\n", __func__);
@@ -767,6 +809,69 @@ static int mode_switch(struct drm_panel *panel, unsigned int cur_mode,
         return ret;
 }
 
+static int panel_cabc_set_cmdq(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, unsigned int cabc_mode)
+{
+	char cabc_tb[2] = {0x55, 0x01};
+	const unsigned int cabc_value_map[3] = {1, 3, 0};
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (ctx->cabc_mode == cabc_mode)
+		goto done;
+
+	cabc_tb[1] = cabc_value_map[cabc_mode];
+
+	if (!cb)
+		return -1;
+
+	if (cabc_mode > 2)
+		return -1;
+
+	cb(dsi, handle, cabc_tb, ARRAY_SIZE(cabc_tb));
+
+	ctx->cabc_mode = cabc_mode;
+	pr_info("%s set cabc to %d\n", __func__, cabc_mode);
+done:
+	return 0;
+}
+
+static void panel_cabc_get_state(struct drm_panel *panel, unsigned int *cabc_mode)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	*cabc_mode = ctx->cabc_mode;
+}
+
+static int panel_hbm_set(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, bool hbm_en)
+{
+	char hbm_tb[3] = {0x51, 0x07, 0xFF};
+	const unsigned int hbm_value_map[2] = {0x07, 0x0F};
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (ctx->hbm_en == hbm_en)
+		goto done;
+
+	hbm_tb[1] = hbm_value_map[hbm_en];
+
+	if (!cb)
+		return -1;
+
+	cb(dsi, handle, hbm_tb, ARRAY_SIZE(hbm_tb));
+
+	ctx->hbm_en = hbm_en;
+	pr_info("%s set HBM to %d\n", __func__, hbm_en);
+done:
+	return 0;
+}
+
+static void panel_hbm_get_state(struct drm_panel *panel, bool *state)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	*state = ctx->hbm_en;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
@@ -775,6 +880,10 @@ static struct mtk_panel_funcs ext_funcs = {
 	.mode_switch = mode_switch,
 	.get_virtual_heigh = lcm_get_virtual_heigh,
 	.get_virtual_width = lcm_get_virtual_width,
+	.hbm_set_cmdq = panel_hbm_set,
+	.hbm_get_state = panel_hbm_get_state,
+	.cabc_set_cmdq = panel_cabc_set_cmdq,
+	.cabc_get_state = panel_cabc_get_state,
 };
 #endif
 
