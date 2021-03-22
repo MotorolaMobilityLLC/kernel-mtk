@@ -93,6 +93,7 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct hs_video;
 	struct imgsensor_mode_struct slim_video;
 	struct imgsensor_mode_struct custom1;
+	struct imgsensor_mode_struct custom2;
 
 	kal_uint8 ae_shut_delay_frame;                    /* shutter delay frame for AE cycle */
 	kal_uint8 ae_sensor_gain_delay_frame;
@@ -108,6 +109,7 @@ struct imgsensor_info_struct {
 	kal_uint8 hs_video_delay_frame;
 	kal_uint8 slim_video_delay_frame;                 /* enter slim video delay frame num */
 	kal_uint8 custom1_delay_frame;                    /* enter custom1 delay frame num */
+	kal_uint8 custom2_delay_frame;
 
 	kal_uint8  frame_time_delay_frame;
 	kal_uint8 margin;                                 /* sensor framelength & shutter margin */
