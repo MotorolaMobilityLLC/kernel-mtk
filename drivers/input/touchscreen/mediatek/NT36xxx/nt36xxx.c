@@ -1866,6 +1866,43 @@ static struct tpd_driver_t nvt_device_driver = {
 	},
 };
 
+int nvt_check_panel() {
+	int ret = -1;
+
+	//check panel
+	tpd_get_panel();
+	NVT_LOG("enter, active_panel_name=%s\n", active_panel_name);
+	if (strlen(active_panel_name) && nvt_device_driver.tpd_panel_supplier) {
+		NVT_LOG("need check panel info\n");
+		if (strstr(active_panel_name, nvt_device_driver.tpd_panel_supplier)) {
+			NVT_LOG("panel matched!");
+			ret = 0;
+		} else {
+			NVT_LOG("panel not matched!\n");
+		}
+	}
+
+	return ret;
+}
+
+int nvt_check_dt() {
+	int ret = 0;
+        struct device_node *node1 = NULL;
+
+        NVT_LOG("enter\n");
+        node1 = of_find_matching_node(node1, nvt_match_table);
+        if (node1) {
+                int ret;
+                ret = of_property_read_string(node1, "novatek,panel-supplier",
+                        &nvt_device_driver.tpd_panel_supplier);
+		NVT_LOG("get novatek,panel_supplier ret=%d, tpd_panel_supplier= %s\n", ret, nvt_device_driver.tpd_panel_supplier);
+        } else {
+                NVT_LOG("node not found!\n");
+        }
+
+	return ret;
+}
+
 /*******************************************************
  *Description:
  *	Driver Install function.
@@ -1878,7 +1915,20 @@ static int32_t __init nvt_driver_init(void)
 	int32_t ret = 0;
 
 	NVT_LOG("start\n");
-	tpd_get_dts_info();
+	if (!tpd_dts_data.tpd_panel_match) {
+		//avoid duplicate invoked
+	        tpd_get_dts_info();
+	}
+
+	nvt_check_dt();
+        if (tpd_dts_data.tpd_panel_match) {
+		ret = nvt_check_panel();
+	        //check panel
+	        if (ret) {
+			NVT_LOG("nvt_check_panel fail, ret=%d\n", ret);
+			return ret;
+	        }
+	}
 
 	ret = tpd_driver_add(&nvt_device_driver);
 	if (ret < 0) {
