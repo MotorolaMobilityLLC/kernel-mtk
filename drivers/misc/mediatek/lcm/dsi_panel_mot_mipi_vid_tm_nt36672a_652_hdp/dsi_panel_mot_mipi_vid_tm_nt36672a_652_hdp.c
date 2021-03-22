@@ -125,9 +125,9 @@ struct LCM_setting_table {
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x28, 0, {} },
-	{REGFLAG_DELAY, 20, {} },
+	{REGFLAG_DELAY, 40, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 120, {} }
+	{REGFLAG_DELAY, 100, {} }
 
 };
 
@@ -143,9 +143,9 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0x53,1,{0x24}},
 	{0x55,1,{0x00}},
 	{0x11,1,{0x00}},
-	{REGFLAG_DELAY, 120, {}},
+	{REGFLAG_DELAY, 100, {}},
 	{0x29,1,{0x00}},
-	{REGFLAG_DELAY, 20, {}}
+	{REGFLAG_DELAY, 40, {}}
 };
 
 static struct LCM_setting_table bl_level[] = {
@@ -227,14 +227,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active = 2;
-	params->dsi.vertical_backporch = 16;
-	params->dsi.vertical_frontporch = 32;
+	params->dsi.vertical_backporch = 54;
+	params->dsi.vertical_frontporch = 20;
 	//params->dsi.vertical_frontporch_for_low_power = 540;/*disable dynamic frame rate*/
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 12;
-	params->dsi.horizontal_backporch = 120;
-	params->dsi.horizontal_frontporch = 116;
+	params->dsi.horizontal_backporch = 50;
+	params->dsi.horizontal_frontporch = 125;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_range = 4;
 	params->dsi.ssc_disable = 1;
@@ -243,7 +243,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 270;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 310;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 288;	/* this value must be in MTK suggested table */
 #endif
 	//params->dsi.PLL_CK_CMD = 220;
 	//params->dsi.PLL_CK_VDO = 255;
@@ -253,8 +253,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.fbk_div = 0x1;
 #endif
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.esd_check_enable = 0;
+	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
@@ -269,6 +269,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 static void lcm_init_power(void)
 {
 	LCM_LOGI("[LCM] lcm_init_power\n");
+	SET_RESET_PIN(0);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
 	lcm_set_bias_init(15,1);
@@ -279,8 +280,7 @@ static void lcm_suspend_power(void)
 {
 	LCM_LOGI("[LCM] lcm_suspend_power\n");
 	lcm_set_bias_pin_disable(1);
-	MDELAY(5);
-	SET_RESET_PIN(0);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT0);
 	LCM_LOGI("[LCM] lcm suspend power down.\n");
 }
@@ -288,6 +288,7 @@ static void lcm_suspend_power(void)
 static void lcm_resume_power(void)
 {
 	LCM_LOGI("[LCM] lcm_resume_power\n");
+	SET_RESET_PIN(0);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
 	lcm_set_bias_pin_enable(15,1);
@@ -297,11 +298,14 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	LCM_LOGI("[LCM] lcm_init\n");
+	SET_RESET_PIN(0);
+	MDELAY(10);
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 }
@@ -311,6 +315,8 @@ static void lcm_suspend(void)
 	LCM_LOGI("[LCM] lcm_suspend\n");
 
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+	SET_RESET_PIN(0);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(10);
 }
 
@@ -432,7 +438,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		bl_lvl = level;
 	// set 8bit
 	bl_level[0].para_list[0] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,nt36672a_TM : bl_level[0].para_list[0]=0x%x\n",__func__,bl_level[0].para_list[0]);
+	LCM_LOGI("%s,nt36672a_TM : bl_level=0x%x\n",__func__,bl_level[0].para_list[0]);
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }

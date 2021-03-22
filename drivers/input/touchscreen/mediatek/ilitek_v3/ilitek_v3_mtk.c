@@ -448,12 +448,63 @@ static struct tpd_driver_t tpd_device_driver = {
 	.resume = tpd_resume,
 };
 
+int ili_check_panel() {
+	//check panel
+        int ret = -1;
+
+        //check panel
+	tpd_get_panel();
+        ILI_INFO("enter, active_panel_name=%s\n", active_panel_name);
+        if (strlen(active_panel_name) && tpd_device_driver.tpd_panel_supplier) {
+                ILI_INFO("need check panel info\n");
+                if (strstr(active_panel_name, tpd_device_driver.tpd_panel_supplier)) {
+                        ILI_INFO("panel matched!");
+                        ret = 0;
+                } else {
+                        ILI_INFO("panel not matched!\n");
+                }
+        }
+
+        return ret;
+}
+
+int ili_check_dt() {
+	int ret = 0;
+        struct device_node *node1 = NULL;
+
+        ILI_INFO("enter\n");
+        node1 = of_find_matching_node(node1, tp_match_table);
+        if (node1) {
+                ret = of_property_read_string(node1, "ili,panel-supplier",
+			&tpd_device_driver.tpd_panel_supplier);
+		ILI_INFO("get ili,panel_supplier ret=%d, tpd_panel_supplier=%s\n", ret, tpd_device_driver.tpd_panel_supplier);
+        } else {
+                ILI_INFO("tp_match_table node not found!\n");
+        }
+
+	return ret;
+}
+
 static int __init ilitek_plat_dev_init(void)
 {
 	int ret = 0;
 
 	ILI_INFO("ILITEK TP driver init for MTK\n");
-	tpd_get_dts_info();
+        if (!tpd_dts_data.tpd_panel_match) {
+                //avoid duplicate invoked
+                tpd_get_dts_info();
+        }
+
+	ili_check_dt();
+	if (tpd_dts_data.tpd_panel_match) {
+		ret = ili_check_panel();
+		//check panel
+		if (ret) {
+			ILI_INFO("ili_check_panel fail, ret=%d\n", ret);
+			return ret;
+		}
+	}
+
 	ret = tpd_driver_add(&tpd_device_driver);
 	if (ret < 0) {
 		ILI_ERR("ILITEK add TP driver failed\n");
