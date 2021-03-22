@@ -81,6 +81,10 @@ static const char * const power_supply_scope_text[] = {
 	"Unknown", "System", "Device"
 };
 
+static const char * const power_supply_charge_rate_text[] = {
+        "None", "Normal", "Weak", "Turbo"
+};
+
 static const char * const power_supply_usbc_text[] = {
 	"Nothing attached", "Sink attached", "Powered cable w/ sink",
 	"Debug Accessory", "Audio Adapter", "Powered cable w/o sink",
@@ -173,6 +177,10 @@ static ssize_t power_supply_show_property(struct device *dev,
 		ret = sprintf(buf, "%s\n",
 			      power_supply_charge_type_text[value.intval]);
 		break;
+	case POWER_SUPPLY_PROP_CHARGE_RATE:
+                ret = sprintf(buf, "%s\n", 
+                              power_supply_charge_rate_text[value.intval]);
+                break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		ret = sprintf(buf, "%s\n",
 			      power_supply_health_text[value.intval]);
@@ -315,6 +323,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(charge_empty),
 	POWER_SUPPLY_ATTR(charge_now),
 	POWER_SUPPLY_ATTR(charge_avg),
+	POWER_SUPPLY_ATTR(charge_rate),
 	POWER_SUPPLY_ATTR(charge_counter),
 	POWER_SUPPLY_ATTR(constant_charge_current),
 	POWER_SUPPLY_ATTR(constant_charge_current_max),
