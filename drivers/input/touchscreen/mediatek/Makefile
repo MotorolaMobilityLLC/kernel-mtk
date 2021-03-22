@@ -11,3 +11,4 @@ obj-y   +=  tpd_default.o
 obj-y   +=  tpd_misc.o
 obj-y   +=  tpd_setting.o
 obj-$(CONFIG_TOUCHSCREEN_MTK_ILITEK_V3_ILI7806S)	+= ilitek_v3/
+obj-$(CONFIG_TOUCHSCREEN_MTK_NVT_NT36xxx) += NT36xxx/
