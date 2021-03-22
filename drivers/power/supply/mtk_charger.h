@@ -288,6 +288,7 @@ struct mmi_params {
 	bool			chg_disable;
 	int			target_fcc;
 	int			target_usb;
+	struct notifier_block	chg_reboot;
 };
 
 struct mtk_charger {
@@ -422,5 +423,6 @@ extern void _wake_up_charger(struct mtk_charger *info);
 /* functions for other */
 extern int mtk_chg_enable_vbus_ovp(bool enable);
 
+extern void aee_kernel_RT_Monitor_api_factory(void);
 
 #endif /* __MTK_CHARGER_H */
