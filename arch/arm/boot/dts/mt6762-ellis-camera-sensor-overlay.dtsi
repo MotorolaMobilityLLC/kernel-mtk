@@ -253,4 +253,47 @@
 	status = "okay";
 
 };
+&pio {
+ flash_default: flash_default_cfg{
+ };
+ flash_en_pin0: flash_en_pin0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flash_en_pin1: flash_en_pin1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	torch_en_pin0: torch_en_pin0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	torch_en_pin1: torch_en_pin1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&flashlights_ocp8132 {
+	pinctrl-names = "flash_default", "flash_en_pin0", "flash_en_pin1", "torch_en_pin0", "torch_en_pin1";
+	pinctrl-0 = <&flash_default>;
+	pinctrl-1 = <&flash_en_pin0>;
+	pinctrl-2 = <&flash_en_pin1>;
+	pinctrl-3 = <&torch_en_pin0>;
+	pinctrl-4 = <&torch_en_pin1>;
+	status = "okay";
+
+};
 /* CAMERA GPIO end */
