@@ -1439,6 +1439,78 @@ void update_charging_limit_modes(struct mtk_charger *info, int batt_soc)
 		info->mmi.charging_limit_modes = charging_limit_modes;
 }
 
+#define WEAK_CHRG_THRSH 450
+#define TURBO_CHRG_THRSH 2500
+int mmi_chrg_rate_check(void)
+{
+	int chg_rate, icl, icl_c, rc;
+	union power_supply_propval val;
+	char *charge_rate[] = {
+		"None", "Normal", "Weak", "Turbo"
+	};
+	static struct mtk_charger *pinfo;
+	struct power_supply *psy;
+
+	if (pinfo == NULL) {
+		psy = power_supply_get_by_name("mtk-master-charger");
+		if (psy == NULL) {
+			chr_err("[%s]psy is not rdy\n", __func__);
+			chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		        goto end_rate_check;
+		}
+
+		pinfo = (struct mtk_charger *)power_supply_get_drvdata(psy);
+		if (pinfo == NULL) {
+			chr_err("[%s]mtk_gauge is not rdy\n", __func__);
+			chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		        goto end_rate_check;
+		}
+	}
+
+
+	if (pinfo == NULL) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	}
+
+	icl = pinfo->chg_data[CHG1_SETTING].input_current_limit / 1000;
+	icl_c = pinfo->chg_data[CHG1_SETTING].typec_input_current_limit;
+
+	rc = mmi_get_prop_from_charger(pinfo,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+	if (rc < 0) {
+		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	} else if (!val.intval) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	}
+
+	if (extern_is_typec_adapter(pinfo)
+		&& adapter_dev_get_property(pinfo->pd_adapter, TYPEC_RP_LEVEL)
+			== 3000) {
+			if (icl_c == -1 || icl_c > TURBO_CHRG_THRSH * 1000) {
+				chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+				goto end_rate_check;
+			}
+	}
+
+	if (icl >= TURBO_CHRG_THRSH) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+	} else if (icl < WEAK_CHRG_THRSH) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
+		goto end_rate_check;
+	}
+
+	chg_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
+
+end_rate_check:
+	pr_info("%s Charger Detected\n", charge_rate[chg_rate]);
+	return chg_rate;
+}
+
 #define MIN_TEMP_C -20
 #define MAX_TEMP_C 60
 #define MIN_MAX_TEMP_C 47

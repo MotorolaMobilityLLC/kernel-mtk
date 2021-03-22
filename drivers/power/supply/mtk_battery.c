@@ -327,6 +327,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+        POWER_SUPPLY_PROP_CHARGE_RATE,
 };
 
 static int battery_psy_get_property(struct power_supply *psy,
@@ -453,6 +454,9 @@ static int battery_psy_get_property(struct power_supply *psy,
 			}
 			val->intval = q_max_uah;
 		}
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_RATE:
+		val->intval = mmi_chrg_rate_check();
 		break;
 
 	default:
