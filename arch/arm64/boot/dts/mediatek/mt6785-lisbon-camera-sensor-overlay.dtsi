@@ -157,6 +157,19 @@
 			output-high;
 		};
 	};
+	camera0_vcamaf_off: camera0_vcamaf_output_low@gpio21 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera0_vcamaf_on: camera0_vcamaf_output_high@gpio21 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			output-high;
+		};
+	};
 	camera1_vcama_off: camera1_vcama_output_low@gpio109 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
@@ -431,6 +444,7 @@
 			"cam2_pnd0", "cam2_pnd1",
 			"cam0_ldo_vcama_0", "cam0_ldo_vcama_1",
 			"cam0_ldo_vcamd_0", "cam0_ldo_vcamd_1",
+			"cam0_ldo_vcamaf_0", "cam0_ldo_vcamaf_1",
 			"cam1_ldo_vcama_0", "cam1_ldo_vcama_1",
 			"cam1_ldo_vcamd_0", "cam1_ldo_vcamd_1",
 			"cam2_ldo_vcama_0", "cam2_ldo_vcama_1",
@@ -477,57 +491,59 @@
 	pinctrl-14 = <&camera0_vcama_on>;
 	pinctrl-15 = <&camera0_vcamd_off>;
 	pinctrl-16 = <&camera0_vcamd_on>;
-	pinctrl-17 = <&camera1_vcama_off>;
-	pinctrl-18 = <&camera1_vcama_on>;
-	pinctrl-19 = <&camera1_vcamd_off>;
-	pinctrl-20 = <&camera1_vcamd_on>;
-	pinctrl-21 = <&camera2_vcama_off>;
-	pinctrl-22 = <&camera2_vcama_on>;
-	pinctrl-23 = <&camera2_vcamd_off>;
-	pinctrl-24 = <&camera2_vcamd_on>;
-	pinctrl-25 = <&camera0_mclk_off>;
-	pinctrl-26 = <&camera0_mclk_2ma>;
-	pinctrl-27 = <&camera0_mclk_4ma>;
-	pinctrl-28 = <&camera0_mclk_6ma>;
-	pinctrl-29 = <&camera0_mclk_8ma>;
-	pinctrl-30 = <&camera1_mclk_off>;
-	pinctrl-31 = <&camera1_mclk_2ma>;
-	pinctrl-32 = <&camera1_mclk_4ma>;
-	pinctrl-33 = <&camera1_mclk_6ma>;
-	pinctrl-34 = <&camera1_mclk_8ma>;
-	pinctrl-35 = <&camera2_mclk_off>;
-	pinctrl-36 = <&camera2_mclk_2ma>;
-	pinctrl-37 = <&camera2_mclk_4ma>;
-	pinctrl-38 = <&camera2_mclk_6ma>;
-	pinctrl-39 = <&camera2_mclk_8ma>;
-	pinctrl-40 = <&camera4_rst_low>;
-	pinctrl-41 = <&camera4_rst_high>;
-	pinctrl-42 = <&camera4_pdn_low>;
-	pinctrl-43 = <&camera4_pdn_high>;
-	pinctrl-44 = <&camera6_rst_low>;
-	pinctrl-45 = <&camera6_rst_high>;
-	pinctrl-46 = <&camera6_pdn_low>;
-	pinctrl-47 = <&camera6_pdn_high>;
-	pinctrl-48 = <&camera4_vcama_off>;
-	pinctrl-49 = <&camera4_vcama_on>;
-	pinctrl-50 = <&camera4_vcamd_off>;
-	pinctrl-51 = <&camera4_vcamd_on>;
-	pinctrl-52 = <&camera6_vcama_off>;
-	pinctrl-53 = <&camera6_vcama_on>;
-	pinctrl-54 = <&camera6_vcamd_off>;
-	pinctrl-55 = <&camera6_vcamd_on>;
-	pinctrl-56 = <&camera4_mclk_off>;
-	pinctrl-57 = <&camera4_mclk_2ma>;
-	pinctrl-58 = <&camera4_mclk_4ma>;
-	pinctrl-59 = <&camera4_mclk_6ma>;
-	pinctrl-60 = <&camera4_mclk_8ma>;
-	pinctrl-61 = <&camera6_mclk_off>;
-	pinctrl-62 = <&camera6_mclk_2ma>;
-	pinctrl-63 = <&camera6_mclk_4ma>;
-	pinctrl-64 = <&camera6_mclk_6ma>;
-	pinctrl-65 = <&camera6_mclk_8ma>;
-	pinctrl-66 = <&camera_mipi_switch_low>;
-	pinctrl-67 = <&camera_mipi_switch_high>;
+	pinctrl-17 = <&camera0_vcamaf_off>;
+	pinctrl-18 = <&camera0_vcamaf_on>;
+	pinctrl-19 = <&camera1_vcama_off>;
+	pinctrl-20 = <&camera1_vcama_on>;
+	pinctrl-21 = <&camera1_vcamd_off>;
+	pinctrl-22 = <&camera1_vcamd_on>;
+	pinctrl-23 = <&camera2_vcama_off>;
+	pinctrl-24 = <&camera2_vcama_on>;
+	pinctrl-25 = <&camera2_vcamd_off>;
+	pinctrl-26 = <&camera2_vcamd_on>;
+	pinctrl-27 = <&camera0_mclk_off>;
+	pinctrl-28 = <&camera0_mclk_2ma>;
+	pinctrl-29 = <&camera0_mclk_4ma>;
+	pinctrl-30 = <&camera0_mclk_6ma>;
+	pinctrl-31 = <&camera0_mclk_8ma>;
+	pinctrl-32 = <&camera1_mclk_off>;
+	pinctrl-33 = <&camera1_mclk_2ma>;
+	pinctrl-34 = <&camera1_mclk_4ma>;
+	pinctrl-35 = <&camera1_mclk_6ma>;
+	pinctrl-36 = <&camera1_mclk_8ma>;
+	pinctrl-37 = <&camera2_mclk_off>;
+	pinctrl-38 = <&camera2_mclk_2ma>;
+	pinctrl-39 = <&camera2_mclk_4ma>;
+	pinctrl-40 = <&camera2_mclk_6ma>;
+	pinctrl-41 = <&camera2_mclk_8ma>;
+	pinctrl-42 = <&camera4_rst_low>;
+	pinctrl-43 = <&camera4_rst_high>;
+	pinctrl-44 = <&camera4_pdn_low>;
+	pinctrl-45 = <&camera4_pdn_high>;
+	pinctrl-46 = <&camera6_rst_low>;
+	pinctrl-47 = <&camera6_rst_high>;
+	pinctrl-48 = <&camera6_pdn_low>;
+	pinctrl-49 = <&camera6_pdn_high>;
+	pinctrl-50 = <&camera4_vcama_off>;
+	pinctrl-51 = <&camera4_vcama_on>;
+	pinctrl-52 = <&camera4_vcamd_off>;
+	pinctrl-53 = <&camera4_vcamd_on>;
+	pinctrl-54 = <&camera6_vcama_off>;
+	pinctrl-55 = <&camera6_vcama_on>;
+	pinctrl-56 = <&camera6_vcamd_off>;
+	pinctrl-57 = <&camera6_vcamd_on>;
+	pinctrl-58 = <&camera4_mclk_off>;
+	pinctrl-59 = <&camera4_mclk_2ma>;
+	pinctrl-60 = <&camera4_mclk_4ma>;
+	pinctrl-61 = <&camera4_mclk_6ma>;
+	pinctrl-62 = <&camera4_mclk_8ma>;
+	pinctrl-63 = <&camera6_mclk_off>;
+	pinctrl-64 = <&camera6_mclk_2ma>;
+	pinctrl-65 = <&camera6_mclk_4ma>;
+	pinctrl-66 = <&camera6_mclk_6ma>;
+	pinctrl-67 = <&camera6_mclk_8ma>;
+	pinctrl-68 = <&camera_mipi_switch_low>;
+	pinctrl-69 = <&camera_mipi_switch_high>;
 
 	cam0_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam1_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
