@@ -49,11 +49,60 @@ const struct of_device_id touch_of_match[] = {
 	{},
 };
 
+char active_panel_name[50] = {0};
+
+int tpd_get_panel(void)
+{
+	if (strlen(active_panel_name)) {
+		TPD_DMESG("got active_panel_name=%s\n", active_panel_name);
+		return 0;
+	}
+
+	//bringup, parse panel name from cmdline
+	TPD_DMESG("enter\n");
+	if (saved_command_line) {
+		char *sub;
+		char key_prefix[] = "mipi_mot_vid_";
+
+		TPD_DMESG("saved_command_line is %s\n", saved_command_line);
+		sub = strstr(saved_command_line, key_prefix);
+		if (sub) {
+			char *d;
+			int n, len, len_max = 50;
+
+			d = strstr(sub, " ");
+			if (d) {
+				n = strlen(sub) - strlen(d);
+			} else {
+				n = strlen(sub);
+			}
+
+			if (n > len_max)
+				len = len_max;
+			else
+				len = n;
+
+			strncpy(active_panel_name, sub, len);
+			TPD_DMESG("active_panel_name=%s\n", active_panel_name);
+
+		} else {
+			TPD_DMESG("active panel not found!");
+			return -1;
+		}
+	} else {
+		TPD_DMESG("saved_command_line null!");
+		return -1;
+	}
+
+	return 0;
+}
+
 void tpd_get_dts_info(void)
 {
 	struct device_node *node1 = NULL;
 	int key_dim_local[16] = {0}, i = 0;
 
+	TPD_DMESG("enter\n");
 	node1 = of_find_matching_node(node1, touch_of_match);
 	if (node1) {
 		of_property_read_u32(node1,
@@ -134,6 +183,8 @@ void tpd_get_dts_info(void)
 			"tpd-rst-ext-gpio-num",
 			&tpd_dts_data.rst_ext_gpio_num);
 
+		tpd_dts_data.tpd_panel_match =
+			of_property_read_bool(node1, "tpd-panel-match");
 	} else {
 		TPD_DMESG("can't find touch compatible custom node\n");
 	}
@@ -485,6 +536,8 @@ int tpd_driver_add(struct tpd_driver_t *tpd_drv)
 		if (tpd_driver_list[i].tpd_device_name == NULL) {
 			tpd_driver_list[i].tpd_device_name =
 				tpd_drv->tpd_device_name;
+			tpd_driver_list[i].tpd_panel_supplier =
+				tpd_drv->tpd_panel_supplier;
 			tpd_driver_list[i].tpd_local_init =
 				tpd_drv->tpd_local_init;
 			tpd_driver_list[i].suspend = tpd_drv->suspend;
@@ -562,7 +615,7 @@ static int tpd_probe(struct platform_device *pdev)
 	/* TPD_RES_X = simple_strtoul(LCM_WIDTH, NULL, 0); */
 	/* TPD_RES_Y = simple_strtoul(LCM_HEIGHT, NULL, 0); */
 
-	#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION
 	if (strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "90", 2) == 0
 		|| strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "270", 3) == 0) {
 #ifdef CONFIG_MTK_FB
