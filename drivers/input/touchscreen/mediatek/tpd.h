@@ -119,6 +119,7 @@ struct tpd_dts_info {
 	int tpd_key_num;
 	int tpd_key_local[4];
 	bool tpd_use_ext_gpio;
+	bool tpd_panel_match;
 	int rst_ext_gpio_num;
 	struct tpd_key_dim_local tpd_key_dim_local[4];
 	struct tpd_filter_t touch_filter;
@@ -130,6 +131,7 @@ struct tpd_attrs {
 };
 struct tpd_driver_t {
 	char *tpd_device_name;
+	const char* tpd_panel_supplier;
 	int (*tpd_local_init)(void);
 	void (*suspend)(struct device *h);
 	void (*resume)(struct device *h);
@@ -137,6 +139,8 @@ struct tpd_driver_t {
 	struct tpd_attrs attrs;
 };
 
+extern char active_panel_name[50];
+extern int tpd_get_panel(void);
 
 #if 1				/* #ifdef TPD_HAVE_BUTTON */
 void tpd_button(unsigned int x, unsigned int y, unsigned int down);
