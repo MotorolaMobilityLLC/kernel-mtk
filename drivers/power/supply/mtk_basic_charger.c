@@ -91,8 +91,12 @@ static bool is_typec_adapter(struct mtk_charger *info)
 		return false;
 
 	rp = adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL);
+#ifdef MTK_BASE
 	if (info->pd_type == MTK_PD_CONNECT_TYPEC_ONLY_SNK &&
 			rp != 500 &&
+#else
+        if (rp > 500 &&
+#endif
 			info->chr_type != POWER_SUPPLY_TYPE_USB &&
 			info->chr_type != POWER_SUPPLY_TYPE_USB_CDP)
 		return true;
@@ -108,8 +112,12 @@ bool extern_is_typec_adapter(struct mtk_charger *info)
 		return false;
 
 	rp = adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL);
+#ifdef MTK_BASE
 	if (info->pd_type == MTK_PD_CONNECT_TYPEC_ONLY_SNK &&
 			rp != 500 &&
+#else
+        if (rp > 500 &&
+#endif
 			info->chr_type != POWER_SUPPLY_TYPE_USB &&
 			info->chr_type != POWER_SUPPLY_TYPE_USB_CDP)
 		return true;
