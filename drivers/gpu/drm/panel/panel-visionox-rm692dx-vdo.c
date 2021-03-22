@@ -275,10 +275,10 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x42, 0x81);
 	lcm_dcs_write_seq_static(ctx, 0x49, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
-	lcm_dcs_write_seq_static(ctx, 0xE0, 0x40); //60Hz:40
-	lcm_dcs_write_seq_static(ctx, 0xDA, 0x02); //60Hz:02
+	lcm_dcs_write_seq_static(ctx, 0xE0, 0x00); //60Hz:40
+	lcm_dcs_write_seq_static(ctx, 0xDA, 0x00); //60Hz:02
 	lcm_dcs_write_seq_static(ctx, 0xFE, 0x22);//demura page
-	lcm_dcs_write_seq_static(ctx, 0x77, 0x02);//demure off:02 on:00
+	lcm_dcs_write_seq_static(ctx, 0x77, 0x00);//demure off:02 on:00
 
 
 	/* PPS */
