@@ -1028,4 +1028,6 @@ extern void do_fg_algo(struct mtk_battery *gm, unsigned int intr_num);
 extern void fg_bat_temp_int_internal(struct mtk_battery *gm);
 /* mtk_battery_algo.c end */
 
+extern int mmi_chrg_rate_check(void);
+
 #endif /* __MTK_BATTERY_INTF_H__ */

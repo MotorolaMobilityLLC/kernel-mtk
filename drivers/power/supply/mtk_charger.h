@@ -425,4 +425,6 @@ extern int mtk_chg_enable_vbus_ovp(bool enable);
 
 extern void aee_kernel_RT_Monitor_api_factory(void);
 
+extern bool extern_is_typec_adapter(struct mtk_charger *info);
+
 #endif /* __MTK_CHARGER_H */
