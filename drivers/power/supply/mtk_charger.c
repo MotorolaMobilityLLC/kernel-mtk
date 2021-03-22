@@ -1905,6 +1905,55 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 	return rc;
 }
 
+static int chg_reboot(struct notifier_block *nb,
+			 unsigned long event, void *unused)
+{
+	struct mtk_charger *info = container_of(nb, struct mtk_charger,
+						mmi.chg_reboot);
+	union power_supply_propval val;
+	int rc;
+
+	pr_info("chg Reboot\n");
+	if (!info) {
+		pr_info("called before chip valid!\n");
+		return NOTIFY_DONE;
+	}
+
+	if (info->mmi.factory_mode) {
+		switch (event) {
+		case SYS_POWER_OFF:
+			aee_kernel_RT_Monitor_api_factory();
+			info->is_suspend = true;
+			/* Disable Factory Kill */
+			info->disable_charger = true;
+			info->chg_tcmd_client.factory_kill_disable = true;
+			/* Disable Charging */
+			charger_dev_enable(info->chg1_dev, false);
+			/* Suspend USB */
+			//charger_dev_enable_hz(info->chg1_dev, true);//TODO
+
+			rc = mmi_get_prop_from_charger(info,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+			while (rc >= 0 && val.intval) {
+				msleep(100);
+				rc = mmi_get_prop_from_charger(info,
+					POWER_SUPPLY_PROP_ONLINE, &val);
+				pr_info("Wait for VBUS to decay\n");
+			}
+
+			pr_info("VBUS UV wait 1 sec!\n");
+			/* Delay 1 sec to allow more VBUS decay */
+			msleep(1000);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return NOTIFY_DONE;
+}
+
+
 #define CHG_SHOW_MAX_SIZE 50
 static ssize_t factory_image_mode_store(struct device *dev,
 				struct device_attribute *attr,
@@ -2080,6 +2129,13 @@ void mmi_init(struct mtk_charger *info)
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
 
+	info->mmi.chg_reboot.notifier_call = chg_reboot;
+	info->mmi.chg_reboot.next = NULL;
+	info->mmi.chg_reboot.priority = 1;
+	rc = register_reboot_notifier(&info->mmi.chg_reboot);
+	if (rc)
+		pr_err("SMB register for reboot failed\n");
+
 	rc = device_create_file(&info->pdev->dev,
 				&dev_attr_force_demo_mode);
 	if (rc) {
@@ -2212,6 +2268,7 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 		chg_alg_notifier_call(alg, &notify);
 	}
 
+	pdata1->input_current_limit = 500000;
 	charger_dev_set_input_current(info->chg1_dev, 100000);
 	charger_dev_set_mivr(info->chg1_dev, info->data.min_charger_voltage);
 	charger_dev_plug_out(info->chg1_dev);
@@ -2663,6 +2720,11 @@ int psy_charger_set_property(struct power_supply *psy,
 	int idx;
 
 	chr_err("%s: prop:%d %d\n", __func__, psp, val->intval);
+
+	if (info->mmi.factory_mode) {
+                chr_err("%s factory mode, return\n", __func__);
+		return 0;
+        }//TODO
 
 	info = (struct mtk_charger *)power_supply_get_drvdata(psy);
 
