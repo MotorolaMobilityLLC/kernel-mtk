@@ -26,6 +26,8 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcamd_0"},
 	{"ldo_vcamio_1"},
 	{"ldo_vcamio_0"},
+	{"ldo_vcamaf_1"},
+	{"ldo_vcamaf_0"},
 };
 
 #ifdef MIPI_SWITCH
