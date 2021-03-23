@@ -259,7 +259,7 @@ void ImgSensor_FuseIDRead_hi1336(struct stCAM_CAL_DATAINFO_STRUCT*pData){
 	write_cmos_sensor_8(0x0302, 0x01);
 	for(i = 0; i < 9; i++){
 		data[i] = read_cmos_sensor(0x0308);
-		pr_info("%2x",data[i]);
+		pr_debug("%2x",data[i]);
 	}
 	imgSensorSetDataEfuseID(data,pData->deviceID,9);
 	write_cmos_sensor_8(0x0809, 0x00);
