@@ -395,6 +395,9 @@
 	g_FG_PSEUDO100 = <100 100 100 100 100 100 100 100 100 100>;
 	ACTIVE_TABLE = <(5)>;
 
+	//io-channels = <&auxadc 5>;
+	//io-channel-names = "batteryID-channel";//TODO
+
 };
 
 &usb {
