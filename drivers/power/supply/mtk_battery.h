@@ -1029,5 +1029,6 @@ extern void fg_bat_temp_int_internal(struct mtk_battery *gm);
 /* mtk_battery_algo.c end */
 
 extern int mmi_chrg_rate_check(void);
+extern int mmi_batt_health_check(void);
 
 #endif /* __MTK_BATTERY_INTF_H__ */
