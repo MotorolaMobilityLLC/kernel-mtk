@@ -26,7 +26,7 @@
 
 #define PFX "saipan_qtech_hi4821q_camera_sensor"
 #define LOG_INF(format, args...)    \
-	pr_info(PFX "[%s] " format, __func__, ##args)
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 //PDAF
 #define ENABLE_PDAF 1
@@ -399,7 +399,7 @@ void ImgSensor_FuseIDRead(struct stCAM_CAL_DATAINFO_STRUCT*pData){
 	write_cmos_sensor_8(0x0302, 0x01);
 	for(i = 0; i < 9; i++){
 		data[i] = read_cmos_sensor(0x0308);
-		pr_info("%2x",data[i]);
+		pr_debug("%2x",data[i]);
 	}
 	imgSensorSetDataEfuseID(data,pData->deviceID,9);
 	write_cmos_sensor_8(0x0b00, 0x00);
@@ -780,7 +780,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-    			pr_info("i2c write id : 0x%x, sensor id: 0x%x\n",
+			pr_debug("i2c write id : 0x%x, sensor id: 0x%x\n",
     			imgsensor.i2c_write_id, *sensor_id);
 
 #if SAIPAN_QTECH_HI4821Q_OTP_ENABLE
@@ -794,7 +794,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				//*sensor_id = 0xFFFFFFFF;
 				//return ERROR_SENSOR_CONNECT_FAIL;
 			} else {
-				pr_info("get eeprom data success\n");
+				pr_debug("get eeprom data success\n");
 				imgSensorSetEepromData(&st_rear_saipan_qtech_hi4821q_eeprom_data);
 
 				#if SAIPAN_QTECH_HI4821Q_XGC_QGC_BPGC_CALIB
@@ -805,21 +805,21 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 					#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 
-						pr_info("saipan_qtech_hi4821q_eeprom:bpgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_BPGC - 1].startAdress + 1);
-						pr_info("saipan_qtech_hi4821q_eeprom:qgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 1);
-						pr_info("saipan_qtech_hi4821q_eeprom:xgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 1);
+						pr_debug("saipan_qtech_hi4821q_eeprom:bpgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_BPGC - 1].startAdress + 1);
+						pr_debug("saipan_qtech_hi4821q_eeprom:qgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 1);
+						pr_debug("saipan_qtech_hi4821q_eeprom:xgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 1);
 
-						pr_info("=====================saipan_qtech_hi4821q dump bpgc eeprom data start====================\n");
+						pr_debug("=====================saipan_qtech_hi4821q dump bpgc eeprom data start====================\n");
 						dumpEEPROMData(BPGC_DATA_SIZE,bpgc_data_buffer);
-						pr_info("=====================saipan_qtech_hi4821q dump bpgc eeprom data end======================\n");
+						pr_debug("=====================saipan_qtech_hi4821q dump bpgc eeprom data end======================\n");
 
-						pr_info("=====================saipan_qtech_hi4821q dump qgc eeprom data start====================\n");
+						pr_debug("=====================saipan_qtech_hi4821q dump qgc eeprom data start====================\n");
 						dumpEEPROMData(QGC_DATA_SIZE,qgc_data_buffer);
-						pr_info("=====================saipan_qtech_hi4821q dump qgc eeprom data end======================\n");
+						pr_debug("=====================saipan_qtech_hi4821q dump qgc eeprom data end======================\n");
 
-						pr_info("=====================saipan_qtech_hi4821q dump xgc eeprom data start====================\n");
+						pr_debug("=====================saipan_qtech_hi4821q dump xgc eeprom data start====================\n");
 						dumpEEPROMData(XGC_DATA_SIZE,xgc_data_buffer);
-						pr_info("=====================saipan_qtech_hi4821q dump xgc eeprom data end======================\n");
+						pr_debug("=====================saipan_qtech_hi4821q dump xgc eeprom data end======================\n");
 					#endif
 				#endif
 			}
@@ -872,7 +872,7 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				pr_info("i2c write id: 0x%x, sensor id: 0x%x\n",
+				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
