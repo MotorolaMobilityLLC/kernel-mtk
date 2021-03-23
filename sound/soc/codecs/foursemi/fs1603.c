@@ -10,6 +10,7 @@
 #define FS1603_FW_NAME        "fs1603.fsm"
 #define FS1603S_FW_NAME       "fs1603s.fsm"
 #define FS1603_PRESET_EQ_LEN  (0x0090)
+#define FS1603_EXCER_RAM_LEN  (0x0070)
 #define FS1603_RS2RL_RATIO    (2700)
 #define FS1603_OTP_COUNT_MAX  (5)
 #define FS1603_EXCER_RAM_ADDR (0x0)
@@ -200,7 +201,7 @@ static int fs1603_store_otp(fsm_dev_t *fsm_dev, uint8_t valOTP)
 		fsm_parse_otp(fsm_dev, otprdata, &re25_otp, &count);
 		pr_addr(info, "re25 old:%d, new:%d", re25_otp, fsm_dev->re25);
 		delta = abs(re25_otp - fsm_dev->re25);
-		if (delta < ((fsm_dev->spkr << FSM_MAGNIF_FACTOR) / 20)) {
+		if (delta < (FSM_MAGNIF(fsm_dev->spkr) / 20)) {
 			pr_addr(info, "not need to update otp, delta: %d", delta);
 			break;
 		}
@@ -464,11 +465,13 @@ int fs1603_f0_test(fsm_dev_t *fsm_dev)
 	ret |= fsm_reg_write(fsm_dev, fsm_dev->compat.ACSEQA, 0x0000);
 	for (i = 0; i < COEF_LEN; i++) {
 		convert_data_to_bytes(coef_acsbp[i], buf);
-		ret |= fsm_burst_write(fsm_dev, fsm_dev->compat.ACSEQWL, buf, sizeof(uint32_t));
+		ret |= fsm_burst_write(fsm_dev, fsm_dev->compat.ACSEQWL,
+				buf, sizeof(uint32_t));
 	}
 	for (i = 0; i < COEF_LEN; i++) {
 		convert_data_to_bytes(coef_acsbp[i], buf);
-		ret |= fsm_burst_write(fsm_dev, fsm_dev->compat.ACSEQWL, buf, sizeof(uint32_t));
+		ret |= fsm_burst_write(fsm_dev, fsm_dev->compat.ACSEQWL,
+				buf, sizeof(uint32_t));
 	}
 	ret |= fsm_access_key(fsm_dev, 0);
 	// Amp on
@@ -544,7 +547,7 @@ int fs1603s_pre_f0_test(fsm_dev_t *fsm_dev)
 	fsm_reg_read(fsm_dev, REG(FSM_SYSCTRL), NULL); // dummy read
 	fsm_delay_ms(15); // 15ms
 	pos_mask = fsm_dev->pos_mask;
-	fsm_dev->pos_mask = FSM_CHN_MONO;
+	fsm_dev->pos_mask = FSM_POS_MONO;
 	ret = fs1603_config_i2s(fsm_dev);
 	fsm_dev->pos_mask = pos_mask;
 	ret |= fsm_reg_write(fsm_dev, REG(FSM_AUDIOCTRL), 0x0000);
@@ -637,7 +640,7 @@ int fs1603s_post_f0_test(fsm_dev_t *fsm_dev)
 	ret = fsm_reg_read(fsm_dev, 0xE6, &value);
 	fsm_access_key(fsm_dev, 0);
 	rs_trim = ((value == 0) ? 0x8F : (value & 0xFF));
-	ret |= fsm_reg_read(fsm_dev, 0xBB, &value);
+	ret |= fsm_reg_multiread(fsm_dev, 0xBB, &value);
 	// calc r0
 	r0 = FSM_MAGNIF(FS1603_RS2RL_RATIO * rs_trim) / value / 8;
 	pr_addr(info, "zm:%04X, R0:%d", value, r0);
@@ -673,6 +676,7 @@ void fs1603_ops(fsm_dev_t *fsm_dev)
 		fsm_dev->dev_ops.start_up = fs1603s_start_up;
 	}
 	fsm_dev->compat.preset_unit_len = FS1603_PRESET_EQ_LEN;
+	fsm_dev->compat.excer_ram_len = FS1603_EXCER_RAM_LEN;
 	fsm_dev->compat.addr_excer_ram = FS1603_EXCER_RAM_ADDR;
 	fsm_dev->compat.otp_max_count = FS1603_OTP_COUNT_MAX;
 	fsm_dev->compat.ACSEQA = REG(FS1603_ACSEQA);
