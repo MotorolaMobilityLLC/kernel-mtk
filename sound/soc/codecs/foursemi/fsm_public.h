@@ -41,9 +41,6 @@ int fsm_i2c_reg_write(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t val);
 int fsm_i2c_bulkwrite(fsm_dev_t *fsm_dev, uint8_t reg,
 				uint8_t *data, int len);
 int fsm_get_amb_tempr(void);
-int fsm_read_efsdata(struct fsm_calib_v2 *data);
-int fsm_write_efsdata(struct fsm_calib_v2 *data);
-int fsm_i2c_save_re25(struct fsm_calib_v2 *calib_data);
 int fsm_i2c_init(void);
 void fsm_i2c_exit(void);
 #else
@@ -82,7 +79,7 @@ void fsm_proc_deinit(void);
 int fsm_sysfs_init(struct device *dev);
 void fsm_sysfs_deinit(struct device *dev);
 #else
-#define fsm_sysfs_init(...) (-1)
+#define fsm_sysfs_init(...)
 #define fsm_sysfs_deinit(...)
 #endif
 
@@ -165,8 +162,7 @@ int fsm_ops_dummy(fsm_dev_t *fsm_dev);
 int fsm_write_reg_tbl(fsm_dev_t *fsm_dev, uint16_t scene);
 int fsm_set_cal_scene(fsm_dev_t *fsm_dev);
 int fsm_get_livedata(fsm_msg_t *data);
-int fsm_save_re25(struct fsm_calib_v2 *data);
-int fsm_cal_spkr_zmimp(fsm_dev_t *fsm_dev, uint16_t data);
+uint32_t fsm_cal_spkr_zmimp(fsm_dev_t *fsm_dev, uint16_t data);
 
 /*
  * module: fsm_hal
@@ -181,7 +177,6 @@ int fsm_hal_reg_write(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t val);
 int fsm_hal_bulkwrite(fsm_dev_t *fsm_dev, uint8_t reg, uint8_t *val, uint32_t len);
 int fsm_hal_bulkread(fsm_dev_t *fsm_dev, uint8_t reg, uint32_t len, uint8_t *val);
 int fsm_hal_get_livedata(fsm_msg_t *data);
-int fsm_hal_save_re25(struct fsm_calib_v2 *data);
 int fstool_reg_read(uint8_t addr, uint8_t reg, uint16_t *val);
 int fstool_reg_write(uint8_t addr, uint8_t reg, uint16_t val);
 int fstool_bulkwrite(uint8_t addr, uint8_t reg,
@@ -220,14 +215,12 @@ void fs1860_ops(fsm_dev_t *fsm_dev);
 
 #ifdef CONFIG_FSM_NONDSP
 #include "fsm_algo.h"
-void fs_nondsp_ops(fsm_dev_t *fsm_dev);
 int fsm_algo_send_afe_cal(void *buf);
 int fsm_algo_get_livedata(fsm_msg_t *data);
 void fsm_algo_module_ctrl(bool enable);
 void fsm_algo_cfg_ctrl(fsm_msg_t *data, int opcode);
 int fsm_algo_save_re25(struct fsm_calib_v2 *calib_data);
 #else
-#define fs_nondsp_ops(...)
 #define fsm_algo_get_livedata(...) (-1001)
 #define fsm_algo_module_ctrl(...)
 #define fsm_algo_cfg_ctrl(...)
@@ -246,7 +239,6 @@ void fsm_init(void);
 void fsm_speaker_onn(void);
 void fsm_speaker_off(void);
 void fsm_stereo_rotation(int next_angle);
-void fsm_batv_monitor(void);
 void fsm_re25_test(bool force);
 void fsm_f0_test(void);
 int fsm_test_result(struct fsm_cal_result *result, int size);

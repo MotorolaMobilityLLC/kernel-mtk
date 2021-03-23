@@ -131,6 +131,7 @@ static struct fsm_config g_fsm_config = {
 	.store_otp = 1,
 	.force_mute = 0,
 	.stop_test = 0,
+	.use_monitor = 0,
 	.skip_monitor = 0,
 	.stream_muted = 1,
 	.nondsp_mode = 0,
@@ -186,13 +187,9 @@ static int fsm_cal_re25_zmdata(fsm_dev_t *fsm_dev,
 	if (re25->count >= RE25_TEST_COUNT)
 		return 0;
 
-	ret = fsm_reg_read(fsm_dev, REG(FSM_ZMDATA), &zmdata);
+	ret = fsm_reg_multiread(fsm_dev, REG(FSM_ZMDATA), &zmdata);
 	if (ret) {
 		pr_addr(err, "get zmdata fail:%d", ret);
-		return -EINVAL;
-	}
-	if (zmdata == 0 || zmdata == 0xFFFF) {
-		pr_addr(warning, "invalid data:%04X, skip", zmdata);
 		return -EINVAL;
 	}
 	if ((abs(re25->pre_val - zmdata) > FSM_ZMDELTA_MAX)
@@ -232,7 +229,7 @@ static int fsm_cal_f0_zmdata(fsm_dev_t *fsm_dev,
 	if (!fsm_dev->state.f0_runing || fsm_dev->is1603s) {
 		return 0;
 	}
-	ret = fsm_reg_read(fsm_dev, REG(FSM_ZMDATA), &zmdata);
+	ret = fsm_reg_multiread(fsm_dev, REG(FSM_ZMDATA), &zmdata);
 	if (ret) {
 		pr_addr(err, "get zmdata fail:%d", ret);
 		return -EINVAL;
@@ -345,7 +342,9 @@ fsm_config_t *fsm_get_config(void)
 {
 	return &g_fsm_config;
 }
-// EXPORT_SYMBOL(fsm_get_config);
+#ifdef __KERNEL__
+EXPORT_SYMBOL(fsm_get_config);
+#endif
 
 void fsm_get_version(fsm_version_t *version)
 {
@@ -474,7 +473,7 @@ int fsm_get_bf(fsm_dev_t *fsm_dev, const uint16_t bf, uint16_t *pval)
 	reg.len = (bf >> 12) & 0x0F;
 	reg.pos = (bf >> 8) & 0x0F;
 	reg.addr = bf & 0xFF;
-	ret = fsm_reg_read(fsm_dev, reg.addr, &reg.value);
+	ret = fsm_reg_multiread(fsm_dev, reg.addr, &reg.value);
 	if (ret) {
 		pr_err("get bf:%04X failed", bf);
 		return ret;
@@ -511,10 +510,7 @@ struct fsm_dev *fsm_get_fsm_dev_by_id(int id)
 	fsm_config_t *cfg = fsm_get_config();
 	fsm_dev_t *fsm_dev;
 
-	if (!cfg) {
-		return NULL;
-	}
-	if (cfg->dev_count <= 0) {
+	if (!cfg || cfg->dev_count <= 0) {
 		return NULL;
 	}
 
@@ -652,7 +648,7 @@ int fsm_reg_update_bits(fsm_dev_t *fsm_dev, reg_unit_t *reg)
 	}
 	mask = ((1 << (reg->len + 1)) - 1) << reg->pos;
 	val = (reg->value << reg->pos);
-	ret = fsm_reg_read(fsm_dev, addr, &temp);
+	ret = fsm_reg_multiread(fsm_dev, addr, &temp);
 	temp = ((~mask & temp) | (val & mask));
 	ret |= fsm_reg_write(fsm_dev, addr, temp);
 
@@ -664,7 +660,7 @@ int fsm_reg_update(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t val)
 	uint16_t temp;
 	int ret;
 
-	ret = fsm_reg_read(fsm_dev, reg, &temp);
+	ret = fsm_reg_multiread(fsm_dev, reg, &temp);
 	if (!ret && temp != val) {
 		ret = fsm_reg_write(fsm_dev, reg, val);
 	}
@@ -734,6 +730,9 @@ int fsm_get_srate_bits(fsm_dev_t *fsm_dev, uint32_t srate)
 	int size;
 	int idx;
 
+	if (!fsm_dev) {
+		return -EINVAL;
+	}
 	if (srate > 48000 && HIGH8(fsm_dev->version) != FS1860_DEV_ID) {
 		pr_addr(err, "invalid srate:%d", srate);
 		return -EINVAL;
@@ -865,8 +864,8 @@ static int fsm_check_dev_type(fsm_dev_t *fsm_dev)
 {
 	uint16_t dev_type;
 
-	if (!fsm_dev) {
-		pr_err("fsm_dev is NULL");
+	if (!fsm_dev || !fsm_dev->dev_list) {
+		pr_addr(err, "bad parameter");
 		return -EINVAL;
 	}
 	if (!fsm_dev->dev_list) {
@@ -1007,7 +1006,7 @@ int fsm_init_info(fsm_dev_t *fsm_dev)
 	fsm_dev->tmax = fsm_get_spk_info(fsm_dev, FSM_INFO_SPK_TMAX);
 	fsm_dev->tcoef = fsm_get_spk_info(fsm_dev, FSM_INFO_SPK_TEMPR_COEF);
 	fsm_dev->tsel = fsm_get_spk_info(fsm_dev, FSM_INFO_SPK_TEMPR_SEL);
-	pr_addr(debug, "tmax:%d, tcoef:%d, tsel:%d",
+	pr_addr(info, "tmax:%d, tcoef:%d, tsel:%d",
 		fsm_dev->tmax, fsm_dev->tcoef, fsm_dev->tsel);
 	fsm_dev->spkr = fsm_get_spk_info(fsm_dev, FSM_INFO_SPK_RES);
 	fsm_dev->rapp = fsm_get_spk_info(fsm_dev, FSM_INFO_SPK_RAPP);
@@ -1016,9 +1015,9 @@ int fsm_init_info(fsm_dev_t *fsm_dev)
 		fsm_dev->compat.RS2RL_RATIO = \
 				fsm_get_spk_info(fsm_dev, FSM_INFO_RSRL_RATIO);
 	}
-	pr_addr(debug, "pos:%02X, rs_ratio:%d",
+	pr_addr(info, "pos:%02X, rs_ratio:%d",
 		fsm_dev->pos_mask, fsm_dev->compat.RS2RL_RATIO);
-	pr_addr(debug, "spkr:%d, rapp:%d",
+	pr_addr(info, "spkr:%d, rapp:%d",
 		fsm_dev->spkr, fsm_dev->rapp);
 
 	return 0;
@@ -1240,29 +1239,6 @@ static int fsm_get_vbat(fsm_dev_t *fsm_dev)
 	return ret;
 }
 
-#ifdef CONFIG_FSM_VBAT_MONITOR
-static uint16_t fsm_get_vbat_volume(void)
-{
-	struct fsm_vbat_state *vbat_state;
-	uint16_t cur_batv;
-	uint16_t vol_vbat;
-
-	vbat_state = &g_vbat_state;
-	if (vbat_state == NULL) {
-		return -EINVAL;
-	}
-	cur_batv = vbat_state->cur_batv;
-	if (cur_batv > FSM_VBAT_HIGH)
-		cur_batv = FSM_VBAT_HIGH;
-	else if (cur_batv < FSM_VBAT_LOW)
-		cur_batv = FSM_VBAT_LOW;
-	vol_vbat = 0xFF - (FSM_VBAT_HIGH - cur_batv) / FSM_VBAT_STEP;
-	pr_info("vbat_vol:%X", vol_vbat);
-
-	return vol_vbat;
-}
-#endif
-
 int fsm_write_stereo_ceof(fsm_dev_t *fsm_dev)
 {
 	stereo_coef_t *stereo_coef;
@@ -1295,7 +1271,6 @@ int fsm_write_excer_ram(fsm_dev_t *fsm_dev)
 {
 	ram_data_t *excer_ram;
 	uint8_t write_buf[4];
-	int count;
 	int ret;
 	int i;
 
@@ -1307,16 +1282,14 @@ int fsm_write_excer_ram(fsm_dev_t *fsm_dev)
 		pr_addr(err, "note: not found data");
 		return -EINVAL;
 	}
-	count = excer_ram->len;
-	pr_addr(debug, "excer ram len: %d", count);
-	if (fsm_dev->compat.DACEQA == 0 || fsm_dev->compat.DACEQWL == 0) {
-		pr_err("error: DACEQA:%d, DACEQWL:%d", fsm_dev->compat.DACEQA,
-				fsm_dev->compat.DACEQWL);
+	if (excer_ram->len != fsm_dev->compat.excer_ram_len) {
+		pr_addr(err, "invalid size: %d", excer_ram->len);
 		return -EINVAL;
 	}
+	pr_addr(debug, "excer ram len: %d", excer_ram->len);
 	ret = fsm_reg_write(fsm_dev, fsm_dev->compat.DACEQA,
 			fsm_dev->compat.addr_excer_ram);
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < excer_ram->len; i++) {
 		convert_data_to_bytes(excer_ram->data[i], write_buf);
 		ret |= fsm_burst_write(fsm_dev, fsm_dev->compat.DACEQWL,
 				write_buf, sizeof(uint32_t));
@@ -1481,11 +1454,6 @@ int fsm_write_preset_eq(fsm_dev_t *fsm_dev,
 
 	if (preset_list->len != fsm_dev->compat.preset_unit_len) {
 		pr_addr(err, "invalid size: %d", preset_list->len);
-		return -EINVAL;
-	}
-	if (fsm_dev->compat.ACSEQA == 0 || fsm_dev->compat.ACSEQWL == 0) {
-		pr_err("error: DACEQA:%d, DACEQWL:%d", fsm_dev->compat.ACSEQA,
-				fsm_dev->compat.ACSEQWL);
 		return -EINVAL;
 	}
 	ret = fsm_reg_write(fsm_dev, fsm_dev->compat.ACSEQA,
@@ -1654,7 +1622,7 @@ static int fsm_set_tsctrl(fsm_dev_t *fsm_dev,
 	if (fsm_dev == NULL) {
 		return -EINVAL;
 	}
-	ret = fsm_reg_read(fsm_dev, REG(FSM_TSCTRL), &tsctrl);
+	ret = fsm_reg_multiread(fsm_dev, REG(FSM_TSCTRL), &tsctrl);
 	set_bf_val(&tsctrl, FSM_TSEN, enable);
 	set_bf_val(&tsctrl, FSM_OFF_AUTOEN, auto_off);
 	ret |= fsm_reg_write(fsm_dev, REG(FSM_TSCTRL), tsctrl);
@@ -1680,28 +1648,50 @@ static uint16_t fsm_cal_threshold(fsm_dev_t *fsm_dev,
 	result = (uint32_t)zmdata * FSM_MAGNIF_TEMPR_COEF;
 	result = result / (FSM_MAGNIF_TEMPR_COEF + fsm_dev->tcoef *
 			(mt_tempr * fsm_dev->tmax / 100 - (fsm_dev->tsel >> 1)));
-	pr_addr(info, "MT[%d-%d]:%X", mt_type, mt_tempr, result);
+	pr_addr(info, "MT[%2d-%3d]:%X", mt_type, mt_tempr, result);
 
 	return (uint16_t)result;
 }
 
+static int fsm_calc_step_unit(fsm_dev_t *fsm_dev)
+{
+	int step_unit;
+	int spkr_mag;
+
+	if (fsm_dev == NULL) {
+		return 0;
+	}
+	spkr_mag = FSM_MAGNIF(fsm_dev->spkr);
+	if (fsm_dev->spkr <= 10) {
+		step_unit = spkr_mag * FSM_SPKR_ALLOWANCE / 12700;
+	} else {
+		step_unit = spkr_mag * FSM_RCVR_ALLOWANCE / 12700;
+	}
+	step_unit += 1; // fix integer precision
+	pr_addr(info, "spkr:%d, step:%d", fsm_dev->spkr, step_unit);
+
+	return step_unit;
+}
+
 static int fsm_check_re25_range(fsm_dev_t *fsm_dev, int re25)
 {
-	int temp_val;
+	int zmimp_min;
+	int step_unit;
+	int spkr_mag;
 	int re25_min;
 	int re25_max;
 
 	if (fsm_dev == NULL) {
 		return -EINVAL;
 	}
-	temp_val = FSM_MAGNIF(fsm_dev->spkr);
-	if (fsm_dev->spkr <= 10) { // 10 ohm
-		re25_min = temp_val * (100 - FSM_SPKR_ALLOWANCE) / 100;
-		re25_max = temp_val * (100 + FSM_SPKR_ALLOWANCE) / 100;
-	} else {
-		re25_min = temp_val * (100 - FSM_RCVR_ALLOWANCE) / 100;
-		re25_max = temp_val * (100 + FSM_RCVR_ALLOWANCE) / 100;
+	spkr_mag = FSM_MAGNIF(fsm_dev->spkr);
+	step_unit = fsm_calc_step_unit(fsm_dev);
+	re25_min = spkr_mag - 0x7F * step_unit;
+	zmimp_min = fsm_cal_spkr_zmimp(fsm_dev, 0xFFF0);
+	if (re25_min < zmimp_min) {
+		re25_min = zmimp_min;
 	}
+	re25_max = spkr_mag + 0x7F * step_unit;
 	pr_addr(info, "spkr:%d, min:%d, max:%d",
 			fsm_dev->spkr, re25_min, re25_max);
 	if (re25 < re25_min || re25 > re25_max) {
@@ -1761,12 +1751,12 @@ static int fsm_set_threshold_v2(fsm_dev_t *fsm_dev, uint16_t zmdata)
 	return ret;
 }
 
-int fsm_cal_spkr_zmimp(fsm_dev_t *fsm_dev, uint16_t data)
+uint32_t fsm_cal_spkr_zmimp(fsm_dev_t *fsm_dev, uint16_t data)
 {
-	int result;
+	uint32_t result;
 
 	if (!fsm_dev) {
-		return -EINVAL;
+		return 0xFFFF;
 	}
 	if (fsm_dev->compat.RS2RL_RATIO == 0) {
 		pr_addr(info, "invalid rs ratio");
@@ -1813,6 +1803,7 @@ static int fsm_set_threshold(fsm_dev_t *fsm_dev,
 	ret |= fsm_check_re25_range(fsm_dev, calib.re25);
 	if (ret) {
 		pr_err("check re25 fail:%d", ret);
+		fsm_dev->re25 = calib.re25 = 0;
 		fsm_dev->state.calibrated = false;
 		fsm_reg_write(fsm_dev, REG(FSM_ADCTIME), 0x0031);
 		return ret;
@@ -1839,7 +1830,8 @@ int fsm_parse_otp(fsm_dev_t *fsm_dev, uint16_t value,
 	int spkr_mag;
 	int offset;
 
-	if (fsm_dev == NULL) {
+	if (fsm_dev == NULL || re25 == NULL || count == NULL) {
+		pr_err("bad parameters");
 		return -EINVAL;
 	}
 
@@ -1847,12 +1839,9 @@ int fsm_parse_otp(fsm_dev_t *fsm_dev, uint16_t value,
 	cal_count = parse_otp_write_count(fsm_dev, value);
 	pr_addr(info, "cal_count:%d", cal_count);
 	fsm_dev->state.otp_stored = ((cal_count > 0) ? 1 : 0);
-	if (count != NULL) {
 		*count = cal_count;
-	}
 	if (cal_count <= 0) {
-		if (re25)
-			*re25 = 0;
+		*re25 = 0;
 		return 0;
 	}
 
@@ -1860,15 +1849,7 @@ int fsm_parse_otp(fsm_dev_t *fsm_dev, uint16_t value,
 	if (re25 != NULL) {
 		byte = (uint8_t)((value >> 8) & 0xFF);
 		spkr_mag = FSM_MAGNIF(fsm_dev->spkr);
-		if (fsm_dev->spkr <= 10) {
-			step_unit = spkr_mag * FSM_SPKR_ALLOWANCE / 12700;
-		} else {
-			step_unit = spkr_mag * FSM_RCVR_ALLOWANCE / 12700;
-		}
-		step_unit += 1; // fix integer precision
-		if (byte == 0x7F) {
-			byte = 0x00;
-		}
+		step_unit = fsm_calc_step_unit(fsm_dev);
 		offset = (byte & 0x7F) * step_unit;
 		if ((byte & 0x80) != 0) {
 			*re25 = spkr_mag - offset;
@@ -1904,7 +1885,10 @@ int fsm_check_otp(fsm_dev_t *fsm_dev)
 	if (count > 0 && count < fsm_dev->compat.otp_max_count) {
 		fsm_set_threshold(fsm_dev, re25, FSM_DATA_TYPE_RE25);
 	} else if (count == 0) {
-		pr_addr(warning, "not calibrate yet");
+		// not calibrated yet, use default re25 of dts
+		re25 = fsm_dev->re25_dft;
+		pr_addr(info, "not calirated, use re25_dft:%d", re25);
+		fsm_set_threshold(fsm_dev, re25, FSM_DATA_TYPE_RE25);
 	} else {
 		pr_addr(warning, "otp write count max");
 		ret = -9527; // count limit
@@ -1924,18 +1908,15 @@ int fsm_config_vol(fsm_dev_t *fsm_dev)
 	if (!fsm_dev || !cfg) {
 		return -EINVAL;
 	}
-	if (cfg->stream_muted) {
-		return fsm_reg_write(fsm_dev, REG(FSM_AUDIOCTRL), 0x0000);
-	}
+
 	if (cfg->volume > FSM_VOLUME_MAX) {
 		cfg->volume = FSM_VOLUME_MAX;
 	}
-	volume = (fsm_dev->state.calibrated ? cfg->volume : 0xDF); // -12dB
-#ifdef CONFIG_FSM_VBAT_MONITOR
-	if (cfg->next_scene < FSM_SCENE_LOW_PWR) {
-		volume = MIN(volume, fsm_get_vbat_volume());
+	if (fsm_dev->re25_dft == 0 && !fsm_dev->state.calibrated) {
+		volume = 0xDF; // -12dB
+	} else {
+		volume = cfg->volume;
 	}
-#endif
 	volume = ((volume << 8) & 0xFF00);
 	pr_addr(debug, "vol: %04X", volume);
 
@@ -1954,12 +1935,7 @@ static uint8_t fsm_re25_to_byte(fsm_dev_t *fsm_dev, int re25)
 	}
 
 	spkr_mag = FSM_MAGNIF(fsm_dev->spkr);
-	if (fsm_dev->spkr <= 10) {
-		step_unit = (spkr_mag * FSM_SPKR_ALLOWANCE) / 12700;
-	} else {
-		step_unit = (spkr_mag * FSM_RCVR_ALLOWANCE) / 12700;
-	}
-	step_unit += 1; // fix integer precision
+	step_unit = fsm_calc_step_unit(fsm_dev);
 	offset = re25 - spkr_mag;
 	if (offset < 0) {
 		offset *= -1;
@@ -2148,6 +2124,25 @@ int fsm_check_status(fsm_dev_t *fsm_dev)
 	return -EINVAL;
 }
 
+int fsm_check_spkcoef(fsm_dev_t *fsm_dev)
+{
+	uint8_t reg_tcoef;
+	uint16_t value;
+	int ret;
+
+	if (fsm_dev == NULL) {
+		return -EINVAL;
+	}
+	reg_tcoef = REG(FSM_TEMPSEL);
+	ret = fsm_reg_read(fsm_dev, reg_tcoef, &value);
+	if (value == 0x0010) {
+		// not inited yet
+		return -EINVAL;
+	}
+
+	return ret;
+}
+
 int fsm_ops_dummy(fsm_dev_t *fsm_dev)
 {
 	return 0;
@@ -2184,6 +2179,11 @@ int fsm_stub_dev_init(fsm_dev_t *fsm_dev)
 
 	if (cfg->force_init) {
 		pr_addr(info, "force init");
+	}
+	ret = fsm_check_spkcoef(fsm_dev);
+	if (ret) {
+		pr_addr(info, "try init device");
+		fsm_dev->state.dev_inited = false;
 	}
 	if (!cfg->force_init && fsm_dev->state.dev_inited) {
 		return 0;
@@ -2468,10 +2468,6 @@ int fsm_stub_post_calib(fsm_dev_t *fsm_dev)
 			}
 		}
 	}
-	if (fsm_dev->is1603s) {
-		// recover lnm
-		ret |= fsm_set_bf(fsm_dev, FSM_LNM_EN, 1);
-	}
 	ret |= fsm_set_tsctrl(fsm_dev, false, false);
 	fsm_wait_stable(fsm_dev, FSM_WAIT_TSIGNAL_OFF);
 	fsm_dev->cur_scene = FSM_SCENE_UNKNOW;
@@ -2529,20 +2525,6 @@ int fsm_dev_recover(fsm_dev_t *fsm_dev)
 	cfg->force_scene = false;
 
 	return ret;
-}
-
-int fsm_save_re25(struct fsm_calib_v2 *data)
-{
-	if (!data) {
-		return -EINVAL;
-	}
-#if defined(CONFIG_FSM_I2C)
-	return fsm_i2c_save_re25(data);
-#elif defined(FSM_HAL_SUPPORT)
-	return fsm_hal_save_re25(data);
-#else
-	return 0;
-#endif
 }
 
 int fsm_get_livedata(fsm_msg_t *data)
@@ -2652,7 +2634,6 @@ int fsm_detect_device(fsm_dev_t *fsm_dev, uint8_t dev_id)
 		break;
 	case FS1603_DEV_ID:
 		fs1603_ops(fsm_dev);
-		fs_nondsp_ops(fsm_dev);
 		break;
 	case FS1818_DEV_ID:
 	case FS1896_DEV_ID:
@@ -2768,6 +2749,9 @@ void fsm_init(void)
 	}
 	*/
 	fsm_mutex_lock();
+	pr_info("version: %s", FSM_CODE_VERSION);
+	pr_info("branch : %s", FSM_GIT_BRANCH);
+	pr_info("date   : %s", FSM_CODE_DATE);
 	ret = fsm_try_init();
 	if (ret) { // no device or firmware
 		pr_err("init failed: %d", ret);
@@ -2797,8 +2781,10 @@ void fsm_speaker_onn(void)
 	fsm_list_wait(FSM_WAIT_AMP_ON);
 	vbat_state = &g_vbat_state;
 	vbat_state->cur_batv = 0;
-	fsm_list_func(fsm_dev, fsm_get_vbat);
-	pr_info("vbat:%d", vbat_state->cur_batv);
+	if (cfg->use_monitor) {
+		fsm_list_func(fsm_dev, fsm_get_vbat);
+		pr_info("vbat:%d", vbat_state->cur_batv);
+	}
 	fsm_list_func_arg(fsm_dev, fsm_stub_set_mute, false);
 	vbat_state->last_batv = vbat_state->cur_batv;
 	fsm_list_wait(FSM_WAIT_AMP_ADC_ON);
@@ -2869,35 +2855,6 @@ void fsm_stereo_rotation(int next_angle)
 	}
 	fsm_list_func_arg(fsm_dev, fsm_swap_channel, cfg->next_angle);
 	cfg->cur_angle = cfg->next_angle;
-	fsm_mutex_unlock();
-}
-
-void fsm_batv_monitor(void)
-{
-	fsm_config_t *cfg = fsm_get_config();
-	struct fsm_vbat_state *vbat_state;
-	fsm_dev_t *fsm_dev = NULL;
-
-	vbat_state = &g_vbat_state;
-	if (cfg->skip_monitor || !vbat_state) {
-		return;
-	}
-	fsm_mutex_lock();
-	vbat_state->cur_batv = 0;
-	// get current batv
-	fsm_list_func(fsm_dev, fsm_get_vbat);
-	pr_info("cur_batv:%d", vbat_state->cur_batv);
-	if ((vbat_state->cur_batv <= vbat_state->last_batv - FSM_VBAT_STEP)
-			|| (vbat_state->batvh_count >= FSM_VBATH_COUNT)
-			|| (vbat_state->last_batv == 0)) {
-		vbat_state->batvh_count = 0;
-		// update volume
-		fsm_list_func(fsm_dev, fsm_config_vol);
-		// update last batv
-		vbat_state->last_batv = vbat_state->cur_batv;
-	} else if (vbat_state->cur_batv >= vbat_state->last_batv + FSM_VBAT_STEP) {
-		vbat_state->batvh_count++;
-	}
 	fsm_mutex_unlock();
 }
 
