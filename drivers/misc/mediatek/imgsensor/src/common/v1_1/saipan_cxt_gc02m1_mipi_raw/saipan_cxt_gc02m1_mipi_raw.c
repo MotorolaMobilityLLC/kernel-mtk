@@ -42,7 +42,7 @@
 #define LOG_1 LOG_INF("SAIPAN_CXT_GC02M1, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
 
@@ -430,7 +430,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	}
 	if (*sensor_id != imgsensor_info.sensor_id) {
 		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
-		pr_info("get_imgsensor_id: 0x%x fail\n", *sensor_id);
+		pr_debug("get_imgsensor_id: 0x%x fail\n", *sensor_id);
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
