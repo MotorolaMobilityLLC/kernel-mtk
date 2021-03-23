@@ -24,6 +24,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include "mot_s5khm2mipiraw_Sensor.h"
+#include "mot_s5khm2_pdaf.h"
 
 #define PFX "[imgsensor] mot_s5khm2mipiraw"
 #define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
@@ -193,31 +194,6 @@ static struct imgsensor_struct imgsensor = {
 	.ihdr_mode = 0,
 	.i2c_write_id = I2C_ADDR,
 	.current_ae_effective_frame = 2,
-};
-
-/* VC2 for PDAF */
-static struct SENSOR_VC_INFO_STRUCT vc_info_preview = {
-	0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	0x00, 0x2b, 0x0838, 0x0618, /* VC0 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC1 */
-	0x01, 0x30, 0x0208, 0x0300, /* VC2 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC3 */
-};
-
-static struct SENSOR_VC_INFO_STRUCT vc_info_capture = {
-	0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	0x00, 0x2b, 0x1070, 0x0c30, /* VC0 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC1 */
-	0x01, 0x30, 0x0208, 0x0300, /* VC2 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC3 */
-};
-
-static struct SENSOR_VC_INFO_STRUCT vc_info_video = {
-	0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	0x00, 0x2b, 0x0838, 0x0618, /* VC0 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC1 */
-	0x01, 0x30, 0x0208, 0x0300, /* VC2 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC3 */
 };
 
 static kal_uint16 sensor_init_setting_array[] = {
@@ -1005,7 +981,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = PDAF_SUPPORT;
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
 	sensor_info->SensorClockDividCount = 3; /* not use */
@@ -1606,22 +1582,21 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			#if 0
-			memcpy((void *)PDAFinfo,
-				(void *)&imgsensor_pd_info,
-				sizeof(struct SET_PD_BLOCK_INFO_T));
-			#endif
-			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			#if 0
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			#if PDAF_SUPPORT
 			memcpy((void *)PDAFinfo,
-				(void *)&imgsensor_pd_info_16_9,
+				(void *)&imgsensor_pd_info[0],
 				sizeof(struct SET_PD_BLOCK_INFO_T));
 			#endif
 			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			#if PDAF_SUPPORT
+			memcpy((void *)PDAFinfo,
+				(void *)&imgsensor_pd_info[1],
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			#endif
+			break;
 		default:
 			break;
 		}
@@ -1633,23 +1608,23 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		/*PDAF capacity enable or not, 2p8 only full size support PDAF*/
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			/* video & capture use same setting */
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM2:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
@@ -1797,18 +1772,28 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		pvcinfo =
 		 (struct SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
 		switch (*feature_data_32) {
+		#if PDAF_SUPPORT
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			memcpy((void *)pvcinfo, (void *)&vc_info_preview,
+			memcpy((void *)pvcinfo, (void *)&vc_info[0],
 				sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			memcpy((void *)pvcinfo, (void *)&vc_info_capture,
+			memcpy((void *)pvcinfo, (void *)&vc_info[0],
 				sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			memcpy((void *)pvcinfo, (void *)&vc_info_video,
+			memcpy((void *)pvcinfo, (void *)&vc_info[0],
 				sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			memcpy((void *)pvcinfo, (void *)&vc_info[0],
+				sizeof(struct SENSOR_VC_INFO_STRUCT));
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			memcpy((void *)pvcinfo, (void *)&vc_info[1],
+				sizeof(struct SENSOR_VC_INFO_STRUCT));
+			break;
+		#endif
 		default:
 			break;
 		}
