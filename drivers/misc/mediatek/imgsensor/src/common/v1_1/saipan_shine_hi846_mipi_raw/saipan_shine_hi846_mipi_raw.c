@@ -26,7 +26,7 @@
 
 #define PFX "saipan_shine_hi846_camera_sensor"
 #define LOG_INF(format, args...)    \
-	pr_info(PFX "[%s] " format, __func__, ##args)
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define LOG_ERR(format, args...)  \
 	pr_err(PFX "[%s] " format, __func__, ##args)
@@ -967,12 +967,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
-                pr_info("zyk i2c_write_id =0x%x",imgsensor.i2c_write_id);
+                pr_debug("zyk i2c_write_id =0x%x",imgsensor.i2c_write_id);
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				pr_info("i2c write id : 0x%x, sensor id: 0x%x\n",
+				pr_debug("i2c write id : 0x%x, sensor id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);
                                 /*sensor_init();
 				rc = saipan_shine_hi846_sensor_otp_info();
@@ -1030,7 +1030,7 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				pr_info("i2c write id: 0x%x, sensor id: 0x%x\n",
+				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
