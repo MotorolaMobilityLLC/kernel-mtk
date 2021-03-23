@@ -34,11 +34,12 @@
 *****************************************************************************/
 #include "focaltech_core.h"
 #include "focaltech_flash.h"
+#include "tpd.h"
 
 /*****************************************************************************
 * Private constant and macro definitions using #define
 *****************************************************************************/
-#define FTS_FW_REQUEST_SUPPORT                      0
+#define FTS_FW_REQUEST_SUPPORT                      1
 /* Example: focaltech_ts_fw_tianma.bin */
 #define FTS_FW_NAME_PREX_WITH_REQUEST               "focaltech_ts_fw_"
 
@@ -1885,9 +1886,14 @@ static int fts_get_fw_file_via_request_firmware(struct fts_upgrade *upg)
         return -EINVAL;
     }
 
-    snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin", \
-             FTS_FW_NAME_PREX_WITH_REQUEST, \
-             upg->module_info->vendor_name);
+    if (tpd_dts_data.panel_supplier)
+        snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin", \
+                 FTS_FW_NAME_PREX_WITH_REQUEST, \
+                 tpd_dts_data.panel_supplier);
+    else
+        snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin", \
+                 FTS_FW_NAME_PREX_WITH_REQUEST, \
+                 upg->module_info->vendor_name);
 
     ret = request_firmware(&fw, fwname, upg->ts_data->dev);
     if (0 == ret) {
