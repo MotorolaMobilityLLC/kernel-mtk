@@ -793,7 +793,10 @@ static int mt_usb_get_property(struct power_supply *psy,
 			val->intval = 0;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		val->intval = 500000;
+	        if (info->type == POWER_SUPPLY_USB_TYPE_SDP)
+			val->intval = 500000;
+		else
+			val->intval = 1500000;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = 5000000;
