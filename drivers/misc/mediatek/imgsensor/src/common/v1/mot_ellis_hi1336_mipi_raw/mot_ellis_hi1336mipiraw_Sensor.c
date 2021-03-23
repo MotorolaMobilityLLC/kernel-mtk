@@ -164,7 +164,7 @@ by different scenario */
     .mipi_sensor_type = MIPI_OPHY_NCSI2,
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
 //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-    .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
+    .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
     .mclk = 24,
     .mipi_lane_num = SENSOR_MIPI_4_LANE,
     .i2c_addr_table = {0x40, 0xff},
