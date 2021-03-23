@@ -10,41 +10,30 @@
 
 /* debug print macro, default closed */
 // #define DEBUG
-// #define FSM_DEBUG
-// #define FSM_DEBUG_I2C
+#define FSM_DEBUG
+#define FSM_DEBUG_I2C
 
 #if defined(__KERNEL__)
 /* kernel module: */
 #define CONFIG_FSM_MISC
-// #define CONFIG_FSM_REGMAP
-// #define CONFIG_FSM_PROC
-#define CONFIG_FSM_SYSFS
+#define CONFIG_FSM_MTK
 #define CONFIG_FSM_CODEC
 #define CONFIG_FSM_FIRMWARE
 #define CONFIG_FSM_I2C
-// #define CONFIG_FSM_QCOM_NONDSP
-// #define CONFIG_FSM_Q820_EVB
-// #define CONFIG_FSM_STUB
-// #define CONFIG_FSM_VBAT_MONITOR
 #endif
 
 /* device chip select: */
-// #define CONFIG_FSM_NONDSP
-// #define CONFIG_FSM_FS1601S
-// #define CONFIG_FSM_FS1801
 #define CONFIG_FSM_FS1603
-// #define CONFIG_FSM_FS1860
 
 /* VERSION INFORMATION */
-#define FSM_CODE_VERSION "v3.0.6"
-#define FSM_CODE_DATE    "20200724"
-#define FSM_GIT_BRANCH   "wintech-s96767"
-#define FSM_GIT_COMMIT   "844068"
+#define FSM_CODE_VERSION "v3.1.0"
+#define FSM_CODE_DATE    "20210724"
+#define FSM_GIT_BRANCH   "moto-fs1894s"
+#define FSM_GIT_COMMIT   "739aef79"
 
 #define FSM_DRV_NAME     "fs16xx"
 #define FSM_FW_NAME      "fs16xx.fsm"
-#define FSM_CALIB_FILE   "/data/fsm_calib.txt"
-// #define FSM_CALIB_FILE "/mnt/vendor/persist/fsm_calib.txt"
+#define FSM_CALIB_FILE "/mnt/vendor/persist/fsm_calib.txt"
 
 /* scenes defination */
 #define FSM_SCENE_UNKNOW           (0)
@@ -209,8 +198,8 @@ enum dev_id_index {
 #define FSM_RCVR_ALLOWANCE    (20) // percentage: %
 #define FSM_MAGNIF(val)       ((val) << FSM_MAGNIF_FACTOR)
 #endif
-#define FSM_WAIT_STABLE_RETRY (200)
-#define FSM_CALIB_RE25_RETRY  (50)
+#define FSM_WAIT_STABLE_RETRY (10)
+#define FSM_CALIB_RE25_RETRY  (20)
 #define FSM_I2C_RETRY         (20)
 #define FSM_ZMDELTA_MAX       0x150
 #define FSM_RS_TRIM_DEFAULT   0x8F
@@ -354,7 +343,7 @@ typedef struct fsm_pll_config fsm_pll_config_t;
 #define PRESET_VER_FS1801  0x8A01 // FS1801 series
 #define PRESET_VER_FS1860  0x8701 // FS1860
 #define PRESET_VER3        (0x93)
-#define IS_PRESET_V3(ver)  (HIGH8(ver) == PRESET_VER3)
+#define IS_PRESET_V3(ver)  (HIGH8(ver) >= PRESET_VER3)
 
 enum fsm_dsc_type {
 	FSM_DSC_DEV_INFO = 0,
@@ -576,7 +565,7 @@ struct fsm_ops {
 typedef struct fsm_ops fsm_ops_t;
 
 struct fsm_config {
-	int8_t dev_count;
+	uint8_t dev_count;
 	uint16_t cur_angle;
 	uint16_t next_angle;
 	uint16_t next_scene;
@@ -607,6 +596,7 @@ struct fsm_config {
 	uint32_t vddd_on      : 1;
 	uint32_t reset_chip   : 1;
 	uint32_t stop_test    : 1;
+	uint32_t use_monitor  : 1;
 	uint32_t skip_monitor : 1;
 	uint32_t stream_muted : 1;
 	uint32_t i2c_debug    : 1;
@@ -732,6 +722,7 @@ struct fsm_state {
 
 struct fsm_compat {
 	uint16_t preset_unit_len;
+	uint16_t excer_ram_len;
 	uint16_t addr_excer_ram;
 	uint16_t otp_max_count;
 	uint16_t ACSEQA  : 8;
@@ -763,9 +754,18 @@ struct fsm_monitor_data {
 #define FSM_IOC_CALIBRATE   _IOW(FSM_IOC_MAGIC, 7, int)
 #define FSM_IOC_F0_TEST     _IOW(FSM_IOC_MAGIC, 8, int)
 #define FSM_IOC_GET_RESULT  _IOR(FSM_IOC_MAGIC, 9, void *)
-#define FSM_IOC_SEND_APR    _IOWR(FSM_IOC_MAGIC, 10, void *)
+#define FSM_IOC_SET_ADDR    _IOW(FSM_IOC_MAGIC, 10, int)
+#define FSM_IOC_SEND_APR    _IOWR(FSM_IOC_MAGIC, 11, void *)
+#define FSM_IOC_GET_INFO    _IOR(FSM_IOC_MAGIC, 12, void *)
+#define FSM_IOC_SET_RE      _IOW(FSM_IOC_MAGIC, 13, void *)
 #define FSM_IOC_SET_SLAVE   (0x0706)
-#define FSM_IOC_MAXNR       (11)
+#define FSM_IOC_MAXNR       (14)
+#ifdef CONFIG_COMPAT
+#define FSM_IOC_GET_RESULT32 _IOR(FSM_IOC_MAGIC, 9, compat_uptr_t)
+#define FSM_IOC_SEND_APR32   _IOWR(FSM_IOC_MAGIC, 11, compat_uptr_t)
+#define FSM_IOC_GET_INFO32   _IOR(FSM_IOC_MAGIC, 12, compat_uptr_t)
+#define FSM_IOC_SET_RE32     _IOW(FSM_IOC_MAGIC, 13, compat_uptr_t)
+#endif
 
 struct fsm_misc_args {
 	uint16_t scene;
@@ -830,6 +830,7 @@ struct fsm_dev {
 	int id;
 	int spkr;
 	int re25;
+	int re25_dft;
 	int f0;
 	int errcode;
 	char const *dev_name;
