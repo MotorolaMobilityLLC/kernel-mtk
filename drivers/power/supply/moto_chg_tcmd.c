@@ -729,32 +729,27 @@ static ssize_t bat_id_show(struct device *dev, struct device_attribute *attr, ch
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct moto_chg_tcmd_data *data = platform_get_drvdata(pdev);
-	struct moto_chg_tcmd_client *client;
-	int channel;
 	int val;
 	int ret;
 
-	channel = data->adc_channel_list[MOTO_ADC_TCMD_CHANNEL_BATID];
-	if (channel < 100) {
-		client = ap_adc_client;
-	} else {
-		client = pm_adc_client;
-		channel -= 100;
-	}
-
-	if (!client) {
-		pr_err("%s adc_client(%d) is null\n", __func__, channel);
-		ret = -ENODEV;
+	if (!bat_client) {
+		pr_err("%s bat client  is null\n", __func__);
 		goto end;
 	}
 
-	moto_chg_get_adc_value(data, client, channel, &val);
+	ret = bat_client->get_bat_id(bat_client->data,
+					&val);
+	if (ret) {
+		pr_err("%s get bat vol fail %d\n", __func__, ret);
+		val = ret;
+		goto end;
+	}
 	ret = (val * 1000 / (data->batid_v_ref- val) ) * data->batid_r_pull/ 1000;
 
 end:
 	data->bat_id = ret;
 
-	return snprintf(buf, PAGE_SIZE, "%d\n", data->bat_voltage);
+	return snprintf(buf, PAGE_SIZE, "%d\n", data->bat_id);
 }
 
 static ssize_t bat_id_store(struct device *dev, struct device_attribute *attr,
