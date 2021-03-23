@@ -15,17 +15,13 @@
 #include <sound/tlv.h>
 #include <linux/version.h>
 
-struct fsm_codec {
-	struct workqueue_struct *codec_wq;
-	struct delayed_work codec_monitor;
-};
-
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
 #define snd_soc_codec              snd_soc_component
 #define snd_soc_add_codec_controls snd_soc_add_component_controls
 #define snd_soc_register_codec     snd_soc_register_component
 #define snd_soc_unregister_codec   snd_soc_unregister_component
 #define snd_soc_codec_driver       snd_soc_component_driver
+#define snd_soc_codec_get_drvdata  snd_soc_component_get_drvdata
 #define remove_ret_type void
 #define remove_ret_val
 #else
@@ -36,15 +32,13 @@ struct fsm_codec {
 /* Supported rates and data formats */
 #define FSM_RATES   SNDRV_PCM_RATE_8000_48000
 #define FSM_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE \
-					| SNDRV_PCM_FMTBIT_S32_LE | SNDRV_PCM_FMTBIT_S24_3LE)
+					 | SNDRV_PCM_FMTBIT_S24_3LE | SNDRV_PCM_FMTBIT_S32_LE)
 
-static int fw_inited;
 static const unsigned int fsm_rates[] = { 8000, 16000, 32000, 44100, 48000 };
 static const struct snd_pcm_hw_constraint_list fsm_constraints = {
 	.list = fsm_rates,
 	.count = ARRAY_SIZE(fsm_rates),
 };
-struct fsm_codec *g_fsm_codec;
 
 static int fsm_get_scene_index(uint16_t scene)
 {
@@ -59,6 +53,25 @@ static int fsm_get_scene_index(uint16_t scene)
 	}
 
 	return index;
+}
+
+int fsm_init_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	int state;
+
+	state = (fsm_get_presets() != NULL) ? 1 : 0;
+	pr_info("state:%d", state);
+	ucontrol->value.integer.value[0] = state;
+
+	return 0;
+}
+
+int fsm_init_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	fsm_init();
+	return 0;
 }
 
 int fsm_scene_get(struct snd_kcontrol *kcontrol,
@@ -133,7 +146,7 @@ int fsm_stop_put(struct snd_kcontrol *kcontrol,
 	if (!cfg) {
 		return -1;
 	}
-	pr_info("stop: %x", stop);
+	pr_info("stop: %d", stop);
 	if (stop) {
 		cfg->force_mute = true;
 		fsm_speaker_off();
@@ -161,40 +174,16 @@ int fsm_rotation_put(struct snd_kcontrol *kcontrol,
 {
 	int angle = ucontrol->value.integer.value[0];
 
-	pr_info("angle: %x", angle);
+	pr_info("angle: %d", angle);
 	fsm_stereo_rotation(angle);
 
 	return 0;
 }
 
-int fsm_fw_state_get(struct snd_kcontrol *kcontrol,
-			struct snd_ctl_elem_value *ucontrol)
+static const struct snd_kcontrol_new fsm_snd_controls[] =
 {
-	ucontrol->value.integer.value[0] = fw_inited;
-	pr_info("fw init state: %ld", ucontrol->value.integer.value[0]);
-
-	return 0;
-
-}
-
-int fsm_fw_state_put(struct snd_kcontrol *kcontrol,
-			struct snd_ctl_elem_value *ucontrol)
-{
-	fsm_config_t *cfg = fsm_get_config();
-	int force_init = ucontrol->value.integer.value[0];
-	int ret = 0;
-
-	pr_info("force_init: %x", force_init);
-	ret = fsm_firmware_init(cfg->fw_name);
-	if (!ret)
-		fw_inited = 1;
-
-	FSM_FUNC_EXIT(ret);
-
-	return 0;
-}
-
-static const struct snd_kcontrol_new fsm_snd_controls[] = {
+	SOC_SINGLE_EXT("FSM_Fw_Init", SND_SOC_NOPM, 0, 1, 0,
+			fsm_init_get, fsm_init_put),
 	SOC_SINGLE_EXT("FSM_Scene", SND_SOC_NOPM, 0, FSM_SCENE_MAX, 0,
 			fsm_scene_get, fsm_scene_put),
 	SOC_SINGLE_EXT("FSM_Volume", SND_SOC_NOPM, 0, FSM_VOLUME_MAX, 0,
@@ -203,13 +192,14 @@ static const struct snd_kcontrol_new fsm_snd_controls[] = {
 			fsm_stop_get, fsm_stop_put),
 	SOC_SINGLE_EXT("FSM_Rotation", SND_SOC_NOPM, 0, 360, 0,
 			fsm_rotation_get, fsm_rotation_put),
-	SOC_SINGLE_EXT("FSM_Fw_Init", SND_SOC_NOPM, 0, 1, 0,
-			fsm_fw_state_get, fsm_fw_state_put),
 };
 
 static struct snd_soc_dapm_widget fsm_dapm_widgets_common[] = {
 	/* Stream widgets */
 	SND_SOC_DAPM_AIF_IN("AIF IN", "AIF Playback", 0, SND_SOC_NOPM, 0, 0),
+#ifdef CONFIG_FSM_MTK
+	SND_SOC_DAPM_AIF_OUT("AIF OUT", "AIF Capture", 0, SND_SOC_NOPM, 0, 0),
+#endif
 	SND_SOC_DAPM_OUTPUT("OUTL"),
 	SND_SOC_DAPM_INPUT("AEC Loopback"),
 };
@@ -243,10 +233,6 @@ static int fsm_add_widgets(struct snd_soc_codec *codec)
 				ARRAY_SIZE(fsm_dapm_routes_common));
 	return 0;
 }
-
-#ifdef CONFIG_FSM_NONDSP
-#include "fsm_algo.c"
-#endif
 
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
 //static struct snd_soc_codec *snd_soc_kcontrol_codec(
@@ -347,68 +333,23 @@ static int fsm_hw_params(struct snd_pcm_substream *substream,
 	chn_size = snd_pcm_format_physical_width(format);
 	bclk = srate * chn_size * 2; // params_channels(params);
 	fsm_set_i2s_clocks(srate, bclk);
-	pr_info("srate:%d, chn:2, chn_size:%d, bclk:%d", srate, chn_size, bclk);
+	pr_info("srate:%d, chn:%d, chn_size:%d, bclk:%d", srate,
+			params_channels(params), chn_size, bclk);
 
 	return 0;
-}
-
-int fsm_set_codec_monitor(struct fsm_codec *fsm_codec, bool enable)
-{
-	fsm_config_t *cfg = fsm_get_config();
-	if (!cfg || !fsm_codec || !fsm_codec->codec_wq) {
-		return -EINVAL;
-	}
-#ifdef CONFIG_FSM_VBAT_MONITOR
-	if (enable) {
-		cfg->skip_monitor = false;
-		queue_delayed_work(fsm_codec->codec_wq,
-				&fsm_codec->codec_monitor, 5*HZ);
-	} else {
-		cfg->skip_monitor = true;
-		if (delayed_work_pending(&fsm_codec->codec_monitor)) {
-			cancel_delayed_work_sync(&fsm_codec->codec_monitor);
-		}
-	}
-#endif
-	return 0;
-}
-
-static void fsm_codec_monitor(struct work_struct *work)
-{
-	struct fsm_codec *fsm_codec = g_fsm_codec;
-	fsm_config_t *cfg = fsm_get_config();
-
-	if (!fsm_codec || !cfg) {
-		return;
-	}
-	if (cfg->skip_monitor) {
-		return;
-	}
-	// fsm_get_amb_tempr();
-	fsm_batv_monitor();
-	/* reschedule */
-	queue_delayed_work(fsm_codec->codec_wq, &fsm_codec->codec_monitor,
-			2*HZ);
-
 }
 
 static int fsm_mute_stream(struct snd_soc_dai *dai, int mute, int stream)
 {
-	struct fsm_codec *fsm_codec = g_fsm_codec;
-
 	if (stream != SNDRV_PCM_STREAM_PLAYBACK) {
 		pr_info("captrue stream");
 		return 0;
 	}
 
 	if (mute) {
-		fsm_set_codec_monitor(fsm_codec, false);
 		fsm_speaker_off();
-		fsm_algo_module_ctrl(false);
 	} else {
-		fsm_algo_module_ctrl(true);
 		fsm_speaker_onn();
-		fsm_set_codec_monitor(fsm_codec, true);
 	}
 
 	return 0;
@@ -462,7 +403,7 @@ static struct snd_soc_dai_driver fsm_aif_dai[] = {
 			.rates = FSM_RATES,
 			.formats = FSM_FORMATS,
 		},
-#ifdef CONFIG_FSM_NONDSP // tx only for non dsp
+#ifdef CONFIG_FSM_MTK
 		.capture = {
 			.stream_name = "AIF Capture",
 			.channels_min = 1,
@@ -483,26 +424,17 @@ static struct snd_soc_dai_driver fsm_aif_dai[] = {
 static int fsm_codec_probe(struct snd_soc_codec *codec)
 {
 	fsm_config_t *cfg = fsm_get_config();
-	struct fsm_codec *fsm_codec;
-	int ret;
+	int ret = 0;
 
-	pr_info("dev_name: %s", dev_name(codec->dev));
+	pr_debug("dev_name: %s", dev_name(codec->dev));
 	if (!cfg) {
 		return -EINVAL;
 	}
-	//ret = fsm_firmware_init(cfg->fw_name);
-	ret = fsm_add_widgets(codec);
-	fsm_codec = devm_kzalloc(codec->dev, sizeof(struct fsm_codec), GFP_KERNEL);
-	if (!fsm_codec) {
-		pr_err("allocate memory fail");
-		return -EINVAL;
-	}
-	fsm_codec->codec_wq = create_singlethread_workqueue("fs16xx");
-	INIT_DELAYED_WORK(&fsm_codec->codec_monitor, fsm_codec_monitor);
-	g_fsm_codec = fsm_codec;
-#ifdef CONFIG_FSM_NONDSP
-	ret |= fsm_algo_init(codec);
+	fsm_set_pdev(codec->dev);
+#ifndef CONFIG_FSM_MTK
+	ret = fsm_firmware_init(cfg->fw_name);
 #endif
+	ret |= fsm_add_widgets(codec);
 	pr_info("codec probe done");
 
 	FSM_FUNC_EXIT(ret);
@@ -511,22 +443,14 @@ static int fsm_codec_probe(struct snd_soc_codec *codec)
 
 static remove_ret_type fsm_codec_remove(struct snd_soc_codec *codec)
 {
-	struct fsm_codec *fsm_codec = g_fsm_codec;
 
 	if (codec == NULL) {
 		return remove_ret_val;
 	}
-	if (fsm_codec != NULL) {
-		cancel_delayed_work_sync(&fsm_codec->codec_monitor);
-		destroy_workqueue(fsm_codec->codec_wq);
-		devm_kfree(codec->dev, fsm_codec);
-	}
 	if (fsm_get_pdev() == codec->dev) {
 		fsm_firmware_deinit();
 	}
-#ifdef CONFIG_FSM_NONDSP
-	fsm_algo_deinit(codec);
-#endif
+
 	return remove_ret_val;
 }
 
