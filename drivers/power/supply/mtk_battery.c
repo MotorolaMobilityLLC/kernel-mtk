@@ -350,6 +350,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_status;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
+                bs_data->bat_health = mmi_batt_health_check();
 		val->intval = bs_data->bat_health;
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
@@ -519,6 +520,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 			&& gm->b_EOC != true) {
 			bm_err("POWER_SUPPLY_STATUS_FULL\n");
 			gm->b_EOC = true;
+                        bs_data->bat_status = POWER_SUPPLY_STATUS_FULL;
 			notify_fg_chr_full(gm);
 		} else
 			gm->b_EOC = false;
@@ -3313,6 +3315,8 @@ int battery_init(struct platform_device *pdev)
 
 	/* for gauge hal hw ocv */
 	gm->bs_data.bat_batt_temp = force_get_tbat(gm, true);
+	if (is_kernel_power_off_charging())
+		gm->bs_data.bat_status = POWER_SUPPLY_STATUS_CHARGING;
 	mtk_power_misc_init(gm);
 
 	ret = mtk_battery_daemon_init(pdev);

@@ -1511,6 +1511,28 @@ end_rate_check:
 	return chg_rate;
 }
 
+
+int mmi_batt_health_check(void)
+{
+        static struct mtk_charger *pinfo;
+	struct power_supply *psy;
+
+	if (pinfo == NULL) {
+		psy = power_supply_get_by_name("mtk-master-charger");
+		if (psy == NULL) {
+			chr_err("[%s]psy is not rdy\n", __func__);
+		        return POWER_SUPPLY_HEALTH_GOOD;
+		}
+		pinfo = (struct mtk_charger *)power_supply_get_drvdata(psy);
+	}
+
+	if (pinfo == NULL) {
+		pr_err("[%s]called before charger_manager valid!\n", __func__);
+		return POWER_SUPPLY_HEALTH_GOOD;
+	}
+	return pinfo->mmi.batt_health;
+}
+
 #define MIN_TEMP_C -20
 #define MAX_TEMP_C 60
 #define MIN_MAX_TEMP_C 47
@@ -2213,6 +2235,7 @@ void mmi_init(struct mtk_charger *info)
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
 
+	info->mmi.batt_health = POWER_SUPPLY_HEALTH_GOOD;
 	info->mmi.chg_reboot.notifier_call = chg_reboot;
 	info->mmi.chg_reboot.next = NULL;
 	info->mmi.chg_reboot.priority = 1;
