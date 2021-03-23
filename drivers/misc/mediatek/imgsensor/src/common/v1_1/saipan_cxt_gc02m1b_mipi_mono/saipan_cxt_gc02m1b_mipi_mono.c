@@ -44,7 +44,7 @@
 #define LOG_1 LOG_INF("SAIPAN_CXT_GC02M1B, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
 
@@ -439,7 +439,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				pr_info("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
 			pr_err("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -471,7 +471,7 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				pr_info("open i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+				pr_debug("open i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
 			pr_err("open Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
