@@ -231,12 +231,29 @@
 };
 
 &i2c6 {
-	ext_buck_vgpu@55 {
-		regulator-name ="ext_buck_vgpu";
-		regulator-min-microvolt = <300000>;
-		regulator-max-microvolt = <1300000>;
-		vsel_pin = <2>;
-	};
+    status = "ok";
+    abov_sar@20 {
+        status = "ok";
+        compatible = "abov,abov_sar_mmi_overlay_7ch";
+        reg = <0x20>;
+        cap_vdd-supply = <&mt_pmic_vio28_ldo_reg>;
+        interrupt-parent = <&pio>;
+        interrupts = <1 IRQ_TYPE_EDGE_FALLING 1 0>;
+        abov,irq-gpio-std = <&pio 12 0>;
+        reg_array_len = <0x03>;
+        reg_array_val = <0x07 0x00 0x08 0x1F 0xFB 0x01>;
+        cap,use_channel_ch0 = <0x00>;
+        cap,use_channel_ch1 = <0x01>;
+        cap,use_channel_ch2 = <0x02>;
+        ch0_name = "capsense_bottom";
+        ch1_name = "capsense_top_right";
+        ch2_name = "capsense_top_left";
+        label = "AbovCapSense";
+        cap,channel_number = <0x03>;
+        cap,fw_mode_ret = <0x39>;
+        button_mask = <0x15>;
+        cap,flash_erase_time = <1400>;
+    };
 };
 
 /* CONSYS GPIO standardization */
