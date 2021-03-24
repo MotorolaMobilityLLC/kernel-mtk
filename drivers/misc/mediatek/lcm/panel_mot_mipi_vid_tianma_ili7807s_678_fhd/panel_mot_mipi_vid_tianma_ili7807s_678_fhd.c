@@ -669,7 +669,7 @@ static void lcm_init_power(void)
 
 static void lcm_suspend_power(void)
 {
-	SET_RESET_PIN(0);
+	//SET_RESET_PIN(0);
 	if(lcm_util.set_gpio_lcd_enp_bias) {
 		lcm_util.set_gpio_lcd_enp_bias(0);
 	}
@@ -683,6 +683,9 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
+
+	pr_info("[LCM]lcm_init\n");
+
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	SET_RESET_PIN(0);
@@ -695,6 +698,8 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
+	pr_info("[LCM]lcm_suspend\n");
+
 	push_table(NULL, lcm_suspend_setting,
 			ARRAY_SIZE(lcm_suspend_setting), 1);
 	MDELAY(10);
@@ -705,30 +710,12 @@ static void lcm_resume(void)
 	lcm_init();
 }
 
-#if defined(CONFIG_LEDS_AW99703)
-extern int is_aw99703_chip_exist(void);
-extern int chargepump_set_backlight_level(unsigned int level);
-#endif
-#if defined(CONFIG_LEDS_LM3697)
-extern int is_lm3697_chip_exist(void);
-extern int lm3697_set_brightness_level(unsigned int level);
-#endif
 
 static void lcm_setbacklight(/*void *handle, */unsigned int level)
 {
-	pr_debug("lcm_setbacklight.");
-#if defined(CONFIG_LEDS_AW99703)
-	if (is_aw99703_chip_exist()) {
-		chargepump_set_backlight_level(level);
-		return;
-	}
-#endif
-#if defined(CONFIG_LEDS_LM3697)
-	if (is_lm3697_chip_exist()) {
-		lm3697_set_brightness_level(level);
-		return;
-    }
-#endif
+	pr_info("lcm_setbacklight.");
+
+	return;
 }
 
 struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv = {
