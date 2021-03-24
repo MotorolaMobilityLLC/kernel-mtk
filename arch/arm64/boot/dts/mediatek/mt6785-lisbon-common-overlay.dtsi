@@ -81,7 +81,7 @@
 		aw99703,work-mode = <1>; /* backlight */
 		aw99703,flash-timeout-time = <0x05>; /* 500ms(default) */
 		aw99703,flash-current = <0x08>; /* 59.2mA(default) */
-		aw99703,efuse-config = <0x1C 0x61 0x61 0x4C 0x2C 0xC0 0x08 0x00 0x01 0xC0 0x00 0x00 0x50>;
+		aw99703,efuse-config = <0x1C 0x61 0x61 0x4C 0x2C 0xC0 0x08 0x00 0x00 0xC0 0x00 0x00 0x50>;
 		status = "okay";
 	};
 	i2c_lcd_bias@3e {
@@ -267,14 +267,14 @@
 			output-low;
 		};
 	};
-	mtkfb_pins_lcd_backlight_en0_gpio: lcd_backlight_en1_gpio {
+	mtkfb_pins_lcd_backlight_en1_gpio: lcd_backlight_en1_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	mtkfb_pins_lcd_backlight_en1_gpio: lcd_backlight_en0_gpio {
+	mtkfb_pins_lcd_backlight_en0_gpio: lcd_backlight_en0_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
 			slew-rate = <1>;
