@@ -785,7 +785,7 @@ void mtk_crtc_start_for_pm(struct drm_crtc *crtc);
 void mtk_crtc_stop_for_pm(struct mtk_drm_crtc *mtk_crtc, bool need_wait);
 bool mtk_crtc_frame_buffer_existed(void);
 
-
 int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode);
 int mtk_drm_crtc_set_panel_hbm_gpio(struct drm_crtc *crtc, bool hbm_en);
+int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level);
 #endif /* MTK_DRM_CRTC_H */

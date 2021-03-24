@@ -23,6 +23,10 @@
 #define READ_DDIC_SLOT_NUM (4 * MAX_RX_CMD_NUM)
 #define MAX_DYN_CMD_NUM 20
 
+#define BRIGHTNESS_HBM_ON	0xFFFFFFFE
+#define BRIGHTNESS_HBM_OFF	(BRIGHTNESS_HBM_ON - 1)
+#define HBM_BRIGHTNESS(value) ((value) == 0 ? BRIGHTNESS_HBM_OFF : BRIGHTNESS_HBM_ON)
+#define BL_MAX_LEVEL 255
 
 struct mtk_dsi;
 struct cmdq_pkt;
@@ -211,10 +215,9 @@ struct dynamic_fps_params {
 	unsigned int lfr_minimum_fps;
 };
 
-enum hbm_mode {
-	HBM_MODE_GPIO = 0,
+enum panel_hbm_type {
+	HBM_MODE_DCS_GPIO = 0,
 	HBM_MODE_DCS_ONLY,
-	HBM_MODE_DCS_GPIO,
 };
 
 struct mtk_panel_params {
@@ -251,7 +254,7 @@ struct mtk_panel_params {
 	unsigned int lcm_index;
 	unsigned int wait_sof_before_dec_vfp;
 	unsigned int doze_delay;
-	enum hbm_mode panel_hbm_mode;
+	enum panel_hbm_type hbm_type;
 };
 
 struct mtk_panel_ext {
