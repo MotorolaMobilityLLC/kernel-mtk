@@ -199,6 +199,11 @@ int lm3697_set_brightness_level(unsigned int level)
 {
 	if (!ext_lm3697_data)
 		return 0;
+	pr_info("%s LM3697_level is %d\n", __func__, level);
+
+	lm3697_i2c_write(ext_lm3697_data->client,
+				LM3697_CTRL_A_BRT_LSB,
+				0X00);
 	lm3697_i2c_write(ext_lm3697_data->client,
 				LM3697_CTRL_A_BRT_MSB,
 				level  & 0xff);
