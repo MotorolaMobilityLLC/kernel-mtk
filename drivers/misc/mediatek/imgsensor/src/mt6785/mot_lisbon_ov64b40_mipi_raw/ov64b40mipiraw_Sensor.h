@@ -3654,9 +3654,11 @@ static kal_uint16 ov64b40_slim_video_setting[] = {
     0x3046,0x01,
 };
 
+static kal_uint16 ov64b40_custom1_setting[] = {
+};
 
 //9248x6944_10fps_1996.8Mbps
-static kal_uint16 ov64b40_custom1_setting[] = {
+static kal_uint16 ov64b40_custom3_setting[] = {
     0x0304,0x01,
     0x0305,0xa0,
     0x0325,0x80,
@@ -3986,7 +3988,7 @@ static kal_uint16 ov64b40_custom2_setting[] = {
 };
 
 // 1280x720_240fps_1996.8Mbps
-static kal_uint16 ov64b40_custom3_setting[] = {
+static kal_uint16 ov64b40_custom4_setting[] = {
     0x0304,0x01,
     0x0305,0xa0,
     0x0325,0xE0,
@@ -4149,8 +4151,6 @@ static kal_uint16 ov64b40_custom3_setting[] = {
     0x5780,0xc1,
     0x3046,0x01,
 };
-
-static kal_uint16 ov64b40_custom4_setting[] = {};
 
 typedef enum{
 	IMGSENSOR_MODE_INIT,
@@ -4356,7 +4356,10 @@ struct ov64b40_eeprom_t{
 	uint8_t pdaf_out2_data_mtk[1004];
 	uint8_t pdaf_out1_crc16_mtk[2];
 	uint8_t pdaf_out2_crc16_mtk[2];
-	uint8_t others[1061];
+	uint8_t ovpdaf[732];
+        uint8_t ovpdaf_crc16[2];
+	uint8_t xtalk[288];
+	uint8_t others[40];
 };
 
 typedef struct {
