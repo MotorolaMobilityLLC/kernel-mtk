@@ -629,6 +629,12 @@ static int mmc_blk_ioctl_cmd(struct mmc_blk_data *md,
 		goto cmd_done;
 	}
 
+#ifdef CONFIG_MMC_FFU
+	if (idata->ic.opcode == MMC_FFU_INVOKE_OP) {
+		err = mmc_ffu_invoke(card, idata->buf);
+		goto cmd_done;
+	}
+#endif
 	/*
 	 * Dispatch the ioctl() into the block request queue.
 	 */

@@ -22,3 +22,4 @@ mmc_core-$(CONFIG_MMC_CRYPTO)	+= crypto.o
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/tee/gud/Makefile.include
 endif
+obj-$(CONFIG_MMC_FFU)		+= mmc_ffu.o
