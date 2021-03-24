@@ -191,6 +191,8 @@ static irqreturn_t adsp_irq_dispatcher(int irq, void *data)
 		return IRQ_NONE;
 	pdata->clear_irq(pdata->cid);
 	pdata->irq_cb(irq, pdata->data, pdata->cid);
+	pdata->clear_irq(pdata->cid);
+	wmb(); /* drain writebuffer */
 	return IRQ_HANDLED;
 }
 
