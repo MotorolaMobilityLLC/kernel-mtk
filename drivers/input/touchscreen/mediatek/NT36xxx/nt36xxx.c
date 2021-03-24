@@ -686,6 +686,7 @@ info_retry:
 	ts->abs_x_max = (uint16_t)((buf[5] << 8) | buf[6]);
 	ts->abs_y_max = (uint16_t)((buf[7] << 8) | buf[8]);
 	ts->max_button_num = buf[11];
+	ts->fw_type = buf[14];
 	ts->cascade = buf[34] & 0x01;
 	if (ts->pen_support) {
 		ts->x_gang_num = buf[37];
@@ -701,6 +702,7 @@ info_retry:
 		ts->abs_x_max = TOUCH_DEFAULT_MAX_WIDTH;
 		ts->abs_y_max = TOUCH_DEFAULT_MAX_HEIGHT;
 		ts->max_button_num = TOUCH_KEY_NUM;
+		ts->fw_type = 1;
 
 		if(retry_count < 3) {
 			retry_count++;
@@ -717,7 +719,8 @@ info_retry:
 		ret = 0;
 	}
 
-	NVT_LOG("fw_ver = 0x%02X, fw_type = 0x%02X\n", ts->fw_ver, buf[14]);
+	NVT_LOG("fw_ver=%d, x_num=%d, y_num=%d, abs_xmax=%d, abs_y_max=%d, max_button_num=%d!\n", ts->fw_ver, ts->x_num, ts->y_num, ts->abs_x_max, ts->abs_y_max, ts->max_button_num);
+	NVT_LOG("FW type is 0x%02X\n", buf[14]);
 
 	//---Get Novatek PID---
 	nvt_read_pid();
@@ -1063,6 +1066,22 @@ static int32_t nvt_parse_dt(struct device *dev)
 		return ret;
 	} else {
 		NVT_LOG("SWRST_N8_ADDR=0x%06X\n", SWRST_N8_ADDR);
+	}
+
+	ret = of_property_read_u32(np, "novatek,def-build-id", &ts->build_id);
+	if (ret) {
+		ts->build_id = 0;
+		NVT_LOG("novatek,build_id undefined.\n");
+	} else {
+		NVT_LOG("novatek,build_id=0x%04X\n", ts->build_id);
+	}
+
+	ret = of_property_read_u32(np, "novatek,def-config-id", &ts->config_id);
+	if (ret) {
+		ts->config_id = 0;
+		NVT_LOG("novatek,config_id undefined.\n");
+	} else {
+		NVT_LOG("novatek,config_id=0x%04X\n", ts->config_id);
 	}
 
 	ret = of_property_read_u32(np, "novatek,spi-rd-fast-addr", &SPI_RD_FAST_ADDR);
@@ -1575,6 +1594,7 @@ static int8_t nvt_ts_check_chip_ver_trim(uint32_t chip_ver_trim_addr)
 				ts->mmap = trim_id_table[list].mmap;
 				ts->carrier_system = trim_id_table[list].hwinfo->carrier_system;
 				ts->hw_crc = trim_id_table[list].hwinfo->hw_crc;
+				strncpy(ts->product_id, trim_id_table[list].trim_id, 10);
 				ret = 0;
 				goto out;
 			} else {
@@ -1588,6 +1608,132 @@ static int8_t nvt_ts_check_chip_ver_trim(uint32_t chip_ver_trim_addr)
 
 out:
 	return ret;
+}
+
+#include <linux/major.h>
+#include <linux/kdev_t.h>
+
+/* Attribute: path (RO) */
+static ssize_t path_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	ssize_t blen;
+	const char *path;
+
+	path = kobject_get_path(&ts->client->dev.kobj, GFP_KERNEL);
+	blen = scnprintf(buf, PAGE_SIZE, "%s", path ? path : "na");
+	kfree(path);
+	return blen;
+}
+
+/* Attribute: vendor (RO) */
+static ssize_t vendor_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "novatek_ts");
+}
+
+static ssize_t ic_ver_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int buildid;
+
+	buildid = ts->fw_ver << 8 | ts->fw_type;
+	return scnprintf(buf, PAGE_SIZE, "%s%s\n%s%04x\n%s%04x\n",
+			"Product ID: ", ts->product_id,
+			"Build ID: ", buildid ? buildid : ts->build_id,
+			"Config ID: ", ts->nvt_pid ? ts->nvt_pid : ts->config_id);
+}
+
+static struct device_attribute touchscreen_attributes[] = {
+	__ATTR_RO(path),
+	__ATTR_RO(vendor),
+	__ATTR_RO(ic_ver),
+#ifdef PALM_GESTURE
+	__ATTR(palm_settings, S_IRUGO | S_IWUSR | S_IWGRP, nvt_palm_settings_show, nvt_palm_settings_store),
+#endif
+#ifdef EDGE_SUPPRESSION
+	__ATTR(rotate, S_IRUGO | S_IWUSR | S_IWGRP, nvt_edge_reject_show, nvt_edge_reject_store),
+#endif
+	__ATTR_NULL
+};
+
+/*******************************************************
+Description:
+	Novatek touchscreen FW function class. file node
+	initial function.
+
+return:
+	Executive outcomes. 0---succeed. -1---failed.
+*******************************************************/
+int32_t nvt_fw_class_init(bool create)
+{
+	struct device_attribute *attrs = touchscreen_attributes;
+	int i, error = 0;
+	s32 ret = 0;
+	static struct class *touchscreen_class;
+	static struct device *ts_class_dev;
+	dev_t devno;
+	static int minor;
+
+	NVT_LOG("enter, create=%d", create);
+	if (create) {
+		ret = alloc_chrdev_region(&devno, 0, 1, NVT_SPI_NAME);
+
+		if (ret) {
+			NVT_ERR("cant`t allocate chrdev\n");
+			return ret;
+		}
+
+		touchscreen_class = class_create(THIS_MODULE, "touchscreen");
+		if (IS_ERR(touchscreen_class)) {
+			error = PTR_ERR(touchscreen_class);
+			touchscreen_class = NULL;
+			return error;
+		}
+
+		ts_class_dev = device_create(touchscreen_class, NULL,
+				devno,
+				ts, NVT_SPI_NAME);
+
+		if (IS_ERR(ts_class_dev)) {
+			error = PTR_ERR(ts_class_dev);
+			ts_class_dev = NULL;
+			return error;
+		}
+
+		for (i = 0; attrs[i].attr.name != NULL; ++i) {
+			error = device_create_file(ts_class_dev, &attrs[i]);
+			if (error)
+				break;
+		}
+
+		if (error)
+			goto device_destroy;
+		else
+			NVT_LOG("create /sys/class/touchscreen/%s Succeeded!\n", NVT_SPI_NAME);
+	} else {
+		if (!touchscreen_class || !ts_class_dev)
+			return -ENODEV;
+
+		for (i = 0; attrs[i].attr.name != NULL; ++i)
+			device_remove_file(ts_class_dev, &attrs[i]);
+
+		device_unregister(ts_class_dev);
+		class_unregister(touchscreen_class);
+	}
+
+	return ret;
+
+device_destroy:
+	for (--i; i >= 0; --i)
+		device_remove_file(ts_class_dev, &attrs[i]);
+	device_destroy(touchscreen_class, MKDEV(INPUT_MAJOR, minor));
+	ts_class_dev = NULL;
+	class_unregister(touchscreen_class);
+	NVT_ERR("error creating touchscreen class\n");
+
+	return -ENODEV;
 }
 
 /*******************************************************
@@ -1874,6 +2020,11 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	}
 #endif
 
+	ret = nvt_fw_class_init(true);
+	if (ret) {
+		NVT_ERR("Create touchscreen class failed. ret=%d\n", ret);
+	}
+
 	bTouchIsAwake = 1;
 	tpd_load_status = 1;
 
@@ -1973,6 +2124,8 @@ return:
 static int32_t nvt_ts_remove(struct spi_device *client)
 {
 	NVT_LOG("Removing driver...\n");
+
+	nvt_fw_class_init(false);
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts->early_suspend);

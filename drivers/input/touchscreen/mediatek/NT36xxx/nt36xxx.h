@@ -143,6 +143,10 @@ struct nvt_ts_data {
 	uint8_t y_gang_num;
 	struct input_dev *pen_input_dev;
 	int8_t pen_phys[32];
+        char product_id[10];
+        uint8_t fw_type;
+        uint32_t build_id;
+        uint32_t config_id;
 #ifdef CONFIG_MTK_SPI
 	struct mt_chip_conf spi_ctrl;
 #endif
