@@ -838,12 +838,6 @@ config MTK_BQ2560x_SUPPORT
 	help
 	  BQ 2560x.
 
-config MTK_BAT_NTC_100
-	bool "Battery NTC 100K"
-        default n
-	help
-	  Battery NTC 100K support.
-
 config CHARGER_PD_ET7303
 	bool "Define for cclogic driver Etek ET7303"
         default n
