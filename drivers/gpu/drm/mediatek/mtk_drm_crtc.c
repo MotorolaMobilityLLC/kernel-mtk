@@ -682,6 +682,35 @@ static void bl_cmdq_cb(struct cmdq_cb_data data)
 	kfree(cb_data);
 }
 
+static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
+{
+	unsigned int bl_level;
+	static unsigned int bl_lvl_during_hbm = 0;
+	static bool hbm_mode = true;
+
+	bl_level = *bl_lvl;
+
+	if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
+		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? BL_MAX_LEVEL : bl_lvl_during_hbm;
+		hbm_mode = bl_level == BRIGHTNESS_HBM_ON ? true : false;
+
+		DDPINFO("HBM set  bl_level=%d bl_max_level = %d bl_lvl_during_hbm = %d hbm_mode = %d\n",
+				bl_level, BL_MAX_LEVEL, bl_lvl_during_hbm, hbm_mode);
+	} else {
+		bl_lvl_during_hbm = bl_level;
+
+		if (bl_level == 0) {
+			hbm_mode = false;
+			DDPINFO(" bl_vl=%d, set hbm_mode to false\n", bl_level);
+		}
+		else if (hbm_mode) {
+			DDPINFO("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+			return true;
+		}
+	}
+	return false;
+}
+
 int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -694,6 +723,9 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 	int index = drm_crtc_index(crtc);
 	if (m_new_pq_persist_property[DISP_PQ_CCORR_SILKY_BRIGHTNESS])
 		sb_backlight = level;
+
+	if (panel_set_hbm_backlight(crtc, &level))
+		return 0;
 
 	CRTC_MMP_EVENT_START(index, backlight, (unsigned long)crtc,
 			level);
@@ -1103,7 +1135,7 @@ int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode)
 
 	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 	if (!(mtk_crtc->enabled)) {
-		DDPINFO("Sleep State set backlight stop --crtc not ebable\n");
+		DDPINFO("Sleep State set CABC stop --crtc not ebable\n");
 		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return -EINVAL;
 	}

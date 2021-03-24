@@ -913,5 +913,5 @@ int m4u_sec_init(void);
 
 int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode);
 int mtk_drm_crtc_set_panel_hbm_gpio(struct drm_crtc *crtc, bool hbm_en);
-
+int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level);
 #endif /* MTK_DRM_CRTC_H */
