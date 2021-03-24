@@ -429,30 +429,19 @@ int g_temperature[MAX_TABLE] = {
 	-45/*TEMPERATURE_T9*/
 };
 
-//BAT NTC 100K
-#ifdef CONFIG_MTK_BAT_NTC_100
-#define BAT_NTC_10 0
-#define BAT_NTC_47 0
-#define BAT_NTC_100 1
-#else
 #define BAT_NTC_10 1
 #define BAT_NTC_47 0
-#define BAT_NTC_100 0
-#endif
 
 #if (BAT_NTC_10 == 1)
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+#define RBAT_PULL_UP_R             16900
+#else
 #define RBAT_PULL_UP_R             24000
+#endif
 #endif
 
 #if (BAT_NTC_47 == 1)
 #define RBAT_PULL_UP_R             61900
-#endif
-
-//BAT NTC 100K
-#ifdef CONFIG_MTK_BAT_NTC_100
-#if (BAT_NTC_100 == 1)
-#define RBAT_PULL_UP_R             16900
-#endif
 #endif
 
 #define RBAT_PULL_UP_VOLT          2800
@@ -460,6 +449,33 @@ int g_temperature[MAX_TABLE] = {
 #define BIF_NTC_R 16000
 
 #if (BAT_NTC_10 == 1)
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+struct fuelgauge_temperature Fg_Temperature_Table[23] = {
+		{-40, 202700},
+		{-35, 153500},
+		{-30, 117200},
+		{-25, 89270},
+		{-20, 69590},
+		{-15, 54620},
+		{-10, 43210},
+		{-5, 34430},
+		{0, 27570},
+		{5, 22240},
+		{10, 18060},
+		{15, 14740},
+		{20, 12110},
+		{25, 10000},
+		{30, 8313},
+		{35, 6943},
+		{40, 5820},
+		{45, 4910},
+		{50, 4160},
+		{55, 3540},
+		{60, 3019},
+		{65, 2580},
+		{70, 2221}
+};
+#else
 struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[23] = {
 		{-40, 195652},
 		{-35, 148171},
@@ -486,6 +502,7 @@ struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[23] = {
    		{70, 2227}
 };
 #endif
+#endif
 
 #if (BAT_NTC_47 == 1)
 struct fuelgauge_temperature Fg_Temperature_Table[21] = {
@@ -510,35 +527,6 @@ struct fuelgauge_temperature Fg_Temperature_Table[21] = {
 		{50, 16433},
 		{55, 13539},
 		{60, 11210}
-};
-#endif
-
-//BAT NTC 100K
-#if (BAT_NTC_100 == 1)
-struct fuelgauge_temperature Fg_Temperature_Table[23] = {
-		{-40, 4397119},
-		{-35, 3088598},
-		{-30, 2197225},
-		{-25, 1581880},
-		{-20, 1151036},
-		{-15, 846578},
-		{-10, 628988},
-		{-5, 471632},
-		{0, 357011},
-		{5, 272499},
-		{10, 209709},
-		{15, 162650},
-		{20, 127080},
-		{25, 100000},
-		{30, 79221},
-		{35, 63167},
-		{40, 50676},
-		{45, 40903},
-		{50, 33194},
-		{55, 27090},
-		{60, 22224},
-		{65, 18322},
-		{70, 15184}
 };
 #endif
 
