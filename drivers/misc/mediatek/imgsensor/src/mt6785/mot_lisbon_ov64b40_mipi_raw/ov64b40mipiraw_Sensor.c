@@ -110,6 +110,18 @@ static struct imgsensor_info_struct imgsensor_info = {
            .max_framerate = 300,
            .mipi_pixel_rate = 679680000,
        },
+	.custom3 = {//full size capture
+		.pclk = 115200000,
+		.linelength  = 1608,
+		.framelength = 7164,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width  = 9248,
+		.grabwindow_height = 6944,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 10,
+		.mipi_pixel_rate =1996800000,
+	},
 	.margin = 31,			//sensor framelength & shutter margin
 	.min_shutter = 16,		//min shutter
 	.min_gain = 64, // 1x gain
@@ -127,7 +139,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,   //1,le first ; 0, se first
 	.temperature_support = 0, //1, support; 0,not support
 
-	.sensor_mode_num = 5,	  //support sensor mode num ,don't support Slow motion
+	.sensor_mode_num = 8,	  //support sensor mode num ,don't support Slow motion
 
 	.cap_delay_frame = 3,		//enter capture delay frame num
 	.pre_delay_frame = 3, 		//enter preview delay frame num
@@ -171,10 +183,13 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information*/
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
  { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // Preview
- { 9248, 6944,	  0,	0,	  9248, 6944, 4624, 3472,	0,	   0, 4624, 3472,	  0, 0, 4624, 3472}, // capture
+ { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // capture
  { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // normal_video
  { 9248, 6944,   796,   1328, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // hs_video 1920x1080_120fps_1699
  { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // slim video 4624x3472_30fps_1699
+ { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // custom1 stereo as Preview
+ { 9248, 6944,   796,   1328, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // custom2 as 120fps
+ { 9248, 6944,    0,    0,    9248, 6944, 9248, 6944,   0,     0, 9248, 6944,     0, 0, 9248, 6944}, // custom3 full size capture
 
 #if 0
  { 9248, 6944,    0,    872,  9248, 5200, 4624, 2600,   0,     0, 4624, 2600,     0, 0, 4624, 2600}, // video
@@ -710,10 +725,10 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para,
 #define PDC_SIZE 732
 #define XTALK_SIZE 288
 #define PDC_EEPROM_OFFSET   0x0D6C//
-#define PDC_SENSOR_OFFSET_1 0x5C0A//real start-addr is 0x5C0E
-#define PDC_SENSOR_OFFSET_2 0x5900
-#define XTALK_EEPROM_OFFSET 0x104D//
-#define XTALK_SENSOR_OFFSET 0x53C0
+#define PDC_SENSOR_OFFSET 0x5F80//real start-addr is 0x5C0E
+#define XTALK_EEPROM_OFFSET 0x1BD4//
+#define XTALK_SENSOR_OFFSET 0x5A40
+#define XTALK_DEBUG_PATH "/data/vendor/camera_dump/xtalk_debug"
 
 struct otp_cali_setting {
 	kal_uint16 pdc_cali_setting[PDC_SIZE * 2];
@@ -723,7 +738,67 @@ struct otp_cali_setting {
 static struct otp_cali_setting otp_data;
 
 static int Is_Read_Otp_Data;
+static int Is_Debug_Xtalk = 1;
 
+static void ov64b40_read_pdc_xtalk_data(void *data)
+{
+	int i;
+	int pdc_size;
+	int ret = 0;
+	char read_buf = '1';
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+
+	struct ov64b40_eeprom_t *eeprom = (struct ov64b40_eeprom_t*)data;
+	LOG_INF("E\n");
+	if (NULL == data) {
+		LOG_INF("data is NULL");
+		return;
+	}
+
+	pdc_size = PDC_SIZE - 12;
+	for (i = 0; i < pdc_size; i++) {
+		otp_data.pdc_cali_setting[2 * i] = PDC_SENSOR_OFFSET + i;
+		otp_data.pdc_cali_setting[2 * i + 1] = eeprom->ovpdaf[i + 12];
+	}
+
+        for (i = 0; i < XTALK_SIZE; i++) {
+		otp_data.xtalk_cali_setting[2 * i] = XTALK_SENSOR_OFFSET + i;
+		otp_data.xtalk_cali_setting[2 * i + 1] = eeprom->xtalk[i];
+	}
+
+	//debug feature
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+	fp = filp_open(XTALK_DEBUG_PATH, O_RDONLY | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  XTALK_DEBUG_PATH, ret);
+		goto p_err;
+	}
+	ret = vfs_read(fp, &read_buf, 1, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file(%s) read fail(%d)", XTALK_DEBUG_PATH, ret);
+		goto p_err;
+	}
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	Is_Debug_Xtalk = (int)(read_buf - '0');
+	LOG_INF("read file(%s) : %d\n", XTALK_DEBUG_PATH, Is_Debug_Xtalk);
+#if 0
+	for (i = 0; i < pdc_size; i++) {
+		LOG_INF("pdc_cali_setting[%d] : [0x%x, 0x%x]", i, otp_data.pdc_cali_setting[2 * i], otp_data.pdc_cali_setting[2 * i + 1]);
+	}
+	for (i = 0; i < XTALK_SIZE; i++) {
+		LOG_INF("xtalk_cali_setting[%d] : [0x%x, 0x%x]", i, otp_data.xtalk_cali_setting[2 * i], otp_data.xtalk_cali_setting[2 * i + 1]);
+	}
+#endif
+
+}
+#if 0
 static void read_cali_data_from_eeprom(void)
 {
 	int i, ret;
@@ -769,6 +844,7 @@ static void read_cali_data_from_eeprom(void)
 		Is_Read_Otp_Data = 1;
 	}
 }
+#endif
 
 static void write_cali_data_to_sensor(void)
 {
@@ -798,6 +874,25 @@ static void preview_setting(void)
 	table_write_cmos_sensor(ov64b40_preview_setting,
 		sizeof(ov64b40_preview_setting) / sizeof(kal_uint16));
 }	/*	preview_setting  */
+
+static void write_pdc_xtalk_to_Sensor()
+{
+	LOG_INF("E\n");
+
+	table_write_cmos_sensor(otp_data.pdc_cali_setting,
+		sizeof(otp_data.pdc_cali_setting) / sizeof(kal_uint16));
+
+	table_write_cmos_sensor(otp_data.xtalk_cali_setting,
+		sizeof(otp_data.xtalk_cali_setting) / sizeof(kal_uint16));
+
+	write_cmos_sensor(0x5000, (read_cmos_sensor(0x5000) | 0x0A));
+	write_cmos_sensor(0x5A02, (read_cmos_sensor(0x5A02) | 0x01));
+
+#if 0
+	LOG_INF("enable tag : [0x5000, 0x%x], [0x5A02, 0x%x]", read_cmos_sensor(0x5000), read_cmos_sensor(0x5A02));
+#endif
+}
+
 
 static void capture_setting(kal_uint16 currefps)
 {
@@ -1337,6 +1432,7 @@ static void ov64b40_eeprom_format_calibration_data(void *data)
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
 		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
+
 /*************************************************************************
 * FUNCTION
 *	get_imgsensor_id
@@ -1367,10 +1463,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				read_cali_data_from_eeprom();//read calibration data
+				//read_cali_data_from_eeprom();//read calibration data
 				ov64b40_read_data_from_eeprom(OV64B40_EEPROM_SLAVE_ADDR, 0x0000, OV64B40_EEPROM_SIZE);
 				ov64b40_eeprom_dump_bin(EEPROM_DATA_PATH, OV64B40_EEPROM_SIZE, (void *)ov64b40_eeprom);
 				ov64b40_eeprom_format_calibration_data((void *)ov64b40_eeprom);
+				ov64b40_read_pdc_xtalk_data((void *)ov64b40_eeprom);
 				LOG_INF("probe success, i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
@@ -1698,6 +1795,12 @@ static kal_uint32 custom3(
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	custom3_setting();
+
+	if(Is_Debug_Xtalk)
+	{
+		write_pdc_xtalk_to_Sensor();
+		mdelay(500);
+	}
 
 	return ERROR_NONE;
 }	/*      custom3       */
