@@ -467,7 +467,12 @@ static void aw99703_parse_efuse_dt_data(struct device *dev,
 
 static int aw99703_backlight_init(struct aw99703_data *drvdata)
 {
+	u8 value = 0;
+
 	pr_info("%s enter.\n", __func__);
+
+	aw99703_i2c_read(g_aw99703_data->client, 0x0e, &value);
+	aw99703_i2c_read(g_aw99703_data->client, 0x0f, &value);
 
 	/* Optimize chip PFM performance. */
 	aw99703_i2c_write(drvdata->client, AW99703_REG_WPRT1,
@@ -512,9 +517,11 @@ static int aw99703_backlight_init(struct aw99703_data *drvdata)
 	aw99703_i2c_write(drvdata->client, AW99703_REG_BSTCTR2,
 			drvdata->efuse_config[9]);
 
-	aw99703_pwm_mode_enable(drvdata);
-	aw99703_set_work_mode(drvdata, drvdata->work_mode);
-	aw99703_map_type_setting(drvdata);
+	//aw99703_pwm_mode_enable(drvdata);
+	//aw99703_set_work_mode(drvdata, drvdata->work_mode);
+	//aw99703_map_type_setting(drvdata);
+	aw99703_i2c_write(drvdata->client, AW99703_REG_MODE,
+			0x15);
 	mdelay(6);
 
 	/* Exit AUTO_FREQUENCE when working normally. */
@@ -527,7 +534,7 @@ static int aw99703_backlight_init(struct aw99703_data *drvdata)
 	aw99703_i2c_write(drvdata->client, AW99703_REG_BSTCTR2,
 			drvdata->efuse_config[12]);
 
-	aw99703_max_brightness_setting(drvdata);
+	//aw99703_max_brightness_setting(drvdata);
 
 	return 0;
 }
@@ -610,7 +617,7 @@ static int aw99703_bl_update_status(struct backlight_device *bl_dev)
 }
 
 static const struct backlight_ops aw99703_bl_ops = {
-		.update_status = aw99703_bl_update_status,
+		//.update_status = aw99703_bl_update_status,
 		.get_brightness = aw99703_bl_get_brightness,
 };
 #endif
