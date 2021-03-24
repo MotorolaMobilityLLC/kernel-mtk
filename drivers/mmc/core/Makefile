@@ -23,3 +23,4 @@ obj-$(CONFIG_MMC_BLOCK_IO_LOG)	+= mtk_mmc_block.o
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/tee/gud/Makefile.include
 endif
+obj-$(CONFIG_MMC_FFU)		+= mmc_ffu.o
