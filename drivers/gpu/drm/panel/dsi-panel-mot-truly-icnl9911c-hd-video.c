@@ -512,7 +512,7 @@ static struct mtk_panel_params ext_params = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
-	.panel_hbm_mode = HBM_MODE_GPIO,
+	.hbm_type = HBM_MODE_DCS_GPIO,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -529,7 +529,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
-	.panel_hbm_mode = HBM_MODE_GPIO,
+	.hbm_type = HBM_MODE_DCS_GPIO,
 };
 
 static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
