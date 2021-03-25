@@ -3697,6 +3697,12 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 		power-domains = <&scpsys MT6765_POWER_DOMAIN_DIS>;
 	};
 
+/* +EKELLIS-15,liangnengjie.wt,20210324,add SWTP bringup */
+	swtp:swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+/* -EKELLIS-15, liangnengjie@wt.com, 20210324, add SWTP */
+
 	smi_larb2: smi_larb2@15021000 {
 		cell-index = <2>;
 		compatible = "mediatek,smi_larb2","mediatek,mt6765-smi-larb","mediatek,smi-larb";
