@@ -3032,6 +3032,11 @@
 			"TOP_ULPOSC1_D2",
 			"TOP_ULPOSC1_D8";
 	};
+/* +EKELLIS-15,liangnengjie.wt,20210324,add SWTP bringup */
+	swtp:swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+/* -EKELLIS-15, liangnengjie@wt.com, 20210324, add SWTP */
 
 	dsi_te: dsi_te {
 		compatible = "mediatek, DSI_TE-eint";
