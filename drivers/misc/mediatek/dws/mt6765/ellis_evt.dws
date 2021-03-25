@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.18.2021.17:04:14"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.23.2021.21:34:26"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>MT6765</proj>
@@ -91,6 +91,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint44>
+            <eint69>
+                <varName>SWTP</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint69>
             <eint144>
                 <varName>MAIN_PMIC</varName>
                 <debounce_time>0</debounce_time>
@@ -815,11 +822,11 @@
                 <ies>true</ies>
             </gpio68>
             <gpio69>
-                <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>true</inpull_en>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
