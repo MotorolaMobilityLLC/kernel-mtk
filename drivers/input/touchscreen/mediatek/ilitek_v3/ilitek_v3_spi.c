@@ -554,6 +554,37 @@ int ili_core_spi_setup(int num)
 	return 0;
 }
 
+static int ili_parse_tp_module() {
+	int tp_module = 0;
+
+	if (ilits->panel_supplier && strstr(ilits->panel_supplier, "txd")) {
+		tp_module = MODEL_TXD;
+	}
+
+	ILI_INFO("tp_module = %d\n", tp_module);
+	return tp_module;
+}
+
+static int ili_parse_dt(struct device_node *dp) {
+	int ret = 0;
+
+	ILI_INFO("enter\n");
+	if (dp) {
+		ret = of_property_read_string(dp, "ili,panel-supplier", &ilits->panel_supplier);
+		ILI_INFO("get ili,panel_supplier ret=%d, panel_supplier=%s\n", ret, ilits->panel_supplier);
+
+		//get tp_module
+		ilits->fw_tp_module = of_property_read_bool(dp, "ili,fw-tp-module");
+		if (ilits->fw_tp_module) {
+			ilits->tp_module = ili_parse_tp_module();
+		}
+	} else {
+		ILI_INFO("dp node NULL!\n");
+	}
+
+	return ret;
+}
+
 static int ilitek_spi_probe(struct spi_device *spi)
 {
 	struct touch_bus_info *info =
@@ -609,6 +640,8 @@ static int ilitek_spi_probe(struct spi_device *spi)
 		return -ENOMEM;
 	}
 
+	ili_parse_dt(spi->dev.of_node);
+
 	ilits->i2c = NULL;
 	ilits->spi = spi;
 	ilits->dev = &spi->dev;
@@ -636,7 +669,8 @@ static int ilitek_spi_probe(struct spi_device *spi)
 		ilits->reset = TP_HW_RST_ONLY;
 
 	ilits->rst_edge_delay = 10;
-	ilits->fw_open = FILP_OPEN;
+	//ilits->fw_open = FILP_OPEN;
+	ilits->fw_open = REQUEST_FIRMWARE;
 	ilits->fw_upgrade_mode = UPGRADE_IRAM;
 	ilits->mp_move_code = ili_move_mp_code_iram;
 	ilits->gesture_move_code = ili_move_gesture_code_iram;
