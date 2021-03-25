@@ -1410,7 +1410,7 @@ int mmi_get_prop_from_charger(struct mtk_charger *info,
 	int rc;
 
 	if (!info->charger_psy) {
-		info->charger_psy = power_supply_get_by_name("charger");
+		info->charger_psy = power_supply_get_by_name("mtk-master-charger");
 
 		if (!info->charger_psy) {
 			pr_err("[%s]Error getting charger power sypply\n", __func__);
