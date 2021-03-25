@@ -394,12 +394,12 @@ static void set_shutter(kal_uint32 shutter)
 			write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
 		}
 
-		// Update Shutter
-		write_cmos_sensor(0x3502, (shutter << 4) & 0xFF);
-		write_cmos_sensor(0x3501, (shutter >> 4) & 0xFF);
-		write_cmos_sensor(0x3500, (shutter >> 12) & 0x0F);
-		write_cmos_sensor(0x380c, imgsensor.line_length>>8);
-		write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
+	        // Update Shutter
+	        write_cmos_sensor(0x3502, (shutter) & 0xFE);
+	        write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
+	        write_cmos_sensor(0x3500, (shutter >> 16) & 0x7F);
+	        write_cmos_sensor(0x380c, imgsensor.line_length>>8);
+	        write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
 
 		imgsensor.current_ae_effective_frame = 2;
 
