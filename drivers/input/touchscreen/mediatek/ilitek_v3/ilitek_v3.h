@@ -971,8 +971,10 @@ struct ilitek_ts_data {
 	bool proxmity_face;
 	bool eng_flow;
 	/* module info */
+	bool fw_tp_module;
 	int tp_module;
 	int md_fw_ili_size;
+	const char *panel_supplier;
 	char *md_name;
 	char *md_fw_filp_path;
 	char *md_fw_rq_path;
