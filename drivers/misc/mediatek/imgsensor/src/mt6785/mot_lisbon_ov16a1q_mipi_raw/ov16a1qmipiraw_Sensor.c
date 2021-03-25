@@ -152,6 +152,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	.i2c_addr_table = {0x20, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
+	.i2c_speed = 1000,
 
 };
 
@@ -564,7 +565,7 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para,
 						tosend,
 						imgsensor.i2c_write_id,
 						3,
-						400);
+						imgsensor_info.i2c_speed);
 			tosend = 0;
 		}
 #else
