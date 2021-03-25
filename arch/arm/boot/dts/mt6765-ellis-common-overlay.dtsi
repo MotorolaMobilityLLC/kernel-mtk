@@ -310,6 +310,11 @@
 	};
 };
 
+&touch {
+	compatible = "mediatek,touch";
+};
+
+
 /* accdet start */
 &accdet {
 	accdet-mic-vol = <6>;
