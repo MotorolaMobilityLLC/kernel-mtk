@@ -449,38 +449,30 @@ static struct tpd_driver_t tpd_device_driver = {
 };
 
 int ili_check_panel() {
+	int ret = -1;
+	struct device_node *node1 = NULL;
+	const char *panel_supplier;
+
+	ILI_INFO("enter\n");
+	//get panel_supplier
+	node1 = of_find_matching_node(node1, tp_match_table);
+	if (node1) {
+		ret = of_property_read_string(node1, "ili,panel-supplier", &panel_supplier);
+		ILI_INFO("get ili,panel_supplier=%s ret=%d\n", panel_supplier, ret);
+	}
+
 	//check panel
-        int ret = -1;
-
-        //check panel
 	tpd_get_panel();
-        ILI_INFO("enter, active_panel_name=%s\n", active_panel_name);
-        if (strlen(active_panel_name) && tpd_device_driver.tpd_panel_supplier) {
-                ILI_INFO("need check panel info\n");
-                if (strstr(active_panel_name, tpd_device_driver.tpd_panel_supplier)) {
-                        ILI_INFO("panel matched!");
-                        ret = 0;
-                } else {
-                        ILI_INFO("panel not matched!\n");
-                }
-        }
-
-        return ret;
-}
-
-int ili_check_dt() {
-	int ret = 0;
-        struct device_node *node1 = NULL;
-
-        ILI_INFO("enter\n");
-        node1 = of_find_matching_node(node1, tp_match_table);
-        if (node1) {
-                ret = of_property_read_string(node1, "ili,panel-supplier",
-			&tpd_device_driver.tpd_panel_supplier);
-		ILI_INFO("get ili,panel_supplier ret=%d, tpd_panel_supplier=%s\n", ret, tpd_device_driver.tpd_panel_supplier);
-        } else {
-                ILI_INFO("tp_match_table node not found!\n");
-        }
+	if (strlen(active_panel_name) && panel_supplier) {
+		if (strstr(active_panel_name, panel_supplier)) {
+			ILI_INFO("panel matched!");
+				ret = 0;
+			} else {
+				ILI_INFO("panel not matched!\n");
+			}
+	} else {
+		ILI_INFO("panel null! active_panel_name=%s\n", active_panel_name);
+	}
 
 	return ret;
 }
@@ -495,7 +487,6 @@ static int __init ilitek_plat_dev_init(void)
                 tpd_get_dts_info();
         }
 
-	ili_check_dt();
 	if (tpd_dts_data.tpd_panel_match) {
 		ret = ili_check_panel();
 		//check panel

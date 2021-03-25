@@ -1045,7 +1045,7 @@ static int ilitek_get_tp_module(void)
 	 * if there are various tp modules been used in projects.
 	 */
 
-	return 0;
+	return ilits->tp_module;
 }
 
 static void ili_update_tp_module_info(void)
@@ -1122,7 +1122,7 @@ static void ili_update_tp_module_info(void)
 		break;
 	}
 
-	if (module == 0 || ilits->md_fw_ili_size < ILI_FILE_HEADER) {
+	if (module == 0) {
 		ILI_ERR("Couldn't find any tp modules, applying default settings\n");
 		ilits->md_name = "DEF";
 		ilits->md_fw_filp_path = DEF_FW_FILP_PATH;
