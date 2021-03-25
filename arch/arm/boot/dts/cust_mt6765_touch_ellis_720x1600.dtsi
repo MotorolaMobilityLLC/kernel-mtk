@@ -79,7 +79,8 @@
 		reg = <0x0>;
 		status = "okay";
 
-		ili,panel-supplier = "ili7806s";
+		ili,panel-supplier = "txd_ili7806s";
+		ili,fw-tp-module;
 
 		novatek,reset-gpio = <&pio 164 0>;
 		novatek,irq-gpio = <&pio 10 2008>;
