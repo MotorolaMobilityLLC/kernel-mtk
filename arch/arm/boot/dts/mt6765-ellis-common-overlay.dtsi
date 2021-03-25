@@ -645,5 +645,5 @@
 	pd_vbus_upper_bound = <5000000>;
 };
 
-//#include "mt6765-moto-ellis-fps.dtsi"
+#include "mt6765-moto-ellis-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
