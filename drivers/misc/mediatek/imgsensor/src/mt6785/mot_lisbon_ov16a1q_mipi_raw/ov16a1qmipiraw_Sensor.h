@@ -1223,6 +1223,7 @@ typedef struct imgsensor_struct {
 
 } imgsensor_struct;
 
+#define CONFIG_RLK_CAM_PERFORMANCE_IMPROVE
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
 typedef struct imgsensor_info_struct {
 	kal_uint16 sensor_id;			//record sensor id defined in Kd_imgsensor.h
