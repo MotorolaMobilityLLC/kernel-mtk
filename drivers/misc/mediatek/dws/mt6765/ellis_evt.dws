@@ -48,6 +48,13 @@
         </module>
         <module name="eint">
             <count>160</count>
+            <eint0>
+                <varName>ACCDET</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint0>
             <eint1>
                 <varName>MSDC1_INS</varName>
                 <debounce_time>0</debounce_time>
@@ -290,11 +297,12 @@
             </gpio15>
             <gpio16>
                 <eint_mode>false</eint_mode>
-                <def_mode>3</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_LCD_BIAS_ENP_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio16>
