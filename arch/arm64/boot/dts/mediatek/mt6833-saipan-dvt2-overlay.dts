@@ -1,0 +1,47 @@
+/* Copyright (c) 2019, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include "mediatek/mt6833-saipan-common-overlay.dtsi"
+#include "mediatek/cust_mt6833_touch_720x1600.dtsi"
+
+/* Board match root node */
+/ {
+	fragment@model {
+		target-path = "/";
+		__overlay__ {
+			mot,model = "saipan";
+			mot,board-id = <0x41 0xB200>;
+		};
+	};
+};
+
+&aw881xx_smartpa {
+	reset-gpio = <&pio 139 0>;
+};
+
+&abov_int_default {
+            /* active state */
+            pinmux = <PINMUX_GPIO65__FUNC_GPIO65>;
+};
+
+&i2c7 {
+    abov_sar@20 {
+        interrupts = <65 IRQ_TYPE_EDGE_FALLING 65 0>;
+        abov,irq-gpio-std = <&pio 65 0>;
+    };
+};
+
+#include <saipan_dvt2/cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
