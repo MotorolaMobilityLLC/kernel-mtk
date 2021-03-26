@@ -40,6 +40,9 @@
 #define ENABLE_PDAF 1
 #define EEPROM_SLAVE_ID 0xA2
 
+#define OV64B40_SERIAL_NUM_SIZE 16
+#define MAIN_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -1254,6 +1257,7 @@ static void ov64b40_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[12], eeprom->serial_number[13],
 		eeprom->serial_number[14], eeprom->serial_number[15]);
 
+	ov64b40_eeprom_dump_bin(MAIN_SERIAL_NUM_DATA_PATH,  OV64B40_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_INF("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;

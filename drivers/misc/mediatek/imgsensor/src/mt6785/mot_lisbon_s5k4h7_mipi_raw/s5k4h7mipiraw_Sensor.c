@@ -57,7 +57,9 @@
 #define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define S5K4H7YX_EEPROM_SIZE 715
+#define S5K4H7YX_SERIAL_NUM_SIZE 8
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7qt_otp_data.bin"
+#define WIDE_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_wide.bin"
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static bool bIsLongExposure = KAL_FALSE;
@@ -1557,6 +1559,8 @@ static void s5k4h7qt_eeprom_get_mnf_data(void *data,
 		basic_info_group->serial_number[2], basic_info_group->serial_number[3],
 		basic_info_group->serial_number[4], basic_info_group->serial_number[5],
 		basic_info_group->serial_number[6], basic_info_group->serial_number[7]);
+
+	s5k4h7qt_eeprom_dump_bin(WIDE_SERIAL_NUM_DATA_PATH,  S5K4H7YX_SERIAL_NUM_SIZE,  basic_info_group->serial_number);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_INF("snprintf of mnf->serial_number failed");
