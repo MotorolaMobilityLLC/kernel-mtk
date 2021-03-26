@@ -402,6 +402,8 @@
 
 	//io-channels = <&auxadc 5>;
 	//io-channel-names = "batteryID-channel";//TODO
+        EMBEDDED_SEL = <(1)>;
+        DIFFERENCE_FULLOCV_ITH = <(80)>;
 
 	df-serialnum = "SB18D15207";
 	#include "bat_setting/EKELLIS_S96767AA1_xinnengde_4V4_4000mah.dtsi"
