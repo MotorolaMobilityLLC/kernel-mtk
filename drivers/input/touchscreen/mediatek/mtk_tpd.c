@@ -451,6 +451,46 @@ static int tpd_fb_notifier_callback(
 	TPD_DEBUG("%s\n", __func__);
 
 	evdata = data;
+
+#if defined(CONFIG_TOUCHSCREEN_MTK_ILI7807)
+	/* If we aren't interested in this event, skip it immediately ... */
+	if ((event != FB_EVENT_BLANK) && (event != FB_EARLY_EVENT_BLANK))
+		return 0;
+
+	blank = *(int *)evdata->data;
+	TPD_DMESG("fb_notify(blank=%d)\n", blank);
+	if (event == FB_EARLY_EVENT_BLANK) {
+		switch (blank) {
+		case FB_BLANK_POWERDOWN:
+				TPD_DMESG("LCD OFF Notify\n");
+				if (g_tpd_drv && !tpd_suspend_flag) {
+					err = cancel_work_sync(&touch_resume_work);
+					if (!err)
+						TPD_DMESG("cancel touch_resume_workqueue err = %d\n", err);
+					g_tpd_drv->suspend(NULL);
+				}
+				tpd_suspend_flag = 1;
+			break;
+		default:
+			break;
+		}
+	} else if (event == FB_EVENT_BLANK) {
+		switch (blank) {
+			case FB_BLANK_UNBLANK:
+				TPD_DMESG("LCD ON Notify\n");
+				if (g_tpd_drv && tpd_suspend_flag) {
+						err = queue_work(touch_resume_workqueue, &touch_resume_work);
+						if (!err) {
+							 TPD_DMESG("start touch_resume_workqueue failed\n");
+							 return err;
+						}
+				}
+				break;
+			default:
+				break;
+		}
+	 }
+#else
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK)
 		return 0;
@@ -482,6 +522,7 @@ static int tpd_fb_notifier_callback(
 	default:
 		break;
 	}
+#endif
 	return 0;
 }
 /* Add driver: if find TPD_TYPE_CAPACITIVE driver successfully, loading it */
