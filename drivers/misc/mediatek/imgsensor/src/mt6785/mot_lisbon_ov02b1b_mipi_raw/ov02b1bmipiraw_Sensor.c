@@ -1114,8 +1114,10 @@ static void slim_video_setting(void)
 
 
 #define OV02B1B_OTP_SIZE 32
+#define OV02B1B_SERIAL_NUM_SIZE 16
 static uint8_t ov02b1b_otp_data[OV02B1B_OTP_SIZE] = {0};
 #define OV02B1B_OTP_DATA_PATH "/data/vendor/camera_dump/ov02b1b_otp_data.bin"
+#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
 
 static void ov02b1b_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
 {
@@ -1180,6 +1182,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 				ov02b1b_read_data_from_otp();
 				ov02b1b_otp_dump_bin(OV02B1B_OTP_DATA_PATH, OV02B1B_OTP_SIZE, (void *)ov02b1b_otp_data);
+				ov02b1b_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, OV02B1B_SERIAL_NUM_SIZE, (void *)ov02b1b_otp_data);
 				return ERROR_NONE;
 			}
 
