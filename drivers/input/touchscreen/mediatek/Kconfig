@@ -213,4 +213,12 @@ config TOUCHSCREEN_MTK_ILITEK_V3_ILI7806S
 	  module will be called.
 source "drivers/input/touchscreen/mediatek/ilitek_v3/Kconfig"
 
+config TOUCHSCREEN_MTK_TP_SEQ_PRE
+	bool "TP seq config"
+	default n
+	help
+          Say Y here if you need set tp seq ahead of LCD
+
+          If unsure, say N.
+
 endif
