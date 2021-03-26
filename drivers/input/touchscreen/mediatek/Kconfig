@@ -44,4 +44,12 @@ config TOUCHSCREEN_MTK_NVT_NT36xxx
 
 source "drivers/input/touchscreen/mediatek/NT36xxx/Kconfig"
 
+config TOUCHSCREEN_MTK_TP_SEQ_PRE
+	bool "TP seq config"
+	default n
+	help
+          Say Y here if you need set tp seq ahead of LCD
+
+          If unsure, say N.
+
 endif
