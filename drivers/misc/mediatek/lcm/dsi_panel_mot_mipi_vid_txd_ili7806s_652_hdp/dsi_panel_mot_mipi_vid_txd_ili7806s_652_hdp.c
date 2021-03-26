@@ -280,7 +280,6 @@ static void lcm_suspend_power(void)
 	LCM_LOGI("[LCM] lcm_suspend_power\n");
 	lcm_set_bias_pin_disable(2);
 	MDELAY(5);
-	SET_RESET_PIN(0);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT0);
 	LCM_LOGI("[LCM] lcm suspend power down.\n");
 }
@@ -297,11 +296,11 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	LCM_LOGI("[LCM] lcm_init\n");
-	SET_RESET_PIN(1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
-	SET_RESET_PIN(0);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(1);
-	SET_RESET_PIN(1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(20);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 }
@@ -312,6 +311,7 @@ static void lcm_suspend(void)
 
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 }
 
 static void lcm_resume(void)
@@ -324,12 +324,11 @@ static unsigned int lcm_compare_id(void)
 {
 	unsigned char buffer[4];
 	unsigned int array[16];
-
-	SET_RESET_PIN(1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
-	SET_RESET_PIN(0);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(1);
-	SET_RESET_PIN(1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(20);
 
 	array[0] = 0x00043700;	// read id return four byte
