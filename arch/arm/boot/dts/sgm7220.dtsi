@@ -1,0 +1,26 @@
+/*SGM7220 logic ic
+*/
+/ {
+	sgm7220_typec: sgm7220_type_c_port0 {
+		/* 0: dfp/ufp, 1: dfp, 2: ufp */
+		tcpc-dual,supported_modes = <0>;
+		sgm7220-tcpc,name = "type_c_port0"; /* tcpc_device's name */
+		/* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+		sgm7220-tcpc,role_def = <4>;
+		sgm7220-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
+		/* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
+		sgm7220-tcpc,vconn_supply  = <0>;
+		/* the number of notifier supply */
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+		sgm7220-tcpc,notifier_supply_num = <3>;
+#else
+		sgm7220-tcpc,notifier_supply_num = <2>;
+#endif
+		sgm7220,intr_gpio = <&pio 41 0x1>;
+		sgm7220,intr_gpio_num = <41>;
+
+		sgm7220,en_gpio = <&pio 159 0x0>;
+
+		charger = <&mtk_charger_type>;
+    };
+};
