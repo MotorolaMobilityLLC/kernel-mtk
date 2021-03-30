@@ -46,13 +46,6 @@
         apple_2_1a_charger_current = <800000>;
         ta_ac_charger_current = <2000000>;
 
-        /* battery temperature protection */
-        enable_min_charge_temperature;
-        min_charge_temperature = <0>;
-        min_charge_temperature_plus_x_degree = <10>;
-        max_charge_temperature = <60>;
-        max_charge_temperature_minus_x_degree = <45>;
-
         /*mmi config*/
         mmi,iterm-ma = <243>;
         mmi,mmi-temp-zones = <0 4200 1000 0>,
