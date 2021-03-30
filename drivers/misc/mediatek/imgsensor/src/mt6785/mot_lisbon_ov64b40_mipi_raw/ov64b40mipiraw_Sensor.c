@@ -119,7 +119,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 9248,
 		.grabwindow_height = 6944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 10,
+		.max_framerate = 100,
 		.mipi_pixel_rate =1996800000,
 	},
 	.margin = 31,			//sensor framelength & shutter margin
