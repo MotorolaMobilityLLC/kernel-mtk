@@ -62,7 +62,7 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 				defined(CONFIG_LEDS_MTK_PWM)
 			setMaxBrightness("lcd-backlight", 70, 0);
 			#else
-			setMaxbrightness(178, 0);
+			setMaxbrightness(178, 1);
 			#endif
 			break;
 		case 2:
