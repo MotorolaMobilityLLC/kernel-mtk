@@ -974,7 +974,7 @@ static kal_uint16 ov16a1q_slim_video_setting[] = {
 };
 
 //4608x3456 10-bit 30fps 1452Mbps/lane
-static kal_uint16 ov16a1q_custom0_setting[] = {
+static kal_uint16 ov16a1q_custom3_setting[] = {
     0x0307,0x00,
     0x4837,0x0a,
     0x0329,0x01,
@@ -1080,6 +1080,9 @@ typedef enum{
 	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
 	IMGSENSOR_MODE_CUSTOM1,
+	IMGSENSOR_MODE_CUSTOM2,
+	IMGSENSOR_MODE_CUSTOM3,
+	IMGSENSOR_MODE_CUSTOM4,
 } IMGSENSOR_MODE;
 
 typedef struct imgsensor_mode_struct {
@@ -1145,6 +1148,7 @@ typedef struct imgsensor_info_struct {
 	imgsensor_mode_struct hs_video;	//high speed video scenario relative information
 	imgsensor_mode_struct slim_video;	//slim video for VT scenario relative information
 	imgsensor_mode_struct custom1;	//slim video for VT scenario relative information
+	imgsensor_mode_struct custom3;
 
 	kal_uint8  ae_shut_delay_frame;	//shutter delay frame for AE cycle
 	kal_uint8  ae_sensor_gain_delay_frame;	//sensor gain delay frame for AE cycle
@@ -1159,6 +1163,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint8  hs_video_delay_frame;	//enter high speed video  delay frame num
 	kal_uint8  slim_video_delay_frame;	//enter slim video delay frame num
 	kal_uint8  custom1_delay_frame;	//enter slim video delay frame num
+	kal_uint8  custom3_delay_frame; /* enter custom3 delay frame num */
 
 	kal_uint8  margin;				//sensor framelength & shutter margin
 	kal_uint32 min_shutter;			//min shutter
