@@ -6441,7 +6441,7 @@ page_owner=on loop.max_part=7";
 		/* enable_pe_4; */
 		enable_type_c;
 		power_path_support;
-		enable_dynamic_mivr;
+		/* enable_dynamic_mivr; */
 		bootmode = <&chosen>;
 
 		/* common */
