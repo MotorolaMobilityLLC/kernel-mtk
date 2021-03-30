@@ -22,6 +22,11 @@
 #define LM3697_CTRL_A_B_BRT_CFG		0x16
 #define LM3697_FEEDBACK_ENABLE		0x19
 #define LM3697_BOOST_CTRL		0x1a
+#define LM3697_CONTROL_A_RAMP		0x11
+#define LM3697_CONTROL_B_RAMP		0x12
+#define LM3697_CONTROL_A_RUN_RAMP	0x13
+#define LM3697_CONTROL_A_FS_SETTING	0x17
+
 
 #define LM3697_CTRL_A_BRT_LSB		0x20
 #define LM3697_CTRL_A_BRT_MSB		0x21
@@ -195,21 +200,6 @@ brightness_out:
 	mutex_unlock(&led->lock);
 }
 
-int lm3697_set_brightness_level(unsigned int level)
-{
-	if (!ext_lm3697_data)
-		return 0;
-	pr_info("%s LM3697_level is %d\n", __func__, level);
-
-	lm3697_i2c_write(ext_lm3697_data->client,
-				LM3697_CTRL_A_BRT_LSB,
-				0X00);
-	lm3697_i2c_write(ext_lm3697_data->client,
-				LM3697_CTRL_A_BRT_MSB,
-				level  & 0xff);
-}
-
-EXPORT_SYMBOL_GPL(lm3697_set_brightness_level);
 
 static unsigned char chipid;
 static int lm3697_read_chipid(struct lm3697 *priv)
@@ -274,18 +264,53 @@ static int lm3697_gpio_init(struct lm3697 *priv)
 
 static int lm3697_init(struct lm3697 *priv)
 {
+
+	pr_info("LM3697 %s\n", __func__);
+
+	lm3697_i2c_write(priv->client, LM3697_OUTPUT_CONFIG, 0x00);
+	lm3697_i2c_write(priv->client, LM3697_CONTROL_A_RAMP, 0x22);
+	lm3697_i2c_write(priv->client, LM3697_CONTROL_B_RAMP, 0x22);
+	lm3697_i2c_write(priv->client, LM3697_CONTROL_A_RUN_RAMP, 0x02);
+	/* Change BLK to Linear mode. 0x00 = exponential, 0x01 = Linear */
+	lm3697_i2c_write(priv->client, LM3697_CTRL_A_B_BRT_CFG, 0x01);
+	lm3697_i2c_write(priv->client, LM3697_FEEDBACK_ENABLE, 0x07);
+	lm3697_i2c_write(priv->client, LM3697_BOOST_CTRL, 0x04);
+	lm3697_i2c_write(priv->client, LM3697_CTRL_ENABLE, 0x01);
+
+	return 0;
+}
+
+int lm3697_set_brightness_level(unsigned int level)
+{
 	int ret = -1;
 
-	/* Change BLK to Linear mode. 0x00 = exponential, 0x01 = Linear */
-	ret = lm3697_i2c_write(priv->client, LM3697_CTRL_A_B_BRT_CFG, 0x01);
-	if (ret) {
-		pr_err("Cannot write LM3697_CTRL_A_B_BRT_CFG\n");
-		goto out;
+	if (!ext_lm3697_data)
+		return 0;
+	if(ext_lm3697_data->enabled == 0) {
+		lm3697_init(ext_lm3697_data);
+		ext_lm3697_data->enabled = 1;
 	}
 
-out:
-	return ret;
+	if (level == 0) {
+		ext_lm3697_data->enabled = 0;
+		lm3697_i2c_write(ext_lm3697_data->client, LM3697_CONTROL_A_RAMP, 0x00);
+		lm3697_i2c_write(ext_lm3697_data->client, LM3697_CONTROL_B_RAMP, 0x00);
+		lm3697_i2c_write(ext_lm3697_data->client, LM3697_CONTROL_A_RUN_RAMP, 0x00);
+	}
+
+	pr_info("%s LM3697_level is %d\n", __func__, level);
+
+	lm3697_i2c_write(ext_lm3697_data->client,
+				LM3697_CTRL_A_BRT_LSB,
+				0X00);
+
+	lm3697_i2c_write(ext_lm3697_data->client,
+				LM3697_CTRL_A_BRT_MSB,
+				level  & 0xff);
+
 }
+
+EXPORT_SYMBOL_GPL(lm3697_set_brightness_level);
 
 static void lm3697_probe_dt(struct device *dev, struct lm3697 *priv)
 {
@@ -307,7 +332,7 @@ static int lm3697_probe(struct i2c_client *client,
 	led->brightness = LED_OFF;
 	led->led_dev.name = "lm3697";
 	led->led_dev.max_brightness = MAX_BRIGHTNESS_8BIT;
-	led->led_dev.brightness_set = lm3697_brightness_set;
+	//led->led_dev.brightness_set = lm3697_brightness_set;
 	mutex_init(&led->lock);
 	lm3697_probe_dt(&client->dev, led);
 	i2c_set_clientdata(client, led);
@@ -325,6 +350,7 @@ static int lm3697_probe(struct i2c_client *client,
 		pr_err("%s : Register led class failed\n", __func__);
 		goto err_init;
 	}
+	led->enabled = 1;
 	ext_lm3697_data = led;
 	return 0;
 
