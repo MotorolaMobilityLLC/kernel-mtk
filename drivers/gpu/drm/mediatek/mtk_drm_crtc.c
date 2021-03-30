@@ -686,7 +686,7 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 {
 	unsigned int bl_level;
 	static unsigned int bl_lvl_during_hbm = 0;
-	static bool hbm_mode = true;
+	static bool hbm_mode = false;
 
 	bl_level = *bl_lvl;
 
@@ -694,17 +694,17 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? BL_MAX_LEVEL : bl_lvl_during_hbm;
 		hbm_mode = bl_level == BRIGHTNESS_HBM_ON ? true : false;
 
-		DDPINFO("HBM set  bl_level=%d bl_max_level = %d bl_lvl_during_hbm = %d hbm_mode = %d\n",
+		pr_info("HBM set  bl_level=%d bl_max_level = %d bl_lvl_during_hbm = %d hbm_mode = %d\n",
 				bl_level, BL_MAX_LEVEL, bl_lvl_during_hbm, hbm_mode);
 	} else {
 		bl_lvl_during_hbm = bl_level;
 
 		if (bl_level == 0) {
 			hbm_mode = false;
-			DDPINFO(" bl_vl=%d, set hbm_mode to false\n", bl_level);
+			pr_info(" bl_vl=%d, set hbm_mode to false\n", bl_level);
 		}
 		else if (hbm_mode) {
-			DDPINFO("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+			pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
 			return true;
 		}
 	}
