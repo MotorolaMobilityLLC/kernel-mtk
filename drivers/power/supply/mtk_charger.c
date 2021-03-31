@@ -3003,8 +3003,9 @@ static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
 	val = !!val;
 	charger_dev_enable(cm->chg1_dev, val);
 
+	charging_enable_flag = val;
 	//val = val ? CHARGER_NOTIFY_START_CHARGING : CHARGER_NOTIFY_STOP_CHARGING;//TODO
-	charging_enable_flag = !!val;
+
 	_wake_up_charger(cm);
 	//ret = charger_manager_notifier(cm, val);//TODO
 
