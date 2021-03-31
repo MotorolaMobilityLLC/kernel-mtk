@@ -18,7 +18,6 @@
 #define BRIGHTNESS_HBM_ON	0xFFFFFFFE
 #define BRIGHTNESS_HBM_OFF	(BRIGHTNESS_HBM_ON - 1)
 #define HBM_BRIGHTNESS(value) ((value) == 0 ? BRIGHTNESS_HBM_OFF : BRIGHTNESS_HBM_ON)
-#define BL_MAX_LEVEL 255
 
 struct mtk_dsi;
 struct cmdq_pkt;
@@ -270,6 +269,7 @@ struct mtk_panel_params {
 	unsigned int wait_sof_before_dec_vfp;
 	unsigned int doze_delay;
 	enum panel_hbm_type hbm_type;
+	int max_bl_level;
 
 	//Settings for LFR Function:
 	unsigned int lfr_enable;
