@@ -428,6 +428,29 @@ enum SENSOR_DPCM_TYPE_ENUM {
 	COMP8_DI_2A = 0x2A,
 };
 
+#define MAX_CALIBRATION_STRING 40
+
+typedef struct {
+	MINT32 mnf;
+	MINT32 awb;
+	MINT32 af;
+	MINT32 lsc;
+	MINT32 pdaf;
+	MINT32 dual;
+} mot_calibration_status_t;
+
+typedef struct {
+	char integrator[MAX_CALIBRATION_STRING];
+	char serial_number[MAX_CALIBRATION_STRING];
+	char table_revision[MAX_CALIBRATION_STRING];
+	char mot_part_number[MAX_CALIBRATION_STRING];
+	char actuator_id[MAX_CALIBRATION_STRING];
+	char lens_id[MAX_CALIBRATION_STRING];
+	char factory_id[MAX_CALIBRATION_STRING];
+	char manufacture_line[MAX_CALIBRATION_STRING];
+	char manufacture_date[MAX_CALIBRATION_STRING];
+} mot_calibration_mnf_t;
+
 struct ACDK_SENSOR_RESOLUTION_INFO_STRUCT {
 	MUINT16 SensorPreviewWidth;
 	MUINT16 SensorPreviewHeight;
@@ -682,6 +705,8 @@ struct ACDK_SENSOR_INFO_STRUCT {
 	MUINT16 SensorVerFOV;
 	MUINT16 SensorOrientation;
 	MUINT32 SensorModuleID;
+	mot_calibration_status_t calibration_status;
+	mot_calibration_mnf_t mnf_calibration;
 };
 
 #define ACDK_SENSOR_INFO2_STRUCT struct ACDK_SENSOR_INFO_STRUCT
