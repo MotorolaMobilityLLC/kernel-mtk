@@ -687,15 +687,17 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 	unsigned int bl_level;
 	static unsigned int bl_lvl_during_hbm = 0;
 	static bool hbm_mode = false;
+	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
+	int max_bl_level = (panel_ext->max_bl_level) ? (panel_ext->max_bl_level) : 255;
 
 	bl_level = *bl_lvl;
 
 	if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
-		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? BL_MAX_LEVEL : bl_lvl_during_hbm;
+		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? max_bl_level : bl_lvl_during_hbm;
 		hbm_mode = bl_level == BRIGHTNESS_HBM_ON ? true : false;
 
 		pr_info("HBM set  bl_level=%d bl_max_level = %d bl_lvl_during_hbm = %d hbm_mode = %d\n",
-				bl_level, BL_MAX_LEVEL, bl_lvl_during_hbm, hbm_mode);
+				bl_level, max_bl_level, bl_lvl_during_hbm, hbm_mode);
 	} else {
 		bl_lvl_during_hbm = bl_level;
 
