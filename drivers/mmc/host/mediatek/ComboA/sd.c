@@ -5224,13 +5224,22 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (!mmc)
 		return -ENOMEM;
 
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	host = mmc_priv(mmc);
+	/* Initialize vcore opp to leave vcore unchanged by default */
+	host->vcore_opp = -1;
+#endif
+
 	ret = msdc_dt_init(pdev, mmc);
 	if (ret) {
 		mmc_free_host(mmc);
 		return ret;
 	}
 
+#ifndef CONFIG_MTK_MT6382_BDG_BUF7
 	host = mmc_priv(mmc);
+#endif
+
 	base = host->base;
 	hw = host->hw;
 
@@ -5496,6 +5505,12 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		clk_disable_unprepare(host->src_hclk_ctl);
 #endif
 	pm_qos_remove_request(&host->msdc_pm_qos_req);
+
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	if (host->vcore_opp != -1)
+		pm_qos_remove_request(host->req_vcore);
+#endif
+
 	pm_runtime_disable(&pdev->dev);
 	mmc_remove_host(host->mmc);
 
@@ -5537,6 +5552,12 @@ static int msdc_runtime_suspend(struct device *dev)
 	pm_qos_update_request(&host->msdc_pm_qos_req,
 		PM_QOS_DEFAULT_VALUE);
 
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	if (host->vcore_opp != -1)
+		pm_qos_update_request(host->req_vcore,
+			PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+#endif
+
 	return 0;
 }
 
@@ -5547,6 +5568,11 @@ static int msdc_runtime_resume(struct device *dev)
 	void __iomem *base = host->base;
 
 	pm_qos_update_request(&host->msdc_pm_qos_req, 0);
+
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	if (host->vcore_opp != -1)
+		pm_qos_update_request(host->req_vcore, host->vcore_opp);
+#endif
 
 	if (host->src_hclk_ctl)
 		(void)clk_prepare_enable(host->src_hclk_ctl);

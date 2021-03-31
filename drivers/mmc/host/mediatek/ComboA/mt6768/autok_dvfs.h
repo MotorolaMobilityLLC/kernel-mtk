@@ -16,8 +16,9 @@
 #include "msdc_cust.h"
 
 #include "autok.h"
-
+#ifndef CONFIG_MTK_MT6382_BDG_BUF7
 #define VCOREFS_READY
+#endif
 #if defined(VCOREFS_READY)
 #include <linux/pm_qos.h>
 #include "helio-dvfsrc-opp.h"

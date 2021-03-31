@@ -425,6 +425,9 @@ struct msdc_host {
 
 	struct pm_qos_request   msdc_pm_qos_req; /* use for pm qos */
 
+	struct pm_qos_request   *req_vcore;
+	int vcore_opp;
+
 	struct clk              *clk_ctl;
 	struct clk              *aes_clk_ctl;
 	/* src hclk for clk source of MSDC register */
