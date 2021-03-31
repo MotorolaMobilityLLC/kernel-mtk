@@ -25,7 +25,7 @@
 
 #define PFX "ellis_sunwin_ov02b1b"
 #define LOG_INF(format, args...)    \
-	pr_debug(PFX "[%s] " format, __func__, ##args)
+	pr_err(PFX "[%s] " format, __func__, ##args)
 #define LOG_ERR(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -1204,6 +1204,54 @@ static void custom1_setting(void)
     write_cmos_sensor(0xfb, 0x01);
 }    /*    capture_setting  */
 
+#define OV02B1B_OTP_SIZE 32
+static uint8_t ov02b1b_otp_data[OV02B1B_OTP_SIZE] = {0};
+#define OV02B1B_OTP_DATA_PATH "/data/vendor/camera_dump/ov02b1b_otp_data.bin"
+
+static void ov02b1b_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+static int ov02b1b_read_data_from_otp(void)
+{
+	int i=0;
+	LOG_INF("ov02b1b_read_data_from_otp -E");
+	write_cmos_sensor(0xfd, 0x06);
+	for(i=0;i<OV02B1B_OTP_SIZE;i++)
+	{
+		ov02b1b_otp_data[i]=read_cmos_sensor(i);
+	}
+
+	LOG_INF("ov02b1b_read_data_from_otp -X");
+	return 0;
+}
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
     kal_uint8 i = 0;
@@ -1218,6 +1266,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             if (*sensor_id == imgsensor_info.sensor_id) {
             LOG_ERR("sunwin ov02b1b i2c write id : 0x%x, sensor id: 0x%x\n",
             imgsensor.i2c_write_id, *sensor_id);
+            ov02b1b_read_data_from_otp();
+            ov02b1b_otp_dump_bin(OV02B1B_OTP_DATA_PATH, OV02B1B_OTP_SIZE, (void *)ov02b1b_otp_data);
             return ERROR_NONE;
             }
 
@@ -1463,7 +1513,18 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorHightSampling = 0;    // 0 is default 1x
     sensor_info->SensorPacketECCOrder = 1;
 
-
+	{
+		snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
+			"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		ov02b1b_otp_data[0], ov02b1b_otp_data[1],
+		ov02b1b_otp_data[2], ov02b1b_otp_data[3],
+		ov02b1b_otp_data[4], ov02b1b_otp_data[5],
+		ov02b1b_otp_data[6], ov02b1b_otp_data[7],
+		ov02b1b_otp_data[8], ov02b1b_otp_data[9],
+		ov02b1b_otp_data[10], ov02b1b_otp_data[11],
+		ov02b1b_otp_data[12], ov02b1b_otp_data[13],
+		ov02b1b_otp_data[14], ov02b1b_otp_data[15]);
+	}
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	    sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
