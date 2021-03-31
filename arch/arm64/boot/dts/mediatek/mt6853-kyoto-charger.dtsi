@@ -128,7 +128,7 @@
 		mmi,batt-curr-boost = <300000>;
 		mmi,batt-ovp-lmt = <4550000>;
 		mmi,pl-chrg-vbatt-min = <3600000>;
-		mmi,typec-middle-current = <1500000>;
+		mmi,typec-middle-current = <1000000>;
 		mmi,step-first-current-comp = <0>;
 		mmi,dont-rerun-aicl;
 		mmi,chrg-temp-zones-num = <5>;
@@ -138,7 +138,7 @@
 					<15 4450 2500 0 0>,
 					<45 4250 5800 4450 4000>,
 					<60 4200 3600 0 0>;
-		mmi,thermal-min-level = <2000000>;
+		mmi,thermal-min-level = <1500000>;
 		charger_device_0 {
 			chrg-name = "pmic-sw";
 			psy-name = "battery";
@@ -147,7 +147,7 @@
 		charger_device_1 {
 			chrg-name = "cp-master";
 			psy-name = "bq2597x-standalone";
-			charging-curr-min = <2000000>;
+			charging-curr-min = <1500000>;
 		};
 	};
 };
