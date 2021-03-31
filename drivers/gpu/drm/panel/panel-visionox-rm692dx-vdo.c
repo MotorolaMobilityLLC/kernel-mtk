@@ -434,6 +434,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	msleep(2);
 
 	ctx->vci_gpio = devm_gpiod_get(ctx->dev, "vci", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->vci_gpio)) {
