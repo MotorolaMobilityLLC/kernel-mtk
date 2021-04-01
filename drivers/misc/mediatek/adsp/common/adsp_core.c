@@ -189,6 +189,8 @@ static irqreturn_t adsp_irq_dispatcher(int irq, void *data)
 	adsp_mt_clr_spm(pdata->cid);
 	if (!pdata->irq_cb || !pdata->clear_irq)
 		return IRQ_NONE;
+	/* MMI_STOPSHIP Add adsp verify log for Audio factory smart pa cali fail issue */
+	pr_info("%s(), add drain writebuffer for verify", __func__);
 	pdata->irq_cb(irq, pdata->data, pdata->cid);
 	pdata->clear_irq(pdata->cid);
 	wmb(); /* drain writebuffer */
