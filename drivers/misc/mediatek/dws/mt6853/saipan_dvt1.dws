@@ -74,14 +74,14 @@
             <eint16>
                 <varName>SWTP</varName>
                 <debounce_time>512</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint16>
             <eint17>
                 <varName>SWTP_1</varName>
                 <debounce_time>512</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint17>
@@ -265,8 +265,8 @@
             <gpio16>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
@@ -275,8 +275,8 @@
             <gpio17>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
