@@ -62,5 +62,6 @@ struct bq2560x_platform_data {
 	enum vac_ovp vac_ovp;
 	
 };
+void bq2560x_enable_statpin(bool en);
 
 #endif
