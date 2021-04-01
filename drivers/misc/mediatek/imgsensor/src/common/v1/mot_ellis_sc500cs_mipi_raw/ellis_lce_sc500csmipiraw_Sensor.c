@@ -25,7 +25,7 @@
 
 #define PFX "ellis_lce_sc500cs_camera_sensor"
 #define LOG_INF(format, args...)    \
-	pr_info(PFX "[%s] " format, __func__, ##args)
+	pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE 0
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -831,6 +831,321 @@ static void slim_video_setting(void)
 #endif
 }
 
+#define ELLIS_SC500_EEPROM_SLAVE_ADDR 0xA4
+#define ELLIS_SC500_SENSOR_IIC_SLAVE_ADDR 0x6c
+#define ELLIS_SC500_EEPROM_SIZE  1898
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/sc500_eeprom_data.bin"
+#define MOTO_ELLIS_SC500CS_LSC_CHECKSUM_SIZE  1870
+#define MOTO_ELLIS_SC500CS_MNF_INFO_SIZE  9
+#define MOTO_ELLIS_SC500CS_AWB_CHECKSUM_SIZE 18
+#define MOTO_ELLIS_SC500CS_AWB_FLAG 0X55
+#define MOTO_ELLIS_SC500CS_LSC_FLAG 0X55
+#define MOTO_ELLIS_SC500CS_MNF_FLAG 0X55
+#define MOTO_ELLIS_SC500CS_GOLDEN_LIMITVALUE 0X32
+static uint8_t ELLIS_SC500_eeprom[ELLIS_SC500_EEPROM_SIZE] = {0};
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
+
+static uint8_t MotoEllisSc500csChecksum(unsigned char *Data, int Len)
+{
+    int doChecksum = 0, i=0;
+    for (i=0; i<Len; i++) {
+        doChecksum += Data[i];
+    }
+    return (doChecksum%0xFF+1);
+}
+
+#if 0
+static uint16_t to_uint16_swap(uint8_t *data)
+{
+	uint16_t converted;
+	memcpy(&converted, data, sizeof(uint16_t));
+	return ntohs(converted);
+}
+#endif
+static void ELLIS_SC500_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+{
+	int i = 0;
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = slave;
+	spin_unlock(&imgsensor_drv_lock);
+
+	//read eeprom data
+	for (i = 0; i < size; i ++) {
+		ELLIS_SC500_eeprom[i] = read_cmos_sensor(start_add);
+		start_add ++;
+	}
+
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = ELLIS_SC500_SENSOR_IIC_SLAVE_ADDR;
+	spin_unlock(&imgsensor_drv_lock);
+}
+
+static void ELLIS_SC500_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+            ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+#if 0
+static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
+{
+	uint8_t result = 0;
+
+	if (unit.r < AWB_R_MIN || unit.r > AWB_R_MAX) {
+		LOG_INF("unit r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, unit.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (unit.gr < AWB_GR_MIN || unit.gr > AWB_GR_MAX) {
+		LOG_INF("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, unit.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (unit.gb < AWB_GB_MIN || unit.gb > AWB_GB_MAX) {
+		LOG_INF("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, unit.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (unit.b < AWB_B_MIN || unit.b > AWB_B_MAX) {
+		LOG_INF("unit b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, unit.b, AWB_B_MAX);
+		result = 1;
+	}
+
+	if (golden.r < AWB_R_MIN || golden.r > AWB_R_MAX) {
+		LOG_INF("golden r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, golden.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (golden.gr < AWB_GR_MIN || golden.gr > AWB_GR_MAX) {
+		LOG_INF("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, golden.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (golden.gb < AWB_GB_MIN || golden.gb > AWB_GB_MAX) {
+		LOG_INF("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, golden.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (golden.b < AWB_B_MIN || golden.b > AWB_B_MAX) {
+		LOG_INF("golden b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, golden.b, AWB_B_MAX);
+		result = 1;
+	}
+
+	return result;
+}
+#endif
+static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t golden,
+		awb_limit_t limit)
+{
+	uint32_t r_g;
+	uint32_t b_g;
+	uint32_t unit_g_avg;
+	uint32_t golden_g_avg;
+	uint32_t golden_rg, golden_bg;
+	uint32_t r_g_golden_min;
+	uint32_t r_g_golden_max;
+	uint32_t b_g_golden_min;
+	uint32_t b_g_golden_max;
+	unit_g_avg = (unit.gr + unit.gb)/2;
+	golden_g_avg = (golden.gr + golden.gb)/2;
+	r_g = (unit.r* 1000)/unit_g_avg;
+	b_g = (unit.b*1000)/unit_g_avg;
+
+	golden_rg = (golden.r*1000)/golden_g_avg;
+	golden_bg = (golden.b*1000)/golden_g_avg;
+
+	r_g_golden_min = limit.r_g_golden_min;
+	r_g_golden_max = limit.r_g_golden_max;
+	b_g_golden_min = limit.b_g_golden_min;
+	b_g_golden_max = limit.b_g_golden_max;
+	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,r_g_golden_min,r_g_golden_max);
+	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,golden_bg,b_g_golden_min,b_g_golden_max);
+	if (r_g < (golden_rg - r_g_golden_min) || r_g > (golden_rg + r_g_golden_max)) {
+		LOG_INF("Final RG calibration factors out of range!");
+		return 1;
+	}
+
+	if (b_g < (golden_bg - b_g_golden_min) || b_g > (golden_bg + b_g_golden_max)) {
+		LOG_INF("Final BG calibration factors out of range!");
+		return 1;
+	}
+	return 0;
+}
+
+static calibration_status_t ELLIS_SC500_check_awb_data(void *data)
+{
+	struct ELLIS_SC500_eeprom_t *eeprom = (struct ELLIS_SC500_eeprom_t*)data;
+	awb_t unit;
+	awb_t golden;
+	awb_limit_t golden_limit;
+        if(eeprom->awb_crc16[0] != MotoEllisSc500csChecksum(eeprom->awb_flag,
+                MOTO_ELLIS_SC500CS_AWB_CHECKSUM_SIZE-1) || eeprom->awb_flag[0] != MOTO_ELLIS_SC500CS_AWB_FLAG) {
+		LOG_INF("AWB CRC Fails!");
+		return CRC_FAILURE;
+	}
+	unit.r = (eeprom->awb_src_1_r[1]<<8 |eeprom->awb_src_1_r[0]);
+	unit.gr = (eeprom->awb_src_1_gr[1]<<8 |eeprom->awb_src_1_gr[0]);
+	unit.gb = (eeprom->awb_src_1_gb[1]<<8 |eeprom->awb_src_1_gb[0]);
+	unit.b = (eeprom->awb_src_1_b[1]<<8 |eeprom->awb_src_1_b[0]);
+
+	golden.r = (eeprom->awb_src_1_golden_r[1]<<8 |eeprom->awb_src_1_golden_r[0]);
+	golden.gr = (eeprom->awb_src_1_golden_gr[1]<<8 |eeprom->awb_src_1_golden_gr[0]);
+	golden.gb = (eeprom->awb_src_1_golden_gb[1]<<8 |eeprom->awb_src_1_golden_gb[0]);
+	golden.b = (eeprom->awb_src_1_golden_b[1]<<8 |eeprom->awb_src_1_golden_b[0]);
+#if 0
+	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
+		LOG_INF("AWB CRC limit Fails!");
+		return LIMIT_FAILURE;
+	}
+#endif
+
+	golden_limit.r_g_golden_min = MOTO_ELLIS_SC500CS_GOLDEN_LIMITVALUE;
+	golden_limit.r_g_golden_max = MOTO_ELLIS_SC500CS_GOLDEN_LIMITVALUE;
+	golden_limit.b_g_golden_min = MOTO_ELLIS_SC500CS_GOLDEN_LIMITVALUE;
+	golden_limit.b_g_golden_max = MOTO_ELLIS_SC500CS_GOLDEN_LIMITVALUE;
+
+	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
+		LOG_INF("AWB CRC factor limit Fails!");
+		return LIMIT_FAILURE;
+	}
+	LOG_INF("AWB CRC Pass");
+	return NO_ERRORS;
+}
+
+static calibration_status_t ELLIS_SC500_check_lsc_data_mtk(void *data)
+{
+	struct ELLIS_SC500_eeprom_t *eeprom = (struct ELLIS_SC500_eeprom_t*)data;
+
+        if(eeprom->lsc_crc16[0] != MotoEllisSc500csChecksum(eeprom->lsc_flag,
+                MOTO_ELLIS_SC500CS_LSC_CHECKSUM_SIZE-1) || eeprom->lsc_flag[0] != MOTO_ELLIS_SC500CS_LSC_FLAG) {
+		LOG_INF("LSC CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("LSC CRC Pass");
+	return NO_ERRORS;
+}
+
+static void ELLIS_SC500_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+	struct ELLIS_SC500_eeprom_t *eeprom = (struct ELLIS_SC500_eeprom_t*)data;
+
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		eeprom->moduleid[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c",eeprom->moduleid[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+
+	if (eeprom->moduleid[0] == 'L') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "LCE");
+	} else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown manufacturer_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		eeprom->year[0], eeprom->month[0], eeprom->day[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x",
+		eeprom->moduleid[0]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
+
+
+static calibration_status_t ELLIS_SC500_check_manufacturing_data(void *data)
+{
+	struct ELLIS_SC500_eeprom_t *eeprom = (struct ELLIS_SC500_eeprom_t*)data;
+        if(eeprom->manufacture_crc[0] != MotoEllisSc500csChecksum(eeprom->info_flag,
+                MOTO_ELLIS_SC500CS_MNF_INFO_SIZE-1) || eeprom->info_flag[0] != MOTO_ELLIS_SC500CS_MNF_FLAG) {
+		LOG_INF("AWB CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+
+static void ELLIS_SC500_eeprom_format_calibration_data(void *data)
+{
+	if (NULL == data) {
+		LOG_INF("data is NULL");
+		return;
+	}
+
+	mnf_status = ELLIS_SC500_check_manufacturing_data(data);
+	awb_status = ELLIS_SC500_check_awb_data(data);
+	lsc_status = ELLIS_SC500_check_lsc_data_mtk(data);
+	dual_status = 0;
+
+	LOG_INF("status mnf:%d, awb:%d, lsc_status:%d, dual:%d",
+		mnf_status, awb_status, lsc_status, dual_status);
+}
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -845,6 +1160,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 			pr_err("ellis_lce_sc500cs i2c write id : 0x%x, sensor id: 0x%x\n",
 			imgsensor.i2c_write_id, *sensor_id);
+			ELLIS_SC500_read_data_from_eeprom(ELLIS_SC500_EEPROM_SLAVE_ADDR, 0x0000, ELLIS_SC500_EEPROM_SIZE);
+			ELLIS_SC500_eeprom_dump_bin(EEPROM_DATA_PATH, ELLIS_SC500_EEPROM_SIZE, (void *)ELLIS_SC500_eeprom);
+			ELLIS_SC500_eeprom_format_calibration_data((void *)ELLIS_SC500_eeprom);
 			return ERROR_NONE;
 			}
 
@@ -1158,7 +1476,11 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
 	sensor_info->SensorHightSampling = 0;    // 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
-
+    sensor_info->calibration_status.mnf = mnf_status;
+    sensor_info->calibration_status.awb = awb_status;
+    sensor_info->calibration_status.lsc = lsc_status;
+    sensor_info->calibration_status.dual = dual_status;
+    ELLIS_SC500_eeprom_get_mnf_data((void *) ELLIS_SC500_eeprom, &sensor_info->mnf_calibration);
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	    sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
@@ -1782,4 +2104,3 @@ pfFunc)
 		*pfFunc =  &sensor_func;
 	return ERROR_NONE;
 }	/*	ELLIS_LCE_SC500CS_MIPI_RAW_SensorInit	*/
-
