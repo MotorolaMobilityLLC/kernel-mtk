@@ -452,6 +452,16 @@ static int bq2560x_set_stat_ctrl(struct bq2560x *bq, int ctrl)
 	return bq2560x_update_bits(bq, BQ2560X_REG_00, REG00_STAT_CTRL_MASK,
 				   val << REG00_STAT_CTRL_SHIFT);
 }
+static struct bq2560x *g_bq2560x;
+void bq2560x_enable_statpin(bool en)
+{
+
+	if(en)
+		bq2560x_set_stat_ctrl(g_bq2560x, 0);
+	else
+		bq2560x_set_stat_ctrl(g_bq2560x, 3);
+}
+
 
 static int bq2560x_set_int_mask(struct bq2560x *bq, int mask)
 {
@@ -1489,6 +1499,8 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 		dev_err(bq->dev, "failed to register sysfs. err: %d\n", ret);
 
 	determine_initial_status(bq);
+
+	g_bq2560x = bq;
 
 //+EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
 /*
