@@ -142,7 +142,62 @@ struct imgsensor_info_struct {
 	kal_uint32  i2c_speed;     //i2c speed
 };
 
+#define AWB_R_MIN 200
+#define AWB_R_MAX 880
+#define AWB_GR_MIN 760
+#define AWB_GR_MAX 880
+#define AWB_GB_MIN 760
+#define AWB_GB_MAX 880
+#define AWB_B_MIN 200
+#define AWB_B_MAX 880
 
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct ELLIS_SC500_eeprom_t{
+	uint8_t info_flag[1];
+	uint8_t moduleid[1];
+	uint8_t postion[1];
+	uint8_t lens_id[1];
+	uint8_t actuator_id[1];
+	uint8_t year[1];
+	uint8_t month[1];
+	uint8_t day[1];
+	uint8_t manufacture_crc[1];
+	uint8_t awb_flag[1];
+	uint8_t awb_src_1_r[2];
+	uint8_t awb_src_1_b[2];
+	uint8_t awb_src_1_gr[2];
+	uint8_t awb_src_1_gb[2];
+	uint8_t awb_src_1_golden_r[2];
+	uint8_t awb_src_1_golden_b[2];
+	uint8_t awb_src_1_golden_gr[2];
+	uint8_t awb_src_1_golden_gb[2];;
+	uint8_t awb_crc16[1];
+	uint8_t lsc_flag[1];
+	uint8_t lsc_data_mtk[1868];
+	uint8_t lsc_crc16[1];
+};
+
+typedef struct {
+	uint16_t r;
+	uint16_t gr;
+	uint16_t gb;
+	uint16_t b;
+	uint16_t r_g;
+	uint16_t b_g;
+	uint16_t gr_gb;
+} awb_t;
+
+typedef struct {
+	uint8_t r_g_golden_min;
+	uint8_t r_g_golden_max;
+	uint8_t b_g_golden_min;
+	uint8_t b_g_golden_max;
+} awb_limit_t;
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
 				u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
