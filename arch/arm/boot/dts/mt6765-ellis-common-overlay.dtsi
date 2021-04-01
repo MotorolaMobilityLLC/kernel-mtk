@@ -47,7 +47,7 @@
 		ti,bq2560x,boost-voltage = <4998>;
 		ti,bq2560x,boost-current = <1200>;
 		ti,bq2560x,enable_term;
-		ti,bq2560x,stat-pin-ctrl = <0>;
+		ti,bq2560x,stat-pin-ctrl = <3>;
 		ti,bq2560x,vac-ovp-threshold = <6500>;
 
 	};
@@ -95,6 +95,10 @@
 		led_mode = <4>;
 		data = <1>;
 		pwm_config = <0 1 0 0 0>;
+	};
+	led7:led@7 {
+		compatible = "mediatek,charging";
+		led_mode = <3>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
