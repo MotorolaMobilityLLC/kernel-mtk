@@ -74,6 +74,9 @@ char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"keyboard-backlight",
 	"button-backlight",
 	"lcd-backlight",
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+	"charging",
+#endif
 };
 
 struct cust_mt65xx_led *pled_dtsi;
@@ -638,6 +641,13 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 				button_flag = true;
 			}
 		}
+//+EKELLIS-48, yaocankun.wt, 20210401, add led control node
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+	if (strcmp(cust->name, "charging") == 0) {
+		return 0;
+	}
+#endif
+//-EKELLIS-48, yaocankun.wt, 20210401, add led control node
 		return mt_brightness_set_pmic(cust->data, level, bl_div_hal);
 
 	case MT65XX_LED_MODE_CUST_LCM:
