@@ -17,6 +17,7 @@ endif
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gate_ic
+ccflags-y += -I$(srctree)/drivers/power/supply
 
 obj-$(CONFIG_MTK_LEDS) += mtk_leds_drv.o
 
@@ -30,3 +31,4 @@ endif
 endif
 obj-$(CONFIG_LEDS_MT6357) += leds-mt6357.o
 obj-$(CONFIG_LEDS_MT6357) += mt_led_trigger.o
+
