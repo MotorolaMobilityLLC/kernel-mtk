@@ -7,6 +7,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/leds/$(MTK_PLATFORM)
 endif
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include
+ccflags-y += -I$(srctree)/drivers/power/supply
 
 obj-$(CONFIG_MTK_LEDS) += mtk_leds_drv.o
 

@@ -24,6 +24,10 @@
 #include <ddp_aal.h>
 #endif
 
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+#include <bq2560x.h>
+#endif
+
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
@@ -263,6 +267,20 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 		}
 	}
 #endif
+
+//+EKELLIS-48, yaocankun.wt, 20210401, add led control node
+#ifdef CONFIG_MTK_BQ2560x_SUPPORT
+	if (strcmp(led_data->cust.name, "charging") == 0) {
+		if (level == 0) {
+			bq2560x_enable_statpin(0);
+		}
+		else
+		{
+			bq2560x_enable_statpin(1);
+		}
+	}
+#endif
+//-EKELLIS-48, yaocankun.wt, 20210401, add led control node
 }
 
 static int mt65xx_blink_set(struct led_classdev *led_cdev,
