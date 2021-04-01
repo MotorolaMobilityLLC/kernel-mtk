@@ -3288,7 +3288,7 @@ static int battery_tcmd_register_tcmd(struct mtk_battery *data)
 	data->bat_tcmd_client.get_bat_id = battery_tcmd_read_bat_id;
 	data->bat_tcmd_client.get_bat_voltage = battery_tcmd_read_bat_voltage;
 	data->bat_tcmd_client.get_bat_ocv = battery_tcmd_read_bat_ocv;
-	//ret = moto_chg_tcmd_register(&data->bat_tcmd_client);//TODO
+	ret = moto_chg_tcmd_register(&data->bat_tcmd_client);
 
 	return ret;
 }
