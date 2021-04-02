@@ -138,6 +138,16 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0xFF,1,{0x10}},
 	{0xFB,1,{0x01}},
 	{0x3B,5,{0x03,0x14,0x36,0x04,0x04}},
+	{0xFF,1,{0x23}},
+	{0xFB,1,{0x01}},
+	{0x07,1,{0x20}},
+	{0x08,1,{0x04}},
+	{0x09,1,{0x00}},
+	{0xFF,1,{0x24}},
+	{0xFB,1,{0x01}},
+	{0xC4,1,{0x22}},
+	{0xFF,1,{0x10}},
+	{0xFB,1,{0x01}},
 	{0x35,1,{0x00}},
 	{0x51,1,{0x00}},
 	{0x53,1,{0x24}},
@@ -226,9 +236,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active = 2;
-	params->dsi.vertical_backporch = 54;
-	params->dsi.vertical_frontporch = 20;
+	params->dsi.vertical_sync_active = 10;
+	params->dsi.vertical_backporch = 10;
+	params->dsi.vertical_frontporch = 54;
 	//params->dsi.vertical_frontporch_for_low_power = 540;/*disable dynamic frame rate*/
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
@@ -243,7 +253,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 270;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 288;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 290;	/* this value must be in MTK suggested table */
 #endif
 	//params->dsi.PLL_CK_CMD = 220;
 	//params->dsi.PLL_CK_VDO = 255;
@@ -253,8 +263,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.fbk_div = 0x1;
 #endif
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
