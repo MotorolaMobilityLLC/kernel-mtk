@@ -1591,6 +1591,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			#endif
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 			#if PDAF_SUPPORT
 			memcpy((void *)PDAFinfo,
 				(void *)&imgsensor_pd_info[1],
@@ -1615,7 +1616,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
@@ -1697,28 +1698,28 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*feature_return_para_32 = 3; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			*feature_return_para_32 = 6; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM2:
-			*feature_return_para_32 = 6; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*feature_return_para_32 = 3; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*feature_return_para_32 = 3; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*feature_return_para_32 = 6; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*feature_return_para_32 = 3; /*BINNING_NONE*/
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
 			break;
 		default:
-			*feature_return_para_32 = 3; /*BINNING_AVERAGED*/
+			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
 			break;
 		}
 		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
@@ -1790,6 +1791,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 			memcpy((void *)pvcinfo, (void *)&vc_info[1],
 				sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
