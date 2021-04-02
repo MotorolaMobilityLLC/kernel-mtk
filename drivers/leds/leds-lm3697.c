@@ -271,10 +271,12 @@ static int lm3697_init(struct lm3697 *priv)
 	lm3697_i2c_write(priv->client, LM3697_CONTROL_A_RAMP, 0x22);
 	lm3697_i2c_write(priv->client, LM3697_CONTROL_B_RAMP, 0x22);
 	lm3697_i2c_write(priv->client, LM3697_CONTROL_A_RUN_RAMP, 0x02);
+	lm3697_i2c_write(priv->client, LM3697_CONTROL_A_FS_SETTING, 0x19);
 	/* Change BLK to Linear mode. 0x00 = exponential, 0x01 = Linear */
 	lm3697_i2c_write(priv->client, LM3697_CTRL_A_B_BRT_CFG, 0x01);
 	lm3697_i2c_write(priv->client, LM3697_FEEDBACK_ENABLE, 0x07);
 	lm3697_i2c_write(priv->client, LM3697_BOOST_CTRL, 0x04);
+	lm3697_i2c_write(priv->client, 0x1C, 0x0F);
 	lm3697_i2c_write(priv->client, LM3697_CTRL_ENABLE, 0x01);
 
 	return 0;
