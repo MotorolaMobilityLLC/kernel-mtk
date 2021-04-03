@@ -139,8 +139,8 @@ struct MotAlspsDefConfig {
 };
 
 struct MotAlspsVariableConfig {
-  uint16_t farTh;
-  uint16_t NearTh;
+  float low_coef;
+  float high_coef;
   uint16_t pWTime;
   bool pUseOilAlgo;
 };
