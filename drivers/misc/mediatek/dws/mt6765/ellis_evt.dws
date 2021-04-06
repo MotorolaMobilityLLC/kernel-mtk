@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.31.2021.19:20:26"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.06.2021.09:41:20"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>MT6765</proj>
@@ -91,13 +91,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint14>
-            <eint41>
+            <eint42>
                 <varName>TCPC_PD</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
-            </eint41>
+            </eint42>
             <eint44>
                 <varName>DSI_TE</varName>
                 <debounce_time>0</debounce_time>
@@ -566,7 +566,17 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio40>
-            <gpio41>
+	    <gpio41>
+		<eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio41>
+            <gpio42>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
@@ -576,7 +586,7 @@
                 <varName0>GPIO_USB_TYPEC_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
-            </gpio41>
+            </gpio42>
             <gpio43>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
@@ -1789,7 +1799,7 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
+                <out_high>true</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio159>
