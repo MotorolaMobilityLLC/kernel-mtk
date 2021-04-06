@@ -320,6 +320,10 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
+	if (info->mmi.target_usb == 0) {
+		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
+	}
+
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	if (pdata->cp_ichg_limit!= -1) {
@@ -551,6 +555,9 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	}
 
 	info->mmi.battery_charging_disable = false;
+
+	info->mmi.target_usb = 0;
+
 	return 0;
 }
 
@@ -784,6 +791,11 @@ static int select_pdc_charging_current_limit(struct charger_manager *info)
 		info->data.pd_charger_current;
 #else
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
+
+	if (info->mmi.target_usb == 0) {
+		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
+	}
+
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	if (info->mmi.adaptive_charging_disable_ibat
