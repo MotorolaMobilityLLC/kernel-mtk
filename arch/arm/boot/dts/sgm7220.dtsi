@@ -16,10 +16,8 @@
 #else
 		sgm7220-tcpc,notifier_supply_num = <2>;
 #endif
-		sgm7220,intr_gpio = <&pio 41 0x1>;
-		sgm7220,intr_gpio_num = <41>;
-
-		sgm7220,en_gpio = <&pio 159 0x0>;
+		sgm7220,intr_gpio = <&pio 42 0x1>;
+		sgm7220,intr_gpio_num = <42>;
 
 		charger = <&mtk_charger_type>;
     };
