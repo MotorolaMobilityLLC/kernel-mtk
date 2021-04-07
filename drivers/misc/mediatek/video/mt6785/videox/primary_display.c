@@ -9132,11 +9132,13 @@ UINT32 DISP_GetScreenWidth(void)
 {
 	return primary_display_get_width();
 }
+EXPORT_SYMBOL(DISP_GetScreenWidth);
 
 UINT32 DISP_GetScreenHeight(void)
 {
 	return primary_display_get_height();
 }
+EXPORT_SYMBOL(DISP_GetScreenHeight);
 
 UINT32 DISP_GetActiveHeight(void)
 {
