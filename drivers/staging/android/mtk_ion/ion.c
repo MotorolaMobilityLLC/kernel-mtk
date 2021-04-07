@@ -187,6 +187,8 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	INIT_LIST_HEAD(&buffer->attachments);
 #endif
 	mutex_init(&buffer->lock);
+	if (heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC)
+		goto exit;
 	/*
 	 * this will set up dma addresses for the sglist -- it is not
 	 * technically correct as per the dma api -- a specific
@@ -201,12 +203,12 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 		sg_dma_address(sg) = sg_phys(sg);
 		sg_dma_len(sg) = sg->length;
 	}
-
+exit:
 	mutex_lock(&dev->buffer_lock);
 	ion_buffer_add(dev, buffer);
 	mutex_unlock(&dev->buffer_lock);
-	atomic_long_add(len, &heap->total_allocated);
 	atomic_long_add(len, &total_heap_bytes);
+	atomic_long_add(len, &heap->total_allocated);
 	return buffer;
 
 err1:

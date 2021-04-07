@@ -3544,7 +3544,7 @@
 
 	memory_ssmr_features: memory-ssmr-features {
 		compatible = "mediatek,memory-ssmr-features";
-		svp-size = <0 0x10000000>;
+		svp-size = <0 0xD000000>;
 		iris-recognition-size = <0 0>;
 		2d_fr-size = <0 0>;
 		tui-size = <0 0>;
