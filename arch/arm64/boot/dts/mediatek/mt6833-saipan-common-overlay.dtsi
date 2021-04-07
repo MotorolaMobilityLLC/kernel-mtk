@@ -308,7 +308,7 @@
 
 &bat_gm30 {
 	EMBEDDED_SEL = <(1)>;	/* embedded battery.*/
-	DIFFERENCE_FULLOCV_ITH = <(244)>;	/*Charging termination current.*/
+	DIFFERENCE_FULLOCV_ITH = <(400)>;	/*Charging termination current.*/
 
 	df-serialnum = "SB18D09927";
 	g_Q_MAX_row = <4>;
