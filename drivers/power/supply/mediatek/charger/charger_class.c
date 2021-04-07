@@ -245,7 +245,7 @@ int charger_dev_set_eoc_current(struct charger_device *chg_dev, u32 uA)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
 	    chg_dev->ops->set_eoc_current)
-		chg_dev->ops->set_eoc_current(chg_dev, uA);
+		return chg_dev->ops->set_eoc_current(chg_dev, uA);
 
 	return -ENOTSUPP;
 }
