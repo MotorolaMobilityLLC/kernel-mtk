@@ -46,7 +46,7 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 	DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L
 };
 
-static unsigned int gOVL_bg_color = 0xff000000;
+static unsigned int gOVL_bg_color = 0xffff0000;
 static unsigned int gOVL_dim_color = 0xff000000;
 
 static unsigned int ovl_bg_w[OVL_NUM];

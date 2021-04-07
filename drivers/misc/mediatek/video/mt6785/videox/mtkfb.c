@@ -283,6 +283,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
 	enum mtkfb_power_mode prev_pm = primary_display_get_power_mode();
 
+	DISPDBG("%s, blank_mode=%d\n", __func__, blank_mode);
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
@@ -2103,6 +2104,7 @@ static int __parse_tag_videolfb_extra(struct device_node *node)
 	if (!prop)
 		return -1;
 	islcmconnected = of_read_number(prop, 1);
+//	islcmconnected = 1;
 
 	prop = (void *)of_get_property(node, "atag,videolfb-islcm_inited",
 				       NULL);
@@ -2162,6 +2164,7 @@ int __parse_tag_videolfb(struct device_node *node)
 			lcd_fps = 6000;
 
 		islcmconnected = videolfb_tag->islcmfound;
+//		islcmconnected = 1;
 		vramsize = videolfb_tag->vram;
 		fb_base = videolfb_tag->fb_base;
 		is_lcm_inited = 1;

@@ -452,7 +452,7 @@ void dump_reg_row(unsigned long baddr, unsigned long offset, unsigned int count)
 			len += snprintf(buf + len, buf_len - len, "\n");
 	}
 
-	DDPDUMP("%s", buf);
+	DISPINFO("%s", buf);
 }
 
 static void mutex_dump_reg(void)

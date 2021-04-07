@@ -158,6 +158,9 @@ static struct {
 	{DISP_OPT_LCM_HBM, 0, "DISP_OPT_LCM_HBM"},
 	/*DynFPS*/
 	{DISP_OPT_DYNAMIC_FPS, 0, "DISP_OPT_DYNAMIC_FPS"},
+#ifdef CONFIG_MTK_MT6382_BDG
+	{DISP_OPT_6382_DBG, 0, "DISP_OPT_6382_DBG"},
+#endif
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -369,7 +372,7 @@ void disp_helper_option_init(void)
 
 	/* ================ Begin: lowpower option setting ================ */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 0);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);

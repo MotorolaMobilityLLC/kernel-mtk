@@ -71,7 +71,6 @@
 
 #define DISPDBG(string, args...)					\
 	do {								\
-		if (ddp_debug_dbg_log_level())				\
 			DISPMSG(string, ##args);			\
 	} while (0)
 
@@ -80,6 +79,20 @@
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s\n", __func__); \
 		if (g_mobilelog)					\
 			pr_info("%s line:%d", __func__, __LINE__);\
+	} while (0)
+
+#define DISPFUNCSTART()							\
+	do {								\
+		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s START\n", __func__); \
+		if (g_mobilelog)					\
+			pr_info("[DISP]mt6382 %s start, line:%d", __func__, __LINE__);\
+	} while (0)
+
+#define DISPFUNCEND()							\
+	do {								\
+		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s END\n", __func__); \
+		if (g_mobilelog)					\
+			pr_info("[DISP]mt6382 %s end, line:%d", __func__, __LINE__);\
 	} while (0)
 
 #define DISPDBGFUNC() DISPFUNC()

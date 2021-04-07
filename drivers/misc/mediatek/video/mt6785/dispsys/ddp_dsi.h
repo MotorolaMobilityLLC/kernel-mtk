@@ -214,6 +214,11 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq);
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		    unsigned int cmd, unsigned char count,
 		    unsigned char *para_list, unsigned char force_update);
+#ifdef CONFIG_MTK_MT6382_BDG
+void DSI_set_cmdq_V1(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+		    unsigned int cmd, unsigned char count,
+		    unsigned char *para_list, unsigned char force_update);
+#endif
 void DSI_set_cmdq_V4(enum DISP_MODULE_ENUM module, bool hs,
 			struct LCM_setting_table_V3 *para_tbl,
 			unsigned int size, unsigned char force_update);
