@@ -865,33 +865,14 @@ bool jd_submit_atom(struct kbase_context *kctx, const struct base_jd_atom_v2 *us
 			ret = jd_done_nolock(katom, NULL);
 
 			goto out;
-		} else {
-
-			if (katom->core_req & BASE_JD_REQ_SOFT_JOB) {
-				/* This softjob has failed due to a previous
-				 * dependency, however we should still run the
-				 * prepare & finish functions
-				 */
-				if (kbase_prepare_soft_job(katom) != 0) {
-					katom->event_code =
-						BASE_JD_EVENT_JOB_INVALID;
-					ret = jd_done_nolock(katom, NULL);
-					goto out;
-				}
-			}
-
-			katom->will_fail_event_code = katom->event_code;
-			ret = false;
-
-			goto out;
 		}
-	} else {
-		/* These must occur after the above loop to ensure that an atom
-		 * that depends on a previous atom with the same number behaves
-		 * as expected */
-		katom->event_code = BASE_JD_EVENT_DONE;
-		katom->status = KBASE_JD_ATOM_STATE_QUEUED;
+		katom->will_fail_event_code = katom->event_code;
 	}
+	/* These must occur after the above loop to ensure that an atom
+	 * that depends on a previous atom with the same number behaves
+	 * as expected */
+	katom->event_code = BASE_JD_EVENT_DONE;
+	katom->status = KBASE_JD_ATOM_STATE_QUEUED;
 
 	/* For invalid priority, be most lenient and choose the default */
 	sched_prio = kbasep_js_atom_prio_to_sched_prio(user_atom->prio);
