@@ -386,7 +386,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);//08 cmd, 03 video
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx,0x53,0x28);
-	lcm_dcs_write_seq_static(ctx,0x55,0x01);
+	lcm_dcs_write_seq_static(ctx,0x55,0x00);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x11);
 	msleep(120);
@@ -894,7 +894,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.get_virtual_width = lcm_get_virtual_width,
 	.hbm_set_cmdq = panel_hbm_set,
 	.hbm_get_state = panel_hbm_get_state,
-	.cabc_set_cmdq = panel_cabc_set_cmdq,
+	/*.cabc_set_cmdq = panel_cabc_set_cmdq,*/
 	.cabc_get_state = panel_cabc_get_state,
 };
 #endif
