@@ -48,18 +48,18 @@ kal_uint16 saipan_qtech_hi4821q_read_eeprom(kal_uint32 addr);
 #define SRAM_QGC_START_ADDR_48M     0x4000
 #define SRAM_BPGC_START_ADDR_48M     0x5068  //0x8980 (2020.9.14)
 
-#define PGC_DATA_SIZE 572
+#define BPGC_DATA_SIZE 572
 #define QGC_DATA_SIZE 1008
-#define XGC_DATA_SIZE 693
+#define XGC_DATA_SIZE 630
 
 #if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 extern void dumpEEPROMData(int u4Length,u8* pu1Params);
 #endif
-#endif
-
-#if SAIPAN_QTECH_HI4821Q_XGC_QGC_BPGC_CALIB
-	void apply_sensor_BPGC_Cali(void);
-	void apply_sensor_XGC_QGC_Cali(void);
+extern kal_uint16 saipan_qtech_hi4821q_XGC_setting_burst[XGC_DATA_SIZE];
+extern kal_uint16 saipan_qtech_hi4821q_QGC_setting_burst[QGC_DATA_SIZE];
+extern kal_uint16 saipan_qtech_hi4821q_BPGC_setting_burst[BPGC_DATA_SIZE];
+extern  void sensor_format_XGC_QGC_Cali_data( u8* xgc_data_buffer , u8* qgc_data_buffer );
+extern void sensor_format_BPGC_Cali_data(u8* bpgc_data_buffer);
 #endif
 
 #if SAIPAN_QTECH_HI4821Q_OTP_ENABLE
