@@ -22,7 +22,7 @@
 #include "kd_camera_feature.h"
 #include "kd_imgsensor.h"
 
-#define MAIN_OTP_DUMP 1
+#define MAIN_OTP_DUMP 0
 
 #define DEV_NAME_FMT_DEV "/dev/camera_eeprom%u"
 
