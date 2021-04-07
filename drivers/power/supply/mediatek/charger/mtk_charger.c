@@ -2897,6 +2897,11 @@ void mmi_init(struct charger_manager *info)
 	if (rc)
 		pr_err("[%s]couldn't create factory_charge_upper\n", __func__);
 
+	rc = charger_dev_set_eoc_current(info->chg1_dev,
+				info->mmi.chrg_iterm*1000);
+	if (rc)
+		pr_err("[%s]couldn't set eoc current\n", __func__);
+
 	info->mmi.init_done = true;
 }
 
