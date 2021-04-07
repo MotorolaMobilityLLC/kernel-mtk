@@ -33,10 +33,6 @@
 
 #define per_frame 1
 
-extern u8* bpgc_data_buffer;
-extern u8* qgc_data_buffer;
-extern u8* xgc_data_buffer;
-
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -168,7 +164,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x40, 0xff},
-	.i2c_speed = 400,
+	.i2c_speed = 1000,
 };
 
 
@@ -412,6 +408,52 @@ void ImgSensor_FuseIDRead(struct stCAM_CAL_DATAINFO_STRUCT*pData){
 	write_cmos_sensor_8(0x0b00, 0x01);
 	mdelay(1);
 }
+
+//XGC,QGC,BPGC Calibration data are applied here
+#if SAIPAN_QTECH_HI4821Q_XGC_QGC_BPGC_CALIB
+#ifdef SAIPAN_QTECH_HI4821Q_OTP_DUMP_XQGC
+void print_sensor_apply_setting(kal_uint16 *para, kal_uint32 len)
+{
+	int  n = 0;
+	for(n=0; n<len; n=n+2)
+		LOG_INF("Little_print[%d] reg = 0x%4x,value = 0x%4x",n/2,para[n],para[n+1]);
+}
+#endif
+static void apply_sensor_XGC_QGC_Cali(void)
+{
+	if (0 != saipan_qtech_hi4821q_XGC_setting_burst[0])
+	{
+		write_cmos_sensor(0x0b00,0x0000);
+		write_cmos_sensor(0x0318,0x0001);
+		write_cmos_sensor(0x301c,0x0002);
+		//print_sensor_apply_setting(saipan_qtech_hi4821q_XGC_setting_burst,sizeof(saipan_qtech_hi4821q_XGC_setting_burst) /sizeof(kal_uint16));
+		saipan_qtech_hi4821q_table_write_cmos_sensor(
+			saipan_qtech_hi4821q_XGC_setting_burst,sizeof(saipan_qtech_hi4821q_XGC_setting_burst) /sizeof(kal_uint16));
+       }
+	if (0 != saipan_qtech_hi4821q_QGC_setting_burst[0])
+	{
+		write_cmos_sensor(0x301c,0x0002);
+		//print_sensor_apply_setting(saipan_qtech_hi4821q_QGC_setting_burst,sizeof(saipan_qtech_hi4821q_QGC_setting_burst) /sizeof(kal_uint16));
+		saipan_qtech_hi4821q_table_write_cmos_sensor(
+			saipan_qtech_hi4821q_QGC_setting_burst,sizeof(saipan_qtech_hi4821q_QGC_setting_burst) /sizeof(kal_uint16));
+         }
+	 mdelay(10);
+}
+
+static void apply_sensor_BPGC_Cali(void)
+{
+	if (0 != saipan_qtech_hi4821q_BPGC_setting_burst[0])
+	{
+		write_cmos_sensor(0x0b00,0x0000);
+		write_cmos_sensor(0x0318,0x0001);
+		write_cmos_sensor(0x301c,0x0000);
+		//print_sensor_apply_setting(saipan_qtech_hi4821q_BPGC_setting_burst,sizeof(saipan_qtech_hi4821q_BPGC_setting_burst) /sizeof(kal_uint16));
+		saipan_qtech_hi4821q_table_write_cmos_sensor(
+			saipan_qtech_hi4821q_BPGC_setting_burst,sizeof(saipan_qtech_hi4821q_BPGC_setting_burst) /sizeof(kal_uint16));
+	}
+	mdelay(10);
+}
+#endif
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 {
@@ -766,7 +808,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_int32 size = 0;
-
+	#if SAIPAN_QTECH_HI4821Q_XGC_QGC_BPGC_CALIB
+	//get the BPGC qgc xgc buffer
+	u8* bpgc_data_buffer = NULL;
+	u8* qgc_data_buffer = NULL;
+	u8* xgc_data_buffer = NULL;
+	#endif
 	saipan_qtech_hi4821q_table_write_cmos_sensor(
 			addr_data_pair_init_saipan_qtech_hi4821q,
 			sizeof(addr_data_pair_init_saipan_qtech_hi4821q) /
@@ -802,7 +849,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					bpgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_BPGC - 1].startAdress + 1]);
 					qgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_QGC - 1].startAdress + 1]);
 					xgc_data_buffer = &(st_rear_saipan_qtech_hi4821q_eeprom_data.dataBuffer[st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_XGC - 1].startAdress + 1]);
-
+					sensor_format_XGC_QGC_Cali_data(xgc_data_buffer,qgc_data_buffer);
+					sensor_format_BPGC_Cali_data(bpgc_data_buffer);
 					#if SAIPAN_QTECH_HI4821Q_OTP_DUMP
 
 						pr_debug("saipan_qtech_hi4821q_eeprom:bpgc_addr:0x%x\n",st_rear_saipan_qtech_hi4821q_Checksum[SAIPAN_QTECH_HI4821Q_BPGC - 1].startAdress + 1);
