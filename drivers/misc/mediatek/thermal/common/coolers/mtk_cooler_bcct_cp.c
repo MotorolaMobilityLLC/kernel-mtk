@@ -270,7 +270,7 @@ int bat_char_curr_limit)
 	return 0;
 }
 
-static int cl_bcct_2nd_klog_on;
+static int cl_bcct_2nd_klog_on = 1;
 static struct thermal_cooling_device
 		*cl_bcct_2nd_dev[MAX_NUM_INSTANCE_MTK_COOLER_BCCT_2ND] = { 0 };
 
@@ -529,15 +529,15 @@ struct thermal_cooling_device *cdev, unsigned long temp)
 	delta = pterm/abcct_2nd_kp + abcct_2nd_iterm/abcct_2nd_ki
 		+ dterm/abcct_2nd_kd;
 
-	/* Align limit to 500mA to avoid redundant calls to x_chrlmt. */
-	if (delta > 0 && delta < 500)
-		delta = 500;
-	else if (delta > -500 && delta < 0)
-		delta = -500;
+	/* Align limit to 50mA to avoid redundant calls to x_chrlmt. */
+	if (delta > 0 && delta < 50)
+		delta = 50;
+	else if (delta > -50 && delta < 0)
+		delta = -50;
 
 	limit = abcct_2nd_cur_bat_chr_curr_limit + (int) delta;
 	/* Align limit to 50mA to avoid redundant calls to x_chrlmt. */
-	limit = (limit / 500) * 500;
+	limit = (limit / 50) * 50;
 	limit = MIN(abcct_2nd_max_bat_chr_curr_limit, limit);
 	limit = MAX(abcct_2nd_min_bat_chr_curr_limit, limit);
 	abcct_2nd_cur_bat_chr_curr_limit = limit;
