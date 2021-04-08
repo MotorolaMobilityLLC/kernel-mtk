@@ -194,7 +194,7 @@
 
 &mt6360_pmu {
 	rgbled {
-		mt,led_name = "red", "mt6360_pmu_led2",
+		mt,led_name = "charging", "mt6360_pmu_led2",
 		"mt6360_pmu_led3", "mt6360_pmu_led4";
 	};
 };
