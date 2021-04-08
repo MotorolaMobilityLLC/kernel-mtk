@@ -211,6 +211,7 @@ static int lcm_panel_bias_disable(void)
 
 static void lcm_panel_init(struct lcm *ctx)
 {
+	udelay(10 * 1000);
 	ctx->reset_gpio =
 		devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
@@ -218,11 +219,11 @@ static void lcm_panel_init(struct lcm *ctx)
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return;
 	}
-	udelay(5 * 1000);
+	udelay(1 * 1000);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	udelay(5 * 1000);
+	udelay(1 * 1000);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	udelay(15 * 1000);
+	mdelay(20);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	lcm_dcs_write_seq_static(ctx,0xF0,0x5A,0x59);
@@ -258,7 +259,6 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,0x11);
 	msleep(120);
 	lcm_dcs_write_seq_static(ctx,0x29);
-	msleep(20);
 	lcm_dcs_write_seq_static(ctx,0x26,0x01);
 }
 
@@ -288,9 +288,8 @@ static int lcm_unprepare(struct drm_panel *panel)
 		return 0;
 	lcm_dcs_write_seq_static(ctx, 0x26, 0x08);
 	lcm_dcs_write_seq_static(ctx, 0x28);
-	msleep(20);
 	lcm_dcs_write_seq_static(ctx, 0x10);
-	msleep(65);
+	msleep(100);
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -357,7 +356,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->bias_pos, 1);
 	devm_gpiod_put(ctx->dev, ctx->bias_pos);
 
-	udelay(2000);
+	udelay(1000);
 
 	ctx->bias_neg = devm_gpiod_get_index(ctx->dev,
 		"bias", 1, GPIOD_OUT_HIGH);
