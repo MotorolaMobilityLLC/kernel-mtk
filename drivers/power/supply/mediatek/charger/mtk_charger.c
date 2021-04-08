@@ -481,7 +481,9 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 
 		chr_err("%s: dev:%s idx:%d en:%d\n", __func__,
 			dev_name(consumer->dev), idx, input_current);
+		#ifdef MTK_BASE
 		_mtk_charger_change_current_setting(info);
+		#endif
 		_wake_up_charger(info);
 		return 0;
 	}
@@ -506,7 +508,9 @@ int charger_manager_set_charging_current_limit(
 		pdata->thermal_charging_current_limit = charging_current;
 		chr_err("%s: dev:%s idx:%d en:%d\n", __func__,
 			dev_name(consumer->dev), idx, charging_current);
+		#ifdef MTK_BASE
 		_mtk_charger_change_current_setting(info);
+		#endif
 		_wake_up_charger(info);
 		return 0;
 	}
@@ -563,7 +567,9 @@ int charger_manager_force_charging_current(struct charger_consumer *consumer,
 			return -ENOTSUPP;
 
 		pdata->force_charging_current = charging_current;
+		#ifdef MTK_BASE
 		_mtk_charger_change_current_setting(info);
+		#endif
 		_wake_up_charger(info);
 		return 0;
 	}
