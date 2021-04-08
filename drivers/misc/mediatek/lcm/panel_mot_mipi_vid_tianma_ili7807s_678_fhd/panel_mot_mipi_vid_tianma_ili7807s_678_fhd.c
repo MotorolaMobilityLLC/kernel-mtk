@@ -676,6 +676,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
         params->dsi.lcm_esd_check_table[1].cmd = 0x0d;
         params->dsi.lcm_esd_check_table[1].count = 1;
         params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
+	params->dsi.ssc_disable = 0;
+	params->dsi.ssc_range = 8;
 }
 
 static void lcm_init_power(void)
