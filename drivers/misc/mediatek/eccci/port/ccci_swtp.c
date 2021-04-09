@@ -31,10 +31,12 @@
 const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
 	{ .compatible = SWTP1_COMPATIBLE_DEVICE_ID,},
+#ifndef SWTP_CUSTOMER
 	// modify by wt.changtingting for swtp start
 	{ .compatible = SWTP2_COMPATIBLE_DEVICE_ID, },
 	{ .compatible = SWTP3_COMPATIBLE_DEVICE_ID, },
 	// modify by wt.changtingting for swtp end
+#endif
 	{},
 };
 #define SWTP_MAX_SUPPORT_MD 1
@@ -69,6 +71,7 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 	return ret;
 }
 
+#ifndef SWTP_FACTORY
 static int swtp_switch_state(int irq, struct swtp_t *swtp)
 {
 	unsigned long flags;
@@ -105,7 +108,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		swtp->gpio_state[i] = SWTP_EINT_PIN_PLUG_IN;
 
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
-
+#ifndef SWTP_CUSTOMER
 	// modify by wt.changtingting for swtp start
 	/* show gpio state */
 	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
@@ -126,13 +129,20 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		}
 	}*/
 	// modify by wt.changtingting for swtp end
-
+#else
+	for (i = 0; i < MAX_PIN_NUM; i++) {
+		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
+			swtp->tx_power_mode = SWTP_DO_TX_POWER;
+			break;
+		}
+	}
+#endif
 	inject_pin_status_event(swtp->tx_power_mode, rf_name);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	return swtp->tx_power_mode;
 }
-
+#endif
 static void swtp_send_tx_power_state(struct swtp_t *swtp)
 {
 	int ret = 0;
@@ -156,7 +166,7 @@ static void swtp_send_tx_power_state(struct swtp_t *swtp)
 			"%s:md is no support\n", __func__);
 
 }
-
+#ifndef SWTP_FACTORY
 static irqreturn_t swtp_irq_handler(int irq, void *data)
 {
 	struct swtp_t *swtp = (struct swtp_t *)data;
@@ -172,6 +182,7 @@ static irqreturn_t swtp_irq_handler(int irq, void *data)
 
 	return IRQ_HANDLED;
 }
+#endif
 
 static void swtp_tx_delayed_work(struct work_struct *work)
 {
@@ -192,7 +203,9 @@ static void swtp_tx_delayed_work(struct work_struct *work)
 int swtp_md_tx_power_req_hdlr(int md_id, int data)
 {
 	struct swtp_t *swtp = NULL;
-
+#ifdef SWTP_FACTORY
+        unsigned long flags;
+#endif
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
 		CCCI_LEGACY_ERR_LOG(md_id, SYS,
 		"%s:md_id=%d not support\n",
@@ -201,6 +214,12 @@ int swtp_md_tx_power_req_hdlr(int md_id, int data)
 	}
 
 	swtp = &swtp_data[md_id];
+#ifdef SWTP_FACTORY
+       /*default do no tx power for special use*/
+       spin_lock_irqsave(&swtp->spinlock, flags);
+       swtp->tx_power_mode = SWTP_NO_TX_POWER;
+       spin_unlock_irqrestore(&swtp->spinlock, flags);
+#endif
 	swtp_send_tx_power_state(swtp);
 
 	return 0;
@@ -216,12 +235,12 @@ int swtp_init(int md_id)
 #endif
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
-
+#ifndef SWTP_CUSTOMER
 	// modify by wt.changtingting for swtp start
 	char irq_name[12];
 	int has_write = 0;
 	// modify by wt.changtingting for swtp end
-
+#endif
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS,
 			"invalid md_id = %d\n", md_id);
@@ -245,10 +264,14 @@ int swtp_init(int md_id)
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"%s:swtp%d get debounce fail\n",
 					__func__, i);
+#ifndef SWTP_CUSTOMER
 				// modify by wt.changtingting for swtp start
 				// break;
 				ints[0] = 512000;
 				// modify by wt.changtingting for swtp end
+#else
+                                break;
+#endif
 			}
 
 			ret = of_property_read_u32_array(node, "interrupts",
@@ -271,7 +294,12 @@ int swtp_init(int md_id)
 				swtp_data[md_id].setdebounce[i]);
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
-
+#ifdef SWTP_CUSTOMER
+			ret = request_irq(swtp_data[md_id].irq[i],
+				swtp_irq_handler, IRQF_TRIGGER_NONE,
+				(i == 0 ? "swtp0-eint" : "swtp1-eint"),
+				&swtp_data[md_id]);
+#else
 			// modify by wt.changtingting for swtp start
 			/*ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
@@ -283,10 +311,13 @@ int swtp_init(int md_id)
 				CCCI_LEGACY_ERR_LOG(md_id, SYS, "get swtp%d-eint fail\n", i);
 				break;
 			}
+#ifndef SWTP_FACTORY
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
 				irq_name, &swtp_data[md_id]);
 			// modify by wt.changtingting for swtp end
+#endif
+#endif
 			if (ret) {
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"swtp%d-eint IRQ LINE NOT AVAILABLE\n",

@@ -42,3 +42,11 @@ else
 obj-  := dummy.o # avoid build error
 endif
 
+ifeq ($(TARGET_PRODUCT),lisbon_factory)
+ccflags-y += -DSWTP_FACTORY
+endif
+
+ifeq ($(TARGET_PRODUCT),lisbon_retail)
+ccflags-y += -DSWTP_CUSTOMER
+endif
+
