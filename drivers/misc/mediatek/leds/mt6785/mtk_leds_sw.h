@@ -14,6 +14,8 @@
 #ifndef _LEDS_SW_H
 #define _LEDS_SW_H
 
+#include <linux/backlight.h>
+
 /******************************************************************************
  *  LED & Backlight type defination
  *****************************************************************************/
@@ -35,7 +37,8 @@ enum mt65xx_led_mode {
 	MT65XX_LED_MODE_GPIO,
 	MT65XX_LED_MODE_PMIC,
 	MT65XX_LED_MODE_CUST_LCM,
-	MT65XX_LED_MODE_CUST_BLS_PWM
+	MT65XX_LED_MODE_CUST_BLS_PWM,
+	MT65XX_LED_MODE_I2C
 };
 
 /******************************************************************************
@@ -159,6 +162,7 @@ struct cust_mt65xx_led {
 	enum mt65xx_led_mode mode;
 	long data;
 	struct PWM_config config_data;
+	struct backlight_device *i2c_bd;
 };
 
 /**
