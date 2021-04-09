@@ -211,7 +211,7 @@ static int lcm_panel_bias_disable(void)
 
 static void lcm_panel_init(struct lcm *ctx)
 {
-	udelay(10 * 1000);
+	udelay(15 * 1000);
 	ctx->reset_gpio =
 		devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
