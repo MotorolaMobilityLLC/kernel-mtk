@@ -243,18 +243,19 @@ static void set_dummy(void)
 {
 	LOG_INF("dummyline H= %d, dummypixels V= %d\n",	imgsensor.dummy_line, imgsensor.dummy_pixel);
 	write_cmos_sensor(0xFD, 0x01);
-	write_cmos_sensor(0x14, imgsensor.frame_length >> 8 & 0x7F);
-	write_cmos_sensor(0x15, imgsensor.frame_length & 0xFF);
+	write_cmos_sensor(0x14, (imgsensor.frame_length -0x4c4) >> 8 & 0x7F);
+	write_cmos_sensor(0x15, (imgsensor.frame_length -0x4c4) & 0xFF);
 	write_cmos_sensor(0xFE, 0x02);
 
 }
 
+#if 0
 static inline void extend_frame_length(kal_uint32 frame_length)
 {
 	/* Extend frame length V*/
 	write_cmos_sensor(0xFD, 0x01);
-	write_cmos_sensor(0x14, imgsensor.frame_length >> 8 & 0x7F);
-	write_cmos_sensor(0x15, imgsensor.frame_length & 0xFF);
+	write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8 & 0x7F);
+	write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
 	write_cmos_sensor(0xFE, 0x02);
 }
 
@@ -274,7 +275,7 @@ static inline void update_gain(kal_uint16 reg_gain)
 	write_cmos_sensor(0x22, reg_gain);
 	write_cmos_sensor(0xFE, 0x02);
 }
-
+#endif
 static kal_uint32 streaming_control(kal_bool enable)
 {
 	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
@@ -299,7 +300,7 @@ static kal_uint32 return_sensor_id(void)
 	write_cmos_sensor(0xfd, 0x00);
 	return ((read_cmos_sensor(0x02) << 8) | read_cmos_sensor(0x03));
 }
-
+#if 0
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0;
@@ -311,7 +312,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 
 	return (kal_uint16) reg_gain;
 }
-
+#endif
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 {
 	kal_uint32 frame_length = imgsensor.frame_length;
@@ -340,35 +341,58 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 
 static void write_shutter(kal_uint32 shutter)
 {
-	kal_uint16 realtime_fps = 0;
+	kal_uint32 realtime_fps = 0;
 
 	spin_lock(&imgsensor_drv_lock);
+
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
 	else
 		imgsensor.frame_length = imgsensor.min_frame_length;
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-	if (shutter < imgsensor_info.min_shutter)
-		shutter = imgsensor_info.min_shutter;
 
-	if (imgsensor.autoflicker_en) {
-		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(146, 0);
-		else {
-			extend_frame_length(imgsensor.frame_length);
+	spin_unlock(&imgsensor_drv_lock);
+
+	shutter = (shutter < imgsensor_info.min_shutter) ?
+		imgsensor_info.min_shutter : shutter;
+	shutter =
+		(shutter > (imgsensor_info.max_frame_length -
+		imgsensor_info.margin)) ? (imgsensor_info.max_frame_length -
+		imgsensor_info.margin) : shutter;
+
+	//frame_length and shutter should be an even number.
+	shutter = (shutter >> 1) << 1;
+	imgsensor.frame_length = (imgsensor.frame_length >> 1) << 1;
+//auroflicker:need to avoid 15fps and 30 fps
+	if (imgsensor.autoflicker_en == KAL_TRUE) {
+		realtime_fps = imgsensor.pclk /
+			imgsensor.line_length * 10 / imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305) {
+			realtime_fps = 296;
+	                set_max_framerate(realtime_fps, 0);
+		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
+			realtime_fps = 146;
+	                set_max_framerate(realtime_fps, 0);
+		} else {
+			imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+                        write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
+			write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+			write_cmos_sensor(0xfe, 0x02);	//fresh
 		}
 	} else {
-		extend_frame_length(imgsensor.frame_length);
-		LOG_INF("(else)imgsensor.frame_length = %d\n",
-			imgsensor.frame_length);
+		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
+		write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+		write_cmos_sensor(0xfe, 0x02);	//fresh
 	}
 
-	updat_shutter(shutter);
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x0e, (shutter >> 8) & 0xFF);
+		write_cmos_sensor(0x0f, shutter  & 0xFF);
+		write_cmos_sensor(0xfe, 0x02);	//fresh
 	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }
@@ -388,66 +412,104 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 				     kal_uint32 frame_length,
 				     kal_bool auto_extend_en)
 {
-	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
+
+	unsigned long flags;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	spin_lock(&imgsensor_drv_lock);
-
 	if (frame_length > 1)
-	    imgsensor.frame_length = frame_length;
+		imgsensor.frame_length = frame_length;
+
+	spin_lock(&imgsensor_drv_lock);
+	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
 
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
-		? (imgsensor_info.max_frame_length - imgsensor_info.margin)
-		: shutter;
 
-	if (imgsensor.autoflicker_en) {
-		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(146, 0);
-		else {
-			extend_frame_length(imgsensor.frame_length);
+	spin_unlock(&imgsensor_drv_lock);
+
+	shutter = (shutter < imgsensor_info.min_shutter) ?
+		imgsensor_info.min_shutter : shutter;
+	shutter =
+		(shutter > (imgsensor_info.max_frame_length -
+		imgsensor_info.margin)) ? (imgsensor_info.max_frame_length -
+		imgsensor_info.margin) : shutter;
+
+	//frame_length and shutter should be an even number.
+	shutter = (shutter >> 1) << 1;
+	imgsensor.frame_length = (imgsensor.frame_length >> 1) << 1;
+//auroflicker:need to avoid 15fps and 30 fps
+	if (imgsensor.autoflicker_en == KAL_TRUE) {
+		realtime_fps = imgsensor.pclk /
+			imgsensor.line_length * 10 / imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305) {
+			realtime_fps = 296;
+			set_max_framerate(realtime_fps, 0);
+		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
+			realtime_fps = 146;
+			set_max_framerate(realtime_fps, 0);
+		} else {
+			imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+			write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
+			write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+			write_cmos_sensor(0xfe, 0x02);
 		}
 	} else {
-		extend_frame_length(imgsensor.frame_length);
+		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
+		write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+		write_cmos_sensor(0xfe, 0x02);
 	}
 
-	updat_shutter(shutter);
+	 write_cmos_sensor(0xfd, 0x01);
+	 write_cmos_sensor(0x0e, (shutter >> 8) & 0xFF);
+	 write_cmos_sensor(0x0f, shutter  & 0xFF);
+	 write_cmos_sensor(0xfe, 0x02);
 	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }
 
 static kal_uint16 set_gain(kal_uint16 gain)
 {
-	kal_uint16 reg_gain;
+	kal_uint8  iReg;
 
-	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
-		LOG_INF("Error gain setting");
+	if((gain >= 0x40) && (gain <= (15*0x40))) //base gain = 0x40
+	{
+		iReg = 0x10 * gain/BASEGAIN;        //change mtk gain base to aptina gain base
 
-		if (gain < imgsensor_info.min_gain)
-			gain = imgsensor_info.min_gain;
+		if(iReg<=0x10)
+		{
+			write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x22, 0x10);//0x23
+			write_cmos_sensor(0xfe, 0x02);	//fresh
+			LOG_INF("OV02B10MIPI_SetGain = 16");
+		}
+		else if(iReg>= 0xf8)//gpw
+		{
+			write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x22,0xf8);
+			write_cmos_sensor(0xfe, 0x02);	//fresh
+			LOG_INF("OV02B10MIPI_SetGain = 160");
+		}
 		else
-			gain = imgsensor_info.max_gain;
+		{
+			write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x22, (kal_uint8)iReg);
+			write_cmos_sensor(0xfe, 0x02);	//fresh
+			LOG_INF("OV02B10MIPI_SetGain = %d",iReg);
+		}
 	}
+	else
+		LOG_INF("error gain setting");
 
-	reg_gain = gain2reg(gain);
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.gain = reg_gain;
-	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
-
-	update_gain(reg_gain);
 	return gain;
-}
+}    /*    set_gain  */
 
 static void sensor_init(void)
 {
