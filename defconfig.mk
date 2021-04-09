@@ -24,6 +24,7 @@ ifneq ($(TARGET_BUILD_VARIANT), user)
 ifneq ($(KERNEL_DEFCONFIG_EXT),)
 PRODUCT_SPECIFIC_DEFCONFIGS += $(KERNEL_DEFCONFIG_EXT)
 endif
+ifneq ($(TARGET_NO_KERNEL_DEBUG), true)
 
 ifneq ($(wildcard $(KERNEL_DEBUG_DEFCONFIG)),)
 PRODUCT_SPECIFIC_DEFCONFIGS += $(KERNEL_DEBUG_DEFCONFIG)
@@ -32,6 +33,8 @@ endif
 # Add a product-specific debug defconfig, too
 ifneq ($(PRODUCT_DEBUG_DEFCONFIG),)
 PRODUCT_SPECIFIC_DEFCONFIGS += $(PRODUCT_KERNEL_DEBUG_DEFCONFIG)
+endif
+
 endif
 endif
 
