@@ -199,10 +199,10 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 		ret = of_property_read_u32(led_node, "led_mode", &mode);
 		if (!ret) {
 			pled_dtsi[i].mode = mode;
-			LEDS_DEBUG("The %s's led mode is : %d\n",
+			pr_info("The %s's led mode is : %d\n",
 				pled_dtsi[i].name, pled_dtsi[i].mode);
 		} else {
-			LEDS_DEBUG("led dts can not get %s led mode\n",
+			pr_info("led dts can not get %s led mode\n",
 				pled_dtsi[i].name);
 			pled_dtsi[i].mode = 0;
 		}
@@ -843,6 +843,19 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 		LEDS_DEBUG("%s backlight control by LCM\n", __func__);
 		/* warning for this API revork */
 		return ((cust_brightness_set) (cust->data)) (level, bl_div_hal);
+
+	case MT65XX_LED_MODE_I2C:
+		if (strcmp(cust->name, "lcd-backlight") == 0)
+			bl_brightness_hal = level;
+		LEDS_DEBUG("%s backlight control by I2C bl driver\n", __func__);
+		if (!(cust->i2c_bd))
+			cust->i2c_bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
+
+		if(cust->i2c_bd)
+			return backlight_device_set_brightness(cust->i2c_bd, level);
+		else
+			pr_err("%s backlight control by I2C bl: no i2c_bd\n", __func__);
+		break;
 
 	case MT65XX_LED_MODE_CUST_BLS_PWM:
 		if (strcmp(cust->name, "lcd-backlight") == 0)
