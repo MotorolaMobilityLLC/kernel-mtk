@@ -15,6 +15,8 @@ FACTORY_DEFCONFIG		:= $(LJAPDEFCONFIGSRC)/factory-$(DEFCONFIG_BASENAME).config
 
 # add debug config file for non-user build
 ifneq ($(TARGET_BUILD_VARIANT), user)
+ifneq ($(TARGET_NO_KERNEL_DEBUG), true)
+
 ifneq ($(wildcard $(KERNEL_DEBUG_DEFCONFIG)),)
 PRODUCT_SPECIFIC_DEFCONFIGS += $(KERNEL_DEBUG_DEFCONFIG)
 endif
@@ -22,6 +24,8 @@ endif
 # Add a product-specific debug defconfig, too
 ifneq ($(PRODUCT_DEBUG_DEFCONFIG),)
 PRODUCT_SPECIFIC_DEFCONFIGS += $(PRODUCT_KERNEL_DEBUG_DEFCONFIG)
+endif
+
 endif
 endif
 
