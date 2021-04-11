@@ -2260,7 +2260,7 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	} else
 		charger_present = val.intval;
 
-	usb_mv = pmic_get_vbus();
+	usb_mv = charger_get_vbus();
 
 
 	pr_info("[%s]batt=%d mV, %d mA, %d C, USB= %d mV\n", __func__,
