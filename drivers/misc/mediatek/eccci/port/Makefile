@@ -50,3 +50,8 @@ endif
 ifneq (,$(findstring austin, $(strip $(TARGET_PRODUCT))))
 ccflags-y += -DAUSTIN_SWTP_CONFIG
 endif
+
+# Add for Kyoto special swtp logic
+ifneq (,$(findstring kyoto, $(strip $(TARGET_PRODUCT))))
+ccflags-y += -DKYOTO_SWTP_CUST
+endif
