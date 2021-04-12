@@ -272,14 +272,14 @@
 	};
 	torch_en_pin0: torch_en_pin0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	torch_en_pin1: torch_en_pin1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
 			slew-rate = <1>;
 			output-high;
 		};
