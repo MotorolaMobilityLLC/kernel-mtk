@@ -573,4 +573,8 @@ extern unsigned int dump_output;
 extern unsigned int dump_output_comp;
 extern void *composed_buf;
 extern struct completion dump_buf_comp;
+
+char* primary_display_get_lcm_supplier(void);
+char* primary_display_get_lcm_name(void);
+
 #endif
