@@ -368,7 +368,14 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"%s:swtp%d get debounce fail\n",
 					__func__, i);
-				break;
+#ifdef KYOTO_SWTP_CUST
+				// modify by wt.changtingting for swtp start
+				// break;
+				ints[0] = 512000;
+				// modify by wt.changtingting for swtp end
+#else
+                                break;
+#endif
 			}
 
 			ret = of_property_read_u32_array(node, "interrupts",
