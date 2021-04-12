@@ -41,12 +41,12 @@ ccci_port-y += ccci_swtp.o
 else
 obj-  := dummy.o # avoid build error
 endif
+# Add for Kyoto special swtp logic
+ifneq (,$(findstring kyoto, $(strip $(TARGET_PRODUCT))))
+ccflags-y += -DKYOTO_SWTP_CUST
+endif
 
+# Disable SWTP on factory version for lisbon, keep MTK default logic for customer version
 ifeq ($(TARGET_PRODUCT),lisbon_factory)
-ccflags-y += -DSWTP_FACTORY
+ccflags-y += -DDISABLE_SWTP_FACTORY
 endif
-
-ifeq ($(TARGET_PRODUCT),lisbon_retail)
-ccflags-y += -DSWTP_CUSTOMER
-endif
-
