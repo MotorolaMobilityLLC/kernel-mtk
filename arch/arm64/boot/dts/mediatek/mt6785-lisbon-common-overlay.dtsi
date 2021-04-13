@@ -58,9 +58,11 @@
 };
 
 &i2c6 {
-	aw99703-bl@36 {
-		compatible = "awinic,aw99703-bl";
+	lcd_backlight@36 {
+		compatible = "awinic,aw99703-bl", "ti,lm3697-bl";
 		reg = <0x36>;
+
+		/*awinic,aw99703-bl begain*/
 		aw99703,hwen-gpio = <&pio 22 0>;
 		/* brightness map level 1:256,2:1024,3:2048 */
 		aw99703,bl-map = <1>;
@@ -82,8 +84,27 @@
 		aw99703,flash-timeout-time = <0x05>; /* 500ms(default) */
 		aw99703,flash-current = <0x08>; /* 59.2mA(default) */
 		aw99703,efuse-config = <0x1C 0x61 0x61 0x4C 0x2C 0xC0 0x08 0x00 0x00 0xC0 0x00 0x00 0x50>;
+		/*awinic,aw99703-bl end*/
+
+		/*ti,lm3697-bl begain*/
+		lm3697,hwen-gpio = <&pio 22 0>;
+		lm3697,output-config = <0x00>;  /*use control A*/
+		lm3697,control-a-ramp = <0x20>;  /*start-up 524ms, shutdown 2048us*/
+		lm3697,control-b-ramp = <0x20>;  /*start-up 524ms, shutdown 2048us*/
+		lm3697,run-time-ramp = <0x22>;  /*ramp-up 524ms, ramp-down 524ms*/
+		lm3697,bl-fscal-led = <0x19>;  /* 25mA */
+		lm3697,ctrl_a_b_brt_cfg = <0x01>; /*Change BLK to Linear mode. 0x00 = exponential, 0x01 = Linear*/
+		lm3697,feedback-enable = <0x07>;  /*led anode is connected to cout(deault)*/
+		lm3697,boost-control = <0x04>; /* 32V */
+		lm3697,pwm-config = <0x0F>;  /*default 0x0C disable PWM, 0x0F enable PWM*/
+		lm3697,ctrl-bank-en = <0x01>;  /*enable bank A*/
+		lm3697,ctrl-a-bl-lsb = <0x00>;
+		lm3697,ctrl-a-bl-msb = <0x00>;
+		/*ti,lm3697-bl end*/
+
 		status = "okay";
 	};
+
 	i2c_lcd_bias@3e {
 		compatible = "mediatek,i2c_lcd_bias";
 		reg = <0x3E>;
