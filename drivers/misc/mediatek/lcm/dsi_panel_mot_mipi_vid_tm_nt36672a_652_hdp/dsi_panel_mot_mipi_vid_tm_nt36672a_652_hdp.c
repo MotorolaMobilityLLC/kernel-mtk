@@ -35,6 +35,8 @@
 #include <lcm_pmic.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
@@ -151,7 +153,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0x35,1,{0x00}},
 	{0x51,1,{0x00}},
 	{0x53,1,{0x24}},
-	{0x55,1,{0x00}},
+	{0x55,1,{0x01}},
 	{0x11,1,{0x00}},
 	{REGFLAG_DELAY, 100, {}},
 	{0x29,1,{0x00}},
@@ -159,7 +161,42 @@ static struct LCM_setting_table init_setting_vdo[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0x51, 0x01, {0xFF} }
+	{ 0x51, 0x01, {0xCC} }
+};
+
+static struct LCM_setting_table lcm_cabc_setting_ui[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x01} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_mv[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x03} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_disable[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x00} },
+};
+
+struct LCM_cabc_table {
+	int cmd_num;
+	struct LCM_setting_table *cabc_cmds;
+};
+
+//Make sure the seq keep consitent with definition of cabc_mode, otherwise it need remap
+static struct LCM_cabc_table lcm_cabc_settings[] = {
+	{ARRAY_SIZE(lcm_cabc_setting_ui), lcm_cabc_setting_ui},
+	{ARRAY_SIZE(lcm_cabc_setting_mv), lcm_cabc_setting_mv},
+	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
+};
+
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 1, {0XCC} },	//80% PWM
+	{0x51, 1, {0XFF} },	//100% PWM
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -434,14 +471,23 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	// for 8bit
 	unsigned int bl_lvl;
-	if(level > 255 || level < 0){
-		bl_lvl = 0;
+	unsigned int bl_max = 204;
+	if(level > 255) {
+		//do nothing
 		LCM_LOGI("%s,nt36672a backlight: level error\n", __func__);
-	}else
-		bl_lvl = level;
+	} else {
+		bl_lvl = (bl_max * level)/255;  //enabled HBM, 80% PWM
+	}
+
+	if (bl_lvl == 0) {
+		//reset low brightness to avoid black
+                bl_lvl = 1;
+		//LCM_LOGI("%s,nt36672a_TM backlight: reset bl_lvl=1\n", __func__);
+	}
+
 	// set 8bit
 	bl_level[0].para_list[0] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,nt36672a_TM : bl_level=0x%x\n",__func__,bl_level[0].para_list[0]);
+	LCM_LOGI("%s,nt36672a_TM : level=%d, bl_level=0x%x\n",__func__, level, bl_level[0].para_list[0]);
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
@@ -511,38 +557,37 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 }
 #endif
 
-/*
-static struct LCM_setting_table set_cabc[] = {
-	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
-	{ 0x55, 0x01, {0x02} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-
-static int cabc_status = 0;
-static void lcm_set_cabc_cmdq(void *handle, unsigned int enable)
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
 {
-	pr_err("[nt36672a] cabc set to %d\n", enable);
-	if (enable==1){
-		set_cabc[1].para_list[0]=0x02;
-		push_table(handle, set_cabc, sizeof(set_cabc) / sizeof(struct LCM_setting_table), 1);
-		pr_err("[nt36672a] cabc set enable, set_cabc[0x%2x]=%x \n",set_cabc[1].cmd,set_cabc[1].para_list[0]);
-	}else if (enable == 0){
-		set_cabc[1].para_list[0]=0x00;
-		push_table(handle, set_cabc, sizeof(set_cabc) / sizeof(struct LCM_setting_table), 1);
-		pr_err("[nt36672a] cabc set disable, set_cabc[0x%2x]=%x \n",set_cabc[1].cmd,set_cabc[1].para_list[0]);
+	pr_info("%s,tm_nt36672a cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			break;
+		case PARAM_CABC:
+			if (*lcm_value >= CABC_MODE_NUM) {
+				pr_info("%s: invalid CABC mode:%d out of CABC_MODE_NUM:", *lcm_value, CABC_MODE_NUM);
+			}
+			else {
+				unsigned int cmd_num = lcm_cabc_settings[*lcm_value].cmd_num;
+				pr_info("%s: handle PARAM_CABC, mode=%d, cmd_num=%d", __func__, *lcm_value, cmd_num);
+				push_table(handle, lcm_cabc_settings[*lcm_value].cabc_cmds, cmd_num, 1);
+			}
+			break;
+		default:
+			pr_err("%s,tm_nt36672a cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
 	}
-	cabc_status = enable;
-}
 
-static void lcm_get_cabc_status(int *status)
-{
-	pr_err("[nt36672a] cabc get to %d\n", cabc_status);
-	*status = cabc_status;
+	pr_info("%s,ili7806s cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+
 }
-*/
 
 struct LCM_DRIVER mipi_mot_vid_tm_nt36672a_hdp_652_lcm_drv = {
 	.name = "mipi_mot_vid_tm_nt36672a_hdp_652",
+	.supplier = "tm",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
@@ -555,8 +600,7 @@ struct LCM_DRIVER mipi_mot_vid_tm_nt36672a_hdp_652_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
-//	.set_cabc_cmdq = lcm_set_cabc_cmdq,
-//	.get_cabc_status = lcm_get_cabc_status,
+	.set_lcm_cmd = lcm_set_cmdq,
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
