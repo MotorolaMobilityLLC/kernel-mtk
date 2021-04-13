@@ -3833,3 +3833,5 @@ firmware_class.path=/vendor/firmware";
 #include "mediatek/rt9471.dtsi"
 #endif
 #include "mediatek/trusty.dtsi"
+/* Motorola base dts override */
+#include "mediatek/mt6765-moto-base.dtsi"
