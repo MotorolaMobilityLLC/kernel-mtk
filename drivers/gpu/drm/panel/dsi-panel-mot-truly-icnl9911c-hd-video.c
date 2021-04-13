@@ -212,6 +212,7 @@ static int lcm_panel_bias_disable(void)
 static void lcm_panel_init(struct lcm *ctx)
 {
 	udelay(15 * 1000);
+
 	ctx->reset_gpio =
 		devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
@@ -720,8 +721,8 @@ static int lcm_get_modes(struct drm_panel *panel)
 	mode2->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(panel->connector, mode2);
 
-	panel->connector->display_info.width_mm = 67;
-	panel->connector->display_info.height_mm = 150;
+	panel->connector->display_info.width_mm = 68;
+	panel->connector->display_info.height_mm = 151;
 
 	panel->connector->display_info.panel_ver = 0x01;
 	panel->connector->display_info.panel_id = 0xFF0A1C91;
