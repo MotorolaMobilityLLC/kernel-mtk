@@ -1596,6 +1596,105 @@ static void ufshcd_resume_clkscaling(struct ufs_hba *hba)
 		devfreq_resume_device(hba->devfreq);
 }
 
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
+static ssize_t SEC_UFS_HPB_info_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct Scsi_Host *Shost = container_of(dev, struct Scsi_Host, shost_dev);
+	struct ufs_hba *hba = shost_priv(Shost);
+	struct ufsf_feature *ufsf = &hba->ufsf;
+	struct ufshpb_lu *hpb = ufsf->ufshpb_lup[0];
+	struct SEC_UFS_HPB_info *hpb_info = &(hba->SEC_hpb_info);
+
+	long long hit_cnt;
+	long long miss_cnt;
+	long long set_rt_cnt, unset_rt_cnt;
+
+	int rt_pin_cnt = 0, act_cnt = 0;
+	int rgn_idx;
+	enum HPBREGION_STATE state;
+
+	long long pinned_rb_cnt, active_rb_cnt;
+	long long hpb_amount_R_kb_diff;
+	long hours = 0;
+
+	if (!hpb || !(ufsf->hpb_dev_info.hpb_device))
+		return 0;
+
+	if (ufsf->ufshpb_state == HPB_FAILED)
+		return 0;
+
+	hit_cnt = atomic64_read(&hpb->hit);
+	miss_cnt = atomic64_read(&hpb->miss);
+	set_rt_cnt = atomic64_read(&hpb->set_rt_req_cnt);
+	unset_rt_cnt = atomic64_read(&hpb->unset_rt_req_cnt);
+
+	for (rgn_idx = 0; rgn_idx < hpb->rgns_per_lu; rgn_idx++) {
+		state = hpb->rgn_tbl[rgn_idx].rgn_state;
+		if (state == HPBREGION_RT_PINNED)
+			rt_pin_cnt++;
+		else if (state == HPBREGION_ACTIVE)
+			act_cnt++;
+	}
+
+	pinned_rb_cnt = atomic64_read(&(hpb_info->hpb_pinned_rb_cnt));
+	active_rb_cnt = atomic64_read(&(hpb_info->hpb_active_rb_cnt));
+
+	hpb_amount_R_kb_diff = hpb_info->hpb_amount_R_kb - hpb_info->hpb_amount_R_kb_old;
+	hpb_info->hpb_amount_R_kb_old = hpb_info->hpb_amount_R_kb;
+
+	get_monotonic_boottime(&(hpb_info->timestamp_new));
+	hours = (hpb_info->timestamp_new.tv_sec - hpb_info->timestamp_old.tv_sec) / 60;	/* min */
+	hours = (hours + 30) / 60;	/* round up to hours */
+	get_monotonic_boottime(&(hpb_info->timestamp_old));	/* update timestamp */
+
+	return sprintf(buf, "\"HCNT\":\"%llu\","
+			"\"MCNT\":\"%llu\","
+			"\"SRTCNT\":\"%llu\","
+			"\"USRTCNT\":\"%llu\","
+			"\"RTPCNT\":\"%d\","
+			"\"ACTCNT\":\"%d\","
+			"\"PINRBCNT\":\"%llu\","
+			"\"ACTRBCNT\":\"%llu\","
+			"\"HPBDAYMB\":\"%llu\","
+			"\"HPBhours\":\"%ld\"\n",
+			hit_cnt,
+			miss_cnt,
+			set_rt_cnt,
+			unset_rt_cnt,
+			rt_pin_cnt,
+			act_cnt,
+			pinned_rb_cnt,
+			active_rb_cnt,
+			(hpb_amount_R_kb_diff >> 10),
+			hours);
+}
+static DEVICE_ATTR(SEC_UFS_HPB_info, 0444, SEC_UFS_HPB_info_show, NULL);
+
+static ssize_t SEC_UFS_HPB_error_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct Scsi_Host *Shost = container_of(dev, struct Scsi_Host, shost_dev);
+	struct ufs_hba *hba = shost_priv(Shost);
+	struct SEC_UFS_HPB_info *hpb_info = &(hba->SEC_hpb_info);
+
+	if (!(hba->ufsf.hpb_dev_info.hpb_device))
+		return 0;
+
+	return sprintf(buf, "\"HPBRERR\":\"%u\","
+			"\"RBRERR\":\"%u\","
+			"\"RBSRTERR\":\"%u\","
+			"\"WBPFERR\":\"%u\","
+			"\"WBUSRTERR\":\"%u\","
+			"\"WBUSRTAERR\":\"%u\"\n",
+			hpb_info->hpb_read_err_count,
+			hpb_info->hpb_RB_ID_READ_err_count,
+			hpb_info->hpb_RB_ID_SET_RT_err_count,
+			hpb_info->hpb_WB_ID_PREFETCH_err_count,
+			hpb_info->hpb_WB_ID_UNSET_RT_err_count,
+			hpb_info->hpb_WB_ID_UNSET_RT_ALL_err_count);
+}
+static DEVICE_ATTR(SEC_UFS_HPB_err_info, 0444, SEC_UFS_HPB_error_show, NULL);
+#endif
+
 static ssize_t ufshcd_clkscale_enable_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -5454,7 +5553,10 @@ static irqreturn_t ufshcd_transfer_req_compl(struct ufs_hba *hba, int *ret)
 	if (completed_reqs) {
 		if (ret)
 			*ret = __ufshcd_transfer_req_compl(hba, completed_reqs);
-
+			
+#if defined(CONFIG_SCSI_UFS_HPB)
+		ufsf_hpb_wakeup_worker_on_idle(&hba->ufsf);
+#endif
 		return IRQ_HANDLED;
 	} else {
 		return IRQ_NONE;
@@ -6078,6 +6180,83 @@ out:
 	pm_runtime_put_sync(hba->dev);
 	up(&hba->eh_sem);
 }
+
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
+static void ufshcd_add_hpb_info_sysfs_node(struct ufs_hba *hba);
+
+static void SEC_ufs_update_hpb_info(struct ufs_hba *hba, int read_transfer_len)
+{
+	struct SEC_UFS_HPB_info *hpb_info = &(hba->SEC_hpb_info);
+
+	if (hpb_info->hpb_info_disable)
+		return;
+
+	/*
+	 * read_transfer_len : Byte
+	 * hpb_info->hpb_amount_R_kb : KB
+	 */
+	hpb_info->hpb_amount_R_kb += (unsigned long)(read_transfer_len >> 10);
+	if (unlikely((s64)hpb_info->hpb_amount_R_kb < 0))
+		goto disable_hpb_info;
+	return;
+
+disable_hpb_info:
+	hpb_info->hpb_info_disable = true;
+	return;
+}
+
+#define SEC_UFS_HPB_ERR_check(hpb_info, member) ({		\
+		(hpb_info)->member++;				\
+		if ((hpb_info)->member == UINT_MAX) 		\
+			(hpb_info)->hpb_err_count_disable = true; })
+
+static void SEC_ufs_hpb_error_check(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+{
+	struct SEC_UFS_HPB_info *hpb_info = &(hba->SEC_hpb_info);
+
+	u8 cmd_opcode = cmd->cmnd[0];
+	u8 cmd_id = cmd->cmnd[1];
+
+	if (hpb_info->hpb_err_count_disable)
+		return;
+
+	switch (cmd_opcode) {
+	case READ_16:
+		SEC_UFS_HPB_ERR_check(hpb_info, hpb_read_err_count);
+		break;
+	case UFSHPB_READ_BUFFER:
+		if (cmd_id == UFSHPB_RB_ID_READ)
+			SEC_UFS_HPB_ERR_check(hpb_info, hpb_RB_ID_READ_err_count);
+		else if (cmd_id == UFSHPB_RB_ID_SET_RT)
+			SEC_UFS_HPB_ERR_check(hpb_info, hpb_RB_ID_SET_RT_err_count);
+		break;
+	case UFSHPB_WRITE_BUFFER:
+		if (cmd_id == UFSHPB_WB_ID_PREFETCH)
+			SEC_UFS_HPB_ERR_check(hpb_info, hpb_WB_ID_PREFETCH_err_count);
+		else if (cmd_id == UFSHPB_WB_ID_UNSET_RT)
+			SEC_UFS_HPB_ERR_check(hpb_info, hpb_WB_ID_UNSET_RT_err_count);
+		else if (cmd_id == UFSHPB_WB_ID_UNSET_RT_ALL)
+			SEC_UFS_HPB_ERR_check(hpb_info, hpb_WB_ID_UNSET_RT_ALL_err_count);
+		break;
+	default:
+		break;
+	}
+
+	return;
+}
+
+void SEC_ufs_hpb_rb_count(struct ufs_hba *hba, struct ufshpb_region *rgn)
+{
+       if (rgn->rgn_state == HPBREGION_PINNED ||
+	   rgn->rgn_state == HPBREGION_RT_PINNED) {
+	       atomic64_inc(&(hba->SEC_hpb_info.hpb_pinned_rb_cnt));
+       } else if (rgn->rgn_state == HPBREGION_ACTIVE) {
+	       atomic64_inc(&(hba->SEC_hpb_info.hpb_active_rb_cnt));
+       }
+
+       return;
+}
+#endif
 
 /**
  * ufshcd_update_uic_error - check and set fatal UIC error flags.
@@ -7818,6 +7997,12 @@ static int ufshcd_probe_hba(struct ufs_hba *hba, bool async)
 	ufsf_device_check(hba);
 	ufsf_tw_init(&hba->ufsf);
 	ufsf_hpb_init(&hba->ufsf);
+#if defined(CONFIG_SCSI_UFS_HPB)
+	if (hba->ufsf.hpb_dev_info.hpb_device) {
+		ufshcd_add_hpb_info_sysfs_node(hba);
+		get_monotonic_boottime(&(hba->SEC_hpb_info.timestamp_old));
+	}
+#endif
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
 	if (hba->dev_info.wmanufacturerid == UFS_VENDOR_SKHYNIX)
@@ -9469,6 +9654,28 @@ static void ufshcd_device_quiesce(struct ufs_hba *hba)
 
 	ufs_mtk_rpmb_quiesce(hba);
 }
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
+static struct attribute *ufs_hpb_attributes[] = {
+	&dev_attr_SEC_UFS_HPB_info.attr,
+	&dev_attr_SEC_UFS_HPB_err_info.attr,
+	NULL
+};
+
+static struct attribute_group ufs_hpb_attribute_group = {
+	.attrs  = ufs_hpb_attributes,
+};
+
+static void ufshcd_add_hpb_info_sysfs_node(struct ufs_hba *hba)
+{
+	int err  = -ENOMEM;
+	struct device *dev = &(hba->host->shost_dev);
+
+	err = sysfs_create_group(&dev->kobj, &ufs_hpb_attribute_group);
+
+	if (err)
+		dev_err(hba->dev, "cannot create hpb sysfs group err: %d\n", err);
+}
+#endif
 
 /**
  * ufshcd_shutdown - shutdown routine
@@ -9790,6 +9997,10 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	ufshcd_init_hpb(hba);
 #endif
 
+#if defined(CONFIG_SCSI_UFS_HPB)
+	atomic64_set(&(hba->SEC_hpb_info.hpb_pinned_rb_cnt), 0);
+	atomic64_set(&(hba->SEC_hpb_info.hpb_active_rb_cnt), 0);
+#endif
 	async_schedule(ufshcd_async_scan, hba);
 	ufs_sysfs_add_nodes(hba->dev);
 

@@ -5,7 +5,7 @@
 
 #include "ufshcd.h"
 #include "ufshpb.h"
-
+#include "ufsfeature.h"
 #define UFSHCD_REQ_SENSE_SIZE	18
 
 /*
@@ -20,6 +20,10 @@ static int ufshpb_create_sysfs(struct ufsf_feature *ufsf,
 			       struct ufshpb_lu *hpb);
 static int ufshpb_remove_sysfs(struct ufshpb_lu *hpb);
 
+static inline bool ufshpb_is_triggered_by_fs(struct ufshpb_region *rgn)
+{
+	return atomic_read(&rgn->reason) == HPBUPDATE_RT_FROM_FS;
+}
 static inline void
 ufshpb_get_pos_from_lpn(struct ufshpb_lu *hpb, unsigned long lpn, int *rgn_idx,
 			int *srgn_idx, int *offset)
@@ -62,8 +66,11 @@ static bool ufshpb_ppn_dirty_check(struct ufshpb_lu *hpb, unsigned long lpn,
 			return true;
 
 		if (hpb->entries_per_srgn < srgn_offset + scan_cnt) {
-			find_size = hpb->entries_per_srgn - srgn_offset;
-			scan_cnt -= find_size;
+			int cnt = hpb->entries_per_srgn - srgn_offset;
+
+			find_size = hpb->entries_per_srgn;
+			scan_cnt -= cnt;
+			cur_lpn += cnt;
 		} else {
 			find_size = srgn_offset + scan_cnt;
 			scan_cnt = 0;
@@ -76,7 +83,6 @@ static bool ufshpb_ppn_dirty_check(struct ufshpb_lu *hpb, unsigned long lpn,
 		if (srgn_offset < hpb->entries_per_srgn)
 			return srgn_offset < find_size;
 
-		cur_lpn += find_size;
 	} while (scan_cnt);
 
 	return false;
@@ -179,11 +185,29 @@ static inline bool ufshpb_is_read_cmd(struct scsi_cmnd *cmd)
 
 	return false;
 }
+static inline bool ufshpb_is_write_cmd(struct scsi_cmnd *cmd)
+{
+	return (cmd->cmnd[0] == WRITE_10 || cmd->cmnd[0] == WRITE_16);
+}
+
+static inline bool ufshpb_is_discard_cmd(struct scsi_cmnd *cmd)
+{
+	return cmd->cmnd[0] == UNMAP;
+}
 
 static inline bool ufshpb_is_write_discard_lrbp(struct ufshcd_lrb *lrbp)
 {
 	if (lrbp->cmd->cmnd[0] == WRITE_10 || lrbp->cmd->cmnd[0] == WRITE_16 ||
 	    lrbp->cmd->cmnd[0] == UNMAP)
+		return true;
+
+	return false;
+}
+
+
+static inline bool ufshpb_is_host_control_mode(struct ufshpb_lu *hpb)
+{
+	if (hpb->ufsf->hpb_dev_info.hpb_control_mode == 0)
 		return true;
 
 	return false;
@@ -241,6 +265,9 @@ static inline void ufshpb_lu_put(struct ufshpb_lu *hpb)
 static void ufshpb_failed(struct ufshpb_lu *hpb, const char *f)
 {
 	ERR_MSG("ufshpb_driver failed. function (%s)", f);
+#if defined(CONFIG_HPB_RELEASE_CHECK)
+	BUG();
+#endif
 	hpb->ufsf->ufshpb_state = HPB_FAILED;
 	ufshpb_lu_put(hpb);
 }
@@ -257,8 +284,10 @@ static struct ufshpb_req *ufshpb_get_pre_req(struct ufshpb_lu *hpb)
 	struct ufshpb_req *pre_req;
 
 	if (hpb->num_inflight_pre_req >= hpb->throttle_pre_req) {
+#if defined(CONFIG_HPB_DEBUG)
 		HPB_DEBUG(hpb, "pre_req throttle. inflight %d throttle %d",
 			  hpb->num_inflight_pre_req, hpb->throttle_pre_req);
+#endif
 		return NULL;
 	}
 
@@ -266,7 +295,9 @@ static struct ufshpb_req *ufshpb_get_pre_req(struct ufshpb_lu *hpb)
 					   struct ufshpb_req,
 					   list_req);
 	if (!pre_req) {
+#if defined(CONFIG_HPB_DEBUG)
 		HPB_DEBUG(hpb, "There is no pre_req");
+#endif
 		return NULL;
 	}
 
@@ -409,14 +440,14 @@ static inline int ufshpb_issue_ctx_id_ticket(struct ufshpb_lu *hpb)
 	return hpb_ctx_id;
 }
 
-static inline void ufshpb_set_write_buf_cmd(unsigned char *cdb,
-					    unsigned long lpn, unsigned int len,
-					    int hpb_ctx_id)
+static inline void ufshpb_set_prefetch_cmd(unsigned char *cdb,
+					   unsigned long lpn, unsigned int len,
+					   int hpb_ctx_id)
 {
 	int len_byte = len * HPB_ENTRY_SIZE;
 
 	cdb[0] = UFSHPB_WRITE_BUFFER;
-	cdb[1] = UFSHPB_WRITE_BUFFER_ID;
+	cdb[1] = UFSHPB_WB_ID_PREFETCH;
 	cdb[2] = GET_BYTE_3(lpn);
 	cdb[3] = GET_BYTE_2(lpn);
 	cdb[4] = GET_BYTE_1(lpn);
@@ -463,7 +494,6 @@ static int ufshpb_mimic_scsi_request_fn(struct ufshpb_lu *hpb,
 
 	ret = q->prep_rq_fn(q, req);
 	if (unlikely(ret != BLKPREP_OK)) {
-		HPB_DEBUG(hpb, "scsi_prep_fn is fail");
 		ret = -EIO;
 		goto prep_err;
 	}
@@ -473,7 +503,7 @@ static int ufshpb_mimic_scsi_request_fn(struct ufshpb_lu *hpb,
 
 	busy = atomic_inc_return(&sdev->device_busy) - 1;
 	if (busy >= sdev->queue_depth) {
-		ret = -EAGAIN;
+		ret = -EIO;
 		goto finish_cmd;
 	}
 
@@ -482,7 +512,7 @@ static int ufshpb_mimic_scsi_request_fn(struct ufshpb_lu *hpb,
 	ret = blk_queue_start_tag(q, req);
 	if (ret) {
 		list_del_init(&req->queuelist);
-		ret = -EAGAIN;
+		ret = -EIO;
 		goto finish_cmd;
 	}
 	spin_unlock_irqrestore(q->queue_lock, flags);
@@ -555,8 +585,8 @@ static int ufshpb_set_pre_req(struct ufshpb_lu *hpb, struct scsi_cmnd *cmd,
 
 	/* 2. scsi_request setup */
 	rq = scsi_req(req);
-	ufshpb_set_write_buf_cmd(rq->cmd, pre_req->wb.lpn, pre_req->wb.len,
-				 hpb_ctx_id);
+	ufshpb_set_prefetch_cmd(rq->cmd, pre_req->wb.lpn, pre_req->wb.len,
+				hpb_ctx_id);
 	rq->cmd_len = scsi_command_size(rq->cmd);
 
 	ret = ufshpb_mimic_scsi_request_fn(hpb, req);
@@ -577,6 +607,8 @@ static int ufshpb_check_pre_req_cond(struct ufshpb_lu *hpb,
 	unsigned int transfer_len;
 	unsigned int lpn;
 
+	//no support Write buffer
+	return -EINVAL;
 	if (!ufshpb_is_read_cmd(cmd))
 		return -EINVAL;
 
@@ -596,15 +628,6 @@ static int ufshpb_check_pre_req_cond(struct ufshpb_lu *hpb,
 	 */
 	if (transfer_len < hpb->pre_req_min_tr_len ||
 	    transfer_len > hpb->pre_req_max_tr_len)
-		return -EINVAL;
-
-	/*
-	 * When the request is from ioctrl, the address in rq will be -1.
-	 * At this case, the ufshpb_ppn_dirty_check() will check the address
-	 * with 0xFFFFFFFF_FFFFFFFF (64bit) or 0xFFFFFFFF(32bit). This will
-	 * cause unexpected behavier. So skip here.
-	 */
-	if ((long)blk_rq_pos(cmd->request) == -1)
 		return -EINVAL;
 
 	lpn = ufshpb_get_lpn(cmd->request);
@@ -629,7 +652,7 @@ void ufshpb_end_pre_req(struct ufsf_feature *ufsf, struct request *req)
 }
 
 int ufshpb_prepare_pre_req(struct ufsf_feature *ufsf, struct scsi_cmnd *cmd,
-			   u8 lun)
+			   int lun)
 {
 	struct ufs_hba *hba = ufsf->hba;
 	struct ufshpb_lu *hpb;
@@ -716,9 +739,8 @@ int ufshpb_prepare_add_lrbp(struct ufsf_feature *ufsf, int add_tag)
 
 	add_lrbp = &hba->lrb[add_tag];
 
-	pre_cmd = add_lrbp->cmd;
 
-	err = ufshcd_hold(hba, true);
+	err = ufshcd_hold(hba,false);
 	if (err)
 		goto hold_err;
 
@@ -732,11 +754,428 @@ int ufshpb_prepare_add_lrbp(struct ufsf_feature *ufsf, int add_tag)
 map_err:
 	ufshcd_release(hba);
 hold_err:
+	pre_cmd = add_lrbp->cmd;
 	add_lrbp->cmd = NULL;
 	clear_bit_unlock(add_tag, &hba->lrb_in_use);
 	ufsf_hpb_end_pre_req(&hba->ufsf, pre_cmd->request);
 	return -EIO;
 }
+static inline void ufshpb_update_lru_list(enum selection_type selection_type,
+					  struct list_head *target_lh,
+					  struct ufshpb_region *rgn)
+{
+	switch (selection_type) {
+	case LRU:
+		list_move_tail(&rgn->list_lru_rgn, target_lh);
+		break;
+	default:
+		break;
+	}
+}
+
+static void ufshpb_hit_lru_info(struct victim_select_info *lru_info,
+				struct ufshpb_region *rgn)
+{
+	struct list_head *target_lh = NULL;
+
+	if (rgn->rgn_state == HPBREGION_ACTIVE) {
+		if (ufshpb_is_triggered_by_fs(rgn)) {
+			rgn->rgn_state = HPBREGION_RT_PINNED;
+			target_lh = &lru_info->lh_lru_rt_pinned_rgn;
+		} else {
+			target_lh = &lru_info->lh_lru_rgn;
+		}
+	} else if (rgn->rgn_state == HPBREGION_RT_PINNED) {
+		target_lh = &lru_info->lh_lru_rt_pinned_rgn;
+	}
+
+	ufshpb_update_lru_list(lru_info->selection_type, target_lh, rgn);
+}
+
+static inline void ufshpb_act_rsp_list_add(struct ufshpb_lu *hpb,
+					   struct ufshpb_subregion *srgn)
+{
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	atomic64_inc(&hpb->act_rsp_list_cnt);
+#endif
+	list_add_tail(&srgn->list_act_srgn, &hpb->lh_act_srgn);
+}
+
+static inline void ufshpb_act_rsp_list_del(struct ufshpb_lu *hpb,
+					   struct ufshpb_subregion *srgn)
+{
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	atomic64_dec(&hpb->act_rsp_list_cnt);
+#endif
+	list_del_init(&srgn->list_act_srgn);
+}
+
+static inline void ufshpb_inact_rsp_list_add(struct ufshpb_lu *hpb,
+					     struct ufshpb_region *rgn)
+{
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	atomic64_inc(&hpb->inact_rsp_list_cnt);
+#endif
+	list_add_tail(&rgn->list_inact_rgn, &hpb->lh_inact_rgn);
+}
+
+static inline void ufshpb_inact_rsp_list_del(struct ufshpb_lu *hpb,
+					     struct ufshpb_region *rgn)
+{
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	atomic64_dec(&hpb->inact_rsp_list_cnt);
+#endif
+	list_del_init(&rgn->list_inact_rgn);
+}
+
+static void ufshpb_update_active_info(struct ufshpb_lu *hpb, int rgn_idx,
+				      int srgn_idx, enum HPBUPDATE_INFO info)
+{
+	struct ufshpb_region *rgn;
+	struct ufshpb_subregion *srgn;
+
+	rgn = hpb->rgn_tbl + rgn_idx;
+	srgn = rgn->srgn_tbl + srgn_idx;
+
+	if (!list_empty(&rgn->list_inact_rgn))
+		ufshpb_inact_rsp_list_del(hpb, rgn);
+
+	if (list_empty(&srgn->list_act_srgn)) {
+		ufshpb_act_rsp_list_add(hpb, srgn);
+#if defined(CONFIG_HPB_DEBUG)
+		if (info == HPBUPDATE_RT_FROM_FS) {
+			HPB_DEBUG(hpb, "*** Noti [HOST]: RT SET %d - %d",
+				  rgn_idx, srgn_idx);
+			TMSG(hpb->ufsf, hpb->lun, "*** Noti [HOST]: RT SET %d - %d",
+			     rgn_idx, srgn_idx);
+		} else if (info == HPBUPDATE_FROM_DEV) {
+			HPB_DEBUG(hpb, "*** Noti [DEV]: ACT %d - %d",
+				  rgn_idx, srgn_idx);
+			TMSG(hpb->ufsf, hpb->lun, "*** Noti [DEV]: ACT %d - %d",
+			     rgn_idx, srgn_idx);
+		}
+#endif
+	}
+}
+
+static void ufshpb_update_inactive_info(struct ufshpb_lu *hpb, int rgn_idx,
+					enum HPBUPDATE_INFO info)
+{
+	struct ufshpb_region *rgn;
+	struct ufshpb_subregion *srgn;
+	int srgn_idx;
+
+	rgn = hpb->rgn_tbl + rgn_idx;
+
+	for (srgn_idx = 0; srgn_idx < rgn->srgn_cnt; srgn_idx++) {
+		srgn = rgn->srgn_tbl + srgn_idx;
+
+		if (!list_empty(&srgn->list_act_srgn))
+			ufshpb_act_rsp_list_del(hpb, srgn);
+	}
+
+	if (list_empty(&rgn->list_inact_rgn)) {
+		ufshpb_inact_rsp_list_add(hpb, rgn);
+#if defined(CONFIG_HPB_DEBUG)
+		if (info == HPBUPDATE_RT_FROM_FS) {
+			HPB_DEBUG(hpb, "*** Noti [HOST]: RT UNSET %d", rgn_idx);
+			TMSG(hpb->ufsf, hpb->lun, "*** Noti [HOST]: RT UNSET %d",
+			     rgn_idx);
+		} else if (info == HPBUPDATE_FROM_DEV) {
+			HPB_DEBUG(hpb, "*** Noti [DEV]: INACT %d", rgn_idx);
+			TMSG(hpb->ufsf, hpb->lun, "*** Noti [DEV]: INACT %d",
+			     rgn_idx);
+		} else {
+			HPB_DEBUG(hpb, "*** ERR : INACT %d", rgn_idx);
+			TMSG(hpb->ufsf, hpb->lun, "*** ERR [DEV]: INACT %d",
+			     rgn_idx);
+		}
+#endif
+	}
+}
+
+static void ufshpb_update_active_info_by_read(struct ufshpb_lu *hpb,
+					      struct scsi_cmnd *cmd)
+{
+	struct ufshpb_region *rgn;
+	struct ufshpb_subregion *srgn;
+	struct request *rq = cmd->request;
+	int s_rgn_idx, e_rgn_idx, rgn_idx, srgn_idx;
+	bool is_update = false;
+	unsigned int start_lpn, end_lpn;
+	unsigned long flags;
+	struct victim_select_info *lru_info = &hpb->lru_info;
+	//long long miss_after_region_full,hit_after_region_full,total_access_region_after_region_full;
+
+	start_lpn = ufshpb_get_lpn(rq);
+	end_lpn = start_lpn + ufshpb_get_len(rq) - 1;
+
+	s_rgn_idx = start_lpn >> hpb->entries_per_rgn_shift;
+	e_rgn_idx = end_lpn >> hpb->entries_per_rgn_shift;
+
+	for (rgn_idx = s_rgn_idx; rgn_idx <= e_rgn_idx; rgn_idx++) {
+		rgn = hpb->rgn_tbl + rgn_idx;
+		for (srgn_idx = 0; srgn_idx < rgn->srgn_cnt; srgn_idx++) {
+			is_update = false;
+			srgn = rgn->srgn_tbl + srgn_idx;
+			spin_lock_irqsave(&hpb->hpb_lock, flags);
+			//&& srgn->srgn_state != HPBSUBREGION_CLEAN
+		    if (rgn->rgn_state == HPBREGION_INACTIVE ||rgn->rgn_state == HPBREGION_ACTIVE) {
+				rgn->active_threshold = UFSHPB_HOST_MAX_ACTIVE_THRESHOLD >> (atomic64_read(&rgn->last_hit_cnt)/atomic64_read(&rgn->last_miss_cnt));
+				if (rgn->active_threshold < UFSHPB_HOST_MIN_ACTIVE_THRESHOLD) {
+					rgn->active_threshold = UFSHPB_HOST_MIN_ACTIVE_THRESHOLD;
+				}
+				atomic64_inc(&srgn->read_cnt);
+				if (atomic64_read(&srgn->read_cnt) > rgn->active_threshold) {
+					is_update = true;
+					atomic_set(&rgn->reason, HPBUPDATE_RT_FROM_FS);
+				}
+			}
+			spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+			if (is_update) {
+#if defined(CONFIG_HPB_DEBUG)
+				TMSG(hpb->ufsf, hpb->lun, "%llu + %u set rt_pin %d",
+					 (unsigned long long) blk_rq_pos(rq),
+					 (unsigned int) blk_rq_sectors(rq), rgn_idx);
+#endif
+				//printk("***active region :%d ****\n",rgn_idx);
+				spin_lock_irqsave(&hpb->rsp_list_lock, flags);
+				ufshpb_update_active_info(hpb, rgn_idx,srgn_idx,HPBUPDATE_RT_FROM_FS);
+				spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
+			}
+		}
+	}
+}
+
+static void ufshpb_update_inactive_info_by_write_discard(struct ufshpb_lu *hpb,
+						struct scsi_cmnd *cmd)
+{
+	struct ufshpb_region *rgn;
+	struct ufshpb_subregion *srgn;
+	struct request *rq = cmd->request;
+	int s_rgn_idx, s_srgn_idx, s_offset;
+	int e_rgn_idx, e_srgn_idx, e_offset;
+	int rgn_idx,srgn_idx;
+	bool is_update = false;
+	unsigned int start_lpn, end_lpn, length;
+	unsigned long flags;
+	struct victim_select_info *lru_info = &hpb->lru_info;
+
+	start_lpn = ufshpb_get_lpn(rq);
+	end_lpn = start_lpn + ufshpb_get_len(rq) - 1;
+	length = ufshpb_get_len(rq);
+	ufshpb_get_pos_from_lpn(hpb, start_lpn, &s_rgn_idx, &s_srgn_idx,
+				&s_offset);
+	ufshpb_get_pos_from_lpn(hpb, end_lpn, &e_rgn_idx, &e_srgn_idx,
+				&e_offset);
+	rgn= hpb->rgn_tbl + s_rgn_idx;
+	 if ((ufshpb_is_discard_cmd(cmd) || (ufshpb_is_write_cmd(cmd))) && (rgn->rgn_state == HPBREGION_RT_PINNED)) {
+		if (e_rgn_idx == s_rgn_idx) {
+			is_update = false;
+			rgn= hpb->rgn_tbl + s_rgn_idx;
+			spin_lock_irqsave(&hpb->hpb_lock, flags);
+			rgn->discard_write_size += length;
+			if (atomic64_read(&rgn->last_hit_cnt) > UFSHPB_HOST_HIT_CNT_THRESHOLD2) {
+				rgn->deactive_threshold = UFSHPB_HOST_MIN_DEACTIVE_THRESHOLD *(1<< (atomic64_read(&rgn->last_hit_cnt)/atomic64_read(&rgn->last_miss_cnt)));
+				if (rgn->deactive_threshold > UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD) {
+					rgn->deactive_threshold = UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD;
+				}
+			} else {
+				rgn->deactive_threshold = UFSHPB_HOST_MID_DEACTIVE_THRESHOLD *(1<< (atomic64_read(&rgn->last_hit_cnt)/atomic64_read(&rgn->last_miss_cnt)));
+				if (rgn->deactive_threshold > UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD) {
+					rgn->deactive_threshold = UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD;
+				}
+			}
+			if (rgn->discard_write_size > rgn->deactive_threshold) {
+				is_update = true;
+				atomic_set(&rgn->reason, HPBUPDATE_RT_FROM_FS);
+			}
+			if (ufshpb_is_discard_cmd(cmd)) {
+				rgn->total_unmap_count += length;
+			} else {
+				rgn->total_write_count += length;
+			}
+			spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+
+			if (is_update) {
+#if defined(CONFIG_HPB_DEBUG)
+				TMSG(hpb->ufsf, hpb->lun, "%llu + %u unset rt_pin %d",
+					 (unsigned long long) blk_rq_pos(rq),
+					 (unsigned int) blk_rq_sectors(rq), s_rgn_idx);
+#endif
+				printk("***de-active region :%d ****\n",s_rgn_idx);
+				spin_lock_irqsave(&hpb->rsp_list_lock, flags);
+				ufshpb_update_inactive_info(hpb, s_rgn_idx,
+								HPBUPDATE_RT_FROM_FS);
+				spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
+			}
+		} else {
+			for (rgn_idx = s_rgn_idx; rgn_idx <= e_rgn_idx; rgn_idx++) {
+				rgn = hpb->rgn_tbl + rgn_idx;
+				is_update = false;
+				spin_lock_irqsave(&hpb->hpb_lock, flags);
+				if (rgn_idx == s_rgn_idx) {
+					rgn->discard_write_size += ((hpb->srgn_unit_size / BLOCK) - s_offset);
+					if (ufshpb_is_discard_cmd(cmd)) {
+						rgn->total_unmap_count += ((hpb->srgn_unit_size / BLOCK) - s_offset);
+					} else {
+						rgn->total_write_count += ((hpb->srgn_unit_size / BLOCK) - s_offset);
+					}
+				} else if (rgn_idx == e_rgn_idx) {
+					rgn->discard_write_size +=  e_offset;
+					if (ufshpb_is_discard_cmd(cmd)) {
+						rgn->total_unmap_count += e_offset;
+					} else {
+						rgn->total_write_count += e_offset;
+					}
+				} else {
+					rgn->discard_write_size +=  (hpb->srgn_unit_size / BLOCK);
+					if (ufshpb_is_discard_cmd(cmd)) {
+						rgn->total_unmap_count += (hpb->srgn_unit_size / BLOCK);
+					} else {
+						rgn->total_write_count += (hpb->srgn_unit_size / BLOCK);
+					}
+				}
+			if (atomic64_read(&rgn->last_hit_cnt) > UFSHPB_HOST_HIT_CNT_THRESHOLD2) {
+				rgn->deactive_threshold = UFSHPB_HOST_MIN_DEACTIVE_THRESHOLD *(1<< (atomic64_read(&rgn->last_hit_cnt)/atomic64_read(&rgn->last_miss_cnt)));
+				if (rgn->deactive_threshold > UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD) {
+					rgn->deactive_threshold = UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD;
+				}
+			} else {
+				rgn->deactive_threshold = UFSHPB_HOST_MID_DEACTIVE_THRESHOLD *(1<< (atomic64_read(&rgn->last_hit_cnt)/atomic64_read(&rgn->last_miss_cnt)));
+				if (rgn->deactive_threshold > UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD) {
+					rgn->deactive_threshold = UFSHPB_HOST_MAX_DEACTIVE_THRESHOLD;
+				}
+			}
+
+			if (rgn->discard_write_size > rgn->deactive_threshold) {
+				is_update = true;
+				atomic_set(&rgn->reason, HPBUPDATE_RT_FROM_FS);
+			}
+
+			spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+			if (is_update) {
+#if defined(CONFIG_HPB_DEBUG)
+				TMSG(hpb->ufsf, hpb->lun, "%llu + %u unset rt_pin %d",
+					 (unsigned long long) blk_rq_pos(rq),
+					 (unsigned int) blk_rq_sectors(rq), rgn_idx);
+#endif
+				printk("***de-active region :%d ****\n",rgn_idx);
+				spin_lock_irqsave(&hpb->rsp_list_lock, flags);
+				ufshpb_update_inactive_info(hpb, rgn_idx,
+								HPBUPDATE_RT_FROM_FS);
+				spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
+            }
+        }
+    }
+  }
+}
+
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+static void ufshpb_increase_hit_count(struct ufshpb_lu *hpb,
+				      struct ufshpb_region *rgn,
+				      int transfer_len)
+{
+	if (rgn->rgn_state == HPBREGION_PINNED ||
+	    rgn->rgn_state == HPBREGION_RT_PINNED) {
+		if (transfer_len < HPB_MULTI_CHUNK_LOW) {
+			atomic64_inc(&hpb->pinned_low_hit);
+			atomic64_inc(&rgn->rgn_pinned_low_hit);
+		} else {
+			atomic64_inc(&hpb->pinned_high_hit);
+			atomic64_inc(&rgn->rgn_pinned_high_hit);
+		}
+	} else if (rgn->rgn_state == HPBREGION_ACTIVE) {
+		if (transfer_len < HPB_MULTI_CHUNK_LOW) {
+			atomic64_inc(&hpb->active_low_hit);
+			atomic64_inc(&rgn->rgn_active_low_hit);
+		} else {
+			atomic64_inc(&hpb->active_high_hit);
+			atomic64_inc(&rgn->rgn_active_high_hit);
+		}
+	}
+}
+
+static void ufshpb_increase_miss_count(struct ufshpb_lu *hpb,
+				       struct ufshpb_region *rgn,
+				       int transfer_len)
+{
+	if (rgn->rgn_state == HPBREGION_PINNED ||
+	    rgn->rgn_state == HPBREGION_RT_PINNED) {
+		if (transfer_len < HPB_MULTI_CHUNK_LOW) {
+			atomic64_inc(&hpb->pinned_low_miss);
+			atomic64_inc(&rgn->rgn_pinned_low_miss);
+		} else {
+			atomic64_inc(&hpb->pinned_high_miss);
+			atomic64_inc(&rgn->rgn_pinned_high_miss);
+		}
+	} else if (rgn->rgn_state == HPBREGION_ACTIVE) {
+		if (transfer_len < HPB_MULTI_CHUNK_LOW) {
+			atomic64_inc(&hpb->active_low_miss);
+			atomic64_inc(&rgn->rgn_active_low_miss);
+		} else {
+			atomic64_inc(&hpb->active_high_miss);
+			atomic64_inc(&rgn->rgn_active_high_miss);
+		}
+	} else if (rgn->rgn_state == HPBREGION_INACTIVE) {
+		if (transfer_len < HPB_MULTI_CHUNK_LOW) {
+			atomic64_inc(&hpb->inactive_low_read);
+			atomic64_inc(&rgn->rgn_inactive_low_read);
+		} else {
+			atomic64_inc(&hpb->inactive_high_read);
+			atomic64_inc(&rgn->rgn_inactive_high_read);
+		}
+	}
+}
+
+static void ufshpb_increase_rb_count(struct ufshpb_lu *hpb,
+				struct ufshpb_region *rgn)
+{
+	if (rgn->rgn_state == HPBREGION_PINNED ||
+		rgn->rgn_state == HPBREGION_RT_PINNED) {
+		atomic64_inc(&hpb->pinned_rb_cnt);
+		atomic64_inc(&rgn->rgn_pinned_rb_cnt);
+       } else if (rgn->rgn_state == HPBREGION_ACTIVE) {
+		atomic64_inc(&hpb->active_rb_cnt);
+		atomic64_inc(&rgn->rgn_active_rb_cnt);
+       }
+}
+
+static void ufshpb_debug_sys_init(struct ufshpb_lu *hpb)
+{
+	struct ufshpb_region *rgn;
+	int rgn_idx;
+
+	atomic64_set(&hpb->pinned_low_hit, 0);
+	atomic64_set(&hpb->pinned_high_hit, 0);
+	atomic64_set(&hpb->pinned_low_miss, 0);
+	atomic64_set(&hpb->pinned_high_miss, 0);
+	atomic64_set(&hpb->active_low_hit, 0);
+	atomic64_set(&hpb->active_high_hit, 0);
+	atomic64_set(&hpb->active_low_miss, 0);
+	atomic64_set(&hpb->active_high_miss, 0);
+	atomic64_set(&hpb->inactive_low_read, 0);
+	atomic64_set(&hpb->inactive_high_read, 0);
+	atomic64_set(&hpb->pinned_rb_cnt, 0);
+	atomic64_set(&hpb->active_rb_cnt, 0);
+
+	for (rgn_idx = 0; rgn_idx < hpb->rgns_per_lu; rgn_idx++) {
+		rgn = hpb->rgn_tbl + rgn_idx;
+		atomic64_set(&rgn->rgn_pinned_low_hit, 0);
+		atomic64_set(&rgn->rgn_pinned_high_hit, 0);
+		atomic64_set(&rgn->rgn_pinned_low_miss, 0);
+		atomic64_set(&rgn->rgn_pinned_high_miss, 0);
+		atomic64_set(&rgn->rgn_active_low_hit, 0);
+		atomic64_set(&rgn->rgn_active_high_hit, 0);
+		atomic64_set(&rgn->rgn_active_low_miss, 0);
+		atomic64_set(&rgn->rgn_active_high_miss, 0);
+		atomic64_set(&rgn->rgn_inactive_low_read, 0);
+		atomic64_set(&rgn->rgn_inactive_high_read, 0);
+		atomic64_set(&rgn->rgn_pinned_rb_cnt, 0);
+		atomic64_set(&rgn->rgn_active_rb_cnt, 0);
+	}
+}
+#endif
 
 /* routine : READ10 -> HPB_READ  */
 void ufshpb_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
@@ -745,6 +1184,7 @@ void ufshpb_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 	struct ufshpb_region *rgn;
 	struct ufshpb_subregion *srgn;
 	struct request *rq;
+	struct scsi_cmnd *cmd;
 	unsigned long long ppn = 0;
 	unsigned long lpn, flags;
 	int transfer_len = TRANSFER_LEN;
@@ -754,57 +1194,58 @@ void ufshpb_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 	if (!lrbp || !ufsf_is_valid_lun(lrbp->lun))
 		return;
 
-	if (!ufshpb_is_write_discard_lrbp(lrbp) &&
-	    !ufshpb_is_read_cmd(lrbp->cmd))
+	cmd = lrbp->cmd;
+	if (!ufshpb_is_read_cmd(cmd) && !ufshpb_is_write_cmd(cmd) &&
+	    !ufshpb_is_discard_cmd(cmd))
 		return;
 
-	rq = lrbp->cmd->request;
+	rq = cmd->request;
 	hpb = ufsf->ufshpb_lup[lrbp->lun];
 	ret = ufshpb_lu_get(hpb);
 	if (ret)
 		return;
 
 	if (hpb->force_disable) {
-		if (ufshpb_is_read_cmd(lrbp->cmd))
+#if defined(CONFIG_HPB_DEBUG)
+		if (ufshpb_is_read_cmd(cmd))
 			TMSG(ufsf, hpb->lun, "%llu + %u READ_10",
 			     (unsigned long long) blk_rq_pos(rq),
 			     (unsigned int) blk_rq_sectors(rq));
+#endif
 		goto put_hpb;
 	}
-
-	/*
-	 * When the request is from ioctrl, the address in rq will be -1.
-	 * At this case, the ufshpb_ppn_dirty_check() will check the address
-	 * with 0xFFFFFFFF_FFFFFFFF (64bit) or 0xFFFFFFFF(32bit). This will
-	 * cause unexpected behavier. So skip here.
-	 */
-	if ((long)blk_rq_pos(rq) == -1)
-		goto put_hpb;
 
 	lpn = ufshpb_get_lpn(rq);
 	ufshpb_get_pos_from_lpn(hpb, lpn, &rgn_idx, &srgn_idx, &srgn_offset);
 	rgn = hpb->rgn_tbl + rgn_idx;
 	srgn = rgn->srgn_tbl + srgn_idx;
-
 	/*
 	 * If cmd type is WRITE, bitmap set to dirty.
 	 */
-	if (ufshpb_is_write_discard_lrbp(lrbp)) {
+	if (ufshpb_is_write_cmd(cmd) || ufshpb_is_discard_cmd(cmd)) {
 		spin_lock_irqsave(&hpb->hpb_lock, flags);
-		if (rgn->rgn_state == HPBREGION_INACTIVE) {
-			spin_unlock_irqrestore(&hpb->hpb_lock, flags);
-			goto put_hpb;
+		if (rgn->rgn_state != HPBREGION_INACTIVE) {
+			ufshpb_set_dirty(hpb, lrbp, rgn_idx, srgn_idx,
+					 srgn_offset);
 		}
-		ufshpb_set_dirty(hpb, lrbp, rgn_idx, srgn_idx, srgn_offset);
 		spin_unlock_irqrestore(&hpb->hpb_lock, flags);
-		goto put_hpb;
 	}
 
-	if (!ufshpb_is_read_cmd(lrbp->cmd))
+	if(ufshpb_is_host_control_mode(hpb))
+	{
+		if (ufshpb_is_read_cmd(cmd))
+			ufshpb_update_active_info_by_read(hpb, cmd);
+		else if(ufshpb_is_discard_cmd(cmd) || ufshpb_is_write_cmd(cmd))
+			ufshpb_update_inactive_info_by_write_discard(hpb, cmd);
+	}
+
+	if (!ufshpb_is_read_cmd(cmd))
 		goto put_hpb;
 
 	if (ufshpb_is_unaligned(rq)) {
+#if defined(CONFIG_HPB_DEBUG)
 		TMSG_CMD(hpb, "READ_10 not aligned 4KB", rq, rgn_idx, srgn_idx);
+#endif
 		goto put_hpb;
 	}
 
@@ -813,16 +1254,33 @@ void ufshpb_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 		goto put_hpb;
 
 	if (!ufshpb_is_support_chunk(transfer_len)) {
+#if defined(CONFIG_HPB_DEBUG)
 		TMSG_CMD(hpb, "READ_10 doesn't support chunk size",
 			 rq, rgn_idx, srgn_idx);
+#endif
 		goto put_hpb;
 	}
 
 	spin_lock_irqsave(&hpb->hpb_lock, flags);
 	if (ufshpb_ppn_dirty_check(hpb, lpn, transfer_len)) {
 		atomic64_inc(&hpb->miss);
-		TMSG_CMD(hpb, "READ_10 E_D", rq, rgn_idx, srgn_idx);
+		if (rgn->rgn_state == HPBREGION_PINNED ||
+	        rgn->rgn_state == HPBREGION_RT_PINNED ||
+			rgn->rgn_state == HPBREGION_ACTIVE) {
+			atomic64_inc(&rgn->last_miss_cnt);
+			atomic64_inc(&rgn->total_miss_cnt);
+		}
+
+		/*if(atomic64_read(&hpb->lru_info.active_cnt) == hpb->lru_info.max_lru_active_cnt) {
+			atomic64_inc(&hpb->miss_after_region_full);
+		}*/
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+		ufshpb_increase_miss_count(hpb, rgn, transfer_len);
+#endif
 		spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+#if defined(CONFIG_HPB_DEBUG)
+		TMSG_CMD(hpb, "READ_10 E_D", rq, rgn_idx, srgn_idx);
+#endif
 		goto put_hpb;
 	}
 
@@ -836,12 +1294,22 @@ void ufshpb_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 	}
 
 	ufshpb_set_read16_cmd(hpb, lrbp, ppn, transfer_len);
+#if defined(CONFIG_HPB_DEBUG)
 	TMSG(ufsf, hpb->lun, "%llu + %u HPB_READ %d - %d context_id %d",
-	     (unsigned long long) blk_rq_pos(lrbp->cmd->request),
-	     (unsigned int) blk_rq_sectors(lrbp->cmd->request), rgn_idx,
+	     (unsigned long long) blk_rq_pos(rq),
+	     (unsigned int) blk_rq_sectors(rq), rgn_idx,
 	     srgn_idx, lrbp->hpb_ctx_id);
+#endif
 
 	atomic64_inc(&hpb->hit);
+	atomic64_inc(&rgn->total_hit_cnt);
+	atomic64_inc(&rgn->last_hit_cnt);
+	/*if(atomic64_read(&hpb->lru_info.active_cnt) == hpb->lru_info.max_lru_active_cnt) {
+			atomic64_inc(&hpb->hit_after_region_full);
+	}*/
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	ufshpb_increase_hit_count(hpb, rgn, transfer_len);
+#endif
 put_hpb:
 	ufshpb_lu_put(hpb);
 	return;
@@ -854,27 +1322,36 @@ static inline void ufshpb_put_map_req(struct ufshpb_lu *hpb,
 {
 	list_add_tail(&map_req->list_req, &hpb->lh_map_req_free);
 	hpb->num_inflight_map_req--;
+	hpb->num_inflight_rt_req--;
 }
 
 static struct ufshpb_req *ufshpb_get_map_req(struct ufshpb_lu *hpb)
 {
 	struct ufshpb_req *map_req;
 
-	if (hpb->num_inflight_map_req >= hpb->throttle_map_req) {
+	if (hpb->num_inflight_map_req >= hpb->throttle_map_req ||
+	    hpb->num_inflight_rt_req >= hpb->throttle_rt_req) {
+#if defined(CONFIG_HPB_DEBUG)
 		HPB_DEBUG(hpb, "map_req throttle. inflight %d throttle %d",
 			  hpb->num_inflight_map_req, hpb->throttle_map_req);
+		HPB_DEBUG(hpb, "rt_req throttle. rt inflight %d rt throttle %d",
+			  hpb->num_inflight_rt_req, hpb->throttle_rt_req);
+#endif
 		return NULL;
 	}
 
 	map_req = list_first_entry_or_null(&hpb->lh_map_req_free,
 					   struct ufshpb_req, list_req);
 	if (!map_req) {
+#if defined(CONFIG_HPB_DEBUG)
 		HPB_DEBUG(hpb, "There is no map_req");
+#endif
 		return NULL;
 	}
 
 	list_del_init(&map_req->list_req);
 	hpb->num_inflight_map_req++;
+	hpb->num_inflight_rt_req++;
 
 	return map_req;
 }
@@ -889,8 +1366,8 @@ static int ufshpb_clean_dirty_bitmap(struct ufshpb_lu *hpb,
 	rgn = hpb->rgn_tbl + srgn->rgn_idx;
 
 	if (rgn->rgn_state == HPBREGION_INACTIVE) {
-		HPB_DEBUG(hpb, "%d - %d evicted", srgn->rgn_idx,
-			  srgn->srgn_idx);
+		ERR_MSG("region[%d] was activated. But it's state is changed",
+			rgn->rgn_idx);
 		return -EINVAL;
 	}
 
@@ -910,8 +1387,8 @@ static void ufshpb_clean_active_subregion(struct ufshpb_lu *hpb,
 	rgn = hpb->rgn_tbl + srgn->rgn_idx;
 
 	if (rgn->rgn_state == HPBREGION_INACTIVE) {
-		HPB_DEBUG(hpb, "%d - %d evicted", srgn->rgn_idx,
-			  srgn->srgn_idx);
+		ERR_MSG("region[%d] was activated. But it's state is changed",
+			rgn->rgn_idx);
 		return;
 	}
 	srgn->srgn_state = HPBSUBREGION_CLEAN;
@@ -927,15 +1404,18 @@ static void ufshpb_error_active_subregion(struct ufshpb_lu *hpb,
 	rgn = hpb->rgn_tbl + srgn->rgn_idx;
 
 	if (rgn->rgn_state == HPBREGION_INACTIVE) {
-		ERR_MSG("%d - %d evicted", srgn->rgn_idx, srgn->srgn_idx);
+		ERR_MSG("region[%d] was activated. But it's state is changed",
+			rgn->rgn_idx);
 		return;
 	}
 	srgn->srgn_state = HPBSUBREGION_DIRTY;
 }
 
+#if defined(CONFIG_HPB_DEBUG)
 static void ufshpb_check_ppn(struct ufshpb_lu *hpb, int rgn_idx, int srgn_idx,
 			     struct ufshpb_map_ctx *mctx, const char *str)
 {
+	struct ufshpb_region *rgn = hpb->rgn_tbl + rgn_idx;
 	int error = 0;
 	unsigned long long val[2];
 
@@ -948,62 +1428,71 @@ static void ufshpb_check_ppn(struct ufshpb_lu *hpb, int rgn_idx, int srgn_idx,
 	if (error)
 		val[0] = val[1] = 0;
 
-	HPB_DEBUG(hpb, "%s READ BUFFER %d - %d ( %llx ~ %llx )", str, rgn_idx,
-		  srgn_idx, val[0], val[1]);
+	HPB_DEBUG(hpb, "%s READ BUFFER %d - %d ( %llx ~ %llx ) rgn_state %d",
+		  str, rgn_idx, srgn_idx, val[0], val[1], rgn->rgn_state);
+}
+#endif
+static bool is_clear_reason(struct ufshpb_lu *hpb, struct ufshpb_region *rgn)
+{
+	struct ufshpb_subregion *srgn;
+	unsigned long flags;
+	bool ret = true;
+	int srgn_idx;
+
+	spin_lock_irqsave(&hpb->rsp_list_lock, flags);
+	if (!list_empty(&rgn->list_inact_rgn))
+		ret = false;
+	else {
+		for (srgn_idx = 0; srgn_idx < rgn->srgn_cnt; srgn_idx++) {
+			srgn = rgn->srgn_tbl + srgn_idx;
+
+			if (!list_empty(&srgn->list_act_srgn)) {
+				ret = false;
+				break;
+			}
+		}
+	}
+	spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
+
+	return ret;
 }
 
 static void ufshpb_map_compl_process(struct ufshpb_req *map_req)
 {
 	struct ufshpb_lu *hpb = map_req->hpb;
-	struct ufshpb_subregion *srgn;
+	struct ufshpb_region *rgn = hpb->rgn_tbl + map_req->rgn_idx;
+	struct ufshpb_subregion *srgn = rgn->srgn_tbl + map_req->srgn_idx;
 	unsigned long flags;
+	int i = 0;
 
-	srgn = hpb->rgn_tbl[map_req->rb.rgn_idx].srgn_tbl +
-		map_req->rb.srgn_idx;
-
+#if defined(CONFIG_HPB_DEBUG)
 	if (hpb->debug)
 		ufshpb_check_ppn(hpb, srgn->rgn_idx, srgn->srgn_idx, srgn->mctx,
 				 "COMPL");
 
-	TMSG(hpb->ufsf, hpb->lun, "Noti: C RB %d - %d", map_req->rb.rgn_idx,
-	     map_req->rb.srgn_idx);
-
+	TMSG(hpb->ufsf, hpb->lun, "Noti: C RB %d - %d", map_req->rgn_idx,
+	     map_req->srgn_idx);
+#endif
+	printk("***compl active region :%d ****\n",map_req->rgn_idx);
 	spin_lock_irqsave(&hpb->hpb_lock, flags);
 	ufshpb_clean_active_subregion(hpb, srgn);
+	atomic64_set(&srgn->read_cnt, 0);
+	atomic64_inc(&rgn->active_cnt);
+	atomic64_set(&rgn->last_hit_cnt, 0);
+	atomic64_set(&rgn->last_miss_cnt, 0);
+	atomic64_set(&rgn->last_write_cnt, 0);
+	rgn->discard_write_size = 0;
+	/*if(atomic64_read(&hpb->lru_info.active_cnt) == hpb->lru_info.max_lru_active_cnt)
+	{
+			atomic64_set(&hpb->hit_after_region_full,0);
+			atomic64_set(&hpb->miss_after_region_full,0);
+			atomic64_set(&hpb->total_access_region_after_region_full,0);
+			memset(&hpb->access_region, 0, 1024);// will replace by bitmap
+	}*/
 	spin_unlock_irqrestore(&hpb->hpb_lock, flags);
-}
 
-static void ufshpb_update_active_info(struct ufshpb_lu *hpb, int rgn_idx,
-				      int srgn_idx)
-{
-	struct ufshpb_region *rgn;
-	struct ufshpb_subregion *srgn;
-
-	rgn = hpb->rgn_tbl + rgn_idx;
-	srgn = rgn->srgn_tbl + srgn_idx;
-
-	list_del_init(&rgn->list_inact_rgn);
-
-	if (list_empty(&srgn->list_act_srgn))
-		list_add_tail(&srgn->list_act_srgn, &hpb->lh_act_srgn);
-}
-
-static void ufshpb_update_inactive_info(struct ufshpb_lu *hpb, int rgn_idx)
-{
-	struct ufshpb_region *rgn;
-	struct ufshpb_subregion *srgn;
-	int srgn_idx;
-
-	rgn = hpb->rgn_tbl + rgn_idx;
-
-	for (srgn_idx = 0; srgn_idx < rgn->srgn_cnt; srgn_idx++) {
-		srgn = rgn->srgn_tbl + srgn_idx;
-
-		list_del_init(&srgn->list_act_srgn);
-	}
-
-	if (list_empty(&rgn->list_inact_rgn))
-		list_add_tail(&rgn->list_inact_rgn, &hpb->lh_inact_rgn);
+	if (is_clear_reason(hpb, rgn))
+		atomic_set(&rgn->reason, HPBUPDATE_NONE);
 }
 
 static int ufshpb_map_req_error(struct ufshpb_req *map_req)
@@ -1014,8 +1503,8 @@ static int ufshpb_map_req_error(struct ufshpb_req *map_req)
 	struct scsi_sense_hdr sshdr;
 	unsigned long flags;
 
-	rgn = hpb->rgn_tbl + map_req->rb.rgn_idx;
-	srgn = rgn->srgn_tbl + map_req->rb.srgn_idx;
+	rgn = hpb->rgn_tbl + map_req->rgn_idx;
+	srgn = rgn->srgn_tbl + map_req->srgn_idx;
 
 	scsi_normalize_sense(map_req->sense, SCSI_SENSE_BUFFERSIZE, &sshdr);
 
@@ -1030,9 +1519,10 @@ static int ufshpb_map_req_error(struct ufshpb_req *map_req)
 	spin_lock_irqsave(&hpb->hpb_lock, flags);
 	if (rgn->rgn_state == HPBREGION_PINNED) {
 		if (sshdr.asc == 0x06 && sshdr.ascq == 0x01) {
+#if defined(CONFIG_HPB_DEBUG)
 			HPB_DEBUG(hpb, "retry pinned rb %d - %d",
-				  map_req->rb.rgn_idx, map_req->rb.srgn_idx);
-
+				  map_req->rgn_idx, map_req->srgn_idx);
+#endif
 			list_add_tail(&map_req->list_req,
 				      &hpb->lh_map_req_retry);
 			spin_unlock_irqrestore(&hpb->hpb_lock, flags);
@@ -1041,9 +1531,10 @@ static int ufshpb_map_req_error(struct ufshpb_req *map_req)
 					      msecs_to_jiffies(RETRY_DELAY_MS));
 			return -EAGAIN;
 		}
+#if defined(CONFIG_HPB_DEBUG)
 		HPB_DEBUG(hpb, "pinned rb %d - %d(dirty)",
-			  map_req->rb.rgn_idx, map_req->rb.srgn_idx);
-
+			  map_req->rgn_idx, map_req->srgn_idx);
+#endif
 		ufshpb_error_active_subregion(hpb, srgn);
 		spin_unlock_irqrestore(&hpb->hpb_lock, flags);
 	} else {
@@ -1052,23 +1543,25 @@ static int ufshpb_map_req_error(struct ufshpb_req *map_req)
 		spin_unlock_irqrestore(&hpb->hpb_lock, flags);
 
 		spin_lock_irqsave(&hpb->rsp_list_lock, flags);
-		ufshpb_update_inactive_info(hpb, map_req->rb.rgn_idx);
+		ufshpb_update_inactive_info(hpb, map_req->rgn_idx,
+					    HPBUPDATE_NONE);
 		spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
-
+#if defined(CONFIG_HPB_DEBUG)
 		HPB_DEBUG(hpb, "Non-pinned rb %d will be inactive",
-			  map_req->rb.rgn_idx);
-
-		schedule_work(&hpb->ufshpb_task_workq);
+			  map_req->rgn_idx);
+#endif
 	}
 
 	return 0;
 }
 
+#ifdef CONFIG_PM
 static inline void ufshpb_mimic_blk_pm_put_request(struct request *rq)
 {
 	if (rq->q->dev && !(rq->rq_flags & RQF_PM) && !--rq->q->nr_pending)
 		pm_runtime_mark_last_busy(rq->q->dev);
 }
+#endif
 
 /* routine : map_req compl */
 static void ufshpb_map_req_compl_fn(struct request *req, blk_status_t error)
@@ -1086,7 +1579,7 @@ static void ufshpb_map_req_compl_fn(struct request *req, blk_status_t error)
 
 	if (error) {
 		ERR_MSG("COMP_NOTI: RB number %d ( %d - %d )", error,
-			map_req->rb.rgn_idx, map_req->rb.srgn_idx);
+			map_req->rgn_idx, map_req->srgn_idx);
 
 		ret = ufshpb_map_req_error(map_req);
 		if (ret)
@@ -1186,7 +1679,23 @@ static inline void ufshpb_set_read_buf_cmd(unsigned char *cdb, int rgn_idx,
 					   int srgn_idx, int srgn_mem_size)
 {
 	cdb[0] = UFSHPB_READ_BUFFER;
-	cdb[1] = UFSHPB_READ_BUFFER_ID;
+	cdb[1] = UFSHPB_RB_ID_READ;
+	cdb[2] = GET_BYTE_1(rgn_idx);
+	cdb[3] = GET_BYTE_0(rgn_idx);
+	cdb[4] = GET_BYTE_1(srgn_idx);
+	cdb[5] = GET_BYTE_0(srgn_idx);
+	cdb[6] = GET_BYTE_2(srgn_mem_size);
+	cdb[7] = GET_BYTE_1(srgn_mem_size);
+	cdb[8] = GET_BYTE_0(srgn_mem_size);
+	cdb[9] = 0x00;
+	printk("******rgn_idx:%d, srgn_idx:%d, mem size:%d\n",rgn_idx,srgn_idx,srgn_mem_size);
+}
+
+static inline void ufshpb_set_rt_cmd(unsigned char *cdb, int rgn_idx,
+				     int srgn_idx, int srgn_mem_size)
+{
+	cdb[0] = UFSHPB_READ_BUFFER;
+	cdb[1] = UFSHPB_RB_ID_READ;
 	cdb[2] = GET_BYTE_1(rgn_idx);
 	cdb[3] = GET_BYTE_0(rgn_idx);
 	cdb[4] = GET_BYTE_1(srgn_idx);
@@ -1232,6 +1741,7 @@ static int ufshpb_execute_map_req(struct ufshpb_lu *hpb,
 	struct scsi_request *rq;
 	struct scsi_cmnd *scmd;
 	struct bio *bio = map_req->bio;
+	struct ufshpb_region *rgn = hpb->rgn_tbl + map_req->rgn_idx;
 	int ret;
 
 	ret = ufshpb_map_req_add_bio_page(hpb, q, bio, map_req->rb.mctx);
@@ -1262,20 +1772,36 @@ static int ufshpb_execute_map_req(struct ufshpb_lu *hpb,
 
 	/* 2. scsi_request setup */
 	rq = scsi_req(req);
-	ufshpb_set_read_buf_cmd(rq->cmd, map_req->rb.rgn_idx,
-				map_req->rb.srgn_idx, hpb->srgn_mem_size);
+	if (ufshpb_is_triggered_by_fs(rgn))
+		ufshpb_set_rt_cmd(rq->cmd, map_req->rgn_idx, map_req->srgn_idx,
+				  hpb->srgn_mem_size);
+	else
+		ufshpb_set_read_buf_cmd(rq->cmd, map_req->rgn_idx,
+					map_req->srgn_idx, hpb->srgn_mem_size);
 	rq->cmd_len = scsi_command_size(rq->cmd);
 
+#if defined(CONFIG_HPB_DEBUG)
 	if (hpb->debug)
-		ufshpb_check_ppn(hpb, map_req->rb.rgn_idx, map_req->rb.srgn_idx,
+		ufshpb_check_ppn(hpb, map_req->rgn_idx, map_req->srgn_idx,
 				 map_req->rb.mctx, "ISSUE");
 
-	TMSG(hpb->ufsf, hpb->lun, "Noti: I RB %d - %d", map_req->rb.rgn_idx,
-	     map_req->rb.srgn_idx);
+	TMSG(hpb->ufsf, hpb->lun, "Noti: I RB %d - %d", map_req->rgn_idx,
+	     map_req->srgn_idx);
+#endif
 
 	blk_execute_rq_nowait(q, NULL, req, 1, ufshpb_map_req_compl_fn);
 
-	atomic64_inc(&hpb->map_req_cnt);
+	if (ufshpb_is_triggered_by_fs(rgn))
+		atomic64_inc(&hpb->set_rt_req_cnt);
+	else
+		atomic64_inc(&hpb->map_req_cnt);
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	ufshpb_increase_rb_count(hpb, rgn);
+#endif
+#if defined(SEC_UFS_ERROR_COUNT)
+	/* It's same as ufshpb_increase_rb_count() */
+	SEC_ufs_hpb_rb_count(hpb->ufsf->hba, rgn);
+#endif
 
 	return 0;
 }
@@ -1309,8 +1835,8 @@ static inline void ufshpb_set_map_req(struct ufshpb_lu *hpb, int rgn_idx,
 				      struct ufshpb_req *map_req)
 {
 	map_req->hpb = hpb;
-	map_req->rb.rgn_idx = rgn_idx;
-	map_req->rb.srgn_idx = srgn_idx;
+	map_req->rgn_idx = rgn_idx;
+	map_req->srgn_idx = srgn_idx;
 	map_req->rb.mctx = mctx;
 	map_req->rb.lun = hpb->lun;
 }
@@ -1334,8 +1860,14 @@ static struct ufshpb_map_ctx *ufshpb_get_map_ctx(struct ufshpb_lu *hpb,
 static inline void ufshpb_add_lru_info(struct victim_select_info *lru_info,
 				       struct ufshpb_region *rgn)
 {
-	rgn->rgn_state = HPBREGION_ACTIVE;
-	list_add_tail(&rgn->list_lru_rgn, &lru_info->lh_lru_rgn);
+	if (ufshpb_is_triggered_by_fs(rgn)) {
+		rgn->rgn_state = HPBREGION_RT_PINNED;
+		list_add_tail(&rgn->list_lru_rgn,
+			      &lru_info->lh_lru_rt_pinned_rgn);
+	} else {
+		rgn->rgn_state = HPBREGION_ACTIVE;
+		list_add_tail(&rgn->list_lru_rgn, &lru_info->lh_lru_rgn);
+	}
 	atomic64_inc(&lru_info->active_cnt);
 }
 
@@ -1355,16 +1887,18 @@ static inline int ufshpb_add_region(struct ufshpb_lu *hpb,
 
 		srgn->mctx = ufshpb_get_map_ctx(hpb, &err);
 		if (!srgn->mctx) {
-			HPB_DEBUG(hpb, "get mctx err %d srgn %d free_table %d",
+			ERR_MSG("get mctx err %d srgn %d free_table %d",
 				  err, srgn_idx, hpb->debug_free_table);
 			goto out;
 		}
 
 		srgn->srgn_state = HPBSUBREGION_DIRTY;
 	}
+#if defined(CONFIG_HPB_DEBUG)
 	HPB_DEBUG(hpb, "\x1b[44m\x1b[32m E->active region: %d \x1b[0m",
 		  rgn->rgn_idx);
 	TMSG(hpb->ufsf, hpb->lun, "Noti: ACT RG: %d", rgn->rgn_idx);
+#endif
 
 	ufshpb_add_lru_info(lru_info, rgn);
 out:
@@ -1407,9 +1941,11 @@ static void __ufshpb_evict_region(struct ufshpb_lu *hpb,
 
 	lru_info = &hpb->lru_info;
 
+#if defined(CONFIG_HPB_DEBUG)
 	HPB_DEBUG(hpb, "\x1b[41m\x1b[33m C->EVICT region: %d \x1b[0m",
 		  rgn->rgn_idx);
 	TMSG(hpb->ufsf, hpb->lun, "Noti: EVIC RG: %d", rgn->rgn_idx);
+#endif
 
 	ufshpb_cleanup_lru_info(lru_info, rgn);
 
@@ -1417,18 +1953,6 @@ static void __ufshpb_evict_region(struct ufshpb_lu *hpb,
 		srgn = rgn->srgn_tbl + srgn_idx;
 
 		ufshpb_purge_active_subregion(hpb, srgn, HPBSUBREGION_UNUSED);
-	}
-}
-
-static void ufshpb_hit_lru_info(struct victim_select_info *lru_info,
-				struct ufshpb_region *rgn)
-{
-	switch (lru_info->selection_type) {
-	case LRU:
-		list_move_tail(&rgn->list_lru_rgn, &lru_info->lh_lru_rgn);
-		break;
-	default:
-		break;
 	}
 }
 
@@ -1450,7 +1974,9 @@ static int ufshpb_check_issue_state_srgns(struct ufshpb_lu *hpb,
 	return 0;
 }
 
-static struct ufshpb_region *ufshpb_victim_lru_info(struct ufshpb_lu *hpb)
+static struct
+ufshpb_region *ufshpb_victim_lru_info(struct ufshpb_lu *hpb,
+				      struct ufshpb_region *load_rgn)
 {
 	struct victim_select_info *lru_info = &hpb->lru_info;
 	struct ufshpb_region *rgn;
@@ -1468,6 +1994,22 @@ static struct ufshpb_region *ufshpb_victim_lru_info(struct ufshpb_lu *hpb)
 			victim_rgn = rgn;
 			break;
 		}
+
+		if (victim_rgn || !ufshpb_is_triggered_by_fs(load_rgn))
+			break;
+
+		list_for_each_entry(rgn, &lru_info->lh_lru_rt_pinned_rgn,
+				    list_lru_rgn) {
+			if (!rgn)
+				break;
+
+			if (ufshpb_check_issue_state_srgns(hpb, rgn))
+				continue;
+
+			victim_rgn = rgn;
+			break;
+
+		}
 		break;
 	default:
 		break;
@@ -1476,9 +2018,195 @@ static struct ufshpb_region *ufshpb_victim_lru_info(struct ufshpb_lu *hpb)
 	return victim_rgn;
 }
 
+/* routine : unset_rt compl */
+static void ufshpb_unset_rt_req_compl_fn(struct request *req,
+					 blk_status_t error)
+{
+	struct ufshpb_req *pre_req = (struct ufshpb_req *) req->end_io_data;
+	struct ufshpb_lu *hpb = pre_req->hpb;
+	struct ufshpb_region *rgn = hpb->rgn_tbl + pre_req->rgn_idx;
+	struct ufshpb_subregion *srgn;
+	unsigned long flags;
+	int srgn_idx = 0;
+
+#ifdef CONFIG_PM
+	ufshpb_mimic_blk_pm_put_request(req);
+#endif
+
+	if (hpb->ufsf->ufshpb_state != HPB_PRESENT) {
+		spin_lock_irqsave(&hpb->hpb_lock, flags);
+		goto free_pre_req;
+	}
+
+	if (error) {
+		ERR_MSG("COMP UNSET_RT err %d rgn %d", error, pre_req->rgn_idx);
+		spin_lock_irqsave(&hpb->hpb_lock, flags);
+		goto free_pre_req;
+	}
+
+#if defined(CONFIG_HPB_DEBUG)
+	HPB_DEBUG(hpb, "COMPL UNSET_RT %d", pre_req->rgn_idx);
+	TMSG(hpb->ufsf, hpb->lun, "COMPL UNSET_RT %d", pre_req->rgn_idx);
+#endif
+	printk("***compl de-active region :%d ****\n",pre_req->rgn_idx);
+	spin_lock_irqsave(&hpb->hpb_lock, flags);
+	if (rgn->rgn_state != HPBREGION_INACTIVE)
+		rgn->rgn_state = HPBREGION_ACTIVE;
+free_pre_req:
+	ufshpb_put_pre_req(pre_req->hpb, pre_req);
+	hpb->num_inflight_rt_req--;
+	rgn->discard_write_size = 0;
+	//atomic64_set(&rgn->last_miss_cnt, 0);
+	for (srgn_idx = 0; srgn_idx < rgn->srgn_cnt; srgn_idx++){
+			srgn = rgn->srgn_tbl + srgn_idx;
+			atomic64_set(&srgn->read_cnt, 0);
+	}
+	spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+
+	if (is_clear_reason(hpb, rgn))
+		atomic_set(&rgn->reason, HPBUPDATE_NONE);
+
+	scsi_device_put(hpb->ufsf->sdev_ufs_lu[hpb->lun]);
+	ufshpb_lu_put(hpb);
+}
+
+static inline void ufshpb_set_unset_rt_cmd(unsigned char *cdb, u16 rgn_idx)
+{
+	cdb[0] = UFSHPB_WRITE_BUFFER;
+	cdb[1] = UFSHPB_WB_ID_UNSET_RT;
+	cdb[2] = GET_BYTE_1(rgn_idx);
+	cdb[3] = GET_BYTE_0(rgn_idx);
+	cdb[9] = 0x00;	/* Control = 0x00 */
+}
+
+static int ufshpb_execute_unset_rt_req(struct ufshpb_lu *hpb,
+				       struct scsi_device *sdev,
+				       struct ufshpb_req *pre_req)
+{
+	struct request_queue *q = sdev->request_queue;
+	struct request *req;
+	struct scsi_request *rq;
+	struct scsi_cmnd *scmd;
+
+	req = pre_req->req;
+
+	/*
+	 * blk_init_rl() -> alloc_request_size().
+	 * q->init_rq_fn = scsi_old_init_rq behavior.
+	 */
+	scmd = (struct scsi_cmnd *)(req + 1);
+	memset(scmd, 0, sizeof(*scmd));
+	scmd->sense_buffer = pre_req->sense;
+	scmd->req.sense = scmd->sense_buffer;
+
+	/* blk_get_request behavior */
+	blk_rq_init(q, req);
+	q->initialize_rq_fn(req);
+
+	/* 1. request setup */
+	req->cmd_flags = REQ_OP_WRITE | REQ_OP_SCSI_OUT;
+	req->rq_flags = RQF_QUIET | RQF_PREEMPT;
+	req->timeout = msecs_to_jiffies(30000);
+	req->end_io_data = (void *)pre_req;
+
+	/* 2. scsi_request setup */
+	rq = scsi_req(req);
+	ufshpb_set_unset_rt_cmd(rq->cmd, pre_req->rgn_idx);
+	rq->cmd_len = scsi_command_size(rq->cmd);
+
+#if defined(CONFIG_HPB_DEBUG)
+	HPB_DEBUG(hpb, "ISSUE UNSET_RT %d", pre_req->rgn_idx);
+	TMSG(hpb->ufsf, hpb->lun, "ISSUE UNSET_RT %d", pre_req->rgn_idx);
+#endif
+
+	blk_execute_rq_nowait(q, NULL, req, 1, ufshpb_unset_rt_req_compl_fn);
+
+	atomic64_inc(&hpb->unset_rt_req_cnt);
+
+	return 0;
+}
+
+static int ufshpb_issue_unset_rt_req(struct ufshpb_lu *hpb,
+				     struct ufshpb_req *pre_req)
+{
+	struct scsi_device *sdev;
+	struct ufsf_feature *ufsf = hpb->ufsf;
+	int ret = 0;
+
+	sdev = ufsf->sdev_ufs_lu[hpb->lun];
+	if (!sdev) {
+		WARNING_MSG("cannot find scsi_device");
+		return -ENODEV;
+	}
+
+	ret = ufshpb_get_scsi_device(ufsf->hba, sdev);
+	if (ret)
+		return ret;
+
+	ret = ufshpb_execute_unset_rt_req(hpb, sdev, pre_req);
+	if (ret)
+		scsi_device_put(sdev);
+
+	return ret;
+}
+
+static int ufshpb_prepare_unset_rt_req(struct ufshpb_lu *hpb,
+				       struct ufshpb_region *rgn)
+{
+	struct ufshpb_req *pre_req;
+	unsigned long flags;
+	int ret = 0;
+
+	spin_lock_irqsave(&hpb->hpb_lock, flags);
+	if (hpb->num_inflight_rt_req >= hpb->throttle_rt_req) {
+#if defined(CONFIG_HPB_DEBUG)
+		HPB_DEBUG(hpb, "rt_req throttle. rt inflight %d rt throttle %d",
+			  hpb->num_inflight_rt_req, hpb->throttle_rt_req);
+#endif
+		ret = -ENOMEM;
+		goto unlock_out;
+	}
+	pre_req = ufshpb_get_pre_req(hpb);
+	if (!pre_req) {
+		ret = -ENOMEM;
+		goto unlock_out;
+	}
+	hpb->num_inflight_rt_req++;
+	spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+
+	pre_req->hpb = hpb;
+	pre_req->rgn_idx = rgn->rgn_idx;
+
+	ret = ufshpb_lu_get(hpb);
+	if (ret) {
+		WARNING_MSG("warning: ufshpb_lu_get failed.. %d", ret);
+		spin_lock_irqsave(&hpb->hpb_lock, flags);
+		ufshpb_put_pre_req(hpb, pre_req);
+		hpb->num_inflight_rt_req--;
+		goto unlock_out;
+	}
+
+	ret = ufshpb_issue_unset_rt_req(hpb, pre_req);
+	if (ret) {
+		ERR_MSG("issue unset_rt_req failed. rgn %d err %d",
+			rgn->rgn_idx, ret);
+		ufshpb_lu_put(hpb);
+		goto wakeup_ee_worker;
+	}
+	return ret;
+unlock_out:
+	spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+	return ret;
+wakeup_ee_worker:
+	ufshpb_failed(hpb, __func__);
+	return ret;
+
+}
+
 static int ufshpb_evict_region(struct ufshpb_lu *hpb, struct ufshpb_region *rgn)
 {
 	unsigned long flags;
+	int ret;
 
 	spin_lock_irqsave(&hpb->hpb_lock, flags);
 	if (rgn->rgn_state == HPBREGION_PINNED) {
@@ -1487,8 +2215,24 @@ static int ufshpb_evict_region(struct ufshpb_lu *hpb, struct ufshpb_region *rgn)
 		 * But if so, it would treat error as critical,
 		 * and it will run ufshpb_eh_work
 		 */
-		WARNING_MSG("pinned active-block drop-out error");
+		WARNING_MSG("rgn[%d] pinned drop-out error",
+			    rgn->rgn_idx);
 		goto out;
+	} else if (rgn->rgn_state == HPBREGION_RT_PINNED) {
+		if (!ufshpb_is_triggered_by_fs(rgn)) {
+			WARNING_MSG("rgn[%d] rt_pinned drop-out error",
+				  rgn->rgn_idx);
+			goto out;
+		} else {
+			if (ufshpb_check_issue_state_srgns(hpb, rgn))
+				goto evict_fail;
+
+			spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+			ret = ufshpb_prepare_unset_rt_req(hpb, rgn);
+			spin_lock_irqsave(&hpb->hpb_lock, flags);
+			if (ret)
+				goto evict_fail;
+		}
 	}
 
 	if (!list_empty(&rgn->list_lru_rgn)) {
@@ -1589,17 +2333,38 @@ static int ufshpb_load_region(struct ufshpb_lu *hpb, struct ufshpb_region *rgn)
 	if (rgn->rgn_state == HPBREGION_INACTIVE) {
 		if (atomic64_read(&lru_info->active_cnt)
 		    == lru_info->max_lru_active_cnt) {
-			victim_rgn = ufshpb_victim_lru_info(hpb);
+			victim_rgn = ufshpb_victim_lru_info(hpb, rgn);
 			if (!victim_rgn) {
+#if defined(CONFIG_HPB_DEBUG)
 				HPB_DEBUG(hpb, "UFSHPB victim_rgn is NULL");
-				ret = -ENOMEM;
+#endif
+				if (list_empty(&lru_info->lh_lru_rgn) &&
+				    !ufshpb_is_triggered_by_fs(rgn))
+					ret = -EACCES;
+				else
+					ret = -ENOMEM;
 				goto out;
 			}
-			TMSG(hpb->ufsf, hpb->lun, "Noti: VT RG %d",
-			     victim_rgn->rgn_idx);
-			HPB_DEBUG(hpb, "LRU MAX(=%ld). victim choose %d",
-				  atomic64_read(&lru_info->active_cnt),
-				  victim_rgn->rgn_idx);
+
+			if (victim_rgn->rgn_state == HPBREGION_RT_PINNED) {
+				spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+				ret = ufshpb_prepare_unset_rt_req(hpb, victim_rgn);
+				spin_lock_irqsave(&hpb->hpb_lock, flags);
+				if (ret) {
+					ERR_MSG("issue unset_rt failed. [%d] err %d",
+						rgn->rgn_idx, ret);
+					goto out;
+				}
+			}
+
+#if defined(CONFIG_HPB_DEBUG)
+			TMSG(hpb->ufsf, hpb->lun, "Noti: VT RG %d state %d",
+			     victim_rgn->rgn_idx, victim_rgn->rgn_state);
+			HPB_DEBUG(hpb,
+				  "LRU MAX(=%lld). victim choose %d state %d",
+				  (long long)atomic64_read(&lru_info->active_cnt),
+				  victim_rgn->rgn_idx, victim_rgn->rgn_state);
+#endif
 
 			__ufshpb_evict_region(hpb, victim_rgn);
 		}
@@ -1622,35 +2387,93 @@ wake_up_ee_worker:
 static void ufshpb_rsp_req_region_update(struct ufshpb_lu *hpb,
 					 struct ufshpb_rsp_field *rsp_field)
 {
+	struct ufshpb_region *rgn;
+	struct ufshpb_subregion *srgn;
 	int num, rgn_idx, srgn_idx;
 
 	/*
 	 * If active rgn = inactive rgn, choose inactive rgn.
 	 * So, active process -> inactive process
 	 */
-	spin_lock(&hpb->rsp_list_lock);
 	for (num = 0; num < rsp_field->active_rgn_cnt; num++) {
 		rgn_idx = be16_to_cpu(rsp_field->hpb_active_field[num].active_rgn);
 		srgn_idx = be16_to_cpu(rsp_field->hpb_active_field[num].active_srgn);
 
-		HPB_DEBUG(hpb, "act num: %d, region: %d, subregion: %d",
-			  num + 1, rgn_idx, srgn_idx);
-		ufshpb_update_active_info(hpb, rgn_idx, srgn_idx);
-		atomic64_inc(&hpb->rb_active_cnt);
+		if (unlikely(rgn_idx >= hpb->rgns_per_lu)) {
+			ERR_MSG("rgn_idx %d is wrong. (Max %d\n",
+				rgn_idx, hpb->rgns_per_lu);
+			continue;
+		}
+
+		rgn = hpb->rgn_tbl + rgn_idx;
+
+		if (unlikely(srgn_idx >= rgn->srgn_cnt)) {
+			ERR_MSG("srgn_idx %d is wrong. (Max %d\n",
+				srgn_idx, rgn->srgn_cnt);
+			continue;
+		}
+
+		srgn = rgn->srgn_tbl + srgn_idx;
+
+		if (ufshpb_is_triggered_by_fs(rgn) || ufshpb_is_host_control_mode(hpb))
+		{
+			spin_lock(&hpb->rsp_list_lock);
+			ufshpb_update_active_info(hpb, rgn_idx,srgn_idx,
+						  HPBUPDATE_RT_FROM_FS);
+			spin_unlock(&hpb->rsp_list_lock);
+
+			spin_lock(&hpb->hpb_lock);
+			atomic_set(&rgn->reason, HPBUPDATE_RT_FROM_FS);
+			if (srgn->srgn_state == HPBSUBREGION_CLEAN)
+				srgn->srgn_state = HPBSUBREGION_DIRTY;
+			spin_unlock(&hpb->hpb_lock);
+		} else {
+			//continue;
+			spin_lock(&hpb->rsp_list_lock);
+			ufshpb_update_active_info(hpb, rgn_idx, srgn_idx,
+						  HPBUPDATE_FROM_DEV);
+			spin_unlock(&hpb->rsp_list_lock);
+
+			/* It is just blocking HPB_READ */
+			spin_lock(&hpb->hpb_lock);
+			if (srgn->srgn_state == HPBSUBREGION_CLEAN)
+				srgn->srgn_state = HPBSUBREGION_DIRTY;
+			spin_unlock(&hpb->hpb_lock);
+
+			atomic64_inc(&hpb->rb_active_cnt);
+		}
 	}
 
 	for (num = 0; num < rsp_field->inactive_rgn_cnt; num++) {
 		rgn_idx = be16_to_cpu(rsp_field->hpb_inactive_field[num]);
-		HPB_DEBUG(hpb, "inact num: %d, region: %d", num + 1, rgn_idx);
-		ufshpb_update_inactive_info(hpb, rgn_idx);
+
+		if (unlikely(rgn_idx >= hpb->rgns_per_lu)) {
+			ERR_MSG("rgn_idx %d is wrong. (Max %d\n",
+				rgn_idx, hpb->rgns_per_lu);
+			continue;
+		}
+
+		rgn = hpb->rgn_tbl + rgn_idx;
+
+		if (ufshpb_is_triggered_by_fs(rgn) || ufshpb_is_host_control_mode(hpb))
+			continue;
+
+		spin_lock(&hpb->rsp_list_lock);
+		ufshpb_update_inactive_info(hpb, rgn_idx,
+					    HPBUPDATE_FROM_DEV);
+		spin_unlock(&hpb->rsp_list_lock);
+
+		/*
+		 * Doesn't clean up lru info. It will be executed in worker.
+		 * It is just blocking HPB_READ.
+		 */
+		spin_lock(&hpb->hpb_lock);
+		if (rgn->rgn_state == HPBREGION_ACTIVE)
+			rgn->rgn_state = HPBREGION_INACTIVE;
+		spin_unlock(&hpb->hpb_lock);
+
 		atomic64_inc(&hpb->rb_inactive_cnt);
 	}
-	spin_unlock(&hpb->rsp_list_lock);
-
-	TMSG(hpb->ufsf, hpb->lun, "Noti: #ACT %u, #INACT %u",
-	     rsp_field->active_rgn_cnt, rsp_field->inactive_rgn_cnt);
-
-	schedule_work(&hpb->ufshpb_task_workq);
 }
 
 static inline int ufshpb_may_field_valid(struct ufshcd_lrb *lrbp,
@@ -1686,6 +2509,22 @@ static bool ufshpb_is_empty_rsp_lists(struct ufshpb_lu *hpb)
 	return ret;
 }
 
+void ufshpb_wakeup_worker_on_idle(struct ufsf_feature *ufsf)
+{
+	struct ufshpb_lu *hpb;
+	int lun;
+
+	if (ufsf->hba->outstanding_reqs)
+		return;
+
+	seq_scan_lu(lun) {
+		hpb = ufsf->ufshpb_lup[lun];
+		if (hpb) {
+			if (!ufshpb_is_empty_rsp_lists(hpb))
+				schedule_work(&hpb->ufshpb_task_workq);
+		}
+	}
+}
 /* routine : isr (ufs) */
 void ufshpb_rsp_upiu(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 {
@@ -1696,24 +2535,8 @@ void ufshpb_rsp_upiu(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 
 	data_seg_len = be32_to_cpu(lrbp->ucd_rsp_ptr->header.dword_2)
 		& MASK_RSP_UPIU_DATA_SEG_LEN;
-
-	if (!data_seg_len) {
-		bool do_workq = false;
-
-		if (!ufsf_is_valid_lun(lrbp->lun))
-			return;
-
-		hpb = ufsf->ufshpb_lup[lrbp->lun];
-		ret = ufshpb_lu_get(hpb);
-		if (ret)
-			return;
-
-		do_workq = !ufshpb_is_empty_rsp_lists(hpb);
-		if (do_workq)
-			schedule_work(&hpb->ufshpb_task_workq);
-
-		goto put_hpb;
-	}
+	if (!data_seg_len)
+		return;
 
 	memcpy(&sense_data, &lrbp->ucd_rsp_ptr->sr.sense_data_len,
 		sizeof(struct ufshpb_rsp_field));
@@ -1734,22 +2557,15 @@ void ufshpb_rsp_upiu(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 	if (hpb->force_map_req_disable)
 		goto put_hpb;
 
-	HPB_DEBUG(hpb, "**** HPB Noti %u LUN %u Seg-Len %u, #ACT %u, #INACT %u",
-		  rsp_field->hpb_type, lrbp->lun,
-		  be32_to_cpu(lrbp->ucd_rsp_ptr->header.dword_2) &
-		  MASK_RSP_UPIU_DATA_SEG_LEN, rsp_field->active_rgn_cnt,
-		  rsp_field->inactive_rgn_cnt);
 	atomic64_inc(&hpb->rb_noti_cnt);
 
 	switch (rsp_field->hpb_type) {
 	case HPB_RSP_REQ_REGION_UPDATE:
 		WARN_ON(data_seg_len != DEV_DATA_SEG_LEN);
 		ufshpb_rsp_req_region_update(hpb, rsp_field);
-		goto put_hpb;
+		break;
 	default:
-		HPB_DEBUG(hpb, "hpb_type is not available : %d",
-			  rsp_field->hpb_type);
-		goto put_hpb;
+		break;
 	}
 
 put_hpb:
@@ -1851,14 +2667,14 @@ static int ufshpb_issue_map_req_from_list(struct ufshpb_lu *hpb)
 
 		ufshpb_set_read_buf_cmd(cmd, srgn->rgn_idx, srgn->srgn_idx,
 					hpb->srgn_mem_size);
-
+#if defined(CONFIG_HPB_DEBUG)
 		if (hpb->debug)
 			ufshpb_check_ppn(hpb, srgn->rgn_idx, srgn->srgn_idx,
 					 srgn->mctx, "ISSUE");
 
-		TMSG(hpb->ufsf, hpb->lun, "Noti: I RB %d - %d",
+		TMSG(hpb->ufsf, hpb->lun, "Pinned: I RB %d - %d",
 		     srgn->rgn_idx, srgn->srgn_idx);
-
+#endif
 		ret = ufshpb_execute_map_req_wait(hpb, cmd, srgn);
 		if (ret < 0) {
 			ERR_MSG("region %d sub %d failed with err %d",
@@ -1869,14 +2685,13 @@ static int ufshpb_issue_map_req_from_list(struct ufshpb_lu *hpb)
 					 &hpb->lh_pinned_srgn);
 			continue;
 		}
-
-		TMSG(hpb->ufsf, hpb->lun, "Noti: C RB %d - %d",
-		     srgn->rgn_idx, srgn->srgn_idx);
-
+#if defined(CONFIG_HPB_DEBUG)
 		if (hpb->debug)
 			ufshpb_check_ppn(hpb, srgn->rgn_idx, srgn->srgn_idx,
 					 srgn->mctx, "COMPL");
-
+		TMSG(hpb->ufsf, hpb->lun, "Pinend: C RB %d - %d",
+		     srgn->rgn_idx, srgn->srgn_idx);
+#endif
 		spin_lock_irqsave(&hpb->hpb_lock, flags);
 		ufshpb_clean_active_subregion(hpb, srgn);
 		spin_unlock_irqrestore(&hpb->hpb_lock, flags);
@@ -1895,8 +2710,9 @@ static void ufshpb_work_handler(struct work_struct *work)
 	int ret;
 
 	hpb = container_of(work, struct ufshpb_lu, ufshpb_work);
+#if defined(CONFIG_HPB_DEBUG)
 	HPB_DEBUG(hpb, "worker start for pinned region");
-
+#endif
 	if (!list_empty(&hpb->lh_pinned_srgn)) {
 		ret = ufshpb_issue_map_req_from_list(hpb);
 		/*
@@ -1905,10 +2721,11 @@ static void ufshpb_work_handler(struct work_struct *work)
 		 * so it is not critical-error, and just finish work-handler
 		 */
 		if (ret)
-			HPB_DEBUG(hpb, "failed map-issue. ret %d", ret);
+			WARNING_MSG("failed map-issue. ret %d", ret);
 	}
-
+#if defined(CONFIG_HPB_DEBUG)
 	HPB_DEBUG(hpb, "worker end");
+#endif
 }
 
 static int ufshpb_check_pm(struct ufshpb_lu *hpb)
@@ -1945,9 +2762,9 @@ static void ufshpb_retry_work_handler(struct work_struct *work)
 		WARNING_MSG("warning: ufshpb_lu_get failed %d..", ret);
 		return;
 	}
-
+#if defined(CONFIG_HPB_DEBUG)
 	HPB_DEBUG(hpb, "retry worker start");
-
+#endif
 	spin_lock_irqsave(&hpb->hpb_lock, flags);
 	list_splice_init(&hpb->lh_map_req_retry, &retry_list);
 	spin_unlock_irqrestore(&hpb->hpb_lock, flags);
@@ -1967,12 +2784,14 @@ static void ufshpb_retry_work_handler(struct work_struct *work)
 		ret = ufshpb_issue_map_req(hpb, map_req);
 		if (ret) {
 			ERR_MSG("issue map_req failed. [%d-%d] err %d",
-				map_req->rb.rgn_idx, map_req->rb.srgn_idx, ret);
+				map_req->rgn_idx, map_req->srgn_idx, ret);
 			ufshpb_lu_put(hpb);
 			goto wakeup_ee_worker;
 		}
 	}
+#if defined(CONFIG_HPB_DEBUG)
 	HPB_DEBUG(hpb, "worker end");
+#endif
 	ufshpb_lu_put(hpb);
 	return;
 wakeup_ee_worker:
@@ -1997,6 +2816,10 @@ static void ufshpb_add_starved_list(struct ufshpb_lu *hpb,
 			return;
 	}
 
+	/* It will be added to hpb->lh_inact_rgn */
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	atomic64_inc(&hpb->inact_rsp_list_cnt);
+#endif
 	list_add_tail(&rgn->list_inact_rgn, starved_list);
 }
 
@@ -2011,7 +2834,12 @@ static void ufshpb_run_inactive_region_list(struct ufshpb_lu *hpb)
 	while ((rgn = list_first_entry_or_null(&hpb->lh_inact_rgn,
 					       struct ufshpb_region,
 					       list_inact_rgn))) {
-		list_del_init(&rgn->list_inact_rgn);
+		if (hpb->ufsf->ufshpb_state == HPB_SUSPEND) {
+			INFO_MSG("suspend state. Issuing WRITE_BUFFER the next turn");
+			break;
+		}
+
+		ufshpb_inact_rsp_list_del(hpb, rgn);
 		spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
 
 		ret = ufshpb_evict_region(hpb, rgn);
@@ -2040,7 +2868,7 @@ static void ufshpb_add_active_list(struct ufshpb_lu *hpb,
 		return;
 	}
 
-	list_add(&srgn->list_act_srgn, &hpb->lh_act_srgn);
+	ufshpb_act_rsp_list_add(hpb, srgn);
 }
 
 static void ufshpb_run_active_subregion_list(struct ufshpb_lu *hpb)
@@ -2054,31 +2882,40 @@ static void ufshpb_run_active_subregion_list(struct ufshpb_lu *hpb)
 	while ((srgn = list_first_entry_or_null(&hpb->lh_act_srgn,
 						struct ufshpb_subregion,
 						list_act_srgn))) {
-		list_del_init(&srgn->list_act_srgn);
-
-		if (hpb->force_map_req_disable) {
-			HPB_DEBUG(hpb, "map_req disabled");
-			continue;
+		if (hpb->ufsf->ufshpb_state == HPB_SUSPEND) {
+			INFO_MSG("suspend state. Issuing READ_BUFFER the next turn");
+			break;
 		}
+
+		ufshpb_act_rsp_list_del(hpb, srgn);
+
+		if (hpb->force_map_req_disable)
+			continue;
 
 		spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
 
 		rgn = hpb->rgn_tbl + srgn->rgn_idx;
 
 		ret = ufshpb_load_region(hpb, rgn);
-		if (ret)
-			break;
+		if (ret) {
+			spin_lock_irqsave(&hpb->rsp_list_lock, flags);
+			if (ret == -EACCES) {
+				continue;
+			} else {
+				ufshpb_add_active_list(hpb, rgn, srgn);
+				break;
+			}
+		}
 
 		ret = ufshpb_prepare_map_req(hpb, srgn);
-		if (ret)
+
+		if (ret) {
+			spin_lock_irqsave(&hpb->rsp_list_lock, flags);
+			ufshpb_add_active_list(hpb, rgn, srgn);
 			break;
+		}
 
 		spin_lock_irqsave(&hpb->rsp_list_lock, flags);
-	}
-
-	if (ret) {
-		spin_lock_irqsave(&hpb->rsp_list_lock, flags);
-		ufshpb_add_active_list(hpb, rgn, srgn);
 	}
 	spin_unlock_irqrestore(&hpb->rsp_list_lock, flags);
 }
@@ -2091,6 +2928,9 @@ static void ufshpb_task_workq_fn(struct work_struct *work)
 	hpb = container_of(work, struct ufshpb_lu, ufshpb_task_workq);
 	ret = ufshpb_lu_get(hpb);
 	if (ret) {
+		if (hpb)
+			WARNING_MSG("lu_get failed.. hpb_state %d",
+				    hpb->ufsf->ufshpb_state);
 		WARNING_MSG("warning: ufshpb_lu_get failed %d..", ret);
 		return;
 	}
@@ -2238,6 +3078,7 @@ static void ufshpb_init_subregion_tbl(struct ufshpb_lu *hpb,
 		srgn->rgn_idx = rgn->rgn_idx;
 		srgn->srgn_idx = srgn_idx;
 		srgn->srgn_state = HPBSUBREGION_UNUSED;
+		atomic64_set(&srgn->read_cnt, 0);
 	}
 }
 
@@ -2327,7 +3168,7 @@ ufshpb_map_req_mempool_init(struct ufshpb_lu *hpb)
 
 	hpb->map_req = kzalloc(sizeof(struct ufshpb_req) * qd, GFP_KERNEL);
 	if (!hpb->map_req)
-		goto release_mem;
+		return -ENOMEM;
 
 	/*
 	 * q->cmd_size: sizeof(struct scsi_cmd) + shost->hostt->cmd_size
@@ -2378,7 +3219,7 @@ ufshpb_pre_req_mempool_init(struct ufshpb_lu *hpb)
 
 	hpb->pre_req = kzalloc(sizeof(struct ufshpb_req) * qd, GFP_KERNEL);
 	if (!hpb->pre_req)
-		goto release_mem;
+		return -ENOMEM;
 
 	/*
 	 * q->cmd_size: sizeof(struct scsi_cmd) + shost->hostt->cmd_size
@@ -2445,10 +3286,12 @@ static void ufshpb_find_lu_qd(struct ufshpb_lu *hpb)
 		INIT_INFO("hba->nutrs = %d", hba->nutrs);
 	}
 
-	hpb->throttle_map_req = hpb->qd;
-	hpb->throttle_pre_req = hpb->qd;
+	hpb->throttle_map_req = hpb->qd / 8;
+	hpb->throttle_pre_req = hpb->qd / 2;
+	hpb->throttle_rt_req = hpb->qd / 8;
 	hpb->num_inflight_map_req = 0;
 	hpb->num_inflight_pre_req = 0;
+	hpb->num_inflight_rt_req = 0;
 }
 
 static void ufshpb_init_lu_constant(struct ufshpb_dev_info *hpb_dev_info,
@@ -2549,7 +3392,7 @@ static void ufshpb_init_lu_constant(struct ufshpb_dev_info *hpb_dev_info,
 	INIT_INFO("===================================\n");
 }
 
-static int ufshpb_lu_hpb_init(struct ufsf_feature *ufsf, u8 lun)
+static int ufshpb_lu_hpb_init(struct ufsf_feature *ufsf, int lun)
 {
 	struct ufshpb_lu *hpb = ufsf->ufshpb_lup[lun];
 	struct ufshpb_region *rgn_table, *rgn;
@@ -2559,8 +3402,15 @@ static int ufshpb_lu_hpb_init(struct ufsf_feature *ufsf, u8 lun)
 
 	ufshpb_init_lu_constant(&ufsf->hpb_dev_info, hpb);
 
-	rgn_table = kzalloc(sizeof(struct ufshpb_region) * hpb->rgns_per_lu,
-			    GFP_KERNEL);
+	/*if (hpb->hpb_ver >= 0x0220) {
+		ret = ufshpb_issue_unset_rt_all_req(hpb);
+		if (ret) {
+			ERR_MSG("V2.2 spec cmd is not allowed.");
+			return ret;
+		}
+	}*/
+
+	rgn_table = vzalloc(sizeof(struct ufshpb_region) * hpb->rgns_per_lu);
 	if (!rgn_table) {
 		ret = -ENOMEM;
 		goto out;
@@ -2573,9 +3423,14 @@ static int ufshpb_lu_hpb_init(struct ufsf_feature *ufsf, u8 lun)
 
 	spin_lock_init(&hpb->hpb_lock);
 	spin_lock_init(&hpb->rsp_list_lock);
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	atomic64_set(&hpb->act_rsp_list_cnt, 0);
+	atomic64_set(&hpb->inact_rsp_list_cnt, 0);
+#endif
 
 	/* init lru information */
 	INIT_LIST_HEAD(&hpb->lru_info.lh_lru_rgn);
+	INIT_LIST_HEAD(&hpb->lru_info.lh_lru_rt_pinned_rgn);
 	hpb->lru_info.selection_type = LRU;
 
 	INIT_LIST_HEAD(&hpb->lh_pinned_srgn);
@@ -2608,9 +3463,26 @@ static int ufshpb_lu_hpb_init(struct ufsf_feature *ufsf, u8 lun)
 	total_srgn_cnt = hpb->srgns_per_lu;
 	INIT_INFO("total_subregion_count: %d", total_srgn_cnt);
 	for (rgn_idx = 0, srgn_cnt = 0; rgn_idx < hpb->rgns_per_lu;
-	     rgn_idx++, total_srgn_cnt -= srgn_cnt) {
-		rgn = rgn_table + rgn_idx;
-		rgn->rgn_idx = rgn_idx;
+        rgn_idx++, total_srgn_cnt -= srgn_cnt) {
+        rgn = rgn_table + rgn_idx;
+        rgn->rgn_idx = rgn_idx;
+        rgn->total_write_count = 0;
+        rgn->total_read_count  = 0;
+        rgn->total_unmap_count = 0;
+
+        rgn->active_threshold = 128;
+        rgn->deactive_threshold = 16383; //64MB
+
+        atomic64_set(&rgn->total_hit_cnt,0);
+        atomic64_set(&rgn->total_miss_cnt,0);
+        //atomic64_set(&rgn->chunksize_miss,0);
+        //atomic64_set(&rgn->region_miss,0);
+        atomic64_set(&rgn->active_cnt,0);
+        //atomic64_set(&rgn->deactive_cnt,0);
+        atomic64_set(&rgn->last_hit_cnt,0);
+        atomic64_set(&rgn->last_miss_cnt, 0);
+        atomic64_set(&rgn->last_write_cnt, 0);
+        atomic_set(&rgn->reason, HPBUPDATE_NONE);
 
 		INIT_LIST_HEAD(&rgn->list_inact_rgn);
 
@@ -2671,7 +3543,7 @@ release_pre_req_mempool:
 release_map_req_mempool:
 	ufshpb_map_req_mempool_remove(hpb);
 release_rgn_table:
-	kfree(rgn_table);
+	vfree(rgn_table);
 out:
 	return ret;
 }
@@ -2731,7 +3603,7 @@ void ufshpb_get_geo_info(struct ufshpb_dev_info *hpb_dev_info, u8 *geo_buf)
 	ufshpb_init_constant();
 }
 
-int ufshpb_get_lu_info(struct ufsf_feature *ufsf, u8 lun, u8 *unit_buf)
+int ufshpb_get_lu_info(struct ufsf_feature *ufsf, int lun, u8 *unit_buf)
 {
 	struct ufsf_lu_desc lu_desc;
 	struct ufshpb_lu *hpb;
@@ -2787,6 +3659,9 @@ int ufshpb_get_lu_info(struct ufsf_feature *ufsf, u8 lun, u8 *unit_buf)
 		hpb->lru_info.max_lru_active_cnt =
 			lu_desc.lu_max_active_hpb_rgns -
 			lu_desc.lu_num_hpb_pinned_rgns;
+		atomic64_set(&hpb->lru_info.active_cnt, 0);
+		hpb->lru_info.max_update_lba_cnt = 0;
+		hpb->lru_info.average_update_lba_cnt = 0;
 		hpb->lu_pinned_rgn_startidx =
 			lu_desc.lu_hpb_pinned_rgn_startidx;
 		hpb->lu_pinned_end_offset = lu_desc.lu_hpb_pinned_end_offset;
@@ -2857,45 +3732,13 @@ static int ufshpb_init(struct ufsf_feature *ufsf)
 
 	return 0;
 out_free_mem:
-	seq_scan_lu(lun)
+	seq_scan_lu(lun) {
 		kfree(ufsf->ufshpb_lup[lun]);
-
-	ufsf->ufshpb_state = HPB_NOT_SUPPORTED;
-	return ret;
+		ufsf->ufshpb_lup[lun] = NULL;
 }
 
-static void ufshpb_purge_active_region(struct ufshpb_lu *hpb)
-{
-	struct ufshpb_region *rgn;
-	struct ufshpb_subregion *srgn;
-	unsigned long flags;
-	int rgn_idx, srgn_idx, state;
-
-	RELEASE_INFO("Start");
-	spin_lock_irqsave(&hpb->hpb_lock, flags);
-	for (rgn_idx = 0; rgn_idx < hpb->rgns_per_lu; rgn_idx++) {
-		rgn = hpb->rgn_tbl + rgn_idx;
-
-		if (rgn->rgn_state == HPBREGION_INACTIVE)
-			continue;
-
-		if (rgn->rgn_state == HPBREGION_PINNED)
-			state = HPBSUBREGION_DIRTY;
-		else if (rgn->rgn_state == HPBREGION_ACTIVE) {
-			state = HPBSUBREGION_UNUSED;
-			ufshpb_cleanup_lru_info(&hpb->lru_info, rgn);
-		} else
-			continue;
-
-		for (srgn_idx = 0; srgn_idx < rgn->srgn_cnt; srgn_idx++) {
-			srgn = rgn->srgn_tbl + srgn_idx;
-
-			ufshpb_purge_active_subregion(hpb, srgn, state);
-		}
-	}
-	spin_unlock_irqrestore(&hpb->hpb_lock, flags);
-
-	RELEASE_INFO("END");
+	ufsf->ufshpb_state = HPB_FAILED;
+	return ret;
 }
 
 static void ufshpb_drop_retry_list(struct ufshpb_lu *hpb)
@@ -2910,7 +3753,7 @@ static void ufshpb_drop_retry_list(struct ufshpb_lu *hpb)
 	list_for_each_entry_safe(map_req, next, &hpb->lh_map_req_retry,
 				 list_req) {
 		INFO_MSG("drop map_req %p ( %d - %d )", map_req,
-			 map_req->rb.rgn_idx, map_req->rb.srgn_idx);
+			 map_req->rgn_idx, map_req->srgn_idx);
 
 		list_del_init(&map_req->list_req);
 
@@ -2974,7 +3817,7 @@ static void ufshpb_destroy_region_tbl(struct ufshpb_lu *hpb)
 	}
 
 	ufshpb_table_mempool_remove(hpb);
-	kfree(hpb->rgn_tbl);
+	vfree(hpb->rgn_tbl);
 
 	RELEASE_INFO("End");
 }
@@ -3032,7 +3875,7 @@ static void ufshpb_reset(struct ufsf_feature *ufsf)
 			ufshpb_cancel_jobs(hpb);
 			ufshpb_drop_retry_list(hpb);
 			ufshpb_drop_rsp_lists(hpb);
-			ufshpb_purge_active_region(hpb);
+			//ufshpb_purge_active_region(hpb);
 		}
 	}
 
@@ -3059,8 +3902,6 @@ void ufshpb_reset_handler(struct work_struct *work)
 	if (ret == 0)
 		ERR_MSG("UFSHPB kref is not init_value(=1). kref count = %d",
 			atomic_read(&ufsf->ufshpb_kref.refcount.refs));
-
-	INIT_INFO("HPB_RESET_START");
 
 	ufshpb_reset(ufsf);
 }
@@ -3100,7 +3941,8 @@ void ufshpb_suspend(struct ufsf_feature *ufsf)
 	seq_scan_lu(lun) {
 		hpb = ufsf->ufshpb_lup[lun];
 		if (hpb) {
-			INFO_MSG("ufshpb_lu %d goto suspend", lun);
+			INFO_MSG("ufshpb_lu %d changes suspend state", lun);
+			hpb->ufsf->ufshpb_state = HPB_SUSPEND;
 			ufshpb_cancel_jobs(hpb);
 		}
 	}
@@ -3116,6 +3958,7 @@ void ufshpb_resume(struct ufsf_feature *ufsf)
 		if (hpb) {
 			bool do_workq = false;
 			bool do_retry_work = false;
+			hpb->ufsf->ufshpb_state = HPB_PRESENT;
 
 			do_workq = !ufshpb_is_empty_rsp_lists(hpb);
 			do_retry_work =
@@ -3142,6 +3985,15 @@ static void ufshpb_stat_init(struct ufshpb_lu *hpb)
 	atomic64_set(&hpb->rb_inactive_cnt, 0);
 	atomic64_set(&hpb->map_req_cnt, 0);
 	atomic64_set(&hpb->pre_req_cnt, 0);
+	atomic64_set(&hpb->set_rt_req_cnt, 0);
+	atomic64_set(&hpb->unset_rt_req_cnt, 0);
+	//atomic64_set(&hpb->miss_after_region_full, 0);
+	//atomic64_set(&hpb->hit_after_region_full, 0);
+	//atomic64_set(&hpb->total_access_region_after_region_full,0);
+	//memset(&hpb->access_region, 0, 1024);// will replace by bitmap
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	ufshpb_debug_sys_init(hpb);
+#endif
 }
 
 /* SYSFS functions */
@@ -3151,9 +4003,6 @@ static ssize_t ufshpb_sysfs_prep_disable_show(struct ufshpb_lu *hpb, char *buf)
 
 	ret = snprintf(buf, PAGE_SIZE, "force_hpb_read_disable %d\n",
 		       hpb->force_disable);
-
-	if (ret < 0)
-		return ret;
 
 	SYSFS_INFO("%s", buf);
 
@@ -3187,9 +4036,6 @@ static ssize_t ufshpb_sysfs_map_disable_show(struct ufshpb_lu *hpb, char *buf)
 
 	ret = snprintf(buf, PAGE_SIZE, "force_map_req_disable %d\n",
 		       hpb->force_map_req_disable);
-
-	if (ret < 0)
-		return ret;
 
 	SYSFS_INFO("%s", buf);
 
@@ -3225,9 +4071,6 @@ static ssize_t ufshpb_sysfs_throttle_map_req_show(struct ufshpb_lu *hpb,
 	ret = snprintf(buf, PAGE_SIZE, "throttle_map_req %d\n",
 		       hpb->throttle_map_req);
 
-	if (ret < 0)
-		return ret;
-
 	SYSFS_INFO("%s", buf);
 
 	return ret;
@@ -3256,9 +4099,6 @@ static ssize_t ufshpb_sysfs_throttle_pre_req_show(struct ufshpb_lu *hpb,
 	ret = snprintf(buf, PAGE_SIZE, "throttle_pre_req %d\n",
 		       hpb->throttle_pre_req);
 
-	if (ret < 0)
-		return ret;
-
 	SYSFS_INFO("%s", buf);
 
 	return ret;
@@ -3279,16 +4119,41 @@ static ssize_t ufshpb_sysfs_throttle_pre_req_store(struct ufshpb_lu *hpb,
 	return cnt;
 }
 
+static ssize_t ufshpb_sysfs_throttle_rt_req_show(struct ufshpb_lu *hpb, char *buf)
+{
+	int ret;
+
+	ret = snprintf(buf, PAGE_SIZE, "throttle_rt_req %d\n", hpb->throttle_rt_req);
+
+	SYSFS_INFO("%s", buf);
+
+	return ret;
+}
+
+static ssize_t ufshpb_sysfs_throttle_rt_req_store(struct ufshpb_lu *hpb,
+						  const char *buf, size_t cnt)
+{
+	unsigned long throttle_rt_req;
+
+	if (kstrtoul(buf, 0, &throttle_rt_req))
+		return -EINVAL;
+
+	if (throttle_rt_req > 0 && throttle_rt_req <= 32)
+		hpb->throttle_rt_req = (int)throttle_rt_req;
+	else
+		SYSFS_INFO("value is wrong. throttle_rt_req must be in [1~32] ");
+
+	SYSFS_INFO("throttle_rt_req %d", hpb->throttle_rt_req);
+
+	return cnt;
+}
+
 static ssize_t ufshpb_sysfs_pre_req_min_tr_len_show(struct ufshpb_lu *hpb,
 						    char *buf)
 {
 	int ret;
 
 	ret = snprintf(buf, PAGE_SIZE, "%d", hpb->pre_req_min_tr_len);
-
-	if (ret < 0)
-		return ret;
-
 	SYSFS_INFO("pre_req min transfer len %d", hpb->pre_req_min_tr_len);
 
 	return ret;
@@ -3323,10 +4188,6 @@ static ssize_t ufshpb_sysfs_pre_req_max_tr_len_show(struct ufshpb_lu *hpb,
 	int ret;
 
 	ret = snprintf(buf, PAGE_SIZE, "%d", hpb->pre_req_max_tr_len);
-
-	if (ret < 0)
-		return ret;
-
 	SYSFS_INFO("pre_req max transfer len %d", hpb->pre_req_max_tr_len);
 
 	return ret;
@@ -3352,14 +4213,12 @@ static ssize_t ufshpb_sysfs_pre_req_max_tr_len_store(struct ufshpb_lu *hpb,
 	return count;
 }
 
+#if defined(CONFIG_HPB_DEBUG)
 static ssize_t ufshpb_sysfs_debug_show(struct ufshpb_lu *hpb, char *buf)
 {
 	int ret;
 
 	ret = snprintf(buf, PAGE_SIZE, "debug %d\n", hpb->debug);
-
-	if (ret < 0)
-		return ret;
 
 	SYSFS_INFO("%s", buf);
 
@@ -3383,18 +4242,248 @@ static ssize_t ufshpb_sysfs_debug_store(struct ufshpb_lu *hpb,
 
 	return cnt;
 }
+#endif
+
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+static ssize_t ufshpb_sysfs_lba_info_show(struct ufshpb_lu *hpb, char *buf)
+{
+       struct ufshpb_region *rgn;
+       struct ufshpb_subregion *srgn;
+       enum HPBREGION_STATE rgn_state;
+       enum HPBSUBREGION_STATE srgn_state;
+       unsigned long lpn, flags;
+       int rgn_idx, srgn_idx, srgn_offset;
+       int ppn_clean_offset, ppn_clean_pinned_cnt = 0, ppn_clean_active_cnt = 0;
+       unsigned long long pinned_valid_size = 0, active_valid_size = 0;
+       int ret;
+
+       lpn = hpb->lba_rgns_info / SECTORS_PER_BLOCK;
+
+       ufshpb_get_pos_from_lpn(hpb, lpn, &rgn_idx, &srgn_idx, &srgn_offset);
+
+       rgn = hpb->rgn_tbl + rgn_idx;
+
+       spin_lock_irqsave(&hpb->hpb_lock, flags);
+       rgn_state = rgn->rgn_state;
+       for (srgn_idx = 0; srgn_idx < hpb->srgns_per_rgn; srgn_idx++) {
+	       srgn = rgn->srgn_tbl + srgn_idx;
+	       srgn_state = srgn->srgn_state;
+
+	       if (!ufshpb_valid_srgn(rgn, srgn))
+		       continue;
+
+	       if (!srgn->mctx || !srgn->mctx->ppn_dirty)
+		       continue;
+
+	       ppn_clean_offset = 0;
+
+	       while (ppn_clean_offset < hpb->entries_per_srgn) {
+		       ppn_clean_offset =
+			       find_next_zero_bit((unsigned long *)srgn->mctx->ppn_dirty,
+						  hpb->entries_per_srgn,
+						  ppn_clean_offset);
+
+		       if (ppn_clean_offset >= hpb->entries_per_srgn)
+			       break;
+
+		       if (rgn_state == HPBREGION_PINNED ||
+			   rgn_state == HPBREGION_RT_PINNED)
+			       ppn_clean_pinned_cnt++;
+		       else if (rgn_state == HPBREGION_ACTIVE)
+			       ppn_clean_active_cnt++;
+
+		       ppn_clean_offset++;
+	       }
+       }
+
+       pinned_valid_size = ppn_clean_pinned_cnt * BLOCK_KB;
+       active_valid_size = ppn_clean_active_cnt * BLOCK_KB;
+
+       ret = snprintf(buf, PAGE_SIZE,
+		      "[LBA] %d [Region State] %d (0-INACTIVE, 1-ACTIVE, 2-PINNED, 3-RT_PINNED)\n"
+		      "[Pinned] hit_count(low) %lld hit_count(high) %lld miss_count(low) %lld miss_count(high) %lld\n"
+		      "[Active] hit_count(low) %lld hit_count(high) %lld miss_count(low) %lld miss_count(high) %lld\n"
+		      "[Inactive] read_count(low) %lld read_count(high) %lld\n"
+		      "[Pinned_rb_cnt] %lld [Active_rb_cnt] %lld\n"
+		      "[Current_pinned_valid_size] %llu [Current_active_valid_size] %llu\n",
+		      hpb->lba_rgns_info, rgn_state,
+		      (long long)atomic64_read(&rgn->rgn_pinned_low_hit),
+		      (long long)atomic64_read(&rgn->rgn_pinned_high_hit),
+		      (long long)atomic64_read(&rgn->rgn_pinned_low_miss),
+		      (long long)atomic64_read(&rgn->rgn_pinned_high_miss),
+		      (long long)atomic64_read(&rgn->rgn_active_low_hit),
+		      (long long)atomic64_read(&rgn->rgn_active_high_hit),
+		      (long long)atomic64_read(&rgn->rgn_active_low_miss),
+		      (long long)atomic64_read(&rgn->rgn_active_high_miss),
+		      (long long)atomic64_read(&rgn->rgn_inactive_low_read),
+		      (long long)atomic64_read(&rgn->rgn_inactive_high_read),
+		      (long long)atomic64_read(&rgn->rgn_pinned_rb_cnt),
+		      (long long)atomic64_read(&rgn->rgn_active_rb_cnt),
+		      pinned_valid_size, active_valid_size);
+
+       SYSFS_INFO("%s", buf);
+       spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+       return ret;
+}
+
+static ssize_t ufshpb_sysfs_lba_info_store(struct ufshpb_lu *hpb,
+					   const char *buf, size_t cnt)
+{
+       unsigned long value;
+
+       if (kstrtoul(buf, 0, &value)) {
+	       ERR_MSG("kstrtoul error");
+	       return -EINVAL;
+       }
+
+       if (value > hpb->lu_num_blocks * SECTORS_PER_BLOCK) {
+	       ERR_MSG("value %lu > lu_num_blocks %d error",
+		       value, hpb->lu_num_blocks);
+	       return -EINVAL;
+       }
+
+       hpb->lba_rgns_info = (int)value;
+
+       SYSFS_INFO("lba_info %d", hpb->lba_rgns_info);
+
+       return cnt;
+}
+
+static ssize_t ufshpb_sysfs_active_size_show(struct ufshpb_lu *hpb, char *buf)
+{
+       struct ufshpb_region *rgn;
+       struct ufshpb_subregion *srgn;
+       enum HPBREGION_STATE rgn_state;
+       enum HPBSUBREGION_STATE srgn_state;
+       int ret, rgn_idx, srgn_idx;
+       int ppn_clean_offset, ppn_clean_pinned_cnt = 0, ppn_clean_active_cnt = 0;
+       unsigned long flags;
+       unsigned long long pinned_valid_size = 0, active_valid_size = 0;
+
+       spin_lock_irqsave(&hpb->hpb_lock, flags);
+       for (rgn_idx = 0; rgn_idx < hpb->rgns_per_lu; rgn_idx++) {
+	       rgn = hpb->rgn_tbl + rgn_idx;
+	       rgn_state = rgn->rgn_state;
+
+	       for (srgn_idx = 0; srgn_idx < hpb->srgns_per_rgn; srgn_idx++) {
+		       srgn = rgn->srgn_tbl + srgn_idx;
+		       srgn_state = srgn->srgn_state;
+
+		       if (!ufshpb_valid_srgn(rgn, srgn))
+			       continue;
+
+		       if (!srgn->mctx || !srgn->mctx->ppn_dirty)
+			       continue;
+
+		       ppn_clean_offset = 0;
+
+		       while (ppn_clean_offset < hpb->entries_per_srgn) {
+			       ppn_clean_offset =
+				       find_next_zero_bit((unsigned long *)srgn->mctx->ppn_dirty,
+							  hpb->entries_per_srgn,
+							  ppn_clean_offset);
+
+			       if (ppn_clean_offset >= hpb->entries_per_srgn)
+				       break;
+
+			       if (rgn_state == HPBREGION_PINNED ||
+				   rgn_state == HPBREGION_RT_PINNED)
+				       ppn_clean_pinned_cnt++;
+			       else if (rgn_state == HPBREGION_ACTIVE)
+				       ppn_clean_active_cnt++;
+
+			       ppn_clean_offset++;
+		       }
+	       }
+       }
+       spin_unlock_irqrestore(&hpb->hpb_lock, flags);
+       pinned_valid_size = ppn_clean_pinned_cnt * BLOCK_KB;
+       active_valid_size = ppn_clean_active_cnt * BLOCK_KB;
+
+       ret = snprintf(buf, PAGE_SIZE,
+		      "[Pinned] current_valid_size %llu [Active] current_valid_size %llu\n",
+		      pinned_valid_size, active_valid_size);
+
+       SYSFS_INFO("%s", buf);
+
+       return ret;
+}
+
+static ssize_t ufshpb_sysfs_hpb_normal_read_count_show(struct ufshpb_lu *hpb,
+						       char *buf)
+{
+	long long pinned_low_hit_cnt, pinned_high_hit_cnt;
+	long long pinned_low_miss_cnt, pinned_high_miss_cnt;
+	long long active_low_hit_cnt, active_high_hit_cnt;
+	long long active_low_miss_cnt, active_high_miss_cnt;
+	long long inactive_low_read_cnt, inactive_high_read_cnt;
+	int ret;
+
+	pinned_low_hit_cnt = atomic64_read(&hpb->pinned_low_hit);
+	pinned_high_hit_cnt = atomic64_read(&hpb->pinned_high_hit);
+	pinned_low_miss_cnt = atomic64_read(&hpb->pinned_low_miss);
+	pinned_high_miss_cnt = atomic64_read(&hpb->pinned_high_miss);
+	active_low_hit_cnt = atomic64_read(&hpb->active_low_hit);
+	active_high_hit_cnt = atomic64_read(&hpb->active_high_hit);
+	active_low_miss_cnt = atomic64_read(&hpb->active_low_miss);
+	active_high_miss_cnt = atomic64_read(&hpb->active_high_miss);
+	inactive_low_read_cnt = atomic64_read(&hpb->inactive_low_read);
+	inactive_high_read_cnt = atomic64_read(&hpb->inactive_high_read);
+
+	ret = snprintf(buf, PAGE_SIZE,
+		       "[Pinned] hit_count(low) %lld hit_count(high) %lld miss_count(low) %lld miss_count(high) %lld\n"
+		       "[Active] hit_count(low) %lld hit_count(high) %lld miss_count(low) %lld miss_count(high) %lld\n"
+		       "[Inactive] read_count(low) %lld read_count(high) %lld\n",
+		       pinned_low_hit_cnt, pinned_high_hit_cnt, pinned_low_miss_cnt, pinned_high_miss_cnt,
+		       active_low_hit_cnt, active_high_hit_cnt, active_low_miss_cnt, active_high_miss_cnt,
+		       inactive_low_read_cnt, inactive_high_read_cnt);
+
+	SYSFS_INFO("%s", buf);
+
+	return ret;
+}
+
+static ssize_t ufshpb_sysfs_rb_count_show(struct ufshpb_lu *hpb, char *buf)
+{
+       long long pinned_rb_cnt, active_rb_cnt;
+       int ret;
+
+       pinned_rb_cnt = atomic64_read(&hpb->pinned_rb_cnt);
+       active_rb_cnt = atomic64_read(&hpb->active_rb_cnt);
+
+       ret = snprintf(buf, PAGE_SIZE,
+		      "[Pinned] rb_count %lld [Active] rb_count %lld\n",
+		      pinned_rb_cnt, active_rb_cnt);
+
+       SYSFS_INFO("%s", buf);
+
+       return ret;
+}
+
+static ssize_t ufshpb_sysfs_rsp_list_cnt_show(struct ufshpb_lu *hpb, char *buf)
+{
+	long long act_cnt, inact_cnt;
+	int ret;
+
+	act_cnt = atomic64_read(&hpb->act_rsp_list_cnt);
+	inact_cnt = atomic64_read(&hpb->inact_rsp_list_cnt);
+
+	ret = snprintf(buf, PAGE_SIZE,
+		       "act_rsp_list_cnt %lld inact_rsp_list_cnt %lld\n",
+		       act_cnt, inact_cnt);
+
+	SYSFS_INFO("%s", buf);
+
+	return ret;
+}
+#endif
 
 static ssize_t ufshpb_sysfs_version_show(struct ufshpb_lu *hpb, char *buf)
 {
 	int ret;
 
-	ret = snprintf(buf, PAGE_SIZE,
-		       "HPB version %.2x %.2x D/D version %.2x %.2x\n",
-		       GET_BYTE_1(hpb->hpb_ver), GET_BYTE_0(hpb->hpb_ver),
-		       GET_BYTE_1(UFSHPB_DD_VER), GET_BYTE_0(UFSHPB_DD_VER));
-
-	if (ret < 0)
-		return ret;
+	ret = snprintf(buf, PAGE_SIZE, "HPB version %.4X D/D version %.6X%s\n",
+		       hpb->hpb_ver, UFSHPB_DD_VER, UFSHPB_DD_VER_POST);
 
 	SYSFS_INFO("%s", buf);
 
@@ -3405,6 +4494,30 @@ static ssize_t ufshpb_sysfs_hit_show(struct ufshpb_lu *hpb, char *buf)
 {
 	long long hit_cnt;
 	int ret;
+	int rgn_idx = 0;
+	struct ufshpb_region *rgn;
+	//printk(KERN_ERR "*****ufshpb_sysfs_hit_show,read latency:%d,write latency:%d,unmap latency:%d, load L2P latency:%d************\n",
+	//total_read_latency,total_write_latency,total_unmap_latency,total_load_L2P_latency);
+	for (rgn_idx = 0; rgn_idx < hpb->rgns_per_lu; rgn_idx++) {
+		rgn = hpb->rgn_tbl + rgn_idx;
+		printk(KERN_ERR "[region] %d, [Region_State] %d,[Pinned]_hit_cnt(low) %lld, hit_cnt(high) %lld, miss_cnt(low) %lld, miss_cnt(high) %lld,[Active]_hit_cnt(low) %lld, hit_cnt(high) %lld, miss_cnt(low) %lld, miss_cnt(high) %lld,[Inactive]_read_cnt(low) %lld, read_cnt(high) %lld,[Pinned_rb_cnt] %lld, [Active_rb_cnt] %lld,[deactive_threshold] %d,[active_threshold] %d,[last_hit_cnt] %lld,[average_hit_cnt] %d\n",
+			rgn_idx, rgn->rgn_state,
+			(long long)atomic64_read(&rgn->rgn_pinned_low_hit),
+			(long long)atomic64_read(&rgn->rgn_pinned_high_hit),
+			(long long)atomic64_read(&rgn->rgn_pinned_low_miss),
+			(long long)atomic64_read(&rgn->rgn_pinned_high_miss),
+			(long long)atomic64_read(&rgn->rgn_active_low_hit),
+			(long long)atomic64_read(&rgn->rgn_active_high_hit),
+			(long long)atomic64_read(&rgn->rgn_active_low_miss),
+			(long long)atomic64_read(&rgn->rgn_active_high_miss),
+			(long long)atomic64_read(&rgn->rgn_inactive_low_read),
+			(long long)atomic64_read(&rgn->rgn_inactive_high_read),
+			(long long)atomic64_read(&rgn->rgn_pinned_rb_cnt),
+			(long long)atomic64_read(&rgn->rgn_active_rb_cnt),
+			rgn->deactive_threshold,rgn->active_threshold,
+			(long long)atomic64_read(&rgn->last_hit_cnt),
+			(long long)atomic64_read(&rgn->total_hit_cnt)/(long long)atomic64_read(&rgn->active_cnt));
+	}
 
 	hit_cnt = atomic64_read(&hpb->hit);
 
@@ -3467,8 +4580,22 @@ static ssize_t ufshpb_sysfs_pre_req_show(struct ufshpb_lu *hpb, char *buf)
 
 	ret = snprintf(buf, PAGE_SIZE, "pre_req_count %lld\n", pre_req_cnt);
 
-	if (ret < 0)
-		return ret;
+	SYSFS_INFO("%s", buf);
+
+	return ret;
+}
+
+static ssize_t ufshpb_sysfs_rt_req_show(struct ufshpb_lu *hpb, char *buf)
+{
+	long long set_rt_cnt, unset_rt_cnt;
+	int ret;
+
+	set_rt_cnt = atomic64_read(&hpb->set_rt_req_cnt);
+	unset_rt_cnt = atomic64_read(&hpb->unset_rt_req_cnt);
+
+	ret = snprintf(buf, PAGE_SIZE,
+		       "set_rt_count %lld unset_rt_count %lld\n",
+		       set_rt_cnt, unset_rt_cnt);
 
 	SYSFS_INFO("%s", buf);
 
@@ -3477,13 +4604,16 @@ static ssize_t ufshpb_sysfs_pre_req_show(struct ufshpb_lu *hpb, char *buf)
 
 static ssize_t ufshpb_sysfs_region_stat_show(struct ufshpb_lu *hpb, char *buf)
 {
-	int ret, pin_cnt = 0, act_cnt = 0, inact_cnt = 0, rgn_idx;
+	int ret, pin_cnt = 0, rt_pin_cnt = 0, act_cnt = 0, inact_cnt = 0;
+	int rgn_idx;
 	enum HPBREGION_STATE state;
 
 	for (rgn_idx = 0; rgn_idx < hpb->rgns_per_lu; rgn_idx++) {
 		state = hpb->rgn_tbl[rgn_idx].rgn_state;
 		if (state == HPBREGION_PINNED)
 			pin_cnt++;
+		else if (state == HPBREGION_RT_PINNED)
+			rt_pin_cnt++;
 		else if (state == HPBREGION_ACTIVE)
 			act_cnt++;
 		else if (state == HPBREGION_INACTIVE)
@@ -3491,13 +4621,9 @@ static ssize_t ufshpb_sysfs_region_stat_show(struct ufshpb_lu *hpb, char *buf)
 	}
 
 	ret = snprintf(buf, PAGE_SIZE,
-		       "Total %d pinned %d active %d inactive %d\n",
-		       hpb->rgns_per_lu, pin_cnt, act_cnt, inact_cnt);
-
-	if (ret < 0)
-		return ret;
-
-	SYSFS_INFO("%s", buf);
+		       "Total %d pinned %d rt_pinned %d active %d inactive %d\n",
+		       hpb->rgns_per_lu, pin_cnt, rt_pin_cnt, act_cnt,
+		       inact_cnt);
 
 	return ret;
 }
@@ -3523,8 +4649,8 @@ static ssize_t ufshpb_sysfs_info_lba_store(struct ufshpb_lu *hpb,
 	struct ufshpb_region *rgn;
 	struct ufshpb_subregion *srgn;
 	unsigned long long ppn = 0;
-	unsigned long value = 0, lpn, flags;
-	int rgn_idx = 0, srgn_idx = 0, srgn_offset = 0, error = 0;
+	unsigned long value, lpn, flags;
+	int rgn_idx, srgn_idx, srgn_offset, error = 0;
 
 	if (kstrtoul(buf, 0, &value)) {
 		ERR_MSG("kstrtoul error");
@@ -3576,7 +4702,7 @@ out:
 static ssize_t ufshpb_sysfs_info_region_store(struct ufshpb_lu *hpb,
 					      const char *buf, size_t cnt)
 {
-	unsigned long rgn_idx = 0;
+	unsigned long rgn_idx;
 	int srgn_idx;
 
 	if (kstrtoul(buf, 0, &rgn_idx))
@@ -3640,19 +4766,33 @@ static struct ufshpb_sysfs_entry ufshpb_sysfs_entries[] = {
 	__ATTR(throttle_pre_req, 0644,
 	       ufshpb_sysfs_throttle_pre_req_show,
 	       ufshpb_sysfs_throttle_pre_req_store),
+	__ATTR(throttle_rt_req, 0644,
+	       ufshpb_sysfs_throttle_rt_req_show,
+	       ufshpb_sysfs_throttle_rt_req_store),
 	__ATTR(pre_req_min_tr_len, 0644,
 	       ufshpb_sysfs_pre_req_min_tr_len_show,
 	       ufshpb_sysfs_pre_req_min_tr_len_store),
 	__ATTR(pre_req_max_tr_len, 0644,
 	       ufshpb_sysfs_pre_req_max_tr_len_show,
 	       ufshpb_sysfs_pre_req_max_tr_len_store),
+#if defined(CONFIG_HPB_DEBUG)
 	__ATTR(debug, 0644,
 	       ufshpb_sysfs_debug_show, ufshpb_sysfs_debug_store),
+#endif
+#if defined(CONFIG_HPB_DEBUG_SYSFS)
+	__ATTR(lba_info, 0644,
+	       ufshpb_sysfs_lba_info_show, ufshpb_sysfs_lba_info_store),
+	__ATTR(active_size, 0444, ufshpb_sysfs_active_size_show, NULL),
+	__ATTR(read_count, 0444, ufshpb_sysfs_hpb_normal_read_count_show, NULL),
+	__ATTR(rb_count, 0444, ufshpb_sysfs_rb_count_show, NULL),
+	__ATTR(rsp_list_count, 0444, ufshpb_sysfs_rsp_list_cnt_show, NULL),
+#endif
 	__ATTR(hpb_version, 0444, ufshpb_sysfs_version_show, NULL),
 	__ATTR(hit_count, 0444, ufshpb_sysfs_hit_show, NULL),
 	__ATTR(miss_count, 0444, ufshpb_sysfs_miss_show, NULL),
 	__ATTR(map_req_count, 0444, ufshpb_sysfs_map_req_show, NULL),
 	__ATTR(pre_req_count, 0444, ufshpb_sysfs_pre_req_show, NULL),
+	__ATTR(rt_req_count, 0444, ufshpb_sysfs_rt_req_show, NULL),
 	__ATTR(region_stat_count, 0444, ufshpb_sysfs_region_stat_show, NULL),
 	__ATTR(count_reset, 0200, NULL, ufshpb_sysfs_count_reset_store),
 	__ATTR(get_info_from_lba, 0200, NULL, ufshpb_sysfs_info_lba_store),
