@@ -190,7 +190,6 @@ struct sgm7220_chip {
 	struct type_c_parameters type_c_param;
 	struct type_c_parameters type_c_param_old;
 	int irq_gpio;
-	int en_gpio;
 	int irq;
 	int chip_id;
 };
@@ -889,14 +888,6 @@ static int sgm7220_parse_dt(struct sgm7220_chip *chip, struct device *dev)
 		return ret;
 	}
 	chip->irq_gpio = ret;
-
-	ret = of_get_named_gpio(np, "sgm7220,en_gpio", 0);
-	if (ret < 0) {
-		pr_err("%s no sgm7220,en_gpio info\n", __func__);
-		return ret;
-	}
-	chip->en_gpio = ret;
-
 #else
 	ret = of_property_read_u32(np, "sgm7220,intr_gpio_num", &chip->irq_gpio);
 	if (ret < 0)
@@ -1110,13 +1101,10 @@ static int sgm7220_i2c_resume(struct device *dev)
 static void sgm7220_shutdown(struct i2c_client *client)
 {
 	struct sgm7220_chip *chip = i2c_get_clientdata(client);
-	int ret = 0;
 	/* Please reset IC here */
 	if (chip != NULL) {
 		if (chip->irq)
 			disable_irq(chip->irq);
-		gpio_set_value(chip->en_gpio, 1);
-		ret = gpio_get_value(chip->en_gpio);
 		tcpm_shutdown(chip->tcpc);
 	}
 }
