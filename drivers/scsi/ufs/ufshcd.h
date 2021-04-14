@@ -610,6 +610,25 @@ enum ufs_crypto_state {
 	UFS_CRYPTO_HW_FBE_ENCRYPTED   = (1 << 3),
 };
 
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
+struct SEC_UFS_HPB_info {
+	atomic64_t hpb_pinned_rb_cnt;
+	atomic64_t hpb_active_rb_cnt;
+	u64 hpb_amount_R_kb;
+	u64 hpb_amount_R_kb_old;
+	unsigned int hpb_read_err_count;
+	unsigned int hpb_RB_ID_READ_err_count;
+	unsigned int hpb_RB_ID_SET_RT_err_count;
+	unsigned int hpb_WB_ID_PREFETCH_err_count;
+	unsigned int hpb_WB_ID_UNSET_RT_err_count;
+	unsigned int hpb_WB_ID_UNSET_RT_ALL_err_count;
+
+	struct timespec timestamp_old;
+	struct timespec timestamp_new;
+	bool hpb_info_disable;
+	bool hpb_err_count_disable;
+};
+#endif
 /**
  * struct ufs_hba - per adapter private structure
  * @mmio_base: UFSHCI base register address
@@ -937,6 +956,10 @@ struct ufs_hba {
 	bool full_init_linereset;
 	bool force_host_reset;
 	bool invalid_resp_upiu;
+	int HPBControlMode;
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
+	struct SEC_UFS_HPB_info SEC_hpb_info;
+#endif
 
 #if defined(CONFIG_UFSFEATURE)
 	struct ufsf_feature ufsf;
@@ -1061,6 +1084,7 @@ int ufshcd_wait_for_register(struct ufs_hba *hba, u32 reg, u32 mask,
 				u32 val, unsigned long interval_us,
 				unsigned long timeout_ms, bool can_sleep);
 
+void SEC_ufs_hpb_rb_count(struct ufs_hba *hba, struct ufshpb_region *rgn);
 /**
  * MTK PATCH
  * Wrapper function for safely calling variant operations
