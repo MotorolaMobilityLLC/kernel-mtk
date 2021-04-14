@@ -96,6 +96,15 @@ struct ufsf_lu_desc {
 	unsigned int tw_lu_buf_size;
 #endif
 };
+struct ufshpb_dev_info {
+	bool hpb_device;
+	int hpb_number_lu;
+	int hpb_ver;
+	int hpb_rgn_size;
+	int hpb_srgn_size;
+	int hpb_device_max_active_rgns;
+	u8  hpb_control_mode;
+};
 
 struct ufsf_feature {
 	struct ufs_hba *hba;
@@ -155,6 +164,7 @@ int ufsf_hpb_prepare_add_lrbp(struct ufsf_feature *ufsf, int add_tag);
 void ufsf_hpb_end_pre_req(struct ufsf_feature *ufsf, struct request *req);
 void ufsf_hpb_change_lun(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp);
 void ufsf_hpb_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp);
+void ufsf_hpb_wakeup_worker_on_idle(struct ufsf_feature *ufsf);
 void ufsf_hpb_noti_rb(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp);
 void ufsf_hpb_reset_lu(struct ufsf_feature *ufsf);
 void ufsf_hpb_reset_host(struct ufsf_feature *ufsf);

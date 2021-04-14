@@ -565,6 +565,25 @@ enum {
 	UFSHCD_STATE_EH_SCHEDULED,
 };
 
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
+struct SEC_UFS_HPB_info {
+	atomic64_t hpb_pinned_rb_cnt;
+	atomic64_t hpb_active_rb_cnt;
+	u64 hpb_amount_R_kb;
+	u64 hpb_amount_R_kb_old;
+	unsigned int hpb_read_err_count;
+	unsigned int hpb_RB_ID_READ_err_count;
+	unsigned int hpb_RB_ID_SET_RT_err_count;
+	unsigned int hpb_WB_ID_PREFETCH_err_count;
+	unsigned int hpb_WB_ID_UNSET_RT_err_count;
+	unsigned int hpb_WB_ID_UNSET_RT_ALL_err_count;
+
+	struct timespec timestamp_old;
+	struct timespec timestamp_new;
+	bool hpb_info_disable;
+	bool hpb_err_count_disable;
+};
+#endif
 /**
  * struct ufs_hba - per adapter private structure
  * @mmio_base: UFSHCI base register address
@@ -859,6 +878,10 @@ struct ufs_hba {
 	struct request_queue	*bsg_queue;
 
 	bool invalid_resp_upiu;
+	int HPBControlMode;
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
+	struct SEC_UFS_HPB_info SEC_hpb_info;
+#endif
 
 #if defined(CONFIG_SCSI_UFS_FEATURE)
 	struct ufsf_feature ufsf;
@@ -987,6 +1010,10 @@ void ufshcd_parse_dev_ref_clk_freq(struct ufs_hba *hba, struct clk *refclk);
 void ufshcd_print_all_evt_hist(struct ufs_hba *hba,
 				struct seq_file *m, char **buff, unsigned long *size);
 void ufshcd_update_evt_hist(struct ufs_hba *hba, u32 id, u32 val);
+
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
+void SEC_ufs_hpb_rb_count(struct ufs_hba *hba, struct ufshpb_region *rgn);
+#endif
 
 static inline void check_upiu_size(void)
 {
