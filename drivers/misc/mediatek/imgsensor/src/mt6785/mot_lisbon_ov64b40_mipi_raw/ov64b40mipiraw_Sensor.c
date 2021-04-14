@@ -110,6 +110,18 @@ static struct imgsensor_info_struct imgsensor_info = {
            .max_framerate = 300,
            .mipi_pixel_rate = 679680000,
        },
+	.custom1 = {//full size capture
+		.pclk = 115200000,
+		.linelength  = 300,
+		.framelength = 1600,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width  = 1280,
+		.grabwindow_height = 720,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 2400,
+		.mipi_pixel_rate =802000000,
+	},
 	.custom3 = {//full size capture
 		.pclk = 115200000,
 		.linelength  = 1608,
@@ -141,15 +153,15 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.sensor_mode_num = 8,	  //support sensor mode num ,don't support Slow motion
 
-	.cap_delay_frame = 3,		//enter capture delay frame num
-	.pre_delay_frame = 3, 		//enter preview delay frame num
-	.video_delay_frame = 3,		//enter video delay frame num
-	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
-	.slim_video_delay_frame = 3,    //enter slim video delay frame num
-	.custom1_delay_frame = 3,	//enter custom1 delay frame num
-	.custom2_delay_frame = 3,	//enter custom2 delay frame num
-	.custom3_delay_frame = 3,	//enter custom3 delay frame num
-	.custom4_delay_frame = 3,	//enter custom4 delay frame num
+	.cap_delay_frame = 2,		//enter capture delay frame num
+	.pre_delay_frame = 2, 		//enter preview delay frame num
+	.video_delay_frame = 2,		//enter video delay frame num
+	.hs_video_delay_frame = 2,	//enter high speed video  delay frame num
+	.slim_video_delay_frame = 2,    //enter slim video delay frame num
+	.custom1_delay_frame = 2,	//enter custom1 delay frame num
+	.custom2_delay_frame = 2,	//enter custom2 delay frame num
+	.custom3_delay_frame = 2,	//enter custom3 delay frame num
+	.custom4_delay_frame = 2,	//enter custom4 delay frame num
 
 	.isp_driving_current = ISP_DRIVING_8MA, //mclk driving current
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
@@ -182,24 +194,14 @@ static struct imgsensor_struct imgsensor = {
 
 /* Sensor output window information*/
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // Preview
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // capture
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // normal_video
+ { 9248, 6944,   2327, 1752,  4624, 3472, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // Preview
+ { 9248, 6944,   2327, 1752,  4624, 3472, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // capture
+ { 9248, 6944,   2327, 1752,  4624, 3472, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // normal_video
  { 9248, 6944,   796,   1328, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // hs_video 1920x1080_120fps_1699
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // slim video 4624x3472_30fps_1699
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // custom1 stereo as Preview
+ { 9248, 6944,   2327, 1752,  4624, 3472, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // slim video 4624x3472_30fps_1699
+ { 9248, 6944,   2076, 2048,  5120, 2880, 1280,  720,   0,     0, 1280,  720,     0, 0, 1280,  720}, // custom1 stereo as Preview
  { 9248, 6944,   796,   1328, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // custom2 as 120fps
  { 9248, 6944,    0,    0,    9248, 6944, 9248, 6944,   0,     0, 9248, 6944,     0, 0, 9248, 6944}, // custom3 full size capture
-
-#if 0
- { 9248, 6944,    0,    872,  9248, 5200, 4624, 2600,   0,     0, 4624, 2600,     0, 0, 4624, 2600}, // video
- { 9248, 6944,   784,   1312, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // high speed video 240fps
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // slim video same as preview
- { 9248, 6944,    0,    0,    9248, 6944, 4624, 3472,   0,     0, 4624, 3472,     0, 0, 4624, 3472}, // custom1 stereo as Preview
- { 9248, 6944,   784,   1312, 7680, 4320, 1920, 1080,   0,     0, 1920, 1080,     0, 0, 1920, 1080}, // custom2 as 120fps
- { 9248, 6944,    0,    872,  9248, 5200, 4624, 2600,   0,     0, 4624, 2600,     0, 0, 4624, 2600}, // custom3 as 12M @ 60fps
- { 9248, 6944,    0,    0,    9248, 6944, 9248, 6944,   0,     0, 9248, 6944,     0, 0, 9248, 6944}, // custom4 full size capture
-#endif
 };
 
 static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[4] = {
