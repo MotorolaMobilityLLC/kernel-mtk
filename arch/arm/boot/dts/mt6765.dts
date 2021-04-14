@@ -33,7 +33,7 @@
 				firmware_class.path=/vendor/firmware";
 	};
 
-	regulator_vibrator {
+        regulator_vibrator: regulator_vibrator {
 		compatible = "regulator-vibrator";
 		min-volt = <2300000>;
 		max-volt = <3200000>;
