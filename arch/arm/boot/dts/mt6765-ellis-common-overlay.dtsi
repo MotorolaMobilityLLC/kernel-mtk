@@ -106,6 +106,14 @@
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+
+        usb_phy_init:usb_phy_init {
+		compatible = "mediatek,phy_tuning";
+		u2_vrt_ref = <5>;
+		u2_term_ref = <5>;
+		u2_enhance = <3>;
+		status = "okay";
+	};
 };
 
 &regulator_vibrator {
