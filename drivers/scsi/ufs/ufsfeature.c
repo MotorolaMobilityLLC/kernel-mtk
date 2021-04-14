@@ -224,6 +224,8 @@ static int ufsf_read_dev_desc(struct ufsf_feature *ufsf, u8 selector)
 		  desc_buf[DEVICE_DESC_PARAM_EX_FEAT_SUP+2],
 		  desc_buf[DEVICE_DESC_PARAM_EX_FEAT_SUP+3]);
 
+	INIT_INFO("boot Control mode is=0x%.2x", desc_buf[DEVICE_DESC_PARAM_HPB_CONTROL]);
+
 #if defined(CONFIG_UFSHPB)
 	ufshpb_get_dev_info(&ufsf->hpb_dev_info, desc_buf);
 #endif
@@ -326,9 +328,10 @@ out_free_mem:
 #if defined(CONFIG_UFSHPB)
 	seq_scan_lu(lun)
 		kfree(ufsf->ufshpb_lup[lun]);
+		ufsf->ufshpb_lup[lun] = NULL;
 
 	/* don't call init handler */
-	ufsf->ufshpb_state = HPB_NOT_SUPPORTED;
+	ufsf->ufshpb_state = HPB_FAILED;
 #endif
 #if defined(CONFIG_UFSTW)
 	seq_scan_lu(lun)
@@ -544,6 +547,11 @@ inline void ufsf_hpb_noti_rb(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp)
 		ufshpb_rsp_upiu(ufsf, lrbp);
 }
 
+inline void ufsf_hpb_wakeup_worker_on_idle(struct ufsf_feature *ufsf)
+{
+	if (ufsf->ufshpb_state == HPB_PRESENT)
+		ufshpb_wakeup_worker_on_idle(ufsf);
+}
 inline void ufsf_hpb_reset_lu(struct ufsf_feature *ufsf)
 {
 	ufsf->ufshpb_state = HPB_RESET;
@@ -580,8 +588,12 @@ inline void ufsf_hpb_suspend(struct ufsf_feature *ufsf)
 
 inline void ufsf_hpb_resume(struct ufsf_feature *ufsf)
 {
-	if (ufsf->ufshpb_state == HPB_PRESENT)
+	if (ufsf->ufshpb_state == HPB_SUSPEND ||
+	    ufsf->ufshpb_state == HPB_PRESENT) {
+		if (ufsf->ufshpb_state == HPB_PRESENT)
+			WARNING_MSG("warning.. hpb state PRESENT in resuming");
 		ufshpb_resume(ufsf);
+	}
 }
 
 inline void ufsf_hpb_release(struct ufsf_feature *ufsf)
@@ -611,6 +623,7 @@ inline void ufsf_hpb_change_lun(struct ufsf_feature *ufsf,
 				struct ufshcd_lrb *lrbp) {}
 inline void ufsf_hpb_prep_fn(struct ufsf_feature *ufsf,
 			     struct ufshcd_lrb *lrbp) {}
+inline void ufsf_hpb_wakeup_worker_on_idle(struct ufsf_feature *ufsf) {}
 inline void ufsf_hpb_noti_rb(struct ufsf_feature *ufsf,
 			     struct ufshcd_lrb *lrbp) {}
 inline void ufsf_hpb_reset_lu(struct ufsf_feature *ufsf) {}
