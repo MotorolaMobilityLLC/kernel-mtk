@@ -108,6 +108,10 @@
 	};
 };
 
+&regulator_vibrator {
+       min-volt = <3000000>;//EKELLIS-59, yaocankun.wt, 20210407, update vibrator voltage
+};
+
 &pio {
 	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
 		pins_cmd_dat {
