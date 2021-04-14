@@ -3655,6 +3655,7 @@ static kal_uint16 ov64b40_slim_video_setting[] = {
 };
 
 static kal_uint16 ov64b40_custom1_setting[] = {
+#include "OV64B_Setting_Lisbon_24M_MCLK_0125_720p_fps240.h"
 };
 
 //9248x6944_10fps_1996.8Mbps
