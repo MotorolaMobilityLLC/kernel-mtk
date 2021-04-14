@@ -29,14 +29,14 @@
 #define PFX "mot_ellis_hi1336_camera_sensor"
 #define LOG_INF(format, args...)    \
     pr_err(PFX "[%s] " format, __func__, ##args)
-	
+
 #define LOG_ERR(format, args...)    \
     pr_err(PFX "[%s] " format, __func__, ##args)
 
 //PDAF
-#define ENABLE_PDAF 0
+#define ENABLE_PDAF 1
 //+bug449738 maliping.wt, add, 2019/06/25,video pdaf flow
-#define __ENABLE_VIDEO_CUSTOM_PDAF__    //wt.maliping add
+//#define __ENABLE_VIDEO_CUSTOM_PDAF__    //wt.maliping add
 //-bug449738 maliping.wt, add, 2019/06/25,video pdaf flow
 
 #define e2prom 0
@@ -131,9 +131,9 @@ by different scenario */
         .framelength = 4163,
         .startx = 0,
         .starty = 0,
-        .grabwindow_width = 3264,
-        .grabwindow_height = 2448,
-        .mipi_data_lp2hs_settle_dc = 85,//unit , ns
+        .grabwindow_width = 4208,
+        .grabwindow_height = 3120,
+        .mipi_data_lp2hs_settle_dc = 85,
         .max_framerate = 240,
     },
     .margin = 7,
@@ -151,7 +151,7 @@ by different scenario */
 
     .ihdr_support = 0,      //1, support; 0,not support
     .ihdr_le_firstline = 0,  //1,le first ; 0, se first
-    .sensor_mode_num = 5,      //support sensor mode num
+    .sensor_mode_num = 6,      //support sensor mode num
     .frame_time_delay_frame = 1,//The delay frame of setting frame length
     .cap_delay_frame = 1,
     .pre_delay_frame = 1,
@@ -164,7 +164,7 @@ by different scenario */
     .mipi_sensor_type = MIPI_OPHY_NCSI2,
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
 //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-    .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
+    .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
     .mclk = 24,
     .mipi_lane_num = SENSOR_MIPI_4_LANE,
     .i2c_addr_table = {0x40, 0xff},
@@ -188,16 +188,57 @@ static struct imgsensor_struct imgsensor = {
 };
 
 /* Sensor output window information */
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
     { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120},        // preview (4208 x 3120)
     { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120},        // capture (4208 x 3120)
-    { 4208, 3120,   0, 392, 4208, 2336,  4208, 2336,  0,  0, 4208, 2336, 0, 0, 4208, 2336},        // VIDEO (4208 x 2368)
+    { 4208, 3120,   0, 392, 4208, 2336,  4208, 2336,  0,  0, 4208, 2336, 0, 0, 4208, 2336},        // VIDEO (4208 x 2336)
     { 4208, 3120,   4, 108, 4200, 2904,   700,  484,  30, 2, 640, 480, 0, 0,  640,  480},        // hight speed video (640 x 480)
-    { 4208, 3120,   4, 474, 4200, 2172,  1400,  724,  60, 2, 1280, 720, 0, 0, 1280,  720}       // slim video (1280 x 720)
-    //{ 4208, 3120,   0, 334, 4208, 2452,  4208, 2452, 472, 2, 3264,2448, 0, 0, 3264, 2448}        // custom1
+    { 4208, 3120,   4, 474, 4200, 2172,  1400,  724,  60, 2, 1280, 720, 0, 0, 1280,  720},       // slim video (1280 x 720)
+    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}        // custom1
 };
 
 #if ENABLE_PDAF
+static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
+{
+	/* Preview mode setting */
+	 {0x02, //VC_Num
+	  0x0a, //VC_PixelNum
+	  0x00, //ModeSelect	/* 0:auto 1:direct */
+	  0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
+	  0x00, //0DValue		/* 0D Value */
+	  0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
+	  0x00, 0x2B, 0x0838, 0x0618,	// VC0 Maybe image data?
+	  0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
+	  0x01, 0x30, 0x0140, 0x0300,   // VC2 PDAF
+	  0x00, 0x00, 0x0000, 0x0000},	// VC3 ??
+
+	/* Capture mode setting */
+	 {0x02, //VC_Num
+	  0x0a, //VC_PixelNum
+	  0x00, //ModeSelect	/* 0:auto 1:direct */
+	  0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
+	  0x00, //0DValue		/* 0D Value */
+	  0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
+	  0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
+	  0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
+	  //0x01, 0x30, 0x0000, 0x0000,   // VC2 PDAF
+	  0x01, 0x30, 0x0140, 0x0300,   // VC2 PDAF
+	  0x00, 0x00, 0x0000, 0x0000},	// VC3 ??
+
+	/* Video mode setting */
+	{0x02, //VC_Num
+	 0x0a, //VC_PixelNum
+	 0x00, //ModeSelect    /* 0:auto 1:direct */
+	 0x00, //EXPO_Ratio    /* 1/1, 1/2, 1/4, 1/8 */
+	 0x00, //0DValue	   /* 0D Value */
+	 0x00, //RG_STATSMODE  /* STATS divistion mode 0:16x16	1:8x8  2:4x4  3:1x1 */
+	 0x00, 0x2B, 0x1070, 0x0C30,   // VC0 Maybe image data?
+	 0x00, 0x00, 0x0000, 0x0000,   // VC1 MVHDR
+	 //0x01, 0x30, 0x0000, 0x0000,	 // VC2 PDAF
+	 0x01, 0x30, 0x0140, 0x0300,   // VC2 PDAF
+	 0x00, 0x00, 0x0000, 0x0000},  // VC3 ??
+};
+
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
     .i4OffsetX = 56,
@@ -1723,18 +1764,10 @@ static void capture_setting(kal_uint16 currefps)
     LOG_INF("E! %s currefps:%d\n",__func__,currefps);
 #if MULTI_WRITE
     LOG_INF("capture_setting multi write\n");
-    if (currefps > 150) {
     mot_ellis_hi1336_table_write_cmos_sensor(
         addr_data_pair_capture_30fps_mot_ellis_hi1336,
         sizeof(addr_data_pair_capture_30fps_mot_ellis_hi1336) /
         sizeof(kal_uint16));
-
-    } else {
-    mot_ellis_hi1336_table_write_cmos_sensor(
-        addr_data_pair_capture_15fps_mot_ellis_hi1336,
-        sizeof(addr_data_pair_capture_15fps_mot_ellis_hi1336) /
-        sizeof(kal_uint16));
-    }
 #else
     LOG_INF("capture_setting normal write\n");
     if( currefps > 150) {
@@ -2960,7 +2993,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorPacketECCOrder = 1;
 
 #if ENABLE_PDAF
-    sensor_info->PDAF_Support = 1;
+    sensor_info->PDAF_Support = 2;
 #endif
     sensor_info->calibration_status.mnf = mnf_status;
     sensor_info->calibration_status.af = af_status;
@@ -3321,6 +3354,7 @@ static kal_uint32 feature_control(
 
 #if ENABLE_PDAF
     struct SET_PD_BLOCK_INFO_T *PDAFinfo;
+    struct SENSOR_VC_INFO_STRUCT *pvcinfo;
 #endif
 
     unsigned long long *feature_data =
@@ -3495,7 +3529,7 @@ static kal_uint32 feature_control(
                 sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
         break;
         case MSDK_SCENARIO_ID_CUSTOM1:
-            memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[3],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+            memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
         break;
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
         default:
@@ -3538,7 +3572,7 @@ static kal_uint32 feature_control(
                 #ifdef __ENABLE_VIDEO_CUSTOM_PDAF__
                 *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1; // video & capture use same setting
                 #else
-                *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+                *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
                 #endif
                 break;
             case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
@@ -3548,7 +3582,7 @@ static kal_uint32 feature_control(
                 *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
                 break;
             case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-                *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+                *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
                 break;
             case MSDK_SCENARIO_ID_CUSTOM1:
                 #ifdef __ENABLE_VIDEO_CUSTOM_PDAF__
@@ -3562,6 +3596,27 @@ static kal_uint32 feature_control(
                 break;
         }
         break;
+    case SENSOR_FEATURE_GET_VC_INFO:
+        LOG_INF("SENSOR_FEATURE_GET_VC_INFO %d\n", (UINT16)*feature_data);
+        pvcinfo = (struct SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+        switch (*feature_data_32)
+        {
+            case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+                LOG_INF("SENSOR_FEATURE_GET_VC_INFO CAPTURE_JPEG\n");
+                memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1],sizeof(struct SENSOR_VC_INFO_STRUCT));
+                break;
+            case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+                LOG_INF("SENSOR_FEATURE_GET_VC_INFO VIDEO PREVIEW\n");
+                memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[2],sizeof(struct SENSOR_VC_INFO_STRUCT));
+                break;
+            case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+                LOG_INF("SENSOR_FEATURE_GET_VC_INFO DEFAULT_PREVIEW\n");
+                memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(struct SENSOR_VC_INFO_STRUCT));
+                break;
+            default:
+                break;
+        }
+        break;
     case SENSOR_FEATURE_GET_PDAF_INFO:
         pr_info("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%llu\n", *feature_data);
         PDAFinfo= (struct SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
@@ -3571,9 +3626,7 @@ static kal_uint32 feature_control(
                 memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(struct SET_PD_BLOCK_INFO_T));
                 break;
             case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-                #ifdef __ENABLE_VIDEO_CUSTOM_PDAF__
-                memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info_4208_2368,sizeof(struct SET_PD_BLOCK_INFO_T));
-                #endif
+                memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(struct SET_PD_BLOCK_INFO_T));
                 break;
             case MSDK_SCENARIO_ID_CUSTOM1:
                 #ifdef __ENABLE_VIDEO_CUSTOM_PDAF__
@@ -3583,12 +3636,18 @@ static kal_uint32 feature_control(
             case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
             case MSDK_SCENARIO_ID_SLIM_VIDEO:
             case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+                memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(struct SET_PD_BLOCK_INFO_T));
+                break;
             default:
                 break;
         }
         break;
     case SENSOR_FEATURE_GET_PDAF_DATA:
         pr_info("SENSOR_FEATURE_GET_PDAF_DATA\n");
+        break;
+    case SENSOR_FEATURE_SET_PDAF:
+        LOG_ERR("[HI1336] PDAF mode : %d\n", *feature_data_16);
+        imgsensor.pdaf_mode = *feature_data_16;
         break;
 #endif
 
