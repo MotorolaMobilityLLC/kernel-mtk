@@ -69,7 +69,7 @@ static struct pinctrl_state *ocp8132_hw_ch1_low;
 static int use_count;
 
 static int g_flash_duty = -1;
-static int g_flash_channel_idx;
+static int g_flash_channel_idx = 0;
 
 /* platform data */
 struct ocp8132_platform_data {
@@ -121,35 +121,29 @@ static int ocp8132_pinctrl_init(struct platform_device *pdev)
 static int ocp8132_pinctrl_set(int pin, int state)
 {
 	int ret = 0;
-	struct pinctrl_state *ocp8132_hw_chx_low = ocp8132_hw_ch0_low;
-	struct pinctrl_state *ocp8132_hw_chx_high = ocp8132_hw_ch0_high;
 
 	if (IS_ERR(ocp8132_pinctrl)) {
 		pr_info("pinctrl is not available\n");
 		return -1;
 	}
 
-	PK_DBG("g_flash_channel_idx = %d\n", g_flash_channel_idx);
-	if (g_flash_channel_idx == 0) {
-		ocp8132_hw_chx_low = ocp8132_hw_ch0_low;
-		ocp8132_hw_chx_high = ocp8132_hw_ch0_high;
-	} else if (g_flash_channel_idx == 1) {
-		ocp8132_hw_chx_low = ocp8132_hw_ch1_low;
-		ocp8132_hw_chx_high = ocp8132_hw_ch1_high;
-	} else {
-		PK_DBG("please check g_flash_channel_idx!!!\n");
-	}
-
 	switch (pin) {
 	case OCP8132_PINCTRL_PIN_HWEN:
-		if (state == OCP8132_PINCTRL_PINSTATE_LOW && !IS_ERR(ocp8132_hw_chx_low))
-			ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_chx_low);
-		else if (state == OCP8132_PINCTRL_PINSTATE_HIGH && !IS_ERR(ocp8132_hw_chx_high))
-			ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_chx_high);
-		if(g_flash_channel_idx == 1)
+		if (state == OCP8132_PINCTRL_PINSTATE_LOW
+			&& !IS_ERR(ocp8132_hw_ch0_low) && !IS_ERR(ocp8132_hw_ch1_low))
+		{
 			ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_ch0_low);
-		else if(g_flash_channel_idx == 0)
 			ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_ch1_low);
+		}
+		else if (state == OCP8132_PINCTRL_PINSTATE_HIGH
+			&& !IS_ERR(ocp8132_hw_ch0_high) && !IS_ERR(ocp8132_hw_ch1_high) && !IS_ERR(ocp8132_hw_ch1_low))
+		{
+			ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_ch0_high);
+			if(g_flash_channel_idx == 1)
+				ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_ch1_high);
+			else if(g_flash_channel_idx == 0)
+				ret = pinctrl_select_state(ocp8132_pinctrl, ocp8132_hw_ch1_low);
+		}
 		break;
 	default:
 		pr_info("set err, pin(%d) state(%d)\n", pin, state);
@@ -244,8 +238,6 @@ static int ocp8132_ioctl(unsigned int cmd, unsigned long arg)
 
 	fl_arg = (struct flashlight_dev_arg *)arg;
 	channel = fl_arg->channel;
-	if(g_flash_duty == 1)//for preflash and torch using torch mode
-		g_flash_channel_idx = channel;
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
@@ -256,8 +248,10 @@ static int ocp8132_ioctl(unsigned int cmd, unsigned long arg)
 	case FLASH_IOC_SET_DUTY:
 		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",channel, (int)fl_arg->arg);
 		ocp8132_set_level(fl_arg->arg);
-		if((int)fl_arg->arg == 0)//for preflash and torch using torch mode
-			g_flash_channel_idx = 1;//for preflash and torch using torch mode
+		if((int)fl_arg->arg >= 15)
+			g_flash_channel_idx = 1;
+		else
+			g_flash_channel_idx = 0;
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
@@ -620,3 +614,4 @@ module_exit(flashlight_ocp8132_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Simon Wang <Simon-TCH.Wang@mediatek.com>");
 MODULE_DESCRIPTION("MTK Flashlight OCP8132 GPIO Driver");
+
