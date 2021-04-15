@@ -664,6 +664,8 @@
 
 &pdc {
 	pd_vbus_upper_bound = <5000000>;
+	sc_charger_current = <2000000>;
+	sc_input_current = <2000000>;
 };
 
 #include "mt6765-moto-ellis-fps.dtsi"
