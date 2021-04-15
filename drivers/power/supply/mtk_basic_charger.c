@@ -146,6 +146,7 @@ static bool support_fast_charging(struct mtk_charger *info)
 			break;
 		}
 	}
+        chr_debug("support_fast_charging ret: %d\n", ret);
 	return ret;
 }
 
@@ -228,10 +229,15 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		is_basic = true;
 	}
 
-	if (support_fast_charging(info))
+        chr_debug("%s info: chr_type:%d ac_input:%d ac_chg:%d conf:%d", __func__, info->chr_type,
+                info->data.ac_charger_input_current, info->data.ac_charger_current, info->config);
+
+	if (support_fast_charging(info)) {
 		is_basic = false;
-	else {
+                chr_debug("%s is_basic:false", __func__);
+        }else {
 		is_basic = true;
+                chr_debug("%s is_basic:true", __func__);
 		/* AICL */
 		charger_dev_run_aicl(info->chg1_dev,
 			&pdata->input_current_limit_by_aicl);
@@ -282,7 +288,6 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	}
 
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
-
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	if (pdata->thermal_charging_current_limit != -1) {
@@ -295,6 +300,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 	} else
 		info->setting.charging_current_limit1 = -1;
+                chr_debug("%s info:charging_current_limit1 = %d",  __func__, info->setting.charging_current_limit1);
 
 	if (pdata->thermal_input_current_limit != -1) {
 		if (pdata->thermal_input_current_limit <
@@ -306,6 +312,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 	} else
 		info->setting.input_current_limit1 = -1;
+                chr_debug("%s info:input_current_limit1 = %d", __func__, info->setting.input_current_limit1);
 
 	if (pdata2->thermal_charging_current_limit != -1) {
 		if (pdata2->thermal_charging_current_limit <
@@ -336,11 +343,15 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 					pdata->input_current_limit_by_aicl;
 	}
 
-	if (pdata->moto_chg_tcmd_ibat != -1)
+	if (pdata->moto_chg_tcmd_ibat != -1) {
 		pdata->charging_current_limit = pdata->moto_chg_tcmd_ibat;
+                info->setting.charging_current_limit1 = pdata->moto_chg_tcmd_ibat;//may not need as tcmd use normal usb as basic type
+        }
 
-	if (pdata->moto_chg_tcmd_ichg != -1)
+	if (pdata->moto_chg_tcmd_ichg != -1) {
 		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
+                info->setting.input_current_limit1 = pdata->moto_chg_tcmd_ichg;//may not need as tcmd use normal usb as basic type
+        }
 done:
 
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
