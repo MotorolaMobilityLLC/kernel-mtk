@@ -182,7 +182,8 @@ obj-$(CONFIG_THERMAL) += mtk_ts_imgsensor.o
 obj-$(CONFIG_THERMAL) += mtk_ts_dctm.o
 endif
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
-
+obj-$(CONFIG_THERMAL) += mtk_ts_wtcharger.o
+obj-$(CONFIG_THERMAL) += mtk_ts_wtmbtherm.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
