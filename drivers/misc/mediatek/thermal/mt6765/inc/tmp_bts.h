@@ -13,6 +13,8 @@
 
 #define AUX_IN0_NTC (0)
 #define AUX_IN1_NTC (1)
+#define AUX_IN2_NTC (2)
+#define AUX_IN3_NTC (3)
 
 #define BTS_RAP_PULL_UP_R		390000 /* 390K, pull up resister */
 
@@ -37,6 +39,31 @@
 #define BTSMDPA_RAP_NTC_TABLE		7 /* default is NCP15WF104F03RC(100K) */
 
 #define BTSMDPA_RAP_ADC_CHANNEL		AUX_IN1_NTC /* default is 1 */
+
+/* Add the NTC of Main Board(RT1707), to detect the temperature of main board skin. */
+#define MBTHERM_RAP_PULL_UP_R               390000 /* 390K, pull up resister */
+
+#define MBTHERM_TAP_OVER_CRITICAL_LOW       4397119 /* base on 100K NTC temp
+                                                 * default value -40 deg
+                                                 */
+
+#define MBTHERM_RAP_PULL_UP_VOLTAGE         1800 /* 1.8V ,pull up voltage */
+
+#define MBTHERM_RAP_NTC_TABLE               7 /* default is NCP15WF104F03RC(100K) */
+
+#define MBTHERM_RAP_ADC_CHANNEL             AUX_IN2_NTC /* default is 2 */
+/* Add the NTC of charger(RT1704), to detect the temperature of Charge's pmic IC. */
+#define WTCHARGER_RAP_PULL_UP_R               390000 /* 390K, pull up resister */
+
+#define WTCHARGER_TAP_OVER_CRITICAL_LOW       4397119 /* base on 100K NTC temp
+                                                 * default value -40 deg
+                                                 */
+
+#define WTCHARGER_RAP_PULL_UP_VOLTAGE         1800 /* 1.8V ,pull up voltage */
+
+#define WTCHARGER_RAP_NTC_TABLE               7 /* default is NCP15WF104F03RC(100K) */
+
+#define WTCHARGER_RAP_ADC_CHANNEL             AUX_IN3_NTC /* default is 0 */
 
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
