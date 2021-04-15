@@ -87,6 +87,7 @@ int set_bdg_data_rate(unsigned int data_rate);
 unsigned int get_bdg_line_cycle(void);
 unsigned int get_dsc_state(void);
 unsigned int get_mt6382_init(void);
+unsigned int get_bdg_tx_mode(void);
 int check_stopstate(void *cmdq);
 
 unsigned int mtk_spi_read(u32 addr);

@@ -53,6 +53,7 @@ unsigned int hsa_byte = 0, hbp_byte = 0, hfp_byte = 0, bllp_byte = 0, bg_tx_line
 //unsigned int ap_tx_hsa_wc = 0, ap_tx_hbp_wc = 0, ap_tx_hfp_wc = 0, ap_tx_bllp_wc = 0;
 unsigned int dsc_en;
 unsigned int mt6382_init;
+unsigned int bdg_tx_mode;
 
 #define T_DCO		5  // nominal: 200MHz
 int hsrx_clk_div;
@@ -2748,6 +2749,13 @@ unsigned int get_mt6382_init(void)
 	return mt6382_init;
 }
 
+unsigned int get_bdg_tx_mode(void)
+{
+	DISPMSG("%s, bdg_tx_mode=%d\n", __func__, bdg_tx_mode);
+
+	return bdg_tx_mode;
+}
+
 #define DELAY_US 1
 void mt6382_nt36672c_fhd_vdo_init(bool dsc_on)
 {
@@ -4174,7 +4182,7 @@ int lcm_init(enum DISP_BDG_ENUM module)
 	DISPFUNCSTART();
 
 //	mt6382_nt36672c_fhd_vdo_init(dsc_en);
-#if 0
+#if 1
 	if (dsc_en) {
 		if (tx_data_rate < 601)
 			push_table(nt36672c_60hz, sizeof(nt36672c_60hz) /
@@ -4200,8 +4208,8 @@ int lcm_init(enum DISP_BDG_ENUM module)
 			sizeof(struct lcm_setting_table), 1);
 	}
 #endif
-	push_table(nt35695b_cmd_mode, sizeof(nt35695b_cmd_mode) /
-		sizeof(struct lcm_setting_table), 1);
+	//push_table(nt35695b_cmd_mode, sizeof(nt35695b_cmd_mode) /
+	//	sizeof(struct lcm_setting_table), 1);
 
 
 	DISPFUNCEND();
@@ -4221,10 +4229,11 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 	tx_params->data_rate = tx_data_rate > 0 ?
 				tx_data_rate : tx_params->data_rate;
 	dsc_en = tx_params->bdg_dsc_enable;
+	bdg_tx_mode = tx_params->mode;
 
 	DISPMSG("%s, tx_data_rate=%d, bdg_ssc_disable=%d, ssc_disable=%d, dsc_enable=%d, mode=%d\n",
 		__func__, tx_data_rate, tx_params->bdg_ssc_disable,
-		tx_params->ssc_disable, dsc_en, tx_params->mode);
+		tx_params->ssc_disable, dsc_en, bdg_tx_mode);
 
 	ret |= bdg_mipi_tx_dphy_clk_setting(module, cmdq, tx_params);
 	udelay(20);
@@ -4239,7 +4248,7 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 	ret |= bdg_dsi_line_timing_dphy_setting(module, cmdq, tx_params);
 
 	/* panel init*/
-//	lcm_init(module);
+	lcm_init(module);
 
 	ret |= bdg_tx_set_mode(module, cmdq, tx_params->mode);
 

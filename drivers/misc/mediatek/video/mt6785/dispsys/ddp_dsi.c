@@ -6024,7 +6024,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 			      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 	}
 #ifdef CONFIG_MTK_MT6382_BDG
-	if (get_mt6382_init() == 1) {
+	if (get_mt6382_init() == 1 && (get_bdg_tx_mode() == CMD_MODE)) {
 		bdg_tx_cmd_mode(DISP_BDG_DSI0, NULL);
 		bdg_tx_start(DISP_BDG_DSI0, NULL);
 		bdg_mutex_trigger(DISP_BDG_DSI0, NULL);
@@ -6116,7 +6116,8 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	if (atomic_read(&dsi_idle_flg) == 0)
 		DSI_exit_ULPS(module);
 #ifdef CONFIG_MTK_MT6382_BDG
-	check_stopstate(NULL);
+	if (check_stopstate(NULL) == 0 && (get_bdg_tx_mode() != CMD_MODE))
+		bdg_tx_start(DISP_BDG_DSI0, NULL);
 #endif
 	DSI_Reset(module, NULL);
 	_set_power_on_status(module, 1);
