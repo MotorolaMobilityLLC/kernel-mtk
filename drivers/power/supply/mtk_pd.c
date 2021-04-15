@@ -59,6 +59,7 @@
 
 #include "mtk_pd.h"
 #include "mtk_charger_algorithm_class.h"
+#include "mtk_charger.h"
 
 static int pd_dbg_level = PD_DEBUG_LEVEL;
 #define PD_VBUS_IR_DROP_THRESHOLD 1200
@@ -578,7 +579,7 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 	pd_max_watt = cap->max_mv[idx] * (cap->ma[idx]
 			/ 100 * (100 - pd->ibus_err) - 100);
 
-	pd_dbg("pd_max_watt:%d %d %d %d %d\n", idx,
+	pd_err("pd_max_watt:%d %d %d %d %d\n", idx,
 		cap->max_mv[idx],
 		cap->ma[idx],
 		pd->ibus_err,
@@ -586,7 +587,7 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 
 
 	now_max_watt = cap->max_mv[idx] * ibus + chg2_watt;
-	pd_dbg("now_max_watt:%d %d %d %d %d\n", idx,
+	pd_err("now_max_watt:%d %d %d %d %d\n", idx,
 		cap->max_mv[idx],
 		ibus,
 		chg2_watt,
@@ -596,11 +597,14 @@ int __mtk_pdc_get_setting(struct chg_alg_device *alg, int *newvbus, int *newcur,
 			/ 100 * (100 - pd->ibus_err)
 			- pd->vsys_watt;
 
-	pd_dbg("pd_min_watt:%d %d %d %d %d\n", pd->pd_buck_idx,
+	pd_err("pd_min_watt:%d %d %d %d %d\n", pd->pd_buck_idx,
 		cap->max_mv[pd->pd_buck_idx],
 		cap->ma[pd->pd_buck_idx],
 		pd->ibus_err,
 		pd->vsys_watt);
+
+
+        pd_err("pd_idx: pd_boost_idx:%d pd_buck_idx:%d\n", pd->pd_boost_idx, pd->pd_buck_idx);
 
 	if (pd_min_watt <= 5000000)
 		pd_min_watt = 5000000;
@@ -641,6 +645,30 @@ reset:
 	return 0;
 }
 
+
+int pd_sc_set_mmi_target_fcc (struct mtk_pd *pd) {
+        static struct mtk_charger *pinfo;
+        int ret = 0;
+	struct power_supply *psy;
+
+	if (pinfo == NULL) {
+		psy = power_supply_get_by_name("mtk-master-charger");
+		if (psy == NULL) {
+			pd_err("[%s]psy is not rdy\n", __func__);
+			return -1;
+		}
+
+		pinfo = (struct mtk_charger *)power_supply_get_drvdata(psy);
+		if (pinfo == NULL) {
+			pd_err("[%s]mtk_gauge is not rdy\n", __func__);
+			return -1;
+		}
+                if(pd != NULL)
+                        pd->sc_charger_current = ((pinfo->mmi.target_fcc < 0) ? 0 : pinfo->mmi.target_fcc);
+	}
+        return ret;
+}
+
 static int pd_sc_set_charger(struct chg_alg_device *alg)
 {
 	struct mtk_pd *pd;
@@ -656,6 +684,9 @@ static int pd_sc_set_charger(struct chg_alg_device *alg)
 	}
 
 	mutex_lock(&pd->data_lock);
+
+        pd_sc_set_mmi_target_fcc(pd);
+
 	if (pd->charging_current_limit1 != -1) {
 		if (pd->charging_current_limit1 <
 			pd->sc_charger_current)
@@ -696,7 +727,7 @@ static int pd_sc_set_charger(struct chg_alg_device *alg)
 	pd_hal_set_cv(alg,
 		CHG1, pd->cv);
 
-	pd_dbg("%s m:%d s:%d cv:%d chg1:%d,%d min:%d:%d\n", __func__,
+	pd_err("%s m:%d s:%d cv:%d chg1:%d,%d min:%d:%d\n", __func__,
 		alg->config,
 		pd->state,
 		pd->cv,
@@ -813,7 +844,7 @@ static int pd_dcs_set_charger(struct chg_alg_device *alg)
 	pd_hal_set_cv(alg,
 		CHG1, pd->cv);
 
-	pd_dbg("%s m:%d s:%d cv:%d chg1:%d,%d chg2:%d,%d chg2en:%d min:%d,%d,%d\n",
+	pd_err("%s m:%d s:%d cv:%d chg1:%d,%d chg2:%d,%d chg2en:%d min:%d,%d,%d\n",
 		__func__,
 		alg->config,
 		pd->state,
@@ -1247,7 +1278,7 @@ int _pd_set_setting(struct chg_alg_device *alg_dev,
 {
 	struct mtk_pd *pd;
 
-	pd_dbg("%s cv:%d icl:%d,%d cc:%d,%d\n",
+	pd_err("%s cv:%d icl:%d,%d cc:%d,%d\n",
 		__func__,
 		setting->cv,
 		setting->input_current_limit1,

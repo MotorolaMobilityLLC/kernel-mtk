@@ -2862,12 +2862,8 @@ int psy_charger_set_property(struct power_supply *psy,
 			info->enable_hv_charging = false;
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
-#ifdef CONFIG_MTK_BQ2560x_SUPPORT
-                pr_err("ignore thermal limit charging current:%d\n", val->intval);
-#else
 		info->chg_data[idx].thermal_charging_current_limit =
 			val->intval;
-#endif
 		break;
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
 		info->chg_data[idx].thermal_input_current_limit =
