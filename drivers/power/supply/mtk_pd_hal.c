@@ -231,6 +231,15 @@ int pd_hal_get_ibus(struct chg_alg_device *alg, int *ibus)
 	if (ret < 0)
 		pr_notice("%s: get vbus failed: %d\n", __func__, ret);
 
+	if(ret == -ENOTSUPP)
+	{
+		pr_err("roll back to get input current\n");
+		ret = charger_dev_get_input_current(hal->chg1_dev, ibus);
+		if (ret < 0)
+			pr_notice("%s: get input current failed: %d\n", __func__, ret);
+	}
+
+
 	return ret;
 }
 
