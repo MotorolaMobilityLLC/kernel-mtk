@@ -478,6 +478,13 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 		typec_set_data_role(tcpc->typec_port, TYPEC_DEVICE);
 		typec_set_pwr_role(tcpc->typec_port, TYPEC_SINK);
 		typec_set_vconn_role(tcpc->typec_port, TYPEC_SINK);
+#ifdef CONFIG_TCPC_SGM7220
+		if (!tcpc->partner) {
+			tcpc->partner = typec_register_partner(tcpc->typec_port, &tcpc->partner_desc);
+			if (!tcpc->partner)
+				TCPC_ERR("register partner failed\r\n");
+		}
+#endif
 		break;
 	case TYPEC_ATTACHED_SRC:
 		tcpc->dual_role_pr = DUAL_ROLE_PROP_PR_SRC;
@@ -489,6 +496,13 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 		typec_set_data_role(tcpc->typec_port, TYPEC_HOST);
 		typec_set_pwr_role(tcpc->typec_port, TYPEC_SOURCE);
 		typec_set_vconn_role(tcpc->typec_port, TYPEC_SOURCE);
+#ifdef CONFIG_TCPC_SGM7220
+		if (!tcpc->partner) {
+			tcpc->partner = typec_register_partner(tcpc->typec_port, &tcpc->partner_desc);
+			if (!tcpc->partner)
+				TCPC_ERR("register partner failed\r\n");
+		}
+#endif
 		break;
 	default:
 		break;
@@ -540,7 +554,13 @@ static inline int tcpci_report_usb_port_detached(struct tcpc_device *tcpc)
 		tcpc_enable_timer(tcpc, TYPEC_RT_TIMER_PE_IDLE);
 	}
 #endif /* CONFIG_USB_POWER_DELIVERY */
-
+#ifdef CONFIG_TCPC_SGM7220
+	if (tcpc->partner) {
+		typec_unregister_partner(tcpc->partner);
+		TCPC_INFO("tcpci_report_usb_port_detached typec_unregister_partner start\n");
+	}
+	tcpc->partner = NULL;
+#endif
 	tcpci_set_wake_lock_pd(tcpc, false);
 	return 0;
 }
