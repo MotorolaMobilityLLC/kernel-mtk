@@ -346,7 +346,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 		} else if (chip->type_c_param_old.attach_state == CABLE_STATE_AS_DFP) {
 			tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SRC;
 		}
-		tcpci_notify_typec_state(tcpc_dev);
+		tcpci_report_usb_port_changed(tcpc_dev);
 		if (chip->type_c_param_old.attach_state == CABLE_STATE_AS_DFP) {
 			tcpci_source_vbus(tcpc_dev,
 				TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
@@ -357,7 +357,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 	if ((chip->type_c_param.attach_state == CABLE_STATE_AS_UFP) &&
 		(chip->type_c_param_old.attach_state != CABLE_STATE_AS_UFP)) {
 		tcpc_dev->typec_attach_new = TYPEC_ATTACHED_SNK;
-		tcpci_notify_typec_state(tcpc_dev);
+		tcpci_report_usb_port_changed(tcpc_dev);
 		tcpci_source_vbus(tcpc_dev,
 			TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SNK;
@@ -366,7 +366,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 	if ((chip->type_c_param.attach_state == CABLE_STATE_AS_DFP) &&
 		(chip->type_c_param_old.attach_state != CABLE_STATE_AS_DFP)) {
 		tcpc_dev->typec_attach_new = TYPEC_ATTACHED_SRC;
-		tcpci_notify_typec_state(tcpc_dev);
+		tcpci_report_usb_port_changed(tcpc_dev);
 		tcpci_source_vbus(tcpc_dev,
 			TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, -1);
 		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SRC;
