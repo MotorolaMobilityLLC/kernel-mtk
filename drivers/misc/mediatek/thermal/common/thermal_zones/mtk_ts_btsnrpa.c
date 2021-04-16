@@ -1332,7 +1332,7 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 			/* check unsupport pin value, if unsupport,
 			 * set channel = 1 as default setting.
 			 */
-			g_RAP_ADC_channel = AUX_IN1_NTC;
+			g_RAP_ADC_channel = AUX_IN2_NTC;
 		else {
 			g_RAP_ADC_channel = adc_channel;
 		}
