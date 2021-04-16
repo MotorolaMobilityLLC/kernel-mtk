@@ -234,6 +234,8 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 		} else
 			LEDS_DEBUG("led dts can't get pwm config\n");
 
+		pled_dtsi[i].i2c_bd = NULL;
+
 		switch (pled_dtsi[i].mode) {
 		case MT65XX_LED_MODE_CUST_LCM:
 #if defined(CONFIG_BACKLIGHT_SUPPORT_LM3697)
@@ -845,16 +847,18 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 		return ((cust_brightness_set) (cust->data)) (level, bl_div_hal);
 
 	case MT65XX_LED_MODE_I2C:
-		if (strcmp(cust->name, "lcd-backlight") == 0)
+		if (strcmp(cust->name, "lcd-backlight") == 0) {
 			bl_brightness_hal = level;
-		LEDS_DEBUG("%s backlight control by I2C bl driver\n", __func__);
-		if (!(cust->i2c_bd))
-			cust->i2c_bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
+			if (!(cust->i2c_bd)) {
+				LEDS_DEBUG("%s backlight control get i2c_bd\n", __func__);
+				cust->i2c_bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
+			}
 
-		if(cust->i2c_bd)
-			return backlight_device_set_brightness(cust->i2c_bd, level);
-		else
-			pr_err("%s backlight control by I2C bl: no i2c_bd\n", __func__);
+			if(cust->i2c_bd)
+				return backlight_device_set_brightness(cust->i2c_bd, level);
+			else
+				pr_err("%s backlight control by I2C bl: no i2c_bd\n", __func__);
+		}
 		break;
 
 	case MT65XX_LED_MODE_CUST_BLS_PWM:
