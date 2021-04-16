@@ -323,6 +323,13 @@ int charger_dev_enable_powerpath(struct charger_device *chg_dev, bool en)
 	    chg_dev->ops->enable_powerpath)
 		return chg_dev->ops->enable_powerpath(chg_dev, en);
 
+	if (chg_dev == NULL)
+		pr_err("the chg_dev is null\n");
+	else if(chg_dev->ops == NULL)
+		pr_err("the chg_dev ops is null\n");
+	else if(chg_dev->ops->enable_powerpath == NULL)
+		pr_err("the chg_dev ops enable_powerpath is null\n");
+
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_enable_powerpath);
