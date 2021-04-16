@@ -110,7 +110,10 @@ int setMaxbrightness(int max_level, int enable)
 	mutex_lock(&bl_level_limit_mutex);
 	if (enable == 1) {
 		limit_flag = 1;
-		limit = max_level;
+		if(cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness)
+			limit = max_level*cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness/255;
+		else
+			limit = max_level;
 		mutex_unlock(&bl_level_limit_mutex);
 		if (current_level != 0) {
 			if (limit < last_level) {
@@ -127,7 +130,10 @@ int setMaxbrightness(int max_level, int enable)
 		}
 	} else {
 		limit_flag = 0;
-		limit = 255;
+		if(cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness)
+			limit = cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness;
+		else
+			limit = 255;
 		mutex_unlock(&bl_level_limit_mutex);
 
 		if (current_level != 0) {
@@ -507,7 +513,10 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 #ifdef CONTROL_BL_TEMPERATURE
 
 	last_level = 0;
-	limit = 255;
+	if(cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness)
+		limit = cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness;
+	else
+		limit = 255;
 	limit_flag = 0;
 	current_level = 0;
 	pr_debug
