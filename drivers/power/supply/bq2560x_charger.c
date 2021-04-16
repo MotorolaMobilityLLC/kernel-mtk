@@ -952,9 +952,7 @@ static int bq2560x_charging(struct charger_device *chg_dev, bool enable)
 	return ret;
 }
 
-//+Bug 597174,lishuwen.wt,2020.11.06,modify,add charger current nod
-#ifdef WT_COMPILE_FACTORY_VERSION
-#if defined(CONFIG_WT_PROJECT_T99653AA1) || defined(CONFIG_WT_PROJECT_T99652AA1)
+//EKELLIS-68,yaocankun,add,20210413,enable usb suspend
 static int bq2560x_enable_vbus(struct charger_device *chg_dev, bool enable)
 {
 
@@ -971,9 +969,7 @@ static int bq2560x_enable_vbus(struct charger_device *chg_dev, bool enable)
 
 	return ret;
 }
-#endif
-#endif
-//-Bug 597174,lishuwen.wt,2020.11.06,modify,add charger current nod
+//EKELLIS-68,yaocankun,add,20210413,enable usb suspend
 
 static int bq2560x_plug_in(struct charger_device *chg_dev)
 {
@@ -1328,7 +1324,7 @@ static struct charger_ops bq2560x_chg_ops = {
 	.is_safety_timer_enabled = bq2560x_is_safety_timer_enabled,
 
 	/* Power path */
-	.enable_powerpath = NULL,
+	.enable_powerpath = bq2560x_enable_vbus,
 	.is_powerpath_enabled = NULL,
 
 	/* OTG */
