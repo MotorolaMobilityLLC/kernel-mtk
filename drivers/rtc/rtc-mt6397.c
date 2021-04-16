@@ -1225,12 +1225,44 @@ static int mtk_rtc_ioctl(struct device *dev, unsigned int cmd, unsigned long arg
 	return err;
 }
 
+static int mtk_rtc_irq_enable(struct device *dev, unsigned int enabled)
+{
+	unsigned int irqen;
+	int ret;
+	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
+
+	mutex_lock(&rtc->lock);
+
+	ret = regmap_read(rtc->regmap, rtc->addr_base + RTC_IRQ_EN, &irqen);
+	if (ret < 0)
+		goto exit;
+
+	if (enabled)
+		irqen = irqen | RTC_IRQ_EN_ONESHOT_AL;
+	else
+		irqen = irqen & ~RTC_IRQ_EN_AL;
+
+	ret = regmap_write(rtc->regmap, rtc->addr_base + RTC_IRQ_EN, irqen);
+	if (ret < 0)
+		goto exit;
+	ret = mtk_rtc_write_trigger(rtc);
+	mutex_unlock(&rtc->lock);
+
+	return ret;
+
+exit:
+	mutex_unlock(&rtc->lock);
+	pr_err("%s error\n", __func__);
+	return ret;
+}
+
 static const struct rtc_class_ops mtk_rtc_ops = {
 	.ioctl      = mtk_rtc_ioctl,
 	.read_time  = mtk_rtc_read_time,
 	.set_time   = mtk_rtc_set_time,
 	.read_alarm = mtk_rtc_read_alarm,
 	.set_alarm  = mtk_rtc_set_alarm,
+	.alarm_irq_enable = mtk_rtc_irq_enable,
 };
 
 static int mtk_rtc_reload(struct mt6397_rtc *rtc)
