@@ -22,6 +22,7 @@ typedef enum{
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
 	IMGSENSOR_MODE_VIDEO,
+	IMGSENSOR_MODE_HS_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
 } IMGSENSOR_MODE;
 
@@ -83,6 +84,7 @@ typedef struct imgsensor_info_struct {
 	imgsensor_mode_struct pre;		/* preview scenario relative information */
 	imgsensor_mode_struct cap;		/* capture scenario relative information */
 	imgsensor_mode_struct normal_video;/* normal video  scenario relative information */
+	imgsensor_mode_struct hs_video;
 	imgsensor_mode_struct slim_video;	/* slim video for VT scenario relative information */
 
 
