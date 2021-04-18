@@ -469,18 +469,20 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
-	LOG_INF("set_gain %d \n", gain);
-	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
+        //max gain 15.5 * 64
+        kal_uint16 max_gain = 992;
+        LOG_INF("set_gain %d \n", gain);
+	if (gain < BASEGAIN || gain > max_gain) {
 		LOG_INF("Error gain setting");
 
 		if (gain < BASEGAIN)
 			gain = BASEGAIN;
-		else if (gain > 16 * BASEGAIN)
-			gain = 16 * BASEGAIN;
+		else if (gain > max_gain)
+			gain = max_gain;
 	}
 
 	//reg_gain = gain2reg(gain);
-	reg_gain = gain*2;
+	reg_gain = gain*4;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
