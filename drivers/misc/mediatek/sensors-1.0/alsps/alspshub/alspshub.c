@@ -408,6 +408,10 @@ static int alshub_factory_enable_sensor(bool enable_disable,
 	else
 		WRITE_ONCE(obj->als_factory_enable, false);
 
+	/* Do not actually disable sensor if android is using it */
+	if (!enable_disable && obj->als_android_enable)
+		return 0;
+
 	if (enable_disable == true) {
 		err = sensor_set_delay_to_hub(ID_LIGHT, sample_periods_ms);
 		if (err) {
@@ -523,6 +527,15 @@ static int pshub_factory_enable_sensor(bool enable_disable,
 {
 	int err = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	if (enable_disable == true)
+		WRITE_ONCE(obj->ps_factory_enable, true);
+	else
+		WRITE_ONCE(obj->ps_factory_enable, false);
+
+	/* Do not actually disable sensor if android is using it */
+	if (!enable_disable && obj->ps_android_enable)
+		return 0;
 
 	if (enable_disable == true) {
 		err = sensor_set_delay_to_hub(ID_PROXIMITY, sample_periods_ms);
