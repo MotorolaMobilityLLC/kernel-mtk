@@ -217,9 +217,9 @@ static void set_dummy(void)
 
 	LOG_INF("imgsensor.frame_length = %d\n", imgsensor.frame_length);
 	write_cmos_sensor(0xfd, 0x01);
-	write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-    write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
-    write_cmos_sensor(0xfe, 0x02);//fresh
+	write_cmos_sensor(0x14, ((imgsensor.frame_length-0x4c4) & 0x7F00) >> 8);
+	write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+	write_cmos_sensor(0xfe, 0x02);//fresh
 }    /*    set_dummy  */
 
 static kal_uint32 return_sensor_id(void)
@@ -554,7 +554,6 @@ static void sensor_init(void)
     write_cmos_sensor(0x05, 0x10);
     write_cmos_sensor(0x07, 0x20);
     write_cmos_sensor(0x09, 0xb0);
-	write_cmos_sensor(0x12, 0x03);
     write_cmos_sensor(0xfd, 0x03);
 	write_cmos_sensor(0xc2, 0x01);
     write_cmos_sensor(0xfb, 0x01);
@@ -663,7 +662,6 @@ write_cmos_sensor(0x03, 0x70);
 write_cmos_sensor(0x05, 0x10);
 write_cmos_sensor(0x07, 0x20);
 write_cmos_sensor(0x09, 0xb0);
-write_cmos_sensor(0x12, 0x03);
 write_cmos_sensor(0xfd, 0x03);
 write_cmos_sensor(0xc2, 0x01);
 write_cmos_sensor(0xfb, 0x01);
@@ -772,7 +770,6 @@ write_cmos_sensor(0x03, 0x70);
 write_cmos_sensor(0x05, 0x10);
 write_cmos_sensor(0x07, 0x20);
 write_cmos_sensor(0x09, 0xb0);
-write_cmos_sensor(0x12, 0x03);
 write_cmos_sensor(0xfd, 0x03);
 write_cmos_sensor(0xc2, 0x01);
 write_cmos_sensor(0xfb, 0x01);
@@ -880,7 +877,6 @@ write_cmos_sensor(0x03, 0x70);
 write_cmos_sensor(0x05, 0x10);
 write_cmos_sensor(0x07, 0x20);
 write_cmos_sensor(0x09, 0xb0);
-write_cmos_sensor(0x12, 0x03);
 write_cmos_sensor(0xfd, 0x03);
 write_cmos_sensor(0xc2, 0x01);
 
@@ -988,7 +984,6 @@ write_cmos_sensor(0x03, 0x70);
 write_cmos_sensor(0x05, 0x10);
 write_cmos_sensor(0x07, 0x20);
 write_cmos_sensor(0x09, 0xb0);
-write_cmos_sensor(0x12, 0x03);
 write_cmos_sensor(0xfd, 0x03);
 write_cmos_sensor(0xc2, 0x01);
 
@@ -1096,7 +1091,6 @@ write_cmos_sensor(0x03, 0x70);
 write_cmos_sensor(0x05, 0x10);
 write_cmos_sensor(0x07, 0x20);
 write_cmos_sensor(0x09, 0xb0);
-write_cmos_sensor(0x12, 0x03);
 write_cmos_sensor(0xfd, 0x03);
 write_cmos_sensor(0xc2, 0x01);
 
@@ -1964,7 +1958,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[4], sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-            memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[3],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+            memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
         break;
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
         default:
