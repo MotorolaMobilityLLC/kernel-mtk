@@ -2286,8 +2286,7 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	} else if (mmi->pres_chrg_step == STEP_NORM) {
 		if (!zone->fcc_norm_ma)
 			mmi->pres_chrg_step = STEP_FLOAT;
-		else if ((batt_soc < 100) ||
-			 (batt_mv + HYST_STEP_MV) < max_fv_mv) {
+		else if ((batt_mv + HYST_STEP_MV/2) < max_fv_mv) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_NORM;
 		} else if (mmi_has_current_tapered(info, batt_ma,
@@ -2295,7 +2294,7 @@ static void mmi_charger_check_status(struct charger_manager *info)
 			mmi->pres_chrg_step = STEP_FULL;
 		}
 	} else if (mmi->pres_chrg_step == STEP_FULL) {
-		if (batt_soc <= 99) {
+		if (batt_mv < (max_fv_mv - HYST_STEP_MV * 2)) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_NORM;
 		}
