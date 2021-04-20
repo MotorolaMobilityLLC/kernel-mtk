@@ -8,6 +8,13 @@
 	moto_chg_tcmd: moto_chg_tcmd {
 	};
 
+	disp_leds {
+		backlight {
+			max-brightness = <2047>;
+			led-bits = <11>;
+		};
+	};
+
         msdc1_ins:msdc1_ins {
         };
 
