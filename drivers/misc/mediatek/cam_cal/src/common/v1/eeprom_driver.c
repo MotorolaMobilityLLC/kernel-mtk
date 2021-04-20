@@ -52,6 +52,17 @@ static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
 static unsigned int g_lastDevID;
 
+#define HI556_MODULE_INFO_SIZE 7
+#define HI556_LSC_DATA_SIZE 1868
+#define HI556_AWB_DATA_SIZE 16
+#define MOT_ELLIS_HI556D_SENSOR_ID 0x0556
+extern unsigned char hi556_data_lsc[HI556_LSC_DATA_SIZE + 1];
+extern unsigned char hi556_data_awb[HI556_AWB_DATA_SIZE + 1];
+extern unsigned char hi556_lsc_valid;
+extern unsigned char hi556_awb_valid;
+
+static u32 hi556_vendor_id = 0x19050000;
+
 /***********************************************************
  *
  ***********************************************************/
@@ -662,69 +673,87 @@ static long EEPROM_drv_ioctl(struct file *file,
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
-
-		pr_debug("SensorID=%x DeviceID=%x\n",
-			ptempbuf->sensorID, ptempbuf->deviceID);
-		pcmdInf = EEPROM_get_cmd_info_ex(
-			ptempbuf->sensorID,
-			ptempbuf->deviceID);
-
-		/* Check the max size if specified */
-		if (pcmdInf != NULL &&
-		    (pcmdInf->maxEepromSize != 0) &&
-		    (pcmdInf->maxEepromSize <
-		     (ptempbuf->u4Offset + ptempbuf->u4Length))) {
-			pr_debug("Error!! not support address >= 0x%x!!\n",
-				 pcmdInf->maxEepromSize);
-			kfree(pBuff);
-			kfree(pu1Params);
-			return -EFAULT;
+		pr_debug("SensorID=%x, DeviceID=%x, offset=%d, length=%d, pu1Params:0x%x\n",
+			ptempbuf->sensorID, ptempbuf->deviceID, ptempbuf->u4Offset, ptempbuf->u4Length, *pu1Params);
+		if(ptempbuf->sensorID == MOT_ELLIS_HI556D_SENSOR_ID) {
+			if(ptempbuf->u4Offset == 2){
+				pr_debug("Do layoutcheck\n");
+				memcpy(pu1Params, (u8 *)&hi556_vendor_id, 4);
+		}else{
+			if (ptempbuf->sensorID == 0x556 && ptempbuf->u4Length == 0x10 && ptempbuf->u4Offset == 0x41b && hi556_awb_valid){//HI556 AWB data
+				pr_debug("awb data copy to user\n");
+				memcpy(pu1Params, (u8 *) hi556_data_awb, ptempbuf->u4Length);
+			}
+			if (ptempbuf->sensorID == 0x556 && ptempbuf->u4Length == 0x74C && ptempbuf->u4Offset == 0x452 && hi556_lsc_valid){//HI556 LSC data
+				pr_debug("lsc data copy to user\n");
+				memcpy(pu1Params, (u8 *) hi556_data_lsc, ptempbuf->u4Length);
+			}
 		}
+			i4RetValue = ptempbuf->u4Length;
+		} else {
+			pr_debug("SensorID=%x DeviceID=%x\n",
+				ptempbuf->sensorID, ptempbuf->deviceID);
+			pcmdInf = EEPROM_get_cmd_info_ex(
+				ptempbuf->sensorID,
+				ptempbuf->deviceID);
 
-		if (pcmdInf != NULL && g_lastDevID != ptempbuf->deviceID) {
-			if (EEPROM_set_i2c_bus(ptempbuf->deviceID,
-					       pcmdInf) != 0) {
-				pr_debug("deviceID Error!\n");
+			/* Check the max size if specified */
+			if (pcmdInf != NULL &&
+				(pcmdInf->maxEepromSize != 0) &&
+				(pcmdInf->maxEepromSize <
+				(ptempbuf->u4Offset + ptempbuf->u4Length))) {
+				pr_debug("Error!! not support address >= 0x%x!!\n",
+					pcmdInf->maxEepromSize);
 				kfree(pBuff);
 				kfree(pu1Params);
 				return -EFAULT;
 			}
-			g_lastDevID = ptempbuf->deviceID;
-		}
 
-		if (pcmdInf != NULL) {
-			if (pcmdInf->readCMDFunc != NULL) {
-				if ((ptempbuf->sensorID == 0x885a)
-				&& (ptempbuf->u4Offset == 0x7500))
-					*pu1Params = i4RetValue = ov8856_af_inf;
-				else if ((ptempbuf->sensorID == 0x885a)
-				&& (ptempbuf->u4Offset == 0x7501))
-					*pu1Params = i4RetValue = ov8856_af_mac;
-				else if ((ptempbuf->sensorID == 0x885a)
-				&& (ptempbuf->u4Offset == 0x7502))
-					*pu1Params = i4RetValue = ov8856_af_lsb;
-				else if ((ptempbuf->sensorID == 0x487b)
-				&& (ptempbuf->u4Offset == 0x7500))
-					*pu1Params = i4RetValue = s5k4h7_af_inf;
-				else if ((ptempbuf->sensorID == 0x487b)
-				&& (ptempbuf->u4Offset == 0x7501))
-					*pu1Params = i4RetValue = s5k4h7_af_mac;
-				else if ((ptempbuf->sensorID == 0x487b)
-				&& (ptempbuf->u4Offset == 0x7502))
-					*pu1Params = i4RetValue = s5k4h7_af_lsb;
-				else
-					i4RetValue =
-						pcmdInf->readCMDFunc(
-							  pcmdInf->client,
-							  ptempbuf->u4Offset,
-							  pu1Params,
-							  ptempbuf->u4Length);
+			if (pcmdInf != NULL && g_lastDevID != ptempbuf->deviceID) {
+				if (EEPROM_set_i2c_bus(ptempbuf->deviceID,
+							pcmdInf) != 0) {
+					pr_debug("deviceID Error!\n");
+					kfree(pBuff);
+					kfree(pu1Params);
+					return -EFAULT;
+				}
+				g_lastDevID = ptempbuf->deviceID;
 			}
-			else {
-				pr_debug("pcmdInf->readCMDFunc == NULL\n");
-				kfree(pBuff);
-				kfree(pu1Params);
-				return -EFAULT;
+
+			if (pcmdInf != NULL) {
+				if (pcmdInf->readCMDFunc != NULL) {
+					if ((ptempbuf->sensorID == 0x885a)
+					&& (ptempbuf->u4Offset == 0x7500))
+						*pu1Params = i4RetValue = ov8856_af_inf;
+					else if ((ptempbuf->sensorID == 0x885a)
+					&& (ptempbuf->u4Offset == 0x7501))
+						*pu1Params = i4RetValue = ov8856_af_mac;
+					else if ((ptempbuf->sensorID == 0x885a)
+					&& (ptempbuf->u4Offset == 0x7502))
+						*pu1Params = i4RetValue = ov8856_af_lsb;
+					else if ((ptempbuf->sensorID == 0x487b)
+					&& (ptempbuf->u4Offset == 0x7500))
+						*pu1Params = i4RetValue = s5k4h7_af_inf;
+					else if ((ptempbuf->sensorID == 0x487b)
+					&& (ptempbuf->u4Offset == 0x7501))
+						*pu1Params = i4RetValue = s5k4h7_af_mac;
+					else if ((ptempbuf->sensorID == 0x487b)
+					&& (ptempbuf->u4Offset == 0x7502))
+						*pu1Params = i4RetValue = s5k4h7_af_lsb;
+					else
+						i4RetValue =
+							pcmdInf->readCMDFunc(
+								pcmdInf->client,
+								ptempbuf->u4Offset,
+								pu1Params,
+								ptempbuf->u4Length);
+				}
+				else {
+					pr_debug("pcmdInf->readCMDFunc == NULL\n");
+					kfree(pBuff);
+					kfree(pu1Params);
+					return -EFAULT;
+				}
 			}
 		}
 #ifdef CAM_CALGETDLT_DEBUG
