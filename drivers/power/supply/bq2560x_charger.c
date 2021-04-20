@@ -970,6 +970,24 @@ static int bq2560x_enable_vbus(struct charger_device *chg_dev, bool enable)
 	return ret;
 }
 //EKELLIS-68,yaocankun,add,20210413,enable usb suspend
+//EKELLIS-99,yaocankun,add,20210413,enable otg when in hiz
+static int bq2560x_get_vbus_enable(struct charger_device *chg_dev, bool *enable)
+{
+
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret = 0;
+	unsigned char en = 0;
+
+
+	ret = bq2560x_get_hiz_mode(bq, &en);
+	*enable = !en;
+
+	pr_err("lsw_charger get enable_vbus %s %s\n", enable ? "enable" : "disable",
+	       !ret ? "successfully" : "failed");
+
+	return ret;
+}
+//EKELLIS-99,yaocankun,add,20210413,enable otg when in hiz
 
 static int bq2560x_plug_in(struct charger_device *chg_dev)
 {
@@ -1138,7 +1156,33 @@ static int bq2560x_kick_wdt(struct charger_device *chg_dev)
 static int bq2560x_set_otg(struct charger_device *chg_dev, bool en)
 {
 	int ret;
+//EKELLIS-99,yaocankun,add,20210413,enable otg when in hiz
+	u8 state = 0;
 	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+
+	ret = bq2560x_get_hiz_mode(bq,&state);
+	if(!ret && state && en)
+	{
+		ret = bq2560x_exit_hiz_mode(bq);
+		pr_err("exit hz mode before enable OTG %s\n",
+				!ret ? "successfully" : "failed");
+	}
+	else if(!ret)
+	{
+		if(state)
+		{
+			pr_err("hz mode is on with disable otg\n");
+		}
+		else if(en)
+		{
+			pr_err("hz mode is off with enable otg\n");
+		}
+		else
+			pr_err("hz mode is off with disable otg\n");
+	}
+	else
+		pr_err("error in get hz mode\n");
+//EKELLIS-99,yaocankun,add,20210413,enable otg when in hiz
 
 	if (en)
 		ret = bq2560x_enable_otg(bq);
@@ -1146,7 +1190,7 @@ static int bq2560x_set_otg(struct charger_device *chg_dev, bool en)
 		ret = bq2560x_disable_otg(bq);
 
 	pr_err("%s OTG %s\n", en ? "enable" : "disable",
-	       !ret ? "successfully" : "failed");
+			!ret ? "successfully" : "failed");
 
 	return ret;
 }
@@ -1325,7 +1369,7 @@ static struct charger_ops bq2560x_chg_ops = {
 
 	/* Power path */
 	.enable_powerpath = bq2560x_enable_vbus,
-	.is_powerpath_enabled = NULL,
+	.is_powerpath_enabled = bq2560x_get_vbus_enable,
 
 	/* OTG */
 	.enable_otg = bq2560x_set_otg,
@@ -1527,13 +1571,7 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 //+EXTR ROG-1709,lishuwen.wt,2020.11.21,modify,plug out OTG then reboot phone that OTG REG error config case vbus always on
 	bq2560x_disable_otg(bq);
 //-EXTR ROG-1709,lishuwen.wt,2020.11.21,modify,plug out OTG then reboot phone that OTG REG error config case vbus always on
-//+Bug 597174,lishuwen.wt,2020.12.10,modify,optimize add charger current nod
-#ifdef WT_COMPILE_FACTORY_VERSION
-#if defined(CONFIG_WT_PROJECT_T99653AA1) || defined(CONFIG_WT_PROJECT_T99652AA1)
 	bq2560x_enable_vbus(bq->chg_dev,true);
-#endif
-#endif
-//-Bug 597174,lishuwen.wt,2020.12.10,modify,optimize add charger current nod
 	pr_err("bq2560x probe successfully, Part Num:%d, Revision:%d\n!",
 	       bq->part_no, bq->revision);
 
