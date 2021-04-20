@@ -623,6 +623,21 @@ int baro_flush_report(void)
 	return err;
 }
 
+int baro_cali_report(int *value)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = value[0];
+	event.word[1] = value[1];
+	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
+	printk("baro_cali_report event.word[0]:%d,event.word[1]:%d\n", event.word[0], event.word[1]);
+	return err;
+}
+
 static int baro_probe(void)
 {
 	int err;
