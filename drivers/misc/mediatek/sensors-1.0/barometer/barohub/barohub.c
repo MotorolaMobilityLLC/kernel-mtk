@@ -255,7 +255,13 @@ static int barohub_factory_clear_cali(void)
 }
 static int barohub_factory_set_cali(int32_t offset)
 {
-	return 0;
+	int err = 0;
+	int value[2];
+
+	value[0] = offset;
+	err = baro_cali_report(value);
+	printk("[%s] err:%d, offset:%d\n", __func__, err, offset);
+	return sensor_set_cmd_to_hub(ID_PRESSURE, CUST_ACTION_SET_CALI, (void *)&offset);
 }
 static int barohub_factory_get_cali(int32_t *offset)
 {
