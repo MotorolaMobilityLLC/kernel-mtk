@@ -26,6 +26,40 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define per_frame 1
 
+#define MODULE_INFO_SIZE 7
+#define AWB_DATA_SIZE 16
+#define LSC_DATA_SIZE 1868
+
+#define OTP_SET_ADDR_H 0x010A
+#define OTP_SET_ADDR_L 0x010B
+#define OTP_RW_FLAG 0x0102
+#define OTP_READ_FLAG 0x0108
+
+#define MODULE_GROUP_FLAG_ADDR 0x401
+#define MODULE_GROUP1_START_ADDR 0x402
+#define MODULE_GROUP2_START_ADDR 0x40A
+#define MODULE_GROUP3_START_ADDR 0x412
+
+#define AWB_GROUP_FLAG_ADDR 0x41A
+#define AWB_GROUP1_START_ADDR 0x41B
+#define AWB_GROUP2_START_ADDR 0x42C
+#define AWB_GROUP3_START_ADDR 0x43D
+
+#define LSC_GROUP_FLAG_ADDR 0x44E
+#define LSC_GROUP1_START_ADDR 0x44F
+#define LSC_GROUP2_START_ADDR 0xB9C
+#define LSC_GROUP3_START_ADDR 0x12E9
+
+unsigned char hi556_data_lsc[LSC_DATA_SIZE + 1] = {0};/*Add check sum*/
+unsigned char hi556_data_awb[AWB_DATA_SIZE + 1] = {0};/*Add check sum*/
+unsigned char hi556_data_info[MODULE_INFO_SIZE + 1] = {0};/*Add check sum*/
+unsigned char hi556_module_id = 0;
+unsigned char hi556_lsc_valid = 0;
+unsigned char hi556_awb_valid = 0;
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_ELLIS_HI556D_SENSOR_ID,
 	.checksum_value = 0x55e2a82f,
@@ -241,6 +275,284 @@ static void write_cmos_sensor_8(kal_uint32 addr, kal_uint32 para)
 		(char)(addr & 0xFF), (char)(para & 0xFF)};
 
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
+
+#ifdef HI556_OTP_DUMP
+static void dumpEEPROMData1(kal_uint16 u4Length, u8* pu1Params, kal_uint16 addr)
+{
+	kal_uint16 i = 0;
+	for(i = 0; i < u4Length; i += 16){
+		if(u4Length - i  >= 16){
+			LOG_INF("[0x%x-0x%x]:0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x ",
+			i+addr,i+15+addr,pu1Params[i],pu1Params[i+1],pu1Params[i+2],pu1Params[i+3],pu1Params[i+4],pu1Params[i+5],pu1Params[i+6]
+			,pu1Params[i+7],pu1Params[i+8],pu1Params[i+9],pu1Params[i+10],pu1Params[i+11],pu1Params[i+12],pu1Params[i+13],pu1Params[i+14]
+			,pu1Params[i+15]);
+		}else{
+			kal_uint16 j = i;
+			for(;j < u4Length;j++)
+			LOG_INF("[0x%x]:0x%x ",j+addr,pu1Params[j]);
+		}
+	}
+}
+#endif
+
+static void hi556_disable_otp_func(void)
+{
+	write_cmos_sensor(0x0a00, 0x00);
+	mdelay(10);
+	write_cmos_sensor(0x003e, 0x00);
+	write_cmos_sensor(0x0a00, 0x00);
+}
+
+static kal_uint16 read_hi556_module_info(void)
+{
+	kal_uint16 otp_grp_flag = 0;
+	kal_uint16 year = 0, month = 0, day = 0;
+	kal_uint16 position = 0,lens_id = 0,vcm_id = 0;
+	kal_uint32 check_sum = 0, check_sum_cal = 0;
+	kal_uint16 i, minfo_start_addr = 0;
+
+	LOG_INF("enter read_hi556_module_info\n");
+	/* select group */
+	write_cmos_sensor_8(OTP_SET_ADDR_H, (MODULE_GROUP_FLAG_ADDR>>8)&0xff);
+	write_cmos_sensor_8(OTP_SET_ADDR_L, (MODULE_GROUP_FLAG_ADDR)&0xff);
+	write_cmos_sensor_8(OTP_RW_FLAG, 0x01);
+	otp_grp_flag = read_cmos_sensor(OTP_READ_FLAG);
+	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+	if(otp_grp_flag == 0x01) {
+		minfo_start_addr = MODULE_GROUP1_START_ADDR;
+		LOG_INF("module info is group1\n");
+	} else if(otp_grp_flag == 0x13) {
+		minfo_start_addr = MODULE_GROUP2_START_ADDR;
+		LOG_INF("module info is group2\n");
+	} else if(otp_grp_flag == 0x37) {
+		minfo_start_addr = MODULE_GROUP3_START_ADDR;
+		LOG_INF("module info is group3\n");
+	} else {
+		LOG_INF("hi556 OTP has no module info\n");
+		return 0;
+	}
+
+	/* read & checksum */
+	write_cmos_sensor_8(OTP_SET_ADDR_H, ((minfo_start_addr)>>8)&0xff);
+	write_cmos_sensor_8(OTP_SET_ADDR_L, (minfo_start_addr)&0xff);
+	write_cmos_sensor_8(OTP_RW_FLAG, 0x01);
+	for(i = 0; i < MODULE_INFO_SIZE + 1; i++){
+		hi556_data_info[i]=read_cmos_sensor(OTP_READ_FLAG);
+	}
+	for(i = 0; i < MODULE_INFO_SIZE; i++){
+		check_sum_cal += hi556_data_info[i];
+	}
+
+	check_sum_cal = (check_sum_cal % 255) + 1;
+	hi556_module_id = hi556_data_info[0];
+	position = hi556_data_info[1];
+	lens_id = hi556_data_info[2];
+	vcm_id = hi556_data_info[3];
+	year = hi556_data_info[4];
+	month = hi556_data_info[5];
+	day = hi556_data_info[6];
+	check_sum = hi556_data_info[MODULE_INFO_SIZE];
+
+#ifdef HI556_OTP_DUMP
+	dumpEEPROMData1(MODULE_INFO_SIZE, &hi556_data_info[0], minfo_start_addr);
+#endif
+	//LOG_INF("module_id=0x%x position=0x%x\n", hi556_module_id, position);
+	LOG_INF(" HI556 INFO module_id=0x%x position=0x%x \n", hi556_module_id, position);
+	LOG_INF(" HI556 INFO lens_id=0x%x,vcm_id=0x%x \n",lens_id, vcm_id);
+	LOG_INF(" HI556 INFO date is %d-%d-%d \n",year,month,day);
+	LOG_INF(" HI556 INFO check_sum=0x%x,check_sum_cal=0x%x \n", check_sum, check_sum_cal);
+	if(check_sum == check_sum_cal){
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
+static kal_uint16 read_hi556_awb_info(void)
+{
+	kal_uint16 otp_grp_flag = 0;
+	kal_uint32 check_sum_awb = 0, check_sum_awb_cal = 0;
+	kal_uint16 UintR = 0, UintB = 0, UintGr = 0, UintGb = 0;
+	kal_uint16 GoldenR = 0, GoldenB = 0, GoldenGr = 0, GoldenGb = 0;
+	kal_uint16 i, awb_start_addr=0;
+
+	LOG_INF("enter read_hi556_awb_info\n");
+	/* select group */
+	write_cmos_sensor_8(OTP_SET_ADDR_H, (AWB_GROUP_FLAG_ADDR>>8)&0xff);
+	write_cmos_sensor_8(OTP_SET_ADDR_L, (AWB_GROUP_FLAG_ADDR)&0xff);
+	write_cmos_sensor_8(OTP_RW_FLAG, 0x01);
+	otp_grp_flag = read_cmos_sensor(OTP_READ_FLAG);
+	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+	if(otp_grp_flag == 0x01) {
+		awb_start_addr = AWB_GROUP1_START_ADDR;
+		LOG_INF("awb data is group1\n");
+	} else if(otp_grp_flag == 0x13) {
+		awb_start_addr = AWB_GROUP2_START_ADDR;
+		LOG_INF("awb data is group2\n");
+	} else if(otp_grp_flag == 0x37) {
+		awb_start_addr = AWB_GROUP3_START_ADDR;
+		LOG_INF("awb data is group3\n");
+	} else {
+		LOG_INF("hi556 OTP has no awb data\n");
+		return 0;
+	}
+
+	/* read & checksum */
+	write_cmos_sensor_8(OTP_SET_ADDR_H, ((awb_start_addr)>>8)&0xff);
+	write_cmos_sensor_8(OTP_SET_ADDR_L, (awb_start_addr)&0xff);
+	write_cmos_sensor_8(OTP_RW_FLAG, 0x01);
+	for(i = 0; i < AWB_DATA_SIZE + 1; i++){
+		hi556_data_awb[i]=read_cmos_sensor(OTP_READ_FLAG);
+	}
+	for(i = 0; i < AWB_DATA_SIZE; i++){
+		check_sum_awb_cal += hi556_data_awb[i];
+	}
+
+	UintR = ((hi556_data_awb[1]<<8)&0xff00)|(hi556_data_awb[0]&0xff);
+	UintB = ((hi556_data_awb[3]<<8)&0xff00)|(hi556_data_awb[2]&0xff);
+	UintGr = ((hi556_data_awb[5]<<8)&0xff00)|(hi556_data_awb[4]&0xff);
+	UintGb = ((hi556_data_awb[7]<<8)&0xff00)|(hi556_data_awb[6]&0xff);
+	GoldenR = ((hi556_data_awb[9]<<8)&0xff00)|(hi556_data_awb[8]&0xff);
+	GoldenB = ((hi556_data_awb[11]<<8)&0xff00)|(hi556_data_awb[10]&0xff);
+	GoldenGr = ((hi556_data_awb[13]<<8)&0xff00)|(hi556_data_awb[12]&0xff);
+	GoldenGb = ((hi556_data_awb[15]<<8)&0xff00)|(hi556_data_awb[14]&0xff);
+	check_sum_awb = hi556_data_awb[AWB_DATA_SIZE];
+	check_sum_awb_cal = (check_sum_awb_cal % 255) + 1;
+
+#ifdef HI556_OTP_DUMP
+	dumpEEPROMData1(AWB_DATA_SIZE, &hi556_data_awb[0], awb_start_addr);
+#endif
+	LOG_INF(" HI556 AWB UintR=0x%x,UintB=0x%x,UintGr=%x,UintGb=0x%x \n", UintR, UintB, UintGr, UintGb);
+	LOG_INF(" HI556 AWB GoldenR=0x%x,GoldenB=0x%x,GoldenGr=%x,GoldenGb=0x%x \n", GoldenR, GoldenB, GoldenGr, GoldenGb);
+	LOG_INF(" HI556 AWB check_sum_awb=0x%x,check_sum_awb_cal=0x%x \n",check_sum_awb,check_sum_awb_cal);
+	if(check_sum_awb == check_sum_awb_cal){
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
+static kal_uint16 read_hi556_lsc_info(void)
+{
+	kal_uint16 otp_grp_flag = 0;
+	kal_uint32 check_sum_lsc = 0, check_sum_lsc_cal = 0;
+	kal_uint16 i, lsc_start_addr = 0;
+
+	LOG_INF("enter read_hi556_lsc_info\n");
+	/* select group */
+	write_cmos_sensor_8(OTP_SET_ADDR_H, (LSC_GROUP_FLAG_ADDR>>8)&0xff);
+	write_cmos_sensor_8(OTP_SET_ADDR_L, (LSC_GROUP_FLAG_ADDR)&0xff);
+	write_cmos_sensor_8(OTP_RW_FLAG, 0x01);
+	otp_grp_flag = read_cmos_sensor(OTP_READ_FLAG);
+	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+	if(otp_grp_flag == 0x01) {
+		lsc_start_addr = LSC_GROUP1_START_ADDR;
+		LOG_INF("lsc data is group1\n");
+	} else if(otp_grp_flag == 0x13) {
+		lsc_start_addr = LSC_GROUP2_START_ADDR;
+		LOG_INF("lsc data is group2\n");
+	} else if(otp_grp_flag == 0x37) {
+		lsc_start_addr = LSC_GROUP3_START_ADDR;
+		LOG_INF("lsc data is group3\n");
+	} else {
+		LOG_INF("hi556 OTP has no lsc data\n");
+		return 0;
+	}
+
+	/* read & checksum */
+	write_cmos_sensor_8(OTP_SET_ADDR_H, ((lsc_start_addr)>>8)&0xff);
+	write_cmos_sensor_8(OTP_SET_ADDR_L, (lsc_start_addr)&0xff);
+	write_cmos_sensor_8(OTP_RW_FLAG, 0x01);
+	for(i = 0; i < LSC_DATA_SIZE + 1; i++){
+		hi556_data_lsc[i] = read_cmos_sensor(OTP_READ_FLAG);
+	}
+	for(i = 0; i < LSC_DATA_SIZE; i++){
+		check_sum_lsc_cal += hi556_data_lsc[i];
+	}
+
+	LOG_INF("check_sum_lsc_cal = 0x%x\n", check_sum_lsc_cal);
+
+	check_sum_lsc = hi556_data_lsc[LSC_DATA_SIZE];
+	check_sum_lsc_cal = (check_sum_lsc_cal % 255) + 1;
+
+#ifdef HI556_OTP_DUMP
+	dumpEEPROMData1(LSC_DATA_SIZE, &hi556_data_lsc[0], lsc_start_addr);
+#endif
+	LOG_INF(" HI556 LSC check_sum_lsc=0x%x, check_sum_lsc_cal=0x%x \n", check_sum_lsc, check_sum_lsc_cal);
+	if(check_sum_lsc == check_sum_lsc_cal){
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
+static kal_uint16 hi556_sensor_otp_info(void)
+{
+
+	/* 1. sensor init */
+
+	write_cmos_sensor(0x0e00, 0x0102); //tg_pmem_sckpw/sdly
+	write_cmos_sensor(0x0e02, 0x0102); //tg_pmem_sckpw/sdly
+	write_cmos_sensor(0x0e0c, 0x0100); //tg_pmem_rom_dly
+	write_cmos_sensor(0x27fe, 0xe000); // firmware start address-ROM
+	write_cmos_sensor(0x0b0e, 0x8600); // BGR enable
+	write_cmos_sensor(0x0d04, 0x0100); // STRB(OTP Busy) output enable
+	write_cmos_sensor(0x0d02, 0x0707); // STRB(OTP Busy) output drivability
+	write_cmos_sensor(0x0f30, 0x6e25); // Analog PLL setting
+	write_cmos_sensor(0x0f32, 0x7067); // Analog CLKGEN setting
+	write_cmos_sensor(0x0f02, 0x0106); // PLL enable
+	write_cmos_sensor(0x0a04, 0x0000); // mipi disable
+	write_cmos_sensor(0x0e0a, 0x0001); // TG PMEM CEN anable
+	write_cmos_sensor(0x004a, 0x0100); // TG MCU enable
+	write_cmos_sensor(0x003e, 0x1000); // ROM OTP Continuous W/R mode enable
+	write_cmos_sensor(0x0a00, 0x0100); // Stream ON
+
+	/* 2. init OTP setting*/
+	write_cmos_sensor_8(0x0a02, 0x01);//Fast sleep on
+	write_cmos_sensor_8(0x0a00, 0x00);//stand by on
+	mdelay(10);
+	write_cmos_sensor_8(0x0f02, 0x00);//pll disable
+	write_cmos_sensor_8(0x011a, 0x01);//CP TRIM_H
+	write_cmos_sensor_8(0x011b, 0x09);//IPGM TRIM_H
+	write_cmos_sensor_8(0x0d04, 0x01);//Fsync(OTP busy)Output Enable
+	write_cmos_sensor_8(0x0d02, 0x07);//Fsync(OTP busy)Output Drivability
+	write_cmos_sensor_8(0x003e, 0x10);//OTP r/w mode
+	write_cmos_sensor_8(0x0a00, 0x01);//standby off
+
+	/* 3. read eeprom data */
+	//minfo && awb group
+	mnf_status = read_hi556_module_info();
+	if(mnf_status != 1){
+		hi556_module_id = 0;
+		LOG_INF(" hi556_data_info invalid \n");
+		return 0;
+	}else{
+		hi556_module_id = 1;
+	}
+	awb_status = read_hi556_awb_info();
+	if(awb_status != 1){
+		hi556_awb_valid = 0;
+		LOG_INF(" hi556_data_awb invalid \n");
+		return 0;
+	}else{
+		hi556_awb_valid = 1;
+	}
+	lsc_status = read_hi556_lsc_info();
+	if(lsc_status != 1){
+		hi556_lsc_valid = 0;
+		LOG_INF(" hi556_data_lsc invalid \n");
+		return 0;
+	}else{
+		hi556_lsc_valid = 1;
+	}
+
+	/* 4. disable otp function */
+	hi556_disable_otp_func();
+	dual_status = 0;
+	LOG_INF("status mnf:%d, awb:%d, lsc_status:%d",
+		mnf_status, awb_status, lsc_status);
+	return 1;
 }
 
 static void set_dummy(void)
@@ -1473,6 +1785,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	int rc = 0;
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1481,8 +1794,15 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				LOG_ERR("hi556 i2c write id : 0x%x, sensor id: 0x%x\n",
+				LOG_INF("hi556 i2c write id : 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
+				rc = hi556_sensor_otp_info();
+				if(rc == 0){
+					*sensor_id = 0xFFFFFFFF;
+					pr_err("Hi556 read OTP ERROR\n");
+					return ERROR_SENSOR_CONNECT_FAIL;
+				}
+				LOG_INF("Hi556 read OTP success\n");
 				return ERROR_NONE;
 			}
 
@@ -1794,7 +2114,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
 	sensor_info->SensorHightSampling = 0;    // 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
-
+	sensor_info->calibration_status.mnf = mnf_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
+	sensor_info->calibration_status.dual = dual_status;
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	    sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
