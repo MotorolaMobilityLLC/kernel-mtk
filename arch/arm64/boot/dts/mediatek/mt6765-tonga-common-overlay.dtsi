@@ -11,3 +11,15 @@
  */
 
 #include "mediatek/mt6765-moto-common-overlay.dtsi"
+
+&mtk_gauge {
+	charger = <&mtk_charger_type>;
+};
+
+&mtk_charger_type {
+	bc12_active = <1>;
+};
+
+&usb {
+	charger = <&mtk_charger_type>;
+};
