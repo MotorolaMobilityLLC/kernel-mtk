@@ -467,6 +467,9 @@
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
 
+&mrdump_ext_rst {
+	force_mode = "EINT";
+};
 
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
 #include "mediatek/mt6785-moto-lisbon-fps.dtsi"
