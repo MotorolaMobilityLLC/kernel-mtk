@@ -23,3 +23,12 @@
 &usb {
 	charger = <&mtk_charger_type>;
 };
+
+&i2c0 {
+	fs16xx@34 {
+		compatible = "foursemi,fs16xx";
+		reg = <0x34>;
+		fsm,re25-dft = <7168>;
+		status = "okay";
+	};
+};
