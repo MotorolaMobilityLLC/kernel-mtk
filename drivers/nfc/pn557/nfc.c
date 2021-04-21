@@ -82,10 +82,18 @@ void nfc_enable_irq(struct nfc_dev *nfc_dev)
     spin_unlock_irqrestore(&nfc_dev->irq_enabled_lock, flags);
 }
 
+static void nfc_init_stat(struct nfc_dev *nfc_dev)
+{
+	nfc_dev->count_irq = 0;
+}
+
 static irqreturn_t nfc_dev_irq_handler(int irq, void *dev_id)
 {
     struct nfc_dev *nfc_dev = dev_id;
     unsigned long flags;
+
+    if (device_may_wakeup(&nfc_dev->client->dev))
+        pm_wakeup_event(&nfc_dev->client->dev, WAKEUP_SRC_TIMEOUT);
     nfc_disable_irq(nfc_dev);
     spin_lock_irqsave(&nfc_dev->irq_enabled_lock, flags);
     nfc_dev->count_irq++;
@@ -217,6 +225,7 @@ static int nfc_dev_open(struct inode *inode, struct file *filp)
             struct nfc_dev, nfc_device);
 
     filp->private_data = nfc_dev;
+    nfc_init_stat(nfc_dev);
     pr_info("%s: %d,%d\n", __func__, imajor(inode), iminor(inode));
     return ret;
 }
@@ -424,8 +433,8 @@ static int nfc_probe(struct i2c_client *client,
     device_init_wakeup(&client->dev, true);
     device_set_wakeup_capable(&client->dev, true);
     i2c_set_clientdata(client, nfc_dev);
-    /*Enable IRQ and VEN*/
-    nfc_enable_irq(nfc_dev);
+    nfc_disable_irq(nfc_dev);
+    nfc_dev->irq_wake_up = false;
     /*call to platform specific probe*/
     ret = func(NFC_PLATFORM, _nfc_probe)(nfc_dev);
     if (ret != 0) {
@@ -485,6 +494,38 @@ err:
     return ret;
 }
 
+static int nfc_suspend(struct device *device)
+{
+    struct i2c_client *client = to_i2c_client(device);
+    struct nfc_dev *nfc_dev = i2c_get_clientdata(client);
+
+    pr_info("%s\n", __func__);
+    if (device_may_wakeup(&client->dev)&& nfc_dev->irq_enabled) {
+        if (!enable_irq_wake(client->irq))
+            nfc_dev->irq_wake_up = true;
+            pr_info("%s enable irq wake \n", __func__);
+    }
+    return 0;
+}
+
+static int nfc_resume(struct device *device)
+{
+    struct i2c_client *client = to_i2c_client(device);
+    struct nfc_dev *nfc_dev = i2c_get_clientdata(client);
+
+    pr_info("%s\n", __func__);
+    if (device_may_wakeup(&client->dev) && nfc_dev->irq_wake_up) {
+        if (!disable_irq_wake(client->irq))
+            nfc_dev->irq_wake_up = false;
+            pr_info("%s disable irq wake \n", __func__);
+    }
+    return 0;
+}
+
+
+static const struct dev_pm_ops nfc_pm_ops = {
+    SET_SYSTEM_SLEEP_PM_OPS(nfc_suspend, nfc_resume)
+};
 static const struct i2c_device_id nfc_id[] = {
         { "pn5xx", 0 },
         { }
@@ -503,6 +544,7 @@ static struct i2c_driver nfc_driver = {
         .driver     = {
                 .owner = THIS_MODULE,
                 .name  = "pn5xx",
+                .pm = &nfc_pm_ops,
                 .of_match_table = nfc_match_table,
         },
 };
