@@ -26,8 +26,10 @@
 #include "mot_s5k4h7mipiraw_otp.h"
 
 #define PFX "[MOTO_EEPROM s5k4h7-otp]"
-#define LOG_INF(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
-#define LOG_DBG(format, args...) pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+static int m_mot_camera_debug = 0;
+#define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_DBG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define GetBit(x,y)   ((x) >> (y) & 1)
