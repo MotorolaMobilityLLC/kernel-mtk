@@ -471,6 +471,10 @@
 	force_mode = "EINT";
 };
 
+&lk_charger {
+	temp_t4_threshold = <60>;
+};
+
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
 #include "mediatek/mt6785-moto-lisbon-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
