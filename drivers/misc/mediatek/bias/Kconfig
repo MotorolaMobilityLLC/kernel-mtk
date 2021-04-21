@@ -1,0 +1,10 @@
+config PANEL_BIAS
+	bool "Bias Support"
+	default n
+	help
+	  This feature is used to configure the external bias chip
+
+config PANEL_BIAS_LIST
+	string "define bias chip"
+	help
+	  Choose which bias chip to use
