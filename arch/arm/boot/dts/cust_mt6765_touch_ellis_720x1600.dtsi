@@ -74,10 +74,12 @@
 	#size-cells = <0>;
 
 	touch@0{
-		compatible = "mediatek,cap_touch","novatek,NVT-ts-spi";
+		compatible = "mediatek,cap_touch","himax,hxcommon","novatek,NVT-ts-spi";
  		spi-max-frequency = <10000000>;
 		reg = <0x0>;
 		status = "okay";
+
+		himax,panel-supplier = "hx83112a";
 
 		ili,panel-supplier = "txd_ili7806s";
 		ili,fw-tp-module;
