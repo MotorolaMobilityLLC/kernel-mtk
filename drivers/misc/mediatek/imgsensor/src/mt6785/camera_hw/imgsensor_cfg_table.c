@@ -222,14 +222,13 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
             SENSOR_DRVNAME_MOT_LISBON_OV64B40_MIPI_RAW,
             {
-                {RST, Vol_High, 0},
-                {SensorMCLK, Vol_High, 4},
-                {RST, Vol_Low, 5},
+                {SensorMCLK, Vol_High, 1},
+                {RST, Vol_Low, 1},
                 {AVDD, Vol_2800, 0},
                 {DOVDD, Vol_1800, 0},
                 {DVDD, Vol_1100, 1},
-                {AFVDD, Vol_2800, 5},
-                {RST, Vol_High, 0},
+                {AFVDD, Vol_2800, 0},
+                {RST, Vol_High, 4},
             },
         },
 #endif
@@ -252,10 +251,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			SENSOR_DRVNAME_MOT_LISBON_OV02B1B_MIPI_RAW,
 			{
-				{PDN, Vol_Low, 0},
+				{PDN, Vol_Low, 1},
 				{DOVDD, Vol_1800, 1},
-				{SensorMCLK, Vol_High, 0},
-				{AVDD, Vol_2800, 6},
+				{AVDD, Vol_2800, 11},
+				{SensorMCLK, Vol_High, 1},
 				{PDN, Vol_High, 5},
 			},
 		},
@@ -265,11 +264,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			SENSOR_DRVNAME_MOT_LISBON_S5K5E9_MIPI_RAW,
 			{
 				{RST, Vol_Low, 1},
-				{AVDD, Vol_2800, 0},
+				{AVDD, Vol_2800, 1},
 				{DVDD, Vol_1200, 1},
-				{DOVDD, Vol_1800, 0},
+				{DOVDD, Vol_1800, 1},
 				{SensorMCLK, Vol_High, 1},
-				{RST, Vol_High, 5},
+				{RST, Vol_High, 18},
 			},
 		},
 #endif
