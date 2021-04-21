@@ -149,7 +149,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.margin = 31,			//sensor framelength & shutter margin
 	.min_shutter = 16,		//min shutter
 	.min_gain = 64, // 1x gain
-	.max_gain = 922, // real again is 15.5x
+	.max_gain = 992, // real again is 15.5x
 	.min_gain_iso = 100,
 	.gain_step = 1,
 	.gain_type = 1,
@@ -490,24 +490,6 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 	LOG_INF("Add for N3D! shutter =%d, framelength =%d\n",shutter, imgsensor.frame_length);
 }
 
-#define FACTOR 992.0f//(15.5f　* 64.0f)
-static kal_uint32 digital_gain_calc(kal_uint16 aaa_gain)
-{
-	float real_dig_gain = 1.0f;//MIN Dgain
-	kal_uint32 reg_dig_gain = 1024;//1024 = 1x
-
-	real_dig_gain = aaa_gain / FACTOR;
-
-	if (real_dig_gain > 15.99f)//Max digital gain
-	{
-		real_dig_gain = 15.99f;
-	}
-
-	reg_dig_gain = (kal_uint32)(real_dig_gain * 1024) << 6;
-
-	return reg_dig_gain;
-}
-
 #if 0
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -538,7 +520,6 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
-	kal_uint32 reg_dig_gain;
 	LOG_INF("set_gain %d \n", gain);
 	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
 		LOG_INF("Error gain setting");
@@ -549,29 +530,13 @@ static kal_uint16 set_gain(kal_uint16 gain)
 			gain = imgsensor_info.max_gain;
 	}
 
-	//reg_gain = gain2reg(gain);
 	reg_gain = gain*4;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
 	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
-
-	if (gain > 992) {
-		//kernel_neon_begin();
-		reg_dig_gain = digital_gain_calc(gain);
-		//kernel_neon_end();
-		write_cmos_sensor(0x3508, 0x0F);//15.5x analog
-		write_cmos_sensor(0x3509, 0x80);
-		write_cmos_sensor(0x350A, (reg_dig_gain >> 16) & 0x0F);//dgain
-		write_cmos_sensor(0x350B, (reg_dig_gain >> 8) & 0xFF);
-		write_cmos_sensor(0x350C, (reg_dig_gain & 0xFF));
-	} else {
-		write_cmos_sensor(0x3508, (reg_gain>>8));
-		write_cmos_sensor(0x3509, (reg_gain&0xFF));
-		write_cmos_sensor(0x350A, 0x01);
-		write_cmos_sensor(0x350B, 0x00);
-		write_cmos_sensor(0x350C, 0x00);
-	}
+	write_cmos_sensor(0x3508, (reg_gain>>8) & 0x7f);
+	write_cmos_sensor(0x3509, (reg_gain&0xFE));
 	return gain;
 }	/*	set_gain  */
 
