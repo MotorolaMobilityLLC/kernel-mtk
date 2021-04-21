@@ -391,4 +391,11 @@
 		u2_enhance = <2>;
 		status = "okay";
        };
+	usb_host_init:usb_host_init {
+		compatible = "mediatek,host_tuning";
+		u2_vrt_ref = <6>;
+		u2_term_ref = <4>;
+		u2_enhance = <3>;
+		status = "okay";
+	};
 };
