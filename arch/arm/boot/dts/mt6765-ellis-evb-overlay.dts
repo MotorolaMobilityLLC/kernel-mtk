@@ -20,7 +20,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "ellis";
-			mot,board-id = <0x41 0xA200>;
+			mot,board-id = <0x41 0xA100>;
 		};
 	};
 };
@@ -28,16 +28,14 @@
 &rt1711_typec {
        rt-tcpc,vconn_supply  = <0>;
        charger = <&mtk_charger_type>;
-       rt1711pd,intr_gpio = <&pio 42 0x0>;
-       rt1711pd,intr_gpio_num = <42>;
 };
 
 &sgm7220_typec {
-	sgm7220,intr_gpio = <&pio 42 0x1>;
-	sgm7220,intr_gpio_num = <42>;
+	sgm7220,intr_gpio = <&pio 41 0x1>;
+	sgm7220,intr_gpio_num = <41>;
 
-	/delete-property/ sgm7220,en_gpio;
+	sgm7220,en_gpio = <&pio 159 0x0>;
 };
 
-#include <ellis_evt/cust.dtsi>
+#include <ellis_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
