@@ -3026,7 +3026,7 @@ static int  mtk_charger_tcmd_set_chg_current(void *input, int  val)
 
 	cm->chg_data[0].moto_chg_tcmd_ibat = val * 1000;
 	//ret = _mtk_charger_change_current_setting(cm);
-        ret = charger_dev_set_input_current(cm->chg1_dev, val);//TODO
+        ret = charger_dev_set_charging_current(cm->chg1_dev, val);
 
 	return ret;
 }
@@ -3048,7 +3048,7 @@ static int  mtk_charger_tcmd_set_usb_current(void *input, int  val)
 
 	cm->chg_data[0].moto_chg_tcmd_ichg = val * 1000;
 	//ret = _mtk_charger_change_current_setting(cm);
-	ret = charger_dev_set_input_current(cm->chg1_dev, val);//TODO
+	ret = charger_dev_set_input_current(cm->chg1_dev, val);
 
 	return ret;
 }
