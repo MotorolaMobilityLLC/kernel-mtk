@@ -507,7 +507,7 @@ static int do_algorithm(struct mtk_charger *info)
 			info->setting.cv);
 	}
 
-    //charger_dev_enable_hz(info->chg1_dev, info->mmi.demo_discharging);//TODO
+	charger_dev_enable_hz(info->chg1_dev, info->mmi.demo_discharging);
 
 	if (pdata->input_current_limit == 0 ||
 	    pdata->charging_current_limit == 0)

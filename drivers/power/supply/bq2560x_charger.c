@@ -952,6 +952,23 @@ static int bq2560x_charging(struct charger_device *chg_dev, bool enable)
 	return ret;
 }
 
+static int bq2560x_enable_hz(struct charger_device *chg_dev, bool enable)
+{
+
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret = 0;
+
+	if (enable)
+		ret = bq2560x_enter_hiz_mode(bq);
+	else
+		ret = bq2560x_exit_hiz_mode(bq);
+
+	pr_err("lsw_charger %s enable_hz %s\n", enable ? "enable" : "disable",
+	       !ret ? "successfully" : "failed");
+
+	return ret;
+}
+
 //EKELLIS-68,yaocankun,add,20210413,enable usb suspend
 static int bq2560x_enable_vbus(struct charger_device *chg_dev, bool enable)
 {
@@ -1370,6 +1387,9 @@ static struct charger_ops bq2560x_chg_ops = {
 	/* Power path */
 	.enable_powerpath = bq2560x_enable_vbus,
 	.is_powerpath_enabled = bq2560x_get_vbus_enable,
+
+        /* Hz mode */
+        .enable_hz = bq2560x_enable_hz,
 
 	/* OTG */
 	.enable_otg = bq2560x_set_otg,
