@@ -48,6 +48,7 @@ struct nfc_dev    {
     unsigned int        ese_pwr_gpio;
     /* NFC_IRQ state */
     bool                irq_enabled;
+    bool                irq_wake_up;
     spinlock_t          irq_enabled_lock;
     unsigned int        count_irq;
     /* NFC additional parameters for old platforms */
