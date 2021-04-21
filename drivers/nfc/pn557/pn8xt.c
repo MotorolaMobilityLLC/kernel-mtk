@@ -188,6 +188,7 @@ static long pn8xt_nfc_pwr(struct nfc_dev *nfc_dev, unsigned int arg)
         case 0:
             /* power off */
             pr_debug("%s power off\n", __func__);
+                nfc_disable_irq(nfc_dev);
             if (nfc_dev->firm_gpio) {
                 if ((*cur_state & (ST_WIRED | ST_SPI | ST_SPI_PRIO))== 0){
                     pn8xt_update_state(pn8xt_dev, ST_IDLE, true);
@@ -204,6 +205,7 @@ static long pn8xt_nfc_pwr(struct nfc_dev *nfc_dev, unsigned int arg)
         case 1:
             /* power on */
             pr_debug("%s power on\n", __func__);
+                nfc_enable_irq(nfc_dev);
             if (nfc_dev->firm_gpio) {
                 if ((*cur_state & (ST_WIRED|ST_SPI|ST_SPI_PRIO))== 0){
                     pn8xt_update_state(pn8xt_dev, ST_IDLE, true);
