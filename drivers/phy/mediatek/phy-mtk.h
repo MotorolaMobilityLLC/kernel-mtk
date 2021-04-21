@@ -107,6 +107,6 @@ extern u32 phy_debug_level;
 	} while (0)
 
 extern const struct of_device_id mtk_phy_of_match[];
-
+extern extern bool mt_usb_is_device(void);
 
 #endif

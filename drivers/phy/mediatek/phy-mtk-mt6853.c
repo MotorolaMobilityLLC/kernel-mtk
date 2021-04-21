@@ -401,6 +401,7 @@ reg_done:
 static void usb_phy_tuning(struct mtk_phy_instance *instance)
 {
 	s32 u2_vrt_ref, u2_term_ref, u2_enhance;
+	static s32 u2_vrt_ref_host, u2_term_ref_host, u2_enhance_host;
 	struct device_node *of_node;
 
 	if (!instance->phy_tuning.inited) {
@@ -418,11 +419,36 @@ static void usb_phy_tuning(struct mtk_phy_instance *instance)
 			of_property_read_u32(of_node, "u2_enhance",
 				(u32 *) &instance->phy_tuning.u2_enhance);
 		}
+
+		u2_vrt_ref_host = instance->phy_tuning.u2_vrt_ref;
+		u2_term_ref_host = instance->phy_tuning.u2_term_ref;
+		u2_enhance_host = instance->phy_tuning.u2_enhance;
+		of_node = of_find_compatible_node(NULL, NULL,
+			"mediatek,host_tuning");
+		if (of_node) {
+			of_property_read_u32(of_node, "u2_vrt_ref",
+				&u2_vrt_ref_host);
+			of_property_read_u32(of_node, "u2_term_ref",
+				&u2_term_ref_host);
+			of_property_read_u32(of_node, "u2_enhance",
+				&u2_enhance_host);
+		}
+
 		instance->phy_tuning.inited = true;
 	}
-	u2_vrt_ref = instance->phy_tuning.u2_vrt_ref;
-	u2_term_ref = instance->phy_tuning.u2_term_ref;
-	u2_enhance = instance->phy_tuning.u2_enhance;
+
+	bool host = !mt_usb_is_device();
+	if (host) {
+		u2_vrt_ref = u2_vrt_ref_host;
+		u2_term_ref = u2_term_ref_host;
+		u2_enhance = u2_enhance_host;
+	} else {
+		u2_vrt_ref = instance->phy_tuning.u2_vrt_ref;
+		u2_term_ref = instance->phy_tuning.u2_term_ref;
+		u2_enhance = instance->phy_tuning.u2_enhance;
+	}
+	pr_info("usb_phy_tuning: host=%dvrt=%d, term_ref=%d,enhance=%d\n",
+		host, u2_vrt_ref, u2_term_ref, u2_enhance);
 
 	if (u2_vrt_ref != -1) {
 		if (u2_vrt_ref <= VAL_MAX_WIDTH_3) {
