@@ -430,14 +430,6 @@
         charger = <&mtk_charger_type>;
 };
 
-&rt1711_typec {
-       rt-tcpc,vconn_supply  = <0>;
-       charger = <&mtk_charger_type>;
-       rt1711pd,intr_gpio = <&pio 42 0x0>;
-       rt1711pd,intr_gpio_num = <42>;
-};
-
-
 &key_google {
 	compatible = "mediatek, key_google_key-eint";
 	interrupt-parent = <&pio>;
