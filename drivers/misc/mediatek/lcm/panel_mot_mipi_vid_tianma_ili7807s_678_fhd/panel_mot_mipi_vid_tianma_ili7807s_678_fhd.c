@@ -659,11 +659,11 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 46;
-	params->dsi.horizontal_frontporch = 46;
+	params->dsi.horizontal_backporch = 28;
+	params->dsi.horizontal_frontporch = 28;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
-	params->dsi.PLL_CLOCK = 560;
+	params->dsi.PLL_CLOCK = 571;
 	params->physical_height = 161;
 	params->physical_width = 70;
 
