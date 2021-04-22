@@ -300,5 +300,8 @@
 #define REG0B_DEV_REV_MASK        	0x03
 #define REG0B_DEV_REV_SHIFT       	0
 
-
+/* Register 0x0C */
+#define	BQ2560X_REG_0C			0x0C
+#define	REG0C_DEVICE_DEFAULT		0X00
+#define	REG0C_DEVICE_SGM		0XFF
 #endif
