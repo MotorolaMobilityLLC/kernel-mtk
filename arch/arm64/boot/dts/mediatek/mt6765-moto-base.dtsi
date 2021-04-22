@@ -22,4 +22,12 @@
 
 	tboard_thermistor4: thermal-sensor4 {
 	};
+
+        lk_charger: lk_charger {
+             /delete-property/ enable_pe_plus;
+        };
+        charger: charger {
+             /delete-property/ enable_dynamic_mivr;
+        };
+
 };
