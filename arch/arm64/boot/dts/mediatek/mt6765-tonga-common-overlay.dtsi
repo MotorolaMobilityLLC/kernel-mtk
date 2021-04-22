@@ -11,6 +11,7 @@
  */
 
 #include "mediatek/mt6765-moto-common-overlay.dtsi"
+#include <dt-bindings/mmc/mt6765-msdc.h>
 
 &mtk_gauge {
 	charger = <&mtk_charger_type>;
@@ -31,4 +32,8 @@
 		fsm,re25-dft = <7168>;
 		status = "okay";
 	};
+};
+
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
