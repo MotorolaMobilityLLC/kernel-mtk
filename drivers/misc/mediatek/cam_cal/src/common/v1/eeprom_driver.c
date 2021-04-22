@@ -51,7 +51,7 @@ static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
 
 static unsigned int g_lastDevID;
-
+#ifdef MOT_ELLIS_HI556D_MIPI_RAW
 #define HI556_MODULE_INFO_SIZE 7
 #define HI556_LSC_DATA_SIZE 1868
 #define HI556_AWB_DATA_SIZE 16
@@ -62,7 +62,7 @@ extern unsigned char hi556_lsc_valid;
 extern unsigned char hi556_awb_valid;
 
 static u32 hi556_vendor_id = 0x19050000;
-
+#endif
 /***********************************************************
  *
  ***********************************************************/
@@ -673,6 +673,7 @@ static long EEPROM_drv_ioctl(struct file *file,
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
+#ifdef MOT_ELLIS_HI556D_MIPI_RAW
 		pr_debug("SensorID=%x, DeviceID=%x, offset=%d, length=%d, pu1Params:0x%x\n",
 			ptempbuf->sensorID, ptempbuf->deviceID, ptempbuf->u4Offset, ptempbuf->u4Length, *pu1Params);
 		if(ptempbuf->sensorID == MOT_ELLIS_HI556D_SENSOR_ID) {
@@ -691,6 +692,7 @@ static long EEPROM_drv_ioctl(struct file *file,
 		}
 			i4RetValue = ptempbuf->u4Length;
 		} else {
+#endif
 			pr_debug("SensorID=%x DeviceID=%x\n",
 				ptempbuf->sensorID, ptempbuf->deviceID);
 			pcmdInf = EEPROM_get_cmd_info_ex(
@@ -708,6 +710,7 @@ static long EEPROM_drv_ioctl(struct file *file,
 				kfree(pu1Params);
 				return -EFAULT;
 			}
+
 
 			if (pcmdInf != NULL && g_lastDevID != ptempbuf->deviceID) {
 				if (EEPROM_set_i2c_bus(ptempbuf->deviceID,
@@ -755,7 +758,9 @@ static long EEPROM_drv_ioctl(struct file *file,
 					return -EFAULT;
 				}
 			}
+#ifdef MOT_ELLIS_HI556D_MIPI_RAW
 		}
+#endif
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv2);
 		if (ktv2.tv_sec > ktv1.tv_sec)
