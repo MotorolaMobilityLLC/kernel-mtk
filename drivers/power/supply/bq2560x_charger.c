@@ -821,6 +821,7 @@ static int bq2560x_detect_device(struct bq2560x *bq)
 {
 	int ret;
 	u8 data;
+	u8 data_2;
 
 	ret = bq2560x_read_byte(bq, BQ2560X_REG_0B, &data);
 	if (!ret) {
@@ -829,17 +830,16 @@ static int bq2560x_detect_device(struct bq2560x *bq)
 		    (data & REG0B_DEV_REV_MASK) >> REG0B_DEV_REV_SHIFT;
 	}
 
-//+bug 589756,yaocankun,20201014,add,add charger info
 	switch(bq->part_no)
 	{
 		case 0x2:
 			charger_ic_type = CHARGER_IC_ETA6953;
-			pr_err("Found charger ic ETA6953\n");
+			pr_info("Found charger ic ETA6953 or SGM41511\n");
 
 		break;
 		case 0x9:
 			charger_ic_type = CHARGER_IC_SY6974;
-			pr_err("Found charger ic SY6974\n");
+			pr_info("Found charger ic SY6974\n");
 
 		break;
 		default:
@@ -848,7 +848,20 @@ static int bq2560x_detect_device(struct bq2560x *bq)
 
 	}
 
-//-bug 589756,yaocankun,20201014,add,add charger info
+	if(charger_ic_type == CHARGER_IC_ETA6953) {
+		ret = bq2560x_read_byte(bq, BQ2560X_REG_0C, &data_2);
+		if (!ret) {
+			if(data_2 == REG0C_DEVICE_SGM) {
+				charger_ic_type = CHARGER_IC_SGM41511;
+				pr_info("Found charger ic is SGM41511\n");
+			} else {
+				pr_info("Found charger ic is ETA6953\n");
+			}
+		} else {
+			pr_err("get charger ic BQ2560X_REG_0C error,defaultly setting to CHARGER_IC_ETA6953\n");
+		}
+	}
+
 	return ret;
 }
 
