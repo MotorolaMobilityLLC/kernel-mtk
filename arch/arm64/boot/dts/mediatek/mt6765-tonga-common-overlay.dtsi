@@ -13,10 +13,6 @@
 #include "mediatek/mt6765-moto-common-overlay.dtsi"
 #include <dt-bindings/mmc/mt6765-msdc.h>
 
-&mtk_gauge {
-	charger = <&mtk_charger_type>;
-};
-
 &mtk_charger_type {
 	bc12_active = <1>;
 };
@@ -53,6 +49,84 @@
 	interconnects = <&auxadc 3>;
 };
 
+&i2c5 {
+	bq25601@6B {
+		compatible = "ti,bq25601";
+		reg = <0x6B>;
+		ti,bq2560x,usb-vlim = <4600>;
+		ti,bq2560x,usb-ilim = <2000>;
+		ti,bq2560x,usb-vreg = <4400>;
+		ti,bq2560x,usb-ichg = <2000>;
+		ti,bq2560x,precharge-current = <256>;
+		ti,bq2560x,termination-current = <180>;
+		ti,bq2560x,boost-voltage = <4998>;
+		ti,bq2560x,boost-current = <1200>;
+		ti,bq2560x,enable_term;
+		ti,bq2560x,stat-pin-ctrl = <0>;
+		ti,bq2560x,vac-ovp-threshold = <6500>;
+
+	};
+};
+&pdc {
+	pd_vbus_upper_bound = <5000000>;
+};
+&lk_charger {
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <500000>;
+	charging_host_charger_current = <2000000>;
+	ta_ac_charger_current = <2000000>;
+};
+&pe {
+	status = "disable";
+};
+&pe2 {
+	status = "disable";
+};
+&pe4 {
+	status = "disable";
+};
+&charger {
+	charger = <&mtk_charger_type>;
+	/* common */
+	battery_cv = <4400000>;
+	max_charger_voltage = <6500000>;
+	min_charger_voltage = <4600000>;
+
+	/* charging current */
+	usb_charger_current_suspend = <0>;
+	usb_charger_current_unconfigured = <70000>;
+	usb_charger_current_configured = <500000>;
+	usb_charger_current = <500000>;
+	ac_charger_current = <2000000>;
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_charger_current = <1500000>;
+	apple_1_0a_charger_current = <650000>;
+	apple_2_1a_charger_current = <800000>;
+	ta_ac_charger_current = <2000000>;
+	typec_limit_aicr = <3000000>;
+
+	/*mmi config*/
+	mmi,iterm-ma = <243>;
+	mmi,mmi-temp-zones = <0 4200 1000 0>,
+			<10 0 1000 1000>,
+			<15 4200 2500 1000>,
+			<45 0 3000 3000>,
+			<60 4200 3000 0>;
+	mmi,enable-charging-limit;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
+	mmi,vfloat-comp-uv = <20000>;
+
+};
+&mtk_gauge {
+	charger = <&mtk_charger_type>;
+	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
+	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
+	/* battery prop */
+	g_FG_PSEUDO100 = <100 100 100 100 100 100 100 100 100 100>;
+	ACTIVE_TABLE = <(5)>;
+};
 
 &i2c0 {
 	fs16xx@34 {
