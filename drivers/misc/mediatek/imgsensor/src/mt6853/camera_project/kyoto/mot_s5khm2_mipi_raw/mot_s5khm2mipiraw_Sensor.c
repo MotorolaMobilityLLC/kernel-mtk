@@ -45,10 +45,10 @@ static int m_mot_camera_debug = 0;
 #define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
 
 static const char *s5khm2_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
-
+static bool bIsLongExposure = KAL_FALSE;
 static mot_calibration_info_t s5khm2_cal_info = {0};
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
-
+static kal_uint32 streaming_control(kal_bool enable);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -420,6 +420,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 
 static void write_shutter(kal_uint32 shutter)
 {
+	int i=0;
 	kal_uint16 realtime_fps = 0;
 
 	spin_lock(&imgsensor_drv_lock);
@@ -431,8 +432,7 @@ static void write_shutter(kal_uint32 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 	if (shutter < imgsensor_info.min_shutter)
-		shutter = imgsensor_info.min_shutter;
-
+		shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
 	if (imgsensor.autoflicker_en) {
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
 		if (realtime_fps >= 297 && realtime_fps <= 305)
@@ -451,9 +451,73 @@ static void write_shutter(kal_uint32 shutter)
 			imgsensor.frame_length);
 	}
 
-	/* Update Shutter */
-	write_cmos_sensor(0X0202, shutter & 0xFFFF);
-	LOG_DEBUG("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+	LOG_INF("shutter =%d, linelength =%d\n", shutter, imgsensor.line_length);
+	if (shutter > 65530) {    //tilne =10395    1s=1000000000/10395=96200
+		/*enter long exposure mode */
+		kal_uint32 new_framelength;
+		kal_uint32 long_shutter;
+		kal_uint32 temp2_0342 = 0x40F8;
+		kal_uint8 temp1_0702=0x06,temp1_0704=0x06;
+		int timeout = 200;
+		int framecnt = 0;
+
+		bIsLongExposure = KAL_TRUE;
+		LOG_INF(" enter long exposure mode\n");
+
+		/* Calculate value need by long exposure setting*/
+		long_shutter = shutter/temp2_0342*imgsensor.line_length/64;
+		//long_shutter=0xbbe4;
+		new_framelength = long_shutter+12;
+		LOG_INF("Calc long_shutter=%x, framelength=%d. shutter=0x%x\n",\
+			      long_shutter, new_framelength,shutter);
+		/*stream off */
+		streaming_control(KAL_FALSE);
+		/*setting for long exposure*/
+		write_cmos_sensor_8(0x0340, (new_framelength&0xFF00)>>8);
+		write_cmos_sensor_8(0x0341, (new_framelength&0x00FF));
+		write_cmos_sensor_8(0x0202, (long_shutter&0xFF00)>>8);
+		write_cmos_sensor_8(0x0203, (long_shutter&0x00FF));
+	       write_cmos_sensor_8(0x0702, temp1_0702&0x00FF);
+		write_cmos_sensor_8(0x0704, temp1_0704&0x00FF);
+		/*stream on*/
+		write_cmos_sensor_8(0x0100, 0x01);
+		for (i = 0; i < timeout; i++) {
+			mdelay(10);
+			framecnt = read_cmos_sensor_8(0x0005);
+			if ( framecnt == 0xFF) {
+				LOG_INF(" Stream On OK at i=%d.\n", i);
+				break;
+			}
+		}
+		/* Frame exposure mode customization for LE*/
+		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.current_ae_effective_frame = 1;
+		LOG_INF(" long exposure stream on-\n");
+	} else {
+		/*normal mode*/
+		if (bIsLongExposure == KAL_TRUE) {
+			bIsLongExposure = KAL_FALSE;
+			LOG_INF("[Exit long shutter + ]  shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+			/*stream off*/
+			streaming_control(KAL_FALSE);
+			/*setting for normal*/
+			write_cmos_sensor_8(0x0702, 0x00);
+			write_cmos_sensor_8(0x0703, 0x00);
+			write_cmos_sensor_8(0x0704, 0x00);
+			write_cmos_sensor_8(0x0705, 0x00);
+			/*stream on*/
+			streaming_control(KAL_TRUE);
+			LOG_INF("[Exit long shutter - ] shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+
+		} else {
+			write_cmos_sensor_8(0x0202, shutter >> 8);
+			write_cmos_sensor_8(0x0203, shutter & 0xFF);
+			LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+		}
+		imgsensor.current_ae_effective_frame = 1;
+	}
+	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }
 
@@ -536,7 +600,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	write_cmos_sensor(ANALOG_GAIN_REG, (reg_gain & 0xFFFF));
 	return gain;
 }
-
+#if 0
 static void check_streamon(void)
 {
 	unsigned int i = 0, framecnt = 0;
@@ -564,19 +628,28 @@ static void check_streamoff(void)
 	}
 	LOG_INF(" Stream Off Fail1!\n");
 }
-
+#endif
 static kal_uint32 streaming_control(kal_bool enable)
 {
-	unsigned int tmp;
+	int timeout = 200;
+	int i = 0;
+	int framecnt = 0;
 
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	LOG_INF("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
-		check_streamon();
+		mdelay(1);
 	} else {
-		tmp = read_cmos_sensor_8(0x0100);
-		if (tmp)
-			write_cmos_sensor_8(0x0100, 0x00);
+		write_cmos_sensor_8(0x0100, 0x00);
+		for (i = 0; i < timeout; i++) {
+			mdelay(1);
+			framecnt = read_cmos_sensor_8(0x0005);
+			if ( framecnt == 0xFF) {
+			LOG_INF(" Stream Off OK at i=%d.\n", i);
+			return ERROR_NONE;
+		}
+	}
+		LOG_INF("Stream Off Fail! framecnt= %d.\n", framecnt);
 	}
 	return ERROR_NONE;
 }
@@ -1090,7 +1163,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	imgsensor.current_scenario_id = scenario_id;
 	spin_unlock(&imgsensor_drv_lock);
 
-	check_streamoff();
+	//check_streamoff();
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
