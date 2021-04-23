@@ -1295,6 +1295,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(DSI_PANEL_MOT_MIPI_VID_TM_NT36672A_652_HDP)
 	&mipi_mot_vid_tm_nt36672a_hdp_652_lcm_drv,
 #endif
+
+#if defined(NT36525C_FHDP_DSI_VDO_AUO_CPHY_90HZ_DJIN)
+	&nt36525c_fhdp_dsi_vdo_auo_cphy_90hz_djin_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
