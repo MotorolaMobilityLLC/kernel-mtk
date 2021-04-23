@@ -381,6 +381,29 @@ static ssize_t barodevnum_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
+static ssize_t barocali_store(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	struct baro_context *cxt = NULL;
+	int err = 0;
+	uint8_t *cali_buf = NULL;
+
+	cali_buf = vzalloc(count);
+	if (!cali_buf)
+		return -ENOMEM;
+	memcpy(cali_buf, buf, count);
+
+	mutex_lock(&baro_context_obj->baro_op_mutex);
+	cxt = baro_context_obj;
+	if (cxt->baro_ctl.set_cali != NULL)
+		err = cxt->baro_ctl.set_cali(cali_buf, count);
+	if (err < 0)
+		pr_err("baro set cali err %d\n", err);
+	mutex_unlock(&baro_context_obj->baro_op_mutex);
+	vfree(cali_buf);
+	return count;
+}
+
 static int barometer_remove(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
@@ -523,12 +546,14 @@ DEVICE_ATTR_RW(baroactive);
 DEVICE_ATTR_RW(barobatch);
 DEVICE_ATTR_RW(baroflush);
 DEVICE_ATTR_RO(barodevnum);
+DEVICE_ATTR_WO(barocali);
 
 static struct attribute *baro_attributes[] = {
 	&dev_attr_baroactive.attr,
 	&dev_attr_barobatch.attr,
 	&dev_attr_baroflush.attr,
 	&dev_attr_barodevnum.attr,
+	&dev_attr_barocali.attr,
 	NULL
 };
 
@@ -564,6 +589,7 @@ int baro_register_control_path(struct baro_control_path *ctl)
 	cxt->baro_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->baro_ctl.batch = ctl->batch;
 	cxt->baro_ctl.flush = ctl->flush;
+	cxt->baro_ctl.set_cali = ctl->set_cali;
 	cxt->baro_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->baro_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->baro_ctl.is_support_batch = ctl->is_support_batch;
