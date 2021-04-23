@@ -22,6 +22,7 @@
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7_eeprom_data.bin"
 #define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_wide.bin"
 #define DUMP_WIDE_SERIAL_NUMBER_SIZE 8
+#define S5K4H7_EEPROM_MAX_SIZE 2185
 
 typedef enum {
 	PAGE_INVAIL,
@@ -92,7 +93,7 @@ typedef struct {
 	COMMON_PAGE_INFO  sfr_distance_3_info;
 	COMMON_PAGE_INFO  af_sync_info;
 	COMMON_PAGE_INFO  mtk_module_info;
-	unsigned char data[2048];
+	unsigned char data[S5K4H7_EEPROM_MAX_SIZE];
 } OTP_INFO;
 
 typedef struct {
