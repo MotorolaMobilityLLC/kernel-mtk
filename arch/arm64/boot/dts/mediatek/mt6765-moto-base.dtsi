@@ -7,4 +7,19 @@
 / {
 	moto_chg_tcmd: moto_chg_tcmd {
 	};
+
+	/delete-node/ tboard_thermistor1;
+	/delete-node/ tboard_thermistor2;
+	/delete-node/ tboard_thermistor3;
+	tboard_thermistor1: thermal-sensor1 {
+	};
+
+	tboard_thermistor2: thermal-sensor2 {
+	};
+
+	tboard_thermistor3: thermal-sensor3 {
+	};
+
+	tboard_thermistor4: thermal-sensor4 {
+	};
 };
