@@ -69,6 +69,8 @@ struct lcm {
 		lcm_dcs_write(ctx, d, ARRAY_SIZE(d));				\
 	})
 
+extern int lcm_bias_config(void);
+
 static inline struct lcm *panel_to_lcm(struct drm_panel *panel)
 {
 	return container_of(panel, struct lcm, panel);
@@ -359,6 +361,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	}
 	gpiod_set_value(ctx->bias_neg, 1);
 	devm_gpiod_put(ctx->dev, ctx->bias_neg);
+	lcm_bias_config();
 #endif
 	lcm_panel_init(ctx);
 	ret = ctx->error;
