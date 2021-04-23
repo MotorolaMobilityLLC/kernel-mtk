@@ -61,7 +61,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 290400000,
+		.mipi_pixel_rate = 298000000,
 	},
 	.cap = {
 		.pclk = 100000000,
@@ -73,18 +73,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1728,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 290400000,
-	},
-	.cap1 = {							//capture for 15fps
-		.pclk = 150000000,
-		.linelength  = 1700,
-		.framelength = 2582,
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width  = 3264,
-		.grabwindow_height = 2448,
-		.mipi_data_lp2hs_settle_dc = 15,
-		.max_framerate = 150,
+		.mipi_pixel_rate = 298000000,
 	},
 	.normal_video = { // cap
 		.pclk = 100000000,
@@ -96,7 +85,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1728,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 290400000,
+		.mipi_pixel_rate = 298000000,
 	},
 	.hs_video = {
 		.pclk = 100000000,				//record different mode's pclk
@@ -122,7 +111,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 15,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 290400000,
+		.mipi_pixel_rate = 298000000,
 	},
 	.custom1 = {//pre
 		.pclk = 100000000,				//record different mode's pclk
@@ -136,7 +125,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 2400,
-		.mipi_pixel_rate = 600000000,
+		.mipi_pixel_rate = 602000000,
 	},
 	.custom3 = {//full size capture
 		.pclk = 100000000,
@@ -150,14 +139,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate =594000000,
 	},
-	.margin = 6,			//sensor framelength & shutter margin
-	.min_shutter = 6,		//min shutter
+	.margin = 8,			//sensor framelength & shutter margin
+	.min_shutter = 8,		//min shutter
 	.min_gain = 64,
-	.max_gain = 4096,
+	.max_gain = 992,
 	.min_gain_iso = 100,
-	.gain_step = 1,
-	.gain_type = 0,
-	.max_frame_length = 0x90f7,//max framelength by sensor register's limitation
+	.gain_step = 2,
+	.gain_type = 1,
+	.max_frame_length = 0x7FFE,//max framelength by sensor register's limitation
 	.ae_shut_delay_frame = 0,	//shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
 	.ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
 	.ae_ispGain_delay_frame = 2,//isp gain delay frame for AE cycle
@@ -240,11 +229,11 @@ static kal_uint32 return_sensor_id(void)
 static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
-	/* you can set dummy by imgsensor.dummy_line and imgsensor.dummy_pixel, or you can set dummy by imgsensor.frame_length and imgsensor.line_length */
-	write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
-	write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-	write_cmos_sensor(0x380c, imgsensor.line_length >> 8);
+
+	write_cmos_sensor(0x380c, (imgsensor.line_length >> 8) & 0xFF);
 	write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
+	write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8) & 0x7F);
+	write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFE);
 }	/*	set_dummy  */
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -275,17 +264,12 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
-#if 0
-static void write_shutter(kal_uint16 shutter)
+
+static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
-	kal_uint32 frame_length = 0;
+	static bool islongexp = 0;
 
-	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
-	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
-
-	// OV Recommend Solution
-	// if shutter bigger than frame_length, should extend frame length first
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
@@ -295,33 +279,61 @@ static void write_shutter(kal_uint16 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
-    // Framelength should be an even number
-	   imgsensor.frame_length = ((imgsensor.frame_length + 1) >> 1) << 1;
 
-	if (imgsensor.autoflicker_en) {
-		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(146, 0);
+	if(shutter <= 32758) {
+		shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
+			(imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+		if (imgsensor.autoflicker_en) {
+			realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+			if (realtime_fps >= 297 && realtime_fps <= 305)
+				set_max_framerate(296, 0);
+			else if (realtime_fps >= 147 && realtime_fps <= 150)
+				set_max_framerate(146, 0);
+			else {
+				// Extend frame length
+				write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8) & 0x7F);
+				write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFE);
+			}
+		} else {
+			// Extend frame length
+			write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8) & 0x7F);
+			write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFE);
+		}
+		if(!islongexp) {
+			// Update Shutter
+			write_cmos_sensor(0x3500, (shutter >> 16) & 0x7F);
+			write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
+			write_cmos_sensor(0x3502, (shutter) & 0xFE);
+		} else {
+			write_cmos_sensor(0x3208, 0x03);
+			write_cmos_sensor(0x3500, 0x00);
+			write_cmos_sensor(0x3501, 0x0f);
+			write_cmos_sensor(0x3502, 0x48);
+			write_cmos_sensor(0x3208, 0x13);
+			write_cmos_sensor(0x3208, 0xA3);
+			islongexp = 0;
+		}
 	} else {
-		// Extend frame length
-		write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
-		write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
+		write_cmos_sensor(0x3208, 0x03);
+		write_cmos_sensor(0x3500, (shutter >> 16) & 0x7F);
+		write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
+		write_cmos_sensor(0x3502, (shutter) & 0xFE);
+		write_cmos_sensor(0x3598, 0x01);
+		write_cmos_sensor(0x3509, 0x00);
+		write_cmos_sensor(0x350a, 0x01);
+		write_cmos_sensor(0x350b, 0x00);
+		write_cmos_sensor(0x380e, 0x20);
+		write_cmos_sensor(0x380f, 0x08);
+		write_cmos_sensor(0x5221, 0x00);
+		write_cmos_sensor(0x5222, 0x5b);
+		write_cmos_sensor(0x5223, 0xea);
+		write_cmos_sensor(0x3208, 0x13);
+		write_cmos_sensor(0x3208, 0xA3);
+		islongexp = 1;
 	}
 
-	// Update Shutter
-	write_cmos_sensor(0x3500, (shutter>>12) & 0x0F);
-	write_cmos_sensor(0x3501, (shutter>>4) & 0xFF);
-	write_cmos_sensor(0x3502, (shutter<<4) & 0xF0);
-	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
-
-	//LOG_INF("frame_length = %d ", frame_length);
-
+	LOG_INF("shutter =%d, framelength =%d islongexp = %d \n", shutter, imgsensor.frame_length,islongexp);
 }	/*	write_shutter  */
-
-#endif
 
 /*************************************************************************
 * FUNCTION
@@ -342,102 +354,12 @@ static void write_shutter(kal_uint16 shutter)
 static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
-	kal_uint16 realtime_fps = 0;
 
-	kal_uint32 shutter_us = 0;
-	kal_uint32 LL = 0;
-	kal_uint32 fix_shutter = 0xfe500;
-
-	//kal_uint32 frame_length = 0;
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	//write_shutter(shutter);
-	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
-	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
-
-	// OV Recommend Solution
-	// if shutter bigger than frame_length, should extend frame length first
-	spin_lock(&imgsensor_drv_lock);
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-
-//	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
-//brad comment this tp prevent bad long shutter
-	    // Framelength should be an even number
-	imgsensor.frame_length = ((imgsensor.frame_length + 1) >> 1) << 1;
-
-	if (shutter > 42507) {
-		printk("brad long exp %d %d \n", shutter, imgsensor.frame_length);
-
-		//write_cmos_sensor(0x0100, 0x00);  /*stream on*/
-
-		//write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
-		//write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-
-		shutter_us = (shutter << 8) / (imgsensor.pclk / imgsensor.line_length);
-		//LL = shutter_us * 0x8FF / 1000000;
-		LL = shutter_us * 9;
-
-		printk("shutter_us: %d, SHUTTER:x%x pck:x%x ll:x%x L: 0x%x\n",
-			shutter_us, shutter, imgsensor.pclk, imgsensor.line_length, LL);
-
-		//shutter=0xfe500;
-
-		write_cmos_sensor(0x380e, 0xff);
-		write_cmos_sensor(0x380f, 0xff);
-		write_cmos_sensor(0x380c, LL >> 8);
-		write_cmos_sensor(0x380d, LL & 0XFF);
-
-
-		write_cmos_sensor(0x3502, (fix_shutter << 4) & 0xFF);
-		write_cmos_sensor(0x3501, (fix_shutter >> 4) & 0xFF);
-		write_cmos_sensor(0x3500, (fix_shutter >> 12) & 0x0F);
-
-		//write_cmos_sensor(0x0100, 0x01);  /*stream on*/
-
-		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SKIP;
-		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SKIP;
-		imgsensor.current_ae_effective_frame = 2;
-	} else {
-		if (imgsensor.autoflicker_en) {
-			realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-			if (realtime_fps >= 297 && realtime_fps <= 305)
-				set_max_framerate(296, 0);
-			else if (realtime_fps >= 147 && realtime_fps <= 150)
-				set_max_framerate(146, 0);
-			else {
-				// Extend frame length
-				write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
-				write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-			}
-		} else {
-			// Extend frame length
-			write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
-			write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-		}
-
-	        // Update Shutter
-	        write_cmos_sensor(0x3502, (shutter) & 0xFE);
-	        write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
-	        write_cmos_sensor(0x3500, (shutter >> 16) & 0x7F);
-	        write_cmos_sensor(0x380c, imgsensor.line_length>>8);
-	        write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
-
-		imgsensor.current_ae_effective_frame = 2;
-
-	}
-
-	LOG_INF("Exit! shutter =%d, framelength =%d line_length = %d,realtime_fps=%d\n",
-            shutter, imgsensor.frame_length,imgsensor.line_length,
-            (imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length));
+	write_shutter(shutter);
 }
 
 #if 0
@@ -469,29 +391,24 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
-        //max gain 15.5 * 64
-        kal_uint16 max_gain = 992;
-        LOG_INF("set_gain %d \n", gain);
-	if (gain < BASEGAIN || gain > max_gain) {
-		LOG_INF("Error gain setting");
 
-		if (gain < BASEGAIN)
-			gain = BASEGAIN;
-		else if (gain > max_gain)
-			gain = max_gain;
+	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
+		if (gain < imgsensor_info.min_gain)
+			gain = imgsensor_info.min_gain;
+		else
+			gain = imgsensor_info.max_gain;
 	}
 
-	//reg_gain = gain2reg(gain);
 	reg_gain = gain*4;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+	LOG_INF("gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
 
 	write_cmos_sensor(0x3508, (reg_gain>>8));
 	write_cmos_sensor(0x3509, (reg_gain&0xFF));
 	return gain;
-}	/*	set_gain  */
+}
 
 static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gain)
 {
