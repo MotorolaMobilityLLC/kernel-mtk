@@ -82,6 +82,7 @@
 		himax,panel-supplier = "hx83112a";
 
 		ili,panel-supplier = "txd_ili7806s";
+		ili,charger-psy-name = "battery";
 		ili,fw-tp-module;
 
 		novatek,reset-gpio = <&pio 164 0>;
