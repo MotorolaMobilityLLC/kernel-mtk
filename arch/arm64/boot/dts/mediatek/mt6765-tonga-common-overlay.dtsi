@@ -25,6 +25,35 @@
 	charger = <&mtk_charger_type>;
 };
 
+&tboard_thermistor1 {
+	compatible = "mediatek,mtboard-thermistor1";
+	io-channels = <&auxadc 0>;
+	io-channel-names = "thermistor-ch0";
+	interconnects = <&auxadc 0>;
+};
+
+&tboard_thermistor2 {
+	compatible = "mediatek,mtboard-thermistor2";
+	io-channels = <&auxadc 1>;
+	io-channel-names = "thermistor-ch1";
+	interconnects = <&auxadc 1>;
+};
+
+&tboard_thermistor3 {
+	compatible = "mediatek,mtboard-thermistor3";
+	io-channels = <&auxadc 2>;
+	io-channel-names = "thermistor-ch2";
+	interconnects = <&auxadc 2>;
+};
+
+&tboard_thermistor4 {
+	compatible = "mediatek,mtboard-thermistor4";
+	io-channels = <&auxadc 3>;
+	io-channel-names = "thermistor-ch3";
+	interconnects = <&auxadc 3>;
+};
+
+
 &i2c0 {
 	fs16xx@34 {
 		compatible = "foursemi,fs16xx";
