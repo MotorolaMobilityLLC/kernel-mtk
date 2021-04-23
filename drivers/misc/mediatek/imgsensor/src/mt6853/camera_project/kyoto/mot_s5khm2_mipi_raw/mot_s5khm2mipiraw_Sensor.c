@@ -116,8 +116,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.custom1 = {
 		.pclk = 1600000000,
-		.linelength = 5696,
-		.framelength = 4680,
+		.linelength = 17920,
+		.framelength = 1448,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1920,
@@ -138,16 +138,16 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 870000000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
-	.margin = 24,
-	.min_shutter = 6,
+	.margin = 4,
+	.min_shutter = 2,
 	.min_gain = 64,   //1x
 	.max_gain = 2560, //40x
 	.min_gain_iso = 100,
 	.gain_step = 2,  //type2 step=2
 	.gain_type = 2, //sam
 	.max_frame_length = 0xffff,
-	.ae_shut_delay_frame = 0,
-	.ae_sensor_gain_delay_frame = 0,
+	.ae_shut_delay_frame = 2,
+	.ae_sensor_gain_delay_frame = 2,
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
@@ -175,7 +175,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[] = {
 {12000, 9000,  0,   0, 12000, 9000, 4000, 3000,  0,   0, 4000, 3000, 0, 0, 4000, 3000},//pre
 {12000, 9000,  0,   0, 12000, 9000, 4000, 3000,  0,   0, 4000, 3000, 0, 0, 4000, 3000},//cap
-{12000, 9000,  0,   0, 12000, 9000, 4000, 3000,  0,   0, 4000, 3000, 0, 0, 4000, 3000},//cap
+{12000, 9000,  0,   0, 12000, 9000, 4000, 3000,  0,   0, 4000, 3000, 0, 0, 4000, 3000},//normal video
 {12000, 9000,  252,   1272, 11520, 6480, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},//hs_video
 {12000, 9000,  0,   0, 12000, 9000, 4000, 3000,  0,   0, 4000, 3000, 0, 0, 4000, 3000},//slim_video
 {12000, 9000,  252,   1272, 11520, 6480, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},//custom1
