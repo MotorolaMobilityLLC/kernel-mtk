@@ -590,7 +590,7 @@ int s5k4h7_otp_data(void)
 	unsigned int size = 0;
 	bool ret = FALSE;
 
-	memset(otp_info_map.data,0,2048);
+	memset(otp_info_map.data,0,S5K4H7_EEPROM_MAX_SIZE);
 
 	mnf_info->data = otp_info_map.data;
 	size = mnf_info->size;
@@ -624,33 +624,61 @@ int s5k4h7_otp_data(void)
 		(mot_s5k4h7_otp.af_inf_macro_flag - mot_s5k4h7_otp.lsc_flag)/sizeof(UINT8));
 	LOG_INF ("lsc ret %d size = %d\n", ret,size);
 
-	light_source_info->data = mot_s5k4h7_otp.light_source_flag;
+	light_source_info->data = otp_info_map.data + size;
+	size += light_source_info->size;
 	ret = moto_read_common_one_page_data(light_source_info);
-	LOG_INF ("light_source_info ret %d size = %d\n", ret, light_source_info->size);
+	memcpy(mot_s5k4h7_otp.light_source_flag,
+		light_source_info->data,
+		(mot_s5k4h7_otp.wb_flag - mot_s5k4h7_otp.light_source_flag)/sizeof(UINT8));
+	LOG_INF ("light_source_info ret %d size = %d\n", ret,size);
 
-	optical_center_info->data = mot_s5k4h7_otp.oc_flag;
+	optical_center_info->data = otp_info_map.data + size;
+	size += optical_center_info->size;
 	ret = moto_read_common_two_page_data(optical_center_info);
-	LOG_INF ("optical_center_info ret %d size = %d\n", ret ,optical_center_info->size);
+	memcpy(mot_s5k4h7_otp.oc_flag,
+		optical_center_info->data,
+		(mot_s5k4h7_otp.sfr_dist1_flag - mot_s5k4h7_otp.oc_flag)/sizeof(UINT8));
+	LOG_INF ("optical_center_info ret %d size = %d\n", ret,size);
 
-	sfr_distance_1_info->data = mot_s5k4h7_otp.sfr_dist1_flag;
+	sfr_distance_1_info->data = otp_info_map.data + size;
+	size += sfr_distance_1_info->size;
 	ret = moto_read_common_one_page_data(sfr_distance_1_info);
-	LOG_INF ("sfr_distance_1_info ret %d size = %d\n", ret, sfr_distance_1_info->size);
+	memcpy(mot_s5k4h7_otp.sfr_dist1_flag,
+		sfr_distance_1_info->data,
+		(mot_s5k4h7_otp.sfr_dist2_flag - mot_s5k4h7_otp.sfr_dist1_flag)/sizeof(UINT8));
+	LOG_INF ("sfr_distance_1_info ret %d size = %d\n", ret,size);
 
-	sfr_distance_2_info->data = mot_s5k4h7_otp.sfr_dist2_flag;
+	sfr_distance_2_info->data = otp_info_map.data + size;
+	size += sfr_distance_2_info->size;
 	ret = moto_read_common_two_page_data(sfr_distance_2_info);
-	LOG_INF ("sfr_distance_2_info ret %d size = %d\n", ret, sfr_distance_2_info->size);
+	memcpy(mot_s5k4h7_otp.sfr_dist2_flag,
+		sfr_distance_2_info->data,
+		(mot_s5k4h7_otp.sfr_dist3_flag - mot_s5k4h7_otp.sfr_dist2_flag)/sizeof(UINT8));
+	LOG_INF ("sfr_distance_2_info ret %d size = %d\n", ret,size);
 
-	sfr_distance_3_info->data = mot_s5k4h7_otp.sfr_dist3_flag;
+	sfr_distance_3_info->data = otp_info_map.data + size;
+	size += sfr_distance_3_info->size;
 	ret = moto_read_common_one_page_data(sfr_distance_3_info);
-	LOG_INF ("sfr_distance_3_info ret %d size = %d\n", ret, sfr_distance_3_info->size);
+	memcpy(mot_s5k4h7_otp.sfr_dist3_flag,
+		sfr_distance_3_info->data,
+		(mot_s5k4h7_otp.lsc_flag - mot_s5k4h7_otp.sfr_dist3_flag)/sizeof(UINT8));
+	LOG_INF ("sfr_distance_3_info ret %d size = %d\n", ret,size);
 
-	af_sync_info->data = mot_s5k4h7_otp.af_sync_flag;
+	af_sync_info->data = otp_info_map.data + size;
+	size += af_sync_info->size;
 	ret = moto_read_one_or_two_page_data(af_sync_info);
-	LOG_INF ("af_sync_info ret %d size = %d\n", ret, af_sync_info->size);
+	memcpy(mot_s5k4h7_otp.af_sync_flag,
+		af_sync_info->data,
+		(mot_s5k4h7_otp.mtk_info_flag - mot_s5k4h7_otp.af_sync_flag)/sizeof(UINT8));
+	LOG_INF ("af_sync_info ret %d size = %d\n", ret,size);
 
-	mtk_module_info->data = mot_s5k4h7_otp.mtk_info_flag;
+	mtk_module_info->data = otp_info_map.data + size;
+	size += mtk_module_info->size;
 	ret = moto_read_one_or_two_page_data(mtk_module_info);
-	LOG_INF ("mtk_module_info ret %d size = %d\n", ret, mtk_module_info->size);
+	memcpy(mot_s5k4h7_otp.mtk_info_flag,
+		mtk_module_info->data,
+		(mot_s5k4h7_otp.mtk_info_crc + 2 - mot_s5k4h7_otp.mtk_info_flag)/sizeof(UINT8));
+	LOG_INF ("mtk_module_info ret %d size = %d\n", ret,size);
 
 	return 0;
 }
