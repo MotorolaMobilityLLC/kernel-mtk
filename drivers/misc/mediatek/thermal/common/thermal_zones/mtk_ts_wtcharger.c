@@ -1393,13 +1393,13 @@ static int mtkts_wtcharger_probe(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_OF
-const struct of_device_id mt_thermistor_of_match3[2] = {
-	{.compatible = "mediatek,mtboard-thermistor3",},
+const struct of_device_id mt_thermistor_of_match4[2] = {
+	{.compatible = "mediatek,mtboard-thermistor4",},
 	{},
 };
 #endif
 
-#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor3"
+#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor4"
 static struct platform_driver mtk_thermal_wtcharger_driver = {
 	.remove = NULL,
 	.shutdown = NULL,
@@ -1409,7 +1409,7 @@ static struct platform_driver mtk_thermal_wtcharger_driver = {
 	.driver = {
 		.name = THERMAL_THERMISTOR_NAME,
 #ifdef CONFIG_OF
-		.of_match_table = mt_thermistor_of_match3,
+		.of_match_table = mt_thermistor_of_match4,
 #endif
 	},
 };
