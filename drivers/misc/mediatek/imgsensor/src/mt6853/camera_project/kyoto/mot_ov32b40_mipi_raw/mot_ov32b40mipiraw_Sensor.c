@@ -415,7 +415,7 @@ static inline void updat_shutter(kal_uint32 shutter)
 	kal_uint32 long_shutter;
 	/*1s=1000000000  tline=12500  1000000000/12500=80000*/
         if(shutter > 70000)
-        {
+	{
 		/* long exposure
 		  *ov32b  default binning=2,
 		  *In the tuning file camera_AE_custom_transfotm.cpp:
@@ -429,7 +429,7 @@ static inline void updat_shutter(kal_uint32 shutter)
 	    /*undate shutter*/
 		write_cmos_sensor_8(0x3500, (shutter >> 16) & 0xFF);
 		write_cmos_sensor_8(0x3501, (shutter >> 8) & 0xFF);
-		write_cmos_sensor_8(kal_uint32 addr, kal_uint8 para)(0x3502, (shutter) & 0xFF);
+		write_cmos_sensor_8(0x3502, (shutter) & 0xFF);
        }
 }
 
