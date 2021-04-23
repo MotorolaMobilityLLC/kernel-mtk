@@ -113,6 +113,22 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 			return -EINVAL;
 		}
 		return 0;
+	case BAROMETER_IOCTL_GET_CALI:
+		if (baro_factory.fops != NULL &&
+		    baro_factory.fops->get_cali != NULL) {
+			err = baro_factory.fops->get_cali(&data);
+			if (err < 0) {
+				pr_err(
+					"BAROMETER_IOCTL_GET_CALI read data fail!\n");
+				return -EINVAL;
+			}
+			if (copy_to_user(ptr, &data, sizeof(data)))
+				return -EFAULT;
+		} else {
+			pr_err("BAROMETER_IOCTL_GET_CALI NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	case BAROMETER_GET_TEMP_DATA:
 		return 0;
 	default:
