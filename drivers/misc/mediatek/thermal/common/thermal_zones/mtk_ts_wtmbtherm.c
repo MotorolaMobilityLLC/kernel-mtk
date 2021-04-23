@@ -1402,12 +1402,12 @@ static int mtkts_mbtherm_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 const struct of_device_id mt_thermistor_of_match_mb[2] = {
-	{.compatible = "mediatek,mtboard-thermistor2",},
+	{.compatible = "mediatek,mtboard-thermistor3",},
 	{},
 };
 #endif
 
-#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor2"
+#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor3"
 static struct platform_driver mtk_thermal_mbtherm_driver = {
 	.remove = NULL,
 	.shutdown = NULL,
