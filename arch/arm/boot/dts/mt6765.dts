@@ -2306,14 +2306,14 @@
 	};
 
 	tboard_thermistor3: thermal-sensor3 {
-		compatible = "mediatek,mtboard-thermistor2";
+		compatible = "mediatek,mtboard-thermistor3";
 		io-channels = <&auxadc 2>;
 		io-channel-names = "thermistor-ch2";
 		interconnects = <&auxadc 2>;
         };
 
         tboard_thermistor4: thermal-sensor4 {
-		compatible = "mediatek,mtboard-thermistor3";
+		compatible = "mediatek,mtboard-thermistor4";
 		io-channels = <&auxadc 3>;
 		io-channel-names = "thermistor-ch3";
 		interconnects = <&auxadc 3>;
