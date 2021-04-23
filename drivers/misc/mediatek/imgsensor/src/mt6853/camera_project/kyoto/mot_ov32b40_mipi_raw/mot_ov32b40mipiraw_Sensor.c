@@ -411,10 +411,26 @@ static inline void extend_frame_length(kal_uint32 frame_length)
 
 static inline void updat_shutter(kal_uint32 shutter)
 {
-	/*undate shutter*/
-	write_cmos_sensor_8(0x3500, (shutter >> 16) & 0xFF);
-	write_cmos_sensor_8(0x3501, (shutter >> 8) & 0xFF);
-	write_cmos_sensor_8(0x3502, (shutter) & 0xFF);
+
+	kal_uint32 long_shutter;
+	/*1s=1000000000  tline=12500  1000000000/12500=80000*/
+        if(shutter > 70000)
+        {
+		/* long exposure
+		  *ov32b  default binning=2,
+		  *In the tuning file camera_AE_custom_transfotm.cpp:
+		  *u4Eposuretime = u4Eposuretime / u4BinningSumRatio
+		  */
+		long_shutter= shutter*2;
+		write_cmos_sensor_8(0x3500, (long_shutter >> 16) & 0xFF);
+		write_cmos_sensor_8(0x3501, (long_shutter >> 8) & 0xFF);
+		write_cmos_sensor_8(0x3502, (long_shutter) & 0xFF);
+        }else{
+	    /*undate shutter*/
+		write_cmos_sensor_8(0x3500, (shutter >> 16) & 0xFF);
+		write_cmos_sensor_8(0x3501, (shutter >> 8) & 0xFF);
+		write_cmos_sensor_8(kal_uint32 addr, kal_uint8 para)(0x3502, (shutter) & 0xFF);
+       }
 }
 
 static inline void update_gain(kal_uint16 reg_gain)
