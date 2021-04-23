@@ -236,161 +236,160 @@ static void lcm_panel_init(struct lcm *ctx)
 	udelay(10 * 1000);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x16),
-	lcm_dcs_write_seq_static(ctx, 0x88, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x16),
-	lcm_dcs_write_seq_static(ctx, 0x8D, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x8C, 0x03),
-	lcm_dcs_write_seq_static(ctx, 0x00, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x66, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x67, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x68, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x6A, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x69, 0x70),
-	lcm_dcs_write_seq_static(ctx, 0x6B, 0xF8),
-	lcm_dcs_write_seq_static(ctx, 0x6C, 0x77),
-	lcm_dcs_write_seq_static(ctx, 0x6D, 0xF8),
-	lcm_dcs_write_seq_static(ctx, 0x6E, 0xF8),
-	lcm_dcs_write_seq_static(ctx, 0x75, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x76, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x77, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x78, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x79, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x7A, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x7B, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x7C, 0xCC),
-	lcm_dcs_write_seq_static(ctx, 0x7D, 0x02),
-	lcm_dcs_write_seq_static(ctx, 0x7E, 0x66),
-	lcm_dcs_write_seq_static(ctx, 0x7F, 0x04),
-	lcm_dcs_write_seq_static(ctx, 0x80, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x81, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x82, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x83, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x84, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x85, 0x00),
-	lcm_dcs_write_seq_static(ctx, 0x86, 0x00),
-
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x60);
-	lcm_dcs_write_seq_static(ctx, 0x1B, 0xCC);
-	lcm_dcs_write_seq_static(ctx, 0x24, 0xCC);
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0xD0);
-	lcm_dcs_write_seq_static(ctx, 0x42, 0x81);
-	lcm_dcs_write_seq_static(ctx, 0x49, 0x01);
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
-	lcm_dcs_write_seq_static(ctx, 0xE0, 0x00); //60Hz:40
-	lcm_dcs_write_seq_static(ctx, 0xDA, 0x00); //60Hz:02
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x22);//demura page
-	lcm_dcs_write_seq_static(ctx, 0x77, 0x00);//demure off:02 on:00
-
-	if ( strstr(saved_command_line, "WritePPS")) {
-	    /* PPS */
-            lcm_dcs_write_seq_static(ctx, 0xFE, 0xD2);
-            lcm_dcs_write_seq_static(ctx, 0x00, 0x11);
-            lcm_dcs_write_seq_static(ctx, 0x01, 0x89);
-            lcm_dcs_write_seq_static(ctx, 0x02, 0x30);
-            lcm_dcs_write_seq_static(ctx, 0x03, 0x09);
-            lcm_dcs_write_seq_static(ctx, 0x04, 0x60);
-            lcm_dcs_write_seq_static(ctx, 0x05, 0x04);
-            lcm_dcs_write_seq_static(ctx, 0x06, 0x38);
-            lcm_dcs_write_seq_static(ctx, 0x07, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x08, 0x0c);
-            lcm_dcs_write_seq_static(ctx, 0x09, 0x04);
-            lcm_dcs_write_seq_static(ctx, 0x0a, 0x38);
-            lcm_dcs_write_seq_static(ctx, 0x0b, 0x02);
-            lcm_dcs_write_seq_static(ctx, 0x0c, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x0d, 0x20);
-            lcm_dcs_write_seq_static(ctx, 0x0e, 0x01);
-            lcm_dcs_write_seq_static(ctx, 0x0f, 0x7e);
-            lcm_dcs_write_seq_static(ctx, 0x10, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x11, 0x0f);
-            lcm_dcs_write_seq_static(ctx, 0x12, 0x0c);
-            lcm_dcs_write_seq_static(ctx, 0x13, 0x08);
-            lcm_dcs_write_seq_static(ctx, 0x14, 0xbb);
-            lcm_dcs_write_seq_static(ctx, 0x15, 0x04);
-            lcm_dcs_write_seq_static(ctx, 0x16, 0x3d);
-            lcm_dcs_write_seq_static(ctx, 0x17, 0x18);
-            lcm_dcs_write_seq_static(ctx, 0x18, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x19, 0x10);
-            lcm_dcs_write_seq_static(ctx, 0x1a, 0xf0);
-            lcm_dcs_write_seq_static(ctx, 0x1b, 0x03);
-            lcm_dcs_write_seq_static(ctx, 0x1c, 0x0c);
-            lcm_dcs_write_seq_static(ctx, 0x1d, 0x20);
-            lcm_dcs_write_seq_static(ctx, 0x1e, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x1f, 0x06);
-            lcm_dcs_write_seq_static(ctx, 0x20, 0x0b);
-            lcm_dcs_write_seq_static(ctx, 0x21, 0x0b);
-            lcm_dcs_write_seq_static(ctx, 0x22, 0x33);
-            lcm_dcs_write_seq_static(ctx, 0x23, 0x0e);
-            lcm_dcs_write_seq_static(ctx, 0x24, 0x1c);
-            lcm_dcs_write_seq_static(ctx, 0x25, 0x2a);
-            lcm_dcs_write_seq_static(ctx, 0x26, 0x38);
-            lcm_dcs_write_seq_static(ctx, 0x27, 0x46);
-            lcm_dcs_write_seq_static(ctx, 0x28, 0x54);
-            lcm_dcs_write_seq_static(ctx, 0x29, 0x62);
-            lcm_dcs_write_seq_static(ctx, 0x2a, 0x69);
-            lcm_dcs_write_seq_static(ctx, 0x2b, 0x70);
-            lcm_dcs_write_seq_static(ctx, 0x2d, 0x77);
-            lcm_dcs_write_seq_static(ctx, 0x2f, 0x79);
-            lcm_dcs_write_seq_static(ctx, 0x30, 0x7b);
-            lcm_dcs_write_seq_static(ctx, 0x31, 0x7d);
-            lcm_dcs_write_seq_static(ctx, 0x32, 0x7e);
-            lcm_dcs_write_seq_static(ctx, 0x33, 0x01);
-            lcm_dcs_write_seq_static(ctx, 0x34, 0x02);
-            lcm_dcs_write_seq_static(ctx, 0x35, 0x01);
-            lcm_dcs_write_seq_static(ctx, 0x36, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x37, 0x09);
-            lcm_dcs_write_seq_static(ctx, 0x38, 0x40);
-            lcm_dcs_write_seq_static(ctx, 0x39, 0x09);
-            lcm_dcs_write_seq_static(ctx, 0x3a, 0xbe);
-            lcm_dcs_write_seq_static(ctx, 0x3b, 0x19);
-            lcm_dcs_write_seq_static(ctx, 0x3d, 0xfc);
-            lcm_dcs_write_seq_static(ctx, 0x3f, 0x19);
-            lcm_dcs_write_seq_static(ctx, 0x40, 0xfa);
-            lcm_dcs_write_seq_static(ctx, 0x41, 0x19);
-            lcm_dcs_write_seq_static(ctx, 0x42, 0xf8);
-            lcm_dcs_write_seq_static(ctx, 0x43, 0x1a);
-            lcm_dcs_write_seq_static(ctx, 0x44, 0x38);
-            lcm_dcs_write_seq_static(ctx, 0x45, 0x1a);
-            lcm_dcs_write_seq_static(ctx, 0x46, 0x78);
-            lcm_dcs_write_seq_static(ctx, 0x47, 0x1a);
-            lcm_dcs_write_seq_static(ctx, 0x48, 0xb6);
-            lcm_dcs_write_seq_static(ctx, 0x49, 0x2a);
-            lcm_dcs_write_seq_static(ctx, 0x4a, 0xf6);
-            lcm_dcs_write_seq_static(ctx, 0x4b, 0x2b);
-            lcm_dcs_write_seq_static(ctx, 0x4c, 0x34);
-            lcm_dcs_write_seq_static(ctx, 0x4d, 0x2b);
-            lcm_dcs_write_seq_static(ctx, 0x4e, 0x74);
-            lcm_dcs_write_seq_static(ctx, 0x4f, 0x3b);
-            lcm_dcs_write_seq_static(ctx, 0x50, 0x74);
-            lcm_dcs_write_seq_static(ctx, 0x51, 0x6b);
-            lcm_dcs_write_seq_static(ctx, 0x52, 0xf4);
-            lcm_dcs_write_seq_static(ctx, 0x86, 0x04);
-            lcm_dcs_write_seq_static(ctx, 0x87, 0x38);
-            lcm_dcs_write_seq_static(ctx, 0x88, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x89, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x8a, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x8b, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x8c, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x8d, 0x00);
-            lcm_dcs_write_seq_static(ctx, 0x8e, 0x80);
+	if( strstr(saved_command_line, "EVT1Panel") || strstr(saved_command_line, "EVT2Panel") ) {
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0xD2);
+		lcm_dcs_write_seq_static(ctx, 0x00, 0x11);
+		lcm_dcs_write_seq_static(ctx, 0x01, 0x89);
+		lcm_dcs_write_seq_static(ctx, 0x02, 0x30);
+		lcm_dcs_write_seq_static(ctx, 0x03, 0x09);
+		lcm_dcs_write_seq_static(ctx, 0x04, 0x60);
+		lcm_dcs_write_seq_static(ctx, 0x05, 0x04);
+		lcm_dcs_write_seq_static(ctx, 0x06, 0x38);
+		lcm_dcs_write_seq_static(ctx, 0x07, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x08, 0x0c);
+		lcm_dcs_write_seq_static(ctx, 0x09, 0x04);
+		lcm_dcs_write_seq_static(ctx, 0x0a, 0x38);
+		lcm_dcs_write_seq_static(ctx, 0x0b, 0x02);
+		lcm_dcs_write_seq_static(ctx, 0x0c, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x0d, 0x20);
+		lcm_dcs_write_seq_static(ctx, 0x0e, 0x01);
+		lcm_dcs_write_seq_static(ctx, 0x0f, 0x7e);
+		lcm_dcs_write_seq_static(ctx, 0x10, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x11, 0x0f);
+		lcm_dcs_write_seq_static(ctx, 0x12, 0x0c);
+		lcm_dcs_write_seq_static(ctx, 0x13, 0x08);
+		lcm_dcs_write_seq_static(ctx, 0x14, 0xbb);
+		lcm_dcs_write_seq_static(ctx, 0x15, 0x04);
+		lcm_dcs_write_seq_static(ctx, 0x16, 0x3d);
+		lcm_dcs_write_seq_static(ctx, 0x17, 0x18);
+		lcm_dcs_write_seq_static(ctx, 0x18, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x19, 0x10);
+		lcm_dcs_write_seq_static(ctx, 0x1a, 0xf0);
+		lcm_dcs_write_seq_static(ctx, 0x1b, 0x03);
+		lcm_dcs_write_seq_static(ctx, 0x1c, 0x0c);
+		lcm_dcs_write_seq_static(ctx, 0x1d, 0x20);
+		lcm_dcs_write_seq_static(ctx, 0x1e, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x1f, 0x06);
+		lcm_dcs_write_seq_static(ctx, 0x20, 0x0b);
+		lcm_dcs_write_seq_static(ctx, 0x21, 0x0b);
+		lcm_dcs_write_seq_static(ctx, 0x22, 0x33);
+		lcm_dcs_write_seq_static(ctx, 0x23, 0x0e);
+		lcm_dcs_write_seq_static(ctx, 0x24, 0x1c);
+		lcm_dcs_write_seq_static(ctx, 0x25, 0x2a);
+		lcm_dcs_write_seq_static(ctx, 0x26, 0x38);
+		lcm_dcs_write_seq_static(ctx, 0x27, 0x46);
+		lcm_dcs_write_seq_static(ctx, 0x28, 0x54);
+		lcm_dcs_write_seq_static(ctx, 0x29, 0x62);
+		lcm_dcs_write_seq_static(ctx, 0x2a, 0x69);
+		lcm_dcs_write_seq_static(ctx, 0x2b, 0x70);
+		lcm_dcs_write_seq_static(ctx, 0x2d, 0x77);
+		lcm_dcs_write_seq_static(ctx, 0x2f, 0x79);
+		lcm_dcs_write_seq_static(ctx, 0x30, 0x7b);
+		lcm_dcs_write_seq_static(ctx, 0x31, 0x7d);
+		lcm_dcs_write_seq_static(ctx, 0x32, 0x7e);
+		lcm_dcs_write_seq_static(ctx, 0x33, 0x01);
+		lcm_dcs_write_seq_static(ctx, 0x34, 0x02);
+		lcm_dcs_write_seq_static(ctx, 0x35, 0x01);
+		lcm_dcs_write_seq_static(ctx, 0x36, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x37, 0x09);
+		lcm_dcs_write_seq_static(ctx, 0x38, 0x40);
+		lcm_dcs_write_seq_static(ctx, 0x39, 0x09);
+		lcm_dcs_write_seq_static(ctx, 0x3a, 0xbe);
+		lcm_dcs_write_seq_static(ctx, 0x3b, 0x19);
+		lcm_dcs_write_seq_static(ctx, 0x3d, 0xfc);
+		lcm_dcs_write_seq_static(ctx, 0x3f, 0x19);
+		lcm_dcs_write_seq_static(ctx, 0x40, 0xfa);
+		lcm_dcs_write_seq_static(ctx, 0x41, 0x19);
+		lcm_dcs_write_seq_static(ctx, 0x42, 0xf8);
+		lcm_dcs_write_seq_static(ctx, 0x43, 0x1a);
+		lcm_dcs_write_seq_static(ctx, 0x44, 0x38);
+		lcm_dcs_write_seq_static(ctx, 0x45, 0x1a);
+		lcm_dcs_write_seq_static(ctx, 0x46, 0x78);
+		lcm_dcs_write_seq_static(ctx, 0x47, 0x1a);
+		lcm_dcs_write_seq_static(ctx, 0x48, 0xb6);
+		lcm_dcs_write_seq_static(ctx, 0x49, 0x2a);
+		lcm_dcs_write_seq_static(ctx, 0x4a, 0xf6);
+		lcm_dcs_write_seq_static(ctx, 0x4b, 0x2b);
+		lcm_dcs_write_seq_static(ctx, 0x4c, 0x34);
+		lcm_dcs_write_seq_static(ctx, 0x4d, 0x2b);
+		lcm_dcs_write_seq_static(ctx, 0x4e, 0x74);
+		lcm_dcs_write_seq_static(ctx, 0x4f, 0x3b);
+		lcm_dcs_write_seq_static(ctx, 0x50, 0x74);
+		lcm_dcs_write_seq_static(ctx, 0x51, 0x6b);
+		lcm_dcs_write_seq_static(ctx, 0x52, 0xf4);
+		lcm_dcs_write_seq_static(ctx, 0x86, 0x04);
+		lcm_dcs_write_seq_static(ctx, 0x87, 0x38);
+		lcm_dcs_write_seq_static(ctx, 0x88, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x89, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x8a, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x8b, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x8c, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x8d, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x8e, 0x80);
 	}
 
+	if( strstr(saved_command_line, "EVT1Panel") ) {
+		printk("%s, write EVT1Panel init code\n", __func__);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x60);
+		lcm_dcs_write_seq_static(ctx, 0x1B, 0xCC); // for EVT1 forced to restart
+		lcm_dcs_write_seq_static(ctx, 0x24, 0xCC); // for EVT1 forced to restart
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0xD0);
+		lcm_dcs_write_seq_static(ctx, 0x42, 0x81); // 01 VESA off, 81 VESA on
+		lcm_dcs_write_seq_static(ctx, 0x49, 0x01);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84); //page Frequency switching address
+		lcm_dcs_write_seq_static(ctx, 0xE0, 0x00); //90Hz:00
+		lcm_dcs_write_seq_static(ctx, 0xDA, 0x00); //90Hz:00
+	//	lcm_dcs_write_seq_static(ctx, 0xE0, 0x40); //60Hz:40
+	//	lcm_dcs_write_seq_static(ctx, 0xDA, 0x02); //60Hz:02
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x22);//demura page
+		lcm_dcs_write_seq_static(ctx, 0x77, 0x00);//demure off:02 on:00
 
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x40);
-	lcm_dcs_write_seq_static(ctx, 0x82, 0x10);
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0xD2);
-	lcm_dcs_write_seq_static(ctx, 0x53, 0x08);
-	lcm_dcs_write_seq_static(ctx, 0x72, 0x07);
-	lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
-	lcm_dcs_write_seq_static(ctx, 0xFA, 0x01); // 07 VESAo ff, 01 VESA on
-	lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);//08 cmd, 03 video
-	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
-	lcm_dcs_write_seq_static(ctx,0x53,0x28);
-	lcm_dcs_write_seq_static(ctx,0x55,0x00);
-	lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
-	lcm_dcs_write_seq_static(ctx, 0x11);
-	msleep(120);
-	lcm_dcs_write_seq_static(ctx, 0x29);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x40);
+		lcm_dcs_write_seq_static(ctx, 0x82, 0x10);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0xD2);
+		lcm_dcs_write_seq_static(ctx, 0x53, 0x08);
+		lcm_dcs_write_seq_static(ctx, 0x72, 0x07);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00); //page Turn off frequency switch
+		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01); // 07 VESA off, 01 VESA on
+		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);//08 cmd, 03 video
+		lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x11);
+		msleep(120);
+		lcm_dcs_write_seq_static(ctx, 0x29);
+	}
+	else if( strstr(saved_command_line, "EVT2Panel") ) {
+		printk("%s, write EVT2Panel init code\n", __func__);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0xD0);
+		lcm_dcs_write_seq_static(ctx, 0x42, 0x81);     // 01 VESA off, 81 VESA on
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
+		lcm_dcs_write_seq_static(ctx, 0xDA, 0x00);    //60Hz: 02
+
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01);     // 07 VESA off, 01 VESA on
+		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);
+		lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x11);
+		msleep(120);
+		lcm_dcs_write_seq_static(ctx, 0x29);
+	}
+	else if( strstr(saved_command_line, "DVTPanel") ) {
+		printk("%s, write DVTPanel init code\n", __func__);
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0xD0);
+		lcm_dcs_write_seq_static(ctx, 0x42, 0x81);     // 01 VESA off, 81 VESA on
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
+		lcm_dcs_write_seq_static(ctx, 0xDA, 0x00);    //60Hz: 02
+
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01);     // 07 VESA off, 01 VESA on
+		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);
+		lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x11);
+		msleep(120);
+		lcm_dcs_write_seq_static(ctx, 0x29);
+	}
 }
 
 static int lcm_disable(struct drm_panel *panel)
@@ -528,9 +527,9 @@ static int lcm_enable(struct drm_panel *panel)
 #define HFP (26)
 #define HSA (2)
 #define HBP (36)
-#define VFP_45HZ (12)
-#define VFP_60HZ (12)
-#define VFP_90HZ (12)
+#define VFP_45HZ (26)
+#define VFP_60HZ (26)
+#define VFP_90HZ (26)
 #define VSA (8)
 #define VBP (12)
 #define VAC (2400)
@@ -541,7 +540,7 @@ static u32 fake_width = 1080;
 static bool need_fake_resolution;
 
 static struct drm_display_mode default_mode = {
-	.clock = 166932,//htotal*vtotal*vrefresh/1000
+	.clock = 179636,//htotal*vtotal*vrefresh/1000
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -554,7 +553,7 @@ static struct drm_display_mode default_mode = {
 };
 
 static struct drm_display_mode performance_mode = {
-	.clock = 250398,//htotal*vtotal*vrefresh/1000
+	.clock = 269452,//htotal*vtotal*vrefresh/1000
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -568,7 +567,7 @@ static struct drm_display_mode performance_mode = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params = {
-	.pll_clk = 280,
+	.pll_clk = 343,
 	.vfp_low_power = VFP_45HZ,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -618,7 +617,7 @@ static struct mtk_panel_params ext_params = {
 };
 
 static struct mtk_panel_params ext_params_90hz = {
-	.pll_clk = 280,
+	.pll_clk = 343,
 	.vfp_low_power = VFP_60HZ,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -970,8 +969,8 @@ static int lcm_get_modes(struct drm_panel *panel)
 	mode2->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(panel->connector, mode2);
 
-	panel->connector->display_info.width_mm = 69;
-	panel->connector->display_info.height_mm = 154;
+	panel->connector->display_info.width_mm = 70;
+	panel->connector->display_info.height_mm = 155;
 
 	panel->connector->display_info.panel_ver = 0x01;
 	panel->connector->display_info.panel_id = 0x12082A93;
