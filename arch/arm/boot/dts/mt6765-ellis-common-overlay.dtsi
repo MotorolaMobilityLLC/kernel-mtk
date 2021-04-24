@@ -53,6 +53,15 @@
 	};
 };
 
+&i2c6 {
+    ext_buck_vgpu@55 {
+        regulator-name ="ext_buck_vgpu";
+        regulator-min-microvolt = <300000>;
+        regulator-max-microvolt = <1300000>;
+        vsel_pin = <2>;
+    };
+};
+
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
