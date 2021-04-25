@@ -39,7 +39,7 @@ void *fsm_devm_kstrdup(struct device *dev, void *buf, size_t size);
 int fsm_i2c_reg_read(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t *pVal);
 int fsm_i2c_reg_write(fsm_dev_t *fsm_dev, uint8_t reg, uint16_t val);
 int fsm_i2c_bulkwrite(fsm_dev_t *fsm_dev, uint8_t reg,
-				uint8_t *data, int len);
+                uint8_t *data, int len);
 int fsm_get_amb_tempr(void);
 int fsm_i2c_init(void);
 void fsm_i2c_exit(void);
@@ -180,9 +180,9 @@ int fsm_hal_get_livedata(fsm_msg_t *data);
 int fstool_reg_read(uint8_t addr, uint8_t reg, uint16_t *val);
 int fstool_reg_write(uint8_t addr, uint8_t reg, uint16_t val);
 int fstool_bulkwrite(uint8_t addr, uint8_t reg,
-				uint32_t len, uint8_t *val);
+                uint32_t len, uint8_t *val);
 int fstool_bulkread(uint8_t addr, uint8_t reg,
-				uint32_t len, uint8_t *val);
+                uint32_t len, uint8_t *val);
 void fsm_hal_close(void);
 #else
 #define fsm_hal_open(...) (0)
