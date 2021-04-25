@@ -494,6 +494,8 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 
 		g_leds_data[i]->cdev.brightness_set = mt65xx_led_set;
 		g_leds_data[i]->cdev.blink_set = mt65xx_blink_set;
+		if(cust_led_list[i].max_brightness)
+			g_leds_data[i]->cdev.max_brightness = cust_led_list[i].max_brightness;
 
 		INIT_WORK(&g_leds_data[i]->work, mt_mt65xx_led_work);
 
