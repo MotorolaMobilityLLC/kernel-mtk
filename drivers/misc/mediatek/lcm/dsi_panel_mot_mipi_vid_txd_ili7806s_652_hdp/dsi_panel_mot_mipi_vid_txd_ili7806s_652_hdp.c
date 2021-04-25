@@ -135,7 +135,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting_vdo[] = {
-	{0xFF,3,{0x78,0x07,0x06}}, //Page0
+	{0xFF,3,{0x78,0x07,0x06}}, //Page6
 	{0xCD,1,{0x68}},
 	{0xFF,3,{0x78,0x07,0x00}}, //Page0
 	{0x53,1,{0x2C}},
@@ -143,6 +143,9 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0x55,1,{0x01}}, 	//0x01 ui 	0x03 mv 	0x00 off
 	{0x11,1,{0x00}},
 	{REGFLAG_DELAY, 120, {}},
+	{0xFF,3,{0x78,0x07,0x03}}, //Page3, pwm clk to 18.8Khz
+	{0x84,1,{0x02}},
+	{0xFF,3,{0x78,0x07,0x00}}, //Page0, pwm clk to 18.8Khz
 	{0x29,1,{0x00}},
 	{REGFLAG_DELAY, 20, {}},
 	{0x35,1,{0x00}}
@@ -268,7 +271,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.horizontal_sync_active = 12;
 	params->dsi.horizontal_backporch = 120;
-	params->dsi.horizontal_frontporch = 116;
+	params->dsi.horizontal_frontporch = 138;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_range = 4;
 	params->dsi.ssc_disable = 1;
@@ -460,8 +463,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		unsigned int bl_lvl;
 		bl_lvl =(1638 * level)/255;  //enabled HBM, 80% PWM
 		LCM_LOGI("%s,ili7806s backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
-		//for 11/12bit
-		bl_level[1].para_list[0] = (bl_lvl&0xF00)>>8;
+		//for 11bit
+		bl_level[1].para_list[0] = (bl_lvl&0x700)>>8;
 		bl_level[1].para_list[1] = (bl_lvl&0xFF);
 		LCM_LOGI("%s,ili7806s_txd : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
 
