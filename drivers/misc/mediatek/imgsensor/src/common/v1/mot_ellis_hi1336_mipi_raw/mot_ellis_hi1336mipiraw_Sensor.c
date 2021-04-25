@@ -44,7 +44,8 @@
 #define per_frame 1
 extern bool read_mot_ellis_hi1336_eeprom( kal_uint16 addr, BYTE *data, kal_uint32 size);
 extern bool read_eeprom( kal_uint16 addr, BYTE * data, kal_uint32 size);
-
+#define HI1336_SERIAL_NUM_SIZE 16
+#define MAIN_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -2553,7 +2554,7 @@ static void ELLIS_Hi1336_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[10], eeprom->serial_number[11],
 		eeprom->serial_number[12], eeprom->serial_number[13],
 		eeprom->serial_number[14], eeprom->serial_number[15]);
-
+	ELLIS_Hi1336_eeprom_dump_bin(MAIN_SERIAL_NUM_DATA_PATH,  HI1336_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_INF("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
