@@ -98,6 +98,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
+#define BL_MAX_LEVEL                    1638
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -459,16 +460,19 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-		// set 11bit
-		unsigned int bl_lvl;
-		bl_lvl =(1638 * level)/255;  //enabled HBM, 80% PWM
-		LCM_LOGI("%s,ili7806s backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
-		//for 11bit
-		bl_level[1].para_list[0] = (bl_lvl&0x700)>>8;
-		bl_level[1].para_list[1] = (bl_lvl&0xFF);
-		LCM_LOGI("%s,ili7806s_txd : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
+	// set 11bit
+	unsigned int bl_lvl;
 
-		push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	if (level > BL_MAX_LEVEL) {
+		LCM_LOGI("%s: ili7806s: level%d: exceed max bl:%d\n", __func__, level, BL_MAX_LEVEL);
+	}
+	bl_lvl = level;
+	//for 11bit
+	bl_level[1].para_list[0] = (bl_lvl&0x700)>>8;
+	bl_level[1].para_list[1] = (bl_lvl&0xFF);
+	LCM_LOGI("%s,ili7806s_txd : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
+
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
 /*
