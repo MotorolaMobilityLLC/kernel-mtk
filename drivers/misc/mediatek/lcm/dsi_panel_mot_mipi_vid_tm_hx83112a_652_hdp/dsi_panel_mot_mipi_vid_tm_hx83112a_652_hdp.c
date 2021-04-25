@@ -98,6 +98,14 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
+#define LCM_BL_BITS_11			0 		//EVT bit12, DVT: bit11
+#if LCM_BL_BITS_11
+#define LCM_BL_MAX_BRIGHTENSS		1638
+#else
+#define LCM_BL_MAX_BRIGHTENSS		3276
+#endif
+
+#define BL_MAX_LEVEL			1638
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -461,12 +469,22 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 		// set 11bit
 	unsigned int bl_lvl;
-	bl_lvl = (3276 * level)/255;  //enabled HBM, 80% PWM
+
+	if (level > BL_MAX_LEVEL) {
+		LCM_LOGI("%s: ili7806s: level%d: exceed max bl:%d\n", __func__, level, BL_MAX_LEVEL);
+		//return;
+	}
+	bl_lvl =(LCM_BL_MAX_BRIGHTENSS * level)/BL_MAX_LEVEL;
 	LCM_LOGI("%s,hx83112a backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
-	//for 11/12bit
+#if LCM_BL_BITS_11
+	//for 11bit
+	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
+#else
+	//for 12bit
 	bl_level[0].para_list[0] = (bl_lvl&0xF00)>>8;
+#endif
 	bl_level[0].para_list[1] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,hx83112a_tm : para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[0].para_list[0],bl_level[0].para_list[1]);
+	LCM_LOGI("%s,tm_hx83112a : para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[0].para_list[0],bl_level[0].para_list[1]);
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
