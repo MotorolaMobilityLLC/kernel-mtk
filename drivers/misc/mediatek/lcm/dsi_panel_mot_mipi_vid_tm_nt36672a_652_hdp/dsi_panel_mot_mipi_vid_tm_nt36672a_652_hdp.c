@@ -98,6 +98,14 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
+#define LCM_BL_BITS_11			0 		//EVT bit12, DVT: bit11
+#if LCM_BL_BITS_11
+#define LCM_BL_MAX_BRIGHTENSS		1638
+#else
+#define LCM_BL_MAX_BRIGHTENSS		204
+#endif
+
+#define BL_MAX_LEVEL			1638
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -471,23 +479,34 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	// for 8bit
 	unsigned int bl_lvl;
-	unsigned int bl_max = 204;
-	if(level > 255) {
-		//do nothing
-		LCM_LOGI("%s,nt36672a backlight: level error\n", __func__);
-	} else {
-		bl_lvl = (bl_max * level)/255;  //enabled HBM, 80% PWM
+
+	if (level > BL_MAX_LEVEL) {
+		LCM_LOGI("%s: tm_nt36672a: level%d: exceed max bl:%d\n", __func__, level, BL_MAX_LEVEL);
+		//return;
 	}
+
+	bl_lvl =(LCM_BL_MAX_BRIGHTENSS * level)/BL_MAX_LEVEL;
 
 	if (bl_lvl == 0) {
 		//reset low brightness to avoid black
-                bl_lvl = 1;
-		//LCM_LOGI("%s,nt36672a_TM backlight: reset bl_lvl=1\n", __func__);
+		if (LCM_BL_MAX_BRIGHTENSS > 255)
+			bl_lvl = 12;
+		else
+			bl_lvl = 1;
+
+		LCM_LOGI("%s,tm_nt36672a backlight: reset bl_lvl=1\n", __func__);
 	}
 
+#if LCM_BL_BITS_11
+    //for 11bit
+	bl_level[1].para_list[0] = (bl_lvl&0x700)>>8;
+	bl_level[1].para_list[1] = (bl_lvl&0xFF);
+	LCM_LOGI("%s,tm_nt36672a : para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
+#else
 	// set 8bit
 	bl_level[0].para_list[0] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,nt36672a_TM : level=%d, bl_level=0x%x\n",__func__, level, bl_level[0].para_list[0]);
+	LCM_LOGI("%s,tm_nt36672a : para_list[0]=%x\n",__func__,bl_level[0].para_list[0]);
+#endif
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
