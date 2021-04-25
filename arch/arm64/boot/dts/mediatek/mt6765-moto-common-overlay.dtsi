@@ -447,5 +447,5 @@
 //Move it to overlay dts entry for support different hardware phase
 //#include "k65v1_64_bsp/cust.dtsi"
 #include "mediatek/cust_mt6765_camera.dtsi"
-#include "mediatek/cust_mt6765_touch_1080x1920.dtsi"
+//#include "mediatek/cust_mt6765_touch_1080x1920.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
