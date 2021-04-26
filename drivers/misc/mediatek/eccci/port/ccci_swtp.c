@@ -106,12 +106,24 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		swtp->gpio_state[i] = SWTP_EINT_PIN_PLUG_IN;
 
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
+	//EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, start
+	#ifdef CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART
+	if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT) {
+		swtp->tx_power_mode = SWTP_DO_TX_POWER;
+	} else {
+		swtp->tx_power_mode = SWTP_NO_TX_POWER;
+	}
+	CCCI_LEGACY_ERR_LOG(-1, SYS,"%s:swtp_switch_state : %d\n", __func__, swtp->tx_power_mode);
+
+	#else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
 			swtp->tx_power_mode = SWTP_DO_TX_POWER;
 			break;
 		}
 	}
+	#endif
+	//EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, end
 
 	inject_pin_status_event(swtp->curr_mode, rf_name);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
