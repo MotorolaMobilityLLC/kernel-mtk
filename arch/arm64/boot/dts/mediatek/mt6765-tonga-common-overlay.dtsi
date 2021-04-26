@@ -16,9 +16,11 @@
 #include <dt-bindings/mmc/mt6765-msdc.h>
 
 &mtk_charger_type {
-	bc12_active = <1>;
+	bc12_active = <0>;
 };
-
+&mt6370_chg {
+	bc12_sel = <0>;
+};
 &usb {
 	charger = <&mtk_charger_type>;
 };
