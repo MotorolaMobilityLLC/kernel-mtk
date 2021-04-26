@@ -11,6 +11,7 @@
  */
 
 #include "mediatek/mt6765-moto-common-overlay.dtsi"
+#include "mediatek/mt6765-moto-tonga-fps.dtsi"
 #include "cust_mt6765_touch_tonga_720x1600.dtsi"
 #include <dt-bindings/mmc/mt6765-msdc.h>
 
