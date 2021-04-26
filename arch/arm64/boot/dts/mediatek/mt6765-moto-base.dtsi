@@ -3,6 +3,7 @@
  * 	Add nodes or properties to root node
  * 	Delete nodes or properties
 */
+#include "sgm7220.dtsi"
 
 / {
 	moto_chg_tcmd: moto_chg_tcmd {
