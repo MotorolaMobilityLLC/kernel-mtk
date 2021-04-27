@@ -35,26 +35,19 @@
 
 MODULE_LICENSE("GPL v2");
 
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
-#if defined(CONFIG_CHARGER_PD_ET7303)
-#ifdef CONFIG_MTK_CHARGER
+#ifndef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 #include <charger_class.h>
 static struct charger_device *primary_charger;
-#endif
-#endif
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#endif //Introduce External PD & Type-C logic
 
 #include <mt-plat/mtk_boot_common.h>
 
 struct device_node	*usb_node;
 static int		iddig_eint_num;
 static ktime_t		ktime_start, ktime_end;
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
-#if defined(CONFIG_CHARGER_PD_ET7303)
-#else
+#ifdef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 static struct		regulator *reg_vbus;
-#endif
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#endif //Introduce External PD & Type-C logic
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
 { .hw_ep_num = 1, .style = FIFO_TX,
@@ -134,9 +127,7 @@ void set_usb_phy_mode(int mode)
 
 static void _set_vbus(int is_on)
 {
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
-#if defined(CONFIG_CHARGER_PD_ET7303)
-#ifdef CONFIG_MTK_CHARGER
+#ifndef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 	if (!primary_charger) {
 		DBG(0, "vbus_init<%d>\n", vbus_on);
 
@@ -144,9 +135,8 @@ static void _set_vbus(int is_on)
 		if (!primary_charger) {
 			DBG(0, "get primary charger device failed\n");
 			return;
+		}
 	}
-	}
-#endif
 #else
 	if (!reg_vbus) {
 		DBG(0, "vbus_init\n");
@@ -156,8 +146,7 @@ static void _set_vbus(int is_on)
 			return;
 		}
 	}
-#endif
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#endif  //Introduce External PD & Type-C logic
 
 	DBG(0, "op<%d>, status<%d>\n", is_on, vbus_on);
 	if (is_on && !vbus_on) {
@@ -165,13 +154,10 @@ static void _set_vbus(int is_on)
 		 * host mode correct used by PMIC
 		 */
 		vbus_on = true;
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
-#if defined(CONFIG_CHARGER_PD_ET7303)
-#ifdef CONFIG_MTK_CHARGER
+#ifndef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 		charger_dev_enable_otg(primary_charger, true);
-  //ROG-2359 xuweijiang.wt, Modify, 20201217, change charger boost current
+		//Modify, 20201217, change charger boost current
 		charger_dev_set_boost_current_limit(primary_charger, 1200000);
-#endif
 #else
 		if (regulator_set_voltage(reg_vbus, 5000000, 5000000))
 			DBG(0, "vbus regulator set voltage failed\n");
@@ -181,22 +167,17 @@ static void _set_vbus(int is_on)
 
 		if (regulator_enable(reg_vbus))
 			DBG(0, "vbus regulator enable failed\n");
-#endif
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#endif //Introduce External PD & Type-C logic
 	} else if (!is_on && vbus_on) {
 		/* disable VBUS 1st then update flag
 		 * to make host mode correct used by PMIC
 		 */
 		vbus_on = false;
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
-#if defined(CONFIG_CHARGER_PD_ET7303)
-#ifdef CONFIG_MTK_CHARGER
+#ifndef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 		charger_dev_enable_otg(primary_charger, false);
-#endif
 #else
 		regulator_disable(reg_vbus);
-#endif
-//EKELLIS-5, ET&RT logic ic bringup, for ET7303
+#endif //Introduce External PD & Type-C logic
 	}
 }
 
