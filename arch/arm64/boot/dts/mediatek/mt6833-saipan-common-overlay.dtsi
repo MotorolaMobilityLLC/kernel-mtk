@@ -237,7 +237,7 @@
 		reg = <0x34>;
 		reset-gpio = <&pio 169 0>;
 		irq-gpio = <&pio 39 0>;
-		fade-enable = <0>;
+		fade-enable = <1>;
 		pa-syn-enable = <0>;
 		status = "okay";
 	};
