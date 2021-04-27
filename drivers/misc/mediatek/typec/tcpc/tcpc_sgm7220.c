@@ -301,6 +301,8 @@ static void process_mode_register(struct sgm7220_chip *info)
 	tmp = reg_val;
 	val = (tmp & MOD_ACTIVE_CABLE_DETECTION);
 	info->type_c_param.active_cable_attach = val;
+
+	pr_info("sgm7220 %s , current_det = %d, accessory_attach = %d, active_cable_attach = %d\n", __func__, info->type_c_param.current_det, info->type_c_param.accessory_attach, info->type_c_param.active_cable_attach);
 }
 
 static void process_interrupt_register(struct sgm7220_chip *info)
@@ -332,6 +334,8 @@ static void process_interrupt_register(struct sgm7220_chip *info)
 	tmp = reg_val;
 	val = ((tmp & INT_CABLE_DIR) >> INT_CABLE_DIR_SHIFT);
 	info->type_c_param.cable_dir = val;
+
+	pr_info("sgm7220 %s ,attach_state = %d, cable_dir = %d \n", __func__, info->type_c_param.attach_state, info->type_c_param.cable_dir);
 }
 
 static void process_tcpci_attach_state(struct sgm7220_chip *chip)
@@ -352,6 +356,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 				TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		}
 		tcpc_dev->typec_attach_old = TYPEC_UNATTACHED;
+		pr_info("sgm7220 %s , attach_state = DETACHED\n", __func__);
 	}
 
 	if ((chip->type_c_param.attach_state == CABLE_STATE_AS_UFP) &&
@@ -361,6 +366,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 		tcpci_source_vbus(tcpc_dev,
 			TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SNK;
+		pr_info("sgm7220 %s , attach_state = TYPEC_ATTACHED_SNK\n", __func__);
 	}
 
 	if ((chip->type_c_param.attach_state == CABLE_STATE_AS_DFP) &&
@@ -371,6 +377,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 			TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, -1);
 		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SRC;
 			/* -1 means let tcpc decide current value */
+		pr_info("sgm7220 %s , attach_state = TYPEC_ATTACHED_SRC\n", __func__);
 	}
 	chip->type_c_param_old.attach_state = chip->type_c_param.attach_state;
 	tcpc_dev->typec_polarity = chip->type_c_param.cable_dir;
@@ -387,7 +394,7 @@ static void sgm7220_irq_work_handler(struct kthread_work *work)
 
 	down(&chip->suspend_lock);
 	mutex_lock(&mutex2);
-
+	pr_info("%s enter\n", __func__);
 	process_mode_register(chip);
 	process_interrupt_register(chip);
 	process_tcpci_attach_state(chip);
@@ -789,7 +796,18 @@ static int sgm7220_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 
 static int sgm7220_set_cc(struct tcpc_device *tcpc, int pull)
 {
-	pr_info("%s enter\n", __func__);
+	struct sgm7220_chip *chip = tcpc_get_dev_data(tcpc);
+	int ret;
+	uint8_t value = 0;
+
+	pr_info("%s enter ,pull = %d\n", __func__, pull);
+
+	value = 0x01;
+	ret = sgm7220_update_reg(chip->client, REG_SET, value, SET_I2C_DISABLE_TERM);//Disable RD and RP
+	if (ret < 0) {
+		pr_err("%s: init REG_SET fail!\n", __func__);
+		 return ret;
+	}
 /*	if (pull == TYPEC_CC_RP)
 		value = SET_MODE_SELECT_SRC;
 	else if (pull == TYPEC_CC_RD)
@@ -802,6 +820,14 @@ static int sgm7220_set_cc(struct tcpc_device *tcpc, int pull)
 	if (ret < 0) {
 		pr_err("%s: update reg fail!\n", __func__);
 	}*/
+	value = 0x00;
+	ret = sgm7220_update_reg(chip->client, REG_SET, value, SET_I2C_DISABLE_TERM);//Enable RD and RP
+	if (ret < 0) {
+		pr_err("%s: init REG_SET fail!\n", __func__);
+		return ret;
+	}
+
+	pr_info("%s end ,value = %x\n", __func__, value);
 	return 0;
 }
 
