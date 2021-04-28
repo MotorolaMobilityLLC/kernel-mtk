@@ -353,6 +353,7 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01); // 07 VESA off, 01 VESA on
 		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);//08 cmd, 03 video
 		lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x53, 0x28);
 		lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 		lcm_dcs_write_seq_static(ctx, 0x11);
 		msleep(120);
@@ -369,6 +370,7 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01);     // 07 VESA off, 01 VESA on
 		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);
 		lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x53, 0x28);
 		lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 		lcm_dcs_write_seq_static(ctx, 0x11);
 		msleep(120);
@@ -385,6 +387,7 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01);     // 07 VESA off, 01 VESA on
 		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);
 		lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x53, 0x28);
 		lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 		lcm_dcs_write_seq_static(ctx, 0x11);
 		msleep(120);
@@ -569,7 +572,7 @@ static struct drm_display_mode performance_mode = {
 static struct mtk_panel_params ext_params = {
 	.pll_clk = 343,
 	.vfp_low_power = VFP_45HZ,
-	.cust_esd_check = 1,
+	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0A, .count = 1, .para_list[0] = 0x9C,
@@ -619,7 +622,7 @@ static struct mtk_panel_params ext_params = {
 static struct mtk_panel_params ext_params_90hz = {
 	.pll_clk = 343,
 	.vfp_low_power = VFP_60HZ,
-	.cust_esd_check = 1,
+	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 
@@ -770,7 +773,9 @@ static void mode_switch_60_to_90(struct drm_panel *panel,
 	} else if (stage == AFTER_DSI_POWERON) {
 		/* 60 to 90 */
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
-		lcm_dcs_write_seq_static(ctx, 0xE0, 0x00);
+		if( strstr(saved_command_line, "EVT1Panel") ) {
+			lcm_dcs_write_seq_static(ctx, 0xE0, 0x00);
+		}
 		lcm_dcs_write_seq_static(ctx, 0xDA, 0x00);
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
 	}
@@ -786,7 +791,9 @@ static void mode_switch_90_to_60(struct drm_panel *panel,
 	} else if (stage == AFTER_DSI_POWERON) {
                 /* switch to 60hz */
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
-		lcm_dcs_write_seq_static(ctx, 0xE0, 0x40);
+		if( strstr(saved_command_line, "EVT1Panel") ) {
+			lcm_dcs_write_seq_static(ctx, 0xE0, 0x40);
+		}
 		lcm_dcs_write_seq_static(ctx, 0xDA, 0x02);
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
         }
