@@ -4,6 +4,7 @@
  * 	Delete nodes or properties
 */
 #include "sgm7220.dtsi"
+#include "tcpc_config.dtsi"
 
 / {
 	moto_chg_tcmd: moto_chg_tcmd {
