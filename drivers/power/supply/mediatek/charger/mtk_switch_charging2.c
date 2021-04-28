@@ -303,8 +303,19 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	if (pdata->moto_chg_tcmd_ichg != -1)
 		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
 
-	if(info->mmi.adaptive_charging_disable_ibat)
+	if (info->mmi.adaptive_charging_disable_ibat
+		&& !info->mmi.battery_charging_disable) {
 		pdata->charging_current_limit = 0;
+		info->mmi.battery_charging_disable = true;
+		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
+	} else if (!info->mmi.adaptive_charging_disable_ibat
+			&& info->mmi.battery_charging_disable) {
+		info->mmi.battery_charging_disable = false;
+		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
+	} else if (info->mmi.adaptive_charging_disable_ibat
+			&& info->mmi.battery_charging_disable) {
+		pdata->charging_current_limit = 0;
+	}
 done:
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
@@ -467,6 +478,8 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 		charger_dev_enable_hz(info->chg1_dev, false);
 		info->mmi.charging_enable_hz = false;
 	}
+
+	info->mmi.battery_charging_disable = false;
 
 	return 0;
 }
@@ -707,8 +720,19 @@ static int select_pdc_charging_current_limit(struct charger_manager *info)
 
 	info->mmi.target_usb = pdata->input_current_limit;
 
-	if(info->mmi.adaptive_charging_disable_ibat)
+	if (info->mmi.adaptive_charging_disable_ibat
+		&& !info->mmi.battery_charging_disable) {
 		pdata->charging_current_limit = 0;
+		info->mmi.battery_charging_disable = true;
+		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
+	} else if (!info->mmi.adaptive_charging_disable_ibat
+			&& info->mmi.battery_charging_disable) {
+		info->mmi.battery_charging_disable = false;
+		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
+	} else if (info->mmi.adaptive_charging_disable_ibat
+			&& info->mmi.battery_charging_disable) {
+		pdata->charging_current_limit = 0;
+	}
 #endif
 
 	sc_select_charging_current(info, pdata);

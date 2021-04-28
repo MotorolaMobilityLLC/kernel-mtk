@@ -2378,11 +2378,13 @@ static void mmi_charger_check_status(struct charger_manager *info)
 		mmi->target_usb,
 		mmi->demo_discharging);
 	pr_info("[%s]adaptive charging:disable_ibat = %d, "
-		"disable_ichg = %d, enable HZ = %d\n",
+		"disable_ichg = %d, enable HZ = %d, "
+		"charging disable = %d\n",
 		__func__,
 		mmi->adaptive_charging_disable_ibat,
 		mmi->adaptive_charging_disable_ichg,
-		mmi->charging_enable_hz);
+		mmi->charging_enable_hz,
+		mmi->battery_charging_disable);
 end_check:
 
 	return;
@@ -2690,6 +2692,7 @@ void mmi_init(struct charger_manager *info)
 	info->mmi.adaptive_charging_disable_ibat = false;
 	info->mmi.adaptive_charging_disable_ichg = false;
 	info->mmi.charging_enable_hz = false;
+	info->mmi.battery_charging_disable = false;
 
 	rc = parse_mmi_dt(info, &info->pdev->dev);
 	if (rc < 0)
