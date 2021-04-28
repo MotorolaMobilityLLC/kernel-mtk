@@ -83,7 +83,6 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint14>
-            <eint41>
             <eint42>
                 <varName>TCPC_PD</varName>
                 <debounce_time>0</debounce_time>
