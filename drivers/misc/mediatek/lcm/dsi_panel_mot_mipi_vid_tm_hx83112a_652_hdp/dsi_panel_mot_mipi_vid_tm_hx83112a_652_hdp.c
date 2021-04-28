@@ -98,11 +98,13 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
-#define LCM_BL_BITS_11			0 		//EVT bit12, DVT: bit11
+#define LCM_BL_BITS_11			0 		//EVT bit12
 #if LCM_BL_BITS_11
 #define LCM_BL_MAX_BRIGHTENSS		1638
+#define LCM_BL_MIN_BRIGHTENSS		12
 #else
 #define LCM_BL_MAX_BRIGHTENSS		3276
+#define LCM_BL_MIN_BRIGHTENSS		19
 #endif
 
 #define BL_MAX_LEVEL			1638
@@ -142,41 +144,48 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting_vdo[] = {
-	{0xB9,3,{0x83,0x11,0x2a}},
+	{0xB9,3, {0x83,0x11,0x2A}},
 	{0xE9,1,{0xC4}},
 	{0xCF,1,{0xC0}},
 	{0xE9,1,{0x3F}},
+	{0xBD,1, {0x01}},
+	{0xE4, 41, {0x00, 0x77, 0xE1, 0xE1, 0xE1, 0xE1, 0xE1, 0xE1, 0xE1, 0xE1, 0xC7, 0xB2, 0xA0, 0x90, 0x81, 0x75, 0x69, 0x5F, 0x55, 0x4C, 0x44, 0x3D, 0x36, 0x2F, 0x2A, 0x20, 0x1E, 0x19, 0x11, 0x0D, 0x0B, 0x06, 0x03, 0x54, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55}},
+	{0xBD,1, {0x00}},
+	{REGFLAG_DELAY,1,{}},
+	{0x11,1, {0x00}},
+	{REGFLAG_DELAY,85,{}},
 	{0x35,1,{0x00}},
 	{0x51,2,{0x00,0x00}},
 	{0x53,1,{0x24}},
-	{0x55,1,{0x00}},
-	{0x11,1,{0x00}},
-	{REGFLAG_DELAY, 85, {}},
+	{0x55,1, {0x01}},
+	{REGFLAG_DELAY,20,{}},
+	{0xE4,23, {0x2D, 0x01, 0x2C, 0x00, 0x08, 0x00, 0x10, 0x08, 0x04, 0x04, 0x9A, 0x9A, 0x9A, 0x9A, 0x9A, 0xBB, 0xDB, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0x30}},
+	{REGFLAG_DELAY,1,{}},
 	{0x29,1,{0x00}},
 	{REGFLAG_DELAY, 20, {}}
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0x51, 0x02, {0x06, 0x66} }
+	{ 0x51, 0x02, {0x0C, 0xCC} }
 };
 
-/*
 static struct LCM_setting_table lcm_cabc_setting_ui[] = {
-	{0xFF, 1, {0x10} },
-	{0xFB, 1, {0x01} },
-	{0x55, 1, {0x01} },
+	{0x55,1, {0x01}},
+	{REGFLAG_DELAY,20,{}},
+	{0xE4,23, {0x2D, 0x01, 0x2C, 0x00, 0x08, 0x00, 0x10, 0x08, 0x04, 0x04, 0x9A, 0x9A, 0x9A, 0x9A, 0x9A, 0xBB, 0xDB, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0x30}},
+	{REGFLAG_DELAY,1,{}},
 };
 
 static struct LCM_setting_table lcm_cabc_setting_mv[] = {
-	{0xFF, 1, {0x10} },
-	{0xFB, 1, {0x01} },
-	{0x55, 1, {0x03} },
+	{0x55,1, {0x03}},
+	{REGFLAG_DELAY,20,{}},
+	{0xE4,23, {0x2D, 0x01, 0x2C, 0x00, 0x08, 0x00, 0x10, 0x08, 0x04, 0x04, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x66, 0x66, 0xE2, 0xFF, 0xAA, 0xFE, 0xEF, 0x30}},
+	{REGFLAG_DELAY,1,{}},
 };
 
 static struct LCM_setting_table lcm_cabc_setting_disable[] = {
-	{0xFF, 1, {0x10} },
-	{0xFB, 1, {0x01} },
 	{0x55, 1, {0x00} },
+	{REGFLAG_DELAY,20,{}},
 };
 
 struct LCM_cabc_table {
@@ -192,10 +201,9 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 };
 
 static struct LCM_setting_table lcm_hbm_setting[] = {
-	{0x51, 2, {0x06, 0X66} },	//80% PWM
+	{0x51, 2, {0x0C, 0XCC} },	//80% PWM
 	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
 };
-*/
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned int count, unsigned char force_update)
@@ -471,11 +479,15 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	unsigned int bl_lvl;
 
 	if (level > BL_MAX_LEVEL) {
-		LCM_LOGI("%s: ili7806s: level%d: exceed max bl:%d\n", __func__, level, BL_MAX_LEVEL);
+		LCM_LOGI("%s: tm_hx83112a: level%d: exceed max bl:%d\n", __func__, level, BL_MAX_LEVEL);
 		//return;
 	}
 	bl_lvl =(LCM_BL_MAX_BRIGHTENSS * level)/BL_MAX_LEVEL;
-	LCM_LOGI("%s,hx83112a backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
+	if (bl_lvl < LCM_BL_MIN_BRIGHTENSS) {
+		//reset low brightness to avoid black
+		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
+		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
+	}
 #if LCM_BL_BITS_11
 	//for 11bit
 	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
@@ -484,7 +496,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	bl_level[0].para_list[0] = (bl_lvl&0xF00)>>8;
 #endif
 	bl_level[0].para_list[1] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,tm_hx83112a : para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[0].para_list[0],bl_level[0].para_list[1]);
+	LCM_LOGI("%s,tm_hx83112a: level=%d, para_list[0]=0x%x,para_list[1]=0x%x\n",__func__, level, bl_level[0].para_list[0],bl_level[0].para_list[1]);
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
@@ -532,7 +544,6 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 }
 #endif
 
-/*
 static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 		unsigned int *lcm_count, unsigned int *lcm_value)
 {
@@ -560,7 +571,6 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 	pr_info("%s, tm_hx83112a cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
 
 }
-*/
 
 struct LCM_DRIVER mipi_mot_vid_tm_hx83112a_hdp_652_lcm_drv = {
 	.name = "mipi_mot_vid_tm_hx83112a_hdp_652",
@@ -577,7 +587,7 @@ struct LCM_DRIVER mipi_mot_vid_tm_hx83112a_hdp_652_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
-	//.set_lcm_cmd = lcm_set_cmdq,
+	.set_lcm_cmd = lcm_set_cmdq,
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
