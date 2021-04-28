@@ -57,7 +57,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 700000000,
+		.mipi_pixel_rate = 280500000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.cap = {
@@ -69,7 +69,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 700000000,
+		.mipi_pixel_rate = 280500000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.normal_video = {
@@ -81,7 +81,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 700000000,
+		.mipi_pixel_rate = 280500000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.hs_video = {
@@ -92,9 +92,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
-		.mipi_pixel_rate = 700000000,
+		.mipi_pixel_rate = 280500000,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 1200,
+		.max_framerate = 300,
 	},
 	.slim_video = {
 		.pclk = 280000000,
@@ -105,7 +105,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 700000000,
+		.mipi_pixel_rate = 280500000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.margin = 4,
@@ -395,11 +395,11 @@ static kal_uint32 streaming_control(kal_bool enable)
 	LOG_INF("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
-		mdelay(1);
+		mdelay(10);
 	} else {
 			write_cmos_sensor_8(0x0100, 0x00);
 			for (i = 0; i < timeout; i++) {
-				mdelay(1);
+				mdelay(10);
 				framecnt = read_cmos_sensor_8(0x0005);
 				if ( framecnt == 0xFF) {
 				LOG_INF(" Stream Off OK at i=%d.\n", i);
@@ -413,7 +413,6 @@ static kal_uint32 streaming_control(kal_bool enable)
 /*need check*/
 static void write_shutter(kal_uint32 shutter)
 {
-	int i = 0;
 	kal_uint16 realtime_fps = 0;
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -446,19 +445,12 @@ static void write_shutter(kal_uint32 shutter)
 			imgsensor.frame_length);
 	}
 
-	/* Update Shutter */
-	write_cmos_sensor_8(0x0202, shutter >> 8);
-	write_cmos_sensor_8(0x0203, shutter & 0xFF);
 	LOG_DBG("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
-	LOG_INF("shutter =%d, linelength =%d\n", shutter, imgsensor.line_length);
 	if (shutter > 65530) {  //linetime=10160/960000000<< maxshutter=3023622-line=32s
 		/*enter long exposure mode */
 		kal_uint32 new_framelength;
 		kal_uint32 long_shutter;
 		kal_uint32 temp1_0200 = 0, temp2_0342 = 0;
-		int timeout = 200;
-		int framecnt = 0;
-
 		bIsLongExposure = KAL_TRUE;
 		LOG_INF(" enter long exposure mode\n");
 
@@ -483,17 +475,7 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0202, (long_shutter&0xFF00)>>8);
 		write_cmos_sensor_8(0x0203, (long_shutter&0x00FF));
 		/*stream on*/
-
-		write_cmos_sensor_8(0x0100, 0x01);
-
-		for (i = 0; i < timeout; i++) {
-			mdelay(10);
-			framecnt = read_cmos_sensor_8(0x0005);
-			if ( framecnt == 0xFF) {
-				LOG_INF(" Stream On OK at i=%d.\n", i);
-				break;
-			}
-		}
+		streaming_control(KAL_TRUE);
 		/* Frame exposure mode customization for LE*/
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
