@@ -16,8 +16,9 @@
 #else
 		rt-tcpc,notifier_supply_num = <2>;
 #endif
-		rt1711pd,intr_gpio = <&pio 41 0x0>;
-		rt1711pd,intr_gpio_num = <41>;
+		rt1711pd,intr_gpio = <&pio 42 0x0>;
+		rt1711pd,intr_gpio_num = <42>;
+		charger = <&mtk_charger_type>;
 		pd-data {
 			pd,vid = <0x29cf>;
 			pd,pid = <0x1711>;
