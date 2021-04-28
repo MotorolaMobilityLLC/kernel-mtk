@@ -266,7 +266,23 @@ long MOT_LISBON_DW9800VAF_Ioctl_Main(struct file *a_pstFile,
 /* Q1 : Try release multiple times. */
 int MOT_LISBON_DW9800VAF_Release_Main(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	int i4RetValue = 0;
+	unsigned char cmd_number;
+	char puSendCmdArray[3][2] = {
+	{0x02, 0x01}, {0x02, 0x00}, {0xFE, 0xFE}};
 	LOG_INF("Start\n");
+
+	for (cmd_number = 0; cmd_number < 3; cmd_number++) {
+		if (puSendCmdArray[cmd_number][0] != 0xFE) {
+			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
+					puSendCmdArray[cmd_number], 2);
+
+			if (i4RetValue < 0)
+				return -1;
+		} else {
+			udelay(100);
+		}
+	}
 
 	if (*g_pAF_Opened == 2)
 		LOG_INF("Wait\n");
