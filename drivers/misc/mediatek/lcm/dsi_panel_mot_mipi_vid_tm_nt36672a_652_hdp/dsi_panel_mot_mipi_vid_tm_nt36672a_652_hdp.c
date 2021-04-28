@@ -98,11 +98,13 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
-#define LCM_BL_BITS_11			0 		//EVT bit12, DVT: bit11
+#define LCM_BL_BITS_11			1 		//EVT bit8, DVT: bit11
 #if LCM_BL_BITS_11
 #define LCM_BL_MAX_BRIGHTENSS		1638
+#define LCM_BL_MIN_BRIGHTENSS		12
 #else
 #define LCM_BL_MAX_BRIGHTENSS		204
+#define LCM_BL_MIN_BRIGHTENSS		2
 #endif
 
 #define BL_MAX_LEVEL			1638
@@ -150,16 +152,17 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0x3B,5,{0x03,0x14,0x36,0x04,0x04}},
 	{0xFF,1,{0x23}},
 	{0xFB,1,{0x01}},
-	{0x07,1,{0x20}},
-	{0x08,1,{0x06}},
-	{0x09,1,{0x00}},
+	{0x00,1,{0x60}},	//set backlight to 11bit
+	{0x07,1,{0x00}},
+	{0x08,1,{0x01}},	//pwm clk 20khz
+	{0x09,1,{0x80}},	//set backlight to 11bit
 	{0xFF,1,{0x24}},
 	{0xFB,1,{0x01}},
 	{0xC4,1,{0x22}},
 	{0xFF,1,{0x10}},
 	{0xFB,1,{0x01}},
 	{0x35,1,{0x00}},
-	{0x51,1,{0x00}},
+	{0x51,2,{0x00,0x00}},
 	{0x53,1,{0x24}},
 	{0x55,1,{0x01}},
 	{0x11,1,{0x00}},
@@ -169,7 +172,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0x51, 0x01, {0xCC} }
+	{ 0x51, 0x02, {0x06, 0x66} }
 };
 
 static struct LCM_setting_table lcm_cabc_setting_ui[] = {
@@ -203,8 +206,8 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 };
 
 static struct LCM_setting_table lcm_hbm_setting[] = {
-	{0x51, 1, {0XCC} },	//80% PWM
-	{0x51, 1, {0XFF} },	//100% PWM
+	{0x51, 2, {0x06, 0x66} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -485,27 +488,28 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		//return;
 	}
 
+#if LCM_BL_BITS_11
+	bl_lvl = level;
+	if (bl_lvl == 0) {
+		//reset bl to min to avoid black
+		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
+		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
+	}
+    //for 11bit
+	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
+	bl_level[0].para_list[1] = (bl_lvl&0xFF);
+	LCM_LOGI("%s, tm_nt36672a: level=%d, para_list[0]=0x%x, para_list[1]=0x%x\n",__func__, level, bl_level[0].para_list[0],bl_level[0].para_list[1]);
+#else
+	//EVT 8bit
 	bl_lvl =(LCM_BL_MAX_BRIGHTENSS * level)/BL_MAX_LEVEL;
-
 	if (bl_lvl == 0) {
 		//reset low brightness to avoid black
-		if (LCM_BL_MAX_BRIGHTENSS > 255)
-			bl_lvl = 12;
-		else
-			bl_lvl = 1;
-
-		LCM_LOGI("%s,tm_nt36672a backlight: reset bl_lvl=1\n", __func__);
+		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
+		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
 	}
-
-#if LCM_BL_BITS_11
-    //for 11bit
-	bl_level[1].para_list[0] = (bl_lvl&0x700)>>8;
-	bl_level[1].para_list[1] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,tm_nt36672a : para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
-#else
 	// set 8bit
 	bl_level[0].para_list[0] = (bl_lvl&0xFF);
-	LCM_LOGI("%s,tm_nt36672a : para_list[0]=%x\n",__func__,bl_level[0].para_list[0]);
+	LCM_LOGI("%s,tm_nt36672a: level=%d, bl_lvl=%d, para_list[0]=0x%x\n", __func__,level, bl_lvl, bl_level[0].para_list[0]);
 #endif
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
