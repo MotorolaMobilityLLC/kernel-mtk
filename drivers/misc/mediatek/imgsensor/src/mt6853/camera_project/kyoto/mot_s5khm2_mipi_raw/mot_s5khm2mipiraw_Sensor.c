@@ -420,7 +420,6 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 
 static void write_shutter(kal_uint32 shutter)
 {
-	int i=0;
 	kal_uint16 realtime_fps = 0;
 
 	spin_lock(&imgsensor_drv_lock);
@@ -458,8 +457,6 @@ static void write_shutter(kal_uint32 shutter)
 		kal_uint32 long_shutter;
 		kal_uint32 temp2_0342 = 0x40F8;
 		kal_uint8 temp1_0702=0x06,temp1_0704=0x06;
-		int timeout = 200;
-		int framecnt = 0;
 
 		bIsLongExposure = KAL_TRUE;
 		LOG_INF(" enter long exposure mode\n");
@@ -480,15 +477,7 @@ static void write_shutter(kal_uint32 shutter)
 	       write_cmos_sensor_8(0x0702, temp1_0702&0x00FF);
 		write_cmos_sensor_8(0x0704, temp1_0704&0x00FF);
 		/*stream on*/
-		write_cmos_sensor_8(0x0100, 0x01);
-		for (i = 0; i < timeout; i++) {
-			mdelay(10);
-			framecnt = read_cmos_sensor_8(0x0005);
-			if ( framecnt == 0xFF) {
-				LOG_INF(" Stream On OK at i=%d.\n", i);
-				break;
-			}
-		}
+		streaming_control(KAL_TRUE);
 		/* Frame exposure mode customization for LE*/
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
@@ -638,11 +627,11 @@ static kal_uint32 streaming_control(kal_bool enable)
 	LOG_INF("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
-		mdelay(1);
+		mdelay(10);
 	} else {
 		write_cmos_sensor_8(0x0100, 0x00);
 		for (i = 0; i < timeout; i++) {
-			mdelay(1);
+			mdelay(10);
 			framecnt = read_cmos_sensor_8(0x0005);
 			if ( framecnt == 0xFF) {
 			LOG_INF(" Stream Off OK at i=%d.\n", i);
