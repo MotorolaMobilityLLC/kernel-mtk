@@ -75,4 +75,9 @@
 	egistec,gpio_irq = <&pio 18 0x0>;
 };
 #include <saipan_evb/cust.dtsi>
+
+&i2c_lcd_bias_mtk {
+	vpos = <20>;//4.0v+20*100mv=6v
+	vneg = <20>;
+};
 /*End of this file, DO NOT ADD ANYTHING HERE*/
