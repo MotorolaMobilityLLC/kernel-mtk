@@ -115,7 +115,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_shutter = 2,
 	.min_gain = BASEGAIN,
 	.max_gain = 16 * BASEGAIN,
-	.min_gain_iso = 50,
+	.min_gain_iso = 100,
 	.gain_step = 2,
 	.gain_type = 0,
 	.max_frame_length = 0xffff,
@@ -169,6 +169,7 @@ static struct imgsensor_struct imgsensor = {
 	.ihdr_en = 0,		// sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5A,
 	.vendor_id = 0,
+	.current_ae_effective_frame = 0x4A0EE303,//0x13DE3285,
 };
 
 /* Sensor output window information */
@@ -352,12 +353,7 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0203, (shutter) & 0xFF);
 
 		write_cmos_sensor_8(0x0100, 0x01);  /*stream on*/
-		/* Frame exposure mode customization for LE*/
-		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.current_ae_effective_frame = 1;
 	} else {
-		imgsensor.current_ae_effective_frame = 1;
 		if (bIsLongExposure) {
 			pr_debug("brad enter normal shutter.\n");
 

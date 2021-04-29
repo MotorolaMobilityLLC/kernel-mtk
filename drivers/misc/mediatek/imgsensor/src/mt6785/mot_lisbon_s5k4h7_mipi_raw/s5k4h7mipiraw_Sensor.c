@@ -173,7 +173,7 @@ static struct imgsensor_struct imgsensor = {
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,/* current scenario id */
 	.ihdr_en = 0, /* sensor need support LE, SE with HDR feature */
 	.i2c_write_id = 0x5A,
-	.current_ae_effective_frame = 1, //number of frames in effect for long exposure?if N+1 take effect?the value is 1?
+	.current_ae_effective_frame = 0x3372CB48,//0x13DE38C8, //number of frames in effect for long exposure?if N+1 take effect?the value is 1?
 };
 
 
@@ -317,8 +317,9 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 static void write_shutter(kal_uint32 shutter)
 {
-	int i = 0;
 	kal_uint16 realtime_fps = 0;
+	kal_uint32 temp_0200 = 0, temp_0340 = 0;
+	kal_uint32 temp_0202 = 0, temp_0342 = 0;
 
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -329,108 +330,58 @@ static void write_shutter(kal_uint32 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-//	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 
-	if (imgsensor.autoflicker_en) {
-		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(146, 0);
-		else {
-		/* Extend frame length */
-		write_cmos_sensor_8(0x0340, imgsensor.frame_length >> 8);
-		write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
-		}
-	} else {
-		/* Extend frame length */
-		write_cmos_sensor_8(0x0340, imgsensor.frame_length >> 8);
-		write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
-	}
-	LOG_INF("shutter =%d, linelength =%d\n", shutter, imgsensor.line_length);
-	if (shutter > 65530) {  //linetime=10160/960000000<< maxshutter=3023622-line=32s
-		/*enter long exposure mode */
-		kal_uint32 new_framelength;
-		kal_uint32 long_shutter;
-		kal_uint32 temp1_0200 = 0, temp2_0342 = 0;
-		int timeout = 200;
-		int framecnt = 0;
-
-		bIsLongExposure = KAL_TRUE;
-		LOG_INF(" enter long exposure mode\n");
-
-		/* Calculate value need by long exposure setting*/
-		temp1_0200 = 0xFF6C;
-		temp2_0342 = 0xFFFC;
-		 //shutter unit is S.used by 0x202 and 0x20
-		long_shutter = (shutter*imgsensor.line_length-temp1_0200)/temp2_0342;
-		new_framelength = long_shutter+5; //used by 0x340 and 0x341
-		LOG_INF("Calc long_shutter=%x, framelength=%d. shutter=0x%x\n",\
-			      long_shutter, new_framelength,shutter);
-		/*stream off */
+	if (shutter > 65530) {
+		temp_0342 = 0xFFFC;
+		temp_0200 = 0xFF6C;
+		temp_0202 = ((shutter*3688-temp_0200))/temp_0342 +1;
+		temp_0340 = temp_0202 + 5;
+		LOG_INF("temp_0202 =%d, temp_0340 =%d \n", temp_0202, temp_0340);
 		streaming_control(KAL_FALSE);
-
-		/*setting for long exposure*/
-		write_cmos_sensor_8(0x0340, (new_framelength&0xFF00)>>8);
-		write_cmos_sensor_8(0x0341, (new_framelength&0x00FF));
+		write_cmos_sensor_8(0x0340, (temp_0340&0xFF00)>>8);
+		write_cmos_sensor_8(0x0341, (temp_0340&0x00FF));
 		write_cmos_sensor_8(0x0342, 0xFF);
 		write_cmos_sensor_8(0x0343, 0xFC);
 		write_cmos_sensor_8(0x0200, 0xFF);
 		write_cmos_sensor_8(0x0201, 0x6C);
-		write_cmos_sensor_8(0x0202, (long_shutter&0xFF00)>>8);
-		write_cmos_sensor_8(0x0203, (long_shutter&0x00FF));
-		/*stream on*/
+		write_cmos_sensor_8(0x0202, (temp_0202&0xFF00)>>8);
+		write_cmos_sensor_8(0x0203, (temp_0202&0x00FF));
+		streaming_control(KAL_TRUE);
+		bIsLongExposure = KAL_TRUE;
+	} else {
 
-		write_cmos_sensor_8(0x0100, 0x01);
-
-		for (i = 0; i < timeout; i++) {
-			mdelay(10);
-			framecnt = read_cmos_sensor_8(0x0005);
-			if ( framecnt == 0xFF) {
-				LOG_INF(" Stream On OK at i=%d.\n", i);
-				break;
+		shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
+				(imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+		if (imgsensor.autoflicker_en) {
+			realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+			if (realtime_fps >= 297 && realtime_fps <= 305)
+				set_max_framerate(296, 0);
+			else if (realtime_fps >= 147 && realtime_fps <= 150)
+				set_max_framerate(146, 0);
+			else {
+				write_cmos_sensor_8(0x0340, imgsensor.frame_length >> 8);
+				write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
 			}
+		} else {
+			write_cmos_sensor_8(0x0340, imgsensor.frame_length >> 8);
+			write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
 		}
 
-		/* Frame exposure mode customization for LE*/
-		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.current_ae_effective_frame = 1;
-		LOG_INF(" long exposure stream on-\n");
-	} else {
-		/*normal mode*/
 		if (bIsLongExposure == KAL_TRUE) {
-			bIsLongExposure = KAL_FALSE;
-			LOG_INF("[Exit long shutter + ]  shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
-			/*stream off*/
 			streaming_control(KAL_FALSE);
-			/*setting for normal*/
-			write_cmos_sensor_8(0x0340, 0x09);
-			write_cmos_sensor_8(0x0341, 0xE2);
 			write_cmos_sensor_8(0x0342, 0x0E);
 			write_cmos_sensor_8(0x0343, 0x68);
 			write_cmos_sensor_8(0x0200, 0x0D);
 			write_cmos_sensor_8(0x0201, 0xD8);
-			write_cmos_sensor_8(0x0202, 0x02);
-			write_cmos_sensor_8(0x0203, 0x08);
-			/*stream on*/
 			streaming_control(KAL_TRUE);
-			LOG_INF("[Exit long shutter - ] shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
-
-		} else {
-			shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
-			write_cmos_sensor_8(0x0202, shutter >> 8);
-			write_cmos_sensor_8(0x0203, shutter & 0xFF);
-			LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+			bIsLongExposure = KAL_FALSE;
 		}
-		imgsensor.current_ae_effective_frame = 1;
+		write_cmos_sensor_8(0x0202, shutter >> 8);
+		write_cmos_sensor_8(0x0203, shutter & 0xFF);
 	}
-	/* Update Shutter */
 
-
-
-	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
-}	/*	write_shutter  */
+	LOG_INF("shutter =%d, framelength =%d bIsLongExposure = %d\n", shutter, imgsensor.frame_length,bIsLongExposure);
+}
 
 /*************************************************************************
 * FUNCTION
