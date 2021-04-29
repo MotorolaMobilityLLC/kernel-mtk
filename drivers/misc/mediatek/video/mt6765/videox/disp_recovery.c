@@ -667,6 +667,7 @@ int primary_display_esd_recovery(void)
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct LCM_PARAMS *lcm_param = NULL;
 	mmp_event mmp_r = ddp_mmp_get_events()->esd_recovery_t;
+	unsigned int last_level;
 
 	DISPFUNC();
 	dprec_logger_start(DPREC_LOGGER_ESD_RECOVERY, 0, 0);
@@ -719,6 +720,12 @@ int primary_display_esd_recovery(void)
 
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 6);
 
+	DISPDBG("[ESD]backlignt off[begin]\n");
+	last_level=get_lcm_backlight_level();
+	disp_lcm_set_backlight(primary_get_lcm(), NULL, 0);
+	mdelay(200);
+	DISPDBG("[ESD] backlignt off[end]\n");
+
 	DISPDBG("[POWER]lcm suspend[begin]\n");
 	/*after dsi_stop, we should enable the dsi basic irq.*/
 	dsi_basic_irq_enable(DISP_MODULE_DSI0, NULL);
@@ -741,6 +748,11 @@ int primary_display_esd_recovery(void)
 	disp_lcm_esd_recover(primary_get_lcm());
 	DISPCHECK("[ESD]lcm recover[end]\n");
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 8);
+
+	mdelay(200);
+	DISPDBG("[ESD]backlight on[begin]\n");
+	disp_lcm_set_backlight(primary_get_lcm(), NULL, last_level);
+	DISPCHECK("[ESD]backlight on[end]\n");
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (disp_partial_is_support()) {
