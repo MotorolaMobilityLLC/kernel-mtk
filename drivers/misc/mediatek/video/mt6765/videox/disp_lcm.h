@@ -77,6 +77,7 @@ bool disp_lcm_need_send_cmd(
 	unsigned int last_dynfps, unsigned int new_dynfps);
 void disp_lcm_dynfps_send_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle,
 	unsigned int from_fps, unsigned int to_fps);
+int get_lcm_backlight_level(void);
 
 /*-----------------------DynFPS end-----------------------------------*/
 #endif
