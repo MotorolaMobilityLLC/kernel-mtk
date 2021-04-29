@@ -451,7 +451,7 @@
             <gpio32>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
@@ -593,6 +593,50 @@
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio46>
+            <gpio47>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI1_MISO_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio47>
+            <gpio48>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI1_CS_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio48>
+            <gpio49>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI1_MOSI_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio49>
+            <gpio50>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI1_CK_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio50>
             <gpio51>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
