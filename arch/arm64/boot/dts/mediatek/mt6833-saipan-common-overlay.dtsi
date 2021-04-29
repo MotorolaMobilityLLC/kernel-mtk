@@ -411,8 +411,3 @@
 		status = "okay";
 	};
 };
-
-&i2c_lcd_bias_mtk {
-	vpos = <20>;//4.0v+20*100mv=6v
-	vneg = <20>;
-};
