@@ -1496,6 +1496,10 @@ int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps)
 	return -1;
 }
 
+static int g_last_level;
+int get_lcm_backlight_level(void){
+	return g_last_level;
+}
 int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	void *handle, int level)
 {
@@ -1508,6 +1512,7 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	}
 
 	lcm_drv = plcm->drv;
+	g_last_level=level;
 	if (lcm_drv->set_backlight_cmdq) {
 		lcm_drv->set_backlight_cmdq(handle, level);
 	} else {
