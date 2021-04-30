@@ -26,8 +26,8 @@
 #define CONFIG_FSM_FS1603
 
 /* VERSION INFORMATION */
-#define FSM_CODE_VERSION "v3.1.1"
-#define FSM_CODE_DATE    "20210422"
+#define FSM_CODE_VERSION "v3.1.2"
+#define FSM_CODE_DATE    "20210429"
 #define FSM_GIT_BRANCH   "moto-fs1894s"
 #define FSM_GIT_COMMIT   "739aef79"
 
@@ -180,6 +180,7 @@ enum dev_id_index {
 #define FS1603S_SERIES 0X05B0
 #define IS_FS1603S(id) (((id) & 0xFFF0) == FS1603S_SERIES)
 
+#define FSM_F0_COUNT          (14)
 #define CUST_NAME_SIZE        (32)
 #define STRING_LEN_MAX        (255)
 #define LOG_BUF_SIZE          (8 * 8 + 1)
@@ -832,6 +833,7 @@ struct fsm_dev {
     int re25;
     int re25_dft;
     int f0;
+    uint16_t zmdata[FSM_F0_COUNT];
     int errcode;
     char const *dev_name;
 };
