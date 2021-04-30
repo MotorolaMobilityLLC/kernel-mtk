@@ -156,6 +156,7 @@ void lcm_set_bias_pin_enable(unsigned int value,unsigned int delay)
 	 pr_info("%s\n",__func__);
 
 	 disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
+	 mdelay(delay);
 	 disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
 	 lcm_set_bias_config(value,delay);
 	 return;
