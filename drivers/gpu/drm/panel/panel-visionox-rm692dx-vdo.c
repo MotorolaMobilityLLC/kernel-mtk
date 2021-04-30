@@ -720,6 +720,9 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 {
 	char bl_tb0[] = {0x51, 0x07, 0xFF};
 
+	if ((level != 0) && (level < 16))
+		level = 16;
+
 	pr_info("%s backlight = %d\n", __func__, level);
 
 	level = level * 2047  / 255;
