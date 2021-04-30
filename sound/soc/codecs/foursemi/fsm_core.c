@@ -2850,8 +2850,9 @@ void fsm_speaker_off(void)
     fsm_list_func(fsm_dev, fsm_stub_shut_down);
     fsm_list_wait(FSM_WAIT_AMP_ADC_PLL_OFF);
     cfg->speaker_on = false;
-    pr_debug("done");
     fsm_mutex_unlock();
+    fsm_set_scene(0);
+    pr_debug("done");
 }
 
 void fsm_stereo_rotation(int next_angle)
@@ -2926,6 +2927,7 @@ void fsm_re25_test(bool force)
     fsm_list_func_arg(fsm_dev, fsm_stub_set_tsignal, true);
     cfg->force_calib = false;
     cfg->skip_monitor = false;
+    cfg->stop_test = true;
     pr_debug("done");
     fsm_mutex_unlock();
 }
@@ -3034,8 +3036,20 @@ int fsm_test_result(struct fsm_cal_result *result, int size)
         result->info[dev].re25 = fsm_dev->tdata->test_re25;
         result->info[dev].f0 = fsm_dev->tdata->test_f0;
         freq_count = fsm_dev->tdata->f0.count;
+        if (!cfg->stop_test) {
+            if (cfg->test_type == TEST_F0)
+                result->info[dev].f0 = 0;
+            else if (cfg->test_type == TEST_RE25)
+                result->info[dev].re25 = 0;
+            else
+                pr_addr(err, "invalid test type");
+        }
         if (freq_count <= 0 || size == sizeof(struct fsm_cal_result)) {
             pr_addr(info, "copy info data only");
+            if (fsm_dev->is1603s) {
+                memcpy(&result->f0_zmdata[dev * FSM_F0_COUNT],
+                        fsm_dev->zmdata, FSM_F0_COUNT * sizeof(uint16_t));
+            }
             continue;
         }
         if (result->freq_count != freq_count) {
