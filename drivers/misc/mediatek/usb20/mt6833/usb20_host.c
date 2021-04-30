@@ -257,6 +257,13 @@ static bool musb_is_host(void)
 	return host_mode;
 }
 
+bool mmi_musb_is_host(void)
+{
+	return musb_is_host();
+}
+
+EXPORT_SYMBOL(mmi_musb_is_host);
+
 void musb_session_restart(struct musb *musb)
 {
 	void __iomem	*mbase = musb->mregs;
