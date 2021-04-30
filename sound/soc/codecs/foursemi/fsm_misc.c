@@ -30,6 +30,7 @@ struct fsm_dev_info {
     int addr[FSM_DEV_MAX]; // addr of i2c devices
     int pos[FSM_DEV_MAX]; // position of i2c devices
     int re25[FSM_DEV_MAX];
+    int is1603s;
 };
 
 static int g_misc_opened;
@@ -293,6 +294,7 @@ int fsm_get_dev_info(int *arg)
         dev_info.pos[idx]  = fsm_dev->pos_mask;
         dev_info.re25[idx] = fsm_dev->re25;
     }
+    dev_info.is1603s = (int)fsm_dev->is1603s;
     ret = copy_to_user((int *)arg, &dev_info, sizeof(dev_info));
     if (ret) {
         pr_err("get dev info fail:%d", ret);
