@@ -606,6 +606,28 @@ int fs1603s_pre_f0_test(fsm_dev_t *fsm_dev)
     return ret;
 }
 
+static int fs1603s_get_f0_zmdata(fsm_dev_t *fsm_dev)
+{
+    uint16_t value = 0;
+    int ret = 0;
+    int idx = 0;
+
+    if (fsm_dev == NULL)
+        return 0;
+
+    ret = fsm_reg_write(fsm_dev, 0x4F, 0X0002);
+    for (idx = 0; idx < FSM_F0_COUNT; idx++) {
+        // set bit[13:8] = 0
+        ret |= fsm_reg_write(fsm_dev, 0x4E, (value & 0xC0FF) | (idx << 8));
+        // get bit[7:0]
+        ret |= fsm_reg_read(fsm_dev, 0x4E, &value);
+        fsm_dev->zmdata[idx] = value & 0x00FF;
+        pr_info("zmdata[%d] : 0x%2x, 4E = 0x%04x", idx, fsm_dev->zmdata[idx], value);
+    }
+
+    return ret;
+}
+
 int fs1603s_f0_test(fsm_dev_t *fsm_dev)
 {
     fsm_config_t *cfg = fsm_get_config();
@@ -624,6 +646,7 @@ int fs1603s_f0_test(fsm_dev_t *fsm_dev)
         }
         fsm_dev->f0 = f0;
         pr_info("F0(Hz):%d", f0);
+        fs1603s_get_f0_zmdata(fsm_dev);
         // calc r0
         ret |= fsm_reg_write(fsm_dev, 0xB3, 0x1200);
         // checktime 100ms
@@ -655,11 +678,11 @@ int fs1603s_post_f0_test(fsm_dev_t *fsm_dev)
         return -EINVAL;
     }
     fsm_access_key(fsm_dev, 1);
+    // calc r0
     ret = fsm_reg_read(fsm_dev, 0xE6, &value);
     fsm_access_key(fsm_dev, 0);
     rs_trim = ((value == 0) ? 0x8F : (value & 0xFF));
     ret |= fsm_reg_multiread(fsm_dev, 0xBB, &value);
-    // calc r0
     r0 = FSM_MAGNIF(FS1603_RS2RL_RATIO * rs_trim) / value / 8;
     pr_addr(info, "zm:%04X, R0:%d", value, r0);
     fsm_dev->state.f0_runing = false;
