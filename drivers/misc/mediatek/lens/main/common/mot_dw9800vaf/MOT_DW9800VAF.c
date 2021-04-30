@@ -53,7 +53,7 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 	char puReadCmd[1] = { (char)(a_u2Addr) };
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puReadCmd, 1);
-	if (i4RetValue != 2) {
+	if (i4RetValue < 0) {
 		LOG_INF(" I2C write failed!!\n");
 		return -1;
 	}
@@ -89,10 +89,6 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	char puSendCmd[3] = { 0x03, (char)(a_u2Data >> 8),
 		(char)(a_u2Data & 0xFF) };
-
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 3);
 
@@ -291,7 +287,8 @@ int MOT_DW9800VAF_SetI2Cclient_Main(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
-
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 	return 1;
 }
 
