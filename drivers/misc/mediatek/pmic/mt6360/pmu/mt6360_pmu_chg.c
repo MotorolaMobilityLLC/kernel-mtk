@@ -451,6 +451,11 @@ static int DPDM_Switch_TO_CHG_upstream(struct mt6360_pmu_chg_info *mpci,
 
 static int mt6360_set_usbsw_state(struct mt6360_pmu_chg_info *mpci, int state)
 {
+	if (mmi_musb_is_host()) {
+		dev_info(mpci->dev, "%s: usb is host, skip switch dpdm\n", __func__);
+		return 0;
+	}
+
 	dev_info(mpci->dev, "%s: state = %d\n", __func__, state);
 
 	/* Switch D+D- to AP/MT6360 */
@@ -624,6 +629,12 @@ static int mt6360_chgdet_post_process(struct mt6360_pmu_chg_info *mpci)
 		mpci->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 		goto out;
 	}
+
+	if (mmi_musb_is_host()) {
+		mpci->chg_type = NONSTANDARD_CHARGER;
+		goto out;
+	}
+
 	/* Plug in */
 	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_USB_STATUS1);
 	if (ret < 0)
