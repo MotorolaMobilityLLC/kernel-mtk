@@ -146,8 +146,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.gain_step = 2,  //type2 step=2
 	.gain_type = 2, //sam
 	.max_frame_length = 0xffff,
-	.ae_shut_delay_frame = 2,
-	.ae_sensor_gain_delay_frame = 2,
+	.ae_shut_delay_frame = 0,
+	.ae_sensor_gain_delay_frame = 0,
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
