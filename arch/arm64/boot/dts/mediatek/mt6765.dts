@@ -3040,6 +3040,11 @@ firmware_class.path=/vendor/firmware";
 			"TOP_ULPOSC1_D2",
 			"TOP_ULPOSC1_D8";
 	};
+/* +EKTONG-20,longyili.wt,20210428,add SWTP bringup */
+	swtp:swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+/* -EKTONG-20,longyili.wt,20210428, add SWTP */
 
 	dsi_te: dsi_te {
 		compatible = "mediatek, DSI_TE-eint";

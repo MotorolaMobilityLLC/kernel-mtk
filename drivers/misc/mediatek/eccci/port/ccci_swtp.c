@@ -107,7 +107,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
 	//EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, start
-	#ifdef CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART
+       #if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) | defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART)
 	if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT) {
 		swtp->tx_power_mode = SWTP_DO_TX_POWER;
 	} else {
