@@ -286,9 +286,9 @@ static int lcm_unprepare(struct drm_panel *panel)
 {
 	struct lcm *ctx = panel_to_lcm(panel);
 
-	pr_info("%s\n", __func__);
 	if (!ctx->prepared)
 		return 0;
+	pr_info("%s\n", __func__);
 	lcm_dcs_write_seq_static(ctx, 0x26, 0x08);
 	lcm_dcs_write_seq_static(ctx, 0x28);
 	lcm_dcs_write_seq_static(ctx, 0x10);
@@ -324,6 +324,62 @@ static int lcm_unprepare(struct drm_panel *panel)
 #endif
 
 	return 0;
+}
+
+static void lcm_shutdown(struct mipi_dsi_device *dsi)
+{
+	struct lcm *ctx = mipi_dsi_get_drvdata(dsi);
+
+	if (!ctx->prepared)
+		return ;
+
+	pr_info("%s\n", __func__);
+
+	lcm_dcs_write_seq_static(ctx, 0x26, 0x08);
+	lcm_dcs_write_seq_static(ctx, 0x28);
+	lcm_dcs_write_seq_static(ctx, 0x10);
+	msleep(100);
+
+	ctx->error = 0;
+	ctx->prepared = false;
+
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->reset_gpio)) {
+		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n", __func__, PTR_ERR(ctx->reset_gpio));
+	} else {
+		gpiod_set_value(ctx->reset_gpio, 0);
+		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	}
+	udelay(1000);
+
+#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
+	lcm_panel_bias_disable();
+#else
+
+	ctx->bias_neg = devm_gpiod_get_index(ctx->dev,
+		"bias", 1, GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->bias_neg)) {
+		dev_err(ctx->dev, "%s: cannot get bias_neg %ld\n",
+			__func__, PTR_ERR(ctx->bias_neg));
+		return ;
+	}
+	gpiod_set_value(ctx->bias_neg, 0);
+	devm_gpiod_put(ctx->dev, ctx->bias_neg);
+
+	udelay(5000);
+
+	ctx->bias_pos = devm_gpiod_get_index(ctx->dev,
+		"bias", 0, GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->bias_pos)) {
+		dev_err(ctx->dev, "%s: cannot get bias_pos %ld\n",
+			__func__, PTR_ERR(ctx->bias_pos));
+		return ;
+	}
+	gpiod_set_value(ctx->bias_pos, 0);
+	devm_gpiod_put(ctx->dev, ctx->bias_pos);
+#endif
+
+	return ;
 }
 
 static int lcm_prepare(struct drm_panel *panel)
@@ -869,6 +925,7 @@ MODULE_DEVICE_TABLE(of, lcm_of_match);
 static struct mipi_dsi_driver lcm_driver = {
 	.probe = lcm_probe,
 	.remove = lcm_remove,
+	.shutdown = lcm_shutdown,
 	.driver = {
 		.name = "panel-truly-icnl9911c-vdo",
 		.owner = THIS_MODULE,
