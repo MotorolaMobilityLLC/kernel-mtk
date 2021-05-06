@@ -103,6 +103,18 @@
 		fpc,irq = <&pio 14 0>;
 		status = "okay";
 	};
+
+	goodix_int: goodix_int {
+		compatible = "mediatek,fingerprint-goodix";
+		interrupt-parent = <&pio>;
+		interrupts = <14 IRQ_TYPE_EDGE_RISING 14 0>;
+		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+		pinctrl-0 = <&fps_irq>;
+		pinctrl-1 = <&fps_reset_high>;
+		pinctrl-2 = <&fps_reset_low>;
+		int-gpios = <&pio 14 0>;
+		status = "okay";
+	};
 };
 
 &spi1 {
@@ -116,5 +128,13 @@
 		spi-max-frequency = <8000000>;
 		netlink-event = <31>;
 		status = "okay";
+	};
+
+	goodix_tee@1 {
+		status = "okay";
+		compatible = "goodix,goodix-fp";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		netlink-event = <30>;
 	};
 };
