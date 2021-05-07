@@ -2598,11 +2598,12 @@ static calibration_status_t ELLIS_Hi1336_check_manufacturing_data(void *data)
 {
 	struct ELLIS_Hi1336_eeprom_t *eeprom = (struct ELLIS_Hi1336_eeprom_t*)data;
 LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
+#if 0
 	if(strncmp(eeprom->mpn, ELLIS_Hi1336_MANUFACTURE_PART_NUMBER, ELLIS_Hi1336_MPN_LENGTH) != 0) {
 		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
 		return CRC_FAILURE;
 	}
-
+#endif
 	if (!eeprom_util_check_crc16(data, ELLIS_Hi1336_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_INF("Manufacturing CRC Fails!");
