@@ -4187,3 +4187,5 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 #ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #include "mediatek/trusty.dtsi"
 #endif
+/* Motorola base dts override */
+#include "mediatek/mt6768-moto-base.dtsi"
