@@ -132,6 +132,15 @@
 	ACTIVE_TABLE = <(5)>;
 };
 
+&moto_chg_tcmd {
+                compatible = "mmi,moto-chg-tcmd";
+                status = "okay";
+
+                mmi,ntc_table = <1>;
+                mmi,ntc_v_ref = <1800000>;
+                mmi,ntc_r_pull = <100000>;
+};
+
 &led6 {
 	led_mode = <4>;
 };
