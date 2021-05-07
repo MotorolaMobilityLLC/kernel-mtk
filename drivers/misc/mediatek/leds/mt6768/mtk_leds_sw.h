@@ -151,6 +151,7 @@ struct cust_mt65xx_led {
 	enum mt65xx_led_mode mode;
 	long data;
 	struct PWM_config config_data;
+	int max_brightness;
 };
 
 /**
