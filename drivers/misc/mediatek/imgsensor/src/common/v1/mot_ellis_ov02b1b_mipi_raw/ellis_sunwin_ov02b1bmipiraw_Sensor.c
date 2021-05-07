@@ -29,6 +29,12 @@
 #define LOG_ERR(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
 
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t af_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t pdaf_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
 /* Camera Hardwareinfo */
 //extern struct global_otp_struct hw_info_main2_otp;
 static kal_uint32 streaming_control(kal_bool enable);
@@ -1240,6 +1246,20 @@ p_err:
 	set_fs(old_fs);
 	LOG_INF(" end writing file");
 }
+
+static void ov02b1b_eeprom_format_calibration_data()
+{
+	mnf_status = 0;
+	af_status = 0;
+	awb_status = 0;
+	lsc_status = 0;
+	pdaf_status = 0;
+	dual_status = 0;
+
+	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+}
+
 static int ov02b1b_read_data_from_otp(void)
 {
 	int i=0;
@@ -1253,6 +1273,7 @@ static int ov02b1b_read_data_from_otp(void)
 	LOG_INF("ov02b1b_read_data_from_otp -X");
 	return 0;
 }
+
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
@@ -1269,6 +1290,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             LOG_ERR("sunwin ov02b1b i2c write id : 0x%x, sensor id: 0x%x\n",
             imgsensor.i2c_write_id, *sensor_id);
             ov02b1b_read_data_from_otp();
+            ov02b1b_eeprom_format_calibration_data();
             ov02b1b_otp_dump_bin(OV02B1B_OTP_DATA_PATH, OV02B1B_OTP_SIZE, (void *)ov02b1b_otp_data);
             ov02b1b_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, OV02B1B_SERIAL_NUM_SIZE, (void *)ov02b1b_otp_data);
             return ERROR_NONE;
@@ -1516,7 +1538,12 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
     sensor_info->SensorHightSampling = 0;    // 0 is default 1x
     sensor_info->SensorPacketECCOrder = 1;
-
+    sensor_info->calibration_status.mnf = mnf_status;
+    sensor_info->calibration_status.af = af_status;
+    sensor_info->calibration_status.awb = awb_status;
+    sensor_info->calibration_status.lsc = lsc_status;
+    sensor_info->calibration_status.pdaf = pdaf_status;
+    sensor_info->calibration_status.dual = dual_status;
 	{
 		snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
 			"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
