@@ -521,7 +521,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 {
 	char bl_tb0[] = {0x51, 0xf, 0xff};
 
-	pr_info("%s backlight = %d\n", __func__, level);
+	pr_debug("%s backlight = %d\n", __func__, level);
 
 	bl_tb0[1] = ((level >> 8) & 0xf);
 	bl_tb0[2] = (level & 0xff);
