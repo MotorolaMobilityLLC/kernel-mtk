@@ -1009,7 +1009,9 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	pSensorInfo->SensorVerFOV = pInfo->SensorVerFOV;
 	pSensorInfo->SensorHorFOV = pInfo->SensorHorFOV;
 	pSensorInfo->SensorOrientation = pInfo->SensorOrientation;
-
+	/*calibration*/
+	pSensorInfo->calibration_status = pInfo->calibration_status;
+	pSensorInfo->mnf_calibration = pInfo->mnf_calibration;
 	imgsensor_sensor_get_info(
 	    psensor,
 	    MSDK_SCENARIO_ID_CUSTOM1,
