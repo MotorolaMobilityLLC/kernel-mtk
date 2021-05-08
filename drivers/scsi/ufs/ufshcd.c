@@ -5554,7 +5554,7 @@ static irqreturn_t ufshcd_transfer_req_compl(struct ufs_hba *hba, int *ret)
 		if (ret)
 			*ret = __ufshcd_transfer_req_compl(hba, completed_reqs);
 			
-#if defined(CONFIG_SCSI_UFS_HPB)
+#if defined(CONFIG_SCSI_UFS_FEATURE) && defined(CONFIG_SCSI_UFS_HPB)
 		ufsf_hpb_wakeup_worker_on_idle(&hba->ufsf);
 #endif
 		return IRQ_HANDLED;
