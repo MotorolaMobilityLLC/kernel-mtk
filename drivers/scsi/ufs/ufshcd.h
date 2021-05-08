@@ -1084,7 +1084,10 @@ int ufshcd_wait_for_register(struct ufs_hba *hba, u32 reg, u32 mask,
 				u32 val, unsigned long interval_us,
 				unsigned long timeout_ms, bool can_sleep);
 
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
 void SEC_ufs_hpb_rb_count(struct ufs_hba *hba, struct ufshpb_region *rgn);
+#endif
+
 /**
  * MTK PATCH
  * Wrapper function for safely calling variant operations
