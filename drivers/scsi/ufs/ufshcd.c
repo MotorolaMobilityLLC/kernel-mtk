@@ -5881,7 +5881,7 @@ static int ufshcd_transfer_req_compl(struct ufs_hba *hba)
 	completed_reqs = tr_doorbell ^ hba->outstanding_reqs;
 
 	ret = __ufshcd_transfer_req_compl(hba, completed_reqs);
-#if defined(CONFIG_UFSFEATURE)
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
 	ufsf_hpb_wakeup_worker_on_idle(&hba->ufsf);
 #endif
 	return ret;
