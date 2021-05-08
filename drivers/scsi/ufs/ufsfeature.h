@@ -96,6 +96,8 @@ struct ufsf_lu_desc {
 	unsigned int tw_lu_buf_size;
 #endif
 };
+
+#if defined(CONFIG_SCSI_UFS_FEATURE)
 struct ufshpb_dev_info {
 	bool hpb_device;
 	int hpb_number_lu;
@@ -105,6 +107,7 @@ struct ufshpb_dev_info {
 	int hpb_device_max_active_rgns;
 	u8  hpb_control_mode;
 };
+#endif
 
 struct ufsf_feature {
 	struct ufs_hba *hba;
@@ -158,6 +161,7 @@ bool ufsf_is_valid_lun(int lun);
 int ufsf_get_ee_status(struct ufs_hba *hba, u32 *status);
 
 /* for hpb */
+#if defined(CONFIG_SCSI_UFS_FEATURE)
 int ufsf_hpb_prepare_pre_req(struct ufsf_feature *ufsf, struct scsi_cmnd *cmd,
 			     int lun);
 int ufsf_hpb_prepare_add_lrbp(struct ufsf_feature *ufsf, int add_tag);
@@ -174,6 +178,7 @@ void ufsf_hpb_suspend(struct ufsf_feature *ufsf);
 void ufsf_hpb_resume(struct ufsf_feature *ufsf);
 void ufsf_hpb_release(struct ufsf_feature *ufsf);
 void ufsf_hpb_set_init_state(struct ufsf_feature *ufsf);
+#endif
 
 /* for tw*/
 void ufsf_tw_prep_fn(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp);
