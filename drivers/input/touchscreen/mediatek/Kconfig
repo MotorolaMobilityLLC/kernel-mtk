@@ -221,4 +221,17 @@ config TOUCHSCREEN_MTK_TP_SEQ_PRE
 
           If unsure, say N.
 
+config TOUCHSCREEN_GOODIX_GTX8
+	bool "goodix for Mediatek package"
+	default n
+	help
+	  Say Y here if you have goodix touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/goodix-ts-sunrise/Kconfig"
+
 endif
