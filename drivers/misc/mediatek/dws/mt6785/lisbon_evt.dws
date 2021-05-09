@@ -92,6 +92,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint16>
+            <eint25>
+                <varName>MT6382_NFC</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint25>
             <eint43>
                 <varName>DSI_TE</varName>
                 <debounce_time>0</debounce_time>
@@ -386,8 +393,8 @@
                 <ies>true</ies>
             </gpio24>
             <gpio25>
-                <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
