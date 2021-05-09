@@ -65,6 +65,7 @@
 
 #include "mtk_charger_intf.h"
 #include "mtk_charger_init.h"
+#include <linux/qpnp_adaptive_charge.h>
 
 static char atm_mode[10];
 int __init atm_mode_init(char *s)
@@ -575,6 +576,34 @@ int charger_manager_force_charging_current(struct charger_consumer *consumer,
 	}
 	return -EBUSY;
 }
+
+void adaptive_charging_disable_ichg(bool on)
+{
+	struct charger_manager *info = pinfo;
+
+	if (info == NULL)
+		return;
+
+	info->mmi.adaptive_charging_disable_ichg = !!on;
+	pr_info("%s: adaptive charging disable ichg %d\n", __func__,
+		info->mmi.adaptive_charging_disable_ichg);
+	_wake_up_charger(info);
+}
+EXPORT_SYMBOL(adaptive_charging_disable_ichg);
+
+void adaptive_charging_disable_ibat(bool on)
+{
+	struct charger_manager *info = pinfo;
+
+	if (info == NULL)
+		return;
+
+	info->mmi.adaptive_charging_disable_ibat = !!on;
+	pr_info("%s: adaptive charging disable ibat %d\n", __func__,
+		info->mmi.adaptive_charging_disable_ibat);
+	_wake_up_charger(info);
+}
+EXPORT_SYMBOL(adaptive_charging_disable_ibat);
 
 int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 {
@@ -2467,6 +2496,14 @@ static void mmi_charger_check_status(struct charger_manager *info)
 		mmi->target_fcc,
 		mmi->target_usb,
 		mmi->demo_discharging);
+	pr_info("[%s]adaptive charging:disable_ibat = %d, "
+		"disable_ichg = %d, enable HZ = %d, "
+		"charging disable = %d\n",
+		__func__,
+		mmi->adaptive_charging_disable_ibat,
+		mmi->adaptive_charging_disable_ichg,
+		mmi->charging_enable_hz,
+		mmi->battery_charging_disable);
 end_check:
 
 	return;
@@ -2754,6 +2791,10 @@ void mmi_init(struct charger_manager *info)
 
 	info->mmi.is_factory_image = false;
 	info->mmi.charging_limit_modes = CHARGING_LIMIT_UNKNOWN;
+	info->mmi.adaptive_charging_disable_ibat = false;
+	info->mmi.adaptive_charging_disable_ichg = false;
+	info->mmi.charging_enable_hz = false;
+	info->mmi.battery_charging_disable = false;
 
 	rc = parse_mmi_dt(info, &info->pdev->dev);
 	if (rc < 0)
