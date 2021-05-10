@@ -26,16 +26,33 @@
 };
 
 &spi1 {
+	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
-	spislv@2 {
-		compatible = "mediatek,hifi4dsp-spi";
-		spi-max-frequency = <1000000>;
-		spi-pin-mode = <0>;
-		/*tick-dly = <1>;*/
-		ick-dly = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&spislv_pins_default>;
+	spislv@0 {
+		compatible = "mediatek,spi_slave";
 		reg = <0>;
-		status = "okay";
+		spi-max-frequency = <55000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		low-speed-tick-delay = /bits/ 8 <1>;
+		low-speed-early-trans = /bits/ 8 <0>;
+		high-speed-tick-delay = /bits/ 8 <2>;
+		high-speed-early-trans = /bits/ 8 <1>;
+		slave-drive-strength = /bits/ 8 <3>;
+	};
+};
+&pio {
+	spislv_pins_default: spislv_mode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO63__FUNC_SPI2_MI>,
+				<PINMUX_GPIO65__FUNC_SPI2_MO>,
+				<PINMUX_GPIO66__FUNC_SPI2_CLK>,
+				<PINMUX_GPIO64__FUNC_SPI2_CSB>;
+			drive-strength = <3>;
+		};
 	};
 };
 
