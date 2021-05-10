@@ -469,6 +469,7 @@
         io-channel-names = "batteryID-channel";
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(900)>;       /*Charging termination current.*/
+	SHUTDOWN_1_TIME = <(15)>;
 
 	df-serialnum = "SB18C77773";
 	#include "bat_setting/mt6785_battery_table_SB18C77773_ext.dtsi"
