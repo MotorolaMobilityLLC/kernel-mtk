@@ -144,6 +144,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{REGFLAG_DELAY, 120, {} },
 };
 
+#ifndef CONFIG_MTK_HIGH_FRAME_RATE
 static struct LCM_setting_table init_setting_cmd[] = {
 	{0xFF, 3, {0x78, 0x07, 0x00} },	//Page0
 	{0x11, 1, {0x00} },
@@ -600,6 +601,7 @@ static struct LCM_setting_table init_setting_cmd[] = {
 	{REGFLAG_DELAY, 20, {} },
 	{0x35, 1, {0x00} },
 };
+#endif
 
 static struct LCM_setting_table lcm_cabc_setting[] = {
 	{0x55, 1, {0x01} },	//UI
@@ -639,6 +641,33 @@ static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
+{
+	struct dfps_info *dfps_params = dsi->dfps_params;
+
+	dsi->dfps_enable = 1;
+	dsi->dfps_default_fps = 12000;/*real fps * 100, to support float*/
+	dsi->dfps_def_vact_tim_fps = 12000;/*real vact timing fps * 100*/
+	/* traversing array must less than DFPS_LEVELS */
+	/* DPFS_LEVEL0 */
+	dfps_params[0].level = DFPS_LEVEL0;
+	dfps_params[0].fps = 12000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 12000;/*real vact timing fps * 100*/
+	/* if mipi clock solution */
+	dfps_params[0].PLL_CLOCK = 510;
+	/* dfps_params[0].data_rate = xx; */
+	/* DPFS_LEVEL1 */
+	dfps_params[1].level = DFPS_LEVEL1;
+	dfps_params[1].fps = 12000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 12000;/*real vact timing fps * 100*/
+	/* if mipi clock solution */
+	dfps_params[1].PLL_CLOCK = 510;
+	/* dfps_params[1].data_rate = xx; */
+	dsi->dfps_num = 2;
+}
+#endif
+
 static void lcm_get_params(struct LCM_PARAMS *params)
 {
 	memset(params, 0, sizeof(struct LCM_PARAMS));
@@ -653,19 +682,46 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	params->dsi.vertical_sync_active = 2;
+	params->dsi.vertical_backporch = 20;
+	params->dsi.vertical_frontporch = 50;
+#else
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 12;
 	params->dsi.vertical_frontporch = 20;
+#endif
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+ 	params->dsi.horizontal_sync_active = 4;
+	params->dsi.horizontal_backporch = 101;
+	params->dsi.horizontal_frontporch = 102;
+#else
 	params->dsi.horizontal_sync_active = 4;
 	params->dsi.horizontal_backporch = 28;
 	params->dsi.horizontal_frontporch = 28;
+#endif
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	params->dsi.PLL_CLOCK = 514;
+#else
 	params->dsi.PLL_CLOCK = 571;
+#endif
 	params->physical_height = 161;
 	params->physical_width = 70;
+
+#ifdef CONFIG_MTK_MT6382_BDG
+	params->dsi.dsc_enable = 0;
+	params->dsi.ssc_disable = 1;
+	params->dsi.bdg_ssc_disable = 1;
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	params->dsi.bdg_dsc_enable = 1;
+#else
+	params->dsi.bdg_dsc_enable = 0;
+#endif
+#endif
 
 	params->density = 480;
 	params->dsi.esd_check_enable = 1;
@@ -676,8 +732,16 @@ static void lcm_get_params(struct LCM_PARAMS *params)
         params->dsi.lcm_esd_check_table[1].cmd = 0x0d;
         params->dsi.lcm_esd_check_table[1].count = 1;
         params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
+#ifndef CONFIG_MTK_MT6382_BDG
 	params->dsi.ssc_disable = 0;
 	params->dsi.ssc_range = 8;
+#endif
+
+	#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	/****DynFPS start****/
+	lcm_dfps_int(&(params->dsi));
+	/****DynFPS end****/
+	#endif
 }
 
 static void lcm_init_power(void)
@@ -708,7 +772,7 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
-
+#ifndef CONFIG_MTK_HIGH_FRAME_RATE
 	pr_info("[LCM]lcm_init\n");
 
 	SET_RESET_PIN(1);
@@ -719,6 +783,7 @@ static void lcm_init(void)
 	MDELAY(20);
 	push_table(NULL, init_setting_cmd,
 			ARRAY_SIZE(init_setting_cmd), 1);
+#endif
 }
 
 static void lcm_suspend(void)
