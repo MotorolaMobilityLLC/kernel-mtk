@@ -53,7 +53,7 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 	char puReadCmd[1] = { (char)(a_u2Addr) };
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puReadCmd, 1);
-	if (i4RetValue != 2) {
+	if (i4RetValue != 1) {
 		LOG_INF(" I2C write failed!!\n");
 		return -1;
 	}
