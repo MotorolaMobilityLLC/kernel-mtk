@@ -31,12 +31,12 @@
                 charger_device_1 {
                         chrg-name = "cp-master";
                         psy-name = "bq2597x-master";
-                        charging-curr-min = <2500000>;
+                        charging-curr-min = <2000000>;
                 };
                 charger_device_2 {
                         chrg-name = "cp-slave";
                         psy-name = "bq2597x-slave";
-                        charging-curr-min = <3000000>;
+                        charging-curr-min = <2500000>;
                 };
 
         };
