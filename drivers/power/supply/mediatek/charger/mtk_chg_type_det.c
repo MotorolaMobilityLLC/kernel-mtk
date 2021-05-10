@@ -479,7 +479,9 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	struct tcp_notify *noti = data;
 	struct chg_type_info *cti = container_of(pnb,
 		struct chg_type_info, pd_nb);
+	#ifdef MTK_BASE
 	int vbus = 0;
+	#endif
 	struct power_supply *ac_psy = power_supply_get_by_name("ac");
 	struct power_supply *usb_psy = power_supply_get_by_name("usb");
 	struct mt_charger *mtk_chg_ac;
@@ -525,6 +527,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		    noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_AUDIO)
 			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			#ifdef MTK_BASE
 			if (cti->tcpc_kpoc) {
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
@@ -538,6 +541,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 					      &cti->pwr_off_work);
 				break;
 			}
+			#endif
 			pr_info("%s USB Plug out\n", __func__);
 			plug_in_out_handler(cti, false, false);
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
