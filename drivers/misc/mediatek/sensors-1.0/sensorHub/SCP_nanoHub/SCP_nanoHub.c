@@ -1823,7 +1823,9 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_CAMGEST:
 		data->time_stamp = data_t->time_stamp;
-		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		data->data[0] = data_t->data[0];
+		data->data[1] = data_t->data[1];
+		data->data[2] = data_t->data[2];
 		break;
 	case ID_CHOPCHOP:
 		data->time_stamp = data_t->time_stamp;
