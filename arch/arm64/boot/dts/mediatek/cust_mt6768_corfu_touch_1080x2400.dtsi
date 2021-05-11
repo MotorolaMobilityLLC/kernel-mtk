@@ -27,7 +27,6 @@
 
 		interrupt-parent = <&pio>;
 		goodix,avdd-name = "vtouch";
-		vtouch-supply = <&mt_pmic_vldo28_ldo_reg>;
 		//vtouch-load = <1>;
 		goodix,reset-gpio = <&pio 23 0x0>;
 		goodix,irq-gpio = <&pio 0 0x0>;
@@ -48,6 +47,27 @@
 
 	};
 
+        focaltech@38{
+        status = "okay";
+                compatible = "focaltech,fts";
+                reg = <0x38>;
+                /* Focaltech GPIO Configuration */
+                interrupt-parent = <&pio>;
+                interrupts = <0 0x2>;
+                focaltech,avdd-gpio = <&pio 29 0>;
+                focaltech,reset-gpio =<&pio 23 0x0>;
+                focaltech,irq-gpio = <&pio 0 0x0>;
+                focaltech,max-touch-number = <10>;
+                focaltech,display-coords =  <0 0 1080 2400>;
+
+                /*
+                focaltech,have-key;
+                focaltech,key-number = <3>;
+                focaltech,keys = <139 102 158>;
+                focaltech,key-x-coords = <200 600 800>;
+                focaltech,key-y-coords = <2000 2000 2000>;
+                */
+        };
 };
 
 &touch {
@@ -59,7 +79,6 @@
 	interrupts = <1 IRQ_TYPE_EDGE_FALLING 1 0>;
 	goodix,irq-gpio = <&pio 1 0x0>;
 	goodix,reset-gpio = <&pio 23 0x0>;
-	vtouch-supply = <&mt_pmic_vldo28_ldo_reg>;
 
 	/* Rotate cord when open blew lables */
 	/*goodix,x2x;*/
