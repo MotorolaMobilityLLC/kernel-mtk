@@ -817,7 +817,28 @@ unsigned int s5k5e9_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigne
 	}
 	return size;
 }
+static void s5k5e9_eeprom_get_3aInfo_data(
+mot_calibration_3aInfo_t *calibration_3aInfo)
+{
 
+	calibration_3aInfo->cie_src_1_ev = to_uint16_swap(s5k5e9_otp_data.cie_ev);
+	calibration_3aInfo->cie_src_1_u = to_uint16_swap(s5k5e9_otp_data.cie_u);
+	calibration_3aInfo->cie_src_1_v = to_uint16_swap(s5k5e9_otp_data.cie_v);
+	calibration_3aInfo->awb_src_1_golden_r = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_r);
+	calibration_3aInfo->awb_src_1_golden_gr = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_gr);
+	calibration_3aInfo->awb_src_1_golden_gb = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_gb);
+	calibration_3aInfo->awb_src_1_golden_b = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_b);
+	calibration_3aInfo->awb_src_1_r = to_uint16_swap(s5k5e9_otp_data.awb_src_1_r);
+	calibration_3aInfo->awb_src_1_gr = to_uint16_swap(s5k5e9_otp_data.awb_src_1_gr);
+	calibration_3aInfo->awb_src_1_gb = to_uint16_swap(s5k5e9_otp_data.awb_src_1_gb);
+	calibration_3aInfo->awb_src_1_b = to_uint16_swap(s5k5e9_otp_data.awb_src_1_b);
+	calibration_3aInfo->awb_src_1_rg_ratio = to_uint16_swap(s5k5e9_otp_data.awb_src_1_rg_ratio);
+	calibration_3aInfo->awb_src_1_bg_ratio = to_uint16_swap(s5k5e9_otp_data.awb_src_1_bg_ratio);
+	calibration_3aInfo->awb_src_1_gr_gb_ratio = to_uint16_swap(s5k5e9_otp_data.awb_src_1_gr_gb_ratio);
+	calibration_3aInfo->awb_src_1_golden_rg_ratio = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_rg_ratio);
+	calibration_3aInfo->awb_src_1_golden_bg_ratio = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_bg_ratio);
+	calibration_3aInfo->awb_src_1_golden_gr_gb_ratio = to_uint16_swap(s5k5e9_otp_data.awb_src_1_golden_gr_gb_ratio);
+}
 static void s5k5e9_eeprom_get_mnf_data(mot_calibration_mnf_t *mnf)
 {
 	int ret;
@@ -1717,6 +1738,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->calibration_status.lsc = lsc_status;
         sensor_info->calibration_status.mnf = mnf_status;
 	s5k5e9_eeprom_get_mnf_data( &sensor_info->mnf_calibration);
+	s5k5e9_eeprom_get_3aInfo_data( &sensor_info->calibration_3aInfo);
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
