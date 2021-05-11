@@ -363,9 +363,9 @@ static kal_uint16 read_hi556_module_info(void)
 	LOG_INF(" HI556 INFO date is %d-%d-%d \n",year,month,day);
 	LOG_INF(" HI556 INFO check_sum=0x%x,check_sum_cal=0x%x \n", check_sum, check_sum_cal);
 	if(check_sum == check_sum_cal){
-		return 1;
-	}else{
 		return 0;
+	}else{
+		return 1;
 	}
 }
 
@@ -427,9 +427,9 @@ static kal_uint16 read_hi556_awb_info(void)
 	LOG_INF(" HI556 AWB GoldenR=0x%x,GoldenB=0x%x,GoldenGr=%x,GoldenGb=0x%x \n", GoldenR, GoldenB, GoldenGr, GoldenGb);
 	LOG_INF(" HI556 AWB check_sum_awb=0x%x,check_sum_awb_cal=0x%x \n",check_sum_awb,check_sum_awb_cal);
 	if(check_sum_awb == check_sum_awb_cal){
-		return 1;
-	}else{
 		return 0;
+	}else{
+		return 1;
 	}
 }
 
@@ -481,9 +481,9 @@ static kal_uint16 read_hi556_lsc_info(void)
 #endif
 	LOG_INF(" HI556 LSC check_sum_lsc=0x%x, check_sum_lsc_cal=0x%x \n", check_sum_lsc, check_sum_lsc_cal);
 	if(check_sum_lsc == check_sum_lsc_cal){
-		return 1;
-	}else{
 		return 0;
+	}else{
+		return 1;
 	}
 }
 
@@ -523,7 +523,7 @@ static kal_uint16 hi556_sensor_otp_info(void)
 	/* 3. read eeprom data */
 	//minfo && awb group
 	mnf_status = read_hi556_module_info();
-	if(mnf_status != 1){
+	if(mnf_status != 0){
 		hi556_module_id = 0;
 		LOG_INF(" hi556_data_info invalid \n");
 		return 0;
@@ -531,7 +531,7 @@ static kal_uint16 hi556_sensor_otp_info(void)
 		hi556_module_id = 1;
 	}
 	awb_status = read_hi556_awb_info();
-	if(awb_status != 1){
+	if(awb_status != 0){
 		hi556_awb_valid = 0;
 		LOG_INF(" hi556_data_awb invalid \n");
 		return 0;
@@ -539,7 +539,7 @@ static kal_uint16 hi556_sensor_otp_info(void)
 		hi556_awb_valid = 1;
 	}
 	lsc_status = read_hi556_lsc_info();
-	if(lsc_status != 1){
+	if(lsc_status != 0){
 		hi556_lsc_valid = 0;
 		LOG_INF(" hi556_data_lsc invalid \n");
 		return 0;
