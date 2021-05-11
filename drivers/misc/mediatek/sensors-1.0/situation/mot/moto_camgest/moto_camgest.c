@@ -102,12 +102,17 @@ static int moto_camgest_flush(void)
 
 static int moto_camgest_recv_data(struct data_unit_t *event, void *reserved)
 {
+	int ret;
+	int32_t value[3] = {0};
+
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_CAMGEST);
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(camgest_wake_lock, msecs_to_jiffies(100));
-		//situation_notify(ID_CAMGEST);
-    situation_data_report(ID_CAMGEST, event->gesture_data_t.probability);
+		value[0] = event->data[0];
+		value[1] = event->data[1];
+		value[2] = event->data[2];
+		ret=mot_camgest_data_report(value);
 	}
 	return 0;
 }
