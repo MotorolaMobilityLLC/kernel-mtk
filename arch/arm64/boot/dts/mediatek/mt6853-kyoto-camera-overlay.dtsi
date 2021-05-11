@@ -524,9 +524,9 @@
 		status = "okay";
 	};
 
-	camera_main_three_af_mtk:camera_main_three@51 {
+	camera_main_three_af_mtk:camera_main_three@0C {
 		compatible = "mediatek,camera_main_three_af";
-		reg = <0x51>;
+		reg = <0x0C>;
 		status = "okay";
 	};
 };
@@ -537,9 +537,9 @@
 		status = "okay";
 	};
 
-	camera_main_af_mtk:camera_main_af@18 {
+	camera_main_af_mtk:camera_main_af@0C {
 		compatible = "mediatek,camera_main_af";
-		reg = <0x18>;
+		reg = <0x0C>;
 		status = "okay";
 	};
 };
