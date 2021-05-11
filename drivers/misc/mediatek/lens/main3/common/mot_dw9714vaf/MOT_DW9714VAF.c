@@ -306,8 +306,6 @@ int MOT_DW9714VAF_SetI2Cclient_Main3(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 	return 1;
 }
 
