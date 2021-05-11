@@ -177,6 +177,32 @@ int sar_data_report(int32_t value[3])
 	return sar_data_report_t(value, 0);
 }
 
+int mot_camgest_data_report(int32_t value[3])
+{
+	int err = 0, index = -1;
+	struct sensor_event event;
+	struct situation_context *cxt = situation_context_obj;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	index = handle_to_index(ID_CAMGEST);
+	if (index < 0) {
+		pr_err("[%s] invalid index\n", __func__);
+		return -1;
+	}
+	event.handle = ID_CAMGEST;
+	event.flush_action = DATA_ACTION;
+	event.word[0] = value[0];
+	event.word[1] = value[1];
+	event.word[2] = value[2];
+	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
+	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
+		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
+		__pm_wakeup_event(cxt->ws[index], 250);
+
+	return err;
+}
+
 int mot_ltv_data_report(int32_t value[3])
 {
 	int err = 0, index = -1;
@@ -495,6 +521,11 @@ static ssize_t situparams_store(struct device *dev, struct device_attribute *att
 	err = sensor_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&cxt->motparams.chopchop_params, sizeof(struct mot_chopchop));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
+#endif
+#ifdef CONFIG_MOTO_CAMGEST
+	err = sensor_cfg_to_hub(ID_CAMGEST, (uint8_t *)&cxt->motparams.camgest_params, sizeof(struct mot_camgest));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CAMGEST fail\n");
 #endif
 #ifdef CONFIG_MOTO_GLANCE
 	err = sensor_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&cxt->motparams.glance_params, sizeof(struct mot_glance));
