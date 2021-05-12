@@ -4494,6 +4494,14 @@ page_owner=on loop.max_part=7";
 		status = "disabled";
 	};
 
+	mt6382_nfc: mt6382_nfc {
+		compatible = "mediatek, mt6382_nfc-eint";
+		interrupt-parent = <&pio>;
+		interrupts = <25 IRQ_TYPE_EDGE_BOTH 25 0>;
+		mt6382_nfc_srclk = <&pio 25 0x0>;
+		status = "okay";
+	};
+
 	disp_ovl0@14008000 {
 		compatible = "mediatek,disp_ovl0";
 		reg = <0 0x14008000 0 0x1000>;

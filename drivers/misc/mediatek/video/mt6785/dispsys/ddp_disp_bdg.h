@@ -102,6 +102,7 @@ unsigned int get_mt6382_init(void);
 unsigned int get_bdg_tx_mode(void);
 int check_stopstate(void *cmdq);
 int polling_status(void);
+void bdg_clk_buf_nfc(bool onoff);
 
 unsigned int mtk_spi_read(u32 addr);
 int mtk_spi_write(u32 addr, unsigned int regval);
@@ -112,4 +113,8 @@ irqreturn_t bdg_eint_thread_handler(int irq, void *data);
 void bdg_request_eint_irq(void);
 //void bdg_free_eint_irq(void);
 
+/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
+irqreturn_t nfc_eint_thread_handler(int irq, void *data);
+void nfc_request_eint_irq(void);
+/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 #endif

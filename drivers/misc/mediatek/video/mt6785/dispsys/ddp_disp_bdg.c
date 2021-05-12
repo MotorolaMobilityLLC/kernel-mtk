@@ -25,7 +25,10 @@
 #include "../../../base/power/include/clkbuf_v1/mt6785/mtk_clkbuf_hw.h"
 #include <linux/of.h>
 #include <linux/of_irq.h>
-
+/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
+/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 #include "cmdq-bdg.h"
 //#include "ddp_log.h"
 //#include <linux/math.h>
@@ -58,6 +61,12 @@ unsigned int dsc_en;
 unsigned int mt6382_init;
 unsigned int bdg_tx_mode;
 static int bdg_eint_irq;
+/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
+static int nfc_eint_irq;
+static int mt6382_nfc_srclk;
+static bool nfc_irq_already_requested;
+static int mt6382_nfc_gpio_value;
+/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 static bool irq_already_requested;
 
 #define T_DCO		5  // nominal: 200MHz
@@ -169,13 +178,11 @@ do { \
 
 #define DSI_OUTREG32(cmdq, addr, val) \
 do { \
-	DISPDBG("%s\n", __func__); \
 	mtk_spi_write((unsigned long)(&addr), val); \
 } while (0)
 
 #define DSI_MASKREG32(cmdq, addr, mask, val) \
 do { \
-	DISPDBG("%s\n", __func__); \
 	mtk_spi_mask_write((unsigned long)(addr), mask, val); \
 } while (0)
 #else
@@ -1706,6 +1713,22 @@ void set_ana_mipi_dsi_off(void *cmdq)
 	DISPFUNCEND();
 }
 
+void bdg_clk_buf_nfc(bool onoff)
+{
+//	DISPFUNCSTART();
+
+	if (onoff) {
+		mtk_spi_write(0x000000a0, 0x00000022);
+//		DSI_OUTREGBIT(cmdq, struct CKBUF_CTRL_REG,
+//				SYS_REG->CKBUF_CTRL, NFC_CK_OUT_EN, 1);
+	} else {
+		mtk_spi_write(0x000000a0, 0x00000002);
+//		DSI_OUTREGBIT(cmdq, struct CKBUF_CTRL_REG,
+//				SYS_REG->CKBUF_CTRL, NFC_CK_OUT_EN, 0);
+	}
+//	DISPFUNCEND();
+}
+
 int dsi_get_pcw(int data_rate, int pcw_ratio)
 {
 	int pcw, tmp, pcw_floor;
@@ -2537,6 +2560,7 @@ int bdg_tx_enable_hs_clk(enum DISP_BDG_ENUM module,
 	}
 	return 0;
 }
+
 #if 0
 int dsi_set_fps(lcm_dsi_params *dsi_params, enum dsi_fps_enum fps)
 {
@@ -2633,6 +2657,7 @@ int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq)
 	int i;
 
 	DISPFUNCSTART();
+
 //	DISPINFO("%s, DSI_TX_START=0x%08x\n",__func__,
 //		mtk_spi_read((unsigned long)(&TX_REG[0]->DSI_TX_START)));
 
@@ -2648,6 +2673,7 @@ int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq)
 					TX_REG[i]->DSI_TX_COM_CON, DSI_RESET, 0);
 		}
 	}
+
 	return 0;
 }
 
@@ -2677,6 +2703,7 @@ int bdg_tx_stop(enum DISP_BDG_ENUM module, void *cmdq)
 	int i;
 
 	DISPFUNCSTART();
+
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_START_REG,
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 0);
@@ -2834,13 +2861,14 @@ int bdg_tx_wait_for_idle(enum DISP_BDG_ENUM module)
 			udelay(1);
 			status = mtk_spi_read((unsigned long)(&TX_REG[i]->DSI_TX_INTSTA));
 //			DISPMSG("%s, i=%d, status=0x%x, timeout=%d\n",
-//				_func__, i, status, timeout);
+//				__func__, i, status, timeout);
 
 			if (!(status & 0x80000000))
 				break;
 			timeout--;
 		}
 	}
+
 	if (timeout == 0) {
 //		dsi_dump_reg(module, 0);
 		DISPMSG("%s, wait timeout!\n", __func__);
@@ -4457,6 +4485,7 @@ void push_table(struct lcm_setting_table *table, unsigned int count,
 	unsigned int i, cmd;
 
 	DISPFUNCSTART();
+
 	for (i = 0; i < count; i++) {
 		cmd = table[i].cmd;
 
@@ -4480,7 +4509,6 @@ void push_table(struct lcm_setting_table *table, unsigned int count,
 		}
 	}
 }
-
 
 int lcm_init(enum DISP_BDG_ENUM module)
 {
@@ -4515,7 +4543,6 @@ int lcm_init(enum DISP_BDG_ENUM module)
 #endif
 	//push_table(nt35695b_cmd_mode, sizeof(nt35695b_cmd_mode) /
 	//	sizeof(struct lcm_setting_table), 1);
-
 
 	DISPFUNCEND();
 
@@ -4639,7 +4666,6 @@ int bdg_tx_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 	DISPFUNCEND();
 	return 0;
 }
-
 
 void calculate_datarate_cfgs_rx(unsigned int data_rate)
 {
@@ -4890,7 +4916,7 @@ int check_stopstate(void *cmdq)
 	while (timeout) {
 		stop_state = mtk_spi_read((unsigned long)(&OCLA_REG->OCLA_LANE0_STOPSTATE));
 
-		DISPMSG("stop_state=0x%x, timeout=%d\n", stop_state, timeout);
+//		DISPMSG("stop_state=0x%x, timeout=%d\n", stop_state, timeout);
 
 		if ((stop_state & 0x1) == 0x1)
 			count++;
@@ -5053,7 +5079,7 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 	unsigned int temp, frame_width;
 	unsigned int ipi_tx_delay_qst, t_ipi_tx_delay;
 	unsigned int t_ppi_clk, t_ipi_clk, t_hact_ppi, t_hact_ipi;
-// bit2: HSRX EoTp enable, bit1: LPTX EoTp enable, bit0: LPRX EoTp enable
+	/* bit2: HSRX EoTp enable, bit1: LPTX EoTp enable, bit0: LPRX EoTp enable */
 	unsigned int eotp_cfg = 4;
 	unsigned int timeout = 5000;
 	unsigned int phy_ready = 0, count = 0;
@@ -6478,6 +6504,9 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 
 	// request eint irq
 	bdg_request_eint_irq();
+	/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
+	nfc_request_eint_irq();
+	/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 
 	DISPFUNCEND();
 
@@ -6531,9 +6560,8 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	GPIO = (struct BDG_GPIO_REGS *)DISPSYS_BDG_GPIO_BASE;
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
 
-	bdg_tx_pull_6382_reset_pin();
-
 	clk_buf_disp_ctrl(true);
+	bdg_tx_pull_6382_reset_pin();
 	set_LDO_on(cmdq);
 	set_mtcmos_on(cmdq);
 	ana_macro_on(cmdq);
@@ -6582,7 +6610,6 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	else {
 		DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_CTL,
 				0x1 << 0 | 0x0 << 3 | 0x1 << 6 | 0x0 << 9);
-
 	DSI_OUTREGBIT(cmdq, struct DISP_MUTEX0_EN_REG,
 			MUTEX_REG->DISP_MUTEX0_EN, MUTEX0_EN, 1);
 	}
@@ -6732,6 +6759,89 @@ void bdg_request_eint_irq(void)
 	// enable irq
 	enable_irq(bdg_eint_irq);
 }
+
+/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
+void nfc_work_func(void)
+{
+	int nfc_srclk;
+
+	nfc_srclk = gpio_get_value(mt6382_nfc_srclk);
+	//DISPMSG("%s, NFC SRCLK GPIO Value = %d\n", __func__, nfc_srclk);
+
+	//suspend need to disable MT6382 first and enable SRCLK first
+	if (nfc_srclk != mt6382_nfc_gpio_value) { //the state of gpio has been updated
+		mt6382_nfc_gpio_value = nfc_srclk;
+
+		if (nfc_srclk == 1) {
+			//switch the mt6382 clock
+			//DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
+			//	__func__, nfc_srclk);
+			bdg_clk_buf_nfc(nfc_srclk);
+		} else {
+			//switch the mt6382 clock
+			//DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
+			//	__func__, nfc_srclk);
+			bdg_clk_buf_nfc(nfc_srclk);
+		}
+	}
+}
+
+irqreturn_t nfc_eint_thread_handler(int irq, void *data)
+{
+	nfc_work_func();
+
+	return IRQ_HANDLED;
+}
+
+void nfc_request_eint_irq(void)
+{
+	struct device_node *node;
+
+	if (nfc_irq_already_requested) {
+		enable_irq(nfc_eint_irq);
+		return;
+	}
+
+	// get compatible node
+	node = of_find_compatible_node(NULL, NULL, "mediatek, mt6382_nfc-eint");
+	if (!node) {
+		DISPMSG("%s, mt6382 can't find mt6382_nfc_eint compatible node\n", __func__);
+		return;
+	}
+
+	//get gpio
+	mt6382_nfc_srclk = of_get_named_gpio(node, "mt6382_nfc_srclk", 0);
+	if (mt6382_nfc_srclk < 0)
+		DISPMSG("%s: get NFC SRCLK GPIO failed (%d)", __func__, mt6382_nfc_srclk);
+	else
+		DISPMSG("%s: get NFC SRCLK GPIO Success (%d)", __func__, mt6382_nfc_srclk);
+
+	// get irq number
+	nfc_eint_irq = irq_of_parse_and_map(node, 0);
+	DISPMSG("%s, mt6382 NFC EINT irq number: (%d)\n", __func__, nfc_eint_irq);
+
+	// register irq thread handler
+	if (request_threaded_irq(nfc_eint_irq, NULL/*dbg_eint_irq_handler*/,
+				nfc_eint_thread_handler,
+				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+				"MT6382_NFC_EINT", NULL)) {
+		DISPMSG("%s, mt6382 request NFC EINT irq failed!\n", __func__);
+		return;
+	}
+
+	nfc_irq_already_requested = true;
+	mt6382_nfc_gpio_value = 0;
+
+	//get SRCLK status
+	nfc_work_func();
+
+	// enable irq
+	enable_irq(nfc_eint_irq);
+	// enable irq wake
+	irq_set_irq_wake(nfc_eint_irq, 1);
+}
+/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
+
 #if 0
 void bdg_free_eint_irq(void)
 {
