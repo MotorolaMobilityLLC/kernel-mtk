@@ -378,6 +378,19 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	if (pdata->moto_chg_tcmd_ichg != -1)
 		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
 
+	if (info->mmi.adaptive_charging_disable_ibat
+		&& !info->mmi.battery_charging_disable) {
+		pdata->charging_current_limit = 0;
+		info->mmi.battery_charging_disable = true;
+		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
+	} else if (!info->mmi.adaptive_charging_disable_ibat
+			&& info->mmi.battery_charging_disable) {
+		info->mmi.battery_charging_disable = false;
+		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
+	} else if (info->mmi.adaptive_charging_disable_ibat
+			&& info->mmi.battery_charging_disable) {
+		pdata->charging_current_limit = 0;
+	}
 done:
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
@@ -406,7 +419,22 @@ done:
 	charger_dev_set_charging_current(info->chg1_dev,
 					pdata->charging_current_limit);
 
-	charger_dev_enable_hz(info->chg1_dev, info->mmi.demo_discharging);
+
+	if ((info->mmi.adaptive_charging_disable_ichg || info->mmi.demo_discharging)
+			&& !(info->mmi.charging_enable_hz)) {
+
+		charger_dev_enable_hz(info->chg1_dev, true);
+		info->mmi.charging_enable_hz = true;
+		charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+
+	} else if (info->mmi.charging_enable_hz
+			&& !info->mmi.adaptive_charging_disable_ichg
+			&& !info->mmi.demo_discharging) {
+
+		charger_dev_enable_hz(info->chg1_dev, false);
+		info->mmi.charging_enable_hz = false;
+		charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+	}
 
 	/* If AICR < 300mA, stop PE+/PE+20 */
 	if (pdata->input_current_limit < 300000) {
@@ -534,6 +562,12 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	mtk_pe40_plugout_reset(info);
 	mtk_pe50_plugout_reset(info);
 
+	if (info->mmi.charging_enable_hz) {
+		charger_dev_enable_hz(info->chg1_dev, false);
+		info->mmi.charging_enable_hz = false;
+	}
+
+	info->mmi.battery_charging_disable = false;
 	return 0;
 }
 
