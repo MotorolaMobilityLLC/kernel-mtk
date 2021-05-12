@@ -206,6 +206,10 @@
         #include "bat_setting/mt6768_battery_table_MD50_scud_5000mah_ext.dtsi"
 };
 
+&msdc0 {
+	req_vcore = <1>;
+};
+
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 	cd-gpios = <&pio 25 0>;
