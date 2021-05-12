@@ -833,9 +833,7 @@ static void process_dbg_opt(const char *opt)
 			bdg_tx_init(DISP_BDG_DSI0, data_config, NULL);
 			bdg_tx_bist_pattern(DISP_BDG_DSI0, NULL, TRUE, 0, 0x3ff, 0, 0);
 //			dsi_set_cksm(module, NULL, TRUE);
-			bdg_tx_cmd_mode(DISP_BDG_DSI0, NULL);
 			bdg_tx_start(DISP_BDG_DSI0, NULL);
-			bdg_mutex_trigger(DISP_BDG_DSI0, NULL);
 //			mdelay(2000);
 //			dsi_get_cksm(module);
 		} else {
@@ -853,24 +851,52 @@ static void process_dbg_opt(const char *opt)
 
 		clk_buf_disp_ctrl(false);
 
-	} else if (strncmp(opt, "send_3", 6) == 0) {
-		char para[7] = {0x10, 0x02, 0x00, 0x09, 0x00, 0x00, 0x00};
+	} else if (strncmp(opt, "disp_ext", 8) == 0) {
+		struct cmdqRecStruct *cmdq;
 
-		DSI_set_cmdq_V1(DISP_MODULE_DSI0, NULL, 0x28, 7, para, 1);
+		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq);
+		cmdqRecReset(cmdq);
 
-		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
+		DSI_set_cmdq_V2(DISP_MODULE_DSI0, cmdq, 0x20, 0, 0, 1);
+
+		cmdqRecFlush(cmdq);
+		cmdqRecDestroy(cmdq);
+
+//		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
+
+	} else if (strncmp(opt, "disp_inv", 8) == 0) {
+		struct cmdqRecStruct *cmdq;
+
+		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq);
+		cmdqRecReset(cmdq);
+		DSI_set_cmdq_V2(DISP_MODULE_DSI0, cmdq, 0x21, 0, 0, 1);
+
+		cmdqRecFlush(cmdq);
+		cmdqRecDestroy(cmdq);
+
+//		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
+
+	} else if (strncmp(opt, "disp_off", 8) == 0) {
+		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, 0x28, 0, 0, 1);
+
+//		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
+
+	} else if (strncmp(opt, "disp_on", 7) == 0) {
+		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, 0x29, 0, 0, 1);
+
+//		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
 
 	} else if (strncmp(opt, "send_2", 6) == 0) {
 		char para[7] = {0x10, 0x02, 0x00, 0x07, 0x00, 0x00, 0x00};
 
-		DSI_set_cmdq_V1(DISP_MODULE_DSI0, NULL, 0x24, 7, para, 1);
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x24, 7, para, 1);
 
 		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
 
 	} else if (strncmp(opt, "send_1", 6) == 0) {
 		char para[7] = {0x10, 0x02, 0x00, 0x05, 0x00, 0x00, 0x00};
 
-		DSI_set_cmdq_V1(DISP_MODULE_DSI0, NULL, 0x20, 7, para, 1);
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x20, 7, para, 1);
 
 		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
 
@@ -886,13 +912,72 @@ static void process_dbg_opt(const char *opt)
 				&para[6], &para[5], &para[4], &para[3]);
 
 		DISPMSG("ret=%d, addr:0x%x%x%x%x, data:0x%x%x%x%x\n",
-			ret, para[2], para[1], para[0], cmd,
-			para[6], para[5], para[4], para[3]);
+				ret, para[2], para[1], para[0], cmd,
+				para[6], para[5], para[4], para[3]);
 
-		DSI_set_cmdq_V1(DISP_MODULE_DSI0, NULL, cmd, 7, para, 1);
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, cmd, 7, para, 1);
 
 		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
 
+	} else if (strncmp(opt, "stop_dsi", 8) == 0) {
+
+		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		primary_display_diagnose(__func__, __LINE__);
+
+	} else if (strncmp(opt, "stop_6382", 9) == 0) {
+		char para[7] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+		char para1[7] = {0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00};
+
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x00, 7, para, 1);
+
+		if (polling_status() != 0)
+			DISPMSG("ERROR!ERROR!!!\n");
+		mdelay(100);
+
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x10, 7, para1, 1);
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x10, 7, para, 1);
+	} else if (strncmp(opt, "_stop_dsi", 9) == 0) {
+		/* by mt6382 spi */
+
+		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		primary_display_diagnose(__func__, __LINE__);
+
+		bdg_tx_stop(DISP_BDG_DSI0, NULL);
+
+		if (polling_status() != 0)
+			DISPMSG("ERROR!ERROR!!!\n");
+
+		bdg_tx_reset(DISP_BDG_DSI0, NULL);
+
+	} else if (strncmp(opt, "_start_dsi", 10) == 0) {
+		/* by mt6382 spi */
+
+		bdg_tx_start(DISP_BDG_DSI0, NULL);
+
+		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
+				   CMDQ_DISABLE);
+
+	} else if (strncmp(opt, "start_dsi", 9) == 0) {
+		char para[7] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+		char para1[7] = {0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00};
+
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x00, 7, para, 1);
+		DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, NULL, 0x00, 7, para1, 1);
+
+		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
+				   CMDQ_DISABLE);
+	} else if (strncmp(opt, "read_cmd", 8) == 0) {
+		char para[1] = {0x00};
+
+		bdg_tx_set_mode(DISP_BDG_DSI0, NULL, CMD_MODE);
+		bdg_set_dcs_read_cmd(true, NULL);
+
+		DSI_dcs_read_lcm_reg_via_bdg(DISP_MODULE_DSI0, NULL, 0x0a, para, 2);
+
+		bdg_set_dcs_read_cmd(false, NULL);
+		bdg_tx_set_mode(DISP_BDG_DSI0, NULL, SYNC_PULSE_VDO_MODE);
 	} else if (strncmp(opt, "dump", 4) == 0) {
 
 		DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
@@ -900,19 +985,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "xdump", 5) == 0) {
 
 		bdg_dsi_dump_reg(DISP_BDG_DSI0);
-
-	} else if (strncmp(opt, "pat_cmd", 7) == 0) {
-
-		bdg_tx_bist_pattern(DISP_BDG_DSI0, NULL, TRUE, 0, 0x3ff, 0, 0);
-		bdg_tx_cmd_mode(DISP_BDG_DSI0, NULL);
-		bdg_tx_start(DISP_BDG_DSI0, NULL);
-		bdg_mutex_trigger(DISP_BDG_DSI0, NULL);
-
-	} else if (strncmp(opt, "dsi_cmd", 7) == 0) {
-
-		bdg_tx_cmd_mode(DISP_BDG_DSI0, NULL);
-		bdg_tx_start(DISP_BDG_DSI0, NULL);
-		bdg_mutex_trigger(DISP_BDG_DSI0, NULL);
 
 	} else if (strncmp(opt, "bdg_int", 7) == 0) {
 		struct LCM_PARAMS *lcm_param = NULL;
@@ -962,7 +1034,7 @@ static void process_dbg_opt(const char *opt)
 				addr, val);
 			return;
 		}
-
+		DISPMSG("mt6382 set_mask addr:0x%08x, mask:0x08x, val:0x%08x\n", addr, mask, val);
 	} else if (!strncmp(opt, "set_mt6382_spi:", 15)) {
 		unsigned int addr = 0, val = 0;
 		int ret = -1;

@@ -23,7 +23,10 @@
 #include "mt6382.h"
 #include "disp_dts_gpio.h"
 #include "../../../base/power/include/clkbuf_v1/mt6785/mtk_clkbuf_hw.h"
+#include <linux/of.h>
+#include <linux/of_irq.h>
 
+#include "cmdq-bdg.h"
 //#include "ddp_log.h"
 //#include <linux/math.h>
 
@@ -54,6 +57,8 @@ unsigned int hsa_byte = 0, hbp_byte = 0, hfp_byte = 0, bllp_byte = 0, bg_tx_line
 unsigned int dsc_en;
 unsigned int mt6382_init;
 unsigned int bdg_tx_mode;
+static int bdg_eint_irq;
+static bool irq_already_requested;
 
 #define T_DCO		5  // nominal: 200MHz
 int hsrx_clk_div;
@@ -73,7 +78,7 @@ unsigned int ddl_cntr_ref_reg;
 struct lcm_setting_table {
 	unsigned int cmd;
 	unsigned char count;
-	unsigned char para_list[64];
+	unsigned char para_list[256];
 };
 
 #define MM_CLK			546 //fpga=26
@@ -94,7 +99,7 @@ unsigned int mtk_spi_read(u32 addr)
 
 #ifdef SW_EARLY_PORTING
 #else
-	dsp_spi_read_ex(addr, &value, 4, SPI_SPEED);
+	spislv_read(addr, &value, 4);
 #endif
 //	DISPMSG("%s, addr=0x%08x, value=0x%08x\n", __func__, addr, value);
 	return value;
@@ -108,7 +113,7 @@ int mtk_spi_write(u32 addr, unsigned int regval)
 //	DISPMSG("mt6382, %s, addr=0x%08x, value=0x%x\n", __func__, addr, value);
 #ifdef SW_EARLY_PORTING
 #else
-	ret = dsp_spi_write_ex(addr, &value, 4, SPI_SPEED);
+	ret = spislv_write(addr, &value, 4);
 #endif
 	return ret;
 }
@@ -129,7 +134,7 @@ int mtk_spi_mask_write(u32 addr, u32 msk, u32 value)
 #ifdef SW_EARLY_PORTING
 	return 0;
 #else
-	return spi_write_register_mask(addr, value, msk, SPI_SPEED);
+	return spislv_write_register_mask(addr, value, msk);
 #endif
 }
 
@@ -149,7 +154,7 @@ int mtk_spi_mask_field_write(u32 addr, u32 msk, u32 value)
 #ifdef SW_EARLY_PORTING
 	return 0;
 #else
-	return spi_write_register_mask(addr, value, msk, SPI_SPEED);
+	return spislv_write_register_mask(addr, value, msk);
 #endif
 }
 
@@ -164,13 +169,13 @@ do { \
 
 #define DSI_OUTREG32(cmdq, addr, val) \
 do { \
-	DISPDBG("%s", __func__); \
+	DISPDBG("%s\n", __func__); \
 	mtk_spi_write((unsigned long)(&addr), val); \
 } while (0)
 
 #define DSI_MASKREG32(cmdq, addr, mask, val) \
 do { \
-	DISPDBG("%s", __func__); \
+	DISPDBG("%s\n", __func__); \
 	mtk_spi_mask_write((unsigned long)(addr), mask, val); \
 } while (0)
 #else
@@ -402,16 +407,16 @@ struct lcm_setting_table nt36672c_90hz[] = {
 	{0x16, 1, {0x78} },
 	{0x19, 1, {0x0D} },
 	{0x1A, 1, {0xF4} },
-	{0x37, 1, {0X6E} },
-	{0x88, 1, {0X76} },
+	{0x37, 1, {0x6E} },
+	{0x88, 1, {0x76} },
 
 	{0xFF, 1, {0x2C} },
 	{0xFB, 1, {0x01} },
 	{0x4D, 1, {0x1E} },
 	{0x4E, 1, {0x04} },
-	{0x4F, 1, {0X00} },
-	{0x9D, 1, {0X1E} },
-	{0x9E, 1, {0X04} },
+	{0x4F, 1, {0x00} },
+	{0x9D, 1, {0x1E} },
+	{0x9E, 1, {0x04} },
 
 	{0xFF, 1, {0xF0} },
 	{0xFB, 1, {0x01} },
@@ -423,21 +428,23 @@ struct lcm_setting_table nt36672c_90hz[] = {
 	{0x4E, 1, {0x02} },
 	{0x85, 1, {0x02} },
 
-	{0xFF, 1, {0XD0} },
+	{0xFF, 1, {0xD0} },
 	{0xFB, 1, {0x01} },
-	{0X09, 1, {0XAD} },
+	{0X09, 1, {0xAD} },
 
 	{0xFF, 1, {0X20} },
 	{0xFB, 1, {0x01} },
-	{0XF8, 1, {0X64} },
+	{0XF8, 1, {0x64} },
 
-	{0xFF, 1, {0X2A} },
+	{0xFF, 1, {0x2A} },
 	{0xFB, 1, {0x01} },
-	{0X1A, 1, {0XF0} },
+	{0X1A, 1, {0xF0} },
 	{0x30, 1, {0x5E} },
 	{0x31, 1, {0xCA} },
 	{0x34, 1, {0xFE} },
 	{0x35, 1, {0x35} },
+	{0x36, 1, {0xA2} },
+
 	{0x36, 1, {0xA2} },
 	{0x37, 1, {0xF8} },
 	{0x38, 1, {0x37} },
@@ -456,6 +463,7 @@ struct lcm_setting_table nt36672c_90hz[] = {
 	{0x25, 1, {0x00} },
 	{0x4E, 1, {0x02} },
 	{0x35, 1, {0x82} },
+	{0xFF, 1, {0xC0} },
 
 	{0xFF, 1, {0xC0} },
 	{0xFB, 1, {0x01} },
@@ -472,6 +480,8 @@ struct lcm_setting_table nt36672c_90hz[] = {
 	{0xC0, 1, {0x03} },
 	{0x51, 1, {0x00} },
 	{0x35, 1, {0x00} },
+	{0x53, 1, {0x24} },
+
 	{0x53, 1, {0x24} },
 	{0x55, 1, {0x00} },
 	{0xFF, 1, {0x10} },
@@ -1165,22 +1175,15 @@ void bdg_tx_pull_6382_reset_pin(void)
 	bdg_tx_set_6382_reset_pin(0);
 	udelay(10);
 	bdg_tx_set_6382_reset_pin(1);
+	DISPFUNCEND();
 }
 
 void bdg_tx_set_6382_reset_pin(unsigned int value)
 {
-	DISPFUNCSTART();
 	if (value)
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_6382_RST_OUT1);
 	else
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_6382_RST_OUT0);
-}
-
-void bdg_tx_set_test_pattern(void)
-{
-	DISPFUNCSTART();
-	DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_SELF_PAT_CON0, 0x11);
-	DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_INTSTA, 0x0);
 }
 
 void set_LDO_on(void *cmdq)
@@ -1190,18 +1193,14 @@ void set_LDO_on(void *cmdq)
 
 	DISPFUNCSTART();
 
-//	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL0_REG,
-//			SYS_REG->SYSREG_LDO_CTRL0, RG_PHYLDO_MASKB, 1);
-//	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL1_REG,
-//			SYS_REG->SYSREG_LDO_CTRL1, RG_PHYLDO1_LP_EN, 0);
-//	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL1_REG,
-//			SYS_REG->SYSREG_LDO_CTRL1, RG_PHYLDO2_EN, 1);
-//	udelay(400);
-//	DISPMSG("mt6382, %s, delay 400us\n", __func__);
+	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL0_REG,
+			SYS_REG->SYSREG_LDO_CTRL0, RG_PHYLDO_MASKB, 1);
+	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL0_REG,
+			SYS_REG->SYSREG_LDO_CTRL0, RG_LDO_TRIM_BY_EFUSE, 0);
 
 	while (timeout) {
 		reg1 = (mtk_spi_read((unsigned long)(&SYS_REG->LDO_STATUS)) & 0x300);
-		DISPMSG("mt6382, %s, LDO_STATUS=0x%x\n", __func__, reg1);
+//		DISPMSG("mt6382, %s, LDO_STATUS=0x%x\n", __func__, reg1);
 
 		if (reg1 == 0x300)
 			break;
@@ -1224,9 +1223,14 @@ void set_LDO_on(void *cmdq)
 
 		if ((reg1 != 0) | (reg2 != 0) | (reg2 != 0)) {
 			DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL0_REG,
-					SYS_REG->SYSREG_LDO_CTRL0, RG_PHYLDO_MASKB, 1);
+					SYS_REG->SYSREG_LDO_CTRL0, RG_LDO_TRIM_BY_EFUSE, 1);
 		}
 	}
+
+	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL1_REG,
+			SYS_REG->SYSREG_LDO_CTRL1, RG_PHYLDO1_LP_EN, 0);
+	DSI_OUTREGBIT(cmdq, struct SYSREG_LDO_CTRL1_REG,
+			SYS_REG->SYSREG_LDO_CTRL1, RG_PHYLDO2_EN, 1);
 	DISPFUNCEND();
 }
 
@@ -1300,12 +1304,114 @@ void set_mtcmos_off(void *cmdq)
 
 void set_pll_on(void *cmdq)
 {
+	unsigned int reg = 0;
+
 	DISPFUNCSTART();
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON3));
+	reg = reg | 0x0000001e;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON3, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON5));
+	reg = reg | 0x00016bf0;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON5, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON5));
+	reg = reg & 0xfffdffff;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON5, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->PLLON_CON0));
+	reg = reg | 0x07ffffff;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->PLLON_CON0, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->PLLON_CON1));
+	reg = reg | 0x07fffe00;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->PLLON_CON1, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->PLLON_CON1));
+	reg = reg & 0xfffffe00;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->PLLON_CON1, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON3));
+	reg = reg | 0x00000001;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON3, reg);
+
+	udelay(1);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON3));
+	reg = reg & 0xfffffffd;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON3, reg);
+
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON1, 0x800fc000);
+
+	udelay(1);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON0));
+	reg = reg | 0x00000001;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON0, reg);
+
+	udelay(20);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON0));
+	reg = reg | 0x00800001;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON0, reg);
+
+	DISPFUNCEND();
 }
 
 void set_pll_off(void *cmdq)
 {
+	unsigned int reg = 0;
+
 	DISPFUNCSTART();
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON3));
+	reg = reg | 0x00000000;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON3, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON3));
+	reg = reg & 0xffffffe1;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON3, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON5));
+	reg = reg | 0x000020a0;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON5, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->AP_PLL_CON5));
+	reg = reg & 0xfffcb4af;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->AP_PLL_CON5, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->PLLON_CON0));
+	reg = reg | 0x07ffffff;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->PLLON_CON0, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->PLLON_CON1));
+	reg = reg | 0x07fffe00;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->PLLON_CON1, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->PLLON_CON1));
+	reg = reg & 0xfffffe00;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->PLLON_CON1, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON0));
+	reg = reg | 0x00000000;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON0, reg);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON0));
+	reg = reg & 0xff7ffffe;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON0, reg);
+
+	udelay(1);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON3));
+	reg = reg | 0x00000003;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON3, reg);
+
+	udelay(1);
+
+	reg = mtk_spi_read((unsigned long)(&APMIXEDSYS->MAINPLL_CON3));
+	reg = reg & 0xfffffffe;
+	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON3, reg);
 }
 
 void ana_macro_on(void *cmdq)
@@ -1330,8 +1436,13 @@ void ana_macro_on(void *cmdq)
 	DSI_OUTREG32(cmdq, APMIXEDSYS->MAINPLL_CON0, 0xff800001);
 
 	DSI_OUTREG32(cmdq, TOPCKGEN->CLK_CFG_0_CLR, 0xffffffff);
-	//set clock source
-	reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0);
+	/* set clock source
+	 * bit 16-17 is display mm clk 1(270m)/2(405m)/3(540m)
+	 * dsc_on:vact * hact * vrefresh * (vtotal / vact) * bubble_ratio
+	 */
+//	reg = (3 << 24) | (1 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
+	reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //405M for 120Hz
+//	reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
 	DSI_OUTREG32(cmdq, TOPCKGEN->CLK_CFG_0_SET, reg);
 	//config update
 	reg = (1 << 4) | (1 << 3) | (1 << 1) | (1 << 0);
@@ -1464,6 +1575,137 @@ void set_subsys_off(void *cmdq)
 	DSI_OUTREG32(cmdq, DISPSYS_REG->MMSYS_HW_DCM_2ND_DIS0, 0);
 }
 
+void set_ana_mipi_dsi_off(void *cmdq)
+{
+	unsigned int timeout = 5000;
+
+	DISPFUNCSTART();
+
+	//Tx mac enter ulps sequence:
+	//Disable clock lane high speed mode
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_PHY_LCCON_REG,
+		TX_REG[0]->DSI_TX_PHY_LCCON, LC_HS_TX_EN, 0); //[0]: lc_hstx_en
+
+	//Disable all lane ultra-low power state mode
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_PHY_LD0CON_REG,
+		TX_REG[0]->DSI_TX_PHY_LD0CON, L0_ULPM_EN, 0); //[0]: lc_hstx_en
+
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_PHY_LCCON_REG,
+		TX_REG[0]->DSI_TX_PHY_LCCON, LC_ULPM_EN, 0); //[1]: lc_ulpm_en
+
+	//Enable SLEEPIN_ULPS_INT_EN
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_INTEN_REG,
+		TX_REG[0]->DSI_TX_INTEN, SLEEPIN_ULPS_INT_EN, 1); //[15]: sleepin_ulps_int_en
+
+
+	//Enalbe all lane ultra-low power state mode
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_PHY_LD0CON_REG,
+		TX_REG[0]->DSI_TX_PHY_LD0CON, LX_ULPM_AS_L0, 1); //[3]: lx_ulpm_as_l0
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_PHY_LD0CON_REG,
+		TX_REG[0]->DSI_TX_PHY_LD0CON, L0_ULPM_EN, 1); //[1]: l0_ulpm_en
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_PHY_LCCON_REG,
+		TX_REG[0]->DSI_TX_PHY_LCCON, LC_ULPM_EN, 1); //[1]: lc_ulpm_ens
+
+	//Wait sleep in irq and clear irq state
+	while ((mtk_spi_read((unsigned long)(&TX_REG[0]->DSI_TX_INTSTA)) & 0x8000) != 0x8000) {
+		udelay(1);
+		timeout--;
+
+		if (timeout == 0) {
+			DISPMSG("%s, wait timeout!\n", __func__);
+			break;
+		}
+	}
+	//disable SLEEPIN_ULPS_INT_EN
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_INTEN_REG,
+		TX_REG[0]->DSI_TX_INTEN, SLEEPIN_ULPS_INT_EN, 0); //[15]: sleepin_ulps_int_en
+
+	//mipi_dsi_tx_phy_sw_lp00_enable
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_PRE_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D2_SW_LPTX_PRE_OE, DSI_SW_LPTX_PRE_OE, 0); //[0]
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D2_SW_LPTX_OE, DSI_SW_LPTX_OE, 0); //[0]: dsi_d2_sw_lptx_oe
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DP_REG,
+		MIPI_TX_REG->MIPI_TX_D2_SW_LPTX_DP, DSI_SW_LPTX_DP, 0); //[0]: dsi_d2_sw_lptx_dp
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DN_REG,
+		MIPI_TX_REG->MIPI_TX_D2_SW_LPTX_DN, DSI_SW_LPTX_DN, 0); //[0]: dsi_d2_sw_lptx_dn
+
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_PRE_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D0_SW_LPTX_PRE_OE, DSI_SW_LPTX_PRE_OE, 0); //[0]
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D0_SW_LPTX_OE, DSI_SW_LPTX_OE, 0); //[0]: dsi_d0_sw_lptx_oe
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DP_REG,
+		MIPI_TX_REG->MIPI_TX_D0_SW_LPTX_DP, DSI_SW_LPTX_DP, 0); //[0]: dsi_d0_sw_lptx_dp
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DN_REG,
+		MIPI_TX_REG->MIPI_TX_D0_SW_LPTX_DN, DSI_SW_LPTX_DN, 0); //[0]: dsi_d0_sw_lptx_dn
+
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_PRE_OE_REG,
+		MIPI_TX_REG->MIPI_TX_CK_SW_LPTX_PRE_OE, DSI_SW_LPTX_PRE_OE, 0); //[0]
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_OE_REG,
+		MIPI_TX_REG->MIPI_TX_CK_SW_LPTX_OE, DSI_SW_LPTX_OE, 0); //[0]: dsi_ck_sw_lptx_oe
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DP_REG,
+		MIPI_TX_REG->MIPI_TX_CK_SW_LPTX_DP, DSI_SW_LPTX_DP, 0); //[0]: dsi_ck_sw_lptx_dp
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DN_REG,
+		MIPI_TX_REG->MIPI_TX_CK_SW_LPTX_DN, DSI_SW_LPTX_DN, 0); //[0]: dsi_ck_sw_lptx_dn
+
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_PRE_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D1_SW_LPTX_PRE_OE, DSI_SW_LPTX_PRE_OE, 0); //[0]
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D1_SW_LPTX_OE, DSI_SW_LPTX_OE, 0); //[0]: dsi_d1_sw_lptx_oe
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DP_REG,
+		MIPI_TX_REG->MIPI_TX_D1_SW_LPTX_DP, DSI_SW_LPTX_DP, 0); //[0]: dsi_d1_sw_lptx_dp
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DN_REG,
+		MIPI_TX_REG->MIPI_TX_D1_SW_LPTX_DN, DSI_SW_LPTX_DN, 0); //[0]: dsi_d1_sw_lptx_dn
+
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_PRE_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D3_SW_LPTX_PRE_OE, DSI_SW_LPTX_PRE_OE, 0); //[0]
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_OE_REG,
+		MIPI_TX_REG->MIPI_TX_D3_SW_LPTX_OE, DSI_SW_LPTX_OE, 0); //[0]: dsi_d3_sw_lptx_oe
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DP_REG,
+		MIPI_TX_REG->MIPI_TX_D3_SW_LPTX_DP, DSI_SW_LPTX_DP, 0); //[0]: dsi_d3_sw_lptx_dp
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_LPTX_DN_REG,
+		MIPI_TX_REG->MIPI_TX_D3_SW_LPTX_DN, DSI_SW_LPTX_DN, 0); //[0]: dsi_d3_sw_lptx_dn
+
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_CTL_EN_REG,
+		MIPI_TX_REG->MIPI_TX_D2_SW_CTL_EN, DSI_SW_CTL_EN, 1); //[0]: dsi_d2_sw_ctl_en
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_CTL_EN_REG,
+		MIPI_TX_REG->MIPI_TX_D0_SW_CTL_EN, DSI_SW_CTL_EN, 1); //[0]: dsi_d0_sw_ctl_en
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_CTL_EN_REG,
+		MIPI_TX_REG->MIPI_TX_CK_SW_CTL_EN, DSI_SW_CTL_EN, 1); //[0]: dsi_ck_sw_ctl_en
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_CTL_EN_REG,
+		MIPI_TX_REG->MIPI_TX_D1_SW_CTL_EN, DSI_SW_CTL_EN, 1); //[0]: dsi_d1_sw_ctl_en
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_SW_CTL_EN_REG,
+		MIPI_TX_REG->MIPI_TX_D3_SW_CTL_EN, DSI_SW_CTL_EN, 1); //[0]: dsi_d3_sw_ctl_en
+
+	//Clear lane_num when enter ulps
+	DSI_OUTREGBIT(cmdq, struct DSI_TX_TXRX_CON_REG,
+		TX_REG[0]->DSI_TX_TXRX_CON, LANE_NUM, 0);
+
+	//tx_phy_disalbe:
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_PLL_CON1_REG,
+		MIPI_TX_REG->MIPI_TX_PLL_CON1, RG_DSI_PLL_EN, 0);
+
+	//pll_sdm_iso_en = 1, pll_sdm_pwr_on = 0
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_PLL_PWR_REG,
+		MIPI_TX_REG->MIPI_TX_PLL_PWR, AD_DSI_PLL_SDM_ISO_EN, 1); //[1]
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_PLL_PWR_REG,
+		MIPI_TX_REG->MIPI_TX_PLL_PWR, AD_DSI_PLL_SDM_PWR_ON, 0); //[0]
+
+	// TIEL_SEL=1
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_LANE_CON_REG,
+		MIPI_TX_REG->MIPI_TX_LANE_CON, RG_DSI_PAD_TIEL_SEL, 1);
+
+	// BG_LPF_EN=0
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_LANE_CON_REG,
+		MIPI_TX_REG->MIPI_TX_LANE_CON, RG_DSI_BG_LPF_EN, 0);
+
+	// BG_CORE_EN=0
+	DSI_OUTREGBIT(cmdq, struct MIPI_TX_LANE_CON_REG,
+		MIPI_TX_REG->MIPI_TX_LANE_CON, RG_DSI_BG_CORE_EN, 0);
+
+	DISPFUNCEND();
+}
+
 int dsi_get_pcw(int data_rate, int pcw_ratio)
 {
 	int pcw, tmp, pcw_floor;
@@ -1503,15 +1745,7 @@ int bdg_mipi_tx_dphy_clk_setting(enum DISP_BDG_ENUM module,
 
 	DISPFUNCSTART();
 
-	if (dsi_params->data_rate != 0) {
-		data_Rate = dsi_params->data_rate;
-	} else if (dsi_params->PLL_CLOCK) {
-		data_Rate = dsi_params->PLL_CLOCK * 2;
-	} else {
-		DISPMSG("PLL clock should not be 0!!!\n");
-		ASSERT(0);
-		return -1;
-	}
+	data_Rate = tx_data_rate;
 
 	DISPINFO("%s, data_Rate=%d\n",	__func__, data_Rate);
 
@@ -1809,18 +2043,9 @@ int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
 
 	DISPFUNCSTART();
 
-	if (tx_params->data_rate != 0) {
-		ui = 1000 / tx_params->data_rate;
-		cycle_time = 8000 / tx_params->data_rate;
-		tx_data_rate = tx_params->data_rate;
-	} else if (tx_params->PLL_CLOCK) {
-		ui = 1000 / (tx_params->PLL_CLOCK * 2);
-		cycle_time = 8000 / (tx_params->PLL_CLOCK * 2);
-		tx_data_rate = tx_params->PLL_CLOCK * 2;
-	} else {
-		DISPMSG("PLL clock should not be 0!!!\n");
-		ASSERT(0);
-	}
+	ui = 1000 / tx_data_rate;
+	cycle_time = 8000 / tx_data_rate;
+
 	DISPINFO(
 		"%s, tx_data_rate=%d, cycle_time=%d, ui=%d\n",
 		__func__, tx_data_rate, cycle_time, ui);
@@ -2211,7 +2436,7 @@ int bdg_tx_vdo_timing_set(enum DISP_BDG_ENUM module,
 	if (hsa_byte < 0) {
 		DISPMSG("error!hsa = %d < 0!\n", hsa_byte);
 		hsa_byte = 0;
-		return -1;
+//		return -1;
 	}
 
 	if (hfp_byte > data_init_byte) {
@@ -2219,7 +2444,7 @@ int bdg_tx_vdo_timing_set(enum DISP_BDG_ENUM module,
 	} else {
 		hfp_byte = 4;
 		DISPMSG("hfp is too short!\n");
-		return -2;
+//		return -2;
 	}
 
 	DISPINFO(
@@ -2234,7 +2459,7 @@ int bdg_tx_vdo_timing_set(enum DISP_BDG_ENUM module,
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_VBP_NL,
 					(tx_params->vertical_backporch));
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_VFP_NL,
-					(tx_params->vertical_frontporch - 1));
+					(tx_params->vertical_frontporch));
 
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_HSA_WC, hsa_byte);
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_HBP_WC, hbp_byte);
@@ -2281,6 +2506,14 @@ int bdg_tx_buf_rw_set(enum DISP_BDG_ENUM module,
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_RW_TIMES, rw_times);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_BUF_CON0_REG,
 			TX_REG[i]->DSI_TX_BUF_CON0, ANTI_LATENCY_BUF_EN, 1);
+
+		if (tx_params->mode == CMD_MODE) {
+#ifdef _HIGH_FRM_
+			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0200);
+#else
+			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0300);
+#endif
+		}
 	}
 
 	return 0;
@@ -2343,10 +2576,17 @@ int bdg_tx_set_mode(enum DISP_BDG_ENUM module,
 {
 	int i = 0;
 
-	DISPFUNCSTART();
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+	DISPINFO("%s, mode=%d\n", __func__, mode);
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_MODE_CON_REG,
 				TX_REG[i]->DSI_TX_MODE_CON, MODE, mode);
+	}
+	if (mode == CMD_MODE)
+		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
+			DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 0);
+	else
+		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
+			DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 1);
 
 	return 0;
 }
@@ -2401,6 +2641,32 @@ int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq)
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_START_REG,
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 1);
+		if (bdg_tx_mode == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_TX_COM_CON_REG,
+					TX_REG[i]->DSI_TX_COM_CON, DSI_RESET, 1);
+			DSI_OUTREGBIT(cmdq, struct DSI_TX_COM_CON_REG,
+					TX_REG[i]->DSI_TX_COM_CON, DSI_RESET, 0);
+		}
+	}
+	return 0;
+}
+
+int bdg_set_dcs_read_cmd(bool enable, void *cmdq)
+{
+	DISPFUNCSTART();
+
+	if (enable) {
+		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 55);
+		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
+				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 1);
+		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
+				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 0);
+	} else {
+		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0);
+		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
+				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 0);
+		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
+				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 1);
 	}
 
 	return 0;
@@ -2434,6 +2700,28 @@ int bdg_tx_reset(enum DISP_BDG_ENUM module, void *cmdq)
 	return 0;
 }
 
+int bdg_vm_mode_set(enum DISP_BDG_ENUM module, bool enable,
+			unsigned int long_pkt, void *cmdq)
+{
+	int i;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (enable) {
+			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_VM_CMD_CON1, 0x10);
+			DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001110);
+			if (long_pkt > 1)
+				DSI_OUTREG32(cmdq, TX_REG[i]->DSI_VM_CMD_CON0, 0x37);
+			else
+				DSI_OUTREG32(cmdq, TX_REG[i]->DSI_VM_CMD_CON0, 0x35);
+
+		} else {
+			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_VM_CMD_CON0, 0);
+			DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001100);
+		}
+	}
+	return 0;
+}
+
 int bdg_tx_cmd_mode(enum DISP_BDG_ENUM module, void *cmdq)
 {
 	int i;
@@ -2444,9 +2732,7 @@ int bdg_tx_cmd_mode(enum DISP_BDG_ENUM module, void *cmdq)
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_MEM_CONTI, 0x3c);
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_CMDQ, 0x2c3909);
 		DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_CMDQ_CON, 1);
-
 	}
-	udelay(10);
 
 	return 0;
 }
@@ -2467,17 +2753,32 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module)
 {
 	unsigned int i, k;
 
-	DISPFUNC();
+	DISPFUNCSTART();
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		unsigned long dsc_base_addr = (unsigned long)DSC_REG;
 		unsigned long dsi_base_addr = (unsigned long)TX_REG[i];
-		unsigned long mipi_base_addr = (unsigned long)MIPI_TX_REG;
+//		unsigned long mipi_base_addr = (unsigned long)MIPI_TX_REG;
+
+		DISPMSG("========================== mt6382 RX REGS ==\n", i);
+
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d00c, mtk_spi_read(0x0000d00c));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d2d0, mtk_spi_read(0x0000d2d0));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d2b0, mtk_spi_read(0x0000d2b0));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d270, mtk_spi_read(0x0000d270));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d250, mtk_spi_read(0x0000d250));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d230, mtk_spi_read(0x0000d230));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d210, mtk_spi_read(0x0000d210));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d280, mtk_spi_read(0x0000d280));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d260, mtk_spi_read(0x0000d260));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d240, mtk_spi_read(0x0000d240));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d220, mtk_spi_read(0x0000d220));
+		DISPMSG("0x%08x: 0x%08x\n", 0x0000d200, mtk_spi_read(0x0000d200));
 
 		DISPMSG("========================== mt6382 DSI%d REGS ==\n", i);
 
 //		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
-		for (k = 0; k < 0x200; k += 16) {
+		for (k = 0; k < 0x210; k += 16) {
 			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
 				mtk_spi_read(dsi_base_addr + k),
 				mtk_spi_read(dsi_base_addr + k + 0x4),
@@ -2493,7 +2794,7 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module)
 				mtk_spi_read((dsi_base_addr + 0xd00 + k + 0x8)),
 				mtk_spi_read((dsi_base_addr + 0xd00 + k + 0xc)));
 		}
-
+/*
 		DISPMSG("========================== mt6382 MIPI%d REGS ==\n", i);
 //		for (k = 0; k < sizeof(struct BDG_MIPI_TX_REGS); k += 16) {
 		for (k = 0; k < 0x100; k += 16) {
@@ -2503,7 +2804,7 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module)
 				mtk_spi_read(mipi_base_addr + k + 0x8),
 				mtk_spi_read(mipi_base_addr + k + 0xc));
 		}
-
+*/
 		if (dsc_en) {
 			DISPMSG("========================== mt6382 DSC%d REGS ==\n", i);
 			for (k = 0; k < sizeof(struct BDG_DISP_DSC_REGS); k += 16) {
@@ -2525,6 +2826,8 @@ int bdg_tx_wait_for_idle(enum DISP_BDG_ENUM module)
 	int i;
 	unsigned int timeout = 5000; /* unit: usec */
 	unsigned int status;
+
+	DISPFUNCSTART();
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		while (timeout) {
@@ -2572,7 +2875,7 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 	if (dsc_en) {
 //		ps_wc = width;
 		ps_wc = width * 24 / 8 / 3;	/* for 8bpp, 1/3 compression */
-		rxtx_ratio = 225;	/* ratio=2.25 */
+		rxtx_ratio = RXTX_RATIO;	/* ratio=2.25 */
 	} else {
 		ps_wc = width * 24 / 8;	/* for 8bpp, 1/3 compression */
 		rxtx_ratio = 100;
@@ -2693,9 +2996,11 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 
 	ap_tx_hfp_wc = ap_tx_total_word_cnt - ap_tx_total_word_cnt_no_hfp_wc;
 
-	DISPMSG("%s, ap_tx_hsa_wc=%d, ap_tx_hbp_wc=%d, ap_tx_bllp_wc=%d, ap_tx_data_phy_cycle=%d\n",
+	DISPMSG(
+		"%s, ap_tx_hsa_wc=%d, ap_tx_hbp_wc=%d, ap_tx_bllp_wc=%d, ap_tx_data_phy_cycle=%d\n",
 		__func__, ap_tx_hsa_wc, ap_tx_hbp_wc, ap_tx_bllp_wc, ap_tx_data_phy_cycle);
-	DISPMSG("%s, ap_tx_hfp_wc=%d, ap_tx_total_word_cnt=%d, ap_tx_total_word_cnt_no_hfp_wc=%d\n",
+	DISPMSG(
+		"%s, ap_tx_hfp_wc=%d, ap_tx_total_word_cnt=%d, ap_tx_total_word_cnt_no_hfp_wc=%d\n",
 		__func__, ap_tx_hfp_wc, ap_tx_total_word_cnt, ap_tx_total_word_cnt_no_hfp_wc);
 
 #endif
@@ -4226,12 +4531,16 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 	DISPFUNCSTART();
 
 	tx_params = &(config->dispif_config.dsi);
-	tx_params->data_rate = tx_data_rate > 0 ?
-				tx_data_rate : tx_params->data_rate;
 	dsc_en = tx_params->bdg_dsc_enable;
 	bdg_tx_mode = tx_params->mode;
+	if (tx_params->PLL_CLOCK) {
+		tx_data_rate = tx_params->PLL_CLOCK * 2;
+	} else {
+		DISPMSG("PLL clock should not be 0!!!\n");
+		return -1;
+	}
 
-	DISPMSG("%s, tx_data_rate=%d, bdg_ssc_disable=%d, ssc_disable=%d, dsc_enable=%d, mode=%d\n",
+	DISPMSG("%s, data_rate=%d, bdg_ssc_disable=%d, ssc_disable=%d, dsc_enable=%d, mode=%d\n",
 		__func__, tx_data_rate, tx_params->bdg_ssc_disable,
 		tx_params->ssc_disable, dsc_en, bdg_tx_mode);
 
@@ -4262,7 +4571,7 @@ int bdg_tx_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 
 	DISPFUNCSTART();
 
-
+#if 0
 	/* step 0: PLL DISABLE */
 //	MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1,
 //			 FLD_RG_DSI_PLL_EN, 0);
@@ -4310,7 +4619,7 @@ int bdg_tx_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 //	MIPITX_OUTREG32(DSI_PHY_REG[i] + MIPITX_LANE_CON,
 //		0x3FFF0100);
 	DSI_OUTREG32(cmdq, MIPI_TX_REG->MIPI_TX_LANE_CON, 0x3FFF0100);
-
+#endif
 	bdg_tx_enable_hs_clk(module, cmdq, FALSE);
 	bdg_tx_set_mode(module, cmdq, CMD_MODE);
 	bdg_tx_reset(module, cmdq);
@@ -4446,15 +4755,16 @@ void calculate_datarate_cfgs_rx(unsigned int data_rate)
 	else
 		cdr_coarse_trgt_reg = timebase * 900000 * 2 / 32 / 1000000 - 1;
 
-	en_dly_deass_thresh_reg = 1000000 * 7 * 6 / hs_clk_freq / 2 / T_DCO
-				+ des_div_en_dly_deass_th;
+	en_dly_deass_thresh_reg = 1000000 * 7 * 6 / hs_clk_freq / 2 / T_DCO +
+		des_div_en_dly_deass_th;
 
 	post_rcvd_rst_val = 2 * T_DCO * hs_clk_freq * 2 / 7 / 1000000 - 1;
 	post_rcvd_rst_reg = (post_rcvd_rst_val > 0) ? post_rcvd_rst_val : 1;
 
 	post_det_dly_thresh_val = ((189 * 1000000 / hs_clk_freq / 2) -
 				(9 * 7 * 1000000 / hs_clk_freq / 2)) / T_DCO - 7;
-	post_det_dly_thresh_reg = (post_det_dly_thresh_val > 0) ? post_det_dly_thresh_val : 1;
+	post_det_dly_thresh_reg = (post_det_dly_thresh_val > 0) ?
+		post_det_dly_thresh_val : 1;
 
 	DISPMSG("cdr_coarse_trgt_reg=%d, post_rcvd_rst_val=%d, fjump_deskew_reg=%d\n",
 		cdr_coarse_trgt_reg, post_rcvd_rst_val, post_rcvd_rst_reg);
@@ -4521,13 +4831,16 @@ void startup_seq_common(void *cmdq)
 		PPI_CALIBCTRL_RW_COMMON_BG_0_BG_MAX_COUNTER_MASK, 500);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_TERMCAL_CFG_0 * 4,
-		PPI_RW_TERMCAL_CFG_0_TERMCAL_TIMER_MASK, 25); // cfg_clk = 26 MHz
+		PPI_RW_TERMCAL_CFG_0_TERMCAL_TIMER_MASK,
+		25); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_OFFSETCAL_CFG_0 * 4,
-		PPI_RW_OFFSETCAL_CFG_0_OFFSETCAL_WAIT_THRESH_MASK, 5); // cfg_clk = 26 MHz
+		PPI_RW_OFFSETCAL_CFG_0_OFFSETCAL_WAIT_THRESH_MASK,
+		5); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_LPDCOCAL_TIMEBASE * 4,
-		PPI_RW_LPDCOCAL_TIMEBASE_LPCDCOCAL_TIMEBASE_MASK, 103); // cfg_clk = 26 MHz
+		PPI_RW_LPDCOCAL_TIMEBASE_LPCDCOCAL_TIMEBASE_MASK,
+		103); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_LPDCOCAL_NREF * 4,
 		PPI_RW_LPDCOCAL_NREF_LPDCOCAL_NREF_MASK, 800);
@@ -4539,10 +4852,12 @@ void startup_seq_common(void *cmdq)
 		PPI_RW_LPDCOCAL_TWAIT_CONFIG_LPDCOCAL_TWAIT_PON_MASK, 127);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_LPDCOCAL_TWAIT_CONFIG * 4,
-		PPI_RW_LPDCOCAL_TWAIT_CONFIG_LPDCOCAL_TWAIT_COARSE_MASK, 32); // cfg_clk = 26 MHz
+		PPI_RW_LPDCOCAL_TWAIT_CONFIG_LPDCOCAL_TWAIT_COARSE_MASK,
+		32); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_LPDCOCAL_VT_CONFIG * 4,
-		PPI_RW_LPDCOCAL_VT_CONFIG_LPDCOCAL_TWAIT_FINE_MASK, 32); // cfg_clk = 26 MHz
+		PPI_RW_LPDCOCAL_VT_CONFIG_LPDCOCAL_TWAIT_FINE_MASK,
+		32); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_LPDCOCAL_VT_CONFIG * 4,
 		PPI_RW_LPDCOCAL_VT_CONFIG_LPCDCOCAL_VT_NREF_RANGE_MASK, 15);
@@ -4556,8 +4871,10 @@ void startup_seq_common(void *cmdq)
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_LPDCOCAL_COARSE_CFG * 4,
 		PPI_RW_LPDCOCAL_COARSE_CFG_NCOARSE_START_MASK, 1);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6 * 4,
-		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_HSTXLB_DCO_PON_OVR_EN_MASK, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_HSTXLB_DCO_PON_OVR_EN_MASK,
+		1);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_COMMON_CFG * 4,
 		PPI_RW_COMMON_CFG_CFG_CLK_DIV_FACTOR_MASK, 3);
@@ -4566,7 +4883,7 @@ void startup_seq_common(void *cmdq)
 
 int check_stopstate(void *cmdq)
 {
-	unsigned int timeout = 500;
+	unsigned int timeout = 5000;
 	unsigned int stop_state = 0, count = 0;
 
 	DISPFUNCSTART();
@@ -4590,13 +4907,46 @@ int check_stopstate(void *cmdq)
 		return -1;
 	}
 	mipi_rx_unset_forcerxmode(cmdq);
+
+/* Disable extra design */
+	mtk_spi_write(0x00047080, 0x0);
+	mtk_spi_write(0x00047084, 0x102);
+
 	mt6382_init = 1;
 
 	DISPFUNCEND();
 	return 0;
 }
 
+int polling_status(void)
+{
+	unsigned int timeout = 5000;
+	unsigned int status = 0;
+
+	DISPFUNCSTART();
+	while (timeout) {
+		status = mtk_spi_read((unsigned long)(&TX_REG[0]->DSI_TX_STATE_DBG7));
+
+		DISPMSG("%s, status=0x%x, timeout=%d\n", __func__, status, timeout);
+
+		if ((status & 0x800) == 0x800)
+			break;
+
+		udelay(1);
+		timeout--;
+	}
+
+	if (timeout == 0) {
+		DISPMSG("%s, wait timeout!\n", __func__);
+		bdg_dsi_dump_reg(DISP_BDG_DSI0);
+		return -1;
+	}
+
+	DISPFUNCEND();
+	return 0;
+}
 #define _n36672c_
+
 int bdg_dsc_init(enum DISP_BDG_ENUM module,
 			void *cmdq, struct LCM_DSI_PARAMS *tx_params)
 {
@@ -4658,38 +5008,38 @@ int bdg_dsc_init(enum DISP_BDG_ENUM module,
  *Compression rate = 1/3
  */
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_W, 0x01670438);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_H, 0x086F086F);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_W, 0x01670438);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_H, 0x006B0013);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CHUNK_SIZE, 0x00000438);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_BUF_SIZE, 0x00005460);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_MODE, 0x00000100);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CFG, 0x0000D022);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_H, 0x09230923);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_W, 0x00b3021c);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_H, 0x00740013);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CHUNK_SIZE, 0x0000021c);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_BUF_SIZE, 0x00002a30);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_MODE, 0x00000201);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CFG, 0x0000d022);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PAD, 0x00000000);
 
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_OBUF, 0x00000000);
 
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[0], 0x000C8089);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[1], 0x031C0200);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[2], 0x028C0020);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[3], 0x000C000F);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[4], 0x028B050E);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[5], 0x10F01800);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[6], 0x20000C03);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[7], 0x330B0B06);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[8], 0x382A1C0E);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[0], 0x000c8089);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[1], 0x020e0200);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[2], 0x01e80020);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[3], 0x000c0007);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[4], 0x0516050e);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[5], 0x10f01800);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[6], 0x20000c03);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[7], 0x330b0b06);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[8], 0x382a1c0e);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[9], 0x69625446);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[10], 0x7B797770);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[11], 0x00007E7D);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[12], 0x01040900);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[13], 0xF9450125);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[14], 0xE967F167);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[15], 0xE187E167);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[16], 0xD9C7E1A7);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[17], 0xD1E9D9C9);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[18], 0xD20DD1E9);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[19], 0x0000D230);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SHADOW, 0x00000040);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[10], 0x7b797770);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[11], 0x00007e7d);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[12], 0x00800880);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[13], 0xf8c100a1);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[14], 0xe8e3f0e3);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[15], 0xe103e0e3);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[16], 0xd943e123);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[17], 0xd185d965);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[18], 0xd1a7d1a5);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[19], 0x0000d1ed);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SHADOW, 0x00000020);
 #endif
 	DISPFUNCEND();
 	return 0;
@@ -4745,43 +5095,53 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 
 	//Interrupt Registers
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_PHY_FATAL_OS, 0);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_PHY_FATAL_OS, 0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_PHY_FATAL_OS,
+		0xffffffff);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_PHY_FATAL_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_PHY_OS, 0);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_PHY_OS, 0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_PHY_OS,
+		0xffffffff);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_PHY_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_DSI_FATAL_OS, 0);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DSI_FATAL_OS, 0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DSI_FATAL_OS,
+		0xffffffff);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_DSI_FATAL_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_DSI_OS, 0);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DSI_OS, 0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DSI_OS,
+		0xffffffff);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_DSI_OS, 0);
 
 //	if (out_type) {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_DDI_FATAL_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DDI_FATAL_OS, 0xffffffff);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_DDI_FATAL_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_DDI_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DDI_OS, 0xffffffff);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_DDI_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_DDI_FATAL_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DDI_FATAL_OS,
+		0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_DDI_FATAL_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_DDI_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_DDI_OS,
+		0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_DDI_OS, 0);
 //	}
 	//video mode/ipi
 //	if (!out_type) {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_IPI_FATAL_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_IPI_FATAL_OS, 0xffffffff);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_IPI_FATAL_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_IPI_FATAL_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_IPI_FATAL_OS,
+		0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_IPI_FATAL_OS, 0);
 //	}
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_FIFO_FATAL_OS, 0);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_FIFO_FATAL_OS, 0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_FIFO_FATAL_OS,
+		0xffffffff);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_FIFO_FATAL_OS, 0);
 
 //	if (out_type) {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_ERR_RPT_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_ERR_RPT_OS, 0xffffffff);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_ERR_RPT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_ERR_RPT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_ERR_RPT_OS,
+		0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_ERR_RPT_OS, 0);
 //	}
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_RX_TRIGGERS_OS, 0);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_RX_TRIGGERS_OS, 0xffffffff);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_MASK_N_RX_TRIGGERS_OS,
+		0xffffffff);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_RX_TRIGGERS_OS, 0);
 
 //	if (out_type) {
@@ -4811,7 +5171,8 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 			temp = 8000;
 			t_ppi_clk  = temp / ap_tx_data_rate;
 		//t_hact_ppi = ((6 + frame_width * 3) / (n_lanes + 1)) * t_ppi_clk;
-			t_hact_ppi = ((6 + frame_width * 3) * temp / ap_tx_data_rate / (lanes + 1));
+			t_hact_ppi = ((6 + frame_width * 3) * temp / ap_tx_data_rate /
+				(lanes + 1));
 		}
 
 		if (t_hact_ppi > t_hact_ipi)
@@ -4819,10 +5180,11 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 //ipi_tx_delay_qst = ((t_hact_ppi - t_hact_ipi) * MM_CLK / 1000 + 20 *
 //(temp * MM_CLK / tx_data_rate / 1000) + 4);
 			ipi_tx_delay_qst = ((t_hact_ppi - t_hact_ipi) * MM_CLK +
-					0 * temp * MM_CLK / ap_tx_data_rate) / 1000 + 4;
+					20 * temp * MM_CLK / ap_tx_data_rate) / 1000 + 4;
 		else
 		//ipi_tx_delay_qst =  (20 * (temp * MM_CLK / tx_data_rate / 1000) + 4);
-			ipi_tx_delay_qst =  20 * temp * MM_CLK / ap_tx_data_rate / 1000 + 4;
+			ipi_tx_delay_qst =  20 * temp * MM_CLK /
+				ap_tx_data_rate / 1000 + 4;
 
 		DISPINFO("ap_tx_data_rate=%d, temp=%d, t_ppi_clk=%d, t_ipi_clk=%d\n",
 			ap_tx_data_rate, temp, t_ppi_clk, t_ipi_clk);
@@ -4886,18 +5248,21 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 				CORE_DIG_RW_COMMON_7_LANE4_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
 				0);
 
-	if (data_rate >= 1500)
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_STARTUP_RW_COMMON_DPHY_7 * 4,
-					PPI_STARTUP_RW_COMMON_DPHY_7_DPHY_DDL_CAL_addr_MASK,
-					40);
+	if (data_rate > RX_V12)
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		PPI_STARTUP_RW_COMMON_DPHY_7 * 4,
+		PPI_STARTUP_RW_COMMON_DPHY_7_DPHY_DDL_CAL_addr_MASK,
+		40);
 	else
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_STARTUP_RW_COMMON_DPHY_7 * 4,
-					PPI_STARTUP_RW_COMMON_DPHY_7_DPHY_DDL_CAL_addr_MASK,
-					104);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		PPI_STARTUP_RW_COMMON_DPHY_7 * 4,
+		PPI_STARTUP_RW_COMMON_DPHY_7_DPHY_DDL_CAL_addr_MASK,
+		104);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_STARTUP_RW_COMMON_DPHY_8 * 4,
-				PPI_STARTUP_RW_COMMON_DPHY_8_CPHY_DDL_CAL_addr_MASK,
-				80);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		PPI_STARTUP_RW_COMMON_DPHY_8 * 4,
+		PPI_STARTUP_RW_COMMON_DPHY_8_CPHY_DDL_CAL_addr_MASK,
+		80);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_0 * 4,
 				PPI_RW_DDLCAL_CFG_0_DDLCAL_TIMEBASE_TARGET_MASK,
@@ -4961,65 +5326,81 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 					coarse_bank);
 	}
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_8 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_8_OA_LANE0_HSRX_CDPHY_SEL_FAST_MASK,
-			sel_fast);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_8 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_8_OA_LANE0_HSRX_CDPHY_SEL_FAST_MASK,
+		sel_fast);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_8 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_8_OA_LANE1_HSRX_CDPHY_SEL_FAST_MASK,
-			sel_fast);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_8 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_8_OA_LANE1_HSRX_CDPHY_SEL_FAST_MASK,
+		sel_fast);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_8 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_8_OA_LANE2_HSRX_CDPHY_SEL_FAST_MASK,
-			sel_fast);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_8 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_8_OA_LANE2_HSRX_CDPHY_SEL_FAST_MASK,
+		sel_fast);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_8 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_8_OA_LANE3_HSRX_CDPHY_SEL_FAST_MASK,
-			sel_fast);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_8 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_8_OA_LANE3_HSRX_CDPHY_SEL_FAST_MASK,
+		sel_fast);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_8 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_8_OA_LANE4_HSRX_CDPHY_SEL_FAST_MASK,
-				sel_fast);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_8 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_8_OA_LANE4_HSRX_CDPHY_SEL_FAST_MASK,
+		sel_fast);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_LP_0 * 4,
-				CORE_DIG_DLANE_0_RW_LP_0_LP_0_TTAGO_REG_MASK, 6);
+		CORE_DIG_DLANE_0_RW_LP_0_LP_0_TTAGO_REG_MASK,
+		6);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_LP_0 * 4,
-				CORE_DIG_DLANE_1_RW_LP_0_LP_0_TTAGO_REG_MASK, 6);
+		CORE_DIG_DLANE_1_RW_LP_0_LP_0_TTAGO_REG_MASK,
+		6);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_LP_0 * 4,
-				CORE_DIG_DLANE_2_RW_LP_0_LP_0_TTAGO_REG_MASK, 6);
+		CORE_DIG_DLANE_2_RW_LP_0_LP_0_TTAGO_REG_MASK,
+		6);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_LP_0 * 4,
-				CORE_DIG_DLANE_3_RW_LP_0_LP_0_TTAGO_REG_MASK, 6);
+		CORE_DIG_DLANE_3_RW_LP_0_LP_0_TTAGO_REG_MASK,
+		6);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_2 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_2_OA_LANE0_SEL_LANE_CFG_MASK,
-			0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_2 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_2_OA_LANE0_SEL_LANE_CFG_MASK,
+		0);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_2 * 4,
-				CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_2_OA_LANE1_SEL_LANE_CFG_MASK,
-				0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_2 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_2_OA_LANE1_SEL_LANE_CFG_MASK,
+		0);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_2 * 4,
-				CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_2_OA_LANE2_SEL_LANE_CFG_MASK,
-				1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_2 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_2_OA_LANE2_SEL_LANE_CFG_MASK,
+		1);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_2 * 4,
-				CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_2_OA_LANE3_SEL_LANE_CFG_MASK,
-				0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_2 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_2_OA_LANE3_SEL_LANE_CFG_MASK,
+		0);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_2 * 4,
-				CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_2_OA_LANE4_SEL_LANE_CFG_MASK,
-				0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_2 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_2_OA_LANE4_SEL_LANE_CFG_MASK,
+		0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_6 * 4,
-				CORE_DIG_RW_COMMON_6_DESERIALIZER_EN_DEASS_COUNT_THRESH_D_MASK, 1);
+		CORE_DIG_RW_COMMON_6_DESERIALIZER_EN_DEASS_COUNT_THRESH_D_MASK,
+		1);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_6 * 4,
-				CORE_DIG_RW_COMMON_6_DESERIALIZER_DIV_EN_DELAY_THRESH_D_MASK, 1);
+		CORE_DIG_RW_COMMON_6_DESERIALIZER_DIV_EN_DELAY_THRESH_D_MASK,
+		1);
 
-	if (data_rate > 1500) {
+	if (data_rate > RX_V12) {
 		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
 		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_12 * 4,
 		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_12_OA_L0_HSRX_DPHY_DDL_BYPASS_EN_OVR_VAL_MASK,
@@ -5121,577 +5502,831 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 		1);
 	}
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_9 * 4,
-			CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_9_OA_LANE2_HSRX_HS_CLK_DIV_MASK,
-			hsrx_clk_div);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_9 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_9_OA_LANE2_HSRX_HS_CLK_DIV_MASK,
+		hsrx_clk_div);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_CLK_RW_HS_RX_0 * 4,
-			CORE_DIG_DLANE_CLK_RW_HS_RX_0_HS_RX_0_TCLKSETTLE_REG_MASK,
-			28);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_CLK_RW_HS_RX_0 * 4,
+		CORE_DIG_DLANE_CLK_RW_HS_RX_0_HS_RX_0_TCLKSETTLE_REG_MASK,
+		28);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_CLK_RW_HS_RX_7 * 4,
-				CORE_DIG_DLANE_CLK_RW_HS_RX_7_HS_RX_7_TCLKMISS_REG_MASK,
-				6);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_CLK_RW_HS_RX_7 * 4,
+		CORE_DIG_DLANE_CLK_RW_HS_RX_7_HS_RX_7_TCLKMISS_REG_MASK,
+		6);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_0 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
-				hs_thssettle);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_0 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
+		hs_thssettle);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_0 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
-				hs_thssettle);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_0 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
+		hs_thssettle);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_0 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
-				hs_thssettle);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_0 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
+		hs_thssettle);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_0 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
-				hs_thssettle);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_0 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_0_HS_RX_0_THSSETTLE_REG_MASK,
+		hs_thssettle);
 
-	if (data_rate > 1500) {
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				1);
+	if (data_rate > RX_V12) {
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_0_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_1_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_2_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_3_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_0_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_1_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK, 0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_2_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_3_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			0);
 	} else {
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_0_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_1_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK, 0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_2_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_3_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_DESKEW_SUPPORTED_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_0_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_0_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_1_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_1_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_2_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_2_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_CFG_1 * 4,
-				CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_3_RW_CFG_1 * 4,
+			CORE_DIG_DLANE_3_RW_CFG_1_CFG_1_SOT_DETECTION_REG_MASK,
+			1);
 	}
 
 	if (data_rate > 2500) {
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			0);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				0);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			0);
 	} else {
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			1);
 
-		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
-				1);
+		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+			CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
+			CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_IGNORE_ALTERNCAL_REG_MASK,
+			1);
 	}
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
-			CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
-			1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_1 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
+		16);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_1 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
+		16);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_1 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
+		16);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_1 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
+		16);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
+		3);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
+		3);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
+		3);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
+		3);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
+		CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
+		3);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_4 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
+		150);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_4 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
+		150);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_4 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
+		150);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_4 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
+		150);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK,
+		0);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK,
+		0);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK,
+		0);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK,
+		0);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_5 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK,
+		2);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK,
+		2);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK,
+		2);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK,
+		2);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_7 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_7 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_7 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_7 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
+		1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
+		fjump_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
+		fjump_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
+		fjump_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_3 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
+		fjump_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_0_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_0_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
+		eye_open_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_1_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_1_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
+		eye_open_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_2_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_2_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
+		eye_open_deskew_reg);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_DLANE_3_RW_HS_RX_6 * 4,
+		CORE_DIG_DLANE_3_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
+		eye_open_deskew_reg);
+
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0404);
+
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x040C);
+
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0414);
+
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x041C);
+
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0423);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
-			CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
-			1);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0429);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
-			CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
-			1);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0430);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
-			CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
-			1);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x043A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
-			CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_UPDATE_SETTINGS_DESKEW_REG_MASK,
-			1);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0445);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_1 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
-				16);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x044A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_1 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
-				16);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0450);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_1 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
-				16);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x045A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_1 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_1_HS_RX_1_FILTER_SIZE_DESKEW_REG_MASK,
-				16);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0465);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
-				3);
+	mtk_spi_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0469);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
-				3);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0472);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
-				3);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x047A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
-				3);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0485);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_CLK_RW_HS_RX_2 * 4,
-				CORE_DIG_DLANE_CLK_RW_HS_RX_2_HS_RX_2_WINDOW_SIZE_DESKEW_REG_MASK,
-				3);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0489);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK,
-				1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0490);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x049A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04A4);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_3_HS_RX_3_STEP_SIZE_DESKEW_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04AC);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_4 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
-				150);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04B4);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_4 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
-				150);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04BC);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_4 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
-				150);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04C4);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_4 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_4_HS_RX_4_MAX_ITERATIONS_DESKEW_REG_MASK,
-				150);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04CC);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK, 0);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04D4);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK, 0);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04DC);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK, 0);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04E4);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_5_HS_RX_5_DDL_LEFT_INIT_REG_MASK, 0);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04EC);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04F4);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x04FC);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0504);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_5 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_5_HS_RX_5_DDL_MID_INIT_REG_MASK, 1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x050C);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_6 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK, 2);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0514);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_6 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK, 2);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x051C);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_6 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK, 2);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0523);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_6 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_6_HS_RX_6_DDL_RIGHT_INIT_REG_MASK, 2);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0529);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_7 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
-				1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0530);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_7 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
-				1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x053A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_7 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
-				1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0545);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_7 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_7_HS_RX_7_DESKEW_AUTO_ALGO_SEL_REG_MASK,
-				1);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x054A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_0_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
-				fjump_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0550);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_1_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
-				fjump_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x055A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_2_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
-				fjump_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0565);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_3 * 4,
-				CORE_DIG_DLANE_3_RW_HS_RX_3_HS_RX_3_FJUMP_DESKEW_REG_MASK,
-				fjump_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0569);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_0_RW_HS_RX_6 * 4,
-			CORE_DIG_DLANE_0_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
-			eye_open_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0572);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_1_RW_HS_RX_6 * 4,
-			CORE_DIG_DLANE_1_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
-			eye_open_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x057A);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_2_RW_HS_RX_6 * 4,
-			CORE_DIG_DLANE_2_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
-			eye_open_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0585);
 
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_DLANE_3_RW_HS_RX_6 * 4,
-			CORE_DIG_DLANE_3_RW_HS_RX_6_HS_RX_6_MIN_EYE_OPENING_DESKEW_REG_MASK,
-			eye_open_deskew_reg);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0589);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0404);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0590);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x040C);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x059A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0414);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05A4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x041C);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05AC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0423);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05B4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0429);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05BC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0430);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05C4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x043A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05CC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0445);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05D4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x044A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05DC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0450);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05E4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x045A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05EC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0465);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05F4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0469);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x05FC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0472);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0604);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x047A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x060C);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0485);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0614);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0489);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x061C);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0490);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0623);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x049A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0629);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04A4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0632);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04AC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x063A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04B4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0645);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04BC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x064A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04C4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0650);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04CC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x065A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04D4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0665);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04DC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0669);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04E4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0672);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04EC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x067A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04F4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0685);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x04FC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0689);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0504);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0690);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x050C);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x069A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0514);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06A4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x051C);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06AC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0523);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06B4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0529);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06BC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0530);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06C4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x053A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06CC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0545);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06D4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x054A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06DC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0550);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06E4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x055A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06EC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0565);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06F4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0569);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x06FC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0572);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0704);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x057A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x070C);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0585);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0714);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0589);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x071C);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0590);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0723);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x059A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x072A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05A4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0730);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05AC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x073A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05B4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0745);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05BC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x074A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05C4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0750);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05CC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x075A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05D4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0765);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05DC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0769);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05E4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0772);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05EC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x077A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05F4);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0785);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x05FC);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0789);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0604);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x0790);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x060C);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x079A);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0614);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07A4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x061C);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07AC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0623);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07B4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0629);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07BC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0632);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07C4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x063A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07CC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0645);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07D4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x064A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07DC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0650);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07E4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x065A);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07EC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0665);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07F4);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0669);
+	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4,
+		0x07FC);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0672);
+#ifdef _Disable_HS_DCO_
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_HSTXLB_DCO_EN_OVR_EN_MASK,
+		1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_HSTXLB_DCO_PON_OVR_EN_MASK,
+		1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_LP_DCO_EN_OVR_VAL_MASK,
+		0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6 * 4,
+		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_LP_DCO_PON_OVR_VAL_MASK,
+		0);
+#endif
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x067A);
+#ifdef _Disable_LP_TX_L123_
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x40, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1428 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1428 * 4,	0x40, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1628 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1628 * 4,	0x40, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x40, 1);
 
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0685);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0689);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0690);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x069A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06A4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06AC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06B4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06BC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06C4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06CC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06D4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06DC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06E4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06EC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06F4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x06FC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0704);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x070C);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0714);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x071C);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0723);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x072A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0730);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x073A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0745);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x074A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0750);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x075A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0765);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0769);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0772);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x077A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0785);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0789);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x0790);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x079A);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07A4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07AC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07B4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07BC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07C4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07CC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07D4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07DC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07E4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07EC);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07F4);
-
-	mtk_spi_write(MIPI_RX_PHY_BASE + CORE_DIG_COMMON_RW_DESKEW_FINE_MEM * 4, 0x07FC);
-/* force delay en */
-#if 0
-	mtk_spi_write(0x000440B0, 0x00000A00);
-	mtk_spi_write(0x000448B0, 0x00000A00);
-	mtk_spi_write(0x000450B0, 0x00000A00);
-	mtk_spi_write(0x000458B0, 0x00000A00);
-	mtk_spi_write(0x000460B0, 0x00000A00);
-
-	mtk_spi_write(0x000440B4, 0x00000100);
-	mtk_spi_write(0x000448B4, 0x00000100);
-	mtk_spi_write(0x000450B4, 0x00000000);
-	mtk_spi_write(0x000458B4, 0x00000100);
-	mtk_spi_write(0x000460B4, 0x00000100);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1227 * 4, 0xf, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1427 * 4, 0xf, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1627 * 4, 0xf, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1827 * 4, 0xf, 0);
 #endif
 	DISPFUNCEND();
 }
@@ -5700,12 +6335,12 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 void output_debug_signal(void)
 {
 	//Mutex thread 0 remove mod_sof[1]
-//	mtk_spi_write(0x00025030, 0x0000001D);
+	mtk_spi_write(0x00025030, 0x0000001D);
 
 	//Mutex thread 1 use IPI_VSYNC falling and mod_sof[1]
-//	mtk_spi_write(0x00025050, 0x00000002);
-//	mtk_spi_write(0x0002504C, 0x0000004a);
-//	mtk_spi_write(0x00025040, 0x00000001);
+	mtk_spi_write(0x00025050, 0x00000002);
+	mtk_spi_write(0x0002504C, 0x0000004a);
+	mtk_spi_write(0x00025040, 0x00000001);
 
 	//DSI DBG Setting
 	mtk_spi_write(0x00021170, 0x00001001);
@@ -5747,11 +6382,16 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
 
 	clk_buf_disp_ctrl(true);
+	bdg_tx_pull_6382_reset_pin();
+	spislv_init();
+	spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
+
 	set_LDO_on(cmdq);
 	set_mtcmos_on(cmdq);
 	ana_macro_on(cmdq);
 	set_subsys_on(cmdq);
 
+	spislv_switch_speed_hz(SPI_TX_MAX_SPEED_HZ, SPI_RX_MAX_SPEED_HZ);
 	// Disable reset sequential de-glitch circuit
 	DSI_OUTREG32(cmdq, SYS_REG->RST_DG_CTRL, 0);
 	// Set GPIO to active IRQ
@@ -5765,7 +6405,8 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, SYS_REG->DISP_MISC0, 1);
 	DSI_OUTREG32(cmdq, SYS_REG->DISP_MISC0, 0);
 	// switch DDI(cmd mode) or IPI(vdo mode) path
-	if (tx_params->mode == 0) {
+	DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001100);
+	if (tx_params->mode == CMD_MODE) {
 		DSI_OUTREGBIT(cmdq, struct GPIO_MODE1_REG, GPIO->GPIO_MODE1, RSV_24, 0x31);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
 				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 0);
@@ -5789,7 +6430,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	// MUTEX setting
 	DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX_INTEN, 0x1 << 16);
 	DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_MOD0, 0x1f);
-	if (tx_params->mode == 0)
+	if (tx_params->mode == CMD_MODE)
 		DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_CTL, 0);
 	else {
 		DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_CTL,
@@ -5835,6 +6476,32 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 
 //	output_debug_signal();
 
+	// request eint irq
+	bdg_request_eint_irq();
+
+	DISPFUNCEND();
+
+	return ret;
+}
+
+int bdg_common_deinit(enum DISP_BDG_ENUM module, void *cmdq)
+{
+	int ret = 0;
+
+	DISPFUNCSTART();
+
+	if (mt6382_init) {
+		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
+		clk_buf_disp_ctrl(true);
+		set_ana_mipi_dsi_off(cmdq);
+		ana_macro_off(cmdq);
+		set_mtcmos_off(cmdq);
+		set_LDO_off(cmdq);
+		clk_buf_disp_ctrl(false);
+		mt6382_init = 0;
+	} else
+		DISPMSG("%s, 6382 not init\n", __func__);
+
 	DISPFUNCEND();
 
 	return ret;
@@ -5864,6 +6531,9 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	GPIO = (struct BDG_GPIO_REGS *)DISPSYS_BDG_GPIO_BASE;
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
 
+	bdg_tx_pull_6382_reset_pin();
+
+	clk_buf_disp_ctrl(true);
 	set_LDO_on(cmdq);
 	set_mtcmos_on(cmdq);
 	ana_macro_on(cmdq);
@@ -5882,10 +6552,12 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, SYS_REG->DISP_MISC0, 1);
 	DSI_OUTREG32(cmdq, SYS_REG->DISP_MISC0, 0);
 	// switch DDI(cmd mode) or IPI(vdo mode) path
-	if (tx_params->mode == 0)
+	DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001100);
+	if (tx_params->mode == CMD_MODE) {
+		DSI_OUTREGBIT(cmdq, struct GPIO_MODE1_REG, GPIO->GPIO_MODE1, RSV_24, 0x31);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
 				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 0);
-	else
+	} else
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
 				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 1);
 
@@ -5905,17 +6577,22 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	// MUTEX setting
 	DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX_INTEN, 0x1 << 16);
 	DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_MOD0, 0x1f);
-	if (tx_params->mode == 0)
+	if (tx_params->mode == CMD_MODE)
 		DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_CTL, 0);
-	else
+	else {
 		DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_CTL,
 				0x1 << 0 | 0x0 << 3 | 0x1 << 6 | 0x0 << 9);
 
 	DSI_OUTREGBIT(cmdq, struct DISP_MUTEX0_EN_REG,
 			MUTEX_REG->DISP_MUTEX0_EN, MUTEX0_EN, 1);
+	}
 
 	// DSI-TX setting
 	bdg_tx_init(module, config, NULL);
+	/* panel init*/
+	lcm_init(module);
+	bdg_tx_set_mode(module, cmdq, tx_params->mode);
+
 	DSI_OUTREG32(cmdq, TX_REG[0]->DSI_RESYNC_CON, 0x50007);
 
 	// DSC setting
@@ -5925,21 +6602,39 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 				DSC_REG->DISP_DSC_CON, DSC_PT_MEM_EN, 1);
 		DSI_OUTREGBIT(cmdq, struct DISP_DSC_CON_REG,
 				DSC_REG->DISP_DSC_CON, DSC_EN, 1);
-	} else
+	} else {
+#ifdef DSC_RELAY_MODE_EN
+		bdg_dsc_init(module, cmdq, tx_params);
+		DSI_OUTREGBIT(cmdq, struct DISP_DSC_CON_REG,
+				DSC_REG->DISP_DSC_CON, DSC_PT_MEM_EN, 1);
+		DSI_OUTREGBIT(cmdq, struct DISP_DSC_CON_REG,
+				DSC_REG->DISP_DSC_CON, DSC_RELAY, 1);
+		DSI_OUTREGBIT(cmdq, struct DISP_DSC_CON_REG,
+				DSC_REG->DISP_DSC_CON, DSC_EN, 1);
+#else
 		DSI_OUTREGBIT(cmdq, struct DISP_DSC_CON_REG,
 				DSC_REG->DISP_DSC_CON, DSC_ALL_BYPASS, 1);
+#endif
+	}
 
 	bdg_tx_start(DISP_BDG_DSI0, NULL);
 
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_SOFT_RSTN_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_CFG_OS, 4);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_PIXEL_NUM_OS, 1080);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_PIXEL_NUM_OS,
+			(tx_params->horizontal_active_pixel));
 	if (dsc_en) {
 //tx:500M
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HSA_TIME_OS, 145);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HBP_TIME_OS, 145);
+//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HSA_TIME_OS, 145);
+//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HBP_TIME_OS, 145);
+//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HLINE_TIME_OS,
+//			(1080 + 145 + 145 + 2361));
+//tx:760 MHz
+		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HSA_TIME_OS, 22);
+		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HBP_TIME_OS, 22);
 		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HLINE_TIME_OS,
-			(1080 + 145 + 145 + 2361));
+			(1080 + 22 + 22 + 1331));
+
 	} else {
 //tx:1G
 		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HSA_TIME_OS, 73);
@@ -5947,10 +6642,14 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_HLINE_TIME_OS,
 			(1080 + 73 + 73 + 2998));
 	}
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VSA_LINES_OS, 20);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VBP_LINES_OS, 20);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VFP_LINES_OS, 100);
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VACTIVE_LINES_OS, 2400);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VSA_LINES_OS,
+			(tx_params->vertical_sync_active));
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VBP_LINES_OS,
+			(tx_params->vertical_backporch));
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VFP_LINES_OS,
+			(tx_params->vertical_frontporch));
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_VACTIVE_LINES_OS,
+			(tx_params->vertical_active_line));
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_IPI_PG_EN_OS, 1);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_SOFT_RSTN_OS, 1);
 
@@ -5961,3 +6660,81 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	return ret;
 }
 
+#if 0
+irqreturn_t bdg_eint_irq_handler(int irq, void *data)
+{
+
+	return IRQ_HANDLED;
+}
+#endif
+
+irqreturn_t bdg_eint_thread_handler(int irq, void *data)
+{
+	unsigned int irq_ctrl3 = 0;
+
+	//DISPMSG("%s, mt6382 enter eint thread\n", __func__);
+
+	irq_ctrl3 = mtk_spi_read((unsigned long)(&SYS_REG->SYSREG_IRQ_CTRL3));
+	//DISPMSG("%s, mt6382 irq_ctrl3: (0x%x)\n", irq_ctrl3, __func__);
+
+	if ((irq_ctrl3 & 0x80000000) == 0x80000000) {
+		//IRQ mask for MTCMOS_PWR_ACK (reg_irq_mask_set bit31)
+		DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG,
+			SYS_REG->IRQ_MSK_SET, REG_31, 1);
+
+		// callback function for checking module's rg status
+		// todo..
+	}
+
+	if (irq_ctrl3 & BIT(10)) {
+		s32 ret;
+
+		ret = cmdq_bdg_irq_handler();
+		DISPMSG("%s: irq_ctrl3:%#x ret:%d", __func__, irq_ctrl3, ret);
+	}
+
+	// disable irq (can't use disable_irq() in ISR)
+	disable_irq_nosync(bdg_eint_irq);
+
+	return IRQ_HANDLED;
+}
+
+void bdg_request_eint_irq(void)
+{
+	struct device_node *node;
+
+	if (irq_already_requested) {
+		enable_irq(bdg_eint_irq);
+		return;
+	}
+
+	// get compatible node
+	node = of_find_compatible_node(NULL, NULL, "mediatek, mt6382_eint");
+	if (!node) {
+		DISPMSG("%s, mt6382 can't find mt6382_eint compatible node\n", __func__);
+		return;
+	}
+
+	// get irq number
+	bdg_eint_irq = irq_of_parse_and_map(node, 0);
+	DISPMSG("%s, mt6382 EINT irq number: (%d)\n", __func__, bdg_eint_irq);
+
+	// register irq thread handler
+	if (request_threaded_irq(bdg_eint_irq, NULL/*dbg_eint_irq_handler*/,
+				bdg_eint_thread_handler, IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+				"MT6382_EINT", NULL)) {
+		DISPMSG("%s, mt6382 request EINT irq failed!\n", __func__);
+		return;
+	}
+
+	irq_already_requested = true;
+
+	// enable irq
+	enable_irq(bdg_eint_irq);
+}
+#if 0
+void bdg_free_eint_irq(void)
+{
+	free_irq(mt6382_eint_irq, NULL);
+}
+#endif

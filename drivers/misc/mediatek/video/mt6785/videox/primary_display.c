@@ -4516,7 +4516,7 @@ lcm_corner_out:
 			_cmdq_reset_config_handle();
 		}
 
-		ret = disp_lcm_init(pgc->plcm, 1);
+//		ret = disp_lcm_init(pgc->plcm, 1);
 	}
 	if (!ret)
 		primary_display_set_lcm_power_state_nolock(LCM_ON);
@@ -5008,10 +5008,10 @@ int primary_display_wait_for_vsync(void *config)
 #endif
 
 	if (!islcmconnected || !has_vsync) {
-//		DISPCHECK("use fake vsync: lcm_connect=%d, has_vsync=%d\n",
-//			  islcmconnected, has_vsync);
-		msleep(20);
-		return 0;
+		DISPCHECK("use fake vsync: lcm_connect=%d, has_vsync=%d\n",
+			  islcmconnected, has_vsync);
+//		msleep(20);
+//		return 0;
 	}
 
 	if (pgc->force_fps_keep_count && pgc->force_fps_skip_count) {
@@ -5291,6 +5291,10 @@ int primary_display_suspend(void)
 #endif
 	/* pgc->state = DISP_SLEPT; */
 
+#ifdef CONFIG_MTK_MT6382_BDG
+	bdg_common_deinit(DISP_BDG_DSI0, NULL);
+#endif
+
 done:
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	/*
@@ -5439,10 +5443,6 @@ int primary_display_resume(void)
 			 MMPROFILE_FLAG_START, 0, 0);
 
 	_primary_path_lock(__func__);
-#ifdef CONFIG_MTK_MT6382_BDG
-	bdg_tx_pull_6382_reset_pin();
-	DISP_PR_INFO("[DENNIS][%s][%d]\n", __func__, __LINE__);
-#endif
 	if (pgc->state == DISP_ALIVE) {
 		DISPCHECK("primary display path is already resume, skip\n");
 		primary_display_lcm_power_on_state(1);
@@ -5618,7 +5618,9 @@ int primary_display_resume(void)
 		io_gs.is_decouple_mode = primary_display_is_decouple_mode();
 		dpmgr_path_ioctl(pgc->dpmgr_handle, NULL,
 				 DDP_OVL_GOLDEN_SETTING, &io_gs);
-
+#ifdef CONFIG_MTK_MT6382_BDG
+		mmdvfs_qos_force_step(0);
+#endif
 	}
 	DISP_PR_INFO("[DENNIS][%s][%d]\n", __func__, __LINE__);
 	DISPCHECK("[POWER]dpmanager re-init[end]\n");
@@ -5640,6 +5642,14 @@ int primary_display_resume(void)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 			 MMPROFILE_FLAG_PULSE, 0, 5);
+
+#ifdef CONFIG_MTK_MT6382_BDG
+	if (get_mt6382_init()) {
+		bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
+		bdg_tx_start(DISP_BDG_DSI0, NULL);
+	}
+#endif
+
 	DISPINFO("[POWER]dpmgr path start[begin]\n");
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 
@@ -5767,7 +5777,7 @@ int primary_display_resume(void)
 	 */
 	if (disp_helper_get_option(DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT)) {
 		/* only for low power measurement */
-		DISPMSG("WARNING!!!!!! FORCE NO LCM MODE!!!\n");
+		DISP_PR_INFO("WARNING!!!!!! FORCE NO LCM MODE!!!\n");
 		islcmconnected = 0;
 //		islcmconnected = 1;
 
@@ -5812,6 +5822,8 @@ done:
 	disp_tphint_reset_status();
 
 	lcm_fps_ctx_reset(&lcm_fps_ctx);
+
+	DISPFUNCEND();
 
 	return ret;
 }

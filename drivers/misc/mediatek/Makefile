@@ -130,6 +130,7 @@ obj-$(CONFIG_MTK_LCM) += ext_disp/
 ifneq ($(CONFIG_CUSTOM_KERNEL_HDMI), "")
 obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 endif
+obj-$(CONFIG_MTK_MT6382_BDG) += spi_slave_drv/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT) += dfrc/
 obj-$(CONFIG_MTK_PMIC_WRAP_HAL) += pmic_wrap/
@@ -174,4 +175,3 @@ obj-$(CONFIG_MTK_MDDP_SUPPORT) += mddp/
 obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 obj-y += subpmic/
 obj-$(CONFIG_MTK_OTP) += otp/
-obj-$(CONFIG_MTK_MT6382_BDG) += hifi4dsp_spi/

@@ -25,7 +25,8 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/mtdummy/ion_mtk_dum
 endif
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
-		    -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+		    -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/ \
+		    -I$(srctree)/drivers/misc/mediatek/cmdq/bridge
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \

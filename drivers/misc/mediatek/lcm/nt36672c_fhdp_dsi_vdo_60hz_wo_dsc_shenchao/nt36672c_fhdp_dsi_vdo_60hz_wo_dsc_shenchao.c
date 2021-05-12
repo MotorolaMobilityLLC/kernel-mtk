@@ -102,7 +102,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #ifndef FALSE
 #define FALSE 0
 #endif
-//#define DSC_ENABLE
+#define DSC_ENABLE
 /* i2c control start */
 
 #define LCM_I2C_ADDR 0x3E
@@ -430,20 +430,20 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	struct dfps_info *dfps_params = dsi->dfps_params;
 
 	dsi->dfps_enable = 1;
-	dsi->dfps_default_fps = 9000;/*real fps * 100, to support float*/
-	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
+	dsi->dfps_default_fps = 12000;/*real fps * 100, to support float*/
+	dsi->dfps_def_vact_tim_fps = 12000;/*real vact timing fps * 100*/
 	/* traversing array must less than DFPS_LEVELS */
 	/* DPFS_LEVEL0 */
 	dfps_params[0].level = DFPS_LEVEL0;
-	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
-	dfps_params[0].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+	dfps_params[0].fps = 12000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 12000;/*real vact timing fps * 100*/
 	/* if mipi clock solution */
 	dfps_params[0].PLL_CLOCK = 500;
 	/* dfps_params[0].data_rate = xx; */
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
-	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
-	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+	dfps_params[1].fps = 12000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 12000;/*real vact timing fps * 100*/
 	/* if mipi clock solution */
 	dfps_params[1].PLL_CLOCK = 500;
 	/* dfps_params[1].data_rate = xx; */
@@ -489,8 +489,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active = 10;
-	params->dsi.vertical_backporch = 22;
-	params->dsi.vertical_frontporch = 853;
+	params->dsi.vertical_backporch = 10;
+	params->dsi.vertical_frontporch = 54;
 	//params->dsi.vertical_frontporch_for_low_power = 750;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
