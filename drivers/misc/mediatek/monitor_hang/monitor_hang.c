@@ -393,7 +393,8 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 
 	if (cmd == HANG_KICK) {
 		pr_info("hang_detect HANG_KICK ( %d)\n", (int)arg);
-		MonitorHangKick((int)arg);
+		//MonitorHangKick((int)arg);
+		MonitorHangKick(0);// wt 20210512 modify
 		return ret;
 	}
 
