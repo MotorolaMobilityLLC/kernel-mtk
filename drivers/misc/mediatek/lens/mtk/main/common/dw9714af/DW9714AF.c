@@ -36,26 +36,41 @@ static spinlock_t *g_pAF_SpinLock;
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4CurrPosition;
+static unsigned long g_u4TargetPosition;
+static u16  ParkLensPaceBoundary[4]    = {20, 60, 100, 140};
 
+static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
+{
+	int i4RetValue = 0;
+	char puReadCmd[1] = { (char)(a_u2Addr) };
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puReadCmd, 1);
+	if (i4RetValue < 0) {
+		pr_err(" I2C write failed!!\n");
+		return -1;
+	}
+
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (char *)a_puBuff, 1);
+	if (i4RetValue != 1) {
+		pr_err(" I2C read failed!!\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
 
-	char puSendCmd[2] = {(char)(a_u2Data >> 4),
-			     (char)((a_u2Data & 0xF) << 4)};
-
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
-
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	char puSendCmd[3] = { 0x03, (char)(a_u2Data >> 8),
+		(char)(a_u2Data & 0xFF) };
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 3);
 
 	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!\n");
+		pr_err("I2C send failed!!\n");
 		return -1;
 	}
-
 	return 0;
 }
 
@@ -85,16 +100,46 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
-	LOG_INF("+\n");
-
-	if (*g_pAF_Opened == 1) {
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
+	int i4RetValue = 0;
+	unsigned char cmd_number;
+	unsigned char  puSendCmdArray[6][3] = {
+		{0xED, 0xAB,0},
+		{0x02, 0x01,0},
+		{0x02, 0x00,1},
+		{0x06, 0x84,0},
+		{0x07, 0x01,0},
+		{0x08, 0x60,0},
+	};
+	mdelay(2);
+	for (cmd_number = 0; cmd_number < 6; cmd_number++) {
+			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
+					puSendCmdArray[cmd_number], 2);
+			if (i4RetValue < 0)
+			{
+				pr_err(" I2C write fail\n");
+				return -1;
+			}
+			if(puSendCmdArray[cmd_number][2])
+			{
+				mdelay(puSendCmdArray[cmd_number][2]);
+			}
 	}
+	return 0;
+}
 
-	LOG_INF("-\n");
+
+static u8  read_data(u8 addr)
+{
+	u8  get_byte = 0;
+
+	i2c_read(addr, &get_byte);
+
+	return get_byte;
+}
+
+static int s4MOT_DW9714VAF_ReadPosition(unsigned short *a_pu2Result)
+{
+	*a_pu2Result = (read_data(0x03) << 8) + (read_data(0x04) & 0xff);
 
 	return 0;
 }
@@ -103,7 +148,38 @@ static int initAF(void)
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
+	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
+		LOG_INF("out of range\n");
+		return -EINVAL;
+	}
 
+	if (*g_pAF_Opened == 1) {
+		unsigned short InitPos;
+		initAF();
+		ret = s4MOT_DW9714VAF_ReadPosition(&InitPos);
+		if (ret == 0) {
+			LOG_INF("Init Pos %6d\n", InitPos);
+			spin_lock(g_pAF_SpinLock);
+			g_u4CurrPosition = (unsigned long)InitPos;
+			spin_unlock(g_pAF_SpinLock);
+
+		} else {
+			spin_lock(g_pAF_SpinLock);
+			g_u4CurrPosition = 0;
+			spin_unlock(g_pAF_SpinLock);
+		}
+
+		spin_lock(g_pAF_SpinLock);
+		*g_pAF_Opened = 2;
+		spin_unlock(g_pAF_SpinLock);
+	}
+
+	if (g_u4CurrPosition == a_u4Position)
+		return 0;
+
+	spin_lock(g_pAF_SpinLock);
+	g_u4TargetPosition = a_u4Position;
+	spin_unlock(g_pAF_SpinLock);
 	if (s4AF_WriteReg((unsigned short)a_u4Position) == 0) {
 		g_u4CurrPosition = a_u4Position;
 		ret = 0;
@@ -111,7 +187,6 @@ static inline int moveAF(unsigned long a_u4Position)
 		LOG_INF("set I2C failed when moving the motor\n");
 		ret = -1;
 	}
-
 	return ret;
 }
 
@@ -171,23 +246,51 @@ long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 /* Q1 : Try release multiple times. */
 int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	char power_down_mode_cmd[2]={0x02,0x01};
+	int ret;
 	LOG_INF("Start\n");
 
-	if (*g_pAF_Opened == 2) {
-		LOG_INF("Wait\n");
-		s4AF_WriteReg(0x80); /* Power down mode */
-	}
+	if (*g_pAF_Opened == 2)
+	{
+		while (g_u4CurrPosition > 0){
+			// Move in different pace to reduce park lens time
+			if (g_u4CurrPosition > ParkLensPaceBoundary[3])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[3];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[2])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[2];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[1])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[1];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[0])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[0];
+			}
+			else
+			{
+				g_u4CurrPosition = 0;
+			}
 
+			s4AF_WriteReg(g_u4CurrPosition);
+			mdelay(2);
+		}
+		ret = i2c_master_send(g_pstAF_I2Cclient,power_down_mode_cmd, 2);
+		if(ret <0)
+		{
+			pr_err(" I2C write fail\n");
+		}
+	}
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
-
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 0;
 		spin_unlock(g_pAF_SpinLock);
 	}
-
 	LOG_INF("End\n");
-
 	return 0;
 }
 
@@ -197,9 +300,6 @@ int DW9714AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
-
-	initAF();
-
 	return 1;
 }
 
