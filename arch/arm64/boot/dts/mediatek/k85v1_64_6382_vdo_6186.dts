@@ -184,13 +184,29 @@
 			pinmux = <PINMUX_GPIO43__FUNC_DSI_TE>;
 		};
 	};
+
+	mtkfb_pins_6382_rst_out1_gpio: 6382_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_6382_rst_out0_gpio: 6382_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 
 &mtkfb {
 	pinctrl-names = "lcd_bias_enp1_gpio", "lcd_bias_enp0_gpio",
 		"lcd_bias_enn1_gpio", "lcd_bias_enn0_gpio",
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te";
+		"mode_te_te", "6382_rst_out1_gpio", "6382_rst_out0_gpio";
 	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
 	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
 	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
@@ -198,6 +214,8 @@
 	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
 	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-7 = <&mtkfb_pins_6382_rst_out1_gpio>;
+	pinctrl-8 = <&mtkfb_pins_6382_rst_out0_gpio>;
 	status = "okay";
 };
 
@@ -422,6 +440,37 @@
 		};
 	};
 }; /* IRTX GPIO Settings -End */
+
+&spi2 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&spislv_pins_default>;
+	spislv@0 {
+		compatible = "mediatek,spi_slave";
+		reg = <0>;
+		spi-max-frequency = <55000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		low-speed-tick-delay = /bits/ 8 <1>;
+		low-speed-early-trans = /bits/ 8 <0>;
+		high-speed-tick-delay = /bits/ 8 <2>;
+		high-speed-early-trans = /bits/ 8 <1>;
+		slave-drive-strength = /bits/ 8 <3>;
+	};
+};
+&pio {
+	spislv_pins_default: spislv_mode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO63__FUNC_SPI2_MI>,
+				<PINMUX_GPIO65__FUNC_SPI2_MO>,
+				<PINMUX_GPIO66__FUNC_SPI2_CLK>,
+				<PINMUX_GPIO64__FUNC_SPI2_CSB>;
+			drive-strength = <3>;
+		};
+	};
+};
 
 #include <k85v1_64_6382_vdo_6186/cust.dtsi>
 #include "mediatek/cust_mt6785_camera.dtsi"
