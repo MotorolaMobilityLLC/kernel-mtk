@@ -153,6 +153,7 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	mediatek,pad-select = <0>, <1>;
+	tee-only;
 	fingerprint@0 {
 		status = "okay";
 		compatible = "mediatek,finger-chipone";
