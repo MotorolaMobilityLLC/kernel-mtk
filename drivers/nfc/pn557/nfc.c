@@ -147,7 +147,7 @@ static ssize_t nfc_dev_read(struct file *filp, char __user *buf,
     ret = i2c_master_recv(nfc_dev->client, tmp, count);
     mutex_unlock(&nfc_dev->read_mutex);
     /* delay of 1ms for slow devices*/
-    udelay(1000);
+    udelay(2000);
     if (ret < 0) {
         pr_err("%s: i2c_master_recv returned %d\n", __func__, ret);
         goto err;
