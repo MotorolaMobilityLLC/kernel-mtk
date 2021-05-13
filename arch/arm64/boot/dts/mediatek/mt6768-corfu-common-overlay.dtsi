@@ -184,6 +184,39 @@
 	};
 };
 
+&i2c5 {
+	clock-frequency = <400000>;
+
+	aw9610x_sar@12 {
+		compatible = "awinic,aw9610x_sar_0";
+		reg = <0x12>;
+		irq-gpio = <&pio 19 0x0>;
+		chip_name = "AW96105";
+                sar-num = <0>;
+		aw9610x,using-firmware;
+		aw9610x,firmware_name = "aw9610x_0";
+		status = "okay";
+	};
+
+	abov_sar@20 {
+		compatible = "abov,abov_sar_mmi_overlay_7ch";
+		reg = <0x20>;
+		abov,irq-gpio-std = <&pio 19 0x0>;        //interrup gpio number,based on actual circuit configuration
+		reg_array_len = <0x03>;
+		reg_array_val = <0x07 0x00 0x08 0x1F 0xFB 0x01>;
+		cap,use_channel_ch0 = <0x00>;
+		cap,use_channel_ch1 = <0x01>;
+		cap,use_channel_ch2 = <0x02>;
+		ch0_name = "capsense_bottom";
+		ch1_name = "capsense_top";
+		label = "AbovCapSense";  //firmware name,need pused AbovCapSense.BIN into /vendor/firmware/
+		cap,channel_number = <0x03>;
+		cap,fw_mode_ret = <0x39>;
+		button_mask = <0x15>;
+		cap,flash_erase_time = <1400>;
+		status = "okay";
+	};
+};
 /* accdet start */
 &accdet {
 	/* accdet micbias voltage: 0x07,2.7v;0x05,2.5v;0x02,1.9v */

@@ -2009,8 +2009,8 @@
                 <pullPushEn>false</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
-                <speed_kbps>3400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <speed_kbps>400</speed_kbps>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus5>
             <i2c_bus6>
                 <speed_kbps>400</speed_kbps>
