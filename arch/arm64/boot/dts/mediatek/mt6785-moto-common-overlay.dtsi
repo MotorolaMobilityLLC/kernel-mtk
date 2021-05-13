@@ -30,8 +30,8 @@
 	phy_tuning {
                 compatible = "mediatek,phy_tuning";
                 u2_vrt_ref = <7>;
-                u2_term_ref = <7>;
-                u2_enhance = <2>;
+                u2_term_ref = <4>;
+                u2_enhance = <3>;
 		status = "okay";
         };
 };
