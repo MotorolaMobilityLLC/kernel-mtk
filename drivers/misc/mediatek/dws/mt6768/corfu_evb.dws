@@ -555,7 +555,7 @@
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_SIM2_HOT_PLUG</varName0>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio46>
             <gpio47>
@@ -566,7 +566,7 @@
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_SIM1_HOT_PLUG</varName0>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio47>
             <gpio48>
@@ -2068,7 +2068,7 @@
             <eint0>
                 <varName>MD1_SIM1_HOT_PLUG_EINT</varName>
                 <debounce_time>10</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
@@ -2078,7 +2078,7 @@
             <eint1>
                 <varName>MD1_SIM2_HOT_PLUG_EINT</varName>
                 <debounce_time>10</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
