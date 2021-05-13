@@ -272,7 +272,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.horizontal_sync_active = 12;
 	params->dsi.horizontal_backporch = 120;
-	params->dsi.horizontal_frontporch = 138;
+	params->dsi.horizontal_frontporch = 130;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_range = 4;
 	params->dsi.ssc_disable = 1;
@@ -281,7 +281,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 270;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 310;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 308;	/* this value must be in MTK suggested table */
 #endif
 	//params->dsi.PLL_CK_CMD = 220;
 	//params->dsi.PLL_CK_VDO = 255;
