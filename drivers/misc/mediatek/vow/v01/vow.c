@@ -1114,7 +1114,7 @@ static int vow_service_ReadVoiceData_Internal(unsigned int buf_offset,
 			vowserv.voicedata_idx = 0;
 		}
 		mutex_lock(&vow_vmalloc_lock);
-#ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT
+#if (defined CONFIG_MTK_VOW_DUAL_MIC_SUPPORT && defined DUAL_CH_TRANSFER)
 		/* start interleaving L+R */
 		vow_interleaving(
 			&vowserv.voicedata_kernel_ptr[vowserv.voicedata_idx],
@@ -1139,7 +1139,7 @@ static int vow_service_ReadVoiceData_Internal(unsigned int buf_offset,
 			vowserv.tx_keyword_start = true;
 		}
 
-#ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT
+#if (defined CONFIG_MTK_VOW_DUAL_MIC_SUPPORT && defined DUAL_CH_TRANSFER)
 		/* 2 Channels */
 		vowserv.voicedata_idx += buf_length;
 #else
