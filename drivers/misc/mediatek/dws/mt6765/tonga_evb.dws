@@ -1030,19 +1030,17 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
-                <varName0>GPIO_CAMERA_2_CMRST_PIN</varName0>
+                <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio87>
             <gpio88>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_VCAMD_EN_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio88>
@@ -1081,12 +1079,12 @@
             </gpio91>
             <gpio92>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_KPD_KROW0_PIN</varName0>
+                <varName0>GPIO_CAMERA_VCAMA_ENABLE_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio92>
@@ -1184,7 +1182,7 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
+                <out_high>false</out_high>
                 <varName0>GPIO_CAMERA_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
@@ -1195,7 +1193,7 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
+                <out_high>false</out_high>
                 <varName0>GPIO_CAMERA_CMRST1_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
@@ -1267,11 +1265,12 @@
             </gpio108>
             <gpio109>
                 <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_CAMERA_2_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio109>
@@ -1747,7 +1746,7 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
+                <out_high>false</out_high>
                 <varName0>GPIO_LCM_LED_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
@@ -1900,6 +1899,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_SUB_VCAMD_LDO_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio170>
@@ -1963,7 +1963,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_WDT</varName0>
+                <varName0>GPIO_CAMERA_VCAMD_EN_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio177>
@@ -1983,7 +1983,7 @@
             <count>32</count>
             <i2c_bus0>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>false</pullPushEn>
+                <pullPushEn>true</pullPushEn>
             </i2c_bus0>
             <i2c_bus1>
                 <speed_kbps>400</speed_kbps>
@@ -2029,7 +2029,7 @@
             <device4>
                 <varName>CAMERA_MAIN</varName>
                 <channel>I2C_CHANNEL_2</channel>
-                <address>0x1A</address>
+                <address>0x40</address>
             </device4>
             <device5>
                 <varName>CAMERA_MAIN_EEPROM</varName>
@@ -2043,12 +2043,12 @@
             </device6>
             <device7>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x2D</address>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x7A</address>
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
-                <channel>I2C_CHANNEL_6</channel>
+                <channel>I2C_CHANNEL_4</channel>
                 <address>0x50</address>
             </device8>
             <device9>
@@ -2079,7 +2079,7 @@
             <device14>
                 <varName>CAMERA_SUB_EEPROM</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address>0x52</address>
+                <address>0x54</address>
             </device14>
             <device15>
                 <varName>SUBPMIC_PMU</varName>
@@ -2117,10 +2117,15 @@
                 <address>0x11</address>
             </device21>
             <device22>
+                <varName>CAMERA_MAIN_THREE</varName>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x6E</address>
+            </device22>
+            <device23>
                 <varName>USB_TYPE_C_SGM</varName>
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x47</address>
-            </device22>
+            </device23>
         </module>
         <module name="md1_eint">
             <count>3</count>
@@ -2162,6 +2167,7 @@
                 <varName0>MAIN_CAMERA_POWER_IO</varName0>
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_IO</varName2>
+                <varName3>MAIN_CAMERA_3_POWER_IO</varName3>
             </pmic4>
             <pmic5>
                 <ldoVar>VLDO28</ldoVar>
@@ -2169,7 +2175,6 @@
                 <varName0>MAIN_CAMERA_POWER_AF</varName0>
                 <varName1>SUB_CAMERA_POWER_AF</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
-                <varName3>CAP_TOUCH_VDD</varName3>
             </pmic5>
         </module>
         <module name="kpd">
