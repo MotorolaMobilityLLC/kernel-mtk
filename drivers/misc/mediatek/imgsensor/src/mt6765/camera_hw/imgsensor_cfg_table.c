@@ -30,7 +30,11 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
+#ifdef MOT_TONGA_S5KJN1SQ_MIPI_RAW
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
+#else
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DVDD},
+#endif
 			//{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_PDN},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
@@ -77,13 +81,13 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 	},
 	{
 		IMGSENSOR_SENSOR_IDX_MAIN3,
-		IMGSENSOR_I2C_DEV_2,
+		IMGSENSOR_I2C_DEV_0,
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
-			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DVDD},
-			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_PDN},
+			//{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DVDD},
+			//{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_PDN},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
 		},
@@ -188,6 +192,56 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{SensorMCLK, Vol_High, 1},
 			{AVDD, Vol_2800, 6},
 			{RST, Vol_High, 10},
+		},
+	},
+#endif
+#if defined(MOT_TONGA_S5KJN1SQ_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_TONGA_S5KJN1SQ_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 1},
+                        {RST, Vol_Low, 1},
+			{DVDD, Vol_1100, 0},
+			{DOVDD, Vol_1800, 2},
+			{AVDD, Vol_2800, 3},
+			{RST, Vol_High, 1},
+		},
+	},
+#endif
+#if defined(MOT_TONGA_S5K4H7_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_TONGA_S5K4H7_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 1},
+			{RST, Vol_Low, 1},
+			{AVDD, Vol_High, 0},
+			{DVDD, Vol_1200, 0},
+			{DOVDD, Vol_1800, 0},
+			{RST, Vol_High, 5},
+		},
+	},
+#endif
+#if defined(MOT_TONGA_OV02B1B_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_TONGA_OV02B1B_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 1},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 6},
+			{RST, Vol_High, 10},
+		},
+	},
+#endif
+#if defined(MOT_TONGA_GC02M1_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_TONGA_GC02M1_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 2},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
+			{RST, Vol_High, 2},
 		},
 	},
 #endif

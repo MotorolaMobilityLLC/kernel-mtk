@@ -136,6 +136,12 @@
 #define MOT_ELLIS_OV02B1B_SENSOR_ID 0x002b
 #define MOT_ELLIS_HI556D_SENSOR_ID 0x0556
 //add ellis sensor id end
+//add tonga sensor id begin
+#define MOT_TONGA_S5K4H7_SENSOR_ID 0x487B
+#define MOT_TONGA_OV02B1B_SENSOR_ID 0x002b
+#define MOT_TONGA_GC02M1_SENSOR_ID 0x02e0
+#define MOT_TONGA_S5KJN1SQ_SENSOR_ID 0x38e1
+//add tonga sensor id end
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
 #define IMX499_SENSOR_ID                        0x0499
@@ -615,6 +621,12 @@
 #define SENSOR_DRVNAME_MOT_ELLIS_OV02B1B_MIPI_RAW "mot_ellis_ov02b1b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_ELLIS_HI556D_MIPI_RAW "mot_ellis_hi556d_mipi_raw"
 //add ellis sensor drvname end
+//add tonga sensor drvname begin
+#define SENSOR_DRVNAME_MOT_TONGA_S5K4H7_MIPI_RAW "mot_tonga_s5k4h7_mipi_raw"
+#define SENSOR_DRVNAME_MOT_TONGA_OV02B1B_MIPI_RAW "mot_tonga_ov02b1b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_TONGA_GC02M1_MIPI_RAW "mot_tonga_gc02m1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_TONGA_S5KJN1SQ_MIPI_RAW "mot_tonga_s5kjn1sq_mipi_raw"
+//add tonga sensor drvname end
 /******************************************************************************
  *
  ******************************************************************************/
