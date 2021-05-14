@@ -344,6 +344,11 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x22);//demura page
 		lcm_dcs_write_seq_static(ctx, 0x77, 0x00);//demure off:02 on:00
 
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x72);
+		lcm_dcs_write_seq_static(ctx, 0x18, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x19, 0x11);
+		lcm_dcs_write_seq_static(ctx, 0x1A, 0x03);
+
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x40);
 		lcm_dcs_write_seq_static(ctx, 0x82, 0x10);
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0xD2);
@@ -366,6 +371,11 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
 		lcm_dcs_write_seq_static(ctx, 0xDA, 0x00);    //60Hz: 02
 
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x72);
+		lcm_dcs_write_seq_static(ctx, 0x18, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x19, 0x11);
+		lcm_dcs_write_seq_static(ctx, 0x1A, 0x03);
+
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
 		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01);     // 07 VESA off, 01 VESA on
 		lcm_dcs_write_seq_static(ctx, 0xC2, 0x08);
@@ -382,6 +392,11 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0x42, 0x81);     // 01 VESA off, 81 VESA on
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x84);
 		lcm_dcs_write_seq_static(ctx, 0xDA, 0x00);    //60Hz: 02
+
+		lcm_dcs_write_seq_static(ctx, 0xFE, 0x72);
+		lcm_dcs_write_seq_static(ctx, 0x18, 0x00);
+		lcm_dcs_write_seq_static(ctx, 0x19, 0x11);
+		lcm_dcs_write_seq_static(ctx, 0x1A, 0x03);
 
 		lcm_dcs_write_seq_static(ctx, 0xFE, 0x00);
 		lcm_dcs_write_seq_static(ctx, 0xFA, 0x01);     // 07 VESA off, 01 VESA on
@@ -720,8 +735,8 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 {
 	char bl_tb0[] = {0x51, 0x07, 0xFF};
 
-	if ((level != 0) && (level < 16))
-		level = 16;
+	if ((level != 0) && (level < 2))
+		level = 2;
 
 	pr_debug("%s backlight = %d\n", __func__, level);
 
