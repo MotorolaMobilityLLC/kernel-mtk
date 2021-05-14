@@ -14,7 +14,7 @@
 #include "mediatek/mt6765-moto-tonga-fps.dtsi"
 #include "cust_mt6765_touch_tonga_720x1600.dtsi"
 #include <dt-bindings/mmc/mt6765-msdc.h>
-
+#include "mt6765-tonga-camera-sensor-overlay.dtsi"
 &mtk_charger_type {
 	bc12_active = <0>;
 };
