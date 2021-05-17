@@ -42,6 +42,11 @@
 #endif
 #endif
 
+#define LCM_ID_0			0x12
+#define LCM_ID_1 			0x0B
+#define LCM_ID_2	 		0x10
+#define LCM_ID_3 			0x91
+
 static struct LCM_UTIL_FUNCS lcm_util;
 
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
@@ -340,46 +345,37 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width,
 #endif
 }
 
+/*
 struct LCM_setting_table switch_table_page[] = {
 	{ 0xF0, 2, {0x5A,0x59} }
 };
-
+*/
 
 static unsigned int lcm_compare_id(void)
 {
-	unsigned int id1 = 0;
-	unsigned int id2 = 0;
-	unsigned int id3 = 0;
-	unsigned char buffer[2];
+	unsigned char buffer[4];
 	unsigned int array[16];
 
 	SET_RESET_PIN(1);
+	MDELAY(10);
 	SET_RESET_PIN(0);
-	MDELAY(1);
-
+	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(10);
 
-	array[0] = 0x00023700;  /* read id return two byte,version and id */
+	array[0] = 0x00043700;	// read id return four byte
 	dsi_set_cmdq(array, 1, 1);
 
-	read_reg_v2(0xDA, buffer, 2);
-	id1 = buffer[0];     /* we only need ID */
-
-	read_reg_v2(0xDB, buffer, 2);
-	id2 = buffer[0];
-
-	read_reg_v2(0xDC, buffer, 2);
-	id3 = buffer[0];
-
-	pr_info("[LCM]%s,id check ,id1 = 0x%x, id2 = 0x%x, id3 = 0x%x\n", __func__, id1, id2, id3);
-
-	if (id1 == 0x06 && id2 == 0x11 && id3 == 0x0c) {
-		pr_info("%s:lcm gt9885 DA matched.\n", __func__);
+	read_reg_v2(0xA1, buffer, 4);
+	pr_info("%s:visionox_ft3519:id=0x%02x%02x%02x%02x\n", __func__, buffer[0], buffer[1], buffer[2], buffer[3]);
+	if (LCM_ID_0 == buffer[0] && LCM_ID_1 == buffer[1] && LCM_ID_2 == buffer[2] && LCM_ID_3 == buffer[3]) {
+		pr_info("%s:kernel:ft3519 reg A1 matched.\n", __func__);
 		return 1;
 	}
-	else
+	else {
+		pr_info("%s: ft3519 reg A1 unmatched.\n", __func__);
 		return 0;
+	}
 }
 
 
@@ -496,8 +492,8 @@ static void *lcm_switch_mode(int mode)
 }
 
 
-struct LCM_DRIVER mipi_mot_vid_visionox_gt9885_fhd_647_lcm_drv = {
-	.name = "mipi_mot_vid_visionox_gt9885_fhd_647",
+struct LCM_DRIVER mipi_mot_vid_visionox_ft3519_fhd_643_lcm_drv = {
+	.name = "mipi_mot_vid_visionox_ft3519_fhd_643",
 	.supplier = "visionox",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
