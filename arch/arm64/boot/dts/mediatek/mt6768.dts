@@ -2368,6 +2368,12 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		io-channel-names = "thermistor-ch1";
 	};
 
+	tboard_thermistor3: thermal-sensor3 {
+		compatible = "mediatek,mtboard-thermistor3";
+		io-channels = <&auxadc 3>;
+		io-channel-names = "thermistor-ch3";
+	};
+
 	drcc: drcc {
 		compatible = "mediatek,drcc";
 		state = <255>;
