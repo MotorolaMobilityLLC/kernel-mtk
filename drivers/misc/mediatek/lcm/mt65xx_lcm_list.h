@@ -16,6 +16,7 @@
 
 #include <lcm_drv.h>
 
+extern struct LCM_DRIVER mipi_mot_vid_visionox_ft3519_fhd_643_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_visionox_gt9885_fhd_647_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
