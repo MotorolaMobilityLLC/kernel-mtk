@@ -26,8 +26,8 @@
 #define CONFIG_FSM_FS1603
 
 /* VERSION INFORMATION */
-#define FSM_CODE_VERSION "v3.1.2"
-#define FSM_CODE_DATE    "20210429"
+#define FSM_CODE_VERSION "v3.1.3"
+#define FSM_CODE_DATE    "20210517"
 #define FSM_GIT_BRANCH   "moto-fs1894s"
 #define FSM_GIT_COMMIT   "739aef79"
 
@@ -604,7 +604,7 @@ struct fsm_config {
     uint32_t nondsp_mode  : 1;
     uint32_t speaker_on   : 1;
     uint32_t skip_all     : 1;
-    //uint32_t bypass_dsp : 1;
+    uint32_t bypass_dsp   : 1;
 
     char *codec_name[FSM_DEV_MAX];
     char *codec_dai_name[FSM_DEV_MAX];
