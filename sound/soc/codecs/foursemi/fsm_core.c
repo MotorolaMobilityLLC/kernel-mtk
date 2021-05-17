@@ -136,6 +136,7 @@ static struct fsm_config g_fsm_config = {
     .stream_muted = 1,
     .nondsp_mode = 0,
     .skip_all = 0,
+    .bypass_dsp = 0,
 #ifdef DEBUG
     .i2c_debug = 1,
 #endif
@@ -2603,7 +2604,16 @@ void fsm_set_scene(int scene)
         return;
     }
     fsm_mutex_lock();
-    cfg->next_scene = BIT(scene);
+    if (scene == 6) { // dsp bypass
+        cfg->bypass_dsp = 1;
+        cfg->next_scene = BIT(6);
+    } else if (scene == 5){
+        cfg->bypass_dsp = 0;
+    }
+
+    if (cfg->bypass_dsp == 0)
+        cfg->next_scene = BIT(scene);
+
     fsm_list_func(fsm_dev, fsm_stub_switch_preset);
     if (!cfg->stream_muted && cfg->next_scene != FSM_SCENE_RCV) {
         fsm_delay_ms(10);
@@ -2851,7 +2861,12 @@ void fsm_speaker_off(void)
     fsm_list_wait(FSM_WAIT_AMP_ADC_PLL_OFF);
     cfg->speaker_on = false;
     fsm_mutex_unlock();
-    fsm_set_scene(0);
+    if (cfg->bypass_dsp == 0) {
+        fsm_set_scene(0);
+        pr_info("protect scene, switch to default mode");
+    } else {
+        pr_info("bypass mode");
+    }
     pr_debug("done");
 }
 
