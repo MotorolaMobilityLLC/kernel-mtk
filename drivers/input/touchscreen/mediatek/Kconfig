@@ -21,6 +21,8 @@ config TOUCHSCREEN_MTK
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
 
+source "drivers/input/touchscreen/mediatek/FT3519/Kconfig"
+
 config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
 	bool "MediaTek Touch Panel Rotation With LCM"
 	default y
