@@ -1150,7 +1150,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_CMPDN1_PIN</varName0>
+                <varName0>GPIO_CAMERA_FVCAMA_ENABLE_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio98>
