@@ -15,6 +15,7 @@
                 mmi,typec-middle-current = <1500000>;
                 mmi,step-first-current-comp = <0>;
                 mmi,dont-rerun-aicl;
+		mmi,enable-new-sourcecap-dec;
                 mmi,chrg-temp-zones-num = <5>;
                 mmi,mmi-chrg-temp-zones =
 					<0 4200 1000  0 0>,
