@@ -149,10 +149,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_ELLIS_HI1336_MIPI_RAW,
 		{
+			{RST, Vol_Low, 2},
+			{SensorMCLK, Vol_High, 2},
 			{DOVDD, Vol_1800, 0},
 			{AVDD, Vol_High, 0},
 			{DVDD, Vol_1100, 1},
-			{SensorMCLK, Vol_High, 2},
 			{RST, Vol_High, 2},
 		},
 	},
@@ -162,12 +163,13 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
        SENSOR_DRVNAME_MOT_ELLIS_SC500CS_MIPI_RAW,
        {
            {RST, Vol_Low, 2},
+           {SensorMCLK, Vol_High, 6},
            {DOVDD, Vol_1800, 2},
-           {DVDD, Vol_1100, 2},
+           {DVDD, Vol_1200, 2},
            {AVDD, Vol_High, 2},
            {RST, Vol_High, 2},
-           {SensorMCLK, Vol_High, 6},
        },
+
    },
 #endif
 #if defined(MOT_ELLIS_HI556D_MIPI_RAW)
@@ -175,10 +177,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
        SENSOR_DRVNAME_MOT_ELLIS_HI556D_MIPI_RAW,
        {
            {RST, Vol_Low, 5},
+           {SensorMCLK, Vol_High, 1},
            {DOVDD, Vol_1800, 1},
            {AVDD, Vol_High, 1},
            {DVDD, Vol_1200, 5},
-           {SensorMCLK, Vol_High, 1},
            {RST, Vol_High, 1},
        },
    },
@@ -188,8 +190,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		SENSOR_DRVNAME_MOT_ELLIS_OV02B1B_MIPI_RAW,
 		{
 			{RST, Vol_Low, 1},
-			{DOVDD, Vol_1800, 1},
 			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 6},
 			{RST, Vol_High, 10},
 		},
@@ -199,8 +201,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_TONGA_S5KJN1SQ_MIPI_RAW,
 		{
+			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
-                        {RST, Vol_Low, 1},
 			{DVDD, Vol_1100, 0},
 			{DOVDD, Vol_1800, 2},
 			{AVDD, Vol_2800, 3},
@@ -212,8 +214,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_TONGA_S5K4H7_MIPI_RAW,
 		{
-			{SensorMCLK, Vol_High, 1},
 			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
 			{AVDD, Vol_High, 0},
 			{DVDD, Vol_1200, 0},
 			{DOVDD, Vol_1800, 0},
@@ -225,8 +227,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_TONGA_OV02B1B_MIPI_RAW,
 		{
-			{SensorMCLK, Vol_High, 1},
 			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 6},
 			{RST, Vol_High, 10},
@@ -237,8 +239,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_TONGA_GC02M1_MIPI_RAW,
 		{
-			{SensorMCLK, Vol_High, 2},
 			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 2},
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 1},
 			{RST, Vol_High, 2},
