@@ -530,4 +530,6 @@ bool primary_display_need_update_hrt_fps(
 /**************function for DynFPS end************************/
 #endif
 
+char* primary_display_get_lcm_supplier(void);
+char* primary_display_get_lcm_name(void);
 #endif
