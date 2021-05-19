@@ -1354,7 +1354,7 @@ static int mtkts_chargerts_register_thermal(void)
 	mtkts_chargerts_dprintk("[%s]\n", __func__);
 
 	/* trips : trip 0~1 */
-	thz_dev = mtk_thermal_zone_device_register("mtktschgntc", num_trip, NULL,
+	thz_dev = mtk_thermal_zone_device_register("mtktswtcharger", num_trip, NULL,
 						&mtkts_CHARGERTS_dev_ops, 0, 0, 0,
 						interval * 1000);
 
