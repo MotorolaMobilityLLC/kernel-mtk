@@ -113,7 +113,7 @@ static int initAF(void)
 		{0x02, 0x00,1},
 		{0x06, 0x84,0},
 		{0x07, 0x01,0},
-		{0x08, 0x49,0},
+		{0x08, 0x78,0},
 	};
 	mdelay(2);
 	for (cmd_number = 0; cmd_number < 6; cmd_number++) {
