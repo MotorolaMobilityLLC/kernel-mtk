@@ -126,10 +126,12 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
-	char puSendCmdArray[7][2] = {
-	{0x02, 0x01}, {0x02, 0x00}, {0xFE, 0xFE},
-	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x60}, {0xFE, 0xFE},
-	//{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x0B}, {0x10, 0x01}, {0xFE, 0xFE},
+	char puSendCmdArray[4][3] = {
+	{0x02, 0x02,1},
+	{0x06, 0x40,0},
+	{0x07, 0x0b,0},
+	{0x10, 0x00,0},
+
 	};
 	unsigned char cmd_number;
 
@@ -138,16 +140,18 @@ static int initdrv(void)
 	LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]),
 			puSendCmdArray[2]);
 
-	for (cmd_number = 0; cmd_number < 7; cmd_number++) {
-		if (puSendCmdArray[cmd_number][0] != 0xFE) {
+	for (cmd_number = 0; cmd_number < 4; cmd_number++) {
 			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
 					puSendCmdArray[cmd_number], 2);
-
 			if (i4RetValue < 0)
+			{
+				LOG_INF(" I2C write fail\n");
 				return -1;
-		} else {
-			udelay(100);
-		}
+			}
+			if(puSendCmdArray[cmd_number][2])
+			{
+				mdelay(puSendCmdArray[cmd_number][2]);
+			}
 	}
 
 	return i4RetValue;
