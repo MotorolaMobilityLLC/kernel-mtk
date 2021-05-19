@@ -66,7 +66,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 176000000,
 		.linelength = 2816,
-		.framelength = 2049,
+		.framelength = 2082,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1296,
@@ -79,7 +79,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.cap = {
 		.pclk = 176000000,
 		.linelength = 2816,
-		.framelength = 2049,
+		.framelength = 2082,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2592,
@@ -101,7 +101,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.normal_video = {
 		.pclk = 176000000,
 		.linelength = 2816,
-		.framelength = 2049,
+		.framelength = 2082,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2592,
@@ -804,7 +804,7 @@ static void night_mode(kal_bool enable)
 
 #if MULTI_WRITE
 kal_uint16 addr_data_pair_init_mot_ellis_hi556d[] = {
-	0x0a00, 0x0000,
+
 	0x0e00, 0x0102,
 	0x0e02, 0x0102,
 	0x0e0c, 0x0100,
@@ -963,15 +963,15 @@ kal_uint16 addr_data_pair_init_mot_ellis_hi556d[] = {
 	0x0b0c, 0xf814,
 	0x0b0e, 0xc618,
 	0x0b10, 0xa828,
-	0x0b12, 0x004c,
+	0x0b12, 0x002c,
 	0x0b14, 0x4068,
 	0x0b16, 0x0000,
 	0x0f30, 0x6e25,
 	0x0f32, 0x7067,
 	0x0954, 0x0009,
-	0x0956, 0x1100,
-	0x0958, 0xcc80,
-	0x095a, 0x0000,
+	0x0956, 0x0000,
+	0x0958, 0xba80,
+	0x095a, 0x5140,
 	0x0c00, 0x1110,
 	0x0c02, 0x0011,
 	0x0c04, 0x0000,
@@ -989,6 +989,7 @@ kal_uint16 addr_data_pair_init_mot_ellis_hi556d[] = {
 	0x0e0a, 0x0001,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
+	0x004e, 0x0100,
 	0x000c, 0x0022,
 	0x0008, 0x0b00,
 	0x005a, 0x0202,
@@ -1022,10 +1023,9 @@ kal_uint16 addr_data_pair_init_mot_ellis_hi556d[] = {
 	0x0068, 0x0500,
 	0x0122, 0x0300,
 	0x015a, 0xff08,
-	0x0804, 0x0200,
+	0x0804, 0x0208,
 	0x005c, 0x0102,
 	0x0a1a, 0x0800,
-	0x004e, 0x0100
 };
 #endif
 
@@ -1265,12 +1265,26 @@ static void sensor_init(void)
 
 #if MULTI_WRITE
 kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
+//Sensor Information////////////////////////////
+//Sensor	  : hi-556
+//Date		  : 2021-04-08
+//Customer        : Lenovo
+//Image size	  : 1296x972
+//MCLK		  : 24MHz
+//MIPI speed(Mbps): 440Mbps x 2Lane
+//Frame Length	  : 2082
+//Line Length 	  : 2816
+//Max Fps 	  : 30fps
+//Pixel order 	  : Green 1st (=GB)
+//X/Y-flip	  : X-flip
+//BLC offset	  : 64code
+////////////////////////////////////////////////
+	0x0a00, 0x0000,
 	0x0b0a, 0x8259,
 	0x0f30, 0x6e25,
 	0x0f32, 0x7167,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
-	0x004e, 0x0100,
 	0x000c, 0x0122,
 	0x0008, 0x0b00,
 	0x005a, 0x0404,
@@ -1285,14 +1299,14 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 	0x002e, 0x3311,
 	0x0030, 0x3311,
 	0x0032, 0x3311,
-	0x0006, 0x0801,
+	0x0006, 0x0822,
 	0x0a22, 0x0000,
 	0x0a12, 0x0510,
 	0x0a14, 0x03cc,
 	0x003e, 0x0000,
-	0x0074, 0x07ff,
+	0x0074, 0x0820,
 	0x0070, 0x0411,
-	0x0804, 0x0200,
+	0x0804, 0x0208,
 	0x0a04, 0x016a,
 	0x090e, 0x0010,
 	0x090c, 0x09c0,
@@ -1300,9 +1314,10 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 	0x0914, 0xc106,
 	0x0916, 0x040e,
 	0x0918, 0x0304,
-	0x091a, 0x0709,
+	0x091a, 0x0708,
 	0x091c, 0x0e06,
-	0x091e, 0x0300
+	0x091e, 0x0300,
+	0x0958, 0xba80,
 };
 #endif
 
@@ -1360,12 +1375,26 @@ static void preview_setting(void)
 
 #if MULTI_WRITE
 kal_uint16 addr_data_pair_capture_fps_mot_ellis_hi556d[] = {
+//Sensor Information////////////////////////////
+//Sensor	  : Hi-556
+//Date		  : 2021-04-08
+//Customer        : Lenovo
+//Image size	  : 2592x1944
+//MCLK		  : 24MHz
+//MIPI speed(Mbps): 880Mbps x 2Lane
+//Frame Length	  : 4166
+//Line Length 	  : 2816
+//Max Fps 	  : 15fps
+//Pixel order 	  : Green 1st (=GB)
+//X/Y-flip	  : X-flip
+//BLC offset	  : 64code
+////////////////////////////////////////////////
+	0x0a00, 0x0000,
 	0x0b0a, 0x8252,
 	0x0f30, 0x6e25,
 	0x0f32, 0x7067,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
-	0x004e, 0x0100,
 	0x000c, 0x0022,
 	0x0008, 0x0b00,
 	0x005a, 0x0202,
@@ -1386,7 +1415,7 @@ kal_uint16 addr_data_pair_capture_fps_mot_ellis_hi556d[] = {
 	0x0a14, 0x0798,
 	0x003e, 0x0000,
 	0x0074, 0x1044,
-	0x0070, 0x0411,
+	0x0070, 0x0822,
 	0x0804, 0x0200,
 	0x0a04, 0x014a,
 	0x090c, 0x0fdc,
@@ -1397,16 +1426,31 @@ kal_uint16 addr_data_pair_capture_fps_mot_ellis_hi556d[] = {
 	0x0918, 0x0408,
 	0x091a, 0x0c0d,
 	0x091c, 0x0f09,
-	0x091e, 0x0a00
+	0x091e, 0x0a00,
+	0x0958, 0xba80,
 };
 
 kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
+//Sensor Information////////////////////////////
+//Sensor	  : Hi-556
+//Date		  : 2021-04-08
+//Customer        : lenovo
+//Image size	  : 2592x1944
+//MCLK		  : 24MHz
+//MIPI speed(Mbps): 880Mbps x 2Lane
+//Frame Length	  : 2082
+//Line Length 	  : 2816
+//Max Fps 	  : 30fps
+//Pixel order 	  : Green 1st (=GB)
+//X/Y-flip	  : X-flip
+//BLC offset	  : 64code
+////////////////////////////////////////////////
+	0x0a00, 0x0000,
 	0x0b0a, 0x8252,
 	0x0f30, 0x6e25,
 	0x0f32, 0x7067,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
-	0x004e, 0x0100,
 	0x000c, 0x0022,
 	0x0008, 0x0b00,
 	0x005a, 0x0202,
@@ -1421,13 +1465,13 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 	0x002e, 0x1111,
 	0x0030, 0x1111,
 	0x0032, 0x1111,
-	0x0006, 0x0801,
+	0x0006, 0x0822,
 	0x0a22, 0x0000,
 	0x0a12, 0x0a20,
 	0x0a14, 0x0798,
 	0x003e, 0x0000,
-	0x0074, 0x07ff,
-	0x0070, 0x0411,
+	0x0074, 0x0820,
+	0x0070, 0x0400,
 	0x0804, 0x0200,
 	0x0a04, 0x014a,
 	0x090c, 0x0fdc,
@@ -1438,7 +1482,8 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 	0x0918, 0x0408,
 	0x091a, 0x0c0d,
 	0x091c, 0x0f09,
-	0x091e, 0x0a00
+	0x091e, 0x0a00,
+	0x0958, 0xba80,
 };
 #endif
 
