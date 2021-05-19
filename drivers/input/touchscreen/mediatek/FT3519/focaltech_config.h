@@ -175,6 +175,7 @@
  * choose your ic chip type of focaltech
  */
 #define FTS_CHIP_TYPE   _FT3519
+#define FTS_CHIP_NAME   "ft3519"
 
 /******************* Enables *********************/
 /*********** 1 to enable, 0 to disable ***********/
