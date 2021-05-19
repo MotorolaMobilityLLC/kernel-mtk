@@ -73,6 +73,7 @@
 #include <trace/hooks/fsnotify.h>
 #include <trace/hooks/fuse.h>
 #include <trace/hooks/ogki_honor.h>
+#include <trace/hooks/user.h>
 
 /*
  * Export tracepoints that act as a bare tracehook (ie: have no trace event
@@ -554,3 +555,5 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_mem_cgroup_charge);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_filemap_add_folio);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_shrink_node);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_set_tsk_need_resched_lazy);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_alloc_uid);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_free_user);
