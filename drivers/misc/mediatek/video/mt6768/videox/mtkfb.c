@@ -71,6 +71,8 @@
 
 #include "smi_public.h"
 
+#include "mtkfb_params.h"
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -195,6 +197,116 @@ void mtkfb_log_enable(int enable)
 {
 	mtkfb_log_on = enable;
 	MTKFB_LOG("mtkfb log %s\n", enable ? "enabled" : "disabled");
+}
+
+int hbm_state = 0;
+int cabc_mode = 0;
+int  mtkfb_set_cabc(int cabc_mode)
+{
+    int cmd_type = PARAM_CABC;
+
+    pr_info("%s: set CABC %d.\n", __func__, cabc_mode);
+    if(primary_display_setlcm_cmd(&cmd_type, NULL, &cabc_mode)) {
+        pr_err("%s: set CABC %d failed.\n", __func__, cabc_mode);
+        return -1;
+    }
+
+    pr_info("%s: set CABC %d.\n", __func__, cabc_mode);
+    return 0;
+}
+
+int mtkfb_set_hbm(int hbm_state)
+{
+    int cmd_type = PARAM_HBM;
+
+    if(primary_display_setlcm_cmd(&cmd_type, NULL, &hbm_state)) {
+        pr_err("%s: set HBM %d failed.\n", __func__, hbm_state);
+        return -1;
+    }
+
+    pr_info("%s: set HBM %d.\n", __func__, hbm_state);
+    return 0;
+}
+
+static ssize_t hbm_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", hbm_state);
+}
+static ssize_t hbm_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+    if(*buf == hbm_state) {
+        pr_info("%s: HBM state %d already.\n", __func__, hbm_state);
+    } else if(*buf != HBM_OFF_STATE && *buf != HBM_ON_STATE) {
+        pr_err("%s: invalid HBM state %d.\n", __func__, *buf);
+     } else {
+         if(!mtkfb_set_hbm(*buf)) {
+            hbm_state = *buf;
+        }
+    }
+	return count;
+}
+static DEVICE_ATTR(hbm, (S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP), hbm_show, hbm_store);
+
+static ssize_t cabc_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", cabc_mode);
+}
+static ssize_t cabc_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+    if(*buf == cabc_mode) {
+        pr_info("%s: HBM state %d already.\n", __func__, cabc_mode);
+    } else if(*buf < CABC_UI_MODE || *buf > CABC_DIS_MODE) {
+        pr_err("%s: invalid CABC state %d.\n", __func__, *buf);
+     } else {
+         if(!mtkfb_set_cabc(*buf)) {
+            cabc_mode = *buf;
+        }
+    }
+	return count;
+}
+static DEVICE_ATTR(cabc, (S_IWUSR | S_IWGRP | S_IRUGO), cabc_show, cabc_store);
+
+static ssize_t panel_supplier_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", primary_display_get_lcm_supplier());
+}
+static DEVICE_ATTR(panel_supplier, S_IRUGO, panel_supplier_show, NULL);
+
+static ssize_t panel_name_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", primary_display_get_lcm_name());
+}
+static DEVICE_ATTR(panel_name, S_IRUGO, panel_name_show, NULL);
+
+static struct attribute *panel_attrs[] = {
+        &dev_attr_panel_supplier.attr,
+        &dev_attr_panel_name.attr,
+        &dev_attr_cabc.attr,
+        &dev_attr_hbm.attr,
+        NULL,
+};
+
+static struct attribute_group panel_attr_group = {
+	.attrs = panel_attrs,
+};
+
+static int mtk_fb_create_sysfs(void)
+{
+	int rc;
+
+	rc = sysfs_create_group(&mtkfb_fbi->dev->kobj, &panel_attr_group);
+	if (rc)
+		pr_err("panel id group creation failed, rc=%d\n", rc);
+
+	return rc;
 }
 
 /*
@@ -2631,6 +2743,8 @@ static int mtkfb_probe(struct platform_device *pdev)
 	register_framebuffer(fb1);
 	DISPMSG("%s, register_ext_framebuffer done\n", __func__);
 #endif
+
+	mtk_fb_create_sysfs();
 
 #ifdef FPGA_DEBUG_PAN
 	test_task = kthread_create(update_test_kthread,
