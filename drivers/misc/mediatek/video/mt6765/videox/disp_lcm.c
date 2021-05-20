@@ -1523,6 +1523,30 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	return 0;
 }
 
+#ifdef CONFIG_BACKLIGHT_LEVEL_LCM
+int disp_lcm_get_max_brightness(struct disp_lcm_handle *plcm)
+{
+	struct LCM_DRIVER *lcm_drv = NULL;
+	unsigned int bl_max_level = 0;
+
+	DISPFUNC();
+	if (!_is_lcm_inited(plcm)) {
+		DISPERR("lcm_drv is null\n");
+		return 0;
+	}
+
+	lcm_drv = plcm->drv;
+	if (lcm_drv->get_max_brightness) {
+		bl_max_level = lcm_drv->get_max_brightness();
+		DISPMSG("%s:get max_brightness:%d", __func__, bl_max_level);
+	} else {
+		DISPERR("FATAL ERROR, lcm_drv->set_backlight is null\n");
+	}
+
+	return bl_max_level;
+}
+#endif
+
 int disp_lcm_ioctl(struct disp_lcm_handle *plcm, enum LCM_IOCTL ioctl,
 	unsigned int arg)
 {

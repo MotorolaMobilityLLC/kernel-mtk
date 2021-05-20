@@ -40,3 +40,11 @@ config LEDS_MT6357
 	  Mediatek MT6357 PMIC.
 	  If you want to use MediaTek(R) LEDs support, say Y or M here.
 	  If unsure, say N.
+
+config BACKLIGHT_LEVEL_LCM
+        bool "Support backlight max brightness per panel"
+        default n
+        help
+	  Backlight max brightness set by lcm panel.
+	  Support multiple panels with different max brightness.
+	  If the panel need set different max brightness, enable it and get max brightness from panel.
