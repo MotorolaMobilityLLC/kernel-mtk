@@ -41,7 +41,6 @@ config LEDS_MT6357
 	  If you want to use MediaTek(R) LEDs support, say Y or M here.
 	  If unsure, say N.
 
-
 config LEDS_MTK_DISP
 	tristate "Mediatek display LED support"
 	depends on LEDS_CLASS
@@ -79,3 +78,11 @@ config CONTROL_BL_TEMPERATURE
 	  Set y to support.
 	  Set n to not support.
 	  This option enables means thermal can set brightness by the api of led driver.
+
+config BACKLIGHT_LEVEL_LCM
+        bool "Support backlight max brightness per panel"
+        default n
+        help
+	  Backlight max brightness set by lcm panel.
+	  Support multiple panels with different max brightness.
+	  If the panel need set different max brightness, enable it and get max brightness from panel.
