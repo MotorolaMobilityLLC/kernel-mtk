@@ -268,7 +268,21 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 				pr_info
 				    ("led dts can't get pwm config\n");
 
+#ifdef CONFIG_BACKLIGHT_LEVEL_LCM
+		max_brightness = 0;
+		if (strstr(leds_name[i], "lcd-backlight")) {
+			// get panel max brightness
+			//pr_info("%s:invoke primary_display_get_max_brightness\n", __func__);
+			max_brightness = primary_display_get_max_brightness();
+			ret = 0;
+		}
+		if (max_brightness < 100) {
+			//get from led dtsi by default
+			ret = of_property_read_u32(led_node, "max-brightness", &max_brightness);
+		}
+#else
 		ret = of_property_read_u32(led_node, "max-brightness", &max_brightness);
+#endif
 		if (!ret) {
 			pled_dtsi[i].max_brightness = max_brightness;
 			pr_info("The %s's led max_brightness is : %d\n",

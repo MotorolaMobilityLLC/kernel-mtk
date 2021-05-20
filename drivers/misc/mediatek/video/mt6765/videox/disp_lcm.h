@@ -47,6 +47,9 @@ int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm);
 int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps);
 int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 	void *handle, int level);
+#ifdef CONFIG_BACKLIGHT_LEVEL_LCM
+int disp_lcm_get_max_brightness(struct disp_lcm_handle *plcm);
+#endif
 int disp_lcm_read_fb(struct disp_lcm_handle *plcm);
 int disp_lcm_ioctl(struct disp_lcm_handle *plcm, enum LCM_IOCTL ioctl,
 	unsigned int arg);

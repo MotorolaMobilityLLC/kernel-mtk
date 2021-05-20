@@ -447,6 +447,9 @@ int primary_display_get_original_width(void);
 int primary_display_get_original_height(void);
 int primary_display_lcm_ATA(void);
 int primary_display_setbacklight(unsigned int level);
+#ifdef CONFIG_BACKLIGHT_LEVEL_LCM
+int primary_display_get_max_brightness(void);
+#endif
 int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback,
 	unsigned int user_data);
 int primary_display_switch_dst_mode(int mode);
