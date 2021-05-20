@@ -1030,6 +1030,7 @@ struct LCM_DRIVER {
 	/* /////////////////////////CABC backlight related function */
 	void (*set_backlight)(unsigned int level);
 	void (*set_backlight_cmdq)(void *handle, unsigned int level);
+	unsigned int (*get_max_brightness)(void);
 	bool (*get_hbm_state)(void);
 	bool (*get_hbm_wait)(void);
 	bool (*set_hbm_wait)(bool wait);

@@ -8109,6 +8109,28 @@ int primary_display_setbacklight(unsigned int level)
 	return ret;
 }
 
+#ifdef CONFIG_BACKLIGHT_LEVEL_LCM
+int primary_display_get_max_brightness(void)
+{
+        int bl_max = 0;
+	DISPFUNC();
+        if ((pgc == NULL) || (pgc->plcm == NULL)) {
+                DISPMSG("%s:get max_brightness early!\n");
+                return -1;
+        }
+        if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+                int ret;
+                DISPMSG("primary display path is busy\n");
+                ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ*1);
+                DISPMSG("wait frame done ret:%d\n", ret);
+        }
+
+	bl_max = disp_lcm_get_max_brightness(pgc->plcm);
+        DISPMSG("%s: get max_brightness=\n",__func__, bl_max);
+        return bl_max;
+}
+#endif
+
 int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count,
 	unsigned int *lcm_value)
 {
