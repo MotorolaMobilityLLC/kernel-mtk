@@ -602,7 +602,6 @@ static void check_streamon(void)
 		mdelay(1);
 	}
 }
-
 static void check_streamoff(void)
 {
 	unsigned int i = 0, framecnt = 0;
@@ -633,11 +632,12 @@ static kal_uint32 streaming_control(kal_bool enable)
 		for (i = 0; i < timeout; i++) {
 			mdelay(10);
 			framecnt = read_cmos_sensor_8(0x0005);
-			if ( framecnt == 0xFF) {
-			LOG_INF(" Stream Off OK at i=%d.\n", i);
-			return ERROR_NONE;
+			if ( framecnt == 0xFF)
+			{
+				LOG_INF(" Stream Off OK at i=%d.\n", i);
+				return ERROR_NONE;
+			}
 		}
-	}
 		LOG_INF("Stream Off Fail! framecnt= %d.\n", framecnt);
 	}
 	return ERROR_NONE;
@@ -646,9 +646,9 @@ static kal_uint32 streaming_control(kal_bool enable)
 static inline void sensor_pre_init(void)
 {
 	write_cmos_sensor(0x6028, 0x4000);
-	write_cmos_sensor(0x0000, 0x0F1C);
+	write_cmos_sensor(0x0000, 0x0F20);
 	write_cmos_sensor(0x0000, 0x1AD2);
-	write_cmos_sensor(0x001E, 0x6FB4);
+	write_cmos_sensor(0x001E, 0x7385);
 	write_cmos_sensor(0x6028, 0x4000);
 	write_cmos_sensor(0x6018, 0x0001);
 	mdelay(8);
