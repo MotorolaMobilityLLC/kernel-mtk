@@ -98,16 +98,10 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
-#define LCM_BL_BITS_11			0 		//EVT bit12
-#if LCM_BL_BITS_11
-#define LCM_BL_MAX_BRIGHTENSS		1638
-#define LCM_BL_MIN_BRIGHTENSS		12
-#else
+#define LCM_BL_BITS_12			1	//bit12
 #define LCM_BL_MAX_BRIGHTENSS		3276
 #define LCM_BL_MIN_BRIGHTENSS		19
-#endif
-
-#define BL_MAX_LEVEL			1638
+#define BL_MAX_LEVEL			LCM_BL_MAX_BRIGHTENSS
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -473,6 +467,12 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 }
 
+static unsigned int lcm_get_max_brightness(void)
+{
+        LCM_LOGD("%s: return max_brightness:%d\n", __func__, LCM_BL_MAX_BRIGHTENSS);
+        return LCM_BL_MAX_BRIGHTENSS;
+}
+
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 		// set 11bit
@@ -488,12 +488,12 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
 		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
 	}
-#if LCM_BL_BITS_11
-	//for 11bit
-	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
-#else
+#if LCM_BL_BITS_12
 	//for 12bit
 	bl_level[0].para_list[0] = (bl_lvl&0xF00)>>8;
+#else
+	//for 11bit
+	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
 #endif
 	bl_level[0].para_list[1] = (bl_lvl&0xFF);
 	LCM_LOGI("%s,tm_hx83112a: level=%d, para_list[0]=0x%x,para_list[1]=0x%x\n",__func__, level, bl_level[0].para_list[0],bl_level[0].para_list[1]);
@@ -586,6 +586,7 @@ struct LCM_DRIVER mipi_mot_vid_tm_hx83112a_hdp_652_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+	.get_max_brightness = lcm_get_max_brightness,
 	.ata_check = lcm_ata_check,
 	.set_lcm_cmd = lcm_set_cmdq,
 #if (LCM_DSI_CMD_MODE)
