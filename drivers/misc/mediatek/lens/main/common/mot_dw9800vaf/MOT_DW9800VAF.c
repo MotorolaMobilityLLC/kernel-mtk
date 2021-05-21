@@ -126,12 +126,12 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
-	char puSendCmdArray[4][3] = {
+	char puSendCmdArray[5][3] = {
+	{0x02, 0x02,0},
 	{0x02, 0x02,1},
+	{0x02, 0x02,0},
 	{0x06, 0x40,0},
 	{0x07, 0x0b,0},
-	{0x10, 0x00,0},
-
 	};
 	unsigned char cmd_number;
 
@@ -140,7 +140,7 @@ static int initdrv(void)
 	LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]),
 			puSendCmdArray[2]);
 
-	for (cmd_number = 0; cmd_number < 4; cmd_number++) {
+	for (cmd_number = 0; cmd_number < 5; cmd_number++) {
 			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
 					puSendCmdArray[cmd_number], 2);
 			if (i4RetValue < 0)
