@@ -230,10 +230,6 @@ static void lcm_panel_init(struct lcm *ctx)
 	udelay(15 * 1000);
 	gpiod_set_value(ctx->reset_gpio, 1);
 	udelay(10 * 1000);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	udelay(10 * 1000);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	udelay(10 * 1000);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	if( strstr(saved_command_line, "EVT1Panel") || strstr(saved_command_line, "EVT2Panel") ) {
