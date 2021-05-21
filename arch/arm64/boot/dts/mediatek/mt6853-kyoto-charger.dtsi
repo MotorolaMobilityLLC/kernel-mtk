@@ -108,6 +108,18 @@
 		3488 3488 3488 3488/*T8*/
 		3488 3488 3488 3488/*T9*/
 	>;
+
+	g_FG_PSEUDO100_T0 = <(100)>;
+	/*Pseudo 100% percentage at T0*/
+	g_FG_PSEUDO100_T1 = <(100)>;
+	/*Pseudo 100% percentage at T1*/
+	g_FG_PSEUDO100_T2 = <(90)>;
+	/*Pseudo 100% percentage at T2*/
+	g_FG_PSEUDO100_T3 = <(84)>;
+	/*Pseudo 100% percentage at T3*/
+	g_FG_PSEUDO100_T4 = <(63)>;
+	/*Pseudo 100% percentage at T4*/
+
         #include "bat_setting/batterytable_nt50_atl_5000mah_ext.dtsi"
 	#include "bat_setting/batterytable_nt50_sunwoda_5000mah_ext.dtsi"
 };
