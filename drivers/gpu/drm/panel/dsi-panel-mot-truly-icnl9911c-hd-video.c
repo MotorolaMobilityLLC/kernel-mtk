@@ -82,8 +82,10 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 	ssize_t ret;
 	char *addr;
 
-	if (ctx->error < 0)
-		return;
+	if (ctx->error < 0) {
+		dev_err(ctx->dev, "%s: there is a error %zd before,now writing seq: %ph\n", __func__, ctx->error, data);
+		ctx->error = 0;
+	}
 
 	addr = (char *)data;
 	if ((int)*addr < 0xB0)
@@ -102,8 +104,10 @@ static int lcm_dcs_read(struct lcm *ctx, u8 cmd, void *data, size_t len)
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 	ssize_t ret;
 
-	if (ctx->error < 0)
-		return 0;
+	if (ctx->error < 0) {
+		dev_err(ctx->dev, "%s: there is a error %zd before,now cmd (%#x)\n", __func__, ctx->error, cmd);
+		ctx->error = 0;
+	}
 
 	ret = mipi_dsi_dcs_read(dsi, cmd, data, len);
 	if (ret < 0) {
