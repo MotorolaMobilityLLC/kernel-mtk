@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2019 MediaTek Inc.
+ * Copyright (c) 2021 MediaTek Inc.
  */
 
 /*****************************************************************************
@@ -79,43 +79,17 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.cap = {
 		.pclk = 560000000, /*//30fps case*/
-		.linelength = 8688, /*//0x1608*/
-		.framelength = 6400, /*//0x0FA8*/
+		.linelength = 4584, /*//0x2330*/
+		.framelength = 4064, /*//0x09F0*/
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 8160, /*//0x1440*/
-		.grabwindow_height = 6144, /*//0x0F28*/
-		/*//grabwindow_height should be 16's N times*/
-		.mipi_data_lp2hs_settle_dc = 85,
+		.grabwindow_width = 4080, /*//0x0A20*/
+		.grabwindow_height = 3072, /*//0x0794*/
+		//grabwindow_height should be 16's N times
+		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 556800000,
+		.mipi_pixel_rate = 662400000,
 	},
-#if 0 //stan
-	.cap1 = {
-		.pclk = 678000000, /*//30fps case*/
-		.linelength = 5640, /*//0x1608*/
-		.framelength = 4008, /*//0x0FA8*/
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 5184, /*//0x1440*/
-		.grabwindow_height = 3880, /*//0x0F28*/
-		/*//grabwindow_height should be 16's N times*/
-		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 300,
-	},
-	.cap2 = {
-		.pclk = 678000000, /*//30fps case*/
-		.linelength = 5640, /*//0x1608*/
-		.framelength = 4008, /*//0x0FA8*/
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 5184, /*//0x1440*/
-		.grabwindow_height = 3880, /*//0x0F28*/
-		/*//grabwindow_height should be 16's N times*/
-		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 300,
-	},
-#endif
 	.normal_video = {
 		.pclk = 560000000, /*//30fps case*/
 		.linelength = 5910, /*//0x2330*/
@@ -123,37 +97,11 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4080, /*//0x0A20*/
-		.grabwindow_height = 2296, /*//0x0794*/
+		.grabwindow_height = 3072, /*//0x0794*/
 		//grabwindow_height should be 16's N times
 		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 480000000,
-	},
-	.hs_video = {/*slow motion*/
-		.pclk = 600000000, /*//30fps case*/
-		.linelength = 2096, /*0x0500*/
-		.framelength = 2380, /*//0x02d0*/
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 1280, /*//0x1440*/
-		.grabwindow_height = 720, /*//0x0F28*/
-		/*//grabwindow_height should be 16's N times*/
-		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 1200,
-		.mipi_pixel_rate = 640000000,
-	},
-	.slim_video = {/*VT Call*/
-		.pclk = 600000000, /*//30fps case*/
-		.linelength = 2116, /*//0x1608*/
-		.framelength = 4720, /*//0x0FA8*/
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 1920, /*//0x1440*/
-		.grabwindow_height = 1080, /*//0x0F28*/
-		/*//grabwindow_height should be 16's N times*/
-		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 600,
-		.mipi_pixel_rate = 640000000,
 	},
 	.margin = 10,		/* sensor framelength & shutter margin */
 	.min_shutter = 4,	/* min shutter */
@@ -174,16 +122,16 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,	/* isp gain delay frame for AE cycle */
 	.ihdr_support = 0,	/* 1, support; 0,not support */
 	.ihdr_le_firstline = 0,	/* 1,le first ; 0, se first */
-	.sensor_mode_num = 5,	/* support sensor mode num */
+	.sensor_mode_num = 3,	/* support sensor mode num */
 
-	.cap_delay_frame = 3,	/* enter capture delay frame num */
-	.pre_delay_frame = 3,	/* enter preview delay frame num */
-	.video_delay_frame = 3,	/* enter video delay frame num */
+	.cap_delay_frame = 2,	/* enter capture delay frame num */
+	.pre_delay_frame = 2,	/* enter preview delay frame num */
+	.video_delay_frame = 2,	/* enter video delay frame num */
 
 	/* enter high speed video  delay frame num */
-	.hs_video_delay_frame = 3,
+	.hs_video_delay_frame = 2,
 
-	.slim_video_delay_frame = 3,	/* enter slim video delay frame num */
+	.slim_video_delay_frame = 2,	/* enter slim video delay frame num */
 
 	.isp_driving_current = ISP_DRIVING_6MA,	/* mclk driving current */
 
@@ -267,12 +215,10 @@ static struct imgsensor_struct imgsensor = {
  */
 
 /* Sensor output window information */
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[3] = {
 	{ 8192,	6176,	  16,	  16,	4080,	3072,	4080,	3072,	0,	0,	4080,	3072,	0,	0,	4080,	3072}, // Preview
-	{ 8192,	6176,	  16,	  16,	8160,	6144,	8160,	6144,	0,	0,	8160,	6144,	0,	0,	8160,	6144}, // capture
-	{ 8192,	6176,	  16,	 792,	4080,	2296,	4080,	2296,	0,	0,	4080,	2296,	0,	0,	4080,	2296}, // video
-	{ 8192,	6176,	1536,	1648,	2560,	1440,	1280,	720,	0,	0,	1280,	720,	0,	0,	1280,	 720}, //hight speed video
-	{ 8192,	6176,	 256,	 928,	3840,	2160,	1920,	1080,	0,	0,	1920,	1080,	0,	0,	1920,	1080}, // slim video
+	{ 8192,	6176,	  16,	  16,	4080,	3072,	4080,	3072,	0,	0,	4080,	3072,	0,	0,	4080,	3072}, // capture
+	{ 8192,	6176,	  16,	  16,	4080,	3072,	4080,	3072,	0,	0,	4080,	3072,	0,	0,	4080,	3072}, // video
 };
 
 
@@ -594,9 +540,8 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 	if ((I2C_BUFFER_LEN - tosend) < 4 || IDX == len || addr != addr_last) {
 		iBurstWriteReg_multi(puSendCmd, tosend,
 			imgsensor.i2c_write_id, 4, imgsensor_info.i2c_speed);
-
 			tosend = 0;
-	}
+}
 #else
 		iWriteRegI2CTiming(puSendCmd, 4,
 			imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
@@ -1940,6 +1885,8 @@ static void sensor_init(void)
 {
 	/* initial sequence */
 
+	pr_debug("sensor_init\n");
+
 	write_cmos_sensor(0x6028, 0x4000);
 	write_cmos_sensor(0x0000, 0x0001);
 	write_cmos_sensor(0x0000, 0x38E1);
@@ -2193,8 +2140,8 @@ static kal_uint16 addr_data_pair_pre_jn1sq[] = {
 	0x0702, 0x0000,
 	0x0202, 0x0100,
 	0x0200, 0x0100,
-	0x0D00, 0x0101,
-	0x0D02, 0x0101,
+	0x0D00, 0x0100,
+	0x0D02, 0x0001,
 	0x0D04, 0x0102,
 	0x6226, 0x0000
 };
@@ -2212,294 +2159,22 @@ static void preview_setting(void)
 	  Output_Width :	4080	px
 	  Output_Height :	3072	px
 	  Frame rate :	30.06	fps
-	  Output format :	Raw10	
+	  Output format :	Raw10
 	  H-size :	4584 	px
 	  H-blank :	504	px
 	  V-size :	4064	line
 	  V-blank :	992	line
-	  Tail X :	508	
-	  Tail Y :	3056	
+	  Tail X :	508
+	  Tail Y :	3056
 	  Lane :	4	lane
 	  First Pixel :	Gr	First*/
+
+	pr_debug("preview_setting\n");
 
 	table_write_cmos_sensor(addr_data_pair_pre_jn1sq,
 			sizeof(addr_data_pair_pre_jn1sq) / sizeof(kal_uint16));
 
 }				/*      preview_setting  */
-
-
-
-static kal_uint16 addr_data_pair_cap_jn1sq[] = {
-	0x6028, 0x2400,
-	0x602A, 0x1A28,
-	0x6F12, 0x4C00,
-	0x602A, 0x065A,
-	0x6F12, 0x0000,
-	0x602A, 0x139E,
-	0x6F12, 0x0400,
-	0x602A, 0x139C,
-	0x6F12, 0x0100,
-	0x602A, 0x13A0,
-	0x6F12, 0x0500,
-	0x6F12, 0x0120,
-	0x602A, 0x2072,
-	0x6F12, 0x0101,
-	0x602A, 0x1A64,
-	0x6F12, 0x0001,
-	0x6F12, 0x0000,
-	0x602A, 0x19E6,
-	0x6F12, 0x0200,
-	0x602A, 0x1A30,
-	0x6F12, 0x3403,
-	0x602A, 0x19FC,
-	0x6F12, 0x0700,
-	0x602A, 0x19F4,
-	0x6F12, 0x0707,
-	0x602A, 0x19F8,
-	0x6F12, 0x0B0B,
-	0x602A, 0x1B26,
-	0x6F12, 0x6F80,
-	0x6F12, 0xA060,
-	0x602A, 0x1A3C,
-	0x6F12, 0x8207,
-	0x602A, 0x1A48,
-	0x6F12, 0x8207,
-	0x602A, 0x1444,
-	0x6F12, 0x2000,
-	0x6F12, 0x2000,
-	0x602A, 0x144C,
-	0x6F12, 0x3F00,
-	0x6F12, 0x3F00,
-	0x602A, 0x7F6C,
-	0x6F12, 0x0100,
-	0x6F12, 0x2F00,
-	0x6F12, 0xFA00,
-	0x6F12, 0x2400,
-	0x6F12, 0xE500,
-	0x602A, 0x0650,
-	0x6F12, 0x0600,
-	0x602A, 0x0654,
-	0x6F12, 0x0000,
-	0x602A, 0x1A46,
-	0x6F12, 0x9800,
-	0x602A, 0x1A52,
-	0x6F12, 0x9800,
-	0x602A, 0x0674,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x602A, 0x0668,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x602A, 0x0684,
-	0x6F12, 0x4001,
-	0x602A, 0x0688,
-	0x6F12, 0x4001,
-	0x602A, 0x147C,
-	0x6F12, 0x0400,
-	0x602A, 0x1480,
-	0x6F12, 0x0400,
-	0x602A, 0x19F6,
-	0x6F12, 0x0404,
-	0x602A, 0x0812,
-	0x6F12, 0x0010,
-	0x602A, 0x2148,
-	0x6F12, 0x0100,
-	0x602A, 0x2042,
-	0x6F12, 0x1A00,
-	0x602A, 0x0874,
-	0x6F12, 0x0106,
-	0x602A, 0x09C0,
-	0x6F12, 0x4000,
-	0x602A, 0x09C4,
-	0x6F12, 0x4000,
-	0x602A, 0x19FE,
-	0x6F12, 0x0C1C,
-	0x602A, 0x4D92,
-	0x6F12, 0x0000,
-	0x602A, 0x8104,
-	0x6F12, 0x0000,
-	0x602A, 0x4D94,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x602A, 0x3570,
-	0x6F12, 0x0000,
-	0x602A, 0x3574,
-	0x6F12, 0x4B08,
-	0x602A, 0x21E4,
-	0x6F12, 0x0400,
-	0x602A, 0x21EC,
-	0x6F12, 0x9100,
-	0x602A, 0x2080,
-	0x6F12, 0x0100,
-	0x6F12, 0xFF00,
-	0x602A, 0x2086,
-	0x6F12, 0x0001,
-	0x602A, 0x208E,
-	0x6F12, 0x14F4,
-	0x602A, 0x208A,
-	0x6F12, 0xD244,
-	0x6F12, 0xD244,
-	0x602A, 0x120E,
-	0x6F12, 0x1000,
-	0x602A, 0x212E,
-	0x6F12, 0x0200,
-	0x602A, 0x13AE,
-	0x6F12, 0x0100,
-	0x602A, 0x0718,
-	0x6F12, 0x0000,
-	0x602A, 0x0710,
-	0x6F12, 0x0010,
-	0x6F12, 0x0201,
-	0x6F12, 0x0800,
-	0x602A, 0x1B5C,
-	0x6F12, 0x0000,
-	0x602A, 0x0786,
-	0x6F12, 0x1401,
-	0x602A, 0x2022,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x602A, 0x1360,
-	0x6F12, 0x0000,
-	0x602A, 0x1376,
-	0x6F12, 0x0000,
-	0x6F12, 0x6038,
-	0x6F12, 0x7038,
-	0x6F12, 0x8038,
-	0x602A, 0x1386,
-	0x6F12, 0x0B00,
-	0x602A, 0x06FA,
-	0x6F12, 0x1000,
-	0x602A, 0x4A94,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x602A, 0x0A76,
-	0x6F12, 0x1000,
-	0x602A, 0x0AEE,
-	0x6F12, 0x1000,
-	0x602A, 0x0B66,
-	0x6F12, 0x1000,
-	0x602A, 0x0BDE,
-	0x6F12, 0x1000,
-	0x602A, 0x0C56,
-	0x6F12, 0x1000,
-	0x602A, 0x0CF2,
-	0x6F12, 0x0001,
-	0x602A, 0x0CF0,
-	0x6F12, 0x0101,
-	0x602A, 0x11B8,
-	0x6F12, 0x0000,
-	0x602A, 0x11F6,
-	0x6F12, 0x0010,
-	0x602A, 0x4A74,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6028, 0x4000,
-	0xF46A, 0xAE80,
-	0x0344, 0x0000,
-	0x0346, 0x0000,
-	0x0348, 0x1FFF,
-	0x034A, 0x181F,
-	0x034C, 0x1FE0,
-	0x034E, 0x1800,
-	0x0350, 0x0010,
-	0x0352, 0x0010,
-	0x0900, 0x0111,
-	0x0380, 0x0001,
-	0x0382, 0x0001,
-	0x0384, 0x0001,
-	0x0386, 0x0001,
-	0x0110, 0x1002,
-	0x0114, 0x0300,
-	0x0116, 0x3000,
-	0x0136, 0x1800,
-	0x013E, 0x0000,
-	0x0300, 0x0006,
-	0x0302, 0x0001,
-	0x0304, 0x0004,
-	0x0306, 0x008C,
-	0x0308, 0x0008,
-	0x030A, 0x0001,
-	0x030C, 0x0000,
-	0x030E, 0x0004,
-	0x0310, 0x0074,
-	0x0312, 0x0000,
-	0x0340, 0x1900,
-	0x0342, 0x21F0,
-	0x0702, 0x0000,
-	0x0202, 0x0100,
-	0x0200, 0x0100,
-	0x0D00, 0x0100,
-	0x0D02, 0x0001,
-	0x0D04, 0x0002,
-	0x6226, 0x0000
-};
-
-
-
-static void capture_setting(kal_uint16 currefps)
-{
-
-	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v0.1b_2020510 -- (Set)Shine"*/
-
-	/*ExtClk :	24	MHz
-	  Vt_pix_clk :	70 	MHz 70*8 = 560Mhz
-	  MIPI_output_speed :	1392.0 	Mbps/lane
-	  Crop_Width :	8192	px
-	  Crop_Height :	6176	px
-	  Output_Width :	8160	px
-	  Output_Height :	6144	px
-	  Frame rate :	10.07	fps
-	  Output format :	Raw10	
-	  H-size :	8688 	px
-	  H-blank :	528	px
-	  V-size :	6400	line
-	  V-blank :	256	line
-	  Tail X :	0	
-	  Tail Y :	0	
-	  Lane :	4	lane
-	  First Pixel :	Gr	First*/
-	
-	table_write_cmos_sensor(addr_data_pair_cap_jn1sq,
-			sizeof(addr_data_pair_cap_jn1sq) / sizeof(kal_uint16));
-}
 
 static kal_uint16 addr_data_pair_video_jn1sq[] = {
 	0x6028, 0x2400,
@@ -2606,11 +2281,11 @@ static kal_uint16 addr_data_pair_video_jn1sq[] = {
 	0x602A, 0x3570,
 	0x6F12, 0x0000,
 	0x602A, 0x3574,
-	0x6F12, 0x4700,
+	0x6F12, 0x1304,
 	0x602A, 0x21E4,
 	0x6F12, 0x0400,
 	0x602A, 0x21EC,
-	0x6F12, 0xC702,
+	0x6F12, 0x1D02,
 	0x602A, 0x2080,
 	0x6F12, 0x0100,
 	0x6F12, 0xFF00,
@@ -2650,7 +2325,7 @@ static kal_uint16 addr_data_pair_video_jn1sq[] = {
 	0x602A, 0x1386,
 	0x6F12, 0x0B00,
 	0x602A, 0x06FA,
-	0x6F12, 0x0000,
+	0x6F12, 0x1000,
 	0x602A, 0x4A94,
 	0x6F12, 0x0600,
 	0x6F12, 0x0600,
@@ -2706,11 +2381,11 @@ static kal_uint16 addr_data_pair_video_jn1sq[] = {
 	0x6028, 0x4000,
 	0xF46A, 0xAE80,
 	0x0344, 0x0000,
-	0x0346, 0x0308,
+	0x0346, 0x0000,
 	0x0348, 0x1FFF,
-	0x034A, 0x1517,
+	0x034A, 0x181F,
 	0x034C, 0x0FF0,
-	0x034E, 0x08F8,
+	0x034E, 0x0C00,
 	0x0350, 0x0008,
 	0x0352, 0x0008,
 	0x0900, 0x0122,
@@ -2739,576 +2414,18 @@ static kal_uint16 addr_data_pair_video_jn1sq[] = {
 	0x0702, 0x0000,
 	0x0202, 0x0100,
 	0x0200, 0x0100,
-	0x0D00, 0x0101,
-	0x0D02, 0x0101,
+	0x0D00, 0x0100,
+	0x0D02, 0x0001,
 	0x0D04, 0x0102,
 	0x6226, 0x0000
 };
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-
-	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v0.1b_2020510 -- (Set)Shine"*/
-
-	/*ExtClk :	24	MHz
-	  Vt_pix_clk :	70 	MHz 70*8 = 560Mhz
-	  MIPI_output_speed :	1200.0 	Mbps/lane
-	  Crop_Width :	8192	px
-	  Crop_Height :	4624	px
-	  Output_Width :	4080	px
-	  Output_Height :	2296	px
-	  Frame rate :	30.02	fps
-	  Output format :	Raw10	
-	  H-size :	5910 	px
-	  H-blank :	1830	px
-	  V-size :	3156	line
-	  V-blank :	860	line
-	  Tail X :	508	
-	  Tail Y :	2288	
-	  Lane :	4	lane
-	  First Pixel :	Gr	First*/
+	pr_debug("normal_video_setting\n");
 
 	table_write_cmos_sensor(addr_data_pair_video_jn1sq,
 		sizeof(addr_data_pair_video_jn1sq) / sizeof(kal_uint16));
-}
-
-static kal_uint16 addr_data_pair_hs_jn1sq[] = {
-	0x6028, 0x2400,
-	0x602A, 0x1A28,
-	0x6F12, 0x4C00,
-	0x602A, 0x065A,
-	0x6F12, 0x0000,
-	0x602A, 0x139E,
-	0x6F12, 0x0300,
-	0x602A, 0x139C,
-	0x6F12, 0x0000,
-	0x602A, 0x13A0,
-	0x6F12, 0x0A00,
-	0x6F12, 0x0020,
-	0x602A, 0x2072,
-	0x6F12, 0x0000,
-	0x602A, 0x1A64,
-	0x6F12, 0x0301,
-	0x6F12, 0xFF00,
-	0x602A, 0x19E6,
-	0x6F12, 0x0201,
-	0x602A, 0x1A30,
-	0x6F12, 0x3401,
-	0x602A, 0x19FC,
-	0x6F12, 0x0B00,
-	0x602A, 0x19F4,
-	0x6F12, 0x0606,
-	0x602A, 0x19F8,
-	0x6F12, 0x1010,
-	0x602A, 0x1B26,
-	0x6F12, 0x6F80,
-	0x6F12, 0xA020,
-	0x602A, 0x1A3C,
-	0x6F12, 0x5207,
-	0x602A, 0x1A48,
-	0x6F12, 0x5207,
-	0x602A, 0x1444,
-	0x6F12, 0x2100,
-	0x6F12, 0x2100,
-	0x602A, 0x144C,
-	0x6F12, 0x4200,
-	0x6F12, 0x4200,
-	0x602A, 0x7F6C,
-	0x6F12, 0x0100,
-	0x6F12, 0x3100,
-	0x6F12, 0xF700,
-	0x6F12, 0x2600,
-	0x6F12, 0xE100,
-	0x602A, 0x0650,
-	0x6F12, 0x0600,
-	0x602A, 0x0654,
-	0x6F12, 0x0000,
-	0x602A, 0x1A46,
-	0x6F12, 0x8900,
-	0x602A, 0x1A52,
-	0x6F12, 0xBF00,
-	0x602A, 0x0674,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x602A, 0x0668,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x602A, 0x0684,
-	0x6F12, 0x4001,
-	0x602A, 0x0688,
-	0x6F12, 0x4001,
-	0x602A, 0x147C,
-	0x6F12, 0x1000,
-	0x602A, 0x1480,
-	0x6F12, 0x1000,
-	0x602A, 0x19F6,
-	0x6F12, 0x0904,
-	0x602A, 0x0812,
-	0x6F12, 0x0010,
-	0x602A, 0x2148,
-	0x6F12, 0x0100,
-	0x602A, 0x2042,
-	0x6F12, 0x1A00,
-	0x602A, 0x0874,
-	0x6F12, 0x1100,
-	0x602A, 0x09C0,
-	0x6F12, 0x1803,
-	0x602A, 0x09C4,
-	0x6F12, 0x1803,
-	0x602A, 0x19FE,
-	0x6F12, 0x0E1C,
-	0x602A, 0x4D92,
-	0x6F12, 0x0000,
-	0x602A, 0x8104,
-	0x6F12, 0x0000,
-	0x602A, 0x4D94,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x602A, 0x3570,
-	0x6F12, 0x0000,
-	0x602A, 0x3574,
-	0x6F12, 0x3801,
-	0x602A, 0x21E4,
-	0x6F12, 0x0400,
-	0x602A, 0x21EC,
-	0x6F12, 0x6801,
-	0x602A, 0x2080,
-	0x6F12, 0x0100,
-	0x6F12, 0xFF01,
-	0x602A, 0x2086,
-	0x6F12, 0x0002,
-	0x602A, 0x208E,
-	0x6F12, 0x14F4,
-	0x602A, 0x208A,
-	0x6F12, 0xC244,
-	0x6F12, 0xD244,
-	0x602A, 0x120E,
-	0x6F12, 0x1000,
-	0x602A, 0x212E,
-	0x6F12, 0x0A00,
-	0x602A, 0x13AE,
-	0x6F12, 0x0102,
-	0x602A, 0x0718,
-	0x6F12, 0x0005,
-	0x602A, 0x0710,
-	0x6F12, 0x0004,
-	0x6F12, 0x0401,
-	0x6F12, 0x0100,
-	0x602A, 0x1B5C,
-	0x6F12, 0x0300,
-	0x602A, 0x0786,
-	0x6F12, 0x7701,
-	0x602A, 0x2022,
-	0x6F12, 0x0101,
-	0x6F12, 0x0101,
-	0x602A, 0x1360,
-	0x6F12, 0x0100,
-	0x602A, 0x1376,
-	0x6F12, 0x0200,
-	0x6F12, 0x6038,
-	0x6F12, 0x7038,
-	0x6F12, 0x8038,
-	0x602A, 0x1386,
-	0x6F12, 0x0B00,
-	0x602A, 0x06FA,
-	0x6F12, 0x1000,
-	0x602A, 0x4A94,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x6F12, 0x0600,
-	0x602A, 0x0A76,
-	0x6F12, 0x1000,
-	0x602A, 0x0AEE,
-	0x6F12, 0x1000,
-	0x602A, 0x0B66,
-	0x6F12, 0x1000,
-	0x602A, 0x0BDE,
-	0x6F12, 0x1000,
-	0x602A, 0x0C56,
-	0x6F12, 0x1000,
-	0x602A, 0x0CF2,
-	0x6F12, 0x0001,
-	0x602A, 0x0CF0,
-	0x6F12, 0x0101,
-	0x602A, 0x11B8,
-	0x6F12, 0x0000,
-	0x602A, 0x11F6,
-	0x6F12, 0x0010,
-	0x602A, 0x4A74,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6028, 0x4000,
-	0xF46A, 0xAE80,
-	0x0344, 0x05F0,
-	0x0346, 0x0660,
-	0x0348, 0x1A0F,
-	0x034A, 0x11BF,
-	0x034C, 0x0500,
-	0x034E, 0x02D0,
-	0x0350, 0x0004,
-	0x0352, 0x0004,
-	0x0900, 0x0144,
-	0x0380, 0x0002,
-	0x0382, 0x0006,
-	0x0384, 0x0002,
-	0x0386, 0x0006,
-	0x0110, 0x1002,
-	0x0114, 0x0300,
-	0x0116, 0x3000,
-	0x0136, 0x1800,
-	0x013E, 0x0000,
-	0x0300, 0x0006,
-	0x0302, 0x0001,
-	0x0304, 0x0004,
-	0x0306, 0x0096,
-	0x0308, 0x0008,
-	0x030A, 0x0001,
-	0x030C, 0x0000,
-	0x030E, 0x0003,
-	0x0310, 0x0064,
-	0x0312, 0x0000,
-	0x080E, 0x0000,
-	0x0340, 0x094C,
-	0x0342, 0x0830,
-	0x0702, 0x0000,
-	0x0202, 0x0100,
-	0x0200, 0x0100,
-	0x0D00, 0x0101,
-	0x0D02, 0x0001,
-	0x0D04, 0x0002,
-	0x6226, 0x0000
-};
-
-static void hs_video_setting(void)
-{
-	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v0.1b_2020510 -- (Set)Shine"*/
-
-	/*ExtClk :	24	MHz
-	  Vt_pix_clk :	75 	MHz 70*8 = 600Mhz
-	  MIPI_output_speed :	1600.0 	Mbps/lane
-	  Crop_Width :	5152	px
-	  Crop_Height :	2912	px
-	  Output_Width :	1280	px
-	  Output_Height :	720	px
-	  Frame rate :	120.28	fps
-	  Output format :	Raw10
-	  H-size :	2096 	px
-	  H-blank :	816	px
-	  V-size :	2380	line
-	  V-blank :	1660	line
-	  Tail X :	0
-	  Tail Y :	0
-	  Lane :	4	lane
-	  First Pixel :	Gr	First*/
-	table_write_cmos_sensor(addr_data_pair_hs_jn1sq,
-			sizeof(addr_data_pair_hs_jn1sq) / sizeof(kal_uint16));
-}
-
-static kal_uint16 addr_data_pair_slim_jn1sq[] = {
-	0x6028, 0x2400,
-	0x602A, 0x1A28,
-	0x6F12, 0x4C00,
-	0x602A, 0x065A,
-	0x6F12, 0x0000,
-	0x602A, 0x139E,
-	0x6F12, 0x0300,
-	0x602A, 0x139C,
-	0x6F12, 0x0000,
-	0x602A, 0x13A0,
-	0x6F12, 0x0A00,
-	0x6F12, 0x0020,
-	0x602A, 0x2072,
-	0x6F12, 0x0000,
-	0x602A, 0x1A64,
-	0x6F12, 0x0301,
-	0x6F12, 0xFF00,
-	0x602A, 0x19E6,
-	0x6F12, 0x0201,
-	0x602A, 0x1A30,
-	0x6F12, 0x3401,
-	0x602A, 0x19FC,
-	0x6F12, 0x0B00,
-	0x602A, 0x19F4,
-	0x6F12, 0x0606,
-	0x602A, 0x19F8,
-	0x6F12, 0x1010,
-	0x602A, 0x1B26,
-	0x6F12, 0x6F80,
-	0x6F12, 0xA020,
-	0x602A, 0x1A3C,
-	0x6F12, 0x5207,
-	0x602A, 0x1A48,
-	0x6F12, 0x5207,
-	0x602A, 0x1444,
-	0x6F12, 0x2100,
-	0x6F12, 0x2100,
-	0x602A, 0x144C,
-	0x6F12, 0x4200,
-	0x6F12, 0x4200,
-	0x602A, 0x7F6C,
-	0x6F12, 0x0100,
-	0x6F12, 0x3100,
-	0x6F12, 0xF700,
-	0x6F12, 0x2600,
-	0x6F12, 0xE100,
-	0x602A, 0x0650,
-	0x6F12, 0x0600,
-	0x602A, 0x0654,
-	0x6F12, 0x0000,
-	0x602A, 0x1A46,
-	0x6F12, 0x8900,
-	0x602A, 0x1A52,
-	0x6F12, 0xBF00,
-	0x602A, 0x0674,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x6F12, 0x0500,
-	0x602A, 0x0668,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x6F12, 0x0800,
-	0x602A, 0x0684,
-	0x6F12, 0x4001,
-	0x602A, 0x0688,
-	0x6F12, 0x4001,
-	0x602A, 0x147C,
-	0x6F12, 0x1000,
-	0x602A, 0x1480,
-	0x6F12, 0x1000,
-	0x602A, 0x19F6,
-	0x6F12, 0x0904,
-	0x602A, 0x0812,
-	0x6F12, 0x0010,
-	0x602A, 0x2148,
-	0x6F12, 0x0100,
-	0x602A, 0x2042,
-	0x6F12, 0x1A00,
-	0x602A, 0x0874,
-	0x6F12, 0x1100,
-	0x602A, 0x09C0,
-	0x6F12, 0x9800,
-	0x602A, 0x09C4,
-	0x6F12, 0x9800,
-	0x602A, 0x19FE,
-	0x6F12, 0x0E1C,
-	0x602A, 0x4D92,
-	0x6F12, 0x0000,
-	0x602A, 0x8104,
-	0x6F12, 0x0000,
-	0x602A, 0x4D94,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x602A, 0x3570,
-	0x6F12, 0x0000,
-	0x602A, 0x3574,
-	0x6F12, 0x0502,
-	0x602A, 0x21E4,
-	0x6F12, 0x0400,
-	0x602A, 0x21EC,
-	0x6F12, 0x1400,
-	0x602A, 0x2080,
-	0x6F12, 0x0100,
-	0x6F12, 0xFF01,
-	0x602A, 0x2086,
-	0x6F12, 0x0002,
-	0x602A, 0x208E,
-	0x6F12, 0x14F4,
-	0x602A, 0x208A,
-	0x6F12, 0xC244,
-	0x6F12, 0xD244,
-	0x602A, 0x120E,
-	0x6F12, 0x1000,
-	0x602A, 0x212E,
-	0x6F12, 0x0A00,
-	0x602A, 0x13AE,
-	0x6F12, 0x0102,
-	0x602A, 0x0718,
-	0x6F12, 0x0005,
-	0x602A, 0x0710,
-	0x6F12, 0x0004,
-	0x6F12, 0x0401,
-	0x6F12, 0x0100,
-	0x602A, 0x1B5C,
-	0x6F12, 0x0300,
-	0x602A, 0x0786,
-	0x6F12, 0x7701,
-	0x602A, 0x2022,
-	0x6F12, 0x0101,
-	0x6F12, 0x0101,
-	0x602A, 0x1360,
-	0x6F12, 0x0100,
-	0x602A, 0x1376,
-	0x6F12, 0x0200,
-	0x6F12, 0x6038,
-	0x6F12, 0x7038,
-	0x6F12, 0x8038,
-	0x602A, 0x1386,
-	0x6F12, 0x0B00,
-	0x602A, 0x06FA,
-	0x6F12, 0x1000,
-	0x602A, 0x4A94,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x6F12, 0xFAFF,
-	0x602A, 0x0A76,
-	0x6F12, 0x1000,
-	0x602A, 0x0AEE,
-	0x6F12, 0x1000,
-	0x602A, 0x0B66,
-	0x6F12, 0x1000,
-	0x602A, 0x0BDE,
-	0x6F12, 0x1000,
-	0x602A, 0x0C56,
-	0x6F12, 0x1000,
-	0x602A, 0x0CF2,
-	0x6F12, 0x0001,
-	0x602A, 0x0CF0,
-	0x6F12, 0x0101,
-	0x602A, 0x11B8,
-	0x6F12, 0x0000,
-	0x602A, 0x11F6,
-	0x6F12, 0x0010,
-	0x602A, 0x4A74,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6F12, 0x0000,
-	0x6028, 0x4000,
-	0xF46A, 0xAE80,
-	0x0344, 0x00F0,
-	0x0346, 0x0390,
-	0x0348, 0x1F0F,
-	0x034A, 0x148F,
-	0x034C, 0x0780,
-	0x034E, 0x0438,
-	0x0350, 0x0004,
-	0x0352, 0x0004,
-	0x0900, 0x0144,
-	0x0380, 0x0002,
-	0x0382, 0x0006,
-	0x0384, 0x0002,
-	0x0386, 0x0006,
-	0x0110, 0x1002,
-	0x0114, 0x0300,
-	0x0116, 0x3000,
-	0x0136, 0x1800,
-	0x013E, 0x0000,
-	0x0300, 0x0006,
-	0x0302, 0x0001,
-	0x0304, 0x0004,
-	0x0306, 0x0096,
-	0x0308, 0x0008,
-	0x030A, 0x0001,
-	0x030C, 0x0000,
-	0x030E, 0x0003,
-	0x0310, 0x0064,
-	0x0312, 0x0000,
-	0x080E, 0x0000,
-	0x0340, 0x1270,
-	0x0342, 0x0844,
-	0x0702, 0x0000,
-	0x0202, 0x0100,
-	0x0200, 0x0100,
-	0x0D00, 0x0101,
-	0x0D02, 0x0001,
-	0x0D04, 0x0002,
-	0x6226, 0x0000
-};
-
-static void slim_video_setting(void)
-{
-	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v0.1b_2020510 -- (Set)Shine"*/
-
-	/*ExtClk :	24	MHz
-	  Vt_pix_clk :	75 	MHz 70*8 = 600Mhz
-	  MIPI_output_speed :	1600.0 	Mbps/lane
-	  Crop_Width :	7712	px
-	  Crop_Height :	4352	px
-	  Output_Width :	1920	px
-	  Output_Height :	1080	px
-	  Frame rate :	60.07	fps
-	  Output format :	Raw10	
-	  H-size :	2116 	px
-	  H-blank :	196	px
-	  V-size :	4720	line
-	  V-blank :	3640	line
-	  Tail X :	0	
-	  Tail Y :	0	
-	  Lane :	4	lane
-	  First Pixel :	Gr	First*/
-
-	table_write_cmos_sensor(addr_data_pair_slim_jn1sq,
-		sizeof(addr_data_pair_slim_jn1sq) / sizeof(kal_uint16));
 }
 
 #if EEPROM_READY //stan
@@ -3393,7 +2510,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #endif
 				return ERROR_NONE;
 
-		/* 4Cell version check, 2T7 And 2T7's checking is differet
+		/* 4Cell version check, s5kjn1sq And s5kjn1sq's checking is differet
 		 *	sp8spFlag = (((read_cmos_sensor(0x000C) & 0xFF) << 8)
 		 *		|((read_cmos_sensor(0x000E) >> 8) & 0xFF));
 		 *	pr_debug(
@@ -3405,7 +2522,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		 *	}
 		 *
 		 *		pr_debug(
-		 *	"2t7 type is 0x(%x),0x000C(0x%x),0x000E(0x%x)\n",
+		 *	"s5kjn1sq type is 0x(%x),0x000C(0x%x),0x000E(0x%x)\n",
 		 *		sp8spFlag,
 		 *		read_cmos_sensor(0x000C),
 		 *		read_cmos_sensor(0x000E));
@@ -3618,7 +2735,8 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	}
 	spin_unlock(&imgsensor_drv_lock);
 
-	capture_setting(imgsensor.current_fps);
+	//capture_setting(imgsensor.current_fps);
+	preview_setting();
 	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
@@ -3644,53 +2762,6 @@ static kal_uint32 normal_video(
 	return ERROR_NONE;
 }				/*      normal_video   */
 
-static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-			   MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
-{
-
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
-	imgsensor.pclk = imgsensor_info.hs_video.pclk;
-	/* imgsensor.video_mode = KAL_TRUE; */
-	imgsensor.line_length = imgsensor_info.hs_video.linelength;
-	imgsensor.frame_length = imgsensor_info.hs_video.framelength;
-	imgsensor.min_frame_length = imgsensor_info.hs_video.framelength;
-	imgsensor.dummy_line = 0;
-	imgsensor.dummy_pixel = 0;
-	/* imgsensor.current_fps = 300; */
-	imgsensor.autoflicker_en = KAL_FALSE;
-	spin_unlock(&imgsensor_drv_lock);
-	hs_video_setting();
-	set_mirror_flip(imgsensor.mirror);
-
-	return ERROR_NONE;
-}				/*      hs_video   */
-
-static kal_uint32 slim_video(
-	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
-{
-
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
-	imgsensor.pclk = imgsensor_info.slim_video.pclk;
-	/* imgsensor.video_mode = KAL_TRUE; */
-	imgsensor.line_length = imgsensor_info.slim_video.linelength;
-	imgsensor.frame_length = imgsensor_info.slim_video.framelength;
-	imgsensor.min_frame_length = imgsensor_info.slim_video.framelength;
-	imgsensor.dummy_line = 0;
-	imgsensor.dummy_pixel = 0;
-	/* imgsensor.current_fps = 300; */
-	imgsensor.autoflicker_en = KAL_FALSE;
-	spin_unlock(&imgsensor_drv_lock);
-	slim_video_setting();
-	set_mirror_flip(imgsensor.mirror);
-
-	return ERROR_NONE;
-}				/*      slim_video       */
-
-
-
 static kal_uint32 get_resolution(
 	MSDK_SENSOR_RESOLUTION_INFO_STRUCT(*sensor_resolution))
 {
@@ -3710,16 +2781,6 @@ static kal_uint32 get_resolution(
 	sensor_resolution->SensorVideoHeight =
 		imgsensor_info.normal_video.grabwindow_height;
 
-
-	sensor_resolution->SensorHighSpeedVideoWidth =
-		imgsensor_info.hs_video.grabwindow_width;
-	sensor_resolution->SensorHighSpeedVideoHeight =
-		imgsensor_info.hs_video.grabwindow_height;
-
-	sensor_resolution->SensorSlimVideoWidth =
-		imgsensor_info.slim_video.grabwindow_width;
-	sensor_resolution->SensorSlimVideoHeight =
-		imgsensor_info.slim_video.grabwindow_height;
 	return ERROR_NONE;
 }				/*      get_resolution  */
 
@@ -3752,13 +2813,6 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->CaptureDelayFrame = imgsensor_info.cap_delay_frame;
 	sensor_info->PreviewDelayFrame = imgsensor_info.pre_delay_frame;
 	sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
-
-	sensor_info->HighSpeedVideoDelayFrame =
-		imgsensor_info.hs_video_delay_frame;
-
-	sensor_info->SlimVideoDelayFrame =
-		imgsensor_info.slim_video_delay_frame;
-
 	sensor_info->SensorMasterClockSwitch = 0;	/* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
 
@@ -3820,24 +2874,6 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			imgsensor_info.normal_video.mipi_data_lp2hs_settle_dc;
 
 		break;
-	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		sensor_info->SensorGrabStartX = imgsensor_info.hs_video.startx;
-		sensor_info->SensorGrabStartY = imgsensor_info.hs_video.starty;
-
-		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
-			imgsensor_info.hs_video.mipi_data_lp2hs_settle_dc;
-
-		break;
-	case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		sensor_info->SensorGrabStartX =
-			imgsensor_info.slim_video.startx;
-		sensor_info->SensorGrabStartY =
-			imgsensor_info.slim_video.starty;
-
-		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
-			imgsensor_info.slim_video.mipi_data_lp2hs_settle_dc;
-
-		break;
 	default:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
 		sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
@@ -3867,12 +2903,6 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		break;
 	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		normal_video(image_window, sensor_config_data);
-		break;
-	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		hs_video(image_window, sensor_config_data);
-		break;
-	case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		slim_video(image_window, sensor_config_data);
 		break;
 	default:
 		pr_debug("Error ScenarioId setting");
@@ -4027,50 +3057,6 @@ static kal_uint32 set_max_framerate_by_scenario(
 		}
 		break;
 
-	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		frame_length = imgsensor_info.hs_video.pclk
-			/ framerate * 10 / imgsensor_info.hs_video.linelength;
-		spin_lock(&imgsensor_drv_lock);
-		imgsensor.dummy_line =
-		  (frame_length > imgsensor_info.hs_video.framelength)
-		? (frame_length - imgsensor_info.hs_video.  framelength) : 0;
-
-		imgsensor.frame_length =
-		    imgsensor_info.hs_video.framelength + imgsensor.dummy_line;
-
-		imgsensor.min_frame_length = imgsensor.frame_length;
-		spin_unlock(&imgsensor_drv_lock);
-		if (imgsensor.frame_length > imgsensor.shutter)
-			set_dummy();
-		else {
-			/*No need to set*/
-			pr_debug("frame_length %d < shutter %d",
-				imgsensor.frame_length, imgsensor.shutter);
-		}
-		break;
-	case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		frame_length = imgsensor_info.slim_video.pclk
-			/ framerate * 10 / imgsensor_info.slim_video.linelength;
-
-		spin_lock(&imgsensor_drv_lock);
-		imgsensor.dummy_line =
-		  (frame_length > imgsensor_info.slim_video.framelength)
-		? (frame_length - imgsensor_info.slim_video.  framelength) : 0;
-
-		imgsensor.frame_length =
-		  imgsensor_info.slim_video.framelength + imgsensor.dummy_line;
-
-		imgsensor.min_frame_length = imgsensor.frame_length;
-		spin_unlock(&imgsensor_drv_lock);
-		if (imgsensor.frame_length > imgsensor.shutter)
-			set_dummy();
-		else {
-			/*No need to set*/
-			pr_debug("frame_length %d < shutter %d",
-				imgsensor.frame_length, imgsensor.shutter);
-		}
-		break;
-
 	default:		/* coding with  preview scenario by default */
 		frame_length = imgsensor_info.pre.pclk
 			/ framerate * 10 / imgsensor_info.pre.linelength;
@@ -4115,12 +3101,6 @@ static kal_uint32 get_default_framerate_by_scenario(
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		*framerate = imgsensor_info.cap.max_framerate;
 		break;
-	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		*framerate = imgsensor_info.hs_video.max_framerate;
-		break;
-	case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		*framerate = imgsensor_info.slim_video.max_framerate;
-		break;
 	default:
 		break;
 	}
@@ -4143,28 +3123,6 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
-
-#if 0  //stan
-static kal_uint32 get_sensor_temperature(void)
-{
-	UINT8 temperature;
-	INT32 temperature_convert;
-
-	temperature = read_cmos_sensor_8(0x013a);
-
-	if (temperature >= 0x0 && temperature <= 0x78)
-		temperature_convert = temperature;
-	else
-		temperature_convert = -1;
-
-	/*pr_info("temp_c(%d), read_reg(%d), enable %d\n",
-	 *	temperature_convert, temperature, read_cmos_sensor_8(0x0138));
-	 */
-
-	return temperature_convert;
-}
-#endif
-
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
@@ -4195,14 +3153,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= imgsensor_info.normal_video.pclk;
 			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
-				= imgsensor_info.hs_video.pclk;
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
-				= imgsensor_info.slim_video.pclk;
-			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
@@ -4210,7 +3160,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
-		
 	case SENSOR_FEATURE_GET_PERIOD_BY_SCENARIO:
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -4222,16 +3171,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 			= (imgsensor_info.normal_video.framelength << 16)
 				+ imgsensor_info.normal_video.linelength;
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
-			= (imgsensor_info.hs_video.framelength << 16)
-				+ imgsensor_info.hs_video.linelength;
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
-			= (imgsensor_info.slim_video.framelength << 16)
-				+ imgsensor_info.slim_video.linelength;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
@@ -4341,16 +3280,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			memcpy((void *)wininfo,
 				(void *)&imgsensor_winsize_info[2],
-			       sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			memcpy((void *)wininfo,
-				(void *)&imgsensor_winsize_info[3],
-			       sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			memcpy((void *)wininfo,
-				(void *)&imgsensor_winsize_info[4],
 			       sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -4471,7 +3400,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		 * break;
 		 * case SENSOR_FEATURE_GET_PDAF_DATA: //get cal data from eeprom
 		 * pr_debug("SENSOR_FEATURE_GET_PDAF_DATA\n");
-		 * read_2T7_eeprom((kal_uint16 )(*feature_data),
+		 * read_S5KJN1SQ_eeprom((kal_uint16 )(*feature_data),
 		 * (char*)(uintptr_t)(*(feature_data+1)),
 		 * (kal_uint32)(*(feature_data+2)));
 		 * pr_debug("SENSOR_FEATURE_GET_PDAF_DATA success\n");
@@ -4493,14 +3422,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_shutter(*feature_data);
 		streaming_control(KAL_TRUE);
 		break;
-		
-#if 0  //stan
-	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
-		*feature_return_para_i32 = get_sensor_temperature();
-		*feature_para_len = 4;
-		break;
-#endif
-
 	case SENSOR_FEATURE_GET_PIXEL_RATE:
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -4515,20 +3436,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			(imgsensor_info.normal_video.pclk /
 			(imgsensor_info.normal_video.linelength - 80))*
 			imgsensor_info.normal_video.grabwindow_width;
-
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.hs_video.pclk /
-			(imgsensor_info.hs_video.linelength - 80))*
-			imgsensor_info.hs_video.grabwindow_width;
-
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-			(imgsensor_info.slim_video.pclk /
-			(imgsensor_info.slim_video.linelength - 80))*
-			imgsensor_info.slim_video.grabwindow_width;
 
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -4551,14 +3458,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
 				imgsensor_info.normal_video.mipi_pixel_rate;
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.hs_video.mipi_pixel_rate;
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-				imgsensor_info.slim_video.mipi_pixel_rate;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
