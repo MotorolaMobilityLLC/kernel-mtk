@@ -45,6 +45,12 @@
 #define MULTI_WRITE    1
 
 
+#define AWB_GROUP_FLAG_ADDR 0x78
+#define AWB_GROUP1_START_ADDR 0x80
+#define AWB_GROUP2_START_ADDR 0xC0
+#define AWB_DATA_SIZE 6
+unsigned char gc02m1_data_awb[AWB_DATA_SIZE+3] = {0}; //add flag and checksum value
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -233,6 +239,53 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	char pu_send_cmd[2] = {(char)(addr & 0xff), (char)(para & 0xff)};
 
 	iWriteRegI2C(pu_send_cmd, 2, imgsensor.i2c_write_id);
+}
+
+static void read_gc02m1_awb_info(void)
+{
+	kal_uint16 i, awb_start_addr = 0, otp_grp_flag = 0;
+
+	//init setting
+	write_cmos_sensor(0xfc, 0x01);
+	write_cmos_sensor(0xf4, 0x41);
+	write_cmos_sensor(0xf5, 0xc0);
+	write_cmos_sensor(0xf6, 0x44);
+	write_cmos_sensor(0xf8, 0x38);
+	write_cmos_sensor(0xf9, 0x82);
+	write_cmos_sensor(0xfa, 0x00);
+	write_cmos_sensor(0xfd, 0x80);
+	write_cmos_sensor(0xfc, 0x81);
+	write_cmos_sensor(0xfe, 0x03);
+	write_cmos_sensor(0x01, 0x0b);
+	write_cmos_sensor(0xf7, 0x01);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x8e);
+
+	write_cmos_sensor(0xf3, 0x30); //OTP read init set
+	write_cmos_sensor(0xfe, 0x02); //page select
+	write_cmos_sensor(0x17, AWB_GROUP_FLAG_ADDR); //set addr
+	write_cmos_sensor(0xf3, 0x34); //otp read pulse
+	otp_grp_flag = read_cmos_sensor(0x19); //read value
+	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+
+	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
+		awb_start_addr = AWB_GROUP1_START_ADDR;
+		LOG_INF("awb data is group1\n");
+	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
+		awb_start_addr = AWB_GROUP2_START_ADDR;
+		LOG_INF("awb data is group2\n");
+	} else {
+		LOG_INF("gc02m1 OTP has no awb data\n");
+	}
+	gc02m1_data_awb[0] = otp_grp_flag;
+	for(i = 0; i < AWB_DATA_SIZE + 2; i++){
+		write_cmos_sensor(0x17, (awb_start_addr+i*0x08));
+		write_cmos_sensor(0xf3, 0x34);
+		gc02m1_data_awb[i+1] = read_cmos_sensor(0x19);
+		LOG_INF("addr = 0x%x, value = 0x%x\n", (awb_start_addr+i*0x08), gc02m1_data_awb[i+1]);
+	}
 }
 
 static void set_dummy(void)
@@ -683,6 +736,7 @@ static void slim_video_setting(void)
 		addr_data_pair_slim_video_mot_tonga_gc02m1,
 		sizeof(addr_data_pair_slim_video_mot_tonga_gc02m1) /
 		sizeof(kal_uint16));
+
 }
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
@@ -719,6 +773,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				read_gc02m1_awb_info();
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
