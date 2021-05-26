@@ -1246,4 +1246,10 @@ config SND_SOC_RT5509
 	depends on I2C
 	select RT_REGMAP
 
+config SND_SOC_FS16XX
+	tristate "Support fs16xx/fs16xx"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver
+
 endmenu
