@@ -1,0 +1,39 @@
+/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+&sound {
+    compatible = "mediatek,mt6768-mt6358-sound";
+    mediatek,audio-codec = <&mt6358_snd>;
+    mediatek,platform = <&afe>;
+    mtk_spk_i2s_out = <1>;
+    mtk_spk_i2s_in = <2>;
+    /* mtk_spk_i2s_mck = <3>; */
+    mediatek,speaker-codec {
+        sound-dai = <&speaker_amp>;
+    };
+};
+
+&i2c7 {
+    clock-frequency = <400000>;
+    speaker_amp: speaker_amp@34{
+        compatible = "mediatek,speaker_amp";
+        #sound-dai-cells = <0>;
+        reg = <0x34>;
+        status = "disable";
+    };
+
+    fs16xx@34 {
+        compatible = "foursemi,fs16xx";
+        reg = <0x34>;
+        fsm,re25-dft = <7168>;
+        status = "okay";
+    };
+};
