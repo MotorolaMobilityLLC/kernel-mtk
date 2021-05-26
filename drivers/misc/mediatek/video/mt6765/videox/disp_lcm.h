@@ -41,6 +41,9 @@ int disp_lcm_update(struct disp_lcm_handle *plcm,
 	int x, int y, int w, int h, int force);
 int disp_lcm_esd_check(struct disp_lcm_handle *plcm);
 int disp_lcm_esd_recover(struct disp_lcm_handle *plcm);
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+bool disp_lcm_notify_support(struct disp_lcm_handle *plcm);
+#endif
 int disp_lcm_suspend(struct disp_lcm_handle *plcm);
 int disp_lcm_resume(struct disp_lcm_handle *plcm);
 int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm);
