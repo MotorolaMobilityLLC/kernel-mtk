@@ -74,7 +74,7 @@
 	#size-cells = <0>;
 
 	touch@0{
-		compatible = "novatek,NVT-ts-spi";
+		compatible =  "tchip,ilitek", "novatek,NVT-ts-spi";
  		spi-max-frequency = <10000000>;
 		reg = <0x0>;
 		status = "okay";
@@ -82,12 +82,13 @@
 		novatek,reset-gpio = <&pio 164 0>;
 		novatek,irq-gpio = <&pio 10 2008>;
 
+		touch,reset-gpio = <&pio 164 0>;
+		touch,irq-gpio = <&pio 10 0x2008>;
 		/* 525 */
 		//novatek,swrst-n8-addr = <0x01F01A>;
 
 		/* 672A, 525B, 675, 526, 672C, 523 */
 		novatek,swrst-n8-addr = <0x03F0FE>;
 		novatek,spi-rd-fast-addr = <0x03F310>;
-
 	};
 };
