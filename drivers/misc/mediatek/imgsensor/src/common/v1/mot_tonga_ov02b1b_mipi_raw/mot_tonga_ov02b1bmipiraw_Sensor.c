@@ -555,7 +555,7 @@ static void sensor_init(void)
     write_cmos_sensor(0x07, 0x20);
     write_cmos_sensor(0x09, 0xb0);
     write_cmos_sensor(0xfd, 0x03);
-    write_cmos_sensor(0xc2, 0x01);
+	write_cmos_sensor(0xc2, 0x01);
     write_cmos_sensor(0xfb, 0x01);
 }
 /*    MIPI_sensor_Init  */
@@ -1919,7 +1919,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[4], sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM1:
-            memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+            memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[3],sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
         break;
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
         default:
