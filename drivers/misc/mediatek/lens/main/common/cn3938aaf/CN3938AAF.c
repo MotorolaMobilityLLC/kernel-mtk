@@ -144,7 +144,7 @@ static int initAF(void)
 		if (i4RetValue < 0)
 			LOG_ERR(" puSendCmd5 send failed.\n");
 
-		i4RetValue = s4AF_WriteReg(0x07, 0x0C);
+		i4RetValue = s4AF_WriteReg(0x07, 0x7F);
 		if (i4RetValue < 0)
 			LOG_ERR(" puSendCmd6 send failed.\n");
 
