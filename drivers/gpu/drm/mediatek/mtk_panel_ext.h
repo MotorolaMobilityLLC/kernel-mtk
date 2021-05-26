@@ -366,6 +366,7 @@ struct mtk_panel_funcs {
 	int (*cabc_set_cmdq)(struct drm_panel *panel, void *dsi_drv,
 			    dcs_write_gce cb, void *handle, unsigned int cabc_mode);
 	void (*cabc_get_state)(struct drm_panel *panel, unsigned int *state);
+	int (*notify_fps_chg)(void *dsi_drv, dcs_write_gce cb, void *handle, unsigned int mode);
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);
