@@ -6729,6 +6729,18 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 		panel_ext->funcs->cabc_get_state(dsi->panel, (unsigned int *)params);
 		break;
 	}
+	case DSI_NOTIFY_FPS_CHG:
+	{
+		panel_ext = mtk_dsi_get_panel_ext(comp);
+		if (!(panel_ext && panel_ext->funcs &&
+		      panel_ext->funcs->notify_fps_chg))
+			break;
+
+		panel_ext->funcs->notify_fps_chg(dsi,
+					mipi_dsi_dcs_write_gce, handle,
+					*(unsigned int *)params);
+		break;
+	}
 
 	default:
 		break;
