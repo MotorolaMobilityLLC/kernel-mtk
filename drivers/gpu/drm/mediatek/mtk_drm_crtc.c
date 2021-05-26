@@ -1117,6 +1117,43 @@ int mtk_drm_crtc_set_panel_cabc(struct drm_crtc *crtc, unsigned int cabc_mode)
 	return 0;
 }
 
+static int mtk_drm_crtc_notify_panel_fps_chg(struct drm_crtc *crtc, unsigned int mode)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct cmdq_pkt *cmdq_handle;
+	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
+
+
+	if (!(mtk_crtc->enabled)) {
+		DDPINFO("%s crtc not ebable\n",  __func__);
+		return -EINVAL;
+	}
+
+	if (!(comp && comp->funcs && comp->funcs->io_cmd)) {
+		DDPINFO("%s no output comp\n", __func__);
+		return -EINVAL;
+	}
+
+	mtk_drm_idlemgr_kick(__func__, crtc, 0);
+
+	cmdq_handle =
+		cmdq_pkt_create(mtk_crtc->gce_obj.client[CLIENT_DSI_CFG]);
+
+	if (mtk_crtc_with_sub_path(crtc, mtk_crtc->ddp_mode))
+		mtk_crtc_wait_frame_done(mtk_crtc, cmdq_handle,
+			DDP_SECOND_PATH, 0);
+	else
+		mtk_crtc_wait_frame_done(mtk_crtc, cmdq_handle,
+			DDP_FIRST_PATH, 0);
+
+	comp->funcs->io_cmd(comp, cmdq_handle, DSI_NOTIFY_FPS_CHG, &mode);
+
+	cmdq_pkt_flush(cmdq_handle);
+	cmdq_pkt_destroy(cmdq_handle);
+
+	return 0;
+}
+
 void mtk_drm_crtc_disable_vblank(struct drm_device *drm, unsigned int pipe)
 {
 	struct mtk_drm_private *priv = drm->dev_private;
@@ -1991,6 +2028,8 @@ static void mtk_crtc_disp_mode_switch_begin(struct drm_crtc *crtc,
 		mtk_drm_set_idle_check_interval(crtc, _idle_timeout);
 
 	mtk_drm_idlemgr_kick(__func__, crtc, 0);
+
+	mtk_drm_crtc_notify_panel_fps_chg(crtc, mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX]);
 }
 
 bool already_free;
