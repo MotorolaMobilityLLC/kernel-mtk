@@ -589,14 +589,10 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
 	struct lcm *ctx = panel_to_lcm(panel);
 	int ret = 0;
 
-	if (mode == 0) {
+	if (mode == 0)
 		ext->params = &ext_params;
-		lcm_dcs_write_seq_static(ctx, 0x26, 0x01);
-	}
-	else if (mode == 1) {
+	else if (mode == 1)
 		ext->params = &ext_params_90hz;
-		lcm_dcs_write_seq_static(ctx, 0x26, 0x02);
-	}
 	else
 		ret = 1;
 
@@ -711,6 +707,24 @@ static void panel_hbm_get_state(struct drm_panel *panel, bool *state)
 	*state = ctx->hbm_en;
 }
 
+static int panel_notify_fps_chg(void *dsi, dcs_write_gce cb, void *handle, unsigned int mode)
+{
+	char dfps_cmd[2][2]= {
+				{0x26, 0x1},
+				{0x26, 0x2},
+			   };
+
+	if (!cb)
+		return -1;
+
+	if (mode > 2) return -1;
+
+	cb(dsi, handle, &dfps_cmd[mode], ARRAY_SIZE(dfps_cmd[mode]));
+	pr_info("%s send_dfps_cmd 0x%x 0x%x\n", __func__, dfps_cmd[mode][0], dfps_cmd[mode][1]);
+
+	return 0;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
@@ -723,6 +737,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.hbm_get_state = panel_hbm_get_state,
 	.cabc_set_cmdq = panel_cabc_set_cmdq,
 	.cabc_get_state = panel_cabc_get_state,
+	.notify_fps_chg = panel_notify_fps_chg,
 };
 #endif
 
