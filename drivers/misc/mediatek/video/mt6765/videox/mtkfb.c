@@ -407,6 +407,42 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+void mtkfb_lcm_notify_tp_fb_blank_powerdown(void)
+{
+	struct fb_event event;
+	int blank;
+
+	MTKFB_FUNC();
+	blank = FB_BLANK_POWERDOWN;
+
+	event.info = mtkfb_fbi;
+	event.data = &blank;
+	fb_notifier_call_chain(FB_EARLY_EVENT_NOTIFY_TP_BLANK, &event);
+
+	DISPINFO("[ESD]%s end\n", __func__);
+	return;
+}
+EXPORT_SYMBOL(mtkfb_lcm_notify_tp_fb_blank_powerdown);
+
+void mtkfb_lcm_notify_tp_fb_blank_unblank(void)
+{
+	struct fb_event event;
+	int blank;
+
+	MTKFB_FUNC();
+	blank = FB_BLANK_UNBLANK;
+
+	event.info = mtkfb_fbi;
+	event.data = &blank;
+	fb_notifier_call_chain(FB_EVENT_NOTIFY_TP_BLANK, &event);
+
+	DISPINFO("[ESD]%s end\n", __func__);
+	return;
+}
+EXPORT_SYMBOL(mtkfb_lcm_notify_tp_fb_blank_unblank);
+#endif
+
 int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
