@@ -90,14 +90,14 @@
 	};
 	camera_pins_cam1_pnd0: cam1@2 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO98__FUNC_GPIO98>;
+			pinmux = <PINMUX_GPIO97__FUNC_GPIO97>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam1_pnd1: cam1@3 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO98__FUNC_GPIO98>;
+			pinmux = <PINMUX_GPIO97__FUNC_GPIO97>;
 			slew-rate = <1>;
 			output-high;
 		};
