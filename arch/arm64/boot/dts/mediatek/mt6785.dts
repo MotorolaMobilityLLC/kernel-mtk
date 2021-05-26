@@ -4557,6 +4557,28 @@ page_owner=on loop.max_part=7";
 			"CLK_TVDPLL_D16",
 			"CLK_TVDPLL_CK",
 			"CLK_MIPID0_26M";
+
+		gce-client-names = "BDG_CLIENT_CFG0",
+			"BDG_CLIENT_CFG1",
+			"BDG_CLIENT_CFG2",
+			"BDG_CLIENT_TRIG_LOOP0",
+			"BDG_CLIENT_TRIG_LOOP1";
+
+		/* define subsys, see mt6885-gce.h */
+		gce-subsys = <&gce_mbox 0x14000000 SUBSYS_1400XXXX>,
+			<&gce_mbox 0x14010000 SUBSYS_1401XXXX>,
+			<&gce_mbox 0x14020000 SUBSYS_1402XXXX>;
+
+		/* define events, see mt6885-gce.h */
+		gce-event-names = "bdg_rdma0_sof",
+			"bdg_dsi0_sof",
+			"bdg_rdma0_sof",
+			"bdg_rdma0_eof",
+			"bdg_dsi0_eof",
+			"bdg_dsi0_te",
+			"bdg_dsi0_irq",
+			"bdg_dsi0_done",
+			"bdg_dsi0_target_line";
 	};
 
 	dsi_te: dsi_te {
