@@ -1050,6 +1050,9 @@ struct LCM_DRIVER {
 	unsigned int (*esd_recover)(void);
 	unsigned int (*check_status)(void);
 	unsigned int (*ata_check)(unsigned char *buffer);
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+	bool (*set_lcm_notify)(void);
+#endif
 	void (*read_fb)(unsigned char *buffer);
 	int (*ioctl)(enum LCM_DRV_IOCTL_CMD cmd, unsigned int data);
 	/* /////////////////////////////////////////////// */
