@@ -47,10 +47,10 @@
 &pio {
 	spislv_pins_default: spislv_mode_default {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO63__FUNC_SPI2_MI>,
-				<PINMUX_GPIO65__FUNC_SPI2_MO>,
-				<PINMUX_GPIO66__FUNC_SPI2_CLK>,
-				<PINMUX_GPIO64__FUNC_SPI2_CSB>;
+			pinmux = <PINMUX_GPIO47__FUNC_SPI1_A_MI>,
+				<PINMUX_GPIO49__FUNC_SPI1_A_MO>,
+				<PINMUX_GPIO50__FUNC_SPI1_A_CLK>,
+				<PINMUX_GPIO48__FUNC_SPI1_A_CSB>;
 			drive-strength = <3>;
 		};
 	};
