@@ -13,6 +13,7 @@ extern struct LCM_DRIVER mipi_mot_vid_txd_ili7806s_hdp_652_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_tm_hx83112a_hdp_652_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_tm_nt36672a_hdp_652_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_boe_nt36525c_652_hdp_lcm_drv;
+extern struct LCM_DRIVER mipi_mot_vid_tm_ili9883a_652_hdp_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
 extern struct LCM_DRIVER nt35595_fhd_dsi_cmd_truly_8163_lcm_drv;
