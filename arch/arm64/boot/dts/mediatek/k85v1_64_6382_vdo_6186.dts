@@ -455,7 +455,7 @@
 		spi-rx-bus-width = <1>;
 		low-speed-tick-delay = /bits/ 8 <1>;
 		low-speed-early-trans = /bits/ 8 <0>;
-		high-speed-tick-delay = /bits/ 8 <2>;
+		high-speed-tick-delay = /bits/ 8 <0>;
 		high-speed-early-trans = /bits/ 8 <1>;
 		slave-drive-strength = /bits/ 8 <3>;
 	};
