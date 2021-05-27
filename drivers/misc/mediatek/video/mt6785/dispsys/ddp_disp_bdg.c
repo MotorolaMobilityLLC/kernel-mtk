@@ -30,7 +30,7 @@
 #include <linux/of_gpio.h>
 /***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 #include "cmdq-bdg.h"
-//#include "ddp_log.h"
+#include "ddp_log.h"
 //#include <linux/math.h>
 
 #define SPI_EN
@@ -4976,12 +4976,6 @@ int polling_status(void)
 int bdg_dsc_init(enum DISP_BDG_ENUM module,
 			void *cmdq, struct LCM_DSI_PARAMS *tx_params)
 {
-	unsigned int width, height;
-
-	DISPFUNCSTART();
-	width = tx_params->horizontal_active_pixel / 1;
-	height = tx_params->vertical_active_line;
-
 #ifdef _n36672c_
 /*
  *Resolution = 1080x2400
@@ -4991,81 +4985,125 @@ int bdg_dsc_init(enum DISP_BDG_ENUM module,
  *DSC version = v1.1
  *Compression rate = 1/3
  */
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_W, 0x01670438);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_H, 0x095f095f);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_W, 0x00b3021c);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_H, 0x012b0007);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CHUNK_SIZE, 0x0000021c);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_BUF_SIZE, 0x000010e0);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_MODE, 0x00000101);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CFG, 0x0000d022);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PAD, 0x00000000);
+	unsigned long width = tx_params->horizontal_active_pixel / 1;
+	unsigned long height = tx_params->vertical_active_line;
+	unsigned int init_delay_limit, init_delay_height;
+	unsigned int pic_group_width_m1;
+	unsigned int pic_height_m1, pic_height_ext_m1, pic_height_ext_num;
+	unsigned int slice_group_width_m1;
+	unsigned int pad_num;
+	unsigned int val;
+	struct LCM_DSC_CONFIG_PARAMS *params = &tx_params->dsc_params;
 
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_OBUF, 0x00000000);
+	DISPFUNCSTART();
+	if (!dsc_en) {
+		DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_H, height - 1);
+		DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_W, width);
+		return 0;
+	}
 
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[0], 0x000c8089);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[1], 0x020e00aa);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[2], 0x002b0020);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[3], 0x000c0007);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[4], 0x0cb70db7);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[5], 0x1ba01800);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[6], 0x20000c03);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[7], 0x330b0b06);
+	if (params->pic_width != width || params->pic_height != height) {
+		DISPMSG("%s size mismatch...", __func__);
+		return 1;
+	}
+
+	/* DSC Empty flag always high */
+	DSI_OUTREGBIT(cmdq, struct DISP_DSC_CON_REG,
+			DSC_REG->DISP_DSC_CON, DSC_EMPTY_FLAG_SEL, 1);
+
+	/* DSC output buffer as FHD(plus) */
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_OBUF, 0x800002C2);
+
+	init_delay_limit =
+			((128 + (params->xmit_delay + 2) / 3) * 3 +
+			params->slice_width - 1) / params->slice_width;
+	init_delay_height =
+			(init_delay_limit > 15) ? 15 : init_delay_limit;
+
+	val = params->slice_mode + (init_delay_height << 8) + (1 << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_MODE, val);
+
+	pic_group_width_m1 = (width + 2) / 3 - 1;
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_W,
+			(pic_group_width_m1 << 16) + width);
+
+	pic_height_m1 = height - 1;
+	pic_height_ext_num = (height + params->slice_height - 1) /
+		params->slice_height;
+	pic_height_ext_m1 = pic_height_ext_num * params->slice_height - 1;
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_H,
+			(pic_height_ext_m1 << 16) + pic_height_m1);
+
+	slice_group_width_m1 = (params->slice_width + 2) / 3 - 1;
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_W,
+			(slice_group_width_m1 << 16) + params->slice_width);
+
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_H,
+			((params->slice_width % 3) << 30) +
+			((pic_height_ext_num - 1) << 16) + params->slice_height - 1);
+
+	DSI_OUTREG32(cmdq,  DSC_REG->DISP_DSC_CHUNK_SIZE,
+			params->chunk_size);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_BUF_SIZE,
+			params->chunk_size * params->slice_height);
+
+	pad_num = (params->chunk_size + 2) / 3 * 3 - params->chunk_size;
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PAD, pad_num);
+	if (params->dsc_cfg)
+		DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CFG, params->dsc_cfg);
+	else
+		DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CFG, 0x22);
+
+	if ((params->ver & 0xf) == 2)
+		DSI_OUTREGBIT(cmdq, struct DISP_DSC_SHADOW_REG,
+				DSC_REG->DISP_DSC_SHADOW, DSC_VERSION_MINOR, 0x2);
+	else
+		DSI_OUTREGBIT(cmdq, struct DISP_DSC_SHADOW_REG,
+				DSC_REG->DISP_DSC_SHADOW, DSC_VERSION_MINOR, 0x1);
+
+	/* set PPS */
+	val = params->dsc_line_buf_depth + (params->bit_per_channel << 4) +
+			(params->bit_per_pixel << 8) + (params->rct_on << 18) +
+			(params->bp_enable << 19);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[0], val);
+
+	val = (params->xmit_delay) + (params->dec_delay << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[1], val);
+
+	val = (params->scale_value) + (params->increment_interval << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[2], val);
+
+	val = (params->decrement_interval) + (params->line_bpg_offset << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[3], val);
+
+	val = (params->nfl_bpg_offset) + (params->slice_bpg_offset << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[4], val);
+
+	val = (params->initial_offset) + (params->final_offset << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[5], val);
+
+	val = (params->flatness_minqp) + (params->flatness_maxqp << 8) +
+			(params->rc_model_size << 16);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[6], val);
+
+	val = (params->rc_edge_factor) + (params->rc_quant_incr_limit0 << 8) +
+			(params->rc_quant_incr_limit1 << 16) +
+			(params->rc_tgt_offset_hi << 24) +
+			(params->rc_tgt_offset_lo << 28);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[7], val);
+
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[8], 0x382a1c0e);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[9], 0x69625446);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[10], 0x7b797770);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[11], 0x00007e7d);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[12], 0x00800880);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[11], 0x7e7d);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[12], 0x800880);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[13], 0xf8c100a1);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[14], 0xe8e3f0e3);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[15], 0xe103e0e3);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[16], 0xd943e123);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[17], 0xd185d965);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[18], 0xd1a7d1a5);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[19], 0x0000d1ed);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SHADOW, 0x00000020);
-#else
-/*
- *Resolution = 1080x2160
- *Slice width = 1080
- *Slice height = 20
- *Format = RGB888
- *DSC version = v1.2
- *Compression rate = 1/3
- */
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_W, 0x01670438);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PIC_H, 0x09230923);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_W, 0x00b3021c);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SLICE_H, 0x00740013);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CHUNK_SIZE, 0x0000021c);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_BUF_SIZE, 0x00002a30);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_MODE, 0x00000201);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_CFG, 0x0000d022);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PAD, 0x00000000);
-
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_OBUF, 0x00000000);
-
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[0], 0x000c8089);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[1], 0x020e0200);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[2], 0x01e80020);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[3], 0x000c0007);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[4], 0x0516050e);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[5], 0x10f01800);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[6], 0x20000c03);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[7], 0x330b0b06);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[8], 0x382a1c0e);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[9], 0x69625446);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[10], 0x7b797770);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[11], 0x00007e7d);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[12], 0x00800880);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[13], 0xf8c100a1);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[14], 0xe8e3f0e3);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[15], 0xe103e0e3);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[16], 0xd943e123);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[17], 0xd185d965);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[18], 0xd1a7d1a5);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[19], 0x0000d1ed);
-	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_SHADOW, 0x00000020);
+	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[19], 0xd1ed);
 #endif
 	DISPFUNCEND();
 	return 0;
