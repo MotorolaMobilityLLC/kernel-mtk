@@ -158,9 +158,6 @@ static struct {
 	{DISP_OPT_LCM_HBM, 0, "DISP_OPT_LCM_HBM"},
 	/*DynFPS*/
 	{DISP_OPT_DYNAMIC_FPS, 0, "DISP_OPT_DYNAMIC_FPS"},
-#ifdef CONFIG_MTK_MT6382_BDG
-	{DISP_OPT_6382_DBG, 0, "DISP_OPT_6382_DBG"},
-#endif
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)

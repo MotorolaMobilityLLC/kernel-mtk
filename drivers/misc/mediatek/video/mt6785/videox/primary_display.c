@@ -106,9 +106,7 @@
 #include "mtk_ovl.h"
 #include "ddp_ovl_wcg.h"
 #include "disp_tphint.h"
-#ifdef CONFIG_MTK_MT6382_BDG
 #include "ddp_disp_bdg.h"
-#endif
 
 /*if GPU use fb heap for compress buffer need turn on this marco*/
 /*#define ENLARGE_FB_FOR_COMPRESS*/
@@ -4204,15 +4202,15 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 
 	dprec_init();
 	dpmgr_init();
-#ifdef CONFIG_MTK_MT6382_BDG
-	if (is_lcm_inited) {
-		disp_pm_qos_update_mmclk(559);
-		bdg_register_init();
-		set_mt6382_init(1);
-		set_deskew_status(1);
-	} else
-		set_mt6382_init(0);
-#endif
+	if (bdg_is_bdg_connected() == 1) {
+		if (is_lcm_inited) {
+			disp_pm_qos_update_mmclk(559);
+			bdg_register_init();
+			set_mt6382_init(1);
+			set_deskew_status(1);
+		} else
+			set_mt6382_init(0);
+	}
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	disp_pm_qos_init();
 	dvfs_last_ovl_req = 0;
@@ -4498,10 +4496,9 @@ lcm_corner_out:
 	data_config->fps = lcm_fps;
 	data_config->dst_dirty = 1;
 
-#ifdef CONFIG_MTK_MT6382_BDG
-	if (data_config->dispif_config.dsi.mode == CMD_MODE)
-		bdg_tx_init(DISP_BDG_DSI0, data_config, NULL);
-#endif
+	if (bdg_is_bdg_connected() == 1)
+		if (data_config->dispif_config.dsi.mode == CMD_MODE)
+			bdg_tx_init(DISP_BDG_DSI0, data_config, NULL);
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config,
 				pgc->cmdq_handle_config);
 
@@ -5304,9 +5301,8 @@ int primary_display_suspend(void)
 #endif
 	/* pgc->state = DISP_SLEPT; */
 
-#ifdef CONFIG_MTK_MT6382_BDG
-	bdg_common_deinit(DISP_BDG_DSI0, NULL);
-#endif
+	if (bdg_is_bdg_connected() == 1)
+		bdg_common_deinit(DISP_BDG_DSI0, NULL);
 
 done:
 #ifdef MTK_FB_MMDVFS_SUPPORT
@@ -5506,17 +5502,17 @@ int primary_display_resume(void)
 		__func__, g_force_cfg, g_force_cfg_id);
 
 #endif
-#ifdef CONFIG_MTK_MT6382_BDG
-	//	mmdvfs_qos_force_step(0);
-	/*	559-449-314-273*/
-	disp_pm_qos_update_mmclk(559); // workaround for resume fail
+	if (bdg_is_bdg_connected() == 1) {
+		//	mmdvfs_qos_force_step(0);
+		/*	559-449-314-273*/
+		disp_pm_qos_update_mmclk(559); // workaround for resume fail
 
-	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
-	DISP_PR_INFO("[%s][%d]\n", __func__, __LINE__);
-	bdg_common_init(DISP_BDG_DSI0, data_config, NULL);
-	mipi_dsi_rx_mac_init(DISP_BDG_DSI0, data_config, NULL);
-	set_deskew_status(0);
-#endif
+		data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+		DISP_PR_INFO("[%s][%d]\n", __func__, __LINE__);
+		bdg_common_init(DISP_BDG_DSI0, data_config, NULL);
+		mipi_dsi_rx_mac_init(DISP_BDG_DSI0, data_config, NULL);
+		set_deskew_status(0);
+	}
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
@@ -5658,12 +5654,12 @@ int primary_display_resume(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 			 MMPROFILE_FLAG_PULSE, 0, 5);
 
-#ifdef CONFIG_MTK_MT6382_BDG
-	if (get_mt6382_init()) {
-		bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
-		bdg_tx_start(DISP_BDG_DSI0, NULL);
+	if (bdg_is_bdg_connected() == 1) {
+		if (get_mt6382_init()) {
+			bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
+			bdg_tx_start(DISP_BDG_DSI0, NULL);
+		}
 	}
-#endif
 
 	DISPINFO("[POWER]dpmgr path start[begin]\n");
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -5806,11 +5802,11 @@ int primary_display_resume(void)
 	}
 
 done:
-#ifdef CONFIG_MTK_MT6382_BDG
-	//mmdvfs_qos_force_step(0);
-/*	559-449-314-273*/
-	disp_pm_qos_update_mmclk(449);
-#endif
+	if (bdg_is_bdg_connected() == 1) {
+		//mmdvfs_qos_force_step(0);
+	/*	559-449-314-273*/
+		disp_pm_qos_update_mmclk(449);
+	}
 	DISP_PR_INFO("[%s][%d]\n", __func__, __LINE__);
 	primary_set_state(DISP_ALIVE);
 #if 0 //def CONFIG_TRUSTONIC_TRUSTED_UI

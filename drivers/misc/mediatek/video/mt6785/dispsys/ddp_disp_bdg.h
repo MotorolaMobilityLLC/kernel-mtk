@@ -72,6 +72,7 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 		   struct disp_ddp_path_config *config, void *cmdq);
 int bdg_tx_deinit(enum DISP_BDG_ENUM module, void *cmdq);
 void bdg_register_init(void);
+int bdg_is_bdg_connected(void);
 int bdg_common_init(enum DISP_BDG_ENUM module,
 			struct disp_ddp_path_config *config, void *cmdq);
 int bdg_common_deinit(enum DISP_BDG_ENUM module, void *cmdq);

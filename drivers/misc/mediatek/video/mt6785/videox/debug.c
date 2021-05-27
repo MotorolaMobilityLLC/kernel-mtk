@@ -74,9 +74,7 @@
 #include "ddp_clkmgr.h"
 
 #include "ddp_misc.h"
-#ifdef CONFIG_MTK_MT6382_BDG
 #include "ddp_disp_bdg.h"
-#endif
 
 #include "../../../base/power/include/clkbuf_v1/mt6785/mtk_clkbuf_hw.h"
 
@@ -785,7 +783,6 @@ static void process_dbg_opt(const char *opt)
 			primary_display_manual_unlock();
 			return;
 		}
-#ifdef CONFIG_MTK_MT6382_BDG
 	} else if (strncmp(opt, "set_data_rate:", 14) == 0) {
 		unsigned int data_rate = 0;
 		int ret = -1;
@@ -985,7 +982,6 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "xdump", 5) == 0) {
 
 		bdg_dsi_dump_reg(DISP_BDG_DSI0, 1);
-#ifdef CONFIG_MTK_MT6382_BDG
 	} else if (strncmp(opt, "mipi_hopping:on", 15) == 0) {
 		if (pgc->state == DISP_SLEPT) {
 			DISPDBG("primary display is already slept\n");
@@ -1018,7 +1014,6 @@ static void process_dbg_opt(const char *opt)
 //			primary_display_ccci_mipi_callback(0, 0);
 		if (get_bdg_tx_mode() != CMD_MODE)
 			DSI_Start(DISP_MODULE_DSI0, NULL);
-#endif
 	} else if (strncmp(opt, "bdg_int", 7) == 0) {
 		struct LCM_PARAMS *lcm_param = NULL;
 		struct disp_ddp_path_config *data_config;
@@ -1112,7 +1107,6 @@ static void process_dbg_opt(const char *opt)
 			bdg_tx_start(DISP_BDG_DSI0, NULL);
 		mdelay(100);
 		return;
-#endif
 	} else if (strncmp(opt, "mobile:", 7) == 0) {
 		if (strncmp(opt + 7, "on", 2) == 0)
 			g_mobilelog = 1;

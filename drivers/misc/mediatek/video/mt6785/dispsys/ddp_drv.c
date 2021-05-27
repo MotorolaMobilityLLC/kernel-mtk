@@ -69,6 +69,7 @@
 #include "ddp_info.h"
 #include "ddp_m4u.h"
 #include "display_recorder.h"
+#include "ddp_disp_bdg.h"
 
 /* #define DISP_NO_DPI */
 #ifndef DISP_NO_DPI

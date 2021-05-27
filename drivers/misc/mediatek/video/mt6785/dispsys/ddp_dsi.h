@@ -217,11 +217,9 @@ void set_deskew_status(unsigned int value);
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		    unsigned int cmd, unsigned char count,
 		    unsigned char *para_list, unsigned char force_update);
-#ifdef CONFIG_MTK_MT6382_BDG
 void DSI_send_cmdq_to_bdg(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		    unsigned int cmd, unsigned char count,
 		    unsigned char *para_list, unsigned char force_update);
-#endif
 void DSI_set_cmdq_V4(enum DISP_MODULE_ENUM module, bool hs,
 			struct LCM_setting_table_V3 *para_tbl,
 			unsigned int size, unsigned char force_update);

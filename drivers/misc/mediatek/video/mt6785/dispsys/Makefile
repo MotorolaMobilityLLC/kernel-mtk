@@ -79,7 +79,7 @@ obj-y += ddp_dsi.o
 obj-y += ddp_clkmgr.o
 obj-y += ddp_rsz.o
 obj-y += ddp_postmask.o
-obj-$(CONFIG_MTK_MT6382_BDG) += ddp_disp_bdg.o
+obj-y += ddp_disp_bdg.o
 #common
 obj-y += ddp_drv.o
 obj-y += ddp_path.o

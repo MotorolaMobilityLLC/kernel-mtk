@@ -67,6 +67,7 @@ static int nfc_eint_irq;
 static int mt6382_nfc_srclk;
 static bool nfc_irq_already_requested;
 static int mt6382_nfc_gpio_value;
+static int mt6382_connected;
 /***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 static bool irq_already_requested;
 
@@ -1174,6 +1175,29 @@ struct lcm_setting_table nt35695b_cmd_mode[] = {
 	{0x53, 1, {0x24} },
 	{0x55, 1, {0x00} },
 };
+
+int bdg_is_bdg_connected(void)
+{
+	DISPFUNCSTART();
+#ifdef CONFIG_MTK_MT6382_BDG
+	return 1;
+#else
+	return 0;
+#endif
+	if (mt6382_connected == 0) {
+		unsigned int ret = 0;
+#ifdef CONFIG_MTK_MT6382_BDG
+		spislv_init();
+		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
+		ret = mtk_spi_read(0x0);
+#endif
+	if (ret == 0)
+		mt6382_connected = -1;
+	else
+		mt6382_connected = 1;
+	}
+	return mt6382_connected;
+}
 
 void bdg_tx_pull_6382_reset_pin(void)
 {
@@ -7089,14 +7113,14 @@ irqreturn_t bdg_eint_thread_handler(int irq, void *data)
 		// callback function for checking module's rg status
 		// todo..
 	}
-
+#ifdef CONFIG_MTK_MT6382_BDG
 	if (irq_ctrl3 & BIT(10)) {
 		s32 ret;
 
 		ret = cmdq_bdg_irq_handler();
 		DISPMSG("%s: irq_ctrl3:%#x ret:%d", __func__, irq_ctrl3, ret);
 	}
-
+#endif
 	// disable irq (can't use disable_irq() in ISR)
 	disable_irq_nosync(bdg_eint_irq);
 

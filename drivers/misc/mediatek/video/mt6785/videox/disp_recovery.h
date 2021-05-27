@@ -19,10 +19,8 @@
 
 /* defined in mtkfb.c should move to mtkfb.h*/
 extern unsigned int islcmconnected;
-#ifdef CONFIG_MTK_MT6382_BDG
 extern ddp_dsi_config(enum DISP_MODULE_ENUM module,
 		struct disp_ddp_path_config *config, void *cmdq);
-#endif
 
 void primary_display_check_recovery_init(void);
 void primary_display_esd_check_enable(int enable);

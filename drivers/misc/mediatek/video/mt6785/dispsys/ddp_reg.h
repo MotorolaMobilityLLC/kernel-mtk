@@ -120,7 +120,6 @@ extern cmdqBackupSlotHandle dispsys_slot;
 #define DISPSYS_RSZ0_BASE	ddp_get_module_va(DISP_MODULE_RSZ0)
 #define DISPSYS_POSTMASK_BASE	ddp_get_module_va(DISP_MODULE_POSTMASK)
 #define DISPSYS_SLOT_BASE	dispsys_slot
-#ifdef CONFIG_MTK_MT6382_BDG
 #define DISPSYS_BDG_SYSREG_CTRL_BASE		0x00000000UL
 #define DISPSYS_BDG_TOPCKGEN_BASE		0x00003000UL
 #define DISPSYS_BDG_APMIXEDSYS_BASE		0x00004000UL
@@ -135,7 +134,6 @@ extern cmdqBackupSlotHandle dispsys_slot;
 #define DISPSYS_BDG_MMSYS_CONFIG_BASE		0x00023000UL
 #define DISPSYS_BDG_RDMA0_REGS_BASE		0x00024000UL
 #define DISPSYS_BDG_MUTEX_REGS_BASE		0x00025000UL
-#endif
 #ifdef INREG32
 #undef INREG32
 #define INREG32(x)	(__raw_readl((unsigned long *)(x)))
