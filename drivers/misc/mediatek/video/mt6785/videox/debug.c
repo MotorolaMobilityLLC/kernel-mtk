@@ -88,7 +88,7 @@ static struct proc_dir_entry *mtkfb_procfs;
 static struct proc_dir_entry *disp_lowpower_proc;
 #endif
 
-unsigned int g_mobilelog;
+unsigned int g_mobilelog = 1;
 int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
@@ -984,8 +984,41 @@ static void process_dbg_opt(const char *opt)
 
 	} else if (strncmp(opt, "xdump", 5) == 0) {
 
-		bdg_dsi_dump_reg(DISP_BDG_DSI0);
-
+		bdg_dsi_dump_reg(DISP_BDG_DSI0, 1);
+#ifdef CONFIG_MTK_MT6382_BDG
+	} else if (strncmp(opt, "mipi_hopping:on", 15) == 0) {
+		if (pgc->state == DISP_SLEPT) {
+			DISPDBG("primary display is already slept\n");
+			return;
+		}
+		primary_display_idlemgr_kick(__func__, 1);
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle))
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+				DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+		if (get_bdg_tx_mode() != CMD_MODE)
+			DSI_Stop(DISP_MODULE_DSI0, NULL);
+		bdg_mipi_clk_change(1, 1);
+//		if (get_bdg_tx_mode() == CMD_MODE)
+//			primary_display_ccci_mipi_callback(1, 0);
+		if (get_bdg_tx_mode() != CMD_MODE)
+			DSI_Start(DISP_MODULE_DSI0, NULL);
+	} else if (strncmp(opt, "mipi_hopping:off", 16) == 0) {
+		if (pgc->state == DISP_SLEPT) {
+			DISPDBG("primary display is already slept\n");
+			return;
+		}
+		primary_display_idlemgr_kick(__func__, 1);
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle))
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+				DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+		if (get_bdg_tx_mode() != CMD_MODE)
+			DSI_Stop(DISP_MODULE_DSI0, NULL);
+		bdg_mipi_clk_change(1, 0);
+//		if (get_bdg_tx_mode() == CMD_MODE)
+//			primary_display_ccci_mipi_callback(0, 0);
+		if (get_bdg_tx_mode() != CMD_MODE)
+			DSI_Start(DISP_MODULE_DSI0, NULL);
+#endif
 	} else if (strncmp(opt, "bdg_int", 7) == 0) {
 		struct LCM_PARAMS *lcm_param = NULL;
 		struct disp_ddp_path_config *data_config;

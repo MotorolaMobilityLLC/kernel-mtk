@@ -213,6 +213,7 @@ void DSI_ForceConfig(int forceconfig);
 int DSI_set_roi(int x, int y);
 int DSI_check_roi(void);
 int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq);
+void set_deskew_status(unsigned int value);
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		    unsigned int cmd, unsigned char count,
 		    unsigned char *para_list, unsigned char force_update);
@@ -241,6 +242,11 @@ int ddp_dsi_write_lcm_cmdq(enum DISP_MODULE_ENUM module,
 			struct cmdqRecStruct *cmdq,
 			unsigned char cmd, unsigned char count,
 			unsigned char *para_list);
+enum DSI_STATUS DSI_Start(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq);
+enum DSI_STATUS DSI_Stop(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq);
+enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq);
 
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
 /*-------------------------------DynFPS start------------------------------*/
@@ -261,5 +267,4 @@ void DSI_dynfps_send_cmd(
 #ifdef __cplusplus
 }
 #endif
-
 #endif /* __DSI_DRV_H__ */

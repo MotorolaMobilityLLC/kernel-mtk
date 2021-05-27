@@ -802,7 +802,7 @@ struct SYSREG_LDO_CTRL0_REG {
 };
 
 struct SYSREG_LDO_CTRL1_REG {
-	unsigned RG_PHYLDO2_EN  : 1;
+	unsigned RG_PHYLDO2_EN : 1;
 	unsigned REG_01 : 28;
 	unsigned RG_PHYLDO1_LP_EN : 1;
 	unsigned REG_30 : 2;
@@ -831,7 +831,7 @@ struct BDG_SYSREG_CTRL_REGS {
 	unsigned int RSV_0070[2];				/* 0078..007C */
 	struct DISP_SYSREG_REG DISP_MISC0;			/* 0080 */
 	struct DISP_SYSREG_REG DISP_MISC1;			/* 0084 */
-	unsigned int RSV_0088[6];				/* 0088..00BC */
+	unsigned int RSV_0088[6];				/* 0088..009C */
 	struct CKBUF_CTRL_REG CKBUF_CTRL;			/* 00A0 */
 	struct SYSREG_LDO_CTRL0_REG SYSREG_LDO_CTRL0;		/* 00A4 */
 	struct SYSREG_LDO_CTRL1_REG SYSREG_LDO_CTRL1;		/* 00A8 */

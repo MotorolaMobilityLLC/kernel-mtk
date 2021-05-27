@@ -2705,10 +2705,6 @@ static void mtkfb_late_resume(void)
 	DISPMSG("%s+\n", __func__);
 
 	ret = primary_display_resume();
-	mdelay(10);
-	primary_display_suspend();
-	mdelay(10);
-	primary_display_resume();
 
 	if (ret) {
 		DISP_PR_ERR("primary display resume failed\n");

@@ -83,5 +83,6 @@ void external_display_idlemgr_kick(const char *source, int need_lock);
 #endif
 
 extern atomic_t idle_need_repaint;
+extern unsigned int esd_checking;
 
 #endif /* _DISP_LOWPOWER_H_ */

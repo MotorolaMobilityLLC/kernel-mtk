@@ -2208,7 +2208,9 @@ int mmdvfs_qos_force_step(int step)
 		pr_notice("force set step invalid: %d\n", step);
 		return -EINVAL;
 	}
-	force_step = step;
+	pr_notice("%s, force set step: %d->%d\n", __func__, force_step, step);
+//	force_step = step;
+//	force_step = 0;
 	update_step(PM_QOS_NUM_CLASSES, -1);
 	return 0;
 }
@@ -2238,7 +2240,11 @@ void mmdvfs_autok_qos_enable(bool enable)
 {
 	pr_notice("%s: step_size=%d current_max_step=%d\n",
 		__func__, step_size, current_max_step);
-	if (!enable && step_size > 0 && current_max_step == STEP_UNREQUEST)
+	if (!enable && step_size > 0
+#ifndef AUTOK_FORCE_LOW
+		&& current_max_step == STEP_UNREQUEST
+#endif
+	)
 		mmdvfs_qos_force_step(step_size - 1);
 
 	mmdvfs_autok_enable = enable;

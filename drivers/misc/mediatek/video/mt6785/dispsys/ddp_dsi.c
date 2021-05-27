@@ -77,6 +77,11 @@ static int dsi_reg_op_debug;
 #ifdef CONFIG_MTK_MT6382_BDG
 unsigned int data_phy_cycle;
 #endif
+#ifdef _BDG_CMD_MODE_
+unsigned int line_back_to_LP = 6;
+#else
+unsigned int line_back_to_LP = 1;
+#endif
 
 #define BIT_TO_VALUE(TYPE, bit)				\
 do {							\
@@ -196,6 +201,7 @@ struct DSI_REGS *DSI_REG[DSI_INTERFACE_NUM];
 unsigned long DSI_PHY_REG[DSI_INTERFACE_NUM];
 struct DSI_CMDQ_REGS *DSI_CMDQ_REG[DSI_INTERFACE_NUM];
 struct DSI_VM_CMDQ_REGS *DSI_VM_CMD_REG[DSI_INTERFACE_NUM];
+unsigned int deskew_done;
 
 static int mipi_clk_change_sta;
 static int dsi_currect_mode;
@@ -526,7 +532,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 			   ddp_get_module_name(module));
 }
 
-static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module,
+enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module,
 				 struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
@@ -537,6 +543,20 @@ static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module,
 			      DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 1);
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
 			      DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 0);
+	}
+
+	return DSI_STATUS_OK;
+}
+
+enum DSI_STATUS DSI_Stop(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq)
+{
+	if (module == DISP_MODULE_DSI1) {
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG,
+			DSI_REG[1]->DSI_START, DSI_START, 0);
+	} else {
+		DSI_OUTREGBIT(cmdq, struct DSI_START_REG,
+			DSI_REG[0]->DSI_START, DSI_START, 0);
 	}
 
 	return DSI_STATUS_OK;
@@ -1464,16 +1484,16 @@ void DSI_Calc_VDO_Timing(enum DISP_MODULE_ENUM module,
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (_dsi_context[i].dsi_params.IsCphy)
 			DSI_CPHY_Calc_VDO_Timing(module, dsi_params);
+		else {
 #ifdef CONFIG_MTK_MT6382_BDG
-		else
 			if (get_dsc_state())
 				DSI_DPHY_Calc_VDO_Timing_with_DSC(module, dsi_params);
+			else
 #endif
-		else
-			DSI_DPHY_Calc_VDO_Timing(module, dsi_params);
+				DSI_DPHY_Calc_VDO_Timing(module, dsi_params);
+		}
 	}
 }
-
 
 int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 			  enum DSI_PORCH_TYPE type, unsigned int value)
@@ -1496,7 +1516,7 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 		}
 		if (type == DSI_VACT) {
 			DISPINFO("set dsi%d vact to %d\n", i, value);
-			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VACT_NL, value);
+			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VACT_NL, value / line_back_to_LP);
 		}
 		if (type == DSI_HFP) {
 			DISPINFO("set dsi%d hfp to %d\n", i, value);
@@ -1619,8 +1639,7 @@ void DSI_Config_VDO_Timing(enum DISP_MODULE_ENUM module,
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VFP_NL,
 				_dsi_context[i].vfp);
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VACT_NL,
-				dsi_params->vertical_active_line);
-
+				dsi_params->vertical_active_line / line_back_to_LP);
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSA_WC,
 				_dsi_context[i].hsa_byte);
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HBP_WC,
@@ -1656,7 +1675,7 @@ DSI_PS_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_VACT_NL_REG,
-			      DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
+			      DSI_REG[i]->DSI_VACT_NL, VACT_NL, h / line_back_to_LP);
 		if (dsi_params->ufoe_enable &&
 		    dsi_params->ufoe_params.lr_mode_en != 1) {
 			if (dsi_params->ufoe_params.compress_ratio == 3) {
@@ -1688,11 +1707,11 @@ DSI_PS_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		if (ps_wc_adjust)
 			ps_wc *= dsi_params->packet_size_mult;
 
-		SET_VAL_MASK(value, mask, ps_wc, FLD_DSI_PS_WC);
+		SET_VAL_MASK(value, mask, ps_wc * line_back_to_LP, FLD_DSI_PS_WC);
 		SET_VAL_MASK(value, mask, ps_sel_bitvalue, FLD_DSI_PS_SEL);
 		DISP_REG_MASK(cmdq, &DSI_REG[i]->DSI_PSCTRL, value, mask);
-
-		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_SIZE_CON, h << 16 | w);
+		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_SIZE_CON,
+			(h / line_back_to_LP) << 16 | (w * line_back_to_LP));
 	}
 
 	return DSI_STATUS_OK;
@@ -2045,6 +2064,9 @@ static void DSI_DPHY_clk_setting(enum DISP_MODULE_ENUM module,
 
 #ifdef CONFIG_MTK_MT6382_BDG
 	dsi_params->data_rate = get_ap_data_rate();
+	dsi_params->data_rate_dyn = get_ap_dyn_data_rate(1);
+	DISPMSG("%s, data_rate=%d, dyn_data_rate=%d\n",
+		__func__, dsi_params->data_rate, dsi_params->data_rate_dyn);
 #endif
 
 	DISPINFO("%s, mipi_clk_change_sta=%d, data_rate=%d, PLL_CLOCK=%d, data_rate_dyn=%d\n",
@@ -2057,7 +2079,7 @@ static void DSI_DPHY_clk_setting(enum DISP_MODULE_ENUM module,
 		dsi_params->PLL_CLOCK : dsi_params->PLL_CLOCK_dyn;
 	data_Rate = data_Rate != 0 ? data_Rate : pll_clock * 2;
 
-	DISPINFO("%s, data_Rate=%d\n",	__func__, data_Rate);
+	DISPINFO("%s, data_Rate=%d, line_back_to_LP=%d\n", __func__, data_Rate, line_back_to_LP);
 
 	/* DPHY SETTING */
 
@@ -2595,6 +2617,13 @@ static void _dsi_phy_clk_setting_gce(enum DISP_MODULE_ENUM module,
 }
 
 #ifdef CONFIG_MTK_MT6382_BDG
+void set_deskew_status(unsigned int value)
+{
+	DISPMSG("%s, value=%d->%d\n",
+		__func__, deskew_done, value);
+	deskew_done = value;
+}
+
 void DSI_MIPI_deskew(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	unsigned int i = 0;
@@ -2615,10 +2644,11 @@ void DSI_MIPI_deskew(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 			      DSI_REG[i]->DSI_PHY_SYNCON, HS_SKEWCAL_PAT, 0xaa);
 #endif
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_SYNCON, 0x00aaffff);
-		DSI_OUTREGBIT(NULL, struct DSI_TIME_CON0_REG,
+		DSI_OUTREGBIT(cmdq, struct DSI_TIME_CON0_REG,
 			DSI_REG[i]->DSI_TIME_CON0, SKEWCALL_PRD, 6);
 
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_START, 0);
+		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_INTSTA, 0x0);
 
 		dsi_wait_not_busy(module, cmdq);
 
@@ -2650,9 +2680,9 @@ void DSI_MIPI_deskew(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 			timeout--;
 		}
 		if (timeout == 0) {
-			DISPDBG("%s, dsi wait idle timeout!\n", __func__);
+			DISPDBG("%s, status=0x%x, dsi wait idle timeout!\n", __func__, status);
 			DSI_DumpRegisters(module, 2);
-			DSI_Reset(module, NULL);
+			DSI_Reset(module, cmdq);
 		}
 #if 0
 		DSI_OUTREGBIT(cmdq, struct DSI_PHY_SYNCON_REG,
@@ -2873,7 +2903,11 @@ int mipi_clk_change(enum DISP_MODULE_ENUM module, int en)
 #endif
 		mipi_clk_change_sta = 0;
 	}
-
+#ifdef CONFIG_MTK_MT6382_BDG
+	if (get_mt6382_init() && (get_bdg_tx_mode() == CMD_MODE))
+		data_rate = get_ap_dyn_data_rate(en);
+#endif
+	DISPMSG("%s, ap_dyn_data_rate=%d\n", __func__, data_rate);
 	if (_is_power_on_status(module) == 0) {
 		DISPMSG("%s,suspend,skip hopping\n", __func__);
 		return 0;
@@ -3432,6 +3466,7 @@ void DSI_DPHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 	unsigned int ui = 0;
 #ifdef CONFIG_MTK_MT6382_BDG
 	unsigned int hs_trail;
+	unsigned int data_rate;
 #else
 	unsigned int hs_trail_m, hs_trail_n;
 	unsigned char timcon_temp;
@@ -3468,11 +3503,13 @@ void DSI_DPHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 	lane_no = dsi_params->LANE_NUM;
 	if (dsi_params->data_rate != 0) {
 #ifdef CONFIG_MTK_MT6382_BDG
-		ui = 1000 / dsi_params->data_rate;
-		cycle_time = 8000 / dsi_params->data_rate;
+		data_rate = mipi_clk_change_sta == 0 ?
+			dsi_params->data_rate : get_ap_dyn_data_rate(1);
+		ui = 1000 / data_rate;
+		cycle_time = 8000 / data_rate;
 		DISPINFO(
 			"%s, data_rate=%d, Cycle Time=%d, interval=%d, lane#=%d\n",
-			__func__, dsi_params->data_rate, cycle_time, ui, lane_no);
+			__func__, data_rate, cycle_time, ui, lane_no);
 	} else if (dsi_params->PLL_CLOCK) {
 		ui = 1000 / (dsi_params->PLL_CLOCK * 2);
 		cycle_time = 8000 / (dsi_params->PLL_CLOCK * 2);
@@ -3742,8 +3779,6 @@ void DSI_Set_VM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 				      DSI_REG[i]->DSI_VM_CMD_CON, TS_VFP_EN, 1);
 			DSI_OUTREGBIT(cmdq, struct DSI_VM_CMD_CON_REG,
 				      DSI_REG[i]->DSI_VM_CMD_CON, VM_CMD_EN, 1);
-
-			DDPMSG("%s\n", __func__);
 		}
 	} else {
 		DSI_OUTREGBIT(cmdq, struct DSI_VM_CMD_CON_REG,
@@ -4597,6 +4632,7 @@ static void DSI_config_bdg_reg(struct cmdqRecStruct *cmdq,
 	else
 		return;
 
+	DISPFUNCSTART();
 	cmdq_reg = DSI_CMDQ_REG[dsi_i]->data;
 	if (count > 1) {
 		t2.CONFG = 2;
@@ -4846,7 +4882,6 @@ void DSI_send_cmdq_to_bdg(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 {
 	int dsi_i = 0;
 
-	DISPFUNCSTART();
 	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL)
 		dsi_i = 0;
 	else if (module == DISP_MODULE_DSI1)
@@ -4900,8 +4935,6 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		}
 #endif
 	} else { /* cmd mode */
-		DISPMSG("%s,gavin cmd=0x%x,count=%d,para[0]=0x%x\n",
-					__func__, cmd, count, para_list[0]);
 		dsi_wait_not_busy(module, cmdq);
 		DSI_send_cmd_cmd(cmdq, module, 0, REGFLAG_ESCAPE_ID, cmd,
 					count, para_list, force_update);
@@ -5709,9 +5742,12 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module,
 		_dsi_context[i].lcm_height = config->dst_h;
 		_dump_dsi_params(&(_dsi_context[i].dsi_params));
 	}
-
 #ifdef CONFIG_MTK_MT6382_BDG
+	set_bdg_tx_mode(dsi_config->mode);
 	dsi_config->data_rate = get_ap_data_rate();
+//	dsi_config->data_rate_dyn= get_ap_dyn_data_rate(1);
+	DISPMSG("%s, data_rate=%d, dyn_data_rate=%d\n",
+		__func__, dsi_config->data_rate, dsi_config->data_rate_dyn);
 #endif
 	DISPINFO(
 		"%s, PLL_CLOCK=%d, data_rate=%d, mode=%d\n",
@@ -5725,7 +5761,13 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module,
 		DSI_PHY_clk_switch(module, NULL, false);
 	}
 #endif
-
+#ifdef CONFIG_MTK_MT6382_BDG
+	if (dsi_config->mode != CMD_MODE && DSI_REG[0]->DSI_INTSTA.BUSY &&
+			DSI_REG[0]->DSI_START.DSI_START) {
+		DISPINFO("skip dsi config in vdo mode busy state\n");
+		return 0;
+	}
+#endif
 	/* c2v */
 	if (dsi_config->mode != CMD_MODE)
 		dsi_currect_mode = 1;
@@ -5861,7 +5903,7 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 	DSI_clk_HS_mode(module, cmdq, TRUE);
 
 #ifdef CONFIG_MTK_MT6382_BDG
-	if (get_mt6382_init() == 1 && get_ap_data_rate() > RX_V12)
+	if (deskew_done == 0 && get_ap_data_rate() > RX_V12)
 		DSI_MIPI_deskew(module, cmdq);
 #endif
 
@@ -6385,7 +6427,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 			      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 	}
 #ifdef CONFIG_MTK_MT6382_BDG
-	if (get_mt6382_init() == 1 && (get_bdg_tx_mode() == CMD_MODE)) {
+	if (get_mt6382_init() &&  (get_bdg_tx_mode() == CMD_MODE)) {
 		bdg_tx_cmd_mode(DISP_BDG_DSI0, NULL);
 		bdg_tx_start(DISP_BDG_DSI0, NULL);
 		bdg_mutex_trigger(DISP_BDG_DSI0, NULL);
@@ -6477,8 +6519,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	if (atomic_read(&dsi_idle_flg) == 0)
 		DSI_exit_ULPS(module);
 #ifdef CONFIG_MTK_MT6382_BDG
-	if (check_stopstate(NULL) == 0 && (get_bdg_tx_mode() != CMD_MODE))
-		bdg_tx_start(DISP_BDG_DSI0, NULL);
+	check_stopstate(NULL);
 #endif
 	DSI_Reset(module, NULL);
 	_set_power_on_status(module, 1);
@@ -6757,6 +6798,19 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 		}
 	} else if (state == CMDQ_ESD_CHECK_READ) {
 		unsigned int value = 0, mask = 0;
+#ifdef CONFIG_MTK_MT6382_BDG
+		unsigned char rxbypass0[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x84
+		unsigned char rxbypass1[] = {0x10, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00}; //ID 0x84
+		unsigned char rxsel0[] = {0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x70
+		unsigned char rxsel1[] = {0x31, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00}; //ID 0x70
+
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x84, 7,
+				rxbypass1, 1);
+
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x70, 7,
+				rxsel0, 1);
+#endif
+
 		/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
 		SET_VAL_MASK(value, mask, 1, FLD_RD_RDY_INT_EN);
 		SET_VAL_MASK(value, mask, 1, FLD_CMD_DONE_INT_EN);
@@ -6779,16 +6833,30 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			DSI_OUTREG32(cmdq_trigger_handle,
 				     &DSI_CMDQ_REG[dsi_i]->data[0], 0x00013700);
 			DSI_OUTREG32(cmdq_trigger_handle,
-				     &DSI_CMDQ_REG[dsi_i]->data[1],
-				     AS_UINT32(&t0));
-			DSI_OUTREG32(cmdq_trigger_handle,
-				     &DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 2);
+				     &DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
 
 			/* start DSI */
 			DSI_OUTREG32(cmdq_trigger_handle,
 				     &DSI_REG[dsi_i]->DSI_START, 0);
 			DSI_OUTREG32(cmdq_trigger_handle,
 				     &DSI_REG[dsi_i]->DSI_START, 1);
+			if (dsi_i == 0) {
+				DSI_POLLREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_INTSTA,
+					0x80000000, 0);
+			}
+
+			DSI_OUTREG32(cmdq_trigger_handle,
+				&DSI_CMDQ_REG[dsi_i]->data[0], AS_UINT32(&t0));
+
+			DSI_OUTREG32(cmdq_trigger_handle,
+				&DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
+
+			/* start DSI */
+			DSI_OUTREG32(cmdq_trigger_handle,
+				&DSI_REG[dsi_i]->DSI_START, 0);
+			DSI_OUTREG32(cmdq_trigger_handle,
+				&DSI_REG[dsi_i]->DSI_START, 1);
 
 			/*
 			 * 1.wait DSI RD_RDY(must clear,
@@ -6822,6 +6890,12 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			}
 			/* loop: 0~4 */
 		}
+#ifdef CONFIG_MTK_MT6382_BDG
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x84, 7,
+				rxbypass0, 1);
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x70, 7,
+				rxsel1, 1);
+#endif
 	} else if (state == CMDQ_ESD_CHECK_CMP) {
 		struct LCM_esd_check_item *lcm_esd_tb;
 		int return_val;
@@ -6884,7 +6958,7 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 				ret = 0; /* esd pass */
 			} else {
 				/* esd fail */
-				DISP_PR_ERR(
+				DISP_PR_INFO(
 				"[DSI]cmp fail:read(0x%x)!=expect(0x%x)\n",
 					    read_data0.byte1,
 					    lcm_esd_tb->para_list[0]);
@@ -6901,6 +6975,10 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			hSlot = 0;
 		}
 	} else if (state == CMDQ_STOP_VDO_MODE) {
+#ifdef CONFIG_MTK_MT6382_BDG
+		unsigned char stopdsi[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x00
+		unsigned char setcmd[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x14
+#endif
 		/* use cmdq to stop dsi vdo mode */
 		/* 1.dual dsi need do reset DSI_DUAL_EN/DSI_START */
 		DSI_SetMode(module, cmdq_trigger_handle, CMD_MODE);
@@ -6939,7 +7017,26 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 		if (i == 1) /* DUAL */
 			DSI_POLLREG32(cmdq_trigger_handle,
 				      &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
+#ifdef CONFIG_MTK_MT6382_BDG
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x00, 7,
+				stopdsi, 1);
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x14, 7,
+				setcmd, 1);
+#endif
 	} else if (state == CMDQ_START_VDO_MODE) {
+#ifdef CONFIG_MTK_MT6382_BDG
+		unsigned char setvdo[] = {0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00}; //ID 0x14
+		unsigned char stopdsi[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x00
+		unsigned char startdsi[] = {0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00}; //ID 0x00
+
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x14, 7,
+				setvdo, 1);
+
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x00, 7,
+				stopdsi, 1);
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x00, 7,
+				startdsi, 1);
+#endif
 		keep_LP11_in_sw_ctrl(module, cmdq_trigger_handle);
 		sw_ctrl_switch(module, cmdq_trigger_handle, 1);
 		DSI_send_cmd_cmd(cmdq_trigger_handle, module,

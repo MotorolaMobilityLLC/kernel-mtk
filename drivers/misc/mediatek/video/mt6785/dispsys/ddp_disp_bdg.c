@@ -30,7 +30,7 @@
 #include <linux/of_gpio.h>
 /***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 #include "cmdq-bdg.h"
-#include "ddp_log.h"
+//#include "ddp_log.h"
 //#include <linux/math.h>
 
 #define SPI_EN
@@ -54,6 +54,7 @@ struct DSI_TX_PHY_TIMCON1_REG timcon1;
 struct DSI_TX_PHY_TIMCON2_REG timcon2;
 struct DSI_TX_PHY_TIMCON3_REG timcon3;
 unsigned int bg_tx_data_phy_cycle = 0, tx_data_rate = 0, ap_tx_data_rate = 0;
+unsigned int ap_tx_dyn_data_rate = 0, tx_dyn_data_rate = 0, bg_mipi_clk_change_sta = 0;
 //unsigned int ap_tx_data_phy_cycle = 0;
 unsigned int hsa_byte = 0, hbp_byte = 0, hfp_byte = 0, bllp_byte = 0, bg_tx_line_cycle = 0;
 //unsigned int ap_tx_hsa_wc = 0, ap_tx_hbp_wc = 0, ap_tx_hfp_wc = 0, ap_tx_bllp_wc = 0;
@@ -1768,7 +1769,7 @@ int bdg_mipi_tx_dphy_clk_setting(enum DISP_BDG_ENUM module,
 
 	DISPFUNCSTART();
 
-	data_Rate = tx_data_rate;
+	data_Rate = bg_mipi_clk_change_sta == 0 ? tx_data_rate : tx_dyn_data_rate;
 
 	DISPINFO("%s, data_Rate=%d\n",	__func__, data_Rate);
 
@@ -2062,16 +2063,18 @@ int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
 	int i;
 	u32 ui, cycle_time;
 	unsigned int hs_trail;
+	unsigned int data_Rate;
 //	unsigned char timcon_temp;
 
 	DISPFUNCSTART();
+	data_Rate = bg_mipi_clk_change_sta == 0 ? tx_data_rate : tx_dyn_data_rate;
 
-	ui = 1000 / tx_data_rate;
-	cycle_time = 8000 / tx_data_rate;
+	ui = 1000 / data_Rate;
+	cycle_time = 8000 / data_Rate;
 
 	DISPINFO(
 		"%s, tx_data_rate=%d, cycle_time=%d, ui=%d\n",
-		__func__, tx_data_rate, cycle_time, ui);
+		__func__, data_Rate, cycle_time, ui);
 
 #if 1
 	/* lpx >= 50ns (spec) */
@@ -2330,6 +2333,11 @@ int bdg_tx_ps_ctrl(enum DISP_BDG_ENUM module,
 {
 	int i;
 	unsigned int ps_wc, width, bpp, ps_sel;
+#ifdef _BDG_CMD_MODE_
+	unsigned int line_back_to_LP = 6;
+#else
+	unsigned int line_back_to_LP = 1;
+#endif
 
 	DISPFUNCSTART();
 
@@ -2366,27 +2374,27 @@ int bdg_tx_ps_ctrl(enum DISP_BDG_ENUM module,
 	}
 	ps_wc = (width * bpp) / 8;
 	DISPINFO(
-		"%s, DSI_WIDTH=%d, DSI_HEIGHT=%d, ps_sel=%d, ps_wc=%d\n",
-		__func__, width, tx_params->vertical_active_line, ps_sel, ps_wc);
+		"%s, DSI_WIDTH=%d, DSI_HEIGHT=%d, ps_sel=%d, ps_wc=%d, line_back_to_LP=%d\n",
+		__func__, width, tx_params->vertical_active_line, ps_sel, ps_wc, line_back_to_LP);
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_VACT_NL_REG,
 				TX_REG[i]->DSI_TX_VACT_NL, VACT_NL,
-				tx_params->vertical_active_line);
+				tx_params->vertical_active_line / line_back_to_LP);
 
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_PSCON_REG,
 				TX_REG[i]->DSI_TX_PSCON, CUSTOM_HEADER, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_PSCON_REG,
-				TX_REG[i]->DSI_TX_PSCON, DSI_PS_WC, ps_wc);
+				TX_REG[i]->DSI_TX_PSCON, DSI_PS_WC, ps_wc * line_back_to_LP);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_PSCON_REG,
 				TX_REG[i]->DSI_TX_PSCON, DSI_PS_SEL, ps_sel);
 
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_SIZE_CON_REG,
 				TX_REG[i]->DSI_TX_SIZE_CON, DSI_WIDTH,
-				width);
+				width * line_back_to_LP);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_SIZE_CON_REG,
 				TX_REG[i]->DSI_TX_SIZE_CON, DSI_HEIGHT,
-				tx_params->vertical_active_line);
+				tx_params->vertical_active_line / line_back_to_LP);
 	}
 
 	return 0;
@@ -2531,8 +2539,15 @@ int bdg_tx_buf_rw_set(enum DISP_BDG_ENUM module,
 			TX_REG[i]->DSI_TX_BUF_CON0, ANTI_LATENCY_BUF_EN, 1);
 
 		if (tx_params->mode == CMD_MODE) {
-#ifdef _HIGH_FRM_
-			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0200);
+#ifdef _CMD_120FPS_
+#if 0
+			if (bg_mipi_clk_change_sta)
+				DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0745);
+			else
+				DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0026);
+#else
+			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0a00);
+#endif
 #else
 			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_TX_BUF_CON1, 0x0dfd0300);
 #endif
@@ -2658,20 +2673,11 @@ int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq)
 
 	DISPFUNCSTART();
 
-//	DISPINFO("%s, DSI_TX_START=0x%08x\n",__func__,
-//		mtk_spi_read((unsigned long)(&TX_REG[0]->DSI_TX_START)));
-
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_START_REG,
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_START_REG,
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 1);
-		if (bdg_tx_mode == 0) {
-			DSI_OUTREGBIT(cmdq, struct DSI_TX_COM_CON_REG,
-					TX_REG[i]->DSI_TX_COM_CON, DSI_RESET, 1);
-			DSI_OUTREGBIT(cmdq, struct DSI_TX_COM_CON_REG,
-					TX_REG[i]->DSI_TX_COM_CON, DSI_RESET, 0);
-		}
 	}
 
 	return 0;
@@ -2682,13 +2688,13 @@ int bdg_set_dcs_read_cmd(bool enable, void *cmdq)
 	DISPFUNCSTART();
 
 	if (enable) {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 55);
+//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 55);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
 				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 1);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
 				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 0);
 	} else {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0);
+//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
 				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 0);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
@@ -2776,34 +2782,302 @@ int bdg_mutex_trigger(enum DISP_BDG_ENUM module, void *cmdq)
 	return 0;
 }
 
-int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module)
+int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 {
 	unsigned int i, k;
+	unsigned int tmp;
 
-	DISPFUNCSTART();
-
+#if 0
+	DISPMSG("0x%08x: 0x%08x\n", 0x0000d314, mtk_spi_read(0x0000d314));
+	DISPMSG("0x%08x: 0x%08x\n", 0x00007310, mtk_spi_read(0x00007310));
+	DISPMSG("0x%08x: 0x%08x\n", 0x000231a8, mtk_spi_read(0x000231a8));
+	DISPMSG("0x%08x: 0x%08x\n", 0x00023174, mtk_spi_read(0x00023174));
+	DISPMSG("0x%08x: 0x%08x\n", 0x0002106c, mtk_spi_read(0x0002106c));
+	DISPMSG("0x%08x: 0x%08x\n", 0x00021300, mtk_spi_read(0x00021300));
+	DISPMSG("0x%08x: 0x%08x\n", 0x00003010, mtk_spi_read(0x00003010));
+#endif
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		unsigned long dsc_base_addr = (unsigned long)DSC_REG;
 		unsigned long dsi_base_addr = (unsigned long)TX_REG[i];
-//		unsigned long mipi_base_addr = (unsigned long)MIPI_TX_REG;
+		unsigned long mipi_base_addr = (unsigned long)MIPI_TX_REG;
 
 		DISPMSG("========================== mt6382 RX REGS ==\n", i);
+		tmp = mtk_spi_read(0x0000d00c);
+		DISPMSG("INT_ST_MAIN(0x0000d00c): 0x%08x\n", tmp);
+		if (tmp != 0) {
+			if (tmp & (1 << 0))
+				DISPMSG("INT_ST_MAIN(bit0), int_st_phy_fatal\n");
+			if (tmp & (1 << 1))
+				DISPMSG("INT_ST_MAIN(bit1), int_st_dsi_fatal\n");
+			if (tmp & (1 << 2))
+				DISPMSG("INT_ST_MAIN(bit2), int_st_ddi_fatal\n");
+			if (tmp & (1 << 3))
+				DISPMSG("INT_ST_MAIN(bit3), int_st_ipi_fatal\n");
+			if (tmp & (1 << 4))
+				DISPMSG("INT_ST_MAIN(bit4), int_st_fifo_fatal\n");
+			if (tmp & (1 << 16))
+				DISPMSG("INT_ST_MAIN(bit16), int_st_phy\n");
+			if (tmp & (1 << 17))
+				DISPMSG("INT_ST_MAIN(bit17), int_st_dsi\n");
+			if (tmp & (1 << 18))
+				DISPMSG("INT_ST_MAIN(bit18), int_st_ddi\n");
+			if (tmp & (1 << 19))
+				DISPMSG("INT_ST_MAIN(bit19), int_st_ipi\n");
+			if (tmp & (1 << 21))
+				DISPMSG("INT_ST_MAIN(bit21), int_st_err_rpt\n");
+			if (tmp & (1 << 22))
+				DISPMSG("INT_ST_MAIN(bit22), int_st_rx_triggers\n");
+		}
 
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d00c, mtk_spi_read(0x0000d00c));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d2d0, mtk_spi_read(0x0000d2d0));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d2b0, mtk_spi_read(0x0000d2b0));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d270, mtk_spi_read(0x0000d270));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d250, mtk_spi_read(0x0000d250));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d230, mtk_spi_read(0x0000d230));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d210, mtk_spi_read(0x0000d210));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d280, mtk_spi_read(0x0000d280));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d260, mtk_spi_read(0x0000d260));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d240, mtk_spi_read(0x0000d240));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d220, mtk_spi_read(0x0000d220));
-		DISPMSG("0x%08x: 0x%08x\n", 0x0000d200, mtk_spi_read(0x0000d200));
+		tmp = mtk_spi_read(0x0000d200);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_PHY_FATAL(0x0000d200): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("Lane 0 Start-of-Transmission Synchronization Error.\n");
+			if (tmp & (1 << 1))
+				DISPMSG("Lane 0 Escape Entry Error.\n");
+			if (tmp & (1 << 2))
+				DISPMSG("Lane 0 Control Error.\n");
+			if (tmp & (1 << 3))
+				DISPMSG("Lane 0 LP Data Transmission Synchronization Error.\n");
+			if (tmp & (1 << 4))
+				DISPMSG("Lane 0 LP0 Contention Error.\n");
+			if (tmp & (1 << 5))
+				DISPMSG("Lane 0 LP1 Contention Error.\n");
+			if (tmp & (1 << 7)) {
+				DISPMSG("Peripheral LPTX timeout defined in DSI ");
+				DISPMSG("protocol, avoid to bus contention.\n");
+			}
+			if (tmp & (1 << 8))
+				DISPMSG("Lane 1 Start-of-Transmission Synchronization Error.\n");
+			if (tmp & (1 << 9))
+				DISPMSG("Lane 1 Escape Entry Error.\n");
+			if (tmp & (1 << 10))
+				DISPMSG("Lane 1 Control Error.\n");
+			if (tmp & (1 << 11)) {
+				DISPMSG("Skew between lanes is greater than ");
+				DISPMSG("maximum allowed value.\n");
+			}
+			if (tmp & (1 << 16))
+				DISPMSG("Lane 2 Start-of-Transmission Synchronization Error.\n");
+			if (tmp & (1 << 17))
+				DISPMSG("Lane 2 Escape Entry Error.\n");
+			if (tmp & (1 << 18))
+				DISPMSG("Lane 2 Control Error.\n");
+			if (tmp & (1 << 24))
+				DISPMSG("Lane 3 Start-of-Transmission Synchronization Error.\n");
+		}
+
+		tmp = mtk_spi_read(0x0000d220);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_DSI_FATAL(0x0000d220): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("Payload Checksum error detected on VC 0.\n");
+			if (tmp & (1 << 1))
+				DISPMSG("Payload Checksum error detected on VC 1.\n");
+			if (tmp & (1 << 2))
+				DISPMSG("Payload Checksum error detected on VC 2.\n");
+			if (tmp & (1 << 3))
+				DISPMSG("Payload Checksum error detected on VC 3.\n");
+			if (tmp & (1 << 4)) {
+				DISPMSG("LPRX only. Payload size Mismatch error ");
+				DISPMSG("detected on VC 0. Causes Payload Checksum error.\n");
+			}
+			if (tmp & (1 << 5)) {
+				DISPMSG("LPRX only. Payload size Mismatch error ");
+				DISPMSG("detected on VC 1. Causes Payload Checksum error.\n");
+			}
+			if (tmp & (1 << 6)) {
+				DISPMSG("LPRX only. Payload size Mismatch error ");
+				DISPMSG("detected on VC 2. Causes Payload Checksum error.\n");
+			}
+			if (tmp & (1 << 7)) {
+				DISPMSG("LPRX only. Payload size Mismatch error ");
+				DISPMSG("detected on VC 3. Causes Payload Checksum error.\n");
+			}
+			if (tmp & (1 << 16))
+				DISPMSG("Header error unrecoverable.\n");
+			if (tmp & (1 << 17)) {
+				DISPMSG("Read or TE command is followed by another read ");
+				DISPMSG("or write command instead of BTA.\n");
+			}
+			if (tmp & (1 << 18))
+				DISPMSG("Invalid data type detected.\n");
+		}
+
+		tmp = mtk_spi_read(0x0000d240);
+		DISPMSG("INT_ST_DDI_FATAL(0x0000d240): 0x%08x\n", tmp);
+		if (tmp & (1 << 0)) {
+			DISPMSG("This timeout should rise when the DSI Display panel is not ");
+			DISPMSG("outputting response data during programmed value.\n");
+			DISPMSG("Data received after this timeout are ignored and ");
+			DISPMSG("related logic will be reset.\n");
+		}
+		if (tmp & (1 << 1))
+			DISPMSG("Reports error when panel responds an invalid data type.\n");
+
+		tmp = mtk_spi_read(0x0000d260);
+		DISPMSG("INT_ST_IPI_FATAL(0x0000d260): 0x%08x\n", tmp);
+		if (tmp & (1 << 0)) {
+			DISPMSG("This bit asserts when receiving error IPI timing information, ");
+			DISPMSG("e.g. no HSE after HSS in pulse mode.\n");
+		}
+		if (tmp & (1 << 1)) {
+			DISPMSG("This bit asserts when receiving non-integer pixel ");
+			DISPMSG("number video packet.\n");
+		}
+		tmp = mtk_spi_read(0x0000d280);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_FIFO_FATAL(0x0000d280): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("LPRX FIFO overflow, caused by LPRX from PHY.\n");
+			if (tmp & (1 << 1))
+				DISPMSG("LPTX FIFO overflow, caused by LPTX from DDI.\n");
+			if (tmp & (1 << 4))
+				DISPMSG("D-PHY HSRX elastbuf overflow, caused by D-PHY HSRX.\n");
+			if (tmp & (1 << 8))
+				DISPMSG("DDI Header FIFO overflow, caused by HSRX from PPI.\n");
+			if (tmp & (1 << 9))
+				DISPMSG("DDI Payload FIFO overflow, caused by HSRX from PPI.\n");
+			if (tmp & (1 << 16))
+				DISPMSG("IPI Control FIFO overflow, caused by HSRX from PPI.\n");
+			if (tmp & (1 << 17))
+				DISPMSG("IPI Pixel FIFO overflow, caused by HSRX from PPI.\n");
+			if (tmp & (1 << 18))
+				DISPMSG("IPI Pixel FIFO overflow, caused by read from IPI.\n");
+		}
+
+		tmp = mtk_spi_read(0x0000d210);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_PHY(0x0000d210): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("Lane 0 Start-of-Transmission(SoT) Error.\n");
+			if (tmp & (1 << 1))
+				DISPMSG("Lane 1 Start-of-Transmission(SoT) Error.\n");
+			if (tmp & (1 << 2))
+				DISPMSG("Lane 2 Start-of-Transmission(SoT) Error.\n");
+			if (tmp & (1 << 3))
+				DISPMSG("Lane 3 Start-of-Transmission(SoT) Error.\n");
+			if (tmp & (1 << 4))
+				DISPMSG("HS Invalid Code Word Detection on lane 0.\n");
+			if (tmp & (1 << 5))
+				DISPMSG("HS Invalid Code Word Detection on lane 1.\n");
+			if (tmp & (1 << 6))
+				DISPMSG("HS Invalid Code Word Detection on lane 2.\n");
+			if (tmp & (1 << 16)) {
+				DISPMSG("This timeout is to inform the user when the LPDT ");
+				DISPMSG(
+					"transmission duration is more than the programmed time.\n");
+			}
+			if (tmp & (1 << 17)) {
+				DISPMSG("This timeout is to inform the user when the high-speed ");
+				DISPMSG("reception duration is more than the programmed time.\n");
+			}
+		}
+
+		tmp = mtk_spi_read(0x0000d230);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_DSI(0x0000d230): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("Header ECC Check error detected on VC 0.\n");
+			if (tmp & (1 << 1))
+				DISPMSG("Header ECC Check error detected on VC 1.\n");
+			if (tmp & (1 << 2))
+				DISPMSG("Header ECC Check error detected on VC 2.\n");
+			if (tmp & (1 << 3))
+				DISPMSG("Header ECC Check error detected on VC 3.\n");
+			if (tmp & (1 << 4)) {
+				DISPMSG("EoT packet detected error, according the configuration ");
+				DISPMSG("EOTP_CFG.\n");
+			}
+		}
+		tmp = mtk_spi_read(0x0000d250);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_DDI(0x0000d250): 0x%08x\n", tmp);
+			if (tmp & (1 << 0)) {
+				DISPMSG("This timeout should rise when the DSI Display panel is ");
+				DISPMSG(
+					"not accepting the incoming data during programmed value.\n");
+			}
+			if (tmp & (1 << 1)) {
+				DISPMSG("This field reports when DSI2 host sends an invalid ");
+				DISPMSG("virtual channel for DDI command packets.\n");
+			}
+			if (tmp & (1 << 4)) {
+				DISPMSG("This field reports when received response packet number ");
+				DISPMSG("mismatch with the value in WC.\n");
+			}
+			if (tmp & (1 << 5))
+				DISPMSG("This field reports when panel responds an invalid VC.\n");
+			if (tmp & (1 << 6)) {
+				DISPMSG("This field reports when panel responds data after ");
+				DISPMSG("response timeout is fired.\n");
+			}
+		}
+
+		tmp = mtk_spi_read(0x0000d270);
+		DISPMSG("INT_ST_IPI(0x0000d270): 0x%08x\n", tmp);
+		if (tmp & (1 << 0)) {
+			DISPMSG("This bit asserts when receiving invalid virtual channel packets ");
+			DISPMSG("according the configuration IPI_VALID_VC_CFG.\n");
+		}
+		if (tmp & (1 << 1)) {
+			DISPMSG("This bit asserts when frame timing information is corrupted ");
+			DISPMSG("because of back pressure.\n");
+		}
+		tmp = mtk_spi_read(0x0000d2b0);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_ERR_RPT(0x0000d2b0): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("SOT Error.\n");
+			if (tmp & (1 << 1))
+				DISPMSG("SOT Sync Error.\n");
+			if (tmp & (1 << 2))
+				DISPMSG("EOT Error.\n");
+			if (tmp & (1 << 3))
+				DISPMSG("Escape mode Entry Command Error.\n");
+			if (tmp & (1 << 4))
+				DISPMSG("Low-power Transmit Sync Error.\n");
+			if (tmp & (1 << 5))
+				DISPMSG("Peripheral Timeout Error.\n");
+			if (tmp & (1 << 6))
+				DISPMSG("False Control Error.\n");
+			if (tmp & (1 << 7))
+				DISPMSG("Contention detected.\n");
+			if (tmp & (1 << 8))
+				DISPMSG("ECC Error, single-bit(detected and corrected).\n");
+			if (tmp & (1 << 9))
+				DISPMSG("ECC Error, multi-bit(detected and not corrected).\n");
+			if (tmp & (1 << 10))
+				DISPMSG("Payload Checksum Error(long packet only).\n");
+			if (tmp & (1 << 11))
+				DISPMSG("DSI Data Type Not Recognized.\n");
+			if (tmp & (1 << 12)) {
+				DISPMSG("DSI VC ID invalid, both DDI_VALID_VC_CFG & ");
+				DISPMSG("IPI_VALID_VC_CFG related error will assert this bit.\n");
+			}
+			if (tmp & (1 << 13))
+				DISPMSG("Invalid Transmission Length.\n");
+			if (tmp & (1 << 15))
+				DISPMSG("DSI Protocol Violation.\n");
+			if (tmp & (1 << 16))
+				DISPMSG("High-speed Invalid Code Word Detection on lane.\n");
+		}
+
+		tmp = mtk_spi_read(0x0000d2d0);
+		if (tmp != 0) {
+			DISPMSG("INT_ST_RX_TRIGGERS(0x0000d2d0): 0x%08x\n", tmp);
+			if (tmp & (1 << 0))
+				DISPMSG("Trigger 0\n");
+			if (tmp & (1 << 1))
+				DISPMSG("Trigger 1\n");
+			if (tmp & (1 << 2))
+				DISPMSG("Trigger 2\n");
+			if (tmp & (1 << 3))
+				DISPMSG("Trigger 3\n");
+		}
 
 		DISPMSG("========================== mt6382 DSI%d REGS ==\n", i);
-
 //		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
 		for (k = 0; k < 0x210; k += 16) {
 			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
@@ -2815,38 +3089,39 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module)
 
 		DISPMSG("========================== mt6382 DSI%d CMD REGS ==\n", i);
 		for (k = 0; k < 32; k += 16) { /* only dump first 32 bytes cmd */
-			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", 0xd00 + k,
 				mtk_spi_read((dsi_base_addr + 0xd00 + k)),
 				mtk_spi_read((dsi_base_addr + 0xd00 + k + 0x4)),
 				mtk_spi_read((dsi_base_addr + 0xd00 + k + 0x8)),
 				mtk_spi_read((dsi_base_addr + 0xd00 + k + 0xc)));
 		}
-/*
-		DISPMSG("========================== mt6382 MIPI%d REGS ==\n", i);
-//		for (k = 0; k < sizeof(struct BDG_MIPI_TX_REGS); k += 16) {
-		for (k = 0; k < 0x100; k += 16) {
-			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
-				mtk_spi_read(mipi_base_addr + k),
-				mtk_spi_read(mipi_base_addr + k + 0x4),
-				mtk_spi_read(mipi_base_addr + k + 0x8),
-				mtk_spi_read(mipi_base_addr + k + 0xc));
-		}
-*/
-		if (dsc_en) {
-			DISPMSG("========================== mt6382 DSC%d REGS ==\n", i);
-			for (k = 0; k < sizeof(struct BDG_DISP_DSC_REGS); k += 16) {
+
+		if (level) {
+			DISPMSG("========================== mt6382 MIPI%d REGS ==\n", i);
+//			for (k = 0; k < sizeof(struct BDG_MIPI_TX_REGS); k += 16) {
+			for (k = 0; k < 0x100; k += 16) {
 				DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
-					mtk_spi_read(dsc_base_addr + k),
-					mtk_spi_read(dsc_base_addr + k + 0x4),
-					mtk_spi_read(dsc_base_addr + k + 0x8),
-					mtk_spi_read(dsc_base_addr + k + 0xc));
+					mtk_spi_read(mipi_base_addr + k),
+					mtk_spi_read(mipi_base_addr + k + 0x4),
+					mtk_spi_read(mipi_base_addr + k + 0x8),
+					mtk_spi_read(mipi_base_addr + k + 0xc));
+			}
+
+			if (dsc_en) {
+				DISPMSG("========================== mt6382 DSC%d REGS ==\n", i);
+				for (k = 0; k < sizeof(struct BDG_DISP_DSC_REGS); k += 16) {
+					DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+						mtk_spi_read(dsc_base_addr + k),
+						mtk_spi_read(dsc_base_addr + k + 0x4),
+						mtk_spi_read(dsc_base_addr + k + 0x8),
+						mtk_spi_read(dsc_base_addr + k + 0xc));
+				}
 			}
 		}
 	}
 
 	return 0;
 }
-
 
 int bdg_tx_wait_for_idle(enum DISP_BDG_ENUM module)
 {
@@ -2870,7 +3145,8 @@ int bdg_tx_wait_for_idle(enum DISP_BDG_ENUM module)
 	}
 
 	if (timeout == 0) {
-//		dsi_dump_reg(module, 0);
+		bdg_dsi_dump_reg(module, 0);
+		bdg_tx_reset(module, NULL);
 		DISPMSG("%s, wait timeout!\n", __func__);
 		return -1;
 	}
@@ -2892,8 +3168,11 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 	unsigned int bg_tx_line_time = 0, disp_pipe_line_time = 0;
 	unsigned int rxtx_ratio = 0;
 //	unsigned int ap_tx_total_word_cnt = 0, ap_tx_total_word_cnt_no_hfp_wc = 0;
+	unsigned int data_Rate;
 
 	DISPFUNCSTART();
+	data_Rate = bg_mipi_clk_change_sta == 0 ? tx_data_rate : tx_dyn_data_rate;
+
 	width = tx_params->horizontal_active_pixel / 1;
 	height = tx_params->vertical_active_line;
 	lanes = tx_params->LANE_NUM;
@@ -2901,7 +3180,6 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 	/* Step 1. Show Bridge DSI TX Setting. */
 	/* get bdg-tx hsa_byte, hbp_byte, new_hfp_byte and bllp_byte */
 	if (dsc_en) {
-//		ps_wc = width;
 		ps_wc = width * 24 / 8 / 3;	/* for 8bpp, 1/3 compression */
 		rxtx_ratio = RXTX_RATIO;	/* ratio=2.25 */
 	} else {
@@ -2950,11 +3228,8 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 		break;
 	}
 
-//	bg_tx_line_cycle = (bg_tx_total_word_cnt % lanes) == 0 ?
-//				(bg_tx_total_word_cnt / lanes) :
-//				(bg_tx_total_word_cnt / lanes) + 1;
 	bg_tx_line_cycle = (bg_tx_total_word_cnt + (lanes - 1)) / lanes;
-	bg_tx_line_time = bg_tx_line_cycle * 8000 / tx_data_rate;
+	bg_tx_line_time = bg_tx_line_cycle * 8000 / data_Rate;
 
 	disp_pipe_line_time = width * 1000 / MM_CLK;
 
@@ -2979,8 +3254,7 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 	/* refer to DSI_DPHY_Calc_VDO_Timing() */
 
 	/* Step 5. fine-tune data rate */
-
-#ifdef aaa
+#if 0
 	if (dsc_en) {
 		ap_tx_hsa_wc = 4;
 		ap_tx_hbp_wc = 4;
@@ -3042,6 +3316,33 @@ unsigned int get_ap_data_rate(void)
 	return ap_tx_data_rate;
 }
 
+unsigned int get_ap_dyn_data_rate(int en)
+{
+	if (en)
+		return ap_tx_dyn_data_rate;
+	else
+		return ap_tx_data_rate;
+}
+
+unsigned int get_bdg_dyn_data_rate(int en)
+{
+	if (en)
+		return tx_dyn_data_rate;
+	else
+		return tx_data_rate;
+}
+
+void cal_dyn_data_rate(struct LCM_DSI_PARAMS *lcm_params)
+{
+	ap_tx_dyn_data_rate = lcm_params->data_rate_dyn ? lcm_params->data_rate_dyn :
+		lcm_params->PLL_CLOCK_dyn * 2;
+
+	ap_tx_dyn_data_rate = ap_tx_dyn_data_rate * RXTX_RATIO / 100;
+
+	DISPMSG("%s, ap_tx_dyn_data_rate=%d\n",
+		__func__, ap_tx_dyn_data_rate);
+}
+
 unsigned int get_bdg_data_rate(void)
 {
 	DISPMSG("%s, tx_data_rate=%d\n", __func__, tx_data_rate);
@@ -3075,11 +3376,25 @@ unsigned int get_dsc_state(void)
 	return dsc_en;
 }
 
+void set_mt6382_init(unsigned int value)
+{
+	DISPMSG("%s, mt6382_init=%d->%d\n", __func__, mt6382_init, value);
+
+	mt6382_init = value;
+}
+
 unsigned int get_mt6382_init(void)
 {
 	DISPMSG("%s, mt6382_init=%d\n", __func__, mt6382_init);
 
 	return mt6382_init;
+}
+
+void set_bdg_tx_mode(unsigned int value)
+{
+	DISPMSG("%s: %u\n", __func__, value);
+
+	bdg_tx_mode = value;
 }
 
 unsigned int get_bdg_tx_mode(void)
@@ -4515,7 +4830,7 @@ int lcm_init(enum DISP_BDG_ENUM module)
 	DISPFUNCSTART();
 
 //	mt6382_nt36672c_fhd_vdo_init(dsc_en);
-#if 1
+
 	if (dsc_en) {
 		if (tx_data_rate < 601)
 			push_table(nt36672c_60hz, sizeof(nt36672c_60hz) /
@@ -4540,9 +4855,9 @@ int lcm_init(enum DISP_BDG_ENUM module)
 		push_table(nt36672c_wo_dsc, sizeof(nt36672c_wo_dsc) /
 			sizeof(struct lcm_setting_table), 1);
 	}
-#endif
-	//push_table(nt35695b_cmd_mode, sizeof(nt35695b_cmd_mode) /
-	//	sizeof(struct lcm_setting_table), 1);
+
+//	push_table(nt35695b_cmd_mode, sizeof(nt35695b_cmd_mode) /
+//		sizeof(struct lcm_setting_table), 1);
 
 	DISPFUNCEND();
 
@@ -4554,6 +4869,7 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 {
 	int ret = 0;
 	struct LCM_DSI_PARAMS *tx_params;
+	unsigned int data_rate;
 
 	DISPFUNCSTART();
 
@@ -4562,13 +4878,18 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 	bdg_tx_mode = tx_params->mode;
 	if (tx_params->PLL_CLOCK) {
 		tx_data_rate = tx_params->PLL_CLOCK * 2;
+		tx_dyn_data_rate = tx_params->PLL_CLOCK_dyn * 2;
 	} else {
 		DISPMSG("PLL clock should not be 0!!!\n");
 		return -1;
 	}
-
-	DISPMSG("%s, data_rate=%d, bdg_ssc_disable=%d, ssc_disable=%d, dsc_enable=%d, mode=%d\n",
-		__func__, tx_data_rate, tx_params->bdg_ssc_disable,
+	cal_dyn_data_rate(tx_params);
+	data_rate = bg_mipi_clk_change_sta == 0 ? tx_data_rate : tx_dyn_data_rate;
+	DISPMSG("%s, tx_data_rata = %d, tx_dyn_data_rate = %d\n", __func__,
+		tx_data_rate, tx_dyn_data_rate);
+	DISPMSG("%s, bg_mipi_change_sta=%d, data_rate=%d, bdg_ssc_disable=%d",
+		__func__, bg_mipi_clk_change_sta, data_rate, tx_params->bdg_ssc_disable);
+	DISPMSG("%s, ssc_disable=%d, dsc_enable=%d, mode=%d\n", __func__,
 		tx_params->ssc_disable, dsc_en, bdg_tx_mode);
 
 	ret |= bdg_mipi_tx_dphy_clk_setting(module, cmdq, tx_params);
@@ -4584,9 +4905,9 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 	ret |= bdg_dsi_line_timing_dphy_setting(module, cmdq, tx_params);
 
 	/* panel init*/
-	lcm_init(module);
+//	lcm_init(module);
 
-	ret |= bdg_tx_set_mode(module, cmdq, tx_params->mode);
+//	ret |= bdg_tx_set_mode(module, cmdq, tx_params->mode);
 
 	DISPFUNCEND();
 	return ret;
@@ -4916,7 +5237,7 @@ int check_stopstate(void *cmdq)
 	while (timeout) {
 		stop_state = mtk_spi_read((unsigned long)(&OCLA_REG->OCLA_LANE0_STOPSTATE));
 
-//		DISPMSG("stop_state=0x%x, timeout=%d\n", stop_state, timeout);
+		DISPMSG("stop_state=0x%x, timeout=%d\n", stop_state, timeout);
 
 		if ((stop_state & 0x1) == 0x1)
 			count++;
@@ -4964,27 +5285,17 @@ int polling_status(void)
 
 	if (timeout == 0) {
 		DISPMSG("%s, wait timeout!\n", __func__);
-		bdg_dsi_dump_reg(DISP_BDG_DSI0);
+		bdg_dsi_dump_reg(DISP_BDG_DSI0, 0);
 		return -1;
 	}
 
 	DISPFUNCEND();
 	return 0;
 }
-#define _n36672c_
 
 int bdg_dsc_init(enum DISP_BDG_ENUM module,
 			void *cmdq, struct LCM_DSI_PARAMS *tx_params)
 {
-#ifdef _n36672c_
-/*
- *Resolution = 1080x2400
- *Slice width = 540
- *Slice height = 8
- *Format = RGB888
- *DSC version = v1.1
- *Compression rate = 1/3
- */
 	unsigned long width = tx_params->horizontal_active_pixel / 1;
 	unsigned long height = tx_params->vertical_active_line;
 	unsigned int init_delay_limit, init_delay_height;
@@ -5104,7 +5415,6 @@ int bdg_dsc_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[17], 0xd185d965);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[18], 0xd1a7d1a5);
 	DSI_OUTREG32(cmdq, DSC_REG->DISP_DSC_PPS[19], 0xd1ed);
-#endif
 	DISPFUNCEND();
 	return 0;
 }
@@ -5121,6 +5431,7 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 	unsigned int eotp_cfg = 4;
 	unsigned int timeout = 5000;
 	unsigned int phy_ready = 0, count = 0;
+	unsigned int ap_data_rate;
 	struct LCM_DSI_PARAMS *tx_params;
 
 	DISPFUNCSTART();
@@ -5144,7 +5455,7 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_ST_MAIN_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_EOTP_CFG_OS, eotp_cfg);
 //	if (out_type)
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_CTRL_CFG_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_CTRL_CFG_OS, 0);
 
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_FIFO_STATUS_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_PHY_MODE_OS, tx_params->IsCphy);
@@ -5152,9 +5463,9 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_PHY_TEST_CTRL1_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_PHY_DATA_STATUS_OS, 0);
 //	if (out_type) {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_LPTXRDY_TO_CNT_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_LPTX_TO_CNT_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_HSRX_TO_CNT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_LPTXRDY_TO_CNT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_LPTX_TO_CNT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_HSRX_TO_CNT_OS, 0);
 //	}
 
 	//Interrupt Registers
@@ -5209,11 +5520,18 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_INT_FORCE_RX_TRIGGERS_OS, 0);
 
 //	if (out_type) {
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_RDY_TO_CNT_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_RESP_TO_CNT_OS, 0);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_VALID_VC_CFG_OS, 0xf);
-		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_RDY_TO_CNT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_RESP_TO_CNT_OS, 0);
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_VALID_VC_CFG_OS, 0xf);
+	/* 0x1b for MMCLK 270M 0x37 for MMCLK 407M */
+#ifdef _90HZ_
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x1b);
+#else
+	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x37);
+#endif
+
 //	}
+	ap_data_rate = bg_mipi_clk_change_sta == 0 ? ap_tx_data_rate : ap_tx_dyn_data_rate;
 
 	//video mode/ipi
 //	if (!out_type) {
@@ -5227,15 +5545,15 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 		t_hact_ipi = frame_width * 1000 / MM_CLK;
 		if (tx_params->IsCphy) { //c-phy
 			temp = 7000;
-			t_ppi_clk = temp / ap_tx_data_rate;
+			t_ppi_clk = temp / ap_data_rate;
 		//t_hact_ppi = ((6 + frame_width * 3) / (n_lanes + 1) / 2) * t_ppi_clk;
 			t_hact_ppi = ((6 + frame_width * 3) * temp /
-				ap_tx_data_rate / (lanes + 1) / 2);
+				ap_data_rate / (lanes + 1) / 2);
 		} else {
 			temp = 8000;
-			t_ppi_clk  = temp / ap_tx_data_rate;
+			t_ppi_clk  = temp / ap_data_rate;
 		//t_hact_ppi = ((6 + frame_width * 3) / (n_lanes + 1)) * t_ppi_clk;
-			t_hact_ppi = ((6 + frame_width * 3) * temp / ap_tx_data_rate /
+			t_hact_ppi = ((6 + frame_width * 3) * temp / ap_data_rate /
 				(lanes + 1));
 		}
 
@@ -5244,14 +5562,14 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 //ipi_tx_delay_qst = ((t_hact_ppi - t_hact_ipi) * MM_CLK / 1000 + 20 *
 //(temp * MM_CLK / tx_data_rate / 1000) + 4);
 			ipi_tx_delay_qst = ((t_hact_ppi - t_hact_ipi) * MM_CLK +
-					20 * temp * MM_CLK / ap_tx_data_rate) / 1000 + 4;
+					20 * temp * MM_CLK / ap_data_rate) / 1000 + 4;
 		else
 		//ipi_tx_delay_qst =  (20 * (temp * MM_CLK / tx_data_rate / 1000) + 4);
 			ipi_tx_delay_qst =  20 * temp * MM_CLK /
-				ap_tx_data_rate / 1000 + 4;
+				ap_data_rate / 1000 + 4;
 
 		DISPINFO("ap_tx_data_rate=%d, temp=%d, t_ppi_clk=%d, t_ipi_clk=%d\n",
-			ap_tx_data_rate, temp, t_ppi_clk, t_ipi_clk);
+			ap_data_rate, temp, t_ppi_clk, t_ipi_clk);
 		DISPINFO("t_hact_ppi=%d, t_hact_ipi=%d\n", t_hact_ppi, t_hact_ipi);
 
 		//t_ipi_tx_delay = ipi_tx_delay_qst_i * t_ipi_clk;
@@ -5293,24 +5611,24 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 	DISPFUNCSTART();
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
-				CORE_DIG_RW_COMMON_7_LANE0_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
-				0);
+		CORE_DIG_RW_COMMON_7_LANE0_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
+		0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
-				CORE_DIG_RW_COMMON_7_LANE1_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
-				0);
+		CORE_DIG_RW_COMMON_7_LANE1_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
+		0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
 				CORE_DIG_RW_COMMON_7_LANE2_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
 				0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
-				CORE_DIG_RW_COMMON_7_LANE3_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
-				0);
+		CORE_DIG_RW_COMMON_7_LANE3_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
+		0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
-				CORE_DIG_RW_COMMON_7_LANE4_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
-				0);
+		CORE_DIG_RW_COMMON_7_LANE4_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
+		0);
 
 	if (data_rate > RX_V12)
 		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
@@ -5329,65 +5647,65 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 		80);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_0 * 4,
-				PPI_RW_DDLCAL_CFG_0_DDLCAL_TIMEBASE_TARGET_MASK,
-				125);// cfg_clk = 26 MHz
+		PPI_RW_DDLCAL_CFG_0_DDLCAL_TIMEBASE_TARGET_MASK,
+		125); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_7 * 4,
-				PPI_RW_DDLCAL_CFG_7_DDLCAL_DECR_WAIT_MASK,
-				34);
+		PPI_RW_DDLCAL_CFG_7_DDLCAL_DECR_WAIT_MASK,
+		34);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_1 * 4,
-				PPI_RW_DDLCAL_CFG_1_DDLCAL_DISABLE_TIME_MASK,
-				25);
+		PPI_RW_DDLCAL_CFG_1_DDLCAL_DISABLE_TIME_MASK,
+		25);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_2 * 4,
-				PPI_RW_DDLCAL_CFG_2_DDLCAL_WAIT_MASK,
-				4);
+		PPI_RW_DDLCAL_CFG_2_DDLCAL_WAIT_MASK,
+		4);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_2 * 4,
-				PPI_RW_DDLCAL_CFG_2_DDLCAL_TUNE_MODE_MASK,
-				2);
+		PPI_RW_DDLCAL_CFG_2_DDLCAL_TUNE_MODE_MASK,
+		2);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_2 * 4,
-				PPI_RW_DDLCAL_CFG_2_DDLCAL_DDL_DLL_MASK,
-				1);
+		PPI_RW_DDLCAL_CFG_2_DDLCAL_DDL_DLL_MASK,
+		1);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_2 * 4,
-				PPI_RW_DDLCAL_CFG_2_DDLCAL_ENABLE_WAIT_MASK,
-				25); // cfg_clk = 26 MHz
+		PPI_RW_DDLCAL_CFG_2_DDLCAL_ENABLE_WAIT_MASK,
+		25); // cfg_clk = 26 MHz
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_2 * 4,
-				PPI_RW_DDLCAL_CFG_2_DDLCAL_UPDATE_SETTINGS_MASK,
-				1);
+		PPI_RW_DDLCAL_CFG_2_DDLCAL_UPDATE_SETTINGS_MASK,
+		1);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_4 * 4,
-				PPI_RW_DDLCAL_CFG_4_DDLCAL_STUCK_THRESH_MASK,
-				10);
+		PPI_RW_DDLCAL_CFG_4_DDLCAL_STUCK_THRESH_MASK,
+		10);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_6 * 4,
-				PPI_RW_DDLCAL_CFG_6_DDLCAL_MAX_DIFF_MASK,
-				10);
+		PPI_RW_DDLCAL_CFG_6_DDLCAL_MAX_DIFF_MASK,
+		10);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_7 * 4,
-				PPI_RW_DDLCAL_CFG_7_DDLCAL_START_DELAY_MASK,
-				12); // cfg_clk = 26 MHz
+		PPI_RW_DDLCAL_CFG_7_DDLCAL_START_DELAY_MASK,
+		12); // cfg_clk = 26 MHz
 
 	if (data_rate > 1500) {
 		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_3 * 4,
-					PPI_RW_DDLCAL_CFG_3_DDLCAL_COUNTER_REF_MASK,
-					ddl_cntr_ref_reg);
+			PPI_RW_DDLCAL_CFG_3_DDLCAL_COUNTER_REF_MASK,
+			ddl_cntr_ref_reg);
 
 		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_1 * 4,
 					PPI_RW_DDLCAL_CFG_1_DDLCAL_MAX_PHASE_MASK,
 					max_phase);
 
 		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_5 * 4,
-					PPI_RW_DDLCAL_CFG_5_DDLCAL_DLL_FBK_MASK,
-					dll_fbk);
+			PPI_RW_DDLCAL_CFG_5_DDLCAL_DLL_FBK_MASK,
+			dll_fbk);
 
 		mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + PPI_RW_DDLCAL_CFG_5 * 4,
-					PPI_RW_DDLCAL_CFG_5_DDLCAL_DDL_COARSE_BANK_MASK,
-					coarse_bank);
+			PPI_RW_DDLCAL_CFG_5_DDLCAL_DDL_COARSE_BANK_MASK,
+			coarse_bank);
 	}
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
@@ -6376,7 +6694,6 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_LP_DCO_PON_OVR_VAL_MASK,
 		0);
 #endif
-
 #ifdef _Disable_LP_TX_L123_
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x80, 1);
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x40, 1);
@@ -6392,6 +6709,19 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1627 * 4, 0xf, 0);
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1827 * 4, 0xf, 0);
 #endif
+#ifdef _G_MODE_EN_
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE0_CTRL_2_9 * 4, 0x18, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE1_CTRL_2_9 * 4, 0x18, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE2_CTRL_2_9 * 4, 0x18, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE3_CTRL_2_9 * 4, 0x18, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE +
+		CORE_DIG_IOCTRL_RW_AFE_LANE4_CTRL_2_9 * 4, 0x18, 0);
+#endif
+
 	DISPFUNCEND();
 }
 
@@ -6421,12 +6751,8 @@ void output_debug_signal(void)
 	mtk_spi_write(0x00007300, 0x77701111);
 }
 
-int bdg_common_init(enum DISP_BDG_ENUM module,
-			struct disp_ddp_path_config *config, void *cmdq)
+void bdg_register_init(void)
 {
-	int ret = 0;
-	struct LCM_DSI_PARAMS *tx_params;
-
 	DISPFUNCSTART();
 
 	DISPSYS_REG = (struct BDG_DISPSYS_CONFIG_REGS *)DISPSYS_BDG_MMSYS_CONFIG_BASE;
@@ -6444,8 +6770,21 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	EFUSE = (struct BDG_EFUSE_REGS *)DISPSYS_BDG_EFUSE_BASE;
 	GPIO = (struct BDG_GPIO_REGS *)DISPSYS_BDG_GPIO_BASE;
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
+}
+
+int bdg_common_init(enum DISP_BDG_ENUM module,
+			struct disp_ddp_path_config *config, void *cmdq)
+{
+	int ret = 0;
+	struct LCM_DSI_PARAMS *tx_params;
+	unsigned int ap_data_rate;
+
+	DISPFUNCSTART();
+
+	bdg_register_init();
 
 	clk_buf_disp_ctrl(true);
+	mdelay(2);
 	bdg_tx_pull_6382_reset_pin();
 	spislv_init();
 	spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
@@ -6528,15 +6867,15 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 				DSC_REG->DISP_DSC_CON, DSC_ALL_BYPASS, 1);
 	#endif
 	}
-
-	calculate_datarate_cfgs_rx(ap_tx_data_rate);
+	ap_data_rate = bg_mipi_clk_change_sta == 0 ? ap_tx_data_rate : ap_tx_dyn_data_rate;
+	calculate_datarate_cfgs_rx(ap_data_rate);
 	startup_seq_common(cmdq);
 
 	if (tx_params->IsCphy) {
 		DISPINFO("%s rx cphy\n", __func__);
 //		startup_seq_cphy_specific();
 	} else
-		startup_seq_dphy_specific(ap_tx_data_rate);
+		startup_seq_dphy_specific(ap_data_rate);
 
 //	output_debug_signal();
 
@@ -6559,7 +6898,6 @@ int bdg_common_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 
 	if (mt6382_init) {
 		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
-		clk_buf_disp_ctrl(true);
 		set_ana_mipi_dsi_off(cmdq);
 		ana_macro_off(cmdq);
 		set_mtcmos_off(cmdq);
@@ -6599,6 +6937,7 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
 
 	clk_buf_disp_ctrl(true);
+	mdelay(2);
 	bdg_tx_pull_6382_reset_pin();
 	set_LDO_on(cmdq);
 	set_mtcmos_on(cmdq);
@@ -6648,8 +6987,8 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	else {
 		DSI_OUTREG32(cmdq, MUTEX_REG->DISP_MUTEX0_CTL,
 				0x1 << 0 | 0x0 << 3 | 0x1 << 6 | 0x0 << 9);
-	DSI_OUTREGBIT(cmdq, struct DISP_MUTEX0_EN_REG,
-			MUTEX_REG->DISP_MUTEX0_EN, MUTEX0_EN, 1);
+		DSI_OUTREGBIT(cmdq, struct DISP_MUTEX0_EN_REG,
+				MUTEX_REG->DISP_MUTEX0_EN, MUTEX0_EN, 1);
 	}
 
 	// DSI-TX setting
@@ -6886,3 +7225,132 @@ void bdg_free_eint_irq(void)
 	free_irq(mt6382_eint_irq, NULL);
 }
 #endif
+
+void bdg_dsi_mipi_clk_change(enum DISP_BDG_ENUM module, void *handle, int clk)
+{
+	unsigned int pcw_ratio = 0;
+	unsigned int pcw = 0;
+	unsigned int pcw_floor = 0;
+	unsigned int posdiv    = 0;
+	unsigned int prediv    = 0;
+	unsigned int status = 0;
+
+	if (clk != 0) {
+		unsigned int tmp = 0;
+
+		if (clk > 2500) {
+			DISPINFO("mipitx Data Rate exceed limit(%d)\n",
+			clk);
+			ASSERT(0);
+		} else if (clk >= 2000) { /* 2G ~ 2.5G */
+			pcw_ratio = 1;
+			posdiv    = 0;
+			prediv    = 0;
+		} else if (clk >= 1000) { /* 1G ~ 2G */
+			pcw_ratio = 2;
+			posdiv    = 1;
+			prediv    = 0;
+		} else if (clk >= 500) { /* 500M ~ 1G */
+			pcw_ratio = 4;
+			posdiv    = 2;
+			prediv    = 0;
+		} else if (clk > 250) { /* 250M ~ 500M */
+			pcw_ratio = 8;
+			posdiv    = 3;
+			prediv    = 0;
+		} else if (clk >= 125) { /* 125M ~ 250M */
+			pcw_ratio = 16;
+			posdiv    = 4;
+			prediv    = 0;
+		} else {
+			DISPINFO("dataRate is too low(%d)\n", clk);
+			ASSERT(0);
+		}
+
+		pcw = clk * pcw_ratio / 26;
+		pcw_floor = clk * pcw_ratio % 26;
+		tmp = ((pcw & 0xFF) << 24) |
+		(((256 * pcw_floor / 26) & 0xFF) << 16) |
+		(((256 * (256 * pcw_floor % 26) / 26) & 0xFF) << 8) |
+		((256 * (256 * (256 * pcw_floor % 26) % 26) / 26)
+		& 0xFF);
+
+		DSI_OUTREG32(handle, MIPI_TX_REG->MIPI_TX_PLL_CON0, tmp);
+		DSI_OUTREGBIT(handle, struct MIPI_TX_PLL_CON1_REG,
+				MIPI_TX_REG->MIPI_TX_PLL_CON1,
+				RG_DSI_PLL_POSDIV, posdiv);
+
+		status = mtk_spi_read((unsigned long)(&MIPI_TX_REG->MIPI_TX_PLL_CON1));
+		if ((status & 0x1) == 0x1)
+			DSI_OUTREGBIT(handle, struct MIPI_TX_PLL_CON1_REG,
+				MIPI_TX_REG->MIPI_TX_PLL_CON1,
+				RG_DSI_PLL_SDM_PCW_CHG, 0);
+		else
+			DSI_OUTREGBIT(handle, struct MIPI_TX_PLL_CON1_REG,
+				MIPI_TX_REG->MIPI_TX_PLL_CON1,
+				RG_DSI_PLL_SDM_PCW_CHG, 1);
+	}
+}
+
+int bdg_dsi_porch_setting(enum DISP_BDG_ENUM module, void *handle,
+	 unsigned int value)
+{
+	int  ret = 0;
+
+	DSI_OUTREG32(handle, TX_REG[0]->DSI_TX_HBP_WC, value);
+	DISPINFO("set dsi0 hbp to %d\n", value);
+
+	return ret;
+}
+
+int bdg_mipi_clk_change(int msg, int en)
+{
+	unsigned int data_rate = 0;
+//	unsigned int dsi_hbp = 0; /* adaptive HBP value */
+
+	if (bg_mipi_clk_change_sta == en) {
+		DISPMSG("%s, hopping status not change\n", __func__);
+		return 0;
+	}
+
+	data_rate = get_bdg_dyn_data_rate(en);
+	if (bdg_tx_mode != 0) {
+		if (en) {
+//			data_rate = get_bdg_dyn_data_rate(en);
+	//		dsi_hbp = 0x20;
+		} else {
+//			data_rate = 760;
+	//		dsi_hbp = 0x38;
+		}
+	}
+	DISPMSG("%s, bdg_tx_data_rate=%d\n", __func__, data_rate);
+	/* wait 6382 dsi revsync state */
+	if (bdg_tx_mode == CMD_MODE)
+		bdg_tx_wait_for_idle(DISP_BDG_DSI0);
+	else
+		polling_status();
+
+	/* change mipi clk & hbp porch params*/
+	bdg_dsi_mipi_clk_change(DISP_BDG_DSI0, NULL, data_rate);
+//	bdg_dsi_porch_setting(DISP_BDG_DSI0, NULL, dsi_hbp);
+
+	/* mipi clk setting need 28us */
+	udelay(28);
+#if 0
+	if (bdg_tx_mode == CMD_MODE) {
+		/*modify output_valid_threshold for cmd mipi hopping
+		 *output_valid_threshold must < 0xDEF
+		 *TODO : long-term solution need add delay to meet AP line time balance
+		 */
+		if (en)
+			DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_BUF_CON1, 0x0dfd0745);
+		else
+			DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_BUF_CON1, 0x0dfd0026);
+	}
+#endif
+	bg_mipi_clk_change_sta = en;
+
+	return 0;
+}
+
+

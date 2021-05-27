@@ -1197,6 +1197,14 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			primary_display_manual_unlock();
 			continue;
 		}
+
+		if (esd_checking == 1) {
+			/*if esd checking, delay dl->dc*/
+			DISPINFO(
+				"[disp_lowpower]esd checking,delay enter idle\n");
+			primary_display_manual_unlock();
+			continue;
+		}
 		/* double check if dynamic switch on/off */
 		if (atomic_read(&idlemgr_task_active)) {
 			mmprofile_log_ex(ddp_mmp_get_events()->idlemgr,
