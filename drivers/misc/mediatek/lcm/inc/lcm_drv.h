@@ -413,7 +413,7 @@ struct LCM_DSC_CONFIG_PARAMS {
 
 	unsigned int flatness_minqp;
 	unsigned int flatness_maxqp;
-	unsigned int rc_mode1_size;
+	unsigned int rc_model_size;
 	unsigned int rc_edge_factor;
 	unsigned int rc_quant_incr_limit0;
 	unsigned int rc_quant_incr_limit1;
