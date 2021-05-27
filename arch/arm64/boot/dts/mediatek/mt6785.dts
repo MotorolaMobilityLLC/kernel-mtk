@@ -1859,7 +1859,11 @@ page_owner=on loop.max_part=7";
 		sram_share_cnt = <2>;
 		sram_share_engine = <21>, <22>;
 		sram_share_event = <710>, <711>;
-		thread_count = <24>;
+// #if defined(CONFIG_MTK_MT6382_DBG)
+		thread_count = <56>;
+// #else
+//		thread_count = <24>;
+// #endif
 		secure_thread = <8 11>;
 		mboxes = <&gce_mbox 0 0 CMDQ_THR_PRIO_4>,
 			<&gce_mbox 1 0 CMDQ_THR_PRIO_4>,
@@ -1900,6 +1904,7 @@ page_owner=on loop.max_part=7";
 			clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>,
 				<&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
 			clock-names = "GCE", "GCE_TIMER";
+		gce_mbox_bdg = <&gce_mbox_bdg>;
 	};
 
 	gce_mbox: gce_mbox@10228000 {
@@ -1919,6 +1924,24 @@ page_owner=on loop.max_part=7";
 		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>,
 			<&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
 		clock-names = "gce", "gce-timer";
+	};
+
+	gce_mbox_bdg: gce_mbox_bdg {
+		compatible = "mediatek,mailbox-gce-bdg";
+		#mbox-cells = <3>;
+		#gce-event-cells = <1>;
+		#gce-subsys-cells = <2>;
+		mboxes = <&gce_mbox_bdg 20 0 CMDQ_THR_PRIO_2>,
+			 <&gce_mbox_bdg 21 0 CMDQ_THR_PRIO_1>;
+	};
+
+	cmdq-bdg-test {
+		compatible = "mediatek,cmdq-bdg-test";
+		mediatek,gce = <&gce_mbox_bdg>;
+		mboxes = <&gce_mbox_bdg 22 0 CMDQ_THR_PRIO_2>,
+			 <&gce_mbox_bdg 23 0 CMDQ_THR_PRIO_1>;
+		token_user0 = /bits/ 16 <CMDQ_SYNC_TOKEN_USER_0>;
+		token_gpr_set4 = /bits/ 16 <CMDQ_SYNC_TOKEN_GPR_SET_4>;
 	};
 
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \

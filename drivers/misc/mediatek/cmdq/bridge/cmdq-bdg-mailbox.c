@@ -16,14 +16,12 @@
 #include <linux/clk.h>
 
 #include <spi_slave.h>
-#define SPI_SPEED_HIGH          (55 * 1000 * 1000)
-#define SPI_SPEED_WRITE		SPI_SPEED_HIGH
-#define SPI_SPEED_READ		(SPI_SPEED_WRITE / 2)
-
 #include <mmprofile.h>
 
 #include "cmdq-bdg.h"
+#if IS_ENABLED(CONFIG_MTK_CMDQ_V3)
 #include "cmdq_helper_ext.h"
+#endif
 
 #define SYSREG_IRQ_CTRL2	0x1c
 #define SYSREG_IRQ_MSK_CLR	0x74
@@ -373,6 +371,7 @@ static inline u32 cmdq_bdg_dump_thread(struct cmdq_thread *thread)
 	return pc;
 }
 
+#if IS_ENABLED(CONFIG_MTK_CMDQ_V3)
 void cmdq_bdg_dump_handle(struct cmdqRecStruct *rec, const char *tag)
 {
 #if IS_ENABLED(CONFIG_MTK_CMDQ_V3)
@@ -394,6 +393,7 @@ void cmdq_bdg_dump_handle(struct cmdqRecStruct *rec, const char *tag)
 #endif
 }
 EXPORT_SYMBOL(cmdq_bdg_dump_handle);
+#endif
 
 static void cmdq_bdg_task_callback(struct cmdq_pkt *pkt, const s32 err)
 {
