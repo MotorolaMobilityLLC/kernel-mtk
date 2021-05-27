@@ -270,6 +270,8 @@ static void write_shutter(kal_uint32 shutter)
 	kal_uint16 realtime_fps = 0;
 	static bool islongexp = 0;
 
+	kal_uint32 vts_register_val = 0;
+
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
@@ -280,7 +282,7 @@ static void write_shutter(kal_uint32 shutter)
 	spin_unlock(&imgsensor_drv_lock);
 	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
 
-	if(shutter <= 32758) {
+	if(shutter <= 0x7FF6) {
 		shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
 			(imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 		if (imgsensor.autoflicker_en) {
@@ -290,14 +292,26 @@ static void write_shutter(kal_uint32 shutter)
 			else if (realtime_fps >= 147 && realtime_fps <= 150)
 				set_max_framerate(146, 0);
 			else {
-				// Extend frame length
+				if (shutter <= 0x2000) {
+					write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8) & 0x7F);
+					write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFE);
+				}
+				else { // 0x2000 < shutter <= 0x7FF6
+					vts_register_val = imgsensor.frame_length - shutter + 0x2000;
+					write_cmos_sensor(0x380e, (vts_register_val >> 8) & 0x7F);
+					write_cmos_sensor(0x380f, vts_register_val & 0xFE);
+				}
+			}
+		} else {
+			if (shutter <= 0x2000) {
 				write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8) & 0x7F);
 				write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFE);
 			}
-		} else {
-			// Extend frame length
-			write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8) & 0x7F);
-			write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFE);
+			else { // 0x2000 < shutter <= 0x7FF6
+				vts_register_val = imgsensor.frame_length - shutter + 0x2000;
+				write_cmos_sensor(0x380e, (vts_register_val >> 8) & 0x7F);
+				write_cmos_sensor(0x380f, vts_register_val & 0xFE);
+			}
 		}
 		if(!islongexp) {
 			// Update Shutter
