@@ -680,6 +680,9 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_SET_PM_QOS,
 	ISP_CMD_SET_PM_QOS_INFO,
 	ISP_CMD_TRANSFOR_CCU_REG,
+#ifdef MOT_MTK_PATCH
+	ISP_CMD_SET_VIR_CQCNT,
+#endif
 	ISP_CMD_SET_SEC_DAPC_REG
 };
 
@@ -797,6 +800,10 @@ enum ISP_HALT_DMA_ENUM {
 	_IOW(ISP_MAGIC, ISP_CMD_SET_SEC_DAPC_REG, unsigned int)
 #define ISP_TRANSFOR_CCU_REG \
 	_IOWR(ISP_MAGIC, ISP_CMD_TRANSFOR_CCU_REG,  unsigned char*)
+#ifdef MOT_MTK_PATCH
+#define ISP_SET_VIR_CQCNT \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_VIR_CQCNT, unsigned int)
+#endif
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER      \
@@ -840,6 +847,10 @@ enum ISP_HALT_DMA_ENUM {
 					struct compat_ISP_MEM_INFO_STRUCT)
 #define COMPAT_ISP_TRANSFOR_CCU_REG     \
 	_IOWR(ISP_MAGIC, ISP_CMD_TRANSFOR_CCU_REG,   compat_uptr_t)
+#ifdef MOT_MTK_PATCH
+#define COMPAT_ISP_SET_VIR_CQCNT      \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_VIR_CQCNT, unsigned int)
+#endif
 #endif
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag);
