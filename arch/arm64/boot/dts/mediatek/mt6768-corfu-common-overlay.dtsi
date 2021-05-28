@@ -78,7 +78,7 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
+		led_mode = <4>;
 		data = <1>;
 		pwm_config = <0 3 0 0 0>;
 	};
@@ -213,6 +213,38 @@
 		};
 	};
 
+	mtkfb_pins_lcm_vddi_out1_gpio: lcm_vddi_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_vddi_out0_gpio: lcm_vddi_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_vci_out1_gpio: lcm_vci_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_vci_out0_gpio: lcm_vci_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
 	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
@@ -223,10 +255,16 @@
 &mtkfb {
 	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"lcm_vddi_out1_gpio", "lcm_vddi_out0_gpio",
+		"lcm_vci_out1_gpio", "lcm_vci_out0_gpio",
 		"mode_te_te";
 	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-2 = <&mtkfb_pins_lcm_vddi_out1_gpio>;
+	pinctrl-3 = <&mtkfb_pins_lcm_vddi_out0_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_vci_out1_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcm_vci_out0_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
 };
 
