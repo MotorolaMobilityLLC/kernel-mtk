@@ -43,7 +43,7 @@ static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4CurrPosition;
 static unsigned long g_u4TargetPosition;
-static u16  ParkLensPaceBoundary[4]    = {20, 60, 100, 140};
+static u16  ParkLensPaceBoundary[4]    = {60, 100, 150, 200};
 
 static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 {
@@ -261,27 +261,23 @@ int MOT_DW9714VAF_Release_Main3(struct inode *a_pstInode, struct file *a_pstFile
 			// Move in different pace to reduce park lens time
 			if (g_u4CurrPosition > ParkLensPaceBoundary[3])
 			{
-				g_u4CurrPosition -= ParkLensPaceBoundary[3];
+				g_u4CurrPosition -= ParkLensPaceBoundary[2];
 			}
 			else if (g_u4CurrPosition > ParkLensPaceBoundary[2])
 			{
-				g_u4CurrPosition -= ParkLensPaceBoundary[2];
-			}
-			else if (g_u4CurrPosition > ParkLensPaceBoundary[1])
-			{
 				g_u4CurrPosition -= ParkLensPaceBoundary[1];
 			}
-			else if (g_u4CurrPosition > ParkLensPaceBoundary[0])
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[1])
 			{
 				g_u4CurrPosition -= ParkLensPaceBoundary[0];
 			}
 			else
 			{
-				g_u4CurrPosition = 0;
+				break;
 			}
 
 			s4AF_WriteReg(g_u4CurrPosition);
-			mdelay(2);
+			mdelay(10);
 		}
 		ret = i2c_master_send(g_pstAF_I2Cclient,power_down_mode_cmd, 2);
 		if(ret <0)
