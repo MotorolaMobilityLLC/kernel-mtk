@@ -1327,6 +1327,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(DSI_PANEL_MOT_MIPI_VID_HLT_FT8006S_652_HDP)
 	&mipi_mot_vid_hlt_ft8006s_652_hdp_lcm_drv,
 #endif
+
+#if defined(DSI_PANEL_MOT_MIPI_VID_VISIONOX_GT9885_FHD)
+	&mipi_mot_vid_visionox_gt9885_fhd_647_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
