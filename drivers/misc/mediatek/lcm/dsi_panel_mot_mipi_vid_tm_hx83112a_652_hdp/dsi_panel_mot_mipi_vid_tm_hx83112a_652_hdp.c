@@ -344,11 +344,11 @@ static void lcm_init(void)
 {
 	LCM_LOGI("[LCM] lcm_init\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(10);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(50);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -357,7 +357,7 @@ static void lcm_suspend(void)
 	LCM_LOGI("[LCM] lcm_suspend\n");
 
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(10);
 }
 
@@ -372,11 +372,11 @@ static unsigned int lcm_compare_id(void)
 	unsigned char buffer[4];
 	unsigned int array[16];
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(10);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(50);
 
 	array[0] = 0x00043700;	// read id return four byte
 	dsi_set_cmdq(array, 1, 1);
