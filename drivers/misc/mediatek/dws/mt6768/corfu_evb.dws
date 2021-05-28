@@ -374,7 +374,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_RST_PIN</varName0>
+                <varName0>LCM_VCI_3P0_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio29>
@@ -385,7 +385,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_WDT</varName0>
+                <varName0>LCM_VDDI_1P8_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio30>
