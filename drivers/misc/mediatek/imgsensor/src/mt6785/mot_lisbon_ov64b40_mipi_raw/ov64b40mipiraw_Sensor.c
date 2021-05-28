@@ -446,15 +446,13 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 
 	spin_lock(&imgsensor_drv_lock);
 	/*Change frame time*/
-       if (frame_length > 1)
+	if (frame_length > 1)
 	    dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-	imgsensor.min_frame_length = imgsensor.frame_length;
 
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
+	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
+
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
