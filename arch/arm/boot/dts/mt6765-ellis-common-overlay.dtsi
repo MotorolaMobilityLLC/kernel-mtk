@@ -43,7 +43,7 @@
 		ti,bq2560x,usb-vreg = <4400>;
 		ti,bq2560x,usb-ichg = <2000>;
 		ti,bq2560x,precharge-current = <256>;
-		ti,bq2560x,termination-current = <180>;
+		ti,bq2560x,termination-current = <60>;
 		ti,bq2560x,boost-voltage = <4998>;
 		ti,bq2560x,boost-current = <1200>;
 		ti,bq2560x,enable_term;
