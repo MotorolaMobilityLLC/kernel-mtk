@@ -63,6 +63,12 @@ extern unsigned char hi556_awb_valid;
 
 static u32 hi556_vendor_id = 0x19050000;
 #endif
+
+#ifdef MOT_TONGA_GC02M1_MIPI_RAW
+#define GC02M1_AWB_DATA_SIZE 6
+extern unsigned char gc02m1_data_awb[GC02M1_AWB_DATA_SIZE+3];
+static u32 gc02m1_vendor_id = 0x19050000;
+#endif
 /***********************************************************
  *
  ***********************************************************/
@@ -693,6 +699,22 @@ static long EEPROM_drv_ioctl(struct file *file,
 			i4RetValue = ptempbuf->u4Length;
 		} else {
 #endif
+#ifdef MOT_TONGA_GC02M1_MIPI_RAW
+        pr_debug("SensorID=%x, DeviceID=%x, offset=%d, length=%d, pu1Params:0x%x\n",
+            ptempbuf->sensorID, ptempbuf->deviceID, ptempbuf->u4Offset, ptempbuf->u4Length, *pu1Params);
+        if(ptempbuf->sensorID == 0x02e0) {
+            if(ptempbuf->u4Offset == 0x10){
+                pr_debug("Do layoutcheck\n");
+                memcpy(pu1Params, (u8 *)&gc02m1_vendor_id, 4);
+            }else{
+                if (ptempbuf->sensorID == 0x02e0 && ptempbuf->u4Length == 0x09 && ptempbuf->u4Offset == 0x78){
+                    pr_debug("awb data copy to user\n");
+                    memcpy(pu1Params, (u8 *) gc02m1_data_awb, ptempbuf->u4Length);
+                }
+            }
+            i4RetValue = ptempbuf->u4Length;
+        } else {
+#endif
 			pr_debug("SensorID=%x DeviceID=%x\n",
 				ptempbuf->sensorID, ptempbuf->deviceID);
 			pcmdInf = EEPROM_get_cmd_info_ex(
@@ -760,6 +782,9 @@ static long EEPROM_drv_ioctl(struct file *file,
 			}
 #ifdef MOT_ELLIS_HI556D_MIPI_RAW
 		}
+#endif
+#ifdef MOT_TONGA_GC02M1_MIPI_RAW
+        }
 #endif
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv2);
