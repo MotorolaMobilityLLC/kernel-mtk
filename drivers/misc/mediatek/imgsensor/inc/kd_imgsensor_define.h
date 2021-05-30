@@ -451,6 +451,22 @@ typedef struct {
 	char manufacture_date[MAX_CALIBRATION_STRING];
 } mot_calibration_mnf_t;
 
+typedef enum {
+	STATUS_OK,
+	STATUS_CRC_FAIL,
+	STATUS_LIMIT_FAIL
+} MotCalibrationStatus;
+
+typedef struct {
+        MotCalibrationStatus mnf_status;
+        MotCalibrationStatus af_status;
+        MotCalibrationStatus awb_status;
+        MotCalibrationStatus lsc_status;
+        MotCalibrationStatus pdaf_status;
+        MotCalibrationStatus dual_status;
+	mot_calibration_mnf_t mnf_cal_data;
+} mot_calibration_info_t;
+
 struct ACDK_SENSOR_RESOLUTION_INFO_STRUCT {
 	MUINT16 SensorPreviewWidth;
 	MUINT16 SensorPreviewHeight;
