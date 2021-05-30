@@ -29,6 +29,12 @@
 #define LOG_ERR(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
 
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t af_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t pdaf_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
 /* Camera Hardwareinfo */
 //extern struct global_otp_struct hw_info_main2_otp;
 static kal_uint32 streaming_control(kal_bool enable);
@@ -217,9 +223,9 @@ static void set_dummy(void)
 
 	LOG_INF("imgsensor.frame_length = %d\n", imgsensor.frame_length);
 	write_cmos_sensor(0xfd, 0x01);
-	write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-    write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
-    write_cmos_sensor(0xfe, 0x02);//fresh
+	write_cmos_sensor(0x14, ((imgsensor.frame_length-0x4c4) & 0x7F00) >> 8);
+	write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+	write_cmos_sensor(0xfe, 0x02);//fresh
 }    /*    set_dummy  */
 
 static kal_uint32 return_sensor_id(void)
@@ -1203,22 +1209,69 @@ static void custom1_setting(void)
     write_cmos_sensor(0xfb, 0x01);
 }    /*    capture_setting  */
 
-/*
-static kal_uint32 compareManufacturerId(void)
+#define OV02B1B_OTP_SIZE 32
+static uint8_t ov02b1b_otp_data[OV02B1B_OTP_SIZE] = {0};
+#define OV02B1B_OTP_DATA_PATH "/data/vendor/camera_dump/ov02b1b_otp_data.bin"
+#define OV02B1B_SERIAL_NUM_SIZE 16
+#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
+static void ov02b1b_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
 {
-	kal_uint32 startAddress = 0x10;
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
 
-	write_cmos_sensor(0xfd, 0x06);
-	write_cmos_sensor(0x21, 0x00);
-	if(((read_cmos_sensor(startAddress+2) == 'S') && (read_cmos_sensor(startAddress+3) == 'W'))
-		||((read_cmos_sensor(startAddress+10) == 'S') && (read_cmos_sensor(startAddress+11) == 'W'))){
-		LOG_INF("current sensor manufacturer id is SW\n");
-		return 0;
-	}else{
-		return ERROR_SENSOR_CONNECT_FAIL;
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
 	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
 }
-*/
+
+static void ov02b1b_eeprom_format_calibration_data()
+{
+	mnf_status = 0;
+	af_status = 0;
+	awb_status = 0;
+	lsc_status = 0;
+	pdaf_status = 0;
+	dual_status = 0;
+
+	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+}
+
+static int ov02b1b_read_data_from_otp(void)
+{
+	int i=0;
+	LOG_INF("ov02b1b_read_data_from_otp -E");
+	write_cmos_sensor(0xfd, 0x06);
+	for(i=0;i<OV02B1B_OTP_SIZE;i++)
+	{
+		ov02b1b_otp_data[i]=read_cmos_sensor(i);
+	}
+
+	LOG_INF("ov02b1b_read_data_from_otp -X");
+	return 0;
+}
+
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
@@ -1241,6 +1294,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				*/
                 LOG_ERR("ov02b1b i2c write id : 0x%x, sensor id: 0x%x\n",
                 imgsensor.i2c_write_id, *sensor_id);
+                ov02b1b_read_data_from_otp();
+                ov02b1b_eeprom_format_calibration_data();
+                ov02b1b_otp_dump_bin(OV02B1B_OTP_DATA_PATH, OV02B1B_OTP_SIZE, (void *)ov02b1b_otp_data);
+                ov02b1b_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, OV02B1B_SERIAL_NUM_SIZE, (void *)ov02b1b_otp_data);
                 return ERROR_NONE;
             }
 
@@ -1486,8 +1543,24 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
     sensor_info->SensorHightSampling = 0;    // 0 is default 1x
     sensor_info->SensorPacketECCOrder = 1;
-
-
+    sensor_info->calibration_status.mnf = mnf_status;
+    sensor_info->calibration_status.af = af_status;
+    sensor_info->calibration_status.awb = awb_status;
+    sensor_info->calibration_status.lsc = lsc_status;
+    sensor_info->calibration_status.pdaf = pdaf_status;
+    sensor_info->calibration_status.dual = dual_status;
+	{
+		snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
+			"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		ov02b1b_otp_data[0], ov02b1b_otp_data[1],
+		ov02b1b_otp_data[2], ov02b1b_otp_data[3],
+		ov02b1b_otp_data[4], ov02b1b_otp_data[5],
+		ov02b1b_otp_data[6], ov02b1b_otp_data[7],
+		ov02b1b_otp_data[8], ov02b1b_otp_data[9],
+		ov02b1b_otp_data[10], ov02b1b_otp_data[11],
+		ov02b1b_otp_data[12], ov02b1b_otp_data[13],
+		ov02b1b_otp_data[14], ov02b1b_otp_data[15]);
+	}
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	    sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
