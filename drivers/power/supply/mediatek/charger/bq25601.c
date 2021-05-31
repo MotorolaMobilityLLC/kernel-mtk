@@ -1164,6 +1164,7 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_watchdog(0x3);	/* WDT 160s */
 	bq25601_set_en_timer(0x0);	/* Enable charge timer */
 	bq25601_set_int_mask(0x0);	/* Disable fault interrupt */
+	bq25601_set_stat_ctrl(0x03);	/* Disable stat, to turn off the led */
 	pr_info("%s: hw_init down!\n", __func__);
 	return status;
 }
@@ -1209,6 +1210,18 @@ static int bq25601_parse_dt(struct bq25601_info *info,
 	 */
 	return 0;
 }
+
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+int bq25601_start_chg_type_detect(void)
+{
+	int ret;
+	unsigned char val;
+	msleep(1000);
+	ret = bq25601_read_byte(8, &val);
+	return val & 0xE0;
+}
+EXPORT_SYMBOL_GPL(bq25601_start_chg_type_detect);
+#endif
 
 static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 			    u32 args)
