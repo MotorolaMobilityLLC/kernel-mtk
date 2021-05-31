@@ -16,7 +16,11 @@
 #
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),)
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+else
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
+endif
 
 MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
@@ -31,6 +35,9 @@ else
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63169af/inc
 endif
 
+ifneq ($(wildcard $(MTK_CUSTOM_PATH)/lens/main/$(ARCH_MTK_PROJECT)),)
+obj-y += $(ARCH_MTK_PROJECT)/
+else
 ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN_CFILES += main_lens.c
@@ -119,5 +126,5 @@ else
 endif
 obj-y  += common/bu64253gwzaf/
 obj-y  += common/mot_dw9800vaf/
-
+endif
 endif
