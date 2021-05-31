@@ -90,9 +90,32 @@ static int chrdet_inform_psy_changed(enum charger_type chg_type,
 	return ret;
 }
 
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+extern int bq25601_start_chg_type_detect(void);
+#endif
 
 int hw_charging_get_charger_type(void)
 {
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	int chg_type = 0;
+	Charger_Detect_Init();
+	chg_type = bq25601_start_chg_type_detect();
+	Charger_Detect_Release();
+	pr_err("[%s] The charge type is  0x%x\n",__func__,chg_type);
+	switch (chg_type) {
+		case 0x20:
+			return STANDARD_HOST;//SDP
+		case 0x40:
+			return CHARGING_HOST;//CDP
+		case 0x60:
+			return STANDARD_CHARGER;//DCP
+		case 0xc0:
+			return NONSTANDARD_CHARGER;//FC
+		default:
+			break;
+	}
+#endif
+	
 	return STANDARD_HOST;
 }
 
