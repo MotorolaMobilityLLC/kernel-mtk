@@ -7,12 +7,16 @@
 #include "eeprom_i2c_common_driver.h"
 #include "eeprom_i2c_custom_driver.h"
 #include "kd_imgsensor.h"
+#ifdef MOT_TONGA_S5K4H7_MIPI_RAW
 extern unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned int addr,
 			unsigned char *data, unsigned int size);
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 	{MOT_TONGA_S5KJN1SQ_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+#ifdef MOT_TONGA_S5K4H7_MIPI_RAW
 	{MOT_TONGA_S5K4H7_SENSOR_ID, 0x5A, mot_s5k4h7_read_region, MAX_EEPROM_SIZE_16K},
+#endif
 	{MOT_ELLIS_SC500CS_SENSOR_ID, 0xA4, Common_read_region},
 	{MOT_ELLIS_HI1336_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX230_SENSOR_ID, 0xA0, Common_read_region},
