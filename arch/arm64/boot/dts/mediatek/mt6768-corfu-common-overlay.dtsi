@@ -88,6 +88,17 @@
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+        nfc:nfc {
+		compatible = "mediatek,nfc-gpio-v2";
+		gpio-rst = <31>;
+		gpio-rst-std = <&pio 31 0x0>;
+		gpio-irq = <5>;
+		gpio-irq-std = <&pio 5 0x0>;
+	};
+
+	irq_nfc: irq_nfc {
+		compatible = "mediatek,irq_nfc-eint";
+	};
 };
 
 &i2c2 {
