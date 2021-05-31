@@ -210,3 +210,10 @@ config MOTO_CHG_TCMD_SUPPORT
 	default n
 	help
 	  This is to enable MOTO supports of charger TCMD INTERFACE.
+
+config MOTO_CHG_BQ25601_SUPPORT
+        bool "Enable BQ25601 charger ic for Moto"
+        default n
+        help
+          This is to enable MOTO supports of charger BQ25601.
+
