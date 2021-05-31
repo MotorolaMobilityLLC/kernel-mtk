@@ -55,13 +55,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint0>
-            <eint9>
-                <varName>GOODIX_FP</varName>
+            <eint5>
+                <varName>IRQ_NFC</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>High</polarity>
-                <sensitive_level>Edge</sensitive_level>
+                <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
-            </eint9>
+            </eint5>
             <eint20>
                 <varName>SUBPMIC_PMU_EINT</varName>
                 <debounce_time>0</debounce_time>
@@ -141,7 +141,18 @@
             </gpio2>
             <gpio3>
                 <smt>true</smt>
-            </gpio3>
+	    </gpio3>
+            <gpio5>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_IRQ_NFC_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio5>
             <gpio8>
                 <eint_mode>false</eint_mode>
                 <def_mode>7</def_mode>
@@ -153,17 +164,6 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio8>
-            <gpio9>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_NFC_EINT_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio9>
             <gpio10>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -382,7 +382,18 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio30>
-            <gpio32>
+	    <gpio31>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_NFC_RST_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio31>
+	    <gpio32>
                 <eint_mode>false</eint_mode>
                 <def_mode>7</def_mode>
                 <inpull_en>false</inpull_en>
@@ -1711,16 +1722,15 @@
                 <ies>true</ies>
             </gpio158>
             <gpio159>
-                <eint_mode>false</eint_mode>
+	        <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_RST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
-            </gpio159>
+	    </gpio159>
             <gpio160>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
