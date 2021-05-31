@@ -227,3 +227,9 @@ config CHARGER_MM8013
 	  Say Y to enable
 	  mm8013 driver.
 	  Set to Yes if MM8013 is used.
+
+config MOTO_CHG_BQ25601_SUPPORT
+        bool "Enable BQ25601 charger ic for Moto"
+        default n
+        help
+          This is to enable MOTO supports of charger BQ25601.
