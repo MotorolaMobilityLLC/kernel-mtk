@@ -68,7 +68,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 352800000,
+		.mipi_pixel_rate = 331740000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.cap = {
@@ -80,7 +80,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 352800000,
+		.mipi_pixel_rate = 331740000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.normal_video = {
@@ -92,18 +92,18 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 352800000,
+		.mipi_pixel_rate = 331740000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.hs_video = {
 		.pclk = 115200000,
-		.linelength = 720,
-		.framelength = 1332,
+		.linelength = 360,
+		.framelength = 2666,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1920,
-		.grabwindow_height = 1080,
-		.mipi_pixel_rate = 664000000,
+		.grabwindow_width = 1632,
+		.grabwindow_height = 1224,
+		.mipi_pixel_rate = 658100000,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
 	},
@@ -116,7 +116,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 352800000,
+		.mipi_pixel_rate = 331740000,
 		.mipi_data_lp2hs_settle_dc = 85,
 	},
 	.custom1 = {
@@ -137,11 +137,11 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1332,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
-		.max_framerate = 2400,
-		.mipi_pixel_rate = 662400000,
+		.grabwindow_width = 1632,
+		.grabwindow_height = 1224,
+		.mipi_pixel_rate = 663490000,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 2400,
 	},
 	.custom3 = {
 		.pclk = 115200000,
@@ -194,10 +194,10 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[] = {
 {6528, 4896,    0,    0, 6528, 4896, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448},//pre
 {6528, 4896,    0,    0, 6528, 4896, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448},//cap
 {6528, 4896,    0,    0, 6528, 4896, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448},//video
-{6528, 4896, 1344, 1368, 3840, 2160, 1920, 1080, 0, 0, 1920, 1080, 0, 0, 1920, 1080},//hs_video
+{6528, 4896,    0,    0, 6528, 4896, 1632, 1224, 0, 0, 1632, 1224, 0, 0, 1632, 1224},//hs_video
 {6528, 4896,    0,    0, 6528, 4896, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448},//slim_video
 {6528, 4896, 1344, 1368, 3840, 2160, 1920, 1080, 0, 0, 1920, 1080, 0, 0, 1920, 1080},//custom1
-{6528, 4896,  740, 1008, 5120, 2880, 1280,  720, 0, 0, 1280,  720, 0, 0, 1280,  720},//custom2
+{6528, 4896,    0,    0, 6528, 4896, 1632, 1224, 0, 0, 1632, 1224, 0, 0, 1632, 1224},//custom2
 {6528, 4896,    0,    0, 6528, 4896, 6528, 4896, 0, 0, 6528, 4896, 0, 0, 6528, 4896},//custom3
 };
 
@@ -234,7 +234,7 @@ static kal_uint16 normal_video_setting_array[] = {
 };
 
 static kal_uint16 hs_video_setting_array[] = {
-#include "setting/OV32B40_1920X1080_MIPI1656_120FPS_1080P_noPD.h"
+#include "setting/OV32B40_1632X1224_MIPI1656_120FPS_1080P_noPD.h"
 };
 
 static kal_uint16 slim_video_setting_array[] = {
@@ -246,7 +246,7 @@ static kal_uint16 custom1_setting_array[] = {
 };
 
 static kal_uint16 custom2_setting_array[] = {
-#include "setting/OV32B40_1280X720_MIPI1656_240FPS_720P_noPD.h"
+#include "setting/OV32B40_1632X1224_MIPI1656_240FPS_720P_noPD.h"
 };
 
 static kal_uint16 custom3_setting_array[] = {
