@@ -1173,7 +1173,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_2_VCAMD_EN</varName0>
+                <varName0>GPIO_CAMERA_2_VCAMA_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio107>
@@ -1651,11 +1651,10 @@
             <gpio152>
                 <eint_mode>false</eint_mode>
                 <def_mode>5</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_MIPI_SWITCH_SEL_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio152>
@@ -1739,6 +1738,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_RT9465_PWR_EN_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio160>
@@ -1788,10 +1788,10 @@
             </gpio164>
             <gpio165>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_mode>4</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
@@ -2019,7 +2019,7 @@
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_4</channel>
+                <channel>I2C_CHANNEL_3</channel>
                 <address>0x10</address>
             </device8>
             <device9>
@@ -2048,9 +2048,9 @@
                 <address>0x4B</address>
             </device14>
             <device15>
-                <varName>CAMERA_MAIN_THREE</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x6e</address>
+                <varName>CAMERA_MAIN_TWO_EEPROM</varName>
+                <channel>I2C_CHANNEL_3</channel>
+                <address>0x50</address>
             </device15>
             <device16>
                 <varName>CCU_SENSOR_I2C_2_HW</varName>
@@ -2097,9 +2097,7 @@
             <pmic1>
                 <ldoVar>VCAMA2</ldoVar>
                 <defEn>OFF</defEn>
-                <varName1>SUB_CAMERA_POWER_A</varName1>
-                <varName2>MAIN_CAMERA_2_POWER_A</varName2>
-                <varName3>MAIN_CAMERA_3_POWER_A</varName3>
+                <varName0>SUB_CAMERA_POWER_A</varName0>
             </pmic1>
             <pmic2>
                 <ldoVar>VSIM1</ldoVar>
@@ -2112,7 +2110,7 @@
             <pmic4>
                 <ldoVar>VCAMD</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_POWER_D</varName0>
+                <varName0>MAIN_CAMERA_2_POWER_D</varName0>
             </pmic4>
             <pmic5>
                 <ldoVar>VCAMIO</ldoVar>
@@ -2120,12 +2118,14 @@
                 <varName0>MAIN_CAMERA_POWER_IO</varName0>
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_IO</varName2>
-                <varName3>MAIN_CAMERA_3_POWER_IO</varName3>
             </pmic5>
             <pmic6>
                 <ldoVar>VLDO28</ldoVar>
                 <defEn>OFF</defEn>
                 <varName0>MAIN_CAMERA_POWER_AF</varName0>
+                <varName1>SUB_CAMERA_POWER_AF</varName1>
+                <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
+                <varName3>CAP_TOUCH_VDD</varName3>
             </pmic6>
         </module>
         <module name="kpd">
