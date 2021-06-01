@@ -85,7 +85,7 @@
 
 	fingerprint_reset_high: fingerprint_reset_high {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -93,7 +93,7 @@
 
 	fingerprint_reset_low: fingerprint_reset_low {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -157,7 +157,7 @@
                 fp-gpio-vcc-enable;
 
                 egistec,gpio_vcc_en = <&pio 22 0x0>;
-                egistec,gpio_reset = <&pio 6 0x0>;
+                egistec,gpio_reset = <&pio 21 0x0>;
                 egistec,gpio_irq = <&pio 8 0x0>;
 /*
                 vcc_fp-supply = <&mt_pmic_vfp_ldo_reg>;
