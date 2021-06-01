@@ -21,6 +21,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_SYWT78)      += flashlights-sywt78.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_OCP8132)      += flashlights-ocp8132.o
+obj-$(CONFIG_MTK_FLASHLIGHT_CORFU_GPIO)  += flashlights-corfu-gpio.o
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -D$(MTK_PLATFORM) -D$(MTK_PROJECT)
 ccflags-$(CONFIG_MTK_FLASHLIGHT_SYWT78)    += -DCONFIG_MTK_FLASHLIGHT_SYWT78
