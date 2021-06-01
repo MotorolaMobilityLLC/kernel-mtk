@@ -5,7 +5,12 @@
 #
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),)
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+else
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
+ccflags-y += -D$(MTK_PLATFORM) -D$(ARCH_MTK_PROJECT)
+endif
 IMGSENSOR_DRIVER_PATH  := $(srctree)/drivers/misc/mediatek/imgsensor/src
 COMMON_VERSION := v1
 
@@ -47,6 +52,13 @@ endif
 obj-y				+= $(platform_drv)
 obj-y				+= imgsensor_clk.o
 
+ifneq ($(project_drv),)
+$(info imgsensor drv by project $(project_drv))
+endif
+ifneq ($(ARCH_MTK_PROJECT),)
+obj-y                           += $(project_drv)
+endif
+
 ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw))
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_hw
 obj-y				+= camera_hw/
@@ -54,7 +66,12 @@ ifneq ($(project_drv),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
 endif
 else
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
+else
+obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
+endif
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
 endif
 
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
