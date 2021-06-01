@@ -467,7 +467,6 @@ static int disp_probe_1(void)
 	if (bdg_is_bdg_connected() == 1)
 		disp_init_bdg_gce_obj();
 
-
 	pr_info("disp driver(1) %s end\n", __func__);
 	/* NOT_REFERENCED(class_dev); */
 	return ret;

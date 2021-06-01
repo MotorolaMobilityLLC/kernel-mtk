@@ -232,7 +232,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 #ifdef DSC_ENABLE
 	{0xC0, 1, {0x03} },
 #else
-	//{0xC0, 1, {0x00} },
+	{0xC0, 1, {0x00} },
 #endif
 	{0xC1, 16,
 		{0x89, 0x28, 0x00, 0x08, 0x00, 0xAA, 0x02, 0x0E,
@@ -574,11 +574,11 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #endif
 	params->dsi.CLK_HS_POST = 36;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9d;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
 
 	/* for ARR 2.0 */
 	// params->max_refresh_rate = 60;

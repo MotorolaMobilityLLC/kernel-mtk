@@ -2708,10 +2708,6 @@ int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq)
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_START_REG,
 				TX_REG[i]->DSI_TX_START, DSI_TX_START, 1);
-		DSI_OUTREGBIT(cmdq, struct DSI_TX_COM_CON_REG,
-				TX_REG[i]->DSI_TX_START, DSI_RESET, 1);
-		DSI_OUTREGBIT(cmdq, struct DSI_TX_COM_CON_REG,
-				TX_REG[i]->DSI_TX_START, DSI_RESET, 0);
 	}
 
 	return 0;
@@ -2722,13 +2718,11 @@ int bdg_set_dcs_read_cmd(bool enable, void *cmdq)
 	DISPFUNCSTART();
 
 	if (enable) {
-//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 55);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
 				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 1);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
 				DISPSYS_REG->MIPI_RX_POST_CTRL, MIPI_RX_MODE_SEL, 0);
 	} else {
-//		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
 				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 0);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
@@ -2822,6 +2816,8 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 	unsigned int tmp;
 
 #if 0
+	DISPMSG("0x%08x: 0x%08x\n", 0x00014260, mtk_spi_read(0x00014260));
+	DISPMSG("0x%08x: 0x%08x\n", 0x00023170, mtk_spi_read(0x00023170));
 	DISPMSG("0x%08x: 0x%08x\n", 0x0000d314, mtk_spi_read(0x0000d314));
 	DISPMSG("0x%08x: 0x%08x\n", 0x00007310, mtk_spi_read(0x00007310));
 	DISPMSG("0x%08x: 0x%08x\n", 0x000231a8, mtk_spi_read(0x000231a8));
@@ -5331,7 +5327,6 @@ void disp_init_bdg_gce_obj(void)
 {
 	struct device *dev;
 	int index;
-
 	dev = disp_get_device();
 	if (dev == NULL) {
 		DISPINFO("get device fail\n");
@@ -5395,11 +5390,9 @@ void disp_init_bdg_gce_obj(void)
 
 static void bdg_cmdq_cb(struct cmdq_cb_data data)
 {
-//	struct mtk_cmd_cb_data *cb_data = data.data;
 	struct cmdq_pkt *cmdq_handle = data.data;
 
 	cmdq_pkt_destroy(cmdq_handle);
-//      kfree(cmdq_handle);
 }
 
 void bdg_dsi_vfp_gce(unsigned int vfp)
@@ -5423,8 +5416,8 @@ void bdg_dsi_vfp_gce(unsigned int vfp)
 	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021300, 0x107d0, ~0);
 	cmdq_pkt_wait_no_clear(cmdq_handle, bdg_dsi0_target_gce_event);
 	cmdq_pkt_wait_no_clear(cmdq_handle, bdg_rdma0_sof_gce_event);
-	/* set BDG VFP to vfp - 1 */
-	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021028, vfp - 1, ~0);
+	/* set BDG VFP to vfp */
+	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021028, vfp, ~0);
 
 	/* set DSI TARGET_LINE mask */
 	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021300, 0x7d0, ~0);
@@ -5440,6 +5433,7 @@ void bdg_dsi_vfp_gce(unsigned int vfp)
 
 	cmdq_pkt_destroy(cmdq_handle);
 }
+
 int bdg_dsc_init(enum DISP_BDG_ENUM module,
 			void *cmdq, struct LCM_DSI_PARAMS *tx_params)
 {
@@ -5676,7 +5670,6 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 #else
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x37);
 #endif
-
 //	}
 	ap_data_rate = bg_mipi_clk_change_sta == 0 ? ap_tx_data_rate : ap_tx_dyn_data_rate;
 
@@ -7240,14 +7233,15 @@ irqreturn_t bdg_eint_thread_handler(int irq, void *data)
 		// callback function for checking module's rg status
 		// todo..
 	}
-#ifdef CONFIG_MTK_MT6382_BDG
+
 	if (irq_ctrl3 & BIT(10)) {
 		s32 ret;
-
+#if defined(CONFIG_MTK_MT6382_BDG)
 		ret = cmdq_bdg_irq_handler();
+#endif
 		DISPMSG("%s: irq_ctrl3:%#x ret:%d", __func__, irq_ctrl3, ret);
 	}
-#endif
+
 	// disable irq (can't use disable_irq() in ISR)
 	disable_irq_nosync(bdg_eint_irq);
 

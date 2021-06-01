@@ -206,24 +206,6 @@ int _esd_check_config_handle_cmd(struct cmdqRecStruct *qhandle)
  * Config cmdq_handle_config_esd
  * return value: 0:success, 1:fail
  */
-
-static atomic_t flag_6382 = ATOMIC_INIT(0);
-static int esd_callback(unsigned long userdata)
-{
-		int ret = 0;
-		CmdqInterruptCB orig_callback = (CmdqInterruptCB)userdata;
-
-		if (orig_callback)
-			ret = orig_callback(0);
-
-	atomic_set(&flag_6382, 1);
-	DDPMSG("%s\n", __func__);
-	DDPMSG("MIPI_RX_POST_CTRL %x, DDIPOST_SETTING %x, DDI_POST_DEBUG0 %x\n",
-		mtk_spi_read(0x00023170), mtk_spi_read(0x00023174), mtk_spi_read(0x00023180));
-
-		return ret;
-}
-
 int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 {
 	int ret = 0;
@@ -234,17 +216,10 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 
 	if (bdg_is_bdg_connected() == 1)
 		cmdqRecClearEventToken(qhandle, CMDQ_EVENT_DSI_TE);
-
-	/* wait stream eof first */
-	/* cmdqRecWait(qhandle, CMDQ_EVENT_DISP_RDMA0_EOF); */
 	cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	primary_display_manual_lock();
 	esd_checking = 1;
-	if (bdg_is_bdg_connected() == 1) {
-		atomic_set(&flag_6382, 0);
-		cmdqRecWait(qhandle, CMDQ_EVENT_DSI_TE);
-	}
 
 	/* 2.stop dsi vdo mode */
 	dpmgr_path_build_cmdq(phandle, qhandle, CMDQ_STOP_VDO_MODE, 0);
@@ -264,20 +239,8 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 
 	/* 6.flush instruction */
 	dprec_logger_start(DPREC_LOGGER_ESD_CMDQ, 0, 0);
-	if (bdg_is_bdg_connected() == 1) {
-		_blocking_flush();
-		ret = cmdqRecFlushAsyncCallback(qhandle, esd_callback, 0);
-	} else
-		ret = cmdqRecFlush(qhandle);
-
+	ret = cmdqRecFlush(qhandle);
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
-
-	if (bdg_is_bdg_connected() == 1) {
-		udelay(500);
-	//	bdg_dsi_stop_vdo_gce();
-		while (atomic_read(&flag_6382) != 1)
-			udelay(50);
-	}
 	DISPINFO("[ESD]%s ret=%d\n", __func__, ret);
 	primary_display_manual_unlock();
 
@@ -313,7 +276,6 @@ int do_esd_check_eint(void)
 	int ret = 0;
 	mmp_event mmp_te = ddp_mmp_get_events()->esd_extte;
 
-	DISPINFO("[ESD]ESD check eint\n");
 	mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
 		(primary_display_is_video_mode() > 0), GPIO_EINT_MODE);
 	primary_display_switch_esd_mode(GPIO_EINT_MODE);
@@ -328,6 +290,7 @@ int do_esd_check_eint(void)
 	atomic_set(&esd_ext_te_event, 0);
 
 	primary_display_switch_esd_mode(GPIO_DSI_MODE);
+	DISPINFO("[ESD]ESD check eint, ret=%d\n", ret);
 
 	return ret;
 }
@@ -811,7 +774,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 	int esd_try_cnt = 5;
 	int recovery_done = 0;
 
-	DISPFUNC();
+	DISPFUNCSTART();
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
@@ -862,6 +825,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 		if (kthread_should_stop())
 			break;
 	}
+	DISPFUNCEND();
 	return 0;
 }
 
@@ -1257,6 +1221,7 @@ void primary_display_check_recovery_init(void)
 
 void primary_display_esd_check_enable(int enable)
 {
+	DISPCHECK("[ESD]%s[%d]\n", __func__, __LINE__);
 	if (!_lcm_need_esd_check()) {
 		DISPCHECK("[ESD]do not support esd check\n");
 		return;
