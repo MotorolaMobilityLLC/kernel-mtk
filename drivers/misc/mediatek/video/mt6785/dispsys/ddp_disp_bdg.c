@@ -1179,11 +1179,6 @@ struct lcm_setting_table nt35695b_cmd_mode[] = {
 int bdg_is_bdg_connected(void)
 {
 	DISPFUNCSTART();
-#ifdef CONFIG_MTK_MT6382_BDG
-	return 1;
-#else
-	return 0;
-#endif
 	if (mt6382_connected == 0) {
 		unsigned int ret = 0;
 #ifdef CONFIG_MTK_MT6382_BDG
