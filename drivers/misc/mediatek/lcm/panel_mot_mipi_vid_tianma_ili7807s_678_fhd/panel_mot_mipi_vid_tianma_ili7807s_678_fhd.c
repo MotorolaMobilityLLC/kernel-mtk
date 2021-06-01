@@ -839,6 +839,7 @@ static void lcm_init_power(void)
 
 static void lcm_suspend_power(void)
 {
+	pr_info("[lcm]lcm_suspend_power");
 	//SET_RESET_PIN(0);
 	if(lcm_util.set_gpio_lcd_enp_bias) {
 		lcm_util.set_gpio_lcd_enp_bias(0);
@@ -923,4 +924,5 @@ struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv = {
 	.set_backlight = lcm_setbacklight,
 //	.set_backlight_cmdq = lcm_setbacklight_cmdq,
         .set_lcm_cmd = lcm_set_cmdq,
+        .tp_gesture_status = GESTURE_OFF,
 };
