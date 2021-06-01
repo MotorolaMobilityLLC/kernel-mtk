@@ -336,8 +336,4 @@ config IPV6_SEG6_BPF
 	depends on IPV6_SEG6_LWTUNNEL
 	depends on IPV6 = y
 
-config MTK_IPV6_VZW
-	bool "IPv6: VZW special support"
-	depends on IPV6 = y
-
 endif # IPV6
