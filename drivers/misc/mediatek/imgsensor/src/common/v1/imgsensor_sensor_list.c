@@ -23,6 +23,30 @@
  *     mediatek\custom\common\hal\imgsensor\src\sensorlist.cpp
  */
 struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
+/* Add Corfu Start*/
+#if defined(MOT_CORFU_HI1336_OFILM)
+	{MOT_CORFU_HI1336_OFILM_ID,
+	SENSOR_DRVNAME_MOT_CORFU_HI1336_OFILM,
+	MOT_CORFU_HI1336_OFILM_SensorInit},
+#endif
+/* Add Corfu end*/
+/* Coful */
+#if defined(MOT_COFUL_S5K4H7_QTECH)
+	{MOT_COFUL_S5K4H7_QTECH_ID,
+	SENSOR_DRVNAME_MOT_COFUL_S5K4H7_QTECH,
+	MOT_COFUL_S5K4H7_QTECH_SensorInit},
+#endif
+#if defined(MOT_COFUL_GC02M1_TSP)
+	{MOT_COFUL_GC02M1_TSP_ID,
+	SENSOR_DRVNAME_MOT_COFUL_GC02M1_TSP,
+	MOT_COFUL_GC02M1_TSP_SensorInit},
+#endif
+#if defined(MOT_COFUL_S5KJN1_QTECH)
+	{MOT_COFUL_S5KJN1_QTECH_ID,
+	SENSOR_DRVNAME_MOT_COFUL_S5KJN1_QTECH,
+	MOT_COFUL_S5KJN1_QTECH_SensorInit},
+#endif
+/* Add Coful end*/
 	/*IMX*/
 #if defined(IMX519_MIPI_RAW)
 	{IMX519_SENSOR_ID,

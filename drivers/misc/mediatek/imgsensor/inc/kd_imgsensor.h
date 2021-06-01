@@ -370,6 +370,15 @@
 #define S5K4H7YX03_SENSOR_ID            0x487B
 //add lisbon sensor id end
 
+//add corfu sensor id begin
+#define MOT_CORFU_HI1336_OFILM_ID       0x1336
+//add corfu sensor id end
+//add coful sensor id begin
+#define MOT_COFUL_S5K4H7_QTECH_ID       0x487C
+#define MOT_COFUL_GC02M1_TSP_ID         0x02e1
+#define MOT_COFUL_S5KJN1_QTECH_ID       0x38E1
+//add coful sensor id end
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -594,6 +603,14 @@
 #define SENSOR_DRVNAME_MOT_LISBON_S5K4H7_MIPI_RAW           "mot_lisbon_s5k4h7_mipi_raw"
 //add lisbon sensor drvname end
 
+//add corfu sensor drvname begin
+#define SENSOR_DRVNAME_MOT_CORFU_HI1336_OFILM               "mot_corfu_hi1336_ofilm"
+//add corfu sensor drvname end
+//add coful sensor drvname begin
+#define SENSOR_DRVNAME_MOT_COFUL_S5K4H7_QTECH               "mot_coful_s5k4h7_qtech"
+#define SENSOR_DRVNAME_MOT_COFUL_GC02M1_TSP                 "mot_coful_gc02m1_tsp"
+#define SENSOR_DRVNAME_MOT_COFUL_S5KJN1_QTECH               "mot_coful_s5kjn1_qtech"
+//add coful sensor drvname end
 /*moto */
 #include "mot_imgsensor.h"
 /******************************************************************************
