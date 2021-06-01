@@ -40,8 +40,11 @@
 #define LOG_1 LOG_INF("MOT_AUSTIN_GC02M1, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
-
+static int mot_sensor_debug = 0;
+#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_DEBUG(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_INF_N(format, args...)   pr_warn(PFX "[%s] " format, __func__, ##args)
+#define LOG_ERROR(format, args...)   pr_err(PFX "[%s] " format, __func__, ##args)
 #define MULTI_WRITE    1
 
 
@@ -254,13 +257,13 @@ static void AUSTIN_GC02M1_eeprom_dump_bin(const char *file_name, uint32_t size, 
 	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if (IS_ERR_OR_NULL(fp)) {
             ret = PTR_ERR(fp);
-		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		LOG_ERROR("open file error(%s), error(%d)\n",  file_name, ret);
 		goto p_err;
 	}
 
 	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
 	if (ret < 0) {
-		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		LOG_ERROR("file write fail(%s) to EEPROM data(%d)", file_name, ret);
 		goto p_err;
 	}
 
@@ -270,7 +273,7 @@ p_err:
 		filp_close(fp, NULL);
 
 	set_fs(old_fs);
-	LOG_INF(" end writing file");
+	LOG_ERROR(" end writing file");
 }
 
 
@@ -725,57 +728,63 @@ kal_uint16 addr_data_pair_slim_video_mot_austin_gc02m1[] = {
 
 static void sensor_init(void)
 {
-	LOG_INF("E\n");
+       LOG_INF_N("E\n");
 
 	mot_austin_gc02m1_table_write_cmos_sensor(
 	    addr_data_pair_init_mot_austin_gc02m1,
 		sizeof(addr_data_pair_init_mot_austin_gc02m1) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void preview_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	mot_austin_gc02m1_table_write_cmos_sensor(
 		addr_data_pair_preview_mot_austin_gc02m1,
 		sizeof(addr_data_pair_preview_mot_austin_gc02m1) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void capture_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	mot_austin_gc02m1_table_write_cmos_sensor(
 		addr_data_pair_capture_mot_austin_gc02m1,
 		sizeof(addr_data_pair_capture_mot_austin_gc02m1) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void normal_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	mot_austin_gc02m1_table_write_cmos_sensor(
 	    addr_data_pair_normal_video_mot_austin_gc02m1,
 		sizeof(addr_data_pair_normal_video_mot_austin_gc02m1) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	mot_austin_gc02m1_table_write_cmos_sensor(
 		addr_data_pair_hs_video_mot_austin_gc02m1,
 		sizeof(addr_data_pair_hs_video_mot_austin_gc02m1) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	mot_austin_gc02m1_table_write_cmos_sensor(
 		addr_data_pair_slim_video_mot_austin_gc02m1,
 		sizeof(addr_data_pair_slim_video_mot_austin_gc02m1) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 
 }
 
@@ -1125,7 +1134,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		slim_video(image_window, sensor_config_data);
 		break;
 	default:
-		LOG_INF("Error ScenarioId setting");
+		LOG_ERROR("Error ScenarioId setting");
 		preview(image_window, sensor_config_data);
 		return ERROR_INVALID_SCENARIO_ID;
 	}
@@ -1247,7 +1256,7 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
 		set_dummy();
-		LOG_INF("error scenario_id = %d, we use preview scenario\n", scenario_id);
+		LOG_ERROR("error scenario_id = %d, we use preview scenario\n", scenario_id);
 		break;
 	}
 	return ERROR_NONE;
