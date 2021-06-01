@@ -6912,6 +6912,10 @@ void bdg_register_init(void)
 	EFUSE = (struct BDG_EFUSE_REGS *)DISPSYS_BDG_EFUSE_BASE;
 	GPIO = (struct BDG_GPIO_REGS *)DISPSYS_BDG_GPIO_BASE;
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
+
+	/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
+	nfc_request_eint_irq();
+	/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 }
 
 int bdg_common_init(enum DISP_BDG_ENUM module,
