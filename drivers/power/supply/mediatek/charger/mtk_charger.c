@@ -3971,6 +3971,24 @@ static ssize_t store_BatNotify(struct device *dev,
 
 static DEVICE_ATTR(BatteryNotify, 0644, show_BatNotify, store_BatNotify);
 
+static ssize_t show_BatNotify2(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	pr_debug("[Battery] show_BatteryNotify2: 0x%x\n", pinfo->notify_code);
+
+	return sprintf(buf, "%u\n", pinfo->notify_code);
+}
+
+static ssize_t store_BatNotify2(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	return store_BatNotify(dev, attr, buf, size);
+}
+
+static DEVICE_ATTR(BatteryNotify2, 0644, show_BatNotify2, store_BatNotify2);
+
 static ssize_t show_BN_TestMode(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -4183,6 +4201,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 
 	/* Battery warning */
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
+	if (ret)
+		goto _out;
+	/* Battery warning */
+	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify2);
 	if (ret)
 		goto _out;
 	ret = device_create_file(&(pdev->dev), &dev_attr_BN_TestMode);
