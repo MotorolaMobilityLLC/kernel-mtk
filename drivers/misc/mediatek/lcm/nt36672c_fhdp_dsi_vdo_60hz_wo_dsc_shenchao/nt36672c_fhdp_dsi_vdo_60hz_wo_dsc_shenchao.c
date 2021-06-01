@@ -448,18 +448,24 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* traversing array must less than DFPS_LEVELS */
 	/* DPFS_LEVEL0 */
 	dfps_params[0].level = DFPS_LEVEL0;
-	dfps_params[0].fps = 12000;/*real fps * 100, to support float*/
+	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
 	dfps_params[0].vact_timing_fps = 12000;/*real vact timing fps * 100*/
 	/* if mipi clock solution */
-	dfps_params[0].PLL_CLOCK = 500;
+	//dfps_params[0].PLL_CLOCK = 500;
 	/* dfps_params[0].data_rate = xx; */
+	/* if vfp solution */
+	dfps_params[0].vertical_frontporch = 2500;
+
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
 	dfps_params[1].fps = 12000;/*real fps * 100, to support float*/
 	dfps_params[1].vact_timing_fps = 12000;/*real vact timing fps * 100*/
 	/* if mipi clock solution */
-	dfps_params[1].PLL_CLOCK = 500;
+/*	dfps_params[1].PLL_CLOCK = 500;*/
 	/* dfps_params[1].data_rate = xx; */
+	/* if vfp solution */
+	dfps_params[1].vertical_frontporch = 54;
+
 	dsi->dfps_num = 2;
 }
 #endif
@@ -501,9 +507,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active = 20;
-	params->dsi.vertical_backporch = 20;
-	params->dsi.vertical_frontporch = 46;
+	params->dsi.vertical_sync_active = 10;
+	params->dsi.vertical_backporch = 10;
+	params->dsi.vertical_frontporch = 54;
 	//params->dsi.vertical_frontporch_for_low_power = 750;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
@@ -555,7 +561,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* this value must be in MTK suggested table */
 #ifdef DSC_ENABLE
 	params->dsi.bdg_dsc_enable = 1;
-	params->dsi.PLL_CLOCK = 500; //with dsc
+	params->dsi.PLL_CLOCK = 510; //with dsc
 #else
 	params->dsi.bdg_dsc_enable = 0;
 	params->dsi.PLL_CLOCK = 500; //without dsc

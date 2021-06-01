@@ -942,9 +942,41 @@ void DSI_DPHY_Calc_VDO_Timing_with_DSC(enum DISP_MODULE_ENUM module,
 	unsigned int t_hfp, t_hbp, t_hsa;
 	unsigned int t_hbllp, ps_wc, ap_tx_total_word_cnt_no_hfp_wc, ap_tx_total_word_cnt;
 	unsigned int ap_tx_line_cycle, ap_tx_cycle_time;
+	struct dfps_info *dfps_params = NULL;
 
 	DISPFUNCSTART();
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	/*if not power on scenario
+	 * if disp_fps !=0 means dynfps happen
+	 */
+	if (_dsi_context[i].disp_fps) {
+		int j;
 
+		for (j = 0; j < dsi_params->dfps_num; j++) {
+			if ((dsi_params->dfps_params)[j].fps ==
+				_dsi_context[i].disp_fps) {
+				dfps_params =
+				&((dsi_params->dfps_params)[j]);
+				DISPMSG("%s,disp_fps=%d\n",
+				__func__, _dsi_context[i].disp_fps);
+				break;
+			}
+		}
+	}
+#endif
+	t_vsa = (dfps_params) ? ((dfps_params->vertical_sync_active) ?
+			dfps_params->vertical_sync_active :
+			dsi_params->vertical_sync_active) :
+		dsi_params->vertical_sync_active;
+	t_vbp = (dfps_params) ? ((dfps_params->vertical_backporch) ?
+			dfps_params->vertical_backporch :
+			dsi_params->vertical_backporch) :
+		dsi_params->vertical_backporch;
+	t_vfp = (dfps_params) ? ((dfps_params->vertical_frontporch) ?
+			dfps_params->vertical_frontporch :
+			dsi_params->vertical_frontporch) :
+		dsi_params->vertical_frontporch;
+#if 0
 	t_vfp = (mipi_clk_change_sta) ?
 		(dsi_params->vertical_frontporch_dyn == 0 ?
 		 dsi_params->vertical_frontporch :
@@ -960,7 +992,7 @@ void DSI_DPHY_Calc_VDO_Timing_with_DSC(enum DISP_MODULE_ENUM module,
 		 dsi_params->vertical_sync_active :
 		 dsi_params->vertical_sync_active_dyn) :
 		dsi_params->vertical_sync_active;
-#if 0
+
 	t_hbp = (mipi_clk_change_sta) ?
 		(dsi_params->horizontal_backporch_dyn == 0 ?
 		 dsi_params->horizontal_backporch :
@@ -8188,6 +8220,77 @@ void ddp_dsi_dynfps_chg_fps(
 	}
 
 }
+
+extern void bdg_dsi_vfp_gce(unsigned int vfp);
+void ddp_dsi_bdg_dynfps_chg_fps(
+	enum DISP_MODULE_ENUM module, void *handle,
+	unsigned int last_fps, unsigned int new_fps, unsigned int chg_index)
+{
+	struct LCM_DSI_PARAMS *dsi = NULL;
+	struct dfps_info *dfps_params_last = NULL;
+	struct dfps_info *dfps_params_new = NULL;
+	unsigned int i = 0;
+
+	dsi = &_dsi_context[0].dsi_params;
+
+	for (i = 0; i < dsi->dfps_num; i++) {
+		if ((dsi->dfps_params)[i].fps == last_fps)
+			dfps_params_last = &((dsi->dfps_params)[i]);
+		if ((dsi->dfps_params)[i].fps == new_fps)
+			dfps_params_new = &((dsi->dfps_params)[i]);
+	}
+	if (dfps_params_last == NULL ||
+		dfps_params_new == NULL)
+		return;
+
+	DDPMSG("%s,fps %d->%d\n", __func__, last_fps, new_fps);
+	DDPMSG("%s,chg_index=0x%x\n", __func__, chg_index);
+	/*we will not change dsi_params
+	 *will use this disp_fps to choose right params
+	 */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		_dsi_context[i].disp_fps = new_fps;
+		_dsi_context[i].dynfps_chg_index = chg_index;
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+#if 0
+		if (chg_index & DYNFPS_DSI_MIPI_CLK) {
+			DDPMSG("%s, change MIPI Clock\n", __func__);
+			/*ToDo, may be not only mipi clock chaged
+			 * need also check other parameters
+			 * apply all related parameters
+			 */
+			DSI_PHY_TIMCONFIG(module, handle, dsi);
+//			DSI_Calc_VDO_Timing(module, dsi);
+			DSI_Config_VDO_Timing(module, handle, dsi);
+
+			/*pll off -> on*/
+			dsi_phy_clk_switch_gce(module, handle, false);
+			dsi_phy_clk_switch_gce(module, handle, true);
+
+		} else if (chg_index & DYNFPS_DSI_HFP) {
+			DDPMSG("%s, change HFP\n", __func__);
+			/*DynFPS ToDo whether need change PHY timing */
+			/*DSI_PHY_TIMCONFIG(module, handle, dsi);*/
+#if 0		/*maybe not only HFP changed, update all parameters*/
+			ddp_dsi_porch_setting(module, handle, DSI_HFP,
+					_dsi_context[i].hfp_byte);
+#endif
+			DSI_Config_VDO_Timing(module, handle, dsi);
+
+		} else
+#endif
+			if (chg_index & DYNFPS_DSI_VFP) {
+				DDPMSG("%s, change VFP\n", __func__);
+				bdg_dsi_vfp_gce(dfps_params_new->vertical_frontporch);
+				DDPMSG("%s, change VFP-\n", __func__);
+			}
+
+	}
+
+}
+
 void ddp_dsi_dynfps_get_vfp_info(unsigned int disp_fps,
 	unsigned int *vfp, unsigned int *vfp_for_lp)
 {

@@ -10876,6 +10876,10 @@ void primary_display_update_cfg_id(int cfg_id)
 	mutex_unlock(&(pgc->dynfps_lock));
 }
 
+extern void ddp_dsi_bdg_dynfps_chg_fps(
+		enum DISP_MODULE_ENUM module, void *handle,
+		unsigned int last_fps, unsigned int new_fps, unsigned int chg_index);
+
 void primary_display_dynfps_chg_fps(int cfg_id)
 {
 	int last_cfg_id;
@@ -10999,8 +11003,22 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 				last_dynfps, new_dynfps);
 		}
 
+	if (bdg_is_bdg_connected() == 1) {
+		if (get_dsc_state()) {
+			cmdqRecClearEventToken(qhandle,
+					CMDQ_EVENT_DSI_TE);
+		}
+	}
 		cmdqRecClearEventToken(qhandle,
 				CMDQ_EVENT_DISP_RDMA0_SOF);
+
+	if (bdg_is_bdg_connected() == 1) {
+		if (get_dsc_state()) {
+			cmdqRecWaitNoClear(qhandle,
+					CMDQ_EVENT_DSI_TE);
+		}
+	}
+
 		cmdqRecWaitNoClear(
 			qhandle, CMDQ_EVENT_DISP_RDMA0_SOF);
 		/*now only primary display support*/

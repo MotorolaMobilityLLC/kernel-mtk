@@ -1032,7 +1032,9 @@ static void _cmd_mode_enter_idle(void)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	unsigned long long bandwidth;
 #endif
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	unsigned int cfg_id = 0;
+#endif
 
 	DISPDBG("[LP]%s\n", __func__);
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
@@ -1059,7 +1061,9 @@ static void _cmd_mode_enter_idle(void)
 
 static void _cmd_mode_leave_idle(void)
 {
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	unsigned int cfg_id = 0;
+#endif
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	unsigned long long bandwidth;
 	unsigned int in_fps = 60;

@@ -95,7 +95,7 @@ struct disp_node_struct {
 	spinlock_t node_lock;
 };
 
-static struct platform_device mydev;
+static struct platform_device *mydev;
 
 static long disp_unlocked_ioctl(struct file *file, unsigned int cmd,
 				unsigned long arg)
@@ -193,7 +193,7 @@ struct dispsys_device {
 
 struct device *disp_get_device(void)
 {
-	return &(mydev.dev);
+	return &(mydev->dev);
 }
 
 #if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
@@ -257,7 +257,7 @@ struct disp_iommu_device *disp_get_iommu_dev(void)
 
 	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++) {
 
-		larb_node[larb_idx] = of_parse_phandle(mydev.dev.of_node,
+		larb_node[larb_idx] = of_parse_phandle(mydev->dev.of_node,
 						"mediatek,larb", larb_idx);
 		if (!larb_node[larb_idx]) {
 			pr_info("disp driver get larb %d fail\n", larb_idx);
@@ -314,6 +314,8 @@ static inline unsigned int virq_to_hwirq(unsigned int virq)
 	return hwirq;
 }
 /* end for irq check */
+
+extern void disp_init_bdg_gce_obj(void);
 
 static int disp_probe_1(void)
 {
@@ -462,6 +464,9 @@ static int disp_probe_1(void)
 
 	ddp_path_init();
 	disp_m4u_init();
+	if (bdg_is_bdg_connected() == 1)
+		disp_init_bdg_gce_obj();
+
 
 	pr_info("disp driver(1) %s end\n", __func__);
 	/* NOT_REFERENCED(class_dev); */
@@ -486,7 +491,7 @@ static int disp_probe(struct platform_device *pdev)
 	pr_info("disp driver(1) %s begin\n", __func__);
 
 	/* save pdev for disp_probe_1 */
-	memcpy(&mydev, pdev, sizeof(mydev));
+	mydev = pdev;
 
 	disp_helper_option_init();
 
