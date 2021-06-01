@@ -25,8 +25,6 @@
 #include "mot_austin_hi1336mipiraw_Sensor.h"
 #include "mot_austin_hi1336_Setting.h"
 #include "mot_austin_hi1336_otp.h"
-#define LOG_INF(format, args...)    \
-	pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define e2prom 1
 
@@ -393,7 +391,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
     /* Total gain = M + N /16 X   */
 
     if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
-        LOG_INF("Error gain setting");
+        LOG_ERROR("Error gain setting");
 
         if (gain < BASEGAIN)
             gain = BASEGAIN;
@@ -582,7 +580,7 @@ static kal_uint32 open(void)
 		retry = 2;
 	}
 	if (imgsensor_info.sensor_id != sensor_id) {
-		LOG_INF("open sensor id fail: 0x%x\n", sensor_id);
+		LOG_ERROR("open sensor id fail: 0x%x\n", sensor_id);
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
 	/* initail sequence write in  */

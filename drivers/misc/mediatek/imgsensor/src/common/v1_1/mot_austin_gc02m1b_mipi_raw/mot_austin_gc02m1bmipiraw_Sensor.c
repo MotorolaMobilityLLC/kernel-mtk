@@ -40,8 +40,11 @@
 #define LOG_1 LOG_INF("GC02M1B, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
-
+static int mot_sensor_debug = 0;
+#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_DEBUG(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_INF_N(format, args...)   pr_warn(PFX "[%s] " format, __func__, ##args)
+#define LOG_ERROR(format, args...)   pr_err(PFX "[%s] " format, __func__, ##args)
 #define MULTI_WRITE    1
 #define EEPROM_READY 1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -719,66 +722,73 @@ kal_uint16 addr_data_pair_custom1_gc02m1b[] = {
 
 static void sensor_init(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	gc02m1b_table_write_cmos_sensor(
 	    addr_data_pair_init_gc02m1b,
 		sizeof(addr_data_pair_init_gc02m1b) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void preview_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	gc02m1b_table_write_cmos_sensor(
 		addr_data_pair_preview_gc02m1b,
 		sizeof(addr_data_pair_preview_gc02m1b) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void capture_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	gc02m1b_table_write_cmos_sensor(
 		addr_data_pair_capture_gc02m1b,
 		sizeof(addr_data_pair_capture_gc02m1b) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void normal_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	gc02m1b_table_write_cmos_sensor(
 	    addr_data_pair_normal_video_gc02m1b,
 		sizeof(addr_data_pair_normal_video_gc02m1b) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	gc02m1b_table_write_cmos_sensor(
 		addr_data_pair_hs_video_gc02m1b,
 		sizeof(addr_data_pair_hs_video_gc02m1b) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	gc02m1b_table_write_cmos_sensor(
 		addr_data_pair_slim_video_gc02m1b,
 		sizeof(addr_data_pair_slim_video_gc02m1b) /
 		sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void custom1_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 gc02m1b_table_write_cmos_sensor(
 		addr_data_pair_custom1_gc02m1b,
 		sizeof(addr_data_pair_custom1_gc02m1b) /
 		sizeof(kal_uint16));
+       LOG_INF_N("X\n");
 }
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
@@ -842,13 +852,13 @@ static void gc02m1b_otp_dump_bin(const char *file_name, uint32_t size, const voi
 	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if (IS_ERR_OR_NULL(fp)) {
 		ret = PTR_ERR(fp);
-		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		LOG_ERROR("open file error(%s), error(%d)\n",  file_name, ret);
 		goto p_err;
 	}
 
 	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
 	if (ret < 0) {
-		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		LOG_ERROR("file write fail(%s) to EEPROM data(%d)", file_name, ret);
 		goto p_err;
 	}
 
@@ -935,7 +945,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #endif
 				return ERROR_NONE;
 			}
-			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+			LOG_ERROR("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -967,7 +977,7 @@ static kal_uint32 open(void)
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
-			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+			LOG_ERROR("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -1040,7 +1050,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+			LOG_ERROR("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 				imgsensor.current_fps, imgsensor_info.cap.max_framerate / 10);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
 		imgsensor.line_length = imgsensor_info.cap.linelength;
@@ -1283,7 +1293,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		custom1(image_window, sensor_config_data);
 	break;
 	default:
-		LOG_INF("Error ScenarioId setting");
+		LOG_ERROR("Error ScenarioId setting");
 		preview(image_window, sensor_config_data);
 		return ERROR_INVALID_SCENARIO_ID;
 	}
@@ -1364,7 +1374,7 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 			spin_unlock(&imgsensor_drv_lock);
 		} else {
 			if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-				LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+				LOG_ERROR("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 					framerate, imgsensor_info.cap.max_framerate / 10);
 			frame_length = imgsensor_info.cap.pclk / framerate * 10 / imgsensor_info.cap.linelength;
 			spin_lock(&imgsensor_drv_lock);
@@ -1419,7 +1429,7 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
 		set_dummy();
-		LOG_INF("error scenario_id = %d, we use preview scenario\n", scenario_id);
+		LOG_ERROR("error scenario_id = %d, we use preview scenario\n", scenario_id);
 		break;
 	}
 	return ERROR_NONE;
