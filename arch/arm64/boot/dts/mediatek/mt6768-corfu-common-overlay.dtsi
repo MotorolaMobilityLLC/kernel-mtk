@@ -15,6 +15,7 @@
 #include "mediatek/cust_mt6768_camera.dtsi"
 #include "mediatek/cust_mt6768_corfu_touch_1080x2400.dtsi"
 #include "dt-bindings/mmc/mt6768-msdc.h"
+#include "mediatek/mt6768-moto-corfu-fps.dtsi"
 
 &reserved_memory {
 	reserve-memory-scp_share {
@@ -99,6 +100,64 @@
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
+};
+
+&moto_chg_tcmd {
+                compatible = "mmi,moto-chg-tcmd";
+                status = "okay";
+
+                mmi,ntc_table = <1>;
+                mmi,ntc_v_ref = <1800000>;
+                mmi,ntc_r_pull = <100000>;
+
+                mmi,batid_v_ref = <1800000>;
+                mmi,batid_r_pull = <100000>;
+
+                mmi,adc-channel-cpu = <0>;
+                mmi,adc-channel-charger = <2>;
+                mmi,adc-channel-pa = <1>;
+                mmi,adc-channel-batid = <3>;
+                mmi,adc-channel-vbat = <100>;
+};
+
+&charger {
+        /* common */
+        battery_cv = <4450000>;
+        enable_pe_2;
+        /* charging current */
+        usb_charger_current_suspend = <0>;
+        usb_charger_current_unconfigured = <70000>;
+        usb_charger_current_configured = <500000>;
+        usb_charger_current = <500000>;
+        ac_charger_current = <2000000>;
+        ac_charger_input_current = <2000000>;
+        non_std_ac_charger_current = <1000000>;
+        charging_host_charger_current = <1500000>;
+        apple_1_0a_charger_current = <650000>;
+        apple_2_1a_charger_current = <800000>;
+        ta_ac_charger_current = <2000000>;
+        typec_limit_aicr = <2000000>;
+
+        /*mmi config*/
+        mmi,iterm-ma = <243>;
+        mmi,mmi-temp-zones = <0 4200 970 0>,
+                        <10 0 2425 2425>,
+                        <15 0 3000 3000>,
+                        <23 0 3000 3000>,
+                        <35 0 3000 3000>,
+                        <45 0 3000 3000>,
+                        <60 4200 3000 0>;
+        mmi,mmi-ffc-zones = <4450 243>,
+                                <4450 243>,
+                                <4450 243>,
+                                <4480 670>,
+                                <4480 770>,
+                                <4480 840>,
+                                <4450 243>;
+        mmi,enable-charging-limit;
+        mmi,upper-limit-capacity = <65>;
+        mmi,lower-limit-capacity = <60>;
+        mmi,vfloat-comp-uv = <10000>;
 };
 
 &msdc1 {
