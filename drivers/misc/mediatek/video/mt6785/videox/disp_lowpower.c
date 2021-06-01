@@ -61,6 +61,7 @@
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
 #include "disp_drv_log.h"
+#include "ddp_disp_bdg.h"
 #include "disp_lowpower.h"
 #include "disp_arr.h"
 #include "disp_rect.h"
@@ -365,7 +366,11 @@ static int primary_display_dsi_vfp_change(int state)
 	unsigned int last_req_dfps;
 	unsigned int min_dfps;
 
-	cmdqRecCreate(CMDQ_SCENARIO_DISP_VFP_CHANGE, &qhandle);
+	if (bdg_is_bdg_connected() == 1)
+		cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle);
+	else
+		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &qhandle);
+
 	cmdqRecReset(qhandle);
 
 	/* make sure token RDMA_SOF is clear */
@@ -395,9 +400,6 @@ static int primary_display_dsi_vfp_change(int state)
 				__func__, apply_vfp);
 		}
 #endif
-		dpmgr_path_ioctl(primary_get_dpmgr_handle(), qhandle,
-				DDP_DSI_PORCH_CHANGE,
-				&apply_vfp);
 	} else if (state == 0) {
 		apply_vfp = params->dsi.vertical_frontporch;
 
@@ -413,18 +415,44 @@ static int primary_display_dsi_vfp_change(int state)
 				__func__, apply_vfp);
 		}
 #endif
-		dpmgr_path_ioctl(primary_get_dpmgr_handle(), qhandle,
-				 DDP_DSI_PORCH_CHANGE,
-				 &apply_vfp);
 	}
 
-	if (primary_display_is_support_ARR() && apply_vfp != 0) {
-		cmdqRecBackupUpdateSlot(qhandle, hSlot, 0, state);
-		cmdqRecBackupUpdateSlot(qhandle, hSlot, 1, apply_vfp);
-		primary_display_update_vfp_line_slot(qhandle, apply_vfp);
-		cmdqRecFlushAsyncCallback(qhandle, _vfp_chg_callback, 0);
+	if (state == 1 || state == 0) {
+		if (bdg_is_bdg_connected() == 1) {
+
+			cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+			/* stop dsi vdo mode */
+			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+				qhandle, CMDQ_STOP_VDO_MODE, 0);
+
+			cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		}
+	}
+	dpmgr_path_ioctl(primary_get_dpmgr_handle(), qhandle,
+				 DDP_DSI_PORCH_CHANGE,
+				 &apply_vfp);
+
+	if (bdg_is_bdg_connected() == 1) {
+		dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), qhandle,
+				CMDQ_START_VDO_MODE, 0);
+		dpmgr_path_trigger(primary_get_dpmgr_handle(),
+				qhandle, CMDQ_ENABLE);
+
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+				primary_get_dpmgr_handle()), qhandle, 0);
+
+		_blocking_flush();
+		cmdqRecFlush(qhandle);
 	} else {
-		cmdqRecFlushAsync(qhandle);
+		if (primary_display_is_support_ARR() && apply_vfp != 0) {
+			cmdqRecBackupUpdateSlot(qhandle, hSlot, 0, state);
+			cmdqRecBackupUpdateSlot(qhandle, hSlot, 1, apply_vfp);
+			primary_display_update_vfp_line_slot(qhandle, apply_vfp);
+			cmdqRecFlushAsyncCallback(qhandle, _vfp_chg_callback, 0);
+		} else {
+			cmdqRecFlushAsync(qhandle);
+		}
 	}
 	cmdqRecDestroy(qhandle);
 

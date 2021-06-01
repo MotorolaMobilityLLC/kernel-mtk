@@ -32,6 +32,7 @@
 #include "disp_drv_platform.h"
 #include "primary_display.h"
 #include "mt-plat/mtk_chip.h"
+#include "ddp_disp_bdg.h"
 
 /* use this magic_code to detect memory corruption */
 #define MAGIC_CODE 0xDEADAAA0U
@@ -446,7 +447,8 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_TUI_MODE, 0);
 	disp_helper_set_option(DISP_OPT_LCM_HBM, 0);
 	/*DynFPS*/
-	disp_helper_set_option(DISP_OPT_DYNAMIC_FPS, 1);
+	if (bdg_is_bdg_connected() == 1)
+		disp_helper_set_option(DISP_OPT_DYNAMIC_FPS, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

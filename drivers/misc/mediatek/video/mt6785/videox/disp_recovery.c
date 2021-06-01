@@ -705,12 +705,12 @@ int primary_display_esd_check(void)
 
 	dprec_logger_start(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_START, 0, 0);
-	DISPINFO("[ESD]ESD check begin\n");
+	DISPCHECK("[ESD]ESD check begin\n");
 
 	primary_display_manual_lock();
 	if (primary_get_state() == DISP_SLEPT) {
 		mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 1, 0);
-		DISPINFO("[ESD]Primary DISP slept. Skip esd check\n");
+		DISPCHECK("[ESD]Primary DISP slept. Skip esd check\n");
 		primary_display_manual_unlock();
 		goto done;
 	}
@@ -754,8 +754,15 @@ int primary_display_esd_check(void)
 	mmprofile_log_ex(mmp_rd, MMPROFILE_FLAG_PULSE,
 			 0, primary_display_is_video_mode());
 
-	/* only cmd mode read & with disable mmsys clk will kick */
-	ret = do_esd_check_read();
+	if (bdg_is_bdg_connected() == 1) {
+		if (get_mt6382_init() == 1)
+			ret = do_esd_check_read();
+		else
+			DISPMSG("%s, 6382 not init, skip esd check\n", __func__);
+	} else {
+		/* only cmd mode read & with disable mmsys clk will kick */
+		ret = do_esd_check_read();
+	}
 
 	mmprofile_log_ex(mmp_rd, MMPROFILE_FLAG_END, 0, ret);
 
@@ -933,11 +940,9 @@ int primary_display_esd_recovery(void)
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 8);
 	if (bdg_is_bdg_connected() == 1) {
 		if (get_mt6382_init() == 1) {
-			if (get_mt6382_init()) {
 				DISPCHECK("set 6382 mode start\n");
 				bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
 				bdg_tx_start(DISP_BDG_DSI0, NULL);
-			}
 		}
 		/*	559-449-314-273*/
 		disp_pm_qos_update_mmclk(449);
@@ -1221,7 +1226,6 @@ void primary_display_check_recovery_init(void)
 
 void primary_display_esd_check_enable(int enable)
 {
-	DISPCHECK("[ESD]%s[%d]\n", __func__, __LINE__);
 	if (!_lcm_need_esd_check()) {
 		DISPCHECK("[ESD]do not support esd check\n");
 		return;

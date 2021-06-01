@@ -232,7 +232,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 #ifdef DSC_ENABLE
 	{0xC0, 1, {0x03} },
 #else
-	{0xC0, 1, {0x00} },
+	//{0xC0, 1, {0x00} },
 #endif
 	{0xC1, 16,
 		{0x89, 0x28, 0x00, 0x08, 0x00, 0xAA, 0x02, 0x0E,
@@ -455,6 +455,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* dfps_params[0].data_rate = xx; */
 	/* if vfp solution */
 	dfps_params[0].vertical_frontporch = 2500;
+	dfps_params[0].vertical_frontporch_for_low_power = 3550; //50hz
 
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
@@ -465,6 +466,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* dfps_params[1].data_rate = xx; */
 	/* if vfp solution */
 	dfps_params[1].vertical_frontporch = 54;
+	dfps_params[1].vertical_frontporch_for_low_power = 880; //90hz
 
 	dsi->dfps_num = 2;
 }

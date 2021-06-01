@@ -23,6 +23,7 @@
 #define HW_NUM			(1)
 #define RX_V12			(1700)
 #define _G_MODE_EN_
+#define _Disable_HS_DCO_
 #define _VDO_120FPS_
 //#define _CMD_120FPS_
 //#define _90HZ_

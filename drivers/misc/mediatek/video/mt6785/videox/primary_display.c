@@ -5800,7 +5800,17 @@ int primary_display_resume(void)
 					       DDP_IRQ_UNKNOWN);
 		}
 	}
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	/*DynFPS*/
+	/*check whether need change fps according cfg*/
+	if (primary_display_is_support_DynFPS()) {
+		int last_cfg = primary_display_get_current_cfg_id();
 
+		/* easy way to force change fps */
+		primary_display_update_cfg_id(!last_cfg);
+		primary_display_dynfps_chg_fps(last_cfg);
+	}
+#endif
 done:
 	if (bdg_is_bdg_connected() == 1) {
 		//mmdvfs_qos_force_step(0);
@@ -10996,36 +11006,43 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 		}
 		cmdqRecReset(qhandle);
 
-		if (need_send_cmd) {
-			cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-			DISPMSG("%s,send cmd to lcm in VFP solution\n", __func__);
-			disp_lcm_dynfps_send_cmd(pgc->plcm, qhandle,
-				last_dynfps, new_dynfps);
-		}
+			if (bdg_is_bdg_connected() == 1) {
 
-	if (bdg_is_bdg_connected() == 1) {
-		if (get_dsc_state()) {
-			cmdqRecClearEventToken(qhandle,
-					CMDQ_EVENT_DSI_TE);
-		}
-	}
-		cmdqRecClearEventToken(qhandle,
-				CMDQ_EVENT_DISP_RDMA0_SOF);
+				cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
-	if (bdg_is_bdg_connected() == 1) {
-		if (get_dsc_state()) {
-			cmdqRecWaitNoClear(qhandle,
-					CMDQ_EVENT_DSI_TE);
-		}
-	}
+				/* stop dsi vdo mode */
+				dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+						qhandle, CMDQ_STOP_VDO_MODE, 0);
 
-		cmdqRecWaitNoClear(
-			qhandle, CMDQ_EVENT_DISP_RDMA0_SOF);
-		/*now only primary display support*/
-		ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
-			last_dynfps, new_dynfps, fps_change_index);
+				cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
-		cmdqRecFlushAsync(qhandle);
+				ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
+						last_dynfps, new_dynfps, fps_change_index);
+
+				dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), qhandle,
+						CMDQ_START_VDO_MODE, 0);
+				dpmgr_path_trigger(primary_get_dpmgr_handle(),
+						qhandle, CMDQ_ENABLE);
+
+				ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+						primary_get_dpmgr_handle()), qhandle, 0);
+
+				_blocking_flush();
+					cmdqRecFlush(qhandle);
+			} else {
+				if (need_send_cmd) {
+					cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+					DISPMSG("%s,send cmd to lcm in VFP solution\n", __func__);
+					disp_lcm_dynfps_send_cmd(pgc->plcm, qhandle,
+								last_dynfps, new_dynfps);
+				}
+
+				/*now only primary display support*/
+				ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
+							last_dynfps, new_dynfps, fps_change_index);
+
+				cmdqRecFlushAsync(qhandle);
+			}
 	} else if (need_send_cmd && (sendmode == LCM_SEND_IN_CMD)) {
 		struct cmdqRecStruct *qhandle2 = NULL;
 
@@ -11053,12 +11070,9 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 			cmdqRecWait(qhandle2, CMDQ_SYNC_TOKEN_STREAM_EOF);
 			cmdqRecClearEventToken(qhandle2, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 			cmdqRecFlush(qhandle2);
-			res = bdg_tx_wait_for_idle(DISP_BDG_DSI0);
-			if (res < 0) {
-				DISPMSG("%s, gavin 6382 tx idle wait timeout\n", __func__);
-				bdg_tx_reset(DISP_BDG_DSI0, NULL);
-				bdg_tx_wait_for_idle(DISP_BDG_DSI0);
-			}
+			if (bdg_is_bdg_connected() == 1)
+				res = bdg_tx_wait_for_idle(DISP_BDG_DSI0);
+
 			DISPMSG("%s,send cmd to lcm in cmd mode\n", __func__);
 			disp_lcm_dynfps_send_cmd(pgc->plcm, qhandle,
 						last_dynfps, new_dynfps);

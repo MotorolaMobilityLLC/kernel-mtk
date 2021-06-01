@@ -20,6 +20,7 @@
 #include "ddp_reg_disp_bdg.h"
 #include "disp_drv_log.h"
 #include "ddp_reg.h"
+#include "ddp_dsi.h"
 #include "ddp_drv.h"
 #include "mt6382.h"
 #include "disp_dts_gpio.h"
@@ -2816,8 +2817,6 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 	unsigned int tmp;
 
 #if 0
-	DISPMSG("0x%08x: 0x%08x\n", 0x00014260, mtk_spi_read(0x00014260));
-	DISPMSG("0x%08x: 0x%08x\n", 0x00023170, mtk_spi_read(0x00023170));
 	DISPMSG("0x%08x: 0x%08x\n", 0x0000d314, mtk_spi_read(0x0000d314));
 	DISPMSG("0x%08x: 0x%08x\n", 0x00007310, mtk_spi_read(0x00007310));
 	DISPMSG("0x%08x: 0x%08x\n", 0x000231a8, mtk_spi_read(0x000231a8));
@@ -6868,6 +6867,7 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 /* for debug use */
 void output_debug_signal(void)
 {
+#if 0
 	//Mutex thread 0 remove mod_sof[1]
 	mtk_spi_write(0x00025030, 0x0000001D);
 
@@ -6889,6 +6889,8 @@ void output_debug_signal(void)
 	//GPIO Mode
 	mtk_spi_write(0x00007310, 0x17711111);
 	mtk_spi_write(0x00007300, 0x77701111);
+#endif
+	mtk_spi_write(0x00007310, 0x11111111);
 }
 
 void bdg_register_init(void)
@@ -7018,10 +7020,6 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 		startup_seq_dphy_specific(ap_data_rate);
 
 //	output_debug_signal();
-	//TODO: Fix TARGET line
-	DSI_OUTREG32(cmdq, TX_REG[0]->DSI_TARGET_NL, 0x7d0);
-
-	DSI_OUTREG32(cmdq, DISPSYS_REG->TE_OUT_CON, 0x2e);
 
 	// request eint irq
 	bdg_request_eint_irq();
@@ -7451,7 +7449,7 @@ int bdg_dsi_porch_setting(enum DISP_BDG_ENUM module, void *handle,
 int bdg_mipi_clk_change(int msg, int en)
 {
 	unsigned int data_rate = 0;
-//	unsigned int dsi_hbp = 0; /* adaptive HBP value */
+	unsigned int dsi_hbp = 0; /* adaptive HBP value */
 
 	if (bg_mipi_clk_change_sta == en) {
 		DISPMSG("%s, hopping status not change\n", __func__);
@@ -7461,11 +7459,11 @@ int bdg_mipi_clk_change(int msg, int en)
 	data_rate = get_bdg_dyn_data_rate(en);
 	if (bdg_tx_mode != 0) {
 		if (en) {
-//			data_rate = get_bdg_dyn_data_rate(en);
-	//		dsi_hbp = 0x20;
+			data_rate = 1030;
+			dsi_hbp = 0x47;
 		} else {
-//			data_rate = 760;
-	//		dsi_hbp = 0x38;
+			data_rate = 1020;
+			dsi_hbp = 0x38;
 		}
 	}
 	DISPMSG("%s, bdg_tx_data_rate=%d\n", __func__, data_rate);
@@ -7477,22 +7475,11 @@ int bdg_mipi_clk_change(int msg, int en)
 
 	/* change mipi clk & hbp porch params*/
 	bdg_dsi_mipi_clk_change(DISP_BDG_DSI0, NULL, data_rate);
-//	bdg_dsi_porch_setting(DISP_BDG_DSI0, NULL, dsi_hbp);
+	if (bdg_tx_mode != 0)
+		bdg_dsi_porch_setting(DISP_BDG_DSI0, NULL, dsi_hbp);
 
 	/* mipi clk setting need 28us */
 	udelay(28);
-#if 0
-	if (bdg_tx_mode == CMD_MODE) {
-		/*modify output_valid_threshold for cmd mipi hopping
-		 *output_valid_threshold must < 0xDEF
-		 *TODO : long-term solution need add delay to meet AP line time balance
-		 */
-		if (en)
-			DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_BUF_CON1, 0x0dfd0745);
-		else
-			DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_BUF_CON1, 0x0dfd0026);
-	}
-#endif
 	bg_mipi_clk_change_sta = en;
 
 	return 0;

@@ -1517,6 +1517,27 @@ void DSI_Calc_VDO_Timing(enum DISP_MODULE_ENUM module,
 	}
 }
 
+static void DSI_send_cmd_cmd(struct cmdqRecStruct *cmdq,
+		enum DISP_MODULE_ENUM module,
+		bool hs, unsigned char data_id,
+		unsigned int cmd, unsigned char count,
+		unsigned char *para_list,
+		unsigned char force_update);
+
+int ddp_dsi_set_bdg_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
+	unsigned int value)
+{
+	unsigned char setvfp[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x28
+
+	setvfp[3] = value & 0xff;
+	setvfp[4] = (value & 0xff00) >> 8;
+
+	DSI_send_cmd_cmd(handle, DISP_MODULE_DSI0, 1, 0x79, 0x28, 7,
+			setvfp, 1);
+
+	return 0;
+}
+
 int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 			  enum DSI_PORCH_TYPE type, unsigned int value)
 {
@@ -1527,6 +1548,10 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 		if (type == DSI_VFP) {
 			DISPINFO("set dsi%d vfp to %d\n", i, value);
 			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VFP_NL, value);
+
+		if (bdg_is_bdg_connected() == 1)
+			if (get_mt6382_init() == 1)//if (bdg_is_bdg_connected() == 1)
+				ddp_dsi_set_bdg_porch_setting(module, handle, value - 1);
 		}
 		if (type == DSI_VSA) {
 			DISPINFO("set dsi%d vsa to %d\n", i, value);
@@ -6807,10 +6832,11 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			return -1;
 		}
 	} else if (state == CMDQ_ESD_CHECK_READ) {
-		unsigned char rxbypass0[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x84
-		unsigned char rxbypass1[] = {0x10, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00}; //ID 0x84
-		unsigned char rxsel0[] = {0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x70
-		unsigned char rxsel1[] = {0x31, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00}; //ID 0x70
+
+		unsigned char rxbypass0[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};//ID 0x84
+		unsigned char rxbypass1[] = {0x10, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00};//ID 0x84
+		unsigned char rxsel0[] = {0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};//ID 0x70
+		unsigned char rxsel1[] = {0x31, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00};//ID 0x70
 
 		if (bdg_is_bdg_connected() == 1) {
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x84, 7,
@@ -6986,13 +7012,19 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			hSlot = 0;
 		}
 	} else if (state == CMDQ_STOP_VDO_MODE) {
-		unsigned char stopdsi[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x00
-		unsigned char setcmd[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x14
-		unsigned char reset0[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x10
-		unsigned char reset1[] = {0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00}; //ID 0x10
-
+		unsigned char stopdsi[] = {
+			0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x00
+		unsigned char setcmd[] = {
+			0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x14
+		unsigned char reset0[] = {
+			0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; //ID 0x10
+		unsigned char reset1[] = {
+			0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00}; //ID 0x10
 		/* use cmdq to stop dsi vdo mode */
-		/* dual dsi need do reset DSI_DUAL_EN/DSI_START */
+		/* 1.dual dsi need do reset DSI_DUAL_EN/DSI_START */
+		DSI_SetMode(module, cmdq_trigger_handle, CMD_MODE);
+
+		/* 2.dual dsi need do reset DSI_DUAL_EN/DSI_START */
 		if (module == DISP_MODULE_DSIDUAL) {
 			DSI_OUTREGBIT(cmdq_trigger_handle,
 				      struct DSI_COM_CTRL_REG,
@@ -8220,75 +8252,6 @@ void ddp_dsi_dynfps_chg_fps(
 	}
 
 }
-
-extern void bdg_dsi_vfp_gce(unsigned int vfp);
-void ddp_dsi_bdg_dynfps_chg_fps(
-	enum DISP_MODULE_ENUM module, void *handle,
-	unsigned int last_fps, unsigned int new_fps, unsigned int chg_index)
-{
-	struct LCM_DSI_PARAMS *dsi = NULL;
-	struct dfps_info *dfps_params_last = NULL;
-	struct dfps_info *dfps_params_new = NULL;
-	unsigned int i = 0;
-
-	dsi = &_dsi_context[0].dsi_params;
-
-	for (i = 0; i < dsi->dfps_num; i++) {
-		if ((dsi->dfps_params)[i].fps == last_fps)
-			dfps_params_last = &((dsi->dfps_params)[i]);
-		if ((dsi->dfps_params)[i].fps == new_fps)
-			dfps_params_new = &((dsi->dfps_params)[i]);
-	}
-	if (dfps_params_last == NULL ||
-		dfps_params_new == NULL)
-		return;
-
-	DDPMSG("%s,fps %d->%d\n", __func__, last_fps, new_fps);
-	DDPMSG("%s,chg_index=0x%x\n", __func__, chg_index);
-	/*we will not change dsi_params
-	 *will use this disp_fps to choose right params
-	 */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		_dsi_context[i].disp_fps = new_fps;
-		_dsi_context[i].dynfps_chg_index = chg_index;
-	}
-
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-#if 0
-		if (chg_index & DYNFPS_DSI_MIPI_CLK) {
-			DDPMSG("%s, change MIPI Clock\n", __func__);
-			/*ToDo, may be not only mipi clock chaged
-			 * need also check other parameters
-			 * apply all related parameters
-			 */
-			DSI_PHY_TIMCONFIG(module, handle, dsi);
-//			DSI_Calc_VDO_Timing(module, dsi);
-			DSI_Config_VDO_Timing(module, handle, dsi);
-
-			/*pll off -> on*/
-			dsi_phy_clk_switch_gce(module, handle, false);
-			dsi_phy_clk_switch_gce(module, handle, true);
-
-		} else if (chg_index & DYNFPS_DSI_HFP) {
-			DDPMSG("%s, change HFP\n", __func__);
-			/*DynFPS ToDo whether need change PHY timing */
-			/*DSI_PHY_TIMCONFIG(module, handle, dsi);*/
-#if 0		/*maybe not only HFP changed, update all parameters*/
-			ddp_dsi_porch_setting(module, handle, DSI_HFP,
-					_dsi_context[i].hfp_byte);
-#endif
-			DSI_Config_VDO_Timing(module, handle, dsi);
-
-		} else
-#endif
-			if (chg_index & DYNFPS_DSI_VFP) {
-				DDPMSG("%s, change VFP\n", __func__);
-				bdg_dsi_vfp_gce(dfps_params_new->vertical_frontporch);
-				DDPMSG("%s, change VFP-\n", __func__);
-			}
-	}
-}
-
 void ddp_dsi_dynfps_get_vfp_info(unsigned int disp_fps,
 	unsigned int *vfp, unsigned int *vfp_for_lp)
 {
