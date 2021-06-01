@@ -474,4 +474,5 @@
 
 #include <k85v1_64_6382_vdo/cust.dtsi>
 #include "mediatek/cust_mt6785_camera.dtsi"
+#include "mediatek/novatek-nt36xxx-spi.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
