@@ -1399,6 +1399,20 @@ int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 	return -1;
 }
 
+void is_touchscreen_gesture_open(int value)
+{
+	struct LCM_DRIVER *lcm_drv = NULL;
+	if (_is_lcm_inited(pgc->plcm)) {
+		lcm_drv = pgc->plcm->drv;
+		if (value == 1) {
+				lcm_drv->tp_gesture_status  = GESTURE_ON;
+		} else{
+				lcm_drv->tp_gesture_status = GESTURE_OFF;
+		}
+	}
+}
+EXPORT_SYMBOL(is_touchscreen_gesture_open);
+
 int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 {
 	struct LCM_DRIVER *lcm_drv = NULL;
@@ -1412,10 +1426,16 @@ int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 			DISP_PR_ERR("FATAL ERROR, lcm_drv->suspend is null\n");
 			return -1;
 		}
-
-		if (lcm_drv->suspend_power)
-			lcm_drv->suspend_power();
-
+		DISP_PR_INFO("tp_gesture_status = %d\n",lcm_drv->tp_gesture_status);
+		if(lcm_drv->tp_gesture_status ){
+			if (lcm_drv->tp_gesture_status == GESTURE_OFF) {
+				if (lcm_drv->suspend_power)
+					lcm_drv->suspend_power();
+			}
+		}else{
+			if (lcm_drv->suspend_power)
+					lcm_drv->suspend_power();
+		}
 		return 0;
 	}
 	DISP_PR_ERR("lcm_drv is null\n");
