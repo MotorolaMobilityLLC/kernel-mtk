@@ -111,6 +111,15 @@
 	};
 };
 
+&i2c7 {
+        bq25601@6B {
+                status = "okay";
+                compatible = "mediatek,bq25601";
+                reg = <0x6B>;
+                charger_name = "primary_chg";
+        };
+};
+
 /* accdet start */
 &accdet {
 	/* accdet micbias voltage: 0x07,2.7v;0x05,2.5v;0x02,1.9v */
@@ -129,6 +138,117 @@
 	status = "okay";
 };
 /* accdet end */
+
+&moto_chg_tcmd {
+                compatible = "mmi,moto-chg-tcmd";
+                status = "okay";
+
+                mmi,ntc_table = <1>;
+                mmi,ntc_v_ref = <1800000>;
+                mmi,ntc_r_pull = <100000>;
+
+                mmi,batid_v_ref = <1800000>;
+                mmi,batid_r_pull = <100000>;
+
+                mmi,adc-channel-cpu = <0>;
+                mmi,adc-channel-charger = <2>;
+                mmi,adc-channel-pa = <1>;
+                mmi,adc-channel-batid = <3>;
+                mmi,adc-channel-vbat = <100>;
+};
+
+&charger {
+        /* common */
+        battery_cv = <4450000>;
+        enable_pe_2;
+        /* charging current */
+        usb_charger_current_suspend = <0>;
+        usb_charger_current_unconfigured = <70000>;
+        usb_charger_current_configured = <500000>;
+        usb_charger_current = <500000>;
+        ac_charger_current = <2500000>;
+        ac_charger_input_current = <25000000>;
+        non_std_ac_charger_current = <1000000>;
+        charging_host_charger_current = <1500000>;
+        apple_1_0a_charger_current = <650000>;
+        apple_2_1a_charger_current = <800000>;
+        ta_ac_charger_current = <25000000>;
+        typec_limit_aicr = <2000000>;
+
+        /*mmi config*/
+        mmi,iterm-ma = <243>;
+        mmi,mmi-temp-zones = <0 4200 970 0>,
+                        <10 0 2425 2425>,
+                        <15 0 3000 3000>,
+                        <23 0 3000 3000>,
+                        <35 0 3000 3000>,
+                        <45 0 3000 3000>,
+                        <60 4200 3000 0>;
+        mmi,mmi-ffc-zones = <4450 243>,
+                                <4450 243>,
+                                <4450 243>,
+                                <4480 670>,
+                                <4480 770>,
+                                <4480 840>,
+                                <4450 243>;
+        mmi,enable-charging-limit;
+        mmi,upper-limit-capacity = <65>;
+        mmi,lower-limit-capacity = <60>;
+        mmi,vfloat-comp-uv = <10000>;
+};
+
+&bat_gm30 {
+        io-channels = <&auxadc 2>;
+        io-channel-names = "batteryID-channel";
+        EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
+        DIFFERENCE_FULLOCV_ITH = <(630)>;       /*Charging termination current.*/
+        SHUTDOWN_1_TIME = <(10)>;
+
+        df-serialnum = "SB18D11784";
+        g_Q_MAX_row = <4>;
+        g_Q_MAX_col = <10>;
+        g_Q_MAX = <
+                /*bat1,   bat2,   bat3,    bat4*/
+                4931 4890 4931 4931/*T0*/
+                4982 4933 4982 4982/*T1*/
+                4969 4924 4897 4897/*T2*/
+                4975 4859 4308 4308/*T3*/
+                4905 4783 3488 3488/*T4*/
+                3488 3488 3488 3488/*T5*/
+                3488 3488 3488 3488/*T6*/
+                3488 3488 3488 3488/*T7*/
+                3488 3488 3488 3488/*T8*/
+                3488 3488 3488 3488/*T9*/
+        >;
+        g_Q_MAX_H_CURRENT_row = <4>;
+        g_Q_MAX_H_CURRENT_col = <10>;
+        g_Q_MAX_H_CURRENT = <
+                /*bat1,   bat2,   bat3,    bat4*/
+                4931 4890 4931 4931/*T0*/
+                4982 4933 4982 4982/*T1*/
+                4969 4924 4897 4897/*T2*/
+                4975 4859 4308 4308/*T3*/
+                4905 4783 3488 3488/*T4*/
+                3488 3488 3488 3488/*T5*/
+                3488 3488 3488 3488/*T6*/
+                3488 3488 3488 3488/*T7*/
+                3488 3488 3488 3488/*T8*/
+                3488 3488 3488 3488/*T9*/
+        >;
+
+        g_FG_PSEUDO100_T0 = <(100)>;
+        /*Pseudo 100% percentage at T0*/
+        g_FG_PSEUDO100_T1 = <(100)>;
+        /*Pseudo 100% percentage at T1*/
+        g_FG_PSEUDO100_T2 = <(90)>;
+        /*Pseudo 100% percentage at T2*/
+        g_FG_PSEUDO100_T3 = <(84)>;
+        /*Pseudo 100% percentage at T3*/
+        g_FG_PSEUDO100_T4 = <(63)>;
+        /*Pseudo 100% percentage at T4*/
+
+        #include "bat_setting/mt6768_battery_table_JK50_5000mah_ext.dtsi"
+};
 
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <20>; /* direct defined GPIO num */
