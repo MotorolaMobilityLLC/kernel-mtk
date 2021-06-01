@@ -47,11 +47,6 @@
 #include "mot_austin_s5kjn1sq_otp.h"
 #define MULTI_WRITE 1
 #define ENABLE_PDAF
-#define LOG_INF(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
-
-#define LOG_ERR(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
 
 #if MULTI_WRITE
 static const int I2C_BUFFER_LEN = 1020; /*trans# max is 255, each 4 bytes*/
@@ -795,7 +790,7 @@ void * remosaic_data_parse(enum REMOSAIC_DATA_TYPE type, void * data)
     uint8_t data_crc16[2] = {0};
     if(data == NULL)
     {
-        LOG_ERR("NULL of data");
+        LOG_ERROR("NULL of data");
         return NULL;
     }
 
@@ -808,7 +803,7 @@ void * remosaic_data_parse(enum REMOSAIC_DATA_TYPE type, void * data)
             data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE + 1);
             if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE, convert_crc(data_crc16)))
             {
-                LOG_ERR("XTC data CRC Fails!");
+                LOG_ERROR("XTC data CRC Fails!");
                 return NULL;
             }
             break;
@@ -818,7 +813,7 @@ void * remosaic_data_parse(enum REMOSAIC_DATA_TYPE type, void * data)
             data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE + 1);
             if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE, convert_crc(data_crc16)))
             {
-                LOG_ERR("sensor XTC data CRC Fails!");
+                LOG_ERROR("sensor XTC data CRC Fails!");
                 return NULL;
             }
             break;
@@ -828,7 +823,7 @@ void * remosaic_data_parse(enum REMOSAIC_DATA_TYPE type, void * data)
             data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE + 1);
             if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE, convert_crc(data_crc16)))
             {
-                LOG_ERR("PDXTC data CRC Fails!");
+                LOG_ERROR("PDXTC data CRC Fails!");
                 return NULL;
             }
             break;
@@ -838,7 +833,7 @@ void * remosaic_data_parse(enum REMOSAIC_DATA_TYPE type, void * data)
             data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE + 1);
             if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE, convert_crc(data_crc16)))
             {
-                LOG_ERR("SW_GGC data CRC Fails!");
+                LOG_ERROR("SW_GGC data CRC Fails!");
                 return NULL;
             }
             break;

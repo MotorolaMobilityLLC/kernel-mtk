@@ -15,11 +15,12 @@
 #include "imgsensor_ca.h"
 
 #include "mot_austin_s5kjn1sqmipiraw_Sensor.h"
-#define LOG_INF(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
+static int mot_sensor_debug = 0;
+#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_ERR(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
+#define LOG_INF_N(format, args...)   pr_warn(PFX "[%s] " format, __func__, ##args)
+#define LOG_ERROR(format, args...)   pr_err(PFX "[%s] " format, __func__, ##args)
 
-#define LOG_ERR(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
 #define S5KJN1_SERIAL_NUM_SIZE 16
 #define MAIN_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
 #define EEPROM_READY   1
@@ -106,13 +107,13 @@ static void AUSTIN_S5KJN1_eeprom_dump_bin(const char *file_name, uint32_t size, 
 	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if (IS_ERR_OR_NULL(fp)) {
             ret = PTR_ERR(fp);
-		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		LOG_ERROR("open file error(%s), error(%d)\n",  file_name, ret);
 		goto p_err;
 	}
 
 	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
 	if (ret < 0) {
-		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		LOG_ERROR("file write fail(%s) to EEPROM data(%d)", file_name, ret);
 		goto p_err;
 	}
 
@@ -263,7 +264,7 @@ static calibration_status_t AUSTIN_S5KJN1_check_awb_data(void *data)
 	if(!eeprom_util_check_crc16(eeprom->cie_src_1_ev,
 		AUSTIN_S5KJN1_EEPROM_CRC_AWB_CAL_SIZE,
 		convert_crc(eeprom->awb_crc16))) {
-		LOG_INF("AWB CRC Fails!");
+		LOG_ERROR("AWB CRC Fails!");
 		return CRC_FAILURE;
 	}
 
@@ -283,7 +284,7 @@ static calibration_status_t AUSTIN_S5KJN1_check_awb_data(void *data)
 	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
 	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
 	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
-		LOG_INF("AWB CRC limit Fails!");
+		LOG_ERROR("AWB CRC limit Fails!");
 		return LIMIT_FAILURE;
 	}
 
@@ -293,7 +294,7 @@ static calibration_status_t AUSTIN_S5KJN1_check_awb_data(void *data)
 	golden_limit.b_g_golden_max = eeprom->awb_b_g_golden_max_limit[0];
 
 	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
-		LOG_INF("AWB CRC factor limit Fails!");
+		LOG_ERROR("AWB CRC factor limit Fails!");
 		return LIMIT_FAILURE;
 	}
 	LOG_INF("AWB CRC Pass");
@@ -323,7 +324,7 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 		eeprom->eeprom_table_version[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->table_revision failed");
+		LOG_ERROR("snprintf of mnf->table_revision failed");
 		mnf->table_revision[0] = 0;
 	}
 
@@ -332,21 +333,21 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->mot_part_number failed");
+		LOG_ERROR("snprintf of mnf->mot_part_number failed");
 		mnf->mot_part_number[0] = 0;
 	}
 
 	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->actuator_id failed");
+		LOG_ERROR("snprintf of mnf->actuator_id failed");
 		mnf->actuator_id[0] = 0;
 	}
 
 	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->lens_id failed");
+		LOG_ERROR("snprintf of mnf->lens_id failed");
 		mnf->lens_id[0] = 0;
 	}
 
@@ -362,7 +363,7 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 	}
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->integrator failed");
+		LOG_ERROR("snprintf of mnf->integrator failed");
 		mnf->integrator[0] = 0;
 	}
 
@@ -370,7 +371,7 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 		eeprom->factory_id[0], eeprom->factory_id[1]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->factory_id failed");
+		LOG_ERROR("snprintf of mnf->factory_id failed");
 		mnf->factory_id[0] = 0;
 	}
 
@@ -378,7 +379,7 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 		eeprom->manufacture_line[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->manufacture_line failed");
+		LOG_ERROR("snprintf of mnf->manufacture_line failed");
 		mnf->manufacture_line[0] = 0;
 	}
 
@@ -386,7 +387,7 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->manufacture_date failed");
+		LOG_ERROR("snprintf of mnf->manufacture_date failed");
 		mnf->manufacture_date[0] = 0;
 	}
 
@@ -401,7 +402,7 @@ static void AUSTIN_S5KJN1_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[14], eeprom->serial_number[15]);
 	AUSTIN_S5KJN1_eeprom_dump_bin(MAIN_SERIAL_NUM_DATA_PATH,  S5KJN1_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->serial_number failed");
+		LOG_ERROR("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
 	}
 }
@@ -412,7 +413,7 @@ static calibration_status_t AUSTIN_S5KJN1_check_af_data(void *data)
 
 	if (!eeprom_util_check_crc16(eeprom->af_data, AUSTIN_S5KJN1_EEPROM_CRC_AF_CAL_SIZE,
 		convert_crc(eeprom->af_crc16))) {
-		LOG_INF("Autofocus CRC Fails!");
+		LOG_ERROR("Autofocus CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("Autofocus CRC Pass");
@@ -425,13 +426,13 @@ static calibration_status_t AUSTIN_S5KJN1_check_pdaf_data(void *data)
 
 	if (!eeprom_util_check_crc16(eeprom->pdaf_out1_data_mtk, AUSTIN_S5KJN1_EEPROM_CRC_PDAF_OUTPUT1_SIZE,
 		convert_crc(eeprom->pdaf_out1_crc16_mtk))) {
-		LOG_INF("PDAF OUTPUT1 CRC Fails!");
+		LOG_ERROR("PDAF OUTPUT1 CRC Fails!");
 		return CRC_FAILURE;
 	}
 
 	if (!eeprom_util_check_crc16(eeprom->pdaf_out2_data_mtk, AUSTIN_S5KJN1_EEPROM_CRC_PDAF_OUTPUT2_SIZE,
 		convert_crc(eeprom->pdaf_out2_crc16_mtk))) {
-		LOG_INF("PDAF OUTPUT2 CRC Fails!");
+		LOG_ERROR("PDAF OUTPUT2 CRC Fails!");
 		return CRC_FAILURE;
 	}
 
@@ -451,7 +452,7 @@ LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
 #endif
 	if (!eeprom_util_check_crc16(data, AUSTIN_S5KJN1_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
-		LOG_INF("Manufacturing CRC Fails!");
+		LOG_ERROR("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("Manufacturing CRC Pass");
