@@ -1,0 +1,215 @@
+
+
+&pio {
+        fingerprint_pins_default: fp_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO14__FUNC_SPI5_CSB>;
+                        slew-rate = <1>;
+                        bias-pull-up;
+                };
+
+                pins_cmd2_dat {
+                        pinmux = <PINMUX_GPIO16__FUNC_SPI5_CLK>;
+                        slew-rate = <1>;
+                        bias-pull-down;
+                };
+
+                pins_cmd3_dat {
+                        pinmux = <PINMUX_GPIO13__FUNC_SPI5_MI>;
+                        slew-rate = <0>;
+                        bias-pull-down;
+                };
+
+                pins_cmd4_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_SPI5_MO>;
+                        slew-rate = <1>;
+                        bias-pull-down;
+                };
+        };
+
+        finger_spi_active: finger_spi_active {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO14__FUNC_SPI5_CSB>;
+                        drive-strength = <2>;
+                };
+
+                pins_cmd2_dat {
+                        pinmux = <PINMUX_GPIO16__FUNC_SPI5_CLK>;
+                        drive-strength = <2>;
+                };
+
+                pins_cmd3_dat {
+                        pinmux = <PINMUX_GPIO13__FUNC_SPI5_MI>;
+                        drive-strength = <2>;
+                };
+
+                pins_cmd4_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_SPI5_MO>;
+                        drive-strength = <2>;
+                };
+        };
+
+        finger_spi_default: finger_spi_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO14__FUNC_SPI5_CSB>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+
+                pins_cmd2_dat {
+                        pinmux = <PINMUX_GPIO16__FUNC_SPI5_CLK>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+
+                pins_cmd3_dat {
+                        pinmux = <PINMUX_GPIO13__FUNC_SPI5_MI>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+
+                pins_cmd4_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_SPI5_MO>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+
+	fingerprint_irq: fingerprint_irq {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO8__FUNC_GPIO8>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerprint_reset_high: fingerprint_reset_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: fingerprint_reset_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerprint_ldo1p8_high: fingerprint_ldo1p8_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_ldo1p8_low: fingerprint_ldo1p8_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	/*fingerprint_ldo3p3_high: fingerprint_ldo3p3_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_ldo3p3_low: fingerprint_ldo3p3_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};*/
+};
+
+&odm {
+/*
+	fingerprint_int: fingerprint_int {
+		compatible = "mediatek,fingerprint-fpc";
+		fpc,enable-wakeup;
+		interrupt-parent = <&pio>;
+		interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
+		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+		pinctrl-0 = <&fingerprint_irq>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_reset_low>;
+		fpc,vdd= <&pio 89 0>;
+		fpc,irq = <&pio 15 0>;
+		status = "okay";
+	};
+*/
+	egis_fp: fp_egistec {
+		compatible = "fp-egistec";
+                interrupt-parent = <&pio>;
+                interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
+
+                fp-ctrl-power;
+                fp-gpio-vcc-enable;
+
+                egistec,gpio_vcc_en = <&pio 22 0x0>;
+                egistec,gpio_reset = <&pio 6 0x0>;
+                egistec,gpio_irq = <&pio 8 0x0>;
+/*
+                vcc_fp-supply = <&mt_pmic_vfp_ldo_reg>;
+                egis-fp,vcc-voltage = <3000000 3000000>;
+                egis-fp,vcc-current = <100000>;
+*/
+                pinctrl-names = "egis_rst_high", "egis_rst_low", 
+                                "egis_irq_active", "egis_vcc_high", 
+                                "egis_vcc_low", "egis_spi_active", 
+                                "egis_spi_default";
+                pinctrl-0 = <&fingerprint_reset_high>;
+                pinctrl-1 = <&fingerprint_reset_low>;
+                pinctrl-2 = <&fingerprint_irq>;
+                pinctrl-3 = <&fingerprint_ldo1p8_high>;
+                pinctrl-4 = <&fingerprint_ldo1p8_low>;
+                pinctrl-5 = <&finger_spi_active>;
+                pinctrl-6 = <&finger_spi_default>;
+
+		status = "okay";
+       };
+};
+/* 1.8v */
+/* &mt_pmic_vio18_ldo_reg {
+	regulator-boot-on;
+	regulator-always-on;
+}; */
+/* 3.3v */
+/*
+&mt_pmic_vfp_ldo_reg {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-boot-on;
+	regulator-always-on;
+};
+*/
+&spi5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	mediatek,pad-select = <0>, <1>;
+	fpc_tee@0 {
+		compatible = "fpc,fpc_spi";
+		reg = <0>;
+		fpc,enable-wakeup;
+		spi-max-frequency = <10000000>;
+		netlink-event = <31>;
+		status = "okay";
+	};
+        fingerprintegis@1 {
+                compatible = "mediatek,egis-fingerprint";
+                reg = <1>;
+                spi-max-frequency = <8000000>;
+                netlink-event = <30>;
+                status = "okay";
+        };
+};
