@@ -20,8 +20,6 @@
 #include "ddp_reg_disp_bdg.h"
 #include "disp_drv_log.h"
 #include "ddp_reg.h"
-#include "ddp_dsi.h"
-#include "ddp_drv.h"
 #include "mt6382.h"
 #include "disp_dts_gpio.h"
 #include "../../../base/power/include/clkbuf_v1/mt6785/mtk_clkbuf_hw.h"
@@ -81,16 +79,6 @@ int max_phase, dll_fbk, coarse_bank, sel_fast;
 int post_rcvd_rst_val, post_det_dly_thresh_val;
 unsigned int post_rcvd_rst_reg, post_det_dly_thresh_reg;
 unsigned int ddl_cntr_ref_reg;
-
-struct cmdq_client *disp_bdg_gce_client;
-struct cmdq_base *disp_bdg_gce_base;
-int bdg_dsi0_eof_gce_event;
-int bdg_dsi0_sof_gce_event;
-int bdg_dsi0_te_gce_event;
-int bdg_dsi0_done_gce_event;
-int bdg_dsi0_target_gce_event;
-int bdg_rdma0_sof_gce_event;
-int bdg_rdma0_eof_gce_event;
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -5322,117 +5310,6 @@ int polling_status(void)
 	return 0;
 }
 
-void disp_init_bdg_gce_obj(void)
-{
-	struct device *dev;
-	int index;
-	dev = disp_get_device();
-	if (dev == NULL) {
-		DISPINFO("get device fail\n");
-		return;
-	}
-
-	index = of_property_match_string(dev->of_node,
-			"gce-client-names", "BDG_CLIENT_CFG0");
-
-	if (index < 0) {
-		DISPINFO("%s map client fail\n", __func__);
-		return;
-	}
-
-	disp_bdg_gce_client = cmdq_mbox_create(dev, index);
-	if (disp_bdg_gce_client == NULL) {
-		DISPINFO("%s create client fail\n", __func__);
-		return;
-	}
-
-	disp_bdg_gce_base = cmdq_register_device(dev);
-	if (disp_bdg_gce_base == NULL)
-		DISPINFO("%s register client fail\n", __func__);
-
-	bdg_dsi0_eof_gce_event = cmdq_dev_get_event(dev, "bdg_dsi0_eof");
-	if (bdg_dsi0_eof_gce_event == 0)
-		DISPINFO("%s register EOF GCE event %d\n", __func__,
-				bdg_dsi0_eof_gce_event);
-
-	bdg_dsi0_sof_gce_event = cmdq_dev_get_event(dev, "bdg_dsi0_sof");
-	if (bdg_dsi0_sof_gce_event)
-		DISPINFO("%s register SOF GCE event %d\n", __func__,
-				bdg_dsi0_sof_gce_event);
-
-	bdg_dsi0_te_gce_event = cmdq_dev_get_event(dev, "bdg_dsi0_te");
-	if (bdg_dsi0_te_gce_event)
-		DISPINFO("%s register TE GCE event %d\n", __func__,
-				bdg_dsi0_te_gce_event);
-
-	bdg_dsi0_done_gce_event = cmdq_dev_get_event(dev, "bdg_dsi0_done");
-	if (bdg_dsi0_done_gce_event)
-		DISPINFO("%s register DONE GCE event %d\n", __func__,
-				bdg_dsi0_done_gce_event);
-
-	bdg_dsi0_target_gce_event =
-		cmdq_dev_get_event(dev, "bdg_dsi0_target_line");
-	if (bdg_dsi0_target_gce_event)
-		DISPINFO("%s register TARGET GCE event %d\n", __func__,
-				bdg_dsi0_target_gce_event);
-
-	bdg_rdma0_sof_gce_event = cmdq_dev_get_event(dev, "bdg_rdma0_sof");
-	if (bdg_rdma0_sof_gce_event)
-		DISPINFO("%s register TARGET GCE event %d\n", __func__,
-				bdg_rdma0_sof_gce_event);
-
-	bdg_rdma0_eof_gce_event = cmdq_dev_get_event(dev, "bdg_rdma0_eof");
-	if (bdg_rdma0_eof_gce_event)
-		DISPINFO("%s register TARGET GCE event %d\n", __func__,
-				bdg_rdma0_eof_gce_event);
-}
-
-static void bdg_cmdq_cb(struct cmdq_cb_data data)
-{
-	struct cmdq_pkt *cmdq_handle = data.data;
-
-	cmdq_pkt_destroy(cmdq_handle);
-}
-
-void bdg_dsi_vfp_gce(unsigned int vfp)
-{
-	struct cmdq_pkt *cmdq_handle;
-	int ret;
-
-	if (!disp_bdg_gce_client) {
-		DISPINFO("%s not valid gce client\n", __func__);
-		return;
-	}
-
-	cmdq_handle = cmdq_pkt_create(disp_bdg_gce_client);
-
-	cmdq_pkt_clear_event(cmdq_handle, bdg_dsi0_target_gce_event);
-	cmdq_pkt_clear_event(cmdq_handle, bdg_rdma0_sof_gce_event);
-
-	/* set DSI TARGET_LINE unmask */
-	/* TODO: remove fixed TARGET_NL count */
-	/* TODO: not to usd fixed address */
-	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021300, 0x107d0, ~0);
-	cmdq_pkt_wait_no_clear(cmdq_handle, bdg_dsi0_target_gce_event);
-	cmdq_pkt_wait_no_clear(cmdq_handle, bdg_rdma0_sof_gce_event);
-	/* set BDG VFP to vfp */
-	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021028, vfp, ~0);
-
-	/* set DSI TARGET_LINE mask */
-	cmdq_pkt_write(cmdq_handle, disp_bdg_gce_base, 0x00021300, 0x7d0, ~0);
-
-	/* TODO: use cmdq async flush */
-	if (0)
-		cmdq_pkt_flush_threaded(cmdq_handle, bdg_cmdq_cb, cmdq_handle);
-	else {
-		ret = cmdq_pkt_flush(cmdq_handle);
-		if (ret)
-			DISPINFO("%s cmdq_timeout\n", __func__);
-	}
-
-	cmdq_pkt_destroy(cmdq_handle);
-}
-
 int bdg_dsc_init(enum DISP_BDG_ENUM module,
 			void *cmdq, struct LCM_DSI_PARAMS *tx_params)
 {
@@ -6867,7 +6744,6 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 /* for debug use */
 void output_debug_signal(void)
 {
-#if 0
 	//Mutex thread 0 remove mod_sof[1]
 	mtk_spi_write(0x00025030, 0x0000001D);
 
@@ -6889,8 +6765,6 @@ void output_debug_signal(void)
 	//GPIO Mode
 	mtk_spi_write(0x00007310, 0x17711111);
 	mtk_spi_write(0x00007300, 0x77701111);
-#endif
-	mtk_spi_write(0x00007310, 0x11111111);
 }
 
 void bdg_register_init(void)
@@ -7479,7 +7353,7 @@ int bdg_mipi_clk_change(int msg, int en)
 
 	/* change mipi clk & hbp porch params*/
 	bdg_dsi_mipi_clk_change(DISP_BDG_DSI0, NULL, data_rate);
-	if (bdg_tx_mode != 0)
+	if (bdg_tx_mode != CMD_MODE)
 		bdg_dsi_porch_setting(DISP_BDG_DSI0, NULL, dsi_hbp);
 
 	/* mipi clk setting need 28us */

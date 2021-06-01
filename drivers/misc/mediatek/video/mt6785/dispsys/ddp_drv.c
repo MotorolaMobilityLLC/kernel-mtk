@@ -69,7 +69,6 @@
 #include "ddp_info.h"
 #include "ddp_m4u.h"
 #include "display_recorder.h"
-#include "ddp_disp_bdg.h"
 
 /* #define DISP_NO_DPI */
 #ifndef DISP_NO_DPI
@@ -315,8 +314,6 @@ static inline unsigned int virq_to_hwirq(unsigned int virq)
 }
 /* end for irq check */
 
-extern void disp_init_bdg_gce_obj(void);
-
 static int disp_probe_1(void)
 {
 	int ret = 0;
@@ -464,8 +461,6 @@ static int disp_probe_1(void)
 
 	ddp_path_init();
 	disp_m4u_init();
-	if (bdg_is_bdg_connected() == 1)
-		disp_init_bdg_gce_obj();
 
 	pr_info("disp driver(1) %s end\n", __func__);
 	/* NOT_REFERENCED(class_dev); */

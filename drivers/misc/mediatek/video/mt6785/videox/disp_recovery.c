@@ -214,8 +214,6 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 	/* 1.reset */
 	cmdqRecReset(qhandle);
 
-	if (bdg_is_bdg_connected() == 1)
-		cmdqRecClearEventToken(qhandle, CMDQ_EVENT_DSI_TE);
 	cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	primary_display_manual_lock();

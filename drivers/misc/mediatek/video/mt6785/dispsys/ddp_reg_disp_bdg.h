@@ -822,14 +822,14 @@ struct BDG_SYSREG_CTRL_REGS {
 	struct SYSREG_PWR_CTRL_REG SYSREG_PWR_CTRL;		/* 0008 */
 	unsigned int RSV_000C;					/* 000C */
 	struct SYSREG_RST_CTRL_REG SYSREG_RST_CTRL;		/* 0010 */
-	unsigned int RSV_0014[2];				/* 0014..001C */
-	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL2; /* 001C */
-	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL3; /* 0020 */
-	unsigned int RSV_0024[16];				/* 0024..0060 */
-	struct DISP_SYSREG_REG RST_DG_CTRL;			/* 0064 */
-	struct RST_CLR_SET_REG RST_SET;				/* 0068 */
-	struct RST_CLR_SET_REG RST_CLR;				/* 006C */
-	struct IRQ_MSK_CLR_SET_REG IRQ_MSK_SET;			/* 0070 */
+	unsigned int RSV_0014[2];				/* 0014..0018 */
+	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL2;		/* 001C */
+	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL3;		/* 0020 */
+	unsigned int RSV_0024[16];			/* 0024..0060 */
+	struct DISP_SYSREG_REG RST_DG_CTRL;		/* 0064 */
+	struct RST_CLR_SET_REG RST_SET;			/* 0068 */
+	struct RST_CLR_SET_REG RST_CLR;			/* 006C */
+	struct IRQ_MSK_CLR_SET_REG IRQ_MSK_SET;		/* 0070 */
 	struct IRQ_MSK_CLR_SET_REG IRQ_MSK_CLR;			/* 0074 */
 	unsigned int RSV_0070[2];				/* 0078..007C */
 	struct DISP_SYSREG_REG DISP_MISC0;			/* 0080 */

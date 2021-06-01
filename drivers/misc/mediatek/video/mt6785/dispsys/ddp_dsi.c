@@ -1551,7 +1551,7 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 
 		if (bdg_is_bdg_connected() == 1)
 			if (get_mt6382_init() == 1)//if (bdg_is_bdg_connected() == 1)
-				ddp_dsi_set_bdg_porch_setting(module, handle, value - 1);
+				ddp_dsi_set_bdg_porch_setting(module, handle, value);
 		}
 		if (type == DSI_VSA) {
 			DISPINFO("set dsi%d vsa to %d\n", i, value);
@@ -4912,7 +4912,6 @@ static void DSI_set_cmdq_serially(enum DISP_MODULE_ENUM module,
 	}
 }
 
-
 void DSI_send_cmdq_to_bdg(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		     unsigned int cmd, unsigned char count,
 		     unsigned char *para_list, unsigned char force_update)
@@ -6832,7 +6831,6 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			return -1;
 		}
 	} else if (state == CMDQ_ESD_CHECK_READ) {
-
 		unsigned char rxbypass0[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};//ID 0x84
 		unsigned char rxbypass1[] = {0x10, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00};//ID 0x84
 		unsigned char rxsel0[] = {0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};//ID 0x70
