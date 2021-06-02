@@ -332,4 +332,52 @@
 
 };
 /* CAMERA GPIO end */
+/* flashlight gpio start*/
+&pio {
+	flashlight_en_low: flashlight_en_output_low@gpio160 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
+			output-low;
+		};
+	};
+	flashlight_en_high: flashlight_en_output_high@gpio160 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
+			output-high;
+		};
+	};
+	flashlight_ce_low: flashlight_ce_output_low@gpio159 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			output-low;
+		};
+	};
+	flashlight_ce_high: flashlight_ce_output_high@gpio159 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			output-high;
+		};
+	};
+};
+
+&flashlights_dummy_gpio {
+	compatible = "mediatek,flashlights_corfu_gpio";
+	pinctrl-names = "flashlight_en_low",
+			"flashlight_en_high",
+			"flashlight_ce_low",
+			"flashlight_ce_high";
+
+	pinctrl-0 = <&flashlight_en_low>;
+	pinctrl-1 = <&flashlight_en_high>;
+	pinctrl-2 = <&flashlight_ce_low>;
+	pinctrl-3 = <&flashlight_ce_high>;
+
+	decouple = <1>;
+	channel@1 {
+		type = <0>;
+		ct = <0>;
+		part = <0>;
+	};
+};
+/* flashlight gpio end*/
 
