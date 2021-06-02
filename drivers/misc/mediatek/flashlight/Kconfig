@@ -225,3 +225,14 @@ config MTK_FLASHLIGHT_CORFU_GPIO
 
 	  Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_COFUL_GPIO
+	tristate "Mediatek flashlight coful gpio driver"
+	depends on MTK_FLASHLIGHT
+	help
+	  This is flashlight coful gpio driver for camera.
+
+	  Say Y here if you want a coful driver IC with GPIO interface.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
