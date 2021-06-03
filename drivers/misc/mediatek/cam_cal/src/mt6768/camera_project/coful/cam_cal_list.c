@@ -15,8 +15,14 @@
 #include "eeprom_i2c_common_driver.h"
 #include "eeprom_i2c_custom_driver.h"
 #include "kd_imgsensor.h"
-
+extern unsigned int S5K4H7_read_region(struct i2c_client *client, unsigned int addr,
+			unsigned char *data, unsigned int size);
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+	/*Below is commom sensor */
+	{MOT_COFUL_S5KJN1_QTECH_ID, 0xA0, Common_read_region},
+	{MOT_CORFU_HI1336_OFILM_ID, 0xA2, Common_read_region},
+        {MOT_COFUL_S5K4H7_QTECH_ID, 0x5A, S5K4H7_read_region},
+        {MOT_COFUL_GC02M1_TSP_ID, 0x6e, GC02M1_read_region},
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };
