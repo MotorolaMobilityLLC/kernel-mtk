@@ -2069,6 +2069,11 @@
                 <channel>I2C_CHANNEL_6</channel>
                 <address>0x68</address>
             </device12>
+            <device13>
+                <varName>CAMERA_MAIN_TWO_EEPROM</varName>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x5a</address>
+            </device13>
             <device14>
                 <varName>SLAVE_CHARGER</varName>
                 <channel>I2C_CHANNEL_7</channel>
