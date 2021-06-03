@@ -102,6 +102,10 @@
 	};
 };
 
+&msdc1 {
+        cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+};
+
 &i2c2 {
 	clock-frequency = <400000>;
 
@@ -286,6 +290,8 @@
 			output-low;
 		};
 	};
+        msdc1_ins: msdc1_ins {
+        };
 };
 &consys {
 	pinctrl-names = "default", "gps_lna_state_init",
