@@ -42,6 +42,8 @@
 #endif
 #endif
 
+#include "mtkfb_params.h"
+
 #define LCM_ID_0			0x12
 #define LCM_ID_1 			0x0B
 #define LCM_ID_2	 		0x10
@@ -145,6 +147,11 @@ static struct LCM_setting_table bl_level[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x07, 0XFF} },	// HBM off
+	{0x51, 2, {0x0F, 0XFF} },	// HBM on
+};
+
 static void push_table(struct LCM_setting_table *table,
 		unsigned int count,
 		unsigned char force_update)
@@ -177,7 +184,6 @@ static void push_table(struct LCM_setting_table *table,
 		}
 	}
 }
-
 
 static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 {
@@ -491,6 +497,23 @@ static void *lcm_switch_mode(int mode)
 #endif
 }
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	pr_info("%s,visionox cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			push_table(&lcm_hbm_setting[*lcm_value], 1, 1);
+			break;
+		default:
+			pr_err("%s,visionox cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_info("%s,visionox cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+
+}
 
 struct LCM_DRIVER mipi_mot_vid_visionox_ft3519_fhd_643_lcm_drv = {
 	.name = "mipi_mot_vid_visionox_ft3519_fhd_643",
@@ -507,6 +530,7 @@ struct LCM_DRIVER mipi_mot_vid_visionox_ft3519_fhd_643_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
+	.set_lcm_cmd = lcm_set_cmdq,
 	.update = lcm_update,
 	.switch_mode = lcm_switch_mode,
 };
