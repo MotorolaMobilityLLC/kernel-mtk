@@ -39,6 +39,12 @@
 
 #define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5kjn1_eeprom_data.bin"
+#define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
+
+static const char *s5kjn1_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
+static mot_calibration_info_t s5kjn1_cal_info = {0};
+int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
 int flash_mode = 0;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -4644,6 +4650,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				// get calibration status and mnf data.
+				imgread_cam_cal_data(*sensor_id, s5kjn1_dump_file, &s5kjn1_cal_info);
+
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
@@ -5124,6 +5133,16 @@ get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 #else
 	sensor_info->PDAF_Support = 0;
 #endif
+
+	sensor_info->calibration_status.mnf   = s5kjn1_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = s5kjn1_cal_info.af_status;
+	sensor_info->calibration_status.awb   = s5kjn1_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = s5kjn1_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = s5kjn1_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = s5kjn1_cal_info.dual_status;
+
+	memcpy(&sensor_info->mnf_calibration, &s5kjn1_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
+
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
