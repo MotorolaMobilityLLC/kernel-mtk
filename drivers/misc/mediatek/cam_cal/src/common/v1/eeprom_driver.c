@@ -5,7 +5,7 @@
 #define PFX "CAM_CAL"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
-
+#ifndef MOT_MT6768_COFUL
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -27,8 +27,10 @@
 #include <linux/fs.h>
 #include <linux/compat.h>
 #endif
-
-
+#endif
+#ifdef MOT_MT6768_COFUL
+#include "eeprom_driver.h"
+#endif
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -44,8 +46,11 @@ static dev_t g_devNum = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);
 static struct cdev *g_charDrv;
 static struct class *g_drvClass;
 static unsigned int g_drvOpened;
+#ifdef MOT_MT6768_COFUL
+struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX] = { NULL };
+#else
 static struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX] = { NULL };
-
+#endif
 
 static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
@@ -82,6 +87,7 @@ static u32 ov02b10_vendor_id = 0x11110000;
 /***********************************************************
  *
  ***********************************************************/
+#ifndef MOT_MT6768_COFUL
 struct stCAM_CAL_CMD_INFO_STRUCT {
 	unsigned int sensorID;
 	unsigned int deviceID;
@@ -94,7 +100,7 @@ struct stCAM_CAL_CMD_INFO_STRUCT {
 
 static struct stCAM_CAL_CMD_INFO_STRUCT
 	g_camCalDrvInfo[IMGSENSOR_SENSOR_IDX_MAX_NUM];
-
+#endif
 /********************************************************************
  * EEPROM_set_i2c_bus()
  * To i2c client and slave id
