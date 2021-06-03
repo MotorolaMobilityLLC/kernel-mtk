@@ -48,7 +48,7 @@
 #define LOG_INF(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #ifndef VENDOR_EDIT
-//#define VENDOR_EDIT
+#define VENDOR_EDIT
 #endif
 
 #include "mot_coful_s5k4h7_qtech.h"
@@ -65,8 +65,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 /*zhengjiang.zhu@Camera.Drv, 2017/10/2 add for register device info*/
 #define DEVICE_VERSION_S5K4H7QTECH    "s5k4h7qtech"
 /*Caohua.Lin@Camera.Drv, 20180126 remove register device adapt with mt6771*/
+static mot_calibration_info_t s5k4h7_cal_info = {0};
 static kal_uint32 streaming_control(kal_bool enable);
-static uint8_t deviceInfo_register_value;
+//static uint8_t deviceInfo_register_value;
 #endif
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -1028,6 +1029,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			read_cmos_sensor(0x0000));
 		if (*sensor_id == imgsensor_info.sensor_id) {
 #ifdef VENDOR_EDIT
+            s5k4h7_otp_data();
+			s5k4h7_get_cal_info(&s5k4h7_cal_info);
+#endif
+#if 0
 			/*
 			 * zhengjiang.zhu@Camera.Drv,
 			 * 2017/10/18 add for register device info
@@ -1045,7 +1050,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			}
 #endif
 			LOG_INF(
-				"i2c write id: 0x%x, sensor id: 0x%x module_id 0x%x\n",
+				"debugxx i2c write id: 0x%x, sensor id: 0x%x module_id 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id,
 				imgsensor_info.module_id);
 			break;
@@ -1094,7 +1099,7 @@ static kal_uint32 open(void)
 
 #ifdef VENDOR_EDIT
 	/*zhengjiang.zhu@Camera.Drv, 2017/10/18 add for otp */
-	bool otp_flag = 0;
+	//bool otp_flag = 0;
 #endif
 
 	LOG_INF("%s imgsensor.enable_secure %d\n",
@@ -1134,6 +1139,8 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 #ifdef VENDOR_EDIT
+#endif
+#if 0
 	/*zhengjiang.zhu@Camera.Drv, 2017/10/18 add for otp */
 	otp_flag = S5K4H7QTECH_otp_update();
 	if (otp_flag)
@@ -1420,6 +1427,15 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;	// 0 is default 1x
 	sensor_info->SensorHightSampling = 0;	// 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
+
+#ifdef VENDOR_EDIT
+        sensor_info->calibration_status.af    = s5k4h7_cal_info.af_status;
+	sensor_info->calibration_status.awb   = s5k4h7_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = s5k4h7_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = s5k4h7_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = s5k4h7_cal_info.dual_status;
+    memcpy(&sensor_info->mnf_calibration, &s5k4h7_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
+#endif
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
