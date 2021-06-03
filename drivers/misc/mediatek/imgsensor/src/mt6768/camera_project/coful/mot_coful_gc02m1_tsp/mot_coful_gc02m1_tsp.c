@@ -34,6 +34,7 @@
 #include "kd_imgsensor_errcode.h"
 
 #include "mot_coful_gc02m1_tsp.h"
+#include "gc02m1tspotp.h"
 
 /************************** Modify Following Strings for Debug **************************/
 #define PFX "gc02m1_camera_sensor"
@@ -45,6 +46,7 @@
 #define MULTI_WRITE    1
 
 
+static mot_calibration_info_t gc02m1_cal_info = {0};
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -80,8 +82,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1276,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
+		.grabwindow_width = 1600,
+		.grabwindow_height = 1200,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 67200000,
 		.max_framerate = 300,
@@ -95,7 +97,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 3,
+	.sensor_mode_num = 5,
 
 	.cap_delay_frame = 2,
 	.pre_delay_frame = 2,
@@ -646,7 +648,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id()+1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+		                sensor_init();
+			        gc02m1_read_all_data(&gc02m1_cal_info);
+                                LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -842,6 +846,12 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.af    = gc02m1_cal_info.af_status;
+	sensor_info->calibration_status.awb   = gc02m1_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = gc02m1_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = gc02m1_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = gc02m1_cal_info.dual_status;
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:

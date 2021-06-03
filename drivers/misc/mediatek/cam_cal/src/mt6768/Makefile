@@ -4,7 +4,12 @@ MTK_CUSTOM_PATH := $(srctree)/drivers/misc/mediatek
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 CAM_CAL_SRC_PATH := $(MTK_CUSTOM_PATH)/cam_cal/src
 CAM_CAL_PLATFORM_SRC_PATH := $(CAM_CAL_SRC_PATH)/$(MTK_PLATFORM)
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),)
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+else
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MOTO_PROJECT))
+ccflags-y += -D$(MTK_PLATFORM) -D$(ARCH_MTK_PROJECT)
+endif
 COMMON_VERSION := v1
 
 ifeq ($(CONFIG_ARCH_MTK_PROJECT), "tb8786p2_64_k419_wifi")
@@ -36,4 +41,11 @@ endef
 
 # Project or platform code
 CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev
+sources := coful_g coful_factory
+ifneq ($(filter $(TARGET_PRODUCT),$(sources)),)
+$(warning this is coful CAMERA OTP .....)
+CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev custom_eeprom_driver eeprom_i2c_mot_coful_gc02m1_tsp
+subdir-ccflags-y += -DMOT_MT6768_COFUL
+endif
 $(foreach src,$(CUSTOM_SRC_LIST),$(eval $(call INC_CUSTOM_SRC,$(src))))
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
