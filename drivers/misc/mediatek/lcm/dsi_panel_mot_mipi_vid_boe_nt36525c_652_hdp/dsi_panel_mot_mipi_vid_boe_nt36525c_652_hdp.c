@@ -122,8 +122,8 @@ static struct LCM_setting_table init_setting[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
-	{ 0x51, 0x01, {0xFF} },
+	{ 0xFF, 0x01, {0x10} },
+	{ 0x51, 0x02, {0x07, 0xFF} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -439,12 +439,11 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	//for 8bit
-	unsigned int bl_lvl;
-	bl_lvl =(255 * level)/255;
-	LCM_LOGI("%s,nt36525c backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
-	//for 8bit
-	bl_level[1].para_list[0] = (bl_lvl&0xFF);
+	//for 11bit
+	LCM_LOGI("%s,nt36525c backlight: level = %d,bl_lvl=%d\n", __func__, level);
+
+	bl_level[1].para_list[0] = (level&0x700)>>8;
+	bl_level[1].para_list[1] = (level&0xFF);
 	LCM_LOGI("%s nt36525c : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
 
 	push_table(handle, bl_level,
