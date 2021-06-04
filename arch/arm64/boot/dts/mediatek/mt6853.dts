@@ -6427,7 +6427,7 @@ page_owner=on loop.max_part=7";
 		pd_charger_current = <500000>;
 
 		/* battery temperature protection */
-		temp_t4_threshold = <60>;
+		temp_t4_threshold = <59>;
 		temp_t3_threshold = <45>;
 		temp_t1_threshold = <0>;
 	};
