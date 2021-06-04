@@ -14,3 +14,4 @@
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 obj-y += mot_corfu_gc02m1_tsp.o
+obj-y += gc02m1tspotp.o
