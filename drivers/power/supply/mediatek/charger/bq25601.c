@@ -1144,6 +1144,11 @@ static int bq25601_get_is_safetytimer_enable(struct charger_device
 	return val;
 }
 
+static int bq25601_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	pr_info("%s\n", __func__);
+        return bq25601_get_vbus_stat();
+}
 
 static unsigned int charging_hw_init(void)
 {
@@ -1161,7 +1166,11 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_batlowv(0x1);	/* BATLOWV 3.0V */
 	bq25601_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
 	bq25601_set_en_term(0x1);	/* Enable termination */
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	bq25601_set_watchdog(0x0);      /* CLOSE WDT */
+#else
 	bq25601_set_watchdog(0x3);	/* WDT 160s */
+#endif
 	bq25601_set_en_timer(0x0);	/* Enable charge timer */
 	bq25601_set_int_mask(0x0);	/* Disable fault interrupt */
 	bq25601_set_stat_ctrl(0x03);	/* Disable stat, to turn off the led */
@@ -1212,6 +1221,20 @@ static int bq25601_parse_dt(struct bq25601_info *info,
 }
 
 #ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
+{
+        int ret;
+
+        pr_err("[%s]: en = %d\n",__func__,en);
+        ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
+                                       (unsigned char) (!en),
+                                       (unsigned char) (CON0_EN_HIZ_MASK),
+                                       (unsigned char) (CON0_EN_HIZ_SHIFT)
+                                      );
+
+        return !ret;
+}
+
 int bq25601_start_chg_type_detect(void)
 {
 	int ret;
@@ -1268,9 +1291,13 @@ static struct charger_ops bq25601_chg_ops = {
 
 
 	/* Power path */
-	/*.enable_powerpath = bq25601_enable_power_path, */
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	.enable_powerpath = bq25601_enable_power_path,
 	/*.is_powerpath_enabled = bq25601_get_is_power_path_enable, */
 
+        /* ADC */
+        .get_vbus_adc = bq25601_get_vbus,
+#endif
 
 	/* OTG */
 	.enable_otg = bq25601_enable_otg,
