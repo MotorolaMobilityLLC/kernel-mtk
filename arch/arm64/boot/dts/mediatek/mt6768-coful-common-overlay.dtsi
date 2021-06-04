@@ -159,17 +159,6 @@
 	};
 };
 
-&i2c6{
-	wusb3801@68 {
-		status = "ok";
-		compatible = "mediatek,wusb3801x";
-		reg = <0x68>;
-		interrupt-parent = <&pio>;
-		interrupts = <4 IRQ_TYPE_LEVEL_LOW 4 0>;
-		wusb3801,irq-gpio = <&pio 4 0x0>;
-	};
-};
-
 &i2c7 {
         bq25601@6B {
                 status = "okay";
