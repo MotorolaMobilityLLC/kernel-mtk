@@ -461,4 +461,16 @@ extern long MOT_AUSTIN_DW9800VAF_Ioctl_Main(struct file *a_pstFile, unsigned int
 			   unsigned long a_u4Param);
 extern int MOT_AUSTIN_DW9800VAF_Release_Main(struct inode *a_pstInode, struct file *a_pstFile);
 extern int MOT_AUSTIN_DW9800VAF_GetFileName_Main(unsigned char *pFileName);
+
+#define DW9781CAF_SetI2Cclient DW9781CAF_SetI2Cclient_Main
+#define DW9781CAF_Ioctl DW9781CAF_Ioctl_Main
+#define DW9781CAF_Release DW9781CAF_Release_Main
+#define DW9781CAF_GetFileName DW9781CAF_GetFileName_Main
+extern int DW9781CAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9781CAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int DW9781CAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int DW9781CAF_GetFileName(unsigned char *pFileName);
+
 #endif
