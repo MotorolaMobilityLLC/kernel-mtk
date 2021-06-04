@@ -107,14 +107,22 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
 	//EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, start
-       #if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) | defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART)
-	if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT) {
-		swtp->tx_power_mode = SWTP_DO_TX_POWER;
-	} else {
-		swtp->tx_power_mode = SWTP_NO_TX_POWER;
-	}
-	CCCI_LEGACY_ERR_LOG(-1, SYS,"%s:swtp_switch_state : %d\n", __func__, swtp->tx_power_mode);
-
+       //EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, start
+       #if defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART)
+       if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT) {
+           swtp->tx_power_mode = SWTP_DO_TX_POWER;
+       } else {
+           swtp->tx_power_mode = SWTP_NO_TX_POWER;
+       }
+       CCCI_LEGACY_ERR_LOG(-1, SYS,"%s:swtp_switch_state : %d\n", __func__, swtp->tx_power_mode);
+       #elif defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART)
+       if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_IN) {
+           swtp->tx_power_mode = SWTP_NO_TX_POWER;
+       } else {
+           swtp->tx_power_mode = SWTP_DO_TX_POWER;
+       }
+       CCCI_LEGACY_ERR_LOG(-1, SYS,"%s:swtp_switch_state : %d\n", __func__, swtp->tx_power_mode);
+       //EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, start
 	#else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
@@ -319,7 +327,14 @@ int swtp_init(int md_id)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
+
+	//EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, start
+	#if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART)
+	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
+	#else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
+	#endif
+	//EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, end
 
 	spin_lock_init(&swtp_data[md_id].spinlock);
 
