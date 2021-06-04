@@ -526,6 +526,11 @@
 	};
 };
 
+&spi3 {
+	ilitek@1 {
+		ilitek,report_gesture_key;
+	};
+};
 
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
 #include "mediatek/mt6785-moto-lisbon-fps.dtsi"
