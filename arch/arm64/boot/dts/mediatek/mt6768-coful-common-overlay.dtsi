@@ -83,6 +83,16 @@
 		data = <1>;
 		pwm_config = <0 3 0 0 0>;
 	};
+	gpio-leds {
+		compatible = "gpio-leds";
+		status = "okay";
+		charging {
+		        gpios = <&pio 12 0x0>;
+		        label = "charging";
+		        linux,default-trigger = "none";
+		        retain-state-suspended;
+		};
+	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
