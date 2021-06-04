@@ -476,6 +476,7 @@ static int wusb3801_get_power_status(
 		struct tcpc_device *tcpc, uint16_t *pwr_status)
 {
 		pr_info("%s enter \n", __func__);
+	*pwr_status = 0;
 	return 0;
 }
 
@@ -853,7 +854,7 @@ static int wusb3801_tcpcdev_init(struct wusb3801_chip *chip, struct device *dev)
 	if (IS_ERR(chip->tcpc))
 		return -EINVAL;
 
-	chip->tcpc->typec_attach_old = TYPEC_UNATTACHED;
+	chip->tcpc->typec_attach_old = !TYPEC_UNATTACHED;
     chip->tcpc->typec_attach_new = TYPEC_UNATTACHED;
     //tcpci_report_usb_port_detached(chip->tcpc);
     tcpci_report_usb_port_changed(chip->tcpc);
@@ -1118,11 +1119,15 @@ static void wusb3801_shutdown(struct i2c_client *client)
 	struct wusb3801_chip *chip = i2c_get_clientdata(client);
 
 	/* Please reset IC here */
-	wusb3801_i2c_write8(chip->tcpc,
-			WUSB3801_REG_CONTROL0, 0x00);
+	//wusb3801_i2c_write8(chip->tcpc,
+	//		WUSB3801_REG_CONTROL0, 0x00);
 	if (chip != NULL) {
 		if (chip->irq)
 			disable_irq(chip->irq);
+		tcpm_shutdown(chip->tcpc);
+	} else {
+		wusb3801_i2c_write8(chip->tcpc,
+				WUSB3801_REG_CONTROL0, 0x00);
 	}
 }
 
