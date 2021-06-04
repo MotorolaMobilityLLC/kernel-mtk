@@ -34,6 +34,7 @@
 #include "kd_imgsensor_errcode.h"
 
 #include "mot_corfu_gc02m1_tsp.h"
+#include "gc02m1tspotp.h"
 
 /************************** Modify Following Strings for Debug **************************/
 #define PFX "gc02m1_camera_sensor"
@@ -44,7 +45,7 @@
 
 #define MULTI_WRITE    1
 
-
+static mot_calibration_info_t gc02m1_cal_info = {0};
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -646,6 +647,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id()+1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				sensor_init();
+				gc02m1_read_all_data(&gc02m1_cal_info);
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
@@ -842,6 +845,13 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.mnf   = gc02m1_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = gc02m1_cal_info.af_status;
+	sensor_info->calibration_status.awb   = gc02m1_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = gc02m1_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = gc02m1_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = gc02m1_cal_info.dual_status;
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
