@@ -27,7 +27,6 @@
 
 		interrupt-parent = <&pio>;
 		goodix,avdd-name = "vtouch";
-		vtouch-supply = <&mt_pmic_vldo28_ldo_reg>;
 		//vtouch-load = <1>;
 		goodix,reset-gpio = <&pio 23 0x0>;
 		goodix,irq-gpio = <&pio 0 0x0>;
@@ -81,7 +80,6 @@
 	interrupts = <1 IRQ_TYPE_EDGE_FALLING 1 0>;
 	goodix,irq-gpio = <&pio 1 0x0>;
 	goodix,reset-gpio = <&pio 23 0x0>;
-	vtouch-supply = <&mt_pmic_vldo28_ldo_reg>;
 
 	/* Rotate cord when open blew lables */
 	/*goodix,x2x;*/
