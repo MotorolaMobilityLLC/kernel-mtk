@@ -48,11 +48,11 @@
 #define LOG_INF(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #ifndef VENDOR_EDIT
-//#define VENDOR_EDIT
+#define VENDOR_EDIT
 #endif
 
 #include "mot_corfu_s5k4h7_qtech.h"
-#include "s5k4h7qtechotp.h"
+#include "mot_s5k4h7mipiraw_otp.h"
 
 #define MULTI_WRITE 1
 #if MULTI_WRITE
@@ -62,11 +62,8 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #endif
 
 #ifdef VENDOR_EDIT
-/*zhengjiang.zhu@Camera.Drv, 2017/10/2 add for register device info*/
-#define DEVICE_VERSION_S5K4H7QTECH    "s5k4h7qtech"
-/*Caohua.Lin@Camera.Drv, 20180126 remove register device adapt with mt6771*/
+static mot_calibration_info_t s5k4h7_cal_info = {0};
 static kal_uint32 streaming_control(kal_bool enable);
-static uint8_t deviceInfo_register_value;
 #endif
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -1025,21 +1022,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			read_cmos_sensor(0x0000));
 		if (*sensor_id == imgsensor_info.sensor_id) {
 #ifdef VENDOR_EDIT
-			/*
-			 * zhengjiang.zhu@Camera.Drv,
-			 * 2017/10/18 add for register device info
-			 */
-			imgsensor_info.module_id = s5k4h7qtech_get_module_id();
-			/*
-			 * Caohua.Lin@Camera.Drv,
-			 * 20180126 remove to adapt with mt6771
-			 */
-			if (deviceInfo_register_value == 0x00) {
-				register_imgsensor_deviceinfo("Cam_f",
-					DEVICE_VERSION_S5K4H7QTECH,
-					imgsensor_info.module_id);
-				deviceInfo_register_value = 0x01;
-			}
+			s5k4h7_otp_data();
+			s5k4h7_get_cal_info(&s5k4h7_cal_info);
 #endif
 			LOG_INF(
 				"i2c write id: 0x%x, sensor id: 0x%x module_id 0x%x\n",
@@ -1087,12 +1071,7 @@ static kal_uint32 open(void)
 	//const kal_uint8 i2c_addr[] =
 	//{IMGSENSOR_WRITE_ID_1, IMGSENSOR_WRITE_ID_2};
 	kal_uint8 retry = 1;
-	kal_uint16 sensor_id = 0;
-
-#ifdef VENDOR_EDIT
-	/*zhengjiang.zhu@Camera.Drv, 2017/10/18 add for otp */
-	bool otp_flag = 0;
-#endif
+	kal_uint32 sensor_id = 0;
 
 	LOG_INF("%s imgsensor.enable_secure %d\n",
 		__func__, imgsensor.enable_secure);
@@ -1130,14 +1109,6 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
-#ifdef VENDOR_EDIT
-	/*zhengjiang.zhu@Camera.Drv, 2017/10/18 add for otp */
-	otp_flag = S5K4H7QTECH_otp_update();
-	if (otp_flag)
-		LOG_INF("Load otp succeed\n");
-	else
-		LOG_INF("Load otp failed\n");
-#endif
 	spin_lock(&imgsensor_drv_lock);
 
 	imgsensor.autoflicker_en = KAL_FALSE;
@@ -1417,6 +1388,17 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;	// 0 is default 1x
 	sensor_info->SensorHightSampling = 0;	// 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
+
+#ifdef VENDOR_EDIT
+	sensor_info->calibration_status.mnf   = s5k4h7_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = s5k4h7_cal_info.af_status;
+	sensor_info->calibration_status.awb   = s5k4h7_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = s5k4h7_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = s5k4h7_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = s5k4h7_cal_info.dual_status;
+
+	memcpy(&sensor_info->mnf_calibration, &s5k4h7_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
+#endif
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
