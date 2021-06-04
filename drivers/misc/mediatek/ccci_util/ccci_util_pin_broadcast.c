@@ -103,6 +103,7 @@ static int ccci_util_pin_bc_release(struct inode *inode, struct file *filp)
 static ssize_t ccci_util_pin_bc_read(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
 {
 	struct pin_event_user_ctrl *user_ctrl;
+	int ret;
 
 	user_ctrl = filp->private_data;
 	if (filp->f_flags & O_NONBLOCK) {
@@ -116,7 +117,10 @@ static ssize_t ccci_util_pin_bc_read(struct file *filp, char __user *buf, size_t
 		if (copy_to_user(buf, &user_ctrl->pin_event, sizeof(struct pin_status_event)))
 			return -EFAULT;
 	} else {
-		wait_event_interruptible(pin_event_wait, user_ctrl->pin_update == 1);
+		ret = wait_event_interruptible(pin_event_wait, user_ctrl->pin_update == 1);
+		CCCI_UTIL_ERR_MSG("ccci_util_pin_bc_read, user_ctrl->pin_update:%d,ret:%d\n", user_ctrl->pin_update, ret);
+		if (ret < 0)
+			return -EINTR;
 		spin_lock(&pin_event_update_lock);
 		user_ctrl->pin_update = 0;
 		memcpy(&user_ctrl->pin_event, pin_event, sizeof(struct pin_status_event));
