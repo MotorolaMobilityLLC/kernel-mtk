@@ -21,6 +21,8 @@
 #include <lcm_pmic.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
@@ -122,9 +124,41 @@ static struct LCM_setting_table init_setting[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0xFF, 0x03, {0x98, 0x83, 0x00} },
-	{ 0x51, 0x02, {0x07, 0xFF} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+	{0xFF, 0x03, {0x98, 0x83, 0x00} },
+	{0x51, 0x02, {0x06, 0x66} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table lcm_cabc_setting_ui[] = {
+	{0xFF, 0x03, {0x98, 0x83, 0x00} },
+	{0x55, 1, {0x01} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_mv[] = {
+	{0xFF, 0x03, {0x98, 0x83, 0x00} },
+	{0x55, 1, {0x03} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_disable[] = {
+	{0xFF, 0x03, {0x98, 0x83, 0x00} },
+	{0x55, 1, {0x00} },
+};
+
+struct LCM_cabc_table {
+	int cmd_num;
+	struct LCM_setting_table *cabc_cmds;
+};
+
+//Make sure the seq keep consitent with definition of cabc_mode, otherwise it need remap
+static struct LCM_cabc_table lcm_cabc_settings[] = {
+	{ARRAY_SIZE(lcm_cabc_setting_ui), lcm_cabc_setting_ui},
+	{ARRAY_SIZE(lcm_cabc_setting_mv), lcm_cabc_setting_mv},
+	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
+};
+
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x06, 0x66} },	//80% PWM
+	{0x51, 2, {0x07, 0XFF} },	//100% PWM
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -444,10 +478,36 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	//for 11bit
 	bl_level[1].para_list[0] = (level&0x700)>>8;
 	bl_level[1].para_list[1] = (level&0xFF);
-	LCM_LOGI("%s ili9883a : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
 
 	push_table(handle, bl_level,
 		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	pr_info("%s,tm_ili9883a cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			break;
+		case PARAM_CABC:
+			if (*lcm_value >= CABC_MODE_NUM) {
+				pr_info("%s: invalid CABC mode:%d out of CABC_MODE_NUM:", *lcm_value, CABC_MODE_NUM);
+			}
+			else {
+				unsigned int cmd_num = lcm_cabc_settings[*lcm_value].cmd_num;
+				pr_info("%s: handle PARAM_CABC, mode=%d, cmd_num=%d", __func__, *lcm_value, cmd_num);
+				push_table(handle, lcm_cabc_settings[*lcm_value].cabc_cmds, cmd_num, 1);
+			}
+			break;
+		default:
+			pr_err("%s,tm_ili9883a cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_info("%s,tm_ili9883a cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
 }
 
 struct LCM_DRIVER mipi_mot_vid_tm_ili9883a_652_hdp_lcm_drv = {
@@ -464,4 +524,5 @@ struct LCM_DRIVER mipi_mot_vid_tm_ili9883a_652_hdp_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
+	.set_lcm_cmd = lcm_set_cmdq,
 };
