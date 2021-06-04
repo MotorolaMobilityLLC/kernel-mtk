@@ -31,6 +31,9 @@ else
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63169af/inc
 endif
 
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"corfu")
+obj-y += corfu/
+else
 ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN_CFILES += main_lens.c
@@ -120,5 +123,5 @@ else
 endif
 obj-y  += common/bu64253gwzaf/
 obj-y  += common/mot_dw9800vaf/
-
+endif
 endif
