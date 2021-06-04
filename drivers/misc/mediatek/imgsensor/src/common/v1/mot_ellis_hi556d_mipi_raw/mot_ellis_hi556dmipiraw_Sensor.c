@@ -66,7 +66,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 176000000,
 		.linelength = 2816,
-		.framelength = 2082,
+		.framelength = 1984,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1296,
@@ -79,7 +79,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.cap = {
 		.pclk = 176000000,
 		.linelength = 2816,
-		.framelength = 2082,
+		.framelength = 1984,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2592,
@@ -166,12 +166,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	//enter slim video delay frame num
 	.slim_video_delay_frame = 2,
 
-	.isp_driving_current = ISP_DRIVING_6MA,
+	.isp_driving_current = ISP_DRIVING_2MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = 1,
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
-	.mclk = 24,
+	.mclk = 26,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x40, 0x50, 0xff},
 	.i2c_speed = 400,
@@ -970,7 +970,7 @@ kal_uint16 addr_data_pair_init_mot_ellis_hi556d[] = {
 	0x0f32, 0x7067,
 	0x0954, 0x0009,
 	0x0956, 0x0000,
-	0x0958, 0xba80,
+	0x0958, 0xbb80,
 	0x095a, 0x5140,
 	0x0c00, 0x1110,
 	0x0c02, 0x0011,
@@ -1281,7 +1281,7 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 ////////////////////////////////////////////////
 	0x0a00, 0x0000,
 	0x0b0a, 0x8259,
-	0x0f30, 0x6e25,
+	0x0f30, 0x8135,
 	0x0f32, 0x7167,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
@@ -1299,13 +1299,13 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 	0x002e, 0x3311,
 	0x0030, 0x3311,
 	0x0032, 0x3311,
-	0x0006, 0x0822,
+	0x0006, 0x07c0,
 	0x0a22, 0x0000,
 	0x0a12, 0x0510,
 	0x0a14, 0x03cc,
 	0x003e, 0x0000,
-	0x0074, 0x0820,
-	0x0070, 0x0411,
+	0x0074, 0x07be,
+	0x0070, 0x03df,
 	0x0804, 0x0208,
 	0x0a04, 0x016a,
 	0x090e, 0x0010,
@@ -1317,7 +1317,7 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 	0x091a, 0x0708,
 	0x091c, 0x0e06,
 	0x091e, 0x0300,
-	0x0958, 0xba80,
+	0x0958, 0xbb80,
 };
 #endif
 
@@ -1447,7 +1447,7 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 ////////////////////////////////////////////////
 	0x0a00, 0x0000,
 	0x0b0a, 0x8252,
-	0x0f30, 0x6e25,
+	0x0f30, 0x8135,
 	0x0f32, 0x7067,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
@@ -1465,13 +1465,13 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 	0x002e, 0x1111,
 	0x0030, 0x1111,
 	0x0032, 0x1111,
-	0x0006, 0x0822,
+	0x0006, 0x07c0,
 	0x0a22, 0x0000,
 	0x0a12, 0x0a20,
 	0x0a14, 0x0798,
 	0x003e, 0x0000,
-	0x0074, 0x0820,
-	0x0070, 0x0400,
+	0x0074, 0x07be,
+	0x0070, 0x03df,
 	0x0804, 0x0200,
 	0x0a04, 0x014a,
 	0x090c, 0x0fdc,
@@ -1483,7 +1483,7 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 	0x091a, 0x0c0d,
 	0x091c, 0x0f09,
 	0x091e, 0x0a00,
-	0x0958, 0xba80,
+	0x0958, 0xbb80,
 };
 #endif
 
