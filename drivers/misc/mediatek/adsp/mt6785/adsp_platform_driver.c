@@ -134,7 +134,8 @@ static bool is_adsp_core_suspend(struct adsp_priv *pdata)
 
 	return check_hifi_status(ADSP_A_IS_WFI) &&
 	       check_hifi_status(ADSP_AXI_BUS_IS_IDLE) &&
-	       (status == ADSP_SUSPEND);
+	       (status == ADSP_SUSPEND) &&
+	       is_adsp_genirq_idle(pdata->id);
 }
 
 int adsp_core0_suspend(void)
@@ -394,7 +395,8 @@ static int adsp_core_drv_probe(struct platform_device *pdev)
 	pdata->irq[ADSP_IRQ_WDT_ID].seq = platform_get_irq(pdev, 0);
 	pdata->irq[ADSP_IRQ_WDT_ID].clear_irq = adsp_mt_disable_wdt;
 	pdata->irq[ADSP_IRQ_IPC_ID].seq = platform_get_irq(pdev, 1);
-	pdata->irq[ADSP_IRQ_IPC_ID].clear_irq = adsp_mt_clr_sysirq;
+	/* adsp_ipi clr irq by itself */
+	/* pdata->irq[ADSP_IRQ_IPC_ID].clear_irq = adsp_mt_clr_sysirq; */
 
 	of_property_read_u32(dev->of_node, "sysram", &temp);
 	pdata->sysram_phys = (phys_addr_t)temp;
