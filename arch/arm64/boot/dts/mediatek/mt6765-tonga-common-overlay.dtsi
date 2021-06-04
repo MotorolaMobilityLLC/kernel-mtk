@@ -175,7 +175,7 @@
 
 &led6 {
 	led_mode = <4>;
-	max-brightness = <2047>;
+	max-brightness = <1638>; /*2047*0.8*/
 };
 
 &odm {
