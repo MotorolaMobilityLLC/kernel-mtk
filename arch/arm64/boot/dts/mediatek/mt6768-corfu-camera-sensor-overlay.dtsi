@@ -226,8 +226,20 @@
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
 			output-low;
-        	};
-    	};
+		};
+	};
+	cam1_vcamaf_on: cam1_vcamaf_on@gpio97 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO97__FUNC_GPIO97>;
+			output-high;
+		};
+	};
+	cam1_vcamaf_off: cam1_vcamaf_off@gpio97 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO97__FUNC_GPIO97>;
+			output-low;
+		};
+	};
 	camera_pins_default: camdefault {
 	};
 
@@ -256,7 +268,8 @@
 			"cam3_mclk_2mA", "cam3_mclk_4mA",
 			"cam3_mclk_6mA", "cam3_mclk_8mA",
 			"cam_mipi_switch_sel_1", "cam_mipi_switch_sel_0",
-			"cam0_vcamaf_on", "cam0_vcamaf_off";
+			"cam0_vcamaf_on", "cam0_vcamaf_off",
+			"cam1_vcamaf_on", "cam1_vcamaf_off";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera0_rst_low>;
@@ -295,6 +308,8 @@
 	pinctrl-34 = <&camera_cam_mipi_switch_sel_0>;
 	pinctrl-35 = <&cam0_vcamaf_on>;
 	pinctrl-36 = <&cam0_vcamaf_off>;
+	pinctrl-37 = <&cam1_vcamaf_on>;
+	pinctrl-38 = <&cam1_vcamaf_off>;
 
 	cam0_vcama-supply = <&mt_pmic_vcama1_ldo_reg>;
 	cam0_vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
