@@ -14,4 +14,4 @@
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 obj-y += mot_corfu_s5k4h7_qtech.o
-#obj-y += s5k4h7qtechotp.o
+obj-y += mot_s5k4h7mipiraw_otp.o
