@@ -33,6 +33,10 @@ ifeq ($(CONFIG_MACH_MT6779), y)
   ccflags-y += -I$(srctree)/drivers/misc/mediatek/timer/timesync/
 endif
 
+ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"corfu")
+obj-y += corfu/
+else
+
 obj-$(CONFIG_MTK_LENS)    += mainaf.o
 
 mainaf-y  += main_lens.o
@@ -74,3 +78,4 @@ mainaf-y  += common/bu63169af/OIS_main.o
 mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
 
+endif # CONFIG_ARCH_MOTO_PROJECT == corfu
