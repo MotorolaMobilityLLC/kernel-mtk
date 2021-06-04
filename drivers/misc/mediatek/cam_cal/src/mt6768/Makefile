@@ -41,6 +41,15 @@ endef
 
 # Project or platform code
 CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev
+
+# filter Coful and corfu
+sources := corfu_g corfu_factory
+ifneq ($(filter $(TARGET_PRODUCT),$(sources)),)
+$(warning this is corfu  CAMERA OTP .....)
+CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev custom_eeprom_driver eeprom_i2c_mot_corfu_gc02m1_tsp
+subdir-ccflags-y += -DMOT_MT6768_COFUL
+endif
+
 sources := coful_g coful_factory
 ifneq ($(filter $(TARGET_PRODUCT),$(sources)),)
 $(warning this is coful CAMERA OTP .....)
