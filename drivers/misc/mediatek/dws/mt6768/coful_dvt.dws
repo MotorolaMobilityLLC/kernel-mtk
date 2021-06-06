@@ -2075,7 +2075,7 @@
                 <address>0x4B</address>
             </device14>
             <device15>
-                <varName>CAMERA_MAIN_THREE</varName>
+                <varName>CAMERA_SUB_TWO</varName>
                 <channel>I2C_CHANNEL_2</channel>
                 <address>0x6e</address>
             </device15>
