@@ -358,6 +358,7 @@ extern struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_90hz_shenchao_6382_lcm_drv;
 extern struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_120hz_shenchao_6382_lcm_drv;
 extern struct LCM_DRIVER r66451_fhdp_dsi_cmd_tianma_lcm_drv;
 extern struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv;
+extern struct LCM_DRIVER mipi_mot_vid_tianma_ili7807s_60hz_fhd_678_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
