@@ -999,6 +999,15 @@ enum gesture_state {
 	GESTURE_ON =2,
 };
 
+#ifdef CONFIG_MTK_MT6382_BDG
+/* lisbon lcm on use */
+enum LISBON_LCM {
+	LCM_UNKNOWN = 0,
+	LCM_G9X_120HZ_ILI7807S = 1,
+	LCM_G95_60HZ_ILI7807S =2,
+};
+#endif
+
 struct LCM_DRIVER {
 	const char *name;
 	const char *supplier;

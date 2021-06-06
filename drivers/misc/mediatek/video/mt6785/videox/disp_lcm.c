@@ -31,6 +31,8 @@
 /* such as DPI0, DSI0/1 */
 /* static struct disp_lcm_handle _disp_lcm_driver[MAX_LCM_NUMBER]; */
 
+
+
 int _lcm_count(void)
 {
 	return lcm_count;
@@ -2010,4 +2012,22 @@ unsigned int disp_lcm_get_hbm_time(bool en, struct disp_lcm_handle *plcm)
 	return time;
 }
 /*-------------------HBM End-----------------------------*/
+
+#ifdef CONFIG_MTK_MT6382_BDG
+int touchscreen_get_lcm_name(void)
+{
+	int lcm_name = 0;
+
+	if(pgc->plcm) {
+		if(strcmp(pgc->plcm->drv->name,"mipi_mot_vid_tianma_ili7807s_60hz_fhd_678") == 0) {
+			lcm_name = LCM_G95_60HZ_ILI7807S;
+		} else if (strcmp(pgc->plcm->drv->name,"mipi_mot_vid_tianma_ili7807s_fhd_678") == 0) {
+			lcm_name = LCM_G9X_120HZ_ILI7807S;
+		}
+	}
+
+	return lcm_name;
+}
+EXPORT_SYMBOL(touchscreen_get_lcm_name);
+#endif
 
