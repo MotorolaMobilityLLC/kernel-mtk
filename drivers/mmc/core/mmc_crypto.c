@@ -7,6 +7,9 @@
 #include <linux/mmc/host.h>
 #include "mmc_crypto.h"
 #include "queue.h"
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <tlc_km.h>
+#endif
 
 static bool mmc_cap_idx_valid(struct mmc_host *host, u8 cap_idx)
 {
@@ -159,6 +162,30 @@ static int mmc_crypto_keyslot_program(struct keyslot_manager *ksm,
 	if (err)
 		return err;
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	{
+		if (hwkm_is_slot_already_programmed(slot)) {
+			pr_notice("Trustonic HWKM: keyslot: %d is already programmed, skipping!\n", slot);
+		} else {
+			u32 gie_config = (slot & 0xFF) | (0x01 << 16);
+			u8 wrapped_key[HWKM_AES_STORAGE_KEY_MAX_SIZE] = {0};
+			pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
+			memcpy(wrapped_key, key->raw, MMC_CRYPTO_KEY_MAX_SIZE);
+			if (hwkm_program_key(
+					wrapped_key,
+					MMC_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /*40 bytes*/
+					gie_config, /* slot number marker*/
+					STORAGE_KEY_EMMC_SWCQHCI) != 0) {
+				pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+				return -EINVAL;
+			} else {
+				hwkm_set_slot_programmed_mask(slot);
+			}
+			pr_notice("Trustonic HWKM: End programing slot: %d\n", slot);
+		}
+	}
+#endif
+
 	memcpy(&cfg_arr[slot], &cfg, sizeof(cfg));
 	memzero_explicit(&cfg, sizeof(cfg));
 
@@ -178,12 +205,42 @@ static int mmc_crypto_keyslot_evict(struct keyslot_manager *ksm,
 
 	memset(&cfg_arr[slot], 0, sizeof(cfg_arr[slot]));
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	if (hwkm_is_slot_already_programmed(slot)) {
+		pr_notice("Trustonic HWKM: Start eviction for slot: %d\n", slot);
+		hwkm_set_slot_evicted_mask(slot);
+		pr_notice("Trustonic HWKM: End eviction for slot: %d\n", slot);
+	}
+#endif
+
 	return 0;
 }
+
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+static int mmc_crypto_derive_raw_secret(struct keyslot_manager *ksm,
+			const u8 *wrapped_key,
+			unsigned int wrapped_key_size,
+			u8 *secret,
+			unsigned int secret_size)
+{
+	struct mmc_host *host = keyslot_manager_private(ksm);
+	if (!mmc_is_crypto_enabled(host))
+		return -EINVAL;
+
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	return hwkm_derive_raw_secret(wrapped_key, wrapped_key_size, secret, secret_size);
+#else
+	return -EOPNOTSUPP;
+#endif
+}
+#endif
 
 static const struct keyslot_mgmt_ll_ops swcq_ksm_ops = {
 	.keyslot_program	= mmc_crypto_keyslot_program,
 	.keyslot_evict		= mmc_crypto_keyslot_evict,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	.derive_raw_secret	= mmc_crypto_derive_raw_secret,
+#endif
 };
 
 /**
@@ -250,7 +307,11 @@ static int mmc_init_crypto_spec(struct mmc_host *host,
 
 	host->ksm = keyslot_manager_create(host->parent,
 		NUM_KEYSLOTS(host), ksm_ops,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+		BLK_CRYPTO_FEATURE_WRAPPED_KEYS,
+#else
 		BLK_CRYPTO_FEATURE_STANDARD_KEYS,
+#endif
 		crypto_modes_supported, host);
 
 	if (!host->ksm) {

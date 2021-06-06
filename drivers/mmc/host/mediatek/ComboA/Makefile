@@ -68,3 +68,7 @@ endif
 ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 msdc-y += $(MTK_PLATFORM)/msdc_fpga_io.o
 endif
+
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+include $(srctree)/drivers/tee/gud/Makefile.include
+endif
