@@ -1343,6 +1343,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(PANEL_MOT_MIPI_VID_TIANMA_ILI7807S_678_FHD)
         &mipi_mot_vid_tianma_ili7807s_fhd_678_lcm_drv,
 #endif
+#if defined(PANEL_MOT_MIPI_VID_TIANMA_ILI7807S_60HZ_678_FHD)
+        &mipi_mot_vid_tianma_ili7807s_60hz_fhd_678_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
