@@ -123,8 +123,91 @@ static void msdc_crypto_program_key(struct mmc_host *host,
 	/* TKEY */
 	for (i = 0; i < 8; i++)
 		writel(tkey[i], ll_host->base + (MSDC_AES_TKEY_GP1 + i * 4));
-
 }
+
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <tlc_km.h>
+#include <linux/arm-smccc.h>
+#include <linux/soc/mediatek/mtk_sip_svc.h>
+
+/* only non-cqe uses this to set key */
+static void msdc_crypto_program_hwkm_key(struct mmc_host *host,
+			u8 *key, u8 *tkey, u32 config, u32 slot)
+{
+	struct arm_smccc_res res;
+	struct msdc_host *ll_host = mmc_priv(host);
+
+	if (!ll_host || !ll_host->base)
+		return;
+
+	/* disable AES path firstly if need for safety */
+	msdc_complete_mqr_crypto(host);
+
+	if (unlikely(!*key && !tkey)) {
+		/* disable AES path by set bypass bit */
+		MSDC_SET_BIT32(ll_host->base + MSDC_AES_SWST, MSDC_AES_BYPASS);
+		return;
+	}
+
+	/* switch crypto engine to MSDC */
+
+	/* write AES config */
+	MSDC_WRITE32(ll_host->base + MSDC_AES_CFG_GP1, 0);
+	MSDC_SET_BIT32(ll_host->base + MSDC_AES_CFG_GP1, config);
+
+	if (!(readl(ll_host->base + MSDC_AES_CFG_GP1)))
+		pr_notice("%s write config fail %d!!\n", __func__, config);
+
+	if (hwkm_is_slot_already_programmed(slot)) {
+		arm_smccc_smc(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
+				(1 << 7), slot, 0, 0, 0, 0, 0, &res);
+	} else {
+		u8 wrapped_key[HWKM_AES_STORAGE_KEY_MAX_SIZE] = {0};
+		memcpy(wrapped_key, key, MMC_CRYPTO_KEY_MAX_SIZE/2);
+		memcpy(wrapped_key + MMC_CRYPTO_KEY_MAX_SIZE/2, tkey,
+				MMC_CRYPTO_KEY_MAX_SIZE/2);
+		if (hwkm_program_key(
+				wrapped_key,
+				MMC_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /*40 bytes*/
+				0, /*We don't care about the slot number, offset, etc*/
+				STORAGE_KEY_EMMC_SWCQHCI) != 0) {
+			pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+		}
+	}
+}
+
+/* set crypto information */
+static int msdc_prepare_mqr_crypto(struct mmc_host *host,
+		u64 data_unit_num, int ddir, int tag, int slot)
+{
+	u32 data_unit_size = 0;
+	u32 aes_config = 0;
+	int ret = -EINVAL;
+	struct msdc_host *ll_host = mmc_priv(host);
+
+	data_unit_size = host->crypto_cfgs[slot].data_unit_size * 512;
+
+	if (data_unit_size > 4096) {
+		WARN_ON(1);
+		return -EDOM;
+	}
+	/* There is only one cap in sw-cqhci */
+	aes_config = (data_unit_size) << 16 |
+		host->crypto_cap_array[0].key_size << 8 |
+		host->crypto_cap_array[0].algorithm_id << 0;
+
+	/* Program key onto ICE */
+	msdc_crypto_program_hwkm_key(host,
+			&(host->crypto_cfgs[slot].crypto_key[0]),
+			&(host->crypto_cfgs[slot].crypto_key[MMC_CRYPTO_KEY_MAX_SIZE/2]),
+			aes_config,
+			slot);
+
+	/* Switch crypto engine to MSDC */
+	ret = set_crypto(ll_host, data_unit_num, ddir);
+	return ret;
+}
+#else
 
 /* set crypto information */
 static int msdc_prepare_mqr_crypto(struct mmc_host *host,
@@ -158,6 +241,7 @@ static int msdc_prepare_mqr_crypto(struct mmc_host *host,
 	/* switch crypto engine to MSDC */
 	return set_crypto(ll_host, data_unit_num, ddir);
 }
+#endif
 
 static void msdc_init_crypto(struct mmc_host *host)
 {

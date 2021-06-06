@@ -113,3 +113,6 @@ ccflags-y += -I$(srctree)/drivers/char/rpmb/
 
 obj-$(CONFIG_MMC_SDHCI_XENON)	+= sdhci-xenon-driver.o
 sdhci-xenon-driver-y		+= sdhci-xenon.o sdhci-xenon-phy.o
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+include $(srctree)/drivers/tee/gud/Makefile.include
+endif
