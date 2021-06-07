@@ -522,6 +522,14 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 	pr_info("%s,boe_nt36525c cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
 }
 
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+static bool lcm_set_recovery_notify(void)
+{
+	//return TRUE if TP need lcm notify
+	//NVT touch recover need enable lcm notify
+	return TRUE;
+}
+#endif
 
 struct LCM_DRIVER mipi_mot_vid_boe_nt36525c_652_hdp_lcm_drv = {
 	.name = "mipi_mot_vid_boe_nt36525c_652_hdp",
@@ -538,4 +546,7 @@ struct LCM_DRIVER mipi_mot_vid_boe_nt36525c_652_hdp_lcm_drv = {
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
 	.set_lcm_cmd = lcm_set_cmdq,
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+	.set_lcm_notify = lcm_set_recovery_notify,
+#endif
 };
