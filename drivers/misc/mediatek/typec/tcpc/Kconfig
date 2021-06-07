@@ -73,6 +73,16 @@ config TCPC_WUSB3801
 	  Also Support Power Delivery
 	  Say N to disable
 
+config TCPC_SGM7220
+	bool "MediaTek SGM7220 TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable SGM7220
+	  TypeC port Controller
+	  Also Support Power Delivery
+	  Say N to disable
+
 config USB_PD_VBUS_STABLE_TOUT
 	int "PD VBUS Stable Timeout"
 	depends on USB_POWER_DELIVERY
