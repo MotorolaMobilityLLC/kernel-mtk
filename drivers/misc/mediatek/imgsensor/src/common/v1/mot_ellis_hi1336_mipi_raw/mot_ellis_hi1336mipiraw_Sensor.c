@@ -139,7 +139,7 @@ by different scenario */
     },
     .margin = 7,
     .min_shutter = 7,
-    .max_frame_length = 0x1E8480,
+    .max_frame_length = 0x30D400,      //32s
 #if per_frame
     .ae_shut_delay_frame = 0,
     .ae_sensor_gain_delay_frame = 0,
@@ -492,7 +492,7 @@ static void write_shutter(kal_uint32 shutter)
     }
 
     write_cmos_sensor_8(0x020D, (shutter & 0xFF0000) >> 16 );
-    write_cmos_sensor(0x020A, shutter);
+    write_cmos_sensor(0x020A, (shutter & 0xFFFF));
 
     LOG_INF("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
 }
