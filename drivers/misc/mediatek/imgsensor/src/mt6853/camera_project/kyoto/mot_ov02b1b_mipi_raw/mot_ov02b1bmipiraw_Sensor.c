@@ -31,6 +31,7 @@ static int m_mot_camera_debug = 0;
 #define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_DBG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 
+#define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define I2C_ADDR (0x7a)
@@ -216,7 +217,7 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
-	LOG_INF("image_mirror = %d\n", image_mirror);
+	LOG_INF_N("image_mirror = %d\n", image_mirror);
 	switch (image_mirror) {
 	case IMAGE_NORMAL:
 		break;
@@ -280,7 +281,7 @@ static inline void update_gain(kal_uint16 reg_gain)
 #endif
 static kal_uint32 streaming_control(kal_bool enable)
 {
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	LOG_INF_N("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor(0xfd, 0x01);
 		write_cmos_sensor(0x10, 0x01);
@@ -319,7 +320,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 {
 	kal_uint32 frame_length = imgsensor.frame_length;
 
-	LOG_INF("framerate = %d, min framelength should enable %d\n", framerate,
+	LOG_INF_N("framerate = %d, min framelength should enable %d\n", framerate,
 		min_framelength_en);
 
 	frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
@@ -515,34 +516,34 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
 static void sensor_init(void)
 {
-	LOG_INF("E \n");
+	LOG_INF_N("E \n");
 	table_write_cmos_sensor(sensor_init_setting_array,
 		sizeof(sensor_init_setting_array)/sizeof(kal_uint16));
 }
 
 static void preview_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 }
 
 static void capture_setting(kal_uint16 currefps)
 {
-	LOG_INF(" E! currefps:%d\n",  currefps);
+	LOG_INF_N(" E! currefps:%d\n",  currefps);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	LOG_INF(" E! currefps:%d\n",  currefps);
+	LOG_INF_N(" E! currefps:%d\n",  currefps);
 }
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 }
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 }
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
@@ -556,7 +557,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			LOG_INF("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
+			LOG_INF_N("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
@@ -587,7 +588,7 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = return_sensor_id();
-			LOG_INF("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
+			LOG_INF_N("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, sensor_id,
 				imgsensor_info.sensor_id == sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
@@ -627,7 +628,7 @@ static kal_uint32 open(void)
 
 static kal_uint32 close(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	streaming_control(0);
 	return ERROR_NONE;
@@ -636,7 +637,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s E\n", __func__);
+	LOG_INF_N("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -655,7 +656,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s E\n", __func__);
+	LOG_INF_N("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
@@ -674,7 +675,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -693,7 +694,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -714,7 +715,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
@@ -734,7 +735,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	sensor_resolution->SensorFullWidth =
 		imgsensor_info.cap.grabwindow_width;
@@ -908,7 +909,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 
 static kal_uint32 set_video_mode(UINT16 framerate)
 {
-	LOG_INF("framerate = %d\n ", framerate);
+	LOG_INF_N("framerate = %d\n ", framerate);
 
 	if (framerate == 0)
 		return ERROR_NONE;
