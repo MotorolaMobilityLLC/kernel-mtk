@@ -20,10 +20,10 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "corfu";
-			mot,board-id = <0x41 0xA100>;
+			mot,board-id = <0x41 0xB100>;
 		};
 	};
 };
-#include "mediatek/mt6768-corfu-camera-sensor-evb-overlay.dtsi"
+#include "mediatek/mt6768-corfu-camera-sensor-dvt-overlay.dtsi"
 #include <corfu_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
