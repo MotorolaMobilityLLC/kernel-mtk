@@ -30,6 +30,7 @@ static int m_mot_camera_debug = 0;
 #define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_DEBUG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 
+#define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define I2C_ADDR (0x20)
@@ -350,7 +351,7 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
-	LOG_INF("image_mirror = %d\n", image_mirror);
+	LOG_INF_N("image_mirror = %d\n", image_mirror);
 	switch (image_mirror) {
 	case IMAGE_NORMAL:
 		write_cmos_sensor_8(0x3820,
@@ -589,7 +590,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 {
 	unsigned int tmp;
 
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	LOG_INF_N("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
 	} else {
@@ -603,76 +604,76 @@ static kal_uint32 streaming_control(kal_bool enable)
 static void sensor_init(void)
 {
 	unsigned int tmp;
-	LOG_INF("E \n");
+	LOG_INF_N("E \n");
 	tmp = read_cmos_sensor_8(0x0100);
 	if (tmp & 0x01)
 		write_cmos_sensor_8(0x0100, 0x00);
 	table_write_cmos_sensor(sensor_init_setting_array,
 		sizeof(sensor_init_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void preview_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(preview_setting_array,
 		sizeof(preview_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void capture_setting(kal_uint16 currefps)
 {
-	LOG_INF(" E! currefps:%d\n",  currefps);
+	LOG_INF_N(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(capture_setting_array,
 		sizeof(capture_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	LOG_INF(" E! currefps:%d\n",  currefps);
+	LOG_INF_N(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(normal_video_setting_array,
 		sizeof(normal_video_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(hs_video_setting_array,
 		sizeof(hs_video_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(slim_video_setting_array,
 		sizeof(slim_video_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void custom1_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(custom1_setting_array,
 		sizeof(custom1_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void custom2_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(custom2_setting_array,
 		sizeof(custom2_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void write_cross_talk_data(void)
 {
 	uint16_t write_table[(OV_CROSS_TALK_GROUP_SIZE + 6)*2] = {0};
 
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	memcpy(write_table, &ov_cross_talk_data.height[0].addr, sizeof(write_table));
 
@@ -693,15 +694,15 @@ static void write_cross_talk_data(void)
 		sizeof(write_table)/sizeof(uint16_t));
 
 	LOG_INF("apply cross talk calibration data success.");
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void custom3_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(custom3_setting_array,
 		sizeof(custom3_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static kal_uint32 return_sensor_id(void)
@@ -793,7 +794,7 @@ static kal_uint32 open(void)
 
 static kal_uint32 close(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	streaming_control(0);
 	return ERROR_NONE;
@@ -802,7 +803,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s E\n", __func__);
+	LOG_INF_N("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -823,7 +824,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s E\n", __func__);
+	LOG_INF_N("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
@@ -844,7 +845,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -865,7 +866,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -888,7 +889,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
@@ -911,7 +912,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
@@ -932,7 +933,7 @@ static kal_uint32 custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM2;
@@ -953,7 +954,7 @@ static kal_uint32 custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 custom3(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM3;
@@ -977,7 +978,7 @@ static kal_uint32 custom3(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	sensor_resolution->SensorFullWidth =
 		imgsensor_info.cap.grabwindow_width;
