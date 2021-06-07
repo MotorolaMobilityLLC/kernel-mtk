@@ -564,7 +564,7 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 			mtk_disp_esd_check_switch(crtc, true);
 			DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 			mutex_unlock(&private->commit.lock);
-			break;
+			continue;
 		} else if (recovery_flg) {
 			DDPINFO("[ESD] esd recovery success\n");
 			recovery_flg = 0;
