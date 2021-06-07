@@ -31,6 +31,7 @@ static int m_mot_camera_debug = 0;
 #define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_DBG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 
+#define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE_REGISTER_VALUE  (8)
@@ -286,7 +287,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	kal_uint8 itemp;
 
-	LOG_INF("image_mirror = %d\n", image_mirror);
+	LOG_INF_N("image_mirror = %d\n", image_mirror);
 	itemp = read_cmos_sensor_8(0x0101);
 	itemp &= ~0x03;
 
@@ -392,7 +393,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 	int i = 0;
 	int framecnt = 0;
 
-	LOG_INF("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
+	LOG_INF_N("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
 		mdelay(10);
@@ -402,11 +403,11 @@ static kal_uint32 streaming_control(kal_bool enable)
 				mdelay(10);
 				framecnt = read_cmos_sensor_8(0x0005);
 				if ( framecnt == 0xFF) {
-				LOG_INF(" Stream Off OK at i=%d.\n", i);
+				LOG_INF_N(" Stream Off OK at i=%d.\n", i);
 				return ERROR_NONE;
 			}
 		}
-		LOG_INF("Stream Off Fail! framecnt= %d.\n", framecnt);
+		LOG_INF_N("Stream Off Fail! framecnt= %d.\n", framecnt);
 	}
 	return ERROR_NONE;
 }
@@ -452,7 +453,7 @@ static void write_shutter(kal_uint32 shutter)
 		kal_uint32 long_shutter;
 		kal_uint32 temp1_0200 = 0, temp2_0342 = 0;
 		bIsLongExposure = KAL_TRUE;
-		LOG_INF(" enter long exposure mode\n");
+		LOG_INF_N(" enter long exposure mode\n");
 
 		/* Calculate value need by long exposure setting*/
 		temp1_0200 = 0xFF6C;
@@ -460,7 +461,7 @@ static void write_shutter(kal_uint32 shutter)
 		 //shutter unit is S.used by 0x202 and 0x20
 		long_shutter = (shutter*imgsensor.line_length-temp1_0200)/temp2_0342;
 		new_framelength = long_shutter+5; //used by 0x340 and 0x341
-		LOG_INF("Calc long_shutter=%x, framelength=%d. shutter=0x%x\n",\
+		LOG_INF_N("Calc long_shutter=%x, framelength=%d. shutter=0x%x\n",\
 			      long_shutter, new_framelength,shutter);
 		/*stream off */
 		streaming_control(KAL_FALSE);
@@ -480,12 +481,12 @@ static void write_shutter(kal_uint32 shutter)
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.current_ae_effective_frame = 1;
-		LOG_INF(" long exposure stream on-\n");
+		LOG_INF_N(" long exposure stream on-\n");
 	} else {
 		/*normal mode*/
 		if (bIsLongExposure == KAL_TRUE) {
 			bIsLongExposure = KAL_FALSE;
-			LOG_INF("[Exit long shutter + ]  shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+			LOG_INF_N("[Exit long shutter + ]  shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 			/*stream off*/
 			streaming_control(KAL_FALSE);
 			/*setting for normal*/
@@ -499,7 +500,7 @@ static void write_shutter(kal_uint32 shutter)
 			write_cmos_sensor_8(0x0203, 0x08);
 			/*stream on*/
 			streaming_control(KAL_TRUE);
-			LOG_INF("[Exit long shutter - ] shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+			LOG_INF_N("[Exit long shutter - ] shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 
 		} else {
 			shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
@@ -629,50 +630,50 @@ static void check_streamoff(void)
 #endif
 static void sensor_init(void)
 {
-	LOG_INF("E \n");
+	LOG_INF_N("E \n");
 	table_write_cmos_sensor(sensor_init_setting_array,
 		sizeof(sensor_init_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void preview_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(preview_setting_array,
 		sizeof(preview_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void capture_setting(kal_uint16 currefps)
 {
-	LOG_INF(" E! currefps:%d\n",  currefps);
+	LOG_INF_N(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(capture_setting_array,
 		sizeof(capture_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	LOG_INF(" E! currefps:%d\n",  currefps);
+	LOG_INF_N(" E! currefps:%d\n",  currefps);
 	table_write_cmos_sensor(normal_video_setting_array,
 		sizeof(normal_video_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(hs_video_setting_array,
 		sizeof(hs_video_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(slim_video_setting_array,
 		sizeof(slim_video_setting_array)/sizeof(kal_uint16));
-	LOG_INF("X");
+	LOG_INF_N("X");
 }
 
 static kal_uint32 return_sensor_id(void)
@@ -691,7 +692,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			LOG_INF("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
+			LOG_INF_N("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
@@ -724,7 +725,7 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = return_sensor_id();
-			LOG_INF("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
+			LOG_INF_N("i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, sensor_id,
 				imgsensor_info.sensor_id == sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
@@ -763,7 +764,7 @@ static kal_uint32 open(void)
 
 static kal_uint32 close(void)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	streaming_control(0);
 	return ERROR_NONE;
@@ -772,7 +773,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s E\n", __func__);
+	LOG_INF_N("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -792,7 +793,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("%s E\n", __func__);
+	LOG_INF_N("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
@@ -811,7 +812,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -830,7 +831,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -851,7 +852,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
@@ -1062,7 +1063,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 /*not nedd check*/
 static kal_uint32 set_video_mode(UINT16 framerate)
 {
-	LOG_INF("framerate = %d\n ", framerate);
+	LOG_INF_N("framerate = %d\n ", framerate);
 
 	if (framerate == 0)
 		return ERROR_NONE;
