@@ -138,8 +138,8 @@
         cap,use_channel_ch1 = <0x01>;
         cap,use_channel_ch2 = <0x02>;
         ch0_name = "capsense_bottom";
-        ch1_name = "capsense_top_right";
-        ch2_name = "capsense_top_left";
+        ch1_name = "capsense_top_left";
+        ch2_name = "capsense_top_right";
         label = "AbovCapSense";
         cap,channel_number = <0x03>;
         cap,fw_mode_ret = <0x39>;
