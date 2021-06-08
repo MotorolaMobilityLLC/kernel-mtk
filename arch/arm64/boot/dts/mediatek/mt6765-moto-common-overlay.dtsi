@@ -9,15 +9,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
+/dts-v1/;
+/plugin/;
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
-
-/dts-v1/;
-/plugin/;
-
+#include "carrier-channel-ids.dtsi"
 
 &odm {
 	utags {
