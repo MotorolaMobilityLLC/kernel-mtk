@@ -121,6 +121,7 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	mediatek,pad-select = <0>, <1>;
+	tee-only;
 	fpc_tee@0 {
 		compatible = "fpc,fpc_spi";
 		reg = <0>;
