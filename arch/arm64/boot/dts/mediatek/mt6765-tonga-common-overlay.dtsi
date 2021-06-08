@@ -62,7 +62,7 @@
 		ti,bq2560x,usb-vreg = <4400>;
 		ti,bq2560x,usb-ichg = <2000>;
 		ti,bq2560x,precharge-current = <256>;
-		ti,bq2560x,termination-current = <180>;
+		ti,bq2560x,termination-current = <120>;
 		ti,bq2560x,boost-voltage = <4998>;
 		ti,bq2560x,boost-current = <1200>;
 		ti,bq2560x,enable_term;
@@ -111,17 +111,14 @@
 	typec_limit_aicr = <3000000>;
 
 	/*mmi config*/
-	mmi,iterm-ma = <243>;
+	mmi,iterm-ma = <150>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
-			<10 0 1000 1000>,
-			<15 4200 2500 1000>,
+			<15 0 1000 1000>,
 			<45 0 3000 3000>,
-			<60 4200 3000 0>;
+			<60 4200 2500 0>;
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
-	mmi,vfloat-comp-uv = <20000>;
-
 };
 &mtk_gauge {
 	charger = <&mtk_charger_type>;
