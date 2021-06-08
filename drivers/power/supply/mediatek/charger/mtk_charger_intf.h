@@ -19,7 +19,7 @@
 #include <mt-plat/v1/mtk_battery.h>
 
 #include <linux/power/moto_chg_tcmd.h>
-
+#include <linux/power_supply.h>
 #include <mtk_gauge_time_service.h>
 
 #include <mt-plat/v1/charger_class.h>
@@ -534,6 +534,9 @@ extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 extern bool is_dual_charger_supported(struct charger_manager *info);
 extern int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable);
 extern bool is_typec_adapter(struct charger_manager *info);
+extern int mmi_get_prop_from_charger(struct charger_manager *info,
+				enum power_supply_property psp,
+				union power_supply_propval *val);
 
 /* pmic API */
 extern unsigned int upmu_get_rgs_chrdet(void);
