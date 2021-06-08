@@ -86,11 +86,13 @@ struct imgsensor_struct {
 	kal_uint8 ihdr_en;	//ihdr enable or disable
 
 	kal_uint8 i2c_write_id;	//record current sensor's i2c write id
+	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;
+	kal_uint8 current_ae_effective_frame;
 };
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
 struct imgsensor_info_struct {
-	kal_uint16 sensor_id;	//record sensor id defined in Kd_imgsensor.h
+	kal_uint32 sensor_id;			/* record sensor id defined in Kd_imgsensor.h */
 	//#ifdef VENDOR_EDIT
 	/*Zhenagjiang.zhu@camera.drv 2017/10/18,modify for different module */
 	kal_uint16 module_id;
@@ -144,6 +146,11 @@ struct imgsensor_info_struct {
 	//must end with 0xff
 	kal_uint8 i2c_addr_table[5];
 	kal_uint32 i2c_speed;	//khz
+	kal_uint32 min_gain;
+	kal_uint32 max_gain;
+	kal_uint32 min_gain_iso;
+	kal_uint32 gain_step;
+	kal_uint32 gain_type;
 };
 
 /* SENSOR READ/WRITE ID */
