@@ -3682,6 +3682,10 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		};
 	};
 
+	evt_dvt_camera: evt_dvt_camera {
+		compatible = "mediatek,compatible_camera";
+	};
+
 	camsv1@1a050000 {
 		compatible = "mediatek,camsv1";
 		reg = <0 0x1a050000 0 0x1000>;
