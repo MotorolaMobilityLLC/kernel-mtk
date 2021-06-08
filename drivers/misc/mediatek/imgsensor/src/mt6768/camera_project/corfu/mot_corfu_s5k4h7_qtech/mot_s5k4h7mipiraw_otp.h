@@ -20,7 +20,7 @@
 #define OTP_PAGE_SIZE 64
 
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7_eeprom_data.bin"
-#define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_wide.bin"
+#define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
 #define DUMP_WIDE_SERIAL_NUMBER_SIZE 8
 #define S5K4H7_EEPROM_MAX_SIZE 2185
 
