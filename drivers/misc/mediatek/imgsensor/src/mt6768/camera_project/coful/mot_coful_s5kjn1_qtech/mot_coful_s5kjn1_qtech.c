@@ -393,21 +393,18 @@ static void set_shutter(kal_uint32 shutter)
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	if (shutter < 95932) {
+	if (shutter < 94755) {
 		if (bNeedSetNormalMode) {
 			LOG_INF("exit long shutter\n");
 			write_cmos_sensor(0x6028, 0x4000);
 			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0334, 0x0000);
-			write_cmos_sensor(0x0E0A, 0x0000);
-			write_cmos_sensor(0x0E0C, 0x0000);
-			write_cmos_sensor(0x0E0E, 0x0000);
-			write_cmos_sensor(0x0E10, 0x0000);
-			write_cmos_sensor(0x0E12, 0x0000);
-			write_cmos_sensor(0x0E14, 0x0000);
-			write_cmos_sensor(0x0E16, 0x0000);
+			write_cmos_sensor(0x0340, 0x0c54);
+			write_cmos_sensor(0x0342, 0x0716);
+			write_cmos_sensor(0x0202, 0x0100);
+			write_cmos_sensor(0x0702, 0x0000);
 			write_cmos_sensor(0x0704, 0x0000);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
+			write_cmos_sensor(0x0100, 0x0100);
+
 			bNeedSetNormalMode = KAL_FALSE;
 			imgsensor.current_ae_effective_frame = 2;
 		}
@@ -461,13 +458,14 @@ static void set_shutter(kal_uint32 shutter)
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.current_ae_effective_frame = 2;
-
 		write_cmos_sensor(0x6028, 0x4000);
 		write_cmos_sensor(0x0100, 0x0000); //stream off
-		write_cmos_sensor(0x0334, 0x0001);
-		write_cmos_sensor(0x0E0A, 0x0002);
-		write_cmos_sensor(0x0E0C, 0x0100);
-		write_cmos_sensor(0x0E0E, 0x0003);
+		write_cmos_sensor(0x0340, 0xFBD4);
+		write_cmos_sensor(0x0342, 0x21F0);
+		write_cmos_sensor(0x0202, 0xFBC8);
+		write_cmos_sensor(0x0702, 0x0500);
+		write_cmos_sensor(0x0704, 0x0500);
+		write_cmos_sensor(0x0100, 0x0100); //stream on
 
 		write_cmos_sensor(0x0E10, pre_shutter); //1st frame
 		write_cmos_sensor(0x0E12, imgsensor.gain); //aGain 1st frame
@@ -475,27 +473,63 @@ static void set_shutter(kal_uint32 shutter)
 		switch (shutter) {
 		case SHUTTER_1:
 			LOG_INF("cxc shutter 1\n");
-			write_cmos_sensor(0x0E14, 0x05DB); //2nd frame
+			write_cmos_sensor(0x6028, 0x4000);
+			write_cmos_sensor(0x0100, 0x0000); //stream off
+			write_cmos_sensor(0x0202, 0xFBC8);
+			write_cmos_sensor(0x0340, 0xFBD4);
+			write_cmos_sensor(0x0702, 0x0000);
+			write_cmos_sensor(0x0704, 0x0000);
+			write_cmos_sensor(0x0100, 0x0100); //stream on
 			break;
 		case SHUTTER_2:
 			LOG_INF("cxc shutter 2\n");
-			write_cmos_sensor(0x0E14, 0x0BB6); //2nd frame
+			write_cmos_sensor(0x6028, 0x4000);
+			write_cmos_sensor(0x0100, 0x0000); //stream off
+			write_cmos_sensor(0x0202, 0xFBC8);
+			write_cmos_sensor(0x0340, 0xFBD4);
+			write_cmos_sensor(0x0702, 0x0100);
+			write_cmos_sensor(0x0704, 0x0100);
+			write_cmos_sensor(0x0100, 0x0100); //stream on
 			break;
 		case SHUTTER_4:
 			LOG_INF("cxc shutter 4\n");
-			write_cmos_sensor(0x0E14, 0x176C); //2nd frame
+			write_cmos_sensor(0x6028, 0x4000);
+			write_cmos_sensor(0x0100, 0x0000); //stream off
+			write_cmos_sensor(0x0202, 0xFBC8);
+			write_cmos_sensor(0x0340, 0xFBD4);
+			write_cmos_sensor(0x0702, 0x0200);
+			write_cmos_sensor(0x0704, 0x0200);
+			write_cmos_sensor(0x0100, 0x0100); //stream on
 			break;
 		case SHUTTER_8:
 			LOG_INF("cxc shutter 8\n");
-			write_cmos_sensor(0x0E14, 0x2ED8); //2nd frame
+			write_cmos_sensor(0x6028, 0x4000);
+			write_cmos_sensor(0x0100, 0x0000); //stream off
+			write_cmos_sensor(0x0202, 0xFBC8);
+			write_cmos_sensor(0x0340, 0xFBD4);
+			write_cmos_sensor(0x0702, 0x0300);
+			write_cmos_sensor(0x0704, 0x0300);
+			write_cmos_sensor(0x0100, 0x0100); //stream on
 			break;
 		case SHUTTER_16:
 			LOG_INF("cxc shutter 16\n");
-			write_cmos_sensor(0x0E14, 0x5DB0); //2nd frame
+			write_cmos_sensor(0x6028, 0x4000);
+			write_cmos_sensor(0x0100, 0x0000); //stream off
+			write_cmos_sensor(0x0202, 0xFBC8);
+			write_cmos_sensor(0x0340, 0xFBD4);
+			write_cmos_sensor(0x0702, 0x0400);
+			write_cmos_sensor(0x0704, 0x0400);
+			write_cmos_sensor(0x0100, 0x0100); //stream on
 			break;
 		case SHUTTER_32:
 			LOG_INF("cxc shutter 32\n");
-			write_cmos_sensor(0x0E14, 0xBB61); //2nd frame
+			write_cmos_sensor(0x6028, 0x4000);
+			write_cmos_sensor(0x0100, 0x0000); //stream off
+			write_cmos_sensor(0x0202, 0xFBC8);
+			write_cmos_sensor(0x0340, 0xFBD4);
+			write_cmos_sensor(0x0702, 0x0500);
+			write_cmos_sensor(0x0704, 0x0500);
+			write_cmos_sensor(0x0100, 0x0100); //stream on
 			break;
 		default:
 			LOG_INF("cxc shutter > 1\n");
