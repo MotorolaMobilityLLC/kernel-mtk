@@ -74,8 +74,8 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #define FRAME_WIDTH             (720)
 #define FRAME_HEIGHT            (1600)
 
-#define LCM_PHYSICAL_WIDTH	(67930)
-#define LCM_PHYSICAL_HEIGHT	(150960)
+#define LCM_PHYSICAL_WIDTH	(68040)
+#define LCM_PHYSICAL_HEIGHT	(151200)
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY	        0xFFFB
@@ -117,13 +117,12 @@ static struct LCM_setting_table init_setting[] = {
 	{0x08,1,{0x01}},
 	{0x09,1,{0xE4}},
 	{0xFF,1,{0x10}},
-        {REGFLAG_DELAY, 1, {}},
+	{REGFLAG_DELAY, 1, {}},
 	{0xFB,1,{0x01}},
 	{0xBA,1,{0x03}},
 	{0x35,1,{0x00}},
 	{0x55,1,{0x01}},
 	{0x53,1,{0x24}},
-	{REGFLAG_DELAY, 10, {}},
 	{0x29,1,{0x00}},
 	{REGFLAG_DELAY, 20, {}},
 	{0x11,1,{0x00}},
@@ -274,6 +273,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->height = FRAME_HEIGHT;
 	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
 	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
