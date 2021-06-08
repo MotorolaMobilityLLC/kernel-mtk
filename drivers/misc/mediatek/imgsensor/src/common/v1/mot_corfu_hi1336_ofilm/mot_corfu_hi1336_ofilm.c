@@ -37,7 +37,7 @@ extern bool read_hi1336_eeprom( kal_uint16 addr, BYTE *data, kal_uint32 size);
 extern bool read_eeprom( kal_uint16 addr, BYTE * data, kal_uint32 size);
 
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/hi1336_eeprom_data.bin"
-#define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
+#define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
 
 static const char *hi1336_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
 static mot_calibration_info_t hi1336_cal_info = {0};
