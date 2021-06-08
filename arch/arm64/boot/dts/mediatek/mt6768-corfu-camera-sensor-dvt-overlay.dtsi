@@ -228,13 +228,13 @@
 			output-low;
 		};
 	};
-	cam1_vcamaf_on: cam1_vcamaf_on@gpio97 {
+	cam0_vcama_on: cam0_vcama_on@gpio97 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO97__FUNC_GPIO97>;
 			output-high;
 		};
 	};
-	cam1_vcamaf_off: cam1_vcamaf_off@gpio97 {
+	cam0_vcama_off: cam0_vcama_off@gpio97 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO97__FUNC_GPIO97>;
 			output-low;
@@ -269,7 +269,7 @@
 			"cam3_mclk_6mA", "cam3_mclk_8mA",
 			"cam_mipi_switch_sel_1", "cam_mipi_switch_sel_0",
 			"cam0_vcamaf_on", "cam0_vcamaf_off",
-			"cam1_vcamaf_on", "cam1_vcamaf_off";
+			"cam0_vcama_on", "cam0_vcama_off";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera0_rst_low>;
@@ -308,10 +308,9 @@
 	pinctrl-34 = <&camera_cam_mipi_switch_sel_0>;
 	pinctrl-35 = <&cam0_vcamaf_on>;
 	pinctrl-36 = <&cam0_vcamaf_off>;
-	pinctrl-37 = <&cam1_vcamaf_on>;
-	pinctrl-38 = <&cam1_vcamaf_off>;
+	pinctrl-37 = <&cam0_vcama_on>;
+	pinctrl-38 = <&cam0_vcama_off>;
 
-	cam0_vcama-supply = <&mt_pmic_vcama1_ldo_reg>;
 	cam0_vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
 	cam0_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam0_vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
@@ -381,3 +380,7 @@
 	};
 };
 /* flashlight gpio end*/
+
+&evt_dvt_camera {
+	compatible_camera = "dvt";
+};
