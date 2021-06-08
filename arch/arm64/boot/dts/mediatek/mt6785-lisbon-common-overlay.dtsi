@@ -461,7 +461,6 @@
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
-        mmi,vfloat-comp-uv = <10000>;
 };
 
 &bat_gm30 {
@@ -470,6 +469,19 @@
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(900)>;       /*Charging termination current.*/
 	SHUTDOWN_1_TIME = <(15)>;
+	CAR_TUNE_VALUE = <(99)>;
+
+	UI_FULL_LIMIT_EN = <(1)>;
+	UI_FULL_LIMIT_SOC0 = <(10000)>;
+	UI_FULL_LIMIT_ITH0 = <(9000)>;
+	UI_FULL_LIMIT_SOC1 = <(10000)>;
+	UI_FULL_LIMIT_ITH1 = <(9000)>;
+	UI_FULL_LIMIT_SOC2 = <(10000)>;
+	UI_FULL_LIMIT_ITH2 = <(9000)>;
+	UI_FULL_LIMIT_SOC3 = <(10000)>;
+	UI_FULL_LIMIT_ITH3 = <(9000)>;
+	UI_FULL_LIMIT_SOC4 = <(10000)>;
+	UI_FULL_LIMIT_ITH4 = <(9000)>;
 
 	df-serialnum = "SB18C77773";
 	#include "bat_setting/mt6785_battery_table_SB18C77773_ext.dtsi"
