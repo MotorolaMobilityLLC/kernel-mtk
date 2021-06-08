@@ -397,3 +397,7 @@
 	};
 };
 /* flashlight gpio end*/
+
+&evt_dvt_camera {
+	compatible_camera = "evt";
+};
