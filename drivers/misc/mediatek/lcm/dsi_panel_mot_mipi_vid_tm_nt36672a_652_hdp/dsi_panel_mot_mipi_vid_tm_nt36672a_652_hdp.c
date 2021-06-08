@@ -95,8 +95,8 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FRAME_WIDTH			(720)
 #define FRAME_HEIGHT		(1600)
 
-#define LCM_PHYSICAL_WIDTH	(68040)
-#define LCM_PHYSICAL_HEIGHT	(151200)
+#define LCM_PHYSICAL_WIDTH	(67930)
+#define LCM_PHYSICAL_HEIGHT	(150960)
 
 #define LCM_BL_BITS_11			1 		//EVT bit8, DVT: bit11
 #if LCM_BL_BITS_11
