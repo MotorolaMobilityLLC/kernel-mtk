@@ -21,3 +21,4 @@ obj-y		+= gpio/
 #obj-y		+= mt6306/
 obj-y		+= mclk/
 obj-y		+= imgsensor_cfg_table.o
+obj-y		+= corfu_compatible_camera.o
