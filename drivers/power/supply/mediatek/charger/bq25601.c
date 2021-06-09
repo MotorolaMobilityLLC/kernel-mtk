@@ -1150,7 +1150,8 @@ static int bq25601_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 	int val = 0;
 
 	val = battery_get_vbus();
-	pr_info("%s: vbus = %d \n", __func__, val);
+	*vbus = val;
+	pr_info("%s: vbus = %d \n", __func__, *vbus);
         return val;
 //        return bq25601_get_vbus_stat();
 }
