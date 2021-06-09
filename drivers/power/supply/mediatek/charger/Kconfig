@@ -233,3 +233,15 @@ config MOTO_CHG_BQ25601_SUPPORT
         default n
         help
           This is to enable MOTO supports of charger BQ25601.
+
+config MOTO_CHG_RT9471_SUPPORT
+        bool "Enable RT9471 charger ic for Moto"
+        default n
+        help
+          This is to enable MOTO supports of charger RT9471.
+
+config MOTO_CHG_WT6670F_SUPPORT
+        bool "Enable WT6670F charger protocol IC for Moto"
+        default n
+        help
+          This is to enable MOTO supports of IC WT6670F.
