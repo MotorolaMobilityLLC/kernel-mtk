@@ -206,6 +206,10 @@ struct rt9471_chip {
 	u32 ceb_gpio;
 	int irq;
 	u8 irq_mask[RT9471_IRQIDX_MAX];
+#ifdef CONFIG_MOTO_CHG_RT9471_SUPPORT
+        enum rt9471_port_stat port;
+        enum charger_type chg_type;
+#endif
 #ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 	atomic_t vbus_gd;
 	bool attach;
@@ -259,6 +263,11 @@ static const u8 rt9471_reg_addr[] = {
 	RT9471_REG_MASK2,
 	RT9471_REG_MASK3,
 };
+
+#ifdef CONFIG_MOTO_CHG_RT9471_SUPPORT
+struct rt9471_chip* rt9471_info = NULL;
+int rt9471_flag = 0;
+#endif
 
 static int rt9471_read_device(void *client, u32 addr, int len, void *dst)
 {
@@ -2208,6 +2217,7 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 	 * Secondary charger: HZ=0 and CHG_EN=1 at needed,
 	 *		      e.x.: PE10, PE20, etc...
 	 */
+#ifndef CONFIG_MOTO_CHG_RT9471_SUPPORT
 	if (!chip->is_primary) {
 		ret = rt9471_enable_hz(chip, true, RT9471_HZU_PP);
 		if (ret < 0)
@@ -2219,6 +2229,7 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 					      __func__, ret);
 		chip->enter_shipping_mode = true;
 	}
+#endif
 
 	return 0;
 }
@@ -2401,6 +2412,16 @@ static int rt9471_set_cv(struct charger_device *chg_dev, u32 uV)
 	struct rt9471_chip *chip = dev_get_drvdata(&chg_dev->dev);
 
 	return __rt9471_set_cv(chip, uV);
+}
+
+static int rt9471_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+        int val = 0;
+
+        val = battery_get_vbus();
+	*vbus = val * 1000;
+        pr_info("%s: vbus = %d , mv = %d \n", __func__, val, *vbus);
+        return val * 1000;
 }
 
 static int rt9471_get_ichg(struct charger_device *chg_dev, u32 *uA)
@@ -2870,6 +2891,9 @@ static struct charger_ops rt9471_chg_ops = {
 	.get_constant_voltage = rt9471_get_cv,
 	.set_constant_voltage = rt9471_set_cv,
 
+        /* ADC */
+        .get_vbus_adc = rt9471_get_vbus,
+
 	/* get/set charging current*/
 	.get_charging_current = rt9471_get_ichg,
 	.set_charging_current = rt9471_set_ichg,
@@ -2945,6 +2969,60 @@ static ssize_t shipping_mode_store(struct device *dev,
 }
 
 static const DEVICE_ATTR_WO(shipping_mode);
+
+#ifdef CONFIG_MOTO_CHG_RT9471_SUPPORT
+int rt9471_start_chg_type_detect(void)
+{
+        int ret;
+        u8 port = RT9471_PORTSTAT_NOINFO;
+        if(rt9471_info == NULL)
+        {
+                dev_err(rt9471_info->dev,"%s rt9471_info is null!!\n",__func__);
+                return CHARGER_UNKNOWN;
+	}
+        /*enable BC1.2*/
+        ret = __rt9471_enable_bc12(rt9471_info, 1);
+        if(ret < 0)
+                dev_err(rt9471_info->dev,"%s enable BC1.2 error\n",__func__);
+        msleep(1000);
+        /*Get charger type*/
+        ret = rt9471_i2c_read_byte(rt9471_info, RT9471_REG_STATUS, &port);
+        if (ret < 0)
+                rt9471_info->port = RT9471_PORTSTAT_NOINFO;
+        else
+                rt9471_info->port = (port & RT9471_PORTSTAT_MASK) >>
+                                     RT9471_PORTSTAT_SHIFT;
+        switch (rt9471_info->port) {
+        case RT9471_PORTSTAT_NOINFO:
+                rt9471_info->chg_type = CHARGER_UNKNOWN;
+                break;
+        case RT9471_PORTSTAT_SDP:
+                rt9471_info->chg_type = STANDARD_HOST;
+                break;
+        case RT9471_PORTSTAT_CDP:
+                rt9471_info->chg_type = CHARGING_HOST;
+                break;
+        case RT9471_PORTSTAT_SAMSUNG_10W:
+        case RT9471_PORTSTAT_APPLE_12W:
+        case RT9471_PORTSTAT_DCP:
+                rt9471_info->chg_type = STANDARD_CHARGER;
+                break;
+        case RT9471_PORTSTAT_APPLE_10W:
+                rt9471_info->chg_type = APPLE_2_1A_CHARGER;
+                break;
+        case RT9471_PORTSTAT_APPLE_5W:
+                rt9471_info->chg_type = APPLE_1_0A_CHARGER;
+                break;
+        case RT9471_PORTSTAT_NSDP:
+        default:
+                rt9471_info->chg_type = NONSTANDARD_CHARGER;
+                break;
+        }
+        dev_err(rt9471_info->dev,"%s detected charger type: 0x%2x \n",__func__, rt9471_info->chg_type);
+        return rt9471_info->chg_type;
+}
+EXPORT_SYMBOL_GPL(rt9471_start_chg_type_detect);
+#endif
 
 static int rt9471_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
@@ -3076,6 +3154,13 @@ static int rt9471_probe(struct i2c_client *client,
 	}
 
 	__rt9471_dump_registers(chip);
+
+#ifdef  CONFIG_MOTO_CHG_RT9471_SUPPORT
+        rt9471_info = chip;
+        rt9471_flag = 1;
+	dev_info(chip->dev, "%s rt9471_flag is set to 1.\n", __func__);
+#endif
+
 	dev_info(chip->dev, "%s successfully\n", __func__);
 	return 0;
 

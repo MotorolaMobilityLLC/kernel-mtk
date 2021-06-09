@@ -821,6 +821,28 @@ void dump_i2c_status(int id)
 }
 EXPORT_SYMBOL(dump_i2c_status);
 
+unsigned int get_i2c_speed(int id)
+{
+        return g_mt_i2c[id]->speed_hz;
+}
+EXPORT_SYMBOL(get_i2c_speed);
+
+void set_i2c_speed(int id, unsigned int speed_hz)
+{
+        if (id >= I2C_MAX_CHANNEL) {
+                pr_info("error %s, id = %d\n", __func__, id);
+                return;
+        }
+
+        if (!g_mt_i2c[id]) {
+                pr_info("error %s, g_mt_i2c[%d] == NULL\n", __func__, id);
+                return;
+        }
+        pr_info("[I2C] set i2c-%d speed_hz %d", id, speed_hz);
+        g_mt_i2c[id]->speed_hz = speed_hz;
+}
+EXPORT_SYMBOL(set_i2c_speed);
+
 static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 {
 	u16 addr_reg = 0;
