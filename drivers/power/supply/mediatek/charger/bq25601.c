@@ -799,7 +799,7 @@ unsigned int bq25601_get_system_status(void)
 	return val;
 }
 
-unsigned int bq25601_get_vbus_stat(void)
+	unsigned int bq25601_get_vbus_stat(void)
 {
 	unsigned int ret = 0;
 	unsigned char val = 0;
@@ -809,6 +809,7 @@ unsigned int bq25601_get_vbus_stat(void)
 				     (unsigned char) (CON8_VBUS_STAT_MASK),
 				     (unsigned char) (CON8_VBUS_STAT_SHIFT)
 				    );
+	pr_info("%s: vbus = %d\n", __func__, val);
 	return val;
 }
 
@@ -1146,8 +1147,12 @@ static int bq25601_get_is_safetytimer_enable(struct charger_device
 
 static int bq25601_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 {
-	pr_info("%s\n", __func__);
-        return bq25601_get_vbus_stat();
+	int val = 0;
+
+	val = battery_get_vbus();
+	pr_info("%s: vbus = %d \n", __func__, val);
+        return val;
+//        return bq25601_get_vbus_stat();
 }
 
 static unsigned int charging_hw_init(void)
@@ -1294,10 +1299,10 @@ static struct charger_ops bq25601_chg_ops = {
 #ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
 	.enable_powerpath = bq25601_enable_power_path,
 	/*.is_powerpath_enabled = bq25601_get_is_power_path_enable, */
+#endif
 
         /* ADC */
         .get_vbus_adc = bq25601_get_vbus,
-#endif
 
 	/* OTG */
 	.enable_otg = bq25601_enable_otg,
