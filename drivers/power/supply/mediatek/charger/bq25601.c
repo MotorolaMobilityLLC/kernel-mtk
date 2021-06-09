@@ -1150,9 +1150,9 @@ static int bq25601_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 	int val = 0;
 
 	val = battery_get_vbus();
-	*vbus = val;
-	pr_info("%s: vbus = %d \n", __func__, *vbus);
-        return val;
+	*vbus = val * 1000;
+	pr_info("%s: vbus = %d , mv = %d \n", __func__, val, *vbus);
+        return val * 1000;
 //        return bq25601_get_vbus_stat();
 }
 
@@ -1165,7 +1165,11 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_wdt_rst(0x1);	/* Kick watchdog */
 	bq25601_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
 	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	bq25601_set_iterm(0x3);	/* Termination current 180mA + 60mA */
+#else
 	bq25601_set_iterm(0x2);	/* Termination current 180mA */
+#endif
 	bq25601_set_vreg(0x11);	/* VREG 4.4V */
 	bq25601_set_pfm(0x1);//disable pfm
 	bq25601_set_rdson(0x0);     /*close rdson*/
