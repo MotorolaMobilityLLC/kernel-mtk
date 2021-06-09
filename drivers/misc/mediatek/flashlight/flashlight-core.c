@@ -1807,8 +1807,10 @@ static int __init flashlight_init(void)
 			&pt_low_vol_callback, LOW_BATTERY_PRIO_FLASHLIGHT);
 	register_battery_percent_notify(
 			&pt_low_bat_callback, BATTERY_PERCENT_PRIO_FLASHLIGHT);
+	#ifdef MTK_BASE
 	register_battery_oc_notify(
 			&pt_oc_callback, BATTERY_OC_PRIO_FLASHLIGHT);
+	#endif
 #endif
 
 	pr_debug("Init done\n");
