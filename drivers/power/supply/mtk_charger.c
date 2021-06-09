@@ -1811,7 +1811,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 				usb_suspend, voltage_full, demo_full_soc, batt_soc);
 	} else if ((mmi->pres_chrg_step == STEP_NONE) ||
 		   (mmi->pres_chrg_step == STEP_STOP)) {
-		if (zone->norm_mv && (batt_mv >= zone->norm_mv)) {
+		if (zone->norm_mv && ((batt_mv + HYST_STEP_MV) >= zone->norm_mv)) {
 			if (zone->fcc_norm_ma)
 				mmi->pres_chrg_step = STEP_NORM;
 			else
@@ -1838,7 +1838,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		}
 	} else if (mmi->pres_chrg_step == STEP_NORM) {
 		if (!zone->fcc_norm_ma)
-			mmi->pres_chrg_step = STEP_STOP;
+			mmi->pres_chrg_step = STEP_FLOAT;
 		else if ((batt_mv + HYST_STEP_MV/2) < max_fv_mv) {
 			mmi->chrg_taper_cnt = 0;
 			mmi->pres_chrg_step = STEP_NORM;
@@ -1855,6 +1855,9 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		if ((zone->fcc_norm_ma) ||
 		    ((batt_mv + HYST_STEP_MV) < zone->norm_mv))
 			mmi->pres_chrg_step = STEP_MAX;
+		else if (mmi_has_current_tapered(info, batt_ma,
+				   mmi->chrg_iterm))
+			mmi->pres_chrg_step = STEP_STOP;
 
 	}
 
@@ -1863,9 +1866,9 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	case STEP_FLOAT:
 	case STEP_MAX:
 		if (!zone->norm_mv)
-			target_fv = max_fv_mv;
+			target_fv = max_fv_mv + mmi->vfloat_comp_mv;
 		else
-			target_fv = zone->norm_mv;
+			target_fv = zone->norm_mv + mmi->vfloat_comp_mv;
 		target_fcc = zone->fcc_max_ma;
 		break;
 	case STEP_FULL:
