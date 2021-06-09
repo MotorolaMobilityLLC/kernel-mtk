@@ -2318,6 +2318,9 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		aed = <0x1a>;
 	};
 
+        usbpd_pm:usbpd_pm{
+        };
+
 	spi0:spi0@1100a000 {
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
