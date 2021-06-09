@@ -448,7 +448,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 
 			q_max_mah =
 				gm->fg_table_cust_data.fg_profile[
-				gm->battery_id].q_max / 10;
+				gm->battery_id].q_max;
 
 			q_max_uah = q_max_mah * 1000;
 			if (q_max_uah <= 100000) {
