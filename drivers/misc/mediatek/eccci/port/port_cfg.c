@@ -266,6 +266,9 @@ static struct port_t md1_ccci_ports[] = {
 	{CCCI_DISP_TX, CCCI_DISP_RX, 1, 1, 0xFF, 0xFF,
 		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 29, "ttyC6",},
+        {CCCI_CIQ_TX, CCCI_CIQ_RX, 2, 2, 0xFF, 0xFF,
+                MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+                &char_port_ops, 30, "ccci_ciq",},
 };
 
 #ifdef CONFIG_MTK_ECCCI_C2K

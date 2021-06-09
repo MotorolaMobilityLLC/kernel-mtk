@@ -483,6 +483,8 @@ enum CCCI_CH {
 	CCCI_TCHE_TX			= 182,
 	CCCI_DISP_RX			= 183,
 	CCCI_DISP_TX			= 184,
+        CCCI_CIQ_RX                     = 185,
+        CCCI_CIQ_TX                     = 186,
 
 
 	CCCI_C2K_PPP_DATA, /* data ch for c2k */
