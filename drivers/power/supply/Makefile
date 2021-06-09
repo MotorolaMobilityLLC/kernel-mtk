@@ -82,6 +82,8 @@ obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
 obj-$(CONFIG_CHARGER_TPS65217)	+= tps65217_charger.o
 obj-$(CONFIG_AXP288_FUEL_GAUGE) += axp288_fuel_gauge.o
 obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
+obj-$(CONFIG_WT6670F_QC3P)      += wt6670f_qc3p.o wt6670f_upgrade.o
+obj-$(CONFIG_BQ2597X_CHARGE_PUMP)       += bq2597x_charger.o pd_policy_manager.o
 
 ifeq ($(CONFIG_MACH_MT8173),y)
 else
