@@ -223,7 +223,7 @@ static irqreturn_t mtk_pmic_keys_release_irq_handler_thread(
 	input_report_key(info->keys->input_dev, info->keycode, 0);
 	input_sync(info->keys->input_dev);
 
-	dev_dbg(info->keys->dev, "release key =%d using PMIC\n",
+	dev_info(info->keys->dev, "release key =%d using PMIC\n",
 			info->keycode);
 
 	return IRQ_HANDLED;
@@ -245,7 +245,7 @@ static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
 	input_report_key(info->keys->input_dev, info->keycode, pressed);
 	input_sync(info->keys->input_dev);
 
-	dev_dbg(info->keys->dev, "(%s) key =%d using PMIC\n",
+	dev_info(info->keys->dev, "(%s) key =%d using PMIC\n",
 		 pressed ? "pressed" : "released", info->keycode);
 
 	return IRQ_HANDLED;
