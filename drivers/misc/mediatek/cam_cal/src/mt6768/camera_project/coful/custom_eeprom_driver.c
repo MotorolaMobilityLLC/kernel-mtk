@@ -39,7 +39,7 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 		},
 		{
 			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
-			{0x00000001, 0x1CF60027, 0x00100018, mot_check_af_data  },//High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
+			{0x00000001, 0x18F60027, 0x00100018, mot_check_af_data  },//High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
 			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
 			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },
 			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data},//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
