@@ -131,8 +131,13 @@
 
 &charger {
         /* common */
-        battery_cv = <4450000>;
+        battery_cv = <4464000>;
+        max_charger_voltage = <12000000>;
+        min_charger_voltage = <4600000>;
+
         enable_pe_2;
+        enable_sw_jeita;
+
         /* charging current */
         usb_charger_current_suspend = <0>;
         usb_charger_current_unconfigured = <70000>;
@@ -169,6 +174,16 @@
         mmi,vfloat-comp-uv = <10000>;
 };
 
+&bat_gm30 {
+        io-channels = <&auxadc 5>;
+        io-channel-names = "batteryID-channel";
+        EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
+        DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
+
+        df-serialnum = "SB18D11784";
+        #include "bat_setting/mt6768_battery_table_NC50_5000mah_ext.dtsi"
+};
+
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
@@ -201,6 +216,125 @@
         status = "okay";
 	};
 };
+
+/* Config charger */
+&i2c6{
+        wt6670f@35 {
+                status = "okay";
+                compatible = "mediatek,wt6670f_qc3p";
+                reg = <0x35>;
+                wt6670f-reset-gpio = <&pio 25 0x0>;
+                wt6670f-int-gpio = <&pio 6 0x0>;
+                wt6670f-i2c-scl-pin = <&pio 89 0x0>;
+                wt6670f-i2c-sda-pin = <&pio 90 0x0>;
+
+                pinctrl-names = "default",
+                                "wt6670_i2c_scl_low", "wt6670_i2c_scl_high",
+                                "wt6670_i2c_sda_low", "wt6670_i2c_sda_high",
+                                "wt6670_i2c";
+                pinctrl-0 = <&wt6670_pins_default>;
+                pinctrl-1 = <&wt6670_pins_scl_low>;
+                pinctrl-2 = <&wt6670_pins_scl_high>;
+                pinctrl-3 = <&wt6670_pins_sda_low>;
+                pinctrl-4 = <&wt6670_pins_sda_high>;
+                pinctrl-5 = <&wt6670_pins_i2c>;
+        };
+};
+
+&i2c7 {
+        bq25601@6B {
+                status = "okay";
+                compatible = "mediatek,bq25601";
+                reg = <0x6B>;
+
+                charger_name = "primary_chg";
+        };
+
+        bq2597x-standalone@66 {
+                compatible = "ti,bq2597x-standalone";
+                reg = <0x66>;
+                interrupt-parent = <&pio>;
+
+                ti,bq2597x,bat-ovp-alarm-disable;
+                ti,bq2597x,bat-ucp-alarm-disable;
+                ti,bq2597x,bat-ucp-disable;
+
+                ti,bq2597x,bat-therm-disable;
+                ti,bq2597x,bus-therm-disable;
+                ti,bq2597x,die-therm-disable;
+
+                ti,bq2597x,bat-ovp-threshold = <4525>;
+                ti,bq2597x,bat-ovp-alarm-threshold = <4490>;
+                ti,bq2597x,bat-ocp-threshold = <7000>;
+                ti,bq2597x,bat-ocp-alarm-threshold = <6000>;
+
+                ti,bq2597x,bus-ovp-threshold = <12000>;
+                ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
+                ti,bq2597x,bus-ocp-threshold = <3750>;
+                ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
+
+
+                ti,bq2597x,bat-therm-threshold = <0x15>;/*4.1%*/
+                ti,bq2597x,bus-therm-threshold = <0x15>;/*4.1%*/
+                ti,bq2597x,die-therm-threshold = <145>;
+
+                ti,bq2597x,ac-ovp-threshold = <14>;
+                ti,bq2597x,sense-resistor-mohm = <5>;
+
+                sc8551,ac-ovp-threshold = <13>;
+        };
+};
+
+&usbpd_pm {
+        compatible = "moto,usbpd-pm";
+        status = "okay";
+        moto,pd-bat-volt-max = <4480>;
+        moto,pd-bat-curr-max = <6000>;
+        moto,pd-bus-volt-max = <12000>;
+        moto,pd-bus-curr-max = <3000>;
+        moto,pd-non-ffc-bat-volt-max = <4450>;
+        //moto,cp-sec-enable;
+};
+
+&pio {
+        wt6670_pins_default: wt6670_default_mode {
+        };
+        wt6670_pins_scl_low: wt6670_scl_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO89__FUNC_GPIO89>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        wt6670_pins_scl_high: wt6670_scl_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO89__FUNC_GPIO89>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        wt6670_pins_sda_low: wt6670_sda_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        wt6670_pins_sda_high: wt6670_sda_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        wt6670_pins_i2c: wt6670_i2c_mode {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO90__FUNC_SDA6>,
+                                <PINMUX_GPIO89__FUNC_SCL6>;
+                };
+        };
+};
+
 /* accdet start */
 &accdet {
 	/* accdet micbias voltage: 0x07,2.7v;0x05,2.5v;0x02,1.9v */
