@@ -79,7 +79,7 @@ static struct name_list *white_list;
 	struct proc_dir_entry *pe;
 #endif
 
-
+static int system_server_pid;
 
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
@@ -393,8 +393,7 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 
 	if (cmd == HANG_KICK) {
 		pr_info("hang_detect HANG_KICK ( %d)\n", (int)arg);
-		//MonitorHangKick((int)arg);
-		MonitorHangKick(0);// wt 20210512 modify
+		MonitorHangKick((int)arg);
 		return ret;
 	}
 
@@ -1956,7 +1955,8 @@ static int hang_detect_thread(void *arg)
 #ifdef BOOT_UP_HANG
 		if (hd_detect_enabled)
 #else
-		if (hd_detect_enabled && CheckWhiteList())
+		system_server_pid = FindTaskByName("system_server");
+		if (hd_detect_enabled && CheckWhiteList() && (system_server_pid != -1))
 #endif
 		{
 
