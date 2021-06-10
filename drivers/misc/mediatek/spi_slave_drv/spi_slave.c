@@ -169,9 +169,8 @@ static int spislv_sync_sub(u32 addr, void *val, u32 len, bool is_read)
 
 	status = rx_cmd_read_sta[1];
 	/* ignore status for set early transfer bit */
-	if (addr == SPISLV_CTRL)
+	if (addr == SPISLV_CTRL && !is_read)
 		status = 0x6;
-
 	if ((status & CONFIG_READY) != CONFIG_READY) {
 		pr_notice("SPI config %s but status error: 0x%x, latched by %dHZ, err addr: 0x%x\n",
 				is_read ? "read" : "write", status, slv_data.rx_speed_hz, addr);
@@ -219,9 +218,8 @@ static int spislv_sync_sub(u32 addr, void *val, u32 len, bool is_read)
 
 	status = rx_cmd_read_sta[1];
 	/* ignore status for set early transfer bit */
-	if (addr == SPISLV_CTRL)
+	if (addr == SPISLV_CTRL && !is_read)
 		status = 0x26;
-
 	if (((status & SR_RD_ERR) == SR_RD_ERR) ||
 		((status & SR_WR_ERR) == SR_WR_ERR) ||
 		((status & SR_TIMEOUT_ERR) == SR_TIMEOUT_ERR)) {
@@ -334,8 +332,8 @@ int spislv_init(void)
 	if (ret)
 		return ret;
 
-	ret = spislv_write_register_mask(SPISLV_CTRL,
-		slv_data.low_speed_early_trans << 16, EARLY_TRANS_MASK);
+	ret = spislv_write_register(SPISLV_CTRL, (0x40 & (~(EARLY_TRANS_MASK)))
+		| ((slv_data.low_speed_early_trans << 16) & (EARLY_TRANS_MASK)));
 	if (ret)
 		return ret;
 
@@ -349,12 +347,12 @@ int spislv_switch_speed_hz(u32 tx_speed_hz, u32 rx_speed_hz)
 	int ret = 0;
 
 	if (rx_speed_hz >= SPI_RX_MAX_SPEED_HZ) {
-		ret = spislv_write_register_mask(SPISLV_CTRL,
-			slv_data.high_speed_early_trans << 16, EARLY_TRANS_MASK);
-		 spislv_chip_info.tick_delay = slv_data.high_speed_tick_delay;
+		ret = spislv_write_register(SPISLV_CTRL, (0x40 & (~(EARLY_TRANS_MASK)))
+			| ((slv_data.high_speed_early_trans << 16) & (EARLY_TRANS_MASK)));
+		spislv_chip_info.tick_delay = slv_data.high_speed_tick_delay;
 	} else {
-		ret = spislv_write_register_mask(SPISLV_CTRL,
-			slv_data.low_speed_early_trans << 16, EARLY_TRANS_MASK);
+		ret = spislv_write_register(SPISLV_CTRL, (0x40 & (~(EARLY_TRANS_MASK)))
+			| ((slv_data.low_speed_early_trans << 16) & (EARLY_TRANS_MASK)));
 		spislv_chip_info.tick_delay = slv_data.low_speed_tick_delay;
 	}
 	slv_data.tx_speed_hz =
