@@ -298,7 +298,7 @@
 	cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam0_enable_sensor = "mot_tonga_s5kjn1sq_mipi_raw";
 	cam1_enable_sensor = "mot_tonga_s5k4h7_mipi_raw";
-	cam2_enable_sensor = "mot_tonga_ov02b1b_mipi_raw";
+	cam2_enable_sensor = "mot_tonga_ov02b1b_mipi_raw mot_tonga_gc02m1b_mipi_raw";
 	cam3_enable_sensor = "mot_tonga_null_mipi";
 	cam4_enable_sensor = "mot_tonga_gc02m1_mipi_raw";
 	status = "okay";
