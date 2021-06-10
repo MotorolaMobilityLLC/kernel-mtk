@@ -1681,7 +1681,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	int batt_temp;
 	int usb_mv;
 	int charger_present = 0;
-
+	int stop_recharge_hyst;
 	int prev_step;
 
 	union power_supply_propval val;
@@ -1809,9 +1809,20 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 
 		pr_info("Charge Demo Mode:us = %d, vf = %d, dfs = %d,bs = %d\n",
 				usb_suspend, voltage_full, demo_full_soc, batt_soc);
-	} else if ((mmi->pres_chrg_step == STEP_NONE) ||
-		   (mmi->pres_chrg_step == STEP_STOP)) {
+	} else if (mmi->pres_chrg_step == STEP_NONE) {
 		if (zone->norm_mv && ((batt_mv + HYST_STEP_MV) >= zone->norm_mv)) {
+			if (zone->fcc_norm_ma)
+				mmi->pres_chrg_step = STEP_NORM;
+			else
+				mmi->pres_chrg_step = STEP_STOP;
+		} else
+			mmi->pres_chrg_step = STEP_MAX;
+	} else if (mmi->pres_chrg_step == STEP_STOP) {
+		if (batt_temp > COOL_TEMP)
+			stop_recharge_hyst = 2 * HYST_STEP_MV;
+		else
+			stop_recharge_hyst = 5 * HYST_STEP_MV;
+		if (zone->norm_mv && ((batt_mv + stop_recharge_hyst) >= zone->norm_mv)) {
 			if (zone->fcc_norm_ma)
 				mmi->pres_chrg_step = STEP_NORM;
 			else
