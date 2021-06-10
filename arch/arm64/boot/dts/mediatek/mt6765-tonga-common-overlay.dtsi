@@ -294,6 +294,10 @@
 	};
 };
 
+&regulator_vibrator {
+	min-volt = <3000000>;
+};
+
 &msdc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
