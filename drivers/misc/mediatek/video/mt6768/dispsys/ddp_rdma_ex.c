@@ -618,7 +618,11 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	/* get fifo parameters */
 	switch (rdma_golden_setting->mmsys_clk) {
 	case MMSYS_CLK_LOW:
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+		mmsysclk = 312;
+#else
 		mmsysclk = 230;
+#endif
 		break;
 	case MMSYS_CLK_HIGH:
 		mmsysclk = 457;
@@ -660,6 +664,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 				fifo_off_ultra = 30;
 			else
 				fifo_off_ultra = 50;
+
+			if (rdma_golden_setting->dst_height > 2340 &&
+				rdma_golden_setting->fps == 90)
+				fifo_off_ultra = 30;
 		} else if (is_rsz_sram)
 			fifo_off_ultra = 10;
 		else

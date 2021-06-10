@@ -33,7 +33,8 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
 subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion \
 		    -I$(srctree)/drivers/staging/android/ion/mtk
 
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
+		    -I$(srctree)/drivers/misc/mediatek/cmdq/bridge
 
 ifeq ($(CONFIG_MACH_MT6761),y)
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
@@ -86,7 +87,7 @@ obj-y += ddp_irq.o
 obj-y += ddp_info.o
 obj-y += ddp_color_format.o
 obj-y += ddp_pwm_mux.o
-
+obj-y += ddp_disp_bdg.o
 
 ifeq ($(CONFIG_MMPROFILE), y)
 obj-y += ddp_mmp.o
