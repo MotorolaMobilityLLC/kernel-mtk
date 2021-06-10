@@ -1178,7 +1178,6 @@ struct lcm_setting_table nt35695b_cmd_mode[] = {
 
 int bdg_is_bdg_connected(void)
 {
-	DISPFUNCSTART();
 	if (mt6382_connected == 0) {
 		unsigned int ret = 0;
 #ifdef CONFIG_MTK_MT6382_BDG
@@ -1191,6 +1190,9 @@ int bdg_is_bdg_connected(void)
 	else
 		mt6382_connected = 1;
 	}
+
+	DISPMSG("%s, mt6382_connected=%d\n", __func__, mt6382_connected);
+
 	return mt6382_connected;
 }
 
@@ -2352,7 +2354,7 @@ int bdg_tx_ps_ctrl(enum DISP_BDG_ENUM module,
 {
 	int i;
 	unsigned int ps_wc, width, bpp, ps_sel;
-#ifdef _BDG_CMD_MODE_
+#ifdef _LINE_BACK_TO_LP_
 	unsigned int line_back_to_LP = 6;
 #else
 	unsigned int line_back_to_LP = 1;
@@ -6710,6 +6712,21 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 		CORE_DIG_IOCTRL_RW_AFE_CB_CTRL_2_6_OA_CB_LP_DCO_PON_OVR_VAL_MASK,
 		0);
 #endif
+#ifdef _Disable_LP_TX_L023_
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1028 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1028 * 4,	0x40, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1428 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1428 * 4,	0x40, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1628 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1628 * 4,	0x40, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x80, 1);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x40, 1);
+
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1027 * 4, 0xf, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1427 * 4, 0xf, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1627 * 4, 0xf, 0);
+	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1827 * 4, 0xf, 0);
+#endif
 #ifdef _Disable_LP_TX_L123_
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x80, 1);
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x40, 1);
@@ -6901,9 +6918,6 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 
 	// request eint irq
 	bdg_request_eint_irq();
-	/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
-	nfc_request_eint_irq();
-	/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 
 	DISPFUNCEND();
 
@@ -7362,5 +7376,3 @@ int bdg_mipi_clk_change(int msg, int en)
 
 	return 0;
 }
-
-

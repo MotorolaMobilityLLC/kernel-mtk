@@ -708,7 +708,7 @@ int primary_display_esd_check(void)
 	primary_display_manual_lock();
 	if (primary_get_state() == DISP_SLEPT) {
 		mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 1, 0);
-		DISPCHECK("[ESD]Primary DISP slept. Skip esd check\n");
+		DISPCHECK("[ESD]ESD check, Primary DISP slept. Skip esd check\n");
 		primary_display_manual_unlock();
 		goto done;
 	}

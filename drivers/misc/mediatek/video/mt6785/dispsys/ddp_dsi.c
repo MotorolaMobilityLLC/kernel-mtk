@@ -74,7 +74,7 @@ enum MIPITX_PAD_VALUE {
 static int dsi_reg_op_debug;
 unsigned int data_phy_cycle;
 
-#ifdef _BDG_CMD_MODE_
+#ifdef _LINE_BACK_TO_LP_
 unsigned int line_back_to_LP = 6;
 #else
 unsigned int line_back_to_LP = 1;
@@ -870,6 +870,7 @@ static void _dsi_wait_not_busy_(enum DISP_MODULE_ENUM module,
 		udelay(1);
 	}
 }
+
 static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module,
 			      struct cmdqRecStruct *cmdq)
 {
@@ -1550,7 +1551,7 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VFP_NL, value);
 
 		if (bdg_is_bdg_connected() == 1)
-			if (get_mt6382_init() == 1)//if (bdg_is_bdg_connected() == 1)
+			if (get_mt6382_init() == 1)
 				ddp_dsi_set_bdg_porch_setting(module, handle, value);
 		}
 		if (type == DSI_VSA) {
@@ -2814,6 +2815,7 @@ void DSI_MIPI_clk_change(enum DISP_MODULE_ENUM module, void *cmdq, int clk)
 		}
 	}
 }
+
 void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 	struct cmdqRecStruct *cmdq, struct LCM_DSI_PARAMS *dsi_params);
 
@@ -3283,7 +3285,6 @@ void dsi_cmd_mode_clk_change(enum DISP_MODULE_ENUM module,
 
 #define NS_TO_CYCLE_MOD(n, c)	((n) / (c) + (((n) % (c)) ? 1 : 0))
 #define NS_TO_CYCLE(n, c)	((n) / (c))
-
 void DSI_CPHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		       struct LCM_DSI_PARAMS *dsi_params)
 {
@@ -4938,6 +4939,44 @@ void DSI_send_cmdq_to_bdg(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 	}
 }
 
+void ap_send_bdg_tx_stop(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+{
+	char para[7] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	// 0x00021000=0x00000000
+	DSI_send_cmdq_to_bdg(module, cmdq, 0x00, 7, para, 1);
+}
+
+void ap_send_bdg_tx_reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+{
+	char para[7] = {0x10, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00};
+	char para1[7] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	// 0x00021010=0x00000001
+	DSI_send_cmdq_to_bdg(module, cmdq, 0x10, 7, para, 1);
+	// 0x00021010=0x00000000
+	DSI_send_cmdq_to_bdg(module, cmdq, 0x10, 7, para1, 1);
+}
+
+void ap_send_bdg_tx_set_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+				unsigned int mode)
+{
+	char para[7] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+	char para1[7] = {0x31, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};
+	char para2[7] = {0x31, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00};
+
+	DISPMSG("%s, mode=%d\n", __func__, mode);
+
+	// 0x00021014=0x00000000
+	DSI_send_cmdq_to_bdg(module, cmdq, 0x14, 7, para, 1);
+	// 0x00023170=0x00000000
+	if (mode == CMD_MODE)
+		DSI_send_cmdq_to_bdg(module, cmdq, 0x70, 7, para1, 1);
+	// 0x00023170=0x00000001
+	else
+		DSI_send_cmdq_to_bdg(module, cmdq, 0x70, 7, para2, 1);
+}
+
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 				unsigned int cmd, unsigned char count,
 				unsigned char *para_list, unsigned char force_update)
@@ -5779,7 +5818,6 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module,
 	if (bdg_is_bdg_connected() == 1) {
 		set_bdg_tx_mode(dsi_config->mode);
 		dsi_config->data_rate = get_ap_data_rate();
-		//	dsi_config->data_rate_dyn= get_ap_dyn_data_rate(1);
 		DISPMSG("%s, data_rate=%d, dyn_data_rate=%d\n",
 				__func__, dsi_config->data_rate, dsi_config->data_rate_dyn);
 	}
@@ -6106,9 +6144,16 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		}
 	}
 
-	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
 	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);
 	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0);
+
+	if (get_mt6382_init()) {
+		ap_send_bdg_tx_stop(module, cmdq_handle);
+		ap_send_bdg_tx_reset(module, cmdq_handle);
+		ap_send_bdg_tx_set_mode(module, cmdq_handle, CMD_MODE);
+	}
+
+	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
 
 	DISPFUNCEND();
 
