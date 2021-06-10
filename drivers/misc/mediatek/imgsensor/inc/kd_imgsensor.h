@@ -139,6 +139,7 @@
 //add tonga sensor id begin
 #define MOT_TONGA_S5K4H7_SENSOR_ID 0x487B
 #define MOT_TONGA_OV02B1B_SENSOR_ID 0x002b
+#define MOT_TONGA_GC02M1B_SENSOR_ID (0x02e0+1)
 #define MOT_TONGA_GC02M1_SENSOR_ID 0x02e0
 #define MOT_TONGA_S5KJN1SQ_SENSOR_ID 0x38e1
 //add tonga sensor id end
@@ -624,6 +625,7 @@
 //add tonga sensor drvname begin
 #define SENSOR_DRVNAME_MOT_TONGA_S5K4H7_MIPI_RAW "mot_tonga_s5k4h7_mipi_raw"
 #define SENSOR_DRVNAME_MOT_TONGA_OV02B1B_MIPI_RAW "mot_tonga_ov02b1b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_TONGA_GC02M1B_MIPI_RAW "mot_tonga_gc02m1b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_TONGA_GC02M1_MIPI_RAW "mot_tonga_gc02m1_mipi_raw"
 #define SENSOR_DRVNAME_MOT_TONGA_S5KJN1SQ_MIPI_RAW "mot_tonga_s5kjn1sq_mipi_raw"
 //add tonga sensor drvname end
