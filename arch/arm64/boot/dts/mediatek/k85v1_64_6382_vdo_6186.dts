@@ -31,7 +31,7 @@
 	atag,videolfb-fps= <6000>;
 	atag,videolfb-vramSize= <0x017e8000>;
 	atag,videolfb-lcmname=
-		"nt36672c_fhdp_dsi_vdo_60hz_wo_dsc_shenchao_lcm_drv";
+		"nt36672c_fhdp_dsi_vdo_120hz_shenchao_6382_lcm_drv";
 };
 
 
