@@ -144,6 +144,7 @@ struct stAF_DrvList {
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
 	int (*pAF_GetFileName)(unsigned char *pFileName);
 	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
+	int (*pAF_OisExtIntf)(motOISExtIntf *pExtData);
 };
 
 #define I2CBUF_MAXSIZE 10
@@ -215,5 +216,7 @@ struct stAF_MotorI2CSendCmd {
 #define AFIOC_G_GETDRVNAME _IOWR(AF_MAGIC, 17, struct stAF_MotorName)
 
 #define AFIOC_X_CTRLPARA _IOWR(AF_MAGIC, 18, struct stAF_CtrlCmd)
+
+#define AFIOC_G_OISEXTINTF _IOWR(AF_MAGIC, 20, motOISExtIntf)
 
 #endif
