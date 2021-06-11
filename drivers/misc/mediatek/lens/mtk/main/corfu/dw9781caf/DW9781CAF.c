@@ -22,7 +22,10 @@
 #include <linux/i2c.h>
 #include <linux/uaccess.h>
 
+#include <linux/slab.h>
 #include "lens_info.h"
+#include "dw9781_i2c.h"
+#include "dw9781.h"
 
 #define AF_DRVNAME "DW9781CAF_DRV"
 #define AF_I2C_SLAVE_ADDR 0xE4
@@ -42,6 +45,8 @@ static spinlock_t *g_pAF_SpinLock;
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 2046;
 static unsigned long g_u4CurrPosition;
+static motOISExtData *pDW9781TestResult = NULL;
+static spinlock_t g_OIS_SpinLock;
 
 static int dw9781c_i2c_write(u8 *pwrite_data,u16 write_length)
 {
@@ -240,6 +245,8 @@ int DW9781CAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
 
+	spin_lock_init(&g_OIS_SpinLock);
+
 	initAF();
 
 	return 1;
@@ -261,4 +268,64 @@ int DW9781CAF_GetFileName(unsigned char *pFileName)
 	pFileName[0] = '\0';
 	#endif
 	return 1;
+}
+
+int MOT_DW9781CAF_EXT_CMD_HANDLER(motOISExtIntf *pExtCmd)
+{
+	dw9781_set_i2c_client(g_pstAF_I2Cclient);
+
+	switch (pExtCmd->cmd) {
+		case OIS_SART_FW_DL:
+			LOG_INF("Kernel OIS_SART_FW_DL\n");
+			break;
+		case OIS_START_HEA_TEST:
+			{
+				//spin_lock(&g_OIS_SpinLock);
+				if (!pDW9781TestResult) {
+					pDW9781TestResult = (motOISExtData *)kzalloc(sizeof(motOISExtData), GFP_KERNEL);
+				}
+
+				LOG_INF("Kernel OIS_START_HEA_TEST\n");
+				if (pDW9781TestResult) {
+					Cross_Motion_Test(pExtCmd->data.hea_param.radius, pExtCmd->data.hea_param.accuracy,
+					                   pExtCmd->data.hea_param.steps_in_degree, pExtCmd->data.hea_param.wait1,
+					                   pExtCmd->data.hea_param.wait2, pDW9781TestResult);
+				} else {
+					LOG_INF("FATAL: Kernel OIS_START_HEA_TEST memory error!!!\n");
+				}
+				//spin_unlock(&g_OIS_SpinLock);
+				break;
+			}
+		case OIS_START_GYRO_OFFSET_CALI:
+			LOG_INF("Kernel OIS_START_GYRO_OFFSET_CALI\n");
+			gyro_offset_calibrtion();
+			break;
+		case OIS_QUERY_FW_INFO:
+			LOG_INF("Kernel OIS_QUERY_FW_INFO\n");
+			memset(&pExtCmd->data.fw_info, 0xff, sizeof(motOISFwInfo));
+			break;
+		case OIS_QUERY_HEA_RESULT:
+			{
+				LOG_INF("Kernel OIS_QUERY_HEA_RESULT\n");
+				//spin_lock(&g_OIS_SpinLock);
+				if (pDW9781TestResult) {
+					memcpy(&pExtCmd->data.hea_result, &pDW9781TestResult->hea_result, sizeof(motOISHeaResult));
+					kfree(pDW9781TestResult);
+					pDW9781TestResult = NULL;
+				}
+				//spin_unlock(&g_OIS_SpinLock);
+				break;
+			}
+		case OIS_QUERY_GYRO_OFFSET_RESULT:
+			{
+				motOISGOffsetResult *gOffset = dw9781_get_gyro_offset_result();
+				LOG_INF("Kernel OIS_QUERY_GYRO_OFFSET_RESULT\n");
+				memcpy(&pExtCmd->data.gyro_offset_result, gOffset, sizeof(motOISGOffsetResult));
+				break;
+			}
+		default:
+			LOG_INF("Kernel OIS invalid cmd\n");
+			break;
+	}
+	return 0;
 }

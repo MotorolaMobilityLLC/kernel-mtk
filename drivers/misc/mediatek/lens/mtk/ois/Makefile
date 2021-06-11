@@ -15,28 +15,18 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+#MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+#ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 
 MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
+
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/common
 
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/sub/inc
+MAIN_CFILES  += dw9781/dw9781.c
+MAIN_CFILES  += dw9781/dw9781_circle_test.c
+MAIN_CFILES  += dw9781/dw9781_i2c.c
 
-ifeq ($(CONFIG_MACH_MT6779), y)
-  ccflags-y += -I$(srctree)/drivers/misc/mediatek/timer/timesync/
-endif
-
-obj-$(CONFIG_MTK_LENS)    += subaf.o
-
-subaf-y  += sub_lens.o
-subaf-y  += common/bu6424af/BU6424AF.o
-subaf-y  += common/bu6429af/BU6429AF.o
-subaf-y  += common/dw9714af/DW9714AF.o
-subaf-y  += common/dw9814af/DW9814AF.o
-subaf-y  += common/dw9718af/DW9718AF.o
-subaf-y  += common/lc898214af/LC898214AF.o
-subaf-y  += common/wv511aaf/WV511AAF.o
-subaf-y  += common/ak7371af/AK7371AF.o
+obj-y  += dw9781/
