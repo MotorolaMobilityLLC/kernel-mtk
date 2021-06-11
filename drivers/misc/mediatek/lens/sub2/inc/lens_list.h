@@ -14,6 +14,7 @@
 #ifndef _LENS_LIST_H
 
 #define _LENS_LIST_H
+#include "ois_ext_cmd.h"
 
 #if 0
 #define AK7371AF_SetI2Cclient AK7371AF_SetI2Cclient_Sub2
