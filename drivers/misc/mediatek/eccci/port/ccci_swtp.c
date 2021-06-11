@@ -236,15 +236,15 @@ static void swtp_init_delayed_work(struct work_struct *work)
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
 
-	CCCI_NORMAL_LOG(-1, SYS, "%s start\n", __func__);
-	CCCI_BOOTUP_LOG(-1, SYS, "%s start\n", __func__);
-
-	md_id = swtp->md_id;
-
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start */
         char irq_name[12];
         int has_write = 0;
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end */
+
+	CCCI_NORMAL_LOG(-1, SYS, "%s start\n", __func__);
+	CCCI_BOOTUP_LOG(-1, SYS, "%s start\n", __func__);
+
+	md_id = swtp->md_id;
 
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
 		ret = -2;
