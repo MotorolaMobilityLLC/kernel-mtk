@@ -31,6 +31,9 @@ else
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63169af/inc
 endif
 
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
+
 ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"corfu")
 obj-y += corfu/
 else
