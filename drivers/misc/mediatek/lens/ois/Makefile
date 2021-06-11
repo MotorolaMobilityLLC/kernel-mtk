@@ -15,32 +15,18 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+#MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+#ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 
 MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
+
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/common
 
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main3/inc
+MAIN_CFILES  += dw9781/dw9781.c
+MAIN_CFILES  += dw9781/dw9781_circle_test.c
+MAIN_CFILES  += dw9781/dw9781_i2c.c
 
-ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
-
-MAIN3_CFILES += main3_lens.c
-
-#MAIN3_CFILES  += common/ak7371af/AK7371AF.c
-
-obj-m := main3af.o
-main3af-objs := $(MAIN3_CFILES:.c=.o)
-
-else
-
-obj-y += main3_lens.o
-#obj-y += common/ak7371af/
-obj-y += common/bu24253af/
-obj-y += common/gt9772af/
-obj-y += common/mot_dw9714vaf/
-
-
-endif
+obj-y  += dw9781/
