@@ -81,6 +81,14 @@ static struct workqueue_struct *ois_workqueue;
 static struct work_struct ois_work;
 static struct hrtimer ois_timer;
 
+typedef struct {
+	motOISExtInfType ext_state;
+	motOISExtIntf ext_data;
+	struct work_struct ext_work;
+} ois_ext_work_struct;
+static struct workqueue_struct *ois_ext_workqueue;
+static ois_ext_work_struct ois_ext_work;
+
 static DEFINE_MUTEX(ois_mutex);
 static int g_EnableTimer;
 static int g_GetOisInfoCnt;
@@ -90,7 +98,7 @@ static struct stAF_OisPosInfo OisPosInfo;
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_DW9781CAF, DW9781CAF_SetI2Cclient, DW9781CAF_Ioctl,
-	 DW9781CAF_Release, DW9781CAF_GetFileName, NULL},
+	 DW9781CAF_Release, DW9781CAF_GetFileName, NULL, MOT_DW9781CAF_EXT_CMD},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -462,6 +470,22 @@ static enum hrtimer_restart ois_timer_func(struct hrtimer *timer)
 }
 /* ------------------------- */
 
+/* OIS extended interfaces */
+static void ois_ext_interface(struct work_struct *data)
+{
+	ois_ext_work_struct *pwork = container_of(data, ois_ext_work_struct, ext_work);
+
+	if (!pwork) return;
+
+	mutex_lock(&ois_mutex);
+	if (g_pstAF_CurDrv->pAF_OisExtIntf) {
+		LOG_INF("OIS ext cmd handling...");
+		g_pstAF_CurDrv->pAF_OisExtIntf(&pwork->ext_data);
+	}
+	mutex_unlock(&ois_mutex);
+	LOG_INF("OIS ext_data:%p, ext_intf:%p, cmd:%d", pwork->ext_data, g_pstAF_CurDrv->pAF_OisExtIntf, pwork->ext_data.cmd);
+}
+
 /* ////////////////////////////////////////////////////////////// */
 static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		     unsigned long a_u4Param)
@@ -469,109 +493,139 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 	long i4RetValue = 0;
 
 	switch (a_u4Command) {
-	case AFIOC_S_SETDRVNAME:
-		i4RetValue = AF_SetMotorName(
-			(__user struct stAF_MotorName *)(a_u4Param));
-		break;
-
-	case AFIOC_G_GETDRVNAME:
-		{
-	/* Set Driver Name */
-	int i;
-	struct stAF_MotorName stMotorName;
-	struct stAF_DrvList *pstAF_CurDrv = NULL;
-	__user struct stAF_MotorName *pstMotorName =
-			(__user struct stAF_MotorName *)a_u4Param;
-
-	if (copy_from_user(&stMotorName, pstMotorName,
-			   sizeof(struct stAF_MotorName)))
-		LOG_INF("copy to user failed when getting motor information\n");
-
-	stMotorName.uMotorName[sizeof(stMotorName.uMotorName) - 1] = '\0';
-
-	/* LOG_INF("set driver name(%s)\n", stMotorName.uMotorName); */
-
-	for (i = 0; i < MAX_NUM_OF_LENS; i++) {
-		if (g_stAF_DrvList[i].uEnable != 1)
+		case AFIOC_S_SETDRVNAME:
+			i4RetValue = AF_SetMotorName(
+				(__user struct stAF_MotorName *)(a_u4Param));
 			break;
 
-		LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
-		if (strcmp(stMotorName.uMotorName,
-			   g_stAF_DrvList[i].uDrvName) == 0) {
-			/* LOG_INF("Name : %s\n", stMotorName.uMotorName); */
-			pstAF_CurDrv = &g_stAF_DrvList[i];
-			break;
-		}
-	}
+		case AFIOC_G_GETDRVNAME:
+			{
+				/* Set Driver Name */
+				int i;
+				struct stAF_MotorName stMotorName;
+				struct stAF_DrvList *pstAF_CurDrv = NULL;
+				__user struct stAF_MotorName *pstMotorName =
+						(__user struct stAF_MotorName *)a_u4Param;
 
-	/* Get File Name */
-	if (pstAF_CurDrv) {
-		if (pstAF_CurDrv->pAF_GetFileName) {
-			__user struct stAF_MotorName *pstMotorName =
-			(__user struct stAF_MotorName *)a_u4Param;
-			struct stAF_MotorName MotorFileName;
+				if (copy_from_user(&stMotorName, pstMotorName,
+						   sizeof(struct stAF_MotorName)))
+					LOG_INF("copy to user failed when getting motor information\n");
 
-			pstAF_CurDrv->pAF_GetFileName(
-					MotorFileName.uMotorName);
-			i4RetValue = 1;
+				stMotorName.uMotorName[sizeof(stMotorName.uMotorName) - 1] = '\0';
 
-			if (copy_to_user(
-				    pstMotorName, &MotorFileName,
-				    sizeof(struct stAF_MotorName)))
-				LOG_INF("copy to user failed\n");
-		}
-	}
-		}
-		break;
+				/* LOG_INF("set driver name(%s)\n", stMotorName.uMotorName); */
 
-	case AFIOC_S_SETDRVINIT:
-		spin_lock(&g_AF_SpinLock);
-		g_s4AF_Opened = 1;
-		spin_unlock(&g_AF_SpinLock);
-		break;
+				for (i = 0; i < MAX_NUM_OF_LENS; i++) {
+					if (g_stAF_DrvList[i].uEnable != 1)
+						break;
 
-	case AFIOC_S_SETPOWERDOWN:
-		AF_PowerDown();
-		i4RetValue = 1;
-		break;
+					LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
+					if (strcmp(stMotorName.uMotorName,
+						   g_stAF_DrvList[i].uDrvName) == 0) {
+						/* LOG_INF("Name : %s\n", stMotorName.uMotorName); */
+						pstAF_CurDrv = &g_stAF_DrvList[i];
+						break;
+					}
+			}
 
-	case AFIOC_G_OISPOSINFO:
-		if (g_pstAF_CurDrv) {
-			if (g_pstAF_CurDrv->pAF_OisGetHallPos) {
-				__user struct stAF_OisPosInfo *pstOisPosInfo =
-					(__user struct stAF_OisPosInfo *)
-						a_u4Param;
+			/* Get File Name */
+			if (pstAF_CurDrv) {
+					if (pstAF_CurDrv->pAF_GetFileName) {
+						__user struct stAF_MotorName *pstMotorName =
+						(__user struct stAF_MotorName *)a_u4Param;
+						struct stAF_MotorName MotorFileName;
 
-				mutex_lock(&ois_mutex);
+						pstAF_CurDrv->pAF_GetFileName(
+								MotorFileName.uMotorName);
+						i4RetValue = 1;
 
-				if (copy_to_user(
-					    pstOisPosInfo, &OisPosInfo,
-					    sizeof(struct stAF_OisPosInfo)))
-					LOG_INF("copy to user failed\n");
-
-				g_OisPosIdx = 0;
-				g_GetOisInfoCnt = 100;
-				memset(&OisPosInfo, 0, sizeof(OisPosInfo));
-				mutex_unlock(&ois_mutex);
-
-				if (g_EnableTimer == 0) {
-					/* Start Timer */
-					hrtimer_start(&ois_timer,
-						      ktime_set(0, 50000000),
-						      HRTIMER_MODE_REL);
-					g_EnableTimer = 1;
+						if (copy_to_user(
+							    pstMotorName, &MotorFileName,
+							    sizeof(struct stAF_MotorName)))
+							LOG_INF("copy to user failed\n");
+					}
 				}
 			}
-		}
-		break;
+			break;
 
-	default:
-		if (g_pstAF_CurDrv) {
-			if (g_pstAF_CurDrv->pAF_Ioctl)
-				i4RetValue = g_pstAF_CurDrv->pAF_Ioctl(
-					a_pstFile, a_u4Command, a_u4Param);
-		}
-		break;
+		case AFIOC_S_SETDRVINIT:
+			spin_lock(&g_AF_SpinLock);
+			g_s4AF_Opened = 1;
+			spin_unlock(&g_AF_SpinLock);
+			break;
+
+		case AFIOC_S_SETPOWERDOWN:
+			AF_PowerDown();
+			i4RetValue = 1;
+			break;
+
+		case AFIOC_G_OISPOSINFO:
+			if (g_pstAF_CurDrv) {
+				if (g_pstAF_CurDrv->pAF_OisGetHallPos) {
+					__user struct stAF_OisPosInfo *pstOisPosInfo =
+						(__user struct stAF_OisPosInfo *)
+							a_u4Param;
+
+					mutex_lock(&ois_mutex);
+
+					if (copy_to_user(
+						    pstOisPosInfo, &OisPosInfo,
+						    sizeof(struct stAF_OisPosInfo)))
+						LOG_INF("copy to user failed\n");
+
+					g_OisPosIdx = 0;
+					g_GetOisInfoCnt = 100;
+					memset(&OisPosInfo, 0, sizeof(OisPosInfo));
+					mutex_unlock(&ois_mutex);
+
+					if (g_EnableTimer == 0) {
+						/* Start Timer */
+						hrtimer_start(&ois_timer,
+							      ktime_set(0, 50000000),
+							      HRTIMER_MODE_REL);
+						g_EnableTimer = 1;
+					}
+				}
+			}
+			break;
+
+		case AFIOC_G_OISEXTINTF:
+			if (g_pstAF_CurDrv) {
+				if (g_pstAF_CurDrv->pAF_OisExtIntf) {
+					__user motOISExtIntf *pOisExtData = (__user motOISExtIntf *)a_u4Param;
+
+					if (pOisExtData) {
+						mutex_lock(&ois_mutex);
+						if (copy_from_user(&ois_ext_work.ext_data,
+						                 pOisExtData,
+						                 sizeof(motOISExtIntf))) {
+							LOG_INF("OIS copy from user failed\n");
+						}
+						mutex_unlock(&ois_mutex);
+					}
+
+					if ((ois_ext_work.ext_data.cmd > OIS_SART_FW_DL) && (ois_ext_work.ext_data.cmd <= OIS_EXT_INTF_MAX)) {
+						//Raise new thread to avoid long execution time block capture requests
+						LOG_INF("OIS ext_state:%d, cmd:%d", ois_ext_work.ext_state, ois_ext_work.ext_data.cmd);
+						if (ois_ext_work.ext_state != ois_ext_work.ext_data.cmd) {
+							if (ois_ext_workqueue) {
+								LOG_INF("OIS queue ext work...");
+								queue_work(ois_ext_workqueue, &ois_ext_work.ext_work);
+							}
+							ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
+						}
+					}
+				}
+			}
+			break;
+
+		default:
+			if (g_pstAF_CurDrv) {
+				if (g_pstAF_CurDrv->pAF_Ioctl)
+					i4RetValue = g_pstAF_CurDrv->pAF_Ioctl(
+						a_pstFile, a_u4Command, a_u4Param);
+			}
+			break;
 	}
 
 	return i4RetValue;
@@ -627,6 +681,13 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	g_EnableTimer = 0;
 	/* ------------------------- */
 
+	/* OIS ext interfaces for test and firmware checking */
+	INIT_WORK(&ois_ext_work.ext_work, ois_ext_interface);
+	if (ois_ext_workqueue == NULL) {
+		ois_ext_workqueue = create_singlethread_workqueue("ois_ext_intf");
+	}
+	/* ------------------------- */
+
 	LOG_INF("End\n");
 
 	return 0;
@@ -666,6 +727,13 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		ois_workqueue = NULL;
 	}
 	/* ------------------------- */
+
+	flush_work(&ois_ext_work.ext_work);
+	if (ois_ext_workqueue) {
+		flush_workqueue(ois_ext_workqueue);
+		destroy_workqueue(ois_ext_workqueue);
+		ois_ext_workqueue = NULL;
+	}
 
 	LOG_INF("End\n");
 
