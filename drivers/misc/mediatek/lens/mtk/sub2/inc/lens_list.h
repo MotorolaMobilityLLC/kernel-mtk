@@ -8,6 +8,6 @@
 #ifndef _LENS_LIST_H
 
 #define _LENS_LIST_H
-
+#include "ois_ext_cmd.h"
 
 #endif

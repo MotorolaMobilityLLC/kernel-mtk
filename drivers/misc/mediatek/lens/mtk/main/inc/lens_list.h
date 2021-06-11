@@ -8,6 +8,7 @@
 #ifndef _LENS_LIST_H
 
 #define _LENS_LIST_H
+#include "ois_ext_cmd.h"
 
 extern void MAIN2AF_PowerDown(void);
 
@@ -405,11 +406,13 @@ extern int GT9772AF_GetFileName(unsigned char *pFileName);
 #define DW9781CAF_Ioctl DW9781CAF_Ioctl_Main
 #define DW9781CAF_Release DW9781CAF_Release_Main
 #define DW9781CAF_GetFileName DW9781CAF_GetFileName_Main
+#define MOT_DW9781CAF_EXT_CMD MOT_DW9781CAF_EXT_CMD_HANDLER
 extern int DW9781CAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long DW9781CAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 			   unsigned long a_u4Param);
 extern int DW9781CAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int DW9781CAF_GetFileName(unsigned char *pFileName);
+extern int MOT_DW9781CAF_EXT_CMD_HANDLER(motOISExtIntf *pExtCmd);
 
 #endif

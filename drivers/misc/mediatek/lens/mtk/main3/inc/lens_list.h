@@ -8,7 +8,7 @@
 #ifndef _LENS_LIST_H
 
 #define _LENS_LIST_H
-
+#include "ois_ext_cmd.h"
 
 #define BU24253AF_SetI2Cclient BU24253AF_SetI2Cclient_Main3
 #define BU24253AF_Ioctl BU24253AF_Ioctl_Main3
