@@ -235,7 +235,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	//dfps_params[0].PLL_CLOCK = 510;
 	/* dfps_params[0].data_rate = xx; */
 	/* if vfp solution */
-	dfps_params[0].vertical_frontporch = 2400;
+	dfps_params[0].vertical_frontporch = 2580;
 	//dfps_params[0].vertical_frontporch_for_low_power = 3550; //50hz
 
 	/* DPFS_LEVEL1 */
@@ -268,7 +268,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 20;
-	params->dsi.vertical_frontporch = 2400;
+	params->dsi.vertical_frontporch = 50;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
  	params->dsi.horizontal_sync_active = 4;
@@ -276,7 +276,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_frontporch = 102;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
-	params->dsi.PLL_CLOCK = 514;
+	params->dsi.PLL_CLOCK = 519;
 	params->physical_height = 161;
 	params->physical_width = 70;
 
@@ -320,14 +320,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.bdg_dsc_enable = 1;
 
 	params->density = 480;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
-        params->dsi.lcm_esd_check_table[1].cmd = 0x0d;
-        params->dsi.lcm_esd_check_table[1].count = 1;
-        params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
+        //params->dsi.lcm_esd_check_table[1].cmd = 0x0d;
+        //params->dsi.lcm_esd_check_table[1].count = 1;
+        //params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
 
 	#ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	/****DynFPS start****/
