@@ -80,6 +80,9 @@
 		pinctrl-1 = <&fingerprint_reset_high>;
 		pinctrl-2 = <&fingerprint_reset_low>;
 		int-gpios = <&pio 15 0>;
+		rgltr-ctrl-support;
+		fp,vdd-supply=<&mt_pmic_vfp_ldo_reg>;
+		fp,voltage-range = <3300000 3300000>;
 		status = "okay";
 	};
 };
@@ -92,8 +95,8 @@
 &mt_pmic_vfp_ldo_reg {
 	regulator-min-microvolt = <3300000>;
 	regulator-max-microvolt = <3300000>;
-	regulator-boot-on;
-	regulator-always-on;
+	//regulator-boot-on;
+	//regulator-always-on;
 };
 &spi5 {
 	#address-cells = <1>;
