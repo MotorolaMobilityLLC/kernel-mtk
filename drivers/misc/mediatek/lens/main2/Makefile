@@ -24,6 +24,9 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main2/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main2/common/lc898212xdaf_f/inc
 
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
+
 ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN2_CFILES += main2_lens.c
