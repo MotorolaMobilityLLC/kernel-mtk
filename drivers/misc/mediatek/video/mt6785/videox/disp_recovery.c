@@ -222,6 +222,8 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 	/* 2.stop dsi vdo mode */
 	dpmgr_path_build_cmdq(phandle, qhandle, CMDQ_STOP_VDO_MODE, 0);
 
+	/* for dcs read bdg reg test */
+	/* dpmgr_path_build_cmdq(phandle, qhandle, CMDQ_BDG_REG_READ, 0); */
 	/* 3.write instruction(read from lcm) */
 	dpmgr_path_build_cmdq(phandle, qhandle, CMDQ_ESD_CHECK_READ, 0);
 

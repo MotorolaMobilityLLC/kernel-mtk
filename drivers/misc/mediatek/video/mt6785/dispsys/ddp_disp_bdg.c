@@ -1185,13 +1185,12 @@ int bdg_is_bdg_connected(void)
 		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
 		ret = mtk_spi_read(0x0);
 #endif
-	if (ret == 0)
-		mt6382_connected = -1;
-	else
-		mt6382_connected = 1;
+		if (ret == 0) {
+			mt6382_connected = -1;
+			DISPMSG("%s, mt6382_connected=%d\n", __func__, mt6382_connected);
+		} else
+			mt6382_connected = 1;
 	}
-
-	DISPMSG("%s, mt6382_connected=%d\n", __func__, mt6382_connected);
 
 	return mt6382_connected;
 }
@@ -2706,8 +2705,6 @@ int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq)
 
 int bdg_set_dcs_read_cmd(bool enable, void *cmdq)
 {
-	DISPFUNCSTART();
-
 	if (enable) {
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_RACK_REG,
 				TX_REG[0]->DSI_TX_RACK, DSI_TX_RACK_BYPASS, 1);
@@ -5625,8 +5622,7 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 
 void startup_seq_dphy_specific(unsigned int data_rate)
 {
-	DISPMSG("%s, data_rate=%d\n", __func__, data_rate);
-	DISPFUNCSTART();
+	DISPMSG("%s START, data_rate=%dMHz\n", __func__, data_rate);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
 		CORE_DIG_RW_COMMON_7_LANE0_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
@@ -5637,8 +5633,8 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 		0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
-				CORE_DIG_RW_COMMON_7_LANE2_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
-				0);
+		CORE_DIG_RW_COMMON_7_LANE2_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
+		0);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + CORE_DIG_RW_COMMON_7 * 4,
 		CORE_DIG_RW_COMMON_7_LANE3_HSRX_WORD_CLK_SEL_GATING_REG_MASK,
@@ -6723,21 +6719,6 @@ void startup_seq_dphy_specific(unsigned int data_rate)
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x40, 1);
 
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1027 * 4, 0xf, 0);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1427 * 4, 0xf, 0);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1627 * 4, 0xf, 0);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1827 * 4, 0xf, 0);
-#endif
-#ifdef _Disable_LP_TX_L123_
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x80, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1228 * 4,	0x40, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1428 * 4,	0x80, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1428 * 4,	0x40, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1628 * 4,	0x80, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1628 * 4,	0x40, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x80, 1);
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1828 * 4,	0x40, 1);
-
-	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1227 * 4, 0xf, 0);
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1427 * 4, 0xf, 0);
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1627 * 4, 0xf, 0);
 	mtk_spi_mask_field_write(MIPI_RX_PHY_BASE + 0x1827 * 4, 0xf, 0);
