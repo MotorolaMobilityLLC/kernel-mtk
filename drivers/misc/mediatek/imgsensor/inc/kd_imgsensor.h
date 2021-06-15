@@ -370,6 +370,13 @@
 #define S5K4H7YX03_SENSOR_ID            0x487B
 //add lisbon sensor id end
 
+//add kyoto sensor id begin
+#define MOT_S5KHM2_SENSOR_ID                               (0x1ad2)
+#define MOT_OV32B40_SENSOR_ID                              (0x3242)
+#define MOT_OV02B1B_SENSOR_ID                              (0x002b)
+#define MOT_S5K4H7_SENSOR_ID                               (0x487b)
+//add kyoto sensor id end
+
 //add corfu sensor id begin
 #define MOT_CORFU_S5KGM1_QTECH_ID       0x08D1
 #define MOT_CORFU_HI1336_OFILM_ID       0x1336
@@ -606,6 +613,13 @@
 #define SENSOR_DRVNAME_MOT_LISBON_S5K4H7_MIPI_RAW           "mot_lisbon_s5k4h7_mipi_raw"
 //add lisbon sensor drvname end
 
+//add kyoto sensor drvname begin
+#define SENSOR_DRVNAME_MOT_S5KHM2_MIPI_RAW                 "mot_s5khm2_mipi_raw"
+#define SENSOR_DRVNAME_MOT_OV32B40_MIPI_RAW                "mot_ov32b40_mipi_raw"
+#define SENSOR_DRVNAME_MOT_OV02B1B_MIPI_RAW                "mot_ov02b1b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_S5K4H7_MIPI_RAW                 "mot_s5k4h7_mipi_raw"
+//add kyoto sensor drvname end
+
 //add corfu sensor drvname begin
 #define SENSOR_DRVNAME_MOT_CORFU_S5KGM1_QTECH               "mot_corfu_s5kgm1_qtech"
 #define SENSOR_DRVNAME_MOT_CORFU_HI1336_OFILM               "mot_corfu_hi1336_ofilm"
@@ -617,8 +631,7 @@
 #define SENSOR_DRVNAME_MOT_COFUL_GC02M1_TSP                 "mot_coful_gc02m1_tsp"
 #define SENSOR_DRVNAME_MOT_COFUL_S5KJN1_QTECH               "mot_coful_s5kjn1_qtech"
 //add coful sensor drvname end
-/*moto */
-#include "mot_imgsensor.h"
+
 /******************************************************************************
  *
  ******************************************************************************/
