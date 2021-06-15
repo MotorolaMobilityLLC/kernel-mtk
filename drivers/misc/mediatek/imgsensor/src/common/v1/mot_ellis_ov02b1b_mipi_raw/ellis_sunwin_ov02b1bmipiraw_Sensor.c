@@ -24,6 +24,10 @@
 #include "ellis_sunwin_ov02b1bmipiraw_Sensor.h"
 
 #define PFX "ellis_sunwin_ov02b1b"
+static int m_mot_camera_debug = 0;
+#define LOG_INF_D(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_DEBUG_D(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+
 #define LOG_INF(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
 #define LOG_ERR(format, args...)    \
@@ -221,7 +225,7 @@ static void set_dummy(void)
 		imgsensor.frame_length = imgsensor.frame_length - imgsensor.frame_length % 2;
 	}
 
-	LOG_INF("imgsensor.frame_length = %d\n", imgsensor.frame_length);
+	LOG_INF_D("imgsensor.frame_length = %d\n", imgsensor.frame_length);
 	write_cmos_sensor(0xfd, 0x01);
 	write_cmos_sensor(0x14, ((imgsensor.frame_length-0x4c4) & 0x7F00) >> 8);
 	write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
@@ -438,7 +442,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
             write_cmos_sensor(0xfd, 0x01);
             write_cmos_sensor(0x22, (kal_uint8)iReg);
             write_cmos_sensor(0xfe, 0x02);//fresh
-            LOG_INF("OV02BMIPI_SetGain = %d",iReg);
+            LOG_INF_D("OV02BMIPI_SetGain = %d",iReg);
         }
     }
     else
@@ -1666,7 +1670,7 @@ static kal_uint32 set_video_mode(UINT16 framerate)
 
 static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 {
-	LOG_INF("enable = %d, framerate = %d ", enable, framerate);
+	LOG_INF_D("enable = %d, framerate = %d ", enable, framerate);
 	spin_lock(&imgsensor_drv_lock);
 	if (enable) //enable auto flicker
 		imgsensor.autoflicker_en = KAL_TRUE;
@@ -1863,7 +1867,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *)feature_para;
 
-	LOG_INF("feature_id = %d\n", feature_id);
+	LOG_INF_D("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
@@ -1917,7 +1921,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_REGISTER:
 		sensor_reg_data->RegData = read_cmos_sensor(sensor_reg_data->RegAddr);
-		LOG_INF("adb_i2c_read 0x%x = 0x%x\n", sensor_reg_data->RegAddr, sensor_reg_data->RegData);
+		LOG_INF_D("adb_i2c_read 0x%x = 0x%x\n", sensor_reg_data->RegAddr, sensor_reg_data->RegData);
 		break;
 	case SENSOR_FEATURE_GET_LENS_DRIVER_ID:
 	    *feature_return_para_32 = LENS_DRIVER_ID_DO_NOT_CARE;
@@ -1947,7 +1951,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len=4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-	    LOG_INF("current fps :%d\n", (UINT32)*feature_data);
+	    LOG_INF_D("current fps :%d\n", (UINT32)*feature_data);
 	    spin_lock(&imgsensor_drv_lock);
 	    imgsensor.current_fps = *feature_data;
 	    spin_unlock(&imgsensor_drv_lock);
@@ -1965,13 +1969,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		streaming_control(KAL_TRUE);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-	    LOG_INF("ihdr enable :%d\n", (BOOL)*feature_data);
+	    LOG_INF_D("ihdr enable :%d\n", (BOOL)*feature_data);
 	    spin_lock(&imgsensor_drv_lock);
 	    imgsensor.ihdr_en = (BOOL)*feature_data;
 	    spin_unlock(&imgsensor_drv_lock);
 	break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
-		LOG_INF("SENSOR_FEATURE_GET_CROP_INFO scenarioId:%d\n", (UINT32)*feature_data);
+		LOG_INF_D("SENSOR_FEATURE_GET_CROP_INFO scenarioId:%d\n", (UINT32)*feature_data);
 		wininfo = (struct SENSOR_WINSIZE_INFO_STRUCT *)(uintptr_t)(*(feature_data + 1));
 		switch (*feature_data_32) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -1996,7 +2000,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
         break;
 	case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
-		LOG_INF("SENSOR_SET_SENSOR_IHDR LE = %d, SE = %d, Gain = %d\n",
+		LOG_INF_D("SENSOR_SET_SENSOR_IHDR LE = %d, SE = %d, Gain = %d\n",
 			(UINT16)*feature_data, (UINT16)*(feature_data + 1), (UINT16)*(feature_data + 2));
 		ihdr_write_shutter_gain((UINT16)*feature_data, (UINT16)*(feature_data + 1),
 			(UINT16)*(feature_data + 2));
