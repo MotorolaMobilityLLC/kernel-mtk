@@ -1032,10 +1032,12 @@ kal_uint16 addr_data_pair_init_mot_ellis_hi556d[] = {
 static void sensor_init(void)
 {
 #if MULTI_WRITE
+	LOG_INF("sensor_init multi write\n");
 	mot_ellis_hi556d_table_write_cmos_sensor(
 		addr_data_pair_init_mot_ellis_hi556d,
 		sizeof(addr_data_pair_init_mot_ellis_hi556d) /
 		sizeof(kal_uint16));
+	LOG_INF("sensor_init multi write end\n");
 #else
 	write_cmos_sensor(0x0a00, 0x0000); // stream off
 	write_cmos_sensor(0x0e00, 0x0102);
@@ -1324,10 +1326,12 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 static void preview_setting(void)
 {
 #if MULTI_WRITE
+	LOG_INF("preview_setting multi write\n");
 	mot_ellis_hi556d_table_write_cmos_sensor(
 		addr_data_pair_preview_mot_ellis_hi556d,
 		sizeof(addr_data_pair_preview_mot_ellis_hi556d) /
 		sizeof(kal_uint16));
+	LOG_INF("preview_setting multi write end\n");
 #else
 	write_cmos_sensor(0x0b0a, 0x8259);
 	write_cmos_sensor(0x0f30, 0x6e25);
@@ -1491,6 +1495,7 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 static void capture_setting(kal_uint16 currefps)
 {
 #if MULTI_WRITE
+	LOG_INF("capture_setting multi write\n");
 	if (currefps == 300) {
 		mot_ellis_hi556d_table_write_cmos_sensor(
 			addr_data_pair_capture_30fps_mot_ellis_hi556d,
@@ -1502,6 +1507,7 @@ static void capture_setting(kal_uint16 currefps)
 			sizeof(addr_data_pair_capture_fps_mot_ellis_hi556d) /
 			sizeof(kal_uint16));
 	}
+	LOG_INF("capture_setting multi write end\n");
 #else
 	if (currefps == 300) {
 		LOG_INF("%s fps = 300\n", __func__);
