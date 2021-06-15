@@ -17,10 +17,10 @@
 #define __MOT_COFUL_GC02M1_TSP_H__
 
 /* SENSOR MIRROR FLIP INFO */
-#define GC02M1_MIRROR_NORMAL    1
+#define GC02M1_MIRROR_NORMAL    0
 #define GC02M1_MIRROR_H         0
 #define GC02M1_MIRROR_V         0
-#define GC02M1_MIRROR_HV        0
+#define GC02M1_MIRROR_HV        1
 
 #if GC02M1_MIRROR_NORMAL
 #define GC02M1_MIRROR	        0x80
