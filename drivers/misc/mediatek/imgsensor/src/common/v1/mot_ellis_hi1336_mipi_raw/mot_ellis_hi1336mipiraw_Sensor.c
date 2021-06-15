@@ -27,6 +27,10 @@
 #define MAX_TIME2 20000000  // 6004 * 0x1E8480 / PCLK us  (PCLK @ 600MHz)
 
 #define PFX "mot_ellis_hi1336_camera_sensor"
+static int m_mot_camera_debug = 0;
+#define LOG_INF_D(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_DEBUG_D(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+
 #define LOG_INF(format, args...)    \
     pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -467,7 +471,7 @@ static void write_shutter(kal_uint32 shutter)
         imgsensor.frame_length = imgsensor_info.max_frame_length;
     spin_unlock(&imgsensor_drv_lock);
 
-    LOG_INF("shutter = %d, imgsensor.frame_length = %d, imgsensor.min_frame_length = %d\n",
+    LOG_INF_D("shutter = %d, imgsensor.frame_length = %d, imgsensor.min_frame_length = %d\n",
         shutter, imgsensor.frame_length, imgsensor.min_frame_length);
 
 
@@ -494,7 +498,7 @@ static void write_shutter(kal_uint32 shutter)
     write_cmos_sensor_8(0x020D, (shutter & 0xFF0000) >> 16 );
     write_cmos_sensor(0x020A, (shutter & 0xFFFF));
 
-    LOG_INF("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
+    LOG_INF_D("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
 }
 
 static void set_shutter_frame_length(kal_uint32 shutter, kal_uint16 frame_length){
@@ -584,7 +588,7 @@ static void set_shutter(kal_uint32 shutter)
 {
     unsigned long flags;
 
-    LOG_INF("set_shutter");
+    LOG_INF_D("set_shutter");
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -641,7 +645,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
     spin_lock(&imgsensor_drv_lock);
     imgsensor.gain = reg_gain;
     spin_unlock(&imgsensor_drv_lock);
-    LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+    LOG_INF_D("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
 
     write_cmos_sensor_8(0x0213,reg_gain);
     return gain;
@@ -740,6 +744,7 @@ static void sensor_init(void)
         addr_data_pair_init_mot_ellis_hi1336,
         sizeof(addr_data_pair_init_mot_ellis_hi1336) /
         sizeof(kal_uint16));
+    LOG_INF("sensor_init multi write end\n");
 #else
     LOG_INF("sensor_init normal write\n");
     write_cmos_sensor(0x0b00, 0x0000);
@@ -1705,6 +1710,7 @@ static void preview_setting(void)
         addr_data_pair_preview_mot_ellis_hi1336,
         sizeof(addr_data_pair_preview_mot_ellis_hi1336) /
         sizeof(kal_uint16));
+    LOG_INF("preview_setting multi write end\n");
 #else
     write_cmos_sensor(0x3250, 0xa060);
     write_cmos_sensor(0x0730, 0x760f);
@@ -1769,6 +1775,7 @@ static void capture_setting(kal_uint16 currefps)
         addr_data_pair_capture_30fps_mot_ellis_hi1336,
         sizeof(addr_data_pair_capture_30fps_mot_ellis_hi1336) /
         sizeof(kal_uint16));
+    LOG_INF("capture_setting multi write end\n");
 #else
     LOG_INF("capture_setting normal write\n");
     if( currefps > 150) {
@@ -3366,7 +3373,7 @@ static kal_uint32 feature_control(
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
         (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-    LOG_INF("feature_id = %d\n", feature_id);
+    LOG_INF_D("feature_id = %d\n", feature_id);
     switch (feature_id) {
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ_BY_SCENARIO:
 		switch (*feature_data) {
