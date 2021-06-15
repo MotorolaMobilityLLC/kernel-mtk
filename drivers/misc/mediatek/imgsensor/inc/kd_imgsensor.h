@@ -372,6 +372,12 @@
 #define GC02K0_SENSOR_ID                        0x2385
 #define OV16A10_SENSOR_ID                       0x561641
 
+//add kyoto sensor id begin
+#define MOT_S5KHM2_SENSOR_ID                               (0x1ad2)
+#define MOT_OV32B40_SENSOR_ID                              (0x3242)
+#define MOT_OV02B1B_SENSOR_ID                              (0x002b)
+#define MOT_S5K4H7_SENSOR_ID                               (0x487b)
+//add kyoto sensor id end
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
@@ -611,8 +617,12 @@
 #define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1B_MIPI_MONO "saipan_cxt_gc02m1b_mipi_mono"
 #define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW "saipan_cxt_gc02m1_mipi_raw"
 
-/*moto */
-#include "mot_imgsensor.h"
+//add kyoto sensor drvname begin
+#define SENSOR_DRVNAME_MOT_S5KHM2_MIPI_RAW                 "mot_s5khm2_mipi_raw"
+#define SENSOR_DRVNAME_MOT_OV32B40_MIPI_RAW                "mot_ov32b40_mipi_raw"
+#define SENSOR_DRVNAME_MOT_OV02B1B_MIPI_RAW                "mot_ov02b1b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_S5K4H7_MIPI_RAW                 "mot_s5k4h7_mipi_raw"
+//add kyoto sensor drvname end
 /******************************************************************************
  *
  ******************************************************************************/
