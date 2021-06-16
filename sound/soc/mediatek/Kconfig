@@ -449,3 +449,9 @@ config SND_HAC_AW8155
 	help
 	 Select Y if you have such device.
 	 If unsure select "N".
+
+config SND_SOC_FS16XX
+	tristate "Support fs16xx/fs16xx"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver.
