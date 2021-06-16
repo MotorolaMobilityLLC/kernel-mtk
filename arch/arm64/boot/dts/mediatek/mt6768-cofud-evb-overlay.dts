@@ -24,6 +24,6 @@
 		};
 	};
 };
-
+#include "mediatek/mt6768-cofud-camera-sensor-evb-overlay.dtsi"
 #include <cofud_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
