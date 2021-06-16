@@ -90,15 +90,6 @@ static int chrdet_inform_psy_changed(enum charger_type chg_type,
 	return ret;
 }
 
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
-extern int bq25601_start_chg_type_detect(void);
-#endif
-
-#ifdef CONFIG_MOTO_CHG_RT9471_SUPPORT
-extern int rt9471_start_chg_type_detect(void);
-extern int rt9471_flag;
-#endif
-
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 extern int wt6670f_start_detection(void);
 extern int wt6670f_get_protocol(void);
@@ -107,38 +98,7 @@ extern void bq2597x_set_psy(void);
 
 int hw_charging_get_charger_type(void)
 {
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
-	int chg_type = 0;
-
-    #ifdef CONFIG_MOTO_CHG_RT9471_SUPPORT
-        if(rt9471_flag == 0){
-    #endif
-	    Charger_Detect_Init();
-	    chg_type = bq25601_start_chg_type_detect();
-	    Charger_Detect_Release();
-	    pr_err("[%s] BQ25601 charge type is  0x%x\n",__func__,chg_type);
-	    switch (chg_type) {
-		case 0x20:
-			return STANDARD_HOST;//SDP
-		case 0x40:
-			return CHARGING_HOST;//CDP
-		case 0x60:
-			return STANDARD_CHARGER;//DCP
-		case 0xc0:
-			return NONSTANDARD_CHARGER;//FC
-		default:
-			break;
-	    }
-    #ifdef CONFIG_MOTO_CHG_RT9471_SUPPORT
-	} else {
-            Charger_Detect_Init();
-            chg_type = rt9471_start_chg_type_detect();
-	    pr_err("[%s] RT9471 charge type is  0x%x\n",__func__,chg_type);
-            Charger_Detect_Release();
-            return chg_type;
-	}
-    #endif
-#elif defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
         int chg_type = 0;
         Charger_Detect_Init();
         wt6670f_start_detection();
