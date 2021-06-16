@@ -32,7 +32,7 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 		{
 			.sensorID= MOT_COFUL_S5KJN1_QTECH_ID,
 			.deviceID = 0x01,
-			.dataLength = 0x1d33,
+			.dataLength = 0x19CB,
 			.sensorVendorid = 0x16020000,
 			.vendorByte = {1,2,3,4},
 			.dataBuffer = NULL
