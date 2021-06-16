@@ -410,6 +410,11 @@
 #define MOT_COFUL_GC02M1_TSP_ID         0x02e1
 #define MOT_COFUL_S5KJN1_QTECH_ID       0x38E1
 //add coful sensor id end
+//add cofud sensor id begin
+#define MOT_COFUD_S5K4H7_SENSOR_ID       0x487C
+#define MOT_COFUD_GC02M1_SENSOR_ID       0x02e1
+#define MOT_COFUD_S5KJN1_SENSOR_ID       0x38E1
+//add cofud sensor id end
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
@@ -666,6 +671,12 @@
 #define SENSOR_DRVNAME_MOT_COFUL_GC02M1_TSP                 "mot_coful_gc02m1_tsp"
 #define SENSOR_DRVNAME_MOT_COFUL_S5KJN1_QTECH               "mot_coful_s5kjn1_qtech"
 //add coful sensor drvname end
+
+//add cofud sensor drvname begin
+#define SENSOR_DRVNAME_MOT_COFUD_S5K4H7_MIPI_RAW               "mot_cofud_s5k4h7_mipi_raw"
+#define SENSOR_DRVNAME_MOT_COFUD_GC02M1_MIPI_RAW               "mot_cofud_gc02m1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_COFUD_S5KJN1_MIPI_RAW               "mot_cofud_s5kjn1_mipi_raw"
+//add cofud sensor drvname end
 
 /******************************************************************************
  *
