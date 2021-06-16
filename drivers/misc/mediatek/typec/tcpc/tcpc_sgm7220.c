@@ -730,9 +730,9 @@ static int sgm7220_tcpcdev_init(struct sgm7220_chip *chip, struct device *dev)
 	if (IS_ERR(chip->tcpc))
 		return -EINVAL;
 
-	chip->tcpc->typec_attach_old = !TYPEC_UNATTACHED;
-	chip->tcpc->typec_attach_new = TYPEC_UNATTACHED;
-	tcpci_report_usb_port_changed(chip->tcpc);
+	//chip->tcpc->typec_attach_old = !TYPEC_UNATTACHED;
+	//chip->tcpc->typec_attach_new = TYPEC_UNATTACHED;
+	//tcpci_report_usb_port_changed(chip->tcpc);
 	schedule_delayed_work(&chip->first_check_typec_work, msecs_to_jiffies(3000));
 	pr_info("%s end\n", __func__);
 	return 0;
@@ -934,6 +934,7 @@ static int sgm7220_i2c_probe(struct i2c_client *client,
 		goto err_create_cc_orientation_file;
 	}
 
+	tcpc_schedule_init_work(chip->tcpc);
 	pr_info("%s probe OK!\n", __func__);
 	return 0;
 err_create_cc_orientation_file:
