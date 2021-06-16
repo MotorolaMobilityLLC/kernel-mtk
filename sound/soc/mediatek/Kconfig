@@ -362,3 +362,9 @@ config SND_SOC_MTK_AUDIO_DSP
 	  that can be used with other platforms
 	  Select Y if you have such device.
 	  If unsure select "N".
+
+config SND_SOC_FS16XX
+	tristate "Support fs16xx/fs16xx"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver.
