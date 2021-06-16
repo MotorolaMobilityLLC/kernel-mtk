@@ -20,6 +20,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_CORFU_GPIO)  += flashlights-corfu-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_COFUL_GPIO)  += flashlights-coful-gpio.o
+obj-$(CONFIG_MTK_FLASHLIGHT_COFUD_GPIO)  += flashlights-cofud-gpio.o
 
 ccflags-$(CONFIG_MTK_FLASHLIGHT_DEBUG)     := -DDEBUG
 ccflags-$(CONFIG_MTK_FLASHLIGHT_LED191)    += -DCONFIG_MTK_FLASHLIGHT_LED191
