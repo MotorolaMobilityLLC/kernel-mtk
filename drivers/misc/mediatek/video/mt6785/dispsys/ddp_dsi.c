@@ -4399,7 +4399,7 @@ unsigned int DSI_dcs_read_bdg_reg(enum DISP_MODULE_ENUM module,
 	}
 
 	DSI_send_cmd_cmd(cmdq, DISP_MODULE_DSI0, 1, 0x79,
-			0x1c, 3, intsta, 1); //0x00021000c /* HS+Long Packet */
+			0x0c, 3, intsta, 1); //0x00021000c /* HS+Long Packet */
 
 	DSI_send_read_bdg_reg(cmdq, module, 1, 0x44);
 
@@ -6687,7 +6687,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 	}
 
 	if (bdg_is_bdg_connected() == 1 && get_mt6382_init() &&
-			(get_bdg_tx_mode() == CMD_MODE)) {
+		(get_bdg_tx_mode() == CMD_MODE)) {
 		bdg_tx_cmd_mode(DISP_BDG_DSI0, NULL);
 		bdg_tx_start(DISP_BDG_DSI0, NULL);
 		bdg_mutex_trigger(DISP_BDG_DSI0, NULL);
@@ -7068,108 +7068,109 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 					rxbypass1, 1); //0x00021084 = 0x00000002
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x70, 7,
 					rxsel0, 1); //0x00023170 = 0x00000000
-		}
-		/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
-		DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,
-			      DSI_REG[dsi_i]->DSI_INTEN, RD_RDY, 1);
-		DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,
-			      DSI_REG[dsi_i]->DSI_INTEN, CMD_DONE, 1);
 
-		/* 0.send read lcm command(short packet) */
-		t0.CONFG = 0x0c; /* HS+BTA */
-		t0.Data_ID = 0x44;
-		t0.Data0 = 0;
-		t0.Data1 = 0;
+			/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,
+					DSI_REG[dsi_i]->DSI_INTEN, RD_RDY, 1);
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,
+					DSI_REG[dsi_i]->DSI_INTEN, CMD_DONE, 1);
 
-		t1.CONFG = 0x08; /* HS+Short Packet */
-		t1.Data_ID = 0x77;
-		t1.Data0 = 0x04;
-		t1.Data1 = 0;
+			/* send read lcm command(short packet) */
+			t0.CONFG = 0x0c; /* HS+BTA */
+			t0.Data_ID = 0x44;
+			t0.Data0 = 0;
+			t0.Data1 = 0;
 
-		/* write DSI CMDQ */
-		DSI_OUTREG32(cmdq_trigger_handle,
-			&DSI_CMDQ_REG[dsi_i]->data[0], AS_UINT32(&t1));
-		DSI_OUTREG32(cmdq_trigger_handle,
-			     &DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
+			t1.CONFG = 0x08; /* HS+Short Packet */
+			t1.Data_ID = 0x77;
+			t1.Data0 = 0x04;
+			t1.Data1 = 0;
 
-		/* start DSI */
-		DSI_OUTREG32(cmdq_trigger_handle,
-			     &DSI_REG[dsi_i]->DSI_START, 0);
-		DSI_OUTREG32(cmdq_trigger_handle,
-			     &DSI_REG[dsi_i]->DSI_START, 1);
+			/* write DSI CMDQ */
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_CMDQ_REG[dsi_i]->data[0], AS_UINT32(&t1));
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
 
-		if (dsi_i == 0) {
-			DSI_POLLREG32(cmdq_trigger_handle,
-				&DSI_REG[dsi_i]->DSI_INTSTA,
-				0x80000000, 0);
-		}
+			/* start DSI */
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_START, 0);
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_START, 1);
 
-		if (bdg_is_bdg_connected() == 1)
+			if (dsi_i == 0) {
+				DSI_POLLREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_INTSTA,
+					0x80000000, 0);
+			}
+
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79,
-					0x1c, 3, intsta, 1); //0x00021000c /* HS+Long Packet */
+					0x0c, 3, intsta, 1); //0x00021000c /* HS+Long Packet */
 
-		/* write DSI CMDQ */
-		DSI_OUTREG32(cmdq_trigger_handle,
-			&DSI_CMDQ_REG[dsi_i]->data[0], AS_UINT32(&t0));
+			/* write DSI CMDQ */
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_CMDQ_REG[dsi_i]->data[0], AS_UINT32(&t0));
 
-		DSI_OUTREG32(cmdq_trigger_handle,
-			&DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
 
-		/* start DSI */
-		DSI_OUTREG32(cmdq_trigger_handle,
-			&DSI_REG[dsi_i]->DSI_START, 0);
-		DSI_OUTREG32(cmdq_trigger_handle,
-			&DSI_REG[dsi_i]->DSI_START, 1);
+			/* start DSI */
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_START, 0);
+			DSI_OUTREG32(cmdq_trigger_handle,
+					&DSI_REG[dsi_i]->DSI_START, 1);
 
-		/* wait DSI RD_RDY(must clear,
-		 * in case of cpu RD_RDY interrupt handler)
-		 */
-		if (dsi_i == 0) {
-			DSI_POLLREG32(cmdq_trigger_handle,
-				      &DSI_REG[dsi_i]->DSI_INTSTA,
-				      0x00000001, 0x1);
-			DSI_OUTREGBIT(cmdq_trigger_handle,
-				      struct DSI_INT_STATUS_REG,
-				      DSI_REG[dsi_i]->DSI_INTSTA,
-				      RD_RDY, 0x00000000);
-		}
-		/* save RX data */
-		if (hSlot) {
-//			DSI_BACKUPREG32(cmdq_trigger_handle, hSlot,
-//				6, &DSI_REG[0]->DSI_RX_DATA0);
-			DSI_BACKUPREG32(cmdq_trigger_handle, hSlot,
-				7, &DSI_REG[dsi_i]->DSI_RX_DATA1);
-		}
+			/* wait DSI RD_RDY(must clear,
+			 * in case of cpu RD_RDY interrupt handler)
+			 */
+			if (dsi_i == 0) {
+				DSI_POLLREG32(cmdq_trigger_handle,
+						&DSI_REG[dsi_i]->DSI_INTSTA,
+						0x00000001, 0x1);
+				DSI_OUTREGBIT(cmdq_trigger_handle,
+						struct DSI_INT_STATUS_REG,
+						DSI_REG[dsi_i]->DSI_INTSTA,
+						RD_RDY, 0x00000000);
+			}
 
-		/* write RX_RACK */
-		DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_RACK_REG,
-			      DSI_REG[dsi_i]->DSI_RACK, DSI_RACK, 1);
+			/* save RX data */
+			if (hSlot) {
+				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot,
+						6, &DSI_REG[0]->DSI_RX_DATA0);
+				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot,
+						7, &DSI_REG[dsi_i]->DSI_RX_DATA1);
+			}
 
-		/* polling not busy(no need clear) */
-		if (dsi_i == 0) {
-			DSI_POLLREG32(cmdq_trigger_handle,
-				      &DSI_REG[dsi_i]->DSI_INTSTA,
-				      0x80000000, 0);
-		}
+			/* write RX_RACK */
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_RACK_REG,
+					DSI_REG[dsi_i]->DSI_RACK, DSI_RACK, 1);
 
-		if (bdg_is_bdg_connected() == 1) {
+			/* polling not busy(no need clear) */
+			if (dsi_i == 0) {
+				DSI_POLLREG32(cmdq_trigger_handle,
+					      &DSI_REG[dsi_i]->DSI_INTSTA,
+					      0x80000000, 0);
+			}
+
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x84, 7,
 					rxbypass0, 1); //0x00021084 = 0x00000000
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x70, 7,
 					rxsel1, 1); //0x00023170 = 0x00000001
-		}
 
-		if (hSlot) {
-			/* read from slot */
-//			cmdqBackupReadSlot(hSlot, 6,
-//					   (uint32_t *)&read_data0);
-			cmdqBackupReadSlot(hSlot, 7,
-					   (uint32_t *)&read_data1);
+			if (hSlot) {
+				/* read from slot */
+				cmdqBackupReadSlot(hSlot, 6,
+						   (uint32_t *)&read_data0);
+				cmdqBackupReadSlot(hSlot, 7,
+						   (uint32_t *)&read_data1);
+			}
+			DISPCHECK("read_data0=0x%02x%02x%02x%02x\n",
+				read_data0.byte3, read_data0.byte2,
+				read_data0.byte1, read_data0.byte0);
+			DISPCHECK("read_data1=0x%02x%02x%02x%02x\n",
+				read_data1.byte3, read_data1.byte2,
+				read_data1.byte1, read_data1.byte0);
 		}
-//		DISPCHECK("read_data0=0x%02x%02x%02x%02x\n",
-//			read_data0.byte3, read_data0.byte2, read_data0.byte1, read_data0.byte0);
-		DISPCHECK("read_data1=0x%02x%02x%02x%02x\n",
-			read_data1.byte3, read_data1.byte2, read_data1.byte1, read_data1.byte0);
 	} else if (state == CMDQ_ESD_CHECK_READ) {
 		unsigned char rxbypass0[] = {0x10, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00};//ID 0x84
 		unsigned char rxbypass1[] = {0x10, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00};//ID 0x84
