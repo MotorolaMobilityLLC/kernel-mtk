@@ -47,6 +47,21 @@ const unsigned int VBAT_CV_VTH[] = {
 };
 
 /*BQ25601 REG04 ICHG[6:0]*/
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+const unsigned int CS_VTH[] = {
+        0, 6000, 12000, 18000, 24000,
+        30000, 36000, 42000, 48000, 54000,
+        60000, 66000, 72000, 78000, 84000,
+        90000, 96000, 102000, 108000, 114000,
+        120000, 126000, 132000, 138000, 144000,
+        150000, 156000, 162000, 168000, 174000,
+        180000, 186000, 192000, 198000, 204000,
+        210000, 216000, 222000, 228000, 234000,
+        240000, 246000, 252000, 258000, 264000,
+        270000, 276000, 282000, 288000, 294000,
+        300000
+};
+#else
 const unsigned int CS_VTH[] = {
 	0, 6000, 12000, 18000, 24000,
 	30000, 36000, 42000, 48000, 54000,
@@ -57,6 +72,7 @@ const unsigned int CS_VTH[] = {
 	180000, 186000, 192000, 198000, 204000,
 	210000, 216000, 222000, 228000
 };
+#endif
 
 /*BQ25601 REG00 IINLIM[5:0]*/
 const unsigned int INPUT_CS_VTH[] = {
@@ -94,6 +110,9 @@ const unsigned int BOOST_CURRENT_LIMIT[] = {
 };
 
 struct bq25601_info {
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	struct i2c_client *client;
+#endif
 	struct charger_device *chg_dev;
 	struct charger_properties chg_props;
 	struct device *dev;
@@ -101,6 +120,13 @@ struct bq25601_info {
 	const char *eint_name;
 	enum charger_type chg_type;
 	int irq;
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+        struct mutex    chgdet_lock;
+        bool            attach;
+        /*psy*/
+        struct power_supply *psy;
+        struct delayed_work psy_dwork;
+#endif
 };
 
 DEFINE_MUTEX(g_input_current_mutex);
@@ -739,6 +765,19 @@ void bq25601_set_boostv(unsigned int val)
 
 /* CON7---------------------------------------------------- */
 
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+void bq25601_set_force_dpdm(unsigned int val)
+{
+        unsigned int ret = 0;
+
+        ret = bq25601_config_interface((unsigned char) (bq25601_CON7),
+                                       (unsigned char) (val),
+                                       (unsigned char) (CON7_FORCE_DPDM_MASK),
+                                       (unsigned char) (CON7_FORCE_DPDM_SHIFT)
+                                      );
+}
+#endif
+
 void bq25601_set_tmr2x_en(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -1231,6 +1270,7 @@ static int bq25601_parse_dt(struct bq25601_info *info,
 }
 
 #ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+/*
 static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
 {
         int ret;
@@ -1244,16 +1284,108 @@ static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
 
         return !ret;
 }
-
-int bq25601_start_chg_type_detect(void)
+*/
+static void bq25601_inform_psy_dwork_handler(struct work_struct *work)
 {
-	int ret;
-	unsigned char val;
-	msleep(1000);
-	ret = bq25601_read_byte(8, &val);
-	return val & 0xE0;
+        int ret = 0;
+        union power_supply_propval propval = {.intval = 0};
+
+        struct bq25601_info *chip = container_of(work, struct bq25601_info,
+                                                psy_dwork.work);
+        bool attach = false;
+        enum charger_type chg_type = CHARGER_UNKNOWN;
+
+        mutex_lock(&chip->chgdet_lock);
+        attach = chip->attach;
+        chg_type = chip->chg_type;
+        mutex_unlock(&chip->chgdet_lock);
+
+        pr_info( "%s attach = %d, type = %d\n", __func__,attach, chg_type);
+
+        /* Get chg type det power supply */
+        if (!chip->psy)
+                chip->psy = power_supply_get_by_name("charger");
+        if (!chip->psy) {
+                dev_notice(chip->dev, "%s get power supply fail\n", __func__);
+                mod_delayed_work(system_wq, &chip->psy_dwork,
+                                 msecs_to_jiffies(1000));
+                return;
+        }
+
+        propval.intval = attach;
+        ret = power_supply_set_property(chip->psy, POWER_SUPPLY_PROP_ONLINE,
+                                        &propval);
+        if (ret < 0)
+                pr_err("%s psy online fail(%d)\n",
+                                      __func__, ret);
+
+        propval.intval = chg_type;
+        ret = power_supply_set_property(chip->psy,
+                                        POWER_SUPPLY_PROP_CHARGE_TYPE,
+                                        &propval);
+        if (ret < 0)
+                pr_err("%s psy type fail(%d)\n", __func__, ret);
 }
-EXPORT_SYMBOL_GPL(bq25601_start_chg_type_detect);
+
+static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
+{
+        int ret = 0;
+        int count = 0;
+        unsigned char val;
+        struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
+
+        pr_info("%s en = %d\n", __func__, en);
+
+        chip->attach = en;
+
+        mutex_lock(&chip->chgdet_lock);
+        Charger_Detect_Init();
+        if(chip->attach == 0){
+                chip->chg_type = CHARGER_UNKNOWN;
+                goto out;
+        }
+
+        msleep(300);
+
+        for(count;count<1;count++){
+                ret = bq25601_read_byte(8, &val);
+                if((0x20 != (val & 0xE0)) && (0xc0 != (val & 0xE0))){
+                        break;
+                }else{
+                        /*force second recognition*/
+                        bq25601_set_force_dpdm(0x1);
+                        msleep(500);
+                        pr_info("%s,charger is usb will test again\n",__func__);
+                }
+        }
+
+        switch (val & 0xE0) {
+                case 0x20:
+                        chip->chg_type = STANDARD_HOST;//SDP
+                        break;
+                case 0x40:
+                        chip->chg_type = CHARGING_HOST;//CDP
+                        break;
+                case 0x60:
+                        chip->chg_type = STANDARD_CHARGER;//DCP
+                        break;
+                case 0xc0:
+                        chip->chg_type = NONSTANDARD_CHARGER;//FC
+                        break;
+                default:
+                        chip->chg_type = CHARGER_UNKNOWN;
+                        break;
+        }
+        pr_info("%s,charger type is %d\n",__func__,chip->chg_type);
+out:
+        if(&chip->psy_dwork != NULL)
+                schedule_delayed_work(&chip->psy_dwork, 0);
+
+        Charger_Detect_Release();
+        mutex_unlock(&chip->chgdet_lock);
+        return 0;
+
+}
 #endif
 
 static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
@@ -1301,10 +1433,8 @@ static struct charger_ops bq25601_chg_ops = {
 
 
 	/* Power path */
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
-	.enable_powerpath = bq25601_enable_power_path,
+	/*.enable_powerpath = bq25601_enable_power_path,*/
 	/*.is_powerpath_enabled = bq25601_get_is_power_path_enable, */
-#endif
 
         /* ADC */
         .get_vbus_adc = bq25601_get_vbus,
@@ -1313,6 +1443,10 @@ static struct charger_ops bq25601_chg_ops = {
 	.enable_otg = bq25601_enable_otg,
 	.set_boost_current_limit = bq25601_set_boost_current_limit,
 	.event = bq25601_do_event,
+
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+        .enable_chg_type_det =bq25601_enable_chg_type_det,
+#endif
 };
 
 
@@ -1331,6 +1465,13 @@ static int bq25601_driver_probe(struct i2c_client *client,
 
 	new_client = client;
 	info->dev = &client->dev;
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+        info->client = client;
+        info->chg_type = 0;
+        info->attach = 0;
+        mutex_init(&info->chgdet_lock);
+        INIT_DELAYED_WORK(&info->psy_dwork, bq25601_inform_psy_dwork_handler);
+#endif
 
 	ret = bq25601_parse_dt(info, &client->dev);
 	if (ret < 0)
@@ -1354,6 +1495,18 @@ static int bq25601_driver_probe(struct i2c_client *client,
 
 	return 0;
 }
+
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+static int bq25601_remove(struct i2c_client *client)
+{
+        struct bq25601_info *chip = i2c_get_clientdata(client);
+
+        pr_info("%s\n",__func__);
+        mutex_destroy(&chip->chgdet_lock);
+        cancel_delayed_work_sync(&chip->psy_dwork);
+        return 0;
+}
+#endif
 
 /**********************************************************
  *
@@ -1463,6 +1616,9 @@ static struct i2c_driver bq25601_driver = {
 #endif
 	},
 	.probe = bq25601_driver_probe,
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+        .remove = bq25601_remove,
+#endif
 	.id_table = bq25601_i2c_id,
 };
 

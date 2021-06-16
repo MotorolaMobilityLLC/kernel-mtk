@@ -321,9 +321,9 @@ static void wt6670f_create_device_node(struct device *dev)
 
 int wt6670f_do_reset(void)
 {
-	gpio_direction_output(wt6670f_reset_pin,1);
-	msleep(50);
-	gpio_direction_output(wt6670f_reset_pin,0);
+	gpio_direction_output(_wt->reset_pin,1);
+	msleep(1);
+	gpio_direction_output(_wt->reset_pin,0);
 	msleep(10);
 }
 EXPORT_SYMBOL_GPL(wt6670f_do_reset);
@@ -473,10 +473,14 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 
 	wt6670f_create_device_node(&(client->dev));
 
+	wt6670f_do_reset();
 	firmware_version = wt6670f_get_firmware_version();
 	pr_info("[%s] firmware_version = %d\n", __func__,firmware_version);
 
-	//wt6670f_isp_flow(wt);
+	if(firmware_version != WT6670_FIRMWARE_VERSION){
+            pr_info("[%s]: firmware need upgrade, run wt6670_isp!", __func__);
+            wt6670f_isp_flow(wt);
+        }
 
 	return 0;
 }
