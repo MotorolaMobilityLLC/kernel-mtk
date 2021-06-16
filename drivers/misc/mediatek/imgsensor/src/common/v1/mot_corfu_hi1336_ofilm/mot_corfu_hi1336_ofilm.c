@@ -95,11 +95,11 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 832,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 640 ,
-		.grabwindow_height = 480 ,
+		.grabwindow_width = 1280 ,
+		.grabwindow_height = 720 ,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 95200000, //( 238M*4/10)
+		.mipi_pixel_rate = 190400000, //( 467M*4/10)
 	},
 	.slim_video = {
 		.pclk = 600000000,
@@ -174,7 +174,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	{ 4224, 3136,   0,   4, 4224, 3128,	 2112, 1564,  4,  2, 2104, 1560, 0, 0, 2104, 1560},		// preview (2104 x 1560)//DIFF
 	{ 4224, 3136,   0,   6, 4224, 3124,	 4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},		// capture (4208 x 3120)
 	{ 4224, 3136,   0,   6, 4224, 3124,	 4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},		// VIDEO (4208 x 3120)
-	{ 4224, 3136,   0, 116, 4224, 2904,	  704,  484,  32, 2,  640,  480, 0, 0,  640,  480},		// hight speed video (640 x 480)
+	{ 4224, 3136,   0, 482, 4224, 2172,	 1408,  724,  64, 2, 1280, 720, 0, 0,  1280,  720},		// hight speed video (1280 x 720)
 	{ 4224, 3136,   0, 482, 4224, 2172,  1408,  724,  64, 2, 1280,  720, 0, 0, 1280,  720},       // slim video (1280 x 720)
 };
 
