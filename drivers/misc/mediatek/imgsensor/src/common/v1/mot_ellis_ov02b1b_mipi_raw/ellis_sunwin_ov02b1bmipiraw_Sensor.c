@@ -65,7 +65,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.cap = {
 		.pclk = 16500000,            //record different mode's pclk
 		.linelength = 448,            //record different mode's linelength
-		.framelength = 1240,            //record different mode's framelength
+		.framelength = 1221,            //record different mode's framelength
 		.startx = 0,                    //record different mode's startx of grabwindow
 		.starty = 0,                    //record different mode's starty of grabwindow
 		.grabwindow_width = 1600,        //record different mode's width of grabwindow
@@ -74,7 +74,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*     following for GetDefaultFramerateByScenario()    */
 		.mipi_pixel_rate = 66000000,
-		.max_framerate = 297,
+		.max_framerate = 300,
 	},
 	#if 0
 	.cap1 = {
