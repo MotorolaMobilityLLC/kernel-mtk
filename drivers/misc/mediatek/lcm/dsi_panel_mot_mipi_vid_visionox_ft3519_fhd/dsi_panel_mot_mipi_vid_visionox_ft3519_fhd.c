@@ -270,9 +270,9 @@ static void lcm_suspend_power(void)
 	pr_info("[LCM]%s\n",__func__);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(2);
-	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_VDDI_OUT0);
-	MDELAY(2);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_VCI_OUT0);
+	MDELAY(2);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_VDDI_OUT0);
 	MDELAY(5);
 }
 
