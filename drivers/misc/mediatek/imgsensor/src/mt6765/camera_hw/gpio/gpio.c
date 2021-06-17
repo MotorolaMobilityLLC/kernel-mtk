@@ -196,6 +196,19 @@ static enum IMGSENSOR_RETURN gpio_set(
 		    __func__,
 		    pin, pin_state);
 
+#ifdef CONFIG_MOTO_ELLIS_PROJECT_CAMERA
+	if(sensor_idx == 0 && IMGSENSOR_HW_PIN_RST == pin && GPIO_STATE_H == gpio_state )
+	{
+		ppinctrl_state =pgpio->ppinctrl_state_cam[1][((pin - IMGSENSOR_HW_PIN_PDN) << 1) + GPIO_STATE_H ];
+		if (ppinctrl_state == NULL || IS_ERR(ppinctrl_state) || pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state))
+		     pr_err( "%s : GPIO_STATE_H pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
+		mdelay(1);
+		ppinctrl_state =pgpio->ppinctrl_state_cam[1][((pin - IMGSENSOR_HW_PIN_PDN) << 1) + GPIO_STATE_L];
+		if (ppinctrl_state == NULL || IS_ERR(ppinctrl_state) || pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state))
+		     pr_err( "%s : GPIO_STATE_L pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
+	}
+#endif
+
 	mutex_unlock(&pinctrl_mutex);
 
 	return IMGSENSOR_RETURN_SUCCESS;
