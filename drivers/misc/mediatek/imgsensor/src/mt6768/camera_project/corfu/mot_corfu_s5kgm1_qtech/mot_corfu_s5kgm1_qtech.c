@@ -3036,7 +3036,7 @@ static kal_uint32 return_sensor_id(void)
 *GLOBALS AFFECTED
 *
 *************************************************************************/
-extern int hbb_flag;
+extern int dw9781c_download_ois_fw(void);
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -3055,6 +3055,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
+
+				dw9781c_download_ois_fw();
+
 				return ERROR_NONE;
 			}
 
