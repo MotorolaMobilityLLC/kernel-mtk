@@ -145,6 +145,7 @@ struct stAF_DrvList {
 	int (*pAF_GetFileName)(unsigned char *pFileName);
 	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
 	int (*pAF_OisExtIntf)(motOISExtIntf *pExtData);
+	int (*pAF_OisGetResult)(motOISExtIntf *pExtData);
 };
 
 #define I2CBUF_MAXSIZE 10
