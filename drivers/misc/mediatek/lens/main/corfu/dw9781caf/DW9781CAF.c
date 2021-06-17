@@ -46,6 +46,7 @@ static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 2046;
 static unsigned long g_u4CurrPosition;
 static motOISExtData *pDW9781TestResult = NULL;
+extern int dw9781_check;
 
 static int dw9781c_i2c_write(u8 *pwrite_data,u16 write_length)
 {
@@ -108,29 +109,23 @@ static int initAF(void)
 	if (*g_pAF_Opened == 1) {
 		int i4RetValue = 0;
 
-		u16 Reg0 = 0x0001;
-		u16 Reg1 = 0x0001;
-		u16 Reg2 = 0x56FA;
-		u16 Reg3 = 0x0000;
-
-		i4RetValue = s4AF_WriteReg(0xD002,Reg0);
-		if(i4RetValue < 0) {
-			LOG_INF("I2C send 0x0001 to 0xD002 failed!!\n");
-		}
-		usleep_range(4000,5000);
-
-		i4RetValue = s4AF_WriteReg(0xD001,Reg1);
-		if(i4RetValue < 0) {
-			LOG_INF("I2C send 0x0001 to 0xD001 failed!!\n");
-		}
-		usleep_range(25000,26000);
-
-		i4RetValue = s4AF_WriteReg(0xEBF1,Reg2);
-		if(i4RetValue < 0) {
-			LOG_INF("I2C send 0x56FA to 0xEBF1 failed!!\n");
+		if(!dw9781_check)
+		{
+			LOG_INF("OIS initialize failed");
+			return -1;
 		}
 
-		i4RetValue = s4AF_WriteReg(0x7015,Reg3);
+		ois_reset();
+
+		i4RetValue = ois_checksum();
+		if(i4RetValue < 0) {
+			LOG_INF("dw9781 checksum failed!!\n");
+			return -1;
+		}
+
+		ois_reset();
+
+		i4RetValue = s4AF_WriteReg(0x7015,0x0000);
 		if(i4RetValue < 0) {
 			LOG_INF("I2C send 0x0000 to 0x7015 failed!!\n");
 		}
@@ -152,8 +147,8 @@ static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
 
-	if (s4AF_WriteReg(0xD013,(u16)a_u4Position) == 0) {
-		g_u4CurrPosition = a_u4Position;
+	if (s4AF_WriteReg(0xD013,((u16)a_u4Position * 2)) == 0) {
+		g_u4CurrPosition = (a_u4Position * 2);
 		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
