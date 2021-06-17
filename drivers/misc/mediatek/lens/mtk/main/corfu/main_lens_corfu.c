@@ -98,7 +98,8 @@ static struct stAF_OisPosInfo OisPosInfo;
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_DW9781CAF, DW9781CAF_SetI2Cclient, DW9781CAF_Ioctl,
-	 DW9781CAF_Release, DW9781CAF_GetFileName, NULL, MOT_DW9781CAF_EXT_CMD},
+	 DW9781CAF_Release, DW9781CAF_GetFileName, NULL, MOT_DW9781CAF_EXT_CMD,
+	 MOT_DW9781CAF_GET_RESULT},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -604,13 +605,27 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 						mutex_unlock(&ois_mutex);
 					}
 
-					if ((ois_ext_work.ext_data.cmd > OIS_SART_FW_DL) && (ois_ext_work.ext_data.cmd <= OIS_EXT_INTF_MAX)) {
+					if ((ois_ext_work.ext_data.cmd > OIS_EXT_INVALID_CMD) && (ois_ext_work.ext_data.cmd <= OIS_ACTION_MAX)) {
 						//Raise new thread to avoid long execution time block capture requests
 						LOG_INF("OIS ext_state:%d, cmd:%d", ois_ext_work.ext_state, ois_ext_work.ext_data.cmd);
 						if (ois_ext_work.ext_state != ois_ext_work.ext_data.cmd) {
 							if (ois_ext_workqueue) {
 								LOG_INF("OIS queue ext work...");
 								queue_work(ois_ext_workqueue, &ois_ext_work.ext_work);
+							}
+							ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
+						}
+					} else if ((ois_ext_work.ext_data.cmd > OIS_ACTION_MAX) && (ois_ext_work.ext_data.cmd <= OIS_EXT_INTF_MAX)) {
+						//wait till result ready
+						if (ois_ext_work.ext_state != ois_ext_work.ext_data.cmd) {
+							if (g_pstAF_CurDrv->pAF_OisGetResult) {
+								motOISExtIntf resultData;
+								resultData.cmd = ois_ext_work.ext_data.cmd;
+								mutex_lock(&ois_mutex);
+								g_pstAF_CurDrv->pAF_OisGetResult(&resultData);
+								mutex_unlock(&ois_mutex);
+								if (copy_to_user(pOisExtData, &resultData, sizeof(motOISExtIntf)))
+									LOG_INF("copy to user failed\n");
 							}
 							ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
 						}
