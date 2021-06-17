@@ -2,6 +2,7 @@
 #define __ELLIS_QTECH_HI1336_SENSOR_SETTING_H__
 
 static kal_uint16 addr_data_pair_init_mot_ellis_hi1336[] = {
+    0x0208, 0x0002,
     0x0b00, 0x0000,
     0x2000, 0x0021,
     0x2002, 0x04a5,
