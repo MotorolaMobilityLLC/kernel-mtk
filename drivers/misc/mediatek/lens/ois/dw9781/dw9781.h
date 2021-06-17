@@ -21,4 +21,6 @@ void check_calibration_data(void);
 int Cross_Motion_Test(unsigned short RADIUS, unsigned short ACCURACY,
                       unsigned short DEG_STEP, unsigned short WAIT_TIME1,
                       unsigned short WAIT_TIME2, motOISExtData *pResult);
+void ois_reset(void);
+int ois_checksum(void);
 #endif

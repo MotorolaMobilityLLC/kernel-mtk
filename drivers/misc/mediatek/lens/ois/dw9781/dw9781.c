@@ -1,9 +1,38 @@
 #include <linux/printk.h>
+#include <linux/firmware.h>
+#include <linux/slab.h>
 #include "dw9781_i2c.h"
 #include "dw9781.h"
 
 #define LOG_INF(format, args...) \
 	printk(" [%s] " format, __func__, ##args)
+
+/* fw downlaod */
+#define DW9781C_CHIP_ID_ADDRESS 0x7000
+#define DW9781C_CHIP_ID 0x9781
+#define FW_VER_CURR_ADDR 0x7001
+#define FW_TYPE_ADDR 0x700D
+#define SET_FW 0x8001
+#define EOK 0
+#define ERROR_SECOND_ID -1
+#define ERROR_FW_VERIFY -2
+#define MTP_START_ADDRESS 0x8000
+
+int dw9781_check = 0;
+static unsigned short checksum_value = 0;
+typedef struct
+{
+	unsigned int driverIc;
+	unsigned int size;
+	unsigned short *fwContentPtr;
+	unsigned short version;
+}FirmwareContex;
+
+extern struct i2c_client *g_pstAF_I2Cclient;
+FirmwareContex g_firmwareContext;
+unsigned short g_downloadByForce;
+
+const struct firmware *dw9781cfw;
 
 static motOISGOffsetResult dw9781GyroOffsetResult;
 
@@ -13,7 +42,7 @@ static void os_mdelay(unsigned long ms)
 	usleep_range(us, us+2000);
 }
 
-static void ois_reset(void)
+void ois_reset(void)
 {
 	LOG_INF("[dw9781c_ois_reset] ois reset\r\n");
 	write_reg_16bit_value_16bit(0xD002, 0x0001); /* printfc reset */
@@ -345,3 +374,284 @@ void check_calibration_data(void)
 	read_reg_16bit_value_16bit(0x7312, &tmp); read_reg_16bit_value_16bit(0x7313, &tmp1); LOG_INF("Y_ACC_BIQUAD_24: %08X\r\n", tmp<<16 | tmp1);
 }
 
+int GenerateFirmwareContexts(void)
+{
+	int i4RetValue;
+	g_firmwareContext.version = 0x0201;
+	g_firmwareContext.size = 10240; /* size: word */
+	g_firmwareContext.driverIc = 0x9781;
+
+	i4RetValue = request_firmware(&dw9781cfw, "mot_dw9781.prog", NULL);
+	if(i4RetValue<0) {
+		LOG_INF("get dw9781c firmware failed!\n");
+	} else {
+		int i = 0;
+		g_firmwareContext.fwContentPtr = kmalloc(20480,GFP_KERNEL);
+		if(!g_firmwareContext.fwContentPtr )
+		{
+			printk("kmalloc fwContentPtr failed in GenerateFirmwareContexts\n");
+			return -1;
+		}
+		while(i<10240) {
+			(g_firmwareContext.fwContentPtr)[i] = (((dw9781cfw->data)[2*i] << 8) + ((dw9781cfw->data)[(2*i+1)]));
+			i++;
+		}
+		LOG_INF("get dw9781c firmware sucess,and size = %d\n",dw9781cfw->size);
+	}
+	checksum_value = *(g_firmwareContext.fwContentPtr+10234);
+	g_downloadByForce = 0;
+	return i4RetValue;
+}
+
+void ois_ready_check(void)
+{
+	unsigned short fw_flag1, fw_flag2, fw_flag3;
+	write_reg_16bit_value_16bit(0xD001, 0x0001); /* chip enable */
+	os_mdelay(4);
+	write_reg_16bit_value_16bit(0xD001, 0x0000); /* dsp off mode */
+	write_reg_16bit_value_16bit(0xFAFA, 0x98AC); /* All protection(1) */
+	write_reg_16bit_value_16bit(0xF053, 0x70BD); /* All protection(2) */
+	read_reg_16bit_value_16bit(0x8000, &fw_flag1); /* check checksum flag1 */
+	read_reg_16bit_value_16bit(0x8001, &fw_flag2); /* check checksum flag2 */
+	read_reg_16bit_value_16bit(0xA7F9, &fw_flag3); /* check checksum flag3 */
+	printk("[dw9781c_ois_ready_check] checksum flag1 : 0x%04x, checksum flag2 : 0x%04x, checksum flag3 : 0x%04x\n", fw_flag1, fw_flag2, fw_flag3);
+	if((fw_flag1 == 0xF073) && (fw_flag2 == 0x2045) && (fw_flag3 == 0xCC33))
+	{
+		printk("[dw9781c_ois_ready_check] checksum flag is ok\n");
+		ois_reset(); /* ois reset */
+	} else {
+		write_reg_16bit_value_16bit(0xD002, 0x0001); /* dw9781c reset */
+		os_mdelay(4);
+		printk("[dw9781c_ois_ready_check] previous firmware download fail\n");
+	}
+}
+
+void all_protection_release(void)
+{
+	printk("[dw9781c_all_protection_release] execution\n");
+	/* release all protection */
+	write_reg_16bit_value_16bit(0xFAFA, 0x98AC);
+	mdelay(1);
+	write_reg_16bit_value_16bit(0xF053, 0x70BD);
+	mdelay(1);
+}
+
+void erase_mtp(void)
+{
+	printk("[dw9781c_erase_mtp] start erasing firmware flash\n");
+	/* 12c level adjust */
+	write_reg_16bit_value_16bit(0xd005, 0x0001);
+	write_reg_16bit_value_16bit(0xdd03, 0x0002);
+	write_reg_16bit_value_16bit(0xdd04, 0x0002);
+
+	/* 4k Sector_0 */
+	write_reg_16bit_value_16bit(0xde03, 0x0000);
+	/* 4k Sector Erase */
+	write_reg_16bit_value_16bit(0xde04, 0x0002);
+	os_mdelay(10);
+	/* 4k Sector_1 */
+	write_reg_16bit_value_16bit(0xde03, 0x0008);
+	/* 4k Sector Erase */
+	write_reg_16bit_value_16bit(0xde04, 0x0002);
+	os_mdelay(10);
+	/* 4k Sector_2 */
+	write_reg_16bit_value_16bit(0xde03, 0x0010);
+	/* 4k Sector Erase */
+	write_reg_16bit_value_16bit(0xde04, 0x0002);
+	os_mdelay(10);
+	/* 4k Sector_3 */
+	write_reg_16bit_value_16bit(0xde03, 0x0018);
+	/* 4k Sector Erase */
+	write_reg_16bit_value_16bit(0xde04, 0x0002);
+	os_mdelay(10);
+	/* 4k Sector_4 */
+	write_reg_16bit_value_16bit(0xde03, 0x0020);
+	/* 4k Sector Erase */
+	write_reg_16bit_value_16bit(0xde04, 0x0002);
+	os_mdelay(10);
+	printk("[dw9781c_erase_mtp] complete erasing firmware flash\n");
+}
+
+int download_fw(void)
+{
+	unsigned char ret = ERROR_FW_VERIFY;
+	unsigned short i;
+	unsigned short addr;
+	//unsigned short buf[g_firmwareContext.size];
+	unsigned short* buf_temp = NULL;
+	buf_temp = kmalloc(20480,GFP_KERNEL);
+	if(buf_temp == NULL)
+	{
+		printk("kmalloc buf_temp failed in download_fw\n");
+		return -1;
+	}
+	memset(buf_temp, 0, g_firmwareContext.size * sizeof(unsigned short));
+	/* step 1: MTP Erase and DSP Disable for firmware 0x8000 write */
+	write_reg_16bit_value_16bit(0xd001, 0x0000);
+	/* step 2: MTP setup */
+	all_protection_release();
+	erase_mtp();
+	printk("[dw9781c_download_fw] start firmware download\n");
+	/* step 3: firmware sequential write to flash */
+
+	for (i = 0; i < g_firmwareContext.size; i += DATPKT_SIZE)
+	{
+		addr = MTP_START_ADDRESS + i;
+		i2c_block_write_reg( addr, g_firmwareContext.fwContentPtr + i, DATPKT_SIZE);
+	}
+	printk("[dw9781c_download_fw] write firmware to flash\n");
+	/* step 4: firmware sequential read from flash */
+	for (i = 0; i <  g_firmwareContext.size; i += DATPKT_SIZE)
+	{
+		addr = MTP_START_ADDRESS + i;
+		i2c_block_read_reg(addr, buf_temp + i, DATPKT_SIZE);
+	}
+	printk("[dw9781c_download_fw] read firmware from flash\n");
+	/* step 5: firmware verify */
+	for (i = 0; i < g_firmwareContext.size; i++)
+	{
+		buf_temp[i] = ((buf_temp[i] << 8) & 0xff00) | ((buf_temp[i] >> 8) & 0x00ff);
+		if (g_firmwareContext.fwContentPtr[i] != buf_temp[i])
+		{
+			printk("[dw9781c_download_fw] firmware verify NG!!! ADDR:%04X -- firmware:%04x -- READ:%04x\n", MTP_START_ADDRESS+i, g_firmwareContext.fwContentPtr[i], buf_temp[i]);
+			kfree(buf_temp);
+			buf_temp = NULL;
+			return ERROR_FW_VERIFY;
+		}else
+			ret = EOK;
+	}
+	kfree(buf_temp);
+	buf_temp = NULL;
+
+	printk("[dw9781c_download_fw] firmware verification pass\n");
+	printk("[dw9781c_download_fw] firmware download success\n");
+
+	return ret;
+}
+
+unsigned short fw_checksum_verify(void)
+{
+	unsigned short data;
+
+	/* FW checksum command */
+	write_reg_16bit_value_16bit(0x7011, 0x2000);
+	/* command  start */
+	write_reg_16bit_value_16bit(0x7010, 0x8000);
+	os_mdelay(10);
+	/* calc the checksum to write the 0x7005 */
+	read_reg_16bit_value_16bit(0x7005, &data);
+	printk("F/W Checksum calculated value : 0x%04X\n", data);
+
+	return data;
+}
+
+int erase_mtp_rewritefw(void)
+{
+	printk("dw9781c erase for rewritefw starting..");
+
+	/* 512 byte page */
+	write_reg_16bit_value_16bit(0xde03, 0x0027);
+	/* page erase */
+	write_reg_16bit_value_16bit(0xde04, 0x0008);
+	os_mdelay(10);
+
+	printk("dw9781c checksum flag erase : 0xCC33\n");
+	return 0;
+}
+
+int dw9781c_download_ois_fw(void)
+{
+	unsigned char ret;
+	unsigned short fwchecksum = 0;
+	unsigned short first_chip_id = 0;
+	unsigned short second_chip_id = 0;
+	unsigned short fw_version_current = 0;
+	unsigned short fw_version_latest = 0;
+	unsigned short fw_type = 0;
+
+	ois_ready_check();
+	ret = GenerateFirmwareContexts();
+	if(ret < 0)
+		return ret;
+
+	read_reg_16bit_value_16bit(DW9781C_CHIP_ID_ADDRESS, &first_chip_id);
+	printk("[dw9781c] first_chip_id : 0x%x\n", first_chip_id);
+	if (first_chip_id != DW9781C_CHIP_ID) { /* first_chip_id verification failed */
+		all_protection_release();
+		read_reg_16bit_value_16bit(0xd060, &second_chip_id); /* second_chip_id: 0x0020 */
+		if ( second_chip_id == 0x0020 ) /* Check the second_chip_id*/
+		{
+			printk("[dw9781c] start flash download:: size:%d, version:0x%x\n",
+				g_firmwareContext.size, g_firmwareContext.version);
+			ret = download_fw(); /* Need to forced update OIS firmware again. */
+			printk("[dw9781c] flash download::vendor_dw9781c\n");
+			if (ret != 0x0) {
+				erase_mtp_rewritefw();
+				write_reg_16bit_value_16bit(0xd000, 0x0000); /* Shut download mode */
+				printk("[dw9781c] firmware download error, ret = 0x%x\n", ret);
+				printk("[dw9781c] change dw9781c state to shutdown mode\n");
+				ret = ERROR_FW_VERIFY;
+			} else {
+				printk("[dw9781c] firmware download success\n");
+			}
+		} else {
+			erase_mtp_rewritefw();
+			write_reg_16bit_value_16bit(0xd000, 0x0000); /* Shut download mode */
+			printk("[dw9781c] second_chip_id check fail,second_chip_id = 0x%x\n",second_chip_id);
+			printk("[dw9781c] change dw9781c state to shutdown mode\n");
+			ret = ERROR_SECOND_ID;
+		}
+	} else {
+		fwchecksum = fw_checksum_verify();
+		if(fwchecksum != checksum_value)
+		{
+			g_downloadByForce = 1;
+			printk("[dw9781c] firmware checksum error 0x%04X, 0x%04X\n", checksum_value, fwchecksum);
+		}
+
+		read_reg_16bit_value_16bit(FW_TYPE_ADDR, &fw_type);
+		if(fw_type != SET_FW)
+		{
+			g_downloadByForce = 1;
+			printk("[dw9781c] Update to firmware for set\n");
+		}
+		read_reg_16bit_value_16bit(FW_VER_CURR_ADDR, &fw_version_current);
+		fw_version_latest = g_firmwareContext.version; /*Enter the firmware version in VIVO*/
+		printk("[dw9781c] fw_version_current = 0x%x, fw_version_latest = 0x%x\n",
+			fw_version_current, fw_version_latest);
+		/* download firmware, check if need update, download firmware to flash */
+		if (g_downloadByForce || ((fw_version_current & 0xFF) != (fw_version_latest & 0xFF))) {
+			printk("[dw9781c] start flash download:: size:%d, version:0x%x g_downloadByForce %d\n",
+				g_firmwareContext.size, g_firmwareContext.version, g_downloadByForce);
+			ret = download_fw();
+			printk("[dw9781c] flash download::vendor_dw9781c\n");
+			if (ret != EOK) {
+				erase_mtp_rewritefw();
+				write_reg_16bit_value_16bit(0xd000, 0x0000); /* Shut download mode */
+				printk("[dw9781c] firmware download error, ret = 0x%x\n", ret);
+				printk("[dw9781c] change dw9781c state to shutdown mode\n");
+				ret = ERROR_FW_VERIFY;
+			} else {
+				printk("[dw9781c] firmware download success\n");
+			}
+		} else {
+			printk("[dw9781c] ois firmware version is updated, skip download\n");
+		}
+	}
+	kfree(g_firmwareContext.fwContentPtr);
+	g_firmwareContext.fwContentPtr = NULL;
+	dw9781_check = 1;
+	return ret;
+}
+
+int ois_checksum(void)
+{
+	unsigned short fwchecksum = 0;
+	fwchecksum = fw_checksum_verify();
+	if(fwchecksum != checksum_value)
+	{
+		printk("[dw9781c] firmware checksum error 0x%04X, 0x%04X\n", checksum_value, fwchecksum);
+		return -1;
+	}
+	return 0;
+}
