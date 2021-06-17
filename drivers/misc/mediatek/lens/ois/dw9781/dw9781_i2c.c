@@ -81,3 +81,57 @@ int read_reg_16bit_value_16bit(unsigned short regAddr, unsigned short *regData)
 
 	return 0;
 }
+
+void i2c_block_write_reg(unsigned short addr,unsigned short *fwContentPtr,int size)
+{
+	char puSendCmd[DATPKT_SIZE*2 + 2];
+	int IDX = 0;
+	int tosend = 0;
+	u16 data;
+	puSendCmd[tosend++] = (char)(addr >> 8);
+	puSendCmd[tosend++] = (char)(addr & 0xff);
+	while(size > IDX) {
+		data = fwContentPtr[IDX];
+		puSendCmd[tosend++] = (char)(data >> 8);
+		puSendCmd[tosend++] = (char)(data & 0xff);
+		IDX++;
+		if(IDX == size) {
+			int i4RetValue = 0;
+			struct i2c_msg msgs;
+			msgs.addr  = DW9781_I2C_SLAVE_ADDR >> 1;
+			msgs.flags = 0;
+			msgs.len   = (DATPKT_SIZE * 2 + 2);
+			msgs.buf   = puSendCmd;
+			i4RetValue = i2c_transfer(dw9781_i2c_client->adapter, &msgs, 1);
+			if (i4RetValue != 1) {
+				LOG_INF("I2C send failed!!\n");
+				return;
+			}
+			return;
+		}
+	}
+}
+
+void i2c_block_read_reg(unsigned short addr,unsigned short *temp,int size)
+{
+	int i4RetValue = 0;
+	char puSendCmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
+	struct i2c_msg msgs[2];
+
+	msgs[0].addr  = DW9781_I2C_SLAVE_ADDR >> 1;
+	msgs[0].flags = 0;
+	msgs[0].len   = 2;
+	msgs[0].buf   = puSendCmd;
+
+	msgs[1].addr  = DW9781_I2C_SLAVE_ADDR >> 1;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len   = 2 * size;
+	msgs[1].buf   = (u8*)temp;
+
+	i4RetValue = i2c_transfer(dw9781_i2c_client->adapter, msgs, 2);
+	if (i4RetValue != 2) {
+		LOG_INF("I2C send failed!!\n");
+		return;
+	}
+	return;
+}

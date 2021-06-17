@@ -864,6 +864,7 @@ static int AF_i2c_remove(struct i2c_client *client)
 }
 
 /* Kirby: add new-style driver {*/
+extern void dw9781_set_i2c_client(struct i2c_client *i2c_client);
 static int AF_i2c_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
@@ -887,6 +888,8 @@ static int AF_i2c_probe(struct i2c_client *client,
 	spin_lock_init(&g_AF_SpinLock);
 
 	LOG_INF("Attached!!\n");
+
+	dw9781_set_i2c_client(g_pstAF_I2Cclient);
 
 	return 0;
 }
