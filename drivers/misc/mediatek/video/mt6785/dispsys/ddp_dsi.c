@@ -1064,8 +1064,11 @@ void DSI_DPHY_Calc_VDO_Timing_with_DSC(enum DISP_MODULE_ENUM module,
 			data_phy_cycle * lanes;
 		break;
 	}
-	//t_hfp = ap_tx_total_word_cnt - ap_tx_total_word_cnt_no_hfp_wc;
-	t_hfp = 92;
+	if (bdg_is_bdg_connected() == 1)
+		t_hfp = 92;
+	else
+		t_hfp = ap_tx_total_word_cnt - ap_tx_total_word_cnt_no_hfp_wc;
+
 	DISPINFO(
 		"[DISP]-kernel-%s, ps_wc=%d, get_bdg_line_cycle=%d, ap_tx_total_word_cnt=%d, data_phy_cycle=%d, ap_tx_total_word_cnt_no_hfp_wc=%d\n",
 		__func__, ps_wc, get_bdg_line_cycle(), ap_tx_total_word_cnt, data_phy_cycle,
@@ -3739,32 +3742,36 @@ void DSI_DPHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 		    REG_FLD_VAL(FLD_HS_PRPR, timcon0.HS_PRPR) +
 		    REG_FLD_VAL(FLD_HS_ZERO, timcon0.HS_ZERO) +
 		    REG_FLD_VAL(FLD_HS_TRAIL, timcon0.HS_TRAIL);
-		if (bdg_is_bdg_connected() == 1)
+		if (bdg_is_bdg_connected() == 1) {
 			value = 0x15211314;
-		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON0, value);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON0, value);
+		}
 
 		value = REG_FLD_VAL(FLD_TA_GO, timcon1.TA_GO) +
 		    REG_FLD_VAL(FLD_TA_SURE, timcon1.TA_SURE) +
 		    REG_FLD_VAL(FLD_TA_GET, timcon1.TA_GET) +
 		    REG_FLD_VAL(FLD_DA_HS_EXIT, timcon1.DA_HS_EXIT);
-		if (bdg_is_bdg_connected() == 1)
+		if (bdg_is_bdg_connected() == 1) {
 			value = 0x28641e50;
-		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON1, value);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON1, value);
+		}
 
 		value = REG_FLD_VAL(FLD_CONT_DET, timcon2.CONT_DET) +
 		    REG_FLD_VAL(FLD_DA_HS_SYNC, 1) + /* default value */
 		    REG_FLD_VAL(FLD_CLK_ZERO, timcon2.CLK_ZERO) +
 		    REG_FLD_VAL(FLD_CLK_TRAIL, timcon2.CLK_TRAIL);
-		if (bdg_is_bdg_connected() == 1)
+		if (bdg_is_bdg_connected() == 1) {
 			value = 0x1e850103;
-		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON2, value);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON2, value);
+		}
 
 		value = REG_FLD_VAL(FLD_CLK_HS_PRPR, timcon3.CLK_HS_PRPR) +
 		    REG_FLD_VAL(FLD_CLK_HS_POST, timcon3.CLK_HS_POST) +
 		    REG_FLD_VAL(FLD_CLK_HS_EXIT, timcon3.CLK_HS_EXIT);
-		if (bdg_is_bdg_connected() == 1)
+		if (bdg_is_bdg_connected() == 1) {
 			value = 0x00282017;
-		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON3, value);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON3, value);
+		}
 
 		DISPINFO(
 		"%s, PHY_TIMECON0=0x%08x,PHY_TIMECON1=0x%08x,PHY_TIMECON2=0x%08x,PHY_TIMECON3=0x%08x\n",
