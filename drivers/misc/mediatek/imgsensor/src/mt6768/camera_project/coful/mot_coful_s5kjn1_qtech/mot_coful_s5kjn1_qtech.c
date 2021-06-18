@@ -160,19 +160,19 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	{
 		0x02, 0x0A, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2B, 0x07D0, 0x05DC, 0x01, 0x00, 0x0000, 0x0000,
-		0x01, 0x30, 0x026C, 0x02E0, 0x03, 0x00, 0x0000, 0x0000
+		0x01, 0x30, 0x027C, 0x0BF0, 0x03, 0x00, 0x0000, 0x0000
 	},
 
 	{
 		0x02, 0x0A, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2B, 0x07D0, 0x05DC, 0x01, 0x00, 0x0000, 0x0000,
-		0x01, 0x30, 0x026C, 0x02E0, 0x03, 0x00, 0x0000, 0x0000
+		0x01, 0x30, 0x027C, 0x0BF0, 0x03, 0x00, 0x0000, 0x0000
 	},
 
 	{
 		0x02, 0x0A, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2B, 0x0FA0, 0x0BB8, 0x01, 0x00, 0x0000, 0x0000,
-		0x01, 0x30, 0x026C, 0x02E0, 0x03, 0x00, 0x0000, 0x0000
+		0x01, 0x30, 0x027C, 0x0BF0, 0x03, 0x00, 0x0000, 0x0000
 	}
 };
 
@@ -185,42 +185,18 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 };
 
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
-	.i4OffsetX = 16,
-	.i4OffsetY = 28,
-	.i4PitchX = 32,
-	.i4PitchY = 32,
-	.i4PairNum = 16,
+	.i4OffsetX = 8,
+	.i4OffsetY = 8,
+	.i4PitchX = 8,
+	.i4PitchY = 8,
+	.i4PairNum = 4,
 	.i4SubBlkW = 8,
-	.i4SubBlkH = 8,
-	.i4PosL = {{18, 29}, {26, 29}, {34, 29}, {42, 29}, {22, 41}, {30, 41}, {
-			38,
-			41
-		},
-		{46, 41}, {18, 49}, {26, 49}, {34, 49}, {42, 49}, {
-			22,
-			53
-		}, {
-			30,
-			53
-		},
-		{38, 53}, {46, 53}
-	},
-	.i4PosR = {{18, 33}, {26, 33}, {34, 33}, {42, 33}, {22, 37}, {30, 37}, {
-			38,
-			37
-		},
-		{46, 37}, {18, 45}, {26, 45}, {34, 45}, {42, 45}, {
-			22,
-			57
-		}, {
-			30,
-			57
-		},
-		{38, 57}, {46, 57}
-	},
-	.iMirrorFlip = 0,
-	.i4BlockNumX = 124,
-	.i4BlockNumY = 92,
+	.i4SubBlkH = 2,
+	.i4PosL = {{11, 8}, {9, 11}, {13, 12}, {15, 15}},
+	.i4PosR = {{10, 8}, {8, 11}, {12, 12}, {14, 15}},
+	.iMirrorFlip = IMAGE_HV_MIRROR,
+	.i4BlockNumX = 508,
+	.i4BlockNumY = 382,
 };
 
 #if MULTI_WRITE
