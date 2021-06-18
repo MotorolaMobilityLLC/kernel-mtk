@@ -244,13 +244,22 @@ static kal_int32 get_sensor_temperature(void)
 
 static void set_dummy(void)
 {
-	LOG_INF("dummyline H= %d, dummypixels V= %d\n",	imgsensor.dummy_line, imgsensor.dummy_pixel);
-	write_cmos_sensor(0xFD, 0x01);
-	write_cmos_sensor(0x14, (imgsensor.frame_length -0x4c4) >> 8 & 0x7F);
-	write_cmos_sensor(0x15, (imgsensor.frame_length -0x4c4) & 0xFF);
-	write_cmos_sensor(0xFE, 0x02);
+	kal_uint32 v_blank = 0;
 
-}
+	if (imgsensor.frame_length%2 != 0) {
+		imgsensor.frame_length = imgsensor.frame_length - imgsensor.frame_length % 2;
+	}
+
+	v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+
+	LOG_INF("imgsensor.frame_length = %d, v_blank = %d\n", imgsensor.frame_length, v_blank);
+
+	write_cmos_sensor(0xfd, 0x01);
+	write_cmos_sensor(0x14, (v_blank & 0x7F00) >> 8);
+	write_cmos_sensor(0x15, v_blank & 0xFF);
+	write_cmos_sensor(0xfe, 0x02);//fresh
+}    /*    set_dummy  */
+
 
 #if 0
 static inline void extend_frame_length(kal_uint32 frame_length)
@@ -345,6 +354,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint32 realtime_fps = 0;
+	kal_uint32 v_blank;
 
 	spin_lock(&imgsensor_drv_lock);
 
@@ -379,16 +389,18 @@ static void write_shutter(kal_uint32 shutter)
 	                set_max_framerate(realtime_fps, 0);
 		} else {
 			imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
-                        write_cmos_sensor(0xfd, 0x01);
-			write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-			write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+			v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+            write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+			write_cmos_sensor(0x15, v_blank & 0xFF);
 			write_cmos_sensor(0xfe, 0x02);	//fresh
 		}
 	} else {
 		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
-		write_cmos_sensor(0xfd, 0x01);
-		write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-		write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+		v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+        write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+		write_cmos_sensor(0x15, v_blank & 0xFF);
 		write_cmos_sensor(0xfe, 0x02);	//fresh
 	}
 
@@ -396,10 +408,27 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor(0x0e, (shutter >> 8) & 0xFF);
 		write_cmos_sensor(0x0f, shutter  & 0xFF);
 		write_cmos_sensor(0xfe, 0x02);	//fresh
-	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
+        LOG_INF("shutter =%d, framelength =%d, v_blank = %d\n", shutter, imgsensor.frame_length, v_blank);
 }
 
+
+/*************************************************************************
+ * FUNCTION
+ *    set_shutter
+ *
+ * DESCRIPTION
+ *    This function set e-shutter of sensor to change exposure time.
+ *
+ * PARAMETERS
+ *    iShutter : exposured lines
+ *
+ * RETURNS
+ *    None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
@@ -416,17 +445,19 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 				     kal_bool auto_extend_en)
 {
 	kal_uint16 realtime_fps = 0;
-
+	kal_int32 dummy_line = 0;
 	unsigned long flags;
+	kal_uint32 v_blank = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	if (frame_length > 1)
-		imgsensor.frame_length = frame_length;
-
 	spin_lock(&imgsensor_drv_lock);
+	if (frame_length > 1)
+	    dummy_line = frame_length - imgsensor.frame_length;
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
 	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
 
@@ -457,16 +488,18 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 			set_max_framerate(realtime_fps, 0);
 		} else {
 			imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+			v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
 			write_cmos_sensor(0xfd, 0x01);
-			write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-			write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+			write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+			write_cmos_sensor(0x15, v_blank & 0xFF);
 			write_cmos_sensor(0xfe, 0x02);
 		}
 	} else {
 		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+		v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
 		write_cmos_sensor(0xfd, 0x01);
-		write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-		write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+		write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+		write_cmos_sensor(0x15, v_blank & 0xFF);
 		write_cmos_sensor(0xfe, 0x02);
 	}
 
@@ -474,9 +507,11 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 	 write_cmos_sensor(0x0e, (shutter >> 8) & 0xFF);
 	 write_cmos_sensor(0x0f, shutter  & 0xFF);
 	 write_cmos_sensor(0xfe, 0x02);
-	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
-}
+	LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d, v_blank = %d\n",
+		shutter, imgsensor.frame_length, realtime_fps, v_blank);
+}				/* set_shutter_frame_length */
+
 
 static kal_uint16 set_gain(kal_uint16 gain)
 {
