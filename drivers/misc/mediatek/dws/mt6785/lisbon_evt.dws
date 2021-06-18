@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.24.2021.16:49:04"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="06.16.2021.10:09:05"-->
 <dct_cfg>
     <general chip="MT6785">
         <proj>MT6785_Phone</proj>
@@ -569,7 +569,7 @@
             </gpio43>
             <gpio44>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
