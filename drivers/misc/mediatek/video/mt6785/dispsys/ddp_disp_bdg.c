@@ -2289,10 +2289,10 @@ int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
 				TX_REG[i]->DSI_TX_PHY_TIMECON3, CLK_HS_EXIT,
 				timcon3.CLK_HS_EXIT);
 
-		mtk_spi_write(0x00021000 + 0x0110, 0x0D120B09);
-		mtk_spi_write(0x00021000 + 0x0114, 0x122D0D24);
-		mtk_spi_write(0x00021000 + 0x0118, 0x0D390103);
-		mtk_spi_write(0x00021000 + 0x011c, 0x00120D0A);
+		mtk_spi_write(0x00021000 + 0x0110, 0x0C110A08);  /*480M*/
+		mtk_spi_write(0x00021000 + 0x0114, 0x10280C20);
+		mtk_spi_write(0x00021000 + 0x0118, 0x0D320103);
+		mtk_spi_write(0x00021000 + 0x011c, 0x00101209);
 
 		DISPINFO("%s, PHY_TIMECON0=0x%08x,PHY_TIMECON1=0x%08x\n",
 			__func__,
