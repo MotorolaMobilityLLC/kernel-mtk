@@ -147,9 +147,10 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 static struct LCM_setting_table init_setting_cmd[] = {
 	{0xFF, 3, {0x78, 0x07, 0x06} }, //120HZ
 	{0x5F, 1, {0x24} },
-	{0x4E, 1, {0x60} },
-	{0x4D, 1, {0x01} },
+	{0x4E, 1, {0xF0} },
+	{0x4D, 1, {0x00} },
 	{0x48, 1, {0x09} },
+	{0xC7, 1, {0x05} },
 
 	{0xFF, 3, {0x78, 0x07, 0x00} },	//Page0  120dsc
 	{0x11, 1, {0x00} },
@@ -268,15 +269,15 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 20;
-	params->dsi.vertical_frontporch = 50;
+	params->dsi.vertical_frontporch = 2580;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
  	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 101;
+	params->dsi.horizontal_backporch = 59;
 	params->dsi.horizontal_frontporch = 102;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
-	params->dsi.PLL_CLOCK = 519;
+	params->dsi.PLL_CLOCK = 480;
 	params->physical_height = 161;
 	params->physical_width = 70;
 
@@ -325,9 +326,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
-        //params->dsi.lcm_esd_check_table[1].cmd = 0x0d;
-        //params->dsi.lcm_esd_check_table[1].count = 1;
-        //params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
+        params->dsi.lcm_esd_check_table[1].cmd = 0x0b;
+        params->dsi.lcm_esd_check_table[1].count = 1;
+        params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
 
 	#ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	/****DynFPS start****/
@@ -359,7 +360,7 @@ static void lcm_suspend_power(void)
 
 static void lcm_resume_power(void)
 {
-	SET_RESET_PIN(0);
+	//SET_RESET_PIN(0);
 	lcm_init_power();
 }
 
