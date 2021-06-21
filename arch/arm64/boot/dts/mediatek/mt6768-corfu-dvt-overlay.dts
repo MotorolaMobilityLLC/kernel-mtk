@@ -25,5 +25,5 @@
 	};
 };
 #include "mediatek/mt6768-corfu-camera-sensor-dvt-overlay.dtsi"
-#include <corfu_evb/cust.dtsi>
+#include <corfu_dvt/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
