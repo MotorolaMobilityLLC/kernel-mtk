@@ -86,7 +86,11 @@ static struct proc_dir_entry *mtkfb_procfs;
 static struct proc_dir_entry *disp_lowpower_proc;
 #endif
 
+#ifdef CONFIG_MTK_VIDEO_DEBUG
 unsigned int g_mobilelog = 1;
+#else
+unsigned int g_mobilelog = 0;
+#endif
 int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;

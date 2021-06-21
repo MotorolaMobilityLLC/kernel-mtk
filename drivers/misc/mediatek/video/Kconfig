@@ -167,3 +167,11 @@ config MTK_DRE30_SUPPORT
 	  display visual enhancement ver.3.
 	  This feature requires the cowork of AAL user-space algorithm process.
 	  Please also turn on MTK_AAL_SUPPORT amd MTK_DRE30_SUPPORT in ProjectConfig.mk.
+
+config MTK_VIDEO_DEBUG
+        bool "Support MTK Video debug logs"
+        help
+          This config decide video more debug logs
+          User build will disable
+          If you are not sure about this, do not set it to y
+
