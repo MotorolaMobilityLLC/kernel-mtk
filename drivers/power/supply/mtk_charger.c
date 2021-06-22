@@ -58,6 +58,7 @@
 #include <linux/reboot.h>
 
 #include "mtk_charger.h"
+#include <linux/qpnp_adaptive_charge.h>
 
 struct tag_bootmode {
 	u32 size;
@@ -1941,6 +1942,11 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		mmi->target_fcc,
 		mmi->target_usb,
 		mmi->demo_discharging);
+	pr_info("[%s]adaptive charging:disable_ibat = %d, "
+		"disable_ichg = %d\n",
+		__func__,
+		mmi->adaptive_charging_disable_ibat,
+		mmi->adaptive_charging_disable_ichg);
 end_check:
 
 	return;
@@ -2233,6 +2239,34 @@ static DEVICE_ATTR(force_max_chrg_temp, 0644,
 		force_max_chrg_temp_show,
 		force_max_chrg_temp_store);
 
+void adaptive_charging_disable_ichg(bool on)
+{
+	struct mtk_charger *info = mmi_info;
+
+	if (info == NULL)
+		return;
+
+	info->mmi.adaptive_charging_disable_ichg = !!on;
+	pr_info("%s: adaptive charging disable ichg %d\n", __func__,
+		info->mmi.adaptive_charging_disable_ichg);
+	_wake_up_charger(info);
+}
+EXPORT_SYMBOL(adaptive_charging_disable_ichg);
+
+void adaptive_charging_disable_ibat(bool on)
+{
+	struct mtk_charger *info = mmi_info;
+
+	if (info == NULL)
+		return;
+
+	info->mmi.adaptive_charging_disable_ibat = !!on;
+	pr_info("%s: adaptive charging disable ibat %d\n", __func__,
+		info->mmi.adaptive_charging_disable_ibat);
+	_wake_up_charger(info);
+}
+EXPORT_SYMBOL(adaptive_charging_disable_ibat);
+
 static int  mtk_charger_tcmd_set_usb_current(void *input, int  val);
 
 void mmi_init(struct mtk_charger *info)
@@ -2246,6 +2280,8 @@ void mmi_init(struct mtk_charger *info)
 
 	info->mmi.is_factory_image = false;
 	info->mmi.charging_limit_modes = CHARGING_LIMIT_UNKNOWN;
+	info->mmi.adaptive_charging_disable_ibat = false;
+	info->mmi.adaptive_charging_disable_ichg = false;
 
 	rc = parse_mmi_dt(info, &info->pdev->dev);
 	if (rc < 0)

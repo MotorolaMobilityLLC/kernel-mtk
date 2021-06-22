@@ -264,6 +264,10 @@ struct mmi_params {
 
 	bool			factory_kill_armed;
 
+	/*adaptive charging*/
+	bool adaptive_charging_disable_ichg;
+	bool adaptive_charging_disable_ibat;
+
 	/* Charge Profile */
 	int			num_temp_zones;
 	struct mmi_temp_zone	*temp_zones;
