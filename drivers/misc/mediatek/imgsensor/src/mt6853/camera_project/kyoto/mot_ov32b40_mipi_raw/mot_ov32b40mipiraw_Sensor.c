@@ -10,6 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
   ****************************************************************************/
+#include <linux/module.h>
+#include <linux/kernel.h>
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -26,9 +28,12 @@
 #include "mot_ov32b40mipiraw_Sensor.h"
 
 #define PFX "[imgsensor] mot_ov32b40mipiraw"
-static int m_mot_camera_debug = 0;
-#define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
-#define LOG_DEBUG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+
+static int mot_sensor_debug = 0;
+module_param(mot_sensor_debug, int, S_IRWXU);
+
+#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_DEBUG(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 
 #define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
@@ -422,7 +427,7 @@ static inline void updat_shutter(kal_uint32 shutter)
 		  *In the tuning file camera_AE_custom_transfotm.cpp:
 		  *u4Eposuretime = u4Eposuretime / u4BinningSumRatio
 		  */
-		long_shutter= shutter*2;
+		long_shutter= shutter;
 		write_cmos_sensor_8(0x3500, (long_shutter >> 16) & 0xFF);
 		write_cmos_sensor_8(0x3501, (long_shutter >> 8) & 0xFF);
 		write_cmos_sensor_8(0x3502, (long_shutter) & 0xFF);
@@ -1174,11 +1179,33 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	return ERROR_NONE;
 }
 
+static const char *mot_ov32b40_scenario_to_name(enum MSDK_SCENARIO_ID_ENUM scenario_id)
+{
+	const char *pScenarioName[] = {
+		"MSDK_SCENARIO_ID_CAMERA_PREVIEW",
+		"MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG",
+		"MSDK_SCENARIO_ID_VIDEO_PREVIEW",
+		"MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO",
+		"MSDK_SCENARIO_ID_SLIM_VIDEO",
+		"MSDK_SCENARIO_ID_CUSTOM1",
+		"MSDK_SCENARIO_ID_CUSTOM2",
+		"MSDK_SCENARIO_ID_CUSTOM3",
+		"MSDK_SCENARIO_ID_CUSTOM4",
+		"MSDK_SCENARIO_ID_CUSTOM5",
+		"MSDK_SCENARIO_ID_MAX",
+	};
+
+	if (scenario_id >= MSDK_SCENARIO_ID_CAMERA_PREVIEW && scenario_id <= MSDK_SCENARIO_ID_MAX)
+		return pScenarioName[scenario_id];
+	else
+		return "SCENARIO_UNKONWN";
+}
+
 static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("scenario_id = %d\n", scenario_id);
+	LOG_INF_N("scenario(%d): %s\n", scenario_id, mot_ov32b40_scenario_to_name(scenario_id));
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.current_scenario_id = scenario_id;
 	spin_unlock(&imgsensor_drv_lock);
@@ -1736,23 +1763,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
-		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			*feature_return_para_32 = 2; /*BINNING_NONE*/
-			break;
-		case MSDK_SCENARIO_ID_CUSTOM2:
-			*feature_return_para_32 = 4; /*BINNING_NONE*/
-			break;
-		case MSDK_SCENARIO_ID_CUSTOM3:
-			*feature_return_para_32 = 1; /*BINNING_NONE*/
-			break;
-		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		default:
-			*feature_return_para_32 = 2; /*BINNING_AVERAGED*/
-			break;
+			case MSDK_SCENARIO_ID_CUSTOM3:
+				*feature_return_para_32 = 1000; /*BINNING_NONE*/
+				break;
+			default:
+				*feature_return_para_32 = 1310; /*BINNING_AVERAGED*/
+				break;
 		}
 		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
 			*feature_return_para_32);
