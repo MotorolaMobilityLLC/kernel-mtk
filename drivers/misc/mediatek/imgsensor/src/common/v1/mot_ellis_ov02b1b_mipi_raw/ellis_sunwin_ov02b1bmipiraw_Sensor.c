@@ -221,14 +221,19 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 
 static void set_dummy(void)
 {
-    	if (imgsensor.frame_length%2 != 0) {
+	kal_uint32 v_blank = 0;
+
+	if (imgsensor.frame_length%2 != 0) {
 		imgsensor.frame_length = imgsensor.frame_length - imgsensor.frame_length % 2;
 	}
 
-	LOG_INF_D("imgsensor.frame_length = %d\n", imgsensor.frame_length);
+	v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+
+	LOG_INF("imgsensor.frame_length = %d, v_blank = %d\n", imgsensor.frame_length, v_blank);
+
 	write_cmos_sensor(0xfd, 0x01);
-	write_cmos_sensor(0x14, ((imgsensor.frame_length-0x4c4) & 0x7F00) >> 8);
-	write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+	write_cmos_sensor(0x14, (v_blank & 0x7F00) >> 8);
+	write_cmos_sensor(0x15, v_blank & 0xFF);
 	write_cmos_sensor(0xfe, 0x02);//fresh
 }    /*    set_dummy  */
 
@@ -262,7 +267,8 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 
 static void write_shutter(kal_uint32 shutter)
 {
-    kal_uint32 realtime_fps = 0;
+	kal_uint32 realtime_fps = 0;
+	kal_uint32 v_blank;
 
     spin_lock(&imgsensor_drv_lock);
 
@@ -297,16 +303,18 @@ static void write_shutter(kal_uint32 shutter)
             set_max_framerate(realtime_fps, 0);
         } else {
             imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
-            write_cmos_sensor(0xfd, 0x01);
-            write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-            write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
-            write_cmos_sensor(0xfe, 0x02);//fresh
-            }
-    } else {
-        imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
-        write_cmos_sensor(0xfd, 0x01);
-        write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-        write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
+			v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+                        write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+			write_cmos_sensor(0x15, v_blank & 0xFF);
+			write_cmos_sensor(0xfe, 0x02);	//fresh
+		}
+	} else {
+		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+		v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+		write_cmos_sensor(0x15, v_blank & 0xFF);
         write_cmos_sensor(0xfe, 0x02);//fresh
    }
 
@@ -315,7 +323,7 @@ static void write_shutter(kal_uint32 shutter)
     write_cmos_sensor(0x0f, shutter  & 0xFF);
     write_cmos_sensor(0xfe, 0x02);//fresh sss
 
-    //LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+    LOG_INF("shutter =%d, framelength =%d, v_blank = %d\n", shutter, imgsensor.frame_length, v_blank);
 }
 
 static void set_shutter(kal_uint32 shutter)
@@ -330,9 +338,10 @@ static void set_shutter(kal_uint32 shutter)
 static void set_shutter_frame_length(kal_uint16 shutter,
 			kal_uint16 frame_length)
 {
-	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	kal_int32 dummy_line = 0;
+	unsigned long flags;
+	kal_uint32 v_blank = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
@@ -340,7 +349,7 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 
 	spin_lock(&imgsensor_drv_lock);
 	if (frame_length > 1)
-		dummy_line = frame_length - imgsensor.frame_length;
+	    dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
 
 	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
@@ -362,39 +371,41 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 	shutter = (shutter >> 1) << 1;
 	imgsensor.frame_length = (imgsensor.frame_length >> 1) << 1;
 //auroflicker:need to avoid 15fps and 30 fps
-	if (imgsensor.autoflicker_en) {
+	if (imgsensor.autoflicker_en == KAL_TRUE) {
 		realtime_fps = imgsensor.pclk /
 			imgsensor.line_length * 10 / imgsensor.frame_length;
 		if (realtime_fps >= 297 && realtime_fps <= 305) {
 			realtime_fps = 296;
-	    set_max_framerate(realtime_fps, 0);
+			set_max_framerate(realtime_fps, 0);
 		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
 			realtime_fps = 146;
-	    set_max_framerate(realtime_fps, 0);
+			set_max_framerate(realtime_fps, 0);
 		} else {
-		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
-        write_cmos_sensor(0xfd, 0x01);
-	    write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-	    write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
-        write_cmos_sensor(0xfe, 0x02);
+			imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+			v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+			write_cmos_sensor(0xfd, 0x01);
+			write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+			write_cmos_sensor(0x15, v_blank & 0xFF);
+			write_cmos_sensor(0xfe, 0x02);
 		}
 	} else {
-	    imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
-        write_cmos_sensor(0xfd, 0x01);
-	    write_cmos_sensor(0x14, (imgsensor.frame_length - 0x4c4) >> 8);
-	    write_cmos_sensor(0x15, (imgsensor.frame_length - 0x4c4) & 0xFF);
-        write_cmos_sensor(0xfe, 0x02);
+		imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+		v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
+		write_cmos_sensor(0xfd, 0x01);
+		write_cmos_sensor(0x14, (v_blank >> 8) & 0x7F);
+		write_cmos_sensor(0x15, v_blank & 0xFF);
+		write_cmos_sensor(0xfe, 0x02);
 	}
 
-	/* Update Shutter */
 	 write_cmos_sensor(0xfd, 0x01);
 	 write_cmos_sensor(0x0e, (shutter >> 8) & 0xFF);
 	 write_cmos_sensor(0x0f, shutter  & 0xFF);
 	 write_cmos_sensor(0xfe, 0x02);
 
-	//LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d\n",
-	//	shutter, imgsensor.frame_length, realtime_fps);
+	LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d, v_blank = %d\n",
+		shutter, imgsensor.frame_length, realtime_fps, v_blank);
 }				/* set_shutter_frame_length */
+
 
 
 
