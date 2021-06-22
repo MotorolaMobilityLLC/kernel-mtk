@@ -220,7 +220,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*if HFP solution*/
 	/*dfps_params[0].horizontal_frontporch = xx;*/
 	dfps_params[0].vertical_frontporch = 1372;
-	//dfps_params[0].vertical_frontporch_for_low_power = 2500;
+	dfps_params[0].vertical_frontporch_for_low_power = 1372;
 
 	/*if need mipi hopping params add here*/
 	//dfps_params[0].dynamic_switch_mipi = 0;
@@ -239,7 +239,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*if HFP solution*/
 	/*dfps_params[1].horizontal_frontporch = xx;*/
 	dfps_params[1].vertical_frontporch = 371;
-	//dfps_params[1].vertical_frontporch_for_low_power = 2500;
+	dfps_params[1].vertical_frontporch_for_low_power = 1372;
 
 	/*if need mipi hopping params add here*/
 	//dfps_params[1].dynamic_switch_mipi = 0;
@@ -295,7 +295,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 30;
 	params->dsi.vertical_frontporch = 1372;
-	//params->dsi.vertical_frontporch_for_low_power = 0;
+	params->dsi.vertical_frontporch_for_low_power = 1372;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 11;
