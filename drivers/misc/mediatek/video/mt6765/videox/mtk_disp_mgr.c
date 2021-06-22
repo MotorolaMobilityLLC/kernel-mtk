@@ -1563,6 +1563,7 @@ const char *_session_ioctl_spy(unsigned int cmd)
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = -1;
+	void __user *argp = (void __user *)arg;
 	static DEFINE_RATELIMIT_STATE(ioctl_ratelimit, 1 * HZ, 10);
 
 	switch (cmd) {
@@ -1620,7 +1621,14 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
-			return primary_display_get_lcm_index();
+			int lcm_index;
+			lcm_index = primary_display_get_lcm_index();
+			if (copy_to_user(argp, &lcm_index, sizeof(lcm_index))) {
+				DISPERR("mtk_disp_mgr_ioctl: handle get_lcm_index, copy_to_user_failed!\n");
+				return -EFAULT;
+			}
+			DISPDBG("%s: get lcm_index=%d\n", __func__, lcm_index);
+			return 0;
 		}
 	case DISP_IOCTL_QUERY_VALID_LAYER:
 		{
