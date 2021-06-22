@@ -352,6 +352,17 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
                 info->setting.input_current_limit1 = pdata->moto_chg_tcmd_ichg;//may not need as tcmd use normal usb as basic type
         }
+
+	if (info->mmi.adaptive_charging_disable_ibat) {
+		pdata->charging_current_limit = 0;
+		info->setting.charging_current_limit1 = 0;
+	}
+
+	if (info->mmi.adaptive_charging_disable_ichg) {
+		pdata->input_current_limit = 0;
+		info->setting.input_current_limit1 = 0;
+	}
+
 done:
 
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
@@ -499,6 +510,7 @@ static int do_algorithm(struct mtk_charger *info)
 	info->is_chg_done = chg_done;
 
 	if (is_basic == true) {
+
 		charger_dev_set_input_current(info->chg1_dev,
 			pdata->input_current_limit);
 		charger_dev_set_charging_current(info->chg1_dev,
@@ -507,7 +519,10 @@ static int do_algorithm(struct mtk_charger *info)
 			info->setting.cv);
 	}
 
-	charger_dev_enable_hz(info->chg1_dev, info->mmi.demo_discharging);
+	if (info->mmi.demo_discharging || info->mmi.adaptive_charging_disable_ichg)
+		charger_dev_enable_hz(info->chg1_dev, true);
+	else
+		charger_dev_enable_hz(info->chg1_dev, false);
 
 	if (pdata->input_current_limit == 0 ||
 	    pdata->charging_current_limit == 0)
