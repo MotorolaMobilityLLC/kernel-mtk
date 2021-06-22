@@ -226,6 +226,13 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+void VIB_ResetPos_Main(unsigned long a_u4Position)
+{
+	moveAF(a_u4Position);
+}
+#endif
+
 /* ////////////////////////////////////////////////////////////// */
 long DW9800WAF_Ioctl_Main(struct file *a_pstFile,
 		unsigned int a_u4Command, unsigned long a_u4Param)

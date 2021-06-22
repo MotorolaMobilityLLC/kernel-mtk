@@ -161,6 +161,11 @@ extern long DW9800WAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 extern int DW9800WAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int DW9800WAF_GetFileName(unsigned char *pFileName);
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#define VIB_ResetPos VIB_ResetPos_Main
+extern void VIB_ResetPos_Main(unsigned long a_u4Position);
+#endif
+
 #define MOT_LISBON_DW9800VAF_SetI2Cclient MOT_LISBON_DW9800VAF_SetI2Cclient_Main
 #define MOT_LISBON_DW9800VAF_Ioctl MOT_LISBON_DW9800VAF_Ioctl_Main
 #define MOT_LISBON_DW9800VAF_Release MOT_LISBON_DW9800VAF_Release_Main
