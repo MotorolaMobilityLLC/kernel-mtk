@@ -236,3 +236,13 @@ config MTK_FLASHLIGHT_COFUL_GPIO
 
 	  Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_COFUD_GPIO
+	tristate "Mediatek flashlight cofud gpio driver"
+	depends on MTK_FLASHLIGHT
+	help
+	  This is flashlight cofud gpio driver for camera.
+
+	  Say Y here if you want a cofud driver IC with GPIO interface.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
