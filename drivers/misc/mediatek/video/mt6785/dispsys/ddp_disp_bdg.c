@@ -6811,7 +6811,7 @@ void bdg_register_init(void)
 	GPIO = (struct BDG_GPIO_REGS *)DISPSYS_BDG_GPIO_BASE;
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
 	/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
-	DISPMSG("%s, ####### enter nfc_request_eint_irq!\n", __func__);
+	//DISPMSG("%s, ####### enter nfc_request_eint_irq!\n", __func__);
 	nfc_request_eint_irq();
 	/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 }
@@ -6835,7 +6835,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	if (nfc_clk_already_enabled)
 	{
 		bdg_clk_buf_nfc(1);
-		DISPMSG("%s, NFC SRCLK confirm open", __func__);
+		//DISPMSG("%s, NFC SRCLK confirm open", __func__);
 	}
 
 	set_LDO_on(cmdq);
@@ -7190,7 +7190,7 @@ void nfc_work_func(void)
 	int nfc_srclk;
 
 	nfc_srclk = gpio_get_value(mt6382_nfc_srclk);
-	DISPMSG("%s, NFC SRCLK GPIO Value = %d\n", __func__, nfc_srclk);
+	//DISPMSG("%s, NFC SRCLK GPIO Value = %d\n", __func__, nfc_srclk);
 
 	//suspend need to disable MT6382 first and enable SRCLK first
 	if (nfc_srclk != mt6382_nfc_gpio_value) { //the state of gpio has been updated
@@ -7198,14 +7198,14 @@ void nfc_work_func(void)
 
 		if (nfc_srclk == 1) {
 			//switch the mt6382 clock
-			DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
-				__func__, nfc_srclk);
+			//DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
+			//	__func__, nfc_srclk);
 			nfc_clk_already_enabled = true;
 			bdg_clk_buf_nfc(nfc_srclk);
 		} else {
 			//switch the mt6382 clock
-			DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
-				__func__, nfc_srclk);
+			//DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
+			//	__func__, nfc_srclk);
 			nfc_clk_already_enabled = false;
 			bdg_clk_buf_nfc(nfc_srclk);
 		}
@@ -7222,10 +7222,10 @@ irqreturn_t nfc_eint_thread_handler(int irq, void *data)
 void nfc_request_eint_irq(void)
 {
 	struct device_node *node;
-	DISPMSG("%s, #######begin!\n", __func__);
+	//DISPMSG("%s, #######begin!\n", __func__);
 	if (nfc_irq_already_requested) {
 		enable_irq(nfc_eint_irq);
-		DISPMSG("%s, #######nfc_irq_already_requested!\n", __func__);
+		//DISPMSG("%s, #######nfc_irq_already_requested!\n", __func__);
 		return;
 	}
 
@@ -7267,7 +7267,7 @@ void nfc_request_eint_irq(void)
 	// enable irq wake
 	irq_set_irq_wake(nfc_eint_irq, 1);
 
-	DISPMSG("%s, #######end!\n", __func__);
+	//DISPMSG("%s, #######end!\n", __func__);
 }
 /***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 
