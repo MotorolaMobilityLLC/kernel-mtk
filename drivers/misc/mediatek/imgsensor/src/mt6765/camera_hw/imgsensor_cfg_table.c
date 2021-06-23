@@ -197,6 +197,18 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_ELLIS_GC02M1B_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_ELLIS_GC02M1B_MIPI_RAW,
+		{
+			{RST, Vol_Low, 2},
+			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
+			{RST, Vol_High, 1},
+		},
+	},
+#endif
 #if defined(MOT_TONGA_S5KJN1SQ_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_TONGA_S5KJN1SQ_MIPI_RAW,

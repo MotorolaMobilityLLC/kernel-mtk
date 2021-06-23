@@ -135,6 +135,7 @@
 #define MOT_ELLIS_SC500CS_SENSOR_ID 0xee27
 #define MOT_ELLIS_OV02B1B_SENSOR_ID 0x002b
 #define MOT_ELLIS_HI556D_SENSOR_ID 0x0556
+#define MOT_ELLIS_GC02M1B_SENSOR_ID (0x02e0+1)
 //add ellis sensor id end
 //add tonga sensor id begin
 #define MOT_TONGA_S5K4H7_SENSOR_ID 0x487B
@@ -621,6 +622,7 @@
 #define SENSOR_DRVNAME_MOT_ELLIS_SC500CS_MIPI_RAW "mot_ellis_sc500cs_mipi_raw"
 #define SENSOR_DRVNAME_MOT_ELLIS_OV02B1B_MIPI_RAW "mot_ellis_ov02b1b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_ELLIS_HI556D_MIPI_RAW "mot_ellis_hi556d_mipi_raw"
+#define SENSOR_DRVNAME_MOT_ELLIS_GC02M1B_MIPI_RAW "mot_ellis_gc02m1b_mipi_raw"
 //add ellis sensor drvname end
 //add tonga sensor drvname begin
 #define SENSOR_DRVNAME_MOT_TONGA_S5K4H7_MIPI_RAW "mot_tonga_s5k4h7_mipi_raw"
