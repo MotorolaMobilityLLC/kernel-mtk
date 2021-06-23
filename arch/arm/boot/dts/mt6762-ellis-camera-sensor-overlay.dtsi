@@ -251,7 +251,7 @@
 
 	cam0_enable_sensor = "mot_ellis_hi1336_mipi_raw";
 	cam1_enable_sensor = "mot_ellis_sc500cs_mipi_raw mot_ellis_hi556d_mipi_raw";
-	cam2_enable_sensor = "mot_ellis_ov02b1b_mipi_raw";
+	cam2_enable_sensor = "mot_ellis_ov02b1b_mipi_raw mot_ellis_gc02m1b_mipi_raw";
 	status = "okay";
 
 };
