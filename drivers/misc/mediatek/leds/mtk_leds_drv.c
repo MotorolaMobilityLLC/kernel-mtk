@@ -106,6 +106,7 @@ int setMaxbrightness(int max_level, int enable)
 {
 #if !defined(CONFIG_MTK_AAL_SUPPORT)
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+	unsigned int min_level;
 
 	mutex_lock(&bl_level_limit_mutex);
 	if (enable == 1) {
@@ -115,17 +116,20 @@ int setMaxbrightness(int max_level, int enable)
 		else
 			limit = max_level;
 		mutex_unlock(&bl_level_limit_mutex);
+		min_level = current_level;
+		if(min_level > last_level)
+			min_level = last_level;
 		if (current_level != 0) {
-			if (limit < last_level) {
+			if (limit < min_level) {
 				pr_info
 				    ("Max brightness limit=%d\n", limit);
-				mt65xx_led_set_cust(&cust_led_list
+				mt_mt65xx_led_set_cust(&cust_led_list
 						    [MT65XX_LED_TYPE_LCD],
 						    limit);
 			} else {
 				mt65xx_led_set_cust(&cust_led_list
 						    [MT65XX_LED_TYPE_LCD],
-						    last_level);
+						    current_level);
 			}
 		}
 	} else {
@@ -140,7 +144,7 @@ int setMaxbrightness(int max_level, int enable)
 			pr_info("Control temperature close:limit=%d\n",
 				       limit);
 			mt65xx_led_set_cust(&cust_led_list[MT65XX_LED_TYPE_LCD],
-					    last_level);
+					    current_level);
 
 		}
 	}
