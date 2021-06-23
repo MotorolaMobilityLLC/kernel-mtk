@@ -398,7 +398,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(pd_active),
 	POWER_SUPPLY_ATTR(pd_authentication),
 	POWER_SUPPLY_ATTR(pd_type),
-	POWER_SUPPLY_ATTR(charging_enable),
 	POWER_SUPPLY_ATTR(fastcharge_enable),
 	POWER_SUPPLY_ATTR(input_suspend),
 	POWER_SUPPLY_ATTR(fast_charge_current),
