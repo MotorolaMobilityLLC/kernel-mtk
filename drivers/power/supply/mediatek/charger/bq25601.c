@@ -1269,8 +1269,7 @@ static int bq25601_parse_dt(struct bq25601_info *info,
 	return 0;
 }
 
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
-/*
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
 {
         int ret;
@@ -1284,7 +1283,24 @@ static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
 
         return !ret;
 }
-*/
+#endif
+
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+
+static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
+{
+        int ret;
+
+        pr_err("[%s]: en = %d\n",__func__,en);
+        ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
+                                       (unsigned char) (!en),
+                                       (unsigned char) (CON0_EN_HIZ_MASK),
+                                       (unsigned char) (CON0_EN_HIZ_SHIFT)
+                                      );
+
+        return !ret;
+}
+
 static void bq25601_inform_psy_dwork_handler(struct work_struct *work)
 {
         int ret = 0;
@@ -1433,7 +1449,7 @@ static struct charger_ops bq25601_chg_ops = {
 
 
 	/* Power path */
-	/*.enable_powerpath = bq25601_enable_power_path,*/
+	.enable_powerpath = bq25601_enable_power_path,
 	/*.is_powerpath_enabled = bq25601_get_is_power_path_enable, */
 
         /* ADC */
