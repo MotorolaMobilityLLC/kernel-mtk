@@ -55,7 +55,14 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint0>
-	    <eint4>
+            <eint1>
+                <varName>SWTP</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint1>
+            <eint4>
                 <varName>TCPC_PD</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
