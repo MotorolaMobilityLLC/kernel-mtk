@@ -516,7 +516,17 @@
 &lk_charger {
 	temp_t4_threshold = <60>;
 };
-
+&pio {
+	spislv_pins_default: spislv_mode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO47__FUNC_SPI1_A_MI>,
+				<PINMUX_GPIO49__FUNC_SPI1_A_MO>,
+				<PINMUX_GPIO50__FUNC_SPI1_A_CLK>,
+				<PINMUX_GPIO48__FUNC_SPI1_A_CSB>;
+			drive-strength = <3>;
+		};
+	};
+};
 &spi1 {
 	status = "okay";
 	#address-cells = <1>;
@@ -529,25 +539,13 @@
 		spi-max-frequency = <55000000>;
 		spi-tx-bus-width = <1>;
 		spi-rx-bus-width = <1>;
-		low-speed-tick-delay = /bits/ 8 <1>;
+		low-speed-tick-delay = /bits/ 8 <4>;
 		low-speed-early-trans = /bits/ 8 <0>;
-		high-speed-tick-delay = /bits/ 8 <0>;
-		high-speed-early-trans = /bits/ 8 <1>;
+		high-speed-tick-delay = /bits/ 8 <2>;
+		high-speed-early-trans = /bits/ 8 <0>;
 		slave-drive-strength = /bits/ 8 <3>;
 	};
 };
-&pio {
-	spislv_pins_default: spislv_mode_default {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO47__FUNC_SPI1_A_MI>,
-				<PINMUX_GPIO49__FUNC_SPI1_A_MO>,
-				<PINMUX_GPIO50__FUNC_SPI1_A_CLK>,
-				<PINMUX_GPIO48__FUNC_SPI1_A_CSB>;
-			drive-strength = <3>;
-		};
-	};
-};
-
 &spi3 {
 	ilitek@1 {
 		ilitek,report_gesture_key;
