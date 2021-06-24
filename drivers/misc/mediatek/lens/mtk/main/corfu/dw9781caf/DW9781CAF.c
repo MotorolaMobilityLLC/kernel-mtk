@@ -38,6 +38,8 @@
 #define LOG_INF(format, args...)
 #endif
 
+#define OIS_SWITCH 1
+
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
@@ -174,6 +176,24 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
+void control_ois(__user struct stAF_CtrlCmd *CtrlCmd)
+{
+	struct stAF_CtrlCmd ControlCmd;
+	copy_from_user(&ControlCmd, CtrlCmd, sizeof(struct stAF_CtrlCmd));
+
+	switch (ControlCmd.i8CmdID) {
+		case OIS_SWITCH:
+			if(ControlCmd.i8Param[0])
+				s4AF_WriteReg(0x7015,0x0002);
+			else
+				s4AF_WriteReg(0x7015,0x0000);
+			break;
+
+		default:
+			break;
+	}
+}
+
 /* ////////////////////////////////////////////////////////////// */
 long DW9781CAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		    unsigned long a_u4Param)
@@ -196,6 +216,10 @@ long DW9781CAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 
 	case AFIOC_T_SETMACROPOS:
 		i4RetValue = setAFMacro(a_u4Param);
+		break;
+
+	case AFIOC_X_CTRLPARA:
+		control_ois((__user struct stAF_CtrlCmd *)(a_u4Param));
 		break;
 
 	default:
