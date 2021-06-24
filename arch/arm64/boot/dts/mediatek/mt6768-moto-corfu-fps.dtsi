@@ -133,7 +133,7 @@
 };
 
 &odm {
-/*
+
 	fingerprint_int: fingerprint_int {
 		compatible = "mediatek,fingerprint-fpc";
 		fpc,enable-wakeup;
@@ -143,11 +143,11 @@
 		pinctrl-0 = <&fingerprint_irq>;
 		pinctrl-1 = <&fingerprint_reset_high>;
 		pinctrl-2 = <&fingerprint_reset_low>;
-		fpc,vdd= <&pio 89 0>;
-		fpc,irq = <&pio 15 0>;
+		fpc,vdd= <&pio 22 0>;
+		fpc,irq = <&pio 8 0>;
 		status = "okay";
 	};
-*/
+
 	egis_fp: fp_egistec {
 		compatible = "fp-egistec";
                 interrupt-parent = <&pio>;
