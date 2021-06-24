@@ -76,8 +76,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.pre = {
 		.pclk = 560000000, /*//30fps case*/
-		.linelength = 4584, /*//0x2330*/
-		.framelength = 4064, /*//0x09F0*/
+		.linelength = 5910, /*//0x2330*/
+		.framelength = 3156, /*//0x09F0*/
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4080, /*//0x0A20*/
@@ -85,12 +85,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 		//grabwindow_height should be 16's N times
 		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 662400000,
+		.mipi_pixel_rate = 494400000,
 	},
 	.cap = {
 		.pclk = 560000000, /*//30fps case*/
-		.linelength = 4584, /*//0x2330*/
-		.framelength = 4064, /*//0x09F0*/
+		.linelength = 5910, /*//0x2330*/
+		.framelength = 3156, /*//0x09F0*/
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4080, /*//0x0A20*/
@@ -98,7 +98,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		//grabwindow_height should be 16's N times
 		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 662400000,
+		.mipi_pixel_rate = 494400000,
 	},
 	.normal_video = {
 		.pclk = 560000000, /*//30fps case*/
@@ -111,7 +111,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		//grabwindow_height should be 16's N times
 		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 480000000,
+		.mipi_pixel_rate = 494400000,
 	},
 	.margin = 10,		/* sensor framelength & shutter margin */
 	.min_shutter = 4,	/* min shutter */
@@ -601,9 +601,9 @@ static void sensor_init(void)
 	pr_debug("sensor_init\n");
 
 	write_cmos_sensor(0x6028, 0x4000);
-	write_cmos_sensor(0x0000, 0x0001);
+	write_cmos_sensor(0x0000, 0x0002);
 	write_cmos_sensor(0x0000, 0x38E1);
-	write_cmos_sensor(0x001E, 0x0005);
+	write_cmos_sensor(0x001E, 0x0007);
 	write_cmos_sensor(0x6028, 0x4000);
 	write_cmos_sensor(0x6010, 0x0001);
 	mdelay(5);
