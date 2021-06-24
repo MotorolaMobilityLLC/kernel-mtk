@@ -125,7 +125,7 @@ static struct LCM_setting_table init_setting[] = {
 
 static struct LCM_setting_table bl_level[] = {
 	{0xFF, 0x03, {0x98, 0x83, 0x00} },
-	{0x51, 0x02, {0x06, 0x66} },
+	{0x51, 0x02, {0x0C, 0xCC} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -157,8 +157,8 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 };
 
 static struct LCM_setting_table lcm_hbm_setting[] = {
-	{0x51, 2, {0x06, 0x66} },	//80% PWM
-	{0x51, 2, {0x07, 0XFF} },	//100% PWM
+	{0x51, 2, {0x0C, 0xCC} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFE} },	//100% PWM
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -474,12 +474,14 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
+	unsigned int bl_lvl;
 
 	//for 11bit
 	LCM_LOGI("%s,ili9883a backlight: level = %d,bl_lvl=%d\n", __func__, level);
-	//for 11bit
-	bl_level[1].para_list[0] = (level&0x700)>>8;
-	bl_level[1].para_list[1] = (level&0xFF);
+	//BL OTP 11bit use bit_11--bit_1 for TM_ILI9883A
+	bl_lvl = level<<1;
+	bl_level[1].para_list[0] = (bl_lvl&0xF00)>>8;
+	bl_level[1].para_list[1] = (bl_lvl&0xFE);
 
 	push_table(handle, bl_level,
 		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
