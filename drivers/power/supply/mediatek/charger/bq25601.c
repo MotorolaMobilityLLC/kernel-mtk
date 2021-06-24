@@ -1134,7 +1134,9 @@ static int bq25601_enable_otg(struct charger_device *chg_dev, bool en)
 	if (en) {
 		bq25601_set_chg_config(0);
 		bq25601_set_otg_config(1);
+#ifndef CONFIG_MOTO_CHG_BQ25601_SUPPORT
 		bq25601_set_watchdog(0x3);	/* WDT 160s */
+#endif
 	} else {
 		bq25601_set_otg_config(0);
 		bq25601_set_chg_config(1);
@@ -1361,7 +1363,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                 goto out;
         }
 
-        msleep(300);
+        msleep(500);
 
         for(count;count<1;count++){
                 ret = bq25601_read_byte(8, &val);
