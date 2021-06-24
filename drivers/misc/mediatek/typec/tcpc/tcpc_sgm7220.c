@@ -334,7 +334,7 @@ static void sgm7220_process_interrupt_register(struct sgm7220_chip *chip, u8 sta
 	case SGM7220_TYPE_NOT_ATTACHED:
 		tcpc->typec_attach_new = TYPEC_UNATTACHED;
 		tcpci_report_usb_port_changed(tcpc);
-		tcpci_notify_typec_state(tcpc);
+		//tcpci_notify_typec_state(tcpc);
 		if (tcpc->typec_attach_old == TYPEC_ATTACHED_SRC) {
 		    tcpci_source_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		}
@@ -345,7 +345,7 @@ static void sgm7220_process_interrupt_register(struct sgm7220_chip *chip, u8 sta
 				tcpc->typec_attach_new = TYPEC_ATTACHED_SRC;
 				tcpci_report_usb_port_changed(tcpc);
 				tcpci_source_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, 0);
-				tcpci_notify_typec_state(tcpc);
+				//tcpci_notify_typec_state(tcpc);
 				tcpc->typec_attach_old = TYPEC_ATTACHED_SRC;
 		}
 		break;
@@ -353,7 +353,7 @@ static void sgm7220_process_interrupt_register(struct sgm7220_chip *chip, u8 sta
 		if (tcpc->typec_attach_new != TYPEC_ATTACHED_SNK) {
 				tcpc->typec_attach_new = TYPEC_ATTACHED_SNK;
 				tcpci_report_usb_port_changed(tcpc);
-				tcpci_notify_typec_state(tcpc);
+				//tcpci_notify_typec_state(tcpc);
 				tcpc->typec_attach_old = TYPEC_ATTACHED_SNK;
 		}
 		break;
