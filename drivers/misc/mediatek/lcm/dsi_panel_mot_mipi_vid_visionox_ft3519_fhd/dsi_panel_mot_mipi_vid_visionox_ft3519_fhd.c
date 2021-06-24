@@ -127,6 +127,8 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
+{0x80, 0x03, {0x01,0x10,0x10}},
+{0x58, 0x01, {0x01}},
 {0x35, 0x01, {0x00}},
 {0x53, 0x01, {0x20}},
 {0x51, 0x02, {0x07,0xff}},
@@ -251,14 +253,15 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	params->dsi.PLL_CLOCK = 550;    /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 620;    /* this value must be in MTK suggested table */
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
 	params->dsi.fbk_div = 0x1;
 #endif
 
-	params->dsi.clk_lp_per_line_enable = 0;
+	params->dsi.cont_clock = 0;
+	params->dsi.clk_lp_per_line_enable = 1;
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
