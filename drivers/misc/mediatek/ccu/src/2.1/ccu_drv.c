@@ -878,6 +878,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			"CCU_IOCTL_GET_I2C_DMA_BUF_ADDR fail: %d\n",
 			ret);
 			ret = -EFAULT;
+			break;
 		}
 
 		ret = ccu_get_i2c_dma_buf_addr(g_ccu_device, &ioarg);
