@@ -66,6 +66,7 @@ static int bdg_eint_irq;
 static int nfc_eint_irq;
 static int mt6382_nfc_srclk;
 static bool nfc_irq_already_requested;
+static bool nfc_clk_already_enabled;
 static int mt6382_nfc_gpio_value;
 static int mt6382_connected;
 /***** NFC SRCLKENAI0 Interrupt Handler --- *****/
@@ -6807,6 +6808,11 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	spislv_init();
 	spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
 
+	if (nfc_clk_already_enabled)
+		bdg_clk_buf_nfc(1);
+	else
+		bdg_clk_buf_nfc(0);
+
 	set_LDO_on(cmdq);
 	set_mtcmos_on(cmdq);
 	ana_macro_on(cmdq);
@@ -7169,11 +7175,13 @@ void nfc_work_func(void)
 			//switch the mt6382 clock
 			//DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
 			//	__func__, nfc_srclk);
+			nfc_clk_already_enabled = true;
 			bdg_clk_buf_nfc(nfc_srclk);
 		} else {
 			//switch the mt6382 clock
 			//DISPMSG("%s, NFC SRCLK switch the display clock = %d\n",
 			//	__func__, nfc_srclk);
+			nfc_clk_already_enabled = false;
 			bdg_clk_buf_nfc(nfc_srclk);
 		}
 	}
