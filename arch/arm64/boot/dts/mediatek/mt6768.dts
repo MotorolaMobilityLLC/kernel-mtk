@@ -1684,6 +1684,10 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	swtp:swtp@{
+		compatible = "mediatek, swtp-eint";
+	};
+
 	mt6358_gauge {
 		compatible = "mediatek,mt6358_gauge";
 		bootmode = <&chosen>;
