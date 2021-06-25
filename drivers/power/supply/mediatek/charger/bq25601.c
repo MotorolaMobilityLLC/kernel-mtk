@@ -1217,7 +1217,7 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_batlowv(0x1);	/* BATLOWV 3.0V */
 	bq25601_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
 	bq25601_set_en_term(0x1);	/* Enable termination */
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 	bq25601_set_watchdog(0x0);      /* CLOSE WDT */
 #else
 	bq25601_set_watchdog(0x3);	/* WDT 160s */
