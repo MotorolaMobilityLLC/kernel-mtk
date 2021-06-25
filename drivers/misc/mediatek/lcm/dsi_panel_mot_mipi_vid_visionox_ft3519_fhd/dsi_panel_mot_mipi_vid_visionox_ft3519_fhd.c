@@ -112,6 +112,8 @@ static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 #define FALSE 0
 #endif
 
+#define LCM_BIT_11	TRUE
+
 struct LCM_setting_table {
 	unsigned int cmd;
 	unsigned char count;
@@ -477,9 +479,29 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
+#if LCM_BIT_11
+	unsigned int bl_min = 12;
+	unsigned int bl_lvl;
+
+	pr_info("[LCM]%s, backlight value = %d \n", __func__, level);
+	if (level < bl_min) {
+		//avoid panel too dark
+		level = bl_min;
+		pr_debug("%s, reset min bl\n", __func__);
+	}
+
+	bl_lvl = level;
+	//for 11bit
+	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
+	bl_level[0].para_list[1] = (bl_lvl&0xFF);
+	pr_debug("%s:bl: para_list[0]=0x%x, para_list[1]=0x%x\n", __func__, bl_level[0].para_list[0], bl_level[0].para_list[1]);
+#else
+	//default max level 255
 	pr_info("[LCM]%s,backlight value = %d \n", __func__, level);
 	bl_level[0].para_list[0] = (level >> 5) & 0x07;
     bl_level[0].para_list[1] = (level << 3) & 0xF8;
+#endif
+
 	push_table(bl_level,
 			sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
