@@ -39,6 +39,16 @@ const struct of_device_id swtp_of_match[] = {
 #endif
 	{},
 };
+
+// modify by wt.changtingting for swtp start
+static const char irq_name[][16] = {
+	"swtp0-eint",
+	"swtp1-eint",
+	"swtp2-eint",
+	"swtp3-eint"
+};
+// modify by wt.changtingting for swtp end
+
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
@@ -232,12 +242,7 @@ static void swtp_init_delayed_work(struct work_struct *work)
 #endif
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
-#ifdef KYOTO_SWTP_CUST
-	// modify by wt.changtingting for swtp start
-	char irq_name[12];
-	int has_write = 0;
-	// modify by wt.changtingting for swtp end
-#endif
+
 	CCCI_NORMAL_LOG(-1, SYS, "%s start\n", __func__);
 	CCCI_BOOTUP_LOG(-1, SYS, "%s start\n", __func__);
 
@@ -254,6 +259,15 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
+	// modify by wt.changtingting for swtp start
+	if (ARRAY_SIZE(swtp_of_match) < MAX_PIN_NUM || ARRAY_SIZE(irq_name) < MAX_PIN_NUM) {
+		ret = -5;
+		CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: invalid array count = %d(swtp_of_match), %d(irq_name)\n", __func__, ARRAY_SIZE(swtp_of_match) ,ARRAY_SIZE(irq_name));
+		goto SWTP_INIT_END;
+	}
+
+	// modify by wt.changtingting for swtp end
 	for (i = 0; i < MAX_PIN_NUM; i++)
 		swtp_data[md_id].gpio_state[i] = SWTP_EINT_PIN_PLUG_OUT;
 
@@ -302,15 +316,10 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
 				(i == 0 ? "swtp0-eint" : "swtp1-eint"),
 				&swtp_data[md_id]);*/
-			memset(irq_name, 0, sizeof(irq_name));
-			has_write = snprintf(irq_name, 12, "swtp%d-eint", i);
-			if (has_write <= 0 || has_write > 12) {
-				CCCI_LEGACY_ERR_LOG(md_id, SYS, "get swtp%d-eint fail\n", i);
-				break;
-			}
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
-				irq_name, &swtp_data[md_id]);
+				irq_name[i],
+				&swtp_data[md_id]);
 			// modify by wt.changtingting for swtp end
 #else
 #ifndef DISABLE_SWTP_FACTORY
