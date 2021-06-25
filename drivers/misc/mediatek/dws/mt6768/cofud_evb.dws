@@ -178,6 +178,17 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio5>
+            <gpio7>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+		<out_high>false</out_high>
+		<varName0>GPIO_CHG_INT</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio7>
             <gpio8>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -1657,7 +1668,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_UART_UTXD1_PIN</varName0>
+                <varName0>GPIO_CHG_EN_0</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio151>
