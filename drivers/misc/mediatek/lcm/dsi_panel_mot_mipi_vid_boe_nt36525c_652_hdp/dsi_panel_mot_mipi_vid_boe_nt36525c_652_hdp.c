@@ -492,6 +492,9 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	push_table(handle, bl_level,
 		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+
+	lcm_hbm_setting[0].para_list[0] = bl_level[2].para_list[0];
+	lcm_hbm_setting[0].para_list[1] = bl_level[2].para_list[1];
 }
 
 static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
