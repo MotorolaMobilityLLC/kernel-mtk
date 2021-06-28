@@ -89,18 +89,6 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.hs_video = {
 		.pclk = 600000000,
-		.linelength = 2116,
-		.framelength = 4720,
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 1920,
-		.grabwindow_height = 1080,
-		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 640000000,
-		.max_framerate = 600,
-	},
-	.slim_video = {
-		.pclk = 600000000,
 		.linelength = 2096,
 		.framelength = 2380,
 		.startx = 0,
@@ -110,6 +98,30 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 640000000,
 		.max_framerate = 1200,
+	},
+	.slim_video = {
+		.pclk = 560000000,
+		.linelength = 5910,
+		.framelength = 3156,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 4080,
+		.grabwindow_height = 3072,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 494400000,
+		.max_framerate = 300,
+	},
+	.custom1 = {
+		.pclk = 600000000,
+		.linelength = 2116,
+		.framelength = 4720,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1920,
+		.grabwindow_height = 1080,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 640000000,
+		.max_framerate = 600,
 	},
 	.margin = 10,
 	.min_shutter = 2,
@@ -126,6 +138,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.video_delay_frame = 2,
 	.hs_video_delay_frame = 2,
 	.slim_video_delay_frame = 2,
+	.custom1_delay_frame = 2,
 	.isp_driving_current = ISP_DRIVING_4MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
@@ -176,12 +189,14 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	}
 };
 
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 	{8160, 6144, 0, 0, 8160, 6144, 4080, 3072, 0, 0, 4080, 3072,0, 0, 4080, 3072},
 	{8160, 6144, 0, 0, 8160, 6144, 4080, 3072, 0, 0, 4080, 3072,0, 0, 4080, 3072},
 	{8160, 6144, 0, 0, 8160, 6144, 4080, 3072, 0, 0, 4080, 3072,0, 0, 4080, 3072},
-	{8160, 6144, 0, 0, 8160, 6144, 1920, 1080, 0, 0, 1920, 1080,0, 0, 1920, 1080},
 	{8160, 6144, 240, 912, 7680, 4320, 1280, 720, 0, 0, 1280, 720,0, 0, 1280, 720},
+	{8160, 6144, 0, 0, 8160, 6144, 4080, 3072, 0, 0, 4080, 3072,0, 0, 4080, 3072},
+	{8160, 6144, 240, 912, 7680, 4320, 1920, 1080, 0, 0, 1920, 1080,0, 0, 1920, 1080},
+
 };
 
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
@@ -1358,7 +1373,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x6F12, 0x0067);
 #endif
 }
-static void hs_video_setting(void)
+static void custom1_setting(void)
 {
 
 	LOG_INF("E\n");
@@ -1878,7 +1893,13 @@ static void normal_video_setting(kal_uint16 currefps)
 	capture_setting(currefps);
 }
 
-static void slim_video_setting(void)
+static void slim_video_setting(kal_uint16 currefps)
+{
+	LOG_INF("start\n");
+	capture_setting(currefps);
+}
+
+static void hs_video_setting(void)
 {
 
 	LOG_INF("E\n");
@@ -2456,8 +2477,24 @@ slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-	slim_video_setting();
+	slim_video_setting(imgsensor.current_fps);
 	set_mirror_flip(imgsensor.mirror);
+	return ERROR_NONE;
+}
+Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
+		image_window, MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+	LOG_INF("E\n");
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
+	imgsensor.pclk = imgsensor_info.custom1.pclk;
+
+	imgsensor.line_length = imgsensor_info.custom1.linelength;
+	imgsensor.frame_length = imgsensor_info.custom1.framelength;
+	imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
+	imgsensor.autoflicker_en = KAL_FALSE;
+	spin_unlock(&imgsensor_drv_lock);
+	custom1_setting();
 	return ERROR_NONE;
 }
 static kal_uint32
@@ -2484,6 +2521,10 @@ get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 		imgsensor_info.slim_video.grabwindow_width;
 	sensor_resolution->SensorSlimVideoHeight =
 		imgsensor_info.slim_video.grabwindow_height;
+	sensor_resolution->SensorCustom1Width =
+		imgsensor_info.custom1.grabwindow_width;
+	sensor_resolution->SensorCustom1Height =
+		imgsensor_info.custom1.grabwindow_height;
 	return ERROR_NONE;
 }
 
@@ -2513,6 +2554,7 @@ get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		imgsensor_info.hs_video_delay_frame;
 	sensor_info->SlimVideoDelayFrame =
 		imgsensor_info.slim_video_delay_frame;
+	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
 	sensor_info->FrameTimeDelayFrame =
 		imgsensor_info.frame_time_delay_frame;
 	sensor_info->SensorMasterClockSwitch = 0;
@@ -2587,6 +2629,11 @@ get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
 			imgsensor_info.slim_video.mipi_data_lp2hs_settle_dc;
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		sensor_info->SensorGrabStartX = imgsensor_info.custom1.startx;
+		sensor_info->SensorGrabStartY = imgsensor_info.custom1.starty;
+		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
+			imgsensor_info.custom1.mipi_data_lp2hs_settle_dc;
 	default:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
 		sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
@@ -2621,6 +2668,9 @@ control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		slim_video(image_window, sensor_config_data);
+		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		Custom1(image_window, sensor_config_data);
 		break;
 	default:
 		LOG_INF("Error ScenarioId setting");
@@ -2779,6 +2829,31 @@ set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM
 		if (imgsensor.frame_length > imgsensor.shutter)
 			set_dummy();
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		if (imgsensor.current_fps !=
+				imgsensor_info.custom1.max_framerate)
+			LOG_INF
+			("%d fps is not support, so use cap: %d fps!\n",
+			 framerate,
+			 imgsensor_info.custom1.max_framerate / 10);
+		frame_length =
+			imgsensor_info.custom1.pclk / framerate * 10 /
+			imgsensor_info.custom1.linelength;
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.dummy_line =
+			(frame_length >
+			 imgsensor_info.custom1.framelength) ? (frame_length -
+			 imgsensor_info.custom1.framelength) : 0;
+		if (imgsensor.dummy_line < 0)
+			imgsensor.dummy_line = 0;
+		imgsensor.frame_length =
+			imgsensor_info.custom1.framelength
+			 + imgsensor.dummy_line;
+		imgsensor.min_frame_length = imgsensor.frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		break;
 	default:
 		frame_length =
 			imgsensor_info.pre.pclk / framerate * 10 /
@@ -2823,6 +2898,9 @@ static kal_uint32 get_default_framerate_by_scenario(enum
 		break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		*framerate = imgsensor_info.slim_video.max_framerate;
+		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		*framerate = imgsensor_info.custom1.max_framerate;
 		break;
 	default:
 		break;
@@ -2985,6 +3063,11 @@ feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				   (void *)&imgsensor_winsize_info[4],
 				   sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			memcpy((void *)wininfo,
+				   (void *)&imgsensor_winsize_info[5],
+				   sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			memcpy((void *)wininfo,
@@ -3017,6 +3100,7 @@ feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		case MSDK_SCENARIO_ID_CUSTOM1:
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
 				   sizeof(struct SET_PD_BLOCK_INFO_T));
@@ -3041,6 +3125,7 @@ feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				   (void *)&SENSOR_VC_INFO[2],
 				   sizeof(struct SENSOR_VC_INFO_STRUCT));
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
 		default:
 			memcpy((void *)pvcinfo,
 				   (void *)&SENSOR_VC_INFO[0],
@@ -3125,6 +3210,13 @@ feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				imgsensor_info.slim_video.grabwindow_width;
 
 			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) =
+				(imgsensor_info.slim_video.pclk /
+				 (imgsensor_info.slim_video.linelength - 80)) *
+				imgsensor_info.slim_video.grabwindow_width;
+
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) =
@@ -3154,6 +3246,10 @@ feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) =
 				imgsensor_info.slim_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) =
+				imgsensor_info.custom1.mipi_pixel_rate;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
