@@ -133,6 +133,7 @@ static int initAF(void)
 		}
 
 		LOG_INF("DW9781C OIS driver init success!!\n");
+		LOG_INF("OIS ON!\n");
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
@@ -184,9 +185,15 @@ void control_ois(__user struct stAF_CtrlCmd *CtrlCmd)
 	switch (ControlCmd.i8CmdID) {
 		case OIS_SWITCH:
 			if(ControlCmd.i8Param[0])
+			{
 				s4AF_WriteReg(0x7015,0x0002);
+				LOG_INF("OIS OFF!\n");
+			}
 			else
+			{
 				s4AF_WriteReg(0x7015,0x0000);
+				LOG_INF("OIS ON!\n");
+			}
 			break;
 
 		default:
