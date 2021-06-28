@@ -1448,4 +1448,10 @@ config SND_SOC_SMARTPAINFO
 
 source "sound/soc/codecs/cs35l43/Kconfig"
 
+config SND_SOC_FS16XX_KERNEL
+	tristate "Support fs16xx/fs16xx kernel driver"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver
+
 endmenu
