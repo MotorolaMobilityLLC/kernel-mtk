@@ -377,7 +377,6 @@ void check_calibration_data(void)
 int GenerateFirmwareContexts(void)
 {
 	int i4RetValue;
-	g_firmwareContext.version = 0x0201;
 	g_firmwareContext.size = 10240; /* size: word */
 	g_firmwareContext.driverIc = 0x9781;
 
@@ -397,8 +396,10 @@ int GenerateFirmwareContexts(void)
 			i++;
 		}
 		LOG_INF("get dw9781c firmware sucess,and size = %d\n",dw9781cfw->size);
+
+		g_firmwareContext.version = *(g_firmwareContext.fwContentPtr+10235);
+		checksum_value = *(g_firmwareContext.fwContentPtr+10234);
 	}
-	checksum_value = *(g_firmwareContext.fwContentPtr+10234);
 	g_downloadByForce = 0;
 	return i4RetValue;
 }
