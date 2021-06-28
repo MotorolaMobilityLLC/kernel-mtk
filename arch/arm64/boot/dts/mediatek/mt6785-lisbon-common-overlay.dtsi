@@ -470,6 +470,8 @@
         DIFFERENCE_FULLOCV_ITH = <(900)>;       /*Charging termination current.*/
 	SHUTDOWN_1_TIME = <(15)>;
 	CAR_TUNE_VALUE = <(95)>;
+	TEMPERATURE_T4 = <(-10)>;
+	/*Battery temperature T4*/
 
 	UI_FULL_LIMIT_EN = <(1)>;
 	UI_FULL_LIMIT_SOC0 = <(10000)>;
