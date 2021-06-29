@@ -29,6 +29,7 @@ extern int backlight_brightness_set(int level);
 #else
 #define backlight_brightness_set(level) do { } while (0)
 #endif
+extern int hbm_brightness_set(int enable);
 extern int disp_bls_set_max_backlight(unsigned int level);
 extern void disp_aal_notify_backlight_changed(int bl_1024);
 extern bool disp_aal_is_support(void);
