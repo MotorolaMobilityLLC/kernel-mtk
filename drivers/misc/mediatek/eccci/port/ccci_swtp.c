@@ -40,6 +40,7 @@ const struct of_device_id swtp_of_match[] = {
 	{},
 };
 
+#ifdef KYOTO_SWTP_CUST
 // modify by wt.changtingting for swtp start
 static const char irq_name[][16] = {
 	"swtp0-eint",
@@ -48,6 +49,7 @@ static const char irq_name[][16] = {
 	"swtp3-eint"
 };
 // modify by wt.changtingting for swtp end
+#endif
 
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
