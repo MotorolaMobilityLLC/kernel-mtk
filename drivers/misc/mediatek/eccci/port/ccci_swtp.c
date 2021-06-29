@@ -261,6 +261,7 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
+#ifdef KYOTO_SWTP_CUST
 	// modify by wt.changtingting for swtp start
 	if (ARRAY_SIZE(swtp_of_match) < MAX_PIN_NUM || ARRAY_SIZE(irq_name) < MAX_PIN_NUM) {
 		ret = -5;
@@ -268,8 +269,8 @@ static void swtp_init_delayed_work(struct work_struct *work)
 			"%s: invalid array count = %d(swtp_of_match), %d(irq_name)\n", __func__, ARRAY_SIZE(swtp_of_match) ,ARRAY_SIZE(irq_name));
 		goto SWTP_INIT_END;
 	}
-
 	// modify by wt.changtingting for swtp end
+#endif
 	for (i = 0; i < MAX_PIN_NUM; i++)
 		swtp_data[md_id].gpio_state[i] = SWTP_EINT_PIN_PLUG_OUT;
 
