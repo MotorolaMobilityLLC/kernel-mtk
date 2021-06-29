@@ -463,6 +463,13 @@
         mmi,lower-limit-capacity = <60>;
 };
 
+&mt6360_pmu {
+	chg {
+		ircmp_resistor = <0>;           /* uohm */
+		ircmp_vclamp = <0>;             /* uV */
+	};
+};
+
 &bat_gm30 {
         io-channels = <&auxadc 5>;
         io-channel-names = "batteryID-channel";
