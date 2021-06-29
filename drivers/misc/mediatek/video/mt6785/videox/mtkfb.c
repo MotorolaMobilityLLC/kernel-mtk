@@ -94,6 +94,8 @@
 #include "mmpath.h"
 #include "mtkfb_params.h"
 
+#include "mtk_leds_drv.h"
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -239,6 +241,8 @@ int  mtkfb_set_cabc(int cabc_mode)
 int mtkfb_set_hbm(int hbm_state)
 {
     int cmd_type = PARAM_HBM;
+
+    hbm_brightness_set(hbm_state);
 
     if(primary_display_setlcm_cmd(&cmd_type, NULL, &hbm_state)) {
         pr_err("%s: set HBM %d failed.\n", __func__, hbm_state);
