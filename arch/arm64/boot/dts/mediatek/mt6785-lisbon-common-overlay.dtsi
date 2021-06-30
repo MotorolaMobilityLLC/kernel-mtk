@@ -467,6 +467,7 @@
 	chg {
 		ircmp_resistor = <0>;           /* uohm */
 		ircmp_vclamp = <0>;             /* uV */
+		cv = <4450000>;			/* uA */
 	};
 };
 
