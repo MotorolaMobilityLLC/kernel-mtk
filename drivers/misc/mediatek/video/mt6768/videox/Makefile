@@ -71,7 +71,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
 		     -I$(srctree)/drivers/misc/mediatek/m4u/2.0 \
              -I$(srctree)/drivers/devfreq	\
              -I$(srctree)/include/linux/soc/mediatek \
-             -I$(srctree)/drivers/misc/mediatek/sync/
+             -I$(srctree)/drivers/misc/mediatek/sync \
+             -I$(srctree)/drivers/misc/mediatek/leds	\
+             -I$(srctree)/drivers/misc/mediatek/leds/$(MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/trusted_mem/public/
