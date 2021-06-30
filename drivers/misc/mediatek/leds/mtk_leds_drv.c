@@ -95,6 +95,7 @@ static unsigned int limit_flag;
 static unsigned int last_level;
 static unsigned int current_level;
 static DEFINE_MUTEX(bl_level_limit_mutex);
+static int hbm_state;
 
 /****************************************************************************
  * external functions for display
@@ -244,6 +245,13 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 		}
 		mutex_unlock(&bl_level_limit_mutex);
 #endif
+		if(hbm_state) {
+			if(current_level) {
+				pr_info("[LED] %s: hbm_state %d, backlight level %d, ignore...\n", __func__, hbm_state, current_level);
+				return;
+			} else
+				hbm_state = 0;
+		}
 	}
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 	retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
@@ -420,6 +428,28 @@ int backlight_brightness_set(int level)
 
 }
 EXPORT_SYMBOL(backlight_brightness_set);
+
+/****************************************************************************
+ * external functions for HBM
+ ***************************************************************************/
+int hbm_brightness_set(int enable)
+{
+	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+	int level;
+
+	if(enable) {
+		level = cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness;
+	} else {
+		level = current_level;
+	}
+
+	hbm_state = enable;
+	pr_info("[LED] %s: hbm_state %d, level %d.\n", __func__, hbm_state, level);
+
+	return mt_mt65xx_led_set_cust(&cust_led_list[MT65XX_LED_TYPE_LCD], level);
+}
+EXPORT_SYMBOL(hbm_brightness_set);
+
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 static int led_i2c_probe(struct i2c_client *client,
 		const struct i2c_device_id *id);
