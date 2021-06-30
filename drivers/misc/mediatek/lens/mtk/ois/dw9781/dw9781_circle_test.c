@@ -83,8 +83,8 @@ int Cross_Motion_Test(unsigned short RADIUS, unsigned short ACCURACY,
 
 	LOG_INF("Gyro Gain X = 0x%04X -- Gyro Gain Y = 0x%04X\r\n", GYRO_GAIN[AXIS_X], GYRO_GAIN[AXIS_Y]);
 
-	REF_POSITION_RADIUS[AXIS_X] = 1000*(REF_GYRO_RESULT * H2D(GYRO_GAIN[AXIS_X])) / 8192.0f; //[code/deg]
-	REF_POSITION_RADIUS[AXIS_Y] = 1000*(REF_GYRO_RESULT * H2D(GYRO_GAIN[AXIS_Y])) / 8192.0f;
+	REF_POSITION_RADIUS[AXIS_X] = 1000*(REF_GYRO_RESULT * H2D(GYRO_GAIN[AXIS_X])) / 8192; //[code/deg]
+	REF_POSITION_RADIUS[AXIS_Y] = 1000*(REF_GYRO_RESULT * H2D(GYRO_GAIN[AXIS_Y])) / 8192;
 
 	LOG_INF("REF_POSITION_RADIUS_X = %f -- REF_POSITION_RADIUS_Y = %f\r\n", REF_POSITION_RADIUS[AXIS_X], REF_POSITION_RADIUS[AXIS_Y]);
 
@@ -112,10 +112,10 @@ int Cross_Motion_Test(unsigned short RADIUS, unsigned short ACCURACY,
 	circle_cnt = 0;
 
 	// X Move Test
-	for (point = 0; point <= x_points; point++)
+	for (point = 0; point < x_points; point++)
 	{
 		TARGET_POSITION[AXIS_X] = TARGET_RADIUS[AXIS_X] - x_step*point;
-		TARGET_POSITION[AXIS_Y] = 0;
+		TARGET_POSITION[AXIS_Y] = TARGET_RADIUS[AXIS_Y] * ((point > x_points/2) ? -1 : 1);
 
 		pResult->hea_result.g_targetAdc[AXIS_X][circle_cnt] = TARGET_POSITION[AXIS_X];
 		pResult->hea_result.g_targetAdc[AXIS_Y][circle_cnt] = TARGET_POSITION[AXIS_Y];
@@ -175,7 +175,7 @@ int Cross_Motion_Test(unsigned short RADIUS, unsigned short ACCURACY,
 	// Y Move Test
 	for (point = 0; point < y_points; point++)
 	{
-		TARGET_POSITION[AXIS_X] = 0;
+		TARGET_POSITION[AXIS_X] = TARGET_RADIUS[AXIS_X] * ((point > y_points/2) ? -1 : 1);
 		TARGET_POSITION[AXIS_Y] = TARGET_RADIUS[AXIS_Y] - y_step*point;
 
 		RamWriteA(0x7025, TARGET_POSITION[AXIS_X]);
