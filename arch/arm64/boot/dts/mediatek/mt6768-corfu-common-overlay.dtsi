@@ -89,6 +89,7 @@
 		status = "okay";
 		charging {
 		        gpios = <&pio 12 0x0>;
+			gpio-num = <12>;
 		        label = "charging";
 		        linux,default-trigger = "none";
 		        retain-state-suspended;
