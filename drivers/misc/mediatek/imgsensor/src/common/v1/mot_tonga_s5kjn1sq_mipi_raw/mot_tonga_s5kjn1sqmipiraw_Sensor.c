@@ -68,7 +68,7 @@ static const int I2C_BUFFER_LEN = 4;
  * PFX "[%s] " format, __func__, ##args)
  */
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
+static bool bNeedSetNormalMode = KAL_FALSE;
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_TONGA_S5KJN1SQ_SENSOR_ID,
@@ -304,6 +304,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 	set_dummy();
 }				/*      set_max_framerate  */
 
+#if 0
 static void write_shutter(kal_uint16 shutter)
 {
 
@@ -346,7 +347,7 @@ static void write_shutter(kal_uint16 shutter)
 		shutter, imgsensor.frame_length);
 
 }				/*      write_shutter  */
-
+#endif
 
 
 /*************************************************************************
@@ -365,22 +366,81 @@ static void write_shutter(kal_uint16 shutter)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static void set_shutter(kal_uint16 shutter)
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
+	kal_uint16 realtime_fps = 0;
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	write_shutter(shutter);
-}				/*      set_shutter */
+	spin_lock(&imgsensor_drv_lock);
+	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin) {
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+	} else {
+		imgsensor.frame_length = imgsensor.min_frame_length;
+	}
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length) {
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	}
+	spin_unlock(&imgsensor_drv_lock);
+	if (shutter < imgsensor_info.min_shutter)
+		shutter = imgsensor_info.min_shutter;
 
-static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
+	if (imgsensor.autoflicker_en) {
+		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305) {
+			set_max_framerate(296, 0);
+		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
+			set_max_framerate(146, 0);
+		} else {
+			// Extend frame length
+			write_cmos_sensor(0x0340, imgsensor.frame_length);
+		}
+	} else {
+		// Extend frame length
+		write_cmos_sensor(0x0340, imgsensor.frame_length);
+	}
+
+	if (shutter > 0xFFF0) {
+
+		bNeedSetNormalMode = KAL_TRUE;
+		if(shutter >= 3448275){
+			shutter = 3448275;
+		}
+		CintR = ((unsigned long long)shutter) / 128;
+		Time_Frame = CintR + 0x0002;
+		pr_debug("CintR = %d\n", CintR);
+		write_cmos_sensor(0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor(0x0202, CintR & 0xFFFF);
+		write_cmos_sensor(0x0702, 0x0700);
+		write_cmos_sensor(0x0704, 0x0700);
+
+		pr_debug("download long shutter setting shutter = %d\n", shutter);
+	} else {
+		if (bNeedSetNormalMode == KAL_TRUE) {
+			bNeedSetNormalMode = KAL_FALSE;
+			write_cmos_sensor(0x0702, 0x0000);
+			write_cmos_sensor(0x0704, 0x0000);
+
+			pr_debug("return to normal shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+
+		}
+		write_cmos_sensor(0x0340, imgsensor.frame_length);
+		write_cmos_sensor(0x0202, imgsensor.shutter);
+	}
+}
+
+static void set_shutter_frame_length(kal_uint32 shutter, kal_uint32 frame_length)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	kal_int32 dummy_line = 0;
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
@@ -418,11 +478,33 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
 	}
 
-	/* Update Shutter */
-	write_cmos_sensor(0X0202, shutter & 0xFFFF);
+	if (shutter > 0xFFF0) {	//linetime=10160/960000000<< maxshutter=3023622-line=32s
 
-	pr_debug("shutter = %d, framelength = %d/%d, dummy_line= %d\n", shutter, imgsensor.frame_length,
-		frame_length, dummy_line);
+		bNeedSetNormalMode = KAL_TRUE;
+		if(shutter >= 1538000){
+			shutter = 1538000;
+		}
+		CintR = (5013 * (unsigned long long)shutter) / 321536;
+		Time_Frame = CintR + 0x0002;
+		pr_debug("CintR = %d\n", CintR);
+		write_cmos_sensor(0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor(0x0202, CintR & 0xFFFF);
+		write_cmos_sensor(0x0702, 0x0600);
+		write_cmos_sensor(0x0704, 0x0600);
+
+		pr_debug("download long shutter setting shutter = %d\n", shutter);
+	} else {
+		if (bNeedSetNormalMode == 1) {
+			bNeedSetNormalMode = 0;
+			write_cmos_sensor(0x0702, 0x0000);
+			write_cmos_sensor(0x0704, 0x0000);
+
+			pr_debug("return to normal shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+
+		}
+		write_cmos_sensor(0x0340, imgsensor.frame_length);
+		write_cmos_sensor(0x0202, imgsensor.shutter);
+	}
 
 }
 
@@ -616,21 +698,21 @@ static void sensor_init(void)
 
 static void preview_setting(void)
 {
-	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v0.1b_2020510 -- (Set)Shine"*/
+	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v2.0a_20210614 -- (Set)Shine"*/
 
 	/*ExtClk :	24	MHz
 	  Vt_pix_clk :	70 	MHz 70*8 = 560Mhz
-	  MIPI_output_speed :	1656.0 	Mbps/lane
+	  MIPI_output_speed :	1236.0 	Mbps/lane
 	  Crop_Width :	8192	px
 	  Crop_Height :	6176	px
 	  Output_Width :	4080	px
 	  Output_Height :	3072	px
-	  Frame rate :	30.06	fps
+	  Frame rate :	30.02	fps
 	  Output format :	Raw10
-	  H-size :	4584 	px
-	  H-blank :	504	px
-	  V-size :	4064	line
-	  V-blank :	992	line
+	  H-size :	5910 	px
+	  H-blank :	1830	px
+	  V-size :	3156	line
+	  V-blank :	84	line
 	  Tail X :	508
 	  Tail Y :	3056
 	  Lane :	4	lane
@@ -645,6 +727,26 @@ static void preview_setting(void)
 
 static void normal_video_setting(kal_uint16 currefps)
 {
+	/* Convert from : "MOT_TONGA_S5KJN1SQ_EVT0_ReferenceSetfile_v2.0a_20210614 -- (Set)Shine"*/
+
+	/*ExtClk :	24	MHz
+	  Vt_pix_clk :	70 	MHz 70*8 = 560Mhz
+	  MIPI_output_speed :	1236.0 	Mbps/lane
+	  Crop_Width :	8192	px
+	  Crop_Height :	6176	px
+	  Output_Width :	4080	px
+	  Output_Height :	3072	px
+	  Frame rate :	30.02	fps
+	  Output format :	Raw10
+	  H-size :	5910 	px
+	  H-blank :	1830	px
+	  V-size :	3156	line
+	  V-blank :	84	line
+	  Tail X :	508
+	  Tail Y :	3056
+	  Lane :	4	lane
+	  First Pixel :	Gr	First*/
+
 	pr_debug("normal_video_setting\n");
 
 	table_write_cmos_sensor(addr_data_pair_video_jn1sq,
