@@ -392,6 +392,23 @@ static bool bNeedSetNormalMode = KAL_FALSE;
 #define SHUTTER_16		1534919//27591
 #define SHUTTER_32		3069838
 
+static void check_output_stream_off(void)
+{
+	kal_uint16 read_count = 0, read_register0005_value = 0;
+
+	for (read_count = 0; read_count <= 100; read_count++) {
+		read_register0005_value = read_cmos_sensor_8(0x0005);
+
+		if (read_register0005_value == 0xff)
+			break;
+		mdelay(1);
+
+		if (read_count == 100)
+			LOG_INF("cxc stream off error\n");
+	}
+
+}
+
 //cxc long exposure <
 
 /*************************************************************************
@@ -493,6 +510,7 @@ static void set_shutter(kal_uint32 shutter)
 
 		write_cmos_sensor(0x6028, 0x4000);
 		write_cmos_sensor(0x0100, 0x0000); //stream off
+		check_output_stream_off();
 		write_cmos_sensor(0x0334, 0x0001);
 		write_cmos_sensor(0x0E0A, 0x0002);
 		write_cmos_sensor(0x0E0C, 0x0100);
