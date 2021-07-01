@@ -264,6 +264,8 @@
 &charger {
         /* common */
         battery_cv = <4450000>;
+        min_charger_voltage = <4200000>;
+
         enable_pe_2;
         /* charging current */
         usb_charger_current_suspend = <0>;
@@ -279,22 +281,18 @@
         ta_ac_charger_current = <2500000>;
         typec_limit_aicr = <2000000>;
 
+        /* dynamic mivr */
+        min_charger_voltage_1 = <4200000>;
+        min_charger_voltage_2 = <4000000>;
+        max_dmivr_charger_current = <2000000>;
+
         /*mmi config*/
-        mmi,iterm-ma = <243>;
-        mmi,mmi-temp-zones = <0 4200 970 0>,
-                        <10 0 2425 2425>,
-                        <15 0 3000 3000>,
-                        <23 0 3000 3000>,
-                        <35 0 3000 3000>,
-                        <45 0 3000 3000>,
-                        <60 4200 3000 0>;
-        mmi,mmi-ffc-zones = <4450 243>,
-                                <4450 243>,
-                                <4450 243>,
-                                <4480 670>,
-                                <4480 770>,
-                                <4480 840>,
-                                <4450 243>;
+        mmi,iterm-ma = <98>;
+        mmi,mmi-temp-zones = <0 4200 1000 0>,
+                        <15 4400 1000 0>,
+                        <45 4400 3000 0>,
+                        <60 4200 2500 0>;
+
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
