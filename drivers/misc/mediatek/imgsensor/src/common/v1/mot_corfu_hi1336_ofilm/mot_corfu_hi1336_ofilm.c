@@ -121,7 +121,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_gain_iso = 100,
 	.gain_step = 4,
 	.gain_type = 3,
-	.max_frame_length = 0xFFFFF-4,
+	.max_frame_length = 0x30D400,
 #if per_frame
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
