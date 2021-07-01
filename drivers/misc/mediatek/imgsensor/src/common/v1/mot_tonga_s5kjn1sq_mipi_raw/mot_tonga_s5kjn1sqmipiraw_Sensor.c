@@ -795,7 +795,7 @@ static void read_4cell_from_eeprom(char *data)
 
 #define TONGA_S5KJN1_EEPROM_SLAVE_ADDR 0xA0
 #define TONGA_S5KJN1_SENSOR_IIC_SLAVE_ADDR 0xAC
-#define TONGA_S5KJN1_EEPROM_SIZE  0x191d
+#define TONGA_S5KJN1_EEPROM_SIZE  0x39c7
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5kjn1_eeprom_data.bin"
 #define TONGA_S5KJN1_EEPROM_CRC_AF_CAL_SIZE 24
 #define TONGA_S5KJN1_EEPROM_CRC_AWB_CAL_SIZE 43
@@ -805,7 +805,11 @@ static void read_4cell_from_eeprom(char *data)
 #define TONGA_S5KJN1_EEPROM_CRC_MANUFACTURING_SIZE 37
 #define TONGA_S5KJN1_MANUFACTURE_PART_NUMBER "28D14866"
 #define TONGA_S5KJN1_MPN_LENGTH 8
+#define TONGA_S5KJN1_EEPROM_GGC_SIZE 346
+#define TONGA_S5KJN1_EEPROM_GGC_START_ADDR 0x386B
+#define TONGA_S5KJN1_EEPROM_GGC_END_ADDR 0x39C4
 
+static kal_uint16 addr_data_pair_ggc_jn1sq[TONGA_S5KJN1_EEPROM_GGC_SIZE+4] = {0};
 static uint8_t TONGA_S5KJN1_eeprom[TONGA_S5KJN1_EEPROM_SIZE] = {0};
 static calibration_status_t mnf_status = CRC_FAILURE;
 static calibration_status_t af_status = CRC_FAILURE;
@@ -1232,6 +1236,27 @@ static void TONGA_S5KJN1_eeprom_format_calibration_data(void *data)
 		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
 
+static void TONGA_S5KJN1_eeprom_format_ggc_data(void)
+{
+	kal_uint16 gcc_crc16 = TONGA_S5KJN1_eeprom[TONGA_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|TONGA_S5KJN1_eeprom[TONGA_S5KJN1_EEPROM_GGC_END_ADDR+2];
+	kal_uint16 i = 0;
+
+	if (eeprom_util_check_crc16((TONGA_S5KJN1_eeprom+TONGA_S5KJN1_EEPROM_GGC_START_ADDR),
+		TONGA_S5KJN1_EEPROM_GGC_SIZE, gcc_crc16)) {
+		pr_debug("HW GCC CRC success!");
+
+		addr_data_pair_ggc_jn1sq[0] = 0x6028;
+		addr_data_pair_ggc_jn1sq[1] = 0x2400;
+		addr_data_pair_ggc_jn1sq[2] = 0x602A;
+		addr_data_pair_ggc_jn1sq[3] = 0x0CFC;
+		for(i = 0; i < TONGA_S5KJN1_EEPROM_GGC_SIZE; i += 2){
+			addr_data_pair_ggc_jn1sq[i+4] = 0x6F12;
+			addr_data_pair_ggc_jn1sq[i+5] = TONGA_S5KJN1_eeprom[i+TONGA_S5KJN1_EEPROM_GGC_START_ADDR]<<8 | TONGA_S5KJN1_eeprom[i+TONGA_S5KJN1_EEPROM_GGC_START_ADDR+1];
+		}
+
+	}
+}
+
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -1269,6 +1294,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				TONGA_S5KJN1_read_data_from_eeprom(TONGA_S5KJN1_EEPROM_SLAVE_ADDR, 0x0000, TONGA_S5KJN1_EEPROM_SIZE);
 				TONGA_S5KJN1_eeprom_dump_bin(EEPROM_DATA_PATH, TONGA_S5KJN1_EEPROM_SIZE, (void *)TONGA_S5KJN1_eeprom);
 				TONGA_S5KJN1_eeprom_format_calibration_data((void *)TONGA_S5KJN1_eeprom);
+				TONGA_S5KJN1_eeprom_format_ggc_data();
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				/* preload 4cell data */
@@ -1369,6 +1395,10 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
+
+	pr_debug("wirte gcc date to sensor reg");
+	table_write_cmos_sensor(addr_data_pair_ggc_jn1sq,
+		sizeof(addr_data_pair_ggc_jn1sq) / sizeof(kal_uint16));
 
 	spin_lock(&imgsensor_drv_lock);
 
