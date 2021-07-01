@@ -194,12 +194,10 @@ static struct imgsensor_struct imgsensor = {
 	// test pattern mode or not. KAL_TRUE for in test pattern mode,
 	// KAL_FALSE for normal output
 	.test_pattern = KAL_FALSE,
-	.enable_secure = KAL_FALSE,
-	//current scenario id
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,		// sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5a,
-	.current_ae_effective_frame = 1, //number of frames in effect for long exposure?if N+1 take effect?the value is 1?
+	.current_ae_effective_frame = 2,
 };
 
 
@@ -451,7 +449,7 @@ static void write_shutter(kal_uint32 shutter)
 			write_cmos_sensor_8(0x0203, shutter & 0xFF);
 			LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 		}
-		imgsensor.current_ae_effective_frame = 1;
+		imgsensor.current_ae_effective_frame = 2;
 	}
 	/* Update Shutter */
 
@@ -1497,13 +1495,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	//LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
-		case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
-			*feature_return_para_32 = imgsensor.current_ae_effective_frame;
-			break;
-		case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
-			memcpy(feature_return_para_32, &imgsensor.ae_frm_mode,
-			sizeof(struct IMGSENSOR_AE_FRM_MODE));
-			break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
@@ -1515,19 +1506,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_shutter;
-		break;
-	case SENSOR_FEATURE_GET_BINNING_TYPE:
-		switch (*(feature_data + 1)) {
-		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			*feature_return_para_32 = 1; /*BINNING_NONE*/
-			break;
-		default:
-			*feature_return_para_32 = 2; /*BINNING_AVERAGED*/
-			break;
-		}
-		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
-			*feature_return_para_32);
-		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
 		/*
@@ -1736,6 +1714,30 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		if (*feature_data != 0)
 			set_shutter(*feature_data);
 		streaming_control(KAL_TRUE);
+		break;
+	case SENSOR_FEATURE_GET_BINNING_TYPE:
+		switch (*(feature_data + 1)) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*feature_return_para_32 = 1; /*BINNING_NONE*/
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+		default:
+			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
+			break;
+		}
+		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
+			*feature_return_para_32);
+		*feature_para_len = 4;
+		break;
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+		*feature_return_para_32 = imgsensor.current_ae_effective_frame;
+		break;
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
+		memcpy(feature_return_para_32,
+		&imgsensor.ae_frm_mode, sizeof(struct IMGSENSOR_AE_FRM_MODE));
 		break;
 	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
 	{
