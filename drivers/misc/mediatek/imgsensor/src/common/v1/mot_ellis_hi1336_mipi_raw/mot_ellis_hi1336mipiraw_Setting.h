@@ -957,7 +957,7 @@ static kal_uint16 addr_data_pair_init_mot_ellis_hi1336[] = {
 
 static kal_uint16 addr_data_pair_preview_mot_ellis_hi1336[] = {
     0x3250, 0xa060,
-    0x0730, 0x770f,
+    0x0730, 0x5b0b,
     0x0732, 0xe0b0,
     0x1118, 0x0006,
     0x1200, 0x011f,
@@ -1016,7 +1016,7 @@ static kal_uint16 addr_data_pair_preview_mot_ellis_hi1336[] = {
 kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi1336[] = {
  
 	0x3250, 0xa060,
-    0x0730, 0x770f,
+    0x0730, 0x5b0b,
     0x0732, 0xe0b0,
     0x1118, 0x0006,
     0x1200, 0x011f,
@@ -1075,7 +1075,7 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi1336[] = {
 
 static kal_uint16 addr_data_pair_video_hi1336[] = {
     0x3250, 0xa060,
-    0x0730, 0x760f,
+    0x0730, 0x5b0b,
     0x0732, 0xe0b0,
     0x1118, 0x018e,
     0x1200, 0x0d1f,
@@ -1126,7 +1126,7 @@ static kal_uint16 addr_data_pair_video_hi1336[] = {
 
 static kal_uint16 addr_data_pair_hs_video_mot_ellis_hi1336[] = {
     0x3250, 0xa470,
-    0x0730, 0x770f,
+    0x0730, 0x5b0b,
     0x0732, 0xe4b0,
     0x1118, 0x0072,
     0x1200, 0x011f,
@@ -1182,7 +1182,7 @@ static kal_uint16 addr_data_pair_hs_video_mot_ellis_hi1336[] = {
 
 static kal_uint16 addr_data_pair_slim_video_mot_ellis_hi1336[] = {
     0x3250, 0xa060,
-    0x0730, 0x770f,
+    0x0730, 0x5b0b,
     0x0732, 0xe2b0,
     0x1118, 0x01a8,
     0x1200, 0x011f,
@@ -1239,7 +1239,7 @@ static kal_uint16 addr_data_pair_slim_video_mot_ellis_hi1336[] = {
 static kal_uint16 addr_data_pair_custom1_hi1336[] = {
     //size 3264x2448//
     0x3250, 0xa060,
-    0x0730, 0x770f,
+    0x0730, 0x5b0b,
     0x0732, 0xe0b0,
     0x1118, 0x0006,
     0x1200, 0x011f,
