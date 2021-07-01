@@ -353,6 +353,23 @@ static kal_uint32 streaming_control(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static void check_output_stream_off(void)
+{
+	kal_uint16 read_count = 0, read_register0005_value = 0;
+
+	for (read_count = 0; read_count <= 100; read_count++) {
+		read_register0005_value = read_cmos_sensor_8(0x0005);
+
+		if (read_register0005_value == 0xff)
+			break;
+		mdelay(1);
+
+		if (read_count == 100)
+			LOG_INF("cxc stream off error\n");
+	}
+
+}
+
 static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
@@ -404,7 +421,7 @@ static void write_shutter(kal_uint32 shutter)
 			      long_shutter, new_framelength,shutter);
 		/*stream off */
 		streaming_control(KAL_FALSE);
-
+		check_output_stream_off();
 		/*setting for long exposure*/
 		write_cmos_sensor_8(0x0340, (new_framelength&0xFF00)>>8);
 		write_cmos_sensor_8(0x0341, (new_framelength&0x00FF));
