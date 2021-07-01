@@ -127,13 +127,7 @@ static int initAF(void)
 
 		ois_reset();
 
-		i4RetValue = s4AF_WriteReg(0x7015,0x0000);
-		if(i4RetValue < 0) {
-			LOG_INF("I2C send 0x0000 to 0x7015 failed!!\n");
-		}
-
 		LOG_INF("DW9781C OIS driver init success!!\n");
-		LOG_INF("OIS ON!\n");
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
