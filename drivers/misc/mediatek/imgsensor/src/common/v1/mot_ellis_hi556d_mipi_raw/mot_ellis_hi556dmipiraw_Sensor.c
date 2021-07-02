@@ -64,20 +64,20 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_ELLIS_HI556D_SENSOR_ID,
 	.checksum_value = 0x55e2a82f,
 	.pre = {
-		.pclk = 176000000,
+		.pclk = 167700000,
 		.linelength = 2816,
 		.framelength = 1984,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1296,
-		.grabwindow_height = 972,
+		.grabwindow_width = 2592,
+		.grabwindow_height = 1944,
 
 		.mipi_data_lp2hs_settle_dc = 14,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
 	.cap = {
-		.pclk = 176000000,
+		.pclk = 167700000,
 		.linelength = 2816,
 		.framelength = 1984,
 		.startx = 0,
@@ -90,7 +90,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.cap1 = {
 		.pclk = 176000000,
 		.linelength = 2816,
-		.framelength = 4166,
+		.framelength = 3970,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2592,
@@ -99,9 +99,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 150,
 	},
 	.normal_video = {
-		.pclk = 176000000,
+		.pclk = 167700000,
 		.linelength = 2816,
-		.framelength = 2082,
+		.framelength = 1984,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2592,
@@ -112,7 +112,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.hs_video = {
-	.pclk = 176000000,
+	.pclk = 167700000,
 	.linelength = 2816,
 		.framelength = 520,
 		.startx = 0,
@@ -123,7 +123,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 1200,
 	},
 	.slim_video = {
-		.pclk = 176000000,
+		.pclk = 167700000,
 		.linelength = 2816,
 		.framelength = 2083,
 		.startx = 0,
@@ -134,8 +134,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.max_framerate = 300,
 	},
 
-	.margin = 6,
-	.min_shutter = 6,
+	.margin = 2,
+	.min_shutter = 2,
 	.max_frame_length = 0x7FFF,
 #if per_frame
 	.ae_shut_delay_frame = 0,
@@ -173,7 +173,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
 	.mclk = 26,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
-	.i2c_addr_table = {0x40, 0x50, 0xff},
+	.i2c_addr_table = {0x40, 0xff},
 	.i2c_speed = 400,
 };
 
@@ -196,8 +196,8 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	// preview
-{ 2592, 1944,    0,    0, 2592, 1944, 1296,  972,
-	 0,    0, 1296,  972,    0,    0, 1296,  972},
+{ 2592, 1944,    0,    0, 2592, 1944, 2592, 1944,
+         0,    0, 2592, 1944,    0,    0, 2592, 1944},
 	// capture
 { 2592, 1944,    0,    0, 2592, 1944, 2592, 1944,
 	 0,    0, 2592, 1944,    0,    0, 2592, 1944},
@@ -1281,45 +1281,44 @@ kal_uint16 addr_data_pair_preview_mot_ellis_hi556d[] = {
 //X/Y-flip	  : X-flip
 //BLC offset	  : 64code
 ////////////////////////////////////////////////
-	0x0a00, 0x0000,
-	0x0b0a, 0x8259,
-	0x0f30, 0x8135,
-	0x0f32, 0x7167,
-	0x004a, 0x0100,
-	0x004c, 0x0000,
-	0x000c, 0x0122,
-	0x0008, 0x0b00,
-	0x005a, 0x0404,
-	0x0012, 0x000c,
-	0x0018, 0x0a33,
-	0x0022, 0x0008,
-	0x0028, 0x0017,
-	0x0024, 0x0022,
-	0x002a, 0x002b,
-	0x0026, 0x0030,
-	0x002c, 0x07c7,
-	0x002e, 0x3311,
-	0x0030, 0x3311,
-	0x0032, 0x3311,
-	0x0006, 0x07c0,
-	0x0a22, 0x0000,
-	0x0a12, 0x0510,
-	0x0a14, 0x03cc,
-	0x003e, 0x0000,
-	0x0074, 0x07be,
-	0x0070, 0x03df,
-	0x0804, 0x0208,
-	0x0a04, 0x016a,
-	0x090e, 0x0010,
-	0x090c, 0x09c0,
-	0x0902, 0x4319,
-	0x0914, 0xc106,
-	0x0916, 0x040e,
-	0x0918, 0x0304,
-	0x091a, 0x0708,
-	0x091c, 0x0e06,
-	0x091e, 0x0300,
-	0x0958, 0xbb80,
+        0x0b0a, 0x8252,
+        0x0f30, 0x8135,
+        0x0f32, 0x7067,
+        0x004a, 0x0100,
+        0x004c, 0x0000,
+        0x000c, 0x0022,
+        0x0008, 0x0b00,
+        0x005a, 0x0202,
+        0x0012, 0x000e,
+        0x0018, 0x0a31,
+        0x0022, 0x0008,
+        0x0028, 0x0017,
+        0x0024, 0x0028,
+        0x002a, 0x002d,
+        0x0026, 0x0030,
+        0x002c, 0x07c7,
+        0x002e, 0x1111,
+        0x0030, 0x1111,
+        0x0032, 0x1111,
+        0x0006, 0x07c0,
+        0x0a22, 0x0000,
+        0x0a12, 0x0a20,
+        0x0a14, 0x0798,
+        0x003e, 0x0000,
+        0x0074, 0x07be,
+        0x0070, 0x03df,
+        0x0804, 0x0200,
+        0x0a04, 0x014a,
+        0x090c, 0x0fdc,
+        0x090e, 0x002d,
+        0x0902, 0x4319,
+        0x0914, 0xc10a,
+        0x0916, 0x071f,
+        0x0918, 0x0408,
+        0x091a, 0x0c0d,
+        0x091c, 0x0f09,
+        0x091e, 0x0a00,
+        0x0958, 0xbb80,
 };
 #endif
 
@@ -1393,9 +1392,9 @@ kal_uint16 addr_data_pair_capture_fps_mot_ellis_hi556d[] = {
 //X/Y-flip	  : X-flip
 //BLC offset	  : 64code
 ////////////////////////////////////////////////
-	0x0a00, 0x0000,
+
 	0x0b0a, 0x8252,
-	0x0f30, 0x6e25,
+	0x0f30, 0x8135,
 	0x0f32, 0x7067,
 	0x004a, 0x0100,
 	0x004c, 0x0000,
@@ -1413,13 +1412,13 @@ kal_uint16 addr_data_pair_capture_fps_mot_ellis_hi556d[] = {
 	0x002e, 0x1111,
 	0x0030, 0x1111,
 	0x0032, 0x1111,
-	0x0006, 0x1046,
+	0x0006, 0x0f82,
 	0x0a22, 0x0000,
 	0x0a12, 0x0a20,
 	0x0a14, 0x0798,
 	0x003e, 0x0000,
-	0x0074, 0x1044,
-	0x0070, 0x0822,
+	0x0074, 0x0f80,
+	0x0070, 0x07c0,
 	0x0804, 0x0200,
 	0x0a04, 0x014a,
 	0x090c, 0x0fdc,
@@ -1431,7 +1430,7 @@ kal_uint16 addr_data_pair_capture_fps_mot_ellis_hi556d[] = {
 	0x091a, 0x0c0d,
 	0x091c, 0x0f09,
 	0x091e, 0x0a00,
-	0x0958, 0xba80,
+	0x0958, 0xbb80,
 };
 
 kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
@@ -1449,7 +1448,7 @@ kal_uint16 addr_data_pair_capture_30fps_mot_ellis_hi556d[] = {
 //X/Y-flip	  : X-flip
 //BLC offset	  : 64code
 ////////////////////////////////////////////////
-	0x0a00, 0x0000,
+
 	0x0b0a, 0x8252,
 	0x0f30, 0x8135,
 	0x0f32, 0x7067,
