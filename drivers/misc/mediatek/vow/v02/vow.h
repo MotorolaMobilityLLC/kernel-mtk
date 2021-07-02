@@ -82,7 +82,7 @@
 
 /* length limitation sync by audio hal */
 #if (defined CONFIG_MTK_VOW_DUAL_MIC_SUPPORT && defined DUAL_CH_TRANSFER)
-#define VOW_VBUF_LENGTH      (0x12E80 * VOW_MAX_MIC_NUM)  /* (0x12480 + 0x0A00) * 2 */
+#define VOW_VBUF_LENGTH      (0x12E80 * VOW_MAX_MIC_NUM)  /*(0x12480 + 0x0A00) * VOW_MAX_MIC_NUM*/
 #else
 #define VOW_VBUF_LENGTH      (0x12E80)  /* 0x12480 + 0x0A00 */
 #endif
@@ -97,7 +97,8 @@
 #define BARGEIN_DUMP_SMPL_CNT_MIC      (VOW_FRM_LEN * 16)
 #define BARGEIN_DUMP_BYTE_CNT_MIC      (BARGEIN_DUMP_SMPL_CNT_MIC * sizeof(short))
 #define BARGEIN_DUMP_SMPL_CNT_ECHO     (VOW_FRM_LEN * 16)
-#define BARGEIN_DUMP_BYTE_CNT_ECHO     (BARGEIN_DUMP_SMPL_CNT_ECHO * sizeof(short))
+#define BARGEIN_DUMP_BYTE_CNT_ECHO     (BARGEIN_DUMP_SMPL_CNT_ECHO * sizeof(short) * \
+					VOW_MAX_MIC_NUM)  /* dump size align with mic */
 #define BARGEIN_DUMP_TOTAL_BYTE_CNT    (BARGEIN_DUMP_BYTE_CNT_MIC * VOW_MAX_MIC_NUM + \
 					BARGEIN_DUMP_BYTE_CNT_ECHO)
 

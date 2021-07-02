@@ -309,10 +309,18 @@ void vow_ipi_rx_internal(unsigned int msg_id,
 			idx = DUMP_INPUT;
 			dump_work[idx].mic_data_size = ipi_ptr->mic_dump_size;
 			dump_work[idx].mic_offset = ipi_ptr->mic_offset;
+			//VOWDRV_DEBUG("%s(), [Input]dump size %d offset %d\n",
+					//__func__,
+					//dump_work[idx].mic_data_size,
+					//dump_work[idx].mic_offset);
 #ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT
 			dump_work[idx].mic_data_size_R =
 					ipi_ptr->mic_dump_size;
 			dump_work[idx].mic_offset_R = ipi_ptr->mic_offset_R;
+			//VOWDRV_DEBUG("%s(), [Input R]dump size %d offset %d\n",
+					//__func__,
+					//dump_work[idx].mic_data_size_R,
+					//dump_work[idx].mic_offset_R);
 #endif  /* #ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT */
 			ret = queue_work(dump_workqueue[idx],
 					 &dump_work[idx].work);
@@ -328,7 +336,10 @@ void vow_ipi_rx_internal(unsigned int msg_id,
 			idx = DUMP_BARGEIN;
 			dump_work[idx].echo_data_size = ipi_ptr->echo_dump_size;
 			dump_work[idx].echo_offset = ipi_ptr->echo_offset;
-
+			//VOWDRV_DEBUG("%s(), [BargeIn]dump size %d offset %d\n",
+					//__func__,
+					//dump_work[idx].echo_data_size,
+					//dump_work[idx].echo_offset);
 			ret = queue_work(dump_workqueue[idx],
 					 &dump_work[idx].work);
 			if (ret > 0)
