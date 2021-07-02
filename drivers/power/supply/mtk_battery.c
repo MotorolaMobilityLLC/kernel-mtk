@@ -488,6 +488,7 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	int cur_chr_type;
 
 	struct power_supply *chg_psy = NULL;
+	struct power_supply *extern_charger = NULL;
 	int ret;
 
 	gm = psy->drv_data;
@@ -503,18 +504,21 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &online);
 
-		ret = power_supply_get_property(chg_psy,
-			POWER_SUPPLY_PROP_STATUS, &status);
+		extern_charger = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
+						       "extern_charger");
+		if (IS_ERR_OR_NULL(extern_charger)) {
+			bm_err("%s Couldn't get extern_charger\n", __func__);
+			ret = power_supply_get_property(chg_psy,
+					POWER_SUPPLY_PROP_STATUS, &status);
+		} else
+			ret = power_supply_get_property(extern_charger,
+				POWER_SUPPLY_PROP_STATUS, &status);
 
 		if (!online.intval)
 			bs_data->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
 		else {
-			if (status.intval == POWER_SUPPLY_STATUS_NOT_CHARGING)
-				bs_data->bat_status =
-					POWER_SUPPLY_STATUS_NOT_CHARGING;
-			else
-				bs_data->bat_status =
-					POWER_SUPPLY_STATUS_CHARGING;
+			bs_data->bat_status = status.intval;
+
 			fg_sw_bat_cycle_accu(gm);
 		}
 
