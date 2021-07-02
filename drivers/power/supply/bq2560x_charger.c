@@ -38,6 +38,8 @@
 #include "charger_class.h"
 #include "bq2560x_reg.h"
 #include "bq2560x.h"
+#include "mtk_charger.h"
+#include <tcpm.h>
 
 //+bug 589756,yaocankun,20201014,add,add charger info
 /*#include <linux/hardware_info.h>
@@ -94,6 +96,7 @@ struct bq2560x {
 	struct mutex i2c_rw_lock;
 
 	bool charge_enabled;	/* Register bit status */
+	bool hiz_mode;
 	bool power_good;
 
 	struct bq2560x_platform_data *platform_data;
@@ -106,6 +109,12 @@ struct bq2560x {
 	struct power_supply_config psy_cfg;
 	struct power_supply *psy;
 //-BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
+
+	struct notifier_block pd_nb;
+	struct mutex attach_lock;
+	struct tcpc_device *tcpc_dev;
+	bool attach;
+	bool mmi_charging_full;
 };
 
 static const struct charger_properties bq2560x_chg_props = {
@@ -935,6 +944,10 @@ static const struct attribute_group bq2560x_attr_group = {
 	.attrs = bq2560x_attributes,
 };
 
+static char *bq2560x_charger_supplied_to[] = {
+	"battery",
+};
+
 static int bq2560x_charging(struct charger_device *chg_dev, bool enable)
 {
 
@@ -959,8 +972,13 @@ static int bq2560x_charging(struct charger_device *chg_dev, bool enable)
 
 	ret = bq2560x_read_byte(bq, BQ2560X_REG_01, &val);
 
-	if (!ret)
-		bq->charge_enabled = !!(val & REG01_CHG_CONFIG_MASK);
+	if (!ret) {
+		val = !!(val & REG01_CHG_CONFIG_MASK);
+		if (bq->charge_enabled != val) {
+			bq->charge_enabled = val;
+			power_supply_changed(bq->psy);
+		}
+	}
 
 	return ret;
 }
@@ -970,6 +988,7 @@ static int bq2560x_enable_hz(struct charger_device *chg_dev, bool enable)
 
 	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
 	int ret = 0;
+	u8 val;
 
 	if (enable)
 		ret = bq2560x_enter_hiz_mode(bq);
@@ -979,20 +998,25 @@ static int bq2560x_enable_hz(struct charger_device *chg_dev, bool enable)
 	pr_err("lsw_charger %s enable_hz %s\n", enable ? "enable" : "disable",
 	       !ret ? "successfully" : "failed");
 
+	ret = bq2560x_read_byte(bq, BQ2560X_REG_00, &val);
+
+	if (!ret) {
+		val = !!(val & REG00_ENHIZ_MASK);
+		if (bq->hiz_mode != val) {
+			bq->hiz_mode = val;
+			power_supply_changed(bq->psy);
+		}
+	}
+
 	return ret;
 }
 
 //EKELLIS-68,yaocankun,add,20210413,enable usb suspend
 static int bq2560x_enable_vbus(struct charger_device *chg_dev, bool enable)
 {
-
-	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
 	int ret = 0;
 
-	if (enable)
-		ret = bq2560x_exit_hiz_mode(bq);
-	else
-		ret = bq2560x_enter_hiz_mode(bq);
+	ret = bq2560x_enable_hz(chg_dev, !enable);
 
 	pr_err("lsw_charger %s enable_vbus %s\n", enable ? "enable" : "disable",
 	       !ret ? "successfully" : "failed");
@@ -1040,6 +1064,11 @@ static int bq2560x_plug_out(struct charger_device *chg_dev)
 
 	if (ret)
 		pr_err("Failed to disable charging:%d\n", ret);
+
+	ret = bq2560x_enable_hz(chg_dev, false);
+
+	if (ret)
+		pr_err("Failed to disable HIZ mode:%d\n", ret);
 
 	return ret;
 }
@@ -1181,6 +1210,34 @@ static int bq2560x_kick_wdt(struct charger_device *chg_dev)
 	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
 
 	return bq2560x_reset_watchdog_timer(bq);
+}
+
+static int bq2560x_do_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	struct bq2560x *bq =
+		dev_get_drvdata(&chg_dev->dev);
+
+	if (!bq->psy) {
+		dev_notice(bq->dev, "%s: cannot get psy\n", __func__);
+		return -ENODEV;
+	}
+
+	pr_err("event:%d\n", event);
+	switch (event) {
+	case EVENT_FULL:
+		bq->mmi_charging_full = true;
+		break;
+	case EVENT_RECHARGE:
+	case EVENT_DISCHARGE:
+		bq->mmi_charging_full = false;
+		break;
+	default:
+		break;
+	}
+
+	power_supply_changed(bq->psy);
+
+	return 0;
 }
 
 static int bq2560x_set_otg(struct charger_device *chg_dev, bool en)
@@ -1417,6 +1474,9 @@ static struct charger_ops bq2560x_chg_ops = {
 
 	/* ADC */
 	.get_tchg_adc = NULL,
+
+	/* Event */
+	.event = bq2560x_do_event,
 };
 
 static struct of_device_id bq2560x_charger_match_table[] = {
@@ -1443,7 +1503,7 @@ MODULE_DEVICE_TABLE(of, bq2560x_charger_match_table);
 //+BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
 static enum power_supply_property bq2560x_gauge_properties[] = {
 	POWER_SUPPLY_PROP_STATUS,
-//	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_ONLINE,
 //	POWER_SUPPLY_PROP_CURRENT_NOW,
 };
 
@@ -1453,27 +1513,50 @@ static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
 	struct bq2560x *bq;
 	int ret;
 	u8 status;
+	u8 hiz_mode;
 
 	bq = (struct bq2560x *)power_supply_get_drvdata(psy);
 
 	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		mutex_lock(&bq->attach_lock);
+		val->intval = bq->attach;
+		mutex_unlock(&bq->attach_lock);
+		break;
 	case POWER_SUPPLY_PROP_STATUS:
-		ret = bq2560x_read_byte(bq, BQ2560X_REG_08, &status);
-		if (!ret) {
-			status = status & REG08_CHRG_STAT_MASK;
-			status = status >> REG08_CHRG_STAT_SHIFT;
-			if (status == 0) /* Ready */
-				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-			else if ((status == 1) || (status == 2)) /* Charge in progress */
-				val->intval = POWER_SUPPLY_STATUS_CHARGING;
-			else if (status == 3) /* Charge done */
-				val->intval = POWER_SUPPLY_STATUS_FULL;
-			else
-				val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
-
-			//pr_err("lsw_bat_status reg_val:%d\n", status);
-		}else
+		ret = bq2560x_get_hiz_mode(bq, &hiz_mode);
+		if (ret)
 			return -EINVAL;
+		hiz_mode = !!hiz_mode;
+
+		ret = bq2560x_read_byte(bq, BQ2560X_REG_08, &status);
+		pr_info("%s status:0x%x, ret:%d", __func__, status, ret);
+		if (ret)
+			return -EINVAL;
+
+		if (!bq->attach || (bq->attach && hiz_mode)) {
+			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
+			break;
+		}
+
+		status = status & REG08_CHRG_STAT_MASK;
+		status = status >> REG08_CHRG_STAT_SHIFT;
+		if (status == 0) /* Ready */
+			if (bq->charge_enabled)
+				val->intval = POWER_SUPPLY_STATUS_CHARGING;
+			else
+				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		else if ((status == 1) || (status == 2)) /* Charge in progress */
+			val->intval = POWER_SUPPLY_STATUS_CHARGING;
+		else if (status == 3) /* Charge done */
+			val->intval = POWER_SUPPLY_STATUS_FULL;
+		else
+			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
+
+		if (bq->mmi_charging_full == true)
+			val->intval = POWER_SUPPLY_STATUS_FULL;
+
+		pr_info("bat_status:%d\n", val->intval);
 		break;
 	default:
 		return -EINVAL;
@@ -1504,6 +1587,55 @@ static int bq2560x_psy_gauge_set_property(struct power_supply *psy,
 	return ret;
 }
 //-BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
+
+static void handle_typec_attach(struct bq2560x *bq,
+				bool en)
+{
+	mutex_lock(&bq->attach_lock);
+	bq->attach = en;
+	if (!bq->attach)
+		bq->mmi_charging_full = false;
+	mutex_unlock(&bq->attach_lock);
+}
+
+static int pd_tcp_notifier_call(struct notifier_block *nb,
+				unsigned long event, void *data)
+{
+	struct tcp_notify *noti = data;
+	struct bq2560x *bq =
+		(struct bq2560x *)container_of(nb,
+		struct bq2560x, pd_nb);
+
+	switch (event) {
+	case TCP_NOTIFY_TYPEC_STATE:
+		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
+		    (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
+			pr_info("%s USB Plug in, pol = %d\n", __func__,
+					noti->typec_state.polarity);
+			handle_typec_attach(bq, true);
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
+			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			pr_info("%s USB Plug out\n", __func__);
+			handle_typec_attach(bq, false);
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
+			pr_info("%s Source_to_Sink\n", __func__);
+			handle_typec_attach(bq, true);
+		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
+			pr_info("%s Sink_to_Source\n", __func__);
+			handle_typec_attach(bq, false);
+		}
+		break;
+	default:
+		break;
+	};
+	return NOTIFY_OK;
+}
 
 static int bq2560x_charger_probe(struct i2c_client *client,
 				 const struct i2c_device_id *id)
@@ -1575,6 +1707,23 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 
 	g_bq2560x = bq;
 
+	mutex_init(&bq->attach_lock);
+
+	bq->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (!bq->tcpc_dev) {
+		pr_notice("%s get tcpc device type_c_port0 fail\n", __func__);
+		ret = -ENODEV;
+		return ret;
+	}
+
+	bq->pd_nb.notifier_call = pd_tcp_notifier_call;
+	ret = register_tcp_dev_notifier(bq->tcpc_dev, &bq->pd_nb,
+					TCP_NOTIFY_TYPE_ALL);
+	if (ret < 0) {
+		pr_notice("%s: register tcpc notifer fail\n", __func__);
+		ret = -EINVAL;
+		return ret;
+	}
 //+EXTR ROG-1485,lishuwen.wt,2020.11.10,modify,insert OTG then reboot phone that first boot up can not detect OTG
 /*
 	config.dev = bq->dev;
@@ -1598,6 +1747,8 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	bq->psy_desc.get_property = bq2560x_psy_gauge_get_property;
 	bq->psy_desc.set_property = bq2560x_psy_gauge_set_property;
 	bq->psy_cfg.drv_data = bq;
+	bq->psy_cfg.supplied_to = bq2560x_charger_supplied_to;
+	bq->psy_cfg.num_supplicants = ARRAY_SIZE(bq2560x_charger_supplied_to);
 	bq->psy = power_supply_register(bq->dev, &bq->psy_desc, &bq->psy_cfg);
 //-BUG 605310,lishuwen.wt,2020.12.05,modify,status for charger current nod
 
@@ -1630,16 +1781,11 @@ static void bq2560x_charger_shutdown(struct i2c_client *client)
 {
 //+EXTR ROG-1709,lishuwen.wt,2020.11.21,modify,plug out OTG then reboot phone that OTG REG error config case vbus always on
 	struct bq2560x *bq = i2c_get_clientdata(client);
+	pr_err("bq2560x_charger_shutdown\n");
 	bq2560x_disable_otg(bq);
-	//pr_err("lsw_charger bq2560x_charger_shutdown\n");
 //-EXTR ROG-1709,lishuwen.wt,2020.11.21,modify,plug out OTG then reboot phone that OTG REG error config case vbus always on
-//+Bug 597174,lishuwen.wt,2020.12.10,modify,add charger current nod
-#ifdef WT_COMPILE_FACTORY_VERSION
-#if defined(CONFIG_WT_PROJECT_T99653AA1) || defined(CONFIG_WT_PROJECT_T99652AA1)
 	bq2560x_enable_vbus(bq->chg_dev,true);
-#endif
-#endif
-//-Bug 597174,lishuwen.wt,2020.12.10,modify,add charger current nod
+
 }
 
 static struct i2c_driver bq2560x_charger_driver = {
