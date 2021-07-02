@@ -874,7 +874,7 @@ static void bq2560x_dump_regs(struct bq2560x *bq)
 	for (addr = 0x0; addr <= 0x0B; addr++) {
 		ret = bq2560x_read_byte(bq, addr, &val);
 		if (ret == 0)
-			pr_err("Reg[%.2x] = 0x%.2x\n", addr, val);
+			pr_debug("Reg[%.2x] = 0x%.2x\n", addr, val);
 	}
 }
 
