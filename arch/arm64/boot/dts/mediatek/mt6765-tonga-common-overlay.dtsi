@@ -54,7 +54,7 @@
 };
 
 &i2c5 {
-	bq25601@6B {
+	bq2560x_charger:bq25601@6B {
 		compatible = "ti,bq25601";
 		reg = <0x6B>;
 		ti,bq2560x,usb-vlim = <4600>;
@@ -122,6 +122,7 @@
 };
 &mtk_gauge {
 	charger = <&mtk_charger_type>;
+	extern_charger = <&bq2560x_charger>;
 	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
 	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
 	/* battery prop */
