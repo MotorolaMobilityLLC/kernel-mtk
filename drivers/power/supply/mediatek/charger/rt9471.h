@@ -58,6 +58,7 @@ enum rt9471_reg_addr {
 
 /* ========== TOP 0x01 ============ */
 #define RT9471_QONRST_MASK	BIT(7)
+#define RT9471_STAT_EN_MASK	BIT(6)
 #define RT9471_DISI2CTO_MASK	BIT(3)
 #define RT9471_WDTCNTRST_MASK	BIT(2)
 #define RT9471_WDT_SHIFT	0
