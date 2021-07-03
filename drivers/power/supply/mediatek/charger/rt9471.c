@@ -1088,6 +1088,14 @@ static int __rt9471_enable_bc12(struct rt9471_chip *chip, bool en)
 				      RT9471_BC12_EN_MASK);
 }
 
+static int __rt9471_enable_stat_pin(struct rt9471_chip *chip, bool en)
+{
+	dev_info(chip->dev, "%s en = %d\n", __func__, en);
+
+	return (en ? rt9471_set_bit : rt9471_clr_bit)
+	       (chip, RT9471_REG_TOP, RT9471_STAT_EN_MASK);
+}
+
 static int __rt9471_dump_registers(struct rt9471_chip *chip)
 {
 	int ret = 0, i = 0;
@@ -2200,6 +2208,10 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 	ret = __rt9471_enable_bc12(chip, false);
 	if (ret < 0)
 		dev_notice(chip->dev, "%s dis bc12 fail(%d)\n", __func__, ret);
+
+	ret = __rt9471_enable_stat_pin(chip, false);
+	if (ret < 0)
+		dev_notice(chip->dev, "%s disable_stat_pin fail(%d)\n", __func__, ret);
 
 	/*
 	 * Customization for MTK platform
