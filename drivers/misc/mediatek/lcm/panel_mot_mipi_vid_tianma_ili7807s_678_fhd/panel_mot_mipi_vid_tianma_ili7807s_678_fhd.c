@@ -225,7 +225,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	struct dfps_info *dfps_params = dsi->dfps_params;
 
 	dsi->dfps_enable = 1;
-	dsi->dfps_default_fps = 12000;/*real fps * 100, to support float*/
+	dsi->dfps_default_fps = 6000;/*real fps * 100, to support float*/
 	dsi->dfps_def_vact_tim_fps = 12000;/*real vact timing fps * 100*/
 	/* traversing array must less than DFPS_LEVELS */
 	/* DPFS_LEVEL0 */
@@ -237,7 +237,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* dfps_params[0].data_rate = xx; */
 	/* if vfp solution */
 	dfps_params[0].vertical_frontporch = 2580;
-	//dfps_params[0].vertical_frontporch_for_low_power = 3550; //50hz
+	//dfps_params[0].vertical_frontporch_for_low_power = 3600; //50hz
 
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
@@ -248,7 +248,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* dfps_params[1].data_rate = xx; */
 	/* if vfp solution */
 	dfps_params[1].vertical_frontporch = 50;
-	//dfps_params[1].vertical_frontporch_for_low_power = 880; //90hz
+	//dfps_params[1].vertical_frontporch_for_low_power = 898; //90hz
 	dsi->dfps_num = 2;
 }
 #endif
@@ -269,15 +269,15 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 20;
-	params->dsi.vertical_frontporch = 2580;
+	params->dsi.vertical_frontporch = 50;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
  	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 59;
+	params->dsi.horizontal_backporch = 82;
 	params->dsi.horizontal_frontporch = 102;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
-	params->dsi.PLL_CLOCK = 480;
+	params->dsi.PLL_CLOCK = 500;
 	params->physical_height = 161;
 	params->physical_width = 70;
 
@@ -321,8 +321,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.bdg_dsc_enable = 1;
 
 	params->density = 480;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
