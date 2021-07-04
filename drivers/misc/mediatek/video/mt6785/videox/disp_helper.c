@@ -370,7 +370,7 @@ void disp_helper_option_init(void)
 
 	/* ================ Begin: lowpower option setting ================ */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 0);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);

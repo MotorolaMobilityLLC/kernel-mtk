@@ -943,7 +943,7 @@ int primary_display_esd_recovery(void)
 				bdg_tx_start(DISP_BDG_DSI0, NULL);
 		}
 		/*	559-449-314-273*/
-		disp_pm_qos_update_mmclk(449);
+		disp_pm_qos_update_mmclk(559);
 	}
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (disp_partial_is_support()) {
@@ -973,8 +973,11 @@ int primary_display_esd_recovery(void)
 		 * for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW
 		 * when trigger loop start
 		 */
-		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
-				   CMDQ_DISABLE);
+		if (bdg_is_bdg_connected() == 1 && primary_display_is_video_mode())
+			primary_display_vdo_restart(false);
+		else
+			dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
+					   CMDQ_DISABLE);
 	}
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 11);
 

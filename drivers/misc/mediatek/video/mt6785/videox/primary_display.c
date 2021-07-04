@@ -5434,6 +5434,45 @@ int primary_display_lcm_power_on_state(int alive)
 	return skip_update;
 }
 
+void primary_display_vdo_restart(bool need_wait_frame_done)
+{
+	struct cmdqRecStruct *qhandle = NULL;
+	int ret = 0;
+
+
+	if (bdg_is_bdg_connected() == 1) {
+		DISPFUNCSTART();
+		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle);
+		if (ret) {
+			DISPCHECK("%s,cmdq create fail!\n", __func__);
+			return;
+		}
+		cmdqRecReset(qhandle);
+		if (need_wait_frame_done)
+			cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		/* stop dsi vdo mode */
+		dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+				qhandle, CMDQ_STOP_VDO_MODE, 0);
+
+		cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), qhandle,
+				CMDQ_START_VDO_MODE, 0);
+		cmdqRecFlush(qhandle);
+		cmdqRecReset(qhandle);
+
+		dpmgr_path_trigger(primary_get_dpmgr_handle(),
+				qhandle, CMDQ_ENABLE);
+
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+				primary_get_dpmgr_handle()), qhandle, 0);
+
+		cmdqRecFlush(qhandle);
+	}
+	cmdqRecDestroy(qhandle);
+}
+
 int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
@@ -5700,7 +5739,10 @@ int primary_display_resume(void)
 				       DDP_IRQ_RDMA0_DONE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
-		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+		if (bdg_is_bdg_connected() == 1 && primary_display_is_video_mode())
+			primary_display_vdo_restart(false);
+		else
+			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
 #if 0
 		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle,
@@ -5805,7 +5847,7 @@ done:
 	if (bdg_is_bdg_connected() == 1) {
 		//mmdvfs_qos_force_step(0);
 	/*	559-449-314-273*/
-		disp_pm_qos_update_mmclk(449);
+		disp_pm_qos_update_mmclk(559);
 	}
 	primary_set_state(DISP_ALIVE);
 #if 0 //def CONFIG_TRUSTONIC_TRUSTED_UI
@@ -8874,11 +8916,31 @@ int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count,
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd,
 				 MMPROFILE_FLAG_PULSE, 1, 2);
 		cmdqRecReset(cmdq_handle_lcm_cmd);
+		if (bdg_is_bdg_connected() == 1) {
+			cmdqRecWait(cmdq_handle_lcm_cmd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+			/* stop dsi vdo mode */
+			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+					cmdq_handle_lcm_cmd, CMDQ_STOP_VDO_MODE, 0);
+
+			disp_lcm_set_lcm_cmd(pgc->plcm, cmdq_handle_lcm_cmd, lcm_cmd,
+					     lcm_count, lcm_value);
+			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), cmdq_handle_lcm_cmd,
+					CMDQ_START_VDO_MODE, 0);
+			cmdqRecClearEventToken(cmdq_handle_lcm_cmd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+			dpmgr_path_trigger(primary_get_dpmgr_handle(),
+					cmdq_handle_lcm_cmd, CMDQ_ENABLE);
+
+			ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+					primary_get_dpmgr_handle()), cmdq_handle_lcm_cmd, 0);
+			_cmdq_flush_config_handle_mira(cmdq_handle_lcm_cmd, 1);
+		} else {
 		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_lcm_cmd);
 		disp_lcm_set_lcm_cmd(pgc->plcm, cmdq_handle_lcm_cmd, lcm_cmd,
 				     lcm_count, lcm_value);
 		/*Async flush by cmdq*/
 		_cmdq_flush_config_handle_mira(cmdq_handle_lcm_cmd, 0);
+		}
 		DISPCHECK("[CMD]%s ret=%d\n", __func__, ret);
 	} else {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,

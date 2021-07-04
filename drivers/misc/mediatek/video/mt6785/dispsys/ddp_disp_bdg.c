@@ -2290,10 +2290,10 @@ int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
 				TX_REG[i]->DSI_TX_PHY_TIMECON3, CLK_HS_EXIT,
 				timcon3.CLK_HS_EXIT);
 
-		mtk_spi_write(0x00021000 + 0x0110, 0x0C110A08);  /*480M*/
+		mtk_spi_write(0x00021000 + 0x0110, 0x0C110A08);  /*500M*/
 		mtk_spi_write(0x00021000 + 0x0114, 0x10280C20);
 		mtk_spi_write(0x00021000 + 0x0118, 0x0D320103);
-		mtk_spi_write(0x00021000 + 0x011c, 0x00101209);
+		mtk_spi_write(0x00021000 + 0x011c, 0x0010120A);
 
 		DISPINFO("%s, PHY_TIMECON0=0x%08x,PHY_TIMECON1=0x%08x\n",
 			__func__,
@@ -3273,7 +3273,7 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 	/* get ap_tx_data_rate and set back to ap */
 	/* get lpx, hs_prep, hs_zero,... refer to DSI_DPHY_TIMCONFIG()*/
 //	ap_tx_data_rate = tx_data_rate * rxtx_ratio / 100;
-	ap_tx_data_rate = 2330;
+	ap_tx_data_rate = 2300;
 
 	/* Step 4. Decide AP DSI TX Blanking */
 	/* get ap-tx hsa_byte, hbp_byte, new_hfp_byte and bllp_byte */
