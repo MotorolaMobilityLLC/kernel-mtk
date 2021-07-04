@@ -277,14 +277,14 @@
 			pinmux = <PINMUX_GPIO43__FUNC_DSI_TE>;
 		};
 	};
-	mtkfb_pins_lcd_ldo_en0_gpio: lcd_ldo_en1_gpio {
+	mtkfb_pins_lcd_ldo_en1_gpio: lcd_ldo_en1_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	mtkfb_pins_lcd_ldo_en1_gpio: lcd_ldo_en0_gpio {
+	mtkfb_pins_lcd_ldo_en0_gpio: lcd_ldo_en0_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
 			slew-rate = <1>;
