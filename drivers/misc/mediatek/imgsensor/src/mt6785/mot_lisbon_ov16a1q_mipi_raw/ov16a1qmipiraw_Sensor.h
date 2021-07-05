@@ -26,7 +26,7 @@ static kal_uint16 ov16a1q_hs_video_setting[] = {
 };
 
 static kal_uint16 ov16a1q_init_setting[] = {
-    0x0102,0x00,
+    0x0102,0x01,
     0x0301,0x48,
     0x0302,0x31,
     0x0303,0x04,

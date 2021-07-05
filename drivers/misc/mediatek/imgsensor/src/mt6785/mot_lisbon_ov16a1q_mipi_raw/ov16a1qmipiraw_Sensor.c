@@ -328,12 +328,12 @@ static void write_shutter(kal_uint32 shutter)
 			write_cmos_sensor(0x3208, 0xa0);
 		}
 		if(!islongexp) {
-			write_cmos_sensor(0x3208, 0x00);
+			write_cmos_sensor(0x3208, 0x01);
 			write_cmos_sensor(0x3500, (shutter >> 16) & 0x7F);
 			write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
 			write_cmos_sensor(0x3502, (shutter) & 0xFE);
-			write_cmos_sensor(0x3208, 0x10);
-			write_cmos_sensor(0x3208, 0xa0);
+			write_cmos_sensor(0x3208, 0x11);
+			write_cmos_sensor(0x3208, 0xa1);
 		} else {
 			write_cmos_sensor(0x3208, 0x03);
 			write_cmos_sensor(0x3500, 0x00);
