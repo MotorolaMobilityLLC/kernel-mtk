@@ -141,9 +141,12 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 			break;
 		}
 	}
+	//MMI_STOPSHIP
+	//For the MTK base line is truck line. It do not include MOT special feature. So this function could not be called.
+	//Need to restore it after MTK Moto specail line is ready.
+	inject_pin_status_event(swtp->tx_power_mode, rf_name);
         */
-        inject_pin_status_event(swtp->tx_power_mode, rf_name);
-	spin_unlock_irqrestore(&swtp->spinlock, flags);
+        spin_unlock_irqrestore(&swtp->spinlock, flags);
         //CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,"wttest4-swtp->tx_power_mode = %d\n", swtp->tx_power_mode);
         /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end*/
 	return swtp->tx_power_mode;
