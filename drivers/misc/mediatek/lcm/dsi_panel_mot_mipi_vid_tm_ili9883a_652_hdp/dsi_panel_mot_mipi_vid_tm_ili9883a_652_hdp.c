@@ -337,14 +337,14 @@ static void lcm_init_power(void)
 	LCM_LOGI("[LCM] lcm_init_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_init(0x14,1);
+	lcm_set_bias_init(0x14,3);
 	MDELAY(10);
 }
 
 static void lcm_suspend_power(void)
 {
 	LCM_LOGI("[LCM] lcm_suspend_power\n");
-	lcm_set_bias_pin_disable(1);
+	lcm_set_bias_pin_disable(3);
 	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT0);
 	LCM_LOGI("[LCM] lcm suspend power down.\n");
@@ -355,7 +355,7 @@ static void lcm_resume_power(void)
 	LCM_LOGI("[LCM] lcm_resume_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_pin_enable(0x14,1);
+	lcm_set_bias_pin_enable(0x14,3);
 	MDELAY(10);
 }
 
@@ -365,9 +365,10 @@ static void lcm_init(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(10);
+	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
+
 	push_table(NULL, init_setting,
 		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1);
 }
@@ -485,7 +486,6 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	push_table(handle, bl_level,
 		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-
 	lcm_hbm_setting[0].para_list[0] = bl_level[1].para_list[0];
 	lcm_hbm_setting[0].para_list[1] = bl_level[1].para_list[1];
 }
