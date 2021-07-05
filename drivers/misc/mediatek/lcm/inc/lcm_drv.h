@@ -685,6 +685,7 @@ struct LCM_DSI_PARAMS {
 	unsigned int PLL_CLOCK;
 	/* data_rate = PLL_CLOCK x 2 */
 	unsigned int data_rate;
+	unsigned int ap_data_rate;
 	unsigned int PLL_CK_VDO;
 	unsigned int PLL_CK_CMD;
 	unsigned int dsi_clock;

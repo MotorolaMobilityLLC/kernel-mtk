@@ -3264,7 +3264,11 @@ int bdg_dsi_line_timing_dphy_setting(enum DISP_BDG_ENUM module,
 	/* Step 3. Decide AP DSI TX Data Rate and PHY Timing */
 	/* get ap_tx_data_rate and set back to ap */
 	/* get lpx, hs_prep, hs_zero,... refer to DSI_DPHY_TIMCONFIG()*/
-	ap_tx_data_rate = tx_data_rate * rxtx_ratio / 100;
+	if (tx_params->ap_data_rate)
+		ap_tx_data_rate = tx_params->ap_data_rate;
+	else
+		ap_tx_data_rate = tx_data_rate * rxtx_ratio / 100;
+
 
 	/* Step 4. Decide AP DSI TX Blanking */
 	/* get ap-tx hsa_byte, hbp_byte, new_hfp_byte and bllp_byte */

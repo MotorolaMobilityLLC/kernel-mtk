@@ -73,6 +73,7 @@ enum MIPITX_PAD_VALUE {
 
 static int dsi_reg_op_debug;
 unsigned int data_phy_cycle;
+unsigned int test = 1;
 
 #ifdef _LINE_BACK_TO_LP_
 unsigned int line_back_to_LP = 6;
@@ -496,6 +497,8 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 #if 0
 	struct DSI_TXRX_CTRL_REG txrx_ctrl;
 #endif
+	mmprofile_log_ex(ddp_mmp_get_events()->DSI_IRQ[i],
+			 MMPROFILE_FLAG_PULSE, param, i);
 
 	i = DSI_MODULE_to_ID(module);
 	status = *(struct DSI_INT_STATUS_REG *)(&param);
@@ -521,7 +524,11 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 
 	if (status.BUFFER_UNDERRUN_INT_EN) {
 		DDP_PR_ERR("%s:buffer underrun\n", ddp_get_module_name(module));
-		primary_display_diagnose(__func__, __LINE__);
+		DISPMSG("dsi buffer underrun\n");
+		if (test) {
+			primary_display_diagnose(__func__, __LINE__);
+			test = 0;
+		}
 	}
 
 	if (status.INP_UNFINISH_INT_EN)
@@ -901,9 +908,15 @@ enum DSI_STATUS DSI_BIST_Pattern_Test(enum DISP_MODULE_ENUM module,
 		if (enable) {
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_BIST_PATTERN,
 				     color);
+#if 0
 			DSI_OUTREGBIT(cmdq, struct DSI_BIST_CON_REG,
 				      DSI_REG[i]->DSI_BIST_CON,
 				      SELF_PAT_PRE_MODE, 1);
+#endif
+			DSI_OUTREGBIT(cmdq, struct DSI_BIST_CON_REG,
+				      DSI_REG[i]->DSI_BIST_CON,
+				      SELF_PAT_POST_MODE, 1);
+
 
 			if (_is_lcm_cmd_mode(module)) {
 				struct DSI_T0_INS t0;
@@ -927,6 +940,7 @@ enum DSI_STATUS DSI_BIST_Pattern_Test(enum DISP_MODULE_ENUM module,
 			 * can't just start dsi so we just disable
 			 * pattern bit, do not start dsi here
 			 */
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_BIST_CON, 0x00);
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_BIST_CON, 0x00);
 		}
 	}
@@ -1064,7 +1078,11 @@ void DSI_DPHY_Calc_VDO_Timing_with_DSC(enum DISP_MODULE_ENUM module,
 			data_phy_cycle * lanes;
 		break;
 	}
-	t_hfp = ap_tx_total_word_cnt - ap_tx_total_word_cnt_no_hfp_wc;
+	if (dsi_params->ap_data_rate)
+		t_hfp = 88;
+	else
+		t_hfp = ap_tx_total_word_cnt - ap_tx_total_word_cnt_no_hfp_wc;
+
 	DISPINFO(
 		"[DISP]-kernel-%s, ps_wc=%d, get_bdg_line_cycle=%d, ap_tx_total_word_cnt=%d, data_phy_cycle=%d, ap_tx_total_word_cnt_no_hfp_wc=%d\n",
 		__func__, ps_wc, get_bdg_line_cycle(), ap_tx_total_word_cnt, data_phy_cycle,
@@ -3757,6 +3775,14 @@ void DSI_DPHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 		    REG_FLD_VAL(FLD_CLK_HS_EXIT, timcon3.CLK_HS_EXIT);
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON3, value);
 
+		if (dsi_params->ap_data_rate && bdg_is_bdg_connected() == 1) {
+			DISPMSG("%s, need special timing\n", __func__);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON0, 0x151f0f14);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON1, 0x24641e50);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON2, 0x1d850103);
+			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON3, 0x00282017);
+		}
+
 		DISPINFO(
 		"%s, PHY_TIMECON0=0x%08x,PHY_TIMECON1=0x%08x,PHY_TIMECON2=0x%08x,PHY_TIMECON3=0x%08x\n",
 			__func__,
@@ -5168,20 +5194,12 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 
 	if (DSI_REG[dsi_i]->DSI_MODE_CTRL.MODE) { /* vdo cmd */
 		if (bdg_is_bdg_connected() == 1) {
-			if (get_mt6382_init()) {
-				bdg_vm_mode_set(DISP_BDG_DSI0, true, count, cmdq);
-				DSI_send_vm_cmd(cmdq, module, REGFLAG_ESCAPE_ID, cmd,
-							count, para_list, force_update);
-				mdelay(100); //need to check
-			}
-		}
-		DSI_send_vm_cmd(cmdq, module, REGFLAG_ESCAPE_ID, cmd,
-					count, para_list, force_update);
-		if (bdg_is_bdg_connected() == 1) {
-			if (get_mt6382_init()) { //need to check
-				mdelay(100); //need to check
-				bdg_vm_mode_set(DISP_BDG_DSI0, false, count, cmdq);
-			}
+			dsi_wait_not_busy(module, cmdq);
+			DSI_send_cmd_cmd(cmdq, module, 0, REGFLAG_ESCAPE_ID, cmd,
+						count, para_list, force_update);
+		} else {
+			DSI_send_vm_cmd(cmdq, module, REGFLAG_ESCAPE_ID, cmd,
+						count, para_list, force_update);
 		}
 	} else {/* cmd mode */
 		dsi_wait_not_busy(module, cmdq);
@@ -6335,6 +6353,8 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	}
 
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
+	if (bdg_is_bdg_connected() == 1)
+		set_deskew_status(0);
 
 	DISPFUNCEND();
 
@@ -6783,6 +6803,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DSI_Reset(module, NULL);
 	_set_power_on_status(module, 1);
+	test = 1;
 
 	return DSI_STATUS_OK;
 }
@@ -7192,6 +7213,9 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 		for (i = 0; i < 3; i++) {
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
+			if (i > 0 && bdg_is_bdg_connected() == 1)
+				cmdq_pkt_sleep(((struct cmdqRecStruct *)cmdq_trigger_handle)->pkt,
+						CMDQ_US_TO_TICK(20), CMDQ_GPR_R12);
 
 			/* 0.send read lcm command(short packet) */
 			t0.CONFG = 0x04; /* BTA */
@@ -7421,6 +7445,7 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x00, 7,
 					startdsi, 1);
 		}
+
 		keep_LP11_in_sw_ctrl(module, cmdq_trigger_handle);
 		sw_ctrl_switch(module, cmdq_trigger_handle, 1);
 		DSI_send_cmd_cmd(cmdq_trigger_handle, module,
