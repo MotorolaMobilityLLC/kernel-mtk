@@ -35,7 +35,7 @@
 };
 
 &i2c5 {
-	bq25601@6B {
+	bq2560x_charger:bq25601@6B {
 		compatible = "ti,bq25601";
 		reg = <0x6B>;
 		ti,bq2560x,usb-vlim = <4600>;
@@ -423,6 +423,7 @@
 
 &mtk_gauge {
 	charger = <&mtk_charger_type>;
+        extern_charger = <&bq2560x_charger>;
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
 
