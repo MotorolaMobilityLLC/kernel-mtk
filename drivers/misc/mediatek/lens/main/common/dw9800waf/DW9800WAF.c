@@ -184,7 +184,22 @@ static inline int moveAF(unsigned long a_u4Position)
 			g_u4CurrPosition = 0;
 			spin_unlock(g_pAF_SpinLock);
 		}
-
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+		if(a_u4Position <=250){
+			s4AF_WriteReg(450);
+			mdelay(10);
+			s4AF_WriteReg(400);
+			mdelay(10);
+			s4AF_WriteReg(350);
+			mdelay(10);
+			s4AF_WriteReg(325);
+			mdelay(10);
+			s4AF_WriteReg(300);
+			mdelay(15);
+			s4AF_WriteReg(275);
+			mdelay(15);
+		}
+#endif
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
@@ -229,6 +244,21 @@ static inline int setAFMacro(unsigned long a_u4Position)
 #ifdef CONFIG_AF_NOISE_ELIMINATION
 void VIB_ResetPos_Main(unsigned long a_u4Position)
 {
+
+	if(a_u4Position <=250 && g_u4CurrPosition >=500){
+		s4AF_WriteReg(450);
+		mdelay(10);
+		s4AF_WriteReg(400);
+		mdelay(10);
+		s4AF_WriteReg(350);
+		mdelay(10);
+		s4AF_WriteReg(325);
+		mdelay(10);
+		s4AF_WriteReg(300);
+		mdelay(15);
+		s4AF_WriteReg(275);
+		mdelay(15);
+	}
 	moveAF(a_u4Position);
 }
 #endif
