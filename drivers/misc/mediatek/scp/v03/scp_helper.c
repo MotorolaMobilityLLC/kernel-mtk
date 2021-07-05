@@ -484,8 +484,6 @@ static void scp_wait_ready_timeout(unsigned long data)
 	if (scp_timeout_times < 10)
 		scp_send_reset_wq(RESET_TYPE_TIMEOUT);
 #endif
-	if(scp_timeout_times >= 10)
-		BUG_ON(1);
 	scp_timeout_times++;
 	pr_notice("[SCP] scp_timeout_times=%x\n", scp_timeout_times);
 }
