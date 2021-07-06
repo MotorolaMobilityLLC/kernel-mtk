@@ -480,16 +480,17 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 #if LCM_BIT_11
-	unsigned int bl_min = 12;
+	//unsigned int bl_min = 12;
 	unsigned int bl_lvl;
 
 	pr_info("[LCM]%s, backlight value = %d \n", __func__, level);
+/*
 	if (level < bl_min) {
 		//avoid panel too dark
 		level = bl_min;
 		pr_debug("%s, reset min bl\n", __func__);
 	}
-
+*/
 	bl_lvl = level;
 	//for 11bit
 	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
