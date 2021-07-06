@@ -124,6 +124,10 @@
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
 
+&mrdump_ext_rst {
+        force_mode = "EINT";
+};
+
 &i2c2 {
 	clock-frequency = <400000>;
 
