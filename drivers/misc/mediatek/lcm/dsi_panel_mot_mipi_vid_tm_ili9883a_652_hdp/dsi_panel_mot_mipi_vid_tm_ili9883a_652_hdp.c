@@ -156,10 +156,8 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
 };
 
-static struct LCM_setting_table lcm_hbm_setting[] = {
-	{0x51, 2, {0x0C, 0xCC} },	//80% PWM
-	{0x51, 2, {0x0F, 0XFE} },	//100% PWM
-};
+static struct LCM_setting_table lcm_hbm_setting = {0x51, 2, {0x0F, 0xFE} };//100% PWM
+
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update)
@@ -495,7 +493,8 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 
 	switch(*lcm_cmd) {
 		case PARAM_HBM:
-			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			if (*lcm_value)
+				push_table(handle, &lcm_hbm_setting, 1, 1);
 			break;
 		case PARAM_CABC:
 			if (*lcm_value >= CABC_MODE_NUM) {

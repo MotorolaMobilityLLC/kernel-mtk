@@ -165,10 +165,7 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
 };
 
-static struct LCM_setting_table lcm_hbm_setting[] = {
-	{0x51, 2, {0x06, 0x66} },	//80% PWM
-	{0x51, 2, {0x07, 0XFF} },	//100% PWM
-};
+static struct LCM_setting_table lcm_hbm_setting = {0x51, 2, {0x07, 0xFF} };//100% PWM
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update)
@@ -501,8 +498,8 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 
 	switch(*lcm_cmd) {
 		case PARAM_HBM:
-			LCM_LOGI("%s nt36525c -1 : para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,lcm_hbm_setting[*lcm_value].para_list[0],lcm_hbm_setting[*lcm_value].para_list[1]);
-			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			if (*lcm_value)
+				push_table(handle, &lcm_hbm_setting, 1, 1);
 			break;
 		case PARAM_CABC:
 			if (*lcm_value >= CABC_MODE_NUM) {
