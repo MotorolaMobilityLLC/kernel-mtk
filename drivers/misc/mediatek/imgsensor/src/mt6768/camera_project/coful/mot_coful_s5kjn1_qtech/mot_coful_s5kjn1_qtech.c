@@ -45,7 +45,6 @@
 static const char *s5kjn1_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
 static mot_calibration_info_t s5kjn1_cal_info = {0};
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
-int flash_mode = 0;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static struct imgsensor_info_struct imgsensor_info = {
@@ -2308,7 +2307,6 @@ static kal_uint32 close(void)
 {
 	LOG_INF("E\n");
 
-	flash_mode = 0;
 	return ERROR_NONE;
 }
 
@@ -2346,7 +2344,6 @@ preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	capture_setting(imgsensor.current_fps);   //preview use capture setting
 	set_mirror_flip(imgsensor.mirror);
 
-	flash_mode = 1;
 	return ERROR_NONE;
 }
 
@@ -2417,7 +2414,6 @@ capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	}
 #endif
 */
-	flash_mode = 1;
 	return ERROR_NONE;
 }
 
@@ -2438,7 +2434,6 @@ normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	normal_video_setting(imgsensor.current_fps);
 	set_mirror_flip(imgsensor.mirror);
 
-	flash_mode = 0;
 	return ERROR_NONE;
 }
 
@@ -2462,7 +2457,6 @@ hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	hs_video_setting();
 	set_mirror_flip(imgsensor.mirror);
 
-	flash_mode = 0;
 	return ERROR_NONE;
 }
 

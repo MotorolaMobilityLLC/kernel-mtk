@@ -65,7 +65,7 @@ static struct pinctrl_state *corfu_ce_low;
 /* define usage count */
 static int use_count;
 
-extern int flash_mode;
+static int cur_duty = 0xFFFF;
 
 /* platform data */
 struct corfu_platform_data {
@@ -168,10 +168,10 @@ static int corfu_enable(void)
 {
 	/* TODO: wrap enable function */
 
-	if(flash_mode)
-		return corfu_pinctrl_set(CORFU_PINCTRL_PIN_EN, CORFU_PINCTRL_PINSTATE_HIGH);
-	else
+	if(cur_duty == 0xFFFF)
 		return corfu_pinctrl_set(CORFU_PINCTRL_PIN_CE, CORFU_PINCTRL_PINSTATE_HIGH);
+	else
+		return corfu_pinctrl_set(CORFU_PINCTRL_PIN_EN, CORFU_PINCTRL_PINSTATE_HIGH);
 }
 
 /* flashlight disable function */
@@ -186,6 +186,7 @@ static int corfu_disable(void)
 static int corfu_set_level(int level)
 {
 	/* TODO: wrap set level function */
+	cur_duty = level;
 	return 0;
 }
 
