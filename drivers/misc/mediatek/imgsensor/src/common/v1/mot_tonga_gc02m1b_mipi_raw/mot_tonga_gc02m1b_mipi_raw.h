@@ -114,6 +114,12 @@ struct imgsensor_info_struct {
 	kal_uint32 i2c_speed;
 };
 
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
