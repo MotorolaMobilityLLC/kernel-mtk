@@ -1208,6 +1208,8 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 	bq25601_set_iterm(0x3);	/* Termination current 180mA + 60mA */
+#elif CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	bq25601_set_iterm(0x1);	/* Termination current 120mA */
 #else
 	bq25601_set_iterm(0x2);	/* Termination current 180mA */
 #endif
