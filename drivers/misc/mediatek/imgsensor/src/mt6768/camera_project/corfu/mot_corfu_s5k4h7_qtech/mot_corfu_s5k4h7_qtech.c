@@ -192,7 +192,7 @@ static struct imgsensor_struct imgsensor = {
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,		// sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5a,
-	.current_ae_effective_frame = 2,
+	.current_ae_effective_frame = 0x3372CB48,
 };
 
 
@@ -347,23 +347,6 @@ static kal_uint32 streaming_control(kal_bool enable)
 	return ERROR_NONE;
 }
 
-static void check_output_stream_off(void)
-{
-	kal_uint16 read_count = 0, read_register0005_value = 0;
-
-	for (read_count = 0; read_count <= 100; read_count++) {
-		read_register0005_value = read_cmos_sensor_8(0x0005);
-
-		if (read_register0005_value == 0xff)
-			break;
-		mdelay(1);
-
-		if (read_count == 100)
-			LOG_INF("cxc stream off error\n");
-	}
-
-}
-
 static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
@@ -415,7 +398,6 @@ static void write_shutter(kal_uint32 shutter)
 			      long_shutter, new_framelength,shutter);
 		/*stream off */
 		streaming_control(KAL_FALSE);
-		check_output_stream_off();
 		/*setting for long exposure*/
 		write_cmos_sensor_8(0x0340, (new_framelength&0xFF00)>>8);
 		write_cmos_sensor_8(0x0341, (new_framelength&0x00FF));
@@ -427,12 +409,11 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0203, (long_shutter&0x00FF));
 		/*stream on*/
 
-		write_cmos_sensor_8(0x0100, 0x01);
+		streaming_control(KAL_TRUE);
 
 		/* Frame exposure mode customization for LE*/
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.current_ae_effective_frame = 1;
 		LOG_INF(" long exposure stream on-\n");
 	} else {
 		/*normal mode*/
@@ -460,7 +441,6 @@ static void write_shutter(kal_uint32 shutter)
 			write_cmos_sensor_8(0x0203, shutter & 0xFF);
 			LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 		}
-		imgsensor.current_ae_effective_frame = 2;
 	}
 	/* Update Shutter */
 
