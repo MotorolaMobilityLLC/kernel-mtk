@@ -700,6 +700,114 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+
+static calibration_status_t mnf_status = CRC_FAILURE;
+static calibration_status_t af_status = CRC_FAILURE;
+static calibration_status_t awb_status = CRC_FAILURE;
+static calibration_status_t lsc_status = CRC_FAILURE;
+static calibration_status_t pdaf_status = CRC_FAILURE;
+static calibration_status_t dual_status = CRC_FAILURE;
+
+static void gc02m1b_eeprom_format_calibration_data()
+{
+	mnf_status = 0;
+	af_status = 0;
+	awb_status = 0;
+	lsc_status = 0;
+	pdaf_status = 0;
+	dual_status = 0;
+
+	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+}
+
+#define MODULE_GROUP_FLAG_ADDR 0x78
+#define MODULE_GROUP1_START_ADDR 0x80
+#define MODULE_GROUP2_START_ADDR 0xC0
+#define MODULE_DATA_SIZE 8
+static unsigned char gc02m1b_module_data[8] = {0}; //add flag and checksum value
+
+#define GC02M1B_SERIAL_NUM_SIZE 8
+#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
+
+static void gc02m1b_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+
+static void read_gc02m1b_module_info(void)
+{
+	kal_uint16 i, start_addr = 0, otp_grp_flag = 0;
+
+	//init setting
+	write_cmos_sensor(0xfc, 0x01);
+	write_cmos_sensor(0xf4, 0x41);
+	write_cmos_sensor(0xf5, 0xc0);
+	write_cmos_sensor(0xf6, 0x44);
+	write_cmos_sensor(0xf8, 0x38);
+	write_cmos_sensor(0xf9, 0x82);
+	write_cmos_sensor(0xfa, 0x00);
+	write_cmos_sensor(0xfd, 0x80);
+	write_cmos_sensor(0xfc, 0x81);
+	write_cmos_sensor(0xfe, 0x03);
+	write_cmos_sensor(0x01, 0x0b);
+	write_cmos_sensor(0xf7, 0x01);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x8e);
+
+	write_cmos_sensor(0xf3, 0x30); //OTP read init set
+	write_cmos_sensor(0xfe, 0x02); //page select
+	write_cmos_sensor(0x17, MODULE_GROUP_FLAG_ADDR); //set addr
+	write_cmos_sensor(0xf3, 0x34); //otp read pulse
+	otp_grp_flag = read_cmos_sensor(0x19); //read value
+	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+
+	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
+		start_addr = MODULE_GROUP1_START_ADDR;
+		LOG_INF("otp data is group1\n");
+	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
+		start_addr = MODULE_GROUP2_START_ADDR;
+		LOG_INF("otp data is group2\n");
+	} else {
+		LOG_INF("gc02m1 OTP has no otp data\n");
+	}
+
+	for(i = 0; i < MODULE_DATA_SIZE; i++){
+		write_cmos_sensor(0x17, (start_addr+i*0x08));
+		write_cmos_sensor(0xf3, 0x34);
+		gc02m1b_module_data[i] = read_cmos_sensor(0x19);
+		LOG_INF("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1b_module_data[i]);
+	}
+}
+
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -713,6 +821,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id() + 1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				read_gc02m1b_module_info();
+				gc02m1b_eeprom_format_calibration_data();
+				gc02m1b_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, MODULE_DATA_SIZE, (void *)gc02m1b_module_data);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -903,7 +1014,20 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
-
+	sensor_info->calibration_status.mnf = mnf_status;
+	sensor_info->calibration_status.af = af_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
+	sensor_info->calibration_status.pdaf = pdaf_status;
+	sensor_info->calibration_status.dual = dual_status;
+	{
+		snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
+			"%02x%02x%02x%02x%02x%02x%02x%02x",
+		gc02m1b_module_data[0], gc02m1b_module_data[1],
+		gc02m1b_module_data[2], gc02m1b_module_data[3],
+		gc02m1b_module_data[4], gc02m1b_module_data[5],
+		gc02m1b_module_data[6], gc02m1b_module_data[7]);
+	}
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
