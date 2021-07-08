@@ -91,7 +91,8 @@ static unsigned int esd_check_mode;
 static unsigned int esd_check_enable;
 unsigned int esd_checking;
 static int te_irq;
-
+/*for esd check delay enable*/
+static struct timer_list timer;
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
@@ -1198,6 +1199,23 @@ void primary_display_requset_eint(void)
 	}
 }
 
+static void primary_display_esd_check_enable_handler(unsigned long data)
+{
+	DDPMSG("%s do start esd check\n", __func__);
+	primary_display_esd_check_enable(1);
+}
+
+void primary_display_esd_check_enable_delay(int enable)
+{
+	if (unlikely(timer_pending(&timer))) {
+		DISPMSG("%s update esd timer\n", __func__);
+		mod_timer(&timer, jiffies + 10 * HZ); //delay 10s
+	} else {
+		DISPMSG("%s add esd timer\n", __func__);
+		timer.expires = jiffies + 10 * HZ; //delay 10s
+		add_timer(&timer);
+	}
+}
 
 void primary_display_check_recovery_init(void)
 {
@@ -1214,7 +1232,12 @@ void primary_display_check_recovery_init(void)
 			init_waitqueue_head(&esd_ext_te_wq);
 			primary_display_requset_eint();
 			set_esd_check_mode(GPIO_EINT_MODE);
-			primary_display_esd_check_enable(1);
+			if (bdg_is_bdg_connected() == 1) {
+				init_timer(&timer);
+				timer.function = primary_display_esd_check_enable_handler;
+				primary_display_esd_check_enable_delay(1);
+			} else
+				primary_display_esd_check_enable(1);
 		}
 	}
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
