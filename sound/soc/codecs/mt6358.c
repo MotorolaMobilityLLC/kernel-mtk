@@ -3313,6 +3313,10 @@ static int mt_mic_bias_event(struct snd_soc_dapm_widget *w,
 
 	dev_dbg(priv->dev, "%s(), event 0x%x, mux %u\n", __func__, event, mux);
 
+	if (IS_VOW_AMIC_BASE(mux) || MIC_TYPE_MUX_VOW_DMIC == mux
+		|| MIC_TYPE_MUX_VOW_DMIC_LP == mux)
+		return 0;
+
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		if (mux == MIC_TYPE_MUX_DMIC)
