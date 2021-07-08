@@ -948,7 +948,6 @@ int ccci_load_firmware(int md_id, void *img_inf,
 	char img_err_str[], char post_fix[], struct device *dev)
 {
 #define MAX_REMAP_SIZE (1024 * 1024)
-	int i = 0;
 	int ret = 0;
 	int check_ret = 0;
 	int read_size = 0;
@@ -965,8 +964,7 @@ int ccci_load_firmware(int md_id, void *img_inf,
 	int hdr_size = 0;
 	void *img_data_ptr = NULL;
 	char *img_str = md_img_info_str[md_id];
-	int scan_max;
-	int md_type_val;
+	static const int md_type_val = 3; //only MT6580 using this
 	int val = 0;
 
 
@@ -1004,55 +1002,29 @@ int ccci_load_firmware(int md_id, void *img_inf,
 		goto out;
 	}
 
-	md_type_val = 3;//get_modem_support_cap(md_id); only MT6580 using this
-	if ((md_type_val > 0)
-			&& (md_type_val < modem_ultg)) {
-		i = md_type_val;
-		scan_max = md_type_val;
-	} else {
-		/*
-		 * NOTES:
-		 * if md support type is ubin,
-		 * then need try to find suitable md image
-		 */
-		i = modem_ultg;
-		scan_max = MAX_IMG_NUM;
-	}
-TRY_LOAD_IMG:
 	ret = request_firmware(&fw_entry, img_name, dev);
 	if (ret != 0) {
-		/*CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
-		 *	"Try to load firmware %s failed:ret=%d!\n",
-		 * img_name, ret);
-		 */
-		if (i <= scan_max) {
-			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr i:%d\n", i);
-			if (img->type == IMG_MD)
-				val = snprintf(img_name, IMG_NAME_LEN,
-					"modem_%d_%s_n.img",
-					md_id+1, get_md_img_cap_str(i));
-			else if (img->type == IMG_DSP)
-				val = snprintf(img_name, IMG_NAME_LEN,
-					"dsp_%d_%s_n.bin",
-					md_id+1, get_md_img_cap_str(i));
-			else if (img->type == IMG_ARMV7)
-				val = snprintf(img_name, IMG_NAME_LEN,
-					"armv7_%d_%s_n.bin",
-					md_id+1, get_md_img_cap_str(i));
-			else {
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
-					"[Error]Invalid img type%d\n",
-					img->type);
-				return -CCCI_ERR_INVALID_PARAM;
-			}
-			if (val < 0 || val >= IMG_NAME_LEN) {
-				CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
-					"%s-%d:snprintf fail,val=%d,type=%d\n",
-					__func__, __LINE__, val, img->type);
-				goto out;
-			}
-			i++;
-			goto TRY_LOAD_IMG;
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr md_type_val:%d\n", md_type_val);
+		if (img->type == IMG_MD)
+			val = snprintf(img_name, IMG_NAME_LEN,
+				"modem_%d_%s_n.img",
+				md_id+1, md_img_type_str[md_type_val]);
+		else if (img->type == IMG_DSP)
+			val = snprintf(img_name, IMG_NAME_LEN,
+				"dsp_%d_%s_n.bin",
+				md_id+1, md_img_type_str[md_type_val]);
+		else {
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
+				"[Error]Invalid img type%d\n",
+				img->type);
+			return -CCCI_ERR_INVALID_PARAM;
+		}
+
+		if (val < 0 || val >= IMG_NAME_LEN) {
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
+				"%s-%d:snprintf fail,val=%d,type=%d\n",
+				__func__, __LINE__, val, img->type);
+			goto out;
 		} else {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 			     "Try to load all md image failed:ret=%d!\n", ret);
