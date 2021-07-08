@@ -110,6 +110,7 @@ obj-y  += common/lc898122af/
 obj-y += common/ov5645af/
 obj-y  += common/wv511aaf/
 obj-y  += common/ak7371af/
+obj-y  += common/gt9772af/
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
   obj-y  += common/bu63165af/
 else
