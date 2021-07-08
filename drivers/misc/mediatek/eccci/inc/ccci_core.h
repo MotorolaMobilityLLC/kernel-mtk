@@ -509,6 +509,15 @@ enum CCCI_CH {
 	CCCI_GARB_RX			= 204,
 	CCCI_GARB_TX			= 205,
 
+	CCCI_EPDG1_RX			= 236,
+	CCCI_EPDG1_TX			= 237,
+	CCCI_EPDG2_RX			= 238,
+	CCCI_EPDG2_TX			= 239,
+	CCCI_EPDG3_RX			= 240,
+	CCCI_EPDG3_TX			= 241,
+	CCCI_EPDG4_RX			= 242,
+	CCCI_EPDG4_TX			= 243,
+
 	CCCI_C2K_PPP_DATA, /* data ch for c2k */
 
 	CCCI_C2K_AT,	/*rild AT ch for c2k*/
