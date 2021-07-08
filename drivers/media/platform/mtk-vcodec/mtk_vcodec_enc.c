@@ -461,8 +461,11 @@ static int vidioc_venc_s_ctrl(struct v4l2_ctrl *ctrl)
 		p->b_qp = ctrl->val;
 		break;
 	case V4L2_CID_MPEG_VIDEO_ENABLE_TSVC:
-		mtk_v4l2_debug(0, "V4L2_CID_MPEG_VIDEO_ENABLE_TSVC");
-		p->tsvc = ctrl->val;
+		mtk_v4l2_debug(0,
+			"V4L2_CID_MPEG_VIDEO_ENABLE_TSVC layer: %d, type: %d\n",
+			ctrl->p_new.p_u32[0], ctrl->p_new.p_u32[1]);
+		if (ctrl->p_new.p_u32[0] == 3)
+			p->tsvc = 1;
 		ctx->param_change |= MTK_ENCODE_PARAM_TSVC;
 		break;
 	case V4L2_CID_MPEG_MTK_ENCODE_RC_MAX_QP:
@@ -2929,13 +2932,14 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 
 	memset(&cfg, 0, sizeof(cfg));
 	cfg.id = V4L2_CID_MPEG_VIDEO_ENABLE_TSVC;
-	cfg.type = V4L2_CTRL_TYPE_INTEGER;
+	cfg.type = V4L2_CTRL_TYPE_U32;
 	cfg.flags = V4L2_CTRL_FLAG_WRITE_ONLY;
-	cfg.name = "Video encode tsvc switch";
+	cfg.name = "Video encode tsvc";
 	cfg.min = 0;
-	cfg.max = 8;
+	cfg.max = 15;
 	cfg.step = 1;
 	cfg.def = 0;
+	cfg.dims[0] = 2;
 	cfg.ops = ops;
 	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
 
