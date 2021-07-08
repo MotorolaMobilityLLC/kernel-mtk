@@ -508,9 +508,10 @@ int mdw_usr_mem_free(struct apusys_mem *um, struct mdw_usr *u)
 		mm = list_entry(list_ptr, struct mdw_mem, u_item);
 
 		if (mm->kmem.fd == um->fd &&
-			mm->kmem.mem_type == um->mem_type) {
-			mdw_flw_debug("get mem fd(%d) type(%d)\n",
-				mm->kmem.fd, mm->kmem.mem_type);
+			mm->kmem.mem_type == um->mem_type &&
+			mm->kmem.khandle == um->khandle) {
+			mdw_flw_debug("get mem fd(%d) type(%d) khandle(%d)\n",
+				mm->kmem.fd, mm->kmem.mem_type, mm->kmem.khandle);
 
 			ret = mdw_mem_u2k_handle(&mm->kmem, um);
 			if (ret)
