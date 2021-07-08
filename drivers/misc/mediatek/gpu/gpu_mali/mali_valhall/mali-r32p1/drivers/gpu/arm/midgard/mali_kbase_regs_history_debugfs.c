@@ -241,4 +241,29 @@ void kbasep_regs_history_debugfs_init(struct kbase_device *kbdev)
 			kbdev->mali_debugfs_directory, &kbdev->io_history,
 			&regs_history_fops);
 }
+#else
+// MTK: add to prevent build fail
+int kbase_io_history_init(struct kbase_io_history *h, u16 n)
+{
+	(void)h;
+	(void)n;
+
+	return 0;
+};
+
+void kbase_io_history_term(struct kbase_io_history *h)
+{
+	(void)h;
+};
+
+void kbase_io_history_dump(struct kbase_device *kbdev)
+{
+	(void)kbdev;
+};
+
+void kbasep_regs_history_debugfs_init(struct kbase_device *kbdev)
+{
+	(void)kbdev;
+};
+
 #endif /* defined(CONFIG_DEBUG_FS) && !IS_ENABLED(CONFIG_MALI_NO_MALI) */
