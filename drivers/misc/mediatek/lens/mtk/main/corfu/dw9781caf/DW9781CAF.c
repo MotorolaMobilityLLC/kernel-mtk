@@ -180,7 +180,7 @@ void control_ois(__user struct stAF_CtrlCmd *CtrlCmd)
 		case OIS_SWITCH:
 			if(ControlCmd.i8Param[0])
 			{
-				s4AF_WriteReg(0x7015,0x0002);
+				s4AF_WriteReg(0x7015,0x0001);
 				LOG_INF("OIS OFF!\n");
 			}
 			else
