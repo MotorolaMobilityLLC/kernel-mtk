@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 MediaTek Inc.
+# Copyright (C) 2021 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,13 +11,13 @@
 # GNU General Public License for more details.
 #
 
-obj-y += dip/
-obj-y += src/
-obj-y += owe/
-obj-y += rsc/
-obj-y += wpe/
-obj-y += dpe/
-obj-y += tsf/
-obj-y += mfb/
-obj-y += fdvt/
-obj-y += pda/
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+
+$(info $(srctree))
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-$(CONFIG_MTK_IOMMU_V2) += -I$(srctree)/drivers/iommu
+ccflags-$(CONFIG_MTK_IOMMU_V2) += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
+
+obj-y := camera_pda_dummy.o
+
+obj-$(CONFIG_MTK_CAMERA_ISP_PDA_SUPPORT) += isp_6s/camera_pda.o
