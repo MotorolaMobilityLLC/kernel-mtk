@@ -317,7 +317,7 @@ unsigned int get_has_hrt_bw(void)
 
 int disp_pm_qos_update_mmclk(int mm_freq)
 {
-//	enum vcore_opp vcore_value = VCORE_OPP_1;
+	enum vcore_opp vcore_value = VCORE_OPP_0;
 
 #if 0
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
@@ -325,9 +325,12 @@ int disp_pm_qos_update_mmclk(int mm_freq)
 					!primary_display_is_decouple_mode(), vcore_value);
 #endif
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	DISPMSG("%s, force set mmclk=%d, vcore=0.725v\n", __func__, mm_freq);
+	if (mm_freq < 559)
+		vcore_value = VCORE_OPP_1;
+	DISPMSG("%s, force set mmclk=%d, vcore=%s\n",
+		__func__, mm_freq, vcore_value == VCORE_OPP_0 ? "0.825v" : "0.725v");
 	pm_qos_update_request(&mm_freq_request, mm_freq);
-//	pm_qos_update_request(&vcore_request, vcore_value);
+	pm_qos_update_request(&vcore_request, vcore_value);
 #endif
 #if 0
 	   mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,

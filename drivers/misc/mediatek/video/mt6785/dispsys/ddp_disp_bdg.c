@@ -21,6 +21,7 @@
 #include "disp_drv_log.h"
 #include "ddp_reg.h"
 #include "mt6382.h"
+#include "ddp_dsi.h"
 #include "disp_dts_gpio.h"
 #include "../../../base/power/include/clkbuf_v1/mt6785/mtk_clkbuf_hw.h"
 #include <linux/of.h>
@@ -6929,6 +6930,7 @@ int bdg_common_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 		set_LDO_off(cmdq);
 		clk_buf_disp_ctrl(false);
 		mt6382_init = 0;
+		set_deskew_status(0);
 	} else
 		DISPMSG("%s, 6382 not init\n", __func__);
 

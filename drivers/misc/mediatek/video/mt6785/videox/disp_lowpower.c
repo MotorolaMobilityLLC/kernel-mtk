@@ -366,11 +366,7 @@ static int primary_display_dsi_vfp_change(int state)
 	unsigned int last_req_dfps;
 	unsigned int min_dfps;
 
-	if (bdg_is_bdg_connected() == 1)
-		cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle);
-	else
-		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &qhandle);
-
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle);
 	cmdqRecReset(qhandle);
 
 	/* make sure token RDMA_SOF is clear */
@@ -425,8 +421,6 @@ static int primary_display_dsi_vfp_change(int state)
 			/* stop dsi vdo mode */
 			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
 				qhandle, CMDQ_STOP_VDO_MODE, 0);
-
-			cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 		}
 	}
 	dpmgr_path_ioctl(primary_get_dpmgr_handle(), qhandle,
@@ -442,7 +436,6 @@ static int primary_display_dsi_vfp_change(int state)
 		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
 				primary_get_dpmgr_handle()), qhandle, 0);
 
-		_blocking_flush();
 		cmdqRecFlush(qhandle);
 	} else {
 		if (primary_display_is_support_ARR() && apply_vfp != 0) {

@@ -5484,7 +5484,6 @@ int primary_display_resume(void)
 #endif
 
 	DISPCHECK("%s begin\n", __func__);
-//	DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
 	DISPFUNCSTART();
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 			 MMPROFILE_FLAG_START, 0, 0);
@@ -5545,7 +5544,6 @@ int primary_display_resume(void)
 		data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		bdg_common_init(DISP_BDG_DSI0, data_config, NULL);
 		mipi_dsi_rx_mac_init(DISP_BDG_DSI0, data_config, NULL);
-		set_deskew_status(0);
 	}
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -5844,9 +5842,9 @@ int primary_display_resume(void)
 #endif
 done:
 	if (bdg_is_bdg_connected() == 1) {
-		//mmdvfs_qos_force_step(0);
+		mmdvfs_qos_force_step(0);
 	/*	559-449-314-273*/
-		disp_pm_qos_update_mmclk(449);
+//		disp_pm_qos_update_mmclk(559);
 	}
 	primary_set_state(DISP_ALIVE);
 #if 0 //def CONFIG_TRUSTONIC_TRUSTED_UI
@@ -11060,9 +11058,6 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 				/* stop dsi vdo mode */
 				dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
 						qhandle, CMDQ_STOP_VDO_MODE, 0);
-
-				cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-
 				ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
 						last_dynfps, new_dynfps, fps_change_index);
 
@@ -11074,8 +11069,7 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 				ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
 						primary_get_dpmgr_handle()), qhandle, 0);
 
-				_blocking_flush();
-					cmdqRecFlush(qhandle);
+				cmdqRecFlush(qhandle);
 			} else {
 				if (need_send_cmd) {
 					cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);

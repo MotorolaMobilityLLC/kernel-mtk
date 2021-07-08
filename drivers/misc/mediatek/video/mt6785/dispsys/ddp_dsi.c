@@ -6353,8 +6353,6 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	}
 
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
-	if (bdg_is_bdg_connected() == 1)
-		set_deskew_status(0);
 
 	DISPFUNCEND();
 
