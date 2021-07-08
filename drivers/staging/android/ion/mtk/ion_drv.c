@@ -895,6 +895,8 @@ static int ion_drv_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 	}
 	pdata = (struct ion_platform_data *)of_device_get_match_data(dev);
+	if (!pdata)
+		IONMSG("get match data fail\n");
 #else
 
 	pdata = pdev->dev.platform_data;
