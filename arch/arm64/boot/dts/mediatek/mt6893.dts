@@ -2885,13 +2885,13 @@ page_owner=on loop.max_part=7";
 		reg = <0 0x0c400000 0 0x40000>;
 	};
 
-	dfd@10200b00 {
+	dfd_mcu: dfd@10200b00 {
 		compatible = "mediatek,dfd";
 		reg = <0 0x10200b00 0 0x10000>;
-
 		mediatek,enabled = <1>;
 		mediatek,chain_length = <0x4c08>;
 		mediatek,rg_dfd_timeout = <0xa0>;
+		mediatek,check_dfd_support = <1>;
 	};
 
 	dfd_cache: dfd_cache {
