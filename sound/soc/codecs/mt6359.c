@@ -2584,7 +2584,8 @@ static int mt_vow_aud_lpw_event(struct snd_soc_dapm_widget *w,
 					   0x0039, 0x0039);
 		} else {
 			/* handset single mic (R)*/
-			if (priv->vow_single_mic_select == MIC_INDEX_THIRD)
+			if (priv->vow_single_mic_select == MIC_INDEX_THIRD ||
+			    priv->vow_single_mic_select == MIC_INDEX_REF)
 				regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON4,
 						   0x0039, 0x0039);
 			/* handset single mic (L) or headset mic mode*/
@@ -4200,14 +4201,13 @@ static const struct snd_soc_dapm_widget mt6359_dapm_widgets[] = {
 static int mt_vow_amic_connect(struct snd_soc_dapm_widget *source,
 			       struct snd_soc_dapm_widget *sink)
 {
-
 	struct snd_soc_dapm_widget *w = sink;
 	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
 	struct mt6359_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 
-	if (IS_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE_0]) ||
+	if ((IS_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE_0]) ||
 	    IS_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE_1]) ||
-	    IS_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE_2]))
+	    IS_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE_2])) && priv->vow_enable)
 		return 1;
 	else
 		return 0;
@@ -4221,9 +4221,9 @@ static int mt_vow_amic_dcc_connect(struct snd_soc_dapm_widget *source,
 	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
 	struct mt6359_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 
-	if (IS_DCC_BASE(priv->mux_select[MUX_MIC_TYPE_0]) ||
+	if ((IS_DCC_BASE(priv->mux_select[MUX_MIC_TYPE_0]) ||
 	    IS_DCC_BASE(priv->mux_select[MUX_MIC_TYPE_1]) ||
-	    IS_DCC_BASE(priv->mux_select[MUX_MIC_TYPE_2]))
+	    IS_DCC_BASE(priv->mux_select[MUX_MIC_TYPE_2])) && priv->vow_enable)
 		return 1;
 	else
 		return 0;
@@ -4542,6 +4542,7 @@ static int mt6359_codec_dai_vow_hw_params(struct snd_pcm_substream *substream,
 		 substream->number);
 
 	priv->vow_channel = channel;
+	priv->vow_enable = 1; //enter vow enable flow.
 
 	return 0;
 }
