@@ -950,7 +950,8 @@ int m4u_get_user_pages(int eModuleID, struct task_struct *tsk,
 static int m4u_get_pages(int eModuleID, unsigned long BufAddr,
 			 unsigned long BufSize, unsigned long *pPhys)
 {
-	int ret, i;
+	int ret;
+	unsigned int i;
 	int page_num;
 	unsigned long start_pa;
 	unsigned int write_mode = 0;
@@ -1374,16 +1375,7 @@ int m4u_switch_acp(unsigned int port,
 		return -EINVAL;
 	}
 
-#if 0
-	struct m4u_buf_info_t *pMvaInfo;
-
-	pMvaInfo = pseudo_client_find_buf(ion_m4u_client, iova, 0);
-	if (!pseudo_is_acp_port(port) ||
-	    port != pMvaInfo->port ||
-	    size > pMvaInfo->size) {
-#else
 	if (!pseudo_is_acp_port(port)) {
-#endif
 		M4U_MSG("invalid p:%d, va:0x%lx, sz:0x%lx\n",
 			port, iova, size);
 		return -EINVAL;
@@ -1440,7 +1432,7 @@ void m4u_find_max_port_size(unsigned long base, unsigned long max,
 	unsigned int *err_port, unsigned int *err_size)
 #endif
 {
-	int i, j, k, t;
+	unsigned int i, j, k, t;
 	int size[PORT_MAX_COUNT] = {0, 0, 0, 0, 0};
 	int port[PORT_MAX_COUNT] = {-1, -1, -1, -1, -1};
 	unsigned int start = (unsigned int)(base / 1024);
@@ -1728,6 +1720,9 @@ int __pseudo_alloc_mva(struct m4u_client_t *client,
 	*retmva = dma_addr;
 
 	mva_sg = kzalloc(sizeof(*mva_sg), GFP_KERNEL);
+	if (!mva_sg)
+		M4U_ERR("alloc mva_sg fail\n");
+
 	mva_sg->table = table;
 	mva_sg->mva = *retmva;
 
@@ -1744,7 +1739,8 @@ int __pseudo_alloc_mva(struct m4u_client_t *client,
 	/* pbuf_info for userspace compatible */
 	pbuf_info = pseudo_alloc_buf_info();
 	if (!pbuf_info)
-		return -ENOMEM;
+		M4U_ERR("alloc pbuf_info fail\n");
+
 	pbuf_info->va = va;
 	pbuf_info->port = port;
 	pbuf_info->size = size;
@@ -2565,7 +2561,7 @@ get_pages_done:
 	kernel_va = 0;
 	kernel_size = 0;
 	kernel_va = vmap(pages, page_num, VM_MAP, PAGE_KERNEL);
-	if (kernel_va == 0 || (unsigned long)kernel_va & M4U_PAGE_MASK) {
+	if (kernel_va == 0 || (uintptr_t)kernel_va & M4U_PAGE_MASK) {
 		M4U_MSG(
 			"mva_map_kernel:vmap fail: page_num=%d, kernel_va=0x%p\n",
 				page_num, kernel_va);
@@ -3517,7 +3513,7 @@ static const struct file_operations pseudo_fops = {
 
 static int pseudo_probe(struct platform_device *pdev)
 {
-	int i, j;
+	unsigned int i, j;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int count = 0;
 #endif
