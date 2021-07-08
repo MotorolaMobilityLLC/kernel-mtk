@@ -506,12 +506,12 @@ int mdw_usr_mem_free(struct apusys_mem *um, struct mdw_usr *u)
 	mutex_lock(&u->mtx);
 	list_for_each_safe(list_ptr, tmp, &u->mem_list) {
 		mm = list_entry(list_ptr, struct mdw_mem, u_item);
-
 		if (mm->kmem.fd == um->fd &&
 			mm->kmem.mem_type == um->mem_type &&
-			mm->kmem.khandle == um->khandle) {
-			mdw_flw_debug("get mem fd(%d) type(%d) khandle(%d)\n",
-				mm->kmem.fd, mm->kmem.mem_type, mm->kmem.khandle);
+			mm->kmem.uidr == um->khandle) {
+			mdw_mem_debug("get mem fd(%d) type(%d) kd(%x) idr(%u)\n",
+				mm->kmem.fd, mm->kmem.mem_type,
+				mm->kmem.khandle, mm->kmem.uidr);
 
 			ret = mdw_mem_u2k_handle(&mm->kmem, um);
 			if (ret)
@@ -525,6 +525,9 @@ int mdw_usr_mem_free(struct apusys_mem *um, struct mdw_usr *u)
 
 	if (mm)
 		u->iova_size = u->iova_size - mm->kmem.iova_size;
+	else
+		mdw_mem_debug("Not found fd(%d) type(%d) khandle(%d)\n",
+				um->fd, um->mem_type, um->khandle);
 
 	mutex_unlock(&u->mtx);
 
