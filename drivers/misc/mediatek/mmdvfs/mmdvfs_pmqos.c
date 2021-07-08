@@ -25,6 +25,10 @@
 #include <linux/delay.h>
 #include <linux/sched/clock.h>
 
+#if defined(CONFIG_MACH_MT6785)
+#include "mtkfb.h"
+#endif
+
 #ifdef PLL_HOPPING_READY
 #include <mtk_freqhopping_drv.h>
 #endif
@@ -2209,8 +2213,11 @@ int mmdvfs_qos_force_step(int step)
 		return -EINVAL;
 	}
 	pr_notice("%s, force set step: %d->%d\n", __func__, force_step, step);
-//	force_step = step;
-	force_step = 0;
+	force_step = step;
+#if defined(CONFIG_MACH_MT6785)
+	if (mtkfb_is_bdg_connected() == 1)
+		force_step = 0;
+#endif
 	update_step(PM_QOS_NUM_CLASSES, -1);
 	return 0;
 }
