@@ -313,7 +313,7 @@ static int debug_probe(struct platform_device *pdev)
 	}
 
 	pr_notice("debug probe done, dbglog_buf= 0x%p\n", dbglog_buf);
-
+	apusys_dump_init(&pdev->dev);
 	return 0;
 
 out:
@@ -324,6 +324,7 @@ out:
 
 static int debug_remove(struct platform_device *pdev)
 {
+	apusys_dump_exit(&pdev->dev);
 	return 0;
 }
 
