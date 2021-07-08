@@ -362,7 +362,7 @@ static int spm_module_init(void)
 #endif
 
 	/* implemented in mtk_spm_dram.c */
-	spm_do_dram_config_check();
+	//spm_do_dram_config_check();
 
 	ret = platform_driver_register(&spm_dev_drv);
 	if (ret) {
