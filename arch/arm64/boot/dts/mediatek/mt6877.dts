@@ -4862,6 +4862,17 @@
 		interrupts = <GIC_SPI 407 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
+	pda: pda@1a0b0000 {
+		compatible = "mediatek,camera-pda";
+		reg = <0 0x1a0b0000 0 0x1000>;
+		interrupts = <GIC_SPI 419 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&camsys_main_clk CLK_CAM_M_PDA>;
+		clock-names = "PDA_TOP_MUX";
+		iommus = <&iommu0 M4U_PORT_L13_CAM_PADI0>,
+			 <&iommu0 M4U_PORT_L13_CAM_PADI1>,
+			 <&iommu0 M4U_PORT_L13_CAM_PDAO>;
+	};
+
 	ipesys_clk: syscon@1b000000 {
 		compatible = "mediatek,mt6877-ipesys", "syscon";
 		reg = <0 0x1b000000 0 0x1000>;
