@@ -324,7 +324,7 @@ static void mrdump_mini_add_misc_pa(unsigned long va, unsigned long pa,
 	}
 }
 
-static void mrdump_mini_add_misc(unsigned long addr, unsigned long size,
+void mrdump_mini_add_misc(unsigned long addr, unsigned long size,
 		unsigned long start, char *name)
 {
 	if (!mrdump_virt_addr_valid((void *)addr))
