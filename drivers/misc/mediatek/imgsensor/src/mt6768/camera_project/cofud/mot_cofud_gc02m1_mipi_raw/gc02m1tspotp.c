@@ -57,7 +57,7 @@
 #define BYTE          unsigned char
 #define I2C_ID          0x6e
 
-int wb_idx = -1;
+int gc02m1_wb_idx = -1;
 gc02m1_otp_t gc02m1_otp_data;
 
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
@@ -157,29 +157,29 @@ unsigned int gc02m1_read_all_data(mot_calibration_info_t * pOtpCalInfo)
 			if (otp_check_crc16(&(gc02m1_otp_data.group_data[0].wb_flag),
 				sizeof(gc02m1_otp_data.group_data[0].wb_data)+1,
 						convert_crc(&(gc02m1_otp_data.group_data[0].wb_checksum[0])))) {
-				pOtpCalInfo->awb_status = STATUS_OK;
-				LOG_INF("pOtpCalInfo->awb_status=%d\n",pOtpCalInfo->awb_status);
-				LOG_INF("debugxxx eeprom WB checksum success\n");
-				wb_idx = 3;
+                                pOtpCalInfo->awb_status = STATUS_OK;
+                                LOG_INF("pOtpCalInfo->awb_status=%d\n",pOtpCalInfo->awb_status);
+				LOG_INF("debugxxx CRC eeprom WB checksum success\n");
+				gc02m1_wb_idx = 3;
 			}
 		}
 	}else if(wb_flag == 0x10)//2
 	{
-		for (i = 0; i < 8; i++) {
-			write_cmos_sensor_8(0xfe, 0x02);
-			write_cmos_sensor_8(0x17, 0xC0+i*8);
-			write_cmos_sensor_8(0xf3, 0x34);
-			otp_data[i+1]= read_cmos_sensor_8(0x019);
-			LOG_INF("group2 debugxxx G-Dg otp_data[%d] = 0x%x\n",i+1,otp_data[i+1]);
-		}
-		if ((wb_flag & 0x30) >> 4 == 0x01) {
-			if (otp_check_crc16(gc02m1_otp_data.group_data[0].wb_data,
-				sizeof(gc02m1_otp_data.group_data[0].wb_data),
+	     for (i = 0; i < 8; i++) {
+              write_cmos_sensor_8(0xfe, 0x02);
+	      write_cmos_sensor_8(0x17, 0xC0+i*8);
+	      write_cmos_sensor_8(0xf3, 0x34);
+	      otp_data[i+1]= read_cmos_sensor_8(0x019);
+	      LOG_INF("group2 debugxxx G-Dg otp_data[%d] = 0x%x\n",i,otp_data[i]);
+        }
+        if ((wb_flag & 0x30) >> 4 == 0x01) {
+		if (otp_check_crc16((gc02m1_otp_data.group_data[0].wb_data),
+			sizeof(gc02m1_otp_data.group_data[0].wb_data),
 						convert_crc(&(gc02m1_otp_data.group_data[0].wb_checksum[0])))) {
-				pOtpCalInfo->awb_status = STATUS_OK;
-				LOG_INF("pOtpCalInfo->awb_status=%d\n",pOtpCalInfo->awb_status);
-				LOG_INF("debugxxx eeprom WB checksum success\n");
-				wb_idx = 3;
+                                pOtpCalInfo->awb_status = STATUS_OK;
+                                LOG_INF("pOtpCalInfo->awb_status=%d\n",pOtpCalInfo->awb_status);
+				LOG_INF("debugxxx CRC eeprom WB checksum success\n");
+				gc02m1_wb_idx = 3;
 			}
 		}
 	}
@@ -192,13 +192,13 @@ unsigned int GC02M1_OTP_Read_Data(u32 addr, u8 *data, u32 size)
 
 	LOG_INF("G-Dg GC02M1_OTP_Read_Data, size=%d\n", size);
 
-	if (wb_idx == -1) {
+	if (gc02m1_wb_idx == -1) {
 		pr_err("G-Dg otp data err!!!");
 		return -1;
 	}
 
 	if (size == 2) { //read flag
-		memcpy(data, &wb_idx, size);
+		memcpy(data, &gc02m1_wb_idx, size);
 		LOG_INF("G-Dg addr = 0x%x\n", addr);
 	} else if (size == 6) { //read single awb data
 		memcpy(data, gc02m1_otp_data.group_data[0].wb_data, size);
