@@ -856,15 +856,18 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu,
 	i = (buff.cmdq_buff.codec_type == VCU_VDEC) ? VCU_VDEC : VCU_VENC;
 	cmds = vcu->gce_cmds[i];
 
-	user_data_addr = (unsigned char *)
+	if (buff.cmdq_buff.cmds_user_ptr > 0) {
+		user_data_addr = (unsigned char *)
 				   (unsigned long)buff.cmdq_buff.cmds_user_ptr;
-	ret = (long)copy_from_user(cmds, user_data_addr,
+		ret = (long)copy_from_user(cmds, user_data_addr,
 				   (unsigned long)sizeof(struct gce_cmds));
-	if (ret != 0L) {
-		pr_info("[VCU] %s(%d) gce_cmds copy_from_user failed!%d\n",
-			__func__, __LINE__, ret);
+		if (ret != 0L) {
+			pr_info("[VCU] %s(%d) gce_cmds copy_from_user failed!%d\n",
+				__func__, __LINE__, ret);
+			return -EINVAL;
+		}
+	} else
 		return -EINVAL;
-	}
 
 	buff.cmdq_buff.cmds_user_ptr = (u64)(unsigned long)cmds;
 	core_id = buff.cmdq_buff.core_id;
