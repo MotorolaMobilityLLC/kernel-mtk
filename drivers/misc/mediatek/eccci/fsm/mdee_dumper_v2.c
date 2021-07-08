@@ -125,7 +125,7 @@ static void ccci_aed_v2(struct ccci_fsm_ee *mdee, unsigned int dump_flag,
 static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 	struct debug_info_t *debug_info, char *ex_info)
 {
-	int md_id = mdee->md_id;
+	int md_id = 0;
 	struct ccci_mem_layout *mem_layout;
 	char *ex_info_temp = NULL;
 	int ret = 0;
