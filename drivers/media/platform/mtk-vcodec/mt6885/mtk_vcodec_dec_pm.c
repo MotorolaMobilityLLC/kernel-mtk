@@ -301,6 +301,7 @@ void mtk_vdec_hw_break(struct mtk_vcodec_dev *dev, int hw_id)
 	void __iomem *vdec_ufo_addr = dev->dec_reg_base[VDEC_BASE] + 0x800;
 	void __iomem *vdec_lat_misc_addr = dev->dec_reg_base[VDEC_LAT_MISC];
 	void __iomem *vdec_lat_vld_addr = dev->dec_reg_base[VDEC_LAT_VLD];
+	void __iomem *vdec_soc_gcon_addr = dev->dec_reg_base[VDEC_SOC_GCON];
 	struct mtk_vcodec_ctx *ctx = NULL;
 	int misc_offset[4] = {64, 66, 67, 65};
 
@@ -316,7 +317,7 @@ void mtk_vdec_hw_break(struct mtk_vcodec_dev *dev, int hw_id)
 		ctx = dev->curr_dec_ctx[hw_id];
 		fourcc = ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc;
 		if (readl(vdec_gcon_addr) == 0) {
-			mtk_v4l2_debug(0, "VDEC not HW break since clk off. codec:0x%08x(%c%c%c%c)",
+			mtk_v4l2_debug(0, "VDEC CORE not HW break since clk off. codec:0x%08x(%c%c%c%c)",
 			    fourcc, fourcc & 0xFF, (fourcc >> 8) & 0xFF,
 			    (fourcc >> 16) & 0xFF, (fourcc >> 24) & 0xFF);
 			return;
@@ -396,6 +397,12 @@ void mtk_vdec_hw_break(struct mtk_vcodec_dev *dev, int hw_id)
 	} else if (hw_id == MTK_VDEC_LAT) {
 		ctx = dev->curr_dec_ctx[hw_id];
 		fourcc = ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc;
+		if (readl(vdec_soc_gcon_addr+0x200) == 0) {
+			mtk_v4l2_debug(0, "VDEC LAT not HW break since clk off. codec:0x%08x(%c%c%c%c)",
+			    fourcc, fourcc & 0xFF, (fourcc >> 8) & 0xFF,
+			    (fourcc >> 16) & 0xFF, (fourcc >> 24) & 0xFF);
+			return;
+		}
 		/* hw break */
 		writel((readl(vdec_lat_misc_addr + 0x0100) | 0x1),
 			vdec_lat_misc_addr + 0x0100);
