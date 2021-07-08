@@ -73,10 +73,15 @@ ccflags-y += -I$(src)/include
 subdir-ccflags-y += -I$(src)/include
 
 # Driver version string which is returned to userspace via an ioctl
-MALI_RELEASE_NAME ?= '"r32p0-00cet0"'
+MALI_RELEASE_NAME ?= '"r32p1-00bet0"'
 # Set up defaults if not defined by build system
-MALI_CUSTOMER_RELEASE ?= 1
-MALI_UNIT_TEST ?= 0
+ifeq ($(CONFIG_MALI_DEBUG), y)
+    MALI_UNIT_TEST = 1
+    MALI_CUSTOMER_RELEASE ?= 0
+else
+    MALI_UNIT_TEST ?= 0
+    MALI_CUSTOMER_RELEASE ?= 1
+endif
 MALI_COVERAGE ?= 0
 
 #CONFIG_MALI_PLATFORM_NAME ?= "devicetree"
