@@ -47,11 +47,15 @@ void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 	int cpu;
 	elf_gregset_t *reg;
 
-	if (mrdump_cblock) {
-		crash_record = &mrdump_cblock->crash_record;
+	if (!mrdump_cblock)
+		return;
 
-		local_irq_disable();
-		cpu = get_HW_cpuid();
+	crash_record = &mrdump_cblock->crash_record;
+
+	local_irq_disable();
+	cpu = get_HW_cpuid();
+
+	if (cpu >= 0 && cpu < nr_cpu_ids) {
 		switch (sizeof(unsigned long)) {
 		case 4:
 			reg = (elf_gregset_t *)&crash_record->cpu_reg[cpu].arm32_reg.arm32_regs;
@@ -65,23 +69,21 @@ void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 			BUILD_BUG();
 		}
 
-		if (cpu >= 0 && cpu < nr_cpu_ids) {
-			/* null regs, no register dump */
-			if (regs)
-				elf_core_copy_kernel_regs(reg, regs);
-			mrdump_save_control_register(creg);
-		}
+		/* null regs, no register dump */
+		if (regs)
+			elf_core_copy_kernel_regs(reg, regs);
 
-		va_start(ap, msg);
-		vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg,
-				ap);
-		va_end(ap);
-
-		crash_record->fault_cpu = cpu;
-
-		/* FIXME: Check reboot_mode is valid */
-		crash_record->reboot_mode = reboot_mode;
+		mrdump_save_control_register(creg);
 	}
+
+	va_start(ap, msg);
+	vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg, ap);
+	va_end(ap);
+
+	crash_record->fault_cpu = cpu;
+
+	/* FIXME: Check reboot_mode is valid */
+	crash_record->reboot_mode = reboot_mode;
 }
 
 int __init mrdump_full_init(void)
