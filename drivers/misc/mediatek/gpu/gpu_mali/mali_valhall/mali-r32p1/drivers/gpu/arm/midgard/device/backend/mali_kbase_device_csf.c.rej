@@ -1,0 +1,16 @@
+--- drivers/gpu/arm/midgard/device/backend/mali_kbase_device_csf.c
++++ drivers/gpu/arm/midgard/device/backend/mali_kbase_device_csf.c
+@@ -237,13 +261,8 @@
+ }
+ 
+ static const struct kbase_device_init dev_init[] = {
+-#ifdef CONFIG_MALI_NO_MALI
+-	{ kbase_gpu_device_create, kbase_gpu_device_destroy,
+-	  "Dummy model initialization failed" },
+-#else
+ 	{ assign_irqs, NULL, "IRQ search failed" },
+ 	{ registers_map, registers_unmap, "Register map failed" },
+-#endif
+ 	{ power_control_init, power_control_term,
+ 	  "Power control initialization failed" },
+ 	{ kbase_device_io_history_init, kbase_device_io_history_term,
