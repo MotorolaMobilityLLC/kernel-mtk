@@ -534,7 +534,6 @@ int do_lcm_vdo_lp_write(struct ddp_lcm_write_cmd_table *write_table,
 
 		/* 6.flush instruction */
 		ret = cmdqRecFlush(handle);
-
 	} else {
 		DISPINFO("Not support cmd mode\n");
 	}
@@ -648,7 +647,6 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 	int esd_try_cnt = 5; /* 20; */
 	int recovery_done = 0;
 
-	DISPFUNC();
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
@@ -938,6 +936,7 @@ void primary_display_check_recovery_init(void)
 
 void primary_display_esd_check_enable(int enable)
 {
+	DISPERR("[ESD]%s\n", __func__);
 	if (_need_do_esd_check()) {
 		if (enable) {
 			esd_check_enable = 1;

@@ -869,10 +869,6 @@ int ddp_path_top_clock_on(void)
 	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++)
 		mtk_smi_larb_get(&iommu_dev->larb_pdev[larb_idx]->dev);
 #endif
-	/* enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP_MUTEX"); */
-	DISPINFO("ddp CG0:%x, CG1:%x\n",
-		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 
 	return 0;
 }

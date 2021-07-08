@@ -1646,6 +1646,10 @@ void _cmdq_start_trigger_loop(void)
 	int ret = 0;
 
 	ret = cmdqRecStartLoop(pgc->cmdq_handle_trigger);
+	if (ret < 0) {
+		DISPERR("%s cmdq start loop fail\n", __func__);
+		return;
+	}
 	if (!primary_display_is_video_mode()) {
 		if (need_wait_esd_eof()) {
 			/* Need set esd check eof synctoken to
@@ -1675,6 +1679,8 @@ void _cmdq_stop_trigger_loop(void)
 	 * trigger loop will never stop
 	 */
 	ret = cmdqRecStopLoop(pgc->cmdq_handle_trigger);
+	if (ret < 0)
+		DISPERR("%s cmdq stop loop fail\n", __func__);
 	DISPINFO("primary display STOP cmdq trigger loop finished\n");
 }
 
@@ -2033,10 +2039,8 @@ static int init_sec_buf(void)
 
 static int deinit_sec_buf(void)
 {
-	int ret  = 0;
-
 	if (sec_mva) {
-		ret  = sec_buf_ion_free();
+		sec_buf_ion_free();
 		sec_mva = 0;
 		/* DISPMSG("deinit_sec_mva 0x%x\n", sec_mva); */
 	}
@@ -4943,6 +4947,10 @@ static int check_switch_lcm_mode_for_debug(void)
 		return 0;
 
 	lcm_param_cv = disp_lcm_get_params(pgc->plcm);
+	if (lcm_param_cv == NULL) {
+		DISPERR("(%s)lcm_param_cv == NULL\n", __func__);
+		return 0;
+	}
 	DISPCHECK("lcm_mode_status=%d, lcm_param_cv->dsi.mode %d\n",
 		  lcm_mode_status, lcm_param_cv->dsi.mode);
 	if (lcm_param_cv->dsi.mode != CMD_MODE)
@@ -10287,6 +10295,7 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 			/*now only primary display support*/
 			ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
 					last_dynfps, new_dynfps, fps_change_index);
+
 			cmdqRecFlushAsync(qhandle);
 		} else {
 			cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
@@ -10351,4 +10360,3 @@ void _primary_display_fps_change_callback(void)
 #endif
 /*-----------------DynFPS end-------------------------------*/
 #endif
-
