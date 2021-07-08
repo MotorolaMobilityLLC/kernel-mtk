@@ -5239,13 +5239,15 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (!mmc)
 		return -ENOMEM;
 
+	host = mmc_priv(mmc);
+	/* Initialize vcore opp to leave vcore unchanged by default */
+	host->vcore_opp = -1;
 	ret = msdc_dt_init(pdev, mmc);
 	if (ret) {
 		mmc_free_host(mmc);
 		return ret;
 	}
 
-	host = mmc_priv(mmc);
 	base = host->base;
 	hw = host->hw;
 
@@ -5512,6 +5514,8 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		clk_disable_unprepare(host->new_rx_clk_ctl);
 #endif
 	pm_qos_remove_request(&host->msdc_pm_qos_req);
+	if (host->vcore_opp != -1)
+		pm_qos_remove_request(host->req_vcore);
 	pm_runtime_disable(&pdev->dev);
 	mmc_remove_host(host->mmc);
 
@@ -5554,6 +5558,9 @@ static int msdc_runtime_suspend(struct device *dev)
 
 	pm_qos_update_request(&host->msdc_pm_qos_req,
 		PM_QOS_DEFAULT_VALUE);
+	if (host->vcore_opp != -1)
+		pm_qos_update_request(host->req_vcore,
+			PM_QOS_VCORE_OPP_DEFAULT_VALUE);
 
 	return 0;
 }
@@ -5565,6 +5572,8 @@ static int msdc_runtime_resume(struct device *dev)
 	void __iomem *base = host->base;
 
 	pm_qos_update_request(&host->msdc_pm_qos_req, 0);
+	if (host->vcore_opp != -1)
+		pm_qos_update_request(host->req_vcore, host->vcore_opp);
 
 	if (host->new_rx_clk_ctl)
 		(void)clk_prepare_enable(host->new_rx_clk_ctl);
