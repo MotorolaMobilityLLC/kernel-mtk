@@ -2696,7 +2696,7 @@ void DSI_MIPI_deskew(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 #endif
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_SYNCON, 0x00aaffff);
 		DSI_OUTREGBIT(cmdq, struct DSI_TIME_CON0_REG,
-			DSI_REG[i]->DSI_TIME_CON0, SKEWCALL_PRD, 6);
+			DSI_REG[i]->DSI_TIME_CON0, SKEWCALL_PRD, 10);
 
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_START, 0);
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_INTSTA, 0x0);
