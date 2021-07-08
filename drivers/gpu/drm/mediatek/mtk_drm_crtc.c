@@ -4920,7 +4920,6 @@ void mtk_drm_crtc_first_enable(struct drm_crtc *crtc)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
 #endif
-	mtk_drm_crtc_init_para(crtc);
 
 	if (mtk_crtc->enabled) {
 		DDPINFO("crtc%d skip %s\n", crtc_id, __func__);
@@ -4933,6 +4932,8 @@ void mtk_drm_crtc_first_enable(struct drm_crtc *crtc)
 
 	/*for dual pipe*/
 	mtk_crtc_prepare_dual_pipe(mtk_crtc);
+
+	mtk_drm_crtc_init_para(crtc);
 
 	/* 2. start trigger loop first to keep gce alive */
 	if (mtk_crtc_with_trigger_loop(crtc)) {
