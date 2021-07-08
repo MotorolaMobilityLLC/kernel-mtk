@@ -343,17 +343,12 @@ bool mtk_adsp_dai_id_support_share_mem(int dai_id)
 /* base on dsp type get core_id */
 int mtk_get_core_id(int dsp_type)
 {
-	int ret = 0;
-
-	if (dsp_type == AUDIO_OPENDSP_USE_HIFI3_A)
-		ret = ADSP_A_ID;
-	else
-		ret = -1;
-	return ret;
+	return (dsp_type == AUDIO_OPENDSP_USE_HIFI3_A) ?
+		ADSP_A_ID : -1;
 }
 
 bool get_mtk_enable_common_mem_mpu(void)
 {
-	return true;
+	return false;
 }
 
