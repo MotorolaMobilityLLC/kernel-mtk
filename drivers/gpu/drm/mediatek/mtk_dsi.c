@@ -4946,8 +4946,7 @@ static void mtk_dsi_cmd_timing_change(struct mtk_dsi *dsi,
 	struct mtk_crtc_state *old_mtk_state = to_mtk_crtc_state(old_state);
 	unsigned int src_mode =
 		old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
-	unsigned int dst_mode =
-		state->prop_val[CRTC_PROP_DISP_MODE_IDX];
+	unsigned int dst_mode;
 	bool need_mipi_change = 1;
 	unsigned int clk_cnt = 0;
 	struct mtk_drm_private *priv = NULL;
@@ -4957,7 +4956,7 @@ static void mtk_dsi_cmd_timing_change(struct mtk_dsi *dsi,
 		return;
 
 	state = to_mtk_crtc_state(mtk_crtc->base.state);
-
+	dst_mode = state->prop_val[CRTC_PROP_DISP_MODE_IDX];
 	/* use no mipi clk change solution */
 	if (mtk_crtc->base.dev)
 		priv = mtk_crtc->base.dev->dev_private;
