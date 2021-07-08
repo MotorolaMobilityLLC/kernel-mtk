@@ -1066,6 +1066,7 @@ TRY_LOAD_IMG:
 		}
 	}
 	strncpy(img->file_name, img_name, sizeof(img->file_name));
+	img->file_name[IMG_NAME_LEN - 1] = '\0';
 	img->offset = 0;
 	img->tail_length = 0;
 	/*Check whether need skip header*/
