@@ -1202,7 +1202,11 @@ static unsigned int charging_hw_init(void)
 	unsigned int status = 0;
 
 	bq25601_set_en_hiz(0x0);
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	bq25601_set_vindpm(0x1);	/* VIN DPM check 4.0V */
+#else
 	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.6V */
+#endif
 	bq25601_set_wdt_rst(0x1);	/* Kick watchdog */
 	bq25601_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
 	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
