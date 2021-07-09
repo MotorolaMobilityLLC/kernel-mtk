@@ -42,6 +42,14 @@
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5kjn1_eeprom_data.bin"
 #define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
 
+#define COFUL_S5KJN1_EEPROM_SIZE  0x39c7
+#define COFUL_S5KJN1_EEPROM_GGC_SIZE 346
+#define COFUL_S5KJN1_EEPROM_GGC_START_ADDR 0x386B
+#define COFUL_S5KJN1_EEPROM_GGC_END_ADDR 0x39C4
+
+extern int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc);
+static kal_uint16 addr_data_pair_ggc_jn1[COFUL_S5KJN1_EEPROM_GGC_SIZE+4] = {0};
+static uint8_t COFUL_S5KJN1_eeprom[COFUL_S5KJN1_EEPROM_SIZE] = {0};
 static const char *s5kjn1_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
 static mot_calibration_info_t s5kjn1_cal_info = {0};
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
@@ -2117,6 +2125,26 @@ static kal_uint32 return_sensor_id(void)
 	return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 }
 
+static void COFUL_S5KJN1_eeprom_format_ggc_data(void)
+{
+	kal_uint16 gcc_crc16 = COFUL_S5KJN1_eeprom[COFUL_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|COFUL_S5KJN1_eeprom[COFUL_S5KJN1_EEPROM_GGC_END_ADDR+2];
+	kal_uint16 i = 0;
+
+	if (eeprom_util_check_crc16((COFUL_S5KJN1_eeprom+COFUL_S5KJN1_EEPROM_GGC_START_ADDR),
+		COFUL_S5KJN1_EEPROM_GGC_SIZE, gcc_crc16)) {
+		pr_debug("HW GCC CRC success!");
+
+		addr_data_pair_ggc_jn1[0] = 0x6028;
+		addr_data_pair_ggc_jn1[1] = 0x2400;
+		addr_data_pair_ggc_jn1[2] = 0x602A;
+		addr_data_pair_ggc_jn1[3] = 0x0CFC;
+		for(i = 0; i < COFUL_S5KJN1_EEPROM_GGC_SIZE; i += 2){
+			addr_data_pair_ggc_jn1[i+4] = 0x6F12;
+			addr_data_pair_ggc_jn1[i+5] = COFUL_S5KJN1_eeprom[i+COFUL_S5KJN1_EEPROM_GGC_START_ADDR]<<8 | COFUL_S5KJN1_eeprom[i+COFUL_S5KJN1_EEPROM_GGC_START_ADDR+1];
+		}
+
+	}
+}
 /*************************************************************************
 *FUNCTION
 *  get_imgsensor_id
@@ -2148,7 +2176,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
 				imgread_cam_cal_data(*sensor_id, s5kjn1_dump_file, &s5kjn1_cal_info);
-
+				COFUL_S5KJN1_eeprom_format_ggc_data();
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
@@ -2218,7 +2246,12 @@ static kal_uint32 open(void)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
 	sensor_init();
+
+	pr_debug("wirte gcc date to sensor reg");
+	mot_coful_s5kjn1_qtech_table_write_cmos_sensor(addr_data_pair_ggc_jn1,
+		sizeof(addr_data_pair_ggc_jn1) / sizeof(kal_uint16));
 	spin_lock(&imgsensor_drv_lock);
+
 	imgsensor.autoflicker_en = KAL_FALSE;
 	imgsensor.sensor_mode = IMGSENSOR_MODE_INIT;
 	imgsensor.pclk = imgsensor_info.pre.pclk;
