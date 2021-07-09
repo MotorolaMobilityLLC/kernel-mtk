@@ -163,7 +163,7 @@
 		ch0_name = "capsense_bottom";
 		ch1_name = "capsense_top";
 		label = "AbovCapSense";  //firmware name,need pused AbovCapSense.BIN into /vendor/firmware/
-		cap,channel_number = <0x03>;
+		cap,channel_number = <0x02>;
 		cap,fw_mode_ret = <0x39>;
 		button_mask = <0x15>;
 		cap,flash_erase_time = <1400>;
