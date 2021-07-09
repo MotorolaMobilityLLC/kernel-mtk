@@ -346,12 +346,6 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 //cxc long exposure >
 static bool bNeedSetNormalMode = KAL_FALSE;
-#define SHUTTER_1		95932//30396
-#define SHUTTER_2		191864//60792
-#define SHUTTER_4		383729//56049
-#define SHUTTER_8		767459//46563
-#define SHUTTER_16		1534919//27591
-#define SHUTTER_32		3069838
 
 //cxc long exposure <
 
@@ -375,170 +369,70 @@ static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
-	kal_uint32 pre_shutter = 2877;
-
-	LOG_INF("cxc enter  shutter = %d\n", shutter);
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	if (shutter < 94755) {
-		if (bNeedSetNormalMode) {
-			LOG_INF("exit long shutter\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0340, 0x0c54);
-			write_cmos_sensor(0x0342, 0x0716);
-			write_cmos_sensor(0x0202, 0x0100);
-			write_cmos_sensor(0x0702, 0x0000);
-			write_cmos_sensor(0x0704, 0x0000);
-			write_cmos_sensor(0x0100, 0x0100);
-
-			bNeedSetNormalMode = KAL_FALSE;
-			imgsensor.current_ae_effective_frame = 2;
-		}
-		pre_shutter = shutter;
-
-		spin_lock(&imgsensor_drv_lock);
-		if (shutter > imgsensor.min_frame_length -
-				imgsensor_info.margin)
-			imgsensor.frame_length = shutter +
-				imgsensor_info.margin;
-		else
-			imgsensor.frame_length = imgsensor.min_frame_length;
-		if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-			imgsensor.frame_length =
-				imgsensor_info.max_frame_length;
-		spin_unlock(&imgsensor_drv_lock);
-		shutter =
-			(shutter < imgsensor_info.min_shutter)
-			 ? imgsensor_info.min_shutter : shutter;
-		shutter =
-			(shutter >
-			 (imgsensor_info.max_frame_length -
-			 imgsensor_info.margin)) ?
-			 (imgsensor_info.max_frame_length -
-			 imgsensor_info.margin) : shutter;
-		if (imgsensor.autoflicker_en) {
-			realtime_fps =
-				imgsensor.pclk / imgsensor.line_length * 10 /
-				imgsensor.frame_length;
-			if (realtime_fps >= 297 && realtime_fps <= 305)
-				set_max_framerate(296, 0);
-			else if (realtime_fps >= 147 && realtime_fps <= 150)
-				set_max_framerate(146, 0);
-			else {
-				write_cmos_sensor(0x0340,
-					  imgsensor.frame_length & 0xFFFF);
-			}
-		} else {
-
-			write_cmos_sensor(0x0340,
-					imgsensor.frame_length & 0xFFFF);
-		}
-
-		write_cmos_sensor(0X0202, shutter & 0xFFFF);
-		LOG_INF("cxc 2 enter  shutter = %d\n", shutter);
-
+	spin_lock(&imgsensor_drv_lock);
+	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin) {
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
 	} else {
+		imgsensor.frame_length = imgsensor.min_frame_length;
+	}
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length) {
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	}
+	spin_unlock(&imgsensor_drv_lock);
+	if (shutter < imgsensor_info.min_shutter)
+		shutter = imgsensor_info.min_shutter;
 
-		LOG_INF("cxc enter long shutter\n");
-		bNeedSetNormalMode = KAL_TRUE;
-		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
-		imgsensor.current_ae_effective_frame = 2;
-		write_cmos_sensor(0x6028, 0x4000);
-		write_cmos_sensor(0x0100, 0x0000); //stream off
-		write_cmos_sensor(0x0340, 0xFBD4);
-		write_cmos_sensor(0x0342, 0x21F0);
-		write_cmos_sensor(0x0202, 0xFBC8);
-		write_cmos_sensor(0x0702, 0x0500);
-		write_cmos_sensor(0x0704, 0x0500);
-		write_cmos_sensor(0x0100, 0x0100); //stream on
-
-		write_cmos_sensor(0x0E10, pre_shutter); //1st frame
-		write_cmos_sensor(0x0E12, imgsensor.gain); //aGain 1st frame
-
-		switch (shutter) {
-		case SHUTTER_1:
-			LOG_INF("cxc shutter 1\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0202, 0xFBC8);
-			write_cmos_sensor(0x0340, 0xFBD4);
-			write_cmos_sensor(0x0702, 0x0000);
-			write_cmos_sensor(0x0704, 0x0000);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
-			break;
-		case SHUTTER_2:
-			LOG_INF("cxc shutter 2\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0202, 0xFBC8);
-			write_cmos_sensor(0x0340, 0xFBD4);
-			write_cmos_sensor(0x0702, 0x0100);
-			write_cmos_sensor(0x0704, 0x0100);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
-			break;
-		case SHUTTER_4:
-			LOG_INF("cxc shutter 4\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0202, 0xFBC8);
-			write_cmos_sensor(0x0340, 0xFBD4);
-			write_cmos_sensor(0x0702, 0x0200);
-			write_cmos_sensor(0x0704, 0x0200);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
-			break;
-		case SHUTTER_8:
-			LOG_INF("cxc shutter 8\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0202, 0xFBC8);
-			write_cmos_sensor(0x0340, 0xFBD4);
-			write_cmos_sensor(0x0702, 0x0300);
-			write_cmos_sensor(0x0704, 0x0300);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
-			break;
-		case SHUTTER_16:
-			LOG_INF("cxc shutter 16\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0202, 0xFBC8);
-			write_cmos_sensor(0x0340, 0xFBD4);
-			write_cmos_sensor(0x0702, 0x0400);
-			write_cmos_sensor(0x0704, 0x0400);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
-			break;
-		case SHUTTER_32:
-			LOG_INF("cxc shutter 32\n");
-			write_cmos_sensor(0x6028, 0x4000);
-			write_cmos_sensor(0x0100, 0x0000); //stream off
-			write_cmos_sensor(0x0202, 0xFBC8);
-			write_cmos_sensor(0x0340, 0xFBD4);
-			write_cmos_sensor(0x0702, 0x0500);
-			write_cmos_sensor(0x0704, 0x0500);
-			write_cmos_sensor(0x0100, 0x0100); //stream on
-			break;
-		default:
-			LOG_INF("cxc shutter > 1\n");
-			write_cmos_sensor(0x0E14, ((shutter * 0x05DB) /
-				SHUTTER_1)); //2nd frame
-			break;
+	if (imgsensor.autoflicker_en) {
+		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305) {
+			set_max_framerate(296, 0);
+		} else if (realtime_fps >= 147 && realtime_fps <= 150) {
+			set_max_framerate(146, 0);
+		} else {
+			// Extend frame length
+			write_cmos_sensor(0x0340, imgsensor.frame_length);
 		}
-		write_cmos_sensor(0x0E16, 0x0050); //aGain 2nd frame
-		write_cmos_sensor(0x0704, 0x0600); //shifter for shutter
-
-		write_cmos_sensor(0x0100, 0x0100); //stream on
-		pre_shutter = 0;
+	} else {
+		// Extend frame length
+		write_cmos_sensor(0x0340, imgsensor.frame_length);
 	}
 
-	//write_cmos_sensor(0X0202, shutter & 0xFFFF);
+	if (shutter > 0xFFF0) {
 
-	LOG_INF("cxc  Exit! shutter =%d, framelength =%d\n", shutter,
-			imgsensor.frame_length);
+		bNeedSetNormalMode = KAL_TRUE;
+		if(shutter >= 3448275){
+			shutter = 3448275;
+		}
+		CintR = ((unsigned long long)shutter) / 128;
+		Time_Frame = CintR + 0x0002;
+		pr_debug("CintR = %d\n", CintR);
+		write_cmos_sensor(0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor(0x0202, CintR & 0xFFFF);
+		write_cmos_sensor(0x0702, 0x0700);
+		write_cmos_sensor(0x0704, 0x0700);
+
+		pr_debug("download long shutter setting shutter = %d\n", shutter);
+	} else {
+		if (bNeedSetNormalMode == KAL_TRUE) {
+			bNeedSetNormalMode = KAL_FALSE;
+			write_cmos_sensor(0x0702, 0x0000);
+			write_cmos_sensor(0x0704, 0x0000);
+
+			pr_debug("return to normal shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+
+		}
+		write_cmos_sensor(0x0340, imgsensor.frame_length);
+		write_cmos_sensor(0x0202, imgsensor.shutter);
+	}
 }
+
 
 /*************************************************************************
 *FUNCTION
@@ -549,57 +443,77 @@ static void set_shutter(kal_uint32 shutter)
 *
 *************************************************************************/
 
-static void
-set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
+static void set_shutter_frame_length(kal_uint32 shutter, kal_uint32 frame_length)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	kal_int32 dummy_line = 0;
-	kal_bool autoflicker_closed = KAL_FALSE;
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
 	spin_lock(&imgsensor_drv_lock);
-
-	dummy_line = frame_length - imgsensor.frame_length;
+	/* Change frame time */
+	if (frame_length > 1)
+		dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-	imgsensor.min_frame_length = imgsensor.frame_length;
 
 	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
+
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-	shutter =
-		(shutter < imgsensor_info.min_shutter)
-		 ? imgsensor_info.min_shutter : shutter;
-	shutter =
-		(shutter >
-		 (imgsensor_info.max_frame_length -
-		  imgsensor_info.margin)) ? (imgsensor_info.max_frame_length -
-			 imgsensor_info.margin) : shutter;
 
-	if (autoflicker_closed) {
-		realtime_fps =
-			imgsensor.pclk / imgsensor.line_length * 10 /
-			imgsensor.frame_length;
+	spin_unlock(&imgsensor_drv_lock);
+	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
+		? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+
+	if (imgsensor.autoflicker_en) {
+		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
 		if (realtime_fps >= 297 && realtime_fps <= 305)
 			set_max_framerate(296, 0);
 		else if (realtime_fps >= 147 && realtime_fps <= 150)
 			set_max_framerate(146, 0);
-		else
-			write_cmos_sensor(0x0340, imgsensor.frame_length);
-	} else
+		else {
+			/* Extend frame length */
+			write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
+		}
+	} else {
+		/* Extend frame length */
+		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
+	}
+
+	if (shutter > 0xFFF0) {	//linetime=10160/960000000<< maxshutter=3023622-line=32s
+
+		bNeedSetNormalMode = KAL_TRUE;
+		if(shutter >= 1538000){
+			shutter = 1538000;
+		}
+		CintR = (5013 * (unsigned long long)shutter) / 321536;
+		Time_Frame = CintR + 0x0002;
+		pr_debug("CintR = %d\n", CintR);
+		write_cmos_sensor(0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor(0x0202, CintR & 0xFFFF);
+		write_cmos_sensor(0x0702, 0x0600);
+		write_cmos_sensor(0x0704, 0x0600);
+
+		pr_debug("download long shutter setting shutter = %d\n", shutter);
+	} else {
+		if (bNeedSetNormalMode == 1) {
+			bNeedSetNormalMode = 0;
+			write_cmos_sensor(0x0702, 0x0000);
+			write_cmos_sensor(0x0704, 0x0000);
+
+			pr_debug("return to normal shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+
+		}
 		write_cmos_sensor(0x0340, imgsensor.frame_length);
-
-
-	write_cmos_sensor(0x0202, imgsensor.shutter);
-	LOG_INF
-	("Exit! shutter %d framelength %d/%d dummy_line=%d auto_extend=%d\n",
-	 shutter, imgsensor.frame_length,
-	  frame_length, dummy_line, read_cmos_sensor(0x0350));
+		write_cmos_sensor(0x0202, imgsensor.shutter);
+	}
 
 }
 
