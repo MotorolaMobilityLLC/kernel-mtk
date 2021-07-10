@@ -560,6 +560,16 @@ int erase_mtp_rewritefw(void)
 	return 0;
 }
 
+void switch_chip_register(void)
+{
+	unsigned short data;
+	read_reg_16bit_value_16bit(0x7012, &data);
+	if(data == 0x4) {
+		write_reg_16bit_value_16bit(0x7012,0x0007);
+		calibration_save();
+	}
+}
+
 int dw9781c_download_ois_fw(void)
 {
 	unsigned char ret;
@@ -642,6 +652,9 @@ int dw9781c_download_ois_fw(void)
 	kfree(g_firmwareContext.fwContentPtr);
 	g_firmwareContext.fwContentPtr = NULL;
 	dw9781_check = 1;
+
+	switch_chip_register();
+
 	return ret;
 }
 
