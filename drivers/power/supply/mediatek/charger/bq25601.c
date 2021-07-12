@@ -34,6 +34,16 @@
 
 #define GETARRAYNUM(array) (ARRAY_SIZE(array))
 
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int wt6670f_start_detection(void);
+extern int wt6670f_get_protocol(void);
+//extern int wt6670f_get_charger_type(void);
+extern bool wt6670f_is_charger_ready(void);
+//extern void bq2597x_set_psy(void);
+bool m_chg_ready = false;
+int m_chg_type = 0;
+#endif
+
 /*bq25601 REG06 VREG[5:0]*/
 const unsigned int VBAT_CV_VTH[] = {
 	3856000, 3888000, 3920000, 3952000,
@@ -110,7 +120,7 @@ const unsigned int BOOST_CURRENT_LIMIT[] = {
 };
 
 struct bq25601_info {
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
 	struct i2c_client *client;
 #endif
 	struct charger_device *chg_dev;
@@ -120,9 +130,10 @@ struct bq25601_info {
 	const char *eint_name;
 	enum charger_type chg_type;
 	int irq;
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
         struct mutex    chgdet_lock;
         bool            attach;
+	bool            charging_enabled;
         /*psy*/
         struct power_supply *psy;
         struct delayed_work psy_dwork;
@@ -951,18 +962,35 @@ static void bq25601_hw_component_detect(void)
 		g_bq25601_hw_exist, val);
 }
 
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+static int bq25601_is_charging_enabled(struct charger_device *chg_dev, bool *en)
+{
+        struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
+
+	*en = chip->charging_enabled;
+	pr_info("%s: charging enable status: %d \n", __func__, *en);
+
+	return 0;
+}
+#endif
 
 static int bq25601_enable_charging(struct charger_device *chg_dev,
 				   bool en)
 {
 	int status = 0;
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+        struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
+#endif
 
-	pr_info("enable state : %d\n", en);
+	pr_info("%s: charging enable state: %d \n", __func__, en);
 	if (en) {
 		/* bq25601_config_interface(bq25601_CON3, 0x1, 0x1, 4); */
 		/* enable charging */
 		bq25601_set_en_hiz(0x0);
 		bq25601_set_chg_config(en);
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+		chip->charging_enabled = true;
+#endif
 	} else {
 		/* bq25601_config_interface(bq25601_CON3, 0x0, 0x1, 4); */
 		/* enable charging */
@@ -970,6 +998,9 @@ static int bq25601_enable_charging(struct charger_device *chg_dev,
 		pr_info("[charging_enable] under test mode: disable charging\n");
 
 		/*bq25601_set_en_hiz(0x1);*/
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+                chip->charging_enabled = false;
+#endif
 	}
 
 	return status;
@@ -1277,23 +1308,16 @@ static int bq25601_parse_dt(struct bq25601_info *info,
 	return 0;
 }
 
+#if 0
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
+static void bq25601_set_usbpsy(struct power_supply *psy)
 {
-        int ret;
-
-        pr_err("[%s]: en = %d\n",__func__,en);
-        ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
-                                       (unsigned char) (!en),
-                                       (unsigned char) (CON0_EN_HIZ_MASK),
-                                       (unsigned char) (CON0_EN_HIZ_SHIFT)
-                                      );
-
-        return !ret;
+        power_supply_changed(psy);
 }
 #endif
+#endif
 
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 
 static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
 {
@@ -1349,13 +1373,35 @@ static void bq25601_inform_psy_dwork_handler(struct work_struct *work)
                                         &propval);
         if (ret < 0)
                 pr_err("%s psy type fail(%d)\n", __func__, ret);
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+        if(power_supply_get_by_name("bq2597x-standalone")){
+                pr_info( "%s charge pump bq2597x is used, call bq2597x_set_psy!\n", __func__);
+//                bq2597x_set_psy();
+
+/*
+		if(!chip->usb_psy){
+			chip->usb_psy = power_supply_get_by_name("usb");
+		}
+		if(!chip->usb_psy){
+			pr_err("%s usb psy get failed \n", __func__);
+		}
+		else {
+			bq25601_set_usbpsy(chip->usb_psy);
+		}
+*/
+	}
+#endif
+	return;
 }
 
 static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 {
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
         int ret = 0;
-        int count = 0;
         unsigned char val;
+#endif
+        int count = 0;
         struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
 
         pr_info("%s en = %d\n", __func__, en);
@@ -1363,12 +1409,56 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
         chip->attach = en;
 
         mutex_lock(&chip->chgdet_lock);
-        Charger_Detect_Init();
         if(chip->attach == 0){
                 chip->chg_type = CHARGER_UNKNOWN;
                 goto out;
         }
 
+        Charger_Detect_Init();
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	m_chg_ready = false;
+	m_chg_type = 0;
+        wt6670f_start_detection();
+        while((!m_chg_ready)&&(count<30)){
+                msleep(100);
+                count++;
+                m_chg_ready = wt6670f_is_charger_ready();
+                pr_err("wt6670f waiting type: 0x%x, count: %d\n",m_chg_ready, count);
+        }
+        m_chg_type = wt6670f_get_protocol();
+
+        pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
+
+        switch (m_chg_type) {
+            case 0x1:
+                chip->chg_type = NONSTANDARD_CHARGER;//FC
+                break;
+            case 0x2:
+                chip->chg_type = STANDARD_HOST;//SDP
+                break;
+            case 0x3:
+                chip->chg_type = CHARGING_HOST;//CDP
+                break;
+            case 0x4:
+            case 0x5:
+            case 0x6:
+            case 0x8://QC3P_18W
+            case 0x9://QC3P_27W
+                chip->chg_type = STANDARD_CHARGER;//DC
+		break;
+/*
+            case 0x8://QC3P_18W
+                chip->chg_type = QC3P_18W_CHARGER;//DC
+		break;
+            case 0x9://QC3P_27W
+                chip->chg_type = QC3P_27W_CHARGER;//DC
+                break;
+*/
+	    default:
+                chip->chg_type = CHARGER_UNKNOWN;
+                break;
+        }
+#else
         msleep(500);
 
         for(count;count<1;count++){
@@ -1400,12 +1490,19 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                         chip->chg_type = CHARGER_UNKNOWN;
                         break;
         }
+#endif
         pr_info("%s,charger type is %d\n",__func__,chip->chg_type);
 out:
         if(&chip->psy_dwork != NULL)
                 schedule_delayed_work(&chip->psy_dwork, 0);
 
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+        if((m_chg_type != 0x8) && (m_chg_type != 0x9)){
+#endif
         Charger_Detect_Release();
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	}
+#endif
         mutex_unlock(&chip->chgdet_lock);
         return 0;
 
@@ -1441,6 +1538,9 @@ static struct charger_ops bq25601_chg_ops = {
 	/* Normal charging */
 	.dump_registers = bq25601_dump_register,
 	.enable = bq25601_enable_charging,
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+	.is_enabled = bq25601_is_charging_enabled,
+#endif
 	.get_charging_current = bq25601_get_current,
 	.set_charging_current = bq25601_set_current,
 	.get_input_current = bq25601_get_input_current,
@@ -1468,7 +1568,7 @@ static struct charger_ops bq25601_chg_ops = {
 	.set_boost_current_limit = bq25601_set_boost_current_limit,
 	.event = bq25601_do_event,
 
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
         .enable_chg_type_det =bq25601_enable_chg_type_det,
 #endif
 };
@@ -1489,7 +1589,7 @@ static int bq25601_driver_probe(struct i2c_client *client,
 
 	new_client = client;
 	info->dev = &client->dev;
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
         info->client = client;
         info->chg_type = 0;
         info->attach = 0;
@@ -1520,7 +1620,7 @@ static int bq25601_driver_probe(struct i2c_client *client,
 	return 0;
 }
 
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 static int bq25601_remove(struct i2c_client *client)
 {
         struct bq25601_info *chip = i2c_get_clientdata(client);
@@ -1640,7 +1740,7 @@ static struct i2c_driver bq25601_driver = {
 #endif
 	},
 	.probe = bq25601_driver_probe,
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
         .remove = bq25601_remove,
 #endif
 	.id_table = bq25601_i2c_id,
