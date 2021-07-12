@@ -46,3 +46,4 @@ obj-$(CONFIG_CHARGER_HL7005) += hl7005.o
 obj-$(CONFIG_CHARGER_BQ25601) += bq25601.o
 obj-$(CONFIG_LOAD_SWITCH_RT9750) += rt9750.o
 obj-$(CONFIG_CHARGER_MT6362) += mt6362-chg.o
+obj-$(CONFIG_WT6670F_QC3P)      += wt6670f_qc3p.o wt6670f_upgrade.o
