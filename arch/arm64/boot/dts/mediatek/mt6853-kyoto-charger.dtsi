@@ -109,9 +109,9 @@
 		3488 3488 3488 3488/*T9*/
 	>;
 
-	g_FG_PSEUDO100_T0 = <(100)>;
+	g_FG_PSEUDO100_T0 = <(97)>;
 	/*Pseudo 100% percentage at T0*/
-	g_FG_PSEUDO100_T1 = <(100)>;
+	g_FG_PSEUDO100_T1 = <(97)>;
 	/*Pseudo 100% percentage at T1*/
 	g_FG_PSEUDO100_T2 = <(90)>;
 	/*Pseudo 100% percentage at T2*/
