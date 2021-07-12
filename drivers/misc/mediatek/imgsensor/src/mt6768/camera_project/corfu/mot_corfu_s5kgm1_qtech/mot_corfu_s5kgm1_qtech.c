@@ -371,6 +371,10 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 
 static kal_uint32 streaming_control(kal_bool enable)
 {
+	int timeout = 200; //(10000 / imgsensor.current_fps) + 1;
+	int i = 0;
+	int framecnt = 0;
+
 	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor(0x6028, 0x4000);
@@ -378,6 +382,15 @@ static kal_uint32 streaming_control(kal_bool enable)
 	} else {
 		write_cmos_sensor(0x6028, 0x4000);
 		write_cmos_sensor(0x0100, 0x0000);
+		for ( i = 0; i < timeout; i++) {
+			mDELAY(5);
+			framecnt = read_cmos_sensor_8(0x0005);
+			if (framecnt == 0xFF) {
+				LOG_INF("Stream Off is OK at i=%d.\n", i);
+				return ERROR_NONE;
+			}
+		}
+		LOG_INF("Stream Off Fail! framecnt = %d.\n", framecnt);
 	}
 	return ERROR_NONE;
 }
@@ -577,7 +590,6 @@ set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	kal_int32 dummy_line = 0;
-	kal_bool autoflicker_closed = KAL_FALSE;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
@@ -585,7 +597,8 @@ set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
 
 	spin_lock(&imgsensor_drv_lock);
 
-	dummy_line = frame_length - imgsensor.frame_length;
+	if (frame_length > 1)
+		dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
 	imgsensor.min_frame_length = imgsensor.frame_length;
 
@@ -603,7 +616,7 @@ set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
 		  imgsensor_info.margin)) ? (imgsensor_info.max_frame_length -
 			 imgsensor_info.margin) : shutter;
 
-	if (autoflicker_closed) {
+	if (imgsensor.autoflicker_en) {
 		realtime_fps =
 			imgsensor.pclk / imgsensor.line_length * 10 /
 			imgsensor.frame_length;
@@ -616,13 +629,11 @@ set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
 	} else
 		write_cmos_sensor(0x0340, imgsensor.frame_length);
 
-
 	write_cmos_sensor(0x0202, imgsensor.shutter);
 	LOG_INF
 	("Exit! shutter %d framelength %d/%d dummy_line=%d auto_extend=%d\n",
 	 shutter, imgsensor.frame_length,
 	  frame_length, dummy_line, read_cmos_sensor(0x0350));
-
 }
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
