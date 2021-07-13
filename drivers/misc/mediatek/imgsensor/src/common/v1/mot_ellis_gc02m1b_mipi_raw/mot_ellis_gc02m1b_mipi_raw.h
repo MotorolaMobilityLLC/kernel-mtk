@@ -89,6 +89,7 @@ struct imgsensor_info_struct {
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;
+	struct imgsensor_mode_struct normal_video;
 	kal_uint8  ae_shut_delay_frame;
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame;
