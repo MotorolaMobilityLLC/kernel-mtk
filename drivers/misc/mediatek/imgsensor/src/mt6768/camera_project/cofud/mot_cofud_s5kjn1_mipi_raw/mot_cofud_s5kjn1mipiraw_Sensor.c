@@ -2344,7 +2344,6 @@ preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	capture_setting(imgsensor.current_fps);   //preview use capture setting
 	set_mirror_flip(imgsensor.mirror);
 
-	flash_mode = 1;
 	return ERROR_NONE;
 }
 
@@ -2415,7 +2414,6 @@ capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	}
 #endif
 */
-	flash_mode = 1;
 	return ERROR_NONE;
 }
 
@@ -2436,7 +2434,6 @@ normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	normal_video_setting(imgsensor.current_fps);
 	set_mirror_flip(imgsensor.mirror);
 
-	flash_mode = 0;
 	return ERROR_NONE;
 }
 
@@ -2460,7 +2457,6 @@ hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	hs_video_setting();
 	set_mirror_flip(imgsensor.mirror);
 
-	flash_mode = 0;
 	return ERROR_NONE;
 }
 
