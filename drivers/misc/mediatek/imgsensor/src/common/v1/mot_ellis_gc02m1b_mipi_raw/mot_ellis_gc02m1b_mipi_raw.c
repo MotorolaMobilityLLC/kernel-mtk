@@ -73,6 +73,18 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 67200000,
 		.max_framerate = 300,
 	},
+	.normal_video = {
+		.pclk = 84000000,
+		.linelength = 2192,
+		.framelength = 1276,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1600,
+		.grabwindow_height = 1200,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 67200000,
+		.max_framerate = 300,
+	},
 
 	.margin = 16,
 	.min_shutter = 4,
@@ -82,7 +94,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 2,
+	.sensor_mode_num = 3,
 
 	.cap_delay_frame = 2,
 	.pre_delay_frame = 2,
@@ -119,6 +131,7 @@ static struct imgsensor_struct imgsensor = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 	{1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200, 0, 0, 1600, 1200}, /* Preview */
 	{1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200, 0, 0, 1600, 1200}, /* capture */
+	{1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200, 0, 0, 1600, 1200}  /* video */
 };
 
 #if MULTI_WRITE
@@ -624,6 +637,12 @@ kal_uint16 addr_data_pair_capture_mot_ellis_gc02m1b[] = {
 	0x3e, 0x90,
 };
 
+kal_uint16 addr_data_pair_normal_video_mot_ellis_gc02m1b[] = {
+	0xfe, 0x00,
+	0x41, 0x04,
+	0x42, 0xf4,
+	0x3e, 0x90,
+};
 static void sensor_init(void)
 {
 	LOG_INF("E\n");
@@ -649,6 +668,15 @@ static void capture_setting(void)
 	mot_ellis_gc02m1b_table_write_cmos_sensor(
 		addr_data_pair_capture_mot_ellis_gc02m1b,
 		sizeof(addr_data_pair_capture_mot_ellis_gc02m1b) /
+		sizeof(kal_uint16));
+}
+
+static void normal_video_setting(void)
+{
+	LOG_INF("E\n");
+	mot_ellis_gc02m1b_table_write_cmos_sensor(
+	    addr_data_pair_normal_video_mot_ellis_gc02m1b,
+		sizeof(addr_data_pair_normal_video_mot_ellis_gc02m1b) /
 		sizeof(kal_uint16));
 }
 
@@ -910,6 +938,24 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	return ERROR_NONE;
 }
 
+static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+	LOG_INF("E\n");
+
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
+	imgsensor.pclk = imgsensor_info.normal_video.pclk;
+	imgsensor.line_length = imgsensor_info.normal_video.linelength;
+	imgsensor.frame_length = imgsensor_info.normal_video.framelength;
+	imgsensor.min_frame_length = imgsensor_info.normal_video.framelength;
+	/* imgsensor.current_fps = 300; */
+	imgsensor.autoflicker_en = KAL_FALSE;
+	spin_unlock(&imgsensor_drv_lock);
+	normal_video_setting();
+	return ERROR_NONE;
+}
+
 static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
 	LOG_INF("E\n");
@@ -917,6 +963,8 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 	sensor_resolution->SensorFullHeight = imgsensor_info.cap.grabwindow_height;
 	sensor_resolution->SensorPreviewWidth = imgsensor_info.pre.grabwindow_width;
 	sensor_resolution->SensorPreviewHeight = imgsensor_info.pre.grabwindow_height;
+	sensor_resolution->SensorVideoWidth = imgsensor_info.normal_video.grabwindow_width;
+	sensor_resolution->SensorVideoHeight = imgsensor_info.normal_video.grabwindow_height;
 	return ERROR_NONE;
 }
 
@@ -994,6 +1042,12 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
 			imgsensor_info.cap.mipi_data_lp2hs_settle_dc;
 		break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		sensor_info->SensorGrabStartX = imgsensor_info.normal_video.startx;
+		sensor_info->SensorGrabStartY = imgsensor_info.normal_video.starty;
+		sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
+			imgsensor_info.normal_video.mipi_data_lp2hs_settle_dc;
+		break;
 	default:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
 		sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
@@ -1018,6 +1072,9 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		capture(image_window, sensor_config_data);
+		break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		normal_video(image_window, sensor_config_data);
 		break;
 	default:
 		LOG_INF("Error ScenarioId setting");
@@ -1077,6 +1134,19 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
 		spin_unlock(&imgsensor_drv_lock);
 		set_dummy();
 		break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		if (framerate == 0)
+			return ERROR_NONE;
+		frame_length = imgsensor_info.normal_video.pclk / framerate * 10 /
+			imgsensor_info.normal_video.linelength;
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video.framelength) ?
+			(frame_length - imgsensor_info.normal_video.framelength) : 0;
+		imgsensor.frame_length = imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
+		imgsensor.min_frame_length = imgsensor.frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+		set_dummy();
+		break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
 			LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
@@ -1112,6 +1182,9 @@ static kal_uint32 get_default_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM s
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		*framerate = imgsensor_info.pre.max_framerate;
+		break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		*framerate = imgsensor_info.normal_video.max_framerate;
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		*framerate = imgsensor_info.cap.max_framerate;
@@ -1151,6 +1224,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 				rate = imgsensor_info.cap.mipi_pixel_rate;
+				break;
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				rate = imgsensor_info.normal_video.mipi_pixel_rate;
 				break;
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			default:
@@ -1230,9 +1306,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[2], sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
-			break;
-		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[3], sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
