@@ -335,9 +335,15 @@ int primary_display_dsi_vfp_change(int state)
 	struct LCM_PARAMS *params;
 	unsigned int apply_vfp = 0;
 	if (bdg_is_bdg_connected() == 1)
-		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	else
-		cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n",
+			__func__, __LINE__, ret);
+		return -1;
+	}
 
 	cmdqRecReset(handle);
 
