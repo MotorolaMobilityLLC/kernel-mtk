@@ -534,6 +534,8 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	dpmgr_path_stop(pgcl->dpmgr_handle, ovl2mem_cmdq_enabled());
 
 	/* /cmdqRecDumpCommand(pgcl->cmdq_handle_config); */
+	DISPDBG("[SVP]ovl2mem cdmq flash cdmq handle:%p\n",
+		pgcl->cmdq_handle_config);
 
 	cmdqRecFlushAsyncCallback(pgcl->cmdq_handle_config,
 		(CmdqAsyncFlushCB)ovl2mem_callback,
@@ -600,6 +602,26 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG,
 			cfg->input_cfg[i].src_offset_x,
 			cfg->input_cfg[i].src_offset_y);
+
+		if (cfg->input_cfg[i].layer_enable
+			&& cfg->input_cfg[i].security != DISP_NORMAL_BUFFER) {
+			data_config->ovl_config[config_layer_id].hnd =
+				disp_snyc_get_ion_handle(cfg->session_id,
+				 cfg->input_cfg[i].layer_id,
+				(unsigned int)cfg->input_cfg[i].next_buff_idx);
+
+			DISPERR("[SVP]ovl2mem sec layer id: %d, cdmq handle:%p\n",
+				cfg->input_cfg[i].layer_id, pgcl->cmdq_handle_config);
+		}
+	}
+
+	if (cfg->output_cfg.security != DISP_NORMAL_BUFFER) {
+		data_config->wdma_config.hnd = disp_snyc_get_ion_handle(
+			cfg->session_id,
+			disp_sync_get_output_timeline_id(),
+			(unsigned int)cfg->output_cfg.buff_idx);
+		DISPERR("[SVP]ovl2mem out is sec addr, cdmq handle:%p:\n",
+			pgcl->cmdq_handle_config);
 	}
 
 	if (dpmgr_path_is_busy(pgcl->dpmgr_handle))

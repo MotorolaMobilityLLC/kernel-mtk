@@ -16,6 +16,7 @@
 #include <linux/types.h>
 #include <linux/wait.h>
 #include <disp_session.h>
+#include <ion.h>
 
 #include "ddp_hal.h"
 #include "lcm_drv.h"
@@ -222,6 +223,7 @@ struct OVL_CONFIG_STRUCT {
 	int ext_sel_layer;
 	int ext_layer;
 	int phy_layer;
+	struct ion_handle *hnd;
 };
 
 struct OVL_BASIC_STRUCT {
@@ -309,6 +311,7 @@ struct WDMA_CONFIG_STRUCT {
 	unsigned int useSpecifiedAlpha;
 	unsigned char alpha;
 	enum DISP_BUFFER_TYPE security;
+	struct ion_handle *hnd;
 };
 
 struct golden_setting_context {

@@ -240,6 +240,8 @@ void mtkfb_release_session_fence(unsigned int session_id);
 struct disp_sync_info *_get_sync_info(unsigned int session_id,
 					unsigned int timeline_id);
 
+struct ion_handle *disp_snyc_get_ion_handle(unsigned int session_id,
+	unsigned int timeline_id, unsigned int idx);
 
 #ifdef __cplusplus
 } /* extern C */

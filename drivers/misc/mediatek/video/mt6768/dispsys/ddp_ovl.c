@@ -27,6 +27,8 @@
 #include "debug.h"
 #include "disp_drv_platform.h"
 #include "mtk_dramc.h"
+#include <ion.h>
+#include <ion_sec_heap.h>
 
 #define OVL_REG_BACK_MAX	(40)
 #define OVL_LAYER_OFFSET	(0x20)
@@ -652,20 +654,43 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 	} else {
 		unsigned int size;
 		int m4u_port;
+		enum TRUSTED_MEM_REQ_TYPE mem_type;
 
 		size = (dst_h - 1) * cfg->src_pitch + dst_w * Bpp;
 		m4u_port = module_to_m4u_port(module);
+		mem_type = -1;
+
+		if ((module == DISP_MODULE_OVL0_2L) && (cfg->hnd != NULL)) {
+			int sec = -1;
+			int sec_id = -1;
+			ion_phys_addr_t sec_hdl = -1;
+
+			mem_type = ion_hdl2sec_type(cfg->hnd, &sec, &sec_id, &sec_hdl);
+			DDPDBG("[SVP]before ovl0_2l setting sec id as: %d,type:%d, port:%d\n",
+				sec_id, mem_type, m4u_port);
+		}
+
 		if (cfg->security != DISP_SECURE_BUFFER) {
 			/*
 			 * ovl is sec but this layer is non-sec
 			 * we need to tell cmdq to help map non-sec mva
 			 * to sec mva
 			 */
-			cmdqRecWriteSecure(handle,
-				disp_addr_convert(DISP_REG_OVL_L0_ADDR +
-					layer_offset_addr),
-				CMDQ_SAM_NMVA_2_MVA, cfg->addr + offset,
-				0, size, m4u_port);
+			DDPDBG("[SVP]ovl0_2l: 1 module: %d,setting type:%d, cmdq handel:%p\n",
+				module, mem_type, handle);
+			if (mem_type != -1) {
+				cmdqRecWriteSecureMetaData(handle,
+					disp_addr_convert(DISP_REG_OVL_L0_ADDR +
+						layer_offset_addr),
+					CMDQ_SAM_NMVA_2_MVA, cfg->addr + offset,
+					0, size, m4u_port, mem_type);
+			} else {
+				cmdqRecWriteSecure(handle,
+					disp_addr_convert(DISP_REG_OVL_L0_ADDR +
+						layer_offset_addr),
+					CMDQ_SAM_NMVA_2_MVA, cfg->addr + offset,
+					0, size, m4u_port);
+			}
 			if (is_ext_layer)
 				DISP_REG_SET_FIELD(handle,
 					REG_FLD_MSB_LSB(cfg->ext_layer + 4,
@@ -682,11 +707,22 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 			 * cmdq sec driver will help to convert handle to
 			 * correct address
 			 */
-			cmdqRecWriteSecure(handle,
-				disp_addr_convert(DISP_REG_OVL_L0_ADDR +
-					layer_offset_addr),
-				CMDQ_SAM_H_2_MVA, cfg->addr,
-				offset, size, m4u_port);
+			DDPDBG("[SVP]ovl0_2l: 2 module: %d,setting type:%d, cmdq handel:%p\n",
+				module, mem_type, handle);
+
+			if (mem_type != -1) {
+				cmdqRecWriteSecureMetaData(handle,
+					disp_addr_convert(DISP_REG_OVL_L0_ADDR +
+						layer_offset_addr),
+					CMDQ_SAM_H_2_MVA, cfg->addr,
+					offset, size, m4u_port, mem_type);
+			} else {
+				cmdqRecWriteSecure(handle,
+					disp_addr_convert(DISP_REG_OVL_L0_ADDR +
+						layer_offset_addr),
+					CMDQ_SAM_H_2_MVA, cfg->addr,
+					offset, size, m4u_port);
+			}
 			if (is_ext_layer)
 				DISP_REG_SET_FIELD(handle,
 					REG_FLD_MSB_LSB(cfg->ext_layer + 4,

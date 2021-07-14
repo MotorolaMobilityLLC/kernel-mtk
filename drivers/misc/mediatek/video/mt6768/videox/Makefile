@@ -58,6 +58,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/gpu/ged/include/ \
              -I$(srctree)/drivers/iommu/
 
+ifeq ($(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/trusted_mem/public/
+endif
+
 subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion \
 		    -I$(srctree)/drivers/staging/android/ion/mtk
 

@@ -116,4 +116,10 @@ ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"DISP")
 else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"OFF")
     ccflags-y += -DDISP_COLOR_ON
 endif
+
+ifeq ($(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/trusted_mem/public/
+endif
+subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion \
+		    -I$(srctree)/drivers/staging/android/ion/mtk
 # EOF
