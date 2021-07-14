@@ -1750,27 +1750,32 @@ static signed int config_secure_fdvt_hw(struct fdvt_config *basic_config)
 		cmdq_pkt_write(pkt, NULL, FDVT_LOOP_HW, 0x00006002,
 			       CMDQ_REG_MASK);
 		cmdq_pkt_write(pkt, NULL, FDVT_INT_EN_HW, 0x0, CMDQ_REG_MASK);
+#ifdef CMDQ_MTEE
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_RS_CON_BASE_ADR_HW,
 			basic_config->FDVT_RSCON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_RSCON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_FD_CON_BASE_ADR_HW,
 			basic_config->FDVT_FD_CON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_FD_CON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_YUV2RGB_CON_BASE_ADR_HW,
 			basic_config->FDVT_YUV2RGBCON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_YUV2RGBCON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
+#endif
 		cmdq_sec_pkt_set_payload(pkt, 1, sizeof(basic_config->FDVT_METADATA_TO_GCE), (unsigned int *)&basic_config->FDVT_METADATA_TO_GCE);
 
 		cmdq_pkt_write(pkt, NULL, FDVT_START_HW, 0x1, CMDQ_REG_MASK);
@@ -1785,15 +1790,16 @@ static signed int config_secure_fdvt_hw(struct fdvt_config *basic_config)
 			       CMDQ_REG_MASK);
 
 		cmdq_pkt_write(pkt, NULL, FDVT_INT_EN_HW, 0x1, CMDQ_REG_MASK);
-
+#ifdef CMDQ_MTEE
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_FD_CON_BASE_ADR_HW,
 			basic_config->FDVT_FD_POSE_CON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_FD_POSE_CON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
-
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
+#endif
 		cmdq_pkt_write(pkt, NULL, FDVT_START_HW, 0x1, CMDQ_REG_MASK);
 
 		cmdq_pkt_wfe(pkt, fdvt_event_id);
@@ -1806,29 +1812,32 @@ static signed int config_secure_fdvt_hw(struct fdvt_config *basic_config)
 		cmdq_pkt_write(pkt, NULL, FDVT_LOOP_HW, 0x00001A00,
 			       CMDQ_REG_MASK);
 		cmdq_pkt_write(pkt, NULL, FDVT_INT_EN_HW, 0x1, CMDQ_REG_MASK);
-
+#ifdef CMDQ_MTEE
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_RS_CON_BASE_ADR_HW,
 			basic_config->FDVT_RSCON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_RSCON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_FD_CON_BASE_ADR_HW,
 			basic_config->FDVT_FD_CON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_FD_CON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
 		cmdq_sec_pkt_write_reg(pkt,
 			FDVT_YUV2RGB_CON_BASE_ADR_HW,
 			basic_config->FDVT_YUV2RGBCON_BASE_ADR,
 			CMDQ_IWC_PH_2_MVA,
 			0,
 			basic_config->FDVT_YUV2RGBCON_BUFSIZE,
-			M4U_PORT_L20_IPE_FDVT_RDA_DISP);
-
+			M4U_PORT_L20_IPE_FDVT_RDA_DISP,
+			SEC_ID_SEC_CAM);
+#endif
 		cmdq_pkt_write(pkt, NULL, FDVT_START_HW, 0x1, CMDQ_REG_MASK);
 
 		cmdq_pkt_wfe(pkt, fdvt_event_id);
