@@ -180,6 +180,8 @@ struct mt6358_priv {
 	int reg_afe_vow_cfg4;
 	int reg_afe_vow_cfg5;
 	int reg_afe_vow_periodic;
+	/* vow dmic low power mode, 1: enable, 0: disable */
+	int vow_dmic_lp;
 };
 
 /* static function declaration */
@@ -1276,12 +1278,6 @@ enum {
 	MIC_TYPE_MUX_DCC,
 	MIC_TYPE_MUX_DCC_ECM_DIFF,
 	MIC_TYPE_MUX_DCC_ECM_SINGLE,
-	MIC_TYPE_MUX_VOW_ACC,
-	MIC_TYPE_MUX_VOW_DMIC,
-	MIC_TYPE_MUX_VOW_DMIC_LP,
-	MIC_TYPE_MUX_VOW_DCC,
-	MIC_TYPE_MUX_VOW_DCC_ECM_DIFF,
-	MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE,
 	MIC_TYPE_MUX_MASK = 0xf,
 };
 
@@ -1289,11 +1285,8 @@ enum {
 			x == MIC_TYPE_MUX_DCC_ECM_DIFF || \
 			x == MIC_TYPE_MUX_DCC_ECM_SINGLE)
 
-#define IS_VOW_DCC_BASE(x) (x == MIC_TYPE_MUX_VOW_DCC || \
-			    x == MIC_TYPE_MUX_VOW_DCC_ECM_DIFF || \
-			    x == MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE)
 
-#define IS_VOW_AMIC_BASE(x) (x == MIC_TYPE_MUX_VOW_ACC || IS_VOW_DCC_BASE(x))
+#define IS_AMIC_BASE(x) (x == MIC_TYPE_MUX_ACC || IS_DCC_BASE(x))
 
 static const char * const mic_type_mux_map[] = {
 	"Idle",
@@ -1302,12 +1295,6 @@ static const char * const mic_type_mux_map[] = {
 	"DCC",
 	"DCC_ECM_DIFF",
 	"DCC_ECM_SINGLE",
-	"VOW_ACC",
-	"VOW_DMIC",
-	"VOW_DMIC_LP",
-	"VOW_DCC",
-	"VOW_DCC_ECM_DIFF",
-	"VOW_DCC_ECM_SINGLE"
 };
 
 static int mic_type_mux_map_value[] = {
@@ -1317,12 +1304,6 @@ static int mic_type_mux_map_value[] = {
 	MIC_TYPE_MUX_DCC,
 	MIC_TYPE_MUX_DCC_ECM_DIFF,
 	MIC_TYPE_MUX_DCC_ECM_SINGLE,
-	MIC_TYPE_MUX_VOW_ACC,
-	MIC_TYPE_MUX_VOW_DMIC,
-	MIC_TYPE_MUX_VOW_DMIC_LP,
-	MIC_TYPE_MUX_VOW_DCC,
-	MIC_TYPE_MUX_VOW_DCC_ECM_DIFF,
-	MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE,
 };
 
 static SOC_VALUE_ENUM_SINGLE_DECL(mic_type_mux_map_enum,
@@ -2627,15 +2608,15 @@ static int mt_adc_supply_event(struct snd_soc_dapm_widget *w,
 	struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 	unsigned int mic_type = priv->mux_select[MUX_MIC_TYPE];
 
-	dev_dbg(priv->dev, "%s(), event 0x%x\n",
-		__func__, event);
+	dev_dbg(priv->dev, "%s(), event 0x%x, vow_enable: %d\n",
+		__func__, event, priv->vow_enable);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		/* Enable audio ADC CLKGEN  */
 		regmap_update_bits(priv->regmap, MT6358_AUDDEC_ANA_CON13,
 				   0x1 << 5, 0x1 << 5);
-		if (IS_VOW_AMIC_BASE(mic_type)) {
+		if (IS_AMIC_BASE(mic_type) && priv->vow_enable) {
 			/* ADC CLK from CLKGEN (3.25MHz) */
 			dev_info(priv->dev, "%s(), vow mode\n", __func__);
 			regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON3,
@@ -2683,7 +2664,7 @@ static int mt_vow_ldo_event(struct snd_soc_dapm_widget *w,
 	dev_info(priv->dev, "%s(), event 0x%x, MIC_TYPE %x\n",
 		 __func__, event, priv->mux_select[MUX_MIC_TYPE]);
 
-	if (!(IS_VOW_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE]))) {
+	if (!(IS_AMIC_BASE(priv->mux_select[MUX_MIC_TYPE]))) {
 		dev_info(priv->dev, "%s(), no AMIC, return\n", __func__);
 		return 0;
 	}
@@ -2706,6 +2687,9 @@ static int mt_vow_ldo_event(struct snd_soc_dapm_widget *w,
 		regmap_update_bits(priv->regmap, MT6358_AUDENC_ANA_CON1,
 				   RG_CLKSQ_EN_VOW_MASK_SFT,
 				   0x0 << RG_CLKSQ_EN_VOW_SFT);
+		dev_info(priv->dev, "%s(), set vow disable at the last vow capture widget\n",
+			 __func__);
+		priv->vow_enable = 0;
 		break;
 	default:
 		break;
@@ -2742,7 +2726,6 @@ static int mt_vow_out_event(struct snd_soc_dapm_widget *w,
 				   0xffff, 0xffff);
 		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3,
 				   0xffff, 0x0000);
-		priv->vow_enable = 0;
 		break;
 	default:
 		break;
@@ -2755,7 +2738,8 @@ static int mt6358_vow_cfg_enable(struct mt6358_priv *priv)
 {
 	unsigned int mic_type = priv->mux_select[MUX_MIC_TYPE];
 
-	dev_info(priv->dev, "%s(), mic_type %d\n", __func__, mic_type);
+	dev_info(priv->dev, "%s(), mic_type: %d, vow_dmic_lp: %d\n", __func__,
+		 mic_type, priv->vow_dmic_lp);
 
 	/* Enable vow cfg setting */
 	regmap_write(priv->regmap, MT6358_AFE_VOW_CFG0,
@@ -2771,28 +2755,27 @@ static int mt6358_vow_cfg_enable(struct mt6358_priv *priv)
 	regmap_write(priv->regmap, MT6358_AFE_VOW_CFG5,
 		     priv->reg_afe_vow_cfg5);
 
-	switch (mic_type) {
-	case MIC_TYPE_MUX_VOW_DMIC_LP:
-		regmap_update_bits(priv->regmap, MT6358_AFE_VOW_CFG4,
-				   0xfff0, 0x024e);
-		/* vow posdiv and cic mode configure*/
-		/* LP DMIC settings : 812.5k */
-		regmap_write(priv->regmap, MT6358_AFE_VOW_POSDIV_CFG0, 0x0c0a);
-		/* VOW_DIGMIC_ON */
-		regmap_update_bits(priv->regmap, MT6358_AFE_VOW_TOP,
+	if (mic_type == MIC_TYPE_MUX_DMIC) {
+		if (priv->vow_dmic_lp) {
+			regmap_update_bits(priv->regmap, MT6358_AFE_VOW_CFG4,
+					   0xfff0, 0x024e);
+			/* vow posdiv and cic mode configure*/
+			/* LP DMIC settings : 812.5k */
+			regmap_write(priv->regmap, MT6358_AFE_VOW_POSDIV_CFG0, 0x0c0a);
+			/* VOW_DIGMIC_ON */
+			regmap_update_bits(priv->regmap, MT6358_AFE_VOW_TOP,
 				   0x20c0, 0x20c0);
-		break;
-	case MIC_TYPE_MUX_VOW_DMIC:
-		regmap_update_bits(priv->regmap, MT6358_AFE_VOW_CFG4,
-				   0xfff0, 0x029e);
-		/* vow posdiv and cic mode configure */
-		/* DMIC settings : 1600k */
-		regmap_write(priv->regmap, MT6358_AFE_VOW_POSDIV_CFG0, 0x0c00);
-		/* VOW_DIGMIC_ON */
-		regmap_update_bits(priv->regmap, MT6358_AFE_VOW_TOP,
-				   0x20c0, 0x20c0);
-		break;
-	default:
+		} else {
+			regmap_update_bits(priv->regmap, MT6358_AFE_VOW_CFG4,
+					   0xfff0, 0x029e);
+			/* vow posdiv and cic mode configure */
+			/* DMIC settings : 1600k */
+			regmap_write(priv->regmap, MT6358_AFE_VOW_POSDIV_CFG0, 0x0c00);
+			/* VOW_DIGMIC_ON */
+			regmap_update_bits(priv->regmap, MT6358_AFE_VOW_TOP,
+					   0x20c0, 0x20c0);
+		}
+	} else {
 		regmap_update_bits(priv->regmap, MT6358_AFE_VOW_CFG4,
 				   0xfff0, 0x029e);
 		/* vow posdiv and cic mode configure */
@@ -2801,7 +2784,6 @@ static int mt6358_vow_cfg_enable(struct mt6358_priv *priv)
 		/* VOW_DIGMIC_OFF */
 		regmap_update_bits(priv->regmap, MT6358_AFE_VOW_TOP,
 				   0x20c0, 0x0000);
-		break;
 	}
 	return 0;
 }
@@ -3102,7 +3084,7 @@ static int mt6358_vow_amic_enable(struct mt6358_priv *priv)
 	dev_info(priv->dev, "%s(), mux, mic %u, pga l %u\n",
 		 __func__, mic_type, mux_pga_l);
 
-	if (IS_VOW_DCC_BASE(mic_type)) {
+	if (IS_DCC_BASE(mic_type)) {
 		/* DCC 50k CLK (from 26M) */
 		regmap_write(priv->regmap, MT6358_AFE_DCCLK_CFG0, 0x2062);
 		regmap_write(priv->regmap, MT6358_AFE_DCCLK_CFG0, 0x2062);
@@ -3114,12 +3096,12 @@ static int mt6358_vow_amic_enable(struct mt6358_priv *priv)
 	/* mic bias 0 */
 	if (mux_pga_l == PGA_MUX_AIN0) {
 		switch (mic_type) {
-		case MIC_TYPE_MUX_VOW_DCC_ECM_DIFF:
+		case MIC_TYPE_MUX_DCC_ECM_DIFF:
 			regmap_update_bits(priv->regmap,
 					   MT6358_AUDENC_ANA_CON9,
 					   0xff00, 0x7700);
 			break;
-		case MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE:
+		case MIC_TYPE_MUX_DCC_ECM_SINGLE:
 			regmap_update_bits(priv->regmap,
 					   MT6358_AUDENC_ANA_CON9,
 					   0xff00, 0x1100);
@@ -3147,12 +3129,12 @@ static int mt6358_vow_amic_enable(struct mt6358_priv *priv)
 	/* mic bias 0 */
 	if (mux_pga_l == PGA_MUX_AIN2) {
 		switch (mic_type) {
-		case MIC_TYPE_MUX_VOW_DCC_ECM_DIFF:
+		case MIC_TYPE_MUX_DCC_ECM_DIFF:
 			regmap_update_bits(priv->regmap,
 					   MT6358_AUDENC_ANA_CON9,
 					   0xff00, 0x7700);
 			break;
-		case MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE:
+		case MIC_TYPE_MUX_DCC_ECM_SINGLE:
 			regmap_update_bits(priv->regmap,
 					   MT6358_AUDENC_ANA_CON9,
 					   0xff00, 0x1100);
@@ -3172,7 +3154,7 @@ static int mt6358_vow_amic_enable(struct mt6358_priv *priv)
 			   RG_AUDPREAMPLGAIN_MASK_SFT,
 			   0x04 << RG_AUDPREAMPLGAIN_SFT);
 
-	if (IS_VOW_DCC_BASE(mic_type)) {
+	if (IS_DCC_BASE(mic_type)) {
 		/* Audio L preamplifier DCC precharge */
 		regmap_update_bits(priv->regmap, MT6358_AUDENC_ANA_CON0,
 				   0xf8ff, 0x0004);
@@ -3209,7 +3191,7 @@ static int mt6358_vow_amic_enable(struct mt6358_priv *priv)
 				   RG_AUDADCLPWRUP_MASK_SFT,
 				   0x1 << RG_AUDADCLPWRUP_SFT);
 	}
-	if (IS_VOW_DCC_BASE(mic_type)) {
+	if (IS_DCC_BASE(mic_type)) {
 		usleep_range(100, 150);
 		/* Audio L preamplifier DCC precharge off */
 		regmap_update_bits(priv->regmap, MT6358_AUDENC_ANA_CON0,
@@ -3265,7 +3247,7 @@ static int mt6358_vow_amic_disable(struct mt6358_priv *priv)
 	/* Disable MICBIAS1, MISBIAS1 = 1P7V */
 	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON10, 0x0000);
 
-	if (IS_VOW_DCC_BASE(mic_type)) {
+	if (IS_DCC_BASE(mic_type)) {
 		/* dcclk_gen_on=1'b0 */
 		regmap_write(priv->regmap, MT6358_AFE_DCCLK_CFG0, 0x2060);
 		/* dcclk_pdn=1'b1 */
@@ -3311,26 +3293,41 @@ static int mt_mic_bias_event(struct snd_soc_dapm_widget *w,
 	struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 	unsigned int mux = priv->mux_select[MUX_MIC_TYPE];
 
-	dev_dbg(priv->dev, "%s(), event 0x%x, mux %u\n", __func__, event, mux);
-
-	if (IS_VOW_AMIC_BASE(mux) || MIC_TYPE_MUX_VOW_DMIC == mux
-		|| MIC_TYPE_MUX_VOW_DMIC_LP == mux)
-		return 0;
+	dev_dbg(priv->dev, "%s(), event 0x%x, mux %u, vow_enable: %d\n",
+		__func__, event, mux, priv->vow_enable);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		if (mux == MIC_TYPE_MUX_DMIC)
-			mt6358_dmic_enable(priv);
-		else
-			mt6358_amic_enable(priv);
-
+		if (priv->vow_enable) {
+			if (mux == MIC_TYPE_MUX_DMIC) {
+				mt6358_vow_dmic_enable(priv);
+				mt6358_vow_cfg_enable(priv);
+			} else {
+				mt6358_vow_amic_enable(priv);
+				mt6358_vow_cfg_enable(priv);
+			}
+		} else {
+			if (mux == MIC_TYPE_MUX_DMIC)
+				mt6358_dmic_enable(priv);
+			else
+				mt6358_amic_enable(priv);
+		}
 		break;
 	case SND_SOC_DAPM_POST_PMD:
-		if (mux == MIC_TYPE_MUX_DMIC)
-			mt6358_dmic_disable(priv);
-		else
-			mt6358_amic_disable(priv);
-
+		if (priv->vow_enable) {
+			if (mux == MIC_TYPE_MUX_DMIC) {
+				mt6358_vow_cfg_disable(priv);
+				mt6358_vow_dmic_disable(priv);
+			} else {
+				mt6358_vow_cfg_disable(priv);
+				mt6358_vow_amic_disable(priv);
+			}
+		} else {
+			if (mux == MIC_TYPE_MUX_DMIC)
+				mt6358_dmic_disable(priv);
+			else
+				mt6358_amic_disable(priv);
+		}
 		break;
 	default:
 		break;
@@ -3358,18 +3355,6 @@ static int mt_mic_type_event(struct snd_soc_dapm_widget *w,
 		case MIC_TYPE_MUX_DMIC:
 			mt6358_dmic_enable(priv);
 			break;
-		case MIC_TYPE_MUX_VOW_DMIC:
-		case MIC_TYPE_MUX_VOW_DMIC_LP:
-			mt6358_vow_dmic_enable(priv);
-			mt6358_vow_cfg_enable(priv);
-			break;
-		case MIC_TYPE_MUX_VOW_ACC:
-		case MIC_TYPE_MUX_VOW_DCC:
-		case MIC_TYPE_MUX_VOW_DCC_ECM_DIFF:
-		case MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE:
-			mt6358_vow_amic_enable(priv);
-			mt6358_vow_cfg_enable(priv);
-			break;
 		default:
 			mt6358_amic_enable(priv);
 			break;
@@ -3380,18 +3365,6 @@ static int mt_mic_type_event(struct snd_soc_dapm_widget *w,
 		switch (priv->mux_select[MUX_MIC_TYPE]) {
 		case MIC_TYPE_MUX_DMIC:
 			mt6358_dmic_disable(priv);
-			break;
-		case MIC_TYPE_MUX_VOW_DMIC:
-		case MIC_TYPE_MUX_VOW_DMIC_LP:
-			mt6358_vow_cfg_disable(priv);
-			mt6358_vow_dmic_disable(priv);
-			break;
-		case MIC_TYPE_MUX_VOW_ACC:
-		case MIC_TYPE_MUX_VOW_DCC:
-		case MIC_TYPE_MUX_VOW_DCC_ECM_DIFF:
-		case MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE:
-			mt6358_vow_cfg_disable(priv);
-			mt6358_vow_amic_disable(priv);
 			break;
 		default:
 			mt6358_amic_disable(priv);
@@ -3855,12 +3828,8 @@ static const struct snd_soc_dapm_route mt6358_dapm_routes[] = {
 	{"VOW TX", NULL, "VOW_CLK"},
 	{"VOW TX", NULL, "AUD_VOW"},
 	{"VOW TX", NULL, "VOW_LDO"},
-	{"Mic Type Mux", "VOW_ACC", "ADC L"},
-	{"Mic Type Mux", "VOW_DCC", "ADC L"},
-	{"Mic Type Mux", "VOW_DCC_ECM_DIFF", "ADC L"},
-	{"Mic Type Mux", "VOW_DCC_ECM_SINGLE", "ADC L"},
-	{"Mic Type Mux", "VOW_DMIC", "AIN0"},
-	{"Mic Type Mux", "VOW_DMIC_LP", "AIN0"},
+	{"VOW TX", NULL, "ADC L"},
+	{"VOW TX", NULL, "AIN0_DMIC"},
 
 	/* mic bias */
 	{"AIN0", NULL, "MIC_BIAS", mt_amic_connect},
@@ -7805,6 +7774,15 @@ static void mt6358_parse_dt(struct mt6358_priv *priv)
 		dev_info(dev, "%s() failed to read mic-type, default DCC\n",
 			 __func__);
 		priv->mux_select[MUX_MIC_TYPE] = MIC_TYPE_MUX_DCC;
+	}
+
+	ret = of_property_read_bool(dev->of_node, "vow_dmic_lp");
+	if (ret) {
+		priv->vow_dmic_lp = 1;
+	} else {
+		dev_info(dev, "%s() vow_dmic_lp node not exist, default off.\n",
+			 __func__);
+		priv->vow_dmic_lp = 0;
 	}
 }
 
