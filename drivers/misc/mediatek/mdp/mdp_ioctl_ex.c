@@ -43,6 +43,7 @@
 #include "mdp_ioctl_ex.h"
 #include "cmdq_struct.h"
 #include "mdp_m4u.h"
+#include "ion_sec_heap.h"
 
 #define MDP_TASK_PAENDING_TIME_MAX	100000000
 
@@ -59,10 +60,6 @@ static atomic_t m4u_init = ATOMIC_INIT(0);
 #endif
 #if defined(MDP_M4U_MTEE_SEC_CAM_SUPPORT)
 static atomic_t m4u_gz_init_sec_cam = ATOMIC_INIT(0);
-#endif
-#if defined(MDP_M4U_MTEE_SVP_SUPPORT)
-static atomic_t m4u_gz_init_svp = ATOMIC_INIT(0);
-static atomic_t m4u_gz_init_wfd = ATOMIC_INIT(0);
 #endif
 
 static int mdp_limit_open(struct inode *pInode, struct file *pFile)
@@ -532,6 +529,47 @@ static s32 cmdq_mdp_handle_setup(struct mdp_submit *user_job,
 	return 0;
 }
 
+static s32 mdp_init_secure_id(struct cmdqRecStruct *handle)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	u32 i;
+	uint32_t trustmem_type = 0;
+	int sec = 0;
+	int iommu_sec_id = 0;
+	ion_phys_addr_t sec_handle;
+	struct cmdqSecAddrMetadataStruct *secMetadatas = NULL;
+
+	if (!handle->secData.is_secure)
+		return 0;
+	secMetadatas = (struct cmdqSecAddrMetadataStruct *)handle->secData.addrMetadatas;
+
+	for (i = 0; i < handle->secData.addrMetadataCount; i++) {
+		secMetadatas[i].useSecIdinMeta = 1;
+		if (secMetadatas[i].ionFd <= 0) {
+			secMetadatas[i].sec_id = 0;
+			continue;
+		}
+
+		trustmem_type = ion_fd2sec_type(secMetadatas[i].ionFd, &sec,
+			&iommu_sec_id, &sec_handle);
+		secMetadatas[i].baseHandle = (uint64_t)sec_handle;
+#ifdef CONFIG_MTK_CMDQ_MBOX_EXT
+		secMetadatas[i].sec_id = iommu_sec_id;
+#else
+		secMetadatas[i].sec_id = trustmem_type;
+#endif
+		CMDQ_LOG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
+				__func__, secMetadatas[i].port,
+				secMetadatas[i].ionFd,
+				secMetadatas[i].sec_id,
+				secMetadatas[i].baseHandle);
+	}
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 static int mdp_implement_read_v1(struct mdp_submit *user_job,
 				struct cmdqRecStruct *handle,
 				struct cmdq_command_buffer *cmd_buf)
@@ -671,20 +709,6 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 		CMDQ_LOG("[SEC] m4u_gz_sec_init SEC_ID_SEC_CAM is called\n");
 	}
 #endif
-#ifdef MDP_M4U_MTEE_SVP_SUPPORT
-	if (user_job.secData.extension & 0x1) {
-		/* using 2nd display scenario */
-		if (atomic_cmpxchg(&m4u_gz_init_wfd, 0, 1) == 0) {
-			m4u_gz_sec_init(3);
-			CMDQ_LOG("[SEC] m4u_gz_sec_init SEC_ID_WFD(3) is called\n");
-		}
-	} else {
-		if (atomic_cmpxchg(&m4u_gz_init_svp, 0, 1) == 0) {
-			m4u_gz_sec_init(1);
-			CMDQ_LOG("[SEC] m4u_gz_sec_init SEC_ID_SVP(1) is called\n");
-		}
-	}
-#endif
 
 	/* setup secure data */
 	status = cmdq_mdp_handle_sec_setup(&user_job.secData, handle);
@@ -695,6 +719,8 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 		kfree(cmd_buf.va_base);
 		goto done;
 	}
+
+	mdp_init_secure_id(handle);
 
 	/* Make command from user job */
 	CMDQ_TRACE_FORCE_BEGIN("mdp_translate_user_job\n");
