@@ -179,6 +179,7 @@ static struct LCM_setting_table init_setting_cmd[] = {
 	{0xE1, 1, {0xD9} },
 	{0xFD, 2, {0x00, 0x00} },
 	{0xFF, 3, {0x78, 0x07, 0x00} },
+	{0x35, 1, {0x00} },
 };
 
 static struct LCM_setting_table lcm_cabc_setting[] = {
