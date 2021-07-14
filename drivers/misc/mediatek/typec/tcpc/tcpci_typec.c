@@ -750,9 +750,7 @@ static inline void typec_custom_src_attached_entry(
 #ifdef CONFIG_TYPEC_CAP_CUSTOM_SRC
 	TYPEC_NEW_STATE(typec_attached_custom_src);
 	tcpc->typec_attach_new = TYPEC_ATTACHED_CUSTOM_SRC;
-
 	tcpc->typec_remote_rp_level = typec_get_cc1();
-
 	tcpci_report_power_control(tcpc, true);
 	tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SINK_5V, -1);
 #endif	/* CONFIG_TYPEC_CAP_CUSTOM_SRC */
