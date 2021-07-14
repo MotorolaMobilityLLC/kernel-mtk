@@ -860,7 +860,7 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu,
 		user_data_addr = (unsigned char *)
 				   (unsigned long)buff.cmdq_buff.cmds_user_ptr;
 		ret = (long)copy_from_user(cmds, user_data_addr,
-				   (unsigned long)sizeof(struct gce_cmds));
+					   (unsigned long)sizeof(struct gce_cmds));
 		if (ret != 0L) {
 			pr_info("[VCU] %s(%d) gce_cmds copy_from_user failed!%d\n",
 				__func__, __LINE__, ret);
@@ -938,6 +938,8 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu,
 		}
 	}
 
+	if (j < 0)
+		return -EINVAL;
 	if (atomic_read(&vcu->gce_job_cnt[i][core_id]) == 0 &&
 		vcu->gce_info[j].v4l2_ctx != NULL){
 		if (i == VCU_VENC) {
