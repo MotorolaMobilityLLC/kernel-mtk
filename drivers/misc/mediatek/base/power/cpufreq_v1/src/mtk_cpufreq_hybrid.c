@@ -172,11 +172,11 @@ static struct task_struct *Ripi_cpu_dvfs_task;
 static DECLARE_COMPLETION(cpuhvfs_setup_done);
 #elif defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_SSPM_VER_V1)
 struct ipi_action cpufreq_act;
-#else
-#endif
-#else
+#else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#else /* CONFIG_MTK_TINYSYS_MCUPM_SUPPORT */
 static DECLARE_COMPLETION(cpuhvfs_setup_done);
-#endif
+#endif /* CONFIG_MTK_TINYSYS_MCUPM_SUPPORT */
 uint32_t cpufreq_buf[4];
 int cpufreq_ipi_ackdata;
 
@@ -224,12 +224,9 @@ int Ripi_cpu_dvfs_thread(void *data)
 	/* tag_pr_info("sspm_ipi_recv_registration */
 	/*IPI_ID_CPU_DVFS pass!!(%d)\n", ret); */
 #else
-#endif
-#else
-#if defined(USE_SSPM_VER_V2)
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#else /* CONFIG_MTK_TINYSYS_MCUPM_SUPPORT */
 	wait_for_completion(&cpuhvfs_setup_done);
-#else
-#endif
 #endif
 	/* an endless loop in which we are doing our work */
 	do {
