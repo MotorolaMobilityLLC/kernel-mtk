@@ -314,7 +314,7 @@ int do_esd_check_read(void)
 
 	/* only cmd mode read & with disable mmsys clk will kick */
 	if ((disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) &&
-	    !primary_display_is_video_mode()) || bdg_is_bdg_connected() == 1)
+	    !primary_display_is_video_mode()))
 		primary_display_idlemgr_kick((char *)__func__, 1);
 
 	/* 0.create esd check cmdq */
