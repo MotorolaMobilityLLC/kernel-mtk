@@ -127,6 +127,7 @@ struct bq2560x {
 	struct tcpc_device *tcpc_dev;
 	bool attach;
 	bool mmi_charging_full;
+	struct power_supply *chg_psy;
 };
 
 static const struct charger_properties bq2560x_chg_props = {
@@ -1604,6 +1605,7 @@ static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
 	int ret;
 	u8 status;
 	u8 hiz_mode;
+	union power_supply_propval online = {0};
 
 	bq = (struct bq2560x *)power_supply_get_drvdata(psy);
 
@@ -1624,7 +1626,23 @@ static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
 		if (ret)
 			return -EINVAL;
 
-		if (!bq->attach || (bq->attach && hiz_mode)) {
+		if (bq->chg_psy == NULL) {
+			bq->chg_psy = power_supply_get_by_name("mtk_charger_type");
+		}
+		if (IS_ERR_OR_NULL(bq->chg_psy)) {
+			pr_err("%s Couldn't get chg_psy\n", __func__);
+			return -EINVAL;
+		} else {
+			ret = power_supply_get_property(bq->chg_psy,
+						POWER_SUPPLY_PROP_ONLINE, &online);
+			if (ret)
+				return -EINVAL;
+		}
+
+		if (!online.intval)
+			bq->mmi_charging_full = false;
+
+		if (!online.intval || (online.intval && hiz_mode)) {
 			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
 			break;
 		}
