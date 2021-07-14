@@ -68,7 +68,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 292800000,
+		.mipi_pixel_rate = 728000000,
 	},
 	.cap = {
 		.pclk = 280000000,
@@ -572,7 +572,7 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XAF);
+	write_cmos_sensor_8(0X030F, 0XB6);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
