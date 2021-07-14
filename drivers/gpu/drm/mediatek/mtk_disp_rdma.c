@@ -328,7 +328,7 @@ static irqreturn_t mtk_disp_rdma_irq_handler(int irq, void *dev_id)
 	if (val & (1 << 1)) {
 		if (rdma->id == DDP_COMPONENT_RDMA0)
 			DRM_MMP_EVENT_START(rdma0, val, 0);
-		DDPIRQ("[IRQ] %s: frame start!\n", mtk_dump_comp_str(rdma));
+		DDPINFO("[IRQ] %s: frame start!\n", mtk_dump_comp_str(rdma));
 
 		if (mtk_crtc) {
 			state = to_mtk_crtc_state(mtk_crtc->base.state);

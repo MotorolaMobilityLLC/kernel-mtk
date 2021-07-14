@@ -678,6 +678,7 @@ static void bl_cmdq_cb(struct cmdq_cb_data data)
 	int id;
 	unsigned int bl_idx = 0;
 
+	DDPINFO("%s()\n", __func__);
 	id = drm_crtc_index(crtc);
 	if (id == 0) {
 		bl_idx = *(unsigned int *)(cmdq_buf->va_base +
@@ -3368,6 +3369,7 @@ int mtk_crtc_comp_is_busy(struct mtk_drm_crtc *mtk_crtc)
 static void trig_done_cb(struct cmdq_cb_data data)
 {
 	CRTC_MMP_MARK((unsigned long)data.data, trig_loop_done, 0, 0);
+	DDPINFO("%s()\n", __func__);
 }
 
 void mtk_crtc_clear_wait_event(struct drm_crtc *crtc)
@@ -3616,6 +3618,7 @@ void mtk_crtc_stop_trig_loop(struct drm_crtc *crtc)
 
 	cmdq_mbox_stop(mtk_crtc->gce_obj.client[CLIENT_TRIG_LOOP]);
 	cmdq_pkt_destroy(mtk_crtc->trig_loop_cmdq_handle);
+	mtk_crtc->trig_loop_cmdq_handle = NULL;
 }
 
 /* sw workaround to fix gce hw bug */
