@@ -62,6 +62,7 @@ unsigned int bdg_tx_mode;
 static int bdg_eint_irq;
 static int mt6382_connected;
 static bool irq_already_requested;
+static int bdg_mipi_hopping;
 
 #define T_DCO		5  // nominal: 200MHz
 int hsrx_clk_div;
@@ -1132,7 +1133,7 @@ int bdg_mipi_tx_dphy_clk_setting(enum DISP_BDG_ENUM module,
 }
 
 int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
-			void *cmdq, struct LCM_DSI_PARAMS *tx_params)
+			void *cmdq, unsigned int tx_data_rate)
 {
 	int i;
 	u32 ui, cycle_time;
@@ -2588,7 +2589,7 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 	ret |= bdg_mipi_tx_dphy_clk_setting(module, cmdq, tx_params);
 	udelay(20);
 
-	ret |= bdg_tx_phy_config(module, cmdq, tx_params);
+	ret |= bdg_tx_phy_config(module, cmdq, tx_data_rate);
 	ret |= bdg_tx_txrx_ctrl(module, cmdq, tx_params);
 	ret |= bdg_tx_ps_ctrl(module, cmdq, tx_params);
 	ret |= bdg_tx_vdo_timing_set(module, cmdq, tx_params);
@@ -4758,6 +4759,8 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 
 	// request eint irq
 //	bdg_request_eint_irq();
+	if (bdg_mipi_hopping)
+		bdg_mipi_clk_change_for_resume(0, 1);
 
 	DISPFUNCEND();
 
@@ -5152,15 +5155,41 @@ int bdg_mipi_clk_change(int msg, int en)
 		dsi_hbp = 0x38;
 	}
 
+	bdg_mipi_hopping = en;
+
 	/* wait 6382 dsi revsync state */
 	polling_status();
 
 	/* change mipi clk & hbp porch params*/
 	bdg_dsi_mipi_clk_change(DISP_BDG_DSI0, NULL, data_rate);
 	bdg_dsi_porch_setting(DISP_BDG_DSI0, NULL, dsi_hbp);
+	bdg_tx_phy_config(DISP_BDG_DSI0, NULL, data_rate);
 
 	/* mipi clk setting need 28us */
 	udelay(28);
 
 	return 0;
 }
+
+int bdg_mipi_clk_change_for_resume(int msg, int en)
+{
+	unsigned int data_rate = 0;
+	unsigned int dsi_hbp = 0; /* adaptive HBP value */
+
+	if (en) {
+		data_rate = 749;
+		dsi_hbp = 0x20;
+	} else {
+		data_rate = 760;
+		dsi_hbp = 0x38;
+	}
+
+	/* change mipi clk & hbp porch params*/
+	bdg_dsi_mipi_clk_change(DISP_BDG_DSI0, NULL, data_rate);
+	bdg_dsi_porch_setting(DISP_BDG_DSI0, NULL, dsi_hbp);
+	bdg_tx_phy_config(DISP_BDG_DSI0, NULL, data_rate);
+
+	return 0;
+}
+
+

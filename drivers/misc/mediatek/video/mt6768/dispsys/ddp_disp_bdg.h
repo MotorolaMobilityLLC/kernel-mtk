@@ -89,6 +89,7 @@ int bdg_tx_bist_pattern(enum DISP_BDG_ENUM module,
 int bdg_tx_set_mode(enum DISP_BDG_ENUM module,
 				void *cmdq, unsigned int mode);
 int bdg_mipi_clk_change(int msg, int en);
+int bdg_mipi_clk_change_for_resume(int msg, int en);
 int bdg_tx_start(enum DISP_BDG_ENUM module, void *cmdq);
 int bdg_tx_stop(enum DISP_BDG_ENUM module, void *cmdq);
 int bdg_tx_cmd_mode(enum DISP_BDG_ENUM module, void *cmdq);
