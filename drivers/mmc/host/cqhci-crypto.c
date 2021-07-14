@@ -46,6 +46,49 @@ static void cqhci_crypto_program_key(struct cqhci_host *host,
 	msdc_gate_clock(host->mmc);
 }
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <tlc_km.h>
+#include <linux/arm-smccc.h>
+#include <linux/soc/mediatek/mtk_sip_svc.h>
+
+static void cqhci_crypto_program_wrapped_key(struct cqhci_host *host,
+				     const union cqhci_crypto_cfg_entry *cfg,
+				     int slot)
+{
+	u32 slot_offset = host->crypto_cfg_register + slot * sizeof(*cfg);
+
+	msdc_ungate_clock(host->mmc);
+	/* Ensure that CFGE is cleared before programming the key */
+	cqhci_writel(host, 0, slot_offset + 16 * sizeof(cfg->reg_val[0]));
+	pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
+	if (hwkm_program_key(
+			cfg->crypto_key,
+			CQHCI_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /*40 bytes*/
+			slot_offset,
+			STORAGE_KEY_EMMC_HWCQHCI) != 0) {
+		pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+	} else {
+		pr_notice("Trustonic HWKM: End programing slot: %d\n", slot);
+		/* Write dword 17 */
+		cqhci_writel(host, le32_to_cpu(cfg->reg_val[17]),
+			     slot_offset + 17 * sizeof(cfg->reg_val[0]));
+		/* Write dword 16 */
+		cqhci_writel(host, le32_to_cpu(cfg->reg_val[16]),
+			     slot_offset + 16 * sizeof(cfg->reg_val[0]));
+	}
+	msdc_gate_clock(host->mmc);
+}
+
+static int cqhci_crypto_derive_raw_secret(struct keyslot_manager *ksm,
+			const u8 *wrapped_key,
+			unsigned int wrapped_key_size,
+			u8 *secret,
+			unsigned int secret_size)
+{
+	return hwkm_derive_raw_secret(wrapped_key, wrapped_key_size, secret, secret_size);
+}
+#endif
+
 static int cqhci_crypto_keyslot_program(struct keyslot_manager *ksm,
 					const struct blk_crypto_key *key,
 					unsigned int slot)
@@ -92,7 +135,11 @@ static int cqhci_crypto_keyslot_program(struct keyslot_manager *ksm,
 		memcpy(cfg.crypto_key, key->raw, key->size);
 	}
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	cqhci_crypto_program_wrapped_key(host, &cfg, slot);
+#else
 	cqhci_crypto_program_key(host, &cfg, slot);
+#endif
 
 	memzero_explicit(&cfg, sizeof(cfg));
 	return 0;
@@ -120,6 +167,9 @@ static int cqhci_crypto_keyslot_evict(struct keyslot_manager *ksm,
 static const struct keyslot_mgmt_ll_ops cqhci_ksm_ops = {
 	.keyslot_program	= cqhci_crypto_keyslot_program,
 	.keyslot_evict		= cqhci_crypto_keyslot_evict,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	.derive_raw_secret	= cqhci_crypto_derive_raw_secret,
+#endif
 };
 
 bool cqhci_crypto_enable(struct cqhci_host *host)
@@ -208,7 +258,11 @@ int cqhci_host_init_crypto(struct cqhci_host *host)
 	num_keyslots = host->crypto_capabilities.config_count + 1;
 	ksm = keyslot_manager_create(dev, num_keyslots,
 				     &cqhci_ksm_ops,
-				     BLK_CRYPTO_FEATURE_STANDARD_KEYS,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+                BLK_CRYPTO_FEATURE_WRAPPED_KEYS,
+#else
+                BLK_CRYPTO_FEATURE_STANDARD_KEYS,
+#endif
 				     crypto_modes_supported, host);
 
 	if (!ksm) {
