@@ -231,8 +231,20 @@ void mtk_venc_dvfs_end(struct mtk_vcodec_ctx *ctx)
 			update_hist(venc_cur_job, &venc_hists, 0);
 		} else {
 			/* Set allowed time for slowmotion 4 buffer pack */
-			interval = (long long)(1000 * 4 /
-					(int)ctx->enc_params.operationrate);
+			if (ctx->enc_params.operationrate > 0) {
+				interval = (long long)(1000 * 4 /
+						(int)ctx->enc_params.operationrate);
+			} else {
+				if (ctx->enc_params.framerate_denom == 0)
+					ctx->enc_params.framerate_denom = 1;
+				if (ctx->enc_params.operationrate == 0 &&
+					ctx->enc_params.framerate_num == 0)
+					ctx->enc_params.framerate_num =
+					ctx->enc_params.framerate_denom * 30;
+				interval = (long long)(1000 * 4 /
+						(int)(ctx->enc_params.framerate_num /
+						ctx->enc_params.framerate_denom));
+			}
 			update_hist(venc_cur_job, &venc_hists, interval*1000);
 		}
 		venc_jobs = venc_jobs->next;
