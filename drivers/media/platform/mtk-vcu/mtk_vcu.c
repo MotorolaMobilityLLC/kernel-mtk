@@ -697,7 +697,8 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 				CMDQ_IWC_H_2_MVA,
 				dma_offset,
 				dma_size,
-				0);
+				0,
+				SEC_ID_WFD);
 		else
 			pr_info("[VCU] CMD_SEC_WRITE wrong addr: 0x%x 0x%x 0x%x 0x%x\n",
 				addr, data, dma_offset, dma_size);
