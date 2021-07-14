@@ -100,6 +100,7 @@ struct mtk_charger_type {
 	struct mutex attach_lock;
 	bool attach;
 #endif //Introduce External PD & Type-C logic
+	bool otg_mode;
 };
 
 struct tag_bootmode {
@@ -490,6 +491,7 @@ static void dump_charger_name(int type)
 static int get_charger_type(struct mtk_charger_type *info)
 {
 	enum power_supply_usb_type type;
+	pr_err("%s: check start\n", __func__);
 
 	hw_bc11_init(info);
 	if (hw_bc11_DCD(info)) {
@@ -516,6 +518,7 @@ static int get_charger_type(struct mtk_charger_type *info)
 		pr_info("charger type: skip bc11 release for BC12 DCP SPEC\n");
 
 	dump_charger_name(info->psy_desc.type);
+	pr_err("%s:check end\n", __func__);
 
 	return type;
 }
@@ -589,7 +592,7 @@ static void do_charger_detection_work(struct work_struct *data)
 
 #ifndef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 	mutex_lock(&info->attach_lock);
-	do_charger_detect(info, info->attach);
+	do_charger_detect(info, chrdet);
 	mutex_unlock(&info->attach_lock);
 #else
 	if (chrdet)
@@ -638,6 +641,11 @@ irqreturn_t chrdet_int_handler(int irq, void *data)
 #endif
 		}
 	}
+
+	if(info->otg_mode && chrdet) {
+		pr_err("otg occur, ignore chgdet\n");
+		return IRQ_HANDLED;
+	}
 	pr_notice("%s: chrdet:%d\n", __func__, chrdet);
 	do_charger_detect(info, chrdet);
 
@@ -649,7 +657,8 @@ static void hadle_typec_attach(struct mtk_charger_type *info, bool en)
 {
 	mutex_lock(&info->attach_lock);
 	info->attach = en;
-	schedule_work(&info->chr_work);
+//	schedule_work(&info->chr_work);
+	pr_err("do BC1.2 with vbus detect rather than type-c notify\n");
 	mutex_unlock(&info->attach_lock);
 }
 
@@ -684,6 +693,13 @@ static int mt6357_tcp_notifier_call(struct notifier_block *pnb,
 			hadle_typec_attach(info, false);
 		}
 
+		break;
+	case TCP_NOTIFY_SOURCE_VBUS:
+		pr_err("%s source vbus = %dmv\n", __func__, noti->vbus_state.mv);
+		if (noti->vbus_state.mv)
+			info->otg_mode = true;
+		else
+			info->otg_mode = false;
 		break;
 	default:
 		break;
@@ -961,7 +977,6 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 		}
 
 		INIT_WORK(&info->chr_work, do_charger_detection_work);
-#ifdef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 		schedule_work(&info->chr_work);
 
 		ret = devm_request_threaded_irq(&pdev->dev,
@@ -969,6 +984,7 @@ static int mt6357_charger_type_probe(struct platform_device *pdev)
 			chrdet_int_handler, IRQF_TRIGGER_HIGH, "chrdet", info);
 		if (ret < 0)
 			pr_notice("%s request chrdet irq fail\n", __func__);
+#ifdef CONFIG_TCPC_MT6370 //Introduce External PD & Type-C logic
 	}
 #endif //Introduce External PD & Type-C logic
 
