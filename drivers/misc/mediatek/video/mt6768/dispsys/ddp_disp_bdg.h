@@ -20,7 +20,7 @@
 #include "lcm_drv.h"
 #include <linux/interrupt.h>
 
-#define HW_NUM			(1)
+#define HW_NUM			(2)
 #define RX_V12			(1720)
 #define _90HZ_
 #define _n36672c_

@@ -761,13 +761,15 @@ void _primary_display_enable_mmsys_clk(void)
 	if (primary_display_is_decouple_mode()) {
 		data_config =
 			dpmgr_path_get_last_config(primary_get_dpmgr_handle());
-		data_config->rdma_dirty = 1;
+		if (data_config != NULL)
+			data_config->rdma_dirty = 1;
 		dpmgr_path_config(primary_get_dpmgr_handle(), data_config,
 			NULL);
 
 		data_config = dpmgr_path_get_last_config(
 			primary_get_ovl2mem_handle());
-		data_config->dst_dirty = 1;
+		if (data_config != NULL)
+			data_config->dst_dirty = 1;
 		dpmgr_path_config(primary_get_ovl2mem_handle(), data_config,
 			NULL);
 		dpmgr_path_ioctl(primary_get_ovl2mem_handle(), NULL,
@@ -1110,6 +1112,13 @@ int primary_display_request_dvfs_perf(
 			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		}
+		emi_opp =
+			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
+				PM_QOS_DDR_OPP_DEFAULT_VALUE : opp_level;
+		mm_freq =
+			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
+				PM_QOS_MM_FREQ_DEFAULT_VALUE :
+			layering_rule_get_mm_freq_table(opp_level);
 #else
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
@@ -1132,14 +1141,11 @@ int primary_display_request_dvfs_perf(
 			opp_level = HRT_OPP_LEVEL_LEVEL0;
 			break;
 		}
-#endif
-		emi_opp =
-			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
-				PM_QOS_DDR_OPP_DEFAULT_VALUE : opp_level;
+
+		emi_opp =  opp_level;
 		mm_freq =
-			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
-				PM_QOS_MM_FREQ_DEFAULT_VALUE :
 			layering_rule_get_mm_freq_table(opp_level);
+#endif
 
 		/*scenario:MMDVFS_SCEN_DISP(0x17),SMI_BWC_SCEN_UI_IDLE(0xb)*/
 		mmprofile_log_ex(ddp_mmp_get_events()->dvfs,

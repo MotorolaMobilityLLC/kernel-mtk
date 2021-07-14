@@ -1589,7 +1589,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module,
 {
 	int i = 0;
 	unsigned int j = 0;
-	unsigned int data_Rate;
+	unsigned int data_Rate = 0;
 	unsigned int pcw_ratio = 0;
 	unsigned int posdiv = 0;
 	unsigned int prediv = 0;
@@ -4369,7 +4369,7 @@ void DSI_set_cmdq(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 int DSI_Send_ROI(enum DISP_MODULE_ENUM module, void *handle, unsigned int x,
 	unsigned int y, unsigned int width, unsigned int height)
 {
-	if (!primary_display_is_video_mode())
+	if (!primary_display_is_video_mode() && (pgc != NULL))
 		disp_lcm_update(pgc->plcm, x, y, width, height, 0);
 	else
 		DDPDBG("LCM is video mode, no need DSI send ROI!\n");

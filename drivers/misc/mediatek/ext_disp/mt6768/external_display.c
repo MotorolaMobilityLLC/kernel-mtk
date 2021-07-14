@@ -2120,7 +2120,7 @@ int ext_disp_is_sleepd(void)
 
 	/* EXTDFUNC(); */
 	_ext_disp_path_lock(__func__);
-	temp = !pgc->state;
+	temp = (pgc->state == 0) ? 1 : 0;
 	_ext_disp_path_unlock(__func__);
 
 	return temp;

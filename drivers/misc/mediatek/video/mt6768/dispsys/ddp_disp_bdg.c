@@ -141,7 +141,10 @@ int mtk_spi_mask_write(u32 addr, u32 msk, u32 value)
 		if ((msk & temp) == temp)
 			break;
 	}
-	value = value << i;
+	if (i == 32)
+		value = 0;
+	else
+		value = value << i;
 //	DISPMSG("mt6382, %s, i=%02d, temp=0x%08x, addr=0x%08x, msk=0x%08x, value=0x%x\n",
 //		__func__, i, temp, addr, msk, value);
 #ifdef SW_EARLY_PORTING
@@ -161,7 +164,10 @@ int mtk_spi_mask_field_write(u32 addr, u32 msk, u32 value)
 		if ((msk & temp) == temp)
 			break;
 	}
-	value = value << i;
+	if (i == 32)
+		value = 0;
+	else
+		value = value << i;
 //	DISPMSG("mt6382, %s, i=%02d, temp=0x%08x, addr=0x%08x, msk=0x%08x, value=0x%x\n",
 //		__func__, i, temp, addr, msk, value);
 #ifdef SW_EARLY_PORTING
@@ -238,16 +244,20 @@ do { \
 int bdg_is_bdg_connected(void)
 {
 	if (mt6382_connected == 0) {
-		unsigned int ret = 0;
 #ifdef CONFIG_MTK_MT6382_BDG
+		unsigned int ret = 0;
+
 		spislv_init();
 		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
 		ret = mtk_spi_read(0x0);
-#endif
+
 		if (ret == 0)
 			mt6382_connected = -1;
 		else
 			mt6382_connected = 1;
+#else
+		mt6382_connected = -1;
+#endif
 	}
 	return mt6382_connected;
 }
@@ -1351,7 +1361,7 @@ int bdg_tx_txrx_ctrl(enum DISP_BDG_ENUM module,
 	int lane_num = tx_params->LANE_NUM;
 	bool hstx_cklp_en = tx_params->cont_clock ? FALSE : TRUE;
 	bool dis_eotp_en = tx_params->IsCphy ? TRUE : FALSE;
-	bool ext_te_en = tx_params->mode ? FALSE : TRUE;
+	bool ext_te_en = (tx_params->mode != CMD_MODE) ? FALSE : TRUE;
 
 	DISPFUNCSTART();
 
@@ -1462,6 +1472,7 @@ int bdg_tx_vdo_timing_set(enum DISP_BDG_ENUM module,
 {
 	int i;
 	u32 dsi_buf_bpp, data_init_byte;
+	data_init_byte = 0;
 
 	DISPFUNCSTART();
 
@@ -4857,7 +4868,8 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	// DSI-TX setting
 	bdg_tx_init(module, config, NULL);
 	/* panel init*/
-	bdg_lcm_init(pgc->plcm, 1);
+	if (pgc != NULL)
+		bdg_lcm_init(pgc->plcm, 1);
 	bdg_tx_set_mode(module, cmdq, tx_params->mode);
 
 	DSI_OUTREG32(cmdq, TX_REG[0]->DSI_RESYNC_CON, 0x50007);
