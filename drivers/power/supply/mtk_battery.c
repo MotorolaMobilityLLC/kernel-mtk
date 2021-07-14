@@ -1589,6 +1589,10 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 		&(fg_cust_data->vbat_oldocv_diff), 1);
 	fg_read_dts_val(np, "SWOCV_OLDOCV_DIFF_EMB",
 		&(fg_cust_data->swocv_oldocv_diff_emb), 1);
+	fg_read_dts_val(np, "VIR_OLDOCV_DIFF_EMB",
+		&(fg_cust_data->vir_oldocv_diff_emb), 1);
+	fg_read_dts_val(np, "VIR_OLDOCV_DIFF_EMB_LT",
+		&(fg_cust_data->vir_oldocv_diff_emb_lt), 1);
 
 	fg_read_dts_val(np, "PMIC_SHUTDOWN_TIME",
 		&(fg_cust_data->pmic_shutdown_time), UNIT_TRANS_60);
