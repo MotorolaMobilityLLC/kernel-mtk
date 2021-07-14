@@ -422,10 +422,13 @@ static void mtk_plane_atomic_update(struct drm_plane *plane,
 	state->pending.dst_y = dst_y;
 	state->pending.width = dst_w;
 	state->pending.height = dst_h;
-	if (mtk_drm_fb_is_secure(fb))
+	if (mtk_drm_fb_is_secure(fb)) {
 		state->pending.is_sec = true;
-	else
+		state->pending.sec_id = mtk_fb_get_sec_id(fb);
+	} else {
 		state->pending.is_sec = false;
+		state->pending.sec_id = -1;
+	}
 	for (i = 0; i < PLANE_PROP_MAX; i++)
 		state->pending.prop_val[i] = state->prop_val[i];
 

@@ -115,7 +115,8 @@ endif
 ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) += -I$(srctree)/drivers/misc/mediatek/cmdq/mailbox
 
 subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion/ \
-		    -I$(srctree)/drivers/staging/android/ion/mtk
+		    -I$(srctree)/drivers/staging/android/ion/mtk \
+		    -I$(srctree)/drivers/misc/mediatek/trusted_mem/public
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6885) $(CONFIG_MACH_MT6893) $(CONFIG_MACH_MT6873) $(CONFIG_MACH_MT6853)))
 ccflags-y += -DDRM_MMPATH
