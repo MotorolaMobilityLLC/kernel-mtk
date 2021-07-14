@@ -3078,6 +3078,11 @@ static int ISP_WriteRegToHw(struct ISP_REG_STRUCT *pReg, unsigned int Count)
 	dbgWriteReg = IspInfo.DebugMask & ISP_DBG_WRITE_REG;
 	spin_unlock(&(IspInfo.SpinLockIsp));
 
+	if ((void *)pReg == NULL) {
+		LOG_NOTICE("%s pReg is null.\n", __func__);
+		return -EFAULT;
+	}
+
 	switch (pReg->module) {
 	case ISP_CAM_A_IDX:
 		regBase = ISP_CAM_A_BASE;
@@ -3154,8 +3159,8 @@ static int ISP_WriteRegToHw(struct ISP_REG_STRUCT *pReg, unsigned int Count)
 		if (((regBase + pReg[i].Addr) < (regBase + ispRange))) {
 			ISP_WR32(regBase + pReg[i].Addr, pReg[i].Val);
 		} else {
-			LOG_NOTICE("wrong address(0x%lx)\n",
-				   (unsigned long)(regBase + pReg[i].Addr));
+			LOG_NOTICE("wrong address >= 0x%lx\n", ispRange);
+			Ret = -EFAULT;
 		}
 	}
 
@@ -3171,7 +3176,8 @@ static int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 	int Ret = 0;
 	struct ISP_REG_STRUCT *pData = NULL;
 
-	if ((pRegIo->Count * sizeof(struct ISP_REG_STRUCT)) > 0xFFFFF000) {
+	if (((pRegIo->Count * sizeof(struct ISP_REG_STRUCT)) > 0xFFFFF000) ||
+		(pRegIo->Count == 0)) {
 		LOG_NOTICE("pRegIo->Count error");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -3186,7 +3192,7 @@ static int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 			GFP_ATOMIC);
 
 	if (pData == NULL) {
-		LOG_DBG(
+		LOG_INF(
 			"ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
 			current->comm, current->pid, current->tgid);
 
@@ -3474,7 +3480,7 @@ static int ISP_REGISTER_IRQ_USERKEY(char *userName)
 	spin_lock((spinlock_t *)(&SpinLock_UserKey));
 
 	/* 1. check the current users is full or not */
-	if (FirstUnusedIrqUserKey == IRQ_USER_NUM_MAX) {
+	if (FirstUnusedIrqUserKey >= IRQ_USER_NUM_MAX) {
 		key = -1;
 	} else {
 		/* 2. check the user had registered or not */
@@ -3491,6 +3497,13 @@ static int ISP_REGISTER_IRQ_USERKEY(char *userName)
 		/* 3.return new userkey for user */
 		/*   if the user had not registered before */
 		if (key < 0) {
+
+			if (strcmp((void *)IrqUserKey_UserInfo[i].userName,
+				"DefaultUserNametoAllocMem") != 0) {
+				LOG_INF("userName was not initialized.\n");
+				return key;
+			}
+
 			/* IrqUserKey_UserInfo[i].userName=userName; */
 			memset((void *)IrqUserKey_UserInfo[i].userName, 0,
 			       sizeof(IrqUserKey_UserInfo[i].userName));
@@ -4653,6 +4666,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			LOG_NOTICE("get hwmodule from user fail\n");
 			Ret = -EFAULT;
 		} else {
+			if (module >= ISP_DEV_NODE_NUM) {
+				LOG_NOTICE(
+				"ISP_RESET_BY_HWMODULE module is invalid\n");
+				Ret = -EFAULT;
+				break;
+			}
 			spin_lock(&(IspInfo.SpinLockClock));
 			if (G_u4EnableClockCount[module] != 0) {
 				spin_unlock(&(IspInfo.SpinLockClock));
@@ -6655,6 +6674,14 @@ static int ISP_release(struct inode *pInode, struct file *pFile)
 		pr_detect_count);
 
 	for (i = ISP_CAM_A_IDX; i < ISP_CAMSV_START_IDX; i++) {
+		spin_lock(&(IspInfo.SpinLockClock));
+		if (G_u4EnableClockCount[i] == 0) {
+			spin_unlock(&(IspInfo.SpinLockClock));
+			LOG_INF(
+			"G_u4EnableClockCount aleady be 0, cannot read/write reg\n");
+			continue;
+		}
+		spin_unlock(&(IspInfo.SpinLockClock));
 		/* Close VF when ISP_release */
 		/* reason of close vf is to make sure */
 		/* camera can serve regular after previous abnormal exit */
@@ -6683,6 +6710,14 @@ static int ISP_release(struct inode *pInode, struct file *pFile)
 	}
 
 	for (i = ISP_CAMSV_START_IDX; i <= ISP_CAMSV_END_IDX; i++) {
+		spin_lock(&(IspInfo.SpinLockClock));
+		if (G_u4EnableClockCount[i] == 0) {
+			spin_unlock(&(IspInfo.SpinLockClock));
+			LOG_INF(
+			"G_u4EnableClockCount aleady be 0, cannot read/write reg\n");
+			continue;
+		}
+		spin_unlock(&(IspInfo.SpinLockClock));
 		Reg = ISP_RD32(CAMSV_REG_TG_VF_CON(i));
 		Reg &= 0xfffffffE; /* close Vfinder */
 		ISP_WR32(CAMSV_REG_TG_VF_CON(i), Reg);
