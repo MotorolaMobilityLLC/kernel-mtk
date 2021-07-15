@@ -1459,16 +1459,18 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                 break;
         }
 #else
-        msleep(500);
+//        msleep(500);
+        msleep(200);
 
-        for(count;count<1;count++){
+        for(count = 0;count<8;count++){
                 ret = bq25601_read_byte(8, &val);
-                if((0x20 != (val & 0xE0)) && (0xc0 != (val & 0xE0))){
+//                if((0x20 != (val & 0xE0)) && (0xc0 != (val & 0xE0))){
+                if((0x40 == (val & 0xE0)) || (0x60 == (val & 0xE0))){
                         break;
                 }else{
                         /*force second recognition*/
                         bq25601_set_force_dpdm(0x1);
-                        msleep(500);
+                        msleep(100);
                         pr_info("%s,charger is usb will test again\n",__func__);
                 }
         }
@@ -1484,6 +1486,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                         chip->chg_type = STANDARD_CHARGER;//DCP
                         break;
                 case 0xc0:
+		case 0xa0:
                         chip->chg_type = NONSTANDARD_CHARGER;//FC
                         break;
                 default:
