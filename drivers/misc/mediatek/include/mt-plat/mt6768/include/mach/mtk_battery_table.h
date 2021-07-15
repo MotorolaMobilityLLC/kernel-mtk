@@ -207,7 +207,34 @@ int g_temperature[MAX_TABLE] = {
 #define BIF_NTC_R 16000
 
 #if (BAT_NTC_10 == 1)
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[23] = {
+                {-40, 188500},
+                {-35, 144300},
+                {-30, 111300},
+                {-25, 86560},
+                {-20, 67790},
+                {-15, 53460},
+                {-10, 42450},
+                {-5, 33930},
+                {0, 27280},
+                {5, 22070},
+                {10, 17960},
+                {15, 14700},
+                {20, 12090},
+                {25, 10000},
+                {30, 8312},
+                {35, 6942},
+                {40, 5826},
+                {45, 4911},
+                {50, 4158},
+                {55, 3536},
+                {60, 3019},
+                {65, 2588},
+                {70, 2227}
+};
+#else
+struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[21] = {
 		{-40, 195652},
 		{-35, 148171},
 		{-30, 113347},
@@ -232,6 +259,7 @@ struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[23] = {
                 {65, 2588},
                 {70, 2227}
 };
+#endif
 #endif
 
 #if (BAT_NTC_47 == 1)
