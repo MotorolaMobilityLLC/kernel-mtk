@@ -579,18 +579,40 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
  *************************************************************************/
 static kal_uint16 set_gain(kal_uint16 gain)
 {
-	kal_uint16 reg_gain;
+	kal_uint16 reg_gain, max_gain;
 
 	/* gain=1024;//for test */
 	/* return; //for test */
 
-	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
+	switch (imgsensor.current_scenario_id) {
+	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		if(imgsensor_info.pre.grabwindow_width <= 4080)
+			max_gain = 64;
+		break;
+	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+		if(imgsensor_info.cap.grabwindow_width <= 4080)
+			max_gain = 64;
+		break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		if(imgsensor_info.normal_video.grabwindow_width <= 4080)
+			max_gain = 64;
+		break;
+	case MSDK_SCENARIO_ID_CUSTOM1:
+		if(imgsensor_info.custom1.grabwindow_width <= 4080)
+			max_gain = 64;
+		break;
+	default:
+		max_gain = 16;
+		break;
+	}
+
+	if (gain < BASEGAIN || gain > max_gain * BASEGAIN) {
 		pr_debug("Error gain setting");
 
 		if (gain < BASEGAIN)
 			gain = BASEGAIN;
-		else if (gain > 16 * BASEGAIN)
-			gain = 16 * BASEGAIN;
+		else if (gain > max_gain * BASEGAIN)
+			gain = max_gain * BASEGAIN;
 	}
 
 	reg_gain = gain2reg(gain);
