@@ -617,7 +617,7 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 						}
 					} else if ((ois_ext_work.ext_data.cmd > OIS_ACTION_MAX) && (ois_ext_work.ext_data.cmd <= OIS_EXT_INTF_MAX)) {
 						//wait till result ready
-						if (ois_ext_work.ext_state != ois_ext_work.ext_data.cmd) {
+						{
 							if (g_pstAF_CurDrv->pAF_OisGetResult) {
 								motOISExtIntf resultData;
 								resultData.cmd = ois_ext_work.ext_data.cmd;
