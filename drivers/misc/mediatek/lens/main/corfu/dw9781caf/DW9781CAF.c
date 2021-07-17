@@ -251,6 +251,11 @@ int DW9781CAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		spin_unlock(g_pAF_SpinLock);
 	}
 
+	if (pDW9781TestResult) {
+		kfree(pDW9781TestResult);
+		pDW9781TestResult = NULL;
+	}
+
 	LOG_INF("End\n");
 
 	return 0;
@@ -302,9 +307,20 @@ int MOT_DW9781CAF_EXT_CMD_HANDLER(motOISExtIntf *pExtCmd)
 
 				LOG_INF("Kernel OIS_START_HEA_TEST\n");
 				if (pDW9781TestResult) {
-					Cross_Motion_Test(pExtCmd->data.hea_param.radius, pExtCmd->data.hea_param.accuracy,
-					                   pExtCmd->data.hea_param.steps_in_degree, pExtCmd->data.hea_param.wait1,
-					                   pExtCmd->data.hea_param.wait2, pDW9781TestResult);
+					LOG_INF("OIS raius:%d,accuracy:%d,step/deg:%d,wait0:%d,wait1:%d,wait2:%d",
+					        pExtCmd->data.hea_param.radius,
+					        pExtCmd->data.hea_param.accuracy,
+					        pExtCmd->data.hea_param.steps_in_degree,
+					        pExtCmd->data.hea_param.wait0,
+					        pExtCmd->data.hea_param.wait1,
+					        pExtCmd->data.hea_param.wait2);
+					square_motion_test(pExtCmd->data.hea_param.radius,
+					                   pExtCmd->data.hea_param.accuracy,
+					                   pExtCmd->data.hea_param.steps_in_degree,
+					                   pExtCmd->data.hea_param.wait0,
+					                   pExtCmd->data.hea_param.wait1,
+					                   pExtCmd->data.hea_param.wait2,
+					                   pDW9781TestResult);
 					LOG_INF("OIS HALL NG points:%d", pDW9781TestResult->hea_result.ng_points);
 				} else {
 					LOG_INF("FATAL: Kernel OIS_START_HEA_TEST memory error!!!\n");
@@ -335,8 +351,6 @@ int MOT_DW9781CAF_GET_TEST_RESULT(motOISExtIntf *pExtCmd)
 				if (pDW9781TestResult) {
 					memcpy(&pExtCmd->data.hea_result, &pDW9781TestResult->hea_result, sizeof(motOISHeaResult));
 					LOG_INF("OIS NG points:%d, Ret:%d", pDW9781TestResult->hea_result.ng_points, pExtCmd->data.hea_result.ng_points);
-					kfree(pDW9781TestResult);
-					pDW9781TestResult = NULL;
 				}
 				break;
 			}
