@@ -18,9 +18,8 @@ int gyro_offset_calibrtion(void);
 motOISGOffsetResult *dw9781_get_gyro_offset_result(void);
 void calibration_save(void);
 void check_calibration_data(void);
-int Cross_Motion_Test(unsigned short RADIUS, unsigned short ACCURACY,
-                      unsigned short DEG_STEP, unsigned short WAIT_TIME1,
-                      unsigned short WAIT_TIME2, motOISExtData *pResult);
+int square_motion_test (int radius, int accuracy,
+	int deg_step, int w_time0, int w_time1, int w_time2, motOISExtData *pResult);
 void ois_reset(void);
 int ois_checksum(void);
 #endif
