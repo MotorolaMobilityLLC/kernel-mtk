@@ -278,7 +278,7 @@ static uint16_t to_uint16_swap(uint8_t *data)
 	return ntohs(converted);
 }
 
-static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
 {
 	int32_t crc_match = 0;
 	uint16_t crc = 0x0000;
