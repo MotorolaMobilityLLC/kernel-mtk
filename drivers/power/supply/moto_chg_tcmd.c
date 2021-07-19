@@ -690,6 +690,10 @@ static ssize_t bat_ocv_store(struct device *dev, struct device_attribute *attr,
 static DEVICE_ATTR(bat_ocv, S_IWUSR | S_IRUGO,
 	bat_ocv_show, bat_ocv_store);
 
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int moto_tcmd_wt6670f_get_firmware_version(void);
+#endif
+
 static ssize_t chg_type_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -711,7 +715,12 @@ static ssize_t chg_type_show(struct device *dev, struct device_attribute *attr, 
 	}
 
 end:
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	data->chg_type = moto_tcmd_wt6670f_get_firmware_version();
+	pr_err("%s get type: %d\n", __func__,data->chg_type);
+#else
 	data->chg_type = type;
+#endif
 
 	return snprintf(buf, PAGE_SIZE, "%02d\n", data->chg_type);
 }
