@@ -360,6 +360,19 @@ void wt6670f_reset_chg_type(void)
 }
 EXPORT_SYMBOL_GPL(wt6670f_reset_chg_type);
 
+int moto_tcmd_wt6670f_get_firmware_version(void)
+{
+	int fm_ver = 0;
+	wt6670f_do_reset();
+	fm_ver = wt6670f_get_firmware_version();
+	pr_info("%s: wt6670f get firmware:%d!\n", __func__,fm_ver);
+	if(3 == fm_ver)
+	return 1;
+	else
+	return 0;
+}
+EXPORT_SYMBOL_GPL(moto_tcmd_wt6670f_get_firmware_version);
+
 static irqreturn_t wt6670f_intr_handler(int irq, void *data)
 {
 	pr_info("%s: read charger type!\n", __func__);
