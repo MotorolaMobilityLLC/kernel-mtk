@@ -5729,10 +5729,13 @@ int primary_display_resume(void)
 				       DISP_PATH_EVENT_IF_VSYNC,
 				       DDP_IRQ_RDMA0_DONE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
+#if 0
 		if (bdg_is_bdg_connected() == 1 && primary_display_is_video_mode())
 			primary_display_vdo_restart(false);
 		else
-			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+#endif
+		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+
 #if 0
 		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle,
