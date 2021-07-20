@@ -822,7 +822,8 @@ struct BDG_SYSREG_CTRL_REGS {
 	struct SYSREG_PWR_CTRL_REG SYSREG_PWR_CTRL;		/* 0008 */
 	unsigned int RSV_000C;					/* 000C */
 	struct SYSREG_RST_CTRL_REG SYSREG_RST_CTRL;		/* 0010 */
-	unsigned int RSV_0014[2];				/* 0014..0018 */
+	unsigned int RSV_0014[1];						/* 0014 */
+	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL1;		/* 0018 */
 	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL2;		/* 001C */
 	struct SYSREG_IRQ_CTRL_REG SYSREG_IRQ_CTRL3;		/* 0020 */
 	unsigned int RSV_0024[16];			/* 0024..0060 */

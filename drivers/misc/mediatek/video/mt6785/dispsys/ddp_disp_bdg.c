@@ -31,8 +31,11 @@
 #include <linux/of_gpio.h>
 /***** NFC SRCLKENAI0 Interrupt Handler --- *****/
 #include "cmdq-bdg.h"
-//#include "ddp_log.h"
+#include "ddp_log.h"
 //#include <linux/math.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
+#include <uapi/linux/sched/types.h>
 
 #define SPI_EN
 struct BDG_SYSREG_CTRL_REGS *SYS_REG;		/* 0x00000000 */
@@ -94,7 +97,7 @@ struct lcm_setting_table {
 	unsigned char para_list[256];
 };
 
-#define MM_CLK			546 //fpga=26
+#define MM_CLK			405 //fpga=26
 #define NS_TO_CYCLE(n, c)	((n) / (c) + (((n) % (c)) ? 1 : 0))
 
 #define DSI_MODULE_to_ID(x)	(x == DISP_BDG_DSI0 ? 0 : 1)
@@ -1470,9 +1473,24 @@ void ana_macro_on(void *cmdq)
 	 * bit 16-17 is display mm clk 1(270m)/2(405m)/3(540m)
 	 * dsc_on:vact * hact * vrefresh * (vtotal / vact) * bubble_ratio
 	 */
-//	reg = (3 << 24) | (1 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
-	reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //405M for 120Hz
-//	reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
+	switch (MM_CLK) {
+	case 546:
+		DISPMSG("%s, 6382 mmclk 546M\n", __func__);
+		reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
+		break;
+	case 405:
+		DISPMSG("%s, 6382 mmclk 405M\n", __func__);
+		reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //405M for 120Hz
+		break;
+	case 270:
+		DISPMSG("%s, 6382 mmclk 270M\n", __func__);
+		reg = (3 << 24) | (1 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
+		break;
+	default:
+		DISPMSG("%s, 6382 mmclk default 546M\n", __func__);
+		reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
+		break;
+	}
 	DSI_OUTREG32(cmdq, TOPCKGEN->CLK_CFG_0_SET, reg);
 	//config update
 	reg = (1 << 4) | (1 << 3) | (1 << 1) | (1 << 0);
@@ -2343,6 +2361,12 @@ int bdg_tx_txrx_ctrl(enum DISP_BDG_ENUM module,
 		DSI_OUTREGBIT(cmdq, struct DSI_TX_TXRX_CON_REG,
 				TX_REG[i]->DSI_TX_TXRX_CON, EXT_TE_EN,
 				ext_te_en);
+		DSI_OUTREGBIT(cmdq, struct DSI_TX_INTEN_REG,
+				TX_REG[i]->DSI_TX_INTEN, FRAME_DONE_INT_EN,
+				1);
+		DSI_OUTREGBIT(cmdq, struct DSI_TX_INTEN_REG,
+				TX_REG[i]->DSI_TX_INTEN, BUFFER_UNDERRUN_INT_EN,
+				1);
 		/* fpga mode */
 		//DSI_OUTREG32(cmdq, &TX_REG[i]->DSI_PHY_LCPAT, 0x55);
 	}
@@ -2818,6 +2842,8 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 		unsigned long dsc_base_addr = (unsigned long)DSC_REG;
 		unsigned long dsi_base_addr = (unsigned long)TX_REG[i];
 		unsigned long mipi_base_addr = (unsigned long)MIPI_TX_REG;
+		unsigned long rx_base_addr = (unsigned long)DSI2_REG;
+		unsigned long rx_phy_base_addr = (unsigned long)MIPI_RX_PHY_BASE;
 
 		DISPMSG("========================== mt6382 RX REGS ==\n", i);
 		tmp = mtk_spi_read(0x0000d00c);
@@ -3094,11 +3120,30 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 			if (tmp & (1 << 3))
 				DISPMSG("Trigger 3\n");
 		}
-
+		if (level > 2) {
+			DISPMSG("========================== mt6382 RX Full REGS ==\n");
+	//		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
+			for (k = 0; k < 0x210; k += 16) {
+				DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", rx_base_addr + k,
+					mtk_spi_read(rx_base_addr + k),
+					mtk_spi_read(rx_base_addr + k + 0x4),
+					mtk_spi_read(rx_base_addr + k + 0x8),
+					mtk_spi_read(rx_base_addr + k + 0xc));
+			}
+			DISPMSG("========================== mt6382 RX PHY REGS ==\n");
+	//		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
+			for (k = 12288; k < 0x15440; k += 16) {
+				DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k / 4,
+					mtk_spi_read(rx_phy_base_addr + k),
+					mtk_spi_read(rx_phy_base_addr + k + 0x4),
+					mtk_spi_read(rx_phy_base_addr + k + 0x8),
+					mtk_spi_read(rx_phy_base_addr + k + 0xc));
+			}
+		}
 		DISPMSG("========================== mt6382 DSI%d REGS ==\n", i);
 //		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
-		for (k = 0; k < 0x210; k += 16) {
-			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+		for (k = 0; k < 0x4f0; k += 16) {
+			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", dsi_base_addr + k,
 				mtk_spi_read(dsi_base_addr + k),
 				mtk_spi_read(dsi_base_addr + k + 0x4),
 				mtk_spi_read(dsi_base_addr + k + 0x8),
@@ -3163,7 +3208,6 @@ int bdg_tx_wait_for_idle(enum DISP_BDG_ENUM module)
 	}
 
 	if (timeout == 0) {
-		bdg_dsi_dump_reg(module, 0);
 		bdg_tx_reset(module, NULL);
 		DISPMSG("%s, wait timeout!\n", __func__);
 		return -1;
@@ -6794,6 +6838,17 @@ void bdg_register_init(void)
 	/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
 	nfc_request_eint_irq();
 	/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
+	/* open 6382 dsi eint */
+	DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG, SYS_REG->IRQ_MSK_CLR, REG_04, 1);
+	DSI_OUTREGBIT(NULL, struct DSI_TX_INTEN_REG,
+			TX_REG[0]->DSI_TX_INTEN, FRAME_DONE_INT_EN,
+			1);
+	DSI_OUTREGBIT(NULL, struct DSI_TX_INTEN_REG,
+			TX_REG[0]->DSI_TX_INTEN, BUFFER_UNDERRUN_INT_EN,
+			1);
+		// request eint irq
+	bdg_request_eint_irq();
+
 }
 
 int bdg_common_init(enum DISP_BDG_ENUM module,
@@ -6828,6 +6883,8 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, SYS_REG->RST_DG_CTRL, 0);
 	// Set GPIO to active IRQ
 	DSI_OUTREGBIT(cmdq, struct GPIO_MODE1_REG, GPIO->GPIO_MODE1, GPIO12, 1);
+	/* open 6382 dsi eint */
+	DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG, SYS_REG->IRQ_MSK_CLR, REG_04, 1);
 
 	tx_params = &(config->dispif_config.dsi);
 
@@ -7099,34 +7156,66 @@ irqreturn_t bdg_eint_irq_handler(int irq, void *data)
 }
 #endif
 
-irqreturn_t bdg_eint_thread_handler(int irq, void *data)
+static struct task_struct *bdg_eint_chk_task;
+wait_queue_head_t bdg_check_task_wq;
+struct mutex bdg_lock;
+static int mtk_bdg_eint_check_worker_kthread(void *data)
 {
 	unsigned int irq_ctrl3 = 0;
+	unsigned int val;
+	struct DSI_TX_INTSTA_REG *intsta;
+	unsigned int ret = 0;
+	struct sched_param param = {.sched_priority = 87};
 
-	//DISPMSG("%s, mt6382 enter eint thread\n", __func__);
+	sched_setscheduler(current, SCHED_RR, &param);
 
-	irq_ctrl3 = mtk_spi_read((unsigned long)(&SYS_REG->SYSREG_IRQ_CTRL3));
-	//DISPMSG("%s, mt6382 irq_ctrl3: (0x%x)\n", irq_ctrl3, __func__);
+	while (1) {
+		ret = wait_event_interruptible(bdg_check_task_wq, 1);
+		if (ret < 0) {
+			DISPINFO("[ESD]check thread waked up accidently\n");
+			continue;
+		}
 
-	if ((irq_ctrl3 & 0x80000000) == 0x80000000) {
-		//IRQ mask for MTCMOS_PWR_ACK (reg_irq_mask_set bit31)
-		DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG,
-			SYS_REG->IRQ_MSK_SET, REG_31, 1);
+		mutex_lock(&bdg_lock);
+		irq_ctrl3 = mtk_spi_read((unsigned long)(&SYS_REG->SYSREG_IRQ_CTRL3));
+//		DISPINFO("%s, mt6382 irq_ctrl3: (0x%x)\n", __func__, irq_ctrl3);
 
-		// callback function for checking module's rg status
-		// todo..
-	}
-
-	if (irq_ctrl3 & BIT(10)) {
-		s32 ret;
-#if defined(CONFIG_MTK_MT6382_BDG)
-		ret = cmdq_bdg_irq_handler();
+#if 0
+		if (irq_ctrl3 & BIT(10))
+			cmdq_bdg_irq_handler();
 #endif
-		DISPMSG("%s: irq_ctrl3:%#x ret:%d", __func__, irq_ctrl3, ret);
-	}
+		if (irq_ctrl3 & BIT(0)) {
+			if (mtk_spi_read(0x0000d280) != 0) {
+				DISPMSG("%s, rx mac irq\n", __func__);
+				bdg_dsi_dump_reg(DISP_BDG_DSI0, 0);
+			}
+		}
 
-	// disable irq (can't use disable_irq() in ISR)
-	disable_irq_nosync(bdg_eint_irq);
+		if (irq_ctrl3 & BIT(4)) {
+			val = mtk_spi_read((unsigned long)&TX_REG[0]->DSI_TX_INTSTA);
+			intsta = (struct DSI_TX_INTSTA_REG *)&val;
+
+			if (intsta->FRAME_DONE_INT_FLAG)
+				DDPIRQ("%s, 6382 tx frame done\n", __func__);
+
+			if (intsta->BUFFER_UNDERRUN_INT_FLAG) {
+				bdg_dsi_dump_reg(DISP_BDG_DSI0, 1);
+				DDPAEE("disp bdg 6382 underrun\n");
+			}
+			DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_INTSTA, ~val);
+		}
+
+		if (kthread_should_stop())
+			break;
+
+		mutex_unlock(&bdg_lock);
+	}
+	return ret;
+}
+
+irqreturn_t bdg_eint_thread_handler(int irq, void *data)
+{
+	wake_up_interruptible(&bdg_check_task_wq);
 
 	return IRQ_HANDLED;
 }
@@ -7136,14 +7225,14 @@ void bdg_request_eint_irq(void)
 	struct device_node *node;
 
 	if (irq_already_requested) {
-		enable_irq(bdg_eint_irq);
+		DDPMSG("%s irq_already_requested\n", __func__);
 		return;
 	}
 
 	// get compatible node
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mt6382_eint");
 	if (!node) {
-		DISPMSG("%s, mt6382 can't find mt6382_eint compatible node\n", __func__);
+		DISPINFO("%s, mt6382 can't find mt6382_eint compatible node\n", __func__);
 		return;
 	}
 
@@ -7155,14 +7244,17 @@ void bdg_request_eint_irq(void)
 	if (request_threaded_irq(bdg_eint_irq, NULL/*dbg_eint_irq_handler*/,
 				bdg_eint_thread_handler, IRQF_TRIGGER_RISING | IRQF_ONESHOT,
 				"MT6382_EINT", NULL)) {
-		DISPMSG("%s, mt6382 request EINT irq failed!\n", __func__);
+		DISPINFO("%s, mt6382 request EINT irq failed!\n", __func__);
 		return;
 	}
 
 	irq_already_requested = true;
 
-	// enable irq
-	enable_irq(bdg_eint_irq);
+	bdg_eint_chk_task = kthread_create(
+		mtk_bdg_eint_check_worker_kthread, NULL, "bdg_6382");
+	init_waitqueue_head(&bdg_check_task_wq);
+	wake_up_process(bdg_eint_chk_task);
+
 }
 
 /***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
