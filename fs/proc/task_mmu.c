@@ -1861,6 +1861,10 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
 
 		down_read(&mm->mmap_sem);
 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+			/* Moto huangzq2: abort reclaim if app goes to foreground. */
+			if (task->signal->oom_score_adj == 0)
+				break;
+
 			reclaim_walk.private = vma;
 
 			if (vma->vm_flags & VM_LOCKED)
