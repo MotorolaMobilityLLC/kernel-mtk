@@ -2045,8 +2045,6 @@ static int chg_reboot(struct notifier_block *nb,
 			info->chg_tcmd_client.factory_kill_disable = true;
 			/* Disable Charging */
 			charger_dev_enable(info->chg1_dev, false);
-			/* Suspend USB */
-			charger_dev_enable_hz(info->chg1_dev, true);
 
 			rc = mmi_get_prop_from_charger(info,
 				POWER_SUPPLY_PROP_ONLINE, &val);
