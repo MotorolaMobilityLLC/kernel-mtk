@@ -102,8 +102,8 @@
 		compatible = "mediatek,nfc-gpio-v2";
 		gpio-rst = <31>;
 		gpio-rst-std = <&pio 31 0x0>;
-		gpio-irq = <5>;
-		gpio-irq-std = <&pio 5 0x0>;
+		gpio-irq = <1>;
+		gpio-irq-std = <&pio 1 0x0>;
 	};
 
 	irq_nfc: irq_nfc {
@@ -440,6 +440,14 @@
                                 <PINMUX_GPIO89__FUNC_SCL6>;
                 };
         };
+};
+
+/*config stylus pen*/
+&odm {
+    pen_detect: pen_detect {
+       compatible = "rohm,bu520xx_pen_detect";
+       rohm,nirq-gpio = <&pio 5 0x00>;
+    };
 };
 
 /* accdet start */
