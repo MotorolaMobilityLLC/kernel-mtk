@@ -1400,6 +1400,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 #ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
         int ret = 0;
         unsigned char val;
+	bool force_set = false;
 #endif
         int count = 0;
         struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
@@ -1460,7 +1461,6 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
         }
 #else
 //        msleep(500);
-        msleep(200);
 
         for(count = 0;count<8;count++){
                 ret = bq25601_read_byte(8, &val);
@@ -1469,7 +1469,10 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                         break;
                 }else{
                         /*force second recognition*/
-                        bq25601_set_force_dpdm(0x1);
+			if(!force_set){
+                              bq25601_set_force_dpdm(0x1);
+			      force_set = true;
+			}
                         msleep(100);
                         pr_info("%s,charger is usb will test again\n",__func__);
                 }
