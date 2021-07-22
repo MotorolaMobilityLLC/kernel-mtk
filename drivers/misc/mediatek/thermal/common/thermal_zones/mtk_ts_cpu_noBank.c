@@ -1657,14 +1657,14 @@ static void tscpu_thermal_shutdown(struct platform_device *dev)
 
 
 /*tscpu_thermal_suspend spend 1000us~1310us*/
-static int tscpu_thermal_suspend
-(struct platform_device *dev, pm_message_t state)
+static int tscpu_thermal_suspend_noirq(struct device *dev)
 {
 #if !defined(CFG_THERM_NO_AUXADC)
 	int cnt = 0;
 	int temp = 0;
 #endif
 	tscpu_printk("%s, %d\n", __func__, talking_flag);
+
 #if THERMAL_PERFORMANCE_PROFILE
 	struct timeval begin, end;
 	unsigned long val;
@@ -1748,16 +1748,18 @@ static int tscpu_thermal_suspend
 						(end.tv_sec - begin.tv_sec),
 						(end.tv_usec - begin.tv_usec));
 #endif
+
 	return 0;
 }
 
 /*tscpu_thermal_suspend spend 3000us~4000us*/
-static int tscpu_thermal_resume(struct platform_device *dev)
+static int tscpu_thermal_resume_noirq(struct device *dev)
 {
 #if !defined(CFG_THERM_NO_AUXADC)
 	int temp = 0;
 	int cnt = 0;
 #endif
+
 	tscpu_printk("%s, %d\n", __func__, talking_flag);
 
 	g_is_temp_valid = 0;
@@ -1887,20 +1889,25 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 
 	g_tc_resume = 2;	/* set "2", resume finish,can read temp */
 
+
 	return 0;
 }
+
+static const struct dev_pm_ops lvts_pm_ops = {
+	.suspend_noirq = tscpu_thermal_suspend_noirq,
+	.resume_noirq = tscpu_thermal_resume_noirq,
+};
 
 static struct platform_driver mtk_thermal_driver = {
 	.remove = NULL,
 	.shutdown = tscpu_thermal_shutdown,
 	.probe = tscpu_thermal_probe,
-	.suspend = tscpu_thermal_suspend,
-	.resume = tscpu_thermal_resume,
 	.driver = {
 		.name = THERMAL_NAME,
 #ifdef CONFIG_OF
 		.of_match_table = mt_thermal_of_match,
 #endif
+		.pm = &lvts_pm_ops,
 	},
 };
 
