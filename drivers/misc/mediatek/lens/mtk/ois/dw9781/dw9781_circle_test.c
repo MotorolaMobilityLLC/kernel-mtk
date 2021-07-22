@@ -327,7 +327,8 @@ Date		: 2020.12.09
 Version		: 0.001
 History		:
 ***************************************************************************/
-int square_motion_test (int radius, int accuracy, int deg_step, int w_time0, int w_time1, int w_time2, motOISExtData *pResult)
+int square_motion_test (int radius, int accuracy, int deg_step, int w_time0,
+                               int w_time1, int w_time2, int ref_stroke, motOISExtData *pResult)
 {
 	signed short REF_POSITION_RADIUS[2];
 	signed short circle_adc[4][512];
@@ -346,6 +347,12 @@ int square_motion_test (int radius, int accuracy, int deg_step, int w_time0, int
 	int NG_Points = 0;
 	unsigned short lens_ofst_x, lens_ofst_y;
 	int hallx, hally;
+
+	ois_printf("OIS raius:%d,accuracy:%d,deg/step:%d,wait0:%d,wait1:%d,wait2:%d, ref_stroke:%d",
+					        radius, accuracy, deg_step, w_time0,
+					        w_time1, w_time2, ref_stroke);
+
+	REF_STROKE = ref_stroke;
 
 	read_reg_16bit_value_16bit(0x7075, &lens_ofst_x);		/* lens offset */
 	read_reg_16bit_value_16bit(0x7076, &lens_ofst_y);
