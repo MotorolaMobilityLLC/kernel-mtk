@@ -400,6 +400,12 @@
 #define MOT_COFUD_GC02M1_SENSOR_ID       0x02e1
 #define MOT_COFUD_S5KJN1_SENSOR_ID       0x38E1
 //add cofud sensor id end
+//add milan sensor id begin
+#define MOT_MILAN_S5K4H7_SENSOR_ID       0x487C
+#define MOT_MILAN_GC02M1_SENSOR_ID       0x02e1
+#define MOT_MILAN_S5KJN1_SENSOR_ID       0x38E1
+#define MOT_MILAN_OV16A1Q_SENSOR_ID      0x1641
+//add milan sensor id end
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
@@ -663,7 +669,12 @@
 #define SENSOR_DRVNAME_MOT_COFUD_GC02M1_MIPI_RAW               "mot_cofud_gc02m1_mipi_raw"
 #define SENSOR_DRVNAME_MOT_COFUD_S5KJN1_MIPI_RAW               "mot_cofud_s5kjn1_mipi_raw"
 //add cofud sensor drvname end
-
+//add milan sensor drvname begin
+#define SENSOR_DRVNAME_MOT_MILAN_S5K4H7_MIPI_RAW            "mot_milan_s5k4h7_mipi_raw"
+#define SENSOR_DRVNAME_MOT_MILAN_GC02M1_MIPI_RAW            "mot_milan_gc02m1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_MILAN_S5KJN1_MIPI_RAW            "mot_milan_s5kjn1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_MILAN_OV16A1Q_MIPI_RAW           "mot_milan_ov16a1q_mipi_raw"
+//add milan sensor drvname end
 /******************************************************************************
  *
  ******************************************************************************/
