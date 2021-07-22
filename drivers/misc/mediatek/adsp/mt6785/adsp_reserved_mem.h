@@ -35,6 +35,10 @@ struct adsp_reserve_mblock {
 };
 
 struct adsp_mpu_info_t {
+	u32 prog_addr;
+	u32 prog_size;
+	u32 data_addr;
+	u32 data_size;
 	u32 share_dram_addr;
 	u32 share_dram_size;
 };
