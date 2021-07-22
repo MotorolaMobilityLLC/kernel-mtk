@@ -5033,6 +5033,8 @@ int primary_display_resume(void)
 	_primary_path_lock(__func__);
 	if (pgc->state == DISP_ALIVE) {
 		primary_display_lcm_power_on_state(1);
+		_cmdq_insert_wait_frame_done_token_mira(
+						pgc->cmdq_handle_config);
 		DISPCHECK("primary display path is already resume, skip\n");
 		goto done;
 	}
@@ -8293,7 +8295,7 @@ static int _primary_display_set_lcm_hbm(bool en)
 	int ret = 0;
 	struct cmdqRecStruct *qhandle_hbm = NULL;
 
-	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &qhandle_hbm);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle_hbm);
 	if (ret) {
 		DISPMSG("%s:failed to create cmdq handle\n", __func__);
 		return -1;
