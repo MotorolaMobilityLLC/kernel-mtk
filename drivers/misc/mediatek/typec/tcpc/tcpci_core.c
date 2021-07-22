@@ -33,7 +33,7 @@
 #endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"2.0.13_MTK"
+#define TCPC_CORE_VERSION		"2.0.14_MTK"
 
 static ssize_t tcpc_show_property(struct device *dev,
 				  struct device_attribute *attr, char *buf);
@@ -453,19 +453,15 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 	/* If system support "WAKE_LOCK_IDLE",
 	 * please use it instead of "WAKE_LOCK_SUSPEND"
 	 */
-	wakeup_source_init(&tcpc->attach_wake_lock,
-		"tcpc_attach_wakelock");
-	wakeup_source_init(&tcpc->dettach_temp_wake_lock,
-		"tcpc_detach_wakelock");
+	tcpc->attach_wake_lock =
+		wakeup_source_register(&tcpc->dev, "tcpc_attach_wake_lock");
+	tcpc->detach_wake_lock =
+		wakeup_source_register(&tcpc->dev, "tcpc_detach_wake_lock");
 
 	tcpci_timer_init(tcpc);
 #ifdef CONFIG_USB_POWER_DELIVERY
 	pd_core_init(tcpc);
 #endif /* CONFIG_USB_POWER_DELIVERY */
-
-	ret = tcpc_dual_role_phy_init(tcpc);
-	if (ret < 0)
-		dev_err(&tcpc->dev, "dual role usb init fail\n");
 
 	return tcpc;
 }
@@ -827,10 +823,10 @@ void tcpc_device_unregister(struct device *dev, struct tcpc_device *tcpc)
 	tcpc_typec_deinit(tcpc);
 
 #ifdef CONFIG_USB_PD_REV30
-	wakeup_source_trash(&tcpc->pd_port.pps_request_wake_lock);
+	wakeup_source_unregister(tcpc->pd_port.pps_request_wake_lock);
 #endif /* CONFIG_USB_PD_REV30 */
-	wakeup_source_trash(&tcpc->dettach_temp_wake_lock);
-	wakeup_source_trash(&tcpc->attach_wake_lock);
+	wakeup_source_unregister(tcpc->detach_wake_lock);
+	wakeup_source_unregister(tcpc->attach_wake_lock);
 
 	device_unregister(&tcpc->dev);
 
@@ -970,6 +966,23 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.14_MTK
+ * (1) Move out typec_port registration and operation to rt_pd_manager.c
+ * (2) Rename CONFIG_TYPEC_WAIT_BC12 to CONFIG_USB_PD_WAIT_BC12
+ * (3) Not to set power/data/vconn role repeatedly
+ * (4) Revise vconn highV protection
+ * (5) Revise tcpc timer
+ * (6) Reduce IBUS Iq for MT6371, MT6372 and MT6360
+ * (7) Decrease VBUS present threshold (VBUS_CAL) by 60mV (2LSBs) for RT171x
+ * (8) Replace \r\n with \n for resolving logs without newlines
+ * (9) Remove the member time_stamp from struct pd_msg
+ * (10) Remove NoResponseTimer as Sink for new PD spec
+ * (11) Revise responses of Reject and Not_Supported
+ * (12) Revise the usages of pd_traffic_control and typec_power_ctrl
+ * (13) Revise the usages of wait_event_*()
+ * (14) Add PD capability for TYPEC_ATTACHED_DBGACC_SNK
+ * (15) Utilize rt-regmap to reduce I2C accesses
+ *
  * 2.0.13_MTK
  * (1) Add TCPC flags for VCONN_SAFE5V_ONLY
  * (2) Add boolean property attemp_discover_svid in dts/dtsi
