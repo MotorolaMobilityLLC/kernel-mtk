@@ -46,6 +46,7 @@
 #include <linux/dmapool.h>
 #include <linux/mailbox_controller.h>
 #include <linux/module.h>
+#include "ion_sec_heap.h"
 
 #if IS_ENABLED(CONFIG_MTK_SVP_ON_MTEE_SUPPORT) || IS_ENABLED(CONFIG_MTK_CAM_GENIEZONE_SUPPORT)
 #include "tz_m4u.h"
@@ -1331,6 +1332,8 @@ s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
 		kfree(addr_meta);
 		return -EFAULT;
 	}
+
+	cmdq_mdp_init_secure_id(addr_meta, secData->addrMetadataCount);
 	cmdq_sec_pkt_assign_metadata(handle->pkt,
 		secData->addrMetadataCount,
 		addr_meta);
@@ -1368,6 +1371,41 @@ s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
 	return 0;
 #else
 	return 0;
+#endif
+}
+
+void cmdq_mdp_init_secure_id(void *meta_array, u32 count)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	u32 i;
+	uint32_t trustmem_type = 0;
+	int sec = 0;
+	int iommu_sec_id = 0;
+	ion_phys_addr_t sec_handle;
+	struct cmdqSecAddrMetadataStruct *secMetadatas =
+			(struct cmdqSecAddrMetadataStruct *)meta_array;
+
+	for (i = 0; i < count; i++) {
+		secMetadatas[i].useSecIdinMeta = 1;
+		if (secMetadatas[i].ionFd <= 0) {
+			secMetadatas[i].sec_id = 0;
+			continue;
+		}
+
+		trustmem_type = ion_fd2sec_type(secMetadatas[i].ionFd, &sec,
+			&iommu_sec_id, &sec_handle);
+		secMetadatas[i].baseHandle = (uint64_t)sec_handle;
+#ifdef CONFIG_MTK_CMDQ_MBOX_EXT
+		secMetadatas[i].sec_id = iommu_sec_id;
+#else
+		secMetadatas[i].sec_id = trustmem_type;
+#endif
+		CMDQ_LOG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
+				__func__, secMetadatas[i].port,
+				secMetadatas[i].ionFd,
+				secMetadatas[i].sec_id,
+				secMetadatas[i].baseHandle);
+	}
 #endif
 }
 
