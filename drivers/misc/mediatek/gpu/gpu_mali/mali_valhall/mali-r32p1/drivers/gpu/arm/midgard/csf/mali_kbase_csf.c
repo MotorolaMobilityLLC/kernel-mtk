@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
  * (C) COPYRIGHT 2018-2021 ARM Limited. All rights reserved.
@@ -2364,6 +2364,31 @@ static void protm_event_worker(struct work_struct *data)
 				 group, 0u);
 }
 
+static void report_queue_fatal_error(struct kbase_queue *const queue,
+				     u32 cs_fatal, u64 cs_fatal_info,
+				     u8 group_handle)
+{
+	struct base_csf_notification error =
+		{ .type = BASE_CSF_NOTIFICATION_GPU_QUEUE_GROUP_ERROR,
+		  .payload = {
+			  .csg_error = {
+				  .handle = group_handle,
+				  .error = {
+					  .error_type =
+						  BASE_GPU_QUEUE_GROUP_QUEUE_ERROR_FATAL,
+					  .payload = {
+						  .fatal_queue = {
+							  .sideband =
+								  cs_fatal_info,
+							  .status = cs_fatal,
+							  .csi_index =
+								  queue->csi_index,
+						  } } } } } };
+
+	add_error(queue->kctx, &queue->error, &error);
+	kbase_event_wakeup(queue->kctx);
+}
+
 /**
  * handle_fault_event - Handler for CS fault.
  *
@@ -2403,34 +2428,11 @@ handle_fault_event(struct kbase_queue *const queue,
 		 cs_fault_exception_type,
 		 kbase_gpu_exception_name(cs_fault_exception_type),
 		 cs_fault_exception_data, cs_fault_info_exception_data);
-}
 
-static void report_queue_fatal_error(struct kbase_queue *const queue,
-				     u32 cs_fatal, u64 cs_fatal_info,
-				     u8 group_handle)
-{
-	struct base_csf_notification error = {
-		.type = BASE_CSF_NOTIFICATION_GPU_QUEUE_GROUP_ERROR,
-		.payload = {
-			.csg_error = {
-				.handle = group_handle,
-				.error = {
-					.error_type =
-					BASE_GPU_QUEUE_GROUP_QUEUE_ERROR_FATAL,
-					.payload = {
-						.fatal_queue = {
-						.sideband = cs_fatal_info,
-						.status = cs_fatal,
-						.csi_index = queue->csi_index,
-						}
-					}
-				}
-			}
-		}
-	};
-
-	add_error(queue->kctx, &queue->error, &error);
-	kbase_event_wakeup(queue->kctx);
+	if (cs_fault_exception_type ==
+	    CS_FAULT_EXCEPTION_TYPE_RESOURCE_EVICTION_TIMEOUT)
+		report_queue_fatal_error(queue, GPU_EXCEPTION_TYPE_SW_FAULT_2,
+					 0, queue->group->handle);
 }
 
 /**
