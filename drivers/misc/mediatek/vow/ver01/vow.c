@@ -2676,6 +2676,9 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		if (!vow_service_SetVBufAddr(arg))
 			ret = -EFAULT;
 		break;
+	case VOW_READ_VOW_DUMP_DATA:
+		//Do nothing
+		break;
 	case VOW_BARGEIN_ON:
 		VOWDRV_DEBUG("VOW_BARGEIN_ON, irq: %d", (unsigned int)arg);
 		if (!VowDrv_SetBargeIn(1, (unsigned int)arg))
@@ -2817,6 +2820,7 @@ static long VowDrv_compat_ioctl(struct file *fp,
 		break;
 	case VOW_READ_VOICE_DATA:
 	case VOW_SET_SPEAKER_MODEL:
+	case VOW_READ_VOW_DUMP_DATA:
 	case VOW_SET_APREG_INFO: {
 		struct vow_model_info_kernel_t __user *data32;
 		struct vow_model_info_t __user *data;
