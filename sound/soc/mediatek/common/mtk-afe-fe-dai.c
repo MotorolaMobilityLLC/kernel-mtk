@@ -646,10 +646,12 @@ int mtk_memif_set_disable(struct mtk_base_afe *afe, int id)
 }
 EXPORT_SYMBOL_GPL(mtk_memif_set_disable);
 
-#if defined(CONFIG_MTK_AUDIODSP_SUPPORT)
+
 int mtk_dsp_memif_set_enable(struct mtk_base_afe *afe, int id)
 {
-	int ret = 0, adsp_sem_ret = ADSP_ERROR;
+	int ret = 0;
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+	int adsp_sem_ret = ADSP_ERROR;
 
 	if (is_adsp_feature_in_active())
 		adsp_sem_ret = get_adsp_semaphore(SEMA_AUDIOREG);
@@ -657,19 +659,21 @@ int mtk_dsp_memif_set_enable(struct mtk_base_afe *afe, int id)
 	if (adsp_sem_ret == ADSP_OK) {
 		ret = mtk_memif_set_enable(afe, id);
 		release_adsp_semaphore(SEMA_AUDIOREG);
-	} else {
-		if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
-			pr_info("%s adsp_sem_ret[%d]\n",
-				__func__, adsp_sem_ret);
+	} else if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
+		pr_info("%s adsp_sem_ret[%d]\n", __func__, adsp_sem_ret);
+	else
+#endif
 		ret = mtk_memif_set_enable(afe, id);
-	}
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtk_dsp_memif_set_enable);
 
 int mtk_dsp_memif_set_disable(struct mtk_base_afe *afe, int id)
 {
-	int ret = 0, adsp_sem_ret = ADSP_ERROR;
+	int ret = 0;
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+	int adsp_sem_ret = ADSP_ERROR;
 
 	if (is_adsp_feature_in_active())
 		adsp_sem_ret = get_adsp_semaphore(SEMA_AUDIOREG);
@@ -677,12 +681,12 @@ int mtk_dsp_memif_set_disable(struct mtk_base_afe *afe, int id)
 	if (adsp_sem_ret == ADSP_OK) {
 		ret = mtk_memif_set_disable(afe, id);
 		release_adsp_semaphore(SEMA_AUDIOREG);
-	} else {
-		if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
-			pr_info("%s adsp_sem_ret[%d]\n",
-				__func__, adsp_sem_ret);
+	} else if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
+		pr_info("%s adsp_sem_ret[%d]\n", __func__, adsp_sem_ret);
+	else
+#endif
 		ret = mtk_memif_set_disable(afe, id);
-	}
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtk_dsp_memif_set_disable);
@@ -691,13 +695,16 @@ EXPORT_SYMBOL_GPL(mtk_dsp_memif_set_disable);
 int mtk_dsp_irq_set_enable(struct mtk_base_afe *afe,
 			   const struct mtk_base_irq_data *irq_data)
 {
-	int ret = 0, adsp_sem_ret = ADSP_ERROR;
+	int ret = 0;
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+	int adsp_sem_ret = ADSP_ERROR;
+#endif
 
 	if (!afe)
 		return -EPERM;
 	if (!irq_data)
 		return -EPERM;
-
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 	if (is_adsp_feature_in_active())
 		adsp_sem_ret = get_adsp_semaphore(SEMA_AUDIOREG);
 	/* get sem ok*/
@@ -706,14 +713,14 @@ int mtk_dsp_irq_set_enable(struct mtk_base_afe *afe,
 				   1 << irq_data->irq_en_shift,
 				   1 << irq_data->irq_en_shift);
 		release_adsp_semaphore(SEMA_AUDIOREG);
-	} else {
-		if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
-			pr_info("%s adsp_sem_ret[%d]\n",
-				__func__, adsp_sem_ret);
+	} else if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
+		pr_info("%s adsp_sem_ret[%d]\n", __func__, adsp_sem_ret);
+	else
+#endif
 		regmap_update_bits(afe->regmap, irq_data->irq_en_reg,
 				   1 << irq_data->irq_en_shift,
 				   1 << irq_data->irq_en_shift);
-	}
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtk_dsp_irq_set_enable);
@@ -721,13 +728,17 @@ EXPORT_SYMBOL_GPL(mtk_dsp_irq_set_enable);
 int mtk_dsp_irq_set_disable(struct mtk_base_afe *afe,
 			    const struct mtk_base_irq_data *irq_data)
 {
-	int ret = 0, adsp_sem_ret = ADSP_ERROR;
+	int ret = 0;
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+		int adsp_sem_ret = ADSP_ERROR;
+#endif
 
 	if (!afe)
 		return -EPERM;
 	if (!irq_data)
 		return -EPERM;
 
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 	if (is_adsp_feature_in_active())
 		adsp_sem_ret = get_adsp_semaphore(SEMA_AUDIOREG);
 
@@ -737,19 +748,17 @@ int mtk_dsp_irq_set_disable(struct mtk_base_afe *afe,
 				   1 << irq_data->irq_en_shift,
 				   0 << irq_data->irq_en_shift);
 		release_adsp_semaphore(SEMA_AUDIOREG);
-	} else {
-		if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
-			pr_info("%s adsp_sem_ret[%d]\n",
-				__func__, adsp_sem_ret);
+	} else if (adsp_sem_ret == ADSP_SEMAPHORE_BUSY)
+		pr_info("%s adsp_sem_ret[%d]\n", __func__, adsp_sem_ret);
+	else
+#endif
 		regmap_update_bits(afe->regmap, irq_data->irq_en_reg,
 				   1 << irq_data->irq_en_shift,
 				   0 << irq_data->irq_en_shift);
-	}
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtk_dsp_irq_set_disable);
-
-#endif
 
 int mtk_memif_set_addr(struct mtk_base_afe *afe, int id,
 		       unsigned char *dma_area,

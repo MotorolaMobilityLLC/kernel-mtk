@@ -95,6 +95,7 @@ bool is_adsp_feature_in_active(void)
 	// ADSP_A is the master.
 	return adsp_feature_is_active(ADSP_A_ID);
 }
+EXPORT_SYMBOL(is_adsp_feature_in_active);
 
 int _adsp_register_feature(u32 cid, u32 fid, u32 opt)
 {
