@@ -690,7 +690,8 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	case CMD_SEC_WRITE:
 #if defined(CONFIG_MTK_CMDQ_MBOX_EXT)
-		if (vcu_check_reg_base(vcu, addr, 4) == 0)
+		if (vcu_check_reg_base(vcu, addr, 4) == 0) {
+#if defined(CONFIG_MTK_SVP_ON_MTEE_SUPPORT)
 			cmdq_sec_pkt_write_reg(pkt,
 				addr,
 				data,
@@ -699,9 +700,11 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 				dma_size,
 				0,
 				SEC_ID_WFD);
-		else
+#endif
+		} else {
 			pr_info("[VCU] CMD_SEC_WRITE wrong addr: 0x%x 0x%x 0x%x 0x%x\n",
 				addr, data, dma_offset, dma_size);
+		}
 #endif
 		pr_debug("[VCU] %s addr: 0x%x, data: 0x%x, offset: 0x%x, size: 0x%x\n",
 			__func__, addr, data, dma_offset, dma_size);
