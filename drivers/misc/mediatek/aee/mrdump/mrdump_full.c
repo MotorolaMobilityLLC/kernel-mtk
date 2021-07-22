@@ -86,6 +86,28 @@ void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 	crash_record->reboot_mode = reboot_mode;
 }
 
+#if CONFIG_SYSFS
+
+static ssize_t mrdump_version_show(struct kobject *kobj,
+		struct kobj_attribute *kattr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s", MRDUMP_GO_DUMP);
+}
+
+static struct kobj_attribute mrdump_version_attribute =
+	__ATTR(mrdump_version, 0400, mrdump_version_show, NULL);
+
+static struct attribute *attrs[] = {
+	&mrdump_version_attribute.attr,
+	NULL,
+};
+
+static struct attribute_group attr_group = {
+	.attrs = attrs,
+};
+
+#endif
+
 int __init mrdump_full_init(void)
 {
 #ifdef CONFIG_MTK_DFD_INTERNAL_DUMP
@@ -104,53 +126,15 @@ int __init mrdump_full_init(void)
 		pr_notice("%s: DFD_EXTENDED_DUMP enabled\n", __func__);
 #endif
 
+#if CONFIG_SYSFS
+	if (sysfs_create_group(kernel_kobj, &attr_group)) {
+		pr_notice("MT-RAMDUMP: sysfs create sysfs failed\n");
+		return -ENOMEM;
+	}
+#endif
 	pr_info("%s: MT-RAMDUMP enabled done\n", __func__);
 	return 0;
 }
-
-#if CONFIG_SYSFS
-
-static ssize_t mrdump_version_show(struct module_attribute *attr,
-		struct module_kobject *kobj, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%s", MRDUMP_GO_DUMP);
-}
-
-static struct module_attribute mrdump_version_attribute =
-	__ATTR(version, 0400, mrdump_version_show, NULL);
-
-static struct attribute *attrs[] = {
-	&mrdump_version_attribute.attr,
-	NULL,
-};
-
-static struct attribute_group attr_group = {
-	.attrs = attrs,
-};
-
-static int __init mrdump_sysfs_init(void)
-{
-	struct kobject *kobj;
-
-	kobj = kset_find_obj(module_kset, KBUILD_MODNAME);
-	if (kobj) {
-		if (sysfs_create_group(kobj, &attr_group)) {
-			pr_notice("MT-RAMDUMP: sysfs create sysfs failed\n");
-			return -ENOMEM;
-		}
-	} else {
-		pr_notice("MT-RAMDUMP: Cannot find module %s object\n",
-				KBUILD_MODNAME);
-		return -EINVAL;
-	}
-
-	pr_info("%s: done.\n", __func__);
-	return 0;
-}
-
-module_init(mrdump_sysfs_init);
-
-#endif
 
 static int param_set_mrdump_lbaooo(const char *val,
 		const struct kernel_param *kp)
