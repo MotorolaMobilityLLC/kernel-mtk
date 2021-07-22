@@ -29,3 +29,6 @@ obj-$(CONFIG_MMC_FFU)		+= ffu.o
 obj-$(CONFIG_MMC_BLOCK_IO_LOG)	+= mtk_mmc_block.o
 obj-$(CONFIG_MTK_MMC_PWR_WP) 	+= mtk_emmc_write_protect.o
 obj-$(CONFIG_MMC_CRYPTO)	+= mmc_crypto.o crypto.o
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+endif

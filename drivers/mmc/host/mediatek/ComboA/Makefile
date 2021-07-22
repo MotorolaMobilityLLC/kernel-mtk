@@ -51,3 +51,7 @@ msdc-y += $(MMC_FOLDER)/autok_dvfs.o
 msdc-$(CONFIG_FPGA_EARLY_PORTING) += $(MMC_FOLDER)/msdc_fpga_io.o
 
 obj-$(CONFIG_MMC_CRYPTO) += sw-cqhci-crypto.o
+
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+endif
