@@ -1,7 +1,7 @@
 #ifndef __OIS_EXT_CMD_H__
 #define __OIS_EXT_CMD_H__
 
-#define OIS_HEA_MAX_TEST_POINTS 36
+#define OIS_HEA_MAX_TEST_POINTS 40
 #define OIS_HEA_CHANNEL_NUM     2
 #define OIS_EXT_DATA_MAX_LEN    (OIS_HEA_MAX_TEST_POINTS*OIS_HEA_CHANNEL_NUM*6*sizeof(u16)+4*sizeof(u16))
 
@@ -33,6 +33,7 @@ typedef struct {
 	u16 wait0;
 	u16 wait1;
 	u16 wait2;
+	u16 ref_stroke;
 } motOISHeaParam;
 
 typedef struct {

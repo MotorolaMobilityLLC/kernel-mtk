@@ -307,19 +307,21 @@ int MOT_DW9781CAF_EXT_CMD_HANDLER(motOISExtIntf *pExtCmd)
 
 				LOG_INF("Kernel OIS_START_HEA_TEST\n");
 				if (pDW9781TestResult) {
-					LOG_INF("OIS raius:%d,accuracy:%d,step/deg:%d,wait0:%d,wait1:%d,wait2:%d",
+					LOG_INF("OIS raius:%d,accuracy:%d,step/deg:%d,wait0:%d,wait1:%d,wait2:%d, ref_stroke:%d",
 					        pExtCmd->data.hea_param.radius,
 					        pExtCmd->data.hea_param.accuracy,
 					        pExtCmd->data.hea_param.steps_in_degree,
 					        pExtCmd->data.hea_param.wait0,
 					        pExtCmd->data.hea_param.wait1,
-					        pExtCmd->data.hea_param.wait2);
+					        pExtCmd->data.hea_param.wait2,
+					        pExtCmd->data.hea_param.ref_stroke);
 					square_motion_test(pExtCmd->data.hea_param.radius,
 					                   pExtCmd->data.hea_param.accuracy,
 					                   pExtCmd->data.hea_param.steps_in_degree,
 					                   pExtCmd->data.hea_param.wait0,
 					                   pExtCmd->data.hea_param.wait1,
 					                   pExtCmd->data.hea_param.wait2,
+					                   pExtCmd->data.hea_param.ref_stroke,
 					                   pDW9781TestResult);
 					LOG_INF("OIS HALL NG points:%d", pDW9781TestResult->hea_result.ng_points);
 				} else {
