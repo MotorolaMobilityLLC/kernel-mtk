@@ -280,7 +280,6 @@ static void mtk_sync_timeline_signal(struct sync_timeline *obj,
 					cur->func(fence, cur);
 				}
 			}
-			INIT_LIST_HEAD(&fence->cb_list);
 		} else
 			dma_fence_signal_locked(&pt->base);
 	}
