@@ -262,26 +262,7 @@ static void mtk_sync_timeline_signal(struct sync_timeline *obj,
 		 * prevent deadlocking on timeline->lock inside
 		 * timeline_fence_release().
 		 */
-		if (time != 0) {
-			struct dma_fence *fence = &pt->base;
-			struct dma_fence_cb *cur, *tmp;
-			struct list_head cb_list;
-
-			lockdep_assert_held(fence->lock);
-			if (!unlikely(test_and_set_bit(DMA_FENCE_FLAG_SIGNALED_BIT,
-							  &fence->flags))){
-				/* Stash the cb_list before replacing it with the timestamp */
-				list_replace(&fence->cb_list, &cb_list);
-				fence->timestamp = time;
-				set_bit(DMA_FENCE_FLAG_TIMESTAMP_BIT, &fence->flags);
-				trace_dma_fence_signaled(fence);
-				list_for_each_entry_safe(cur, tmp, &cb_list, node) {
-					INIT_LIST_HEAD(&cur->node);
-					cur->func(fence, cur);
-				}
-			}
-		} else
-			dma_fence_signal_locked(&pt->base);
+		dma_fence_signal_locked(&pt->base);
 	}
 
 	spin_unlock_irq(&obj->lock);
