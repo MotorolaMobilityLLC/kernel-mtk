@@ -2697,6 +2697,19 @@ void disp_dbg_probe(void)
 			__func__, __LINE__);
 		goto out;
 	}
+
+	if (!proc_create("disp_lfr_dbg", S_IFREG | 0440,
+		mtkfb_debug_procfs, &disp_lfr_dbg_fops)) {
+		pr_info("[%s %d]failed to create idlevfp in /proc/mtkfb_debug/disp_lfr_dbg\n",
+			__func__, __LINE__);
+		goto out;
+	}
+	if (!proc_create("disp_lfr_params", S_IFREG | 0444,
+		mtkfb_debug_procfs, &disp_lfr_params_fops)) {
+		pr_info("[%s %d]failed to create idlevfp in /proc/mtkfb_debug/disp_lfr_params\n",
+			__func__, __LINE__);
+		goto out;
+	}
 #endif
 
 #if IS_ENABLED(CONFIG_MTK_HDMI_SUPPORT)
