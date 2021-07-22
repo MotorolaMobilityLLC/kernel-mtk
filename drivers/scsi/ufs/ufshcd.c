@@ -1272,8 +1272,6 @@ static int ufshcd_scale_clks(struct ufs_hba *hba, bool scale_up)
 	ktime_t start = ktime_get();
 	bool clk_state_changed = false;
 
-	return 0;
-
 	if (list_empty(head))
 		goto out;
 
