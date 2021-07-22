@@ -3111,8 +3111,34 @@ void mtk_crtc_enable_iommu_runtime(struct mtk_drm_crtc *mtk_crtc,
 }
 
 #ifdef MTK_DRM_CMDQ_ASYNC
+#ifdef MTK_DRM_FB_LEAK
+static void mtk_disp_signal_fence_worker_signal(struct drm_crtc *crtc, struct cmdq_cb_data data)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	if (unlikely(!mtk_crtc)) {
+		DDPINFO("%s:invalid ESD context, crtc id:%d\n",
+			__func__, drm_crtc_index(crtc));
+		return;
+	}
+	mtk_crtc->cb_data = data;
+	atomic_set(&mtk_crtc->cmdq_done, 1);
+	wake_up_interruptible(&mtk_crtc->signal_fence_task_wq);
+}
 
 static void ddp_cmdq_cb(struct cmdq_cb_data data)
+{
+	struct mtk_cmdq_cb_data *cb_data = data.data;
+	struct drm_crtc_state *crtc_state = cb_data->state;
+	struct drm_crtc *crtc = crtc_state->crtc;
+
+	mtk_disp_signal_fence_worker_signal(crtc, data);
+}
+
+static void _ddp_cmdq_cb(struct cmdq_cb_data data)
+#else
+static void ddp_cmdq_cb(struct cmdq_cb_data data)
+#endif
 {
 	struct mtk_cmdq_cb_data *cb_data = data.data;
 	struct drm_crtc_state *crtc_state = cb_data->state;
@@ -3158,21 +3184,22 @@ static void ddp_cmdq_cb(struct cmdq_cb_data data)
 
 	if (session_id > 0)
 		mtk_crtc_release_input_layer_fence(crtc, session_id);
-#ifdef MTK_DRM_DELAY_PRESENT_FENCE
-	// release present fence
-	if (drm_crtc_index(crtc) != 2 && session_id > 0) {
-		struct cmdq_pkt_buffer *cmdq_buf = &(mtk_crtc->gce_obj.buf);
-		unsigned int fence_idx = *(unsigned int *)(cmdq_buf->va_base +
-				DISP_SLOT_PRESENT_FENCE(drm_crtc_index(crtc)));
-
-		mtk_release_present_fence(session_id, fence_idx);
-	}
-#endif
 	if (crtc->state) {
 		mtk_state = to_mtk_crtc_state(crtc->state);
 		if (mtk_crtc_is_frame_trigger_mode(crtc) &&
 			mtk_state->prop_val[CRTC_PROP_DOZE_ACTIVE]) {
 			te_cnt = 1;
+		}
+	}
+	// release present fence
+	if (drm_crtc_index(crtc) != 2) {
+		struct cmdq_pkt_buffer *cmdq_buf = &(mtk_crtc->gce_obj.buf);
+		unsigned int fence_idx = *(unsigned int *)(cmdq_buf->va_base +
+				DISP_SLOT_PRESENT_FENCE(drm_crtc_index(crtc)));
+		// only VDO mode panel use CMDQ call
+		if (mtk_crtc &&
+			!mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base)) {
+			mtk_release_present_fence(session_id, fence_idx, mtk_crtc->eof_time);
 		}
 	}
 
@@ -3194,13 +3221,34 @@ static void ddp_cmdq_cb(struct cmdq_cb_data data)
 		drm_writeback_signal_completion(&mtk_crtc->wb_connector, 0);
 	}
 	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
-
+#ifdef MTK_DRM_FB_LEAK
+	cmdq_pkt_wait_complete(cb_data->cmdq_handle);
+#endif
 	cmdq_pkt_destroy(cb_data->cmdq_handle);
 	kfree(cb_data);
 
 	CRTC_MMP_EVENT_END(id, frame_cfg, 0, 0);
 }
 
+#ifdef MTK_DRM_FB_LEAK
+static int mtk_drm_signal_fence_worker_kthread(void *data)
+{
+	struct sched_param param = {.sched_priority = 87};
+	int ret = 0;
+
+	struct mtk_drm_crtc *mtk_crtc = (struct mtk_drm_crtc *)data;
+
+	sched_setscheduler(current, SCHED_RR, &param);
+	while (1) {
+		ret = wait_event_interruptible(
+			mtk_crtc->signal_fence_task_wq
+			, atomic_read(&mtk_crtc->cmdq_done));
+			atomic_set(&mtk_crtc->cmdq_done, 0);
+		_ddp_cmdq_cb(mtk_crtc->cb_data);
+	}
+	return 0;
+}
+#endif
 #else
 /* ddp_cmdq_cb_blocking should be called within locked function */
 static void ddp_cmdq_cb_blocking(struct mtk_cmdq_cb_data *cb_data)
@@ -5973,8 +6021,13 @@ int mtk_crtc_gce_flush(struct drm_crtc *crtc, void *gce_cb,
 	}
 
 #ifdef MTK_DRM_CMDQ_ASYNC
+#ifdef MTK_DRM_FB_LEAK
+	if (cmdq_pkt_flush_async(cmdq_handle,
+		gce_cb, cb_data) < 0)
+#else
 	if (cmdq_pkt_flush_threaded(cmdq_handle,
 		gce_cb, cb_data) < 0)
+#endif
 		DDPPR_ERR("failed to flush gce_cb\n");
 #else
 	cmdq_pkt_flush(cmdq_handle);
@@ -6971,7 +7024,7 @@ static int mtk_drm_pf_release_thread(void *data)
 				DISP_SLOT_PRESENT_FENCE(crtc_idx));
 
 		mtk_release_present_fence(private->session_id[crtc_idx],
-					  fence_idx);
+					  fence_idx, 0);
 		mutex_unlock(&private->commit.lock);
 	}
 
@@ -7336,6 +7389,13 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 		wakeup_source_init(&mtk_crtc->wk_lock, mtk_crtc->wk_lock_name);
 	}
 
+#ifdef MTK_DRM_FB_LEAK
+	mtk_crtc->signal_present_fece_task = kthread_create(
+		mtk_drm_signal_fence_worker_kthread, mtk_crtc, "signal_fence");
+	init_waitqueue_head(&mtk_crtc->signal_fence_task_wq);
+	atomic_set(&mtk_crtc->cmdq_done, 0);
+	wake_up_process(mtk_crtc->signal_present_fece_task);
+#endif
 	DDPMSG("%s-CRTC%d create successfully\n", __func__,
 		priv->num_pipes - 1);
 
