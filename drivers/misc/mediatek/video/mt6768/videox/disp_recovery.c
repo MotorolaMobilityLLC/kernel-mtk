@@ -779,7 +779,7 @@ int primary_display_esd_recovery(void)
 	DISPDBG("[ESD]dsi power reset[begine]\n");
 	dpmgr_path_dsi_power_off(primary_get_dpmgr_handle(), NULL);
 	if (bdg_is_bdg_connected() == 1) {
-		struct disp_ddp_path_config *data_config;
+		struct disp_ddp_path_config *data_config = NULL;
 
 		bdg_common_deinit(DISP_BDG_DSI0, NULL);
 
@@ -796,7 +796,7 @@ int primary_display_esd_recovery(void)
 	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]dsi power reset[end]\n");
 	if (bdg_is_bdg_connected() == 1) {
-		struct disp_ddp_path_config *data_config;
+		struct disp_ddp_path_config *data_config = NULL;
 
 //		extern ddp_dsi_config(enum DISP_MODULE_ENUM module,
 //		struct disp_ddp_path_config *config, void *cmdq);

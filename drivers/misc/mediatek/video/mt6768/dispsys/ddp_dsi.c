@@ -2231,6 +2231,7 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 		timcon2.CLK_TRAIL = NS_TO_CYCLE(100, cycle_time) + 1;
 		if (timcon2.CLK_TRAIL < 2)
 			timcon2.CLK_TRAIL = 2;
+		timcon2.CONT_DET = 0;
 
 		/* clk_exit > 100ns (spec) */
 		/* clk_exit = 200ns */
