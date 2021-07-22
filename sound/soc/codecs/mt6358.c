@@ -7771,9 +7771,9 @@ static void mt6358_parse_dt(struct mt6358_priv *priv)
 	ret = of_property_read_u32(dev->of_node, "mediatek,mic-type",
 				   &priv->mux_select[MUX_MIC_TYPE]);
 	if (ret) {
-		dev_info(dev, "%s() failed to read mic-type, default DCC\n",
+		dev_info(dev, "%s() failed to read mic-type, default ACC\n",
 			 __func__);
-		priv->mux_select[MUX_MIC_TYPE] = MIC_TYPE_MUX_DCC;
+		priv->mux_select[MUX_MIC_TYPE] = MIC_TYPE_MUX_ACC;
 	}
 
 	ret = of_property_read_bool(dev->of_node, "vow_dmic_lp");
