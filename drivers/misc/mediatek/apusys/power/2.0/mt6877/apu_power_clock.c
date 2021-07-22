@@ -177,7 +177,7 @@ static int _enable_acc(enum DVFS_VOLTAGE_DOMAIN domain, bool enable)
 	ret = mt_secure_call_ret2(MTK_SIP_APUPWR_CONTROL,
 			MTK_APUPWR_SMC_OP_ACC_TOGGLE,
 			(size_t)domain, (size_t)enable, 0, &value);
-	LOG_DBG("[%s] domain@%d, enable(%d) ACC: 0x%x\n", __func__, domain, enable, value);
+	LOG_DBG("[%s] domain@%d, enable(%d) ACC: 0x%lx\n", __func__, domain, enable, value);
 
 	if (ret) {
 		LOG_ERR("[%s] domain@%d, enable(%d) Fail: %d\n", __func__, domain, enable, ret);
