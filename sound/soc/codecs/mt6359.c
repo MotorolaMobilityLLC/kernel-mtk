@@ -2562,8 +2562,6 @@ static int mt_vow_aud_lpw_event(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		/* add delay for RC Calibration */
-		usleep_range(1000, 1200);
 		/* Enable VOW AND gate CLK */
 		/* Select VOW CLKSQ out */
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON23,
@@ -2572,6 +2570,8 @@ static int mt_vow_aud_lpw_event(struct snd_soc_dapm_widget *w,
 		regmap_update_bits(priv->regmap, MT6359_AUDENC_ANA_CON23,
 				   RG_VOWCLK_SEL_EN_VOW_MASK_SFT,
 				   0x1 << RG_VOWCLK_SEL_EN_VOW_SFT);
+		/* add delay for RC Calibration */
+		usleep_range(1000, 1200);
 		/* Enable audio uplink LPW mode */
 		/* Enable Audio ADC 1st Stage LPW */
 		/* Enable Audio ADC 2nd & 3rd LPW */
