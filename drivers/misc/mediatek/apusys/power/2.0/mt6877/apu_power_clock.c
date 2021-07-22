@@ -274,7 +274,7 @@ static void _init_acc(enum DVFS_VOLTAGE_DOMAIN domain)
 			(size_t)domain, 0, 0);
 
 	if (ret)
-		LOG_ERR("[%s] domain:%d, ret:%d\n", __func__, ret);
+		LOG_ERR("[%s] domain:%d, ret:%d\n", __func__, domain, ret);
 
 #else
 	bool inverse = false;
@@ -472,7 +472,7 @@ int set_apu_clock_source(enum DVFS_FREQ freq, enum DVFS_VOLTAGE_DOMAIN domain)
 			(size_t)freq, (size_t)domain, 0);
 
 	if (ret) {
-		LOG_ERR("[%s] domain:%d, ret:%d\n", __func__, ret);
+		LOG_ERR("[%s] domain:%d, ret:%d\n", __func__, domain, ret);
 		return -1;
 	}
 
@@ -609,7 +609,7 @@ int config_apupll_freq(enum DVFS_FREQ freq, enum DVFS_VOLTAGE_DOMAIN domain)
 			(size_t)freq, (size_t)div2, (size_t)domain);
 
 	if (ret) {
-		LOG_ERR("[%s] domain:%d, ret:%d\n", __func__, ret);
+		LOG_ERR("[%s] domain:%d, ret:%d\n", __func__, domain, ret);
 		return -1;
 	}
 
