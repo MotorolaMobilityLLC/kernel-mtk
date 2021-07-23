@@ -29,7 +29,8 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
-
+#include <linux/module.h>
+#include <linux/kernel.h>
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -45,7 +46,15 @@
 #include "kd_camera_typedef.h"
 
 #define PFX "s5k4h7qtech_camera_sensor"
-#define LOG_INF(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
+static int mot_sensor_debug = 0;
+module_param(mot_sensor_debug, int, S_IRWXU);
+
+#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_DEBUG(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+
+#define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #ifndef VENDOR_EDIT
 #define VENDOR_EDIT
@@ -54,12 +63,9 @@ static bool bIsLongExposure = KAL_FALSE;
 #include "mot_corfu_s5k4h7_qtech.h"
 #include "mot_s5k4h7mipiraw_otp.h"
 
-#define MULTI_WRITE 1
-#if MULTI_WRITE
+
 #define I2C_BUFFER_LEN 765 /* trans# max is 255, each 3 bytes */
-#else
-#define I2C_BUFFER_LEN 3
-#endif
+
 
 #ifdef VENDOR_EDIT
 static mot_calibration_info_t s5k4h7_cal_info = {0};
@@ -265,7 +271,7 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para,
 			addr_last = addr;
 
 		}
-#if MULTI_WRITE
+
 		/* Write when remain buffer size is less than 3 bytes
 		 * or reach end of data
 		 */
@@ -278,10 +284,7 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para,
 						imgsensor_info.i2c_speed);
 			tosend = 0;
 		}
-#else
-		iWriteRegI2C(puSendCmd, 3, imgsensor.i2c_write_id);
-		tosend = 0;
-#endif
+
 	}
 
 #if 0 /*for debug*/
@@ -763,49 +766,52 @@ static kal_uint16 s5k4h7qtech_slim_video_setting[] = {
 
 static void sensor_init(void)
 {
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(s5k4h7qtech_init_setting,
 		sizeof(s5k4h7qtech_init_setting) / sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }				/*  s5k4h7qtechMIPI_Sensor_Init  */
 
 
 static void preview_setting(void)
 {
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(s5k4h7qtech_preview_setting,
 		sizeof(s5k4h7qtech_preview_setting) / sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }				/*  s5k4h7qtechMIPI_Capture_Setting  */
 
 static void capture_setting(kal_uint16 currefps)
 {
-#if 0
-	if (currefps == 150) {
-		table_write_cmos_sensor(s5k4h7qtech_cap1_setting,
-			sizeof(s5k4h7qtech_cap1_setting) / sizeof(kal_uint16));
-	} else {
-#endif
+	LOG_INF_N("E\n");
 		table_write_cmos_sensor(s5k4h7qtech_cap_setting,
 			sizeof(s5k4h7qtech_cap_setting) / sizeof(kal_uint16));
-//	}
+    LOG_INF_N("X\n");
+
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	LOG_INF("E! currefps:%d\n", currefps);
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(s5k4h7qtech_normal_video_setting,
 		sizeof(s5k4h7qtech_normal_video_setting) / sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void hs_video_setting(void)
 {
-	LOG_INF("EVGA 120fps");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(s5k4h7qtech_hs_video_setting,
 		sizeof(s5k4h7qtech_hs_video_setting) / sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 static void slim_video_setting(void)
 {
-	LOG_INF("E");
+	LOG_INF_N("E\n");
 	table_write_cmos_sensor(s5k4h7qtech_slim_video_setting,
 		sizeof(s5k4h7qtech_slim_video_setting) / sizeof(kal_uint16));
+	LOG_INF_N("X\n");
 }
 
 
@@ -838,7 +844,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	do {
 		*sensor_id = ((read_cmos_sensor_8(0x0000) << 8)
 			      | read_cmos_sensor_8(0x0001)) + 1;
-		LOG_INF("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n",
+		LOG_INF_N("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n",
 			read_cmos_sensor_8(0x0000), read_cmos_sensor_8(0x0001),
 			read_cmos_sensor(0x0000));
 		if (*sensor_id == imgsensor_info.sensor_id) {
@@ -846,13 +852,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			s5k4h7_otp_data();
 			s5k4h7_get_cal_info(&s5k4h7_cal_info);
 #endif
-			LOG_INF(
+			LOG_INF_N(
 				"i2c write id: 0x%x, sensor id: 0x%x module_id 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id,
 				imgsensor_info.module_id);
 			break;
 		}
-		LOG_INF("Read sensor id fail, id: 0x%x,0x%x\n",
+		LOG_ERR("Read sensor id fail, id: 0x%x,0x%x\n",
 			imgsensor.i2c_write_id, *sensor_id);
 		retry--;
 	} while (retry > 0);
@@ -1277,12 +1283,33 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	return ERROR_NONE;
 }	/* get_info */
 
+static const char *mot_corfu_s5k4h7_scenario_to_name(enum MSDK_SCENARIO_ID_ENUM scenario_id)
+{
+	const char *pScenarioName[] = {
+		"MSDK_SCENARIO_ID_CAMERA_PREVIEW",
+		"MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG",
+		"MSDK_SCENARIO_ID_VIDEO_PREVIEW",
+		"MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO",
+		"MSDK_SCENARIO_ID_SLIM_VIDEO",
+		"MSDK_SCENARIO_ID_CUSTOM1",
+		"MSDK_SCENARIO_ID_CUSTOM2",
+		"MSDK_SCENARIO_ID_CUSTOM3",
+		"MSDK_SCENARIO_ID_CUSTOM4",
+		"MSDK_SCENARIO_ID_CUSTOM5",
+		"MSDK_SCENARIO_ID_MAX",
+	};
+
+	if (scenario_id >= MSDK_SCENARIO_ID_CAMERA_PREVIEW && scenario_id <= MSDK_SCENARIO_ID_MAX)
+		return pScenarioName[scenario_id];
+	else
+		return "SCENARIO_UNKONWN";
+}
 
 static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			  MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("scenario_id = %d\n", scenario_id);
+	LOG_INF_N("scenario(%d): %s\n", scenario_id, mot_corfu_s5k4h7_scenario_to_name(scenario_id));
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.current_scenario_id = scenario_id;
 	spin_unlock(&imgsensor_drv_lock);
