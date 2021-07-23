@@ -2468,6 +2468,10 @@ static int mtk_charger_plug_in(struct mtk_charger *info,
 
 	charger_dev_plug_in(info->chg1_dev);
 
+	if (info->mmi.factory_mode) {
+		charger_dev_set_input_current(info->chg1_dev, 2000000);/*2A*/
+	}
+
 	return 0;
 }
 
