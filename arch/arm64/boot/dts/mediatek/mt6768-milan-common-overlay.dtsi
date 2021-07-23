@@ -11,7 +11,7 @@
  */
 
 #include "mediatek/mt6768-moto-common-overlay.dtsi"
-#include "mediatek/mt6768-corfu-audio-overlay.dtsi"
+#include "mediatek/mt6768-milan-audio-overlay.dtsi"
 #include "mediatek/cust_mt6768_corfu_touch_1080x2400.dtsi"
 #include "dt-bindings/mmc/mt6768-msdc.h"
 #include "mediatek/mt6768-moto-corfu-fps.dtsi"
