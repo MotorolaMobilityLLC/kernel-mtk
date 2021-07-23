@@ -102,7 +102,7 @@ by different scenario */
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 4208,
-        .grabwindow_height = 2336,
+        .grabwindow_height = 3120,
         .mipi_data_lp2hs_settle_dc = 85,
         .max_framerate = 300,
 
@@ -194,12 +194,12 @@ static struct imgsensor_struct imgsensor = {
 
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
-    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120},        // preview (4208 x 3120)
-    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120},        // capture (4208 x 3120)
-    { 4208, 3120,   0, 392, 4208, 2336,  4208, 2336,  0,  0, 4208, 2336, 0, 0, 4208, 2336},        // VIDEO (4208 x 2336)
-    { 4208, 3120,   4, 108, 4200, 2904,   700,  484,  30, 2, 640, 480, 0, 0,  640,  480},        // hight speed video (640 x 480)
-    { 4208, 3120,   4, 474, 4200, 2172,  1400,  724,  60, 2, 1280, 720, 0, 0, 1280,  720},       // slim video (1280 x 720)
-    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}        // custom1
+    { 4224, 3136,   0,   6, 4224, 3124,  4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},        // preview (4208 x 3120)
+    { 4224, 3136,   0,   6, 4224, 3124,  4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},        // capture (4208 x 3120)
+    { 4224, 3136,   0,   6, 4224, 3124,  4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},        // VIDEO (4208 x 3120)
+    { 4224, 3136,   0, 116, 4224, 2904,   704,  484,  32, 2, 640, 480, 0, 0,  640,  480},        // hight speed video (640 x 480)
+    { 4224, 3136,   0, 482, 4224, 2172,  1408,  724,  64, 2, 1280, 720, 0, 0, 1280,  720},       // slim video (1280 x 720)
+    { 4224, 3136,   0,   6, 4224, 3124,  4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120}        // custom1
 };
 
 #if ENABLE_PDAF
@@ -1907,8 +1907,8 @@ static void video_setting(void)
 #if MULTI_WRITE
     LOG_INF("video_setting multi write\n");
     mot_ellis_hi1336_table_write_cmos_sensor(
-        addr_data_pair_video_hi1336,
-        sizeof(addr_data_pair_video_hi1336) /
+        addr_data_pair_capture_30fps_mot_ellis_hi1336,
+        sizeof(addr_data_pair_capture_30fps_mot_ellis_hi1336) /
         sizeof(kal_uint16));
 #else
     LOG_INF("video_setting normal write\n");
