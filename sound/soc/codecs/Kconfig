@@ -1451,4 +1451,11 @@ config SND_SOC_FS16XX
 	depends on I2C
 	help
 	  FourSemi Smart Amplifier Driver
+
+config SND_SOC_AW883XX
+    tristate "SoC Audio for awinic aw883xx series"
+    depends on I2C
+    help
+      This option enables support for aw883xx series Smart PA.
+
 endmenu
