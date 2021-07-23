@@ -412,3 +412,8 @@
 		status = "okay";
 	};
 };
+
+&mt6360_ldo {
+	sdcard_det_en=<1>;
+	sdcard_hlact=<0>;
+};
