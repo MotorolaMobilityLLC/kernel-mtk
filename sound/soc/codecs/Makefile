@@ -494,7 +494,7 @@ obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
 obj-$(CONFIG_SND_SOC_RT5509)	+= snd-soc-rt5509.o
 obj-$(CONFIG_SND_SOC_MT6660)	+= snd-soc-mt6660.o
 obj-$(CONFIG_SND_SOC_AW87339)	+= aw87339/
-
+obj-$(CONFIG_SND_SOC_AW883XX)	+= aw883xx/
 #for AWINIC AW882XX Smart PA
 obj-$(CONFIG_SND_SMARTPA_AW882XX) += awinic/
 ifeq ($(CONFIG_SND_SOC_MT6358),y)
