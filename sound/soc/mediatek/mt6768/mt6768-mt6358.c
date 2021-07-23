@@ -583,6 +583,9 @@ static struct snd_soc_dai_link mt6768_mt6358_dai_links[] = {
 #ifdef CONFIG_SND_SOC_FS16XX
 		.codec_dai_name = "fs16xx-aif",
 		.codec_name = "fs16xx.7-0034",
+#elif defined CONFIG_SND_SOC_AW883XX
+		.codec_dai_name = "aw883xx-aif-7-34",
+		.codec_name = "aw883xx_smartpa.7-0034",
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
@@ -598,6 +601,9 @@ static struct snd_soc_dai_link mt6768_mt6358_dai_links[] = {
 #ifdef CONFIG_SND_SOC_FS16XX
 		.codec_dai_name = "fs16xx-aif",
 		.codec_name = "fs16xx.7-0034",
+#elif defined CONFIG_SND_SOC_AW883XX
+		.codec_dai_name = "aw883xx-aif-7-34",
+		.codec_name = "aw883xx_smartpa.7-0034",
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
