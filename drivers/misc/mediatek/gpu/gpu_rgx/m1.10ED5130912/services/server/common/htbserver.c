@@ -799,6 +799,10 @@ HTBLogKM(
 	IMG_UINT32 * pui32Message = aui32MessageBuffer;
 	IMG_UINT32 ui32MessageSize = 4 * (HTB_LOG_HEADER_SIZE+ui32NumArgs);
 
+	PVR_LOGG_IF_FALSE(aui32Args != NULL, "aui32Args != NULL invalid", e0);
+	PVR_LOGG_IF_FALSE(ui32NumArgs == HTB_SF_PARAMNUM(SF), "ui32NumArgs == HTB_SF_PARAMNUM(SF) invalid", e0);
+	PVR_LOGG_IF_FALSE(ui32NumArgs <= HTB_LOG_MAX_PARAMS, "ui32NumArgs <= HTB_LOG_MAX_PARAMS invalid", e0);
+
 	if ( g_hTLStream
 			&& ( 0 == PID || ~0 == PID || HTB_LOGMODE_ALLPID == g_sCtrl.eLogMode || _ValidPID(PID) )
 /*			&& ( g_sCtrl.ui32GroupEnable & (0x1 << HTB_SF_GID(SF)) ) */
@@ -836,6 +840,9 @@ HTBLogKM(
 	}
 
 	return eError;
+
+e0:
+	return PVRSRV_ERROR_INVALID_PARAMS;
 }
 
 /* EOF */
