@@ -853,6 +853,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->calibration_status.lsc   = gc02m1_cal_info.lsc_status;
 	sensor_info->calibration_status.pdaf  = gc02m1_cal_info.pdaf_status;
 	sensor_info->calibration_status.dual  = gc02m1_cal_info.dual_status;
+	memcpy(&sensor_info->mnf_calibration, &gc02m1_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
