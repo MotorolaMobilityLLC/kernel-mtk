@@ -51,11 +51,18 @@
 #define LOG_1 SENSORDB("GC02M1,MIPI CAM\n")
 #define LOG_INF(format, args...) \
 	pr_err(PFX "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 /*********************   Modify end    *********************************/
 
 #define USHORT        unsigned short
 #define BYTE          unsigned char
 #define I2C_ID          0x6e
+
+#define CHECK_SNPRINTF_RET(ret, str, msg)               \
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) { \
+		LOG_ERR(msg);                           \
+		str[0] = 0;                             \
+	}
 
 gc02m1_otp_data_t gc02m1_otp_data;
 
@@ -114,9 +121,11 @@ unsigned int gc02m1_read_all_data(mot_calibration_info_t * pOtpCalInfo)
 {
 	unsigned int i = 0;
 	unsigned int addr = 0;
+	int ret = 0;
 
 	u8 *otp_data = (u8 *)&gc02m1_otp_data;
 
+	mot_calibration_mnf_t * pMnfData = &pOtpCalInfo->mnf_cal_data;
 	pOtpCalInfo->mnf_status = STATUS_OK;
 	LOG_INF("LOG_INF gc02m1_read_all_data\n");
 
@@ -145,6 +154,42 @@ unsigned int gc02m1_read_all_data(mot_calibration_info_t * pOtpCalInfo)
 
 	eeprom_dump_bin(EEPROM_DATA_PATH, sizeof(gc02m1_otp_data_t), &gc02m1_otp_data.program_flag);
 	eeprom_dump_bin(SERIAL_DATA_PATH, DUMP_DEPTH_SERIAL_NUMBER_SIZE, gc02m1_otp_data.serial_number);
+
+	// manufacturer ID
+	if (gc02m1_otp_data.serial_number[0] == 'S' && gc02m1_otp_data.serial_number[1] == 'U')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	else if (gc02m1_otp_data.serial_number[0] == 'O' && gc02m1_otp_data.serial_number[1] == 'F')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "OFilm");
+	else if (gc02m1_otp_data.serial_number[0] == 'H' && gc02m1_otp_data.serial_number[1] == 'O')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Holitech");
+	else if (gc02m1_otp_data.serial_number[0] == 'T' && gc02m1_otp_data.serial_number[1] == 'S')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Tianshi");
+	else if (gc02m1_otp_data.serial_number[0] == 'S' && gc02m1_otp_data.serial_number[1] == 'W')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Sunwin");
+	else if (gc02m1_otp_data.serial_number[0] == 'S' && gc02m1_otp_data.serial_number[1] == 'E')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Semco");
+	else if (gc02m1_otp_data.serial_number[0] == 'Q' && gc02m1_otp_data.serial_number[1] == 'T')
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	else
+		ret = snprintf(pMnfData->integrator, MAX_CALIBRATION_STRING, "Unknown");
+
+	CHECK_SNPRINTF_RET(ret, pMnfData->integrator, "failed to fill integrator string");
+
+	// manufacture date
+	ret = snprintf(pMnfData->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+			gc02m1_otp_data.serial_number[2], gc02m1_otp_data.serial_number[3], gc02m1_otp_data.serial_number[4]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->manufacture_date, "failed to fill manufature date");
+
+	// serialNumber
+	ret = snprintf(pMnfData->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x",
+		gc02m1_otp_data.serial_number[0],  gc02m1_otp_data.serial_number[1],
+		gc02m1_otp_data.serial_number[2],  gc02m1_otp_data.serial_number[3],
+		gc02m1_otp_data.serial_number[4],  gc02m1_otp_data.serial_number[5],
+		gc02m1_otp_data.serial_number[6],  gc02m1_otp_data.serial_number[7]);
+	CHECK_SNPRINTF_RET(ret, pMnfData->serial_number, "failed to fill serial number");
+
+	LOG_INF("integrator: %s, manufacture_date: %s, serial_number: %s",
+		pMnfData->integrator, pMnfData->manufacture_date, pMnfData->serial_number);
 
 	return 0;
 }
