@@ -6,3 +6,9 @@ config MTK_VIBRATOR
 	  You can customize the vibrate strength and lowest vibrate time.
 	  If you want to use MediaTek Vibrator driver, say Y or M here.
 	  If unsure, say N.
+
+config SEPERATE_VOLT_FORLONGVIB
+	bool "Seperate the volt value for long vib"
+	default n
+	help
+	  Enable it only for product that need seperate the volt value for long vib
