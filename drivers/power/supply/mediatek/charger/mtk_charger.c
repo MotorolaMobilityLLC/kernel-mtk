@@ -2055,7 +2055,11 @@ int mmi_chrg_rate_check(void)
 			}
 	}
 
+#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+	if (icl > TURBO_CHRG_THRSH) {
+#else
 	if (icl >= TURBO_CHRG_THRSH) {
+#endif
 		chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		goto end_rate_check;
 	} else if (icl < WEAK_CHRG_THRSH) {
