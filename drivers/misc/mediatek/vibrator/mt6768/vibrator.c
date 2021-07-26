@@ -28,6 +28,9 @@ static int debug_enable_vib_hal = 1;
 } while (0)
 
 #define OC_INTR_INIT_DELAY      (3)
+#ifdef CONFIG_SEPERATE_VOLT_FORLONGVIB
+#define DEFAULT_VIB_LONG_MS     (70)
+#endif
 
 void vibr_Enable_HW(struct regulator *reg)
 {
@@ -104,6 +107,23 @@ void init_cust_vibrator_dtsi(struct platform_device *pdev)
 							pvib_cust->vib_vol);
 		else
 			pvib_cust->vib_vol = 0x05;
+#ifdef CONFIG_SEPERATE_VOLT_FORLONGVIB
+		ret = of_property_read_u32(pdev->dev.of_node, "vib_vol_long",
+                                                        &(pvib_cust->vib_vol_long));
+		if (!ret)
+                        VIB_DEBUG("vib_vol_long from dts is : %d\n",
+                                                        pvib_cust->vib_vol_long);
+                else
+                        pvib_cust->vib_vol_long = pvib_cust->vib_vol;
+
+		ret = of_property_read_u32(pdev->dev.of_node, "vib_long_ms",
+                                                        &(pvib_cust->vib_long_ms));
+                if (!ret)
+                        VIB_DEBUG("vib_long_ms from dts is : %d\n",
+                                                        pvib_cust->vib_long_ms);
+                else
+                        pvib_cust->vib_long_ms = DEFAULT_VIB_LONG_MS;
+#endif
 #endif
 		VIB_DEBUG("pvib_cust = %d, %d, %d\n", pvib_cust->vib_timer,
 				pvib_cust->vib_limit, pvib_cust->vib_vol);
@@ -132,6 +152,24 @@ void vibr_power_set(void)
 	}
 #endif
 }
+
+#ifdef CONFIG_SEPERATE_VOLT_FORLONGVIB
+void vibr_power_set_long(void)
+{
+#ifdef CUST_VIBR_VOL
+        struct vibrator_hw *hw = get_cust_vibrator_dtsi();
+
+        if (hw != NULL) {
+                VIB_DEBUG("Set long vib vol = %d\n", hw->vib_vol_long);
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6358
+                pmic_set_register_value(PMIC_RG_VIBR_VOSEL, hw->vib_vol_long);
+#endif
+        } else {
+                VIB_DEBUG("Can not get vibrator long settings from dtsi!\n");
+        }
+#endif
+}
+#endif
 
 struct vibrator_hw *mt_get_cust_vibrator_hw(void)
 {

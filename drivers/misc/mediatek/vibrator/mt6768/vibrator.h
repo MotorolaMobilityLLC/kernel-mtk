@@ -28,6 +28,10 @@ struct vibrator_hw {
 #endif
 #ifdef CUST_VIBR_VOL
 	int	vib_vol;
+#ifdef CONFIG_SEPERATE_VOLT_FORLONGVIB
+	int     vib_vol_long;
+	int     vib_long_ms;
+#endif
 #endif
 };
 
