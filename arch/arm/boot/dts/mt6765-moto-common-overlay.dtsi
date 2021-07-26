@@ -29,3 +29,7 @@
 	};
 };
 
+&lk_charger {
+	temp_t4_threshold = <59>;
+};
+
