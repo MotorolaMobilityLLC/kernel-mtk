@@ -373,11 +373,26 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 
 static kal_uint32 streaming_control(kal_bool enable)
 {
+	int framecnt = 0;
+	int i = 0;
+
 	LOG_INF_N("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
-		write_cmos_sensor(0x3C1E, 0x0100);
 		write_cmos_sensor_byte(0x0100, 0x01);
-		write_cmos_sensor(0x3C1E, 0x0000);
+		while (1)
+		{
+			framecnt = read_cmos_sensor(0x0005);
+			if ((framecnt & 0xff) != 0xFF)
+			{
+				LOG_INF("stream is on %d ", framecnt);
+				break;
+			}
+			else
+			{
+				LOG_INF("stream is not on, %d, i=%d", framecnt, i++);
+				mdelay(1);
+			}
+		}
 	} else {
 		write_cmos_sensor_byte(0x0100, 0x00);
 	}
