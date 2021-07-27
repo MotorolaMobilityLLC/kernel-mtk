@@ -1709,13 +1709,13 @@ static const struct i2c_device_id rt1711_id_table[] = {
 MODULE_DEVICE_TABLE(i2c, rt1711_id_table);
 
 static const struct of_device_id rt_match_table[] = {
-	{.compatible = "mediatek,usb_type_c",},
+	{.compatible = "mediatek,usb_type_c_rt1711",},
 	{},
 };
 
 static struct i2c_driver rt1711_driver = {
 	.driver = {
-		.name = "usb_type_c",
+		.name = "usb_type_c_rt1711",
 		.owner = THIS_MODULE,
 		.of_match_table = rt_match_table,
 		.pm = RT1711_PM_OPS,
@@ -1731,7 +1731,7 @@ static int __init rt1711_init(void)
 	struct device_node *np;
 
 	pr_info("%s (%s): initializing...\n", __func__, RT1711H_DRV_VERSION);
-	np = of_find_node_by_name(NULL, "usb_type_c");
+	np = of_find_node_by_name(NULL, "usb_type_c_rt1711");
 	if (np != NULL)
 		pr_info("usb_type_c node found...\n");
 	else
