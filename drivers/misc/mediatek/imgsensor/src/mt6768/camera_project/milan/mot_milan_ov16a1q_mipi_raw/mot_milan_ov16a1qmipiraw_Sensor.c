@@ -646,7 +646,7 @@ static kal_uint32 custom3(
 #define OV16A1Q_EEPROM_SLAVE_ADDR 0xA2
 #define OV16A1Q_SENSOR_IIC_SLAVE_ADDR 0x20
 #define OV16A1Q_EEPROM_SIZE  0x18F3
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/ov16a1q_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_ov16a1q_eeprom.bin"
 #define OV16A1Q_EEPROM_CRC_AWB_CAL_SIZE 43
 #define OV16A1Q_EEPROM_CRC_LSC_SIZE 1868
 #define OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE 37

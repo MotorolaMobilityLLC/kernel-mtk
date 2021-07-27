@@ -18,7 +18,7 @@ extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 		       u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/gc02m1_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gc02m1_eeprom.bin"
 #define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
 #define DUMP_DEPTH_SERIAL_NUMBER_SIZE 3
 
