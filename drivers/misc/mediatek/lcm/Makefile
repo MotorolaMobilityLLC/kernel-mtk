@@ -23,6 +23,9 @@ obj-$(CONFIG_MTK_LCM) += mt65xx_lcm_list.o        \
                          lcm_pmic.o               \
                          lcm_util.o
 
+obj-$(CONFIG_MTK_BIAS_BL_FEATURE) += BackLight_Control_I2C.o  \
+				     Bias_power.o
+
 LCM_LISTS := $(subst ",,$(CONFIG_CUSTOM_KERNEL_LCM))
 obj-$(CONFIG_MTK_LCM) += $(foreach LCM,$(LCM_LISTS),$(LCM)/)
 
