@@ -2095,6 +2095,11 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x12</address>
             </device17>
+            <device18>
+                <varName>CAMERA_MAIN_THREE_AF</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x0c</address>
+            </device18>
         </module>
         <module name="md1_eint">
             <count>3</count>
