@@ -786,6 +786,30 @@ void clk_buf_disp_ctrl(bool onoff)
 
 	pwrap_dcxo_en = clkbuf_readl(DCXO_ENABLE) & ~DCXO_NFC_ENABLE;
 	clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en);
+/*MMI_STOPSHIP  <display>: <Subsequent change to the same macro name,in pl lk kernel>*/
+#if defined(CONFIG_MTK_MT6382_BDG) && defined(CONFIG_MTK_MT6382_BDG_BUF7)
+	if (onoff) {
+		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR,
+			PMIC_XO_EXTBUF7_MODE_MASK,
+			PMIC_XO_EXTBUF7_MODE_MASK,
+			PMIC_XO_EXTBUF7_MODE_SHIFT);
+		pmic_config_interface(PMIC_DCXO_CW11_SET_ADDR,
+			PMIC_XO_EXTBUF7_EN_M_MASK,
+			PMIC_XO_EXTBUF7_EN_M_MASK,
+			PMIC_XO_EXTBUF7_EN_M_SHIFT);
+			pmic_clk_buf_swctrl[XO_NFC] = 1;
+	} else {
+		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR,
+			PMIC_XO_EXTBUF7_MODE_MASK,
+			PMIC_XO_EXTBUF7_MODE_MASK,
+			PMIC_XO_EXTBUF7_MODE_SHIFT);
+		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR,
+			PMIC_XO_EXTBUF7_EN_M_MASK,
+			PMIC_XO_EXTBUF7_EN_M_MASK,
+			PMIC_XO_EXTBUF7_EN_M_SHIFT);
+		pmic_clk_buf_swctrl[XO_NFC] = 0;
+	}
+#else
 	if (onoff) {
 		pmic_config_interface(PMIC_DCXO_CW00_CLR_ADDR,
 			PMIC_XO_EXTBUF3_MODE_MASK,
@@ -807,6 +831,7 @@ void clk_buf_disp_ctrl(bool onoff)
 			PMIC_XO_EXTBUF3_EN_M_SHIFT);
 		pmic_clk_buf_swctrl[XO_NFC] = 0;
 	}
+#endif
 }
 EXPORT_SYMBOL(clk_buf_disp_ctrl);
 
@@ -1533,6 +1558,7 @@ short is_clkbuf_bringup(void)
 
 void clk_buf_post_init(void)
 {
+#ifndef CONFIG_MTK_MT6382_BDG_BUF7
 #if defined(CONFIG_MTK_UFS_SUPPORT)
 	int boot_type;
 
@@ -1545,6 +1571,7 @@ void clk_buf_post_init(void)
 #else
 	clk_buf_ctrl_internal(CLK_BUF_UFS, CLK_BUF_FORCE_OFF);
 	CLK_BUF7_STATUS = CLOCK_BUFFER_DISABLE;
+#endif
 #endif
 
 #ifdef CLKBUF_USE_BBLPM
