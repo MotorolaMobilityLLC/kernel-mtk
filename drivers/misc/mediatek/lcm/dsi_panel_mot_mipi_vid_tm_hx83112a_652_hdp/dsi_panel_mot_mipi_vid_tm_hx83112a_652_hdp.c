@@ -100,7 +100,6 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 
 #define LCM_BL_BITS_12			1	//bit12
 #define LCM_BL_MAX_BRIGHTENSS		3276
-#define LCM_BL_MIN_BRIGHTENSS		19
 #define BL_MAX_LEVEL			LCM_BL_MAX_BRIGHTENSS
 
 #define REGFLAG_DELAY		0xFFFC
@@ -484,11 +483,6 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		//return;
 	}
 	bl_lvl =(LCM_BL_MAX_BRIGHTENSS * level)/BL_MAX_LEVEL;
-	if (bl_lvl < LCM_BL_MIN_BRIGHTENSS) {
-		//reset low brightness to avoid black
-		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
-		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
-	}
 #if LCM_BL_BITS_12
 	//for 12bit
 	bl_level[0].para_list[0] = (bl_lvl&0xF00)>>8;
