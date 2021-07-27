@@ -529,7 +529,11 @@ void ana_macro_on(void *cmdq)
 	 * dsc_on:vact * hact * vrefresh * (vtotal / vact) * bubble_ratio
 	 */
 #ifdef _90HZ_
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
+#else
 	reg = (3 << 24) | (1 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
+#endif
 #else
 	reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //405M for 120Hz
 #endif
@@ -6044,8 +6048,11 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	}
 
 	calculate_datarate_cfgs_rx(ap_tx_data_rate);
+
+#ifndef CONFIG_MTK_MT6382_BDG_BUF7
 	if (!disp_bdg_gce_client)
 		disp_init_bdg_gce_obj();
+#endif
 
 	startup_seq_common(cmdq);
 
