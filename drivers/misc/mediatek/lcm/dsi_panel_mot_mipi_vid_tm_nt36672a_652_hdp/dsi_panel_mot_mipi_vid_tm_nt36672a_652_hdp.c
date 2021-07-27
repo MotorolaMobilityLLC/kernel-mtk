@@ -101,10 +101,8 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_BL_BITS_11			1 		//EVT bit8, DVT: bit11
 #if LCM_BL_BITS_11
 #define LCM_BL_MAX_BRIGHTENSS		1638
-#define LCM_BL_MIN_BRIGHTENSS		12
 #else
 #define LCM_BL_MAX_BRIGHTENSS		204
-#define LCM_BL_MIN_BRIGHTENSS		2
 #endif
 
 #define BL_MAX_LEVEL			1638
@@ -491,11 +489,6 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 #if LCM_BL_BITS_11
 	bl_lvl = level;
-	if (bl_lvl == 0) {
-		//reset bl to min to avoid black
-		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
-		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
-	}
     //for 11bit
 	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
 	bl_level[0].para_list[1] = (bl_lvl&0xFF);
@@ -503,12 +496,6 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 #else
 	//EVT 8bit
 	bl_lvl =(LCM_BL_MAX_BRIGHTENSS * level)/BL_MAX_LEVEL;
-	if (bl_lvl == 0) {
-		//reset low brightness to avoid black
-		bl_lvl = LCM_BL_MIN_BRIGHTENSS;
-		LCM_LOGD("%s, tm_nt36672a: reset bl_lvl=%d\n", __func__, bl_lvl);
-	}
-	// set 8bit
 	bl_level[0].para_list[0] = (bl_lvl&0xFF);
 	LCM_LOGI("%s,tm_nt36672a: level=%d, bl_lvl=%d, para_list[0]=0x%x\n", __func__,level, bl_lvl, bl_level[0].para_list[0]);
 #endif
