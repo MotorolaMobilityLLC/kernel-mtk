@@ -186,6 +186,7 @@
 
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 25 0>;
 };
 
 &i2c2 {
