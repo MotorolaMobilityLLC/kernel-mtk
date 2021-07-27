@@ -1071,13 +1071,13 @@
                 <ies>true</ies>
             </gpio93>
             <gpio94>
-                <eint_mode>true</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_GPS_LNA_PIN</varName0>
+                <varName0>GPIO_FLASH_LED_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio94>
@@ -2087,6 +2087,11 @@
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x34</address>
             </device11>
+            <device13>
+                <varName>STROBE_MAIN</varName>
+                <channel>I2C_CHANNEL_7</channel>
+                <address>0x63</address>
+            </device13>
             <device14>
                 <varName>SLAVE_CHARGER</varName>
                 <channel>I2C_CHANNEL_7</channel>
