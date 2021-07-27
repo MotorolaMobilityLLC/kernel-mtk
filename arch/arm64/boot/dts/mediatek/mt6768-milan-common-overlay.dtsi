@@ -12,7 +12,6 @@
 
 #include "mediatek/mt6768-moto-common-overlay.dtsi"
 #include "mediatek/mt6768-milan-audio-overlay.dtsi"
-#include "mediatek/cust_mt6768_corfu_touch_1080x2400.dtsi"
 #include "dt-bindings/mmc/mt6768-msdc.h"
 #include "mediatek/mt6768-moto-milan-fps.dtsi"
 
@@ -505,41 +504,67 @@
 		};
 	};
 
-	mtkfb_pins_lcm_vddi_out1_gpio: lcm_vddi_out1_gpio {
+	mtkfb_pins_6382_rst_out1_gpio: 6382_rst_out1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 
-	mtkfb_pins_lcm_vddi_out0_gpio: lcm_vddi_out0_gpio {
+	mtkfb_pins_6382_rst_out0_gpio: 6382_rst_out0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			pinmux = <PINMUX_GPIO43__FUNC_GPIO43>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 
-	mtkfb_pins_lcm_vci_out1_gpio: lcm_vci_out1_gpio {
+	mtkfb_pins_lcd_bias_enp1_gpio: lcd_bias_enp1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			pinmux = <PINMUX_GPIO83__FUNC_GPIO83>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 
-	mtkfb_pins_lcm_vci_out0_gpio: lcm_vci_out0_gpio {
+	mtkfb_pins_lcd_bias_enp0_gpio: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			pinmux = <PINMUX_GPIO83__FUNC_GPIO83>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 
-	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+	mtkfb_pins_lcd_bias_enn1_gpio: lcd_bias_enn1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+			pinmux = <PINMUX_GPIO82__FUNC_GPIO82>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0_gpio: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO82__FUNC_GPIO82>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bl_en1_gpio: lcd_bl_en1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO26__FUNC_GPIO26>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bl_en0_gpio: lcd_bl_en0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO26__FUNC_GPIO26>;
+			slew-rate = <1>;
+			output-low;
 		};
 	};
 };
@@ -547,17 +572,55 @@
 &mtkfb {
 	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"lcm_vddi_out1_gpio", "lcm_vddi_out0_gpio",
-		"lcm_vci_out1_gpio", "lcm_vci_out0_gpio",
-		"mode_te_te";
+		"6382_rst_out1_gpio", "6382_rst_out0_gpio",
+		"lcd_bias_enp1_gpio","lcd_bias_enp0_gpio",
+		"lcd_bias_enn1_gpio","lcd_bias_enn0_gpio",
+		"lcd_bl_en1_gpio","lcd_bl_en0_gpio";
+
 	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-2 = <&mtkfb_pins_lcm_vddi_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_vddi_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_vci_out1_gpio>;
-	pinctrl-5 = <&mtkfb_pins_lcm_vci_out0_gpio>;
-	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-2 = <&mtkfb_pins_6382_rst_out1_gpio>;
+	pinctrl-3 = <&mtkfb_pins_6382_rst_out0_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp1_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp0_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn1_gpio>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn0_gpio>;
+	pinctrl-8 = <&mtkfb_pins_lcd_bl_en1_gpio>;
+	pinctrl-9 = <&mtkfb_pins_lcd_bl_en0_gpio>;
 	status = "okay";
+};
+
+&spi3 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&spislv_pins_default>;
+
+	spislv@0 {
+		compatible = "mediatek,spi_slave";
+		reg = <0>;
+		spi-max-frequency = <55000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		low-speed-tick-delay = /bits/ 8 <1>;
+		low-speed-early-trans = /bits/ 8 <0>;
+		high-speed-tick-delay = /bits/ 8 <1>;
+		high-speed-early-trans = /bits/ 8 <1>;
+		slave-drive-strength = /bits/ 8 <3>;
+	};
+};
+
+&pio {
+	spislv_pins_default: spislv_mode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_SPI3_MI>,
+				<PINMUX_GPIO22__FUNC_SPI3_CSB>,
+				<PINMUX_GPIO23__FUNC_SPI3_MO>,
+				<PINMUX_GPIO24__FUNC_SPI3_CLK>;
+			drive-strength = <3>;
+		};
+	};
 };
 
 /* DISPSYS GPIO standardization end*/
