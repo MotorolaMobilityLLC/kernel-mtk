@@ -131,7 +131,7 @@
 
 &charger {
         /* common */
-        battery_cv = <4464000>;
+        battery_cv = <4450000>;
         max_charger_voltage = <12000000>;
         min_charger_voltage = <4600000>;
 
@@ -150,38 +150,54 @@
         apple_1_0a_charger_current = <650000>;
         apple_2_1a_charger_current = <800000>;
         ta_ac_charger_current = <2000000>;
-        typec_limit_aicr = <2000000>;
 
         /*mmi config*/
-        mmi,iterm-ma = <243>;
+        mmi,iterm-ma = <242>;
         mmi,mmi-temp-zones = <0 4200 970 0>,
-                        <10 0 2425 2425>,
-                        <15 0 3000 3000>,
-                        <23 0 3000 3000>,
-                        <35 0 3000 3000>,
+                        <10 4200 2500 970>,
+                        <15 0 2500 2500>,
                         <45 0 3000 3000>,
-                        <60 4200 3000 0>;
-        mmi,mmi-ffc-zones = <4450 243>,
-                                <4450 243>,
-                                <4450 243>,
-                                <4480 670>,
-                                <4480 770>,
-                                <4480 840>,
-                                <4450 243>;
+                        <60 4200 2500 0>;
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
-        mmi,vfloat-comp-uv = <10000>;
 };
 
 &bat_gm30 {
-        io-channels = <&auxadc 5>;
-        io-channel-names = "batteryID-channel";
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
-        DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
-
-        df-serialnum = "SB18D11784";
-        #include "bat_setting/mt6768_battery_table_NC50_5000mah_ext.dtsi"
+        DIFFERENCE_FULLOCV_ITH = <(300)>;       /*Charging termination current.*/
+	  df-serialnum = "SB18D00294";
+	  g_Q_MAX_row = <4>;
+	  g_Q_MAX_col = <10>;
+	  g_Q_MAX = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5010 5010 5010 5010/*T0*/
+		5001 5001 5001 5001/*T1*/
+		5098 5098 5098 5098/*T2*/
+		5098 5098 5098 5098/*T3*/
+		4851 4851 4851 4851/*T4*/
+		3488 3488 3488 3488/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	  >;
+	  g_Q_MAX_H_CURRENT_row = <4>;
+	  g_Q_MAX_H_CURRENT_col = <10>;
+	  g_Q_MAX_H_CURRENT = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5010 5010 5010 5010/*T0*/
+		5001 5001 5001 5001/*T1*/
+		5098 5098 5098 5098/*T2*/
+		5098 5098 5098 5098/*T3*/
+		4851 4851 4851 4851/*T4*/
+		3488 3488 3488 3488/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	  >;
+        #include "bat_setting/mt6768_battery_table_MD50_atl_5000mah_ext.dtsi"
 };
 
 &msdc1 {
@@ -325,124 +341,43 @@
     };
 };
 
+/* Config typec */
+&i2c5 {
+	clock-frequency = <400000>;
+	mediatek,use-open-drain;
+	sgm7220@67 {
+		compatible = "mediatek,usb_type_c_sgm7220";
+		reg = <0x67>;
+		mt6370pd,intr_gpio_num = <4>; /* direct defined GPIO num */
+		mt6370pd,intr_gpio = <&pio 4 0x0>;
+		status = "okay";
+	};
+
+	wusb3801@68 {
+		compatible = "mediatek,usb_type_c";
+		reg = <0x68>;
+		mt6370pd,intr_gpio_num = <4>; /* direct defined GPIO num */
+		mt6370pd,intr_gpio = <&pio 4 0x0>;
+		status = "okay";
+	};
+
+	rt1711_typec@4E {
+		compatible = "mediatek,usb_type_c_rt1711";
+		reg = <0x4E>;
+		rt1711pd,intr_gpio = <&pio 4 0x0>;
+		rt1711pd,intr_gpio_num = <4>;
+		status = "okay";
+	};
+};
 /* Config charger */
-&i2c6{
-        wt6670f@35 {
-                status = "okay";
-                compatible = "mediatek,wt6670f_qc3p";
-                reg = <0x35>;
-                wt6670f-reset-gpio = <&pio 25 0x0>;
-                wt6670f-int-gpio = <&pio 6 0x0>;
-                wt6670f-i2c-scl-pin = <&pio 89 0x0>;
-                wt6670f-i2c-sda-pin = <&pio 90 0x0>;
-
-                pinctrl-names = "default",
-                                "wt6670_i2c_scl_low", "wt6670_i2c_scl_high",
-                                "wt6670_i2c_sda_low", "wt6670_i2c_sda_high",
-                                "wt6670_i2c";
-                pinctrl-0 = <&wt6670_pins_default>;
-                pinctrl-1 = <&wt6670_pins_scl_low>;
-                pinctrl-2 = <&wt6670_pins_scl_high>;
-                pinctrl-3 = <&wt6670_pins_sda_low>;
-                pinctrl-4 = <&wt6670_pins_sda_high>;
-                pinctrl-5 = <&wt6670_pins_i2c>;
-        };
+&i2c7{
+	bq25601@6B {
+		status = "okay";
+		compatible = "mediatek,bq25601";
+		reg = <0x6B>;
+		charger_name = "primary_chg";
+	};
 };
-
-&i2c7 {
-        bq25601@6B {
-                status = "okay";
-                compatible = "mediatek,bq25601";
-                reg = <0x6B>;
-
-                charger_name = "primary_chg";
-        };
-
-        bq2597x-standalone@66 {
-                compatible = "ti,bq2597x-standalone";
-                reg = <0x66>;
-                interrupt-parent = <&pio>;
-
-                ti,bq2597x,bat-ovp-alarm-disable;
-                ti,bq2597x,bat-ucp-alarm-disable;
-                ti,bq2597x,bat-ucp-disable;
-
-                ti,bq2597x,bat-therm-disable;
-                ti,bq2597x,bus-therm-disable;
-                ti,bq2597x,die-therm-disable;
-
-                ti,bq2597x,bat-ovp-threshold = <4525>;
-                ti,bq2597x,bat-ovp-alarm-threshold = <4490>;
-                ti,bq2597x,bat-ocp-threshold = <7000>;
-                ti,bq2597x,bat-ocp-alarm-threshold = <6000>;
-
-                ti,bq2597x,bus-ovp-threshold = <12000>;
-                ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
-                ti,bq2597x,bus-ocp-threshold = <3750>;
-                ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
-
-
-                ti,bq2597x,bat-therm-threshold = <0x15>;/*4.1%*/
-                ti,bq2597x,bus-therm-threshold = <0x15>;/*4.1%*/
-                ti,bq2597x,die-therm-threshold = <145>;
-
-                ti,bq2597x,ac-ovp-threshold = <14>;
-                ti,bq2597x,sense-resistor-mohm = <5>;
-
-                sc8551,ac-ovp-threshold = <13>;
-        };
-};
-
-&usbpd_pm {
-        compatible = "moto,usbpd-pm";
-        status = "okay";
-        moto,pd-bat-volt-max = <4480>;
-        moto,pd-bat-curr-max = <6000>;
-        moto,pd-bus-volt-max = <12000>;
-        moto,pd-bus-curr-max = <3000>;
-        moto,pd-non-ffc-bat-volt-max = <4450>;
-        //moto,cp-sec-enable;
-};
-
-&pio {
-        wt6670_pins_default: wt6670_default_mode {
-        };
-        wt6670_pins_scl_low: wt6670_scl_low {
-                pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO89__FUNC_GPIO89>;
-                        slew-rate = <1>;
-                        output-low;
-                };
-        };
-        wt6670_pins_scl_high: wt6670_scl_high {
-                pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO89__FUNC_GPIO89>;
-                        slew-rate = <1>;
-                        output-high;
-                };
-        };
-        wt6670_pins_sda_low: wt6670_sda_low {
-                pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
-                        slew-rate = <1>;
-                        output-low;
-                };
-        };
-        wt6670_pins_sda_high: wt6670_sda_high {
-                pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
-                        slew-rate = <1>;
-                        output-high;
-                };
-        };
-        wt6670_pins_i2c: wt6670_i2c_mode {
-                pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO90__FUNC_SDA6>,
-                                <PINMUX_GPIO89__FUNC_SCL6>;
-                };
-        };
-};
-
 /*config stylus pen*/
 &odm {
     pen_detect: pen_detect {
