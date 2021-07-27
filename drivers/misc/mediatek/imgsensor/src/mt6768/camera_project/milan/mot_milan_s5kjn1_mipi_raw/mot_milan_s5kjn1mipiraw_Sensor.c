@@ -39,7 +39,7 @@
 
 #define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5kjn1_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_s5kjn1_eeprom.bin"
 #define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
 
 #define MILAN_S5KJN1_EEPROM_SIZE  0x39c7
