@@ -96,6 +96,21 @@ int g_FG_PSEUDO1[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	{ 13, 14, 15, 16} /*T9*/
 };
 
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+int g_FG_PSEUDO100[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
+	/*bat1,   bat2,   bat3,    bat4*/
+	{ 96, 96, 96, 100},/*T0*/
+	{ 97, 97, 97, 100},/*T1*/
+	{ 96, 96, 96, 100},/*T2*/
+	{ 95, 95, 95, 100},/*T3*/
+	{ 95, 95, 95, 100},/*T4*/
+	{ 100, 100, 100, 100},/*T5*/
+	{ 100, 100, 100, 100},/*T6*/
+	{ 100, 100, 100, 100},/*T7*/
+	{ 100, 100, 100, 100},/*T8*/
+	{ 100, 100, 100, 100} /*T9*/
+};
+#else
 int g_FG_PSEUDO100[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	/*bat1,   bat2,   bat3,    bat4*/
 	{ 100, 100, 100, 100},/*T0*/
@@ -109,6 +124,7 @@ int g_FG_PSEUDO100[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	{ 100, 100, 100, 100},/*T8*/
 	{ 100, 100, 100, 100} /*T9*/
 };
+#endif
 
 /* shutdown_hl_zcv */
 int g_SHUTDOWN_HL_ZCV[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
