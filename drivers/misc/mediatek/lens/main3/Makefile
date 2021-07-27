@@ -41,6 +41,6 @@ obj-y += main3_lens.o
 obj-y += common/bu24253af/
 obj-y += common/gt9772af/
 obj-y += common/mot_dw9714vaf/
-
+obj-y += common/dw9714af/
 
 endif
