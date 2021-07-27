@@ -1452,7 +1452,8 @@ enum DSI_STATUS DSI_TXRX_Control(enum DISP_MODULE_ENUM module,
 	bool hstx_cklp_en = dsi_params->cont_clock ? FALSE : TRUE;
 	int max_return_size = 0;
 
-	hstx_cklp_en = false;
+	if (bdg_is_bdg_connected() == 1)
+		hstx_cklp_en = false;
 	switch (lane_num) {
 	case LCM_ONE_LANE:
 		lane_num_bitvalue = 0x1;
