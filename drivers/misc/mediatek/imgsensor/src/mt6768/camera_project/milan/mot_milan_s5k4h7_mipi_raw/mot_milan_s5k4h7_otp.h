@@ -19,7 +19,7 @@
 #define OTP_PAGE_START_ADDR 0x0A04
 #define OTP_PAGE_SIZE 64
 
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_s5k4h7_eeprom.bin"
 #define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_wide.bin"
 #define DUMP_WIDE_SERIAL_NUMBER_SIZE 8
 #define S5K4H7_EEPROM_MAX_SIZE 2185
