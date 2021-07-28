@@ -4098,6 +4098,82 @@ static int suspend_active_queue_groups_on_reset(struct kbase_device *kbdev)
 	return ret;
 }
 
+/**
+ * scheduler_handle_reset_in_protected_mode() - Update the state of normal mode
+ *                                              groups when reset is done during
+ *                                              protected mode execution.
+ *
+ * @group: Pointer to the device.
+ *
+ * This function is called at the time of GPU reset, before the suspension of
+ * queue groups, to handle the case when the reset is getting performed whilst
+ * GPU is in protected mode.
+ * On entry to protected mode all the groups, except the top group that executes
+ * in protected mode, are implicitly suspended by the FW. Thus this function
+ * simply marks the normal mode groups as suspended (and cleans up the
+ * corresponding CSG slots) to prevent their potential forceful eviction from
+ * the Scheduler. So if GPU was in protected mode and there was no fault, then
+ * only the protected mode group would be suspended in the regular way post exit
+ * from this function. And if GPU was in normal mode, then all on-slot groups
+ * will get suspended in the regular way.
+ *
+ * Return: true if the groups remaining on the CSG slots need to be suspended in
+ *         the regular way by sending CSG SUSPEND reqs to FW, otherwise false.
+ */
+static bool scheduler_handle_reset_in_protected_mode(struct kbase_device *kbdev)
+{
+	struct kbase_csf_scheduler *scheduler = &kbdev->csf.scheduler;
+	u32 const num_groups = kbdev->csf.global_iface.group_num;
+	struct kbase_queue_group *protm_grp;
+	bool suspend_on_slot_groups;
+	unsigned long flags;
+	u32 csg_nr;
+
+	mutex_lock(&scheduler->lock);
+
+	spin_lock_irqsave(&scheduler->interrupt_lock, flags);
+	protm_grp = scheduler->active_protm_grp;
+
+	/* If GPU wasn't in protected mode or had exited it before the GPU reset
+	 * then all the on-slot groups can be suspended in the regular way by
+	 * sending CSG SUSPEND requests to FW.
+	 * If there wasn't a fault for protected mode group, then it would
+	 * also need to be suspended in the regular way before the reset.
+	 */
+	suspend_on_slot_groups = !(protm_grp && protm_grp->faulted);
+	spin_unlock_irqrestore(&scheduler->interrupt_lock, flags);
+
+	if (!protm_grp)
+		goto unlock;
+
+	/* GPU is in protected mode, so all the on-slot groups barring the
+	 * the protected mode group can be marked as suspended right away.
+	 */
+	for (csg_nr = 0; csg_nr < num_groups; csg_nr++) {
+		struct kbase_queue_group *const group =
+			kbdev->csf.scheduler.csg_slots[csg_nr].resident_group;
+		int new_val;
+
+		if (!group || (group == protm_grp))
+			continue;
+
+		cleanup_csg_slot(group);
+		group->run_state = KBASE_CSF_GROUP_SUSPENDED;
+
+		/* Simply treat the normal mode groups as non-idle. The tick
+		 * scheduled after the reset will re-initialize the counter
+		 * anyways.
+		 */
+		new_val = atomic_inc_return(&scheduler->non_idle_offslot_grps);
+		KBASE_KTRACE_ADD_CSF_GRP(kbdev, SCHEDULER_NONIDLE_OFFSLOT_INC,
+					 group, new_val);
+	}
+
+unlock:
+	mutex_unlock(&scheduler->lock);
+	return suspend_on_slot_groups;
+}
+
 static void scheduler_inner_reset(struct kbase_device *kbdev)
 {
 	u32 const num_groups = kbdev->csf.global_iface.group_num;
@@ -4143,7 +4219,9 @@ void kbase_csf_scheduler_reset(struct kbase_device *kbdev)
 	WARN_ON(!kbase_reset_gpu_is_active(kbdev));
 
 	KBASE_KTRACE_ADD(kbdev, SCHEDULER_RESET, NULL, 0u);
-	if (!suspend_active_queue_groups_on_reset(kbdev)) {
+
+	if (scheduler_handle_reset_in_protected_mode(kbdev) &&
+	    !suspend_active_queue_groups_on_reset(kbdev)) {
 		/* As all groups have been successfully evicted from the CSG
 		 * slots, clear out thee scheduler data fields and return
 		 */
