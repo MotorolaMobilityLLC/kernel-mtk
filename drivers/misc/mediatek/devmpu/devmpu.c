@@ -244,7 +244,7 @@ int devmpu_print_violation(uint64_t vio_addr, uint32_t vio_id,
 
 		temp = page;
 
-		pr_info("Page#%llx RD/WR : %08zx/%08zx (%lld)\n",
+		pr_info("Page#%llx RD/WR : %08zx/%08zx (%u)\n",
 			page,
 			switchValue(rd_perm),
 			switchValue(wr_perm),
