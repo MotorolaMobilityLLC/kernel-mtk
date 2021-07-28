@@ -204,7 +204,7 @@ static int mtk_mux_set_parent_setclr(struct clk_hw *hw, u8 index)
 		 * Workaround for mm dvfs. Poll mm rdma reg before
 		 * clkmux switching.
 		 */
-		if (!strcmp(__clk_get_name(hw->clk), "mm_sel"))
+		if (hw && hw->clk && !strcmp(__clk_get_name(hw->clk), "mm_sel"))
 			mm_polling(hw);
 #endif
 
