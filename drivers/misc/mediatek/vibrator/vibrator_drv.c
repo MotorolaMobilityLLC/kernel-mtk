@@ -107,7 +107,7 @@ static void vibrator_enable(unsigned int dur, unsigned int activate)
 			dur = hw->vib_timer;
 
 		dur = (dur > 15000 ? 15000 : dur);
-#ifdef CONFIG_AF_NOISE_ELIMINATION
+#ifdef CONFIG_SEPERATE_VOLT_FORLONGVIB
 		pr_debug(VIB_TAG "Judge if it is long vib dur=%d, long=%d\n", dur, hw->vib_long_ms);
 		if (dur > hw->vib_long_ms) {
                     vibr_power_set_long();
