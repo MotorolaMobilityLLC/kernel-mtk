@@ -472,9 +472,9 @@
 			compatible = "mediatek,reserve-memory-scp_share";
 			no-map;
 #ifdef CONFIG_MTK_TINYSYS_SCP_LOGGER_SUPPORT
-			size = <0 0x00300000>; /*3 MB share mem size */
+			size = <0 0x00320000>; /*3MB + 128K share mem size */
 #else
-			size = <0 0x00180000>;
+			size = <0 0x001A0000>;
 #endif
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x50000000 0 0x40000000>;
@@ -6063,6 +6063,12 @@
 		mtk_dsp_ver = <0x1>;
 		swdsp_smartpa_process_enable = <0x5>;
 		mtk_dsp_mem_afe = <0x1 0x40000>; /* always enable */
+	};
+
+	snd_scp_ultra: snd_scp_ultra {
+		compatible = "mediatek,snd_scp_ultra";
+		scp_ultra_dl_memif_id = <0x7>;
+		scp_ultra_ul_memif_id = <0xf>;
 	};
 
 	audio_sram@11212000 {
