@@ -688,12 +688,6 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		return ERR_PTR(-EINVAL);
 	}
 
-    /* add by k.zhang for sgtable_init KE bug */
-	if ((len > 1024 * 1024 * 1024)) {
-		IONMSG("%s error: size (%zu) is more than 1G !!\n",
-		       __func__, len);
-		return ERR_PTR(-EINVAL);
-	}
 	/*avoid camelcase, will modify in a letter*/
 	mmprofile_log_ex(ion_mmp_events[PROFILE_ALLOC], MMPROFILE_FLAG_START,
 			 (unsigned long)client, len);
