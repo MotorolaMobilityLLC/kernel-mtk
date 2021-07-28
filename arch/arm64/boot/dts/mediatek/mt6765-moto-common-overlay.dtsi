@@ -402,6 +402,10 @@
 	bc12_sel = <1>;
 };
 
+&lk_charger {
+	temp_t4_threshold = <60>;
+};
+
 //Move it to overlay dts entry for support different hardware phase
 //#include "k65v1_64_bsp/cust.dtsi"
 //#include "mediatek/cust_mt6765_camera.dtsi"
