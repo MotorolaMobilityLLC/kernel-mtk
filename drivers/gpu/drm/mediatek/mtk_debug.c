@@ -74,9 +74,6 @@ static struct proc_dir_entry *disp_lowpower_proc;
 static struct proc_dir_entry *mtkfb_debug_procfs;
 #endif
 static struct drm_device *drm_dev;
-static struct DISP_PQ_BYPASS_SWITCH m_old_pq_bypass_switch;
-static struct DISP_PQ_BYPASS_SWITCH m_new_pq_bypass_switch;
-
 bool g_mobile_log;
 bool g_fence_log;
 bool g_irq_log;
@@ -84,6 +81,8 @@ bool g_detail_log;
 bool g_trace_log;
 unsigned int mipi_volt;
 unsigned int disp_met_en;
+static unsigned int m_old_pq_persist_property[32];
+unsigned int m_new_pq_persist_property[32];
 
 int gCaptureOVLEn;
 int gCaptureWDMAEn;
@@ -1395,43 +1394,6 @@ int mtk_dprec_mmp_dump_ovl_layer(struct mtk_plane_state *plane_state)
 	return -1;
 }
 
-int mtk_drm_ioctl_pq_debug_set_bypass(struct drm_device *dev, void *data,
-	struct drm_file *file_priv)
-{
-	int ret = 0;
-	struct mtk_drm_private *private = dev->dev_private;
-	struct drm_crtc *crtc = private->crtc[0];
-
-	m_old_pq_bypass_switch = m_new_pq_bypass_switch;
-	m_new_pq_bypass_switch = *((struct DISP_PQ_BYPASS_SWITCH *)data);
-
-	DDPFUNC("+");
-
-	if (m_old_pq_bypass_switch.color_bypass !=
-		m_new_pq_bypass_switch.color_bypass)
-		disp_color_set_bypass(crtc, m_new_pq_bypass_switch.color_bypass);
-
-	if (m_old_pq_bypass_switch.ccorr_bypass !=
-		m_new_pq_bypass_switch.ccorr_bypass)
-		disp_ccorr_set_bypass(crtc, m_new_pq_bypass_switch.ccorr_bypass);
-
-	if (m_old_pq_bypass_switch.gamma_bypass !=
-		m_new_pq_bypass_switch.gamma_bypass)
-		disp_gamma_set_bypass(crtc, m_new_pq_bypass_switch.gamma_bypass);
-
-	if (m_old_pq_bypass_switch.dither_bypass !=
-		m_new_pq_bypass_switch.dither_bypass)
-		disp_dither_set_bypass(crtc, m_new_pq_bypass_switch.dither_bypass);
-
-	if (m_old_pq_bypass_switch.aal_bypass !=
-		m_new_pq_bypass_switch.aal_bypass)
-		disp_aal_set_bypass(crtc, m_new_pq_bypass_switch.aal_bypass);
-
-	DDPFUNC("-");
-
-	return ret;
-}
-
 int mtk_dprec_mmp_dump_cwb_buffer(struct drm_crtc *crtc,
 		void *buffer, unsigned int buf_idx)
 {
@@ -1730,6 +1692,49 @@ bool mtk_drm_set_cwb_user_buf(void *user_buffer, enum CWB_BUFFER_TYPE type)
 			user_buffer, type);
 
 	return true;
+}
+
+int mtk_drm_ioctl_pq_get_persist_property(struct drm_device *dev, void *data,
+	struct drm_file *file_priv)
+{
+	int i, ret = 0;
+	unsigned int pq_persist_property[32];
+	struct mtk_drm_private *private = dev->dev_private;
+	struct drm_crtc *crtc = private->crtc[0];
+
+	memset(pq_persist_property, 0, sizeof(pq_persist_property));
+	memcpy(pq_persist_property, (unsigned int *)data, sizeof(pq_persist_property));
+
+	for (i = 0; i < DISP_PQ_PROPERTY_MAX; i++) {
+		m_old_pq_persist_property[i] = m_new_pq_persist_property[i];
+		m_new_pq_persist_property[i] = pq_persist_property[i];
+	}
+
+	DDPFUNC("+");
+
+	if (m_old_pq_persist_property[DISP_PQ_COLOR_BYPASS] !=
+		m_new_pq_persist_property[DISP_PQ_COLOR_BYPASS])
+		disp_color_set_bypass(crtc, m_new_pq_persist_property[DISP_PQ_COLOR_BYPASS]);
+
+	if (m_old_pq_persist_property[DISP_PQ_CCORR_BYPASS] !=
+		m_new_pq_persist_property[DISP_PQ_CCORR_BYPASS])
+		disp_ccorr_set_bypass(crtc, m_new_pq_persist_property[DISP_PQ_CCORR_BYPASS]);
+
+	if (m_old_pq_persist_property[DISP_PQ_GAMMA_BYPASS] !=
+		m_new_pq_persist_property[DISP_PQ_GAMMA_BYPASS])
+		disp_gamma_set_bypass(crtc, m_new_pq_persist_property[DISP_PQ_GAMMA_BYPASS]);
+
+	if (m_old_pq_persist_property[DISP_PQ_DITHER_BYPASS] !=
+		m_new_pq_persist_property[DISP_PQ_DITHER_BYPASS])
+		disp_dither_set_bypass(crtc, m_new_pq_persist_property[DISP_PQ_DITHER_BYPASS]);
+
+	if (m_old_pq_persist_property[DISP_PQ_AAL_BYPASS] !=
+		m_new_pq_persist_property[DISP_PQ_AAL_BYPASS])
+		disp_aal_set_bypass(crtc, m_new_pq_persist_property[DISP_PQ_AAL_BYPASS]);
+
+	DDPFUNC("-");
+
+	return ret;
 }
 
 static void process_dbg_opt(const char *opt)
