@@ -57,6 +57,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL},
 #endif
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_VDDA},
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
 		},
 	},
@@ -69,6 +70,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_VDDA},
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
 		},
 	},
@@ -96,6 +98,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_VDDA},
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
 		},
 	},
@@ -174,38 +177,41 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
-			{AVDD, Vol_2800, 1},
 			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
 			{DVDD, Vol_1100, 1},
+			{VDDA, Vol_High, 1},
 			{RST, Vol_High, 5}
 		 },
 	},
 #endif
 #if defined(MOT_CORFU_S5K4H7_QTECH)
-        {
-                SENSOR_DRVNAME_MOT_CORFU_S5K4H7_QTECH,
-                {
-                        {RST, Vol_Low, 1},
-                        {SensorMCLK, Vol_High, 1},
-                        {DVDD, Vol_1200, 1},
-                        {AVDD, Vol_2800, 1},
-                        {DOVDD, Vol_1800, 1},
-                        {RST, Vol_High, 5}
-                },
-        },
+	{
+		SENSOR_DRVNAME_MOT_CORFU_S5K4H7_QTECH,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DVDD, Vol_1200, 1},
+			{AVDD, Vol_2800, 1},
+			{DOVDD, Vol_1800, 1},
+			{VDDA, Vol_High, 1},
+			{RST, Vol_High, 5}
+		},
+	},
 #endif
 #if defined(MOT_CORFU_GC02M1_TSP)
-        {
-                SENSOR_DRVNAME_MOT_CORFU_GC02M1_TSP,
-                {
-                        {RST, Vol_Low, 1},
-                        {SensorMCLK, Vol_High, 1},
-                        {DVDD, Vol_High, 1},
-                        {DOVDD, Vol_1800, 1},
-                        {AVDD, Vol_2800, 1},
-                        {RST, Vol_High, 5}
-                },
-        },
+	{
+		SENSOR_DRVNAME_MOT_CORFU_GC02M1_TSP,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DVDD, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
+			{VDDA, Vol_High, 1},
+			{RST, Vol_High, 5}
+		},
+	},
 #endif
 /* Add Corfu end */
 	/* add new sensor before this line */
