@@ -116,10 +116,13 @@ static enum IMGSENSOR_RETURN gpio_init(void *pinstance)
 					ret = IMGSENSOR_RETURN_ERROR;
 					return ret;
 				}
-				pgpio->ppinctrl_state_cam[j][i] =
-					pinctrl_lookup_state(
-					    pgpio->ppinctrl,
-					    str_pinctrl_name);
+				if((!strcmp(str_pinctrl_name,"cam4_vcamaf_on")) || (!strcmp(str_pinctrl_name,"cam4_vcamaf_off")))
+					pgpio->ppinctrl_state_cam[j][i] = pgpio->ppinctrl_state_cam[1][i];
+				else
+					pgpio->ppinctrl_state_cam[j][i] =
+						pinctrl_lookup_state(
+						    pgpio->ppinctrl,
+						    str_pinctrl_name);
 
 				if (pgpio->ppinctrl_state_cam[j][i] == NULL ||
 				    IS_ERR(pgpio->ppinctrl_state_cam[j][i])) {
