@@ -405,9 +405,9 @@ page_owner=on loop.max_part=7";
 			compatible = "mediatek,reserve-memory-scp_share";
 			no-map;
 #ifdef CONFIG_MTK_TINYSYS_SCP_LOGGER_SUPPORT
-			size = <0 0x00300000>; /*3 MB share mem size */
+			size = <0 0x00320000>; /*3MB + 128K share mem size */
 #else
-			size = <0 0x00180000>;
+			size = <0 0x001A0000>;
 #endif
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x50000000 0 0x40000000>;
@@ -2757,6 +2757,12 @@ page_owner=on loop.max_part=7";
 		prefer_mode = <0>;
 		mode_size = <0x9c00 0xD000>;
 		block_size = <0x1000>;
+	};
+
+	snd_scp_ultra: snd_scp_ultra {
+		compatible = "mediatek,snd_scp_ultra";
+		scp_ultra_dl_memif_id = <0x7>;
+		scp_ultra_ul_memif_id = <0xf>;
 	};
 
 	btcvsd_snd: mtk-btcvsd-snd@18050000 {
