@@ -51,6 +51,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AFVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 #ifdef MIPI_SWITCH
@@ -66,6 +67,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AFVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
@@ -93,6 +95,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AFVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
@@ -175,6 +178,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
 			{AVDD, Vol_2800, 1},
+			{AFVDD, Vol_High, 1},
 			{DOVDD, Vol_1800, 1},
 			{DVDD, Vol_1100, 1},
 			{RST, Vol_High, 5}
@@ -182,30 +186,32 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	},
 #endif
 #if defined(MOT_COFUD_S5K4H7_MIPI_RAW)
-        {
-                SENSOR_DRVNAME_MOT_COFUD_S5K4H7_MIPI_RAW,
-                {
-                        {RST, Vol_Low, 1},
-                        {SensorMCLK, Vol_High, 1},
-                        {DVDD, Vol_1200, 1},
-                        {AVDD, Vol_2800, 1},
-                        {DOVDD, Vol_1800, 1},
-                        {RST, Vol_High, 5}
-                },
-        },
+	{
+		SENSOR_DRVNAME_MOT_COFUD_S5K4H7_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DVDD, Vol_1200, 1},
+			{AVDD, Vol_2800, 1},
+			{AFVDD, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{RST, Vol_High, 5}
+		},
+	},
 #endif
 #if defined(MOT_COFUD_GC02M1_MIPI_RAW)
-        {
-                SENSOR_DRVNAME_MOT_COFUD_GC02M1_MIPI_RAW,
-                {
-                        {RST, Vol_Low, 1},
-                        {SensorMCLK, Vol_High, 1},
-                        {DVDD, Vol_High, 1},
-                        {DOVDD, Vol_1800, 1},
-                        {AVDD, Vol_2800, 1},
-                        {RST, Vol_High, 5}
-                },
-        },
+	{
+		SENSOR_DRVNAME_MOT_COFUD_GC02M1_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DVDD, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
+			{AFVDD, Vol_High, 1},
+			{RST, Vol_High, 5}
+		},
+	},
 #endif
 /* Add Corfu end */
 	/* add new sensor before this line */
