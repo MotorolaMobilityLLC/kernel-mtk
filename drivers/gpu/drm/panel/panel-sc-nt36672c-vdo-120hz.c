@@ -536,8 +536,6 @@ static struct mtk_panel_params ext_params = {
 	.data_rate = 1176,
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 120,
-		.lfr_enable = 1,
-		.lfr_minimum_fps = 60,
 	},
 	.dyn = {
 		.switch_en = 1,
@@ -546,6 +544,8 @@ static struct mtk_panel_params ext_params = {
 		.hfp = 161,
 		.vfp = 2528,
 	},
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -596,8 +596,6 @@ static struct mtk_panel_params ext_params_90hz = {
 	.data_rate = 1176,
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 120,
-		.lfr_enable = 1,
-		.lfr_minimum_fps = 60,
 	},
 	.dyn = {
 		.switch_en = 1,
@@ -606,6 +604,8 @@ static struct mtk_panel_params ext_params_90hz = {
 		.hfp = 161,
 		.vfp = 879,
 	},
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 
 static struct mtk_panel_params ext_params_120hz = {
@@ -655,8 +655,6 @@ static struct mtk_panel_params ext_params_120hz = {
 	.data_rate = 1176,
 	.dyn_fps = {
 		.switch_en = 1, .vact_timing_fps = 120,
-		.lfr_enable = 1,
-		.lfr_minimum_fps = 60,
 	},
 	.dyn = {
 		.switch_en = 1,
@@ -665,6 +663,8 @@ static struct mtk_panel_params ext_params_120hz = {
 		.hfp = 161,
 		.vfp = 54,
 	},
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 
 static int panel_ext_reset(struct drm_panel *panel, int on)
