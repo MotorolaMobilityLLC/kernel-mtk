@@ -60,6 +60,10 @@
 #include <platform/mtk_platform_common.h>
 #endif
 
+#if IS_ENABLED(CONFIG_MTK_GPU_DEBUG)
+#include <ged_log.h>
+#endif
+
 #ifdef CONFIG_MALI_CORESTACK
 bool corestack_driver_control = true;
 #else
@@ -2702,6 +2706,10 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 
 int kbase_pm_protected_mode_enable(struct kbase_device *const kbdev)
 {
+#if IS_ENABLED(CONFIG_MTK_GPU_DEBUG)
+	if (is_gpu_ged_log_enable())
+		pr_info("[gpu_debug]%s", __func__);
+#endif
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
 		GPU_COMMAND_SET_PROTECTED_MODE);
 	return 0;
@@ -2710,6 +2718,11 @@ int kbase_pm_protected_mode_enable(struct kbase_device *const kbdev)
 int kbase_pm_protected_mode_disable(struct kbase_device *const kbdev)
 {
 	lockdep_assert_held(&kbdev->pm.lock);
+
+#if IS_ENABLED(CONFIG_MTK_GPU_DEBUG)
+	if (is_gpu_ged_log_enable())
+		pr_info("[gpu_debug]%s", __func__);
+#endif
 
 	return kbase_pm_do_reset(kbdev);
 }
