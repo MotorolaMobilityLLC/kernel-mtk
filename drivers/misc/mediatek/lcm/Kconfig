@@ -23,3 +23,12 @@ config MTK_LCM_DEVICE_TREE_SUPPORT
 	  Please also turn on MTK_LCM_DEVICE_TREE_SUPPORT in ProjectConfig.mk.
 	  If not define MTK_LCM_DEVICE_TREE_SUPPORT
 	  there will not connect between display driver and LCM devices.
+
+config MTK_BIAS_BL_FEATURE
+	default n
+	bool "Support bias and backlight i2c driver"
+	help
+	  This config for bias IC and backlight IC
+	  bias IC and backlight IC are used by LCM
+	  Normal project will disable it first
+	  If you are not sure about this, do not set it to y
