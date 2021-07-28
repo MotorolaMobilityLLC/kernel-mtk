@@ -240,6 +240,30 @@
 			output-low;
 		};
 	};
+	cam1_vdda_on: cam1_vdda_on@gpio110 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO110__FUNC_GPIO110>;
+			output-high;
+		};
+	};
+	cam1_vdda_off: cam1_vdda_off@gpio110 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO110__FUNC_GPIO110>;
+			output-low;
+		};
+	};
+	cam2_vdda_on: cam2_vdda_on@gpio153 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			output-high;
+		};
+	};
+	cam2_vdda_off: cam2_vdda_off@gpio153 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			output-low;
+		};
+	};
 	cam4_vcamd_off: cam4_vcamd_output_low@gpio152 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
@@ -282,6 +306,8 @@
 			"cam_mipi_switch_sel_1", "cam_mipi_switch_sel_0",
 			"cam0_vcamaf_on", "cam0_vcamaf_off",
 			"cam0_vcama_on", "cam0_vcama_off",
+			"cam1_vdda_on", "cam1_vdda_off",
+			"cam2_vdda_on", "cam2_vdda_off",
 			"cam4_vcamd_on", "cam4_vcamd_off";
 
 	pinctrl-0 = <&camera_pins_default>;
@@ -323,8 +349,12 @@
 	pinctrl-36 = <&cam0_vcamaf_off>;
 	pinctrl-37 = <&cam0_vcama_on>;
 	pinctrl-38 = <&cam0_vcama_off>;
-	pinctrl-39 = <&cam4_vcamd_on>;
-	pinctrl-40 = <&cam4_vcamd_off>;
+	pinctrl-39 = <&cam1_vdda_on>;
+	pinctrl-40 = <&cam1_vdda_off>;
+	pinctrl-41 = <&cam2_vdda_on>;
+	pinctrl-42 = <&cam2_vdda_off>;
+	pinctrl-43 = <&cam4_vcamd_on>;
+	pinctrl-44 = <&cam4_vcamd_off>;
 
 	cam0_vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
 	cam0_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
