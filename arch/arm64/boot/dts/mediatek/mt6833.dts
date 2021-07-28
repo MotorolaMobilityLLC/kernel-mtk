@@ -1848,6 +1848,27 @@ page_owner=on loop.max_part=7";
 		clocks = <&infracfg_ao CLK_IFRAO_GCE>;
 	};
 
+	ktf-cmdq-test {
+		compatible = "mediatek,ktf-cmdq-test";
+		mediatek,gce = <&gce_mbox>;
+		mmsys_config = <&mmsys_config>;
+		mboxes = <&gce_mbox 8 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 9 CMDQ_NO_TIMEOUT CMDQ_THR_PRIO_1>,
+			<&gce_mbox 10 0 CMDQ_THR_PRIO_1>;
+		mediatek,gce-subsys = <99>, <SUBSYS_1400XXXX>;
+		gce-subsys = <&gce_mbox 0x14000000 SUBSYS_1400XXXX>,
+			<&gce_mbox 0x14010000 SUBSYS_1401XXXX>,
+			<&gce_mbox 0x14020000 SUBSYS_1402XXXX>;
+		token_user0 = /bits/ 16 <CMDQ_SYNC_TOKEN_USER_0>;
+		token_gpr_set4 = /bits/ 16 <CMDQ_SYNC_TOKEN_GPR_SET_4>;
+		gce-event-names = "disp_rdma0_sof",
+			"disp_rdsz0_sof",
+			"mdp_rdma0_sof";
+		gce-events = <&gce_mbox CMDQ_EVENT_DISP_RDMA0_SOF>,
+			<&gce_mbox CMDQ_EVENT_DISP_RSZ0_SOF>,
+			<&gce_mbox CMDQ_EVENT_MDP_RDMA0_SOF>;
+	};
+
 	cmdq-test {
 		compatible = "mediatek,cmdq-test";
 		mediatek,gce = <&gce_mbox>;
