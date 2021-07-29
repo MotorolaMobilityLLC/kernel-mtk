@@ -55,9 +55,9 @@ extern void BDG_set_cmdq_V2_DSI0(void *cmdq, unsigned int cmd, unsigned char cou
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
 #define MDELAY(n)		(lcm_util.mdelay(n))
 #define UDELAY(n)		(lcm_util.udelay(n))
-/*
+
 #define dsi_set_cmdq_V4(para_tbl, size, force_update) \
-	lcm_util.dsi_set_cmdq_V4(para_tbl, size, force_update)*/
+	lcm_util.dsi_set_cmdq_V4(para_tbl, size, force_update)
 #define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
 	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update) \
@@ -464,7 +464,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0XC0,0x01,{0X02}},
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x01,{0xFF}},
+	{0X51,0x01,{0x00}},
 	{0X53,0x01,{0X2C}},
 	{0X55,0x01,{0X00}},
 
@@ -502,11 +502,9 @@ static struct LCM_setting_table bl_level[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 */
-/*
 static struct LCM_setting_table_V4 BL_Level[] = {
 	{0x15, 0x51, 1, {0xFF}, 0 },
 };
-*/
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update,int IsMT6382)
 {
@@ -759,16 +757,15 @@ static void lcm_setbacklight_cmdq(void *handle,unsigned int level)
 {
 
 	pr_info("%s,nt36672c tianma backlight: level = %d\n", __func__, level);
-/*
-	if(level < 100)
-		level = 100;
-*/
-/*	BL_Level[0].para_list[0] = level;
+	if(level < 30 && level != 0)
+		level = 30;
+
+	BL_Level[0].para_list[0] = level;
 
 	dsi_set_cmdq_V4(BL_Level,
 				sizeof(BL_Level)
 				/ sizeof(struct LCM_setting_table_V4), 1);
-*/
+
 }
 
 static void *lcm_switch_mode(int mode)
