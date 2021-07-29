@@ -40,6 +40,11 @@
 
 #define OIS_SWITCH 1
 
+typedef enum {
+    MCU_CMD_NONE           = 0x00,
+    MCU_CMD_OIS_DISABLE    = 0x01,
+} motOISParam;
+
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
@@ -171,14 +176,11 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
-void control_ois(__user struct stAF_CtrlCmd *CtrlCmd)
+void control_ois(struct stAF_CtrlCmd *CtrlCmd)
 {
-	struct stAF_CtrlCmd ControlCmd;
-	copy_from_user(&ControlCmd, CtrlCmd, sizeof(struct stAF_CtrlCmd));
-
-	switch (ControlCmd.i8CmdID) {
+	switch (CtrlCmd->i8CmdID) {
 		case OIS_SWITCH:
-			if(ControlCmd.i8Param[0])
+			if(CtrlCmd->i8Param[0])
 			{
 				s4AF_WriteReg(0x7015,0x0001);
 				LOG_INF("OIS OFF!\n");
@@ -200,6 +202,8 @@ long DW9781CAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		    unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
+	struct stAF_CtrlCmd ControlCmd;
+	struct stAF_MotorCmd af_para;
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
@@ -220,7 +224,26 @@ long DW9781CAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 		break;
 
 	case AFIOC_X_CTRLPARA:
-		control_ois((__user struct stAF_CtrlCmd *)(a_u4Param));
+		copy_from_user(&ControlCmd, (__user struct stAF_CtrlCmd *)a_u4Param, sizeof(struct stAF_CtrlCmd));
+		control_ois(&ControlCmd);
+		break;
+
+	case AFIOC_S_SETPARA:
+		if (copy_from_user(&af_para, (__user struct stAF_MotorCmd *)a_u4Param, sizeof(struct stAF_MotorCmd))) {
+			LOG_INF("OIS copy from user failed\n");
+		}
+
+		LOG_INF("OIS u4CmdID: %d, u4Param:%d\n", af_para.u4CmdID, af_para.u4Param);
+
+		switch (af_para.u4CmdID) {
+			case (u32)MCU_CMD_OIS_DISABLE:
+				ControlCmd.i8CmdID = OIS_SWITCH;
+				ControlCmd.i8Param[0] = af_para.u4Param;
+				control_ois(&ControlCmd);
+				break;
+			default:
+				break;
+		}
 		break;
 
 	default:
