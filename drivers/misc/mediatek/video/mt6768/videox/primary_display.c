@@ -10407,3 +10407,64 @@ char* primary_display_get_lcm_name(void)
 {
 	return (char *)pgc->plcm->drv->name ? (char *)pgc->plcm->drv->name  : "null";
 }
+
+int write_lcm_lp_by_cmdq(struct LCM_setting_table_V4 *para_tbl,
+									unsigned int size,
+									unsigned char force_update)
+{
+	int ret = 0;
+	UINT32 index = 0;
+	struct cmdqRecStruct *cmdq_handle_backlight = NULL;
+	DISPFUNC();
+	/* Create backlight read cmdq */
+	ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK,
+							&cmdq_handle_backlight);
+	if (ret) {
+		DISPDBG("fail to create primary cmdq handle\n");
+		return -1;
+	}
+	/* 1.use cmdq to read from lcm */
+	if (primary_display_is_video_mode()) {
+		/* 1.reset */
+		cmdqRecReset(cmdq_handle_backlight);
+		/* wait stream eof first */
+		cmdqRecWait(cmdq_handle_backlight,CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		/* 2.stop dsi vdo mode */
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, cmdq_handle_backlight,CMDQ_STOP_VDO_MODE, 0);
+		/* set cabc cmd*/
+		do {
+			ddp_dsi_write_lcm_register_cmdq(DISP_MODULE_DSI0,cmdq_handle_backlight, para_tbl,index, force_update);
+		} while (++index < size);
+		/* 4.start dsi vdo mode */
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, cmdq_handle_backlight,CMDQ_START_VDO_MODE, 0);
+		cmdqRecClearEventToken(cmdq_handle_backlight,CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		/* 5.trigger path */
+		dpmgr_path_trigger(pgc->dpmgr_handle,cmdq_handle_backlight, CMDQ_ENABLE);
+		/* mutex sof wait*/
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle),cmdq_handle_backlight, 0);
+		/* 6.Async flush by cmdq */
+		ret = cmdqRecFlushAsync(cmdq_handle_backlight);
+		DISPDBG("[LCM]_set_backlight_mode_by_cmdq ret=%d\n", ret);
+	}
+	else {
+		DISPDBG("Not support cmd mode\n");
+	}
+	cmdqRecDestroy(cmdq_handle_backlight);
+	cmdq_handle_backlight = NULL;
+	return ret;
+}
+
+void primary_display_write_lcm_cmdq(
+	struct LCM_setting_table_V4 *para_tbl,
+	unsigned int size,
+	unsigned char force_update)
+{
+	if (pgc->state == DISP_SLEPT) {
+		DISPERR("Sleep State set backlight invald\n");
+	}
+	else {
+		primary_display_idlemgr_kick(__func__, 0);
+		if (primary_display_cmdq_enabled())
+			write_lcm_lp_by_cmdq(para_tbl, size, force_update);
+	}
+}
