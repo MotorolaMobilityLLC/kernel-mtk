@@ -6,6 +6,11 @@ config MOTO_ELLIS_PROJECT_CAMERA
         help
           Say Y here for distinguish different projects
 
+config MOTO_MTK_PATCH
+        bool "Define for mtk patch about camera"
+        help
+          Say Y here for submiting by moto
+
 # EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, start
 config MOTO_ELLIS_PROJECT_SWTP_SETING_APART
         bool "Define for Ellis SWTP seting apart"
