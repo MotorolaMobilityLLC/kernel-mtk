@@ -114,12 +114,9 @@ static struct LCM_setting_table init_setting[] = {
 	{0x11,1,{0x00}},
 	{REGFLAG_DELAY, 80, {}},
 	{0x29,1,{0x00}},
-	{REGFLAG_DELAY, 20, {}},
-	{REGFLAG_DELAY, 5, {}},
+	{REGFLAG_DELAY, 10, {}},
 	{0x53,1,{0x24}},
-	{REGFLAG_DELAY, 5, {}},
 	{0x55,1,{0x00}},
-	{REGFLAG_DELAY, 5, {}},
 	{0x35,1,{0x00}}
 };
 
@@ -237,7 +234,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*if HFP solution*/
 	/*dfps_params[1].horizontal_frontporch = xx;*/
 	dfps_params[1].vertical_frontporch = 371;
-	dfps_params[1].vertical_frontporch_for_low_power = 1372;
+	dfps_params[1].vertical_frontporch_for_low_power = 1372;//60 FPS in idle mode
 
 	/*if need mipi hopping params add here*/
 	//dfps_params[1].dynamic_switch_mipi = 0;
@@ -354,16 +351,15 @@ static void lcm_resume_power(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
 	lcm_set_bias_pin_enable(0x14,3);
-	MDELAY(10);
 }
 
 static void lcm_init(void)
 {
 	LCM_LOGI("[LCM] lcm_init\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(5);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 
