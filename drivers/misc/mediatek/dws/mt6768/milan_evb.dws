@@ -49,19 +49,12 @@
         <module name="eint">
             <count>160</count>
             <eint0>
-                <varName>MRDUMP_EXT_RST</varName>
-                <debounce_time>512</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint0>
-            <eint1>
                 <varName>TOUCH</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
-            </eint1>
+            </eint0>
             <eint4>
                 <varName>TCPC_PD</varName>
                 <debounce_time>0</debounce_time>
@@ -135,7 +128,7 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_EINT_RAMDUMP_PIN</varName0>
+                <varName0>GPIO_CTP_EINT_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio0>
@@ -146,7 +139,6 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CTP_EINT_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio1>
@@ -301,36 +293,46 @@
             </gpio16>
             <gpio17>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <smt>true</smt>
+                <varName0>GPIO_SPI4_MISO_PIN</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio17>
             <gpio18>
-                <smt>true</smt>
+                <eint_mode>false</eint_mode>
+                <def_mode>2</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI4_CS_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
             </gpio18>
             <gpio19>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <eint_mode>false</eint_mode>
+                <def_mode>2</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>true</smt>
+                <varName0>GPIO_SPI4_MOSI_PIN</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio19>
             <gpio20>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <eint_mode>false</eint_mode>
+                <def_mode>2</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_SUBPMIC_IRQB_EINT_PIN</varName0>
-                <smt>true</smt>
+                <varName0>GPIO_SPI4_SCK_PIN</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio20>
             <gpio21>
@@ -1250,8 +1252,9 @@
                 <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_CTP_RST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio112>
