@@ -5062,6 +5062,12 @@ long lcd_enp_bias_setting(unsigned int value)
 	return ret;
 }
 
+void DSI_set_cmdq_V4_Wrapper_DSI0(struct LCM_setting_table_V4 *para_tbl,
+	unsigned int index, unsigned char force_update)
+{
+	ddp_dsi_write_lcm_register_cmdq(DISP_MODULE_DSI0, NULL, para_tbl,index, force_update);
+}
+
 int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 	struct LCM_DRIVER *lcm_drv)
 {
@@ -5106,6 +5112,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 			DSI_set_cmdq_V4_DSI0;
 		utils->mipi_dsi_cmds_rx =
 			DSI_dcs_read_lcm_reg_v3_wrapper_DSI0;
+		utils->dsi_set_cmdq_V4 =
+			primary_display_write_lcm_cmdq;
 	} else if (module == DISP_MODULE_DSI1) {
 		utils->set_reset_pin =
 			lcm1_set_reset_pin;
@@ -8188,4 +8196,74 @@ void DSI_dynfps_send_cmd(
 /*-------------------------------DynFPS end------------------------------*/
 #endif
 
-
+void ddp_dsi_write_lcm_register_cmdq(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq,
+	struct LCM_setting_table_V4 *para_tbl,
+	unsigned int index,
+	unsigned char force_update)
+{
+	UINT32 i;
+	int dsi_i = 0;
+	unsigned long goto_addr, mask_para, set_para;
+	struct DSI_T0_INS t0;
+	/* DSI_T1_INS t1; */
+	struct DSI_T2_INS t2;
+	unsigned char data_id, cmd, count;
+	unsigned char *para_list;
+	DISPFUNC();
+	dsi_i = DSI_MODULE_to_ID(module);
+	if (dsi_i != 0) {
+		pr_notice("[lsy]should use dsi0\n");
+		return;
+	}
+		/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
+		DSI_OUTREGBIT(cmdq,
+				struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+				RD_RDY, 1);
+		DSI_OUTREGBIT(cmdq,
+				struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+				CMD_DONE, 1);
+		dsi_wait_not_busy(module, cmdq);
+		DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[dsi_i]->data[0], 0);
+		data_id = para_tbl[index].id;
+		cmd = para_tbl[index].cmd;
+		count = para_tbl[index].count;
+		para_list = para_tbl[index].para_list;
+		DDPMSG("lsy data_id = 0x%x,cmd = 0x%x,count = 0x%x,para_list[0] = 0x%x,para_list[1] = 0x%x\n",
+					data_id,cmd,count,*para_list,*(para_list + 1));
+		if (count > 1) {
+			t2.CONFG = 2;
+			t2.Data_ID = data_id;
+			t2.WC16 = count + 1;
+			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[dsi_i]->data[0].byte0,AS_UINT32(&t2));
+			goto_addr = (unsigned long)(&DSI_CMDQ_REG[dsi_i]->data[1].byte0);
+			mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
+			set_para = (cmd << ((goto_addr & 0x3u) * 8));
+			DSI_MASKREG32(cmdq, goto_addr & (~((unsigned long)0x3u)),mask_para, set_para);
+			for (i = 0; i < count; i++) {
+				goto_addr = (unsigned long)(&DSI_CMDQ_REG[dsi_i]->data[1].byte1) + i;
+				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
+				set_para = (para_list[i] << ((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,goto_addr & (~((unsigned long)0x3u)),mask_para, set_para);
+			}
+			DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_CMDQ_SIZE,2 + (count) / 4);
+		} else {
+		/* 0. send write lcm command(short packet) */
+			t0.CONFG = 0x00;
+			t0.Data0 = cmd;
+			if (count) {
+			t0.Data_ID = data_id;
+			t0.Data1 = para_list[0];
+			} else {
+			t0.Data_ID = data_id;
+			t0.Data1 = 0;
+			}
+			/* write DSI CMDQ */
+			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[dsi_i]->data[0],AS_UINT32(&t0));
+			DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 1);
+		}
+		/* start DSI */
+		DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_START, 0);
+		DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_START, 1);
+		DSI_POLLREG32(cmdq, &DSI_REG[dsi_i]->DSI_INTSTA, 0x80000000, 0);
+}
