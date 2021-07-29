@@ -634,7 +634,7 @@ struct S_START_T {
  */
 static unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
 
-#ifdef MOT_MTK_PATCH
+#ifdef CONFIG_MOTO_MTK_PATCH
 static unsigned int g_virtual_cq_cnt[2] = {0, 0};
 static unsigned int g_virtual_cq_cnt_a;
 static unsigned int g_virtual_cq_cnt_b;
@@ -8774,7 +8774,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
-#ifdef MOT_MTK_PATCH
+#ifdef CONFIG_MOTO_MTK_PATCH
 	case ISP_SET_VIR_CQCNT:
 		spin_lock((spinlock_t *)(&virtual_cqcnt_lock));
 		if (copy_from_user(&g_virtual_cq_cnt, (void *)Param,
@@ -9281,7 +9281,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
 	case ISP_SET_SEC_DAPC_REG:
-#ifdef MOT_MTK_PATCH
+#ifdef CONFIG_MOTO_MTK_PATCH
 	case ISP_SET_VIR_CQCNT:
 #endif
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
@@ -10207,7 +10207,7 @@ static signed int ISP_probe(struct platform_device *pDev)
 		spin_lock_init(&(SpinLock_P2FrameList));
 		spin_lock_init(&(SpinLockRegScen));
 		spin_lock_init(&(SpinLock_UserKey));
-#ifdef MOT_MTK_PATCH
+#ifdef CONFIG_MOTO_MTK_PATCH
 		spin_lock_init(&(virtual_cqcnt_lock));
 #endif
 		#ifdef ENABLE_KEEP_ION_HANDLE
@@ -14719,7 +14719,7 @@ LB_CAMA_SOF_IGNORE:
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
 	if (IrqStatus & SOF_INT_ST) {
-#ifdef MOT_MTK_PATCH
+#ifdef CONFIG_MOTO_MTK_PATCH
 		if ((ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100) !=
 			g_virtual_cq_cnt_a) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
@@ -15361,7 +15361,7 @@ LB_CAMB_SOF_IGNORE:
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
 	if (IrqStatus & SOF_INT_ST) {
-#ifdef MOT_MTK_PATCH
+#ifdef CONFIG_MOTO_MTK_PATCH
 		if ((ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100) !=
 			g_virtual_cq_cnt_b) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
