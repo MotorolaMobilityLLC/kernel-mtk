@@ -166,6 +166,24 @@ extern bool is_ipoh_bootup;
 extern char mtkfb_lcm_name[];
 extern long dts_gpio_state;
 
+void ddp_dsi_write_lcm_register_cmdq(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq,
+	struct LCM_setting_table_V4 *para_tbl,
+	unsigned int index,
+	unsigned char force_update);
+extern void primary_display_write_lcm_cmdq(
+	struct LCM_setting_table_V4 *para_tbl,
+	unsigned int size,
+	unsigned char force_update);
+extern int write_lcm_lp_by_cmdq(
+	struct LCM_setting_table_V4 *para_tbl,
+	unsigned int size,
+	unsigned char force_update);
+extern int write_lcm_lp_by_cmdq(
+	struct LCM_setting_table_V4 *para_tbl,
+	unsigned int size,
+	unsigned char force_update);
+
 int DSI_enable_checksum(enum DISP_MODULE_ENUM module,
 	struct cmdqRecStruct *cmdq);
 void DSI_ChangeClk(enum DISP_MODULE_ENUM module, UINT32 clk);
