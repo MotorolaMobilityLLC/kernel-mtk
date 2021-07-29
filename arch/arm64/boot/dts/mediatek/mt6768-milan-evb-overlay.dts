@@ -23,10 +23,6 @@
 			mot,board-id = <0x41 0xA100>;
 		};
 	};
-
-	mrdump_ext_rst: mrdump_ext_rst {
-		status = "disable";
-	};
 };
 #include "mediatek/mt6768-milan-camera-sensor-evb-overlay.dtsi"
 #include <milan_evb/cust.dtsi>
