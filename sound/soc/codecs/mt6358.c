@@ -6349,7 +6349,20 @@ static int dc_trim_thread(void *arg)
 	do_exit(0);
 	return 0;
 }
+#ifdef HP_IMPENDANCE
+/* Headphone Impedance Detection */
+static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
+{
+	/* The formula is from DE programming guide */
+	/* should be mantain by pmic owner */
+	/* R = V /I */
+	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
+	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
+	long val = 3600000/ pcm_offset * aux_diff;
 
+	return (int)DIV_ROUND_CLOSEST(val,7832);
+}
+#else
 /* Headphone Impedance Detection */
 static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 {
@@ -6361,7 +6374,7 @@ static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 
 	return DIV_ROUND_CLOSEST(3600000 / pcm_offset * aux_diff, 7832);
 }
-
+#endif
 static int calculate_impedance(struct mt6358_priv *priv,
 			       int dc_init, int dc_input,
 			       short pcm_offset,
