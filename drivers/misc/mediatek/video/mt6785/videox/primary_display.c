@@ -5470,7 +5470,6 @@ void primary_display_vdo_restart(bool need_wait_frame_done)
 	cmdqRecDestroy(qhandle);
 }
 
-
 int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
@@ -5847,7 +5846,7 @@ done:
 	if (bdg_is_bdg_connected() == 1) {
 		mmdvfs_qos_force_step(0);
 	/*	559-449-314-273*/
-//		disp_pm_qos_update_mmclk(559);
+		disp_pm_qos_update_mmclk(559);
 	}
 	primary_set_state(DISP_ALIVE);
 #if 0 //def CONFIG_TRUSTONIC_TRUSTED_UI
@@ -9024,7 +9023,7 @@ int primary_display_setlcm_cmd(unsigned int *lcm_cmd, unsigned int *lcm_count,
 	}
 
 	_primary_path_unlock(__func__);
-	_primary_path_switch_dst_lock();
+	_primary_path_switch_dst_unlock();
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd,
 			 MMPROFILE_FLAG_END, 0, 0);
