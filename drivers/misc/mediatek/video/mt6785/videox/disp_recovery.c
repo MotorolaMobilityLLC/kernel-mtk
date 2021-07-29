@@ -943,7 +943,7 @@ int primary_display_esd_recovery(void)
 			bdg_tx_start(DISP_BDG_DSI0, NULL);
 		}
 		/*	559-449-314-273*/
-//		disp_pm_qos_update_mmclk(449);
+		disp_pm_qos_update_mmclk(559);
 	}
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (disp_partial_is_support()) {
