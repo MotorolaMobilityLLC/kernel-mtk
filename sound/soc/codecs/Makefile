@@ -497,6 +497,10 @@ obj-$(CONFIG_SND_SOC_AW87339)	+= aw87339/
 obj-$(CONFIG_SND_SOC_AW883XX)	+= aw883xx/
 #for AWINIC AW882XX Smart PA
 obj-$(CONFIG_SND_SMARTPA_AW882XX) += awinic/
+# Add for  hp impendance
+ifneq (,$(findstring milan, $(strip $(TARGET_PRODUCT))))
+ccflags-y += -DHP_IMPENDANCE
+endif
 ifeq ($(CONFIG_SND_SOC_MT6358),y)
   MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
   subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
