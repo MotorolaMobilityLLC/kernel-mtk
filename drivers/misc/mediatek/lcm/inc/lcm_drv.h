@@ -944,6 +944,14 @@ struct dsi_cmd_desc {
 	char *payload;
 };
 
+struct LCM_setting_table_V4 {
+	unsigned char id;
+	unsigned char cmd;
+	unsigned char count;
+	unsigned char para_list[128];
+	unsigned int flag;
+};
+
 struct LCM_UTIL_FUNCS {
 	void (*set_reset_pin)(unsigned int value);
 	void (*set_chip_select)(unsigned int value);
@@ -986,6 +994,10 @@ struct LCM_UTIL_FUNCS {
 	void (*dsi_set_cmdq_V22)(void *cmdq, unsigned int cmd,
 			unsigned char count, unsigned char *para_list,
 			unsigned char force_update);
+
+	void (*dsi_set_cmdq_V4)(struct LCM_setting_table_V4 *para_list,
+		unsigned int size, unsigned char force_update);
+
 	void (*dsi_swap_port)(int swap);
 	void (*dsi_set_cmdq_V23)(void *cmdq, unsigned int cmd,
 		unsigned char count, unsigned char *para_list,
