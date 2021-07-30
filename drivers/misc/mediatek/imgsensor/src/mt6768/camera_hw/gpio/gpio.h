@@ -12,6 +12,7 @@
 #include <linux/platform_device.h>
 #include <linux/pinctrl/pinctrl.h>
 #include "imgsensor_hw.h"
+#define CAMERA_CHROMATIX_NOISE
 
 extern struct mutex pinctrl_mutex;
 
@@ -29,6 +30,10 @@ enum GPIO_CTRL_STATE_CAM  {
 	GPIO_CTRL_STATE_LDO_VCAMIO_L,
 	GPIO_CTRL_STATE_LDO_VCAMAF_H,
 	GPIO_CTRL_STATE_LDO_VCAMAF_L,
+#ifdef CAMERA_CHROMATIX_NOISE
+	GPIO_CTRL_STATE_LDO_VCAMA_CN_H,
+	GPIO_CTRL_STATE_LDO_VCAMA_CN_L,
+#endif
 	GPIO_CTRL_STATE_MAX_NUM_CAM,
 };
 
