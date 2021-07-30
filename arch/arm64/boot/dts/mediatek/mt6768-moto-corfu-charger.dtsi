@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-/*
 &moto_chg_tcmd {
                 compatible = "mmi,moto-chg-tcmd";
                 status = "okay";
@@ -30,112 +29,69 @@
                 mmi,adc-channel-vbat = <100>;
 };
 
-*/
-
-/*
 &charger {
-        // common
-        battery_cv = <4450000>;
-	enable_pe_2;
-        //charging current
+        /* common */
+        battery_cv = <4464000>;
+        max_charger_voltage = <12000000>;
+        min_charger_voltage = <4600000>;
+
+        enable_pe_2;
+        enable_sw_jeita;
+
+        /* charging current */
         usb_charger_current_suspend = <0>;
         usb_charger_current_unconfigured = <70000>;
         usb_charger_current_configured = <500000>;
         usb_charger_current = <500000>;
         ac_charger_current = <2000000>;
-        ac_charger_input_current = <1500000>;
+        ac_charger_input_current = <2000000>;
         non_std_ac_charger_current = <1000000>;
         charging_host_charger_current = <1500000>;
         apple_1_0a_charger_current = <650000>;
         apple_2_1a_charger_current = <800000>;
         ta_ac_charger_current = <2000000>;
+        typec_limit_aicr = <2000000>;
 
         //mmi config
         mmi,iterm-ma = <243>;
-        mmi,mmi-temp-zones = <0 4200 1000 0>,
-                        <10 4200 2500 1000>,
-                        <15 0 2500 2500>,
-			<25 0 3000 3000>,
-			<35 0 3000 3000>,
-                        <45 0 3000 3000>,
-                        <60 4200 3000 0>;
-	mmi,mmi-ffc-zones = <4450 243>,
-				<4450 243>,
-				<4450 243>,
-				<4480 509>,
-				<4480 548>,
-				<4480 563>,
-				<4450 243>;
+        mmi,mmi-temp-zones =
+                       <0 4200 1000  0>,
+                       <10 4250 2500 1000>,
+//                       <10 4450 1000 0>,
+                       <15 4450 2500 0>,
+                       <25 4300 6000 4000>,
+//                       <25 4480 4000 0>,
+                       <35 4300 6000 4000>,
+//                       <35 4480 4000 0>,
+                       <45 4300 6000 4000>,
+//                       <45 4480 4000 0>,
+                       <60 4200 4000 0>;
+
+	mmi,mmi-ffc-zones =
+                        <4200 243>,
+                        <4450 243>,
+                        <4450 243>,
+                        <4480 550>,
+                        <4480 588>,
+                        <4480 631>,
+                        <4200 243>;
+
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
-        mmi,vfloat-comp-uv = <0>;
-        max_charger_voltage = <11000000>;
+        mmi,vfloat-comp-uv = <20000>;
 	enable_cp;
 };
 
 &bat_gm30 {
         io-channels = <&auxadc 5>;
         io-channel-names = "batteryID-channel";
-        EMBEDDED_SEL = <(1)>;   // embedded battery.
-        DIFFERENCE_FULLOCV_ITH = <(630)>;       // Charging termination current
-	SHUTDOWN_1_TIME = <(10)>;
+        EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
+        DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
 
         df-serialnum = "SB18D11784";
-	g_Q_MAX_row = <4>;
-	g_Q_MAX_col = <10>;
-	g_Q_MAX = <
-		// bat1,   bat2,   bat3,    bat4
-		4931 4890 4931 4931 //T0
-		4982 4933 4982 4982 //T1
-		4969 4924 4897 4897 //T2
-		4975 4859 4308 4308 //T3
-		4905 4783 3488 3488 //T4
-		3488 3488 3488 3488 //T5
-		3488 3488 3488 3488 //T6
-		3488 3488 3488 3488 //T7
-		3488 3488 3488 3488 //T8
-		3488 3488 3488 3488 //T9
-	>;
-	g_Q_MAX_H_CURRENT_row = <4>;
-	g_Q_MAX_H_CURRENT_col = <10>;
-	g_Q_MAX_H_CURRENT = <
-		// bat1,   bat2,   bat3,    bat4
-		4931 4890 4931 4931 //T0
-		4982 4933 4982 4982 //T1
-		4969 4924 4897 4897 //T2
-		4975 4859 4308 4308 //T3
-		4905 4783 3488 3488 //T4
-		3488 3488 3488 3488 //T5
-		3488 3488 3488 3488 //T6
-		3488 3488 3488 3488 //T7
-		3488 3488 3488 3488 //T8
-		3488 3488 3488 3488 //T9
-	>;
-
-	g_FG_PSEUDO100_T0 = <(100)>;
-	//Pseudo 100% percentage at T0
-	g_FG_PSEUDO100_T1 = <(100)>;
-	//Pseudo 100% percentage at T1
-	g_FG_PSEUDO100_T2 = <(90)>;
-	//Pseudo 100% percentage at T2
-	g_FG_PSEUDO100_T3 = <(84)>;
-	//Pseudo 100% percentage at T3
-	g_FG_PSEUDO100_T4 = <(63)>;
-	//Pseudo 100% percentage at T4
-
-        #include "bat_setting/batterytable_nt50_atl_5000mah_ext.dtsi"
-	#include "bat_setting/batterytable_nt50_sunwoda_5000mah_ext.dtsi"
+        #include "bat_setting/mt6768_battery_table_NC50_5000mah_ext.dtsi"
 };
-
-&pio {
-	bq2597x_int_default: bq2597x_int_default {
-		pinmux = <PINMUX_GPIO2__FUNC_GPIO2>;
-		slew-rate= <0>;
-		bias-disable;
-	};
-};
-*/
 
 &odm {
 	mmi_chrg_manager {
@@ -145,9 +101,9 @@
 		mmi,pd-volt-max = <12000000>;
 		mmi,pd-curr-max = <3000000>;
 		mmi,batt-curr-boost = <300000>;
-		mmi,batt-ovp-lmt = <4480000>;
+		mmi,batt-ovp-lmt = <4550000>;
 		mmi,pl-chrg-vbatt-min = <3600000>;
-		mmi,typec-middle-current = <1000000>;
+		mmi,typec-middle-current = <1500000>;
 		mmi,step-first-current-comp = <0>;
 		mmi,dont-rerun-aicl;
 		mmi,chrg-temp-zones-num = <5>;
@@ -155,11 +111,9 @@
 					<0 4200 1000  0 0>,
 					<10 4250 2500 4450 1000>,
 					<15 4450 2500 0 0>,
-					<25 4300 6000 4450 4000>,
-					<35 4300 6000 4450 4000>,
 					<45 4300 6000 4450 4000>,
 					<60 4200 4000 0 0>;
-
+/*
             mmi,mmi-ffc-zones = <4200 243>,
                                 <4250 243>,
                                 <4450 243>,
@@ -167,7 +121,7 @@
                                 <4480 588>,
                                 <4480 631>,
                                 <4200 243>;
-
+*/
 		mmi,thermal-min-level = <1500000>;
 		charger_device_0 {
 			chrg-name = "pmic-sw";
@@ -177,7 +131,7 @@
 		charger_device_1 {
 			chrg-name = "cp-master";
 			psy-name = "bq2597x-standalone";
-			charging-curr-min = <1500000>;
+			charging-curr-min = <2000000>;
 		};
 	};
 };
