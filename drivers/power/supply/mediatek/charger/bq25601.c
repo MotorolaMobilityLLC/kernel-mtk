@@ -1402,6 +1402,12 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
         unsigned char val;
 	bool force_set = false;
 #endif
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	bool early_notified = false;
+	bool should_notify = false;
+	int early_chg_type = 0;
+        union power_supply_propval propval = {.intval = 0};
+#endif
         int count = 0;
         struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
 
@@ -1424,8 +1430,66 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                 msleep(100);
                 count++;
                 m_chg_ready = wt6670f_is_charger_ready();
-                pr_err("wt6670f waiting type: 0x%x, count: %d\n",m_chg_ready, count);
+
+                if(!early_notified){
+		      early_chg_type = wt6670f_get_protocol();
+		}
+
+		switch(early_chg_type){
+			case 0x1:
+                             if(!early_notified){
+				   should_notify = true;
+                                   chip->chg_type = NONSTANDARD_CHARGER;//FC
+			     }
+                             break;
+			case 0x2:
+                             if(!early_notified){
+				   should_notify = true;
+                                   chip->chg_type = STANDARD_HOST;//SDP
+                             }
+                             break;
+	    		case 0x3:
+                             if(!early_notified){
+				   should_notify = true;
+                                   chip->chg_type = CHARGING_HOST;//CDP
+                             }
+                             break;
+			case 0x4:
+			case 0x5:
+                        case 0x6:
+                        case 0x8://QC3P_18W
+                        case 0x9://QC3P_27W
+                             if(!early_notified){
+				   should_notify = true;
+                                   chip->chg_type = STANDARD_CHARGER;//DC
+                             }
+			     break;
+			default:
+			     break;
+
+		}
+
+		// Earlier notify charger detected before QC3+ detected
+		if(should_notify && (!early_notified) && (&chip->psy_dwork != NULL)){
+                        pr_err("[%s] WT6670F charger detect early notify!\n",__func__);
+                        if (!chip->psy)
+                             chip->psy = power_supply_get_by_name("charger");
+
+			if(chip->psy){
+	                     propval.intval = early_chg_type;
+                             power_supply_set_property(chip->psy,
+                                           POWER_SUPPLY_PROP_CHARGE_TYPE,
+                                           &propval);
+
+			     early_notified = true;
+			}
+		}
+
+//                pr_err("wt6670f waiting type: 0x%x, count: %d\n",m_chg_ready, count);
+                pr_err("wt6670f waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
+//                pr_err("wt6670f waiting early type: 0x%x, chr_type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_type, m_chg_ready, count);
         }
+
         m_chg_type = wt6670f_get_protocol();
 
         pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
@@ -1499,8 +1563,16 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 #endif
         pr_info("%s,charger type is %d\n",__func__,chip->chg_type);
 out:
-        if(&chip->psy_dwork != NULL)
+        if(&chip->psy_dwork != NULL){
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+           if((!early_notified) || (early_notified && (early_chg_type != m_chg_type))){
+		pr_info("%s,notify charger type again!\n",__func__);
+#endif
                 schedule_delayed_work(&chip->psy_dwork, 0);
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	   }
+#endif
+	}
 
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
         if((m_chg_type != 0x8) && (m_chg_type != 0x9)){
