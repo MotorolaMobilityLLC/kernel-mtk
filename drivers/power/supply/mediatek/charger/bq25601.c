@@ -1690,6 +1690,9 @@ static int bq25601_driver_probe(struct i2c_client *client,
 	bq25601_hw_component_detect();
 	charging_hw_init();
 
+#if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+        i2c_set_clientdata(client, info);
+#endif
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->chg_dev_name,
 						&client->dev, info,
@@ -1707,6 +1710,21 @@ static int bq25601_driver_probe(struct i2c_client *client,
 }
 
 #if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+static void bq25601_shutdown(struct i2c_client *client)
+{
+        struct bq25601_info *chip = i2c_get_clientdata(client);
+
+        pr_info("%s the chip id %x\n", __func__,chip);
+
+        charger_device_unregister(chip->chg_dev);
+
+        mutex_destroy(&chip->chgdet_lock);
+        cancel_delayed_work_sync(&chip->psy_dwork);
+
+        bq25601_set_reg_rst(0x1);
+        bq25601_dump_register(chip->chg_dev);
+}
+
 static int bq25601_remove(struct i2c_client *client)
 {
         struct bq25601_info *chip = i2c_get_clientdata(client);
@@ -1827,6 +1845,7 @@ static struct i2c_driver bq25601_driver = {
 	},
 	.probe = bq25601_driver_probe,
 #if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+        .shutdown = bq25601_shutdown,
         .remove = bq25601_remove,
 #endif
 	.id_table = bq25601_i2c_id,
