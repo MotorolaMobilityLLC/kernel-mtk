@@ -37,6 +37,9 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD},
+#ifdef CAMERA_CHROMATIX_NOISE
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD_CN},
+#endif
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
@@ -49,6 +52,9 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+#ifdef CAMERA_CHROMATIX_NOISE
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD_CN},
+#endif
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 #ifdef MIPI_SWITCH
@@ -64,6 +70,9 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+#ifdef CAMERA_CHROMATIX_NOISE
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD_CN},
+#endif
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 #ifdef MIPI_SWITCH
@@ -79,6 +88,9 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+#ifdef CAMERA_CHROMATIX_NOISE
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD_CN},
+#endif
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
@@ -91,6 +103,9 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
+#ifdef CAMERA_CHROMATIX_NOISE
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD_CN},
+#endif
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
@@ -160,6 +175,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {DOVDD, Vol_1800, 1},
                         {DVDD, Vol_1100, 1},
                         {AVDD, Vol_2800, 1},
+#ifdef CAMERA_CHROMATIX_NOISE
+                        {AVDDCN, Vol_1800, 1},
+#endif
                         {RST, Vol_High, 5}
                 },
         },
@@ -172,6 +190,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {SensorMCLK, Vol_High, 1},
                         {DOVDD, Vol_1800, 1},
                         {AVDD, Vol_2800, 1},
+#ifdef CAMERA_CHROMATIX_NOISE
+                        {AVDDCN, Vol_1800, 1},
+#endif
                         {DVDD, Vol_1100, 1},
                         {RST, Vol_High, 5}
                 },
@@ -185,6 +206,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {SensorMCLK, Vol_High, 1},
                         {DVDD, Vol_1200, 1},
                         {AVDD, Vol_2800, 1},
+#ifdef CAMERA_CHROMATIX_NOISE
+                        {AVDDCN, Vol_1800, 1},
+#endif
                         {DOVDD, Vol_1800, 1},
                         {RST, Vol_High, 5}
                 },
@@ -199,6 +223,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                         {DVDD, Vol_High, 1},
                         {DOVDD, Vol_1800, 1},
                         {AVDD, Vol_2800, 1},
+#ifdef CAMERA_CHROMATIX_NOISE
+                        {AVDDCN, Vol_1800, 1},
+#endif
                         {RST, Vol_High, 5}
                 },
         },
