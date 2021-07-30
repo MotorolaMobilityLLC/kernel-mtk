@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="06.07.2021.14:12:25"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="07.30.2021.17:05:03"-->
 <dct_cfg>
     <general chip="MT6768">
         <proj>MT6768 Phone</proj>
@@ -155,8 +155,8 @@
             </gpio2>
             <gpio3>
                 <smt>true</smt>
-	    </gpio3>
-	    <gpio4>
+            </gpio3>
+            <gpio4>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
@@ -194,8 +194,8 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
-		<out_high>false</out_high>
-		<varName0>GPIO_CHG_INT</varName0>
+                <out_high>false</out_high>
+                <varName0>GPIO_CHG_INT</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio7>
@@ -428,7 +428,7 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio30>
-	    <gpio31>
+            <gpio31>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
@@ -439,7 +439,7 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio31>
-	    <gpio32>
+            <gpio32>
                 <eint_mode>false</eint_mode>
                 <def_mode>7</def_mode>
                 <inpull_en>false</inpull_en>
@@ -1043,7 +1043,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_GPS_LNA_PIN</varName0>
+                <varName0>GPIO_CAMERA_RDN3_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio92>
@@ -1701,6 +1701,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_CAMERA_RDN0_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio153>
@@ -1758,7 +1759,7 @@
                 <ies>true</ies>
             </gpio158>
             <gpio159>
-	        <eint_mode>false</eint_mode>
+                <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
@@ -1766,7 +1767,7 @@
                 <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
-	    </gpio159>
+            </gpio159>
             <gpio160>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
@@ -1828,6 +1829,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_CAMERA_RDN1_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio165>
