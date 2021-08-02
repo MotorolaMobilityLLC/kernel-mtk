@@ -1098,6 +1098,7 @@ static int bq2560x_enable_vbus(struct charger_device *chg_dev, bool enable)
 }
 //EKELLIS-68,yaocankun,add,20210413,enable usb suspend
 //EKELLIS-99,yaocankun,add,20210413,enable otg when in hiz
+/*
 static int bq2560x_get_vbus_enable(struct charger_device *chg_dev, bool *enable)
 {
 
@@ -1113,7 +1114,7 @@ static int bq2560x_get_vbus_enable(struct charger_device *chg_dev, bool *enable)
 	       !ret ? "successfully" : "failed");
 
 	return ret;
-}
+}*/
 //EKELLIS-99,yaocankun,add,20210413,enable otg when in hiz
 
 static int bq2560x_plug_in(struct charger_device *chg_dev)
@@ -1546,8 +1547,8 @@ static struct charger_ops bq2560x_chg_ops = {
 	.is_safety_timer_enabled = bq2560x_is_safety_timer_enabled,
 
 	/* Power path */
-	.enable_powerpath = bq2560x_enable_vbus,
-	.is_powerpath_enabled = bq2560x_get_vbus_enable,
+	//.enable_powerpath = bq2560x_enable_vbus,
+	//.is_powerpath_enabled = bq2560x_get_vbus_enable,
 
         /* Hz mode */
         .enable_hz = bq2560x_enable_hz,
