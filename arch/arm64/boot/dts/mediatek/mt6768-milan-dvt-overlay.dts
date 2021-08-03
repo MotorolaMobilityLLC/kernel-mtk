@@ -24,6 +24,62 @@
 		};
 	};
 };
+
+&pio {
+	fingerprint_ldo1p8_high: fingerprint_ldo1p8_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO27__FUNC_GPIO27>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_ldo1p8_low: fingerprint_ldo1p8_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO27__FUNC_GPIO27>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&egis_fp {
+		compatible = "fp-egistec";
+                interrupt-parent = <&pio>;
+                interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
+
+                fp-ctrl-power;
+                fp-gpio-vcc-enable;
+
+                egistec,gpio_vcc_en = <&pio 27 0x0>;
+                egistec,gpio_reset = <&pio 28 0x0>;
+                egistec,gpio_irq = <&pio 8 0x0>;
+
+                //vcc_fp-supply = <&mt_pmic_vldo28_ldo_reg>;
+                //vcc_fp-supply = <&mt_pmic_vfp_ldo_reg>;
+                egis-fp,vcc-voltage = <3000000 3000000>;
+                egis-fp,vcc-current = <100000>;
+
+                pinctrl-names = "egis_rst_high", "egis_rst_low",
+                                "egis_irq_active", "egis_vcc_high",
+                                "egis_vcc_low", "egis_spi_active",
+                                "egis_spi_default";
+                pinctrl-0 = <&fingerprint_reset_high>;
+                pinctrl-1 = <&fingerprint_reset_low>;
+                pinctrl-2 = <&fingerprint_irq>;
+                pinctrl-3 = <&fingerprint_ldo1p8_high>;
+                pinctrl-4 = <&fingerprint_ldo1p8_low>;
+                pinctrl-5 = <&finger_spi_active>;
+                pinctrl-6 = <&finger_spi_default>;
+
+		status = "okay";
+};
+
+/* 3.0v */
+/* &mt_pmic_vldo28_ldo_reg {
+	regulator-boot-on;
+	regulator-always-on;
+}; */
 //#include "mediatek/mt6768-milan-camera-sensor-evb-overlay.dtsi"
 #include <milan_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
