@@ -159,9 +159,9 @@ static struct LCM_setting_table init_setting[] = {
 	{0XF8,0x01,{0X65}},
 	{0XFF,0x01,{0X23}},
 	{0XFB,0x01,{0X01}},
-	{0X07,0x01,{0X00}},//26.6KHZ
-	{0X08,0x01,{0X01}},//26.6KHZ
-	{0X09,0x01,{0X01}},//26.6KHZ
+	{0X07,0x01,{0X40}},//35.5KHZ
+	{0X08,0x01,{0X03}},//35.5KHZ
+	{0X09,0x01,{0X00}},//35.5KHZ
 	{0XFF,0x01,{0X24}},
 	{0XFB,0x01,{0X01}},
 	{0X00,0x01,{0X20}},
@@ -695,7 +695,7 @@ static void lcm_init(void)
 	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT1);
 	Bias_power_write_bytes(0x01,0x0F);
-	MDELAY(5);
+	MDELAY(15);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(15);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
@@ -704,7 +704,7 @@ static void lcm_init(void)
 	MDELAY(50);
 
 	push_table(NULL, init_setting,
-		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1, 1);
+		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1, 0);
 
 	MDELAY(40);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BL_EN_OUT1);
@@ -757,8 +757,8 @@ static void lcm_setbacklight_cmdq(void *handle,unsigned int level)
 {
 
 	pr_info("%s,nt36672c tianma backlight: level = %d\n", __func__, level);
-	if(level < 30 && level != 0)
-		level = 30;
+	if(level < 3 && level != 0)
+		level = 3;
 
 	BL_Level[0].para_list[0] = level;
 
