@@ -1933,9 +1933,9 @@ static void vb2ops_venc_stop_streaming(struct vb2_queue *q)
 				v4l2_m2m_buf_done(to_vb2_v4l2_buffer(src_buf),
 					  VB2_BUF_STATE_ERROR);
 		}
+		ctx->enc_flush_buf->lastframe = NON_EOS;
 	}
 
-	ctx->enc_flush_buf->lastframe = NON_EOS;
 	if ((q->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE &&
 	     vb2_is_streaming(&ctx->m2m_ctx->out_q_ctx.q)) ||
 	    (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE &&
