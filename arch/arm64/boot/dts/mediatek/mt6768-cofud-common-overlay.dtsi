@@ -131,6 +131,10 @@
                 mmi,adc-channel-vbat = <100>;
 };
 
+&lk_charger {
+        temp_t4_threshold = <60>;
+};
+
 &charger {
         /* common */
         battery_cv = <4450000>;
