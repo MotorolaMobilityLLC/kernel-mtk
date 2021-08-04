@@ -37,6 +37,7 @@
 #define UB_SKIP_FRAME 20
 #define UB_BEGIN_FRAME 50
 #define XGF_MAX_SPID_LIST_LENGTH 20
+#define N 8
 
 enum XGF_ERROR {
 	XGF_NOTIFY_OK,
@@ -72,6 +73,49 @@ struct xgf_sub_sect {
 	struct hlist_node hlist;
 	unsigned long long start_ts;
 	unsigned long long end_ts;
+};
+
+struct xgf_ema2_predictor {
+	/* data */
+	long long learn_rate;
+	long long beta;
+	long long epsilon;
+	long long alpha;
+	long long mu;
+	long long one;
+
+	long long L[N];
+	long long W[N];
+
+	long long RMSProp[N];
+	long long nabla[N];
+	long long rho[N];
+
+	long long x_record[N];
+	long long acc_x;
+	long long acc_xx[N + 1];
+	long long x_front[N];
+	long long xt_last;
+	long long xt_last_valid;
+
+	int record_idx;
+	long long ar_error_diff;
+	long long ar_coeff_sum;
+	bool ar_coeff_enable;
+	int ar_coeff_frames;
+	int acc_idx;
+	int coeff_shift;
+	int order;
+	long long t;
+	bool ar_coeff_valid;
+
+	int invalid_th;
+	unsigned int invalid_input_cnt;
+	unsigned int invalid_negative_output_cnt;
+	unsigned int skip_grad_update_cnt;
+	bool rmsprop_initialized;
+	bool x_record_initialized;
+	int err_code;
 };
 
 struct xgf_render {
@@ -201,6 +245,7 @@ extern int (*fpsgo_xgf2ko_calculate_target_fps_fp)(int pid,
 	unsigned long long cur_queue_end_ts);
 extern void (*fpsgo_xgf2ko_do_recycle_fp)(int pid,
 	unsigned long long bufID);
+extern long long (*xgf_ema2_predict_fp)(struct xgf_ema2_predictor *pt, long long X);
 
 void xgf_lockprove(const char *tag);
 void xgf_trace(const char *fmt, ...);
@@ -255,6 +300,8 @@ void xgf_set_logical_render_info(int pid, unsigned long long bufID,
 	int *l_arr, int l_num, int *r_arr, int r_num,
 	unsigned long long l_start_ts,
 	unsigned long long f_start_ts);
+
+long long xgf_ema2_predict(struct xgf_ema2_predictor *pt, long long X);
 
 enum XGF_EVENT {
 	SCHED_SWITCH,
