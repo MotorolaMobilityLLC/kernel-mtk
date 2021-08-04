@@ -661,6 +661,19 @@ static void set_mirror_flip(kal_uint8 image_mirror)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
+static void check_stream_is_on(void)
+{
+	unsigned int i = 0;
+	int timeout = (10000 / imgsensor.current_fps) + 1;
+
+	for (i = 0; i < timeout; i++) {
+		if (read_cmos_sensor_8(0x0005) != 0xFF)
+			break;
+		else
+			mdelay(1);
+	}
+	pr_debug("%s exit! %d\n", __func__, i);
+}
 
 static void check_streamoff(void)
 {
@@ -683,6 +696,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
+		check_stream_is_on();
 	} else {
 		write_cmos_sensor_8(0x0100, 0x00);
 		check_streamoff();
