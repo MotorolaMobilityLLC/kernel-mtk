@@ -1670,6 +1670,8 @@
 			<0 0x10033000 0 0x1000>,
 			<0 0x00111000 0 0x1000>;
 		interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&infracfg_ao_clk CLK_IFRAO_DEVICE_APC>;
+		clock-names = "devapc-infra-clock";
 	};
 
 	ap_ccif0@10209000 {
