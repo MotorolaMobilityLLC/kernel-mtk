@@ -1339,6 +1339,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					GED_KPI_MAX_FPS,
 					GED_KPI_DEFAULT_FPS_MARGIN, 0,
 					GED_KPI_FRC_DEFAULT_MODE, -1);
+				ged_kpi_set_gift_status(0);
 				INIT_LIST_HEAD(&psHead->sList);
 #ifdef GED_ENABLE_TIMER_BASED_DVFS_MARGIN
 				spin_lock_irqsave(&gs_hashtableLock,

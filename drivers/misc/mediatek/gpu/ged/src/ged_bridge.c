@@ -244,10 +244,8 @@ int ged_bridge_query_gpu_dvfs_info(
 			QueryGPUDVFSInfoOut->eError =
 				ged_kpi_set_gift_status(QueryGPUDVFSInfoIn->hint);
 	}
-	else {
-		QueryGPUDVFSInfoOut->eError = ged_kpi_query_gpu_dvfs_info(
+	QueryGPUDVFSInfoOut->eError = ged_kpi_query_gpu_dvfs_info(
 			QueryGPUDVFSInfoOut);
-	}
 	return 0;
 }
 
