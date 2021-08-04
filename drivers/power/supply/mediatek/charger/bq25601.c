@@ -1426,8 +1426,8 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 	m_chg_ready = false;
 	m_chg_type = 0;
         wt6670f_start_detection();
-        while((!m_chg_ready)&&(count<30)){
-                msleep(100);
+        while((!m_chg_ready)&&(count<100)){
+                msleep(30);
                 count++;
                 m_chg_ready = wt6670f_is_charger_ready();
 
