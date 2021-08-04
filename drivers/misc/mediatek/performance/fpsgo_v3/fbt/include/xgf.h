@@ -37,7 +37,6 @@
 #define UB_SKIP_FRAME 20
 #define UB_BEGIN_FRAME 50
 #define XGF_MAX_SPID_LIST_LENGTH 20
-#define DEFAULT_DFRC 60
 
 enum XGF_ERROR {
 	XGF_NOTIFY_OK,
@@ -112,9 +111,6 @@ struct xgf_render {
 
 	int spid;
 	int dep_frames;
-
-	unsigned long long raw_l_runtime;
-	unsigned long long raw_r_runtime;
 };
 
 struct xgf_dep {
@@ -246,13 +242,9 @@ int has_xgf_dep(pid_t tid);
 int uboost2xgf_get_info(int pid, unsigned long long bufID,
 	unsigned long long *timer_period, int *frame_idx);
 
-int fpsgo_fstb2xgf_get_target_fps(int pid, unsigned long long bufID,
-	int *target_fps_margin, unsigned long long cur_queue_end_ts);
 int fpsgo_xgf2ko_calculate_target_fps(int pid, unsigned long long bufID,
 	int *target_fps_margin, unsigned long long cur_queue_end_ts);
-int fpsgo_fstb2xgf_notify_recycle(int pid, unsigned long long bufID);
 void fpsgo_xgf2ko_do_recycle(int pid, unsigned long long bufID);
-void fpsgo_ctrl2xgf_display_rate(int dfrc_fps);
 int xgf_get_display_rate(void);
 int xgf_get_process_id(int pid);
 int xgf_check_main_sf_pid(int pid, int process_id);

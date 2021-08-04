@@ -63,7 +63,7 @@ static int xgf_stddev_multi = XGF_UBOOST_STDDEV_M;
 static int xgf_spid_list_length;
 static int xgf_wspid_list_length;
 static int xgf_cfg_spid;
-static int display_rate = DEFAULT_DFRC;
+static int display_rate;
 int fstb_frame_num;
 EXPORT_SYMBOL(fstb_frame_num);
 int fstb_no_stable_thr;
@@ -84,10 +84,6 @@ module_param(xgf_sp_name_id, int, 0644);
 module_param(xgf_uboost, int, 0644);
 module_param(xgf_stddev_multi, int, 0644);
 module_param(xgf_cfg_spid, int, 0644);
-module_param(fstb_frame_num, int, 0644);
-module_param(fstb_no_stable_thr, int, 0644);
-module_param(fstb_target_fps_margin, int, 0644);
-module_param(fstb_separate_runtime_enable, int, 0644);
 
 HLIST_HEAD(xgf_renders);
 HLIST_HEAD(xgf_hw_events);
@@ -367,13 +363,6 @@ int xgf_check_specific_pid(int pid)
 	return ret;
 }
 EXPORT_SYMBOL(xgf_check_specific_pid);
-
-void fpsgo_ctrl2xgf_display_rate(int dfrc_fps)
-{
-	xgf_lock(__func__);
-	display_rate = dfrc_fps;
-	xgf_unlock(__func__);
-}
 
 static inline int xgf_is_enable(void)
 {
@@ -1212,8 +1201,6 @@ static int xgf_get_render(pid_t rpid, unsigned long long bufID,
 		iter->u_runtime_idx = 0;
 		iter->spid = 0;
 		iter->dep_frames = xgf_prev_dep_frames;
-		iter->raw_l_runtime = 0;
-		iter->raw_r_runtime = 0;
 	}
 
 	INIT_HLIST_HEAD(&iter->sector_head);
@@ -2047,42 +2034,6 @@ static int xgf_enter_est_runtime(int rpid, struct xgf_render *render,
 	return ret;
 }
 
-int fpsgo_fstb2xgf_get_target_fps(int pid, unsigned long long bufID,
-	int *target_fps_margin, unsigned long long cur_queue_end_ts)
-{
-	int target_fps;
-
-	xgf_lock(__func__);
-
-	WARN_ON(!fpsgo_xgf2ko_calculate_target_fps_fp);
-	if (fpsgo_xgf2ko_calculate_target_fps_fp)
-		target_fps = fpsgo_xgf2ko_calculate_target_fps_fp(pid, bufID,
-			target_fps_margin, cur_queue_end_ts);
-	else
-		target_fps = -ENOENT;
-
-	xgf_unlock(__func__);
-
-	return target_fps;
-}
-
-int fpsgo_fstb2xgf_notify_recycle(int pid, unsigned long long bufID)
-{
-	int ret = 1;
-
-	xgf_lock(__func__);
-
-	WARN_ON(!fpsgo_xgf2ko_do_recycle_fp);
-	if (fpsgo_xgf2ko_do_recycle_fp)
-		fpsgo_xgf2ko_do_recycle_fp(pid, bufID);
-	else
-		ret = -ENOENT;
-
-	xgf_unlock(__func__);
-
-	return ret;
-}
-
 static void xgf_get_runtime(pid_t tid, u64 *runtime)
 {
 	struct task_struct *p;
@@ -2450,14 +2401,11 @@ void xgf_set_logical_render_runtime(int pid, unsigned long long bufID,
 	struct xgf_render *r, **rrender;
 
 	rrender = &r;
-	if (!xgf_get_render(pid, bufID, rrender, 1)) {
+	if (!xgf_get_render(pid, bufID, rrender, 1))
 		ret = 1;
-		r->raw_l_runtime = l_runtime;
-		r->raw_r_runtime = r_runtime;
-	}
 
 	fpsgo_main_trace("[fstb_ko][%d][0x%llx] | raw_runtime=(%llu,%llu)(%d)", pid, bufID,
-		r->raw_l_runtime, r->raw_r_runtime, ret);
+		l_runtime, r_runtime, ret);
 	fpsgo_systrace_c_fbt(pid, bufID, l_runtime, "raw_t_cpu_logical");
 	fpsgo_systrace_c_fbt(pid, bufID, r_runtime, "raw_t_cpu_render");
 }
@@ -2639,44 +2587,6 @@ Reget:
 	}
 }
 
-static void fstb_buffer_record_waking_switch_timer(int cpu, int event,
-	int data, int note, int state, unsigned long long ts)
-{
-	int index;
-	struct fstb_trace_event *fte;
-
-	if (!xgf_atomic_read(xgf_ko_enabled))
-		return;
-
-Reget:
-	index = atomic_inc_return(&fstb_event_data_idx);
-
-	if (unlikely(index < 0)) {
-		atomic_set(&fstb_event_data_idx, 0);
-		return;
-	}
-
-	if (unlikely(index > (MAX_EVENT_NUM + (xgf_nr_cpus << 1)))) {
-		atomic_set(&fstb_event_data_idx, 0);
-		return;
-	}
-
-	if (unlikely(index == MAX_EVENT_NUM))
-		atomic_set(&fstb_event_data_idx, 0);
-	else if (unlikely(index > MAX_EVENT_NUM))
-		goto Reget;
-
-	index -= 1;
-
-	fte = &fstb_event_data[index];
-	fte->ts = ts;
-	fte->cpu = cpu;
-	fte->event = event;
-	fte->note = note;
-	fte->state = state;
-	fte->pid = data;
-}
-
 static void xgf_irq_handler_entry_tracer(void *ignore,
 					int irqnr,
 					struct irqaction *irq_action)
@@ -2794,7 +2704,6 @@ static void xgf_sched_switch_tracer(void *ignore,
 	unsigned long long ts = xgf_get_time();
 	int c_wake_cpu = xgf_get_task_wake_cpu(current);
 	int prev_pid = xgf_get_task_pid(prev);
-	int next_pid = xgf_get_task_pid(next);
 
 	prev_state = xgf_trace_sched_switch_state(preempt, prev);
 	temp_state = prev_state & (TASK_STATE_MAX-1);
@@ -2803,60 +2712,14 @@ static void xgf_sched_switch_tracer(void *ignore,
 		skip = 1;
 
 	xgf_buffer_update(c_wake_cpu, SCHED_SWITCH, prev_pid, skip, ts);
-
-	if (temp_state)
-		fstb_buffer_record_waking_switch_timer(c_wake_cpu, SCHED_SWITCH,
-			next_pid, prev_pid, 1, ts);
-	else
-		fstb_buffer_record_waking_switch_timer(c_wake_cpu, SCHED_SWITCH,
-			next_pid, prev_pid, 0, ts);
 }
 
-static void xgf_sched_waking_tracer(void *ignore, struct task_struct *p)
-{
-	unsigned long long ts = xgf_get_time();
-	int c_wake_cpu = xgf_get_task_wake_cpu(current);
-	int c_pid = xgf_get_task_pid(current);
-	int p_pid = xgf_get_task_pid(p);
-
-	fstb_buffer_record_waking_switch_timer(c_wake_cpu, SCHED_WAKING,
-		p_pid, c_pid, 512, ts);
-}
+static void xgf_sched_waking_tracer(void *ignore, struct task_struct *p) { }
 
 static void xgf_hrtimer_expire_entry_tracer(void *ignore,
-	struct hrtimer *hrtimer, ktime_t *now)
-{
-	unsigned long long ts = xgf_get_time();
-	int c_wake_cpu = xgf_get_task_wake_cpu(current);
-	int c_pid = xgf_get_task_pid(current);
-	int length = -1;
-	char func_name[100];
+	struct hrtimer *hrtimer, ktime_t *now) { }
 
-	length = scnprintf(func_name, 100, "%ps", hrtimer->function);
-	if (length >= 0) {
-		if (strncmp(func_name, "shader_tick_timer_callback", 26) &&
-			strncmp(func_name, "tick_sched_timer", 16))
-			fstb_buffer_record_waking_switch_timer(c_wake_cpu, HRTIMER_ENTRY, 0,
-				c_pid, 512, ts);
-	}
-}
-
-static void xgf_hrtimer_expire_exit_tracer(void *ignore, struct hrtimer *hrtimer)
-{
-	unsigned long long ts = xgf_get_time();
-	int c_wake_cpu = xgf_get_task_wake_cpu(current);
-	int c_pid = xgf_get_task_pid(current);
-	int length = -1;
-	char func_name[100];
-
-	length = scnprintf(func_name, 100, "%ps", hrtimer->function);
-	if (length >= 0) {
-		if (strncmp(func_name, "shader_tick_timer_callback", 26) &&
-			strncmp(func_name, "tick_sched_timer", 16))
-			fstb_buffer_record_waking_switch_timer(c_wake_cpu, HRTIMER_EXIT, 0,
-				c_pid, 512, ts);
-	}
-}
+static void xgf_hrtimer_expire_exit_tracer(void *ignore, struct hrtimer *hrtimer) { }
 
 struct tracepoints_table {
 	const char *name;
