@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
 menu "Device Drivers"
 
+
+config MOTO_MTK_PATCH
+        bool "Define for mtk patch about camera"
+        help
+          Say Y here for submiting by moto
+
 source "drivers/amba/Kconfig"
 
 source "drivers/base/Kconfig"
