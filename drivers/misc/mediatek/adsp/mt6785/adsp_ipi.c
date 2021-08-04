@@ -224,11 +224,6 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 		pr_info("adsp_ipi_send: cannot use in isr");
 		return ADSP_IPI_ERROR;
 	}
-	if (is_adsp_ready(pdata->id) != 1) {
-		pr_notice("adsp_ipi_send: %s not enabled, id=%d",
-			  adsp_core_ids[pdata->id], id);
-		return ADSP_IPI_ERROR;
-	}
 
 	if (len > sizeof(send_obj->share_buf) || buf == NULL) {
 		pr_info("adsp_ipi_send: %s buffer error",
