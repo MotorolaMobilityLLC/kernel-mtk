@@ -4815,6 +4815,9 @@ int primary_display_suspend(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend,
 		MMPROFILE_FLAG_PULSE, 0, 3);
 
+	if (!primary_display_is_video_mode())
+		primary_display_wakeup_pf_thread();
+
 	DISPCHECK("[POWER]primary display path stop[begin]\n");
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[POWER]primary display path stop[end]\n");
