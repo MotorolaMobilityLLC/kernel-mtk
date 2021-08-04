@@ -375,11 +375,11 @@ static int mtk_scp_ultra_engine_state_set(struct snd_kcontrol *kcontrol,
 			       ULTRA_IPI_NEED_ACK);
 		return 0;
 	case SCP_ULTRA_STATE_RECOVERY:
-		pm_runtime_get_sync(afe->dev);
 		if (old_usnd_state == SCP_ULTRA_STATE_OFF ||
 		    old_usnd_state == SCP_ULTRA_STATE_IDLE ||
 		    old_usnd_state == SCP_ULTRA_STATE_RECOVERY)
 			return 0;
+		pm_runtime_get_sync(afe->dev);
 		if (old_usnd_state == SCP_ULTRA_STATE_START)
 			ultra_ipi_send(AUDIO_TASK_USND_MSG_ID_STOP,
 				       false,
@@ -393,7 +393,7 @@ static int mtk_scp_ultra_engine_state_set(struct snd_kcontrol *kcontrol,
 			       ULTRA_IPI_NEED_ACK);
 		scp_deregister_feature(ULTRA_FEATURE_ID);
 		pm_runtime_put(afe->dev);
-		__pm_relax(&ultra_suspend_lock);
+		aud_wake_unlock(&ultra_suspend_lock);
 		return 0;
 	default:
 		pr_info("%s() err state, ignore\n", __func__);
