@@ -24,6 +24,8 @@
 		};
 	};
 };
+
+#include "mediatek/mt6768-moto-milan-fps-evb.dtsi"
 #include "mediatek/mt6768-milan-camera-sensor-evb-overlay.dtsi"
 #include <milan_evb/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
