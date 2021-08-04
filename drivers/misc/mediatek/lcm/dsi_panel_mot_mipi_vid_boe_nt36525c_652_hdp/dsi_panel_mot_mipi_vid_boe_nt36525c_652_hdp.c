@@ -529,6 +529,7 @@ static bool lcm_set_recovery_notify(void)
 
 struct LCM_DRIVER mipi_mot_vid_boe_nt36525c_652_hdp_lcm_drv = {
 	.name = "mipi_mot_vid_boe_nt36525c_652_hdp",
+	.supplier = "boe_nt36525c_hdp_vid",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
