@@ -219,6 +219,12 @@ s32 cmdq_sec_pkt_write_reg(struct cmdq_pkt *pkt, u32 addr, u64 base,
 	if (ret)
 		return ret;
 
+	/* check boundary size and append at first before append metadata */
+	if (unlikely(!pkt->avail_buf_size)) {
+		if (cmdq_pkt_add_cmd_buffer(pkt) < 0)
+			return -ENOMEM;
+	}
+
 	return cmdq_sec_append_metadata(pkt, type, base, offset, size, port, sec_id);
 }
 EXPORT_SYMBOL(cmdq_sec_pkt_write_reg);
