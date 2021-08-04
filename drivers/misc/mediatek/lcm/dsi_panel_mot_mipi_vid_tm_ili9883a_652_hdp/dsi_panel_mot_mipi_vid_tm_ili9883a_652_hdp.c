@@ -512,6 +512,7 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 
 struct LCM_DRIVER mipi_mot_vid_tm_ili9883a_652_hdp_lcm_drv = {
 	.name = "mipi_mot_vid_tm_ili9883a_652_hdp",
+	.supplier = "tianma_ili9883a_hdp_vid",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
