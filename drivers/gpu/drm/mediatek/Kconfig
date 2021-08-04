@@ -26,6 +26,15 @@ config DRM_MEDIATEK_HDMI
 	help
 	  DRM/KMS HDMI driver for Mediatek SoCs
 
+config MTK_HDR_COLOR_GAIN_RGB
+	hex "Config CCORR parameters for HDR layers"
+	default 0
+	help
+	  This control color gain for hdr screen.
+	  0~11 bit for blue gain.
+	  12~23 bit for green gain.
+	  24~63 bit for red gain.
+
 config MTK_PQ_COLOR_MODE
 	string "Config PQ_COLOR_MODE (MDP & DISP COLOR on/off)"
 	default "DISP"

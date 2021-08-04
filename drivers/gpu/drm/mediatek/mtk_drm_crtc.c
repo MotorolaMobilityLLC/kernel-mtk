@@ -6303,6 +6303,36 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 
 	hdr_en = (bool)state->prop_val[CRTC_PROP_HDR_ENABLE];
 
+#ifdef CONFIG_MTK_HDR_COLOR_GAIN_RGB
+	DDPMSG("crtc CONFIG_HDR_COLOR_GAIN_RED =%ld!\n", CONFIG_MTK_HDR_COLOR_GAIN_RGB);
+	if (hdr_en && state->prop_val[CRTC_PROP_HDR_ENABLE] == MTK_HDR10P_PROPERTY_FLAG) {
+		struct mtk_crtc_ddp_ctx *ddp_ctx = &mtk_crtc->ddp_ctx[mtk_crtc->ddp_mode];
+
+		for (i = 0; i < ddp_ctx->ddp_comp_nr[DDP_FIRST_PATH]; i++) {
+			struct mtk_ddp_comp *comp = ddp_ctx->ddp_comp[DDP_FIRST_PATH][i];
+
+			if (comp->id == DDP_COMPONENT_CCORR0) {
+				disp_ccorr_set_RGB_Gain(comp, cmdq_handle,
+					CONFIG_MTK_HDR_COLOR_GAIN_RGB >> 24 & 0xFFF,
+					CONFIG_MTK_HDR_COLOR_GAIN_RGB >> 12 & 0xFFF,
+					CONFIG_MTK_HDR_COLOR_GAIN_RGB & 0xFFF);
+				break;
+			}
+		}
+	} else {
+		struct mtk_crtc_ddp_ctx *ddp_ctx = &mtk_crtc->ddp_ctx[mtk_crtc->ddp_mode];
+
+		for (i = 0; i < ddp_ctx->ddp_comp_nr[DDP_FIRST_PATH]; i++) {
+			struct mtk_ddp_comp *comp = ddp_ctx->ddp_comp[DDP_FIRST_PATH][i];
+
+			if (comp->id == DDP_COMPONENT_CCORR0) {
+				disp_ccorr_set_RGB_Gain(comp, cmdq_handle, 1024, 1024, 1024);
+				break;
+			}
+		}
+	}
+#endif
+
 	for_each_comp_in_cur_crtc_path(comp, mtk_crtc, i, j) {
 		if (crtc->state->color_mgmt_changed)
 			mtk_ddp_gamma_set(comp, crtc->state, cmdq_handle);

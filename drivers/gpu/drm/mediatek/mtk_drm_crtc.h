@@ -51,6 +51,7 @@
 
 #define PRIMARY_OVL_EXT_LAYER_NR 6L
 
+#define MTK_HDR10P_PROPERTY_FLAG 2
 
 #define pgc	_get_context()
 
