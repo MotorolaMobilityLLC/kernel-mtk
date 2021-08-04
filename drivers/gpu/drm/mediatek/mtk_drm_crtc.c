@@ -6957,6 +6957,8 @@ static int mtk_drm_cwb_monitor_thread(void *data)
 		ret = wait_event_interruptible(
 			mtk_crtc->cwb_wq,
 			atomic_read(&mtk_crtc->cwb_task_active));
+		if (ret)
+			DDPMSG("%s wait_event_interruptible failed, ret = %d\n", __func__, ret);
 		atomic_set(&mtk_crtc->cwb_task_active, 0);
 
 		cwb_info = mtk_crtc->cwb_info;
