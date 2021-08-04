@@ -393,4 +393,18 @@
 		part = <0>;
 	};
 };
+
+&flashlights_lm3644 {
+	pinctrl-names = "flashlight_hwen_high",
+			"flashlight_hwen_low";
+	pinctrl-0 = <&flashlight_hwen_high>;
+	pinctrl-1 = <&flashlight_hwen_low>;
+
+	decouple = <1>;
+	channel@1 {
+		type = <0>;
+		ct = <0>;
+		part = <0>;
+	};
+};
 /* flashlight gpio end*/

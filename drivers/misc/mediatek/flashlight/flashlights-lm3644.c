@@ -58,6 +58,7 @@
 #define LM3644TT_FLASH_TIMEOUT (0x09)
 
 #define LM3644_REG_DEVICE_ID (0x0C)
+#define LM3644_VER_DEVICE_ID (0x02)
 
 /* define channel, level */
 #define LM3644_CHANNEL_NUM 2
@@ -78,14 +79,14 @@ static struct work_struct lm3644_work_ch2;
 #define LM3644_PINCTRL_PIN_HWEN 0
 #define LM3644_PINCTRL_PINSTATE_LOW 0
 #define LM3644_PINCTRL_PINSTATE_HIGH 1
-#define LM3644_PINCTRL_STATE_HWEN_HIGH "hwen_high"
-#define LM3644_PINCTRL_STATE_HWEN_LOW  "hwen_low"
+#define LM3644_PINCTRL_STATE_HWEN_HIGH "flashlight_hwen_high"
+#define LM3644_PINCTRL_STATE_HWEN_LOW  "flashlight_hwen_low"
 static struct pinctrl *lm3644_pinctrl;
 static struct pinctrl_state *lm3644_hwen_high;
 static struct pinctrl_state *lm3644_hwen_low;
 
 /* lm3644 revision */
-static int is_lm3644tt;
+static int lm3644tt_chip_id;
 
 /* define usage count */
 static int use_count;
@@ -108,6 +109,7 @@ struct lm3644_chip_data {
 	struct mutex lock;
 };
 
+struct lm3644_platform_data *g_lm3644_pdata;
 
 /******************************************************************************
  * Pinctrl configuration
@@ -183,14 +185,14 @@ static const int lm3644_current[LM3644_LEVEL_NUM] = {
 };
 
 static const unsigned char lm3644tt_torch_level[LM3644_LEVEL_NUM] = {
-	0x07, 0x10, 0x18, 0x21, 0x29, 0x31, 0x3A, 0x00, 0x00, 0x00,
+	0x02, 0x11, 0x15, 0x19, 0x1C, 0x20, 0x23, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 static const unsigned char lm3644_torch_level[LM3644_LEVEL_NUM] = {
-	0x0F, 0x20, 0x31, 0x42, 0x52, 0x63, 0x74, 0x00, 0x00, 0x00,
+	0x1C, 0x23, 0x2A, 0x31, 0x38, 0x40, 0x46, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -200,7 +202,7 @@ static const unsigned char lm3644_flash_level[LM3644_LEVEL_NUM] = {
 	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x11, 0x13,
 	0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F, 0x21, 0x23, 0x25, 0x27,
 	0x29, 0x2B, 0x2D, 0x2F, 0x31, 0x33, 0x35, 0x37, 0x39, 0x3B,
-	0x3D, 0x40, 0x43, 0x46, 0x49, 0x4C, 0x4F, 0x52, 0x54
+	0x3D, 0x40, 0x43, 0x48, 0x4C, 0x50, 0x54, 0x59, 0x5D
 };
 
 static unsigned char lm3644_reg_enable;
@@ -361,7 +363,7 @@ static int lm3644_set_level_ch1(int level)
 
 	/* set torch brightness level */
 	reg = LM3644_REG_TORCH_LEVEL_LED1;
-	if (is_lm3644tt)
+	if (lm3644tt_chip_id)
 		val = lm3644tt_torch_level[level];
 	else
 		val = lm3644_torch_level[level];
@@ -386,7 +388,7 @@ static int lm3644_set_level_ch2(int level)
 
 	/* set torch brightness level */
 	reg = LM3644_REG_TORCH_LEVEL_LED2;
-	if (is_lm3644tt)
+	if (lm3644tt_chip_id)
 		val = lm3644tt_torch_level[level];
 	else
 		val = lm3644_torch_level[level];
@@ -427,8 +429,12 @@ int lm3644_init(void)
 	msleep(20);
 
 	/* get silicon revision */
-	is_lm3644tt = lm3644_read_reg(lm3644_i2c_client, LM3644_REG_DEVICE_ID);
-	pr_info("LM3644(TT) revision(%d).\n", is_lm3644tt);
+	lm3644tt_chip_id = lm3644_read_reg(lm3644_i2c_client, LM3644_REG_DEVICE_ID);
+	pr_err("LM3644(TT) revision(%d).\n", lm3644tt_chip_id);
+        if (LM3644_VER_DEVICE_ID != lm3644tt_chip_id) {
+	  pr_err("is not lm3644");
+          return -1;
+	}
 
 	/* clear enable register */
 	reg = LM3644_REG_ENABLE;
@@ -439,7 +445,7 @@ int lm3644_init(void)
 
 	/* set torch current ramp time and flash timeout */
 	reg = LM3644_REG_TIMING_CONF;
-	if (is_lm3644tt)
+	if (lm3644tt_chip_id)
 		val = LM3644_TORCH_RAMP_TIME | LM3644TT_FLASH_TIMEOUT;
 	else
 		val = LM3644_TORCH_RAMP_TIME | LM3644_FLASH_TIMEOUT;
@@ -665,11 +671,10 @@ static struct flashlight_operations lm3644_ops = {
  *****************************************************************************/
 static int lm3644_chip_init(struct lm3644_chip_data *chip)
 {
-	/* NOTE: Chip initialication move to "set driver" for power saving.
-	 * lm3644_init();
-	 */
+	int ver = 0;
+	ver = lm3644_init();
 
-	return 0;
+	return ver;
 }
 
 static int lm3644_parse_dt(struct device *dev,
@@ -689,7 +694,7 @@ static int lm3644_parse_dt(struct device *dev,
 		pr_info("Parse no dt, node.\n");
 		return 0;
 	}
-	pr_info("Channel number(%d).\n", pdata->channel_num);
+	pr_err("Channel number(%d).\n", pdata->channel_num);
 
 	if (of_property_read_u32(np, "decouple", &decouple))
 		pr_info("Parse no dt, decouple.\n");
@@ -732,6 +737,7 @@ static int lm3644_i2c_probe(
 		struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct lm3644_chip_data *chip;
+
 	int err;
 	int i;
 
@@ -759,31 +765,35 @@ static int lm3644_i2c_probe(
 	mutex_init(&chip->lock);
 
 	/* init chip hw */
-	lm3644_chip_init(chip);
+	if (lm3644_chip_init(chip))
+        {
+                err = -ENODEV;
+		goto err_out;
+        }
 
-	/* check flashlight device */
-	pr_info("lm3644 LM3644_DEVICE_ID = %d\n",
-		lm3644_read_reg(lm3644_i2c_client, LM3644_DEVICE_ID));
-	if (lm3644_read_reg(lm3644_i2c_client, LM3644_DEVICE_ID) != 0x02) {
-		pr_info("lm3644 in not available\n");
-		if (lm3644_pdata->channel_num) {
-			for (i = 0; i < lm3644_pdata->channel_num; i++)
-				flashlight_dev_unregister_by_device_id(
-					&lm3644_pdata->dev_id[i]);
+	/* register flashlight device */
+        pr_err("gt++ channel_num = %d", g_lm3644_pdata->channel_num);
+	if (g_lm3644_pdata->channel_num) {
+		for (i = 0; i < g_lm3644_pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(
+						&g_lm3644_pdata->dev_id[i],
+						&lm3644_ops)) {
+				err = -EFAULT;
+				goto err_out;
+			}
+	} else {
+		if (flashlight_dev_register(LM3644_NAME, &lm3644_ops)) {
+			err = -EFAULT;
+			goto err_out;
 		}
-		if (lm3644_pinctrl)
-			devm_pinctrl_put(lm3644_pinctrl);
-		err = -EFAULT;
-		goto err_free;
 	}
 
-	pr_debug("i2c probe done.\n");
+	pr_err("i2c probe done.\n");
 
 	return 0;
-err_free:
-	i2c_set_clientdata(client, NULL);
-	kfree(chip);
+
 err_out:
+	pr_debug("i2c probe failed");
 	return err;
 }
 
@@ -835,7 +845,6 @@ static int lm3644_probe(struct platform_device *pdev)
 {
 	struct lm3644_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int err;
-	int i;
 
 	pr_debug("Probe start.\n");
 
@@ -878,22 +887,7 @@ static int lm3644_probe(struct platform_device *pdev)
 
 	/* clear usage count */
 	use_count = 0;
-
-	/* register flashlight device */
-	if (pdata->channel_num) {
-		for (i = 0; i < pdata->channel_num; i++)
-			if (flashlight_dev_register_by_device_id(
-						&pdata->dev_id[i],
-						&lm3644_ops)) {
-				err = -EFAULT;
-				goto err_free;
-			}
-	} else {
-		if (flashlight_dev_register(LM3644_NAME, &lm3644_ops)) {
-			err = -EFAULT;
-			goto err_free;
-		}
-	}
+	g_lm3644_pdata = pdata;
 
 	pr_debug("Probe done.\n");
 
@@ -914,18 +908,20 @@ static int lm3644_remove(struct platform_device *pdev)
 	pdev->dev.platform_data = NULL;
 
 	/* unregister flashlight device */
-	if (pdata && pdata->channel_num)
-		for (i = 0; i < pdata->channel_num; i++)
-			flashlight_dev_unregister_by_device_id(
-					&pdata->dev_id[i]);
-	else
-		flashlight_dev_unregister(LM3644_NAME);
+	if (LM3644_VER_DEVICE_ID == lm3644tt_chip_id) {
+		if (pdata && pdata->channel_num)
+			for (i = 0; i < pdata->channel_num; i++)
+				flashlight_dev_unregister_by_device_id(
+						&pdata->dev_id[i]);
+		else
+			flashlight_dev_unregister(LM3644_NAME);
+	}
 
 	/* flush work queue */
 	flush_work(&lm3644_work_ch1);
 	flush_work(&lm3644_work_ch2);
 
-	pr_debug("Remove done.\n");
+	pr_err("Remove done.\n");
 
 	return 0;
 }
@@ -964,7 +960,7 @@ static int __init flashlight_lm3644_init(void)
 {
 	int ret;
 
-	pr_debug("Init start.\n");
+	pr_err("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&lm3644_platform_device);
@@ -980,18 +976,18 @@ static int __init flashlight_lm3644_init(void)
 		return ret;
 	}
 
-	pr_debug("Init done.\n");
+	pr_err("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_lm3644_exit(void)
 {
-	pr_debug("Exit start.\n");
+	pr_err("Exit start.\n");
 
 	platform_driver_unregister(&lm3644_platform_driver);
 
-	pr_debug("Exit done.\n");
+	pr_err("Exit done.\n");
 }
 
 module_init(flashlight_lm3644_init);

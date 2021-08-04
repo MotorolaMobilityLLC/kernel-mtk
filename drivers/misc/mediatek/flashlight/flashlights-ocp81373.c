@@ -65,7 +65,8 @@
 
 #define OCP81373_REG_FLAG1 (0x0A)
 #define OCP81373_REG_FLAG2 (0x0B)
-
+#define OCP81373_REG_DEVICE_ID (0x0C)
+#define OCP81373_VER_DEVICE_ID (0x3A)
 /* define channel, level */
 #define OCP81373_CHANNEL_NUM 2
 #define OCP81373_CHANNEL_CH1 0
@@ -94,6 +95,7 @@ static struct pinctrl_state *ocp81373_hwen_low;
 /* define usage count */
 static int use_count;
 
+static int ocp81373_chip_id;
 /* define i2c */
 static struct i2c_client *ocp81373_i2c_client;
 
@@ -110,6 +112,7 @@ struct ocp81373_chip_data {
 	struct mutex lock;
 };
 
+struct ocp81373_platform_data *g_ocp81373_pdata;
 
 /******************************************************************************
  * Pinctrl configuration
@@ -181,7 +184,7 @@ static const int ocp81373_current[OCP81373_LEVEL_NUM] = {
 };
 
 static const unsigned char ocp81373_torch_level[OCP81373_LEVEL_NUM] = {
-	0x18, 0x1A, 0x1C, 0x1E, 0x20, 0x22, 0x24, 0x00, 0x00, 0x00,
+	0x13, 0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
@@ -419,6 +422,14 @@ int ocp81373_init(void)
 	ocp81373_pinctrl_set(
 			OCP81373_PINCTRL_PIN_HWEN, OCP81373_PINCTRL_PINSTATE_HIGH);
 	msleep(20);
+
+	ocp81373_chip_id = ocp81373_read_reg(ocp81373_i2c_client, OCP81373_REG_DEVICE_ID);
+        pr_err("gt++ banben = 0x%x", ocp81373_chip_id);
+
+        if (OCP81373_VER_DEVICE_ID != ocp81373_chip_id)
+	{
+	    return -1;
+	}
 	/* clear enable register */
 	reg = OCP81373_REG_ENABLE;
 	val = OCP81373_DISABLE;
@@ -430,7 +441,7 @@ int ocp81373_init(void)
 	reg = OCP81373_REG_TIMING_CONF;
 	val = OCP81373_TORCH_RAMP_TIME | OCP81373_FLASH_TIMEOUT;
 	ret = ocp81373_write_reg(ocp81373_i2c_client, reg, val);
-
+	pr_err("gt++ ret = %d", ret);
 	return ret;
 }
 
@@ -662,11 +673,10 @@ static struct flashlight_operations ocp81373_ops = {
  *****************************************************************************/
 static int ocp81373_chip_init(struct ocp81373_chip_data *chip)
 {
-	/* NOTE: Chip initialication move to "set driver" for power saving.
-	 * ocp81373_init();
-	 */
+	int ver = 0;
+	ver = ocp81373_init();
 
-	return 0;
+	return ver;
 }
 
 static int ocp81373_parse_dt(struct device *dev,
@@ -686,7 +696,7 @@ static int ocp81373_parse_dt(struct device *dev,
 		pr_info("Parse no dt, node.\n");
 		return 0;
 	}
-	pr_info("Channel number(%d).\n", pdata->channel_num);
+	pr_err("Channel number(%d).\n", pdata->channel_num);
 
 	if (of_property_read_u32(np, "decouple", &decouple))
 		pr_info("Parse no dt, decouple.\n");
@@ -730,8 +740,9 @@ static int ocp81373_i2c_probe(
 {
 	struct ocp81373_chip_data *chip;
 	int err;
+	int i;
 
-	pr_info("i2c probe start.\n");
+	pr_debug("i2c probe start.\n");
 
 	/* check i2c */
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
@@ -739,7 +750,6 @@ static int ocp81373_i2c_probe(
 		err = -ENODEV;
 		goto err_out;
 	}
-
 	/* init chip private data */
 	chip = kzalloc(sizeof(struct ocp81373_chip_data), GFP_KERNEL);
 	if (!chip) {
@@ -755,13 +765,35 @@ static int ocp81373_i2c_probe(
 	mutex_init(&chip->lock);
 
 	/* init chip hw */
-	ocp81373_chip_init(chip);
+	if (ocp81373_chip_init(chip))
+	{
+                err = -ENODEV;
+ 		goto err_out;
+	}
 
-	pr_info("i2c probe done.\n");
+	/* register flashlight device */
+	pr_err("gt++ channel_num = %d", g_ocp81373_pdata->channel_num);
+	if (g_ocp81373_pdata->channel_num) {
+		for (i = 0; i < g_ocp81373_pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(
+					&g_ocp81373_pdata->dev_id[i],
+					&ocp81373_ops)) {
+				err = -EFAULT;
+				goto err_out;
+			}
+	} else {
+		if (flashlight_dev_register(OCP81373_NAME, &ocp81373_ops)) {
+			err = -EFAULT;
+			goto err_out;
+		}
+	}
+
+	pr_debug("gt++ i2c probe done.\n");
 
 	return 0;
 
 err_out:
+	pr_err("i2c probe failed");
 	return err;
 }
 
@@ -814,9 +846,9 @@ static int ocp81373_probe(struct platform_device *pdev)
 	struct ocp81373_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	struct ocp81373_chip_data *chip = NULL;
 	int err;
-	int i;
+	//int i;
 
-	pr_info("Probe start.\n");
+	pr_debug("Probe start.\n");
 
 	/* init pinctrl */
 	if (ocp81373_pinctrl_init(pdev)) {
@@ -856,24 +888,9 @@ static int ocp81373_probe(struct platform_device *pdev)
 
 	/* clear usage count */
 	use_count = 0;
+	g_ocp81373_pdata = pdata;
 
-	/* register flashlight device */
-	if (pdata->channel_num) {
-		for (i = 0; i < pdata->channel_num; i++)
-			if (flashlight_dev_register_by_device_id(
-					&pdata->dev_id[i],
-					&ocp81373_ops)) {
-				err = -EFAULT;
-				goto err_free;
-			}
-	} else {
-		if (flashlight_dev_register(OCP81373_NAME, &ocp81373_ops)) {
-			err = -EFAULT;
-			goto err_free;
-		}
-	}
-
-	pr_info("Probe done.\n");
+	pr_debug("Probe done.\n");
 
 	return 0;
 err_free:
@@ -888,23 +905,25 @@ static int ocp81373_remove(struct platform_device *pdev)
 	struct ocp81373_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int i;
 
-	pr_info("Remove start.\n");
+	pr_err("Remove start.\n");
 
 	i2c_del_driver(&ocp81373_i2c_driver);
 
 	/* unregister flashlight device */
-	if (pdata && pdata->channel_num)
-		for (i = 0; i < pdata->channel_num; i++)
-			flashlight_dev_unregister_by_device_id(
+        if (OCP81373_VER_DEVICE_ID == ocp81373_chip_id) {
+		if (pdata && pdata->channel_num)
+			for (i = 0; i < pdata->channel_num; i++)
+				flashlight_dev_unregister_by_device_id(
 					&pdata->dev_id[i]);
-	else
-		flashlight_dev_unregister(OCP81373_NAME);
+		else
+			flashlight_dev_unregister(OCP81373_NAME);
+        }
 
 	/* flush work queue */
 	flush_work(&ocp81373_work_ch1);
 	flush_work(&ocp81373_work_ch2);
 
-	pr_info("Remove done.\n");
+	pr_err("Remove done.\n");
 
 	return 0;
 }
