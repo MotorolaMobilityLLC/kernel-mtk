@@ -47,8 +47,6 @@ enum{
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
 	IMGSENSOR_MODE_VIDEO,
-	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
-	IMGSENSOR_MODE_SLIM_VIDEO,
 };
 
 struct imgsensor_mode_struct {
@@ -90,10 +88,7 @@ struct imgsensor_info_struct {
 	kal_uint32 checksum_value;
 	struct imgsensor_mode_struct pre;
 	struct imgsensor_mode_struct cap;
-	struct imgsensor_mode_struct cap1;
 	struct imgsensor_mode_struct normal_video;
-	struct imgsensor_mode_struct hs_video;
-	struct imgsensor_mode_struct slim_video;
 	kal_uint8  ae_shut_delay_frame;
 	kal_uint8  ae_sensor_gain_delay_frame;
 	kal_uint8  ae_ispGain_delay_frame;
@@ -103,8 +98,7 @@ struct imgsensor_info_struct {
 	kal_uint8  cap_delay_frame;
 	kal_uint8  pre_delay_frame;
 	kal_uint8  video_delay_frame;
-	kal_uint8  hs_video_delay_frame;
-	kal_uint8  slim_video_delay_frame;
+	kal_uint8  frame_time_delay_frame;
 	kal_uint8  margin;
 	kal_uint32 min_shutter;
 	kal_uint32 max_frame_length;
