@@ -161,11 +161,12 @@
         max_dmivr_charger_current = <2000000>;
 
         /*mmi config*/
-        mmi,iterm-ma = <98>;
+        mmi,iterm-ma = <243>;
         mmi,mmi-temp-zones = <0 4200 1000 0>,
-                        <15 4400 1000 0>,
-                        <45 4400 3000 0>,
-                        <60 4200 2500 0>;
+                        <10 4250 2500 0>,
+                        <15 4450 2500 0>,
+			<45 4450 4000 0>,
+                        <60 4200 4000 0>;
 
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
@@ -180,7 +181,7 @@
         DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
 
         df-serialnum = "SB18D11784";
-        #include "bat_setting/mt6768_battery_table_NC50_5000mah_ext.dtsi"
+        #include "bat_setting/mt6768_battery_table_ND50_jiade_5000mah_ext.dtsi"
 };
 
 &msdc1 {
@@ -259,7 +260,7 @@
                         aicr = <500000>;                /* uA */
                         cv = <4350000>;                 /* uV */
                         ichg = <1000000>;               /* uA */
-                        ieoc = <200000>;                /* uA */
+                        ieoc = <100000>;                /* uA */
                         safe_tmr = <10>;                /* hour */
                         wdt = <40>;                     /* sec */
                         /*
