@@ -93,6 +93,7 @@ const struct flashlight_device_id flashlight_id[] = {
 	{0, 0, 0, "flashlights_ocp8132", 0, 0},
 	{0, 0, 0, "flashlights-corfu-gpio", 0, 1},
 	{0, 0, 0, "flashlights-ocp81373", 0, 1},
+	{0, 0, 0, "flashlights-lm3644", 0, 1},
 };
 #endif
 
