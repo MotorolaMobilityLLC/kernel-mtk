@@ -441,6 +441,11 @@ int hbm_brightness_set(int enable)
 		level = cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness;
 	} else {
 		level = current_level;
+		if (!level) {
+			//check level 0 to avoid potential black issue
+			//keep as max, auto brightness will work then
+			level = cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness;
+		}
 	}
 
 	hbm_state = enable;
