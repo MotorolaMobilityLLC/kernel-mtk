@@ -2055,7 +2055,7 @@ int mmi_chrg_rate_check(void)
 			}
 	}
 
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
 	if (icl > TURBO_CHRG_THRSH) {
 #else
 	if (icl >= TURBO_CHRG_THRSH) {
