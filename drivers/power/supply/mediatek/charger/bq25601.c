@@ -983,6 +983,11 @@ static int bq25601_enable_charging(struct charger_device *chg_dev,
 #endif
 
 	pr_info("%s: charging enable state: %d \n", __func__, en);
+	/*
+	 * pr_info("%s: reg8: 0x08X \n", __func__, bq25601_get_chrg_stat());
+	 * WARN(true, "%s calltrace", __func__);
+	 */
+	
 	if (en) {
 		/* bq25601_config_interface(bq25601_CON3, 0x1, 0x1, 4); */
 		/* enable charging */
@@ -1009,23 +1014,20 @@ static int bq25601_enable_charging(struct charger_device *chg_dev,
 static int bq25601_get_current(struct charger_device *chg_dev,
 			       u32 *ichg)
 {
-	unsigned int ret_val = 0;
-#if 0 //todo
-	unsigned char ret_force_20pct = 0;
+	int ret_val = 0;
+	unsigned char val;
 
 	/* Get current level */
-	bq25601_read_interface(bq25601_CON2, &ret_val, CON2_ICHG_MASK,
+	ret_val = bq25601_read_interface(bq25601_CON2, &val, CON2_ICHG_MASK,
 			       CON2_ICHG_SHIFT);
 
-	/* Get Force 20% option */
-	bq25601_read_interface(bq25601_CON2, &ret_force_20pct,
-			       CON2_FORCE_20PCT_MASK,
-			       CON2_FORCE_20PCT_SHIFT);
+	if (val < GETARRAYNUM(CS_VTH)) {
+		*ichg = CS_VTH[val] * 10;
+	}
+	else {
+		*ichg = 0;
+	}
 
-	/* Parsing */
-	ret_val = (ret_val * 64) + 512;
-
-#endif
 	return ret_val;
 }
 
@@ -1056,14 +1058,18 @@ static int bq25601_get_input_current(struct charger_device *chg_dev,
 				     u32 *aicr)
 {
 	int ret = 0;
-#if 0
 	unsigned char val = 0;
 
-	bq25601_read_interface(bq25601_CON0, &val, CON0_IINLIM_MASK,
+	ret = bq25601_read_interface(bq25601_CON0, &val, CON0_IINLIM_MASK,
 			       CON0_IINLIM_SHIFT);
-	ret = (int)val;
-	*aicr = INPUT_CS_VTH[val];
-#endif
+
+	if (val < GETARRAYNUM(INPUT_CS_VTH)) {
+		*aicr = INPUT_CS_VTH[val] * 10;	
+	}
+	else {
+		*aicr = 0;
+	}
+
 	return ret;
 }
 
