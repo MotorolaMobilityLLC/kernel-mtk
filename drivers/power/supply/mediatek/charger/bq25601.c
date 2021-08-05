@@ -1526,7 +1526,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                 break;
 */
 	    default:
-                chip->chg_type = CHARGER_UNKNOWN;
+                chip->chg_type = NONSTANDARD_CHARGER;//FC
                 break;
         }
 #else
