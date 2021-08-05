@@ -26,8 +26,8 @@
 #define CONFIG_FSM_FS1603
 
 /* VERSION INFORMATION */
-#define FSM_CODE_VERSION "v3.1.3"
-#define FSM_CODE_DATE    "20210517"
+#define FSM_CODE_VERSION "v3.1.4"
+#define FSM_CODE_DATE    "20210805"
 #define FSM_GIT_BRANCH   "moto-fs1894s"
 #define FSM_GIT_COMMIT   "739aef79"
 
