@@ -2229,6 +2229,7 @@ int fsm_stub_dev_init(fsm_dev_t *fsm_dev)
 
     ret |= fsm_reg_write(fsm_dev, REG(FSM_SYSCTRL), 0x0001);
     fsm_wait_stable(fsm_dev, FSM_WAIT_AMP_ADC_OFF);
+    ret |= fsm_reg_write(fsm_dev, REG(FSM_PLLCTRL4), 0x0000);
     if (ret) {
         pr_addr(err, "init failed:%d", ret);
         fsm_dev->state.dev_inited = false;
