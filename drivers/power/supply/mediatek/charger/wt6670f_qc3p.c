@@ -237,15 +237,9 @@ int wt6670f_set_voltage(u16 voltage)
 	u16 voltage_now;
 
 	voltage_now = wt6670f_get_vbus_voltage();
+        pr_err("wt6670f current voltage = %d, set voltage = %d\n", voltage_now, voltage);
 
-/*  if(voltage == 5000)
-  {
-    step = _wt->count;
-    step &= 0x7FFF;
-	  step = ((step & 0xff) << 8) | ((step >> 8) & 0xff);
-    _wt->count = 0;
-  }
-	else*/ if(voltage - voltage_now < 0)
+	if(voltage - voltage_now < 0)
 	{
 		step = (u16)((voltage_now - voltage) / 20);
     _wt->count -= step;
@@ -269,7 +263,34 @@ int wt6670f_set_voltage(u16 voltage)
 }
 EXPORT_SYMBOL_GPL(wt6670f_set_voltage);
 
+int wt6670f_set_volt_count(int count)
+{
+        int ret;
+        u16 step = abs(count);
 
+        pr_err("Set vbus with %d pulse!\n!", count);
+
+        if(count < 0)
+        {
+    _wt->count -= step;
+                step &= 0x7FFF;
+                step = ((step & 0xff) << 8) | ((step >> 8) & 0xff);
+
+    if(_wt->count < 0)
+        _wt->count = 0;
+        }
+        else
+        {
+    _wt->count += step;
+    step |= 0x8000;
+    step = ((step & 0xff) << 8) | ((step >> 8) & 0xff);
+        }
+  pr_err("---->southchip count = %d   %04x\n", _wt->count, step);
+        ret = wt6670f_write_word(_wt, 0xBB, step);
+
+        return ret;
+}
+EXPORT_SYMBOL_GPL(wt6670f_set_volt_count);
 
 static ssize_t wt6670f_show_test(struct device *dev,
 						struct device_attribute *attr, char *buf)
