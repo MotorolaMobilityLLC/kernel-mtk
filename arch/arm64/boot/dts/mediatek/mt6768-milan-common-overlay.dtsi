@@ -374,6 +374,21 @@
 		status = "okay";
 	};
 };
+
+/* Config backlight */
+&i2c6{
+	I2C_LCD_BIAS@3E {
+		compatible = "Bias_power";
+		reg = <0x3E>;
+		status = "okay";
+	};
+	I2C_LCD_BACKLIGHT@36 {
+		compatible = "BL_control";
+		reg = <0x36>;
+		status = "okay";
+	};
+};
+
 /* Config charger */
 &i2c7{
 	bq25601@6B {
