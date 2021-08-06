@@ -11,152 +11,130 @@
  * GNU General Public License for more details.
  */
 #ifndef BUILD_LK
-#include <linux/string.h>
-#include <linux/kernel.h>
-#endif
-
-#include "lcm_drv.h"
-#include "lcm_define.h"
-#include "disp_dts_gpio.h"
-#ifdef BUILD_LK
-#include <platform/upmu_common.h>
-#include <platform/mt_gpio.h>
-#include <platform/mt_i2c.h>
-#include <platform/mt_pmic.h>
-#include <string.h>
-#elif defined(BUILD_UBOOT)
-#include <asm/arch/mt_gpio.h>
-
-#ifdef CONFIG_MTK_LEGACY
-#include <mach/mt_pm_ldo.h>
-#include <mach/mt_gpio.h>
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#include <cust_gpio_usage.h>
-#include <cust_i2c.h>
-#endif
-
-#endif
-#endif
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/fs.h>
-#include <linux/slab.h>
-#include <linux/init.h>
-#include <linux/list.h>
-#include <linux/i2c.h>
-#include <linux/irq.h>
-/* #include <linux/jiffies.h> */
-/* #include <linux/delay.h> */
-#include <linux/uaccess.h>
 #include <linux/interrupt.h>
-#include <linux/io.h>
+#include <linux/i2c.h>
+#include <linux/slab.h>
+#include <linux/irq.h>
+#include <linux/miscdevice.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h>
+#include <linux/input.h>
+#include <linux/workqueue.h>
+#include <linux/kobject.h>
 #include <linux/platform_device.h>
-/*****************************************************************************
- * Define
- *****************************************************************************/
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#define I2C_I2C_LCD_BIAS_CHANNEL 6
-#define TPS_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL        /* for I2C channel 0 */
-#define I2C_ID_NAME "Bias_power"
-#define TPS_ADDR 0x3E
+#include <linux/atomic.h>
+#include <linux/of.h>
+#include <linux/module.h>
 
-/*****************************************************************************
- * GLobal Variable
- *****************************************************************************/
-static struct i2c_board_info Bias_power_board_info __initdata = {
-	I2C_BOARD_INFO(I2C_ID_NAME,
-			TPS_ADDR) };
+static struct i2c_client *new_client;
 
-static struct i2c_client *Bias_power_i2c_client;
+static const struct i2c_device_id Bias_power_i2c_id[] = { {"Bias_power", 0}, {} };
+static int Bias_power_driver_probe(struct i2c_client *client,
+	const struct i2c_device_id *id);
+static int Bias_power_driver_remove(struct i2c_client *client);
 
-/*****************************************************************************
- * Function Prototype
- *****************************************************************************/
-static int Bias_power_probe(struct i2c_client *client,
-		const struct i2c_device_id *id);
-static int Bias_power_remove(struct i2c_client *client);
-/*****************************************************************************
- * Data Structure
- *****************************************************************************/
-
-struct Bias_power_dev {
-	struct i2c_client *client;
-
-};
-
-static const struct of_device_id _lcm_i2c_of_match[] = {
-	{ .compatible = "mediatek,I2C_LCD_BIAS", },
+#ifdef CONFIG_OF
+static const struct of_device_id Bias_power_id[] = {
+	{.compatible = "Bias_power"},
 	{},
 };
+MODULE_DEVICE_TABLE(of, Bias_power_id);
+#endif
 
-static const struct i2c_device_id Bias_power_id[] = {
-	{I2C_ID_NAME, 0},
-	{}
-};
-static struct i2c_driver Bias_power_iic_driver = {
-	.id_table = Bias_power_id,
-	.probe = Bias_power_probe,
-	.remove = Bias_power_remove,
-	/* .detect               = mt6605_detect, */
+static struct i2c_driver Bias_power_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
 		.name = "Bias_power",
-		.of_match_table = _lcm_i2c_of_match,
+#ifdef CONFIG_OF
+		.of_match_table = of_match_ptr(Bias_power_id),
+#endif
 	},
+	.probe = Bias_power_driver_probe,
+	.remove = Bias_power_driver_remove,
+	.id_table = Bias_power_i2c_id,
 };
 
-static int Bias_power_probe(struct i2c_client *client,
-		const struct i2c_device_id *id)
+static DEFINE_MUTEX(Bias_power_i2c_access);
+
+/* I2C Function For Read/Write */
+int Bias_power_read_bytes(unsigned char cmd, unsigned char *returnData)
 {
-	pr_info("[LCM]%s\n",__func__);
-	Bias_power_i2c_client = client;
-	return 0;
+	char cmd_buf[2] = { 0x00, 0x00 };
+	char readData = 0;
+	int ret = 0;
+	mutex_lock(&Bias_power_i2c_access);
+	cmd_buf[0] = cmd;
+	ret = i2c_master_send(new_client, &cmd_buf[0], 1);
+	ret = i2c_master_recv(new_client, &cmd_buf[1], 1);
+	if (ret < 0) {
+		mutex_unlock(&Bias_power_i2c_access);
+		return 0;
+	}
+	readData = cmd_buf[1];
+	*returnData = readData;
+	mutex_unlock(&Bias_power_i2c_access);
+	return 1;
 }
 
-static int Bias_power_remove(struct i2c_client *client)
+int Bias_power_write_bytes(unsigned char cmd, unsigned char writeData)
 {
-	pr_info("[LCM]%s\n",__func__);
-	//Bias_power_i2c_client = NULL;
+	char write_data[2] = { 0 };
+	int ret = 0;
+	pr_notice("[KE/Bias_power] cmd: %02x, data: %02x,%s\n", cmd, writeData, __func__);
+	mutex_lock(&Bias_power_i2c_access);
+	write_data[0] = cmd;
+	write_data[1] = writeData;
+	ret = i2c_master_send(new_client, write_data, 2);
+	if (ret < 0) {
+		mutex_unlock(&Bias_power_i2c_access);
+		pr_notice("[Bias_power] I2C write fail!!!\n");
+		return 0;
+	}
+	mutex_unlock(&Bias_power_i2c_access);
+	return 1;
+}
+
+static int Bias_power_driver_probe(struct i2c_client *client,
+	const struct i2c_device_id *id)
+{
+	int err = 0;
+	pr_notice("[KE/Bias_power] name=%s addr=0x%x\n",
+		client->name, client->addr);
+	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
+	if (!new_client) {
+		err = -ENOMEM;
+		goto exit;
+	}
+	memset(new_client, 0, sizeof(struct i2c_client));
+	new_client = client;
+	return 0;
+ exit:
+	return err;
+}
+
+static int Bias_power_driver_remove(struct i2c_client *client)
+{
+	pr_notice("[KE/Bias_power] %s\n", __func__);
+	new_client = NULL;
 	i2c_unregister_device(client);
 	return 0;
 }
 
-int Bias_power_write_bytes(unsigned char addr, unsigned char value)
+static int __init Bias_power_init(void)
 {
-	int ret = 0;
-	struct i2c_client *client = Bias_power_i2c_client;
-	char write_data[2] = { 0 };
-	write_data[0] = addr;
-	write_data[1] = value;
-	ret = i2c_master_send(client, write_data, 2);
-	if (ret < 0)
-		pr_notice("[LCM]Bias_power write data fail !!\n");
-	return ret;
-}
-
-static int __init Bias_power_iic_init(void)
-{
-	pr_info("[LCM]%s\n",__func__);
-	i2c_register_board_info(TPS_I2C_BUSNUM, &Bias_power_board_info, 1);
-	pr_info("[LCM]%s\n",__func__);
-	i2c_add_driver(&Bias_power_iic_driver);
-	pr_info("[LCM]%s\n",__func__);
+	pr_notice("[KE/Bias_power] %s\n", __func__);
+	if (i2c_add_driver(&Bias_power_driver) != 0)
+		pr_notice("[KE/Bias_power] failed to register Bias_power i2c driver.\n");
+	else
+		pr_notice("[KE/Bias_power] Success to register Bias_power i2c driver.\n");
 	return 0;
 }
 
-static void __exit Bias_power_iic_exit(void)
+static void __exit Bias_power_exit(void)
 {
-	pr_info("[LCM]%s\n",__func__);
-	i2c_del_driver(&Bias_power_iic_driver);
+	i2c_del_driver(&Bias_power_driver);
 }
 
-
-module_init(Bias_power_iic_init);
-module_exit(Bias_power_iic_exit);
-
-MODULE_AUTHOR("Xiaokuan Shi");
-MODULE_DESCRIPTION("MTK Bias_power I2C Driver");
-MODULE_LICENSE("GPL");
+module_init(Bias_power_init);
+module_exit(Bias_power_exit);
 #endif
-
