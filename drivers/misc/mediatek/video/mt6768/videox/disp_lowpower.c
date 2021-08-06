@@ -1130,10 +1130,10 @@ int primary_display_request_dvfs_perf(
 			opp_level = HRT_OPP_LEVEL_LEVEL2;
 			break;
 		case HRT_LEVEL_DEFAULT:
-			opp_level = HRT_OPP_LEVEL_LEVEL0;
+			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		default:
-			opp_level = HRT_OPP_LEVEL_LEVEL0;
+			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		}
 #endif
