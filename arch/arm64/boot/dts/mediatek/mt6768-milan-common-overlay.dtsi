@@ -108,6 +108,12 @@
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
+    usb_phy_init:usb_phy_init {
+        compatible = "mediatek,phy_tuning";
+        u2_vrt_ref = <7>;
+        u2_term_ref = <7>;
+        u2_enhance = <3>;
+    };
 };
 
 &moto_chg_tcmd {
