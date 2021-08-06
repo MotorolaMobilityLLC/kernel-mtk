@@ -5012,8 +5012,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_EMMC)
 		mmc->caps |= MMC_CAP_CMD23;
 #endif
-	if (host->hw->host_function == MSDC_SD)
-		mmc->caps |= MMC_CAP_AGGRESSIVE_PM;
+	// Disable aggressive pm feature to avoid sd reenumerate issue when resume
+//	if (host->hw->host_function == MSDC_SD)
+//		mmc->caps |= MMC_CAP_AGGRESSIVE_PM;
 
 	mmc->caps |= MMC_CAP_ERASE;
 
