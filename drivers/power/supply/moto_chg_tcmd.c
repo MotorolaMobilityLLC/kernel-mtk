@@ -796,7 +796,7 @@ static ssize_t factory_kill_disable_store(struct device *dev, struct device_attr
 	}
 
 	chg_client->factory_kill_disable = !!val;
-
+	pr_info("%s, factory_kill_disable(%d)\n", __func__, chg_client->factory_kill_disable);
 end:
 	return count;
 }
