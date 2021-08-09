@@ -346,7 +346,12 @@ void disp_helper_option_init(void)
 
 	/* =================Begin: lowpower option setting================= */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 1);
+#ifdef CONFIG_MTK_DISP_IDLE_MGR_DISABLE
+        disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+        DISPERR("%s:set DISP_OPT_IDLE_MGR 0", __func__);
+#else
 	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
+#endif
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
