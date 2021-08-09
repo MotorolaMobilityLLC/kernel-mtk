@@ -487,6 +487,10 @@ struct tcpc_device {
 #ifdef CONFIG_CABLE_TYPE_DETECTION
 	enum tcpc_cable_type typec_cable_type;
 #endif /* CONFIG_CABLE_TYPE_DETECTION */
+
+#ifdef CONFIG_TYPEC_PD_POWER_OFF_CHARGE_DELAY
+       bool mmi_poweroffchg;
+#endif
 };
 
 #define to_tcpc_device(obj) container_of(obj, struct tcpc_device, dev)
