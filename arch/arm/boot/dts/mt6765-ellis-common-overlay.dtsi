@@ -437,6 +437,7 @@
 
 &mtk_charger_type {
         bc12_active = <0>;
+        bootmode = <&chosen>;
 };
 
 &mtk_gauge {
