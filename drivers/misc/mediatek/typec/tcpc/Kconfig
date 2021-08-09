@@ -120,3 +120,11 @@ config MTK_TYPEC_WATER_DETECT_BY_PCB
 	  need to be enabled.
 	  Say Yes to let PCB decides enabling water detection or not.
 	  If unsure, say N.
+
+config TYPEC_PD_POWER_OFF_CHARGE_DELAY
+	bool "typec pd delay in power off charging mode"
+	depends on TCPC_CLASS
+        default n
+	help
+	  Say Yes to delay power off charging pd detect a few more seconds.
+	  If unsure, say N.
