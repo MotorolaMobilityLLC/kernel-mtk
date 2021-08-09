@@ -350,11 +350,8 @@ void disp_helper_option_init(void)
 
 	/* =================Begin: lowpower option setting================= */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 1);
-#ifdef CONFIG_MTK_MT6382_BDG_BUF7
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
-#else
 	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
-#endif
+
 	/* 1. vdo mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
 	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 1);
@@ -377,11 +374,8 @@ void disp_helper_option_init(void)
 
 	/* use RGB565 format for decouple mode intermediate buffer */
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
-#ifdef CONFIG_MTK_MT6382_BDG_BUF7
-	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 1);
-#else
+
 	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
-#endif
 	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
