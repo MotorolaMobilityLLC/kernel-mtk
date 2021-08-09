@@ -2576,11 +2576,23 @@ blk_qc_t submit_bio(struct bio *bio)
 
 		if (unlikely(block_dump)) {
 			char b[BDEVNAME_SIZE];
-			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
-			current->comm, task_pid_nr(current),
-				op_is_write(bio_op(bio)) ? "WRITE" : "READ",
-				(unsigned long long)bio->bi_iter.bi_sector,
-				bio_devname(bio, b), count);
+			// Begin Motorola, zhangp5, 08/09/2021, IKSWR-121424
+			if(unlikely(block_dump > 1)){
+				if(op_is_write(bio_op(bio)) && count > 40){
+					printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
+					current->comm, task_pid_nr(current),
+						op_is_write(bio_op(bio)) ? "WRITE" : "READ",
+						(unsigned long long)bio->bi_iter.bi_sector,
+						bio_devname(bio, b), count);
+				}
+			}else{
+				printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
+				current->comm, task_pid_nr(current),
+					op_is_write(bio_op(bio)) ? "WRITE" : "READ",
+					(unsigned long long)bio->bi_iter.bi_sector,
+					bio_devname(bio, b), count);
+			}
+			// End IKSWR-121424
 		}
 	}
 
