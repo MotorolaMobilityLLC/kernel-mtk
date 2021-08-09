@@ -2331,7 +2331,6 @@ capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps);
 	set_mirror_flip(imgsensor.mirror);
-	mdelay(10);
 	gain_flag=true;
 
 	return ERROR_NONE;
