@@ -394,6 +394,65 @@ static void tcpc_device_release(struct device *dev)
 static void tcpc_init_work(struct work_struct *work);
 static void tcpc_event_init_work(struct work_struct *work);
 
+#ifdef CONFIG_TYPEC_PD_POWER_OFF_CHARGE_DELAY
+int mmi_get_bootarg(char *key, char **value)
+{
+	const char *bootargs_tmp = NULL;
+	char *idx = NULL;
+	char *kvpair = NULL;
+	int err = 1;
+	struct device_node *n = of_find_node_by_path("/chosen");
+	size_t bootargs_tmp_len = 0;
+        char *bootargs_str = NULL;
+
+	if (n == NULL)
+		goto err;
+
+	if (of_property_read_string(n, "bootargs", &bootargs_tmp) != 0)
+		goto putnode;
+
+	bootargs_tmp_len = strlen(bootargs_tmp);
+	if (!bootargs_str) {
+		/* The following operations need a non-const
+		 * version of bootargs
+		 */
+		bootargs_str = kmalloc(bootargs_tmp_len + 1, GFP_KERNEL);
+		if (!bootargs_str)
+			goto putnode;
+	}
+	strlcpy(bootargs_str, bootargs_tmp, bootargs_tmp_len + 1);
+
+	idx = strnstr(bootargs_str, key, strlen(bootargs_str));
+	if (idx) {
+		kvpair = strsep(&idx, " ");
+		if (kvpair)
+			if (strsep(&kvpair, "=")) {
+				*value = strsep(&kvpair, " ");
+				if (*value)
+					err = 0;
+			}
+	}
+
+        kfree(bootargs_str);
+
+putnode:
+	of_node_put(n);
+err:
+	return err;
+}
+
+bool mmi_check_pfchargebootmode() {
+        char *mmi_bootmode;
+        if (mmi_get_bootarg("androidboot.mode=", &mmi_bootmode) == 0) {
+                pr_info("[%s] check mmi_bootmode = %s.\n", __func__, mmi_bootmode);
+                return (strcmp("charger", mmi_bootmode) == 0 ? true : false);
+        } else {
+                pr_err("%s get bootmode fail\n", __func__);
+                return false;
+        }
+}
+#endif
+
 struct tcpc_device *tcpc_device_register(struct device *parent,
 	struct tcpc_desc *tcpc_desc, struct tcpc_ops *ops, void *drv_data)
 {
@@ -441,6 +500,10 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 		return ERR_PTR(ret);
 	}
 
+#ifdef CONFIG_TYPEC_PD_POWER_OFF_CHARGE_DELAY
+        tcpc->mmi_poweroffchg = mmi_check_pfchargebootmode();
+#endif
+
 	INIT_DELAYED_WORK(&tcpc->init_work, tcpc_init_work);
 	INIT_DELAYED_WORK(&tcpc->event_init_work, tcpc_event_init_work);
 
@@ -486,8 +549,17 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 		return ret;
 	}
 
+#ifndef CONFIG_TYPEC_PD_POWER_OFF_CHARGE_DELAY
 	schedule_delayed_work(
 		&tcpc->event_init_work, msecs_to_jiffies(10*1000));
+#else
+        if(tcpc->mmi_poweroffchg)
+                schedule_delayed_work(
+		      &tcpc->event_init_work, msecs_to_jiffies(15*1000));
+        else
+                schedule_delayed_work(
+		      &tcpc->event_init_work, msecs_to_jiffies(10*1000));
+#endif
 
 	pr_info("%s : tcpc irq enable OK!\n", __func__);
 	return 0;

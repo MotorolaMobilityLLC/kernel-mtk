@@ -616,7 +616,6 @@ static void do_charger_detection_work(struct work_struct *data)
 	}
 }
 
-
 irqreturn_t chrdet_int_handler(int irq, void *data)
 {
 	struct mtk_charger_type *info = data;
@@ -627,7 +626,9 @@ irqreturn_t chrdet_int_handler(int irq, void *data)
 		PMIC_RGS_CHRDET_MASK,
 		PMIC_RGS_CHRDET_SHIFT);
 	if (!chrdet) {
-		hw_bc11_done(info);
+#ifndef CONFIG_PD_HARDRESET_HND
+                hw_bc11_done(info);
+#endif
 		/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
 		/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
 		if (info->bootmode == 8 || info->bootmode == 9) {
@@ -639,7 +640,17 @@ irqreturn_t chrdet_int_handler(int irq, void *data)
 			if (system_state != SYSTEM_POWER_OFF)
 				kernel_power_off();
 #endif
+#ifdef CONFIG_PD_HARDRESET_HND
+                        pr_info("%s: attach: %d \n", __func__, info->attach);
+                        if (info->attach) {
+                                pr_err("[%s] power off charging mode, attach but !chrdet, pd hard reset maybe, ignore!\n", __func__);
+                                return IRQ_HANDLED;
+                        }
+#endif
 		}
+#ifdef CONFIG_PD_HARDRESET_HND
+		hw_bc11_done(info);
+#endif
 	}
 
 	if(info->otg_mode && chrdet) {
@@ -657,6 +668,7 @@ static void hadle_typec_attach(struct mtk_charger_type *info, bool en)
 {
 	mutex_lock(&info->attach_lock);
 	info->attach = en;
+        pr_info("%s attach:%d\n", __func__, info->attach);
 //	schedule_work(&info->chr_work);
 	pr_err("do BC1.2 with vbus detect rather than type-c notify\n");
 	mutex_unlock(&info->attach_lock);
@@ -683,6 +695,12 @@ static int mt6357_tcp_notifier_call(struct notifier_block *pnb,
 			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			pr_info("%s USB Plug out\n", __func__);
 			hadle_typec_attach(info, false);
+#ifdef CONFIG_PD_HARDRESET_HND
+		        if (info->bootmode == 8 || info->bootmode == 9) {
+                             schedule_work(&info->chr_work);
+                             pr_info("%s re schedule chr work\n", __func__);
+                        }
+#endif
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 			pr_info("%s Source_to_Sink\n", __func__);
@@ -1070,4 +1088,3 @@ module_exit(mt6357_charger_type_exit);
 MODULE_AUTHOR("wy.chuang <wy.chuang@mediatek.com>");
 MODULE_DESCRIPTION("MTK Charger Type Detection Driver");
 MODULE_LICENSE("GPL");
-

@@ -907,4 +907,10 @@ source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
 endif
 
+config PD_HARDRESET_HND
+        bool "PD HARDRESET handle"
+        default n
+	help
+	  Say Y here to enable PD Hardreset ignore
+
 endif # POWER_SUPPLY
