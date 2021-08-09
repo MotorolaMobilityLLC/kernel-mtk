@@ -3064,7 +3064,7 @@ static int  mtk_charger_tcmd_set_usb_enable(void *input, int  val)
 	struct mtk_charger *cm = (struct mtk_charger *)input;
 	int ret;
 
-	val = !!val;
+	val = !val;
 	ret = charger_dev_enable_hz(cm->chg1_dev, val);
 
 	return ret;
