@@ -42,5 +42,6 @@ obj-y += common/bu24253af/
 obj-y += common/gt9772af/
 obj-y += common/mot_dw9714vaf/
 obj-y += common/dw9714af/
+obj-y += common/mot_milan_dw9714af/
 
 endif
