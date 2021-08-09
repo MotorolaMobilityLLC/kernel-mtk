@@ -377,21 +377,10 @@ void check_calibration_data(void)
 int GenerateFirmwareContexts(void)
 {
 	int i4RetValue;
-	unsigned short flag;
 	g_firmwareContext.size = 10240; /* size: word */
 	g_firmwareContext.driverIc = 0x9781;
 
-	read_reg_16bit_value_16bit(0x7004, &flag);
-	if(flag == 0x0004) {
-		i4RetValue = request_firmware(&dw9781cfw, "mot_dw9781_zet.prog", NULL);
-		LOG_INF("get ZET module!\n");
-	} else if(flag == 0x0000) {
-		i4RetValue = request_firmware(&dw9781cfw, "mot_dw9781_tdk.prog", NULL);
-		LOG_INF("get TDK module!\n");
-	} else {
-		i4RetValue = request_firmware(&dw9781cfw, "mot_dw9781_tdk.prog", NULL);
-		pr_err("Not TDK or ZET module!,use default firmware!\n");
-	}
+	i4RetValue = request_firmware(&dw9781cfw, "mot_dw9781.prog", NULL);
 
 	if(i4RetValue<0) {
 		LOG_INF("get dw9781c firmware failed!\n");
