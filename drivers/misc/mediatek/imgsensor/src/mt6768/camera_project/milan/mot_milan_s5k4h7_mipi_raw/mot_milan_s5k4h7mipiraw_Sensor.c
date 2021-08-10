@@ -197,7 +197,7 @@ static struct imgsensor_struct imgsensor = {
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,		// sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5a,
-	.current_ae_effective_frame = 0x3372CB48,
+	.current_ae_effective_frame = 2,
 };
 
 
