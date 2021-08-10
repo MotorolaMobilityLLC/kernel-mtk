@@ -212,7 +212,7 @@ static struct imgsensor_struct imgsensor = {
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,		// sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5a,
-	.current_ae_effective_frame = 0x3372CB48,
+	.current_ae_effective_frame = 2,
 };
 
 
@@ -429,8 +429,7 @@ static void write_shutter(kal_uint32 shutter)
 		LOG_INF("Calc long_shutter=%x, framelength=%d. shutter=0x%x\n",\
 			      long_shutter, new_framelength,shutter);
 		/*stream off */
-		streaming_control(KAL_FALSE);
-
+		write_cmos_sensor_8(0x0100, 0X00);
 		/*setting for long exposure*/
 		write_cmos_sensor_8(0x0340, (new_framelength&0xFF00)>>8);
 		write_cmos_sensor_8(0x0341, (new_framelength&0x00FF));
@@ -442,7 +441,7 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0203, (long_shutter&0x00FF));
 		/*stream on*/
 
-		streaming_control(KAL_TRUE);
+		write_cmos_sensor_8(0x0100, 0X01);
 
 		/* Frame exposure mode customization for LE*/
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
