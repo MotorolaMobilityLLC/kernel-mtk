@@ -469,6 +469,9 @@
         EMBEDDED_SEL = <(1)>;
         DIFFERENCE_FULLOCV_ITH = <(80)>;
 
+        VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
+        VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
+
 	df-serialnum = "SB18D15207";
         #include "bat_setting/S96767AA1_ATL_4V4_4000MAH.dtsi"
         #include "bat_setting/S96767AA1_SUN_4V4_4000MAH.dtsi"
