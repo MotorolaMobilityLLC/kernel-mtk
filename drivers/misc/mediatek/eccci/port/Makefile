@@ -46,6 +46,11 @@ ifneq (,$(findstring kyoto, $(strip $(TARGET_PRODUCT))))
 ccflags-y += -DKYOTO_SWTP_CUST
 endif
 
+# Add for corfu series
+ifeq ($(filter corfu cofud coful milan,$(TARGET_PRODUCT)),)
+ccflags-y += -DSWTP_GPIO_STATE_CUST
+endif
+
 # Disable SWTP on factory version for lisbon, keep MTK default logic for customer version
 ifeq ($(TARGET_PRODUCT),lisbon_factory)
 ccflags-y += -DDISABLE_SWTP_FACTORY
