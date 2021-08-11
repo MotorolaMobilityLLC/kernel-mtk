@@ -57,7 +57,7 @@ static struct i2c_driver BL_control_driver = {
 static DEFINE_MUTEX(BL_control_i2c_access);
 
 /* I2C Function For Read/Write */
-int BL_control_read_bytes(unsigned char cmd)
+char BL_control_read_bytes(unsigned char cmd)
 {
 	char cmd_buf[2] = { 0x00, 0x00 };
 	char readData = 0;
