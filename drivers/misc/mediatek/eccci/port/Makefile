@@ -55,3 +55,8 @@ endif
 ifneq (,$(findstring kyoto, $(strip $(TARGET_PRODUCT))))
 ccflags-y += -DKYOTO_SWTP_CUST
 endif
+
+# Add for corfu series
+ifeq ($(filter corfu cofud coful milan,$(TARGET_PRODUCT)),)
+ccflags-y += -DSWTP_GPIO_STATE_CUST
+endif
