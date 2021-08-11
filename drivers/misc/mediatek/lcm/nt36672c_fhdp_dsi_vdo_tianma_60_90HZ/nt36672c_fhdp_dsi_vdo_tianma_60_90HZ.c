@@ -48,6 +48,7 @@
 static struct LCM_UTIL_FUNCS lcm_util;
 
 extern int BL_control_write_bytes(unsigned char addr, unsigned char value);
+extern char BL_control_read_bytes(unsigned char cmd);
 extern int Bias_power_write_bytes(unsigned char addr, unsigned char value);
 extern void BDG_set_cmdq_V2_DSI0(void *cmdq, unsigned int cmd, unsigned char count,
 			unsigned char *para_list, unsigned char force_update);
@@ -471,7 +472,6 @@ static struct LCM_setting_table init_setting[] = {
 	{0X11,0x00,{}},
 	{REGFLAG_DELAY,100,{}},
 	{0X29,0x00,{}},
-	{REGFLAG_DELAY,40,{}},
 /*
 	{0xFF,0x01,{0x10}},
 	{0xFB,0x01,{0x01}},
@@ -701,22 +701,26 @@ static void lcm_init(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(15);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(50);
+	MDELAY(15);
 
 	push_table(NULL, init_setting,
 		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1, 0);
 
 	MDELAY(40);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BL_EN_OUT1);
-	BL_control_write_bytes(0x02,0x01);
-	BL_control_write_bytes(0x10,0x07);
-	BL_control_write_bytes(0x19,0x07);
-	BL_control_write_bytes(0x1A,0x04);
-	BL_control_write_bytes(0x1C,0x0E);
-	BL_control_write_bytes(0x24,0x02);
-	BL_control_write_bytes(0x22,0x0F);
-	BL_control_write_bytes(0x23,0xFF);
 
+	pr_info("%s,backlight IC chip ID = 0x%x\n",__func__,BL_control_read_bytes(0x00));
+	if(0x03 == BL_control_read_bytes(0x00))
+		BL_control_write_bytes(0x02,0x01);
+	else{
+		BL_control_write_bytes(0x10,0x07);
+		BL_control_write_bytes(0x19,0x07);
+		BL_control_write_bytes(0x1A,0x04);
+		BL_control_write_bytes(0x1C,0x0E);
+		BL_control_write_bytes(0x24,0x02);
+		BL_control_write_bytes(0x22,0x0F);
+		BL_control_write_bytes(0x23,0xFF);
+	}
 	pr_info("%s end\n", __func__);
 
 }
