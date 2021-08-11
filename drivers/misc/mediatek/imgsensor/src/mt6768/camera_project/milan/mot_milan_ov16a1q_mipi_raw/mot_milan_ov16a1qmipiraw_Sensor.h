@@ -22,7 +22,7 @@ static kal_uint16 ov16a1q_custom1_setting[] = {
 #include "OV16A1Q_1280x720_240fps_MIPI4_1484Mbps_20200421.h"
 };
 static kal_uint16 ov16a1q_hs_video_setting[] = {
-#include "OV16A1Q_1920x1080_120fps_MIPI4_1484Mbps_20200421.h"
+#include "OV16A1Q_1164x874_120fps_MIPI4_726Mbps_20210811.h"
 };
 
 static kal_uint16 ov16a1q_init_setting[] = {

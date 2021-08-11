@@ -88,16 +88,16 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 298000000,
 	},
 	.hs_video = {
-		.pclk = 100000000,				//record different mode's pclk
-		.linelength  = 425,				//record different mode's linelength
-		.framelength = 1962,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 1920,		//record different mode's width of grabwindow
-		.grabwindow_height = 1080,		//record different mode's height of grabwindow
+		.pclk = 100000000,               //record different mode's pclk
+		.linelength  = 425,              //record different mode's linelength
+		.framelength = 1960,              //record different mode's framelength
+		.startx = 0,                     //record different mode's startx of grabwindow
+		.starty = 0,                     //record different mode's starty of grabwindow
+		.grabwindow_width  = 1164,       //record different mode's width of grabwindow
+		.grabwindow_height = 874,        //record different mode's height of grabwindow
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 600000000,
+		.mipi_pixel_rate = 290400000,
 	},
 	.slim_video = {//pre
 		.pclk = 100000000,				//record different mode's pclk
@@ -193,13 +193,13 @@ static struct imgsensor_struct imgsensor = {
 
 /* Sensor output window information*/
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
- { 4656, 3496, 0, 0,  	   4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 },// Preview
- { 4656, 3496, 0, 0,  	   4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 },//capture
- { 4656, 3496, 0, 0,  	   4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 },//normal-video
- { 4656, 3496,  426,  684, 3840, 2160, 1920, 1080,    0,  0,  1920, 1080, 0, 0, 1920, 1080 }, //hight speed video  //8 2
+ { 4656, 3496, 0, 0,  	   4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 }, // Preview
+ { 4656, 3496, 0, 0,  	   4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 }, // capture
+ { 4656, 3496, 0, 0,  	   4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 }, // normal-video
+ { 4656, 3496, 0, 0,  	   4656, 3496, 1164,  874,    0,  0,  1164,  874, 0, 0, 1164,  874 }, // hight speed video
  { 4656, 3496,    0,    0, 4656, 3496, 2328, 1748,   12, 10,  2304, 1728, 0, 0, 2304, 1728 }, // slim video
  { 4656, 3496, 1066, 1044, 2560, 1440, 1280,  720,    0,  0,  1280,  720, 0, 0, 1280,  720 }, // custom1
- { 4656, 3496, 0, 0,  	   4656, 3496, 4656, 3496,   24, 20,  4608, 3456, 0, 0, 4608, 3456 }, //custom3
+ { 4656, 3496, 0, 0,  	   4656, 3496, 4656, 3496,   24, 20,  4608, 3456, 0, 0, 4608, 3456 }, // custom3
 };
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
