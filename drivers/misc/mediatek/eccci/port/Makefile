@@ -51,3 +51,7 @@ ccci_port-y := port_cfg.o \
 
 endif
 
+# Add for corfu series
+ifeq ($(filter corfu cofud coful milan,$(TARGET_PRODUCT)),)
+ccflags-y += -DSWTP_GPIO_STATE_CUST
+endif
