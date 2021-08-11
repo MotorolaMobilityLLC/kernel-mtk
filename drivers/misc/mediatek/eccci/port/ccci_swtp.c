@@ -53,6 +53,26 @@ static const char rf_name[] = "RF_cable";
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
 #define MAX_RETRY_CNT 30
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end*/
+
+#ifdef SWTP_GPIO_STATE_CUST
+static ssize_t swtp_gpio_state_show(struct class *class,
+		struct class_attribute *attr,
+		char *buf)
+{
+	int ret;
+	ret = gpio_get_value_cansleep(326);
+	CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d\n", __func__, ret);
+	return sprintf(buf, "%d\n", ret);
+}
+
+static CLASS_ATTR_RO(swtp_gpio_state);
+
+static struct class swtp_class = {
+	.name			= "swtp",
+	.owner			= THIS_MODULE,
+};
+#endif
+
 static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
@@ -272,6 +292,12 @@ static void swtp_init_delayed_work(struct work_struct *work)
 			"%s: invalid md_id = %d\n", __func__, md_id);
 		goto SWTP_INIT_END;
 	}
+
+#ifdef SWTP_GPIO_STATE_CUST
+	ret = class_register(&swtp_class);
+
+	ret = class_create_file(&swtp_class, &class_attr_swtp_gpio_state);
+#endif
 
 	// modify by wt.changtingting for swtp start
 	if (ARRAY_SIZE(swtp_of_match) < MAX_PIN_NUM || ARRAY_SIZE(irq_name) < MAX_PIN_NUM) {
