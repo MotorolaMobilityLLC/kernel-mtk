@@ -559,6 +559,7 @@ struct mot_ltv {
     float raw_accel_margin;
 };
 
+#ifdef CONFIG_MOTO_ALSPS_PARAMS
 struct als_cal {
 	uint32_t alscfg;
     uint8_t hascali;
@@ -651,6 +652,19 @@ struct ps_custom {
     struct MotAlgoPsPrams motalgopsprams;
     struct PsOilParams    psoilparams;
 };
+#endif
+
+#ifdef CONFIG_MOTO_ALSPS_NVCFG
+struct mot_als_nvcfg {
+    uint32_t  alscfg;
+    float als_cali[2];//moto add:light_scale,target_lux
+};
+
+struct mot_ps_nvcfg {
+    uint32_t  pscfg;
+    uint16_t ps_cali[4]; //moto :cover uncover high_thresold low_thresold
+};
+#endif
 
 struct mot_params {
 #ifdef CONFIG_MOTO_CHOPCHOP_PARAMS
@@ -669,6 +683,10 @@ struct mot_params {
     struct als_custom alscustom;
 
     struct ps_custom pscustom;
+#endif
+#ifdef CONFIG_MOTO_ALSPS_NVCFG
+    struct mot_als_nvcfg  als_nvcfg;
+    struct mot_ps_nvcfg  ps_nvcfg;
 #endif
 };
 #endif
