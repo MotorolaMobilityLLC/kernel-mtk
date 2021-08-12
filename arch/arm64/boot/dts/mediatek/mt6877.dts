@@ -3113,7 +3113,7 @@
 			<0>, /*MTK_DRM_OPT_VDS_PATH_SWITCH*/
 			<0>, /*MTK_DRM_OPT_LAYER_REC*/
 			<0>, /*MTK_DRM_OPT_CLEAR_LAYER*/
-			<0>; /*MTK_DRM_OPT_LFR*/
+			<1>; /*MTK_DRM_OPT_LFR*/
 	};
 
 	disp_mutex0: disp_mutex@14001000 {
