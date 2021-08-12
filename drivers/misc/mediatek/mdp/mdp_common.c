@@ -1436,6 +1436,11 @@ s32 cmdq_mdp_update_sec_addr_index(struct cmdqRecStruct *handle,
 
 u32 cmdq_mdp_handle_get_instr_count(struct cmdqRecStruct *handle)
 {
+	/* check boundary size and append at first before append metadata */
+	if (unlikely(!handle->pkt->avail_buf_size)) {
+		if (cmdq_pkt_add_cmd_buffer(handle->pkt) < 0)
+			return -ENOMEM;
+	}
 	return handle->pkt->cmd_buf_size / CMDQ_INST_SIZE;
 }
 
