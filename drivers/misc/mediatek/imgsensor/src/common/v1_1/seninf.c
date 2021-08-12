@@ -334,6 +334,7 @@ static long seninf_ioctl(struct file *pfile,
 	default:
 		PK_DBG("No such command %d\n", cmd);
 		ret = -EPERM;
+		goto SENINF_IOCTL_EXIT;
 		break;
 	}
 
@@ -345,10 +346,9 @@ static long seninf_ioctl(struct file *pfile,
 		goto SENINF_IOCTL_EXIT;
 	}
 
-	kfree(pbuff);
-
 SENINF_IOCTL_EXIT:
-
+	if (pbuff != NULL)
+		kfree(pbuff);
 	return ret;
 }
 
