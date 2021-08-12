@@ -306,6 +306,8 @@ enum{
 #define CAMSYS_REG_HALT2_SEC_EN                (ISP_CAMSYS_CONFIG_BASE + 0x0364)
 #define CAMSYS_REG_HALT3_SEC_EN                (ISP_CAMSYS_CONFIG_BASE + 0x0368)
 #define CAMSYS_REG_HALT4_SEC_EN                (ISP_CAMSYS_CONFIG_BASE + 0x036C)
+#define CAMSYS_REG_HALT4_3RD_EN                (ISP_CAMSYS_CONFIG_BASE + 0x03BC)
+
 
 #define CAM_REG_CTL_EN(module)                  (isp_devs[module].regs + 0x0004)
 #define CAM_REG_CTL_EN2(module)                 (isp_devs[module].regs + 0x0008)

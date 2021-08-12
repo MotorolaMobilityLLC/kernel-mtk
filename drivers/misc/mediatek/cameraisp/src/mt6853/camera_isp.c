@@ -2551,7 +2551,7 @@ static void ISP_ConfigDMAControl(enum ISP_DEV_NODE_ENUM module)
 	ISP_WR32(CAM_REG_AAHO_CON(module), 0x80000080);//AAHO 128
 	ISP_WR32(CAM_REG_AAHO_CON2(module), 0x00000000);
 	ISP_WR32(CAM_REG_AAHO_CON3(module), 0x00000000);
-	ISP_WR32(CAM_REG_AAHO_DRS(module), 0x80000000);//1/4~1/8
+	ISP_WR32(CAM_REG_AAHO_DRS(module), 0x80550045);//1/4~1/8
 
 	ISP_WR32(CAM_REG_AFO_CON(module), 0x80000180);//AFO 384
 	ISP_WR32(CAM_REG_AFO_CON2(module), 0x00C00090);//1/2~3/8
@@ -2689,11 +2689,12 @@ static void ISP_ConfigDMAControl(enum ISP_DEV_NODE_ENUM module)
 	ISP_WR32(CAMSYS_REG_HALT1_EN, 0x00000001);
 	ISP_WR32(CAMSYS_REG_HALT2_EN, 0x00000001);
 	ISP_WR32(CAMSYS_REG_HALT3_EN, 0x00000001);
-	ISP_WR32(CAMSYS_REG_HALT4_EN, 0x00000001);
+	ISP_WR32(CAMSYS_REG_HALT4_EN, 0x00008001);
 	ISP_WR32(CAMSYS_REG_HALT1_SEC_EN, 0x00000001);
 	ISP_WR32(CAMSYS_REG_HALT2_SEC_EN, 0x00000001);
 	ISP_WR32(CAMSYS_REG_HALT3_SEC_EN, 0x00000001);
-	ISP_WR32(CAMSYS_REG_HALT4_SEC_EN, 0x00000001);
+	ISP_WR32(CAMSYS_REG_HALT4_SEC_EN, 0x00008001);
+	ISP_WR32(CAMSYS_REG_HALT4_3RD_EN, 0x00008001);
 }
 
 /*******************************************************************************
@@ -8314,8 +8315,9 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 
 			IRQ_LOG_KEEPER(
 				module, m_CurrentPPB, _LOG_ERR,
-				"CAM_A:raw_int_err:0x%x, raw_int5_wrn:0x%x,lsci_wrn:0x%x\n",
-				ErrStatus, WarnStatus, warnTwo);
+				"CAM_A:raw_int_err:0x%x, raw_int5_wrn:0x%x,lsci_wrn:0x%x, rawb_int5_wrn:0x%x\n",
+				ErrStatus, WarnStatus, warnTwo,
+				g_ISPIntStatus[ISP_IRQ_TYPE_INT_CAM_B_ST].ispInt5Err);
 
 			/* TG ERR print */
 			if (ErrStatus & TG_ERR_ST) {
