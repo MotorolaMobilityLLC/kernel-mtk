@@ -36,6 +36,12 @@ config MOTO_ALSPS_PARAMS
 	help
 	  This feature Option is used for open/close moto alsps algo parms.
 
+config MOTO_ALSPS_NVCFG
+	bool "algo params for moto alsps nvcfg"
+	default n
+	help
+	  This feature Option is used for open/close moto alsps nvcfg parms.
+
 source "drivers/misc/mediatek/sensor/2.0/mtk_nanohub/Kconfig"
 source "drivers/misc/mediatek/sensor/2.0/sensorhub/Kconfig"
 source "drivers/misc/mediatek/sensor/2.0/test/Kconfig"
