@@ -55,6 +55,7 @@ struct FSTB_FRAME_INFO {
 	struct hlist_node hlist;
 
 	int pid;
+	int proc_id;
 	char proc_name[16];
 	int target_fps;
 	int target_fps_margin;
@@ -115,10 +116,9 @@ struct FSTB_RENDER_TARGET_FPS {
 	struct fps_level level[MAX_NR_RENDER_FPS_LEVELS];
 };
 
-struct FSTB_FTEH_LIST {
-	struct hlist_node hlist;
-	char process_name[16];
-	char thread_name[16];
+struct FSTB_POWERFPS_LIST {
+	int pid;
+	int fps;
 };
 
 #endif
