@@ -6243,6 +6243,10 @@ static void sf_cmdq_cb(struct cmdq_cb_data data)
 	kfree(cb_data);
 }
 
+#if defined(CONFIG_MTK_HDR_COLOR_GAIN_RGB) && (CONFIG_MTK_HDR_COLOR_GAIN_RGB > 0)
+static int mtk_hdr_color_gain_setted;
+#endif
+
 static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 				      struct drm_crtc_state *old_crtc_state)
 {
@@ -6303,9 +6307,10 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 
 	hdr_en = (bool)state->prop_val[CRTC_PROP_HDR_ENABLE];
 
-#ifdef CONFIG_MTK_HDR_COLOR_GAIN_RGB
-	DDPMSG("crtc CONFIG_HDR_COLOR_GAIN_RED =%ld!\n", CONFIG_MTK_HDR_COLOR_GAIN_RGB);
-	if (hdr_en && state->prop_val[CRTC_PROP_HDR_ENABLE] == MTK_HDR10P_PROPERTY_FLAG) {
+#if defined(CONFIG_MTK_HDR_COLOR_GAIN_RGB) && (CONFIG_MTK_HDR_COLOR_GAIN_RGB > 0)
+	DDPINFO("crtc CONFIG_HDR_COLOR_GAIN_RED =%ld!\n", CONFIG_MTK_HDR_COLOR_GAIN_RGB);
+	if (hdr_en && !mtk_hdr_color_gain_setted &&
+	    state->prop_val[CRTC_PROP_HDR_ENABLE] & MTK_HDR10P_PROPERTY_FLAG) {
 		struct mtk_crtc_ddp_ctx *ddp_ctx = &mtk_crtc->ddp_ctx[mtk_crtc->ddp_mode];
 
 		for (i = 0; i < ddp_ctx->ddp_comp_nr[DDP_FIRST_PATH]; i++) {
@@ -6316,10 +6321,11 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 					CONFIG_MTK_HDR_COLOR_GAIN_RGB >> 24 & 0xFFF,
 					CONFIG_MTK_HDR_COLOR_GAIN_RGB >> 12 & 0xFFF,
 					CONFIG_MTK_HDR_COLOR_GAIN_RGB & 0xFFF);
+					mtk_hdr_color_gain_setted = 1;
 				break;
 			}
 		}
-	} else {
+	} else if (mtk_hdr_color_gain_setted) {
 		struct mtk_crtc_ddp_ctx *ddp_ctx = &mtk_crtc->ddp_ctx[mtk_crtc->ddp_mode];
 
 		for (i = 0; i < ddp_ctx->ddp_comp_nr[DDP_FIRST_PATH]; i++) {
@@ -6327,6 +6333,7 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 
 			if (comp->id == DDP_COMPONENT_CCORR0) {
 				disp_ccorr_set_RGB_Gain(comp, cmdq_handle, 1024, 1024, 1024);
+				mtk_hdr_color_gain_setted = 0;
 				break;
 			}
 		}
