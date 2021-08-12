@@ -874,10 +874,12 @@ static int mtk_dsi_set_LFR(struct mtk_dsi *dsi, struct mtk_ddp_comp *comp,
 	unsigned int lfr_skip_num = 0;
 	struct drm_crtc *crtc = dsi->encoder.crtc;
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	unsigned int refresh_rate = mtk_crtc->base.state->adjusted_mode.vrefresh;
+	unsigned int refresh_rate = 0;
 
-	if (!mtk_dsi_is_LFR_Enable(dsi))
+	if (!mtk_crtc || !(mtk_crtc->base.state) || !mtk_dsi_is_LFR_Enable(dsi))
 		return -1;
+
+	refresh_rate = mtk_crtc->base.state->adjusted_mode.vrefresh;
 
 	//Settings lfr settings to LFR_CON_REG
 	if (dsi->ext && dsi->ext->params &&
