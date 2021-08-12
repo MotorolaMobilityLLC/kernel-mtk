@@ -299,5 +299,6 @@ extern void venc_encode_pmqos_gce_end(void *ctx_end,
 		unsigned int core_id, int job_cnt);
 extern void vdec_check_release_lock(void *ctx_check);
 extern void mtk_vcodec_gce_timeout_dump(void *ctx);
+int vcu_set_log(const char *val);
 
 #endif /* _MTK_VCU_H */

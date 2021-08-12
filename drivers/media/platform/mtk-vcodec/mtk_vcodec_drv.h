@@ -320,6 +320,7 @@ struct venc_enc_param {
 	unsigned int maxrefpnum;
 	unsigned int refpdistance;
 	unsigned int refpfrmnum;
+	char *log;
 };
 
 /*

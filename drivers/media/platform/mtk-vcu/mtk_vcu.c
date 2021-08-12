@@ -344,6 +344,8 @@ struct mtk_vcu {
 	int enable_vcu_dbg_log;
 };
 
+static int mtk_vcu_write(const char *val, const struct kernel_param *kp);
+
 static inline bool vcu_running(struct mtk_vcu *vcu)
 {
 	return (bool)vcu->run.signaled;
@@ -2059,24 +2061,28 @@ static long mtk_vcu_unlocked_compat_ioctl(struct file *file, unsigned int cmd,
 }
 #endif
 
-static int mtk_vcu_write(const char *val, const struct kernel_param *kp)
+int mtk_vcu_write(const char *val, const struct kernel_param *kp)
 {
 	if (vcu_ptr != NULL &&
 		vcu_ptr->vdec_log_info != NULL &&
 		val != NULL) {
 		memcpy(vcu_ptr->vdec_log_info->log_info,
 			val, strnlen(val, LOG_INFO_SIZE - 1) + 1);
-	} else
+	} else {
+		pr_info("[VCU] %s(%d) return\n", __func__, __LINE__);
 		return -EFAULT;
+	}
 
 	vcu_ptr->vdec_log_info->log_info[LOG_INFO_SIZE - 1] = '\0';
 
 	// check if need to enable VCU debug log
 	if (strstr(vcu_ptr->vdec_log_info->log_info, "vcu_log 1")) {
 		vcu_ptr->enable_vcu_dbg_log = 1;
+		pr_info("[VCU] enable vcu_log\n");
 		return 0;
 	} else if (strstr(vcu_ptr->vdec_log_info->log_info, "vcu_log 0")) {
 		vcu_ptr->enable_vcu_dbg_log = 0;
+		pr_info("[VCU] disable vcu_log\n");
 		return 0;
 	}
 
@@ -2090,6 +2096,12 @@ static int mtk_vcu_write(const char *val, const struct kernel_param *kp)
 
 	return 0;
 }
+
+int vcu_set_log(const char *val)
+{
+	return mtk_vcu_write(val, NULL);
+}
+EXPORT_SYMBOL_GPL(vcu_set_log);
 
 static struct kernel_param_ops log_param_ops = {
 	.set = mtk_vcu_write,

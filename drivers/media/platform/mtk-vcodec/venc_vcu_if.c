@@ -49,12 +49,12 @@ static void handle_query_cap_ack_msg(struct venc_vcu_ipi_query_cap_ack *msg)
 	if (data == NULL)
 		return;
 	switch (msg->id) {
-	case GET_PARAM_CAPABILITY_SUPPORTED_FORMATS:
+	case VENC_GET_PARAM_CAPABILITY_SUPPORTED_FORMATS:
 		size = sizeof(struct mtk_video_fmt);
 		memcpy((void *)msg->ap_data_addr, data,
 			size * MTK_MAX_ENC_CODECS_SUPPORT);
 		break;
-	case GET_PARAM_CAPABILITY_FRAME_SIZES:
+	case VENC_GET_PARAM_CAPABILITY_FRAME_SIZES:
 		size = sizeof(struct mtk_codec_framesizes);
 		memcpy((void *)msg->ap_data_addr, data,
 			size * MTK_MAX_ENC_CODECS_SUPPORT);

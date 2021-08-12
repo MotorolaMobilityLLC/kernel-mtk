@@ -62,7 +62,7 @@ static void get_supported_format(struct mtk_vcodec_ctx *ctx)
 
 	if (mtk_video_formats[0].fourcc == 0) {
 		if (venc_if_get_param(ctx,
-			GET_PARAM_CAPABILITY_SUPPORTED_FORMATS,
+			VENC_GET_PARAM_CAPABILITY_SUPPORTED_FORMATS,
 			&mtk_video_formats) != 0) {
 			mtk_v4l2_err("Error!! Cannot get supported format");
 			return;
@@ -89,7 +89,7 @@ static void get_supported_framesizes(struct mtk_vcodec_ctx *ctx)
 	unsigned int i;
 
 	if (mtk_venc_framesizes[0].fourcc == 0) {
-		if (venc_if_get_param(ctx, GET_PARAM_CAPABILITY_FRAME_SIZES,
+		if (venc_if_get_param(ctx, VENC_GET_PARAM_CAPABILITY_FRAME_SIZES,
 				      &mtk_venc_framesizes) != 0) {
 			mtk_v4l2_err("[%d] Error!! Cannot get frame size",
 				ctx->id);
@@ -116,7 +116,7 @@ static void get_free_buffers(struct mtk_vcodec_ctx *ctx,
 				struct venc_done_result *pResult)
 {
 	venc_if_get_param(ctx,
-		GET_PARAM_FREE_BUFFERS,
+		VENC_GET_PARAM_FREE_BUFFERS,
 		pResult);
 }
 
@@ -524,6 +524,9 @@ static int vidioc_venc_s_ctrl(struct v4l2_ctrl *ctrl)
 		p->refpfrmnum = ctrl->val;
 		ctx->param_change |= MTK_ENCODE_PARAM_REFP_FRMNUM;
 		break;
+	case V4L2_CID_MPEG_MTK_LOG:
+		mtk_vcodec_set_log(ctx, ctrl->p_new.p_char);
+		break;
 	default:
 		mtk_v4l2_err("ctrl-id=%d not support!", ctrl->id);
 		ret = -EINVAL;
@@ -543,19 +546,19 @@ static int vidioc_venc_g_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_MPEG_MTK_ENCODE_ROI_RC_QP:
 		venc_if_get_param(ctx,
-			GET_PARAM_ROI_RC_QP,
+			VENC_GET_PARAM_ROI_RC_QP,
 			&value);
 		ctrl->val = value;
 		break;
 	case V4L2_CID_MPEG_MTK_RESOLUTION_CHANGE:
 		reschange = (struct venc_resolution_change *)ctrl->p_new.p_u32;
 		venc_if_get_param(ctx,
-			GET_PARAM_RESOLUTION_CHANGE,
+			VENC_GET_PARAM_RESOLUTION_CHANGE,
 			reschange);
 		break;
 	case V4L2_CID_MPEG_MTK_ENCODE_REFP_MAX_FRAME_NUM:
 		venc_if_get_param(ctx,
-			GET_PARAM_REFBUF_FRAME_NUM,
+			VENC_GET_PARAM_REFBUF_FRAME_NUM,
 			&value);
 		ctrl->val = value;
 		break;
@@ -3061,6 +3064,11 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 	cfg.def = 0;
 	cfg.ops = ops;
 	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_enc_ctrl_ops,
+				V4L2_CID_MPEG_MTK_LOG,
+				0, 255, 1, 0);
 
 	if (handler->error) {
 		mtk_v4l2_err("Init control handler fail %d",
