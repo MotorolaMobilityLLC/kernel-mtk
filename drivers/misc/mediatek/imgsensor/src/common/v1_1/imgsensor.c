@@ -340,7 +340,12 @@ imgsensor_sensor_feature_control(
 	    psensor_inst) {
 
 		imgsensor_mutex_lock(psensor_inst);
-
+		if (FeatureId == SENSOR_FEATURE_GET_TEMPERATURE_VALUE &&
+		    psensor_inst->state == IMGSENSOR_STATE_CLOSE){
+			//should do nothing in close stage
+			imgsensor_mutex_unlock(psensor_inst);
+			return ret;
+		}
 		psensor_func->psensor_inst = psensor_inst;
 #if defined(CONFIG_MTK_CAM_SECURE_I2C)
 	PK_INFO("%s secure state %d", __func__,
