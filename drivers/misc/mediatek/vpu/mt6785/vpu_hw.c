@@ -75,6 +75,8 @@ struct wakeup_source vpu_wake_lock[MTK_VPU_CORE];
 #include <linux/pm_qos.h>
 #include <mt-plat/mtk_secure_api.h>
 #include <mt_emi_api.h>  /* for emi mpu */
+#include <linux/arm-smccc.h>
+#include <linux/soc/mediatek/mtk_sip_svc.h>
 
 /* opp, mW */
 struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
@@ -2948,23 +2950,6 @@ out:
 
 #ifndef MTK_VPU_EMULATOR
 
-#define MPU_REGION_ID_VPU (21)
-
-static void vpu_emi_mpu_set(unsigned long start, unsigned long size)
-{
-	struct emi_region_info_t region_info;
-
-	region_info.start = start;
-	region_info.end = start + size - 0x1;
-	region_info.region = MPU_REGION_ID_VPU;
-	SET_ACCESS_PERMISSION(region_info.apc, UNLOCK,
-		FORBIDDEN,     FORBIDDEN, FORBIDDEN, FORBIDDEN,
-		NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-		FORBIDDEN,     FORBIDDEN, FORBIDDEN, FORBIDDEN,
-		FORBIDDEN,     FORBIDDEN, FORBIDDEN, NO_PROTECTION);
-	emi_mpu_set_protection(&region_info);
-}
-
 static int vpu_map_mva_of_bin(int core_s, uint64_t bin_pa)
 {
 	int ret = 0;
@@ -3625,10 +3610,6 @@ int vpu_init_hw(int core_s, struct vpu_device *device)
 	int param;
 	unsigned int core = (unsigned int)core_s;
 	struct vpu_shared_memory_param mem_param;
-
-	/* setup emi mpu protection */
-	if (core == 0)
-		vpu_emi_mpu_set(device->bin_pa, device->bin_size);
 
 	vpu_dump_exception = 0;
 
@@ -4611,10 +4592,16 @@ int vpu_debug_func_core_state(int core_s, enum VpuCoreState state)
 	return 0;
 }
 
+enum MTK_APUSYS_KERNEL_OP {
+	MTK_VPU_SMC_INIT = 0,
+	MTK_APUSYS_KERNEL_OP_NUM
+};
+
 int vpu_boot_up(int core_s, bool secure)
 {
 	int ret = 0;
 	unsigned int core = (unsigned int)core_s;
+	struct arm_smccc_res res;
 
 	/*secure flag is for sdsp force shut down*/
 
@@ -4654,6 +4641,10 @@ int vpu_boot_up(int core_s, bool secure)
 	}
 
 	if (!secure) {
+		arm_smccc_smc(MTK_SIP_APUSYS_CONTROL,
+				MTK_VPU_SMC_INIT,
+				0, 0, 0, 0, 0, 0, &res);
+
 		ret = vpu_hw_boot_sequence(core);
 		if (ret) {
 			LOG_ERR("[vpu_%d]fail to do boot sequence\n", core);
