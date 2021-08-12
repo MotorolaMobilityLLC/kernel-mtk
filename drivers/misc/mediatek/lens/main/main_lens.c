@@ -307,7 +307,7 @@ void AFRegulatorCtrl(int Stage)
 					regVCAMAF =
 					regulator_get(lens_device, "vcamio");
 				}
-				#elif defined(CONFIG_MACH_MT6877)
+				#elif defined(CONFIG_MACH_MT6877) || defined(CONFIG_MACH_MT6781)
 				regVCAMAF =
 					regulator_get(lens_device, "rt5133-ldo3");
 				#elif defined(CONFIG_MACH_MT6885) || defined(CONFIG_MACH_MT6893)
