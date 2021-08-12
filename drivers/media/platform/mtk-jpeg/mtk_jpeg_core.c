@@ -372,7 +372,7 @@ int mtk_jpeg_ctrls_setup(struct mtk_jpeg_ctx *ctx)
 		return handler->error;
 	}
 	v4l2_ctrl_new_std(handler, ops, V4L2_CID_JPEG_COMPRESSION_QUALITY,
-			48, 100, 1, 90);
+			0, 100, 1, 90);
 	if (handler->error) {
 		v4l2_err(&jpeg->v4l2_dev, "V4L2_CID_JPEG_COMPRESSION_QUALITY Init control handler fail %d\n",
 		handler->error);
