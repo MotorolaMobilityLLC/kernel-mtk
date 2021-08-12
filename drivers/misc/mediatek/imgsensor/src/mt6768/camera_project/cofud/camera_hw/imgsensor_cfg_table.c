@@ -156,9 +156,9 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 /* Add Corfu start */
-#if defined(MOT_COFUD_S5KJN1_MIPI_RAW)
+#if defined(MOT_COFUL_S5KJN1_QTECH)
 	{
-		SENSOR_DRVNAME_MOT_COFUD_S5KJN1_MIPI_RAW,
+                SENSOR_DRVNAME_MOT_COFUL_S5KJN1_QTECH,
 		{
 			{SensorMCLK, Vol_High, 1},
 			{RST, Vol_Low, 1},
@@ -185,9 +185,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		 },
 	},
 #endif
-#if defined(MOT_COFUD_S5K4H7_MIPI_RAW)
+#if defined(MOT_COFUL_S5K4H7_QTECH)
 	{
-		SENSOR_DRVNAME_MOT_COFUD_S5K4H7_MIPI_RAW,
+                SENSOR_DRVNAME_MOT_COFUL_S5K4H7_QTECH,
 		{
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
@@ -199,9 +199,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-#if defined(MOT_COFUD_GC02M1_MIPI_RAW)
+#if defined(MOT_COFUL_GC02M1_TSP)
 	{
-		SENSOR_DRVNAME_MOT_COFUD_GC02M1_MIPI_RAW,
+                SENSOR_DRVNAME_MOT_COFUL_GC02M1_TSP,
 		{
 			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
