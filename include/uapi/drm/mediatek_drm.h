@@ -441,6 +441,7 @@ struct DISP_PQ_PARAM {
 #define DRM_MTK_MML_GEM_SUBMIT         0x0E
 #define DRM_MTK_SET_MSYNC_PARAMS         0x0F
 #define DRM_MTK_GET_MSYNC_PARAMS         0x10
+#define DRM_MTK_FACTORY_LCM_AUTO_TEST    0x11
 
 /* PQ */
 #define DRM_MTK_PQ_PERSIST_PROPERTY	0x1F
