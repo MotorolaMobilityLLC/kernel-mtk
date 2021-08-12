@@ -115,6 +115,35 @@ struct drm_mtk_session {
 	uint32_t session_id;
 };
 
+/**
+ * A structure for session create.
+ *
+ * @level_id: id
+ * @level_fps: fps
+ * @max_fps: max fps
+ * @min_fps: min fps
+ */
+struct msync_level_table {
+	unsigned int level_id;
+	unsigned int level_fps;
+	unsigned int max_fps;
+	unsigned int min_fps;
+};
+
+/**
+ * A structure for session create.
+ *
+ * @msync_max_fps: max fps
+ * @msync_min_fps: min fps
+ * @msync_level_num: level number
+ * @level_tb: A pointer of level table
+ */
+struct msync_parameter_table {
+	unsigned int msync_max_fps;
+	unsigned int msync_min_fps;
+	unsigned int msync_level_num;
+	struct msync_level_table *level_tb;
+};
 /* PQ */
 #define C_TUN_IDX 19 /* COLOR_TUNING_INDEX */
 #define COLOR_TUNING_INDEX 19
@@ -410,6 +439,8 @@ struct DISP_PQ_PARAM {
 #define DRM_MTK_GET_MASTER_INFO		0x0C
 #define DRM_MTK_CRTC_GETSFFENCE         0x0D
 #define DRM_MTK_MML_GEM_SUBMIT         0x0E
+#define DRM_MTK_SET_MSYNC_PARAMS         0x0F
+#define DRM_MTK_GET_MSYNC_PARAMS         0x10
 
 /* PQ */
 #define DRM_MTK_PQ_PERSIST_PROPERTY	0x1F
@@ -613,6 +644,9 @@ struct mtk_drm_disp_caps_info {
 	unsigned int max_luminance;
 	unsigned int average_luminance;
 	unsigned int min_luminance;
+
+	/* Msync2.0 */
+	unsigned int msync_level_num;
 };
 
 struct drm_mtk_session_info {
@@ -684,6 +718,12 @@ struct DRM_DISP_WRITE_REG {
 
 #define DRM_IOCTL_MTK_CRTC_GETSFFENCE	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_MTK_CRTC_GETSFFENCE, struct drm_mtk_fence)
+
+#define DRM_IOCTL_MTK_SET_MSYNC_PARAMS    DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_MTK_SET_MSYNC_PARAMS, struct msync_parameter_table)
+
+#define DRM_IOCTL_MTK_GET_MSYNC_PARAMS    DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_MTK_GET_MSYNC_PARAMS, struct msync_parameter_table)
 
 #define DRM_IOCTL_MTK_WAIT_REPAINT	DRM_IOWR(DRM_COMMAND_BASE + \
 		DRM_MTK_WAIT_REPAINT, unsigned int)
