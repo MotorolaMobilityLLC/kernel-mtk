@@ -803,11 +803,14 @@ int primary_display_esd_recovery(void)
 
 		if (pgc != NULL)
 			data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
-		data_config->dst_dirty = 1;
-		dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);
-//		ddp_dsi_config(DISP_MODULE_DSI0, data_config, NULL);
 
-		data_config->dst_dirty = 0;
+		if (data_config != NULL) {
+			data_config->dst_dirty = 1;
+			dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);
+//			ddp_dsi_config(DISP_MODULE_DSI0, data_config, NULL);
+
+			data_config->dst_dirty = 0;
+		}
 	}
 	DISPDBG("[ESD]lcm recover[begin]\n");
 	disp_lcm_esd_recover(primary_get_lcm());
