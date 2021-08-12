@@ -66,7 +66,7 @@ void kbase_backend_get_gpu_time_norequest(struct kbase_device *kbdev,
 	 * Note: TIMESTAMP is 26MHz, CNTVCT is 13MHz
 	 */
 	if (system_time)
-		*system_time = arch_counter_get_cntvct() * 2;
+		*system_time = arch_counter_get_cntvct();
 
 	/* Record the CPU's idea of current time */
 	if (ts != NULL)
