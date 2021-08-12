@@ -71,6 +71,9 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
+#ifdef MIPI_SWITCH
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL},
+#endif
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
 		},
 	},
@@ -84,9 +87,6 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AFVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
-#ifdef MIPI_SWITCH
-			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL},
-#endif
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
 		},
 	},
@@ -147,7 +147,7 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 				0
 			},
 		},
-		IMGSENSOR_SENSOR_IDX_SUB2,
+		IMGSENSOR_SENSOR_IDX_MAIN2,
 	},
 #endif
 
@@ -161,12 +161,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
         {
                 SENSOR_DRVNAME_MOT_MILAN_S5KJN1_MIPI_RAW,
                 {
-                        {SensorMCLK, Vol_High, 1},
                         {RST, Vol_Low, 1},
+                        {SensorMCLK, Vol_High, 1},
                         {DVDD, Vol_1100, 1},
-                        {AVDD, Vol_2800, 1},
                         {DOVDD, Vol_1800, 1},
-                        {VDDA, Vol_2800, 1},
+                        {AVDD, Vol_2800, 1},
                         {AFVDD, Vol_High, 1},
                         {RST, Vol_High, 1},
                 },
@@ -178,10 +177,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 {
                         {RST, Vol_Low, 1},
                         {SensorMCLK, Vol_High, 1},
+                        {AFVDD, Vol_High, 1}, // mipi switch vcc vldo28
                         {AVDD, Vol_2800, 1},
                         {DOVDD, Vol_1800, 1},
-                        {AFVDD, Vol_High, 1},
-                        {DVDD, Vol_1100, 1},
+                        {DVDD, Vol_High, 1},
                         {RST, Vol_High, 5}
                 },
         },
@@ -192,7 +191,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 {
                         {RST, Vol_Low, 1},
                         {SensorMCLK, Vol_High, 1},
-                        {DVDD, Vol_High, 1},
+                        {AFVDD, Vol_High, 1}, // mipi switch vcc vldo28
                         {DOVDD, Vol_1800, 1},
                         {AVDD, Vol_2800, 1},
                         {RST, Vol_High, 5}
