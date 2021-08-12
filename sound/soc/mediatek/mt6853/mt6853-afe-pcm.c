@@ -225,20 +225,15 @@ int mt6853_fe_trigger(struct snd_pcm_substream *substream, int cmd,
 		}
 
 		/* set memif disable */
-		if (runtime->stop_threshold != ~(0U))
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
-			if ((!is_adsp_system_running()) || mtk_audio_get_adsp_reset_status())
-				/* only when adsp enable using hw semaphore to set memif */
-				ret = mtk_dsp_memif_set_disable(afe, id);
-			else
-				ret = 0;
+		if (runtime->stop_threshold != ~(0U) || (!is_adsp_system_running()) ||
+		    mtk_audio_get_adsp_reset_status())
+			ret = mtk_dsp_memif_set_disable(afe, id);
 #else
+		/* barge-in set stop_threshold == ~(0U), memif is set by scp */
+		if (runtime->stop_threshold != ~(0U))
 			ret = mtk_memif_set_disable(afe, id);
 #endif
-		else
-			/* barge-in set stop_threshold == ~(0U), memif is set by scp */
-			ret = 0;
-
 		if (ret) {
 			dev_err(afe->dev, "%s(), error, id %d, memif enable, ret %d\n",
 				__func__, id, ret);
