@@ -304,19 +304,23 @@ bool pd_make_pe_state_transit(struct pd_port *pd_port,
 
 /*---------------------------------------------------------------------------*/
 
-#ifdef CONFIG_USB_PD_REV30
-static inline bool pd30_process_ready_protocol_error(struct pd_port *pd_port)
+static inline bool pd_process_ready_protocol_error(struct pd_port *pd_port)
 {
+#ifdef CONFIG_USB_PD_REV30
 	bool multi_chunk;
-
-	if (!pd_check_rev30(pd_port))
-		return false;
+#endif	/* CONFIG_USB_PD_REV30 */
 
 	if (!pd_port->curr_unsupported_msg) {
 		pe_transit_soft_reset_state(pd_port);
 		return true;
 	}
 
+	if (!pd_check_rev30(pd_port)) {
+		PE_TRANSIT_STATE(pd_port, PE_REJECT);
+		return true;
+	}
+
+#ifdef CONFIG_USB_PD_REV30
 	multi_chunk = pd_is_multi_chunk_msg(pd_port);
 
 	if (pd_port->power_role == PD_ROLE_SINK) {
@@ -328,8 +332,10 @@ static inline bool pd30_process_ready_protocol_error(struct pd_port *pd_port)
 	PE_TRANSIT_STATE(pd_port, multi_chunk ?
 		PE_SRC_CHUNK_RECEIVED : PE_SRC_SEND_NOT_SUPPORTED);
 	return true;
-}
+#else
+	return false;
 #endif	/* CONFIG_USB_PD_REV30 */
+}
 
 #ifdef CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG
 
@@ -396,13 +402,25 @@ static inline bool pd_process_unexpected_message(
 bool pd_process_protocol_error(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
+	bool ret = false;
 	bool power_change = false;
 #if PE_INFO_ENABLE
 	uint8_t event_type = pd_event->event_type;
-	uint8_t msg_id = pd_get_msg_hdr_id(pd_port);
 	uint8_t msg_type = pd_event->msg;
+	uint8_t msg_id = pd_get_msg_hdr_id(pd_port);
 #endif
 	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
+
+	if (pd_port->pe_data.pe_state_flags &
+			PE_STATE_FLAG_IGNORE_UNKNOWN_EVENT) {
+		PE_INFO("Ignore Unknown Event\n");
+		goto out;
+	}
+
+	if (pd_check_pe_during_hard_reset(pd_port)) {
+		PE_INFO("Ignore Event during HReset\n");
+		goto out;
+	}
 
 	switch (pd_port->pe_state_curr) {
 	case PE_SNK_TRANSITION_SINK:
@@ -413,8 +431,8 @@ bool pd_process_protocol_error(
 		power_change = true;
 		if (pd_event_msg_match(pd_event,
 				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
-			PE_DBG("Ignore Ping\n");
-			return false;
+			PE_INFO("Ignore Ping\n");
+			goto out;
 		}
 		break;
 
@@ -423,36 +441,21 @@ bool pd_process_protocol_error(
 #endif	/* CONFIG_USB_PD_PR_SWAP */
 		if (pd_event_msg_match(pd_event,
 				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
-			PE_DBG("Ignore Ping\n");
-			return false;
+			PE_INFO("Ignore Ping\n");
+			goto out;
 		}
 		break;
 
-#ifdef CONFIG_USB_PD_REV30
 	case PE_SNK_READY:
 	case PE_SRC_READY:
-		if (pd30_process_ready_protocol_error(pd_port))
-			return true;
+		if (pd_process_ready_protocol_error(pd_port)) {
+			ret = true;
+			goto out;
+		}
 		break;
-#endif	/* CONFIG_USB_PD_REV30 */
 	};
 
-	if (pd_port->pe_data.pe_state_flags &
-			PE_STATE_FLAG_IGNORE_UNKNOWN_EVENT) {
-		PE_DBG("Ignore Unknown Event\n");
-		return false;
-	}
-
-	if (pd_check_pe_during_hard_reset(pd_port)) {
-		PE_DBG("Ignore Event during HReset\n");
-		return false;
-	}
-
-	/*
-	 * msg_type: PD_EVT_CTRL_MSG (1), PD_EVT_DATA_MSG (2)
-	 */
-
-	PE_INFO("PRL_ERR: %d-%d-%d\n", event_type, msg_type, msg_id);
+	ret = true;
 
 	if (pd_port->pe_data.during_swap) {
 #ifdef CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY
@@ -471,7 +474,13 @@ bool pd_process_protocol_error(
 #endif	/* CONFIG_USB_PD_DISCARD_AND_UNEXPECT_MSG */
 	}
 
-	return true;
+	/*
+	 * event_type: PD_EVT_CTRL_MSG (1), PD_EVT_DATA_MSG (2)
+	 */
+out:
+	PE_INFO("PRL_ERR: %d-%d-%d\n", event_type, msg_type, msg_id);
+
+	return ret;
 }
 
 bool pd_process_tx_failed_discard(struct pd_port *pd_port, uint8_t msg)
@@ -746,9 +755,9 @@ static inline uint8_t pe_get_startup_state(
 		break;
 	}
 
-	/* At least > 2 for Ellisys VNDI PR_SWAP */
+	/* At least > 4 for Ellisys VNDI PR_SWAP */
 #ifdef CONFIG_USB_PD_ERROR_RECOVERY_ONCE
-	if (pd_port->error_recovery_once > 2)
+	if (pd_port->error_recovery_once > 4)
 		startup_state = PE_ERROR_RECOVERY_ONCE;
 #endif	/* CONFIG_USB_PD_ERROR_RECOVERY_ONCE */
 
