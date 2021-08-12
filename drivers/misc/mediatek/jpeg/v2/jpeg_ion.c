@@ -109,7 +109,7 @@ struct ion_handle *jpg_ion_alloc_handle(size_t size, size_t align, unsigned int 
 
 int jpg_ion_share_handle(struct ion_handle *handle)
 {
-	int fd;
+	int fd = -1;
 
 #if defined(CONFIG_MTK_IOMMU_V2)
 	if (!g_jpg_ion_client) {
