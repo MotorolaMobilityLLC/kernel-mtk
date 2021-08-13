@@ -786,7 +786,6 @@ void clk_buf_disp_ctrl(bool onoff)
 
 	pwrap_dcxo_en = clkbuf_readl(DCXO_ENABLE) & ~DCXO_NFC_ENABLE;
 	clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en);
-/*MMI_STOPSHIP  <display>: <Subsequent change to the same macro name,in pl lk kernel>*/
 #if defined(CONFIG_MTK_MT6382_BDG) && defined(CONFIG_MTK_MT6382_BDG_BUF7)
 	if (onoff) {
 		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR,
