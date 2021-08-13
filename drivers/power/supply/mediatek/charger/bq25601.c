@@ -1441,6 +1441,10 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 		      early_chg_type = wt6670f_get_protocol();
 		}
 
+		if(early_chg_type == 0x08 || early_chg_type == 0x09){
+			pr_err("[%s] WT6670F early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
+			break;
+		}
 		switch(early_chg_type){
 			case 0x1:
                              if(!early_notified){
@@ -1482,7 +1486,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
                              chip->psy = power_supply_get_by_name("charger");
 
 			if(chip->psy){
-	                     propval.intval = early_chg_type;
+	                     propval.intval = chip->chg_type;
                              power_supply_set_property(chip->psy,
                                            POWER_SUPPLY_PROP_CHARGE_TYPE,
                                            &propval);
