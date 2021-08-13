@@ -21,7 +21,7 @@ extern unsigned int S5K4H7_read_region(struct i2c_client *client, unsigned int a
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
-	{MOT_MILAN_S5KJN1_SENSOR_ID, 0xA0, Common_read_region},
+	{MOT_MILAN_S5KJN1_SENSOR_ID, 0xA0, Common_read_region,0x4000},
 	{MOT_MILAN_OV16A1Q_SENSOR_ID, 0xA2, Common_read_region},
 	// custom otp
 	{MOT_MILAN_S5K4H7_SENSOR_ID, 0x5A, S5K4H7_read_region},
