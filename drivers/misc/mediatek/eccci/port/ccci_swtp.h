@@ -18,11 +18,17 @@
  * need to follow SOP for customization.
  */
 // modify by wt.changtingting for swtp start
+#ifdef KYOTO_SWTP_CUST
 #define MAX_PIN_NUM 4
+#else
+#define MAX_PIN_NUM 2
+#endif
 #define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
 #define SWTP1_COMPATIBLE_DEVICE_ID "mediatek, swtp1-eint"
+#ifdef KYOTO_SWTP_CUST
 #define SWTP2_COMPATIBLE_DEVICE_ID "mediatek, swtp2-eint"
 #define SWTP3_COMPATIBLE_DEVICE_ID "mediatek, swtp3-eint"
+#endif
 // modify by wt.changtingting for swtp end
 
 #define SWTP_EINT_PIN_PLUG_IN	(1)
