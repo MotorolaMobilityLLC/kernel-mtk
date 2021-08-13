@@ -203,6 +203,7 @@
 		3488 3488 3488 3488/*T9*/
 	  >;
         #include "bat_setting/mt6768_battery_table_MD50_atl_5000mah_ext.dtsi"
+        #include "bat_setting/mt6768_battery_table_MD50_scud_5000mah_ext.dtsi"
 };
 
 &msdc1 {
