@@ -65,7 +65,7 @@ static struct pinctrl_state *corfu_ce_low;
 /* define usage count */
 static int use_count;
 
-static int cur_duty = 6;
+static int cur_duty = 0;
 
 /* platform data */
 struct corfu_platform_data {
@@ -168,7 +168,7 @@ static int corfu_enable(void)
 {
 	/* TODO: wrap enable function */
 
-	if(cur_duty == 6)
+	if(cur_duty == 0)
 		return corfu_pinctrl_set(CORFU_PINCTRL_PIN_CE, CORFU_PINCTRL_PINSTATE_HIGH);
 	else
 		return corfu_pinctrl_set(CORFU_PINCTRL_PIN_EN, CORFU_PINCTRL_PINSTATE_HIGH);
