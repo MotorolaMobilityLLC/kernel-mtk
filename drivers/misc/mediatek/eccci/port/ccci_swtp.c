@@ -59,21 +59,28 @@ static const char rf_name[] = "RF_cable";
 // modify by wt.changtingting for swtp end
 
 #ifdef SWTP_GPIO_STATE_CUST
+static u16 swtp_gpio_pin = 0;
 static ssize_t swtp_gpio_state_show(struct class *class,
 		struct class_attribute *attr,
 		char *buf)
 {
 	int ret;
-	ret = gpio_get_value_cansleep(326);
-	CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d\n", __func__, ret);
+	ret = gpio_get_value_cansleep(swtp_gpio_pin);
+	//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpio:%d\n", __func__, ret, swtp_gpio_pin);
 	return sprintf(buf, "%d\n", ret);
 }
 
 static CLASS_ATTR_RO(swtp_gpio_state);
 
-static struct class swtp_class = {
-	.name			= "swtp",
-	.owner			= THIS_MODULE,
+static struct class swtp_class[] = {
+    {
+        .name    = "swtp",
+        .owner   = THIS_MODULE,
+    },
+    {
+        .name    = "swtp1",
+        .owner   = THIS_MODULE,
+    }
 };
 #endif
 
@@ -280,12 +287,6 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
-#ifdef SWTP_GPIO_STATE_CUST
-	ret = class_register(&swtp_class);
-
-	ret = class_create_file(&swtp_class, &class_attr_swtp_gpio_state);
-#endif
-
 #ifdef KYOTO_SWTP_CUST
 	// modify by wt.changtingting for swtp start
 	if (ARRAY_SIZE(swtp_of_match) < MAX_PIN_NUM || ARRAY_SIZE(irq_name) < MAX_PIN_NUM) {
@@ -350,6 +351,13 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				&swtp_data[md_id]);
 			// modify by wt.changtingting for swtp end
 #else
+#ifdef SWTP_GPIO_STATE_CUST
+			if(swtp_data[md_id].gpiopin[i] != 0){
+				swtp_gpio_pin = swtp_data[md_id].gpiopin[i];
+				ret = class_register(&swtp_class[i]);
+				ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state);
+			}
+#endif
 #ifndef DISABLE_SWTP_FACTORY
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
