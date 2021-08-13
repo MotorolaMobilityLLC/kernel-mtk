@@ -166,7 +166,6 @@ static OTP_INFO  otp_info_map = {
 };
 
 mot_s5k4h7_otp_t mot_s5k4h7_otp = {{0}};
-
 ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
@@ -318,6 +317,22 @@ static int moto_read_sensor_otp_data(int page, int start_add, unsigned char *Buf
 	write_cmos_sensor(0x0a00,0x0000); //4 //otp enable and read end
 
 	return 0;
+}
+
+mot_s5k4h7_otp_alldata_t mot_s5k4h7_otp_data = {{0}};
+void moto_read_otp_all_data(void)
+{
+	unsigned short page_idx = 21;
+	unsigned short start_addr = OTP_PAGE_START_ADDR;
+	unsigned int size =6656;  //104 x 64
+	LOG_INF("X");
+	for(page_idx;page_idx <125;page_idx++)
+	{
+           moto_read_sensor_otp_data(page_idx,start_addr,mot_s5k4h7_otp_data.data+(page_idx-21)*64,64);
+	}
+	eeprom_dump_bin(EEPROM_DATA_PATH,size, mot_s5k4h7_otp_data.data);
+	LOG_INF("E");
+	return;
 }
 
 //get vail page flag
@@ -678,7 +693,7 @@ int s5k4h7_otp_data(void)
 		mtk_module_info->data,
 		(mot_s5k4h7_otp.mtk_info_crc + 2 - mot_s5k4h7_otp.mtk_info_flag)/sizeof(UINT8));
 	LOG_INF ("mtk_module_info ret %d size = %d\n", ret,size);
-
+	moto_read_otp_all_data();
 	return 0;
 }
 
@@ -938,7 +953,7 @@ static void s5k4h7_check_mnf_data(mot_calibration_info_t * pOtpCalInfo)
 
 	pOtpCalInfo->mnf_status = STATUS_OK;
 
-	eeprom_dump_bin(EEPROM_DATA_PATH, sizeof(mot_s5k4h7_otp_t), pOTP->program_flag);
+	//eeprom_dump_bin(EEPROM_DATA_PATH, sizeof(mot_s5k4h7_otp_t), pOTP->program_flag);
 	eeprom_dump_bin(SERIAL_DATA_PATH, DUMP_WIDE_SERIAL_NUMBER_SIZE, pOTP->serial_number);
 
 	if (!eeprom_util_check_crc16(pOTP->program_flag,
