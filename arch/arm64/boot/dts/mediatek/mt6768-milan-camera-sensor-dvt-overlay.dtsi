@@ -361,6 +361,11 @@
 	status = "okay";
 
 };
+
+&mt_pmic_vldo28_ldo_reg {
+	regulator-boot-on;
+	regulator-always-on;
+};
 /* CAMERA GPIO end */
 
 /* flashlight gpio start*/
