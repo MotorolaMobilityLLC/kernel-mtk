@@ -146,7 +146,7 @@
 					<0 4200 1000  0 0>,
 					<10 4250 2500 4450 1000>,
 					<15 4450 2500 0 0>,
-					<45 4300 6000 4450 4000>,
+					<45 4300 6000 4480 4000>,
 					<60 4200 4000 0 0>;
 /*
             mmi,mmi-ffc-zones = <4200 243>,
@@ -166,7 +166,7 @@
 		charger_device_1 {
 			chrg-name = "cp-master";
 			psy-name = "bq2597x-standalone";
-			charging-curr-min = <2000000>;
+			charging-curr-min = <1500000>;
 		};
 	};
 };
