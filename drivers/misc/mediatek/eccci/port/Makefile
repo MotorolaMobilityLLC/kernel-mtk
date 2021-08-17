@@ -47,8 +47,14 @@ ccflags-y += -DKYOTO_SWTP_CUST
 endif
 
 # Add for corfu series
-ifeq ($(filter corfu cofud coful milan,$(TARGET_PRODUCT)),)
-ccflags-y += -DSWTP_GPIO_STATE_CUST
+ifeq ($(findstring corfu,$(TARGET_PRODUCT)), corfu)
+ccflags-y += -DCORFU_SWTP_GPIO_STATE_CUST
+else ifeq ($(findstring cofud,$(TARGET_PRODUCT)), cofud)
+ccflags-y += -DCOFUD_SWTP_GPIO_STATE_CUST
+else ifeq ($(findstring coful,$(TARGET_PRODUCT)), coful)
+ccflags-y += -DCOFUL_SWTP_GPIO_STATE_CUST
+else ifeq ($(findstring milan,$(TARGET_PRODUCT)), milan)
+ccflags-y += -DMILAN_SWTP_GPIO_STATE_CUST
 endif
 
 # Disable SWTP on factory version for lisbon, keep MTK default logic for customer version
