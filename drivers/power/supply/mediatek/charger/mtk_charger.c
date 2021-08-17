@@ -67,6 +67,10 @@
 #include "mtk_charger_init.h"
 #include <linux/qpnp_adaptive_charge.h>
 
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int wt6670f_get_charger_type(void);
+#endif
+
 static char atm_mode[10];
 int __init atm_mode_init(char *s)
 {
@@ -2054,6 +2058,15 @@ int mmi_chrg_rate_check(void)
 				goto end_rate_check;
 			}
 	}
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	rc = wt6670f_get_charger_type();
+	if(0x08 == rc || 0x09 == rc){
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+	}
+#endif
+
 
 #if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
 	if (icl > TURBO_CHRG_THRSH) {
