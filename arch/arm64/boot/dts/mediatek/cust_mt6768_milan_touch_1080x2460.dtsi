@@ -45,6 +45,9 @@
 		novatek,swrst-n8-addr = <0x03F0FE>;
 		novatek,spi-rd-fast-addr = <0x03F310>;
 
+		/* enable report _gesture_key */
+		novatek,report_gesture_key = <1>;
+
 		/* MP */
 		//novatek,mp-support-dt;
 
