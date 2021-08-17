@@ -58,7 +58,7 @@ static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 // modify by wt.changtingting for swtp end
 
-#ifdef SWTP_GPIO_STATE_CUST
+#if defined(CORFU_SWTP_GPIO_STATE_CUST) || defined(COFUD_SWTP_GPIO_STATE_CUST) || defined(COFUL_SWTP_GPIO_STATE_CUST) || defined(MILAN_SWTP_GPIO_STATE_CUST)
 static u16 swtp_gpio_pin = 0;
 static ssize_t swtp_gpio_state_show(struct class *class,
 		struct class_attribute *attr,
@@ -339,6 +339,15 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				swtp_data[md_id].setdebounce[i]);
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
+
+#if defined(CORFU_SWTP_GPIO_STATE_CUST) || defined(COFUD_SWTP_GPIO_STATE_CUST) || defined(COFUL_SWTP_GPIO_STATE_CUST) || defined(MILAN_SWTP_GPIO_STATE_CUST)
+			if(swtp_data[md_id].gpiopin[i] != 0){
+				swtp_gpio_pin = swtp_data[md_id].gpiopin[i];
+				ret = class_register(&swtp_class[i]);
+				ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state);
+			}
+#endif
+
 #ifdef KYOTO_SWTP_CUST
 			// modify by wt.changtingting for swtp start
 			/*ret = request_irq(swtp_data[md_id].irq[i],
@@ -351,13 +360,6 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				&swtp_data[md_id]);
 			// modify by wt.changtingting for swtp end
 #else
-#ifdef SWTP_GPIO_STATE_CUST
-			if(swtp_data[md_id].gpiopin[i] != 0){
-				swtp_gpio_pin = swtp_data[md_id].gpiopin[i];
-				ret = class_register(&swtp_class[i]);
-				ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state);
-			}
-#endif
 #ifndef DISABLE_SWTP_FACTORY
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
