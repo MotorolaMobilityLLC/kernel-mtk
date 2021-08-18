@@ -130,7 +130,7 @@ int jpg_ion_share_handle(struct ion_handle *handle)
 
 void *jpg_ion_map_handle(struct ion_handle *handle)
 {
-	void *ptr;
+	void *ptr = NULL;
 
 #if defined(CONFIG_MTK_IOMMU_V2)
 	if (!g_jpg_ion_client) {
