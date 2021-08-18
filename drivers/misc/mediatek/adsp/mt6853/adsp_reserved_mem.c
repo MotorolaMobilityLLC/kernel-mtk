@@ -140,7 +140,7 @@ void adsp_init_reserve_memory(void)
 	for (id = 0; id < ADSP_NUMS_MEM_ID; id++) {
 		adsp_reserve_mblocks[id].phys_addr = mem->phys_addr + acc_size;
 		adsp_reserve_mblocks[id].virt_addr = mem->virt_addr + acc_size;
-		acc_size += adsp_reserve_mblocks[id].size;
+		acc_size += ALIGN(adsp_reserve_mblocks[id].size, RSV_BLOCK_ALIGN);
 #ifdef MEM_DEBUG
 		pr_info("adsp_reserve_mblocks[%d] phys_addr:%llx, size:0x%zx\n",
 			id,
