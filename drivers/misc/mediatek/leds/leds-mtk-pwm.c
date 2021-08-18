@@ -406,7 +406,7 @@ static int mtk_leds_parse_dt(struct device *dev,
 {
 	struct device_node *child;
 	struct mtk_led_data *s_led;
-	int ret = 0, num = 0, level = 102;
+	int ret = 0, num = 0, level = 0;
 	const char *state;
 
 	if (!dev->of_node) {
@@ -467,6 +467,8 @@ static int mtk_leds_parse_dt(struct device *dev,
 				level = s_led->info.config.max_brightness;
 			else
 				level = s_led->conf.level = 0;
+		} else {
+			level = s_led->info.config.max_brightness;
 		}
 		pr_info("parse %s(%d) leds dt: %s, %s, %d, %d, %d\n",
 			s_led->conf.cdev.name, num, s_led->info.config.name,
