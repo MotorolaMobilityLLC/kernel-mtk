@@ -352,11 +352,12 @@ PVRSRVBridgeServerSyncAlloc(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psServerSyncAllocIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -592,11 +593,12 @@ PVRSRVBridgeServerSyncGetStatus(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psServerSyncGetStatusIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -781,7 +783,7 @@ PVRSRVBridgeServerSyncGetStatus(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hSyncHandleInt2[i])
+			if (psSyncHandleInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -858,11 +860,12 @@ PVRSRVBridgeSyncPrimOpCreate(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psSyncPrimOpCreateIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -1083,7 +1086,7 @@ PVRSRVBridgeSyncPrimOpCreate(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hBlockListInt2[i])
+			if (psBlockListInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -1101,7 +1104,7 @@ PVRSRVBridgeSyncPrimOpCreate(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hServerSyncInt2[i])
+			if (psServerSyncInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -1178,11 +1181,12 @@ PVRSRVBridgeSyncPrimOpTake(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psSyncPrimOpTakeIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -1809,11 +1813,12 @@ PVRSRVBridgeSyncAllocEvent(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psSyncAllocEventIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{

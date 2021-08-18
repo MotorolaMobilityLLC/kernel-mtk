@@ -109,11 +109,12 @@ PVRSRVBridgeDevicememHistoryMap(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psDevicememHistoryMapIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -243,11 +244,12 @@ PVRSRVBridgeDevicememHistoryUnmap(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psDevicememHistoryUnmapIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -378,11 +380,12 @@ PVRSRVBridgeDevicememHistoryMapVRange(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psDevicememHistoryMapVRangeIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -487,11 +490,12 @@ PVRSRVBridgeDevicememHistoryUnmapVRange(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psDevicememHistoryUnmapVRangeIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -602,11 +606,12 @@ PVRSRVBridgeDevicememHistorySparseChange(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psDevicememHistorySparseChangeIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{

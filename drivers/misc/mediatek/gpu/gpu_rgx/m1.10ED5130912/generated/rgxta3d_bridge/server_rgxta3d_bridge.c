@@ -110,11 +110,12 @@ PVRSRVBridgeRGXCreateHWRTData(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psRGXCreateHWRTDataIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -274,7 +275,7 @@ PVRSRVBridgeRGXCreateHWRTData(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hapsFreeListsInt2[i])
+			if (psapsFreeListsInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -939,11 +940,12 @@ PVRSRVBridgeRGXCreateRenderContext(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psRGXCreateRenderContextIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -1222,11 +1224,12 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 			IMG_BYTE *pInputBuffer = (IMG_BYTE *) psRGXKickTA3DIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -2175,7 +2178,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hClientTAFenceSyncPrimBlockInt2[i])
+			if (psClientTAFenceSyncPrimBlockInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -2194,7 +2197,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hClientTAUpdateSyncPrimBlockInt2[i])
+			if (psClientTAUpdateSyncPrimBlockInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -2213,7 +2216,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hServerTASyncsInt2[i])
+			if (psServerTASyncsInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -2232,7 +2235,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hClient3DFenceSyncPrimBlockInt2[i])
+			if (psClient3DFenceSyncPrimBlockInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -2251,7 +2254,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hClient3DUpdateSyncPrimBlockInt2[i])
+			if (psClient3DUpdateSyncPrimBlockInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -2270,7 +2273,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hServer3DSyncsInt2[i])
+			if (psServer3DSyncsInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
@@ -2345,7 +2348,7 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hSyncPMRsInt2[i])
+			if (psSyncPMRsInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,

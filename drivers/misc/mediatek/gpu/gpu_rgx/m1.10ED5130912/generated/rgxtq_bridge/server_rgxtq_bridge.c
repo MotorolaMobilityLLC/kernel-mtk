@@ -107,11 +107,12 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psRGXCreateTransferContextIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -389,11 +390,12 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			    (IMG_BYTE *) psRGXSubmitTransferIN;
 
 			pArrayArgsBuffer = &pInputBuffer[ui32InBufferOffset];
+			OSCachedMemSet(pArrayArgsBuffer, 0, ui32BufferSize);
 		}
 		else
 #endif
 		{
-			pArrayArgsBuffer = OSAllocMemNoStats(ui32BufferSize);
+			pArrayArgsBuffer = OSAllocZMemNoStats(ui32BufferSize);
 
 			if (!pArrayArgsBuffer)
 			{
@@ -769,7 +771,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 
 	if (ui32BufferSize2 != 0)
 	{
-		pArrayArgsBuffer2 = OSAllocMemNoStats(ui32BufferSize2);
+		pArrayArgsBuffer2 = OSAllocZMemNoStats(ui32BufferSize2);
 
 		if (!pArrayArgsBuffer2)
 		{
@@ -1443,7 +1445,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			{
 
 				/* Unreference the previously looked up handle */
-				if (hFenceUFOSyncPrimBlockInt2[i][j])
+				if (psFenceUFOSyncPrimBlockInt[i][j])
 				{
 					PVRSRVReleaseHandleUnlocked
 					    (psConnection->psHandleBase,
@@ -1465,7 +1467,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			{
 
 				/* Unreference the previously looked up handle */
-				if (hUpdateUFOSyncPrimBlockInt2[i][j])
+				if (psUpdateUFOSyncPrimBlockInt[i][j])
 				{
 					PVRSRVReleaseHandleUnlocked
 					    (psConnection->psHandleBase,
@@ -1487,7 +1489,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			{
 
 				/* Unreference the previously looked up handle */
-				if (hServerSyncInt2[i][j])
+				if (psServerSyncInt[i][j])
 				{
 					PVRSRVReleaseHandleUnlocked
 					    (psConnection->psHandleBase,
@@ -1506,7 +1508,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 		{
 
 			/* Unreference the previously looked up handle */
-			if (hSyncPMRsInt2[i])
+			if (psSyncPMRsInt[i])
 			{
 				PVRSRVReleaseHandleUnlocked(psConnection->
 							    psHandleBase,
