@@ -387,6 +387,12 @@ static void debug_low_async_space_locked(struct binder_alloc *alloc, int pid)
 		/* trigger aee kernel exception and get native backtrace */
 		debug_task = get_pid_task(find_vpid(pid), PIDTYPE_PID);
 		if (debug_task) {
+			/* trigger aee exception for netd only */
+			if (!strstr(debug_task->comm, "Binder:")) {
+				put_task_struct(debug_task);
+				return;
+			}
+
 			binder_alloc_debug(BINDER_DEBUG_USER_ERROR,
 			     "%d: pid %d, comm:%s\n",
 			      alloc->pid, pid, debug_task->comm);
