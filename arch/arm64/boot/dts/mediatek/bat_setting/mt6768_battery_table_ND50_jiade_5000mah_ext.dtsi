@@ -10,9 +10,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-battery0_profile_t0_num = <100>;
-battery0_profile_t0_col = <3>;
-battery0_profile_t0 =
+/* 1 means battery id is 1 */
+serialnum_1	= "SB18D25053";
+battery1_name="JIADE_ND50_5000MAH";
+battery1_profile_t0_num = <100>;
+battery1_profile_t0_col = <3>;
+battery1_profile_t0 =
 <
 0       44224   1150
 501     44091   893
@@ -115,9 +118,9 @@ battery0_profile_t0 =
 49098   29982   8288
 49599   29982   8288
 >;
-battery0_profile_t1_num = <100>;
-battery0_profile_t1_col = <3>;
-battery0_profile_t1 =
+battery1_profile_t1_num = <100>;
+battery1_profile_t1_col = <3>;
+battery1_profile_t1 =
 <
 0       44339   1150
 501     44193   1280
@@ -220,9 +223,9 @@ battery0_profile_t1 =
 49098   34371   1432
 49599   32818   1760
 >;
-battery0_profile_t2_num = <100>;
-battery0_profile_t2_col = <3>;
-battery0_profile_t2 =
+battery1_profile_t2_num = <100>;
+battery1_profile_t2_col = <3>;
+battery1_profile_t2 =
 <
 0       44314   1250
 501     44156   2225
@@ -325,9 +328,9 @@ battery0_profile_t2 =
 49098   34194   4626
 49599   32983   6055
 >;
-battery0_profile_t3_num = <100>;
-battery0_profile_t3_col = <3>;
-battery0_profile_t3 =
+battery1_profile_t3_num = <100>;
+battery1_profile_t3_col = <3>;
+battery1_profile_t3 =
 <
 0       44354   1830
 501     44162   3528
@@ -430,9 +433,9 @@ battery0_profile_t3 =
 49098   33754   18570
 49599   33754   18570
 >;
-battery0_profile_t4_num = <100>;
-battery0_profile_t4_col = <3>;
-battery0_profile_t4 =
+battery1_profile_t4_num = <100>;
+battery1_profile_t4_col = <3>;
+battery1_profile_t4 =
 <
 0       44407   3000
 501     44134   6318
