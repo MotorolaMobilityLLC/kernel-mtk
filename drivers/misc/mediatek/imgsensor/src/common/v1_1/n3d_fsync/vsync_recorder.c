@@ -122,8 +122,10 @@ static int update_vs1_rec(unsigned int d_tclk)
 		if (records[vs1_idx].timestamps[vs1_pos] > vs2_latest_ts) {
 			records[vs1_idx].timestamps[vs1_pos] =
 				vs2_latest_ts + diff_ts;
-			LOG_D("amend vs1 ts to %u\n",
-			      records[vs1_idx].timestamps[vs1_pos]);
+			/*
+			 * LOG_D("amend vs1 ts to %u\n",
+			 *   records[vs1_idx].timestamps[vs1_pos]);
+			 */
 		}
 	}
 
@@ -147,8 +149,10 @@ static int update_vs2_rec(unsigned int d_tclk)
 		if (records[vs2_idx].timestamps[vs2_pos] > vs1_latest_ts) {
 			records[vs2_idx].timestamps[vs2_pos] =
 				vs1_latest_ts + diff_ts;
-			LOG_D("amend vs2 ts to %u\n",
-			      records[vs2_idx].timestamps[vs2_pos]);
+			/*
+			 * LOG_D("amend vs2 ts to %u\n",
+			 *    records[vs2_idx].timestamps[vs2_pos]);
+			 */
 		} else {
 			/* Need to correction vs2 when vs2 recorded */
 			vs2_diff_cnt_correction = d_tclk;
@@ -176,7 +180,7 @@ int record_vs_diff(int vflag, unsigned int diff_cnt)
 	if (!is_period_closely(latest_vs1_period, latest_vs2_period)) {
 		/* skip recording untrust ts */
 	} else if (global_time == 0) {
-		LOG_D("start recording, diff_cnt = %u\n", diff_cnt);
+		/*LOG_D("start recording, diff_cnt = %u\n", diff_cnt);*/
 		/* default global time starts from 1 ms */
 		global_time = ONE_MIN_SEC;
 		if (vflag) {
