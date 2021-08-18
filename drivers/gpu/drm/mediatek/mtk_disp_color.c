@@ -58,6 +58,7 @@ static int g_color_bypass[DISP_COLOR_TOTAL];
 static DEFINE_MUTEX(g_color_reg_lock);
 static struct DISPLAY_COLOR_REG g_color_reg;
 static int g_color_reg_valid;
+static atomic_t g_color_initiated = ATOMIC_INIT(0);
 
 #define C1_OFFSET (0)
 #define color_get_offset(module) (0)
@@ -3169,10 +3170,13 @@ static void ddp_color_backup(struct mtk_ddp_comp *comp)
 {
 	g_color_backup.COLOR_CFG_MAIN =
 		readl(comp->regs + DISP_COLOR_CFG_MAIN);
+	atomic_set(&g_color_initiated, 1);
 }
 
 static void ddp_color_restore(struct mtk_ddp_comp *comp)
 {
+	if (atomic_read(&g_color_initiated) != 1)
+		return;
 	writel(g_color_backup.COLOR_CFG_MAIN, comp->regs + DISP_COLOR_CFG_MAIN);
 }
 
