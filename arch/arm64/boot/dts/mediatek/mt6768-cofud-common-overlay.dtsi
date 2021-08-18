@@ -137,7 +137,7 @@
 
 &charger {
         /* common */
-        battery_cv = <4450000>;
+        battery_cv = <4456000>;
         min_charger_voltage = <4200000>;
 
         enable_pe_2;
@@ -180,8 +180,9 @@
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
 
-        df-serialnum = "SB18D11784";
+        df-serialnum = "SB18D24973";	//SB18D25053
         #include "bat_setting/mt6768_battery_table_ND50_jiade_5000mah_ext.dtsi"
+        #include "bat_setting/mt6768_battery_table_ND50_atl_5000mah_ext.dtsi"
 };
 
 &msdc1 {
