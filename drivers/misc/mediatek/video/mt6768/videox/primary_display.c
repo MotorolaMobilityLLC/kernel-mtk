@@ -10309,8 +10309,6 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
 				qhandle, CMDQ_STOP_VDO_MODE, 0);
 
-			cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-
 			ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
 			last_dynfps, new_dynfps, fps_change_index);
 
@@ -10322,7 +10320,6 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 			ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
 				primary_get_dpmgr_handle()), qhandle, 0);
 
-			_blocking_flush();
 			cmdqRecFlush(qhandle);
 		}
 	}
