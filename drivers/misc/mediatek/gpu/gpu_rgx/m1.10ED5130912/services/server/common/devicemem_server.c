@@ -1346,6 +1346,7 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 	DLLIST_NODE         *psNode, *psNodeNext;
 	DEVMEMINT_PF_NOTIFY *psNotifyNode;
 	IMG_BOOL            bPresent = IMG_FALSE;
+	PVRSRV_ERROR        eError;
 
 	if (psDevmemCtx == NULL)
 	{
@@ -1378,11 +1379,16 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 		}
 	}
 
+#if !defined(PVRSRV_USE_BRIDGE_LOCK)
+	/* Acquire write lock for the duration, to avoid resource free
+	 * while trying to read (no need to then also acquire the read lock
+	 * as we have exclusive access while holding the write lock)
+	 */
+	OSWRLockAcquireWrite(psDevmemCtx->hListLock);
+#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
+
 	/* Loop through the registered PIDs and check whether this one is
 	 * present */
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	OSWRLockAcquireRead(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 	dllist_foreach_node(&(psDevmemCtx->sProcessNotifyListHead), psNode, psNodeNext)
 	{
 		psNotifyNode = IMG_CONTAINER_OF(psNode, DEVMEMINT_PF_NOTIFY, sProcessNotifyListElem);
@@ -1393,9 +1399,6 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 			break;
 		}
 	}
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	OSWRLockReleaseRead(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 
 	if (bRegister == IMG_TRUE)
 	{
@@ -1404,7 +1407,8 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 			PVR_DPF((PVR_DBG_ERROR,
 			         "%s: Trying to register a PID that is already registered",
 			         __func__));
-			return PVRSRV_ERROR_PID_ALREADY_REGISTERED;
+			eError = PVRSRV_ERROR_PID_ALREADY_REGISTERED;
+			goto err_already_registered;
 		}
 
 		psNotifyNode = OSAllocMem(sizeof(*psNotifyNode));
@@ -1413,16 +1417,12 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 			PVR_DPF((PVR_DBG_ERROR,
 			         "%s: Unable to allocate memory for the notify list",
 			          __func__));
-			return PVRSRV_ERROR_OUT_OF_MEMORY;
+			eError = PVRSRV_ERROR_OUT_OF_MEMORY;
+			goto err_out_of_mem;
 		}
 		psNotifyNode->ui32PID = ui32PID;
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		OSWRLockAcquireWrite(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
+		/* Write lock is already held (if not using BRIDGE_LOCK) */
 		dllist_add_to_tail(&(psDevmemCtx->sProcessNotifyListHead), &(psNotifyNode->sProcessNotifyListElem));
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		OSWRLockReleaseWrite(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 	}
 	else
 	{
@@ -1431,8 +1431,10 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 			PVR_DPF((PVR_DBG_ERROR,
 			         "%s: Trying to unregister a PID that is not registered",
 			         __func__));
-			return PVRSRV_ERROR_PID_NOT_REGISTERED;
+			eError = PVRSRV_ERROR_PID_NOT_REGISTERED;
+			goto err_not_registered;
 		}
+		/* Write lock is already held (if not using BRIDGE_LOCK) */
 		dllist_remove_node(psNode);
 		psNotifyNode = IMG_CONTAINER_OF(psNode, DEVMEMINT_PF_NOTIFY, sProcessNotifyListElem);
 		OSFreeMem(psNotifyNode);
@@ -1442,19 +1444,22 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 	{
 		/* If the last process in the list is being unregistered, then also
 		 * unregister the device memory context from the notify list. */
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		OSWRLockAcquireWrite(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
+		/* Write lock is already held (if not using BRIDGE_LOCK) */
 		if (dllist_is_empty(&psDevmemCtx->sProcessNotifyListHead))
 		{
 			dllist_remove_node(&psDevmemCtx->sPageFaultNotifyListElem);
 		}
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		OSWRLockReleaseWrite(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 	}
+	eError = PVRSRV_OK;
 
-	return PVRSRV_OK;
+err_already_registered:
+err_out_of_mem:
+err_not_registered:
+
+#if !defined(PVRSRV_USE_BRIDGE_LOCK)
+	OSWRLockReleaseWrite(psDevmemCtx->hListLock);
+#endif
+	return eError;
 }
 
 /*************************************************************************/ /*!
