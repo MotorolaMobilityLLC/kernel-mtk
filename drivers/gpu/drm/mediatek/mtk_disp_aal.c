@@ -72,6 +72,7 @@ struct timeval start, end;
 /* To enable debug log: */
 /* # echo aal_dbg:1 > /sys/kernel/debug/dispsys */
 int aal_dbg_en;
+static int g_max_backlight = 1023;
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_clock_lock);
@@ -454,26 +455,22 @@ void disp_aal_refresh_by_kernel(void)
 	}
 }
 
-void disp_aal_notify_backlight_changed(int bl_1024)
+void disp_aal_notify_backlight_changed(int trans_backlight)
 {
 	unsigned long flags;
-	int max_backlight = 0;
 	unsigned int service_flags;
 
-	AALAPI_LOG("%d/1023\n", bl_1024);
-	disp_aal_notify_backlight_log(bl_1024);
+	AALAPI_LOG("%d/%d\n", trans_backlight, g_max_backlight);
+	disp_aal_notify_backlight_log(trans_backlight);
 	//disp_aal_exit_idle(__func__, 1);
 
-	// FIXME
-	//max_backlight = disp_pwm_get_max_backlight(DISP_PWM0);
-	max_backlight = 2048;
-	if (bl_1024 > max_backlight)
-		bl_1024 = max_backlight;
+	if (trans_backlight > g_max_backlight)
+		trans_backlight = g_max_backlight;
 
-	atomic_set(&g_aal_backlight_notified, bl_1024);
+	atomic_set(&g_aal_backlight_notified, trans_backlight);
 
 	service_flags = 0;
-	if (bl_1024 == 0) {
+	if (trans_backlight == 0) {
 		mt_leds_brightness_set("lcd-backlight", 0);
 		/* set backlight = 0 may be not from AAL, */
 		/* we have to let AALService can turn on backlight */
@@ -484,11 +481,11 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		!m_new_pq_persist_property[DISP_PQ_CCORR_SILKY_BRIGHTNESS])) {
 		/* AAL Service is not running */
 
-		mt_leds_brightness_set("lcd-backlight", bl_1024);
+		mt_leds_brightness_set("lcd-backlight", trans_backlight);
 	}
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
-	g_aal_hist.backlight = bl_1024;
+	g_aal_hist.backlight = trans_backlight;
 	g_aal_hist.serviceFlags |= service_flags;
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 	// always notify aal service for LED changed
@@ -504,6 +501,7 @@ int led_brightness_changed_event(struct notifier_block *nb, unsigned long event,
 	struct led_conf_info *led_conf;
 
 	led_conf = (struct led_conf_info *)v;
+	g_max_backlight = (1 << led_conf->trans_bits) - 1;
 
 	switch (event) {
 	case 1:
