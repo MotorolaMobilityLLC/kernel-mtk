@@ -273,6 +273,21 @@ static void update_bus_bw(struct mu3h_sch_bw_info *sch_bw,
 	}
 }
 
+static bool sch_offset_used(struct mu3h_sch_bw_info *sch_bw,
+	u32 offset)
+{
+	struct mu3h_sch_ep_info *sch_ep;
+	bool used = false;
+
+	list_for_each_entry(sch_ep, &sch_bw->bw_ep_list, endpoint) {
+		if (sch_ep->offset == offset) {
+			used = true;
+			break;
+		}
+	}
+	return used;
+}
+
 static int check_sch_bw(struct usb_device *udev,
 	struct mu3h_sch_bw_info *sch_bw, struct mu3h_sch_ep_info *sch_ep)
 {
@@ -306,6 +321,10 @@ static int check_sch_bw(struct usb_device *udev,
 		if (min_bw > worst_bw) {
 			min_bw = worst_bw;
 			min_index = offset;
+		} else if (min_bw == worst_bw) {
+			if (sch_offset_used(sch_bw, min_index) &&
+					!sch_offset_used(sch_bw, offset))
+				min_index = offset;
 		}
 		if (min_bw == 0)
 			break;
