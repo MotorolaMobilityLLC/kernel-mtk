@@ -759,19 +759,19 @@ void _primary_display_enable_mmsys_clk(void)
 	if (primary_display_is_decouple_mode()) {
 		data_config =
 			dpmgr_path_get_last_config(primary_get_dpmgr_handle());
-		if (data_config != NULL)
+		if (data_config != NULL) {
 			data_config->rdma_dirty = 1;
-		dpmgr_path_config(primary_get_dpmgr_handle(), data_config,
-			NULL);
+			dpmgr_path_config(primary_get_dpmgr_handle(), data_config,
+				NULL);
 
-		data_config = dpmgr_path_get_last_config(
-			primary_get_ovl2mem_handle());
-		if (data_config != NULL)
-			data_config->dst_dirty = 1;
-		dpmgr_path_config(primary_get_ovl2mem_handle(), data_config,
-			NULL);
-		dpmgr_path_ioctl(primary_get_ovl2mem_handle(), NULL,
-			DDP_OVL_GOLDEN_SETTING, &gset_arg);
+			data_config = dpmgr_path_get_last_config(
+				primary_get_ovl2mem_handle());
+				data_config->dst_dirty = 1;
+			dpmgr_path_config(primary_get_ovl2mem_handle(), data_config,
+				NULL);
+			dpmgr_path_ioctl(primary_get_ovl2mem_handle(), NULL,
+				DDP_OVL_GOLDEN_SETTING, &gset_arg);
+		}
 	} else {
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL,
 			DDP_OVL_GOLDEN_SETTING, &gset_arg);
