@@ -3073,6 +3073,7 @@ s64 v4l2_ctrl_g_ctrl_int64(struct v4l2_ctrl *ctrl)
 	/* It's a driver bug if this happens. */
 	WARN_ON(ctrl->is_ptr || ctrl->type != V4L2_CTRL_TYPE_INTEGER64);
 	c.value64 = 0;
+	c.size = 0;
 	get_ctrl(ctrl, &c);
 	return c.value64;
 }
