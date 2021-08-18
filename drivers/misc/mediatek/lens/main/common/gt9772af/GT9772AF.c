@@ -280,10 +280,13 @@ int GT9772AF_GetFileName(unsigned char *pFileName)
 {
 	#if SUPPORT_GETTING_LENS_FOLDER_NAME
 	char FilePath[256];
-	char *FileString;
+	char *FileString = NULL;
 
-	sprintf(FilePath, "%s", __FILE__);
+	if (sprintf(FilePath, "%s", __FILE__) < 0)
+		return 0;
 	FileString = strrchr(FilePath, '/');
+	if (FileString == NULL)
+		return 0;
 	*FileString = '\0';
 	FileString = (strrchr(FilePath, '/') + 1);
 	strncpy(pFileName, FileString, AF_MOTOR_NAME);
