@@ -93,6 +93,8 @@ int sensor_comm_ctrl_send(struct sensor_comm_ctrl *ctrl, unsigned int size)
 {
 	int retry = 0, ret = 0;
 	const int max_retry = 10;
+	const int64_t timeout = 2000000000LL;
+	int64_t start_time = 0, duration = 0;
 
 	if (!READ_ONCE(scp_status)) {
 		pr_err_ratelimited("dropped comm %u %u\n",
@@ -104,6 +106,11 @@ int sensor_comm_ctrl_send(struct sensor_comm_ctrl *ctrl, unsigned int size)
 		ret = sensor_comm_ctrl_seq_send(ctrl, size);
 	} while (retry++ < max_retry && ret < 0);
 
+	duration = ktime_get_boottime_ns() - start_time;
+	if (duration > timeout) {
+		pr_notice("running time %lld\n", duration);
+		WARN_ON(1);
+	}
 	return ret;
 }
 
