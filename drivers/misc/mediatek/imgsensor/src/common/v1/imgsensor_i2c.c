@@ -188,12 +188,15 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 	pinst->msg[1].flags = I2C_M_RD;
 	pinst->msg[1].len   = read_length;
 	pinst->msg[1].buf   = pread_data;
-
-	if (i2c_transfer(
-	    pinst->pi2c_client->adapter,
-	    pinst->msg,
-	    IMGSENSOR_I2C_MSG_SIZE_READ)
-	    != IMGSENSOR_I2C_MSG_SIZE_READ) {
+	if (mtk_i2c_transfer(
+			pinst->pi2c_client->adapter,
+			pinst->msg,
+			IMGSENSOR_I2C_MSG_SIZE_READ,
+			(pi2c_cfg->pinst->status.filter_msg)
+				? I2C_A_FILTER_MSG : 0,
+			((speed > 0) && (speed <= 1000))
+				? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000)
+			!= IMGSENSOR_I2C_MSG_SIZE_READ) {
 
 		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 30);
 
@@ -239,10 +242,15 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 		pmsg++;
 		pdata += write_per_cycle;
 	}
-
-	if (i2c_transfer(
-	    pinst->pi2c_client->adapter,
-	    pinst->msg, i) != i) {
+	if (mtk_i2c_transfer(
+			pinst->pi2c_client->adapter,
+			pinst->msg,
+			i,
+			(pi2c_cfg->pinst->status.filter_msg)
+				? I2C_A_FILTER_MSG : 0,
+			((speed > 0) && (speed <= 1000))
+				? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000)
+			!= i) {
 
 		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 30);
 
