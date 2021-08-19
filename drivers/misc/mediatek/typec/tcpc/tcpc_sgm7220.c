@@ -338,9 +338,46 @@ static void process_interrupt_register(struct sgm7220_chip *info)
 	pr_info("sgm7220 %s ,attach_state = %d, cable_dir = %d \n", __func__, info->type_c_param.attach_state, info->type_c_param.cable_dir);
 }
 
+static inline void sgm7220_unattached_cc_entry(struct tcpc_device *tcpc_dev)
+{
+  tcpc_dev->typec_role = tcpc_dev->typec_attach_old;
+  switch (tcpc_dev->typec_role) {
+  case TYPEC_ATTACHED_NORP_SRC:
+  case TYPEC_ROLE_SNK:
+    pr_info("%s set_cc sink\n", __func__);
+    tcpci_set_cc(tcpc_dev, TYPEC_CC_RD);
+    break;
+  case TYPEC_ROLE_DRP:
+    pr_info("%s set_cc drp\n", __func__);
+    tcpci_set_cc(tcpc_dev, TYPEC_CC_DRP);
+    break;
+  }
+}
+
 static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 {
 	struct tcpc_device *tcpc_dev = chip->tcpc;
+	int rv;
+	uint16_t power_status = 0;
+
+	rv = tcpci_get_power_status(tcpc_dev, &power_status);
+	if (rv < 0)
+		return;
+
+	pr_info("%s power_status = 0x%2x, vbus_level = %d\n",
+		__func__,
+		power_status,
+		tcpc_dev->vbus_level);
+
+	pr_info("%s typec_attach_old = %d"
+		"typec_attach_new = %d"
+		"type_c_param.attach_stat = %d"
+		"old.attach_state = %d \n",
+		__func__,
+	    tcpc_dev->typec_attach_old,
+	    tcpc_dev->typec_attach_new,
+	    chip->type_c_param.attach_state,
+	    chip->type_c_param_old.attach_state);
 
 	if ((chip->type_c_param.attach_state == CABLE_STATE_NOT_ATTACHED) &&
 		(chip->type_c_param_old.attach_state != CABLE_STATE_NOT_ATTACHED)) {
@@ -379,8 +416,28 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 			/* -1 means let tcpc decide current value */
 		pr_info("sgm7220 %s , attach_state = TYPEC_ATTACHED_SRC\n", __func__);
 	}
+
+	if ((chip->type_c_param.attach_state == CABLE_STATE_TO_ACCESSORY) &&
+		(chip->type_c_param_old.attach_state != CABLE_STATE_TO_ACCESSORY)) {
+		tcpc_dev->typec_attach_new = TYPEC_ATTACHED_AUDIO;
+		tcpci_notify_typec_state(tcpc_dev);
+		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_AUDIO;
+	}
+
+	if (tcpc_dev->typec_attach_new == TYPEC_UNATTACHED)
+		sgm7220_unattached_cc_entry(tcpc_dev);
+
 	chip->type_c_param_old.attach_state = chip->type_c_param.attach_state;
 	tcpc_dev->typec_polarity = chip->type_c_param.cable_dir;
+
+	pr_info("%s typec_attach_old = %d"
+		"tcpc_dev->typec_attach_new = %d"
+		"type_c_param.attach_stat = %d"
+		"old.attach_state = %d \n", __func__,
+		tcpc_dev->typec_attach_old,
+		tcpc_dev->typec_attach_new,
+		chip->type_c_param.attach_state,
+		chip->type_c_param_old.attach_state);
 }
 
 static void sgm7220_irq_work_handler(struct kthread_work *work)
@@ -696,14 +753,14 @@ static int sgm7220_get_power_status(
 		*pwr_status |= TCPC_REG_POWER_STATUS_VBUS_PRES;
 	}
 
-	if (val > 0) {
+/*	if (val > 0) {
 		process_mode_register(chip);
 		process_interrupt_register(chip);
 		process_tcpci_attach_state(chip);
 		ret = sgm7220_update_reg(chip->client,
 				   REG_INT, (0x1 << INT_INTERRUPT_STATUS_SHIFT), INT_INTERRUPT_STATUS);
 		pr_err("%s sgm7220_update_reg create boot detect\n", __func__);
-	}
+	}*/
 
 	/*if (val & CABLE_STATE_AS_DFP) {
 		if (*pwr_status & TCPC_REG_POWER_STATUS_EXT_VSAFE0V) {
@@ -808,7 +865,8 @@ static int sgm7220_set_cc(struct tcpc_device *tcpc, int pull)
 		pr_err("%s: init REG_SET fail!\n", __func__);
 		 return ret;
 	}
-/*	if (pull == TYPEC_CC_RP)
+
+	if (pull == TYPEC_CC_RP)
 		value = SET_MODE_SELECT_SRC;
 	else if (pull == TYPEC_CC_RD)
 		value = SET_MODE_SELECT_SNK;
@@ -819,7 +877,14 @@ static int sgm7220_set_cc(struct tcpc_device *tcpc, int pull)
 	ret = sgm7220_update_reg(chip->client, REG_SET, value, SET_MODE_SELECT);
 	if (ret < 0) {
 		pr_err("%s: update reg fail!\n", __func__);
-	}*/
+	}
+
+	ret = sgm7220_read_reg(chip->client, REG_SET, &value);
+	if (ret < 0) {
+		pr_err("%s err\n", __func__);
+		return ret;
+	}
+
 	value = 0x00;
 	ret = sgm7220_update_reg(chip->client, REG_SET, value, SET_I2C_DISABLE_TERM);//Enable RD and RP
 	if (ret < 0) {
