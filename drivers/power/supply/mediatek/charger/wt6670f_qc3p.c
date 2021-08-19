@@ -533,7 +533,11 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	return 0;
 }
 
-
+static void wt6670f_shutdown(struct i2c_client *client)
+{
+	wt6670f_start_detection();
+	pr_info("%s\n", __func__);
+}
 //#define WT6670F_PM_OPS	(NULL)
 
 static const struct i2c_device_id wt6670f_id_table[] = {
@@ -557,7 +561,7 @@ static struct i2c_driver wt6670f_driver = {
 	},
 	.probe = wt6670f_i2c_probe,
 	//.remove = wt6670f_i2c_remove,
-	//.shutdown = wt6670f_shutdown,
+	.shutdown = wt6670f_shutdown,
 	.id_table = wt6670f_id_table,
 };
 
