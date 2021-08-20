@@ -21,6 +21,8 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[GPIO_CTRL_STATE_MAX_NUM_CAM] = {
 	{"rst0"},
 	{"vcama_on"},
 	{"vcama_off"},
+	{"vcama_vldo28_on"},
+	{"vcama_vldo28_off"},
 	{"vcamd_on"},
 	{"vcamd_off"},
 	{"vcamio_on"},
