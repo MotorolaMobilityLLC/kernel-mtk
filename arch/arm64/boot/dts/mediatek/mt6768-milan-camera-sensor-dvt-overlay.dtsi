@@ -349,8 +349,8 @@
 	cam1_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam2_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
-	cam1_vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
-	cam2_vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
+	cam1_vcama_vldo28-supply = <&mt_pmic_vldo28_ldo_reg>;
+	cam2_vcama_vldo28-supply = <&mt_pmic_vldo28_ldo_reg>;
 
 	cam0_enable_sensor = "mot_milan_s5kjn1_mipi_raw";
 	cam1_enable_sensor = "mot_milan_ov16a1q_mipi_raw";
@@ -360,11 +360,6 @@
 
 	status = "okay";
 
-};
-
-&mt_pmic_vldo28_ldo_reg {
-	regulator-boot-on;
-	regulator-always-on;
 };
 /* CAMERA GPIO end */
 

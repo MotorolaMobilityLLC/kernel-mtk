@@ -50,7 +50,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		IMGSENSOR_I2C_DEV_1,
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
-			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AFVDD},
+			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD_VLDO28},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
@@ -66,7 +66,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 		IMGSENSOR_I2C_DEV_1,
 		{
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
-			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AFVDD},
+			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD_VLDO28},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_AVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
@@ -177,7 +177,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 {
                         {RST, Vol_Low, 1},
                         {SensorMCLK, Vol_High, 1},
-                        {AFVDD, Vol_High, 1}, // mipi switch vcc vldo28
+                        {AVDD_VLDO28, Vol_2800, 1}, // mipi switch vcc vldo28
                         {AVDD, Vol_2800, 1},
                         {DOVDD, Vol_1800, 1},
                         {DVDD, Vol_High, 1},
@@ -191,7 +191,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 {
                         {RST, Vol_Low, 1},
                         {SensorMCLK, Vol_High, 1},
-                        {AFVDD, Vol_High, 1}, // mipi switch vcc vldo28
+                        {AVDD_VLDO28, Vol_2800, 1}, // mipi switch vcc vldo28
                         {DOVDD, Vol_1800, 1},
                         {AVDD, Vol_2800, 1},
                         {RST, Vol_High, 5}
