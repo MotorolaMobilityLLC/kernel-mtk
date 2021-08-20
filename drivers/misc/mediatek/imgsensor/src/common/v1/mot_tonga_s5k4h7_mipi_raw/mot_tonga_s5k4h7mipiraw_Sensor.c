@@ -1473,7 +1473,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	LOG_INF("feature_id = %d", feature_id);
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
-			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 6500000;//uint is ns
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 2000000;//uint is ns
 			break;
 		case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
 			*feature_return_para_32 = imgsensor.current_ae_effective_frame;
