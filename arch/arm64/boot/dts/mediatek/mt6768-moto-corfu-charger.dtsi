@@ -30,7 +30,7 @@
 };
 
 &lk_charger {
-        temp_t4_threshold = <59>;
+        temp_t4_threshold = <60>;
 };
 
 &charger {
