@@ -64,6 +64,24 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			{0x00000000, 0x00000015, 0x00000010, NULL},//dump serial number.
 		}
 	},
+	{
+		{
+			.sensorID= MOT_CORFU_HI1336_OFILM_DOE_ID,
+			.deviceID = 0x02,
+			.dataLength = 0x0F43,
+			.sensorVendorid = 0x16020000,
+			.vendorByte = {1,2,3,4},
+			.dataBuffer = NULL
+		},
+		{
+			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
+			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
+			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
+			{0x00000001, 0x000007E1, 0x0000074C, mot_check_lsc_data },
+			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data},
+			{0x00000000, 0x00000015, 0x00000010, NULL},//dump serial number.
+		}
+	},
 };
 
 static int EEPROM_get_cmd_info(unsigned int sensorID,
