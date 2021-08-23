@@ -402,6 +402,7 @@
 //add corfu sensor id begin
 #define MOT_CORFU_S5KGM1_QTECH_ID       0x08D1
 #define MOT_CORFU_HI1336_OFILM_ID       0x1336
+#define MOT_CORFU_HI1336_OFILM_DOE_ID   0x2336
 #define MOT_CORFU_S5K4H7_QTECH_ID       0x487C
 #define MOT_CORFU_GC02M1_TSP_ID         0x02e1
 //add corfu sensor id end
@@ -663,6 +664,7 @@
 //add corfu sensor drvname begin
 #define SENSOR_DRVNAME_MOT_CORFU_S5KGM1_QTECH               "mot_corfu_s5kgm1_qtech"
 #define SENSOR_DRVNAME_MOT_CORFU_HI1336_OFILM               "mot_corfu_hi1336_ofilm"
+#define SENSOR_DRVNAME_MOT_CORFU_HI1336_OFILM_DOE           "mot_corfu_hi1336_ofilm_doe"
 #define SENSOR_DRVNAME_MOT_CORFU_S5K4H7_QTECH               "mot_corfu_s5k4h7_qtech"
 #define SENSOR_DRVNAME_MOT_CORFU_GC02M1_TSP                 "mot_corfu_gc02m1_tsp"
 //add corfu sensor drvname end
