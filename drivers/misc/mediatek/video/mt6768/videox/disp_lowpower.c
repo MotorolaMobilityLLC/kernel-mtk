@@ -1172,7 +1172,11 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	unsigned long long interval = 0;
 	unsigned long long time_diff;
 
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	msleep(26000);
+#else
 	msleep(16000);
+#endif
 	while (1) {
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue,
 			atomic_read(&idlemgr_task_wakeup));
