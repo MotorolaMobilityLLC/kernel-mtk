@@ -10,8 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-#include <linux/module.h>
-#include <linux/kernel.h>
+
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -22,21 +21,15 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 
-#include "mot_corfu_hi1336_ofilm.h"
-#include "mot_corfu_hi1336_ofilm_Setting.h"
-static int mot_sensor_debug = 0;
-module_param(mot_sensor_debug,int,S_IRWXU);
-#define PFX "hi1336_camera_sensor"
-
-#define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
-#define LOG_DEBUG(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#include "mot_corfu_hi1336_ofilm_doe.h"
+#include "mot_corfu_hi1336_ofilm_doe_Setting.h"
+#define PFX "hi1336_por_camera_sensor"
+#define LOG_INF(format, args...)    \
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define e2prom 1
-#define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
-#define per_frame 1
 
-extern bool read_hi1336_eeprom( kal_uint16 addr, BYTE *data, kal_uint32 size);
-extern bool read_eeprom( kal_uint16 addr, BYTE * data, kal_uint32 size);
+#define per_frame 1
 
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/hi1336_eeprom_data.bin"
 #define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
@@ -45,13 +38,13 @@ static const char *hi1336_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PAT
 static mot_calibration_info_t hi1336_cal_info = {0};
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
 
-kal_uint32 extra_sensor_id = 0;
+extern kal_uint32 extra_sensor_id;
 
 #define MULTI_WRITE 1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MOT_CORFU_HI1336_OFILM_ID,
+	.sensor_id = MOT_CORFU_HI1336_OFILM_DOE_ID,
 
 	.checksum_value = 0x4f1b1d5e,
 	.pre = {
@@ -196,7 +189,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 1020
 
-static kal_uint16 hi1336_table_write_cmos_sensor(
+static kal_uint16 hi1336_por_table_write_cmos_sensor(
 					kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -266,21 +259,6 @@ static void set_dummy(void)
 	write_cmos_sensor(0x0206, imgsensor.line_length/4);
 
 }	/*	set_dummy  */
-
-static int select_cam_by_device(char* str)
-{
-	/*
-	 * cam_tuning_mode:
-	 * 1 POR 0x1336
-	 * 2 DOE 0x2336
-	 */
-	if (strstr(str, "2"))
-		extra_sensor_id = 0x1000;
-
-	LOG_INF("str = %s , extra_sensor_id = 0x%x \n", str, extra_sensor_id);
-	return 1;
-}
-__setup("androidboot.panel.cam_tuning_mode=", select_cam_by_device);
 
 static kal_uint32 return_sensor_id(void)
 {
@@ -465,53 +443,47 @@ static void night_mode(kal_bool enable)
 
 static void sensor_init(void)
 {
-	LOG_INF_N("E\n");
-	hi1336_table_write_cmos_sensor(
-		addr_data_pair_init_hi1336,
-		sizeof(addr_data_pair_init_hi1336) /
+	hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_init_hi1336_por,
+		sizeof(addr_data_pair_init_hi1336_por) /
 		sizeof(kal_uint16));
-	LOG_INF_N("X\n");
 }
 
 
 
 static void capture_setting(kal_uint16 currefps)
 {
-	LOG_INF_N("E\n");
 	if (currefps == 300) {
-	hi1336_table_write_cmos_sensor(
-		addr_data_pair_capture_30fps_hi1336,
-		sizeof(addr_data_pair_capture_30fps_hi1336) /
+	hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_capture_30fps_hi1336_por,
+		sizeof(addr_data_pair_capture_30fps_hi1336_por) /
 		sizeof(kal_uint16));
 
 	} else {
-	/*hi1336_table_write_cmos_sensor(
-		addr_data_pair_capture_15fps_hi1336,
-		sizeof(addr_data_pair_capture_15fps_hi1336) /
+	/*hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_capture_15fps_hi1336_por,
+		sizeof(addr_data_pair_capture_15fps_hi1336_por) /
 		sizeof(kal_uint16));*/
 	}
-	LOG_INF_N("X\n");
 }
 
 
 
 static void normal_video_setting(void)
 {
-	LOG_INF_N("E\n");
-	hi1336_table_write_cmos_sensor(
-		addr_data_pair_video_hi1336,
-		sizeof(addr_data_pair_video_hi1336) /
+	hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_video_hi1336_por,
+		sizeof(addr_data_pair_video_hi1336_por) /
 		sizeof(kal_uint16));
-	LOG_INF_N("X\n");
 }
 
 
 
 static void hs_video_setting(void)
 {
-	hi1336_table_write_cmos_sensor(
-		addr_data_pair_hs_video_hi1336,
-		sizeof(addr_data_pair_hs_video_hi1336) /
+	hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_hs_video_hi1336_por,
+		sizeof(addr_data_pair_hs_video_hi1336_por) /
 		sizeof(kal_uint16));
 }
 
@@ -520,23 +492,19 @@ static void hs_video_setting(void)
 
 static void slim_video_setting(void)
 {
-	LOG_INF_N("E\n");
-	hi1336_table_write_cmos_sensor(
-		addr_data_pair_slim_video_hi1336,
-		sizeof(addr_data_pair_slim_video_hi1336) /
+	hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_slim_video_hi1336_por,
+		sizeof(addr_data_pair_slim_video_hi1336_por) /
 		sizeof(kal_uint16));
-	LOG_INF_N("X\n");
 }
 
 
 static void custom1_setting(void)
 {
-	LOG_INF_N("E\n");
-	hi1336_table_write_cmos_sensor(
-		addr_data_pair_custom1_hi1336,
-		sizeof(addr_data_pair_custom1_hi1336) /
+	hi1336_por_table_write_cmos_sensor(
+		addr_data_pair_custom1_hi1336_por,
+		sizeof(addr_data_pair_custom1_hi1336_por) /
 		sizeof(kal_uint16));
-	LOG_INF_N("X\n");
 }
 
 
@@ -594,7 +562,7 @@ static kal_uint32 open(void)
 	kal_uint8 retry = 2;
 	kal_uint16 sensor_id = 0;
 
-	LOG_INF("[open]: hi1336@MT6765,MIPI 4LANE\n");
+	LOG_INF("[open]: hi1336_por@MT6765,MIPI 4LANE\n");
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1517,10 +1485,10 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 MOT_CORFU_HI1336_OFILM_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MOT_CORFU_HI1336_OFILM_DOE_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc =  &sensor_func;
 	return ERROR_NONE;
-}	/*	MOT_CORFU_HI1336_OFILM_SensorInit	*/
+}	/*	MOT_CORFU_HI1336_OFILM_DOE_SensorInit	*/
