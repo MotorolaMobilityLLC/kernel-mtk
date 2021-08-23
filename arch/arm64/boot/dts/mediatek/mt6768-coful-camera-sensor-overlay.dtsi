@@ -372,10 +372,10 @@
 	cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 
 	cam0_enable_sensor = "mot_coful_s5kjn1_qtech";
-	cam1_enable_sensor = "mot_corfu_hi1336_ofilm";
+	cam1_enable_sensor = "mot_corfu_hi1336_ofilm mot_corfu_hi1336_ofilm_doe";
 	cam2_enable_sensor = "mot_coful_s5k4h7_qtech";
 	cam4_enable_sensor = "mot_coful_gc02m1_tsp";
-	cust-sensor = "mot_coful_s5kjn1_qtech mot_corfu_hi1336_ofilm mot_coful_s5k4h7_qtech mot_coful_gc02m1_tsp";
+	cust-sensor = "mot_coful_s5kjn1_qtech mot_corfu_hi1336_ofilm mot_coful_s5k4h7_qtech mot_coful_gc02m1_tsp mot_corfu_hi1336_ofilm_doe";
 
 	status = "okay";
 

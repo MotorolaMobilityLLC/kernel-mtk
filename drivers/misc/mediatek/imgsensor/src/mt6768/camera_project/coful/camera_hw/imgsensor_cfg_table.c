@@ -198,6 +198,22 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 },
         },
 #endif
+#if defined(MOT_CORFU_HI1336_OFILM_DOE)
+        {
+                SENSOR_DRVNAME_MOT_CORFU_HI1336_OFILM_DOE,
+                {
+                        {RST, Vol_Low, 1},
+                        {SensorMCLK, Vol_High, 1},
+                        {DOVDD, Vol_1800, 1},
+                        {AVDD, Vol_2800, 1},
+#ifdef CAMERA_CHROMATIX_NOISE
+                        {AVDDCN, Vol_1800, 1},
+#endif
+                        {DVDD, Vol_1100, 1},
+                        {RST, Vol_High, 5}
+                },
+        },
+#endif
 #if defined(MOT_COFUL_S5K4H7_QTECH)
         {
                 SENSOR_DRVNAME_MOT_COFUL_S5K4H7_QTECH,
