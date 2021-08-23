@@ -1239,6 +1239,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0D02, 0x0101);
 	write_cmos_sensor(0x0D04, 0x0102);
 	write_cmos_sensor(0x6226, 0x0000);
+	write_cmos_sensor(0xB13A, 0x4000);
 	LOG_INF_N("X\n");
 }
 
