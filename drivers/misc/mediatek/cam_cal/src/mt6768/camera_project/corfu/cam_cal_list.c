@@ -23,6 +23,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 	{MOT_CORFU_S5KGM1_QTECH_ID, 0xA0, Common_read_region},
 	{MOT_CORFU_HI1336_OFILM_ID, 0xA2, Common_read_region},
+	{MOT_CORFU_HI1336_OFILM_DOE_ID, 0xA2, Common_read_region},
 	// custom otp
 	{MOT_CORFU_S5K4H7_QTECH_ID, 0x5A, moto_s5k4h7_read_region},
 	{MOT_CORFU_GC02M1_TSP_ID, 0x6e, GC02M1_read_region},
