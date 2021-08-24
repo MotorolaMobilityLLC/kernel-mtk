@@ -651,6 +651,8 @@ static kal_uint32 custom3(
 #define OV16A1Q_EEPROM_CRC_LSC_SIZE 1868
 #define OV16A1Q_EEPROM_CRC_MANUFACTURING_SIZE 37
 
+#define OV16A1Q_EEPROM_XTALK_DATA_SIZE 600
+
 static uint8_t ov16a1q_eeprom[OV16A1Q_EEPROM_SIZE] = {0};
 static calibration_status_t mnf_status = CRC_FAILURE;
 static calibration_status_t af_status = CRC_FAILURE;
@@ -939,6 +941,29 @@ static calibration_status_t ov16a1q_check_lsc_data_mtk(void *data)
 	}
 	LOG_INF("LSC CRC Pass");
 	return NO_ERRORS;
+}
+
+#define OV_XTALK_DATA_SIZE 600
+#define OV_DPC_DATA_SIZE 1920
+static void ov16a1q_get_xtalk_from_eeprom(char *data)
+{
+	struct ov16a1q_eeprom_t *eeprom = (struct ov16a1q_eeprom_t*)ov16a1q_eeprom;
+
+
+	data[0] = (OV_XTALK_DATA_SIZE & 0xff);/*Low*/
+	data[1] = ((OV_XTALK_DATA_SIZE >> 8) & 0xff);/*High*/
+
+	memcpy(&data[2], &eeprom->ovcrosstalk_data, OV_XTALK_DATA_SIZE);
+}
+static void ov16a1q_get_dpc_from_eeprom(char *data)
+{
+	struct ov16a1q_eeprom_t *eeprom = (struct ov16a1q_eeprom_t*)ov16a1q_eeprom;
+
+
+	data[0] = (OV_DPC_DATA_SIZE & 0xff);/*Low*/
+	data[1] = ((OV_DPC_DATA_SIZE >> 8) & 0xff);/*High*/
+
+	memcpy(&data[2], &eeprom->ovdpc_data, OV_DPC_DATA_SIZE);
 }
 static void ov16a1q_eeprom_get_3aInfo_data(void *data,
 mot_calibration_3aInfo_t *calibration_3aInfo)
@@ -2193,6 +2218,31 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
+	case SENSOR_FEATURE_GET_4CELL_DATA:/*get 4 cell data from eeprom*/
+	{
+		/*get 4 cell data from eeprom*/
+		int type = (kal_uint16)(*feature_data);
+		char *data = (char *)(uintptr_t)(*(feature_data+1));
+
+		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
+			memset(data, 0, OV_XTALK_DATA_SIZE);
+			ov16a1q_get_xtalk_from_eeprom(data);
+			LOG_INF(
+			    "[JX]read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
+			    (UINT16)data[0], (UINT16)data[1],
+			    (UINT16)data[2], (UINT16)data[3],
+			    (UINT16)data[4], (UINT16)data[5]);
+		} else if (type == FOUR_CELL_CAL_TYPE_DPC) {
+			memset(data, 0, OV_DPC_DATA_SIZE);
+			ov16a1q_get_dpc_from_eeprom(data);
+			LOG_INF(
+			    "[JX]read dpc = %02x %02x %02x %02x %02x %02x\n",
+			    (UINT16)data[0], (UINT16)data[1],
+			    (UINT16)data[2], (UINT16)data[3],
+			    (UINT16)data[4], (UINT16)data[5]);
+              }
+		break;
+	}
 	default:
 		break;
 	}
