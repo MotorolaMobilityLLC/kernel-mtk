@@ -721,6 +721,14 @@ static void lcm_suspend(void)
 		sizeof(lcm_suspend_setting)/sizeof(struct LCM_setting_table),
 		1, 1);
 
+	pr_info("%s end\n", __func__);
+
+}
+
+static void lcm_suspend_power(void)
+{
+	pr_info("%s enter\n", __func__);
+
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT0);
 	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP_OUT0);
@@ -778,9 +786,10 @@ struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
 	.get_params = lcm_get_params,
 	.init = lcm_init,
 	.suspend = lcm_suspend,
+	.suspend_power = lcm_suspend_power,
 	.resume = lcm_resume,
 	.set_backlight_cmdq= lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
 	.switch_mode = lcm_switch_mode,
-
+	.tp_gesture_status = GESTURE_OFF,
 };
