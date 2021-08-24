@@ -359,6 +359,7 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 	struct tcpc_device *tcpc_dev = chip->tcpc;
 	int rv;
 	uint16_t power_status = 0;
+	uint8_t state;
 
 	rv = tcpci_get_power_status(tcpc_dev, &power_status);
 	if (rv < 0)
@@ -393,6 +394,8 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 				TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		}
 		tcpc_dev->typec_attach_old = TYPEC_UNATTACHED;
+		tcpci_get_cc(tcpc_dev);
+		tcpci_notify_pd_state(tcpc_dev, PD_CONNECT_NONE);
 		pr_info("sgm7220 %s , attach_state = DETACHED\n", __func__);
 	}
 
@@ -404,6 +407,14 @@ static void process_tcpci_attach_state(struct sgm7220_chip *chip)
 			TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SNK;
 		pr_info("sgm7220 %s , attach_state = TYPEC_ATTACHED_SNK\n", __func__);
+
+		tcpci_get_cc(tcpc_dev);
+
+		if (tcpc_dev->typec_remote_rp_level == TYPEC_CC_VOLT_SNK_DFT)
+			state = PD_CONNECT_TYPEC_ONLY_SNK_DFT;
+		else
+			state = PD_CONNECT_TYPEC_ONLY_SNK;
+		tcpci_notify_pd_state(tcpc_dev, state);
 	}
 
 	if ((chip->type_c_param.attach_state == CABLE_STATE_AS_DFP) &&
@@ -839,6 +850,8 @@ static int sgm7220_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 			*active_cc |= TYPEC_CC_VOLT_RD;
 		}
 	}
+
+	chip->tcpc->typec_remote_rp_level= *active_cc;
 
 	act_as_sink = (chip->type_c_param.attach_state == CABLE_STATE_AS_UFP) ? true : false;
 
