@@ -53,7 +53,7 @@
 
 	fingerfp_rst_high: state_reset_high {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -61,15 +61,15 @@
 
 	fingerfp_rst_low: state_reset_low {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 
-	fingerfp_irq: fp_eint@18 {
+	fingerfp_irq: fp_eint {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
 			slew-rate = <0>;
 			bias-disable;
 		};
@@ -78,7 +78,7 @@
 
 	finger_rst_high: finger_rst_high {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -86,7 +86,7 @@
 
 	finger_rst_low: finger_rst_low {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -94,7 +94,7 @@
 
 	finger_irq_active: finger_irq_active {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
 			slew-rate = <0>;
 			bias-disable;
 		};
@@ -172,7 +172,7 @@
 
 &chipone_fp {
 	interrupt-parent = <&pio>;
-	interrupts = <11 IRQ_TYPE_EDGE_RISING 11 0>;
+	interrupts = <22 IRQ_TYPE_EDGE_RISING 22 0>;
 	vdd-supply = <&mt_pmic_vfp_ldo_reg>;
 	pinctrl-names = "default", "fingerprint_reset_low", "fingerprint_reset_high" ,
 	                "fingerprint_irq", "spi-default";
@@ -186,12 +186,12 @@
 
 &fp_egistec {
 	interrupt-parent = <&pio>;
-	interrupts = <11 IRQ_TYPE_EDGE_RISING 11 0>;
+	interrupts = <22 IRQ_TYPE_EDGE_RISING 22 0>;
 
 	fp-ctrl-power;
 
-	egistec,gpio_reset = <&pio 88 0x0>;
-	egistec,gpio_irq = <&pio 11 0x0>;
+	egistec,gpio_reset = <&pio 21 0x0>;
+	egistec,gpio_irq = <&pio 22 0x0>;
 
 	vcc_fp-supply = <&mt_pmic_vfp_ldo_reg>;
 	egis-fp,vcc-voltage = <3000000 3000000>;
