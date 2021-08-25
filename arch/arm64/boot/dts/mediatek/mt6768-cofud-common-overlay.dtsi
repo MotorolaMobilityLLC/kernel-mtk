@@ -137,7 +137,7 @@
 
 &charger {
         /* common */
-        battery_cv = <4456000>;
+        battery_cv = <4464000>;
         min_charger_voltage = <4200000>;
 
         enable_pe_2;
