@@ -6301,7 +6301,8 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 		hbm_en = (bool)state->prop_val[CRTC_PROP_HBM_ENABLE];
 		mtk_drm_crtc_set_panel_hbm(crtc, hbm_en);
 		mtk_drm_crtc_hbm_wait(crtc, hbm_en);
-		if (m_new_pq_persist_property[DISP_PQ_CCORR_SILKY_BRIGHTNESS])
+
+		if (!state->prop_val[CRTC_PROP_DOZE_ACTIVE])
 			mtk_atomic_hbm_bypass_pq(crtc, cmdq_handle, hbm_en);
 	}
 
