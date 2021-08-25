@@ -905,6 +905,7 @@ int ccu_run(void)
 	/*LOG_DBG("cache flushed 2\n");*/
 	/*3. Set CCU_A_RESET. CCU_HW_RST=0*/
 	ccu_write_reg(ccu_base, CCU_INFO23, 0x900d);
+	mb();
 	ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 0);
 
 	LOG_DBG("released CCU reset, wait for initial done, %x\n",
