@@ -2244,9 +2244,8 @@ static void fdvt_enable_clock(bool En)
 #endif
 
 	if (En) { /* Enable clock. */
-		/* log_dbg("Dpe clock enbled. clock_enable_count: %d.",
-		 * clock_enable_count);
-		 */
+		log_inf("FDVT clock enbled. clock_enable_count: %d.",
+		clock_enable_count);
 		mutex_lock(&fdvt_clk_mutex);
 		switch (clock_enable_count) {
 		case 0:
@@ -2276,6 +2275,7 @@ static void fdvt_enable_clock(bool En)
 		default:
 			break;
 		}
+
 		clock_enable_count++;
 		mutex_unlock(&fdvt_clk_mutex);
 #ifdef CONFIG_MTK_IOMMU_V2
@@ -2287,9 +2287,9 @@ static void fdvt_enable_clock(bool En)
 #endif
 	} else { /* Disable clock. */
 
-		/* log_dbg("Dpe clock disabled. clock_enable_count: %d.",
-		 * clock_enable_count);
-		 */
+		log_inf("FDVT clock disabled. clock_enable_count: %d.",
+		clock_enable_count);
+
 		mutex_lock(&fdvt_clk_mutex);
 		clock_enable_count--;
 		switch (clock_enable_count) {
@@ -3489,6 +3489,7 @@ static signed int FDVT_open(struct inode *pInode, struct file *pFile)
 	fdvt_req_ring.hw_process_idx = 0x0;
 
 	/* Enable clock */
+	log_inf("open enable clk\n");
 	fdvt_enable_clock(MTRUE);
 
 	fdvt_count = 0;
@@ -3553,6 +3554,7 @@ static signed int FDVT_release(struct inode *pInode, struct file *pFile)
 		current->tgid);
 
 	/* Disable clock. */
+	log_inf("disable clk\n");
 	fdvt_enable_clock(MFALSE);
 	log_dbg("FDVT release clock_enable_count: %d", clock_enable_count);
 	/*  */
@@ -4082,6 +4084,7 @@ static signed int FDVT_suspend(struct platform_device *pDev, pm_message_t Mesg)
 	bPass1_On_In_Resume_TG1 = 0;
 
 	if (clock_enable_count > 0) {
+		log_inf("suspend enable clk\n");
 		fdvt_enable_clock(MFALSE);
 		fdvt_count++;
 	}
@@ -4096,6 +4099,7 @@ static signed int FDVT_resume(struct platform_device *pDev)
 	log_dbg("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
 
 	if (fdvt_count > 0) {
+		log_inf("resume enable clk\n");
 		fdvt_enable_clock(MTRUE);
 		fdvt_count--;
 	}
