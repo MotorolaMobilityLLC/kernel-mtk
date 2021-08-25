@@ -1512,7 +1512,7 @@ static int mt6370_tcpcdev_init(struct mt6370_chip *chip, struct device *dev)
 
 	chip->tcpc = tcpc_device_register(dev,
 			desc, &mt6370_tcpc_ops, chip);
-	if (IS_ERR(chip->tcpc))
+	if ((IS_ERR(chip->tcpc)) || (chip->tcpc == NULL))
 		return -EINVAL;
 
 	chip->tcpc->tcpc_flags =

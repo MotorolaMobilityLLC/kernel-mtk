@@ -62,7 +62,7 @@ static inline bool pd_dbg_print_out(void)
 
 	used = pd_dbg_buffer[index].used;
 
-	if (used == 0)
+	if (used <= 0)
 		return false;
 
 	if (used < (PD_INFO_BUF_SIZE + 1 + OUT_BUF_MAX))
