@@ -643,7 +643,7 @@ static inline int xgf_ull_multi_add_overflow
 			ret = 1;
 	} else {
 		/* check multi */
-		div_after_multi = div_u64((a*b), b);
+		div_after_multi = div_s64((a*b), b);
 		if (a != div_after_multi)
 			ret = 1;
 	}
