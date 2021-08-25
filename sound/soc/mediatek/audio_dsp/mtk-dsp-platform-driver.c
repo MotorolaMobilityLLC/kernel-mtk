@@ -890,8 +890,8 @@ SYNC_READINDEX:
 		&dsp_mem->ring_buf);
 #endif
 
-	/* handle for underflow */
-	if (dsp_mem->underflowed)
+	/* handle for dsp xrun */
+	if (dsp_mem->adsp_xrun_flag)
 		return -1;
 
 	spin_lock(ringbuf_lock);
@@ -938,6 +938,48 @@ DSP_IRQ_HANDLER_ERR:
 	return;
 }
 
+static bool is_adsp_support_audio_irq(void)
+{
+	if (ADSP_IRQ_NUM > ADSP_IRQ_AUDIO_ID)
+		return true;
+	return false;
+}
+
+static bool mtk_dsp_dl_consume_check_exception(struct mtk_base_dsp *dsp,
+			       struct ipi_msg_t *ipi_msg, int id)
+{
+
+	if (!dsp->dsp_mem[id].substream) {
+		pr_info_ratelimited("%s substream NULL id[%d]\n", __func__, id);
+		return false;
+	}
+
+	if (!snd_pcm_running(dsp->dsp_mem[id].substream)) {
+		pr_info_ratelimited("%s = state[%d]\n", __func__,
+			 dsp->dsp_mem[id].substream->runtime->status->state);
+		return false;
+	}
+
+	/* adsp reset message */
+	if (ipi_msg && ipi_msg->param2 == ADSP_DL_CONSUME_RESET) {
+		pr_info("%s adsp reset id = %d\n", __func__, id);
+		RingBuf_Reset(&dsp->dsp_mem[id].ring_buf);
+		dsp->dsp_mem[id].adsp_xrun_flag = true;
+		snd_pcm_period_elapsed(dsp->dsp_mem[id].substream);
+		return true;
+	}
+
+	/* adsp underflow message */
+	if (ipi_msg && ipi_msg->param2 == ADSP_DL_CONSUME_UNDERFLOW) {
+		pr_info("%s adsp underflowed id = %d\n", __func__, id);
+		dsp->dsp_mem[id].adsp_xrun_flag = true;
+		snd_pcm_period_elapsed(dsp->dsp_mem[id].substream);
+		return true;
+	}
+
+	return false;
+}
+
 static void mtk_dsp_dl_consume_handler(struct mtk_base_dsp *dsp,
 			       struct ipi_msg_t *ipi_msg, int id)
 {
@@ -955,15 +997,6 @@ static void mtk_dsp_dl_consume_handler(struct mtk_base_dsp *dsp,
 			 dsp->dsp_mem[id].substream->runtime->status->state);
 		return;
 	}
-
-	/* adsp reset message */
-	if (ipi_msg && ipi_msg->param2 == ADSP_DL_CONSUME_RESET) {
-		pr_info("%s adsp resert id = %d\n", __func__, id);
-		RingBuf_Reset(&dsp->dsp_mem[id].ring_buf);
-		/* notify subsream */
-		return snd_pcm_period_elapsed(dsp->dsp_mem[id].substream);
-	}
-
 
 	/* upadte for write index*/
 	ipi_audio_buf = (void *)dsp_mem->msg_dtoa_share_buf.va_addr;
@@ -1076,8 +1109,12 @@ void mtk_dsp_handler(struct mtk_base_dsp *dsp,
 		mtk_dsp_ul_handler(dsp, ipi_msg, id);
 		break;
 	case AUDIO_DSP_TASK_DL_CONSUME_DATA:
-		if (ipi_msg->param2 == ADSP_DL_CONSUME_UNDERFLOW)
-			dsp->dsp_mem[id].underflowed = true;
+		// check exceptions in consume message
+		if (mtk_dsp_dl_consume_check_exception(dsp, ipi_msg, id))
+			break;
+		// handle consume message for the platforms which not support audio IRQ
+		if (!is_adsp_support_audio_irq())
+			mtk_dsp_dl_consume_handler(dsp, NULL, id);
 		break;
 	default:
 		break;
@@ -1323,9 +1360,9 @@ static int mtk_dsp_start(struct snd_pcm_substream *substream,
 
 	dev_info(dsp->dev, "%s() task id:%s %s\n",
 		 __func__, id,
-		 dsp_mem->underflowed ? "just underflow" : "");
+		 dsp_mem->adsp_xrun_flag ? "adsp xrun" : "");
 
-	dsp_mem->underflowed = 0;
+	dsp_mem->adsp_xrun_flag = 0;
 
 	ret = mtk_scp_ipi_send(get_dspscene_by_dspdaiid(id), AUDIO_IPI_MSG_ONLY,
 			       AUDIO_IPI_MSG_DIRECT_SEND, AUDIO_DSP_TASK_START,
