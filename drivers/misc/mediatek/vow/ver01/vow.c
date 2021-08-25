@@ -454,8 +454,11 @@ static void vow_ipi_reg_ok(short uuid,
 	vowserv.scp_command_flag = true;
 	/* transfer uuid to model handle id */
 	slot = vow_service_SearchSpeakerModelWithUuid(uuid);
-	if (slot < 0)
+	if (slot < 0) {
+		VOWDRV_DEBUG("%s(), Fail !! Not uuid event !!, exit\n",
+			     __func__);
 		return;
+	}
 	vowserv.scp_command_id = vowserv.vow_speaker_model[slot].id;
 	vowserv.confidence_level = confidence_lv;
 	if (extradata_len <= VOW_EXTRA_DATA_SIZE)
@@ -520,9 +523,42 @@ static void vow_service_Init(void)
 	unsigned int vow_ipi_buf[3];
 
 	VOWDRV_DEBUG("%s():%x\n", __func__, init_flag);
-	audio_load_task(TASK_SCENE_VOW);
-	if (init_flag != 1) {
+	/* common part */
+	vowserv.scp_command_flag = false;
+	vowserv.tx_keyword_start = false;
+	/*Initialization*/
+	vowserv.voicddata_scp_ptr =
+		(char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
+		+ VOW_VOICEDATA_OFFSET;
+	vowserv.voicedata_scp_addr =
+		scp_get_reserve_mem_phys(VOW_MEM_ID) + VOW_VOICEDATA_OFFSET;
+	/*Extra data*/
+	vowserv.extradata_ptr =
+		(char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
+		+ VOW_EXTRA_DATA_OFFSET;
+	vowserv.extradata_addr =
+		scp_get_reserve_mem_phys(VOW_MEM_ID)
+		+ VOW_EXTRA_DATA_OFFSET;
 
+	vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
+		      AUDIO_IPI_MSG_BYPASS_ACK,
+		      IPIMSG_VOW_GET_ALEXA_ENGINE_VER,
+		      0, 0,
+		      NULL);
+	vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
+		      AUDIO_IPI_MSG_BYPASS_ACK,
+		      IPIMSG_VOW_GET_GOOGLE_ENGINE_VER,
+		      0, 0,
+		      NULL);
+	vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
+		      AUDIO_IPI_MSG_BYPASS_ACK,
+		      IPIMSG_VOW_GET_GOOGLE_ARCH,
+		      0, 0,
+		      NULL);
+
+	audio_load_task(TASK_SCENE_VOW);
+
+	if (init_flag != 1) {
 		/*register IPI handler*/
 		audio_task_register_callback(TASK_SCENE_VOW,
 					     vow_IPICmd_Received,
@@ -530,7 +566,6 @@ static void vow_service_Init(void)
 		/*Initialization*/
 		VowDrv_Wait_Queue_flag = 0;
 		VoiceData_Wait_Queue_flag = 0;
-		vowserv.scp_command_flag = false;
 		vowserv.recording_flag = false;
 		vowserv.suspend_lock = 0;
 		vowserv.voice_length = 0;
@@ -549,7 +584,6 @@ static void vow_service_Init(void)
 		vowserv.voicedata_user_addr = 0;
 		vowserv.voicedata_user_size = 0;
 		vowserv.voicedata_user_return_size_addr = 0;
-		vowserv.tx_keyword_start = false;
 		for (I = 0; I < MAX_VOW_SPEAKER_MODEL; I++) {
 			vowserv.vow_speaker_model[I].model_ptr = NULL;
 			vowserv.vow_speaker_model[I].id = -1;
@@ -558,18 +592,6 @@ static void vow_service_Init(void)
 			vowserv.vow_speaker_model[I].flag = 0;
 			vowserv.vow_speaker_model[I].enabled = 0;
 		}
-		vowserv.voicddata_scp_ptr =
-		    (char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
-		    + VOW_VOICEDATA_OFFSET;
-		vowserv.voicedata_scp_addr =
-		    scp_get_reserve_mem_phys(VOW_MEM_ID) + VOW_VOICEDATA_OFFSET;
-		/* Extra data */
-		vowserv.extradata_ptr =
-		    (char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
-		    + VOW_EXTRA_DATA_OFFSET;
-		vowserv.extradata_addr =
-		    scp_get_reserve_mem_phys(VOW_MEM_ID)
-		    + VOW_EXTRA_DATA_OFFSET;
 		mutex_lock(&vow_extradata_mutex);
 		vowserv.extradata_mem_ptr = NULL;
 		mutex_unlock(&vow_extradata_mutex);
@@ -593,19 +615,6 @@ static void vow_service_Init(void)
 		vowserv.google_engine_version = DEFAULT_GOOGLE_ENGINE_VER;
 		memset(vowserv.alexa_engine_version, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
 	} else {
-		/*Initialization*/
-		vowserv.voicddata_scp_ptr =
-		    (char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
-		    + VOW_VOICEDATA_OFFSET;
-		vowserv.voicedata_scp_addr =
-		    scp_get_reserve_mem_phys(VOW_MEM_ID) + VOW_VOICEDATA_OFFSET;
-		/*Extra data*/
-		vowserv.extradata_ptr =
-		    (char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
-		    + VOW_EXTRA_DATA_OFFSET;
-		vowserv.extradata_addr =
-		    scp_get_reserve_mem_phys(VOW_MEM_ID)
-		    + VOW_EXTRA_DATA_OFFSET;
 		vow_ipi_buf[0] = vowserv.voicedata_scp_addr;
 		vow_ipi_buf[1] = vowserv.extradata_addr;
 		vow_ipi_buf[2] = VOW_EXTRA_DATA_SIZE;
@@ -622,21 +631,6 @@ static void vow_service_Init(void)
 		VowDrv_SetFlag(VOW_FLAG_PRE_LEARN, true);
 #endif
 	}
-	vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
-		      AUDIO_IPI_MSG_BYPASS_ACK,
-		      IPIMSG_VOW_GET_ALEXA_ENGINE_VER,
-		      0, 0,
-		      NULL);
-	vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
-		      AUDIO_IPI_MSG_BYPASS_ACK,
-		      IPIMSG_VOW_GET_GOOGLE_ENGINE_VER,
-		      0, 0,
-		      NULL);
-	vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
-		      AUDIO_IPI_MSG_BYPASS_ACK,
-		      IPIMSG_VOW_GET_GOOGLE_ARCH,
-		      0, 0,
-		      NULL);
 #else  /* #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 	VOWDRV_DEBUG("%s():%x, SCP no support\n", __func__, init_flag);
 #endif  /* #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT */
@@ -742,8 +736,11 @@ static int vow_service_SearchSpeakerModelWithUuid(int uuid)
 
 	I = 0;
 	do {
-		if (vowserv.vow_speaker_model[I].uuid == uuid)
+		if (vowserv.vow_speaker_model[I].uuid == uuid) {
+			VOWDRV_DEBUG("vow Search Speaker Model By UUID Success!, uuid:%x\n",
+				     uuid);
 			break;
+		}
 		I++;
 	} while (I < MAX_VOW_SPEAKER_MODEL);
 
@@ -3332,7 +3329,6 @@ static int VowDrv_mod_init(void)
 	if (unlikely(ret != 0))
 		return ret;
 
-	VOWDRV_DEBUG("vow_service_Init");
 	vow_service_Init();
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	scp_A_register_notify(&vow_scp_recover_notifier);
