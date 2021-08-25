@@ -8775,7 +8775,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		spin_lock((spinlock_t *)(&virtual_cqcnt_lock));
 		if (copy_from_user(&g_virtual_cq_cnt, (void *)Param,
 			sizeof(unsigned int)*2) == 0) {
-			pr_info("From hw_module:%d Virtual CQ count from user land : %d\n",
+			pr_debug("From hw_module:%d Virtual CQ count from user land : %d\n",
 			g_virtual_cq_cnt[0], g_virtual_cq_cnt[1]);
 		} else {
 			pr_info(
