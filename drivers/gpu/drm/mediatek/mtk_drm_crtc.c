@@ -2487,7 +2487,9 @@ static void mtk_crtc_update_ddp_state(struct drm_crtc *crtc,
 		/*
 		 * prop_lye_idx is 0 when suspend. Update display mode to avoid
 		 * the dsi params not sync with the mode of new crtc state.
+		 * And switch fps immediately when suspend or resume
 		 */
+		mode_switch_delay_value = 0x7FFFFFFF;
 		mtk_crtc_disp_mode_switch_begin(crtc,
 			old_crtc_state, crtc_state,
 			cmdq_handle);
