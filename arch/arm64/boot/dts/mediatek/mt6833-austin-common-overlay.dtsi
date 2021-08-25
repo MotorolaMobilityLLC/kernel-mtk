@@ -208,6 +208,12 @@
 	status="okay";
 };
 
+&mt_pmic_vio28_ldo_reg {
+	regulator-name = "vio28";
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-enable-ramp-delay = <1920>;
+};
 
 &msdc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
