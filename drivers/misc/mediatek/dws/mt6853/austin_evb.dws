@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="01.19.2021.10:31:43"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="08.17.2021.19:50:46"-->
 <dct_cfg>
     <general chip="MT6833">
         <proj>P21_Phone1</proj>
@@ -131,7 +131,7 @@
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_GYRO_EINT_PIN</varName0>
@@ -172,11 +172,12 @@
             <gpio7>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+                <varName0>GPIO_BARO_EINT_PIN</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio7>
             <gpio8>
@@ -422,9 +423,10 @@
                 <def_mode>2</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>true</smt>
+                <varName0>GPIO_SCP_SPI2_CK</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio31>
             <gpio32>
@@ -432,9 +434,10 @@
                 <def_mode>2</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>true</smt>
+                <varName0>GPIO_SCP_SPI2_CS</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio32>
             <gpio33>
@@ -442,9 +445,10 @@
                 <def_mode>2</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>true</smt>
+                <varName0>GPIO_SCP_SPI2_MO</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio33>
             <gpio34>
@@ -454,7 +458,8 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <smt>true</smt>
+                <varName0>GPIO_SCP_SPI2_MI</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio34>
             <gpio35>
