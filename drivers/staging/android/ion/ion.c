@@ -1465,6 +1465,12 @@ retry:
 						       heap->id);
 					}
 					mutex_unlock(&buffer->lock);
+
+					dma_sync_sg_for_device(attachment->dev,
+							       a->table->sgl,
+							       a->table->nents,
+							       direction);
+
 					return a->table;
 				}
 				mutex_unlock(&buffer->lock);
