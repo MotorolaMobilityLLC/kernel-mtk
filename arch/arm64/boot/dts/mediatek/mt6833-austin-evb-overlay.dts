@@ -27,53 +27,6 @@
 	};
 };
 
-&pio {
-	state_reset_high {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-	};
-
-	state_reset_low {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-	};
-
-	fp_eint {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
-		};
-	};
-
-	finger_rst_high {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-	};
-	finger_rst_low {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO17__FUNC_GPIO17>;
-		};
-	};
-
-	finger_irq_active {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
-		};
-	};
-
-};
-
-&chipone_fp {
-	interrupts = <18 IRQ_TYPE_EDGE_RISING 18 0>;
-};
-
-&fp_egistec {
-	interrupts = <18 IRQ_TYPE_EDGE_RISING 18 0>;
-	egistec,gpio_reset = <&pio 17 0x0>;
-	egistec,gpio_irq = <&pio 18 0x0>;
-};
 #include <austin_evb/cust.dtsi>
 
 &i2c_lcd_bias_mtk {
