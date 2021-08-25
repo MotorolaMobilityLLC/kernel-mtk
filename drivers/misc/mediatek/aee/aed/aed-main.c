@@ -345,7 +345,7 @@ static void ke_gen_class_msg(void)
 	rep_msg->cmdType = AE_RSP;
 	rep_msg->cmdId = AE_REQ_CLASS;
 	rep_msg->len = KE_CLASS_SIZE;
-	strncpy(data, KE_CLASS_STR, KE_CLASS_SIZE);
+	strlcpy(data, KE_CLASS_STR, KE_CLASS_SIZE);
 }
 
 static void ke_gen_type_msg(void)
@@ -363,7 +363,7 @@ static void ke_gen_type_msg(void)
 	rep_msg->cmdType = AE_RSP;
 	rep_msg->cmdId = AE_REQ_TYPE;
 	rep_msg->len = KE_TYPE_SIZE;
-	strncpy(data, KE_TYPE_STR, KE_TYPE_SIZE);
+	strlcpy(data, KE_TYPE_STR, KE_TYPE_SIZE);
 }
 
 static void ke_gen_module_msg(void)
@@ -418,7 +418,7 @@ static void ke_gen_process_msg(void)
 	rep_msg->cmdType = AE_RSP;
 	rep_msg->cmdId = AE_REQ_PROCESS;
 
-	strncpy(data, aed_dev.kerec.lastlog->process_path,
+	strlcpy(data, aed_dev.kerec.lastlog->process_path,
 			AEE_PROCESS_NAME_LENGTH);
 	/* Count into the NUL byte at end of string */
 	rep_msg->len = strlen(data) + 1;
@@ -437,7 +437,7 @@ static void ke_gen_backtrace_msg(void)
 	rep_msg->cmdType = AE_RSP;
 	rep_msg->cmdId = AE_REQ_BACKTRACE;
 
-	strncpy(data, aed_dev.kerec.lastlog->backtrace, AEE_BACKTRACE_LENGTH);
+	strlcpy(data, aed_dev.kerec.lastlog->backtrace, AEE_BACKTRACE_LENGTH);
 	/* Count into the NUL byte at end of string */
 	rep_msg->len = strlen(data) + 1;
 }
@@ -736,7 +736,7 @@ static void ee_gen_class_msg(void)
 	rep_msg->cmdType = AE_RSP;
 	rep_msg->cmdId = AE_REQ_CLASS;
 	rep_msg->len = EX_CLASS_EE_SIZE;
-	strncpy(data, EX_CLASS_EE_STR, EX_CLASS_EE_SIZE);
+	strlcpy(data, EX_CLASS_EE_STR, EX_CLASS_EE_SIZE);
 }
 
 static void ee_gen_type_msg(void)
@@ -755,7 +755,7 @@ static void ee_gen_type_msg(void)
 	rep_msg->cmdType = AE_RSP;
 	rep_msg->cmdId = AE_REQ_TYPE;
 	rep_msg->len = strlen((char const *)&eerec->assert_type) + 1;
-	strncpy(data, (char const *)&eerec->assert_type,
+	strlcpy(data, (char const *)&eerec->assert_type,
 		strlen((char const *)&eerec->assert_type));
 }
 
@@ -2492,10 +2492,10 @@ static void external_exception(const char *assert_type, const int *log,
 			tm.tm_hour, tm.tm_min, tm.tm_sec,
 			(unsigned int)tv.tv_usec);
 	memset(eerec->assert_type, 0, sizeof(eerec->assert_type));
-	strncpy(eerec->assert_type, assert_type,
+	strlcpy(eerec->assert_type, assert_type,
 			sizeof(eerec->assert_type) - 1);
 	memset(eerec->exp_filename, 0, sizeof(eerec->exp_filename));
-	strncpy(eerec->exp_filename, trigger_time,
+	strlcpy(eerec->exp_filename, trigger_time,
 			sizeof(eerec->exp_filename) - 1);
 	strncat(eerec->exp_filename, detail,
 			sizeof(eerec->exp_filename) - 1 - strlen(trigger_time));
