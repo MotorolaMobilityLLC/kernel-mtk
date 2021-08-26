@@ -119,7 +119,6 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_EINT_SAR_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio1>
@@ -1598,21 +1597,23 @@
             </gpio140>
             <gpio141>
                 <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_I2C9_SCA_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio141>
             <gpio142>
                 <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
+                <def_mode>1</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_I2C9_SDA_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio142>
