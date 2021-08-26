@@ -1173,7 +1173,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	unsigned long long time_diff;
 
 #ifdef CONFIG_MTK_MT6382_BDG_BUF7
-	msleep(26000);
+	msleep(31000);
 #else
 	msleep(16000);
 #endif
