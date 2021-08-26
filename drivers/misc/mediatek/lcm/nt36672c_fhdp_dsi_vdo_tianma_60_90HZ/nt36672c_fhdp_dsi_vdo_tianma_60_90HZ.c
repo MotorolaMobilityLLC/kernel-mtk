@@ -46,7 +46,8 @@
 #define LCM_ID_NT36672C_TIANMA (0x03)
 
 static struct LCM_UTIL_FUNCS lcm_util;
-
+static bool frist_setbacklight = false;
+static bool is_dimming_open = false;
 extern int BL_control_write_bytes(unsigned char addr, unsigned char value);
 extern char BL_control_read_bytes(unsigned char cmd);
 extern int Bias_power_write_bytes(unsigned char addr, unsigned char value);
@@ -131,6 +132,9 @@ static struct LCM_setting_table init_setting[] = {
 	{0XFB,0x01,{0X01}},
 	{0X36,0x01,{0X00}},
 	{0X3B,0x05,{0X03,0X14,0X36,0X04,0X04}},
+	{0X51,0x01,{0x00}},
+	{0X53,0x01,{0X24}},
+	{0X55,0x01,{0X00}},
 	{0XB0,0x01,{0X00}},
 	{0XC0,0x01,{0X03}},
 	{0XC1,0x10,{0X89,0X28,0x00,0x14,0x00,0xAA,0x02,0x0E,0x00,0x71,0x00,0x07,0x05,0x0E,0x05,0x16}},
@@ -465,36 +469,11 @@ static struct LCM_setting_table init_setting[] = {
 	{0XC0,0x01,{0X02}},
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x01,{0x00}},
-	{0X53,0x01,{0X2C}},
-	{0X55,0x01,{0X00}},
 
 	{0X11,0x00,{}},
 	{REGFLAG_DELAY,100,{}},
 	{0X29,0x00,{}},
-/*
-	{0xFF,0x01,{0x10}},
-	{0xFB,0x01,{0x01}},
-	{0x28,0x01,{}},
-	{0x10,0x01,{}},
-	{0xFF,0x01,{0x27}},
-	{0xFB,0x01,{0x01}},
-	{0xF9,0x01,{0x00}},
-	{0xFF,0x01,{0x20}},
-	{0xFB,0x01,{0x01}},
-	{0x74,0x01,{0x00}},
-	{0x75,0x01,{0x00}},
-	{0x76,0x01,{0x00}},
-	{0x77,0x01,{0x01}},
-	{0x78,0x01,{0x00}},
-	{0x79,0x01,{0x00}},
-	{0x7A,0x01,{0x00}},
-	{0x7B,0x01,{0x00}},
-	{0x86,0x01,{0x03}},
-	{REGFLAG_DELAY,100,{}},
-	{0xFF,0x01,{0x10}},
-	{0xFB,0x01,{0x01}},
-*/
+
 };
 /*
 static struct LCM_setting_table bl_level[] = {
@@ -504,6 +483,9 @@ static struct LCM_setting_table bl_level[] = {
 */
 static struct LCM_setting_table_V4 BL_Level[] = {
 	{0x15, 0x51, 1, {0xFF}, 0 },
+};
+static struct LCM_setting_table_V4 dimming_on[] = {
+	{0x15, 0x53, 1, {0x2C}, 0 },
 };
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update,int IsMT6382)
@@ -721,6 +703,10 @@ static void lcm_init(void)
 		BL_control_write_bytes(0x22,0x0F);
 		BL_control_write_bytes(0x23,0xFF);
 	}
+
+	frist_setbacklight = true;
+	is_dimming_open  = false;
+
 	pr_info("%s end\n", __func__);
 
 }
@@ -761,8 +747,6 @@ static void lcm_setbacklight_cmdq(void *handle,unsigned int level)
 {
 
 	pr_info("%s,nt36672c tianma backlight: level = %d\n", __func__, level);
-	if(level < 3 && level != 0)
-		level = 3;
 
 	BL_Level[0].para_list[0] = level;
 
@@ -770,6 +754,16 @@ static void lcm_setbacklight_cmdq(void *handle,unsigned int level)
 				sizeof(BL_Level)
 				/ sizeof(struct LCM_setting_table_V4), 1);
 
+	if(frist_setbacklight == false && is_dimming_open == false){
+		dsi_set_cmdq_V4(dimming_on,
+				sizeof(dimming_on)
+				/ sizeof(struct LCM_setting_table_V4), 1);
+		is_dimming_open = true;
+		pr_info("lcm is second set brightness and open dimming function at same time\n");
+	}
+	frist_setbacklight = false;
+
+	return;
 }
 
 static void *lcm_switch_mode(int mode)
