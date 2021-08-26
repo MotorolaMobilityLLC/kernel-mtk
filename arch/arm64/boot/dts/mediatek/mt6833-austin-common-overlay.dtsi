@@ -12,7 +12,7 @@
 
 #include "mediatek/mt6833-moto-common-overlay.dtsi"
 #include <dt-bindings/mmc/mt6833-msdc.h>
-#include "mediatek/mt6833-saipan-sensor-overlay.dtsi"
+#include "mediatek/mt6833-austin-sensor-overlay.dtsi"
 #include "mediatek/mt6833-saipan-camera-sensor-overlay.dtsi"
 
 &mt6360_typec {
