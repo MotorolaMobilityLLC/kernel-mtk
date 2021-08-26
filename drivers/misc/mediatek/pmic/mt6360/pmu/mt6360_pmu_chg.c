@@ -645,6 +645,12 @@ out:
 	ret = mt6360_psy_online_changed(mpci);
 	if (ret < 0)
 		dev_err(mpci->dev, "%s: report psy online fail\n", __func__);
+
+	ret = mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_DEVICE_TYPE,
+				 MT6360_MASK_USBCHGEN, 0);
+	if (ret < 0)
+		dev_err(mpci->dev, "%s: disable usbchgen  fail\n", __func__);
+
 	return mt6360_psy_chg_type_changed(mpci);
 }
 #endif /* CONFIG_MT6360_PMU_CHARGER_TYPE_DETECT */
