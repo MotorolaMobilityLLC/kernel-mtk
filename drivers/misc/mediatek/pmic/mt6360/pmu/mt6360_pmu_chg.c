@@ -680,6 +680,12 @@ out:
 	if (!inform_psy)
 		return ret;
 	mt6360_power_supply_changed(mpci);
+
+	ret = mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_DEVICE_TYPE,
+				 MT6360_MASK_USBCHGEN, 0);
+	if (ret < 0)
+		dev_err(mpci->dev, "%s: disable usbchgen  fail\n", __func__);
+
 	return ret;
 }
 #endif /* CONFIG_MT6360_PMU_CHARGER_TYPE_DETECT */
