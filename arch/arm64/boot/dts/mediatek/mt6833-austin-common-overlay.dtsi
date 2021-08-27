@@ -301,7 +301,7 @@
 	typec_limit_aicr = <3000000>;
 
 	/*mmi config*/
-	mmi,iterm-ma = <98>;
+	mmi,iterm-ma = <100>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
 			<15 0 1000 1000>,
 			<45 0 3000 3000>,
