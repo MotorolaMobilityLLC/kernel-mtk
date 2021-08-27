@@ -1411,6 +1411,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 	bool early_notified = false;
 	bool should_notify = false;
+	bool need_retry = false;
 	int early_chg_type = 0;
         union power_supply_propval propval = {.intval = 0};
 #endif
@@ -1429,8 +1430,14 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 
         Charger_Detect_Init();
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	do{
 	m_chg_ready = false;
 	m_chg_type = 0;
+        early_notified = false;
+        should_notify = false;
+        need_retry = false;
+        early_chg_type = 0;
+
         wt6670f_start_detection();
         while((!m_chg_ready)&&(count<100)){
                 msleep(30);
@@ -1502,7 +1509,14 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 
         m_chg_type = wt6670f_get_protocol();
 
+	if(m_chg_type == 0x7 && !need_retry){
+		need_retry = true;
+	} else {
+		need_retry = false;
+	}
+
         pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
+	}while(need_retry);
 
         switch (m_chg_type) {
             case 0x1:
