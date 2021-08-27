@@ -101,7 +101,7 @@
 	mmi_chrg_manager {
 		compatible = "mmi,chrg-manager";
 		mmi,pps-volt-steps = <20000>;
-		mmi,pps-curr-steps = <100000>;
+		mmi,pps-curr-steps = <40000>;
 		mmi,pd-volt-max = <12000000>;
 		mmi,pd-curr-max = <3000000>;
 		mmi,batt-curr-boost = <300000>;
@@ -115,7 +115,7 @@
 					<0 4200 1000  0 0>,
 					<10 4250 2500 4450 1000>,
 					<15 4450 2500 0 0>,
-					<45 4300 6000 4450 4000>,
+					<45 4300 5800 4470 4000>,
 					<60 4200 4000 0 0>;
 /*
             mmi,mmi-ffc-zones = <4200 243>,
