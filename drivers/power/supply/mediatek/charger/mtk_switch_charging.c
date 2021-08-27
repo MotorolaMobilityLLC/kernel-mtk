@@ -295,6 +295,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		}
 	}
 
+	if (info->chr_type == STANDARD_CHARGER)
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
 	ret = mmi_get_prop_from_charger(info,
