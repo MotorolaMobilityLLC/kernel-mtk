@@ -930,15 +930,7 @@
                 <ies>true</ies>
             </gpio77>
             <gpio78>
-                <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_SIM2_HOT_PLUG</varName0>
                 <smt>true</smt>
-                <ies>true</ies>
             </gpio78>
             <gpio79>
                 <eint_mode>false</eint_mode>
@@ -2330,7 +2322,7 @@
             <count>5</count>
             <eint0>
                 <varName>MD1_SIM1_HOT_PLUG_EINT</varName>
-                <debounce_time>50</debounce_time>
+                <debounce_time>100</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
