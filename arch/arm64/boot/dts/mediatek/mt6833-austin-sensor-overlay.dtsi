@@ -22,10 +22,10 @@
 		pinctrl-0 = <&sar_int_default>;
 		/*use PH3/4 as the reference sensor
 		set it to 0xff if the ref-phases-x is not used*/
-		Semtech,ref-phases-a = <4>;
+		Semtech,ref-phases-a = <0xff>;
 		Semtech,ref-phases-b = <5>;
 		Semtech,ref-phases-c = <6>;
-		Semtech,button-flag = <0x0f>;
+		Semtech,button-flag = <0x1f>;
 		Semtech,reg-num = <24>;
 		Semtech,reg-init = <
 			0x8024 0x7F00 		/*PHEN, Disable all Phases*/
@@ -41,13 +41,13 @@
 		/*	0x807C 0x85C */	/*AFE_PARAM_PH7*/
 
 			/*set CS3 to hiz, because it used as IRQ pin*/
-			0x8030 0xFFD9FF 	/*REG_AFEPH_PH0, CS4, ANT1, Bottom*/
-			0x803C 0xBFF9FF 	/*REG_AFEPH_PH1, CS7, ANT2, Top Right*/
-			0x8048 0xFFF9FD 	/*REG_AFEPH_PH2, CS0, ANT3, Top Left*/
-			0x8054 0xFEF9FF	/*REG_AFEPH_PH3, CS5, ANT4, Top Right side*/
-			0x8060 0xF7F9FF 	/*REG_AFEPH_PH4, CS6, ANT1_REF, Bottom*/
-			0x806C 0xFFF97F 	/*REG_AFEPH_PH5, CS2, ANT2_REF, Top Right*/
-			0x8078 0xFFF9EF 	/*REG_AFEPH_PH6, CS1, ANT3_REF, Top Left*/
+			0x8030 0xFFD9FF 	/*REG_AFEPH_PH0, CS4, ANT0, Bottom*/
+			0x803C 0xFEF9FF 	/*REG_AFEPH_PH1, CS5, ANT6, Top Right&Side*/
+			0x8048 0xFFF9FD 	/*REG_AFEPH_PH2, CS0, ANT1, Top Right*/
+			0x8054 0xF7F9FF		/*REG_AFEPH_PH3, CS6, ANT2, Top central*/
+			0x8060 0xBFF9FF 	/*REG_AFEPH_PH4, CS7, ANT8, Top Left*/
+			0x806C 0xFFF97F 	/*REG_AFEPH_PH5, CS2, ANT0_REF, Bottom*/
+			0x8078 0xFFF9EF 	/*REG_AFEPH_PH6, CS1, ANT8_REF, Top Left*/
 		/*	0x8084 0xBFF9FF */	/*REG_AFEPH_PH7, NOT USE*/
 
 			/*prox1 5000	0x64*/
