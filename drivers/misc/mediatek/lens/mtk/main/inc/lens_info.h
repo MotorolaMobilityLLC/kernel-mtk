@@ -146,6 +146,7 @@ struct stAF_DrvList {
 	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
 	int (*pAF_OisExtIntf)(motOISExtIntf *pExtData);
 	int (*pAF_OisGetResult)(motOISExtIntf *pExtData);
+	int (*pAF_OisSetCalibration)(motOISExtIntf *pExtData);
 };
 
 #define I2CBUF_MAXSIZE 10
