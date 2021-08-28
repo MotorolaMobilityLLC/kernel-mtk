@@ -1,0 +1,15 @@
+#
+# Novatek NT36xxx touchscreen driver configuration
+#
+config TOUCHSCREEN_NOVA_TDDI
+	tristate "Novatek TDDI touchscreen for Mediatek package"
+	depends on SPI
+	default n
+	help
+	  Say y here if you have novatek TDDI touch panel.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called nova-tddi.
+
