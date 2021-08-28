@@ -70,3 +70,4 @@ obj-$(CONFIG_DRM_PANEL_TRULY_ILI9881H_VDO) += panel-truly-ili9881h-rt4801-vdo.o
 obj-$(CONFIG_DRM_PANEL_TRULY_ILI9882N_VDO_90HZ) += panel-truly-ili9882n-rt4801-vdo-90hz.o
 obj-$(CONFIG_DRM_PANEL_RAYDIUM_RM692H0) += panel-raydium-rm692h0-cmd-120hz.o
 obj-$(CONFIG_DRM_PANEL_TRULY_ICNL9911C_VDO) += dsi-panel-mot-truly-icnl9911c-hd-video.o
+obj-$(CONFIG_DRM_PANEL_BOE_NT36525C_VDO) += dsi-panel-mot-boe-nt36525c-hd-video.o
