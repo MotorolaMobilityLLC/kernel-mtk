@@ -355,7 +355,7 @@
 };
 
 &led6 {
-	led_mode = <4>;
+	led_mode = <5>;
 };
 
 &dsi0 {
@@ -363,8 +363,9 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	panel1@0 {
-		compatible = "icnl9911c,truly,vdo";
+		compatible = "nt36525c,boe,vdo";
 		reg = <0>;
+		pm-enable-gpios = <&pio 85 0>;
 		reset-gpios = <&pio 86 0>;
 		bias-gpios = <&pio 137 0>,
 			<&pio 138 0>;
@@ -383,6 +384,13 @@
 			};
 		};
 	};
+};
+
+&mt_pmic_vtp_ldo_reg {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-boot-on;
+	regulator-always-on;
 };
 
 &odm {
