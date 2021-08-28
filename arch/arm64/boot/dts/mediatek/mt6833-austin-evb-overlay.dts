@@ -14,7 +14,7 @@
 /plugin/;
 
 #include "mediatek/mt6833-austin-common-overlay.dtsi"
-#include "mediatek/cust_mt6833_touch_720x1600.dtsi"
+/*#include "mediatek/cust_mt6833_touch_720x1600.dtsi"*/
 
 /* Board match root node */
 / {
@@ -33,4 +33,6 @@
 	vpos = <20>;//4.0v+20*100mv=6v
 	vneg = <20>;
 };
+
+#include "mediatek/austin-touchscreen.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
