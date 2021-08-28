@@ -182,6 +182,7 @@ config TOUCHSCREEN_MTK_GT9157
 	  module will be called
 
 source "drivers/input/touchscreen/mediatek/GT9157/Kconfig"
+source "drivers/input/touchscreen/mediatek/nova_tddi/Kconfig"
 
 config TOUCHSCREEN_HIMAX_CHIPSET
 	bool "Himax touchpanel CHIPSET"
@@ -247,5 +248,13 @@ config TOUCHSCREEN_CHIPONE
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called chipone-tddi.
+
+config TOUCHSCREEN_MTK_TYPE
+	bool "use mediatek touch type"
+	default n
+	help
+	  Say y here if use mediatek touch type.
+
+	  If unsure, say N.
 
 endif
