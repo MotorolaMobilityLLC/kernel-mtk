@@ -99,7 +99,7 @@ static struct stAF_OisPosInfo OisPosInfo;
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_DW9781CAF, DW9781CAF_SetI2Cclient, DW9781CAF_Ioctl,
 	 DW9781CAF_Release, DW9781CAF_GetFileName, NULL, MOT_DW9781CAF_EXT_CMD,
-	 MOT_DW9781CAF_GET_RESULT},
+	 MOT_DW9781CAF_GET_RESULT, MOT_DW9781CAF_SET_CALI},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -628,6 +628,15 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 									LOG_INF("copy to user failed\n");
 							}
 							ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
+						}
+					} else if (ois_ext_work.ext_data.cmd == OIS_SET_GYRO_OFFSET) {
+						if (g_pstAF_CurDrv->pAF_OisSetCalibration) {
+							mutex_lock(&ois_mutex);
+							g_pstAF_CurDrv->pAF_OisSetCalibration(&ois_ext_work.ext_data);
+							mutex_unlock(&ois_mutex);
+							LOG_INF("OIS update gyro_offset to %d, %d",
+							        ois_ext_work.ext_data.data.gyro_offset_result.x_offset,
+							        ois_ext_work.ext_data.data.gyro_offset_result.y_offset);
 						}
 					}
 				}
