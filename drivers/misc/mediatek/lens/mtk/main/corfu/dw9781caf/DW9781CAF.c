@@ -392,3 +392,30 @@ int MOT_DW9781CAF_GET_TEST_RESULT(motOISExtIntf *pExtCmd)
 	}
 	return 0;
 }
+
+int MOT_DW9781CAF_SET_CALIBRATION(motOISExtIntf *pExtCmd)
+{
+	switch (pExtCmd->cmd) {
+		case OIS_SET_GYRO_OFFSET:
+			{
+				if (pExtCmd->data.gyro_offset_result.is_success == 0 &&
+				    pExtCmd->data.gyro_offset_result.x_offset != 0 &&
+				    pExtCmd->data.gyro_offset_result.y_offset != 0) {
+					motOISGOffsetResult *gOffset = dw9781_get_gyro_offset_result();
+
+					//Update the gyro offset
+					gOffset->is_success = 0;
+					gOffset->x_offset = pExtCmd->data.gyro_offset_result.x_offset;
+					gOffset->y_offset = pExtCmd->data.gyro_offset_result.y_offset;
+
+					//Check if gyro offset update needed
+					gyro_offset_check_update();
+					LOG_INF("[%s] OIS update gyro_offset: %d,%d\n", __func__, gOffset->x_offset, gOffset->y_offset);
+				}
+			}
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
