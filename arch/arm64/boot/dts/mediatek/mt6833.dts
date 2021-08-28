@@ -1876,7 +1876,11 @@
 	};
 
 	touch:touch {
+#ifdef CONFIG_TOUCHSCREEN_MTK_TYPE
+		compatible = "mediatek,touch";
+#else
 		compatible = "goodix,touch";
+#endif
 	};
 
 	ap_ccif0@10209000 {
@@ -4107,7 +4111,11 @@
 			<0>, /*MTK_DRM_OPT_DYNAMIC_RDMA_GOLDEN_SETTING*/
 			<1>, /*MTK_DRM_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ*/
 			<0>, /*MTK_DRM_OPT_MET_LOG*/
+#ifdef CONFIG_MTK_DISABLE_PQ
+			<0>, /*MTK_DRM_OPT_USE_PQ*/
+#else
 			<1>, /*MTK_DRM_OPT_USE_PQ*/
+#endif
 			<1>, /*MTK_DRM_OPT_ESD_CHECK_RECOVERY*/
 			<1>, /*MTK_DRM_OPT_ESD_CHECK_SWITCH*/
 			<1>, /*MTK_DRM_OPT_PRESENT_FENCE*/
