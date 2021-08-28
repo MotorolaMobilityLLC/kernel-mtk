@@ -52,6 +52,44 @@ void ois_reset(void)
 	write_reg_16bit_value_16bit(0xEBF1, 0x56FA); /* User protection release */
 }
 
+int gyro_offset_check_update(void)
+{
+	#define MAX_GAP_PERCENT 10
+	unsigned short xOffset, yOffset;
+	unsigned long x_delta_p, y_delta_p;
+
+	if (dw9781GyroOffsetResult.is_success == 0 &&
+	    dw9781GyroOffsetResult.x_offset != 0 &&
+	    dw9781GyroOffsetResult.y_offset != 0) {
+		//We have valid value
+		read_reg_16bit_value_16bit(0x70F8, &xOffset);
+		read_reg_16bit_value_16bit(0x70F9, &yOffset);
+		x_delta_p = abs(dw9781GyroOffsetResult.x_offset - xOffset)*100 / dw9781GyroOffsetResult.x_offset;
+		y_delta_p = abs(dw9781GyroOffsetResult.y_offset - yOffset)*100 / dw9781GyroOffsetResult.y_offset;
+		if ((x_delta_p >= MAX_GAP_PERCENT) || (y_delta_p >= MAX_GAP_PERCENT)) {
+			LOG_INF("[%s] gyro_offset updating from(%d,%d) to (%d,%d), delta(%d,%d)\r\n", __func__,
+			        xOffset, yOffset, dw9781GyroOffsetResult.x_offset, dw9781GyroOffsetResult.y_offset,
+			        x_delta_p, y_delta_p);
+			write_reg_16bit_value_16bit(0x70F8, dw9781GyroOffsetResult.x_offset);
+			write_reg_16bit_value_16bit(0x70F9, dw9781GyroOffsetResult.y_offset);
+			calibration_save();
+
+			xOffset = 0;
+			yOffset = 0;
+
+			read_reg_16bit_value_16bit(0x70F8, &xOffset);
+			read_reg_16bit_value_16bit(0x70F9, &yOffset);
+			LOG_INF("[%s] gyro_offset read back (%d,%d)", __func__, xOffset, yOffset);
+			if (xOffset != dw9781GyroOffsetResult.x_offset || yOffset != dw9781GyroOffsetResult.y_offset) {
+				LOG_INF("[%s] FATAL error gyro_offset update failed!!!", __func__);
+			}
+		} else {
+			LOG_INF("[%s] no need update gyro_offset", __func__);
+		}
+	}
+	return 0;
+}
+
 int gyro_offset_calibrtion(void)
 {
 	unsigned short Addr, status;
