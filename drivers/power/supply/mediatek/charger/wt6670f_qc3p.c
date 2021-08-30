@@ -528,6 +528,12 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	if(firmware_version != WT6670_FIRMWARE_VERSION){
             pr_info("[%s]: firmware need upgrade, run wt6670_isp!", __func__);
             wt6670f_isp_flow(wt);
+		wt6670f_do_reset();
+		firmware_version = wt6670f_get_firmware_version();
+		if(firmware_version != WT6670_FIRMWARE_VERSION){
+            	pr_info("[%s]: firmware upgrade fail, run wt6670_isp again!", __func__);
+            	wt6670f_isp_flow(wt);
+        	}
         }
 
 	return 0;
