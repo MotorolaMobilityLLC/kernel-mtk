@@ -789,10 +789,10 @@
             </gpio64>
             <gpio65>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>false</inpull_en>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_INIT_NO_COVER</varName0>
                 <smt>false</smt>
@@ -1021,20 +1021,21 @@
             </gpio86>
             <gpio87>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_NFC_EINT_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio87>
             <gpio88>
                 <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_NFC_EINT_PIN</varName0>
                 <smt>true</smt>
@@ -1042,12 +1043,12 @@
             </gpio88>
             <gpio89>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_VENB_PIN</varName0>
+                <varName0>GPIO_ANT_SEL2_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio89>
@@ -1056,22 +1057,30 @@
                 <def_mode>1</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_ANT_SEL3_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio90>
             <gpio91>
-                <smt>true</smt>
-            </gpio91>
-            <gpio92>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <smt>true</smt>
+                <ies>true</ies>
+            </gpio91>
+            <gpio92>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_ANT_SEL5_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio92>
