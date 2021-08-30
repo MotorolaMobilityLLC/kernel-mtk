@@ -190,6 +190,9 @@ PVRSRVBridgeRGXDestroyKickSyncContext(IMG_UINT32 ui32DispatchTableEntry,
 	return 0;
 }
 
+static_assert(32 <= IMG_UINT32_MAX,
+	      "32 must not be larger than IMG_UINT32_MAX");
+
 static IMG_INT
 PVRSRVBridgeRGXKickSync(IMG_UINT32 ui32DispatchTableEntry,
 			PVRSRV_BRIDGE_IN_RGXKICKSYNC * psRGXKickSyncIN,
@@ -217,22 +220,38 @@ PVRSRVBridgeRGXKickSync(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_BOOL bHaveEnoughSpace = IMG_FALSE;
 #endif
 
-	IMG_UINT32 ui32BufferSize =
-	    (psRGXKickSyncIN->ui32ClientFenceCount *
+	IMG_UINT32 ui32BufferSize = 0;
+	IMG_UINT64 ui64BufferSize =
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientFenceCount *
 	     sizeof(SYNC_PRIMITIVE_BLOCK *)) +
-	    (psRGXKickSyncIN->ui32ClientFenceCount * sizeof(IMG_HANDLE)) +
-	    (psRGXKickSyncIN->ui32ClientFenceCount * sizeof(IMG_UINT32)) +
-	    (psRGXKickSyncIN->ui32ClientFenceCount * sizeof(IMG_UINT32)) +
-	    (psRGXKickSyncIN->ui32ClientUpdateCount *
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientFenceCount *
+	     sizeof(IMG_HANDLE)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientFenceCount *
+	     sizeof(IMG_UINT32)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientFenceCount *
+	     sizeof(IMG_UINT32)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientUpdateCount *
 	     sizeof(SYNC_PRIMITIVE_BLOCK *)) +
-	    (psRGXKickSyncIN->ui32ClientUpdateCount * sizeof(IMG_HANDLE)) +
-	    (psRGXKickSyncIN->ui32ClientUpdateCount * sizeof(IMG_UINT32)) +
-	    (psRGXKickSyncIN->ui32ClientUpdateCount * sizeof(IMG_UINT32)) +
-	    (psRGXKickSyncIN->ui32ServerSyncCount * sizeof(IMG_UINT32)) +
-	    (psRGXKickSyncIN->ui32ServerSyncCount *
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientUpdateCount *
+	     sizeof(IMG_HANDLE)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientUpdateCount *
+	     sizeof(IMG_UINT32)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ClientUpdateCount *
+	     sizeof(IMG_UINT32)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ServerSyncCount *
+	     sizeof(IMG_UINT32)) +
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ServerSyncCount *
 	     sizeof(SERVER_SYNC_PRIMITIVE *)) +
-	    (psRGXKickSyncIN->ui32ServerSyncCount * sizeof(IMG_HANDLE)) +
-	    (32 * sizeof(IMG_CHAR)) + 0;
+	    ((IMG_UINT64) psRGXKickSyncIN->ui32ServerSyncCount *
+	     sizeof(IMG_HANDLE)) + ((IMG_UINT64) 32 * sizeof(IMG_CHAR)) + 0;
+
+	if (ui64BufferSize > IMG_UINT32_MAX)
+	{
+		psRGXKickSyncOUT->eError = PVRSRV_ERROR_BRIDGE_BUFFER_TOO_SMALL;
+		goto RGXKickSync_exit;
+	}
+
+	ui32BufferSize = (IMG_UINT32) ui64BufferSize;
 
 	if (ui32BufferSize != 0)
 	{
@@ -674,7 +693,10 @@ PVRSRVBridgeRGXKickSync(IMG_UINT32 ui32DispatchTableEntry,
 	UnlockHandle();
 
 	/* Allocated space should be equal to the last updated offset */
-	PVR_ASSERT(ui32BufferSize == ui32NextOffset);
+#ifdef PVRSRV_NEED_PVR_ASSERT
+	if (psRGXKickSyncOUT->eError == PVRSRV_OK)
+		PVR_ASSERT(ui32BufferSize == ui32NextOffset);
+#endif /* PVRSRV_NEED_PVR_ASSERT */
 
 #if defined(INTEGRITY_OS)
 	if (pArrayArgsBuffer)
