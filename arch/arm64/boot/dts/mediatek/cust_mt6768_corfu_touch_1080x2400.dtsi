@@ -26,8 +26,9 @@
 		status = "okay";
 
 		interrupt-parent = <&pio>;
-		goodix,avdd-name = "vtouch";
+		//goodix,avdd-name = "vtouch";
 		//vtouch-load = <1>;
+		goodix,avdd-gpio = <&pio 29 0>;
 		goodix,reset-gpio = <&pio 23 0x0>;
 		goodix,irq-gpio = <&pio 0 0x0>;
 		goodix,irq-flags = <2>; /* 1:trigger rising, 2:trigger falling;*/
