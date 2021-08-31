@@ -991,7 +991,7 @@ static int bq25601_enable_charging(struct charger_device *chg_dev,
 	if (en) {
 		/* bq25601_config_interface(bq25601_CON3, 0x1, 0x1, 4); */
 		/* enable charging */
-		bq25601_set_en_hiz(0x0);
+//		bq25601_set_en_hiz(0x0);
 		bq25601_set_chg_config(en);
 #if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 		chip->charging_enabled = true;
@@ -1239,7 +1239,7 @@ static unsigned int charging_hw_init(void)
 	unsigned int status = 0;
 
 	bq25601_set_en_hiz(0x0);
-#ifdef CONFIG_MOTO_CHG_BQ25601_SUPPORT
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 	bq25601_set_vindpm(0x1);	/* VIN DPM check 4.0V */
 #else
 	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.6V */
@@ -1324,6 +1324,19 @@ static void bq25601_set_usbpsy(struct power_supply *psy)
 #endif
 
 #if (defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT))
+static int bq25601_enable_hz(struct charger_device *chg_dev, bool en)
+{
+        int ret;
+
+        pr_err("[%s]: en = %d\n",__func__,en);
+        ret = bq25601_config_interface((unsigned char) (bq25601_CON0),
+                                       (unsigned char) (en),
+                                       (unsigned char) (CON0_EN_HIZ_MASK),
+                                       (unsigned char) (CON0_EN_HIZ_SHIFT)
+                                      );
+
+        return !ret;
+}
 
 static int bq25601_enable_power_path(struct charger_device *chg_dev, bool en)
 {
@@ -1634,7 +1647,7 @@ static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 }
 
 static struct charger_ops bq25601_chg_ops = {
-#if 0
+#if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 	.enable_hz = bq25601_enable_hz,
 #endif
 
