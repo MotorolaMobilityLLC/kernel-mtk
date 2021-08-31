@@ -1587,7 +1587,15 @@
                 <ies>true</ies>
             </gpio138>
             <gpio139>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_SMARTPA_RST_PIN</varName0>
                 <smt>true</smt>
+                <ies>true</ies>
             </gpio139>
             <gpio140>
                 <eint_mode>false</eint_mode>
@@ -1894,15 +1902,7 @@
                 <ies>true</ies>
             </gpio168>
             <gpio169>
-                <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_RST_PIN</varName0>
                 <smt>true</smt>
-                <ies>true</ies>
             </gpio169>
             <gpio170>
                 <eint_mode>false</eint_mode>
