@@ -93,6 +93,20 @@
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
 
+        /* battery prop */
+        g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+
+        g_FG_PSEUDO100 = <98 98 100 100
+                98 98 100 100
+                98 98 100 100
+                98 98 100 100
+                98 98 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100>;
+
         df-serialnum = "SB18D20540";//SB18D20541
 	g_Q_MAX_row = <4>;
 	g_Q_MAX_col = <10>;
