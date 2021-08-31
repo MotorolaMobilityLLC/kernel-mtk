@@ -879,6 +879,14 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	int ret;
 	struct device_node *dsi_node, *remote_node = NULL, *endpoint = NULL;
 
+	if (strstr(saved_command_line, "nt36525c_boe_dsi_vdo_hdplus")) {
+		pr_err("%s+ nt36525c\n", __func__);
+	} else {
+		pr_err("not match nt36525c !!!\n");
+		return -ENODEV;
+	}
+	pr_info("%s+ nt36525c\n", __func__);
+
 	dsi_node = of_get_parent(dev->of_node);
 	if (dsi_node) {
 		endpoint = of_graph_get_next_endpoint(dsi_node, NULL);
