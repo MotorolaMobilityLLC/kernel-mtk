@@ -322,6 +322,21 @@
         io-channel-names = "batteryID-channel";
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(630)>;       /*Charging termination current.*/
+
+        /* battery prop */
+        g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+
+        g_FG_PSEUDO100 = <98 98 100 100
+                98 98 100 100
+                98 98 100 100
+                98 98 100 100
+                98 98 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100>;
+
         SHUTDOWN_1_TIME = <(10)>;
 
         df-serialnum = "SB18D11784";
