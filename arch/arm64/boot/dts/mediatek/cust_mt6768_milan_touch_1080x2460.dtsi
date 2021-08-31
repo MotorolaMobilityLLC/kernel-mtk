@@ -47,7 +47,8 @@
 
 		/* enable report _gesture_key */
 		novatek,report_gesture_key = <1>;
-
+		/* enable tap wakeup */
+		novatek,panel_wakeup = <1>;
 		/* MP */
 		//novatek,mp-support-dt;
 
