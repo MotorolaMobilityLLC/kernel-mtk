@@ -256,7 +256,7 @@
 
 &sound {
 	mediatek,speaker-codec {
-		sound-dai = <&aw881xx_smartpa>;
+		sound-dai = <&aw883xx_smartpa>;
 	};
 };
 
@@ -274,14 +274,19 @@
 };
 
 &i2c6 {
-       aw881xx_smartpa: aw881xx_smartpa@34 {
-		compatible = "awinic,aw881xx_smartpa";
+	aw883xx_smartpa:aw883xx@34{
+		#sound-dai-cells = <0>;
+		compatible = "awinic,aw883xx_smartpa";
 		reg = <0x34>;
-		reset-gpio = <&pio 169 0>;
+		reset-gpio = <&pio 139 0>;
 		irq-gpio = <&pio 39 0>;
-		fade-enable = <1>;
-		pa-syn-enable = <0>;
-		status = "okay";
+		sync-flag = <0>;
+		sound-channel = <0>;
+		re-min = <1000>;
+		re-max = <40000>;
+		hw-monitor-delay = <1000>;
+		aw-cali-mode = "aw attr";
+		status = "ok";
 	};
 };
 
