@@ -99,11 +99,11 @@ int g_FG_PSEUDO1[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 #if ((defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) || (defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
 int g_FG_PSEUDO100[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	/*bat1,   bat2,   bat3,    bat4*/
-	{ 96, 96, 96, 100},/*T0*/
-	{ 97, 97, 97, 100},/*T1*/
-	{ 96, 96, 96, 100},/*T2*/
-	{ 95, 95, 95, 100},/*T3*/
-	{ 95, 95, 95, 100},/*T4*/
+	{ 98, 98, 98, 100},/*T0*/
+	{ 98, 98, 98, 100},/*T1*/
+	{ 98, 98, 98, 100},/*T2*/
+	{ 98, 98, 98, 100},/*T3*/
+	{ 98, 98, 98, 100},/*T4*/
 	{ 100, 100, 100, 100},/*T5*/
 	{ 100, 100, 100, 100},/*T6*/
 	{ 100, 100, 100, 100},/*T7*/
