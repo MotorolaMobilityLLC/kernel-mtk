@@ -22,7 +22,7 @@
 void disp_pm_qos_init(void);
 void disp_pm_qos_deinit(void);
 int disp_pm_qos_request_dvfs(enum HRT_LEVEL hrt);
-
+int disp_pm_qos_update_mmclk(int mm_freq);
 int disp_pm_qos_update_bw(unsigned long long bandwidth);
 int disp_pm_qos_set_default_bw(unsigned long long *bandwidth);
 int disp_pm_qos_set_ovl_bw(unsigned long long in_fps,
