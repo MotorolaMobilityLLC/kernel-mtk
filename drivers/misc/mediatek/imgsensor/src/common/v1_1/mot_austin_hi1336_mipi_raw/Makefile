@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 MediaTek Inc.
+# Copyright (C) 2019 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,14 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#
-# Makefile for misc devices that really don't fit anywhere else.
-#
-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
+#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-obj-y		+= ../../common/v1_1/camera_hw/regulator/
-obj-y		+= ../../common/v1_1/camera_hw/gpio/
-obj-y		+= ../../common/v1_1/camera_hw/mclk/
-obj-y		+= wl2868/
-obj-y		+= imgsensor_cfg_table.o
-#obj-y           += imgsensor_oc.o
+obj-y += mot_austin_hi1336mipiraw_Sensor.o
