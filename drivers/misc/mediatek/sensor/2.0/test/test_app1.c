@@ -19,6 +19,11 @@
 
 #include "hf_manager.h"
 
+enum {
+	CUST_CMD_CALI,
+	MAX_CUST_CMD,
+};
+
 #define test_app_attr(_name) \
 static struct kobj_attribute _name##_attr = {	\
 	.attr	= {				\
