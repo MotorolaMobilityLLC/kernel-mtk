@@ -38,12 +38,18 @@
 #include "mtk_perfmgr_internal.h"
 #include "boost_ctrl.h"
 
+#ifdef CONFIG_MEDIATEK_DRAMC
+#include <dramc.h>
+#endif
+
 static int ddr_type;
 
 #ifdef MTK_QOS_SUPPORT
 /* QoS Method */
 static int ddr_now;
+static int ddr_lp5_now;
 static struct pm_qos_request emi_request;
+static struct pm_qos_request emi_request_lp5;
 static int emi_opp;
 #endif
 
@@ -97,6 +103,49 @@ static int perfmgr_ddr_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 PROC_FOPS_RW(ddr);
+
+static ssize_t perfmgr_ddr_lp5_proc_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int val;
+	int ret;
+
+	if (cnt >= sizeof(buf)) {
+		pr_debug("ddr_write cnt >= sizeof\n");
+		return -EINVAL;
+	}
+	if (copy_from_user(buf, ubuf, cnt)) {
+		pr_debug("ddr_write copy_from_user\n");
+		return -EFAULT;
+	}
+	buf[cnt] = 0;
+	ret = kstrtoint(buf, 10, &val);
+	if (ret < 0) {
+		pr_debug("ddr_write ret < 0\n");
+		return ret;
+	}
+	if (val < -1 || val > emi_opp) {
+		pr_debug("UNREQ\n");
+		return -1;
+	}
+
+	ddr_lp5_now = val;
+
+#ifdef CONFIG_MEDIATEK_DRAMC
+	if (mtk_dramc_get_ddr_type() == TYPE_LPDDR5)
+		pm_qos_update_request(&emi_request_lp5, val);
+#endif
+
+	return cnt;
+}
+
+static int perfmgr_ddr_lp5_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ddr_lp5_now);
+	return 0;
+}
+PROC_FOPS_RW(ddr_lp5);
 #endif
 
 #ifdef VCORE_DVFS_OPP_SUPPORT
@@ -150,6 +199,9 @@ int dram_ctrl_init(struct proc_dir_entry *parent)
 {
 	int ret = 0;
 	size_t i;
+#ifdef MTK_QOS_SUPPORT
+	char owner[20] = "dram_ctrl_init_lp5";
+#endif
 	struct proc_dir_entry *drams_dir;
 
 	struct pentry {
@@ -161,6 +213,7 @@ int dram_ctrl_init(struct proc_dir_entry *parent)
 		PROC_ENTRY(dram),
 #ifdef MTK_QOS_SUPPORT
 		PROC_ENTRY(ddr),
+		PROC_ENTRY(ddr_lp5),
 #endif
 #ifdef VCORE_DVFS_OPP_SUPPORT
 		PROC_ENTRY(vcore),
@@ -188,14 +241,25 @@ int dram_ctrl_init(struct proc_dir_entry *parent)
 #ifdef MTK_QOS_SUPPORT
 	/* QoS Method */
 	ddr_now = -1;
-	if (!pm_qos_request_active(&emi_request)) {
+	ddr_lp5_now = -1;
+	if (!pm_qos_request_active(&emi_request) ||
+		!pm_qos_request_active(&emi_request_lp5)) {
+
 		pr_debug("hh: emi pm_qos_add_request\n");
 #if defined(MTK_QOS_EMI_OPP)
 		pm_qos_add_request(&emi_request, PM_QOS_EMI_OPP,
 				PM_QOS_EMI_OPP_DEFAULT_VALUE);
+		pm_qos_add_request(&emi_request_lp5, PM_QOS_EMI_OPP,
+				PM_QOS_EMI_OPP_DEFAULT_VALUE);
+		strncpy(emi_request_lp5.owner, owner,
+			sizeof(emi_request_lp5.owner) - 1);
 #else
 		pm_qos_add_request(&emi_request, PM_QOS_DDR_OPP,
 				PM_QOS_DDR_OPP_DEFAULT_VALUE);
+		pm_qos_add_request(&emi_request_lp5, PM_QOS_DDR_OPP,
+				PM_QOS_DDR_OPP_DEFAULT_VALUE);
+		strncpy(emi_request_lp5.owner, owner,
+			sizeof(emi_request_lp5.owner) - 1);
 #endif
 	} else {
 		pr_debug("hh: emi pm_qos already request\n");
