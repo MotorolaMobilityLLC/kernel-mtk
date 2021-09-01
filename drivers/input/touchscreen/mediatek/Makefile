@@ -30,3 +30,4 @@ obj-$(CONFIG_TOUCHSCREEN_FT3519)        +=  FT3519/
 obj-$(CONFIG_TOUCHSCREEN_GOODIX_GTX8)    +=  goodix-ts-sunrise/
 obj-$(CONFIG_TOUCHSCREEN_CHIPONE) += chipone_tddi/
 obj-$(CONFIG_TOUCHSCREEN_NOVA_TDDI) += nova_tddi/
+obj-$(CONFIG_TOUCHSCREEN_ILI9882Q_TDDI) += ilitek_tddi/
