@@ -108,6 +108,10 @@ struct kbase_aliased {
  * @gpu_mappings: count number of times mapped on the GPU. Indicates the number
  *                of references there are to the physical pages from different
  *                GPU VA regions.
+ * @kernel_mappings: count number of times mapped on the CPU, specifically in
+ *                   the kernel. Indicates the number of references there are
+ *                   to the physical pages to prevent flag changes or shrink
+ *                   while maps are still held.
  * @nents: 0..N
  * @pages: N elements, only 0..nents are valid
  * @mappings: List of CPU mappings of this physical memory allocation.
@@ -130,6 +134,7 @@ struct kbase_aliased {
 struct kbase_mem_phy_alloc {
 	struct kref           kref;
 	atomic_t              gpu_mappings;
+	atomic_t              kernel_mappings;
 	size_t                nents;
 	struct tagged_addr    *pages;
 	struct list_head      mappings;
@@ -217,6 +222,30 @@ static inline void kbase_mem_phy_alloc_gpu_unmapped(struct kbase_mem_phy_alloc *
 			pr_err("Mismatched %s:\n", __func__);
 			dump_stack();
 		}
+}
+
+/**
+ * kbase_mem_phy_alloc_kernel_mapped - Increment kernel_mappings
+ * counter for a memory region to prevent commit and flag changes
+ *
+ * @alloc:  Pointer to physical pages tracking object
+ */
+static inline void
+kbase_mem_phy_alloc_kernel_mapped(struct kbase_mem_phy_alloc *alloc)
+{
+	atomic_inc(&alloc->kernel_mappings);
+}
+
+/**
+ * kbase_mem_phy_alloc_kernel_unmapped - Decrement kernel_mappings
+ * counter for a memory region to allow commit and flag changes
+ *
+ * @alloc:  Pointer to physical pages tracking object
+ */
+static inline void
+kbase_mem_phy_alloc_kernel_unmapped(struct kbase_mem_phy_alloc *alloc)
+{
+	WARN_ON(atomic_dec_return(&alloc->kernel_mappings) < 0);
 }
 
 /**
@@ -587,6 +616,7 @@ static inline struct kbase_mem_phy_alloc *kbase_alloc_create(
 
 	kref_init(&alloc->kref);
 	atomic_set(&alloc->gpu_mappings, 0);
+	atomic_set(&alloc->kernel_mappings, 0);
 	alloc->nents = 0;
 	alloc->pages = (void *)(alloc + 1);
 	INIT_LIST_HEAD(&alloc->mappings);

@@ -283,11 +283,9 @@ void kbase_context_mem_pool_group_term(struct kbase_context *kctx)
 
 int kbase_context_mmu_init(struct kbase_context *kctx)
 {
-	kbase_mmu_init(kctx->kbdev,
+	return kbase_mmu_init(kctx->kbdev,
 		&kctx->mmu, kctx,
 		base_context_mmu_group_id_get(kctx->create_flags));
-
-	return 0;
 }
 
 void kbase_context_mmu_term(struct kbase_context *kctx)
