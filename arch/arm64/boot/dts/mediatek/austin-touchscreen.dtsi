@@ -64,20 +64,29 @@
 	};
 	ctp_pins_rst_output0: rstoutput0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO132__FUNC_GPIO132>;
+			pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
 			output-low;
 		};
 	};
 	ctp_pins_rst_output1: rstoutput1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO132__FUNC_GPIO132>;
+			pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
 			output-high;
 		};
 	};
 };
 
 &spi4 {
-	status = "ok";
+	status = "okay";
+	ilitek@1{
+		compatible = "tchip,ilitek";
+		reg = <1>;
+		spi-max-frequency = <12000000>;
+		touch,reset-gpio = <&pio 15 0x00>;
+		touch,irq-gpio = <&pio 14 0x2001>;
+
+		status = "okay";
+	};
 
 	/* Novatek device tree node */
 	novatek@0 {
@@ -86,7 +95,7 @@
 		status = "ok";
 
 		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
-		novatek,reset-gpio = <&pio 132 0x00>;
+		novatek,reset-gpio = <&pio 15 0x00>;
 		novatek,irq-gpio = <&pio 14 0x2001>;
 
 		/* 525 */
