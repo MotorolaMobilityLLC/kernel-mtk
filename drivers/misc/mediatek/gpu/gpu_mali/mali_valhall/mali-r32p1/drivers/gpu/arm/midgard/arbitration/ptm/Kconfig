@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
+# SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note OR MIT
 #
-# (C) COPYRIGHT 2012-2021 ARM Limited. All rights reserved.
+# (C) COPYRIGHT 2021 ARM Limited. All rights reserved.
 #
 # This program is free software and is provided to you under the terms of the
 # GNU General Public License version 2 as published by the Free Software
@@ -18,22 +18,11 @@
 #
 #
 
-config MALI_XEN
-	bool "Enable Xen Interface reference code"
-	depends on MALI_ARBITRATION && XEN
+config MALI_PARTITION_MANAGER
+	bool "Enable compilation of partition manager modules"
+	depends on MALI_ARBITRATION
 	default n
 	help
-	  Enables the build of xen interface modules used in the reference
-	  virtualization setup for Mali
-	  If unsure, say N.
+	  This option enables the compilation of the partition manager
+	  modules used to configure the Mali-G78AE GPU.
 
-config MALI_KUTF_ARBITRATION_TEST
-	bool "Enable Arbitration Test reference code"
-	depends on MALI_KUTF && MALI_ARBITRATION
-	default n
-	help
-	  Enables the build of test modules used in the reference
-	  virtualization setup for Mali
-	  If unsure, say N.
-
-source "drivers/gpu/arm/midgard/arbitration/ptm/Kconfig"
