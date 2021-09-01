@@ -143,6 +143,7 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 
 	kbdev->pm.backend.ca_cores_enabled = ~0ull;
 	kbdev->pm.backend.gpu_powered = false;
+	kbdev->pm.backend.gpu_ready = false;
 	kbdev->pm.suspending = false;
 #ifdef CONFIG_MALI_ARBITER_SUPPORT
 	kbdev->pm.gpu_lost = false;
@@ -567,6 +568,13 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	kbdev->pm.backend.driver_ready_for_irqs = true;
 #endif
 	kbase_pm_enable_interrupts(kbdev);
+
+	WARN_ON(!kbdev->pm.backend.gpu_powered);
+	/* GPU has been powered up (by kbase_pm_init_hw) and interrupts have
+	 * been enabled, so GPU is ready for use and PM state machine can be
+	 * exercised from this point onwards.
+	 */
+	kbdev->pm.backend.gpu_ready = true;
 
 	/* Turn on the GPU and any cores needed by the policy */
 	kbase_pm_do_poweron(kbdev, false);
