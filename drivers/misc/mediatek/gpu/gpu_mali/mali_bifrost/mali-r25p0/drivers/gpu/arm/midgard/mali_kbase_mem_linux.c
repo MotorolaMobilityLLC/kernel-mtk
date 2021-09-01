@@ -602,6 +602,12 @@ unsigned long kbase_mem_evictable_reclaim_count_objects(struct shrinker *s,
 	unsigned long pages = 0;
 
 	kctx = container_of(s, struct kbase_context, reclaim);
+/**
+ * [GPUCORE-27200] WA for scheduling while atomic avoidance
+ * return 0 while callback is called with GFP_ATOMIC
+ */
+	if (sc->gfp_mask & __GFP_ATOMIC)
+		return 0;
 
 	mutex_lock(&kctx->jit_evict_lock);
 
