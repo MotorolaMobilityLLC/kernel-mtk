@@ -5449,6 +5449,10 @@ static signed int ISP_P2_BufQue_Update_ListCIdx(
 	switch (listTag) {
 	case ISP_P2_BUFQUE_LIST_TAG_UNIT:
 		/* [1] check global pointer current sts */
+		//0820-s
+		if ((property < 0) || (P2_FrameUnit_List_Idx[property].curr < 0))
+			return ret;
+		//0820-e
 		cIdxSts = P2_FrameUnit_List[property]
 				[P2_FrameUnit_List_Idx[property].curr].bufSts;
 		/* ///////////////////////////////////////////////////////// */
@@ -5554,9 +5558,17 @@ enum ISP_P2_BUFQUE_LIST_TAG listTag, signed int idx)
 	signed int cnt = 0;
 	int tmpIdx = 0;
 
+	//0820-s
+	if (property < ISP_P2_BUF_STATE_ENQUE)
+		return ret;
+	//0820-e
 	switch (listTag) {
 	case ISP_P2_BUFQUE_LIST_TAG_PACKAGE:
 		tmpIdx = P2_FramePack_List_Idx[property].start;
+		//0820-s
+		if ((tmpIdx < 0) || (idx < 0))
+			return ret;
+		//0820-e
 		/* [1] clear buffer status */
 		P2_FramePackage_List[property][idx].processID = 0x0;
 		P2_FramePackage_List[property][idx].callerID = 0x0;
@@ -5604,6 +5616,10 @@ enum ISP_P2_BUFQUE_LIST_TAG listTag, signed int idx)
 		break;
 	case ISP_P2_BUFQUE_LIST_TAG_UNIT:
 		tmpIdx = P2_FrameUnit_List_Idx[property].start;
+		//0820-s
+		if ((tmpIdx < 0) || (idx < 0))
+			return ret;
+		//0820-e
 		/* [1] clear buffer status */
 		P2_FrameUnit_List[property][idx].processID = 0x0;
 		P2_FrameUnit_List[property][idx].callerID = 0x0;
@@ -5671,7 +5687,9 @@ static signed int ISP_P2_BufQue_GetMatchIdx(struct ISP_P2_BUFQUE_STRUCT param,
 {
 	int idx = -1;
 	int i = 0;
-	int property;
+	//0820-s
+	enum ISP_P2_BUFQUE_PROPERTY property;
+	//0820-e
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
 		LOG_NOTICE("property err(%d)\n", param.property);
@@ -5888,6 +5906,12 @@ static inline unsigned int ISP_P2_BufQue_WaitEventState(
 		LOG_NOTICE("property err(%d)\n", param.property);
 		return ret;
 	}
+	//0820-s
+	if (*idx < 0) {
+		LOG_NOTICE("*idx err(%d)\n", *idx);
+		return ret;
+	}
+	//0820-e
 	property = param.property;
 	/*  */
 	switch (type) {
@@ -5951,7 +5975,9 @@ static signed int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 	int i = 0, q = 0;
 	int idx =  -1, idx2 =  -1;
 	signed int restTime = 0;
-	int property;
+	//0820-s
+	enum ISP_P2_BUFQUE_PROPERTY property;
+	//0820-e
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
 		LOG_NOTICE("property err(%d)\n", param.property);
@@ -7437,6 +7463,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			/* 2nd layer behavoir of copy from user is implemented
 			 * in ISP_WriteReg(...)
 			 */
+			//0820-s
+			if ((RegIo.Count * sizeof(struct ISP_REG_STRUCT)) > 0xFFFFF000) {
+				Ret = -EFAULT;
+				LOG_NOTICE("RegIo.Count error\n");
+				goto EXIT;
+			}
+			//0820-e
 			Ret = ISP_WriteReg(&RegIo);
 		} else {
 			LOG_NOTICE("copy_from_user failed\n");
