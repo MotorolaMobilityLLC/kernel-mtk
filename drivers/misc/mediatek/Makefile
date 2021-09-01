@@ -188,3 +188,4 @@ obj-$(CONFIG_MTK_GATE_IC) += gate_ic/
 obj-$(CONFIG_MTK_OTP) += otp/
 obj-$(CONFIG_PANEL_BIAS) += bias/
 obj-$(CONFIG_MTK_SDA) += sda/
+obj-$(CONFIG_MOT_CAMERA_LDO) += camera_ldo/

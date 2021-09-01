@@ -1,0 +1,7 @@
+config MOT_CAMERA_LDO
+	bool CONFIG_MOT_CAMERA_LDO
+	default n
+	help
+	  MOT CAMERA LDO driver
+
+
