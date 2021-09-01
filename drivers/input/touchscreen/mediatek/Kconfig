@@ -249,6 +249,15 @@ config TOUCHSCREEN_CHIPONE
 	  To compile this driver as a module, choose M here: the
 	  module will be called chipone-tddi.
 
+config TOUCHSCREEN_ILI9882Q_TDDI
+	bool "ILI9882Q host download SPI driver"
+	default n
+	help
+	  Say Y here if you have a Novatek ILI9882Q touchscreen connected
+	  to your system by SPI bus.
+
+	  If unsure, say N.
+
 config TOUCHSCREEN_MTK_TYPE
 	bool "use mediatek touch type"
 	default n
