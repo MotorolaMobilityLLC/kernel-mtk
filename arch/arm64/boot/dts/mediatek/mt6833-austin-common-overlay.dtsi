@@ -461,6 +461,10 @@
 	regulator-always-on;
 };
 
+&spi4 {
+	mediatek,pad-select = <0>,<1>;
+};
+
 &odm {
 	/* set usb phy drv voltage for thunder3 port */
 	drv_phy_cap: drv_phy_cap {
