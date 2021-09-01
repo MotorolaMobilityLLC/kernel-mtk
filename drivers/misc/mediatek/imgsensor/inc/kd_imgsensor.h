@@ -150,6 +150,13 @@
 #define MOT_MAUI_GC02M1_SENSOR_ID (0x02e0+1)
 #define MOT_MAUI_OV02B10_SENSOR_ID 0x002b
 //add maui sensor id end
+//add austin sensor id begin
+#define MOT_AUSTIN_S5KJN1SQ_SENSOR_ID      0x38E1
+#define MOT_AUSTIN_HI1336_SENSOR_ID      0x1337
+#define MOT_AUSTIN_GC02M1B_SENSOR_ID      0x02E0
+#define MOT_AUSTIN_GC02M1_SENSOR_ID      0x02E0
+//add austin sensor id end
+
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
 #define IMX499_SENSOR_ID                        0x0499
@@ -684,6 +691,12 @@
 #define SAIPAN_DMEGC_HI1336_SENSOR_ID 0x1336
 #define SAIPAN_CXT_GC02M1B_SENSOR_ID 0x02e0
 #define SAIPAN_CXT_GC02M1_SENSOR_ID (0x02e0+1)
+//add austin sensor drvname begin
+#define SENSOR_DRVNAME_MOT_AUSTIN_S5KJN1SQ_MIPI_RAW   "mot_austin_s5kjn1sq_mipi_raw"
+#define SENSOR_DRVNAME_MOT_AUSTIN_HI1336_MIPI_RAW   "mot_austin_hi1336_mipi_raw"
+#define SENSOR_DRVNAME_MOT_AUSTIN_GC02M1B_MIPI_RAW   "mot_austin_gc02m1b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_AUSTIN_GC02M1_MIPI_RAW   "mot_austin_gc02m1_mipi_raw"
+//add austin sensor drvname end
 #define SENSOR_DRVNAME_SAIPAN_QTECH_HI4821Q_MIPI_RAW "saipan_qtech_hi4821q_mipi_raw"
 #define SENSOR_DRVNAME_SAIPAN_SHINE_HI846_MIPI_RAW "saipan_shine_hi846_mipi_raw"
 #define SENSOR_DRVNAME_SAIPAN_DMEGC_HI1336_MIPI_RAW "saipan_dmegc_hi1336_mipi_raw"
