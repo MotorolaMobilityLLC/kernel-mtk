@@ -229,6 +229,19 @@ int wt6670f_get_firmware_version(void)
 }
 EXPORT_SYMBOL_GPL(wt6670f_get_firmware_version);
 
+int z350_get_firmware_version(void)
+{
+	int ret;
+	u16 data;
+
+	ret = wt6670f_read_word(_wt, 0x14, &data);
+	if (ret < 0)
+	{
+		pr_err("z350 get firmware fail\n");
+		return ret;
+	}
+	return data;
+}
 
 int wt6670f_set_voltage(u16 voltage)
 {
@@ -383,11 +396,13 @@ EXPORT_SYMBOL_GPL(wt6670f_reset_chg_type);
 
 int moto_tcmd_wt6670f_get_firmware_version(void)
 {
-	int fm_ver = 0;
+	int wt6670f_fm_ver = 0;
+	int z350_fm_ver = 0;
 	wt6670f_do_reset();
-	fm_ver = wt6670f_get_firmware_version();
-	pr_info("%s: wt6670f get firmware:%d!\n", __func__,fm_ver);
-	if(3 == fm_ver)
+	wt6670f_fm_ver = wt6670f_get_firmware_version();
+	z350_fm_ver = z350_get_firmware_version();
+	pr_info("%s: get firmware wt6670f:%x,z350:%x!\n", __func__,wt6670f_fm_ver,z350_fm_ver);
+	if((3 == wt6670f_fm_ver)||(0x080a == z350_fm_ver)||(0x0f0a == z350_fm_ver))
 	return 1;
 	else
 	return 0;
