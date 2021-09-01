@@ -1801,7 +1801,9 @@ _mtk_crtc_cwb_addon_module_connect(
 				} else if (cwb_info->buffer[buf_idx].dst_roi.x >= w/2) {
 				/* handle source ROI locate in right pipe*/
 					dst_roi_l.x = 0;
+					dst_roi_l.y = 0;
 					dst_roi_l.width = 0;
+					dst_roi_l.height = 0;
 					dst_roi_r.x = cwb_info->buffer[buf_idx].dst_roi.x - w/2;
 				} else {
 				/* handle source ROI locate in both display pipe*/
@@ -1847,8 +1849,8 @@ _mtk_crtc_cwb_addon_module_connect(
 				/* connect right pipe */
 				mtk_addon_connect_after(crtc, ddp_mode, addon_module,
 							  &addon_config, cmdq_handle);
-			}
-			mtk_addon_connect_after(crtc, ddp_mode, addon_module,
+			} else
+				mtk_addon_connect_after(crtc, ddp_mode, addon_module,
 						  &addon_config, cmdq_handle);
 		} else
 			DDPPR_ERR("addon type:%d + module:%d not support\n",
