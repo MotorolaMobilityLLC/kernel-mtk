@@ -561,6 +561,7 @@ struct drm_mtk_layer_config {
 	uint32_t clip; /* drv internal use */
 	__u8 compress;
 	__u8 secure;
+	void *mml_cfg;
 };
 
 struct drm_mtk_layering_info {
