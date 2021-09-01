@@ -1953,16 +1953,21 @@ void DSI_MIPI_clk_change(enum DISP_MODULE_ENUM module, void *cmdq, int clk)
 int mipi_clk_change(int msg, int en)
 {
 	struct cmdqRecStruct *handle = NULL;
+	struct LCM_DSI_PARAMS *dsi_params =
+			&(_dsi_context[0].dsi_params);
 
 	DISPMSG("%s,msg=%d,en=%d\n", __func__, msg, en);
 
 	_primary_path_lock(__func__);
+	if (dsi_params->mode == CMD_MODE)
+		primary_display_idlemgr_kick(__func__, 0);
 
 	if (en) {
 		if (!strcmp(mtkfb_lcm_name,
 		"nt35521_hd_dsi_vdo_truly_rt5081_drv")) {
 			def_data_rate = 460;
-			def_dsi_hbp = 0xD2; /* adaptive HBP value */
+			if (dsi_params->mode != CMD_MODE)
+				def_dsi_hbp = 0xD2; /* adaptive HBP value */
 		} else {
 			DISPERR("%s,lcm(%s) not support change mipi clock\n",
 				__func__, mtkfb_lcm_name);
@@ -1980,39 +1985,45 @@ int mipi_clk_change(int msg, int en)
 		unsigned int dsiTmpBufBpp;
 		unsigned int hbp_wc;
 
-		if ((dsi_params->data_format).format == LCM_DSI_FORMAT_RGB565)
-			dsiTmpBufBpp = 2;
-		else
-			dsiTmpBufBpp = 3;
-
-		if (dsi_params->mode == SYNC_EVENT_VDO_MODE ||
-			dsi_params->mode == BURST_VDO_MODE ||
-			dsi_params->switch_mode == SYNC_EVENT_VDO_MODE ||
-			dsi_params->switch_mode == BURST_VDO_MODE) {
-
-			hbp_wc = ((dsi_params->horizontal_backporch +
-				dsi_params->horizontal_sync_active) *
-				dsiTmpBufBpp - 10);
-		} else {
-			hbp_wc =
-			(dsi_params->horizontal_backporch * dsiTmpBufBpp - 10);
-		}
-		hbp_wc = ALIGN_TO((hbp_wc), 4);
-
 		def_data_rate = data_rate;
-		def_dsi_hbp = hbp_wc; /* origin HBP value */
+		if (dsi_params->mode != CMD_MODE) {
+			if ((dsi_params->data_format).format ==
+					LCM_DSI_FORMAT_RGB565)
+				dsiTmpBufBpp = 2;
+			else
+				dsiTmpBufBpp = 3;
+
+			if (dsi_params->mode == SYNC_EVENT_VDO_MODE ||
+				dsi_params->mode == BURST_VDO_MODE ||
+				dsi_params->switch_mode == SYNC_EVENT_VDO_MODE ||
+				dsi_params->switch_mode == BURST_VDO_MODE) {
+
+				hbp_wc = ((dsi_params->horizontal_backporch +
+					dsi_params->horizontal_sync_active) *
+					dsiTmpBufBpp - 10);
+			} else {
+				hbp_wc =
+				(dsi_params->horizontal_backporch * dsiTmpBufBpp - 10);
+			}
+			hbp_wc = ALIGN_TO((hbp_wc), 4);
+
+			def_dsi_hbp = hbp_wc; /* origin HBP value */
+		}
 	}
 
 	if (_is_power_on_status(DISP_MODULE_DSI0)) {
 		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 		cmdqRecReset(handle);
 
+		if (dsi_params->mode != CMD_MODE) {
 		/* 2.wait mutex0_stream_eof: only used for video mode */
-		cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+			cmdqRecWaitNoClear(handle,
+					CMDQ_EVENT_MUTEX0_STREAM_EOF);
+			ddp_dsi_porch_setting(DISP_MODULE_DSI0,
+				handle, DSI_HBP, def_dsi_hbp);
+		} else
+			cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 
-		DSI_MIPI_clk_change(DISP_MODULE_DSI0, handle, def_data_rate);
-		ddp_dsi_porch_setting(DISP_MODULE_DSI0,
-			 handle, DSI_HBP, def_dsi_hbp);
 		cmdqRecFlushAsync(handle);
 		cmdqRecDestroy(handle);
 	}
