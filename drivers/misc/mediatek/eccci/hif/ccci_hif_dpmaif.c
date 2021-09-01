@@ -2670,6 +2670,7 @@ static void set_drb_msg(unsigned char q_num, unsigned short cur_idx,
 	struct dpmaif_drb_msg msg;
 
 	msg.dtyp = DES_DTYP_MSG;
+	msg.reserved = 0;
 	msg.c_bit = 1;
 	msg.packet_len = pkt_len;
 	msg.count_l = count_l;
@@ -2716,6 +2717,7 @@ static void set_drb_payload(unsigned char q_num, unsigned short cur_idx,
 		payload.c_bit = 1;
 	payload.data_len = pkt_size;
 	payload.p_data_addr = data_addr&0xFFFFFFFF;
+	payload.reserved = 0;
 	payload.data_addr_ext = (data_addr>>32)&0xFF;
 #ifdef DPMAIF_DEBUG_LOG
 	temp = (unsigned int *)drb;
