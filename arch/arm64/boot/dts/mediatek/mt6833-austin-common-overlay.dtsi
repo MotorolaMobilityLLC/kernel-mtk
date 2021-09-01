@@ -13,7 +13,8 @@
 #include "mediatek/mt6833-moto-common-overlay.dtsi"
 #include <dt-bindings/mmc/mt6833-msdc.h>
 #include "mediatek/mt6833-austin-sensor-overlay.dtsi"
-#include "mediatek/mt6833-saipan-camera-sensor-overlay.dtsi"
+#include "mediatek/mt6833-austin-camera-sensor-overlay.dtsi"
+
 /* GPS GPIO standardization start */
 &pio {
 	gps_pins_default: gps_default {
@@ -290,6 +291,17 @@
 	};
 };
 
+&i2c7 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+        i2c_camera_ldo{
+             compatible = "mediatek,i2c_camera_ldo";
+             reg = <0x35>;
+             status = "okay";
+         };
+
+ };
 &moto_chg_tcmd {
 		compatible = "mmi,moto-chg-tcmd";
 		status = "okay";
