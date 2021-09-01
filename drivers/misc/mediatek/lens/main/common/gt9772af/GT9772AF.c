@@ -282,7 +282,7 @@ int GT9772AF_GetFileName(unsigned char *pFileName)
 	char FilePath[256];
 	char *FileString = NULL;
 
-	if (sprintf(FilePath, "%s", __FILE__) < 0)
+	if (snprintf(FilePath, sizeof(FilePath), "%s", __FILE__) < 0)
 		return 0;
 	FileString = strrchr(FilePath, '/');
 	if (FileString == NULL)
