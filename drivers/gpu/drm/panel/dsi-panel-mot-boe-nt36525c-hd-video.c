@@ -486,7 +486,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx,  0xBA, 0x03);
 	lcm_dcs_write_seq_static(ctx,  0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx,  0x53, 0x2C);
-	lcm_dcs_write_seq_static(ctx,  0x51, 0x07, 0xFF);
+	lcm_dcs_write_seq_static(ctx,  0x51, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx,  0x29      );
 	msleep(20);
 	lcm_dcs_write_seq_static(ctx,  0x11      );
@@ -745,9 +745,11 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	char bl_tb0[] = {0x51, 0xFF};
+	char bl_tb0[] = {0x51, 0x07, 0xFF};
 
-	bl_tb0[1] = level;
+	pr_debug("nt36525c level : %d\n", level);
+	bl_tb0[1] = ((level >> 8) & 0x7);
+	bl_tb0[2] = (level & 0xff);
 
 	if (!cb)
 		return -1;
