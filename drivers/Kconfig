@@ -31,6 +31,12 @@ config MOTO_MAUI_PROJECT_SWTP_SETING_APART
           Say Y here for distinguish different projects
 # -EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
 
+config MOT_WL2868
+  	bool CONFIG_MOT_WL2868
+  	default n
+  	help
+	    MOT WL2868 driver
+
 source "drivers/amba/Kconfig"
 
 source "drivers/base/Kconfig"
