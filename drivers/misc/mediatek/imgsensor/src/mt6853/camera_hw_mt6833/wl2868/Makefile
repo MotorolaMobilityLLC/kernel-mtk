@@ -11,4 +11,4 @@
 # GNU General Public License for more details.
 #
 
-obj-y				+= wl2868.o
+obj-$(CONFIG_MOT_WL2868)		+= wl2868.o

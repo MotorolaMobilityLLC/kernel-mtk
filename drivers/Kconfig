@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
 menu "Device Drivers"
 
+config MOT_WL2868
+	bool CONFIG_MOT_WL2868
+	default n
+	help
+	  MOT WL2868 driver
+
 source "drivers/amba/Kconfig"
 
 source "drivers/base/Kconfig"
