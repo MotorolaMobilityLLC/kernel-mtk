@@ -8,7 +8,9 @@
 #include "mclk/mclk.h"
 #include "regulator/regulator.h"
 #include "gpio/gpio.h"
+#ifdef CONFIG_MOT_WL2868
 #include "wl2868/wl2868.h"
+#endif
 #include "imgsensor_hw.h"
 #include "imgsensor_cfg_table.h"
 enum IMGSENSOR_RETURN (*hw_open[IMGSENSOR_HW_ID_MAX_NUM])
@@ -16,7 +18,9 @@ enum IMGSENSOR_RETURN (*hw_open[IMGSENSOR_HW_ID_MAX_NUM])
 	imgsensor_hw_mclk_open,
 	imgsensor_hw_regulator_open,
 	imgsensor_hw_gpio_open,
+#ifdef CONFIG_MOT_WL2868
 	imgsensor_hw_wl2868_open
+#endif
 };
 
 struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
