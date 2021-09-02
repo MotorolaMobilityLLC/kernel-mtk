@@ -804,3 +804,11 @@ config MTK_DISABLE_PQ
 	  Say y here if disable mtk pq.
 
 	  If unsure, say N.
+
+config BACKLIGHT_PWM_11BIT
+	bool "set backlight pwm to 11bit, 2047 max"
+	default n
+	help
+	  Say y here if product backlight pwm is 11bit.
+
+	  If unsure, say N.
