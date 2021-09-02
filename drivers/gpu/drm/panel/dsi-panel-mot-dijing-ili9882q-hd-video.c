@@ -244,7 +244,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x98, 0x82, 0x00);
-	lcm_dcs_write_seq_static(ctx, 0x51, 0x07, 0xFF);
+	lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
@@ -505,9 +505,12 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	char bl_tb0[] = {0x51, 0x0F, 0xFF};
+	char bl_tb0[] = {0x51, 0x07, 0xFF};
 
-	bl_tb0[1] = level;
+	pr_debug("ili9882q level : %d\n", level);
+
+	bl_tb0[1] = ((level >> 8) & 0x7);
+	bl_tb0[2] = (level & 0xff);
 
 	if (!cb)
 		return -1;
