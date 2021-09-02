@@ -407,7 +407,7 @@
 };
 
 &led6 {
-	led_mode = <5>;
+	led_mode = <4>;
 };
 
 &dsi0 {
