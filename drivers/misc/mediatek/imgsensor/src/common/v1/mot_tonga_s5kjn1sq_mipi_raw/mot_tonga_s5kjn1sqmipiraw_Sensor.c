@@ -301,7 +301,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 	char pusendcmd[4] = {
 		(char)(addr >> 8), (char)(addr & 0xFF),
 		(char)(para >> 8), (char)(para & 0xFF) };
-	iWriteRegI2C(pusendcmd, 4, imgsensor.i2c_write_id);
+	iWriteRegI2CTiming(pusendcmd, 4, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
@@ -309,7 +309,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 	kal_uint16 get_byte = 0;
 	char pusendcmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
 
-	iReadRegI2C(pusendcmd, 2, (u8 *) &get_byte, 1, imgsensor.i2c_write_id);
+	iReadRegI2CTiming(pusendcmd, 2, (u8 *) &get_byte, 1, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 	return get_byte;
 }
 
@@ -318,7 +318,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 	char pusendcmd[3] = {
 		(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF) };
 
-	iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
+	iWriteRegI2CTiming(pusendcmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
 static void set_dummy(void)
