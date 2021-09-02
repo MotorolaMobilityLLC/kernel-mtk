@@ -10,8 +10,13 @@
 
 	disp_leds {
 		backlight {
+#ifdef CONFIG_BACKLIGHT_PWM_11BIT
+			max-brightness = <2047>;
+			led-bits = <11>;
+#else
 			max-brightness = <4095>;
 			led-bits = <12>;
+#endif
 		};
 	};
 
