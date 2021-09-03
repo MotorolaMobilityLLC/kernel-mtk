@@ -183,6 +183,7 @@ config TOUCHSCREEN_MTK_GT9157
 
 source "drivers/input/touchscreen/mediatek/GT9157/Kconfig"
 source "drivers/input/touchscreen/mediatek/nova_tddi/Kconfig"
+source "drivers/input/touchscreen/mediatek/chipone_v2_tddi/Kconfig"
 
 config TOUCHSCREEN_HIMAX_CHIPSET
 	bool "Himax touchpanel CHIPSET"
