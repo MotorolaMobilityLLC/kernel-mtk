@@ -78,6 +78,51 @@
 
 &spi4 {
 	status = "okay";
+	/delete-property/mediatek,pad-select;
+	mediatek,pad-select = <0>,<0>,<0>;
+	cs-gpios = <0>,<0>,<0>;
+
+	chipone_tddi@2 {
+		compatible = "chipone-tddi";
+		reg = <2>;
+		status = "okay";
+		spi-max-frequency = <9600000>;
+		chipone,rst-gpio = <&pio 15 0x00>;
+		chipone,irq-gpio = <&pio 14 0x2001>;
+
+		touch,max-touch-number = <10>;
+		touch,display-coords =  <0 0 720 1600>;
+		chipone,x-res = <720>;
+		chipone,y-res = <1600>;
+
+		chipone,test-reset-pin;
+		chipone,test-rawdata;
+		chipone,test-rawdata-frames = <1>;
+		chipone,rawdata-min = <1560>;
+		chipone,rawdata-max = <2860>;
+		chipone,test-noise;
+		chipone,test-noise-frames = <16>;
+		chipone,noise-max = <70>;
+		chipone,test-open;
+		chipone,open-min = <3100>;
+		chipone,test-short;
+		chipone,short-min = <500>;
+
+		chipone,test-compensate-cap;
+		chipone,compensate-cap-min = <1>;
+		chipone,compensate-cap-max = <126>;
+
+		chipone,touch-charger-detect-enable;
+		chipone,touch-charger-detect-type = "notify";
+		chipone,touch-charger-detect-psy-name = "usb";
+		chipone,touch-charger-detect-psp = "POWER_SUPPLY_PROP_ONLINE";
+		chipone,touch-charger-detect-psp-poll-interval = <1000>;
+
+		chipone,touch-earjack-detect-enable;
+		chipone,touch-earjack-state-filepath = "/sys/bus/platform/drivers/Accdet_Driver/state";
+		chipone,touch-earjack-poll-interval = <1000>;
+	};
+
 	ilitek@1{
 		compatible = "tchip,ilitek";
 		reg = <1>;
