@@ -91,6 +91,7 @@ obj-y  += common/bu6429af/
 obj-y  += common/bu64748af/
 obj-y  += common/dw9714af/
 obj-y  += common/dw9800waf/
+obj-y  += common/mot_austin_dw9800vaf/
 obj-y  += common/dw9814af/
 obj-y  += common/dw9718af/
 obj-y += common/dw9718taf/
