@@ -443,4 +443,11 @@ extern int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int GT9772AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int GT9772AF_GetFileName(unsigned char *pFileName);
+
+extern int MOT_AUSTIN_DW9800VAF_SetI2Cclient_Main(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_AUSTIN_DW9800VAF_Ioctl_Main(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int MOT_AUSTIN_DW9800VAF_Release_Main(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_AUSTIN_DW9800VAF_GetFileName_Main(unsigned char *pFileName);
 #endif
