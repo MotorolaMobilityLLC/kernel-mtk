@@ -433,4 +433,10 @@ extern int MOT_DW9781CAF_EXT_CMD_HANDLER(motOISExtIntf *pExtCmd);
 extern int MOT_DW9781CAF_GET_TEST_RESULT(motOISExtIntf *pExtCmd);
 extern int MOT_DW9781CAF_SET_CALIBRATION(motOISExtIntf *pExtCmd);
 
+extern int MOT_AUSTIN_DW9800VAF_SetI2Cclient_Main(struct i2c_client *pstAF_I2Cclient,
+				 spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long MOT_AUSTIN_DW9800VAF_Ioctl_Main(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int MOT_AUSTIN_DW9800VAF_Release_Main(struct inode *a_pstInode, struct file *a_pstFile);
+extern int MOT_AUSTIN_DW9800VAF_GetFileName_Main(unsigned char *pFileName);
 #endif
