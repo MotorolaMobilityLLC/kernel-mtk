@@ -35,13 +35,15 @@
 #define GETARRAYNUM(array) (ARRAY_SIZE(array))
 
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int wt6670f_en_hvdcp(void);
 extern int wt6670f_start_detection(void);
 extern int wt6670f_get_protocol(void);
 //extern int wt6670f_get_charger_type(void);
 extern bool wt6670f_is_charger_ready(void);
 //extern void bq2597x_set_psy(void);
 bool m_chg_ready = false;
-int m_chg_type = 0;
+extern int m_chg_type;
+extern int g_qc3p_id;
 #endif
 
 /*bq25601 REG06 VREG[5:0]*/
@@ -1431,13 +1433,14 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 	bool should_notify = false;
 	bool need_retry = false;
 	int early_chg_type = 0;
+	int wait_count = 0;
         union power_supply_propval propval = {.intval = 0};
 #endif
         int count = 0;
+
         struct bq25601_info *chip = dev_get_drvdata(&chg_dev->dev);
 
-        pr_info("%s en = %d\n", __func__, en);
-
+	pr_info("%s en = %d\n", __func__, en);
         chip->attach = en;
 
         mutex_lock(&chip->chgdet_lock);
@@ -1448,6 +1451,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 
         Charger_Detect_Init();
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	if(0 == g_qc3p_id){//wt6670f
 	do{
 	m_chg_ready = false;
 	m_chg_type = 0;
@@ -1455,7 +1459,6 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
         should_notify = false;
         need_retry = false;
         early_chg_type = 0;
-
         wt6670f_start_detection();
         while((!m_chg_ready)&&(count<100)){
                 msleep(30);
@@ -1464,7 +1467,7 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 
                 if(!early_notified){
 		      early_chg_type = wt6670f_get_protocol();
-		}
+		   }
 
 		if(early_chg_type == 0x08 || early_chg_type == 0x09){
 			pr_err("[%s] WT6670F early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
@@ -1535,6 +1538,28 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 
         pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
 	}while(need_retry);
+	}//wt6670f
+		if(1 == g_qc3p_id){//z350
+			m_chg_type = 0;
+			wait_count = 0;
+			while((!m_chg_type)&&(wait_count<30)){
+				msleep(100);
+				wait_count++;
+				pr_err("z350 waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+			}
+			m_chg_type = wt6670f_get_protocol();
+			if(m_chg_type == 0x10){
+				wt6670f_en_hvdcp();
+
+				wait_count = 0;
+				while((m_chg_type != 0xff)&&(wait_count<30)){
+						msleep(100);
+						wait_count++;
+				}
+				m_chg_type = wt6670f_get_protocol();
+			}
+        	pr_err("[%s] z350 charge type is  0x%x\n",__func__, m_chg_type);
+		}
 
         switch (m_chg_type) {
             case 0x1:
