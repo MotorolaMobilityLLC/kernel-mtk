@@ -140,7 +140,7 @@ unsigned int gc02m1_read_all_data(mot_calibration_info_t * pOtpCalInfo)
        wb_flag =read_cmos_sensor_8(0x019);
        LOG_INF("group debugxxx =read_cmos_sensor_8(0x78) = 0x%x \n",wb_flag);
        pOtpCalInfo->awb_status=STATUS_CRC_FAIL;
-       if(wb_flag == 0x40)//1
+       if((wb_flag&0xc0)>>6 == 0x01)//1
        {
           for (i = 0; i < 9; i++) {
               write_cmos_sensor_8(0xfe, 0x02);
@@ -159,7 +159,7 @@ unsigned int gc02m1_read_all_data(mot_calibration_info_t * pOtpCalInfo)
 				gc02m1_wb_idx = 3;
 			}
 		}
-	}else if(wb_flag == 0x10)//2
+	}else if((wb_flag&0x30)>>4 == 0x01)//2
 	{
 	     for (i = 0; i < 8; i++) {
               write_cmos_sensor_8(0xfe, 0x02);
