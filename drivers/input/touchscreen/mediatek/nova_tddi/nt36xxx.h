@@ -141,6 +141,10 @@ struct nvt_ts_data {
 #ifdef CONFIG_SPI_MT65XX
     struct mtk_chip_config spi_ctrl;
 #endif
+	char product_id[10];
+	uint8_t fw_type;
+	uint32_t build_id;
+	uint32_t config_id;
 };
 
 #if NVT_TOUCH_PROC
