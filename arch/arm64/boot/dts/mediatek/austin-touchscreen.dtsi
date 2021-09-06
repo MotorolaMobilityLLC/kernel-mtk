@@ -153,6 +153,8 @@
 		/* MP */
 		//novatek,mp-support-dt;
 
+		novatek,def-config-id = <0x6503>;
+
 		novatek-mp-criteria-nvtpid@0 {
 			#address-cells = <1>;
 			#size-cells = <0>;
