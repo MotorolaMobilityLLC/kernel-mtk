@@ -137,7 +137,7 @@ unsigned int gc02m1_read_all_data(mot_calibration_info_t * pOtpCalInfo)
 	LOG_INF("G-Dg read_cmos_sensor_8(0x78) = 0x%x 0x%x \n", otp_data[0], gc02m1_otp_data.program_flag);
 	if((otp_data[0]&0xC0)>>6 == 0x01)//1
 		addr = 0x80;
-	else if((otp_data[0]&0x30)>>6 == 0x01)//2
+	else if((otp_data[0]&0x30)>>4 == 0x01)//2
 		addr = 0xC0;
 	else {
 		pOtpCalInfo->mnf_status=STATUS_CRC_FAIL;
