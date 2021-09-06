@@ -15,4 +15,9 @@ struct wt6670f {
 	struct mutex i2c_rw_lock;
 };
 
+enum {
+	QC3P_WT6670F,
+	QC3P_Z350,
+};
+
 int wt6670f_isp_flow(struct wt6670f *chip);

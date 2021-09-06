@@ -35,6 +35,8 @@ struct pinctrl_state *i2c6_sda_low;
 struct pinctrl_state *i2c6_sda_high;
 
 struct wt6670f *_wt = NULL;
+int g_qc3p_id = 0;
+int m_chg_type = 0;
 
 static int __wt6670f_write_word(struct wt6670f *wt, u8 reg, u16 data)
 {
@@ -92,8 +94,12 @@ static u16 wt6670f_get_vbus_voltage(void)
 	int ret;
 	u8 data[2];
 	u16 tmp;
-
-	ret = wt6670f_read_word(_wt, 0xBE, (u16 *)data);
+	if(QC3P_WT6670F == g_qc3p_id)
+		ret = wt6670f_read_word(_wt, 0xBE, (u16 *)data);
+	else if(QC3P_Z350 == g_qc3p_id)
+		ret = wt6670f_read_word(_wt, 0x12, (u16 *)data);
+	else
+		ret = -1;
 	if(ret < 0)
 	{
 		pr_err("wt6670f get vbus voltage fail\n");
@@ -107,13 +113,14 @@ static u16 wt6670f_get_vbus_voltage(void)
 	return (u16)(tmp * 18.98);
 }
 
-/*
-static u16 wt6670f_get_id(void)
+
+static u16 wt6670f_get_id(u8 reg)
 {
 	int ret;
 	u16 data;
 
-	ret = wt6670f_read_word(_wt, 0xBC, &data);
+	ret = wt6670f_read_word(_wt, reg, &data);//wt6670f-0xBC,Z350-0x13
+
 	if(ret < 0)
 	{
 		pr_err("wt6670f get id fail\n");
@@ -123,7 +130,6 @@ static u16 wt6670f_get_id(void)
 	pr_err(">>>>>>wt6670f get id = %x\n", data);
 	return data;
 }
-*/
 
 int wt6670f_start_detection(void)
 {
@@ -158,13 +164,40 @@ int wt6670f_re_run_apsd(void)
 }
 EXPORT_SYMBOL_GPL(wt6670f_re_run_apsd);
 
+
+int wt6670f_en_hvdcp(void)
+{
+	int ret;
+	u16 data = 0x01;
+
+	ret = wt6670f_write_word(_wt, 0x05, data);
+
+	if (ret < 0)
+	{
+		pr_info("z350 en hvdcp fail\n");
+		return ret;
+	}
+
+	return data & 0xff;
+}
+EXPORT_SYMBOL_GPL(wt6670f_en_hvdcp);
+
 int wt6670f_get_protocol(void)
 {
 	int ret;
 	u16 data;
-        u8 data1, data2;
+	u8 data1, data2;
+	if(QC3P_WT6670F == g_qc3p_id){
+		ret = wt6670f_read_word(_wt, 0xBD, &data);
+		pr_err("wt6670f get protocol %x\n",data);
+	}
+	else if(QC3P_Z350 == g_qc3p_id){
+		ret = wt6670f_read_word(_wt, 0x11, &data);
+		pr_err("z350 get protocol %x\n",data);
+	}
+	else
+		ret = -1;
 
-	ret = wt6670f_read_word(_wt, 0xBD, &data);
 	if (ret < 0)
 	{
 		pr_err("wt6670f get protocol fail\n");
@@ -174,7 +207,8 @@ int wt6670f_get_protocol(void)
         // Get data2 part
         data1 = data & 0xFF;
         data2 = data >> 8;
-
+	if((QC3P_Z350 == g_qc3p_id)&&(data1 <= 7))
+		data1--;
         pr_err("Get charger type, rowdata = 0X%04x, data1= 0X%02x, data2=0X%02x \n", data, data1, data2);
         if((data2 == 0x03) && ((data1 > 0x9) || (data1 == 0x7)))
         {
@@ -188,7 +222,7 @@ int wt6670f_get_protocol(void)
         }
 
 	if((data1 > 0x00 && data1 < 0x07) ||
-           (data1 > 0x07 && data1 < 0x0a)){
+           (data1 > 0x07 && data1 < 0x0a) ||(QC3P_Z350 == g_qc3p_id && data1 == 0x10)){
 		ret = data1;
 	}
 	else {
@@ -269,8 +303,14 @@ int wt6670f_set_voltage(u16 voltage)
     step |= 0x8000;
     step = ((step & 0xff) << 8) | ((step >> 8) & 0xff);
 	}
-  pr_err("---->southchip count = %d   %04x\n", _wt->count, step);
-	ret = wt6670f_write_word(_wt, 0xBB, step);
+	pr_err("---->southchip count = %d   %04x,QC3P_WT6670F=%d,g_qc3p_id=%d,voltage=%d,voltage_now=%d\n", _wt->count, step,QC3P_WT6670F,g_qc3p_id,voltage,voltage_now);
+
+	if(QC3P_WT6670F == g_qc3p_id)
+		ret = wt6670f_write_word(_wt, 0xBB, step);
+	else if(QC3P_Z350 == g_qc3p_id)
+		ret = wt6670f_write_word(_wt, 0x83, step);
+	else
+		ret = -1;
 
 	return ret;
 }
@@ -299,7 +339,11 @@ int wt6670f_set_volt_count(int count)
     step = ((step & 0xff) << 8) | ((step >> 8) & 0xff);
         }
   pr_err("---->southchip count = %d   %04x\n", _wt->count, step);
-        ret = wt6670f_write_word(_wt, 0xBB, step);
+
+	if(QC3P_WT6670F == g_qc3p_id)
+		ret = wt6670f_write_word(_wt, 0xBB, step);
+	else if(QC3P_Z350 == g_qc3p_id)
+		ret = wt6670f_write_word(_wt, 0x83, step);
 
         return ret;
 }
@@ -343,10 +387,18 @@ static ssize_t wt6670f_show_registers(struct device *dev,
 	int idx = 0;
 	int ret ;
 	u16 data;
+	if(QC3P_WT6670F == g_qc3p_id){
+		ret = wt6670f_read_word(wt, 0xBD, &data);
+		idx = snprintf(buf, PAGE_SIZE, ">>> reg[0xBD] = %04x\n", data);
+		pr_err(">>>>>>>>>>WT6670F test southchip  0xBD = %04x\n", data);
+	}
 
-	ret = wt6670f_read_word(wt, 0xBD, &data);
-	idx = snprintf(buf, PAGE_SIZE, ">>> reg[0xBD] = %04x\n", data);
-	pr_err(">>>>>>>>>>test southchip  0xBD = %04x\n", data);
+	if(QC3P_Z350 == g_qc3p_id){
+		ret = wt6670f_read_word(wt, 0x11, &data);
+		idx = snprintf(buf, PAGE_SIZE, ">>> reg[0x11] = %04x\n", data);
+		pr_err(">>>>>>>>>>Z350 test southchip  0x11 = %04x\n", data);
+	}
+
 	return idx;
 }
 
@@ -360,7 +412,11 @@ static ssize_t wt6670f_store_registers(struct device *dev,
 
 	ret = sscanf(buf, "%x", &val);
 
-	ret = wt6670f_write_word(wt, 0xBB, val);
+	if(QC3P_WT6670F == g_qc3p_id)
+		ret = wt6670f_write_word(wt, 0xBB, val);
+
+	if(QC3P_Z350 == g_qc3p_id)
+		ret = wt6670f_write_word(wt, 0x83, val);
 
 	return count;
 
@@ -411,7 +467,8 @@ EXPORT_SYMBOL_GPL(moto_tcmd_wt6670f_get_firmware_version);
 
 static irqreturn_t wt6670f_intr_handler(int irq, void *data)
 {
-	pr_info("%s: read charger type!\n", __func__);
+	m_chg_type = 0xff;
+	pr_info("%s,chg_type 0x:%x\n", __func__,m_chg_type);
 	_wt->chg_ready = true;
 
 	return IRQ_HANDLED;
@@ -461,6 +518,7 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 {
 	int ret = 0;
 	u16 firmware_version = 0;
+	u16 wt6670f_id = 0;
 	struct wt6670f *wt;
 
 	pr_info("[%s]\n", __func__);
@@ -536,6 +594,14 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	wt6670f_create_device_node(&(client->dev));
 
 	wt6670f_do_reset();
+
+	wt6670f_id = wt6670f_get_id(0x13);
+	if(0x3349 == wt6670f_id){
+		g_qc3p_id = QC3P_Z350;
+		pr_info("[%s] is z350\n", __func__);
+		goto probe_out;
+	}
+
 	firmware_version = wt6670f_get_firmware_version();
 	wt6670f_reset_chg_type();
 	pr_info("[%s] firmware_version = %d, chg_type = 0x%x\n", __func__,firmware_version, _wt->chg_type);
@@ -545,6 +611,13 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
             wt6670f_isp_flow(wt);
         }
 
+	wt6670f_id = wt6670f_get_id(0xBC);
+	if(0x5457 == wt6670f_id){
+		g_qc3p_id = QC3P_WT6670F;
+		pr_info("[%s] is wt6670f,firmware_version = %x\n", __func__,firmware_version);
+	}
+
+probe_out:
 	return 0;
 }
 
