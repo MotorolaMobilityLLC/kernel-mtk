@@ -118,6 +118,10 @@ struct record_state {
 };
 
 static unsigned char g_user_buf[USER_STR_BUFF] = {0};
+#define ILI_SPI_NAME "ilitek"
+#define ILI_SPI_NAME_TM "ilitek_tm"
+static struct class *touchscreen_class;
+static struct device *touchscreen_class_dev;
 
 int ili_str2hex(char *str)
 {
@@ -2783,6 +2787,99 @@ static int netlink_init(void)
 	return ret;
 }
 
+static ssize_t path_show(struct device *pDevice, struct device_attribute *pAttr, char *pBuf)
+{
+	ssize_t blen;
+	const char *path;
+
+	path = kobject_get_path(&ilits->spi->dev.kobj, GFP_KERNEL);
+	blen = scnprintf(pBuf, PAGE_SIZE, "%s\n", path ? path : "na");
+	kfree(path);
+
+	return blen;
+}
+
+/* Attribute: vendor (RO) */
+static ssize_t vendor_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	ILI_INFO("*** %s() vendor = %s ***\n", __func__, "ilitek");
+	return scnprintf(buf, PAGE_SIZE, "ilitek");
+}
+
+/* Attribute: ic_ver (RO) */
+static ssize_t ic_ver_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%s%s\n%s%d%d%d%d\n%s%04x\n",
+			"Product ID: ", ILI_SPI_NAME,
+			"Build ID: ", ilits->chip->fw_ver >> 24, (ilits->chip->fw_ver >> 16) & 0xFF,
+			(ilits->chip->fw_ver >> 8) & 0xFF, ilits->chip->fw_ver & 0xFF,
+			"Config ID: ", ilits->chip->core_ver);
+}
+
+static struct device_attribute touchscreen_attributes[] = {
+	__ATTR_RO(path),
+	__ATTR_RO(vendor),
+	__ATTR_RO(ic_ver),
+	__ATTR_NULL
+};
+
+int ilitek_sys_init(void)
+{
+	int i;
+	s32 ret = 0;
+	dev_t devno;
+	struct device_attribute *attrs = touchscreen_attributes;
+
+	ret = alloc_chrdev_region(&devno, 0, 1, ILI_SPI_NAME);
+	if (ret) {
+		ILI_ERR ("can't allocate chrdev\n");
+		return ret;
+	} else {
+
+		/* set sysfs for firmware */
+		touchscreen_class = class_create(THIS_MODULE, "touchscreen");
+		if (IS_ERR(touchscreen_class)) {
+			ret = PTR_ERR(touchscreen_class);
+			touchscreen_class = NULL;
+			ILI_ERR("Failed to create touchscreen class!\n");
+			return ret;
+		}
+		if(ilits->tp_module == MODEL_TM)
+			touchscreen_class_dev = device_create(touchscreen_class, NULL, devno, NULL, ILI_SPI_NAME_TM);
+		else
+			touchscreen_class_dev = device_create(touchscreen_class, NULL, devno, NULL, ILI_SPI_NAME);
+
+		pr_info(" touchscreen_class_dev = %p \n", touchscreen_class_dev);
+		if (IS_ERR(touchscreen_class_dev)) {
+			ret = PTR_ERR(touchscreen_class_dev);
+			touchscreen_class_dev = NULL;
+			ILI_ERR("Failed to create device(touchscreen_class_dev)!\n");
+			return ret;
+		}
+		ILI_INFO("Succeed to create device(touchscreen_class_dev)!\n");
+
+		for (i = 0; attrs[i].attr.name != NULL; ++i) {
+			ret = device_create_file(touchscreen_class_dev, &attrs[i]);
+			if (ret < 0)
+				goto device_destroy;
+		}
+	}
+
+	return ret;
+
+device_destroy:
+	for (--i; i >= 0; --i)
+		device_remove_file(touchscreen_class_dev, &attrs[i]);
+
+	touchscreen_class_dev = NULL;
+	class_unregister(touchscreen_class);
+	ILI_ERR("error creating touchscreen class\n");
+
+	return -ENODEV;
+}
+
 void ili_node_init(void)
 {
 	int i = 0, ret = 0;
@@ -2802,4 +2899,5 @@ void ili_node_init(void)
 		}
 	}
 	netlink_init();
+	ilitek_sys_init();
 }
