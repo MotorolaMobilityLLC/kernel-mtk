@@ -118,6 +118,88 @@ static int ufshcd_crypto_cfg_entry_write_key(union ufs_crypto_cfg_entry *cfg,
 	return -EINVAL;
 }
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include <tlc_km.h>
+
+static u8 ufshcd_crypto_get_crypto_mode(u8 cap_idx)
+{
+	if (cap_idx == 0)
+		return HWKM_BC_AES_128_XTS;
+	else if (cap_idx == 1)
+		return HWKM_BC_AES_256_XTS;
+
+	return 0;
+}
+
+static u32 ufshcd_get_crypto_para(const union ufs_crypto_cfg_entry *cfg, int slot)
+{
+	u32 crypto_para = 0;
+	u8 mode = 0;
+
+	mode = ufshcd_crypto_get_crypto_mode(cfg->crypto_cap_idx);
+
+	crypto_para = ((slot & 0xFF) << 24) | /* high 8 bits for slot number */
+			((mode & 0xFF) << 16) |  /* bit 16 ~ 24 for encryption mode */
+			((0x40 & 0xFF) << 8);  /* bit 8 ~ 16 for total key bytes */
+
+	/* Disable encryption if not configured yet */
+    if (cfg->config_enable == 0)
+		crypto_para |= 0x01;
+
+	return crypto_para;
+}
+
+static int ufshcd_program_wrapped_key(struct ufs_hba *hba,
+			      const union ufs_crypto_cfg_entry *cfg, int slot)
+{
+	u32 slot_offset = hba->crypto_cfg_register + slot * sizeof(*cfg);
+	int err = -EINVAL;
+
+	u32 crypto_para = ufshcd_get_crypto_para(cfg, slot);
+
+	ufshcd_hold(hba, false);
+
+	/* Clear the dword 16 */
+	ufshcd_writel(hba, 0, slot_offset + 16 * sizeof(cfg->reg_val[0]));
+	/* Ensure that CFGE is cleared before programming the key */
+	wmb();
+	pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
+	if (hwkm_program_key(
+			cfg->crypto_key, /* 64 bytes wrapped key data */
+			UFS_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /* 40 bytes in effect */
+			crypto_para,
+			STORAGE_KEY_UFS) != 0) {
+		pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+		goto out;
+	}
+	pr_notice("Trustonic HWKM: End programing slot: %d\n", slot);
+
+	wmb();
+	/* Write dword 17 */
+	ufshcd_writel(hba, le32_to_cpu(cfg->reg_val[17]),
+		      slot_offset + 17 * sizeof(cfg->reg_val[0]));
+	/* Dword 16 must be written last */
+	wmb();
+	/* Write dword 16 */
+	ufshcd_writel(hba, le32_to_cpu(cfg->reg_val[16]),
+		      slot_offset + 16 * sizeof(cfg->reg_val[0]));
+	wmb();
+	err = 0;
+out:
+	ufshcd_release(hba);
+	return err;
+}
+
+static int ufshcd_derive_raw_secret(struct keyslot_manager *ksm,
+			const u8 *wrapped_key,
+			unsigned int wrapped_key_size,
+			u8 *secret,
+			unsigned int secret_size)
+{
+	return hwkm_derive_raw_secret(wrapped_key, wrapped_key_size, secret, secret_size);
+}
+#endif
+
 static int ufshcd_program_key(struct ufs_hba *hba,
 			      const union ufs_crypto_cfg_entry *cfg, int slot)
 {
@@ -208,7 +290,11 @@ static int ufshcd_crypto_keyslot_program(struct keyslot_manager *ksm,
 	if (err)
 		return err;
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	err = ufshcd_program_wrapped_key(hba, &cfg, slot);
+#else
 	err = ufshcd_program_key(hba, &cfg, slot);
+#endif
 
 	memzero_explicit(&cfg, sizeof(cfg));
 
@@ -256,6 +342,9 @@ EXPORT_SYMBOL_GPL(ufshcd_crypto_disable_spec);
 static const struct keyslot_mgmt_ll_ops ufshcd_ksm_ops = {
 	.keyslot_program	= ufshcd_crypto_keyslot_program,
 	.keyslot_evict		= ufshcd_crypto_keyslot_evict,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	.derive_raw_secret	= ufshcd_derive_raw_secret,
+#endif
 };
 
 enum blk_crypto_mode_num ufshcd_blk_crypto_mode_num_for_alg_dusize(
@@ -337,7 +426,11 @@ int ufshcd_hba_init_crypto_spec(struct ufs_hba *hba,
 
 	hba->ksm = keyslot_manager_create(hba->dev, ufshcd_num_keyslots(hba),
 					  ksm_ops,
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+					  BLK_CRYPTO_FEATURE_WRAPPED_KEYS,
+#else
 					  BLK_CRYPTO_FEATURE_STANDARD_KEYS,
+#endif
 					  crypto_modes_supported, hba);
 
 	if (!hba->ksm) {
