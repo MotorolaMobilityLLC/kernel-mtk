@@ -666,6 +666,20 @@ static int cts_plat_parse_dt(struct cts_platform_data *pdata,
     }
     cts_info("  %-12s: %d", "Y resolution", pdata->res_y);
 
+    if (of_property_read_u32(dev_node, "chipone,def-build-id", &pdata->build_id)) {
+            pdata->build_id = 0;
+        cts_info("chipone,build_id undefined.\n");
+    } else {
+        cts_info("chipone,build_id=0x%04X\n", pdata->build_id);
+    }
+
+    if (of_property_read_u32(dev_node, "chipone,def-config-id", &pdata->config_id)) {
+           pdata->config_id = 0;
+        cts_info("chipone,config_id undefined.\n");
+    } else {
+        cts_info("chipone,config_id=0x%04X\n", pdata->config_id);
+    }
+
     return 0;
 }
 #endif /* CONFIG_CTS_OF */
