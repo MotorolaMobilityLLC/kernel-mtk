@@ -121,6 +121,9 @@
 		chipone,touch-earjack-detect-enable;
 		chipone,touch-earjack-state-filepath = "/sys/bus/platform/drivers/Accdet_Driver/state";
 		chipone,touch-earjack-poll-interval = <1000>;
+
+		chipone,def-build-id = <0x010a>;
+		chipone,def-config-id = <0x0001>;
 	};
 
 	ilitek@1{
