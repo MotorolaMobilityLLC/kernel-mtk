@@ -332,6 +332,12 @@
 	temp_t4_threshold = <60>;
 };
 
+&tboard_thermistor6 {
+	compatible = "mediatek,mtboard-thermistor6";
+	io-channels = <&auxadc 5>;
+	io-channel-names = "thermistor-ch5";
+};
+
 &charger {
 	/* common */
 	battery_cv = <4400000>;
