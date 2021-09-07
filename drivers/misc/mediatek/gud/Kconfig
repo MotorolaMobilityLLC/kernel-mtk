@@ -78,3 +78,12 @@ config TRUSTONIC_TRUSTED_UI
 	  Trustonic TUI features was based on Trustonic TEE mechanism to protect
 	  Touch/Display inside TEE, to prevent malicious access of sensitive data
 	  used by APPs like Banking.
+
+config FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+    bool "Wrapped Key support for FSCRYPT V2"
+    default n
+    ---help---
+      Enable Fscrypt V2 wrapped key support
+      This option enables keymaster in mobicore drive which is used to communicate with
+      TEE OS, for things like, wrapped key programming, wrapped key derivation,
+      and key unwrapping.
