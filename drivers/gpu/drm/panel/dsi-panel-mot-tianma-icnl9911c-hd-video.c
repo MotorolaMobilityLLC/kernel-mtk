@@ -249,9 +249,8 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
 	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(10);
+	msleep(20);
 	lcm_dcs_write_seq_static(ctx, 0x26, 0x02);
-	msleep(100);
 }
 
 static int lcm_disable(struct drm_panel *panel)
@@ -506,12 +505,12 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	char bl_tb0[] = {0x51, 0x07, 0xFF};
+	char bl_tb0[] = {0x51, 0xFF, 0x0E};
 
 	pr_debug("icnl9911c level : %d\n", level);
 
-	bl_tb0[1] = ((level >> 8) & 0x7);
-	bl_tb0[2] = (level & 0xff);
+	bl_tb0[1] = ((level >> 3) & 0xFF);
+	bl_tb0[2] = ((level << 1) & 0x0E);
 
 	if (!cb)
 		return -1;
