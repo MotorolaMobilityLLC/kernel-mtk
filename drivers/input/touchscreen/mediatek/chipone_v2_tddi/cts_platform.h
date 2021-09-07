@@ -117,6 +117,9 @@ struct cts_platform_data {
     u8  vkey_keycodes[CFG_CTS_MAX_VKEY_NUM];
 #endif /* CONFIG_CTS_VIRTUALKEY */
 
+    u32 build_id;
+    u32 config_id;
+
     struct cts_device *cts_dev;
 
     struct input_dev *ts_input_dev;
