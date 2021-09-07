@@ -20,4 +20,6 @@
 		};
 	};
 
+        tboard_thermistor6: thermal-sensor6 {
+        };
 };
