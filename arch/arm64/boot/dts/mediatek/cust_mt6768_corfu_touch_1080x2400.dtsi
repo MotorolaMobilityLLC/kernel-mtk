@@ -57,6 +57,7 @@
                 interrupts = <0 0x2>;
                 focaltech,avdd-gpio = <&pio 29 0>;
                 focaltech,reset-gpio =<&pio 23 0x0>;
+                focaltech,vdd-gpio = <&pio 22 0>;
                 focaltech,irq-gpio = <&pio 0 0x0>;
                 focaltech,max-touch-number = <10>;
                 focaltech,display-coords =  <0 0 1080 2400>;
