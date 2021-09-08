@@ -164,9 +164,9 @@ static struct LCM_setting_table init_setting[] = {
 	{0XF8,0x01,{0X65}},
 	{0XFF,0x01,{0X23}},
 	{0XFB,0x01,{0X01}},
-	{0X07,0x01,{0X40}},//35.5KHZ
-	{0X08,0x01,{0X03}},//35.5KHZ
-	{0X09,0x01,{0X00}},//35.5KHZ
+	{0X07,0x01,{0X20}},//20KHZ
+	{0X08,0x01,{0X0A}},//20KHZ
+	{0X09,0x01,{0X0E}},//20KHZ
 	{0XFF,0x01,{0X24}},
 	{0XFB,0x01,{0X01}},
 	{0X00,0x01,{0X20}},
@@ -692,8 +692,10 @@ static void lcm_init(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BL_EN_OUT1);
 
 	pr_info("%s,backlight IC chip ID = 0x%x\n",__func__,BL_control_read_bytes(0x00));
-	if(0x03 == BL_control_read_bytes(0x00))
+	if(0x03 == BL_control_read_bytes(0x00)){
 		BL_control_write_bytes(0x02,0x01);
+		BL_control_write_bytes(0x08,0x9F);
+	}
 	else{
 		BL_control_write_bytes(0x10,0x07);
 		BL_control_write_bytes(0x19,0x07);
