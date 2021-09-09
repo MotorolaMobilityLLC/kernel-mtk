@@ -10,7 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
+#define PFX "MOT_AUSTIN_HI1336_camera_sensor"
+#define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -23,25 +24,13 @@
 
 #include "mot_austin_hi1336mipiraw_Sensor.h"
 #include "mot_austin_hi1336_Setting.h"
-#define PFX "hi1336_camera_sensor"
+#include "mot_austin_hi1336_otp.h"
 #define LOG_INF(format, args...)    \
 	pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define e2prom 1
 
 #define per_frame 1
-
-extern bool read_hi1336_eeprom( kal_uint16 addr, BYTE *data, kal_uint32 size);
-extern bool read_eeprom( kal_uint16 addr, BYTE * data, kal_uint32 size);
-
-#ifdef EEPROM_READY
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/hi1336_eeprom_data.bin"
-#define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
-
-static const char *hi1336_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
-static mot_calibration_info_t hi1336_cal_info = {0};
-int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
-#endif
 
 #define MULTI_WRITE 1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -527,9 +516,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
                         // get calibration status and mnf data.
 #ifdef EEPROM_READY
-			imgread_cam_cal_data(*sensor_id, hi1336_dump_file, &hi1336_cal_info);
+			AUSTIN_HI1336_read_data_from_eeprom(AUSTIN_HI1336_EEPROM_SLAVE_ADDR, 0x0000, AUSTIN_HI1336_EEPROM_SIZE);
+			AUSTIN_HI1336_eeprom_dump_bin(EEPROM_DATA_PATH, AUSTIN_HI1336_EEPROM_SIZE, (void *)AUSTIN_HI1336_eeprom);
+			AUSTIN_HI1336_eeprom_format_calibration_data((void *)AUSTIN_HI1336_eeprom);
 #endif
-			LOG_INF("i2c write id : 0x%x, sensor id: 0x%x\n",
+			LOG_INF("hi1336 i2c write id : 0x%x, sensor id: 0x%x\n",
 			imgsensor.i2c_write_id, *sensor_id);
 			return ERROR_NONE;
 			}
@@ -869,16 +860,14 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
 	sensor_info->SensorHightSampling = 0;    // 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
-#ifdef EEPROM_READY
-	sensor_info->calibration_status.mnf   = hi1336_cal_info.mnf_status;
-	sensor_info->calibration_status.af    = hi1336_cal_info.af_status;
-	sensor_info->calibration_status.awb   = hi1336_cal_info.awb_status;
-	sensor_info->calibration_status.lsc   = hi1336_cal_info.lsc_status;
-	sensor_info->calibration_status.pdaf  = hi1336_cal_info.pdaf_status;
-	sensor_info->calibration_status.dual  = hi1336_cal_info.dual_status;
+	sensor_info->calibration_status.mnf   = mnf_status;
+	sensor_info->calibration_status.af    = af_status;
+	sensor_info->calibration_status.awb   = awb_status;
+	sensor_info->calibration_status.lsc   = lsc_status;
+	sensor_info->calibration_status.pdaf  = pdaf_status;
+	sensor_info->calibration_status.dual  = dual_status;
 
-	memcpy(&sensor_info->mnf_calibration, &hi1336_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
-#endif
+	AUSTIN_HI1336_eeprom_get_mnf_data((void *) AUSTIN_HI1336_eeprom, &sensor_info->mnf_calibration);
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	    sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
