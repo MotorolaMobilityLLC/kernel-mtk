@@ -450,6 +450,9 @@ static struct mutex open_isp_mutex;
 #define CAM_4X1_SUB_COMMON_D40C (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd40c)
 
 #define CAM_4X1_SUB_COMMON_EN_D110 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd110)
+
+#define CAMSYS_MAIN_CAMSYS_SW_RST (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0x000c)
+#define CAMSYS_RAWB_CAMSYS_SW_RST (isp_devs[ISP_CAMSYS_RAWB_CONFIG_IDX].regs + 0x000c)
 #endif
 
 #define ISP_CAMSYS_RAWA_CONFIG_BASE (isp_devs[ISP_CAMSYS_RAWA_CONFIG_IDX].regs)
@@ -2244,6 +2247,26 @@ static inline void smi_control_clock_mtcmos(enum ISP_DEV_NODE_ENUM module, bool 
 
 		if (module == ISP_CAM_B_IDX) {
 #ifdef SUB_COMMON_CLR
+			/* Reset 4x1 sub common & dump.
+			 * [26:27]: SUB_COMMON_4X1_RST. 1 means reset; 0 means not clear.
+			 */
+			tmp_reg = ISP_RD32(CAMSYS_MAIN_CAMSYS_SW_RST);
+			tmp_reg = tmp_reg | 0x4000000;
+			ISP_WR32(CAMSYS_MAIN_CAMSYS_SW_RST, tmp_reg);
+
+			ISP_SMI_CG_Dump("after SUB_COMMON_4X1_RST reset", false);
+
+
+			/* Reset CAMSYS_RAWB & dump.
+			 * [0:1]: LARBX_RST. 1 means reset; 0 means not clear.
+			 */
+			tmp_reg = 0;
+			tmp_reg = ISP_RD32(CAMSYS_RAWB_CAMSYS_SW_RST);
+			tmp_reg = tmp_reg | 0x1;
+			ISP_WR32(CAMSYS_RAWB_CAMSYS_SW_RST, tmp_reg);
+
+
+			tmp_reg = 0;
 			tmp_reg = ISP_RD32(CAM_4X1_SUB_COMMON_EN_D110);
 			tmp_reg = tmp_reg | 0x4000;
 			ISP_WR32(CAM_4X1_SUB_COMMON_EN_D110, tmp_reg);
@@ -2267,13 +2290,28 @@ static inline void smi_control_clock_mtcmos(enum ISP_DEV_NODE_ENUM module, bool 
 #ifdef SUB_COMMON_CLR
 			ISP_SMI_CG_Dump("after disable larb17", false);
 
-			udelay(10); // delay 10us
+			udelay(20); // delay 10us
 
 			tmp_reg = ISP_RD32(CAM_4X1_SUB_COMMON_EN_D110);
 			tmp_reg = tmp_reg & 0xFFFFBFFF;
 			ISP_WR32(CAM_4X1_SUB_COMMON_EN_D110, tmp_reg);
 
 			ISP_SMI_CG_Dump("after CAM_4X1_SUB_COMMON_EN_D110 ostd en set 0", false);
+
+			/* Release 4x1 sub common & dump */
+			tmp_reg = 0;
+			tmp_reg = ISP_RD32(CAMSYS_MAIN_CAMSYS_SW_RST);
+			tmp_reg = tmp_reg & 0xFBFFFFFF;
+			ISP_WR32(CAMSYS_MAIN_CAMSYS_SW_RST, tmp_reg);
+
+			ISP_SMI_CG_Dump("after SUB_COMMON_4X1_RST release", false);
+
+
+			/* Release CAMSYS_RAWB_CAMSYS_SW_RST & dump */
+			tmp_reg = 0;
+			tmp_reg = ISP_RD32(CAMSYS_RAWB_CAMSYS_SW_RST);
+			tmp_reg = tmp_reg & 0xFFFFFFFE;
+			ISP_WR32(CAMSYS_RAWB_CAMSYS_SW_RST, tmp_reg);
 #endif
 		}
 	}
