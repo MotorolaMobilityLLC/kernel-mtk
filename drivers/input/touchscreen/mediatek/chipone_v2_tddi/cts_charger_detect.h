@@ -6,8 +6,8 @@
 struct chipone_ts_data;
 
 #ifdef CONFIG_CTS_CHARGER_DETECT
-extern int cts_init_charger_detect(struct chipone_ts_data *cts_data);
-extern int cts_deinit_charger_detect(struct chipone_ts_data *cts_data);
+extern int cts_charger_detect_init(struct chipone_ts_data *cts_data);
+extern int cts_charger_detect_deinit(struct chipone_ts_data *cts_data);
 extern int cts_start_charger_detect(struct chipone_ts_data *cts_data);
 extern int cts_stop_charger_detect(struct chipone_ts_data *cts_data);
 extern int cts_is_charger_attached(struct chipone_ts_data *cts_data,
@@ -37,3 +37,4 @@ static inline int cts_is_charger_attached(struct chipone_ts_data *cts_data,
 #endif /* CONFIG_CTS_CHARGER_DETECT */
 
 #endif /* CTS_CHARGER_DETECT_H */
+
