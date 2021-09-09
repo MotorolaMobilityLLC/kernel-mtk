@@ -485,6 +485,7 @@ int dpmaif_stop_rx(unsigned char hif_id);
 int dpmaif_stop_tx(unsigned char hif_id);
 int dpmaif_stop(unsigned char hif_id);
 void dpmaif_stop_hw(void);
+extern void ccmni_clr_flush_timer(void);
 #ifdef CONFIG_MTK_GIC_V3_EXT
 extern void mt_irq_dump_status(int irq);
 #endif

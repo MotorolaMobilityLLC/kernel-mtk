@@ -249,6 +249,22 @@ static int is_skb_gro(struct sk_buff *skb)
 		return 0;
 }
 
+void ccmni_clr_flush_timer(void)
+{
+	int i = 0;
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[0];
+
+	if (ctlb == NULL)
+		return;
+
+	for (i = 0; i < ctlb->ccci_ops->ccmni_num; i++)
+		if (ctlb->ccmni_inst[i] && ctlb->ccmni_inst[i]->dev)
+			if (ctlb->ccmni_inst[i]->dev->flags & IFF_UP)
+				getnstimeofday(&ctlb->ccmni_inst[i]->flush_time);
+
+}
+EXPORT_SYMBOL(ccmni_clr_flush_timer);
+
 static void ccmni_gro_flush(struct ccmni_instance *ccmni)
 {
 	struct timespec curr_time, diff;
