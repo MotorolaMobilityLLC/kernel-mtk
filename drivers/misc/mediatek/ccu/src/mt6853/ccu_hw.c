@@ -392,53 +392,55 @@ int ccu_power(struct ccu_power_s *power)
 
 	} else if (power->bON == 0) {
 		/*CCU Power off*/
-		ccu_sw_hw_reset();
-		if (ccuInfo.IsCcuPoweredOn == 1)
+		if (ccuInfo.IsCcuPoweredOn == 1) {
+			ccu_sw_hw_reset();
 			ret = _ccu_powerdown(true);
+		}
 
 	} else if (power->bON == 2) {
 		/*Restart CCU, no need to release CG*/
+		if (ccuInfo.IsCcuPoweredOn == 1) {
+			/*0. Set CCU_A_RESET. CCU_HW_RST=1*/
+			/*TSF be affected.*/
+			ccu_write_reg(ccu_base, RESET, 0xFF3FFCFF);
+			/*CCU_HW_RST.*/
+			ccu_write_reg(ccu_base, RESET, 0x00010000);
+			LOG_DBG("reset wrote\n");
+			/*ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);*/
 
-		/*0. Set CCU_A_RESET. CCU_HW_RST=1*/
-		/*TSF be affected.*/
-		ccu_write_reg(ccu_base, RESET, 0xFF3FFCFF);
-		/*CCU_HW_RST.*/
-		ccu_write_reg(ccu_base, RESET, 0x00010000);
-		LOG_DBG("reset wrote\n");
-		/*ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);*/
+			/*use user space buffer*/
+			ccu_write_reg(ccu_base, SPREG_02_LOG_DRAM_ADDR1,
+				power->workBuf.mva_log[0]);
+			ccu_write_reg(ccu_base, SPREG_03_LOG_DRAM_ADDR2,
+				power->workBuf.mva_log[1]);
 
-		/*use user space buffer*/
-		ccu_write_reg(ccu_base, SPREG_02_LOG_DRAM_ADDR1,
-			power->workBuf.mva_log[0]);
-		ccu_write_reg(ccu_base, SPREG_03_LOG_DRAM_ADDR2,
-			power->workBuf.mva_log[1]);
-
-		LOG_DBG("LogBuf_mva[0](0x%x)\n", power->workBuf.mva_log[0]);
-		LOG_DBG("LogBuf_mva[1](0x%x)\n", power->workBuf.mva_log[1]);
+			LOG_DBG("LogBuf_mva[0](0x%x)\n", power->workBuf.mva_log[0]);
+			LOG_DBG("LogBuf_mva[1](0x%x)\n", power->workBuf.mva_log[1]);
+		}
 	} else if (power->bON == 3) {
 		/*Pause CCU, but don't pullup CG*/
+		if (ccuInfo.IsCcuPoweredOn == 1) {
+			/*Check CCU halt status*/
+			while ((ccu_read_reg(ccu_base, SPREG_08_CCU_INIT_CHECK)
+				!= CCU_STATUS_INIT_DONE_2)
+				&& (timeout >= 0)) {
+				mdelay(1);
+				LOG_DBG("wait ccu halt done\n");
+				LOG_DBG("ccu halt stat: %x\n",
+				ccu_read_reg_bit(ccu_base, CCU_ST, CCU_SYS_HALT));
+				timeout = timeout - 1;
+			}
 
-		/*Check CCU halt status*/
-		while ((ccu_read_reg(ccu_base, SPREG_08_CCU_INIT_CHECK)
-			!= CCU_STATUS_INIT_DONE_2)
-			&& (timeout >= 0)) {
-			mdelay(1);
-			LOG_DBG("wait ccu halt done\n");
-			LOG_DBG("ccu halt stat: %x\n",
-			ccu_read_reg_bit(ccu_base, CCU_ST, CCU_SYS_HALT));
-			timeout = timeout - 1;
+			if (timeout <= 0) {
+				LOG_ERR("ccu_pause timeout\n");
+				return -ETIMEDOUT;
+			}
+
+			/*Set CCU_A_RESET. CCU_HW_RST=1*/
+			ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
+
+			ccuInfo.IsCcuPoweredOn = 0;
 		}
-
-		if (timeout <= 0) {
-			LOG_ERR("ccu_pause timeout\n");
-			return -ETIMEDOUT;
-		}
-
-		/*Set CCU_A_RESET. CCU_HW_RST=1*/
-		ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
-
-		ccuInfo.IsCcuPoweredOn = 0;
-
 	} else if (power->bON == 4) {
 		/*CCU boot fail, just enable CG*/
 		if (ccuInfo.IsCcuPoweredOn == 1) {
@@ -1166,7 +1168,8 @@ void *ccu_da_to_va(u64 da, int len)
 	} else {
 		offset = da - CCU_CACHE_BASE;
 		if ((offset >= 0) &&
-		((offset + len) < CCU_CTRL_BUF_TOTAL_SIZE)) {
+		((offset + len) < CCU_CTRL_BUF_TOTAL_SIZE) &&
+		((offset + len) < bin_mem->size)) {
 			LOG_INF_MUST("da(0x%lx) to va(0x%lx)",
 				da, bin_mem->va + offset);
 			return (uint32_t *)(bin_mem->va + offset);
