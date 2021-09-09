@@ -167,3 +167,10 @@ config MTK_DRE30_SUPPORT
 	  display visual enhancement ver.3.
 	  This feature requires the cowork of AAL user-space algorithm process.
 	  Please also turn on MTK_AAL_SUPPORT amd MTK_DRE30_SUPPORT in ProjectConfig.mk.
+
+config MTK_ESD_RECOVERY_BACKLIGHT
+	bool "support esd recovery backlight"
+	default n
+	help
+	   if use backlight by custom,not by mtk,after esd recovery backlight need by custom
+	   if not do this,backlight will not open.
