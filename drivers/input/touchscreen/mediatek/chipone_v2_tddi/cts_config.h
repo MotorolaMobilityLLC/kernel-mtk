@@ -3,12 +3,10 @@
 
 /** Driver version */
 #define CFG_CTS_DRIVER_MAJOR_VERSION        1
-#define CFG_CTS_DRIVER_MINOR_VERSION        3
-#define CFG_CTS_DRIVER_PATCH_VERSION        17
+#define CFG_CTS_DRIVER_MINOR_VERSION        2
+#define CFG_CTS_DRIVER_PATCH_VERSION        8
 
-//V1.3.17
-//add selftest and request_firmware function
-#define CFG_CTS_DRIVER_VERSION             "v1.3.17"// "v1.3.16"
+#define CFG_CTS_DRIVER_VERSION              "v1.2.8"
 
 /** Whether reset pin is used */
 #define CFG_CTS_HAS_RESET_PIN
@@ -20,69 +18,59 @@
 #define CFG_CTS_HAS_RESET_PIN
 #endif
 
-#define CFG_CTS_SPI_SPEED_KHZ               4000
+#define CFG_CTS_SPI_SPEED_KHZ               4000//6000
 
 #endif
 
-/* Handle IRQ whether in workqueue or kthread. */
-//#define CFG_CTS_HANDLE_IRQ_USE_WORKQUEUE
-
-/* With SCHED_RR option, kthread will get better performance by
- * dramatic decrease delay between irq and work.
- */
-#define CFG_CTS_HANDLE_IRQ_USE_KTHREAD
-
-/* UP event missing by some reason will cause touch remaining when
- * all fingers are lifted or flying line when touch in the next time.
- * Enable following option will prevent this.
- * FIXME:
- *   Currently, one finger UP event missing in multi-touch, it will
- *   report UP to system when all fingers are lifted.
- */
-#define CFG_CTS_MAKEUP_EVENT_UP
-
+#define CFG_CTS_FORCE_UP
+#define CONFIG_GENERIC_HARDIRQS
 //#define CFG_CTS_FW_LOG_REDIRECT
 
 /** Whether force download firmware to chip */
 //#define CFG_CTS_FIRMWARE_FORCE_UPDATE
 
 /** Use build in firmware or firmware file in fs*/
-#define CFG_CTS_DRIVER_BUILTIN_FIRMWARE
+//#define CFG_CTS_DRIVER_BUILTIN_FIRMWARE
 #define CFG_CTS_FIRMWARE_IN_FS
 #ifdef CFG_CTS_FIRMWARE_IN_FS
-    #define CFG_CTS_FIRMWARE_FILENAME       "ICNL9911C.bin"
-    #define CFG_CTS_FIRMWARE_FILEPATH       "/vendor/firmware/ICNL9911C.bin"
+//#define CFG_CTS_FW_UPDATE_SYS	// Add FW custom process.
+//#define CFG_CTS_FW_UPDATE_FILE_LOAD	// Load config fw bin as default.
+#ifdef CFG_CTS_FW_UPDATE_FILE_LOAD
+#define CFG_CTS_FW_FILE_NAME_MAX_LEN        128
+#define CFG_CTS_FW_FILE_PATH                "/vendor/firmware/"
+#define CFG_CTS_FW_FILE_NAME_VENDOR         "chipone"
+#endif /*CFG_CTS_FW_UPDATE_FILE_LOAD*/
+
+#define CFG_CTS_FIRMWARE_FILENAME           "ICNL9911C.bin"
+#define CFG_CTS_FIRMWARE_FILEPATH           "/vendor/firmware/ICNL9911C.bin"
 #endif /* CFG_CTS_FIRMWARE_IN_FS */
 
 /* IC type support */
-#define CFG_CTS_CHIP_NAME      "ICNL9911C"
+#define CFG_CTS_CHIP_NAME      "ICNL9911S"
 
 #ifdef CONFIG_PROC_FS
     /* Proc FS for backward compatibility for APK tool com.ICN85xx */
-    #define CONFIG_CTS_LEGACY_TOOL
+#define CONFIG_CTS_LEGACY_TOOL
 #endif /* CONFIG_PROC_FS */
 
 #ifdef CONFIG_SYSFS
     /* Sys FS for gesture report, debug feature etc. */
-    #define CONFIG_CTS_SYSFS
+#define CONFIG_CTS_SYSFS
 #endif /* CONFIG_SYSFS */
 
-#define CFG_CTS_MAX_TOUCH_NUM               (10)
+#define CFG_CTS_MAX_TOUCH_NUM               (10) // 5
 
 /* Virtual key support */
 //#define CONFIG_CTS_VIRTUALKEY
 #ifdef CONFIG_CTS_VIRTUALKEY
-    #define CFG_CTS_MAX_VKEY_NUM            (4)
-    #define CFG_CTS_NUM_VKEY                (3)
-    #define CFG_CTS_VKEY_KEYCODES           {KEY_BACK, KEY_HOME, KEY_MENU}
+#define CFG_CTS_MAX_VKEY_NUM            (4)
+#define CFG_CTS_NUM_VKEY                (3)
+#define CFG_CTS_VKEY_KEYCODES           {KEY_BACK, KEY_HOME, KEY_MENU}
 #endif /* CONFIG_CTS_VIRTUALKEY */
 
 /* Gesture wakeup */
-#define CFG_CTS_GESTURE
+//#define CFG_CTS_GESTURE
 #ifdef CFG_CTS_GESTURE
-
-//#define CONFIG_CTS_GESTURE_CALLBACK
-
 #define GESTURE_UP                          0x11
 #define GESTURE_C                           0x12
 #define GESTURE_O                           0x13
@@ -97,45 +85,42 @@
 #define GESTURE_LEFT                        0x23
 #define GESTURE_RIGHT                       0x24
 
-    #define CFG_CTS_NUM_GESTURE             (13u)
-    #define CFG_CTS_GESTURE_REPORT_KEY
-    #define CFG_CTS_GESTURE_KEYMAP      \
-        {{GESTURE_D_TAP, KEY_POWER,},   \
-         {GESTURE_UP, KEY_UP,},         \
-         {GESTURE_DOWN, KEY_DOWN,},     \
-         {GESTURE_LEFT, KEY_LEFT,},     \
-         {GESTURE_RIGHT, KEY_RIGHT,},   \
-         {GESTURE_C, KEY_C,},           \
-         {GESTURE_W, KEY_W,},           \
-         {GESTURE_V, KEY_V,},           \
-         {GESTURE_Z, KEY_Z,},           \
-         {GESTURE_M, KEY_M,},           \
-         {GESTURE_O, KEY_O,},           \
-         {GESTURE_E, KEY_E,},           \
-         {GESTURE_S, KEY_S,},           \
-        }
-    #define CFG_CTS_GESTURE_REPORT_TRACE    0
+#define CFG_CTS_NUM_GESTURE             (13u)
+#define CFG_CTS_GESTURE_REPORT_KEY
+#define CFG_CTS_GESTURE_KEYMAP  \
+	{{GESTURE_C, KEY_C,},       \
+	{GESTURE_W, KEY_W,},       \
+	{GESTURE_V, KEY_V,},       \
+	{GESTURE_D_TAP, KEY_F1,},  \
+	{GESTURE_Z, KEY_Z,},       \
+	{GESTURE_M, KEY_M,},       \
+	{GESTURE_O, KEY_O,},       \
+	{GESTURE_E, KEY_E,},       \
+	{GESTURE_S, KEY_S,},       \
+	{GESTURE_UP, KEY_UP,},	   \
+	{GESTURE_DOWN, KEY_DOWN,},	   \
+	{GESTURE_LEFT, KEY_LEFT,},	   \
+	{GESTURE_RIGHT, KEY_RIGHT,},	   \
+	}
+#define CFG_CTS_GESTURE_REPORT_TRACE    0
 #endif /* CFG_CTS_GESTURE */
 
 //#define CONFIG_CTS_GLOVE
 
 #define CONFIG_CTS_CHARGER_DETECT
 
-#define CONFIG_CTS_EARJACK_DETECT
-
-
 /* ESD protection */
 //#define CONFIG_CTS_ESD_PROTECTION
 #ifdef CONFIG_CTS_ESD_PROTECTION
-    #define CFG_CTS_ESD_PROTECTION_CHECK_PERIOD         (2 * HZ)
-    #define CFG_CTS_ESD_FAILED_CONFIRM_CNT              3
+#define CFG_CTS_ESD_PROTECTION_CHECK_PERIOD         (2 * HZ)
+#define CFG_CTS_ESD_FAILED_CONFIRM_CNT              3
 #endif /* CONFIG_CTS_ESD_PROTECTION */
 
 /* Use slot protocol (protocol B), comment it if use protocol A. */
 #define CONFIG_CTS_SLOTPROTOCOL
 
 #ifdef CONFIG_CTS_LEGACY_TOOL
-    #define CFG_CTS_TOOL_PROC_FILENAME      "icn85xx_tool"
+#define CFG_CTS_TOOL_PROC_FILENAME      "icn85xx_tool"
 #endif /* CONFIG_CTS_LEGACY_TOOL */
 
 #define CFG_CTS_UPDATE_CRCCHECK
