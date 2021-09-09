@@ -2082,7 +2082,7 @@ unsigned int dual_pipe_comp_mapping(unsigned int comp_id)
 		break;
 	case DDP_COMPONENT_OVL2_2L:
 		ret = DDP_COMPONENT_OVL3_2L;
-
+		break;
 	case DDP_COMPONENT_AAL0:
 		ret = DDP_COMPONENT_AAL1;
 		break;
