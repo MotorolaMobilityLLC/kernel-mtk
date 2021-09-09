@@ -2672,6 +2672,7 @@ static void set_drb_msg(unsigned char q_num, unsigned short cur_idx,
 	msg.dtyp = DES_DTYP_MSG;
 	msg.reserved = 0;
 	msg.c_bit = 1;
+	msg.r = 0;
 	msg.packet_len = pkt_len;
 	msg.count_l = count_l;
 	msg.channel_id = channel_id;
