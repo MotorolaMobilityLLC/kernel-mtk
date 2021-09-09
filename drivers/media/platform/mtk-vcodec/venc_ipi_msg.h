@@ -119,6 +119,7 @@ enum venc_set_param_type {
 	VENC_SET_PARAM_REFP_DISTANCE,
 	VENC_SET_PARAM_REFP_FRMNUM,
 	VENC_SET_PARAM_LOG,
+	VENC_SET_PARAM_ENABLE_DUMMY_NAL,
 };
 
 /**
@@ -425,6 +426,7 @@ struct venc_vcu_config {
 	__u32 frame_level_qp;
 	__u32 maxrefpnum;
 	__u32 maxrefbufFrameNum;
+	__u32 dummynal;
 };
 
 /**

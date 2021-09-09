@@ -527,6 +527,13 @@ static int vidioc_venc_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_MPEG_MTK_LOG:
 		mtk_vcodec_set_log(ctx, ctrl->p_new.p_char);
 		break;
+	case V4L2_CID_MPEG_MTK_ENCODE_ENABLE_DUMMY_NAL:
+		mtk_v4l2_debug(2,
+			"V4L2_CID_MPEG_MTK_ENCODE_ENABLE_DUMMY_NAL: %d",
+			ctrl->val);
+		p->dummynal = ctrl->val;
+		ctx->param_change |= MTK_ENCODE_PARAM_DUMMY_NAL;
+		break;
 	default:
 		mtk_v4l2_err("ctrl-id=%d not support!", ctrl->id);
 		ret = -EINVAL;
@@ -1104,6 +1111,7 @@ static void mtk_venc_set_param(struct mtk_vcodec_ctx *ctx,
 	param->b_qp = enc_params->b_qp;
 	param->svp_mode = enc_params->svp_mode;
 	param->tsvc = enc_params->tsvc;
+	param->dummynal = enc_params->dummynal;
 	param->max_qp = enc_params->max_qp;
 	param->min_qp = enc_params->min_qp;
 	param->i_p_qp_delta = enc_params->i_p_qp_delta;
@@ -2317,6 +2325,17 @@ static int mtk_venc_param_change(struct mtk_vcodec_ctx *ctx)
 					&enc_prm);
 	}
 
+	if (!ret &&
+	mtk_buf->param_change & MTK_ENCODE_PARAM_DUMMY_NAL) {
+		enc_prm.dummynal = mtk_buf->enc_params.dummynal;
+		mtk_v4l2_debug(1, "[%d] idx=%d, tsvc=%d",
+				ctx->id,
+				mtk_buf->vb.vb2_buf.index,
+				mtk_buf->enc_params.dummynal);
+		ret |= venc_if_set_param(ctx,
+					VENC_SET_PARAM_ENABLE_DUMMY_NAL,
+					&enc_prm);
+	}
 
 	mtk_buf->param_change = MTK_ENCODE_PARAM_NONE;
 
@@ -3069,6 +3088,18 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 				&mtk_vcodec_enc_ctrl_ops,
 				V4L2_CID_MPEG_MTK_LOG,
 				0, 255, 1, 0);
+
+	memset(&cfg, 0, sizeof(cfg));
+	cfg.id = V4L2_CID_MPEG_MTK_ENCODE_ENABLE_DUMMY_NAL;
+	cfg.type = V4L2_CTRL_TYPE_INTEGER;
+	cfg.flags = V4L2_CTRL_FLAG_WRITE_ONLY;
+	cfg.name = "Video encode enable dummynal";
+	cfg.min = 0;
+	cfg.max = 1;
+	cfg.step = 1;
+	cfg.def = 0;
+	cfg.ops = ops;
+	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
 
 	if (handler->error) {
 		mtk_v4l2_err("Init control handler fail %d",

@@ -508,6 +508,7 @@ static int venc_set_param(unsigned long handle,
 			inst->vsi->config.frame_level_qp =
 				enc_prm->frame_level_qp;
 		}
+		inst->vsi->config.dummynal = enc_prm->dummynal;
 
 		if (enc_prm->color_desc) {
 			memcpy(&inst->vsi->config.color_desc,
