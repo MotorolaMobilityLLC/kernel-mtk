@@ -4,7 +4,6 @@
 #include "cts_platform.h"
 #include "cts_core.h"
 #include "cts_sysfs.h"
-#include "cts_strerror.h"
 
 #ifdef CONFIG_CTS_CHARGER_DETECT
 
@@ -51,7 +50,7 @@ enum cts_charger_detect_type {
 };
 
 /* Over-written setting for DTS */
-//#define CFG_CTS_DEF_CHGR_DET_ENABLE
+#define CFG_CTS_DEF_CHGR_DET_ENABLE
 
 /* Default settings */
 #ifdef CFG_CTS_CHARGER_DETECT_PSY_NOTIFY
@@ -61,18 +60,16 @@ enum cts_charger_detect_type {
 #endif /* CFG_CTS_CHARGER_DETECT_PSY_NOTIFY */
 
 #define CFG_CTS_DEF_CHGR_DET_PSY_NAME           "usb"
-#define CFG_CTS_DEF_CHGR_DET_PSY_PROP           POWER_SUPPLY_PROP_ONLINE
+#define CFG_CTS_DEF_CHGR_DET_PSY_PROP           POWER_SUPPLY_PROP_PRESENT
 #define CFG_CTS_DEF_CHGR_DET_PSP_POLL_INTERVAL  2000u
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 /* Lower version has no power_supply_get_property() */
 #define POWER_SUPPLY_GET_PROPERTY(psy, psp, val) \
     power_supply_get_property(psy, psp, val)
-#define POWER_SUPPLY_NAME(psy)  ((psy)->desc->name)
 #else
 #define POWER_SUPPLY_GET_PROPERTY(psy, psp, val) \
     psy->get_property(psy, psp, val)
-#define POWER_SUPPLY_NAME(psy)  ((psy)->name)
 #endif
 
 struct cts_charger_detect_data {
@@ -85,8 +82,6 @@ struct cts_charger_detect_data {
     const char *psy_name;
     enum power_supply_property psp;
     u32 psp_poll_interval;  /* Unit is ms */
-
-    struct power_supply *psy;
 
     /* Power supply notify */
 #ifdef CFG_CTS_CHARGER_DETECT_PSY_NOTIFY
@@ -101,8 +96,9 @@ struct cts_charger_detect_data {
 
     struct work_struct set_charger_state_work;
 
+    /* Sysfs */
 #ifdef CONFIG_CTS_SYSFS
-    bool sysfs_attr_group_created;
+    bool sysfs_created;
 #endif /* CONFIG_CTS_SYSFS */
 
     struct chipone_ts_data *cts_data;
@@ -161,11 +157,6 @@ static const char *charger_detect_type_str(enum cts_charger_detect_type type)
         charger_detect_type_text[type] : "Unknown";
 }
 
-static const char *charger_state_str(bool state)
-{
-    return state ? "ATTACHED" : "DETACHED";
-}
-
 static int parse_charger_detect_dt(struct cts_charger_detect_data *cd_data,
     struct device_node *np)
 {
@@ -203,6 +194,11 @@ static int parse_charger_detect_dt(struct cts_charger_detect_data *cd_data,
     if (ret) {
         cts_warn("Parse detect psy name failed %d", ret);
         psy_name = CFG_CTS_DEF_CHGR_DET_PSY_NAME;
+    } else {
+	if (power_supply_get_by_name(psy_name) == NULL) {
+		cts_warn("Power supply '%s' not found", psy_name);
+		psy_name = CFG_CTS_DEF_CHGR_DET_PSY_NAME;
+	}
     }
     cd_data->psy_name = kstrdup(psy_name, GFP_KERNEL);
     if (cd_data->psy_name == NULL) {
@@ -210,20 +206,28 @@ static int parse_charger_detect_dt(struct cts_charger_detect_data *cd_data,
         return -ENOMEM;
     }
 
+    cd_data->psp = CFG_CTS_DEF_CHGR_DET_PSY_PROP;
     ret = of_property_read_string(np,
         "chipone,touch-charger-detect-psp", &psp_str);
     if (ret) {
         cts_warn("Parse detect psp failed %d", ret);
-        cd_data->psp = CFG_CTS_DEF_CHGR_DET_PSY_PROP;
     } else {
-        enum power_supply_property psp;
+	struct power_supply *psy;
+	enum   power_supply_property psp;
+	union  power_supply_propval val;
 
         psp = power_supply_prop_from_name(psp_str);
         if (psp < 0) {
-            cts_warn("Parse detect psp: '%s' invalid", psp_str);
-            cd_data->psp = CFG_CTS_DEF_CHGR_DET_PSY_PROP;
+		cts_warn("Parse detect psp: '%s' invalid",
+		psp_str);
         } else {
-            cd_data->psp = psp;
+		psy = power_supply_get_by_name(cd_data->psy_name);
+		if (psy != NULL &&
+		POWER_SUPPLY_GET_PROPERTY(psy, psp, &val) >= 0) {
+			cts_err("Parse detect psp invalid");
+		} else {
+			cd_data->psp = psp;
+		}
         }
     }
 
@@ -320,42 +324,104 @@ static int stop_charger_detect(struct cts_charger_detect_data *cd_data)
     return 0;
 }
 
+static int enable_charger_detect(struct cts_charger_detect_data *cd_data)
+{
+    cts_info("Enable detect type: %d(%s)",
+	cd_data->type, charger_detect_type_str(cd_data->type));
+
+    cd_data->enable = true;
+
+    return 0;
+}
+
+static int disable_charger_detect(struct cts_charger_detect_data *cd_data)
+{
+    int ret;
+
+    cts_info("Disable detect type: %d(%s)",
+		    cd_data->type, charger_detect_type_str(cd_data->type));
+
+    ret = stop_charger_detect(cd_data);
+    if (ret) {
+	    cts_err("Disable detect failed %d", ret);
+    }
+
+    cd_data->enable = false;
+
+    return 0;
+}
+
 static int get_charger_state(struct cts_charger_detect_data *cd_data)
 {
-    union power_supply_propval propval;
-    int   ret;
+    struct power_supply *psy;
+    union  power_supply_propval propval;
+    int    ret;
 
     cts_dbg("Get state from psy: '%s' prop: %d(%s)",
         cd_data->psy_name, cd_data->psp,
         power_supply_prop_str(cd_data->psp));
 
-    if (cd_data->psy == NULL) {
-        if (cd_data->psy_name == NULL || cd_data->psy_name[0] == '\0') {
-            cts_err("Get state from psy name NULL/NUL");
-            return -EINVAL;
-        } else {
-            cd_data->psy = power_supply_get_by_name(cd_data->psy_name);
-            if (cd_data->psy == NULL) {
-                cts_err("Get state from psy: '%s' not found",
-                    cd_data->psy_name);
-                return -EEXIST;
-            }
-        }
+    psy = power_supply_get_by_name(cd_data->psy_name);
+    if (cd_data->psy_name == NULL || psy == NULL) {
+	    cts_err("Get state from psy: '%s' not found",
+			    cd_data->psy_name);
+	return -EINVAL;
     }
 
-    ret = POWER_SUPPLY_GET_PROPERTY(cd_data->psy, cd_data->psp, &propval);
+    ret = POWER_SUPPLY_GET_PROPERTY(psy, cd_data->psp, &propval);
     if (ret < 0) {
-        cts_err("Get state from psy: '%s' prop: %d(%s) failed %d(%s)",
+	cts_err("Get state from psy: '%s' prop: %d(%s) failed",
             cd_data->psy_name, cd_data->psp,
-            power_supply_prop_str(cd_data->psp),
-            ret, cts_strerror(ret));
+		power_supply_prop_str(cd_data->psp));
         return -EINVAL;
     }
 
     /* ONLY for bool type */
     cd_data->state = !!propval.intval;
 
-    cts_dbg("State: %s", charger_state_str(cd_data->state));
+    cts_dbg("State: %s", cd_data->state ? "ATTACHED" : "DETACHED");
+
+    return 0;
+}
+
+static int switch_charger_detect_type(struct cts_charger_detect_data *cd_data,
+    enum cts_charger_detect_type type)
+{
+    bool running;
+
+    cts_info("Switch detect type to %d(%s)",
+		    type, charger_detect_type_str(type));
+
+    if (type >= CTS_CHGR_DET_TYPE_MAX) {
+	cts_err("Switch detect type %d invalid", type);
+	return -EINVAL;
+    }
+
+    if (cd_data->type == type) {
+	cts_warn("Switch detect type equal");
+	return 0;
+    }
+
+    running = cd_data->running;
+
+    if (running) {
+	int ret = stop_charger_detect(cd_data);
+	if (ret) {
+		cts_err("Stop detect failed %d", ret);
+		return ret;
+	}
+	}
+
+    cd_data->type = type;
+
+    if (running) {
+	int ret = start_charger_detect(cd_data);
+	if (ret) {
+		cts_err("Start detect failed %d", ret);
+		cd_data->type = CTS_CHGR_DET_TYPE_NONE;
+		return ret;
+	}
+    }
 
     return 0;
 }
@@ -373,8 +439,8 @@ static void set_dev_charger_state_work(struct work_struct *work)
         cd_data->state);
     cts_unlock_device(&cd_data->cts_data->cts_dev);
     if (ret) {
-        cts_err("Set dev charger state to %s failed %d",
-            charger_state_str(cd_data->state), ret);
+	cts_err("Set dev charger attached to %s failed %d",
+	cd_data->state ? "ATTACHED" : "DETATCHED", ret);
         /* Set to previous state, try set again in next loop */
         cd_data->state = !cd_data->state;
     }
@@ -390,7 +456,7 @@ static int psy_notify_callback(struct notifier_block *nb,
     int ret;
 
     if (nb == NULL || data == NULL) {
-        cts_err("PSY notify with notifier(%p) or data(%p) = NULL",
+	cts_err("PSY notify callback with notifier %p or data %p = NULL",
             nb, data);
         return NOTIFY_DONE;
     }
@@ -400,13 +466,12 @@ static int psy_notify_callback(struct notifier_block *nb,
         return NOTIFY_DONE;
     }
 
-    cd_data =
-        container_of(nb, struct cts_charger_detect_data, psy_notifier);
+    cd_data = container_of(nb, struct cts_charger_detect_data, psy_notifier);
 
     psy = (struct power_supply *)data;
-    if (strcmp(POWER_SUPPLY_NAME(psy), cd_data->psy_name) != 0) {
+    if (strcmp(psy->desc->name, cd_data->psy_name) != 0) {
         cts_dbg("Notify from power supply '%s' not care",
-            POWER_SUPPLY_NAME(psy));
+	psy->desc->name);
         return NOTIFY_DONE;
     }
 
@@ -418,15 +483,13 @@ static int psy_notify_callback(struct notifier_block *nb,
         return NOTIFY_DONE;
     }
 
-    if (cd_data->state != prev_state) {
-        cts_info("State changed: %s -> %s",
-            charger_state_str(prev_state),
-            charger_state_str(cd_data->state));
+    cts_info("State changed: %s -> %s",
+	prev_state ? "ATTACHED" : "DETACHED",
+	cd_data->state ? "ATTACHED" : "DETACHED");
 
-        if (!queue_work(cd_data->cts_data->workqueue,
-            &cd_data->set_charger_state_work)) {
-            cts_warn("Set device charger state work is PENDING");
-        }
+    if (!queue_work(cd_data->cts_data->workqueue,
+	&cd_data->set_charger_state_work)) {
+	cts_warn("Set device charger state work is PENDING");
     }
 
     return NOTIFY_OK;
@@ -453,8 +516,8 @@ static void poll_psp_work(struct work_struct *work)
     } else {
         if (cd_data->state != prev_state) {
             cts_info("State changed: %s -> %s",
-                charger_state_str(prev_state),
-                charger_state_str(cd_data->state));
+		prev_state ? "ATTACHED" : "DETACHED",
+		cd_data->state ? "ATTACHED" : "DETACHED");
 
             if (!queue_work(cd_data->cts_data->workqueue,
                 &cd_data->set_charger_state_work)) {
@@ -549,33 +612,6 @@ int kstrtobool(const char *s, bool *res)
 #endif
 
 #define CHARGER_DET_SYSFS_GROUP_NAME "charger-det"
-
-static int enable_charger_detect(struct cts_charger_detect_data *cd_data)
-{
-    cts_info("Enable detect type: %d(%s)",
-        cd_data->type, charger_detect_type_str(cd_data->type));
-
-    cd_data->enable = true;
-
-    return 0;
-}
-
-static int disable_charger_detect(struct cts_charger_detect_data *cd_data)
-{
-    int ret;
-
-    cts_info("Disable detect type: %d(%s)",
-        cd_data->type, charger_detect_type_str(cd_data->type));
-
-    ret = stop_charger_detect(cd_data);
-    if (ret) {
-        cts_err("Disable detect failed %d", ret);
-    }
-
-    cd_data->enable = false;
-
-    return 0;
-}
 
 static ssize_t charger_detect_enable_show(struct device *dev,
         struct device_attribute *attr, char *buf)
@@ -687,48 +723,6 @@ static ssize_t charger_detect_running_store(struct device *dev,
 static DEVICE_ATTR(running, S_IWUSR | S_IRUGO,
     charger_detect_running_show, charger_detect_running_store);
 
-static int switch_charger_detect_type(struct cts_charger_detect_data *cd_data,
-    enum cts_charger_detect_type type)
-{
-    bool running;
-
-    cts_info("Switch detect type to %d(%s)",
-        type, charger_detect_type_str(type));
-
-    if (type >= CTS_CHGR_DET_TYPE_MAX) {
-        cts_err("Switch detect type %d invalid", type);
-        return -EINVAL;
-    }
-
-    if (cd_data->type == type) {
-        cts_warn("Switch detect type equal");
-        return 0;
-    }
-
-    running = cd_data->running;
-
-    if (running) {
-        int ret = stop_charger_detect(cd_data);
-        if (ret) {
-            cts_err("Stop detect failed %d", ret);
-            return ret;
-        }
-    }
-
-    cd_data->type = type;
-
-    if (running) {
-        int ret = start_charger_detect(cd_data);
-        if (ret) {
-            cts_err("Start detect failed %d", ret);
-            cd_data->type = CTS_CHGR_DET_TYPE_NONE;
-            return ret;
-        }
-    }
-
-    return 0;
-}
-
 static ssize_t charger_detect_type_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
@@ -796,7 +790,8 @@ static ssize_t charger_state_show(struct device *dev,
     }
 
     return scnprintf(buf, PAGE_SIZE,
-        "Charger state: %s\n", charger_state_str(cd_data->state));
+	"Charger state: %s\n",
+	cd_data->state ? "ATTACHED" : "DETACHED");
 }
 static DEVICE_ATTR(state, S_IRUGO, charger_state_show, NULL);
 
@@ -805,15 +800,18 @@ static ssize_t charger_detect_param_show(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_charger_detect_data *cd_data = cts_data->charger_detect_data;
+    struct power_supply *psy;
 
     cts_info("Read sysfs '"CHARGER_DET_SYSFS_GROUP_NAME"/%s'",
         attr->attr.name);
+
+    psy = power_supply_get_by_name(cd_data->psy_name);
 
     return scnprintf(buf, PAGE_SIZE,
         "Power supply name: %s(%sExist)\n"
         "Power supply prop: %d(%s)\n"
         "Poll interval    : %dms\n",
-        cd_data->psy_name, cd_data->psy == NULL ? "Non-" : "",
+	cd_data->psy_name, psy == NULL ? "Non-" : "",
         cd_data->psp, power_supply_prop_str(cd_data->psp),
         cd_data->psp_poll_interval);
 }
@@ -824,10 +822,9 @@ static ssize_t charger_detect_param_store(struct device *dev,
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
     struct cts_charger_detect_data *cd_data = cts_data->charger_detect_data;
-    struct power_supply *psy = NULL;
+    struct power_supply *psy;
+    union  power_supply_propval propval;
     enum   power_supply_property psp;
-    char  *psy_name = NULL;
-    bool   same_psy = false;
     u32    interval;
     int    ret;
 
@@ -841,66 +838,42 @@ static ssize_t charger_detect_param_store(struct device *dev,
         return -EINVAL;
     }
 
-    if (strcasecmp(cd_data->psy_name, argv[0]) != 0) {
-        if ((psy = power_supply_get_by_name(argv[0])) == NULL) {
-            cts_err("Power supply '%s' not found", argv[0]);
-            return -EINVAL;
-        }
-    } else {
-        same_psy = true;
+    psy = power_supply_get_by_name(argv[0]);
+	if (psy == NULL) {
+		cts_err("Power supply '%s' not found", argv[0]);
+		return -EINVAL;
     }
 
-    psp = cd_data->psp;
-    if (argc > 1) {
-        psp = power_supply_prop_from_name(argv[1]);
-        if (psp < 0) {
-            cts_err("Power supply property '%s' not valid",
-                power_supply_prop_str(psp));
-            ret = -EINVAL;
-            goto put_power_supply;
-        }
+    psp = power_supply_prop_from_name(argv[1]);
+    if (psp < 0 ||
+	POWER_SUPPLY_GET_PROPERTY(psy, psp, &propval) < 0) {
+	cts_err("Power supply '%s' property '%s' not valid",
+			argv[0], power_supply_prop_str(psp));
+	return -EINVAL;
     }
 
     interval = cd_data->psp_poll_interval;
     if (argc > 2) {
         ret = kstrtou32(argv[2], 0, &interval);
         if (ret) {
-            cts_err("Arg psp poll interval is invalid");
-            ret = -EINVAL;
-            goto put_power_supply;
+		cts_err("Arg interval is invalid");
+		return -EINVAL;
         }
     }
 
-    if (!same_psy) {
-        psy_name = kstrdup(argv[0], GFP_KERNEL);
-        if (cd_data->psy_name == NULL) {
-            cts_err("Dup power supply name failed");
-            ret = -ENOMEM;
-            goto put_power_supply;
-        }
-
-        if (cd_data->psy_name) {
-            kfree(cd_data->psy_name);
-        }
-        cd_data->psy_name = psy_name;
-
-        if (cd_data->psy) {
-            power_supply_put(cd_data->psy);
-        }
-        cd_data->psy = psy;
+    if (cd_data->psy_name) {
+	kfree(cd_data->psy_name);
+    }
+    cd_data->psy_name = kstrdup(argv[0], GFP_KERNEL);
+    if (cd_data->psy_name == NULL) {
+	cts_err("Dup power supply name failed");
+	return -ENOMEM;
     }
 
     cd_data->psp = psp;
     cd_data->psp_poll_interval = interval;
 
     return count;
-
-put_power_supply:
-    if (psy) {
-        power_supply_put(psy);
-    }
-
-    return ret;
 }
 static DEVICE_ATTR(param, S_IWUSR | S_IRUGO,
     charger_detect_param_show, charger_detect_param_store);
@@ -920,13 +893,15 @@ static const struct attribute_group charger_detect_attr_group = {
 };
 #endif /* CONFIG_CTS_SYSFS */
 
-int cts_init_charger_detect(struct chipone_ts_data *cts_data)
+int cts_charger_detect_init(struct chipone_ts_data *cts_data)
 {
     struct cts_charger_detect_data *cd_data;
     int ret = 0;
 
+    cts_info("Init detect");
+
     if (cts_data == NULL) {
-        cts_err("Init detect with cts_data = NULL");
+	cts_err("Init detect while cts_data = NULL");
         return -EFAULT;
     }
 
@@ -935,8 +910,6 @@ int cts_init_charger_detect(struct chipone_ts_data *cts_data)
         cts_err("Alloc charger detect data failed");
         return -ENOMEM;
     }
-
-    cts_info("Init detect");
 
 #ifdef CONFIG_CTS_OF
     ret = parse_charger_detect_dt(cd_data, cts_data->device->of_node);
@@ -962,7 +935,7 @@ int cts_init_charger_detect(struct chipone_ts_data *cts_data)
     }
 
     cts_info("Detect: %sABLED", cd_data->enable ? "EN" : "DIS");
-    cts_info("  Type    : %s",  charger_detect_type_str(cd_data->type));
+    cts_info("  Type    : %s", charger_detect_type_str(cd_data->type));
     cts_info("  PSY Name: %s, prop: %d(%s)", cd_data->psy_name,
         cd_data->psp, power_supply_prop_str(cd_data->psp));
     cts_info("  Poll Int: %dms", cd_data->psp_poll_interval);
@@ -974,13 +947,13 @@ int cts_init_charger_detect(struct chipone_ts_data *cts_data)
     }
 
 #ifdef CONFIG_CTS_SYSFS
-    cts_info("Create sysfs attr group '%s'", CHARGER_DET_SYSFS_GROUP_NAME);
+    cts_info("Create sysfs group '%s'", CHARGER_DET_SYSFS_GROUP_NAME);
     ret = sysfs_create_group(&cts_data->device->kobj,
         &charger_detect_attr_group);
     if (ret) {
-        cts_warn("Create sysfs attr group failed %d", ret);
+	cts_warn("Create sysfs group failed %d", ret);
     } else {
-        cd_data->sysfs_attr_group_created = true;
+	cd_data->sysfs_created = true;
     }
 #endif /* CONFIG_CTS_SYSFS */
 
@@ -997,10 +970,12 @@ free_cd_data:
     return ret;
 }
 
-int cts_deinit_charger_detect(struct chipone_ts_data *cts_data)
+int cts_charger_detect_deinit(struct chipone_ts_data *cts_data)
 {
     struct cts_charger_detect_data *cd_data;
     int ret;
+
+    cts_info("Deinit detect");
 
     if (cts_data == NULL) {
         cts_err("Deinit detect with cts_data = NULL");
@@ -1013,8 +988,6 @@ int cts_deinit_charger_detect(struct chipone_ts_data *cts_data)
         return 0;
     }
 
-    cts_info("Deinit detect");
-
     if (cd_data->running) {
         ret = stop_charger_detect(cd_data);
         if (ret) {
@@ -1023,12 +996,11 @@ int cts_deinit_charger_detect(struct chipone_ts_data *cts_data)
     }
 
 #ifdef CONFIG_CTS_SYSFS
-    if (cd_data->sysfs_attr_group_created) {
-        cts_info("Remove sysfs attr group '%s'",
-            CHARGER_DET_SYSFS_GROUP_NAME);
+    if (cd_data->sysfs_created) {
+	cts_info("Remove sysfs group '%s'", CHARGER_DET_SYSFS_GROUP_NAME);
         sysfs_remove_group(&cts_data->device->kobj,
             &charger_detect_attr_group);
-        cd_data->sysfs_attr_group_created = false;
+	cd_data->sysfs_created = false;
     }
 #endif /* CONFIG_CTS_SYSFS */
 
@@ -1036,11 +1008,6 @@ int cts_deinit_charger_detect(struct chipone_ts_data *cts_data)
         cts_info("Kfree power supply name");
         kfree(cd_data->psy_name);
         cd_data->psy_name = NULL;
-    }
-
-    if (cd_data->psy) {
-        power_supply_put(cd_data->psy);
-        cd_data->psy = NULL;
     }
 
     kfree(cd_data);
@@ -1065,13 +1032,14 @@ int cts_is_charger_attached(struct chipone_ts_data *cts_data, bool *attached)
         return -ENODEV;
     }
 
+    cts_info("Get state using type %d(%s) param",
+	cd_data->type, charger_detect_type_str(cd_data->type));
+
     ret = get_charger_state(cd_data);
     if (ret) {
         cts_err("Get state failed %d", ret);
         return ret;
     }
-
-    cts_info("Get curr state: %s", charger_state_str(cd_data->state));
 
     *attached = cd_data->state;
 
@@ -1114,3 +1082,4 @@ int cts_stop_charger_detect(struct chipone_ts_data *cts_data)
     return stop_charger_detect(cd_data);
 }
 #endif /* CONFIG_CTS_CHARGER_DETECT */
+

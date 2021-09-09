@@ -11,8 +11,14 @@ extern u16 cts_spi_speed;
 extern int cts_sysfs_add_device(struct device *dev);
 extern void cts_sysfs_remove_device(struct device *dev);
 #else /* CONFIG_CTS_SYSFS */
-static inline int cts_sysfs_add_device(struct device *dev) {return -ENOTSUPP;}
-static inline void cts_sysfs_remove_device(struct device *dev) {}
+static inline int cts_sysfs_add_device(struct device *dev)
+{
+	return -ENOTSUPP;
+}
+
+static inline void cts_sysfs_remove_device(struct device *dev)
+{
+}
 #endif /* CONFIG_CTS_SYSFS */
 
 #endif /* CTS_SYSFS_H */
