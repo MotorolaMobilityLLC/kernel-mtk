@@ -1302,7 +1302,7 @@ int port_lookup_tid(const char *port, enum tee_id_t *o_tid)
 		if (tr_obj->tee_id == TEE_ID_END)
 			break;
 
-		if (strcmp(last_token, tr_obj->srv_name) == 0) {
+		if (strncmp(last_token, tr_obj->srv_name, MAX_SRV_NAME_LEN) == 0) {
 			*o_tid = tr_obj->tee_id;
 			pr_info("[%s] find last_token %s, tee id %d\n",
 				 __func__, last_token, *o_tid);
