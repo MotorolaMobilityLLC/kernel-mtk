@@ -190,3 +190,10 @@ config MTK_MT6382_VDO_MODE
 	  BridgeIC 6382 can support VESA-1.2 DSC, compressing display framedata
 	  Normal project will disable it first
 	  If you are not sure about this, do not set it to y
+
+config MTK_ESD_RECOVERY_BACKLIGHT
+	bool "support esd recovery backlight"
+	default n
+	help
+	   if use backlight by custom,not by mtk,after esd recovery backlight need by custom
+	   if not do this,backlight will not open.
