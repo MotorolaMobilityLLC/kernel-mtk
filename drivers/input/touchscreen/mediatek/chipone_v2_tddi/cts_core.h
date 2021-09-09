@@ -39,14 +39,12 @@ enum cts_device_fw_reg {
     CTS_DEVICE_FW_REG_VERSION = 0x000C,
     CTS_DEVICE_FW_REG_DDI_VERSION = 0x0010,
     CTS_DEVICE_FW_REG_GET_WORK_MODE = 0x003F,
-    CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_DONE = 0x0046, /* RO */
     CTS_DEVICE_FW_REG_FW_LIB_SUB_VERSION =  0x0047,
     CTS_DEVICE_FW_REG_COMPENSATE_CAP_READY =  0x004E,
 
     CTS_DEVICE_FW_REG_TOUCH_INFO = 0x1000,
     CTS_DEVICE_FW_REG_RAW_DATA = 0x2000,
     CTS_DEVICE_FW_REG_DIFF_DATA = 0x3000,
-    CTS_DEVICE_FW_REG_BASELINE = 0x6000,
     CTS_DEVICE_FW_REG_GESTURE_INFO = 0x7000,
 
     CTS_DEVICE_FW_REG_PANEL_PARAM = 0x8000,
@@ -61,7 +59,7 @@ enum cts_device_fw_reg {
     CTS_DEVICE_FW_REG_TEST_WITH_DISPLAY_ON = 0x80A3,
     CTS_DEVICE_FW_REG_INT_MODE = 0x80D8,
     CTS_DEVICE_FW_REG_EARJACK_DETECT_SUPP = 0x8113,
-    CTS_DEVICE_FW_REG_AUTO_CALIB_COMP_CAP_ENABLE = 0x8114,
+    CTS_DEVICE_FW_REG_AUTO_COMPENSATE_EN = 0x8114,
     CTS_DEVICE_FW_REG_ESD_PROTECTION = 0x8156, /* RW */
     CTS_DEVICE_FW_REG_FLAG_BITS = 0x8158,
 
@@ -118,8 +116,6 @@ enum cts_firmware_cmd {
     CTS_CMD_DISABLE_FW_LOG_REDIRECT = 0x87,
     CTS_CMD_ENABLE_READ_CNEG   = 0x88,
     CTS_CMD_DISABLE_READ_CNEG  = 0x89,
-    CTS_CMD_ENABLE_HI_SENSE  = 0x90,
-    CTS_CMD_DISABLE_HI_SENSE  = 0x91,
     CTS_CMD_FW_LOG_SHOW_FINISH = 0xE0,
 
 };
@@ -192,15 +188,6 @@ enum cts_crc_type {
     CTS_CRC32 = 2,
 };
 
-enum cts_work_mode {
-    CTS_WORK_MODE_UNKNOWN = 0,
-    CTS_WORK_MODE_SUSPEND,
-    CTS_WORK_MODE_NORMAL_ACTIVE,
-    CTS_WORK_MODE_NORMAL_IDLE,
-    CTS_WORK_MODE_GESTURE_ACTIVE,
-    CTS_WORK_MODE_GESTURE_IDLE,
-};
-
 /** Chip hardware data, will never change */
 struct cts_device_hwdata {
     const char *name;
@@ -214,7 +201,6 @@ struct cts_device_hwdata {
     u8  program_addr_width;
 
     const struct cts_sfctrl *sfctrl;
-
     int (*enable_access_ddi_reg)(struct cts_device *cts_dev, bool enable);
 };
 
@@ -234,9 +220,6 @@ struct cts_device_fwdata {
     u16 lib_version;
     u16 int_keep_time;
     u16 rawdata_target;
-#ifdef CONFIG_CTS_EARJACK_DETECT
-    bool supp_headphone_cable_reject;
-#endif /* CONFIG_CTS_EARJACK_DETECT */
 };
 
 /** Chip runtime data */
@@ -257,14 +240,16 @@ struct cts_device_rtdata {
 };
 
 struct cts_device {
-    struct cts_platform_data *pdata;
+	struct cts_platform_data *pdata;
 
-    const struct cts_device_hwdata   *hwdata;
-    struct cts_device_fwdata          fwdata;
-    struct cts_device_rtdata          rtdata;
-    const struct cts_flash           *flash;
-    bool enabled;
-
+	const struct cts_device_hwdata *hwdata;
+	struct cts_device_fwdata fwdata;
+	struct cts_device_rtdata rtdata;
+	const struct cts_flash *flash;
+	bool enabled;
+#ifdef CFG_CTS_FW_UPDATE_FILE_LOAD
+	char config_fw_name[CFG_CTS_FW_FILE_NAME_MAX_LEN + 1];
+#endif /* CFG_CTS_FW_UPDATE_FILE_LOAD */
 };
 
 struct cts_platform_data;
@@ -275,285 +260,315 @@ struct chipone_ts_data {
 #else
     struct spi_device *spi_client;
 #endif /* CONFIG_CTS_I2C_HOST */
-
     struct device *device;
-
     struct cts_device cts_dev;
-
     struct cts_platform_data *pdata;
-	struct delayed_work fw_upgrade_work;
-
     struct workqueue_struct *workqueue;
-
-#ifdef CONFIG_CTS_ESD_PROTECTION
-    struct workqueue_struct *esd_workqueue;
-    struct delayed_work esd_work;
-    bool                esd_enabled;
-    int                 esd_check_fail_cnt;
-#endif /* CONFIG_CTS_ESD_PROTECTION */
-
-	void *oem_data;
-
+    struct delayed_work fw_upgrade_work;
+    struct work_struct ts_resume_work;
 #ifdef CONFIG_CTS_CHARGER_DETECT
     void *charger_detect_data;
 #endif /* CONFIG_CTS_CHARGER_DETECT */
 
-#ifdef CONFIG_CTS_EARJACK_DETECT
-    void *earjack_detect_data;
-#endif /* CONFIG_CTS_EARJACK_DETECT */
+#ifdef CONFIG_CTS_ESD_PROTECTION
+	struct workqueue_struct *esd_workqueue;
+	struct delayed_work esd_work;
+	bool esd_enabled;
+	int esd_check_fail_cnt;
+#endif /* CONFIG_CTS_ESD_PROTECTION */
 
 #ifdef CONFIG_CTS_LEGACY_TOOL
-    struct proc_dir_entry *procfs_entry;
+	struct proc_dir_entry *procfs_entry;
 #endif /* CONFIG_CTS_LEGACY_TOOL */
 
-	//suspend & resuem flag!!!
-	bool suspend;
+	bool force_reflash;
 
 };
 
 static inline u32 get_unaligned_le24(const void *p)
 {
-    const u8 *puc = (const u8 *)p;
-    return (puc[0] | (puc[1] << 8) | (puc[2] << 16));
+	const u8 *puc = (const u8 *)p;
+	return (puc[0] | (puc[1] << 8) | (puc[2] << 16));
 }
 
 static inline u32 get_unaligned_be24(const void *p)
 {
-    const u8 *puc = (const u8 *)p;
-    return (puc[2] | (puc[1] << 8) | (puc[0] << 16));
+	const u8 *puc = (const u8 *)p;
+	return (puc[2] | (puc[1] << 8) | (puc[0] << 16));
 }
 
 static inline void put_unaligned_be24(u32 v, void *p)
 {
-    u8 *puc = (u8 *)p;
+	u8 *puc = (u8 *) p;
 
-    puc[0] = (v >> 16) & 0xFF;
-    puc[1] = (v >> 8 ) & 0xFF;
-    puc[2] = (v >> 0 ) & 0xFF;
+	puc[0] = (v >> 16) & 0xFF;
+	puc[1] = (v >> 8) & 0xFF;
+	puc[2] = (v >> 0) & 0xFF;
 }
 
-#define wrap(max,x)        ((max) - 1 - (x))
+#define wrap(max, x)        ((max) - 1 - (x))
 
 extern void cts_lock_device(const struct cts_device *cts_dev);
 extern void cts_unlock_device(const struct cts_device *cts_dev);
 
 extern int cts_sram_writeb_retry(const struct cts_device *cts_dev,
-        u32 addr, u8 b, int retry, int delay);
+				 u32 addr, u8 b, int retry, int delay);
 extern int cts_sram_writew_retry(const struct cts_device *cts_dev,
-        u32 addr, u16 w, int retry, int delay);
+				 u32 addr, u16 w, int retry, int delay);
 extern int cts_sram_writel_retry(const struct cts_device *cts_dev,
-        u32 addr, u32 l, int retry, int delay);
+				 u32 addr, u32 l, int retry, int delay);
 extern int cts_sram_writesb_retry(const struct cts_device *cts_dev,
-        u32 addr, const void *src, size_t len, int retry, int delay);
+				  u32 addr, const void *src, size_t len,
+				  int retry, int delay);
 extern int cts_sram_writesb_check_crc_retry(const struct cts_device *cts_dev,
-        u32 addr, const void *src, size_t len, u32 crc, int retry);
+					    u32 addr, const void *src,
+					    size_t len, u32 crc, int retry);
 
 extern int cts_sram_readb_retry(const struct cts_device *cts_dev,
-        u32 addr, u8 *b, int retry, int delay);
+				u32 addr, u8 *b, int retry, int delay);
 extern int cts_sram_readw_retry(const struct cts_device *cts_dev,
-        u32 addr, u16 *w, int retry, int delay);
+				u32 addr, u16 *w, int retry, int delay);
 extern int cts_sram_readl_retry(const struct cts_device *cts_dev,
-        u32 addr, u32 *l, int retry, int delay);
+				u32 addr, u32 *l, int retry, int delay);
 extern int cts_sram_readsb_retry(const struct cts_device *cts_dev,
-        u32 addr, void *dst, size_t len, int retry, int delay);
+				 u32 addr, void *dst, size_t len, int retry,
+				 int delay);
 
 extern int cts_fw_reg_writeb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u8 b, int retry, int delay);
+				   u32 reg_addr, u8 b, int retry, int delay);
 extern int cts_fw_reg_writew_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u16 w, int retry, int delay);
+				   u32 reg_addr, u16 w, int retry, int delay);
 extern int cts_fw_reg_writel_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u32 l, int retry, int delay);
+				   u32 reg_addr, u32 l, int retry, int delay);
 extern int cts_fw_reg_writesb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, const void *src, size_t len, int retry, int delay);
+				    u32 reg_addr, const void *src, size_t len,
+				    int retry, int delay);
 
 extern int cts_fw_reg_readb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u8 *b, int retry, int delay);
+				  u32 reg_addr, u8 *b, int retry, int delay);
 extern int cts_fw_reg_readw_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u16 *w, int retry, int delay);
+				  u32 reg_addr, u16 *w, int retry, int delay);
 extern int cts_fw_reg_readl_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u32 *l, int retry, int delay);
+				  u32 reg_addr, u32 *l, int retry, int delay);
 extern int cts_fw_reg_readsb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, void *dst, size_t len, int retry, int delay);
+				   u32 reg_addr, void *dst, size_t len,
+				   int retry, int delay);
 extern int cts_fw_reg_readsb_retry_delay_idle(const struct cts_device *cts_dev,
-        u32 reg_addr, void *dst, size_t len, int retry, int delay, int idle);
+					      u32 reg_addr, void *dst,
+					      size_t len, int retry, int delay,
+					      int idle);
 
 extern int cts_hw_reg_writeb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u8 b, int retry, int delay);
+				   u32 reg_addr, u8 b, int retry, int delay);
 extern int cts_hw_reg_writew_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u16 w, int retry, int delay);
+				   u32 reg_addr, u16 w, int retry, int delay);
 extern int cts_hw_reg_writel_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u32 l, int retry, int delay);
+				   u32 reg_addr, u32 l, int retry, int delay);
 extern int cts_hw_reg_writesb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, const void *src, size_t len, int retry, int delay);
+				    u32 reg_addr, const void *src, size_t len,
+				    int retry, int delay);
 
 extern int cts_hw_reg_readb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u8 *b, int retry, int delay);
+				  u32 reg_addr, u8 *b, int retry, int delay);
 extern int cts_hw_reg_readw_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u16 *w, int retry, int delay);
+				  u32 reg_addr, u16 *w, int retry, int delay);
 extern int cts_hw_reg_readl_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, u32 *l, int retry, int delay);
+				  u32 reg_addr, u32 *l, int retry, int delay);
 extern int cts_hw_reg_readsb_retry(const struct cts_device *cts_dev,
-        u32 reg_addr, void *dst, size_t len, int retry, int delay);
-
-static inline int cts_fw_reg_writeb(const struct cts_device *cts_dev, u32 reg_addr, u8 b)
-{
-    return cts_fw_reg_writeb_retry(cts_dev, reg_addr, b, 1, 0);
-}
-
-static inline int cts_fw_reg_writew(const struct cts_device *cts_dev, u32 reg_addr, u16 w)
-{
-    return cts_fw_reg_writew_retry(cts_dev, reg_addr, w, 1, 0);
-}
-
-static inline int cts_fw_reg_writel(const struct cts_device *cts_dev, u32 reg_addr, u32 l)
-{
-    return cts_fw_reg_writel_retry(cts_dev, reg_addr, l, 1, 0);
-}
-
-static inline int cts_fw_reg_writesb(const struct cts_device *cts_dev, u32 reg_addr,
-        const void *src, size_t len)
-{
-    return cts_fw_reg_writesb_retry(cts_dev, reg_addr, src, len, 1, 0);
-}
-
-static inline int cts_fw_reg_readb(const struct cts_device *cts_dev, u32 reg_addr, u8 *b)
-{
-    return cts_fw_reg_readb_retry(cts_dev, reg_addr, b, 1, 0);
-}
-
-static inline int cts_fw_reg_readw(const struct cts_device *cts_dev, u32 reg_addr, u16 *w)
-{
-    return cts_fw_reg_readw_retry(cts_dev, reg_addr, w, 1, 0);
-}
-
-static inline int cts_fw_reg_readl(const struct cts_device *cts_dev, u32 reg_addr, u32 *l)
-{
-    return cts_fw_reg_readl_retry(cts_dev, reg_addr, l, 1, 0);
-}
-
-static inline int cts_fw_reg_readsb(const struct cts_device *cts_dev,
-        u32 reg_addr, void *dst, size_t len)
-{
-    return cts_fw_reg_readsb_retry(cts_dev, reg_addr, dst, len, 4, 15);
-}
-
-static inline int cts_fw_reg_readsb_delay_idle(const struct cts_device *cts_dev,
-        u32 reg_addr, void *dst, size_t len, int idle)
-{
-    return cts_fw_reg_readsb_retry_delay_idle(cts_dev, reg_addr, dst, len, 1, 0, idle);
-}
-
-static inline int cts_hw_reg_writeb(const struct cts_device *cts_dev, u32 reg_addr, u8 b)
-{
-    return cts_hw_reg_writeb_retry(cts_dev, reg_addr, b, 1, 0);
-}
-
-static inline int cts_hw_reg_writew(const struct cts_device *cts_dev, u32 reg_addr, u16 w)
-{
-    return cts_hw_reg_writew_retry(cts_dev, reg_addr, w, 1, 0);
-}
-
-static inline int cts_hw_reg_writel(const struct cts_device *cts_dev, u32 reg_addr, u32 l)
-{
-    return cts_hw_reg_writel_retry(cts_dev, reg_addr, l, 1, 0);
-}
-
-static inline int cts_hw_reg_writesb(const struct cts_device *cts_dev, u32 reg_addr,
-        const void *src, size_t len)
-{
-    return cts_hw_reg_writesb_retry(cts_dev, reg_addr, src, len, 1, 0);
-}
+				   u32 reg_addr, void *dst, size_t len,
+				   int retry, int delay);
 
 static inline int cts_hw_reg_readb(const struct cts_device *cts_dev, u32 reg_addr, u8 *b)
 {
     return cts_hw_reg_readb_retry(cts_dev, reg_addr, b, 1, 0);
 }
-
-static inline int cts_hw_reg_readw(const struct cts_device *cts_dev, u32 reg_addr, u16 *w)
+static inline int cts_hw_reg_writeb(const struct cts_device *cts_dev, u32 reg_addr, u8 b)
 {
-    return cts_hw_reg_readw_retry(cts_dev, reg_addr, w, 1, 0);
+    return cts_hw_reg_writeb_retry(cts_dev, reg_addr, b, 1, 0);
+}
+static inline int cts_hw_reg_writew(const struct cts_device *cts_dev, u32 reg_addr, u16 w)
+{
+    return cts_hw_reg_writew_retry(cts_dev, reg_addr, w, 1, 0);
+}
+static inline int cts_fw_reg_writeb(const struct cts_device *cts_dev,
+				    u32 reg_addr, u8 b)
+{
+	return cts_fw_reg_writeb_retry(cts_dev, reg_addr, b, 1, 0);
 }
 
-static inline int cts_hw_reg_readl(const struct cts_device *cts_dev, u32 reg_addr, u32 *l)
+static inline int cts_fw_reg_writew(const struct cts_device *cts_dev,
+				    u32 reg_addr, u16 w)
 {
-    return cts_hw_reg_readl_retry(cts_dev, reg_addr, l, 1, 0);
+	return cts_fw_reg_writew_retry(cts_dev, reg_addr, w, 1, 0);
+}
+
+static inline int cts_fw_reg_writel(const struct cts_device *cts_dev,
+				    u32 reg_addr, u32 l)
+{
+	return cts_fw_reg_writel_retry(cts_dev, reg_addr, l, 1, 0);
+}
+
+static inline int cts_fw_reg_writesb(const struct cts_device *cts_dev,
+				     u32 reg_addr, const void *src, size_t len)
+{
+	return cts_fw_reg_writesb_retry(cts_dev, reg_addr, src, len, 1, 0);
+}
+
+static inline int cts_fw_reg_readb(const struct cts_device *cts_dev,
+				   u32 reg_addr, u8 *b)
+{
+	return cts_fw_reg_readb_retry(cts_dev, reg_addr, b, 1, 0);
+}
+
+static inline int cts_fw_reg_readw(const struct cts_device *cts_dev,
+				   u32 reg_addr, u16 *w)
+{
+	return cts_fw_reg_readw_retry(cts_dev, reg_addr, w, 1, 0);
+}
+
+static inline int cts_fw_reg_readl(const struct cts_device *cts_dev,
+				   u32 reg_addr, u32 *l)
+{
+	return cts_fw_reg_readl_retry(cts_dev, reg_addr, l, 1, 0);
+}
+
+static inline int cts_fw_reg_readsb(const struct cts_device *cts_dev,
+				    u32 reg_addr, void *dst, size_t len)
+{
+	return cts_fw_reg_readsb_retry(cts_dev, reg_addr, dst, len, 1, 0);
+}
+
+static inline int cts_fw_reg_readsb_delay_idle(const struct cts_device *cts_dev,
+					       u32 reg_addr, void *dst,
+					       size_t len, int idle)
+{
+	return cts_fw_reg_readsb_retry_delay_idle(cts_dev, reg_addr, dst, len,
+						  1, 0, idle);
+}
+
+static inline int cts_hw_reg_writeb_relaxed(const struct cts_device *cts_dev,
+				    u32 reg_addr, u8 b)
+{
+	return cts_hw_reg_writeb_retry(cts_dev, reg_addr, b, 1, 0);
+}
+
+static inline int cts_hw_reg_writew_relaxed(const struct cts_device *cts_dev,
+				    u32 reg_addr, u16 w)
+{
+	return cts_hw_reg_writew_retry(cts_dev, reg_addr, w, 1, 0);
+}
+
+static inline int cts_hw_reg_writel_relaxed(const struct cts_device *cts_dev,
+				    u32 reg_addr, u32 l)
+{
+	return cts_hw_reg_writel_retry(cts_dev, reg_addr, l, 1, 0);
+}
+
+static inline int cts_hw_reg_writesb(const struct cts_device *cts_dev,
+				     u32 reg_addr, const void *src, size_t len)
+{
+	return cts_hw_reg_writesb_retry(cts_dev, reg_addr, src, len, 1, 0);
+}
+
+static inline int cts_hw_reg_readb_relaxed(const struct cts_device *cts_dev,
+				   u32 reg_addr, u8 *b)
+{
+	return cts_hw_reg_readb_retry(cts_dev, reg_addr, b, 1, 0);
+}
+
+static inline int cts_hw_reg_readw_relaxed(const struct cts_device *cts_dev,
+				   u32 reg_addr, u16 *w)
+{
+	return cts_hw_reg_readw_retry(cts_dev, reg_addr, w, 1, 0);
+}
+
+static inline int cts_hw_reg_readl_relaxed(const struct cts_device *cts_dev,
+				   u32 reg_addr, u32 *l)
+{
+	return cts_hw_reg_readl_retry(cts_dev, reg_addr, l, 1, 0);
 }
 
 static inline int cts_hw_reg_readsb(const struct cts_device *cts_dev,
-        u32 reg_addr, void *dst, size_t len)
+				    u32 reg_addr, void *dst, size_t len)
 {
-    return cts_hw_reg_readsb_retry(cts_dev, reg_addr, dst, len, 1, 0);
+	return cts_hw_reg_readsb_retry(cts_dev, reg_addr, dst, len, 1, 0);
 }
 
-static inline int cts_sram_writeb(const struct cts_device *cts_dev, u32 addr, u8 b)
+static inline int cts_sram_writeb(const struct cts_device *cts_dev, u32 addr,
+				  u8 b)
 {
-    return cts_sram_writeb_retry(cts_dev, addr, b, 1, 0);
+	return cts_sram_writeb_retry(cts_dev, addr, b, 1, 0);
 }
 
-static inline int cts_sram_writew(const struct cts_device *cts_dev, u32 addr, u16 w)
+static inline int cts_sram_writew(const struct cts_device *cts_dev, u32 addr,
+				  u16 w)
 {
-    return cts_sram_writew_retry(cts_dev, addr, w, 1, 0);
+	return cts_sram_writew_retry(cts_dev, addr, w, 1, 0);
 }
 
-static inline int cts_sram_writel(const struct cts_device *cts_dev, u32 addr, u32 l)
+static inline int cts_sram_writel(const struct cts_device *cts_dev, u32 addr,
+				  u32 l)
 {
-    return cts_sram_writel_retry(cts_dev, addr, l, 1, 0);
+	return cts_sram_writel_retry(cts_dev, addr, l, 1, 0);
 }
 
 static inline int cts_sram_writesb(const struct cts_device *cts_dev, u32 addr,
-        const void *src, size_t len)
+				   const void *src, size_t len)
 {
-    return cts_sram_writesb_retry(cts_dev, addr, src, len, 1, 0);
+	return cts_sram_writesb_retry(cts_dev, addr, src, len, 1, 0);
 }
 
-static inline int cts_sram_readb(const struct cts_device *cts_dev, u32 addr, u8 *b)
+static inline int cts_sram_readb(const struct cts_device *cts_dev, u32 addr,
+				 u8 *b)
 {
-    return cts_sram_readb_retry(cts_dev, addr, b, 1, 0);
+	return cts_sram_readb_retry(cts_dev, addr, b, 1, 0);
 }
 
-static inline int cts_sram_readw(const struct cts_device *cts_dev, u32 addr, u16 *w)
+static inline int cts_sram_readw(const struct cts_device *cts_dev, u32 addr,
+				 u16 *w)
 {
-    return cts_sram_readw_retry(cts_dev, addr, w, 1, 0);
+	return cts_sram_readw_retry(cts_dev, addr, w, 1, 0);
 }
 
-static inline int cts_sram_readl(const struct cts_device *cts_dev, u32 addr, u32 *l)
+static inline int cts_sram_readl(const struct cts_device *cts_dev, u32 addr,
+				 u32 *l)
 {
-    return cts_sram_readl_retry(cts_dev, addr, l, 1, 0);
+	return cts_sram_readl_retry(cts_dev, addr, l, 1, 0);
 }
 
 static inline int cts_sram_readsb(const struct cts_device *cts_dev,
-        u32 addr, void *dst, size_t len)
+				  u32 addr, void *dst, size_t len)
 {
-    return cts_sram_readsb_retry(cts_dev, addr, dst, len, 1, 0);
+	return cts_sram_readsb_retry(cts_dev, addr, dst, len, 1, 0);
 }
 
 #ifdef CONFIG_CTS_I2C_HOST
 static inline void cts_set_program_addr(struct cts_device *cts_dev)
 {
-    cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_I2CADDR;
-    cts_dev->rtdata.program_mode = true;
-    cts_dev->rtdata.addr_width   = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
+	cts_dev->rtdata.slave_addr = CTS_DEV_PROGRAM_MODE_I2CADDR;
+	cts_dev->rtdata.program_mode = true;
+	cts_dev->rtdata.addr_width = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
 }
 
 static inline void cts_set_normal_addr(struct cts_device *cts_dev)
 {
-    cts_dev->rtdata.slave_addr     = CTS_DEV_NORMAL_MODE_I2CADDR;
-    cts_dev->rtdata.program_mode = false;
-    cts_dev->rtdata.addr_width   = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
+	cts_dev->rtdata.slave_addr = CTS_DEV_NORMAL_MODE_I2CADDR;
+	cts_dev->rtdata.program_mode = false;
+	cts_dev->rtdata.addr_width = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
 }
 #else
 static inline void cts_set_program_addr(struct cts_device *cts_dev)
 {
-    cts_dev->rtdata.slave_addr     = CTS_DEV_PROGRAM_MODE_SPIADDR;
-    cts_dev->rtdata.program_mode   = true;
-    cts_dev->rtdata.addr_width     = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
+	cts_dev->rtdata.slave_addr = CTS_DEV_PROGRAM_MODE_SPIADDR;
+	cts_dev->rtdata.program_mode = true;
+	cts_dev->rtdata.addr_width = CTS_DEV_PROGRAM_MODE_ADDR_WIDTH;
 }
 
 static inline void cts_set_normal_addr(struct cts_device *cts_dev)
 {
-    cts_dev->rtdata.slave_addr     = CTS_DEV_NORMAL_MODE_SPIADDR;
-    cts_dev->rtdata.program_mode   = false;
-    cts_dev->rtdata.addr_width     = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
+	cts_dev->rtdata.slave_addr = CTS_DEV_NORMAL_MODE_SPIADDR;
+	cts_dev->rtdata.program_mode = false;
+	cts_dev->rtdata.addr_width = CTS_DEV_NORMAL_MODE_ADDR_WIDTH;
 }
 #endif
 
@@ -571,36 +586,28 @@ extern int cts_enter_normal_mode(struct cts_device *cts_dev);
 extern int cts_probe_device(struct cts_device *cts_dev);
 extern int cts_set_work_mode(const struct cts_device *cts_dev, u8 mode);
 extern int cts_get_work_mode(const struct cts_device *cts_dev, u8 *mode);
-extern int cts_get_firmware_version(const struct cts_device *cts_dev, u16 *version);
+extern int cts_get_firmware_version(const struct cts_device *cts_dev,
+				    u16 *version);
 extern int cts_get_ddi_version(const struct cts_device *cts_dev, u8 *version);
-extern int cts_get_lib_version(const struct cts_device *cts_dev, u16 *lib_version);
+extern int cts_get_lib_version(const struct cts_device *cts_dev,
+			       u16 *lib_version);
 extern int cts_get_data_ready_flag(const struct cts_device *cts_dev, u8 *flag);
 extern int cts_clr_data_ready_flag(const struct cts_device *cts_dev);
 extern int cts_send_command(const struct cts_device *cts_dev, u8 cmd);
 extern int cts_get_panel_param(const struct cts_device *cts_dev,
-        void *param, size_t size);
+			       void *param, size_t size);
 extern int cts_set_panel_param(const struct cts_device *cts_dev,
-        const void *param, size_t size);
-extern int cts_get_x_resolution(const struct cts_device *cts_dev, u16 *resolution);
-extern int cts_get_y_resolution(const struct cts_device *cts_dev, u16 *resolution);
+			       const void *param, size_t size);
+extern int cts_get_x_resolution(const struct cts_device *cts_dev,
+				u16 *resolution);
+extern int cts_get_y_resolution(const struct cts_device *cts_dev,
+				u16 *resolution);
 extern int cts_get_num_rows(const struct cts_device *cts_dev, u8 *num_rows);
 extern int cts_get_num_cols(const struct cts_device *cts_dev, u8 *num_cols);
-extern int cts_get_dev_esd_protection(struct cts_device *cts_dev, bool *enable);
-extern int cts_set_dev_esd_protection(struct cts_device *cts_dev, bool enable);
-
-enum cts_get_touch_data_flags {
-    CTS_GET_TOUCH_DATA_FLAG_ENABLE_GET_TOUCH_DATA_BEFORE = BIT(0),
-    CTS_GET_TOUCH_DATA_FLAG_CLEAR_DATA_READY = BIT(1),
-    CTS_GET_TOUCH_DATA_FLAG_REMOVE_TOUCH_DATA_BORDER = BIT(2),
-    CTS_GET_TOUCH_DATA_FLAG_FLIP_TOUCH_DATA = BIT(3),
-    CTS_GET_TOUCH_DATA_FLAG_DISABLE_GET_TOUCH_DATA_AFTER = BIT(4),
-};
 extern int cts_enable_get_rawdata(const struct cts_device *cts_dev);
 extern int cts_disable_get_rawdata(const struct cts_device *cts_dev);
 extern int cts_get_rawdata(const struct cts_device *cts_dev, void *buf);
 extern int cts_get_diffdata(const struct cts_device *cts_dev, void *buf);
-extern int cts_get_baseline(const struct cts_device *cts_dev, void *baseline,
-    enum cts_work_mode work_mode, u32 flags, u16 addr, u8 data_width);
 extern int cts_get_compensate_cap(struct cts_device *cts_dev, u8 *cap);
 extern int cts_get_fwid(struct cts_device *cts_dev, u16 *fwid);
 extern int cts_get_hwid(struct cts_device *cts_dev, u32 *hwid);
@@ -609,8 +616,8 @@ extern int cts_get_hwid(struct cts_device *cts_dev, u32 *hwid);
 extern void cts_enable_gesture_wakeup(struct cts_device *cts_dev);
 extern void cts_disable_gesture_wakeup(struct cts_device *cts_dev);
 extern bool cts_is_gesture_wakeup_enabled(const struct cts_device *cts_dev);
-extern int  cts_get_gesture_info(const struct cts_device *cts_dev,
-        void *gesture_info, bool trace_point);
+extern int cts_get_gesture_info(const struct cts_device *cts_dev,
+				void *gesture_info, bool trace_point);
 #endif /* CFG_CTS_GESTURE */
 
 #ifdef CONFIG_CTS_ESD_PROTECTION
@@ -619,10 +626,21 @@ extern void cts_enable_esd_protection(struct chipone_ts_data *cts_data);
 extern void cts_disable_esd_protection(struct chipone_ts_data *cts_data);
 extern void cts_deinit_esd_protection(struct chipone_ts_data *cts_data);
 #else /* CONFIG_CTS_ESD_PROTECTION */
-static inline void cts_init_esd_protection(struct chipone_ts_data *cts_data) {}
-static inline void cts_enable_esd_protection(struct chipone_ts_data *cts_data) {}
-static inline void cts_disable_esd_protection(struct chipone_ts_data *cts_data) {}
-static inline void cts_deinit_esd_protection(struct chipone_ts_data *cts_data) {}
+static inline void cts_init_esd_protection(struct chipone_ts_data *cts_data)
+{
+}
+
+static inline void cts_enable_esd_protection(struct chipone_ts_data *cts_data)
+{
+}
+
+static inline void cts_disable_esd_protection(struct chipone_ts_data *cts_data)
+{
+}
+
+static inline void cts_deinit_esd_protection(struct chipone_ts_data *cts_data)
+{
+}
 #endif /* CONFIG_CTS_ESD_PROTECTION  */
 
 #ifdef CONFIG_CTS_GLOVE
@@ -630,33 +648,49 @@ extern int cts_enter_glove_mode(struct cts_device *cts_dev);
 extern int cts_exit_glove_mode(struct cts_device *cts_dev);
 int cts_is_glove_enabled(const struct cts_device *cts_dev);
 #else
-static inline int cts_enter_glove_mode(struct cts_device *cts_dev) {return 0;}
-static inline int cts_exit_glove_mode(struct cts_device *cts_dev) {return 0;}
-static inline int cts_is_glove_enabled(const struct cts_device *cts_dev)  {return 0;}
+static inline int cts_enter_glove_mode(struct cts_device *cts_dev)
+{
+	return 0;
+}
+
+static inline int cts_exit_glove_mode(struct cts_device *cts_dev)
+{
+	return 0;
+}
+
+static inline int cts_is_glove_enabled(const struct cts_device *cts_dev)
+{
+	return 0;
+}
 #endif
 
 #ifdef CONFIG_CTS_CHARGER_DETECT
 extern bool cts_is_charger_exist(struct cts_device *cts_dev);
 extern int cts_set_dev_charger_attached(struct cts_device *cts_dev, bool attached);
 #else /* CONFIG_CTS_CHARGER_DETECT */
-static inline bool cts_is_charger_exist(struct cts_device *cts_dev) {return false;}
-static inline int cts_dev_charger_attached(struct cts_device *cts_dev, bool attached) {return 0;}
+static inline bool cts_is_charger_exist(struct cts_device *cts_dev)
+{
+	return false;
+}
+
+static inline int cts_set_dev_charger_attached(struct cts_device *cts_dev, bool attached)
+{
+	return 0;
+}
 #endif /* CONFIG_CTS_CHARGER_DETECT */
 
-#ifdef CONFIG_CTS_EARJACK_DETECT
-extern bool cts_is_earjack_exist(struct cts_device *cts_dev);
-extern int cts_set_dev_earjack_attached(struct cts_device *cts_dev, bool attached);
-#else /* CONFIG_CTS_EARJACK_DETECT */
-static inline bool cts_is_earjack_exist(struct cts_device *cts_dev) {return false;}
-static inline int cts_set_dev_earjack_attached(struct cts_device *cts_dev, bool attached) {return 0;}
-#endif /* CONFIG_CTS_EARJACK_DETECT */
-
 #ifdef CONFIG_CTS_LEGACY_TOOL
-extern int  cts_tool_init(struct chipone_ts_data *cts_data);
+extern int cts_tool_init(struct chipone_ts_data *cts_data);
 extern void cts_tool_deinit(struct chipone_ts_data *data);
 #else /* CONFIG_CTS_LEGACY_TOOL */
-static inline int   cts_tool_init(struct chipone_ts_data *cts_data) {return 0;}
-static inline void  cts_tool_deinit(struct chipone_ts_data *data) {}
+static inline int cts_tool_init(struct chipone_ts_data *cts_data)
+{
+	return 0;
+}
+
+static inline void cts_tool_deinit(struct chipone_ts_data *data)
+{
+}
 #endif /* CONFIG_CTS_LEGACY_TOOL */
 
 extern bool cts_is_device_enabled(const struct cts_device *cts_dev);
@@ -679,3 +713,4 @@ extern const char *cts_dev_boot_mode2str(u8 boot_mode);
 extern bool cts_is_fwid_valid(u16 fwid);
 
 #endif /* CTS_CORE_H */
+
