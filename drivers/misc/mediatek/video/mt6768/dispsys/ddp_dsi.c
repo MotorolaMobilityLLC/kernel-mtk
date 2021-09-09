@@ -811,7 +811,7 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module,
 enum DSI_STATUS DSI_BIST_Pattern_Test(enum DISP_MODULE_ENUM module,
 	struct cmdqRecStruct *cmdq, bool enable, unsigned int color)
 {
-	int i = 0;
+	unsigned int i = 0;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (enable) {
