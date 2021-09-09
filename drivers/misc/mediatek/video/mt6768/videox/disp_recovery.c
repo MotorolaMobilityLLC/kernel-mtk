@@ -82,6 +82,10 @@ static unsigned int esd_check_enable;
 unsigned int esd_checking;
 static int te_irq;
 
+#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
+extern int esd_backlight_level;
+#endif
+
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 /***********external display dual LCM ESD check******************/
@@ -889,6 +893,9 @@ int primary_display_esd_recovery(void)
 #endif
 
 done:
+#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
+	disp_lcm_set_backlight(primary_get_lcm(),NULL,esd_backlight_level);
+#endif
 	primary_display_manual_unlock();
 	DISPCHECK("[ESD]ESD recovery end\n");
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_END, 0, 0);
