@@ -334,8 +334,10 @@ struct history_record *history_rec_create(unsigned int record_num,
 
 	size_align = record_num * record_size;
 	size_align = ALIGN(size_align, PAGE_SIZE);
-	if (!record_size)
+	if (!record_size) {
 		IONMSG("warning! record_size is 0\n");
+		return ERR_PTR(-EINVAL);
+	}
 
 	num_align = size_align / record_size;
 
