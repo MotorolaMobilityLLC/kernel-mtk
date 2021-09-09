@@ -2377,6 +2377,8 @@ static void mtk_crtc_disp_mode_switch_begin(struct drm_crtc *crtc,
 	/* Check if disp_mode_idx need change */
 	if (mode_switch_delay_value < 0) {
 		mode_switch_delay_value = old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
+		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] =
+		old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
 		return;
 	}
 
