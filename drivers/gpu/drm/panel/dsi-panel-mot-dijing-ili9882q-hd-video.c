@@ -505,12 +505,12 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	char bl_tb0[] = {0x51, 0x07, 0xFF};
+	char bl_tb0[] = {0x51, 0x0F, 0xFE};
 
 	pr_debug("ili9882q level : %d\n", level);
 
-	bl_tb0[1] = ((level >> 8) & 0x7);
-	bl_tb0[2] = (level & 0xff);
+	bl_tb0[1] = ((level >> 7) & 0x0F);
+	bl_tb0[2] = ((level << 1) & 0xFE);
 
 	if (!cb)
 		return -1;
