@@ -2323,6 +2323,11 @@
                 <channel>I2C_CHANNEL_2</channel>
                 <address>0x0C</address>
             </device28>
+            <device29>
+               <varName>CAMERA_MAIN_EEPROM</varName>
+               <channel>I2C_CHANNEL_2</channel>
+               <address>0x33</address>
+           </device29>
         </module>
         <module name="md1_eint">
             <count>5</count>
