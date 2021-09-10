@@ -92,6 +92,8 @@
         //io-channel-names = "batteryID-channel";
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(244)>;       /*Charging termination current.*/
+        /* Tune value for current measurement */
+        CAR_TUNE_VALUE = <(101)>;
 
         /* battery prop */
         g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
