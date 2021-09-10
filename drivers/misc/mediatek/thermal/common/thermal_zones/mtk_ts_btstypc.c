@@ -1432,6 +1432,8 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 {
 	int err = 0;
 	int ret = 0;
+	struct proc_dir_entry *entry = NULL;
+	struct proc_dir_entry *mtkts_typec_therm_dir = NULL;
 
 	mtkts_typec_therm_dprintk("[%s]\n", __func__);
 
@@ -1458,7 +1460,30 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 	mtkts_typec_therm_printk("[%s]get auxadc iio ch: %d\n", __func__,
 		thermistor_ch5->channel->channel);
 
+	/* setup default table */
+	mtkts_typec_therm_prepare_table(g_RAP_ntc_table);
 
+	mtkts_typec_therm_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
+	if (!mtkts_typec_therm_dir) {
+		mtkts_typec_therm_dprintk(
+			"[%s]: mkdir /proc/driver/thermal failed\n", __func__);
+	} else {
+		entry = proc_create("tztypec_therm", 0664, mtkts_typec_therm_dir,
+				&mtkts_typec_therm_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+
+		entry = proc_create("tztypec_therm_param", 0664, mtkts_typec_therm_dir,
+				&mtkts_typec_therm_param_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+	}
+
+	mtkts_typec_therm_register_thermal();
+#if 0
+	mtkTTimer_register("mtktstypec_therm", mtkts_typec_therm_start_thermal_timer,
+					mtkts_typec_therm_cancel_thermal_timer);
+#endif
 	return err;
 }
 
@@ -1487,8 +1512,7 @@ static struct platform_driver mtk_thermal_typec_therm_driver = {
 
 static int __init mtkts_typec_therm_init(void)
 {
-	struct proc_dir_entry *entry = NULL;
-	struct proc_dir_entry *mtkts_typec_therm_dir = NULL;
+
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
 	int err = 0;
 #endif
@@ -1498,35 +1522,11 @@ static int __init mtkts_typec_therm_init(void)
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
 	err = platform_driver_register(&mtk_thermal_typec_therm_driver);
 	if (err) {
-		mtkts_typec_therm_printk("thermal driver callback register failed.\n");
-		return err;
+		mtkts_typec_therm_printk("mtk_thermal_typec_therm_driver register failed.\n");
 	}
 #endif
-	/* setup default table */
-	mtkts_typec_therm_prepare_table(g_RAP_ntc_table);
 
-	mtkts_typec_therm_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
-	if (!mtkts_typec_therm_dir) {
-		mtkts_typec_therm_dprintk(
-			"[%s]: mkdir /proc/driver/thermal failed\n", __func__);
-	} else {
-		entry = proc_create("tztypec_therm", 0664, mtkts_typec_therm_dir,
-				&mtkts_typec_therm_fops);
-		if (entry)
-			proc_set_user(entry, uid, gid);
-
-		entry = proc_create("tztypec_therm_param", 0664, mtkts_typec_therm_dir,
-				&mtkts_typec_therm_param_fops);
-		if (entry)
-			proc_set_user(entry, uid, gid);
-	}
-
-	mtkts_typec_therm_register_thermal();
-#if 0
-	mtkTTimer_register("mtktstypec_therm", mtkts_typec_therm_start_thermal_timer,
-					mtkts_typec_therm_cancel_thermal_timer);
-#endif
-	return 0;
+	return err;
 }
 
 static void __exit mtkts_typec_therm_exit(void)
