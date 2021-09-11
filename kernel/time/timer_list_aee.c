@@ -41,6 +41,7 @@ static void print_name_offset(struct seq_file *m, void *sym,
 		SEQ_printf_at_AEE(m, "<%pK>", sym);
 	} else {
 		SEQ_printf_at_AEE(m, "%s", symname);
+#if 0
 		if (timer && !strncmp(symname, "hrtimer_wakeup",
 		    strlen("hrtimer_wakeup"))) {
 			struct hrtimer_sleeper *t =
@@ -48,6 +49,7 @@ static void print_name_offset(struct seq_file *m, void *sym,
 					      timer);
 			SEQ_printf_at_AEE(m, " (task: %s)", t->task->comm);
 		}
+#endif
 	}
 }
 
@@ -55,28 +57,14 @@ static void
 print_timer(struct seq_file *m, struct hrtimer *taddr, struct hrtimer *timer,
 	    int idx, u64 now)
 {
-#ifdef CONFIG_TIMER_STATS
-	char tmp[TASK_COMM_LEN + 1];
-#endif
 	SEQ_printf_at_AEE(m, " #%d: ", idx);
 	print_name_offset(m, taddr, NULL);
 	SEQ_printf_at_AEE(m, ", ");
 	print_name_offset(m, timer->function, taddr);
-	SEQ_printf_at_AEE(m, ", S:%02x", timer->state);
 #ifdef CONFIG_TIMER_STATS
 	SEQ_printf_at_AEE(m, ", ");
 	print_name_offset(m, timer->start_site, NULL);
-	memcpy(tmp, timer->start_comm, TASK_COMM_LEN);
-	tmp[TASK_COMM_LEN] = 0;
-	SEQ_printf_at_AEE(m, ", %s/%d", tmp, timer->start_pid);
 #endif
-	SEQ_printf_at_AEE(m, "\n");
-	SEQ_printf_at_AEE(m,
-		" # expires at %llu-%llu nsecs [in %lld to %lld nsecs]\n",
-		(unsigned long long)ktime_to_ns(hrtimer_get_softexpires(timer)),
-		(unsigned long long)ktime_to_ns(hrtimer_get_expires(timer)),
-		(long long)(ktime_to_ns(hrtimer_get_softexpires(timer)) - now),
-		(long long)(ktime_to_ns(hrtimer_get_expires(timer)) - now));
 }
 
 static void
