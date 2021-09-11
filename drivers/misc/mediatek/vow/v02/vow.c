@@ -137,7 +137,7 @@ static void vow_service_ReadPayloadDumpData(unsigned int buf_length);
 #endif
 static DEFINE_MUTEX(vow_vmalloc_lock);
 static DEFINE_MUTEX(vow_extradata_mutex);
-
+static DEFINE_MUTEX(vow_pcmdump_mutex);
 
 /*****************************************************************************
  * VOW SERVICES
@@ -1509,9 +1509,11 @@ static int vow_pcm_dump_notify(bool enable)
 
 static int vow_pcm_dump_set(bool enable)
 {
+	mutex_lock(&vow_pcmdump_mutex);
 	VOWDRV_DEBUG("%s = %d, %d\n", __func__,
 		     vowserv.dump_pcm_flag,
 		     (unsigned int)enable);
+
 #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
 	bargein_resv_dram.vir_addr =
 	    (char *)(scp_get_reserve_mem_virt(VOW_BARGEIN_MEM_ID))
@@ -1562,6 +1564,7 @@ static int vow_pcm_dump_set(bool enable)
 		vow_stop_dump_wait();
 		vow_service_CloseDumpFile();
 	}
+	mutex_unlock(&vow_pcmdump_mutex);
 	return 0;
 }
 
@@ -1570,22 +1573,27 @@ static void vow_service_OpenDumpFile(void)
 	VOWDRV_DEBUG("+%s() %d\n", __func__, b_enable_dump);
 	/* only enable when debug pcm dump on */
 	__pm_stay_awake(&pcm_dump_wake_lock);
+
 	vow_service_OpenDumpFile_internal();
 
+	spin_lock(&vowdrv_lock);
 	if (dump_queue == NULL) {
 		dump_queue = kmalloc(sizeof(struct dump_queue_t), GFP_KERNEL);
 		if (dump_queue != NULL)
 			memset_io(dump_queue, 0, sizeof(struct dump_queue_t));
 	}
+	spin_unlock(&vowdrv_lock);
 	if (!pcm_dump_task) {
 		pcm_dump_task = kthread_create(vow_pcm_dump_kthread,
 					       NULL,
 					       "vow_pcm_dump_kthread");
-		if (IS_ERR(pcm_dump_task))
+		if (IS_ERR(pcm_dump_task)) {
 			VOWDRV_DEBUG("can not create pcm dump kthread\n");
-
-		b_enable_dump = true;
-		wake_up_process(pcm_dump_task);
+			pcm_dump_task = NULL;
+		} else {
+			b_enable_dump = true;
+			wake_up_process(pcm_dump_task);
+		}
 	}
 #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
 	bargein_dump_data_routine_cnt_pass = 0;
@@ -1612,6 +1620,7 @@ static void vow_service_CloseDumpFile(void)
 		kthread_stop(pcm_dump_task);
 		pcm_dump_task = NULL;
 	}
+
 	VOWDRV_DEBUG("[Recog] dump_queue = %p\n", dump_queue);
 #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
 	VOWDRV_DEBUG("[BargeIn] bargein_pass: %d\n",
@@ -1632,10 +1641,13 @@ static void vow_service_CloseDumpFile(void)
 		vffp_dump_data_routine_cnt_pass);
 	VOWDRV_DEBUG("[vffp] vffp dump cnt %d\n",
 		     vowserv.vffp_dump_cnt1);
+
+	spin_lock(&vowdrv_lock);
 	if (dump_queue != NULL) {
 		kfree(dump_queue);
 		dump_queue = NULL;
 	}
+	spin_unlock(&vowdrv_lock);
 
 	vow_service_CloseDumpFile_internal();
 
@@ -1843,9 +1855,13 @@ static int vow_pcm_dump_kthread(void *data)
 			}
 			if (b_enable_dump == false)
 				break;
-
-			current_idx = dump_queue->idx_r;
-			dump_queue->idx_r++;
+			spin_lock(&vowdrv_lock);
+			if (dump_queue != NULL) {
+				current_idx = dump_queue->idx_r;
+				dump_queue->idx_r++;
+			} else
+				break;
+			spin_unlock(&vowdrv_lock);
 		}
 
 		if (vowserv.split_dumpfile_flag) {
@@ -1855,7 +1871,12 @@ static int vow_pcm_dump_kthread(void *data)
 			vowserv.split_dumpfile_flag = false;
 		}
 
-		dump_package = &dump_queue->dump_package[current_idx];
+		spin_lock(&vowdrv_lock);
+		if (dump_queue != NULL)
+			dump_package = &dump_queue->dump_package[current_idx];
+		else
+			break;
+		spin_unlock(&vowdrv_lock);
 
 		/* VOWDRV_DEBUG("[BargeIn] current_idx = %d\n", current_idx); */
 		switch (dump_package->dump_data_type) {
