@@ -1,10 +1,10 @@
 #ifndef _CAMERA_LDO_H_
 #define _CAMERA_LDO_H_
 
-#define CAMERA_DEVICEID_1_ADDR     0x00
-#define CAMERA_DEVICEID_2_ADDR    		    0x01
-#define CAMERA_R_SD_ADDR               0x02
-
+#define CAMERA_DEVICEID_1_ADDR      0x00
+#define CAMERA_DEVICEID_2_ADDR      0x01
+#define CAMERA_R_SD_ADDR            0x02
+//ET5907MV and FAN53870
 #define CAMERA_LDO_LDO1_OUT_ADDR    0x04 //DVDD1 MAIN
 #define CAMERA_LDO_LDO2_OUT_ADDR    0x05 //DVDD2 SUB
 #define CAMERA_LDO_LDO3_OUT_ADDR    0x06 //VDDAF  MAIN
@@ -21,8 +21,24 @@
 #define CAMERA_LDO_LDO_EN_ADDR          0x03  //bit0:LDO1 ~ bit6:LDO7
 #define CAMERA_LDO_LDO_SEQ_CTRL_ADDR    0x0F
 
+//WL2868C
+#define CAMERA_LDO_LDO1_OUT_ADDR_2	0x03
+#define CAMERA_LDO_LDO2_OUT_ADDR_2	0x04
+#define CAMERA_LDO_LDO3_OUT_ADDR_2	0x05
+#define CAMERA_LDO_LDO4_OUT_ADDR_2	0x06
+#define CAMERA_LDO_LDO5_OUT_ADDR_2	0x07
+#define CAMERA_LDO_LDO6_OUT_ADDR_2	0x08
+#define CAMERA_LDO_LDO7_OUT_ADDR_2	0x09
+
+#define CAMERA_LDO_LDO_EN_ADDR_2	0x0E
+
+
+
 #define CAMERA_LDO_PRINT printk
 
+#define ET5907MV_deviceid	0x00
+#define WL2868C_deviceid	0x33
+#define FAN53870_deviceid	0x01
 
 typedef enum {
 	CAMERA_LDO_DVDD1=0,

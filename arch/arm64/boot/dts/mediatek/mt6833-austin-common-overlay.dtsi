@@ -296,10 +296,15 @@
 	#size-cells = <0>;
 	clock-frequency = <400000>;
         i2c_camera_ldo{
-             compatible = "mediatek,i2c_camera_ldo";
-             reg = <0x35>;
-             status = "okay";
-         };
+		compatible = "mediatek,i2c_camera_ldo";
+		reg = <0x35>;
+		status = "okay";
+	};
+	i2c_camera_ldo2{
+		compatible = "mediatek,i2c_camera_ldo2";
+		reg = <0x2f>;
+		status = "okay";
+	};
 
  };
 &moto_chg_tcmd {
