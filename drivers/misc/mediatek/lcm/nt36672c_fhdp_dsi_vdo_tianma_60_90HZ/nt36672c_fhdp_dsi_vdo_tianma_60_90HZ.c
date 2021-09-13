@@ -35,6 +35,8 @@
 #include <asm/arch/mt_gpio.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
@@ -47,6 +49,7 @@
 
 //backlight driver
 #define LCM_BL_DRV_I2C_SUPPORT
+#define LCM_BL_CMD_LP_MODE
 
 #define HWREV_EVT	0xA100
 #define HWREV_EVT5	0xA500
@@ -186,7 +189,7 @@ static struct LCM_setting_table init_setting[] = {
 #else
 	{0X53,0x01,{0X24}},
 #endif
-	{0X55,0x01,{0X00}},
+	{0X55,0x01,{0X01}},
 
 	{0X11,0x00,{}},
 	{REGFLAG_DELAY,100,{}},
@@ -611,6 +614,40 @@ static struct LCM_setting_table_V4 dimming_on[] = {
 };
 #endif
 
+#ifdef LCM_BL_CMD_LP_MODE
+static struct LCM_setting_table_V4 lcm_hbm_on[] = {
+	{0x39, 0x51, 2, {0X0F, 0xFF}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_hbm_off[] = {
+	{0x39, 0x51, 2, {0x0C, 0xCC}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_cabc_ui[] = {
+	{0x15, 0x55, 1, {0X01}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_cabc_mv[] = {
+	{0x15, 0x55, 1, {0X03}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_cabc_dis[] = {
+	{0x15, 0x55, 1, {0X00}, 0 },
+};
+
+#else
+static struct LCM_setting_table lcm_cabc_setting[] = {
+	{0x55, 1, {0x01} },	//UI
+	{0x55, 1, {0x03} },	//MV
+	{0x55, 1, {0x00} },	//DISABLE
+};
+
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x0C, 0XCC} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
+};
+#endif
+
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update)
 {
@@ -948,9 +985,68 @@ static void *lcm_switch_mode(int mode)
 	return NULL;
 }
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+#ifdef LCM_BL_CMD_LP_MODE
+			if (*lcm_value) {
+				dsi_set_cmdq_V4(lcm_hbm_on,
+						sizeof(lcm_hbm_on)/sizeof(struct LCM_setting_table_V4), 1);
+
+				//TBD, in lp mode with 2 bit, it need send cmd twice to make it work currently
+				MDELAY(5);
+				dsi_set_cmdq_V4(lcm_hbm_on,
+						sizeof(lcm_hbm_on)/sizeof(struct LCM_setting_table_V4), 1);
+
+				pr_debug("%s, tm_nt36672c HBM on\n", __func__);
+			}
+			else {
+				dsi_set_cmdq_V4(lcm_hbm_off,
+						sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+				//TBD
+				MDELAY(5);
+				dsi_set_cmdq_V4(lcm_hbm_off,
+						sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+			}
+#else
+			pr_debug("%s:push lcm_hbm_setting:%d", __func__, *lcm_value);
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+#endif
+			pr_info("%s, tm_nt36672c set HBM %d\n", __func__, *lcm_value);
+			break;
+		case PARAM_CABC:
+#ifdef LCM_BL_CMD_LP_MODE
+			switch(*lcm_value) {
+				case CABC_UI_MODE:
+					dsi_set_cmdq_V4(lcm_cabc_ui,
+						sizeof(lcm_cabc_ui)/sizeof(struct LCM_setting_table_V4), 1);
+					break;
+				case CABC_MV_MODE:
+					dsi_set_cmdq_V4(lcm_cabc_mv,
+						sizeof(lcm_cabc_mv)/sizeof(struct LCM_setting_table_V4), 1);
+					break;
+				default:
+					dsi_set_cmdq_V4(lcm_cabc_dis,
+						sizeof(lcm_cabc_dis)/sizeof(struct LCM_setting_table_V4), 1);
+					break;
+			}
+#else
+			pr_debug("%s:push lcm_cabc_setting:%d", __func__, *lcm_value);
+			push_table(handle, &lcm_cabc_setting[*lcm_value], 1, 1);
+#endif
+			pr_info("%s, tm_nt36672c set cabc %d\n", __func__, *lcm_value);
+			break;
+		default:
+			pr_err("%s,tm_nt36672c cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+}
 
 struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
-	.name = "nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv",
+	.name = "mipi_mot_vid_tianma_nt36672c_fhd_678",
 	.supplier = "tianma",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
@@ -965,5 +1061,6 @@ struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
 #endif
 	.ata_check = lcm_ata_check,
 	.switch_mode = lcm_switch_mode,
+	.set_lcm_cmd = lcm_set_cmdq,
 	.tp_gesture_status = GESTURE_OFF,
 };
