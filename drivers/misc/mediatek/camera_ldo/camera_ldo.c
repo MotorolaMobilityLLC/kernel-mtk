@@ -10,29 +10,25 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
-
+#include <linux/mutex.h>
 #include "camera_ldo.h"
-
-
 /*****************************************************************************
  * GLobal Variable
  *****************************************************************************/
-
 static struct i2c_client *camera_ldo_i2c_client;
-
+static DEFINE_MUTEX(camera_ldo_mutex);
 /*****************************************************************************
  * Function Prototype
  *****************************************************************************/
 static int camera_ldo_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int camera_ldo_i2c_remove(struct i2c_client *client);
-int deviceid = -1;
+static int deviceid = -1;
 /*****************************************************************************
  * Extern Area
  *****************************************************************************/
@@ -40,11 +36,11 @@ void camera_ldo_set_en_ldo(CAMERA_LDO_SELECT ldonum,unsigned int en)
 {
 	s32 ret=0;
 	unsigned int value =0;
-
 	if (NULL == camera_ldo_i2c_client) {
 		CAMERA_LDO_PRINT("[camera_ldo] camera_ldo_i2c_client is null!!\n");
 		return;
 	}
+	mutex_lock(&camera_ldo_mutex);
 	if (deviceid == WL2868C_deviceid) {
 		ret = i2c_smbus_read_byte_data(camera_ldo_i2c_client, CAMERA_LDO_LDO_EN_ADDR_2);
 	} else {
@@ -52,9 +48,9 @@ void camera_ldo_set_en_ldo(CAMERA_LDO_SELECT ldonum,unsigned int en)
 	}
 	if (ret < 0) {
 		CAMERA_LDO_PRINT("[camera_ldo] camera_ldo_set_en_ldo read error!\n");
+		mutex_unlock(&camera_ldo_mutex);
 		return;
 	}
-
 	if (en == 0) {
 		value = ret & (~(0x01<<ldonum));
 	} else {
@@ -65,11 +61,10 @@ void camera_ldo_set_en_ldo(CAMERA_LDO_SELECT ldonum,unsigned int en)
 	} else {
 		i2c_smbus_write_byte_data(camera_ldo_i2c_client, CAMERA_LDO_LDO_EN_ADDR, value);
 	}
+	mutex_unlock(&camera_ldo_mutex);
 	CAMERA_LDO_PRINT("[camera_ldo] camera_ldo_set_en_ldo enable before:%x after set :%x  \n", ret, value);
 	return;
-
 }
-
 //VOUT1=0.496V+LDO1_VOUT [6:0]*0.008.   LDO1/LDO2
 //VOUTx=1.504V+LDOx_VOUT [7:0]*0.008.   LDO3~LDO7
 void camera_ldo_set_ET5907MV_value(CAMERA_LDO_SELECT ldonum, unsigned int value, unsigned char *regaddr, unsigned int *Ldo_out)
@@ -185,7 +180,6 @@ void camera_ldo_set_FAN53870_value(CAMERA_LDO_SELECT ldonum, unsigned int value,
 		CAMERA_LDO_PRINT("[camera_ldo] %s exit!!!\n", __FUNCTION__);
 }
 
-
 void camera_ldo_set_ldo_value(CAMERA_LDO_SELECT ldonum, unsigned int value)
 {
 	unsigned int  Ldo_out = 0;
@@ -211,8 +205,10 @@ void camera_ldo_set_ldo_value(CAMERA_LDO_SELECT ldonum, unsigned int value)
 		camera_ldo_set_FAN53870_value(ldonum, value, &regaddr, &Ldo_out);
 		printk("FAN53870 set done\n");
 	}
+	mutex_lock(&camera_ldo_mutex);
 	i2c_smbus_write_byte_data(camera_ldo_i2c_client, regaddr, Ldo_out);
 	ret = i2c_smbus_read_byte_data(camera_ldo_i2c_client, regaddr);
+	mutex_unlock(&camera_ldo_mutex);
 	CAMERA_LDO_PRINT("[camera_ldo] after write ret=0x%x\n", ret);
 }
 /*****************************************************************************
@@ -245,16 +241,18 @@ otherwise the probe function will not be executed!
 
 static int camera_ldo_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+	int deviceid_tmp = -1;
 	if (NULL == client) {
 		CAMERA_LDO_PRINT("[camera_ldo] i2c_client is NULL\n");
 		return -1;
 	}
-	deviceid = i2c_smbus_read_byte_data(client, CAMERA_DEVICEID_2_ADDR);
-	// printk("0x35 read deviceid = 0x%x\n",deviceid);
-	if (deviceid < 0) {
+	deviceid_tmp = i2c_smbus_read_byte_data(client, CAMERA_DEVICEID_2_ADDR);
+	printk("i2c read deviceid = 0x%x\n",deviceid_tmp);
+	if (deviceid_tmp < 0) {
 		CAMERA_LDO_PRINT("i2c failed to read\n");
 		return -1;
 	}
+	deviceid = deviceid_tmp;
 	camera_ldo_i2c_client = client;
 	CAMERA_LDO_PRINT("[camera_ldo]camera_ldo_i2c_probe success addr = 0x%x\n", client->addr);
 	return 0;
