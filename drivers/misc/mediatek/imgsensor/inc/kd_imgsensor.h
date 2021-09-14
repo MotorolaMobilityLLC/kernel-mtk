@@ -153,7 +153,7 @@
 //add austin sensor id begin
 #define MOT_AUSTIN_S5KJN1SQ_SENSOR_ID      0x38E1
 #define MOT_AUSTIN_HI1336_SENSOR_ID      0x1337
-#define MOT_AUSTIN_GC02M1B_SENSOR_ID      0x02E0
+#define MOT_AUSTIN_GC02M1B_SENSOR_ID      0x02E1
 #define MOT_AUSTIN_GC02M1_SENSOR_ID      0x02E0
 //add austin sensor id end
 
