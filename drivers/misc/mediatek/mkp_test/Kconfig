@@ -1,0 +1,5 @@
+config MTK_MKP_TEST
+	tristate "Test MTK MKP feature"
+	default m
+	help
+	  Test MKP
