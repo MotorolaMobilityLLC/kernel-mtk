@@ -33,7 +33,11 @@
 extern struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainData;
 extern struct stCAM_CAL_DATAINFO_STRUCT *g_eepromSubData;
 extern struct stCAM_CAL_DATAINFO_STRUCT *g_eepromMainMicroData;
-
+#if defined(MOT_AUSTIN_GC02M1_MIPI_RAW)
+#define GC02M1_AWB_DATA_SIZE 6
+extern unsigned char gc02m1_data_awb[GC02M1_AWB_DATA_SIZE+3];
+static u32 gc02m1_vendor_id = 0x19050000;
+#endif
 static struct EEPROM_DRV ginst_drv[MAX_EEPROM_NUMBER];
 
 static struct stCAM_CAL_LIST_STRUCT *get_list(struct CAM_CAL_SENSOR_INFO *sinfo)
@@ -217,6 +221,26 @@ static ssize_t eeprom_read(struct file *a_file, char __user *user_buffer,
 			kfree(kbuf);
 			return -EFAULT;
 		}
+#if defined(MOT_AUSTIN_GC02M1_MIPI_RAW)
+	} else if((gc02m1_data_awb !=NULL)&&(MOT_AUSTIN_GC02M1_SENSOR_ID == pdata->sensor_info.sensor_id)) {
+			if(*offset == 0x10) {//check id
+				if(copy_to_user(user_buffer, (u8 *)&gc02m1_vendor_id, 4)) {
+					return -EFAULT;
+				}
+				LOG_DBG("%d,ifCAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+					*offset,size);
+			} else if(*offset == 0x78) {//read otp data
+				    if(copy_to_user(user_buffer, (u8 *) gc02m1_data_awb, size)) {
+					return -EFAULT;
+				    }
+				LOG_DBG("%d, ifCAM_CALIOC_G_READ start! offset=%llu, length=%lu\n",__LINE__,
+					*offset, size);
+			        } else {
+			LOG_INF("maybe some error buf\n");
+			kfree(kbuf);
+			return -EFAULT;
+		}
+#endif
 	}else if((g_eepromSubData != NULL)&&(SAIPAN_DMEGC_HI1336_SENSOR_ID== pdata->sensor_info.sensor_id)){
 		u32 totalLength = (u32)*offset+ (u32)size;
 		if((g_eepromSubData->dataBuffer)&&(totalLength <= g_eepromSubData->dataLength)){
