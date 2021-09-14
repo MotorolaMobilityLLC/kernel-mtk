@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *     gc02m1mipi_Sensor.h
+ *     mot_austin_gc02m1mipi_Sensor.h
  *
  * Project:
  * --------
@@ -13,35 +13,35 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef __GC02M1MIPI_SENSOR_H__
-#define __GC02M1MIPI_SENSOR_H__
+#ifndef __MOT_AUSTIN_GC02M1MIPI_SENSOR_H__
+#define __MOT_AUSTIN_GC02M1MIPI_SENSOR_H__
 
 
 /* SENSOR MIRROR FLIP INFO */
-#define GC02M1_MIRROR_NORMAL    1
-#define GC02M1_MIRROR_H         0
-#define GC02M1_MIRROR_V         0
-#define GC02M1_MIRROR_HV        0
+#define MOT_AUSTIN_GC02M1_MIRROR_NORMAL    1
+#define MOT_AUSTIN_GC02M1_MIRROR_H         0
+#define MOT_AUSTIN_GC02M1_MIRROR_V         0
+#define MOT_AUSTIN_GC02M1_MIRROR_HV        0
 
-#if GC02M1_MIRROR_NORMAL
-#define GC02M1_MIRROR	        0x80
-#elif GC02M1_MIRROR_H
-#define GC02M1_MIRROR	        0x81
-#elif GC02M1_MIRROR_V
-#define GC02M1_MIRROR	        0x82
-#elif GC02M1_MIRROR_HV
-#define GC02M1_MIRROR	        0x83
+#if MOT_AUSTIN_GC02M1_MIRROR_NORMAL
+#define MOT_AUSTIN_GC02M1_MIRROR	        0x80
+#elif MOT_AUSTIN_GC02M1_MIRROR_H
+#define MOT_AUSTIN_GC02M1_MIRROR	        0x81
+#elif MOT_AUSTIN_GC02M1_MIRROR_V
+#define MOT_AUSTIN_GC02M1_MIRROR	        0x82
+#elif MOT_AUSTIN_GC02M1_MIRROR_HV
+#define MOT_AUSTIN_GC02M1_MIRROR	        0x83
 #else
-#define GC02M1_MIRROR	        0x80
+#define MOT_AUSTIN_GC02M1_MIRROR	        0x80
 #endif
 
 
 /* SENSOR PRIVATE INFO FOR GAIN SETTING */
-#define GC02M1_SENSOR_GAIN_BASE             0x400
-#define GC02M1_SENSOR_GAIN_MAX              (12 * GC02M1_SENSOR_GAIN_BASE)
-#define GC02M1_SENSOR_GAIN_MAX_VALID_INDEX  16
-#define GC02M1_SENSOR_GAIN_MAP_SIZE         16
-#define GC02M1_SENSOR_DGAIN_BASE            0x400
+#define MOT_AUSTIN_GC02M1_SENSOR_GAIN_BASE             0x400
+#define MOT_AUSTIN_GC02M1_SENSOR_GAIN_MAX              (12 * MOT_AUSTIN_GC02M1_SENSOR_GAIN_BASE)
+#define MOT_AUSTIN_GC02M1_SENSOR_GAIN_MAX_VALID_INDEX  16
+#define MOT_AUSTIN_GC02M1_SENSOR_GAIN_MAP_SIZE         16
+#define MOT_AUSTIN_GC02M1_SENSOR_DGAIN_BASE            0x400
 
 enum{
 	IMGSENSOR_MODE_INIT,
@@ -106,14 +106,15 @@ struct imgsensor_info_struct {
 	kal_uint8  video_delay_frame;
 	kal_uint8  hs_video_delay_frame;
 	kal_uint8  slim_video_delay_frame;
+	kal_uint8  margin;
+	kal_uint32 min_shutter;
+	kal_uint32 max_frame_length;
 	kal_uint32 min_gain;
 	kal_uint32 max_gain;
 	kal_uint32 min_gain_iso;
 	kal_uint32 gain_step;
-	kal_uint8  gain_type;
-	kal_uint8  margin;
-	kal_uint32 min_shutter;
-	kal_uint32 max_frame_length;
+	kal_uint32 exp_step;
+	kal_uint32 gain_type;
 	kal_uint8  isp_driving_current;
 	kal_uint8  sensor_interface_type;
 	kal_uint8  mipi_sensor_type;
@@ -132,5 +133,6 @@ extern void kdSetI2CSpeed(u16 i2cSpeed);
 extern int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId);
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
 extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId, u16 timing);
+
 
 #endif
