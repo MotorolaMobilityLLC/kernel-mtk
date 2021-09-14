@@ -335,10 +335,7 @@ int primary_display_dsi_vfp_change(int state)
 	struct LCM_PARAMS *params;
 	unsigned int apply_vfp = 0;
 
-	if (bdg_is_bdg_connected() == 1)
-		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-	else
-		cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
 
 	cmdqRecReset(handle);
 
@@ -385,8 +382,6 @@ int primary_display_dsi_vfp_change(int state)
 			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle,
 						CMDQ_STOP_VDO_MODE, 0);
 
-			cmdqRecClearEventToken(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-
 			dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle,
 						DDP_DSI_PORCH_CHANGE, &apply_vfp);
 
@@ -396,8 +391,6 @@ int primary_display_dsi_vfp_change(int state)
 
 			ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(primary_get_dpmgr_handle()),
 						handle, 0);
-
-			_blocking_flush();
 
 			cmdqRecFlush(handle);
 		} else {
