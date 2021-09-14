@@ -153,8 +153,8 @@
                 interrupt-parent = <&pio>;
                 interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
 
-                fp-ctrl-power;
-                fp-gpio-vcc-enable;
+//                fp-ctrl-power;
+//                fp-gpio-vcc-enable;
 
                 egistec,gpio_vcc_en = <&pio 22 0x0>;
                 egistec,gpio_reset = <&pio 21 0x0>;
