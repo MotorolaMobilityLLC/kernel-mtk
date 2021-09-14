@@ -2156,15 +2156,14 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 	} else if (dsi_params->PLL_CLOCK) {
 		ui = 1000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		cycle_time = 8000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
+	} else {
+		DISPINFO("[dsi_dsi.c] PLL clock should not be 0!\n");
+		ASSERT(0);
 	}
+
 	if (bdg_is_bdg_connected() == 1) {
 		ui = ui - 0x01;
 		cycle_time = cycle_time - 0x01;
-	}
-
-	else {
-		DISPINFO("[dsi_dsi.c] PLL clock should not be 0!\n");
-		ASSERT(0);
 	}
 	DISPINFO("Cycle Time=%d, interval=%d, lane#=%d\n",
 		__func__, cycle_time, ui, lane_no);
