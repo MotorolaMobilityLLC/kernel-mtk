@@ -23,7 +23,7 @@
     pr_err(PFX "[%s] " format, __func__, ##args)
  
 #define HI1336_SERIAL_NUM_SIZE 16
-#define MAIN_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
+#define FRONT_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
 #define EEPROM_READY   1
 static DEFINE_SPINLOCK(imgsensor_lock);
 
@@ -421,7 +421,7 @@ static void AUSTIN_HI1336_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[10], eeprom->serial_number[11],
 		eeprom->serial_number[12], eeprom->serial_number[13],
 		eeprom->serial_number[14], eeprom->serial_number[15]);
-	AUSTIN_HI1336_eeprom_dump_bin(MAIN_SERIAL_NUM_DATA_PATH,  HI1336_SERIAL_NUM_SIZE,  eeprom->serial_number);
+	AUSTIN_HI1336_eeprom_dump_bin(FRONT_SERIAL_NUM_DATA_PATH,  HI1336_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_INF("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
