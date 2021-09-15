@@ -116,8 +116,7 @@ module_param(isoc_ep_gpd_count, int, 0644);
 #endif
 
 DEFINE_SPINLOCK(usb_io_lock);
-//MMI_STOPSHIP <musb>: enable musb debug log
-unsigned int musb_debug = 7;
+unsigned int musb_debug;
 unsigned int musb_debug_limit = 1;
 unsigned int musb_uart_debug = 1;
 struct musb *mtk_musb;
