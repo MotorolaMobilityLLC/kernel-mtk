@@ -77,7 +77,7 @@ static int margin_mode_gpu_dbnc_a = 9;
 static int margin_mode_gpu_dbnc_b = 1;
 static int JUMP_CHECK_NUM = DEFAULT_JUMP_CHECK_NUM;
 static int JUMP_CHECK_Q_PCT = DEFAULT_JUMP_CHECK_Q_PCT;
-static int adopt_low_fps;
+static int adopt_low_fps = 1;
 static int condition_get_fps;
 
 DECLARE_WAIT_QUEUE_HEAD(queue);
