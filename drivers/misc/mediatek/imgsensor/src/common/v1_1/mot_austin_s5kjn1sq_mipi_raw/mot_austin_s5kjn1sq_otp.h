@@ -49,9 +49,7 @@ extern kal_uint16 read_cmos_sensor_8(kal_uint16 addr);
 #define AUSTIN_S5KJN1_EEPROM_GGC_SIZE 346
 #define AUSTIN_S5KJN1_EEPROM_GGC_START_ADDR 0x386B
 #define AUSTIN_S5KJN1_EEPROM_GGC_END_ADDR 0x39C4
-#if 0
 static kal_uint16 addr_data_pair_ggc_jn1sq[AUSTIN_S5KJN1_EEPROM_GGC_SIZE+4] = {0};
-#endif
 static uint8_t AUSTIN_S5KJN1_eeprom[AUSTIN_S5KJN1_EEPROM_SIZE] = {0};
 static calibration_status_t mnf_status = CRC_FAILURE;
 static calibration_status_t af_status = CRC_FAILURE;
@@ -477,7 +475,7 @@ static void AUSTIN_S5KJN1_eeprom_format_calibration_data(void *data)
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
 		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
-#if 0
+
 static void AUSTIN_S5KJN1_eeprom_format_ggc_data(void)
 {
 	kal_uint16 gcc_crc16 = AUSTIN_S5KJN1_eeprom[AUSTIN_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|AUSTIN_S5KJN1_eeprom[AUSTIN_S5KJN1_EEPROM_GGC_END_ADDR+2];
@@ -485,7 +483,7 @@ static void AUSTIN_S5KJN1_eeprom_format_ggc_data(void)
 
 	if (eeprom_util_check_crc16((AUSTIN_S5KJN1_eeprom+AUSTIN_S5KJN1_EEPROM_GGC_START_ADDR),
 		AUSTIN_S5KJN1_EEPROM_GGC_SIZE, gcc_crc16)) {
-		pr_debug("HW GCC CRC success!");
+		LOG_INF("HW GCC CRC success!");
 
 		addr_data_pair_ggc_jn1sq[0] = 0x6028;
 		addr_data_pair_ggc_jn1sq[1] = 0x2400;
@@ -498,5 +496,4 @@ static void AUSTIN_S5KJN1_eeprom_format_ggc_data(void)
 
 	}
 }
-#endif
 #endif   //cfp-210812

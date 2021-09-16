@@ -876,7 +876,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				AUSTIN_S5KJN1_read_data_from_eeprom(AUSTIN_S5KJN1_EEPROM_SLAVE_ADDR, 0x0000, AUSTIN_S5KJN1_EEPROM_SIZE);
 				AUSTIN_S5KJN1_eeprom_dump_bin(EEPROM_DATA_PATH, AUSTIN_S5KJN1_EEPROM_SIZE, (void *)AUSTIN_S5KJN1_eeprom);
 				AUSTIN_S5KJN1_eeprom_format_calibration_data((void *)AUSTIN_S5KJN1_eeprom);
-//				AUSTIN_S5KJN1_eeprom_format_ggc_data();
+				AUSTIN_S5KJN1_eeprom_format_ggc_data();
 #endif
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
@@ -979,11 +979,11 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
-#if 0  //cfp-210812
+
 	pr_debug("wirte gcc date to sensor reg");
 	table_write_cmos_sensor(addr_data_pair_ggc_jn1sq,
 		sizeof(addr_data_pair_ggc_jn1sq) / sizeof(kal_uint16));
-#endif
+
 
 	spin_lock(&imgsensor_drv_lock);
 
