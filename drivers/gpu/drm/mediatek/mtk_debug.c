@@ -2768,3 +2768,21 @@ void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size,
 		*start = 0;
 	}
 }
+
+int mtk_disp_ioctl_debug_log_switch(struct drm_device *dev, void *data,
+	struct drm_file *file_priv)
+{
+	unsigned int switch_log = *(unsigned int *)data;
+
+	DDPMSG("%d:%s():switch_log=%d\n", __LINE__, __func__, switch_log);
+	if (switch_log == MTK_DRM_MOBILE_LOG)
+		g_mobile_log = 1;
+	else if (switch_log == MTK_DRM_DETAIL_LOG)
+		g_detail_log = 1;
+	else if (switch_log == MTK_DRM_FENCE_LOG)
+		g_fence_log = 1;
+	else if (switch_log == MTK_DRM_IRQ_LOG)
+		g_irq_log = 1;
+	return 0;
+}
+
