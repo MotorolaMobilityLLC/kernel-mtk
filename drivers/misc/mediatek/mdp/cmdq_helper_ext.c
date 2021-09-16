@@ -86,7 +86,6 @@ static struct cmdq_client *cmdq_entry;
 
 static struct cmdq_base *cmdq_client_base;
 static atomic_t cmdq_thread_usage;
-static atomic_t cmdq_thread_usage_clk;
 
 static wait_queue_head_t *cmdq_wait_queue; /* task done notify */
 static struct ContextStruct cmdq_ctx; /* cmdq driver context */
@@ -3392,14 +3391,6 @@ static void cmdq_core_clk_enable(struct cmdqRecStruct *handle)
 	if (clock_count == 1)
 		mdp_lock_wake_lock(true);
 
-	if (!handle->secData.is_secure) {
-		s32 clk_cnt = atomic_inc_return(&cmdq_thread_usage_clk);
-
-		if (clk_cnt == 1)
-			cmdq_mbox_enable(((struct cmdq_client *)
-				handle->pkt->cl)->chan);
-	}
-
 	cmdq_core_group_clk_cb(true, handle->engineFlag, handle->engine_clk);
 }
 
@@ -3408,17 +3399,6 @@ static void cmdq_core_clk_disable(struct cmdqRecStruct *handle)
 	s32 clock_count;
 
 	cmdq_core_group_clk_cb(false, handle->engineFlag, handle->engine_clk);
-
-	if (!handle->secData.is_secure) {
-		s32 clk_cnt = atomic_dec_return(&cmdq_thread_usage_clk);
-
-		if (clk_cnt == 0)
-			cmdq_mbox_disable(((struct cmdq_client *)
-				handle->pkt->cl)->chan);
-		else if (clk_cnt < 0)
-			CMDQ_ERR("disable clock %s error usage:%d\n",
-				__func__, clk_cnt);
-	}
 
 	clock_count = atomic_dec_return(&cmdq_thread_usage);
 
