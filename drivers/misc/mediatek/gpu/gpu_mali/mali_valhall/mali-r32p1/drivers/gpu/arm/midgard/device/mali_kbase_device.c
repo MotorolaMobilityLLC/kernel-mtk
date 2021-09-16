@@ -161,9 +161,9 @@ void kbase_device_pcm_dev_term(struct kbase_device *const kbdev)
 /**
  * mali_oom_notifier_handler - Mali driver out-of-memory handler
  *
- * @nb - notifier block - used to retrieve kbdev pointer
- * @action - action (unused)
- * @data - data pointer (unused)
+ * @nb: notifier block - used to retrieve kbdev pointer
+ * @action: action (unused)
+ * @data: data pointer (unused)
  * This function simply lists memory usage by the Mali driver, per GPU device,
  * for diagnostic purposes.
  */
