@@ -46,7 +46,7 @@
 #include "mot_austin_s5kjn1sqmipiraw_Sensor.h"
 #include "mot_austin_s5kjn1sq_otp.h"
 #define MULTI_WRITE 1
-//#define ENABLE_PDAF
+#define ENABLE_PDAF
 #define LOG_INF(format, args...)    \
     pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -1070,8 +1070,13 @@ static kal_uint16 addr_data_pair_pre_jn1sq[] = {
 	0x0202, 0x0100,
 	0x0200, 0x0100,
 	0x0D00, 0x0101,
+#ifdef ENABLE_PDAF
+	0x0D02, 0x0101,
+	0x0D04, 0x0102,
+#else
 	0x0D02, 0x0001,
 	0x0D04, 0x0002,
+#endif
 	0x6226, 0x0000
 };
 
@@ -1379,8 +1384,13 @@ static kal_uint16 addr_data_pair_video_jn1sq[] = {
 	0x0202, 0x0100,
 	0x0200, 0x0100,
 	0x0D00, 0x0101,
+#ifdef ENABLE_PDAF
+	0x0D02, 0x1001,
+	0x0D04, 0x1002,
+#else
 	0x0D02, 0x0001,
 	0x0D04, 0x0002,
+#endif
 	0x6226, 0x0000
 };
 
@@ -1717,7 +1727,7 @@ static void hs_video_setting(kal_uint16 currefps)
 
 	pr_debug("hs_video_setting\n");
 
-	printk("---------------------------------------hs_video_setting---------------------------------------\n");
+	LOG_INF("---------------------------------------hs_video_setting---------------------------------------\n");
 
 	table_write_cmos_sensor(addr_data_pair_hs_video_jn1sq,
 		sizeof(addr_data_pair_hs_video_jn1sq) / sizeof(kal_uint16));
@@ -2332,19 +2342,18 @@ static void custom2_setting(void)
 	Output_Width :	4080	px
 	Output_Height : 3072	px
 	Frame rate :	20.02	fps
-	Output format : Raw10	
+	Output format : Raw10
 	H-size :	5910	px
 	H-blank :	1830	px
 	V-size :	4734	line
 	V-blank :	1662	line
 	V-blank time :	17.54	ms
-	Tail X :	508 
-	Tail Y :	3056	
+	Tail X :	508
+	Tail Y :	3056
 	Lane :	4	lane
 	First Pixel :	Gr	First
 	*/
-	
-	printk("---------------------------------------custom2_setting---------------------------------------\n");
+	LOG_INF("---------------------------------------custom2_setting---------------------------------------\n");
 
 	pr_debug("custom2_setting\n");
 	table_write_cmos_sensor(addr_data_pair_custom2,
@@ -2852,7 +2861,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	/* change pdaf support mode to pdaf VC mode */
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = 2;
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
 	sensor_info->SensorClockDividCount = 3;	/* not use */
