@@ -3729,6 +3729,10 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 		value[35] & 0xFFF, (value[35] >> 16) & 0xFFF);
 
 	CMDQ_ERR("RDMA grep:%d => suggest to ask SMI help:%d\n", grep, grep);
+#ifdef CONFIG_MTK_SMI_EXT
+	if (grep)
+		smi_debug_bus_hang_detect(false, "mdp");
+#endif
 }
 
 const char *cmdq_mdp_get_rsz_state(const u32 state)
