@@ -77,9 +77,10 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <4>;
+		led_mode = <6>;
 		data = <1>;
-		pwm_config = <0 3 0 0 0>;
+		pwm_config = <0 1 0 0 0>;
+		max-brightness = <2047>;
 	};
 	gpio-leds {
 		compatible = "gpio-leds";
@@ -387,11 +388,61 @@
 		reg = <0x3E>;
 		status = "okay";
 	};
+/*
 	I2C_LCD_BACKLIGHT@36 {
 		compatible = "BL_control";
 		reg = <0x36>;
 		status = "okay";
 	};
+*/
+	lcd_backlight@36 {
+		compatible = "awinic,aw99703-bl", "ti,lm3697-bl";
+		reg = <0x36>;
+
+		/*awinic,aw99703-bl begin*/
+		aw99703,hwen-gpio = <&pio 26 0>;
+		/* brightness map level 1:256,2:1024,3:2048 */
+		aw99703,bl-map = <3>;
+		aw99703,using-lsb;
+		aw99703,ovp-level = <2>; /* 31V */
+		aw99703,ocp-level = <1>; /* 1.8A */
+		aw99703,switch-freq = <1>; /* 1000kHz(default) */
+		aw99703,auto-freq-high = <0x10>;
+		aw99703,auto-freq-low = <0x05>;
+		aw99703,bl-fscal-led = <0x19>; /* 24.8mA */
+		aw99703,bl-channel = <3>;
+		aw99703,turn-on-ramp = <0x09>; /* 256ms */
+		aw99703,turn-off-ramp = <0x04>; /* 8ms */
+		aw99703,pwm-trans-dim = <0>; /* 2ms */
+		aw99703,i2c-trans-dim = <0x07>; /* 512ms */
+		aw99703,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
+		aw99703,map-type = <1>; /* linear */
+		aw99703,work-mode = <1>; /* backlight */
+		aw99703,flash-timeout-time = <0x05>; /* 500ms(default) */
+		aw99703,flash-current = <0x08>; /* 59.2mA(default) */
+		/*awinic,aw99703-bl end*/
+
+		/*ti,lm3697-bl begin*/
+		lm3697,hwen-gpio = <&pio 26 0>;
+		lm3697,output-config = <0x00>;  /*use control A*/
+		lm3697,control-a-ramp = <0x20>;  /*start-up 524ms, shutdown 2048us*/
+		lm3697,control-b-ramp = <0x20>;  /*start-up 524ms, shutdown 2048us*/
+		lm3697,run-time-ramp = <0x22>;  /*ramp-up 524ms, ramp-down 524ms*/
+		lm3697,bl-fscal-led = <0x19>;  /* 25mA */
+		lm3697,ctrl_a_b_brt_cfg = <0x01>; /*Change BLK to Linear mode. 0x00 = exponential, 0x01 = Linear*/
+		lm3697,feedback-enable = <0x07>;  /*led anode is connected to cout(deault)*/
+		lm3697,boost-control = <0x04>; /* 32V */
+		lm3697,pwm-config = <0x0F>;  /*default 0x0C disable PWM, 0x0F enable PWM*/
+		lm3697,ctrl-bank-en = <0x01>;  /*enable bank A*/
+		lm3697,bl-map = <3>;  /* brightness map level 1:256,2:1024,3:2048 */
+		lm3697,using-lsb;
+		lm3697,ctrl-a-bl-lsb = <0x00>;
+		lm3697,ctrl-a-bl-msb = <0x00>;
+		/*ti,lm3697-bl end*/
+
+		status = "okay";
+	};
+
 };
 
 /* Config charger */

@@ -45,11 +45,16 @@
 
 #define LCM_ID_NT36672C_TIANMA (0x03)
 
+//backlight driver
+#define LCM_BL_DRV_I2C_SUPPORT
+
 static struct LCM_UTIL_FUNCS lcm_util;
+#ifndef LCM_BL_DRV_I2C_SUPPORT
 static bool frist_setbacklight = false;
 static bool is_dimming_open = false;
 extern int BL_control_write_bytes(unsigned char addr, unsigned char value);
 extern char BL_control_read_bytes(unsigned char cmd);
+#endif
 extern int Bias_power_write_bytes(unsigned char addr, unsigned char value);
 extern void BDG_set_cmdq_V2_DSI0(void *cmdq, unsigned int cmd, unsigned char count,
 			unsigned char *para_list, unsigned char force_update);
@@ -509,8 +514,12 @@ static struct LCM_setting_table init_setting[] = {
 	{0XC0,0x01,{0X03}},
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x01,{0x00}},
+	{0X51,0x02,{0xCC, 0x0C}},
+#ifdef LCM_BL_DRV_I2C_SUPPORT
+	{0X53,0x01,{0X2C}},
+#else
 	{0X53,0x01,{0X24}},
+#endif
 	{0X55,0x01,{0X00}},
 
 	{0X11,0x00,{}},
@@ -524,12 +533,15 @@ static struct LCM_setting_table bl_level[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 */
+#ifndef LCM_BL_DRV_I2C_SUPPORT
 static struct LCM_setting_table_V4 BL_Level[] = {
 	{0x15, 0x51, 1, {0xFF}, 0 },
 };
 static struct LCM_setting_table_V4 dimming_on[] = {
 	{0x15, 0x53, 1, {0x2C}, 0 },
 };
+#endif
+
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update,int IsMT6382)
 {
@@ -734,6 +746,7 @@ static void lcm_init(void)
 	MDELAY(40);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BL_EN_OUT1);
 
+#ifndef LCM_BL_DRV_I2C_SUPPORT
 	pr_info("%s,backlight IC chip ID = 0x%x\n",__func__,BL_control_read_bytes(0x00));
 	if(0x03 == BL_control_read_bytes(0x00)){
 		BL_control_write_bytes(0x02,0x01);
@@ -751,6 +764,7 @@ static void lcm_init(void)
 
 	frist_setbacklight = true;
 	is_dimming_open  = false;
+#endif
 
 	pr_info("%s end\n", __func__);
 
@@ -796,6 +810,13 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 	return 1;
 }
 
+#ifdef LCM_BL_DRV_I2C_SUPPORT
+static void lcm_setbacklight(unsigned int level)
+{
+	pr_info("%s,nt36672c tianma enter: level=%d\n", __func__, level);
+	return;
+}
+#else
 static void lcm_setbacklight_cmdq(void *handle,unsigned int level)
 {
 
@@ -818,6 +839,7 @@ static void lcm_setbacklight_cmdq(void *handle,unsigned int level)
 
 	return;
 }
+#endif
 
 static void *lcm_switch_mode(int mode)
 {
@@ -833,7 +855,11 @@ struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
 	.suspend = lcm_suspend,
 	.suspend_power = lcm_suspend_power,
 	.resume = lcm_resume,
+#ifdef LCM_BL_DRV_I2C_SUPPORT
+	.set_backlight = lcm_setbacklight,
+#else
 	.set_backlight_cmdq= lcm_setbacklight_cmdq,
+#endif
 	.ata_check = lcm_ata_check,
 	.switch_mode = lcm_switch_mode,
 	.tp_gesture_status = GESTURE_OFF,
