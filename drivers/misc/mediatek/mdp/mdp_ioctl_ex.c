@@ -561,7 +561,7 @@ static s32 mdp_init_secure_id(struct cmdqRecStruct *handle)
 #else
 		secMetadatas[i].sec_id = trustmem_type;
 #endif
-		CMDQ_LOG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
+		CMDQ_MSG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
 				__func__, secMetadatas[i].port,
 				secMetadatas[i].ionFd,
 				secMetadatas[i].sec_id,
