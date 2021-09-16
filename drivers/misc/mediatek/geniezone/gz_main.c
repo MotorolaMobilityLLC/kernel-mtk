@@ -46,11 +46,6 @@
 #endif
 #endif
 
-#define MTEE_kernel_UT_RUN 1
-#if MTEE_kernel_UT_RUN		//add tmp
-#include "mtee_ut/gz_sec_storage_ut.h"
-#endif
-
 //#define KREE_DEBUG(fmt...) pr_debug("[KREE]" fmt)
 #define KREE_DEBUG(fmt...) pr_info("[KREE]" fmt)
 #define KREE_INFO(fmt...) pr_info("[KREE]" fmt)
@@ -114,11 +109,6 @@ static ssize_t gz_test_store(struct device *dev,
 	case '2':
 		KREE_DEBUG("test_gz_syscall\n"); /*ReeServiceCall*/
 		th = kthread_run(test_gz_syscall, NULL, "test_gz_syscall");
-		break;
-	case 'C':
-		KREE_DEBUG("test GZ Secure Storage\n");
-		th = kthread_run(test_SecureStorageBasic, NULL,
-				 "sec_storage_ut");
 		break;
 	default:
 		KREE_DEBUG("err: unknown test case\n");
