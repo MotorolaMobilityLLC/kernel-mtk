@@ -41,6 +41,8 @@ extern int wt6670f_get_protocol(void);
 //extern int wt6670f_get_charger_type(void);
 extern bool wt6670f_is_charger_ready(void);
 //extern void bq2597x_set_psy(void);
+extern int wt6670f_do_reset(void);
+extern bool qc3p_z350_init_ok;
 bool m_chg_ready = false;
 extern int m_chg_type;
 extern int g_qc3p_id;
@@ -1540,6 +1542,10 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 	}while(need_retry);
 	}//wt6670f
 		if(1 == g_qc3p_id){//z350
+			if(qc3p_z350_init_ok) {
+				qc3p_z350_init_ok =false;
+				wt6670f_do_reset();
+			}
 			m_chg_type = 0;
 			wait_count = 0;
 			while((!m_chg_type)&&(wait_count<30)){
@@ -1548,6 +1554,12 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 				pr_err("z350 waiting dcp type:%x,%d\n",m_chg_type,wait_count);
 			}
 			m_chg_type = wt6670f_get_protocol();
+			if(m_chg_type == 0x04){
+				pr_err("z350==0x04 retry type");
+				msleep(2000);
+				m_chg_type = wt6670f_get_protocol();
+				pr_err("z350==0x04 retry type:%x,%d\n",m_chg_type,wait_count);
+			}
 			if(m_chg_type == 0x10){
 				wt6670f_en_hvdcp();
 

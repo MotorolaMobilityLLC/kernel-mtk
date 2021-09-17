@@ -37,6 +37,7 @@ struct pinctrl_state *i2c6_sda_high;
 struct wt6670f *_wt = NULL;
 int g_qc3p_id = 0;
 int m_chg_type = 0;
+bool qc3p_z350_init_ok = false;
 
 static int __wt6670f_write_word(struct wt6670f *wt, u8 reg, u16 data)
 {
@@ -598,6 +599,8 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	wt6670f_id = wt6670f_get_id(0x13);
 	if(0x3349 == wt6670f_id){
 		g_qc3p_id = QC3P_Z350;
+		qc3p_z350_init_ok = true;
+		gpio_direction_output(_wt->reset_pin, 1);
 		pr_info("[%s] is z350\n", __func__);
 		goto probe_out;
 	}
