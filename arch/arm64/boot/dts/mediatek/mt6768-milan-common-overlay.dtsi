@@ -207,6 +207,10 @@
         #include "bat_setting/mt6768_battery_table_MD50_scud_5000mah_ext.dtsi"
 };
 
+&lk_charger {
+    temp_t4_threshold = <60>;
+};
+
 &msdc0 {
 	req_vcore = <1>;
 };
