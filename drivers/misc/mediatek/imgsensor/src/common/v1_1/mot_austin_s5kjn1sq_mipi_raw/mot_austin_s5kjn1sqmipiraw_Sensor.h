@@ -32,7 +32,6 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_SLIM_VIDEO,
 #if S5KJN1SQ_CUSTOM_ENABLE
 	IMGSENSOR_MODE_CUSTOM1,
-	IMGSENSOR_MODE_CUSTOM2,
 #endif
 };
 
@@ -114,7 +113,6 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct slim_video;
 #if S5KJN1SQ_CUSTOM_ENABLE
 	struct imgsensor_mode_struct custom1;
-	struct imgsensor_mode_struct custom2;
 #endif
 	kal_uint8 ae_shut_delay_frame;	/* shutter delay frame for AE cycle */
 
@@ -136,7 +134,6 @@ struct imgsensor_info_struct {
 	kal_uint8 slim_video_delay_frame;
 #if S5KJN1SQ_CUSTOM_ENABLE
 	kal_uint8 custom1_delay_frame;
-	kal_uint8 custom2_delay_frame;
 #endif
 	kal_uint8  frame_time_delay_frame;
 
