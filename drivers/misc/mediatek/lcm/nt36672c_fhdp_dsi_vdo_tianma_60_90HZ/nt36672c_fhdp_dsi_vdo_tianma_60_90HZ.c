@@ -172,13 +172,15 @@ static struct LCM_setting_table init_setting[] = {
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
 	{0XC0,0x01,{0X03}},
-	{0X00,0x01,{0X00}},//8bit
-	{0X07,0x01,{0X20}},//20KHZ
-	{0X08,0x01,{0X0A}},//20KHZ
-	{0X09,0x01,{0X0E}},//20KHZ
+	{0XFF,0x01,{0X23}},//page
+	{0XFB,0x01,{0X01}},
+	{0X00,0x01,{0X80}},//12bit
+	{0X07,0x01,{0X00}},//20KHZ
+	{0X08,0x01,{0X01}},//20KHZ
+	{0X09,0x01,{0X55}},//20KHZ
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x02,{0xCC, 0x0C}},
+	{0X51,0x02,{0x0C, 0xCC}},
 #ifdef LCM_BL_DRV_I2C_SUPPORT
 	{0X53,0x01,{0X2C}},
 #else
@@ -572,9 +574,15 @@ static struct LCM_setting_table init_setting_evt[] = {
 	{0XB7,0x01,{0X17}},
 	{0XB8,0x01,{0X0C}},
 	{0XC0,0x01,{0X03}},
+	{0XFF,0x01,{0X23}},//page
+	{0XFB,0x01,{0X01}},
+	{0X00,0x01,{0X80}},//12bit
+	{0X07,0x01,{0X00}},//20KHZ
+	{0X08,0x01,{0X01}},//20KHZ
+	{0X09,0x01,{0X55}},//20KHZ
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x02,{0xCC, 0x0C}},
+	{0X51,0x02,{0x0C, 0xCC}},
 #ifdef LCM_BL_DRV_I2C_SUPPORT
 	{0X53,0x01,{0X2C}},
 #else
@@ -615,9 +623,6 @@ static void push_table(void *cmdq, struct LCM_setting_table *table,
 		switch (cmd) {
 
 		case REGFLAG_DELAY:
-			if (table[i].count <= 10)
-				MDELAY(table[i].count);
-			else
 				MDELAY(table[i].count);
 			break;
 
