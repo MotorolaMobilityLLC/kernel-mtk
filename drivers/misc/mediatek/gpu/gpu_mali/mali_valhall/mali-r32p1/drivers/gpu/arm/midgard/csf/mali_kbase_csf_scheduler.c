@@ -4103,7 +4103,7 @@ static int suspend_active_queue_groups_on_reset(struct kbase_device *kbdev)
  *                                              groups when reset is done during
  *                                              protected mode execution.
  *
- * @group: Pointer to the device.
+ * @kbdev: Pointer to the device.
  *
  * This function is called at the time of GPU reset, before the suspension of
  * queue groups, to handle the case when the reset is getting performed whilst

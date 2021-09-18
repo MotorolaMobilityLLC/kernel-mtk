@@ -3212,6 +3212,8 @@ static const struct drm_ioctl_desc mtk_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MTK_HDMI_GET_CAPABILITY, mtk_drm_dp_get_cap,
 			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
 #endif
+	DRM_IOCTL_DEF_DRV(MTK_DEBUG_LOG, mtk_disp_ioctl_debug_log_switch,
+					DRM_UNLOCKED),
 };
 
 #if IS_ENABLED(CONFIG_COMPAT)

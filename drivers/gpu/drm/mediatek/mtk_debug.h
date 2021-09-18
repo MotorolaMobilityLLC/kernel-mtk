@@ -30,6 +30,13 @@
 	  DUMP_BUFFER_COUNT + STATUS_BUFFER_COUNT) *                           \
 		 LOGGER_BUFFER_SIZE)
 
+enum MTK_DRM_DEBUG_LOG_SWITCH_OPS {
+	MTK_DRM_OTHER = 0,
+	MTK_DRM_MOBILE_LOG,
+	MTK_DRM_DETAIL_LOG,
+	MTK_DRM_FENCE_LOG,
+	MTK_DRM_IRQ_LOG,
+};
 extern void disp_color_set_bypass(struct drm_crtc *crtc, int bypass);
 extern void disp_ccorr_set_bypass(struct drm_crtc *crtc, int bypass);
 extern void disp_gamma_set_bypass(struct drm_crtc *crtc, int bypass);
@@ -77,5 +84,7 @@ unsigned int mtk_dbg_get_lfr_vse_dis_value(void);
 unsigned int mtk_dbg_get_lfr_skip_num_value(void);
 unsigned int mtk_dbg_get_lfr_dbg_value(void);
 #endif
+int mtk_disp_ioctl_debug_log_switch(struct drm_device *dev, void *data,
+	struct drm_file *file_priv);
 
 #endif

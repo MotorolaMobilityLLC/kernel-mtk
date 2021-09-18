@@ -25,7 +25,8 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/mtdummy/ion_mtk_dum
 endif
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
-		    -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+		    -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/ \
+                    -I$(srctree)/drivers/misc/mediatek/cmdq/bridge
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
@@ -78,6 +79,7 @@ obj-y += ddp_dsi.o
 obj-y += ddp_clkmgr.o
 obj-y += ddp_rsz.o
 obj-y += ddp_postmask.o
+obj-$(CONFIG_MTK_MT6382_BDG) += ddp_disp_bdg.o
 #common
 obj-y += ddp_drv.o
 obj-y += ddp_path.o

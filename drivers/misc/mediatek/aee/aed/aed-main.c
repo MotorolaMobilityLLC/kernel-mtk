@@ -756,7 +756,7 @@ static void ee_gen_type_msg(void)
 	rep_msg->cmdId = AE_REQ_TYPE;
 	rep_msg->len = strlen((char const *)&eerec->assert_type) + 1;
 	strlcpy(data, (char const *)&eerec->assert_type,
-		strlen((char const *)&eerec->assert_type));
+		strlen((char const *)&eerec->assert_type) + 1);
 }
 
 static void ee_gen_process_msg(void)
@@ -2493,10 +2493,10 @@ static void external_exception(const char *assert_type, const int *log,
 			(unsigned int)tv.tv_usec);
 	memset(eerec->assert_type, 0, sizeof(eerec->assert_type));
 	strlcpy(eerec->assert_type, assert_type,
-			sizeof(eerec->assert_type) - 1);
+			sizeof(eerec->assert_type));
 	memset(eerec->exp_filename, 0, sizeof(eerec->exp_filename));
 	strlcpy(eerec->exp_filename, trigger_time,
-			sizeof(eerec->exp_filename) - 1);
+			sizeof(eerec->exp_filename));
 	strncat(eerec->exp_filename, detail,
 			sizeof(eerec->exp_filename) - 1 - strlen(trigger_time));
 	pr_debug("EE %s\n", eerec->assert_type);

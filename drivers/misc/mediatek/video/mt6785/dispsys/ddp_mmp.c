@@ -477,7 +477,6 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.DSI_IRQ[1] =
 		mmprofile_register_event(DDP_MMP_Events.DSI_IRQ_Parent,
 					 "DSI_IRQ_1");
-
 	/***************add for ARR start***********************/
 	DDP_MMP_Events.primary_chg_fps_wait =
 			mmprofile_register_event(DDP_MMP_Events.primary_Parent,
@@ -488,6 +487,9 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.primary_chg_fps_notify =
 		mmprofile_register_event(DDP_MMP_Events.session_Parent,
 					 "chg_fps_notify_to_user");
+	DDP_MMP_Events.primary_dynfps_chg_fps =
+		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+					"primary_dynfps_chg_fps");
 	/***************add for ARR end***********************/
 
 	mmprofile_enable_event_recursive(DDP_MMP_Events.DDP, 1);

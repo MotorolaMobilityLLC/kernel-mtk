@@ -1270,7 +1270,8 @@ s32 cmdq_mdp_handle_sec_setup(struct cmdqSecDataStruct *secData,
 
 	CMDQ_MSG("%s start:%d, %d\n", __func__,
 		secData->is_secure, secData->addrMetadataCount);
-	if (!secData->addrMetadataCount) {
+	if ((!secData->addrMetadataCount) ||
+		(secData->addrMetadataCount > MDP_MAX_METADATA_COUNT_SIZE)) {
 		CMDQ_ERR(
 			"[secData]mismatch is_secure %d and addrMetadataCount %d\n",
 			secData->is_secure,
@@ -1509,8 +1510,6 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
 
 	CMDQ_TRACE_FORCE_BEGIN("%s %llx\n", __func__, handle->engineFlag);
 	CMDQ_MSG("%s %llx\n", __func__, handle->engineFlag);
-	if (handle->profile_exec)
-		cmdq_pkt_perf_end(handle->pkt);
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	if (handle->secData.is_secure) {
@@ -3730,6 +3729,10 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 		value[35] & 0xFFF, (value[35] >> 16) & 0xFFF);
 
 	CMDQ_ERR("RDMA grep:%d => suggest to ask SMI help:%d\n", grep, grep);
+#ifdef CONFIG_MTK_SMI_EXT
+	if (grep)
+		smi_debug_bus_hang_detect(false, "mdp");
+#endif
 }
 
 const char *cmdq_mdp_get_rsz_state(const u32 state)

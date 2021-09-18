@@ -152,6 +152,7 @@ struct DDP_MMP_Events {
 	mmp_event primary_chg_fps_wait;
 	mmp_event primary_chg_fps_req;
 	mmp_event primary_chg_fps_notify;
+	mmp_event primary_dynfps_chg_fps;
 };
 
 struct DDP_MMP_Events *ddp_mmp_get_events(void);

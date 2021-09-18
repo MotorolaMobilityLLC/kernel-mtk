@@ -911,6 +911,13 @@ static void process_dbg_opt(const char *opt)
 			DISPWARN("primary display is already slept\n");
 			return;
 		}
+
+		if (pgc->pm == FB_SUSPEND || _is_power_on_status(DISP_MODULE_DSI0) == 0) {
+			DISPWARN("Power mode is FB_SUSPEND[pgc->pm:%d] or DSI power off[%d]:\n",
+				pgc->pm, _is_power_on_status(DISP_MODULE_DSI0));
+			return;
+		}
+
 		primary_display_idlemgr_kick(__func__, 1);
 		if (dpmgr_path_is_busy(pgc->dpmgr_handle))
 			dpmgr_wait_event_timeout(pgc->dpmgr_handle,
@@ -925,6 +932,13 @@ static void process_dbg_opt(const char *opt)
 			DISPWARN("primary display is already slept\n");
 			return;
 		}
+
+		if (pgc->pm == FB_SUSPEND || _is_power_on_status(DISP_MODULE_DSI0) == 0) {
+			DISPWARN("Power mode is FB_SUSPEND[pgc->pm:%d] or DSI power off[%d]:\n",
+				pgc->pm, _is_power_on_status(DISP_MODULE_DSI0));
+			return;
+		}
+
 		primary_display_idlemgr_kick(__func__, 1);
 		if (dpmgr_path_is_busy(pgc->dpmgr_handle))
 			dpmgr_wait_event_timeout(pgc->dpmgr_handle,

@@ -1285,8 +1285,8 @@ void kbase_pm_update_state(struct kbase_device *kbdev)
 
 	lockdep_assert_held(&kbdev->hwaccess_lock);
 
-	if (!kbdev->pm.backend.gpu_powered)
-		return; /* Do nothing if the GPU is off */
+	if (!kbdev->pm.backend.gpu_ready)
+		return; /* Do nothing if the GPU is not ready */
 
 	if (kbase_pm_l2_update_state(kbdev))
 		return;
@@ -1628,6 +1628,7 @@ void kbase_pm_clock_on(struct kbase_device *kbdev, bool is_resume)
 
 	/* Turn on the L2 caches */
 	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	kbdev->pm.backend.gpu_ready = true;
 	kbdev->pm.backend.l2_desired = true;
 	kbase_pm_update_state(kbdev);
 	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
@@ -1669,6 +1670,8 @@ bool kbase_pm_clock_off(struct kbase_device *kbdev)
 	}
 
 	kbase_pm_cache_snoop_disable(kbdev);
+
+	kbdev->pm.backend.gpu_ready = false;
 
 	/* The GPU power may be turned off from this point */
 	kbdev->pm.backend.gpu_powered = false;

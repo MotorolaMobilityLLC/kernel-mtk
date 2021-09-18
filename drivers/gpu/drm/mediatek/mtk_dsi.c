@@ -4858,6 +4858,11 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 					__func__);
 		return;
 	}
+	if (!vrefresh) {
+		DDPMSG("%s: skip set mmclk, vrefresh=%d\n", __func__, vrefresh);
+		return;
+	}
+
 	//for FPS change,update dsi->ext
 	dsi->ext = find_panel_ext(dsi->panel);
 	data_rate = mtk_dsi_default_rate(dsi);

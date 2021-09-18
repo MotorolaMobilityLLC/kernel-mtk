@@ -51,6 +51,8 @@ extern int (*fbt_notifier_cpu_frame_time_fps_stabilizer)(
 extern void (*ged_kpi_output_gfx_info2_fp)(long long t_gpu,
 	unsigned int cur_freq, unsigned int cur_max_freq, u64 ulID);
 
+extern void dram_ctl_update_dfrc_fps(int fps);
+
 struct FSTB_FRAME_INFO {
 	struct hlist_node hlist;
 

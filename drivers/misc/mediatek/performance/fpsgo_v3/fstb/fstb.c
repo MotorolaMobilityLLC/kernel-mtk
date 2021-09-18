@@ -77,7 +77,7 @@ static int margin_mode_gpu_dbnc_a = 9;
 static int margin_mode_gpu_dbnc_b = 1;
 static int JUMP_CHECK_NUM = DEFAULT_JUMP_CHECK_NUM;
 static int JUMP_CHECK_Q_PCT = DEFAULT_JUMP_CHECK_Q_PCT;
-static int adopt_low_fps;
+static int adopt_low_fps = 1;
 static int condition_get_fps;
 
 DECLARE_WAIT_QUEUE_HEAD(queue);
@@ -256,6 +256,7 @@ int fpsgo_ctrl2fstb_switch_fstb(int enable)
 	mtk_fstb_dprintk_always("%s %d\n", __func__, fstb_enable);
 	if (!fstb_enable) {
 		syslimiter_update_dfrc_fps(-1);
+		dram_ctl_update_dfrc_fps(dfps_ceiling);
 		hlist_for_each_entry_safe(iter, t,
 				&fstb_frame_infos, hlist) {
 			hlist_del(&iter->hlist);
@@ -1975,6 +1976,7 @@ static void fstb_fps_stats(struct work_struct *work)
 
 	syslimiter_update_dfrc_fps(max_target_fps);
 	fstb_cal_powerhal_fps();
+	dram_ctl_update_dfrc_fps(max_target_fps);
 
 	/* check idle twice to avoid fstb_active ping-pong */
 	if (idle)

@@ -78,7 +78,7 @@ static unsigned long long rec_size;
 #define swpm_pmu_get_sta(u)  ((swpm_pmu_sta & (1 << u)) >> u)
 #define swpm_pmu_set_sta(u)  (swpm_pmu_sta |= (1 << u))
 #define swpm_pmu_clr_sta(u)  (swpm_pmu_sta &= ~(1 << u))
-static struct mutex swpm_pmu_mutex;
+static DEFINE_SPINLOCK(swpm_pmu_spinlock);
 static unsigned int swpm_pmu_sta;
 
 __weak int mt_spower_get_leakage_uW(int dev, int voltage, int deg)
@@ -619,6 +619,7 @@ static void swpm_pmu_set_enable_all(unsigned int enable)
 {
 	int i;
 	unsigned int swpm_pmu_user, swpm_pmu_en;
+	unsigned long flags;
 
 	swpm_pmu_user = enable >> SWPM_CODE_USER_BIT;
 	swpm_pmu_en = enable & 0x1;
@@ -629,7 +630,7 @@ static void swpm_pmu_set_enable_all(unsigned int enable)
 		return;
 	}
 
-	swpm_lock(&swpm_pmu_mutex);
+	spin_lock_irqsave(&swpm_pmu_spinlock, flags);
 	get_online_cpus();
 	if (swpm_pmu_en) {
 		if (!swpm_pmu_sta) {
@@ -655,7 +656,7 @@ static void swpm_pmu_set_enable_all(unsigned int enable)
 		}
 	}
 	put_online_cpus();
-	swpm_unlock(&swpm_pmu_mutex);
+	spin_unlock_irqrestore(&swpm_pmu_spinlock, flags);
 
 	swpm_err("pmu_enable: %d, user_sta: %d\n",
 		 swpm_pmu_en, swpm_pmu_sta);

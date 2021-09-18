@@ -3559,7 +3559,8 @@ page_owner=on loop.max_part=7";
 		mediatek,dec_gce_th_num = <1>; /* VDEC GCE HW THREAD NUM*/
 		mediatek,enc_gce_th_num = <1>; /* VDEC GCE HW THREAD NUM*/
 		mboxes = <&gce_mbox 7 0 CMDQ_THR_PRIO_1>,
-			<&gce_mbox 12 0 CMDQ_THR_PRIO_1>;
+			<&gce_mbox 12 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox_sec 12 0 CMDQ_THR_PRIO_1>;
 		gce-event-names = "venc_eof",
 			"venc_wp_2nd_done", "venc_wp_3nd_done",
 			"vdec_pic_start", "vdec_decode_done", "vdec_pause",
@@ -3806,7 +3807,9 @@ page_owner=on loop.max_part=7";
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 			<&gce_mbox 4 0 CMDQ_THR_PRIO_4>,
 			<&gce_mbox 6 0 CMDQ_THR_PRIO_3>,
-			<&gce_mbox_sec 8 0 CMDQ_THR_PRIO_3>;
+			<&gce_mbox_sec 8 0 CMDQ_THR_PRIO_3>,
+			<&gce_mbox_sec 9 0 CMDQ_THR_PRIO_3>,
+			<&gce_mbox_sec 9 0 CMDQ_THR_PRIO_3>;
 #else
 			<&gce_mbox 4 0 CMDQ_THR_PRIO_4>,
 			<&gce_mbox 6 0 CMDQ_THR_PRIO_3>;
@@ -3820,7 +3823,9 @@ page_owner=on loop.max_part=7";
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 			"CLIENT_SUB_CFG0",
 			"CLIENT_DSI_CFG0",
-			"CLIENT_SEC_CFG0";
+			"CLIENT_SEC_CFG0",
+			"CLIENT_SEC_CFG1",
+			"CLIENT_SEC_CFG2";
 #else
 			"CLIENT_SUB_CFG0",
 			"CLIENT_DSI_CFG0";

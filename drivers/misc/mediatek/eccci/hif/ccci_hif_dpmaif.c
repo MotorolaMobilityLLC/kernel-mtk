@@ -808,7 +808,6 @@ static void dump_drb_record(void)
  *
  * ========================================================
  */
-
 static int dpmaif_queue_broadcast_state(struct hif_dpmaif_ctrl *hif_ctrl,
 	enum HIF_STATE state, enum DIRECTION dir, unsigned char index)
 {
@@ -936,6 +935,7 @@ static int dpmaif_net_rx_push_thread(void *arg)
 			ret = wait_event_interruptible(queue->rx_wq,
 				(!skb_queue_empty(&queue->skb_list.skb_list) ||
 				kthread_should_stop()));
+			ccmni_clr_flush_timer();
 			if (ret == -ERESTARTSYS)
 				continue;
 		}
@@ -2670,7 +2670,9 @@ static void set_drb_msg(unsigned char q_num, unsigned short cur_idx,
 	struct dpmaif_drb_msg msg;
 
 	msg.dtyp = DES_DTYP_MSG;
+	msg.reserved = 0;
 	msg.c_bit = 1;
+	msg.r = 0;
 	msg.packet_len = pkt_len;
 	msg.count_l = count_l;
 	msg.channel_id = channel_id;
@@ -2716,6 +2718,7 @@ static void set_drb_payload(unsigned char q_num, unsigned short cur_idx,
 		payload.c_bit = 1;
 	payload.data_len = pkt_size;
 	payload.p_data_addr = data_addr&0xFFFFFFFF;
+	payload.reserved = 0;
 	payload.data_addr_ext = (data_addr>>32)&0xFF;
 #ifdef DPMAIF_DEBUG_LOG
 	temp = (unsigned int *)drb;

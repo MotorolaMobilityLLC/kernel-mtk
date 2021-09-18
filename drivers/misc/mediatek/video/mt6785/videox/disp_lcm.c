@@ -1426,7 +1426,7 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 {
 	struct LCM_DRIVER *lcm_drv = NULL;
 
-	DISPFUNC();
+	DISPFUNCSTART();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 
@@ -1436,13 +1436,13 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 		if (lcm_drv->resume) {
 			lcm_drv->resume();
 		} else {
-			DISP_PR_ERR("FATAL ERROR, lcm_drv->resume is null\n");
+			DISPMSG("FATAL ERROR, lcm_drv->resume is null\n");
 			return -1;
 		}
 
 		return 0;
 	}
-	DISP_PR_ERR("lcm_drv is null\n");
+	DISPMSG("lcm_drv is null\n");
 	return -1;
 }
 

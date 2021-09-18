@@ -925,11 +925,12 @@ int bdg_mipi_tx_dphy_clk_setting(enum DISP_BDG_ENUM module,
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL0,
 					MIPI_TX_PHY1_SEL,
-					pad_mapping[swap_base[(unsigned int)MIPITX_PHY_LANE_1]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_1]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL1_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL1,
 					MIPI_TX_PHY2BC_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_1]] + 1);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_1]]
+							+ 1);
 
 			/* LANE_2 */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,

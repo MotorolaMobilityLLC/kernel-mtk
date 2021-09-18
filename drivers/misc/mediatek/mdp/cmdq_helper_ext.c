@@ -4092,8 +4092,9 @@ s32 cmdq_pkt_copy_cmd(struct cmdqRecStruct *handle, void *src, const u32 size,
 	}
 
 	exec_cost = div_s64(sched_clock() - exec_cost, 1000);
-	if (exec_cost > 1000)
-		CMDQ_LOG("[warn]%s > 1ms cost:%lluus\n", __func__, exec_cost);
+	if (exec_cost > 2000)
+		CMDQ_LOG("[warn]%s > 2ms cost:%lluus size:%u\n",
+			__func__, exec_cost, size);
 
 	return status;
 }

@@ -1357,7 +1357,11 @@ static int mtk_dai_adda_hw_params(struct snd_pcm_substream *substream,
 			regmap_update_bits(afe->regmap,
 					   AFE_ADDA_TOP_CON0,
 					   0x1 << 0,
+#if defined(CONFIG_SND_SOC_CS35L41)
+					   1);
+#else
 					   0x0 << 0);
+#endif
 
 			/* mtkaif_rxif_data_mode = 0, amic */
 			regmap_update_bits(afe->regmap,

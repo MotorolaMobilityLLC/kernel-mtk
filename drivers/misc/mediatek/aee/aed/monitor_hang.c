@@ -316,7 +316,7 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 	int ret = 0;
 	static long long monitor_status;
 	void __user *argp = (void __user *)arg;
-	char name[TASK_COMM_LEN];
+	char name[TASK_COMM_LEN] = {0};
 
 	/* QHQ RT Monitor */
 	if (cmd == AEEIOCTL_RT_MON_Kick) {
@@ -355,7 +355,7 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 	}
 
 	if (cmd == HANG_ADD_WHITE_LIST) {
-		if (copy_from_user(name, argp, TASK_COMM_LEN))
+		if (copy_from_user(name, argp, TASK_COMM_LEN - 1))
 			ret = -EFAULT;
 		ret = add_white_list(name);
 		pr_info("hang_detect: add white list %s status %d.\n",
@@ -364,7 +364,7 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 	}
 
 	if (cmd == HANG_DEL_WHITE_LIST) {
-		if (copy_from_user(name, argp, TASK_COMM_LEN))
+		if (copy_from_user(name, argp, TASK_COMM_LEN - 1))
 			ret = -EFAULT;
 		ret = del_white_list(name);
 		pr_info("hang_detect: del white list %s status %d.\n",
