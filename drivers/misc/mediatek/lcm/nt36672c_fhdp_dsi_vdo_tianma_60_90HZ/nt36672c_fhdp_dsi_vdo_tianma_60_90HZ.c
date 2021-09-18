@@ -48,6 +48,11 @@
 //backlight driver
 #define LCM_BL_DRV_I2C_SUPPORT
 
+#define HWREV_EVT	0xA100
+#define HWREV_EVT5	0xA500
+
+static bool is_hw_evt = false;
+static bool hw_checked = false;
 static struct LCM_UTIL_FUNCS lcm_util;
 #ifndef LCM_BL_DRV_I2C_SUPPORT
 static bool frist_setbacklight = false;
@@ -133,6 +138,61 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
+	{0XFF,0x01,{0X10}},
+	{0XFB,0x01,{0X01}},
+	{0X36,0x01,{0X00}},
+	{0X3B,0x05,{0X03,0X14,0X3C,0X04,0X04}},
+	{0XB0,0x01,{0X00}},
+	{0XC0,0x01,{0X03}},
+	{0XC1,0x10,{0X89,0X28,0x00,0x14,0x00,0xAA,0x02,0x0E,0x00,0x71,0x00,0x07,0x05,0x0E,0x05,0x16}},
+	{0XC2,0x02,{0X1B,0XA0}},
+	{0XE9,0x01,{0X00}},
+	{0XFF,0x01,{0XE0}},
+	{0XFB,0x01,{0X01}},
+	{0X35,0x01,{0X82}},
+	{0X85,0x01,{0X32}},
+	{0XFF,0x01,{0XF0}},
+	{0XFB,0x01,{0X01}},
+	{0X1C,0x01,{0X01}},
+	{0X33,0x01,{0X01}},
+	{0X5A,0x01,{0X00}},
+	{0X9F,0x01,{0X19}},
+	{0XFF,0x01,{0XD0}},
+	{0XFB,0x01,{0X01}},
+	{0X53,0x01,{0X22}},
+	{0X54,0x01,{0X02}},
+	{0XFF,0x01,{0XC0}},
+	{0XFB,0x01,{0X01}},
+	{0X9C,0x01,{0X11}},
+	{0X9D,0x01,{0X11}},
+	{0XFF,0x01,{0X25}},
+	{0XFB,0x01,{0X01}},
+	{0X0F,0x01,{0X1B}},
+	{0X18,0x01,{0X21}},
+	{0XFF,0x01,{0X10}},
+	{0XFB,0x01,{0X01}},
+	{0XC0,0x01,{0X03}},
+	{0X00,0x01,{0X00}},//8bit
+	{0X07,0x01,{0X20}},//20KHZ
+	{0X08,0x01,{0X0A}},//20KHZ
+	{0X09,0x01,{0X0E}},//20KHZ
+	{0XFF,0x01,{0X10}},
+	{0XFB,0x01,{0X01}},
+	{0X51,0x02,{0xCC, 0x0C}},
+#ifdef LCM_BL_DRV_I2C_SUPPORT
+	{0X53,0x01,{0X2C}},
+#else
+	{0X53,0x01,{0X24}},
+#endif
+	{0X55,0x01,{0X00}},
+
+	{0X11,0x00,{}},
+	{REGFLAG_DELAY,100,{}},
+	{0X29,0x00,{}},
+
+};
+
+static struct LCM_setting_table init_setting_evt[] = {
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
 	{0X36,0x01,{0X00}},
@@ -527,6 +587,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0X29,0x00,{}},
 
 };
+
 /*
 static struct LCM_setting_table bl_level[] = {
 	{0x51, 1, {0xFF} },
@@ -543,7 +604,7 @@ static struct LCM_setting_table_V4 dimming_on[] = {
 #endif
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
-		       unsigned int count, unsigned char force_update,int IsMT6382)
+		       unsigned int count, unsigned char force_update)
 {
 	unsigned int i;
 	unsigned int cmd;
@@ -568,10 +629,7 @@ static void push_table(void *cmdq, struct LCM_setting_table *table,
 			break;
 
 		default:
-			if(IsMT6382)
-				BDG_set_cmdq_V2_DSI0(cmdq, cmd, table[i].count,table[i].para_list, force_update);
-			else
-				dsi_set_cmdq_V22(cmdq, cmd, table[i].count,table[i].para_list, force_update);
+			dsi_set_cmdq_V22(cmdq, cmd, table[i].count,table[i].para_list, force_update);
 		}
 	}
 }
@@ -719,6 +777,30 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 }
 
+static void lcm_hwrev_check(void) {
+	uint32_t hw_rev = 0;
+	int ret;
+	struct device_node *node = of_find_node_by_path("/chosen");
+
+	is_hw_evt = false;
+	hw_checked = true;
+	if (node == NULL) {
+		pr_debug("%s:chosen not found\n", __func__);
+		return;
+	}
+
+	ret = of_property_read_u32(node, "linux,hwrev", &hw_rev);
+	if (ret) {
+		pr_info("%s:hwrev not get\n", __func__);
+	}
+
+	if ((hw_rev >= HWREV_EVT) && (hw_rev <= HWREV_EVT5)) {
+		//evt device
+		is_hw_evt = true;
+	}
+
+	pr_info("%s:end, hw_rev=0x%04x\n", __func__, hw_rev);
+}
 
 static void lcm_init(void)
 {
@@ -740,8 +822,19 @@ static void lcm_init(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(15);
 
-	push_table(NULL, init_setting,
-		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1, 0);
+	if (!hw_checked)
+		lcm_hwrev_check();
+
+	if (is_hw_evt) {
+		pr_info("%s,evt:init_setting_evt\n", __func__);
+		push_table(NULL, init_setting_evt,
+			sizeof(init_setting_evt)/sizeof(struct LCM_setting_table), 1);
+	}
+	else {
+		pr_debug("%s, init_setting\n", __func__);
+		push_table(NULL, init_setting,
+			sizeof(init_setting)/sizeof(struct LCM_setting_table), 1);
+	}
 
 	MDELAY(40);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BL_EN_OUT1);
@@ -754,6 +847,7 @@ static void lcm_init(void)
 	}
 	else{
 		BL_control_write_bytes(0x10,0x07);
+		BL_control_write_bytes(0x16,0x01);
 		BL_control_write_bytes(0x19,0x07);
 		BL_control_write_bytes(0x1A,0x04);
 		BL_control_write_bytes(0x1C,0x0E);
@@ -778,7 +872,7 @@ static void lcm_suspend(void)
 
 	push_table(NULL, lcm_suspend_setting,
 		sizeof(lcm_suspend_setting)/sizeof(struct LCM_setting_table),
-		1, 1);
+		1);
 
 	pr_info("%s end\n", __func__);
 
@@ -791,6 +885,9 @@ static void lcm_suspend_power(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT0);
 	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP_OUT0);
+
+	if (!hw_checked)
+		lcm_hwrev_check();
 
 	pr_info("%s end\n", __func__);
 
@@ -849,6 +946,7 @@ static void *lcm_switch_mode(int mode)
 
 struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
 	.name = "nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv",
+	.supplier = "tianma",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
