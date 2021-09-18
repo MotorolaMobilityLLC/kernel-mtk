@@ -705,9 +705,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	//params->dsi.vertical_frontporch_for_low_power = 2500;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 22;
-	params->dsi.horizontal_backporch = 30;
-	params->dsi.horizontal_frontporch = 143;
+	params->dsi.horizontal_sync_active = 4;
+	params->dsi.horizontal_backporch = 20;
+	params->dsi.horizontal_frontporch = 200;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 	params->dsi.dsc_enable = 0;
