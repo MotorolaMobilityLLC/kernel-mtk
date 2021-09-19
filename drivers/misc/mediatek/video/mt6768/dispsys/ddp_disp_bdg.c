@@ -919,7 +919,8 @@ int bdg_mipi_tx_dphy_clk_setting(enum DISP_BDG_ENUM module,
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL0,
 					MIPI_TX_PHY1AB_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_0]] + 1);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_0]]
+					+ 1);
 
 			/* LANE_1 */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
@@ -930,69 +931,73 @@ int bdg_mipi_tx_dphy_clk_setting(enum DISP_BDG_ENUM module,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL1,
 					MIPI_TX_PHY2BC_SEL,
 					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_1]]
-							+ 1);
+					+ 1);
 
 			/* LANE_2 */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL0,
 					MIPI_TX_PHY2_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_2]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_2]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL0,
 					MIPI_TX_CPHY0BC_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_2]] + 1);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_2]]
+					+ 1);
 
 			/* LANE_3 */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL1_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL1,
 					MIPI_TX_PHY3_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_3]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_3]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL1_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL1,
 					MIPI_TX_CPHYXXX_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_3]] + 1);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_3]]
+					+ 1);
 
 			/* CK LANE */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL0,
 					MIPI_TX_PHYC_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_CK]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_CK]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL0_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL0,
 					MIPI_TX_CPHY1CA_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_CK]] + 1);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_CK]]
+					+ 1);
 
 			/* LPRX SETTING */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL1_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL1,
 					MIPI_TX_LPRX0AB_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_RX]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_RX]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL1_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL1,
 					MIPI_TX_LPRX0BC_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_RX]] + 1);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_RX]]
+					+ 1);
 
 			/* HS_DATA SETTING */
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL2_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL2,
 					MIPI_TX_PHY2_HSDATA_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_2]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_2]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL2_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL2,
 					MIPI_TX_PHY0_HSDATA_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_0]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_0]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL2_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL2,
 					MIPI_TX_PHYC_HSDATA_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_CK]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_CK]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL2_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL2,
 					MIPI_TX_PHY1_HSDATA_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_1]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_1]]);
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_PHY_SEL3_REG,
 					MIPI_TX_REG->MIPI_TX_PHY_SEL3,
 					MIPI_TX_PHY3_HSDATA_SEL,
-					pad_mapping[swap_base[MIPITX_PHY_LANE_3]]);
+					pad_mapping[(unsigned int)swap_base[MIPITX_PHY_LANE_3]]);
 		} else {
 			DSI_OUTREGBIT(cmdq, struct MIPI_TX_CKMODE_EN_REG,
 					MIPI_TX_REG->MIPI_TX_CK_CKMODE_EN,
