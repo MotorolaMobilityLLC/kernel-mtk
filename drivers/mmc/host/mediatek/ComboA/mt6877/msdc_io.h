@@ -83,6 +83,10 @@ void msdc_dump_clock_sts(char **buff, unsigned long *size,
 #ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
 #define msdc_clk_prepare_enable(host) \
 	do { \
+		int lock; \
+		lock = spin_is_locked(&host->lock); \
+		if (lock) \
+			spin_unlock(&host->lock); \
 		if (host->new_rx_clk_ctl) \
 			(void)clk_prepare_enable(host->new_rx_clk_ctl); \
 		if (host->src_hclk_ctl) \
@@ -92,9 +96,15 @@ void msdc_dump_clock_sts(char **buff, unsigned long *size,
 			(void)clk_prepare_enable(host->aes_clk_ctl); \
 		if (host->hclk_ctl) \
 			(void)clk_prepare_enable(host->hclk_ctl); \
+		if (lock) \
+			spin_lock(&host->lock); \
 	} while (0)
 #define msdc_clk_disable_unprepare(host) \
 	do { \
+		int lock; \
+		lock = spin_is_locked(&host->lock); \
+		if (lock) \
+			spin_unlock(&host->lock); \
 		if (host->new_rx_clk_ctl) \
 			clk_disable_unprepare(host->new_rx_clk_ctl); \
 		clk_disable_unprepare(host->clk_ctl); \
@@ -104,6 +114,8 @@ void msdc_dump_clock_sts(char **buff, unsigned long *size,
 			clk_disable_unprepare(host->hclk_ctl); \
 		if (host->src_hclk_ctl) \
 			(void)clk_disable_unprepare(host->src_hclk_ctl); \
+		if (lock) \
+			spin_lock(&host->lock); \
 	} while (0)
 #else
 #define msdc_clk_prepare_enable(host)
