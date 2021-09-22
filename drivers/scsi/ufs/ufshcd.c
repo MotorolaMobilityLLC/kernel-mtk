@@ -62,6 +62,28 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/ufs.h>
 
+#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_UFSHPB)
+#include <linux/of_platform.h>
+
+struct mmi_storage_info {
+        char type[16];  /* UFS or eMMC */
+        char size[16];  /* size in GB */
+        char card_manufacturer[32];
+        char product_name[32];  /* model ID */
+        char firmware_version[32];
+};
+
+struct mmi_ddr_info{
+        unsigned int mr5;
+        unsigned int mr6;
+        unsigned int mr7;
+        unsigned int mr8;
+        unsigned int type;
+        unsigned int ramsize;
+};
+unsigned int ram_size;
+#endif
+
 #define UFSHCD_REQ_SENSE_SIZE	18
 
 #define PWR_INFO_MASK	0xF
@@ -295,7 +317,10 @@ static struct ufs_dev_fix ufs_fixups[] = {
 
 	END_FIX
 };
-
+#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_UFSHPB)
+static int get_dram_info(struct ufs_hba *hba);
+static int get_storage_info(struct ufs_hba *hba);
+#endif
 static void ufshcd_tmc_handler(struct ufs_hba *hba);
 static void ufshcd_async_scan(void *data, async_cookie_t cookie);
 static int ufshcd_reset_and_restore(struct ufs_hba *hba);
@@ -2859,9 +2884,15 @@ static int ufshcd_comp_scsi_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 
 	if (likely(lrbp->cmd)) {
 #if defined(CONFIG_UFSFEATURE)
-		ufsf_hpb_change_lun(&hba->ufsf, lrbp);
+    #if defined(CONFIG_UFSHPB)
+    if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+        ufsf_hpb_change_lun(&hba->ufsf, lrbp);
+	#endif
 		ufsf_tw_prep_fn(&hba->ufsf, lrbp);
-		ufsf_hpb_prep_fn(&hba->ufsf, lrbp);
+    #if defined(CONFIG_UFSHPB)
+     if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+         ufsf_hpb_prep_fn(&hba->ufsf, lrbp);
+    #endif
 #endif
 		ufshcd_prepare_req_desc_hdr(lrbp, &upiu_flags,
 						lrbp->cmd->sc_data_direction);
@@ -2870,7 +2901,8 @@ static int ufshcd_comp_scsi_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 #if defined(CONFIG_SCSI_SKHPB)
 		if (hba->card->wmanufacturerid == UFS_VENDOR_SKHYNIX) {
 			if (hba->skhpb_state == SKHPB_PRESENT &&
-				hba->issue_ioctl == false) {
+				hba->issue_ioctl == false &&
+				IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
 				skhpb_prep_fn(hba, lrbp);
 			}
 		}
@@ -3039,6 +3071,10 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 
 #if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
+     /* the RAM size smaller than 4G not support HPB. just skip the following logic*/
+	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+		goto send_orig_cmd;
+
 	/* Micron version 2.0 not support write buffer id 2 */
 	if (hba->card->wmanufacturerid != UFS_VENDOR_SAMSUNG)
 		goto send_orig_cmd;
@@ -3156,7 +3192,7 @@ out_unlock:
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 out:
 #if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
-	if (!pre_req_err) {
+	if (!pre_req_err && IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
 		pre_cmd = add_lrbp->cmd;
 		scsi_dma_unmap(pre_cmd);
 		add_lrbp->cmd = NULL;
@@ -5655,14 +5691,15 @@ ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp,
 			if (!hba->pm_op_in_progress &&
 			    ufshcd_is_exception_event(lrbp->ucd_rsp_ptr))
 				schedule_work(&hba->eeh_work);
-#if defined(CONFIG_UFSFEATURE)
-			if (scsi_status == SAM_STAT_GOOD)
+#if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
+			if ((scsi_status == SAM_STAT_GOOD) && IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 				ufsf_hpb_noti_rb(&hba->ufsf, lrbp);
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
 			if (hba->card->wmanufacturerid == UFS_VENDOR_SKHYNIX) {
 				if (hba->skhpb_state == SKHPB_PRESENT &&
-						scsi_status == SAM_STAT_GOOD)
+						scsi_status == SAM_STAT_GOOD &&
+						IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 					skhpb_rsp_upiu(hba, lrbp);
 			}
 #endif
@@ -5882,7 +5919,8 @@ static int ufshcd_transfer_req_compl(struct ufs_hba *hba)
 
 	ret = __ufshcd_transfer_req_compl(hba, completed_reqs);
 #if defined(CONFIG_UFSFEATURE) && defined(CONFIG_UFSHPB)
-	ufsf_hpb_wakeup_worker_on_idle(&hba->ufsf);
+	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+		ufsf_hpb_wakeup_worker_on_idle(&hba->ufsf);
 #endif
 	return ret;
 }
@@ -7155,7 +7193,10 @@ out:
 	ufshcd_update_evt_hist(hba, UFS_EVT_DEV_RESET, (u32)err);
 	if (!err) {
 #if defined(CONFIG_UFSFEATURE)
-		ufsf_hpb_reset_lu(&hba->ufsf);
+		#if defined(CONFIG_UFSHPB)
+			if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+				ufsf_hpb_reset_lu(&hba->ufsf);
+		#endif
 		ufsf_tw_reset_lu(&hba->ufsf);
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
@@ -7403,7 +7444,10 @@ static int ufshcd_host_reset_and_restore(struct ufs_hba *hba)
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	ufshcd_hba_stop(hba, false);
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_reset_host(&hba->ufsf);
+	#if defined(CONFIG_UFSHPB)
+		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_reset_host(&hba->ufsf);
+	#endif
 	ufsf_tw_reset_host(&hba->ufsf);
 #endif
 	hba->silence_err_logs = true;
@@ -8438,13 +8482,17 @@ _link_retry:
 		}
 
 #if defined(CONFIG_UFSFEATURE)
-		ufsf_device_check(hba);
-		ufsf_hpb_init(&hba->ufsf);
-		ufsf_tw_init(&hba->ufsf);
-		if (hba->ufsf.hpb_dev_info.hpb_device) {
-			ufshcd_add_hpb_info_sysfs_node(hba);
-			get_monotonic_boottime(&(hba->SEC_hpb_info.timestamp_old));
-		}
+         ufsf_device_check(hba);
+         ufsf_tw_init(&hba->ufsf);
+         #if  defined(CONFIG_UFSHPB)
+         if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
+            ufsf_hpb_init(&hba->ufsf);
+            if (hba->ufsf.hpb_dev_info.hpb_device) {
+                ufshcd_add_hpb_info_sysfs_node(hba);
+                get_monotonic_boottime(&(hba->SEC_hpb_info.timestamp_old));
+            }
+        }
+        #endif
 #endif
 		scsi_scan_host(hba->host);
 
@@ -8478,7 +8526,10 @@ out:
 	}
 
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_reset(&hba->ufsf);
+	#if defined(CONFIG_UFSHPB)
+		if(IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_reset(&hba->ufsf);
+	#endif
 	ufsf_tw_reset(&hba->ufsf);
 #endif
 
@@ -9375,13 +9426,17 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	}
 
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_suspend(&hba->ufsf);
+	#if defined(CONFIG_UFSHPB)
+		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_suspend(&hba->ufsf);
+	#endif
 	ufsf_tw_suspend(&hba->ufsf);
 #endif
 
 #if defined(CONFIG_SCSI_SKHPB)
 	if (hba->card &&
-		hba->card->wmanufacturerid == UFS_VENDOR_SKHYNIX)
+		hba->card->wmanufacturerid == UFS_VENDOR_SKHYNIX &&
+		IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 		skhpb_suspend(hba);
 #endif
 	ret = ufshcd_crypto_suspend(hba, pm_op);
@@ -9553,7 +9608,10 @@ enable_gating:
 		ufshcd_resume_clkscaling(hba);
 	hba->clk_gating.is_suspended = false;
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_resume(&hba->ufsf);
+	#if defined(CONFIG_UFSHPB)
+		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_resume(&hba->ufsf);
+	#endif
 	ufsf_tw_resume(&hba->ufsf);
 #endif
 	ufshcd_release(hba);
@@ -9683,11 +9741,15 @@ static int ufshcd_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		ufshcd_resume_clkscaling(hba);
 
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_resume(&hba->ufsf);
+	#if defined(CONFIG_UFSHPB)
+		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_resume(&hba->ufsf);
+	#endif
 	ufsf_tw_resume(&hba->ufsf);
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
-	skhpb_resume(hba);
+	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+		skhpb_resume(hba);
 #endif
 
 	/* MTK PATCH: Enable auto-hibern8 if resume is successful */
@@ -10102,11 +10164,15 @@ EXPORT_SYMBOL(ufshcd_shutdown);
 void ufshcd_remove(struct ufs_hba *hba)
 {
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_release(&hba->ufsf);
+	#if defined (CONFIG_UFSHPB)
+		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_release(&hba->ufsf);
+	#endif
 	ufsf_tw_release(&hba->ufsf);
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
-	if (hba->card && hba->card->wmanufacturerid == UFS_VENDOR_SKHYNIX)
+	if (hba->card && hba->card->wmanufacturerid == UFS_VENDOR_SKHYNIX &&
+		IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 		skhpb_release(hba, SKHPB_NEED_INIT);
 #endif
 
@@ -10390,14 +10456,23 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	 */
 	ufshcd_set_ufs_dev_active(hba);
 
+#if defined(CONFIG_UFSHPB)  || defined(CONFIG_SCSI_SKHPB)
+    get_storage_info(hba);
+    get_dram_info(hba);
+#endif
+
 #if defined(CONFIG_UFSFEATURE)
-	ufsf_hpb_set_init_state(&hba->ufsf);
+	#if defined(CONFIG_UFSHPB)
+		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+			ufsf_hpb_set_init_state(&hba->ufsf);
+	#endif
 	ufsf_tw_set_init_state(&hba->ufsf);
 #endif
 
 #if defined(CONFIG_SCSI_SKHPB)
-	/* initialize hpb structures */
-	ufshcd_init_hpb(hba);
+    if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+	    /* initialize hpb structures */
+	    ufshcd_init_hpb(hba);
 #endif
 #if defined(CONFIG_UFSHPB)
 	atomic64_set(&(hba->SEC_hpb_info.hpb_pinned_rb_cnt), 0);
@@ -10433,6 +10508,79 @@ out_error:
 	return err;
 }
 EXPORT_SYMBOL_GPL(ufshcd_init);
+
+#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_UFSHPB)
+static int get_storage_info(struct ufs_hba *hba)
+{
+    int ret = 0;
+    struct property *p;
+    struct device_node *n;
+    struct mmi_storage_info *info;
+
+    n = of_find_node_by_path("/chosen/mmi,storage");
+    if (n == NULL) {
+        ret = 1;
+        goto err;
+    }
+
+    info = kzalloc(sizeof(struct mmi_storage_info), GFP_KERNEL);
+    if (!info) {
+        dev_err(hba->dev,"%s: failed to allocate space for mmi_storage_info\n",
+           __func__);
+        ret = 1;
+        goto err;
+    }
+
+    for_each_property_of_node(n, p) {
+        if (!strcmp(p->name, "type") && p->value)
+            strlcpy(info->type, (char *)p->value, sizeof(info->type));
+        if (!strcmp(p->name, "size") && p->value)
+            strlcpy(info->size, (char *)p->value, sizeof(info->size));
+        if (!strcmp(p->name, "manufacturer") && p->value)
+            strlcpy(info->card_manufacturer, (char *)p->value, sizeof(info->card_manufacturer));
+        if (!strcmp(p->name, "product") && p->value)
+            strlcpy(info->product_name, (char *)p->value, sizeof(info->product_name));
+        if (!strcmp(p->name, "firmware") && p->value)
+            strlcpy(info->firmware_version, (char *)p->value, sizeof(info->firmware_version));
+    }
+
+    of_node_put(n);
+
+    dev_info(hba->dev, "manufacturer parsed from choosen is %s\n",info->card_manufacturer);
+err:
+        return ret;
+}
+
+static int get_dram_info(struct ufs_hba *hba)
+{
+         int ret = -1;
+         struct device_node *n;
+         struct mmi_ddr_info *ddr_info;
+
+		ddr_info = kzalloc(sizeof(struct mmi_ddr_info), GFP_KERNEL);
+        if (!ddr_info) {
+                pr_err("%s: failed to allocate space for mmi_ddr_info\n", __func__);
+                goto err;
+        }
+
+        n = of_find_node_by_path("/chosen/mmi,ram");
+       if (n != NULL) {
+               of_property_read_u32(n, "mr5", &ddr_info->mr5);
+                of_property_read_u32(n, "mr6", &ddr_info->mr6);
+                of_property_read_u32(n, "mr7", &ddr_info->mr7);
+                of_property_read_u32(n, "mr8", &ddr_info->mr8);
+                of_property_read_u32(n, "type", &ddr_info->type);
+                of_property_read_u32(n, "ramsize", &ddr_info->ramsize);
+                of_node_put(n);
+        }
+
+        ram_size = (ddr_info->ramsize / 1024);
+        dev_info(hba->dev, "ram_size parsed from chosen is %d\n",ram_size);
+        return ram_size;
+err:
+        return ret;
+}
+#endif
 
 MODULE_AUTHOR("Santosh Yaragnavi <santosh.sy@samsung.com>");
 MODULE_AUTHOR("Vinayak Holikatti <h.vinayak@samsung.com>");
