@@ -127,10 +127,12 @@ void ufs_mtk_dbg_add_trace(struct ufs_hba *hba,
 	ufs_cmd_hlist[ptr].duration = 0;
 	ufs_cmd_hlist[ptr].rq = NULL;
 	ufs_cmd_hlist[ptr].cpu = smp_processor_id();
+#if defined(CONFIG_UFSHPB)
 	ufs_cmd_hlist[ptr].ppn = ppn;
 	ufs_cmd_hlist[ptr].region = region;
 	ufs_cmd_hlist[ptr].subregion = subregion;
 	ufs_cmd_hlist[ptr].resv = resv;
+#endif
 
 	/* keep request pointer to dig out block layer status */
 	if (((event == UFS_TRACE_SEND) || (event == UFS_TRACE_COMPLETED) ||
