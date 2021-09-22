@@ -1160,6 +1160,7 @@ int msdc_switch_part(struct msdc_host *host, char part_id)
 static int check_enable_cqe(void)
 {
 #if !defined(FPGA_PLATFORM)
+#if !defined(CONFIG_MTK_AB_OTA_UPDATER)  || !defined(CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT)
 	enum boot_mode_t mode;
 
 	mode = get_boot_mode();
@@ -1173,7 +1174,7 @@ static int check_enable_cqe(void)
 		(mode == KERNEL_POWER_OFF_CHARGING_BOOT) ||
 		(mode == LOW_POWER_OFF_CHARGING_BOOT))
 		return 0;
-
+#endif
 	return 1;
 #else
 	return 1;
@@ -1187,6 +1188,7 @@ static int msdc_cache_onoff(struct mmc_data *data)
 	u8 *ptr = (u8 *) sg_virt(data->sg);
 #if defined(MTK_MSDC_USE_CACHE)
 	int i;
+#if !defined(CONFIG_MTK_AB_OTA_UPDATER)  || !defined(CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT)
 	enum boot_mode_t mode;
 
 	/*
@@ -1200,6 +1202,7 @@ static int msdc_cache_onoff(struct mmc_data *data)
 		*(ptr + 252) = *(ptr + 251) = *(ptr + 250) = *(ptr + 249) = 0;
 		return 0;
 	}
+#endif
 	/*
 	 * Enable cache by eMMC vendor
 	 * disable emmc cache if eMMC vendor is in emmc_cache_quirk[]
