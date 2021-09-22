@@ -81,6 +81,10 @@
 
 #define UFSHCD "ufshcd"
 #define UFSHCD_DRIVER_VERSION "0.2"
+#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_SCSI_UFS_HPB)
+extern unsigned int ram_size;
+#define IS_RAM_SIZE_GREATER_THAN_4G(ram_size) (ram_size > 4)
+#endif
 
 struct ufs_hba;
 
