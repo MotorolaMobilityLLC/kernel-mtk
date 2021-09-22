@@ -1378,7 +1378,24 @@ int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 	return 0;
 }
 
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+bool disp_lcm_notify_support(struct disp_lcm_handle *plcm)
+{
+	struct LCM_DRIVER *lcm_drv = NULL;
 
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_lcm_notify) {
+			DISPDBG("disp lcm need notify\n");
+			return true;
+		}
+		return false;
+	}
+	DISPINFO("lcm_drv is null\n");
+	return false;
+}
+#endif
 
 int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 {
