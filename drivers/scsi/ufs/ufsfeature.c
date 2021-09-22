@@ -196,10 +196,12 @@ static int ufsf_read_dev_desc(struct ufsf_feature *ufsf, u8 selector)
 		  desc_buf[DEVICE_DESC_PARAM_EX_FEAT_SUP+2],
 		  desc_buf[DEVICE_DESC_PARAM_EX_FEAT_SUP+3]);
 
-	INIT_INFO("boot Control mode is=0x%.2x", desc_buf[DEVICE_DESC_PARAM_HPB_CONTROL]);
 	
 #if defined(CONFIG_SCSI_UFS_HPB)
-	ufshpb_get_dev_info(&ufsf->hpb_dev_info, desc_buf);
+	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
+		INIT_INFO("boot Control mode is=0x%.2x", desc_buf[DEVICE_DESC_PARAM_HPB_CONTROL]);
+		ufshpb_get_dev_info(&ufsf->hpb_dev_info, desc_buf);
+	}
 #endif
 
 #if defined(CONFIG_SCSI_UFS_TW)
@@ -219,7 +221,7 @@ static int ufsf_read_geo_desc(struct ufsf_feature *ufsf, u8 selector)
 		return ret;
 
 #if defined(CONFIG_SCSI_UFS_HPB)
-	if (ufsf->hpb_dev_info.hpb_device)
+	if (ufsf->hpb_dev_info.hpb_device && IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 		ufshpb_get_geo_info(&ufsf->hpb_dev_info, geo_buf);
 #endif
 
@@ -248,7 +250,7 @@ static int ufsf_read_unit_desc(struct ufsf_feature *ufsf,
 		return 0;
 
 #if defined(CONFIG_SCSI_UFS_HPB)
-	if (ufsf->hpb_dev_info.hpb_device) {
+	if (ufsf->hpb_dev_info.hpb_device && IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
 		ret = ufshpb_get_lu_info(ufsf, lun, unit_buf);
 		if (ret == -ENOMEM)
 			goto out;
@@ -307,12 +309,13 @@ void ufsf_device_check(struct ufs_hba *hba)
 	return;
 out_free_mem:
 #if defined(CONFIG_SCSI_UFS_HPB)
-	seq_scan_lu(lun)
+	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
+		seq_scan_lu(lun)
 		kfree(ufsf->ufshpb_lup[lun]);
 		ufsf->ufshpb_lup[lun] = NULL;
-
-	/* don't call init handler */
-	ufsf->ufshpb_state = HPB_FAILED;
+        /* don't call init handler */
+        ufsf->ufshpb_state = HPB_FAILED;
+    }
 #endif
 #if defined(CONFIG_SCSI_UFS_TW)
 	seq_scan_lu(lun)
@@ -407,20 +410,19 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, unsigned int lun,
 			break;
 
 		case QUERY_DESC_IDN_STRING:
-#if defined(CONFIG_SCSI_UFS_HPB)
 			if (!ufs_is_valid_unit_desc_lun(lun)) {
 				ERR_MSG("No unit descriptor for lun 0x%x", lun);
 				err = -EINVAL;
 				goto out_release_mem;
 			}
-			err = ufshpb_issue_req_dev_ctx(ufsf->ufshpb_lup[lun],
+			#if defined(CONFIG_SCSI_UFS_HPB)
+				err = ufshpb_issue_req_dev_ctx(ufsf->ufshpb_lup[lun],
 						       kernel_buf,
 						       ioctl_data->buf_size);
-			if (err < 0)
-				goto out_release_mem;
-
+				if (err < 0)
+					goto out_release_mem;
+			#endif
 			goto copy_buffer;
-#endif
 		case QUERY_DESC_IDN_DEVICE:
 		case QUERY_DESC_IDN_GEOMETRY:
 		case QUERY_DESC_IDN_CONFIGURATION:
@@ -446,9 +448,7 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, unsigned int lun,
 	if (err)
 		goto out_release_mem;
 
-#if defined(CONFIG_SCSI_UFS_HPB)
 copy_buffer:
-#endif
 	if (opcode == UPIU_QUERY_OPCODE_READ_DESC) {
 		err = copy_to_user(buffer, ioctl_data,
 				   sizeof(struct ufs_ioctl_query_data_hpb));
