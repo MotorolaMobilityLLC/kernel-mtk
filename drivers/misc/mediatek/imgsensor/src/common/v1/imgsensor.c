@@ -47,8 +47,8 @@
 #include "imgsensor_proc.h"
 #include "imgsensor_clk.h"
 #include "imgsensor.h"
-
-#define PDAF_DATA_SIZE 4096
+/* MOT increase data size to 8192 IKSWR-128016*/
+#define PDAF_DATA_SIZE 8192 //4096
 
 #ifdef CONFIG_MTK_SMI_EXT
 static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
