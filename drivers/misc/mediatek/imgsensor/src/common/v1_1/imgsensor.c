@@ -1802,7 +1802,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_PDAF_DATA:
 	case SENSOR_FEATURE_GET_4CELL_DATA:
 		{
-#define PDAF_DATA_SIZE 4096
+/* MOT increase data size to 8192 IKSWR-128016*/
+#define PDAF_DATA_SIZE 8192 //4096
 			char *pPdaf_data = NULL;
 			unsigned long long *pFeaturePara_64 =
 				(unsigned long long *)pFeaturePara;
