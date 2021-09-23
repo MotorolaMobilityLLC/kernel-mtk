@@ -28,6 +28,7 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_VIDEO,
 	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
+	IMGSENSOR_MODE_CUSTOM1,
 };
 
 struct imgsensor_mode_struct {
@@ -106,6 +107,7 @@ struct imgsensor_info_struct {
 
 	/* slim video for VT scenario relative information */
 	struct imgsensor_mode_struct slim_video;
+	struct imgsensor_mode_struct custom1;
 	kal_uint8 ae_shut_delay_frame;	/* shutter delay frame for AE cycle */
 
 	/* sensor gain delay frame for AE cycle */
@@ -125,6 +127,7 @@ struct imgsensor_info_struct {
 	kal_uint8 hs_video_delay_frame;
 	kal_uint8 slim_video_delay_frame;
 	kal_uint8  frame_time_delay_frame;
+	kal_uint8 custom1_delay_frame;
 	kal_uint32 min_gain;
 	kal_uint32 max_gain;
 	kal_uint32 min_gain_iso;
