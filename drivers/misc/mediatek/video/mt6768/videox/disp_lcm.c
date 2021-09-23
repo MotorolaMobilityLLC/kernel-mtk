@@ -17,9 +17,7 @@
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/of.h>
 #endif
-#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
-int esd_backlight_level;
-#endif
+
 /* This macro and arrya is designed for multiple LCM support */
 /* for multiple LCM, we should assign I/F Port id in lcm driver, */
 /* such as DPI0, DSI0/1 */
@@ -1152,10 +1150,6 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 	plcm->drv->get_params(plcm->params);
 	plcm->lcm_if_id = plcm->params->lcm_if;
 
-#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
-	esd_backlight_level = 0;		//add esd recovery
-#endif
-
 	/* below code is for lcm driver forward compatible */
 	if (plcm->params->type == LCM_TYPE_DSI
 	    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
@@ -1556,10 +1550,6 @@ int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
 		DISPERR("lcm_drv is null\n");
 		return -1;
 	}
-
-#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
-	esd_backlight_level = level;
-#endif
 
 	lcm_drv = plcm->drv;
 	if (lcm_drv->set_backlight_cmdq) {

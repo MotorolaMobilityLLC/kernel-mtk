@@ -66,6 +66,11 @@
 #include "mtkfb.h"
 #endif
 
+#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
+#include <mtk_leds_drv.h>
+#include <mtk_leds_hal.h>
+#endif
+
 /* For abnormal check */
 static struct task_struct *primary_display_check_task;
 /* used for blocking check task  */
@@ -81,10 +86,6 @@ static unsigned int esd_check_mode;
 static unsigned int esd_check_enable;
 unsigned int esd_checking;
 static int te_irq;
-
-#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
-extern int esd_backlight_level;
-#endif
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
@@ -724,9 +725,11 @@ int primary_display_esd_recovery(void)
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct LCM_PARAMS *lcm_param = NULL;
 	mmp_event mmp_r = ddp_mmp_get_events()->esd_recovery_t;
-
 #ifdef CONFIG_LCM_NOTIFIY_SUPPORT
 	bool lcm_notify_enabled;
+#endif
+#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
+	unsigned int last_level;
 #endif
 
 	DISPFUNC();
@@ -779,6 +782,11 @@ int primary_display_esd_recovery(void)
 	DISPCHECK("[ESD]reset display path[end]\n");
 
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 6);
+
+#ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
+	last_level = mt_get_bl_brightness();
+	DISPCHECK("[ESD] before suspend, last_level:%d\n", last_level);
+#endif
 
 	DISPDBG("[POWER]lcm suspend[begin]\n");
 	/*after dsi_stop, we should enable the dsi basic irq.*/
@@ -902,7 +910,7 @@ int primary_display_esd_recovery(void)
 
 done:
 #ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
-	disp_lcm_set_backlight(primary_get_lcm(),NULL,esd_backlight_level);
+	mt_bl_esd_recover(last_level);
 #endif
 	primary_display_manual_unlock();
 	DISPCHECK("[ESD]ESD recovery end\n");

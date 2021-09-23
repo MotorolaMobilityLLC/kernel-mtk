@@ -842,7 +842,8 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	case MT65XX_LED_MODE_I2C:
 		if (strcmp(cust->name, "lcd-backlight") == 0) {
 #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
-			bl_brightness_hal = level;
+			if (level)
+				bl_brightness_hal = level;
 			if (!(cust->i2c_bd)) {
 				pr_info("%s backlight control get i2c_bd\n", __func__);
 				cust->i2c_bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
@@ -999,3 +1000,40 @@ int mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 
 	return 0;
 }
+
+unsigned int mt_get_bl_brightness(void)
+{
+	return bl_brightness_hal;
+}
+
+unsigned int mt_get_bl_max_brightness(void)
+{
+	int max_level = 255;
+	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+
+	if(cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness)
+		max_level = cust_led_list[MT65XX_LED_TYPE_LCD].max_brightness;
+
+	pr_info("[LED] %s: max bl level:%d\n", __func__, max_level);
+	return max_level;
+}
+
+int mt_bl_esd_recover(int level)
+{
+	int ret;
+	int bl_level = level;
+	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+
+	if (!level) {
+		int max_level = mt_get_bl_max_brightness();
+		int bl_ratio = 80;
+
+		bl_level = max_level * bl_ratio /100;
+		pr_info("[LED] %s: input level 0, new bl level:%d\n", __func__, bl_level);
+	}
+
+	ret = mt_mt65xx_led_set_cust(&cust_led_list[MT65XX_LED_TYPE_LCD], bl_level);
+
+	return ret;
+}
+
