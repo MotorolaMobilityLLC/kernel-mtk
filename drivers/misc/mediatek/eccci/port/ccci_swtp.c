@@ -35,6 +35,16 @@ const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP3_COMPATIBLE_DEVICE_ID,},  /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp */
 	{},
 };
+
+// modify by wt.changtingting for swtp start
+static const char irq_name[][16] = {
+	"swtp0-eint",
+	"swtp1-eint",
+	"swtp2-eint",
+	"swtp3-eint"
+};
+// modify by wt.changtingting for swtp end
+
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
@@ -237,14 +247,13 @@ static void swtp_init_delayed_work(struct work_struct *work)
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
 
-/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start */
-        char irq_name[12];
-        int has_write = 0;
-/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end */
-
 	CCCI_NORMAL_LOG(-1, SYS, "%s start\n", __func__);
 	CCCI_BOOTUP_LOG(-1, SYS, "%s start\n", __func__);
 
+	if (!swtp) {
+		ret = -1;
+		goto SWTP_INIT_END;
+	}
 	md_id = swtp->md_id;
 
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
@@ -254,6 +263,15 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
+	// modify by wt.changtingting for swtp start
+	if (ARRAY_SIZE(swtp_of_match) < MAX_PIN_NUM || ARRAY_SIZE(irq_name) < MAX_PIN_NUM) {
+		ret = -5;
+		CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: invalid array count = %d(swtp_of_match), %d(irq_name)\n", __func__, ARRAY_SIZE(swtp_of_match) ,ARRAY_SIZE(irq_name));
+		goto SWTP_INIT_END;
+	}
+
+	// modify by wt.changtingting for swtp end
 	for (i = 0; i < MAX_PIN_NUM; i++)
 		swtp_data[md_id].gpio_state[i] = SWTP_EINT_PIN_PLUG_OUT;
 
@@ -293,17 +311,10 @@ static void swtp_init_delayed_work(struct work_struct *work)
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
-            memset(irq_name, 0, sizeof(irq_name));
-            has_write = snprintf(irq_name, 12, "swtp%d-eint", i);
-            if (has_write <= 0 || has_write > 12) {
-                CCCI_LEGACY_ERR_LOG(md_id, SYS,
-                    "get swtp%d-eint fail\n",
-                    i);
-                break;
-            }
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
-            irq_name, &swtp_data[md_id]);
+				irq_name[i],
+				&swtp_data[md_id]);
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end */
 			if (ret) {
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
