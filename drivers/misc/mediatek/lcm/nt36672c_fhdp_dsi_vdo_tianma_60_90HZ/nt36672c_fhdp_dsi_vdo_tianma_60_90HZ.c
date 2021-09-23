@@ -1045,6 +1045,22 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 
 }
 
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+static bool lcm_set_recovery_notify(void)
+{
+	char tp_info[] = "nvt";
+
+	//return TRUE if TP need lcm notify
+	//NVT touch recover need enable lcm notify
+	if (strstr(tp_info, "nvt")) {
+		pr_info("%s: return TRUE\n", __func__);
+		return TRUE;
+	}
+
+	return false;
+}
+#endif
+
 struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
 	.name = "mipi_mot_vid_tianma_nt36672c_fhd_678",
 	.supplier = "tianma",
@@ -1061,6 +1077,9 @@ struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv = {
 #endif
 	.ata_check = lcm_ata_check,
 	.switch_mode = lcm_switch_mode,
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+	.set_lcm_notify = lcm_set_recovery_notify,
+#endif
 	.set_lcm_cmd = lcm_set_cmdq,
 	.tp_gesture_status = GESTURE_OFF,
 };
