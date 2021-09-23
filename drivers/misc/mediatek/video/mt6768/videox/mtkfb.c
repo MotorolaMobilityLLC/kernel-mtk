@@ -207,7 +207,6 @@ int  mtkfb_set_cabc(int cabc_mode)
 {
     int cmd_type = PARAM_CABC;
 
-    pr_info("%s: set CABC %d.\n", __func__, cabc_mode);
     if(primary_display_setlcm_cmd(&cmd_type, NULL, &cabc_mode)) {
         pr_err("%s: set CABC %d failed.\n", __func__, cabc_mode);
         return -1;
