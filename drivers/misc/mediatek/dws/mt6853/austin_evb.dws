@@ -1511,10 +1511,11 @@
             <gpio132>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
+                <varName0>BL_ISET_EN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio132>
