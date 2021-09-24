@@ -321,14 +321,14 @@
 	};
 	camera_pins_cam_mipi_switch_sel_1: mipi_sel@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO132__FUNC_GPIO132>;
+			pinmux = <PINMUX_GPIO48__FUNC_GPIO48>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam_mipi_switch_sel_0: mipi_sel@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO132__FUNC_GPIO132>;
+			pinmux = <PINMUX_GPIO48__FUNC_GPIO48>;
 			slew-rate = <1>;
 			output-low;
 		};
