@@ -786,6 +786,10 @@ int primary_display_esd_recovery(void)
 #ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
 	last_level = mt_get_bl_brightness();
 	DISPCHECK("[ESD] before suspend, last_level:%d\n", last_level);
+	//turn off backlight
+	mt_bl_set_brightness_direct(0, 0);
+	mdelay(100);
+	DISPCHECK("[ESD] before suspend backlight off\n");
 #endif
 
 	DISPDBG("[POWER]lcm suspend[begin]\n");
@@ -910,7 +914,7 @@ int primary_display_esd_recovery(void)
 
 done:
 #ifdef CONFIG_MTK_ESD_RECOVERY_BACKLIGHT
-	mt_bl_esd_recover(last_level);
+	mt_bl_set_brightness_direct(last_level, 1);
 #endif
 	primary_display_manual_unlock();
 	DISPCHECK("[ESD]ESD recovery end\n");

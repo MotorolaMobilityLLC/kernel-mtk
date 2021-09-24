@@ -1018,13 +1018,14 @@ unsigned int mt_get_bl_max_brightness(void)
 	return max_level;
 }
 
-int mt_bl_esd_recover(int level)
+int mt_bl_set_brightness_direct(int level, bool nonzero)
 {
 	int ret;
 	int bl_level = level;
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
 
-	if (!level) {
+	if (nonzero && !level) {
+		//when nonzero and level is 0, re-get level
 		int max_level = mt_get_bl_max_brightness();
 		int bl_ratio = 80;
 

@@ -14,7 +14,7 @@
 extern void mt_leds_wake_lock_init(void);
 extern unsigned int *mt_get_div_array(void);
 extern unsigned int mt_get_bl_brightness(void);
-extern int mt_bl_esd_recover(int level);
+extern int mt_bl_set_brightness_direct(int level, bool nonzero);
 extern void mt_led_pwm_disable(int pwm_num);
 extern int mt_led_set_pwm(int pwm_num, struct nled_setting *led);
 extern int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type,
