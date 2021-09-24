@@ -9,11 +9,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- * SB18D00294_A3_MD50_atl_5000mah_battery_prop.dtsi
+ * SB18D33989_A3_MD50_atl_5000mah_battery_prop.dtsi
  */
-
 	/* 0 means battery id is 0 */
-	serialnum_0 = "SB18D00294";
+	serialnum_0 = "SB18D33989";
+
 	battery0_profile_t0_num = <100>;
 	battery0_profile_t0_col = <3>;
 	battery0_profile_t0 =
