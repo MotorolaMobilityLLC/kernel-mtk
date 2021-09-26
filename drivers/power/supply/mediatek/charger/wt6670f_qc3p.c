@@ -632,8 +632,23 @@ probe_out:
 
 static void wt6670f_shutdown(struct i2c_client *client)
 {
-	wt6670f_start_detection();
-	pr_info("%s\n", __func__);
+	int ret;
+	u16 data = 0x01;
+
+	if(QC3P_WT6670F == g_qc3p_id){
+		ret = wt6670f_write_word(_wt, 0xB6, data);
+		pr_info("%s set voltage ok wt6670\n", __func__);
+	}else if(QC3P_Z350 == g_qc3p_id){
+		ret = wt6670f_write_word(_wt, 0x02, data);
+		pr_info("%s set voltage ok z350\n", __func__);
+	}else{
+		ret = wt6670f_write_word(_wt, 0xB6, data);
+		pr_info("%s set voltage ok wt6670\n", __func__);
+	}
+	if (ret < 0)
+	{
+		pr_info("%s set voltage fail\n",__func__);
+	}
 }
 //#define WT6670F_PM_OPS	(NULL)
 
