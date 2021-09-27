@@ -49,8 +49,9 @@
 #define AWB_GROUP1_START_ADDR 0x80
 #define AWB_GROUP2_START_ADDR 0xC0
 #define AWB_DATA_SIZE 6
+#define DATA_GRP_SIZE 8
 unsigned char gc02m1_data_awb[AWB_DATA_SIZE+3] = {0}; //add flag and checksum value
-
+unsigned char gc02m1_data_eeprom[AUSTIN_GC02M1_EEPROM_SIZE] = {0}; //add flag and checksum value
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -241,9 +242,41 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	iWriteRegI2C(pu_send_cmd, 2, imgsensor.i2c_write_id);
 }
 
+static void AUSTIN_GC02M1_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+            ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+
+
 static void read_gc02m1_awb_info(void)
 {
-	kal_uint16 i, awb_start_addr = 0, otp_grp_flag = 0;
+	kal_uint16 i, awb_start_addr = 0, otp_grp_flag = 0, otp_count = 0;
 
 	//init setting
 	write_cmos_sensor(0xfc, 0x01);
@@ -272,19 +305,26 @@ static void read_gc02m1_awb_info(void)
 
 	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
 		awb_start_addr = AWB_GROUP1_START_ADDR;
+		otp_count = 1;
 		LOG_INF("awb data is group1\n");
 	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
 		awb_start_addr = AWB_GROUP2_START_ADDR;
+		otp_count = 9;
 		LOG_INF("awb data is group2\n");
 	} else {
 		LOG_INF("gc02m1 OTP has no awb data\n");
 	}
+	gc02m1_data_eeprom[0] = otp_grp_flag;
 	gc02m1_data_awb[0] = otp_grp_flag;
-	for(i = 0; i < AWB_DATA_SIZE + 2; i++){
-		write_cmos_sensor(0x17, (awb_start_addr+i*0x08));
+	for(i = 0; i < AUSTIN_GC02M1_EEPROM_SIZE; i++){
+		write_cmos_sensor(0x17, (AWB_GROUP1_START_ADDR+i*0x08));
 		write_cmos_sensor(0xf3, 0x34);
-		gc02m1_data_awb[i+1] = read_cmos_sensor(0x19);
-		LOG_INF("addr = 0x%x, value = 0x%x\n", (awb_start_addr+i*0x08), gc02m1_data_awb[i+1]);
+		gc02m1_data_eeprom[i+1] = read_cmos_sensor(0x19);
+		LOG_INF("value = 0x%x\n", gc02m1_data_eeprom[i+1]);
+	}
+	for(i = 0; i < DATA_GRP_SIZE; i++){
+		gc02m1_data_awb[i+1] = gc02m1_data_eeprom[i+otp_count];
+		LOG_INF("addr = 0x%x, value = 0x%x\n", (awb_start_addr+i*0x08), gc02m1_data_awb[i]);
 	}
 }
 
@@ -774,6 +814,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				printk("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				read_gc02m1_awb_info();
+				AUSTIN_GC02M1_eeprom_dump_bin(GC02M1_EEPROM_DATA_PATH, AUSTIN_GC02M1_EEPROM_SIZE, (void *)gc02m1_data_eeprom);
 				return ERROR_NONE;
 			}
 			printk("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
