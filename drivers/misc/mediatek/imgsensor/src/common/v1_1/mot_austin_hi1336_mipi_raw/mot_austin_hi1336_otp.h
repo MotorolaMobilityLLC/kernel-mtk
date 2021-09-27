@@ -37,8 +37,8 @@ static DEFINE_SPINLOCK(imgsensor_lock);
 
 #define AUSTIN_HI1336_EEPROM_SLAVE_ADDR 0xA2
 #define AUSTIN_HI1336_SENSOR_IIC_SLAVE_ADDR 0x46
-#define AUSTIN_HI1336_EEPROM_SIZE  0x1122
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/hi1336_eeprom_data.bin"
+#define AUSTIN_HI1336_EEPROM_SIZE  0x0F44
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_hi1336_eeprom_front.bin"
 #define AUSTIN_HI1336_EEPROM_CRC_AF_CAL_SIZE 24
 #define AUSTIN_HI1336_EEPROM_CRC_AWB_CAL_SIZE 43
 #define AUSTIN_HI1336_EEPROM_CRC_LSC_SIZE 1868
