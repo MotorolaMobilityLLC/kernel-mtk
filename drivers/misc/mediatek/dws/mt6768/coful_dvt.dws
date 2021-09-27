@@ -2109,6 +2109,11 @@
                 <channel>I2C_CHANNEL_2</channel>
                 <address>0x6F</address>
             </device20>
+            <device21>
+                <varName>CAMERA_MAIN_TWO_EEPROM</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x50</address>
+            </device21>
         </module>
         <module name="md1_eint">
             <count>3</count>
