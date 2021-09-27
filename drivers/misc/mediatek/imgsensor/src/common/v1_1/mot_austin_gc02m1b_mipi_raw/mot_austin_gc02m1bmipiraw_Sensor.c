@@ -824,9 +824,9 @@ static void gc02m1b_eeprom_format_calibration_data()
 #define MODULE_GROUP_FLAG_ADDR 0x78
 #define MODULE_GROUP1_START_ADDR 0x80
 #define MODULE_GROUP2_START_ADDR 0xC0
-#define MODULE_DATA_SIZE 8
-static unsigned char gc02m1b_module_data[8] = {0}; //add flag and checksum value
-
+#define MODULE_DATA_SIZE 16
+static unsigned char gc02m1b_serial_data[8] = {0}; //add flag and checksum value
+static unsigned char gc02m1b_data_eeprom[17] = {0}; //add flag and checksum value
 #define GC02M1B_SERIAL_NUM_SIZE 8
 #define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
 
@@ -863,7 +863,7 @@ p_err:
 
 static void read_gc02m1b_module_info(void)
 {
-	kal_uint16 i, start_addr = 0, otp_grp_flag = 0;
+	kal_uint16 i, start_addr = 0, otp_grp_flag = 0, otp_count = 0;
 
 	//init setting
 	write_cmos_sensor(0xfc, 0x01);
@@ -892,19 +892,25 @@ static void read_gc02m1b_module_info(void)
 
 	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
 		start_addr = MODULE_GROUP1_START_ADDR;
+		otp_count = 1;
 		LOG_INF("otp data is group1\n");
 	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
 		start_addr = MODULE_GROUP2_START_ADDR;
+		otp_count = 9;
 		LOG_INF("otp data is group2\n");
 	} else {
 		LOG_INF("gc02m1 OTP has no otp data\n");
 	}
-
+	gc02m1b_data_eeprom[0] = otp_grp_flag;
 	for(i = 0; i < MODULE_DATA_SIZE; i++){
-		write_cmos_sensor(0x17, (start_addr+i*0x08));
+		write_cmos_sensor(0x17, (MODULE_GROUP1_START_ADDR+i*0x08));
 		write_cmos_sensor(0xf3, 0x34);
-		gc02m1b_module_data[i] = read_cmos_sensor(0x19);
-		LOG_INF("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1b_module_data[i]);
+		gc02m1b_data_eeprom[i+1] = read_cmos_sensor(0x19);
+		LOG_INF("value = 0x%x\n",gc02m1b_data_eeprom[i+1]);
+	}
+	for(i = 0; i < GC02M1B_SERIAL_NUM_SIZE; i++){
+		gc02m1b_serial_data[i] = gc02m1b_data_eeprom[i+otp_count];
+		LOG_INF("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1b_serial_data[i]);
 	}
 }
 #endif
@@ -924,7 +930,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #ifdef EEPROM_READY
 				read_gc02m1b_module_info();
 				gc02m1b_eeprom_format_calibration_data();
-				gc02m1b_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, MODULE_DATA_SIZE, (void *)gc02m1b_module_data);
+				gc02m1b_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, MODULE_DATA_SIZE, (void *)gc02m1b_serial_data);
+				gc02m1b_otp_dump_bin(GC02M1B_EEPROM_DATA_PATH, AUSTIN_GC02M1_EEPROM_SIZE, (void *)gc02m1b_data_eeprom);
 #endif
 				return ERROR_NONE;
 			}
@@ -1195,10 +1202,10 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	{
 		snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
 			"%02x%02x%02x%02x%02x%02x%02x%02x",
-		gc02m1b_module_data[0], gc02m1b_module_data[1],
-		gc02m1b_module_data[2], gc02m1b_module_data[3],
-		gc02m1b_module_data[4], gc02m1b_module_data[5],
-		gc02m1b_module_data[6], gc02m1b_module_data[7]);
+		gc02m1b_serial_data[0], gc02m1b_serial_data[1],
+		gc02m1b_serial_data[2], gc02m1b_serial_data[3],
+		gc02m1b_serial_data[4], gc02m1b_serial_data[5],
+		gc02m1b_serial_data[6], gc02m1b_serial_data[7]);
 	}
 #endif
 	switch (scenario_id) {
