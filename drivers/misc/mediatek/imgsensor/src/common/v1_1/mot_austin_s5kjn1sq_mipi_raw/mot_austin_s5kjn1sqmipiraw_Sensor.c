@@ -46,7 +46,7 @@
 #include "mot_austin_s5kjn1sqmipiraw_Sensor.h"
 #include "mot_austin_s5kjn1sq_otp.h"
 #define MULTI_WRITE 1
-//#define ENABLE_PDAF
+#define ENABLE_PDAF
 #define LOG_INF(format, args...)    \
     pr_err(PFX "[%s] " format, __func__, ##args)
 
