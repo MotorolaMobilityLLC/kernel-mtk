@@ -24,6 +24,9 @@
 #ifdef AUSTIN_SWTP_CONFIG
 #define MAX_PIN_NUM 3
 #endif
+#ifdef KYOTO_SWTP_CUST
+#define MAX_PIN_NUM 4
+#endif
 
 #define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
 #define SWTP1_COMPATIBLE_DEVICE_ID "mediatek, swtp1-eint"
