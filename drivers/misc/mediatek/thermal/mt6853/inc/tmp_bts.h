@@ -49,6 +49,20 @@
 
 
 
+/* Add the NTC of FLASH_LED(RT1705), to detect the temperature of flash light. */
+#define FLASHLIGHT_RAP_PULL_UP_R               100000 /* 100K, pull up resister */
+
+#define FLASHLIGHT_TAP_OVER_CRITICAL_LOW       4397119 /* base on 100K NTC temp
+                                                 * default value -40 deg
+                                                 */
+
+#define FLASHLIGHT_RAP_PULL_UP_VOLTAGE         1800 /* 1.8V ,pull up voltage */
+
+#define FLASHLIGHT_RAP_NTC_TABLE               7 /* default is NCP15WF104F03RC(100K) */
+
+#define FLASHLIGHT_RAP_ADC_CHANNEL             AUX_IN4_NTC /* default is 0 */
+
+
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
 
