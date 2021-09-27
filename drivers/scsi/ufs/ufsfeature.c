@@ -410,19 +410,19 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, unsigned int lun,
 			break;
 
 		case QUERY_DESC_IDN_STRING:
+		#if defined(CONFIG_SCSI_UFS_HPB)
 			if (!ufs_is_valid_unit_desc_lun(lun)) {
 				ERR_MSG("No unit descriptor for lun 0x%x", lun);
 				err = -EINVAL;
 				goto out_release_mem;
 			}
-			#if defined(CONFIG_SCSI_UFS_HPB)
 				err = ufshpb_issue_req_dev_ctx(ufsf->ufshpb_lup[lun],
 						       kernel_buf,
 						       ioctl_data->buf_size);
 				if (err < 0)
 					goto out_release_mem;
-			#endif
 			goto copy_buffer;
+		#endif
 		case QUERY_DESC_IDN_DEVICE:
 		case QUERY_DESC_IDN_GEOMETRY:
 		case QUERY_DESC_IDN_CONFIGURATION:
@@ -447,8 +447,9 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, unsigned int lun,
 					    &length);
 	if (err)
 		goto out_release_mem;
-
+#if defined(CONFIG_UFSHPB)
 copy_buffer:
+#endif
 	if (opcode == UPIU_QUERY_OPCODE_READ_DESC) {
 		err = copy_to_user(buffer, ioctl_data,
 				   sizeof(struct ufs_ioctl_query_data_hpb));
