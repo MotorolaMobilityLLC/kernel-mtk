@@ -35,7 +35,8 @@
 #define MOT_AUSTIN_GC02M1_MIRROR	        0x80
 #endif
 
-
+#define AUSTIN_GC02M1_EEPROM_SIZE  17
+#define GC02M1_EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gc02m1_eeprom_macro.bin"
 /* SENSOR PRIVATE INFO FOR GAIN SETTING */
 #define MOT_AUSTIN_GC02M1_SENSOR_GAIN_BASE             0x400
 #define MOT_AUSTIN_GC02M1_SENSOR_GAIN_MAX              (12 * MOT_AUSTIN_GC02M1_SENSOR_GAIN_BASE)
