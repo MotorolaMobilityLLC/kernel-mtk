@@ -37,7 +37,7 @@ extern kal_uint16 read_cmos_sensor_8(kal_uint16 addr);
 #define AUSTIN_S5KJN1_EEPROM_SLAVE_ADDR 0xA0
 #define AUSTIN_S5KJN1_SENSOR_IIC_SLAVE_ADDR 0xAC
 #define AUSTIN_S5KJN1_EEPROM_SIZE  0x39c7
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5kjn1_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_s5kjn1_eeprom_main.bin"
 #define AUSTIN_S5KJN1_EEPROM_CRC_AF_CAL_SIZE 24
 #define AUSTIN_S5KJN1_EEPROM_CRC_AWB_CAL_SIZE 43
 #define AUSTIN_S5KJN1_EEPROM_CRC_LSC_SIZE 1868
