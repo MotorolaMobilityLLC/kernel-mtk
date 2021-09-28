@@ -37,6 +37,8 @@
 		novatek,reset-gpio = <&pio 112 0x00>;
 		novatek,irq-gpio = <&pio 0 0x00>;
 		novatek,def-max-resolution = <1080 2460>;
+		novatek,usb_charger;
+		novatek,usb-psp-online;
 
 		/* 525 */
 		//novatek,swrst-n8-addr = <0x01F01A>;
