@@ -142,7 +142,6 @@
         min_charger_voltage = <4600000>;
 
         enable_pe_2;
-        enable_sw_jeita;
 
         /* charging current */
         usb_charger_current_suspend = <0>;
