@@ -1356,36 +1356,31 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 
 	psDevNode = psDevmemCtx->psDevNode;
 
+#if !defined(PVRSRV_USE_BRIDGE_LOCK)
+	/* Acquire write lock for the duration, to avoid resource free
+	  * while trying to read (no need to then also acquire the read lock
+	  * as we have exclusive access while holding the write lock)
+	   */
+	  OSWRLockAcquireWrite(psDevmemCtx->hListLock);
+#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 	if (bRegister)
 	{
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		OSWRLockAcquireRead(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 		/* If this is the first PID in the list, the device memory context
 		 * needs to be registered for notification */
 		if (dllist_is_empty(&psDevmemCtx->sProcessNotifyListHead))
 		{
 #if !defined(PVRSRV_USE_BRIDGE_LOCK)
-			OSWRLockReleaseRead(psDevmemCtx->hListLock);
+			OSWRLockAcquireWrite(psDevNode->hMemoryContextPageFaultNotifyListLock);
 #endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 			dllist_add_to_tail(&psDevNode->sMemoryContextPageFaultNotifyListHead,
 			                   &psDevmemCtx->sPageFaultNotifyListElem);
-		}
-		else
-		{
+
 #if !defined(PVRSRV_USE_BRIDGE_LOCK)
-			OSWRLockReleaseRead(psDevmemCtx->hListLock);
+			OSWRLockReleaseWrite(psDevNode->hMemoryContextPageFaultNotifyListLock);
 #endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 		}
 	}
 
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	/* Acquire write lock for the duration, to avoid resource free
-	 * while trying to read (no need to then also acquire the read lock
-	 * as we have exclusive access while holding the write lock)
-	 */
-	OSWRLockAcquireWrite(psDevmemCtx->hListLock);
-#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 
 	/* Loop through the registered PIDs and check whether this one is
 	 * present */
@@ -1400,7 +1395,7 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 		}
 	}
 
-	if (bRegister == IMG_TRUE)
+	if (bRegister)
 	{
 		if (bPresent)
 		{
@@ -1438,20 +1433,22 @@ PVRSRV_ERROR DevmemIntRegisterPFNotifyKM(DEVMEMINT_CTX *psDevmemCtx,
 		dllist_remove_node(psNode);
 		psNotifyNode = IMG_CONTAINER_OF(psNode, DEVMEMINT_PF_NOTIFY, sProcessNotifyListElem);
 		OSFreeMem(psNotifyNode);
-	}
 
-	if (!bRegister)
-	{
 		/* If the last process in the list is being unregistered, then also
 		 * unregister the device memory context from the notify list. */
 		/* Write lock is already held (if not using BRIDGE_LOCK) */
 		if (dllist_is_empty(&psDevmemCtx->sProcessNotifyListHead))
 		{
+#if !defined(PVRSRV_USE_BRIDGE_LOCK)
+			OSWRLockAcquireWrite(psDevNode->hMemoryContextPageFaultNotifyListLock);
+#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 			dllist_remove_node(&psDevmemCtx->sPageFaultNotifyListElem);
+#if !defined(PVRSRV_USE_BRIDGE_LOCK)
+			OSWRLockReleaseWrite(psDevNode->hMemoryContextPageFaultNotifyListLock);
+#endif /* !defined(PVRSRV_USE_BRIDGE_LOCK) */
 		}
 	}
 	eError = PVRSRV_OK;
-
 err_already_registered:
 err_out_of_mem:
 err_not_registered:
