@@ -2049,7 +2049,7 @@ static void mtk_crtc_update_ddp_state(struct drm_crtc *crtc,
 			if (lyeblob_ids->lye_idx == 2 && !already_free) {
 				/*free fb buf in second query valid*/
 				mtk_drm_fb_gem_release(dev);
-				free_fb_buf();
+				try_free_fb_buf(dev);
 				already_free = true;
 			}
 			break;
