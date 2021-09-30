@@ -273,6 +273,7 @@ static int fh_dumpregs_read(struct seq_file *m, void *v)
 		if (domain == NULL) {
 			FHDBG("domain is null!");
 			WARN_ON(1);
+			return 0;
 		}
 
 		regs = &domain->regs[fh_id];

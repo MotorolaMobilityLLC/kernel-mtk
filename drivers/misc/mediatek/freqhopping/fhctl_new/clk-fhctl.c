@@ -166,6 +166,7 @@ static int fh_plt_drv_probe(struct platform_device *pdev)
 	if (array == NULL) {
 		FHDBG("array is null!");
 		WARN_ON(1);
+		return 0;
 	}
 
 	/* init every subsys */
