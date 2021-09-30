@@ -1338,7 +1338,11 @@ static int tcpc_event_thread_fn(void *data)
 	/* set_user_nice(current, -20); */
 	/* current->flags |= PF_NOFREEZE;*/
 
-	sched_setscheduler(current, SCHED_FIFO, &sch_param);
+	ret = sched_setscheduler(current, SCHED_FIFO, &sch_param);
+	if (ret != 0) {
+		PD_ERR("sched_setscheduler() error!\n");
+		return ret;
+	}
 
 	while (true) {
 		ret = wait_event_interruptible(tcpc->event_wait_que,
