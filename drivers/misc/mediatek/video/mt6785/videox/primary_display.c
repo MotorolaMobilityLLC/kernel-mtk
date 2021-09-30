@@ -5433,6 +5433,43 @@ int primary_display_lcm_power_on_state(int alive)
 	return skip_update;
 }
 
+void primary_display_vdo_restart(bool need_wait_frame_done)
+{
+	struct cmdqRecStruct *qhandle = NULL;
+
+#ifdef CONFIG_MTK_MT6382_BDG
+		int ret = 0;
+
+		DISPFUNCSTART();
+		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle);
+		if (ret) {
+			DISPCHECK("%s,cmdq create fail!\n", __func__);
+			return;
+		}
+		cmdqRecReset(qhandle);
+		if (need_wait_frame_done)
+			cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		/* stop dsi vdo mode */
+		dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+				qhandle, CMDQ_STOP_VDO_MODE, 0);
+
+//		cmdqRecClearEventToken(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), qhandle,
+				CMDQ_START_VDO_MODE, 0);
+
+		dpmgr_path_trigger(primary_get_dpmgr_handle(),
+				qhandle, CMDQ_ENABLE);
+
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+				primary_get_dpmgr_handle()), qhandle, 0);
+
+		cmdqRecFlush(qhandle);
+#endif
+	cmdqRecDestroy(qhandle);
+}
+
 int primary_display_resume(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
@@ -5653,7 +5690,7 @@ int primary_display_resume(void)
 			 MMPROFILE_FLAG_PULSE, 0, 5);
 
 #ifdef CONFIG_MTK_MT6382_BDG
-	if (get_mt6382_init() && primary_display_is_video_mode()) {
+	if (get_mt6382_init()) {
 		bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
 		bdg_tx_start(DISP_BDG_DSI0, NULL);
 	}
@@ -5704,8 +5741,12 @@ int primary_display_resume(void)
 				       DISP_PATH_EVENT_IF_VSYNC,
 				       DDP_IRQ_RDMA0_DONE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
-
-		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+#ifdef CONFIG_MTK_MT6382_BDG
+		if (primary_display_is_video_mode())
+			primary_display_vdo_restart(false);
+#else
+			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+#endif
 #if 0
 		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle,
@@ -5798,12 +5839,25 @@ DISP_PR_INFO("[%s][%d]\n", __func__, __LINE__);
 					       DDP_IRQ_UNKNOWN);
 		}
 	}
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	/*DynFPS*/
+	/*check whether need change fps according cfg*/
+	if (primary_display_is_support_DynFPS()) {
+		int last_cfg = primary_display_get_current_cfg_id();
+
+		/* easy way to force change fps */
+		primary_display_update_cfg_id(!last_cfg);
+		primary_display_dynfps_chg_fps(last_cfg);
+	}
+#endif
 
 done:
 #ifdef CONFIG_MTK_MT6382_BDG
-//	mmdvfs_qos_force_step(0);
+	if (primary_display_is_video_mode())
+		mmdvfs_qos_force_step(0);
 /*	559-449-314-273*/
-	disp_pm_qos_update_mmclk(449);
+	else
+		disp_pm_qos_update_mmclk(449);
 #endif
 	DISP_PR_INFO("[%s][%d]\n", __func__, __LINE__);
 	primary_set_state(DISP_ALIVE);
@@ -8602,7 +8656,7 @@ int _set_backlight_by_cmdq(unsigned int level)
 				     CMDQ_SYNC_TOKEN_CABC_EOF);
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,
 				 MMPROFILE_FLAG_PULSE, 1, 4);
-		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,
 				 MMPROFILE_FLAG_PULSE, 1, 6);
 		DISPMSG("[BL]%s ret=%d\n", __func__, ret);
@@ -8871,9 +8925,30 @@ int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count,
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd,
 				 MMPROFILE_FLAG_PULSE, 1, 2);
 		cmdqRecReset(cmdq_handle_lcm_cmd);
-		disp_lcm_set_lcm_cmd(pgc->plcm, cmdq_handle_lcm_cmd, lcm_cmd,
+#ifdef CONFIG_MTK_MT6382_BDG
+			cmdqRecWait(cmdq_handle_lcm_cmd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+			/* stop dsi vdo mode */
+			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+					cmdq_handle_lcm_cmd, CMDQ_STOP_VDO_MODE, 0);
+			disp_lcm_set_lcm_cmd(pgc->plcm, cmdq_handle_lcm_cmd, lcm_cmd,
 				     lcm_count, lcm_value);
-		_cmdq_flush_config_handle_mira(cmdq_handle_lcm_cmd, 1);
+			dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), cmdq_handle_lcm_cmd,
+					CMDQ_START_VDO_MODE, 0);
+			cmdqRecClearEventToken(cmdq_handle_lcm_cmd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+			dpmgr_path_trigger(primary_get_dpmgr_handle(),
+					cmdq_handle_lcm_cmd, CMDQ_ENABLE);
+			ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+					primary_get_dpmgr_handle()), cmdq_handle_lcm_cmd, 0);
+
+			_cmdq_flush_config_handle_mira(cmdq_handle_lcm_cmd, 1);
+#else
+	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_lcm_cmd);
+			disp_lcm_set_lcm_cmd(pgc->plcm, cmdq_handle_lcm_cmd, lcm_cmd,
+					     lcm_count, lcm_value);
+			/*Async flush by cmdq*/
+			_cmdq_flush_config_handle_mira(cmdq_handle_lcm_cmd, 0);
+#endif
 		DISPCHECK("[CMD]%s ret=%d\n", __func__, ret);
 	} else {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,
@@ -10918,8 +10993,6 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 				pgc->plcm, last_dynfps, new_dynfps);
 	sendmode = params->sendmode;
 	DISPMSG("%s,need_send_cmd:%b in %s\n", __func__, need_send_cmd, sendmode);
-	mmprofile_log_ex(ddp_mmp_get_events()->primary_dynfps_chg_fps,
-					 MMPROFILE_FLAG_START, last_dynfps, new_dynfps);
 	if (fps_change_index & DYNFPS_DSI_MIPI_CLK ||
 		fps_change_index & DYNFPS_DSI_HFP) {
 
@@ -10988,29 +11061,49 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 			return;
 		}
 		cmdqRecReset(qhandle);
+#ifdef CONFIG_MTK_MT6382_BDG
+				cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+				/* stop dsi vdo mode */
+				dpmgr_path_build_cmdq(primary_get_dpmgr_handle(),
+						qhandle, CMDQ_STOP_VDO_MODE, 0);
+				ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
+						last_dynfps, new_dynfps, fps_change_index);
+
+				dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), qhandle,
+						CMDQ_START_VDO_MODE, 0);
+				dpmgr_path_trigger(primary_get_dpmgr_handle(),
+						qhandle, CMDQ_ENABLE);
+
+				ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(
+						primary_get_dpmgr_handle()), qhandle, 0);
+
+				cmdqRecFlush(qhandle);
+#else
 		if (need_send_cmd) {
 			cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 			DISPMSG("%s,send cmd to lcm in VFP solution\n", __func__);
 			disp_lcm_dynfps_send_cmd(pgc->plcm, qhandle,
 				last_dynfps, new_dynfps);
 		}
-
-		cmdqRecClearEventToken(qhandle,
-				CMDQ_EVENT_DISP_RDMA0_SOF);
-		cmdqRecWaitNoClear(
-			qhandle, CMDQ_EVENT_DISP_RDMA0_SOF);
 		/*now only primary display support*/
 		ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
 			last_dynfps, new_dynfps, fps_change_index);
 		cmdqRecFlushAsync(qhandle);
+#endif
 	} else if (need_send_cmd && (sendmode == LCM_SEND_IN_CMD)) {
+		struct cmdqRecStruct *qhandle2 = NULL;
 		ret = cmdqRecCreate(
 				CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle);
+		ret = cmdqRecCreate(
+				CMDQ_SCENARIO_DISP_ESD_CHECK, &qhandle2);
+
 		if (ret) {
 			DISPCHECK("%s,cmdq create fail!\n", __func__);
 			return;
 		}
 		cmdqRecReset(qhandle);
+		cmdqRecReset(qhandle2);
 
 		if (need_wait_esd_eof()) {
 			/* Wait esd config thread done. */
@@ -11019,17 +11112,16 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 		}
 
 		if (need_send_cmd) {
-			cmdqRecWait(qhandle, CMDQ_SYNC_TOKEN_CABC_EOF);
-			cmdqRecWait(qhandle, CMDQ_SYNC_TOKEN_STREAM_EOF);
-			cmdqRecClearEventToken(qhandle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+			int res = 0;
+
+			cmdqRecWait(qhandle2, CMDQ_SYNC_TOKEN_CABC_EOF);
+			cmdqRecWait(qhandle2, CMDQ_SYNC_TOKEN_STREAM_EOF);
+			cmdqRecClearEventToken(qhandle2, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+			cmdqRecFlush(qhandle2);
 #ifdef CONFIG_MTK_MT6382_BDG
-			cmdqRecFlush(qhandle);
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_dynfps_chg_fps,
 							 MMPROFILE_FLAG_PULSE, 0, 1);
-			bdg_tx_wait_for_idle(DISP_BDG_DSI0);
-			mmprofile_log_ex(ddp_mmp_get_events()->primary_dynfps_chg_fps,
-							 MMPROFILE_FLAG_PULSE, 0, 2);
-			cmdqRecReset(qhandle);
+			res = bdg_tx_wait_for_idle(DISP_BDG_DSI0);
 #endif
 			DISPMSG("%s,send cmd to lcm in cmd mode\n", __func__);
 			disp_lcm_dynfps_send_cmd(pgc->plcm, qhandle,
@@ -11039,7 +11131,7 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 			cmdqRecSetEventToken(qhandle, CMDQ_SYNC_TOKEN_CABC_EOF);
 			cmdqRecSetEventToken(qhandle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 		}
-
+		cmdqRecDestroy(qhandle2);
 		ddp_dsi_dynfps_chg_fps(DISP_MODULE_DSI0, qhandle,
 					last_dynfps, new_dynfps, fps_change_index);
 

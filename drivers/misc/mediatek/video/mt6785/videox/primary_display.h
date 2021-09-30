@@ -524,7 +524,7 @@ extern void check_mm0_clk_sts(void);
 #ifdef MTK_FB_MMDVFS_SUPPORT
 int primary_display_get_dvfs_last_req(void);
 #endif
-
+void primary_display_vdo_restart(bool need_wait_frame_done);
 /**************function for ARR start************************/
 unsigned int primary_display_is_support_ARR(void);
 int primary_display_wait_fps_change(unsigned int *new_fps);

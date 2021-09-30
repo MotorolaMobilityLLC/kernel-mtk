@@ -416,7 +416,7 @@ void rdma_cal_golden_setting(unsigned int idx, unsigned int bpp,
 	gs[GS_RDMA_RSZ_FIFO_SIZE] = 1536;
 	if (gs[GS_RDMA_OUTPUT_VALID_FIFO_TH] > gs[GS_RDMA_RSZ_FIFO_SIZE]) {
 		gs[GS_RDMA_OUTPUT_VALID_FIFO_TH] = gs[GS_RDMA_RSZ_FIFO_SIZE] - 80;
-		DISPMSG("%s, gavin force set output_valid = %d\n",
+		DISPMSG("%s, force set output_valid = %d\n",
 			__func__, gs[GS_RDMA_OUTPUT_VALID_FIFO_TH]);
 	};
 }
