@@ -1112,13 +1112,6 @@ int primary_display_request_dvfs_perf(
 			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		}
-		emi_opp =
-			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
-				PM_QOS_DDR_OPP_DEFAULT_VALUE : opp_level;
-		mm_freq =
-			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
-				PM_QOS_MM_FREQ_DEFAULT_VALUE :
-			layering_rule_get_mm_freq_table(opp_level);
 #else
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
@@ -1135,17 +1128,20 @@ int primary_display_request_dvfs_perf(
 			opp_level = HRT_OPP_LEVEL_LEVEL2;
 			break;
 		case HRT_LEVEL_DEFAULT:
-			opp_level = HRT_OPP_LEVEL_LEVEL0;
+			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		default:
-			opp_level = HRT_OPP_LEVEL_LEVEL0;
+			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		}
-
-		emi_opp =  opp_level;
-		mm_freq =
-			layering_rule_get_mm_freq_table(opp_level);
 #endif
+		emi_opp =
+			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
+				PM_QOS_DDR_OPP_DEFAULT_VALUE : opp_level;
+		mm_freq =
+			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
+				PM_QOS_MM_FREQ_DEFAULT_VALUE :
+			layering_rule_get_mm_freq_table(opp_level);
 
 		/*scenario:MMDVFS_SCEN_DISP(0x17),SMI_BWC_SCEN_UI_IDLE(0xb)*/
 		mmprofile_log_ex(ddp_mmp_get_events()->dvfs,
