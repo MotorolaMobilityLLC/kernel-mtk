@@ -2019,6 +2019,10 @@ int mipi_clk_change(int msg, int en)
 		/* 2.wait mutex0_stream_eof: only used for video mode */
 			cmdqRecWaitNoClear(handle,
 					CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		if (bdg_is_bdg_connected() == 1 && get_dsc_state())
+			ddp_dsi_porch_setting(DISP_MODULE_DSI0,
+					handle, DSI_HBP, 4);
+		else
 			ddp_dsi_porch_setting(DISP_MODULE_DSI0,
 				handle, DSI_HBP, def_dsi_hbp);
 		} else
