@@ -15,15 +15,7 @@
 #
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 
-ifeq ($(CONFIG_MACH_MT6877),y)
-MTK_DERIVED_PLATFORM := mt6877
-endif
-
-ifeq ($(CONFIG_MACH_MT6833),y)
-MTK_DERIVED_PLATFORM := mt6833
-endif
-
-CONFIG_MTK_PLATFORM_SENSOR := $(subst ",,$(CONFIG_MTK_PLATFORM))
+CONFIG_MTK_PLATFORM_SENSOR := mt6781
 
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 IMGSENSOR_DRIVER_PATH  := $(srctree)/drivers/misc/mediatek/imgsensor/src
@@ -42,9 +34,7 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_legacy.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_proc.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_sensor_list.o
 obj-y				+= ../common/$(COMMON_VERSION)/seninf.o
-ifneq ($(ARCH_MTK_PROJECT), k6833v1_64_mt6317)
-obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_pwr_seq.o
-endif
+obj-y				+= ../common/v1_1/n3d_fsync/
 
 define FILTER_DRV
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
@@ -72,50 +62,25 @@ $(info imgsensor drv by platform $(project_drv))
 obj-y				+= $(platform_drv)
 
 ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw))
-ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw_$(MTK_DERIVED_PLATFORM)))
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw
 obj-y				+= camera_hw/
-else
-obj-y				+= camera_hw_$(MTK_DERIVED_PLATFORM)/
-subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw_$(MTK_DERIVED_PLATFORM)
-subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw
-endif
 ifneq ($(project_drv),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
 endif
 else
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
-subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw_$(MTK_DERIVED_PLATFORM)
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/camera_hw
 endif
-
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/common/$(COMMON_VERSION)/camera_hw
 
 # Enable parallelism
 subdir-ccflags-y += -DSENSOR_PARALLEISM
+subdir-ccflags-y += -DSENINF_N3D_SUPPORT
 
-ifneq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/seninf_$(MTK_DERIVED_PLATFORM)))
-subdir-ccflags-y += -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/seninf_$(MTK_DERIVED_PLATFORM)/
-obj-y += seninf_$(MTK_DERIVED_PLATFORM)/
-else
 obj-y += seninf/
-endif
 subdir-ccflags-y += -I$(IMGSENSOR_DRIVER_PATH)/$(CONFIG_MTK_PLATFORM_SENSOR)/seninf/
-
-
 
 $(info imgsensor subdir-ccflags-y = $(subdir-ccflags-y))
 
-
-ifeq ($(ARCH_MTK_PROJECT), k6853v1_64_6360_alpha)
 subdir-ccflags-y += -DNEED_LATE_INITCALL
-endif
-
-ifeq ($(CONFIG_MACH_MT6877),y)
-subdir-ccflags-y += -DNEED_LATE_INITCALL
-endif
-
-ifeq ($(ARCH_MTK_PROJECT), k6833v1_64_mt6317)
-	subdir-ccflags-y += -DNEED_LATE_INITCALL
-endif
