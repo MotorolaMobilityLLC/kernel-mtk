@@ -93,6 +93,8 @@ static bool prop_request(char *kbuf,
 	n = sscanf(kbuf, "%s %31s %x", prop, pll_name, &arg);
 		FHDBG("prop<%s>, pll_name<%s>, arg<%x>\n",
 				prop, pll_name, arg);
+	if (n == -1)
+		FHDBG("error input format\n");
 
 	/* get entry by pll_name */
 	for (i = 0; i < num_pll; i++, array++) {
