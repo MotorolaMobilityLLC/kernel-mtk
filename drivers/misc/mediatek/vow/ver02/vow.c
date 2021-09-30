@@ -644,16 +644,17 @@ static int vow_service_GetParameter(unsigned long arg)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 static int vow_service_CopyModel(int slot)
 {
+	if (slot >= MAX_VOW_SPEAKER_MODEL || slot < 0) {
+		VOWDRV_DEBUG("%s(), slot id=%d, over range\n", __func__, slot);
+		return -EDOM;
+	}
 	if (copy_from_user((void *)(vowserv.vow_speaker_model[slot].model_ptr),
 			   (const void __user *)(vowserv.vow_info_apuser[2]),
 			   vowserv.vow_info_apuser[3])) {
 		VOWDRV_DEBUG("vow Copy Speaker Model Fail\n");
 		return -EFAULT;
 	}
-	if (slot >= MAX_VOW_SPEAKER_MODEL || slot < 0) {
-		VOWDRV_DEBUG("%s(), slot id=%d, over range\n", __func__, slot);
-		return -EDOM;
-	}
+
 	vowserv.vow_speaker_model[slot].flag = 1;
 	vowserv.vow_speaker_model[slot].enabled = 0;
 	vowserv.vow_speaker_model[slot].id = vowserv.vow_info_apuser[0];
@@ -974,7 +975,7 @@ static bool vow_service_SetModelStatus(bool enable, unsigned long arg)
 		return false;
 	}
 
-	if (model_start.handle > INT_MAX) {
+	if (model_start.handle > INT_MAX || model_start.handle < INT_MIN) {
 		VOWDRV_DEBUG("%s(), model_start.handle will cause truncated value\n",
 					__func__);
 		return false;
@@ -1479,6 +1480,10 @@ static void vow_service_ReadVoiceData(void)
 		if (VoiceData_Wait_Queue_flag == 0) {
 			ret = wait_event_interruptible_timeout(VoiceData_Wait_Queue,
 				VoiceData_Wait_Queue_flag, msecs_to_jiffies(50));
+			if (!ret) {
+				VOWDRV_DEBUG("%s, timeout,break\n", __func__);
+				break;
+			}
 		}
 
 		if (VoiceData_Wait_Queue_flag == 1) {
