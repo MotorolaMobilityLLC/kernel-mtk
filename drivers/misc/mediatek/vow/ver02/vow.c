@@ -568,7 +568,8 @@ static void vow_service_Init(void)
 		vowserv.mtkif_type = 0;
 		//set default value to platform identifier and version
 		memset(vowserv.google_engine_arch, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
-		sprintf(vowserv.google_engine_arch, "32fe89be-5205-3d4b-b8cf-55d650d9d200");
+		if (sprintf(vowserv.google_engine_arch, "32fe89be-5205-3d4b-b8cf-55d650d9d200") < 0)
+			VOWDRV_DEBUG("%s(), sprintf fail", __func__);
 		vowserv.google_engine_version = DEFAULT_GOOGLE_ENGINE_VER;
 		memset(vowserv.alexa_engine_version, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
 	} else {
@@ -649,7 +650,10 @@ static int vow_service_CopyModel(int slot)
 		VOWDRV_DEBUG("vow Copy Speaker Model Fail\n");
 		return -EFAULT;
 	}
-
+	if (slot >= MAX_VOW_SPEAKER_MODEL || slot < 0) {
+		VOWDRV_DEBUG("%s(), slot id=%d, over range\n", __func__, slot);
+		return -EDOM;
+	}
 	vowserv.vow_speaker_model[slot].flag = 1;
 	vowserv.vow_speaker_model[slot].enabled = 0;
 	vowserv.vow_speaker_model[slot].id = vowserv.vow_info_apuser[0];
@@ -724,7 +728,7 @@ static bool vow_service_SendSpeakerModel(int slot, bool release_flag)
 	bool ret = false;
 	unsigned int vow_ipi_buf[5];
 
-	if (slot >= MAX_VOW_SPEAKER_MODEL) {
+	if (slot >= MAX_VOW_SPEAKER_MODEL || slot < 0) {
 		VOWDRV_DEBUG("%s(), slot id=%d, over range\n", __func__, slot);
 		return ret;
 	}
@@ -894,7 +898,7 @@ static bool vow_service_SendModelStatus(int slot, bool enable)
 	bool ret = false;
 	unsigned int vow_ipi_buf[2];
 
-	if (slot >= MAX_VOW_SPEAKER_MODEL) {
+	if (slot >= MAX_VOW_SPEAKER_MODEL || slot < 0) {
 		VOWDRV_DEBUG("%s(), slot id=%d, over range\n", __func__, slot);
 		return ret;
 	}
@@ -970,6 +974,11 @@ static bool vow_service_SetModelStatus(bool enable, unsigned long arg)
 		return false;
 	}
 
+	if (model_start.handle > INT_MAX) {
+		VOWDRV_DEBUG("%s(), model_start.handle will cause truncated value\n",
+					__func__);
+		return false;
+	}
 	slot = vow_service_SearchSpeakerModelWithId(model_start.handle);
 	if (slot < 0) {
 		VOWDRV_DEBUG("%s(), no match id\n", __func__);
@@ -1117,7 +1126,8 @@ static bool vow_service_SetVBufAddr(unsigned long arg)
 		mutex_unlock(&vow_vmalloc_lock);
 		return false;
 	}
-	vowserv.voicedata_kernel_ptr = vmalloc(vow_info[3]);
+
+	vowserv.voicedata_kernel_ptr = vmalloc(VOW_VBUF_LENGTH);
 	mutex_unlock(&vow_vmalloc_lock);
 	return true;
 }
@@ -1463,12 +1473,13 @@ static void vow_service_GetVowDumpData(void)
 static void vow_service_ReadVoiceData(void)
 {
 	int stop_condition = 0;
-
+	int ret = 0;
 	/*int rdata;*/
 	while (1) {
-		if (VoiceData_Wait_Queue_flag == 0)
-			wait_event_interruptible_timeout(VoiceData_Wait_Queue,
+		if (VoiceData_Wait_Queue_flag == 0) {
+			ret = wait_event_interruptible_timeout(VoiceData_Wait_Queue,
 				VoiceData_Wait_Queue_flag, msecs_to_jiffies(50));
+		}
 
 		if (VoiceData_Wait_Queue_flag == 1) {
 			VoiceData_Wait_Queue_flag = 0;
@@ -2462,9 +2473,12 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		vow_service_SetModelStatus(VOW_MODEL_STATUS_STOP, arg);
 		break;
 	case VOW_GET_GOOGLE_ENGINE_VER: {
-		copy_to_user((void __user *)arg,
-				 &vowserv.google_engine_version,
-				 sizeof(vowserv.google_engine_version));
+		if (copy_to_user((void __user *)arg,
+						 &vowserv.google_engine_version,
+						 sizeof(vowserv.google_engine_version))) {
+			VOWDRV_DEBUG("%s(), copy_to_user fail in VOW_GET_GOOGLE_ENGINE_VER",
+						__func__);
+		}
 	}
 		break;
 	case VOW_GET_GOOGLE_ARCH:
@@ -2472,31 +2486,39 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		struct vow_engine_info_t engine_ver_temp;
 		unsigned int length = VOW_ENGINE_INFO_LENGTH_BYTE;
 
-		copy_from_user((void *)&engine_ver_temp,
+		if (copy_from_user((void *)&engine_ver_temp,
 				 (const void __user *)arg,
-				 sizeof(struct vow_engine_info_t));
+				 sizeof(struct vow_engine_info_t))) {
+			VOWDRV_DEBUG("%s(), copy_from_user fail", __func__);
+		}
 		if ((unsigned int)cmd == VOW_GET_ALEXA_ENGINE_VER) {
 			pr_debug("VOW_GET_ALEXA_ENGINE_VER = %s, %lu, %lu, %d",
 					 vowserv.alexa_engine_version,
 					 engine_ver_temp.data_addr,
 					 engine_ver_temp.return_size_addr,
 					 length);
-			copy_to_user((void __user *)engine_ver_temp.data_addr,
+			if (copy_to_user((void __user *)engine_ver_temp.data_addr,
 					 vowserv.alexa_engine_version,
-					 length);
+					 length)) {
+				VOWDRV_DEBUG("%s(), copy_to_user fail", __func__);
+			}
 		} else if ((unsigned int)cmd == VOW_GET_GOOGLE_ARCH) {
 			pr_debug("VOW_GET_GOOGLE_ARCH = %s, %lu, %lu, %d",
 					 vowserv.google_engine_arch,
 					 engine_ver_temp.data_addr,
 					 engine_ver_temp.return_size_addr,
 					 length);
-			copy_to_user((void __user *)engine_ver_temp.data_addr,
+			if (copy_to_user((void __user *)engine_ver_temp.data_addr,
 					 vowserv.google_engine_arch,
-					 length);
+					 length)) {
+				VOWDRV_DEBUG("%s(), copy_to_user fail", __func__);
+			}
 		}
-		copy_to_user((void __user *)engine_ver_temp.return_size_addr,
+		if (copy_to_user((void __user *)engine_ver_temp.return_size_addr,
 				 &length,
-				 sizeof(unsigned int));
+				 sizeof(unsigned int))) {
+			VOWDRV_DEBUG("%s(), copy_to_user fail", __func__);
+		}
 	}
 		break;
 #ifdef CONFIG_MTK_VOW_1STSTAGE_PCMCALLBACK
