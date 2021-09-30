@@ -4501,8 +4501,10 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	spin_lock_init(&data->reg_lock);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res)
+	if (!res) {
 		pr_info("%s, get resource is NULL\n", __func__);
+		return -EINVAL;
+	}
 	data->base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(data->base)) {
 		pr_notice("mtk_iommu base is null\n");
