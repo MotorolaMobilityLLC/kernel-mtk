@@ -5379,7 +5379,7 @@ void mtk_crtc_disable_secure_state(struct drm_crtc *crtc)
 
 	/* Disable secure path */
 	cmdq_sec_pkt_set_data(cmdq_handle,
-		0,
+		sec_disp_dapc,
 		sec_disp_port,
 		sec_disp_type,
 		CMDQ_METAEX_NONE);
@@ -5439,8 +5439,9 @@ struct cmdq_pkt *mtk_crtc_gce_commit_begin(struct drm_crtc *crtc)
 						IRQ_LEVEL_IDLE, NULL);
 		}
 
-		DDPMSG("YYG:%s:%d sec port:%u\n", __func__, __LINE__, sec_disp_port);
-		cmdq_sec_pkt_set_data(cmdq_handle, 0,
+		DDPMSG("%s sec dapc:%d port:%u\n", __func__, sec_disp_dapc,
+			sec_disp_port);
+		cmdq_sec_pkt_set_data(cmdq_handle, sec_disp_dapc,
 			sec_disp_port, sec_disp_type,
 			CMDQ_METAEX_NONE);
 #ifdef CONFIG_MTK_SVP_ON_MTEE_SUPPORT
