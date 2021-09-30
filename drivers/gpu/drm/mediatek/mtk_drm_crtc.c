@@ -2352,8 +2352,6 @@ unsigned int mtk_crtc_get_idle_interval(struct drm_crtc *crtc, unsigned int fps)
 	return idle_interval;
 }
 
-static int mode_switch_delay_value = -1;
-
 static void mtk_crtc_disp_mode_switch_begin(struct drm_crtc *crtc,
 	struct drm_crtc_state *old_state, struct mtk_crtc_state *mtk_state,
 	struct cmdq_pkt *cmdq_handle)
@@ -2371,28 +2369,13 @@ static void mtk_crtc_disp_mode_switch_begin(struct drm_crtc *crtc,
 	struct mtk_ddp_comp *output_comp;
 
 	/* Check if disp_mode_idx change */
-	if (mode_switch_delay_value < 0 && old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] ==
+	if (old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] ==
 		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX])
 		return;
 
-	/* Check if disp_mode_idx need change */
-	if (mode_switch_delay_value < 0) {
-		mode_switch_delay_value = old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
-		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] =
-		old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
-		return;
-	}
-
-	if (mode_switch_delay_value == mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX]) {
-		mode_switch_delay_value = -1; //reset delay value
-		return;
-	}
-
-	DDPMSG("%s from %u to %u\n", __func__,
-		mode_switch_delay_value,
+	DDPMSG("%s no delay from %u to %u\n", __func__,
+		old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX],
 		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX]);
-
-	mode_switch_delay_value = -1; //reset delay value
 
 	/* Update mode & adjusted_mode in CRTC */
 	mode = mtk_drm_crtc_avail_disp_mode(crtc,
@@ -2494,7 +2477,6 @@ static void mtk_crtc_update_ddp_state(struct drm_crtc *crtc,
 		 * the dsi params not sync with the mode of new crtc state.
 		 * And switch fps immediately when suspend or resume
 		 */
-		mode_switch_delay_value = 0x7FFFFFFF;
 		mtk_crtc_disp_mode_switch_begin(crtc,
 			old_crtc_state, crtc_state,
 			cmdq_handle);
