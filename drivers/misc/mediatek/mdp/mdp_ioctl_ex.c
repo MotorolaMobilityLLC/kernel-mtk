@@ -573,7 +573,7 @@ static s32 mdp_init_secure_id(struct cmdqRecStruct *handle)
 #endif
 }
 
-#ifdef CMDQ_IN_HOUSE_SECURE_PATH_SUPPORT
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 static s32 mdp_init_secure_id_in_house(struct cmdqRecStruct *handle)
 {
 	u32 i;
@@ -757,9 +757,9 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 
 	mdp_init_secure_id(handle);
 
-	#ifdef CMDQ_IN_HOUSE_SECURE_PATH_SUPPORT
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 	mdp_init_secure_id_in_house(handle);
-	#endif
+#endif
 
 	/* Make command from user job */
 	CMDQ_TRACE_FORCE_BEGIN("mdp_translate_user_job\n");

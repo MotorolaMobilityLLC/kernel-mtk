@@ -27,7 +27,7 @@ int mdp_ion_get_mva(struct ion_handle *handle,
 struct ion_handle *mdp_ion_import_handle(int fd);
 void mdp_ion_free_handle(struct ion_handle *handle);
 void mdp_ion_cache_flush(struct ion_handle *handle);
-#ifdef CMDQ_IN_HOUSE_SECURE_PATH_SUPPORT
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 void  mdp_ion_import_sec_handle(int fd, ion_phys_addr_t *sec_handle);
 #endif
 

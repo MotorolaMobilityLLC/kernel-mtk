@@ -94,7 +94,7 @@ struct ion_handle *mdp_ion_import_handle(int fd)
 	return handle;
 }
 
-#ifdef CMDQ_IN_HOUSE_SECURE_PATH_SUPPORT
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 void mdp_ion_import_sec_handle(int fd, ion_phys_addr_t *sec_handle)
 {
 	size_t size;
