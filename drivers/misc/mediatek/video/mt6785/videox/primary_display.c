@@ -11112,8 +11112,6 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 		}
 
 		if (need_send_cmd) {
-			int res = 0;
-
 			cmdqRecWait(qhandle2, CMDQ_SYNC_TOKEN_CABC_EOF);
 			cmdqRecWait(qhandle2, CMDQ_SYNC_TOKEN_STREAM_EOF);
 			cmdqRecClearEventToken(qhandle2, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
@@ -11121,7 +11119,7 @@ void primary_display_dynfps_chg_fps(int cfg_id)
 #ifdef CONFIG_MTK_MT6382_BDG
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_dynfps_chg_fps,
 							 MMPROFILE_FLAG_PULSE, 0, 1);
-			res = bdg_tx_wait_for_idle(DISP_BDG_DSI0);
+			bdg_tx_wait_for_idle(DISP_BDG_DSI0);
 #endif
 			DISPMSG("%s,send cmd to lcm in cmd mode\n", __func__);
 			disp_lcm_dynfps_send_cmd(pgc->plcm, qhandle,
