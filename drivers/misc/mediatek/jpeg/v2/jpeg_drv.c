@@ -2505,6 +2505,7 @@ static int jpeg_probe(struct platform_device *pdev)
 		 jpeg_drv_enc_isr, IRQF_TRIGGER_LOW,
 		 "jpeg_enc_driver", NULL))
 		JPEG_ERR("JPEG ENC Driver request irq failed\n");
+	disable_irq(gJpegqDev.encIrqId);
     #endif
 	#ifdef JPEG_DEC_DRIVER
 		enable_irq(gJpegqDev.decIrqId);
