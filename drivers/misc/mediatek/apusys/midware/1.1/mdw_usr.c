@@ -214,7 +214,8 @@ void mdw_usr_sys_aee_mem(char *buf, int *n)
 {
 
 	mutex_lock(&u_mem_aee.mtx);
-	snprintf(buf, DUMP_LOG_SIZE, "%s", u_mem_aee.log_buf);
+	if (snprintf(buf, DUMP_LOG_SIZE, "%s", u_mem_aee.log_buf) < 0)
+		mdw_drv_warn("dump mem info fail\n");
 	mutex_unlock(&u_mem_aee.mtx);
 
 	*n = DUMP_LOG_SIZE;
