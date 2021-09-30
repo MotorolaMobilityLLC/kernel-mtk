@@ -269,6 +269,12 @@ static int fh_dumpregs_read(struct seq_file *m, void *v)
 		pll_id = array->pll_id;
 		pll_name = array->pll_name;
 		domain = get_fh_domain(array->domain);
+
+		if (domain == NULL) {
+			FHDBG("domain is null!");
+			WARN_ON(1);
+		}
+
 		regs = &domain->regs[fh_id];
 		data = &domain->data[fh_id];
 
