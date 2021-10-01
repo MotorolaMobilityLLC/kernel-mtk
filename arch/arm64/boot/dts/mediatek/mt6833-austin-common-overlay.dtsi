@@ -476,6 +476,21 @@
 			};
 		};
 	};
+	panel4@0 {
+		compatible = "icnl9911c,boe,vdo";
+		reg = <3>;
+		pm-enable-gpios = <&pio 85 0>;
+		reset-gpios = <&pio 86 0>;
+		bias-gpios = <&pio 137 0>,
+			<&pio 138 0>;
+		bl-iset-en-gpios = <&pio 132 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in4: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
 	ports {
 		port {
 			dsi_out: endpoint {
