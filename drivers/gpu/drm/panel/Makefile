@@ -73,3 +73,4 @@ obj-$(CONFIG_DRM_PANEL_TRULY_ICNL9911C_VDO) += dsi-panel-mot-truly-icnl9911c-hd-
 obj-$(CONFIG_DRM_PANEL_BOE_NT36525C_VDO) += dsi-panel-mot-boe-nt36525c-hd-video.o
 obj-$(CONFIG_DRM_PANEL_DIJING_ILI9882Q_VDO) += dsi-panel-mot-dijing-ili9882q-hd-video.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_ICNL9911C_VDO) += dsi-panel-mot-tianma-icnl9911c-hd-video.o
+obj-$(CONFIG_DRM_PANEL_BOE_ICNL9911C_VDO) += dsi-panel-mot-boe-icnl9911c-hd-video.o
