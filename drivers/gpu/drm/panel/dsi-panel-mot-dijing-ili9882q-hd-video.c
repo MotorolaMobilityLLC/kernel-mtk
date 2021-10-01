@@ -50,11 +50,14 @@ struct lcm {
 	struct gpio_desc *pm_enable_gpio;
 	struct gpio_desc *reset_gpio;
 	struct gpio_desc *bias_pos, *bias_neg;
+	struct gpio_desc *bl_iset_en_gpio;
 
 	bool prepared;
 	bool enabled;
 
 	int error;
+	bool hbm_en;
+	unsigned int cabc_mode;
 };
 
 #define lcm_dcs_write_seq(ctx, seq...) \
@@ -81,8 +84,10 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 	ssize_t ret;
 	char *addr;
 
-	if (ctx->error < 0)
-		return;
+	if (ctx->error < 0) {
+		dev_err(ctx->dev, "%s: there is a error %zd before,now writing seq: %ph\n", __func__, ctx->error, data);
+		ctx->error = 0;
+	}
 
 	addr = (char *)data;
 	if ((int)*addr < 0xB0)
@@ -101,8 +106,10 @@ static int lcm_dcs_read(struct lcm *ctx, u8 cmd, void *data, size_t len)
 	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
 	ssize_t ret;
 
-	if (ctx->error < 0)
-		return 0;
+	if (ctx->error < 0) {
+		dev_err(ctx->dev, "%s: there is a error %zd before,now cmd (%#x)\n", __func__, ctx->error, cmd);
+		ctx->error = 0;
+	}
 
 	ret = mipi_dsi_dcs_read(dsi, cmd, data, len);
 	if (ret < 0) {
@@ -245,6 +252,7 @@ static void lcm_panel_init(struct lcm *ctx)
 
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x98, 0x82, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
+	lcm_dcs_write_seq_static(ctx, 0x55, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
@@ -404,6 +412,8 @@ static int lcm_prepare(struct drm_panel *panel)
 		lcm_unprepare(panel);
 
 	ctx->prepared = true;
+	ctx->cabc_mode = 0; //UI mode
+	ctx->hbm_en = 0;
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 	mtk_panel_tch_rst(panel);
@@ -432,28 +442,39 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-#define HFP (34)
-#define HSA (24)
-#define HBP (35)
-#define VFP (366)
+#define HFP (32)
+#define HSA (18)
+#define HBP (32)
+#define VFP_60HZ (1356)
+#define VFP_90HZ (362)
 #define VSA (2)
 #define VBP (24)
 #define VAC (1600)
 #define HAC (720)
-static u32 fake_heigh = 1600;
-static u32 fake_width = 720;
-static bool need_fake_resolution;
 
 static struct drm_display_mode default_mode = {
-	.clock = 437,
+	.clock = 467,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
 	.htotal = HAC + HFP + HSA + HBP,
 	.vdisplay = VAC,
-	.vsync_start = VAC + VFP,
-	.vsync_end = VAC + VFP + VSA,
-	.vtotal = VAC + VFP + VSA + VBP,
+	.vsync_start = VAC + VFP_60HZ,
+	.vsync_end = VAC + VFP_60HZ + VSA,
+	.vtotal = VAC + VFP_60HZ + VSA + VBP,
+	.vrefresh = 60,
+};
+
+static struct drm_display_mode performance_mode = {
+	.clock = 467,
+	.hdisplay = HAC,
+	.hsync_start = HAC + HFP,
+	.hsync_end = HAC + HFP + HSA,
+	.htotal = HAC + HFP + HSA + HBP,
+	.vdisplay = VAC,
+	.vsync_start = VAC + VFP_90HZ,
+	.vsync_end = VAC + VFP_90HZ + VSA,
+	.vtotal = VAC + VFP_90HZ + VSA + VBP,
 	.vrefresh = 90,
 };
 
@@ -531,23 +552,155 @@ static int lcm_get_virtual_width(void)
 }
 
 static struct mtk_panel_params ext_params = {
-	.pll_clk = 437,
-	.vfp_low_power = 366,
-	.cust_esd_check = 0,
-	.esd_check_enable = 0,
+	.pll_clk = 467,
+	.vfp_low_power = VFP_60HZ,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
 		.cmd = 0x0a,
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 60,
+	},
+	.hbm_type = HBM_MODE_DCS_GPIO,
+	.max_bl_level = 2047,
 };
+
+static struct mtk_panel_params ext_params_90hz = {
+	.pll_clk = 467,
+	.vfp_low_power = VFP_90HZ,
+	.cust_esd_check = 1,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.dyn_fps = {
+		.switch_en = 1,
+		.vact_timing_fps = 90,
+	},
+	.hbm_type = HBM_MODE_DCS_GPIO,
+	.max_bl_level = 2047,
+};
+
+static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
+{
+	struct mtk_panel_ext *ext = find_panel_ext(panel);
+	int ret = 0;
+
+	if (mode == 0)
+		ext->params = &ext_params;
+	else if (mode == 1)
+		ext->params = &ext_params_90hz;
+	else
+		ret = 1;
+
+	return ret;
+}
+
+static int mtk_panel_ext_param_get(struct mtk_panel_params *ext_para,
+			 unsigned int mode)
+{
+	int ret = 0;
+
+	if (mode == 0)
+		ext_para = &ext_params;
+	else if (mode == 1)
+		ext_para = &ext_params_90hz;
+	else
+		ret = 1;
+
+	return ret;
+
+}
+
+static int panel_cabc_set_cmdq(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, unsigned int cabc_mode)
+{
+	const unsigned int cabc_value_map[3] = {1, 3, 0};
+	int cabc_value = 1;
+	char cabc_tb[2] = {0x55, 0x01};
+
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (ctx->cabc_mode == cabc_mode)
+		goto done;
+
+	if (!cb)
+		return -1;
+
+	if (cabc_mode > 2) return -1;
+
+	cabc_value = cabc_value_map[cabc_mode];
+	cabc_tb[1] = cabc_value;
+
+	cb(dsi, handle, cabc_tb, ARRAY_SIZE(cabc_tb));
+	pr_info(" set cabc to %d\n", cabc_value);
+
+done:
+	ctx->cabc_mode = cabc_mode;
+	return 0;
+}
+
+static void panel_cabc_get_state(struct drm_panel *panel, unsigned int *cabc_mode)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	*cabc_mode = ctx->cabc_mode;
+}
+
+static int panel_hbm_set(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, bool hbm_en)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (hbm_en) {
+		ctx->bl_iset_en_gpio =
+		devm_gpiod_get(ctx->dev, "bl-iset-en", GPIOD_OUT_LOW);
+		if (IS_ERR(ctx->bl_iset_en_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get bl_iset_en_gpio %ld\n",
+				__func__, PTR_ERR(ctx->bl_iset_en_gpio));
+			return -1;
+		}
+		devm_gpiod_put(ctx->dev, ctx->bl_iset_en_gpio);
+	} else {
+		ctx->bl_iset_en_gpio =
+		devm_gpiod_get(ctx->dev, "bl-iset-en", GPIOD_IN);
+		if (IS_ERR(ctx->bl_iset_en_gpio)) {
+			dev_err(ctx->dev, "%s: cannot get bl_iset_en_gpio %ld\n",
+				__func__, PTR_ERR(ctx->bl_iset_en_gpio));
+			return -1;
+		}
+		devm_gpiod_put(ctx->dev, ctx->bl_iset_en_gpio);
+	}
+	ctx->hbm_en = hbm_en;
+	pr_info("%s set HBM to %d\n", __func__, hbm_en);
+	return 0;
+}
+
+static void panel_hbm_get_state(struct drm_panel *panel, bool *state)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	*state = ctx->hbm_en;
+}
 
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+	.ext_param_set = mtk_panel_ext_param_set,
+	.ext_param_get = mtk_panel_ext_param_get,
 	.ata_check = panel_ata_check,
 	.get_virtual_heigh = lcm_get_virtual_heigh,
 	.get_virtual_width = lcm_get_virtual_width,
+	.hbm_set_cmdq = panel_hbm_set,
+	.hbm_get_state = panel_hbm_get_state,
+	.cabc_set_cmdq = panel_cabc_set_cmdq,
+	.cabc_get_state = panel_cabc_get_state,
 };
 #endif
 
@@ -570,28 +723,11 @@ struct panel_desc {
 	} delay;
 };
 
-static void change_drm_disp_mode_params(struct drm_display_mode *mode)
-{
-	if (fake_heigh > 0 && fake_heigh < VAC) {
-		mode->vdisplay = fake_heigh;
-		mode->vsync_start = fake_heigh + VFP;
-		mode->vsync_end = fake_heigh + VFP + VSA;
-		mode->vtotal = fake_heigh + VFP + VSA + VBP;
-	}
-	if (fake_width > 0 && fake_width < HAC) {
-		mode->hdisplay = fake_width;
-		mode->hsync_start = fake_width + HFP;
-		mode->hsync_end = fake_width + HFP + HSA;
-		mode->htotal = fake_width + HFP + HSA + HBP;
-	}
-}
-
 static int lcm_get_modes(struct drm_panel *panel)
 {
 	struct drm_display_mode *mode;
+	struct drm_display_mode *mode2;
 
-	if (need_fake_resolution)
-		change_drm_disp_mode_params(&default_mode);
 	mode = drm_mode_duplicate(panel->drm, &default_mode);
 	if (!mode) {
 		dev_err(panel->drm->dev, "failed to add mode %ux%ux@%u\n",
@@ -604,8 +740,25 @@ static int lcm_get_modes(struct drm_panel *panel)
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(panel->connector, mode);
 
-	panel->connector->display_info.width_mm = 64;
-	panel->connector->display_info.height_mm = 129;
+	mode2 = drm_mode_duplicate(panel->drm, &performance_mode);
+	if (!mode2) {
+		dev_info(panel->drm->dev, "failed to add mode %ux%ux@%u\n",
+			 performance_mode.hdisplay, performance_mode.vdisplay,
+			 performance_mode.vrefresh);
+		return -ENOMEM;
+	}
+
+	drm_mode_set_name(mode2);
+	mode2->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(panel->connector, mode2);
+
+	panel->connector->display_info.width_mm = 68;
+	panel->connector->display_info.height_mm = 151;
+
+	panel->connector->display_info.panel_ver = 0x01;
+	panel->connector->display_info.panel_id = 0x0D058473;
+	strcpy(panel->connector->display_info.panel_name, "mipi_mot_vid_dijing_hdp_653");
+	strcpy(panel->connector->display_info.panel_supplier, "djn-ili9882q");
 
 	return 1;
 }
@@ -617,22 +770,6 @@ static const struct drm_panel_funcs lcm_drm_funcs = {
 	.enable = lcm_enable,
 	.get_modes = lcm_get_modes,
 };
-
-static void check_is_need_fake_resolution(struct device *dev)
-{
-	unsigned int ret = 0;
-
-	ret = of_property_read_u32(dev->of_node, "fake_heigh", &fake_heigh);
-	if (ret)
-		need_fake_resolution = false;
-	ret = of_property_read_u32(dev->of_node, "fake_width", &fake_width);
-	if (ret)
-		need_fake_resolution = false;
-	if (fake_heigh > 0 && fake_heigh < VAC)
-		need_fake_resolution = true;
-	if (fake_width > 0 && fake_width < HAC)
-		need_fake_resolution = true;
-}
 
 static int lcm_probe(struct mipi_dsi_device *dsi)
 {
@@ -713,6 +850,13 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	}
 	devm_gpiod_put(dev, ctx->bias_neg);
 #endif
+	ctx->bl_iset_en_gpio = devm_gpiod_get(dev, "bl-iset-en", GPIOD_IN);
+	if (IS_ERR(ctx->bl_iset_en_gpio)) {
+		dev_err(dev, "%s: cannot get bl_iset_en_gpio %ld\n",
+			__func__, PTR_ERR(ctx->bl_iset_en_gpio));
+		return PTR_ERR(ctx->bl_iset_en_gpio);
+	}
+	devm_gpiod_put(dev, ctx->bl_iset_en_gpio);
 	ctx->prepared = true;
 	ctx->enabled = true;
 
@@ -734,7 +878,6 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	if (ret < 0)
 		return ret;
 #endif
-	check_is_need_fake_resolution(dev);
 	pr_info("%s-\n", __func__);
 
 	return ret;
