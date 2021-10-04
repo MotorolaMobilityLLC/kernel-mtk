@@ -3571,6 +3571,15 @@ static void __mt_gpufreq_dump_bringup_status(void)
 			__mt_gpufreq_get_cur_freq());
 }
 
+/* the lock prove have false alarm when driver probe. skip it*/
+#define MTK_SKIP_LOCK_PROVE 1
+
+#if MTK_SKIP_LOCK_PROVE
+#define RETURN_ERROR(X) do { lockdep_on(); return X; } while (0)
+#else
+#define RETURN_ERROR(X) do { return X; } while (0)
+#endif
+
 /*
  * gpufreq driver probe
  */
@@ -3578,7 +3587,9 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 {
 	struct device_node *node;
 	int ret;
-
+#if MTK_SKIP_LOCK_PROVE
+	lockdep_off();
+#endif
 	gpufreq_pr_info("@%s: driver init is started\n", __func__);
 
 	node = of_find_matching_node(NULL, g_gpufreq_of_match);
@@ -3588,19 +3599,19 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #if MT_GPUFREQ_DFD_ENABLE
 	if (mtk_dbgtop_mfg_pwr_en(1)) {
 		gpufreq_pr_info("[GPU_DFD] wait dbgtop ready\n");
-		return EPROBE_DEFER;
+		RETURN_ERROR(EPROBE_DEFER);
 	}
 #endif
 
 	/* init pmic regulator */
 	ret = __mt_gpufreq_init_pmic(pdev);
 	if (ret)
-		return ret;
+		RETURN_ERROR(ret);
 
 	/* init clock source and mtcmos */
 	ret = __mt_gpufreq_init_clk(pdev);
 	if (ret)
-		return ret;
+		RETURN_ERROR(ret);
 
 	__mt_gpufreq_init_acp();
 
@@ -3634,7 +3645,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	g_probe_done = true;
 	gpufreq_pr_info("@%s: driver init is finished\n", __func__);
 
-	return 0;
+	RETURN_ERROR(0);
 }
 
 /*

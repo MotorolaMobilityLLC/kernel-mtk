@@ -254,7 +254,7 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 
 static void mdee_info_dump_v2(struct ccci_fsm_ee *mdee)
 {
-	char *ex_info;		/*[EE_BUF_LEN] = ""; */
+	char *ex_info = NULL;		/*[EE_BUF_LEN] = ""; */
 	/*[EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n";*/
 	char *i_bit_ex_info = NULL;
 	char buf_fail[] = "Fail alloc mem for exception\n";

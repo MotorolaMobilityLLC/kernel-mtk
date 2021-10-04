@@ -573,6 +573,38 @@ static s32 mdp_init_secure_id(struct cmdqRecStruct *handle)
 #endif
 }
 
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+static s32 mdp_init_secure_id_in_house(struct cmdqRecStruct *handle)
+{
+	u32 i;
+	ion_phys_addr_t sec_handle;
+	struct cmdqSecAddrMetadataStruct *secMetadatas = NULL;
+
+	if (!handle->secData.is_secure)
+		return 0;
+	secMetadatas = (struct cmdqSecAddrMetadataStruct *)handle->secData.addrMetadatas;
+
+	for (i = 0; i < handle->secData.addrMetadataCount; i++) {
+		secMetadatas[i].useSecIdinMeta = 1;
+		if (secMetadatas[i].ionFd <= 0) {
+			secMetadatas[i].sec_id = 0;
+			continue;
+		}
+
+		mdp_ion_import_sec_handle(secMetadatas[i].ionFd, &sec_handle);
+		secMetadatas[i].baseHandle = (uint64_t)sec_handle;
+
+		CMDQ_MSG("%s,port:%d,ionFd:%d,sec_id:%d,sec_handle:0x%#llx",
+				__func__, secMetadatas[i].port,
+				secMetadatas[i].ionFd,
+				secMetadatas[i].sec_id,
+				secMetadatas[i].baseHandle);
+	}
+	return 1;
+}
+#endif
+
+
 static int mdp_implement_read_v1(struct mdp_submit *user_job,
 				struct cmdqRecStruct *handle,
 				struct cmdq_command_buffer *cmd_buf)
@@ -724,6 +756,10 @@ s32 mdp_ioctl_async_exec(struct file *pf, unsigned long param)
 	}
 
 	mdp_init_secure_id(handle);
+
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+	mdp_init_secure_id_in_house(handle);
+#endif
 
 	/* Make command from user job */
 	CMDQ_TRACE_FORCE_BEGIN("mdp_translate_user_job\n");

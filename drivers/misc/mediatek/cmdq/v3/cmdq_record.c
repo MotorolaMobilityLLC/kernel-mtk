@@ -1419,7 +1419,7 @@ s32 cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, u32 addr,
 	metadata.port = port;
 	metadata.useSecIdinMeta = 1;
 	metadata.sec_id = sec_id;
-	CMDQ_LOG("%s,port:%d,useSecIdinMeta:%d,sec_id:%d,baseHandle:%#llx,handle:%p",
+	CMDQ_MSG("%s,port:%d,useSecIdinMeta:%d,sec_id:%d,baseHandle:%#llx,handle:%p",
 		__func__, metadata.port, metadata.useSecIdinMeta, metadata.sec_id,
 		baseHandle, handle);
 
@@ -1946,6 +1946,7 @@ s32 cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop)
 		if (handle->scenario == CMDQ_SCENARIO_TIMER_LOOP)
 			arg_b = 0x0;
 
+#ifndef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
 	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		if (handle->secData.is_secure) {
@@ -1960,6 +1961,7 @@ s32 cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop)
 				return status;
 			}
 		}
+#endif
 #endif
 		status = cmdq_append_command(handle, CMDQ_CODE_EOC,
 			0, arg_b, 0, 0);

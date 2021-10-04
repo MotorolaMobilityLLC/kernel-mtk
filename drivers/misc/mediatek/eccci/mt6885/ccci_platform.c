@@ -76,12 +76,18 @@ EXPORT_SYMBOL(ccci_get_md_debug_mode);
 
 void ccci_get_platform_version(char *ver)
 {
+	int ret = 0;
+
 #ifdef ENABLE_CHIP_VER_CHECK
-	sprintf(ver, "MT%04x_S%02x",
+	ret = snprintf(ver, sizeof(ver), "MT%04x_S%02x",
 		get_chip_hw_ver_code(), (get_chip_hw_subcode() & 0xFF));
 #else
-	sprintf(ver, "MT6735_S00");
+	ret = snprintf(ver, sizeof(ver), "MT6735_S00");
 #endif
+
+	if (ret >= sizeof(ver))
+		CCCI_ERROR_LOG(-1, TAG,
+			"%s-%d: snprintf failed, ret = %d\n", __func__, __LINE__, ret);
 }
 
 #ifdef FEATURE_LOW_BATTERY_SUPPORT

@@ -1334,6 +1334,7 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
 	if (handle->profile_exec)
 		cmdq_pkt_perf_end(handle->pkt);
 
+#ifndef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
 	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 	if (handle->secData.is_secure) {
@@ -1343,6 +1344,7 @@ s32 cmdq_mdp_handle_flush(struct cmdqRecStruct *handle)
 		/* prevent flush directly since engine conflict with normal */
 		handle->thread = CMDQ_INVALID_THREAD;
 	}
+#endif
 #endif
 
 	/* finalize it */

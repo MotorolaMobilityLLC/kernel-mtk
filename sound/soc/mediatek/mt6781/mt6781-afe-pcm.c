@@ -138,7 +138,7 @@ int mt6781_fe_trigger(struct snd_pcm_substream *substream, int cmd,
 	unsigned int counter = runtime->period_size;
 	unsigned int rate = runtime->rate;
 	int fs;
-	int ret;
+	int ret = 0;
 	bool dsp_reset = false;
 
 	dev_info(afe->dev, "%s(), %s cmd %d, irq_id %d dsp_reset %d\n",
