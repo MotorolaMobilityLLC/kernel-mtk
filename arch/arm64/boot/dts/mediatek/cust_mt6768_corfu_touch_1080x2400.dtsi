@@ -45,7 +45,8 @@
 		/*goodix,y2y;*/
 		goodix,pen-enable;
 		goodix,key-of-pen = <331 332>;/*BTN_STYLUS, BTN_STYLUS2*/
-
+	        goodix,panel-supplier = "gt9885";
+		goodix,report_gesture_key;
 	};
 
         focaltech@38{
@@ -61,7 +62,7 @@
                 focaltech,irq-gpio = <&pio 0 0x0>;
                 focaltech,max-touch-number = <10>;
                 focaltech,display-coords =  <0 0 1080 2400>;
-                focaltech,panel-supplier = "visionox";
+                focaltech,panel-supplier = "visionox_ft";
                 focaltech,tp_rst_high;
 
                 /*
