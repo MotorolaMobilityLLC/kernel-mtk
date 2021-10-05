@@ -601,16 +601,16 @@ static void swpm_pmu_set_enable(int cpu, int enable)
 		swpm_pmu_stop(cpu);
 
 		if (l3_event) {
-			per_cpu(l3dc_events, cpu) = NULL;
 			perf_event_release_kernel(l3_event);
+			per_cpu(l3dc_events, cpu) = NULL;
 		}
 		if (i_event) {
-			per_cpu(inst_spec_events, cpu) = NULL;
 			perf_event_release_kernel(i_event);
+			per_cpu(inst_spec_events, cpu) = NULL;
 		}
 		if (c_event) {
-			per_cpu(cycle_events, cpu) = NULL;
 			perf_event_release_kernel(c_event);
+			per_cpu(cycle_events, cpu) = NULL;
 		}
 	}
 }
