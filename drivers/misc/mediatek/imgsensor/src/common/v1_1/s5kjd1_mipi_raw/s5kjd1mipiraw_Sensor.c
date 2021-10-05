@@ -207,14 +207,14 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 	/* Preview */
-	{6560, 4920, 0, 0, 6560, 4920, 6560, 4920,
+	{6560, 4920, 0, 0, 6560, 4920, 3280, 2460,
 	    0,   0, 3280, 2460, 0, 0, 3280, 2460},
 	/* capture */
 	{6560, 4920, 0, 0, 6560, 4920, 6560, 4920,
 	    0,   0, 6560, 4920, 0, 0, 6560, 4920},
 	/* video*/
 	{6560, 4920, 0, 0, 6560, 4920, 3280, 2460,
-	   0,   0, 1920, 1080, 0, 0, 1920, 1080},
+	 680, 690, 1920, 1080, 0, 0, 1920, 1080},
 	/* hight speed video */
 	{6560, 4920, 0, 0, 6560, 4920, 3280, 2460,
 	   0,   0, 3280, 2460, 0, 0, 3280, 2460},
@@ -226,7 +226,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 	   0,   0, 3280, 2460, 0, 0, 3280, 2460},
 	/* custom2 normal video staggered HDR */
 	{6560, 4920, 0, 0, 6560, 4920, 3280, 2460,
-	   0,   0, 1920, 1080, 0, 0, 1920, 1080}
+	 680, 690, 1920, 1080, 0, 0, 1920, 1080}
 };
 
 static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[5] = {
