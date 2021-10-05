@@ -311,6 +311,8 @@ enum dsi_porch_type { DECLARE_DSI_PORCH(DECLARE_NUM) };
 static const char * const mtk_dsi_porch_str[] = {
 	DECLARE_DSI_PORCH(DECLARE_STR)};
 
+static DEFINE_MUTEX(set_mmclk_lock);
+
 #define AS_UINT32(x) (*(u32 *)((void *)x))
 
 struct mtk_dsi_driver_data {
@@ -4847,19 +4849,27 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 	unsigned int pixclk = 0;
 	u32 bpp = mipi_dsi_pixel_format_to_bpp(dsi->format);
 	unsigned int pixclk_min = 0;
-	unsigned int hact = mtk_crtc->base.state->adjusted_mode.hdisplay;
-	unsigned int htotal = mtk_crtc->base.state->adjusted_mode.htotal;
-	unsigned int vtotal = mtk_crtc->base.state->adjusted_mode.vtotal;
-	unsigned int vact = mtk_crtc->base.state->adjusted_mode.vdisplay;
-	unsigned int vrefresh = mtk_crtc->base.state->adjusted_mode.vrefresh;
+	unsigned int hact = 0;
+	unsigned int htotal = 0;
+	unsigned int vtotal = 0;
+	unsigned int vact = 0;
+	unsigned int vrefresh = 0;
 
+	mutex_lock(&set_mmclk_lock);
+	hact = mtk_crtc->base.state->adjusted_mode.hdisplay;
+	htotal = mtk_crtc->base.state->adjusted_mode.htotal;
+	vtotal = mtk_crtc->base.state->adjusted_mode.vtotal;
+	vact = mtk_crtc->base.state->adjusted_mode.vdisplay;
+	vrefresh = mtk_crtc->base.state->adjusted_mode.vrefresh;
 	if (!en) {
 		mtk_drm_set_mmclk_by_pixclk(&mtk_crtc->base, pixclk,
 					__func__);
+		mutex_unlock(&set_mmclk_lock);
 		return;
 	}
 	if (!vrefresh) {
 		DDPMSG("%s: skip set mmclk, vrefresh=%d\n", __func__, vrefresh);
+		mutex_unlock(&set_mmclk_lock);
 		return;
 	}
 
@@ -4869,6 +4879,7 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 
 	if (!dsi->ext) {
 		DDPPR_ERR("DSI panel ext is NULL\n");
+		mutex_unlock(&set_mmclk_lock);
 		return;
 	}
 
@@ -4876,6 +4887,7 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 
 	if (!data_rate) {
 		DDPPR_ERR("DSI data_rate is NULL\n");
+		mutex_unlock(&set_mmclk_lock);
 		return;
 	}
 	//If DSI mode is vdo mode
@@ -4906,9 +4918,11 @@ void mtk_dsi_set_mmclk_by_datarate(struct mtk_dsi *dsi,
 	if (mtk_crtc->is_dual_pipe)
 		pixclk /= 2;
 
-	DDPINFO("%s,data_rate =%d,clk=%u pixclk_min=%d, dual=%u\n", __func__,
-			data_rate, pixclk, pixclk_min, mtk_crtc->is_dual_pipe);
+	DDPINFO("%s,data_rate=%d,clk=%u pixclk_min=%d, dual=%u, vrefresh=%d\n",
+		__func__, data_rate, pixclk, pixclk_min,
+		mtk_crtc->is_dual_pipe, vrefresh);
 	mtk_drm_set_mmclk_by_pixclk(&mtk_crtc->base, pixclk, __func__);
+	mutex_unlock(&set_mmclk_lock);
 }
 
 /******************************************************************************
@@ -5064,11 +5078,21 @@ static void mtk_dsi_dy_fps_cmdq_cb(struct cmdq_cb_data data)
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(cb_data->crtc);
 	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
 	struct mtk_dsi *dsi;
+	int vrefresh = 0;
 
-	DDPINFO("%s vdo mode fps change done\n", __func__);
+	if (IS_ERR_OR_NULL(mtk_crtc) || IS_ERR_OR_NULL(&mtk_crtc->base)) {
+		cmdq_pkt_destroy(cb_data->cmdq_handle);
+		kfree(cb_data);
+		return;
+	}
+
+	vrefresh = mtk_crtc->base.state->adjusted_mode.vrefresh;
+	DDPINFO("%s vdo mode fps change done, target fps %d, vrefresh %d\n",
+		__func__, cb_data->misc, vrefresh);
 
 	if (comp && (comp->id == DDP_COMPONENT_DSI0 ||
-		comp->id == DDP_COMPONENT_DSI1)) {
+		comp->id == DDP_COMPONENT_DSI1) &&
+		(cb_data->misc && (cb_data->misc == vrefresh))) {
 		dsi = container_of(comp, struct mtk_dsi, ddp_comp);
 		mtk_dsi_set_mmclk_by_datarate(dsi, mtk_crtc, 1);
 	}
@@ -5094,8 +5118,11 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 			to_mtk_crtc_state(old_state);
 	unsigned int src_mode =
 	    old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
+	struct drm_display_mode *old_mode = &(mtk_crtc->avail_modes[src_mode]);
+	unsigned int fps_src = old_mode->vrefresh;
+	unsigned int fps_dst = adjusted_mode.vrefresh;
 
-	DDPINFO("%s+\n", __func__);
+	DDPINFO("%s+ , fps from %d to %d\n", __func__, fps_src, fps_dst);
 
 	if (dsi->ext && dsi->ext->funcs &&
 		dsi->ext->funcs->ext_param_set)
@@ -5195,6 +5222,7 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 	}
 	cb_data->cmdq_handle = handle;
 	cb_data->crtc = &mtk_crtc->base;
+	cb_data->misc = fps_dst > fps_src ? 0 : fps_dst; // only for lower fps
 	if (cmdq_pkt_flush_threaded(handle,
 		mtk_dsi_dy_fps_cmdq_cb, cb_data) < 0)
 		DDPPR_ERR("failed to flush dsi_dy_fps\n");

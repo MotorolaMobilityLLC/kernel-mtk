@@ -22,20 +22,23 @@
 
 #define HW_NUM			(1)
 #define RX_V12			(1700)
-//#define _VDO_120FPS_
+#ifdef CONFIG_MTK_MT6382_VDO_MODE
+#define _VDO_120FPS_
+#endif
+#ifdef CONFIG_MTK_MT6382_CMD_MODE
 #define _CMD_120FPS_
+#endif
 //#define _90HZ_
 #ifdef _VDO_120FPS_	 //for vdo mode 120Hz
-#define _N36672C_
 #define RXTX_RATIO		(230)
 #endif
 #ifdef _CMD_120FPS_	 //for cmd mode 120Hz
-#define _LINE_BACK_TO_LP_
 #define RXTX_RATIO		(300)
+#define _LINE_BACK_TO_LP_	//only for cmd mode
 #endif
 #ifdef _90HZ_
 #define _Disable_HS_DCO_
-#define _Disable_LP_TX_L123_
+#define _Disable_LP_TX_L023_
 #else
 #define _G_MODE_EN_
 #endif

@@ -342,7 +342,7 @@ static int led_data_init(struct device *dev, struct mtk_led_data *s_led)
 	s_led->conf.cdev.max_brightness = s_led->info.config.max_brightness;
 	s_led->conf.cdev.flags = LED_CORE_SUSPENDRESUME;
 	s_led->conf.cdev.brightness_set_blocking = led_level_set;
-	s_led->brightness = (1 << s_led->conf.trans_bits) - 1;
+	s_led->brightness = 0;
 	s_led->conf.level = s_led->brightness;
 	s_led->last_level = s_led->brightness;
 	ret = devm_led_classdev_register(dev, &(s_led->conf.cdev));

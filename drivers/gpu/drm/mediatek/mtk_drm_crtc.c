@@ -83,6 +83,7 @@ static struct mtk_drm_property mtk_crtc_property[CRTC_PROP_MAX] = {
 	{DRM_MODE_PROP_ATOMIC, "COLOR_TRANSFORM", 0, UINT_MAX, 0},
 	{DRM_MODE_PROP_ATOMIC, "USER_SCEN", 0, UINT_MAX, 0},
 	{DRM_MODE_PROP_ATOMIC, "HDR_ENABLE", 0, UINT_MAX, 0},
+	{DRM_MODE_PROP_ATOMIC, "OVL_DSI_SEQ", 0, UINT_MAX, 0},
 };
 
 static struct cmdq_pkt *sb_cmdq_handle;
@@ -2351,8 +2352,6 @@ unsigned int mtk_crtc_get_idle_interval(struct drm_crtc *crtc, unsigned int fps)
 	return idle_interval;
 }
 
-static int mode_switch_delay_value = -1;
-
 static void mtk_crtc_disp_mode_switch_begin(struct drm_crtc *crtc,
 	struct drm_crtc_state *old_state, struct mtk_crtc_state *mtk_state,
 	struct cmdq_pkt *cmdq_handle)
@@ -2370,28 +2369,13 @@ static void mtk_crtc_disp_mode_switch_begin(struct drm_crtc *crtc,
 	struct mtk_ddp_comp *output_comp;
 
 	/* Check if disp_mode_idx change */
-	if (mode_switch_delay_value < 0 && old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] ==
+	if (old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] ==
 		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX])
 		return;
 
-	/* Check if disp_mode_idx need change */
-	if (mode_switch_delay_value < 0) {
-		mode_switch_delay_value = old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
-		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX] =
-		old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX];
-		return;
-	}
-
-	if (mode_switch_delay_value == mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX]) {
-		mode_switch_delay_value = -1; //reset delay value
-		return;
-	}
-
-	DDPMSG("%s from %u to %u\n", __func__,
-		mode_switch_delay_value,
+	DDPMSG("%s no delay from %u to %u\n", __func__,
+		old_mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX],
 		mtk_state->prop_val[CRTC_PROP_DISP_MODE_IDX]);
-
-	mode_switch_delay_value = -1; //reset delay value
 
 	/* Update mode & adjusted_mode in CRTC */
 	mode = mtk_drm_crtc_avail_disp_mode(crtc,
@@ -2493,7 +2477,6 @@ static void mtk_crtc_update_ddp_state(struct drm_crtc *crtc,
 		 * the dsi params not sync with the mode of new crtc state.
 		 * And switch fps immediately when suspend or resume
 		 */
-		mode_switch_delay_value = 0x7FFFFFFF;
 		mtk_crtc_disp_mode_switch_begin(crtc,
 			old_crtc_state, crtc_state,
 			cmdq_handle);
@@ -3258,6 +3241,20 @@ static void ddp_cmdq_cb(struct cmdq_cb_data data)
 		if (mtk_crtc &&
 			!mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base)) {
 			mtk_release_present_fence(session_id, fence_idx, mtk_crtc->eof_time);
+		}
+	}
+
+	// for wfd latency debug
+	if (id == 0 || id == 2) {
+		struct cmdq_pkt_buffer *cmdq_buf = &(mtk_crtc->gce_obj.buf);
+		unsigned int ovl_dsi_seq = *(unsigned int *)(cmdq_buf->va_base +
+				DISP_SLOT_OVL_DSI_SEQ(id));
+
+		if (ovl_dsi_seq) {
+			if (id == 0)
+				mtk_drm_trace_async_end("OVL0-DSI|%d", ovl_dsi_seq);
+			else if (id == 2)
+				mtk_drm_trace_async_end("OVL2-WDMA|%d", ovl_dsi_seq);
 		}
 	}
 
@@ -5382,7 +5379,7 @@ void mtk_crtc_disable_secure_state(struct drm_crtc *crtc)
 
 	/* Disable secure path */
 	cmdq_sec_pkt_set_data(cmdq_handle,
-		0,
+		sec_disp_dapc,
 		sec_disp_port,
 		sec_disp_type,
 		CMDQ_METAEX_NONE);
@@ -5442,8 +5439,9 @@ struct cmdq_pkt *mtk_crtc_gce_commit_begin(struct drm_crtc *crtc)
 						IRQ_LEVEL_IDLE, NULL);
 		}
 
-		DDPMSG("YYG:%s:%d sec port:%u\n", __func__, __LINE__, sec_disp_port);
-		cmdq_sec_pkt_set_data(cmdq_handle, 0,
+		DDPMSG("%s sec dapc:%d port:%u\n", __func__, sec_disp_dapc,
+			sec_disp_port);
+		cmdq_sec_pkt_set_data(cmdq_handle, sec_disp_dapc,
 			sec_disp_port, sec_disp_type,
 			CMDQ_METAEX_NONE);
 #ifdef CONFIG_MTK_SVP_ON_MTEE_SUPPORT
@@ -6415,6 +6413,27 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 			state->prop_val[CRTC_PROP_PRES_FENCE_IDX], ~0);
 		CRTC_MMP_MARK(index, update_present_fence, 0,
 			state->prop_val[CRTC_PROP_PRES_FENCE_IDX]);
+	}
+
+	/* for wfd latency debug */
+	if (index == 0 || index == 2) {
+		struct cmdq_pkt_buffer *cmdq_buf = &(mtk_crtc->gce_obj.buf);
+		dma_addr_t addr =
+			cmdq_buf->pa_base +
+			DISP_SLOT_OVL_DSI_SEQ(index);
+
+		cmdq_pkt_write(cmdq_handle,
+			mtk_crtc->gce_obj.base, addr,
+			state->prop_val[CRTC_PROP_OVL_DSI_SEQ], ~0);
+
+		if (state->prop_val[CRTC_PROP_OVL_DSI_SEQ]) {
+			if (index == 0)
+				mtk_drm_trace_async_begin("OVL0-DSI|%d",
+					state->prop_val[CRTC_PROP_OVL_DSI_SEQ]);
+			else if (index == 2)
+				mtk_drm_trace_async_begin("OVL2-WDMA|%d",
+					state->prop_val[CRTC_PROP_OVL_DSI_SEQ]);
+		}
 	}
 
 	atomic_set(&mtk_crtc->delayed_trig, 1);
