@@ -457,9 +457,13 @@ static struct mutex open_isp_mutex;
 //-3x1_sub_common : 0x1a00c408[24:19]
 //-4x1_sub_common : 0x1a00d404[24:19]
 //-4x1_sub_common : 0x1a00d40c[24:19]
+#define CAM_3X1_SUB_COMMON_C400 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xc400)
 #define CAM_3X1_SUB_COMMON_C404 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xc404)
 #define CAM_3X1_SUB_COMMON_C408 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xc408)
+
+#define CAM_4X1_SUB_COMMON_D400 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd400)
 #define CAM_4X1_SUB_COMMON_D404 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd404)
+#define CAM_4X1_SUB_COMMON_D408 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd408)
 #define CAM_4X1_SUB_COMMON_D40C (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd40c)
 
 #define CAM_4X1_SUB_COMMON_EN_D110 (isp_devs[ISP_CAMSYS_CONFIG_IDX].regs + 0xd110)
@@ -1038,13 +1042,13 @@ static struct _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #ifdef SUB_COMMON_CLR
 static void ISP_SMI_CG_Dump(char *str, bool smi_dump_en)
 {
-	LOG_DBG("%s: 3X1_SUB_COMMON_C404= 0x%x\n",
+	LOG_DBG("%s: 3X1_SUB_COMMON_C404[19:24]= 0x%x\n",
 		str, (ISP_RD32(CAM_3X1_SUB_COMMON_C404) >> 19) & 0x3F);
-	LOG_DBG("%s: 3X1_SUB_COMMON_C408= 0x%x\n",
+	LOG_DBG("%s: 3X1_SUB_COMMON_C408[19:24]= 0x%x\n",
 		str, (ISP_RD32(CAM_3X1_SUB_COMMON_C408) >> 19) & 0x3F);
-	LOG_DBG("%s: 4X1_SUB_COMMON_D404= 0x%x\n",
+	LOG_DBG("%s: 4X1_SUB_COMMON_D404[19:24]= 0x%x\n",
 		str, (ISP_RD32(CAM_4X1_SUB_COMMON_D404) >> 19) & 0x3F);
-	LOG_INF("%s: 4X1_SUB_COMMON_D40C= 0x%x\n",
+	LOG_INF("%s: 4X1_SUB_COMMON_D40C[19:24]= 0x%x\n",
 		str, (ISP_RD32(CAM_4X1_SUB_COMMON_D40C) >> 19) & 0x3F);
 
 	LOG_DBG("%s: (CG_CON/CG_SET/CG_CLR)= (0x%x/0x%x/0x%x)\n", str,
@@ -1108,7 +1112,14 @@ static void cam_subsys_debug_dump(enum subsys_id sys_id)
 			ISP_RD32(CAMSYS_REG_CG_SET),
 			ISP_RD32(CAMSYS_REG_CG_CLR));
 #ifdef SUB_COMMON_CLR
-		ISP_SMI_CG_Dump("cam_subsys_debug_dump", false);
+		LOG_INF("3X1_SUB_COMMON_C400= 0x%x\n", ISP_RD32(CAM_3X1_SUB_COMMON_C400));
+		LOG_INF("3X1_SUB_COMMON_C404= 0x%x\n", ISP_RD32(CAM_3X1_SUB_COMMON_C404));
+		LOG_INF("3X1_SUB_COMMON_C408= 0x%x\n", ISP_RD32(CAM_3X1_SUB_COMMON_C408));
+
+		LOG_INF("4X1_SUB_COMMON_D400= 0x%x\n", ISP_RD32(CAM_4X1_SUB_COMMON_D400));
+		LOG_INF("4X1_SUB_COMMON_D404= 0x%x\n", ISP_RD32(CAM_4X1_SUB_COMMON_D404));
+		LOG_INF("4X1_SUB_COMMON_D408= 0x%x\n", ISP_RD32(CAM_4X1_SUB_COMMON_D408));
+		LOG_INF("4X1_SUB_COMMON_D40C= 0x%x\n", ISP_RD32(CAM_4X1_SUB_COMMON_D40C));
 #endif
 	break;
 	default:
