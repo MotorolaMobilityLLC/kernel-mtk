@@ -424,6 +424,8 @@
 		aw99703,work-mode = <1>; /* backlight */
 		aw99703,flash-timeout-time = <0x05>; /* 500ms(default) */
 		aw99703,flash-current = <0x08>; /* 59.2mA(default) */
+		aw99703,default-brightness = <1024>;
+		aw99703,reinit-brightness = <15>;
 		/*awinic,aw99703-bl end*/
 
 		/*ti,lm3697-bl begin*/
