@@ -107,13 +107,13 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_AUSTIN_S5KJN1SQ_MIPI_RAW,
 		{
-			{RST, Vol_Low, 2},
-			{DOVDD, Vol_1800, 0},
+			{RST, Vol_Low, 1},
 			{DVDD, Vol_1100, 0},
-			{AFVDD, Vol_2800, 0},
-			{AVDD, Vol_2800, 1},
+			{DOVDD, Vol_1800, 2},
+			{AFVDD, Vol_2800, 1},
+			{AVDD, Vol_2800, 3},
 			{RST, Vol_High, 1},
-			{SensorMCLK, Vol_High, 5}
+			{SensorMCLK, Vol_High, 5},
 		},
 	},
 #endif
@@ -121,12 +121,12 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_AUSTIN_HI1336_MIPI_RAW,
 		{
-			{PDN, Vol_Low, 1},
 			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{PDN, Vol_Low, 1},
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 1},
 			{DVDD, Vol_1100, 1},
-			{SensorMCLK, Vol_High, 1},
 			{PDN, Vol_High, 2},
 			{RST, Vol_High, 2}
 		},
@@ -136,7 +136,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
        {
                SENSOR_DRVNAME_MOT_AUSTIN_GC02M1B_MIPI_RAW,
                {
-                       {RST, Vol_Low, 0},
+                       {RST, Vol_Low, 1},
  		       {SensorMCLK, Vol_High, 2},
                        {DOVDD, Vol_1800, 1},
                        {AVDD, Vol_2800, 1},
@@ -148,8 +148,8 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_AUSTIN_GC02M1_MIPI_RAW,
 		{
+			{RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 2},
-			{RST, Vol_Low, 0},
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 0},
 			{RST, Vol_High, 2}
