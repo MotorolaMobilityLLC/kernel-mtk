@@ -536,10 +536,13 @@ int show_interrupts(struct seq_file *p, void *v)
 		seq_printf(p, "-%-8s", desc->name);
 
 	action = desc->action;
-	if (action) {
+	if (!IS_ERR_OR_NULL(action) && !IS_ERR_OR_NULL(action->name)) {
 		seq_printf(p, "  %s", action->name);
-		while ((action = action->next) != NULL)
-			seq_printf(p, ", %s", action->name);
+		while ((action = action->next) != NULL) {
+			if (!IS_ERR_OR_NULL(action) && !IS_ERR_OR_NULL(action->name)) {
+				seq_printf(p, ", %s", action->name);
+			}
+		}
 	}
 
 	seq_putc(p, '\n');
