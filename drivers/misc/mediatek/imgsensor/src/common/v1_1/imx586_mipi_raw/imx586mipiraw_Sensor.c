@@ -3143,7 +3143,12 @@ static void custom3_setting(void)
 
 	if (otp_flag == OTP_QSC_NONE) {
 		pr_info("OTP no QSC Data, close qsc register");
-		write_cmos_sensor_8(0x3621, 0x00);
+		if (!imx586_is_seamless)
+			write_cmos_sensor_8(0x3621, 0x00);
+		else {
+			imx586_i2c_data[imx586_size_to_write++] = 0x3621;
+			imx586_i2c_data[imx586_size_to_write++] = 0x0;
+		}
 	}
 
 	pr_debug("%s 30 fpsX\n", __func__);
@@ -3171,6 +3176,15 @@ static void custom4_setting(void)
 		imx586_size_to_write += _length;
 	}
 
+	if (otp_flag == OTP_QSC_NONE) {
+		pr_info("OTP no QSC Data, close qsc register");
+		if (!imx586_is_seamless)
+			write_cmos_sensor_8(0x3621, 0x00);
+		else {
+			imx586_i2c_data[imx586_size_to_write++] = 0x3621;
+			imx586_i2c_data[imx586_size_to_write++] = 0x0;
+		}
+	}
 
 	pr_debug("X\n");
 }
