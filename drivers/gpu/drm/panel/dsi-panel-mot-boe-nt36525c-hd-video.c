@@ -229,11 +229,11 @@ static void lcm_panel_init(struct lcm *ctx)
 		return;
 	}
 	gpiod_set_value(ctx->reset_gpio, 0);
-	mdelay(3);
+	mdelay(4);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	mdelay(3);
+	mdelay(5);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	mdelay(3);
+	mdelay(1);
 	gpiod_set_value(ctx->reset_gpio, 1);
 	mdelay(10);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
