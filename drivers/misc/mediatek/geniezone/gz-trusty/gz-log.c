@@ -37,6 +37,7 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/debugfs.h>
 #include <linux/sched/clock.h>
+#include <asm/arch_timer.h>
 
 #if ENABLE_GZ_TRACE_DUMP
 #if IS_BUILTIN(CONFIG_GZ_LOG)
@@ -738,14 +739,16 @@ static const struct file_operations proc_gz_log_fops = {
 
 static int trusty_gz_send_ktime(struct platform_device *pdev)
 {
-	uint64_t current_ktime;
-	uint64_t current_cnt;
+	uint64_t current_ktime = 0;
+	uint64_t current_cnt = 0;
 	uint64_t diff_all;
 	uint32_t diff_msb;
 	uint32_t diff_lsb;
 
+#if IS_ENABLED(CONFIG_ARM64)
 	current_ktime = sched_clock();
 	current_cnt = arch_counter_get_cntvct();
+#endif
 
 	diff_all = current_cnt - (13 * current_ktime)/1000;
 	diff_msb = (diff_all >> 32);
