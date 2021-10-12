@@ -944,8 +944,6 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu,
 		}
 	}
 
-	if (j < 0)
-		return -EINVAL;
 	if (atomic_read(&vcu->gce_job_cnt[i][core_id]) == 0 &&
 		vcu->gce_info[j].v4l2_ctx != NULL){
 		if (i == VCU_VENC) {

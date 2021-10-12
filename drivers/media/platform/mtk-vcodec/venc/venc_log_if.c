@@ -32,6 +32,7 @@ static int venc_log_set_param(unsigned long handle,
 	switch (type) {
 	case VENC_SET_PARAM_LOG:
 		ret = vcu_set_log(enc_prm->log);
+		break;
 	default:
 		pr_info("invalid set parameter type=%d\n", type);
 		ret = -EINVAL;
