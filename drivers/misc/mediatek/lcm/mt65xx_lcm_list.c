@@ -31,6 +31,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT36672C_FHDP_DSI_VDO_TIANMA_60_90HZ)
 		&nt36672c_fhdp_dsi_vdo_tianma_60_90HZ_lcm_drv,
 #endif
+#if defined(PANEL_MOT_MIPI_VID_CSOT_NT36672C_FHD)
+	&mipi_mot_vid_csot_nt36672c_fhd_678_lcm_drv,
+#endif
 #if defined(DSI_PANEL_MOT_MIPI_VID_VISIONOX_FT3519_FHD)
         &mipi_mot_vid_visionox_ft3519_fhd_643_lcm_drv,
 #endif
