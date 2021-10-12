@@ -940,6 +940,7 @@ int ccu_sanity_check(const struct firmware *fw)
 {
 	// const char *name = rproc->firmware;
 	struct elf32_hdr *ehdr;
+	uint32_t phdr_offset;
 	char class;
 
 	if (!fw) {
@@ -981,12 +982,13 @@ int ccu_sanity_check(const struct firmware *fw)
 		return -EINVAL;
 	}
 
-	if (ehdr->e_phnum == 0) {
-		LOG_ERR("No loadable segments\n");
+	if ((ehdr->e_phnum == 0) || (ehdr->e_phnum > CCU_HEADER_NUM)) {
+		LOG_ERR("loadable segments is invalid: %x\n", ehdr->e_phnum);
 		return -EINVAL;
 	}
 
-	if (ehdr->e_phoff > fw->size) {
+	phdr_offset = ehdr->e_phoff + sizeof(struct elf32_phdr) * ehdr->e_phnum;
+	if (phdr_offset > fw->size) {
 		LOG_ERR("Firmware size is too small\n");
 		return -EINVAL;
 	}
