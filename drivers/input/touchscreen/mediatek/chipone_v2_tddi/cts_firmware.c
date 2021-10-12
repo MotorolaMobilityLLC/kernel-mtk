@@ -664,12 +664,58 @@ err_release_firmware:
 }
 #endif /*CFG_CTS_FIRMWARE_IN_FS */
 
+int get_fwname(char *fw_name, char *fw_path, char *fw_prefix_name)
+{
+	char *match_name;
+	char *tmp_name;
+	char module_name[10]={0};
+	char *match_panle = "lcd_name=";
+	char name_underline = '_';
+	char *name_suffix = ".bin";
+	char *path_name = "/vendor/firmware/";
+	int str_len = 0;
+	int loop;
+
+	match_name = strstr(saved_command_line, match_panle);
+	cts_info("get match_name = %s\n", match_name);
+	for(loop = 0; loop < 5; loop++){
+		match_name = strchr(match_name + 1, name_underline);
+		if(NULL == match_name){
+			cts_err(" %s:%d fail to read _ from cts_panel\n", __func__, loop);
+			return -1;
+		}
+		cts_info("get match_name = %s,loop = %d\n", match_name, loop);
+	switch(loop){
+		case 3:
+			tmp_name = match_name;
+			break;
+		case 4:
+			str_len = match_name - tmp_name;
+			strncat(module_name, tmp_name, str_len);
+			cts_info(" %s:get tp module_name =%s\n", __func__, module_name);
+			break;
+		default:
+			break;
+			}
+		}
+	if(tmp_name && (str_len != 0)){
+		sprintf(fw_name, "%s%s", fw_prefix_name, module_name);
+		sprintf(fw_name, "%s%s", fw_name, name_suffix);
+		sprintf(fw_path, "%s%s", path_name, fw_name);
+	}
+	return str_len;
+}
+
 const struct cts_firmware *cts_request_firmware(const struct cts_device
 						*cts_dev, u32 hwid, u16 fwid,
 						u16 curr_firmware_ver)
 {
 	const struct cts_firmware *firmware_builtin = NULL;
 	const struct cts_firmware *firmware_from_file = NULL;
+	char *chipone_name = "chipone_firmware";
+	char chipone_fwname[30];
+	char chipone_fwpath[50];
+	int ret = 0;
 
 	if (hwid == CTS_DEV_HWID_INVALID) {
 		hwid = CTS_DEV_HWID_ANY;
@@ -681,6 +727,12 @@ const struct cts_firmware *cts_request_firmware(const struct cts_device
 	cts_info("Request newer if match hwid: %06x fwid: %04x && ver > %04x",
 		 hwid, fwid, curr_firmware_ver);
 
+	ret = get_fwname(chipone_fwname, chipone_fwpath, chipone_name);
+	if(ret < 0){
+        cts_err(" %s:fail to get fwname,ret = %d\n", __func__, ret);
+	}
+	cts_info("get chipone_fwname = %s,char chipone_fwname =%s\n", chipone_fwname, chipone_fwpath);
+
 #ifdef CFG_CTS_DRIVER_BUILTIN_FIRMWARE
 	firmware_builtin =
 	    cts_request_newer_driver_builtin_firmware(hwid, fwid,
@@ -689,7 +741,7 @@ const struct cts_firmware *cts_request_firmware(const struct cts_device
 
 #ifdef CFG_CTS_FIRMWARE_IN_FS
 	/* Check firmware in file system when probe only when build to .ko */
-	if (is_filesystem_mounted(CFG_CTS_FIRMWARE_FILEPATH)) {
+	if (is_filesystem_mounted(chipone_fwpath)) {
 		firmware_from_file = cts_request_newer_firmware_from_fs(cts_dev,
 #ifdef CFG_CTS_FW_UPDATE_FILE_LOAD
 									cts_dev->
@@ -698,12 +750,10 @@ const struct cts_firmware *cts_request_firmware(const struct cts_device
 									cts_dev->
 									config_fw_name
 									:
-//									CFG_CTS_FIRMWARE_FILEPATH,
-									CFG_CTS_FIRMWARE_FILENAME,
-#else /* CFG_CTS_FW_UPDATE_FILE_LOAD */
-//									CFG_CTS_FIRMWARE_FILEPATH,
-									CFG_CTS_FIRMWARE_FILENAME,
-#endif /* CFG_CTS_FW_UPDATE_FILE_LOAD */
+									chipone_fwname,
+#else
+									chipone_fwname,
+#endif
 									firmware_builtin
 									?
 									FIRMWARE_VERSION
