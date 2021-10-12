@@ -416,11 +416,11 @@
 /*	Pseudo 100% percentage at T0*/
 	g_FG_PSEUDO100_T1 = <(98)>;
 /*	Pseudo 100% percentage at T1*/
-	g_FG_PSEUDO100_T2 = <(98)>;
+	g_FG_PSEUDO100_T2 = <(95)>;
 /*	Pseudo 100% percentage at T2*/
-	g_FG_PSEUDO100_T3 = <(98)>;
+	g_FG_PSEUDO100_T3 = <(95)>;
 /*	Pseudo 100% percentage at T3*/
-	g_FG_PSEUDO100_T4 = <(98)>;
+	g_FG_PSEUDO100_T4 = <(95)>;
 /*	Pseudo 100% percentage at T4*/
 	#include "bat_setting/austin_batterytable_jk50_alt_5000mah.dtsi"
 	#include "bat_setting/austin_batterytable_jk50_scud_5000mah.dtsi"
