@@ -228,26 +228,12 @@ static void lcm_panel_init(struct lcm *ctx)
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return;
 	}
+	mdelay(2);
 	gpiod_set_value(ctx->reset_gpio, 0);
-#if BITS_PER_LONG == 32
-	mdelay(15 * 1000);
-#else
-	udelay(15 * 1000);
-#endif
+	mdelay(2);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	udelay(1 * 1000);
-	gpiod_set_value(ctx->reset_gpio, 0);
-#if BITS_PER_LONG == 32
-	mdelay(10 * 1000);
-#else
-	udelay(10 * 1000);
-#endif
-	gpiod_set_value(ctx->reset_gpio, 1);
-#if BITS_PER_LONG == 32
-	mdelay(10 * 1000);
-#else
-	udelay(10 * 1000);
-#endif
+	mdelay(10);
+
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	lcm_dcs_write_seq_static(ctx, 0xFF, 0x98, 0x82, 0x00);
@@ -257,6 +243,21 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
+	lcm_dcs_write_seq_static(ctx, 0xFF, 0x98, 0x82, 0x02);
+	lcm_dcs_write_seq_static(ctx, 0x06, 0x58);
+	lcm_dcs_write_seq_static(ctx, 0x0B, 0xA0);
+	lcm_dcs_write_seq_static(ctx, 0x0C, 0x80);
+	lcm_dcs_write_seq_static(ctx, 0x0D, 0x1A);
+	lcm_dcs_write_seq_static(ctx, 0x0E, 0x6A);
+	lcm_dcs_write_seq_static(ctx, 0xFF, 0x98, 0x82, 0x0B);
+	lcm_dcs_write_seq_static(ctx, 0x9A, 0x85);
+	lcm_dcs_write_seq_static(ctx, 0x9B, 0x9B);
+	lcm_dcs_write_seq_static(ctx, 0x9C, 0x04);
+	lcm_dcs_write_seq_static(ctx, 0x9D, 0x04);
+	lcm_dcs_write_seq_static(ctx, 0x9E, 0x8C);
+	lcm_dcs_write_seq_static(ctx, 0x9F, 0x8C);
+	lcm_dcs_write_seq_static(ctx, 0xAA, 0x22);
+	lcm_dcs_write_seq_static(ctx, 0xFF, 0x98, 0x82, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(20);
 }
@@ -285,6 +286,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	if (!ctx->prepared)
 		return 0;
 
+	mdelay(2);
 	lcm_dcs_write_seq_static(ctx, 0x28);
 	msleep(50);
 	lcm_dcs_write_seq_static(ctx, 0x10);
@@ -316,7 +318,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return PTR_ERR(ctx->reset_gpio);
 	}
-	gpiod_set_value(ctx->reset_gpio, 0);
+	//gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 
