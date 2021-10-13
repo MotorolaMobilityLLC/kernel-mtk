@@ -2184,6 +2184,40 @@ static uint32_t convert_crc(uint8_t *crc_ptr)
 	return (crc_ptr[0] << 8) | (crc_ptr[1]);
 }
 
+static void eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp))
+	{
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0)
+	{
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+
+
 static void s5kjn1_get_remosaic_param_from_eeprom(char *data)
 {
     int data_index = 0;
@@ -2199,39 +2233,39 @@ static void s5kjn1_get_remosaic_param_from_eeprom(char *data)
     data_crc16[1] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE+1];
     if (!eeprom_util_check_crc16(&MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE, convert_crc(data_crc16)))
     {
-        LOG_INF("XTC data CRC Fails!");
+        LOG_INF_N("XTC data CRC Fails!");
     }
     memcpy(&data[data_index], &MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE);
     data_index = data_index + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE;
-    data_addr_index = S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE + 2;
+    data_addr_index = data_addr_index + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE + 2;
 
 
     data_crc16[0] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE];
     data_crc16[1] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE+1];
     if (!eeprom_util_check_crc16(&MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE, convert_crc(data_crc16)))
     {
-        LOG_INF("sensor XTC data CRC Fails!");
+        LOG_INF_N("sensor XTC data CRC Fails!");
     }
     memcpy(&data[data_index], &MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE);
     data_index = data_index + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE;
-    data_addr_index = S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE + 2;
+    data_addr_index = data_addr_index + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE + 2;
 
 
     data_crc16[0] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE];
     data_crc16[1] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE+1];
     if (!eeprom_util_check_crc16(&MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE, convert_crc(data_crc16)))
     {
-        LOG_INF("PDXTC data CRC Fails!");
+        LOG_INF_N("PDXTC data CRC Fails!");
     }
     memcpy(&data[data_index], &MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE);
     data_index = data_index + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE ;
-    data_addr_index = S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE + 2;
+    data_addr_index = data_addr_index + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE + 2;
 
     data_crc16[0] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE];
     data_crc16[1] = MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index+S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE+1];
     if (!eeprom_util_check_crc16(&MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE, convert_crc(data_crc16)))
     {
-        LOG_INF("SW_GGC data CRC Fails!");
+        LOG_INF_N("SW_GGC data CRC Fails!");
     }
     memcpy(&data[data_index], &MILAN_S5KJN1_eeprom_data_for_remosaic[data_addr_index], S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE);
 
@@ -2243,7 +2277,7 @@ static void s5kjn1_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.i2c_write_id = slave;
 	spin_unlock(&imgsensor_drv_lock);
-
+	LOG_INF_N("slave: 0x%x, start_add: 0x%x, size: %d", slave, start_add, size);
 	//read eeprom data
 	for (i = 0; i < size; i ++) {
 		MILAN_S5KJN1_eeprom_data_for_remosaic[i] = read_cmos_sensor(start_add);
@@ -2305,6 +2339,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				s5kjn1_read_data_from_eeprom(S5KJN1_EEPROM_SLAVE_ADDR, S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR, S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_WITH_CRC_SIZE);
+				eeprom_dump_bin("/data/vendor/camera_dump/mot_s5kjn1_kernel_eeprom_remosaic.bin", S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_WITH_CRC_SIZE, &MILAN_S5KJN1_eeprom_data_for_remosaic[0]);
 				// get calibration status and mnf data.
 				imgread_cam_cal_data(*sensor_id, s5kjn1_dump_file, &s5kjn1_cal_info);
 				MILAN_S5KJN1_eeprom_format_ggc_data();
