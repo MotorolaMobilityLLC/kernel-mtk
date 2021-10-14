@@ -790,46 +790,6 @@ static void custom1_setting(void)
 		sizeof(addr_data_pair_full_size_jn1sq) / sizeof(kal_uint16));
 }
 
-#if 0 //stan
-#define FOUR_CELL_SIZE 3072/*size = 3072 = 0xc00*/
-static int Is_Read_4Cell;
-static char Four_Cell_Array[FOUR_CELL_SIZE + 2];
-static void read_4cell_from_eeprom(char *data)
-{
-	int ret;
-	int addr = 0x763;/*Start of 4 cell data*/
-	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
-	char temp;
-
-	if (Is_Read_4Cell != 1) {
-		pr_debug("Need to read i2C\n");
-
-		pu_send_cmd[0] = (char)(addr >> 8);
-		pu_send_cmd[1] = (char)(addr & 0xFF);
-
-		/* Check I2C is normal */
-		ret = iReadRegI2C(pu_send_cmd, 2, &temp, 1, EEPROM_READ_ID);
-		if (ret != 0) {
-			pr_debug("iReadRegI2C error\n");
-			return;
-		}
-
-		Four_Cell_Array[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
-		Four_Cell_Array[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
-
-		/*Multi-Read*/
-		iReadRegI2C(pu_send_cmd, 2, &Four_Cell_Array[2],
-					FOUR_CELL_SIZE, EEPROM_READ_ID);
-		Is_Read_4Cell = 1;
-	}
-
-	if (data != NULL) {
-		pr_debug("return data\n");
-		memcpy(data, Four_Cell_Array, FOUR_CELL_SIZE);
-	}
-}
-#endif
-
 /* These hard code defined refer LenovoCamera_MultiPF_OTPMap_V2.2_Tonga_JN1_V1.4 doc*/
 
 #define S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR 0x191D
@@ -850,53 +810,104 @@ static void read_4cell_from_eeprom(char *data)
                                 S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE + \
                                 S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE)
 
+static uint8_t AUSTIN_S5KJN1_eeprom_for_remosaic[S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE + 2] = {0};
 
-static void s5kjn1_get_remosaic_param_from_eeprom(char *data)
+enum REMOSAIC_DATA_TYPE {
+    REMOSAIC_DATA_TYPE_XTC,
+    REMOSAIC_DATA_TYPE_SENSOR_XTC,
+    REMOSAIC_DATA_TYPE_PDXTC,
+    REMOSAIC_DATA_TYPE_SW_GGC,
+};
+
+void * remosaic_data_parse(enum REMOSAIC_DATA_TYPE type, void * data)
 {
-    int data_index = 0;
+    void * data_point = NULL;
     uint8_t data_crc16[2] = {0};
-
-    data[0] = (S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE & 0xff);/*Low*/
-    data[1] = ((S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE >> 8) & 0xff);/*High*/
-    data_index = 2;
-
-    data_crc16[0] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE];
-    data_crc16[1] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE+1];
-    if (!eeprom_util_check_crc16(&AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE, convert_crc(data_crc16)))
+    if(data == NULL)
     {
-        LOG_INF("XTC data CRC Fails!");
+        LOG_ERR("NULL of data");
+        return NULL;
     }
-    memcpy(&data[data_index], &AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE);
-    data_index = data_index + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE;
 
-
-    data_crc16[0] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE];
-    data_crc16[1] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE+1];
-    if (!eeprom_util_check_crc16(&AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE, convert_crc(data_crc16)))
+    LOG_INF("type: %d", type);
+    switch(type)
     {
-        LOG_INF("sensor XTC data CRC Fails!");
+        case REMOSAIC_DATA_TYPE_XTC:
+            data_point = data + S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR;
+            data_crc16[0] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE);
+            data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE + 1);
+            if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE, convert_crc(data_crc16)))
+            {
+                LOG_ERR("XTC data CRC Fails!");
+                return NULL;
+            }
+            break;
+        case REMOSAIC_DATA_TYPE_SENSOR_XTC:
+            data_point = data + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_START_ADDR;
+            data_crc16[0] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE);
+            data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE + 1);
+            if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE, convert_crc(data_crc16)))
+            {
+                LOG_ERR("sensor XTC data CRC Fails!");
+                return NULL;
+            }
+            break;
+        case REMOSAIC_DATA_TYPE_PDXTC:
+            data_point = data + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_START_ADDR;
+            data_crc16[0] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE);
+            data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE + 1);
+            if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE, convert_crc(data_crc16)))
+            {
+                LOG_ERR("PDXTC data CRC Fails!");
+                return NULL;
+            }
+            break;
+        case REMOSAIC_DATA_TYPE_SW_GGC:
+            data_point = data + S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_START_ADDR;
+            data_crc16[0] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE);
+            data_crc16[1] = *(uint8_t *)(data_point + S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE + 1);
+            if (!eeprom_util_check_crc16(data_point, S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE, convert_crc(data_crc16)))
+            {
+                LOG_ERR("SW_GGC data CRC Fails!");
+                return NULL;
+            }
+            break;
+        default:
+            return NULL;
+            break;
     }
-    memcpy(&data[data_index], &AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE);
-    data_index = data_index + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE;
+
+    return data_point;
+}
+
+static void remosaic_data_get(void *src_data)
+{
+    int dst_data_index = 0;
+    void * src_data_point = NULL;
+    char * dst_data_point = &AUSTIN_S5KJN1_eeprom_for_remosaic[0];
+
+    dst_data_point[0] = (S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE & 0xff);/*Low*/
+    dst_data_point[1] = ((S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE >> 8) & 0xff);/*High*/
+    dst_data_index = 2;
+
+    src_data_point = remosaic_data_parse(REMOSAIC_DATA_TYPE_XTC, src_data);
+    memcpy(&dst_data_point[dst_data_index], src_data_point, S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE);
+    dst_data_index = dst_data_index + S5KJN1_REMOSAIC_PARAM_XTC_DATA_SIZE;
+
+    src_data_point = remosaic_data_parse(REMOSAIC_DATA_TYPE_SENSOR_XTC, src_data);
+    memcpy(&dst_data_point[dst_data_index], src_data_point, S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE);
+    dst_data_index = dst_data_index + S5KJN1_REMOSAIC_PARAM_SENSOR_XTC_DATA_SIZE;
+
+    src_data_point = remosaic_data_parse(REMOSAIC_DATA_TYPE_PDXTC, src_data);
+    memcpy(&dst_data_point[dst_data_index], src_data_point, S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE);
+    dst_data_index = dst_data_index + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE ;
 
 
-    data_crc16[0] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE];
-    data_crc16[1] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE+1];
-    if (!eeprom_util_check_crc16(&AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE, convert_crc(data_crc16)))
-    {
-        LOG_INF("PDXTC data CRC Fails!");
-    }
-    memcpy(&data[data_index], &AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE);
-    data_index = data_index + S5KJN1_REMOSAIC_PARAM_PDXTC_DATA_SIZE ;
+    src_data_point = remosaic_data_parse(REMOSAIC_DATA_TYPE_SW_GGC, src_data);
+    memcpy(&dst_data_point[dst_data_index], src_data_point, S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE);
+    dst_data_index = dst_data_index + S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE ;
 
-    data_crc16[0] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE];
-    data_crc16[1] = AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_START_ADDR+S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE+1];
-    if (!eeprom_util_check_crc16(&AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE, convert_crc(data_crc16)))
-    {
-        LOG_INF("SW_GGC data CRC Fails!");
-    }
-    memcpy(&data[data_index], &AUSTIN_S5KJN1_eeprom[S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_START_ADDR], S5KJN1_REMOSAIC_PARAM_SW_GGC_DATA_SIZE);
-
+    LOG_INF("Total data num. is %d", dst_data_index);
 }
 
 /*************************************************************************
@@ -938,6 +949,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				AUSTIN_S5KJN1_eeprom_dump_bin(EEPROM_DATA_PATH, AUSTIN_S5KJN1_EEPROM_SIZE, (void *)AUSTIN_S5KJN1_eeprom);
 				AUSTIN_S5KJN1_eeprom_format_calibration_data((void *)AUSTIN_S5KJN1_eeprom);
 				AUSTIN_S5KJN1_eeprom_format_ggc_data();
+				remosaic_data_get((void *)AUSTIN_S5KJN1_eeprom);
 #endif
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
@@ -1923,24 +1935,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 /* ihdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1)); */
 		break;
 
-#if 0 //stan
-	case SENSOR_FEATURE_GET_4CELL_DATA:/*get 4 cell data from eeprom*/
-	{
-		int type = (kal_uint16)(*feature_data);
-		char *data = (char *)(uintptr_t)(*(feature_data+1));
-
-		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
-			pr_debug("Read Cross Talk Start");
-			read_4cell_from_eeprom(data);
-			pr_debug("Read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
-				(UINT16)data[0], (UINT16)data[1],
-				(UINT16)data[2], (UINT16)data[3],
-				(UINT16)data[4], (UINT16)data[5]);
-		}
-		break;
-	}
-#endif
-
 #ifdef ENABLE_PDAF
 	/******************** PDAF START >>> *********/
 	case SENSOR_FEATURE_GET_PDAF_INFO:
@@ -2108,8 +2102,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		char *data = (char *)(uintptr_t)(*(feature_data+1));
 
 		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
-			memset(data, 0, S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE);
-			s5kjn1_get_remosaic_param_from_eeprom(data);
+			memset(data, 0, S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE + 2);
+			memcpy(data, &AUSTIN_S5KJN1_eeprom_for_remosaic[0], S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE +2);
 			LOG_INF(
 			    "[JX]read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
 			    (UINT16)data[0], (UINT16)data[1],
