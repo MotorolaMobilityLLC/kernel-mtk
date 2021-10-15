@@ -23,15 +23,15 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-#include "mot_s5khm2mipiraw_Sensor.h"
-#include "mot_s5khm2_pdaf.h"
+#include "mot_s5khm2qtechmipiraw_Sensor.h"
+#include "mot_s5khm2qtech_pdaf.h"
 
-#define PFX "[imgsensor] mot_s5khm2mipiraw"
+#define PFX "[imgsensor] mot_s5khm2qtechmipiraw"
 static int m_mot_camera_debug = 0;
 #define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_DEBUG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 
-#define LOG_INF_N(format, args...) pr_info(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_INF_N(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE_REGISTER_VALUE  (16)
@@ -41,24 +41,22 @@ static int m_mot_camera_debug = 0;
 #define I2C_BUFFER_LEN 1020
 #endif
 #define I2C_ADDR (0xac)
-#define HM2_PARTNUM_SIZE 8
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5khm2_eeprom_data.bin"
+#define QTECHHM2_PARTNUM_SIZE 8
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5khm2qtech_eeprom_data.bin"
 #define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
-#define KYOTO_S5KHM2OFILM_EEPROM_SLAVE_ADDR 0xA0
-#define KYOTO_S5KHM2OFILM_SENSOR_IIC_SLAVE_ADDR 0xAC
-#define S5KHM2OFILM_PRRTNUMBER "28C99686"
-#define S5KHM2QTECH_PRRTNUMBER "28D38708"
-static uint8_t S5KHM2OFILM_PART[9] = {0};
-
-static const char *s5khm2_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
+#define KYOTO_S5KHM2QTECH_EEPROM_SLAVE_ADDR 0xA0
+#define KYOTO_S5KHM2QTECH_SENSOR_IIC_SLAVE_ADDR 0xAC
+#define S5KHM2QTECHONE_PRRTNUMBER "28D00976"
+static uint8_t S5KHM2QTECH_PART[9] = {0};
+static const char *s5khm2qtech_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
 static bool bIsLongExposure = KAL_FALSE;
-static mot_calibration_info_t s5khm2_cal_info = {0};
+static mot_calibration_info_t s5khm2qtech_cal_info = {0};
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
 static kal_uint32 streaming_control(kal_bool enable);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MOT_S5KHM2_SENSOR_ID,
+	.sensor_id = MOT_S5KHM2QTECH_SENSOR_ID,
 	.checksum_value = 0x30a07776,
 	.pre = {
 		.pclk = 1600000000,
@@ -736,26 +734,26 @@ static void custom2_setting(void)
 	LOG_INF_N("X");
 }
 
-static void KYOTO_S5KHM2OFILM_read_data_from_eeprom(kal_uint8 slave,kal_uint32 part_add)
+static void KYOTO_S5KHM2QTECH_read_data_from_eeprom(kal_uint8 slave,kal_uint32 part_add)
 {
         uint32_t idx;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.i2c_write_id = slave;
 	spin_unlock(&imgsensor_drv_lock);
 	//read eeprom data
-	for(idx = 0; idx<HM2_PARTNUM_SIZE ; idx++) {
-	    S5KHM2OFILM_PART[idx] = read_cmos_sensor_8(part_add);
+	for(idx = 0; idx<QTECHHM2_PARTNUM_SIZE ; idx++) {
+	    S5KHM2QTECH_PART[idx] = read_cmos_sensor_8(part_add);
 	    part_add++;
 	}
-	LOG_INF_N("OFilm S5KHM2OFILM_PART:%s\n", S5KHM2OFILM_PART);
+	LOG_INF_N("QTECH S5KHM2QTECH_PART:%s\n", S5KHM2QTECH_PART);
 	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = KYOTO_S5KHM2OFILM_SENSOR_IIC_SLAVE_ADDR;
+	imgsensor.i2c_write_id = KYOTO_S5KHM2QTECH_SENSOR_IIC_SLAVE_ADDR;
 	spin_unlock(&imgsensor_drv_lock);
 }
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
+	return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001)) + 0x1;
 }
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
@@ -768,23 +766,20 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			KYOTO_S5KHM2OFILM_read_data_from_eeprom(KYOTO_S5KHM2OFILM_EEPROM_SLAVE_ADDR,0x0003);
-			if((strncmp(S5KHM2OFILM_PART, S5KHM2QTECH_PRRTNUMBER, HM2_PARTNUM_SIZE) != 0) && (strncmp(S5KHM2OFILM_PART, S5KHM2OFILM_PRRTNUMBER, HM2_PARTNUM_SIZE) != 0) ) {
+			KYOTO_S5KHM2QTECH_read_data_from_eeprom(KYOTO_S5KHM2QTECH_EEPROM_SLAVE_ADDR,0x0003);
+			if(strncmp(S5KHM2QTECH_PART, S5KHM2QTECHONE_PRRTNUMBER, QTECHHM2_PARTNUM_SIZE)  != 0) {
 
-			LOG_INF_N("Manufacturing part number (%s) check Fails!", S5KHM2OFILM_PART);
+			LOG_INF_N("Manufacturing part number (%s) check Fails!", S5KHM2QTECH_PART);
 
 			return ERROR_SENSOR_CONNECT_FAIL;
-
-	}
+			}
 			*sensor_id = return_sensor_id();
-			LOG_INF_N("OFilm S5KHM2OFILM_PART:0x%x\n", S5KHM2OFILM_PRRTNUMBER);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
-				LOG_INF_N("ofilm i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
+				LOG_INF_N("qtech i2c write id: 0x%x, sid:rid 0x%x:0x%x match:%d\n",
 				imgsensor.i2c_write_id, imgsensor_info.sensor_id, *sensor_id,
 				imgsensor_info.sensor_id == *sensor_id);
-				// get calibration status and mnf data.
-				imgread_cam_cal_data(*sensor_id, s5khm2_dump_file, &s5khm2_cal_info);
+				imgread_cam_cal_data(*sensor_id, s5khm2qtech_dump_file, &s5khm2qtech_cal_info);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -810,9 +805,9 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			if ((strncmp(S5KHM2OFILM_PART, S5KHM2QTECH_PRRTNUMBER, HM2_PARTNUM_SIZE) != 0) && (strncmp(S5KHM2OFILM_PART, S5KHM2OFILM_PRRTNUMBER, HM2_PARTNUM_SIZE) != 0) ) {
+			if(strncmp(S5KHM2QTECH_PART, S5KHM2QTECHONE_PRRTNUMBER, QTECHHM2_PARTNUM_SIZE)  != 0) {
 
-			LOG_INF_N("Manufacturing part number (%s) check Fails!", S5KHM2OFILM_PART);
+			LOG_INF_N("Manufacturing part number (%s) check Fails!", S5KHM2QTECH_PART);
 
 			return ERROR_SENSOR_CONNECT_FAIL;
 			}
@@ -1099,14 +1094,14 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorHightSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
 
-	sensor_info->calibration_status.mnf   = s5khm2_cal_info.mnf_status;
-	sensor_info->calibration_status.af    = s5khm2_cal_info.af_status;
-	sensor_info->calibration_status.awb   = s5khm2_cal_info.awb_status;
-	sensor_info->calibration_status.lsc   = s5khm2_cal_info.lsc_status;
-	sensor_info->calibration_status.pdaf  = s5khm2_cal_info.pdaf_status;
-	sensor_info->calibration_status.dual  = s5khm2_cal_info.dual_status;
+	sensor_info->calibration_status.mnf   = s5khm2qtech_cal_info.mnf_status;
+	sensor_info->calibration_status.af    = s5khm2qtech_cal_info.af_status;
+	sensor_info->calibration_status.awb   = s5khm2qtech_cal_info.awb_status;
+	sensor_info->calibration_status.lsc   = s5khm2qtech_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf  = s5khm2qtech_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual  = s5khm2qtech_cal_info.dual_status;
 
-	memcpy(&sensor_info->mnf_calibration, &s5khm2_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
+	memcpy(&sensor_info->mnf_calibration, &s5khm2qtech_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -1919,7 +1914,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 };
 
 
-UINT32 MOT_S5KHM2_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 MOT_S5KHM2QTECH_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)

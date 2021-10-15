@@ -22,6 +22,7 @@ extern unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned i
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
 	{MOT_S5KHM2_SENSOR_ID, 0xA0, Common_read_region},  //eeprom
+	{MOT_S5KHM2QTECH_SENSOR_ID, 0xA0, Common_read_region},  //eeprom
 	{MOT_OV32B40_SENSOR_ID, 0xA2, Common_read_region}, //eeprom
 	{MOT_S5K4H7_SENSOR_ID, 0x5A, mot_s5k4h7_read_region},  // otp
 	/*  ADD before this line */
