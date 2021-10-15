@@ -46,6 +46,24 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 	},
 	{
 		{
+			.sensorID= MOT_S5KHM2QTECH_SENSOR_ID,
+			.deviceID = 0x01,
+			.dataLength = 0x1925,
+			.sensorVendorid = 0x16020000,
+			.vendorByte = {1,2,3,4},
+			.dataBuffer = NULL
+		},
+		{
+			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
+			{0x00000001, 0x18F60027, 0x00180018, mot_check_af_data  },//High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
+			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
+			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },
+			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data},//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
+			{0x00000001, 0x00000015, 0x00000010, NULL},//dump serial number.
+		}
+	},
+	{
+		{
 			.sensorID= MOT_OV32B40_SENSOR_ID,
 			.deviceID = 0x02,
 			.dataLength = 0x1065,
