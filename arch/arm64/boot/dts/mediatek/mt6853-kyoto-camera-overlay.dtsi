@@ -496,11 +496,11 @@
 	cam2_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 
-	cam0_enable_sensor = "mot_s5khm2_mipi_raw";
+	cam0_enable_sensor = "mot_s5khm2_mipi_raw mot_s5khm2qtech_mipi_raw";
 	cam1_enable_sensor = "mot_ov32b40_mipi_raw";
 	cam2_enable_sensor = "mot_ov02b1b_mipi_raw";
 	cam4_enable_sensor = "mot_s5k4h7_mipi_raw";
-
+	cust-sensor = "mot_s5khm2_mipi_raw mot_s5khm2qtech_mipi_raw mot_ov32b40_mipi_raw mot_ov02b1b_mipi_raw mot_s5k4h7_mipi_raw";
 	status = "okay";
 };
 /* CAMERA GPIO end */
