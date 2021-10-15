@@ -429,9 +429,9 @@
 
 /* CAMERA EEPROM */
 &i2c8 {
-	mtk_camera_eeprom4:camera_eeprom4@51 {
+	mtk_camera_eeprom4:camera_eeprom4@37 {
 		compatible = "mediatek,camera_eeprom";
-		reg = <0x52>;
+		reg = <0x37>;
 		status = "okay";
 	};
 };
@@ -441,9 +441,9 @@
 		reg = <0x51>;
 		status = "okay";
 	};
-	mtk_camera_eeprom2:camera_eeprom2@50 {
+	mtk_camera_eeprom2:camera_eeprom2@37 {
 		compatible = "mediatek,camera_eeprom";
-		reg = <0x50>;
+		reg = <0x37>;
 		status = "okay";
 	};
 };
