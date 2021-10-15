@@ -435,6 +435,7 @@
 #define MOT_COFUD_S5KJN1_SENSOR_ID       0x38E1
 //add cofud sensor id end
 //add kyoto sensor id begin
+#define MOT_S5KHM2QTECH_SENSOR_ID                          (0x1ad2+0x01)
 #define MOT_S5KHM2_SENSOR_ID                               (0x1ad2)
 #define MOT_OV32B40_SENSOR_ID                              (0x3242)
 #define MOT_OV02B1B_SENSOR_ID                              (0x002b)
@@ -728,6 +729,7 @@
 #define SENSOR_DRVNAME_SAIPAN_CXT_GC02M1_MIPI_RAW "saipan_cxt_gc02m1_mipi_raw"
 
 //add kyoto sensor drvname begin
+#define SENSOR_DRVNAME_MOT_S5KHM2QTECH_MIPI_RAW            "mot_s5khm2qtech_mipi_raw"
 #define SENSOR_DRVNAME_MOT_S5KHM2_MIPI_RAW                 "mot_s5khm2_mipi_raw"
 #define SENSOR_DRVNAME_MOT_OV32B40_MIPI_RAW                "mot_ov32b40_mipi_raw"
 #define SENSOR_DRVNAME_MOT_OV02B1B_MIPI_RAW                "mot_ov02b1b_mipi_raw"
