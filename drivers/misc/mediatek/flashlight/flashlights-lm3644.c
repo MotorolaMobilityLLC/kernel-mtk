@@ -65,7 +65,7 @@
 #define LM3644_CHANNEL_CH1 0
 #define LM3644_CHANNEL_CH2 1
 
-#define LM3644_LEVEL_NUM 39
+#define LM3644_LEVEL_NUM 26
 #define LM3644_LEVEL_TORCH 7
 
 #define LM3644_HW_TIMEOUT 400 /* ms */
@@ -86,7 +86,7 @@ static struct pinctrl_state *lm3644_hwen_high;
 static struct pinctrl_state *lm3644_hwen_low;
 
 /* lm3644 revision */
-static int lm3644tt_chip_id;
+static int lm3644_chip_id;
 
 /* define usage count */
 static int use_count;
@@ -178,31 +178,27 @@ static int lm3644_pinctrl_set(int pin, int state)
  * lm3644 operations
  *****************************************************************************/
 static const int lm3644_current[LM3644_LEVEL_NUM] = {
-	 22,  46,  70,  93, 116, 140, 163, 187,  210, 234,
-	257, 281, 304, 327, 351, 374, 398, 421,  445, 468,
-	492, 515, 539, 562, 585, 609, 632, 656,  679, 703,
-	726, 761, 796, 832, 869, 902, 937, 972, 1008
+	 22,  46,  70,  93,  116, 140, 163, 198, 245, 304,
+	351, 398, 445, 503,  550, 597, 656, 703, 750, 796,
+	855, 902, 949, 996, 1054, 1101
 };
 
 static const unsigned char lm3644tt_torch_level[LM3644_LEVEL_NUM] = {
 	0x02, 0x11, 0x15, 0x19, 0x1C, 0x20, 0x23, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 static const unsigned char lm3644_torch_level[LM3644_LEVEL_NUM] = {
-	0x1C, 0x23, 0x2A, 0x31, 0x38, 0x40, 0x46, 0x00, 0x00, 0x00,
+	0x26, 0x2A, 0x2D, 0x31, 0x34, 0x38, 0x3C, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 static const unsigned char lm3644_flash_level[LM3644_LEVEL_NUM] = {
-	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x11, 0x13,
-	0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F, 0x21, 0x23, 0x25, 0x27,
-	0x29, 0x2B, 0x2D, 0x2F, 0x31, 0x33, 0x35, 0x37, 0x39, 0x3B,
-	0x3D, 0x40, 0x43, 0x48, 0x4C, 0x50, 0x54, 0x59, 0x5D
+	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x10, 0x14, 0x19,
+	0x1D, 0x21, 0x25, 0x2A, 0x2E, 0x32, 0x37, 0x3B, 0x3F, 0x43,
+	0x48, 0x4C, 0x50, 0x54, 0x59, 0x5D
 };
 
 static unsigned char lm3644_reg_enable;
@@ -363,10 +359,10 @@ static int lm3644_set_level_ch1(int level)
 
 	/* set torch brightness level */
 	reg = LM3644_REG_TORCH_LEVEL_LED1;
-	if (lm3644tt_chip_id)
-		val = lm3644tt_torch_level[level];
-	else
+	if (lm3644_chip_id)
 		val = lm3644_torch_level[level];
+	else
+                val = lm3644tt_torch_level[level];
 	ret = lm3644_write_reg(lm3644_i2c_client, reg, val);
 
 	lm3644_level_ch1 = level;
@@ -388,10 +384,10 @@ static int lm3644_set_level_ch2(int level)
 
 	/* set torch brightness level */
 	reg = LM3644_REG_TORCH_LEVEL_LED2;
-	if (lm3644tt_chip_id)
-		val = lm3644tt_torch_level[level];
+	if (lm3644_chip_id)
+                val = lm3644_torch_level[level];
 	else
-		val = lm3644_torch_level[level];
+		val = lm3644tt_torch_level[level];
 	ret = lm3644_write_reg(lm3644_i2c_client, reg, val);
 
 	lm3644_level_ch2 = level;
@@ -429,9 +425,9 @@ int lm3644_init(void)
 	msleep(20);
 
 	/* get silicon revision */
-	lm3644tt_chip_id = lm3644_read_reg(lm3644_i2c_client, LM3644_REG_DEVICE_ID);
-	pr_err("LM3644(TT) revision(%d).\n", lm3644tt_chip_id);
-        if (LM3644_VER_DEVICE_ID != lm3644tt_chip_id) {
+	lm3644_chip_id = lm3644_read_reg(lm3644_i2c_client, LM3644_REG_DEVICE_ID);
+	pr_err("LM3644(TT) revision(%d).\n", lm3644_chip_id);
+        if (LM3644_VER_DEVICE_ID != lm3644_chip_id) {
 	  pr_err("is not lm3644");
           return -1;
 	}
@@ -445,10 +441,10 @@ int lm3644_init(void)
 
 	/* set torch current ramp time and flash timeout */
 	reg = LM3644_REG_TIMING_CONF;
-	if (lm3644tt_chip_id)
-		val = LM3644_TORCH_RAMP_TIME | LM3644TT_FLASH_TIMEOUT;
+	if (lm3644_chip_id)
+                val = LM3644_TORCH_RAMP_TIME | LM3644_FLASH_TIMEOUT;
 	else
-		val = LM3644_TORCH_RAMP_TIME | LM3644_FLASH_TIMEOUT;
+		val = LM3644_TORCH_RAMP_TIME | LM3644TT_FLASH_TIMEOUT;
 	ret = lm3644_write_reg(lm3644_i2c_client, reg, val);
 
 	return ret;
@@ -908,7 +904,7 @@ static int lm3644_remove(struct platform_device *pdev)
 	pdev->dev.platform_data = NULL;
 
 	/* unregister flashlight device */
-	if (LM3644_VER_DEVICE_ID == lm3644tt_chip_id) {
+	if (LM3644_VER_DEVICE_ID == lm3644_chip_id) {
 		if (pdata && pdata->channel_num)
 			for (i = 0; i < pdata->channel_num; i++)
 				flashlight_dev_unregister_by_device_id(
