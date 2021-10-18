@@ -230,8 +230,8 @@
 				"retsea",	/* 210 */
 				"retjp",	/* 211 */
 				"softbank",	/* 212 */
-				"undefined",	/* 213 */
-				"undefined",	/* 214 */
+				"optus",	/* 213 */
+				"retkr",	/* 214 */
 				"undefined",	/* 215 */
 				"undefined",	/* 216 */
 				"undefined",	/* 217 */
