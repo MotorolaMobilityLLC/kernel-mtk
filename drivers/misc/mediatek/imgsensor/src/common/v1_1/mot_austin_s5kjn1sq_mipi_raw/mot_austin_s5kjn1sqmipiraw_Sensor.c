@@ -234,6 +234,7 @@ struct imgsensor_struct imgsensor = {
 	/* sensor need support LE, SE with HDR feature */
 	.ihdr_mode = KAL_FALSE,
 	.i2c_write_id = 0xAC,	/* record current sensor's i2c write id */
+	.current_ae_effective_frame = 2,
 
 };
 
@@ -614,61 +615,30 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	}
 }
 
-/*************************************************************************
- * FUNCTION
- *	check_stremoff
- *
- * DESCRIPTION
- *	waiting function until sensor streaming finish.
- *
- * PARAMETERS
- *	None
- *
- * RETURNS
- *	None
- *
- * GLOBALS AFFECTED
- *
- *************************************************************************/
-static void check_stream_is_on(void)
-{
-	unsigned int i = 0;
-	int timeout = (10000 / imgsensor.current_fps) + 1;
-
-	for (i = 0; i < timeout; i++) {
-		if (read_cmos_sensor_8(0x0005) != 0xFF)
-			break;
-		else
-			mdelay(1);
-	}
-	pr_debug("%s exit! %d\n", __func__, i);
-}
-
-static void check_streamoff(void)
-{
-	unsigned int i = 0;
-	int timeout = (10000 / imgsensor.current_fps) + 1;
-
-	mdelay(3);
-	for (i = 0; i < timeout; i++) {
-		if (read_cmos_sensor_8(0x0005) != 0xFF)
-			mdelay(1);
-		else
-			break;
-	}
-	pr_debug("%s exit! %d\n", __func__, i);
-}
-
 static kal_uint32 streaming_control(kal_bool enable)
 {
-	pr_debug("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	int framecnt = 0;
+	int i = 0;
 
+	pr_debug("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
-		check_stream_is_on();
+		while (1)
+		{
+			framecnt = read_cmos_sensor_8(0x0005);
+			if ((framecnt & 0xff) != 0xFF)
+			{
+				LOG_INF("stream is on %d ", framecnt);
+				break;
+			}
+			else
+			{
+				LOG_INF("stream is not on, %d, i=%d", framecnt, i++);
+				mdelay(1);
+			}
+		}
 	} else {
 		write_cmos_sensor_8(0x0100, 0x00);
-		check_streamoff();
 	}
 	return ERROR_NONE;
 }
@@ -2112,6 +2082,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 		break;
 	}
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+			*feature_return_para_32 =
+				imgsensor.current_ae_effective_frame;
+			break;
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
+			memcpy(feature_return_para_32, &imgsensor.ae_frm_mode,
+				sizeof(struct IMGSENSOR_AE_FRM_MODE));
+			break;
 	default:
 		break;
 	}
