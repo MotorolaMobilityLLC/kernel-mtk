@@ -412,9 +412,9 @@
 		4937 5007 1503 1511/*T8*/
 		4937 5007 1493 1501/*T9*/
 	>;
-	g_FG_PSEUDO100_T0 = <(98)>;
+	g_FG_PSEUDO100_T0 = <(96)>;
 /*	Pseudo 100% percentage at T0*/
-	g_FG_PSEUDO100_T1 = <(98)>;
+	g_FG_PSEUDO100_T1 = <(96)>;
 /*	Pseudo 100% percentage at T1*/
 	g_FG_PSEUDO100_T2 = <(95)>;
 /*	Pseudo 100% percentage at T2*/
