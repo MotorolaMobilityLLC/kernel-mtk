@@ -43,3 +43,10 @@ else
 obj-  := dummy.o # avoid build error
 endif
 
+ifneq (,$(findstring saipan, $(strip $(TARGET_PRODUCT))))
+ccflags-y += -DSAIPAN_SWTP_CONFIG
+endif
+
+ifneq (,$(findstring austin, $(strip $(TARGET_PRODUCT))))
+ccflags-y += -DAUSTIN_SWTP_CONFIG
+endif
