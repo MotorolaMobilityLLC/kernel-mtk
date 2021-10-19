@@ -35,6 +35,8 @@
 #include <asm/arch/mt_gpio.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
@@ -46,11 +48,17 @@
 #define LCM_ID_NT36672C_TIANMA (0x03)
 
 #define LCM_BL_DRV_I2C_SUPPORT
+#define LCM_BL_CMD_LP_MODE
 
+#define PWM_51_POS	2
+static bool bl_lm3697 = false;
+static bool config_pwm = true;
+static bool first_bl_check = true;
 static struct LCM_UTIL_FUNCS lcm_util;
-
+#ifndef LCM_BL_DRV_I2C_SUPPORT
 extern char BL_control_read_bytes(unsigned char cmd);
 extern int BL_control_write_bytes(unsigned char addr, unsigned char value);
+#endif
 extern int Bias_power_write_bytes(unsigned char addr, unsigned char value);
 extern void BDG_set_cmdq_V2_DSI0(void *cmdq, unsigned int cmd, unsigned char count,
 			unsigned char *para_list, unsigned char force_update);
@@ -131,6 +139,9 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 static struct LCM_setting_table init_setting[] = {
 	{0xFF,0x01,{0x10}},
 	{0xFB,0x01,{0x01}},
+	{0X51,0x01,{0xCC}},   // Do not move 51 pos alone, should keep same with PWM_51_POS
+	{0X53,0x01,{0X2C}},
+	{0X55,0x01,{0X01}},
 	{0X36,0x01,{0X00}},
 	{0X3B,0x05,{0X03,0X14,0X36,0X04,0X04}},
 	{0xB0,0x01,{0x00}},
@@ -160,15 +171,12 @@ static struct LCM_setting_table init_setting[] = {
 	{0xFF,0x01,{0x10}},
 	{0xFF,0x01,{0x23}},
 	{0xFB,0x01,{0x01}},
-	{0X00,0x01,{0X00}},//8bit
-	{0X07,0x01,{0X20}},//20KHZ
-	{0X08,0x01,{0X0A}},//20KHZ
-	{0X09,0x01,{0X0E}},//20KHZ
+	{0X00,0x01,{0X80}},//12bit
+	{0X07,0x01,{0X00}},//20KHZ
+	{0X08,0x01,{0X01}},//20KHZ
+	{0X09,0x01,{0X55}},//20KHZ
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x01,{0xCC}},
-	{0X53,0x01,{0X2C}},
-	{0X55,0x01,{0X01}},
 
 	{0X11,0x00,{}},
 	{REGFLAG_DELAY,100,{}},
@@ -189,6 +197,44 @@ static struct LCM_setting_table_V4 BL_Level[] = {
 };
 #endif
 
+#ifdef LCM_BL_CMD_LP_MODE
+static struct LCM_setting_table_V4 lcm_hbm_on[] = {
+	{0x39, 0x51, 2, {0X0F, 0xFF}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_hbm_off[] = {
+	{0x39, 0x51, 2, {0x0C, 0xCC}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_hbm_off_lm3697[] = {
+	{0x39, 0x51, 2, {0x0C, 0xEC}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_cabc_ui[] = {
+	{0x15, 0x55, 1, {0X01}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_cabc_mv[] = {
+	{0x15, 0x55, 1, {0X03}, 0 },
+};
+
+static struct LCM_setting_table_V4 lcm_cabc_dis[] = {
+	{0x15, 0x55, 1, {0X00}, 0 },
+};
+
+#else
+static struct LCM_setting_table lcm_cabc_setting[] = {
+	{0x55, 1, {0x01} },	//UI
+	{0x55, 1, {0x03} },	//MV
+	{0x55, 1, {0x00} },	//DISABLE
+};
+
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x0C, 0XCC} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
+};
+#endif
+
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 		       unsigned int count, unsigned char force_update)
 {
@@ -201,9 +247,6 @@ static void push_table(void *cmdq, struct LCM_setting_table *table,
 		switch (cmd) {
 
 		case REGFLAG_DELAY:
-			if (table[i].count <= 10)
-				MDELAY(table[i].count);
-			else
 				MDELAY(table[i].count);
 			break;
 
@@ -233,7 +276,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	struct dfps_info *dfps_params = dsi->dfps_params;
 
 	dsi->dfps_enable = 1;
-	dsi->dfps_default_fps = 60;/*real fps * 100, to support float*/
+	dsi->dfps_default_fps = 6000;/*real fps * 100, to support float*/
 	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
 
 	/* DPFS_LEVEL0 */
@@ -361,6 +404,34 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 }
 
+static void lcm_bl_ic_config() {
+	first_bl_check = false;
+	if (saved_command_line) {
+		char *sub;
+		char lm3697_key[] = "LM3697_EX";
+
+		sub = strstr(saved_command_line, lm3697_key);
+		if (sub) {
+			bl_lm3697 = true;
+			pr_info("%s:lm3697 match\n", __func__);
+
+			//reconfig 51 cmd on init_setting
+			if (config_pwm && (0x51 == init_setting[PWM_51_POS].cmd)) {
+				//keep consistent with lcm_hbm_off_lm3697
+				init_setting[PWM_51_POS].para_list[0] = lcm_hbm_off_lm3697[0].para_list[0];
+				init_setting[PWM_51_POS].para_list[1] = lcm_hbm_off_lm3697[0].para_list[1];
+
+				pr_info("%s:lm3697:new init_setting[%d].para_list[0]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[0]);
+				pr_info("%s:lm3697:new init_setting[%d].para_list[1]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[1]);
+			}
+			else
+				pr_err("%s:lm3697:config_pwm:%d, init_setting[%d].cmd=0x%02x\n", __func__, config_pwm, PWM_51_POS, init_setting[PWM_51_POS].cmd);
+		}
+	}
+	else
+		pr_info("%s: saved_command_line NULL\n", __func__);
+
+}
 
 static void lcm_init(void)
 {
@@ -381,6 +452,15 @@ static void lcm_init(void)
 	MDELAY(15);
 	SET_RESET_PIN(1);
 	MDELAY(15);
+
+	if (config_pwm && first_bl_check) {
+		lcm_bl_ic_config();
+	}
+
+	if (bl_lm3697 && (0x51 == init_setting[PWM_51_POS].cmd)) {
+		pr_info("%s:lm3697:new init_setting[%d].para_list[0]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[0]);
+		pr_info("%s:lm3697:new init_setting[%d].para_list[1]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[1]);
+	}
 
 	push_table(NULL, init_setting,
 		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1);
@@ -468,6 +548,97 @@ static void *lcm_switch_mode(int mode)
 	return NULL;
 }
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+#ifdef LCM_BL_CMD_LP_MODE
+			if (*lcm_value) {
+				dsi_set_cmdq_V4(lcm_hbm_on,
+						sizeof(lcm_hbm_on)/sizeof(struct LCM_setting_table_V4), 1);
+
+				//TBD, in lp mode with 2 bit, it need send cmd twice to make it work currently
+				MDELAY(5);
+				dsi_set_cmdq_V4(lcm_hbm_on,
+						sizeof(lcm_hbm_on)/sizeof(struct LCM_setting_table_V4), 1);
+
+				pr_debug("%s, csot_nt36672c HBM on\n", __func__);
+			}
+			else {
+				if (config_pwm && bl_lm3697) {
+					pr_info("%s: set lm3697 hbm off\n", __func__);
+					dsi_set_cmdq_V4(lcm_hbm_off_lm3697,
+							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+					//TBD
+					MDELAY(5);
+					dsi_set_cmdq_V4(lcm_hbm_off_lm3697,
+							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+				}
+				else {
+					pr_info("%s: set aw99703 hbm off\n", __func__);
+					dsi_set_cmdq_V4(lcm_hbm_off,
+							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+					//TBD
+					MDELAY(5);
+					dsi_set_cmdq_V4(lcm_hbm_off,
+							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+				}
+			}
+#else
+			pr_debug("%s:push lcm_hbm_setting:%d", __func__, *lcm_value);
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+#endif
+			pr_info("%s, csot_nt36672c set HBM %d\n", __func__, *lcm_value);
+			break;
+		case PARAM_CABC:
+#ifdef LCM_BL_CMD_LP_MODE
+			switch(*lcm_value) {
+				case CABC_UI_MODE:
+					dsi_set_cmdq_V4(lcm_cabc_ui,
+						sizeof(lcm_cabc_ui)/sizeof(struct LCM_setting_table_V4), 1);
+					break;
+				case CABC_MV_MODE:
+					dsi_set_cmdq_V4(lcm_cabc_mv,
+						sizeof(lcm_cabc_mv)/sizeof(struct LCM_setting_table_V4), 1);
+					break;
+				default:
+					dsi_set_cmdq_V4(lcm_cabc_dis,
+						sizeof(lcm_cabc_dis)/sizeof(struct LCM_setting_table_V4), 1);
+					break;
+			}
+#else
+			pr_debug("%s:push lcm_cabc_setting:%d", __func__, *lcm_value);
+			push_table(handle, &lcm_cabc_setting[*lcm_value], 1, 1);
+#endif
+			pr_info("%s, csot_nt36672c set cabc %d\n", __func__, *lcm_value);
+
+			if (first_bl_check && config_pwm) {
+				if (first_bl_check)
+					lcm_bl_ic_config();
+
+				if (bl_lm3697) {
+					MDELAY(5);
+					dsi_set_cmdq_V4(lcm_hbm_off_lm3697,
+							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+					//TBD
+					MDELAY(5);
+					dsi_set_cmdq_V4(lcm_hbm_off_lm3697,
+							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
+
+					pr_info("%s: config lm3697 init pwm done\n", __func__);
+				}
+				else
+					pr_info("%s: not lm3697\n", __func__);
+			}
+
+			break;
+		default:
+			pr_err("%s,csot_nt36672c cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+}
 
 struct LCM_DRIVER mipi_mot_vid_csot_nt36672c_fhd_678_lcm_drv = {
 	.name = "mipi_mot_vid_csot_nt36672c_fhd_678",
@@ -484,5 +655,5 @@ struct LCM_DRIVER mipi_mot_vid_csot_nt36672c_fhd_678_lcm_drv = {
 #endif
 	.ata_check = lcm_ata_check,
 	.switch_mode = lcm_switch_mode,
-
+	.set_lcm_cmd = lcm_set_cmdq,
 };
