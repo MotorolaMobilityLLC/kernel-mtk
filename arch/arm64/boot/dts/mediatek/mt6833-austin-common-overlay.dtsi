@@ -548,3 +548,16 @@
 	sdcard_det_en=<1>;
 	sdcard_hlact=<0>;
 };
+
+&swtp {
+	deb-gpios = <&pio 29 0>;
+	debounce = <10>;
+};
+&swtp_1 {
+	deb-gpios = <&pio 30 0>;
+	debounce = <10>;
+};
+&swtp_2 {
+	deb-gpios = <&pio 16 0>;
+	debounce = <10>;
+};
