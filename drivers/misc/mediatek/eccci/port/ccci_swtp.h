@@ -17,7 +17,14 @@
 /* modify MAX_PIN_NUM/DTS to support more gpio,
  * need to follow SOP for customization.
  */
+
+#ifdef SAIPAN_SWTP_CONFIG
 #define MAX_PIN_NUM 4
+#endif
+#ifdef AUSTIN_SWTP_CONFIG
+#define MAX_PIN_NUM 3
+#endif
+
 #define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
 #define SWTP1_COMPATIBLE_DEVICE_ID "mediatek, swtp1-eint"
 /*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
