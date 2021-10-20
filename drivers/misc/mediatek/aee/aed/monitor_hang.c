@@ -194,7 +194,7 @@ int del_white_list(char *name)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 static int monit_hang_flag = 1;
 #define SEQ_printf(m, x...) \
 do {                \
@@ -442,7 +442,7 @@ static int hang_detect_init(void);
 static int __init monitor_hang_init(void)
 {
 	int err = 0;
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	struct proc_dir_entry *pe;
 #endif
 
@@ -458,7 +458,7 @@ static int __init monitor_hang_init(void)
 	hang_detect_init();
 	/* bleow code is added by QHQ  for hang detect */
 	/* end */
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	pe = proc_create("monitor_hang", 0664, NULL, &monitor_hang_fops);
 	if (!pe)
 		return -ENOMEM;
@@ -1859,7 +1859,7 @@ static int hang_detect_thread(void *arg)
 			&& reboot_flag == false)
 			aee_rr_rec_hang_detect_timeout_count(COUNT_ANDROID_REBOOT);
 #endif
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 					if (monit_hang_flag == 1) {
 					/* eng load can detect whether KE*/
 #endif
@@ -1879,7 +1879,7 @@ static int hang_detect_thread(void *arg)
 						AEE_REBOOT_MODE_HANG_DETECT,
 						"Hang Detect", NULL);
 #endif
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 					}
 #endif
 				} else
