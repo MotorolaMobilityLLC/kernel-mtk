@@ -1185,7 +1185,7 @@ static void *ion_dma_buf_kmap(struct dma_buf *dmabuf, unsigned long offset)
 	void *vaddr;
 
 	if (!buffer->heap->ops->map_kernel) {
-		pr_err("%s: map kernel is not implemented by this heap.\n",
+		IONMSG("%s: map kernel is not implemented by this heap.\n",
 		       __func__);
 		return ERR_PTR(-ENOTTY);
 	}
