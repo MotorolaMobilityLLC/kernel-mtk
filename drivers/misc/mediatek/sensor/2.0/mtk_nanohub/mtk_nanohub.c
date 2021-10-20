@@ -1828,7 +1828,7 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_LIGHT, data, length);
 		vfree(data);
 	}
-
+	msleep(1);
 	length = sizeof(struct ps_custom);
 	data = vzalloc(length);
 	if (data) {
@@ -1838,6 +1838,7 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_PROXIMITY, data, length);
 		vfree(data);
 	}
+	msleep(1);
 #endif
 	length = sizeof(device->pressure_config_data);
 	data = vzalloc(length);
@@ -1879,6 +1880,7 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_CHOPCHOP, data, length);
 		vfree(data);
 	}
+	msleep(1);
 #endif
 #ifdef CONFIG_MOTO_CAMGEST_PARAMS
 	length = sizeof(struct mot_camgest);
@@ -1890,6 +1892,7 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_CAMGEST, data, length);
 		vfree(data);
 	}
+	msleep(1);
 #endif
 #ifdef CONFIG_MOTO_GLANCE_PARAMS
 	length = sizeof(struct mot_glance);
@@ -1901,6 +1904,7 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_MOT_GLANCE, data, length);
 		vfree(data);
 	}
+	msleep(1);
 #endif
 #ifdef CONFIG_MOTO_LTV_PARAMS
 	length = sizeof(struct mot_ltv);
@@ -1912,6 +1916,7 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_LTV, data, length);
 		vfree(data);
 	}
+	msleep(1);
 #endif
 }
 
@@ -2751,46 +2756,55 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 	//SITUATION_PR_ERR("situation_store_params count=%d\n", count);
 
 	memcpy(motparams, buf, sizeof(struct mot_params));
-#ifdef CONFIG_MOTO_CHOPCHOP_PARAMS
-	err = mtk_nanohub_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&motparams->chopchop_params, sizeof(struct mot_chopchop));
-	if (err < 0)
-		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
-#endif
-#ifdef CONFIG_MOTO_CAMGEST_PARAMS
-	err = mtk_nanohub_cfg_to_hub(ID_CAMGEST, (uint8_t *)&motparams->camgest_params, sizeof(struct mot_camgest));
-	if (err < 0)
-		pr_err("sensor_cfg_to_hub CAMGEST fail\n");
-#endif
-#ifdef CONFIG_MOTO_GLANCE_PARAMS
-	err = mtk_nanohub_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&motparams->glance_params, sizeof(struct mot_glance));
-	if (err < 0)
-		pr_err("sensor_cfg_to_hub GLANCE fail\n");
-#endif
-#ifdef CONFIG_MOTO_LTV_PARAMS
-	err = mtk_nanohub_cfg_to_hub(ID_LTV, (uint8_t *)&motparams->ltv_params, sizeof(struct mot_ltv));
-	if (err < 0)
-		pr_err("sensor_cfg_to_hub LTV fail\n");
-#endif
 #ifdef CONFIG_MOTO_ALSPS_PARAMS
 	pr_err("sensor_cfg_to_hub  als_custom %d ps_custom %d\n",sizeof(struct als_custom),sizeof(struct ps_custom));
 
 	err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->alscustom, sizeof(struct als_custom));
 	if (err < 0)
 		pr_err("sensor_cfg_to_hub light fail\n");
-
+	msleep(1);
 	err = mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->pscustom, sizeof(struct ps_custom));
+	msleep(1);
 #endif
+
 #ifdef CONFIG_MOTO_ALSPS_NVCFG
 	if(14 == motparams->als_nvcfg.alscfg) {
 		err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->als_nvcfg, sizeof(struct mot_als_nvcfg));
 		if (err < 0)
 			pr_err("sensor_cfg_to_hub light fail\n");
 	}
+	msleep(1);
 	if(15 == motparams->ps_nvcfg.pscfg) {
 		err = mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->ps_nvcfg, sizeof(struct mot_ps_nvcfg));
 		if (err < 0)
 			pr_err("sensor_cfg_to_hub proximity fail\n");
 	}
+	msleep(1);
+#endif
+
+#ifdef CONFIG_MOTO_CHOPCHOP_PARAMS
+	err = mtk_nanohub_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&motparams->chopchop_params, sizeof(struct mot_chopchop));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CHOPCHOP fail\n");
+	msleep(1);
+#endif
+#ifdef CONFIG_MOTO_CAMGEST_PARAMS
+	err = mtk_nanohub_cfg_to_hub(ID_CAMGEST, (uint8_t *)&motparams->camgest_params, sizeof(struct mot_camgest));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub CAMGEST fail\n");
+	msleep(1);
+#endif
+#ifdef CONFIG_MOTO_GLANCE_PARAMS
+	err = mtk_nanohub_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&motparams->glance_params, sizeof(struct mot_glance));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub GLANCE fail\n");
+	msleep(1);
+#endif
+#ifdef CONFIG_MOTO_LTV_PARAMS
+	err = mtk_nanohub_cfg_to_hub(ID_LTV, (uint8_t *)&motparams->ltv_params, sizeof(struct mot_ltv));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub LTV fail\n");
+	msleep(1);
 #endif
 	//if(get_boot_mode() == FACTORY_BOOT)
 	//	mtk_nanohub_selftest_to_hub(ID_PROXIMITY);
