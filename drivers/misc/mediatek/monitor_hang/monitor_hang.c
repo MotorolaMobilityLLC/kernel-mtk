@@ -75,7 +75,7 @@ static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
 static bool reboot_flag;
 static struct name_list *white_list;
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	struct proc_dir_entry *pe;
 #endif
 
@@ -226,8 +226,7 @@ int del_white_list(char *name)
 	return 0;
 }
 
-
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 static int monit_hang_flag = 1;
 #define SEQ_printf(m, x...) \
 do {                \
@@ -579,7 +578,7 @@ void trigger_hang_detect_db(void)
 		aee_rr_rec_hang_detect_timeout_count(COUNT_ANDROID_REBOOT);
 #endif
 
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	if (monit_hang_flag == 1) {
 #endif
 #ifdef CONFIG_MTK_AEE_IPANIC
@@ -594,7 +593,7 @@ void trigger_hang_detect_db(void)
 		"Hang Detect", NULL);
 #endif
 
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	}
 #endif
 
@@ -2094,7 +2093,7 @@ static int __init monitor_hang_init(void)
 	}
 	hang_detect_init();
 
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	pe = proc_create("monitor_hang", 0664, NULL, &monitor_hang_fops);
 	if (!pe)
 		return -ENOMEM;
@@ -2112,7 +2111,7 @@ static void __exit monitor_hang_exit(void)
 	/* kfree(NULL) is safe */
 	kfree(Hang_Info);
 #endif
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifndef CONFIG_MTK_USER_BUILD
 	if (pe)
 		proc_remove(pe);
 #endif
