@@ -620,7 +620,7 @@ static struct LCM_setting_table_V4 lcm_hbm_off[] = {
 };
 
 static struct LCM_setting_table_V4 lcm_hbm_off_lm3697[] = {
-	{0x39, 0x51, 2, {0x0C, 0xEC}, 0 },
+	{0x39, 0x51, 2, {0x0D, 0x2A}, 0 },
 };
 
 static struct LCM_setting_table_V4 lcm_cabc_ui[] = {
@@ -904,6 +904,11 @@ static void lcm_init(void)
 	else {
 		if (config_pwm && first_bl_check) {
 			lcm_bl_ic_config();
+		}
+
+		if (bl_lm3697 && (0x51 == init_setting[PWM_51_POS].cmd)) {
+			pr_info("%s:lm3697:new init_setting[%d].para_list[0]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[0]);
+			pr_info("%s:lm3697:new init_setting[%d].para_list[1]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[1]);
 		}
 
 		pr_debug("%s, init_setting\n", __func__);

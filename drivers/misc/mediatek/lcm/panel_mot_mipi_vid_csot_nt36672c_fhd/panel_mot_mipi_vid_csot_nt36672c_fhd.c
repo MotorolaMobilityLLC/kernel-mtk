@@ -207,7 +207,7 @@ static struct LCM_setting_table_V4 lcm_hbm_off[] = {
 };
 
 static struct LCM_setting_table_V4 lcm_hbm_off_lm3697[] = {
-	{0x39, 0x51, 2, {0x0C, 0xEC}, 0 },
+	{0x39, 0x51, 2, {0x0D, 0x2A}, 0 },
 };
 
 static struct LCM_setting_table_V4 lcm_cabc_ui[] = {
