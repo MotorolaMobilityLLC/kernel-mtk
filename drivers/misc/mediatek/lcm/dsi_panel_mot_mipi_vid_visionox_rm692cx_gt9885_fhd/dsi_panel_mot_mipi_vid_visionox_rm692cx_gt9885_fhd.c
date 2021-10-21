@@ -109,6 +109,7 @@ static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 #ifndef FALSE
 #define FALSE 0
 #endif
+unsigned int area = 0;
 
 struct LCM_setting_table {
 	unsigned int cmd;
@@ -133,6 +134,10 @@ static struct LCM_setting_table init_setting[] = {
 {0xc2, 0x01, {0x03}},
 {0x35, 0x01, {0x00}},
 {0x51, 0x02, {0x07,0xff}},
+{0xfe, 0x01, {0x00}},
+{0x53, 0x01, {0x28}},
+{0xfe, 0x01, {0x60}},
+{0xc3, 0x01, {0x08}},
 {0xfe, 0x01, {0x20}},
 {0xb8, 0x01, {0x08}},
 {0xb9, 0x01, {0x09}},
@@ -536,49 +541,124 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(bl_level,
 			sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 	pr_info("[LCM]%s,level_new is %x\n", __func__,level_new);
-	MDELAY(20);
 
 	//mura
-	switch(level_new)
-	{
-		case 0x00 ... 0x1e :
-				push_table(level_00_1e,
-						sizeof(level_00_1e)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_00_1e\n", __func__);
-				break;
-		case 0x1f ... 0x1fd :
-				push_table(level_1f_1fd,
-						sizeof(level_1f_1fd)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_1f_1fd\n", __func__);
-				break;
-		case 0x1fe ... 0x2ff :
-				push_table(level_1fe_2ff,
-						sizeof(level_1fe_2ff)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_1fe_2ff\n", __func__);
-				break;
-		case 0x300 ... 0x3ff:
-				push_table(level_300_3ff,
-						sizeof(level_300_3ff)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_300_3ff\n", __func__);
-				break;
-		case 0x400 ... 0x4ff:
-				push_table(level_400_4ff,
-						sizeof(level_400_4ff)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_400_4ff\n", __func__);
-				break;
-		case 0x500 ... 0x5ff:
-				push_table(level_500_5ff,
-						sizeof(level_500_5ff)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_500_5ff\n", __func__);
-				break;
-		case 0x600 ... 0xfff:
-				push_table(level_600_fff,
-						sizeof(level_600_fff)/sizeof(struct LCM_setting_table),1);
-				pr_info("[LCM]%s,log check is level_600_fff\n", __func__);
-				break;
-		default:
-				break;
-	}
+		switch(level_new)
+		{
+			case 0x00 ... 0x1e :
+					{
+						if(area == 1){
+							break;
+						}
+						else
+						{
+							MDELAY(20);
+							push_table(level_00_1e,
+							sizeof(level_00_1e)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_00_1e\n", __func__);
+							area = 1;
+						}
+						break;
+					}
+
+			case 0x1f ... 0x1fd :
+					{
+						if(area == 2){
+							break;
+						}
+						else{
+							MDELAY(20);
+							push_table(level_1f_1fd,
+							sizeof(level_1f_1fd)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_1f_1fd\n", __func__);
+							area = 2;
+						}
+						break;
+					}
+
+			case 0x1fe ... 0x2ff :
+					{
+						if(area == 3){
+							break;
+						}
+						else{
+							MDELAY(20);
+							push_table(level_1fe_2ff,
+							sizeof(level_1fe_2ff)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_1fe_2ff\n", __func__);
+
+							area = 3;
+						}
+						break;
+					}
+
+			case 0x300 ... 0x3ff:
+					{
+						if(area == 4){
+							break;
+						}
+						else{
+							MDELAY(20);
+							push_table(level_300_3ff,
+							sizeof(level_300_3ff)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_300_3ff\n", __func__);
+
+							area = 4;
+						}
+						break;
+					}
+
+			case 0x400 ... 0x4ff:
+					{
+						if(area == 5){
+							break;
+						}
+						else{
+							MDELAY(20);
+							push_table(level_400_4ff,
+							sizeof(level_400_4ff)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_400_4ff\n", __func__);
+
+							area = 5;
+						}
+						break;
+					}
+
+			case 0x500 ... 0x5ff:
+					{
+						if(area == 6){
+							break;
+						}
+						else{
+							MDELAY(20);
+							push_table(level_500_5ff,
+							sizeof(level_500_5ff)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_500_5ff\n", __func__);
+
+							area = 6;
+						}
+						break;
+					}
+
+			case 0x600 ... 0xfff:
+					{
+						if(area == 7){
+							break;
+						}
+						else{
+							MDELAY(20);
+							push_table(level_600_fff,
+							sizeof(level_600_fff)/sizeof(struct LCM_setting_table),1);
+							pr_info("[LCM]%s,log check is level_600_fff\n", __func__);
+
+							area = 7;
+						}
+						break;
+					}
+
+			default:
+					break;
+		}
 }
 
 static void *lcm_switch_mode(int mode)
