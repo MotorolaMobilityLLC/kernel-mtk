@@ -2036,10 +2036,15 @@ static void cmdq_mdp_init_pmqos(void)
 		  PM_QOS_MDP_FREQ, PM_QOS_DEFAULT_VALUE);
 		pm_qos_add_request(&isp_clk_qos_request[i],
 		  PM_QOS_IMG_FREQ, PM_QOS_DEFAULT_VALUE);
-		snprintf(mdp_clk_qos_request[i].owner,
+		result = snprintf(mdp_clk_qos_request[i].owner,
 		  sizeof(mdp_clk_qos_request[i].owner) - 1, "mdp_clk_%d", i);
-		snprintf(isp_clk_qos_request[i].owner,
+		if (result < 0)
+			CMDQ_ERR("get mdp_clk_qos_request[i].owner failed, err: %d\n", result);
+
+		result = snprintf(isp_clk_qos_request[i].owner,
 		  sizeof(isp_clk_qos_request[i].owner) - 1, "isp_clk_%d", i);
+		if (result < 0)
+			CMDQ_ERR("get isp_clk_qos_request[i].owner failed, err: %d\n", result);
 	}
 	/* Call mmdvfs_qos_get_freq_steps to get supported frequency */
 	result = mmdvfs_qos_get_freq_steps(PM_QOS_MDP_FREQ, &g_freq_steps[0],

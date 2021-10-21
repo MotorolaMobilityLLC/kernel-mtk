@@ -3167,6 +3167,7 @@ struct drm_mtk_layering_info_32 {
 	int res_idx;
 	uint32_t hrt_weight;
 	uint32_t hrt_idx;
+	compat_uptr_t mml_frame_info[3];
 };
 
 int mtk_layering_rule_ioctl_compat(struct file *file, unsigned int cmd,

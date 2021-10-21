@@ -256,6 +256,8 @@ static int ap_init_v1(struct pll_dts *array, struct match *match)
 
 	if (priv_data->domain == NULL) {
 		FHDBG("domain is null!\n");
+		kfree(hdlr);
+		kfree(priv_data);
 		WARN_ON(1);
 		return 0;
 	}

@@ -27,6 +27,7 @@
 #define MTK_DRM_PROP_PRESENT_FENCE  "PRESENT_FENCE"
 #define MTK_DRM_PROP_OVL_DSI_SEQ  "OVL_DSI_SEQ"
 
+struct mml_frame_info;
 
 /**
  * User-desired buffer creation information structure.
@@ -579,6 +580,7 @@ struct drm_mtk_layering_info {
 	int res_idx;
 	uint32_t hrt_weight;
 	uint32_t hrt_idx;
+	struct mml_frame_info *mml_cfg[3];
 };
 
 /**

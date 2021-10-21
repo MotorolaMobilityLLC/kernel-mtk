@@ -245,7 +245,7 @@ EXPORT_SYMBOL(v4l2_m2m_buf_queue_check);
 
 void mtk_vcodec_set_log(struct mtk_vcodec_ctx *ctx, char *val)
 {
-	int i, argc = 0;
+	int i, argc = 0, ret = 0, argcMex = 0;
 	//char argv[MAX_SUPPORTED_LOG_PARAMS_COUNT * 2][LOG_INFO_SIZE] = {0};
 	char *argv[MAX_SUPPORTED_LOG_PARAMS_COUNT * 2];
 	char *temp = NULL;
@@ -268,25 +268,39 @@ void mtk_vcodec_set_log(struct mtk_vcodec_ctx *ctx, char *val)
 	temp = val;
 	for (token = strsep(&temp, " "); token != NULL; token = strsep(&temp, " ")) {
 		max_cpy_len = strnlen(token, LOG_INFO_SIZE - 1);
-		strncpy(argv[argc], token, max_cpy_len);
-		argv[argc][max_cpy_len] = '\0';
+		if (argc >= 0 && argv[argc]) {
+			argcMex = (LOG_INFO_SIZE-1 > max_cpy_len) ?
+				max_cpy_len : (LOG_INFO_SIZE-2);
+			strncpy(argv[argc], token, argcMex);
+			argv[argc][argcMex+1] = '\0';
+		}
 		argc++;
+		if (argc >= MAX_SUPPORTED_LOG_PARAMS_COUNT * 2)
+			break;
 	}
 
-	for (i = 0; i < (argc >= MAX_SUPPORTED_LOG_PARAMS_COUNT * 2
-			? MAX_SUPPORTED_LOG_PARAMS_COUNT * 2 : argc); i++) {
-		if (strcmp("-mtk_vcodec_dbg", argv[i]) == 0) {
+	argcMex = (argc >= MAX_SUPPORTED_LOG_PARAMS_COUNT * 2
+			? MAX_SUPPORTED_LOG_PARAMS_COUNT * 2 : argc);
+	for (i = 0; i < argcMex; i++) {
+		if (argv[i] != NULL)
+			argv[i][LOG_INFO_SIZE-1] = '\0';
+		else
+			continue;
+		if ((i < argcMex-1) && strcmp("-mtk_vcodec_dbg", argv[i]) == 0) {
 			if (kstrtol(argv[++i], 0, &temp_val) == 0)
 				mtk_vcodec_dbg = temp_val;
-		} else if (strcmp("-mtk_vcodec_perf", argv[i]) == 0) {
+		} else if ((i < argcMex-1) && strcmp("-mtk_vcodec_perf", argv[i]) == 0) {
 			if (kstrtol(argv[++i], 0, &temp_val) == 0)
 				mtk_vcodec_perf = temp_val;
-		} else if (strcmp("-mtk_v4l2_dbg_level", argv[i]) == 0) {
+		} else if ((i < argcMex-1) && strcmp("-mtk_v4l2_dbg_level", argv[i]) == 0) {
 			if (kstrtol(argv[++i], 0, &temp_val) == 0)
 				mtk_v4l2_dbg_level = temp_val;
 		} else {
 			memset(vcu_log, 0x00, LOG_INFO_SIZE);
-			snprintf(vcu_log, LOG_INFO_SIZE, "%s %s", argv[i], argv[i+1]);
+
+			ret = snprintf(vcu_log, LOG_INFO_SIZE, "%s %s", argv[i], argv[i+1]);
+			if (ret < 0)
+				pr_info("[MTK_V4L2] vcu_log snprintf error: %d", ret);
 			if (ctx->type == MTK_INST_DECODER) {
 				vdec_if_init(ctx, V4L2_CID_MPEG_MTK_LOG);
 				vdec_if_set_param(ctx, SET_PARAM_DEC_LOG, vcu_log);

@@ -7523,7 +7523,8 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 {
 	int ret = 0;
 
-	if (sess_mode == primary_display_set_sess_mode) {
+	if (!force && sess_mode == primary_display_set_sess_mode
+		&& primary_display_is_mirror_mode() == 0) {
 		DISPDBG("%s+\n", __func__);
 		return ret;
 	}

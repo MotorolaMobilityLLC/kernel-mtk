@@ -788,11 +788,10 @@ static snd_pcm_uframes_t mtk_dsphw_pcm_pointer_ul
 static snd_pcm_uframes_t mtk_dsphw_pcm_pointer_dl
 			 (struct snd_pcm_substream *substream)
 {
-
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	int id = rtd->cpu_dai->id;
 	struct mtk_base_dsp *dsp = snd_soc_platform_get_drvdata(rtd->platform);
-	struct mtk_base_dsp_mem *dsp_mem = &dsp->dsp_mem[id];
+	struct mtk_base_dsp_mem *dsp_mem;
 	/* afedl id is get from dts */
 	int afedlid = get_afememdl_by_afe_taskid(id);
 	unsigned int hw_ptr = 0, hw_base = 0;
@@ -804,7 +803,15 @@ static snd_pcm_uframes_t mtk_dsphw_pcm_pointer_dl
 	const struct mtk_base_memif_data *memif_data;
 	int reg_ofs_base;
 	int reg_ofs_cur;
-	spinlock_t *ringbuf_lock = &dsp_mem->ringbuf_lock;
+	spinlock_t *ringbuf_lock;
+
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+	dsp_mem = &dsp->dsp_mem[id];
+	ringbuf_lock = &dsp_mem->ringbuf_lock;
+
 
 	if (dsp->dsp_ver)
 		goto SYNC_READINDEX;
@@ -921,6 +928,11 @@ static snd_pcm_uframes_t mtk_dsphw_pcm_pointer
 static void mtk_dsp_dl_handler(struct mtk_base_dsp *dsp,
 			       struct ipi_msg_t *ipi_msg, int id)
 {
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		goto DSP_IRQ_HANDLER_ERR;
+	}
+
 	if (dsp->dsp_mem[id].substream == NULL) {
 		pr_info("%s = substream == NULL\n", __func__);
 		goto DSP_IRQ_HANDLER_ERR;
@@ -948,6 +960,10 @@ static bool is_adsp_support_audio_irq(void)
 static bool mtk_dsp_dl_consume_check_exception(struct mtk_base_dsp *dsp,
 			       struct ipi_msg_t *ipi_msg, int id)
 {
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info_ratelimited("%s id = %d, is overrange\n", __func__, id);
+		return false;
+	}
 
 	if (!dsp->dsp_mem[id].substream) {
 		pr_info_ratelimited("%s substream NULL id[%d]\n", __func__, id);
@@ -984,8 +1000,16 @@ static void mtk_dsp_dl_consume_handler(struct mtk_base_dsp *dsp,
 			       struct ipi_msg_t *ipi_msg, int id)
 {
 	void *ipi_audio_buf;
-	struct mtk_base_dsp_mem *dsp_mem = &dsp->dsp_mem[id];
-	spinlock_t *ringbuf_lock = &dsp->dsp_mem[id].ringbuf_lock;
+	struct mtk_base_dsp_mem *dsp_mem;
+	spinlock_t *ringbuf_lock;
+
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info_ratelimited("%s id = %d, is overrange\n", __func__, id);
+		return;
+	}
+
+	dsp_mem = &dsp->dsp_mem[id];
+	ringbuf_lock = &dsp->dsp_mem[id].ringbuf_lock;
 
 	if (!dsp->dsp_mem[id].substream) {
 		pr_info_ratelimited("%s substream NULL id[%d]\n", __func__, id);
@@ -1030,10 +1054,19 @@ static void mtk_dsp_dl_consume_handler(struct mtk_base_dsp *dsp,
 static void mtk_dsp_ul_handler(struct mtk_base_dsp *dsp,
 			       struct ipi_msg_t *ipi_msg, int id)
 {
-	struct mtk_base_dsp_mem *dsp_mem = &dsp->dsp_mem[id];
+	struct mtk_base_dsp_mem *dsp_mem;
 	void *ipi_audio_buf;
 	unsigned long flags;
-	spinlock_t *ringbuf_lock = &dsp->dsp_mem[id].ringbuf_lock;
+	spinlock_t *ringbuf_lock;
+
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return;
+	}
+
+	dsp_mem = &dsp->dsp_mem[id];
+	ringbuf_lock = &dsp->dsp_mem[id].ringbuf_lock;
+
 
 	if (!dsp->dsp_mem[id].substream) {
 		pr_info("%s substream NULL\n", __func__);
@@ -1147,6 +1180,11 @@ static int mtk_dsp_pcm_open(struct snd_pcm_substream *substream)
 			 AUDIO_IPI_MSG_NEED_ACK, AUDIO_DSP_TASK_OPEN, 0, 0,
 			 NULL);
 
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+
 	dsp->dsp_mem[id].substream = substream;
 
 	return 0;
@@ -1172,6 +1210,10 @@ static int mtk_dsp_pcm_close(struct snd_pcm_substream *substream)
 
 	mtk_dsp_deregister_feature(dsp_feature_id);
 
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
 	dsp->dsp_mem[id].substream = NULL;
 
 	return ret;
@@ -1185,8 +1227,14 @@ static int mtk_dsp_pcm_hw_params(struct snd_pcm_substream *substream,
 	int id = rtd->cpu_dai->id;
 	void *ipi_audio_buf; /* dsp <-> audio data struct*/
 	int ret = 0;
-	struct mtk_base_dsp_mem *dsp_memif = &dsp->dsp_mem[id];
+	struct mtk_base_dsp_mem *dsp_memif;
 
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+
+	dsp_memif = &dsp->dsp_mem[id];
 	pr_info("%s(), task_id: %d\n", __func__, id);
 
 	reset_audiobuffer_hw(&dsp->dsp_mem[id].adsp_buf);
@@ -1293,6 +1341,11 @@ static int mtk_dsp_pcm_hw_free(struct snd_pcm_substream *substream)
 	if (ret)
 		pr_info("%s ret[%d]\n", __func__, ret);
 
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+
 	if (gen_pool_dsp != NULL && substream->dma_buffer.area) {
 		ret = mtk_adsp_genpool_free_sharemem_ring
 				(&dsp->dsp_mem[id], id);
@@ -1315,8 +1368,16 @@ static int mtk_dsp_pcm_hw_prepare(struct snd_pcm_substream *substream)
 	struct mtk_base_dsp *dsp = snd_soc_platform_get_drvdata(rtd->platform);
 	int id = rtd->cpu_dai->id;
 	void *ipi_audio_buf; /* dsp <-> audio data struct */
-	struct mtk_base_dsp_mem *dsp_memif = &dsp->dsp_mem[id];
-	struct audio_hw_buffer *adsp_buf = &dsp->dsp_mem[id].adsp_buf;
+	struct mtk_base_dsp_mem *dsp_memif;
+	struct audio_hw_buffer *adsp_buf;
+
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+
+	dsp_memif = &dsp->dsp_mem[id];
+	adsp_buf = &dsp->dsp_mem[id].adsp_buf;
 
 	clear_audiobuffer_hw(adsp_buf);
 	RingBuf_Reset(&dsp->dsp_mem[id].ring_buf);
@@ -1356,8 +1417,14 @@ static int mtk_dsp_start(struct snd_pcm_substream *substream,
 	int ret = 0;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	int id = rtd->cpu_dai->id;
-	struct mtk_base_dsp_mem *dsp_mem = &dsp->dsp_mem[id];
+	struct mtk_base_dsp_mem *dsp_mem;
 
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+
+	dsp_mem = &dsp->dsp_mem[id];
 	dev_info(dsp->dev, "%s() task id:%s %s\n",
 		 __func__, id,
 		 dsp_mem->adsp_xrun_flag ? "adsp xrun" : "");
@@ -1538,8 +1605,15 @@ static int mtk_dsp_pcm_copy(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	int id = rtd->cpu_dai->id;
 	struct mtk_base_dsp *dsp = snd_soc_platform_get_drvdata(rtd->platform);
-	struct mtk_base_dsp_mem *dsp_mem = &dsp->dsp_mem[id];
+	struct mtk_base_dsp_mem *dsp_mem;
 	int ret = 0;
+
+	if (id < 0 || id >= AUDIO_TASK_DAI_NUM) {
+		pr_info("%s id = %d, is overrange\n", __func__, id);
+		return -1;
+	}
+
+	dsp_mem = &dsp->dsp_mem[id];
 
 	if (count <= 0) {
 		pr_info(

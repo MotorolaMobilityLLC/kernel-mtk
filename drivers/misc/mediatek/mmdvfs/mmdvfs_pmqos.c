@@ -2248,14 +2248,10 @@ int mmdvfs_qos_force_step(int step)
 		pr_notice("force set step invalid: %d\n", step);
 		return -EINVAL;
 	}
-//	force_step = step;
-#if defined(CONFIG_MACH_MT6785)
-#ifdef CONFIG_MTK_MT6382_BDG
-#ifdef CONFIG_MTK_MT6382_VDO_MODE
-	force_step = 0;
-#else
 	force_step = step;
-#endif
+#if defined(CONFIG_MACH_MT6785)
+#if (defined(CONFIG_MTK_MT6382_BDG) && defined(CONFIG_MTK_MT6382_VDO_MODE))
+	force_step = 0;
 #endif
 #endif
 	update_step(PM_QOS_NUM_CLASSES, -1);
