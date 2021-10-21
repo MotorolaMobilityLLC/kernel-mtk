@@ -139,9 +139,8 @@ struct LCM_setting_table {
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x28, 0, {} },
-	{REGFLAG_DELAY, 30, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 70, {} },
+	{REGFLAG_DELAY, 60, {} },
 };
 
 static struct LCM_setting_table init_setting[] = {
@@ -192,7 +191,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0XFB,0x01,{0X01}},
 
 	{0X11,0x00,{}},
-	{REGFLAG_DELAY,100,{}},
+	{REGFLAG_DELAY,70,{}},
 	{0X29,0x00,{}},
 
 };
@@ -878,20 +877,20 @@ static void lcm_init(void)
 	pr_info("%s enter\n", __func__);
 
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(10);
+	MDELAY(1);
 
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP_OUT1);
 	Bias_power_write_bytes(0x00,0x0F);
-	MDELAY(5);
+	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT1);
 	Bias_power_write_bytes(0x01,0x0F);
-	MDELAY(15);
+	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(15);
+	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(15);
+	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(15);
+	MDELAY(10);
 
 	if (!hw_checked)
 		lcm_hwrev_check();
@@ -916,7 +915,7 @@ static void lcm_init(void)
 			sizeof(init_setting)/sizeof(struct LCM_setting_table), 1);
 	}
 
-	MDELAY(40);
+	MDELAY(30);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BL_EN_OUT1);
 
 #ifndef LCM_BL_DRV_I2C_SUPPORT
