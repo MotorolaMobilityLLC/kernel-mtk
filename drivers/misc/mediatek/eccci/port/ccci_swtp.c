@@ -142,7 +142,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 #endif
 
 #ifdef AUSTIN_SWTP_CONFIG
-	if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_IN) {
+	if (swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT) {
 		swtp->tx_power_mode = SWTP_NO_TX_POWER;
 		CCCI_LEGACY_ERR_LOG(-1, SYS,
 			"%s:swtp NO power set by 29\n", __func__);
