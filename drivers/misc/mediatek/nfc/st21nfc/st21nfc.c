@@ -88,7 +88,7 @@ static char *I2CDMAReadBuf; /*= NULL;*/  /* unnecessary initialise */
 static unsigned int I2CDMAReadBuf_pa;    /* = NULL; */
 #endif                                   /* KRNMTKLEGACY_I2C */
 
-static bool enable_debug_log;
+static bool enable_debug_log = true;
 
 /*The enum is used to index a pw_states array, the values matter here*/
 enum st21nfc_power_state {
@@ -821,15 +821,10 @@ static unsigned int st21nfc_poll(struct file *file, poll_table *wait)
 		st21nfc_disable_irq(st21nfc_dev);
 	} else {
 		/* Wake_up_pin is low. Activate ISR  */
-		if (!st21nfc_dev->irq_enabled) {
 			if (enable_debug_log)
 				pr_debug("%s enable irq\n", __func__);
 
 			st21nfc_enable_irq(st21nfc_dev);
-		} else {
-			if (enable_debug_log)
-				pr_debug("%s irq already enabled\n", __func__);
-		}
 	}
 	return mask;
 }
