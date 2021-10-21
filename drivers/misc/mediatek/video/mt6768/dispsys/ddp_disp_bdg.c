@@ -5991,6 +5991,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	struct LCM_DSI_PARAMS *tx_params;
 
 	DISPFUNCSTART();
+	DISPMSG("%s: enter\n", __func__);
 	clk_buf_disp_ctrl(true);
 	bdg_tx_pull_6382_reset_pin();
 	mdelay(1);
@@ -6097,6 +6098,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 //	bdg_request_eint_irq();
 
 	DISPFUNCEND();
+	DISPMSG("%s: end\n", __func__);
 
 	return ret;
 }
