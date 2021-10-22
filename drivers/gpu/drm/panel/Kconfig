@@ -808,6 +808,17 @@ config DRM_PANEL_BOE_ICNL9911C_VDO
 	  and uses 24-bits RGB per pixel. It provides a MIPI DSI interface
 	  to host.
 
+config DRM_PANEL_DJN_ILI9882Q_VDO
+	tristate "ILI9882Q FHD+ video mode panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for ILI9882Q DJN VDO
+	  mode Full HD Plus panel. The panel has a 720x1600 resolution
+	  and uses 24-bits RGB per pixel. It provides a MIPI DSI interface
+	  to host.
+
 config MTK_DISABLE_PQ
 	bool "disable mtk pq for some test situation"
 	default n
