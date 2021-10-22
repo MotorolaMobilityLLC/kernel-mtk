@@ -446,10 +446,8 @@ int vcu_ipi_send(struct platform_device *pdev,
 	if (vcu_ptr->abort || ret == 0) {
 		dev_info(&pdev->dev, "vcu ipi %d ack time out !%d", id, ret);
 		if (!vcu_ptr->abort) {
-			task_lock(vcud_task);
 			send_sig(SIGTERM, vcud_task, 0);
 			send_sig(SIGKILL, vcud_task, 0);
-			task_unlock(vcud_task);
 		}
 		if (vcu_ptr->open_cnt > 0) {
 			dev_info(vcu->dev, "wait for vpud killed %d\n",
@@ -944,8 +942,6 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu,
 		}
 	}
 
-	if (j < 0)
-		return -EINVAL;
 	if (atomic_read(&vcu->gce_job_cnt[i][core_id]) == 0 &&
 		vcu->gce_info[j].v4l2_ctx != NULL){
 		if (i == VCU_VENC) {
@@ -1342,8 +1338,10 @@ void vcu_get_task(struct task_struct **task, struct files_struct **f,
 		files = NULL;
 	}
 
-	*task = vcud_task;
-	*f = files;
+	if (task)
+		*task = vcud_task;
+	if (f)
+		*f = files;
 }
 EXPORT_SYMBOL_GPL(vcu_get_task);
 
@@ -1440,8 +1438,9 @@ static int vcu_init_ipi_handler(void *data, unsigned int len, void *priv)
 
 		atomic_set(&vcu->vdec_log_got, 1);
 		wake_up(&vcu->vdec_log_get_wq);
-		vcud_task = NULL;
-		files = NULL;
+		vcu_get_file_lock();
+		vcu_get_task(NULL, NULL, 1);
+		vcu_put_file_lock();
 
 		dev_info(vcu->dev, "[VCU] vpud killing\n");
 
@@ -1470,8 +1469,16 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 	else if (strcmp(current->comm, "mdpd") == 0)
 		vcuid = 1;
 	else if (strcmp(current->comm, "vpud") == 0) {
-		vcud_task = current;
+		vcu_get_file_lock();
+		if (vcud_task &&
+			(current->tgid != vcud_task->tgid ||
+			current->group_leader != vcud_task->group_leader)) {
+			vcu_put_file_lock();
+			return -EACCES;
+		}
+		vcud_task = current->group_leader;
 		files = vcud_task->files;
+		vcu_put_file_lock();
 		vcuid = 0;
 	} else if (strcmp(current->comm, "vdec_srv") == 0 ||
 		strcmp(current->comm, "venc_srv") == 0) {
@@ -1496,16 +1503,15 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 	vcu_ptr->abort = false;
 	vcu_ptr->vpud_is_going_down = 0;
 
-	pr_info("[VCU] %s name: %s pid %d open_cnt %d\n", __func__,
-		current->comm, current->tgid, vcu_ptr->open_cnt);
+	pr_info("[VCU] %s name: %s pid %d tgid %d open_cnt %d current %p group_leader %p\n",
+		__func__, current->comm, current->pid, current->tgid,
+		vcu_ptr->open_cnt, current, current->group_leader);
 
 	return 0;
 }
 
 static int mtk_vcu_release(struct inode *inode, struct file *file)
 {
-	struct task_struct *task = NULL;
-	struct files_struct *f = NULL;
 	unsigned long flags;
 
 	if (file->private_data)
@@ -1517,7 +1523,7 @@ static int mtk_vcu_release(struct inode *inode, struct file *file)
 		/* reset vpud due to abnormal situations. */
 		vcu_ptr->abort = true;
 		vcu_get_file_lock();
-		vcu_get_task(&task, &f, 1);
+		vcu_get_task(NULL, NULL, 1);
 		vcu_put_file_lock();
 		up(&vcu_ptr->vpud_killed);  /* vdec worker */
 		up(&vcu_ptr->vpud_killed);  /* venc worker */

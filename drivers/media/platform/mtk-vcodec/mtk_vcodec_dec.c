@@ -1409,6 +1409,12 @@ static int vidioc_vdec_g_crop(struct file *file, void *priv,
 {
 	struct mtk_vcodec_ctx *ctx = fh_to_ctx(priv);
 
+	if (!V4L2_TYPE_IS_VALID_CROP(cr->type)) {
+		mtk_v4l2_debug(2, "[%d]Error!! Crop Buf type not allowed ERR",
+					cr->type);
+		return -EINVAL;
+	}
+
 	if (ctx->state < MTK_STATE_HEADER) {
 		struct mtk_q_data *q_data;
 

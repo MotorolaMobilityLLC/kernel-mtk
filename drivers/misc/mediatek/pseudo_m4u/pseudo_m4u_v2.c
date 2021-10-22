@@ -3580,7 +3580,7 @@ static int pseudo_probe(struct platform_device *pdev)
 
 static int pseudo_port_probe(struct platform_device *pdev)
 {
-	int larbid;
+	int larbid = -1;
 	unsigned int fake_nr, i;
 	int ret;
 	struct device *dev;

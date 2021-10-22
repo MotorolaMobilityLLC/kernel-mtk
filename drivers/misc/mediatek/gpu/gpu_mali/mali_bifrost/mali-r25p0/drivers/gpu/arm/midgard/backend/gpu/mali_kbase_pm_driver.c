@@ -1762,20 +1762,18 @@ static int kbase_set_jm_quirks(struct kbase_device *kbdev, const u32 prod_id)
 
 	if (kbase_hw_has_feature(kbdev, BASE_HW_FEATURE_IDVS_GROUP_SIZE)) {
 		int default_idvs_group_size = 0xF;
-		u32 tmp;
+		u32 group_size = 0;
 
-		if (of_property_read_u32(kbdev->dev->of_node,
-					"idvs-group-size", &tmp))
-			tmp = default_idvs_group_size;
-
-		if (tmp > IDVS_GROUP_MAX_SIZE) {
+		if (of_property_read_u32(kbdev->dev->of_node, "idvs-group-size",
+					 &group_size))
+			group_size = default_idvs_group_size;
+		if (group_size > IDVS_GROUP_MAX_SIZE) {
 			dev_err(kbdev->dev,
 				"idvs-group-size of %d is too large. Maximum value is %d",
-				tmp, IDVS_GROUP_MAX_SIZE);
-			tmp = default_idvs_group_size;
+				group_size, IDVS_GROUP_MAX_SIZE);
+			group_size = default_idvs_group_size;
 		}
-
-		kbdev->hw_quirks_jm |= tmp << IDVS_GROUP_SIZE_SHIFT;
+		kbdev->hw_quirks_jm |= group_size << IDVS_GROUP_SIZE_SHIFT;
 	}
 
 #define MANUAL_POWER_CONTROL ((u32)(1 << 8))

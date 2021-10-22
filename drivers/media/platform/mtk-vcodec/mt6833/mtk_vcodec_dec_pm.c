@@ -583,7 +583,6 @@ void mtk_vdec_dvfs_begin(struct mtk_vcodec_ctx *ctx)
 		target_freq_64 = match_freq((int)op_rate_to_freq,
 					&vdec_freq_steps[0],
 					vdec_freq_step_size);
-
 		vdec_freq = target_freq_64;
 		if (vdec_cur_job != 0)
 			vdec_cur_job->mhz = (int)target_freq_64;
@@ -656,14 +655,14 @@ void mtk_vdec_emi_bw_begin(struct mtk_vcodec_ctx *ctx)
 	if (vdec_freq_step_size > 1)
 		b_freq_idx = vdec_freq_step_size - 1;
 
-	emi_bw = 8L * 1920 * 1080 * 2 * 10 * vdec_freq;
+	emi_bw = 8L * 1920 * 1080 * 3 * 10 * vdec_freq;
 #if BITS_PER_LONG == 32
 	emi_bw_input = div_u64(8 * vdec_freq, STD_VDEC_FREQ);
 	emi_bw_output = div_u64((1920 * 1088 * 3 * 20 * 10 * vdec_freq),
 			(2 * 3 * STD_VDEC_FREQ * 1024 * 1024));
 #else
-	emi_bw_input = 8 * vdec_freq / STD_VDEC_FREQ;
-	emi_bw_output = 1920 * 1088 * 3 * 20 * 10 * vdec_freq /
+	emi_bw_input = 8L * vdec_freq / STD_VDEC_FREQ;
+	emi_bw_output = 1920L * 1088 * 3 * 30 * 10 * vdec_freq /
 			2 / 3 / STD_VDEC_FREQ / 1024 / 1024;
 #endif
 
@@ -715,9 +714,9 @@ void mtk_vdec_emi_bw_begin(struct mtk_vcodec_ctx *ctx)
 		mm_qos_set_request(&vdec_ufo_enc, emi_bw_output, 0,
 					BW_COMP_DEFAULT);
 	} else {
-		mm_qos_set_request(&vdec_mc, emi_bw, 0, BW_COMP_NONE);
 		mm_qos_set_request(&vdec_pp, emi_bw_output, 0, BW_COMP_NONE);
 	}
+	mm_qos_set_request(&vdec_mc, emi_bw, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_pred_rd, 1, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_pred_wr, 1, 0, BW_COMP_NONE);
 	mm_qos_set_request(&vdec_ppwrap, 0, 0, BW_COMP_NONE);
