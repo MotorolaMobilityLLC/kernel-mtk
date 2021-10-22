@@ -302,6 +302,15 @@ source "drivers/gpu/drm/stm/Kconfig"
 
 source "drivers/gpu/drm/panel/Kconfig"
 
+config DRM_SUPPORT_MORE_PANELS
+	bool "more panels support for drm"
+	depends on DRM
+	help
+	  This control DRM support more panels
+	  if panels more than 4 in project.dts setting, please set y in *config.
+	  if value equals to y, max support 6 panel(the num can be modify in drm code).
+	  if value equals to n, max support 4 panel.
+
 source "drivers/gpu/drm/bridge/Kconfig"
 
 source "drivers/gpu/drm/sti/Kconfig"
