@@ -442,7 +442,7 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	panel1@0 {
-		compatible = "nt36525c,boe,vdo";
+		compatible = "icnl9911c,boe,vdo";
 		reg = <0>;
 		pm-enable-gpios = <&pio 85 0>;
 		reset-gpios = <&pio 86 0>;
@@ -457,7 +457,7 @@
 		};
 	};
 	panel2@0 {
-		compatible = "ili9882q,dijing,vdo";
+		compatible = "icnl9911c,tianma,vdo";
 		reg = <1>;
 		pm-enable-gpios = <&pio 85 0>;
 		reset-gpios = <&pio 86 0>;
@@ -472,7 +472,7 @@
 		};
 	};
 	panel3@0 {
-		compatible = "icnl9911c,tianma,vdo";
+		compatible = "ili9882q,djn,vdo";
 		reg = <2>;
 		pm-enable-gpios = <&pio 85 0>;
 		reset-gpios = <&pio 86 0>;
@@ -487,7 +487,7 @@
 		};
 	};
 	panel4@0 {
-		compatible = "icnl9911c,boe,vdo";
+		compatible = "nt36525c,boe,vdo";
 		reg = <3>;
 		pm-enable-gpios = <&pio 85 0>;
 		reset-gpios = <&pio 86 0>;
@@ -497,6 +497,21 @@
 		pinctrl-names = "default";
 		port {
 			panel_in4: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	panel5@0 {
+		compatible = "ili9882q,dijing,vdo";
+		reg = <4>;
+		pm-enable-gpios = <&pio 85 0>;
+		reset-gpios = <&pio 86 0>;
+		bias-gpios = <&pio 137 0>,
+			<&pio 138 0>;
+		bl-iset-en-gpios = <&pio 132 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in5: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
