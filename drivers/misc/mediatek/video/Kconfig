@@ -176,6 +176,22 @@ config MTK_DRE30_SUPPORT
 	  This feature requires the cowork of AAL user-space algorithm process.
 	  Please also turn on MTK_AAL_SUPPORT amd MTK_DRE30_SUPPORT in ProjectConfig.mk.
 
+config MTK_FB_LCM_BOOST
+        bool "enable medietak lcm boost"
+        default n
+        help
+          This feature boost cpu & ddr in primary display resume,
+          to boost lcm bridge init.
+          set N by default.
+
+config MTK_LCM_BL_DRIVER_BOOST
+        bool "enable medietak lcm backlight boost"
+        default n
+        help
+          This feature set init backlight when display resume
+	  to speed up screen on for LCM with backlight driver
+	  set N by default.
+
 config MTK_ESD_RECOVERY_BACKLIGHT
 	bool "support esd recovery backlight"
 	default n

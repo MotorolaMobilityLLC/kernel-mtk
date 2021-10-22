@@ -100,6 +100,27 @@
 #include <linux/pm_qos.h>
 #endif
 
+#ifdef CONFIG_MTK_FB_LCM_BOOST
+#define _SUPPORT_LCM_BOOST_
+#endif
+
+#ifdef _SUPPORT_LCM_BOOST_
+#include "mtk_ppm_api.h"
+#include "cpu_ctrl.h"
+#include <linux/pm_qos.h>
+#include <linux/time.h>
+#include "helio-dvfsrc-opp.h"
+#include "mtk_boot_common.h"
+
+#define BSP_CERVINO_CLUSTER_NUMBERS 2
+
+static struct ppm_limit_data fb_blank_freq_to_set[BSP_CERVINO_CLUSTER_NUMBERS];
+static struct ppm_limit_data fb_blank_freq_to_release[BSP_CERVINO_CLUSTER_NUMBERS];
+static struct pm_qos_request fb_blank_ddr_req;
+static int fb_boost_start(void);
+static int fb_boost_release(void);
+#endif
+
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 #define TUI_SINGLE_WINDOW_MODE (0)
@@ -3799,6 +3820,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	DISPCHECK("primary_display_init begin lcm=%s, inited=%d\n",
 		lcm_name, is_lcm_inited);
 
+#ifdef _SUPPORT_LCM_BOOST_
+	DISPDBG("%s:pm_qos_add_request\n", __func__);
+	pm_qos_add_request(&fb_blank_ddr_req, PM_QOS_DDR_OPP,
+	PM_QOS_DDR_OPP_DEFAULT_VALUE);
+#endif
+
 	dprec_init();
 	dpmgr_init();
 	if (bdg_is_bdg_connected() == 1) {
@@ -4484,6 +4511,11 @@ int primary_display_deinit(void)
 	pm_qos_remove_request(&primary_display_mm_freq_request);
 #endif
 
+#ifdef _SUPPORT_LCM_BOOST_
+	DISPDBG("%s:pm_qos_remove_request\n", __func__);
+	pm_qos_remove_request(&fb_blank_ddr_req);
+#endif
+
 	return 0;
 }
 
@@ -4939,6 +4971,58 @@ static int check_switch_lcm_mode_for_debug(void)
 	return 1;
 }
 
+#ifdef _SUPPORT_LCM_BOOST_
+static int fb_boost_start(void)
+{
+	int i, cluster_num;
+
+	cluster_num = arch_get_nr_clusters();
+	DISPDBG("%s:cluster_num\n", __func__, cluster_num);
+	if(cluster_num > BSP_CERVINO_CLUSTER_NUMBERS)
+		cluster_num = BSP_CERVINO_CLUSTER_NUMBERS;
+
+	pm_qos_update_request(&fb_blank_ddr_req, DDR_OPP_0);
+
+	for (i = 0; i < BSP_CERVINO_CLUSTER_NUMBERS; i++) {
+		fb_blank_freq_to_set[i].min = 2001000;
+		fb_blank_freq_to_set[i].max = -1;
+	}
+
+	if(cluster_num > 0){
+		update_userlimit_cpu_freq(CPU_KIR_BOOT, cluster_num, fb_blank_freq_to_set);
+		DISPDBG("%s:return 0\n", __func__);
+		return 0;
+	}
+
+	return -1;
+}
+
+static int fb_boost_release(void)
+{
+	int i, cluster_num;
+
+	DISPDBG("%s:enter\n", __func__);
+	cluster_num = arch_get_nr_clusters();
+	if(cluster_num > BSP_CERVINO_CLUSTER_NUMBERS)
+		cluster_num = BSP_CERVINO_CLUSTER_NUMBERS;
+
+	pm_qos_update_request(&fb_blank_ddr_req, DDR_OPP_UNREQ);
+
+	for (i = 0; i < BSP_CERVINO_CLUSTER_NUMBERS; i++) {
+		fb_blank_freq_to_release[i].min = -1;
+		fb_blank_freq_to_release[i].max = -1;
+	}
+
+	if(cluster_num > 0){
+		update_userlimit_cpu_freq(CPU_KIR_BOOT, cluster_num, fb_blank_freq_to_release);
+		DISPDBG("%s:return 0\n", __func__);
+		return 0;
+	}
+
+	return -1;
+}
+#endif
+
 int primary_display_lcm_power_on_state(int alive)
 {
 	int skip_update = 0;
@@ -4988,6 +5072,11 @@ int primary_display_resume(void)
 #endif
 
 	DISPCHECK("primary_display_resume begin\n");
+
+#ifdef _SUPPORT_LCM_BOOST_
+	fb_boost_start();
+#endif
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 		MMPROFILE_FLAG_START, 0, 0);
 
@@ -5384,6 +5473,12 @@ done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 		MMPROFILE_FLAG_END, 0, 0);
 	ddp_clk_check();
+
+#ifdef _SUPPORT_LCM_BOOST_
+	fb_boost_release();
+	DISPDBG("primary_display_resume end\n");
+#endif
+
 	return ret;
 }
 

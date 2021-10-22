@@ -113,3 +113,8 @@ obj-$(CONFIG_SPI_ZYNQMP_GQSPI)		+= spi-zynqmp-gqspi.o
 # SPI slave protocol handlers
 obj-$(CONFIG_SPI_SLAVE_TIME)		+= spi-slave-time.o
 obj-$(CONFIG_SPI_SLAVE_SYSTEM_CONTROL)	+= spi-slave-system-control.o
+
+ifeq ($(CONFIG_MTK_FB_LCM_BOOST), y)
+ccflags-y += -DCONFIG_SPI_TASK_BOOST
+endif
+

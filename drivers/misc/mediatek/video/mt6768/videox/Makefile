@@ -60,6 +60,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/leds/$(MTK_PLATFORM)	\
              -I$(srctree)/drivers/iommu/
 
+ifeq ($(CONFIG_MTK_FB_LCM_BOOST), y)
+ccflags-y += -I$(srctree)/drivers/devfreq/
+endif
+
 subdir-ccflags-y += -I$(srctree)/drivers/staging/android/ion \
 		    -I$(srctree)/drivers/staging/android/ion/mtk
 

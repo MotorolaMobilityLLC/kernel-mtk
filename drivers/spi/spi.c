@@ -1306,8 +1306,26 @@ static int spi_init_queue(struct spi_controller *ctlr)
 	ctlr->busy = false;
 
 	kthread_init_worker(&ctlr->kworker);
+
+#ifdef CONFIG_SPI_TASK_BOOST
+	dev_dbg(&ctlr->dev, "ctlr->rt=%d\n", ctlr->rt);
+	if (ctlr->rt) {
+		ctlr->kworker_task = kthread_create_on_cpu(kthread_worker_fn, &ctlr->kworker,6, dev_name(&ctlr->dev));
+		kthread_bind(ctlr->kworker_task, 6);
+		dev_info(&ctlr->dev, "kworker_task kthread_create_on_cpu\n");
+		if (!IS_ERR(ctlr->kworker_task))
+			wake_up_process(ctlr->kworker_task);
+		else
+			dev_err(&ctlr->dev, "ctlr->kworker_task ERR\n");
+	} else {
+		ctlr->kworker_task = kthread_run(kthread_worker_fn, &ctlr->kworker,
+					 "%s", dev_name(&ctlr->dev));
+	}
+#else
 	ctlr->kworker_task = kthread_run(kthread_worker_fn, &ctlr->kworker,
 					 "%s", dev_name(&ctlr->dev));
+#endif
+
 	if (IS_ERR(ctlr->kworker_task)) {
 		dev_err(&ctlr->dev, "failed to create message pump task\n");
 		return PTR_ERR(ctlr->kworker_task);

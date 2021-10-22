@@ -26,6 +26,14 @@
 #include <linux/of.h>
 #endif
 
+#ifdef CONFIG_MTK_LCM_BL_DRIVER_BOOST
+#include <mtk_leds_drv.h>
+#include <mtk_leds_hal.h>
+
+unsigned int last_level;
+unsigned int min_level = 15;
+#endif
+
 /* This macro and arrya is designed for multiple LCM support */
 /* for multiple LCM, we should assign I/F Port id in lcm driver, */
 /* such as DPI0, DSI0/1 */
@@ -1448,6 +1456,13 @@ int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
+#ifdef CONFIG_MTK_LCM_BL_DRIVER_BOOST
+		last_level = mt_get_bl_brightness();
+		DISPDBG("before suspend, last_level:%d\n", last_level);
+		//turn off backlight for KPI
+		mt_bl_set_brightness_direct(0, 0);
+#endif
+
 		lcm_drv = plcm->drv;
 		if (lcm_drv->suspend) {
 			lcm_drv->suspend();
@@ -1486,6 +1501,13 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 
 		if (lcm_drv->resume) {
 			lcm_drv->resume();
+#ifdef CONFIG_MTK_LCM_BL_DRIVER_BOOST
+			if (!last_level)
+				last_level = min_level;
+
+			mt_bl_set_brightness_direct(last_level, 0);
+			DISPDBG("%s, mt_bl_set_brightness done\n", __func__);
+#endif
 		} else {
 			DISPERR("FATAL ERROR, lcm_drv->resume is null\n");
 			return -1;

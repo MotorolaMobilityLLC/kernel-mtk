@@ -850,6 +850,10 @@ static int mtk_spi_probe(struct platform_device *pdev)
 			master->rt = true;
 		else
 			master->rt = false;
+
+		if (master->rt)
+			dev_info(&pdev->dev, "master->rt true\n");
+
 	}
 
 	/* avoid access spi register when accessed only in tee in case devapc error */
