@@ -214,7 +214,11 @@ mipi_dsi_device_register_full(struct mipi_dsi_host *host,
 		return ERR_PTR(-EINVAL);
 	}
 
+#ifdef CONFIG_DRM_SUPPORT_MORE_PANELS
+	if (info->channel > 5) {
+#else
 	if (info->channel > 3) {
+#endif
 		dev_err(dev, "invalid virtual channel: %u\n", info->channel);
 		return ERR_PTR(-EINVAL);
 	}
