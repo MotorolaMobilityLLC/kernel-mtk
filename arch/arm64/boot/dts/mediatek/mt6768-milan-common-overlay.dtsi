@@ -679,6 +679,7 @@
 	#size-cells = <0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&spislv_pins_default>;
+	mediatek,kthread-rt = <1>;
 
 	spislv@0 {
 		compatible = "mediatek,spi_slave";
