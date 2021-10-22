@@ -42,6 +42,8 @@
 #endif
 #endif
 
+#include "mtkfb_params.h"
+
 #define LCM_ID_0			0x12
 #define LCM_ID_1 			0x08
 #define LCM_ID_2	 		0x2C
@@ -148,6 +150,25 @@ static struct LCM_setting_table init_setting[] = {
 /* Display On*/
 {0x29, 0x00, {}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+/*
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x07, 0XFF} },	// HBM off
+	{0x51, 2, {0x0F, 0XFF} },	// HBM on
+};
+*/
+
+static struct LCM_setting_table lcm_hbm_setting_on[] = {
+	{0xfe, 1, {0x00}},
+	{0x51, 2, {0x0F, 0xFF}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table lcm_hbm_setting_off[] = {
+	{0xfe, 1, {0x00}},
+	{0x51, 2, {0x07, 0xFF}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 static struct LCM_setting_table bl_level[] = {
@@ -686,6 +707,32 @@ static void *lcm_switch_mode(int mode)
 #endif
 }
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	//pr_info("%s,visionox cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			if (*lcm_value) {
+				pr_info("%s, HBM on\n", __func__);
+				push_table(lcm_hbm_setting_on,
+						sizeof(lcm_hbm_setting_on) / sizeof(struct LCM_setting_table), 1);
+			}
+			else {
+				pr_info("%s, HBM off\n", __func__);
+				push_table(lcm_hbm_setting_off,
+						sizeof(lcm_hbm_setting_off) / sizeof(struct LCM_setting_table), 1);
+			}
+			break;
+		default:
+			pr_err("%s,visionox cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_info("%s,visionox cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+
+}
 struct LCM_DRIVER mipi_mot_vid_visionox_rm692cx_gt9885_fhd_643_lcm_drv = {
 	.name = "mipi_mot_vid_visionox_rm692cx_gt9885_fhd_643",
 	.supplier = "visionox_rm692cx",
@@ -701,6 +748,7 @@ struct LCM_DRIVER mipi_mot_vid_visionox_rm692cx_gt9885_fhd_643_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
+	.set_lcm_cmd = lcm_set_cmdq,
 	.update = lcm_update,
 	.switch_mode = lcm_switch_mode,
 };
