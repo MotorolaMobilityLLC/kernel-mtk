@@ -67,7 +67,7 @@ static unsigned char CTPM_FW_INX[] = {
 #define DJ_INI_NAME_PATH		"/sdcard/mp_dj.ini"
 #define DJ_FW_FILP_PATH                 "/sdcard/ILITEK_FW_DJ"
 #define DJ_INI_REQUEST_PATH		"mp_dj.ini"
-#define DJ_FW_REQUEST_PATH		"ILITEK_FW_DJ"
+#define DJ_FW_REQUEST_PATH		"ILITEK_FW_DJ.bin"
 static unsigned char CTPM_FW_DJ[] = {
 	0xFF,
 };
@@ -87,5 +87,11 @@ static unsigned char CTPM_FW_TXD[] = {
 static unsigned char CTPM_FW_TM[] = {
 	0xFF,
 };
-
+#define DJN_INI_NAME_PATH		"/sdcard/mp_djn.ini"
+#define DJN_FW_FILP_PATH                 "/sdcard/ILITEK_FW_DJN"
+#define DJN_INI_REQUEST_PATH		"mp_djn.ini"
+#define DJN_FW_REQUEST_PATH		"ILITEK_FW_DJN.bin"
+static unsigned char CTPM_FW_DJN[] = {
+	0xFF,
+};
 #endif
