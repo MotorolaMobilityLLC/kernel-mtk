@@ -25,7 +25,7 @@
 /* Debug level */
 bool debug_en = DEBUG_OUTPUT;
 EXPORT_SYMBOL(debug_en);
-
+static char lcd_panle_name[64];
 static struct workqueue_struct *esd_wq;
 static struct workqueue_struct *bat_wq;
 static struct delayed_work esd_work;
@@ -1051,15 +1051,26 @@ int ili_reset_ctrl(int mode)
 	atomic_set(&ilits->tp_reset, END);
 	return ret;
 }
+static int __init lcd_name_get(char *str)
+{
+	strcpy(lcd_panle_name, str);
 
+	return 1;
+}
+__setup("lcd_name=", lcd_name_get);
 static int ilitek_get_tp_module(void)
 {
 	/*
 	 * TODO: users should implement this function
 	 * if there are various tp modules been used in projects.
 	 */
-
-	return 0;
+	ILI_INFO("lcd_panle_name is %s\n", lcd_panle_name);
+	if (strstr(lcd_panle_name, "dijing"))
+		return MODEL_DJ;
+	else if (strstr(lcd_panle_name, "djn"))
+		return MODEL_DJN;
+	else
+		return 0;
 }
 
 static void ili_update_tp_module_info(void)
@@ -1132,11 +1143,20 @@ static void ili_update_tp_module_info(void)
 		ilits->md_fw_ili = CTPM_FW_TM;
 		ilits->md_fw_ili_size = sizeof(CTPM_FW_TM);
 		break;
+	case MODEL_DJN:
+		ilits->md_name = "DJN";
+		ilits->md_fw_filp_path = DJN_FW_FILP_PATH;
+		ilits->md_fw_rq_path = DJN_FW_REQUEST_PATH;
+		ilits->md_ini_path = DJN_INI_NAME_PATH;
+		ilits->md_ini_rq_path = DJN_INI_REQUEST_PATH;
+		ilits->md_fw_ili = CTPM_FW_DJN;
+		ilits->md_fw_ili_size = sizeof(CTPM_FW_DJN);
+		break;
 	default:
 		break;
 	}
 
-	if (module == 0 || ilits->md_fw_ili_size < ILI_FILE_HEADER) {
+	if (module == 0) {
 		ILI_ERR("Couldn't find any tp modules, applying default settings\n");
 		ilits->md_name = "DEF";
 		ilits->md_fw_filp_path = DEF_FW_FILP_PATH;
