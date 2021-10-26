@@ -796,6 +796,14 @@ static void lcm_suspend(void)
 		sizeof(lcm_suspend_setting)/sizeof(struct LCM_setting_table),
 		1);
 
+	pr_info("%s end\n", __func__);
+
+}
+
+static void lcm_suspend_power(void)
+{
+	pr_info("%s enter\n", __func__);
+
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT0);
 	MDELAY(1);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP_OUT0);
@@ -938,6 +946,22 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 
 }
 
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+static bool lcm_set_recovery_notify(void)
+{
+	char tp_info[] = "nvt";
+
+	//return TRUE if TP need lcm notify
+	//NVT touch recover need enable lcm notify
+	if (strstr(tp_info, "nvt")) {
+		pr_info("%s: return TRUE\n", __func__);
+		return TRUE;
+	}
+
+	return false;
+}
+#endif
+
 struct LCM_DRIVER mipi_mot_vid_csot_nt36672c_fhd_678_lcm_drv = {
 	.name = "mipi_mot_vid_csot_nt36672c_fhd_678",
 	.supplier = "csot",
@@ -945,6 +969,7 @@ struct LCM_DRIVER mipi_mot_vid_csot_nt36672c_fhd_678_lcm_drv = {
 	.get_params = lcm_get_params,
 	.init = lcm_init,
 	.suspend = lcm_suspend,
+	.suspend_power = lcm_suspend_power,
 	.resume = lcm_resume,
 #ifdef LCM_BL_DRV_I2C_SUPPORT
 	.set_backlight = lcm_setbacklight,
@@ -953,5 +978,9 @@ struct LCM_DRIVER mipi_mot_vid_csot_nt36672c_fhd_678_lcm_drv = {
 #endif
 	.ata_check = lcm_ata_check,
 	.switch_mode = lcm_switch_mode,
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+	.set_lcm_notify = lcm_set_recovery_notify,
+#endif
 	.set_lcm_cmd = lcm_set_cmdq,
+	.tp_gesture_status = GESTURE_OFF,
 };
