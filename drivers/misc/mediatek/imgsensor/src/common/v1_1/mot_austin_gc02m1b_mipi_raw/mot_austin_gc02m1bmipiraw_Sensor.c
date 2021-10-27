@@ -137,7 +137,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 
 	.min_gain = 64,
-	.max_gain = 640,
+	.max_gain = 768,
 	.min_gain_iso = 100,
 	.gain_step = 1,
 	.gain_type = 4,
