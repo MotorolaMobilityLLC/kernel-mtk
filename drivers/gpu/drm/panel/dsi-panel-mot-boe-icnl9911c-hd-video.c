@@ -836,7 +836,8 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	int ret;
 	struct device_node *dsi_node, *remote_node = NULL, *endpoint = NULL;
 
-	if (strstr(saved_command_line, "mipi_mot_vid_boe_icnl9911c_720p_653")) {
+	if (strstr(saved_command_line, "mipi_mot_vid_boe_icnl9911c_720p_653") ||
+                        !strstr(saved_command_line, "lcd_name=")) {
 		pr_err("%s boe icnl9911c\n", __func__);
 	} else {
 		pr_err("not match boe icnl9911c !!!\n");
