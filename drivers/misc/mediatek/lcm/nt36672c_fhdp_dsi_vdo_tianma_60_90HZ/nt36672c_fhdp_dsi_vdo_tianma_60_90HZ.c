@@ -58,7 +58,7 @@
 static bool is_hw_evt = false;
 static bool hw_checked = false;
 static bool bl_lm3697 = false;
-static bool config_pwm = true;
+static bool config_pwm = false;
 static bool first_bl_check = true;
 static struct LCM_UTIL_FUNCS lcm_util;
 #ifndef LCM_BL_DRV_I2C_SUPPORT
@@ -146,7 +146,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 static struct LCM_setting_table init_setting[] = {
 	{0XFF,0x01,{0X10}},
 	{0XFB,0x01,{0X01}},
-	{0X51,0x02,{0x0C, 0xCC}},   // Do not move 51 pos alone, should keep same with PWM_51_POS
+	{0X51,0x02,{0x0C, 0xEC}},   // Do not move 51 pos alone, should keep same with PWM_51_POS
 	{0X53,0x01,{0X2C}},
 	{0X55,0x01,{0X01}},
 	{0X36,0x01,{0X00}},
@@ -615,11 +615,11 @@ static struct LCM_setting_table_V4 lcm_hbm_on[] = {
 };
 
 static struct LCM_setting_table_V4 lcm_hbm_off[] = {
-	{0x39, 0x51, 2, {0x0C, 0xCC}, 0 },
+	{0x39, 0x51, 2, {0x0C, 0xEC}, 0 },
 };
 
 static struct LCM_setting_table_V4 lcm_hbm_off_lm3697[] = {
-	{0x39, 0x51, 2, {0x0D, 0x2A}, 0 },
+	{0x39, 0x51, 2, {0x0C, 0xFC}, 0 },
 };
 
 static struct LCM_setting_table_V4 lcm_cabc_ui[] = {
@@ -908,6 +908,10 @@ static void lcm_init(void)
 		if (bl_lm3697 && (0x51 == init_setting[PWM_51_POS].cmd)) {
 			pr_info("%s:lm3697:new init_setting[%d].para_list[0]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[0]);
 			pr_info("%s:lm3697:new init_setting[%d].para_list[1]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[1]);
+		}
+		else {
+			pr_info("%s:init_setting[%d].para_list[0]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[0]);
+			pr_info("%s:init_setting[%d].para_list[1]=0x%02x\n", __func__, PWM_51_POS, init_setting[PWM_51_POS].para_list[1]);
 		}
 
 		pr_debug("%s, init_setting\n", __func__);
