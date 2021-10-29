@@ -1255,7 +1255,11 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_iterm(0x3);	/* Termination current 180mA + 60mA */
 	bq25601_set_ovp(0x2);   /* VAC OVP 9v */
 #elif CONFIG_MOTO_CHG_BQ25601_SUPPORT
-	bq25601_set_iterm(0x1);	/* Termination current 120mA */
+	#ifdef CONFIG_CHARGER_BQ25601_MILAN_ITERM
+	bq25601_set_iterm(0x3); /* Termination current 240mA */
+	#else
+	bq25601_set_iterm(0x1); /* Termination current 120mA */
+	#endif
 #else
 	bq25601_set_iterm(0x2);	/* Termination current 180mA */
 #endif
