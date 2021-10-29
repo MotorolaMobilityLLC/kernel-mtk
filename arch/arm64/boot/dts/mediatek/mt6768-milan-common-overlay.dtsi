@@ -171,6 +171,25 @@
 &bat_gm30 {
         EMBEDDED_SEL = <(1)>;   /* embedded battery.*/
         DIFFERENCE_FULLOCV_ITH = <(300)>;       /*Charging termination current.*/
+
+        /* Tune value for current measurement */
+        /*CAR_TUNE_VALUE = <(101)>;*/
+	/*PSEUDO100_EN_DIS = <0>;*/
+
+        /* battery prop */
+        g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+
+        g_FG_PSEUDO100 = <97 97 97 100
+                97 97 97 100
+                97 97 97 100
+                97 97 97 100
+                97 97 97 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100
+                100 100 100 100>;
+
 	  df-serialnum = "SB18D33989";
 	  g_Q_MAX_row = <4>;
 	  g_Q_MAX_col = <10>;
