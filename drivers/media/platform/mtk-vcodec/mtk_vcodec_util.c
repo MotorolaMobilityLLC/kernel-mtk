@@ -295,12 +295,19 @@ void mtk_vcodec_set_log(struct mtk_vcodec_ctx *ctx, char *val)
 		} else if ((i < argcMex-1) && strcmp("-mtk_v4l2_dbg_level", argv[i]) == 0) {
 			if (kstrtol(argv[++i], 0, &temp_val) == 0)
 				mtk_v4l2_dbg_level = temp_val;
-		} else {
+		} else if (i < argcMex-1) {
 			memset(vcu_log, 0x00, LOG_INFO_SIZE);
-
-			ret = snprintf(vcu_log, LOG_INFO_SIZE, "%s %s", argv[i], argv[i+1]);
-			if (ret < 0)
+			if (argv[i+1] != NULL) {
+				argv[i+1][LOG_INFO_SIZE-1] = '\0';
+				ret = snprintf(vcu_log, LOG_INFO_SIZE, "%s %s", argv[i], argv[i+1]);
+			} else {
+				pr_info("[MTK_V4L2] vcu_log input arg[%d] error: Null value", i+1);
+				break;
+			}
+			if (ret < 0) {
 				pr_info("[MTK_V4L2] vcu_log snprintf error: %d", ret);
+				break;
+			}
 			if (ctx->type == MTK_INST_DECODER) {
 				vdec_if_init(ctx, V4L2_CID_MPEG_MTK_LOG);
 				vdec_if_set_param(ctx, SET_PARAM_DEC_LOG, vcu_log);

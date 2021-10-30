@@ -295,7 +295,8 @@ int vpu_dmp_create_locked(int c, struct vpu_request *req,
 
 	d = vpu_dmp_get(c);
 	if (!d) {
-		pr_info("%s: vpu%d: vpu_dmp_get: %d\n", __func__, c, d);
+		pr_info("%s: vpu%d: vpu_dmp_get: %lx\n", __func__, c,
+			(unsigned long)d);
 		goto out;
 	}
 	d->time = sched_clock();

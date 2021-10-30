@@ -342,10 +342,12 @@ static int mtk_drm_idlemgr_monitor_thread(void *data)
 	int crtc_id = drm_crtc_index(crtc);
 
 	msleep(16000);
-	while (1) {
+	do {
 		ret = wait_event_interruptible(
 			idlemgr->idlemgr_wq,
 			atomic_read(&idlemgr->idlemgr_task_active));
+		if (ret < 0)
+			DDPMSG("wait %s fail, ret=%d\n", __func__, ret);
 
 		t_idle = local_clock() - idlemgr_ctx->idlemgr_last_kick_time;
 		if (idlemgr_ctx->idle_vblank_check_internal)
@@ -438,9 +440,7 @@ static int mtk_drm_idlemgr_monitor_thread(void *data)
 		wait_event_interruptible(idlemgr->idlemgr_wq,
 					 !idlemgr_ctx->is_idle);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -457,13 +457,13 @@ int mtk_drm_idlemgr_init(struct drm_crtc *crtc, int index)
 
 	if (!idlemgr) {
 		DDPPR_ERR("struct mtk_drm_idlemgr allocate fail\n");
+		kfree(idlemgr_ctx);
 		return -ENOMEM;
-		;
 	}
 
 	if (!idlemgr_ctx) {
-
 		DDPPR_ERR("struct mtk_drm_idlemgr_context allocate fail\n");
+		kfree(idlemgr);
 		return -ENOMEM;
 	}
 

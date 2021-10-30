@@ -6321,6 +6321,12 @@ static int ISP_open(struct inode *pInode, struct file *pFile)
 	}
 	/*  */
 	if (IspInfo.UserCount > 0) {
+		if (!pIon_client) {
+			pr_info("ERROR: Ion client lost");
+			mutex_lock(&ion_client_mutex);
+			ISP_ion_init();
+			mutex_unlock(&ion_client_mutex);
+		}
 		IspInfo.UserCount++;
 		spin_unlock(&(IspInfo.SpinLockIspRef));
 

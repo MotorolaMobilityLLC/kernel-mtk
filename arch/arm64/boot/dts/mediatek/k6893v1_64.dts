@@ -572,8 +572,8 @@
 
 /* CAMERA specify sensor */
 &kd_camera_hw1 {
-	cam2_enable_sensor = "imx586_mipi_raw s5k3m5sx_mipi_raw";
-	cam4_enable_sensor = "imx586_mipi_raw imx481_mipi_raw";
+	cam2_enable_sensor = "s5k3m5sx_mipi_raw s5kjd1_mipi_raw";
+	cam4_enable_sensor = "imx481_mipi_raw";
 };
 /* CAMERA specify sensor end */
 

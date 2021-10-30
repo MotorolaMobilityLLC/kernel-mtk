@@ -2007,6 +2007,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 	unsigned i;
 	int low_temp_offset = 0;
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
+
+	if (ctrl == NULL)
+		return;
+
 	#if ITurbo
 	ITurboRunSet = 0;
 	#endif

@@ -621,7 +621,7 @@ static int mtk_crtc_enable_vblank_thread(void *data)
 	struct drm_crtc *crtc = (struct drm_crtc *)data;
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 
-	while (1) {
+	do {
 		ret = wait_event_interruptible(
 			mtk_crtc->vblank_enable_wq,
 			atomic_read(&mtk_crtc->vblank_enable_task_active));
@@ -635,11 +635,7 @@ static int mtk_crtc_enable_vblank_thread(void *data)
 		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		atomic_set(&mtk_crtc->vblank_enable_task_active, 0);
 
-		if (kthread_should_stop()) {
-			DDPPR_ERR("%s stopped\n", __func__);
-			break;
-		}
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -1650,9 +1646,10 @@ static void _mtk_crtc_lye_addon_module_disconnect(
 	if (mtk_crtc->is_dual_pipe) {
 		addon_data_dual = mtk_addon_get_scenario_data_dual
 			(__func__, crtc, lye_state->scn[drm_crtc_index(crtc)]);
+	}
 
-		if (!addon_data_dual)
-			return;
+	if (!addon_data_dual) {
+		return;
 	}
 
 	for (i = 0; i < addon_data->module_num; i++) {
@@ -2779,7 +2776,7 @@ static int _mtk_crtc_cmdq_retrig(void *data)
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	atomic_set(&mtk_crtc->cmdq_trig, 0);
-	while (1) {
+	do {
 		ret = wait_event_interruptible(mtk_crtc->trigger_cmdq,
 			atomic_read(&mtk_crtc->cmdq_trig));
 		if (ret < 0)
@@ -2788,9 +2785,7 @@ static int _mtk_crtc_cmdq_retrig(void *data)
 
 		mtk_crtc_clear_wait_event(crtc);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -3247,8 +3242,12 @@ static void ddp_cmdq_cb(struct cmdq_cb_data data)
 	// for wfd latency debug
 	if (id == 0 || id == 2) {
 		struct cmdq_pkt_buffer *cmdq_buf = &(mtk_crtc->gce_obj.buf);
-		unsigned int ovl_dsi_seq = *(unsigned int *)(cmdq_buf->va_base +
-				DISP_SLOT_OVL_DSI_SEQ(id));
+		unsigned int ovl_dsi_seq;
+
+		if (cmdq_buf) {
+			ovl_dsi_seq = *(unsigned int *)(cmdq_buf->va_base +
+					DISP_SLOT_OVL_DSI_SEQ(id));
+		}
 
 		if (ovl_dsi_seq) {
 			if (id == 0)
@@ -3373,6 +3372,11 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	 * working registers in atomic_commit and let the hardware command
 	 * queue update module registers on vblank.
 	 */
+
+	if (!comp) {
+		DDPINFO("%s fail, comp is NULL\n", __func__);
+		return;
+	}
 
 	ovl_is_busy = readl(comp->regs) & 0x1UL;
 	if (ovl_is_busy == 0x1UL)
@@ -4044,6 +4048,37 @@ void mtk_crtc_init_plane_setting(struct mtk_drm_crtc *mtk_crtc)
 	plane_state->comp_state.ext_lye_id = 0;
 }
 
+void mtk_crtc_dual_layer_config(struct mtk_drm_crtc *mtk_crtc,
+		struct mtk_ddp_comp *comp, unsigned int idx,
+		struct mtk_plane_state *plane_state, struct cmdq_pkt *cmdq_handle)
+{
+	struct drm_crtc *crtc = &mtk_crtc->base;
+	struct mtk_drm_private *priv = mtk_crtc->base.dev->dev_private;
+	struct mtk_plane_state plane_state_l;
+	struct mtk_plane_state plane_state_r;
+	struct mtk_ddp_comp *p_comp;
+
+	mtk_drm_layer_dispatch_to_dual_pipe(plane_state,
+		&plane_state_l, &plane_state_r,
+		crtc->state->adjusted_mode.hdisplay);
+
+	if (plane_state->comp_state.comp_id == 0)
+		plane_state_r.comp_state.comp_id = 0;
+
+	p_comp = priv->ddp_comp[dual_pipe_comp_mapping(comp->id)];
+	mtk_ddp_comp_layer_config(p_comp, idx,
+				&plane_state_r, cmdq_handle);
+	DDPINFO("%s+ comp_id:%d, comp_id:%d\n",
+		__func__, p_comp->id,
+		plane_state_r.comp_state.comp_id);
+
+	p_comp = comp;
+	mtk_ddp_comp_layer_config(p_comp, idx, &plane_state_l,
+				  cmdq_handle);
+}
+
+
+
 /* restore ovl layer config and set dal layer if any */
 void mtk_crtc_restore_plane_setting(struct mtk_drm_crtc *mtk_crtc)
 {
@@ -4219,7 +4254,7 @@ static int _mtk_crtc_check_trigger(void *data)
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	atomic_set(&mtk_crtc->trig_event_act, 0);
-	while (1) {
+	do {
 		ret = wait_event_interruptible(mtk_crtc->trigger_event,
 			atomic_read(&mtk_crtc->trig_event_act));
 		if (ret < 0)
@@ -4228,9 +4263,7 @@ static int _mtk_crtc_check_trigger(void *data)
 
 		__mtk_check_trigger(mtk_crtc);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -4245,7 +4278,7 @@ static int _mtk_crtc_check_trigger_delay(void *data)
 
 	atomic_set(&mtk_crtc->trig_delay_act, 0);
 
-	while (1) {
+	do {
 		ret = wait_event_interruptible(mtk_crtc->trigger_delay,
 			atomic_read(&mtk_crtc->trig_delay_act));
 		if (ret < 0)
@@ -4257,9 +4290,7 @@ static int _mtk_crtc_check_trigger_delay(void *data)
 		if (!atomic_read(&mtk_crtc->delayed_trig))
 			__mtk_check_trigger(mtk_crtc);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -4636,7 +4667,7 @@ void mtk_drm_crtc_enable(struct drm_crtc *crtc)
 					__get_golden_setting_context(mtk_crtc);
 		struct cmdq_pkt *cmdq_handle;
 		int gce_event =
-			get_path_wait_event(mtk_crtc, mtk_crtc->ddp_mode);
+			get_path_wait_event(mtk_crtc, (enum CRTC_DDP_PATH)(mtk_crtc->ddp_mode));
 
 		ctx->is_dc = 1;
 
@@ -5645,6 +5676,15 @@ void mtk_drm_crtc_plane_update(struct drm_crtc *crtc, struct drm_plane *plane,
 	if (comp)
 		DDPINFO("%s+ comp_id:%d, comp_id:%d\n", __func__, comp->id,
 		    plane_state->comp_state.comp_id);
+	else {
+		DDPINFO("%s+ comp is NULL\n", __func__);
+		return;
+	}
+
+	if (priv == NULL) {
+		DDPINFO("%s+ priv is NULL\n", __func__);
+		return;
+	}
 
 	/* When use Dynamic OVL 4+2 switch feature, need reAttach
 	 * crtc's comps, In order to fix comp attach wrong crtc issue,
@@ -5652,7 +5692,7 @@ void mtk_drm_crtc_plane_update(struct drm_crtc *crtc, struct drm_plane *plane,
 	 * DRM, then connect WFD, disconnect WFD, then play SVP DRM again,
 	 * the video is green on phone.
 	 */
-	if (priv && mtk_drm_helper_get_opt(priv->helper_opt,
+	if (mtk_drm_helper_get_opt(priv->helper_opt,
 			MTK_DRM_OPT_VDS_PATH_SWITCH))
 		mtk_crtc_attach_ddp_comp(crtc, mtk_crtc->ddp_mode, true);
 
@@ -5661,14 +5701,15 @@ void mtk_drm_crtc_plane_update(struct drm_crtc *crtc, struct drm_plane *plane,
 			struct mtk_plane_state plane_state_l;
 			struct mtk_plane_state plane_state_r;
 
-			if (plane_state->comp_state.comp_id == 0)
+			if ((plane_state->comp_state.comp_id == 0) && comp)
 				plane_state->comp_state.comp_id = comp->id;
 
 			mtk_drm_layer_dispatch_to_dual_pipe(plane_state,
 				&plane_state_l, &plane_state_r,
 				crtc->state->adjusted_mode.hdisplay);
 
-			comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
+			if (priv)
+				comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
 			mtk_ddp_comp_layer_config(comp, plane_index,
 						&plane_state_r, cmdq_handle);
 			DDPINFO("%s+ comp_id:%d, comp_id:%d\n",
@@ -5699,14 +5740,15 @@ void mtk_drm_crtc_plane_update(struct drm_crtc *crtc, struct drm_plane *plane,
 			struct mtk_plane_state plane_state_l;
 			struct mtk_plane_state plane_state_r;
 
-			if (plane_state->comp_state.comp_id == 0)
+			if ((plane_state->comp_state.comp_id == 0) && comp)
 				plane_state->comp_state.comp_id = comp->id;
 
 			mtk_drm_layer_dispatch_to_dual_pipe(plane_state,
 				&plane_state_l, &plane_state_r,
 				crtc->state->adjusted_mode.hdisplay);
 
-			comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
+			if (priv)
+				comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
 			mtk_ddp_comp_layer_config(comp, plane_index,
 						&plane_state_r, cmdq_handle);
 			DDPINFO("%s+D comp_id:%d, comp_id:%d\n",
@@ -7001,7 +7043,7 @@ static int mtk_drm_cwb_monitor_thread(void *data)
 	struct mtk_cwb_info *cwb_info;
 
 	msleep(16000);
-	while (1) {
+	do {
 		ret = wait_event_interruptible(
 			mtk_crtc->cwb_wq,
 			atomic_read(&mtk_crtc->cwb_task_active));
@@ -7016,9 +7058,7 @@ static int mtk_drm_cwb_monitor_thread(void *data)
 
 		mtk_drm_cwb_give_buf(crtc);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -7029,9 +7069,10 @@ static int mtk_drm_cwb_init(struct drm_crtc *crtc)
 	const int len = 50;
 	char name[len];
 
-	snprintf(name, len, "mtk_drm_cwb");
-	mtk_crtc->cwb_task =
-		kthread_create(mtk_drm_cwb_monitor_thread, crtc, name);
+	if (snprintf(name, len, "mtk_drm_cwb")) {
+		mtk_crtc->cwb_task =
+			kthread_create(mtk_drm_cwb_monitor_thread, crtc, name);
+	}
 	init_waitqueue_head(&mtk_crtc->cwb_wq);
 	atomic_set(&mtk_crtc->cwb_task_active, 0);
 
@@ -7069,7 +7110,7 @@ static int mtk_drm_fake_vsync_kthread(void *data)
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
-	while (1) {
+	do {
 		ret = wait_event_interruptible(fake_vsync->fvsync_wq,
 				atomic_read(&fake_vsync->fvsync_active));
 
@@ -7080,9 +7121,7 @@ static int mtk_drm_fake_vsync_kthread(void *data)
 		mtk_crtc_vblank_irq(crtc);
 		usleep_range(16700, 17700);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 	return 0;
 }
 
@@ -7119,7 +7158,7 @@ static int dc_main_path_commit_thread(void *data)
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
-	while (1) {
+	do {
 		ret = wait_event_interruptible(mtk_crtc->dc_main_path_commit_wq,
 			atomic_read(&mtk_crtc->dc_main_path_commit_event));
 		if (ret == 0) {
@@ -7129,9 +7168,8 @@ static int dc_main_path_commit_thread(void *data)
 			DDPINFO("wait dc commit event interrupted, ret = %d\n",
 				     ret);
 		}
-		if (kthread_should_stop())
-			break;
-	}
+
+	} while (!kthread_should_stop());
 
 	return 0;
 }
@@ -8537,6 +8575,7 @@ int mtk_crtc_get_mutex_id(struct drm_crtc *crtc, unsigned int ddp_mode,
 	int find = -1;
 	bool has_connector = true;
 
+	i = j = 0;
 	for_each_comp_in_target_ddp_mode(comp, mtk_crtc, i, j,
 					 ddp_mode)
 		if (comp->id == find_comp) {

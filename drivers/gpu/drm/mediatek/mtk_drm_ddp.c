@@ -4099,10 +4099,6 @@ static int mtk_ddp_sout_sel_MT6885(const struct mtk_mmsys_reg_data *data,
 		next == DDP_COMPONENT_DP_INTF0) {
 		*addr = MT6885_DISP_DSC_WRAP_SOUT_SEL;
 		value = DISP_DSC_WRAP_SOUT_TO_DISP_DP_WRAP_SEL;
-	} else if (cur == DDP_COMPONENT_CCORR1 &&
-		next == DDP_COMPONENT_DMDP_AAL1) {
-		*addr = MT6885_DISP_CCORR1_SOUT_SEL;
-		value = DISP_CCORR1_SOUT_SEL_TO_DISP_MDP_AAL5_SEL;
 	} else {
 		value = -1;
 	}

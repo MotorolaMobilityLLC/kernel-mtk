@@ -1444,13 +1444,15 @@ static void mtk_dsi_cmdq_poll(struct mtk_ddp_comp *comp,
 	struct mtk_drm_crtc *mtk_crtc = comp->mtk_crtc;
 	struct cmdq_client *client = mtk_crtc->gce_obj.client[CLIENT_DSI_CFG];
 
-	if (handle == NULL)
+	if (handle == NULL) {
 		DDPPR_ERR("%s no cmdq handle\n", __func__);
+		return;
+	}
 
 #if 0
 	cmdq_pkt_poll_reg(handle, val, comp->cmdq_subsys, reg & 0xFFFF, mask);
 #else
-	if (handle->cl == (void *)client) {
+	if (handle && (handle->cl == (void *)client)) {
 		cmdq_pkt_poll_timeout(handle, val, SUBSYS_NO_SUPPORT,
 					  reg, mask, 0xFFFF,
 					  CMDQ_GPR_R14);
@@ -1685,17 +1687,18 @@ static irqreturn_t mtk_dsi_irq_status(int irq, void *dev_id)
 
 			DDPINFO("%s():dsi frame done\n", __func__);
 			mtk_crtc = dsi->ddp_comp.mtk_crtc;
+			if (mtk_crtc) {
+				if (mtk_crtc->base.dev)
+					priv = mtk_crtc->base.dev->dev_private;
+				if (priv && mtk_drm_helper_get_opt(priv->helper_opt,
+					MTK_DRM_OPT_HBM))
+					wakeup_dsi_wq(&dsi->frame_done);
 
-			if (mtk_crtc && mtk_crtc->base.dev)
-				priv = mtk_crtc->base.dev->dev_private;
-			if (priv && mtk_drm_helper_get_opt(priv->helper_opt,
-							   MTK_DRM_OPT_HBM))
-				wakeup_dsi_wq(&dsi->frame_done);
-
-			if (!mtk_dsi_is_cmd_mode(&dsi->ddp_comp) &&
-				mtk_crtc && mtk_crtc->vblank_en)
-				mtk_crtc_vblank_irq(&mtk_crtc->base);
-			mtk_crtc->eof_time = ktime_get();
+				if (!mtk_dsi_is_cmd_mode(&dsi->ddp_comp) &&
+					mtk_crtc->vblank_en)
+					mtk_crtc_vblank_irq(&mtk_crtc->base);
+				mtk_crtc->eof_time = ktime_get();
+			}
 		}
 	}
 
@@ -4095,7 +4098,7 @@ int mtk_mipi_dsi_write_gce(struct mtk_dsi *dsi,
 	DDPMSG("%s +\n", __func__);
 
 	/* Check cmd_msg param */
-	if (cmd_msg->type == 0 ||
+	if (strlen(cmd_msg->type) == 0 ||
 		cmd_msg->tx_cmd_num == 0 ||
 		cmd_msg->tx_cmd_num > MAX_TX_CMD_NUM) {
 		DDPPR_ERR("%s: type is %s, tx_cmd_num is %d\n",
@@ -4356,7 +4359,7 @@ int mtk_mipi_dsi_read_gce(struct mtk_dsi *dsi,
 	DDPMSG("%s +\n", __func__);
 
 	/* Check cmd_msg param */
-	if (cmd_msg->type == 0 ||
+	if (strlen(cmd_msg->type) == 0 ||
 		cmd_msg->tx_cmd_num == 0 ||
 		cmd_msg->rx_cmd_num == 0 ||
 		cmd_msg->tx_cmd_num > MAX_TX_CMD_NUM ||
@@ -5199,6 +5202,7 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 			if (!comp) {
 				DDPPR_ERR("ddp comp is NULL\n");
 				mtk_drm_trace_end();
+				kfree(cb_data);
 				return;
 			}
 
@@ -5334,15 +5338,20 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 
 		panel_ext = mtk_dsi_get_panel_ext(comp);
 
-		if (dsi->mipi_hopping_sta && panel_ext && panel_ext->params
-			&& panel_ext->params->dyn.vfp)
+		if (!panel_ext && !panel_ext->params) {
+			DDPINFO("%s, DSI_VFP_DEFAULT_MODE fail, panel_ext is NULL\n", __func__);
+			break;
+		}
+
+		if (dsi->mipi_hopping_sta &&
+			panel_ext->params->dyn.vfp)
 			vfront_porch = panel_ext->params->dyn.vfp;
 		else
 			vfront_porch = dsi->vm.vfront_porch;
 
 		DDPINFO("vfront_porch=%d\n", vfront_porch);
 
-		if (panel_ext->params->wait_sof_before_dec_vfp) {
+		if (panel_ext && panel_ext->params->wait_sof_before_dec_vfp) {
 			cmdq_pkt_clear_event(handle,
 				crtc->gce_obj.event[EVENT_DSI0_SOF]);
 			cmdq_pkt_wait_no_clear(handle,

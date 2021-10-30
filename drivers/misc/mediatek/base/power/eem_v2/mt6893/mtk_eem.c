@@ -209,7 +209,7 @@ static int eem_printf(int id, char *writebuf, int len)
 		return 0;
 
 	/* fill data to aee_log_buf */
-	if ((len > 0) && (len < AEE_PER_ENTRY_LEN)) {
+	if ((len > 0) && (len < AEE_PER_ENTRY_LEN) && id >= 0 && id < NR_EEM_DET) {
 		memcpy(
 		aee_volt->aee_v_det[id].volt_entry[aee_volt->aee_v_det[id].cur_entry],
 		writebuf, len + 1);
@@ -238,17 +238,20 @@ static int eem_aee_log_cur_volt(struct eem_det *det)
 			PTP_MEM_SIZE - str_len,
 			"\n===========id:%d, isTempInv:%d, eem_aging:%d\n",
 			det->ctrl_id, det->isTempInv, eem_aging);
-		for (i = 0; i < det->num_freq_tbl; i++)
-			str_len += snprintf(aee_log_buf + str_len,
-			PTP_MEM_SIZE - str_len,
-			"[%d],eem = [%x], pmic = [%x], volt = [%d]\n",
-			i, det->volt_tbl[i], det->volt_tbl_pmic[i],
-			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
+			if (str_len >= 0) {
+				for (i = 0; i < det->num_freq_tbl; i++)
+					str_len += snprintf(aee_log_buf + str_len,
+					PTP_MEM_SIZE - str_len,
+					"[%d],eem = [%x], pmic = [%x], volt = [%d]\n",
+					i, det->volt_tbl[i], det->volt_tbl_pmic[i],
+					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
+			}
 	}
 
 	/* fill data to aee_log_buf */
 	if ((str_len > 0) &&
-		((cur_oft + str_len) < PTP_MEM_SIZE)) {
+		((cur_oft + str_len) < PTP_MEM_SIZE) &&
+		det->ctrl_id >= 0 && det->ctrl_id < NR_EEM_DET) {
 		memcpy(aee_volt->aee_v_det[det->ctrl_id].dumpbuf +
 			cur_oft, aee_log_buf, str_len + 1);
 		cur_oft += str_len;
@@ -1699,7 +1702,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	FUNC_ENTER(FUNC_LV_HELP);
 	inherit_base_det(det);
 #if EN_PI_VOLT_LOG
-	if (aee_volt)
+	if (aee_volt && det_id >= 0 && det_id < NR_EEM_DET)
 		aee_volt->aee_v_det[det_id].cur_entry = 0;
 #endif
 	eem_debug("IN init_det %s\n", det->name);
@@ -1969,6 +1972,9 @@ static void eem_set_eem_volt(struct eem_det *det)
 {
 #if SET_PMIC_VOLT
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
+
+	if (ctrl == NULL)
+		return;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	ctrl->volt_update |= EEM_VOLT_UPDATE;
