@@ -1338,8 +1338,6 @@ static void charger_check_status(struct mtk_charger *info)
 
 	if (info->mmi.pres_chrg_step == STEP_STOP)
 		charging = false;
-	if (info->mmi.demo_discharging)
-		charging = false;
 
 stop_charging:
 	mtk_battery_notify_check(info);
