@@ -2452,6 +2452,7 @@ static void external_exception(const char *assert_type, const int *log,
 	struct rtc_time tm;
 	struct timeval tv = { 0 };
 	char trigger_time[60];
+	int n = 0;
 
 	if ((aee_mode >= AEE_MODE_CUSTOMER_USER) &&
 		(aee_force_exp == AEE_FORCE_EXP_NOT_SET)) {
@@ -2486,11 +2487,13 @@ static void external_exception(const char *assert_type, const int *log,
 
 	do_gettimeofday(&tv);
 	rtc_time_to_tm(tv.tv_sec - sys_tz.tz_minuteswest * 60, &tm);
-	snprintf(trigger_time, sizeof(trigger_time),
+	n = snprintf(trigger_time, sizeof(trigger_time),
 			"Trigger time:[%d-%02d-%02d %02d:%02d:%02d.%03d]\n",
 			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 			tm.tm_hour, tm.tm_min, tm.tm_sec,
 			(unsigned int)tv.tv_usec);
+	if (n <= 0)
+		pr_debug("%s: snprintf error\n", __func__);
 	memset(eerec->assert_type, 0, sizeof(eerec->assert_type));
 	strlcpy(eerec->assert_type, assert_type,
 			sizeof(eerec->assert_type));

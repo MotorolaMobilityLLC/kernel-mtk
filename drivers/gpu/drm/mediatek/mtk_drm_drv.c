@@ -121,20 +121,23 @@ void disp_drm_debug(const char *opt)
 {
 	pr_notice("[debug] opt=%s\n", opt);
 	if (strncmp(opt, "shift:", 6) == 0) {
-
 		int len = strlen(opt);
-		char buf[100];
+		#define BUF_LEN 100
 
-		strcpy(buf, opt + 6);
-		buf[len - 6] = '\0';
+		if (len < BUF_LEN) {
+			char buf[BUF_LEN];
 
-		pr_notice("[debug] buf=%s\n",
-			buf);
+			strcpy(buf, opt + 6);
+			buf[len - 6] = '\0';
 
-		manual_shift = mtk_atoi(buf);
+			pr_notice("[debug] buf=%s\n",
+				buf);
 
-		pr_notice("[debug] manual_shift=%d\n",
-			manual_shift);
+			manual_shift = mtk_atoi(buf);
+
+			pr_notice("[debug] manual_shift=%d\n",
+				manual_shift);
+		}
 	} else if (strncmp(opt, "no_shift:", 9) == 0) {
 		no_shift = strncmp(opt + 9, "1", 1) == 0;
 		pr_notice("[debug] no_shift=%d\n",
@@ -255,7 +258,7 @@ static void mtk_atomic_rsz_calc_dual_params(
 	u32 tile_in_len[2] = {0};
 	u32 tile_out_len[2] = {0};
 	u32 out_x[2] = {0};
-	bool is_dual = true;
+	bool is_dual = false;
 	int width = crtc->state->adjusted_mode.hdisplay;
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_ddp_comp *output_comp;
@@ -322,8 +325,6 @@ static void mtk_atomic_rsz_calc_dual_params(
 	       param[0].out_len,
 	       param[0].out_x);
 
-	if (!is_dual)
-		return;
 
 	/* right half */
 	tile_out_len[1] = dst_roi->width - tile_out_len[0];
@@ -1880,8 +1881,8 @@ static const struct mtk_crtc_path_data mt6873_mtk_main_path_data = {
 	.path_req_hrt[DDP_MAJOR][0] = true,
 	.wb_path[DDP_MAJOR] = mt6873_mtk_ddp_main_wb_path,
 	.wb_path_len[DDP_MAJOR] = ARRAY_SIZE(mt6873_mtk_ddp_main_wb_path),
-	.path[DDP_MINOR][0] = mt6873_mtk_ddp_main_minor,
-	.path_len[DDP_MINOR][0] = ARRAY_SIZE(mt6873_mtk_ddp_main_minor),
+	.path[DDP_MINOR][0] = NULL,
+	.path_len[DDP_MINOR][0] = 0,
 	.path_req_hrt[DDP_MINOR][0] = false,
 	.path[DDP_MINOR][1] = mt6873_mtk_ddp_main_minor_sub,
 	.path_len[DDP_MINOR][1] = ARRAY_SIZE(mt6873_mtk_ddp_main_minor_sub),
@@ -2704,9 +2705,12 @@ int lcm_fps_ctx_init(struct drm_crtc *crtc)
 	struct mtk_ddp_comp *output_comp;
 	unsigned int index;
 
-	if (!crtc || crtc->index >= MAX_CRTC) {
+	if (!crtc) {
+		DDPMSG("%s:invalid crtc\n", __func__);
+		return -EINVAL;
+	} else if (crtc->index >= MAX_CRTC) {
 		DDPPR_ERR("%s:invalid crtc:%d\n",
-			  __func__, crtc->base.id);
+				__func__, crtc->base.id);
 		return -EINVAL;
 	}
 	index = crtc->index;
@@ -2783,7 +2787,7 @@ int lcm_fps_ctx_update(unsigned long long cur_ns,
 	unsigned long long delta;
 	unsigned long flags = 0;
 
-	if (index > MAX_CRTC)
+	if (index >= MAX_CRTC)
 		return -EINVAL;
 
 	if (!atomic_read(&lcm_fps_ctx[index].is_inited))

@@ -717,11 +717,16 @@ void apusys_dvfs_info(void)
 	int ret, ret_v, ret_f = 0;
 
 	ret = sprintf(log_str, "(u_op,T,min,max)");
-	ret_v = sprintf(logv_str, "v[");
-	ret_f = sprintf(logf_str, "f[");
+	if (ret < 0)
+		LOG_ERR("%s sprintf fail (%d)\n", __func__, ret);
 
-	if (ret < 0 || ret_v < 0 || ret_f < 0)
-		LOG_ERR("%s sprintf fail\n", __func__);
+	ret_v = sprintf(logv_str, "v[");
+	if (ret_v < 0)
+		LOG_ERR("%s sprintf fail (%d)\n", __func__, ret_v);
+
+	ret_f = sprintf(logf_str, "f[");
+	if (ret_f < 0)
+		LOG_ERR("%s sprintf fail (%d)\n", __func__, ret_f);
 
 	for (user = 0; user < APUSYS_DVFS_USER_NUM; user++) {
 		if (dvfs_user_support(user) == false)

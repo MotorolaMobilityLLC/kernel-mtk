@@ -409,7 +409,7 @@
 		reserve-memory-scp_share {
 			compatible = "mediatek,reserve-memory-scp_share";
 			no-map;
-			size = <0 0x00300000>; /*3 MB share mem size */
+			size = <0 0x00320000>; /*3 MB share mem size */
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x50000000 0 0x40000000>;
 		};
@@ -2138,6 +2138,12 @@
 		mediatek,speaker-codec {
 			sound-dai = <&speaker_amp>;
 		};
+	};
+
+	snd_scp_ultra: snd_scp_ultra {
+		compatible = "mediatek,snd_scp_ultra";
+		scp_ultra_dl_memif_id = <0x7>;
+		scp_ultra_ul_memif_id = <0xe>;
 	};
 
 	audio_sram@11212000 {
@@ -4048,13 +4054,13 @@
 		reg = <0 0x1a078000 0 0x8000>;
 	};
 
-	cam1@1a030000 {
+	cam1: cam1@1a030000 {
 		compatible = "mediatek,cam1";
 		reg = <0 0x1a030000 0 0x8000>;
 		interrupts = <GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
-	cam2@1a050000 {
+	cam2: cam2@1a050000 {
 		compatible = "mediatek,cam2";
 		reg = <0 0x1a050000 0 0x8000>;
 		interrupts = <GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>;

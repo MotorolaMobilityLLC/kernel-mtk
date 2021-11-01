@@ -391,18 +391,6 @@ static irqreturn_t jpeg_drv_enc_isr(int irq, void *dev_id)
 #endif
 
 #ifdef JPEG_HYBRID_DEC_DRIVER
-static int jpeg_drv_hybrid_dec_suspend(void)
-{
-	int i;
-
-	JPEG_LOG(0, "%s\n", __func__);
-	for (i = 0 ; i < HW_CORE_NUMBER; i++) {
-		JPEG_LOG(0, "jpeg dec suspend core %d\n", i);
-		if (dec_hwlocked[i])
-			JPEG_LOG(0, "jpeg dec suspend core %d fail\n", i);
-	}
-	return 0;
-}
 
 static int jpeg_drv_hybrid_dec_suspend_notifier(
 					struct notifier_block *nb,
@@ -852,6 +840,21 @@ static void jpeg_drv_hybrid_dec_unlock(int hwid)
 		disable_irq(gJpegqDev.hybriddecIrqId[hwid]);
 	}
 	mutex_unlock(&jpeg_hybrid_dec_lock);
+}
+
+static int jpeg_drv_hybrid_dec_suspend(void)
+{
+	int i;
+
+	JPEG_LOG(0, "%s\n", __func__);
+	for (i = 0 ; i < HW_CORE_NUMBER; i++) {
+		JPEG_LOG(0, "jpeg dec suspend core %d\n", i);
+		if (dec_hwlocked[i]) {
+			JPEG_LOG(0, "suspend unlock core %d\n", i);
+			jpeg_drv_hybrid_dec_unlock(i);
+		}
+	}
+	return 0;
 }
 
 static int jpeg_drv_hybrid_dec_get_status(int hwid)

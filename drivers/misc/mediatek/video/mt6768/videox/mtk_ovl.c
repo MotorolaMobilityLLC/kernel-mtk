@@ -603,8 +603,7 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			cfg->input_cfg[i].src_offset_x,
 			cfg->input_cfg[i].src_offset_y);
 
-		if (cfg->input_cfg[i].layer_enable
-			&& cfg->input_cfg[i].security != DISP_NORMAL_BUFFER) {
+		if (cfg->input_cfg[i].layer_enable) {
 			data_config->ovl_config[config_layer_id].hnd =
 				disp_snyc_get_ion_handle(cfg->session_id,
 				 cfg->input_cfg[i].layer_id,
