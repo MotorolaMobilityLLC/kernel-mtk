@@ -301,6 +301,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	if (!ctx->prepared)
 		return 0;
 
+	lcm_dcs_write_seq_static(ctx, 0x26, 0x08);
 	lcm_dcs_write_seq_static(ctx, 0x28);
 	msleep(50);
 	lcm_dcs_write_seq_static(ctx, 0x10);
