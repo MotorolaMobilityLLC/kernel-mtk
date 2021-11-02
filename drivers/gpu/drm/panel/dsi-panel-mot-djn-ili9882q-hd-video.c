@@ -455,7 +455,7 @@ static int lcm_enable(struct drm_panel *panel)
 #define HAC (720)
 
 static struct drm_display_mode default_mode = {
-	.clock = 467,
+	.clock = 143493,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -468,7 +468,7 @@ static struct drm_display_mode default_mode = {
 };
 
 static struct drm_display_mode performance_mode = {
-	.clock = 467,
+	.clock = 95662,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
