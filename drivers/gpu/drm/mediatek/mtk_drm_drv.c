@@ -255,7 +255,7 @@ static void mtk_atomic_rsz_calc_dual_params(
 	u32 tile_in_len[2] = {0};
 	u32 tile_out_len[2] = {0};
 	u32 out_x[2] = {0};
-	bool is_dual = true;
+	bool is_dual = false;
 	int width = crtc->state->adjusted_mode.hdisplay;
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_ddp_comp *output_comp;
@@ -2704,9 +2704,12 @@ int lcm_fps_ctx_init(struct drm_crtc *crtc)
 	struct mtk_ddp_comp *output_comp;
 	unsigned int index;
 
-	if (!crtc || crtc->index >= MAX_CRTC) {
+	if (!crtc) {
+		DDPMSG("%s:invalid crtc\n", __func__);
+		return -EINVAL;
+	} else if (crtc->index >= MAX_CRTC) {
 		DDPPR_ERR("%s:invalid crtc:%d\n",
-			  __func__, crtc->base.id);
+				__func__, crtc->base.id);
 		return -EINVAL;
 	}
 	index = crtc->index;
@@ -2783,7 +2786,7 @@ int lcm_fps_ctx_update(unsigned long long cur_ns,
 	unsigned long long delta;
 	unsigned long flags = 0;
 
-	if (index > MAX_CRTC)
+	if (index >= MAX_CRTC)
 		return -EINVAL;
 
 	if (!atomic_read(&lcm_fps_ctx[index].is_inited))

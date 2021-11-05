@@ -1450,7 +1450,7 @@ static void mtk_dsi_cmdq_poll(struct mtk_ddp_comp *comp,
 #if 0
 	cmdq_pkt_poll_reg(handle, val, comp->cmdq_subsys, reg & 0xFFFF, mask);
 #else
-	if (handle->cl == (void *)client) {
+	if (handle && (handle->cl == (void *)client)) {
 		cmdq_pkt_poll_timeout(handle, val, SUBSYS_NO_SUPPORT,
 					  reg, mask, 0xFFFF,
 					  CMDQ_GPR_R14);
@@ -1695,7 +1695,8 @@ static irqreturn_t mtk_dsi_irq_status(int irq, void *dev_id)
 			if (!mtk_dsi_is_cmd_mode(&dsi->ddp_comp) &&
 				mtk_crtc && mtk_crtc->vblank_en)
 				mtk_crtc_vblank_irq(&mtk_crtc->base);
-			mtk_crtc->eof_time = ktime_get();
+			if (mtk_crtc)
+				mtk_crtc->eof_time = ktime_get();
 		}
 	}
 
@@ -4095,8 +4096,7 @@ int mtk_mipi_dsi_write_gce(struct mtk_dsi *dsi,
 	DDPMSG("%s +\n", __func__);
 
 	/* Check cmd_msg param */
-	if (cmd_msg->type == 0 ||
-		cmd_msg->tx_cmd_num == 0 ||
+	if (cmd_msg->tx_cmd_num == 0 ||
 		cmd_msg->tx_cmd_num > MAX_TX_CMD_NUM) {
 		DDPPR_ERR("%s: type is %s, tx_cmd_num is %d\n",
 			__func__, cmd_msg->type, (int)cmd_msg->tx_cmd_num);
@@ -4356,8 +4356,7 @@ int mtk_mipi_dsi_read_gce(struct mtk_dsi *dsi,
 	DDPMSG("%s +\n", __func__);
 
 	/* Check cmd_msg param */
-	if (cmd_msg->type == 0 ||
-		cmd_msg->tx_cmd_num == 0 ||
+	if (cmd_msg->tx_cmd_num == 0 ||
 		cmd_msg->rx_cmd_num == 0 ||
 		cmd_msg->tx_cmd_num > MAX_TX_CMD_NUM ||
 		cmd_msg->rx_cmd_num > MAX_RX_CMD_NUM) {
@@ -5199,6 +5198,7 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 			if (!comp) {
 				DDPPR_ERR("ddp comp is NULL\n");
 				mtk_drm_trace_end();
+				kfree(cb_data);
 				return;
 			}
 
@@ -5342,7 +5342,7 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 
 		DDPINFO("vfront_porch=%d\n", vfront_porch);
 
-		if (panel_ext->params->wait_sof_before_dec_vfp) {
+		if (panel_ext && panel_ext->params->wait_sof_before_dec_vfp) {
 			cmdq_pkt_clear_event(handle,
 				crtc->gce_obj.event[EVENT_DSI0_SOF]);
 			cmdq_pkt_wait_no_clear(handle,

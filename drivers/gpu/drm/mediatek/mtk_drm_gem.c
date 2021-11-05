@@ -90,6 +90,7 @@ static struct sg_table *mtk_gem_vmap_pa(struct mtk_drm_gem_obj *mtk_gem,
 	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
 	if (!sgt) {
 		DDPPR_ERR("sgt creation failed\n");
+		kfree(pages);
 		return NULL;
 	}
 
@@ -498,7 +499,8 @@ void mtk_drm_gem_ion_destroy_client(struct ion_client *client)
 void mtk_drm_gem_ion_free_handle(struct ion_client *client,
 	struct ion_handle *handle, const char *name, int line)
 {
-	DRM_MMP_EVENT_START(ion_import_free,
+	if (handle)
+		DRM_MMP_EVENT_START(ion_import_free,
 			    (unsigned long)handle->buffer, line);
 
 	if (!client) {

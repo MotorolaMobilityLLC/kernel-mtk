@@ -3247,8 +3247,12 @@ static void ddp_cmdq_cb(struct cmdq_cb_data data)
 	// for wfd latency debug
 	if (id == 0 || id == 2) {
 		struct cmdq_pkt_buffer *cmdq_buf = &(mtk_crtc->gce_obj.buf);
-		unsigned int ovl_dsi_seq = *(unsigned int *)(cmdq_buf->va_base +
-				DISP_SLOT_OVL_DSI_SEQ(id));
+		unsigned int ovl_dsi_seq;
+
+		if (cmdq_buf) {
+			ovl_dsi_seq = *(unsigned int *)(cmdq_buf->va_base +
+					DISP_SLOT_OVL_DSI_SEQ(id));
+		}
 
 		if (ovl_dsi_seq) {
 			if (id == 0)
@@ -3374,7 +3378,8 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	 * queue update module registers on vblank.
 	 */
 
-	ovl_is_busy = readl(comp->regs) & 0x1UL;
+	if (comp != NULL)
+		ovl_is_busy = readl(comp->regs) & 0x1UL;
 	if (ovl_is_busy == 0x1UL)
 		return;
 
@@ -5661,14 +5666,15 @@ void mtk_drm_crtc_plane_update(struct drm_crtc *crtc, struct drm_plane *plane,
 			struct mtk_plane_state plane_state_l;
 			struct mtk_plane_state plane_state_r;
 
-			if (plane_state->comp_state.comp_id == 0)
+			if ((plane_state->comp_state.comp_id == 0) && comp)
 				plane_state->comp_state.comp_id = comp->id;
 
 			mtk_drm_layer_dispatch_to_dual_pipe(plane_state,
 				&plane_state_l, &plane_state_r,
 				crtc->state->adjusted_mode.hdisplay);
 
-			comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
+			if (priv)
+				comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
 			mtk_ddp_comp_layer_config(comp, plane_index,
 						&plane_state_r, cmdq_handle);
 			DDPINFO("%s+ comp_id:%d, comp_id:%d\n",
@@ -5699,14 +5705,15 @@ void mtk_drm_crtc_plane_update(struct drm_crtc *crtc, struct drm_plane *plane,
 			struct mtk_plane_state plane_state_l;
 			struct mtk_plane_state plane_state_r;
 
-			if (plane_state->comp_state.comp_id == 0)
+			if ((plane_state->comp_state.comp_id == 0) && comp)
 				plane_state->comp_state.comp_id = comp->id;
 
 			mtk_drm_layer_dispatch_to_dual_pipe(plane_state,
 				&plane_state_l, &plane_state_r,
 				crtc->state->adjusted_mode.hdisplay);
 
-			comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
+			if (priv)
+				comp = priv->ddp_comp[plane_state_r.comp_state.comp_id];
 			mtk_ddp_comp_layer_config(comp, plane_index,
 						&plane_state_r, cmdq_handle);
 			DDPINFO("%s+D comp_id:%d, comp_id:%d\n",
