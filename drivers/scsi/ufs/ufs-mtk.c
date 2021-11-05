@@ -816,10 +816,11 @@ static int ufs_mtk_setup_clocks(struct ufs_hba *hba, bool on,
 				goto out;
 
 			if (host && host->pm_qos_init) {
-				pm_qos_update_request(
+				if (hba->quirks & UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC) {
+					pm_qos_update_request(
 					&host->req_mm_bandwidth,
 					5554);
-
+				}
 				pm_qos_update_request(
 					&host->req_cpu_dma_latency, 0);
 
