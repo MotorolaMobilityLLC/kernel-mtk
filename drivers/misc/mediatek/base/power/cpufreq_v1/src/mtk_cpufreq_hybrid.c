@@ -648,7 +648,7 @@ int dvfs_to_mcupm_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		ret = mtk_ipi_send_compl(&mcupm_ipidev, CH_S_CPU_DVFS,
 #endif
 			IPI_SEND_POLLING, cdvfs_d,
-			sizeof(struct cdvfs_data)/MBOX_SLOT_SIZE, 2000);
+			sizeof(struct cdvfs_data)/MBOX_SLOT_SIZE, 4000);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) mcupm_ipi_send_sync ret %d\n",
 			__func__, __LINE__, ret);
