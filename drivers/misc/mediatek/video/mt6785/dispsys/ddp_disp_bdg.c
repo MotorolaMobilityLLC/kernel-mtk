@@ -96,7 +96,7 @@ struct lcm_setting_table {
 	unsigned char para_list[256];
 };
 
-#define MM_CLK		 546 //fpga=26
+#define MM_CLK		 405 //fpga=26
 #define NS_TO_CYCLE(n, c)	((n) / (c) + (((n) % (c)) ? 1 : 0))
 
 #define DSI_MODULE_to_ID(x)	(x == DISP_BDG_DSI0 ? 0 : 1)

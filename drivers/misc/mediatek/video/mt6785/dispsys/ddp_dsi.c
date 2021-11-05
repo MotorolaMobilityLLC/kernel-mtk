@@ -984,6 +984,7 @@ void DSI_DPHY_Calc_VDO_Timing_with_DSC(enum DISP_MODULE_ENUM module,
 			dfps_params->vertical_frontporch :
 			dsi_params->vertical_frontporch) :
 		dsi_params->vertical_frontporch;
+#if 0
 	t_vfp = (mipi_clk_change_sta) ?
 		(dsi_params->vertical_frontporch_dyn == 0 ?
 		 dsi_params->vertical_frontporch :
@@ -999,7 +1000,6 @@ void DSI_DPHY_Calc_VDO_Timing_with_DSC(enum DISP_MODULE_ENUM module,
 		 dsi_params->vertical_sync_active :
 		 dsi_params->vertical_sync_active_dyn) :
 		dsi_params->vertical_sync_active;
-#if 0
 	t_hbp = (mipi_clk_change_sta) ?
 		(dsi_params->horizontal_backporch_dyn == 0 ?
 		 dsi_params->horizontal_backporch :
