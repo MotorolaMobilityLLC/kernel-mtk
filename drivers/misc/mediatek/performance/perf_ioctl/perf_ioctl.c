@@ -71,7 +71,7 @@ static unsigned long perfctl_copy_to_user(void __user *pvTo,
 }
 
 /*--------------------EARA------------------------*/
-static void perfctl_notify_fpsgo_nn_begin(
+void perfctl_notify_fpsgo_nn_begin(
 	struct _EARA_NN_PACKAGE *msgKM,
 	struct _EARA_NN_PACKAGE *msgUM)
 {
@@ -107,7 +107,7 @@ static void perfctl_notify_fpsgo_nn_begin(
 	kfree(__target_time);
 }
 
-static void perfctl_notify_fpsgo_nn_end(
+void perfctl_notify_fpsgo_nn_end(
 	struct _EARA_NN_PACKAGE *msgKM,
 	struct _EARA_NN_PACKAGE *msgUM)
 {
