@@ -48,6 +48,7 @@
 #define LCM_ID_1 			0x08
 #define LCM_ID_2	 		0x2C
 #define LCM_ID_3			0x93
+#define LCM_ID_3_POR			0x94
 
 static struct LCM_UTIL_FUNCS lcm_util;
 
@@ -461,7 +462,8 @@ static unsigned int lcm_compare_id(void)
 
 	read_reg_v2(0xA1, buffer, 4);
 	pr_info("%s:rm692cx_gt9885: id=0x%02x%02x%02x%02x\n", __func__, buffer[0], buffer[1], buffer[2], buffer[3]);
-	if (LCM_ID_0 == buffer[0] && LCM_ID_1 == buffer[1] && LCM_ID_2 == buffer[2] && LCM_ID_3 == buffer[3]) {
+	if (LCM_ID_0 == buffer[0] && LCM_ID_1 == buffer[1] && LCM_ID_2 == buffer[2]
+			&& (LCM_ID_3 == buffer[3] || LCM_ID_3_POR == buffer[3])) {
 		pr_info("%s:kernel:rm692cx_gt9885 reg A1 matched.\n", __func__);
 		return 1;
 	}
