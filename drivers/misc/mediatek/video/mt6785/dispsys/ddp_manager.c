@@ -1327,6 +1327,8 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle,
 	list = ddp_get_scenario_list(phandle->scenario);
 	m_num = ddp_get_module_num(phandle->scenario);
 #ifdef CONFIG_MTK_MT6382_BDG
+	if (phandle->scenario != DDP_SCENARIO_PRIMARY_OVL_MEMOUT &&
+		phandle->scenario != DDP_SCENARIO_SUB_OVL_MEMOUT) {
 		if (get_mt6382_init() && (get_bdg_tx_mode() == CMD_MODE)) {
 			DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, trigger_loop_handle,
 						0x90, 7, para4, 1);
@@ -1343,6 +1345,7 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle,
 			DSI_send_cmdq_to_bdg(DISP_MODULE_DSI0, trigger_loop_handle,
 						0x20, 7, para3, 1);
 		}
+	}
 #endif
 	ddp_mutex_enable(phandle->hwmutexid, phandle->scenario, phandle->mode,
 			 trigger_loop_handle);
