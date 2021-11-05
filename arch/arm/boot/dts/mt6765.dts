@@ -3556,6 +3556,21 @@
 		/* reserved for overlay by odm */
 	};
 
+	memory_ssmr_features: memory-ssmr-features {
+		compatible = "mediatek,memory-ssmr-features";
+		svp-size = <0 0xD000000>;
+		iris-recognition-size = <0 0>;
+		2d_fr-size = <0 0>;
+		tui-size = <0 0>;
+		wfd-size = <0 0>;
+		prot-sharedmem-size = <0 0>;
+	};
+
+	ssmr {
+		compatible = "mediatek,trusted_mem";
+		memory-region = <&ssmr_cma_mem>;
+	};
+
 	radio_md_cfg: radio_md_cfg {
 		compatible = "mediatek,radio_md_cfg";
 	};
