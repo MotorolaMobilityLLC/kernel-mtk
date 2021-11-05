@@ -1274,10 +1274,12 @@ static unsigned int get_booting_start_id(struct ccci_modem *md)
 	enum LOGGING_MODE mdlog_flag = MODE_IDLE;
 	u32 booting_start_id = 0;
 
-	mdlog_flag = md->mdlg_mode;
+	mdlog_flag = (md->mdlg_mode & 0x0000ffff);
 
 	booting_start_id = (((char)mdlog_flag << 8)
 				| get_boot_mode_from_dts());
+
+	booting_start_id |= (md->mdlg_mode & 0xffff0000);
 
 	CCCI_BOOTUP_LOG(md->index, TAG,
 		"%s 0x%x\n", __func__, booting_start_id);
