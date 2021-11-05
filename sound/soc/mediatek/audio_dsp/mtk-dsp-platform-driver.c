@@ -1680,8 +1680,6 @@ void audio_irq_handler(int irq, void *data, int core_id)
 	pdtoa = (unsigned long *)
 		&dsp->core_share_mem.ap_adsp_core_mem[core_id]->dtoa_flag;
 
-	release_adsp_semaphore(SEMA_AUDIO);
-
 	loop_count = DSP_IRQ_LOOP_COUNT;
 	/* read dram data need mb()  */
 	mb();
@@ -1704,6 +1702,7 @@ void audio_irq_handler(int irq, void *data, int core_id)
 		loop_count--;
 	} while (*pdtoa && task_value && loop_count > 0);
 
+	release_adsp_semaphore(SEMA_AUDIO);
 	return;
 IRQ_ERROR:
 	pr_info("IRQ_ERROR irq[%d] data[%p] core_id[%d] dsp[%p]\n",
