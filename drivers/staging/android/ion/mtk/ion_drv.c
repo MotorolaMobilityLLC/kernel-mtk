@@ -596,7 +596,7 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 		    copy_from_user(&param, (void __user *)arg,
 				   sizeof(struct ion_sys_data));
 		if (ret_copy != 0) {
-			IONMSG("%s:err arg copy failed, ret_copy = %d. %s(%s),%d, k:%d\n",
+			IONMSG("%s:err arg copy failed, ret_copy = %lu. %s(%s),%d, k:%d\n",
 			       __func__, ret_copy, client->name, client->dbg_name,
 			       client->pid, from_kernel);
 			ret = -EFAULT;
