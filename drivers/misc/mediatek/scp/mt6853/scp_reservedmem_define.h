@@ -82,7 +82,7 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.num = VOW_BARGEIN_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x4600,  /* 17KB */
+		.size = 0xA000,  /* 40KB */
 	},
 #ifdef SCP_PARAMS_TO_SCP_SUPPORT
 	{
