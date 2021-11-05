@@ -2147,6 +2147,11 @@ static bool compr_l_config_AFBC_V1_2(struct mtk_ddp_comp *comp,
 		return 0;
 	}
 
+	if (Bpp == 0) {
+		DDPDBG("%s fail, no Bpp info\n", __func__);
+		return 0;
+	}
+
 	/* 2. pre-calculation */
 	src_buf_tile_num = ALIGN_TO(pitch / Bpp, tile_w) *
 	    ALIGN_TO(vpitch, tile_h);

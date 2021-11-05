@@ -342,7 +342,7 @@ static int mtk_drm_idlemgr_monitor_thread(void *data)
 	int crtc_id = drm_crtc_index(crtc);
 
 	msleep(16000);
-	while (1) {
+	do {
 		ret = wait_event_interruptible(
 			idlemgr->idlemgr_wq,
 			atomic_read(&idlemgr->idlemgr_task_active));
@@ -440,9 +440,7 @@ static int mtk_drm_idlemgr_monitor_thread(void *data)
 		wait_event_interruptible(idlemgr->idlemgr_wq,
 					 !idlemgr_ctx->is_idle);
 
-		if (kthread_should_stop())
-			break;
-	}
+	} while (!kthread_should_stop());
 
 	return 0;
 }

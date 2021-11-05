@@ -121,20 +121,23 @@ void disp_drm_debug(const char *opt)
 {
 	pr_notice("[debug] opt=%s\n", opt);
 	if (strncmp(opt, "shift:", 6) == 0) {
-
 		int len = strlen(opt);
-		char buf[100];
+		#define BUF_LEN 100
 
-		strcpy(buf, opt + 6);
-		buf[len - 6] = '\0';
+		if (len < BUF_LEN) {
+			char buf[BUF_LEN];
 
-		pr_notice("[debug] buf=%s\n",
-			buf);
+			strcpy(buf, opt + 6);
+			buf[len - 6] = '\0';
 
-		manual_shift = mtk_atoi(buf);
+			pr_notice("[debug] buf=%s\n",
+				buf);
 
-		pr_notice("[debug] manual_shift=%d\n",
-			manual_shift);
+			manual_shift = mtk_atoi(buf);
+
+			pr_notice("[debug] manual_shift=%d\n",
+				manual_shift);
+		}
 	} else if (strncmp(opt, "no_shift:", 9) == 0) {
 		no_shift = strncmp(opt + 9, "1", 1) == 0;
 		pr_notice("[debug] no_shift=%d\n",
@@ -322,8 +325,6 @@ static void mtk_atomic_rsz_calc_dual_params(
 	       param[0].out_len,
 	       param[0].out_x);
 
-	if (!is_dual)
-		return;
 
 	/* right half */
 	tile_out_len[1] = dst_roi->width - tile_out_len[0];
