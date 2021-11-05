@@ -272,7 +272,8 @@ page_owner=on loop.max_part=7";
 		irq-remain = <&edge_keypad &edge_mdwdt>,
 			     <&level_mali0 &level_mali1>,
 			     <&level_mali2 &level_mali3 &level_mali4>,
-			     <&level_i2c0>;
+			     <&level_i2c0>,
+			     <&level_cam1 &level_cam2>;
 
 		resource-ctrl = <&bus26m &infra &syspll>,
 				<&dram_s0 &dram_s1>;
@@ -321,6 +322,14 @@ page_owner=on loop.max_part=7";
 			level_i2c0: level_i2c0 {
 				target = <&i2c0>;
 				value = <0 4 0 0>;
+			};
+			level_cam1: level_cam1 {
+				target = <&cam1>;
+				value = <0 0 0 0>;
+			};
+			level_cam2: level_cam2 {
+				target = <&cam2>;
+				value = <0 1 0 0>;
 			};
 		};
 
