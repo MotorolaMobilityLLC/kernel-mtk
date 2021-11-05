@@ -329,6 +329,7 @@ static int mtk_ccu_start(struct rproc *rproc)
 	ccu->poweron = true;
 	spin_unlock(&ccu->ccu_poweron_lock);
 
+	ccu->disirq = false;
 	if (devm_request_threaded_irq(ccu->dev, ccu->irq_num, NULL,
 		mtk_ccu_isr_handler, IRQF_ONESHOT, "ccu_rproc", ccu)) {
 		dev_err(ccu->dev, "fail to request ccu irq!\n");
@@ -401,6 +402,8 @@ static int mtk_ccu_stop(struct rproc *rproc)
 		3, NULL, 0);
 
 	mtk_ccu_sw_hw_reset(ccu);
+
+	ccu->disirq = true;
 
 #if !defined(SECURE_CCU)
 	ret = mtk_ccu_deallocate_mem(ccu->dev,
@@ -688,6 +691,8 @@ static int mtk_ccu_probe(struct platform_device *pdev)
 	int ret = 0;
 	uint32_t phy_addr;
 	uint32_t phy_size;
+	static struct lock_class_key ccu_lock_key;
+	const char *ccu_lock_name = "ccu_lock_class";
 #if defined(CCU1_DEVICE)
 	struct device_node *node1;
 	phandle ccu_rproc1_phandle;
@@ -699,6 +704,7 @@ static int mtk_ccu_probe(struct platform_device *pdev)
 		dev_err(dev, "rproc or rproc->priv is NULL.\n");
 		return -EINVAL;
 	}
+	lockdep_set_class_and_name(&rproc->lock, &ccu_lock_key, ccu_lock_name);
 	ccu = (struct mtk_ccu *)rproc->priv;
 	ccu->pdev = pdev;
 	ccu->dev = &pdev->dev;
