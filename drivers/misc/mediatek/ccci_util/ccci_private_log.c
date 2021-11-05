@@ -414,7 +414,7 @@ static ssize_t ccci_dump_fops_write(struct file *file,
 	dump_flag = CCCI_DUMP_TIME_FLAG | CCCI_DUMP_ANDROID_TIME_FLAG;
 	res = ccci_dump_write(0, CCCI_DUMP_MD_INIT, dump_flag, "%s\n", infor_buf);
 	if (unlikely(res < 0)) {
-		pr_info("[ccci0/util]ccci dump write fail, size=%d, info:%s, res:%d\n",
+		pr_info("[ccci0/util]ccci dump write fail, size=%lu, info:%s, res:%d\n",
 		       size, infor_buf, res);
 	}
 	return size;
