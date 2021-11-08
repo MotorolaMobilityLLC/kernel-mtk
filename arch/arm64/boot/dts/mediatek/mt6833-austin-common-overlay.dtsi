@@ -381,7 +381,7 @@
 	SHUTDOWN_1_TIME = <(15)>;
 	CAR_TUNE_VALUE = <(100)>;
 
-	df-serialnum = "SB18C77591";
+	df-serialnum = "SB18C77226";
 	g_Q_MAX_row = <4>;
 	g_Q_MAX_col = <10>;
 	g_Q_MAX = <
