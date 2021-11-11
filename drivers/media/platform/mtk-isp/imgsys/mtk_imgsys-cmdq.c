@@ -123,48 +123,6 @@ void imgsys_cmdq_release(struct mtk_imgsys_dev *imgsys_dev)
 	mutex_destroy(&imgsys_dev->power_ctrl_lock);
 }
 
-void imgsys_cmdq_adl_streamon(struct mtk_imgsys_dev *imgsys_dev)
-{
-	struct cmdq_client *client;
-	struct cmdq_pkt *packet;
-	int value;
-	int count;
-	u16 adl_wait;
-	u16 adl_set;
-	int ret;
-
-	ret = of_property_read_u16(imgsys_dev->dev->of_node,
-		"sw_sync_token_tzmp_adl_wait", &adl_wait);
-	if (ret < 0)
-		return;
-
-	ret = of_property_read_u16(imgsys_dev->dev->of_node,
-		"sw_sync_token_tzmp_adl_set", &adl_set);
-	if (ret < 0)
-		return;
-
-	client = cmdq_mbox_create(imgsys_dev->dev, 11);
-	cmdq_clear_event(client->chan, adl_wait);
-	cmdq_clear_event(client->chan, adl_set);
-	packet = cmdq_pkt_create(client);
-	cmdq_sec_pkt_set_data(packet, 0, 0, CMDQ_SEC_DEBUG, CMDQ_METAEX_TZMP);
-	cmdq_sec_pkt_set_mtee(packet, true);
-	cmdq_pkt_finalize_loop(packet);
-	cmdq_pkt_flush_threaded(packet, NULL, (void *)packet);
-
-	count = 0;
-	do {
-		value = cmdq_get_event(client->chan, adl_set);
-		if (value != 0)
-			break;
-	} while (++count < 1000000);
-
-	pr_info("%s: adl event value\n", __func__, adl_set);
-	cmdq_sec_mbox_stop(client);
-	cmdq_pkt_destroy(packet);
-	cmdq_mbox_destroy(client);
-}
-
 void imgsys_cmdq_streamon(struct mtk_imgsys_dev *imgsys_dev)
 {
 	u32 idx = 0;
@@ -177,8 +135,6 @@ void imgsys_cmdq_streamon(struct mtk_imgsys_dev *imgsys_dev)
 	for (idx = IMGSYS_CMDQ_SYNC_TOKEN_IMGSYS_START;
 		idx <= IMGSYS_CMDQ_SYNC_TOKEN_IMGSYS_END; idx++)
 		cmdq_clear_event(imgsys_clt[0]->chan, imgsys_event[idx].event);
-
-	imgsys_cmdq_adl_streamon(imgsys_dev);
 
 	memset((void *)event_hist, 0x0,
 		sizeof(struct imgsys_event_history)*IMGSYS_CMDQ_SYNC_POOL_NUM);
@@ -872,7 +828,6 @@ int imgsys_cmdq_sendtask(struct mtk_imgsys_dev *imgsys_dev,
 			if (frm_info->user_info[frm_idx].is_secFrm)
 				imgsys_cmdq_sec_cmd(pkt);
 			#endif
-
 			IMGSYS_SYSTRACE_END();
 
 			/* Check for packing gce task */
