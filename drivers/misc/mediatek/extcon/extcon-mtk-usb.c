@@ -108,10 +108,8 @@ static int mtk_usb_extcon_set_role(struct mtk_extcon_info *extcon,
 	return 0;
 }
 
-static void mtk_usb_extcon_psy_detector(struct work_struct *work)
+static bool usb_is_online(struct mtk_extcon_info *extcon)
 {
-	struct mtk_extcon_info *extcon = container_of(to_delayed_work(work),
-		struct mtk_extcon_info, wq_psy);
 	union power_supply_propval pval;
 	union power_supply_propval tval;
 	int ret;
@@ -120,29 +118,42 @@ static void mtk_usb_extcon_psy_detector(struct work_struct *work)
 				POWER_SUPPLY_PROP_ONLINE, &pval);
 	if (ret < 0) {
 		dev_info(extcon->dev, "failed to get online prop\n");
-		return;
+		return false;
 	}
 
 	ret = power_supply_get_property(extcon->usb_psy,
 				POWER_SUPPLY_PROP_TYPE, &tval);
 	if (ret < 0) {
 		dev_info(extcon->dev, "failed to get usb type\n");
-		return;
+		return false;
 	}
 
 	dev_info(extcon->dev, "online=%d, type=%d\n", pval.intval, tval.intval);
 
-	/* Workaround for PR_SWAP, Host mode should not come to this function. */
-	if (extcon->c_role == DUAL_PROP_DR_HOST) {
-		dev_info(extcon->dev, "Remain HOST mode\n");
-		return;
-	}
-
 	if (pval.intval && (tval.intval == POWER_SUPPLY_TYPE_USB ||
 			tval.intval == POWER_SUPPLY_TYPE_USB_CDP))
-		mtk_usb_extcon_set_role(extcon, DUAL_PROP_DR_DEVICE);
+		return true;
 	else
-		mtk_usb_extcon_set_role(extcon, DUAL_PROP_DR_NONE);
+		return false;
+}
+
+static void mtk_usb_extcon_psy_detector(struct work_struct *work)
+{
+	struct mtk_extcon_info *extcon = container_of(to_delayed_work(work),
+		struct mtk_extcon_info, wq_psy);
+
+	/* Workaround for PR_SWAP, IF tcpc_dev, then do not switch role. */
+	/* Since we will set USB to none when type-c plug out */
+	if (extcon->tcpc_dev) {
+		if (usb_is_online(extcon) && extcon->c_role == USB_ROLE_NONE)
+			mtk_usb_extcon_set_role(extcon, USB_ROLE_DEVICE);
+	} else {
+		if (usb_is_online(extcon))
+			mtk_usb_extcon_set_role(extcon, USB_ROLE_DEVICE);
+		else
+			mtk_usb_extcon_set_role(extcon, USB_ROLE_NONE);
+	}
+
 }
 
 static int mtk_usb_extcon_psy_notifier(struct notifier_block *nb,
