@@ -541,8 +541,6 @@ static kal_uint32 set_gain(kal_uint32 gain)
 	if (reg_gain > 0x7c0) {
 		reg_d_gain = reg_gain*1024/1984;
 
-		if (reg_d_gain < 0x400)// sensor 1xGain
-			reg_d_gain = 0x400;
 		if (reg_d_gain > 0x3fff)// sensor 16xGain
 			reg_d_gain = 0x3fff;
 		/* long exposure */
@@ -554,8 +552,6 @@ static kal_uint32 set_gain(kal_uint32 gain)
 	} else {
 		if (reg_gain < 0x80)// sensor 1xGain
 			reg_gain = 0x80;
-		if (reg_gain > 0x7c0)// sensor 15.5xGain
-			reg_gain = 0x7c0;
 
 		/* binary to find A_Gain */
 		reg_a_gain = binary_find_AGain(AGain_table,
