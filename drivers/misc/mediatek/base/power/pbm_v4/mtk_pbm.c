@@ -330,7 +330,7 @@ multiple, cpu_lower_bound);
 	} else {
 		if (((abs(pre_tocpu - tocpu) >= 100) && cpu > tocpu) ||
 			((abs(pre_togpu - togpu) >= 30) && gpu > togpu)) {
-			pr_info
+			pr_info_ratelimited
 ("(C/G)=%d,%d=> (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d(Multi:%d),%d\n",
 cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu,
 multiple, cpu_lower_bound);
