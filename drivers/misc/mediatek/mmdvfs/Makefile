@@ -68,6 +68,7 @@ SKIP_SMI_CONFIG := false
 QOS_BOUND_DETECT := true
 FORCE_STEP0 := false
 ccflags-y += -DCHECK_VOLTAGE
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6885" "mt6893"))
 BUILD_MMDVFS_PMQOS := true
 HRT_MECHANISM := true

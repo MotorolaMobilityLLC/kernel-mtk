@@ -756,15 +756,15 @@ int primary_display_esd_check(void)
 	mmprofile_log_ex(mmp_rd, MMPROFILE_FLAG_PULSE,
 			 0, primary_display_is_video_mode());
 
-#ifdef CONFIG_MTK_MT6382_BDG
+	if (bdg_is_bdg_connected() == 1) {
 		if (get_mt6382_init() == 1)
 			ret = do_esd_check_read();
 		else
 			DISPMSG("%s, 6382 not init, skip esd check\n", __func__);
-#else
+	} else {
 		/* only cmd mode read & with disable mmsys clk will kick */
 		ret = do_esd_check_read();
-#endif
+	}
 
 	mmprofile_log_ex(mmp_rd, MMPROFILE_FLAG_END, 0, ret);
 
@@ -905,42 +905,38 @@ int primary_display_esd_recovery(void)
 
 	DISPDBG("[ESD]dsi power reset[begine]\n");
 	dpmgr_path_dsi_power_off(primary_get_dpmgr_handle(), NULL);
-#ifdef CONFIG_MTK_MT6382_BDG
+	if (bdg_is_bdg_connected() == 1) {
 		if (get_mt6382_init() == 1) {
 			struct disp_ddp_path_config *data_config;
-
 			bdg_common_deinit(DISP_BDG_DSI0, NULL);
 			//	mmdvfs_qos_force_step(0);
 			/*	559-449-314-273*/
 			disp_pm_qos_update_mmclk(559); // workaround for resume fail
-
 			data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 			bdg_common_init(DISP_BDG_DSI0, data_config, NULL);
 			mipi_dsi_rx_mac_init(DISP_BDG_DSI0, data_config, NULL);
 		}
-#endif
+	}
 	dpmgr_path_dsi_power_on(primary_get_dpmgr_handle(), NULL);
 	if (!primary_display_is_video_mode())
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL,
 				 DDP_DSI_ENABLE_TE, NULL);
 	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]dsi power reset[end]\n");
-#ifdef CONFIG_MTK_MT6382_BDG
+	if (bdg_is_bdg_connected() == 1) {
 		if (get_mt6382_init() == 1)  {
 			struct disp_ddp_path_config *data_config;
-
 			data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 			data_config->dst_dirty = 1;
 			ddp_dsi_config(DISP_MODULE_DSI0, data_config, NULL);
-
 			data_config->dst_dirty = 0;
 		}
-#endif
+	}
 	DISPDBG("[ESD]lcm recover[begin]\n");
 	disp_lcm_esd_recover(primary_get_lcm());
 	DISPCHECK("[ESD]lcm recover[end]\n");
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 8);
-#ifdef CONFIG_MTK_MT6382_BDG
+	if (bdg_is_bdg_connected() == 1) {
 		if (get_mt6382_init() == 1) {
 			DISPCHECK("set 6382 mode start\n");
 			bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
@@ -948,7 +944,7 @@ int primary_display_esd_recovery(void)
 		}
 		/*	559-449-314-273*/
 //		disp_pm_qos_update_mmclk(449);
-#endif
+	}
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (disp_partial_is_support()) {
 		struct disp_ddp_path_config *data_config =
@@ -977,13 +973,11 @@ int primary_display_esd_recovery(void)
 		 * for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW
 		 * when trigger loop start
 		 */
-#ifdef CONFIG_MTK_MT6382_BDG
-		if (primary_display_is_video_mode())
+		if (bdg_is_bdg_connected() == 1 && primary_display_is_video_mode())
 			primary_display_vdo_restart(false);
-#else
+		else
 			dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
 					   CMDQ_DISABLE);
-#endif
 	}
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 11);
 

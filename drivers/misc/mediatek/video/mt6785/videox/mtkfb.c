@@ -69,6 +69,7 @@
 #include "ddp_log.h"
 #include "ddp_m4u.h"
 #include "disp_lowpower.h"
+#include "ddp_disp_bdg.h"
 
 #ifdef MTKFB_SUPPORT_SECOND_DISP
 #  include "extd_multi_control.h"
@@ -339,6 +340,12 @@ int mtkfb_set_backlight_level(unsigned int level)
 	return 0;
 }
 EXPORT_SYMBOL(mtkfb_set_backlight_level);
+
+int mtkfb_is_bdg_connected(void)
+{
+	return bdg_is_bdg_connected();
+}
+EXPORT_SYMBOL(mtkfb_is_bdg_connected);
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)

@@ -34,10 +34,8 @@ enum DTS_GPIO_STATE {
 	DTS_GPIO_STATE_TE_MODE_GPIO,	/* mode_te_gpio */
 	DTS_GPIO_STATE_TE_MODE_TE,	/* mode_te_te */
 	DTS_GPIO_STATE_TE1_MODE_TE,	/* mode_te1_te */
-#ifdef CONFIG_MTK_MT6382_BDG
 	DTS_GPIO_STATE_6382_RST_OUT1,
 	DTS_GPIO_STATE_6382_RST_OUT0,
-#endif
 	DTS_GPIO_STATE_MAX,		/* for array size */
 };
 

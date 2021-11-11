@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-
 #include <linux/kernel.h>
 #include <linux/delay.h>
 #include <linux/time.h>
@@ -67,6 +66,7 @@ unsigned int mt6382_init;
 unsigned int bdg_tx_mode;
 static int bdg_eint_irq;
 static bool nfc_clk_already_enabled;
+static int mt6382_connected;
 /***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
 static int nfc_eint_irq;
 static int mt6382_nfc_srclk;
@@ -1179,6 +1179,23 @@ struct lcm_setting_table nt35695b_cmd_mode[] = {
 	{0x53, 1, {0x24} },
 	{0x55, 1, {0x00} },
 };
+
+int bdg_is_bdg_connected(void)
+{
+	if (mt6382_connected == 0) {
+		unsigned int ret = 0;
+#ifdef CONFIG_MTK_MT6382_BDG
+		spislv_init();
+		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
+		ret = mtk_spi_read(0x0);
+#endif
+	if (ret == 0)
+		mt6382_connected = -1;
+	else
+		mt6382_connected = 1;
+	}
+	return mt6382_connected;
+}
 
 void bdg_tx_pull_6382_reset_pin(void)
 {

@@ -332,6 +332,7 @@ int mtkfb_set_backlight_level(unsigned int level);
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 int mtkfb1_set_backlight_level(unsigned int level);
 #endif
+int mtkfb_is_bdg_connected(void);
 
 #ifdef __KERNEL__
 
