@@ -1425,7 +1425,7 @@ static int mtk_dsp_start(struct snd_pcm_substream *substream,
 	}
 
 	dsp_mem = &dsp->dsp_mem[id];
-	dev_info(dsp->dev, "%s() task id:%s %s\n",
+	dev_info(dsp->dev, "%s() task id:%d %s\n",
 		 __func__, id,
 		 dsp_mem->adsp_xrun_flag ? "adsp xrun" : "");
 
