@@ -8099,7 +8099,7 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 			/* sscanf returns the number of items in argument
 			 * list successfully filled.
 			 */
-			CMDQ_MSG("TEST_CONFIG: sscanf failed, len:%d\n", len);
+			CMDQ_MSG("TEST_CONFIG: sscanf failed, len:%llu\n", len);
 			break;
 		}
 		CMDQ_MSG("TEST_CONFIG:%lld, %lld, %lld, %lld\n",

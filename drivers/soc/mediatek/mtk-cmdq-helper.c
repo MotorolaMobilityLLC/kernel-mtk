@@ -177,7 +177,7 @@ struct cmdq_client *cmdq_mbox_create(struct device *dev, int index)
 	client->client.tx_block = false;
 	client->chan = mbox_request_channel(&client->client, index);
 	if (IS_ERR(client->chan)) {
-		cmdq_err("channel request fail:%d, idx:%d",
+		cmdq_err("channel request fail:%ld, idx:%d",
 			PTR_ERR(client->chan), index);
 		dump_stack();
 		kfree(client);
@@ -430,7 +430,7 @@ void cmdq_pkt_free_buf(struct cmdq_pkt *pkt)
 					buf->va_base, buf->pa_base,
 					pkt->cur_pool.cnt);
 			else {
-				cmdq_err("free pool:%s dev:%#lx pa:%pa cl:%#lx",
+				cmdq_err("free pool:%s dev:%#lx pa:%pa cl:%p",
 					buf->use_pool ? "true" : "false",
 					(unsigned long)pkt->dev,
 					&buf->pa_base,
@@ -1647,7 +1647,7 @@ static void cmdq_print_wait_summary(void *chan, dma_addr_t pc,
 		len = snprintf(text_gpr, ARRAY_SIZE(text_gpr),
 			" GPR R%u:%#x", gprid, val);
 		if (len >= ARRAY_SIZE(text_gpr))
-			cmdq_log("len:%d over text_gpr size:%d",
+			cmdq_log("len:%d over text_gpr size:%lu",
 				len, ARRAY_SIZE(text_gpr));
 	}
 
@@ -2207,7 +2207,7 @@ static void cmdq_buf_print_move(char *text, u32 txt_sz,
 			"%#06x %#010x [Move ] mask %#018llx",
 			offset, *((u32 *)cmdq_inst), ~val);
 	if (len >= txt_sz)
-		cmdq_log("len:%d over txt_sz:%d", len, txt_sz);
+		cmdq_log("len:%llu over txt_sz:%d", len, txt_sz);
 }
 
 static void cmdq_buf_print_logic(char *text, u32 txt_sz,
