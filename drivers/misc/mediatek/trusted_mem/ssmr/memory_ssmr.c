@@ -594,11 +594,21 @@ static int memory_region_offline(struct SSMR_Feature *feature, phys_addr_t *pa,
 		pr_info("[SSMR-ALLOCATION]: retry: %d\n", offline_retry);
 		feature->virt_addr = dma_alloc_attrs(ssmr_dev, alloc_size,
 					&feature->phy_addr, GFP_KERNEL, 0);
+
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+		if (feature->phy_addr == U64_MAX) {
+#else
+		if (feature->phy_addr == U32_MAX) {
+#endif
+			pr_info("[SSMR-ALLOCATION]: pa=0x%lx, ssmr retry\n", feature->phy_addr);
+			feature->phy_addr = 0;
+		}
+
 		if (!feature->phy_addr) {
 			offline_retry++;
 			msleep(100);
 		}
-	} while (!feature->phy_addr && offline_retry < 20);
+	} while (!feature->phy_addr && offline_retry < 50);
 
 	if (feature->phy_addr) {
 		pr_info("%s: pa=%pad is allocated\n", __func__,
