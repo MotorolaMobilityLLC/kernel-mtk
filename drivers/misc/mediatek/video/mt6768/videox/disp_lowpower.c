@@ -376,7 +376,7 @@ int primary_display_dsi_vfp_change(int state)
 	}
 
 	if (state == 1 || state == 0) {
-		if (bdg_is_bdg_connected() == 1) {
+		if (pgc->vfp_chg_sync_bdg && bdg_is_bdg_connected() == 1) {
 			cmdqRecWait(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 			/* 2.stop dsi vdo mode */
@@ -400,7 +400,7 @@ int primary_display_dsi_vfp_change(int state)
 		}
 	}
 
-	if (bdg_is_bdg_connected() != 1)
+	if (!pgc->vfp_chg_sync_bdg)
 		cmdqRecFlushAsync(handle);
 
 	cmdqRecDestroy(handle);
