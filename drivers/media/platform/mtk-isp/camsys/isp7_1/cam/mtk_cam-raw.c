@@ -27,7 +27,6 @@
 #include "mtk_cam-raw.h"
 #include "mtk_cam-regs.h"
 #include "mtk_cam-video.h"
-#include "mtk_cam-meta.h"
 #include "mtk_cam-seninf-if.h"
 #include "mtk_cam-tg-flash.h"
 #include "mtk_camera-v4l2-controls.h"
@@ -815,7 +814,6 @@ static int mtk_raw_pde_get_ctrl(struct v4l2_ctrl *ctrl)
 	pde_info_p = ctrl->p_new.p;
 	dev = pipeline->raw->devs[pipeline->id];
 
-	mutex_lock(&pde_cfg->pde_info_lock);
 	switch (ctrl->id) {
 	case V4L2_CID_MTK_CAM_PDE_INFO:
 		pde_info_p->pdo_max_size = pde_cfg->pde_info.pdo_max_size;
@@ -827,7 +825,6 @@ static int mtk_raw_pde_get_ctrl(struct v4l2_ctrl *ctrl)
 			 __func__, ctrl->id, ctrl->val);
 		ret = -EINVAL;
 	}
-	mutex_unlock(&pde_cfg->pde_info_lock);
 
 	return ret;
 }
@@ -852,7 +849,6 @@ static int mtk_raw_pde_set_ctrl(struct v4l2_ctrl *ctrl)
 	desc = &node->desc;
 	default_fmt = &desc->fmts[desc->default_fmt_idx].vfmt;
 
-	mutex_lock(&pde_cfg->pde_info_lock);
 	switch (ctrl->id) {
 	case V4L2_CID_MTK_CAM_PDE_INFO:
 		if (!pde_info_p->pdo_max_size || !pde_info_p->pdi_max_size) {
@@ -874,7 +870,6 @@ static int mtk_raw_pde_set_ctrl(struct v4l2_ctrl *ctrl)
 			 __func__, ctrl->id, ctrl->val);
 		ret = -EINVAL;
 	}
-	mutex_unlock(&pde_cfg->pde_info_lock);
 
 	return ret;
 }
@@ -3726,33 +3721,6 @@ static const struct v4l2_ioctl_ops mtk_cam_v4l2_meta_out_ioctl_ops = {
 	.vidioc_expbuf = vb2_ioctl_expbuf,
 };
 
-static const struct mtk_cam_format_desc meta_fmts[] = { /* FIXME for ISP6 meta format */
-	{
-		.vfmt.fmt.meta = {
-			.dataformat = V4L2_META_FMT_MTISP_PARAMS,
-			.buffersize = RAW_STATS_CFG_SIZE,
-		},
-	},
-	{
-		.vfmt.fmt.meta = {
-			.dataformat = V4L2_META_FMT_MTISP_3A,
-			.buffersize = RAW_STATS_0_SIZE,
-		},
-	},
-	{
-		.vfmt.fmt.meta = {
-			.dataformat = V4L2_META_FMT_MTISP_AF,
-			.buffersize = RAW_STATS_1_SIZE,
-		},
-	},
-	{
-		.vfmt.fmt.meta = {
-			.dataformat = V4L2_META_FMT_MTISP_LCS,
-			.buffersize = RAW_STATS_2_SIZE,
-		},
-	},
-};
-
 static const struct mtk_cam_format_desc stream_out_fmts[] = {
 	/* This is a default image format */
 	{
@@ -4596,7 +4564,6 @@ mtk_cam_dev_node_desc output_queues[] = {
 #endif
 		.need_cache_sync_on_prepare = true,
 		.dma_port = MTKCAM_IPI_RAW_META_STATS_CFG,
-		.fmts = meta_fmts,
 		.default_fmt_idx = 0,
 		.max_buf_count = 16,
 		.ioctl_ops = &mtk_cam_v4l2_meta_out_ioctl_ops,
@@ -5103,7 +5070,6 @@ mtk_cam_dev_node_desc capture_queues[] = {
 		.image = false,
 		.smem_alloc = false,
 		.dma_port = MTKCAM_IPI_RAW_META_STATS_0,
-		.fmts = meta_fmts,
 		.default_fmt_idx = 1,
 		.max_buf_count = 16,
 		.ioctl_ops = &mtk_cam_v4l2_meta_cap_ioctl_ops,
@@ -5118,7 +5084,6 @@ mtk_cam_dev_node_desc capture_queues[] = {
 		.smem_alloc = false,
 		.need_cache_sync_on_finish = true,
 		.dma_port = MTKCAM_IPI_RAW_META_STATS_1,
-		.fmts = meta_fmts,
 		.default_fmt_idx = 2,
 		.max_buf_count = 16,
 		.ioctl_ops = &mtk_cam_v4l2_meta_cap_ioctl_ops,
@@ -5133,7 +5098,6 @@ mtk_cam_dev_node_desc capture_queues[] = {
 		.smem_alloc = false,
 		.need_cache_sync_on_finish = true,
 		.dma_port = MTKCAM_IPI_RAW_META_STATS_2,
-		.fmts = meta_fmts,
 		.default_fmt_idx = 3,
 		.max_buf_count = 16,
 		.ioctl_ops = &mtk_cam_v4l2_meta_cap_ioctl_ops,
@@ -5230,9 +5194,12 @@ static void mtk_raw_pipeline_queue_setup(struct mtk_raw_pipeline *pipe)
 		return;
 
 	node_idx = 0;
+
 	/* Setup the output queue */
 	for (i = 0; i < MTK_RAW_TOTAL_OUTPUT_QUEUES; i++) {
 		pipe->vdev_nodes[node_idx].desc = output_queues[i];
+		if (pipe->vdev_nodes[node_idx].desc.id == MTK_RAW_META_IN)
+			pipe->vdev_nodes[node_idx].desc.fmts = mtk_cam_get_meta_fmts();
 		pipe->vdev_nodes[node_idx++].desc.name =
 			output_queue_names[pipe->id][i];
 	}
@@ -5240,6 +5207,9 @@ static void mtk_raw_pipeline_queue_setup(struct mtk_raw_pipeline *pipe)
 	/* Setup the capture queue */
 	for (i = 0; i < MTK_RAW_TOTAL_CAPTURE_QUEUES; i++) {
 		pipe->vdev_nodes[node_idx].desc = capture_queues[i];
+		if (pipe->vdev_nodes[node_idx].desc.id >= MTK_RAW_META_OUT_BEGIN &&
+			pipe->vdev_nodes[node_idx].desc.id <= MTK_RAW_META_OUT_2)
+			pipe->vdev_nodes[node_idx].desc.fmts = mtk_cam_get_meta_fmts();
 		pipe->vdev_nodes[node_idx++].desc.name =
 			capture_queue_names[pipe->id][i];
 	}
@@ -5312,7 +5282,6 @@ static void mtk_raw_pipeline_ctrl_setup(struct mtk_raw_pipeline *pipe)
 				    V4L2_CID_VBLANK, 0, 65535, 1, 0);
 
 	// PDE
-	mutex_init(&pipe->pde_config.pde_info_lock);
 	ctrl = v4l2_ctrl_new_custom(ctrl_hdlr, &cfg_pde_info, NULL);
 
 	ctrl = v4l2_ctrl_new_custom(ctrl_hdlr, &mtk_feature, NULL);
