@@ -452,14 +452,6 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 	if (!extcon->extcon_wq)
 		return -ENOMEM;
 
-	extcon->c_role = DUAL_PROP_DR_DEVICE;
-
-	/* default initial role */
-	mtk_usb_extcon_set_role(extcon, DUAL_PROP_DR_NONE);
-
-	/* default turn off vbus */
-	mtk_usb_extcon_set_vbus(extcon, false);
-
 	/* get id resources */
 	ret = mtk_usb_extcon_id_pin_init(extcon);
 	if (ret < 0)
