@@ -471,9 +471,12 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 		if (retry == 0) {
 			pr_info("msdc%d on clock failed ===> retry twice\n",
 				host->id);
-
+			if (lock)
+				spin_unlock(&host->lock);
 			msdc_clk_disable_unprepare(host);
 			msdc_clk_prepare_enable(host);
+			if (lock)
+				spin_lock(&host->lock);
 			msdc_dump_info(NULL, 0, NULL, host->id);
 			host->prev_cmd_cause_dump = 0;
 		}
@@ -3159,6 +3162,7 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	unsigned int left = 0;
 	int ret = 0;
 	unsigned long pio_tmo;
+	int lock = spin_is_locked(&host->lock);
 
 	#ifndef SDIO_EARLY_SETTING_RESTORE
 	if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ))
@@ -3273,8 +3277,12 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			pr_debug("[%s]: start pio read\n", __func__);
 #endif
 			if (msdc_pio_read(host, data)) {
+				if (lock)
+					spin_unlock(&host->lock);
 				msdc_clk_disable_unprepare(host);
 				msdc_clk_enable_and_stable(host);
+				if (lock)
+					spin_lock(&host->lock);
 				goto stop;      /* need cmd12 */
 			}
 		} else {
@@ -3282,8 +3290,12 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			pr_debug("[%s]: start pio write\n", __func__);
 #endif
 			if (msdc_pio_write(host, data)) {
+				if (lock)
+					spin_unlock(&host->lock);
 				msdc_clk_disable_unprepare(host);
 				msdc_clk_enable_and_stable(host);
+				if (lock)
+					spin_lock(&host->lock);
 				goto stop;
 			}
 

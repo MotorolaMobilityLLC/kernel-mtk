@@ -698,7 +698,7 @@ void msdc_clk_enable_and_stable(struct msdc_host *host)
 	u32 div, mode, hs400_div_dis;
 	u32 val;
 
-	msdc_clk_prepare_enable(host);
+	msdc_clk_enable(host);
 
 	val = MSDC_READ32(MSDC_CFG);
 	GET_FIELD(val, CFG_CKDIV_SHIFT, CFG_CKDIV_MASK, div);
