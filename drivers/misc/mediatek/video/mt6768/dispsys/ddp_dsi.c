@@ -879,7 +879,8 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 		if (type == DSI_VFP) {
 			DISPINFO("set dsi%d vfp to %d\n", i, value);
 			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VFP_NL, value);
-			if (pgc->vfp_chg_sync_bdg && bdg_is_bdg_connected() == 1)
+			if (pgc != NULL && pgc->vfp_chg_sync_bdg
+					&& bdg_is_bdg_connected() == 1)
 				ddp_dsi_set_bdg_porch_setting(module, handle, value);
 		}
 		if (type == DSI_VSA) {
