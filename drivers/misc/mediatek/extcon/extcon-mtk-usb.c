@@ -429,6 +429,10 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 		return PTR_ERR(extcon->role_sw);
 	}
 
+	/* initial usb role */
+	if (extcon->role_sw)
+		extcon->c_role = USB_ROLE_NONE;
+
 	/* vbus */
 	extcon->vbus = devm_regulator_get(dev, "vbus");
 	if (IS_ERR(extcon->vbus)) {
@@ -436,13 +440,19 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 		return PTR_ERR(extcon->vbus);
 	}
 
-	if (!of_property_read_u32(dev->of_node, "vbus-voltage",
-					&extcon->vbus_vol))
-		dev_info(dev, "vbus-voltage=%d", extcon->vbus_vol);
+	/* sync vbus state */
+	if (extcon->vbus) {
+		extcon->vbus_on = regulator_is_enabled(extcon->vbus);
+		dev_info(dev, "vbus is %s\n", extcon->vbus_on ? "on" : "off");
 
-	if (!of_property_read_u32(dev->of_node, "vbus-current",
+		if (!of_property_read_u32(dev->of_node, "vbus-voltage",
+					&extcon->vbus_vol))
+			dev_info(dev, "vbus-voltage=%d", extcon->vbus_vol);
+
+		if (!of_property_read_u32(dev->of_node, "vbus-current",
 					&extcon->vbus_cur))
-		dev_info(dev, "vbus-current=%d", extcon->vbus_cur);
+			dev_info(dev, "vbus-current=%d", extcon->vbus_cur);
+	}
 
 	extcon->bypss_typec_sink =
 		of_property_read_bool(dev->of_node,
