@@ -31,10 +31,14 @@
 //#define _90HZ_
 #ifdef _VDO_120FPS_	 //for vdo mode 120Hz
 #define RXTX_RATIO		(230)
+#else
+#define RXTX_RATIO		(300)
 #endif
 #ifdef _CMD_120FPS_	 //for cmd mode 120Hz
 #define RXTX_RATIO		(300)
 #define _LINE_BACK_TO_LP_	//only for cmd mode
+#else
+#define RXTX_RATIO		(300)
 #endif
 #ifdef _90HZ_
 #define _Disable_HS_DCO_
