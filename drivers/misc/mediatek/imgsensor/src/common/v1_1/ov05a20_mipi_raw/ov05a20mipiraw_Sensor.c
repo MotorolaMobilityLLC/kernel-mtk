@@ -693,8 +693,6 @@ static void hdr_write_gain(kal_uint16 lgain, kal_uint16 sgain)
 	if (reg_lgain > 0x7c0) {
 		reg_d_lgain = reg_lgain*1024/1984;
 
-		if (reg_d_lgain < 0x400)// sensor 1xGain
-			reg_d_lgain = 0x400;
 		if (reg_d_lgain > 0x3fff)// sensor 16xGain
 			reg_d_lgain = 0x3fff;
 		/* long exposure */
@@ -710,8 +708,6 @@ static void hdr_write_gain(kal_uint16 lgain, kal_uint16 sgain)
 	} else {
 		if (reg_lgain < 0x80)// sensor 1xGain
 			reg_lgain = 0x80;
-		if (reg_lgain > 0x7c0)// sensor 15.5xGain
-			reg_lgain = 0x7c0;
 
 		/* binary to find A_Gain */
 		reg_a_gain = binary_find_AGain(AGain_table,
@@ -736,8 +732,6 @@ static void hdr_write_gain(kal_uint16 lgain, kal_uint16 sgain)
 	if (reg_sgain > 0x7c0) {
 		reg_d_sgain = reg_sgain*1024/1984;
 
-		if (reg_d_sgain < 0x400)// sensor 1xGain
-			reg_d_sgain = 0x400;
 		if (reg_d_sgain > 0x3fff)// sensor 16xGain
 			reg_d_sgain = 0x3fff;
 		/* short gain */
@@ -753,8 +747,6 @@ static void hdr_write_gain(kal_uint16 lgain, kal_uint16 sgain)
 	} else {
 		if (reg_sgain < 0x80)// sensor 1xGain
 			reg_sgain = 0x80;
-		if (reg_sgain > 0x7c0)// sensor 15.5xGain
-			reg_sgain = 0x7c0;
 
 		/* binary to find A_Gain */
 		reg_a_gain = binary_find_AGain(AGain_table,
