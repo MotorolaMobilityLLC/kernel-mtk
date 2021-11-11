@@ -2660,6 +2660,11 @@ static int vpu_service_routine(void *arg)
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 
 	for (; !kthread_should_stop();) {
+		if (service_core >= MTK_VPU_CORE) {
+			LOG_ERR("invalid core %d\n",
+				service_core);
+			break;
+		}
 		/* wait for requests if there is no one in user's queue */
 		add_wait_queue(&vpu_dev->req_wait, &wait);
 		while (1) {
@@ -2685,10 +2690,15 @@ static int vpu_service_routine(void *arg)
 		req = vpu_pool_dequeue(&vpu_dev->pool_multiproc, NULL);
 
 		/* 2. self pool */
-		if (!req)
+		if (!req) {
+			if (i >= VPU_REQ_MAX_NUM_PRIORITY || i < 0) {
+				LOG_ERR("invalid priority %d\n", i);
+				break;
+			}
 			req = vpu_pool_dequeue(
 				&vpu_dev->pool[service_core],
 				&vpu_dev->priority_list[service_core][i]);
+		}
 
 		/* 3. common pool */
 		if (!req)
