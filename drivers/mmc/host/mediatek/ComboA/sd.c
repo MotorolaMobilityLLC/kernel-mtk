@@ -2243,10 +2243,10 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 
 		for (i = 0; i < totalpages; i++) {
 			kaddr[i] = (ulong) kmap(hmpage + i);
-			if ((i > 0) && ((kaddr[i] - kaddr[i - 1]) != PAGE_SIZE))
-				flag = 1;
 			if (!kaddr[i])
 				ERR_MSG("msdc0:kmap failed %lx", kaddr[i]);
+			if ((i > 0) && ((kaddr[i] - kaddr[i - 1]) != PAGE_SIZE))
+				flag = 1;
 		}
 
 		ptr = sg_virt(sg);
@@ -2444,10 +2444,10 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 		/* Kmap all need pages, */
 		for (i = 0; i < totalpages; i++) {
 			kaddr[i] = (ulong) kmap(hmpage + i);
-			if ((i > 0) && ((kaddr[i] - kaddr[i - 1]) != PAGE_SIZE))
-				flag = 1;
 			if (!kaddr[i])
 				ERR_MSG("msdc0:kmap failed %lx\n", kaddr[i]);
+			if ((i > 0) && ((kaddr[i] - kaddr[i - 1]) != PAGE_SIZE))
+				flag = 1;
 		}
 
 		ptr = sg_virt(sg);
