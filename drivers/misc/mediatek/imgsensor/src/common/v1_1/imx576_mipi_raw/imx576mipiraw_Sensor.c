@@ -2861,6 +2861,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					  (*feature_para_len)/sizeof(UINT16));
 		}
 		break;
+	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
+		/*
+		 * 1, if driver support new sw frame sync
+		 * set_shutter_frame_length() support third para auto_extend_en
+		 */
+		*(feature_data + 1) = 1;
+		/* margin info by scenario */
+		*(feature_data + 2) = imgsensor_info.margin;
+		break;
 	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
 		/*
 		 * SENSOR_VHDR_MODE_NONE  = 0x0,
