@@ -406,12 +406,13 @@ static void debug_low_async_space_locked(struct binder_alloc *alloc, int pid)
 			     "%d: pid %d comm %s spamming oneway? %zd buffers allocated for a total size of %zd\n",
 			      alloc->pid, pid, debug_task->comm, num_buffers, total_alloc_size);
 
-#if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
-			aee_kernel_exception_api(__FILE__, __LINE__,
-				DB_OPT_DEFAULT | DB_OPT_NATIVE_BACKTRACE,
-				"[binder_low_async]",
-				"\nCRDISPATCH_KEY:netd binder issue");
-#endif
+/* #if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
+ *			aee_kernel_exception_api(__FILE__, __LINE__,
+ *				DB_OPT_DEFAULT | DB_OPT_NATIVE_BACKTRACE,
+ *				"[binder_low_async]",
+ *				"\nCRDISPATCH_KEY:netd binder issue");
+ * #endif
+ */
 			put_task_struct(debug_task);
 		}
 	}
