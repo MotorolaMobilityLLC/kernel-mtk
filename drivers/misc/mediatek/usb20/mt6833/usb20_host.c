@@ -457,8 +457,8 @@ static void do_host_work(struct work_struct *data)
 #endif
 		/* setup fifo for host mode */
 		ep_config_from_table_for_host(mtk_musb);
-
-		if (!mtk_musb->host_suspend)
+		/*moto modify stay awake*/
+		//if (!mtk_musb->host_suspend)
 			__pm_stay_awake(mtk_musb->usb_lock);
 
 
