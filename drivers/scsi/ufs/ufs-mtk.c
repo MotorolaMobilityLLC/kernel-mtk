@@ -1336,7 +1336,8 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 
 			goto out;
 		}
-
+		if (ufshcd_is_link_off(hba))
+			mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 2, 0, 0, 0);
 		host->unipro_lpm = true;
 
 		ufs_mtk_pltfrm_suspend(hba);
