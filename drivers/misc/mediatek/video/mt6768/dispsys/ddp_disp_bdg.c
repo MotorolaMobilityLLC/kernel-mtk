@@ -95,7 +95,7 @@ struct lcm_setting_table {
 	unsigned char para_list[256];
 };
 
-#define MM_CLK			546 //fpga=26
+#define MM_CLK			270 //fpga=26
 #define NS_TO_CYCLE(n, c)	((n) / (c) + (((n) % (c)) ? 1 : 0))
 
 #define DSI_MODULE_to_ID(x)	(x == DISP_BDG_DSI0 ? 0 : 1)
@@ -536,12 +536,25 @@ void ana_macro_on(void *cmdq)
 	 * bit 16-17 is display mm clk 1(270m)/2(405m)/3(540m)
 	 * dsc_on:vact * hact * vrefresh * (vtotal / vact) * bubble_ratio
 	 */
-#ifdef _90HZ_
-	reg = (3 << 24) | (1 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
-#else
-	reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //405M for 120Hz
-#endif
-//	reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
+	switch (MM_CLK) {
+	case 546:
+		DISPMSG("%s, 6382 mmclk 546M\n", __func__);
+		reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
+		break;
+	case 405:
+		DISPMSG("%s, 6382 mmclk 405M\n", __func__);
+		reg = (3 << 24) | (2 << 16) | (1 << 8) | (1 << 0); //405M for 120Hz
+		break;
+	case 270:
+		DISPMSG("%s, 6382 mmclk 270M\n", __func__);
+		reg = (3 << 24) | (1 << 16) | (1 << 8) | (1 << 0); //270M for 90Hz
+		break;
+	default:
+		DISPMSG("%s, 6382 mmclk default 546M\n", __func__);
+		reg = (3 << 24) | (3 << 16) | (1 << 8) | (1 << 0); //540M
+		break;
+	}
+
 	DSI_OUTREG32(cmdq, TOPCKGEN->CLK_CFG_0_SET, reg);
 	//config update
 	reg = (1 << 4) | (1 << 3) | (1 << 1) | (1 << 0);
@@ -1881,6 +1894,8 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 		unsigned long dsc_base_addr = (unsigned long)DSC_REG;
 		unsigned long dsi_base_addr = (unsigned long)TX_REG[i];
 		unsigned long mipi_base_addr = (unsigned long)MIPI_TX_REG;
+		unsigned long rx_base_addr = (unsigned long)DSI2_REG;
+		unsigned long rx_phy_base_addr = (unsigned long)MIPI_RX_PHY_BASE;
 
 		DISPMSG("========================== mt6382 RX REGS ==\n", i);
 		tmp = mtk_spi_read(0x0000d00c);
@@ -2155,11 +2170,30 @@ int bdg_dsi_dump_reg(enum DISP_BDG_ENUM module, unsigned int level)
 			if (tmp & (1 << 3))
 				DISPMSG("Trigger 3\n");
 		}
-
+		if (level > 2) {
+			DISPMSG("========================== mt6382 RX Full REGS ==\n");
+	//		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
+			for (k = 0; k < 0x210; k += 16) {
+				DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", rx_base_addr + k,
+					mtk_spi_read(rx_base_addr + k),
+					mtk_spi_read(rx_base_addr + k + 0x4),
+					mtk_spi_read(rx_base_addr + k + 0x8),
+					mtk_spi_read(rx_base_addr + k + 0xc));
+			}
+			DISPMSG("========================== mt6382 RX PHY REGS ==\n");
+	//		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
+			for (k = 12288; k < 0x15440; k += 16) {
+				DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k / 4,
+					mtk_spi_read(rx_phy_base_addr + k),
+					mtk_spi_read(rx_phy_base_addr + k + 0x4),
+					mtk_spi_read(rx_phy_base_addr + k + 0x8),
+					mtk_spi_read(rx_phy_base_addr + k + 0xc));
+			}
+		}
 		DISPMSG("========================== mt6382 DSI%d REGS ==\n", i);
 //		for (k = 0; k < sizeof(struct BDG_TX_REGS); k += 16) {
-		for (k = 0; k < 0x210; k += 16) {
-			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+		for (k = 0; k < 0x4f0; k += 16) {
+			DISPMSG("0x%08x: 0x%08x 0x%08x 0x%08x 0x%08x\n", dsi_base_addr + k,
 				mtk_spi_read(dsi_base_addr + k),
 				mtk_spi_read(dsi_base_addr + k + 0x4),
 				mtk_spi_read(dsi_base_addr + k + 0x8),
@@ -3393,12 +3427,11 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_RDY_TO_CNT_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_RESP_TO_CNT_OS, 0);
 	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_VALID_VC_CFG_OS, 0xf);
-	/* 0x1b for MMCLK 270M 0x37 for MMCLK 407M */
-#ifdef _90HZ_
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x1b);
-#else
-	DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x37);
-#endif
+	/* 0x1b for MMCLK 270M 0x37 for MMCLK 405M */
+	if (MM_CLK == 270)
+		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x1b);
+	else
+		DSI_OUTREG32(cmdq, DSI2_REG->DSI2_DEVICE_DDI_CLK_MGR_CFG_OS, 0x37);
 //	}
 
 	//video mode/ipi
