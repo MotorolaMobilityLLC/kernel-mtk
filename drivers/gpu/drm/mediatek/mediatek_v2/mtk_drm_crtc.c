@@ -4160,6 +4160,7 @@ void mtk_crtc_start_trig_loop(struct drm_crtc *crtc)
 	unsigned long crtc_id = (unsigned long)drm_crtc_index(crtc);
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
 	struct cmdq_operand lop, rop;
+	struct mtk_panel_params *params = NULL;
 
 	const u16 reg_jump = CMDQ_THR_SPR_IDX1;
 	const u16 var1 = CMDQ_CPR_DDR_USR_CNT;
@@ -4251,9 +4252,12 @@ void mtk_crtc_start_trig_loop(struct drm_crtc *crtc)
 	} else {
 		mtk_disp_mutex_submit_sof(mtk_crtc->mutex[0]);
 		if (crtc_id == 0) {
+			if (mtk_crtc->panel_ext)
+				params = mtk_crtc->panel_ext->params;
 			/*Msync 2.0 add vfp period token instead of EOF*/
 			if (mtk_drm_helper_get_opt(priv->helper_opt,
-					   MTK_DRM_OPT_MSYNC2_0)) {
+					MTK_DRM_OPT_MSYNC2_0) && params &&
+					params->msync2_enable) {
 				DDPDBG("[Msync]%s, add set vfp period token\n", __func__);
 				cmdq_pkt_wfe(cmdq_handle,
 						mtk_crtc->gce_obj.event[EVENT_CMD_EOF]);
@@ -4332,7 +4336,8 @@ void mtk_crtc_start_trig_loop(struct drm_crtc *crtc)
 		/*Msync 2.0 add vfp period token instead of EOF*/
 		if (crtc_id == 0) {
 			if (mtk_drm_helper_get_opt(priv->helper_opt,
-					   MTK_DRM_OPT_MSYNC2_0)) {
+					MTK_DRM_OPT_MSYNC2_0) && params &&
+					params->msync2_enable) {
 				/*wait next SOF*/
 				cmdq_pkt_wait_no_clear(cmdq_handle,
 						    mtk_crtc->gce_obj.event[EVENT_DSI0_SOF]);
