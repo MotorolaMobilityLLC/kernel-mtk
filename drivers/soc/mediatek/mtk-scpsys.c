@@ -166,6 +166,14 @@ static int scpsys_md_domain_is_on(struct scp_domain *scpd)
 	return false;
 }
 
+static int scpsys_regulator_is_enabled(struct scp_domain *scpd)
+{
+	if (!scpd->supply)
+		return 0;
+
+	return regulator_is_enabled(scpd->supply);
+}
+
 static int scpsys_regulator_enable(struct scp_domain *scpd)
 {
 	if (!scpd->supply)
@@ -610,15 +618,16 @@ static int scpsys_power_on(struct generic_pm_domain *genpd)
 	return 0;
 
 err_sram:
-	scpsys_clk_disable(scpd->subsys_clk, MAX_SUBSYS_CLKS);
+	dev_err(scp->dev, "Failed to power on sram/bus %s(%d)\n", genpd->name, ret);
 err_pwr_ack:
-	scpsys_clk_disable(scpd->lp_clk, MAX_CLKS);
+	dev_err(scp->dev, "Failed to power on mtcmos %s(%d)\n", genpd->name, ret);
 err_lp_clk:
-	scpsys_clk_disable(scpd->clk, MAX_CLKS);
+	dev_err(scp->dev, "Failed to enable lp_clk %s(%d)\n", genpd->name, ret);
 err_clk:
-	scpsys_regulator_disable(scpd);
+	val = scpsys_regulator_is_enabled(scpd);
+	dev_err(scp->dev, "Failed to enable clk %s(%d %d)\n", genpd->name, ret, val);
 err_regulator:
-	dev_err(scp->dev, "Failed to power on domain %s(%d)\n", genpd->name, ret);
+	dev_err(scp->dev, "Failed to power on regulator %s(%d)\n", genpd->name, ret);
 
 	return ret;
 }
@@ -706,7 +715,8 @@ err_subsys_lp_clk:
 err_lp_clk:
 	scpsys_clk_disable(scpd->lp_clk, MAX_CLKS);
 out:
-	dev_err(scp->dev, "Failed to power off domain %s(%d)\n", genpd->name, ret);
+	val = scpsys_regulator_is_enabled(scpd);
+	dev_err(scp->dev, "Failed to power off domain %s(%d %d)\n", genpd->name, ret, val);
 
 	return ret;
 }
@@ -898,6 +908,9 @@ static int scpsys_hwv_power_on(struct generic_pm_domain *genpd)
 		i++;
 	} while ((val & BIT(scpd->data->hwv_shift)) == 0);
 
+	/* delay 50us for stable status */
+	udelay(50);
+
 	/* wait until VOTER_ACK = 1 */
 	ret = readx_poll_timeout_atomic(mtk_hwv_is_done, scpd, tmp, tmp > 0,
 			MTK_POLL_DELAY_US, MTK_POLL_TIMEOUT);
@@ -956,6 +969,9 @@ static int scpsys_hwv_power_off(struct generic_pm_domain *genpd)
 			goto err_hwv_vote;
 		i++;
 	} while ((val & BIT(scpd->data->hwv_shift)) != 0);
+
+	/* delay 50us for stable status */
+	udelay(50);
 
 	/* wait until VOTER_ACK = 0 */
 	ret = readx_poll_timeout_atomic(mtk_hwv_is_done, scpd, tmp, tmp > 0,

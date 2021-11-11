@@ -229,13 +229,18 @@ static const struct scp_domain_data scp_domain_data_mt6879[] = {
 	},
 	[MT6879_POWER_DOMAIN_DISP] = {
 		.name = "disp",
-		.hwv_set_ofs = 0x198,
-		.hwv_clr_ofs = 0x19C,
-		.hwv_done_ofs = 0x141C,
-		.hwv_shift = 11,
+		.sta_mask = BIT(25),
+		.ctl_offs = 0xE64,
+		.sram_pdn_bits = GENMASK(8, 8),
+		.sram_pdn_ack_bits = GENMASK(12, 12),
 		.basic_clk_name = {"disp"},
 		.basic_lp_clk_name = {"mdp"},
-		.caps = MTK_SCPD_HWV_OPS,
+		.subsys_clk_prefix = "disp",
+		.subsys_lp_clk_prefix = "mdp_lp",
+		.bp_table = {
+			BUS_PROT_IGN(IFR_TYPE, 0x0C14, 0x0C18, 0x0C10, 0x0C1C,
+				MT6879_TOP_AXI_PROT_EN_MMSYS0_DISP),
+		},
 	},
 	[MT6879_POWER_DOMAIN_MM_INFRA] = {
 		.name = "mm_infra",
@@ -260,7 +265,7 @@ static const struct scp_domain_data scp_domain_data_mt6879[] = {
 				MT6879_VLP_AXI_PROT_EN_MM_PROC_2ND),
 		},
 		.sram_table = {
-			SRAM_NO_ACK(0xEA0, 9), SRAM_NO_ACK(0xEA0, 9),
+			SRAM_NO_ACK(0xEA0, 9), SRAM_NO_ACK(0xEA4, 9),
 			SRAM_NO_ACK(0xEA8, 9), SRAM_NO_ACK(0xEB0, 9),
 		},
 		.caps = MTK_SCPD_SRAM_ISO | MTK_SCPD_SRAM_SLP | MTK_SCPD_L2TCM_SRAM,
