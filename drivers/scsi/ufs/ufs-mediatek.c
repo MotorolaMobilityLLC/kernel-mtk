@@ -734,6 +734,7 @@ static bool ufs_mtk_is_data_cmd(struct scsi_cmnd *cmd)
 }
 
 #define UFS_VEND_SAMSUNG  (1 << 0)
+#define UFS_VEND_MICRON   (1 << 1)
 
 struct tracepoints_table {
 	const char *name;
@@ -820,7 +821,7 @@ static void ufs_mtk_trace_vh_update_sdev_vend_ss(void *data, struct scsi_device 
 	struct ufs_hba *hba = shost_priv(sdev->host);
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 
-	if (hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG)
+	if ((hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG) || (hba->dev_info.wmanufacturerid == UFS_VENDOR_MICRON))
 		ufsf_slave_configure(ufsf, sdev);
 }
 
@@ -904,7 +905,7 @@ static struct tracepoints_table interests[] = {
 	{
 		.name = "android_vh_ufs_update_sdev",
 		.func = ufs_mtk_trace_vh_update_sdev_vend_ss,
-		.vend = UFS_VEND_SAMSUNG
+		.vend = UFS_VEND_SAMSUNG | UFS_VEND_MICRON
 	},
 	{
 		.name = "android_vh_ufs_send_command",
@@ -958,8 +959,8 @@ static int ufs_mtk_install_tracepoints(struct ufs_hba *hba)
 		}
 
 		vend = interests[i].vend;
-		if (vend & UFS_VEND_SAMSUNG) {
-			if (hba->dev_info.wmanufacturerid != UFS_VENDOR_SAMSUNG)
+		if ((vend & UFS_VEND_SAMSUNG) || (vend & UFS_VEND_MICRON)) {
+			if ((hba->dev_info.wmanufacturerid != UFS_VENDOR_SAMSUNG) && (hba->dev_info.wmanufacturerid != UFS_VENDOR_MICRON))
 				continue;
 		}
 
@@ -2198,7 +2199,7 @@ static void ufs_mtk_fixup_dev_quirks(struct ufs_hba *hba)
 	ufs_mtk_install_tracepoints(hba);
 
 #if defined(CONFIG_UFSFEATURE)
-	if (hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG) {
+	if ((hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG) || (hba->dev_info.wmanufacturerid == UFS_VENDOR_MICRON)) {
 		host->ufsf.hba = hba;
 		ufsf_set_init_state(ufs_mtk_get_ufsf(hba));
 	}
