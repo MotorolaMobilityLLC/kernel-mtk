@@ -222,5 +222,10 @@
 //#include "mediatek/cust_mt6833_camera.dtsi"
 //#include <k6833v1_64/cust.dtsi>
 
+/* disable manual mrdump start */
+&mrdump_ext_rst {
+	force_mode = "EINT";
+};
+/* disable manual mrdump end */
 
 /*End of this file, DO NOT ADD ANYTHING HERE*/
