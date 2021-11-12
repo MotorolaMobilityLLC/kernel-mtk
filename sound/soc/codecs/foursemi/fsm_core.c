@@ -223,6 +223,7 @@ static int fsm_cal_f0_zmdata(fsm_dev_t *fsm_dev,
     uint16_t zmdata;
     int count;
     int ret;
+    int idx;
 
     if (!fsm_dev || !f0) {
         return -EINVAL;
@@ -242,6 +243,8 @@ static int fsm_cal_f0_zmdata(fsm_dev_t *fsm_dev,
     count = f0->count;
     pr_addr(info, "ZM[%4d]:%d", freq, zmdata);
     f0->zmdata[count] = zmdata;
+    idx = freq / 100 - 2;
+    fsm_dev->zmdata[idx] = zmdata;
     if (f0->count == 0 || zmdata < f0->min_zm) {
         f0->min_zm = zmdata;
         f0->min_idx = f0->count;
@@ -3062,10 +3065,8 @@ int fsm_test_result(struct fsm_cal_result *result, int size)
         }
         if (freq_count <= 0 || size == sizeof(struct fsm_cal_result)) {
             pr_addr(info, "copy info data only");
-            if (fsm_dev->is1603s) {
-                memcpy(&result->f0_zmdata[dev * FSM_F0_COUNT],
-                        fsm_dev->zmdata, FSM_F0_COUNT * sizeof(uint16_t));
-            }
+            memcpy(&result->f0_zmdata[dev * FSM_F0_COUNT],
+                    fsm_dev->zmdata, FSM_F0_COUNT * sizeof(uint16_t));
             continue;
         }
         if (result->freq_count != freq_count) {
