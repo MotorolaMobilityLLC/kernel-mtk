@@ -27,7 +27,7 @@
 
 /* VERSION INFORMATION */
 #define FSM_CODE_VERSION "v3.1.4"
-#define FSM_CODE_DATE    "20210805"
+#define FSM_CODE_DATE    "20210827"
 #define FSM_GIT_BRANCH   "moto-fs1894s"
 #define FSM_GIT_COMMIT   "739aef79"
 
