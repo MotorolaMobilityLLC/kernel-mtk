@@ -251,7 +251,9 @@ void ufsf_hid_acc_io_stat(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp);
 #if defined(CONFIG_UFSRINGBUF)
 #define QUERY_FLAG_IDN_CMD_HISTORY_RECORD_EN		0x12
 #endif
-
+#if defined(CONFIG_MICRON_UFSHID)
+#define QUERY_FLAG_IDN_HID_EN                           0x13
+#endif
 /* Attribute idn for Query requests */
 #if defined(CONFIG_UFSTW)
 #define QUERY_ATTR_IDN_TW_FLUSH_STATUS			0x1C
@@ -266,6 +268,10 @@ void ufsf_hid_acc_io_stat(struct ufsf_feature *ufsf, struct ufshcd_lrb *lrbp);
 #if defined (CONFIG_UFSRINGBUF)
 #define QUERY_ATTR_IDN_RINGBUF_RTCA			0x22
 #define QUERY_ATTR_IDN_RINGBUF_RTCB			0x23
+#endif
+#if defined(CONFIG_MICRON_UFSHID)
+#define QUERY_ATTR_IDN_HID_FRAG_STATUS                  0x31
+#define QUERY_ATTR_IDN_HID_PROGRESS                     0x32
 #endif
 #define QUERY_ATTR_IDN_SUP_VENDOR_OPTIONS		0xFF
 
