@@ -503,12 +503,14 @@ int fs1603_f0_test(fsm_dev_t *fsm_dev)
 
 int fs1603_post_f0_test(fsm_dev_t *fsm_dev)
 {
+    fsm_config_t *cfg = fsm_get_config();
     int ret;
 
     if (!fsm_dev) {
         return -EINVAL;
     }
     fsm_dev->state.f0_runing = false;
+    cfg->stop_test = true;
     ret = fsm_reg_write(fsm_dev, REG(FSM_SYSCTRL), 0x0001);
     fsm_dev->errcode |= ret;
 
