@@ -27,6 +27,7 @@
 #include <linux/of_platform.h>
 #include <linux/of_graph.h>
 #include <linux/platform_device.h>
+#include <linux/fb.h>
 
 #define CONFIG_MTK_PANEL_EXT
 #if defined(CONFIG_MTK_PANEL_EXT)
@@ -282,9 +283,16 @@ static int lcm_disable(struct drm_panel *panel)
 static int lcm_unprepare(struct drm_panel *panel)
 {
 	struct lcm *ctx = panel_to_lcm(panel);
+	int blank = 0;
+	struct fb_event event;
 
 	if (!ctx->prepared)
 		return 0;
+
+	mdelay(2);
+	blank = FB_BLANK_POWERDOWN;
+	event.data = &blank;
+	fb_notifier_call_chain(FB_EARLY_EVENT_BLANK, &event);
 
 	mdelay(2);
 	lcm_dcs_write_seq_static(ctx, 0x28);
@@ -320,7 +328,7 @@ static int lcm_unprepare(struct drm_panel *panel)
 	}
 	//gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-
+	mdelay(2);
 
 	ctx->bias_neg = devm_gpiod_get_index(ctx->dev,
 		"bias", 1, GPIOD_OUT_HIGH);
@@ -394,7 +402,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->bias_pos, 1);
 	devm_gpiod_put(ctx->dev, ctx->bias_pos);
 
-	udelay(2000);
+	mdelay(2);
 
 	ctx->bias_neg = devm_gpiod_get_index(ctx->dev,
 		"bias", 1, GPIOD_OUT_HIGH);
