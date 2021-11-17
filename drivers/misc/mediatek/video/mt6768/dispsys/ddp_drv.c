@@ -555,8 +555,10 @@ static int disp_probe_1(void)
 	disp_m4u_init();
 
 #ifdef CONFIG_MTK_MT6382_BDG
+#ifndef CONFIG_MTK_MT6382_BDG_BUF7
 	if (bdg_is_bdg_connected() == 1)
 		disp_init_bdg_gce_obj();
+#endif
 #endif
 
 	pr_info("disp driver(1) %s end\n", __func__);
