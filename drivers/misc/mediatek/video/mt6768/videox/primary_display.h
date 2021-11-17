@@ -286,8 +286,6 @@ struct display_primary_path_context {
 	unsigned int first_cfg;
 	/*DynFPS end*/
 #endif
-	/* change vfp for ap dsi and 6382 at same time */
-	bool vfp_chg_sync_bdg;
 };
 
 static inline char *lcm_power_state_to_string(enum lcm_power_state ps)
