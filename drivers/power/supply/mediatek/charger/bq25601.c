@@ -1561,11 +1561,28 @@ static int bq25601_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 			m_chg_type = 0;
 			wait_count = 0;
 			while((!m_chg_type)&&(wait_count<30)){
+				msleep(30);
+				wait_count++;
+				pr_err("z350 early waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+			}
+			m_chg_type = wt6670f_get_protocol();
+			if((m_chg_type != 0x02)&&(m_chg_type != 0x03))
+			{
+				if (!chip->psy)
+				chip->psy = power_supply_get_by_name("charger");
+
+				if(chip->psy){
+				propval.intval = STANDARD_CHARGER;
+				power_supply_set_property(chip->psy,POWER_SUPPLY_PROP_CHARGE_TYPE,&propval);
+				}
+				wait_count = 0;
+				while((!m_chg_type)&&(wait_count<30)){
 				msleep(100);
 				wait_count++;
 				pr_err("z350 waiting dcp type:%x,%d\n",m_chg_type,wait_count);
 			}
 			m_chg_type = wt6670f_get_protocol();
+			}
 			if(m_chg_type == 0x04){
 				pr_err("z350==0x04 retry type");
 				msleep(2000);
