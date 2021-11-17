@@ -565,6 +565,8 @@ int ili_sleep_handler(int mode)
 		ILI_INFO("TP suspend end\n");
 		break;
 	case TP_DEEP_SLEEP:
+		if(ilits->tp_suspend)
+			break;
 		ILI_INFO("TP deep suspend start\n");
 		ilits->tp_suspend = true;
 		ilits->power_status = false;
