@@ -4794,8 +4794,11 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	}
 
 	calculate_datarate_cfgs_rx(ap_tx_data_rate);
+
+#ifndef CONFIG_MTK_MT6382_BDG_BUF7
 	if (!disp_bdg_gce_client)
 		disp_init_bdg_gce_obj();
+#endif
 
 	startup_seq_common(cmdq);
 
