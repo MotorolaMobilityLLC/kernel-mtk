@@ -687,22 +687,23 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 {
 	struct dfps_info *dfps_params = dsi->dfps_params;
 
+	pr_debug("%s enter\n", __func__);
 	dsi->dfps_enable = 1;
-	dsi->dfps_default_fps = 6000;/*real fps * 100, to support float*/
+	dsi->dfps_default_fps = 9000;/*real fps * 100, to support float*/
 	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
 
 	/* DPFS_LEVEL0 */
 	dfps_params[0].level = DFPS_LEVEL0;
-	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
+	dfps_params[0].fps = 9000;/*real fps * 100, to support float*/
 	dfps_params[0].vact_timing_fps = 9000;/*real vact timing fps * 100*/
-	dfps_params[0].vertical_frontporch = 1321;
+	dfps_params[0].vertical_frontporch = 54;  //90Hz
 	dfps_params[0].vertical_frontporch_for_low_power = 0;
 
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
-	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
+	dfps_params[1].fps = 6000;/*real fps * 100, to support float*/
 	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
-	dfps_params[1].vertical_frontporch = 54;
+	dfps_params[1].vertical_frontporch = 1321; //60Hz
 	dfps_params[1].vertical_frontporch_for_low_power = 0;
 
 	dsi->dfps_num = 2;
@@ -742,7 +743,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* video mode timing */
 	params->dsi.vertical_sync_active = 10;
 	params->dsi.vertical_backporch = 10;
-	params->dsi.vertical_frontporch = 1321;
+	params->dsi.vertical_frontporch = 54;	//90Hz
 	//params->dsi.vertical_frontporch_for_low_power = 2500;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
