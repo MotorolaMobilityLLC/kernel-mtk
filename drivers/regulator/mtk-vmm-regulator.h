@@ -8,18 +8,21 @@
 #include <linux/mutex.h>
 #include <linux/types.h>
 #include <linux/remoteproc.h>
+#include <linux/workqueue.h>
 
 #define MAX_MUX_NUM (10)
 #define MAX_OPP_STEP 7
 #define DEFAULT_VOLTAGE 650000
 #define FINE_GRAIN_LOWER_BOUND 650000
 #define DEFAULT_VOLTAGE_LEVEL 3
+#define WAIT_POWER_ON_OFF_TIMEOUT_MS 2000
 
 enum dvfs_apmcu_task_id {
 	DVFS_CCU_NO_NEED_CB = -1,
 	DVFS_CCU_INIT = 0,
 	DVFS_VOLTAGE_UPDATE = 1,
 	DVFS_CCU_UNINIT = 2,
+	DVFS_CCU_QUERY_VB = 3,
 };
 
 enum dvfs_dbg_id {
@@ -63,6 +66,9 @@ struct dvfs_driver_data {
 	u32 en_vb;
 	u32 disable_dvfs;
 	struct ccu_handle_info ccu_handle;
+	atomic_t ccu_power_on;
+	atomic_t request_power_on;
+	struct work_struct work_structure;
 };
 
 struct dvfs_ipc_init {
@@ -75,6 +81,11 @@ struct dvfs_ipc_info {
 	u32 maxOppIdx;
 	u32 minOppIdx;
 	u32 curTickCnt;
+};
+
+struct dvfs_ipc_vb {
+	u32 efuseValue;
+	int voltage[MAX_OPP_STEP];
 };
 
 #endif
