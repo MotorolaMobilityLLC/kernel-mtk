@@ -21,8 +21,6 @@
 #include "imgsensor-glue/imgsensor-glue.h"
 #include "virt-sensor/virt-sensor-entry.h"
 
-#define to_ctx(__sd) container_of(__sd, struct adaptor_ctx, sd)
-
 #undef E
 #define E(__x__) (__x__##_entry)
 #define EXTERN_IMGSENSOR_SUBDRVS extern struct subdrv_entry \
@@ -38,6 +36,9 @@ static struct subdrv_entry *imgsensor_subdrvs[] = {
 	IMGSENSOR_SUBDRVS
 #endif
 };
+
+module_param(sensor_debug, uint, 0644);
+MODULE_PARM_DESC(sensor_debug, "imgsensor_debug");
 
 static int get_outfmt_code(struct adaptor_ctx *ctx)
 {
@@ -1177,6 +1178,7 @@ static int imgsensor_probe(struct i2c_client *client)
 
 	ctx->i2c_client = client;
 	ctx->dev = dev;
+	ctx->sensor_debug_flag = &sensor_debug;
 
 	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
 	if (!endpoint) {

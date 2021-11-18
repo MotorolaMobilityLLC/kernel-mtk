@@ -9,6 +9,13 @@
 //#include "kd_imgsensor_define_v4l2.h"
 #include "imgsensor-user.h"
 
+#define DEBUG_LOG(ctx, ...) do {\
+	imgsensor_info.sd = i2c_get_clientdata(ctx->i2c_client); \
+	imgsensor_info.adaptor_ctx_ = to_ctx(imgsensor_info.sd);\
+	if (unlikely(*((imgsensor_info.adaptor_ctx_)->sensor_debug_flag)))\
+		LOG_INF(__VA_ARGS__);\
+	} while (0)
+
 /* def V4L2_MBUS_CSI2_IS_USER_DEFINED_DATA */
 #define IMGSENSOR_VC_ROUTING
 
@@ -95,6 +102,7 @@ struct subdrv_ctx {
 
 	u8 extend_frame_length_en;
 	u8 fast_mode_on;
+	u8 ae_ctrl_gph_en;
 	u32 is_read_preload_eeprom;
 	u32 is_read_four_cell;
 	bool is_streaming;
@@ -184,6 +192,10 @@ struct subdrv_entry {
 
 #define subdrv_i2c_wr_p16(subctx, reg, p_vals, n_vals) \
 	adaptor_i2c_wr_p16(subctx->i2c_client, \
+		subctx->i2c_write_id >> 1, reg, p_vals, n_vals)
+
+#define subdrv_i2c_wr_seq_p8(subctx, reg, p_vals, n_vals) \
+	adaptor_i2c_wr_seq_p8(subctx->i2c_client, \
 		subctx->i2c_write_id >> 1, reg, p_vals, n_vals)
 
 #define subdrv_i2c_wr_regs_u8(subctx, list, len) \

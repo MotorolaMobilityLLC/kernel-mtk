@@ -22,7 +22,10 @@
 /* frame-sync */
 #include "frame_sync.h"
 
+#define to_ctx(__sd) container_of(__sd, struct adaptor_ctx, sd)
+
 struct adaptor_ctx;
+static unsigned int sensor_debug;
 
 union feature_para {
 	u64 u64[4];
@@ -127,9 +130,10 @@ struct adaptor_ctx {
 
 	int open_refcnt;
 	int power_refcnt;
-
 	/*debug var*/
 	MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
+
+	unsigned int *sensor_debug_flag;
 };
 
 #endif
