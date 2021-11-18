@@ -551,6 +551,7 @@ static int venc_set_param(unsigned long handle,
 	case VENC_SET_PARAM_PREPEND_HEADER:
 		inst->prepend_hdr = 1;
 		ret = vcu_enc_set_param(&inst->vcu_inst, type, enc_prm);
+		inst->ctx->async_mode = !(inst->vsi->sync_mode);
 		break;
 	case VENC_SET_PARAM_COLOR_DESC:
 		memcpy(&inst->vsi->config.color_desc, enc_prm->color_desc,
