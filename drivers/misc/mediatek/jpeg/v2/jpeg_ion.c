@@ -241,7 +241,7 @@ u64 jpg_translate_fd(u64 fd, u32 offset, u32 port)
 	iova += offset;
 
 	jpg_ion_free_handle(ion_h);
-	JPEG_LOG(1, "iova 0x%x", iova);
+	JPEG_LOG(1, "iova 0x%llx", iova);
 
 	return iova;
 }
