@@ -5,6 +5,7 @@
 
 #include "mdw_rv.h"
 #include "mdw_cmn.h"
+#include "mdw_mem_pool.h"
 #include "mdw_trace.h"
 
 #include "apu_ipi.h"
@@ -79,9 +80,8 @@ struct mdw_rv_cmd *mdw_rv_cmd_create(struct mdw_fpriv *mpriv,
 	struct mdw_rv_msg_cmd *rmc = NULL;
 	struct mdw_rv_msg_sc *rmsc = NULL;
 	struct mdw_rv_msg_cb *rmcb = NULL;
-	int ret = 0;
 
-	mdw_trace_begin("%s|cmd(0x%llx/0x%llx)", __func__, c->kid, c->uid);
+	mdw_trace_begin("%s|cmd(0x%llx/0x%llx)", __func__, c->uid, c->kid);
 	mutex_lock(&mpriv->mtx);
 
 	/* check mem address for rv */
@@ -96,6 +96,7 @@ struct mdw_rv_cmd *mdw_rv_cmd_create(struct mdw_fpriv *mpriv,
 	if (!rc)
 		goto out;
 
+	c->rvid = (uint64_t)&rc->s_msg;
 	init_completion(&rc->s_msg.cmplt);
 	/* set start timestamp */
 	rc->start_ts_ns = c->start_ts.tv_sec * 1000000000 + c->start_ts.tv_nsec;
@@ -116,19 +117,12 @@ struct mdw_rv_cmd *mdw_rv_cmd_create(struct mdw_fpriv *mpriv,
 	cb_size += c->exec_infos->size;
 
 	/* allocate communicate buffer */
-	rc->cb = mdw_mem_alloc(mpriv, MDW_MEM_TYPE_MAIN, cb_size,
-		MDW_DEFAULT_ALIGN, F_MDW_MEM_CACHEABLE|F_MDW_MEM_32BIT, false);
+	rc->cb = mdw_mem_pool_alloc(&mpriv->cmd_buf_pool, cb_size,
+		MDW_DEFAULT_ALIGN);
 	if (!rc->cb) {
 		mdw_drv_err("c(0x%llx) alloc cb size(%u) fail\n",
 			c->kid, cb_size);
 		goto free_rc;
-	}
-
-	ret = mdw_mem_map(mpriv, rc->cb);
-	if (ret) {
-		mdw_drv_err("c(0x%llx) map cb size(%u) fail\n",
-			c->kid, cb_size);
-		goto free_mem;
 	}
 
 	/* assign cmd info */
@@ -196,21 +190,19 @@ struct mdw_rv_cmd *mdw_rv_cmd_create(struct mdw_fpriv *mpriv,
 	c->einfos->c.sc_rets = 0;
 
 	if (mdw_mem_flush(mpriv, rc->cb))
-		mdw_drv_warn("s(0x%llx) c(0x%llx) flush rv cbs(%u) fail\n",
-			(uint64_t)c->mpriv, c->kid, rc->cb->size);
+		mdw_drv_warn("s(0x%llx) c(0x%llx/0x%llx) flush rv cbs(%u) fail\n",
+			(uint64_t)c->mpriv, c->kid, c->rvid, rc->cb->size);
 
 	mdw_rv_cmd_set_affinity(c, true);
 
 	goto out;
 
-free_mem:
-	mdw_mem_free(mpriv, rc->cb);
 free_rc:
 	kfree(rc);
 	rc = NULL;
 out:
 	mutex_unlock(&mpriv->mtx);
-	mdw_trace_end("%s|cmd(0x%llx/0x%llx)", __func__, c->kid, c->uid);
+	mdw_trace_end("%s|cmd(0x%llx/0x%llx)", __func__, c->uid, c->kid);
 	return rc;
 }
 
@@ -228,13 +220,15 @@ int mdw_rv_cmd_delete(struct mdw_rv_cmd *rc)
 	mutex_lock(&mpriv->mtx);
 	/* invalidate */
 	if (mdw_mem_invalidate(c->mpriv, rc->cb))
-		mdw_drv_warn("s(0x%llx) c(0x%llx) invalidate rcbs(%u) fail\n",
-			(uint64_t)c->mpriv, c->kid, rc->cb->size);
+		mdw_drv_warn("s(0x%llx) c(0x%llx/0x%llx/0x%llx) invalidate rcbs(%u) fail\n",
+			(uint64_t)c->mpriv, c->uid, c->kid,
+			c->rvid, rc->cb->size);
 
 	/* copy exec infos */
 	rmc = (struct mdw_rv_msg_cmd *)rc->cb->vaddr;
 	if (rmc->exec_infos_offset + c->exec_infos->size != rc->cb->size) {
-		mdw_drv_warn("c(0x%llx) execinfos size(%u/%u) not matched\n",
+		mdw_drv_warn("c(0x%llx/0x%llx/0x%llx) execinfos size(%u/%u) not matched\n",
+			c->uid, c->kid, c->rvid,
 			rmc->exec_infos_offset + c->exec_infos->size,
 			rc->cb->size);
 	} else {
@@ -243,8 +237,7 @@ int mdw_rv_cmd_delete(struct mdw_rv_cmd *rc)
 			c->exec_infos->size);
 	}
 
-	mdw_mem_unmap(rc->c->mpriv, rc->cb);
-	mdw_mem_free(rc->c->mpriv, rc->cb);
+	mdw_mem_pool_free(rc->cb);
 	kfree(rc);
 	mutex_unlock(&mpriv->mtx);
 

@@ -47,8 +47,7 @@ void mdw_dev_session_create(struct mdw_fpriv *mpriv)
 
 	for (i = 0; i < MDW_DEV_MAX; i++) {
 		if (mdev->adevs[i])
-			mdev->adevs[i]->send_cmd(APUSYS_CMD_SESSION_CREATE,
-				mpriv, mdev->adevs[i]);
+			mdev->adevs[i]->send_cmd(APUSYS_CMD_SESSION_CREATE, mpriv, mdev->adevs[i]);
 	}
 }
 
@@ -59,8 +58,7 @@ void mdw_dev_session_delete(struct mdw_fpriv *mpriv)
 
 	for (i = 0; i < MDW_DEV_MAX; i++) {
 		if (mdev->adevs[i])
-			mdev->adevs[i]->send_cmd(APUSYS_CMD_SESSION_DELETE,
-				mpriv, mdev->adevs[i]);
+			mdev->adevs[i]->send_cmd(APUSYS_CMD_SESSION_DELETE, mpriv, mdev->adevs[i]);
 	}
 }
 

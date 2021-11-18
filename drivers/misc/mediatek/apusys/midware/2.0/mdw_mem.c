@@ -13,6 +13,7 @@
 #include "mdw_mem.h"
 #include "mdw_mem_rsc.h"
 #include "mdw_trace.h"
+#include "mdw_mem_pool.h"
 
 #define mdw_mem_show(m) \
 	mdw_mem_debug("mem(0x%llx/0x%llx/%d/0x%llx/%d/0x%llx/0x%x/0x%llx" \
@@ -111,6 +112,8 @@ static struct mdw_mem *mdw_mem_create(struct mdw_fpriv *mpriv)
 		m->mpriv = mpriv;
 		m->release = mdw_mem_delete;
 		m->handle = -1;
+		m->pool = NULL;
+		INIT_LIST_HEAD(&m->p_chunk);
 		mutex_init(&m->mtx);
 		INIT_LIST_HEAD(&m->maps);
 		mdw_mem_show(m);
@@ -371,7 +374,7 @@ static struct mdw_mem_invoke *mdw_mem_invoke_find(struct mdw_fpriv *mpriv,
 
 	list_for_each_entry(m_invoke, &mpriv->invokes, u_node) {
 		if (m_invoke->m == m) {
-			mdw_flw_debug("mpriv(0x%llx) find invoke(0x%llx) to mem(0x%llx)\n",
+			mdw_flw_debug("s(0x%llx) find invoke(0x%llx) to mem(0x%llx)\n",
 				(uint64_t)mpriv, (uint64_t)m_invoke,
 				(uint64_t)m);
 			return m_invoke;
@@ -499,7 +502,7 @@ int mdw_mem_unmap(struct mdw_fpriv *mpriv, struct mdw_mem *m)
 	mdw_mem_show(m);
 	m_invoke = mdw_mem_invoke_find(mpriv, m);
 	if (m_invoke == NULL) {
-		mdw_drv_warn("mpriv(0x%llx) no invoke m(0x%llx)\n",
+		mdw_drv_warn("s(0x%llx) no invoke m(0x%llx)\n",
 			(uint64_t)mpriv, (uint64_t)m);
 		ret = -EINVAL;
 		goto out;
@@ -514,6 +517,9 @@ out:
 int mdw_mem_flush(struct mdw_fpriv *mpriv, struct mdw_mem *m)
 {
 	int ret = 0;
+
+	if (m->pool)
+		return mdw_mem_pool_flush(m);
 
 	mdw_trace_begin("%s|size(%u)", __func__, m->dva_size);
 	ret = dma_buf_end_cpu_access(m->dbuf, DMA_TO_DEVICE);
@@ -532,6 +538,9 @@ out:
 int mdw_mem_invalidate(struct mdw_fpriv *mpriv, struct mdw_mem *m)
 {
 	int ret = 0;
+
+	if (m->pool)
+		return mdw_mem_pool_invalidate(m);
 
 	mdw_trace_begin("%s|size(%u)", __func__, m->dva_size);
 
@@ -608,6 +617,7 @@ static int mdw_mem_ioctl_map(struct mdw_fpriv *mpriv,
 		return -EINVAL;
 	}
 
+	mutex_lock(&mpriv->mdev->mctl_mtx);
 	mutex_lock(&mpriv->mtx);
 
 	/* query mem from apu's mem list */
@@ -645,6 +655,9 @@ out:
 	}
 	dma_buf_put(dbuf);
 	mutex_unlock(&mpriv->mtx);
+	mutex_unlock(&mpriv->mdev->mctl_mtx);
+	if (ret || !m)
+		mdw_drv_err("handle(%llu) m(%p) ret(%d)\n", handle, m, ret);
 
 	return ret;
 }
@@ -658,6 +671,7 @@ static int mdw_mem_ioctl_unmap(struct mdw_fpriv *mpriv,
 
 	memset(args, 0, sizeof(*args));
 
+	mutex_lock(&mpriv->mdev->mctl_mtx);
 	mutex_lock(&mpriv->mtx);
 	m = mdw_mem_get(mpriv, handle);
 	if (!m)
@@ -670,6 +684,9 @@ static int mdw_mem_ioctl_unmap(struct mdw_fpriv *mpriv,
 
 out:
 	mutex_unlock(&mpriv->mtx);
+	mutex_unlock(&mpriv->mdev->mctl_mtx);
+	if (ret)
+		mdw_drv_err("handle(%llu) ret(%d)\n", handle, ret);
 
 	return ret;
 }
@@ -679,7 +696,7 @@ int mdw_mem_ioctl(struct mdw_fpriv *mpriv, void *data)
 	union mdw_mem_args *args = (union mdw_mem_args *)data;
 	int ret = 0;
 
-	mdw_flw_debug("mpriv(0x%llx) op::%d\n", (uint64_t)mpriv, args->in.op);
+	mdw_flw_debug("s(0x%llx) op::%d\n", (uint64_t)mpriv, args->in.op);
 	switch (args->in.op) {
 	case MDW_MEM_IOCTL_ALLOC:
 		ret = mdw_mem_ioctl_alloc(mpriv, args);
@@ -710,6 +727,7 @@ int mdw_mem_init(struct mdw_device *mdev)
 	int ret = 0;
 
 	mutex_init(&mdev->m_mtx);
+	mutex_init(&mdev->mctl_mtx);
 	INIT_LIST_HEAD(&mdev->m_list);
 	mdw_drv_info("set mem done\n");
 
@@ -854,3 +872,4 @@ uint64_t apusys_mem_query_iova(uint64_t kva)
 
 	return iova;
 }
+

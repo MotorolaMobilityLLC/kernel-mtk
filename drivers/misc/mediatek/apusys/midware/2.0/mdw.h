@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/dma-fence.h>
 #include <linux/hashtable.h>
+#include <linux/genalloc.h>
 
 #include "apusys_core.h"
 #include "apusys_device.h"
@@ -65,6 +66,14 @@ struct mdw_mem_invoke {
 	void (*put)(struct mdw_mem_invoke *m_invoke);
 };
 
+enum mdw_queue_type {
+	MDW_QUEUE_COMMON,
+	MDW_QUEUE_NORMAL,
+	MDW_QUEUE_DEADLINE,
+
+	MDW_QUEUE_MAX,
+};
+
 struct mdw_mem {
 	/* in */
 	enum mdw_mem_type type;
@@ -91,10 +100,35 @@ struct mdw_mem {
 	bool need_handle;
 	struct list_head maps;
 	struct mdw_fpriv *mpriv;
+	struct mdw_mem_pool *pool;
 	struct list_head u_item; //to mpriv
 	struct list_head d_node; //to mdev
+	struct list_head p_chunk; //to mem pool
 	struct mutex mtx;
 	void (*release)(struct mdw_mem *m);
+};
+
+/* default chunk size of memory pool */
+#define MDW_MEM_POOL_CHUNK_SIZE (4*1024*1024)
+
+struct mdw_mem_pool {
+	struct mdw_fpriv *mpriv;
+	/* pool attribute */
+	enum mdw_mem_type type;
+	uint64_t flags;
+	uint32_t align;
+	uint32_t chunk_size;
+	/* container and lock */
+	struct gen_pool *gp;
+	struct mutex m_mtx;
+	/* list of resource chunks */
+	struct list_head m_chunks;
+	/* list of allocated memories from gp */
+	struct list_head m_list;
+	/* ref count for cmd/mem */
+	struct kref m_ref;
+	void (*get)(struct mdw_mem_pool *pool);
+	void (*put)(struct mdw_mem_pool *pool);
 };
 
 struct mdw_dinfo {
@@ -175,9 +209,9 @@ struct mdw_device {
 	struct mdw_mem minfos[MDW_MEM_TYPE_MAX];
 
 	/* memory hlist */
-	//DECLARE_HASHTABLE(m_hlist, 5);
 	struct list_head m_list;
 	struct mutex m_mtx;
+	struct mutex mctl_mtx;
 
 	/* device functions */
 	const struct mdw_dev_func *dev_funcs;
@@ -191,6 +225,7 @@ struct mdw_fpriv {
 	struct list_head invokes;
 	struct list_head cmds;
 	struct mutex mtx;
+	struct mdw_mem_pool cmd_buf_pool;
 
 	/* ref count for cmd/mem */
 	struct kref ref;
@@ -225,6 +260,7 @@ struct mdw_cmd {
 	uint64_t kid;
 	uint64_t uid;
 	uint64_t usr_id;
+	uint64_t rvid;
 	uint32_t priority;
 	uint32_t hardlimit;
 	uint32_t softlimit;
@@ -279,8 +315,16 @@ struct mdw_dev_func {
 			"\nCRDISPATCH_KEY:APUSYS_MIDDLEWARE\n" format, \
 			##args); \
 	} while (0)
+#define dma_exception(format, args...) \
+	do { \
+		pr_info("apusys mdw:" format, ##args); \
+		aee_kernel_warning("APUSYS_AP_EXCEPTION_APUSYS_MIDDLEWARE", \
+			"\nCRDISPATCH_KEY:APUSYS_EDMA\n" format, \
+	##args); \
+	} while (0)
 #else
 #define mdw_exception(format, args...)
+#define dma_exception(format, args...)
 #endif
 
 void mdw_ap_set_func(struct mdw_device *mdev);
