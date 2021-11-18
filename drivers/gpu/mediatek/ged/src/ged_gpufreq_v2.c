@@ -13,6 +13,8 @@
 #include <ged_eb.h>
 #include <mt-plat/mtk_gpu_utility.h>
 
+static int g_min_count;
+
 static int g_max_core_num;             /* core_num */
 static int g_avail_mask_num;           /* mask_num */
 
@@ -215,8 +217,11 @@ unsigned int ged_get_freq_by_idx(int oppidx)
 
 	if (g_working_table == NULL)
 		return gpufreq_get_freq_by_idx(TARGET_DEFAULT, oppidx);
-	else
-		return g_working_table[oppidx].freq;
+
+	if (unlikely(oppidx > g_min_working_oppidx))
+		oppidx = g_min_working_oppidx;
+
+	return g_working_table[oppidx].freq;
 }
 
 unsigned int ged_get_power_by_idx(int oppidx)
@@ -226,8 +231,11 @@ unsigned int ged_get_power_by_idx(int oppidx)
 
 	if (g_working_table == NULL)
 		return gpufreq_get_power_by_idx(TARGET_DEFAULT, oppidx);
-	else
-		return g_working_table[oppidx].power;
+
+	if (unlikely(oppidx > g_min_working_oppidx))
+		oppidx = g_min_working_oppidx;
+
+	return g_working_table[oppidx].power;
 }
 
 int ged_get_oppidx_by_freq(unsigned int freq)
@@ -320,6 +328,15 @@ int ged_gpufreq_commit(int oppidx, int commit_type)
 
 	/* DCS policy enabled */
 	if (is_dcs_enable()) {
+		if (oppidx == g_min_virtual_oppidx)
+			g_min_count = (g_min_count < DCS_MIN_OPP_CNT) ?
+				g_min_count + 1 : DCS_MIN_OPP_CNT;
+		else
+			g_min_count = 0;
+
+		if (g_min_count > 0 && g_min_count < 4)
+			oppidx -= 1;
+
 		/* convert virtual opp to working opp with corresponding core mask */
 		if (oppidx > g_min_working_oppidx) {
 			mask_idx = oppidx - g_virtual_oppnum + g_avail_mask_num;
@@ -390,3 +407,9 @@ void ged_gpufreq_print_tables(void)
 				g_virtual_table[i].vsram, g_virtual_table[i].vaging);
 	}
 }
+
+unsigned int ged_gpufreq_get_power_state(void)
+{
+	return gpufreq_get_power_state();
+}
+

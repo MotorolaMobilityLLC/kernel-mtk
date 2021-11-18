@@ -184,7 +184,7 @@ static int gx_tb_dvfs_margin = GED_DVFS_TIMER_BASED_DVFS_MARGIN;
 static int gx_tb_dvfs_margin_cur = GED_DVFS_TIMER_BASED_DVFS_MARGIN;
 
 #define MAX_TB_DVFS_MARGIN               99
-#define MIN_TB_DVFS_MARGIN               10
+#define MIN_TB_DVFS_MARGIN               15
 #define MIN_TB_MARGIN_INC_STEP           1
 #define CONFIGURE_TIMER_BASED_MODE       0x00000000
 #define DYNAMIC_TB_MASK                  0x00000100
@@ -300,6 +300,10 @@ bool ged_dvfs_cal_gpu_utilization_ex(unsigned int *pui32Loading,
 		memcpy((void *)&g_Util_Ex, (void *)Util_Ex,
 			sizeof(struct GpuUtilization_Ex));
 
+		if (g_ged_gpueb_support)
+			mtk_gpueb_dvfs_set_feedback_info(
+				0, g_Util_Ex, 0);
+
 		if (pui32Loading) {
 			ged_log_perf_trace_counter("gpu_loading",
 				(long long)*pui32Loading,
@@ -398,6 +402,7 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID,
 
 		if (ged_is_fdvfs_support() &&
 			is_fb_dvfs_triggered && is_fdvfs_enable()) {
+			memset(batch_freq, 0, sizeof(batch_freq));
 			avg_freq = mtk_gpueb_sysram_batch_read(BATCH_MAX_READ_COUNT,
 						batch_freq, BATCH_STR_SIZE);
 
@@ -405,8 +410,14 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID,
 				(long long)(avg_freq),
 				5566, 0, 0, batch_freq);
 		} else {
-			ged_log_perf_trace_counter("gpu_freq",
+			if (ged_gpufreq_get_power_state())
+				ged_log_perf_trace_counter("gpu_freq",
 				(long long)(ged_get_cur_freq() / 1000), 5566, 0, 0);
+			else
+				// Update min frequency when power off
+				ged_log_perf_trace_counter("gpu_freq",
+				(long long)(ged_get_freq_by_idx(ged_get_min_oppidx()) / 1000),
+				5566, 0, 0);
 		}
 
 		ged_log_perf_trace_counter("gpu_freq_max",
@@ -668,7 +679,7 @@ GED_ERROR ged_dvfs_um_commit(unsigned long gpu_tar_freq, bool bFallback)
 int gx_fb_dvfs_margin = DEFAULT_DVFS_MARGIN;/* 10-bias */
 
 #define MAX_DVFS_MARGIN 990 /* 99 % margin */
-#define MIN_DVFS_MARGIN 10 /* 1% margin */
+#define MIN_DVFS_MARGIN 40 /* 4% margin */
 
 /* dynamic margin mode for FPSGo control fps margin */
 #define DYNAMIC_MARGIN_MODE_CONFIG_FPS_MARGIN 0x10
@@ -870,19 +881,27 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target,
 
 #ifdef GED_DCS_POLICY
 	if (is_dcs_enable() && dcs_get_cur_core_num() < dcs_get_max_core_num())
-		gx_fb_dvfs_margin = DCS_POLICY_MARGIN;
+		if (gx_fb_dvfs_margin < DCS_POLICY_MARGIN)
+			gx_fb_dvfs_margin = DCS_POLICY_MARGIN;
 #endif /* GED_DCS_POLICY */
 
 	t_gpu_target = t_gpu_target * (1000 - gx_fb_dvfs_margin) / 1000;
 
+	// Hint target frame time w/z headroom
+	if (ged_is_fdvfs_support())
+		mtk_gpueb_dvfs_set_taget_frame_time(t_gpu_target, gx_fb_dvfs_margin);
+
 	gpu_freq_pre = ged_get_cur_freq() >> 10;
 
-	if (ged_is_fdvfs_support() && is_fb_dvfs_triggered && is_fdvfs_enable())
-		busy_cycle_cur = g_eb_workload / 100;
+	if (ged_is_fdvfs_support() && is_fb_dvfs_triggered && is_fdvfs_enable()
+		&& g_eb_workload != 0xFFFF)
+		busy_cycle_cur = (g_eb_workload / 100) < (t_gpu * gpu_freq_pre) ?
+			(g_eb_workload / 100) : (t_gpu * gpu_freq_pre);
 	else
 		busy_cycle_cur = t_gpu * gpu_freq_pre;
 
 	busy_cycle[cur_frame_idx] = busy_cycle_cur;
+
 	if (num_pre_frames != GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM - 1) {
 		gpu_busy_cycle = busy_cycle[cur_frame_idx];
 		num_pre_frames++;
@@ -897,10 +916,6 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target,
 		gpu_freq_tar = (gpu_busy_cycle / t_gpu_target);
 	else
 		gpu_freq_tar = gpu_freq_pre;
-
-	// Hint target frame time
-	if (ged_is_fdvfs_support())
-		mtk_gpueb_dvfs_set_taget_frame_time(t_gpu_target);
 
 	if (gpu_freq_tar * 100
 		< GED_FB_DVFS_FERQ_DROP_RATIO_LIMIT * gpu_freq_pre) {
@@ -1132,7 +1147,8 @@ static bool ged_dvfs_policy(
 
 #ifdef GED_DCS_POLICY
 	if (is_dcs_enable() && dcs_get_cur_core_num() < dcs_get_max_core_num())
-		gx_tb_dvfs_margin = DCS_POLICY_MARGIN / 10;
+		if (gx_tb_dvfs_margin < DCS_POLICY_MARGIN / 10)
+			gx_tb_dvfs_margin = DCS_POLICY_MARGIN / 10;
 #endif /* GED_DCS_POLICY */
 
 		if (init == 0) {
@@ -1176,7 +1192,7 @@ static bool ged_dvfs_policy(
 				g_lb_up_count *= 2;
 
 			g_lb_down_count = 1;
-		} else if (ui32GPULoading < 15) {
+		} else if (ui32GPULoading < 20) {
 			i32NewFreqID += g_lb_down_count;
 			g_lb_down_count *= 2;
 			if (g_lb_down_count >= GED_LB_SCALE_LIMIT)
