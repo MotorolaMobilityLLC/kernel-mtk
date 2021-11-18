@@ -295,7 +295,7 @@ void mtk_vcodec_set_log(struct mtk_vcodec_ctx *ctx, char *val)
 		} else if ((i < argcMex-1) && strcmp("-mtk_v4l2_dbg_level", argv[i]) == 0) {
 			if (kstrtol(argv[++i], 0, &temp_val) == 0)
 				mtk_v4l2_dbg_level = temp_val;
-		} else {
+		} else if (i < argcMex-1) {
 			memset(vcu_log, 0x00, LOG_INFO_SIZE);
 			if (argv[i+1] != NULL) {
 				argv[i+1][LOG_INFO_SIZE-1] = '\0';
