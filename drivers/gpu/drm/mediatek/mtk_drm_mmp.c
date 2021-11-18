@@ -313,7 +313,7 @@ int mtk_drm_mmp_ovl_layer(struct mtk_plane_state *state,
 	struct drm_crtc *crtc = state->crtc;
 	int crtc_idx = drm_crtc_index(crtc);
 	struct mmp_metadata_bitmap_t bitmap;
-	struct mmp_metadata_t meta;
+	struct mmp_metadata_t meta = {.data1 = 0, .data2 = 0};
 	unsigned int fmt = pending->format;
 	int raw = 0;
 	int yuv = 0;
