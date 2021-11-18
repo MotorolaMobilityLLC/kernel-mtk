@@ -24,9 +24,6 @@
 /* Declare weak function due to not all platform has definition */
 extern int scp_get_semaphore_3way(int flag) __attribute__((weak));
 extern int scp_release_semaphore_3way(int flag) __attribute__((weak));
-#ifndef SEMA_SCP_3WAY_AUDIOREG
-#define SEMA_SCP_3WAY_AUDIOREG 5
-#endif
 
 #if defined(CONFIG_MTK_AUDIODSP_SUPPORT) && \
 	defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
@@ -34,7 +31,7 @@ extern int scp_release_semaphore_3way(int flag) __attribute__((weak));
 	({ \
 		int __ret = -1; \
 		if (is_scp_sema_support) \
-			__ret = scp_get_semaphore_3way(SEMA_SCP_3WAY_AUDIOREG); \
+			__ret = scp_get_semaphore_3way(SCP_SEMA_AUDIOREG); \
 		else \
 			__ret = get_adsp_semaphore(SEMA_AUDIOREG); \
 		__ret; \
@@ -43,7 +40,7 @@ extern int scp_release_semaphore_3way(int flag) __attribute__((weak));
 #define AUDREG_SEMA_3WAY_RELEASE(is_scp_sema_support) \
 	({ \
 		if (is_scp_sema_support) \
-			scp_release_semaphore_3way(SEMA_SCP_3WAY_AUDIOREG); \
+			scp_release_semaphore_3way(SCP_SEMA_AUDIOREG); \
 		else \
 			release_adsp_semaphore(SEMA_AUDIOREG); \
 	})
@@ -52,14 +49,14 @@ extern int scp_release_semaphore_3way(int flag) __attribute__((weak));
 	({ \
 		int __ret = -1; \
 		if (is_scp_sema_support) \
-			__ret = scp_get_semaphore_3way(SEMA_SCP_3WAY_AUDIOREG); \
+			__ret = scp_get_semaphore_3way(SCP_SEMA_AUDIOREG); \
 		__ret; \
 	})
 
 #define AUDREG_SEMA_3WAY_RELEASE(is_scp_sema_support) \
 	({ \
 		if (is_scp_sema_support) \
-			scp_release_semaphore_3way(SEMA_SCP_3WAY_AUDIOREG); \
+			scp_release_semaphore_3way(SCP_SEMA_AUDIOREG); \
 	})
 #elif defined(CONFIG_MTK_AUDIODSP_SUPPORT)
 #define AUDREG_SEMA_3WAY_GET(is_scp_sema_support) \

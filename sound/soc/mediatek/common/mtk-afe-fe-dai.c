@@ -44,6 +44,10 @@
 #include "adsp_helper.h"
 #endif
 
+#if defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
+#include <scp_helper.h>
+#endif
+
 #if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
 #include "../scp_spk/mtk-scp-spk-mem-control.h"
 #endif
