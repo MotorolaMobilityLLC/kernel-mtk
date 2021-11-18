@@ -4729,7 +4729,7 @@ int mtk_cam_ctx_stream_off(struct mtk_cam_ctx *ctx)
 	struct mtk_cam_device *cam = ctx->cam;
 	struct device *dev;
 	struct mtk_raw_device *raw_dev;
-	unsigned int i;
+	unsigned int i, enabled_sv = 0;
 	int ret;
 
 	if (!ctx->streaming) {
@@ -4801,6 +4801,7 @@ int mtk_cam_ctx_stream_off(struct mtk_cam_ctx *ctx)
 					cam->sv.pipelines[
 						i - MTKCAM_SUBDEV_CAMSV_START].is_occupied = 0;
 					ctx->pipe->enabled_raw &= ~(1 << i);
+					enabled_sv |= (1 << i);
 				}
 			}
 			if (mtk_cam_ts_are_all_ctx_off(cam, ctx))
@@ -4834,6 +4835,7 @@ int mtk_cam_ctx_stream_off(struct mtk_cam_ctx *ctx)
 					ctx, i - MTKCAM_SUBDEV_CAMSV_START, 0, hw_scen);
 				cam->sv.pipelines[i - MTKCAM_SUBDEV_CAMSV_START].is_occupied = 0;
 				ctx->pipe->enabled_raw &= ~(1 << i);
+				enabled_sv |= (1 << i);
 			}
 		}
 	} else if (mtk_cam_is_with_w_channel(ctx)) {
@@ -4845,6 +4847,7 @@ int mtk_cam_ctx_stream_off(struct mtk_cam_ctx *ctx)
 					ctx, i - MTKCAM_SUBDEV_CAMSV_START, 0, hw_scen);
 				cam->sv.pipelines[i - MTKCAM_SUBDEV_CAMSV_START].is_occupied = 0;
 				ctx->pipe->enabled_raw &= ~(1 << i);
+				enabled_sv |= (1 << i);
 			}
 		}
 	}
@@ -4858,7 +4861,7 @@ int mtk_cam_ctx_stream_off(struct mtk_cam_ctx *ctx)
 	/* reset dvfs/qos */
 	if (ctx->used_raw_num) {
 		mtk_cam_dvfs_update_clk(ctx->cam);
-		mtk_cam_qos_bw_reset(ctx->cam);
+		mtk_cam_qos_bw_reset(ctx, enabled_sv);
 	}
 
 	for (i = 0; i < MAX_PIPES_PER_STREAM && ctx->pipe_subdevs[i]; i++) {
