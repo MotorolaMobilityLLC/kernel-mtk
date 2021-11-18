@@ -55,6 +55,7 @@ enum SCP_NOTIFY_EVENT {
 #define SCP_A_ENABLE		0x10
 #define SCP_A_REBOOT		0x11
 
+#define SCP_SEMA_AUDIOREG (-1)
 
 /* scp semaphore definition*/
 enum SEMAPHORE_FLAG {
