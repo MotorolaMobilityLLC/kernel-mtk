@@ -83,7 +83,7 @@ int mtk_cam_working_buf_pool_init(struct mtk_cam_ctx *ctx)
 		buf->msg_buffer.size = msg_buf_size;
 		buf->s_data = NULL;
 
-		dev_info(ctx->cam->dev, "%s:ctx(%d):buf(%d), iova(%pad)\n",
+		dev_dbg(ctx->cam->dev, "%s:ctx(%d):buf(%d), iova(%pad)\n",
 			__func__, ctx->stream_id, i, &buf->buffer.iova);
 
 		/* meta buffer */
@@ -99,7 +99,7 @@ int mtk_cam_working_buf_pool_init(struct mtk_cam_ctx *ctx)
 		buf->meta_buffer.iova = smem.iova;
 		buf->meta_buffer.size = smem.len;
 
-		dev_info(ctx->cam->dev,
+		dev_dbg(ctx->cam->dev,
 			 "%s:meta_buf[%d]:va(%d),iova(%pad),fd(%d),size(%d)\n",
 			 __func__, i, buf->meta_buffer.va, &buf->meta_buffer.iova,
 			 buf->meta_buffer.fd, buf->meta_buffer.size);
