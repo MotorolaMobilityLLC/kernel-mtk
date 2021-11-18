@@ -40,8 +40,11 @@ static u32 ippc_value, ippc_addr;
 
 static int smt_err_count_get(void *data, u64 *val)
 {
-	struct ssusb_mtk *ssusb = data;
+	struct ssusb_mtk *ssusb = NULL;
 
+	if (IS_ERR_OR_NULL(data))
+		return -EFAULT;
+	ssusb = data;
 	*val = ssusb_u3loop_back_test(ssusb);
 
 	mtu3_printk(K_INFO, "%s %llu\n", __func__, *val);
