@@ -7717,6 +7717,25 @@ int mtk_drm_crtc_get_sf_fence_ioctl(struct drm_device *dev, void *data,
 		 args->fence_fd);
 	return ret;
 }
+int mtk_drm_ioctl_get_pq_caps(struct drm_device *dev, void *data,
+	struct drm_file *file_priv)
+{
+	struct mtk_drm_pq_caps_info *pq_info = data;
+
+	pq_info->ccorr_caps.ccorr_bit = 12;
+	pq_info->ccorr_caps.ccorr_number  = 1;
+	pq_info->ccorr_caps.ccorr_linear = 0x01;
+	return 0;
+}
+
+int mtk_drm_ioctl_set_pq_caps(struct drm_device *dev, void *data,
+	struct drm_file *file_priv)
+{
+	struct mtk_drm_pq_caps_info *pq_info = data;
+
+	DDPINFO("%s:ccorr linear:0x%x\n", __func__, pq_info->ccorr_caps.ccorr_linear);
+	return 0;
+}
 
 static int __crtc_need_composition_wb(struct drm_crtc *crtc)
 {

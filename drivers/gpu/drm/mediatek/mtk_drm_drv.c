@@ -3218,6 +3218,11 @@ static const struct drm_ioctl_desc mtk_ioctls[] = {
 #endif
 	DRM_IOCTL_DEF_DRV(MTK_DEBUG_LOG, mtk_disp_ioctl_debug_log_switch,
 					DRM_UNLOCKED),
+
+	DRM_IOCTL_DEF_DRV(MTK_GET_PQ_CAPS, mtk_drm_ioctl_get_pq_caps,
+			  DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(MTK_SET_PQ_CAPS, mtk_drm_ioctl_set_pq_caps,
+			  DRM_UNLOCKED),
 };
 
 #if IS_ENABLED(CONFIG_COMPAT)
