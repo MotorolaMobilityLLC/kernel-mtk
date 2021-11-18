@@ -377,7 +377,7 @@ static ssize_t monitor_hang_write(struct file *filp, const char __user *buf,
 		pr_info("hang_detect: invalid control msg\n");
 	}
 
-	return 0;
+	return count;
 }
 
 static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
