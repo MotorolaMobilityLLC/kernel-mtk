@@ -171,6 +171,14 @@ static void add_sensor_mode(struct adaptor_ctx *ctx,
 
 	mode->pclk = val;
 
+	val = 0;
+
+	subdrv_call(ctx, feature_control,
+		SENSOR_FEATURE_GET_FINE_INTEG_LINE_BY_SCENARIO,
+		para.u8, &len);
+	mode->fine_intg_line = val;
+
+
 	if (!mode->mipi_pixel_rate || !mode->max_framerate || !mode->pclk)
 		return;
 
@@ -187,13 +195,14 @@ static void add_sensor_mode(struct adaptor_ctx *ctx,
 	do_div(mode->linetime_in_ns_readout, mode->pclk / 1000);
 
 
-	dev_dbg(ctx->dev, "%s [%d] id %d %dx%d %dx%d px %d fps %d tLine %lld|%lld\n",
+	dev_dbg(ctx->dev, "%s [%d] id %d %dx%d %dx%d px %d fps %d tLine %lld|%lld fintl %u\n",
 		__func__,
 		idx, id, width, height,
 		mode->llp, mode->fll,
 		mode->mipi_pixel_rate, mode->max_framerate,
 		mode->linetime_in_ns,
-		mode->linetime_in_ns_readout);
+		mode->linetime_in_ns_readout,
+		mode->fine_intg_line);
 
 	ctx->mode_cnt++;
 }
@@ -206,6 +215,8 @@ static int init_sensor_mode(struct adaptor_ctx *ctx)
 	memset(&res, 0, sizeof(res));
 	subdrv_call(ctx, get_resolution, &res);
 	for (i = SENSOR_SCENARIO_ID_MIN; i < SENSOR_SCENARIO_ID_MAX; i++) {
+		ctx->seamless_scenarios[i] = SENSOR_SCENARIO_ID_NONE;
+
 		if (res.SensorWidth[i] > 0 && res.SensorHeight[i] > 0)
 			add_sensor_mode(ctx,
 			i,
@@ -561,8 +572,8 @@ static int imgsensor_set_pad_format(struct v4l2_subdev *sd,
 		if (sensor_mode_id >= 0 && sensor_mode_id < ctx->mode_cnt)
 			mode = &ctx->mode[sensor_mode_id];
 	}
-	dev_info(ctx->dev, "set fmt code = 0x%x, sensor_mode_id = %u\n",
-			fmt->format.code, mode->id);
+	dev_info(ctx->dev, "set fmt code = 0x%x, which %d sensor_mode_id = %u\n",
+			fmt->format.code, fmt->which, mode->id);
 
 	update_pad_format(ctx, mode, fmt);
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {

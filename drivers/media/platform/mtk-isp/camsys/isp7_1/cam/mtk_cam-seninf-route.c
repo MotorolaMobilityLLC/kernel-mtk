@@ -386,7 +386,7 @@ int mtk_cam_seninf_get_vcinfo(struct seninf_ctx *ctx)
 	ret = get_ctrl(ctrl);
 	dev_info(ctx->dev, "%s get_ctrl ret:%d num_entries:%d type:%d\n", __func__,
 		ret, fd.num_entries, fd.type);
-	if (ret || fd.type != MTK_MBUS_FRAME_DESC_TYPE_CSI2)
+	if (ret || fd.type != MTK_MBUS_FRAME_DESC_TYPE_CSI2 || !fd.num_entries)
 		return get_vcinfo_by_pad_fmt(ctx);
 
 	vcinfo->cnt = 0;
@@ -753,39 +753,47 @@ int _mtk_cam_seninf_set_camtg(struct v4l2_subdev *sd, int pad_id, int camtg, boo
 			seninf_ca_checkpipe(ctx->SecInfo_addr);
 		} else {
 #endif
-			/* disable old */
-			old_camtg = vc->cam;
-			/* enable new */
-			vc->cam = camtg;
-			g_seninf_ops->_switch_to_cammux_inner_page(ctx, true);
-			g_seninf_ops->_set_cammux_next_ctrl(ctx, 0xf, vc->cam);
-
-			g_seninf_ops->_switch_to_cammux_inner_page(ctx, false);
-
-			g_seninf_ops->_set_cammux_vc(ctx, vc->cam,
-								vc->vc, vc->dt,
-								!!vc->dt, !!vc->dt);
-			g_seninf_ops->_set_cammux_src(ctx, vc->mux, vc->cam,
-								vc->exp_hsize,
-								vc->exp_vsize);
-			g_seninf_ops->_set_cammux_chk_pixel_mode(ctx,
-								vc->cam,
-								vc->pixel_mode);
-			if (old_camtg != 0xff && disable_last) {
-				//disable old in next sof
+			if (camtg == 0xff) {
+				old_camtg = vc->cam;
+				vc->cam = 0xff;
+				g_seninf_ops->_switch_to_cammux_inner_page(ctx, true);
+				g_seninf_ops->_set_cammux_next_ctrl(ctx, 0x1f, old_camtg);
 				g_seninf_ops->_disable_cammux(ctx, old_camtg);
-			}
-			g_seninf_ops->_cammux(ctx, vc->cam); //enable in next sof
-			g_seninf_ops->_switch_to_cammux_inner_page(ctx, true);
-			g_seninf_ops->_set_cammux_next_ctrl(ctx, vc->mux, vc->cam);
-			if (old_camtg != 0xff && disable_last)
-				g_seninf_ops->_set_cammux_next_ctrl(ctx, vc->mux, old_camtg);
+			} else {
+				/* disable old */
+				old_camtg = vc->cam;
+				/* enable new */
+				vc->cam = camtg;
+				g_seninf_ops->_switch_to_cammux_inner_page(ctx, true);
+				g_seninf_ops->_set_cammux_next_ctrl(ctx, 0x1f, vc->cam);
 
-			if (pad_id == PAD_SRC_RAW0) {
-				// notify vc->cam
-				notify_fsync_cammux_usage_with_kthread(ctx);
-			}
+				g_seninf_ops->_switch_to_cammux_inner_page(ctx, false);
 
+				g_seninf_ops->_set_cammux_vc(ctx, vc->cam,
+									vc->vc, vc->dt,
+									!!vc->dt, !!vc->dt);
+				g_seninf_ops->_set_cammux_src(ctx, vc->mux, vc->cam,
+									vc->exp_hsize,
+									vc->exp_vsize);
+				g_seninf_ops->_set_cammux_chk_pixel_mode(ctx,
+									vc->cam,
+									vc->pixel_mode);
+				if (old_camtg != 0xff && disable_last) {
+					//disable old in next sof
+					g_seninf_ops->_disable_cammux(ctx, old_camtg);
+				}
+				g_seninf_ops->_cammux(ctx, vc->cam); //enable in next sof
+				g_seninf_ops->_switch_to_cammux_inner_page(ctx, true);
+				g_seninf_ops->_set_cammux_next_ctrl(ctx, vc->mux, vc->cam);
+				if (old_camtg != 0xff && disable_last)
+					g_seninf_ops->_set_cammux_next_ctrl(ctx,
+									vc->mux, old_camtg);
+
+				if (pad_id == PAD_SRC_RAW0) {
+					// notify vc->cam
+					notify_fsync_cammux_usage_with_kthread(ctx);
+				}
+			}
 			dev_info(ctx->dev, "%s: pad %d mux %d cam %d -> %d\n",
 				 __func__, vc->out_pad, vc->mux, old_camtg, vc->cam);
 
@@ -850,7 +858,7 @@ mtk_cam_seninf_streaming_mux_change(struct mtk_cam_seninf_mux_param *param)
 		//k_cam_seninf_set_sw_cfg_busy(ctx, true, index);
 
 		_mtk_cam_seninf_set_camtg(sd, pad_id, camtg, false);
-		g_seninf_ops->_enable_cam_mux_vsync_irq(ctx, true, camtg);//
+		//g_seninf_ops->_enable_cam_mux_vsync_irq(ctx, true, camtg);
 		//k_cam_seninf_set_cam_mux_dyn_en(ctx, true, camtg, index);
 
 
@@ -859,7 +867,7 @@ mtk_cam_seninf_streaming_mux_change(struct mtk_cam_seninf_mux_param *param)
 		pad_id = param->settings[1].source;
 		camtg = param->settings[1].camtg;
 		_mtk_cam_seninf_set_camtg(sd, pad_id, camtg, false);
-		g_seninf_ops->_enable_cam_mux_vsync_irq(ctx, true, camtg);
+		//g_seninf_ops->_enable_cam_mux_vsync_irq(ctx, true, camtg);
 		//mtk_cam_seninf_set_cam_mux_dyn_en(ctx, true, camtg, index);
 
 
@@ -871,24 +879,28 @@ mtk_cam_seninf_streaming_mux_change(struct mtk_cam_seninf_mux_param *param)
 
 			_mtk_cam_seninf_set_camtg(sd, pad_id, camtg, false);
 
-			g_seninf_ops->_enable_cam_mux_vsync_irq(ctx, true, camtg);//
+			//g_seninf_ops->_enable_cam_mux_vsync_irq(ctx, true, camtg);
 			//k_cam_seninf_set_cam_mux_dyn_en(ctx, true, camtg, index);
 
 			dev_info(ctx->dev,
-				"%s: param->num %d, pad_id[0] %d, ctx->camtg[0] %d, pad_id[1] %d, ctx->camtg[1] %d pad_id[2] %d, ctx->camtg[2] %d\n",
+				"%s: param->num %d, pad_id[0] %d, ctx->camtg[0] %d, pad_id[1] %d, ctx->camtg[1] %d pad_id[2] %d, ctx->camtg[2] %d %llu|%llu\n",
 				__func__, param->num,
 				param->settings[0].source, param->settings[0].camtg,
 				param->settings[1].source, param->settings[1].camtg,
-				param->settings[2].source, param->settings[2].camtg);
+				param->settings[2].source, param->settings[2].camtg,
+				ktime_get_boottime_ns(),
+				ktime_get_ns());
 		} else
 			dev_info(ctx->dev,
-				"%s: param->num %d, pad_id[0] %d, ctx->camtg[0] %d, pad_id[1] %d, ctx->camtg[1] %d\n",
+				"%s: param->num %d, pad_id[0] %d, ctx->camtg[0] %d, pad_id[1] %d, ctx->camtg[1] %d %llu|%llu\n",
 				__func__, param->num, pad_id, camtg,
-				param->settings[1].source, param->settings[1].camtg);
+				param->settings[1].source, param->settings[1].camtg,
+				ktime_get_boottime_ns(),
+				ktime_get_ns());
 
 		//mtk_cam_seninf_set_sw_cfg_busy(ctx, false, index);
 		//mtk_cam_seninf_enable_global_drop_irq(ctx, false, 0);
-		g_seninf_ops->_disable_all_cam_mux_vsync_irq(ctx);
+		//g_seninf_ops->_disable_all_cam_mux_vsync_irq(ctx);
 
 	}
 	return true;

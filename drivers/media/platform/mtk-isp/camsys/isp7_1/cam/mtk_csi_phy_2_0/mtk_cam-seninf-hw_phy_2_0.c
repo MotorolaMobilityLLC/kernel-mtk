@@ -2946,5 +2946,6 @@ struct mtk_cam_seninf_ops mtk_csi_phy_2_0 = {
 	.mux_num = 13,
 	.cam_mux_num = 16,
 	._show_err_status = mtk_cam_seninf_show_err_status,
+	.pref_mux_num = 9,
 };
 

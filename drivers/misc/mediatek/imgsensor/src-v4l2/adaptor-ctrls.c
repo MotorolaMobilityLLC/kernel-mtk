@@ -491,7 +491,9 @@ static int do_set_ae_ctrl(struct adaptor_ctx *ctx,
 
 		notify_fsync_mgr_set_extend_framelength(ctx, para.u64[0]);
 	}
-
+	ctx->shutter_for_timeout = ctx->exposure->val;
+	if (ctx->cur_mode->fine_intg_line)
+		ctx->shutter_for_timeout /= 1000;
 	ctx->exposure->val = ae_ctrl->exposure.le_exposure;
 	ctx->analogue_gain->val = ae_ctrl->gain.le_gain;
 	ctx->subctx.ae_ctrl_gph_en = 0;
@@ -597,9 +599,10 @@ static int _get_frame_desc(struct adaptor_ctx *ctx, unsigned int pad,
 				if (desc_visited & (0x1 << fd_tmp.entry[j].bus.csi2.user_data_desc))
 					continue;
 
-				dev_info(ctx->dev, "[%s] scenario %u desc %d\n", __func__,
+				dev_info(ctx->dev, "[%s] scenario %u desc %d/%d/%d/%d\n", __func__,
 						scenario_id,
-						fd_tmp.entry[j].bus.csi2.user_data_desc);
+						fd_tmp.entry[j].bus.csi2.user_data_desc,
+						i, j, fd_tmp.num_entries);
 				memcpy(&fd->entry[write_to++], &fd_tmp.entry[j],
 					   sizeof(struct mtk_mbus_frame_desc_entry));
 
@@ -625,6 +628,21 @@ static int ext_ctrl(struct adaptor_ctx *ctx, struct v4l2_ctrl *ctrl, struct sens
 		return -EINVAL;
 
 	switch (ctrl->id) {
+	case V4L2_CID_MTK_SOF_TIMEOUT_VALUE:
+		if (ctx->shutter_for_timeout != 0) {
+			ctrl->val =
+				(mode->linetime_in_ns / 1000) * ctx->shutter_for_timeout;
+		}
+		dev_info(ctx->dev, "[%s] sof timeout value %d|%llu|%d|%d\n",
+			__func__,
+			ctx->shutter_for_timeout,
+			mode->linetime_in_ns,
+			ctrl->val,
+			10000000 / mode->max_framerate);
+
+		if (ctrl->val < (10000000 / mode->max_framerate))
+			ctrl->val = 10000000 / mode->max_framerate;
+		break;
 	case V4L2_CID_VBLANK:
 		ctrl->val = mode->fll - mode->height;
 		break;
@@ -1036,15 +1054,16 @@ static int imgsensor_set_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_START_SEAMLESS_SWITCH:
 		{
 			struct mtk_seamless_switch_param *info = ctrl->p_new.p;
+			u64 time_boot = ktime_get_boottime_ns();
+			u64 time_mono = ktime_get_ns();
 
 			para.u64[0] = info->target_scenario_id;
 			para.u64[1] = (uintptr_t)&info->ae_ctrl[0];
 			para.u64[2] = (uintptr_t)&info->ae_ctrl[1];
 
-			dev_info(dev, "V4L2_CID_START_SEAMLESS_SWITCH %u\n",
-					info->target_scenario_id);
-
-			dev_info(dev, "shutter[%u %u %u %u %u] gain[%u %u %u %u %u]\n",
+			dev_info(dev,
+				    "seamless %u s[%u %u %u %u %u] g[%u %u %u %u %u] s1[%u %u %u %u %u] g1[%u %u %u %u %u] %llu|%llu\n",
+					info->target_scenario_id,
 					info->ae_ctrl[0].exposure.arr[0],
 					info->ae_ctrl[0].exposure.arr[1],
 					info->ae_ctrl[0].exposure.arr[2],
@@ -1054,8 +1073,7 @@ static int imgsensor_set_ctrl(struct v4l2_ctrl *ctrl)
 					info->ae_ctrl[0].gain.arr[1],
 					info->ae_ctrl[0].gain.arr[2],
 					info->ae_ctrl[0].gain.arr[3],
-					info->ae_ctrl[0].gain.arr[4]);
-			dev_info(dev, "shutter[%u %u %u %u %u] gain[%u %u %u %u %u]\n",
+					info->ae_ctrl[0].gain.arr[4],
 					info->ae_ctrl[1].exposure.arr[0],
 					info->ae_ctrl[1].exposure.arr[1],
 					info->ae_ctrl[1].exposure.arr[2],
@@ -1065,7 +1083,10 @@ static int imgsensor_set_ctrl(struct v4l2_ctrl *ctrl)
 					info->ae_ctrl[1].gain.arr[1],
 					info->ae_ctrl[1].gain.arr[2],
 					info->ae_ctrl[1].gain.arr[3],
-					info->ae_ctrl[1].gain.arr[4]);
+					info->ae_ctrl[1].gain.arr[4],
+					time_boot,
+					time_mono);
+
 			if (info->target_scenario_id == 0 &&
 				info->ae_ctrl[0].exposure.arr[0] == 0 &&
 				info->ae_ctrl[0].gain.arr[0] == 0 &&
@@ -1084,6 +1105,14 @@ static int imgsensor_set_ctrl(struct v4l2_ctrl *ctrl)
 			/*store ae ctrl for ESD reset*/
 			memset(&ctx->ae_memento, 0, sizeof(ctx->ae_memento));
 			memcpy(&ctx->ae_memento, &info->ae_ctrl[0],  sizeof(ctx->ae_memento));
+
+			if (info->target_scenario_id < MODE_MAXCNT)
+				ctx->cur_mode = &ctx->mode[info->target_scenario_id];
+			else {
+				dev_info(dev, "[%s] err info->target_scenario_id %d >= MODE_MAXCNT\n",
+					__func__,
+					info->target_scenario_id);
+			}
 
 		}
 		break;
@@ -1425,6 +1454,15 @@ static const struct v4l2_ctrl_config cfg_mtkcam_cust_pixel_rate = {
 	.step = 1,
 };
 
+static const struct v4l2_ctrl_config cfg_mtkcam_sof_timeout_value = {
+	.ops = &ctrl_ops,
+	.id = V4L2_CID_MTK_SOF_TIMEOUT_VALUE,
+	.name = "sof timeout value",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.flags = V4L2_CTRL_FLAG_VOLATILE,
+	.max = 0x7fffffff,
+	.step = 1,
+};
 
 static const struct v4l2_ctrl_config cfg_seamless_scenario = {
 	.ops = &ctrl_ops,
@@ -1615,6 +1653,9 @@ int adaptor_init_ctrls(struct adaptor_ctx *ctx)
 
 	/* pixel rate for special output timing*/
 	v4l2_ctrl_new_custom(&ctx->ctrls, &cfg_mtkcam_cust_pixel_rate, NULL);
+
+	v4l2_ctrl_new_custom(&ctx->ctrls, &cfg_mtkcam_sof_timeout_value, NULL);
+
 
 	/* hblank */
 	min = max = def = cur_mode->llp - cur_mode->width;

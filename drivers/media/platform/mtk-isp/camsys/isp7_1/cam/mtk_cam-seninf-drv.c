@@ -394,12 +394,16 @@ static int get_seninf_ops(struct device *dev, struct seninf_core *core)
 			&g_seninf_ops->mux_num);
 		of_property_read_u32(dev->of_node, "cam_mux_num",
 			&g_seninf_ops->cam_mux_num);
+		of_property_read_u32(dev->of_node, "pref_mux_num",
+			&g_seninf_ops->pref_mux_num);
 
-		dev_info(dev, "%s: seninf_num = %d, mux_num = %d, cam_mux_num = %d\n",
+		dev_info(dev, "%s: seninf_num = %d, mux_num = %d, cam_mux_num = %d, pref_mux_num =%d\n",
 			__func__,
 			g_seninf_ops->seninf_num,
 			g_seninf_ops->mux_num,
-			g_seninf_ops->cam_mux_num);
+			g_seninf_ops->cam_mux_num,
+			g_seninf_ops->pref_mux_num);
+
 		return 0;
 	}
 	for (i = 0; i < SENINF_PHY_VER_NUM; i++) {
@@ -423,12 +427,16 @@ static int get_seninf_ops(struct device *dev, struct seninf_core *core)
 				&g_seninf_ops->mux_num);
 			of_property_read_u32(dev->of_node, "cam_mux_num",
 				&g_seninf_ops->cam_mux_num);
+			of_property_read_u32(dev->of_node, "pref_mux_num",
+				&g_seninf_ops->pref_mux_num);
 
-			dev_info(dev, "%s: seninf_num = %d, mux_num = %d, cam_mux_num = %d\n",
+
+			dev_info(dev, "%s: seninf_num = %d, mux_num = %d, cam_mux_num = %d, pref_mux_num =%d\n",
 				__func__,
 				g_seninf_ops->seninf_num,
 				g_seninf_ops->mux_num,
-				g_seninf_ops->cam_mux_num);
+				g_seninf_ops->cam_mux_num,
+				g_seninf_ops->pref_mux_num);
 			return 0;
 		}
 	}
@@ -721,11 +729,12 @@ static int mtk_cam_seninf_set_fmt(struct v4l2_subdev *sd,
 			mtk_cam_seninf_get_vcinfo(ctx);
 	}
 
-	dev_info(ctx->dev, "s_fmt pad %d code/res 0x%x/%dx%d => 0x%x/%dx%d\n",
+	dev_info(ctx->dev, "s_fmt pad %d code/res 0x%x/%dx%d which %d=> 0x%x/%dx%d\n",
 		 fmt->pad,
 		fmt->format.code,
 		fmt->format.width,
 		fmt->format.height,
+		fmt->which,
 		format->code,
 		format->width,
 		format->height);
@@ -883,8 +892,13 @@ static int config_hw(struct seninf_ctx *ctx)
 			mux = mux_by_grp[vc->group];
 			skip_mux_ctrl = 1;
 		} else {
+			int pref_idx[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					10, 11, 12, 13, 14, 15,	16, 17, 18, 19, 20, 21 };
 			mux = mux_by_grp[vc->group] =
-				mtk_cam_seninf_mux_get(ctx);
+				//mtk_cam_seninf_mux_get(ctx);
+				mtk_cam_seninf_mux_get_pref(ctx,
+						pref_idx,
+						g_seninf_ops->pref_mux_num);
 			skip_mux_ctrl = 0;
 		}
 
@@ -894,11 +908,7 @@ static int config_hw(struct seninf_ctx *ctx)
 		}
 
 		vc->mux = mux->idx;
-		dev_info(
-			ctx->dev, "ctx->pad2cam[vc->out_pad] %d vc->out_pad %d vc->cam %d, i %d",
-			ctx->pad2cam[vc->out_pad], vc->out_pad, vc->cam, i);
-
-		vc->cam = ctx->pad2cam[vc->out_pad];//
+		vc->cam = ctx->pad2cam[vc->out_pad];
 
 		if (!skip_mux_ctrl) {
 			g_seninf_ops->_mux(ctx, vc->mux);
@@ -973,9 +983,11 @@ static int calc_buffered_pixel_rate(struct device *dev,
 	do_div(buffered_pixel_rate, (width + hblank - k));
 	*result = buffered_pixel_rate;
 
-	dev_info(dev, "%s: w %d h %d hb %d vb %d fps %d/%d pclk %lld->%lld orig %lld k %lld\n",
-		 __func__, width, height, hblank, vblank,
-		 fps_n, fps_d, pclk, buffered_pixel_rate, orig_pixel_rate, k);
+	dev_info(
+		dev,
+		"%s: w %d h %d hb %d vb %d fps %d/%d pclk %lld->%lld orig %lld k %lld hbe %d\n",
+		__func__, width, height, hblank, vblank,
+		fps_n, fps_d, pclk, buffered_pixel_rate, orig_pixel_rate, k, HW_BUF_EFFECT);
 
 	return 0;
 }
@@ -1200,6 +1212,7 @@ static int seninf_s_stream(struct v4l2_subdev *sd, int enable)
 		dev_info(ctx->dev, "no sensor\n");
 		return -EFAULT;
 	}
+	mutex_lock(&ctx->pwr_mutex);
 
 	if (enable) {
 		debug_err_detect_initialize(ctx);
@@ -1265,7 +1278,7 @@ static int seninf_s_stream(struct v4l2_subdev *sd, int enable)
 	}
 
 	ctx->streaming = enable;
-
+	mutex_unlock(&ctx->pwr_mutex);
 	return 0;
 }
 
@@ -1696,6 +1709,7 @@ static int seninf_probe(struct platform_device *pdev)
 
 	ctx->open_refcnt = 0;
 	mutex_init(&ctx->mutex);
+	mutex_init(&ctx->pwr_mutex);
 
 	ret = get_csi_port(dev, &port);
 	if (ret) {
@@ -1883,7 +1897,7 @@ int mtk_cam_seninf_calc_pixelrate(struct device *dev, s64 width, s64 height,
 				  s64 sensor_pixel_rate)
 {
 	int ret;
-	s64 p_pixel_rate;
+	s64 p_pixel_rate = sensor_pixel_rate;
 
 	ret = calc_buffered_pixel_rate(dev, width, height, hblank, vblank,
 				       fps_n, fps_d, &p_pixel_rate);
@@ -1921,19 +1935,54 @@ int mtk_cam_seninf_get_pixelrate(struct v4l2_subdev *sd, s64 *p_pixel_rate)
 	return 0;
 }
 
+#define SOF_TIMEOUT_RATIO 110
+int mtk_cam_seninf_check_timeout(struct v4l2_subdev *sd, u64 time_after_sof)
+{
+	struct seninf_ctx *ctx = sd_to_ctx(sd);
+	int frame_time = 400;//400ms
+	int ret = 0;
+	struct v4l2_subdev *sensor_sd = ctx->sensor_sd;
+	struct v4l2_ctrl *ctrl;
+
+	ctrl = v4l2_ctrl_find(sensor_sd->ctrl_handler, V4L2_CID_MTK_SOF_TIMEOUT_VALUE);
+	if (!ctrl) {
+		dev_info(ctx->dev, "no timeout value in subdev %s\n", sd->name);
+		return -EINVAL;
+	}
+
+	frame_time = v4l2_ctrl_g_ctrl(ctrl);
+
+	if ((time_after_sof / 1000) > ((frame_time * SOF_TIMEOUT_RATIO) / 100))
+		ret = -1;
+
+	dev_info(ctx->dev, "%s time_after_sof %llu frame_time %llu ret %d ratio %d\n",
+		__func__,
+		time_after_sof / 1000,
+		frame_time,
+		SOF_TIMEOUT_RATIO,
+		ret);
+	return ret;
+}
+
 
 int mtk_cam_seninf_dump(struct v4l2_subdev *sd)
 {
 	int ret = 0;
+	struct seninf_ctx *ctx = sd_to_ctx(sd);
 
-	ret = g_seninf_ops->_debug(sd_to_ctx(sd));
+	mutex_lock(&ctx->pwr_mutex);
+	if (ctx->streaming) {
+		ret = g_seninf_ops->_debug(sd_to_ctx(sd));
 #if ESD_RESET_SUPPORT
 	if (ret != 0)
 #else
 	if (0)
 #endif
-		reset_sensor(sd_to_ctx(sd));
 
+		reset_sensor(sd_to_ctx(sd));
+	} else
+		dev_info(ctx->dev, "%s should not dump during stream off\n", __func__);
+	mutex_unlock(&ctx->pwr_mutex);
 	return ret;
 }
 
