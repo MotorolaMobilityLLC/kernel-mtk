@@ -2580,12 +2580,13 @@ static void fbt_clear_state(struct render_info *thr)
 
 static void fbt_set_limit(unsigned int blc_wt,
 	int pid, unsigned long long buffer_id,
+	int dep_num, struct fpsgo_loading dep[],
 	struct render_info *thread_info, long long runtime)
 {
 	unsigned int final_blc = blc_wt;
 	int final_blc_pid = pid;
 	unsigned long long final_blc_buffer_id = buffer_id;
-	int final_blc_dep_num = 0;
+	int final_blc_dep_num = dep_num;
 	struct fpsgo_loading final_blc_dep[MAX_DEP_NUM];
 
 	if (!(blc_wt > max_blc ||
@@ -2594,11 +2595,11 @@ static void fbt_set_limit(unsigned int blc_wt,
 		return;
 	}
 
-	if (thread_info && thread_info->dep_arr) {
-		final_blc_dep_num = thread_info->dep_valid_size;
-		memcpy(final_blc_dep, thread_info->dep_arr,
+	if (dep)
+		memcpy(final_blc_dep, dep,
 			final_blc_dep_num * sizeof(struct fpsgo_loading));
-	}
+	else
+		final_blc_dep_num = 0;
 
 
 	if (ultra_rescue)
@@ -3294,7 +3295,8 @@ static int fbt_boost_policy(
 
 	}
 
-	fbt_set_limit(blc_wt, pid, buffer_id, thread_info, t_cpu_cur);
+	fbt_set_limit(blc_wt, pid, buffer_id,
+		thread_info->dep_valid_size, thread_info->dep_arr, thread_info, t_cpu_cur);
 
 	if (!boost_ta)
 		fbt_set_min_cap_locked(thread_info, blc_wt, FPSGO_JERK_INACTIVE);
@@ -3309,8 +3311,11 @@ static int fbt_boost_policy(
 	if (thread_info->p_blc) {
 		thread_info->p_blc->blc = blc_wt;
 		thread_info->p_blc->dep_num = thread_info->dep_valid_size;
-		memcpy(thread_info->p_blc->dep, thread_info->dep_arr,
-			thread_info->dep_valid_size * sizeof(struct fpsgo_loading));
+		if (thread_info->dep_arr)
+			memcpy(thread_info->p_blc->dep, thread_info->dep_arr,
+					thread_info->dep_valid_size * sizeof(struct fpsgo_loading));
+		else
+			thread_info->p_blc->dep_num = 0;
 	}
 	mutex_unlock(&blc_mlock);
 
@@ -3475,7 +3480,8 @@ static void fbt_check_max_blc_locked(void)
 		if (jatm_notify_fp)
 			jatm_notify_fp(0);
 	} else
-		fbt_set_limit(max_blc, max_blc_pid, max_blc_buffer_id, NULL, 0);
+		fbt_set_limit(max_blc, max_blc_pid, max_blc_buffer_id,
+			max_blc_dep_num, max_blc_dep, NULL, 0);
 }
 
 static int fbt_overest_loading(int blc_wt, unsigned long long running_time,
