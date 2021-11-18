@@ -848,6 +848,7 @@ static void mtk_cam_exception_work(struct work_struct *work)
 	struct mtk_cam_ctx *ctx = mtk_cam_s_data_get_ctx(s_data);
 	struct mtk_cam_dump_param dump_param;
 	char warn_desc[48];
+	char title_desc[48];
 
 	if (s_data == NULL)
 		return;
@@ -863,6 +864,7 @@ static void mtk_cam_exception_work(struct work_struct *work)
 				      dbg_work->desc);
 
 	ctx->cam->debug_fs->ops->exp_dump(ctx->cam->debug_fs, &dump_param);
+	snprintf(title_desc, 48, "Camsys:%s", dbg_work->desc);
 	snprintf(warn_desc, 48, "%s:ctx(%d):req(%d):%s",
 		 req->req.debug_str, ctx->stream_id, s_data->frame_seq_no,
 		 dbg_work->desc);
@@ -870,7 +872,7 @@ static void mtk_cam_exception_work(struct work_struct *work)
 		 __func__, warn_desc);
 
 #if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "Camsys",
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, title_desc,
 			       warn_desc);
 #else
 	WARN_ON(1);
