@@ -1250,7 +1250,8 @@ static void mtk_set_first_config(struct drm_device *dev,
 	int i;
 
 	for_each_new_connector_in_state(old_state, connector, new_conn_state, i) {
-		if (connector->encoder && connector->encoder->crtc) {
+		if (private->already_first_config == false &&
+				connector->encoder && connector->encoder->crtc) {
 			private->already_first_config = true;
 			DDPMSG("%s, set first config true\n", __func__);
 		}

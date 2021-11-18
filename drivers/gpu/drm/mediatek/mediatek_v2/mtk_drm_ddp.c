@@ -11176,7 +11176,6 @@ void mtk_ddp_dual_pipe_dump(struct mtk_drm_crtc *mtk_crtc)
 void mtk_ddp_connect_dual_pipe_path(struct mtk_drm_crtc *mtk_crtc,
 	struct mtk_disp_mutex *mutex)
 {
-	DDPFUNC();
 	if (drm_crtc_index(&mtk_crtc->base) == 1) {
 		//to do: dp in 6983 4k60 can use merge, only 8k30 must use dsc
 		if (drm_mode_vrefresh(&(&mtk_crtc->base)->state->adjusted_mode) == 60)
@@ -11189,13 +11188,11 @@ void mtk_ddp_connect_dual_pipe_path(struct mtk_drm_crtc *mtk_crtc,
 		struct mtk_ddp_comp **ddp_comp;
 		enum mtk_ddp_comp_id prev_id, next_id;
 
-		DDPMSG("connect dual pipe path\n");
 		for_each_comp_in_dual_pipe(comp, mtk_crtc, i, j) {
 			if (j >= mtk_crtc->dual_pipe_ddp_ctx.ddp_comp_nr[i]) {
 				DDPINFO("exceed comp nr\n");
 				continue;
 			}
-			DDPINFO("%d %d\n", i, j);
 			ddp_comp = mtk_crtc->dual_pipe_ddp_ctx.ddp_comp[i];
 			prev_id = (j == 0 ? DDP_COMPONENT_ID_MAX :
 				ddp_comp[j - 1]->id);
@@ -11208,7 +11205,6 @@ void mtk_ddp_connect_dual_pipe_path(struct mtk_drm_crtc *mtk_crtc,
 
 			mtk_ddp_add_comp_to_path(mtk_crtc, ddp_comp[j], prev_id,
 						 next_id);
-			DDPINFO("con %u %u-\n", prev_id, next_id);
 		}
 	}
 }
@@ -11384,7 +11380,7 @@ void mtk_disp_mutex_src_set(struct mtk_drm_crtc *mtk_crtc, bool is_cmd_mode)
 	else if (id == DDP_COMPONENT_DPI1)
 		val = DDP_MUTEX_SOF_DPI1;
 
-	DDPMSG("%s, id:%d, val:0x%x\n", __func__, id,
+	DDPINFO("%s, id:%d, val:0x%x\n", __func__, id,
 	       ddp->data->mutex_sof[val]);
 
 	writel_relaxed(ddp->data->mutex_sof[val],
@@ -11399,7 +11395,7 @@ void mtk_disp_mutex_src_set(struct mtk_drm_crtc *mtk_crtc, bool is_cmd_mode)
 		else if (val == DDP_MUTEX_SOF_DPI1)
 			val = DDP_MUTEX_SOF_DPI0;
 
-		DDPMSG("%s, disp1 id:%d, val:0x%x\n", __func__, id,
+		DDPINFO("%s, disp1 id:%d, val:0x%x\n", __func__, id,
 			ddp->data->mutex_sof[val]);
 		writel_relaxed(
 			ddp->data->mutex_sof[val],
@@ -11803,8 +11799,6 @@ void mtk_disp_mutex_submit_sof(struct mtk_disp_mutex *mutex)
 				+ DISP_REG_MUTEX_SOF(ddp->data, mutex->id)) & 0XFFDF;
 		writel(reg, ddp->side_regs + DISP_REG_MUTEX_SOF(ddp->data, mutex->id));
 	}
-
-	DDPFUNC();
 }
 
 static irqreturn_t mtk_disp_mutex_irq_handler(int irq, void *dev_id)
