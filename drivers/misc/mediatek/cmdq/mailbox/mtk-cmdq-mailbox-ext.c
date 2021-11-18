@@ -40,6 +40,8 @@ struct cmdq_util_controller_fp *cmdq_util_controller;
 #define cmdq_util_err(f, args...) cmdq_dump(f, ##args)
 #endif
 
+cmdq_mminfra_power mminfra_power_cb;
+
 /* ddp main/sub, mdp path 0/1/2/3, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
 #define CMDQ_IRQ_MASK			GENMASK(CMDQ_THR_MAX_COUNT - 1, 0)
@@ -218,6 +220,12 @@ struct gce_plat {
 
 #define MMP_THD(t, c)	((t)->idx | ((c)->hwid << 5))
 #endif
+
+void cmdq_get_mminfra_cb(cmdq_mminfra_power cb)
+{
+	mminfra_power_cb = cb;
+}
+EXPORT_SYMBOL(cmdq_get_mminfra_cb);
 
 static void cmdq_init_cpu(struct cmdq *cmdq)
 {
@@ -772,6 +780,12 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 	task->exec_time = sched_clock();
 
 	if (list_empty(&thread->task_busy_list)) {
+		if (mminfra_power_cb && !mminfra_power_cb()) {
+			cmdq_err("task running when mminfra power off,cmdq:%pa id:%u usage:%d",
+			&cmdq->base_pa, cmdq->hwid, atomic_read(&cmdq->usage));
+			dump_stack();
+		}
+
 		WARN_ON(cmdq_clk_enable(cmdq) < 0);
 		WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 
@@ -2315,7 +2329,7 @@ void cmdq_mbox_enable(void *chan)
 	mutex_lock(&cmdq->mbox_mutex);
 	mbox_usage = atomic_inc_return(&cmdq->mbox_usage);
 	if (cmdq->unprepare_in_idle) {
-		mbox_usage = atomic_inc_return(&cmdq->mbox_usage);
+
 		if (mbox_usage == 1) {
 			WARN_ON(clk_prepare(cmdq->clock) < 0);
 			WARN_ON(clk_prepare(cmdq->clock_timer) < 0);
@@ -2341,8 +2355,8 @@ void cmdq_mbox_disable(void *chan)
 	}
 	cmdq_clk_disable(cmdq);
 	mutex_lock(&cmdq->mbox_mutex);
+	mbox_usage = atomic_dec_return(&cmdq->mbox_usage);
 	if (cmdq->unprepare_in_idle) {
-		mbox_usage = atomic_dec_return(&cmdq->mbox_usage);
 		if (mbox_usage == 0) {
 			clk_unprepare(cmdq->clock_timer);
 			clk_unprepare(cmdq->clock);
@@ -2350,6 +2364,15 @@ void cmdq_mbox_disable(void *chan)
 			cmdq_err("mbox_usage:%d", mbox_usage);
 			dump_stack();
 		}
+	}
+	mutex_unlock(&cmdq->mbox_mutex);
+	if ((mbox_usage == 0) && (atomic_read(&cmdq->usage) > 0))
+		cmdq_err("mbox_disable when task running,cmdq:%pa id:%u usage:%d",
+		&cmdq->base_pa, cmdq->hwid, atomic_read(&cmdq->usage));
+	if (mminfra_power_cb && !mminfra_power_cb()) {
+		cmdq_err("mminfra power off when task running,cmdq:%pa id:%u usage:%d",
+		&cmdq->base_pa, cmdq->hwid, atomic_read(&cmdq->usage));
+		dump_stack();
 	}
 	mutex_unlock(&cmdq->mbox_mutex);
 	pm_runtime_put_sync(cmdq->mbox.dev);
