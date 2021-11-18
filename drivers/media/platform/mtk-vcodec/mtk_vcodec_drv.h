@@ -642,6 +642,7 @@ struct mtk_vcodec_dev {
  *	struct ion_client *ion_vdec_client;
  *	struct ion_client *ion_venc_client;
  **/
+	struct list_head log_param_list;
 };
 
 static inline struct mtk_vcodec_ctx *fh_to_ctx(struct v4l2_fh *fh)
@@ -836,6 +837,8 @@ static inline struct mtk_vcodec_ctx *ctrl_to_ctx(struct v4l2_ctrl *ctrl)
 
 #define V4L2_CID_MPEG_MTK_ENCODE_ENABLE_HIGHQUALITY \
 	(V4L2_CID_MPEG_MTK_BASE+45)
+#define V4L2_CID_MPEG_MTK_LOG \
+	(V4L2_CID_MPEG_MTK_BASE+46)
 #define V4L2_CID_MPEG_MTK_ENCODE_ENABLE_DUMMY_NAL \
 	(V4L2_CID_MPEG_MTK_BASE+47)
 
