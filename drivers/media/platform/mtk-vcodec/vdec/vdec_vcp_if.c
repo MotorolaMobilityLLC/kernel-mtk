@@ -109,7 +109,7 @@ static int vdec_vcp_ipi_send(struct vdec_inst *inst, void *msg, int len, bool is
 	unsigned int *msg_signaled;
 	wait_queue_head_t *msg_wq;
 
-	if (inst->vcu.abort)
+	if (inst->vcu.abort || inst->vcu.daemon_pid != get_vcp_generation())
 		return -EIO;
 
 	while (!is_vcp_ready(VCP_A_ID)) {
@@ -173,7 +173,7 @@ static int vdec_vcp_ipi_send(struct vdec_inst *inst, void *msg, int len, bool is
 		mutex_unlock(msg_mutex);
 		inst->vcu.failure = VDEC_IPI_MSG_STATUS_FAIL;
 		inst->vcu.abort = 1;
-		tirgger_vcp_halt(VCP_A_ID);
+		trigger_vcp_halt(VCP_A_ID);
 		return -EIO;
 	}
 
@@ -190,7 +190,7 @@ wait_ack:
 			mutex_unlock(msg_mutex);
 			inst->vcu.failure = VDEC_IPI_MSG_STATUS_FAIL;
 			inst->vcu.abort = 1;
-			tirgger_vcp_halt(VCP_A_ID);
+			trigger_vcp_halt(VCP_A_ID);
 			return -EIO;
 		} else if (-ERESTARTSYS == ret) {
 			mtk_vcodec_err(inst, "wait vcp ipi %X ack ret %d RESTARTSYS retry! (%d)",
@@ -464,8 +464,9 @@ int vcp_dec_ipi_handler(void *arg)
 			continue;
 		}
 
-		if (vcu->abort) {
-			mtk_v4l2_err(" [%d] msg vcu abort\n", vcu->ctx->id);
+		if (vcu->abort || vcu->daemon_pid != get_vcp_generation()) {
+			mtk_v4l2_err(" [%d] msg vcu abort %d %d\n",
+				vcu->ctx->id, vcu->daemon_pid, get_vcp_generation());
 			mutex_unlock(&dev->ctx_mutex);
 			kfree(mq_node);
 			continue;
@@ -730,6 +731,7 @@ static int vdec_vcp_init(struct mtk_vcodec_ctx *ctx, unsigned long *h_vdec)
 
 	mtk_vcodec_debug(inst, "vdec_inst=%p svp_mode=%d", &inst->vcu, msg.reserved);
 	*h_vdec = (unsigned long)inst;
+	inst->vcu.daemon_pid = get_vcp_generation();
 	err = vdec_vcp_ipi_send(inst, &msg, sizeof(msg), 0);
 
 	if (err != 0) {
@@ -972,6 +974,7 @@ void set_vdec_vcp_data(struct vdec_inst *inst, enum vcp_reserve_mem_id_t id, voi
 	msg.vcu_inst_addr = (uintptr_t)&inst->vcu;
 	msg.data[0] = (__u32)((__u64)string_pa & 0xFFFFFFFF);
 	msg.data[1] = (__u32)((__u64)string_pa >> 32);
+	inst->vcu.daemon_pid = get_vcp_generation();
 
 	mtk_vcodec_debug(inst, "msg.id %d msg.data[0]:0x%08x, msg.data[1]:0x%08x\n",
 		msg.id, msg.data[0], msg.data[1]);
@@ -1206,6 +1209,7 @@ static void get_supported_format(struct vdec_inst *inst,
 	msg.ctx_id = inst->ctx->id;
 	msg.ap_inst_addr = (uintptr_t)&inst->vcu;
 	msg.ap_data_addr = (uintptr_t)video_fmt;
+	inst->vcu.daemon_pid = get_vcp_generation();
 	vdec_vcp_ipi_send(inst, &msg, sizeof(msg), 0);
 
 	for (i = 0; i < MTK_MAX_DEC_CODECS_SUPPORT; i++) {
@@ -1233,6 +1237,7 @@ static void get_frame_sizes(struct vdec_inst *inst,
 	msg.ctx_id = inst->ctx->id;
 	msg.ap_inst_addr = (uintptr_t)&inst->vcu;
 	msg.ap_data_addr = (uintptr_t)codec_framesizes;
+	inst->vcu.daemon_pid = get_vcp_generation();
 	vdec_vcp_ipi_send(inst, &msg, sizeof(msg), 0);
 
 	for (i = 0; i < MTK_MAX_DEC_CODECS_SUPPORT; i++) {
