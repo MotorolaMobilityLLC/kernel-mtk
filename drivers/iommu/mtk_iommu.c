@@ -749,13 +749,12 @@ static int mtk_iommu_isr_pause_timer_init(struct mtk_iommu_data *data)
 
 static int mtk_iommu_isr_pause(struct mtk_iommu_data *data, int delay)
 {
-	if (!timer_pending(&data->iommu_isr_pause_timer)) {
-		/* disable all intr */
-		mtk_iommu_isr_setup(data, 0);
-		/* delay seconds */
-		data->iommu_isr_pause_timer.expires = jiffies + delay * HZ;
+	/* disable all intr */
+	mtk_iommu_isr_setup(data, 0);
+	/* delay seconds */
+	data->iommu_isr_pause_timer.expires = jiffies + delay * HZ;
+	if (!timer_pending(&data->iommu_isr_pause_timer))
 		add_timer(&data->iommu_isr_pause_timer);
-	}
 	return 0;
 }
 
@@ -978,6 +977,8 @@ static irqreturn_t mtk_iommu_dump_sec_bank(struct mtk_iommu_data *data,
 		write ? "write" : "read");
 
 	mtk_iommu_tlb_flush_all(data);
+
+	mtk_iommu_isr_record(data);
 
 	return IRQ_HANDLED;
 }
