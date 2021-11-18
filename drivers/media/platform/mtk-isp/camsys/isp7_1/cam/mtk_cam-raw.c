@@ -2223,6 +2223,7 @@ void raw_irq_handle_tg_grab_err(struct mtk_raw_device *raw_dev,
 	val = readl_relaxed(raw_dev->base + REG_TG_PATH_CFG);
 	val = val | TG_TG_FULL_SEL;
 	writel_relaxed(val, raw_dev->base + REG_TG_PATH_CFG);
+	writel_relaxed(val, raw_dev->base_inner + REG_TG_PATH_CFG);
 	wmb(); /* TBC */
 	val2 = readl_relaxed(raw_dev->base + REG_TG_SEN_MODE);
 	val2 = val2 | TG_CMOS_RDY_SEL;
@@ -2307,6 +2308,7 @@ static void raw_irq_handle_tg_overrun_err(struct mtk_raw_device *raw_dev,
 	val = readl_relaxed(raw_dev->base + REG_TG_PATH_CFG);
 	val = val | TG_TG_FULL_SEL;
 	writel_relaxed(val, raw_dev->base + REG_TG_PATH_CFG);
+	writel_relaxed(val, raw_dev->base_inner + REG_TG_PATH_CFG);
 	wmb(); /* for dbg dump register */
 	val2 = readl_relaxed(raw_dev->base + REG_TG_SEN_MODE);
 	val2 = val2 | TG_CMOS_RDY_SEL;
