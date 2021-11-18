@@ -2981,10 +2981,10 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 	cfg.type = V4L2_CTRL_TYPE_INTEGER;
 	cfg.flags = V4L2_CTRL_FLAG_WRITE_ONLY;
 	cfg.name = "Video Encoder Max QP";
-	cfg.min = 0;
+	cfg.min = -1;
 	cfg.max = 51;
 	cfg.step = 1;
-	cfg.def = 0;
+	cfg.def = -1;
 	cfg.ops = ops;
 	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
 
@@ -2993,10 +2993,10 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 	cfg.type = V4L2_CTRL_TYPE_INTEGER;
 	cfg.flags = V4L2_CTRL_FLAG_WRITE_ONLY;
 	cfg.name = "Video Encoder Min QP";
-	cfg.min = 0;
+	cfg.min = -1;
 	cfg.max = 51;
 	cfg.step = 1;
-	cfg.def = 0;
+	cfg.def = -1;
 	cfg.ops = ops;
 	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
 
@@ -3005,10 +3005,10 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 	cfg.type = V4L2_CTRL_TYPE_INTEGER;
 	cfg.flags = V4L2_CTRL_FLAG_WRITE_ONLY;
 	cfg.name = "Video Encoder I-P frame QP Delta";
-	cfg.min = 0;
+	cfg.min = -1;
 	cfg.max = 50;
 	cfg.step = 1;
-	cfg.def = 0;
+	cfg.def = -1;
 	cfg.ops = ops;
 	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
 
@@ -3017,10 +3017,10 @@ int mtk_vcodec_enc_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 	cfg.type = V4L2_CTRL_TYPE_INTEGER;
 	cfg.flags = V4L2_CTRL_FLAG_WRITE_ONLY;
 	cfg.name = "Video Encoder QP control mode";
-	cfg.min = 0;
+	cfg.min = -1;
 	cfg.max = 10;
 	cfg.step = 1;
-	cfg.def = 0;
+	cfg.def = -1;
 	cfg.ops = ops;
 	ctrl = v4l2_ctrl_new_custom(handler, &cfg, NULL);
 
