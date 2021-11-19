@@ -1503,7 +1503,7 @@
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
+                <out_high>false</out_high>
                 <varName0>GPIO_BAROMETER_LDO</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
