@@ -374,13 +374,21 @@ static inline void ufshcd_disable_irq(struct ufs_hba *hba)
 	}
 }
 
+#if defined(CONFIG_UFSHID)
+void ufshcd_scsi_unblock_requests(struct ufs_hba *hba)
+#else
 static void ufshcd_scsi_unblock_requests(struct ufs_hba *hba)
+#endif
 {
 	if (atomic_dec_and_test(&hba->scsi_block_reqs_cnt))
 		scsi_unblock_requests(hba->host);
 }
 
+#if defined(CONFIG_UFSHID)
+void ufshcd_scsi_block_requests(struct ufs_hba *hba)
+#else
 static void ufshcd_scsi_block_requests(struct ufs_hba *hba)
+#endif
 {
 	if (atomic_inc_return(&hba->scsi_block_reqs_cnt) == 1)
 		scsi_block_requests(hba->host);
@@ -1399,11 +1407,19 @@ static bool ufshcd_is_devfreq_scaling_required(struct ufs_hba *hba,
 	return false;
 }
 
+#if defined(CONFIG_UFSHID)
+int ufshcd_wait_for_doorbell_clr(struct ufs_hba *hba,
+					u64 wait_timeout_us,
+					bool ignore_state,
+					int tr_allowed,
+					int tm_allowed)
+#else
 static int ufshcd_wait_for_doorbell_clr(struct ufs_hba *hba,
 					u64 wait_timeout_us,
 					bool ignore_state,
 					int tr_allowed,
 					int tm_allowed)
+#endif
 {
 	unsigned long flags;
 	int ret = 0;
@@ -7506,11 +7522,14 @@ static int ufshcd_host_reset_and_restore(struct ufs_hba *hba)
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	ufshcd_hba_stop(hba, false);
 #if defined(CONFIG_UFSFEATURE)
+	ufsf_tw_reset_host(&hba->ufsf);
 	#if defined(CONFIG_UFSHPB)
 		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 			ufsf_hpb_reset_host(&hba->ufsf);
 	#endif
-	ufsf_tw_reset_host(&hba->ufsf);
+    #if defined(CONFIG_USFHID)
+	ufsf_hid_reset_host(&hba->ufsf);
+	#endif
 #endif
 	hba->silence_err_logs = true;
 	ufshcd_complete_requests(hba);
@@ -8562,6 +8581,13 @@ _link_retry:
         }
 #endif
 
+#if  defined(CONFIG_UFSHID)
+		if (ufshid_get_state(&hba->ufsf) == HID_NEED_INIT  && (hba->card->wmanufacturerid != UFS_VENDOR_SKHYNIX)) {
+		   dev_err(hba->dev, "Chris: Samsung & Micron memory, Hynix use self driver not go here!\n");
+             ufsf_hid_init(&hba->ufsf);
+		}
+#endif
+
 #if defined(CONFIG_SCSI_SKHID)
 		ufshcd_add_hid_info_sysfs_node(hba);
 #endif
@@ -8599,9 +8625,14 @@ out:
 
 #if defined(CONFIG_UFSFEATURE)
 	#if defined(CONFIG_UFSHPB)
-		if(IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
-			ufsf_hpb_reset(&hba->ufsf);
+	if(IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
+		ufsf_hpb_reset(&hba->ufsf);
 	#endif
+
+	#if defined(CONFIG_UFSHID)
+	ufsf_hid_reset(&hba->ufsf);
+	#endif
+
 	ufsf_tw_reset(&hba->ufsf);
 #endif
 
@@ -9502,6 +9533,11 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 			ufsf_hpb_suspend(&hba->ufsf);
 	#endif
+
+	#if defined(CONFIG_UFSHID)
+     ufsf_hid_suspend(&hba->ufsf);
+	#endif
+
 	ufsf_tw_suspend(&hba->ufsf);
 #endif
 
@@ -9817,6 +9853,11 @@ static int ufshcd_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 			ufsf_hpb_resume(&hba->ufsf);
 	#endif
+
+	#if defined(CONFIG_UFSHID)
+     ufsf_hid_resume(&hba->ufsf);
+	#endif
+
 	ufsf_tw_resume(&hba->ufsf);
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
@@ -10386,6 +10427,11 @@ void ufshcd_remove(struct ufs_hba *hba)
 	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 		ufsf_hpb_release(&hba->ufsf);
 	#endif
+
+	#if defined(CONFIG_UFSHID)
+     ufsf_hid_remove(&hba->ufsf);
+	#endif
+
 	ufsf_tw_release(&hba->ufsf);
 #endif
 #if defined(CONFIG_SCSI_SKHPB)
@@ -10690,6 +10736,11 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 		if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size))
 			ufsf_hpb_set_init_state(&hba->ufsf);
 	#endif
+
+	#if defined(CONFIG_UFSHID)
+     ufsf_hid_set_init_state(&hba->ufsf);
+	#endif
+
 	ufsf_tw_set_init_state(&hba->ufsf);
 #endif
 
