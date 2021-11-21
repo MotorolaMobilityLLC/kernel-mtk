@@ -484,6 +484,18 @@ struct ufs_clk_gating {
 	struct workqueue_struct *clk_gating_workq;
 };
 
+#if defined(CONFIG_SCSI_SKHID)
+/* for manual gc */
+struct ufs_manual_gc {
+	int state;
+	bool hagc_support;
+	struct hrtimer hrtimer;
+	unsigned long delay_ms;
+	struct work_struct hibern8_work;
+	struct workqueue_struct *mgc_workq;
+};
+#endif
+
 struct ufs_saved_pwr_info {
 	struct ufs_pa_layer_attr info;
 	bool is_valid;
@@ -817,6 +829,9 @@ struct ufs_hba {
 	/* Keeps information of the UFS device connected to this host */
 	struct ufs_dev_info dev_info;
 	bool auto_bkops_enabled;
+#if defined(CONFIG_SCSI_SKHID)
+	struct ufs_manual_gc manual_gc;
+#endif
 	struct ufs_vreg_info vreg_info;
 	struct list_head clk_list_head;
 
@@ -1051,6 +1066,14 @@ static inline bool ufshcd_keep_autobkops_enabled_except_suspend(
 	return hba->caps & UFSHCD_CAP_KEEP_AUTO_BKOPS_ENABLED_EXCEPT_SUSPEND;
 }
 
+static inline u8 ufshcd_wb_get_query_index(struct ufs_hba *hba)
+{
+	if (hba->dev_info.b_wb_buffer_type == WB_BUF_MODE_LU_DEDICATED)
+		/*for MTK all UDA is on lun 2*/
+		return 2/*hba->card.wb_dedicated_lu*/;
+	return 0;
+}
+
 extern int ufshcd_runtime_suspend(struct ufs_hba *hba);
 extern int ufshcd_runtime_resume(struct ufs_hba *hba);
 extern int ufshcd_runtime_idle(struct ufs_hba *hba);
@@ -1066,6 +1089,12 @@ extern int ufshcd_config_pwr_mode(struct ufs_hba *hba,
 extern int ufshcd_clock_scaling_prepare(struct ufs_hba *hba);
 extern void ufshcd_clock_scaling_unprepare(struct ufs_hba *hba);
 extern void ufshcd_hba_stop(struct ufs_hba *hba, bool can_sleep);
+#if defined(CONFIG_SCSI_SKHID)
+extern int ufshcd_query_attr_retry(struct ufs_hba *hba,
+	enum query_opcode opcode, enum attr_idn idn, u8 index, u8 selector,
+	u32 *attr_val);
+extern int ufshcd_bkops_ctrl(struct ufs_hba *hba, enum bkops_status status);
+#endif
 
 /* UIC command interfaces for DME primitives */
 #define DME_LOCAL	0
@@ -1160,7 +1189,7 @@ int ufshcd_comp_scsi_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp);
 int ufshcd_map_sg(struct ufs_hba *hba, struct ufshcd_lrb *lrbp);
 #endif
 
-#if defined(CONFIG_SCSI_SKHPB)
+#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_SCSI_SKHID)
 int ufshcd_query_flag_retry(struct ufs_hba *hba,
 							enum query_opcode opcode, enum flag_idn idn, bool *flag_res);
 #endif
