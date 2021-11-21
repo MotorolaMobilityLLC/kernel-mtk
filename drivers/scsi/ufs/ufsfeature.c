@@ -196,7 +196,6 @@ static int ufsf_read_dev_desc(struct ufsf_feature *ufsf, u8 selector)
 		  desc_buf[DEVICE_DESC_PARAM_EX_FEAT_SUP+2],
 		  desc_buf[DEVICE_DESC_PARAM_EX_FEAT_SUP+3]);
 
-	
 #if defined(CONFIG_SCSI_UFS_HPB)
 	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
 		INIT_INFO("boot Control mode is=0x%.2x", desc_buf[DEVICE_DESC_PARAM_HPB_CONTROL]);
@@ -206,6 +205,11 @@ static int ufsf_read_dev_desc(struct ufsf_feature *ufsf, u8 selector)
 
 #if defined(CONFIG_SCSI_UFS_TW)
 	ufstw_get_dev_info(&ufsf->tw_dev_info, desc_buf);
+#endif
+
+#if defined(CONFIG_UFSHID)
+	if (ufsf->hba->dev_info.wmanufacturerid != UFS_VENDOR_SKHYNIX)
+	    ufshid_get_dev_info(ufsf, desc_buf);
 #endif
 	return 0;
 }
@@ -229,6 +233,7 @@ static int ufsf_read_geo_desc(struct ufsf_feature *ufsf, u8 selector)
 	if (ufsf->tw_dev_info.tw_device)
 		ufstw_get_geo_info(&ufsf->tw_dev_info, geo_buf);
 #endif
+
 	return 0;
 }
 
@@ -416,12 +421,13 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, unsigned int lun,
 				err = -EINVAL;
 				goto out_release_mem;
 			}
-				err = ufshpb_issue_req_dev_ctx(ufsf->ufshpb_lup[lun],
-						       kernel_buf,
-						       ioctl_data->buf_size);
-				if (err < 0)
-					goto out_release_mem;
-			goto copy_buffer;
+			err = ufshpb_issue_req_dev_ctx(ufsf->ufshpb_lup[lun],
+					       kernel_buf,
+					       ioctl_data->buf_size);
+			if (err < 0)
+				goto out_release_mem;
+
+		goto copy_buffer;
 		#endif
 		case QUERY_DESC_IDN_DEVICE:
 		case QUERY_DESC_IDN_GEOMETRY:
@@ -447,6 +453,7 @@ int ufsf_query_ioctl(struct ufsf_feature *ufsf, unsigned int lun,
 					    &length);
 	if (err)
 		goto out_release_mem;
+
 #if defined(CONFIG_UFSHPB)
 copy_buffer:
 #endif
@@ -724,4 +731,66 @@ inline void ufsf_tw_set_init_state(struct ufsf_feature *ufsf) {}
 inline void ufsf_tw_reset_lu(struct ufsf_feature *ufsf) {}
 inline void ufsf_tw_reset_host(struct ufsf_feature *ufsf) {}
 inline void ufsf_tw_ee_handler(struct ufsf_feature *ufsf) {}
+#endif
+
+/*
+ * Wrapper functions for ufshid.
+ */
+#if defined(CONFIG_UFSHID)
+inline int ufsf_hid_get_state(struct ufsf_feature *ufsf)
+{
+    return ufshid_get_state(ufsf);
+}
+inline void ufsf_hid_set_state(struct ufsf_feature *ufsf, int state)
+{
+    ufshid_set_state(ufsf, state);
+}
+inline void ufsf_hid_get_dev_info(struct ufsf_feature *ufsf, u8 *desc_buf)
+{
+    ufshid_get_dev_info(ufsf, desc_buf);
+}
+inline void ufsf_hid_set_init_state(struct ufsf_feature *ufsf)
+{
+    ufshid_set_state(ufsf,HID_NEED_INIT);
+}
+inline void ufsf_hid_init(struct ufsf_feature *ufsf)
+{
+    ufshid_init(ufsf);
+}
+inline void ufsf_hid_reset(struct ufsf_feature *ufsf)
+{
+    ufshid_reset(ufsf);
+}
+inline void ufsf_hid_reset_host(struct ufsf_feature *ufsf)
+{
+    ufshid_reset_host(ufsf);
+}
+inline void ufsf_hid_remove(struct ufsf_feature *ufsf)
+{
+	ufshid_remove(ufsf);
+}
+inline void ufsf_hid_suspend(struct ufsf_feature *ufsf)
+{
+    ufshid_suspend(ufsf);
+}
+inline void ufsf_hid_resume(struct ufsf_feature *ufsf)
+{
+    ufshid_resume(ufsf);
+}
+inline void ufsf_hid_on_idle(struct ufsf_feature *ufsf)
+{
+    ufshid_on_idle(ufsf);
+}
+#else
+inline int ufsf_hid_get_state(struct ufsf_feature *ufsf) { return 0; }
+inline void ufsf_hid_set_state(struct ufsf_feature *ufsf, int state) {}
+inline void ufsf_hid_get_dev_info(struct ufsf_feature *ufsf, u8 *desc_buf) {}
+inline void ufsf_hid_set_init_state(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_init(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_reset(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_reset_host(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_remove(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_suspend(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_resume(struct ufsf_feature *ufsf) {}
+inline void ufsf_hid_on_idle(struct ufsf_feature *ufsf) {}
 #endif
