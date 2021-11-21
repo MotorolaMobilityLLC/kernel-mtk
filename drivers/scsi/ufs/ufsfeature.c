@@ -273,20 +273,20 @@ out:
 	return ret;
 }
 
-void ufsf_device_check(struct ufs_hba *hba)
+int ufsf_device_check(struct ufs_hba *hba)
 {
 	struct ufsf_feature *ufsf = &hba->ufsf;
-	int ret;
+	int ret = 0;
 	unsigned int lun;
 	u8 selector = 0;
 
 #if defined(CONFIG_SCSI_UFS_HPB)
 	if (ufsf->ufshpb_state == HPB_RESET)
-		return;
+		return ret;
 #endif
 #if defined(CONFIG_SCSI_UFS_TW)
 	if (atomic_read(&ufsf->tw_state) == TW_RESET)
-		return;
+		return ret;
 #endif
 
 	ufsf->slave_conf_cnt = 0;
@@ -299,11 +299,11 @@ void ufsf_device_check(struct ufs_hba *hba)
 
 	ret = ufsf_read_dev_desc(ufsf, selector);
 	if (ret)
-		return;
+		return ret;
 
 	ret = ufsf_read_geo_desc(ufsf, selector);
 	if (ret)
-		return;
+		return ret;
 
 	seq_scan_lu(lun) {
 		ret = ufsf_read_unit_desc(ufsf, lun, selector);
@@ -311,7 +311,7 @@ void ufsf_device_check(struct ufs_hba *hba)
 			goto out_free_mem;
 	}
 
-	return;
+	return 0;
 out_free_mem:
 #if defined(CONFIG_SCSI_UFS_HPB)
 	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
@@ -329,7 +329,7 @@ out_free_mem:
 	ufsf->tw_dev_info.tw_device = false;
 	atomic_set(&ufsf->tw_state, TW_NOT_SUPPORTED);
 #endif
-	return;
+	return 0;
 }
 
 static void ufsf_print_query_buf(unsigned char *field, int size)

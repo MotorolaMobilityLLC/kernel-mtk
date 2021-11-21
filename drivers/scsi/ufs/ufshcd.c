@@ -8121,7 +8121,8 @@ static int ufshcd_probe_hba(struct ufs_hba *hba, bool async)
 		ufshcd_print_info(hba, UFS_INFO_PWR);
 	}
 #if defined(CONFIG_SCSI_UFS_FEATURE)
-	ufsf_device_check(hba);
+	if (ufsf_device_check(hba))
+		goto out;
 	ufsf_tw_init(&hba->ufsf);
 #if defined(CONFIG_SCSI_UFS_HPB)
 	if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
