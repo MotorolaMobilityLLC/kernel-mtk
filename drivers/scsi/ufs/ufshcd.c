@@ -8569,7 +8569,8 @@ _link_retry:
 		}
 
 #if defined(CONFIG_UFSFEATURE)
-         ufsf_device_check(hba);
+         if (ufsf_device_check(hba))
+            goto out;
          ufsf_tw_init(&hba->ufsf);
 #if  defined(CONFIG_UFSHPB)
          if (IS_RAM_SIZE_GREATER_THAN_4G(ram_size)) {
