@@ -142,6 +142,9 @@ enum flag_idn {
 	QUERY_FLAG_IDN_BUSY_RTC				= 0x09,
 	QUERY_FLAG_IDN_RESERVED3			= 0x0A,
 	QUERY_FLAG_IDN_PERMANENTLY_DISABLE_FW_UPDATE	= 0x0B,
+	QUERY_FLAG_IDN_WB_EN                            = 0x0E,
+	QUERY_FLAG_IDN_WB_BUFF_FLUSH_EN                 = 0x0F,
+	QUERY_FLAG_IDN_WB_BUFF_FLUSH_DURING_HIBERN8     = 0x10,
 #if defined(CONFIG_SCSI_UFS_TW)
 	QUERY_FLAG_IDN_TW_EN				= 0x0E,
 	QUERY_FLAG_IDN_TW_BUF_FLUSH_EN			= 0x0F,
@@ -184,6 +187,13 @@ enum attr_idn {
 	QUERY_ATTR_IDN_TW_BUF_LIFETIME_EST	= 0x1E,
 	QUERY_ATTR_CUR_TW_BUF_SIZE		= 0x1F,
 #endif
+
+#if defined(CONFIG_SCSI_SKHID)
+	/* use one reserved bit */
+	QUERY_ATTR_IDN_MANUAL_GC_CONT           = 0x12,
+	QUERY_ATTR_IDN_MANUAL_GC_STATUS         = 0x13,
+#endif
+
 #if defined(CONFIG_SCSI_UFS_FEATURE)
 	QUERY_ATTR_IDN_SUP_VENDOR_OPTIONS	= 0xFF,
 #endif
@@ -285,6 +295,10 @@ enum device_desc_param {
 	DEVICE_DESC_PARAM_PSA_MAX_DATA		= 0x25,
 	DEVICE_DESC_PARAM_PSA_TMT		= 0x29,
 	DEVICE_DESC_PARAM_PRDCT_REV		= 0x2A,
+	DEVICE_DESC_PARAM_EXT_UFS_FEATURE_SUP	= 0x4F,
+	DEVICE_DESC_PARAM_WB_PRESRV_USRSPC_EN	= 0x53,
+	DEVICE_DESC_PARAM_WB_TYPE		= 0x54,
+	DEVICE_DESC_PARAM_WB_SHARED_ALLOC_UNITS = 0x55,
 #if defined(CONFIG_SCSI_UFS_HPB) || defined(CONFIG_SCSI_SKHPB)
 	DEVICE_DESC_PARAM_HPB_VER		= 0x40,
 	DEVICE_DESC_PARAM_HPB_CONTROL		= 0x42, /* JEDEC version */
@@ -364,6 +378,22 @@ enum health_desc_param {
 	HEALTH_DESC_PARAM_EOL_INFO		= 0x2,
 	HEALTH_DESC_PARAM_LIFE_TIME_EST_A	= 0x3,
 	HEALTH_DESC_PARAM_LIFE_TIME_EST_B	= 0x4,
+};
+
+#if defined(CONFIG_SCSI_SKHID)
+enum {
+	MANUAL_GC_OFF = 0,
+	MANUAL_GC_ON,
+	MANUAL_GC_DISABLE,
+	MANUAL_GC_ENABLE,
+	MANUAL_GC_MAX,
+};
+#endif
+
+/* WriteBooster buffer mode */
+enum {
+	WB_BUF_MODE_LU_DEDICATED	= 0x0,
+	WB_BUF_MODE_SHARED		= 0x1,
 };
 
 /*
@@ -631,6 +661,8 @@ struct ufs_dev_info {
 	/* Maximum number of general LU supported by the UFS device */
 	u8 max_lu_supported;
 	u16 wmanufacturerid;
+	u8 b_wb_buffer_type;
+	u8 wb_dedicated_lu;
 	/*UFS device Product Name */
 	u8 *model;
 	u16 wspecversion;

@@ -179,6 +179,12 @@ config SCSI_SKHPB
 	help
 	  Activate or deactive SKHPB driver
 
+config SCSI_SKHID
+	bool "Activate HPB Host-aware Performance Booster"
+	depends on SCSI_UFSHCD
+	help
+	  Activate or deactive SKHPB driver
+
 config SCSI_UFS_CRYPTO
 	bool "UFS Crypto Engine Support"
 	depends on SCSI_UFSHCD && BLK_INLINE_ENCRYPTION
