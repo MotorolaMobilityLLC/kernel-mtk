@@ -173,6 +173,22 @@ config SCSI_UFS_TW_IGNORE_GUARANTEE_BIT
 	  If device not guarantee the lifetime of Turbo Write Buffer and not ignore the bit
 	  So tw_mode change to disable_mode.
 
+config UFSHID
+	bool "UFS Host Initiated Defrag support"
+	depends on SCSI_UFSHCD && UFSFEATURE
+	---help---
+	UFS HID Feature Enable
+
+config UFSHID_POC
+	bool "UFSHID_POC test"
+	depends on SCSI_UFSHCD && UFSFEATURE && UFSHID
+	---help---
+	UFS HID POC test
+	1. block to enter suspend state
+	2. auto_hibern8 enable/disable (HCI)
+	3. set flag bDefragOperation
+	4. debug msg enable (default : disable)
+
 config SCSI_SKHPB
 	bool "Activate HPB Host-aware Performance Booster"
 	depends on SCSI_UFSHCD

@@ -18,6 +18,10 @@
 #include "ufstw.h"
 #endif
 
+#if defined(CONFIG_UFSHID)
+#include "ufshid.h"
+#endif
+
 /* Constant value*/
 #define SECTOR					512
 #define BLOCK					4096
@@ -142,6 +146,10 @@ struct ufsf_feature {
 	int tw_debug_no;
 	atomic64_t tw_debug_ee_count;
 #endif
+#if defined(CONFIG_UFSHID)
+	atomic_t hid_state;
+	struct ufshid_dev *hid_dev;
+#endif
 };
 
 struct ufs_hba;
@@ -192,4 +200,19 @@ void ufsf_tw_set_init_state(struct ufsf_feature *ufsf);
 void ufsf_tw_reset_lu(struct ufsf_feature *ufsf);
 void ufsf_tw_reset_host(struct ufsf_feature *ufsf);
 void ufsf_tw_ee_handler(struct ufsf_feature *ufsf);
+
+/* for hid*/
+#if defined(CONFIG_UFSHID)
+int ufsf_hid_get_state(struct ufsf_feature *ufsf);
+void ufsf_hid_set_state(struct ufsf_feature *ufsf, int state);
+void ufsf_hid_get_dev_info(struct ufsf_feature *ufsf, u8 *desc_buf);
+void ufsf_hid_set_init_state(struct ufsf_feature *ufsf);
+void ufsf_hid_init(struct ufsf_feature *ufsf);
+void ufsf_hid_reset(struct ufsf_feature *ufsf);
+void ufsf_hid_reset_host(struct ufsf_feature *ufsf);
+void ufsf_hid_remove(struct ufsf_feature *ufsf);
+void ufsf_hid_suspend(struct ufsf_feature *ufsf);
+void ufsf_hid_resume(struct ufsf_feature *ufsf);
+void ufsf_hid_on_idle(struct ufsf_feature *ufsf);
+#endif
 #endif /* End of Header */
