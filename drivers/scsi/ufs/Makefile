@@ -38,6 +38,7 @@ ufshcd-core-$(CONFIG_SCSI_UFS_CRYPTO) += ufshcd-crypto.o
 obj-$(CONFIG_UFSFEATURE) += ufsfeature.o
 obj-$(CONFIG_UFSHPB) += ufshpb.o
 obj-$(CONFIG_UFSTW) += ufstw.o
+obj-$(CONFIG_UFSHID) += ufshid.o
 obj-$(CONFIG_SCSI_SKHPB) += ufshpb_skh.o
 obj-$(CONFIG_SCSI_UFSHCD_PCI) += ufshcd-pci.o
 obj-$(CONFIG_SCSI_UFSHCD_PLATFORM) += ufshcd-pltfrm.o
