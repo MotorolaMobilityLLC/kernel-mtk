@@ -145,6 +145,9 @@ enum flag_idn {
 	QUERY_FLAG_IDN_BKOPS_EN         = 0x04,
 	/* MTK PATCH: flag for fw update feasibility check */
 	QUERY_FLAG_IDN_PERMANENTLY_DISABLE_FW_UPDATE = 0xB,
+	QUERY_FLAG_IDN_WB_EN                            = 0x0E,
+	QUERY_FLAG_IDN_WB_BUFF_FLUSH_EN                 = 0x0F,
+	QUERY_FLAG_IDN_WB_BUFF_FLUSH_DURING_HIBERN8     = 0x10,
 #if defined(CONFIG_UFSTW)
 	QUERY_FLAG_IDN_TW_EN				= 0x0E,
 	QUERY_FLAG_IDN_TW_BUF_FLUSH_EN			= 0x0F,
@@ -170,6 +173,11 @@ enum attr_idn {
 	QUERY_ATTR_IDN_TW_BUF_SIZE		= 0x1D,
 	QUERY_ATTR_IDN_TW_BUF_LIFETIME_EST	= 0x1E,
 	QUERY_ATTR_CUR_TW_BUF_SIZE		= 0x1F,
+#endif
+#if defined(CONFIG_SCSI_SKHID)
+	/* use one reserved bit */
+	QUERY_ATTR_IDN_MANUAL_GC_CONT           = 0x12,
+	QUERY_ATTR_IDN_MANUAL_GC_STATUS         = 0x13,
 #endif
 #if defined(CONFIG_UFSFEATURE)
 	QUERY_ATTR_IDN_SUP_VENDOR_OPTIONS	= 0xFF,
@@ -285,6 +293,10 @@ enum device_desc_param {
 	DEVICE_DESC_PARAM_FEAT_SUP		= 0x1F,
 	/* MTK PATCH: Product Revision Level index in String Descriptor */
 	DEVICE_DESC_PARAM_PRDCT_REV		= 0x2A,
+	DEVICE_DESC_PARAM_EXT_UFS_FEATURE_SUP	= 0x4F,
+	DEVICE_DESC_PARAM_WB_PRESRV_USRSPC_EN	= 0x53,
+	DEVICE_DESC_PARAM_WB_TYPE		= 0x54,
+	DEVICE_DESC_PARAM_WB_SHARED_ALLOC_UNITS = 0x55,
 #if defined(CONFIG_UFSHPB) || defined(CONFIG_SCSI_SKHPB)
 	DEVICE_DESC_PARAM_HPB_VER		= 0x40,
 	DEVICE_DESC_PARAM_HPB_CONTROL		= 0x42, /* JEDEC version */
@@ -315,6 +327,22 @@ enum geometry_desc_param {
 	GEOMETRY_DESC_TW_SUPPORT_BUF_TYPE		= 0x56,
 	GEOMETRY_DESC_TW_GROUP_NUM_CAP			= 0x57,
 #endif
+};
+
+#if defined(CONFIG_SCSI_SKHID)
+enum {
+	MANUAL_GC_OFF = 0,
+	MANUAL_GC_ON,
+	MANUAL_GC_DISABLE,
+	MANUAL_GC_ENABLE,
+	MANUAL_GC_MAX,
+};
+#endif
+
+/* WriteBooster buffer mode */
+enum {
+	WB_BUF_MODE_LU_DEDICATED	= 0x0,
+	WB_BUF_MODE_SHARED		= 0x1,
 };
 
 /*
@@ -648,6 +676,9 @@ struct ufs_dev_info {
  */
 struct ufs_dev_desc {
 	u16 wmanufacturerid;
+	u16 wspecversion;
+	u8 b_wb_buffer_type;
+	u8 wb_dedicated_lu;
 	char model[MAX_MODEL_LEN + 1];
 	char prl[MAX_PRL_LEN + 1]; /* MTK PATCH */
 };
