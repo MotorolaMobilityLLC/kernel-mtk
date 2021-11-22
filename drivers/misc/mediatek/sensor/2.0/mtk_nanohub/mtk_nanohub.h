@@ -657,6 +657,7 @@ struct ps_custom {
 #ifdef CONFIG_MOTO_ALSPS_NVCFG
 struct mot_als_nvcfg {
     uint32_t  alscfg;
+    uint32_t panel_id;
     float als_cali[2];//moto add:light_scale,target_lux
 };
 
