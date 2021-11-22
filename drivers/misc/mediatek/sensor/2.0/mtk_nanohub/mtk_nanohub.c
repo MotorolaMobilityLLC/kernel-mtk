@@ -2753,6 +2753,7 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 		const char *buf, size_t count)
 {
 	int err = 0;
+	uint32_t panel_info[3] = {0};
 	//SITUATION_PR_ERR("situation_store_params count=%d\n", count);
 
 	memcpy(motparams, buf, sizeof(struct mot_params));
@@ -2768,6 +2769,13 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 #endif
 
 #ifdef CONFIG_MOTO_ALSPS_NVCFG
+	panel_info[0] = 2;
+	panel_info[1] = motparams->als_nvcfg.panel_id;
+	err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)panel_info, sizeof(panel_info));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub light panel info fail\n");
+	msleep(1);
+
 	if(14 == motparams->als_nvcfg.alscfg) {
 		err = mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->als_nvcfg, sizeof(struct mot_als_nvcfg));
 		if (err < 0)
