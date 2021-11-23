@@ -87,7 +87,7 @@
 
 		novatek,reset-gpio = <&pio 164 0>;
 		novatek,irq-gpio = <&pio 10 2008>;
-		novatek,panel-supplier = "nt36672a";
+		novatek,panel-supplier = "tm_nt36672a","djn_nt36525b";
 
 		//novatek,pen-support;
 		//novatek,wgp-stylus;
