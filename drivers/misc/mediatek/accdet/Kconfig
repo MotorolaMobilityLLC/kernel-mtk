@@ -120,3 +120,8 @@ config TS3A225E_ACCDET
 	  If you want to use TS3A225E
 	  say Y.
 	  If unsure, say N.
+
+config ACCDET_HIGH_IMP_HP_OPT
+	bool "ACCDET high impedance headphone detection optimizaion"
+	help
+	  This is option to enable high impedance headphone detection optimizaion.
