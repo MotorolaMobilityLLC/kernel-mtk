@@ -26,6 +26,8 @@
 #define DTS_RESET_GPIO	"touch,reset-gpio"
 #define DTS_OF_NAME	"tchip,ilitek"
 
+extern char lcd_panle_name[];
+
 void ili_tp_reset(void)
 {
 	ILI_INFO("edge delay = %d\n", ilits->rst_edge_delay);
@@ -629,6 +631,11 @@ static struct ilitek_hwif_info hwif = {
 static int __init ilitek_plat_dev_init(void)
 {
 	ILI_INFO("ILITEK TP driver init for QCOM\n");
+	if (!(strstr(lcd_panle_name, "ili"))) {
+		ILI_ERR("Failed to load driver; panle name is %s;\n",lcd_panle_name);
+		return -ENODEV;
+	}
+
 	if (ili_dev_init(&hwif) < 0) {
 		ILI_ERR("Failed to register i2c/spi bus driver\n");
 		return -ENODEV;
