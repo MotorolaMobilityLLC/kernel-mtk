@@ -25,7 +25,8 @@
 /* Debug level */
 bool debug_en = DEBUG_OUTPUT;
 EXPORT_SYMBOL(debug_en);
-static char lcd_panle_name[64];
+char lcd_panle_name[64];
+EXPORT_SYMBOL(lcd_panle_name);
 static struct workqueue_struct *esd_wq;
 static struct workqueue_struct *bat_wq;
 static struct delayed_work esd_work;
