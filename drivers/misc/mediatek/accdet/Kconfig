@@ -21,3 +21,8 @@ config ACCDET_SUPPORT_EINT0
 	  If you just want to use MediaTek PMIC ACCDET EINT0,
 	  say Y.
 	  If unsure, say N.
+
+config ACCDET_HIGH_IMP_HP_OPT
+       bool "ACCDET high impedance headphone detection optimizaion"
+       help
+         This is option to enable high impedance headphone detection optimizaion.

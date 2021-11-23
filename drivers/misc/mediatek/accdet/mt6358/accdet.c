@@ -1265,6 +1265,11 @@ static void eint_work_callback(void)
 
 		accdet_init();
 
+#ifdef CONFIG_ACCDET_HIGH_IMP_HP_OPT
+		pr_debug("accdet high impedance headphone micbias delay = 64ms\n");
+		mdelay(64);
+#endif
+
 		/* set PWM IDLE  on */
 		pmic_write(ACCDET_STATE_SWCTRL,
 			(pmic_read(ACCDET_STATE_SWCTRL) | ACCDET_PWM_IDLE));
@@ -1523,7 +1528,11 @@ static int pmic_eint_queue_work(int eintID)
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 	if (eintID == PMIC_EINT0) {
 		if (cur_eint_state == EINT_PIN_PLUG_IN) {
+#ifdef CONFIG_ACCDET_HIGH_IMP_HP_OPT
+			eint_debounce_set(eintID, ACCDET_EINT0_DEB_512);
+#else
 			eint_debounce_set(eintID, ACCDET_EINT0_DEB_IN_256);
+#endif
 			accdet_set_debounce(accdet_state110,
 				cust_pwm_deb->debounce3);
 			cur_eint_state = EINT_PIN_PLUG_OUT;
@@ -2190,6 +2199,10 @@ static void accdet_init_once(void)
 	reg = pmic_read(ACCDET_EINT0_CTL);
 	pmic_write(ACCDET_EINT0_CTL,
 		reg | ACCDET_EINT0_PWM_THRSH | ACCDET_EINT0_PWM_WIDTH);
+
+#ifdef CONFIG_ACCDET_HIGH_IMP_HP_OPT
+	eint_debounce_set(PMIC_EINT0, ACCDET_EINT0_DEB_512);
+#endif
 
 	reg = pmic_read(ACCDET_STATE_SWCTRL);
 	pmic_write(ACCDET_STATE_SWCTRL,
