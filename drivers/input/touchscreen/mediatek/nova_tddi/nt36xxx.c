@@ -40,6 +40,8 @@
 #include <linux/jiffies.h>
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
+extern char lcd_panle_name[];
+
 #if NVT_TOUCH_ESD_PROTECT
 static struct delayed_work nvt_esd_check_work;
 static struct workqueue_struct *nvt_esd_check_wq;
@@ -2316,6 +2318,10 @@ static int32_t __init nvt_driver_init(void)
 	int32_t ret = 0;
 
 	NVT_LOG("start\n");
+	if (!(strstr(lcd_panle_name, "nt"))) {
+		NVT_ERR("fail load nvt driver,panle name is %s;\n",lcd_panle_name);
+		return ENODEV;
+	}
 
 	//---add spi driver---
 	ret = spi_register_driver(&nvt_spi_driver);
