@@ -1782,6 +1782,9 @@ static void mtk_nanohub_restoring_config(void)
 	int length = 0;
 	struct mtk_nanohub_device *device = mtk_nanohub_dev;
 	uint8_t *data = NULL;
+#ifdef CONFIG_MOTO_ALSPS_NVCFG
+	uint32_t panel_info[3] = {0};
+#endif
 
 	if (unlikely(!atomic_xchg(&device->cfg_data_after_reboot, 1)))
 		return;
@@ -1838,6 +1841,20 @@ static void mtk_nanohub_restoring_config(void)
 		mtk_nanohub_cfg_to_hub(ID_PROXIMITY, data, length);
 		vfree(data);
 	}
+	msleep(1);
+#endif
+#ifdef CONFIG_MOTO_ALSPS_NVCFG
+	panel_info[0] = 2;
+	panel_info[1] = motparams->als_nvcfg.panel_id;
+	mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)panel_info, sizeof(panel_info));
+	msleep(1);
+
+	if(14 == motparams->als_nvcfg.alscfg)
+	mtk_nanohub_cfg_to_hub(ID_LIGHT, (uint8_t *)&motparams->als_nvcfg, sizeof(struct mot_als_nvcfg));
+	msleep(1);
+
+	if(15 == motparams->ps_nvcfg.pscfg)
+	mtk_nanohub_cfg_to_hub(ID_PROXIMITY, (uint8_t *)&motparams->ps_nvcfg, sizeof(struct mot_ps_nvcfg));
 	msleep(1);
 #endif
 	length = sizeof(device->pressure_config_data);
@@ -2753,7 +2770,9 @@ static ssize_t algo_params_store(struct device_driver *ddri,
 		const char *buf, size_t count)
 {
 	int err = 0;
+#ifdef CONFIG_MOTO_ALSPS_NVCFG
 	uint32_t panel_info[3] = {0};
+#endif
 	//SITUATION_PR_ERR("situation_store_params count=%d\n", count);
 
 	memcpy(motparams, buf, sizeof(struct mot_params));
