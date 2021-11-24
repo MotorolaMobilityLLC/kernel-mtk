@@ -632,7 +632,7 @@ static int compat_get_ion_sys_client_name(
 {
 	char name = 0;
 
-	int i, err;
+	int i, err = 0;
 
 	for (i = 0; i < ION_MM_DBG_NAME_LEN; i++) {
 		err |= get_user(name, &data32->name[i]);
