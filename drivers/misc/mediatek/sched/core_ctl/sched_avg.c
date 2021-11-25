@@ -54,7 +54,6 @@ static int init_thres;
 static int global_task_util;
 
 /* pelt.h */
-#define UTIL_AVG_UNCHANGED		0x1
 #define OVER_THRES_SIZE			2
 #define MAX_CLUSTER_NR			3
 #define MAX_UTIL_TRACKER_PERIODIC_MS	8
