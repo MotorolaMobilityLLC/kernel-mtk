@@ -4662,7 +4662,11 @@ void output_debug_signal(void)
 	//GPIO Mode
 	mtk_spi_write(0x00007300, 0x77701111);
 #endif
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
 	mtk_spi_write(0x00007310, 0x31111111);
+#else
+	mtk_spi_write(0x00007310, 0x11111111);
+#endif
 
 }
 void bdg_first_init(void)
