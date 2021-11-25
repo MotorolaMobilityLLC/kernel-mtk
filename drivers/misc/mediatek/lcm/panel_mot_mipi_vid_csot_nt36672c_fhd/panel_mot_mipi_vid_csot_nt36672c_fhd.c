@@ -169,6 +169,11 @@ static struct LCM_setting_table init_setting[] = {
 	{0xFB,0x01,{0x01}},
 	{0x9C,0x01,{0x11}},
 	{0x9D,0x01,{0x11}},
+	{0xFF,0x01,{0x27}},
+	{0xFB,0x01,{0x01}},
+	{0x3F,0x01,{0x01}},// IC_Status_en=1
+	{0x40,0x01,{0x52}},// FTE_SEL=5 => ESD detection signal
+	{0x43,0x01,{0x10}},// FTE_INV=1
 	{0xFF,0x01,{0x23}},
 	{0xFB,0x01,{0x01}},
 	{0X00,0x01,{0X80}},//12bit
@@ -381,10 +386,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.clk_lp_per_line_enable = 0;
 
 	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 1;
-	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
-	params->dsi.lcm_esd_check_table[0].count = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
+	params->dsi.customization_esd_check_enable = 0;
 
 	params->dsi.lane_swap_en = 0;
 
