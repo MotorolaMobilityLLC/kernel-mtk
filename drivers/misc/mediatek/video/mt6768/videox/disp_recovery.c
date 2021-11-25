@@ -275,11 +275,19 @@ int do_esd_check_eint(void)
 		primary_display_is_video_mode(), GPIO_EINT_MODE);
 	primary_display_switch_esd_mode(GPIO_EINT_MODE);
 
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+	if (wait_event_interruptible_timeout(esd_ext_te_wq,
+		atomic_read(&esd_ext_te_event), HZ / 2) > 0)
+		ret = 1; /* waited low esd check fail */
+	else
+		ret = 0; /* not waited low esd check pass */
+#else
 	if (wait_event_interruptible_timeout(esd_ext_te_wq,
 		atomic_read(&esd_ext_te_event), HZ / 2) > 0)
 		ret = 0; /* esd check pass */
 	else
 		ret = 1; /* esd check fail */
+#endif
 
 	atomic_set(&esd_ext_te_event, 0);
 
@@ -921,8 +929,14 @@ void primary_display_requset_eint(void)
 
 		/* 1.register irq handler */
 		te_irq = irq_of_parse_and_map(node, 0);
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+		/* 1.register irq handler ,normal high,no normal low*/
+		if (request_irq(te_irq, _esd_check_ext_te_irq_handler,
+				IRQF_TRIGGER_LOW, "DSI_TE-eint", NULL)) {
+#else
 		if (request_irq(te_irq, _esd_check_ext_te_irq_handler,
 				IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL)) {
+#endif
 			DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!\n");
 			return;
 		}
