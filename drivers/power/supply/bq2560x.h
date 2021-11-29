@@ -41,6 +41,7 @@ enum vboost {
 enum iboost {
 	BOOSTI_500 = 500,
 	BOOSTI_1200 = 1200,
+	BOOSTI_2000 = 2000,
 };
 
 enum vac_ovp {
