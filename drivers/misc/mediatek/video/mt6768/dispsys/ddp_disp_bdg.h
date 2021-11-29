@@ -13,7 +13,12 @@
 #include <linux/interrupt.h>
 
 #define HW_NUM			(2)
+#ifdef CONFIG_MTK_MT6382_BDG_BUF7
+#define RX_V12			(1800)
+#else
 #define RX_V12			(1720)
+#endif
+
 #define _n36672c_
 #define _Disable_HS_DCO_
 #define _Disable_LP_TX_L023_
