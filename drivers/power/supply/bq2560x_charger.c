@@ -46,10 +46,12 @@
 */
 enum {
 	CHARGER_IC_UNKNOWN,
-	CHARGER_IC_SGM41511,
+	CHARGER_IC_SGM41511,	//PN:0010
 	CHARGER_IC_BQ2560X,
-	CHARGER_IC_ETA6953,
-	CHARGER_IC_SY6974,
+	CHARGER_IC_ETA6953,	//PN:0010
+	CHARGER_IC_SY6974,	//PN:1001
+	CHARGER_IC_SGM41542,	//PN:1101
+
 };
 static int charger_ic_type = CHARGER_IC_UNKNOWN;
 //-bug 589756,yaocankun,20201014,add,add charger info
@@ -411,6 +413,17 @@ int bq2560x_set_boost_current(struct bq2560x *bq, int curr)
 	val = REG02_BOOST_LIM_0P5A;
 	if (curr == BOOSTI_1200)
 		val = REG02_BOOST_LIM_1P2A;
+
+//the sgm41542 boot lim is diff sgm41511
+	if ( charger_ic_type == CHARGER_IC_SGM41542 ) {
+		if (curr == BOOSTI_1200) {
+			val = REG02_BOOST_LIM_0P5A;
+			pr_err("the SGM41542 set the boot lim is 1200\n");
+		} else if (curr == BOOSTI_2000) {
+			val = REG02_BOOST_LIM_1P2A;
+			pr_err("the SGM41542 set the boot lim is 2000\n");
+		}
+	}
 
 	return bq2560x_update_bits(bq, BQ2560X_REG_02, REG02_BOOST_LIM_MASK,
 				   val << REG02_BOOST_LIM_SHIFT);
@@ -851,6 +864,12 @@ static int bq2560x_detect_device(struct bq2560x *bq)
 			pr_info("Found charger ic SY6974\n");
 
 		break;
+
+		case 0xD:
+			charger_ic_type = CHARGER_IC_SGM41542;
+			pr_err("Found: charger ic SGM41542\n");
+		break;
+
 		default:
 			charger_ic_type = CHARGER_IC_ETA6953;
 			pr_err("Unknow charger ic, set it to ETA6953\n");
