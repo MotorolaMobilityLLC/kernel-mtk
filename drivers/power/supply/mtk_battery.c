@@ -507,12 +507,25 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		extern_charger = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
 						       "extern_charger");
 		if (IS_ERR_OR_NULL(extern_charger)) {
-			bm_err("%s Couldn't get extern_charger\n", __func__);
-			ret = power_supply_get_property(chg_psy,
+			bm_err("%s Couldn't get extern_charger bq2560x\n", __func__);
+
+			extern_charger = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
+							       "extern_charger_3rd");
+			if (IS_ERR_OR_NULL(extern_charger)) {
+				bm_err("%s Couldn't get extern_charger_3rd SGM41542\n", __func__);
+				ret = power_supply_get_property(chg_psy,
+						POWER_SUPPLY_PROP_STATUS, &status);
+			} else {
+				bm_err("%s Found get extern_charger_3rd SGM41542\n", __func__);
+				ret = power_supply_get_property(extern_charger,
 					POWER_SUPPLY_PROP_STATUS, &status);
-		} else
+			}
+
+		} else {
+			bm_err("%s Found get extern_charger bq2560x\n", __func__);
 			ret = power_supply_get_property(extern_charger,
 				POWER_SUPPLY_PROP_STATUS, &status);
+		}
 
 		if (!online.intval)
 			bs_data->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
