@@ -11060,3 +11060,5 @@ cpuqos_mode,dnth0,dnth1,upth0,upth1";
 #include "mediatek/mt6879-clkitg.dtsi"
 #include "mediatek/mt6879-disable-unused.dtsi"
 #include "mediatek/trusty.dtsi"
+/* Motorola base dts override */
+#include "mediatek/mt6879-moto-base.dtsi"
