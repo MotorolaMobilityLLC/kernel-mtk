@@ -81,8 +81,12 @@
 
 #define UFSHCD "ufshcd"
 #define UFSHCD_DRIVER_VERSION "0.2"
-#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_SCSI_UFS_HPB)
+#if defined(CONFIG_SCSI_UFS_FEATURE)
 extern unsigned int ram_size;
+extern unsigned int storage_mfrid;
+#define IS_SAMSUNG_DEVICE(mfrid)   (0x1EC == (mfrid))
+#define IS_SKHYNIX_DEVICE(mfrid)   (0x1AD == (mfrid))
+#define IS_MICRON_DEVICE(mfrid)    (0x12C == (mfrid))
 #define IS_RAM_SIZE_GREATER_THAN_4G(ram_size) (ram_size > 4)
 #endif
 

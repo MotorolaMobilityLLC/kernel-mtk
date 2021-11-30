@@ -153,6 +153,9 @@ enum flag_idn {
 #if defined(CONFIG_SCSI_SKHPB)
 	QUERY_FLAG_IDN_HPB_RESET	= 0x11,  /* JEDEC version */
 #endif
+#if defined(CONFIG_MICRON_UFSHID)
+	QUERY_FLAG_IDN_HID_EN               = 0x13
+#endif
 };
 
 /* Attribute idn for Query requests */
@@ -196,6 +199,10 @@ enum attr_idn {
 #if defined(CONFIG_UFSHID)
 	QUERY_ATTR_IDN_HID_OPERATION		= 0x20,
 	QUERY_ATTR_IDN_HID_FRAG_LEVEL		= 0x21,
+#endif
+#if defined(CONFIG_MICRON_UFSHID)
+	QUERY_ATTR_IDN_HID_FRAG_STATUS        = 0x31,
+	QUERY_ATTR_IDN_HID_PROGRESS           = 0x32,
 #endif
 #if defined(CONFIG_SCSI_UFS_FEATURE)
 	QUERY_ATTR_IDN_SUP_VENDOR_OPTIONS	= 0xFF,
