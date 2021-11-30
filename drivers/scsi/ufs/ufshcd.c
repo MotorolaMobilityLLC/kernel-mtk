@@ -62,7 +62,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/ufs.h>
 
-#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_UFSHPB)
+#if defined(CONFIG_UFSFEATURE)
 #include <linux/of_platform.h>
 
 struct mmi_storage_info {
@@ -82,6 +82,7 @@ struct mmi_ddr_info{
         unsigned int ramsize;
 };
 unsigned int ram_size;
+unsigned int storage_mfrid;
 #endif
 
 #define UFSHCD_REQ_SENSE_SIZE	18
@@ -322,7 +323,7 @@ static struct ufs_dev_fix ufs_fixups[] = {
 
 	END_FIX
 };
-#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_UFSHPB)
+#if defined(CONFIG_UFSFEATURE)
 static int get_dram_info(struct ufs_hba *hba);
 static int get_storage_info(struct ufs_hba *hba);
 #endif
@@ -10727,7 +10728,7 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	 */
 	ufshcd_set_ufs_dev_active(hba);
 
-#if defined(CONFIG_UFSHPB)  || defined(CONFIG_SCSI_SKHPB)
+#if defined(CONFIG_UFSFEATURE)
     get_storage_info(hba);
     get_dram_info(hba);
 #endif
@@ -10788,7 +10789,7 @@ out_error:
 }
 EXPORT_SYMBOL_GPL(ufshcd_init);
 
-#if defined(CONFIG_SCSI_SKHPB) || defined(CONFIG_UFSHPB)
+#if defined(CONFIG_UFSFEATURE)
 static int get_storage_info(struct ufs_hba *hba)
 {
     int ret = 0;
@@ -10826,6 +10827,7 @@ static int get_storage_info(struct ufs_hba *hba)
     of_node_put(n);
 
     dev_info(hba->dev, "manufacturer parsed from choosen is %s\n",info->card_manufacturer);
+	storage_mfrid = simple_strtol(info->card_manufacturer, NULL, 16);
 err:
         return ret;
 }
