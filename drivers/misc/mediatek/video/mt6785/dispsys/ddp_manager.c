@@ -522,6 +522,11 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 	for (i = 0; i < new_m_num; i++) {
 		m = new_list[i];
 		/* new module's count is 0 */
+		if (m < 0 || m >= DISP_MODULE_NUM) {
+			DISP_LOG_E("%s: error module_id:%d\n",
+				   __func__, m);
+			return 1;
+		}
 		if (c->module_usage_table[m] == 0) {
 			c->module_usage_table[m]++;
 			c->module_path_table[m] = phandle;
@@ -586,6 +591,11 @@ int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scn,
 
 	for (i = 0; i < old_m_num; i++) {
 		m = old_list[i];
+		if (m < 0 || m >= DISP_MODULE_NUM) {
+			DISP_LOG_E("%s: error module_id:%d\n",
+				   __func__, m);
+			return 1;
+		}
 		if (ddp_is_module_in_scenario(new_scn, m))
 			continue;
 
@@ -624,11 +634,22 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 	release_mutex(phandle->hwmutexid);
 	for (i = 0; i < m_num; i++) {
 		m = list[i];
+		if (m < 0 || m >= DISP_MODULE_NUM) {
+			DISP_LOG_E("%s: error module_id:%d\n",
+				   __func__, m);
+			return 1;
+		}
 		c->module_usage_table[m]--;
 		c->module_path_table[m] = NULL;
 	}
 	c->handle_cnt--;
 	ASSERT(c->handle_cnt >= 0);
+	if (phandle->hwmutexid < 0 ||
+		phandle->hwmutexid >= DDP_MAX_MANAGER_HANDLE) {
+		DISP_LOG_E("%s: error hwmutexid:%d\n",
+			   __func__, phandle->hwmutexid);
+		return 1;
+	}
 	c->handle_pool[phandle->hwmutexid] = NULL;
 	kfree(phandle);
 
@@ -1595,7 +1616,11 @@ static int is_module_in_path(enum DISP_MODULE_ENUM module,
 			     struct ddp_path_handle *phandle)
 {
 	struct DDP_MANAGER_CONTEXT *c = _get_context();
-
+	if (module < DISP_MODULE_OVL0 || module >= DISP_MODULE_NUM) {
+		DISP_LOG_E("%s: error module_id:%d\n",
+			   __func__, module);
+		return -1;
+	}
 	ASSERT(module < DISP_MODULE_UNKNOWN);
 	if (c->module_path_table[module] == phandle)
 		return 1;
@@ -1771,6 +1796,10 @@ int dpmgr_enable_event(disp_path_handle dp_handle, enum DISP_PATH_EVENT event)
 	struct DPMGR_WQ_HANDLE *wq_handle;
 
 	ASSERT(dp_handle);
+	if (event >= DISP_PATH_EVENT_NUM || event < DISP_PATH_EVENT_FRAME_DONE) {
+		DISP_LOG_E("%s: error:event:%d\n", __func__, event);
+		return 1;
+	}
 	phandle = (struct ddp_path_handle *)dp_handle;
 	wq_handle = &phandle->wq_list[event];
 
@@ -2041,7 +2070,10 @@ int dpmgr_signal_event(disp_path_handle dp_handle, enum DISP_PATH_EVENT event)
 	ASSERT(dp_handle);
 	phandle = (struct ddp_path_handle *)dp_handle;
 	wq_handle = &phandle->wq_list[event];
-
+	if (event >= DISP_PATH_EVENT_NUM || event < DISP_PATH_EVENT_FRAME_DONE) {
+		DISP_LOG_E("%s: error:event:%d\n", __func__, event);
+		return 1;
+	}
 	if (phandle->wq_list[event].init) {
 		wq_handle->data = ktime_to_ns(ktime_get());
 		wake_up_interruptible(&(phandle->wq_list[event].wq));

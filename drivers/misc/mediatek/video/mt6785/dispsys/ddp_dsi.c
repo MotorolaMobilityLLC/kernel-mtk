@@ -1706,15 +1706,17 @@ DSI_PS_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	       struct LCM_DSI_PARAMS *dsi_params, int w, int h)
 {
 	int i = 0;
+	int dsi_ps = 0;
 	unsigned int ps_sel_bitvalue = 0;
 	unsigned int ps_wc_adjust = 0;
 	unsigned int ps_wc = 0;
 	unsigned int value = 0, mask = 0;
 	DISPFUNCSTART();
 	/* TODO: parameter checking */
-	ASSERT((int)(dsi_params->PS) <= (int)PACKED_PS_18BIT_RGB666);
+	dsi_ps = (int)(dsi_params->PS);
+	ASSERT(dsi_ps <= (int)PACKED_PS_18BIT_RGB666);
 
-	if ((int)(dsi_params->PS) > (int)(LOOSELY_PS_24BIT_RGB666))
+	if (dsi_ps > (int)(LOOSELY_PS_24BIT_RGB666))
 		ps_sel_bitvalue = (5 - dsi_params->PS);
 	else
 		ps_sel_bitvalue = dsi_params->PS;
@@ -6332,6 +6334,10 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 void poll_frame_done(void *cmdq_handle, int idx)
 {
+	if (idx < 0) {
+		DISP_LOG_E("%s: error:idx:%d\n", __func__, idx);
+		return;
+	}
 	DSI_OUTREGBIT(cmdq_handle, struct DSI_INT_STATUS_REG,
 		DSI_REG[idx]->DSI_INTSTA, FRAME_DONE_INT_EN, 0);
 	DSI_POLLREG32(cmdq_handle, &DSI_REG[idx]->DSI_INTSTA, 0x10, 0x10);

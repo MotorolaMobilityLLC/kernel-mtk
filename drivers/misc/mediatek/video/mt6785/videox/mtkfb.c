@@ -1027,7 +1027,7 @@ int mtkfb_aod_mode_switch(enum mtkfb_aod_power_mode aod_pm)
 	enum mtkfb_power_mode prev_pm = primary_display_get_power_mode();
 
 	DISPCHECK("AOD: ioctl: %s\n",
-		aod_pm ? "AOD_DOZE_SUSPEND" : "AOD_DOZE");
+		(aod_pm != 0) ? "AOD_DOZE_SUSPEND" : "AOD_DOZE");
 	if (!primary_is_aod_supported()) {
 		DISPCHECK("AOD: feature not support\n");
 		return ret;
@@ -1060,7 +1060,7 @@ int mtkfb_aod_mode_switch(enum mtkfb_aod_power_mode aod_pm)
 	}
 	if (ret < 0)
 		DISP_PR_ERR("AOD: set %s failed\n",
-			aod_pm ? "AOD_SUSPEND" : "AOD_RESUME");
+			(aod_pm != MTKFB_AOD_DOZE) ? "AOD_SUSPEND" : "AOD_RESUME");
 	return ret;
 }
 
