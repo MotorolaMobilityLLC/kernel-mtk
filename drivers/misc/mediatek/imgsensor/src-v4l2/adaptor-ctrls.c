@@ -416,7 +416,6 @@ static int do_set_ae_ctrl(struct adaptor_ctx *ctx,
 	while (exp_count < IMGSENSOR_STAGGER_EXPOSURE_CNT &&
 		ae_ctrl->exposure.arr[exp_count] != 0)
 		exp_count++;
-
 	dev_info(ctx->dev,
 			"exposure[LLLE->SSSE] %d %d %d %d %d ana_gain[LLLE->SSSE] %d %d %d %d %d, sub_tag:%u\n",
 			ae_ctrl->exposure.le_exposure,
