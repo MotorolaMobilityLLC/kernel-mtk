@@ -2358,6 +2358,10 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		*(feature_data + 1) = imgsensor_info.gain_step;
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
+	case SENSOR_FEATURE_GET_MAX_EXP_LINE:
+		*(feature_data + 2) =
+			imgsensor_info.max_frame_length - imgsensor_info.margin;
+		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_shutter;
 		switch (*feature_data) {
