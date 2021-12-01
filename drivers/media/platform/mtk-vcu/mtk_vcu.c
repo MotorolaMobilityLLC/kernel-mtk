@@ -680,13 +680,13 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 		if (vcu_check_reg_base(vcu, addr, 4) == 0)
 			cmdq_pkt_read_addr(pkt, addr, CMDQ_THR_SPR_IDX1);
 		else
-			pr_info("[VCU] CMD_READ wrong addr: 0x%x\n", addr);
+			pr_info("[VCU] CMD_READ wrong addr: 0x%llx\n", addr);
 	break;
 	case CMD_WRITE:
 		if (vcu_check_reg_base(vcu, addr, 4) == 0)
 			cmdq_pkt_write(pkt, vcu->clt_base, addr, data, mask);
 		else
-			pr_info("[VCU] CMD_WRITE wrong addr: 0x%x 0x%x 0x%x\n",
+			pr_info("[VCU] CMD_WRITE wrong addr: 0x%llx 0x%llx 0x%x\n",
 				addr, data, mask);
 	break;
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
@@ -716,7 +716,7 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 		if (vcu_check_reg_base(vcu, addr, 4) == 0)
 			cmdq_pkt_poll_addr(pkt, data, addr, mask, gpr);
 		else
-			pr_info("[VCU] CMD_POLL_REG wrong addr: 0x%llx 0x%x 0x%x\n",
+			pr_info("[VCU] CMD_POLL_REG wrong addr: 0x%llx 0x%llx 0x%x\n",
 				addr, data, mask);
 	break;
 	case CMD_WAIT_EVENT:
@@ -733,7 +733,7 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 			cmdq_pkt_mem_move(pkt, vcu->clt_base, addr,
 				data, CMDQ_THR_SPR_IDX1);
 		else
-			pr_info("[VCU] CMD_MEM_MV wrong addr/data: 0x%x 0x%x\n",
+			pr_info("[VCU] CMD_MEM_MV wrong addr/data: 0x%llx 0x%llx\n",
 				addr, data);
 	break;
 	case CMD_POLL_ADDR:
@@ -742,7 +742,7 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 			cmdq_pkt_poll_timeout(pkt, data, SUBSYS_NO_SUPPORT,
 				addr, mask, ~0, gpr);
 		else
-			pr_info("[VCU] CMD_POLL_REG wrong addr: 0x%x 0x%x 0x%x\n",
+			pr_info("[VCU] CMD_POLL_REG wrong addr: 0x%llx 0x%llx 0x%x\n",
 				addr, data, mask);
 	break;
 	default:

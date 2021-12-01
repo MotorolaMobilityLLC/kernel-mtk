@@ -2013,7 +2013,7 @@ static int vb2ops_vdec_buf_prepare(struct vb2_buffer *vb)
 				&ctx->dev->plat_dev->dev);
 			sgt = dma_buf_map_attachment(buf_att, DMA_TO_DEVICE);
 			if (IS_ERR_OR_NULL(sgt)) {
-				mtk_v4l2_err("dma_buf_map_attachment fail %d.\n", sgt);
+				mtk_v4l2_err("dma_buf_map_attachment fail %p.\n", sgt);
 				dma_buf_detach(mtkbuf->frame_buffer.dma_general_buf,
 					buf_att);
 				return -EINVAL;
@@ -2076,7 +2076,7 @@ static int vb2ops_vdec_buf_prepare(struct vb2_buffer *vb)
 				sgt = dma_buf_map_attachment(buf_att,
 					DMA_TO_DEVICE);
 				if (IS_ERR_OR_NULL(sgt)) {
-					mtk_v4l2_err("dma_buf_map_attachment fail %d.\n", sgt);
+					mtk_v4l2_err("dma_buf_map_attachment fail %p.\n", sgt);
 					dma_buf_detach(vb->planes[plane].dbuf, buf_att);
 					return -EINVAL;
 				}
