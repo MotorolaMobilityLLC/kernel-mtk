@@ -460,7 +460,8 @@
 		lm3697,boost-control = <0x04>; /* 32V */
 		lm3697,pwm-config = <0x0F>;  /*default 0x0C disable PWM, 0x0F enable PWM*/
 		lm3697,ctrl-bank-en = <0x01>;  /*enable bank A*/
-		lm3697,bl-map = <3>;  /* brightness map level 1:256,2:1024,3:2048 */
+		lm3697,bl_map = <3>;  /* brightness map level 1:256,2:1024,3:2048 */
+		lm3697,default-brightness = <1024>;
 		lm3697,using-lsb;
 		lm3697,ctrl-a-bl-lsb = <0x00>;
 		lm3697,ctrl-a-bl-msb = <0x00>;
