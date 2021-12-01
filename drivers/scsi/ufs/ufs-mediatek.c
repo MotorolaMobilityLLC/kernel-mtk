@@ -37,6 +37,7 @@
 
 #if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
+static int ufs_abort_aee_count;
 #endif
 
 #define CREATE_TRACE_POINTS
@@ -2190,7 +2191,9 @@ static void ufs_mtk_event_notify(struct ufs_hba *hba,
 		hba->wlun_dev_clr_ua = false;
 
 #if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
-	if (evt == UFS_EVT_ABORT) {
+	if (evt == UFS_EVT_ABORT && !ufs_abort_aee_count) {
+		cmd_hist_disable();
+		ufs_abort_aee_count++;
 		aee_kernel_warning_api(__FILE__,
 			__LINE__, DB_OPT_FS_IO_LOG,
 			"ufshcd_abort", "timeout at tag %d", val);
