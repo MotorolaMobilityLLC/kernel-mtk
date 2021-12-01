@@ -725,6 +725,11 @@ static void process_dbg_opt(const char *opt)
 		int repaint_type;
 
 		ret = sscanf(opt, "repaint:%d\n", &repaint_type);
+		if (ret != 1) {
+			DISP_LOG_E("[%s %d]:sscanf err:%d. str:%s",
+				   __func__, __LINE__, ret, opt);
+			return;
+		}
 		trigger_repaint(repaint_type);
 
 		return;
