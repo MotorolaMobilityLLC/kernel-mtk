@@ -448,6 +448,9 @@ int drm_gem_handle_create(struct drm_file *file_priv,
 			  struct drm_gem_object *obj,
 			  u32 *handlep)
 {
+	if (!&obj || (!&obj->dev) || (!&obj->dev->object_name_lock))
+		return -1;
+
 	mutex_lock(&obj->dev->object_name_lock);
 
 	return drm_gem_handle_create_tail(file_priv, obj, handlep);
