@@ -1651,7 +1651,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
 	if (enable) {
 /* 0 : Normal, 1 : Solid Color, 2 : Color Bar, 3 : Shade Color Bar, 4 : PN9 */
-		write_cmos_sensor(0x0600, 0x0002);
+		write_cmos_sensor(0x0600, 0x0001);
 	} else {
 		write_cmos_sensor(0x0600, 0x0000);
 	}
