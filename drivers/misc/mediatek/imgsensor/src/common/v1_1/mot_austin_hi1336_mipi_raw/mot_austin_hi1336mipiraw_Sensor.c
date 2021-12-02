@@ -1175,7 +1175,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		write_cmos_sensor(0x1038, 0x0000); //mipi_virtual_channel_ctrl
 		write_cmos_sensor(0x1042, 0x0008); //mipi_pd_sep_ctrl_h, mipi_pd_sep_ctrl_l
 		write_cmos_sensor(0x0b04, 0x0141);
-		write_cmos_sensor(0x0C0A, 0x0200);
+		write_cmos_sensor(0x0C0A, 0x0100);
 
 	} else {
 		write_cmos_sensor(0x1038, 0x4100); //mipi_virtual_channel_ctrl
