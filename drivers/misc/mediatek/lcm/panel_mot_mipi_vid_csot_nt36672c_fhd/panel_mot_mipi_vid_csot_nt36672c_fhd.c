@@ -214,6 +214,13 @@ static struct LCM_setting_table_V4 lcm_hbm_off_lm3697[] = {
 	{0x39, 0x51, 2, {0x0C, 0xFC}, 0 },
 };
 
+#define LCM_CMD_PAGE	0
+#if LCM_CMD_PAGE
+static struct LCM_setting_table_V4 lcm_cmd_page[] = {
+    {0x15, 0xFF, 1, {0x10}, 0 },
+};
+#endif
+
 static struct LCM_setting_table_V4 lcm_cabc_ui[] = {
 	{0x15, 0x55, 1, {0X01}, 0 },
 };
@@ -569,32 +576,34 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 		case PARAM_HBM:
 #ifdef LCM_BL_CMD_LP_MODE
 			if (*lcm_value) {
+#if LCM_CMD_PAGE
+				dsi_set_cmdq_V4(lcm_cmd_page,
+						sizeof(lcm_cmd_page)/sizeof(struct LCM_setting_table_V4), 1);
+#endif
+
 				dsi_set_cmdq_V4(lcm_hbm_on,
 						sizeof(lcm_hbm_on)/sizeof(struct LCM_setting_table_V4), 1);
 
-				//TBD, in lp mode with 2 bit, it need send cmd twice to make it work currently
-				MDELAY(5);
-				dsi_set_cmdq_V4(lcm_hbm_on,
-						sizeof(lcm_hbm_on)/sizeof(struct LCM_setting_table_V4), 1);
-
-				pr_debug("%s, csot_nt36672c HBM on\n", __func__);
+				pr_info("%s, csot_nt36672c HBM on\n", __func__);
 			}
 			else {
 				if (config_pwm && bl_lm3697) {
 					pr_info("%s: set lm3697 hbm off\n", __func__);
-					dsi_set_cmdq_V4(lcm_hbm_off_lm3697,
-							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
-					//TBD
-					MDELAY(5);
+#if LCM_CMD_PAGE
+					dsi_set_cmdq_V4(lcm_cmd_page,
+							sizeof(lcm_cmd_page)/sizeof(struct LCM_setting_table_V4), 1);
+#endif
+
 					dsi_set_cmdq_V4(lcm_hbm_off_lm3697,
 							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
 				}
 				else {
-					pr_info("%s: set aw99703 hbm off\n", __func__);
-					dsi_set_cmdq_V4(lcm_hbm_off,
-							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
-					//TBD
-					MDELAY(5);
+					pr_info("%s: set hbm off\n", __func__);
+#if LCM_CMD_PAGE
+					dsi_set_cmdq_V4(lcm_cmd_page,
+							sizeof(lcm_cmd_page)/sizeof(struct LCM_setting_table_V4), 1);
+#endif
+
 					dsi_set_cmdq_V4(lcm_hbm_off,
 							sizeof(lcm_hbm_off)/sizeof(struct LCM_setting_table_V4), 1);
 				}
