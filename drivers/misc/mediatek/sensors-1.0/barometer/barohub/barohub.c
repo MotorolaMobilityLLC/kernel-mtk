@@ -314,12 +314,19 @@ static int barohub_factory_clear_cali(void)
 {
 	return 0;
 }
-static int barohub_factory_set_cali(int32_t offset)
+/*send reference pressure to hub*/
+static int barohub_factory_set_cali(int32_t ref)
 {
-	return 0;
+	int value[2] = {ref, 0};
+
+	printk("[%s] ref:%d\n", __func__, ref);
+	return sensor_cfg_to_hub(ID_PRESSURE, (uint8_t *)value, sizeof(value));
 }
 static int barohub_factory_get_cali(int32_t *offset)
 {
+	struct barohub_ipi_data *obj = obj_ipi_data;
+
+	offset[0] = obj->config_data[1];   // get offset value
 	return 0;
 }
 static int barohub_factory_do_self_test(void)
