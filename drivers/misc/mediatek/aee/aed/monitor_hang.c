@@ -287,11 +287,11 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 		(!strncmp(current->comm, "init", 4))) {
 		reboot_flag = true;
 #ifdef CONFIG_MTK_ENG_BUILD
-		hang_detect_counter = 3;
+		hang_detect_counter = 9;
 #else
-		hang_detect_counter = 1;
+		hang_detect_counter = 9;
 #endif
-		hd_timeout = 3;
+		hd_timeout = 9;
 		pr_info("hang_detect: %s set reboot command.\n", current->comm);
 		return ret;
 	}
