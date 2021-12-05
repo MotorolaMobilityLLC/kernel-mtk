@@ -13,3 +13,4 @@
 #include "mediatek/mt6879-moto-common-overlay.dtsi"
 #include "mediatek/cust_mt6879_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6879_camera_v4l2.dtsi"
+#include "mediatek/tesla-display.dtsi"
