@@ -821,6 +821,17 @@ config DRM_PANEL_NT37801_MSYNC2_RTE
 	  and uses 24-bits RGB per pixel. It provides a MIPI DSI
 	  interface to host.
 
+config DRM_PANEL_TIANMA_NT37701A_655_FHDP_DPHY_CMD_144HZ
+	tristate "TIANMA 1080*2400 DSC DPHY CMD MODE 144HZ PANEL"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for TIANMA NT7701A DSC
+	  DPHY cmd mode Full HD Plus 144HZ panel. The panel has a 1080x2400
+	  resolution and uses 30-bits RGB per pixel. It provides a
+	  MIPI DSI interface to host.
+
 config DRM_MEDIATEK_PANEL
 	tristate "drm panel common driver"
 	depends on OF
