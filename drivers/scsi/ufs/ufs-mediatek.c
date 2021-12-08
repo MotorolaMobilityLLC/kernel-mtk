@@ -46,6 +46,10 @@
 static int ufs_abort_aee_count;
 #endif
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include "ufshcd-moto-crypto.h"
+#endif
+
 #if IS_ENABLED(CONFIG_MTK_UFS_DEBUG)
 static void ufs_mtk_mphy_dump(struct ufs_hba *hba);
 static void ufs_mtk_mphy_record(struct ufs_hba *hba, u8 stage);
@@ -2322,6 +2326,17 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	 */
 	ufs_mtk_mphy_power_on(hba, true);
 	ufs_mtk_setup_clocks(hba, true, POST_CHANGE);
+
+
+	/* Instantiate Motorola crypto capabilities for wrapped keys.
+	 * It is controlled by CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT.
+	 * If this is not defined, this API would return zero and
+	 * non-wrapped crypto capabilities will be initialized.
+	 */
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	hba->quirks |= UFSHCD_QUIRK_CUSTOM_KEYSLOT_MANAGER;
+	ufshcd_moto_hba_init_crypto_capabilities(hba);
+#endif
 
 	host->ip_ver = ufshcd_readl(hba, REG_UFS_MTK_IP_VER);
 
