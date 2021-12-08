@@ -44,6 +44,10 @@ static int ufs_abort_aee_count;
 #include "ufs-mediatek-trace.h"
 #undef CREATE_TRACE_POINTS
 
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+#include "ufshcd-moto-crypto.h"
+#endif
+
 #define ufs_mtk_va09_pwr_ctrl(res, on) \
 	ufs_mtk_smc(UFS_MTK_SIP_VA09_PWR_CTRL, res, on)
 
@@ -1652,6 +1656,17 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	 */
 	ufs_mtk_mphy_power_on(hba, true);
 	ufs_mtk_setup_clocks(hba, true, POST_CHANGE);
+
+
+	/* Instantiate Motorola crypto capabilities for wrapped keys.
+	 * It is controlled by CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT.
+	 * If this is not defined, this API would return zero and
+	 * non-wrapped crypto capabilities will be initialized.
+	 */
+#ifdef CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT
+	hba->quirks |= UFSHCD_QUIRK_CUSTOM_KEYSLOT_MANAGER;
+	ufshcd_moto_hba_init_crypto_capabilities(hba);
+#endif
 
 	/* Get vcc-opt */
 	ufs_mtk_get_vcc_info(res);
