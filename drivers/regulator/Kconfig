@@ -1060,6 +1060,17 @@ config REGULATOR_RT5133
 	  GPIO cannot be used to drive output high. It need to pay more
 	  attention on the usage.
 
+config MOTO_WL2864C
+        tristate "moto wl2864C regulator driver"
+	depends on I2C && GPIOLIB
+	select REGMAP
+	select CRC8
+	select OF_GPIO
+	select REGULATOR_FIXED_VOLTAGE
+	select MTK_SUBPMIC_MISC
+	help
+	  WL2864C is an pmic chip.
+
 config REGULATOR_RT6160
 	tristate "Richtek RT6160 BuckBoost voltage regulator"
 	depends on I2C
