@@ -30,7 +30,7 @@
 #endif
 
 static char bl_tb0[] = { 0x51, 0x0f,0xff };
-#define ENABLE_DSC 1
+
 struct lcm {
 	struct device *dev;
 	struct drm_panel panel;
@@ -286,9 +286,9 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-#define HFP (40)
-#define HSA (10)
-#define HBP (20)
+#define HFP (4)
+#define HSA (4)
+#define HBP (4)
 #define HACT (1080)
 #define VFP (20)
 #define VSA (2)
@@ -296,39 +296,76 @@ static int lcm_enable(struct drm_panel *panel)
 #define VACT (2400)
 #define PLL_CLOCK (330)
 
-
-static const struct drm_display_mode default_mode = {
-#if ENABLE_DSC
-	.clock		= 335340,//192378,
-#else
-	.clock		= 265628,
-#endif
+#if 0
+static const struct drm_display_mode switch_mode_144hz = {
+	.clock		= 382112,
 	.hdisplay	= HACT,
 	.hsync_start	= HACT + HFP,
 	.hsync_end	= HACT + HFP + HSA,
-	.htotal		= HACT + HFP + HSA + HBP,//1150
+	.htotal		= HACT + HFP + HSA + HBP,
 	.vdisplay	= VACT,
 	.vsync_start	= VACT + VFP,
 	.vsync_end	= VACT + VFP + VSA,
-	.vtotal		= VACT + VFP + VSA + VBP,//2430:disabel dsc 4900 enable dsc
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+#endif
+
+static const struct drm_display_mode switch_mode_120hz = {
+	.clock		= 318428,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode switch_mode_90hz = {
+	.clock		= 238821,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
 };
 
 static const struct drm_display_mode switch_mode_60hz = {
-	.clock = 167670,
+	.clock = 159214,
 	.hdisplay	= HACT,
 	.hsync_start	= HACT + HFP,
 	.hsync_end	= HACT + HFP + HSA,
-	.htotal		= HACT + HFP + HSA + HBP,//1150
+	.htotal		= HACT + HFP + HSA + HBP,
 	.vdisplay	= VACT,
 	.vsync_start	= VACT + VFP,
 	.vsync_end	= VACT + VFP + VSA,
-	.vtotal		= VACT + VFP + VSA + VBP,//2430
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+
+
+static const struct drm_display_mode switch_mode_48hz = {
+	.clock = 127371,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
 };
 
 #if defined(CONFIG_MTK_PANEL_EXT)
-static struct mtk_panel_params ext_params = {
-	.data_rate = PLL_CLOCK * 2,
-	.pll_clk = PLL_CLOCK,
+static struct mtk_panel_params ext_params_48hz = {
+	.dyn_fps = {
+		.data_rate = 350,
+	},
+	.data_rate = 350,
+
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -336,8 +373,9 @@ static struct mtk_panel_params ext_params = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.physical_width_um = 68,
+	.physical_height_um = 152,
 
-#if ENABLE_DSC
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
 		.enable = 1,
@@ -374,12 +412,14 @@ static struct mtk_panel_params ext_params = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
-#endif
 };
 
 static struct mtk_panel_params ext_params_60hz = {
-	.data_rate = PLL_CLOCK * 2,
-	.pll_clk = PLL_CLOCK,
+	.dyn_fps = {
+		.data_rate = 440,
+	},
+	.data_rate = 440,
+
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -387,8 +427,9 @@ static struct mtk_panel_params ext_params_60hz = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.physical_width_um = 68,
+	.physical_height_um = 152,
 
-#if ENABLE_DSC
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
 		.enable = 1,
@@ -425,8 +466,169 @@ static struct mtk_panel_params ext_params_60hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
-#endif
 };
+static struct mtk_panel_params ext_params_90hz = {
+	.dyn_fps = {
+		.data_rate = 690,
+	},
+	.data_rate = 690,
+
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68,
+	.physical_height_um = 152,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = 2088,
+		.rct_on = 1,
+		.bit_per_channel = 10,
+		.dsc_line_buf_depth = 11,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 7,
+		.flatness_maxqp = 16,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 15,
+		.rc_quant_incr_limit1 = 15,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+	},
+};
+static struct mtk_panel_params ext_params_120hz = {
+	.dyn_fps = {
+		.data_rate = 960,
+	},
+	.data_rate = 960,
+
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68,
+	.physical_height_um = 152,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = 2088,
+		.rct_on = 1,
+		.bit_per_channel = 10,
+		.dsc_line_buf_depth = 11,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 7,
+		.flatness_maxqp = 16,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 15,
+		.rc_quant_incr_limit1 = 15,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+	},
+};
+
+#if 0
+static struct mtk_panel_params ext_params_144hz = {
+	.dyn_fps = {
+		.data_rate = 1180,
+	},
+	.data_rate = 1180,
+
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68,
+	.physical_height_um = 152,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = 2088,
+		.rct_on = 1,
+		.bit_per_channel = 10,
+		.dsc_line_buf_depth = 11,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 7,
+		.flatness_maxqp = 16,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 15,
+		.rc_quant_incr_limit1 = 15,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+	},
+};
+#endif
 
 static int panel_ata_check(struct drm_panel *panel)
 {
@@ -481,15 +683,33 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	int ret = 0;
 	struct drm_display_mode *m = get_mode_by_id(connector, mode);
 
-	if (drm_mode_vrefresh(m) == 120)
-		ext->params = &ext_params;
+	/*if (drm_mode_vrefresh(m) == 144)
+		ext->params = &ext_params_144hz;
+	else */if (drm_mode_vrefresh(m) == 120)
+		ext->params = &ext_params_120hz;
+	else if (drm_mode_vrefresh(m) == 90)
+		ext->params = &ext_params_90hz;
 	else if (drm_mode_vrefresh(m) == 60)
 		ext->params = &ext_params_60hz;
+	else if (drm_mode_vrefresh(m) == 48)
+		ext->params = &ext_params_48hz;
 	else
 		ret = 1;
 
 	return ret;
 }
+
+#if 0
+static void mode_switch_to_144(struct drm_panel *panel,
+	enum MTK_PANEL_MODE_SWITCH_STAGE stage)
+{
+	if (stage == BEFORE_DSI_POWERDOWN) {
+		struct lcm *ctx = panel_to_lcm(panel);
+
+		lcm_dcs_write_seq_static(ctx, 0x2F, 0x04);
+	}
+}
+#endif
 
 static void mode_switch_to_120(struct drm_panel *panel,
 	enum MTK_PANEL_MODE_SWITCH_STAGE stage)
@@ -501,13 +721,33 @@ static void mode_switch_to_120(struct drm_panel *panel,
 	}
 }
 
+static void mode_switch_to_90(struct drm_panel *panel,
+	enum MTK_PANEL_MODE_SWITCH_STAGE stage)
+{
+	if (stage == BEFORE_DSI_POWERDOWN) {
+		struct lcm *ctx = panel_to_lcm(panel);
+
+		lcm_dcs_write_seq_static(ctx, 0x2F, 0x07);
+	}
+}
+
 static void mode_switch_to_60(struct drm_panel *panel,
 	enum MTK_PANEL_MODE_SWITCH_STAGE stage)
 {
 	if (stage == BEFORE_DSI_POWERDOWN) {
 		struct lcm *ctx = panel_to_lcm(panel);
 
-		lcm_dcs_write_seq_static(ctx, 0x2F, 0x01);
+		lcm_dcs_write_seq_static(ctx, 0x2F, 0x03);
+	}
+}
+
+static void mode_switch_to_48(struct drm_panel *panel,
+	enum MTK_PANEL_MODE_SWITCH_STAGE stage)
+{
+	if (stage == BEFORE_DSI_POWERDOWN) {
+		struct lcm *ctx = panel_to_lcm(panel);
+
+		lcm_dcs_write_seq_static(ctx, 0x2F, 0x08);
 	}
 }
 
@@ -521,10 +761,18 @@ static int mode_switch(struct drm_panel *panel,
 	if (cur_mode == dst_mode)
 		return ret;
 
-	if (drm_mode_vrefresh(m) == 60) { /*switch to 60 */
+	if (drm_mode_vrefresh(m) == 48) { /*switch to 48 */
+		mode_switch_to_48(panel, stage);
+	} else if (drm_mode_vrefresh(m) == 60) { /*switch to 60 */
 		mode_switch_to_60(panel, stage);
+	} else if (drm_mode_vrefresh(m) == 90) { /*switch to 60 */
+		mode_switch_to_90(panel, stage);
 	} else if (drm_mode_vrefresh(m) == 120) { /*switch to 120 */
 		mode_switch_to_120(panel, stage);
+#if 0
+	} else if (drm_mode_vrefresh(m) == 144) { /*switch to 144 */
+		mode_switch_to_144(panel, stage);
+#endif
 	} else
 		ret = 1;
 
@@ -545,31 +793,65 @@ static int lcm_get_modes(struct drm_panel *panel,
 {
 	struct drm_display_mode *mode;
 	struct drm_display_mode *mode_1;
+	struct drm_display_mode *mode_2;
+	struct drm_display_mode *mode_3;
+	//struct drm_display_mode *mode_4;
 
-	mode = drm_mode_duplicate(connector->dev, &switch_mode_60hz);
+	mode = drm_mode_duplicate(connector->dev, &switch_mode_48hz);
 	if (!mode) {
 		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			 default_mode.hdisplay, default_mode.vdisplay,
-			 drm_mode_vrefresh(&default_mode));
+			 switch_mode_48hz.hdisplay, switch_mode_48hz.vdisplay,
+			 drm_mode_vrefresh(&switch_mode_48hz));
 		return -ENOMEM;
 	}
-
 	drm_mode_set_name(mode);
-	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	mode->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode);
 
-	mode_1 = drm_mode_duplicate(connector->dev, &default_mode);
+	mode_1 = drm_mode_duplicate(connector->dev, &switch_mode_60hz);
 	if (!mode_1) {
 		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			default_mode.hdisplay, default_mode.vdisplay,
-			drm_mode_vrefresh(&default_mode));
+			 switch_mode_60hz.hdisplay, switch_mode_60hz.vdisplay,
+			 drm_mode_vrefresh(&switch_mode_60hz));
 		return -ENOMEM;
 	}
-
 	drm_mode_set_name(mode_1);
 	mode_1->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_1);
 
+	mode_2 = drm_mode_duplicate(connector->dev, &switch_mode_90hz);
+	if (!mode_2) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_90hz.hdisplay, switch_mode_90hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_90hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_2);
+	mode_2->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_2);
+
+	mode_3 = drm_mode_duplicate(connector->dev, &switch_mode_120hz);
+	if (!mode_3) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_120hz.hdisplay, switch_mode_120hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_120hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_3);
+	mode_3->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_3);
+#if 0
+	mode_4 = drm_mode_duplicate(connector->dev, &switch_mode_144hz);
+	if (!mode_4) {
+		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			switch_mode_144hz.hdisplay, switch_mode_144hz.vdisplay,
+			drm_mode_vrefresh(&switch_mode_144hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_4);
+	mode_4->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_4);
+#endif
 	connector->display_info.width_mm = 68;
 	connector->display_info.height_mm = 152;
 
@@ -651,7 +933,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 	mtk_panel_tch_handle_reg(&ctx->panel);
-	ret = mtk_panel_ext_create(dev, &ext_params, &ext_funcs, &ctx->panel);
+	ret = mtk_panel_ext_create(dev, &ext_params_60hz, &ext_funcs, &ctx->panel);
 	if (ret < 0)
 		return ret;
 
