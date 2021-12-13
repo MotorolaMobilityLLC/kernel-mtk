@@ -34,6 +34,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(DSI_PANEL_MOT_MIPI_VID_VISIONOX_RM692CX_GT9885_FHD)
 	&mipi_mot_vid_visionox_rm692cx_gt9885_fhd_643_lcm_drv,
 #endif
+#if defined(DSI_PANEL_MOT_MIPI_VID_EDO_FT3519_FHD)
+	&mipi_mot_vid_edo_ft3519_fhd_643_lcm_drv,
+#endif
 #if defined(DSI_PANEL_MOT_MIPI_VID_VISIONOX_GT9885_RM_V0_FHD)
 	&mipi_mot_vid_visionox_gt9885_rm_v0_fhd_643_lcm_drv,
 #endif
