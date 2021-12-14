@@ -363,7 +363,7 @@
 	typec_limit_aicr = <3000000>;
 
 	/*mmi config*/
-	mmi,iterm-ma = <150>;
+	mmi,iterm-ma = <200>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
 			<15 0 1000 1000>,
 			<45 0 3000 3000>,
@@ -377,7 +377,7 @@
 	io-channels = <&auxadc 5>;
 	io-channel-names = "batteryID-channel";
 	EMBEDDED_SEL = <(1)>;	/* embedded battery.*/
-	DIFFERENCE_FULLOCV_ITH = <(200)>;	/*Charging termination current.*/
+	DIFFERENCE_FULLOCV_ITH = <(250)>;	/*Charging termination current.*/
 	SHUTDOWN_1_TIME = <(15)>;
 	CAR_TUNE_VALUE = <(100)>;
 
@@ -412,9 +412,9 @@
 		4937 5007 1503 1511/*T8*/
 		4937 5007 1493 1501/*T9*/
 	>;
-	g_FG_PSEUDO100_T0 = <(96)>;
+	g_FG_PSEUDO100_T0 = <(98)>;
 /*	Pseudo 100% percentage at T0*/
-	g_FG_PSEUDO100_T1 = <(96)>;
+	g_FG_PSEUDO100_T1 = <(98)>;
 /*	Pseudo 100% percentage at T1*/
 	g_FG_PSEUDO100_T2 = <(95)>;
 /*	Pseudo 100% percentage at T2*/
