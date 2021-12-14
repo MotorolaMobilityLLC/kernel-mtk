@@ -3384,6 +3384,7 @@ void DSI_CPHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 	} else {
 		DISPCHECK("[dsi_dsi.c] PLL clock should not be 0!\n");
 		ASSERT(0);
+		return;
 	}
 
 	hs_trail = (dsi_params->HS_TRAIL == 0) ?
