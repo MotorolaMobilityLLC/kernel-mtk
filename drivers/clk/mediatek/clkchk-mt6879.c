@@ -704,6 +704,8 @@ static void dump_bus_reg(struct regmap *regmap, u32 ofs)
 	print_subsys_reg_mt6879(infracfg);
 	print_subsys_reg_mt6879(bcrm_ifr_ao);
 	print_subsys_reg_mt6879(bcrm_ifr_pdn);
+
+	/* sspm need some time to run isr */
 	mdelay(1000);
 
 	BUG_ON(1);
@@ -713,6 +715,7 @@ static void dump_hwv_pll_reg(struct regmap *regmap, u32 shift)
 {
 	u32 val[7];
 
+	regmap_write(regmap, HWV_DOMAIN_KEY, HWV_SECURE_KEY);
 	regmap_read(regmap, HWV_PLL_SET, &val[0]);
 	regmap_read(regmap, HWV_PLL_CLR, &val[1]);
 	regmap_read(regmap, HWV_PLL_STA, &val[2]);
@@ -729,6 +732,8 @@ static void dump_hwv_pll_reg(struct regmap *regmap, u32 shift)
 			HWV_PLL_SET_STA, val[5],
 			HWV_PLL_CLR_STA, val[6]);
 	print_subsys_reg_mt6879(apmixed);
+
+	BUG_ON(1);
 }
 
 static bool is_cg_chk_pwr_on(void)
