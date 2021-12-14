@@ -1342,7 +1342,7 @@ static void _ovl_common_config(struct mtk_ddp_comp *comp, unsigned int idx,
 			size = buf_size;
 			regs_addr = comp->regs_pa +
 				DISP_REG_OVL_EL_ADDR(id);
-			if (state->pending.is_sec && pending->addr) {
+			if (state->pending.is_sec && pending->addr && (dst_h >= 1)) {
 				meta_type = CMDQ_IWC_H_2_MVA;
 				cmdq_sec_pkt_write_reg(handle, regs_addr,
 					pending->addr, meta_type,
@@ -1437,7 +1437,7 @@ static void _ovl_common_config(struct mtk_ddp_comp *comp, unsigned int idx,
 			size = buf_size;
 			regs_addr = comp->regs_pa +
 				DISP_REG_OVL_ADDR(ovl, lye_idx);
-			if (state->pending.is_sec && pending->addr) {
+			if (state->pending.is_sec && pending->addr && (dst_h >= 1)) {
 				meta_type = CMDQ_IWC_H_2_MVA;
 				cmdq_sec_pkt_write_reg(handle, regs_addr,
 					pending->addr, meta_type,
@@ -1872,7 +1872,7 @@ static bool compr_l_config_PVRIC_V3_1(struct mtk_ddp_comp *comp,
 
 			regs_addr = comp->regs_pa +
 				DISP_REG_OVL_EL_ADDR(id);
-			if (state->pending.is_sec && pending->addr) {
+			if (state->pending.is_sec && pending->addr && (dst_h >= 1)) {
 				size = buf_size;
 				meta_type = CMDQ_IWC_H_2_MVA;
 				cmdq_sec_pkt_write_reg(handle, regs_addr,
@@ -1969,7 +1969,7 @@ static bool compr_l_config_PVRIC_V3_1(struct mtk_ddp_comp *comp,
 
 			regs_addr = comp->regs_pa +
 				DISP_REG_OVL_ADDR(ovl, lye_idx);
-			if (state->pending.is_sec && pending->addr) {
+			if (state->pending.is_sec && pending->addr && (dst_h >= 1)) {
 				size = buf_size;
 				meta_type = CMDQ_IWC_H_2_MVA;
 				cmdq_sec_pkt_write_reg(handle, regs_addr,
@@ -2258,7 +2258,7 @@ static bool compr_l_config_AFBC_V1_2(struct mtk_ddp_comp *comp,
 			DISP_REG_OVL_ELX_HDR_ADDR(id);
 
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-		if (comp->mtk_crtc->sec_on && state->pending.is_sec) {
+		if (comp->mtk_crtc->sec_on && state->pending.is_sec && (dst_h >= 1)) {
 			u32 size, meta_type;
 			u32 addr_offset;
 
@@ -2351,7 +2351,7 @@ static bool compr_l_config_AFBC_V1_2(struct mtk_ddp_comp *comp,
 		hdr_addr = comp->regs_pa +
 			DISP_REG_OVL_LX_HDR_ADDR(lye_idx);
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-		if (comp->mtk_crtc->sec_on && state->pending.is_sec) {
+		if (comp->mtk_crtc->sec_on && state->pending.is_sec && (dst_h >= 1)) {
 			u32 size, meta_type, addr_offset;
 
 			size = buf_size;
