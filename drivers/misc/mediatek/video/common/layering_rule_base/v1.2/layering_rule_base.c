@@ -2190,6 +2190,7 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 	struct layer_config *input_config;
 
 	pos = 0;
+	disp_id = 0;
 	test_case = -1;
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
@@ -2243,7 +2244,7 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			if (disp_info->input_config[disp_id] == NULL)
 				return 0;
 		} else if (strncmp(line_buf, "[set_layer]", 11) == 0) {
-			unsigned long int tmp_info;
+			unsigned long int tmp_info = 0;
 
 			tok = strchr(line_buf, ']');
 			if (!tok)
