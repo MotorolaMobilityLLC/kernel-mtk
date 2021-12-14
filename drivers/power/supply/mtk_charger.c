@@ -505,6 +505,14 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 	/* fast charging algo support indicator */
 	info->enable_fast_charging_indicator =
 			of_property_read_bool(np, "enable_fast_charging_indicator");
+
+	if (of_property_read_u32(np, "fast_charging_indicator", &val) >= 0)
+		info->fast_charging_indicator = val;
+	else {
+		chr_err("use default fast_charging_indicator:%d\n",
+			DEFAULT_ALG);
+		info->fast_charging_indicator = DEFAULT_ALG;
+	}
 }
 
 static void mtk_charger_start_timer(struct mtk_charger *info)
@@ -3485,7 +3493,6 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	info->chg_alg_nb.notifier_call = chg_alg_event;
 
-	info->fast_charging_indicator = 0;
 	info->enable_meta_current_limit = 1;
 	info->is_charging = false;
 	info->safety_timer_cmd = -1;
