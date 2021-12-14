@@ -9,6 +9,7 @@
 #include <linux/list.h>
 #include <linux/of.h>
 #include <linux/rpmsg.h>
+#include <linux/kref.h>
 #include <media/media-device.h>
 #include <media/media-request.h>
 #include <media/v4l2-async.h>
@@ -217,6 +218,7 @@ struct mtk_cam_request_stream_data {
 	unsigned int flags;
 	u64 timestamp;
 	u64 timestamp_mono;
+	atomic_t buf_state; /* default: -1 */
 	struct mtk_cam_buffer *bufs[MTK_RAW_TOTAL_NODES];
 	struct v4l2_subdev *sensor;
 	struct v4l2_subdev *seninf_old;
@@ -258,9 +260,11 @@ struct mtk_cam_req_pipe {
 };
 
 enum mtk_cam_request_state {
-	MTK_CAM_REQ_STATE_QUEUED,
+	MTK_CAM_REQ_STATE_PENDING,
+	MTK_CAM_REQ_STATE_RUNNING,
 	MTK_CAM_REQ_STATE_DELETING,
 	MTK_CAM_REQ_STATE_COMPLETE,
+	MTK_CAM_REQ_STATE_CLEANUP,
 	NR_OF_MTK_CAM_REQ_STATE,
 };
 
@@ -309,6 +313,7 @@ struct mtk_cam_request {
 	struct mtk_cam_req_pipe p_data[MTKCAM_SUBDEV_MAX];
 	struct mtk_cam_resource raw_res[MTKCAM_SUBDEV_RAW_END - MTKCAM_SUBDEV_RAW_START];
 	s64 sync_id;
+	struct kref ref_cnt;
 };
 
 struct mtk_cam_working_buf_pool {
@@ -702,6 +707,19 @@ mtk_cam_s_data_reset_wbuf(struct mtk_cam_request_stream_data *s_data)
 	s_data->working_buf = NULL;
 }
 
+static inline bool
+mtk_cam_s_data_set_buf_state(struct mtk_cam_request_stream_data *s_data,
+			     enum vb2_buffer_state state)
+{
+	if (!s_data)
+		return false;
+
+	if (-1 == atomic_cmpxchg(&s_data->buf_state, -1, state))
+		return true;
+
+	return false;
+}
+
 static inline struct mtk_cam_request_stream_data*
 mtk_cam_sensor_work_to_s_data(struct kthread_work *work)
 {
@@ -766,8 +784,11 @@ int mtk_cam_call_seninf_set_pixelmode(struct mtk_cam_ctx *ctx,
 // FIXME: refine following
 void mtk_cam_dev_req_enqueue(struct mtk_cam_device *cam,
 			     struct mtk_cam_request *req);
-void mtk_cam_dev_req_cleanup(struct mtk_cam_ctx *ctx, int pipe_id);
+void mtk_cam_dev_req_cleanup(struct mtk_cam_ctx *ctx, int pipe_id, int buf_state);
 void mtk_cam_dev_req_clean_pending(struct mtk_cam_device *cam, int pipe_id);
+
+void mtk_cam_req_get(struct mtk_cam_request *req, int pipe_id);
+bool mtk_cam_req_put(struct mtk_cam_request *req, int pipe_id);
 
 void mtk_cam_dev_req_try_queue(struct mtk_cam_device *cam);
 
