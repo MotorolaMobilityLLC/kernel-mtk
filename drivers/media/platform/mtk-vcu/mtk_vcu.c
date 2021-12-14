@@ -2204,6 +2204,7 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 		struct task_struct *task, int _group, int result)
 {
 	unsigned long flags;
+	int wait_cnt = 0;
 
 	if (strstr(task->comm, "vpud") && sig == SIGKILL) {
 		pr_info("[VPUD_PROBE_DEATH][signal][%d:%s]send death sig %d to[%d:%s]\n",
@@ -2213,6 +2214,24 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 		spin_lock_irqsave(&vcu_ptr->vpud_sig_lock, flags);
 		vcu_ptr->vpud_is_going_down = 1;
 		spin_unlock_irqrestore(&vcu_ptr->vpud_sig_lock, flags);
+
+		/* wait for GCE done & let IPI ack power off */
+		while (
+		atomic_read(&vcu_ptr->gce_job_cnt[VCU_VDEC][0]) > 0 ||
+		atomic_read(&vcu_ptr->gce_job_cnt[VCU_VDEC][1]) > 0 ||
+		atomic_read(&vcu_ptr->gce_job_cnt[VCU_VENC][0]) > 0 ||
+		atomic_read(&vcu_ptr->gce_job_cnt[VCU_VENC][1]) > 0) {
+			wait_cnt++;
+			if (wait_cnt > 5) {
+				pr_info("[VCU] Vpud killed gce status %d %d\n",
+				atomic_read(
+				&vcu_ptr->gce_job_cnt[VCU_VDEC][0]),
+				atomic_read(
+				&vcu_ptr->gce_job_cnt[VCU_VENC][0]));
+				break;
+			}
+			usleep_range(10000, 20000);
+		}
 	}
 }
 
