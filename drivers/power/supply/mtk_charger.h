@@ -85,6 +85,7 @@ struct charger_data;
 #define MAX_CHARGE_TEMP_MINUS_X_DEGREE	47
 
 #define MAX_ALG_NO 10
+#define DEFAULT_ALG 0
 
 enum bat_temp_state_enum {
 	BAT_TEMP_LOW = 0,
