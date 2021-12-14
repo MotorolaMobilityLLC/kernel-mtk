@@ -496,6 +496,7 @@ static void probe_irq_disable(void *ignore,
 
 	if (!tracer->tracing)
 		return;
+
 	if (__this_cpu_cmpxchg(irq_pi_stat->tracing, 0, 1))
 		return;
 
@@ -512,18 +513,14 @@ static void probe_irq_enable(void *ignore,
 		unsigned long ip, unsigned long parent_ip)
 {
 	struct preemptirq_stat *pi_stat = raw_cpu_ptr(irq_pi_stat);
-	struct irq_mon_tracer *tracer = &irq_off_tracer;
 	unsigned long long ts;
 
 	if (!__this_cpu_read(irq_pi_stat->tracing))
 		return;
 
-	if (!__this_cpu_cmpxchg(irq_pi_stat->enable_locked, 0, 1))
+	if (__this_cpu_cmpxchg(irq_pi_stat->enable_locked, 0, 1))
 		return;
 
-	if (!tracer->tracing) {
-		return;
-	}
 	ts = sched_clock();
 	this_cpu_write(irq_pi_stat->enable_timestamp, ts);
 	this_cpu_write(irq_pi_stat->enable_ip, ip);
@@ -544,6 +541,7 @@ static void probe_preempt_disable(void *ignore
 
 	if (!tracer->tracing)
 		return;
+
 	if (__this_cpu_cmpxchg(preempt_pi_stat->tracing, 0, 1))
 		return;
 
@@ -560,15 +558,12 @@ static void probe_preempt_enable(void *ignore,
 		unsigned long ip, unsigned long parent_ip)
 {
 	struct preemptirq_stat *pi_stat = raw_cpu_ptr(preempt_pi_stat);
-	struct irq_mon_tracer *tracer = &preempt_off_tracer;
 	unsigned long long ts;
 
-	if (!tracer->tracing)
-		return;
 	if (!__this_cpu_read(preempt_pi_stat->tracing))
 		return;
 
-	if (!__this_cpu_cmpxchg(preempt_pi_stat->enable_locked, 0, 1))
+	if (__this_cpu_cmpxchg(preempt_pi_stat->enable_locked, 0, 1))
 		return;
 
 	ts = sched_clock();
