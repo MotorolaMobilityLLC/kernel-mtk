@@ -558,7 +558,7 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 		if (ctl->boot_count == boot_ready_count || ctl->md_state != READY)
 			break;
 		CCCI_NORMAL_LOG(md_id, FSM,
-				"MD power off called by %s, boot_count %d ,ready_count %d\n",
+				"MD power off called by %s, boot_count %d ,ready_count %lu\n",
 				current->comm, ctl->boot_count, boot_ready_count);
 		inject_md_status_event(md_id, MD_STA_EV_RILD_POWEROFF_START,
 				current->comm);
