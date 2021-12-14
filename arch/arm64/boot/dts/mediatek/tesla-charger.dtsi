@@ -1,0 +1,39 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&lk_charger {
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <1000000>;
+	ac_charger_input_current = <1500000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_input_current = <1500000>;
+	charging_host_charger_current = <1000000>;
+
+	temp_t4_threshold = <60>;
+};
+
+&mtk_gauge {
+	R_FG_VALUE = <(5)>;
+};
+
+&pdc {
+    pd_vbus_upper_bound = <14500000>;
+};
+
+&charger {
+    battery_cv = <4480000>;
+    max_charger_voltage = <14500000>;
+    ac_charger_current = <3000000>;
+    fast_charging_indicator = <0>;
+};
