@@ -576,6 +576,7 @@ static struct mtk_panel_params ext_params = {
 		.switch_en = 1,
 		.vact_timing_fps = 60,
 	},
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_DCS_GPIO,
 	.max_bl_level = 2047,
 };
@@ -594,6 +595,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.switch_en = 1,
 		.vact_timing_fps = 90,
 	},
+	.lcm_index = 0,
 	.hbm_type = HBM_MODE_DCS_GPIO,
 	.max_bl_level = 2047,
 };
