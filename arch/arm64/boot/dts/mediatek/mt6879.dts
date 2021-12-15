@@ -3007,7 +3007,7 @@
 		pmic_register = <0xa0d>;
 	};
 
-	soc {
+	soc: soc {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		compatible = "simple-bus";
