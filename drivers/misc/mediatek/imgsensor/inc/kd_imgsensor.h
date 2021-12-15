@@ -374,6 +374,7 @@
 #define GC02K0_SENSOR_ID                        0x2385
 #define OV16A10_SENSOR_ID                       0x561641
 #define GC02M1B_SENSOR_ID                       0x02e0
+#define MOT_DUBAI_GC02M1B_SENSOR_ID             0x02E0
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
@@ -611,6 +612,9 @@
 #define SENSOR_DRVNAME_OV13B10_MIPI_RAW         "ov13b10_mipi_raw"
 #define SENSOR_DRVNAME_OV02B10_MIPI_RAW         "ov02b10_mipi_raw"
 
+//add austin sensor drvname begin
+#define SENSOR_DRVNAME_MOT_DUBAI_GC02M1B_MIPI_RAW   "mot_dubai_gc02m1b_mipi_raw"
+//add austin sensor drvname end
 /******************************************************************************
  *
  ******************************************************************************/
