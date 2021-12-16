@@ -95,7 +95,11 @@ gfp_t kmalloc_fix_flags(gfp_t flags);
 /*
  * Tracking user of a slab.
  */
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE)
+#define TRACK_ADDRS_COUNT 5
+#else
 #define TRACK_ADDRS_COUNT 16
+#endif
 struct track {
 	unsigned long addr;	/* Called from address */
 #ifdef CONFIG_STACKTRACE
