@@ -16,4 +16,5 @@
 #include "mediatek/tesla-wl2864c.dtsi"
 #include "mediatek/cust_mt6879_camera_v4l2.dtsi"
 #include "mediatek/tesla-charger.dtsi"
+#include "mediatek/tesla-connsys.dtsi"
 
