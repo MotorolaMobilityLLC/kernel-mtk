@@ -2,6 +2,13 @@
 
 menu "Memory Management options"
 
+config MTK_SLABTRACE_ENHANCE
+	bool "This is config for debugging slab allocation"
+	default n
+	help
+	   This is config for debugging slab allocation with
+	   enhanced stack trace
+
 config MTK_KASAN_MEMBLOCK_SKIP
 	bool "mtk kasan memblock skip"
 	depends on KASAN
