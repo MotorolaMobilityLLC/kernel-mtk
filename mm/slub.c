@@ -5092,6 +5092,9 @@ EXPORT_SYMBOL(validate_slab_cache);
 struct location {
 	unsigned long count;
 	unsigned long addr;
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE) && defined(CONFIG_STACKTRACE)
+	unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
+#endif
 	long long sum_time;
 	long min_time;
 	long max_time;
@@ -5137,9 +5140,52 @@ static int alloc_loc_track(struct loc_track *t, unsigned long max, gfp_t flags)
 	return 1;
 }
 
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE) && defined(CONFIG_STACKTRACE)
+static int bt_is_same(struct location *l, const struct track *track)
+{
+	int i;
+
+	for (i = 0; i < TRACK_ADDRS_COUNT; i++) {
+		if (l->addrs[i] != track->addrs[i])
+			return 0;
+	}
+	return 1;
+}
+#endif
+
 static int add_location(struct loc_track *t, struct kmem_cache *s,
 				const struct track *track)
 {
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE) && defined(CONFIG_STACKTRACE)
+	struct location *l;
+	unsigned long age = jiffies - track->when;
+	long pos = 0;
+
+	/* compare one by one, longterm hash for performance improve */
+	for (pos = 0; pos < t->count; pos++) {
+		if (bt_is_same(&t->loc[pos], track)) {
+			l = &t->loc[pos];
+			l->count++;
+			if (track->when) {
+				l->sum_time += age;
+				if (age < l->min_time)
+					l->min_time = age;
+				if (age > l->max_time)
+					l->max_time = age;
+
+				if (track->pid < l->min_pid)
+					l->min_pid = track->pid;
+				if (track->pid > l->max_pid)
+					l->max_pid = track->pid;
+
+				cpumask_set_cpu(track->cpu,
+						to_cpumask(l->cpus));
+			}
+			node_set(page_to_nid(virt_to_page(track)), l->nodes);
+			return 1;
+		}
+	}
+#else
 	long start, end, pos;
 	struct location *l;
 	unsigned long caddr;
@@ -5187,7 +5233,7 @@ static int add_location(struct loc_track *t, struct kmem_cache *s,
 		else
 			start = pos;
 	}
-
+#endif
 	/*
 	 * Not found. Insert new tracking element.
 	 */
@@ -5195,12 +5241,24 @@ static int add_location(struct loc_track *t, struct kmem_cache *s,
 		return 0;
 
 	l = t->loc + pos;
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE) && defined(CONFIG_STACKTRACE)
+	if (pos < t->count) {
+		pr_err("[CONFIG_MTK_SLABTRACE_ENHANCE]pos:%ld should not over t->count:%ld\n", pos, t->count);
+		BUG();
+	}
+#else
 	if (pos < t->count)
 		memmove(l + 1, l,
 			(t->count - pos) * sizeof(struct location));
+#endif
 	t->count++;
 	l->count = 1;
 	l->addr = track->addr;
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE) && defined(CONFIG_STACKTRACE)
+	if (l->addr) {
+		memcpy(l->addrs, track->addrs, TRACK_ADDRS_COUNT * sizeof(unsigned long));
+	}
+#endif
 	l->sum_time = age;
 	l->min_time = age;
 	l->max_time = age;
@@ -6080,10 +6138,26 @@ static int slab_debugfs_show(struct seq_file *seq, void *v)
 	if (idx < t->count) {
 		l = &t->loc[idx];
 
+#if defined(CONFIG_MTK_SLABTRACE_ENHANCE) && defined(CONFIG_STACKTRACE)
+		seq_printf(seq, "%ld allocated, ", l->count);
+
+		if (l->addr) {
+			int k = 0;
+
+			seq_printf(seq, "calltrace:\n", l->count);
+			for (k = 0; k < TRACK_ADDRS_COUNT; k++) {
+				if (l->addrs[k])
+					seq_printf(seq, " %pS\n", (void *)l->addrs[k]);
+				else
+					break;
+			}
+		}
+#else
 		seq_printf(seq, "%7ld ", l->count);
 
 		if (l->addr)
 			seq_printf(seq, "%pS", (void *)l->addr);
+#endif
 		else
 			seq_puts(seq, "<not-available>");
 
