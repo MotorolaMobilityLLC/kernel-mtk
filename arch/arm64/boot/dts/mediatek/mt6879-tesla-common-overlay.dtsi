@@ -18,3 +18,29 @@
 #include "mediatek/tesla-charger.dtsi"
 #include "mediatek/tesla-connsys.dtsi"
 
+&i2c6 {
+    aw882xx_smartpa_0: aw882xx@34 {
+        compatible = "awinic,aw882xx_smartpa";
+        #sound-dai-cells = <0>;
+        reg = <0x34>;
+        irq-gpio = <&pio 4 0x0>;
+        sound-channel = <0>;
+        status = "okay";
+    };
+
+    aw882xx_smartpa_1: aw882xx@35 {
+        compatible = "awinic,aw882xx_smartpa";
+        #sound-dai-cells = <0>;
+        reg = <0x35>;
+        irq-gpio = <&pio 62 0x0>;
+        sound-channel = <1>;
+        status = "okay";
+    };
+};
+
+&sound {
+	mediatek,spk-i2s = <1 11>;
+	mediatek,speaker-codec {
+		 sound-dai = <&aw882xx_smartpa_0 &aw882xx_smartpa_1>;
+	};
+};
