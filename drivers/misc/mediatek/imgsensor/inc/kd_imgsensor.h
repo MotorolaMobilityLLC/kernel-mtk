@@ -281,6 +281,7 @@
 #define HI1339_SENSOR_ID                        0x1339
 #define HI1339SUBTXD_SENSOR_ID                  0x133A
 #define HI1339SUBOFILM_SENSOR_ID                0x133B
+#define MOT_DUBAI_HI1336_SENSOR_ID              0x1336
 /*MT*/
 #define MT9D011_SENSOR_ID                       0x1511
 #define MT9D111_SENSOR_ID                       0x1511
@@ -534,6 +535,7 @@
 #define SENSOR_DRVNAME_S5KGD2SP_MIPI_RAW        "s5kgd2sp_mipi_raw"
 #define SENSOR_DRVNAME_S5K3L6WIDE_MIPI_RAW      "s5k3l6wide_mipi_raw"
 /*HI*/
+#define SENSOR_DRVNAME_MOT_DUBAI_HI1336_MIPI_RAW  "mot_dubai_hi1336_mipi_raw"
 #define SENSOR_DRVNAME_HI841_MIPI_RAW           "hi841_mipi_raw"
 #define SENSOR_DRVNAME_HI707_YUV                "hi707_yuv"
 #define SENSOR_DRVNAME_HI704_YUV                "hi704_yuv"
