@@ -10,6 +10,10 @@
  * GNU General Public License for more details.
  */
 
+&dispsys_config {
+	force_dyn_mipi_change;
+};
+
 &mtk_leds {
 	/delete-property/ compatible;
 	/delete-property/ led_mode;
