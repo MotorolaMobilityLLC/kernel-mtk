@@ -2207,7 +2207,10 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 		goto stop_charging;
 	}
-
+	if (info->atm_enabled) {
+		charging = false;
+		goto stop_charging;
+	}
 	if (info->cmd_discharging)
 		charging = false;
 	if (info->safety_timeout)
@@ -2418,7 +2421,9 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 
 	if (info->enable_vbat_mon)
 		charger_dev_enable_6pin_battery_charging(info->chg1_dev, false);
-
+	chr_err("lenovo mtk_charger_plug_out, atm_enabled=%d\n", info->atm_enabled);
+	if (info->atm_enabled)
+		orderly_poweroff(true);
 	return 0;
 }
 
