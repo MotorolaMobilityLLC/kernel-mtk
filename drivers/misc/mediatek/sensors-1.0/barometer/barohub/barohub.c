@@ -37,6 +37,7 @@ struct barohub_ipi_data {
 	bool factory_enable;
 	bool android_enable;
 	int32_t static_cali[2]; //[0]reference, [1]offset
+        uint8_t config_flush_action;
 };
 
 static struct barohub_ipi_data *obj_ipi_data;
@@ -203,6 +204,7 @@ static int baro_recv_data(struct data_unit_t *event, void *reserved)
 		err = baro_cali_report(event->data);
         obj->static_cali[0] = event->data[0];
         obj->static_cali[1] = event->data[1];
+        obj->config_flush_action = CALI_ACTION;
     }
 
 	return err;
@@ -273,8 +275,17 @@ static int barohub_factory_get_cali(int32_t *offset)
 {
 	struct barohub_ipi_data *obj = obj_ipi_data;
 
-	offset[0] = obj->static_cali[1];   // get offset value
-	return 0;
+        if (obj->config_flush_action == CALI_ACTION){
+            //offset[0] = obj->config_data[1];   // get offset value
+            offset[0] = obj->static_cali[1];   // get offset value
+            obj->config_flush_action = 255;
+        }else{
+            offset[0] = 0x7FFFFFFF;
+            pr_err("barohub_factory_get_cali fail,return an invalid offset\n");
+            return -1;
+        }
+	
+        return 0;
 }
 static int barohub_factory_do_self_test(void)
 {
