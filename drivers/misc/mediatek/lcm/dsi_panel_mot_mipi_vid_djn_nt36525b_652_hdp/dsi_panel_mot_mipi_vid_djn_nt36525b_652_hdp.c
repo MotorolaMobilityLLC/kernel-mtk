@@ -728,6 +728,22 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 }
 #endif
 
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+static bool lcm_set_recovery_notify(void)
+{
+	char tp_info[] = "nvt";
+
+	//return TRUE if TP need lcm notify
+	//NVT touch recover need enable lcm notify
+	if (strstr(tp_info, "nvt")) {
+		pr_info("%s: djn_nt: return TRUE\n", __func__);
+		return TRUE;
+	}
+
+	return false;
+}
+#endif
+
 struct LCM_DRIVER mipi_mot_vid_djn_nt36525b_hdp_652_lcm_drv = {
 	.name = "mipi_mot_vid_djn_nt36525b_hdp_652",
 	.supplier = "djn",
@@ -744,6 +760,9 @@ struct LCM_DRIVER mipi_mot_vid_djn_nt36525b_hdp_652_lcm_drv = {
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.get_max_brightness = lcm_get_max_brightness,
 	.ata_check = lcm_ata_check,
+#ifdef CONFIG_LCM_NOTIFIY_SUPPORT
+	.set_lcm_notify = lcm_set_recovery_notify,
+#endif
 //	.set_cabc_cmdq = lcm_set_cabc_cmdq,
 //	.get_cabc_status = lcm_get_cabc_status,
 #if (LCM_DSI_CMD_MODE)
