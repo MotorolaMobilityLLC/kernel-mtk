@@ -35,6 +35,8 @@
 #include <lcm_pmic.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
@@ -96,7 +98,12 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
+#define LCM_BL_BITS_11			1
+#if LCM_BL_BITS_11
+#define LCM_BL_MAX_BRIGHTENSS		1638
+#else
 #define LCM_BL_MAX_BRIGHTENSS		3276
+#endif
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -359,6 +366,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0xFB,1, {0x01}},
 	{0x51,2, {0x00,0x00}},
 	{0x53,1, {0x2C}},
+	{0x55,1, {0x01}},
 	{0x35,1, {0x00}},
 	{0x11,1, {0x00}},
 	{REGFLAG_DELAY,150,{}},
@@ -366,9 +374,58 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{REGFLAG_DELAY,50,{}}
 };
 
+#if LCM_BL_BITS_11
+static struct LCM_setting_table bl_level[] = {
+	{ 0x51, 0x02, {0x06, 0x66} }
+};
+#else
+//12bit
 static struct LCM_setting_table bl_level[] = {
 	{ 0x51, 0x02, {0x0C, 0xCC} }
 };
+#endif
+
+static struct LCM_setting_table lcm_cabc_setting_ui[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x01} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_mv[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x03} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_disable[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x00} },
+};
+
+struct LCM_cabc_table {
+	int cmd_num;
+	struct LCM_setting_table *cabc_cmds;
+};
+
+//Make sure the seq keep consitent with definition of cabc_mode, otherwise it need remap
+static struct LCM_cabc_table lcm_cabc_settings[] = {
+	{ARRAY_SIZE(lcm_cabc_setting_ui), lcm_cabc_setting_ui},
+	{ARRAY_SIZE(lcm_cabc_setting_mv), lcm_cabc_setting_mv},
+	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
+};
+
+#if LCM_BL_BITS_11
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x06, 0x66} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
+};
+#else
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x0C, 0XCC} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
+};
+#endif
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned int count, unsigned char force_update)
@@ -638,15 +695,16 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 }
 
+#if !LCM_BL_BITS_11
 static unsigned int lcm_get_max_brightness(void)
 {
         LCM_LOGD("%s: return max_brightness:%d\n", __func__, LCM_BL_MAX_BRIGHTENSS);
         return LCM_BL_MAX_BRIGHTENSS;
 }
+#endif
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-	// set 12bit
 	unsigned int bl_lvl;
 
 	if (level > LCM_BL_MAX_BRIGHTENSS) {
@@ -655,8 +713,13 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	bl_lvl = level;
 	LCM_LOGI("%s,djn_nt36525b backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
 
-	//for 12bit
+#if LCM_BL_BITS_11
+    //11bit
+	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
+#else
+	//12 bit
 	bl_level[0].para_list[0] = (bl_lvl&0xF00)>>8;
+#endif
 	bl_level[0].para_list[1] = (bl_lvl&0xFF);
 	LCM_LOGI("%s,djn_nt36525b: para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[0].para_list[0],bl_level[0].para_list[1]);
 
@@ -728,6 +791,34 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 }
 #endif
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	pr_info("%s,djn_nt36525b cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			break;
+		case PARAM_CABC:
+			if (*lcm_value >= CABC_MODE_NUM) {
+				pr_info("%s: invalid CABC mode:%d out of CABC_MODE_NUM:", *lcm_value, CABC_MODE_NUM);
+			}
+			else {
+				unsigned int cmd_num = lcm_cabc_settings[*lcm_value].cmd_num;
+				pr_info("%s: handle PARAM_CABC, mode=%d, cmd_num=%d", __func__, *lcm_value, cmd_num);
+				push_table(handle, lcm_cabc_settings[*lcm_value].cabc_cmds, cmd_num, 1);
+			}
+			break;
+		default:
+			pr_err("%s,djn_nt36525b cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_info("%s,ili7806s cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+
+}
+
 #ifdef CONFIG_LCM_NOTIFIY_SUPPORT
 static bool lcm_set_recovery_notify(void)
 {
@@ -758,13 +849,14 @@ struct LCM_DRIVER mipi_mot_vid_djn_nt36525b_hdp_652_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+#if !LCM_BL_BITS_11
 	.get_max_brightness = lcm_get_max_brightness,
+#endif
 	.ata_check = lcm_ata_check,
 #ifdef CONFIG_LCM_NOTIFIY_SUPPORT
 	.set_lcm_notify = lcm_set_recovery_notify,
 #endif
-//	.set_cabc_cmdq = lcm_set_cabc_cmdq,
-//	.get_cabc_status = lcm_get_cabc_status,
+	.set_lcm_cmd = lcm_set_cmdq,
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
