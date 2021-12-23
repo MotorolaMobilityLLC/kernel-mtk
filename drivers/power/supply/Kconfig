@@ -818,6 +818,11 @@ config CHARGER_MT6375
 	  The device is compliant with the USB Battery Charging Specification
 	  Revision 1.2.
 
+config MOTO_CHG_TCMD_SUPPORT
+	tristate "MOTO TCMD interface driver for charger"
+	help
+	  This is to enable MOTO supports of charger TCMD INTERFACE.
+
 config GAUGE_MT6375
 	tristate "MT6375 fuel gauge driver"
 	depends on MFD_MT6375
