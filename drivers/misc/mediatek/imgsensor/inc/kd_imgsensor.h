@@ -363,7 +363,7 @@
 #define IMX355_SENSOR_ID                        0x0355
 #define OV13B10_SENSOR_ID                       0x560d42
 #define OV02B10_SENSOR_ID                       0x002b
-
+#define MOT_DUBAI_OV32C_SENSOR_ID               0x3243
 
 #define OV48B_SENSOR_ID                         0x564842
 #define S5K3P9SP_SENSOR_ID                      0x3109
@@ -478,6 +478,7 @@
 #define SENSOR_DRVNAME_OV2650_RAW               "ov265x_raw"
 #define SENSOR_DRVNAME_OV20880_MIPI_RAW         "ov20880_mipi_raw"
 #define SENSOR_DRVNAME_OV05A20_MIPI_RAW         "ov05a20_mipi_raw"
+#define SENSOR_DRVNAME_MOT_DUBAI_OV32C_MIPI_RAW    "mot_dubai_ov32c_mipi_raw"
 
 /*S5K*/
 #define SENSOR_DRVNAME_S5KJD1_MIPI_RAW        "s5kjd1_mipi_raw"
