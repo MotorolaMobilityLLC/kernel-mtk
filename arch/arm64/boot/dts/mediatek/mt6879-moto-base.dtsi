@@ -4,4 +4,7 @@
  * 	Delete nodes or properties
 */
 
-
+/ {
+	tboard_thermistor4: thermal-ntc4 { };
+	tboard_thermistor5: thermal-ntc5 { };
+};
