@@ -220,14 +220,14 @@
 	};
 	camera_pins_cam1_rst_0: cam1@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam1_rst_1: cam1@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -433,10 +433,10 @@
 		status = "okay";
 	};
 
-	sensor1: sensor1@10 {
+	sensor1: sensor1@20 {
 		compatible = "mediatek,imgsensor";
-		sensor-names = "s5k3p9sp_mipi_raw";
-		reg = <0x10>;
+		sensor-names = "mot_dubai_ov32c_mipi_raw";
+		reg = <0x20>;
 		#thermal-sensor-cells = <0>;
 		pinctrl-names = "mclk_off",
 				"mclk_2mA",
@@ -452,14 +452,10 @@
 		pinctrl-4 = <&camera_pins_cam1_mclk_8ma>;
 		pinctrl-5 = <&camera_pins_cam1_rst_0>;
 		pinctrl-6 = <&camera_pins_cam1_rst_1>;
-#if 0
-		pinctrl-7 = <&camera_pins_cam1_pdn_0>;
-		pinctrl-8 = <&camera_pins_cam1_pdn_1>;
-#endif
-		avdd-supply = <&rt5133_ldo6>;
-		dvdd-supply = <&rt5133_ldo7>;
-		dovdd-supply = <&rt5133_ldo1>;
-		afvdd-supply = <&rt5133_ldo2>;
+
+		avdd-supply = <&cam_uw_fm_avdd_ldo>;
+		dvdd-supply = <&cam_uw_fm_dvdd_ldo>;
+		dovdd-supply = <&cam_iovdd_ldo>;
 
 		clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
 			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
