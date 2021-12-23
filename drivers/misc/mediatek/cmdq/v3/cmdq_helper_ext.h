@@ -665,6 +665,7 @@ enum CMDQ_SPM_MODE {
 struct cmdqRecStruct {
 	struct list_head list_entry;
 	struct cmdq_pkt *pkt;
+	u32 priority;
 	u32 *cmd_end;
 	u64 engineFlag;
 	s32 scenario;
