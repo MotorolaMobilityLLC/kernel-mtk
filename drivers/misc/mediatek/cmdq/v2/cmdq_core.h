@@ -69,6 +69,7 @@
 
 #define CMDQ_LONGSTRING_MAX (180)
 #define CMDQ_DELAY_RELEASE_RESOURCE_MS (1000)
+#define CMDQ_MAX_DUMP_REG_COUNT (2048)
 
 #define CMDQ_ENG_ISP_GROUP_BITS                                                \
 	((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMGO) |             \

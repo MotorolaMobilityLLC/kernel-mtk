@@ -23,6 +23,9 @@ ccflags-$(CONFIG_MACH_MT6779) += -DCMDQ_MDP_ENABLE_SPR
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/misc/mediatek/mmp/ \
+             -I$(srctree)/drivers/misc/mediatek/mdp/ \
+             -I$(srctree)/drivers/iommu/ \
+             -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
 
 # mdp platform code
