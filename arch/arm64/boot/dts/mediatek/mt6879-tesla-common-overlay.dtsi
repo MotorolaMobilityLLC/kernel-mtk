@@ -46,7 +46,8 @@
 };
 
 /* FINGERPRINT start */
-&spi0 {
+&spi1 {
+	status = "okay";
 	fingerprint@0 {
 		compatible = "mediatek,fingerprint";
 		reg = <0>;
@@ -470,14 +471,14 @@
 
 	fingerfp_spi_active: fingerfp_spi_active {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO66__FUNC_SCP_SPI0_MI>, <PINMUX_GPIO64__FUNC_SCP_SPI0_CS>, <PINMUX_GPIO65__FUNC_SCP_SPI0_MO>, <PINMUX_GPIO63__FUNC_SCP_SPI0_CK>;
+			pinmux = <PINMUX_GPIO70__FUNC_SPI1_MI>, <PINMUX_GPIO68__FUNC_SPI1_CSB>, <PINMUX_GPIO69__FUNC_SPI1_MO>, <PINMUX_GPIO67__FUNC_SPI1_CLK>;
 			drive-strength = <2>;
 		};
 	};
 
 	fingerfp_spi_default: fingerfp_spi_default {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO66__FUNC_GPIO66>, <PINMUX_GPIO64__FUNC_GPIO64>, <PINMUX_GPIO65__FUNC_GPIO65>, <PINMUX_GPIO63__FUNC_GPIO63>;
+			pinmux = <PINMUX_GPIO70__FUNC_GPIO70>, <PINMUX_GPIO68__FUNC_GPIO68>, <PINMUX_GPIO69__FUNC_GPIO69>, <PINMUX_GPIO67__FUNC_GPIO67>;
 			slew-rate = <1>;
 			output-low;
 		};
