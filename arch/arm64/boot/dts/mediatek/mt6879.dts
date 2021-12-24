@@ -5634,7 +5634,7 @@
 			iommus = <&apu_iommu0 M4U_LARB34_APU_CODE>;
 		};
 
-		regulator_vibrator {
+		regulator_vibrator: regulator_vibrator {
 			compatible = "regulator-vibrator";
 			label = "vibrator";
 			min-volt = <2800000>;
