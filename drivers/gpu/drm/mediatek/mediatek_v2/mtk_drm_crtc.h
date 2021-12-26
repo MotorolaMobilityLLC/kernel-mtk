@@ -1024,4 +1024,5 @@ int mtk_drm_ioctl_get_pq_caps(struct drm_device *dev, void *data,
 	struct drm_file *file_priv);
 int mtk_drm_ioctl_set_pq_caps(struct drm_device *dev, void *data,
 	struct drm_file *file_priv);
+int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, const struct panel_param_info param_info);
 #endif /* MTK_DRM_CRTC_H */

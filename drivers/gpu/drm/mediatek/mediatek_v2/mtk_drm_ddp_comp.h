@@ -373,6 +373,7 @@ enum mtk_ddp_io_cmd {
 	/*Msync 2.0 cmd end*/
 	DUAL_TE_INIT,
 	OVL_GET_SOURCE_BPC,
+	DSI_PANEL_FEATURE_SET,
 };
 
 struct golden_setting_context {
