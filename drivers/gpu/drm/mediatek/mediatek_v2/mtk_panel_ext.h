@@ -555,6 +555,9 @@ struct mtk_panel_funcs {
 
 	int (*send_ddic_cmd_pack)(struct drm_panel *panel,
 		void *dsi_drv, dcs_write_gce_pack cb, void *handle);
+	int (*panel_feature_set)(struct drm_panel *panel, void *dsi_drv,
+			    dcs_write_gce cb, void *handle, struct panel_param_info param_info);
+	int (*panel_feature_get)(struct drm_panel *panel, paramId_t param_id);
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);
