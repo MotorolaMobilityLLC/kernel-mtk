@@ -4,6 +4,11 @@ ifneq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/include
 endif
 
+ifneq ($(CONFIG_TYPEC_FSA4480),)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/fsa4480
+endif
+
 ifneq ($(CONFIG_SND_SOC_MEDIATEK),)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common
 endif
