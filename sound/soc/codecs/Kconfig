@@ -1936,4 +1936,8 @@ config SND_SOC_TPA6130A2
 	tristate "Texas Instruments TPA6130A2 headphone amplifier"
 	depends on I2C
 
+config TYPEC_FSA4480
+	tristate "fsa4480 for typec analog headset"
+	depends on I2C
+
 endmenu
