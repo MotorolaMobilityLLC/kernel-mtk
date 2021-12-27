@@ -21,6 +21,7 @@ obj-$(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM) += trusted_mem/
 obj-$(CONFIG_MTK_ENABLE_GENIEZONE) += geniezone/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) += masp/
 obj-${CONFIG_MTK_ATF_LOGGER} += atf/
+obj-$(CONFIG_TYPEC_FSA4480) += fsa4480/
 obj-$(CONFIG_MTK_USB_TYPEC) += typec/
 obj-$(CONFIG_MTPROF) += mtprof/
 obj-$(CONFIG_MTK_IRQ_MONITOR) += mtprof/
