@@ -40,6 +40,7 @@ struct lcm {
 	bool enabled;
 
 	int error;
+	unsigned int hbm_mode;
 };
 
 #define lcm_dcs_write_seq(ctx, seq...)                                         \
@@ -779,12 +780,44 @@ static int mode_switch(struct drm_panel *panel,
 	return ret;
 }
 
+
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+	char hbm_tb[3][3] = {
+			{0x51, 0x0D, 0xBA},
+			{0x51, 0x0F, 0xFF},
+			{0x51, 0x0F, 0xFF}
+			};
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (!cb)
+		return -1;
+	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+		case PARAM_ACL:
+			break;
+		case PARAM_HBM:
+			cb(dsi, handle, &hbm_tb[param_info.value][0], 3);
+			ctx->hbm_mode = param_info.value;
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = panel_ata_check,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
