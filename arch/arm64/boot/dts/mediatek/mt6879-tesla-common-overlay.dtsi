@@ -36,6 +36,11 @@
         sound-channel = <1>;
         status = "okay";
     };
+
+    fsa4480_switch: fsa4480@42 {
+        compatible = "fsa,fsa4480-i2c";
+        reg = <0x42>;
+    };
 };
 
 &sound {
