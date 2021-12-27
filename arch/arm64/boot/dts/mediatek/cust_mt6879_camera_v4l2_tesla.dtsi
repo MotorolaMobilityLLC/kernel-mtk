@@ -125,44 +125,44 @@
 &pio {
 	camera_pins_cam0_mclk_off: camera_pins_cam0_mclk_off {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_GPIO101>;
+			pinmux = <PINMUX_GPIO100__FUNC_GPIO100>;
 			drive-strength = <1>;
 		};
 	};
 	camera_pins_cam0_mclk_2ma: camera_pins_cam0_mclk_2ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_CMMCLK2>;
+			pinmux = <PINMUX_GPIO100__FUNC_CMMCLK1>;
 			drive-strength = <0>;
 		};
 	};
 	camera_pins_cam0_mclk_4ma: camera_pins_cam0_mclk_4ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_CMMCLK2>;
+			pinmux = <PINMUX_GPIO100__FUNC_CMMCLK1>;
 			drive-strength = <1>;
 		};
 	};
 	camera_pins_cam0_mclk_6ma: camera_pins_cam0_mclk_6ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_CMMCLK2>;
+			pinmux = <PINMUX_GPIO100__FUNC_CMMCLK1>;
 			drive-strength = <2>;
 		};
 	};
 	camera_pins_cam0_mclk_8ma: camera_pins_cam0_mclk_8ma {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO101__FUNC_CMMCLK2>;
+			pinmux = <PINMUX_GPIO100__FUNC_CMMCLK1>;
 			drive-strength = <3>;
 		};
 	};
 	camera_pins_cam0_rst_0: cam0@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>;
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam0_rst_1: cam0@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>;
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -352,11 +352,10 @@
 		status = "okay";
 	};
 
-	sensor0: sensor0@10 {
+	sensor0: sensor0@20 {
 		compatible = "mediatek,imgsensor";
-		sensor-names = "imx481_mipi_raw",
-				"s5k3m5sx_mipi_raw";
-		reg = <0x10>;
+		sensor-names = "mot_dubai_ov50a_mipi_raw";
+		reg = <0x20>;
 		#thermal-sensor-cells = <0>;
 		pinctrl-names = "mclk_off",
 				"mclk_2mA",
@@ -373,10 +372,10 @@
 		pinctrl-5 = <&camera_pins_cam0_rst_0>;
 		pinctrl-6 = <&camera_pins_cam0_rst_1>;
 
-		avdd-supply = <&rt5133_gpio2>;
-		dvdd-supply = <&rt5133_gpio3>;
-		dovdd-supply = <&rt5133_ldo1>;
-		afvdd-supply = <&rt5133_gpio1>;
+		avdd-supply = <&cam_main_avdd_ldo>;
+		dvdd-supply = <&cam_main_dvdd_ldo>;
+		dovdd-supply = <&cam_iovdd_ldo>;
+		afvdd-supply = <&cam_ois_avdd_ldo>;
 
 		clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
 			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
@@ -386,7 +385,7 @@
 			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D16>,
 			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D4>,
 			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D8>,
-			<&topckgen_clk CLK_TOP_CAMTG4_SEL>;
+			<&topckgen_clk CLK_TOP_CAMTG2_SEL>;
 		clock-names = "6", "12", "13", "19.2", "24", "26", "48", "52", "mclk";
 
 		status = "okay";
