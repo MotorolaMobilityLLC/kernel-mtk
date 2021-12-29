@@ -411,7 +411,7 @@ static int set_sub_task(struct mml_task *task,
 	mutex_unlock(&sub_task->lock);
 
 	if (!atomic_fetch_add_unless(&sub_task->queued, 1, 1)) {
-		WARN_ON(atomic_read(&sub_task->result_ref));
+		//WARN_ON(atomic_read(&sub_task->result_ref));
 		atomic_set(&sub_task->result_ref, 0);
 		kref_get(&pq_task->ref);
 		memcpy(&sub_task->frame_data.pq_param, task->pq_param,
