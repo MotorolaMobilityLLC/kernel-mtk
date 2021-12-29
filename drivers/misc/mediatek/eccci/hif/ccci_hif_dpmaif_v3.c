@@ -3645,6 +3645,8 @@ static struct ccci_hif_ops ccci_hif_dpmaif_ops = {
 
 static void dpmaif_total_spd_cb(u64 total_speed)
 {
+	ccmni_set_cur_speed(total_speed);
+
 	if (total_speed < MAX_SPEED_THRESHOLD)
 		dpmaif_ctrl->enable_pit_debug = 1;
 	else
