@@ -866,7 +866,7 @@ static void trusty_poll_work(struct kthread_work *work)
 
 	if (cpu_mask > 0) {
 		for (i = 0; i < nr_cpus; i++) {
-			if (cpu_mask & (1 << i)) {
+			if ((i < 32) && (cpu_mask & (1 << i))) {
 				trusty_dbg(s->dev, "%s send nop for cpu %d\n",
 						__func__, i);
 				trusty_enqueue_nop(s->dev, NULL, i);
