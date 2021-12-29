@@ -3248,6 +3248,17 @@ static bool mdp_check_camin_support_virtual(void)
 	return true;
 }
 
+static bool mdp_vcp_pq_readback_support_virtual(void)
+{
+	return false;
+}
+
+void mdp_vcp_pq_readback_virtual(struct cmdqRecStruct *handle,
+	u16 engine, u32 vcp_offset, u32 count)
+{
+	CMDQ_ERR("%s no support\n", __func__);
+}
+
 void cmdq_mdp_virtual_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc;
@@ -3321,6 +3332,8 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->getRDMAIndex = mdp_get_rdma_idx_virtual;
 	pFunc->getRegMSBOffset = mdp_get_reg_msb_offset_virtual;
 	pFunc->mdpIsCaminSupport = mdp_check_camin_support_virtual;
+	pFunc->mdpVcpPQReadbackSupport = mdp_vcp_pq_readback_support_virtual;
+	pFunc->mdpVcpPQReadback = mdp_vcp_pq_readback_virtual;
 
 }
 
@@ -4175,6 +4188,17 @@ s32 cmdq_mdp_get_rdma_idx(u32 base)
 	return cmdq_mdp_get_func()->getRDMAIndex(base);
 }
 
+u32 cmdq_mdp_vcp_pq_readback_support(void)
+{
+	return cmdq_mdp_get_func()->mdpVcpPQReadbackSupport();
+}
+
+void cmdq_mdp_vcp_pq_readback(struct cmdqRecStruct *handle, u16 engine,
+	u32 vcp_offset, u32 count)
+{
+	cmdq_mdp_get_func()->mdpVcpPQReadback(handle, engine, vcp_offset, count);
+}
+
 #ifdef MDP_COMMON_ENG_SUPPORT
 void cmdq_mdp_platform_function_setting(void)
 {
@@ -4185,7 +4209,6 @@ struct device *mdp_larb_dev_get(void)
 {
 	return mdp_ctx.larb;
 }
-
 
 static int mdp_loglevel_set(const char *val, const struct kernel_param *kp)
 {
