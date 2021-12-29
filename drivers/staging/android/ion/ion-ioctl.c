@@ -229,7 +229,6 @@ long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			if (cleanup_handle) {
 				mutex_lock(&client->lock);
 				user_ion_free_nolock(client, cleanup_handle);
-				ion_handle_put_nolock(cleanup_handle);
 				mutex_unlock(&client->lock);
 			}
 			IONMSG(
