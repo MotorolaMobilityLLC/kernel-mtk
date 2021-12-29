@@ -157,6 +157,10 @@ const struct of_device_id accdet_of_match[] = {
 	},
 };
 
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+static struct accdet_typec_manager *accdet_typec;
+#endif
+
 static struct platform_driver accdet_driver;
 
 static atomic_t accdet_first;
@@ -2241,13 +2245,13 @@ static void typec_headset_handler(void)
 		accdet->cur_eint_state = EINT_PLUG_OUT;
 	} else {
 		accdet->cur_eint_state = EINT_PLUG_IN;
-
 		if (accdet_dts.moisture_detect_mode != 0x5) {
 			mod_timer(&micbias_timer,
 				jiffies + MICBIAS_DISABLE_TIMER);
 		}
 
 	}
+
 	queue_work(accdet->eint_workqueue, &accdet->eint_work);
 }
 #endif
@@ -2977,6 +2981,14 @@ void mt6368_accdet_late_init(unsigned long data)
 		accdet_init_once();
 	} else
 		pr_info("%s inited dts fail\n", __func__);
+
+	#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+	if (tcpm_inquire_typec_attach_state(accdet_typec->tcpc) == TYPEC_ATTACHED_AUDIO) {
+		fsa4480_switch_event(FSA_TYPEC_ACCESSORY_AUDIO);
+		msleep(300);
+		typec_headset_handler();
+	}
+	#endif
 }
 EXPORT_SYMBOL(mt6368_accdet_late_init);
 
@@ -3140,12 +3152,6 @@ static int init_accdet_tcpc(struct accdet_typec_manager *chip)
 		return ret;
 	}
 
-//	if (tcpm_inquire_typec_attach_state(chip->tcpc) == TYPEC_ATTACHED_AUDIO) {
-// 		fsa4480_switch_event(FSA_TYPEC_ACCESSORY_AUDIO);
-// 		msleep(300);
-// 		typec_headset_handler();
-//	}
-
 	return 0;
 }
 #endif
@@ -3156,9 +3162,7 @@ static int accdet_probe(struct platform_device *pdev)
 	struct resource *res;
 	const struct of_device_id *of_id =
 				of_match_device(accdet_of_match, &pdev->dev);
-	#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
-	struct accdet_typec_manager *accdet_typec;
-	#endif
+
 	if (!of_id) {
 		dev_dbg(&pdev->dev, "Error: No device match found\n");
 		return -ENODEV;
