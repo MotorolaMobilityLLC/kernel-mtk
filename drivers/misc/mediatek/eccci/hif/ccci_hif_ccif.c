@@ -1812,10 +1812,20 @@ void ccci_reset_ccif_hw(unsigned char md_id,
 {
 	int i;
 	struct ccci_smem_region *region;
+	int reset_bit = -1;
 
-	{
-		int reset_bit = -1;
+	CCCI_NORMAL_LOG(md_id, TAG, "%s, ccif_hw_reset_ver = %d\n",
+			__func__, md_ctrl->ccif_hw_reset_ver);
 
+	if (md_ctrl->ccif_hw_reset_ver == 1) {
+		reset_bit = 26;
+
+		/* set ccif0 reset bit */
+		ccci_write32(md_ctrl->infracfg_base, 0xF50, 1 << reset_bit);
+
+		/* set ccif0 reset bit */
+		ccci_write32(md_ctrl->infracfg_base, 0xF54, 1 << reset_bit);
+	} else {
 		switch (ccif_id) {
 		case AP_MD1_CCIF:
 			reset_bit = 8;
