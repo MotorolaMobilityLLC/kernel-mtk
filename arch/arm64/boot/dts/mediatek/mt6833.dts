@@ -5108,6 +5108,7 @@ page_owner=on loop.max_part=7";
 
 	gps: gps@18c00000 {
 		compatible = "mediatek,gps";
+		b13b14-status-addr = <0x10003328>;
 	};
 
 	odm: odm {
