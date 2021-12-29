@@ -2517,6 +2517,29 @@ static int get_temp(struct subdrv_ctx *ctx, int *temp)
 	return 0;
 }
 
+static int get_csi_param(struct subdrv_ctx *ctx,
+	enum SENSOR_SCENARIO_ID_ENUM scenario_id,
+	struct mtk_csi_param *csi_param)
+{
+	csi_param->legacy_phy = 1;
+	csi_param->not_fixed_trail_settle = 1;
+	switch (scenario_id) {
+	case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+	case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+	case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+	case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
+	case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+		csi_param->dphy_trail = 0x20;
+		break;
+
+	default:
+		csi_param->dphy_trail = 0;
+		break;
+	}
+
+	return 0;
+}
+
 static struct subdrv_ops ops = {
 	.get_id = get_imgsensor_id,
 	.init_ctx = init_ctx,
@@ -2530,6 +2553,7 @@ static struct subdrv_ops ops = {
 	.get_frame_desc = get_frame_desc,
 #endif
 	.get_temp = get_temp,
+	.get_csi_param = get_csi_param,
 };
 
 static struct subdrv_pw_seq_entry pw_seq[] = {
