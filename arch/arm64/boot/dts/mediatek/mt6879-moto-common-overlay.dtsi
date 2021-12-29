@@ -16,6 +16,7 @@
 #include <dt-bindings/pinctrl/mt6879-pinfunc.h>
 #include <dt-bindings/phy/phy.h>
 #include <dt-bindings/iio/mt635x-auxadc.h>
+#include "mediatek/carrier-channel-ids.dtsi"
 
 &utags {
 	compatible = "mmi,utags";
