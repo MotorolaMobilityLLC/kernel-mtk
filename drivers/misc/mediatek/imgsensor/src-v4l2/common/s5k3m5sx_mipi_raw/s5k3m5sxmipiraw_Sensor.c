@@ -4793,6 +4793,10 @@ static int get_csi_param(struct subdrv_ctx *ctx,
 	case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 		csi_param->dphy_trail = 0x1;
 		break;
+	case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+		csi_param->dphy_trail = 0x1;
+		csi_param->reg1 = 0x1;
+		break;
 	default:
 		csi_param->dphy_trail = 0;
 		break;
