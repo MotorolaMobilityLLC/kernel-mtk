@@ -33,11 +33,12 @@
 
 #define GED_DVFS_LOADING_BASE_COMMIT    0
 #define GED_DVFS_FRAME_BASE_COMMIT      1
-#define GED_DVFS_CUSTOM_CEIL_COMMIT     2
-#define GED_DVFS_CUSTOM_BOOST_COMMIT    3
-#define GED_DVFS_SET_BOTTOM_COMMIT      4
-#define GED_DVFS_SET_LIMIT_COMMIT       5
-#define GED_DVFS_INPUT_BOOST_COMMIT     6
+#define GED_DVFS_FB_FALLBACK_COMMIT     2
+#define GED_DVFS_CUSTOM_CEIL_COMMIT     3
+#define GED_DVFS_CUSTOM_BOOST_COMMIT    4
+#define GED_DVFS_SET_BOTTOM_COMMIT      5
+#define GED_DVFS_SET_LIMIT_COMMIT       6
+#define GED_DVFS_INPUT_BOOST_COMMIT     7
 #define GED_DVFS_COMMIT_TYPE            int
 
 #define GED_DVFS_DEFAULT                0
@@ -101,7 +102,8 @@ bool ged_dvfs_cal_gpu_utilization_ex(unsigned int *pui32Loading,
 	struct GpuUtilization_Ex *Util_Ex);
 
 
-void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
+void ged_dvfs_run(unsigned long t, long phase,
+	unsigned long ul3DFenceDoneTime, GED_DVFS_COMMIT_TYPE eCommitType);
 
 void ged_dvfs_set_tuning_mode(GED_DVFS_TUNING_MODE eMode);
 GED_DVFS_TUNING_MODE ged_dvfs_get_tuning_mode(void);
@@ -172,7 +174,9 @@ unsigned int ged_dvfs_get_tb_dvfs_margin_mode(void);
 extern void (*mtk_dvfs_loading_mode_fp)(int i32LoadingMode);
 extern int (*mtk_get_dvfs_loading_mode_fp)(void);
 extern void ged_get_gpu_utli_ex(struct GpuUtilization_Ex *util_ex);
+#ifndef MAX
 #define MAX(x, y)	((x) < (y) ? (y) : (x))
+#endif
 
 extern unsigned int ged_log_perf_trace_enable;
 extern unsigned int g_gpufreq_v2;
