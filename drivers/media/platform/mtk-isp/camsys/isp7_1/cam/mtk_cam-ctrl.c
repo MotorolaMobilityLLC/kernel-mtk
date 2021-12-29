@@ -220,7 +220,7 @@ static bool mtk_cam_req_frame_sync_start(struct mtk_cam_request *req)
 					 __func__, ctx->stream_id);
 				continue;
 			}
-			pipe_id = ctx->pipe->id;
+			pipe_id = ctx->stream_id;
 			spin_unlock(&ctx->streaming_lock);
 
 			/* update sensor frame sync */
@@ -261,7 +261,7 @@ static bool mtk_cam_req_frame_sync_start(struct mtk_cam_request *req)
 				 __func__, ctx->stream_id);
 			goto EXIT;
 		}
-		pipe_id = ctx->pipe->id;
+		pipe_id = ctx->stream_id;
 		spin_unlock(&ctx->streaming_lock);
 
 		if (ctx->synced) {
