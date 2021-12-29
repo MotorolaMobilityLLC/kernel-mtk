@@ -2114,6 +2114,7 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	wmb();
 
 #if IS_ENABLED(CONFIG_MTK_UFS_DEBUG)
+	ufshcd_hold(hba, false);
 	if (!(ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL) &
 		(1 << task_tag))) {
 
@@ -2137,6 +2138,7 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 			ufshcd_print_evt_hist(hba);
 		}
 	}
+	ufshcd_release(hba);
 #endif
 }
 
