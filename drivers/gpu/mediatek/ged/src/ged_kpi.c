@@ -48,6 +48,12 @@
 #endif /* MTK_GPU_BM_2 */
 #include <ged_dcs.h>
 
+#if IS_ENABLED(CONFIG_DRM_MEDIATEK)
+#include "mtk_drm_arr.h"
+#else
+#include "disp_arr.h"
+#endif
+
 #ifdef MTK_GED_KPI
 
 #define GED_KPI_TAG "[GED_KPI]"
@@ -60,6 +66,7 @@
 /* set default margin to be distinct from FPSGO(0 or 3) */
 #define GED_KPI_DEFAULT_FPS_MARGIN 4
 #define GED_KPI_CPU_MAX_OPP 0
+#define GED_KPI_FPS_LIMIT 120
 
 #define GED_TIMESTAMP_TYPE_D    0x1
 #define GED_TIMESTAMP_TYPE_1    0x2
@@ -222,6 +229,8 @@ struct GED_KPI_MEOW_DVFS_FREQ_PRED {
 	int gpu_time;
 };
 static struct GED_KPI_MEOW_DVFS_FREQ_PRED *g_psGIFT;
+
+static int g_target_fps_default = GED_KPI_MAX_FPS;
 
 #define GED_KPI_TOTAL_ITEMS 128
 #define GED_KPI_UID(pid, wnd) (pid | ((unsigned long)wnd))
@@ -934,7 +943,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psHead->isSF = psTimeStamp->isSF;
 				ged_kpi_update_TargetTimeAndTargetFps(
 					psHead,
-					GED_KPI_MAX_FPS,
+					g_target_fps_default,
 					GED_KPI_DEFAULT_FPS_MARGIN, 0, 0,
 					GED_KPI_FRC_DEFAULT_MODE, -1);
 				ged_kpi_set_gift_status(0);
@@ -1882,6 +1891,20 @@ unsigned int ged_kpi_get_cur_avg_gpu_freq(void)
 #endif /* MTK_GED_KPI */
 }
 /* ------------------------------------------------------------------- */
+void ged_dfrc_fps_limit_cb(unsigned int target_fps)
+{
+	g_target_fps_default =
+		(target_fps > 0 && target_fps <= GED_KPI_FPS_LIMIT) ?
+		target_fps : g_target_fps_default;
+#ifdef GED_KPI_DEBUG
+	GED_LOGI("[GED_KPI] dfrc_fps %d\n", g_target_fps_default);
+#endif /* GED_KPI_DEBUG */
+	if (target_fps <= 60)
+		mtk_set_gpu_idle(0);
+	else
+		mtk_set_gpu_idle(5);
+}
+/* ------------------------------------------------------------------- */
 GED_ERROR ged_kpi_system_init(void)
 {
 #ifdef MTK_GED_KPI
@@ -1903,6 +1926,12 @@ GED_ERROR ged_kpi_system_init(void)
 		"ged_alloc_atomic(sizeof(struct GED_KPI_MEOW_DVFS_FREQ_PRED)) failed\n");
 		return GED_ERROR_FAIL;
 	}
+
+#if IS_ENABLED(CONFIG_DRM_MEDIATEK)
+	drm_register_fps_chg_callback(ged_dfrc_fps_limit_cb);
+#elif IS_ENABLED(CONFIG_MTK_HIGH_FRAME_RATE)
+	disp_register_fps_chg_callback(ged_dfrc_fps_limit_cb);
+#endif
 
 	g_psWorkQueue =
 		alloc_ordered_workqueue("ged_kpi",
@@ -1934,6 +1963,11 @@ void ged_kpi_system_exit(void)
 		ged_kpi_iterator_delete_func, NULL);
 	spin_unlock_irqrestore(&gs_hashtableLock, ulIRQFlags);
 	destroy_workqueue(g_psWorkQueue);
+#if IS_ENABLED(CONFIG_DRM_MEDIATEK)
+	drm_unregister_fps_chg_callback(ged_dfrc_fps_limit_cb);
+#elif IS_ENABLED(CONFIG_MTK_HIGH_FRAME_RATE)
+	disp_unregister_fps_chg_callback(ged_dfrc_fps_limit_cb);
+#endif
 	ged_thread_destroy(ghThread);
 #ifndef GED_BUFFER_LOG_DISABLE
 	ged_log_buf_free(ghLogBuf_KPI);
@@ -2009,7 +2043,7 @@ static GED_BOOL ged_kpi_find_riskyBQ_func(unsigned long ulID,
 		int maxRisk;
 
 		/* FPSGO skip this BQ, we should skip */
-		if ((psHead->target_fps == GED_KPI_MAX_FPS)
+		if ((psHead->target_fps == g_target_fps_default)
 			&& (psHead->target_fps_margin
 			== GED_KPI_DEFAULT_FPS_MARGIN))
 			return GED_TRUE;
