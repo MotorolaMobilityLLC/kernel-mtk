@@ -17,6 +17,7 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 #include "mt-plat/mtk_ccci_common.h"
+#include "mt-plat/mrdump.h"
 #include "ccci_core.h"
 #include "ccci_modem.h"
 #include "ccci_fsm.h"
