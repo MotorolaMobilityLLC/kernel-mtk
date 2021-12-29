@@ -388,6 +388,8 @@ static int mtk_hwv_pll_prepare(struct clk_hw *hw)
 
 	i = 0;
 
+	/* dummy read to clr idle signal of hw voter bus */
+	regmap_read(pll->hwv_regmap, pll->data->hwv_set_ofs, &val);
 	regmap_write(pll->hwv_regmap, pll->data->hwv_set_ofs, BIT(pll->data->hwv_shift));
 
 	do {
@@ -411,6 +413,7 @@ static int mtk_hwv_pll_prepare(struct clk_hw *hw)
 			udelay(MTK_WAIT_HWV_PLL_DONE_US);
 		else
 			goto err_hwv_done;
+
 		i++;
 	} while (1);
 
@@ -455,6 +458,8 @@ static void mtk_hwv_pll_unprepare(struct clk_hw *hw)
 
 	i = 0;
 
+	/* dummy read to clr idle signal of hw voter bus */
+	regmap_read(pll->hwv_regmap, pll->data->hwv_clr_ofs, &val);
 	regmap_write(pll->hwv_regmap, pll->data->hwv_clr_ofs, BIT(pll->data->hwv_shift));
 
 	do {
@@ -480,6 +485,7 @@ static void mtk_hwv_pll_unprepare(struct clk_hw *hw)
 			udelay(MTK_WAIT_HWV_PLL_DONE_US);
 		else
 			goto err_hwv_done;
+
 		i++;
 	} while (1);
 
