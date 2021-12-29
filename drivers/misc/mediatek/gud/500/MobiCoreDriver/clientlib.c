@@ -28,6 +28,7 @@
 #include "client.h"
 #include "protocol.h"
 
+#define BUFFER_LENGTH_MAX           0x40000000
 static enum mc_result convert(int err)
 {
 	switch (-err) {
@@ -301,9 +302,6 @@ EXPORT_SYMBOL(mc_wait_notification);
 enum mc_result mc_malloc_wsm(u32 device_id, u32 align, u32 len, u8 **wsm,
 			     u32 wsm_flags)
 {
-	enum mc_result ret;
-	uintptr_t va;
-
 	/* Check parameters */
 	if (!is_valid_device(device_id))
 		return MC_DRV_ERR_UNKNOWN_DEVICE;
@@ -314,24 +312,23 @@ enum mc_result mc_malloc_wsm(u32 device_id, u32 align, u32 len, u8 **wsm,
 	if (!wsm)
 		return MC_DRV_ERR_INVALID_PARAMETER;
 
+	if (len > BUFFER_LENGTH_MAX)
+		return MC_DRV_ERR_INVALID_PARAMETER;
+
 	if (!clientlib_client_get())
 		return MC_DRV_ERR_DAEMON_DEVICE_NOT_OPEN;
 
-	/* Call core api */
-	ret = convert(client_cbuf_create(client, len, &va, NULL));
-	if (ret == MC_DRV_OK)
-		*wsm = (u8 *)va;
+	*wsm = vmalloc(len);
+	if (!*wsm)
+		return MC_DRV_ERR_NO_FREE_MEMORY;
 
 	clientlib_client_put();
-	return ret;
+	return MC_DRV_OK;
 }
 EXPORT_SYMBOL(mc_malloc_wsm);
 
 enum mc_result mc_free_wsm(u32 device_id, u8 *wsm)
 {
-	enum mc_result ret;
-	uintptr_t va = (uintptr_t)wsm;
-
 	/* Check parameters */
 	if (!is_valid_device(device_id))
 		return MC_DRV_ERR_UNKNOWN_DEVICE;
@@ -339,10 +336,12 @@ enum mc_result mc_free_wsm(u32 device_id, u8 *wsm)
 	if (!clientlib_client_get())
 		return MC_DRV_ERR_DAEMON_DEVICE_NOT_OPEN;
 
-	/* Call core api */
-	ret = convert(client_cbuf_free(client, va));
+	if (!wsm)
+		return MC_DRV_ERR_INVALID_PARAMETER;
+
+	vfree(wsm);
 	clientlib_client_put();
-	return ret;
+	return MC_DRV_OK;
 }
 EXPORT_SYMBOL(mc_free_wsm);
 
