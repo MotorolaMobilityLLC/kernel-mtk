@@ -113,6 +113,19 @@ struct LCM_setting_table {
 	unsigned char para_list[64];
 };
 
+static struct LCM_setting_table password_open_and_offset_code[] = {
+	{ 0xF0, 0x02, {0x5A, 0x59} },//password open
+	{ 0xF1, 0x02, {0xA5, 0xA6} },//password open
+	{ 0xC1, 0x13, {0xC0,0x20,0x20,0x96,0x04,0x30,0x30,0x04,0x2A,0x40,0x36,0x00,0x07,0xCF,0xFF,0xFF,0x7C,0x01,0xC0}},
+	{ 0xFA, 0x03, {0x45, 0x93 ,0x01} },
+	{ 0xBE, 0x02, {0x5A, 0x5A} },
+	{ 0xBD, 0x03, {0xe9, 0x02 ,0x4E} },
+};
+
+static struct LCM_setting_table password_close_code[] = {
+	{ 0xF1, 0x02, {0x5A, 0x59} },//password close
+	{ 0xF0, 0x02, {0xA5, 0xA6} },//password close
+};
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x26, 1,{0x08}},
 	{0x28, 0, {} },
@@ -362,6 +375,29 @@ static void lcm_resume_power(void)
 	lcm_set_bias_pin_enable(0x14,3);
 }
 
+static void kernel_vref_reg_update(void)
+{
+	int ret = 0;
+	char *vref_f6_reg_start=NULL;
+        char *temp;
+	char vref_f6_reg[8]={'\0'};
+	unsigned char vref_reg_buf = 0x00;
+
+	vref_f6_reg_start = strstr(saved_command_line, "vref_reg=");
+	if(vref_f6_reg_start == NULL){
+		pr_err("[LCM]command_line have no vref_reg info.\n");
+	}
+	temp = vref_f6_reg_start + strlen("vref_reg=");
+	memcpy(vref_f6_reg, temp, 4);
+
+	ret =  kstrtou8(vref_f6_reg, 0, &vref_reg_buf);
+	if (ret != 0){
+		pr_err("[LCM]Convert vref_f6_reg string to unsigned int error.\n");
+	}
+
+	dsi_set_cmdq_V22(NULL,0xF6,1,&vref_reg_buf,1);
+	pr_info("[LCM kernel] write vref_reg_buf_F6 = 0x%02x.\n", vref_reg_buf);
+}
 static void lcm_init(void)
 {
 	LCM_LOGI("[LCM] lcm_init\n");
@@ -373,6 +409,10 @@ static void lcm_init(void)
 	MDELAY(10);
 
 	MDELAY(20);//RESET_N high to OTP load ready,needs more than 30ms
+	push_table(NULL, password_open_and_offset_code, sizeof(password_open_and_offset_code) / sizeof(struct LCM_setting_table), 1);//download password open and offset code
+	kernel_vref_reg_update();
+	MDELAY(1);
+	push_table(NULL, password_close_code, sizeof(password_close_code) / sizeof(struct LCM_setting_table), 1);//download password close code
 	push_table(NULL, init_setting,
 		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1);
 }
