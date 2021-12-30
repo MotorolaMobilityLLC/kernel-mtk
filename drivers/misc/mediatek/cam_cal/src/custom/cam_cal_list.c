@@ -14,6 +14,8 @@
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+	{MOT_DUBAI_HI1336_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_32K},
+#if 0
 	{HI1339_SENSOR_ID, 0xB0, Common_read_region},
 	{OV13B10LZ_SENSOR_ID, 0xB0, Common_read_region},
 	{GC5035_SENSOR_ID,  0x7E, Common_read_region},
@@ -30,6 +32,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{S5K3M5SX_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{IMX350_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX499_SENSOR_ID, 0xA0, Common_read_region},
+#endif
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };
