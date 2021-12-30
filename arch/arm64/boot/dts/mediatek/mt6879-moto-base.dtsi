@@ -10,5 +10,4 @@
 	tboard_thermistor4: thermal-ntc4 { };
 	tboard_thermistor5: thermal-ntc5 { };
 	moto_chg_tcmd: moto_chg_tcmd { };
-	gyro: gyro { };
 };
