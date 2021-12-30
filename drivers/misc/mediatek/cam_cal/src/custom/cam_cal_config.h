@@ -53,6 +53,8 @@ unsigned int layout_check(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int sensorID);
 unsigned int layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int sensorID);
+unsigned int mot_layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int *pGetSensorCalData);
 unsigned int do_module_version(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 unsigned int do_part_number(struct EEPROM_DRV_FD_DATA *pdata,
@@ -70,6 +72,16 @@ unsigned int do_dump_all(struct EEPROM_DRV_FD_DATA *pdata,
 unsigned int do_lens_id_base(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 unsigned int do_lens_id(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+unsigned int mot_do_single_lsc(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+unsigned int mot_do_pdaf(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+unsigned int mot_do_dump_all(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 
 unsigned int get_is_need_power_on(struct EEPROM_DRV_FD_DATA *pdata,
