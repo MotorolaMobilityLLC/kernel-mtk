@@ -55,6 +55,9 @@ enum RPC_OP_ID {
 	IPC_RPC_AMMS_DRDI_CONTROL = 0x4014,
 	IPC_RPC_SAVE_MD_CAPID = 0x4015,
 	IPC_RPC_IT_OP = 0x4321,
+#ifdef CONFIG_MOTO_DRDI_SUPPORT
+	IPC_RPC_PRODUCT_OP = 0x5000,  //product data
+#endif
 };
 
 struct rpc_pkt {
