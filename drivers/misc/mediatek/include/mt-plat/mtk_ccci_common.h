@@ -642,6 +642,25 @@ int switch_sim_mode(int id, char *buf,
 	unsigned int len); /* Export by SIM switch */
 unsigned int get_sim_switch_type(void); /* Export by SIM switch */
 
+#ifdef CONFIG_MOTO_DRDI_SUPPORT
+/* customer data, struct format should sync with lk and modem code */
+#define MOT_CARRIER_LENGTH (65)
+#define MOT_PRODUCT_NAME_LENGTH (32)
+#define MOT_RADIO_STR_LENGTH (33)
+
+struct ccci_product_data_t {
+   unsigned char version;
+   unsigned char factory_mode;
+   unsigned int hwrev;
+   unsigned char radioid;
+   char carrier[MOT_CARRIER_LENGTH];
+   char product[MOT_PRODUCT_NAME_LENGTH];
+   char radio_str[MOT_RADIO_STR_LENGTH];
+};
+
+struct ccci_product_data_t *ccci_rpc_get_product_data(unsigned int *len);
+#endif
+
 #if IS_ENABLED(CONFIG_MTK_ECCCI_C2K_USB)
 /* for c2k usb bypass */
 typedef int (*usb_upstream_buffer_cb_t) (int transfer_id,
