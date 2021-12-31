@@ -589,6 +589,15 @@ static void mot_check_mnf_data(u8 *data,UINT32 StartAddr,
 		LOG_INF("Manufacturing CRC Pass");
 		mot_cal_info->mnf_status = STATUS_OK;
 	}
+
+	//Change for sorting wrongly programmed part number modules
+	if (!(*(data+StartAddr+3) == '2' &&
+		*(data+StartAddr+4) == '8' &&
+		*(data+StartAddr+5) == 'D' &&
+		*(data+StartAddr+6) == '1')) {
+		LOG_ERR("Manufacturing Part number check failed!!!!");
+		mot_cal_info->mnf_status = STATUS_LIMIT_FAIL;
+	}
 }
 
 static void mot_check_af_data(u8 *data, UINT32 StartAddr,
