@@ -87,7 +87,6 @@ struct _ccci_tag_v2 {
 	unsigned int next_tag_offset;
 };
 
-
 /*====================================================== */
 /* Global variable support section                       */
 /*====================================================== */
@@ -837,6 +836,43 @@ _check_md3:
 	}
 }
 
+#ifdef CONFIG_MOTO_DRDI_SUPPORT
+/* for customer data global variable */
+static struct ccci_product_data_t product_data;
+static unsigned int product_data_len;
+
+/* parsing tag info, need called by collect_lk_boot_arguments */
+static void ccci_product_data_parsing(void)
+{
+	if (find_ccci_tag_inf("product_data", (char *)&product_data,
+		sizeof(struct ccci_product_data_t))
+		!= sizeof(struct ccci_product_data_t)) {
+		product_data_len = 0;
+		CCCI_UTIL_ERR_MSG("%s:fail\n", __func__);
+	} else {
+		product_data_len = sizeof(struct ccci_product_data_t);
+		CCCI_UTIL_INF_MSG("len=%u,V=%u,F=%u,HR=%u,RI=%u, CA=%s,PN=%s,RS=%s\n", product_data_len,
+			product_data.version, product_data.factory_mode,
+			product_data.hwrev, product_data.radioid, product_data.carrier,
+			product_data.product, product_data.radio_str);
+	}
+}
+
+/* transfer cust_data & len to caller */
+struct ccci_product_data_t *ccci_rpc_get_product_data(unsigned int *len)
+{
+	if (!len || !(product_data_len > 0)) {
+		CCCI_UTIL_ERR_MSG("%s fail,product_data_len=%u\n",
+			__func__, product_data_len);
+		return NULL;
+	}
+
+	*len = product_data_len;
+	return &product_data;
+}
+EXPORT_SYMBOL(ccci_rpc_get_product_data);
+#endif
+
 static void lk_info_parsing_v1(unsigned int *raw_ptr)
 {
 	struct _ccci_lk_info lk_inf;
@@ -1078,6 +1114,9 @@ _common_process:
 	md_chk_hdr_info_parse();
 	share_memory_info_parsing();
 	verify_md_enable_setting();
+#ifdef CONFIG_MOTO_DRDI_SUPPORT
+	ccci_product_data_parsing();
+#endif
 
 	s_g_lk_load_img_status |= LK_LOAD_MD_EN;
 	s_g_curr_ccci_fo_version = CCCI_FO_VER_02;
