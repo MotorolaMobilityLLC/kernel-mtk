@@ -24,6 +24,7 @@
 };
 
 &mtk_gauge {
+	DIFFERENCE_FULLOCV_ITH = <(1100)>;
 	R_FG_VALUE = <(5)>;
 };
 
@@ -36,6 +37,26 @@
     max_charger_voltage = <14500000>;
     ac_charger_current = <3000000>;
     fast_charging_indicator = <0>;
+
+	/*mmi config*/
+	mmi,iterm-ma = <250>;
+	mmi,mmi-temp-zones = <0 4200 1000 0>,
+			<10 4250 2500 1000>,
+			<15 0 2500 2500>,
+			<45 4250 6000 5200>,
+			<45 4400 5200 4000>,
+			<45 4510 4000 4000>,
+			<60 4200 4000 0>;
+	mmi,mmi-ffc-zones = <0 4200 250>,
+			<10 4250 250>,
+			<15 4480 250>,
+			<25 4510 1000>,
+			<35 4510 1000>,
+			<45 4510 1000>,
+			<60 4200 250>;
+	mmi,enable-charging-limit;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
 };
 
 &moto_chg_tcmd {
