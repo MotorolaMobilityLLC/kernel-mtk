@@ -109,7 +109,7 @@
 			nvmem-cell-names = "rg_csi";
 			port {
 				seninf_csi_port_1_in: endpoint {
-					remote-endpoint = <&sensor0_out>;
+					remote-endpoint = <&sensor4_out>;
 				};
 			};
 		};
@@ -121,7 +121,7 @@
 			nvmem-cell-names = "rg_csi";
 			port {
 				seninf_csi_port_2_in: endpoint {
-					remote-endpoint = <&sensor4_out>;
+					remote-endpoint = <&sensor0_out>;
 				};
 			};
 		};
@@ -410,7 +410,7 @@
 
 		port {
 			sensor0_out: endpoint {
-				remote-endpoint = <&seninf_csi_port_1_in>;
+				remote-endpoint = <&seninf_csi_port_2_in>;
 			};
 		};
 	};
@@ -570,7 +570,7 @@
 
 		port {
 			sensor4_out: endpoint {
-				remote-endpoint = <&seninf_csi_port_2_in>;
+				remote-endpoint = <&seninf_csi_port_1_in>;
 			};
 		};
 	};
