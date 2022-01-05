@@ -55,6 +55,11 @@ enum ENUM_CAMERA_CAM_CAL_TYPE_ENUM {
 	CAMERA_CAM_CAL_DATA_LIST
 };
 
+enum ENUM_MOT_CAMERA_CAM_CAL_TYPE_ENUM {
+	CAMERA_CAM_CAL_DATA_FACTORY_VERIFY = 0,
+	MOT_CAMERA_CAM_CAL_DATA_LIST
+};
+
 enum ENUM_CAM_CAL_DATA_VER_ENUM {
 	CAM_CAL_SINGLE_EEPROM_DATA,
 	CAM_CAL_DOUBLE_EEPROM_DATA,
@@ -182,6 +187,9 @@ struct STRUCT_CAM_CAL_PDAF_STRUCT {
 	unsigned char Data[CAM_CAL_PDAF_SIZE];
 };
 
+#define MAX_CALIBRATION_STRING 40
+#define ALL_EEPROM_DATA_SIZE 0x2000
+
 typedef enum {
 	NONEXISTENCE = -1,
 	NO_ERRORS,
@@ -189,8 +197,13 @@ typedef enum {
 	LIMIT_FAILURE,
 } calibration_status_t;
 
-#define MAX_CALIBRATION_STRING 40
-#define ALL_EEPROM_DATA_SIZE 0x1000
+typedef enum {
+	MAIN_CAMERA,
+	FRONT_CAMERA,
+	DEPTH_CAMERA,
+	UW_CAMERA,
+	TELE_CAMERA,
+} sensor_type_t;
 
 struct MOT_MANUFACTURE_DATA {
 	unsigned char eeprom_table_version[MAX_CALIBRATION_STRING];
@@ -206,7 +219,6 @@ struct MOT_MANUFACTURE_DATA {
 	unsigned char serial_number[MAX_CALIBRATION_STRING];
 };
 
-
 struct MOT_CALIBRATION_STATUS {
 	calibration_status_t mnf_status;
 	calibration_status_t af_status;
@@ -216,10 +228,17 @@ struct MOT_CALIBRATION_STATUS {
 	calibration_status_t dual_status;
 };
 
-struct MOT_EEPROM_DATA {
+struct STRUCT_MOT_EEPROM_DATA {
+	enum ENUM_MOT_CAMERA_CAM_CAL_TYPE_ENUM Command;
+	unsigned int  sensorID;
+	unsigned int  deviceID;
+	unsigned char SensorName[MAX_CALIBRATION_STRING];
+	unsigned int  data_size;
+	sensor_type_t sensor_type;
 	struct MOT_CALIBRATION_STATUS  CalibrationStatus;
-	struct MOT_MANUFACTURE_DATA   ManufactureData;
 	unsigned char DumpAllEepromData[ALL_EEPROM_DATA_SIZE];
+	unsigned char serial_number[MAX_CALIBRATION_STRING];
+	unsigned int serial_number_bit;
 };
 
 /** @brief This enum defines the CAM_CAL Table.  */
@@ -235,8 +254,8 @@ struct STRUCT_CAM_CAL_DATA_STRUCT {
 	struct STRUCT_CAM_CAL_PDAF_STRUCT         PDAF;
 	struct STRUCT_CAM_CAL_Stereo_Data_STRUCT  Stereo_Data;
 	unsigned char LensDrvId[10];
+	struct MOT_MANUFACTURE_DATA   ManufactureData;
 	unsigned char *SensorName;
-	struct MOT_EEPROM_DATA MotEepromData;
 };
 
 /**
