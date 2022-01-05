@@ -33,14 +33,18 @@ struct STRUCT_CALIBRATION_LAYOUT_STRUCT {
 
 struct STRUCT_CAM_CAL_CONFIG_STRUCT {
 	const char *name;
+	sensor_type_t sensor_type;
 	unsigned int (*check_layout_function)(struct EEPROM_DRV_FD_DATA *pdata,
 				unsigned int sensorID);
 	unsigned int (*read_function)(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size);
+	unsigned int (*mot_do_factory_verify_function)(struct EEPROM_DRV_FD_DATA *pdata,
+				unsigned int *pGetSensorCalData);
 	struct STRUCT_CALIBRATION_LAYOUT_STRUCT *layout;
 	unsigned int sensor_id;
 	unsigned int i2c_write_id;
 	unsigned int max_size;
+	unsigned int serial_number_bit;
 	unsigned int enable_preload;
 	unsigned int preload_size;
 	unsigned int has_stored_data;
@@ -81,12 +85,14 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 unsigned int mot_do_pdaf(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
-unsigned int mot_do_dump_all(struct EEPROM_DRV_FD_DATA *pdata,
-		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 
 unsigned int get_is_need_power_on(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int *pGetNeedPowerOn);
 unsigned int get_cal_data(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
+unsigned int mot_get_cal_factory_data(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
+int32_t check_crc16(uint8_t  *data, uint32_t size, uint32_t ref_crc);
+int  mot_check_awb_data(unsigned char* awb_data, int  size);
+
 int read_data(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int sensor_id, unsigned int device_id,
 		unsigned int offset, unsigned int length, unsigned char *data);
