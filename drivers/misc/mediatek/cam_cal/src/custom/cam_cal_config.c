@@ -24,7 +24,6 @@
 #include "eeprom_i2c_common_driver.h"
 
 #define EEPROM_DEBUG
-//The OB value is not deducted from the Moto guide
 #define MOTO_OB_VALUE 64
 #define MOT_AWB_RB_MIN_VALUE 200
 #define MOT_AWB_G_MIN_VALUE 760
@@ -214,6 +213,71 @@ unsigned int mot_layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
 	return result;
 }
 
+int  mot_check_awb_data(unsigned char* awb_data, int  size)
+{
+	int CalR = 1, CalGr = 1, CalGb = 1, CalB = 1;
+	int FacR = 1, FacGr = 1, FacGb = 1, FacB = 1;
+	int RGBGratioDeviation, checkSum;
+	int rg_ratio_gold = 1, bg_ratio_gold = 1, grgb_ratio_gold = 1;
+	int rg_ratio_unit = 1, bg_ratio_unit = 1, grgb_ratio_unit = 1;
+	if(size != MOT_AWB_DATA_SIZE+2)
+		return NONEXISTENCE;
+
+	checkSum = awb_data[43]<<8 | awb_data[44];
+	RGBGratioDeviation = awb_data[6];
+	if(check_crc16(awb_data, 43, checkSum)) {
+		debug_log("check_crc16 ok");
+	} else {
+		debug_log("check_crc16 err");
+		return CRC_FAILURE;
+	}
+
+	//check ratio limt
+	rg_ratio_unit = (awb_data[32]<<8 | awb_data[33])*1000/16384;
+	bg_ratio_unit = (awb_data[34]<<8 | awb_data[35])*1000/16384;
+	grgb_ratio_unit = (awb_data[36]<<8 | awb_data[37])*1000/16384;
+	rg_ratio_gold = (awb_data[18]<<8 | awb_data[19])*1000/16384;
+	bg_ratio_gold = (awb_data[20]<<8 | awb_data[21])*1000/16384;
+	grgb_ratio_gold = (awb_data[22]<<8 | awb_data[23])*1000/16384;
+
+	if(grgb_ratio_unit<MOT_AWB_GRGB_RATIO_MIN_1000TIMES || grgb_ratio_unit>MOT_AWB_GRGB_RATIO_MAX_1000TIMES
+		|| grgb_ratio_gold<MOT_AWB_GRGB_RATIO_MIN_1000TIMES || grgb_ratio_gold>MOT_AWB_GRGB_RATIO_MAX_1000TIMES
+		|| (ABS(rg_ratio_unit, rg_ratio_gold))>RGBGratioDeviation
+		|| (ABS(bg_ratio_unit, bg_ratio_gold))>RGBGratioDeviation) {
+		debug_log("ratio check err");
+		return LIMIT_FAILURE;
+	}
+
+	CalR  = (awb_data[24]<<8 | awb_data[25])/64;
+	CalGr = (awb_data[26]<<8 | awb_data[27])/64;
+	CalGb = (awb_data[28]<<8 | awb_data[29])/64;
+	CalB  = (awb_data[30]<<8 | awb_data[31])/64;
+
+	if(CalR<MOT_AWB_RB_MIN_VALUE || CalR>MOT_AWB_RBG_MAX_VALUE
+		|| CalGr<MOT_AWB_G_MIN_VALUE ||CalGr>MOT_AWB_RBG_MAX_VALUE
+		|| CalGb<MOT_AWB_G_MIN_VALUE ||CalGb>MOT_AWB_RBG_MAX_VALUE
+		|| CalB<MOT_AWB_RB_MIN_VALUE || CalB>MOT_AWB_RBG_MAX_VALUE) {
+		debug_log("check unit R Gr Gb B limit error");
+		return LIMIT_FAILURE;
+	}
+
+	FacR  = (awb_data[10]<<8 | awb_data[11])/64;
+	FacGr = (awb_data[12]<<8 | awb_data[13])/64;
+	FacGb = (awb_data[14]<<8 | awb_data[15])/64;
+	FacB  = (awb_data[16]<<8 | awb_data[17])/64;
+
+	if(FacR<MOT_AWB_RB_MIN_VALUE || FacR>MOT_AWB_RBG_MAX_VALUE
+		|| FacGr<MOT_AWB_G_MIN_VALUE ||FacGr>MOT_AWB_RBG_MAX_VALUE
+		|| FacGb<MOT_AWB_G_MIN_VALUE ||FacGb>MOT_AWB_RBG_MAX_VALUE
+		|| FacB<MOT_AWB_RB_MIN_VALUE || FacB>MOT_AWB_RBG_MAX_VALUE) {
+		debug_log("check gold R Gr Gb B limit error");
+		return LIMIT_FAILURE;
+	}
+
+	return NO_ERRORS;
+}
+
+
 unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData)
 {
@@ -234,126 +298,128 @@ unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 
 	if(check_crc16(tempBuf, 37, checkSum)) {
 		debug_log("check_crc16 ok");
-		pCamCalData->MotEepromData.CalibrationStatus.mnf_status= NO_ERRORS;
 		err = CAM_CAL_ERR_NO_ERR;
 	} else {
 		debug_log("check_crc16 err");
-		pCamCalData->MotEepromData.CalibrationStatus.mnf_status= CRC_FAILURE;
 		err = CAM_CAL_ERR_NO_PARTNO;
 		return err;
 	}
 	 //eeprom_table_version
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.eeprom_table_version, MAX_CALIBRATION_STRING, "0x%x", tempBuf[0]);
+	ret = snprintf(pCamCalData->ManufactureData.eeprom_table_version, MAX_CALIBRATION_STRING, "0x%x", tempBuf[0]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->eeprom_table_version failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.eeprom_table_version, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.eeprom_table_version));
+		memset(pCamCalData->ManufactureData.eeprom_table_version, 0,
+			sizeof(pCamCalData->ManufactureData.eeprom_table_version));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//part_number
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+	ret = snprintf(pCamCalData->ManufactureData.part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
 		tempBuf[3], tempBuf[4], tempBuf[5], tempBuf[6],
 		tempBuf[7], tempBuf[8], tempBuf[9], tempBuf[10]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->mot_part_number failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.part_number, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.part_number));
+		memset(pCamCalData->ManufactureData.part_number, 0,
+			sizeof(pCamCalData->ManufactureData.part_number));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//actuator_id
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.actuator_id, MAX_CALIBRATION_STRING, "0x%x", tempBuf[11]);
+	ret = snprintf(pCamCalData->ManufactureData.actuator_id, MAX_CALIBRATION_STRING, "0x%x", tempBuf[11]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->actuator_id failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.actuator_id, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.actuator_id));
+		memset(pCamCalData->ManufactureData.actuator_id, 0,
+			sizeof(pCamCalData->ManufactureData.actuator_id));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//lens_id
 	if(tempBuf[12] == 0x24)
-		ret = snprintf(pCamCalData->MotEepromData.ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39374A-400");
+		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39374A-400");
+	else if(tempBuf[12] == 0x25)
+		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39449A-400");
 	else
-		ret = snprintf(pCamCalData->MotEepromData.ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Unknow");
+		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Unknow");
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->lens_id failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.lens_id, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.lens_id));
+		memset(pCamCalData->ManufactureData.lens_id, 0,
+			sizeof(pCamCalData->ManufactureData.lens_id));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//manufacture id
 	if(tempBuf[13] == 'T' && tempBuf[14] == 'S') {
-		ret = snprintf(pCamCalData->MotEepromData.ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Tianshi");
+		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Tianshi");
+	} else if(tempBuf[13] == 'S' && tempBuf[14] == 'U') {
+		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Sunny");
 	} else {
-		ret = snprintf(pCamCalData->MotEepromData.ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Unknow");
+		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Unknow");
 	}
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->manufacturer_id failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.manufacturer_id, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.manufacturer_id));
+		memset(pCamCalData->ManufactureData.manufacturer_id, 0,
+			sizeof(pCamCalData->ManufactureData.manufacturer_id));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//factory_id
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.factory_id, MAX_CALIBRATION_STRING, "%c%c", tempBuf[15], tempBuf[16]);
+	ret = snprintf(pCamCalData->ManufactureData.factory_id, MAX_CALIBRATION_STRING, "%c%c", tempBuf[15], tempBuf[16]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->factory_id failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.factory_id, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.factory_id));
+		memset(pCamCalData->ManufactureData.factory_id, 0,
+			sizeof(pCamCalData->ManufactureData.factory_id));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//manufacture_line
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.manufacture_line, MAX_CALIBRATION_STRING, "%u", tempBuf[17]);
+	ret = snprintf(pCamCalData->ManufactureData.manufacture_line, MAX_CALIBRATION_STRING, "%u", tempBuf[17]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->manufacture_line failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.manufacture_line, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.manufacture_line));
+		memset(pCamCalData->ManufactureData.manufacture_line, 0,
+			sizeof(pCamCalData->ManufactureData.manufacture_line));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//manufacture_date
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.manufacture_date, MAX_CALIBRATION_STRING, "20%u%u%u",
+	ret = snprintf(pCamCalData->ManufactureData.manufacture_date, MAX_CALIBRATION_STRING, "20%02u%02u%02u",
 		tempBuf[18], tempBuf[19], tempBuf[20]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->manufacture_date failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.manufacture_date, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.manufacture_date));
+		memset(pCamCalData->ManufactureData.manufacture_date, 0,
+			sizeof(pCamCalData->ManufactureData.manufacture_date));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 
 	//serial_number
-	ret = snprintf(pCamCalData->MotEepromData.ManufactureData.serial_number, MAX_CALIBRATION_STRING,
+	ret = snprintf(pCamCalData->ManufactureData.serial_number, MAX_CALIBRATION_STRING,
 		"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
 		tempBuf[21], tempBuf[22], tempBuf[23], tempBuf[24], tempBuf[25], tempBuf[26], tempBuf[27], tempBuf[28],
 		tempBuf[29], tempBuf[30], tempBuf[31], tempBuf[32], tempBuf[33], tempBuf[34], tempBuf[35], tempBuf[36]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->serial_number failed");
-		memset(pCamCalData->MotEepromData.ManufactureData.serial_number, 0,
-			sizeof(pCamCalData->MotEepromData.ManufactureData.serial_number));
+		memset(pCamCalData->ManufactureData.serial_number, 0,
+			sizeof(pCamCalData->ManufactureData.serial_number));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
 #ifdef EEPROM_DEBUG
-	debug_log("eeprom_table_version: %s\n", pCamCalData->MotEepromData.ManufactureData.eeprom_table_version);
-	debug_log("part_number: %s\n", pCamCalData->MotEepromData.ManufactureData.part_number);
-	debug_log("actuator_id: %s\n", pCamCalData->MotEepromData.ManufactureData.actuator_id);
-	debug_log("lens_id: %s\n", pCamCalData->MotEepromData.ManufactureData.lens_id);
-	debug_log("manufacturer_id: %s\n", pCamCalData->MotEepromData.ManufactureData.manufacturer_id);
-	debug_log("factory_id: %s\n", pCamCalData->MotEepromData.ManufactureData.factory_id);
-	debug_log("manufacture_line: %s\n", pCamCalData->MotEepromData.ManufactureData.manufacture_line);
-	debug_log("manufacture_date: %s\n", pCamCalData->MotEepromData.ManufactureData.manufacture_date);
-	debug_log("serial_number: %s\n", pCamCalData->MotEepromData.ManufactureData.serial_number);
+	debug_log("eeprom_table_version: %s\n", pCamCalData->ManufactureData.eeprom_table_version);
+	debug_log("part_number: %s\n", pCamCalData->ManufactureData.part_number);
+	debug_log("actuator_id: %s\n", pCamCalData->ManufactureData.actuator_id);
+	debug_log("lens_id: %s\n", pCamCalData->ManufactureData.lens_id);
+	debug_log("manufacturer_id: %s\n", pCamCalData->ManufactureData.manufacturer_id);
+	debug_log("factory_id: %s\n", pCamCalData->ManufactureData.factory_id);
+	debug_log("manufacture_line: %s\n", pCamCalData->ManufactureData.manufacture_line);
+	debug_log("manufacture_date: %s\n", pCamCalData->ManufactureData.manufacture_date);
+	debug_log("serial_number: %s\n", pCamCalData->ManufactureData.serial_number);
 #endif
 
 	return err;
@@ -423,11 +489,9 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		if(check_crc16(awb_data, 43, checkSum)) {
 			debug_log("check_crc16 ok");
 			err = CAM_CAL_ERR_NO_ERR;
-			pCamCalData->MotEepromData.CalibrationStatus.awb_status= NO_ERRORS;
 		} else {
 			debug_log("check_crc16 err");
 			err = CAM_CAL_ERR_NO_3A_GAIN;
-			pCamCalData->MotEepromData.CalibrationStatus.awb_status= CRC_FAILURE;
 			return err;
 		}
 		//check ratio limt
@@ -443,7 +507,6 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			|| grgb_ratio_gold<MOT_AWB_GRGB_RATIO_MIN_1000TIMES || grgb_ratio_gold>MOT_AWB_GRGB_RATIO_MAX_1000TIMES
 			|| (ABS(rg_ratio_unit, rg_ratio_gold))>RGBGratioDeviation
 			|| (ABS(bg_ratio_unit, bg_ratio_gold))>RGBGratioDeviation) {
-			pCamCalData->MotEepromData.CalibrationStatus.awb_status = LIMIT_FAILURE;
 			debug_log("ratio check err");
 			err = CAM_CAL_ERR_NO_3A_GAIN;
 			return err;
@@ -458,11 +521,11 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			|| CalGr<MOT_AWB_G_MIN_VALUE ||CalGr>MOT_AWB_RBG_MAX_VALUE
 			|| CalGb<MOT_AWB_G_MIN_VALUE ||CalGb>MOT_AWB_RBG_MAX_VALUE
 			|| CalB<MOT_AWB_RB_MIN_VALUE || CalB>MOT_AWB_RBG_MAX_VALUE) {
-			pCamCalData->MotEepromData.CalibrationStatus.awb_status = LIMIT_FAILURE;
 			debug_log("check unit R Gr Gb B limit error");
 			err = CAM_CAL_ERR_NO_3A_GAIN;
 			return err;
 		}
+
 #ifdef MOTO_OB_VALUE
 		CalR  = CalR - MOTO_OB_VALUE;
 		CalGr = CalGr - MOTO_OB_VALUE;
@@ -486,11 +549,11 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			|| FacGr<MOT_AWB_G_MIN_VALUE ||FacGr>MOT_AWB_RBG_MAX_VALUE
 			|| FacGb<MOT_AWB_G_MIN_VALUE ||FacGb>MOT_AWB_RBG_MAX_VALUE
 			|| FacB<MOT_AWB_RB_MIN_VALUE || FacB>MOT_AWB_RBG_MAX_VALUE) {
-			pCamCalData->MotEepromData.CalibrationStatus.awb_status = LIMIT_FAILURE;
 			debug_log("check gold R Gr Gb B limit error");
 			err = CAM_CAL_ERR_NO_3A_GAIN;
 			return err;
 		}
+
 #ifdef MOTO_OB_VALUE
 		FacR  = FacR - MOTO_OB_VALUE;
 		FacGr = FacGr - MOTO_OB_VALUE;
@@ -531,11 +594,9 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		if(check_crc16(af_data, 24, checkSum)) {
 			debug_log("check_crc16 ok");
 			err = CAM_CAL_ERR_NO_ERR;
-			pCamCalData->MotEepromData.CalibrationStatus.af_status= NO_ERRORS;
 		} else {
 			debug_log("check_crc16 err");
 			err = CAM_CAL_ERR_NO_3A_GAIN;
-			pCamCalData->MotEepromData.CalibrationStatus.af_status= CRC_FAILURE;
 			return err;
 		}
 		AFMacro = (af_data[2]<<8 | af_data[3])/64;
@@ -592,11 +653,9 @@ unsigned int mot_do_single_lsc(struct EEPROM_DRV_FD_DATA *pdata,
 	if(check_crc16(tempBuf, 1868, checkSum)) {
 		debug_log("check_crc16 ok");
 		err = CAM_CAL_ERR_NO_ERR;
-		pCamCalData->MotEepromData.CalibrationStatus.lsc_status = NO_ERRORS;
 	} else {
 		debug_log("check_crc16 err");
 		err = CAM_CAL_ERR_NO_SHADING;
-		pCamCalData->MotEepromData.CalibrationStatus.lsc_status = CRC_FAILURE;
 		return err;
 	}
 
@@ -662,11 +721,9 @@ unsigned int mot_do_pdaf(struct EEPROM_DRV_FD_DATA *pdata,
 	if(check_crc16(tempBuf, 496, checkSum1) && check_crc16(tempBuf +496, 1004, checkSum2)) {
 		debug_log("check_crc16 ok");
 		err = CAM_CAL_ERR_NO_ERR;
-		pCamCalData->MotEepromData.CalibrationStatus.pdaf_status = NO_ERRORS;
 	} else {
 		debug_log("check_crc16 err");
 		err = CAM_CAL_ERR_NO_PDAF;
-		pCamCalData->MotEepromData.CalibrationStatus.pdaf_status = CRC_FAILURE;
 		return err;
 	}
 
@@ -689,21 +746,6 @@ unsigned int mot_do_pdaf(struct EEPROM_DRV_FD_DATA *pdata,
 
 	return err;
 
-}
-
-unsigned int mot_do_dump_all(struct EEPROM_DRV_FD_DATA *pdata,
-		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData)
-{
-	struct STRUCT_CAM_CAL_DATA_STRUCT *pCamCalData =
-				(struct STRUCT_CAM_CAL_DATA_STRUCT *)pGetSensorCalData;
-	int read_data_size;
-
-	read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
-			start_addr, block_size, (unsigned char *)pCamCalData->MotEepromData.DumpAllEepromData);
-	if (read_data_size != block_size)
-		return CAM_CAL_ERR_DUMP_FAILED;
-	debug_log("dump all eeprom data finish\n");
-	return CAM_CAL_ERR_NO_ERR;
 }
 
 unsigned int do_module_version(struct EEPROM_DRV_FD_DATA *pdata,
@@ -1492,6 +1534,51 @@ unsigned int get_is_need_power_on(struct EEPROM_DRV_FD_DATA *pdata, unsigned int
 
 	result = CamCalReturnErr[uint_lsCommand];
 	show_cmd_error_log(lsCommand);
+	return result;
+}
+
+unsigned int mot_get_cal_factory_data(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData)
+{
+	struct STRUCT_MOT_EEPROM_DATA *pCamCalData =
+				(struct STRUCT_MOT_EEPROM_DATA *)pGetSensorCalData;
+
+	enum ENUM_MOT_CAMERA_CAM_CAL_TYPE_ENUM lsCommand = pCamCalData->Command;
+	unsigned int result = CAM_CAL_ERR_NO_DEVICE;
+
+	must_log("device_id = %d, lsCommand = %d\n", pCamCalData->deviceID, lsCommand);
+
+	if (lsCommand != CAMERA_CAM_CAL_DATA_FACTORY_VERIFY) {
+		error_log("Invalid Command = 0x%x\n", lsCommand);
+		return CAM_CAL_ERR_NO_CMD;
+	}
+
+	must_log("last_sensor_id = 0x%x current_sensor_id = 0x%x",
+				last_sensor_id, pCamCalData->sensorID);
+	if (last_sensor_id != pCamCalData->sensorID) {
+		last_sensor_id = pCamCalData->sensorID;
+		debug_log("search %u layouts", cam_cal_number);
+		for (cam_cal_index = 0; cam_cal_index < cam_cal_number; cam_cal_index++) {
+			cam_cal_config = cam_cal_config_list[cam_cal_index];
+			if (cam_cal_config->sensor_id == pCamCalData->sensorID) {
+				break;
+			}
+		}
+	}
+
+	if ((cam_cal_index < cam_cal_number) && (cam_cal_index >= 0)) {
+		strcpy(pCamCalData->SensorName, cam_cal_config->name);
+		pCamCalData->sensor_type = (sensor_type_t)cam_cal_config->sensor_type;
+		pCamCalData->data_size = (unsigned int)cam_cal_config->preload_size;
+		pCamCalData->serial_number_bit= (unsigned int)cam_cal_config->serial_number_bit;
+		debug_log("current sensor name : %s, sensor_type = %d, data_size = 0x%x",
+			pCamCalData->SensorName, pCamCalData->sensor_type, pCamCalData->data_size);
+		if (cam_cal_config->mot_do_factory_verify_function != NULL) {
+			result = cam_cal_config->mot_do_factory_verify_function(pdata, pGetSensorCalData);
+			return result;
+		}
+	} else
+		must_log("layout type not found");
+
 	return result;
 }
 
