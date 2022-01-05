@@ -36,7 +36,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_AUSTIN_HI1336_SENSOR_ID,
 
-	.checksum_value = 0x4f1b1d5e,       //0x6d01485c // Auto Test Mode ÃßÈÄ..
+	.checksum_value = 0x4f1b1d5e,       //0x6d01485c // Auto Test Mode ÃƒÃŸÃˆÃ„..
 	.pre = {
 		.pclk = 600000000,
 		.linelength = 6004,
@@ -47,7 +47,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 571200000, //(1428M * 4 / 10 )
+		.mipi_pixel_rate = 583680000, //(1428M * 4 / 10 )
 	},
 	.cap = {
 		.pclk = 600000000,
@@ -59,7 +59,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 571200000, //(1428M * 4 / 10 )
+		.mipi_pixel_rate = 583680000, //(1428M * 4 / 10 )
 	},
 	.normal_video = {
 		.pclk = 600000000,
@@ -71,7 +71,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 571200000, //( 1428M*4/10)
+		.mipi_pixel_rate = 583680000, //( 1428M*4/10)
 	},
 	.hs_video = {
 		.pclk = 600000000,
