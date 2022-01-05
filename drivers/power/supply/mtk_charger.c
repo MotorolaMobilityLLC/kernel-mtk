@@ -71,6 +71,7 @@ struct tag_bootmode {
 	u32 boottype;
 };
 
+#ifdef MTK_BASE
 #ifdef MODULE
 static char __chg_cmdline[COMMAND_LINE_SIZE];
 static char *chg_cmdline = __chg_cmdline;
@@ -104,6 +105,7 @@ const char *chg_get_cmd(void)
 {
 	return saved_command_line;
 }
+#endif
 #endif
 
 int chr_get_debug_level(void)
@@ -2432,7 +2434,9 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 
 	if (info->enable_vbat_mon)
 		charger_dev_enable_6pin_battery_charging(info->chg1_dev, false);
-
+	chr_err("lenovo mtk_charger_plug_out, atm_enabled=%d\n", info->atm_enabled);
+	if (info->atm_enabled && !info->chg_tcmd_client.factory_kill_disable)
+		kernel_power_off();
 	return 0;
 }
 
@@ -4026,6 +4030,56 @@ _out:
 	return ret;
 }
 
+
+static void mot_chg_get_atm_mode(struct mtk_charger *info)
+{
+	const char *bootargs_ptr = NULL;
+	char *bootargs_str = NULL;
+	char *idx = NULL;
+	char *kvpair = NULL;
+	struct device_node *n = of_find_node_by_path("/chosen");
+	size_t bootargs_ptr_len = 0;
+	char *value = NULL;
+
+	if (n == NULL)
+		return;
+
+	bootargs_ptr = (char *)of_get_property(n, "mmi,bootconfig", NULL);
+
+	if (!bootargs_ptr) {
+		chr_err("%s: failed to get mmi,bootconfig\n", __func__);
+		goto err_putnode;
+	}
+
+	bootargs_ptr_len = strlen(bootargs_ptr);
+	if (!bootargs_str) {
+		/* Following operations need a non-const version of bootargs */
+		bootargs_str = kzalloc(bootargs_ptr_len + 1, GFP_KERNEL);
+		if (!bootargs_str)
+			goto err_putnode;
+	}
+	strlcpy(bootargs_str, bootargs_ptr, bootargs_ptr_len + 1);
+
+	idx = strnstr(bootargs_str, "androidboot.atm=", strlen(bootargs_str));
+	if (idx) {
+		kvpair = strsep(&idx, " ");
+		if (kvpair)
+			if (strsep(&kvpair, "=")) {
+				value = strsep(&kvpair, "\n");
+			}
+	}
+	if (!strncmp(value, "enable", strlen("enable"))) {
+		info->atm_enabled = true;
+		factory_charging_enable = false;
+	}
+	chr_err("%s: value = %s  enable %d\n", __func__, value,info->atm_enabled);
+	kfree(bootargs_str);
+
+err_putnode:
+	of_node_put(n);
+}
+
+#ifdef MTK_BASE
 void mtk_charger_get_atm_mode(struct mtk_charger *info)
 {
 	char atm_str[64] = {0};
@@ -4054,6 +4108,7 @@ void mtk_charger_get_atm_mode(struct mtk_charger *info)
 end:
 	chr_err("%s: atm_enabled = %d\n", __func__, info->atm_enabled);
 }
+#endif
 
 static int psy_charger_property_is_writeable(struct power_supply *psy,
 					       enum power_supply_property psp)
@@ -4627,8 +4682,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 #endif /* CONFIG_PM */
 	srcu_init_notifier_head(&info->evt_nh);
 	mtk_charger_setup_files(pdev);
+#ifdef MTK_BASE
 	mtk_charger_get_atm_mode(info);
-
+#else
+	mot_chg_get_atm_mode(info);
+#endif
 	for (i = 0; i < CHGS_SETTING_MAX; i++) {
 		info->chg_data[i].thermal_charging_current_limit = -1;
 		info->chg_data[i].thermal_input_current_limit = -1;
