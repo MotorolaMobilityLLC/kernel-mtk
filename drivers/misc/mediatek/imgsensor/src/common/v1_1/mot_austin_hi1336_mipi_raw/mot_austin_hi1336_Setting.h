@@ -955,7 +955,7 @@ kal_uint16 addr_data_pair_init_hi1336[] = {
 
 kal_uint16 addr_data_pair_preview_hi1336[] = {
 	0x3250, 0xa060, //sreg8 - RAMP,B[15:10]:d2a_ramp_rng_ctrl
-	0x0730, 0x770f, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
+	0x0730, 0x9813, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
 	0x0732, 0xe0b0, //pll_cfg_mipi_b b13-11:100_isp_div1(1/5) b10-8:000_mipi_div1(1/1) b1-0:00_mipi_div2(1/1)
 	0x1118, 0x0006, //LSC r_win_y B[11]: Bit8 of y offset in start block when cropping. B[10:8] y start index of block when cropping. B[7:0] y offset in start block when cropping.
 	0x1200, 0x011f, //PDPC BYPASS : Dyna-DPC ON, PDEN flag OFF, PD-DPC ON
@@ -965,18 +965,18 @@ kal_uint16 addr_data_pair_preview_hi1336[] = {
 	0x0f00, 0x0000, //fmt ctrl
 	0x1002, 0xc319,
 	0x103e, 0x0000, //mipi_tx_col_read_ctrl
-	0x1020, 0xc10b, //mipi_exit_seq, tlpx
-	0x1022, 0x0a31, //mipi_tclk_prepare, tclk_zero
-	0x1024, 0x030b, //mipi_tclk_pre, ths_prepare
-	0x1026, 0x0d0f, //mipi_ths_zero, ths_trail
-	0x1028, 0x1a0e, //mipi_tclk_post, tclk_trail
+	0x1020, 0xc10c, //mipi_exit_seq, tlpx
+	0x1022, 0x0e36, //mipi_tclk_prepare, tclk_zero
+	0x1024, 0x050f, //mipi_tclk_pre, ths_prepare
+	0x1026, 0x1310, //mipi_ths_zero, ths_trail
+	0x1028, 0x1b0e, //mipi_tclk_post, tclk_trail
 	0x102a, 0x1311, //mipi_texit, tsync
 	0x102c, 0x2400, //mipi_tpd_sync
 	0x1010, 0x07d0, //mipi_vblank_delay
-	0x1012, 0x017d, //mipi_ch0_hblank_delay
-	0x1014, 0x006a, //mipi_hblank_short_delay1
-	0x1016, 0x006a, //mipi_hblank_short_delay2
-	0x101a, 0x006a, //mipi_pd_hblank_delay
+	0x1012, 0x01a4, //mipi_ch0_hblank_delay
+	0x1014, 0x007e, //mipi_hblank_short_delay1
+	0x1016, 0x007e, //mipi_hblank_short_delay2
+	0x101a, 0x007e, //mipi_pd_hblank_delay
 	0x0404, 0x0008, //x addr start active
 	0x0406, 0x1087, //x addr end active
 	0x0220, 0x0008, //y addr start fobp
@@ -991,7 +991,7 @@ kal_uint16 addr_data_pair_preview_hi1336[] = {
 	0x0234, 0x1111, //y even/odd inc tobp
 	0x0238, 0x1111, //y even/odd inc active
 	0x0246, 0x0020, //y read dummy address
-	0x020a, 0x0bb6,
+	0x020a, 0x0cfe,
 	0x021c, 0x0008, //coarse integ time short for iHDR
 	0x0206, 0x05dd, //line length pck
 	0x020e, 0x0d02,
@@ -1005,7 +1005,7 @@ kal_uint16 addr_data_pair_preview_hi1336[] = {
 
 kal_uint16 addr_data_pair_capture_30fps_hi1336[] = {
 	0x3250, 0xa060, //sreg8 - RAMP,B[15:10]:d2a_ramp_rng_ctrl
-	0x0730, 0x770f, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
+	0x0730, 0x9813, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
 	0x0732, 0xe0b0, //pll_cfg_mipi_b b13-11:100_isp_div1(1/5) b10-8:000_mipi_div1(1/1) b1-0:00_mipi_div2(1/1)
 	0x1118, 0x0006, //LSC r_win_y B[11]: Bit8 of y offset in start block when cropping. B[10:8] y start index of block when cropping. B[7:0] y offset in start block when cropping.
 	0x1200, 0x011f, //PDPC BYPASS : Dyna-DPC ON, PDEN flag OFF, PD-DPC ON
@@ -1015,18 +1015,18 @@ kal_uint16 addr_data_pair_capture_30fps_hi1336[] = {
 	0x0f00, 0x0000, //fmt ctrl
 	0x1002, 0xc319,
 	0x103e, 0x0000, //mipi_tx_col_read_ctrl
-	0x1020, 0xc10b, //mipi_exit_seq, tlpx
-	0x1022, 0x0a31, //mipi_tclk_prepare, tclk_zero
-	0x1024, 0x030b, //mipi_tclk_pre, ths_prepare
-	0x1026, 0x0d0f, //mipi_ths_zero, ths_trail
-	0x1028, 0x1a0e, //mipi_tclk_post, tclk_trail
+	0x1020, 0xc10c, //mipi_exit_seq, tlpx
+	0x1022, 0x0e36, //mipi_tclk_prepare, tclk_zero
+	0x1024, 0x050f, //mipi_tclk_pre, ths_prepare
+	0x1026, 0x1310, //mipi_ths_zero, ths_trail
+	0x1028, 0x1b0e, //mipi_tclk_post, tclk_trail
 	0x102a, 0x1311, //mipi_texit, tsync
 	0x102c, 0x2400, //mipi_tpd_sync
 	0x1010, 0x07d0, //mipi_vblank_delay
-	0x1012, 0x017d, //mipi_ch0_hblank_delay
-	0x1014, 0x006a, //mipi_hblank_short_delay1
-	0x1016, 0x006a, //mipi_hblank_short_delay2
-	0x101a, 0x006a, //mipi_pd_hblank_delay
+	0x1012, 0x01a4, //mipi_ch0_hblank_delay
+	0x1014, 0x007e, //mipi_hblank_short_delay1
+	0x1016, 0x007e, //mipi_hblank_short_delay2
+	0x101a, 0x007e, //mipi_pd_hblank_delay
 	0x0404, 0x0008, //x addr start active
 	0x0406, 0x1087, //x addr end active
 	0x0220, 0x0008, //y addr start fobp
@@ -1041,7 +1041,7 @@ kal_uint16 addr_data_pair_capture_30fps_hi1336[] = {
 	0x0234, 0x1111, //y even/odd inc tobp
 	0x0238, 0x1111, //y even/odd inc active
 	0x0246, 0x0020, //y read dummy address
-	0x020a, 0x0bb6,
+	0x020a, 0x0cfe,
 	0x021c, 0x0008, //coarse integ time short for iHDR
 	0x0206, 0x05dd, //line length pck
 	0x020e, 0x0d02,
@@ -1110,7 +1110,7 @@ kal_uint16 addr_data_pair_capture_15fps_hi1336[] = {
 
 kal_uint16 addr_data_pair_video_hi1336[] = {
 	0x3250, 0xa060, //sreg8 - RAMP,B[15:10]:d2a_ramp_rng_ctrl
-	0x0730, 0x770f, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
+	0x0730, 0x9813, //pll_cfg_mipi_a PLL_CLK=750mhz b7-6:00_isp_div2(1/1)
 	0x0732, 0xe0b0, //pll_cfg_mipi_b b13-11:100_isp_div1(1/5) b10-8:000_mipi_div1(1/1) b1-0:00_mipi_div2(1/1)
 	0x1118, 0x0006, //LSC r_win_y B[11]: Bit8 of y offset in start block when cropping. B[10:8] y start index of block when cropping. B[7:0] y offset in start block when cropping.
 	0x1200, 0x011f, //PDPC BYPASS : Dyna-DPC ON, PDEN flag OFF, PD-DPC ON
@@ -1120,18 +1120,18 @@ kal_uint16 addr_data_pair_video_hi1336[] = {
 	0x0f00, 0x0000, //fmt ctrl
 	0x1002, 0xc319,
 	0x103e, 0x0000, //mipi_tx_col_read_ctrl
-	0x1020, 0xc10b, //mipi_exit_seq, tlpx
-	0x1022, 0x0a31, //mipi_tclk_prepare, tclk_zero
-	0x1024, 0x030b, //mipi_tclk_pre, ths_prepare
-	0x1026, 0x0d0f, //mipi_ths_zero, ths_trail
-	0x1028, 0x1a0e, //mipi_tclk_post, tclk_trail
+	0x1020, 0xc10c, //mipi_exit_seq, tlpx
+	0x1022, 0x0e36, //mipi_tclk_prepare, tclk_zero
+	0x1024, 0x050f, //mipi_tclk_pre, ths_prepare
+	0x1026, 0x1310, //mipi_ths_zero, ths_trail
+	0x1028, 0x1b0e, //mipi_tclk_post, tclk_trail
 	0x102a, 0x1311, //mipi_texit, tsync
 	0x102c, 0x2400, //mipi_tpd_sync
 	0x1010, 0x07d0, //mipi_vblank_delay
-	0x1012, 0x017d, //mipi_ch0_hblank_delay
-	0x1014, 0x006a, //mipi_hblank_short_delay1
-	0x1016, 0x006a, //mipi_hblank_short_delay2
-	0x101a, 0x006a, //mipi_pd_hblank_delay
+	0x1012, 0x01a4, //mipi_ch0_hblank_delay
+	0x1014, 0x007e, //mipi_hblank_short_delay1
+	0x1016, 0x007e, //mipi_hblank_short_delay2
+	0x101a, 0x007e, //mipi_pd_hblank_delay
 	0x0404, 0x0008, //x addr start active
 	0x0406, 0x1087, //x addr end active
 	0x0220, 0x0008, //y addr start fobp
@@ -1146,7 +1146,7 @@ kal_uint16 addr_data_pair_video_hi1336[] = {
 	0x0234, 0x1111, //y even/odd inc tobp
 	0x0238, 0x1111, //y even/odd inc active
 	0x0246, 0x0020, //y read dummy address
-	0x020a, 0x0bb6,
+	0x020a, 0x0cfe,
 	0x021c, 0x0008, //coarse integ time short for iHDR
 	0x0206, 0x05dd, //line length pck
 	0x020e, 0x0d02,
