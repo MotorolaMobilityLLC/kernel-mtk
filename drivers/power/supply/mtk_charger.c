@@ -4068,11 +4068,13 @@ static void mot_chg_get_atm_mode(struct mtk_charger *info)
 				value = strsep(&kvpair, "\n");
 			}
 	}
-	if (!strncmp(value, "enable", strlen("enable"))) {
-		info->atm_enabled = true;
-		factory_charging_enable = false;
+	if (value) {
+		if (!strncmp(value, "enable", strlen("enable"))) {
+			info->atm_enabled = true;
+			factory_charging_enable = false;
+		}
+		chr_err("%s: value = %s  enable %d\n", __func__, value,info->atm_enabled);
 	}
-	chr_err("%s: value = %s  enable %d\n", __func__, value,info->atm_enabled);
 	kfree(bootargs_str);
 
 err_putnode:
