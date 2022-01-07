@@ -13,6 +13,7 @@
 #include "mediatek/mt6879-moto-common-overlay.dtsi"
 #include "mediatek/tesla-touch.dtsi"
 #include "mediatek/tesla-display.dtsi"
+#include "mediatek/tesla-sensor.dtsi"
 #include "mediatek/tesla-wl2864c.dtsi"
 #include "mediatek/cust_mt6879_camera_v4l2_tesla.dtsi"
 #include "mediatek/tesla-charger.dtsi"
