@@ -77,7 +77,7 @@ struct mmi_ddr_info{
         unsigned int ramsize;
 };
 unsigned int ram_size;
-unsigned int storage_mfrid;
+char storage_mfrid[32];
 #endif
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
@@ -8142,8 +8142,7 @@ static int ufshcd_probe_hba(struct ufs_hba *hba, bool async)
 
 #if  defined(CONFIG_UFSHID)
 		if (ufshid_get_state(&hba->ufsf) == HID_NEED_INIT  && (hba->card->wmanufacturerid != UFS_VENDOR_SKHYNIX)) {
-		   dev_err(hba->dev, "Chris: Samsung & Micron memory, Hynix use self driver not go here!\n");
-             ufsf_hid_init(&hba->ufsf);
+			ufsf_hid_init(&hba->ufsf);
 		}
 #endif
 
@@ -10406,7 +10405,7 @@ static int get_storage_info(struct ufs_hba *hba)
     of_node_put(n);
 
     dev_info(hba->dev, "manufacturer parsed from choosen is %s\n",info->card_manufacturer);
-	storage_mfrid = simple_strtol(info->card_manufacturer, NULL, 16);
+    strncpy(storage_mfrid, info->card_manufacturer, sizeof(info->card_manufacturer));
 err:
         return ret;
 }
