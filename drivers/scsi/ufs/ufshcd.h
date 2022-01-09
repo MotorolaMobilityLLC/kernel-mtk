@@ -83,10 +83,10 @@
 
 #if defined(CONFIG_UFSFEATURE)
 extern unsigned int ram_size;
-extern unsigned int storage_mfrid;
-#define IS_SAMSUNG_DEVICE(mfrid)   (0x1EC == (mfrid))
-#define IS_SKHYNIX_DEVICE(mfrid)   (0x1AD == (mfrid))
-#define IS_MICRON_DEVICE(mfrid)    (0x12C == (mfrid))
+extern char storage_mfrid[32];
+#define IS_SAMSUNG_DEVICE(mfrid)   (0 == strcmp(mfrid,"SAMSUNG"))
+#define IS_SKHYNIX_DEVICE(mfrid)   (0 == strcmp(mfrid,"SKHYNIX"))
+#define IS_MICRON_DEVICE(mfrid)   (0 == strcmp(mfrid,"MICRON"))
 #define IS_RAM_SIZE_GREATER_THAN_4G(ram_size) (ram_size > 4)
 #endif
 
