@@ -108,6 +108,8 @@ struct chg_limit_setting {
 	int input_current_limit_dvchg1;
 	int charging_current_limit1;
 	int charging_current_limit2;
+	int mmi_fcc_limit;
+	int mmi_current_limit_dvchg1;
 	bool vbat_mon_en;
 };
 

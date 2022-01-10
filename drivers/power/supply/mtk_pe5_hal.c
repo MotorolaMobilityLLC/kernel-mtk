@@ -247,9 +247,10 @@ int pe50_hal_init_hardware(struct chg_alg_device *alg, const char **support_ta,
 	hal->adapters = devm_kzalloc(info->dev,
 				     sizeof(struct adapter_device *) *
 				     support_ta_cnt, GFP_KERNEL);
-	if (!hal->adapters)
-		return -ENOMEM;
-
+	if (!hal->adapters) {
+		ret = -ENOMEM;
+		goto err_free_mem2;
+	}
 	hal->support_ta = support_ta;
 	hal->support_ta_cnt = support_ta_cnt;
 	/* get TA */
@@ -263,7 +264,7 @@ int pe50_hal_init_hardware(struct chg_alg_device *alg, const char **support_ta,
 	}
 	if (!has_ta) {
 		ret = -ENODEV;
-		goto err;
+		goto err_free_mem1;
 	}
 
 	/* get charger device */
@@ -274,7 +275,7 @@ int pe50_hal_init_hardware(struct chg_alg_device *alg, const char **support_ta,
 			PE50_ERR("get %s fail\n", mtk_chgdev_desc_tbl[i].name);
 			if (mtk_chgdev_desc_tbl[i].must_exist) {
 				ret = -ENODEV;
-				goto err;
+				goto err_free_mem1;
 			}
 		}
 	}
@@ -285,7 +286,11 @@ int pe50_hal_init_hardware(struct chg_alg_device *alg, const char **support_ta,
 	hal->dev = info->dev;
 	PE50_INFO("successfully\n");
 	return 0;
-err:
+
+err_free_mem1:
+	devm_kfree(info->dev, hal->adapters);
+err_free_mem2:
+	devm_kfree(info->dev, hal);
 	return ret;
 }
 
@@ -438,6 +443,8 @@ int pe50_hal_get_adc(struct chg_alg_device *alg, enum chg_idx chgidx,
 	int chgtyp = to_chgtyp(chgidx);
 	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
 	int _chan = to_chgclass_adc(chan);
+	union power_supply_propval prop;
+	static struct power_supply *bat_psy = NULL;
 
 	if (chgtyp < 0)
 		return chgtyp;
@@ -447,7 +454,38 @@ int pe50_hal_get_adc(struct chg_alg_device *alg, enum chg_idx chgidx,
 	if (_chan == ADC_CHANNEL_TBAT) {
 		*val = pe50_get_tbat(hal);
 		return 0;
+	} else if (_chan == ADC_CHANNEL_IBAT) {
+		if (bat_psy == NULL || IS_ERR(bat_psy)) {
+			chr_err("%s retry to get bat_psy for ibat\n", __func__);
+			bat_psy = devm_power_supply_get_by_phandle(hal->dev, "gauge");
+		}
+
+		if (bat_psy == NULL || IS_ERR(bat_psy)) {
+			chr_err("%s Couldn't get bat_psy\n", __func__);
+			return -1;
+		} else {
+			 ret = power_supply_get_property(bat_psy,
+				POWER_SUPPLY_PROP_CURRENT_NOW, &prop);
+			 *val = prop.intval / 1000;
+			 return 0;
+		}
+	} else if (_chan == ADC_CHANNEL_VBAT) {
+		if (bat_psy == NULL || IS_ERR(bat_psy)) {
+			chr_err("%s retry to get bat_psy for vbat\n", __func__);
+			bat_psy = devm_power_supply_get_by_phandle(hal->dev, "gauge");
+		}
+
+		if (bat_psy == NULL || IS_ERR(bat_psy)) {
+			chr_err("%s Couldn't get bat_psy\n", __func__);
+			return -1;
+		} else {
+			 ret = power_supply_get_property(bat_psy,
+				POWER_SUPPLY_PROP_VOLTAGE_NOW, &prop);
+			 *val = prop.intval / 1000;
+			 return 0;
+		}
 	}
+
 	ret = charger_dev_get_adc(hal->chgdevs[chgtyp], _chan, val, val);
 	if (ret < 0)
 		return ret;
