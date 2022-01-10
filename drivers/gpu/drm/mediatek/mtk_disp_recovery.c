@@ -561,7 +561,7 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 
 		if (ret != 0) {
 			DDPPR_ERR(
-				"[ESD]after esd recovery %d times, still fail, disable esd check\n",
+				"[ESD]after esd recovery %d times, still fail, enable esd check again\n",
 				ESD_TRY_CNT);
 			mtk_disp_esd_check_switch(crtc, true);
 			DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
