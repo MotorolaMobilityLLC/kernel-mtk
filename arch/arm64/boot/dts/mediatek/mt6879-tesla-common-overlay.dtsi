@@ -116,7 +116,7 @@
 		egistec,gpio_irq = <&pio 24 0x0>;
 
 		vcc_fp-supply = <&mt6368_vfp>;	// ldo for support module vcc
-		egis-fp,vcc-voltage = <3000000 3000000>;	// ldo voltage default 3.3V
+		egis-fp,vcc-voltage = <3300000 3300000>;	// ldo voltage default 3.3V
 		egis-fp,vcc-current = <100000>;
 
 		pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active", "egis_spi_active", "egis_spi_default";
