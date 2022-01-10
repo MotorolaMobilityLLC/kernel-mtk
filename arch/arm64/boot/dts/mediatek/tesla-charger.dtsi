@@ -36,7 +36,10 @@
     battery_cv = <4480000>;
     max_charger_voltage = <14500000>;
     ac_charger_current = <3000000>;
-    fast_charging_indicator = <0>;
+    /*pe5*/
+    fast_charging_indicator = <0x10>;
+    /*swchg + 1CP*/
+    charger_configuration= <3>;
 
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
@@ -45,7 +48,6 @@
 			<15 0 2500 2500>,
 			<45 4250 6000 5200>,
 			<45 4400 5200 4000>,
-			<45 4510 4000 4000>,
 			<60 4200 4000 0>;
 	mmi,mmi-ffc-zones = <0 4200 250>,
 			<10 4250 250>,
@@ -101,3 +103,60 @@
 	};
 };
 
+&pd_adapter{
+	ita_min = <1000>;
+};
+
+
+&pe5 {
+		compatible = "mediatek,charger,pe5";
+		gauge = <&mtk_gauge>;
+		polling_interval = <10000>;
+		ta_cv_ss_repeat_tmin = <25>;
+		vbat_cv = <4510>;
+		start_soc_min = <0>;
+		start_soc_max = <90>;
+		start_vbat_max = <4450>;
+		idvchg_term = <500>;
+		idvchg_step = <50>;
+		ita_level = <3000 2500 2000 1500>;
+		rcable_level = <300 375 500 600>;
+		ita_level_dual = <5000 3700 3400 3000>;
+		rcable_level_dual = <230 350 450 550>;
+		idvchg_ss_init = <1000>;
+		idvchg_ss_step = <250>;
+		idvchg_ss_step1 = <100>;
+		idvchg_ss_step2 = <50>;
+		idvchg_ss_step1_vbat = <4000>;
+		idvchg_ss_step2_vbat = <4200>;
+		ta_blanking = <400>;
+		swchg_aicr = <0>;
+		swchg_ichg = <1200>;
+		swchg_aicr_ss_init = <400>;
+		swchg_aicr_ss_step = <200>;
+		swchg_off_vbat = <4250>;
+		force_ta_cv_vbat = <4250>;
+		chg_time_max = <10800>;
+		tta_level_def = <0 0 0 0 25 50 60 70 80>;
+		tta_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tta_recovery_area = <3>;
+		tbat_level_def = <0 0 0 5 25 40 43 46 50>;
+		tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tbat_recovery_area = <3>;
+		tdvchg_level_def = <0 0 0 5 25 55 60 65 70>;
+		tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tdvchg_recovery_area = <3>;
+		tswchg_level_def = <0 0 0 5 25 65 70 75 80>;
+		tswchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tswchg_recovery_area = <3>;
+		ifod_threshold = <200>;
+		rsw_min = <20>;
+		ircmp_rbat = <40>;
+		ircmp_vclamp = <0>;
+		vta_cap_min = <6800>;
+		vta_cap_max = <11000>;
+		ita_cap_min = <1000>;
+		support_ta = "pca_ta_pps", "pd_adapter";
+		allow_not_check_ta_status;
+		vbat_threshold = <4150>;
+};
