@@ -2281,7 +2281,13 @@ static bool charger_init_algo(struct mtk_charger *info)
 		chr_err("get pe5 success\n");
 		alg->config = info->config;
 		alg->alg_id = PE5_ID;
-		chg_alg_init_algo(alg);
+		if (info->enable_fast_charging_indicator &&
+		    ((PE5_ID & info->fast_charging_indicator) == 0)) {
+			if (chg_alg_init_algo(alg) == -ENODEV)
+				return false;
+		} else
+			chg_alg_init_algo(alg);
+
 		register_chg_alg_notifier(alg, &info->chg_alg_nb);
 	}
 	idx++;
@@ -2936,22 +2942,33 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 {
 	bool change_state = false;
 	int allowed_fcc, target_ma, rc;
+	bool devchg1_en = false;
 
 	if (!info) {
 		pr_err("[%s]called before info valid!\n", __func__);
 		return false;
 	}
 
-	rc = charger_dev_get_charging_current(info->chg1_dev, &allowed_fcc);
-	if (rc < 0) {
-		pr_err("[%s]can't get charging current!\n", __func__);
-	} else
-		allowed_fcc = allowed_fcc /1000;
+	if (info->dvchg1_dev) {
+		rc = charger_dev_is_enabled(info->dvchg1_dev, &devchg1_en);
+		if (rc < 0)
+			devchg1_en = false;
+	}
 
-	if (allowed_fcc >= taper_ma)
+	if (devchg1_en)
 		target_ma = taper_ma;
-	else
-		target_ma = allowed_fcc - TAPER_DROP_MA;
+	else {
+		rc = charger_dev_get_charging_current(info->chg1_dev, &allowed_fcc);
+		if (rc < 0) {
+			pr_err("[%s]can't get charging current!\n", __func__);
+		} else
+			allowed_fcc = allowed_fcc /1000;
+
+		if (allowed_fcc >= taper_ma)
+			target_ma = taper_ma;
+		else
+			target_ma = allowed_fcc - TAPER_DROP_MA;
+	}
 
 	if (batt_ma > 0) {
 		if (batt_ma <= target_ma)
