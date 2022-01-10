@@ -178,6 +178,8 @@ struct pe50_algo_data {
 	enum pe50_thermal_level tswchg_level;
 	int input_current_limit;
 	int cv_limit;
+	int mmi_fcc_limit;
+	int mmi_therm_fcc_limit;
 };
 
 /* Setting from dtsi */
