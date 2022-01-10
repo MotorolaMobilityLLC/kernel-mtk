@@ -761,6 +761,74 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 }
 
 
+#ifdef EEPROM_READY
+#define GC02M1B_VAILD_DATA_SIZE 8
+
+#define MODULE_GROUP_FLAG_ADDR 0x78
+#define MODULE_GROUP1_START_ADDR 0x80
+#define MODULE_GROUP2_START_ADDR 0xC0
+#define MODULE_DATA_SIZE 16
+unsigned char gc02m1b_valid_data[GC02M1B_VAILD_DATA_SIZE] = {0}; //add flag and data
+unsigned char gc02m1b_data_eeprom[MODULE_DATA_SIZE + 1] = {0}; //add flag and data
+
+
+EXPORT_SYMBOL_GPL(gc02m1b_valid_data);
+EXPORT_SYMBOL_GPL(gc02m1b_data_eeprom);
+
+static void read_gc02m1b_module_info(struct subdrv_ctx *ctx)
+{
+	kal_uint16 i, start_addr = 0, otp_grp_flag = 0, otp_count = 0;
+
+	//init setting
+	write_cmos_sensor(ctx, 0xfc, 0x01);
+	write_cmos_sensor(ctx, 0xf4, 0x41);
+	write_cmos_sensor(ctx, 0xf5, 0xc0);
+	write_cmos_sensor(ctx, 0xf6, 0x44);
+	write_cmos_sensor(ctx, 0xf8, 0x38);
+	write_cmos_sensor(ctx, 0xf9, 0x82);
+	write_cmos_sensor(ctx, 0xfa, 0x00);
+	write_cmos_sensor(ctx, 0xfd, 0x80);
+	write_cmos_sensor(ctx, 0xfc, 0x81);
+	write_cmos_sensor(ctx, 0xfe, 0x03);
+	write_cmos_sensor(ctx, 0x01, 0x0b);
+	write_cmos_sensor(ctx, 0xf7, 0x01);
+	write_cmos_sensor(ctx, 0xfc, 0x80);
+	write_cmos_sensor(ctx, 0xfc, 0x80);
+	write_cmos_sensor(ctx, 0xfc, 0x80);
+	write_cmos_sensor(ctx, 0xfc, 0x8e);
+
+	write_cmos_sensor(ctx, 0xf3, 0x30); //OTP read init set
+	write_cmos_sensor(ctx, 0xfe, 0x02); //page select
+	write_cmos_sensor(ctx, 0x17, MODULE_GROUP_FLAG_ADDR); //set addr
+	write_cmos_sensor(ctx, 0xf3, 0x34); //otp read pulse
+	otp_grp_flag = read_cmos_sensor(ctx, 0x19); //read value
+	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+
+	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
+		start_addr = MODULE_GROUP1_START_ADDR;
+		otp_count = 1;
+		LOG_INF("otp data is group1\n");
+	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
+		start_addr = MODULE_GROUP2_START_ADDR;
+		otp_count = 9;
+		LOG_INF("otp data is group2\n");
+	} else {
+		LOG_INF("gc02m1 OTP has no otp data\n");
+	}
+
+	for(i = 0; i < MODULE_DATA_SIZE; i++){
+		write_cmos_sensor(ctx, 0x17, (start_addr+i*0x08));
+		write_cmos_sensor(ctx, 0xf3, 0x34);
+		gc02m1b_data_eeprom[i+1] = read_cmos_sensor(ctx, 0x19);
+		LOG_INF("value = 0x%x\n",gc02m1b_data_eeprom[i+1]);
+	}
+	for(i = 0; i < GC02M1B_VAILD_DATA_SIZE; i++){
+		gc02m1b_valid_data[i] = gc02m1b_data_eeprom[i+otp_count];
+		LOG_INF("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1b_valid_data[i]);
+	}
+}
+#endif
+
 static kal_uint32 return_sensor_id(struct subdrv_ctx *ctx)
 {
               kal_uint32 sensor_id = 0;
@@ -785,6 +853,9 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 			*sensor_id = return_sensor_id(ctx);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", ctx->i2c_write_id, *sensor_id);
+#ifdef EEPROM_READY
+				read_gc02m1b_module_info(ctx);
+#endif
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", ctx->i2c_write_id, *sensor_id);
