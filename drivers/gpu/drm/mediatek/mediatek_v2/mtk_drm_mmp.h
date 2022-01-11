@@ -108,6 +108,7 @@ struct CRTC_MMP_Events {
 	mmp_event msync_enable;
 	/*Msync 2.0 mmp end*/
 	mmp_event mode_switch;
+	mmp_event max_hrt_layers;
 };
 
 struct DRM_MMP_Events *get_drm_mmp_events(void);

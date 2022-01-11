@@ -260,6 +260,8 @@ void init_crtc_mmp_event(void)
 		/*Msync 2.0 mmp end*/
 		g_CRTC_MMP_Events[i].mode_switch = mmprofile_register_event(
 			crtc_mmp_root, "mode_switch");
+		g_CRTC_MMP_Events[i].max_hrt_layers = mmprofile_register_event(
+			crtc_mmp_root, "max_hrt_layers");
 	}
 }
 void drm_mmp_init(void)
