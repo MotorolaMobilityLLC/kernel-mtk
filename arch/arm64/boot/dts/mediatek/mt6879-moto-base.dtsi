@@ -15,3 +15,7 @@
 	hall_3: hall_3 { };
 	hall_4: hall_4 { };
 };
+
+&mmc1 {
+	/delete-property/ vqmmc-supply;
+};
