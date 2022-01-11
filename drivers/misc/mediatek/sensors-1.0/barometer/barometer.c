@@ -396,13 +396,15 @@ static ssize_t baro_store_cali(struct device *dev,
 {
 	struct baro_context *cxt = NULL;
 	int err = 0;
-	int32_t cali_buf[2] = {0};
 
-	err = sscanf(buf, "%d,%d", &cali_buf[0], &cali_buf[1]);
-	if (err != 2) {
-		pr_err("%s sscanf param error:%d\n", __func__, err);
-		return -1;
-	}
+	uint8_t *cali_buf = NULL;
+
+        pr_err("buf is %s, count is %d \n", buf, count);
+
+        cali_buf = vzalloc(count);
+        if (!cali_buf)
+            return -ENOMEM;
+        memcpy(cali_buf, buf, count);
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 	cxt = baro_context_obj;
