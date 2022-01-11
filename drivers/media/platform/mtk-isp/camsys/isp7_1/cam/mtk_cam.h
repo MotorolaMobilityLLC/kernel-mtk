@@ -216,6 +216,7 @@ struct mtk_cam_request_stream_data {
 	int pipe_id;
 	unsigned int frame_seq_no;
 	unsigned int flags;
+	unsigned long raw_dmas;
 	u64 timestamp;
 	u64 timestamp_mono;
 	atomic_t buf_state; /* default: -1 */

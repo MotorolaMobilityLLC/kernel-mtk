@@ -4308,6 +4308,9 @@ static int isp_composer_handle_ack(struct mtk_cam_device *cam,
 			 buf_entry->sub_cq_desc_size,
 			 buf_entry->sub_cq_desc_offset);
 
+		/* mmqos update */
+		mtk_cam_qos_bw_calc(ctx, s_data->raw_dmas);
+
 		if (mtk_cam_is_with_w_channel(ctx)) {
 			if (mtk_cam_sv_rgbw_apply_next_buffer(buf_entry->s_data) == 0)
 				dev_info(raw_dev->dev, "rgbw: sv apply next buffer failed");
@@ -6445,11 +6448,9 @@ int mtk_cam_ctx_stream_on(struct mtk_cam_ctx *ctx)
 	spin_unlock(&ctx->streaming_lock);
 	if (need_dump_mem)
 		cam->debug_fs->ops->reinit(cam->debug_fs, ctx->stream_id);
-	/* update dvfs/qos */
-	if (ctx->used_raw_num) {
+	/* update dvfs */
+	if (ctx->used_raw_num)
 		mtk_cam_dvfs_update_clk(ctx->cam);
-		mtk_cam_qos_bw_calc(ctx);
-	}
 
 	ret = mtk_camsys_ctrl_start(ctx);
 	if (ret)
