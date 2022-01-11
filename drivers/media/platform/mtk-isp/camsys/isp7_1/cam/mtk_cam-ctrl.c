@@ -404,6 +404,8 @@ int mtk_cam_sensor_switch_start_hw(struct mtk_cam_ctx *ctx,
 				   struct mtk_cam_request_stream_data *s_data)
 {
 	struct mtk_cam_device *cam = ctx->cam;
+	struct mtk_cam_req_raw_pipe_data *s_raw_pipe_data;
+	struct mtk_cam_resource_config *res_config;
 	struct mtk_raw_device *raw_dev;
 	struct device *dev;
 	int i, j, ret;
@@ -411,8 +413,16 @@ int mtk_cam_sensor_switch_start_hw(struct mtk_cam_ctx *ctx,
 	int feature_first_req;
 	int exp_no;
 
+	s_raw_pipe_data = mtk_cam_s_data_get_raw_pipe_data(s_data);
+	if (!s_raw_pipe_data) {
+		dev_info(ctx->cam->dev, "%s: failed to get raw_pipe_data (pipe:%d, seq:%d)\n",
+			 __func__, s_data->pipe_id, s_data->frame_seq_no);
+		return -EINVAL;
+	}
+
+	res_config = &s_raw_pipe_data->res_config;
 	if (ctx->used_raw_num) {
-		tgo_pxl_mode = ctx->pipe->res_config.tgo_pxl_mode;
+		tgo_pxl_mode = res_config->tgo_pxl_mode;
 
 	dev = mtk_cam_find_raw_dev(cam, ctx->used_raw_dev);
 	if (!dev) {
@@ -563,7 +573,7 @@ int mtk_cam_sensor_switch_start_hw(struct mtk_cam_ctx *ctx,
 		if (mtk_cam_is_hsf(ctx)) {
 			//HSF control
 			dev_info(cam->dev, "enabled_hsf_raw =%d\n",
-				 ctx->pipe->res_config.enable_hsf_raw);
+				res_config->enable_hsf_raw);
 				ret = mtk_cam_hsf_config(ctx, raw_dev->id);
 				if (ret != 0) {
 					dev_info(cam->dev, "Error:enabled_hsf fail\n");
