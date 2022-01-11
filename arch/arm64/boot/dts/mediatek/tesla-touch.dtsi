@@ -5,6 +5,10 @@
 
 /* TOUCH start */
 
+&fusb304 {
+	status = "disabled";
+};
+
 &spi3 {
 	status = "okay";
 	#address-cells = <1>;
@@ -23,6 +27,11 @@
 		status = "ok";
 		compatible = "goodix,gt9916S";
 		reg = <0x0>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "stylus_clk_active", "stylus_clk_suspend";
+		pinctrl-0 = <&ctp_gt9896s_int_active &ctp_gt9896s_reset_active>;
+		pinctrl-1 = <&ctp_gt9896s_int_suspend &ctp_gt9896s_reset_suspend>;
+		pinctrl-2 = <&ctp_gt9896s_stylus_active>;
+		pinctrl-3 = <&ctp_gt9896s_stylus_suspend>;
 		//mmi,status = "/chosen","mmi,panel_name","contains","nt37701";
 		spi-max-frequency = <1000000>;  /* 4800000,9600000,15000000,19200000 */
 		goodix,reset-gpio = <&pio 159 0x0>;
@@ -30,6 +39,9 @@
 		goodix,iovdd-gpio = <&pio 167 0x0>;
 		goodix,avdd-name = "vtouch";
 		vtouch-supply = <&mt6368_vtp>;
+		goodix,svdd-gpio = <&pio 59 0x0>;
+		goodix,svdd-name = "vstylus";
+		vstylus-supply = <&mt6368_vmc>;
 		goodix,irq-flags = <0x2002>; /* 1:trigger rising, 2:trigger falling;*/
 		goodix,panel-max-id = <10>;
 		goodix,panel-max-x = <1080>;
@@ -38,6 +50,9 @@
 		goodix,panel-max-p = <256>;
 		goodix,input-max-x = <1080>;
 		goodix,input-max-y = <2400>;
+		goodix,stylus_mode-ctrl;
+		goodix,stylus-clk-source = "stylus_clk_gpio"; /* use gpio59 as stylus clk*/
+		mmi,enable-gestures;
 	};
 };
 
@@ -56,6 +71,12 @@
 			output-high;
 		};
 	};
+	ctp_gt9896s_stylus_active: stylus1_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO59__FUNC_GPIO59>;
+			output-high;
+		};
+	};
 	ctp_gt9896s_int_suspend: int1_suspend {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
@@ -65,6 +86,12 @@
 	ctp_gt9896s_reset_suspend: reset1_suspend {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			output-low;
+		};
+	};
+	ctp_gt9896s_stylus_suspend: stylus1_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO59__FUNC_GPIO59>;
 			output-low;
 		};
 	};
