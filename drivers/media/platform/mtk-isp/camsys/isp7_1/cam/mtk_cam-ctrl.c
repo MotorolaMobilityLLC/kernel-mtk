@@ -4649,7 +4649,7 @@ int mtk_camsys_ctrl_start(struct mtk_cam_ctx *ctx)
 	}
 
 	camsys_sensor_ctrl->ctx = ctx;
-	atomic_set(&camsys_sensor_ctrl->reset_seq_no, 0);
+	atomic_set(&camsys_sensor_ctrl->reset_seq_no, 1);
 	atomic_set(&camsys_sensor_ctrl->sensor_enq_seq_no, 0);
 	atomic_set(&camsys_sensor_ctrl->sensor_request_seq_no, 0);
 	atomic_set(&camsys_sensor_ctrl->isp_request_seq_no, 0);
