@@ -959,6 +959,8 @@ static int mtk_spi_probe(struct platform_device *pdev)
 
 	if (!of_property_read_bool(pdev->dev.of_node, "tee-only"))
 		master->set_cs = mtk_spi_set_cs;
+	else
+		dev_info(&pdev->dev,"get tee-only property\n");
 
 	if (mdata->dev_comp->need_pad_sel) {
 		mdata->pad_num = of_property_count_u32_elems(
