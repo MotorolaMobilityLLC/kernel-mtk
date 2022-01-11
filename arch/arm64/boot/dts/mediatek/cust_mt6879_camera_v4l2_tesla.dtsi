@@ -481,6 +481,12 @@
 	#size-cells = <0>;
 
 	//DEPTH
+	mtk_camera_eeprom2:camera_eeprom2@20 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x20>;
+		status = "okay";
+	};
+
 	sensor2: sensor2@6e {
 		compatible = "mediatek,imgsensor";
 		sensor-names = "mot_dubai_gc02m1b_mipi_raw";
