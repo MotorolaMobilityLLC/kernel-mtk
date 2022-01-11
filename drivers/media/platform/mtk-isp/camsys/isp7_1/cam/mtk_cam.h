@@ -51,6 +51,9 @@
 
 #define MTK_CAM_CTX_WATCHDOG_INTERVAL	100
 
+/*stagger sensor stability option for camsys*/
+#define STAGGER_CQ_LAST_SOF 1
+
 struct platform_device;
 struct mtk_rpmsg_device;
 struct mtk_cam_debug_fs;
@@ -139,6 +142,7 @@ struct mtk_camsv_working_buf_entry {
 	u64 ts_raw;
 	u64 ts_sv;
 	atomic_t is_apply;
+	u8 is_stagger;
 };
 
 struct mtk_camsv_working_buf_list {
@@ -164,6 +168,7 @@ struct mtk_mraw_working_buf_entry {
 	u64 ts_raw;
 	u64 ts_mraw;
 	atomic_t is_apply;
+	u8 is_stagger;
 };
 
 struct mtk_mraw_working_buf_list {
