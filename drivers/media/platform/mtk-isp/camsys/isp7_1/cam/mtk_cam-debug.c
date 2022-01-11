@@ -1112,20 +1112,22 @@ mtk_cam_debug_detect_dequeue_failed(struct mtk_cam_request_stream_data *s_data,
 	if (s_data->no_frame_done_cnt > frame_no_update_limit &&
 		s_data->dbg_work.dump_flags == 0) {
 		dev_info(ctx->cam->dev,
-			 "%s:SOF[ctx:%d-#%d] no p1 done for %d sofs, FBC_CNT %d dump req(%d)\n",
+			 "%s:SOF[ctx:%d-#%d] no p1 done for %d sofs, FBC_CNT %d dump req(%d) state(%d) ts(%lu)\n",
 			 req->req.debug_str, ctx->stream_id,
 			 ctx->dequeued_frame_seq_no,
 			 s_data->no_frame_done_cnt, irq_info->fbc_cnt,
-			 s_data->frame_seq_no);
+			 s_data->frame_seq_no,
+			 s_data->state.estate, irq_info->ts_ns / 1000);
 		mtk_cam_req_dump(s_data, MTK_CAM_REQ_DUMP_DEQUEUE_FAILED,
 				 "No P1 done", false);
 	} else if (s_data->no_frame_done_cnt > frame_no_update_limit &&
 		s_data->dbg_work.dump_flags != 0)
 		dev_info(ctx->cam->dev,
-			 "%s:SOF[ctx:%d-#%d] no p1 done for %d sofs, s_data->dbg_work.dump_flags(%d)\n",
+			 "%s:SOF[ctx:%d-#%d] no p1 done for %d sofs, s_data->dbg_work.dump_flags(%d) state(%d) ts(%lu)\n",
 			 req->req.debug_str, ctx->stream_id,
 			 ctx->dequeued_frame_seq_no,
-			 s_data->no_frame_done_cnt, s_data->dbg_work.dump_flags);
+			 s_data->no_frame_done_cnt, s_data->dbg_work.dump_flags,
+			 s_data->state.estate, irq_info->ts_ns / 1000);
 }
 
 void mtk_cam_debug_wakeup(struct wait_queue_head *wq_head)
