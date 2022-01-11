@@ -3253,9 +3253,6 @@ static void mtk_camsys_raw_m2m_trigger(struct mtk_raw_device *raw_dev,
 	if (!mtk_cam_feature_is_m2m(raw_dev->pipeline->feature_active))
 		return;
 
-	if (!mtk_cam_is_mstream_m2m(ctx))
-		trigger_rawi(raw_dev, ctx, -1);
-
 	spin_lock(&sensor_ctrl->camsys_state_lock);
 	triggered = false;
 
@@ -3285,6 +3282,20 @@ static void mtk_camsys_raw_m2m_trigger(struct mtk_raw_device *raw_dev,
 						trigger_rawi(raw_dev, ctx,
 						MTKCAM_IPI_HW_PATH_OFFLINE_M2M);
 					}
+				} else {
+					if (req_stream_data->feature.prev_feature !=
+						req_stream_data->feature.raw_feature) {
+						dev_dbg(raw_dev->dev, "toggle_db, frame_seq_no %d",
+							req_stream_data->frame_seq_no);
+						toggle_db(raw_dev);
+					}
+					if (mtk_cam_feature_is_stagger_m2m(
+							req_stream_data->feature.raw_feature))
+						trigger_rawi(raw_dev, ctx,
+							MTKCAM_IPI_HW_PATH_OFFLINE_STAGGER);
+					else
+						trigger_rawi(raw_dev, ctx,
+							MTKCAM_IPI_HW_PATH_OFFLINE_M2M);
 				}
 				/**
 				 * outer number is 1 more from last SOF's
