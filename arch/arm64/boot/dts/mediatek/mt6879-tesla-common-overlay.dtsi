@@ -97,6 +97,7 @@
 /* FINGERPRINT start */
 &spi1 {
 	status = "okay";
+	tee-only;
 	fingerprint@0 {
 		compatible = "mediatek,fingerprint";
 		reg = <0>;
