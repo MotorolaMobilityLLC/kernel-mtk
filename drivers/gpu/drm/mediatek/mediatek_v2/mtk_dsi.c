@@ -3590,16 +3590,26 @@ static void mtk_dsi_config_trigger(struct mtk_ddp_comp *comp,
 	struct mtk_dsi *dsi = container_of(comp, struct mtk_dsi, ddp_comp);
 	struct mtk_drm_crtc *mtk_crtc = comp->mtk_crtc;
 	struct mtk_panel_ext *ext = dsi->ext;
+	struct mtk_drm_private *priv = mtk_crtc->base.dev->dev_private;
 
 	switch (flag) {
 	case MTK_TRIG_FLAG_TRIGGER:
 		/* TODO: avoid hardcode: 0xF0 register offset  */
 		if (!ext->params->lp_perline_en &&
 			mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base)) {
-			cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + 0x10,
-				       0, DSI_CM_MODE_WAIT_DATA_EVERY_LINE_EN);
-			cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + DSI_CMD_TYPE1_HS,
-					CMD_HS_HFP_BLANKING_HS_EN, CMD_HS_HFP_BLANKING_HS_EN);
+
+			if (priv->data->mmsys_id == MMSYS_MT6855 || priv->data->mmsys_id == MMSYS_MT6879){
+				DDPPR_ERR("%s: mmsys_id == MMSYS_MT6879\n", __func__);
+				cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + 0x10,
+						DSI_CM_MODE_WAIT_DATA_EVERY_LINE_EN,
+						DSI_CM_MODE_WAIT_DATA_EVERY_LINE_EN);
+			} else {
+				cmdq_pkt_write(handle, comp->cmdq_base, comp->regs_pa + 0x10,
+						0, DSI_CM_MODE_WAIT_DATA_EVERY_LINE_EN);
+				cmdq_pkt_write(handle, comp->cmdq_base,
+						comp->regs_pa + DSI_CMD_TYPE1_HS,
+						CMD_HS_HFP_BLANKING_HS_EN, CMD_HS_HFP_BLANKING_HS_EN);
+			}
 		}
 		cmdq_pkt_write(handle, comp->cmdq_base,
 			comp->mtk_crtc->config_regs_pa + 0xF0, 0x1, 0x1);
