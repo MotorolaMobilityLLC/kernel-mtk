@@ -19,11 +19,15 @@
 };
 
 /* CONNSYS cable-det GPIO start */
-&consys {
-	wifi_cable_det_support = "true";
-	pinctrl-names = "wifi_cable_pin_default";
-	pinctrl-0 = <&wifi_cable_det_pin_default>;
-	status = "okay";
+&odm {
+    rfmisc: rfmisc@tesla {
+        wifi_cable_det_support = "true";
+        pinctrl-names = "wifi_cable_pin_default";
+        pinctrl-0 = <&wifi_cable_det_pin_default>;
+        det-gpio = <&pio 124 0X2008>;
+        eint-debounce = <256000>;
+        compatible = "moto,rfmisc";
+    };
 };
 
 &pio {
