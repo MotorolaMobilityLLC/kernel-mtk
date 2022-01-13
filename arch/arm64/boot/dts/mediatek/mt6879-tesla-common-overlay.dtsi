@@ -17,7 +17,6 @@
 #include "mediatek/tesla-wl2864c.dtsi"
 #include "mediatek/cust_mt6879_camera_v4l2_tesla.dtsi"
 #include "mediatek/tesla-charger.dtsi"
-#include "mediatek/tesla-connsys.dtsi"
 
 &i2c6 {
     aw882xx_smartpa_0: aw882xx@34 {
