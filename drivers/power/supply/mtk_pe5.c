@@ -2698,9 +2698,37 @@ err:
 	return pe50_stop(info, &sinfo);
 }
 
+static int mmi_thermal_ratio(struct pe50_algo_info *info, int ibat, int vbat)
+{
+	struct pe50_algo_data *data = info->data;
+	int target_fcc = 0;
+	int ratio;
+
+	if (data->mmi_therm_fcc_limit > 0) {
+		target_fcc = min((u32)data->mmi_therm_fcc_limit, (u32)data->mmi_fcc_limit);
+		if (ibat - target_fcc > data->mmi_therm_cur_thres) {
+			ratio = data->mmi_therm_step;
+			PE50_INFO("--current for thermal,ratio=%d, target_ibat = %d, now_ibat = %d\n",
+				ratio, target_fcc, ibat);
+		} else if(target_fcc - ibat > data->mmi_therm_cur_thres &&
+			data->vbat_cv - vbat > data->mmi_therm_vol_thres) {
+			ratio = data->mmi_therm_step;
+			PE50_INFO("++current for thermal,ratio=%d, target_ibat = %d, now_ibat = %d, cv = %d, now_vbat= %d\n",
+				ratio,target_fcc, ibat, data->vbat_cv, vbat);
+		} else {
+			ratio = 1;
+			PE50_INFO("keep current for thermal,ratio=%d, target_ibat = %d, now_ibat = %d, cv = %d, now_vbat= %d\n",
+				ratio,target_fcc, ibat, data->vbat_cv, vbat);
+		}
+	} else
+		ratio = 1;
+
+	return ratio;
+}
+
 static int pe50_algo_cc_cv_with_ta_cv(struct pe50_algo_info *info)
 {
-	int ret, vbat, ibat, vsys, fcc_min;
+	int ret, vbat, ibat, vsys, fcc_min, ratio;
 	struct pe50_algo_data *data = info->data;
 	struct pe50_ta_auth_data *auth_data = &data->ta_auth_data;
 	u32 idvchg_lmt, vta = data->vta_setting, ita = data->ita_setting;
@@ -2779,22 +2807,24 @@ cc_cv:
 		PE50_INFO("--vta, ita(meas,lmt)=(%d,%d)\n", data->ita_measure,
 			  idvchg_lmt);
 	} else if (ibat > fcc_min) {
-		vta -= auth_data->vta_step;
-		ita -= ita_gap_per_vstep;
+		ratio = mmi_thermal_ratio(info, ibat, vbat);
+		vta -= ratio *auth_data->vta_step;
+		ita -= ratio *ita_gap_per_vstep;
 		ita = max(ita, idvchg_lmt);
-		PE50_INFO("--vta, ibat(meas,lmt)=(%d,%d)\n", ibat, fcc_min);
+		PE50_INFO("--vta, ibat(meas,lmt)=(%d,%d), ratio = %d\n", ibat, fcc_min, ratio);
 	} else if (!data->is_vbat_over_cv && vbat <= data->cv_lower_bound &&
 		   data->ita_measure <= (idvchg_lmt - ita_gap_per_vstep) &&  ibat <=  fcc_min - MMI_IBAT_GAP_MA &&
 		   vta < auth_data->vcap_max && !data->suspect_ta_cc &&
 		   vsys < (PE50_VSYS_UPPER_BOUND - PE50_VSYS_UPPER_BOUND_GAP)) {
-		vta += auth_data->vta_step;
+		ratio = mmi_thermal_ratio(info, ibat, vbat);
+		vta +=ratio * auth_data->vta_step;
 		vta = min(vta, (u32)auth_data->vcap_max);
-		ita += ita_gap_per_vstep;
+		ita += ratio * ita_gap_per_vstep;
 		ita = min(ita, idvchg_lmt);
 		if (ita == data->ita_setting)
 			suspect_ta_cc = true;
-		PE50_INFO("++vta, ita(meas,lmt)=(%d,%d), mmi_fcc = %d\n", data->ita_measure,
-			  idvchg_lmt, fcc_min);
+		PE50_INFO("++vta, ita(meas,lmt)=(%d,%d), mmi_fcc = %d, ratio = %d\n", data->ita_measure,
+			  idvchg_lmt, fcc_min, ratio);
 	} else if (data->is_vbat_over_cv)
 		data->is_vbat_over_cv = false;
 
@@ -4127,6 +4157,29 @@ static int pe50_parse_dt(struct pe50_algo_info *info)
 		data->vbat_threshold = DISABLE_VBAT_THRESHOLD;
 	}
 
+	if (of_property_read_u32(np, "mmi_therm_cur_thres", &val) >= 0)
+		data->mmi_therm_cur_thres = val;
+	else {
+		pr_notice("mmi therm current thres using default:%d\n",
+			MMI_THERMAL_CURRENT_THRESHOLD);
+		data->mmi_therm_cur_thres = MMI_THERMAL_CURRENT_THRESHOLD;
+	}
+	if (of_property_read_u32(np, "mmi_therm_vol_thres", &val) >= 0)
+		data->mmi_therm_vol_thres = val;
+	else {
+		pr_notice("mmi therm voltage thres using default:%d\n",
+			MMI_THERMAL_VOL_THRESHOLD);
+		data->mmi_therm_vol_thres = MMI_THERMAL_VOL_THRESHOLD;
+	}
+	if (of_property_read_u32(np, "mmi_therm_step", &val) >= 0)
+		data->mmi_therm_step = val;
+	else {
+		pr_notice("mmi therm step using default:%d\n",
+			MMI_THERMAL_STEP);
+		data->mmi_therm_step = MMI_THERMAL_STEP;
+	}
+	PE50_INFO("mmi thermal dts= %d,%d,%d\n",
+		data->mmi_therm_cur_thres, data->mmi_therm_vol_thres, data->mmi_therm_step);
 	return 0;
 }
 
