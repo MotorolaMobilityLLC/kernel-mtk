@@ -159,4 +159,7 @@
 		support_ta = "pca_ta_pps", "pd_adapter";
 		allow_not_check_ta_status;
 		vbat_threshold = <4150>;
+		mmi_therm_cur_thres = <500>;
+		mmi_therm_vol_thres = <80>;
+		mmi_therm_step = <3>;
 };
