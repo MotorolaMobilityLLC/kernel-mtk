@@ -201,7 +201,6 @@ unsigned int mot_layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
 	struct STRUCT_CAM_CAL_DATA_STRUCT *pCamCalData =
 				(struct STRUCT_CAM_CAL_DATA_STRUCT *)pGetSensorCalData;
 	unsigned int result = CAM_CAL_ERR_NO_DEVICE;
-
 	if (cam_cal_config->sensor_id == pCamCalData->sensorID) {
 		debug_log("%s sensor_id matched\n", cam_cal_config->name);
 		result = CAM_CAL_ERR_NO_ERR;
@@ -341,6 +340,8 @@ unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39374A-400");
 	else if(tempBuf[12] == 0x25)
 		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39449A-400");
+	else if(tempBuf[12] == 0x40)
+		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39397A-400");
 	else
 		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Unknow");
 
