@@ -3395,6 +3395,11 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 		info->mmi.vfloat_comp_mv = 0;
 	info->mmi.vfloat_comp_mv /= 1000;
 
+	rc = of_property_read_u32(node, "mmi,min-cp-therm-current-ua",
+				  &info->mmi.min_therm_current_limit);
+	if (rc)
+		info->mmi.min_therm_current_limit = 2000000;
+
 	return rc;
 }
 
