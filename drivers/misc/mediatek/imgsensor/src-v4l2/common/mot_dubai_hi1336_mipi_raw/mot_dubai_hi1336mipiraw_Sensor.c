@@ -1129,34 +1129,41 @@ static kal_uint16 sensor_init_setting_array1[] = {
 	0x0908, 0x0003,
 	0x0708, 0x2f00,
 	0x027e, 0x0100,
-
 };
 
 
 static kal_uint16 preview_setting_array[] = {
 	0x3250, 0xa060,
-	0x0730, 0x760f,
+	0x0730, 0x770f,
 	0x0732, 0xe0b0,
 	0x1118, 0x0006,
-	0x1200, 0x0d1f,
+	0x1200, 0x011f,
 	0x1204, 0x1c01,
 	0x1240, 0x0100,
 	0x0b20, 0x8100,
 	0x0f00, 0x0000,
 	0x1002, 0xc319,
+	0x1004, 0x2bab,
 	0x103e, 0x0000,
 	0x1020, 0xc10b,
-	0x1022, 0x0a31,
-	0x1024, 0x030b,
-	0x1026, 0x0d0f,
-	0x1028, 0x1a0e,
+	0x1022, 0x0e35,
+	0x1024, 0x050f,
+	0x1026, 0x1310,
+	0x1028, 0x1b0e,
 	0x102a, 0x1311,
 	0x102c, 0x2400,
 	0x1010, 0x07d0,
-	0x1012, 0x016e,
-	0x1014, 0x0063,
-	0x1016, 0x0063,
-	0x101a, 0x0063,
+	0x1012, 0x017d,
+	0x1014, 0x006a,
+	0x1016, 0x006a,
+	0x1018, 0x0040,
+	0x101a, 0x006a,
+	0x1038, 0x4100,
+	0x1042, 0x1108,
+	0x1048, 0x0080,
+	0x1044, 0x0100,
+	0x1046, 0x0004,
+	0x104c, 0x0000,
 	0x0404, 0x0008,
 	0x0406, 0x1087,
 	0x0220, 0x0008,
@@ -1171,42 +1178,50 @@ static kal_uint16 preview_setting_array[] = {
 	0x0234, 0x1111,
 	0x0238, 0x1111,
 	0x0246, 0x0020,
-	0x020a, 0x0bb6,
+	0x020a, 0x0cfe,
 	0x021c, 0x0008,
 	0x0206, 0x05dd,
-	0x020e, 0x0cf4,
+	0x020e, 0x0d02,
 	0x0b12, 0x1070,
 	0x0b14, 0x0c30,
 	0x0204, 0x0000,
 	0x041c, 0x0048,
 	0x041e, 0x1047,
-	0x0b04, 0x037e,
+	0x0b04, 0x037c,
 };
 
 static kal_uint16 capture_setting_array[] = {
 	0x3250, 0xa060,
-	0x0730, 0x760f,
+	0x0730, 0x770f,
 	0x0732, 0xe0b0,
 	0x1118, 0x0006,
-	0x1200, 0x0d1f,
+	0x1200, 0x011f,
 	0x1204, 0x1c01,
 	0x1240, 0x0100,
 	0x0b20, 0x8100,
 	0x0f00, 0x0000,
 	0x1002, 0xc319,
+	0x1004, 0x2bab,
 	0x103e, 0x0000,
 	0x1020, 0xc10b,
-	0x1022, 0x0a31,
-	0x1024, 0x030b,
-	0x1026, 0x0d0f,
-	0x1028, 0x1a0e,
+	0x1022, 0x0e35,
+	0x1024, 0x050f,
+	0x1026, 0x1310,
+	0x1028, 0x1b0e,
 	0x102a, 0x1311,
 	0x102c, 0x2400,
 	0x1010, 0x07d0,
-	0x1012, 0x016e,
-	0x1014, 0x0063,
-	0x1016, 0x0063,
-	0x101a, 0x0063,
+	0x1012, 0x017d,
+	0x1014, 0x006a,
+	0x1016, 0x006a,
+	0x1018, 0x0040,
+	0x101a, 0x006a,
+	0x1038, 0x4100,
+	0x1042, 0x1108,
+	0x1048, 0x0080,
+	0x1044, 0x0100,
+	0x1046, 0x0004,
+	0x104c, 0x0000,
 	0x0404, 0x0008,
 	0x0406, 0x1087,
 	0x0220, 0x0008,
@@ -1221,42 +1236,50 @@ static kal_uint16 capture_setting_array[] = {
 	0x0234, 0x1111,
 	0x0238, 0x1111,
 	0x0246, 0x0020,
-	0x020a, 0x0bb6,
+	0x020a, 0x0cfe,
 	0x021c, 0x0008,
 	0x0206, 0x05dd,
-	0x020e, 0x0cf4,
+	0x020e, 0x0d02,
 	0x0b12, 0x1070,
 	0x0b14, 0x0c30,
 	0x0204, 0x0000,
 	0x041c, 0x0048,
 	0x041e, 0x1047,
-	0x0b04, 0x037e,
+	0x0b04, 0x037c,
 };
 
 static kal_uint16 normal_video_setting_array[] = {
 	0x3250, 0xa060,
-	0x0730, 0x760f,
+	0x0730, 0x770f,
 	0x0732, 0xe0b0,
 	0x1118, 0x0006,
-	0x1200, 0x0d1f,
+	0x1200, 0x011f,
 	0x1204, 0x1c01,
 	0x1240, 0x0100,
 	0x0b20, 0x8100,
 	0x0f00, 0x0000,
 	0x1002, 0xc319,
+	0x1004, 0x2bab,
 	0x103e, 0x0000,
 	0x1020, 0xc10b,
-	0x1022, 0x0a31,
-	0x1024, 0x030b,
-	0x1026, 0x0d0f,
-	0x1028, 0x1a0e,
+	0x1022, 0x0e35,
+	0x1024, 0x050f,
+	0x1026, 0x1310,
+	0x1028, 0x1b0e,
 	0x102a, 0x1311,
 	0x102c, 0x2400,
 	0x1010, 0x07d0,
-	0x1012, 0x016e,
-	0x1014, 0x0063,
-	0x1016, 0x0063,
-	0x101a, 0x0063,
+	0x1012, 0x017d,
+	0x1014, 0x006a,
+	0x1016, 0x006a,
+	0x1018, 0x0040,
+	0x101a, 0x006a,
+	0x1038, 0x4100,
+	0x1042, 0x1108,
+	0x1048, 0x0080,
+	0x1044, 0x0100,
+	0x1046, 0x0004,
+	0x104c, 0x0000,
 	0x0404, 0x0008,
 	0x0406, 0x1087,
 	0x0220, 0x0008,
@@ -1271,16 +1294,16 @@ static kal_uint16 normal_video_setting_array[] = {
 	0x0234, 0x1111,
 	0x0238, 0x1111,
 	0x0246, 0x0020,
-	0x020a, 0x0bb6,
+	0x020a, 0x0cfe,
 	0x021c, 0x0008,
 	0x0206, 0x05dd,
-	0x020e, 0x0cf4,
+	0x020e, 0x0d02,
 	0x0b12, 0x1070,
 	0x0b14, 0x0c30,
 	0x0204, 0x0000,
 	0x041c, 0x0048,
 	0x041e, 0x1047,
-	0x0b04, 0x037e,
+	0x0b04, 0x037c,
 };
 
 static kal_uint16 hs_video_setting_array[] = {
@@ -1485,27 +1508,42 @@ static kal_uint16 custom2_setting_array[] = {
 
 /* VC2 for PDAF */
 static struct SENSOR_VC_INFO_STRUCT vc_info_preview = {
-	0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	0x00, 0x2b, 0x0838, 0x0618, /* VC0 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC1 */
-	0x01, 0x2b, 0x0208, 0x0300, /* VC2 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC3 */
+	0x02, //VC_Num
+	0x0a, //VC_PixelNum
+	0x00, //ModeSelect	/* 0:auto 1:direct */
+	0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
+	0x00, //0DValue		/* 0D Value */
+	0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
+	0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
+	0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
+	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
+	0x00, 0x00, 0x0000, 0x0000,	// VC3 ??
 };
 
 static struct SENSOR_VC_INFO_STRUCT vc_info_capture = {
-	0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	0x00, 0x2b, 0x1070, 0x0c30, /* VC0 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC1 */
-	0x01, 0x2b, 0x0208, 0x0300, /* VC2 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC3 */
+	0x02, //VC_Num
+	0x0a, //VC_PixelNum
+	0x00, //ModeSelect	/* 0:auto 1:direct */
+	0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
+	0x00, //0DValue		/* 0D Value */
+	0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
+	0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
+	0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
+	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
+	0x00, 0x00, 0x0000, 0x0000,	// VC3 ??
 };
 
 static struct SENSOR_VC_INFO_STRUCT vc_info_video = {
-	0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	0x00, 0x2b, 0x0838, 0x0618, /* VC0 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC1 */
-	0x01, 0x2b, 0x0208, 0x0300, /* VC2 */
-	0x00, 0x00, 0x0000, 0x0000, /* VC3 */
+	0x02, //VC_Num
+	0x0a, //VC_PixelNum
+	0x00, //ModeSelect    /* 0:auto 1:direct */
+	0x00, //EXPO_Ratio    /* 1/1, 1/2, 1/4, 1/8 */
+	0x00, //0DValue	   /* 0D Value */
+	0x00, //RG_STATSMODE  /* STATS divistion mode 0:16x16	1:8x8  2:4x4  3:1x1 */
+	0x00, 0x2B, 0x1070, 0x0C30,   // VC0 Maybe image data?
+	0x00, 0x00, 0x0000, 0x0000,   // VC1 MVHDR
+	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
+	0x00, 0x00, 0x0000, 0x0000,  // VC3 ??
 };
 
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[] = {
@@ -1519,51 +1557,19 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[] = {
 };
 
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
-	.i4OffsetX = 24,
+	.i4OffsetX = 56,
 	.i4OffsetY = 24,
 	.i4PitchX = 32,
 	.i4PitchY = 32,
-	.i4PairNum = 16,
-	.i4SubBlkW = 8,
-	.i4SubBlkH = 8,
-	.i4PosL = {
-		{26, 25}, {34, 25}, {42, 25}, {50, 25},
-		{30, 37}, {38, 37}, {46, 37}, {54, 37},
-		{26, 45}, {34, 45}, {42, 45}, {50, 45},
-		{30, 49}, {38, 49}, {46, 49}, {54, 49}
-	},
-	.i4PosR = {
-		{26, 29}, {34, 29}, {42, 29}, {50, 29},
-		{30, 33}, {38, 33}, {46, 33}, {54, 33},
-		{26, 41}, {34, 41}, {42, 41}, {50, 41},
-		{30, 53}, {38, 53}, {46, 53}, {54, 53}
-	},
-	.i4BlockNumX = 130,
+	.i4PairNum =8,
+	.i4SubBlkW =16,
+	.i4SubBlkH =8,
+	.i4PosL = {{58,31},{74,31},{66,35},{82,35},{58,47},{74,47},{66,51},{82,51}},
+	.i4PosR = {{58,27},{74,27},{66,39},{82,39},{58,43},{74,43},{66,55},{82,55}},
+	.i4BlockNumX = 128,
 	.i4BlockNumY = 96,
-};
-
-static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info_binning = {
-	.i4OffsetX = 12,
-	.i4OffsetY = 12,
-	.i4PitchX = 16,
-	.i4PitchY = 16,
-	.i4PairNum = 16,
-	.i4SubBlkW = 4,
-	.i4SubBlkH = 4,
-	.i4PosL = {
-		{12, 13}, {16, 13}, {20, 13}, {24, 13},
-		{14, 19}, {18, 19}, {22, 19}, {26, 19},
-		{12, 23}, {16, 23}, {20, 23}, {24, 23},
-		{14, 25}, {18, 25}, {22, 25}, {26, 25}
-	},
-	.i4PosR = {
-		{12, 15}, {16, 15}, {20, 15}, {24, 15},
-		{14, 17}, {18, 17}, {22, 17}, {26, 17},
-		{12, 21}, {16, 21}, {20, 21}, {24, 21},
-		{14, 27}, {18, 27}, {22, 27}, {26, 27}
-	},
-	.i4BlockNumX = 130,
-	.i4BlockNumY = 96,
+	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.iMirrorFlip = 0,
 };
 
 #if 0
@@ -2401,7 +2407,7 @@ static int get_info(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	//sensor_info->PDAF_Support = 2;
+	sensor_info->PDAF_Support = 2;
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
 	sensor_info->SensorClockDividCount = 3; /* not use */
@@ -2956,18 +2962,15 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 
 		switch (*feature_data) {
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 			memcpy((void *)PDAFinfo,
 				(void *)&imgsensor_pd_info,
 				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
-		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
 		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
 		default:
-			memcpy((void *)PDAFinfo,
-				(void *)&imgsensor_pd_info_binning,
-				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		}
 		break;
@@ -2979,19 +2982,19 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		/*PDAF capacity enable or not, 2p8 only full size support PDAF*/
 		switch (*feature_data) {
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 			/* video & capture use same setting */
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			break;
+		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-			break;
-		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case SENSOR_SCENARIO_ID_CUSTOM1:
@@ -3155,21 +3158,20 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	return ERROR_NONE;
 } /* feature_control(ctx) */
 
-#if 0
 static struct mtk_mbus_frame_desc_entry frame_desc_prev[] = {
 	{
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
+			.hsize = 0x1070,
+			.vsize = 0x0c30,
 		},
 	},
 	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x0208,
+			.hsize = 0x0100,
 			.vsize = 0x0300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
@@ -3189,7 +3191,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cap[] = {
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x0208,
+			.hsize = 0x0100,
 			.vsize = 0x0300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
@@ -3201,90 +3203,22 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
+			.hsize = 0x1070,
+			.vsize = 0x0c30,
 		},
 	},
 	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x0208,
+			.hsize = 0x0100,
 			.vsize = 0x0300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
 };
-static struct mtk_mbus_frame_desc_entry frame_desc_hs_vid[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x1070,
-			.vsize = 0x0c30,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_cus3[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_cus4[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_cus5[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x0838,
-			.vsize = 0x0618,
-		},
-	},
-};
+
+
 static int get_frame_desc(struct subdrv_ctx *ctx,
 		int scenario_id, struct mtk_mbus_frame_desc *fd)
 {
@@ -3304,34 +3238,12 @@ static int get_frame_desc(struct subdrv_ctx *ctx,
 		fd->num_entries = ARRAY_SIZE(frame_desc_vid);
 		memcpy(fd->entry, frame_desc_vid, sizeof(frame_desc_vid));
 		break;
-	case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
-		fd->type = MTK_MBUS_FRAME_DESC_TYPE_CSI2;
-		fd->num_entries = ARRAY_SIZE(frame_desc_hs_vid);
-		memcpy(fd->entry, frame_desc_hs_vid, sizeof(frame_desc_hs_vid));
-		break;
-	case SENSOR_SCENARIO_ID_SLIM_VIDEO:
-		fd->type = MTK_MBUS_FRAME_DESC_TYPE_CSI2;
-		fd->num_entries = ARRAY_SIZE(frame_desc_slim_vid);
-		memcpy(fd->entry, frame_desc_slim_vid, sizeof(frame_desc_slim_vid));
-		break;
-	case SENSOR_SCENARIO_ID_CUSTOM1:
-		fd->type = MTK_MBUS_FRAME_DESC_TYPE_CSI2;
-		fd->num_entries = ARRAY_SIZE(frame_desc_cus1);
-		memcpy(fd->entry, frame_desc_cus1, sizeof(frame_desc_cus1));
-		break;
-	case SENSOR_SCENARIO_ID_CUSTOM2:
-		fd->type = MTK_MBUS_FRAME_DESC_TYPE_CSI2;
-		fd->num_entries = ARRAY_SIZE(frame_desc_cus2);
-		memcpy(fd->entry, frame_desc_cus2, sizeof(frame_desc_cus2));
-		break;
 	default:
 		return -1;
 	}
 
 	return 0;
 }
-#endif
-
 
 static const struct subdrv_ctx defctx = {
 
@@ -3403,9 +3315,7 @@ static struct subdrv_ops ops = {
 	.feature_control = feature_control,
 	.close = close,
 	.get_csi_param = get_csi_param,
-#if 0
 	.get_frame_desc = get_frame_desc,
-#endif
 	.get_temp = get_temp,
 };
 
