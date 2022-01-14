@@ -308,6 +308,7 @@ struct mmi_params {
 	int			target_fcc;
 	int			target_usb;
 	struct notifier_block	chg_reboot;
+	int			min_therm_current_limit;
 };
 /*moto mmi Functionality end*/
 
