@@ -93,6 +93,24 @@
 	};
 };
 
+&clock_buffer_ctrl {
+	mediatek,xo-bbck4 = <1>;
+};
+
+&i2c3 {
+	status = "okay";
+	nfc_pn5xx: nfc_pn5xx@28 {
+		compatible = "nxp,pn5xx";
+		reg = <0x28>;
+		interrupt-parent = <&pio>;
+		interrupts = <19 IRQ_TYPE_LEVEL_HIGH>;
+		nxp,pn544-irq = <&pio 19 0>;
+		nxp,pn544-ven = <&pio 13 0>;
+		nxp,pn544-fd = <&pio 18 0>;
+		status = "okay";
+	};
+};
+
 /* FINGERPRINT start */
 &spi1 {
 	status = "okay";
