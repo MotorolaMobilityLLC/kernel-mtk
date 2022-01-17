@@ -4693,7 +4693,6 @@ int mtk_camsys_ctrl_start(struct mtk_cam_ctx *ctx)
 	atomic_set(&camsys_sensor_ctrl->isp_enq_seq_no, 0);
 	atomic_set(&camsys_sensor_ctrl->isp_update_timer_seq_no, 0);
 	atomic_set(&camsys_sensor_ctrl->last_drained_seq_no, 0);
-	atomic_set(&camsys_sensor_ctrl->reset_seq_no, 0);
 	camsys_sensor_ctrl->initial_cq_done = 0;
 	camsys_sensor_ctrl->sof_time = 0;
 	if (ctx->used_raw_num) {
