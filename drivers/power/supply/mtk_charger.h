@@ -61,6 +61,9 @@ struct charger_data;
 #define AC_CHARGER_INPUT_CURRENT		3200000
 #define NON_STD_AC_CHARGER_CURRENT		500000
 #define CHARGING_HOST_CHARGER_CURRENT		650000
+/*wireless input current and charging current*/
+#define WIRELESS_CHARGER_MAX_CURRENT			3000000
+#define WIRELESS_CHARGER_MAX_INPUT_CURRENT		1200000
 
 /* dynamic mivr */
 #define V_CHARGER_MIN_1 4400000 /* 4.4 V */
@@ -209,6 +212,9 @@ struct charger_custom_data {
 	int min_charger_voltage_2;
 	int max_dmivr_charger_current;
 
+	/*wireless charger*/
+	int wireless_charger_max_current;
+	int wireless_charger_max_input_current;
 };
 
 struct charger_data {
@@ -351,6 +357,7 @@ struct mtk_charger {
 	struct power_supply *psy_dvchg2;
 
 	struct power_supply  *chg_psy;
+	struct power_supply  *wl_psy;
 	struct power_supply  *bat_psy;
 	struct adapter_device *pd_adapter;
 	struct notifier_block pd_nb;
@@ -468,7 +475,7 @@ struct mtk_charger {
 	struct mutex pp_lock[CHG2_SETTING + 1];
 	struct moto_chg_tcmd_client chg_tcmd_client;
 	struct mmi_params	mmi;
-
+	int wireless_online;
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,
