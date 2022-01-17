@@ -275,6 +275,12 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 
 	info->mmi.target_usb = pdata->input_current_limit;
 
+	if(info->wireless_online) {
+		pdata->charging_current_limit  =  ((info->data.wireless_charger_max_current <
+					pdata->charging_current_limit) ? info->data.wireless_charger_max_current : pdata->charging_current_limit);
+		pdata->input_current_limit = info->data.wireless_charger_max_input_current;
+	}
+
 	sc_select_charging_current(info, pdata);
 
 	if (pdata->thermal_charging_current_limit != -1) {
