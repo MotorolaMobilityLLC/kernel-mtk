@@ -305,8 +305,27 @@ bool is_charger_exist(struct mtk_charger *info)
 int get_charger_type(struct mtk_charger *info)
 {
 	union power_supply_propval prop, prop2, prop3;
+	static struct power_supply *wl_psy;
 	static struct power_supply *chg_psy;
 	int ret;
+	if (info->wireless_online) {
+		if (wl_psy == NULL || IS_ERR(wl_psy)) {
+			chr_err("%s retry to get wl_psy\n", __func__);
+			wl_psy = power_supply_get_by_name("wireless");
+		}
+		if (wl_psy == NULL || IS_ERR(wl_psy)) {
+			chr_err("%s Couldn't get wl_psy\n", __func__);
+			prop2.intval = 0;
+		} else {
+			ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_TYPE, &prop2);
+			chr_err("%s type:%d ret:%d\n", __func__, prop2.intval,ret);
+			if (POWER_SUPPLY_TYPE_WIRELESS == prop2.intval) {
+			chr_err("%s event, wireless online,type:%d\n", __func__, prop2.intval);
+			return prop2.intval;
+			}
+		}
+	}
 
 	chg_psy = info->chg_psy;
 
