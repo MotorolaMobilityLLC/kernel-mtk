@@ -40,7 +40,8 @@
     fast_charging_indicator = <0x10>;
     /*swchg + 1CP*/
     charger_configuration= <3>;
-
+    wireless_charger_max_current = <3000000>;
+    wireless_charger_max_input_current = <1250000>;
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
@@ -163,4 +164,51 @@
 		mmi_therm_cur_thres = <500>;
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
+};
+
+&pio {
+	wls_cps4035_int_default: wls_cps4035_int_default {
+		pinmux = <PINMUX_GPIO31__FUNC_GPIO31>;
+		input-enable;
+		bias-pull-up;
+	};
+	wls_cps4035_det_int_default: wls_cps4035_det_int_default {
+		pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
+		input-enable;
+		bias-pull-down;
+	};
+	wls_cps4035_switch_en_default: wls_cps4035_switch_en_default {
+		pinmux = <PINMUX_GPIO104__FUNC_GPIO104>;
+		output-low;
+	};
+	wls_cps4035_boost_en_default: wls_cps4035_boost_en_default {
+		pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
+		output-low;
+	};
+};
+
+&i2c9 {
+    cps_wls_charger@31 {
+        compatible = "cps,wls-charger-cps4035-H";
+        reg = <0x31>;
+        status = "okay";
+    };
+
+    cps_wls_charger@30 {
+        compatible = "cps,wls-charger-cps4035-L";
+        wireless-fw-name = "cps4035.bin";
+        reg = <0x30>;
+        cps_wls_int = <&pio 31 0x0>;
+        cps_det_int = <&pio 115 0x0>;
+        cps_wls_switch_en = <&pio 104 0x0>;
+        cps_wls_boost_en = <&pio 121 0x0>;
+        pinctrl-names = "cps4035_int_default",
+		"cps4035_det_int_default", "cps4035_switch_en_default",
+		"cps4035_boost_en_default";
+        pinctrl-0 = <&wls_cps4035_int_default>;
+        pinctrl-1 = <&wls_cps4035_det_int_default>;
+        pinctrl-2 = <&wls_cps4035_switch_en_default>;
+        pinctrl-3 = <&wls_cps4035_boost_en_default>;
+        status = "okay";
+    };
 };
