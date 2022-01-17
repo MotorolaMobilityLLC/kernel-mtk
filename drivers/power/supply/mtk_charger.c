@@ -516,6 +516,22 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 			DEFAULT_ALG);
 		info->fast_charging_indicator = DEFAULT_ALG;
 	}
+
+	if (of_property_read_u32(np, "wireless_charger_max_current", &val) >= 0) {
+		info->data.wireless_charger_max_current = val;
+	} else {
+		chr_err("use default WIRELESS_CHARGER_MAX_CURRENT:%d\n",
+			WIRELESS_CHARGER_MAX_CURRENT);
+		info->data.wireless_charger_max_current = WIRELESS_CHARGER_MAX_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "wireless_charger_max_input_current", &val) >= 0) {
+		info->data.wireless_charger_max_input_current = val;
+	} else {
+		chr_err("use default WIRELESS_CHARGER_MAX_INPUT_CURRENT:%d\n",
+			WIRELESS_CHARGER_MAX_INPUT_CURRENT);
+		info->data.wireless_charger_max_input_current = WIRELESS_CHARGER_MAX_INPUT_CURRENT;
+	}
 }
 
 static void mtk_charger_start_timer(struct mtk_charger *info)
@@ -3711,6 +3727,7 @@ static void charger_status_check(struct mtk_charger *info)
 	} else {
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &online);
+		online.intval = online.intval || info->wireless_online;
 
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_STATUS, &status);
@@ -4410,10 +4427,24 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 	union power_supply_propval prop = {0};
 	union power_supply_propval prop2 = {0};
 	union power_supply_propval vbat0 = {0};
+	struct power_supply *wl_psy = NULL;
 	struct power_supply *chg_psy = NULL;
 	int ret;
 
 	info = (struct mtk_charger *)power_supply_get_drvdata(psy);
+        wl_psy = power_supply_get_by_name("wireless");
+        if (wl_psy == NULL || IS_ERR(wl_psy)) {
+                chr_err("%s Couldn't get wl_psy\n", __func__);
+                prop.intval = 0;
+        } else {
+                ret = power_supply_get_property(wl_psy,
+                        POWER_SUPPLY_PROP_ONLINE, &prop);
+                info->wireless_online = prop.intval;
+                if (1 == prop.intval) {
+                        pr_notice("%s event, name:%s online:%d\n", __func__,
+                                psy->desc->name, prop.intval);
+                }
+        }
 
 	if (info == NULL) {
 		pr_notice("%s: failed to get info\n", __func__);
