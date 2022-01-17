@@ -1764,18 +1764,30 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					goto EXIT;
 				}
 
+				get_task_struct(task);
+				rcu_read_unlock();
+
+				if (!try_get_task_stack(task)) {
+					ret = -EINVAL;
+					put_task_struct(task);
+					goto EXIT;
+				}
+
 				user_ret = task_pt_regs(task);
 				memcpy(&(tmp->regs), user_ret,
 						sizeof(struct pt_regs));
-				rcu_read_unlock();
+
 				if (copy_to_user
 				    ((struct aee_thread_reg __user *)arg, tmp,
 				     sizeof(struct aee_thread_reg))) {
 					kfree(tmp);
 					ret = -EFAULT;
+					put_task_stack(task);
+					put_task_struct(task);
 					goto EXIT;
 				}
-
+				put_task_stack(task);
+				put_task_struct(task);
 			} else {
 				pr_info(
 				  "%s: get thread registers ioctl tid invalid\n"
@@ -1798,6 +1810,7 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		unsigned long end = 0, length = 0;
 		unsigned char *stack;
 		int copied;
+		struct mm_struct *raw_mm;
 
 		pr_info("Get direct unwind backtrace stack");
 
@@ -1815,11 +1828,26 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ret = -EFAULT;
 			goto EXIT;
 		}
+		get_task_struct(task);
 		rcu_read_unlock();
 
+		if (!try_get_task_stack(task)) {
+			ret = -EINVAL;
+			put_task_struct(task);
+			goto EXIT;
+		}
+
+		raw_mm = get_task_mm(task);
+		if (!raw_mm) {
+			ret = -EINVAL;
+			put_task_stack(task);
+			put_task_struct(task);
+			goto EXIT;
+		}
+
 		start = stack_raw.sp;
-		down_read(&task->mm->mmap_sem);
-		vma = task->mm->mmap;
+		down_read(&raw_mm->mmap_sem);
+		vma = raw_mm->mmap;
 		while (vma != NULL) {
 			if (vma->vm_start <= start &&
 				vma->vm_end >= start) {
@@ -1827,14 +1855,17 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				break;
 			}
 			vma = vma->vm_next;
-			if (vma == task->mm->mmap)
+			if (vma == raw_mm->mmap)
 				break;
 		}
-		up_read(&task->mm->mmap_sem);
+		up_read(&raw_mm->mmap_sem);
+		mmput(raw_mm);
 
 		if (end == 0) {
 			pr_info("Dump native stack failed:\n");
 			ret = -EFAULT;
+			put_task_stack(task);
+			put_task_struct(task);
 			goto EXIT;
 		}
 
@@ -1845,11 +1876,15 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		stack = vmalloc(MaxStackSize);
 		if (!stack) {
 			ret = -ENOMEM;
+			put_task_stack(task);
+			put_task_struct(task);
 			goto EXIT;
 		}
 
 		copied = access_process_vm(task, start, stack,
 				length, 0);
+		put_task_stack(task);
+		put_task_struct(task);
 		if (copied != length) {
 			pr_info("Access stack error");
 			vfree(stack);
@@ -2068,6 +2103,7 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case AEEIOCTL_CHECK_SUID_DUMPABLE:
 		{
 			int pid;
+			struct mm_struct *t_mm;
 
 			pr_debug("%s: check suid dumpable ioctl\n", __func__);
 
@@ -2090,27 +2126,36 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					ret = -EINVAL;
 					goto EXIT;
 				}
+				get_task_struct(task);
+				rcu_read_unlock();
 
-				task_lock(task);
-				if (task->mm == NULL) {
+				if (!try_get_task_stack(task)) {
+					ret = -EINVAL;
+					put_task_struct(task);
+					goto EXIT;
+				}
+
+				t_mm = get_task_mm(task);
+				if (!t_mm) {
 					pr_info("%s: process:%d task mm null\n",
 						__func__, pid);
-					task_unlock(task);
-					rcu_read_unlock();
+					put_task_stack(task);
+					put_task_struct(task);
 					ret = -EINVAL;
 					goto EXIT;
 				}
 
-				dumpable = get_dumpable(task->mm);
+				dumpable = get_dumpable(t_mm);
 				if (dumpable == 0) {
 					pr_info("%s: set process:%d dumpable\n",
 						__func__, pid);
-					set_dumpable(task->mm, 1);
+					set_dumpable(t_mm, 1);
 				} else
 					pr_info("%s: get process:%d dumpable:%d\n",
 						__func__, pid, dumpable);
-				task_unlock(task);
-				rcu_read_unlock();
+				mmput(t_mm);
+				put_task_stack(task);
+				put_task_struct(task);
 			} else {
 				pr_info(
 				  "%s: check suid dumpable ioctl pid invalid\n",
@@ -2158,7 +2203,14 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					ret = -EINVAL;
 					goto EXIT;
 				}
+				get_task_struct(task);
 				rcu_read_unlock();
+
+				if (!try_get_task_stack(task)) {
+					ret = -EINVAL;
+					put_task_struct(task);
+					goto EXIT;
+				}
 
 				psi = task->last_siginfo;
 				if (psi) {
@@ -2171,9 +2223,13 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 						(struct aee_siginfo __user *)arg
 						, &aee_si, sizeof(aee_si))) {
 						ret = -EFAULT;
+						put_task_stack(task);
+						put_task_struct(task);
 						goto EXIT;
 					}
 				}
+				put_task_stack(task);
+				put_task_struct(task);
 			} else {
 				pr_info("%s: get aee_siginfo ioctl tid invalid\n",
 						__func__);
