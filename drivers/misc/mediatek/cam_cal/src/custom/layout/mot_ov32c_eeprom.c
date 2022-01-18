@@ -25,7 +25,7 @@ unsigned int ov32c_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsig
 #define OV32C_MOT_AWB_CHECKSUM_ADDR 0x6C
 #define OV32C_MOT_LSC_ADDR 0x903
 #define OV32C_MOT_LSC_DATA_SIZE 1868
-#define OV32C_MOT_LSC_CHECKSUM_ADDR 0XF2D
+#define OV32C_MOT_LSC_CHECKSUM_ADDR 0X104F
 
 
 static struct STRUCT_CALIBRATION_LAYOUT_STRUCT cal_layout_table = {
