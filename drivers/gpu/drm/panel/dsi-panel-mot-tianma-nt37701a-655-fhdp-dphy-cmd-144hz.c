@@ -29,6 +29,11 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
+#define REGFLAG_CMD       0xFFFA
+#define REGFLAG_DELAY       0xFFFC
+#define REGFLAG_UDELAY  0xFFFB
+#define REGFLAG_END_OF_TABLE    0xFFFD
+
 static char bl_tb0[] = { 0x51, 0x0f,0xff };
 
 enum panel_version{
@@ -46,7 +51,14 @@ struct lcm {
 
 	int error;
 	unsigned int hbm_mode;
+	unsigned int dc_mode;
 	enum panel_version version;
+};
+
+struct LCM_setting_table {
+	unsigned int cmd;
+	unsigned char count;
+	unsigned char para_list[64];
 };
 
 #define lcm_dcs_write_seq(ctx, seq...)                                         \
@@ -923,16 +935,85 @@ static int mode_switch(struct drm_panel *panel,
 	return ret;
 }
 
+static int pane_hbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	char hbm_tb[3][3] = {{0x51, 0x0D, 0xBA},
+			     {0x51, 0x0F, 0xFF},
+			     {0x51, 0x0F, 0xFF}};
 
+	if (hbm_state > 2) return -1;
+
+	cb(dsi, handle, &hbm_tb[hbm_state], 3);
+	return 0;
+}
+
+static struct LCM_setting_table panel_dc_off[] = {
+	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
+	{REGFLAG_CMD, 2, {0xB2, 0x51}},
+	{REGFLAG_CMD, 2, {0x6F, 0x0F}},
+	{REGFLAG_CMD, 7, {0xB2, 0x60, 0x50, 0x66, 0x91, 0x86, 0x91}},
+	{REGFLAG_CMD, 13, {0xB3, 0x00, 0x08, 0x01, 0x5F, 0x01, 0x5F, 0x02, 0xA4, 0x02, 0xA4, 0x03, 0xBB}},
+	{REGFLAG_CMD, 2, {0x6F, 0x0C}},
+	{REGFLAG_CMD, 13, {0xB3, 0x03, 0xBB, 0x05, 0x2F, 0x05, 0x2F, 0x06, 0x91, 0x06, 0x91, 0x06, 0x92}},
+	{REGFLAG_CMD, 2, {0x6F, 0x18}},
+	{REGFLAG_CMD, 13, {0xB3, 0x06, 0x92, 0x0A, 0x2F, 0x0A, 0x2F, 0x0D, 0xB9, 0x0D, 0xB9, 0x0F, 0xFF}},
+	{REGFLAG_CMD, 2, {0x58, 0x00}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table panel_dc_on[] = {
+	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
+	{REGFLAG_CMD, 2, {0xB2, 0x91}},
+	{REGFLAG_CMD, 2, {0x6F, 0x0F}},
+	{REGFLAG_CMD, 7, {0xB2, 0x60, 0x50, 0x60, 0x00, 0x80, 0x00}},
+	{REGFLAG_CMD, 13, {0xB3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+	{REGFLAG_CMD, 2, {0x6F, 0x0C}},
+	{REGFLAG_CMD, 13, {0xB3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+	{REGFLAG_CMD, 2, {0x6F, 0x18}},
+	{REGFLAG_CMD, 13, {0xB3, 0x06, 0x92, 0x0A, 0x2F, 0x0A, 0x2F, 0x0D, 0xB9, 0x0D, 0xB9, 0x0F, 0xFF}},
+	{REGFLAG_CMD, 2, {0x58, 0x01}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static int pane_dc_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t dc_state)
+{
+
+	unsigned int i = 0;
+	unsigned setting_count = 0;
+	struct LCM_setting_table *pTable;
+	unsigned int cmd;
+
+	if (dc_state) {
+		setting_count = sizeof(panel_dc_on) / sizeof(struct LCM_setting_table);
+		pTable = panel_dc_on;
+	} else {
+		setting_count = sizeof(panel_dc_off) / sizeof(struct LCM_setting_table);
+		pTable = panel_dc_off;
+	}
+
+	for (i = 0; i < setting_count; i++) {
+		cmd = pTable->cmd;
+		switch (cmd) {
+		case REGFLAG_DELAY:
+			msleep(pTable->count);
+			break;
+		case REGFLAG_UDELAY:
+			udelay(pTable->count);
+			break;
+		case REGFLAG_END_OF_TABLE:
+			break;
+		default:
+			cb(dsi, handle, pTable->para_list, pTable->count);
+		}
+		pTable ++ ;
+	}
+	return 0;
+}
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_write_gce cb, void *handle, struct panel_param_info param_info)
 {
-	char hbm_tb[3][3] = {
-			{0x51, 0x0D, 0xBA},
-			{0x51, 0x0F, 0xFF},
-			{0x51, 0x0F, 0xFF}
-			};
+
 	struct lcm *ctx = panel_to_lcm(panel);
 
 	if (!cb)
@@ -944,8 +1025,12 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 		case PARAM_ACL:
 			break;
 		case PARAM_HBM:
-			cb(dsi, handle, &hbm_tb[param_info.value][0], 3);
+			pane_hbm_set_cmdq(dsi, cb, handle, param_info.value);
 			ctx->hbm_mode = param_info.value;
+			break;
+		case PARAM_DC:
+			pane_dc_set_cmdq(dsi, cb, handle, param_info.value);
+			ctx->dc_mode = param_info.value;
 			break;
 		default:
 			break;
