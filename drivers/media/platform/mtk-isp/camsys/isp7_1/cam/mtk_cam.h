@@ -215,6 +215,7 @@ struct mtk_cam_sensor_work {
  * @mtk_cam_exposure: exposure value of sensor of mstream
  * @deque_list_node: the entry node of s_data for deque
  * @cleanup_list_node: the entry node of s_data for cleanup
+ * @req_id: request sequence id from userspace for mstream exposure
  *
  */
 struct mtk_cam_request_stream_data {
@@ -261,6 +262,7 @@ struct mtk_cam_request_stream_data {
 	struct list_head deque_list_node;
 	struct list_head cleanup_list_node;
 	atomic_t first_setting_check;
+	int req_id;
 };
 
 struct mtk_cam_req_pipe {
