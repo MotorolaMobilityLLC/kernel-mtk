@@ -222,6 +222,15 @@ static void vcp_disable_dapc(void)
 	struct arm_smccc_res res;
 	unsigned long onoff;
 
+	arm_smccc_smc(MTK_SIP_TINYSYS_VCP_CONTROL,
+		MTK_TINYSYS_VCP_KERNEL_OP_RESET_SET,
+		1, 0, 0, 0, 0, 0, &res);
+	dsb(SY); /* may take lot of time */
+
+	mutex_lock(&vcp_A_notify_mutex);
+	vcp_extern_notify(VCP_EVENT_STOP);
+	mutex_unlock(&vcp_A_notify_mutex);
+
 	/* Turn off MMuP security */
 	onoff = 0;
 	arm_smccc_smc(MTK_SIP_KERNEL_DAPC_MMUP_CONTROL,
@@ -667,11 +676,6 @@ int reset_vcp(int reset)
 {
 	struct arm_smccc_res res;
 
-	mutex_lock(&vcp_A_notify_mutex);
-	blocking_notifier_call_chain(&vcp_A_notifier_list, VCP_EVENT_STOP,
-		NULL);
-	mutex_unlock(&vcp_A_notify_mutex);
-
 	if (reset & 0x0f) { /* do reset */
 		/* make sure vcp is in idle state */
 		vcp_wait_core_stop_timeout(mmup_enable_count());
@@ -836,6 +840,10 @@ static int vcp_pm_event(struct notifier_block *notifier
 
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
+		mutex_lock(&vcp_A_notify_mutex);
+		vcp_extern_notify(VCP_EVENT_SUSPEND);
+		mutex_unlock(&vcp_A_notify_mutex);
+
 		mutex_lock(&vcp_pw_clk_mutex);
 		pr_notice("[VCP] PM_SUSPEND_PREPARE entered %d %d\n", pwclkcnt, is_suspending);
 		if ((!is_suspending) && pwclkcnt) {
@@ -1821,7 +1829,10 @@ void vcp_sys_reset_ws(struct work_struct *ws)
 
 	/*notify vcp functions stop*/
 	pr_debug("[VCP] %s(): vcp_extern_notify\n", __func__);
+
+	mutex_lock(&vcp_A_notify_mutex);
 	vcp_extern_notify(VCP_EVENT_STOP);
+	mutex_unlock(&vcp_A_notify_mutex);
 
 #ifdef VCP_PARAMS_TO_VCP_SUPPORT
 	/* The function, sending parameters to vcp must be anchored before
