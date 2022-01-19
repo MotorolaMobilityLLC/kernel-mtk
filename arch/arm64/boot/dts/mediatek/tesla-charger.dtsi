@@ -26,6 +26,8 @@
 &mtk_gauge {
 	DIFFERENCE_FULLOCV_ITH = <(1100)>;
 	R_FG_VALUE = <(5)>;
+	CURR_MEASURE_20A = <(0)>;
+	UNIT_MULTIPLE = <(1)>;
 };
 
 &pdc {
