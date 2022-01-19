@@ -336,6 +336,12 @@ static int transceiver_translate(struct transceiver_device *dev,
 		case SENSOR_TYPE_STEP_COUNTER:
 			dst->word[0] = src->value[0];
 			break;
+		case SENSOR_TYPE_DEVICE_ORIENTATION:
+			memcpy(dst->word, src->value,
+				min(sizeof(dst->word), sizeof(src->value)));
+			if (src->value[0] == 16)
+				dst->word[0] = -1;
+		break;
 		default:
 			memcpy(dst->word, src->value,
 				min(sizeof(dst->word), sizeof(src->value)));
