@@ -1049,7 +1049,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	struct lcm *ctx;
 	struct device_node *backlight;
 	int ret;
-	u32 val = 0;
+	const u32 *val;
 
 	pr_info("%s+\n", __func__);
 
@@ -1104,9 +1104,10 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	of_get_property(dev->of_node, "reg", &val);
-	ctx->version = val;
-	pr_info("%s: panel version %d\n", __func__, ctx->version);
+	val = of_get_property(dev->of_node, "reg", NULL);
+	ctx->version = val ? be32_to_cpup(val) : 1;
+
+	pr_info("%s: panel version 0x%x\n", __func__, ctx->version);
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0)
