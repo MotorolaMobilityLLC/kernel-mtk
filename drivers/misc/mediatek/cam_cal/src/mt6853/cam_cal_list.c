@@ -10,6 +10,10 @@
 #include "kd_imgsensor.h"
 
 #define MAX_EEPROM_SIZE_16K 0x4000
+#if defined(MOT_S5K4H7_MIPI_RAW)
+extern unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned int addr,
+                       unsigned char *data, unsigned int size);
+#endif
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
@@ -41,6 +45,12 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{SAIPAN_QTECH_HI4821Q_SENSOR_ID, 0xA0, Common_read_region},
 	{SAIPAN_DMEGC_HI1336_SENSOR_ID, 0xA2, Common_read_region},
 	{SAIPAN_CXT_GC02M1_SENSOR_ID, 0xA4, Common_read_region},
+	{MOT_S5KHM2_SENSOR_ID, 0xA0, Common_read_region},  //eeprom
+	{MOT_S5KHM2QTECH_SENSOR_ID, 0xA0, Common_read_region},  //eeprom
+	{MOT_OV32B40_SENSOR_ID, 0xA2, Common_read_region}, //eeprom
+#if defined(MOT_S5K4H7_MIPI_RAW)
+	{MOT_S5K4H7_SENSOR_ID, 0x5A, mot_s5k4h7_read_region},  // otp
+#endif
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };
