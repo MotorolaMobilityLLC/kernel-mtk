@@ -2340,6 +2340,12 @@ static int _regulator_enable(struct regulator_dev *rdev)
 
 	rdev->use_count++;
 
+	//TODO
+	if (!strcmp(rdev->desc->name, "vrf18") || !strcmp(rdev->desc->name, "VRF18")) {
+		pr_err("%s vrf18 use_count=%d\n", __func__, rdev->use_count);
+		dump_stack();
+	}
+
 	return 0;
 }
 
