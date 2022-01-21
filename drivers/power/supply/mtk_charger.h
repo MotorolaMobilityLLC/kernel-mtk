@@ -92,6 +92,31 @@ struct charger_data;
 #define MAX_ALG_NO 10
 #define DEFAULT_ALG 0
 
+enum mmi_mux_channel {
+	MMI_MUX_CHANNEL_NONE = 0,
+	MMI_MUX_CHANNEL_TYPEC_CHG,
+	MMI_MUX_CHANNEL_TYPEC_OTG,
+	MMI_MUX_CHANNEL_WLC_CHG,
+	MMI_MUX_CHANNEL_WLC_OTG,
+	MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG,
+	MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG,
+	MMI_MUX_CHANNEL_WLC_FW_UPDATE,
+	MMI_MUX_CHANNEL_WLC_FACTORY_TEST,
+	MMI_MUX_CHANNEL_MAX
+};
+
+struct mmi_mux_chan {
+	enum mmi_mux_channel chan;
+	bool on;
+};
+
+struct mmi_mux_configure {
+	u32 typec_mos;
+	u32 wls_mos;
+	bool wls_boost_en;
+	bool wls_loadswtich_en;
+};
+
 enum bat_temp_state_enum {
 	BAT_TEMP_LOW = 0,
 	BAT_TEMP_NORMAL,
@@ -158,7 +183,7 @@ struct sw_jeita_data {
 };
 
 struct mtk_charger_algorithm {
-
+	int (*do_mux)(struct mtk_charger *info, enum mmi_mux_channel channel, bool on);
 	int (*do_algorithm)(struct mtk_charger *info);
 	int (*enable_charging)(struct mtk_charger *info, bool en);
 	int (*do_event)(struct notifier_block *nb, unsigned long ev, void *v);
@@ -315,6 +340,10 @@ struct mmi_params {
 	int			target_usb;
 	struct notifier_block	chg_reboot;
 	int			min_therm_current_limit;
+	bool			enable_mux;
+	struct			mmi_mux_chan mux_channel;
+	int			wls_switch_en;
+	int			wls_boost_en;
 };
 /*moto mmi Functionality end*/
 
@@ -476,6 +505,7 @@ struct mtk_charger {
 	struct moto_chg_tcmd_client chg_tcmd_client;
 	struct mmi_params	mmi;
 	int wireless_online;
+	struct mutex mmi_mux_lock;
 };
 
 static inline int mtk_chg_alg_notify_call(struct mtk_charger *info,
