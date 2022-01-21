@@ -63,6 +63,11 @@
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
 	mmi,min-cp-therm-current-ua = <2000000>;
+	mmi,enable-mux;
+	mmi,mux_wls_switch_en = <&pio 104 0x0>;
+	mmi,mux_wls_boost_en = <&pio 121 0x0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmi_mux_wls_default>;
 };
 
 &moto_chg_tcmd {
@@ -89,6 +94,30 @@
 		slew-rate= <0>;
 		input-enable;
 		bias-pull-up;
+	};
+
+	wls_cps4035_int_default: wls_cps4035_int_default {
+		wls_int {
+			pinmux = <PINMUX_GPIO31__FUNC_GPIO31>;
+			input-enable;
+			bias-pull-up;
+		};
+		wls_det_int {
+			pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
+			input-enable;
+			bias-pull-down;
+		};
+	};
+
+	mmi_mux_wls_default: mmi_mux_wls_default {
+		wls_switch {
+			pinmux = <PINMUX_GPIO104__FUNC_GPIO104>;
+			output-low;
+		};
+		wls_boost {
+			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
+			output-low;
+		};
 	};
 };
 
@@ -168,27 +197,6 @@
 		mmi_therm_step = <3>;
 };
 
-&pio {
-	wls_cps4035_int_default: wls_cps4035_int_default {
-		pinmux = <PINMUX_GPIO31__FUNC_GPIO31>;
-		input-enable;
-		bias-pull-up;
-	};
-	wls_cps4035_det_int_default: wls_cps4035_det_int_default {
-		pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
-		input-enable;
-		bias-pull-down;
-	};
-	wls_cps4035_switch_en_default: wls_cps4035_switch_en_default {
-		pinmux = <PINMUX_GPIO104__FUNC_GPIO104>;
-		output-low;
-	};
-	wls_cps4035_boost_en_default: wls_cps4035_boost_en_default {
-		pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
-		output-low;
-	};
-};
-
 &i2c9 {
     cps_wls_charger@31 {
         compatible = "cps,wls-charger-cps4035-H";
@@ -202,15 +210,8 @@
         reg = <0x30>;
         cps_wls_int = <&pio 31 0x0>;
         cps_det_int = <&pio 115 0x0>;
-        cps_wls_switch_en = <&pio 104 0x0>;
-        cps_wls_boost_en = <&pio 121 0x0>;
-        pinctrl-names = "cps4035_int_default",
-		"cps4035_det_int_default", "cps4035_switch_en_default",
-		"cps4035_boost_en_default";
+        pinctrl-names = "default";
         pinctrl-0 = <&wls_cps4035_int_default>;
-        pinctrl-1 = <&wls_cps4035_det_int_default>;
-        pinctrl-2 = <&wls_cps4035_switch_en_default>;
-        pinctrl-3 = <&wls_cps4035_boost_en_default>;
         status = "okay";
     };
 };
