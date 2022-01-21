@@ -544,6 +544,16 @@ int charger_dev_set_vbatovp_alarm(struct charger_device *chg_dev, u32 uV)
 }
 EXPORT_SYMBOL(charger_dev_set_vbatovp_alarm);
 
+int charger_dev_config_mux(struct charger_device *chg_dev,
+	enum mmi_dvchg_mux_channel typec_mos, enum mmi_dvchg_mux_channel wls_mos)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->config_mux)
+		return chg_dev->ops->config_mux(chg_dev, typec_mos, wls_mos);
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_config_mux);
+
 int charger_dev_reset_vbatovp_alarm(struct charger_device *chg_dev)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
