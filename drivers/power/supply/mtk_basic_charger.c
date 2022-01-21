@@ -58,6 +58,7 @@
 #include <linux/reboot.h>
 
 #include "mtk_charger.h"
+#include <linux/gpio.h>
 
 static int _uA_to_mA(int uA)
 {
@@ -691,10 +692,88 @@ static int dvchg2_dev_event(struct notifier_block *nb, unsigned long event,
 	return NOTIFY_OK;
 }
 
+#define MMI_MUX(_mos1,  _mos2, _boost, _switch) \
+{ \
+	.typec_mos = _mos1, \
+	.wls_mos = _mos2, \
+	.wls_boost_en = _boost, \
+	.wls_loadswtich_en = _switch, \
+}
 
+static const struct mmi_mux_configure config_mmi_mux[MMI_MUX_CHANNEL_MAX] = {
+	[MMI_MUX_CHANNEL_NONE] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CLOSE, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false),
+	[MMI_MUX_CHANNEL_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CHG_OPEN, false, false),
+	[MMI_MUX_CHANNEL_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CLOSE, true, true),
+	[MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, true, true),
+	[MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, true, true),
+	[MMI_MUX_CHANNEL_WLC_FW_UPDATE] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CLOSE, true, true),
+	[MMI_MUX_CHANNEL_WLC_FACTORY_TEST] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CHG_OPEN, false, false),
+};
+
+static int mmi_mux_config(struct mtk_charger *info, enum mmi_mux_channel channel)
+{
+	charger_dev_config_mux(info->dvchg1_dev,
+		config_mmi_mux[channel].typec_mos, config_mmi_mux[channel].wls_mos);
+	if(gpio_is_valid(info->mmi.wls_boost_en))
+		gpio_set_value(info->mmi.wls_boost_en, config_mmi_mux[channel].wls_boost_en);
+	if(gpio_is_valid(info->mmi.wls_switch_en))
+		gpio_set_value(info->mmi.wls_switch_en, config_mmi_mux[channel].wls_loadswtich_en);
+
+	return 0;
+}
+static int mmi_mux_switch(struct mtk_charger *info, enum mmi_mux_channel channel, bool on)
+{
+	int pre_chan, pre_on;
+	if(!info->mmi.enable_mux)
+		return 0;
+
+	mutex_lock(&info->mmi_mux_lock);
+	pre_chan =  info->mmi.mux_channel.chan;
+	pre_on = info->mmi.mux_channel.on;
+	switch (channel) {
+		case MMI_MUX_CHANNEL_NONE:
+			break;
+		case MMI_MUX_CHANNEL_TYPEC_CHG:
+			if (on)
+				mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+			 else
+				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+			info->mmi.mux_channel.chan = channel;
+			info->mmi.mux_channel.on = on;
+			break;
+		case MMI_MUX_CHANNEL_TYPEC_OTG:
+			if (on)
+				mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+			else
+				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+			info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+			info->mmi.mux_channel.on = on;
+			break;
+		case MMI_MUX_CHANNEL_WLC_CHG:
+			break;
+		case MMI_MUX_CHANNEL_WLC_OTG:
+			break;
+		case MMI_MUX_CHANNEL_WLC_FW_UPDATE:
+			break;
+		case MMI_MUX_CHANNEL_WLC_FACTORY_TEST:
+			break;
+		default:
+			chr_err("[%s] Unknown channel: %d\n",
+			__func__, channel);
+	}
+
+	chr_err("[%s] pre= %d,%d config = %d,%d result =%d,%d\n",
+		__func__, pre_chan, pre_on, channel, on,
+		info->mmi.mux_channel.chan,  info->mmi.mux_channel.on);
+	mutex_unlock(&info->mmi_mux_lock);
+
+	return 0;
+}
 int mtk_basic_charger_init(struct mtk_charger *info)
 {
-
+	info->algo.do_mux = mmi_mux_switch;
 	info->algo.do_algorithm = do_algorithm;
 	info->algo.enable_charging = enable_charging;
 	info->algo.do_event = charger_dev_event;

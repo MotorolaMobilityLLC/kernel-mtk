@@ -63,6 +63,7 @@
 #include "mtk_charger.h"
 #include "mtk_battery.h"
 #include "moto_chg_tcmd.h"
+#include <linux/of_gpio.h>
 
 struct tag_bootmode {
 	u32 size;
@@ -3392,6 +3393,17 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 	if (rc)
 		info->mmi.chrg_iterm = 150;
 
+	info->mmi.enable_mux =
+		of_property_read_bool(node, "mmi,enable-mux");
+
+	info->mmi.wls_switch_en = of_get_named_gpio(node, "mmi,mux_wls_switch_en", 0);
+	if(!gpio_is_valid(info->mmi.wls_switch_en))
+		pr_err("mmi wls_switch_en is %d invalid\n", info->mmi.wls_switch_en );
+
+	info->mmi.wls_boost_en = of_get_named_gpio(node, "mmi,mux_wls_boost_en", 0);
+	if(!gpio_is_valid(info->mmi.wls_boost_en))
+		pr_err("mmi wls_boost_en is %d invalid\n", info->mmi.wls_boost_en);
+
 	info->mmi.enable_charging_limit =
 		of_property_read_bool(node, "mmi,enable-charging-limit");
 
@@ -3648,6 +3660,18 @@ void mmi_init(struct mtk_charger *info)
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
 
+	if(gpio_is_valid(info->mmi.wls_switch_en)) {
+		rc  = devm_gpio_request_one(&info->pdev->dev, info->mmi.wls_switch_en,
+				  GPIOF_OUT_INIT_LOW, "mux_wls_switch_en");
+		if (rc  < 0)
+			pr_err(" [%s] Failed to request wls_switch_en gpio, ret:%d", __func__, rc);
+	}
+	if(gpio_is_valid(info->mmi.wls_boost_en)) {
+		rc  = devm_gpio_request_one(&info->pdev->dev, info->mmi.wls_boost_en,
+				  GPIOF_OUT_INIT_LOW, "mux_wls_boost_en");
+		if (rc  < 0)
+			pr_err(" [%s] Failed to request wls_boost_en gpio, ret:%d", __func__, rc);
+	}
 	info->mmi.batt_health = POWER_SUPPLY_HEALTH_GOOD;
 #if 0
 	info->mmi.chg_reboot.notifier_call = chg_reboot;
@@ -4715,6 +4739,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mutex_init(&info->cable_out_lock);
 	mutex_init(&info->charger_lock);
 	mutex_init(&info->pd_lock);
+	mutex_init(&info->mmi_mux_lock);
 	for (i = 0; i < CHG2_SETTING + 1; i++) {
 		mutex_init(&info->pp_lock[i]);
 		info->force_disable_pp[i] = false;
