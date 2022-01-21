@@ -23,6 +23,13 @@ enum adc_channel {
 	ADC_CHANNEL_VOUT,
 };
 
+enum mmi_dvchg_mux_channel {
+	MMI_DVCHG_MUX_NONE,
+	MMI_DVCHG_MUX_CHG_OPEN,
+	MMI_DVCHG_MUX_OTG_OPEN,
+	MMI_DVCHG_MUX_CLOSE,
+};
+
 struct charger_properties {
 	const char *alias_name;
 };
@@ -200,6 +207,11 @@ struct charger_ops {
 	int (*get_property)(struct charger_device *dev,
 			    enum charger_property prop,
 			    union charger_propval *val);
+
+	/* mux*/
+	int (*config_mux)(struct charger_device *dev,
+			enum mmi_dvchg_mux_channel typec_mos,
+			enum mmi_dvchg_mux_channel wls_mos);
 };
 
 static inline void *charger_dev_get_drvdata(
@@ -386,5 +398,6 @@ extern int unregister_charger_device_notifier(
 extern int charger_dev_notify(
 	struct charger_device *charger_dev, int event);
 
-
+extern int charger_dev_config_mux(struct charger_device *chg_dev,
+	enum mmi_dvchg_mux_channel typec_mos, enum mmi_dvchg_mux_channel wls_mos);
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/
