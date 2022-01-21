@@ -30,20 +30,20 @@ void __init set_policy(u32 policy)
 
 	/* default enable all policy */
 	/* MKP default policies (0 ~ 15) */
-	policy_ctrl[MKP_POLICY_MKP] = policy & (1 << MKP_POLICY_MKP);
-	policy_ctrl[MKP_POLICY_DRV] = policy & (1 << MKP_POLICY_DRV);
-	policy_ctrl[MKP_POLICY_SELINUX_STATE] = policy & (1 << MKP_POLICY_SELINUX_STATE);
-	policy_ctrl[MKP_POLICY_SELINUX_AVC] = policy & (1 << MKP_POLICY_SELINUX_AVC);
-	policy_ctrl[MKP_POLICY_TASK_CRED] = policy & (1 << MKP_POLICY_TASK_CRED);
-	policy_ctrl[MKP_POLICY_KERNEL_CODE] = policy & (1 << MKP_POLICY_KERNEL_CODE);
-	policy_ctrl[MKP_POLICY_KERNEL_RODATA] = policy & (1 << MKP_POLICY_KERNEL_RODATA);
-	policy_ctrl[MKP_POLICY_KERNEL_PAGES] = policy & (1 << MKP_POLICY_KERNEL_PAGES);
-	policy_ctrl[MKP_POLICY_PGTABLE] = policy & (1 << MKP_POLICY_PGTABLE);
-	policy_ctrl[MKP_POLICY_S1_MMU_CTRL] = policy & (1 << MKP_POLICY_S1_MMU_CTRL);
-	policy_ctrl[MKP_POLICY_FILTER_SMC_HVC] = policy & (1 << MKP_POLICY_FILTER_SMC_HVC);
+	policy_ctrl[MKP_POLICY_MKP] = policy & BIT(MKP_POLICY_MKP);
+	policy_ctrl[MKP_POLICY_DRV] = policy & BIT(MKP_POLICY_DRV);
+	policy_ctrl[MKP_POLICY_SELINUX_STATE] = policy & BIT(MKP_POLICY_SELINUX_STATE);
+	policy_ctrl[MKP_POLICY_SELINUX_AVC] = policy & BIT(MKP_POLICY_SELINUX_AVC);
+	policy_ctrl[MKP_POLICY_TASK_CRED] = policy & BIT(MKP_POLICY_TASK_CRED);
+	policy_ctrl[MKP_POLICY_KERNEL_CODE] = policy & BIT(MKP_POLICY_KERNEL_CODE);
+	policy_ctrl[MKP_POLICY_KERNEL_RODATA] = policy & BIT(MKP_POLICY_KERNEL_RODATA);
+	policy_ctrl[MKP_POLICY_KERNEL_PAGES] = policy & BIT(MKP_POLICY_KERNEL_PAGES);
+	policy_ctrl[MKP_POLICY_PGTABLE] = policy & BIT(MKP_POLICY_PGTABLE);
+	policy_ctrl[MKP_POLICY_S1_MMU_CTRL] = policy & BIT(MKP_POLICY_S1_MMU_CTRL);
+	policy_ctrl[MKP_POLICY_FILTER_SMC_HVC] = policy & BIT(MKP_POLICY_FILTER_SMC_HVC);
 
 	/* Policies for vendors start from here (16 ~ 31) */
-	policy_ctrl[MKP_POLICY_VENDOR_START] = policy & (1 << MKP_POLICY_VENDOR_START);
+	policy_ctrl[MKP_POLICY_VENDOR_START] = policy & BIT(MKP_POLICY_VENDOR_START);
 	MKP_INFO("MKP: set policy Done\n");
 	return;
 }
