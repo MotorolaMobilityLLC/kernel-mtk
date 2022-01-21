@@ -44,6 +44,9 @@ ssize_t led_trigger_write(struct file *filp, struct kobject *kobj,
 
 	mutex_lock(&led_cdev->led_access);
 
+	if (!memcmp(led_cdev->name,"vibrator",sizeof("vibrator")))
+		goto unlock;
+
 	if (led_sysfs_is_disabled(led_cdev)) {
 		ret = -EBUSY;
 		goto unlock;
