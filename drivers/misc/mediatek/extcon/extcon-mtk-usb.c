@@ -25,6 +25,7 @@
 #if IS_ENABLED(CONFIG_TCPC_CLASS)
 #include "tcpm.h"
 #endif
+#include "mtk_charger.h"
 
 static const unsigned int usb_extcon_cable[] = {
 	EXTCON_USB,
@@ -235,6 +236,28 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 	return 0;
 }
 
+static int mmi_mux_typec_otg_chan(enum mmi_mux_channel channel, bool on)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n");
+		return 0;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+	}
+
+	pr_info("%s open typec OTG chan =%d, on = %d\n", __func__, channel, on);
+	if (info->algo.do_mux)
+		info->algo.do_mux(info, channel, on);
+	else
+		pr_err("%s get info->algo.do_mux fail", __func__);
+
+	return 0;
+}
+
 #if IS_ENABLED(CONFIG_TCPC_CLASS)
 static int mtk_extcon_tcpc_notifier(struct notifier_block *nb,
 		unsigned long event, void *data)
@@ -250,6 +273,8 @@ static int mtk_extcon_tcpc_notifier(struct notifier_block *nb,
 		dev_info(dev, "source vbus = %dmv\n",
 				 noti->vbus_state.mv);
 		vbus_on = (noti->vbus_state.mv) ? true : false;
+		if (vbus_on)
+			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 		mtk_usb_extcon_set_vbus(extcon, vbus_on);
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
@@ -268,14 +293,18 @@ static int mtk_extcon_tcpc_notifier(struct notifier_block *nb,
 			noti->typec_state.new_state == TYPEC_ATTACHED_DBGACC_SNK)) {
 			dev_info(dev, "Type-C SINK plug in\n");
 			mtk_usb_extcon_set_role(extcon, USB_ROLE_DEVICE);
-		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
-			noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC ||
-			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC) &&
+			noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			dev_info(dev, "Type-C SINK plug out\n");
+			mtk_usb_extcon_set_role(extcon, USB_ROLE_NONE);
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_DBGACC_SNK) &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			dev_info(dev, "Type-C plug out\n");
+			dev_info(dev, "Type-C OTG/SRC plug out\n");
 			mtk_usb_extcon_set_role(extcon, USB_ROLE_NONE);
+			mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 		}
 		break;
 	case TCP_NOTIFY_DR_SWAP:

@@ -15,6 +15,7 @@
 #include <linux/mutex.h>
 #include <linux/delay.h>
 #include <tcpm.h>
+#include "mtk_charger.h"
 
 #define MTK_CTD_DRV_VERSION	"1.0.0_MTK"
 
@@ -75,6 +76,28 @@ static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 	return power_supply_set_property(bc12_psy,
 					 POWER_SUPPLY_PROP_ONLINE, &prop);
 }
+static int mmi_mux_typec_chg_chan(enum mmi_mux_channel channel, bool on)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n");
+		return 0;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+	}
+
+	pr_info("%s open typec chg chan = %d on = %d\n", __func__, channel, on);
+
+	if (info->algo.do_mux)
+		info->algo.do_mux(info, channel, on);
+	else
+		pr_err("%s get info->algo.do_mux fail", __func__);
+
+	return 0;
+}
 
 static int typec_attach_thread(void *data)
 {
@@ -110,6 +133,7 @@ static int typec_attach_thread(void *data)
 		pr_notice("%s bc12_sel:%d, attach:%d\n",
 			  __func__, mci->bc12_sel, attach);
 
+                mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, attach);
 		if (mci->bc12_sel != MTK_CTD_BY_SUBPMIC)
 			ret = mtk_ext_get_charger_type(mci, attach);
 		else {
