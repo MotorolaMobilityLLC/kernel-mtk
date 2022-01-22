@@ -309,12 +309,12 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 				     bypass_blank);
 			break;
 		}
-
-		primary_display_set_power_mode(FB_SUSPEND);
-		mtkfb_early_suspend();
+		if (prev_pm != FB_SUSPEND) {
+			primary_display_set_power_mode(FB_SUSPEND);
+			mtkfb_early_suspend();
+		}
 
 		debug_print_power_mode_check(prev_pm, FB_SUSPEND);
-
 		break;
 	default:
 		return -EINVAL;
