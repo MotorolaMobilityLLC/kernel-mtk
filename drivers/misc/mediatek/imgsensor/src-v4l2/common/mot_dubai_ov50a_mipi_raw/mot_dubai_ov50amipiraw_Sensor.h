@@ -44,8 +44,8 @@ struct imgsensor_mode_struct {
 	kal_uint32 linelength;
 	kal_uint32 framelength;
 
-	kal_uint8 startx;
-	kal_uint8 starty;
+	kal_uint16 startx;
+	kal_uint16 starty;
 
 	kal_uint16 grabwindow_width;
 	kal_uint16 grabwindow_height;
