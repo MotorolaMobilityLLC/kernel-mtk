@@ -756,8 +756,20 @@ static int mmi_mux_switch(struct mtk_charger *info, enum mmi_mux_channel channel
 		case MMI_MUX_CHANNEL_WLC_OTG:
 			break;
 		case MMI_MUX_CHANNEL_WLC_FW_UPDATE:
+			if (on)
+				mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_FW_UPDATE);
+			 else
+				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+			info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FW_UPDATE;
+			info->mmi.mux_channel.on = on;
 			break;
 		case MMI_MUX_CHANNEL_WLC_FACTORY_TEST:
+			if (on)
+				mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_FACTORY_TEST);
+			 else
+				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+			info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FACTORY_TEST;
+			info->mmi.mux_channel.on = on;
 			break;
 		default:
 			chr_err("[%s] Unknown channel: %d\n",
