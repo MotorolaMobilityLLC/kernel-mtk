@@ -64,7 +64,7 @@ static bool _is_seamless = false;
 
 #define MULTI_WRITE 1
 
-#define FPT_PDAF_SUPPORT 0
+#define FPT_PDAF_SUPPORT 1
 
 #define SEAMLESS_ 1
 #define SEAMLESS_NO_USE 0
@@ -1887,7 +1887,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
@@ -2022,6 +2022,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.hsize = 0x1000,
 			.vsize = 0x0c00,
 			.user_data_desc = VC_STAGGER_NE,
+		},
+	},
+      {
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x800,
+			.vsize = 0x300,
+			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
 };
