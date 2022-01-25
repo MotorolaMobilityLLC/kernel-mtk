@@ -52,6 +52,7 @@
 		goodix,input-max-y = <2400>;
 		goodix,stylus_mode-ctrl;
 		goodix,stylus-clk-source = "stylus_clk_gpio"; /* use gpio59 as stylus clk*/
+		goodix,pen-enable;
 		mmi,enable-gestures;
 	};
 };
