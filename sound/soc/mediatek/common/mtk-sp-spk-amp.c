@@ -44,7 +44,7 @@
 
 static unsigned int mtk_spk_type;
 #ifdef CONFIG_SND_I2S1
-static int mtk_spk_i2s_out = MTK_SPK_I2S_1, mtk_spk_i2s_in = MTK_SPK_I2S_2;
+static int mtk_spk_i2s_out = MTK_SPK_I2S_1, mtk_spk_i2s_in = MTK_SPK_TINYCONN_I2S_2;
 #else
 static int mtk_spk_i2s_out = MTK_SPK_I2S_3, mtk_spk_i2s_in = MTK_SPK_I2S_0;
 #endif
