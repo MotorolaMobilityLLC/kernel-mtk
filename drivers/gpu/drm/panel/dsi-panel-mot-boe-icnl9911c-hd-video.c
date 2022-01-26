@@ -254,7 +254,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xFA, 0x45, 0x93, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0xBE, 0x72, 0x7C, 0x46, 0x5A, 0x0C, 0x77, 0x43, 0x07, 0x0E, 0x0E);
 	lcm_dcs_write_seq_static(ctx, 0xBD, 0xE9, 0x02, 0x4E, 0xCF, 0x72, 0xA4, 0x08, 0x44, 0xAE, 0x15);
-	lcm_dcs_write_seq_static(ctx, 0xC1, 0xC0, 0x0C, 0x20, 0x96, 0x04, 0x4C, 0x4C, 0x04, 0x2A, 0x40, 0x36, 0x00, 0x07, 0xC0, 0x10, 0xFF, 0x7E, 0x01, 0xC0);
+	lcm_dcs_write_seq_static(ctx, 0xC1, 0xC0, 0x0C, 0x20, 0x96, 0x04, 0x58, 0x58, 0x04, 0x2A, 0x40, 0x36, 0x00, 0x07, 0xC0, 0x10, 0xFF, 0x7E, 0x01, 0xC0);
 	kernel_vref_reg_update(ctx);
 	lcm_dcs_write_seq_static(ctx, 0xD0, 0x80, 0x0D, 0xFF, 0x0F, 0x61, 0x0B, 0x08, 0x04);
 	lcm_dcs_write_seq_static(ctx, 0xE0, 0x30, 0x00, 0x80, 0x88, 0x11, 0x3F, 0x22, 0x62, 0xDF, 0xA0, 0x04, 0xCC, 0x01, 0xFF, 0xF6, 0xFF, 0xF0, 0xFD, 0xFF, 0xFD, 0xF8, 0xF5, 0xFC, 0xFC, 0xFD, 0xFF);
@@ -455,9 +455,9 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-#define HFP (48)
+#define HFP (88)
 #define HSA (4)
-#define HBP (48)
+#define HBP (88)
 #define VFP_60HZ (1000)
 #define VFP_90HZ (150)
 #define VSA (4)
@@ -466,7 +466,7 @@ static int lcm_enable(struct drm_panel *panel)
 #define HAC (720)
 
 static struct drm_display_mode default_mode = {
-	.clock = 128707,
+	.clock = 141624,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -479,7 +479,7 @@ static struct drm_display_mode default_mode = {
 };
 
 static struct drm_display_mode performance_mode = {
-	.clock = 86887,
+	.clock = 94446,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -565,7 +565,7 @@ static int lcm_get_virtual_width(void)
 }
 
 static struct mtk_panel_params ext_params = {
-	.pll_clk = 430,
+	.pll_clk = 449,
 	.vfp_low_power = VFP_60HZ,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -584,7 +584,7 @@ static struct mtk_panel_params ext_params = {
 };
 
 static struct mtk_panel_params ext_params_90hz = {
-	.pll_clk = 430,
+	.pll_clk = 449,
 	.vfp_low_power = VFP_90HZ,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
