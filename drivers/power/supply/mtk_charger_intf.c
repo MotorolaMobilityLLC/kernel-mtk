@@ -304,7 +304,7 @@ bool is_charger_exist(struct mtk_charger *info)
 
 int get_charger_type(struct mtk_charger *info)
 {
-	union power_supply_propval prop, prop2, prop3;
+	union power_supply_propval prop, prop2, prop3, prop_wls;
 	static struct power_supply *wl_psy;
 	static struct power_supply *chg_psy;
 	int ret;
@@ -315,14 +315,15 @@ int get_charger_type(struct mtk_charger *info)
 		}
 		if (wl_psy == NULL || IS_ERR(wl_psy)) {
 			chr_err("%s Couldn't get wl_psy\n", __func__);
-			prop2.intval = 0;
+			prop_wls.intval = POWER_SUPPLY_TYPE_UNKNOWN;
 		} else {
 			ret = power_supply_get_property(wl_psy,
-			POWER_SUPPLY_PROP_TYPE, &prop2);
-			chr_err("%s type:%d ret:%d\n", __func__, prop2.intval,ret);
-			if (POWER_SUPPLY_TYPE_WIRELESS == prop2.intval) {
-			chr_err("%s event, wireless online,type:%d\n", __func__, prop2.intval);
-			return prop2.intval;
+			POWER_SUPPLY_PROP_TYPE, &prop_wls);
+			chr_err("%s type:%d ret:%d\n", __func__, prop_wls.intval,ret);
+			if (POWER_SUPPLY_TYPE_WIRELESS == prop_wls.intval) {
+				chr_err("%s event, wireless online,type:%d\n", __func__, prop_wls.intval);
+			} else {
+				prop_wls.intval = POWER_SUPPLY_TYPE_UNKNOWN;
 			}
 		}
 	}
@@ -358,7 +359,12 @@ int get_charger_type(struct mtk_charger *info)
 		prop2.intval,
 		prop3.intval);
 
-	return prop2.intval;
+	if(POWER_SUPPLY_TYPE_UNKNOWN != prop2.intval)
+		return prop2.intval;
+	else if(POWER_SUPPLY_TYPE_UNKNOWN != prop_wls.intval)
+		return prop_wls.intval;
+	else
+		return POWER_SUPPLY_TYPE_UNKNOWN;
 }
 
 int get_usb_type(struct mtk_charger *info)
