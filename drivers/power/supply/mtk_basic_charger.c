@@ -705,10 +705,12 @@ static const struct mmi_mux_configure config_mmi_mux[MMI_MUX_CHANNEL_MAX] = {
 	[MMI_MUX_CHANNEL_TYPEC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false),
 	[MMI_MUX_CHANNEL_TYPEC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false),
 	[MMI_MUX_CHANNEL_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CHG_OPEN, false, false),
-	[MMI_MUX_CHANNEL_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CLOSE, true, true),
+	[MMI_MUX_CHANNEL_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_DISABLE, MMI_DVCHG_MUX_DISABLE, true, true),
 	[MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, true, true),
-	[MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, true, true),
-	[MMI_MUX_CHANNEL_WLC_FW_UPDATE] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CLOSE, true, true),
+	[MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE,  true, true),
+	[MMI_MUX_CHANNEL_WLC_FW_UPDATE] = MMI_MUX(MMI_DVCHG_MUX_DISABLE, MMI_DVCHG_MUX_DISABLE, true, true),
 	[MMI_MUX_CHANNEL_WLC_FACTORY_TEST] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CHG_OPEN, false, false),
 };
 
@@ -732,44 +734,156 @@ static int mmi_mux_switch(struct mtk_charger *info, enum mmi_mux_channel channel
 	mutex_lock(&info->mmi_mux_lock);
 	pre_chan =  info->mmi.mux_channel.chan;
 	pre_on = info->mmi.mux_channel.on;
+	if (pre_chan == channel && pre_on == on) {
+		mutex_unlock(&info->mmi_mux_lock);
+		return 0;
+	}
 	switch (channel) {
 		case MMI_MUX_CHANNEL_NONE:
 			break;
 		case MMI_MUX_CHANNEL_TYPEC_CHG:
-			if (on)
-				mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
-			 else
-				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
-			info->mmi.mux_channel.chan = channel;
-			info->mmi.mux_channel.on = on;
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
 			break;
 		case MMI_MUX_CHANNEL_TYPEC_OTG:
-			if (on)
-				mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
-			else
-				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
-			info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
-			info->mmi.mux_channel.on = on;
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
 			break;
 		case MMI_MUX_CHANNEL_WLC_CHG:
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
 			break;
 		case MMI_MUX_CHANNEL_WLC_OTG:
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
 			break;
 		case MMI_MUX_CHANNEL_WLC_FW_UPDATE:
-			if (on)
+			if (on) {
 				mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_FW_UPDATE);
-			 else
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FW_UPDATE;
+			 } else {
 				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
-			info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FW_UPDATE;
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+			 }
 			info->mmi.mux_channel.on = on;
 			break;
 		case MMI_MUX_CHANNEL_WLC_FACTORY_TEST:
-			if (on)
+			if (on) {
 				mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_FACTORY_TEST);
-			 else
-				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
-			info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FACTORY_TEST;
-			info->mmi.mux_channel.on = on;
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FACTORY_TEST;
+			 } else {
+				mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+			 }
+			info->mmi.mux_channel.on = true;
 			break;
 		default:
 			chr_err("[%s] Unknown channel: %d\n",
