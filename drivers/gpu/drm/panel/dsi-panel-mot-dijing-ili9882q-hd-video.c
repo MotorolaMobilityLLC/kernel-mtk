@@ -452,18 +452,18 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-#define HFP (32)
-#define HSA (18)
-#define HBP (32)
-#define VFP_60HZ (1356)
-#define VFP_90HZ (362)
+#define HFP (18)
+#define HSA (9)
+#define HBP (18)
+#define VFP_60HZ (1350)
+#define VFP_90HZ (376)
 #define VSA (2)
 #define VBP (24)
 #define VAC (1600)
 #define HAC (720)
 
 static struct drm_display_mode default_mode = {
-	.clock = 143493,
+	.clock = 136598,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -476,7 +476,7 @@ static struct drm_display_mode default_mode = {
 };
 
 static struct drm_display_mode performance_mode = {
-	.clock = 95662,
+	.clock = 137837,
 	.hdisplay = HAC,
 	.hsync_start = HAC + HFP,
 	.hsync_end = HAC + HFP + HSA,
@@ -562,7 +562,7 @@ static int lcm_get_virtual_width(void)
 }
 
 static struct mtk_panel_params ext_params = {
-	.pll_clk = 467,
+	.pll_clk = 449,
 	.vfp_low_power = VFP_60HZ,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
@@ -580,7 +580,7 @@ static struct mtk_panel_params ext_params = {
 };
 
 static struct mtk_panel_params ext_params_90hz = {
-	.pll_clk = 467,
+	.pll_clk = 449,
 	.vfp_low_power = VFP_90HZ,
 	.cust_esd_check = 1,
 	.esd_check_enable = 1,
