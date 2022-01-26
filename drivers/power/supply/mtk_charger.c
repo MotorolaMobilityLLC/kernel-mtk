@@ -2423,6 +2423,8 @@ static bool charger_init_algo(struct mtk_charger *info)
 	return true;
 }
 
+static int mtk_charger_enable_power_path(struct mtk_charger *info,
+	int idx, bool en);
 static int mtk_charger_force_disable_power_path(struct mtk_charger *info,
 	int idx, bool disable);
 static int mtk_charger_plug_out(struct mtk_charger *info)
@@ -2498,6 +2500,8 @@ static int mtk_charger_plug_in(struct mtk_charger *info,
 	info->sc.disable_in_this_plug = false;
 	wakeup_sc_algo_cmd(&info->sc.data, SC_EVENT_PLUG_IN, 0);
 	charger_dev_plug_in(info->chg1_dev);
+	if(POWER_SUPPLY_TYPE_WIRELESS == chr_type)
+		mtk_charger_enable_power_path(info, CHG1_SETTING, true);
 	mtk_charger_force_disable_power_path(info, CHG1_SETTING, false);
 
 	return 0;
@@ -4426,7 +4430,7 @@ int psy_charger_set_property(struct power_supply *psy,
 			val->intval;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
-		if (val->intval > 0)
+		if (val->intval > 0 && !info->wireless_online)
 			mtk_charger_enable_power_path(info, idx, false);
 		else
 			mtk_charger_enable_power_path(info, idx, true);
