@@ -792,6 +792,41 @@ static void bl_cmdq_cb(struct cmdq_cb_data data)
 	kfree(cb_data);
 }
 
+static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
+{
+	unsigned int bl_level;
+	static unsigned int bl_lvl_during_hbm = 0;
+	static bool hbm_mode = false;
+	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
+	int max_bl_level = (panel_ext->max_bl_level) ? (panel_ext->max_bl_level) : 255;
+
+	bl_level = *bl_lvl;
+
+	if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
+		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ? max_bl_level : bl_lvl_during_hbm;
+		hbm_mode = bl_level == BRIGHTNESS_HBM_ON ? true : false;
+
+		pr_info("HBM set  bl_level=%d bl_max_level = %d bl_lvl_during_hbm = %d hbm_mode = %d\n",
+				bl_level, max_bl_level, bl_lvl_during_hbm, hbm_mode);
+	} else if (bl_level == BRIGHTNESS_HBM_ON_SKIP_BL) {
+		hbm_mode = true;
+		pr_info("enter HBM mode, will skip backlight setting.\n");
+		return true;
+	} else {
+		bl_lvl_during_hbm = bl_level;
+
+		if (bl_level == 0) {
+			hbm_mode = false;
+			pr_info(" bl_vl=%d, set hbm_mode to false\n", bl_level);
+		}
+		else if (hbm_mode) {
+			pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+			return true;
+		}
+	}
+	return false;
+}
+
 int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -812,6 +847,9 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 
 	if (m_new_pq_persist_property[DISP_PQ_CCORR_SILKY_BRIGHTNESS])
 		sb_backlight = level;
+
+	if (panel_set_hbm_backlight(crtc, &level))
+		return 0;
 
 	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 
