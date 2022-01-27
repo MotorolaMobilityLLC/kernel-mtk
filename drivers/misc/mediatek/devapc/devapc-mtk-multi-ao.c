@@ -849,7 +849,7 @@ static void devapc_extra_handler(int slave_type, const char *vio_master,
 	}
 
 	/* Severity level */
-	if (dbg_stat->enable_KE && (ret_cb != DEVAPC_NOT_KE)) {
+	if (dbg_stat->enable_KE && (ret_cb != DEVAPC_NOT_KE) && (!(strncmp(vio_master, "APMCU_READ", 10)))) {
 		pr_info(PFX "Device APC Violation Issue/%s", dispatch_key);
 		BUG_ON(id != INFRA_SUBSYS_CONN);
 
@@ -958,7 +958,8 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 	/* It's an abnormal status */
 	pr_info(PFX "WARNING: Abnormal Status\n");
 	print_vio_mask_sta(true);
-	BUG_ON(1);
+	if (!(strncmp(vio_master, "APMCU_READ", 10)))
+		BUG_ON(1);
 
 	spin_unlock_irqrestore(&devapc_lock, flags);
 	return IRQ_HANDLED;
