@@ -469,6 +469,8 @@ static struct mtk_panel_params ext_params_48hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 
 static struct mtk_panel_params ext_params_60hz = {
@@ -523,6 +525,8 @@ static struct mtk_panel_params ext_params_60hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 static struct mtk_panel_params ext_params_90hz = {
 	.dyn_fps = {
@@ -576,6 +580,8 @@ static struct mtk_panel_params ext_params_90hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 static struct mtk_panel_params ext_params_120hz = {
 	.dyn_fps = {
@@ -629,6 +635,8 @@ static struct mtk_panel_params ext_params_120hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 
 static struct mtk_panel_params ext_params_144hz = {
@@ -683,6 +691,8 @@ static struct mtk_panel_params ext_params_144hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
 };
 
 static int panel_ata_check(struct drm_panel *panel)
