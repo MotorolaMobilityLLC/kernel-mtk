@@ -18,6 +18,11 @@
 #define MAX_DYN_CMD_NUM 20
 #define MAX_TX_CMD_NUM_PACK 64
 
+#define BRIGHTNESS_HBM_ON		0xFFFFFFFE
+#define BRIGHTNESS_HBM_OFF		(BRIGHTNESS_HBM_ON - 1)
+#define BRIGHTNESS_HBM_ON_SKIP_BL	(BRIGHTNESS_HBM_ON - 2)
+#define HBM_BRIGHTNESS(value) ((value) == 0 ? BRIGHTNESS_HBM_OFF : BRIGHTNESS_HBM_ON)
+
 struct mtk_dsi;
 struct cmdq_pkt;
 struct mtk_panel_para_table {
@@ -407,6 +412,11 @@ struct msync_cmd_table {
 	struct msync_trigger_level_te_table trigger_level_te_tb;
 };
 
+enum panel_hbm_type {
+	HBM_MODE_DCS_ONLY = 0,
+	HBM_MODE_DCS_GPIO,
+};
+
 struct mtk_panel_params {
 	unsigned int change_fps_by_vfp_send_cmd;
 	unsigned int pll_clk;
@@ -471,6 +481,9 @@ struct mtk_panel_params {
 	struct mtk_panel_spr_params spr_params;
 	enum MTK_PANEL_ROTATION rotate;
 	unsigned int te_delay;
+
+	int max_bl_level;
+	enum panel_hbm_type hbm_type;
 };
 
 struct mtk_panel_ext {
