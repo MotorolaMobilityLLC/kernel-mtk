@@ -1067,4 +1067,5 @@ void mtk_crtc_prepare_instr(struct drm_crtc *crtc);
 unsigned int check_dsi_underrun_event(void);
 void clear_dsi_underrun_event(void);
 int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, const struct panel_param_info param_info);
+int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level);
 #endif /* MTK_DRM_CRTC_H */
