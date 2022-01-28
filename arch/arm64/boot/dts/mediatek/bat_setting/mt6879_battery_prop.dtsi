@@ -70,6 +70,6 @@
 	MULTI_TEMP_GAUGE0 = <(1)>;
 	/* Multi gauge0 enable */
 	RBAT_PULL_UP_VOLT = <(1840)>;
-#include "mt6879_battery_table.dtsi"
+//#include "mt6879_battery_table.dtsi"
 #include "mt6879_battery_prop_dim2_ext.dtsi"
 };
