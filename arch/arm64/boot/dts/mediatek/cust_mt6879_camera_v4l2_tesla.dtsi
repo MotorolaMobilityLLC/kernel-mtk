@@ -50,6 +50,7 @@
 		compatible = "mediatek,mot_dubai_ak7377a";
 		reg = <0x18>;
 		vin-supply = <&cam_ois_avdd_ldo>;
+		vdd-supply = <&cam_main_uw_afvdd_ldo>;
 		port {
 			main_af: endpoint {
 				remote-endpoint = <&main_af_endpoint>;
