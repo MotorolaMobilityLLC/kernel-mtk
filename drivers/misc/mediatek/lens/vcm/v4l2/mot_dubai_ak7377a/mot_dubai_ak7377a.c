@@ -10,7 +10,6 @@
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
-
 #define DRIVER_NAME "ak7377a"
 #define AK7377A_I2C_SLAVE_ADDR 0x18
 
@@ -38,6 +37,8 @@
 #define AK7377A_MOVE_DELAY_US			8400
 #define AK7377A_STABLE_TIME_US			20000
 
+static struct i2c_client *g_pstAF_I2Cclient;
+
 /* ak7377a device structure */
 struct ak7377a_device {
 	struct v4l2_ctrl_handler ctrls;
@@ -49,7 +50,14 @@ struct ak7377a_device {
 	struct pinctrl_state *vcamaf_on;
 	struct pinctrl_state *vcamaf_off;
 };
+#define DW9781_I2C_SLAVE_ADDR 0xE4
 
+static struct i2c_client *dw9781_i2c_client = NULL;
+
+void dw9781_set_i2c_client(struct i2c_client *i2c_client)
+{
+	dw9781_i2c_client = i2c_client;
+}
 static inline struct ak7377a_device *to_ak7377a_vcm(struct v4l2_ctrl *ctrl)
 {
 	return container_of(ctrl->handler, struct ak7377a_device, ctrls);
@@ -115,11 +123,94 @@ static int ak7377a_release(struct ak7377a_device *ak7377a)
 	return 0;
 }
 
+int write_reg_16bit_value_16bit(unsigned short regAddr, unsigned short regData)
+{
+	int i4RetValue = 0;
+	struct i2c_msg msgs;
+	char puSendCmd[4] = { (char)(regAddr>>8), (char)(regAddr&0xff),
+	                      (char)(regData >> 8),
+	                      (char)(regData&0xFF) };
+
+	LOG_INF("DW9781 I2C read:%04x, data:%04x", regAddr, regData);
+
+	if (!dw9781_i2c_client) {
+		printk("[%s] FATAL: DW9781 i2c client is NULL!!!",__func__);
+		return -1;
+	}
+
+	msgs.addr  = DW9781_I2C_SLAVE_ADDR >> 1;
+	msgs.flags = 0;
+	msgs.len   = 4;
+	msgs.buf   = puSendCmd;
+
+	i4RetValue = i2c_transfer(dw9781_i2c_client->adapter, &msgs, 1);
+	if (i4RetValue != 1) {
+		printk("I2C send failed!!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int read_reg_16bit_value_16bit(unsigned short regAddr, unsigned short *regData)
+{
+	int i4RetValue = 0;
+	unsigned short readTemp = 0;
+	struct i2c_msg msg[2];
+	char puReadCmd[2] = { (char)(regAddr>>8), (char)(regAddr&0xff)};
+
+	LOG_INF("DW9781 I2C read:%04x", regAddr);
+
+	if (!dw9781_i2c_client) {
+		printk("[%s] FATAL: DW9781 i2c client is NULL!!!",__func__);
+		return -1;
+	}
+	dw9781_i2c_client->addr = DW9781_I2C_SLAVE_ADDR >> 1;
+
+	msg[0].addr = dw9781_i2c_client->addr;
+	msg[0].flags = 0;
+	msg[0].len = 2;
+	msg[0].buf = puReadCmd;
+
+	msg[1].addr = dw9781_i2c_client->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = 2;
+	msg[1].buf = (u8*)&readTemp;
+
+	i4RetValue = i2c_transfer(dw9781_i2c_client->adapter, msg, ARRAY_SIZE(msg));
+
+	if (i4RetValue != 2) {
+		printk("DW9781 I2C read failed!!\n");
+		return -1;
+	}
+
+	*regData = ((readTemp>>8) & 0xff) | ((readTemp<<8) & 0xff00);
+
+	return 0;
+}
+
+
+static void os_mdelay(unsigned long ms)
+{
+	unsigned long us = ms*1000;
+	usleep_range(us, us+2000);
+}
+
+void ois_reset(void)
+{
+	LOG_INF("[dw9781c_ois_reset] ois reset\r\n");
+	write_reg_16bit_value_16bit(0xD002, 0x0001); /* printfc reset */
+	os_mdelay(4);
+	write_reg_16bit_value_16bit(0xD001, 0x0001); /* Active mode (DSP ON) */
+	os_mdelay(25); /* ST gyro - over wait 25ms, default Servo On */
+	write_reg_16bit_value_16bit(0xEBF1, 0x56FA); /* User protection release */
+}
+
 static int ak7377a_init(struct ak7377a_device *ak7377a)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&ak7377a->sd);
 	int ret = 0;
-
+	unsigned short lock_ois = 0;
 	LOG_INF("+\n");
 
 	client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
@@ -130,6 +221,10 @@ static int ak7377a_init(struct ak7377a_device *ak7377a)
 	/* 00:active mode , 10:Standby mode , x1:Sleep mode */
 	ret = i2c_smbus_write_byte_data(client, 0x02, 0x00);
 
+	ois_reset();
+	read_reg_16bit_value_16bit(0x7015, &lock_ois); /* lock_ois: 0x7015 */
+	LOG_INF("Check HW lock_ois: %x\n", lock_ois);
+	client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
 	LOG_INF("-\n");
 
 	return 0;
@@ -291,7 +386,7 @@ static int ak7377a_probe(struct i2c_client *client)
 	int ret;
 
 	LOG_INF("%s\n", __func__);
-
+	g_pstAF_I2Cclient = client;
 	ak7377a = devm_kzalloc(dev, sizeof(*ak7377a), GFP_KERNEL);
 	if (!ak7377a)
 		return -ENOMEM;
@@ -340,7 +435,7 @@ static int ak7377a_probe(struct i2c_client *client)
 	v4l2_i2c_subdev_init(&ak7377a->sd, client, &ak7377a_ops);
 	ak7377a->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	ak7377a->sd.internal_ops = &ak7377a_int_ops;
-
+	dw9781_set_i2c_client(g_pstAF_I2Cclient);
 	ret = ak7377a_init_controls(ak7377a);
 	if (ret)
 		goto err_cleanup;
