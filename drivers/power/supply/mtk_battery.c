@@ -672,19 +672,18 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		if (wls_online.intval) {
 			cur_chr_type = POWER_SUPPLY_TYPE_WIRELESS;
 		} else {
-		ret = power_supply_get_property(chg_psy,
+			ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_USB_TYPE, &prop_type);
 
-		/* plug in out */
-		cur_chr_type = prop_type.intval;
-
+			/* plug in out */
+			cur_chr_type = prop_type.intval;
+		}
 		if (cur_chr_type == POWER_SUPPLY_TYPE_UNKNOWN) {
 			if (gm->chr_type != POWER_SUPPLY_TYPE_UNKNOWN)
 				bm_err("%s chr plug out\n");
 		} else {
 			if (gm->chr_type == POWER_SUPPLY_TYPE_UNKNOWN)
 				wakeup_fg_algo(gm, FG_INTR_CHARGER_IN);
-		}
 		}
 	}
 
