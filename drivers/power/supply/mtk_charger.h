@@ -346,6 +346,7 @@ struct mmi_params {
 	struct			mmi_mux_chan mux_channel;
 	int			wls_switch_en;
 	int			wls_boost_en;
+	int			charge_rate;
 };
 /*moto mmi Functionality end*/
 

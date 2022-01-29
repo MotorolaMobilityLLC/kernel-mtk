@@ -2563,8 +2563,19 @@ static void charger_send_kpoc_uevent(struct mtk_charger *info)
 /*********************
  * MMI Functionality *
  *********************/
-
+#define CHG_SHOW_MAX_SIZE 50
 static struct mtk_charger *mmi_info;
+
+enum {
+	POWER_SUPPLY_CHARGE_RATE_NONE = 0,
+	POWER_SUPPLY_CHARGE_RATE_NORMAL,
+	POWER_SUPPLY_CHARGE_RATE_WEAK,
+	POWER_SUPPLY_CHARGE_RATE_TURBO,
+};
+
+static char *charge_rate[] = {
+	"None", "Normal", "Weak", "Turbo"
+};
 
 static char *stepchg_str[] = {
 	[STEP_MAX]		= "MAX",
@@ -2632,73 +2643,6 @@ void update_charging_limit_modes(struct mtk_charger *info, int batt_soc)
 		info->mmi.charging_limit_modes = charging_limit_modes;
 }
 
-#if 0
-#define WEAK_CHRG_THRSH 450
-#define TURBO_CHRG_THRSH 2500
-int mmi_chrg_rate_check(void)
-{
-	int chg_rate, icl, icl_c, rc;
-	union power_supply_propval val;
-	char *charge_rate[] = {
-		"None", "Normal", "Weak", "Turbo"
-	};
-
-	if (pinfo == NULL) {
-		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
-		goto end_rate_check;
-	}
-
-	icl = pinfo->chg1_data.input_current_limit / 1000;
-	icl_c = pinfo->chg1_data.typec_input_current_limit;
-
-	rc = mmi_get_prop_from_charger(pinfo,
-				POWER_SUPPLY_PROP_ONLINE, &val);
-	if (rc < 0) {
-		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
-		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
-		goto end_rate_check;
-	} else if (!val.intval) {
-		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
-		goto end_rate_check;
-	}
-
-	if (is_typec_adapter(pinfo)
-		&& adapter_dev_get_property(pinfo->pd_adapter, TYPEC_RP_LEVEL)
-			== 3000) {
-			if (icl_c == -1 || icl_c > TURBO_CHRG_THRSH * 1000) {
-				chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
-				goto end_rate_check;
-			}
-	}
-
-#if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
-	if (icl > TURBO_CHRG_THRSH) {
-#else
-	if (icl >= TURBO_CHRG_THRSH) {
-#endif
-		chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
-		goto end_rate_check;
-	} else if (icl < WEAK_CHRG_THRSH) {
-		chg_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
-		goto end_rate_check;
-	}
-
-	chg_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
-
-end_rate_check:
-	pr_info("%s Charger Detected\n", charge_rate[chg_rate]);
-	return chg_rate;
-}
-
-int mmi_batt_health_check(void)
-{
-	if (pinfo == NULL) {
-		pr_err("[%s]called before mtk_charger valid!\n", __func__);
-		return POWER_SUPPLY_HEALTH_GOOD;
-	}
-	return pinfo->mmi.batt_health;
-}
-#endif
 static int mmi_get_ffc_fv(struct mtk_charger *info, int temp_c)
 {
 	int ffc_max_fv;
@@ -3009,6 +2953,147 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 	}
 
 	return change_state;
+}
+
+#define WEAK_CHRG_THRSH 450
+#define TURBO_CHRG_THRSH 2500
+void mmi_charge_rate_check(struct mtk_charger *info)
+{
+	int icl, rc;
+	int rp_level = 0;
+	union power_supply_propval val;
+	struct charger_data *pdata;
+
+	if (info == NULL)
+		return;
+
+	pdata = &info->chg_data[CHG1_SETTING];
+	icl = pdata->input_current_limit / 1000;
+	rc = mmi_get_prop_from_charger(info, POWER_SUPPLY_PROP_ONLINE, &val);
+	if (rc < 0) {
+		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
+		info->mmi.charge_rate= POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	} else if (!val.intval) {
+		pr_info("[%s]usb off line\n", __func__);
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	}
+
+	rp_level = adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL);
+	if (rp_level == 3000
+		|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK
+		|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30
+		|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+ 	}
+
+	if (icl >= TURBO_CHRG_THRSH)
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+	else if (icl < WEAK_CHRG_THRSH)
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
+	else
+		info->mmi.charge_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
+
+end_rate_check:
+	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
+		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
+}
+
+static ssize_t charge_rate_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	if (!mmi_info) {
+		pr_err("SMBMMI: mmi_info is not initialized\n");
+		return 0;
+	}
+
+	mmi_charge_rate_check(mmi_info);
+	return scnprintf(buf, CHG_SHOW_MAX_SIZE, "%s\n",
+			 charge_rate[mmi_info->mmi.charge_rate]);
+}
+
+static mmi_get_battery_age(void)
+{
+	struct mtk_gauge *gauge;
+	struct power_supply *psy;
+
+	psy = power_supply_get_by_name("mtk-gauge");
+	if (psy == NULL) {
+		pr_err("[%s]psy is not rdy\n", __func__);
+		return 100;
+	}
+
+	gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
+	if (gauge == NULL) {
+		pr_err("[%s]mtk_gauge is not rdy\n", __func__);
+		return 100;
+	}
+
+	gauge->gm->aging_factor =
+		gauge->gm->aging_factor > 10000? 10000: gauge->gm->aging_factor;
+	pr_info("[%s]battery age is %d\n", __func__, gauge->gm->aging_factor);
+
+	return gauge->gm->aging_factor /100;
+}
+static DEVICE_ATTR(charge_rate, S_IRUGO, charge_rate_show, NULL);
+
+static ssize_t age_show(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
+{
+	return scnprintf(buf, CHG_SHOW_MAX_SIZE, "%d\n", mmi_get_battery_age());
+}
+static DEVICE_ATTR(age, S_IRUGO, age_show, NULL);
+
+static struct attribute * mmi_g[] = {
+	&dev_attr_charge_rate.attr,
+	&dev_attr_age.attr,
+	NULL,
+};
+
+static const struct attribute_group power_supply_mmi_attr_group = {
+	.attrs = mmi_g,
+};
+
+
+static void mmi_updata_batt_status(struct mtk_charger *info)
+{
+	static struct power_supply	*batt_psy;
+	char *chrg_rate_string = NULL;
+	char *envp[2];
+	int rc;
+
+	if (!batt_psy) {
+		batt_psy = power_supply_get_by_name("battery");
+		if (!batt_psy) {
+			pr_err( "%s  No battery supply found\n", __func__);
+			return;
+		}
+
+		rc = sysfs_create_group(&batt_psy->dev.kobj,
+				&power_supply_mmi_attr_group);
+		if (rc)
+			pr_err("%s  failed: attr create\n", __func__);
+	}
+
+	mmi_charge_rate_check(info);
+	chrg_rate_string = kmalloc(CHG_SHOW_MAX_SIZE, GFP_KERNEL);
+	if (!chrg_rate_string) {
+		pr_err("%s  Failed to Get Uevent Mem\n", __func__);
+		envp[0] = NULL;
+	} else {
+		scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
+			  "POWER_SUPPLY_CHARGE_RATE=%s",
+			  charge_rate[info->mmi.charge_rate]);
+		envp[0] = chrg_rate_string;
+		envp[1] = NULL;
+	}
+
+	kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
+	kfree(chrg_rate_string);
 }
 
 #define WARM_TEMP 45
@@ -3485,7 +3570,6 @@ static int chg_reboot(struct notifier_block *nb,
 }
 #endif
 
-#define CHG_SHOW_MAX_SIZE 50
 static ssize_t factory_image_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
@@ -3885,7 +3969,7 @@ static int charger_routine_thread(void *arg)
 			sc_update(info);
 			wakeup_sc_algo_cmd(&info->sc.data, SC_EVENT_STOP_CHARGING, 0);
 		}
-
+		mmi_updata_batt_status(info);
 		spin_lock_irqsave(&info->slock, flags);
 		__pm_relax(info->charger_wakelock);
 		spin_unlock_irqrestore(&info->slock, flags);
