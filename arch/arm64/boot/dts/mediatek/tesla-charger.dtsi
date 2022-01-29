@@ -258,3 +258,11 @@
         status = "okay";
     };
 };
+
+&mt6375_typec {
+	pd-data {
+		/* 5V, 3A */
+		pd,sink-pdo-size = <2>;
+		pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
+	};
+};
