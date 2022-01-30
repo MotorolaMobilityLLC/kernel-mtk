@@ -1582,6 +1582,13 @@ static signed int RSC_ReadReg(struct RSC_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 
+	if (pData->Addr < 0x0 || pData->Addr > 0x1000) {
+		LOG_ERR("%s pData->addr is out of range",
+			__func__);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	for (i = 0; i < pRegIo->Count; i++) {
 		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
 			LOG_ERR("get_user failed");
