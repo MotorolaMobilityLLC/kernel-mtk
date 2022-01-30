@@ -81,6 +81,9 @@
     battery_cv = <4480000>;
     max_charger_voltage = <14500000>;
     ac_charger_current = <3000000>;
+    usb_charger_current = <500000>;
+    ac_charger_input_current = <1500000>;
+    charging_host_charger_current = <1500000>;
     /*pe5*/
     fast_charging_indicator = <0x10>;
     /*swchg + 1CP*/
