@@ -19,3 +19,7 @@
 &mmc1 {
 	/delete-property/ vqmmc-supply;
 };
+
+&charger {
+	/delete-property/ enable_dynamic_mivr;
+};
