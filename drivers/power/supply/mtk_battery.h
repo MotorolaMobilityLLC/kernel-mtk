@@ -1150,5 +1150,5 @@ extern void do_fg_algo(struct mtk_battery *gm, unsigned int intr_num);
 extern void fg_bat_temp_int_internal(struct mtk_battery *gm);
 /* mtk_battery_algo.c end */
 extern void disable_all_irq(struct mtk_battery *gm);
-
+extern int mmi_batt_health_check(void);
 #endif /* __MTK_BATTERY_INTF_H__ */
