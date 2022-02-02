@@ -382,6 +382,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_status;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
+		bs_data->bat_health = mmi_batt_health_check();
 		val->intval = bs_data->bat_health;
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
