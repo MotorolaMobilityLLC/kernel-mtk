@@ -443,6 +443,36 @@ err:
 	return ret;
 }
 
+static int pe2_leave(struct chg_alg_device *alg)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe2;
+
+	pe2_dbg("%s: starts\n", __func__);
+	pe2 = dev_get_drvdata(&alg->dev);
+
+	ret = pe2_reset_ta_vchr(alg);
+	if (ret != 0) {
+		pe2_err("%s: failed, state = %d, ret = %d\n",
+			__func__, pe2->state, ret);
+	}
+
+	ret = pe2_hal_enable_vbus_ovp(alg, true);
+	if (ret != 0) {
+		pe2_err("%s: enable vbus ovp fai,ret:%d\n",
+			__func__, ret);
+	}
+
+	pe2_hal_set_mivr(alg, CHG1, pe2->min_charger_voltage);
+	if (ret != 0) {
+		pe2_err("%s:set mivr fail,ret:%d\n",
+			__func__, ret);
+	}
+
+	pe2_dbg("%s: OK\n", __func__);
+	return ret;
+}
+
 static int __pe2_check_charger(struct chg_alg_device *alg)
 {
 	int ret = 0, ret_value = 0;
@@ -493,9 +523,15 @@ static int __pe2_check_charger(struct chg_alg_device *alg)
 	pe2_dbg("%s: OK, state = %d\n",
 		__func__, pe2->state);
 
+	ret = pe20_set_ta_vchr(alg, 5500000);
+	if (ret == 0)
+		pe2_hal_set_mivr(alg, CHG1, pe2->min_charger_voltage);
+	else {
+		pe2_leave(alg);
+		ret = ALG_TA_NOT_SUPPORT;
+	}
 	return ret;
 out:
-
 	if (ret_value == 0)
 		ret_value = ALG_TA_NOT_SUPPORT;
 	pe2_dbg("%s:SOC:(%d,%d,%d),state:%d,chr_type:%d,ret:%d,plugout:%d ref_vbat:%d\n",
@@ -509,36 +545,6 @@ out:
 		pe2->is_cable_out_occur,
 		pe2->ref_vbat);
 	return ret_value;
-}
-
-static int pe2_leave(struct chg_alg_device *alg)
-{
-	int ret = 0;
-	struct mtk_pe20 *pe2;
-
-	pe2_dbg("%s: starts\n", __func__);
-	pe2 = dev_get_drvdata(&alg->dev);
-
-	ret = pe2_reset_ta_vchr(alg);
-	if (ret != 0) {
-		pe2_err("%s: failed, state = %d, ret = %d\n",
-			__func__, pe2->state, ret);
-	}
-
-	ret = pe2_hal_enable_vbus_ovp(alg, true);
-	if (ret != 0) {
-		pe2_err("%s: enable vbus ovp fai,ret:%d\n",
-			__func__, ret);
-	}
-
-	pe2_hal_set_mivr(alg, CHG1, pe2->min_charger_voltage);
-	if (ret != 0) {
-		pe2_err("%s:set mivr fail,ret:%d\n",
-			__func__, ret);
-	}
-
-	pe2_dbg("%s: OK\n", __func__);
-	return ret;
 }
 
 static int _pe2_init_algo(struct chg_alg_device *alg)
@@ -688,6 +694,9 @@ static int pe2_sc_set_charger(struct chg_alg_device *alg)
 	} else
 		pe2->charging_current1 = pe2->sc_charger_current;
 
+	pe2->charging_current1 = pe2->charging_current1 < pe2->mmi_fcc?
+		pe2->charging_current1: pe2->mmi_fcc;
+
 	if (pe2->input_current_limit1 != -1 &&
 		pe2->input_current_limit1 <
 		pe2->sc_input_current) {
@@ -731,12 +740,13 @@ static int pe2_sc_set_charger(struct chg_alg_device *alg)
 		}
 	}
 
-	pe2_dbg("%s m:%d s:%d cv:%d chg1:%d,%d min:%d:%d, 6pin_en:%d, 6pin_re_en=%d\n", __func__,
+	pe2_dbg("%s m:%d s:%d cv:%d chg1:%d,%d,%d, min:%d:%d, 6pin_en:%d, 6pin_re_en=%d\n", __func__,
 		alg->config,
 		pe2->state,
 		pe2->cv,
 		pe2->input_current1,
 		pe2->charging_current1,
+		pe2->mmi_fcc,
 		ichg1_min,
 		aicr1_min,
 		pe2->pe2_6pin_en,
@@ -871,12 +881,10 @@ static int pe2_dcs_set_charger(struct chg_alg_device *alg)
 static int __pe2_run(struct chg_alg_device *alg)
 {
 	struct mtk_pe20 *pe2;
-	int i;
 	int vbat, vbus, ichg;
 	int pre_vbus, pre_idx;
 	int tune = 0, pes = 0; /* For log, to know the state of PE+20 */
-	u32 size;
-	int ret = 0, ret_value = 0, vchr, uisoc;
+	int ret = 0, ret_value = 0;
 
 	pe2 = dev_get_drvdata(&alg->dev);
 
@@ -891,7 +899,7 @@ static int __pe2_run(struct chg_alg_device *alg)
 
 	pre_vbus = pe2->vbus;
 	pre_idx = pe2->idx;
-
+#ifdef MTK_BASE
 	/* PE+ leaves unexpectedly */
 	vchr = pe2_hal_get_vbus(alg);
 	if (abs(vchr - pe2->ta_vchr_org) < 1000000) {
@@ -953,7 +961,7 @@ static int __pe2_run(struct chg_alg_device *alg)
 		break;
 	}
 	pes = 2;
-
+#endif
 	if (alg->config == DUAL_CHARGERS_IN_SERIES) {
 		if (pe2_dcs_set_charger(alg) != 0) {
 			ret = pe2_leave(alg);
@@ -1364,13 +1372,14 @@ int _pe2_set_setting(struct chg_alg_device *alg_dev,
 
 	pe2 = dev_get_drvdata(&alg_dev->dev);
 
-	pe2_dbg("%s cv:%d icl:%d,%d cc:%d,%d, 6pin_en:%d\n",
+	pe2_dbg("%s cv:%d icl:%d,%d cc:%d,%d, mmi_fcc:%d, 6pin_en:%d\n",
 		__func__,
 		setting->cv,
 		setting->input_current_limit1,
 		setting->input_current_limit2,
 		setting->charging_current_limit1,
 		setting->charging_current_limit2,
+		setting->mmi_fcc_limit,
 		setting->vbat_mon_en);
 
 	mutex_lock(&pe2->access_lock);
@@ -1381,6 +1390,7 @@ int _pe2_set_setting(struct chg_alg_device *alg_dev,
 	pe2->charging_current_limit1 = setting->charging_current_limit1;
 	pe2->input_current_limit2 = setting->input_current_limit2;
 	pe2->charging_current_limit2 = setting->charging_current_limit2;
+	pe2->mmi_fcc = setting->mmi_fcc_limit;
 
 	__pm_relax(pe2->suspend_lock);
 	mutex_unlock(&pe2->access_lock);
