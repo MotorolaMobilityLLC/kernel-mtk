@@ -123,6 +123,16 @@ static void reset_hang_info(void)
 	Hang_first_done = false;
 }
 
+void aee_kernel_RT_Monitor_api_factory(void)
+{
+	reset_hang_info();
+	reboot_flag = 0;
+	hd_detect_enabled = 0;
+	hang_detect_counter = hd_timeout;
+	pr_info("[Hang_Detect] hang_detect disabled for factory\n");
+}
+EXPORT_SYMBOL(aee_kernel_RT_Monitor_api_factory);
+
 int add_white_list(char *name)
 {
 	struct name_list *new_thread;
