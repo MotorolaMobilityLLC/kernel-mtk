@@ -3526,7 +3526,7 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 	return rc;
 }
 
-#if 0
+
 static int chg_reboot(struct notifier_block *nb,
 			 unsigned long event, void *unused)
 {
@@ -3545,10 +3545,9 @@ static int chg_reboot(struct notifier_block *nb,
 		switch (event) {
 		case SYS_POWER_OFF:
 			aee_kernel_RT_Monitor_api_factory();
-			pinfo->is_suspend = true;
+			info->is_suspend = true;
 			/* Disable Factory Kill */
 			info->disable_charger = true;
-			info->chg_tcmd_client.factory_kill_disable = true;
 			/* Disable Charging */
 			charger_dev_enable(info->chg1_dev, false);
 			/* Suspend USB */
@@ -3574,7 +3573,7 @@ static int chg_reboot(struct notifier_block *nb,
 
 	return NOTIFY_DONE;
 }
-#endif
+
 
 static ssize_t factory_image_mode_store(struct device *dev,
 				struct device_attribute *attr,
@@ -3767,14 +3766,14 @@ void mmi_init(struct mtk_charger *info)
 			pr_err(" [%s] Failed to request wls_boost_en gpio, ret:%d", __func__, rc);
 	}
 	info->mmi.batt_health = POWER_SUPPLY_HEALTH_GOOD;
-#if 0
+
 	info->mmi.chg_reboot.notifier_call = chg_reboot;
 	info->mmi.chg_reboot.next = NULL;
 	info->mmi.chg_reboot.priority = 1;
 	rc = register_reboot_notifier(&info->mmi.chg_reboot);
 	if (rc)
 		pr_err("SMB register for reboot failed\n");
-#endif
+
 	rc = device_create_file(&info->pdev->dev,
 				&dev_attr_force_demo_mode);
 	if (rc) {
