@@ -132,6 +132,7 @@ struct mtk_pe20 {
 	int input_current_limit2;
 	int charging_current_limit1;
 	int charging_current_limit2;
+	int mmi_fcc;
 
 	/* current IC setting */
 	int input_current1;
