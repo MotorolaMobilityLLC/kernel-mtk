@@ -77,6 +77,10 @@
     pd_vbus_upper_bound = <14500000>;
 };
 
+&pe2 {
+	sc_input_current = <3000000>;
+};
+
 &charger {
     battery_cv = <4480000>;
     max_charger_voltage = <14500000>;
@@ -84,8 +88,8 @@
     usb_charger_current = <500000>;
     ac_charger_input_current = <1500000>;
     charging_host_charger_current = <1500000>;
-    /*pe5*/
-    fast_charging_indicator = <0x10>;
+    /*pe5 && pe2*/
+    fast_charging_indicator = <0x12>;
     /*swchg + 1CP*/
     charger_configuration= <3>;
     wireless_charger_max_current = <3000000>;
