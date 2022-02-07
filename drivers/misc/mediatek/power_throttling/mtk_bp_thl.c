@@ -248,11 +248,13 @@ int bp_notify_handler(void *unused)
 	return 0;
 }
 
+#define BAT_TEMP_LIMIT 5
+#define BAT_TEMP_RECORY (BAT_TEMP_LIMIT + 3)
 int bp_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 {
 	struct power_supply *psy = v;
 	union power_supply_propval val;
-	int ret, uisoc, bat_status;
+	int ret, uisoc, bat_status, bat_temp;
 
 	if (strcmp(psy->desc->name, "battery") != 0)
 		return NOTIFY_DONE;
@@ -269,15 +271,22 @@ int bp_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 
 	bat_status = val.intval;
 
+	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_TEMP, &val);
+	if (ret)
+		return NOTIFY_DONE;
+	bat_temp = val.intval / 10;
+
 	if ((bat_status != POWER_SUPPLY_STATUS_CHARGING && bat_status != -1) &&
 		(bp_thl_data->bp_thl_lv == BATTERY_PERCENT_LEVEL_0) &&
-		(uisoc <= bp_thl_data->soc_limit && uisoc >= 0)) {
+		(uisoc <= bp_thl_data->soc_limit && uisoc >= 0) &&
+		bat_temp <= BAT_TEMP_LIMIT) {
 		bp_thl_data->bp_thl_lv = BATTERY_PERCENT_LEVEL_1;
 		bp_notify_flag = true;
-		pr_info("bp_notify called, l=%d s=%d soc=%d\n", bp_thl_data->bp_thl_lv,
-			bat_status, uisoc);
+		pr_info("bp_notify called, l=%d s=%d soc=%d, temp=%d\n", bp_thl_data->bp_thl_lv,
+			bat_status, uisoc, bat_temp);
 	} else if (((bat_status == POWER_SUPPLY_STATUS_CHARGING) ||
-		(uisoc > bp_thl_data->soc_limit)) &&
+		(uisoc > bp_thl_data->soc_limit) ||
+		bat_temp > BAT_TEMP_RECORY) &&
 		(bp_thl_data->bp_thl_lv == BATTERY_PERCENT_LEVEL_1)) {
 		bp_thl_data->bp_thl_lv = BATTERY_PERCENT_LEVEL_0;
 		bp_notify_flag = true;
