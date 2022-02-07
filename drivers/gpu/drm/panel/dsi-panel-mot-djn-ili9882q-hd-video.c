@@ -537,6 +537,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
 	char bl_tb0[] = {0x51, 0x0F, 0xFE};
+	char dimming_tb[] = {0x53, 0x24};
 
 	pr_debug("ili9882q level : %d\n", level);
 
@@ -545,6 +546,9 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 
 	if (!cb)
 		return -1;
+
+	if (!level)
+		cb(dsi, handle, dimming_tb, ARRAY_SIZE(dimming_tb));
 
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 
