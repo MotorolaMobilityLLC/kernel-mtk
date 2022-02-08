@@ -153,7 +153,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.max_gain = 16*BASEGAIN,
 	.min_gain_iso = 100,
 	.gain_step = 64,
-	.gain_type = 0,
+	.gain_type = 3,
 	.max_frame_length = 0xFFFFFF,
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
@@ -1600,7 +1600,7 @@ static kal_uint16 gain2reg(struct subdrv_ctx *ctx, const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0000;
 
-	reg_gain = gain / 4 - 16;
+	reg_gain = gain/64 - 16;    //gain/BASEGAIN*16-16
 	return (kal_uint16) reg_gain;
 }
 
@@ -1885,7 +1885,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	ctx->gain = reg_gain;
 	DEBUG_LOG(ctx, "gain = %d, reg_gain = 0x%x\n ", gain, reg_gain);
 
-	write_cmos_sensor(ctx, 0x0213, reg_gain);
+	write_cmos_sensor_8(ctx, 0x0213, reg_gain);
 	return gain;
 } /* set_gain */
 
@@ -2736,16 +2736,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			break;
 		}
 	break;
-	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
-		if ((void *)(uintptr_t) (*(feature_data + 1)) == NULL) {
-			*(feature_data + 0) =
-				sizeof(mot_dubai_hi1336_ana_gain_table);
-		} else {
-			memcpy((void *)(uintptr_t) (*(feature_data + 1)),
-			(void *)mot_dubai_hi1336_ana_gain_table,
-			sizeof(mot_dubai_hi1336_ana_gain_table));
-		}
-		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
