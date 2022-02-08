@@ -242,6 +242,7 @@ struct charger_custom_data {
 	/*wireless charger*/
 	int wireless_charger_max_current;
 	int wireless_charger_max_input_current;
+	int wireless_charger_input_current;
 };
 
 struct charger_data {
@@ -349,6 +350,10 @@ struct mmi_params {
 	int			charge_rate;
 };
 /*moto mmi Functionality end*/
+struct moto_wls_chg_ops {
+	void *data;
+	void (*wls_voltage_current_select)(int *pCurrent);
+};
 
 enum chg_data_idx_enum {
 	CHG1_SETTING,
@@ -557,5 +562,5 @@ extern void _wake_up_charger(struct mtk_charger *info);
 extern int mtk_chg_enable_vbus_ovp(bool enable);
 extern void aee_kernel_RT_Monitor_api_factory(void);
 
-
+extern int moto_wireless_chg_ops_register(struct moto_wls_chg_ops *ops);
 #endif /* __MTK_CHARGER_H */

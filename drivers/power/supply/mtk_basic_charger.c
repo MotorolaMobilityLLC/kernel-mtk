@@ -59,6 +59,7 @@
 
 #include "mtk_charger.h"
 #include <linux/gpio.h>
+struct moto_wls_chg_ops *wls_chg_ops = NULL;
 
 static int _uA_to_mA(int uA)
 {
@@ -277,9 +278,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	if(info->wireless_online) {
+		wls_chg_ops->wls_voltage_current_select(&info->data.wireless_charger_input_current);
 		pdata->charging_current_limit  =  ((info->data.wireless_charger_max_current <
 					pdata->charging_current_limit) ? info->data.wireless_charger_max_current : pdata->charging_current_limit);
-		pdata->input_current_limit = info->data.wireless_charger_max_input_current;
+		pdata->input_current_limit = info->data.wireless_charger_input_current;
 	}
 
 	sc_select_charging_current(info, pdata);
@@ -897,6 +899,20 @@ static int mmi_mux_switch(struct mtk_charger *info, enum mmi_mux_channel channel
 
 	return 0;
 }
+
+int moto_wireless_chg_ops_register(struct moto_wls_chg_ops *ops)
+{
+	if (!ops) {
+		pr_err("%s invalide wls chg ops(null)\n", __func__);
+		return -EINVAL;
+	}
+
+	wls_chg_ops = ops;
+
+	return 0;
+}
+EXPORT_SYMBOL(moto_wireless_chg_ops_register);
+
 int mtk_basic_charger_init(struct mtk_charger *info)
 {
 	info->algo.do_mux = mmi_mux_switch;
