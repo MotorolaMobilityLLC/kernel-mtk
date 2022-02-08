@@ -273,3 +273,8 @@
 		pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
 	};
 };
+
+&smart_pen_charger {
+		compatible = "mmi,pen-charger";
+		mmi,pen-psy-name = "wireless";
+};
