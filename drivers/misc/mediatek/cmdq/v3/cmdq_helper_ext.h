@@ -661,7 +661,7 @@ enum CMDQ_SPM_MODE {
 	CMDQ_CG_MODE,
 	CMDQ_PD_MODE,
 };
-
+#define CMDQ_ENG_INORDER CMDQ_MAX_ENGINE_COUNT
 struct cmdqRecStruct {
 	struct list_head list_entry;
 	struct cmdq_pkt *pkt;
@@ -673,6 +673,7 @@ struct cmdqRecStruct {
 	void *running_task;
 	bool jump_replace;	/* jump replace or not */
 	bool finalized;		/* set to true after flush() or startLoop() */
+	bool force_inorder;
 	CmdqInterruptCB loop_cb;
 	unsigned long loop_user_data;
 	CmdqAsyncFlushCB async_callback;
