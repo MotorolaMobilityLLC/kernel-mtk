@@ -306,7 +306,6 @@ s32 cmdq_free_write_addr(dma_addr_t paStart, u32 clt);
 s32 cmdq_free_write_addr_by_node(u32 clt, void *fp);
 
 #define CMDQ_CLT_MDP 0
-#define MDP_META_IN_LEGACY_V2
 
 /* Allocate 32-bit register backup slot
  */
