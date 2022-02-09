@@ -107,9 +107,9 @@ static int mot_dubai_dw9800v_init(struct mot_dubai_dw9800v_device *mot_dubai_dw9
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&mot_dubai_dw9800v->sd);
 	int ret = 0;
-	char puSendCmdArray[7][2] = {
+	char puSendCmdArray[6][2] = {
 	{0x02, 0x01}, {0x02, 0x00}, {0xFE, 0xFE},
-	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x60}, {0xFE, 0xFE},
+	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x0B},
 	};
 	unsigned char cmd_number;
 
@@ -120,7 +120,7 @@ static int mot_dubai_dw9800v_init(struct mot_dubai_dw9800v_device *mot_dubai_dw9
 
 	LOG_INF("Check HW version: %x\n", ret);
 
-	for (cmd_number = 0; cmd_number < 7; cmd_number++) {
+	for (cmd_number = 0; cmd_number < 6; cmd_number++) {
 		if (puSendCmdArray[cmd_number][0] != 0xFE) {
 			ret = i2c_smbus_write_byte_data(client,
 					puSendCmdArray[cmd_number][0],
@@ -129,7 +129,7 @@ static int mot_dubai_dw9800v_init(struct mot_dubai_dw9800v_device *mot_dubai_dw9
 			if (ret < 0)
 				return -1;
 		} else {
-			udelay(100);
+			mdelay(1);
 		}
 	}
 
