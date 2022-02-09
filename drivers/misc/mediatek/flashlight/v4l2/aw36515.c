@@ -41,9 +41,9 @@
 #define FAULT_LED1_SHORT_CIRCUIT	(1<<4)
 
 /*  FLASH Brightness
- *	min 3930uA, step 7830uA, max 2000000uA
+ *	min 3910uA, step 7830uA, max 2000000uA
  */
-#define aw36515_FLASH_BRT_MIN 3930
+#define aw36515_FLASH_BRT_MIN 3910
 #define aw36515_FLASH_BRT_STEP 7830
 #define aw36515_FLASH_BRT_MAX 2000000
 #define aw36515_FLASH_BRT_uA_TO_REG(a)	\
@@ -53,18 +53,18 @@
 	((a) * aw36515_FLASH_BRT_STEP + aw36515_FLASH_BRT_MIN)
 
 /*  FLASH TIMEOUT DURATION
- *	min 32ms, step 32ms, max 1024ms
+ *	min 40ms, step 40ms, max 1600ms
  */
-#define aw36515_FLASH_TOUT_MIN 200
-#define aw36515_FLASH_TOUT_STEP 200
+#define aw36515_FLASH_TOUT_MIN 40
+#define aw36515_FLASH_TOUT_STEP 600
 #define aw36515_FLASH_TOUT_MAX 1600
 
 /*  TORCH BRT
- *	min 980uA, step 1960uA, max 5000uA
+ *	min 980uA, step 1960uA, max 500000uA
  */
 #define aw36515_TORCH_BRT_MIN 980
 #define aw36515_TORCH_BRT_STEP 1960
-#define aw36515_TORCH_BRT_MAX 5000
+#define aw36515_TORCH_BRT_MAX 500000
 #define aw36515_TORCH_BRT_uA_TO_REG(a)	\
 	((a) < aw36515_TORCH_BRT_MIN ? 0 :	\
 	 (((a) - aw36515_TORCH_BRT_MIN) / aw36515_TORCH_BRT_STEP))
@@ -257,7 +257,7 @@ static int aw36515_flash_brt_ctrl(struct aw36515_flash *flash,
 	int rval;
 	u8 br_bits;
 
-	pr_info("%s %d brt:%u", __func__, led_no, brt);
+	pr_info_ratelimited("%s %d brt:%u", __func__, led_no, brt);
 	if (brt < aw36515_FLASH_BRT_MIN)
 		return aw36515_enable_ctrl(flash, led_no, false);
 
@@ -289,12 +289,19 @@ static int aw36515_flash_tout_ctrl(struct aw36515_flash *flash,
 {
 	int rval;
 	u8 tout_bits;
-
-	if (tout == 200)
-		tout_bits = 0x04;
+	pr_info_ratelimited("%s tout=%d", __func__, tout);
+        if (tout <= 0)
+        {
+		tout_bits = 0x00;
+	}
+	else if (tout <= 400)
+	{
+		tout_bits = (tout / aw36515_FLASH_TOUT_STEP) -1;
+	}
 	else
-		tout_bits = 0x07 + (tout / aw36515_FLASH_TOUT_STEP);
-
+	{
+		tout_bits = 0x0a;
+	}
 	rval = regmap_update_bits(flash->regmap,
 				  REG_FLASH_TOUT, 0x1f, tout_bits);
 
