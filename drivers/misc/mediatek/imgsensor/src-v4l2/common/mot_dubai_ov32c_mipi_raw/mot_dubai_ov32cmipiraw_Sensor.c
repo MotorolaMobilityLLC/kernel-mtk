@@ -383,7 +383,7 @@ static void set_shutter_frame_length(struct subdrv_ctx *ctx,
 
 	/* Update Shutter */
 	write_cmos_sensor_8(ctx, 0x3500,(shutter >> 16) & 0xFF);
-	write_cmos_sensor_8(ctx, 0x3500,(shutter >> 8) & 0xFF);
+	write_cmos_sensor_8(ctx, 0x3501,(shutter >> 8) & 0xFF);
 	write_cmos_sensor_8(ctx, 0x3502,(shutter) & 0xFF);
 
 	LOG_INF("ov32c  shutter = %d, framelength = %d/%d, dummy_line= %d\n",
