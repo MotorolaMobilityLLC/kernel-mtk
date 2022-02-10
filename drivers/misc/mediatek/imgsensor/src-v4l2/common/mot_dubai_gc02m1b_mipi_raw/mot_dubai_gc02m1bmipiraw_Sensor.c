@@ -127,8 +127,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 
-	.min_gain = 64,
-	.max_gain = 640,
+	.min_gain = GC02M1B_SENSOR_GAIN_BASE,
+	.max_gain = GC02M1B_SENSOR_GAIN_MAX,
 	.min_gain_iso = 100,
 	.gain_step = 1,
 	.gain_type = 4,
@@ -335,18 +335,8 @@ static void set_shutter_frame_length(struct subdrv_ctx *ctx,
 
 }	/* set_shutter_frame_length */
 
-static kal_uint16 gain2reg(struct subdrv_ctx *ctx, const kal_uint32 gain)
-{
-    kal_uint16 reg_gain = 0x0;
-
-	reg_gain = (gain*4);
-
-	return reg_gain;
-}
-
 static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 {
-	kal_uint16 reg_gain;
 	kal_uint32 temp_gain;
 	kal_int16 gain_index;
 	kal_uint16 GC02M1B_AGC_Param[GC02M1B_SENSOR_GAIN_MAX_VALID_INDEX][2] = {
@@ -377,21 +367,19 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 			gain = imgsensor_info.max_gain;
 	}
 
-	reg_gain = gain2reg(ctx, gain);
-
 	for (gain_index = GC02M1B_SENSOR_GAIN_MAX_VALID_INDEX - 1; gain_index >= 0; gain_index--)
-		if (reg_gain >= GC02M1B_AGC_Param[gain_index][0])
+		if (gain >= GC02M1B_AGC_Param[gain_index][0])
 			break;
 
 	write_cmos_sensor(ctx, 0xfe, 0x00);
 	write_cmos_sensor(ctx, 0xb6, GC02M1B_AGC_Param[gain_index][1]);
-	temp_gain = reg_gain * GC02M1B_SENSOR_DGAIN_BASE / GC02M1B_AGC_Param[gain_index][0];
+	temp_gain = gain * GC02M1B_SENSOR_DGAIN_BASE / GC02M1B_AGC_Param[gain_index][0];
 	write_cmos_sensor(ctx, 0xb1, (temp_gain >> 8) & 0x1f);
 	write_cmos_sensor(ctx, 0xb2, temp_gain & 0xff);
-	LOG_INF("GC02M1B_AGC_Param[gain_index][1] = 0x%x, temp_gain = 0x%x, reg_gain = %d\n",
-		GC02M1B_AGC_Param[gain_index][1], temp_gain, reg_gain);
+	LOG_INF("GC02M1B_AGC_Param[gain_index][1] = 0x%x, temp_gain = 0x%x, gain = %d\n",
+		GC02M1B_AGC_Param[gain_index][1], temp_gain, gain);
 
-	return reg_gain;
+	return gain;
 }
 /*
 static void ihdr_write_shutter_gain(struct subdrv_ctx *ctx, kal_uint16 le,
