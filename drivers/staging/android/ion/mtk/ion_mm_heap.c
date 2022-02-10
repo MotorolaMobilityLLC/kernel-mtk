@@ -1102,6 +1102,16 @@ static int __do_dump_share_fd(const void *data, struct file *file,
 	if (IS_ERR_OR_NULL(buffer))
 		return 0;
 
+	/*
+	 * secure heap buffer struct is different with mm_heap buffer,
+	 * and it isn't public, don't dump here.
+	 *
+	 * only dump supported heap type in ion_mm_heap.c
+	 */
+	if (buffer->heap->type != (unsigned int)ION_HEAP_TYPE_MULTIMEDIA &&
+	    buffer->heap->type != (unsigned int)ION_HEAP_TYPE_SYSTEM)
+		return 0;
+
 	bug_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 	if (bug_info) {
 		pid = bug_info->pid;
