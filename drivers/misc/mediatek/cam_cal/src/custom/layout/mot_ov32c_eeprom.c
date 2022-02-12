@@ -34,7 +34,7 @@ static struct STRUCT_CALIBRATION_LAYOUT_STRUCT cal_layout_table = {
 		{0x00000000, 0x00000000, 0x00000000, do_module_version},
 		{0x00000000, 0x00000000, 0x00000000, do_part_number},
 		{0x00000001, 0x00000903, 0x0000074C, mot_do_single_lsc},
-		{0x00000001, 0x00000027, 0x00000045, mot_do_2a_gain},
+		{0x00000001, 0x00000027, 0x00000045, mot_do_awb_gain},
 		{0x00000000, 0x00000000, 0x00000000, mot_do_pdaf},
 		{0x00000000, 0x00000000, 0x00000000, do_stereo_data},
 		{0x00000000, 0x00000000, 0x00000000, do_dump_all},
