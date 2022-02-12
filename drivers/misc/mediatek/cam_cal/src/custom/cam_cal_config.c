@@ -614,6 +614,158 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 	return err;
 }
 
+
+/***********************************************************************************
+ * Function : To read AWB information. Please put your AWB data function, here.
+ ***********************************************************************************/
+
+unsigned int mot_do_awb_gain(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData)
+{
+	struct STRUCT_CAM_CAL_DATA_STRUCT *pCamCalData =
+				(struct STRUCT_CAM_CAL_DATA_STRUCT *)pGetSensorCalData;
+	int read_data_size, checkSum;
+	unsigned int err = CamCalReturnErr[pCamCalData->Command];
+
+	unsigned char AWBConfig = 0x1;
+	int RGBGratioDeviation, tempMax = 0;
+	int CalR = 1, CalGr = 1, CalGb = 1, CalG = 1, CalB = 1;
+	int FacR = 1, FacGr = 1, FacGb = 1, FacG = 1, FacB = 1;
+	int rg_ratio_gold = 1, bg_ratio_gold = 1, grgb_ratio_gold = 1;
+	int rg_ratio_unit = 1, bg_ratio_unit = 1, grgb_ratio_unit = 1;
+	uint8_t  awb_data[45] = {0};
+	int awb_addr = MOT_AWB_ADDR;
+	int awb_size = MOT_AWB_DATA_SIZE;
+
+	debug_log("block_size=%d sensor_id=%x\n", block_size, pCamCalData->sensorID);
+
+	memset((void *)&pCamCalData->Single2A, 0, sizeof(struct STRUCT_CAM_CAL_SINGLE_2A_STRUCT));
+
+	if (pCamCalData->DataVer >= CAM_CAL_TYPE_NUM) {
+		err = CAM_CAL_ERR_NO_DEVICE;
+		error_log("Read Failed\n");
+		show_cmd_error_log(pCamCalData->Command);
+		return err;
+	}
+	if (block_size == 0) {
+		error_log("block_size(%d) is not correct\n", block_size);
+		show_cmd_error_log(pCamCalData->Command);
+		return err;
+	}
+
+	pCamCalData->Single2A.S2aVer = 0x01;
+	pCamCalData->Single2A.S2aBitEn = (0x01 & AWBConfig);
+
+	/* AWB Calibration Data*/
+	if (0x1 & AWBConfig) {
+		read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				awb_addr, awb_size + 2, (unsigned char *)awb_data);
+		if (read_data_size > 0)
+			err = CAM_CAL_ERR_NO_ERR;
+		else {
+			pCamCalData->Single2A.S2aBitEn = CAM_CAL_NONE_BITEN;
+			error_log("Read Failed\n");
+			show_cmd_error_log(pCamCalData->Command);
+		}
+
+		checkSum = awb_data[43]<<8 | awb_data[44];
+		RGBGratioDeviation = awb_data[6];
+		debug_log("RGBGratioDeviation = %d", RGBGratioDeviation);
+		if(check_crc16(awb_data, 43, checkSum)) {
+			debug_log("check_crc16 ok");
+			err = CAM_CAL_ERR_NO_ERR;
+		} else {
+			debug_log("check_crc16 err");
+			err = CAM_CAL_ERR_NO_3A_GAIN;
+			return err;
+		}
+		//check ratio limt
+		rg_ratio_unit = (awb_data[32]<<8 | awb_data[33])*1000/16384;
+		bg_ratio_unit = (awb_data[34]<<8 | awb_data[35])*1000/16384;
+		grgb_ratio_unit = (awb_data[36]<<8 | awb_data[37])*1000/16384;
+		rg_ratio_gold = (awb_data[18]<<8 | awb_data[19])*1000/16384;
+		bg_ratio_gold = (awb_data[20]<<8 | awb_data[21])*1000/16384;
+		grgb_ratio_gold = (awb_data[22]<<8 | awb_data[23])*1000/16384;
+		debug_log("ratio*1000, Unit R/G = %d, B/G = %d, Gr/Gb = %d, Gold R/G = %d, B/G = %d, Gr/Gb = %d",
+			rg_ratio_unit, bg_ratio_unit, grgb_ratio_unit, rg_ratio_gold, bg_ratio_gold, grgb_ratio_gold);
+		if(grgb_ratio_unit<MOT_AWB_GRGB_RATIO_MIN_1000TIMES || grgb_ratio_unit>MOT_AWB_GRGB_RATIO_MAX_1000TIMES
+			|| grgb_ratio_gold<MOT_AWB_GRGB_RATIO_MIN_1000TIMES || grgb_ratio_gold>MOT_AWB_GRGB_RATIO_MAX_1000TIMES
+			|| (ABS(rg_ratio_unit, rg_ratio_gold))>RGBGratioDeviation
+			|| (ABS(bg_ratio_unit, bg_ratio_gold))>RGBGratioDeviation) {
+			debug_log("ratio check err");
+			err = CAM_CAL_ERR_NO_3A_GAIN;
+			return err;
+		}
+
+		CalR  = (awb_data[24]<<8 | awb_data[25])/64;
+		CalGr = (awb_data[26]<<8 | awb_data[27])/64;
+		CalGb = (awb_data[28]<<8 | awb_data[29])/64;
+		CalB  = (awb_data[30]<<8 | awb_data[31])/64;
+
+		if(CalR<MOT_AWB_RB_MIN_VALUE || CalR>MOT_AWB_RBG_MAX_VALUE
+			|| CalGr<MOT_AWB_G_MIN_VALUE ||CalGr>MOT_AWB_RBG_MAX_VALUE
+			|| CalGb<MOT_AWB_G_MIN_VALUE ||CalGb>MOT_AWB_RBG_MAX_VALUE
+			|| CalB<MOT_AWB_RB_MIN_VALUE || CalB>MOT_AWB_RBG_MAX_VALUE) {
+			debug_log("check unit R Gr Gb B limit error");
+			err = CAM_CAL_ERR_NO_3A_GAIN;
+			return err;
+		}
+
+#ifdef MOTO_OB_VALUE
+		CalR  = CalR - MOTO_OB_VALUE;
+		CalGr = CalGr - MOTO_OB_VALUE;
+		CalGb = CalGb - MOTO_OB_VALUE;
+		CalB  = CalB - MOTO_OB_VALUE;
+#endif
+		CalG = ((CalGr + CalGb) + 1) >> 1;
+		debug_log("Unit R = %d, Gr= %d, Gb = %d, B = %d, G = %d", CalR, CalGr, CalGb, CalB, CalG);
+		tempMax = MAX_temp(CalR,CalG,CalB);
+
+		pCamCalData->Single2A.S2aAwb.rUnitGainu4R = (u32)((tempMax*512 + (CalR >> 1))/CalR);
+		pCamCalData->Single2A.S2aAwb.rUnitGainu4G = (u32)((tempMax*512 + (CalG >> 1))/CalG);
+		pCamCalData->Single2A.S2aAwb.rUnitGainu4B  = (u32)((tempMax*512 + (CalB >> 1))/CalB);
+
+		FacR  = (awb_data[10]<<8 | awb_data[11])/64;
+		FacGr = (awb_data[12]<<8 | awb_data[13])/64;
+		FacGb = (awb_data[14]<<8 | awb_data[15])/64;
+		FacB  = (awb_data[16]<<8 | awb_data[17])/64;
+
+		if(FacR<MOT_AWB_RB_MIN_VALUE || FacR>MOT_AWB_RBG_MAX_VALUE
+			|| FacGr<MOT_AWB_G_MIN_VALUE ||FacGr>MOT_AWB_RBG_MAX_VALUE
+			|| FacGb<MOT_AWB_G_MIN_VALUE ||FacGb>MOT_AWB_RBG_MAX_VALUE
+			|| FacB<MOT_AWB_RB_MIN_VALUE || FacB>MOT_AWB_RBG_MAX_VALUE) {
+			debug_log("check gold R Gr Gb B limit error");
+			err = CAM_CAL_ERR_NO_3A_GAIN;
+			return err;
+		}
+
+#ifdef MOTO_OB_VALUE
+		FacR  = FacR - MOTO_OB_VALUE;
+		FacGr = FacGr - MOTO_OB_VALUE;
+		FacGb = FacGb - MOTO_OB_VALUE;
+		FacB  = FacB - MOTO_OB_VALUE;
+#endif
+		FacG = ((FacGr + FacGb) + 1) >> 1;
+		debug_log("Gold R = %d, Gr= %d, Gb = %d, B = %d, G = %d", FacR, FacGr, FacGb, FacB, FacG);
+		tempMax = MAX_temp(FacR,FacG,FacB);
+
+		pCamCalData->Single2A.S2aAwb.rGoldGainu4R = (u32)((tempMax * 512 + (FacR >> 1)) /FacR);
+		pCamCalData->Single2A.S2aAwb.rGoldGainu4G = (u32)((tempMax * 512 + (FacG >> 1)) /FacG);
+		pCamCalData->Single2A.S2aAwb.rGoldGainu4B  = (u32)((tempMax * 512 + (FacB >> 1)) /FacB);
+
+		debug_log("======================AWB CAM_CAL==================\n");
+		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4R);
+		debug_log("[rCalGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4G);
+		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4B);
+		debug_log("[rFacGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldGainu4R);
+		debug_log("[rFacGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldGainu4G);
+		debug_log("[rFacGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldGainu4B);
+		debug_log("======================AWB CAM_CAL==================\n");
+
+	}
+	return err;
+}
+
 /***********************************************************************************
  * Function : To read LSC Table
  ***********************************************************************************/
