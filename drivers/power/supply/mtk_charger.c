@@ -2150,6 +2150,9 @@ static void mtk_chg_get_tchg(struct mtk_charger *info)
 	}
 }
 
+static bool mtk_is_charger_on(struct mtk_charger *info);
+static int mtk_charger_force_disable_power_path(struct mtk_charger *info,
+	int idx, bool disable);
 bool factory_charging_enable = true;
 static void charger_check_status(struct mtk_charger *info)
 {
@@ -2241,7 +2244,8 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 	if (info->mmi.demo_discharging)
 		charging = false;
-
+	if (info->mmi.adaptive_charging_disable_ibat)
+		charging = false;
 	if (info->atm_enabled) {
 		if (factory_charging_enable)
 			charging = true;
@@ -2274,6 +2278,14 @@ stop_charging:
 		_mtk_enable_charging(info, charging);
 
 	info->can_charging = charging;
+
+	if (info->mmi.adaptive_charging_disable_ichg || info->mmi.demo_discharging) {
+		mtk_charger_force_disable_power_path(info, CHG1_SETTING, true);
+		pr_info("[%s] force disable power path true\n", __func__);
+	} else if (mtk_is_charger_on(info)) {
+		mtk_charger_force_disable_power_path(info, CHG1_SETTING, false);
+		pr_info("[%s] force disable power path false\n", __func__);
+	}
 }
 
 static bool charger_init_algo(struct mtk_charger *info)
@@ -2425,8 +2437,6 @@ static bool charger_init_algo(struct mtk_charger *info)
 
 static int mtk_charger_enable_power_path(struct mtk_charger *info,
 	int idx, bool en);
-static int mtk_charger_force_disable_power_path(struct mtk_charger *info,
-	int idx, bool disable);
 static int mtk_charger_plug_out(struct mtk_charger *info)
 {
 	struct charger_data *pdata1 = &info->chg_data[CHG1_SETTING];
@@ -4279,6 +4289,9 @@ static int psy_charger_property_is_writeable(struct power_supply *psy,
 		return 1;
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
 		return 1;
+	case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		return 1;
 	default:
 		return 0;
 	}
@@ -4292,6 +4305,8 @@ static enum power_supply_property charger_psy_properties[] = {
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
+	POWER_SUPPLY_PROP_INPUT_POWER_LIMIT,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
 };
 
 static int psy_charger_get_property(struct power_supply *psy,
@@ -4533,6 +4548,16 @@ int psy_charger_set_property(struct power_supply *psy,
 			mtk_charger_force_disable_power_path(info, idx, true);
 		else
 			mtk_charger_force_disable_power_path(info, idx, false);
+		break;
+	case POWER_SUPPLY_PROP_INPUT_POWER_LIMIT:
+		info->mmi.adaptive_charging_disable_ichg = !!val->intval;
+		pr_info("%s: adaptive charging disable ichg %d\n", __func__,
+			info->mmi.adaptive_charging_disable_ichg);
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		info->mmi.adaptive_charging_disable_ibat =  !!val->intval;
+		pr_info("%s: adaptive charging disable ibat %d\n", __func__,
+			info->mmi.adaptive_charging_disable_ibat);
 		break;
 	default:
 		return -EINVAL;
