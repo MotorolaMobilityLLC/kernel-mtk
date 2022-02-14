@@ -14,7 +14,7 @@
 /plugin/;
 
 #include "mediatek/mt6879-tesla-common-overlay.dtsi"
-#include "mediatek/tesla-connsys-na.dtsi"
+#include "mediatek/tesla-connsys-vzw.dtsi"
 
 #define TESLA_RADIO_NA 1
 
