@@ -174,14 +174,14 @@
 	};
 	camera_pins_cam0_rst_0: cam0@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO66__FUNC_GPIO66>;
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam0_rst_1: cam0@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO66__FUNC_GPIO66>;
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -218,14 +218,14 @@
 	};
 	camera_pins_cam1_rst_0: cam1@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO65__FUNC_GPIO65>;
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam1_rst_1: cam1@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO65__FUNC_GPIO65>;
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -278,14 +278,14 @@
 	};
 	camera_pins_cam2_rst_0: cam2@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO125__FUNC_GPIO125>;
+			pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_rst_1: cam2@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO125__FUNC_GPIO125>;
+			pinmux = <PINMUX_GPIO34__FUNC_GPIO34>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -338,14 +338,14 @@
 	};
 	camera_pins_cam3_rst_0: cam3@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO98__FUNC_GPIO98>;
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam3_rst_1: cam3@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO98__FUNC_GPIO98>;
+			pinmux = <PINMUX_GPIO35__FUNC_GPIO35>;
 			slew-rate = <1>;
 			output-high;
 		};
