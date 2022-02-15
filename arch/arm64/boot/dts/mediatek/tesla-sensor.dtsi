@@ -34,14 +34,14 @@
 	};
 	folio_int_default: folio_int_default {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO65__FUNC_GPIO65>, <PINMUX_GPIO66__FUNC_GPIO66>;
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>, <PINMUX_GPIO33__FUNC_GPIO33>;
 			drive-strength = <2>;
 			input-enable;
 		};
 	};
 	folio_int_sleep: folio_int_sleep {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO65__FUNC_GPIO65>, <PINMUX_GPIO66__FUNC_GPIO66>;
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>, <PINMUX_GPIO33__FUNC_GPIO33>;
 			drive-strength = <2>;
 			input-enable;
 		};
@@ -79,10 +79,10 @@
 		hall,input-dev-name = "folio_hall_effect_sensor";
 		hall_vdd-supply = <&mt6363_vio18>;
 		hall,nirq-gpio-num = <2>;
-		hall,nirq-gpio_0 = <&pio 65 0x02>;
+		hall,nirq-gpio_0 = <&pio 32 0x02>;
 		hall,nirq-gpio-high-val_0 = <0>;
 		hall,nirq-gpio-low-val_0 = <1>;
-		hall,nirq-gpio_1 = <&pio 66 0x02>;
+		hall,nirq-gpio_1 = <&pio 33 0x02>;
 		hall,nirq-gpio-high-val_1 = <0>;
 		hall,nirq-gpio-low-val_1 = <2>;
 	};
