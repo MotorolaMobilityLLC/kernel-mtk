@@ -1344,6 +1344,7 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 	}
 
 	pe50_hal_enable_charging(info->alg, CHG1, true);
+	msleep(600);
 
 	for (i = 0; i < PE50_MEASURE_R_AVG_TIMES + 2; i++) {
 		ret = pe50_hal_get_adc(info->alg, CHG1, PE50_ADCCHAN_VBUS, &val_vbus);
@@ -1417,9 +1418,10 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 	ibus2 -= (ibus_min + ibus_max);
 	ibus2 = precise_div(ibus2, PE50_MEASURE_R_AVG_TIMES);
 
-	data->r_cable_by_swchg = precise_div(abs(vbus2 - vbus1) * 1000,
+	if (vbus2 < vbus1 && ibus2 > ibus1)
+		data->r_cable_by_swchg = precise_div(abs(vbus2 - vbus1) * 1000,
 					     abs(ibus2 - ibus1));
-
+	PE50_INFO("r_cable_by_swchg=%d", data->r_cable_by_swchg);
 	pe50_hal_enable_charging(info->alg, CHG1, false);
 
 	ret = pe50_hal_set_aicr(info->alg, CHG1, aicr);
@@ -2053,12 +2055,14 @@ static int pe50_algo_measure_r_with_ta_cv(struct pe50_algo_info *info)
 {
 	int ret;
 	struct pe50_algo_data *data = info->data;
-	struct pe50_algo_desc *desc = info->desc;
 	struct pe50_ta_auth_data *auth_data = &data->ta_auth_data;
+#ifdef MTK_BASE
+	struct pe50_algo_desc *desc = info->desc;
 	u32 rcable_retry_level = (data->is_dvchg_exist[PE50_DVCHG_SLAVE] &&
 				  !data->tried_dual_dvchg) ?
 				  desc->rcable_level_dual[PE50_RCABLE_NORMAL] :
 				  desc->rcable_level[PE50_RCABLE_NORMAL];
+#endif
 	struct pe50_stop_info sinfo = {
 		.reset_ta = true,
 		.hardreset_ta = false,
@@ -2079,11 +2083,13 @@ static int pe50_algo_measure_r_with_ta_cv(struct pe50_algo_info *info)
 		PE50_ERR("get r info fail(%d)\n", ret);
 		goto err;
 	}
+#ifdef MTK_BASE
 	if (data->r_cable > rcable_retry_level &&
 	    data->err_retry_cnt < PE50_MEASURE_R_RETRY_MAX) {
 		PE50_INFO("rcable(%d) is worse than normal\n", data->r_cable);
 		goto err;
 	}
+#endif
 	PE50_ERR("avg_r(sw,bat,cable):(%d,%d,%d), r_total:%d\n",
 		 data->r_sw, data->r_bat, data->r_cable, data->r_total);
 select_ita:
