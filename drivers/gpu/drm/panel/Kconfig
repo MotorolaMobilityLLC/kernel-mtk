@@ -834,3 +834,11 @@ config BACKLIGHT_PWM_11BIT
 	  Say y here if product backlight pwm is 11bit.
 
 	  If unsure, say N.
+
+config MTK_DISABLE_RPO
+	bool "disable mtk rpo to fix some wallpapers flicker"
+	default n
+	help
+	  Say y here if disable mtk rpo.
+
+	  If unsure, say N.
