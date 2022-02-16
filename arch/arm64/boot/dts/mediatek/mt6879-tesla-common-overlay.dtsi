@@ -566,3 +566,8 @@
 		gpio_config = <163>;
 	};
 };
+
+&u2port0 {
+	mediatek,eye-vrt = <4>;
+	mediatek,rev6 = <2>;
+};
