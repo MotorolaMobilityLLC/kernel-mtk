@@ -204,7 +204,7 @@
 		idvchg_term = <500>;
 		idvchg_step = <50>;
 		ita_level = <3000 2500 2000 1500>;
-		rcable_level = <300 375 500 600>;
+		rcable_level = <350 400 500 600>;
 		ita_level_dual = <5000 3700 3400 3000>;
 		rcable_level_dual = <230 350 450 550>;
 		idvchg_ss_init = <1000>;
