@@ -1482,7 +1482,8 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	}
 
 	if (ret) {
-		list_del(&driver->pending);
+		if(!list_empty(&driver->pending))
+			list_del(&driver->pending);
 		ret = 0;
 	}
 	mutex_unlock(&udc_lock);
