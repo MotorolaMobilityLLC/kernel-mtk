@@ -2311,7 +2311,7 @@ static bool charger_init_algo(struct mtk_charger *info)
 		alg->config = info->config;
 		alg->alg_id = PE5_ID;
 		if (info->enable_fast_charging_indicator &&
-		    ((PE5_ID & info->fast_charging_indicator) == 0)) {
+		    (PE5_ID & info->fast_charging_indicator)) {
 			if (chg_alg_init_algo(alg) == -ENODEV)
 				return false;
 		} else
