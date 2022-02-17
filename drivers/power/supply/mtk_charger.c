@@ -533,6 +533,11 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 			WIRELESS_CHARGER_MAX_INPUT_CURRENT);
 		info->data.wireless_charger_max_input_current = WIRELESS_CHARGER_MAX_INPUT_CURRENT;
 	}
+	/* meta mode*/
+	if ((info->bootmode == 1) ||(info->bootmode == 5)) {
+		info->config = SINGLE_CHARGER;
+		info->fast_charging_indicator = DEFAULT_ALG;
+	}
 }
 
 static void mtk_charger_start_timer(struct mtk_charger *info)
