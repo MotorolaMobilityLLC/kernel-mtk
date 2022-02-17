@@ -12,7 +12,7 @@
 #include <media/v4l2-subdev.h>
 #include "dw9781.h"
 #include "dw9781_i2c.h"
-
+#include "ois_ext_cmd.h"
 #define DRIVER_NAME "ak7377a"
 #define AK7377A_I2C_SLAVE_ADDR 0x18
 
@@ -41,8 +41,17 @@
 #define AK7377A_STABLE_TIME_US			20000
 extern void dw9781_set_i2c_client(struct i2c_client *i2c_client);
 extern int dw9781c_download_ois_fw(void);
-static struct i2c_client *g_pstAF_I2Cclient;
 
+static struct i2c_client *g_pstAF_I2Cclient;
+typedef struct {
+	motOISExtInfType ext_state;
+	motOISExtIntf ext_data;
+	struct work_struct ext_work;
+} ois_ext_work_struct;
+static struct workqueue_struct *ois_ext_workqueue;
+static ois_ext_work_struct ois_ext_work;
+
+static DEFINE_MUTEX(ois_mutex);
 /* ak7377a device structure */
 struct ak7377a_device {
 	struct v4l2_ctrl_handler ctrls;
@@ -56,6 +65,127 @@ struct ak7377a_device {
 	struct pinctrl_state *vcamaf_off;
 };
 #define DW9781_I2C_SLAVE_ADDR 0xE4
+static motOISExtData *pDW9781TestResult = NULL;
+
+int MOT_DW9781CAF_EXT_CMD_HANDLER(motOISExtIntf *pExtCmd)
+{
+	dw9781_set_i2c_client(g_pstAF_I2Cclient);
+
+	switch (pExtCmd->cmd) {
+		case OIS_SART_FW_DL:
+			LOG_INF("Kernel OIS_SART_FW_DL\n");
+			break;
+		case OIS_START_HEA_TEST:
+			{
+				if (!pDW9781TestResult) {
+					pDW9781TestResult = (motOISExtData *)kzalloc(sizeof(motOISExtData), GFP_NOWAIT);
+				}
+
+				LOG_INF("Kernel OIS_START_HEA_TEST\n");
+				if (pDW9781TestResult) {
+					LOG_INF("OIS raius:%d,accuracy:%d,step/deg:%d,wait0:%d,wait1:%d,wait2:%d, ref_stroke:%d",
+					        pExtCmd->data.hea_param.radius,
+					        pExtCmd->data.hea_param.accuracy,
+					        pExtCmd->data.hea_param.steps_in_degree,
+					        pExtCmd->data.hea_param.wait0,
+					        pExtCmd->data.hea_param.wait1,
+					        pExtCmd->data.hea_param.wait2,
+					        pExtCmd->data.hea_param.ref_stroke);
+					square_motion_test(pExtCmd->data.hea_param.radius,
+					                   pExtCmd->data.hea_param.accuracy,
+					                   pExtCmd->data.hea_param.steps_in_degree,
+					                   pExtCmd->data.hea_param.wait0,
+					                   pExtCmd->data.hea_param.wait1,
+					                   pExtCmd->data.hea_param.wait2,
+					                   pExtCmd->data.hea_param.ref_stroke,
+					                   pDW9781TestResult);
+					LOG_INF("OIS HALL NG points:%d", pDW9781TestResult->hea_result.ng_points);
+				} else {
+					LOG_INF("FATAL: Kernel OIS_START_HEA_TEST memory error!!!\n");
+				}
+				break;
+			}
+		case OIS_START_GYRO_OFFSET_CALI:
+			LOG_INF("Kernel OIS_START_GYRO_OFFSET_CALI\n");
+			gyro_offset_calibrtion();
+			break;
+		default:
+			LOG_INF("Kernel OIS invalid cmd\n");
+			break;
+	}
+	return 0;
+}
+
+int MOT_DW9781CAF_GET_TEST_RESULT(motOISExtIntf *pExtCmd)
+{
+	switch (pExtCmd->cmd) {
+		case OIS_QUERY_FW_INFO:
+			LOG_INF("Kernel OIS_QUERY_FW_INFO\n");
+			memset(&pExtCmd->data.fw_info, 0xff, sizeof(motOISFwInfo));
+			break;
+		case OIS_QUERY_HEA_RESULT:
+			{
+				LOG_INF("Kernel OIS_QUERY_HEA_RESULT\n");
+				if (pDW9781TestResult) {
+					memcpy(&pExtCmd->data.hea_result, &pDW9781TestResult->hea_result, sizeof(motOISHeaResult));
+					LOG_INF("OIS NG points:%d, Ret:%d", pDW9781TestResult->hea_result.ng_points, pExtCmd->data.hea_result.ng_points);
+				}
+				break;
+			}
+		case OIS_QUERY_GYRO_OFFSET_RESULT:
+			{
+				motOISGOffsetResult *gOffset = dw9781_get_gyro_offset_result();
+				LOG_INF("Kernel OIS_QUERY_GYRO_OFFSET_RESULT\n");
+				memcpy(&pExtCmd->data.gyro_offset_result, gOffset, sizeof(motOISGOffsetResult));
+				break;
+			}
+		default:
+			LOG_INF("Kernel OIS invalid cmd\n");
+			break;
+	}
+	return 0;
+}
+
+int MOT_DW9781CAF_SET_CALIBRATION(motOISExtIntf *pExtCmd)
+{
+	switch (pExtCmd->cmd) {
+		case OIS_SET_GYRO_OFFSET:
+			{
+				if (pExtCmd->data.gyro_offset_result.is_success == 0 &&
+				    pExtCmd->data.gyro_offset_result.x_offset != 0 &&
+				    pExtCmd->data.gyro_offset_result.y_offset != 0) {
+					motOISGOffsetResult *gOffset = dw9781_get_gyro_offset_result();
+
+					//Update the gyro offset
+					gOffset->is_success = 0;
+					gOffset->x_offset = pExtCmd->data.gyro_offset_result.x_offset;
+					gOffset->y_offset = pExtCmd->data.gyro_offset_result.y_offset;
+
+					//Check if gyro offset update needed
+					gyro_offset_check_update();
+					LOG_INF("[%s] OIS update gyro_offset: %d,%d\n", __func__, gOffset->x_offset, gOffset->y_offset);
+				}
+			}
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
+/* OIS extended interfaces */
+static void ois_ext_interface(struct work_struct *data)
+{
+	ois_ext_work_struct *pwork = container_of(data, ois_ext_work_struct, ext_work);
+
+	if (!pwork) return;
+
+	mutex_lock(&ois_mutex);
+
+	MOT_DW9781CAF_EXT_CMD_HANDLER(&pwork->ext_data);
+	mutex_unlock(&ois_mutex);
+	LOG_INF("OIS ext_data:%p, cmd:%d", pwork->ext_data, pwork->ext_data.cmd);
+}
 
 static inline struct ak7377a_device *to_ak7377a_vcm(struct v4l2_ctrl *ctrl)
 {
@@ -118,7 +248,16 @@ static int ak7377a_release(struct ak7377a_device *ak7377a)
 	 */
 	usleep_range(AK7377A_STABLE_TIME_US - AK7377A_MOVE_DELAY_US,
 		     AK7377A_STABLE_TIME_US - AK7377A_MOVE_DELAY_US + 1000);
-
+	flush_work(&ois_ext_work.ext_work);
+	if (ois_ext_workqueue) {
+		flush_workqueue(ois_ext_workqueue);
+		destroy_workqueue(ois_ext_workqueue);
+		ois_ext_workqueue = NULL;
+	}
+	if (pDW9781TestResult) {
+		kfree(pDW9781TestResult);
+		pDW9781TestResult = NULL;
+	}
 	return 0;
 }
 extern void ois_ready_check(void);
@@ -221,6 +360,55 @@ fail:
 	return ret;
 }
 
+static long ak7377a_ops_core_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
+{
+	int ret = 0;
+	switch(cmd) {
+	case AFIOC_G_OISEXTINTF: {
+		motOISExtIntf *pOisExtData = arg;
+		memcpy(&ois_ext_work.ext_data, pOisExtData, sizeof(motOISExtIntf));
+		if ((ois_ext_work.ext_data.cmd > OIS_EXT_INVALID_CMD) && (ois_ext_work.ext_data.cmd <= OIS_ACTION_MAX)) {
+			//Raise new thread to avoid long execution time block capture requests
+			LOG_INF("OIS ext_state:%d, cmd:%d", ois_ext_work.ext_state, ois_ext_work.ext_data.cmd);
+			if (ois_ext_work.ext_state != ois_ext_work.ext_data.cmd) {
+
+				if (ois_ext_workqueue) {
+					LOG_INF("OIS queue ext work...");
+					queue_work(ois_ext_workqueue, &ois_ext_work.ext_work);
+				}
+
+				ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
+			}
+		} else if ((ois_ext_work.ext_data.cmd > OIS_ACTION_MAX) && (ois_ext_work.ext_data.cmd <= OIS_EXT_INTF_MAX)) {
+			//wait till result ready
+			{
+					motOISExtIntf resultData;
+					resultData.cmd = ois_ext_work.ext_data.cmd;
+					mutex_lock(&ois_mutex);
+					MOT_DW9781CAF_GET_TEST_RESULT(&resultData);
+					mutex_unlock(&ois_mutex);
+					memcpy((void *)arg, &resultData, sizeof(motOISExtIntf));
+					ois_ext_work.ext_state = ois_ext_work.ext_data.cmd;
+			}
+		} else if (ois_ext_work.ext_data.cmd == OIS_SET_GYRO_OFFSET) {
+				mutex_lock(&ois_mutex);
+				MOT_DW9781CAF_SET_CALIBRATION(&ois_ext_work.ext_data);
+				mutex_unlock(&ois_mutex);
+				LOG_INF("OIS update gyro_offset to %d, %d",
+						ois_ext_work.ext_data.data.gyro_offset_result.x_offset,
+						ois_ext_work.ext_data.data.gyro_offset_result.y_offset);
+		}
+	}
+	break;
+
+	default:
+		ret = -ENOIOCTLCMD;
+		break;
+	}
+
+	return ret;
+}
+
 static int ak7377a_set_ctrl(struct v4l2_ctrl *ctrl)
 {
 	int ret = 0;
@@ -253,7 +441,12 @@ static int ak7377a_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 		pm_runtime_put_noidle(sd->dev);
 		return ret;
 	}
-
+	/* OIS ext interfaces for test and firmware checking */
+	INIT_WORK(&ois_ext_work.ext_work, ois_ext_interface);
+	if (ois_ext_workqueue == NULL) {
+		ois_ext_workqueue = create_singlethread_workqueue("ois_ext_intf");
+	}
+	/* ------------------------- */
 	return 0;
 }
 
@@ -271,7 +464,13 @@ static const struct v4l2_subdev_internal_ops ak7377a_int_ops = {
 	.close = ak7377a_close,
 };
 
-static const struct v4l2_subdev_ops ak7377a_ops = { };
+static struct v4l2_subdev_core_ops ak7377a_ops_core = {
+	.ioctl = ak7377a_ops_core_ioctl,
+};
+
+static const struct v4l2_subdev_ops ak7377a_ops = {
+	.core = &ak7377a_ops_core,
+};
 
 static void ak7377a_subdev_cleanup(struct ak7377a_device *ak7377a)
 {
