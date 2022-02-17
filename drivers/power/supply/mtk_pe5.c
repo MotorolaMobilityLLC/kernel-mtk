@@ -782,7 +782,7 @@ static u32 pe50_get_ibatocp(struct pe50_algo_info *info, u32 ita)
 	if (data->is_swchg_en)
 		ibat += data->ichg_setting;
 #else
-	ibat = data->mmi_fcc_limit;
+	ibat = data->mmi_max_ibat;
 #endif
 	return percent(ibat, PE50_IBATOCP_RATIO);
 }
@@ -4188,6 +4188,14 @@ static int pe50_parse_dt(struct pe50_algo_info *info)
 	}
 	PE50_INFO("mmi thermal dts= %d,%d,%d\n",
 		data->mmi_therm_cur_thres, data->mmi_therm_vol_thres, data->mmi_therm_step);
+
+	if (of_property_read_u32(np, "mmi_max_ibat", &val) >= 0)
+		data->mmi_max_ibat = val;
+	else {
+		pr_notice("mmi_max_ibat using default:%d\n",
+			MMI_MAX_IBAT);
+		data->mmi_max_ibat = MMI_MAX_IBAT;
+	}
 	return 0;
 }
 
