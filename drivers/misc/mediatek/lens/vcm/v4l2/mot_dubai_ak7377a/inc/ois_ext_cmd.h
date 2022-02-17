@@ -1,6 +1,6 @@
 #ifndef __OIS_EXT_CMD_H__
 #define __OIS_EXT_CMD_H__
-
+#define AF_MAGIC 'A'
 #define OIS_HEA_MAX_TEST_POINTS 40
 #define OIS_HEA_CHANNEL_NUM     2
 #define OIS_EXT_DATA_MAX_LEN    (OIS_HEA_MAX_TEST_POINTS*OIS_HEA_CHANNEL_NUM*6*sizeof(u16)+4*sizeof(u16))
@@ -63,4 +63,6 @@ typedef struct {
 	motOISExtInfType cmd;
 	motOISExtData    data;
 } motOISExtIntf;
+
+#define AFIOC_G_OISEXTINTF _IOWR(AF_MAGIC, 20, motOISExtIntf)
 #endif
