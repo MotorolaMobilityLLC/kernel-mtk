@@ -246,6 +246,7 @@
 		mmi_therm_cur_thres = <500>;
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
+		mmi_max_ibat = <6000>;
 };
 
 &i2c9 {
