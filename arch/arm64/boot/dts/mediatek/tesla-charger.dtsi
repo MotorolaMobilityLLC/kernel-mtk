@@ -280,3 +280,14 @@
 		compatible = "mmi,pen-charger";
 		mmi,pen-psy-name = "wireless";
 };
+
+
+&charge_leds {
+	compatible = "gpio-leds";
+
+	charging {
+		label = "charging";
+		gpios = <&pio 163 0x0>;
+		default-state = "off";
+	};
+};
