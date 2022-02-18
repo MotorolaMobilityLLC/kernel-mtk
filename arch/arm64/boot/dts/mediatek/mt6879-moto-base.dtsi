@@ -15,6 +15,7 @@
 	hall_2: hall_2 { };
 	hall_3: hall_3 { };
 	hall_4: hall_4 { };
+	charge_leds: charge_leds { };
 };
 
 &mmc1 {
