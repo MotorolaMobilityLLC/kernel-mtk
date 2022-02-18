@@ -2554,6 +2554,7 @@ static bool mtk_is_charger_on(struct mtk_charger *info)
 	return true;
 }
 
+#ifdef MTK_BASE
 static void charger_send_kpoc_uevent(struct mtk_charger *info)
 {
 	static bool first_time = true;
@@ -2570,6 +2571,7 @@ static void charger_send_kpoc_uevent(struct mtk_charger *info)
 		}
 	}
 }
+#endif
 
 /*********************
  * MMI Functionality *
@@ -3814,6 +3816,7 @@ void mmi_init(struct mtk_charger *info)
 	info->mmi.init_done = true;
 }
 
+#ifdef MTK_BASE
 static void kpoc_power_off_check(struct mtk_charger *info)
 {
 	unsigned int boot_mode = info->bootmode;
@@ -3844,6 +3847,7 @@ static void kpoc_power_off_check(struct mtk_charger *info)
 		charger_send_kpoc_uevent(info);
 	}
 }
+#endif
 
 static void charger_status_check(struct mtk_charger *info)
 {
@@ -3973,7 +3977,9 @@ static int charger_routine_thread(void *arg)
 		check_dynamic_mivr(info);
 		mmi_charger_check_status(info);
 		charger_check_status(info);
+#ifdef MTK_BASE
 		kpoc_power_off_check(info);
+#endif
 
 		if (is_disable_charger(info) == false &&
 			is_charger_on == true &&
