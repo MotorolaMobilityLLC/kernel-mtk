@@ -353,7 +353,7 @@ int square_motion_test (int radius, int accuracy, int deg_step, int w_time0,
 					        w_time1, w_time2, ref_stroke);
 
 	REF_STROKE = ref_stroke;
-
+        ois_reset();
 	read_reg_16bit_value_16bit(0x7075, &lens_ofst_x);		/* lens offset */
 	read_reg_16bit_value_16bit(0x7076, &lens_ofst_y);
 	ois_printf("[square_motion_test] Lens ofst X = 0x%04X -- Lens ofst Y = 0x%04X\r\n", lens_ofst_x, lens_ofst_y);
