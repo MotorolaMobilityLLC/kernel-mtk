@@ -3142,6 +3142,10 @@
 				"infra-ccif2-md";
 		};
 
+		mmqos_md {
+			compatible = "mediatek,mmqos-md";
+		};
+
 		gpio_usage_mapping:gpio {
 			compatible = "mediatek,gpio_usage_mapping";
 		};
