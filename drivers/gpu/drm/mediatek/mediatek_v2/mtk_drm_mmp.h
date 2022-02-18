@@ -109,6 +109,9 @@ struct CRTC_MMP_Events {
 	/*Msync 2.0 mmp end*/
 	mmp_event mode_switch;
 	mmp_event max_hrt_layers;
+	/*Gamma mmp mark*/
+	mmp_event gamma_ioctl;
+	mmp_event gamma_sof;
 };
 
 struct DRM_MMP_Events *get_drm_mmp_events(void);

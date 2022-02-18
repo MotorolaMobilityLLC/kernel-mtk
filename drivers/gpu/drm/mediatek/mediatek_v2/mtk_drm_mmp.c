@@ -262,6 +262,11 @@ void init_crtc_mmp_event(void)
 			crtc_mmp_root, "mode_switch");
 		g_CRTC_MMP_Events[i].max_hrt_layers = mmprofile_register_event(
 			crtc_mmp_root, "max_hrt_layers");
+		/*Gamma MMP MARK*/
+		g_CRTC_MMP_Events[i].gamma_ioctl = mmprofile_register_event(
+			crtc_mmp_root, "gamma_ioctl");
+		g_CRTC_MMP_Events[i].gamma_sof = mmprofile_register_event(
+			crtc_mmp_root, "gamma_sof");
 	}
 }
 void drm_mmp_init(void)
