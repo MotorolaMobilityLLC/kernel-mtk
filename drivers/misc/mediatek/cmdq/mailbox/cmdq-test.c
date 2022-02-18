@@ -38,6 +38,12 @@ enum {
 	CMDQ_TEST_SUBSYS_ERR = 99
 };
 
+enum CMDQ_SECURE_STATE_ENUM {
+	CMDQ_MTEE_STATE = -1,
+	CMDQ_NORMAL_STATE = 0,
+	CMDQ_TEE_STATE = 1,
+};
+
 struct test_node {
 	struct device	*dev;
 	void __iomem	*va;
@@ -1479,11 +1485,16 @@ static void cmdq_test_mbox_vcp(struct cmdq_test *test, const bool reuse)
 }
 
 static void
-cmdq_test_trigger(struct cmdq_test *test, const s32 sec, const s32 id)
+cmdq_test_trigger(struct cmdq_test *test, enum CMDQ_SECURE_STATE_ENUM sec, const s32 id)
 {
 	struct cmdq_thread	*thread =
 		(struct cmdq_thread *)test->loop->chan->con_priv;
 	s32 backup = cmdq_thread_timeout_backup(thread, CMDQ_NO_TIMEOUT);
+
+	if (sec < CMDQ_MTEE_STATE || sec > CMDQ_TEE_STATE) {
+		cmdq_err("invalid input");
+		return;
+	}
 
 #ifndef CMDQ_SECURE_SUPPORT
 	if (sec) {
@@ -1491,6 +1502,13 @@ cmdq_test_trigger(struct cmdq_test *test, const s32 sec, const s32 id)
 		return;
 	}
 #endif
+#ifndef CMDQ_GP_SUPPORT
+	if (sec == CMDQ_TEE_STATE) {
+		cmdq_err("%s sec:%d, don't support cmdq tee driver", __func__, sec);
+		return;
+	}
+#endif
+
 	cmdq_mbox_enable(test->clt->chan);
 	cmdq_mbox_enable(test->loop->chan);
 	cmdq_sec_mbox_enable(test->sec->chan);
