@@ -30,7 +30,6 @@
 	UNIT_MULTIPLE = <(1)>;
 	EMBEDDED_SEL = <(1)>;   /* embedded battery*/
 	COM_FG_METER_RESISTANCE = <(0)>;
-	COM_R_FG_VALUE = <(-5)>;
 
 	g_Q_MAX = <
 		/*bat1,   bat2,   bat3,    bat4*/
