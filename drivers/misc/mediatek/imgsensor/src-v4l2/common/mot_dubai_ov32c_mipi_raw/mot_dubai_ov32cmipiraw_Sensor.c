@@ -262,7 +262,7 @@ static void set_max_framerate(struct subdrv_ctx *ctx, UINT16 framerate,
 }	/*	set_max_framerate  */
 
 //check ok
-static void write_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
+static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
 
@@ -273,8 +273,14 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
 
 	if (ctx->frame_length > imgsensor_info.max_frame_length)
 		ctx->frame_length = imgsensor_info.max_frame_length;
-	if (shutter < imgsensor_info.min_shutter)
-		shutter = imgsensor_info.min_shutter;
+
+
+	shutter = (shutter < imgsensor_info.min_shutter) ?
+				imgsensor_info.min_shutter : shutter;
+	shutter = (shutter >
+				(imgsensor_info.max_frame_length - imgsensor_info.margin)) ?
+				(imgsensor_info.max_frame_length - imgsensor_info.margin) :
+				shutter;
 
 	if (ctx->autoflicker_en) {
 		realtime_fps =
@@ -312,7 +318,7 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
  *
  ************************************************************************
  */
-static void set_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
+static void set_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 {
 	LOG_INF("set_shutter");
 	ctx->shutter = shutter;
@@ -321,7 +327,7 @@ static void set_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
 }	/*	set_shutter */
 
 //check ok
-static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
+static void set_frame_length(struct subdrv_ctx *ctx, kal_uint32 frame_length)
 {
 	if (frame_length > 1)
 		ctx->frame_length = frame_length;
@@ -332,67 +338,25 @@ static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
 		ctx->frame_length = ctx->min_frame_length;
 
 	/* Extend frame length */
+	write_cmos_sensor_8(ctx, 0x3840, ctx->frame_length >> 16);
 	write_cmos_sensor_8(ctx, 0x380e, ctx->frame_length >> 8);
 	write_cmos_sensor_8(ctx, 0x380f, ctx->frame_length & 0xFF);
 	pr_debug("Framelength: set=%d/input=%d/min=%d\n",
 		ctx->frame_length, frame_length, ctx->min_frame_length);
 }
 //check ok
-static void set_shutter_frame_length(struct subdrv_ctx *ctx,
-	kal_uint16 shutter, kal_uint16 frame_length)
-{	kal_uint16 realtime_fps = 0;
-	kal_int32 dummy_line = 0;
+static void set_shutter_frame_length(struct subdrv_ctx *ctx, kal_uint32 shutter,
+					kal_uint32 target_frame_length)
+{
 
-	ctx->shutter = shutter;
-
-	/* Change frame time */
-	if (frame_length > 1)
-		dummy_line = frame_length - ctx->frame_length;
-
-	ctx->frame_length =
-		ctx->frame_length + dummy_line;
-
-
-	if (shutter > ctx->frame_length - imgsensor_info.margin)
-		ctx->frame_length = shutter + imgsensor_info.margin;
-
-
-	if (ctx->frame_length > imgsensor_info.max_frame_length)
-		ctx->frame_length = imgsensor_info.max_frame_length;
-
-
-	shutter =
-		(shutter < imgsensor_info.min_shutter)
-		? imgsensor_info.min_shutter
-		: shutter;
-	shutter =
-		(shutter >
-		(imgsensor_info.max_frame_length - imgsensor_info.margin))
-		? (imgsensor_info.max_frame_length - imgsensor_info.margin)
-		: shutter;
-
-	if (ctx->autoflicker_en) {
-		realtime_fps =
-			ctx->pclk / ctx->line_length *
-			10 / ctx->frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(ctx, 296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(ctx, 146, 0);
-	}
-
-	/* Update Shutter */
-	write_cmos_sensor_8(ctx, 0x3500,(shutter >> 16) & 0xFF);
-	write_cmos_sensor_8(ctx, 0x3501,(shutter >> 8) & 0xFF);
-	write_cmos_sensor_8(ctx, 0x3502,(shutter) & 0xFF);
-
-	LOG_INF("ov32c  shutter = %d, framelength = %d/%d, dummy_line= %d\n",
-		shutter, ctx->frame_length,
-		frame_length, dummy_line);
-
+	if (target_frame_length > 1)
+		ctx->dummy_line = target_frame_length - ctx->frame_length;
+	ctx->frame_length = ctx->frame_length + ctx->dummy_line;
+	ctx->min_frame_length = ctx->frame_length;
+	set_shutter(ctx, shutter);
 }
 
-static kal_uint16 gain2reg(struct subdrv_ctx *ctx,  kal_uint16 gain)
+static kal_uint16 gain2reg(struct subdrv_ctx *ctx,  kal_uint32 gain)
 {
 	kal_uint16 reg_gain = 0x0;
 	gain = gain*256/BASEGAIN;
@@ -1385,11 +1349,9 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			break;
 		}
 		break;
-
-
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
-		set_shutter_frame_length(ctx, (UINT16) *feature_data,
-			(UINT16) *(feature_data + 1));
+		set_shutter_frame_length(ctx, (UINT32) *feature_data,
+			(UINT32) *(feature_data + 1));
 		break;
 #if 0
 	case SENSOR_FEATURE_GET_4CELL_DATA:
@@ -1483,7 +1445,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		break;
 #endif
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
-		set_frame_length(ctx, (UINT16) (*feature_data));
+		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
 
 	default:
