@@ -23,7 +23,7 @@
 #define SKIN_TONE_SIZE 8  /* (-6) */
 #define GRASS_TONE_SIZE 6 /* (-2) */
 #define SKY_TONE_SIZE 3
-#define CCORR_COEF_CNT 4 /* ccorr feature */
+#define CCORR_COEF_CNT 5 /* ccorr feature */
 #define S_GAIN_BY_Y_CONTROL_CNT 5
 #define S_GAIN_BY_Y_HUE_PHASE_CNT 20
 #define LSP_CONTROL_CNT 8
