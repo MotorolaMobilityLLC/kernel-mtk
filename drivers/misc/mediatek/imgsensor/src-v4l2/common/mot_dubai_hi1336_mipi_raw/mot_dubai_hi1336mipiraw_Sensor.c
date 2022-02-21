@@ -1741,7 +1741,7 @@ static void set_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 	write_shutter(ctx, shutter);
 } /* set_shutter */
 
-static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
+static void set_frame_length(struct subdrv_ctx *ctx, kal_uint32 frame_length)
 {
 	if (frame_length > 1)
 		ctx->frame_length = frame_length;
@@ -3034,8 +3034,8 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			(UINT16)*(feature_data+2));
 		break;
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
-		set_shutter_frame_length(ctx, (UINT16) (*feature_data),
-					 (UINT16) (*(feature_data + 1)),
+		set_shutter_frame_length(ctx, (UINT32) (*feature_data),
+					 (UINT32) (*(feature_data + 1)),
 					 (BOOL) (*(feature_data + 2)));
 		break;
 	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
@@ -3141,7 +3141,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			break;
 		}
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
-		set_frame_length(ctx, (UINT16) (*feature_data));
+		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
 	case SENSOR_FEATURE_SET_MULTI_SHUTTER_FRAME_TIME:
 		/*set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),

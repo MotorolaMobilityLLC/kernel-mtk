@@ -600,7 +600,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	return gain;
 }
 
-static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
+static void set_frame_length(struct subdrv_ctx *ctx, kal_uint32 frame_length)
 {
 	if (frame_length > 1)
 		ctx->frame_length = frame_length;
@@ -632,8 +632,8 @@ static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
 }
 
 /* ITD: Modify Dualcam By Jesse 190924 Start */
-static void set_shutter_frame_length(struct subdrv_ctx *ctx, kal_uint16 shutter,
-					kal_uint16 target_frame_length)
+static void set_shutter_frame_length(struct subdrv_ctx *ctx, kal_uint32 shutter,
+					kal_uint32 target_frame_length)
 {
 
 	if (target_frame_length > 1)
@@ -1925,7 +1925,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 /* ITD: Modify Dualcam By Jesse 190924 Start */
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 		pr_debug("SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME\n");
-		set_shutter_frame_length(ctx, (UINT16)*feature_data, (UINT16)*(feature_data+1));
+		set_shutter_frame_length(ctx, (UINT32)*feature_data, (UINT32)*(feature_data+1));
 		break;
 /* ITD: Modify Dualcam By Jesse 190924 End */
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
@@ -1962,7 +1962,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			read_sensor_Cali(ctx);
 		break;
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
-		set_frame_length(ctx, (UINT16) (*feature_data));
+		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
 	default:
 	break;
