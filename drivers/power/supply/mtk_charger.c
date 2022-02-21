@@ -965,6 +965,34 @@ static ssize_t ADC_Charger_Voltage_show(struct device *dev,
 
 static DEVICE_ATTR_RO(ADC_Charger_Voltage);
 
+static ssize_t mmi_vbats_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct mtk_charger *info = dev->driver_data;
+	int vbats;
+
+	charger_dev_get_adc(info->chg1_dev,
+			ADC_CHANNEL_VBAT, &vbats, &vbats);
+	chr_err("%s: %d\n", __func__, vbats);
+
+	return sprintf(buf, "%d\n", vbats);
+}
+
+static DEVICE_ATTR_RO(mmi_vbats);
+
+static ssize_t mmi_ibus_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct mtk_charger *info = dev->driver_data;
+	int ibus;
+
+	ibus = get_ibus(info);
+
+	return sprintf(buf, "%d\n", ibus);
+}
+
+static DEVICE_ATTR_RO(mmi_ibus);
+
 static ssize_t ADC_Charging_Current_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -4168,6 +4196,13 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_sc_ibat_limit);
 	if (ret)
 		goto _out;
+	ret = device_create_file(&(pdev->dev), &dev_attr_mmi_vbats);
+	if (ret)
+		goto _out;
+	ret = device_create_file(&(pdev->dev), &dev_attr_mmi_ibus);
+	if (ret)
+		goto _out;
+
 
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
