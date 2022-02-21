@@ -21,6 +21,8 @@
 
 #define AK7377A_NAME				"mot_dubai_ak7377a"
 #define AK7377A_MAX_FOCUS_POS			1023
+
+#define AFIOC_G_AFPOS _IOWR('A', 35, int)
 /*
  * This sets the minimum granularity for the focus positions.
  * A value of 1 gives maximum accuracy for a desired focus position
@@ -48,6 +50,11 @@ typedef struct {
 	motOISExtIntf ext_data;
 	struct work_struct ext_work;
 } ois_ext_work_struct;
+
+typedef struct {
+	int max_val;
+	int min_val;
+} motAfTestData;
 static struct workqueue_struct *ois_ext_workqueue;
 static ois_ext_work_struct ois_ext_work;
 
@@ -359,10 +366,70 @@ fail:
 
 	return ret;
 }
+static int ak7377a_test_hall_set_position(struct v4l2_subdev  * sd, u16 val)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	int retry = 3;
+	int ret;
+
+	while (--retry > 0) {
+		ret = i2c_smbus_write_word_data(client, AK7377A_SET_POSITION_ADDR,
+					 swab16(val << 4));
+		if (ret < 0) {
+			usleep_range(AK7377A_MOVE_DELAY_US,
+				     AK7377A_MOVE_DELAY_US + 1000);
+		} else {
+			break;
+		}
+	}
+	return ret;
+}
+
+static int ak7377a_test_hall_GetResult(struct v4l2_subdev  * sd,int mode)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	int retry = 10;
+	int ret;
+	int val;
+	int val_L = 0;
+	int val_H = 0;
+	int max_val =0;
+	int min_val=0;
+	msleep(2);
+	while (retry > 0)
+	{
+		ret = i2c_smbus_read_word_data(client, 0x84);
+		msleep(2);
+		val_L=(ret & 0xf000) >> 12;
+		val_H = (ret & 0x00ff) << 4;
+		val = val_L | val_H;
+		LOG_INF("value =%d",val);
+		if(mode ==0)
+		{
+			if(val  > max_val)
+			{
+				max_val=val;
+			}
+		}else{
+			if(val  < min_val)
+			{
+				min_val=val;
+			}
+		}
+		retry--;
+	}
+	if(mode ==0)
+	{
+		return max_val;
+	}else{
+		return min_val;
+	}
+}
 
 static long ak7377a_ops_core_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	int ret = 0;
+	motAfTestData  afdata;
 	switch(cmd) {
 	case AFIOC_G_OISEXTINTF: {
 		motOISExtIntf *pOisExtData = arg;
@@ -400,7 +467,16 @@ static long ak7377a_ops_core_ioctl(struct v4l2_subdev *sd, unsigned int cmd, voi
 		}
 	}
 	break;
-
+	case AFIOC_G_AFPOS:
+	{
+		ret = ak7377a_test_hall_set_position(sd,0xfff);       //4095
+		afdata.max_val= ak7377a_test_hall_GetResult(sd,0);    //mdoe: 0  macro
+		ret = ak7377a_test_hall_set_position(sd,0x00);        //0
+		afdata.min_val=ak7377a_test_hall_GetResult(sd,1);     //mdoe: 1  inf
+		LOG_INF("max =%d min =%d ",afdata.max_val,afdata.min_val);
+		memcpy((void *)arg, &afdata, sizeof(motAfTestData));
+	}
+	break;
 	default:
 		ret = -ENOIOCTLCMD;
 		break;
