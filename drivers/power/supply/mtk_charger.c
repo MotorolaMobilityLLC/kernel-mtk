@@ -2316,6 +2316,7 @@ stop_charging:
 	}
 }
 
+static int  mtk_charger_tcmd_set_usb_current(void *input, int  val);
 static bool charger_init_algo(struct mtk_charger *info)
 {
 	struct chg_alg_device *alg;
@@ -2459,6 +2460,10 @@ static bool charger_init_algo(struct mtk_charger *info)
 		charger_dev_set_drvdata(info->dvchg2_dev, info);
 	}
 
+	if (info->mmi.factory_mode) {
+		/* Disable charging when enter ATM mode(factory mode) */
+		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
+	}
 	return true;
 }
 
@@ -3773,8 +3778,6 @@ static ssize_t force_max_chrg_temp_show(struct device *dev,
 static DEVICE_ATTR(force_max_chrg_temp, 0644,
 		force_max_chrg_temp_show,
 		force_max_chrg_temp_store);
-
-static int  mtk_charger_tcmd_set_usb_current(void *input, int  val);
 
 void mmi_init(struct mtk_charger *info)
 {
