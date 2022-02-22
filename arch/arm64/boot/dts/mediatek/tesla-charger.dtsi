@@ -24,7 +24,7 @@
 };
 
 &mtk_gauge {
-	DIFFERENCE_FULLOCV_ITH = <(1100)>;
+	DIFFERENCE_FULLOCV_ITH = <(850)>;
 	R_FG_VALUE = <(5)>;
 	CURR_MEASURE_20A = <(0)>;
 	UNIT_MULTIPLE = <(1)>;
@@ -106,9 +106,9 @@
 	mmi,mmi-ffc-zones = <0 4200 250>,
 			<10 4250 250>,
 			<15 4480 250>,
-			<25 4510 1000>,
-			<35 4510 1000>,
-			<45 4510 1000>,
+			<25 4510 570>,
+			<35 4510 660>,
+			<45 4510 765>,
 			<60 4200 250>;
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <65>;
