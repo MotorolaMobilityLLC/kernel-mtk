@@ -118,9 +118,11 @@ static bool support_fast_charging(struct mtk_charger *info)
 			chg_alg_state_to_str(state));
 
 		if (state == ALG_READY || state == ALG_RUNNING) {
+			info->mmi.active_fast_alg |= alg->alg_id;
 			ret = true;
 			break;
-		}
+		} else
+			info->mmi.active_fast_alg &= ~alg->alg_id;
 	}
 	return ret;
 }
@@ -418,7 +420,7 @@ static int do_algorithm(struct mtk_charger *info)
 		}
 	}
 
-	chr_err("%s is_basic:%d\n", __func__, is_basic);
+	chr_err("%s is_basic:%d, active fast:%d\n", __func__, is_basic,  info->mmi.active_fast_alg);
 	if (is_basic != true) {
 		is_basic = true;
 		for (i = 0; i < MAX_ALG_NO; i++) {
@@ -428,6 +430,9 @@ static int do_algorithm(struct mtk_charger *info)
 
 			if (info->enable_fast_charging_indicator &&
 			    ((alg->alg_id & info->fast_charging_indicator) == 0))
+				continue;
+
+			if ((alg->alg_id & info->mmi.active_fast_alg) == 0)
 				continue;
 
 			if (!info->enable_hv_charging ||
