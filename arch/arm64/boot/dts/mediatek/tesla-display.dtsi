@@ -26,6 +26,7 @@
 		led_mode = <4>;
 		max-brightness = <3514>;
 		max-hw-brightness = <3514>;
+		default-brightness = <2577>;
 	};
 };
 
