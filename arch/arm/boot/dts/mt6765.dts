@@ -484,7 +484,13 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
-
+		ssmr_cma_mem: ssmr-reserved-cma_memory {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0 0x10000000>;
+			alignment = <0 0x1000000>;
+			alloc-range = <0 0xc0000000 0 0x10000000>;
+		};
 		reserve-memory-sspm_share {
 			compatible = "mediatek,reserve-memory-sspm_share";
 			no-map;
