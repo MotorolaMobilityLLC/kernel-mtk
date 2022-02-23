@@ -20,6 +20,30 @@
 #include "ccci_swtp.h"
 #include "ccci_fsm.h"
 
+
+#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+/* must keep ARRAY_SIZE(swtp_of_match) = ARRAY_SIZE(irq_name) */
+const struct of_device_id swtp_of_match[] = {
+	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
+	{ .compatible = SWTP1_COMPATIBLE_DEVICE_ID,},
+	{ .compatible = SWTP2_COMPATIBLE_DEVICE_ID,},
+	{ .compatible = SWTP3_COMPATIBLE_DEVICE_ID,},
+	{ .compatible = SWTP4_COMPATIBLE_DEVICE_ID,},
+	{ .compatible = SWTP5_COMPATIBLE_DEVICE_ID,},
+	{ .compatible = SWTP6_COMPATIBLE_DEVICE_ID,},
+	{},
+};
+static const char irq_name[][16] = {
+	"swtp-eint",
+	"swtp1-eint",
+	"swtp2-eint",
+	"swtp3-eint",
+	"swtp4-eint",
+	"swtp5-eint",
+	"swtp6-eint",
+	"",
+};
+#else
 /* must keep ARRAY_SIZE(swtp_of_match) = ARRAY_SIZE(irq_name) */
 const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
@@ -29,7 +53,6 @@ const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP4_COMPATIBLE_DEVICE_ID,},
 	{},
 };
-
 static const char irq_name[][16] = {
 	"swtp0-eint",
 	"swtp1-eint",
@@ -38,6 +61,7 @@ static const char irq_name[][16] = {
 	"swtp4-eint",
 	"",
 };
+#endif
 
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
@@ -104,15 +128,51 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	else
 		swtp->gpio_state[i] = SWTP_EINT_PIN_PLUG_IN;
 
+#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+	swtp->tx_power_mode = SWTP_DO_TX_POWER; // default as radiate mode, DO power
+#else
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
+#endif
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
+#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+			swtp->tx_power_mode = SWTP_NO_TX_POWER;
+#else
 			swtp->tx_power_mode = SWTP_DO_TX_POWER;
+#endif
 			break;
 		}
 	}
 
+#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO14, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[0]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO15, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[1]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO17, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[2]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO20, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[3]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO21, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[4]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO30, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[5]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: GPIO124, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[6]);
+
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+		"%s:the end swtp status is %d\n", __func__ , swtp->tx_power_mode);
+
+	inject_pin_status_event(swtp->tx_power_mode, rf_name);
+#else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
+#endif
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	return swtp->tx_power_mode;
