@@ -170,7 +170,7 @@ int gyro_offset_calibrtion(void)
 		calibration_save();
 	} else {
 		memset(&dw9781GyroOffsetResult, 0x0, sizeof(dw9781GyroOffsetResult));
-		dw9781GyroOffsetResult.is_success = status;
+		dw9781GyroOffsetResult.is_success = msg;
 	}
 
 	return msg;
@@ -603,7 +603,7 @@ void switch_chip_register(void)
 {
 	unsigned short data;
 	read_reg_16bit_value_16bit(0x7012, &data);
-	if(data == 0x4) {
+	if(data != 0x7) {
 		ois_reset();
 		write_reg_16bit_value_16bit(0x7012,0x0007);
 		calibration_save();
