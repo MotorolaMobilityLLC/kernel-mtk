@@ -8001,6 +8001,29 @@
 		status = "disabled";
 	};
 
+	/*Add swtp definition*/
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	swtp_1: swtp_1 {
+		compatible = "mediatek, swtp1-eint";
+	};
+	swtp_2: swtp_2 {
+		compatible = "mediatek, swtp2-eint";
+	};
+	swtp_3: swtp_3 {
+		compatible = "mediatek, swtp3-eint";
+	};
+	swtp_4: swtp_4 {
+		compatible = "mediatek, swtp4-eint";
+	};
+	swtp_5: swtp_5 {
+		compatible = "mediatek, swtp5-eint";
+	};
+	swtp_6: swtp_6 {
+		compatible = "mediatek, swtp6-eint";
+	};
+
 	disp_wdma0: disp_wdma0@14018000 {
 		compatible = "mediatek,disp_wdma0",
 					"mediatek,mt6879-disp-wdma";
