@@ -12,7 +12,7 @@
 #define X_GYRO_RAW_DATA_CHECK 0x0010
 #define Y_GYRO_OFFSET_SPEC_OVER_NG 0x0002
 #define Y_GYRO_RAW_DATA_CHECK 0x0020
-#define GYRO_OFST_CAL_OVERCNT 50
+#define GYRO_OFST_CAL_OVERCNT 110
 
 int gyro_offset_calibrtion(void);
 motOISGOffsetResult *dw9781_get_gyro_offset_result(void);
