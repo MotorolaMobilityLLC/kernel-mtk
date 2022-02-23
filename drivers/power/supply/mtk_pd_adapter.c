@@ -604,7 +604,11 @@ static int pd_authentication(struct adapter_device *dev,
 		data->ita_min = info->ita_min;
 		data->pwr_lmt = selected_apdo_cap.pwr_limit;
 		data->support_cc = true;
+	#ifdef MTK_BASE
 		data->support_meas_cap = true;
+	#else
+		data->support_meas_cap = false;
+	#endif
 		data->support_status = true;
 		data->vta_step = 20;
 		data->ita_step = 50;
