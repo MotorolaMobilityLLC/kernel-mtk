@@ -43,7 +43,6 @@
 #define AK7377A_STABLE_TIME_US			20000
 extern void dw9781_set_i2c_client(struct i2c_client *i2c_client);
 extern int dw9781c_download_ois_fw(void);
-
 static struct i2c_client *g_pstAF_I2Cclient;
 typedef struct {
 	motOISExtInfType ext_state;
@@ -284,11 +283,12 @@ static int ak7377a_init(struct ak7377a_device *ak7377a)
 	ret = i2c_smbus_write_byte_data(client, 0x02, 0x00);
 	client->addr = DW9781_I2C_SLAVE_ADDR >> 1;
 	dw9781c_download_ois_fw();
+	ois_reset();
+	write_reg_16bit_value_16bit(0x7015, 0x00);
 	read_reg_16bit_value_16bit(0x7015, &lock_ois); /* lock_ois: 0x7015 */
 	LOG_INF("Check HW lock_ois: %x\n", lock_ois);
 	client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
 	LOG_INF("-\n");
-
 	return 0;
 }
 
