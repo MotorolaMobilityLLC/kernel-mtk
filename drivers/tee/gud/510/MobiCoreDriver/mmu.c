@@ -173,9 +173,14 @@ static inline long gup_local_repeat(struct mm_struct *mm, uintptr_t start,
 	while (retries--) {
 		ret = gup_local(mm, start, nr_pages, write, pages);
 
-		if (-EBUSY != ret)
+		/* ExySp */
+		if (-EBUSY != ret && -ENOMEM != ret)
 			break;
 	}
+
+	/* ExySp */
+	if (-EBUSY == ret || -ENOMEM == ret)
+		mc_dev_err(ret, "gup_local_repeat failed");
 
 	return ret;
 }
