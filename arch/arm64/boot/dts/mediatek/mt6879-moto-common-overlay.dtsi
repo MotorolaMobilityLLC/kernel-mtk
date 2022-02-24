@@ -764,7 +764,4 @@
 };
 /* CONNSYS TCXO GPIO end */
 
-&pdc {
-	pd_vbus_upper_bound = <12000000>;
-};
 /*End of this file, DO NOT ADD ANYTHING HERE*/
