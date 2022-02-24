@@ -2466,6 +2466,7 @@ static bool charger_init_algo(struct mtk_charger *info)
 		charger_dev_set_drvdata(info->dvchg2_dev, info);
 	}
 
+	charger_dev_set_mivr(info->chg1_dev, info->data.min_charger_voltage);
 	if (info->mmi.factory_mode) {
 		/* Disable charging when enter ATM mode(factory mode) */
 		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
