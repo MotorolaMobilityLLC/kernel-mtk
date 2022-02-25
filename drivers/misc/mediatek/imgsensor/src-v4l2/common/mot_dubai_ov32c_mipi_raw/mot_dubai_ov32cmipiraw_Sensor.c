@@ -290,6 +290,15 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 			set_max_framerate(ctx, 296, 0);
 		else if (realtime_fps >= 147 && realtime_fps <= 150)
 			set_max_framerate(ctx, 146, 0);
+		else {
+			write_cmos_sensor_8(ctx, 0x3840, ctx->frame_length >> 16);
+			write_cmos_sensor_8(ctx, 0x380e, ctx->frame_length >> 8);
+			write_cmos_sensor_8(ctx, 0x380f, ctx->frame_length & 0xFF);
+		}
+	} else {
+		write_cmos_sensor_8(ctx, 0x3840, ctx->frame_length >> 16);
+		write_cmos_sensor_8(ctx, 0x380e, ctx->frame_length >> 8);
+		write_cmos_sensor_8(ctx, 0x380f, ctx->frame_length & 0xFF);
 	}
 	/* Update Shutter*/
        write_cmos_sensor_8(ctx, 0x3500,(shutter >> 16) & 0xFF);
