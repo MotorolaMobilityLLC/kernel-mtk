@@ -23,7 +23,7 @@ struct charger_cooler_info {
 
 static struct charger_cooler_info charger_cl_data;
 /* < -1 is unlimit, unit is uA. */
-static const int master_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
+static  int master_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
 	-1, 5200000, 4600000, 4200000, 3800000, 3400000, 3000000, 2600000, 2200000, 1800000, 1400000, 1000000, 700000, 500000, 0
 };
 static const int slave_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
@@ -258,7 +258,7 @@ static int charger_cooling_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	struct thermal_cooling_device *cdev;
 	struct charger_cooling_device *charger_cdev;
-	int ret;
+	int i, ret;
 
 	charger_cdev = devm_kzalloc(dev, sizeof(*charger_cdev), GFP_KERNEL);
 	if (!charger_cdev)
@@ -284,6 +284,15 @@ static int charger_cooling_probe(struct platform_device *pdev)
 			pr_info("Couldn't get s_chg_psy\n");
 			return -EINVAL;
 		}
+	}
+
+	of_property_read_u32_array(np,
+			"mmi,thermal-mitigation",
+			master_charger_state_to_current_limit,
+			CHARGER_STATE_NUM);
+	for (i = 0; i < CHARGER_STATE_NUM; i++) {
+			pr_info("mmi charge thermal table: table %d, current %d mA\n",
+			i, master_charger_state_to_current_limit[i]);
 	}
 
 	ret = sysfs_create_group(kernel_kobj, &charger_cooler_attr_group);
