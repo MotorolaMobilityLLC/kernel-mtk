@@ -143,7 +143,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x11,1,{0x00}},
 	{REGFLAG_DELAY, 20, {}},
 	{0x29,1,{0x00}},
-	{REGFLAG_DELAY, 100, {}},
+	{REGFLAG_DELAY, 80, {}},
 	{0x26,1,{0x02}},
 };
 
@@ -409,7 +409,7 @@ static void lcm_init(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 
-	MDELAY(20);//RESET_N high to OTP load ready,needs more than 30ms
+	MDELAY(10);
 	push_table(NULL, password_open_and_offset_code, sizeof(password_open_and_offset_code) / sizeof(struct LCM_setting_table), 1);//download password open and offset code
 	kernel_vref_reg_update();
 	MDELAY(1);
