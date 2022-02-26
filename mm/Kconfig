@@ -825,4 +825,12 @@ config MTK_MM_DEBUG
 	  type of errors. Wrap the debug code with this config,
 	  so we can remove the debug code by disabling it.
 
+config LRU_GEN
+	bool "Multi-Gen LRU"
+	depends on MMU
+	# the following options can use up the spare bits in page flags
+	depends on !MAXSMP && (64BIT || !SPARSEMEM || SPARSEMEM_VMEMMAP)
+	help
+	  A high performance LRU implementation to overcommit memory.
+
 endmenu
