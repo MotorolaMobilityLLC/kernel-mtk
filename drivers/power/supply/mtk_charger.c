@@ -2664,17 +2664,15 @@ int mmi_get_prop_from_charger(struct mtk_charger *info,
 				union power_supply_propval *val)
 {
 	int rc;
+	struct power_supply *chg_psy = NULL;
 
-	if (!info->chg_psy) {
-		info->chg_psy = power_supply_get_by_name("mtk-master-charger");
-
-		if (!info->chg_psy) {
-			pr_err("[%s]Error getting charger power sypply\n", __func__);
-			return -EINVAL;
-		}
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n", __func__);
+		return -EINVAL;
 	}
 
-	rc = power_supply_get_property(info->chg_psy, psp, val);
+	rc = power_supply_get_property(chg_psy, psp, val);
 
 	return rc;
 }
