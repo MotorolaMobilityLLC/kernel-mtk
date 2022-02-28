@@ -65,4 +65,5 @@ typedef struct {
 } motOISExtIntf;
 
 #define AFIOC_G_OISEXTINTF _IOWR(AF_MAGIC, 20, motOISExtIntf)
+#define VIDIOC_MTK_S_OIS_MODE _IOW('V', BASE_VIDIOC_PRIVATE + 2, int32_t)
 #endif
