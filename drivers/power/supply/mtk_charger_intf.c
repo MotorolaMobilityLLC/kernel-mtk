@@ -275,9 +275,9 @@ bool is_battery_exist(struct mtk_charger *info)
 
 bool is_charger_exist(struct mtk_charger *info)
 {
-	union power_supply_propval prop;
-	static struct power_supply *chg_psy;
-	int ret;
+	union power_supply_propval prop,wlc_prop;
+	static struct power_supply *chg_psy, *wl_psy;
+	int ret = 0;
 	int tmp_ret = 0;
 
 	chg_psy = info->chg_psy;
@@ -290,13 +290,22 @@ bool is_charger_exist(struct mtk_charger *info)
 
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		pr_notice("%s Couldn't get chg_psy\n", __func__);
-		ret = -1;
+		prop.intval = 0;
 	} else {
 		tmp_ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &prop);
-		ret = prop.intval;
+		ret |= prop.intval;
 	}
 
+	wl_psy = power_supply_get_by_name("wireless");
+	if (wl_psy == NULL || IS_ERR(wl_psy)) {
+		chr_err("%s Couldn't get wl_psy\n", __func__);
+		wlc_prop.intval = 0;
+	} else {
+		ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_ONLINE, &wlc_prop);
+		ret |= wlc_prop.intval;
+	}
 	chr_debug("%s:%d\n", __func__,
 		ret);
 	return ret;
