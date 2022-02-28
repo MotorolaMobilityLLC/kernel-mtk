@@ -8,7 +8,7 @@
 #define LOG_INF(format, args...)
 #endif
 #define DW9781_I2C_SLAVE_ADDR 0xE4
-
+#define AK7377A_I2C_SLAVE_ADDR 0x18
 static struct i2c_client *dw9781_i2c_client = NULL;
 
 void dw9781_set_i2c_client(struct i2c_client *i2c_client)
@@ -41,7 +41,7 @@ int write_reg_16bit_value_16bit(unsigned short regAddr, unsigned short regData)
 		printk("I2C send failed!!\n");
 		return -1;
 	}
-
+	dw9781_i2c_client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
 	return 0;
 }
 
@@ -78,6 +78,7 @@ int read_reg_16bit_value_16bit(unsigned short regAddr, unsigned short *regData)
 	}
 
 	*regData = ((readTemp>>8) & 0xff) | ((readTemp<<8) & 0xff00);
+	dw9781_i2c_client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
 	LOG_INF("DW9781 I2C read data :%04x", *regData);
 	return 0;
 }
@@ -88,6 +89,7 @@ void i2c_block_write_reg(unsigned short addr,unsigned short *fwContentPtr,int si
 	int IDX = 0;
 	int tosend = 0;
 	u16 data;
+	dw9781_i2c_client->addr = DW9781_I2C_SLAVE_ADDR >> 1;
 	puSendCmd[tosend++] = (char)(addr >> 8);
 	puSendCmd[tosend++] = (char)(addr & 0xff);
 	while(size > IDX) {
@@ -110,6 +112,7 @@ void i2c_block_write_reg(unsigned short addr,unsigned short *fwContentPtr,int si
 			return;
 		}
 	}
+	dw9781_i2c_client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
 }
 
 void i2c_block_read_reg(unsigned short addr,unsigned short *temp,int size)
@@ -117,7 +120,7 @@ void i2c_block_read_reg(unsigned short addr,unsigned short *temp,int size)
 	int i4RetValue = 0;
 	char puSendCmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
 	struct i2c_msg msgs[2];
-
+	dw9781_i2c_client->addr = DW9781_I2C_SLAVE_ADDR >> 1;
 	msgs[0].addr  = DW9781_I2C_SLAVE_ADDR >> 1;
 	msgs[0].flags = 0;
 	msgs[0].len   = 2;
@@ -133,5 +136,6 @@ void i2c_block_read_reg(unsigned short addr,unsigned short *temp,int size)
 		LOG_INF("I2C send failed!!\n");
 		return;
 	}
+	dw9781_i2c_client->addr = AK7377A_I2C_SLAVE_ADDR >> 1;
 	return;
 }
