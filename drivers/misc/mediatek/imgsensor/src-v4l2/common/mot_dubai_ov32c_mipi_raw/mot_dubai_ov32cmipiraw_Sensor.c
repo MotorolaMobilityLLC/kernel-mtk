@@ -208,7 +208,9 @@ static kal_uint16 addr_data_pair_preview_mot_dubai_ov32c[] = {
 static kal_uint16 addr_data_pair_custom1_ov32c[] = {
 #include"setting/mot_dubai_ov32c_6528x4896_15fps.h"
 };
-
+static kal_uint32 ov32c_ana_gain_table[] = {
+#include"setting/mot_ov32c_gain_table.h"
+};
 
 static void set_normal_mode(struct subdrv_ctx *ctx)
 {
@@ -1166,6 +1168,16 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			break;
 		}
 	break;
+	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
+		if ((void *)(uintptr_t) (*(feature_data + 1)) == NULL) {
+			*(feature_data + 0) =
+			sizeof(ov32c_ana_gain_table);
+		} else {
+			memcpy((void *)(uintptr_t) (*(feature_data + 1)),
+			(void *)ov32c_ana_gain_table,
+			sizeof(ov32c_ana_gain_table));
+		}
+		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
@@ -1389,22 +1401,16 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		break;
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
+		case SENSOR_SCENARIO_ID_CUSTOM1:
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
-			*feature_return_para_32 = 2;
-			break;
-		case SENSOR_SCENARIO_ID_CUSTOM1:
-			*feature_return_para_32 = 1;
-			break;
 		default:
-			*feature_return_para_32 = 1;
+			*feature_return_para_32 = 1000;
 			break;
 		}
-		LOG_INF("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
-			*feature_return_para_32);
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
