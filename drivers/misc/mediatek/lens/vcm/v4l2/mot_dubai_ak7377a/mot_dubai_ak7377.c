@@ -431,6 +431,19 @@ static long ak7377a_ops_core_ioctl(struct v4l2_subdev *sd, unsigned int cmd, voi
 	int ret = 0;
 	motAfTestData  afdata;
 	switch(cmd) {
+	case VIDIOC_MTK_S_OIS_MODE:
+	{
+		int *ois_mode = arg;
+		LOG_INF("VIDIOC_MTK_S_OIS_MODE mode = %d\n",*ois_mode);
+		if (*ois_mode) {
+		    write_reg_16bit_value_16bit(0x7015, 0x00);
+		    LOG_INF("VIDIOC_MTK_S_OIS_MODE Enable\n");
+		} else {
+		    write_reg_16bit_value_16bit(0x7015, 0x01);
+		    LOG_INF("VIDIOC_MTK_S_OIS_MODE Disable\n");
+		}
+	}
+	break;
 	case AFIOC_G_OISEXTINTF: {
 		motOISExtIntf *pOisExtData = arg;
 		memcpy(&ois_ext_work.ext_data, pOisExtData, sizeof(motOISExtIntf));
