@@ -105,8 +105,11 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 
 static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 
+#define EDO_V0_ENABLE	0
+#if EDO_V0_ENABLE
 static bool is_edo_v0 = false;
 static bool first_check = true;
+#endif
 
 #ifndef TRUE
 #define TRUE 1
@@ -151,6 +154,7 @@ static struct LCM_setting_table init_setting[] = {
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
+#if EDO_V0_ENABLE
 static struct LCM_setting_table init_setting_v0[] = {
 {0x35, 0x01, {0x00}},
 {0x53, 0x01, {0x20}},
@@ -365,6 +369,7 @@ static struct LCM_setting_table init_setting_v0[] = {
 {0x29, 0x00, {}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
+#endif
 
 static struct LCM_setting_table bl_level[] = {
 	{0x51,2,{0x07,0xff}},
@@ -409,6 +414,7 @@ static void push_table(struct LCM_setting_table *table,
 	}
 }
 
+#if EDO_V0_ENABLE
 static void lcm_check_panel_ver() {
 	first_check = false;
 	if (saved_command_line) {
@@ -424,6 +430,7 @@ static void lcm_check_panel_ver() {
 	else
 		pr_info("%s: saved_command_line NULL\n", __func__);
 }
+#endif
 
 static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 {
@@ -539,12 +546,15 @@ static void lcm_init(void)
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(20);
+
+#if EDO_V0_ENABLE
 	if (is_edo_v0) {
 		push_table(init_setting_v0,
 			sizeof(init_setting_v0) / sizeof(struct LCM_setting_table), 1);
 		pr_info("[LCM]%s:edo push init_setting_v0\n",__func__);
 	}
 	else
+#endif
 		push_table(init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 }
@@ -561,8 +571,10 @@ static void lcm_resume(void)
 {
 	pr_info("[LCM]%s\n",__func__);
 
+#if EDO_V0_ENABLE
 	if (first_check)
 		lcm_check_panel_ver();
+#endif
 
 	lcm_init();
 }
