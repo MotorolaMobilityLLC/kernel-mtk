@@ -684,7 +684,6 @@ static kal_uint32 preview(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
-
 	ctx->sensor_mode = IMGSENSOR_MODE_PREVIEW;
 	ctx->pclk = imgsensor_info.pre.pclk;
 	ctx->line_length = imgsensor_info.pre.linelength;
@@ -1125,9 +1124,15 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 	LOG_INF("Test_Pattern enable: %d\n", enable);
 	if (enable)
 	{
-		write_cmos_sensor_8(ctx, 0x50c1,0x01);
+		write_cmos_sensor_8(ctx, 0x3019,0xf0);
+		write_cmos_sensor_8(ctx, 0x4308,0x01);
+		write_cmos_sensor_8(ctx, 0x4300,0x00);
+		write_cmos_sensor_8(ctx, 0x4302,0x00);
+		write_cmos_sensor_8(ctx, 0x4304,0x00);
+		write_cmos_sensor_8(ctx, 0x4306,0x07);
 	} else {
-		write_cmos_sensor_8(ctx, 0x50c1,0x00);
+		write_cmos_sensor_8(ctx, 0x3019,0xd2);
+		write_cmos_sensor_8(ctx, 0x4308,0x00);
 	}
 	ctx->test_pattern = enable;
 	return ERROR_NONE;
