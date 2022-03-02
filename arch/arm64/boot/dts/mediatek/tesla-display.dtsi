@@ -92,8 +92,18 @@
 &dsi0 {
 	status = "okay";
 
-
 	panel1@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "mot,dummy,vdo,60hz";
+		pinctrl-names = "default";
+	};
+
+
+	panel2@0 {
 		/delete-property/ compatible;
 		/delete-property/ pm-enable-gpios;
 		/delete-property/ reset-gpios;
@@ -107,9 +117,14 @@
                           <&pio 166 0>;
 		reset-gpios = <&pio 97 0>;
 		pinctrl-names = "default";
+		port {
+			panel_in2: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
 	};
 
-	panel2@0 {
+	panel3@0 {
 		/delete-property/ compatible;
 		/delete-property/ pm-enable-gpios;
 		/delete-property/ reset-gpios;
@@ -124,7 +139,7 @@
 		reset-gpios = <&pio 97 0>;
 		pinctrl-names = "default";
 		port {
-			panel_in2: endpoint {
+			panel_in3: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
