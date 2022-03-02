@@ -110,6 +110,7 @@ obj-$(CONFIG_BACKLIGHT_KTZ8866)         += ktz8866.o
 obj-$(CONFIG_DRM_PANEL_EDO_HX5329_CMD_120) += panel-edo-hx5329-cmd-120hz.o
 obj-$(CONFIG_DRM_MTK_GENERAL_PANEL_DRV) += mtk-drm-general-panel-driver.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_NT37701A_655_FHDP_DPHY_CMD_144HZ) += dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz.o
+obj-$(CONFIG_DRM_PANEL_MOT_DUMMY_VDO_60HZ) += dsi-panel-mot-dummy-vdo-60hz.o
 
 mediatek-drm-gateic-y := mtk_drm_panel_i2c.o \
 		  mtk_drm_gateic_rt4801h.o \
