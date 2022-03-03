@@ -33,7 +33,7 @@
 		pinctrl-2 = <&ctp_gt9896s_stylus_active>;
 		pinctrl-3 = <&ctp_gt9896s_stylus_suspend>;
 		//mmi,status = "/chosen","mmi,panel_name","contains","nt37701";
-		spi-max-frequency = <1000000>;  /* 4800000,9600000,15000000,19200000 */
+		spi-max-frequency = <9600000>;  /* 4800000,9600000,15000000,19200000 */
 		goodix,reset-gpio = <&pio 159 0x0>;
 		goodix,irq-gpio = <&pio 22 0x2002>;
 		goodix,iovdd-gpio = <&pio 167 0x0>;
