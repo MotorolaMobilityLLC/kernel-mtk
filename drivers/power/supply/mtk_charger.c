@@ -2344,13 +2344,7 @@ static bool charger_init_algo(struct mtk_charger *info)
 		chr_err("get pe5 success\n");
 		alg->config = info->config;
 		alg->alg_id = PE5_ID;
-		if (info->enable_fast_charging_indicator &&
-		    (PE5_ID & info->fast_charging_indicator)) {
-			if (chg_alg_init_algo(alg) == -ENODEV)
-				return false;
-		} else
-			chg_alg_init_algo(alg);
-
+		chg_alg_init_algo(alg);
 		register_chg_alg_notifier(alg, &info->chg_alg_nb);
 	}
 	idx++;
