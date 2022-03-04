@@ -11,7 +11,6 @@
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
-#include <linux/iopoll.h>
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 #define USB_AUDIO_DATA_OUT 0
@@ -36,22 +35,6 @@ static u32 Tx_gpd_max_count[MAX_QMU_EP + 1];
 static bool Tx_enable[MAX_QMU_EP + 1];
 static bool Rx_enable[MAX_QMU_EP + 1];
 
-int isoc_ep_end_idx = 3;
-EXPORT_SYMBOL(isoc_ep_end_idx);
-
-int isoc_ep_gpd_count = 260;
-EXPORT_SYMBOL(isoc_ep_gpd_count);
-
-int mtk_qmu_dbg_level = LOG_WARN;
-EXPORT_SYMBOL(mtk_qmu_dbg_level);
-
-int mtk_qmu_max_gpd_num;
-EXPORT_SYMBOL(mtk_qmu_max_gpd_num);
-
-module_param(mtk_qmu_dbg_level, int, 0644);
-module_param(mtk_qmu_max_gpd_num, int, 0644);
-module_param(isoc_ep_end_idx, int, 0644);
-module_param(isoc_ep_gpd_count, int, 0644);
 
 u32 qmu_used_gpd_count(u8 isRx, u32 num)
 {
@@ -609,7 +592,6 @@ bool mtk_is_qmu_enabled(u8 ep_num, u8 isRx)
 	}
 	return false;
 }
-EXPORT_SYMBOL(mtk_is_qmu_enabled);
 
 void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 {
@@ -782,15 +764,10 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		MGC_WriteQMU32(base, MGC_O_QMU_TQCSR(ep_num), DQMU_QUE_START);
 	}
 }
-EXPORT_SYMBOL(mtk_qmu_enable);
 
 void mtk_qmu_stop(u8 ep_num, u8 isRx)
 {
 	void __iomem *base = qmu_base;
-	int ret;
-	u32 value = 0;
-
-	DBG(4, "ep_num=%d, isRx=%d\n", ep_num, isRx);
 
 	if (!isRx) {
 		if (MGC_ReadQMU16(base,
@@ -799,34 +776,21 @@ void mtk_qmu_stop(u8 ep_num, u8 isRx)
 				MGC_O_QMU_TQCSR(ep_num),
 				DQMU_QUE_STOP);
 			QMU_INFO("Stop TQ %d\n", ep_num);
-
-			ret = readl_poll_timeout_atomic(base+
-				MGC_O_QMU_TQCSR(ep_num), value,
-				!(value & DQMU_QUE_ACTIVE), 1, 1000);
-			if (ret)
-				QMU_ERR("Stop TQ %d failed\n", ep_num);
 		} else {
 			QMU_INFO("TQ %d already inactive\n", ep_num);
 		}
 	} else {
-		if (MGC_ReadQMU16(base,
-				MGC_O_QMU_RQCSR(ep_num)) & DQMU_QUE_ACTIVE) {
-			MGC_WriteQMU32(base,
-				MGC_O_QMU_RQCSR(ep_num),
-				DQMU_QUE_STOP);
+		if (MGC_ReadQMU16(base
+				, MGC_O_QMU_RQCSR(ep_num)) & DQMU_QUE_ACTIVE) {
+			MGC_WriteQMU32(base
+				, MGC_O_QMU_RQCSR(ep_num)
+				, DQMU_QUE_STOP);
 			QMU_INFO("Stop RQ %d\n", ep_num);
-
-			ret = readl_poll_timeout_atomic(base+
-				MGC_O_QMU_RQCSR(ep_num), value,
-				!(value & DQMU_QUE_ACTIVE), 1, 1000);
-			if (ret)
-				QMU_ERR("Stop RQ %d failed\n", ep_num);
 		} else {
 			QMU_INFO("RQ %d already inactive\n", ep_num);
 		}
 	}
 }
-EXPORT_SYMBOL(mtk_qmu_stop);
 
 static void mtk_qmu_disable(u8 ep_num, u8 isRx)
 {
@@ -943,13 +907,6 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 		return;
 	}
 	request = &req->request;
-	if (!request) {
-		QMU_ERR(
-			"[RXD]%s Cannot get next usb_request of %d"
-			"but we should have next request and QMU has done.\n"
-			, __func__, ep_num);
-		return;
-	}
 
 	/*Transfer PHY addr got from QMU register to VIR addr */
 	gpd_current = (struct TGPD *)
@@ -1259,7 +1216,6 @@ void mtk_disable_q(struct musb *musb, u8 ep_num, u8 isRx)
 		flush_ep_csr(musb, ep_num, isRx);
 	}
 }
-EXPORT_SYMBOL(mtk_disable_q);
 
 void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 {
