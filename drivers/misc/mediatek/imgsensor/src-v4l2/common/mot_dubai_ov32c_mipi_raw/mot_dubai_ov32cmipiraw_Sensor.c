@@ -32,7 +32,7 @@
 #include <linux/fs.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
-
+#include <linux/module.h>
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define_v4l2.h"
@@ -51,20 +51,14 @@
 #define mot_dubai_ov32ce_write_cmos_sensor(...) subdrv_i2c_wr_regs_u8(__VA_ARGS__)
 
 /**********************Modify Following Strings for Debug**********************/
-#define PFX "mot_dubai_ov32c_camera_sensor"
-
-static int m_mot_camera_debug = 1;
-#define LOG_INF(format, args...)        do { if (m_mot_camera_debug) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while (0)
-#define LOG_DEBUG_D(format, args...)        do { if (m_mot_camera_debug) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while (0)
+#define PFX "mot_dubai_ov32c"
+static int mot_ov32c_camera_debug = 0;
+module_param(mot_ov32c_camera_debug,int, 0644);
+#define LOG_INF(format, args...)        do { if (mot_ov32c_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 /***********************   Modify end    **************************************/
-#define LOG_INF_D(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
-
-#define LOG_ERR(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
-
-
 #define per_frame 1
 #define MULTI_WRITE 1
 #define ENABLE_PDAF 0
@@ -352,7 +346,7 @@ static void set_frame_length(struct subdrv_ctx *ctx, kal_uint32 frame_length)
 	write_cmos_sensor_8(ctx, 0x3840, ctx->frame_length >> 16);
 	write_cmos_sensor_8(ctx, 0x380e, ctx->frame_length >> 8);
 	write_cmos_sensor_8(ctx, 0x380f, ctx->frame_length & 0xFF);
-	pr_debug("Framelength: set=%d/input=%d/min=%d\n",
+	LOG_INF("Framelength: set=%d/input=%d/min=%d\n",
 		ctx->frame_length, frame_length, ctx->min_frame_length);
 }
 //check ok
@@ -398,7 +392,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	kal_uint16 reg_gain;
 
 	if (gain < imgsensor_info.min_gain || gain > imgsensor_info.max_gain) {
-		LOG_INF("Error gain setting");
+		LOG_INF_N("Error gain setting");
 
 		if (gain < imgsensor_info.min_gain)
 			gain = imgsensor_info.min_gain;
@@ -551,12 +545,12 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id(ctx);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
+				LOG_ERR("i2c write id: 0x%x, sensor id: 0x%x\n",
 					ctx->i2c_write_id, *sensor_id);
 
 				return ERROR_NONE;
 			}
-			LOG_INF("Read sensor id fail, id: 0x%x\n",
+			LOG_ERR("Read sensor id fail, id: 0x%x\n",
 				ctx->i2c_write_id);
 			retry--;
 		} while (retry > 0);
@@ -600,11 +594,11 @@ static int open(struct subdrv_ctx *ctx)
 		do {
 	    		sensor_id = return_sensor_id(ctx);
 			if (sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
+				LOG_ERR("i2c write id: 0x%x, sensor id: 0x%x\n",
 					ctx->i2c_write_id, sensor_id);
 				break;
 			}
-			LOG_INF("Read sensor id fail, id: 0x%x\n",
+			LOG_ERR("Read sensor id fail, id: 0x%x\n",
 				sensor_id);
 			retry--;
 		} while (retry > 0);
@@ -683,7 +677,7 @@ static kal_uint32 preview(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_PREVIEW;
 	ctx->pclk = imgsensor_info.pre.pclk;
 	ctx->line_length = imgsensor_info.pre.linelength;
@@ -691,10 +685,7 @@ static kal_uint32 preview(struct subdrv_ctx *ctx,
 	ctx->min_frame_length = imgsensor_info.pre.framelength;
 	ctx->current_fps = imgsensor_info.pre.max_framerate;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	preview_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	preview   */
 
@@ -717,7 +708,7 @@ static kal_uint32 capture(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_CAPTURE;
 	ctx->pclk = imgsensor_info.cap.pclk;
 	ctx->line_length = imgsensor_info.cap.linelength;
@@ -725,9 +716,7 @@ static kal_uint32 capture(struct subdrv_ctx *ctx,
 	ctx->min_frame_length = imgsensor_info.cap.framelength;
 	ctx->current_fps = imgsensor_info.cap.max_framerate;
 	ctx->autoflicker_en = KAL_FALSE;
-   	LOG_INF("Caputre fps:%d\n", ctx->current_fps);
 	capture_setting(ctx);
-	LOG_INF("X\n");
 	return ERROR_NONE;
 } /* capture(ctx) */
 
@@ -735,17 +724,15 @@ static kal_uint32 normal_video(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_VIDEO;
 	ctx->pclk = imgsensor_info.normal_video.pclk;
 	ctx->line_length = imgsensor_info.normal_video.linelength;
 	ctx->frame_length = imgsensor_info.normal_video.framelength;
 	ctx->min_frame_length = imgsensor_info.normal_video.framelength;
-	ctx->current_fps = 300;
+	ctx->current_fps = imgsensor_info.normal_video.max_framerate;
 	ctx->autoflicker_en = KAL_FALSE;
 	video_setting(ctx);
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	normal_video   */
 
@@ -753,20 +740,15 @@ static kal_uint32 hs_video(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
 	ctx->pclk = imgsensor_info.hs_video.pclk;
 	ctx->line_length = imgsensor_info.hs_video.linelength;
 	ctx->frame_length = imgsensor_info.hs_video.framelength;
 	ctx->min_frame_length = imgsensor_info.hs_video.framelength;
-	ctx->dummy_line = 0;
-	ctx->dummy_pixel = 0;
+	ctx->current_fps = imgsensor_info.hs_video.max_framerate;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	hs_video_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	hs_video   */
 
@@ -774,20 +756,15 @@ static kal_uint32 slim_video(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
 	ctx->pclk = imgsensor_info.slim_video.pclk;
 	ctx->line_length = imgsensor_info.slim_video.linelength;
 	ctx->frame_length = imgsensor_info.slim_video.framelength;
 	ctx->min_frame_length = imgsensor_info.slim_video.framelength;
-	ctx->dummy_line = 0;
-	ctx->dummy_pixel = 0;
+	ctx->current_fps = imgsensor_info.slim_video.max_framerate;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	slim_video_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	slim_video	 */
 
@@ -795,18 +772,15 @@ static kal_uint32 custom1(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_CUSTOM1;
 	ctx->pclk = imgsensor_info.custom1.pclk;
 	ctx->line_length = imgsensor_info.custom1.linelength;
 	ctx->frame_length = imgsensor_info.custom1.framelength;
 	ctx->min_frame_length = imgsensor_info.custom1.framelength;
+	ctx->current_fps = imgsensor_info.custom1.max_framerate;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	custom1_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	custom1   */
 
@@ -833,8 +807,7 @@ static int get_info(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_
 		MSDK_SENSOR_INFO_STRUCT *sensor_info,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("scenario_id = %d\n", scenario_id);
-
+	LOG_INF_N("scenario_id = %d\n", scenario_id);
 	sensor_info->SensorClockPolarity = SENSOR_CLOCK_POLARITY_LOW;
 	sensor_info->SensorClockFallingPolarity = SENSOR_CLOCK_POLARITY_LOW;
 	/* not use */
@@ -926,7 +899,7 @@ static int control(struct subdrv_ctx *ctx,
 		custom1(ctx, image_window, sensor_config_data);
 		break;
 	default:
-		LOG_INF("Error ScenarioId setting, use default mode");
+		LOG_INF_N("Error ScenarioId setting, use default mode");
 		preview(ctx, image_window, sensor_config_data);
 		return ERROR_INVALID_SCENARIO_ID;
 	}
