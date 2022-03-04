@@ -518,20 +518,20 @@ static void mtk_charger_parse_dt(struct mtk_charger *info,
 		info->fast_charging_indicator = DEFAULT_ALG;
 	}
 
-	if (of_property_read_u32(np, "wireless_charger_max_current", &val) >= 0) {
-		info->data.wireless_charger_max_current = val;
+	if (of_property_read_u32(np, "wireless_factory_max_current", &val) >= 0) {
+		info->data.wireless_factory_max_current = val;
 	} else {
-		chr_err("use default WIRELESS_CHARGER_MAX_CURRENT:%d\n",
-			WIRELESS_CHARGER_MAX_CURRENT);
-		info->data.wireless_charger_max_current = WIRELESS_CHARGER_MAX_CURRENT;
+		chr_err("use default WIRELESS_FACTORY_MAX_CURRENT:%d\n",
+			WIRELESS_FACTORY_MAX_CURRENT);
+		info->data.wireless_factory_max_current = WIRELESS_FACTORY_MAX_CURRENT;
 	}
 
-	if (of_property_read_u32(np, "wireless_charger_max_input_current", &val) >= 0) {
-		info->data.wireless_charger_max_input_current = val;
+	if (of_property_read_u32(np, "wireless_factory_max_input_current", &val) >= 0) {
+		info->data.wireless_factory_max_input_current = val;
 	} else {
-		chr_err("use default WIRELESS_CHARGER_MAX_INPUT_CURRENT:%d\n",
-			WIRELESS_CHARGER_MAX_INPUT_CURRENT);
-		info->data.wireless_charger_max_input_current = WIRELESS_CHARGER_MAX_INPUT_CURRENT;
+		chr_err("use default WIRELESS_FACTORY_MAX_INPUT_CURRENT:%d\n",
+			WIRELESS_FACTORY_MAX_INPUT_CURRENT);
+		info->data.wireless_factory_max_input_current = WIRELESS_FACTORY_MAX_INPUT_CURRENT;
 	}
 	/* meta mode*/
 	if ((info->bootmode == 1) ||(info->bootmode == 5)) {
@@ -2383,6 +2383,19 @@ static bool charger_init_algo(struct mtk_charger *info)
 		chr_err("get pe2 success\n");
 		alg->config = info->config;
 		alg->alg_id = PE2_ID;
+		chg_alg_init_algo(alg);
+		register_chg_alg_notifier(alg, &info->chg_alg_nb);
+	}
+	idx++;
+
+	alg = get_chg_alg_by_name("wlc");
+	info->alg[idx] = alg;
+	if (alg == NULL)
+		chr_err("get wlc fail\n");
+	else {
+		chr_err("get wlc success\n");
+		alg->config = info->config;
+		alg->alg_id = WLC_ID;
 		chg_alg_init_algo(alg);
 		register_chg_alg_notifier(alg, &info->chg_alg_nb);
 	}
@@ -5045,7 +5058,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
 	/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
-	if (info != NULL && info->bootmode != 8 && info->bootmode != 9)
+	if (info != NULL && info->bootmode != 8 && info->bootmode != 9 && info->atm_enabled != true)
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, true);
 	mtk_charger_tcmd_register(info);
 	mmi_info = info;
