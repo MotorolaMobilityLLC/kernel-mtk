@@ -27,7 +27,7 @@
 #include <linux/fs.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
-
+#include <linux/module.h>
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define_v4l2.h"
@@ -50,11 +50,13 @@
 
 
 /************************** Modify Following Strings for Debug **************************/
-#define PFX "gc02m1b_camera_sensor"
-#define LOG_1 LOG_INF("GC02M1B, MIPI 1LANE\n")
+#define PFX "mot_gc02m1b"
+static int mot_gc02m1b_camera_debug = 0;
+module_param(mot_gc02m1b_camera_debug,int, 0644);
+#define LOG_INF(format, args...)        do { if (mot_gc02m1b_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 /****************************   Modify end    *******************************************/
-
-#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
 #define EEPROM_READY 0
@@ -183,7 +185,7 @@ static void set_max_framerate(struct subdrv_ctx *ctx,
 	/*kal_int16 dummy_line;*/
 	kal_uint32 frame_length = ctx->frame_length;
 
-	pr_debug(
+	LOG_INF(
 		"framerate = %d, min framelength should enable %d\n", framerate,
 		min_framelength_en);
 
@@ -249,7 +251,6 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
 
 static void set_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
 {
-    LOG_INF("set_shutter");
 	ctx->shutter = shutter;
 
 	write_shutter(ctx, shutter);
@@ -272,7 +273,7 @@ static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
 	write_cmos_sensor(ctx, 0x41, ctx->frame_length >> 8);
 	write_cmos_sensor(ctx, 0x42, ctx->frame_length & 0xFF);
 
-	pr_debug("Framelength: set=%d/input=%d/min=%d, auto_extend=%d\n",
+	LOG_INF("Framelength: set=%d/input=%d/min=%d, auto_extend=%d\n",
 		ctx->frame_length, frame_length, ctx->min_frame_length,
 		read_cmos_sensor(ctx, 0x0350));
 }
@@ -329,7 +330,7 @@ static void set_shutter_frame_length(struct subdrv_ctx *ctx,
 	write_cmos_sensor(ctx, 0x04, shutter  & 0xff);
 
 
-	LOG_INF("hi1336 shutter = %d, framelength = %d/%d, dummy_line= %d\n",
+	LOG_INF("shutter = %d, framelength = %d/%d, dummy_line= %d\n",
 		shutter, ctx->frame_length,
 		frame_length, dummy_line);
 
@@ -687,7 +688,7 @@ static void preview_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_preview_gc02m1b,
 		sizeof(addr_data_pair_preview_gc02m1b) /
 		sizeof(kal_uint16));
-	LOG_INF("preview_setting multi write end\n");
+	LOG_INF("X\n");
 }
 
 static void capture_setting(struct subdrv_ctx *ctx)
@@ -697,7 +698,7 @@ static void capture_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_capture_gc02m1b,
 		sizeof(addr_data_pair_capture_gc02m1b) /
 		sizeof(kal_uint16));
-	LOG_INF("capture_setting multi write end\n");
+	LOG_INF("X\n");
 }
 
 static void normal_video_setting(struct subdrv_ctx *ctx)
@@ -707,7 +708,7 @@ static void normal_video_setting(struct subdrv_ctx *ctx)
 	    addr_data_pair_normal_video_gc02m1b,
 		sizeof(addr_data_pair_normal_video_gc02m1b) /
 		sizeof(kal_uint16));
-	LOG_INF("normal_video_setting multi write end\n");
+	LOG_INF("X\n");
 }
 
 static void hs_video_setting(struct subdrv_ctx *ctx)
@@ -717,7 +718,7 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_hs_video_gc02m1b,
 		sizeof(addr_data_pair_hs_video_gc02m1b) /
 		sizeof(kal_uint16));
-	LOG_INF("hs_video_setting multi write end\n");
+	LOG_INF("X\n");
 }
 
 static void slim_video_setting(struct subdrv_ctx *ctx)
@@ -727,7 +728,7 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_slim_video_gc02m1b,
 		sizeof(addr_data_pair_slim_video_gc02m1b) /
 		sizeof(kal_uint16));
-	LOG_INF("slim_video_setting multi write end\n");
+	LOG_INF("X\n");
 }
 
 static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
@@ -743,7 +744,6 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 		write_cmos_sensor(ctx, 0x8c, 0x10);
 		write_cmos_sensor(ctx, 0xfe, 0x00);
 	}
-	LOG_INF("enable: %d\n", enable);
 	ctx->test_pattern = enable;
 	return ERROR_NONE;
 }
@@ -790,29 +790,29 @@ static void read_gc02m1b_module_info(struct subdrv_ctx *ctx)
 	write_cmos_sensor(ctx, 0x17, MODULE_GROUP_FLAG_ADDR); //set addr
 	write_cmos_sensor(ctx, 0xf3, 0x34); //otp read pulse
 	otp_grp_flag = read_cmos_sensor(ctx, 0x19); //read value
-	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
+	LOG_INF_N("otp_grp_flag = 0x%x\n", otp_grp_flag);
 
 	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
 		start_addr = MODULE_GROUP1_START_ADDR;
 		otp_count = 1;
-		LOG_INF("otp data is group1\n");
+		LOG_INF_N("otp data is group1\n");
 	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
 		start_addr = MODULE_GROUP2_START_ADDR;
 		otp_count = 9;
-		LOG_INF("otp data is group2\n");
+		LOG_INF_N("otp data is group2\n");
 	} else {
-		LOG_INF("gc02m1 OTP has no otp data\n");
+		LOG_INF_N("gc02m1 OTP has no otp data\n");
 	}
 
 	for(i = 0; i < MODULE_DATA_SIZE; i++){
 		write_cmos_sensor(ctx, 0x17, (start_addr+i*0x08));
 		write_cmos_sensor(ctx, 0xf3, 0x34);
 		gc02m1b_data_eeprom[i+1] = read_cmos_sensor(ctx, 0x19);
-		LOG_INF("value = 0x%x\n",gc02m1b_data_eeprom[i+1]);
+		LOG_INF_N("value = 0x%x\n",gc02m1b_data_eeprom[i+1]);
 	}
 	for(i = 0; i < GC02M1B_VAILD_DATA_SIZE; i++){
 		gc02m1b_valid_data[i] = gc02m1b_data_eeprom[i+otp_count];
-		LOG_INF("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1b_valid_data[i]);
+		LOG_INF_N("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1b_valid_data[i]);
 	}
 }
 #endif
@@ -823,7 +823,7 @@ static kal_uint32 return_sensor_id(struct subdrv_ctx *ctx)
 
               sensor_id = ((read_cmos_sensor(ctx, 0xf0) << 8) | read_cmos_sensor(ctx, 0xf1));
 
-              LOG_INF("[%s] sensor_id: 0x%x", __func__, sensor_id);
+              LOG_INF_N("[%s] sensor_id: 0x%x", __func__, sensor_id);
 
               return sensor_id;
 }
@@ -840,13 +840,13 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id(ctx);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", ctx->i2c_write_id, *sensor_id);
+				LOG_INF_N("i2c write id: 0x%x, sensor id: 0x%x\n", ctx->i2c_write_id, *sensor_id);
 #ifdef EEPROM_READY
 				read_gc02m1b_module_info(ctx);
 #endif
 				return ERROR_NONE;
 			}
-			LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", ctx->i2c_write_id, *sensor_id);
+			LOG_INF_N("Read sensor id fail, write id: 0x%x, id: 0x%x\n", ctx->i2c_write_id, *sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -889,11 +889,11 @@ static int open(struct subdrv_ctx *ctx)
 		do {
 	    sensor_id = return_sensor_id(ctx);
 			if (sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
+				LOG_INF_N("i2c write id: 0x%x, sensor id: 0x%x\n",
 					ctx->i2c_write_id, sensor_id);
 				break;
 			}
-			LOG_INF("Read sensor id fail, id: 0x%x\n",
+			LOG_INF_N("Read sensor id fail, id: 0x%x\n",
 				ctx->i2c_write_id);
 			retry--;
 		} while (retry > 0);
@@ -1034,10 +1034,7 @@ static kal_uint32 normal_video(struct subdrv_ctx *ctx,
 	ctx->min_frame_length = imgsensor_info.normal_video.framelength;
 	ctx->current_fps = 300;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	normal_video_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	normal_video   */
 
@@ -1045,7 +1042,7 @@ static kal_uint32 hs_video(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF_N("E\n");
 
 	ctx->sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
 	ctx->pclk = imgsensor_info.hs_video.pclk;
@@ -1055,10 +1052,7 @@ static kal_uint32 hs_video(struct subdrv_ctx *ctx,
 	ctx->dummy_line = 0;
 	ctx->dummy_pixel = 0;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	hs_video_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	hs_video   */
 
@@ -1067,7 +1061,6 @@ static kal_uint32 slim_video(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
-
 	ctx->sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
 	ctx->pclk = imgsensor_info.slim_video.pclk;
 	ctx->line_length = imgsensor_info.slim_video.linelength;
@@ -1076,10 +1069,7 @@ static kal_uint32 slim_video(struct subdrv_ctx *ctx,
 	ctx->dummy_line = 0;
 	ctx->dummy_pixel = 0;
 	ctx->autoflicker_en = KAL_FALSE;
-
 	slim_video_setting(ctx);
-
-	LOG_INF("X\n");
 	return ERROR_NONE;
 }	/*	slim_video	 */
 
