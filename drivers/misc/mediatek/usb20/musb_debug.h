@@ -6,8 +6,6 @@
 #ifndef __MUSB_LINUX_DEBUG_H__
 #define __MUSB_LINUX_DEBUG_H__
 
-extern struct musb *musb;
-
 #define yprintk(facility, format, args...) \
 		pr_notice("[MUSB]%s %d: " format, \
 		__func__, __LINE__, ## args)
@@ -44,12 +42,12 @@ extern struct musb *musb;
 extern unsigned int musb_debug;
 extern unsigned int musb_debug_limit;
 extern unsigned int musb_uart_debug;
-extern unsigned int musb_speed;
 
 static inline int _dbg_level(unsigned int level)
 {
 	return level <= musb_debug;
 }
+
 #ifdef DBG
 #undef DBG
 #endif
@@ -73,6 +71,5 @@ static inline int _dbg_level(unsigned int level)
 /* extern const char *otg_state_string(struct musb *); */
 extern int musb_init_debugfs(struct musb *musb)  __attribute__((weak));
 extern void musb_exit_debugfs(struct musb *musb) __attribute__((weak));
-extern void musb_dr_debugfs_init(struct musb *musb);
 
 #endif				/*  __MUSB_LINUX_DEBUG_H__ */
