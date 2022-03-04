@@ -818,11 +818,6 @@ config CHARGER_MT6375
 	  The device is compliant with the USB Battery Charging Specification
 	  Revision 1.2.
 
-config MOTO_CHG_TCMD_SUPPORT
-	tristate "MOTO TCMD interface driver for charger"
-	help
-	  This is to enable MOTO supports of charger TCMD INTERFACE.
-
 config GAUGE_MT6375
 	tristate "MT6375 fuel gauge driver"
 	depends on MFD_MT6375
@@ -913,5 +908,15 @@ config GAUGE_MT6983_ALPHA_SUPPORT
 	  To compile this dirver for used touch IC.
 	  Set Y or M to select this feature for specific platform-mt6983,
 	  and set N to disable.
+
+config MOTO_WLC_ALG_SUPPORT
+	tristate "moto wlc interface driver for charger"
+	help
+	  This is to enable MOTO supports of wlc charger INTERFACE.
+
+config MOTO_CHG_TCMD_SUPPORT
+	tristate "MOTO TCMD interface driver for charger"
+	help
+	  This is to enable MOTO supports of charger TCMD INTERFACE.
 
 endif # POWER_SUPPLY
