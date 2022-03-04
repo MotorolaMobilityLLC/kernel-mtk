@@ -89,12 +89,12 @@
     usb_charger_current = <500000>;
     ac_charger_input_current = <1500000>;
     charging_host_charger_current = <1500000>;
-    /*pe5 && pdc && pe2*/
-    fast_charging_indicator = <0x16>;
+    /*pe5 && pdc && pe2 && wlc*/
+    fast_charging_indicator = <0x36>;
     /*swchg + 1CP*/
     charger_configuration= <3>;
-    wireless_charger_max_current = <3000000>;
-    wireless_charger_max_input_current = <1250000>;
+    wireless_factory_max_current = <3000000>;
+    wireless_factory_max_input_current = <1250000>;
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
@@ -167,6 +167,13 @@
 		};
 		wls_boost {
 			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
+			output-low;
+		};
+	};
+
+	mmi_control_wls_default: mmi_control_wls_default {
+		wls_control {
+			pinmux = <PINMUX_GPIO114__FUNC_GPIO114>;
 			output-low;
 		};
 	};
@@ -297,4 +304,14 @@
 &charger_cooler {
 	mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
 				2000000 1500000 1000000 500000>;
+};
+
+&moto_wlc {
+	compatible = "moto,charger,wlc";
+	min_charger_voltage = <4600000>;
+	wlc_max_charger_current = <3000000>;
+	wlc_max_input_current = <1250000>;
+	mmi,wls_control_en = <&pio 114 0x0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmi_control_wls_default>;
 };

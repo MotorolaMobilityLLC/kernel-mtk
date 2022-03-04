@@ -62,8 +62,8 @@ struct charger_data;
 #define NON_STD_AC_CHARGER_CURRENT		500000
 #define CHARGING_HOST_CHARGER_CURRENT		650000
 /*wireless input current and charging current*/
-#define WIRELESS_CHARGER_MAX_CURRENT			3000000
-#define WIRELESS_CHARGER_MAX_INPUT_CURRENT		1200000
+#define WIRELESS_FACTORY_MAX_CURRENT			3000000
+#define WIRELESS_FACTORY_MAX_INPUT_CURRENT		1250000
 
 /* dynamic mivr */
 #define V_CHARGER_MIN_1 4400000 /* 4.4 V */
@@ -117,6 +117,7 @@ struct mmi_mux_configure {
 	u32 wls_mos;
 	bool wls_boost_en;
 	bool wls_loadswtich_en;
+	bool wls_chip_en;
 };
 
 enum bat_temp_state_enum {
@@ -240,9 +241,8 @@ struct charger_custom_data {
 	int max_dmivr_charger_current;
 
 	/*wireless charger*/
-	int wireless_charger_max_current;
-	int wireless_charger_max_input_current;
-	int wireless_charger_input_current;
+	int wireless_factory_max_current;
+	int wireless_factory_max_input_current;
 };
 
 struct charger_data {
@@ -351,10 +351,6 @@ struct mmi_params {
 	unsigned int	active_fast_alg;
 };
 /*moto mmi Functionality end*/
-struct moto_wls_chg_ops {
-	void *data;
-	void (*wls_voltage_current_select)(int *pCurrent);
-};
 
 enum chg_data_idx_enum {
 	CHG1_SETTING,
@@ -563,5 +559,4 @@ extern void _wake_up_charger(struct mtk_charger *info);
 extern int mtk_chg_enable_vbus_ovp(bool enable);
 extern void aee_kernel_RT_Monitor_api_factory(void);
 
-extern int moto_wireless_chg_ops_register(struct moto_wls_chg_ops *ops);
 #endif /* __MTK_CHARGER_H */
