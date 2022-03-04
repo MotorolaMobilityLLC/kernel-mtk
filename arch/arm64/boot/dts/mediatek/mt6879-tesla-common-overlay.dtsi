@@ -65,30 +65,27 @@
 		pinctrl-names = "irq_active";
 		pinctrl-0 = <&vibrator_irq_input>;
 		f0_pre = < 2350 >;
-		mode = /bits/ 8 < 5 >;
 		f0_cali_percent = /bits/ 8 < 7 >;
-		aw8671x_max_bst_vol = /bits/ 8 <0x0f>;
+		mode = /bits/ 8 < 5 >;
+		aw8671x_gain_bypass = /bits/ 8 < 1 >;
 		aw8671x_brk_bst_md = /bits/ 8 < 0 >;
 		aw8671x_cont_drv1_lvl = /bits/ 8 < 0x7F >;
-		aw8671x_cont_drv2_lvl = /bits/ 8 < 0x50 >;
+		aw8671x_cont_lra_vrms = < 1000 >; /* Motor rated voltage, mV */
 		aw8671x_cont_brk_time = /bits/ 8 < 0x08 >;
 		aw8671x_cont_tset = /bits/ 8 < 0x06 >;
 		aw8671x_cont_bemf_set = /bits/ 8 < 0x02 >;
-		aw8671x_cont_drv_width = /bits/ 8 < 0x4A >;
-		aw8671x_cont_wait_num = /bits/ 8 < 0x06 >;
-		aw8671x_cont_bst_brk_gain = /bits/ 8 < 0x05 >;
+		aw8671x_cont_track_margin = /bits/ 8 < 0x0F >;
 		aw8671x_cont_brk_gain = /bits/ 8 < 0x08 >;
+		aw8671x_cont_bst_brk_gain = /bits/ 8 < 0x05 >;
+		aw8671x_cont_wait_num = /bits/ 8 < 0x06 >;
 		aw8671x_cont_drv1_time = /bits/ 8 < 0x04 >;
 		aw8671x_cont_drv2_time = /bits/ 8 < 0x14 >;
-		aw8671x_cont_track_margin = /bits/ 8 < 0x0c >;
 		aw8671x_duration_time = /bits/ 8 < 20 30 60 >;
 		aw8671x_d2s_gain = /bits/ 8 < 0x04 >;
-		aw8671x_bst_vol_default = /bits/ 8 < 0x04 >;
 		aw8671x_trig_config = /bits/ 8 < 0 0 0 1 0 2 0 0
 						 0 0 0 1 0 2 0 0
 						 0 0 0 1 0 2 0 0 >;
-		aw8671x_bst_vol_ram = /bits/ 8 < 0x04 >;
-		aw8671x_bst_vol_rtp = /bits/ 8 < 0x04 >;
+		aw8671x_bst_vol_default = < 6336 >;
 	};
 };
 
