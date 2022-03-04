@@ -16,7 +16,6 @@
 #include <musb_core.h>
 #include "usb20.h"
 #include <linux/nvmem-consumer.h>
-#include <linux/phy/phy.h>
 
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
@@ -485,19 +484,19 @@ void usb_phy_switch_to_usb(void)
 void set_usb_phy_mode(int mode)
 {
 	switch (mode) {
-	case PHY_MODE_USB_DEVICE:
+	case PHY_DEV_ACTIVE:
 	/* VBUSVALID=1, AVALID=1, BVALID=1, SESSEND=0, IDDIG=1, IDPULLUP=1 */
 		USBPHY_CLR32(0x6C, (0x10<<0));
 		USBPHY_SET32(0x6C, (0x2F<<0));
 		USBPHY_SET32(0x6C, (0x3F<<8));
 		break;
-	case PHY_MODE_USB_HOST:
+	case PHY_HOST_ACTIVE:
 	/* VBUSVALID=1, AVALID=1, BVALID=1, SESSEND=0, IDDIG=0, IDPULLUP=1 */
 		USBPHY_CLR32(0x6c, (0x12<<0));
 		USBPHY_SET32(0x6c, (0x2d<<0));
 		USBPHY_SET32(0x6c, (0x3f<<8));
 		break;
-	case PHY_MODE_INVALID:
+	case PHY_IDLE_MODE:
 	/* VBUSVALID=0, AVALID=0, BVALID=0, SESSEND=1, IDDIG=0, IDPULLUP=1 */
 		USBPHY_SET32(0x6c, (0x11<<0));
 		USBPHY_CLR32(0x6c, (0x2e<<0));
@@ -656,7 +655,7 @@ static void usb_phy_savecurrent_internal(void)
 
 	udelay(1);
 
-	set_usb_phy_mode(PHY_MODE_INVALID);
+	set_usb_phy_mode(PHY_IDLE_MODE);
 }
 
 void usb_phy_savecurrent(void)
@@ -777,7 +776,7 @@ void usb_phy_recover(struct musb *musb)
 	udelay(800);
 
 	/* force enter device mode */
-	set_usb_phy_mode(PHY_MODE_USB_DEVICE);
+	set_usb_phy_mode(PHY_DEV_ACTIVE);
 
 	hs_slew_rate_cal();
 
