@@ -23,10 +23,6 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
-
-#define PFX "MOT_DUBAI_OV50A_camera_sensor"
-#define pr_fmt(fmt) PFX "[%s] " fmt, __func__
-
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -40,11 +36,6 @@
 #include "mot_dubai_ov50amipiraw_Sensor.h"
 #include "mot_dubai_ov50a_Sensor_setting.h"
 #include "mot_dubai_ov50a_ana_gain_table.h"
-#ifdef pr_debug
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 
 #define CPHY_3TRIO
 #define read_cmos_sensor_8(...) subdrv_i2c_rd_u8(__VA_ARGS__)
@@ -59,13 +50,16 @@ static kal_uint16 _i2c_data[_I2C_BUF_SIZE];
 static unsigned int _size_to_write;
 static bool _is_seamless = false;
 #define PD_PIX_2_EN 0
-#define LOG_INF(format, args...)    \
-	pr_debug(PFX "[%s] " format, __func__, ##args)
+
+#define PFX "mot_dubai_ov50a"
+static int mot_ov50a_camera_debug = 0;
+module_param(mot_ov50a_camera_debug,int, 0644);
+#define LOG_INF(format, args...)        do { if (mot_ov50a_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE 1
-
 #define FPT_PDAF_SUPPORT 1
-
 #define SEAMLESS_ 1
 #define SEAMLESS_NO_USE 0
 static int settledebug = 0x10;
@@ -366,7 +360,7 @@ static void set_max_framerate_video(struct subdrv_ctx *ctx, UINT16 framerate,
 
 static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 {
-	pr_debug("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	LOG_INF_N("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(ctx, 0x0100, 0X01);
 		ctx->is_streaming = true;
@@ -484,7 +478,7 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
                _i2c_data[_size_to_write++] = (shutter)  & 0xFF;
 
 	}
-	pr_debug("shutter =%d, framelength =%d, realtime_fps =%d _is_seamless %d\n",
+	LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d _is_seamless %d\n",
 		shutter, ctx->frame_length, realtime_fps, _is_seamless);
 #endif
 }
@@ -510,7 +504,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	kal_uint32 max_gain = imgsensor_info.max_gain;
 
 	if (gain < imgsensor_info.min_gain || gain > max_gain) {
-		pr_debug("Error gain setting\n");
+		LOG_INF_N("Error gain setting\n");
 
 		if (gain < imgsensor_info.min_gain)
 			gain = imgsensor_info.min_gain;
@@ -539,7 +533,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
                _i2c_data[_size_to_write++] =  reg_gain & 0xff;
 	}
 #endif
-	pr_debug("gain = %d , reg_gain = 0x%x\n", gain, reg_gain);
+	LOG_INF("gain = %d , reg_gain = 0x%x\n", gain, reg_gain);
 
 	return gain;
 }
@@ -571,7 +565,7 @@ static void set_frame_length(struct subdrv_ctx *ctx, kal_uint32 frame_length)
                table_write_cmos_sensor(ctx, _i2c_data,
                                        _size_to_write);
        }
-	pr_debug("Framelength: set=%d/input=%d/min=%d\n",
+	LOG_INF("Framelength: set=%d/input=%d/min=%d\n",
 		ctx->frame_length, frame_length, ctx->min_frame_length);
 }
 
@@ -619,11 +613,11 @@ static void preview_setting(struct subdrv_ctx *ctx)
 			addr_data_pair_preview_mot_dubai_ov50a2q,
 			_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -646,10 +640,10 @@ static void capture_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 			addr_data_pair_capture_mot_dubai_ov50a2q,
 			_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -672,11 +666,11 @@ static void normal_video_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 			addr_data_pair_video_mot_dubai_ov50a2q,
 			_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -699,11 +693,11 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_hs_video_mot_dubai_ov50a2q,
 		_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -725,11 +719,11 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_slim_video_mot_dubai_ov50a2q,
 		_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -752,11 +746,11 @@ static void custom1_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_custom1,
 		_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -779,11 +773,11 @@ static void custom2_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_custom2,
 		_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -805,11 +799,11 @@ static void custom3_setting(struct subdrv_ctx *ctx)
 		addr_data_pair_custom3,
 		_length);
 	} else {
-		pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 
 		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			pr_debug("_too much i2c data for fast siwtch %d\n",
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
 				_size_to_write + _length);
 			return;
 		}
@@ -884,7 +878,7 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 	do {
 		*sensor_id = return_sensor_id(ctx);
 	if (*sensor_id == imgsensor_info.sensor_id) {
-		pr_err("i2c write id: 0x%x, sensor id: 0x%x\n",
+		LOG_INF_N("i2c write id: 0x%x, sensor id: 0x%x\n",
 			ctx->i2c_write_id, *sensor_id);
 		return ERROR_NONE;
 	}
@@ -894,7 +888,7 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 	retry = 1;
 	}
 	if (*sensor_id != imgsensor_info.sensor_id) {
-		LOG_INF("%s: 0x%x fail\n", __func__, *sensor_id);
+		LOG_INF_N("%s: 0x%x fail\n", __func__, *sensor_id);
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
@@ -913,7 +907,7 @@ static int open(struct subdrv_ctx *ctx)
 	do {
 		sensor_id = return_sensor_id(ctx);
 	if (sensor_id == imgsensor_info.sensor_id) {
-		pr_debug("2c write id: 0x%x, sensor id: 0x%x\n",
+		LOG_INF_N("2c write id: 0x%x, sensor id: 0x%x\n",
 			ctx->i2c_write_id, sensor_id);
 		break;
 	}
@@ -925,10 +919,9 @@ static int open(struct subdrv_ctx *ctx)
 	retry = 2;
 	}
 	if (imgsensor_info.sensor_id != sensor_id) {
-		pr_debug("Open sensor id: 0x%x fail\n", sensor_id);
+		LOG_INF_N("Open sensor id: 0x%x fail\n", sensor_id);
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
-		pr_debug("enter  sensor id: sensor_init\n");
 	sensor_init(ctx);
 
 	//write_sensor_PDC(ctx);
@@ -959,7 +952,7 @@ static int close(struct subdrv_ctx *ctx)
 static kal_uint32 preview(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		      MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_PREVIEW;
 	ctx->pclk = imgsensor_info.pre.pclk;
 	//ctx->video_mode = KAL_FALSE;
@@ -974,7 +967,7 @@ static kal_uint32 preview(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_ST
 static kal_uint32 capture(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_CAPTURE;
 	ctx->pclk = imgsensor_info.cap.pclk;
 	//ctx->video_mode = KAL_FALSE;
@@ -990,7 +983,7 @@ static kal_uint32 normal_video(struct subdrv_ctx *ctx,
 			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_VIDEO;
 	ctx->pclk = imgsensor_info.normal_video.pclk;
 	ctx->line_length = imgsensor_info.normal_video.linelength;
@@ -1006,7 +999,7 @@ static kal_uint32 hs_video(struct subdrv_ctx *ctx,
 			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
 	ctx->pclk = imgsensor_info.hs_video.pclk;
 	//ctx->video_mode = KAL_TRUE;
@@ -1025,7 +1018,7 @@ static kal_uint32 slim_video(struct subdrv_ctx *ctx,
 			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
 	ctx->pclk = imgsensor_info.slim_video.pclk;
 	//ctx->video_mode = KAL_TRUE;
@@ -1044,8 +1037,7 @@ static kal_uint32 slim_video(struct subdrv_ctx *ctx,
 static kal_uint32 Custom1(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_CUSTOM1;
 	ctx->pclk = imgsensor_info.custom1.pclk;
 	//ctx->video_mode = KAL_FALSE;
@@ -1060,8 +1052,7 @@ static kal_uint32 Custom1(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_ST
 static kal_uint32 Custom2(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_CUSTOM2;
 	ctx->pclk = imgsensor_info.custom2.pclk;
 	//ctx->video_mode = KAL_FALSE;
@@ -1076,8 +1067,7 @@ static kal_uint32 Custom2(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_ST
 static kal_uint32 Custom3(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("%s E\n", __func__);
-
+	LOG_INF_N("E\n");
 	ctx->sensor_mode = IMGSENSOR_MODE_CUSTOM3;
 	ctx->pclk = imgsensor_info.custom3.pclk;
 	//ctx->video_mode = KAL_FALSE;
@@ -1211,7 +1201,7 @@ static int control(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_i
 		Custom3(ctx, image_window, sensor_config_data);
 	break;
 	default:
-		pr_debug("Error ScenarioId setting");
+		LOG_ERR("Error ScenarioId setting");
 		preview(ctx, image_window, sensor_config_data);
 	return ERROR_INVALID_SCENARIO_ID;
 	}
@@ -1241,7 +1231,7 @@ static kal_uint32 set_video_mode(struct subdrv_ctx *ctx, UINT16 framerate)
 static kal_uint32 set_auto_flicker_mode(struct subdrv_ctx *ctx, kal_bool enable,
 			UINT16 framerate)
 {
-	pr_debug("enable = %d, framerate = %d\n",
+	LOG_INF("enable = %d, framerate = %d\n",
 		enable, framerate);
 
 	if (enable) //enable auto flicker
@@ -1257,7 +1247,7 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 {
 	kal_uint32 frameHeight;
 
-	pr_debug("scenario_id = %d, framerate = %d\n", scenario_id, framerate);
+	LOG_INF("scenario_id = %d, framerate = %d\n", scenario_id, framerate);
 
 	if (framerate == 0)
 		return ERROR_NONE;
@@ -1374,7 +1364,7 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 			set_dummy(ctx);
 	break;
 	}
-	pr_debug("scenario_id = %d, framerate = %d done\n", scenario_id, framerate);
+	LOG_INF("scenario_id = %d, framerate = %d done\n", scenario_id, framerate);
 	return ERROR_NONE;
 }
 
@@ -1382,7 +1372,7 @@ static kal_uint32 get_default_framerate_by_scenario(struct subdrv_ctx *ctx,
 			enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			MUINT32 *framerate)
 {
-	pr_debug("[3058]scenario_id = %d\n", scenario_id);
+	LOG_INF_N("scenario_id = %d\n", scenario_id);
 
 	switch (scenario_id) {
 	case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
@@ -1420,7 +1410,7 @@ static kal_uint32 get_default_framerate_by_scenario(struct subdrv_ctx *ctx,
 
 static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 {
-	pr_debug("Test_Pattern enable: %d\n", enable);
+	LOG_INF("Test_Pattern enable: %d\n", enable);
 	if (enable) {
 		write_cmos_sensor(ctx,0x3510,0x0000);
 		write_cmos_sensor(ctx,0x4019,0x0000);
@@ -1464,13 +1454,13 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 	memset(_i2c_data, 0x0, sizeof(_i2c_data));
 	_size_to_write = 0;
 
-	pr_debug("%s %d, %d, %d, %d, %d sizeof(_i2c_data) %d\n", __func__,
+	LOG_INF("%s %d, %d, %d, %d, %d sizeof(_i2c_data) %d\n", __func__,
 		scenario_id, shutter, gain, shutter_2ndframe, gain_2ndframe, sizeof(_i2c_data));
 
 	_length = sizeof(addr_data_pair_seamless_switch_step1_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 
 	if (_length > _I2C_BUF_SIZE) {
-		pr_debug("_too much i2c data for fast siwtch\n");
+		LOG_INF_N("_too much i2c data for fast siwtch\n");
 		return ERROR_NONE;
 	}
 
@@ -1490,7 +1480,7 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 	_length = sizeof(addr_data_pair_seamless_switch_step2_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 
 	if (_size_to_write + _length > _I2C_BUF_SIZE) {
-		pr_debug("_too much i2c data for fast siwtch\n");
+		LOG_INF_N("_too much i2c data for fast siwtch\n");
 		return ERROR_NONE;
 	}
 
@@ -1506,7 +1496,7 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 
 	_length = sizeof(addr_data_pair_seamless_switch_step3_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 	if (_size_to_write + _length > _I2C_BUF_SIZE) {
-		pr_debug("_too much i2c data for fast siwtch\n");
+		LOG_INF_N("_too much i2c data for fast siwtch\n");
 		return ERROR_NONE;
 	}
 	memcpy((void *)(_i2c_data + _size_to_write),
@@ -1514,7 +1504,7 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 		sizeof(addr_data_pair_seamless_switch_step3_mot_dubai_ov50a2q));
 	_size_to_write += _length;
 
-	pr_debug("%s _is_seamless %d, _size_to_write %d\n",
+	LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 #if SEAMLESS_NO_USE
 	for (k = 0; k < _size_to_write; k += 2)
@@ -1527,15 +1517,15 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 		_size_to_write);
 
 #if SEAMLESS_NO_USE
-	pr_debug("===========================================\n");
+	LOG_INF("===========================================\n");
 
 	for (k = 0; k < _size_to_write; k += 2)
-		pr_debug("k = %d, 0x%04x , 0x%02x\n",
+		LOG_INF("k = %d, 0x%04x , 0x%02x\n",
 			k,  _i2c_data[k], read_cmos_sensor_8(ctx, _i2c_data[k]));
 #endif
 
 	_is_seamless = false;
-	pr_debug("exit\n");
+	LOG_INF_N("exit\n");
 	return ERROR_NONE;
 }
 
@@ -1601,7 +1591,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			*pScenarios = 0xff;
 			break;
 		}
-		pr_debug("SENSOR_FEATURE_GET_SEAMLESS_SCENARIOS %d %d\n",
+		LOG_INF_N("SENSOR_FEATURE_GET_SEAMLESS_SCENARIOS %d %d\n",
 			*feature_data, *pScenarios);
 		break;
 	case SENSOR_FEATURE_SEAMLESS_SWITCH:
@@ -1787,7 +1777,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
 	    ctx->current_fps = *feature_data_32;
-		pr_debug("current fps :%d\n", ctx->current_fps);
+		LOG_INF_N("current fps :%d\n", ctx->current_fps);
 	break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
 	    //pr_debug("GET_CROP_INFO scenarioId:%d\n",
@@ -1842,7 +1832,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		}
 	break;
 	case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
-	    pr_debug("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",
+	    LOG_INF_N("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",
 			(UINT16)*feature_data, (UINT16)*(feature_data+1),
 			(UINT16)*(feature_data+2));
 	    ihdr_write_shutter_gain(ctx, (UINT16)*feature_data,
@@ -1889,7 +1879,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	break;
 
 	case SENSOR_FEATURE_GET_VC_INFO2:
-		pr_debug("SENSOR_FEATURE_GET_VC_INFO2 %d\n",
+		LOG_INF_N("SENSOR_FEATURE_GET_VC_INFO2 %d\n",
 							(UINT16) (*feature_data));
 		pvcinfo2 = (struct SENSOR_VC_INFO2_STRUCT *) (uintptr_t) (*(feature_data + 1));
 		get_vc_info_2(pvcinfo2, *feature_data_32);
@@ -1911,7 +1901,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		}
 		break;
 	case SENSOR_FEATURE_GET_PDAF_INFO:
-		pr_debug("SENSOR_FEATURE_GET_PDAF_INFO, scenarioId:%d\n",
+		LOG_INF_N("SENSOR_FEATURE_GET_PDAF_INFO, scenarioId:%d\n",
 			(UINT16) *feature_data);
 		PDAFinfo =
 		  (struct SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
@@ -1931,7 +1921,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	break;
 /* ITD: Modify Dualcam By Jesse 190924 Start */
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
-		pr_debug("SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME\n");
+		LOG_INF_N("SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME\n");
 		set_shutter_frame_length(ctx, (UINT32)*feature_data, (UINT32)*(feature_data+1));
 		break;
 /* ITD: Modify Dualcam By Jesse 190924 End */
