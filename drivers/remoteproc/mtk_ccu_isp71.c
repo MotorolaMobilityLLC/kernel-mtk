@@ -204,6 +204,7 @@ static int mtk_ccu_run(struct mtk_ccu *ccu)
 	writel(ccu->log_taglevel, ccu_base + MTK_CCU_SPARE_REG05);
 
 #if defined(SECURE_CCU)
+	writel(CCU_GO_TO_RUN, ccu_base + MTK_CCU_SPARE_REG06);
 #ifdef CONFIG_ARM64
 	arm_smccc_smc(MTK_SIP_KERNEL_CCU_CONTROL, (u64) CCU_SMC_REQ_RUN, 0, 0, 0, 0, 0, 0, &res);
 #endif
@@ -271,15 +272,19 @@ static int mtk_ccu_clk_prepare(struct mtk_ccu *ccu)
 	int i = 0;
 	struct device *dev = ccu->dev;
 
+	LOG_DBG("Power on CCU0.\n");
 	ret = mtk_ccu_get_power(dev);
 	if (ret)
 		return ret;
+
 #if defined(CCU1_DEVICE)
+	LOG_DBG("Power on CCU1\n");
 	ret = mtk_ccu_get_power(&ccu->pdev1->dev);
 	if (ret)
 		goto ERROR_poweroff_ccu;
 #endif
 
+	LOG_DBG("Clock on CCU\n");
 	for (i = 0; i < MTK_CCU_CLK_PWR_NUM; ++i) {
 		ret = clk_prepare_enable(ccu->ccu_clk_pwr_ctrl[i]);
 		if (ret) {
@@ -301,7 +306,6 @@ ERROR_poweroff_ccu:
 	mtk_ccu_put_power(dev);
 
 	return ret;
-
 }
 
 static void mtk_ccu_clk_unprepare(struct mtk_ccu *ccu)
@@ -426,6 +430,7 @@ static int mtk_ccu_stop(struct rproc *rproc)
 #endif
 
 #if defined(SECURE_CCU)
+	writel(CCU_GO_TO_STOP, ccu->ccu_base + MTK_CCU_SPARE_REG06);
 #ifdef CONFIG_ARM64
 	arm_smccc_smc(MTK_SIP_KERNEL_CCU_CONTROL, (u64) CCU_SMC_REQ_STOP,
 		0, 0, 0, 0, 0, 0, &res);
@@ -571,7 +576,10 @@ static int mtk_ccu_load(struct rproc *rproc, const struct firmware *fw)
 		return ret;
 	}
 
+	LOG_DBG("Load CCU binary start\n");
+
 #if defined(SECURE_CCU)
+	writel(CCU_GO_TO_LOAD, ccu->ccu_base + MTK_CCU_SPARE_REG06);
 #ifdef CONFIG_ARM64
 	arm_smccc_smc(MTK_SIP_KERNEL_CCU_CONTROL, (u64) CCU_SMC_REQ_LOAD,
 		0, 0, 0, 0, 0, 0, &res);
