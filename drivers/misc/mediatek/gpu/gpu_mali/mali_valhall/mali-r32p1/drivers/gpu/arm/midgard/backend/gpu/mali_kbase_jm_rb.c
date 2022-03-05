@@ -1077,6 +1077,14 @@ bool kbase_gpu_irq_evict(struct kbase_device *kbdev, int js,
 		if (next_katom->core_req & BASE_JD_REQ_PERMON)
 			kbase_pm_release_gpu_cycle_counter_nolock(kbdev);
 
+		/* On evicting the next_katom, the last submission kctx on the
+		 * given job slot then reverts back to the one that owns katom.
+		 * The aim is to enable the next submission that can determine
+		 * if the read only shader core L1 cache should be invalidated.
+		 */
+		kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged =
+			SLOT_RB_TAG_KCTX(katom->kctx);
+
 		return true;
 	}
 
@@ -1248,8 +1256,6 @@ void kbase_gpu_complete_hw(struct kbase_device *kbdev, int js,
 						ktime_to_ns(*end_timestamp),
 						(u32)next_katom->kctx->id, 0,
 						next_katom->work_id);
-			kbdev->hwaccess.backend.slot_rb[js].last_context =
-							next_katom->kctx;
 #if defined(MTK_GPU_BM_2)
             if(js == 0) {
                 kbdev->v1->ctx = (u32)next_katom->kctx->id;
@@ -1266,7 +1272,6 @@ void kbase_gpu_complete_hw(struct kbase_device *kbdev, int js,
 							sizeof(js_string)),
 						ktime_to_ns(ktime_get()), 0, 0,
 						0);
-			kbdev->hwaccess.backend.slot_rb[js].last_context = 0;
 		}
 	}
 #endif
@@ -1378,6 +1383,9 @@ void kbase_backend_reset(struct kbase_device *kbdev, ktime_t *end_timestamp)
 			katom->event_code = BASE_JD_EVENT_JOB_CANCELLED;
 			kbase_jm_complete(kbdev, katom, end_timestamp);
 		}
+
+		/* Clear the slot's last katom submission kctx on reset */
+		kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged = SLOT_RB_NULL_TAG_VAL;
 	}
 
 	/* Re-enable GPU hardware counters if we're resetting from protected
@@ -1546,6 +1554,11 @@ bool kbase_backend_soft_hard_stop_slot(struct kbase_device *kbdev,
 						kbase_gpu_remove_atom(kbdev,
 								katom_idx1,
 								action, true);
+						/* Revert the last_context. */
+						kbdev->hwaccess.backend.slot_rb[js]
+							.last_kctx_tagged =
+							SLOT_RB_TAG_KCTX(katom_idx0->kctx);
+
 						stop_x_dep_idx1 =
 					should_stop_x_dep_slot(katom_idx1);
 
@@ -1621,6 +1634,10 @@ bool kbase_backend_soft_hard_stop_slot(struct kbase_device *kbdev,
 					kbase_gpu_remove_atom(kbdev, katom_idx1,
 									action,
 									false);
+					/* Revert the last_context, or mark as purged */
+					kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged =
+						katom_idx0->kctx ? SLOT_RB_TAG_KCTX(katom_idx0->kctx) :
+							    SLOT_RB_TAG_PURGED;
 				} else {
 					/* idx0 has already completed - stop
 					 * idx1
@@ -1707,4 +1724,35 @@ void kbase_gpu_dump_slots(struct kbase_device *kbdev)
 	}
 
 	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+}
+
+void kbase_backend_slot_kctx_purge_locked(struct kbase_device *kbdev, struct kbase_context *kctx)
+{
+	int js;
+	bool tracked = false;
+
+	lockdep_assert_held(&kbdev->hwaccess_lock);
+
+	for (js = 0; js < kbdev->gpu_props.num_job_slots; js++) {
+		u64 tagged_kctx = kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged;
+
+		if (tagged_kctx == SLOT_RB_TAG_KCTX(kctx)) {
+			/* Marking the slot kctx tracking field is purged */
+			kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged = SLOT_RB_TAG_PURGED;
+			tracked = true;
+		}
+	}
+
+	if (tracked) {
+		/* The context had run some jobs before the purge, other slots
+		 * in SLOT_RB_NULL_TAG_VAL condition needs to be marked as
+		 * purged as well.
+		 */
+		for (js = 0; js < kbdev->gpu_props.num_job_slots; js++) {
+			if (kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged ==
+			    SLOT_RB_NULL_TAG_VAL)
+				kbdev->hwaccess.backend.slot_rb[js].last_kctx_tagged =
+					SLOT_RB_TAG_PURGED;
+		}
+	}
 }
