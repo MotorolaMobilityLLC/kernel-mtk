@@ -120,6 +120,7 @@ static struct LCM_setting_table password_open_and_offset_code[] = {
 	{ 0xFA, 0x03, {0x45, 0x93 ,0x01} },
 	{ 0xBE, 0x02, {0x5A, 0x5A} },
 	{ 0xBD, 0x03, {0xe9, 0x02 ,0x4E} },
+	{ 0xFE, 0x01, {0xEF} },
 };
 
 static struct LCM_setting_table password_close_code[] = {
@@ -175,7 +176,7 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
 };
 
-static struct LCM_setting_table lcm_hbm_setting = {0x51, 2, {0x0F, 0xFF} };//100% PWM
+static struct LCM_setting_table lcm_hbm_setting = {0x51, 2, {0xFF, 0x0E} };//100% PWM
 
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -522,8 +523,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	LCM_LOGI("%s,txd_icnl9911c backlight: level = %d\n", __func__, level);
 	//for 11bit
-	bl_level[0].para_list[0] = (level&0x700)>>8;
-	bl_level[0].para_list[1] = (level&0xFF);
+	bl_level[0].para_list[0] = (level & 0x07F8) >> 3;
+	bl_level[0].para_list[1] = (level & 0x07) << 1;
 
 	push_table(handle, bl_level,
 		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
