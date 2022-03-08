@@ -15,7 +15,7 @@
 unsigned int hi1336_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
 
 #define HI1336_MOT_EEPROM_ADDR 0x00
-#define HI1336_MOT_EEPROM_DATA_SIZE 0x0E25
+#define HI1336_MOT_EEPROM_DATA_SIZE 0x0E54
 #define HI1336_MOT_SERIAL_NUMBER_ADDR 0x15
 #define HI1336_MOT_MNF_ADDR 0x00
 #define HI1336_MOT_MNF_DATA_SIZE 37
@@ -34,6 +34,12 @@ unsigned int hi1336_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsi
 #define HI1336_MOT_PDAF_DATA1_SIZE 496
 #define HI1336_MOT_PDAF_DATA2_SIZE 1004
 #define HI1336_MOT_PDAF_CHECKSUM_ADDR 0xE21
+#define HI1336_MOT_AF_SYNC_DATA_ADDR 0x0E25
+#define HI1336_MOT_AF_SYNC_DATA_SIZE 24
+#define HI1336_MOT_AF_SYNC_DATA_CHECKSUM_ADDR 0x0E3D
+#define HI1336_MOT_MTK_NECESSARY_DATA_ADDR 0x0E3F
+#define HI1336_MOT_MTK_NECESSARY_DATA_SIZE 19
+#define HI1336_MOT_MTK_NECESSARY_DATA_CHECKSUM_ADDR 0x0E52
 
 static struct STRUCT_CALIBRATION_LAYOUT_STRUCT cal_layout_table = {
 	0x00000003, 0x32443832, CAM_CAL_SINGLE_EEPROM_DATA,
@@ -144,6 +150,29 @@ unsigned int hi1336_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsi
 	} else {
 		debug_log("check pdaf crc16 err");
 		pCamCalData->CalibrationStatus.pdaf_status = CRC_FAILURE;
+	}
+
+	//af sync data check
+	checkSum = (pCamCalData->DumpAllEepromData[HI1336_MOT_AF_SYNC_DATA_CHECKSUM_ADDR])<< 8
+		|(pCamCalData->DumpAllEepromData[HI1336_MOT_AF_SYNC_DATA_CHECKSUM_ADDR+1]);
+	debug_log("checkSum  = 0x%x", checkSum);
+	if(check_crc16(pCamCalData->DumpAllEepromData+HI1336_MOT_AF_SYNC_DATA_ADDR, HI1336_MOT_AF_SYNC_DATA_SIZE, checkSum)) {
+		debug_log("check af sync data crc16 ok");
+		pCamCalData->CalibrationStatus.af_sync_status = NO_ERRORS;
+	} else {
+		debug_log("check af sync data crc16 err");
+		pCamCalData->CalibrationStatus.af_sync_status = CRC_FAILURE;
+	}
+	//mtk necessary data check
+	checkSum = (pCamCalData->DumpAllEepromData[HI1336_MOT_MTK_NECESSARY_DATA_CHECKSUM_ADDR])<< 8
+		|(pCamCalData->DumpAllEepromData[HI1336_MOT_MTK_NECESSARY_DATA_CHECKSUM_ADDR+1]);
+	debug_log("checkSum  = 0x%x", checkSum);
+	if(check_crc16(pCamCalData->DumpAllEepromData+HI1336_MOT_MTK_NECESSARY_DATA_ADDR, HI1336_MOT_MTK_NECESSARY_DATA_SIZE, checkSum)) {
+		debug_log("check mtk necessary data crc16 ok");
+		pCamCalData->CalibrationStatus.mtk_necessary_status = NO_ERRORS;
+	} else {
+		debug_log("check mtk necessary data crc16 err");
+		pCamCalData->CalibrationStatus.mtk_necessary_status = CRC_FAILURE;
 	}
 	return CAM_CAL_ERR_NO_ERR;
 }

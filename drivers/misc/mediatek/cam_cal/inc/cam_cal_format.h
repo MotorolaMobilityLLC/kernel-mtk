@@ -188,7 +188,7 @@ struct STRUCT_CAM_CAL_PDAF_STRUCT {
 };
 
 #define MAX_CALIBRATION_STRING 40
-#define ALL_EEPROM_DATA_SIZE 0x2000
+#define MAX_ALL_EEPROM_DATA_SIZE 0x2500
 
 typedef enum {
 	NONEXISTENCE = -1,
@@ -226,6 +226,9 @@ struct MOT_CALIBRATION_STATUS {
 	calibration_status_t lsc_status;
 	calibration_status_t pdaf_status;
 	calibration_status_t dual_status;
+	calibration_status_t af_sync_status;
+	calibration_status_t mtk_necessary_status;
+	calibration_status_t xtalk_status;
 };
 
 struct STRUCT_MOT_EEPROM_DATA {
@@ -236,7 +239,7 @@ struct STRUCT_MOT_EEPROM_DATA {
 	unsigned int  data_size;
 	sensor_type_t sensor_type;
 	struct MOT_CALIBRATION_STATUS  CalibrationStatus;
-	unsigned char DumpAllEepromData[ALL_EEPROM_DATA_SIZE];
+	unsigned char DumpAllEepromData[MAX_ALL_EEPROM_DATA_SIZE];
 	unsigned char serial_number[MAX_CALIBRATION_STRING];
 	unsigned int serial_number_bit;
 };
