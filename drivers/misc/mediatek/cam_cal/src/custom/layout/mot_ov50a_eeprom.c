@@ -15,7 +15,7 @@
 unsigned int ov50a_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
 
 #define OV50A_MOT_EEPROM_ADDR 0x00
-#define OV50A_MOT_EEPROM_DATA_SIZE 0x150F
+#define OV50A_MOT_EEPROM_DATA_SIZE 0x2327
 #define OV50A_MOT_SERIAL_NUMBER_ADDR 0x15
 #define OV50A_MOT_MNF_ADDR 0x00
 #define OV50A_MOT_MNF_DATA_SIZE 37
@@ -34,6 +34,15 @@ unsigned int ov50a_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsig
 #define OV50A_MOT_PDAF_DATA1_SIZE 496
 #define OV50A_MOT_PDAF_DATA2_SIZE 1004
 #define OV50A_MOT_PDAF_CHECKSUM_ADDR 0x150B
+#define OV50A_MOT_XTALK_ADDR 0x150F
+#define OV50A_MOT_XTALK_DATA_SIZE 3568
+#define OV50A_MOT_XTALK_CHECKSUM_ADDR 0x22FF
+#define OV50A_MOT_AF_SYNC_DATA_ADDR 0x2301
+#define OV50A_MOT_AF_SYNC_DATA_SIZE 16
+#define OV50A_MOT_AF_SYNC_DATA_CHECKSUM_ADDR 0x2311
+#define OV50A_MOT_MTK_NECESSARY_DATA_ADDR 0x2313
+#define OV50A_MOT_MTK_NECESSARY_DATA_SIZE 18
+#define OV50A_MOT_MTK_NECESSARY_DATA_CHECKSUM_ADDR 0x2325
 
 static struct STRUCT_CALIBRATION_LAYOUT_STRUCT cal_layout_table = {
 	0x00000003, 0x32443832, CAM_CAL_SINGLE_EEPROM_DATA,
@@ -143,6 +152,43 @@ unsigned int ov50a_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsig
 	} else {
 		debug_log("check pdaf crc16 err");
 		pCamCalData->CalibrationStatus.pdaf_status = CRC_FAILURE;
+	}
+
+	//xtalk check
+	checkSum = (pCamCalData->DumpAllEepromData[OV50A_MOT_XTALK_CHECKSUM_ADDR])<< 8
+		|(pCamCalData->DumpAllEepromData[OV50A_MOT_XTALK_CHECKSUM_ADDR+1]);
+	debug_log("checkSum  = 0x%x", checkSum);
+
+	if(check_crc16(pCamCalData->DumpAllEepromData+OV50A_MOT_XTALK_ADDR, OV50A_MOT_XTALK_DATA_SIZE, checkSum)) {
+		debug_log("check xtalk data crc16 ok");
+		pCamCalData->CalibrationStatus.xtalk_status = NO_ERRORS;
+	} else {
+		debug_log("check xtalk data crc16 err");
+		pCamCalData->CalibrationStatus.xtalk_status = CRC_FAILURE;
+	}
+
+	//af sync data check
+	checkSum = (pCamCalData->DumpAllEepromData[OV50A_MOT_AF_SYNC_DATA_CHECKSUM_ADDR])<< 8
+		|(pCamCalData->DumpAllEepromData[OV50A_MOT_AF_SYNC_DATA_CHECKSUM_ADDR+1]);
+	debug_log("checkSum  = 0x%x", checkSum);
+	if(check_crc16(pCamCalData->DumpAllEepromData+OV50A_MOT_AF_SYNC_DATA_ADDR, OV50A_MOT_AF_SYNC_DATA_SIZE, checkSum)) {
+		debug_log("check af sync data crc16 ok");
+		pCamCalData->CalibrationStatus.af_sync_status = NO_ERRORS;
+	} else {
+		debug_log("check af sync data crc16 err");
+		pCamCalData->CalibrationStatus.af_sync_status = CRC_FAILURE;
+	}
+
+	//mtk necessary data check
+	checkSum = (pCamCalData->DumpAllEepromData[OV50A_MOT_MTK_NECESSARY_DATA_CHECKSUM_ADDR])<< 8
+		|(pCamCalData->DumpAllEepromData[OV50A_MOT_MTK_NECESSARY_DATA_CHECKSUM_ADDR+1]);
+	debug_log("checkSum  = 0x%x", checkSum);
+	if(check_crc16(pCamCalData->DumpAllEepromData+OV50A_MOT_MTK_NECESSARY_DATA_ADDR, OV50A_MOT_MTK_NECESSARY_DATA_SIZE, checkSum)) {
+		debug_log("check af sync data crc16 ok");
+		pCamCalData->CalibrationStatus.mtk_necessary_status = NO_ERRORS;
+	} else {
+		debug_log("check af sync data crc16 err");
+		pCamCalData->CalibrationStatus.mtk_necessary_status = CRC_FAILURE;
 	}
 	return CAM_CAL_ERR_NO_ERR;
 }
