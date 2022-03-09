@@ -294,7 +294,9 @@ bool is_charger_exist(struct mtk_charger *info)
 	} else {
 		tmp_ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &prop);
-		ret |= prop.intval;
+		ret = prop.intval;
+		if (ret)
+			return ret;
 	}
 
 	wl_psy = power_supply_get_by_name("wireless");
@@ -304,7 +306,7 @@ bool is_charger_exist(struct mtk_charger *info)
 	} else {
 		ret = power_supply_get_property(wl_psy,
 			POWER_SUPPLY_PROP_ONLINE, &wlc_prop);
-		ret |= wlc_prop.intval;
+		ret = wlc_prop.intval;
 	}
 	chr_debug("%s:%d\n", __func__,
 		ret);
