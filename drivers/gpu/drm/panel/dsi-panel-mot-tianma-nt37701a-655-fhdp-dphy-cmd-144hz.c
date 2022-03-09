@@ -218,7 +218,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	usleep_range(120 * 1000, 121 * 1000);
 	if (ctx->version != PANEL_V1) {
 		lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x08);
-		lcm_dcs_write_seq_static(ctx, 0xE1, 0xA1);
+		lcm_dcs_write_seq_static(ctx, 0xE1, 0x63);
 	}
 	lcm_dcs_write_seq_static(ctx, 0x29);
 
