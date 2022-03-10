@@ -1510,8 +1510,12 @@ cmdq_test_trigger(struct cmdq_test *test, enum CMDQ_SECURE_STATE_ENUM sec, const
 #endif
 
 	cmdq_mbox_enable(test->clt->chan);
-	cmdq_mbox_enable(test->loop->chan);
-	cmdq_sec_mbox_enable(test->sec->chan);
+	if (test->loop)
+		cmdq_mbox_enable(test->loop->chan);
+#ifdef CMDQ_SECURE_SUPPORT
+	if (test->sec)
+		cmdq_sec_mbox_enable(test->sec->chan);
+#endif
 
 	switch (id) {
 	case 0:
@@ -1611,8 +1615,10 @@ cmdq_test_trigger(struct cmdq_test *test, enum CMDQ_SECURE_STATE_ENUM sec, const
 		break;
 	}
 
-	cmdq_sec_mbox_disable(test->sec->chan);
-	cmdq_mbox_disable(test->loop->chan);
+#ifdef CMDQ_SECURE_SUPPORT
+	if (test->sec)
+		cmdq_sec_mbox_disable(test->sec->chan);
+#endif
 	cmdq_mbox_disable(test->clt->chan);
 	cmdq_thread_timeout_restore(thread, backup);
 }
