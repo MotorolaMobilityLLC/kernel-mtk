@@ -662,16 +662,6 @@
 	pd_vbus_upper_bound = <12000000>;
 };
 
-/* SVP */
-&mtee_svp {
-	mtee: MTEE {
-		compatible = "mediatek,mtk_svp_on_mtee_support";
-	};
-	svp: SecureVideoPath {
-		compatible = "mediatek,mtk_sec_video_path_support";
-	};
-};
-
 #include "mediatek/cust_mt6879_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6879_camera_v4l2.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
