@@ -310,7 +310,7 @@
 &moto_wlc {
 	compatible = "moto,charger,wlc";
 	min_charger_voltage = <4600000>;
-	wlc_max_charger_current = <3000000>;
+	wlc_max_charger_current = <3150000>;
 	wlc_max_input_current = <1250000>;
 	mmi,wls_control_en = <&pio 114 0x0>;
 	pinctrl-names = "default";
