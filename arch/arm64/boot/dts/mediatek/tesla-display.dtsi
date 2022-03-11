@@ -99,6 +99,7 @@
 		/delete-property/gate-ic;
 
 		compatible = "mot,dummy,vdo,60hz";
+		reg = <0>;
 		pinctrl-names = "default";
 	};
 
@@ -110,7 +111,7 @@
 		/delete-property/gate-ic;
 
 		compatible = "tianma,nt37701,cmd,144hz";
-		reg = <0>;
+		reg = <1>;
 		pm-enable-gpios = <&pio 103 0>,
                           <&pio 165 0>,
                           <&pio 164 0>,
@@ -131,7 +132,7 @@
 		/delete-property/gate-ic;
 
 		compatible = "tianma,nt37701,cmd,144hz";
-		reg = <1>;
+		reg = <2>;
 		pm-enable-gpios = <&pio 103 0>,
                           <&pio 165 0>,
                           <&pio 164 0>,
