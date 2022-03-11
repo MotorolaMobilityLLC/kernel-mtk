@@ -37,7 +37,7 @@
 static char bl_tb0[] = { 0x51, 0x0f,0xff };
 
 enum panel_version{
-	PANEL_V1 = 0,
+	PANEL_V1 = 1,
 	PANEL_V2,
 };
 
