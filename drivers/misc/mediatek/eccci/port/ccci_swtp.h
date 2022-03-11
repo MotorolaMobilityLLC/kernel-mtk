@@ -20,12 +20,12 @@
 
 #ifdef SAIPAN_SWTP_CONFIG
 #define MAX_PIN_NUM 4
-#endif
-#ifdef AUSTIN_SWTP_CONFIG
+#elif defined AUSTIN_SWTP_CONFIG
 #define MAX_PIN_NUM 3
-#endif
-#ifdef KYOTO_SWTP_CUST
+#elif defined KYOTO_SWTP_CUST
 #define MAX_PIN_NUM 4
+#else
+#define MAX_PIN_NUM 2
 #endif
 
 #define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
