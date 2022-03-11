@@ -260,6 +260,14 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[2] = {
 	},
 };
 
+#define OV50A_EEPROM_IIC_ADDR 0xA0
+#define OV50A_SENSOR_IIC_ADDR 0x20
+#define OV50A_XTLK_EEPROM_OFFSET 0x150F
+#define OV50A_XTLK_REG_OFFSET 0x71F0
+#define OV50A_XTLK_BYTES 3568
+static u8 ov50a_xtlk_buf[OV50A_XTLK_BYTES];
+static u8 xtalk_ready = 0;
+
 static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 scenario)
 {
 	switch (scenario) {
@@ -591,6 +599,46 @@ static void night_mode(struct subdrv_ctx *ctx, kal_bool enable)
 {
 }
 
+static void ov50a_qpd_xtalk_read(struct subdrv_ctx *ctx)
+{
+	int ret = 0;
+
+	memset(ov50a_xtlk_buf, 0x0, sizeof(ov50a_xtlk_buf));
+	LOG_INF("%s: xtalk read start",__func__);
+	ret = adaptor_i2c_rd_p8(ctx->i2c_client, OV50A_EEPROM_IIC_ADDR >> 1, OV50A_XTLK_EEPROM_OFFSET, ov50a_xtlk_buf, sizeof(ov50a_xtlk_buf));
+	LOG_INF("%s: xtalk read end",__func__);
+	if (ret < 0) {
+		pr_err("%s: sequential read xtalk failed, ret: %d\n", __func__, ret);
+	} else {
+		xtalk_ready = 1;
+		LOG_INF("%s: sequential read xtalk success\n", __func__);
+	}
+}
+
+static void ov50a_qpd_calibration_apply(struct subdrv_ctx *ctx)
+{
+	int ret = 0;
+
+	if (!xtalk_ready) {//Try again if power on reading failed
+		LOG_INF("%s: xtalk read retry.", __func__);
+		ov50a_qpd_xtalk_read(ctx);
+	}
+
+	if (xtalk_ready) {
+		ret = adaptor_i2c_wr_seq_p8(ctx->i2c_client, OV50A_SENSOR_IIC_ADDR >> 1, OV50A_XTLK_REG_OFFSET, ov50a_xtlk_buf, sizeof(ov50a_xtlk_buf));
+		if (ret) {
+			pr_err("%s: Sequential Apply xtalk failed, ret: %d\n", __func__, ret);
+		} else {
+			write_cmos_sensor_8(ctx, 0x5002, 0x04);
+			LOG_INF("%s: Sequential Apply xtalk success\n", __func__);
+		}
+	} else {
+		pr_err("%s: read xtalk failed, ret: %d\n", __func__, ret);
+	}
+
+	return;
+}
+
 static void sensor_init(struct subdrv_ctx *ctx)
 {
 	write_cmos_sensor_8(ctx, 0x0103, 0x01);//SW Reset, need delay
@@ -599,6 +647,8 @@ static void sensor_init(struct subdrv_ctx *ctx)
 	table_write_cmos_sensor(ctx,
 		addr_data_pair_init_mot_dubai_ov50a2q,
 		sizeof(addr_data_pair_init_mot_dubai_ov50a2q) / sizeof(kal_uint16));
+
+	ov50a_qpd_calibration_apply(ctx);
 	LOG_INF("%s end\n", __func__);
 }
 
@@ -880,6 +930,7 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 	if (*sensor_id == imgsensor_info.sensor_id) {
 		LOG_INF_N("i2c write id: 0x%x, sensor id: 0x%x\n",
 			ctx->i2c_write_id, *sensor_id);
+		ov50a_qpd_xtalk_read(ctx);
 		return ERROR_NONE;
 	}
 		retry--;
