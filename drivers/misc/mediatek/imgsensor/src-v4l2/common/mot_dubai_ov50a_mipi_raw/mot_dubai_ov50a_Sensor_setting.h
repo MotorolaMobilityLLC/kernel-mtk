@@ -30,6 +30,10 @@ kal_uint16 addr_data_pair_init_mot_dubai_ov50a2q[] = {
 #include"setting/OV50A40_Initial_CPHY_3Trio_1872Msps_20220222.h"
 };
 
+kal_uint16 addr_data_pair_init_mot_dubai_ov50a_20220312[] = {
+#include "setting/OV50A40_Initial_CPHY_3Trio_1872Msps_20220312_1.h"
+};
+
 kal_uint16 addr_data_pair_preview_mot_dubai_ov50a2q[] = {
 #include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_20220121.h"
 };
