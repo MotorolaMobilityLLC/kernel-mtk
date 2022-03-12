@@ -54,6 +54,10 @@ static bool _is_seamless = false;
 #define PFX "mot_dubai_ov50a"
 static int mot_ov50a_camera_debug = 0;
 module_param(mot_ov50a_camera_debug,int, 0644);
+
+static int mot_ov50a_xtalk_en = 1;
+module_param(mot_ov50a_xtalk_en,int, 0644);
+
 #define LOG_INF(format, args...)        do { if (mot_ov50a_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
@@ -617,6 +621,13 @@ static void ov50a_qpd_xtalk_read(struct subdrv_ctx *ctx)
 
 static void ov50a_qpd_calibration_apply(struct subdrv_ctx *ctx)
 {
+	/*Registers need write:
+	    0x71f0 ~ 0x720f      0x20 bytes
+	    0x7290 ~ 0x805f      0xDD0 bytes
+	*/
+	#define XTALK_FIRST_SECTION_BYTES 0x20
+	#define XTALK_SECOND_SECTION_START (0x7290)
+	#define XTALK_SECOND_SECTION_BYTES (OV50A_XTLK_BYTES-XTALK_FIRST_SECTION_BYTES)
 	int ret = 0;
 
 	if (!xtalk_ready) {//Try again if power on reading failed
@@ -625,8 +636,10 @@ static void ov50a_qpd_calibration_apply(struct subdrv_ctx *ctx)
 	}
 
 	if (xtalk_ready) {
-		ret = adaptor_i2c_wr_seq_p8(ctx->i2c_client, OV50A_SENSOR_IIC_ADDR >> 1, OV50A_XTLK_REG_OFFSET, ov50a_xtlk_buf, sizeof(ov50a_xtlk_buf));
-		if (ret) {
+		ret = adaptor_i2c_wr_seq_p8(ctx->i2c_client, OV50A_SENSOR_IIC_ADDR >> 1, OV50A_XTLK_REG_OFFSET, ov50a_xtlk_buf, XTALK_FIRST_SECTION_BYTES);
+		ret |= adaptor_i2c_wr_seq_p8(ctx->i2c_client, OV50A_SENSOR_IIC_ADDR >> 1, XTALK_SECOND_SECTION_START,
+		                            &ov50a_xtlk_buf[XTALK_FIRST_SECTION_BYTES], XTALK_SECOND_SECTION_BYTES);
+		if (ret < 0) {
 			pr_err("%s: Sequential Apply xtalk failed, ret: %d\n", __func__, ret);
 		} else {
 			write_cmos_sensor_8(ctx, 0x5002, 0x04);
@@ -644,11 +657,20 @@ static void sensor_init(struct subdrv_ctx *ctx)
 	write_cmos_sensor_8(ctx, 0x0103, 0x01);//SW Reset, need delay
 	mdelay(5);
 	LOG_INF("%s start\n", __func__);
-	table_write_cmos_sensor(ctx,
-		addr_data_pair_init_mot_dubai_ov50a2q,
-		sizeof(addr_data_pair_init_mot_dubai_ov50a2q) / sizeof(kal_uint16));
 
-	ov50a_qpd_calibration_apply(ctx);
+	if (mot_ov50a_xtalk_en) {//Settings that removed xtalk default data.
+		table_write_cmos_sensor(ctx,
+		    addr_data_pair_init_mot_dubai_ov50a2q,
+		    sizeof(addr_data_pair_init_mot_dubai_ov50a2q) / sizeof(kal_uint16));
+
+		LOG_INF("%s: Applying xtalk...", __func__);
+		ov50a_qpd_calibration_apply(ctx);
+	} else {
+		LOG_INF("%s: skip EEPROM xtalk, use default one...", __func__);
+		table_write_cmos_sensor(ctx,
+		    addr_data_pair_init_mot_dubai_ov50a_20220312,
+		    sizeof(addr_data_pair_init_mot_dubai_ov50a_20220312) / sizeof(kal_uint16));
+	}
 	LOG_INF("%s end\n", __func__);
 }
 
