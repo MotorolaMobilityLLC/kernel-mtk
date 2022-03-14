@@ -4681,6 +4681,12 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 	pr_notice("%s event, name:%s online:%d type:%d vbus:%d\n", __func__,
 		psy->desc->name, prop.intval, prop2.intval,
 		get_vbus(info));
+	/*icl been set to 2A when factory mode boot,for wireless,2A more than OCP(1.5A),
+		 will report OCP before wireless power transfer interrupt.here set to max
+		 current wireless chip could support when wireless cable insert.
+	*/
+	if(info->wireless_online && info->mmi.factory_mode)
+		mtk_charger_tcmd_set_usb_current((void *)info, info->data.wireless_factory_max_input_current);
 
 	_wake_up_charger(info);
 }
