@@ -66,6 +66,7 @@ module_param(mot_ov50a_xtalk_en,int, 0644);
 #define FPT_PDAF_SUPPORT 1
 #define SEAMLESS_ 1
 #define SEAMLESS_NO_USE 0
+static int remosaic_mode =0;
 static int settledebug = 0x10;
 module_param(settledebug,int, 0644);
 MODULE_PARM_DESC(settledebug, "settledebug");
@@ -204,7 +205,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 #endif
 	.mipi_settle_delay_mode = 1,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_R,
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 #ifdef CPHY_3TRIO
 	.mipi_lane_num = SENSOR_MIPI_3_LANE,//mipi lane num
@@ -217,7 +218,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 
 /* Sensor output window information */
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[17] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[8] = {
 	/* Preview*/
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* capture */
@@ -505,7 +506,7 @@ static kal_uint16 gain2reg(struct subdrv_ctx *ctx, const kal_uint32 gain)
 {
 	kal_uint16 iReg = 0x0000;
 
-	//platform 1xgain = 64, sensor driver 1*gain = 0x100
+	//remosaic maxgain = 64*BASEGAIN, other sensor maxgain=255*BASEGAIN
 	iReg = gain*256/BASEGAIN;
 	return iReg;		/* sensorGlobalGain */
 }
@@ -514,7 +515,10 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 {
 	kal_uint16 reg_gain;
 	kal_uint32 max_gain = imgsensor_info.max_gain;
-
+       if(remosaic_mode == 1)
+       {
+		max_gain = 64*BASEGAIN;
+	}
 	if (gain < imgsensor_info.min_gain || gain > max_gain) {
 		LOG_INF_N("Error gain setting\n");
 
@@ -523,7 +527,6 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 		else if (gain > max_gain)
 			gain = max_gain;
 	}
-
 	reg_gain = gain2reg(ctx, gain);
 	ctx->gain = reg_gain;
 
@@ -677,7 +680,7 @@ static void sensor_init(struct subdrv_ctx *ctx)
 static void preview_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
-
+	remosaic_mode =0;
 	LOG_INF("%s start\n", __func__);
 	_length = sizeof(addr_data_pair_preview_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
@@ -705,7 +708,8 @@ static void capture_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 {
 	int _length = 0;
 
-	LOG_INF("%s start\n", __func__);;
+	LOG_INF("%s start\n", __func__);
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_capture_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -732,6 +736,7 @@ static void normal_video_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 	int _length = 0;
 
 	LOG_INF("%s start\n", __func__);
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_video_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -759,6 +764,7 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 	int _length = 0;
 
 	LOG_INF("%s start\n", __func__);
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_hs_video_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -785,6 +791,7 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_slim_video_mot_dubai_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -812,6 +819,7 @@ static void custom1_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
+	remosaic_mode =1;
 	_length = sizeof(addr_data_pair_custom1) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -839,6 +847,7 @@ static void custom2_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom2) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -865,6 +874,7 @@ static void custom3_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom3) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -1633,6 +1643,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		case SENSOR_SCENARIO_ID_CUSTOM1:
 		case SENSOR_SCENARIO_ID_CUSTOM2:
+		case SENSOR_SCENARIO_ID_CUSTOM3:
 			*(feature_data + 1)
 			= (enum ACDK_SENSOR_OUTPUT_DATA_FORMAT_ENUM)
 				imgsensor_info.sensor_output_dataformat;
