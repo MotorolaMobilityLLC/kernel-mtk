@@ -1548,10 +1548,12 @@ void sc_select_charging_current(struct mtk_charger *info, struct charger_data *p
 	info->sc.pre_ibat =  pdata->charging_current_limit;
 
 	if (pdata->thermal_charging_current_limit != -1) {
+	#ifdef MTK_BASE
 		if (pdata->thermal_charging_current_limit <
 		    pdata->charging_current_limit)
 			pdata->charging_current_limit =
 					pdata->thermal_charging_current_limit;
+	#endif
 		info->sc.disable_in_this_plug = true;
 	} else if ((info->sc.solution == SC_REDUCE || info->sc.solution == SC_KEEP)
 		&& info->sc.sc_ibat <
