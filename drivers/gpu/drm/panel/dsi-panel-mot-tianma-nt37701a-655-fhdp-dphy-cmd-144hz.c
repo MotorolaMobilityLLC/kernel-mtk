@@ -137,17 +137,6 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 
 static void lcm_panel_init(struct lcm *ctx)
 {
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(10 * 1000, 15 * 1000);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(10 * 1000, 15 * 1000);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(10 * 1000, 15 * 1000);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(10 * 1000, 15 * 1000);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x6F, 0x06);
 	lcm_dcs_write_seq_static(ctx, 0xB5, 0x00, 0x18, 0x4F);
@@ -250,16 +239,30 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 	int i;
 
 	gpio_status = enabled ? 1:0;
-
-	for (i=0; i < 4; i++) {
-		pm_en_pin = NULL;
-		pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_HIGH);
-		if (IS_ERR(pm_en_pin)) {
-			pr_err("cannot get bias-gpios 0 %ld\n", PTR_ERR(pm_en_pin));
-			return PTR_ERR(pm_en_pin);
+	if (gpio_status) {
+		for (i=0; i < 4; i++) {
+			pm_en_pin = NULL;
+			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
+			if (IS_ERR(pm_en_pin)) {
+				pr_err("cannot get bias-gpios 0 %ld\n", PTR_ERR(pm_en_pin));
+				return PTR_ERR(pm_en_pin);
+			}
+			gpiod_set_value(pm_en_pin, gpio_status);
+			devm_gpiod_put(ctx->dev, pm_en_pin);
+			usleep_range(1000, 1001);
 		}
-		gpiod_set_value(pm_en_pin, gpio_status);
-		devm_gpiod_put(ctx->dev, pm_en_pin);
+	} else {
+		for (i=3; i >= 0; i--) {
+			pm_en_pin = NULL;
+			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
+			if (IS_ERR(pm_en_pin)) {
+				pr_err("cannot get bias-gpios 0 %ld\n", PTR_ERR(pm_en_pin));
+				return PTR_ERR(pm_en_pin);
+			}
+			gpiod_set_value(pm_en_pin, gpio_status);
+			devm_gpiod_put(ctx->dev, pm_en_pin);
+			usleep_range(1000, 1001);
+		}
 	}
 	return 0;
 }
@@ -274,11 +277,13 @@ static int lcm_unprepare(struct drm_panel *panel)
 	if (!ctx->prepared)
 		return 0;
 
-	lcm_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
 	lcm_dcs_write_seq_static(ctx, MIPI_DCS_SET_DISPLAY_OFF);
-	msleep(200);
-	lcm_dcs_write_seq_static(ctx, 0x4f, 0x01);
+	lcm_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
 	msleep(120);
+
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	gate_ic_Power_on(panel, 0);
 
@@ -297,18 +302,21 @@ static int lcm_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
-	// lcd reset H -> L -> L
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(10000, 10001);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(20);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	// end
-
 	ret = gate_ic_Power_on(panel, 1);
 	if (ret < 0 ) goto error;
+
+	// lcd reset L->H -> L -> L
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	usleep_range(11000, 11001);
+	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(1000, 1001);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	usleep_range(1000, 1001);
+	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(11000, 11001);
+	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	// end
 
 	lcm_panel_init(ctx);
 
