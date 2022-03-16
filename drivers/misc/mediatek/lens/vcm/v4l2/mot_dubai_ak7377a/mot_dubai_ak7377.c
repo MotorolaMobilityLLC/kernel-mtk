@@ -218,6 +218,11 @@ static int ak7377a_set_position(struct ak7377a_device *ak7377a, u16 val)
 	while (--retry > 0) {
 		ret = i2c_smbus_write_word_data(client, AK7377A_SET_POSITION_ADDR,
 					 swab16(val << 6));
+		/*
+		Write AF DAC value into AF drift compensation register for DW9781C,
+		MTK platform only support 10bit DAC value, OIS need 12 bit one.
+		*/
+		write_reg_16bit_value_16bit(0x7329, val<<2);
 		if (ret < 0) {
 			usleep_range(AK7377A_MOVE_DELAY_US,
 				     AK7377A_MOVE_DELAY_US + 1000);
@@ -284,6 +289,7 @@ static int ak7377a_init(struct ak7377a_device *ak7377a)
 	client->addr = DW9781_I2C_SLAVE_ADDR >> 1;
 	dw9781c_download_ois_fw();
 	ois_reset();
+	write_reg_16bit_value_16bit(0x73D4, 0x8000); //Set as tripod mode
 	write_reg_16bit_value_16bit(0x7015, 0x00);
 	read_reg_16bit_value_16bit(0x7015, &lock_ois); /* lock_ois: 0x7015 */
 	LOG_INF("Check HW lock_ois: %x\n", lock_ois);
@@ -436,11 +442,12 @@ static long ak7377a_ops_core_ioctl(struct v4l2_subdev *sd, unsigned int cmd, voi
 		int *ois_mode = arg;
 		LOG_INF("VIDIOC_MTK_S_OIS_MODE mode = %d\n",*ois_mode);
 		if (*ois_mode) {
-		    write_reg_16bit_value_16bit(0x7015, 0x00);
-		    LOG_INF("VIDIOC_MTK_S_OIS_MODE Enable\n");
+			write_reg_16bit_value_16bit(0x73D4, 0x8000); //Set as tripod mode
+			write_reg_16bit_value_16bit(0x7015, 0x00);
+			LOG_INF("VIDIOC_MTK_S_OIS_MODE Enable\n");
 		} else {
-		    write_reg_16bit_value_16bit(0x7015, 0x01);
-		    LOG_INF("VIDIOC_MTK_S_OIS_MODE Disable\n");
+			write_reg_16bit_value_16bit(0x7015, 0x01);
+			LOG_INF("VIDIOC_MTK_S_OIS_MODE Disable\n");
 		}
 	}
 	break;
