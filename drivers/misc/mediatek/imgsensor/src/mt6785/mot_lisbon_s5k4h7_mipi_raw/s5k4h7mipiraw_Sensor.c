@@ -1293,10 +1293,10 @@ static calibration_status_t s5k4h7qt_check_manufacturing_data(void *data)
 	if(((eeprom->basic_info_flag1>>6)&0x03) == VALID_FLAG){
 		crc_start = &eeprom->basic_info_flag1;
 		basic_info_group = &eeprom->basic_info_group1;
-	}else if(((eeprom->basic_info_flag1>>6)&0x03) == VALID_FLAG){
+	}else if(((eeprom->basic_info_flag2>>6)&0x03) == VALID_FLAG){
 		crc_start = &eeprom->basic_info_flag2;
 		basic_info_group = &eeprom->basic_info_group2;
-	}else if(((eeprom->basic_info_flag1>>6)&0x03) == VALID_FLAG){
+	}else if(((eeprom->basic_info_flag3>>6)&0x03) == VALID_FLAG){
 		crc_start = &eeprom->basic_info_flag3;
 		basic_info_group = &eeprom->basic_info_group3;
 	}else{
