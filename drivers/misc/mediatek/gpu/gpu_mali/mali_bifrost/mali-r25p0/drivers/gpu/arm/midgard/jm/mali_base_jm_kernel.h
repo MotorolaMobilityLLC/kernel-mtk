@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2020 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2022 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -1040,8 +1040,9 @@ enum base_jd_event_code {
 /**
  * struct base_jd_event_v2 - Event reporting structure
  *
- * @event_code:  event code.
+ * @event_code:  event code of type @ref base_jd_event_code.
  * @atom_number: the atom number that has completed.
+ * @padding:     padding.
  * @udata:       user data.
  *
  * This structure is used by the kernel driver to report information
@@ -1052,8 +1053,9 @@ enum base_jd_event_code {
  * by ANDing with BASE_JD_SW_EVENT_TYPE_MASK.
  */
 struct base_jd_event_v2 {
-	enum base_jd_event_code event_code;
+	__u32 event_code;
 	base_atom_id atom_number;
+	__u8 padding[3];
 	struct base_jd_udata udata;
 };
 
