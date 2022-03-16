@@ -59,7 +59,7 @@
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO166__FUNC_GPIO166>;
 			slew-rate = <1>;
-			output-high;
+			output-low;
 		};
 	};
 
@@ -73,15 +73,15 @@
 
 	mtkfb_pins_oled_avdd_en0: oled_dvdd_en0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			pinmux = <PINMUX_GPIO103__FUNC_GPIO103>;
 			slew-rate = <1>;
-			output-high;
+			output-low;
 		};
 	};
 
 	mtkfb_pins_oled_avdd_en1: oled_dvdd_en1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO103__FUNC_GPIO103>;
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -111,10 +111,10 @@
 		/delete-property/gate-ic;
 
 		compatible = "tianma,nt37701,cmd,144hz";
-		reg = <1>;
-		pm-enable-gpios = <&pio 103 0>,
+		reg = <2>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 103 0>,
                           <&pio 165 0>,
-                          <&pio 164 0>,
                           <&pio 166 0>;
 		reset-gpios = <&pio 97 0>;
 		pinctrl-names = "default";
@@ -132,10 +132,10 @@
 		/delete-property/gate-ic;
 
 		compatible = "tianma,nt37701,cmd,144hz";
-		reg = <2>;
-		pm-enable-gpios = <&pio 103 0>,
+		reg = <1>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 103 0>,
                           <&pio 165 0>,
-                          <&pio 164 0>,
                           <&pio 166 0>;
 		reset-gpios = <&pio 97 0>;
 		pinctrl-names = "default";
