@@ -310,12 +310,13 @@ static int _wlc_is_algo_ready(struct chg_alg_device *alg)
 	return ret_value;
 }
 
+#define VBUS_DEFAULT_MV 5000
 static int wlc_sc_set_charger(struct chg_alg_device *alg)
 {
 	struct mtk_wlc *wlc;
 	int ichg1_min = -1, aicr1_min = -1;
 	int ret;
-	int charging_current, input_current;
+	int charging_current, input_current, vbus, input_thermal_limit;
 
 	wlc = dev_get_drvdata(&alg->dev);
 
@@ -327,10 +328,11 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 	mutex_lock(&wlc->data_lock);
 
 	input_current = wlc->wireless_charger_max_input_current;
+	vbus = VBUS_DEFAULT_MV;
 	charging_current = wlc->wireless_charger_max_current;
 
 	if(NULL != wls_chg_ops)
-		wls_chg_ops->wls_current_select(&input_current);
+		wls_chg_ops->wls_current_select(&input_current, &vbus);
 
 	if (wlc->charging_current_limit1 != -1) {
 		if (wlc->charging_current_limit1 < charging_current)
@@ -339,22 +341,31 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 		if (ret != -EOPNOTSUPP &&
 		    wlc->charging_current_limit1 < ichg1_min)
 			wlc->charging_current1 = 0;
-	} else
-		wlc->charging_current1 = charging_current;
 
+		input_thermal_limit = wlc->charging_current_limit1 / 1000;
+		input_thermal_limit *= VBUS_DEFAULT_MV;
+		input_thermal_limit /= vbus;
+		input_thermal_limit *= 1000;
+	} else {
+		wlc->charging_current1 = charging_current;
+		input_thermal_limit = -1;
+	}
 	wlc->charging_current1 = wlc->charging_current1 < wlc->mmi_fcc ?
 					       wlc->charging_current1 :
 					       wlc->mmi_fcc;
 
-	if (wlc->input_current_limit1 != -1 &&
-	    wlc->input_current_limit1 < input_current) {
-		wlc->input_current1 = input_current;
+
+	if (input_thermal_limit != -1 &&
+	    input_thermal_limit < input_current) {
+		wlc->input_current1 = input_thermal_limit;
 		ret = wlc_hal_get_min_input_current(alg, CHG1, &aicr1_min);
-		if (ret != -EOPNOTSUPP && wlc->input_current_limit1 < aicr1_min)
+		if (ret != -EOPNOTSUPP && input_thermal_limit < aicr1_min)
 			wlc->input_current1 = 0;
 	} else
 		wlc->input_current1 = input_current;
 
+	wlc_info("%s input current = %d:%d:%d:%d, vout = %d\n", __func__, wlc->input_current1,
+			input_current, input_thermal_limit, wlc->charging_current_limit1, vbus);
 	mutex_unlock(&wlc->data_lock);
 
 	if (wlc->input_current1 == 0 || wlc->charging_current1 == 0) {
