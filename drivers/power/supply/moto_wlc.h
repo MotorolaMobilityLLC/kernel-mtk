@@ -102,7 +102,7 @@ struct mtk_wlc {
 };
 struct moto_wls_chg_ops {
 	void *data;
-	void (*wls_current_select)(int  *icl);
+	void (*wls_current_select)(int  *icl, int *vbus);
 };
 
 extern int wlc_hal_init_hardware(struct chg_alg_device *alg);
