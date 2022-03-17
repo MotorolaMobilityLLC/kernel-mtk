@@ -23,6 +23,10 @@ enum {
 #define ufshcd_eh_in_progress(h) \
 	((h)->eh_flags & UFSHCD_EH_IN_PROGRESS)
 
+#if defined(CONFIG_SCSI_SKHID)
+#include "ufs-manual-gc.h"
+#endif
+
 /*
  * Vendor specific UFSHCI Registers
  */
@@ -245,6 +249,11 @@ struct ufs_mtk_host {
 	struct semaphore rpmb_sem;
 #if defined(CONFIG_UFSFEATURE)
 	struct ufsf_feature ufsf;
+#endif
+#if defined(CONFIG_SCSI_SKHID)
+	struct work_struct update_sysfs_work;
+	/* manual_gc */
+	struct ufs_manual_gc manual_gc;
 #endif
 };
 

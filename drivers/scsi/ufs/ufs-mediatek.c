@@ -1687,6 +1687,14 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	get_storage_info(hba);
 	get_dram_info(hba);
 #endif
+#if defined(CONFIG_SCSI_SKHID)
+	if (IS_SKHYNIX_DEVICE(storage_mfrid)) {
+		err = pixel_init(hba);
+		if (err)
+			return err;
+		pixel_init_manual_gc(hba);
+	}
+#endif
 
 	/* Instantiate Motorola crypto capabilities for wrapped keys.
 	 * It is controlled by CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT.
