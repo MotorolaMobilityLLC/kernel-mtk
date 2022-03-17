@@ -95,7 +95,7 @@
     /*swchg + 1CP*/
     charger_configuration= <3>;
     wireless_factory_max_current = <3000000>;
-    wireless_factory_max_input_current = <1250000>;
+    wireless_factory_max_input_current = <1150000>;
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
@@ -311,7 +311,7 @@
 	compatible = "moto,charger,wlc";
 	min_charger_voltage = <4600000>;
 	wlc_max_charger_current = <3150000>;
-	wlc_max_input_current = <1250000>;
+	wlc_max_input_current = <1150000>;
 	mmi,wls_control_en = <&pio 114 0x0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmi_control_wls_default>;
