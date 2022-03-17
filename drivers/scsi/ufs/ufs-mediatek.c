@@ -72,6 +72,31 @@ static int ufs_abort_aee_count;
 #define ufshcd_eh_in_progress(h) \
 	((h)->eh_flags & UFSHCD_EH_IN_PROGRESS)
 
+#if defined(CONFIG_UFSFEATURE)
+struct mmi_storage_info {
+        char type[16];  /* UFS or eMMC */
+        char size[16];  /* size in GB */
+        char card_manufacturer[32];
+        char product_name[32];  /* model ID */
+        char firmware_version[32];
+};
+
+struct mmi_ddr_info{
+        unsigned int mr5;
+        unsigned int mr6;
+        unsigned int mr7;
+        unsigned int mr8;
+        unsigned int type;
+        unsigned int ramsize;
+};
+
+static int get_dram_info(struct ufs_hba *hba);
+static int get_storage_info(struct ufs_hba *hba);
+
+unsigned int ram_size;
+char storage_mfrid[32];
+#endif
+
 static struct ufs_dev_fix ufs_mtk_dev_fixups[] = {
 	UFS_FIX(UFS_ANY_VENDOR, UFS_ANY_MODEL,
 		UFS_DEVICE_QUIRK_DELAY_BEFORE_LPM | UFS_DEVICE_QUIRK_DELAY_AFTER_LPM),
@@ -1658,6 +1683,10 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_mphy_power_on(hba, true);
 	ufs_mtk_setup_clocks(hba, true, POST_CHANGE);
 
+#if defined(CONFIG_UFSFEATURE)
+	get_storage_info(hba);
+	get_dram_info(hba);
+#endif
 
 	/* Instantiate Motorola crypto capabilities for wrapped keys.
 	 * It is controlled by CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT.
@@ -2602,6 +2631,80 @@ static struct platform_driver ufs_mtk_pltform = {
 		.of_match_table = ufs_mtk_of_match,
 	},
 };
+
+#if defined(CONFIG_UFSFEATURE)
+static int get_storage_info(struct ufs_hba *hba)
+{
+    int ret = 0;
+    struct property *p;
+    struct device_node *n;
+    struct mmi_storage_info *info;
+
+    n = of_find_node_by_path("/chosen/mmi,storage");
+    if (n == NULL) {
+        ret = 1;
+        goto err;
+    }
+
+    info = kzalloc(sizeof(struct mmi_storage_info), GFP_KERNEL);
+    if (!info) {
+        dev_err(hba->dev,"%s: failed to allocate space for mmi_storage_info\n",
+           __func__);
+        ret = 1;
+        goto err;
+    }
+
+    for_each_property_of_node(n, p) {
+        if (!strcmp(p->name, "type") && p->value)
+            strlcpy(info->type, (char *)p->value, sizeof(info->type));
+        if (!strcmp(p->name, "size") && p->value)
+            strlcpy(info->size, (char *)p->value, sizeof(info->size));
+        if (!strcmp(p->name, "manufacturer") && p->value)
+            strlcpy(info->card_manufacturer, (char *)p->value, sizeof(info->card_manufacturer));
+        if (!strcmp(p->name, "product") && p->value)
+            strlcpy(info->product_name, (char *)p->value, sizeof(info->product_name));
+        if (!strcmp(p->name, "firmware") && p->value)
+            strlcpy(info->firmware_version, (char *)p->value, sizeof(info->firmware_version));
+    }
+
+    of_node_put(n);
+
+    dev_info(hba->dev, "manufacturer parsed from choosen is %s\n",info->card_manufacturer);
+    strncpy(storage_mfrid, info->card_manufacturer, sizeof(info->card_manufacturer));
+err:
+        return ret;
+}
+
+static int get_dram_info(struct ufs_hba *hba)
+{
+         int ret = -1;
+         struct device_node *n;
+         struct mmi_ddr_info *ddr_info;
+
+		ddr_info = kzalloc(sizeof(struct mmi_ddr_info), GFP_KERNEL);
+        if (!ddr_info) {
+                pr_err("%s: failed to allocate space for mmi_ddr_info\n", __func__);
+                goto err;
+        }
+
+        n = of_find_node_by_path("/chosen/mmi,ram");
+       if (n != NULL) {
+               of_property_read_u32(n, "mr5", &ddr_info->mr5);
+                of_property_read_u32(n, "mr6", &ddr_info->mr6);
+                of_property_read_u32(n, "mr7", &ddr_info->mr7);
+                of_property_read_u32(n, "mr8", &ddr_info->mr8);
+                of_property_read_u32(n, "type", &ddr_info->type);
+                of_property_read_u32(n, "ramsize", &ddr_info->ramsize);
+                of_node_put(n);
+        }
+
+        ram_size = (ddr_info->ramsize / 1024);
+        dev_info(hba->dev, "ram_size parsed from chosen is %d\n",ram_size);
+        return ram_size;
+err:
+        return ret;
+}
+#endif
 
 MODULE_AUTHOR("Stanley Chu <stanley.chu@mediatek.com>");
 MODULE_AUTHOR("Peter Wang <peter.wang@mediatek.com>");
