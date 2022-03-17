@@ -12,7 +12,7 @@
 #define WLC_V_CHARGER_MIN 4600000 /* 4.6 V */
 /*wireless input current and charging current*/
 #define WIRELESS_CHARGER_MAX_CURRENT			3000000
-#define WIRELESS_CHARGER_MAX_INPUT_CURRENT		1250000
+#define WIRELESS_CHARGER_MAX_INPUT_CURRENT		1150000
 #define DISABLE_VBAT_THRESHOLD -1
 #define ECABLEOUT	1	/* cable out */
 #define EHAL		2	/* hal operation error */
