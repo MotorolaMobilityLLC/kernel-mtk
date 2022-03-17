@@ -73,6 +73,15 @@ enum {
 #define VS_SAVEPOWERCONTROL         0xD0A6
 #define VS_UNIPROPOWERDOWNCONTROL   0xD0A8
 
+#if defined(CONFIG_UFSFEATURE)
+extern unsigned int ram_size;
+extern char storage_mfrid[32];
+#define IS_SAMSUNG_DEVICE(mfrid)   (0 == strcmp(mfrid,"SAMSUNG"))
+#define IS_SKHYNIX_DEVICE(mfrid)   (0 == strcmp(mfrid,"SKHYNIX"))
+#define IS_MICRON_DEVICE(mfrid)   (0 == strcmp(mfrid,"MICRON"))
+#define IS_RAM_SIZE_GREATER_THAN_4G(ram_size) (ram_size > 4)
+#endif
+
 /*
  * Vendor specific link state
  */
