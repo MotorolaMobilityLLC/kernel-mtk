@@ -63,7 +63,7 @@ struct charger_data;
 #define CHARGING_HOST_CHARGER_CURRENT		650000
 /*wireless input current and charging current*/
 #define WIRELESS_FACTORY_MAX_CURRENT			3000000
-#define WIRELESS_FACTORY_MAX_INPUT_CURRENT		1250000
+#define WIRELESS_FACTORY_MAX_INPUT_CURRENT		1150000
 
 /* dynamic mivr */
 #define V_CHARGER_MIN_1 4400000 /* 4.4 V */
