@@ -14,5 +14,6 @@ ufs-mediatek-mod-$(CONFIG_UFSFEATURE) += ufsfeature.o ufsfeature-mimic.o
 ufs-mediatek-mod-$(CONFIG_UFSSHPB) += ufsshpb.o
 ufs-mediatek-mod-$(CONFIG_UFSTW) += ufstw.o
 ufs-mediatek-mod-$(CONFIG_UFSHID) += ufshid.o
+ufs-mediatek-mod-$(CONFIG_SCSI_SKHID) += ufs-manual-gc.o
 ufs-mediatek-mod-$(CONFIG_UFSRINGBUF) += ufsringbuf.o
 ufs-mediatek-mod-$(CONFIG_FSCRYPT_WRAPED_KEY_MODE_SUPPORT) += ../ufshcd-moto-crypto.o
