@@ -84,18 +84,19 @@
 };
 
 &charger {
-    battery_cv = <4480000>;
-    max_charger_voltage = <14500000>;
-    ac_charger_current = <3000000>;
-    usb_charger_current = <500000>;
-    ac_charger_input_current = <1500000>;
-    charging_host_charger_current = <1500000>;
-    /*pe5 && pdc && pe2 && wlc*/
-    fast_charging_indicator = <0x36>;
-    /*swchg + 1CP*/
-    charger_configuration= <3>;
-    wireless_factory_max_current = <3000000>;
-    wireless_factory_max_input_current = <1150000>;
+	battery_cv = <4480000>;
+	max_charger_voltage = <14500000>;
+	ac_charger_current = <3000000>;
+	usb_charger_current = <500000>;
+	ac_charger_input_current = <1500000>;
+	charging_host_charger_current = <1500000>;
+	/*pe5 && pdc && pe2 && wlc*/
+	fast_charging_indicator = <0x36>;
+	/*swchg + 1CP*/
+	charger_configuration= <3>;
+	wireless_factory_max_current = <3000000>;
+	wireless_factory_max_input_current = <1150000>;
+	enable_dynamic_mivr;
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
