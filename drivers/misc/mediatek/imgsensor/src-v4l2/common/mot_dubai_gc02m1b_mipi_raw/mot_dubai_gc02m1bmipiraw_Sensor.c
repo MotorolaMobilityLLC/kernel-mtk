@@ -751,6 +751,7 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 
 #ifdef EEPROM_READY
 #define GC02M1B_VAILD_DATA_SIZE 8
+#define GRP_FLAG_IN_ARR 0
 
 #define MODULE_GROUP_FLAG_ADDR 0x78
 #define MODULE_GROUP1_START_ADDR 0x80
@@ -791,6 +792,7 @@ static void read_gc02m1b_module_info(struct subdrv_ctx *ctx)
 	write_cmos_sensor(ctx, 0xf3, 0x34); //otp read pulse
 	otp_grp_flag = read_cmos_sensor(ctx, 0x19); //read value
 	LOG_INF_N("otp_grp_flag = 0x%x\n", otp_grp_flag);
+	gc02m1b_data_eeprom[GRP_FLAG_IN_ARR] = otp_grp_flag;
 
 	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
 		start_addr = MODULE_GROUP1_START_ADDR;
