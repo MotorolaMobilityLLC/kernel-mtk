@@ -41,7 +41,7 @@ static const char irq_name[][16] = {
 	"swtp-eint",
 	"swtp1-eint",
 	"swtp2-eint",
-#ifdef SAIPAN_SWTP_CONFIG
+#if defined(SAIPAN_SWTP_CONFIG) || defined(KYOTO_SWTP_CUST)
 	"swtp3-eint"
 #endif
 };
@@ -146,6 +146,24 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 			"wttest14-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[2]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[2]);
         CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"wttest15-swtp-%s>>tx_power_mode = %d,swtp->gpio_state[3]=%d\n", __func__,swtp->tx_power_mode,swtp->gpio_state[3]);
+
+#ifdef KYOTO_SWTP_CUST
+	// modify by wt.changtingting for swtp start
+	/* show gpio state */
+	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
+		swtp->tx_power_mode = SWTP_DO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_DO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant0=%d, Ant1=%d, Ant5=%d, Ant4=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
+	} else {
+		swtp->tx_power_mode = SWTP_NO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_NO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant0=%d, Ant1=%d, Ant5=%d, Ant4=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
+	}
+    // modify by wt.changtingting for swtp end
+#endif
+
 #ifdef SAIPAN_SWTP_CONFIG
        if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT))
        {
