@@ -51,11 +51,21 @@ enum {
 	CHARGER_IC_ETA6953,	//PN:0010
 	CHARGER_IC_SY6974,	//PN:1001
 	CHARGER_IC_SGM41542,	//PN:1101
+	CHARGER_IC_SGM41513,  //PN:0000
 
 };
 static int charger_ic_type = CHARGER_IC_UNKNOWN;
 //-bug 589756,yaocankun,20201014,add,add charger info
 
+static const unsigned int IPRECHG_CURRENT_STABLE[] = {
+	5, 10, 15, 20, 30, 40, 50, 60,
+	80, 100, 120, 140, 160, 180, 200, 240
+};
+
+static const unsigned int ITERM_CURRENT_STABLE[] = {
+	5, 10, 15, 20, 30, 40, 50, 60,
+	80, 100, 120, 140, 160, 180, 200, 240
+};
 
 enum {
 	PN_BQ25600,
@@ -243,10 +253,33 @@ int bq2560x_set_chargecurrent(struct bq2560x *bq, int curr)
 {
 	u8 ichg;
 
-	if (curr < REG02_ICHG_BASE)
-		curr = REG02_ICHG_BASE;
+	if (bq->part_no == 0x0) {
+		if (curr < SGM4154x_ICHRG_I_MIN_uA)
+			curr = SGM4154x_ICHRG_I_MIN_uA;
+		else if ( curr > SGM4154x_ICHRG_I_MAX_uA)
+			curr = SGM4154x_ICHRG_I_MAX_uA;
+		if (curr <= 40)
+			ichg = curr / 5;
+		else if (curr <= 110)
+			ichg = 0x08 + (curr -40) / 10;
+		else if (curr <= 270)
+			ichg = 0x0F + (curr -110) / 20;
+		else if (curr <= 540)
+			ichg = 0x17 + (curr -270) / 30;
+		else if (curr <= 1500)
+			ichg = 0x20 + (curr -540) / 60;
+		else if (curr <= 2940)
+			ichg = 0x30 + (curr -1500) / 120;
+		else
+			ichg = 0x3d;
+	} else {
+		if (curr < REG02_ICHG_BASE)
+			curr = REG02_ICHG_BASE;
 
-	ichg = (curr - REG02_ICHG_BASE) / REG02_ICHG_LSB;
+		ichg = (curr - REG02_ICHG_BASE) / REG02_ICHG_LSB;
+	}
+
+	pr_err("bq2560x_set_chargecurrent : the curr is %d, the val is 0x%.2x \n", curr, ichg);
 	return bq2560x_update_bits(bq, BQ2560X_REG_02, REG02_ICHG_MASK,
 				   ichg << REG02_ICHG_SHIFT);
 
@@ -256,11 +289,18 @@ int bq2560x_set_term_current(struct bq2560x *bq, int curr)
 {
 	u8 iterm;
 
-	if (curr < REG03_ITERM_BASE)
-		curr = REG03_ITERM_BASE;
+	if (bq->part_no == 0x0) {
+		//sgm41513 the iterm range is 5ma-240ma, 5/10/20/40ma steps
+		for(iterm = 1; iterm < 16 && curr >= ITERM_CURRENT_STABLE[iterm]; iterm++)
+			;
+		iterm--;
+	} else {
+		if (curr < REG03_ITERM_BASE)
+			curr = REG03_ITERM_BASE;
+		iterm = (curr - REG03_ITERM_BASE) / REG03_ITERM_LSB;
+	}
 
-	iterm = (curr - REG03_ITERM_BASE) / REG03_ITERM_LSB;
-
+	pr_err(" bq2560x_set_term_current : the curr is %d, the val is 0x%.2x \n ", curr, iterm);
 	return bq2560x_update_bits(bq, BQ2560X_REG_03, REG03_ITERM_MASK,
 				   iterm << REG03_ITERM_SHIFT);
 }
@@ -270,11 +310,17 @@ int bq2560x_set_prechg_current(struct bq2560x *bq, int curr)
 {
 	u8 iprechg;
 
-	if (curr < REG03_IPRECHG_BASE)
-		curr = REG03_IPRECHG_BASE;
-
-	iprechg = (curr - REG03_IPRECHG_BASE) / REG03_IPRECHG_LSB;
-
+	if (bq->part_no == 0x0) {
+		//sgm41513 the iprechg range is 5ma-240ma, 5/10/20/40ma steps
+		for(iprechg = 1; iprechg < 16 && curr >= IPRECHG_CURRENT_STABLE[iprechg]; iprechg++)
+			;
+		iprechg--;
+	} else {
+		if (curr < REG03_IPRECHG_BASE)
+			curr = REG03_IPRECHG_BASE;
+		iprechg = (curr - REG03_IPRECHG_BASE) / REG03_IPRECHG_LSB;
+	}
+	pr_err(" bq2560x_set_prechg_current : the curr is %d, the val is 0x%.2x \n ", curr, iprechg);
 	return bq2560x_update_bits(bq, BQ2560X_REG_03, REG03_IPRECHG_MASK,
 				   iprechg << REG03_IPRECHG_SHIFT);
 }
@@ -870,6 +916,13 @@ static int bq2560x_detect_device(struct bq2560x *bq)
 			pr_err("Found: charger ic SGM41542\n");
 		break;
 
+		case 0x0:
+
+			charger_ic_type = CHARGER_IC_SGM41513;
+			pr_err("Found charger ic SGM41513\n");
+
+		break;
+
 		default:
 			charger_ic_type = CHARGER_IC_ETA6953;
 			pr_err("Unknow charger ic, set it to ETA6953\n");
@@ -1144,9 +1197,27 @@ static int bq2560x_get_ichg(struct charger_device *chg_dev, u32 *curr)
 
 	ret = bq2560x_read_byte(bq, BQ2560X_REG_02, &reg_val);
 	if (!ret) {
-		ichg = (reg_val & REG02_ICHG_MASK) >> REG02_ICHG_SHIFT;
-		ichg = ichg * REG02_ICHG_LSB + REG02_ICHG_BASE;
-		*curr = ichg * 1000;
+		if (bq->part_no == 0x0) {
+			ichg = reg_val & REG02_ICHG_MASK;
+			if (ichg <= 0x8)
+				*curr = ichg * 5000;
+			else if (ichg <= 0xF)
+				*curr = 40000 + (ichg - 0x8) * 10000;
+			else if (ichg <= 0x17)
+				*curr = 110000 + (ichg - 0xF) * 20000;
+			else if (ichg <= 0x20)
+				*curr = 270000 + (ichg - 0x17) * 30000;
+			else if (ichg <= 0x30)
+				*curr = 540000 + (ichg - 0x20) * 60000;
+			else if (ichg <= 0x3C)
+				*curr = 1500000 + (ichg - 0x30) * 120000;
+			else
+				*curr = 3000000;
+		} else {
+			ichg = (reg_val & REG02_ICHG_MASK) >> REG02_ICHG_SHIFT;
+			ichg = ichg * REG02_ICHG_LSB + REG02_ICHG_BASE;
+			*curr = ichg * 1000;
+		}
 	}
 
 	return ret;
