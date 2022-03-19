@@ -300,6 +300,9 @@
 #define REG0B_DEV_REV_MASK        	0x03
 #define REG0B_DEV_REV_SHIFT       	0
 
+#define SGM4154x_ICHRG_I_MIN_uA			0
+#define SGM4154x_ICHRG_I_MAX_uA			3000
+
 /* Register 0x0C */
 #define	BQ2560X_REG_0C			0x0C
 #define	REG0C_DEVICE_DEFAULT		0X00
