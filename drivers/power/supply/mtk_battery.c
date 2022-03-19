@@ -513,8 +513,17 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 							       "extern_charger_3rd");
 			if (IS_ERR_OR_NULL(extern_charger)) {
 				bm_err("%s Couldn't get extern_charger_3rd SGM41542\n", __func__);
-				ret = power_supply_get_property(chg_psy,
+				extern_charger = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
+												"extern_charger_sgm41513");
+				if (IS_ERR_OR_NULL(extern_charger)) {
+					bm_err("%s Couldn't get extern_charger_sgm41513\n", __func__);
+					ret = power_supply_get_property(chg_psy,
 						POWER_SUPPLY_PROP_STATUS, &status);
+				} else {
+					bm_err("found the extern_charger_sgm41513\n");
+					ret = power_supply_get_property(extern_charger,
+						POWER_SUPPLY_PROP_STATUS, &status);
+				}
 			} else {
 				bm_err("%s Found get extern_charger_3rd SGM41542\n", __func__);
 				ret = power_supply_get_property(extern_charger,
