@@ -64,6 +64,9 @@ kal_uint16 addr_data_pair_custom2[] = {
 kal_uint16 addr_data_pair_custom3[] = {
 #include"setting/OV50A40_1280x720_4C1SCG_10bit_240fps_AG255_20220118.h"
 };
+kal_uint16 addr_data_pair_custom4[] = {
+#include"setting/OV50A40_4096x3072_Cropping_10bit_30fps_AG64_PDVC1_2048x768_20220316.h"
+};
 #ifdef SEAMLESS_SWITCH_V2
 kal_uint16 addr_data_pair_seamless_switch_step1_mot_dubai_ov50a2q[] = {
 	//group 0
