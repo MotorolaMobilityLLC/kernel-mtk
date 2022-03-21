@@ -1190,6 +1190,8 @@ static void cmdq_task_release_buffer(struct cmdqRecStruct *handle)
 
 s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 {
+	int i = 0;
+
 	if (!handle)
 		return -EFAULT;
 
@@ -1223,6 +1225,9 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	handle->durRelease = 0;
 	handle->prepare = cmdq_task_prepare;
 	handle->unprepare = cmdq_task_unprepare;
+
+	for (i = 0; i < ARRAY_SIZE(handle->slot_ids); i++)
+		handle->slot_ids[i] = -1;
 
 	/* store caller info for debug */
 	if (current) {
