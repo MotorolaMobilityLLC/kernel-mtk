@@ -156,6 +156,9 @@
 #define DUMP_VCORE_VOLTAGE (0)
 #endif
 #define LVTS_VALID_DATA_TIME_PROFILING (0)
+
+
+#define CFG_THERMAL_KERNEL_IGNORE_HOT_SENSOR (0)
 /*=============================================================
  *REG ACCESS
  *=============================================================

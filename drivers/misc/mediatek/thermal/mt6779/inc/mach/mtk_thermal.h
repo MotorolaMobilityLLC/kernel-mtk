@@ -86,7 +86,7 @@ struct mt_gpufreq_power_table_info {
 #endif
 
 extern int mtktscpu_limited_dmips;
-
+extern int tscpu_get_temperature_range(void);
 /* Valid if it returns 1, invalid if it returns 0. */
 extern int tscpu_is_temp_valid(void);
 
