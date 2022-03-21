@@ -164,6 +164,7 @@ static int venc_encode_frame(struct venc_inst *inst,
 		inst->vsi->venc.roimap = frm_buf->roimap;
 
 		mtk_vcodec_debug(inst, "ROI: 0x%X", inst->vsi->venc.roimap);
+		mtk_vcodec_debug(inst, "QP: 0x%X", inst->vsi->venc.qpmap);
 	}
 	ret = vcu_enc_encode(&inst->vcu_inst, VENC_BS_MODE_FRAME, frm_buf,
 						 bs_buf, bs_size);

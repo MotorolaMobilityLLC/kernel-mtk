@@ -557,7 +557,11 @@ int vcu_enc_encode(struct venc_vcu_inst *vcu, unsigned int bs_mode,
 			vsi->meta_addr = 0;
 		}
 
-		mtk_vcodec_debug(vcu, " num_planes = %d input (dmabuf:%lx fd:%d), meta fd %d size %d %llx",
+		if (frm_buf->qpmap != 0) {
+			out.qpmap = frm_buf->qpmap;
+		}
+
+		mtk_vcodec_debug(vcu, " num_planes = %d input (dmabuf:%lx fd:%x), metafd %x metasize %d %llx",
 			frm_buf->num_planes,
 			(unsigned long)frm_buf->fb_addr[0].dmabuf,
 			out.input_fd[0], vsi->meta_fd, vsi->meta_size,

@@ -327,6 +327,7 @@ struct venc_frm_buf {
 	u64 timestamp;
 	unsigned int roimap;
 	bool has_meta;
+	unsigned int qpmap;
 	struct dma_buf *meta_dma;
 	dma_addr_t meta_addr;
 };

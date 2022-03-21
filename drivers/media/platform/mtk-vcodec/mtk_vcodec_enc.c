@@ -1515,6 +1515,12 @@ static int vidioc_venc_qbuf(struct file *file, void *priv,
 		mtk_v4l2_debug(1, "[%d] Have HDR info meta fd, buf->index:%d. mtkbuf:%p, fd:%u",
 			ctx->id, buf->index, mtkbuf, buf->reserved);
 	}
+	if (buf->flags & V4L2_BUF_FLAG_QP_META && buf->reserved != 0) {
+		mtk_v4l2_debug(1, "[%d] Have QP info meta fd, buf->index:%d. mtkbuf:%p, pa:0x%x",
+			ctx->id, buf->index, mtkbuf, buf->reserved);
+		mtkbuf->qpmap = buf->reserved;
+		mtkbuf->frm_buf.qpmap = buf->reserved;
+	}
 
 	return v4l2_m2m_qbuf(file, ctx->m2m_ctx, buf);
 }
@@ -2552,6 +2558,10 @@ static void mtk_venc_worker(struct work_struct *work)
 			src_buf->planes[2].data_offset);
 
 	pfrm_buf->roimap = src_buf_info->roimap;
+	pfrm_buf->has_meta = src_buf_info->has_meta;
+	pfrm_buf->qpmap = src_buf_info->qpmap;
+	pfrm_buf->meta_dma = src_buf_info->meta_dma;
+
 	ret = venc_if_encode(ctx, VENC_START_OPT_ENCODE_FRAME,
 				 pfrm_buf, pbs_buf, &enc_result);
 	if (ret) {
