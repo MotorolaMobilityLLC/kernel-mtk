@@ -739,6 +739,8 @@ struct ion_handle *__ion_alloc(struct ion_client *client, size_t len,
 	mutex_lock(&client->lock);
 	ret = ion_handle_add(client, handle);
 	ion_client_buf_add(heap, client, len);
+	if (!ret && grab_handle)
+		ion_handle_get(handle);
 	mutex_unlock(&client->lock);
 	end = sched_clock();
 	if (ret) {
