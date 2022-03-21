@@ -33,9 +33,7 @@ else ifneq (,$(filter $(platform),mt6758 mt6763))
     obj-y += 1.1/
 else ifneq (,$(filter $(platform),mt6765 mt6768)) #copy 1.2 from 1.1 for sensor decouple
     obj-y += 1.2/
-else ifneq (,$(filter $(platform),mt6771))
-    obj-y += 2.0-mt6771/
-else ifneq (,$(filter $(platform),mt6775 mt6785))
+else ifneq (,$(filter $(platform),mt6771 mt6775 mt6785))
     obj-y += 2.0/
 else ifneq (,$(filter $(platform),mt6779))
     obj-y += 2.1/
