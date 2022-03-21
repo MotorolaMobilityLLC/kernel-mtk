@@ -1233,6 +1233,7 @@ static void ndisc_router_discovery(struct sk_buff *skb)
 
 	if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
 	     sysctl_optr == MTK_IPV6_ATT_ALL ||
+         sysctl_optr == MTK_IPV6_TMO_ALL ||
 	     sysctl_optr == MTK_IPV6_EX_RS_INTERVAL) &&
 	    (strncmp(in6_dev->dev->name, "ccmni", 2) == 0)) {
 		/*add for VzW feature : remove IF_RS_VZW_SENT flag*/
