@@ -810,7 +810,6 @@ static ssize_t ssmr_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return ret;
 }
 
-#ifdef CONFIG_MTK_ENG_BUILD
 static ssize_t ssmr_store(struct kobject *kobj, struct kobj_attribute *attr,
 				const char *cmd, size_t count)
 {
@@ -887,7 +886,6 @@ static int memory_ssmr_sysfs_init(void)
 	return 0;
 }
 #endif /* end of CONFIG_SYSFS */
-#endif
 
 int ssmr_probe(struct platform_device *pdev)
 {
@@ -919,10 +917,8 @@ int ssmr_probe(struct platform_device *pdev)
 	}
 
 	/* ssmr sys file init */
-#ifdef CONFIG_MTK_ENG_BUILD
 #if IS_ENABLED(CONFIG_SYSFS)
 	memory_ssmr_sysfs_init();
-#endif
 #endif
 
 	get_reserved_cma_memory(&pdev->dev);
