@@ -1077,7 +1077,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		struct IMGSENSOR_SENSOR_LIST *psensor_list =
 			(struct IMGSENSOR_SENSOR_LIST *)pFeaturePara;
 
-		if (FeatureParaLen < 1 * sizeof(struct IMGSENSOR_SENSOR_LIST)) {
+		if (FeatureParaLen < 4 * sizeof(unsigned long long)) {
 			PK_DBG("FeatureParaLen is too small %d\n", FeatureParaLen);
 			kfree(pFeaturePara);
 			return -EINVAL;
