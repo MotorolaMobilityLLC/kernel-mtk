@@ -47,6 +47,9 @@ struct route_info {
 /* Use to control all ATT feature*/
 #define MTK_IPV6_ATT_ALL        0x0007
 
+/* Use to control all TMO feature*/
+#define MTK_IPV6_TMO_ALL        0x0008
+
 /* Use to control vzw feature except for
  * the fixed rs interval time of 4 seconds
  */
