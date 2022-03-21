@@ -328,6 +328,7 @@ static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 
 	if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
 	     sysctl_optr == MTK_IPV6_ATT_ALL ||
+	     sysctl_optr == MTK_IPV6_TMO_ALL ||
 	     sysctl_optr == MTK_IPV6_EX_RS_INTERVAL) &&
 	    (strncmp(idev->dev->name, "ccmni", 2) == 0)) {
 		/*This ifi_flags refers to the dev flag in kernel,
@@ -3975,7 +3976,8 @@ static void addrconf_rs_timer(struct timer_list *t)
 		write_lock(&idev->lock);
 
 		if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
-		     sysctl_optr == MTK_IPV6_ATT_ALL) &&
+		     sysctl_optr == MTK_IPV6_ATT_ALL ||
+             sysctl_optr == MTK_IPV6_TMO_ALL) &&
 		    (strncmp(dev->name, "ccmni", 2) == 0))
 			idev->rs_interval = idev->cnf.rtr_solicit_interval;
 		else
@@ -4297,7 +4299,8 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp, bool bump_id,
 		write_lock_bh(&ifp->idev->lock);
 		spin_lock(&ifp->lock);
 		if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
-		     sysctl_optr == MTK_IPV6_ATT_ALL) &&
+		     sysctl_optr == MTK_IPV6_ATT_ALL ||
+             sysctl_optr == MTK_IPV6_TMO_ALL) &&
 		    (strncmp(dev->name, "ccmni", 2) == 0))
 			ifp->idev->rs_interval =
 				ifp->idev->cnf.rtr_solicit_interval;
@@ -4606,6 +4609,7 @@ restart:
 
 			if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
 			     sysctl_optr == MTK_IPV6_ATT_ALL ||
+                 sysctl_optr == MTK_IPV6_TMO_ALL ||
 			     sysctl_optr == MTK_IPV6_EX_RS_INTERVAL) &&
 			    (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0))
 				rt = calc_lft_vzw(ifp, &min_lft);
@@ -4630,6 +4634,7 @@ restart:
 			} else if (ifp->prefered_lft == INFINITY_LIFE_TIME) {
 				if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
 				     sysctl_optr == MTK_IPV6_ATT_ALL ||
+                     sysctl_optr == MTK_IPV6_TMO_ALL ||
 				     sysctl_optr == MTK_IPV6_EX_RS_INTERVAL) &&
 				    (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0)) {
 					/*Patch for VzW
@@ -4699,6 +4704,7 @@ restart:
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
 				if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
 				     sysctl_optr == MTK_IPV6_ATT_ALL ||
+                     sysctl_optr == MTK_IPV6_TMO_ALL ||
 				     sysctl_optr == MTK_IPV6_EX_RS_INTERVAL) &&
 				    (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0)) {
 					/*patch for VzW
@@ -5698,7 +5704,8 @@ update_lft:
 		idev->if_flags |= IF_RS_SENT;
 
 		if ((sysctl_optr == MTK_IPV6_VZW_ALL ||
-		     sysctl_optr == MTK_IPV6_ATT_ALL) &&
+		     sysctl_optr == MTK_IPV6_ATT_ALL ||
+             sysctl_optr == MTK_IPV6_TMO_ALL) &&
 		    (strncmp(dev->name, "ccmni", 2) == 0))
 			idev->rs_interval = idev->cnf.rtr_solicit_interval;
 		else
