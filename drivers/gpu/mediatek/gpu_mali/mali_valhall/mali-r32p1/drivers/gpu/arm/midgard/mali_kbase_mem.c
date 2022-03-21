@@ -1,5 +1,3 @@
-<<<<<<< HEAD   (b0aa74 [ALPS06460917] cam:imgsensor:Test solid color/Black)
-=======
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
@@ -4984,4 +4982,3 @@ void kbase_sticky_resource_term(struct kbase_context *kctx)
 		kbase_sticky_resource_release_force(kctx, walker, 0);
 	}
 }
->>>>>>> CHANGE (97b173 [ALPS06476902] GPU: secure patch GPUCORE-30405)

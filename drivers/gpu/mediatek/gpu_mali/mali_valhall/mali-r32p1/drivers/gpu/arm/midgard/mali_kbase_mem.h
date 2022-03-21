@@ -1,5 +1,3 @@
-<<<<<<< HEAD   (b0aa74 [ALPS06460917] cam:imgsensor:Test solid color/Black)
-=======
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
@@ -2127,4 +2125,3 @@ kbase_ctx_reg_zone_get(struct kbase_context *kctx, unsigned long zone_bits)
 }
 
 #endif				/* _KBASE_MEM_H_ */
->>>>>>> CHANGE (97b173 [ALPS06476902] GPU: secure patch GPUCORE-30405)

@@ -1,5 +1,3 @@
-<<<<<<< HEAD   (b0aa74 [ALPS06460917] cam:imgsensor:Test solid color/Black)
-=======
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
@@ -3075,4 +3073,3 @@ u8 kbase_csf_priority_check(struct kbase_device *kbdev, u8 req_priority)
 
 	return out_priority;
 }
->>>>>>> CHANGE (97b173 [ALPS06476902] GPU: secure patch GPUCORE-30405)

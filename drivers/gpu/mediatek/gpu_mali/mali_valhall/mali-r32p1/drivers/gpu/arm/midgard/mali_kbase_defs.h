@@ -1,5 +1,3 @@
-<<<<<<< HEAD   (b0aa74 [ALPS06460917] cam:imgsensor:Test solid color/Black)
-=======
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
@@ -1937,4 +1935,3 @@ static inline bool kbase_device_is_cpu_coherent(struct kbase_device *kbdev)
 #define KBASE_AS_INACTIVE_MAX_LOOPS     100000000
 
 #endif				/* _KBASE_DEFS_H_ */
->>>>>>> CHANGE (97b173 [ALPS06476902] GPU: secure patch GPUCORE-30405)

@@ -1,5 +1,3 @@
-<<<<<<< HEAD   (b0aa74 [ALPS06460917] cam:imgsensor:Test solid color/Black)
-=======
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
@@ -1380,4 +1378,3 @@ void kbase_csf_firmware_mcu_shared_mapping_term(
 	vunmap(csf_mapping->cpu_addr);
 	kfree(csf_mapping->phys);
 }
->>>>>>> CHANGE (97b173 [ALPS06476902] GPU: secure patch GPUCORE-30405)
