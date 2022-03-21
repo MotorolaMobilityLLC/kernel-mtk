@@ -25,6 +25,8 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
 ccflags-y  += -I$(srctree)/include/dt-bindings/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/include/gpufreq_v1/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
+ccflags-y  += -I$(srctree)/drivers/gpu/mediatek/gpufreq/
+ccflags-y  += -I$(srctree)/drivers/gpu/mediatek/mt-plat/
 
 obj-$(CONFIG_THERMAL) += mtk_lvts_tc.o
 #obj-$(CONFIG_THERMAL) += mtk_tc.o
