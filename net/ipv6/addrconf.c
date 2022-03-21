@@ -3880,8 +3880,8 @@ static void addrconf_rs_timer(unsigned long data)
 		goto out;
 
 	if (idev->rs_probes == RTR_SOLICITS_MAX && (idev->if_flags & IF_RS_VZW_SENT)) {
-		idev->if_flags &= ~IF_RS_VZW_SENT;
 		inet6_no_ra_notify(RTM_DELADDR, idev);
+		idev->if_flags &= ~IF_RS_VZW_SENT;
 		goto out;
 	}
 
