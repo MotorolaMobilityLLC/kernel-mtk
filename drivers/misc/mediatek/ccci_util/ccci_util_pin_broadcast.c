@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  */
+
+
 
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -46,12 +48,19 @@ static struct list_head user_list;
 void inject_pin_status_event(int pin_value, const char pin_name[])
 {
 	struct pin_event_user_ctrl *user_ctrl;
+	int ret = 0;
 
 	spin_lock(&pin_event_update_lock);
 	if (pin_name != NULL)
-		snprintf(pin_event->pin_name, 32, "%s", pin_name);
+		ret = snprintf(pin_event->pin_name, 32, "%s", pin_name);
 	else
-		snprintf(pin_event->pin_name, 32, "%s", "----");
+		ret = snprintf(pin_event->pin_name, 32, "%s", "----");
+
+	if (ret < 0 || ret >= 32)
+		CCCI_UTIL_ERR_MSG(
+			"%s-%d:snprintf fail,ret=%d\n",
+			__func__, __LINE__, ret);
+
 	pin_event->pin_value = pin_value;
 	list_for_each_entry(user_ctrl, &user_list, entry)
 		user_ctrl->pin_update = 1;
@@ -80,9 +89,10 @@ static int ccci_util_pin_bc_release(struct inode *inode, struct file *filp)
 {
 	struct pin_event_user_ctrl *user_ctrl;
 
-	user_ctrl = filp->private_data;
 	spin_lock(&pin_event_update_lock);
+	user_ctrl = filp->private_data;
 	user_ctrl->pin_update = 0;
+
 	list_del(&user_ctrl->entry);
 	spin_unlock(&pin_event_update_lock);
 	kfree(user_ctrl);
@@ -93,6 +103,7 @@ static int ccci_util_pin_bc_release(struct inode *inode, struct file *filp)
 static ssize_t ccci_util_pin_bc_read(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
 {
 	struct pin_event_user_ctrl *user_ctrl;
+	int ret;
 
 	user_ctrl = filp->private_data;
 	if (filp->f_flags & O_NONBLOCK) {
@@ -106,7 +117,9 @@ static ssize_t ccci_util_pin_bc_read(struct file *filp, char __user *buf, size_t
 		if (copy_to_user(buf, &user_ctrl->pin_event, sizeof(struct pin_status_event)))
 			return -EFAULT;
 	} else {
-		wait_event_interruptible(pin_event_wait, user_ctrl->pin_update == 1);
+		ret = wait_event_interruptible(pin_event_wait, user_ctrl->pin_update == 1);
+		if (ret < 0)
+			return -EINTR;
 		spin_lock(&pin_event_update_lock);
 		user_ctrl->pin_update = 0;
 		memcpy(&user_ctrl->pin_event, pin_event, sizeof(struct pin_status_event));
@@ -180,4 +193,3 @@ _exit:
 
 	return -1;
 }
-
