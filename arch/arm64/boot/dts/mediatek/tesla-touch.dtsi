@@ -55,6 +55,8 @@
 		goodix,pen-enable;
 		mmi,enable-gestures;
 		mmi,power-off-suspend;
+		mmi,usb-charger-detection;
+		mmi,charger-psy-name = "battery";
 	};
 };
 
