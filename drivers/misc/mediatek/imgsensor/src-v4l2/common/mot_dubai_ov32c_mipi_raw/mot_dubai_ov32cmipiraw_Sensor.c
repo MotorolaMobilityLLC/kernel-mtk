@@ -54,6 +54,9 @@
 #define PFX "mot_dubai_ov32c"
 static int mot_ov32c_camera_debug = 0;
 module_param(mot_ov32c_camera_debug,int, 0644);
+
+static int mot_ov32c_fusion_talk_en = 1;
+module_param(mot_ov32c_fusion_talk_en,int, 0644);
 #define LOG_INF(format, args...)        do { if (mot_ov32c_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
@@ -418,7 +421,51 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 	write_cmos_sensor_8(ctx, 0x0100,0x00); // stream off
     return ERROR_NONE;
 }
+#define OV32C_EEPROM_IIC_ADDR 0xA2
+#define OV32C_SENSOR_IIC_ADDR 0x20
+#define OV32C_FUSION_TALK_EEPROM_OFFSET 0x07E1
+#define OV32C_FUSION_TALK_REG_OFFSET 0x6AD0
+#define OV32C_XTLK_BYTES 288
+static u8 ov32c_xtlk_buf[OV32C_XTLK_BYTES];
+static u8 fusion_talk_ready = 0;
+static void ov32c_fusion_talk_read(struct subdrv_ctx *ctx)
+{
+	int ret = 0;
 
+	memset(ov32c_xtlk_buf, 0x0, sizeof(ov32c_xtlk_buf));
+	LOG_INF("%s: xtalk read start",__func__);
+	ret = adaptor_i2c_rd_p8(ctx->i2c_client, OV32C_EEPROM_IIC_ADDR >> 1, OV32C_FUSION_TALK_EEPROM_OFFSET, ov32c_xtlk_buf, sizeof(ov32c_xtlk_buf));
+	LOG_INF("xtalk read end");
+	if (ret < 0) {
+		LOG_ERR("sequential read fusion talk failed, ret: %d\n",ret);
+	} else {
+		fusion_talk_ready = 1;
+		LOG_INF("sequential read fusion talk success\n");
+	}
+}
+
+static void ov32c_fusion_talk_apply(struct subdrv_ctx *ctx)
+{
+	/*Registers need write:
+	    0x6AD0 ~ 0x6BEF     288 bytes
+	*/
+	int ret = 0;
+	if (!fusion_talk_ready) {//Try again if power on reading failed
+		LOG_INF("fusion talk read retry.");
+		ov32c_fusion_talk_read(ctx);
+	}
+	if (fusion_talk_ready) {
+		ret = adaptor_i2c_wr_seq_p8(ctx->i2c_client, OV32C_SENSOR_IIC_ADDR >> 1, OV32C_FUSION_TALK_REG_OFFSET, ov32c_xtlk_buf, OV32C_XTLK_BYTES);
+		if (ret < 0) {
+			LOG_ERR(" Sequential Apply xtalk failed, ret: %d\n", ret);
+		} else {
+			LOG_INF("%s: Sequential Apply fusion  talk success\n", __func__);
+		}
+	} else {
+		LOG_ERR("read fusion talk failed, ret: %d\n", ret);
+	}
+	return;
+}
 
 /*************************************************************************
  * FUNCTION
@@ -446,9 +493,20 @@ static void night_mode(struct subdrv_ctx *ctx, kal_bool enable)
 static void sensor_init(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
-		addr_data_pair_init_mot_dubai_ov32c,
-		sizeof(addr_data_pair_init_mot_dubai_ov32c)/sizeof(kal_uint16));
+	if( mot_ov32c_fusion_talk_en ==1)
+	{
+    		mot_dubai_ov32ce_write_cmos_sensor(ctx,
+			addr_data_pair_init_mot_dubai_ov32c,
+			sizeof(addr_data_pair_init_mot_dubai_ov32c)/sizeof(kal_uint16));
+		LOG_INF("Applying fusion talk...");
+		ov32c_fusion_talk_apply(ctx);
+	}
+	else
+	{
+    		mot_dubai_ov32ce_write_cmos_sensor(ctx,
+			addr_data_pair_init_mot_dubai_ov32c,
+			sizeof(addr_data_pair_init_mot_dubai_ov32c)/sizeof(kal_uint16));
+	}
     	LOG_INF("X\n");
 }
 
@@ -547,7 +605,7 @@ static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_ERR("i2c write id: 0x%x, sensor id: 0x%x\n",
 					ctx->i2c_write_id, *sensor_id);
-
+				ov32c_fusion_talk_read(ctx);
 				return ERROR_NONE;
 			}
 			LOG_ERR("Read sensor id fail, id: 0x%x\n",
@@ -588,7 +646,7 @@ static int open(struct subdrv_ctx *ctx)
 	kal_uint8 retry = 2;
 	kal_uint16 sensor_id = 0;
 	LOG_INF("open \n");
-        set_normal_mode(ctx);
+      set_normal_mode(ctx);
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		ctx->i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		do {
