@@ -53,6 +53,7 @@
 		goodix,stylus_mode-ctrl;
 		goodix,stylus-clk-source = "stylus_clk_gpio"; /* use gpio59 as stylus clk*/
 		goodix,pen-enable;
+		goodix,edge-ctrl;
 		mmi,enable-gestures;
 		mmi,power-off-suspend;
 		mmi,usb-charger-detection;
