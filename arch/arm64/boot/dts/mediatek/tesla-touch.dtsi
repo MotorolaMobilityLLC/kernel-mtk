@@ -39,9 +39,6 @@
 		goodix,iovdd-gpio = <&pio 167 0x0>;
 		goodix,avdd-name = "vtouch";
 		vtouch-supply = <&mt6368_vtp>;
-		goodix,svdd-gpio = <&pio 59 0x0>;
-		goodix,svdd-name = "vstylus";
-		vstylus-supply = <&mt6368_vmc>;
 		goodix,irq-flags = <0x2002>; /* 1:trigger rising, 2:trigger falling;*/
 		goodix,panel-max-id = <10>;
 		goodix,panel-max-x = <1080>;
@@ -50,8 +47,6 @@
 		goodix,panel-max-p = <256>;
 		goodix,input-max-x = <1080>;
 		goodix,input-max-y = <2400>;
-		goodix,stylus_mode-ctrl;
-		goodix,stylus-clk-source = "stylus_clk_gpio"; /* use gpio59 as stylus clk*/
 		goodix,pen-enable;
 		goodix,edge-ctrl;
 		mmi,enable-gestures;
