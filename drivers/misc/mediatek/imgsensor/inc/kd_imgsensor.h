@@ -132,6 +132,15 @@
 #define S5K4H7LN_SENSOR_ID                        0x487B
 #define SENSOR_DRVNAME_S5K4H7LN_MIPI_RAW          "s5k4h7ln_mipi_raw"
 
+
+
+#define S5K4H7_SENSOR_ID                        0x487B
+#define SENSOR_DRVNAME_S5K4H7_MIPI_RAW          "s5k4h7_mipi_raw"
+#define S5K4H7SUB_SENSOR_ID                     0x487C
+#define SENSOR_DRVNAME_S5K4H7SUB_MIPI_RAW       "s5k4h7sub_mipi_raw"
+
+
+
 /* SENSOR CHIP VERSION */
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
