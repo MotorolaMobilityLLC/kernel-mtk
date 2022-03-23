@@ -236,6 +236,7 @@ struct mt6375_chg_data {
 	atomic_t eoc_cnt;
 	atomic_t tchg;
 	int vbat0_flag;
+	int mmi_chg_status;
 };
 
 struct mt6375_chg_platform_data {
@@ -1050,6 +1051,11 @@ static int mt6375_chg_get_property(struct power_supply *psy,
 		val->intval = atomic_read(&ddata->attach);
 		break;
 	case POWER_SUPPLY_PROP_STATUS:
+		if(ddata->mmi_chg_status == POWER_SUPPLY_STATUS_FULL) {
+			val->intval = POWER_SUPPLY_STATUS_FULL;
+			break;
+		}
+
 		ret = mt6375_chg_field_get(ddata, F_IC_STAT, &_val);
 		if (ret < 0)
 			break;
@@ -1881,8 +1887,15 @@ static int mt6375_do_event(struct charger_device *chgdev, u32 event, u32 args)
 
 	switch (event) {
 	case EVENT_FULL:
+		 ddata->mmi_chg_status = POWER_SUPPLY_STATUS_FULL;
+		 power_supply_changed(ddata->psy);
+		 break;
 	case EVENT_RECHARGE:
+		ddata->mmi_chg_status = POWER_SUPPLY_STATUS_CHARGING;
+		power_supply_changed(ddata->psy);
+		break;
 	case EVENT_DISCHARGE:
+		ddata->mmi_chg_status = POWER_SUPPLY_STATUS_DISCHARGING;
 		power_supply_changed(ddata->psy);
 		break;
 	default:
