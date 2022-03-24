@@ -9,15 +9,12 @@
 #if defined (CONFIG_MACH_MT6877)
 		mt6360,intr_gpio_num = <4>; /* direct defined GPIO num */
 		mt6360,intr_gpio = <&pio 4 0x0>; /* GPIO */
-<<<<<<< HEAD
-=======
 #elif defined (CONFIG_MACH_MT6833)
 		mt6360,intr_gpio_num = <10>; /* direct defined GPIO num */
 		mt6360,intr_gpio = <&pio 10 0x0>; /* GPIO */
 #elif defined (CONFIG_MACH_MT6873)
 		mt6360,intr_gpio_num = <24>; /* direct defined GPIO num */
 		mt6360,intr_gpio = <&pio 24 0x0>;
->>>>>>> 3f88d50... [ALPS06467448] build: add new platform
 #else
 		mt6360,intr_gpio_num = <3>; /* direct defined GPIO num */
 		mt6360,intr_gpio = <&pio 3 0x0>; /* GPIO */
