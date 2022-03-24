@@ -439,6 +439,7 @@ static struct mtk_panel_params ext_params_48hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -495,6 +496,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -550,6 +552,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -605,6 +608,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -661,6 +665,7 @@ static struct mtk_panel_params ext_params_144hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -711,7 +716,11 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 				 unsigned int level)
 {
-	pr_info("%s backlight = %d\n", __func__, level);
+	static unsigned int current_bl = 0;
+
+	if (!(current_bl && level)) pr_info("backlight changed from %u to %u\n", current_bl, level);
+	else pr_debug("backlight changed from %u to %u\n", current_bl, level);
+
 	bl_tb0[1] = (u8)((level>>8)&0xF);
 	bl_tb0[2] = (u8)(level&0xFF);
 
@@ -719,6 +728,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 		return -1;
 
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
+	current_bl = level;
 	return 0;
 }
 
