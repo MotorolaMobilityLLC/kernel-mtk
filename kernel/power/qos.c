@@ -473,43 +473,6 @@ static void pm_qos_work_fn(struct work_struct *work)
 	__pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
 }
 
-#ifdef CONFIG_SMP
-static void pm_qos_irq_release(struct kref *ref)
-{
-	unsigned long flags;
-	struct irq_affinity_notify *notify = container_of(ref,
-					struct irq_affinity_notify, kref);
-	struct pm_qos_request *req = container_of(notify,
-					struct pm_qos_request, irq_notify);
-	struct pm_qos_constraints *c =
-				pm_qos_array[req->pm_qos_class]->constraints;
-
-	spin_lock_irqsave(&pm_qos_lock, flags);
-	cpumask_setall(&req->cpus_affine);
-	spin_unlock_irqrestore(&pm_qos_lock, flags);
-
-	pm_qos_update_target(c, &req->node, PM_QOS_UPDATE_REQ,
-			c->default_value, false);
-}
-
-static void pm_qos_irq_notify(struct irq_affinity_notify *notify,
-		const cpumask_t *mask)
-{
-	unsigned long flags;
-	struct pm_qos_request *req = container_of(notify,
-					struct pm_qos_request, irq_notify);
-	struct pm_qos_constraints *c =
-				pm_qos_array[req->pm_qos_class]->constraints;
-
-	spin_lock_irqsave(&pm_qos_lock, flags);
-	cpumask_copy(&req->cpus_affine, mask);
-	spin_unlock_irqrestore(&pm_qos_lock, flags);
-
-	pm_qos_update_target(c, &req->node, PM_QOS_UPDATE_REQ, req->node.prio,
-			false);
-}
-#endif
-
 /**
  * pm_qos_add_request - inserts new qos request into the list
  * @req: pointer to a preallocated handle
