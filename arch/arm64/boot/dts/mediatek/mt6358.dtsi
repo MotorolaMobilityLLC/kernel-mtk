@@ -346,6 +346,7 @@
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-enable-ramp-delay = <2700>;
+			regulator-always-on;
 		};
 		mt_pmic_vusb_ldo_reg: ldo_vusb {
 			regulator-name = "vusb";
@@ -519,6 +520,7 @@
 	};	/* End of mt6358regulator */
 	mt6358_rtc: mt6358_rtc {
 		compatible = "mediatek,mt6358-rtc";
+		bootmode = <&chosen>;
 		interrupts = <INT_RTC IRQ_TYPE_NONE>;
 		interrupt-names = "rtc";
 		base = <0x580>;
