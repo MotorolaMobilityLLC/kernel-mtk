@@ -384,7 +384,7 @@
 		compatible = "richtek,rt5512";
 		#sound-dai-cells = <0>;
 		reg = <0x5c>;
-		status = "okay";
+		status = "disabled";
 		sound-name-prefix = "Left";
 	};
 };
