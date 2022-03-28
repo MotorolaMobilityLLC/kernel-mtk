@@ -153,6 +153,10 @@ static void filter_by_yuv_layers(struct drm_mtk_layering_info *disp_info)
 					return;
 				}
 			}
+			if (info->dst_width==720 && info->dst_height==1600) {
+				mtk_rollback_layer_to_GPU(disp_info,
+					disp_idx, i);
+ 			}
 		}
 
 		if (yuv_gpu_cnt == 0)
