@@ -256,29 +256,6 @@ static void set_shutter(struct subdrv_ctx *ctx, kal_uint16 shutter)
 	write_shutter(ctx, shutter);
 }	/*	set_shutter */
 
-
-
-static void set_frame_length(struct subdrv_ctx *ctx, kal_uint16 frame_length)
-{
-	if (frame_length > 1)
-		ctx->frame_length = frame_length;
-
-	if (ctx->frame_length > imgsensor_info.max_frame_length)
-		ctx->frame_length = imgsensor_info.max_frame_length;
-	if (ctx->min_frame_length > ctx->frame_length)
-		ctx->frame_length = ctx->min_frame_length;
-
-	/* Extend frame length */
-
-	write_cmos_sensor(ctx, 0x41, ctx->frame_length >> 8);
-	write_cmos_sensor(ctx, 0x42, ctx->frame_length & 0xFF);
-
-	LOG_INF("Framelength: set=%d/input=%d/min=%d, auto_extend=%d\n",
-		ctx->frame_length, frame_length, ctx->min_frame_length,
-		read_cmos_sensor(ctx, 0x0350));
-}
-
-
 static void set_shutter_frame_length(struct subdrv_ctx *ctx,
 	kal_uint16 shutter, kal_uint16 frame_length)
 {	kal_uint16 realtime_fps = 0;
@@ -1362,6 +1339,44 @@ static kal_uint32 get_default_framerate_by_scenario(struct subdrv_ctx *ctx,
 	return ERROR_NONE;
 }
 
+
+static void set_multi_shutter_frame_length(struct subdrv_ctx *ctx,
+				kal_uint32 *shutters, kal_uint16 shutter_cnt,
+				kal_uint16 frame_length)
+{
+	if (shutter_cnt == 1) {
+		ctx->shutter = shutters[0];
+
+		/* if shutter bigger than frame_length, extend frame length first */
+		if (shutters[0] > ctx->min_frame_length - imgsensor_info.margin)
+			ctx->frame_length = shutters[0] + imgsensor_info.margin;
+		else
+			ctx->frame_length = ctx->min_frame_length;
+
+		if (frame_length > ctx->frame_length)
+			ctx->frame_length = frame_length;
+		if (ctx->frame_length > imgsensor_info.max_frame_length)
+			ctx->frame_length = imgsensor_info.max_frame_length;
+
+
+		shutters[0] = (shutters[0] < imgsensor_info.min_shutter)
+			? imgsensor_info.min_shutter
+			: shutters[0];
+
+		shutters[0] = (shutters[0] > (imgsensor_info.max_frame_length
+				      - imgsensor_info.margin))
+			? (imgsensor_info.max_frame_length - imgsensor_info.margin)
+			: shutters[0];
+		/* Update Shutter */
+		write_cmos_sensor(ctx, 0xfe, 0x00);
+		write_cmos_sensor(ctx, 0x41, (ctx->frame_length >> 8)& 0x3f);
+		write_cmos_sensor(ctx, 0x42, ctx->frame_length & 0xFF);;
+		write_cmos_sensor(ctx, 0x03, (shutters[0] >> 8) & 0x3f);
+		write_cmos_sensor(ctx, 0x04, shutters[0]  & 0xff);
+		LOG_INF_N("Exit! shutters =%d, framelength =%d \n",shutters[0],ctx->frame_length);
+	}
+}
+
 static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -1667,8 +1682,10 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			read_four_cell_from_eeprom(ctx, NULL);
 		break;
 #endif
-	case SENSOR_FEATURE_SET_FRAMELENGTH:
-		set_frame_length(ctx, (UINT16) (*feature_data));
+	case SENSOR_FEATURE_SET_MULTI_SHUTTER_FRAME_TIME:
+		set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),
+					(UINT16) (*(feature_data + 1)),
+					(UINT16) (*(feature_data + 2)));
 		break;
 	default:
 		break;
@@ -1774,6 +1791,7 @@ static const struct subdrv_ctx defctx = {
 	.dummy_pixel = 0,		/*current dummypixel*/
 	.dummy_line = 0,		/*current dummyline*/
 	.current_fps = 300,
+	.frame_time_delay_frame = 2,
 	/*full size current fps : 24fps for PIP, 30fps for Normal or ZSD*/
 	.autoflicker_en = KAL_FALSE,
 	.test_pattern = KAL_FALSE,
