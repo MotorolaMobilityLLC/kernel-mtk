@@ -164,8 +164,6 @@ static int wlc_leave(struct chg_alg_device *alg)
 	wlc_dbg("%s: starts\n", __func__);
 	wlc = dev_get_drvdata(&alg->dev);
 
-	moto_wlc_control_gpio(alg, true);
-
 	ret = wlc_reset_ta_vchr(alg);
 	if (ret != 0) {
 		wlc_err("%s: failed, state = %d, ret = %d\n", __func__,
