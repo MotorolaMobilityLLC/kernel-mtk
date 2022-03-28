@@ -1649,6 +1649,45 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 	return ERROR_NONE;
 }
 
+
+static void set_multi_shutter_frame_length(struct subdrv_ctx *ctx,
+				kal_uint32 *shutters, kal_uint32 shutter_cnt,
+				kal_uint32 frame_length)
+{
+	if (shutter_cnt == 1) {
+		ctx->shutter = shutters[0];
+
+		/* if shutter bigger than frame_length, extend frame length first */
+		if (shutters[0] > ctx->min_frame_length - imgsensor_info.margin)
+			ctx->frame_length = shutters[0] + imgsensor_info.margin;
+		else
+			ctx->frame_length = ctx->min_frame_length;
+
+		if (frame_length > ctx->frame_length)
+			ctx->frame_length = frame_length;
+		if (ctx->frame_length > imgsensor_info.max_frame_length)
+			ctx->frame_length = imgsensor_info.max_frame_length;
+
+
+		shutters[0] = (shutters[0] < imgsensor_info.min_shutter)
+			? imgsensor_info.min_shutter
+			: shutters[0];
+
+		shutters[0] = (shutters[0] > (imgsensor_info.max_frame_length
+				      - imgsensor_info.margin))
+			? (imgsensor_info.max_frame_length - imgsensor_info.margin)
+			: shutters[0];
+		/* Update Shutter */
+		write_cmos_sensor_8(ctx, 0x3840, ctx->frame_length >> 16);
+		write_cmos_sensor_8(ctx, 0x380e, ctx->frame_length >> 8);
+		write_cmos_sensor_8(ctx, 0x380f, ctx->frame_length & 0xFF);
+		write_cmos_sensor_8(ctx, 0x3500, (shutters[0] >> 16) & 0xFF);
+		write_cmos_sensor_8(ctx, 0x3501, (shutters[0] >> 8) & 0xFF);
+		write_cmos_sensor_8(ctx, 0x3502, shutters[0] & 0xFF);
+		LOG_INF_N("Exit! shutters =%d, framelength =%d \n",shutters[0],ctx->frame_length);
+	}
+}
+
 static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feature_id,
 			UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -2112,6 +2151,11 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
 		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
+	case SENSOR_FEATURE_SET_MULTI_SHUTTER_FRAME_TIME:
+		set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),
+					(UINT32) (*(feature_data + 1)),
+					(UINT32) (*(feature_data + 2)));
+		break;
 	default:
 	break;
 	}
@@ -2336,7 +2380,7 @@ static const struct subdrv_ctx defctx = {
 	.exposure_max = 0xffffe9 - 31,
 	.exposure_min = 4,
 	.exposure_step = 1,
-	.frame_time_delay_frame = 3,
+	.frame_time_delay_frame = 2,
 	.margin = 31,
 	.max_frame_length = 0xffffe9,
 	.is_streaming = KAL_FALSE,
