@@ -85,6 +85,7 @@
 };
 
 &charger {
+	boot_battery_voltage = <3600000>;
 	battery_cv = <4480000>;
 	max_charger_voltage = <14500000>;
 	ac_charger_current = <3000000>;
