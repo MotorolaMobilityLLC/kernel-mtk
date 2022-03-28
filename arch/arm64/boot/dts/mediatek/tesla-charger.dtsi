@@ -194,6 +194,8 @@
 		interrupt-names = "bq25960_irq";
 		pinctrl-names = "default";
 		pinctrl-0 = <&bq25960_int_default>;
+
+		sc8541-addr = <0x6a>;
 	};
 };
 
