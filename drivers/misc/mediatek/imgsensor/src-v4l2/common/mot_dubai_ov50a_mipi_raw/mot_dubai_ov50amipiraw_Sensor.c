@@ -1778,21 +1778,22 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
-	*(feature_data + 1) = imgsensor_info.min_shutter;
+		*(feature_data + 1) = imgsensor_info.min_shutter;
 		switch (*feature_data) {
-		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
-		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
-		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
-		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
-		case SENSOR_SCENARIO_ID_CUSTOM1:
-		case SENSOR_SCENARIO_ID_CUSTOM2:
-		case SENSOR_SCENARIO_ID_CUSTOM3:
-		case SENSOR_SCENARIO_ID_CUSTOM4:
-			*(feature_data + 2) = 2;
+			case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+			case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+			case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+			case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+			case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
+			case SENSOR_SCENARIO_ID_CUSTOM2:
+			case SENSOR_SCENARIO_ID_CUSTOM3:
+				*(feature_data + 2) = 2;
+			case SENSOR_SCENARIO_ID_CUSTOM1:
+			case SENSOR_SCENARIO_ID_CUSTOM4:
+				*(feature_data + 2) = 4;
 			break;
 		default:
-			*(feature_data + 2) = 1;
+				*(feature_data + 2) = 2;
 			break;
 		}
 		break;
@@ -2155,6 +2156,18 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),
 					(UINT32) (*(feature_data + 1)),
 					(UINT32) (*(feature_data + 2)));
+	case SENSOR_FEATURE_GET_MAX_EXP_LINE:
+		*(feature_data + 2) =
+			imgsensor_info.max_frame_length - imgsensor_info.margin;
+		break;
+	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
+		/*
+		 * 1, if driver support new sw frame sync
+		 * set_shutter_frame_length(ctx) support third para auto_extend_en
+		 */
+		*(feature_data + 1) = 1;
+		/* margin info by scenario */
+		*(feature_data + 2) = imgsensor_info.margin;
 		break;
 	default:
 	break;
