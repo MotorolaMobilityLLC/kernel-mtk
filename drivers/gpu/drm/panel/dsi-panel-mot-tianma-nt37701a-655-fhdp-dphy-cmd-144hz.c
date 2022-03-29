@@ -35,6 +35,7 @@
 #define REGFLAG_END_OF_TABLE    0xFFFD
 
 static char bl_tb0[] = { 0x51, 0x0f,0xff };
+static unsigned int g_hbm_mode = 0;
 
 enum panel_version{
 	PANEL_V1 = 1,
@@ -718,6 +719,8 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 {
 	static unsigned int current_bl = 0;
 
+	if (g_hbm_mode) pr_info("hbm_mode = %d, skip backlight(%d)\n", g_hbm_mode, level);
+
 	if (!(current_bl && level)) pr_info("backlight changed from %u to %u\n", current_bl, level);
 	else pr_debug("backlight changed from %u to %u\n", current_bl, level);
 
@@ -1037,8 +1040,9 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 		case PARAM_ACL:
 			break;
 		case PARAM_HBM:
-			pane_hbm_set_cmdq(dsi, cb, handle, param_info.value);
 			ctx->hbm_mode = param_info.value;
+			g_hbm_mode = param_info.value;
+			pane_hbm_set_cmdq(dsi, cb, handle, param_info.value);
 			break;
 		case PARAM_DC:
 			pane_dc_set_cmdq(dsi, cb, handle, param_info.value);
@@ -1217,6 +1221,8 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 		return ret;
 
 #endif
+	ctx->hbm_mode = 0;
+	ctx->dc_mode = 0;
 
 	pr_info("%s- lcm,nt37701,cmd,120hz\n", __func__);
 
