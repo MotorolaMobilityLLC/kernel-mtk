@@ -3479,7 +3479,8 @@ firmware_class.path=/vendor/firmware";
 	charger: charger {
 		compatible = "mediatek,charger";
 		gauge = <&mtk_gauge>;
-		charger = <&mt6370_chg>;
+		//charger = <&mt6370_chg>;
+		charger = <&mtk_charger_type>;
 		bootmode = <&chosen>;
 		pmic = <&main_pmic>;
 
@@ -3538,10 +3539,11 @@ firmware_class.path=/vendor/firmware";
 
 	extcon_usb: extcon_usb {
 		compatible = "mediatek,extcon-usb";
-		charger = <&mt6370_chg>;
-		vbus-supply = <&otg_vbus>;
-		vbus-voltage = <5000000>;
-		vbus-current = <1800000>;
+		charger = <&mtk_charger_type>;
+		//charger = <&mt6370_chg>;
+		//vbus-supply = <&otg_vbus>;
+		//vbus-voltage = <5000000>;
+		//vbus-current = <1800000>;
 		dev-conn = <&usb>;
 		mediatek,bypss-typec-sink = <1>;
 	};
