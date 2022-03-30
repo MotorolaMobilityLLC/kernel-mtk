@@ -4728,17 +4728,16 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 	struct drm_crtc *crtc = private->crtc[0];
 	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
 	int ret = 0;
+	unsigned int bl_level = 0;
 
 	DDPMSG("%s: set param_idx %d to %d\n", __func__, param_info->param_idx, param_info->value);
 
 	switch (param_info->param_idx) {
 		case PARAM_HBM:
 			if (panel_ext->hbm_type == HBM_MODE_DCS_ONLY) {
-				if (param_info->value) {
-					ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
-					if (!ret) mtk_drm_setbacklight(crtc, BRIGHTNESS_HBM_ON_SKIP_BL);
-				}
-				else ret = mtk_drm_setbacklight(crtc, BRIGHTNESS_HBM_OFF);
+				bl_level = (param_info->value) ? BRIGHTNESS_HBM_ON_SKIP_BL : BRIGHTNESS_HBM_OFF;
+				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+				if (!ret) mtk_drm_setbacklight(crtc, bl_level);
 			}
 			break;
 		default:
