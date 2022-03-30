@@ -396,7 +396,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 		write_cmos_sensor_8(ctx, 0x0100, 0x00);
 		ctx->is_streaming = false;
 	}
-	mdelay(10);
+	mdelay(3);
 	return ERROR_NONE;
 }
 static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
@@ -673,7 +673,7 @@ static void ov50a_qpd_calibration_apply(struct subdrv_ctx *ctx)
 static void sensor_init(struct subdrv_ctx *ctx)
 {
 	write_cmos_sensor_8(ctx, 0x0103, 0x01);//SW Reset, need delay
-	mdelay(5);
+	mdelay(1);
 	LOG_INF("%s start\n", __func__);
 
 	if (mot_ov50a_xtalk_en) {//Settings that removed xtalk default data.
@@ -2456,7 +2456,7 @@ static struct subdrv_pw_seq_entry pw_seq[] = {
 			{HW_ID_MCLK_DRIVING_CURRENT, 8, 0},
 			{HW_ID_DOVDD, 1800000, 0},
 			{HW_ID_AVDD, 2800000, 0},
-			{HW_ID_DVDD, 1200000, 5},
+			{HW_ID_DVDD, 1100000, 1},
 			{HW_ID_RST, 1, 5},
 };
 
