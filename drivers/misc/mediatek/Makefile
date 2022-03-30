@@ -155,6 +155,7 @@ obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_FLASHLIGHT) += flashlight/
 obj-$(CONFIG_RT_FLASHLIGHT)     += flashlight/richtek/
 obj-$(CONFIG_USB) += usb_boost/
+obj-$(CONFIG_USB_CABLE) += usb_cable/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
 ifeq ($(CONFIG_MACH_MT6781),y)
 obj-$(CONFIG_MTK_MUSB_PHY) += usb20/mt6781

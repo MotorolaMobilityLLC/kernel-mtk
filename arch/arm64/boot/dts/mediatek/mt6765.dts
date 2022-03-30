@@ -1032,6 +1032,10 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	usb_cable: usb_cable {
+		compatible = "mediatek,usb_cable_eint";
+	};
+
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
