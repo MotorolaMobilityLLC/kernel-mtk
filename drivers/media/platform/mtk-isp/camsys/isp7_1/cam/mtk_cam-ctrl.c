@@ -2669,9 +2669,9 @@ static void mtk_camsys_raw_frame_start(struct mtk_raw_device *raw_dev,
 	if (mtk_cam_mraw_update_all_buffer_ts(ctx, irq_info->ts_ns) == 0)
 		dev_dbg(raw_dev->dev, "mraw update all buffer ts failed");
 
-	/*touch watchdog*/
+	/* touch watchdog */
 	if (watchdog_scenario(ctx))
-		mtk_ctx_watchdog_kick(ctx);
+		mtk_ctx_watchdog_kick(ctx, raw_dev->id + MTKCAM_SUBDEV_RAW_START);
 	/* inner register dequeue number */
 	if (!mtk_cam_is_stagger(ctx))
 		ctx->dequeued_frame_seq_no = dequeued_frame_seq_no;
@@ -3963,8 +3963,12 @@ void mtk_cam_sv_work(struct work_struct *work)
 		mtk_cam_sv_setup_cfg_info(camsv_dev, s_data);
 		mtk_cam_sv_enquehwbuf(camsv_dev, base_addr, seq_no);
 		mtk_cam_sv_vf_on(camsv_dev, 1);
+		if (watchdog_scenario(ctx))
+			mtk_ctx_watchdog_start(ctx, 4, s_data->pipe_id);
 	} else {
 		mtk_cam_sv_vf_on(camsv_dev, 0);
+		if (watchdog_scenario(ctx))
+			mtk_ctx_watchdog_stop(ctx, s_data->pipe_id);
 	}
 }
 
@@ -4332,6 +4336,10 @@ static void mtk_camsys_camsv_frame_start(struct mtk_camsv_device *camsv_dev,
 	enum MTK_CAMSYS_STATE_RESULT state_handle_ret;
 	int sv_dev_index;
 
+	/* touch watchdog */
+	if (watchdog_scenario(ctx))
+		mtk_ctx_watchdog_kick(ctx, camsv_dev->id + MTKCAM_SUBDEV_CAMSV_START);
+
 	/* inner register dequeue number */
 	sv_dev_index = mtk_cam_find_sv_dev_index(ctx, camsv_dev->id);
 	if (sv_dev_index == -1) {
@@ -4390,6 +4398,10 @@ static void mtk_camsys_mraw_frame_start(struct mtk_mraw_device *mraw_dev,
 	struct mtk_cam_ctx *ctx, unsigned int dequeued_frame_seq_no, u64 ts_ns)
 {
 	int mraw_dev_index;
+
+	/* touch watchdog */
+	if (watchdog_scenario(ctx))
+		mtk_ctx_watchdog_kick(ctx, mraw_dev->id + MTKCAM_SUBDEV_MRAW_START);
 
 	/* inner register dequeue number */
 	mraw_dev_index = mtk_cam_find_mraw_dev_index(ctx, mraw_dev->id);
@@ -4547,6 +4559,9 @@ static int mtk_camsys_event_handle_mraw(struct mtk_cam_device *cam,
 				mtk_camsys_raw_cq_done(raw_dev, ctx, irq_info->frame_idx);
 			} else {
 				mtk_cam_mraw_vf_on(mraw_dev, 1);
+				if (watchdog_scenario(ctx))
+					mtk_ctx_watchdog_start(ctx, 4,
+						mraw_dev->id + MTKCAM_SUBDEV_MRAW_START);
 			}
 		}
 	}
