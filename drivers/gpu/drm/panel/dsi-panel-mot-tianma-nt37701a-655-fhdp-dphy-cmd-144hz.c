@@ -34,9 +34,6 @@
 #define REGFLAG_UDELAY  0xFFFB
 #define REGFLAG_END_OF_TABLE    0xFFFD
 
-static char bl_tb0[] = { 0x51, 0x0f,0xff };
-static unsigned int g_hbm_mode = 0;
-
 enum panel_version{
 	PANEL_V1 = 1,
 	PANEL_V2,
@@ -49,12 +46,16 @@ struct lcm {
 	struct gpio_desc *reset_gpio;
 	bool prepared;
 	bool enabled;
+	bool lhbm_en;
 
 	int error;
 	unsigned int hbm_mode;
 	unsigned int dc_mode;
+	unsigned int current_bl;
 	enum panel_version version;
 };
+
+struct lcm *g_ctx = NULL;
 
 struct LCM_setting_table {
 	unsigned int cmd;
@@ -717,12 +718,13 @@ static int panel_ata_check(struct drm_panel *panel)
 static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 				 unsigned int level)
 {
-	static unsigned int current_bl = 0;
+	char bl_tb0[] = { 0x51, 0x0f, 0xff};
+	struct lcm *ctx = g_ctx;
 
-	if (g_hbm_mode) pr_info("hbm_mode = %d, skip backlight(%d)\n", g_hbm_mode, level);
+	if (ctx->hbm_mode) pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
 
-	if (!(current_bl && level)) pr_info("backlight changed from %u to %u\n", current_bl, level);
-	else pr_debug("backlight changed from %u to %u\n", current_bl, level);
+	if (!(ctx->current_bl && level)) pr_info("backlight changed from %u to %u\n", ctx->current_bl, level);
+	else pr_debug("backlight changed from %u to %u\n", ctx->current_bl, level);
 
 	bl_tb0[1] = (u8)((level>>8)&0xF);
 	bl_tb0[2] = (u8)(level&0xFF);
@@ -731,7 +733,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 		return -1;
 
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
-	current_bl = level;
+	ctx->current_bl = level;
 	return 0;
 }
 
@@ -950,15 +952,102 @@ static int mode_switch(struct drm_panel *panel,
 	return ret;
 }
 
-static int pane_hbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t hbm_state)
+static struct LCM_setting_table panel_lhbm_on[] = {
+	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
+	{REGFLAG_CMD, 2, {0xB2, 0x11}},
+	{REGFLAG_CMD, 3, {0x87, 0x1F, 0xFF}},
+	{REGFLAG_CMD, 2, {0x88, 0x01}},
+	{REGFLAG_CMD, 2, {0x85, 0x01}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table panel_lhbm_off[] = {
+	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
+	{REGFLAG_CMD, 2, {0xB2, 0x11}},
+	{REGFLAG_CMD, 3, {0x87, 0x0F, 0xFF}},
+	{REGFLAG_CMD, 2, {0x88, 0x01}},
+	{REGFLAG_CMD, 2, {0x86, 0x01}},
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static void set_lhbm_alpha(unsigned int bl_level)
 {
-	char hbm_tb[3][3] = {{0x51, 0x0D, 0xBA},
-			     {0x51, 0x0F, 0xFF},
-			     {0x51, 0x0F, 0xFF}};
+	struct LCM_setting_table *pTable = &panel_lhbm_on[2];
+	unsigned int alpha = 0;
+
+	if((bl_level < 4095) && (bl_level > 3514))
+		alpha = bl_level;
+	else if((bl_level < 3515) && (bl_level > 1327))
+		alpha = 9955 * bl_level / 10000 + 17;
+	else
+		alpha = (3*bl_level*bl_level + 4754*bl_level)/10000 + 267;
+
+	pTable->para_list[1] = 0x10 | ((alpha >> 8) & 0x0F);
+	pTable->para_list[2] = alpha & 0xFF;
+	pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
+}
+
+static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
+{
+	unsigned int i = 0,j =0;
+	unsigned setting_count = 0;
+	struct LCM_setting_table *pTable;
+	unsigned int cmd;
+
+	if (on) {
+		set_lhbm_alpha(bl_level);
+		setting_count = sizeof(panel_lhbm_on) / sizeof(struct LCM_setting_table);
+		pTable = panel_lhbm_on;
+	} else {
+		setting_count = sizeof(panel_lhbm_off) / sizeof(struct LCM_setting_table);
+		pTable = panel_lhbm_off;
+	}
+
+	for (i = 0; i < setting_count; i++) {
+		cmd = pTable->cmd;
+		switch (cmd) {
+		case REGFLAG_DELAY:
+			msleep(pTable->count);
+			break;
+		case REGFLAG_UDELAY:
+			udelay(pTable->count);
+			break;
+		case REGFLAG_END_OF_TABLE:
+			break;
+		default:
+			for(j =0; j<pTable->count;j++) pr_info("%d: 0x%x\n", j, pTable->para_list[j]);
+			cb(dsi, handle, pTable->para_list, pTable->count);
+		}
+		pTable ++ ;
+	}
+	return 0;
+
+}
+
+static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	char hbm_on_tb[3] = {0x51, 0x0F, 0xFF};
 
 	if (hbm_state > 2) return -1;
+	switch (hbm_state)
+	{
+		case 0:
+			if (ctx->lhbm_en)
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+			break;
+		case 1:
+			cb(dsi, handle, &hbm_on_tb[0], 3);
+			break;
+		case 2:
+			if (ctx->lhbm_en)
+				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl);
+			else
+				cb(dsi, handle, &hbm_on_tb[0], 3);
+			break;
+		default:
+			break;
+	}
 
-	cb(dsi, handle, &hbm_tb[hbm_state], 3);
 	return 0;
 }
 
@@ -1041,8 +1130,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			break;
 		case PARAM_HBM:
 			ctx->hbm_mode = param_info.value;
-			g_hbm_mode = param_info.value;
-			pane_hbm_set_cmdq(dsi, cb, handle, param_info.value);
+			pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
 			break;
 		case PARAM_DC:
 			pane_dc_set_cmdq(dsi, cb, handle, param_info.value);
@@ -1176,7 +1264,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 		return -ENOMEM;
 
 	mipi_dsi_set_drvdata(dsi, ctx);
-
+	g_ctx = ctx;
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
@@ -1224,7 +1312,9 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	ctx->hbm_mode = 0;
 	ctx->dc_mode = 0;
 
-	pr_info("%s- lcm,nt37701,cmd,120hz\n", __func__);
+	ctx->lhbm_en = of_property_read_bool(dev->of_node, "lhbm-enable");
+
+	pr_info("%s- lcm,nt37701,cmd,120hz, lhbm_en = %d\n", __func__, ctx->lhbm_en);
 
 	return ret;
 }
