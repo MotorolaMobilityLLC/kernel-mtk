@@ -177,6 +177,7 @@
 };
 /* CONSYS end */
 
+/* use config in dws
 &keypad {
 	pinctrl-names = "default";
 	pinctrl-0 = <&kpd_pins_default>;
@@ -192,6 +193,7 @@
 		};
 	};
 };
+*/
 
 
 /* accdet start */
