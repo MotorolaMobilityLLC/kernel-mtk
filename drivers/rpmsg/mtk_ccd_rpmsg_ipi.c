@@ -255,6 +255,14 @@ void ccd_worker_read(struct mtk_ccd *ccd,
 				"worker read wait error: %d\n", ret);
 			goto err_ret;
 		}
+	} else {
+		int cmd_sent = atomic_read(&mept->ccd_cmd_sent);
+
+		dev_info(ccd->dev, "ccd_cmd_sent is not null(%d)\n",
+			cmd_sent);
+
+		if (cmd_sent < 0)
+			goto err_ret;
 	}
 
 	if (atomic_read(&mept->ccd_mep_state) == CCD_MENDPOINT_DESTROY) {
@@ -269,12 +277,13 @@ void ccd_worker_read(struct mtk_ccd *ccd,
 				      list_entry);
 	if (!ccd_params) {
 		spin_unlock(&mept->pending_sendq.queue_lock);
-		dev_info(ccd->dev, "%s: get MULL ccd_params, ccd_cmd_sent(%d)\n",
+		dev_info(ccd->dev, "%s: get NULL ccd_params, ccd_cmd_sent(%d)\n",
 			 __func__, atomic_read(&mept->ccd_cmd_sent));
 		goto err_ret;
 	}
 	list_del(&ccd_params->list_entry);
-	atomic_dec(&mept->ccd_cmd_sent);
+	if (atomic_read(&mept->ccd_cmd_sent) > 0)
+		atomic_dec(&mept->ccd_cmd_sent);
 	spin_unlock(&mept->pending_sendq.queue_lock);
 
 	memcpy(read_obj, &ccd_params->worker_obj, sizeof(*read_obj));
