@@ -29,6 +29,8 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
+#include "dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha.h"
+
 #define REGFLAG_CMD       0xFFFA
 #define REGFLAG_DELAY       0xFFFC
 #define REGFLAG_UDELAY  0xFFFB
@@ -974,15 +976,20 @@ static void set_lhbm_alpha(unsigned int bl_level)
 {
 	struct LCM_setting_table *pTable = &panel_lhbm_on[2];
 	unsigned int alpha = 0;
-
+/*
 	if((bl_level < 4095) && (bl_level > 3514))
 		alpha = bl_level;
 	else if((bl_level < 3515) && (bl_level > 1327))
 		alpha = 9955 * bl_level / 10000 + 17;
 	else
 		alpha = (3*bl_level*bl_level + 4754*bl_level)/10000 + 267;
+*/
+	if (bl_level < ARRAY_SIZE(lhbm_alpha))
+		alpha = lhbm_alpha[bl_level];
+	else
+		bl_level = ARRAY_SIZE(lhbm_alpha) -1;
 
-	pTable->para_list[1] = 0x10 | ((alpha >> 8) & 0x0F);
+	pTable->para_list[1] = (alpha >> 8) & 0xFF;
 	pTable->para_list[2] = alpha & 0xFF;
 	pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
 }
