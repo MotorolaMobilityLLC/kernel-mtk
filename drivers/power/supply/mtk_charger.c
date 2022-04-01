@@ -3402,7 +3402,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		pr_info("Charge Demo Mode:us = %d, vf = %d, dfs = %d,bs = %d\n",
 				usb_suspend, voltage_full, demo_full_soc, batt_soc);
 	} else if (mmi->pres_chrg_step == STEP_NONE) {
-		if (zone->norm_mv && ((batt_mv + HYST_STEP_MV) >= zone->norm_mv)) {
+		if (zone->norm_mv && ((batt_mv + 2 * HYST_STEP_MV) >= zone->norm_mv)) {
 			if (zone->fcc_norm_ma)
 				mmi->pres_chrg_step = STEP_NORM;
 			else
