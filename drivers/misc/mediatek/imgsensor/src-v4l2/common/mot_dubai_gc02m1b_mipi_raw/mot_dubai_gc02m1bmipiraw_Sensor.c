@@ -205,6 +205,7 @@ static void set_max_framerate(struct subdrv_ctx *ctx,
 	}
 	if (min_framelength_en)
 		ctx->min_frame_length = ctx->frame_length;
+	set_dummy(ctx);
 }	/*	set_max_framerate  */
 
 
