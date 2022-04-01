@@ -733,9 +733,11 @@ inline void ufsf_set_init_state(struct ufsf_feature *ufsf)
 	INIT_WORK(&ufsf->reset_lu_work, ufsf_reset_lu_handler);
 
 #if defined(CONFIG_UFSSHPB)
-	ufsshpb_set_state(ufsf, HPB_NEED_INIT);
-	INIT_WORK(&ufsf->hpb_init_work, ufsshpb_init_handler);
-	init_waitqueue_head(&ufsf->hpb_wait);
+	if(ufsf->hba->dev_info.wmanufacturerid == UFS_VENDOR_SAMSUNG) {
+		ufsshpb_set_state(ufsf, HPB_NEED_INIT);
+		INIT_WORK(&ufsf->hpb_init_work, ufsshpb_init_handler);
+		init_waitqueue_head(&ufsf->hpb_wait);
+	}
 #endif
 #if defined(CONFIG_UFSTW)
 	ufstw_set_state(ufsf, TW_NEED_INIT);
