@@ -48,7 +48,7 @@
 #define write_cmos_sensor_8(...) subdrv_i2c_wr_u8(__VA_ARGS__)
 #define read_cmos_sensor(...) subdrv_i2c_rd_u16(__VA_ARGS__)
 #define write_cmos_sensor(...) subdrv_i2c_wr_u16(__VA_ARGS__)
-#define mot_dubai_ov32ce_write_cmos_sensor(...) subdrv_i2c_wr_regs_u8(__VA_ARGS__)
+#define mot_dubai_ov32c_write_cmos_sensor(...) subdrv_i2c_wr_regs_u8(__VA_ARGS__)
 
 /**********************Modify Following Strings for Debug**********************/
 #define PFX "mot_dubai_ov32c"
@@ -58,7 +58,7 @@ module_param(mot_ov32c_camera_debug,int, 0644);
 static int mot_ov32c_fusion_talk_en = 1;
 module_param(mot_ov32c_fusion_talk_en,int, 0644);
 #define LOG_INF(format, args...)        do { if (mot_ov32c_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
-#define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_INF_N(format, args...)     pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 /***********************   Modify end    **************************************/
@@ -142,13 +142,14 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 150,
 		.mipi_pixel_rate = 600000000,
 	},
-	.margin = 31,
+	.margin = 4,
 	.min_shutter = 2,
 	.min_gain = BASEGAIN,
 	.max_gain = 16320,//1024 * 15.9375=16320
 	.min_gain_iso = 100,
 	.gain_step = 1,
-	.gain_type = 0,
+	//sony type:0  OV type:1 Hinyx: type: 2   GC: type 3
+	.gain_type = 1,
 	.max_frame_length = 0x30D400,
 
 
@@ -172,6 +173,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 2, /* enter high speed video  delay frame num */
 	.slim_video_delay_frame = 2,	/* enter slim video delay frame num */
         .custom1_delay_frame = 2,
+	.frame_time_delay_frame = 2,
 	.isp_driving_current = ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
@@ -198,6 +200,18 @@ static kal_uint16 addr_data_pair_init_mot_dubai_ov32c[] = {
 #include"setting/mot_dubai_ov32c_init.h"
 };
 
+static kal_uint16 addr_data_pair_init_mot_dubai_ov32c_1[] = {
+#include"setting/mot_dubai_ov32c_init_1.h"
+};
+
+static u8 data_pair_init_mot_dubai_ov32c_2[] = {
+#include"setting/mot_dubai_ov32c_init_2.h"
+};
+
+static kal_uint16 addr_data_pair_init_mot_dubai_ov32c_3[] = {
+#include"setting/mot_dubai_ov32c_init_3.h"
+};
+
 static kal_uint16 addr_data_pair_preview_mot_dubai_ov32c[] = {
 #include"setting/mot_dubai_ov32c_3264x2448_30fps.h"
 };
@@ -216,11 +230,11 @@ static void set_normal_mode(struct subdrv_ctx *ctx)
      ctx->i2c_write_id=0x30;
      ret=write_cmos_sensor_8(ctx, 0x1000, 0x00);
      ret=write_cmos_sensor_8(ctx, 0x1001, 0x04);
-     msleep(1);
+     mdelay(1);
      ctx->i2c_client->addr=0x20;
      ctx->i2c_write_id=0x20;
      ret=write_cmos_sensor_8(ctx, 0x0103, 0x01);
-     msleep(1);
+     mdelay(1);
 }
 static void set_dummy(struct subdrv_ctx *ctx)
 {
@@ -303,6 +317,10 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
        write_cmos_sensor_8(ctx, 0x3500,(shutter >> 16) & 0xFF);
        write_cmos_sensor_8(ctx, 0x3501,(shutter >> 8) & 0xFF);
        write_cmos_sensor_8(ctx, 0x3502,(shutter) & 0xFF);
+
+       write_cmos_sensor_8(ctx, 0x3540,(shutter >> 16) & 0xFF);
+       write_cmos_sensor_8(ctx, 0x3541,(shutter >> 8) & 0xFF);
+       write_cmos_sensor_8(ctx, 0x3542,(shutter) & 0xFF);
 
 	LOG_INF("ov32c  shutter = %d, framelength = %d\n",
 		shutter, ctx->frame_length);
@@ -407,6 +425,9 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	LOG_INF("gain = %d , reg_gain = 0x%x  \n", gain, reg_gain);
 	write_cmos_sensor_8(ctx, 0x3508, (reg_gain >> 8) & 0xFF);
 	write_cmos_sensor_8(ctx, 0x3509, reg_gain & 0xFF);
+
+	write_cmos_sensor_8(ctx, 0x3548, (reg_gain >> 8) & 0xFF);
+	write_cmos_sensor_8(ctx, 0x3549, reg_gain & 0xFF);
 	return gain;
 }	/*	set_gain  */
 
@@ -495,15 +516,21 @@ static void sensor_init(struct subdrv_ctx *ctx)
     	LOG_INF("E\n");
 	if( mot_ov32c_fusion_talk_en ==1)
 	{
-    		mot_dubai_ov32ce_write_cmos_sensor(ctx,
-			addr_data_pair_init_mot_dubai_ov32c,
-			sizeof(addr_data_pair_init_mot_dubai_ov32c)/sizeof(kal_uint16));
+    		mot_dubai_ov32c_write_cmos_sensor(ctx,
+			addr_data_pair_init_mot_dubai_ov32c_1,
+			sizeof(addr_data_pair_init_mot_dubai_ov32c_1)/sizeof(kal_uint16));
+
+                adaptor_i2c_wr_seq_p8(ctx->i2c_client, OV32C_SENSOR_IIC_ADDR >> 1, 0x6c00, data_pair_init_mot_dubai_ov32c_2,
+			sizeof(data_pair_init_mot_dubai_ov32c_2)/sizeof(u8));
+    		mot_dubai_ov32c_write_cmos_sensor(ctx,
+			addr_data_pair_init_mot_dubai_ov32c_3,
+			sizeof(addr_data_pair_init_mot_dubai_ov32c_3)/sizeof(kal_uint16));
 		LOG_INF("Applying fusion talk...");
 		ov32c_fusion_talk_apply(ctx);
 	}
 	else
 	{
-    		mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    		mot_dubai_ov32c_write_cmos_sensor(ctx,
 			addr_data_pair_init_mot_dubai_ov32c,
 			sizeof(addr_data_pair_init_mot_dubai_ov32c)/sizeof(kal_uint16));
 	}
@@ -514,7 +541,7 @@ static void sensor_init(struct subdrv_ctx *ctx)
 static void preview_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    	mot_dubai_ov32c_write_cmos_sensor(ctx,
 		addr_data_pair_preview_mot_dubai_ov32c,
 		sizeof(addr_data_pair_preview_mot_dubai_ov32c)/sizeof(kal_uint16));
     	LOG_INF("X\n");
@@ -524,7 +551,7 @@ static void preview_setting(struct subdrv_ctx *ctx)
 static void capture_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    	mot_dubai_ov32c_write_cmos_sensor(ctx,
 		addr_data_pair_preview_mot_dubai_ov32c,
 		sizeof(addr_data_pair_preview_mot_dubai_ov32c) /sizeof(kal_uint16));
     	LOG_INF("X\n");
@@ -534,7 +561,7 @@ static void capture_setting(struct subdrv_ctx *ctx)
 static void video_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    	mot_dubai_ov32c_write_cmos_sensor(ctx,
 		addr_data_pair_preview_mot_dubai_ov32c,
 		sizeof(addr_data_pair_preview_mot_dubai_ov32c)/sizeof(kal_uint16));
     	LOG_INF("X\n");
@@ -544,7 +571,7 @@ static void video_setting(struct subdrv_ctx *ctx)
 static void hs_video_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    	mot_dubai_ov32c_write_cmos_sensor(ctx,
 		addr_data_pair_preview_mot_dubai_ov32c,
 		sizeof(addr_data_pair_preview_mot_dubai_ov32c)/sizeof(kal_uint16));
     	LOG_INF("X\n");
@@ -554,7 +581,7 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 static void slim_video_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    	mot_dubai_ov32c_write_cmos_sensor(ctx,
 		addr_data_pair_preview_mot_dubai_ov32c,
 		sizeof(addr_data_pair_preview_mot_dubai_ov32c)/sizeof(kal_uint16));
 	LOG_INF("X\n");
@@ -564,7 +591,7 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 static void custom1_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
-    	mot_dubai_ov32ce_write_cmos_sensor(ctx,
+    	mot_dubai_ov32c_write_cmos_sensor(ctx,
 		addr_data_pair_custom1_ov32c,
 		sizeof(addr_data_pair_custom1_ov32c)/sizeof(kal_uint16));
     	LOG_INF("X\n");
@@ -1617,9 +1644,9 @@ static const struct subdrv_ctx defctx = {
 	.exposure_max = 0xfffc - 3,
 	.exposure_min = 3,
 	.exposure_step = 1,
-	.margin = 3,
+	.margin = 4,
 	.max_frame_length = 0xfffc,
-
+	.frame_time_delay_frame = 2,
 	.mirror = IMAGE_NORMAL, //mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	.shutter = 0x0100,	/*current shutter*/
@@ -1660,13 +1687,13 @@ static struct subdrv_ops ops = {
 };
 
 static struct subdrv_pw_seq_entry pw_seq[] = {
-	{HW_ID_RST, 0, 2},
+	{HW_ID_RST, 0, 0},
 	{HW_ID_MCLK, 24, 0},
 	{HW_ID_MCLK_DRIVING_CURRENT, 6, 1},
 	{HW_ID_DOVDD, 1800000, 0},
 	{HW_ID_AVDD, 2800000, 0},
 	{HW_ID_DVDD, 1100000, 1},
-	{HW_ID_RST, 1, 10}
+	{HW_ID_RST, 1, 5}
 };
 
 const struct subdrv_entry mot_dubai_ov32c_mipi_raw_entry = {
