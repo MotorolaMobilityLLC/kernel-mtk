@@ -389,6 +389,10 @@
 };
 /* AUDIO end */
 
+&regulator_vibrator {
+	min-volt = <3000000>;
+};
+
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 11 0x0>;
