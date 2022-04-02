@@ -53,11 +53,12 @@
 	((a) * aw36515_FLASH_BRT_STEP + aw36515_FLASH_BRT_MIN)
 
 /*  FLASH TIMEOUT DURATION
- *	min 40ms, step 40ms, max 1600ms
+ *  min 40ms, step 40ms, max 1600ms,
+ *  However, the maximum time is only 600ms due to temperature problems
  */
 #define aw36515_FLASH_TOUT_MIN 40
-#define aw36515_FLASH_TOUT_STEP 600
-#define aw36515_FLASH_TOUT_MAX 1600
+#define aw36515_FLASH_TOUT_STEP 40
+#define aw36515_FLASH_TOUT_MAX 600
 
 /*  TORCH BRT
  *	min 980uA, step 1960uA, max 500000uA
@@ -291,7 +292,7 @@ static int aw36515_flash_tout_ctrl(struct aw36515_flash *flash,
 	u8 tout_bits;
 	pr_info_ratelimited("%s tout=%d", __func__, tout);
         if (tout <= 0)
-        {
+       {
 		tout_bits = 0x00;
 	}
 	else if (tout <= 400)
@@ -304,7 +305,6 @@ static int aw36515_flash_tout_ctrl(struct aw36515_flash *flash,
 	}
 	rval = regmap_update_bits(flash->regmap,
 				  REG_FLASH_TOUT, 0x1f, tout_bits);
-
 	return rval;
 }
 
@@ -917,6 +917,8 @@ static int aw36515_probe(struct i2c_client *client,
 		pr_info("register thermal failed\n");
 
 	pr_info("%s:%d", __func__, __LINE__);
+	//disbale led1/2
+	regmap_update_bits(flash->regmap,REG_ENABLE, 0x0f, 0x00);
 	return 0;
 }
 
@@ -936,6 +938,13 @@ static int aw36515_remove(struct i2c_client *client)
 
 	pm_runtime_set_suspended(&client->dev);
 	return 0;
+}
+static void aw36515_shutdown(struct i2c_client *client)
+{
+	struct aw36515_flash *flash = i2c_get_clientdata(client);
+	regmap_update_bits(flash->regmap,REG_ENABLE, 0x0f, 0x00);
+	pr_info_ratelimited("%s", __func__);
+	return;
 }
 
 static int __maybe_unused aw36515_suspend(struct device *dev)
@@ -985,6 +994,7 @@ static struct i2c_driver aw36515_i2c_driver = {
 		   },
 	.probe = aw36515_probe,
 	.remove = aw36515_remove,
+	.shutdown = aw36515_shutdown,
 	.id_table = aw36515_id_table,
 };
 
