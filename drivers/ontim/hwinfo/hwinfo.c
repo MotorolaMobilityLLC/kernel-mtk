@@ -825,11 +825,12 @@ static void get_backaux2_camera_efuse_id(void)
 
 static void get_card_present(void)
 {
+	unsigned int gpio_num = 74;
 	char card_holder_present[BUF_SIZE];
 
 	memset(card_holder_present, '\0', BUF_SIZE);
-	printk("fanxzh gpio(333) value = %d\n", gpio_get_value(333));
-	if (gpio_get_value(333) == 1)
+	printk("gpio(%d) value = %d\n", gpio_get_value(gpio_num));
+	if (gpio_get_value(gpio_num) == 1)
 		strncpy(card_holder_present, "truly", 5);
 	else
 		strncpy(card_holder_present, "false", 5);
