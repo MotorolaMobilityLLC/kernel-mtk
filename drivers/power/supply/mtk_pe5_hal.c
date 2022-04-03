@@ -623,6 +623,17 @@ int pe50_hal_is_pd_adapter_ready(struct chg_alg_device *alg)
 	return ALG_TA_CHECKING;
 }
 
+
+int pe50_hal_set_cv(struct chg_alg_device *alg, enum chg_idx chgidx, u32 uv)
+{
+	int chgtyp = to_chgtyp(chgidx);
+	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
+
+	if (chgtyp < 0)
+		return chgtyp;
+	return charger_dev_set_constant_voltage(hal->chgdevs[chgtyp],
+						uv);
+}
 int pe50_hal_set_ichg(struct chg_alg_device *alg, enum chg_idx chgidx, u32 mA)
 {
 	int chgtyp = to_chgtyp(chgidx);
