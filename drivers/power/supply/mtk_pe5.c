@@ -1240,6 +1240,11 @@ static inline int pe50_start(struct pe50_algo_info *info)
 	}
 
 	data->idvchg_ss_init = desc->idvchg_ss_init;
+	ret = pe50_hal_set_cv(info->alg, CHG1, data->cv_limit * 1000);
+	if (ret < 0) {
+		PE50_ERR("set cv fail(%d)\n", ret);
+		goto start;
+	}
 	ret = pe50_hal_set_aicr(info->alg, CHG1, 3000);
 	if (ret < 0) {
 		PE50_ERR("set aicr fail(%d)\n", ret);
@@ -1353,6 +1358,7 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 		return ret;
 	}
 
+	pe50_hal_set_cv(info->alg, CHG1, data->cv_limit * 1000);
 	pe50_hal_enable_charging(info->alg, CHG1, true);
 	msleep(600);
 
@@ -3969,7 +3975,9 @@ static int pe50_notifier_call(struct chg_alg_device *alg,
 		     notify->evt == EVT_HARDRESET) && data->run_once) {
 			PE50_INFO("detach/hardreset && run once after stop\n");
 			data->notify |= BIT(notify->evt);
-		}
+		} else if (notify->evt == EVT_DETACH)
+			pe50_notify_detach_hdlr(info);
+
 		goto out;
 	}
 	PE50_INFO("%s\n", chg_alg_notify_evt_tostring(notify->evt));
