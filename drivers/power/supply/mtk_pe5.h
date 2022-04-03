@@ -328,6 +328,8 @@ extern int pe50_hal_get_soc(struct chg_alg_device *alg, u32 *soc);
 extern int pe50_hal_is_pd_adapter_ready(struct chg_alg_device *alg);
 extern int pe50_hal_set_ichg(struct chg_alg_device *alg, enum chg_idx chgidx,
 			     u32 mA);
+extern int pe50_hal_set_cv(struct chg_alg_device *alg, enum chg_idx chgidx,
+				u32 uv);
 extern int pe50_hal_set_aicr(struct chg_alg_device *alg, enum chg_idx chgidx,
 			     u32 mA);
 extern int pe50_hal_get_ichg(struct chg_alg_device *alg, enum chg_idx chgidx,
