@@ -2744,6 +2744,14 @@ firmware_class.path=/vendor/firmware";
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	gpio_boardid:gpio_boardid {
+			compatible = "gpio,boardid";
+			gpio,boardid0 = <&pio 163 0>;
+			gpio,boardid1 = <&pio 164 0>;
+			gpio,boardid2 = <&pio 165 0>;
+			gpio,boardid3 = <&pio 166 0>;
+	};
+
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-rst = <172>;
