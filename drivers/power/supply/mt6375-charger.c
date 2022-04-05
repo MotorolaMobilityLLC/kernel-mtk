@@ -110,7 +110,7 @@ enum mt6375_chg_reg_field {
 	/* MT6375_REG_CHG_VCHG */
 	F_CV, F_VREC,
 	/* MT6375_REG_CHG_ICHG */
-	F_CC,
+	F_CC, F_IEOC_DEG,
 	/* MT6375_REG_CHG_TMR */
 	F_CHG_TMR, F_CHG_TMR_EN,
 	/* MT6375_REG_CHG_EOC */
@@ -309,6 +309,10 @@ static const char *const mt6375_attach_trig_names[] = {
 	"ignore", "pwr_rdy", "typec",
 };
 
+static const u32 mt6375_chg_ieoc_deg[] = {
+	2, 256, 1024, 2048,
+};
+
 static const u32 mt6375_chg_vbus_ov[] = {
 	5800, 6500, 11000, 14500,
 };
@@ -350,6 +354,7 @@ static const struct mt6375_chg_range mt6375_chg_ranges[F_MAX] = {
 	[F_CV] = MT6375_CHG_RANGE(3900, 4710, 10, 0, false),
 	[F_VREC] = MT6375_CHG_RANGE(100, 200, 100, 0, false),
 	[F_CC] = MT6375_CHG_RANGE(300, 3150, 50, 6, false),
+	[F_IEOC_DEG] =  MT6375_CHG_RANGE_T(mt6375_chg_ieoc_deg, false),
 	[F_CHG_TMR] = MT6375_CHG_RANGE(5, 20, 5, 0, false),
 	[F_IEOC] = MT6375_CHG_RANGE(100, 800, 50, 1, false),
 	[F_WDT] = MT6375_CHG_RANGE_T(mt6375_chg_wdt, false),
@@ -391,6 +396,7 @@ static const struct mt6375_chg_field mt6375_chg_fields[F_MAX] = {
 	MT6375_CHG_FIELD(F_CV, MT6375_REG_CHG_VCHG, 0, 6),
 	MT6375_CHG_FIELD_RANGE(F_VREC, MT6375_REG_CHG_VCHG, 7, 7, true),
 	MT6375_CHG_FIELD(F_CC, MT6375_REG_CHG_ICHG, 0, 5),
+	MT6375_CHG_FIELD(F_IEOC_DEG, MT6375_REG_CHG_TMR, 0, 1),
 	MT6375_CHG_FIELD(F_CHG_TMR, MT6375_REG_CHG_TMR, 4, 5),
 	MT6375_CHG_FIELD(F_CHG_TMR_EN, MT6375_REG_CHG_TMR, 7, 7),
 	MT6375_CHG_FIELD(F_EOC_RST, MT6375_REG_CHG_EOC, 0, 0),
@@ -2425,6 +2431,13 @@ static int mt6375_chg_init_setting(struct mt6375_chg_data *ddata)
 	struct mt6375_chg_platform_data *pdata = dev_get_platdata(ddata->dev);
 
 	mt_dbg(ddata->dev, "%s\n", __func__);
+	/*config ieoc deg to 2048ms*/
+	ret =mt6375_chg_field_set(ddata, F_IEOC_DEG, 2048);
+	if (ret < 0) {
+		dev_err(ddata->dev, "failed to set IEOC deg\n");
+		return ret;
+	}
+
 	ret = mt6375_chg_field_set(ddata, F_AICC_ONESHOT, 1);
 	if (ret < 0) {
 		dev_err(ddata->dev, "failed to set aicc oneshot\n");
