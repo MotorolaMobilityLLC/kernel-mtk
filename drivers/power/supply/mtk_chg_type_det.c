@@ -112,7 +112,6 @@ static int typec_attach_thread(void *data)
 		val.intval = attach;
 		pr_notice("%s bc12_sel:%d, attach:%d\n",
 			  __func__, mci->bc12_sel, attach);
-		mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, attach);
 		if (mci->bc12_sel == MTK_CTD_BY_SUBPMIC) {
 			ret = power_supply_set_property(mci->bc12_psy,
 						POWER_SUPPLY_PROP_ONLINE, &val);
@@ -150,6 +149,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			handle_typec_attach(mci, true);
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
@@ -169,14 +169,17 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					}
 				}
 			}
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			handle_typec_attach(mci, false);
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 			pr_info("%s Source_to_Sink\n", __func__);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			handle_typec_attach(mci, true);
 		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			pr_info("%s Sink_to_Source\n", __func__);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			handle_typec_attach(mci, false);
 		}
 		break;
