@@ -146,6 +146,7 @@
 //add tonga sensor id end
 //add maui sensor id begin
 #define MOT_MAUI_HI1634B_SENSOR_ID 0x1634
+#define MOT_MAUI_S5K5E9_SENSOR_ID  0x559b
 //add maui sensor id end
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
@@ -636,6 +637,7 @@
 //add tonga sensor drvname end
 //add maui sensor drvname begin
 #define SENSOR_DRVNAME_MOT_MAUI_HI1634B_MIPI_RAW "mot_maui_hi1634b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_MAUI_S5K5E9_MIPI_RAW  "mot_maui_s5k5e9_mipi_raw"
 //add maui sensor drvname end
 /******************************************************************************
  *
