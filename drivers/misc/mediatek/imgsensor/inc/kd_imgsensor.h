@@ -148,6 +148,7 @@
 #define MOT_MAUI_HI1634B_SENSOR_ID 0x1634
 #define MOT_MAUI_S5K5E9_SENSOR_ID  0x559b
 #define MOT_MAUI_GC02M1_SENSOR_ID 0x02e0
+#define MOT_MAUI_OV02B10_SENSOR_ID 0x002b
 //add maui sensor id end
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
@@ -640,6 +641,7 @@
 #define SENSOR_DRVNAME_MOT_MAUI_HI1634B_MIPI_RAW "mot_maui_hi1634b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_MAUI_S5K5E9_MIPI_RAW  "mot_maui_s5k5e9_mipi_raw"
 #define SENSOR_DRVNAME_MOT_MAUI_GC02M1_MIPI_RAW "mot_maui_gc02m1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_MAUI_OV02B10_MIPI_RAW "mot_maui_ov02b10_mipi_raw"
 //add maui sensor drvname end
 /******************************************************************************
  *
