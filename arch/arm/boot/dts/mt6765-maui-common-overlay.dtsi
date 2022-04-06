@@ -399,8 +399,142 @@
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
+&mtk_charger_type {
+	bc12_active = <0>;
+};
+
 &mt6370_chg {
 	bc12_sel = <1>;
+};
+
+&usb {
+	charger = <&mtk_charger_type>;
+};
+
+&lk_charger {
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <500000>;
+	charging_host_charger_current = <2000000>;
+	ta_ac_charger_current = <2000000>;
+};
+
+&pe {
+	status = "disable";
+};
+&pe2 {
+	status = "disable";
+};
+&pe4 {
+	status = "disable";
+};
+
+&i2c5 {
+	bq2560x_charger:bq25601@6B {
+		compatible = "ti,bq25601";
+		reg = <0x6B>;
+		ti,bq2560x,usb-vlim = <4600>;
+		ti,bq2560x,usb-ilim = <2000>;
+		ti,bq2560x,usb-vreg = <4400>;
+		ti,bq2560x,usb-ichg = <2000>;
+		ti,bq2560x,precharge-current = <256>;
+		ti,bq2560x,termination-current = <120>;
+		ti,bq2560x,boost-voltage = <4998>;
+		ti,bq2560x,boost-current = <1200>;
+		ti,bq2560x,enable_term;
+		ti,bq2560x,stat-pin-ctrl = <3>;
+		ti,bq2560x,vac-ovp-threshold = <6500>;
+
+	};
+};
+
+&charger {
+	charger = <&mtk_charger_type>;
+	/* common */
+	battery_cv = <4400000>;
+	max_charger_voltage = <6500000>;
+	min_charger_voltage = <4600000>;
+
+	/* charging current */
+	usb_charger_current_suspend = <0>;
+	usb_charger_current_unconfigured = <70000>;
+	usb_charger_current_configured = <500000>;
+	usb_charger_current = <500000>;
+	ac_charger_current = <2000000>;
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_charger_current = <1500000>;
+	apple_1_0a_charger_current = <650000>;
+	apple_2_1a_charger_current = <800000>;
+	ta_ac_charger_current = <2000000>;
+	typec_limit_aicr = <3000000>;
+
+	/*mmi config*/
+	mmi,iterm-ma = <150>;
+	mmi,mmi-temp-zones = <0 4200 1000 0>,
+			<15 0 1000 1000>,
+			<45 0 3000 3000>,
+			<60 4200 2500 0>;
+	mmi,enable-charging-limit;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
+};
+
+&mtk_gauge {
+	charger = <&mtk_charger_type>;
+	extern_charger = <&bq2560x_charger>;
+	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
+	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
+	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
+	VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
+
+	/* battery prop */
+	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+	g_FG_PSEUDO100 = <98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		98 98 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100
+		100 100 100 100>;
+
+	g_Q_MAX = <4822 4871 2490 1965
+		4856 4936 2468 1984
+		4854 4905 2310 1946
+		4725 4794 1858 1873
+		4856 4920 1843 1851
+		2211 1652 1533 1541
+		2201 1642 1523 1531
+		2191 1632 1513 1521
+		2181 1622 1503 1511
+		2171 1612 1493 1501>;
+
+	g_Q_MAX_H_CURRENT = <4822 4871 2190 1665
+		4856 4936 2168 1684
+		4854 4905 2010 1646
+		4725 4794 1558 1573
+		4856 4920 1543 1551
+		2210 1650 1533 1541
+		2200 1640 1523 1531
+		2190 1630 1513 1521
+		2180 1620 1503 1511
+		2170 1610 1493 1501>;
+	ACTIVE_TABLE = <(5)>;
+
+	df-serialnum = "SB18D15207";
+        #include "bat_setting/S96767AA1_ATL_4V4_4000MAH.dtsi"
+        #include "bat_setting/S96767AA1_SUN_4V4_4000MAH.dtsi"
+};
+
+&moto_chg_tcmd {
+                compatible = "mmi,moto-chg-tcmd";
+                status = "okay";
+
+                mmi,ntc_table = <1>;
+                mmi,ntc_v_ref = <1800000>;
+                mmi,ntc_r_pull = <100000>;
 };
 
 //#include <k65v1_32_bsp/cust.dtsi>
