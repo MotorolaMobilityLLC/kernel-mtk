@@ -90,6 +90,11 @@ struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
 	SENSOR_DRVNAME_MOT_MAUI_GC02M1_MIPI_RAW,
 	MOT_MAUI_GC02M1_MIPI_RAW_SensorInit},
 #endif
+#if defined(MOT_MAUI_OV02B10_MIPI_RAW)
+	{MOT_MAUI_OV02B10_SENSOR_ID,
+	SENSOR_DRVNAME_MOT_MAUI_OV02B10_MIPI_RAW,
+	MOT_MAUI_OV02B10_MIPI_RAW_SensorInit},
+#endif
 	/*  ADD sensor driver before this line */
 	{0, {0}, NULL}, /* end of list */
 };
