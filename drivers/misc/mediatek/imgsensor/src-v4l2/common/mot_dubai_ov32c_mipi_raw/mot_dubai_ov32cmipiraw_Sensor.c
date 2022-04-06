@@ -1185,9 +1185,13 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 		write_cmos_sensor_8(ctx, 0x3019,0xf0);
 		write_cmos_sensor_8(ctx, 0x4308,0x01);
 		write_cmos_sensor_8(ctx, 0x4300,0x00);
+		write_cmos_sensor_8(ctx, 0x4301,0x00);
 		write_cmos_sensor_8(ctx, 0x4302,0x00);
+		write_cmos_sensor_8(ctx, 0x4303,0x00);
 		write_cmos_sensor_8(ctx, 0x4304,0x00);
-		write_cmos_sensor_8(ctx, 0x4306,0x07);
+		write_cmos_sensor_8(ctx, 0x4305,0x00);
+		write_cmos_sensor_8(ctx, 0x4306,0x00);
+		write_cmos_sensor_8(ctx, 0x4307,0x00);
 	} else {
 		write_cmos_sensor_8(ctx, 0x3019,0xd2);
 		write_cmos_sensor_8(ctx, 0x4308,0x00);
