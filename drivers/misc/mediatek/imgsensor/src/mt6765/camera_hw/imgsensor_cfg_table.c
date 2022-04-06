@@ -309,6 +309,18 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_MAUI_OV02B10_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_MAUI_OV02B10_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 2},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_High, 1},
+			{RST, Vol_High, 2},
+		},
+	},
+#endif
 #if defined(IMX398_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_IMX398_MIPI_RAW,
