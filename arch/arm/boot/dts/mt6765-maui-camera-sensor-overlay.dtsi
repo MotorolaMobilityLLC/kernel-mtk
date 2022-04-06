@@ -300,7 +300,7 @@
 	cam1_enable_sensor = "mot_maui_s5k5e9_mipi_raw";
 	cam2_enable_sensor = "mot_maui_gc02m1_mipi_raw";
 	cam3_enable_sensor = "null_mipi_raw";
-	cam4_enable_sensor = "null_mipi_raw";
+	cam4_enable_sensor = "mot_maui_ov02b10_mipi_raw";
 	status = "okay";
 
 };
