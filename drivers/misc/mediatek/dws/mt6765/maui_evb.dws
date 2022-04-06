@@ -1900,7 +1900,7 @@
             </i2c_bus3>
             <i2c_bus4>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>false</pullPushEn>
+                <pullPushEn>true</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
                 <speed_kbps>400</speed_kbps>
@@ -1975,7 +1975,7 @@
             <device13>
                 <varName>CAMERA_SUB</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address>0x2D</address>
+                <address>0x5A</address>
             </device13>
             <device14>
                 <varName>CAMERA_SUB_EEPROM</varName>
