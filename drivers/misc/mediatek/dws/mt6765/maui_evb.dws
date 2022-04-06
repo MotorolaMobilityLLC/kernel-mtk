@@ -2020,7 +2020,7 @@
             <device22>
                 <varName>CAMERA_MAIN_THREE</varName>
                 <channel>I2C_CHANNEL_2</channel>
-                <address>0x6E</address>
+                <address>0x78</address>
             </device22>
             <device23>
                 <varName>USB_TYPE_C_SGM</varName>
