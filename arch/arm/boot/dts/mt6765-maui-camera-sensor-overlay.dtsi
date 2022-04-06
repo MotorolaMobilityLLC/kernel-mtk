@@ -297,7 +297,7 @@
 	cam2_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam4_vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
 	cam0_enable_sensor = "mot_maui_hi1634b_mipi_raw";
-	cam1_enable_sensor = "null_mipi_raw";
+	cam1_enable_sensor = "mot_maui_s5k5e9_mipi_raw";
 	cam2_enable_sensor = "null_mipi_raw";
 	cam3_enable_sensor = "null_mipi_raw";
 	cam4_enable_sensor = "null_mipi_raw";
