@@ -268,12 +268,12 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[2] = {
 		1
 	},
 	{
-		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //custom2
+		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //1080p 60fps
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x0780, 0x0438},
-			{VC_PDAF_STATS, 0x01, 0x2b, 0xF00, 0x10E},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x0780, 0x21c},
 #if PD_PIX_2_EN
-			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0xF00, 0x10E},
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x0780, 0x21c},
 #endif
 		},
 		1
@@ -300,6 +300,7 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 	case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
 	case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 	case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+	case SENSOR_SCENARIO_ID_CUSTOM4:
 	default:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
@@ -324,8 +325,8 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumY = 0,
 	.i4LeFirst = 0,
 	.i4Crop = {
-		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
-		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
+		{0, 0}, {0, 0}, {1088, 996}, {0, 0}, {0, 0},
+		{0, 0}, {64, 228}, {0, 0}, {2048, 1536}
 	},  //{0, 1632}
 	.iMirrorFlip = 0,
 };
@@ -2260,6 +2261,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
+      {
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x800,
+			.vsize = 0x300,
+			.user_data_desc = VC_PDAF_STATS,
+		},
+	},
 };
 static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 	{
@@ -2282,12 +2292,12 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-	{
+      {
 		.bus.csi2 = {
-			.channel = 0,
+			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x0780,
-			.vsize = 0x0438,
+			.hsize = 0x780,
+			.vsize = 0x21c,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
