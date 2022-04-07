@@ -504,6 +504,11 @@
 		io-channel-names = "thermistor-ch6";
 };
 
+&mt6360_ldo {
+ 	sdcard_det_en=<1>;
+ 	sdcard_hlact=<0>;
+};
+
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
