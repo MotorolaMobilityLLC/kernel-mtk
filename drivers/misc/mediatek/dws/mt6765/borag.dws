@@ -75,6 +75,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint2>
+            <eint4>
+                <varName>USB_CABLE</varName>
+                <debounce_time>256</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint4>
             <!--eint5: disable temperarily>
                 <varName>FINGERPRINT_FPSENSOR</varName>
                 <debounce_time>0</debounce_time>
@@ -103,13 +110,6 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint11>
-            <eint19>
-                <varName>USB_CABLE</varName>
-                <debounce_time>256</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint19>
             <eint41>
                 <varName>OTG_IDDIG</varName>
                 <debounce_time>32</debounce_time>
@@ -170,6 +170,17 @@
             <gpio3>
                 <smt>true</smt>
             </gpio3>
+            <gpio4>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_USB_CABLE_EINT_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio4>
             <gpio5>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -275,17 +286,6 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio16>
-            <gpio19>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_USB_CABLE_EINT_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio19>
             <gpio21>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>

@@ -214,7 +214,7 @@
 
 /*usb cable start*/
 &usb_cable {
-	usbcable-gpio = <&pio 19 0>;
+	usbcable-gpio = <&pio 4 0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&usbcable_pins_default>;
 	status = "okay";
@@ -222,7 +222,7 @@
 &pio {
 	usbcable_pins_default:usbcableeint@0{
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO19__FUNC_GPIO19>;
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
 			slew-rate = <0>;
 			bias-disable;
 		};
