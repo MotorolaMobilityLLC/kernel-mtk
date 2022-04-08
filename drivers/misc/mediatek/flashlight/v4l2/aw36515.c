@@ -173,11 +173,15 @@ static int aw36515_enable_ctrl(struct aw36515_flash *flash,
 
 	pr_info_ratelimited("%s led:%d enable:%d", __func__, led_no, on);
 
+#ifdef CONFIG_MTK_FLASHLIGHT_DLPT
 	flashlight_kicker_pbm(on);
+#endif
+#ifdef CONFIG_MTK_FLASHLIGHT_PT
 	if (flashlight_pt_is_low()) {
 		pr_info_ratelimited("pt is low\n");
 		return 0;
 	}
+#endif
 #if 0
 	if (led_no == aw36515_LED0) {
 		if (on)
