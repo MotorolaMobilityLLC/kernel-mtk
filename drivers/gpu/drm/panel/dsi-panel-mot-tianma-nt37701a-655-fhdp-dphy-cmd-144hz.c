@@ -723,7 +723,10 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	char bl_tb0[] = { 0x51, 0x0f, 0xff};
 	struct lcm *ctx = g_ctx;
 
-	if (ctx->hbm_mode) pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
+	if (ctx->hbm_mode) {
+		pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
+		return 0;
+	}
 
 	if (!(ctx->current_bl && level)) pr_info("backlight changed from %u to %u\n", ctx->current_bl, level);
 	else pr_debug("backlight changed from %u to %u\n", ctx->current_bl, level);
@@ -955,8 +958,6 @@ static int mode_switch(struct drm_panel *panel,
 }
 
 static struct LCM_setting_table panel_lhbm_on[] = {
-	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
-	{REGFLAG_CMD, 2, {0xB2, 0x11}},
 	{REGFLAG_CMD, 3, {0x87, 0x1F, 0xFF}},
 	{REGFLAG_CMD, 2, {0x88, 0x01}},
 	{REGFLAG_CMD, 2, {0x85, 0x01}},
@@ -964,8 +965,6 @@ static struct LCM_setting_table panel_lhbm_on[] = {
 };
 
 static struct LCM_setting_table panel_lhbm_off[] = {
-	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
-	{REGFLAG_CMD, 2, {0xB2, 0x11}},
 	{REGFLAG_CMD, 3, {0x87, 0x0F, 0xFF}},
 	{REGFLAG_CMD, 2, {0x88, 0x01}},
 	{REGFLAG_CMD, 2, {0x86, 0x01}},
@@ -974,7 +973,7 @@ static struct LCM_setting_table panel_lhbm_off[] = {
 
 static void set_lhbm_alpha(unsigned int bl_level)
 {
-	struct LCM_setting_table *pTable = &panel_lhbm_on[2];
+	struct LCM_setting_table *pTable = &panel_lhbm_on[0];
 	unsigned int alpha = 0;
 /*
 	if((bl_level < 4095) && (bl_level > 3514))
