@@ -848,10 +848,12 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 	if (m_new_pq_persist_property[DISP_PQ_CCORR_SILKY_BRIGHTNESS])
 		sb_backlight = level;
 
-	if (panel_set_hbm_backlight(crtc, &level))
-		return 0;
-
 	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+
+	if (panel_set_hbm_backlight(crtc, &level)) {
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+		return 0;
+	}
 
 	if (!(mtk_crtc->enabled)) {
 		DDPINFO("Sleep State set backlight stop --crtc not ebable\n");
@@ -1249,7 +1251,7 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	if (cmdq_pkt_flush_threaded(cmdq_handle, panel_feature_cmdq_cb, cb_data) < 0)
 		DDPPR_ERR("failed to flush bl_cmdq_cb\n");
 
-	DDPINFO("%s set panel feature (%d) to %d, success!\n", __func__, param_info.param_idx, param_info.value);
+	DDPMSG("%s set panel feature (%d) to %d, success!\n", __func__, param_info.param_idx, param_info.value);
 
 	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 	return 0;
