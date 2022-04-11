@@ -409,6 +409,22 @@
 		ti,bq2560x,vac-ovp-threshold = <6500>;
 
 	};
+
+	sgm41513_charger:bq25601@1A {
+		compatible = "ti,bq25601";
+		reg = <0x1A>;
+		ti,bq2560x,usb-vlim = <4600>;
+		ti,bq2560x,usb-ilim = <2000>;
+		ti,bq2560x,usb-vreg = <4400>;
+		ti,bq2560x,usb-ichg = <2000>;
+		ti,bq2560x,precharge-current = <256>;
+		ti,bq2560x,termination-current = <120>;
+		ti,bq2560x,boost-voltage = <4998>;
+		ti,bq2560x,boost-current = <1200>;
+		ti,bq2560x,enable_term;
+		ti,bq2560x,stat-pin-ctrl = <3>;
+		ti,bq2560x,vac-ovp-threshold = <6500>;
+	};
 };
 
 &charger {
@@ -446,6 +462,7 @@
 &mtk_gauge {
 	charger = <&mtk_charger_type>;
 	extern_charger = <&bq2560x_charger>;
+	extern_charger_sgm41513 = <&sgm41513_charger>;
 	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
 	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
 	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
