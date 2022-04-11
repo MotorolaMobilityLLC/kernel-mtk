@@ -3848,8 +3848,10 @@
 #include "mt6370.dtsi"
 #include "mt6370_pd.dtsi"
 /* Motorola base dts override */
-#ifdef CONFIG_ELLIS_DTB
+#if defined CONFIG_ELLIS_DTB
 #include "mt6765-moto-base-ellis.dtsi"
+#elif defined CONFIG_MAUI_DTB
+#include "mt6765-moto-base-maui.dtsi"
 #else
 #include "mt6765-moto-base.dtsi"
 #endif
