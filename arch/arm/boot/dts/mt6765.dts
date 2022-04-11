@@ -4718,3 +4718,6 @@ initcall_debug=1 pelt=8 clk_ignore_unused=1";
 &mt6370 {
 	interrupts = <11 IRQ_TYPE_LEVEL_LOW 11 0>;
 };
+
+/* Motorola base dts override */
+#include "mt6765-moto-base-maui.dtsi"
