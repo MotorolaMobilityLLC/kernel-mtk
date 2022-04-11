@@ -59,7 +59,7 @@ static int mot_ov50a_xtalk_en = 1;
 module_param(mot_ov50a_xtalk_en,int, 0644);
 
 #define LOG_INF(format, args...)        do { if (mot_ov50a_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
-#define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_INF_N(format, args...)     pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE 1
