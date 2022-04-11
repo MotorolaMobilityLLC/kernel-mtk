@@ -509,6 +509,13 @@
         #include "bat_setting/S96767AA1_SUN_4V4_4000MAH.dtsi"
 };
 
+&odm {
+	led7:led@7 {
+		compatible = "mediatek,charging";
+		led_mode = <3>;
+	};
+};
+
 &moto_chg_tcmd {
                 compatible = "mmi,moto-chg-tcmd";
                 status = "okay";
