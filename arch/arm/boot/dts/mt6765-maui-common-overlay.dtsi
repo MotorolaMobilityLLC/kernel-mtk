@@ -622,6 +622,13 @@
 		reg = <0x3e>;
 		status = "okay";
 	};
+
+	fs16xx@34 {
+		compatible = "foursemi,fs16xx";
+		reg = <0x34>;
+		fsm,re25-dft = <7168>;
+		status = "okay";
+	};
 };
 
 //#include <k65v1_32_bsp/cust.dtsi>
