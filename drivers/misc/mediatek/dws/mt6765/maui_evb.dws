@@ -1945,7 +1945,7 @@
             <device7>
                 <varName>CAMERA_MAIN_TWO</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address>0x7A</address>
+                <address>0x6E</address>
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
