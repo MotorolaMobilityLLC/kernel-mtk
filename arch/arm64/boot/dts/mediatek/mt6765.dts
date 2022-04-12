@@ -3360,10 +3360,6 @@ firmware_class.path=/vendor/firmware";
 			<&scpsys SCP_SYS_CAM>;
 		clock-names = "CCU_CLK_CAM_CCU",
 			"CAM_PWR";
-	led_simple: led_simple {
-		compatible = "leds-mt65xx";
-	};
-
 	};
 
 	lk_charger: lk_charger {
