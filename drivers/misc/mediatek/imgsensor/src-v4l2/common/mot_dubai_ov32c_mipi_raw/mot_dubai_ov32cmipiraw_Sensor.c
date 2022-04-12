@@ -228,12 +228,24 @@ static void set_normal_mode(struct subdrv_ctx *ctx)
      int ret=0;
      ctx->i2c_client->addr=0x30;
      ctx->i2c_write_id=0x30;
-     ret=write_cmos_sensor_8(ctx, 0x1000, 0x00);
-     ret=write_cmos_sensor_8(ctx, 0x1001, 0x04);
+     ret = write_cmos_sensor_8(ctx, 0x1000, 0x00);
+     if(ret < 0)
+     {
+		LOG_ERR("error");
+     }
+     ret = write_cmos_sensor_8(ctx, 0x1001, 0x04);
+     if(ret < 0)
+     {
+		LOG_ERR("error");
+     }
      mdelay(1);
      ctx->i2c_client->addr=0x20;
      ctx->i2c_write_id=0x20;
-     ret=write_cmos_sensor_8(ctx, 0x0103, 0x01);
+     ret = write_cmos_sensor_8(ctx, 0x0103, 0x01);
+     if(ret < 0)
+     {
+		LOG_ERR("error");
+     }
      mdelay(1);
 }
 static void set_dummy(struct subdrv_ctx *ctx)
@@ -440,6 +452,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 	write_cmos_sensor_8(ctx, 0x0100,0x01);//stream on
     else
 	write_cmos_sensor_8(ctx, 0x0100,0x00); // stream off
+    mdelay(3);
     return ERROR_NONE;
 }
 #define OV32C_EEPROM_IIC_ADDR 0xA2
@@ -733,8 +746,6 @@ static int open(struct subdrv_ctx *ctx)
  *************************************************************************/
 static int close(struct subdrv_ctx *ctx)
 {
-	streaming_control(ctx, KAL_FALSE);
-
 	LOG_INF("E\n");
 	return ERROR_NONE;
 }	/*	close  */
@@ -962,7 +973,7 @@ static int control(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("666666   scenario_id = %d\n", scenario_id);
+	LOG_INF("scenario_id = %d\n", scenario_id);
 	ctx->current_scenario_id = scenario_id;
 	switch (scenario_id) {
 	case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
@@ -1693,11 +1704,11 @@ static struct subdrv_ops ops = {
 static struct subdrv_pw_seq_entry pw_seq[] = {
 	{HW_ID_RST, 0, 0},
 	{HW_ID_MCLK, 24, 0},
-	{HW_ID_MCLK_DRIVING_CURRENT, 6, 1},
+	{HW_ID_MCLK_DRIVING_CURRENT, 6, 2},
 	{HW_ID_DOVDD, 1800000, 0},
 	{HW_ID_AVDD, 2800000, 0},
-	{HW_ID_DVDD, 1100000, 1},
-	{HW_ID_RST, 1, 5}
+	{HW_ID_DVDD, 1100000, 2},
+	{HW_ID_RST, 1, 7}
 };
 
 const struct subdrv_entry mot_dubai_ov32c_mipi_raw_entry = {
