@@ -32,6 +32,8 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
 #ifdef MOT_TONGA_S5KJN1SQ_MIPI_RAW
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
+#elif MOT_MAUI_HI1634B_MIPI_RAW
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 #else
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DVDD},
 #endif
@@ -268,6 +270,19 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_High, 1},
 			{RST, Vol_High, 2},
+		},
+	},
+#endif
+#if defined(MOT_MAUI_HI1634B_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_MAUI_HI1634B_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 0},
+			{AVDD, Vol_High, 0},
+			{DVDD, Vol_High, 1},
+			{RST, Vol_High, 5},
 		},
 	},
 #endif
