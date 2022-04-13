@@ -37,6 +37,7 @@
 
 #include <mt-plat/fpsgo_common.h>
 
+#include "fpsgo_usedext.h"
 #include "fpsgo_base.h"
 #include "fpsgo_sysfs.h"
 #include "fbt_usedext.h"
@@ -5170,6 +5171,19 @@ void fbt_xgff_list_loading_del(struct fbt_thread_loading *ploading)
 	kfree(ploading);
 }
 
+static void fbt_xgff_set_min_cap(unsigned int min_cap)
+{
+	int tgt_opp, tgt_freq, fbt_min_cap;
+
+	if (min_cap > 1024)
+		min_cap = 1024;
+
+	fbt_min_cap = (min_cap * 100 / 1024) + 1;
+	tgt_opp = fbt_get_opp_by_normalized_cap(fbt_min_cap, 0);
+	tgt_freq = cpu_dvfs[0].power[tgt_opp];
+	fbt_cpu_L_ceiling_min(tgt_freq);
+}
+
 static ssize_t light_loading_policy_show(struct kobject *kobj,
 		struct kobj_attribute *attr,
 		char *buf)
@@ -6306,6 +6320,8 @@ int __init fbt_cpu_init(void)
 
 	limit_clus_ceil =
 		kcalloc(cluster_num, sizeof(struct fbt_syslimit), GFP_KERNEL);
+
+	xgff_frame_min_cap_fp = fbt_xgff_set_min_cap;
 
 	fbt_init_sjerk();
 
