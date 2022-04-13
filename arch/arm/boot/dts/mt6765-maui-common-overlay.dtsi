@@ -17,6 +17,11 @@
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
 #include <dt-bindings/mmc/mt6765-msdc.h>
+//#include <k65v1_32_bsp/cust.dtsi>
+#include "mt6765-maui-camera-sensor-overlay.dtsi"
+#include "cust_mt6765_touch_maui_720x1600.dtsi"
+//#include "cust_mt6765_touch_1080x1920.dtsi"
+/*End of this file, DO NOT ADD ANYTHING HERE*/
 
 /* chosen */
 &chosen {
@@ -635,9 +640,3 @@
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
-
-//#include <k65v1_32_bsp/cust.dtsi>
-#include "cust_mt6765_camera.dtsi"
-#include "cust_mt6765_touch_maui_720x1600.dtsi"
-//#include "cust_mt6765_touch_1080x1920.dtsi"
-/*End of this file, DO NOT ADD ANYTHING HERE*/
