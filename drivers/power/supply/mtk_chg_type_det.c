@@ -19,6 +19,13 @@
 
 #define MTK_CTD_DRV_VERSION	"1.0.0_MTK"
 
+struct tag_bootmode {
+	u32 size;
+	u32 tag;
+	u32 bootmode;
+	u32 boottype;
+};
+
 struct mtk_ctd_info {
 	struct device *dev;
 	/* device tree */
@@ -37,6 +44,9 @@ struct mtk_ctd_info {
 	/* suspend notify */
 	struct notifier_block pm_nb;
 	bool is_suspend;
+	struct work_struct	mmi_hardreset_work;
+	bool is_mmi_pd_hardreset;
+	bool is_mmi_pd_hardreset_plugout;
 };
 
 enum {
@@ -149,6 +159,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
+			mci->is_mmi_pd_hardreset_plugout = false;
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			handle_typec_attach(mci, true);
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
@@ -159,6 +170,12 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			if (mci->tcpc_kpoc) {
 				pr_info("%s: typec unattached, power off\n",
 					__func__);
+				if (mci->is_mmi_pd_hardreset) {
+					mci->is_mmi_pd_hardreset_plugout = true;
+					schedule_work(&mci->mmi_hardreset_work);
+					break;
+				}
+			#ifdef MTK_BASE
 				while (1) {
 					if (mci->is_suspend == false) {
 						pr_info("%s, not in suspend, shutdown\n", __func__);
@@ -168,6 +185,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 						msleep(20);
 					}
 				}
+			#endif
 			}
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			handle_typec_attach(mci, false);
@@ -182,6 +200,13 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			handle_typec_attach(mci, false);
 		}
+		break;
+	case TCP_NOTIFY_PD_STATE:
+		if (noti->pd_state.connected == PD_CONNECT_HARD_RESET)
+			mci->is_mmi_pd_hardreset = true;
+		else
+			mci->is_mmi_pd_hardreset = false;
+		pr_info("%s: is_mmi_pd_hardreset = %d\n", __func__, mci->is_mmi_pd_hardreset);
 		break;
 	default:
 		break;
@@ -214,6 +239,8 @@ static int chg_type_det_pm_event(struct notifier_block *notifier,
 
 static void mtk_ctd_parse_dt(struct mtk_ctd_info *mci)
 {
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
 	struct device_node *np = mci->dev->of_node;
 	int ret;
 
@@ -226,6 +253,47 @@ static void mtk_ctd_parse_dt(struct mtk_ctd_info *mci)
 	} else
 		dev_info(mci->dev,
 			 "%s: bc12_sel = %d\n", __func__, mci->bc12_sel);
+
+
+	boot_node = of_parse_phandle(np, "bootmode", 0);
+	if (!boot_node)
+		pr_err("%s: failed to get boot mode phandle\n", __func__);
+	else {
+		tag = (struct tag_bootmode *)of_get_property(boot_node,
+							"atag,boot", NULL);
+		if (!tag)
+			pr_err("%s: failed to get atag,boot\n", __func__);
+		else {
+			pr_err("%s: size:0x%x tag:0x%x bootmode:0x%x boottype:0x%x\n",
+				__func__, tag->size, tag->tag,
+				tag->bootmode, tag->boottype);
+
+			/*charge only mode*/
+			if (tag->bootmode == 8 ||tag->bootmode == 9)
+				mci->tcpc_kpoc = true;
+			else
+				mci->tcpc_kpoc = false;
+		}
+	}
+}
+
+#define MMI_HARDRESET_CNT 50
+static void mmi_pd_hardreset_work(struct work_struct *work)
+
+{
+	int i;
+	struct mtk_ctd_info *mci = container_of(work, struct mtk_ctd_info,
+						mmi_hardreset_work);
+
+	for (i = 0; i < MMI_HARDRESET_CNT; i++) {
+		msleep(20);
+		if (!mci->is_mmi_pd_hardreset_plugout)
+			break;
+	}
+
+	pr_info("mmi_pd_hardreset_work i = %d\n", i);
+	if (i >= MMI_HARDRESET_CNT)
+		kernel_power_off();
 }
 
 static int mtk_ctd_probe(struct platform_device *pdev)
@@ -279,6 +347,10 @@ static int mtk_ctd_probe(struct platform_device *pdev)
 		pr_notice("%s: run typec attach kthread fail\n", __func__);
 		return PTR_ERR(mci->attach_task);
 	}
+
+	INIT_WORK(&mci->mmi_hardreset_work,
+					mmi_pd_hardreset_work);
+
 	dev_info(mci->dev, "%s: successfully\n", __func__);
 	return 0;
 }
