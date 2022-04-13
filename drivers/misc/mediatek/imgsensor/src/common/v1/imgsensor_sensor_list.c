@@ -15,6 +15,12 @@
  *     mediatek\custom\common\hal\imgsensor\src\sensorlist.cpp
  */
 struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
+	/* borag project*/
+#if defined(HI1634B_BORAG_MIPI_RAW)
+	{HI1634B_BORAG_SENSOR_ID,
+	SENSOR_DRVNAME_HI1634B_BORAG_MIPI_RAW,
+	HI1634B_BORAG_MIPI_RAW_SensorInit},
+#endif
 	/*IMX*/
 #if defined(IMX519_MIPI_RAW)
 	{IMX519_SENSOR_ID,
