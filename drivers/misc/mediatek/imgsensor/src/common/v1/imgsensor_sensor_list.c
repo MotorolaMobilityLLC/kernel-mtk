@@ -754,6 +754,11 @@ struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
 		OV8856_MIPI_RAW_SensorInit},
 #endif
 
+#if defined(MOT_MAUI_HI1634B_MIPI_RAW)
+	{MOT_MAUI_HI1634B_SENSOR_ID,
+	SENSOR_DRVNAME_MOT_MAUI_HI1634B_MIPI_RAW,
+	MOT_MAUI_HI1634B_MIPI_RAW_SensorInit},
+#endif
 	/*  ADD sensor driver before this line */
 	{0, {0}, NULL}, /* end of list */
 };
