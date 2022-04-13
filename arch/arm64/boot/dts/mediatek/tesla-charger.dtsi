@@ -84,6 +84,10 @@
 	sc_input_current = <3000000>;
 };
 
+&mtk_ctd {
+	bootmode = <&chosen>;
+};
+
 &charger {
 	boot_battery_voltage = <3600000>;
 	battery_cv = <4480000>;
