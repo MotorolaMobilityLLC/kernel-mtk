@@ -9,6 +9,7 @@
 
 #include <lcm_drv.h>
 
+extern struct LCM_DRIVER ontim_txd9882c_hdplus_dsi_vdo_truly_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
 extern struct LCM_DRIVER nt35595_fhd_dsi_cmd_truly_8163_lcm_drv;
@@ -45,6 +46,7 @@ extern struct LCM_DRIVER spfd5461a_lcm_drv;
 extern struct LCM_DRIVER ta7601_lcm_drv;
 extern struct LCM_DRIVER tft1p3037_lcm_drv;
 extern struct LCM_DRIVER ha5266_lcm_drv;
+
 extern struct LCM_DRIVER hsd070idw1_lcm_drv;
 extern struct LCM_DRIVER lg4571_lcm_drv;
 extern struct LCM_DRIVER lg4573b_wvga_dsi_vdo_lh430mv1_drv;
