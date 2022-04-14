@@ -554,10 +554,10 @@ static int aw36515_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 static int aw36515_close(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
-	pr_info("%s\n", __func__);
-
+	//clean OVP
+	regmap_update_bits(aw36515_flash_data->regmap,REG_FLAG2, 0x0f, 0x00);
+	pr_info_ratelimited("%s", __func__);
 	pm_runtime_put(sd->dev);
-
 	return 0;
 }
 
@@ -923,6 +923,8 @@ static int aw36515_probe(struct i2c_client *client,
 	pr_info("%s:%d", __func__, __LINE__);
 	//disbale led1/2
 	regmap_update_bits(flash->regmap,REG_ENABLE, 0x0f, 0x00);
+	//clean OVP
+	regmap_update_bits(flash->regmap,REG_FLAG2, 0x0f, 0x00);
 	return 0;
 }
 
@@ -945,8 +947,7 @@ static int aw36515_remove(struct i2c_client *client)
 }
 static void aw36515_shutdown(struct i2c_client *client)
 {
-	struct aw36515_flash *flash = i2c_get_clientdata(client);
-	regmap_update_bits(flash->regmap,REG_ENABLE, 0x0f, 0x00);
+	regmap_update_bits(aw36515_flash_data->regmap,REG_ENABLE, 0x0f, 0x00);
 	pr_info_ratelimited("%s", __func__);
 	return;
 }
