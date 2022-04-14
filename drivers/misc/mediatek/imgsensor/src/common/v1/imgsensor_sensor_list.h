@@ -15,6 +15,9 @@ struct IMGSENSOR_INIT_FUNC_LIST {
 	MUINT32 (*init)(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 };
 
+/*borag project*/
+UINT32 HI1634B_BORAG_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
+
 /*IMX*/
 UINT32 IMX519_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
 UINT32 IMX499_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc);
