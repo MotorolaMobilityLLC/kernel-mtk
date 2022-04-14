@@ -115,6 +115,7 @@ static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl,
 	enum MD_STATE state)
 {
 	enum MD_STATE old_state;
+	int ret = 0;
 
 	if (unlikely(ctl->md_state != BOOT_WAITING_FOR_HS2 && state == READY)) {
 		CCCI_NORMAL_LOG(ctl->md_id, FSM,
@@ -134,7 +135,7 @@ static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl,
 	 * otherwise send message on HS2 may fail
 	 */
 	ccci_port_md_status_notify(ctl->md_id, state);
-	ccci_hif_state_notification(ctl->md_id, state);
+	ret = ccci_hif_state_notification(ctl->md_id, state);
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	schedule_work(&ctl->scp_ctl.scp_md_state_sync_work);
 #endif
@@ -143,7 +144,7 @@ static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl,
 		s_md_state_cb != NULL)
 		s_md_state_cb(old_state, state);
 
-	return 0;
+	return ret;
 }
 
 static void fsm_routine_zombie(struct ccci_fsm_ctl *ctl)
@@ -375,7 +376,9 @@ static void fsm_routine_start(struct ccci_fsm_ctl *ctl,
 	spin_unlock_irqrestore(&ctl->event_lock, flags);
 	/* 3. action and poll event queue */
 	ccci_md_pre_start(ctl->md_id);
-	fsm_broadcast_state(ctl, BOOT_WAITING_FOR_HS1);
+	ret = fsm_broadcast_state(ctl, BOOT_WAITING_FOR_HS1);
+	if (ret != 0)
+		goto fail;
 	ret = ccci_md_start(ctl->md_id);
 	if (ret)
 		goto fail;
