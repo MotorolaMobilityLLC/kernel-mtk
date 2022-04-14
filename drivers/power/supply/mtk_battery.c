@@ -4035,7 +4035,7 @@ int battery_init(struct platform_device *pdev)
 	gm = gauge->gm;
 	gm->fixed_bat_tmp = 0xffff;
 	gm->tmp_table = fg_temp_table;
-	gm->log_level = BMLOG_ERROR_LEVEL;
+	gm->log_level = BMLOG_TRACE_LEVEL;
 	gm->sw_iavg_gap = 3000;
 	gm->in_sleep = false;
 	mutex_init(&gm->fg_update_lock);
