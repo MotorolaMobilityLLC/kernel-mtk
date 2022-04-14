@@ -104,7 +104,7 @@
 	/*swchg + 1CP*/
 	charger_configuration= <3>;
 	wireless_factory_max_current = <3000000>;
-	wireless_factory_max_input_current = <1150000>;
+	wireless_factory_max_input_current = <600000>;
 	enable_dynamic_mivr;
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
