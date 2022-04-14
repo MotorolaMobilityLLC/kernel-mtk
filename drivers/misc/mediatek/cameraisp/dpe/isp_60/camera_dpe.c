@@ -3374,6 +3374,14 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				    g_DPE_ReqRing.DPEReq_Struct[
 							g_DPE_ReqRing.WriteIdx].
 				    State) {
+					if (enqueNum >
+						_SUPPORT_MAX_DPE_FRAME_REQUEST_ ||
+						enqueNum < 0) {
+						LOG_ERR(
+						"DPE Enque Num is bigger than enqueNum:%d\n",
+						enqueNum);
+						break;
+					}
 					spin_lock_irqsave(
 					&(DPEInfo.SpinLockIrq[
 						DPE_IRQ_TYPE_INT_DVP_ST]),
@@ -3388,12 +3396,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					spin_unlock_irqrestore(
 					&(DPEInfo.SpinLockIrq[
 					DPE_IRQ_TYPE_INT_DVP_ST]), flags);
-					if (enqueNum >
-					_SUPPORT_MAX_DPE_FRAME_REQUEST_) {
-						LOG_ERR(
-						"DPE Enque Num is bigger than enqueNum:%d\n",
-						     enqueNum);
-					}
 					LOG_DBG(
 					"DPE_ENQNUE_NUM:%d\n", enqueNum);
 				} else {
