@@ -94,6 +94,14 @@
 	};
 };
 
+&i2c5 {
+	externel-charger@1a{
+		compatible = "mediatek,bq25601";
+		reg = <0x1a>;
+		status = "okay";
+	};
+};
+
 &i2c6 {
 	ext_buck_vgpu@55 {
 		regulator-name ="ext_buck_vgpu";
@@ -402,21 +410,21 @@
 	};
 };
 /* AUDIO end */
-
+/*
 &mt6370_pmu {
-	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
+	mt6370,intr_gpio_num = <11>; 
 	mt6370,intr_gpio = <&pio 11 0x0>;
 };
 
 &mt6370_typec {
-	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
+	mt6370pd,intr_gpio_num = <41>; 
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
 &mt6370_chg {
 	bc12_sel = <1>;
 };
-
+*/
 #include "borag/cust.dtsi"
 #include "mediatek/cust_mt6765_camera.dtsi"
 #include "mediatek/cust_mt6765_touch_1080x1920.dtsi"

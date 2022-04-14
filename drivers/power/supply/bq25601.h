@@ -19,6 +19,8 @@
 #define bq25601_CON10      0x0A
 #define	bq25601_CON11		0x0B
 #define bq25601_REG_NUM 12
+#define SGM41513_REG_NUM		0x10
+
 
 /**********************************************************
  *
