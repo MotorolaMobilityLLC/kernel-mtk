@@ -94,6 +94,14 @@
 	};
 };
 
+&i2c5 {
+	externel-charger@1a{
+		compatible = "mediatek,bq25601";
+		reg = <0x1a>;
+		status = "okay";
+	};
+};
+
 &i2c6 {
 	ext_buck_vgpu@55 {
 		regulator-name ="ext_buck_vgpu";
@@ -185,6 +193,24 @@
 	};
 };
 /* accdet end */
+
+/*usb cable start*/
+&usb_cable {
+	usbcable-gpio = <&pio 4 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usbcable_pins_default>;
+	status = "okay";
+};
+&pio {
+	usbcable_pins_default:usbcableeint@0{
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/*usb cable end*/
 
 /* FINGERPRINT start */
 &spi0 {
@@ -384,22 +410,22 @@
 	};
 };
 /* AUDIO end */
-
+/*
 &mt6370_pmu {
-	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
+	mt6370,intr_gpio_num = <11>; 
 	mt6370,intr_gpio = <&pio 11 0x0>;
 };
 
 &mt6370_typec {
-	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
+	mt6370pd,intr_gpio_num = <41>; 
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
 &mt6370_chg {
 	bc12_sel = <1>;
 };
-
-#include <bora2g/cust.dtsi>
+*/
+#include "bora2g/cust.dtsi"
 #include "cust_mt6765_camera.dtsi"
 #include "cust_mt6765_touch_1080x1920.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/

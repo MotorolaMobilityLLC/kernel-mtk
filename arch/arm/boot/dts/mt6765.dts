@@ -1029,6 +1029,10 @@
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	usb_cable: usb_cable {
+		compatible = "mediatek,usb_cable_eint";
+	};
+
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
@@ -2298,6 +2302,14 @@
 		io-channel-names = "thermistor-ch1";
 		interconnects = <&auxadc 1>;
 	};
+
+	tboard_thermistor3: thermal-sensor3 {
+		compatible = "mediatek,mtboard-thermistor3";
+		io-channels = <&auxadc 2>;
+		io-channel-names = "thermistor-ch2";
+		interconnects = <&auxadc 2>;
+	};
+
 	btif@1100c000 {
 		compatible = "mediatek,btif";
 			/*btif base*/
@@ -2726,6 +2738,14 @@
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	gpio_boardid:gpio_boardid {
+			compatible = "gpio,boardid";
+			gpio,boardid0 = <&pio 163 0>;
+			gpio,boardid1 = <&pio 164 0>;
+			gpio,boardid2 = <&pio 165 0>;
+			gpio,boardid3 = <&pio 166 0>;
+	};
+
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-rst = <172>;
@@ -2733,6 +2753,15 @@
 			gpio-irq = <10>;
 			gpio-irq-std = <&pio 10 0x0>;
 		};
+
+       als: als_ps@0 {
+                compatible = "mediatek,als_ps";
+               status = "okay";
+
+                pinctrl-names = "plv3v_enable", "plv3v_disable";
+                pinctrl-0 = <&pl_v3v_enable>;
+                pinctrl-1 = <&pl_v3v_disable>;
+        };
 
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
@@ -3465,12 +3494,16 @@
 	charger: charger {
 		compatible = "mediatek,charger";
 		gauge = <&mtk_gauge>;
-		charger = <&mt6370_chg>;
+		//charger = <&mt6370_chg>;
+		charger = <&mtk_charger_type>;
 		bootmode = <&chosen>;
 		pmic = <&main_pmic>;
 
 		algorithm_name = "Basic";
 		charger_configuration= <0>;
+		/*disable usb type C*/
+		/*enable_type_c;
+		power_path_support;*/
 
 		/* common */
 		battery_cv = <4350000>;
@@ -3524,10 +3557,11 @@
 
 	extcon_usb: extcon_usb {
 		compatible = "mediatek,extcon-usb";
-		charger = <&mt6370_chg>;
-		vbus-supply = <&otg_vbus>;
-		vbus-voltage = <5000000>;
-		vbus-current = <1800000>;
+		charger = <&mtk_charger_type>;
+		//charger = <&mt6370_chg>;
+		//vbus-supply = <&otg_vbus>;
+		//vbus-voltage = <5000000>;
+		//vbus-current = <1800000>;
 		dev-conn = <&usb>;
 		mediatek,bypss-typec-sink = <1>;
 	};
@@ -3768,6 +3802,23 @@
 				<&dvfsrc_freq_opp1>;
 	};
 
+};
+
+&pio {
+	pl_v3v_enable: plv3venable {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	pl_v3v_disable: plv3vdisable {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 
 #include "cust_mt6765_msdc.dtsi"
