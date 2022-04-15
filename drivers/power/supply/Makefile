@@ -29,6 +29,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/power_throttling
 
 obj-$(CONFIG_CHARGER_CROS_USBPD)	+= cros_usbpd-charger.o
 obj-$(CONFIG_CHARGER_BQ25601) += bq25601.o
+obj-$(CONFIG_CHARGER_HL7019D) += hl7019d.o
 obj-$(CONFIG_CHARGER_RT9458) += rt9458.o
 obj-$(CONFIG_CHARGER_RT9465) += rt9465.o
 obj-$(CONFIG_CHARGER_RT9466) += rt9466.o

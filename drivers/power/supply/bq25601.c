@@ -1387,6 +1387,7 @@ static int bq25601_driver_probe(struct i2c_client *client,
 	int ret = 0;
 	struct bq25601_info *info = NULL;
 	struct regulator_config config = { };
+	u8 val = 0;
 
 	pr_info("[%s]\n", __func__);
 
@@ -1401,6 +1402,15 @@ static int bq25601_driver_probe(struct i2c_client *client,
 	ret = bq25601_parse_dt(info, &client->dev);
 	if (ret < 0)
 		return ret;
+
+	ret = bq25601_read_interface(0x0B, &val, 0xFF, 0x0);
+	pr_err("hzn: i2c read return value:%d----------------\n", ret);
+	pr_err("Reg[0x0B]=0x%x\n", val);
+
+	if(ret == -1){
+		pr_err("[%s] i2c error !!!\n", __func__);
+		return ret;
+	}
 
 	bq25601_hw_component_detect();
 	charging_hw_init();
