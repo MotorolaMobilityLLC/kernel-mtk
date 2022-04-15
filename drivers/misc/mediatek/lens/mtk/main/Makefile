@@ -23,6 +23,7 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/lc898122af
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/gt9772af
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/lc898212xdaf/inc
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/bu63165af/inc
@@ -51,6 +52,7 @@ mainaf-y  += common/dw9719taf/DW9719TAF.o
 mainaf-y  += common/dw9763af/DW9763AF.o
 mainaf-y  += common/dw9839af/DW9839AF.o
 mainaf-y  += common/gt9764af/GT9764AF.o
+mainaf-y  += common/gt9772af/GT9772AF.o
 mainaf-y  += common/lc898212af/LC898212AF.o
 mainaf-y  += common/lc898212xdaf/LC898212XDAF.o
 mainaf-y  += common/lc898212xdaf/AfInter.o
