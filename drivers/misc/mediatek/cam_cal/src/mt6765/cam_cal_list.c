@@ -20,6 +20,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{MOT_ELLIS_SC500CS_SENSOR_ID, 0xA4, Common_read_region},
 	{MOT_ELLIS_HI1336_SENSOR_ID, 0xA0, Common_read_region},
 	{MOT_MAUI_HI1634B_SENSOR_ID, 0xA0, Common_read_region},
+	{MOT_MAUI_S5K5E9_SENSOR_ID, 0xA2, Common_read_region},
 	{IMX230_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K2T7SP_SENSOR_ID, 0xA4, Common_read_region},
 	{IMX338_SENSOR_ID, 0xA0, Common_read_region},
