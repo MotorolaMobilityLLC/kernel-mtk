@@ -1900,7 +1900,7 @@
             </i2c_bus3>
             <i2c_bus4>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
                 <speed_kbps>400</speed_kbps>
