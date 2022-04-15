@@ -599,7 +599,8 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	union power_supply_propval online, status, wls_online;
 	union power_supply_propval prop_type;
 	int cur_chr_type = 0, old_vbat0 = 0;
-
+	union power_supply_propval vbat0;
+	
 	struct power_supply *chg_psy = NULL, *wl_psy = NULL;
 	struct power_supply *dv2_chg_psy = NULL;
 	int ret;
