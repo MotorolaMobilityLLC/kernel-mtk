@@ -6619,3 +6619,6 @@
 	};
 };
 #include "mediatek/trusty.dtsi"
+/* Motorola base dts override */
+#include "mediatek/mt6789-moto-base.dtsi"
+
