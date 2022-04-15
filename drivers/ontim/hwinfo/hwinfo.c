@@ -12,6 +12,7 @@
 #include <linux/fs.h>
 #include <linux/gpio.h>
 #include <linux/of.h>
+#include <linux/of_gpio.h>
 
 #include <linux/fs.h>
 #include <asm/system_misc.h>
@@ -825,9 +826,17 @@ static void get_backaux2_camera_efuse_id(void)
 
 static void get_card_present(void)
 {
-	unsigned int gpio_num = 74;
+	struct device_node *dn;
+	unsigned int gpio_num = -1;
 	char card_holder_present[BUF_SIZE];
 
+	dn = of_find_node_with_property(NULL, "cd-gpios");
+	if (!dn) {
+		pr_err("not found node via cd-gpios\n");
+		strcpy(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, "unknown");
+		return;
+	}
+	gpio_num = of_get_named_gpio_flags(dn, "cd-gpios", 0, NULL);
 	memset(card_holder_present, '\0', BUF_SIZE);
 	printk("gpio(%d) value = %d\n", gpio_get_value(gpio_num));
 	if (gpio_get_value(gpio_num) == 1)
