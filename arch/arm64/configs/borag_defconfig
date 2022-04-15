@@ -502,4 +502,4 @@ CONFIG_MTK_AB_OTA_UPDATER=y
 CONFIG_ONTIM_HWINFO_SUPPORT=y
 
 #camera
-CONFIG_CUSTOM_KERNEL_IMGSENSOR="hi1634b_borag_mipi_raw"
+CONFIG_CUSTOM_KERNEL_IMGSENSOR="hi1634b_borag_mipi_raw s5k5e9yx04_borag_1_mipi_raw gc02m1_borag_1_mipi_raw"
