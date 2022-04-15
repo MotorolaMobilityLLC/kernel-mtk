@@ -1,0 +1,34 @@
+/*
+ * Things can done here:
+ * 	Add nodes or properties to root node
+ * 	Delete nodes or properties
+*/
+
+/ {
+	utags: utags { };
+	hw: hw { };
+	tboard_thermistor4: thermal-ntc4 { };
+	tboard_thermistor5: thermal-ntc5 { };
+	moto_chg_tcmd: moto_chg_tcmd { };
+	smart_pen_charger: mmi,pen-charger { };
+	moto_wlc: moto_wlc { };
+	hall_1: hall_1 { };
+	hall_2: hall_2 { };
+	hall_3: hall_3 { };
+	hall_4: hall_4 { };
+	charge_leds: charge_leds { };
+};
+
+&mmc1 {
+	/delete-property/ vqmmc-supply;
+};
+
+&charger {
+	/delete-property/ enable_dynamic_mivr;
+};
+
+&mt6375_typec {
+	/delete-property/ tcpc,en_wd;
+	/delete-property/ tcpc,en_wd_sbu_polling;
+	/delete-property/ tcpc,en_wd_polling_only;
+};
