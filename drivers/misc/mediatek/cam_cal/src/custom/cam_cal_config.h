@@ -58,7 +58,7 @@ unsigned int layout_check(struct EEPROM_DRV_FD_DATA *pdata,
 unsigned int layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int sensorID);
 unsigned int mot_layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
-		unsigned int *pGetSensorCalData);
+		unsigned int sensorId);
 unsigned int do_module_version(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 unsigned int do_part_number(struct EEPROM_DRV_FD_DATA *pdata,
