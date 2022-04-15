@@ -196,12 +196,10 @@ unsigned int layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
 }
 
 unsigned int mot_layout_no_ck(struct EEPROM_DRV_FD_DATA *pdata,
-				unsigned int *pGetSensorCalData)
+				unsigned int sensorId)
 {
-	struct STRUCT_CAM_CAL_DATA_STRUCT *pCamCalData =
-				(struct STRUCT_CAM_CAL_DATA_STRUCT *)pGetSensorCalData;
 	unsigned int result = CAM_CAL_ERR_NO_DEVICE;
-	if (cam_cal_config->sensor_id == pCamCalData->sensorID) {
+	if (cam_cal_config->sensor_id == sensorId) {
 		debug_log("%s sensor_id matched\n", cam_cal_config->name);
 		result = CAM_CAL_ERR_NO_ERR;
 	} else {
