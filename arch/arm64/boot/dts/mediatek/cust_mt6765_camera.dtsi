@@ -257,4 +257,80 @@
 	camaf_m1_pmic-supply = <&mt_pmic_vldo28_ldo_reg>;
 	status = "okay";
 };
+
+&pio {
+	flashlights_ocp8135b_pins_default: ocp8135bdefault {
+	};
+
+	flashlights_ocp8135b_pins_hwenf_high: hwenf_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	flashlights_ocp8135b_pins_hwenf_low: hwenf_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	flashlights_ocp8135b_pins_hwenm_high: hwenm_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	flashlights_ocp8135b_pins_hwenm_low: hwenm_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	flashlights_ocp8135b_pins_pwm: ocp8135bpwm {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO90__FUNC_PWM0>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&flashlights_sywt78{
+    pinctrl-names = "default", "hwenf_high", "hwenf_low", "hwenm_high", "hwenm_low";
+    pinctrl-0 = <&flashlights_ocp8135b_pins_default>;
+    pinctrl-1 = <&flashlights_ocp8135b_pins_hwenf_high>;
+    pinctrl-2 = <&flashlights_ocp8135b_pins_hwenf_low>;
+    pinctrl-3 = <&flashlights_ocp8135b_pins_hwenm_high>;
+    pinctrl-4 = <&flashlights_ocp8135b_pins_hwenm_low>;
+    status = "okay";
+};
+/*
+&pwm0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&flashlights_ocp8135b_pins_pwm>;
+	status = "okay";
+};
+
+&flashlights_ocp8135b {
+	compatible = "mediatek,pwm-ocp8135b";
+	pinctrl-names = "ocp8135bdefault", "hwenf_high", "hwenf_low", "hwenm_high", "hwenm_low", "ocp8135bpwm";
+	pinctrl-0 = <&flashlights_ocp8135b_pins_default>;
+	pinctrl-1 = <&flashlights_ocp8135b_pins_hwenf_high>;
+	pinctrl-2 = <&flashlights_ocp8135b_pins_hwenf_low>;
+	pinctrl-3 = <&flashlights_ocp8135b_pins_hwenm_high>;
+	pinctrl-4 = <&flashlights_ocp8135b_pins_hwenm_low>;
+	pinctrl-5 = <&flashlights_ocp8135b_pins_pwm>;
+	//pwms = <&pwm0 0 1000000>;
+	pwm-names = "pwm0";
+	status = "okay";
+};
+*/
 /* CAMERA GPIO end */

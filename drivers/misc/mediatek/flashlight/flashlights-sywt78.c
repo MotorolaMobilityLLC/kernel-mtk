@@ -55,10 +55,10 @@ static struct work_struct sywt78_work;
 #define SYWT78_PINCTRL_PIN_FLASH 1
 #define SYWT78_PINCTRL_PINSTATE_LOW 0
 #define SYWT78_PINCTRL_PINSTATE_HIGH 1
-#define SYWT78_PINCTRL_STATE_FLASH_HIGH "flash_high"
-#define SYWT78_PINCTRL_STATE_FLASH_LOW  "flash_low"
-#define SYWT78_PINCTRL_STATE_TORCH_HIGH "torch_high"
-#define SYWT78_PINCTRL_STATE_TORCH_LOW  "torch_low"
+#define SYWT78_PINCTRL_STATE_FLASH_HIGH "hwenf_high"
+#define SYWT78_PINCTRL_STATE_FLASH_LOW  "hwenf_low"
+#define SYWT78_PINCTRL_STATE_TORCH_HIGH "hwenm_high"
+#define SYWT78_PINCTRL_STATE_TORCH_LOW  "hwenm_low"
 
 static struct pinctrl *sywt78_pinctrl;
 static struct pinctrl_state *sywt78_flash_high;
