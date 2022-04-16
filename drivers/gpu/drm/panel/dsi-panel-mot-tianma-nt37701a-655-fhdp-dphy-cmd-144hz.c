@@ -958,6 +958,7 @@ static int mode_switch(struct drm_panel *panel,
 }
 
 static struct LCM_setting_table panel_lhbm_on[] = {
+	{REGFLAG_CMD, 3, {0x51, 0x0F, 0xFF}},
 	{REGFLAG_CMD, 3, {0x87, 0x1F, 0xFF}},
 	{REGFLAG_CMD, 2, {0x88, 0x01}},
 	{REGFLAG_CMD, 2, {0x85, 0x01}},
@@ -973,7 +974,7 @@ static struct LCM_setting_table panel_lhbm_off[] = {
 
 static void set_lhbm_alpha(unsigned int bl_level)
 {
-	struct LCM_setting_table *pTable = &panel_lhbm_on[0];
+	struct LCM_setting_table *pTable = &panel_lhbm_on[1];
 	unsigned int alpha = 0;
 /*
 	if((bl_level < 4095) && (bl_level > 3514))
