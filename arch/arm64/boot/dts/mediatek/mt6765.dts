@@ -3357,6 +3357,26 @@ firmware_class.path=/vendor/firmware";
 		};
 	};
 
+	flashlights_ocp8135b: flashlights_ocp8135b {
+		compatible = "mediatek,flashlights_ocp8135b";
+	};
+
+	flashlights_sywt78: flashlights_sywt78 {
+		compatible = "mediatek,flashlights_sywt78";
+	};
+/*
+	pwm0: pwm@1401e000 {
+		compatible = "mediatek,mt8173-disp-pwm",
+			     "mediatek,mt6595-disp-pwm";
+		reg = <0 0x1401e000 0 0x1000>;
+		#pwm-cells = <2>;
+		clocks = <&mmsys CLK_MM_DISP_PWM026M>,
+			 <&mmsys CLK_MM_DISP_PWM0MM>;
+		clock-names = "main", "mm";
+		pinctrl-names = "default";
+		pinctrl-0 = <&disp_pwm0_pins>;
+	};
+*/
 	gps {
 		compatible = "mediatek,gps";
 	};
