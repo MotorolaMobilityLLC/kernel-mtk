@@ -31,11 +31,6 @@
 
 #include "dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha.h"
 
-#define REGFLAG_CMD       0xFFFA
-#define REGFLAG_DELAY       0xFFFC
-#define REGFLAG_UDELAY  0xFFFB
-#define REGFLAG_END_OF_TABLE    0xFFFD
-
 enum panel_version{
 	PANEL_V1 = 1,
 	PANEL_V2,
@@ -58,12 +53,6 @@ struct lcm {
 };
 
 struct lcm *g_ctx = NULL;
-
-struct LCM_setting_table {
-	unsigned int cmd;
-	unsigned char count;
-	unsigned char para_list[64];
-};
 
 #define lcm_dcs_write_seq(ctx, seq...)                                         \
 	({                                                                     \
@@ -957,24 +946,22 @@ static int mode_switch(struct drm_panel *panel,
 	return ret;
 }
 
-static struct LCM_setting_table panel_lhbm_on[] = {
-	{REGFLAG_CMD, 3, {0x51, 0x0F, 0xFF}},
-	{REGFLAG_CMD, 3, {0x87, 0x1F, 0xFF}},
-	{REGFLAG_CMD, 2, {0x88, 0x01}},
-	{REGFLAG_CMD, 2, {0x85, 0x01}},
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
+static struct mtk_panel_para_table panel_lhbm_on[] = {
+	{3, {0x51, 0x0F, 0xFF}},
+	{3, {0x87, 0x1F, 0xFF}},
+	{2, {0x88, 0x01}},
+	{2, {0x85, 0x01}},
 };
 
-static struct LCM_setting_table panel_lhbm_off[] = {
-	{REGFLAG_CMD, 3, {0x87, 0x0F, 0xFF}},
-	{REGFLAG_CMD, 2, {0x88, 0x01}},
-	{REGFLAG_CMD, 2, {0x86, 0x01}},
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
+static struct mtk_panel_para_table panel_lhbm_off[] = {
+	{3, {0x87, 0x0F, 0xFF}},
+	{2, {0x88, 0x01}},
+	{2, {0x86, 0x01}},
 };
 
 static void set_lhbm_alpha(unsigned int bl_level)
 {
-	struct LCM_setting_table *pTable = &panel_lhbm_on[1];
+	struct mtk_panel_para_table *pTable = &panel_lhbm_on[1];
 	unsigned int alpha = 0;
 /*
 	if((bl_level < 4095) && (bl_level > 3514))
@@ -994,46 +981,27 @@ static void set_lhbm_alpha(unsigned int bl_level)
 	pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
 }
 
-static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
+static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
 {
-	unsigned int i = 0,j =0;
-	unsigned setting_count = 0;
-	struct LCM_setting_table *pTable;
-	unsigned int cmd;
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
 
 	if (on) {
 		set_lhbm_alpha(bl_level);
-		setting_count = sizeof(panel_lhbm_on) / sizeof(struct LCM_setting_table);
+		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_on;
 	} else {
-		setting_count = sizeof(panel_lhbm_off) / sizeof(struct LCM_setting_table);
+		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_off;
 	}
-
-	for (i = 0; i < setting_count; i++) {
-		cmd = pTable->cmd;
-		switch (cmd) {
-		case REGFLAG_DELAY:
-			msleep(pTable->count);
-			break;
-		case REGFLAG_UDELAY:
-			udelay(pTable->count);
-			break;
-		case REGFLAG_END_OF_TABLE:
-			break;
-		default:
-			for(j =0; j<pTable->count;j++) pr_info("%d: 0x%x\n", j, pTable->para_list[j]);
-			cb(dsi, handle, pTable->para_list, pTable->count);
-		}
-		pTable ++ ;
-	}
+	cb(dsi, handle, pTable, para_count);
 	return 0;
 
 }
 
-static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void *handle, uint32_t hbm_state)
+static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
-	char hbm_on_tb[3] = {0x51, 0x0F, 0xFF};
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0xFF}};
 
 	if (hbm_state > 2) return -1;
 	switch (hbm_state)
@@ -1045,13 +1013,13 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void 
 		case 1:
 			if (ctx->lhbm_en)
 				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
-			cb(dsi, handle, &hbm_on_tb[0], 3);
+			cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		case 2:
 			if (ctx->lhbm_en)
 				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl);
 			else
-				cb(dsi, handle, &hbm_on_tb[0], 3);
+				cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		default:
 			break;
@@ -1060,71 +1028,50 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void 
 	return 0;
 }
 
-static struct LCM_setting_table panel_dc_off[] = {
-	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
-	{REGFLAG_CMD, 2, {0xB2, 0x11}},
-	{REGFLAG_CMD, 2, {0x6F, 0x0F}},
-	{REGFLAG_CMD, 7, {0xB2, 0x60, 0x50, 0x66, 0x91, 0x86, 0x91}},
-	{REGFLAG_CMD, 13, {0xB3, 0x00, 0x08, 0x01, 0x5F, 0x01, 0x5F, 0x02, 0xA4, 0x02, 0xA4, 0x03, 0xBB}},
-	{REGFLAG_CMD, 2, {0x6F, 0x0C}},
-	{REGFLAG_CMD, 13, {0xB3, 0x03, 0xBB, 0x05, 0x2F, 0x05, 0x2F, 0x06, 0x91, 0x06, 0x91, 0x06, 0x92}},
-	{REGFLAG_CMD, 2, {0x6F, 0x18}},
-	{REGFLAG_CMD, 13, {0xB3, 0x06, 0x92, 0x0A, 0x2F, 0x0A, 0x2F, 0x0D, 0xB9, 0x0D, 0xB9, 0x0F, 0xFF}},
-	{REGFLAG_CMD, 2, {0x58, 0x00}},
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
+static struct mtk_panel_para_table panel_dc_off[] = {
+	{6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
+	{2, {0xB2, 0x11}},
+	{2, {0x6F, 0x0F}},
+	{7, {0xB2, 0x60, 0x50, 0x66, 0x91, 0x86, 0x91}},
+	{13, {0xB3, 0x00, 0x08, 0x01, 0x5F, 0x01, 0x5F, 0x02, 0xA4, 0x02, 0xA4, 0x03, 0xBB}},
+	{2, {0x6F, 0x0C}},
+	{13, {0xB3, 0x03, 0xBB, 0x05, 0x2F, 0x05, 0x2F, 0x06, 0x91, 0x06, 0x91, 0x06, 0x92}},
+	{2, {0x6F, 0x18}},
+	{13, {0xB3, 0x06, 0x92, 0x0A, 0x2F, 0x0A, 0x2F, 0x0D, 0xB9, 0x0D, 0xB9, 0x0F, 0xFF}},
+	{2, {0x58, 0x00}},
 };
 
-static struct LCM_setting_table panel_dc_on[] = {
-	{REGFLAG_CMD, 6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
-	{REGFLAG_CMD, 2, {0xB2, 0x91}},
-	{REGFLAG_CMD, 2, {0x6F, 0x0F}},
-	{REGFLAG_CMD, 7, {0xB2, 0x60, 0x50, 0x60, 0x00, 0x80, 0x00}},
-	{REGFLAG_CMD, 13, {0xB3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
-	{REGFLAG_CMD, 2, {0x6F, 0x0C}},
-	{REGFLAG_CMD, 13, {0xB3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
-	{REGFLAG_CMD, 2, {0x6F, 0x18}},
-	{REGFLAG_CMD, 13, {0xB3, 0x06, 0x92, 0x0A, 0x2F, 0x0A, 0x2F, 0x0D, 0xB9, 0x0D, 0xB9, 0x0F, 0xFF}},
-	{REGFLAG_CMD, 2, {0x58, 0x01}},
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
+static struct mtk_panel_para_table panel_dc_on[] = {
+	{6, {0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00}},
+	{2, {0xB2, 0x91}},
+	{2, {0x6F, 0x0F}},
+	{7, {0xB2, 0x60, 0x50, 0x60, 0x00, 0x80, 0x00}},
+	{13, {0xB3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+	{2, {0x6F, 0x0C}},
+	{13, {0xB3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+	{2, {0x6F, 0x18}},
+	{13, {0xB3, 0x06, 0x92, 0x0A, 0x2F, 0x0A, 0x2F, 0x0D, 0xB9, 0x0D, 0xB9, 0x0F, 0xFF}},
+	{2, {0x58, 0x01}},
 };
 
-static int pane_dc_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t dc_state)
+static int pane_dc_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t dc_state)
 {
-
-	unsigned int i = 0;
-	unsigned setting_count = 0;
-	struct LCM_setting_table *pTable;
-	unsigned int cmd;
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
 
 	if (dc_state) {
-		setting_count = sizeof(panel_dc_on) / sizeof(struct LCM_setting_table);
+		para_count = sizeof(panel_dc_on) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_dc_on;
 	} else {
-		setting_count = sizeof(panel_dc_off) / sizeof(struct LCM_setting_table);
+		para_count = sizeof(panel_dc_off) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_dc_off;
 	}
-
-	for (i = 0; i < setting_count; i++) {
-		cmd = pTable->cmd;
-		switch (cmd) {
-		case REGFLAG_DELAY:
-			msleep(pTable->count);
-			break;
-		case REGFLAG_UDELAY:
-			udelay(pTable->count);
-			break;
-		case REGFLAG_END_OF_TABLE:
-			break;
-		default:
-			cb(dsi, handle, pTable->para_list, pTable->count);
-		}
-		pTable ++ ;
-	}
+	cb(dsi, handle, pTable, para_count);
 	return 0;
 }
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
-			      dcs_write_gce cb, void *handle, struct panel_param_info param_info)
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
 {
 
 	struct lcm *ctx = panel_to_lcm(panel);
@@ -1149,6 +1096,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			break;
 	}
 
+	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
 	return 0;
 }
 
