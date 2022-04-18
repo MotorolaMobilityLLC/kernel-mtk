@@ -32,6 +32,19 @@
 /*****************************************************************************
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
+#ifdef CONFIG_DYNAMIC_DEBUG
+    #undef CONFIG_DYNAMIC_DEBUG
+#endif
+#ifndef DEBUG
+    #define DEBUG
+#endif
+
+#ifdef CONFIG_SND_SOC_AW87XXX
+	#pragma message ("CONFIG_SND_SOC_AW87XXX defined   ------------------------------------")
+#else
+	#pragma message ("CONFIG_SND_SOC_AW87XXX undefine  ------------------------------------")
+#endif
+
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
@@ -63,6 +76,16 @@
 #include <linux/nvmem-consumer.h>
 
 #include "mtk-soc-speaker-amp.h"
+
+#ifdef CONFIG_SND_SOC_AW87XXX
+extern int aw87xxx_add_codec_controls(void *codec);
+extern int aw87xxx_set_profile(int dev_index, char *profile);
+static char *aw_profile[] = {"Music","Receiver", "Off"};/*aw87xxx_acf.bin 文件中配置场景*/
+enum aw87xxx_dev_index {
+	AW_DEV_0 = 0,
+	AW_DEV_1 = 1,
+};
+#endif
 
 /* Use analog setting to do dc compensation */
 #define ANALOG_HPTRIM
@@ -3418,6 +3441,18 @@ static int PMIC_REG_CLEAR_Get(struct snd_kcontrol *kcontrol,
 static void Voice_Amp_Change(bool enable)
 {
 	if (enable) {
+#ifdef CONFIG_SND_SOC_AW87XXX
+		/*切换 PA AW_DEV_0 为 receiver 场景*/
+		aw87xxx_set_profile(AW_DEV_0, aw_profile[1]);
+		//aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);
+	} else {
+		/*切换 PA AW_DEV_0 为 Off 场景*/
+		aw87xxx_set_profile(AW_DEV_0, aw_profile[2]);
+		//aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);
+	}
+#endif
+
+	if (enable) {
 		if (GetDLStatus() == false) {
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_EARPIECEL);
 			pr_debug("%s(), amp on\n", __func__);
@@ -3556,7 +3591,18 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol,
 static void Speaker_Amp_Change(bool enable)
 {
 	if (enable) {
-		if (GetDLStatus() == false)
+#ifdef CONFIG_SND_SOC_AW87XXX
+		/*切换 PA AW_DEV_0 为 Music 场景*/
+		aw87xxx_set_profile(AW_DEV_0, aw_profile[0]);//open up PA
+		aw87xxx_set_profile(AW_DEV_1, aw_profile[0]);//open down PA 
+	} else {
+		/*切换 PA AW_DEV_ 为 Off 场景*/
+		aw87xxx_set_profile(AW_DEV_0, aw_profile[2]);//close up PA
+		aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);//close up PA
+	}
+#endif
+	if (enable) {
+		if (GetDLStatus() == false || true)// should be true for dual-speaker
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_SPEAKERL);
 		pr_debug("%s(), enable %d\n", __func__, enable);
 		/* Disable headphone short-circuit protection */
@@ -3618,7 +3664,7 @@ static void Speaker_Amp_Change(bool enable)
 		pr_debug("%s(), enable %d\n", __func__, enable);
 		/* LOL mux to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0x3 << 2);
-		if (GetDLStatus() == false) {
+		if (GetDLStatus() == false || true) {// should be true for dual-speaker
 			/* Pull-down HPL/R to AVSS28_AUD */
 			hp_pull_down(true);
 
@@ -5979,6 +6025,14 @@ static int mt6357_component_probe(struct snd_soc_component *component)
 				   ARRAY_SIZE(mt6357_pmic_Test_controls));
 	snd_soc_add_component_controls(component, Audio_snd_auxadc_controls,
 				   ARRAY_SIZE(Audio_snd_auxadc_controls));
+#ifdef CONFIG_SND_SOC_AW87XXX
+	ret = aw87xxx_add_codec_controls((void *)component);
+	if (ret < 0) {
+		pr_err("%s: add_codec_controls failed, err %d\n",
+		__func__, ret);
+		return ret;
+	};
+#endif
 	/* here to set  private data */
 	mCodec_data = kzalloc(sizeof(struct mt6357_codec_priv), GFP_KERNEL);
 	if (!mCodec_data) {
