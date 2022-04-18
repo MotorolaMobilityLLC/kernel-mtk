@@ -24,6 +24,13 @@ config MOTO_TONGA_PROJECT_SWTP_SETING_APART
           Say Y here for distinguish different projects
 # -EKKTONGA-20,longyili.wt,20210425,ADD,RF swtp function
 
+# +EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
+config MOTO_MAUI_PROJECT_SWTP_SETING_APART
+        bool "Define for Maui SWTP seting apart"
+        help
+          Say Y here for distinguish different projects
+# -EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
+
 source "drivers/amba/Kconfig"
 
 source "drivers/base/Kconfig"
