@@ -13,9 +13,9 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 
-#include "hi1634b_borag_mipiraw_Sensor.h"
+#include "hi1634b_borag_2_mipiraw_Sensor.h"
 
-#define PFX "hi1634b_borag_camera_sensor"
+#define PFX "hi1634b_borag_2_camera_sensor"
 #define LOG_INF(format, args...)    \
 	pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -24,14 +24,14 @@
 //#define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
 
 #if USE_BURST_MODE
-static kal_uint16 HI1634B_BORAG_table_write_cmos_sensor(
+static kal_uint16 HI1634B_BORAG_2_table_write_cmos_sensor(
 		kal_uint16 * para, kal_uint32 len);
 #endif
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = HI1634B_BORAG_SENSOR_ID,
+	.sensor_id = HI1634B_BORAG_2_SENSOR_ID,
 	.checksum_value = 0x55e2a82f,
 	.pre = {
 		.pclk = 640000000,				//record different mode's pclk
@@ -203,8 +203,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor_8(0x0716) << 8) | read_cmos_sensor_8(0x0717));
-
+	return ((((read_cmos_sensor_8(0x0716) << 8) | read_cmos_sensor_8(0x0717)))+1);
 }
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
@@ -433,7 +432,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 #if USE_BURST_MODE
 #define I2C_BUFFER_LEN 1020 /* trans# max is 255, each 3 bytes */
-static kal_uint16 HI1634B_BORAG_table_write_cmos_sensor(kal_uint16 *para,
+static kal_uint16 HI1634B_BORAG_2_table_write_cmos_sensor(kal_uint16 *para,
 						 kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -494,8 +493,8 @@ static kal_uint16 HI1634B_BORAG_table_write_cmos_sensor(kal_uint16 *para,
 }
 #endif
 
-// HI1634B_BORAG_2.0.8.9_gain_cal_1696Mbps_20191125
-static kal_uint16 HI1634B_BORAG_init_setting[] = {
+// HI1634B_BORAG_2_2.0.8.9_gain_cal_1696Mbps_20191125
+static kal_uint16 HI1634B_BORAG_2_init_setting[] = {
 	0x0790, 0x0100,	
 0x2000, 0x1001,
 0x2002, 0x0000,
@@ -1191,7 +1190,7 @@ static kal_uint16 HI1634B_BORAG_init_setting[] = {
 0x027E, 0x0100,
 };
 
-static kal_uint16 HI1634B_BORAG_capture_setting[] = {
+static kal_uint16 HI1634B_BORAG_2_capture_setting[] = {
 0x0B00, 0x0000,	
 0x0204, 0x0000,	
 0x0206, 0x02C6,	
@@ -1267,7 +1266,7 @@ static kal_uint16 HI1634B_BORAG_capture_setting[] = {
 };
 
 
-static kal_uint16 HI1634B_BORAG_preview_setting[] = {
+static kal_uint16 HI1634B_BORAG_2_preview_setting[] = {
 0x0B00, 0x0000,	
 0x0204, 0x0200,	
 0x0206, 0x02C6,	
@@ -1343,7 +1342,7 @@ static kal_uint16 HI1634B_BORAG_preview_setting[] = {
 };
 
 
-static kal_uint16 HI1634B_BORAG_normal_video_setting[] = {
+static kal_uint16 HI1634B_BORAG_2_normal_video_setting[] = {
 0x0B00, 0x0000,	
 0x0204, 0x0000,	
 0x0206, 0x02C6,	
@@ -1418,7 +1417,7 @@ static kal_uint16 HI1634B_BORAG_normal_video_setting[] = {
 0x160E, 0x0D80,
 };
 
-static kal_uint16 HI1634B_BORAG_hs_video_setting[] = {
+static kal_uint16 HI1634B_BORAG_2_hs_video_setting[] = {
 0x0B00, 0x0000,	
 0x0204, 0x0001,	
 0x0206, 0x02D5,	
@@ -1493,7 +1492,7 @@ static kal_uint16 HI1634B_BORAG_hs_video_setting[] = {
 0x160E, 0x0D80,
 };
 
-static kal_uint16 HI1634B_BORAG_slim_video_setting[] = {
+static kal_uint16 HI1634B_BORAG_2_slim_video_setting[] = {
 0x0B00, 0x0000,	
 0x0204, 0x0201,	
 0x0206, 0x02D5,	
@@ -1573,8 +1572,8 @@ static kal_uint16 HI1634B_BORAG_slim_video_setting[] = {
 static void sensor_init(void)
 {
 	LOG_INF("Hi-1634Q init start\n");
-	HI1634B_BORAG_table_write_cmos_sensor(HI1634B_BORAG_init_setting,
-		sizeof(HI1634B_BORAG_init_setting)/sizeof(kal_uint16));
+	HI1634B_BORAG_2_table_write_cmos_sensor(HI1634B_BORAG_2_init_setting,
+		sizeof(HI1634B_BORAG_2_init_setting)/sizeof(kal_uint16));
 	LOG_INF("Hi-1634Q init end\n");
 
 }	/*	  sensor_init  */
@@ -1583,8 +1582,8 @@ static void preview_setting(void)
 {
 	LOG_INF("Hi-1634Q preview_setting start\n");
 
-	HI1634B_BORAG_table_write_cmos_sensor(HI1634B_BORAG_preview_setting,
-		sizeof(HI1634B_BORAG_preview_setting)/sizeof(kal_uint16));
+	HI1634B_BORAG_2_table_write_cmos_sensor(HI1634B_BORAG_2_preview_setting,
+		sizeof(HI1634B_BORAG_2_preview_setting)/sizeof(kal_uint16));
 
 	LOG_INF("Hi-1634Q preview_setting end\n");
 
@@ -1596,8 +1595,8 @@ static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("Hi-1634Q capture_setting start\n");
 	/*************MIPI output setting************/
-	HI1634B_BORAG_table_write_cmos_sensor(HI1634B_BORAG_capture_setting,
-		sizeof(HI1634B_BORAG_capture_setting)/sizeof(kal_uint16));
+	HI1634B_BORAG_2_table_write_cmos_sensor(HI1634B_BORAG_2_capture_setting,
+		sizeof(HI1634B_BORAG_2_capture_setting)/sizeof(kal_uint16));
 
 	LOG_INF("Hi-1634Q capture_setting end\n");
 }
@@ -1606,8 +1605,8 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("Hi-1634Q normal_video_setting start\n");
 
-	HI1634B_BORAG_table_write_cmos_sensor(HI1634B_BORAG_normal_video_setting,
-		sizeof(HI1634B_BORAG_normal_video_setting)/sizeof(kal_uint16));
+	HI1634B_BORAG_2_table_write_cmos_sensor(HI1634B_BORAG_2_normal_video_setting,
+		sizeof(HI1634B_BORAG_2_normal_video_setting)/sizeof(kal_uint16));
 
 	LOG_INF("Hi-1634Q normal_video_setting end\n");
 }
@@ -1616,8 +1615,8 @@ static void hs_video_setting(void)
 {
 	LOG_INF("Hi-1634Q hs_video_setting start\n");
 
-	HI1634B_BORAG_table_write_cmos_sensor(HI1634B_BORAG_hs_video_setting,
-		sizeof(HI1634B_BORAG_hs_video_setting)/sizeof(kal_uint16));
+	HI1634B_BORAG_2_table_write_cmos_sensor(HI1634B_BORAG_2_hs_video_setting,
+		sizeof(HI1634B_BORAG_2_hs_video_setting)/sizeof(kal_uint16));
 
 	LOG_INF("Hi-1634Q hs_video_setting end\n");
 }
@@ -1626,12 +1625,13 @@ static void slim_video_setting(void)
 {
 	LOG_INF("Hi-1634Q slim_video_setting start\n");
 
-	HI1634B_BORAG_table_write_cmos_sensor(HI1634B_BORAG_slim_video_setting,
-		sizeof(HI1634B_BORAG_slim_video_setting)/sizeof(kal_uint16));
+	HI1634B_BORAG_2_table_write_cmos_sensor(HI1634B_BORAG_2_slim_video_setting,
+		sizeof(HI1634B_BORAG_2_slim_video_setting)/sizeof(kal_uint16));
 
 	LOG_INF("Hi-1634Q slim_video_setting end\n");
 }
 
+extern char back_cam_name[64];
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -1652,6 +1652,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	kal_uint32 module_id = 0;
 	/*sensor have two i2c address 0x34 & 0x20,
 	 *we should detect the module used i2c address
 	 */
@@ -1661,18 +1662,23 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
-				printk("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+			imgsensor.i2c_write_id = 0xA0;
+			module_id = ((read_cmos_sensor_8(0x0A62) << 8) | read_cmos_sensor_8(0x0A63));
+			imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
+			if ((*sensor_id == imgsensor_info.sensor_id) && (module_id == 0x4f46)) {
+				printk("Read sensor id ok !i2c write id: 0x%x, sensor id: 0x%x , Ofilm module id 0x4f46 == 0x%x\n", imgsensor.i2c_write_id, *sensor_id, module_id);
+				memset(back_cam_name, 0x00, sizeof(back_cam_name));
+				memcpy(back_cam_name, "0_hi1634b_borag_2_mipi_raw", 64);
 				return ERROR_NONE;
 			}
 
-			printk("Read sensor id fail,read:0x%x id: 0x%x\n", return_sensor_id(), imgsensor.i2c_write_id);
+			printk("Read sensor id fail,i2c write id: 0x%x, read sensor id :0x%x, Ofilm module id 0x4f46 != 0x%x\n", imgsensor.i2c_write_id, return_sensor_id(), module_id);
 			retry--;
 		} while (retry > 0);
 		i++;
 		retry = 2;
 	}
-	if (*sensor_id != imgsensor_info.sensor_id) {
+	if ((*sensor_id != imgsensor_info.sensor_id) || (module_id != 0x4f46))  {
 		/*if Sensor ID is not correct,
 		 *Must set *sensor_id to 0xFFFFFFFF
 		 */
@@ -1681,6 +1687,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	}
 	return ERROR_NONE;
 }
+
 
 
 /*************************************************************************
@@ -2589,13 +2596,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
 		LOG_INF("SENSOR_FEATURE_GET_PDAF_REG_SETTING %d",
 			(*feature_para_len));
-		HI1634B_BORAG_get_pdaf_reg_setting((*feature_para_len) / sizeof(UINT32)
+		HI1634B_BORAG_2_get_pdaf_reg_setting((*feature_para_len) / sizeof(UINT32)
 					   , feature_data_16);
 		break;
 	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
 		LOG_INF("SENSOR_FEATURE_SET_PDAF_REG_SETTING %d",
 			(*feature_para_len));
-		HI1634B_BORAG_set_pdaf_reg_setting((*feature_para_len) / sizeof(UINT32)
+		HI1634B_BORAG_2_set_pdaf_reg_setting((*feature_para_len) / sizeof(UINT32)
 					   , feature_data_16);
 		break;
 	case SENSOR_FEATURE_SET_PDAF:
@@ -2740,10 +2747,10 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 HI1634B_BORAG_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 HI1634B_BORAG_2_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
 	return ERROR_NONE;
-} /* HI1634B_BORAG_MIPI_RAW_SensorInit */
+} /* HI1634B_BORAG_2_MIPI_RAW_SensorInit */

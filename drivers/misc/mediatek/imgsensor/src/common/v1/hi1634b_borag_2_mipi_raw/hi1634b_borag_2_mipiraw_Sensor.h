@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     HI1634mipi_Sensor.h
+ *     HI1634B_mipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,8 +26,8 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _HI1634MIPI_SENSOR_H
-#define _HI1634MIPI_SENSOR_H
+#ifndef _HI1634B_BORAG_2_MIPI_SENSOR_H
+#define _HI1634B_BORAG_2_MIPI_SENSOR_H
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
