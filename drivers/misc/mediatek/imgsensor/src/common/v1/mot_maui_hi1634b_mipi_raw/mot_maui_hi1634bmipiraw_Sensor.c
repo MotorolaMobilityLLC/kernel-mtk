@@ -33,7 +33,6 @@
 #define PFX "MOT_MAUI_HI1634B_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
-
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -656,7 +655,7 @@ static void slim_video_setting(void)
 #define MAUI_HI1634B_EEPROM_SLAVE_ADDR 0xA0
 #define MAUI_HI1634B_SENSOR_IIC_SLAVE_ADDR 0x40
 #define MAUI_HI1634B_EEPROM_SIZE  0x19FB
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/hi1634b_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gt24p64e_hi1634b_eeprom.bin"
 #define MAUI_HI1634B_EEPROM_CRC_AF_CAL_SIZE 24
 #define MAUI_HI1634B_EEPROM_CRC_AWB_CAL_SIZE 43
 #define MAUI_HI1634B_EEPROM_CRC_LSC_SIZE 1868
