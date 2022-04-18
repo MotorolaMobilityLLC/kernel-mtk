@@ -879,6 +879,7 @@ static int sgm7220_set_cc(struct tcpc_device *tcpc, int pull)
 		 return ret;
 	}
 
+	pull = TYPEC_CC_PULL_GET_RES(pull);
 	if (pull == TYPEC_CC_RP)
 		value = SET_MODE_SELECT_SRC;
 	else if (pull == TYPEC_CC_RD)
@@ -1039,15 +1040,10 @@ static int sgm7220_tcpcdev_init(struct sgm7220_chip *chip, struct device *dev)
 
 	if (of_property_read_u32(np, "sgm7220-tcpc,rp_level", &val) >= 0) {
 		switch (val) {
-		case 0: /* RP Default */
-			desc->rp_lvl = TYPEC_CC_RP_DFT;
-			break;
-		case 1: /* RP 1.5V */
-			desc->rp_lvl = TYPEC_CC_RP_1_5;
-			break;
-		case 2: /* RP 3.0V */
-			desc->rp_lvl = TYPEC_CC_RP_3_0;
-			break;
+		case TYPEC_RP_DFT:
+		case TYPEC_RP_1_5:
+		case TYPEC_RP_3_0:
+			desc->rp_lvl = val;
 		default:
 			break;
 		}
