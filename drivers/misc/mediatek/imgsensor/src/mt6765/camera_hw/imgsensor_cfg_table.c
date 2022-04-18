@@ -142,9 +142,25 @@ struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[] = {
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 /* borag project */
-#if defined(HI1634B_BORAG_MIPI_RAW)
+#if defined(HI1634B_BORAG_1_MIPI_RAW)
 	{
-		SENSOR_DRVNAME_HI1634B_BORAG_MIPI_RAW,
+		SENSOR_DRVNAME_HI1634B_BORAG_1_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 1},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 1},
+			{DVDD, Vol_1100, 1},
+			//{AFVDD, Vol_2800, 0},
+			{PDN, Vol_Low, 0},
+			{PDN, Vol_High, 0},
+			{RST, Vol_High, 5},
+		},
+	},
+#endif
+#if defined(HI1634B_BORAG_2_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_HI1634B_BORAG_2_MIPI_RAW,
 		{
 			{SensorMCLK, Vol_High, 1},
 			{RST, Vol_Low, 1},
