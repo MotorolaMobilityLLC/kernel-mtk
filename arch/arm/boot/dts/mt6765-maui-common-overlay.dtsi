@@ -510,9 +510,9 @@
 		2170 1610 1493 1501>;
 	ACTIVE_TABLE = <(5)>;
 
-	df-serialnum = "SB18D15207";
-        #include "bat_setting/S96767AA1_ATL_4V4_4000MAH.dtsi"
-        #include "bat_setting/S96767AA1_SUN_4V4_4000MAH.dtsi"
+	df-serialnum = "SB18C98449";
+	#include "bat_setting/SWD_4V4_5000MAH.dtsi"
+	#include "bat_setting/ATL_4V4_5000MAH.dtsi"
 };
 
 &odm {
