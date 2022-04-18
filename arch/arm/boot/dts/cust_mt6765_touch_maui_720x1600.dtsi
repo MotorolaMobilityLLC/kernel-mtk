@@ -74,7 +74,7 @@
 	#size-cells = <0>;
 
 	touch@0{
-		compatible = "chipone-tddi";
+		compatible = "chipone-tddi", "focaltech,fts";
 		spi-max-frequency = <10000000>;
 		reg = <0x0>;
 		status = "okay";
@@ -83,5 +83,11 @@
 		chipone,irq-gpio = <&pio 10 2008>;
 		chipone,x-res = <720>;
 		chipone,y-res = <1600>;
+
+		focaltech,reset-gpio =<&pio 164 0x0>;
+		focaltech,irq-gpio = <&pio 10 0x0>;
+		focaltech,max-touch-number = <10>;
+		focaltech,display-coords =  <0 0 720 1600>;
+		focaltech,panel-supplier = "hlt";
 	};
 };
