@@ -107,6 +107,27 @@
 		regulator-max-microvolt = <1300000>;
 		vsel_pin = <1>;
 	};
+
+    	pn544@28 {
+        	compatible = "nxp,pn544";
+        	reg = <0x28>;
+        	status = "okay";
+        	nxp,pn544-irq = <&pio 10 0x0>;
+        	nxp,pn544-ven = <&pio 171 0x0>;
+        	nxp,pn544-fw-dwnld = <&pio 21 0x0>;
+        	gpio-rst = <171>;
+        	gpio-rst-std = <&pio 171 0x0>;
+        	gpio-irq = <10>;
+        	gpio-irq-std = <&pio 10 0x0>;
+    	};
+};
+
+&pn544 {
+    	compatible = "nxp,pn544";
+    	gpio-rst = <171>;
+    	gpio-rst-std = <&pio 171 0x0>;
+    	gpio-irq = <10>;
+    	gpio-irq-std = <&pio 10 0x0>;
 };
 
 &i2c5 {
