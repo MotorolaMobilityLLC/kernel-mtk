@@ -840,7 +840,8 @@ static void md_ccif_queue_dump(unsigned char hif_id)
 
 	struct md_ccif_ctrl *md_ctrl =
 		(struct md_ccif_ctrl *)ccci_hif_get_by_id(hif_id);
-
+	if (!md_ctrl || !md_ctrl->rxq[0].ringbuf)
+		return;
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
 		"Dump md_ctrl->channel_id 0x%lx\n",
 		md_ctrl->channel_id);
@@ -1305,6 +1306,10 @@ static void md_ccif_dump_queue_history(unsigned char hif_id, unsigned int qno)
 	struct md_ccif_ctrl *md_ctrl =
 		(struct md_ccif_ctrl *)ccci_hif_get_by_id(hif_id);
 
+	if (!md_ctrl || !md_ctrl->rxq[qno].ringbuf) {
+		CCCI_NORMAL_LOG(0, TAG, "ccif not power on ,skip dump\n");
+		return;
+		}
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
 		"Dump md_ctrl->channel_id 0x%lx\n", md_ctrl->channel_id);
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
@@ -1479,7 +1484,8 @@ static int md_ccif_op_dump_status(unsigned char hif_id,
 {
 	struct md_ccif_ctrl *md_ctrl =
 		(struct md_ccif_ctrl *)ccci_hif_get_by_id(hif_id);
-
+	if (!md_ctrl)
+		return -1;
 	/*runtime data, boot, long time no response EE */
 	if (flag & DUMP_FLAG_CCIF) {
 		md_ccif_dump("Dump CCIF SRAM\n", hif_id);

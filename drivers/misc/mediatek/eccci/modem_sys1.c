@@ -1486,8 +1486,14 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 		"mediatek,mdhif_type", &md->hif_flag);
 	if (ret != 0)
 		md->hif_flag = (1 << MD1_NET_HIF | 1 << MD1_NORMAL_HIF);
-	ccci_hif_init(md->index, md->hif_flag);
-
+	ret = ccci_hif_init(md->index, md->hif_flag);
+	if (ret != 0) {
+		CCCI_ERROR_LOG(-1, TAG,
+			"%s:ccci_hif_init fail (%d)\n", __func__, ret);
+		kfree(md_hw);
+		md_hw = NULL;
+		return -1;
+	}
 	/* register SYS CORE suspend resume call back */
 	register_syscore_ops(&ccci_modem_sysops);
 
