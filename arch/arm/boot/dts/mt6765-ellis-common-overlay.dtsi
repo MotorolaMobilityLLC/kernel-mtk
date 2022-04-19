@@ -51,6 +51,24 @@
 		ti,bq2560x,vac-ovp-threshold = <6500>;
 
 	};
+
+	bq2560x_charger_3rd:bq25601@3B {
+		compatible = "ti,bq25601";
+		reg = <0x3B>;
+		ti,bq2560x,usb-vlim = <4600>;
+		ti,bq2560x,usb-ilim = <2000>;
+		ti,bq2560x,usb-vreg = <4400>;
+		ti,bq2560x,usb-ichg = <2000>;
+		ti,bq2560x,precharge-current = <240>;
+		ti,bq2560x,termination-current = <60>;
+		ti,bq2560x,boost-voltage = <4998>;
+		ti,bq2560x,boost-current = <1200>;
+		ti,bq2560x,enable_term;
+		ti,bq2560x,stat-pin-ctrl = <3>;
+		ti,bq2560x,vac-ovp-threshold = <6500>;
+
+	};
+
 };
 
 &i2c6 {
@@ -424,6 +442,7 @@
 &mtk_gauge {
 	charger = <&mtk_charger_type>;
         extern_charger = <&bq2560x_charger>;
+	extern_charger_3rd = <&bq2560x_charger_3rd>;
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
 
