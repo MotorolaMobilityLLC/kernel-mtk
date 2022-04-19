@@ -277,12 +277,6 @@ static int lcm_unprepare(struct drm_panel *panel)
 	lcm_dcs_write_seq_static(ctx, MIPI_DCS_ENTER_SLEEP_MODE);
 	msleep(120);
 
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-
-	gate_ic_Power_on(panel, 0);
-
 	ctx->error = 0;
 	ctx->prepared = false;
 
@@ -297,9 +291,6 @@ static int lcm_prepare(struct drm_panel *panel)
 	pr_info("%s+\n", __func__);
 	if (ctx->prepared)
 		return 0;
-
-	ret = gate_ic_Power_on(panel, 1);
-	if (ret < 0 ) goto error;
 
 	// lcd reset L->H -> L -> L
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
@@ -1103,9 +1094,35 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 	return 0;
 }
 
+static int panel_ext_init_power(struct drm_panel *panel)
+{
+	int ret;
+	ret = gate_ic_Power_on(panel, 1);
+	return ret;
+}
+
+static int panel_ext_powerdown(struct drm_panel *panel)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	pr_info("%s+\n", __func__);
+	if (ctx->prepared)
+	    return 0;
+
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+
+	gate_ic_Power_on(panel, 0);
+
+	return 0;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+	.init_power = panel_ext_init_power,
+	.powerdown = panel_ext_powerdown,
 	.ata_check = panel_ata_check,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
