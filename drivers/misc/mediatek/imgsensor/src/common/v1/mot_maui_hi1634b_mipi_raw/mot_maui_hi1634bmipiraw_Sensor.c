@@ -54,7 +54,7 @@
 #undef VENDOR_EDIT
 
 #define USE_BURST_MODE 1
-#define ENABLE_PDAF 0
+#define ENABLE_PDAF 1
 
 //#define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
 #define LOG_INF(format, args...)    \
