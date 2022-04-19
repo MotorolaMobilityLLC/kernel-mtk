@@ -2773,6 +2773,10 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,irq_nfc-eint";
 	};
 
+    pn544: pn544 {
+        compatible = "nxp,pn544";
+    };
+
 	disp_mutex0: disp_mutex0@14001000 {
 		compatible = "mediatek,disp_mutex0";
 		reg = <0 0x14001000 0 0x1000>;
