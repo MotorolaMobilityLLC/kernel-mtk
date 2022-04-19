@@ -24,6 +24,12 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(HX83102P_WXGA_VDO_INCELL_BOE)
 	&hx83102p_wxga_vdo_incell_boe_lcm_drv,
 #endif
+
+
+//#if defined(ONTIM_TXD9882C_HDPLUS_DSI_VDO_TRULY)
+	&ontim_txd9882c_hdplus_dsi_vdo_truly_lcm_drv,
+//#endif
+
 #if defined(NT36672AH_HDP_DSI_VDO_TCL_CSOT)
 	&nt36672ah_hdp_dsi_vdo_tcl_csot_lcm_drv,
 #endif
@@ -1258,6 +1264,8 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 };
 
 unsigned char lcm_name_list[][128] = {
+
+"ontim_txd9882c_hdplus_dsi_vdo_truly"
 #if defined(HX8392A_DSI_CMD)
 	"hx8392a_dsi_cmd",
 #endif
