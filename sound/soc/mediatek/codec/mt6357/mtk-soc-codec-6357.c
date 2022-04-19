@@ -3440,8 +3440,8 @@ static int PMIC_REG_CLEAR_Get(struct snd_kcontrol *kcontrol,
 
 static void Voice_Amp_Change(bool enable)
 {
-	if (enable) {
 #ifdef CONFIG_SND_SOC_AW87XXX
+	if (enable) {
 		/*切换 PA AW_DEV_0 为 receiver 场景*/
 		aw87xxx_set_profile(AW_DEV_0, aw_profile[1]);
 		//aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);
@@ -3590,8 +3590,8 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol,
 
 static void Speaker_Amp_Change(bool enable)
 {
-	if (enable) {
 #ifdef CONFIG_SND_SOC_AW87XXX
+	if (enable) {
 		/*切换 PA AW_DEV_0 为 Music 场景*/
 		aw87xxx_set_profile(AW_DEV_0, aw_profile[0]);//open up PA
 		aw87xxx_set_profile(AW_DEV_1, aw_profile[0]);//open down PA 
