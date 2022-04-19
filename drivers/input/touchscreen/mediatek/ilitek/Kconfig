@@ -1,0 +1,10 @@
+
+config TOUCHSCREEN_ILITEK_S00
+    tristate "generic touchscreen ilitek driver"
+    help
+    add support for touchscreen driver.
+
+config TOUCHSCREEN_ILITEK_MODEL
+    string "ilitek model, kernel defconfig"
+    help
+    ilitek model, kernel defconfig

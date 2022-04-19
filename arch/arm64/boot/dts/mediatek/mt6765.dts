@@ -1025,7 +1025,7 @@ firmware_class.path=/vendor/firmware";
 	};
 
 	touch: touch {
-		compatible = "goodix,touch";
+		compatible = "mediatek,touch";
 	};
 
 	accdet: accdet {

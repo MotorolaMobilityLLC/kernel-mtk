@@ -1022,7 +1022,7 @@
 	};
 
 	touch: touch {
-		compatible = "goodix,touch";
+		compatible = "mediatek,touch";
 	};
 
 	accdet: accdet {
