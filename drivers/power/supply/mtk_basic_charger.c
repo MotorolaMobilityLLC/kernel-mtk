@@ -465,6 +465,7 @@ static int do_algorithm(struct mtk_charger *info)
 			} else if ((pdata->thermal_charging_current_limit > 0)
 				&& (pdata->thermal_charging_current_limit < info->mmi.min_therm_current_limit)
 				&& (alg->alg_id & PE5_ID)) {
+				charger_dev_enable(info->chg1_dev, true);
 				chg_alg_stop_algo(alg);
 				chr_err("%s: alg:%s due to thermal limit current%d < %d\n", __func__,
 					dev_name(&alg->dev), pdata->thermal_charging_current_limit,
