@@ -1396,7 +1396,7 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 	fg_cust_data->shutdown_car_ratio = SHUTDOWN_CAR_RATIO;
 
 	/* log level*/
-	fg_cust_data->daemon_log_level = BMLOG_ERROR_LEVEL;
+	fg_cust_data->daemon_log_level = BMLOG_TRACE_LEVEL;
 
 	/* ZCV update */
 	fg_cust_data->zcv_suspend_time = ZCV_SUSPEND_TIME;
