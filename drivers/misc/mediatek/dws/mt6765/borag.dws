@@ -121,6 +121,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint44>
+            <eint53>
+                <varName>TCPC_PD</varName>
+                <debounce_time>1</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint53>
             <eint144>
                 <varName>MAIN_PMIC</varName>
                 <debounce_time>0</debounce_time>
@@ -636,6 +643,17 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio52>
+            <gpio53>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_BPI_ANT0_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio53>
             <gpio54>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
