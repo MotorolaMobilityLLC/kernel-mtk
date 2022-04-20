@@ -4963,6 +4963,7 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 		(int (*)(unsigned int, unsigned char))mt_set_gpio_pull_enable;
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+    utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
 #endif
 #endif
 
