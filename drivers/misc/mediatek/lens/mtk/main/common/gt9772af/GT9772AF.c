@@ -151,7 +151,7 @@ static int initAF(void)
 		//AAC4
 		ret = s4AF_WriteReg(0, 0x06, 0x84);LOG_INF("AAC4 ret: %x\n", ret);
 		ret = s4AF_WriteReg(0, 0x07, 0x01);LOG_INF("0x07 0x01 ret: %x\n", ret);
-		ret = s4AF_WriteReg(0, 0x08, 0x49);LOG_INF("0x08 0x49ret: %x\n", ret);
+		ret = s4AF_WriteReg(0, 0x08, 0x55);LOG_INF("0x08 0x55ret: %x\n", ret);
 		msleep(1);
 		/*debuge
 		s4AF_ReadReg(0x03, &Temp);  //CODE MSB
