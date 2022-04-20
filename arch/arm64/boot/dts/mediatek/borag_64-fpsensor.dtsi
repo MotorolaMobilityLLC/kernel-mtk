@@ -1,0 +1,44 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 and
+* only version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*/
+
+
+/*begin, fps, fingerprint config*/
+&pio{
+    fpsensor_spi_default: fpsensor_spi_default {
+    };
+    fpsensor_rst_low: fpsensor_rst_low {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    fpsensor_rst_high: fpsensor_rst_high {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+};
+
+&fingerprint_pinctrl{
+    pinctrl-names = "fpsensor_spi_default", "fpsensor_rst_low",
+        "fpsensor_rst_high";
+    pinctrl-0 = <&fpsensor_spi_default>;
+    pinctrl-1 = <&fpsensor_rst_low>;
+    pinctrl-2 = <&fpsensor_rst_high>;
+
+    status = "okay";
+};
+
+/*end, fps, fingerprint config*/

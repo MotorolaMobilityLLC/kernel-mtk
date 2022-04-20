@@ -534,3 +534,11 @@ CONFIG_ONTIM_HWINFO_SUPPORT=y
 
 #camera
 CONFIG_CUSTOM_KERNEL_IMGSENSOR="hi1634b_borag_1_mipi_raw hi1634b_borag_2_mipi_raw s5k5e9yx04_borag_1_mipi_raw gc02m1_borag_1_mipi_raw"
+
+#begin,fps,fingerprint config
+CONFIG_TEE=y
+CONFIG_TRUSTONIC_TEE_SUPPORT=y
+CONFIG_MTK_TEE_GP_SUPPORT=y
+CONFIG_MTK_FINGERPRINT_SUPPORT=y
+CONFIG_MICROTRUST_FPC_M00=y
+

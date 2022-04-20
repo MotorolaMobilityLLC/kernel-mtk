@@ -17,5 +17,6 @@ config MTK_FINGERPRINT_SELECT
 	string "sensor type"
 	default "GF318M"
 
+source drivers/input/fingerprint/fps_fpc_M00/Kconfig
 
 endmenu
