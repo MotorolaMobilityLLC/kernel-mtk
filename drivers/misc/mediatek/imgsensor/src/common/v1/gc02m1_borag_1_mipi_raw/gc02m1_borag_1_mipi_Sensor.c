@@ -43,7 +43,7 @@
 #define LOG_INF(format, args...)    printk(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
-#define MODULE_ID_OFFSET 17
+#define OTP_LEN 17
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -747,11 +747,166 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
-extern char backaux2_cam_name[64];
+static kal_uint32 gc02m1_macro_awb_crc(unsigned char *raw_buf, unsigned int data_count) {
+	kal_uint16 crc = 0x0000;
+	kal_uint16 crc_otp_val_hi = 0x0000;
+	kal_uint16 crc_otp_val_lo = 0x0000;
+	kal_uint32 ret = 0;
+	kal_uint32 i = 0, j = 0, tmp = 0, size = 0, offset = 0;
+
+	LOG_INF("in");
+
+	if ((raw_buf[0] & 0xC0) == 0x40) {
+		size = 7;
+		offset = 0;
+		crc_otp_val_hi = raw_buf[7];
+		crc_otp_val_lo = raw_buf[8];
+	} else if ((raw_buf[0] & 0x30) == 0x10) {
+		size = 6;
+		offset = 9;
+		crc_otp_val_hi = raw_buf[15];
+		crc_otp_val_lo = raw_buf[16];
+	}
+
+	for (i = 0; i < size; i++) {
+		tmp = raw_buf[offset + i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+		}
+        //LOG_INF("buf[%d]:0x%x", i, buf[i]);
+	}
+
+	if (crc == ((crc_otp_val_hi << 8) | crc_otp_val_lo)) {
+		ret = 0;
+	} else {
+		ret = -1;
+	}
+	LOG_INF("crc:0x%x, checksum:0x%x", crc, ((crc_otp_val_hi << 8) | crc_otp_val_lo));
+	return ret;
+}
+
+static kal_uint32 gc02m1_macro_read_otp(unsigned char *buff)
+{
+	kal_uint32 ret = 0;
+	kal_uint16 i;
+
+	write_cmos_sensor(0xfe, 0x00);
+	write_cmos_sensor(0xfc, 0x01);
+	write_cmos_sensor(0xf4, 0x41);
+	write_cmos_sensor(0xf5, 0xc0);
+	write_cmos_sensor(0xf6, 0x44);
+	write_cmos_sensor(0xf8, 0x38);
+	write_cmos_sensor(0xf9, 0x82);
+	write_cmos_sensor(0xfa, 0x00);
+	write_cmos_sensor(0xfd, 0x80);
+	write_cmos_sensor(0xfc, 0x81);
+	write_cmos_sensor(0xf7, 0x01);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x80);
+	write_cmos_sensor(0xfc, 0x8e);
+	write_cmos_sensor(0xf3, 0x30);
+	write_cmos_sensor(0xfe, 0x02);
+
+	for (i = 0; i < OTP_LEN; i++){
+		write_cmos_sensor(0x17, 0x78 + 8*i);
+		write_cmos_sensor(0xf3, 0x34);
+
+		buff[i] = read_cmos_sensor(0x19);
+		LOG_INF("otp_raw_buffer[%d]:0x%x", i, buff[i]);
+	}
+
+	write_cmos_sensor(0xf3, 0x00);
+
+	return ret;
+}
+
+static kal_uint32 gc02m1_macro_cali_awb(unsigned char *buff) {
+	kal_uint32 ret = 0;
+	kal_uint8 group_flag = 0;
+	kal_uint16 rg_ratio_typical, bg_ratio_typical;
+	kal_uint16 rg_ratio_current, bg_ratio_current;
+	kal_uint16 r_gain = 1024, g_gain = 1024, b_gain = 1024;
+	kal_uint16 r_gain_current = 0, g_gain_current = 0, b_gain_current = 0, base_gain = 0;
+	unsigned char *awb_src_dat = buff;
+
+	LOG_INF("in");
+
+	//cnce_clear_otp_check_result(SENSOR_NAME);
+	ret = gc02m1_macro_awb_crc(buff,OTP_LEN);
+	//cnce_save_otp_check_result(SENSOR_NAME, "af", 0x4);
+	//cnce_save_otp_check_result(SENSOR_NAME, "awb", ret);
+	if (0 != ret) {
+		LOG_INF("awb otp data checksum error,parse failed");
+		return ret;
+	}
+
+	group_flag = buff[0];
+
+	if ((group_flag & 0xC0) == 0x40) {
+		rg_ratio_typical = awb_src_dat[1] | (awb_src_dat[2] << 4 & 0xFF00);
+		bg_ratio_typical = awb_src_dat[3] | (awb_src_dat[2] << 8 & 0x0F00);
+
+		rg_ratio_current = awb_src_dat[4] | (awb_src_dat[5] << 4 & 0xFF00);
+		bg_ratio_current = awb_src_dat[6] | (awb_src_dat[5] << 8 & 0x0F00);
+	} else if ((group_flag & 0x30) == 0x10) {
+		rg_ratio_typical = awb_src_dat[9] | (awb_src_dat[10] << 4 & 0xFF00);
+		bg_ratio_typical = awb_src_dat[11] | (awb_src_dat[10] << 8 & 0x0F00);
+
+		rg_ratio_current = awb_src_dat[12] | (awb_src_dat[13] << 4 & 0xFF00);
+		bg_ratio_current = awb_src_dat[14] | (awb_src_dat[13] << 8 & 0x0F00);
+	} else {
+		LOG_INF("wrong group_flag, 0x%x", group_flag);
+		return ret;
+	}
+
+	rg_ratio_typical = rg_ratio_typical > 0 ? rg_ratio_typical : 0x400;
+	bg_ratio_typical = bg_ratio_typical > 0 ? bg_ratio_typical : 0x400;
+
+	rg_ratio_current = rg_ratio_current > 0 ? rg_ratio_current : 0x400;
+	bg_ratio_current = bg_ratio_current > 0 ? bg_ratio_current : 0x400;
+	LOG_INF("rg_ratio_typical = 0x%x, bg_ratio_typical = 0x%x\n", rg_ratio_typical, bg_ratio_typical);
+	LOG_INF("rg_ratio_current = 0x%x, bg_ratio_current = 0x%x\n", rg_ratio_current, bg_ratio_current);
+
+	r_gain_current = 0x400 * rg_ratio_typical / rg_ratio_current;
+	b_gain_current = 0x400 * bg_ratio_typical / bg_ratio_current;
+	g_gain_current = 0x400;
+
+	base_gain = r_gain_current < b_gain_current ? r_gain_current : b_gain_current;
+	base_gain = base_gain < g_gain_current ? base_gain : g_gain_current;
+	LOG_INF("r_gain_current = 0x%x, b_gain_current = 0x%x, base_gain = 0x%x\n",
+		r_gain_current, b_gain_current, base_gain);
+
+	r_gain = 0x400 * r_gain_current / base_gain;
+	g_gain = 0x400 * g_gain_current / base_gain;
+	b_gain = 0x400 * b_gain_current / base_gain;
+	LOG_INF("r_gain = 0x%x, g_gain = 0x%x, b_gain = 0x%x\n", r_gain, g_gain, b_gain);
+
+	write_cmos_sensor(0xfe, 0x04);
+	write_cmos_sensor(0x18, g_gain & 0xff);
+	write_cmos_sensor(0x19, r_gain & 0xff);
+	write_cmos_sensor(0x1a, b_gain & 0xff);
+	write_cmos_sensor(0x1b, g_gain & 0xff);
+	write_cmos_sensor(0x1c, (g_gain >> 8) & 0x07);
+	write_cmos_sensor(0x1d, (r_gain >> 8) & 0x07);
+	write_cmos_sensor(0x1e, (b_gain >> 8) & 0x07);
+	write_cmos_sensor(0x1f, (g_gain >> 8) & 0x07);
+	write_cmos_sensor(0xfe, 0x00);
+
+	LOG_INF("out");
+	return ret;
+}
+extern char backaux_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	unsigned char otp_buffer[17];
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -761,8 +916,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			LOG_INF("gc02m1_borag_1 sensorid = 0x%x\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-					memset(backaux2_cam_name, 0x00, sizeof(backaux2_cam_name));
-					memcpy(backaux2_cam_name, "3_ak57_union_gc02m1_borag_1", 64);
+					memset(backaux_cam_name, 0x00, sizeof(backaux_cam_name));
+					memcpy(backaux_cam_name, "2_gc02m1_borag_1", 64);
+					gc02m1_macro_read_otp((unsigned char *)&otp_buffer);
+					gc02m1_macro_cali_awb((unsigned char *)&otp_buffer);
 					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 					return ERROR_NONE;
 			}
