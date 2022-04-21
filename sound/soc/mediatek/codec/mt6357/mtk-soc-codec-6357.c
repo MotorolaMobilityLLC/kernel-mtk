@@ -77,6 +77,7 @@
 
 #include "mtk-soc-speaker-amp.h"
 
+#define ONTIM_DUAL_SPEAKER_ENABLE true
 #ifdef CONFIG_SND_SOC_AW87XXX
 extern int aw87xxx_add_codec_controls(void *codec);
 extern int aw87xxx_set_profile(int dev_index, char *profile);
@@ -102,6 +103,9 @@ static void setDlMtkifSrc(bool enable);
 #ifndef ANALOG_HPTRIM
 static int SetDcCompenSation(bool enable);
 #endif
+static void Speaker_Amp_PA_SetMode(int mode);
+static void Voice_Amp_PA_SetMode(int mode);
+static void Voice_Amp_Mux_Select(bool enable);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 static struct mt6357_codec_priv *mCodec_data;
@@ -641,6 +645,7 @@ static void hp_aux_feedback_loop_gain_ramp(bool up)
 
 static void hp_pull_down(bool enable)
 {
+	pr_debug("%s() amp_, enable = %d ",__func__,enable);
 	if (enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x400, 0x400);
 	else
@@ -2888,7 +2893,7 @@ static struct snd_soc_dai_driver mtk_6357_dai_codecs[] = {
 };
 static void TurnOnDacPower(int device)
 {
-	pr_debug("%s()\n", __func__);
+	printk("%s()  amp_ device= %d \n", __func__ ,device);  
 	audckbufEnable(true);
 	/* gpio mosi mode */
 	set_playback_gpio(true);
@@ -2897,15 +2902,22 @@ static void TurnOnDacPower(int device)
 	/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
 	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x00a8, 0xffff);
 	switch (device) {
-	case AUDIO_ANALOG_DEVICE_OUT_EARPIECEL:
-	case AUDIO_ANALOG_DEVICE_OUT_EARPIECER:
+	case AUDIO_ANALOG_DEVICE_OUT_EARPIECEL://1
+	case AUDIO_ANALOG_DEVICE_OUT_EARPIECER://0
 		/* Release HS CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0088, 0xffff);
+		 Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0088, 0xffff);
+		//Ana_Set_Reg(AUDDEC_ANA_CON7, 0x00a8, 0xffff);
 		break;
-	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERL:
-	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERR:
+	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERL://5
+	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERR://4
 		/* Release LO CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0028, 0xffff);
+		//Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0028, 0xffff);
+		
+		/* 
+                  when speaker open,also open earpice
+		  0x0088 || 0x0028 = 0x00a8 
+                */
+		 Ana_Set_Reg(AUDDEC_ANA_CON7, 0x00a8, 0xffff);
 		break;
 	case AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L:
 	case AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_R:
@@ -2951,7 +2963,7 @@ static void TurnOnDacPower(int device)
 }
 static void TurnOffDacPower(void)
 {
-	pr_debug("%s()\n", __func__);
+	pr_debug("%s() amp_ \n", __func__);
 	setDlMtkifSrc(false);
 	/* DL scrambler disabling sequence */
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0000, 0xffff);
@@ -3021,13 +3033,13 @@ static void Audio_Amp_Change(int channels, bool enable)
 		 * __func__, mic_vinp_mv, Ana_Get_Reg(AUDDEC_ELR_0));
 		 */
 #endif
-		if (GetDLStatus() == false)
+		if (GetDLStatus() == false || ONTIM_DUAL_SPEAKER_ENABLE)
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
 		/* here pmic analog control */
-		if (mCodec_data->mAudio_Ana_DevicePower
+		if (/*mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
+			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false */true) {
 			/* switch to ground to de pop-noise */
 			/*HP_Switch_to_Ground();*/
 			/* Disable headphone short-circuit protection */
@@ -3122,10 +3134,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 		}
 	} else {
-		if (mCodec_data->mAudio_Ana_DevicePower
+		if (/*mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
+			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false */ true) {
 			/* Pull-down HPL/R to AVSS28_AUD */
 			hp_pull_down(true);
 #ifndef ANALOG_HPTRIM
@@ -3437,31 +3449,43 @@ static int PMIC_REG_CLEAR_Get(struct snd_kcontrol *kcontrol,
 	pr_debug("%s(), not support\n", __func__);
 	return 0;
 }
-
-static void Voice_Amp_Change(bool enable)
-{
-#ifdef CONFIG_SND_SOC_AW87XXX
-	if (enable) {
-		/*切换 PA AW_DEV_0 为 receiver 场景*/
-		aw87xxx_set_profile(AW_DEV_0, aw_profile[1]);
-		//aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);
-	} else {
-		/*切换 PA AW_DEV_0 为 Off 场景*/
-		aw87xxx_set_profile(AW_DEV_0, aw_profile[2]);
-		//aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);
+static void Speaker_Amp_PA_SetMode(int mode){
+	switch(mode){
+		case 0://Music
+		case 1://Receiver
+		case 2:{//Off
+			pr_debug("%s(),mode = %d\n", __func__,mode);
+			aw87xxx_set_profile(AW_DEV_1, aw_profile[mode]);
+			break;
+		}
+		default:{}
 	}
-#endif
-
+}
+static void Voice_Amp_PA_SetMode(int mode){
+	switch(mode){
+		case 0://Music
+		case 1://Receiver
+		case 2:{//Off
+			pr_debug("%s(),mode = %d\n", __func__,mode);
+			aw87xxx_set_profile(AW_DEV_0, aw_profile[mode]);
+			break;
+		}
+		default:{}
+	}
+}
+static void Voice_Amp_Mux_Select(bool enable){
+	pr_debug("%s(), enable = %d", __func__,enable);
 	if (enable) {
-		if (GetDLStatus() == false) {
+		if (GetDLStatus() == false || ONTIM_DUAL_SPEAKER_ENABLE) {
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_EARPIECEL);
-			pr_debug("%s(), amp on\n", __func__);
 			/* Disable headphone short-circuit protection */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 			/* Disable handset short-circuit protection */
 			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0010, 0xffff);
 			/* Disable linout short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0010, 0xffff);
+			// Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0010, 0xffff);
+			 Ana_Set_Reg(AUDDEC_ANA_CON4, 0x117, 0xffff);
+			// Ana_Set_Reg(AUDDEC_ANA_CON4, 0x11b, 0xffff);//speaker on
 			/* Reduce ESD resistance of AU_REFN */
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x200, 0x200);
 			/* Set HS gain as minimum (~ -40dB) */
@@ -3505,7 +3529,8 @@ static void Voice_Amp_Change(bool enable)
 			/* Enable AUD_CLK */
 			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x1, 0x1);
 			/* Enable Audio DAC  */
-			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+			//Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+			 Ana_Set_Reg(AUDDEC_ANA_CON0, 0x37ff, 0xffff);
 			/* Enable low-noise mode of DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0281, 0xffff);
 			/* Switch HS MUX to audio DAC */
@@ -3515,7 +3540,6 @@ static void Voice_Amp_Change(bool enable)
 
 		}
 	} else {
-		pr_debug("%s(), amp off\n", __func__);
 		/* HS mux to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x3 << 2);
 		if (GetDLStatus() == false) {
@@ -3551,6 +3575,20 @@ static void Voice_Amp_Change(bool enable)
 		}
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x1 << 2);
 	}
+}
+static void Voice_Amp_Change(bool enable)
+{
+	pr_debug("%s(), enable %d\n", __func__, enable);
+	Voice_Amp_Mux_Select(enable);
+#ifdef CONFIG_SND_SOC_AW87XXX
+	if (enable) {
+		Voice_Amp_PA_SetMode(1);//Receiver mode
+	} else {
+		Voice_Amp_PA_SetMode(2);//Off
+	}
+#endif
+
+
 }
 static int Voice_Amp_Get(struct snd_kcontrol *kcontrol,
 			 struct snd_ctl_elem_value *ucontrol)
@@ -3590,21 +3628,11 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol,
 
 static void Speaker_Amp_Change(bool enable)
 {
-#ifdef CONFIG_SND_SOC_AW87XXX
+	pr_debug("%s() enable %d", __func__,enable);
+
 	if (enable) {
-		/*切换 PA AW_DEV_0 为 Music 场景*/
-		aw87xxx_set_profile(AW_DEV_0, aw_profile[0]);//open up PA
-		aw87xxx_set_profile(AW_DEV_1, aw_profile[0]);//open down PA 
-	} else {
-		/*切换 PA AW_DEV_ 为 Off 场景*/
-		aw87xxx_set_profile(AW_DEV_0, aw_profile[2]);//close up PA
-		aw87xxx_set_profile(AW_DEV_1, aw_profile[2]);//close up PA
-	}
-#endif
-	if (enable) {
-		if (GetDLStatus() == false || true)// should be true for dual-speaker
+		if (GetDLStatus() == false || ONTIM_DUAL_SPEAKER_ENABLE)// should be true for dual-speaker
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_SPEAKERL);
-		pr_debug("%s(), enable %d\n", __func__, enable);
 		/* Disable headphone short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 		/* Disable handset short-circuit protection */
@@ -3652,19 +3680,20 @@ static void Speaker_Amp_Change(bool enable)
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x1, 0x1);
 		/* Enable Audio DAC  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+		// Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x37ff, 0xffff);
 		/* Enable low-noise mode of DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0201, 0xffff);
 		/* Switch LOL MUX to audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x011b, 0xffff);
+		// Ana_Set_Reg(AUDDEC_ANA_CON4, 0x011b, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x117, 0xffff);
 		/* disable Pull-down HPL/R to AVSS28_AUD */
 		hp_pull_down(false);
 
 	} else {
-		pr_debug("%s(), enable %d\n", __func__, enable);
 		/* LOL mux to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0x3 << 2);
-		if (GetDLStatus() == false || true) {// should be true for dual-speaker
+		if (GetDLStatus() == false || ONTIM_DUAL_SPEAKER_ENABLE) {// should be true for dual-speaker
 			/* Pull-down HPL/R to AVSS28_AUD */
 			hp_pull_down(true);
 
@@ -3697,6 +3726,23 @@ static void Speaker_Amp_Change(bool enable)
 			TurnOffDacPower();
 		}
 	}
+	
+	if (enable)
+	{
+		Speaker_Amp_PA_SetMode(0);//Music
+	}else{
+		Speaker_Amp_PA_SetMode(2);//Off
+	}
+
+#ifdef CONFIG_SND_SOC_AW87XXX
+	//open receiver speaker at Music mode
+	Voice_Amp_Mux_Select(enable);
+	if (enable) {
+		Voice_Amp_PA_SetMode(0);//Music
+	} else {
+		Voice_Amp_PA_SetMode(2);//Off
+	}
+#endif
 }
 static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
@@ -3831,6 +3877,7 @@ static int Receiver_Speaker_Switch_Set(struct snd_kcontrol *kcontrol,
 }
 static void Headset_Speaker_Amp_Change(bool enable)
 {
+pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
 	if (enable) {
 #ifdef ANALOG_HPTRIM
 		if (apply_n12db_gain) {
@@ -3851,7 +3898,7 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			 */
 		}
 #endif
-		if (GetDLStatus() == false)
+		if (GetDLStatus() == false||ONTIM_DUAL_SPEAKER_ENABLE)
 			TurnOnDacPower(
 				AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L);
 		pr_debug("%s(), enable %d\n", __func__, enable);
@@ -3864,7 +3911,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		if (apply_n12db_gain)
 			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0004, 0xff);
 		/* Disable handset short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0010, 0xffff);
+		// Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0010, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0018, 0xffff);
 		/* Disable linout short-circuit protection */
 		enable_lo_buffer(false);
 		/* Reduce ESD resistance of AU_REFN */
@@ -3936,10 +3984,12 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Enable low-noise mode of DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0281, 0x0fff);
 		/* Switch LOL MUX to audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x011b, 0xffff);
+		// Ana_Set_Reg(AUDDEC_ANA_CON4, 0x011b, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x117, 0xffff);
 		/* Switch HPL MUX to Line-out */
 		/* Switch HPR MUX to DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x39ff, 0xffff);
+		// Ana_Set_Reg(AUDDEC_ANA_CON0, 0x39ff, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x37ff, 0xffff);
 #ifndef ANALOG_HPTRIM
 		SetDcCompenSation_spk2hp(true);
 #endif
@@ -3954,7 +4004,7 @@ static void Headset_Speaker_Amp_Change(bool enable)
 #endif
 		/* Audio left headphone input selection (00) open / open */
 		set_input_mux(0);
-		if (GetDLStatus() == false) {
+		if (GetDLStatus() == false||ONTIM_DUAL_SPEAKER_ENABLE) {
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0x0001);
 			/* Disable Audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
