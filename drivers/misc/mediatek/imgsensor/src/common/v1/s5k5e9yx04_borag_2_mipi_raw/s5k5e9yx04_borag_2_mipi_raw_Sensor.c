@@ -13,7 +13,7 @@
 #include <linux/fs.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
-#include "s5k5e9yx04_borag_1_mipi_raw_Sensor.h"
+#include "s5k5e9yx04_borag_2_mipi_raw_Sensor.h"
 //#include "hwinfo.h"
 
 #define PFX "s5k5e9yx04_borag_camera_sensor"
@@ -24,7 +24,7 @@
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K5E9YX04_BORAG_1_SENSOR_ID,
+	.sensor_id = S5K5E9YX04_BORAG_2_SENSOR_ID,
 
 	.checksum_value = 0x2ae69154,
 
@@ -168,7 +168,6 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	return get_byte;
 }
 
-
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
@@ -195,7 +194,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
+	return (((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001))+1);
 	
 }
 
@@ -445,12 +444,12 @@ static void night_mode(kal_bool enable)
 
 static void sensor_init(void)
 {
-	LOG_INF("s5k5e9yx04_borag_1_mipi_raw_Sensor %s:%d E", __func__, __LINE__);
+	LOG_INF("s5k5e9yx04_borag_1_mipi_raw %s:%d E", __func__, __LINE__);
 
    // +++++++++++++++++++++++++++//                                                               
 	// Reset for operation     
 	//Streaming off
-	//S5K5E9_EVT0_Reference_setfile_v0.3b_180308
+	//s5k5e9yx04_borag_1_mipi_raw_EVT0_Reference_setfile_v0.3b_180308
 	write_cmos_sensor(0x0100, 0x00); 
 	write_cmos_sensor(0x3B45, 0x01);
 	write_cmos_sensor(0x0B05, 0x01);
@@ -494,7 +493,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3400, 0x01); //shade_bypass LSC off
 	write_cmos_sensor(0x3C34, 0xEA);
 	write_cmos_sensor(0x3035, 0x5C);	
-    LOG_INF("s5k5e9yx04_borag_1_mipi_raw_Sensor %s:%d X", __func__, __LINE__);
+    LOG_INF("s5k5e9yx04_borag_1_mipi_raw %s:%d X", __func__, __LINE__);
 }	/*	sensor_init  */
 
 
@@ -503,7 +502,7 @@ static void preview_setting(void)
     int i;
     kal_uint16 framecnt;
     
-    LOG_INF("s5k5e9yx04_borag_1_mipi_raw_Sensor %s:%d E", __func__, __LINE__);
+    LOG_INF("s5k5e9yx04_borag_1_mipi_raw %s:%d E", __func__, __LINE__);
 	write_cmos_sensor(0x0100, 0x00);
 	for (i = 0; i < 100; i++)
 	{
@@ -566,7 +565,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x30B8, 0x2A);
 	write_cmos_sensor(0x30BA, 0x2E);
 	write_cmos_sensor(0x0100, 0x01);
-    LOG_INF("s5k5e9yx04_borag_1_mipi_raw_Sensor %s:%d X", __func__, __LINE__);
+    LOG_INF("s5k5e9yx04_borag_1_mipi_raw %s:%d X", __func__, __LINE__);
 }	/*	preview_setting  */
 
 static void capture_setting(kal_uint16 currefps)
@@ -987,6 +986,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0100, 0x01);
 }
 
+
 extern char front_cam_name[64];
 /*************************************************************************
 * FUNCTION
@@ -1020,13 +1020,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                         module_id = ((read_cmos_sensor(0xafd)<< 8) | (read_cmos_sensor(0xafe)<< 8));
                         imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 			if ((*sensor_id == imgsensor_info.sensor_id) && module_id == 0x5052) {				
-				pr_err("s5k5e9yx04_borag_1_mipi_raw_Sensor[%s](%d)    match  ok    i2c write id: 0x%x,read sensor id: 0x%x module_id 0x5052 = : 0x%x \n", __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);
+				pr_err("s5k5e9yx04_borag_2_mipi_raw_Sensor[%s](%d)    match  ok    i2c write id: 0x%x,read sensor id: 0x%x module_id 0x5052 = : 0x%x \n", __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);
                                 memset(front_cam_name,0x00,sizeof(front_cam_name));
-                                memcpy( front_cam_name,"1_s5k5eyx04_borag_1_mipi_raw",64);
+                                memcpy( front_cam_name,"1_s5k5eyx04_borag_2_mipi_raw",64);
 				return ERROR_NONE;
 			}	
 
-            pr_err("s5k5e9yx04_borag_1_mipi_raw_Sensor[%s](%d)    match  fail    i2c write id: 0x%x,read sensor id: 0x%x  module_id 0x5052 !=: 0x%x \n", 
+            pr_err("s5k5e9yx04_borag_2_mipi_raw_Sensor[%s](%d)    match  fail    i2c write id: 0x%x,read sensor id: 0x%x  module_id 0x5052 !=: 0x%x \n", 
             __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);
 			retry--;
 		} while(retry > 0);
@@ -1040,7 +1040,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	}
 	return ERROR_NONE;
 }
-
 
 /*************************************************************************
  * FUNCTION
@@ -1072,11 +1071,11 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {				
-				pr_err("s5k5e9yx04_borag_1_mipi_raw_Sensor[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+				pr_err("s5k5e9yx04_borag_1_mipi_raw[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id); 
 				break;
 			}	
-				pr_err("s5k5e9yx04_borag_1_mipi_raw_Sensor[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+				pr_err("s5k5e9yx04_borag_1_mipi_raw[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id); 
 			retry--;
 		} while(retry > 0);
@@ -1745,10 +1744,10 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K5E9YX04_BORAG_1_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 S5K5E9YX04_BORAG_2_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc =  &sensor_func;
 	return ERROR_NONE;
-}	/*	S5K5E8YX_MIPI_RAW_SensorInit	*/
+}	/*	S5K5E9YX04_BORAG_2_MIPI_RAW_SensorInit	*/

@@ -121,6 +121,8 @@
 #define SENSOR_DRVNAME_HI1634B_BORAG_2_MIPI_RAW                 "hi1634b_borag_2_mipi_raw"
 #define S5K5E9YX04_BORAG_1_SENSOR_ID                            0x559b
 #define SENSOR_DRVNAME_S5K5E9YX04_BORAG_1_MIPI_RAW              "s5k5e9yx04_borag_1_mipi_raw"
+#define S5K5E9YX04_BORAG_2_SENSOR_ID                            0x559c
+#define SENSOR_DRVNAME_S5K5E9YX04_BORAG_2_MIPI_RAW              "s5k5e9yx04_borag_2_mipi_raw"
 #define GC02M1_BORAG_1_SENSOR_ID                                0x2E0
 #define SENSOR_DRVNAME_GC02M1_BORAG_1_MIPI_RAW                  "gc02m1_borag_1_mipi_raw"
 
