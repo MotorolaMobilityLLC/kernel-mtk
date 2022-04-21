@@ -52,6 +52,12 @@ static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
 static unsigned int g_lastDevID;
 
+#ifdef MOT_MAUI_GC02M1_MIPI_RAW
+#define GC02M1_AWB_DATA_SIZE 17
+extern unsigned char gc02m1_data_awb[GC02M1_AWB_DATA_SIZE];
+static u32 gc02m1_vendor_id = 0x19050000;
+#endif
+
 /***********************************************************
  *
  ***********************************************************/
@@ -662,6 +668,22 @@ static long EEPROM_drv_ioctl(struct file *file,
 		do_gettimeofday(&ktv1);
 #endif
 
+#ifdef MOT_MAUI_GC02M1_MIPI_RAW
+        pr_debug("SensorID=%x, DeviceID=%x, offset=%d, length=%d, pu1Params:0x%x\n",
+            ptempbuf->sensorID, ptempbuf->deviceID, ptempbuf->u4Offset, ptempbuf->u4Length, *pu1Params);
+        if(ptempbuf->sensorID == 0x02e1) {
+            if(ptempbuf->u4Offset == 0x10){
+                pr_debug("Do layoutcheck\n");
+                memcpy(pu1Params, (u8 *)&gc02m1_vendor_id, 4);
+            }else{
+                if (ptempbuf->sensorID == 0x02e1 && ptempbuf->u4Length == 0x11 && ptempbuf->u4Offset == 0x78){
+                    pr_debug("awb data copy to user\n");
+                    memcpy(pu1Params, (u8 *) gc02m1_data_awb, ptempbuf->u4Length);
+                }
+            }
+            i4RetValue = ptempbuf->u4Length;
+        } else {
+#endif
 		pr_debug("SensorID=%x DeviceID=%x\n",
 			ptempbuf->sensorID, ptempbuf->deviceID);
 		pcmdInf = EEPROM_get_cmd_info_ex(
@@ -725,6 +747,9 @@ static long EEPROM_drv_ioctl(struct file *file,
 				return -EFAULT;
 			}
 		}
+#ifdef MOT_MAUI_GC02M1_MIPI_RAW
+        }
+#endif
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv2);
 		if (ktv2.tv_sec > ktv1.tv_sec)
