@@ -28,6 +28,7 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 
 //#if defined(ONTIM_TXD9882C_HDPLUS_DSI_VDO_TRULY)
 	&ontim_txd9882c_hdplus_dsi_vdo_truly_lcm_drv,
+	&ontim_icnl9911c_hdplus_dsi_vdo_dj_lcm_drv,
 //#endif
 
 #if defined(NT36672AH_HDP_DSI_VDO_TCL_CSOT)
@@ -1265,7 +1266,8 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 
 unsigned char lcm_name_list[][128] = {
 
-"ontim_txd9882c_hdplus_dsi_vdo_truly"
+"ontim_txd9882c_hdplus_dsi_vdo_truly",
+"ontim_icnl9911c_hdplus_dsi_vdo_dj"
 #if defined(HX8392A_DSI_CMD)
 	"hx8392a_dsi_cmd",
 #endif
