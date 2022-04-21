@@ -147,7 +147,7 @@
 //add maui sensor id begin
 #define MOT_MAUI_HI1634B_SENSOR_ID 0x1634
 #define MOT_MAUI_S5K5E9_SENSOR_ID  0x559b
-#define MOT_MAUI_GC02M1_SENSOR_ID 0x02e0
+#define MOT_MAUI_GC02M1_SENSOR_ID (0x02e0+1)
 #define MOT_MAUI_OV02B10_SENSOR_ID 0x002b
 //add maui sensor id end
 /*IMX*/
