@@ -933,11 +933,57 @@ __setup("band_id=", set_band_id);
 
 unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
-static int get_version_id(void)
+
+int _atoi(char * str);
+
+// resist calculation:  v / r = (adc_v - v) / r_up => r = v * r_up / (adc_v - v)
+#define ADC_VOLTAGE 1800
+
+#define BOARD_ID_ADC_R_UP 100
+int board_id_adc_r_table[] = { 100, 82, 43, 30 };
+char *board_id_version_table[] = { "EVT", "DVT1", "DVT2", "PVT" };
+
+int map2index(const char *msg, int val, int array[], int count)
+{
+	int i;
+	bool inc = (array[0] < array[count - 1]);
+	int  small = inc ? 0 : count - 1;
+	int  big = inc ? count - 1 : 0;
+	int  midval;
+	if (val > (array[big] * 3) / 2) {
+		pr_err("%s: val=%d is too big.\n", msg, val);
+		i = big;
+	} else if (val < array[small] / 2) {
+		pr_err("%s: val=%d is too small.\n", msg, val);
+		i = small;
+	} else {
+		for (i = 0; i < count - 1; i++) {
+			midval = (array[i] + array[i + 1]) / 2;
+			if (inc ? val < midval : val > midval)
+				break;
+		}
+	}
+	return i;
+}
+
+#define BOARD_ID_ADC_FILE "/sys/devices/platform/11001000.auxadc/iio:device0/in_voltage2_input"
+static void get_board_id(void)
 {
 #if 1
-	int id = platform_board_id;
-	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", id);
+	char data[16];
+	char *buf = hwinfo[board_id].hwinfo_buf;
+	int ret = hwinfo_read_file(BOARD_ID_ADC_FILE, data, sizeof(sizeof(data)));
+	if (ret != 0) {
+		pr_err("read " BOARD_ID_ADC_FILE " fail, ret=%d\n", ret);
+		strcpy(buf, "Unknown");
+		return;
+	}
+	int v = _atoi(data);
+	int r = v * BOARD_ID_ADC_R_UP / (ADC_VOLTAGE - v);
+	int i = map2index("board_id", r, board_id_adc_r_table, ARRAY_SIZE(board_id_adc_r_table));
+	pr_info("board_id: data=%s v=%d r=%d i=%d r-ri=%d delta=%d%%\n",
+		data, v, r, i, r - board_id_adc_r_table[i], 100 * (r - board_id_adc_r_table[i]) / board_id_adc_r_table[i]);
+	strcpy(buf, board_id_version_table[i]);
 #else
 	unsigned int gpio_base = 343;
 	unsigned int pin0 = 165;
@@ -1021,7 +1067,7 @@ int _atoi(char * str)
 	} else {
 		radix = 10;
 	}
-	while (*str && *str != '\0')
+	while (*str && *str != '\0' && *str != ' ' && *str != '\n')
 	{
 		if (radix == 16)
 		{
@@ -1334,7 +1380,7 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	//	get_band_id();
 	//	break;
 	case board_id:
-		get_version_id();
+		get_board_id();
 		break;
 	case hw_version:
 		get_hw_version();
