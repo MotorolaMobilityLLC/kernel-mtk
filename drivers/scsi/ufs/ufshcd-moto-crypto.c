@@ -88,9 +88,6 @@ static int ufshcd_program_wrapped_key(struct ufs_hba *hba,
 		      slot_offset + 16 * sizeof(cfg->reg_val[0]));
 	wmb();
 
-	/* Mask the current slot as already programmed */
-	hwkm_set_slot_programmed_mask(slot);
-
 	err = 0;
 
 out:
@@ -111,12 +108,6 @@ static int ufshcd_moto_crypto_keyslot_program(struct blk_keyslot_manager *ksm,
 	int cap_idx = -1;
 	union ufs_crypto_cfg_entry cfg = {};
 	int err = 0;
-
-	/* Return immediately to avoid program key again when runtime PM */
-	if ((hba->dev->power.runtime_status == RPM_RESUMING) &&
-		hwkm_is_slot_already_programmed(slot)) {
-		return 0;
-	}
 
 	BUILD_BUG_ON(UFS_CRYPTO_KEY_SIZE_INVALID != 0);
 	for (i = 0; i < hba->crypto_capabilities.num_crypto_cap; i++) {
@@ -173,7 +164,7 @@ static int ufshcd_moto_crypto_keyslot_evict(struct blk_keyslot_manager *ksm,
 	ufshcd_writel(hba, 0, slot_offset + 16 * sizeof(cfg.reg_val[0]));
 	wmb();
 
-	/* Cleanup dword 0-15 from the key slot */
+	/* Cleanup dword 0-15 keyslot */
 	for (i = 0; i < 16; i++) {
 		ufshcd_writel(hba, le32_to_cpu(cfg.reg_val[i]),
 			      slot_offset + i * sizeof(cfg.reg_val[0]));
@@ -189,9 +180,6 @@ static int ufshcd_moto_crypto_keyslot_evict(struct blk_keyslot_manager *ksm,
 	ufshcd_writel(hba, le32_to_cpu(cfg.reg_val[16]),
 		      slot_offset + 16 * sizeof(cfg.reg_val[0]));
 	wmb();
-
-	/* Mask current slot as evicted */
-	hwkm_set_slot_evicted_mask(slot);
 
 	ufshcd_release(hba);
 	return err;

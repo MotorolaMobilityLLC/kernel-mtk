@@ -346,13 +346,11 @@ void hwkm_set_slot_programmed_mask(unsigned int slot_num)
 {
 	g_slot_mask = (0x1 << slot_num) | g_slot_mask;
 }
-EXPORT_SYMBOL(hwkm_set_slot_programmed_mask);
 
 void hwkm_set_slot_evicted_mask(unsigned int slot_num)
 {
 	g_slot_mask = (~(0x1 << slot_num)) & g_slot_mask;
 }
-EXPORT_SYMBOL(hwkm_set_slot_evicted_mask);
 
 bool hwkm_is_slot_already_programmed(unsigned int slot_num)
 {
@@ -360,4 +358,3 @@ bool hwkm_is_slot_already_programmed(unsigned int slot_num)
 		return true;
 	return false;
 }
-EXPORT_SYMBOL(hwkm_is_slot_already_programmed);
