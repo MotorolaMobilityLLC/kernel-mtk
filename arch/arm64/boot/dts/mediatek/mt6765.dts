@@ -3911,7 +3911,6 @@ firmware_class.path=/vendor/firmware";
 #include "mediatek/bat_setting/mt6765_battery_prop.dtsi"
 //#include "mediatek/mt6370.dtsi"
 //#include "mediatek/mt6370_pd.dtsi"
-#include "mediatek/borag_64-fpsensor.dtsi"
 #ifdef CONFIG_CHARGER_RT9471
 #include "mediatek/rt9471.dtsi"
 #endif

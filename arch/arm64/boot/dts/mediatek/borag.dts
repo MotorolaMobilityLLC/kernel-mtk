@@ -598,5 +598,6 @@
 #include "borag/cust.dtsi"
 #include "mediatek/cust_mt6765_camera.dtsi"
 #include "mediatek/cust_ontim_mt6765_touch_90hz.dtsi"
+#include "mediatek/borag_64-fpsensor.dtsi"
 #include "../../../../sound/soc/mediatek/codec/aw87xxx/aw87xxx.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/

@@ -50,6 +50,13 @@
 #include "tee_client_api.h"
 #endif
 
+#include "ontim/ontim_dev_dgb.h"
+#define FPS_HW_INFO "FPC1553"
+DEV_ATTR_DECLARE(fingersensor)
+DEV_ATTR_DEFINE("vendor", FPS_HW_INFO)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(fingersensor, fingersensor, 8);
+
 #ifdef FPC_DRIVER_FOR_ISEE
 struct TEEC_UUID uuid_ta_fpc = { 0x7778c03f, 0xc30c, 0x4dd0,
 	{0xa3, 0x19, 0xea, 0x29, 0x64, 0x3d, 0x4d, 0x4b}
@@ -370,8 +377,19 @@ static ssize_t clk_enable_set(struct device *device,
 }
 static DEVICE_ATTR(clk_enable, S_IWUSR, NULL, clk_enable_set);
 
+static ssize_t hwinfo_set(struct device *device,
+        struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct fpc_data *fpc = dev_get_drvdata(device);
+	CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 
+	dev_dbg(fpc->dev, "set hwinfo\n");
 
+	return count;
+}
+
+static DEVICE_ATTR(hwinfo, S_IWUSR, NULL, hwinfo_set);
 
 #ifdef CONFIG_FPC_COMPAT
 static ssize_t compatible_all_set(struct device *dev,
@@ -508,6 +526,7 @@ static struct attribute *fpc_attributes[] = {
 	&dev_attr_hw_reset.attr,
 	&dev_attr_wakeup_enable.attr,
 	&dev_attr_clk_enable.attr,
+	&dev_attr_hwinfo.attr,
 	&dev_attr_irq.attr,
 #ifdef CONFIG_FPC_COMPAT
 	&dev_attr_compatible_all.attr,
