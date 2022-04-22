@@ -1037,6 +1037,24 @@
 		compatible = "mediatek,goodix-fp";
 	};
 
+     /** begin fingerprint dts config **/
+        fingerprint_pinctrl: fingerprint_pinctrl {
+            compatible = "mediatek,fingerprint-pinctrl";
+        };
+        /*fingerprint_fpc: fingerprint_fpc {
+            compatible = "mediatek,fingerprint-fpc";
+            fpc,enable-wakeup;
+        };*/
+        fps_fpc_eint:fps_fpc_eint {
+            compatible = "mediatek,fpc-eint";
+            interrupt-parent = <&pio>;
+            interrupts = <5 IRQ_TYPE_NONE 5 0>;
+            debounce = <5 0>;
+            fpc,gpio-irq = <&pio 5 0x0>;
+            fpc,gpio-power = <&pio 170 0x0>;
+            status = "okay";
+        };
+
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
 		reg = <0 0x10011000 0 0x1000>;

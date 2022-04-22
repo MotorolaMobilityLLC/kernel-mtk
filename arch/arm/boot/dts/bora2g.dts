@@ -303,7 +303,7 @@
 /* DISPSYS GPIO standardization end */
 
 /* FINGERPRINT start */
-&spi0 {
+/*&spi0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
 	fingerprint@0 {
@@ -340,6 +340,20 @@
 			output-low;
 		};
 	};
+};*/
+/* FINGERPRINT end */
+
+&spi1 {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    fingerprint_fpc {
+        compatible = "mediatek,fpsensor";
+        reg = <0>;
+        spi-max-frequency = <500000>;
+        //netlink-event = <30>;
+        fpc,enable-wakeup;
+        status = "okay";
+    };
 };
 /* FINGERPRINT end */
 
@@ -521,4 +535,5 @@
 #include "bora2g/cust.dtsi"
 #include "cust_ontim_mt6765_touch_90hz.dtsi"
 #include "cust_mt6765_camera.dtsi"
+#include "borag_64-fpsensor.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
