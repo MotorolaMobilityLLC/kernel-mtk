@@ -49,6 +49,12 @@ static int ddr_info_show(struct seq_file *m, void *v)
 		"DRAM density: %d MB\n", density);
 	ret += snprintf(buf + ret, sizeof(buf) - ret,
 		"vendor ID:    0x%x\n", get_dram_mr(5));
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"Revision ID:  0x%x\n", get_dram_mr(6));
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"Revision ID2: 0x%x\n", get_dram_mr(7));
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"DRAM type:    0x%x\n", get_dram_type());
 
 	seq_write(m, buf, ret);
 
@@ -269,6 +275,10 @@ unsigned int get_dram_mr(unsigned int index)
 	switch (index) {
 	case 5:
 		return ((emi_info.dram_type >> 24) & 0xFF);
+	case 6:
+		return ((emi_info.dram_type >> 16) & 0xFF);
+	case 7:
+		return ((emi_info.dram_type >> 8) & 0xFF);
 	default:
 		return 0;
 	}
