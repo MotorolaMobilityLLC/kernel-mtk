@@ -11,7 +11,6 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	
 	pinctrl-names = "default", "state_eint_as_int",
 		"state_eint_output0", "state_eint_output1",
 		"state_rst_output0", "state_rst_output1",
@@ -23,16 +22,27 @@
 	pinctrl-4 = <&ctp_pins_rst_output0>;
 	pinctrl-5 = <&ctp_pins_rst_output1>;
 	pinctrl-6 = <&ctp_pins_spi_mode>;
-       
-	
+
 	spi_touch@0 {
-		compatible = "mtk,tddi-ilitek";
+		compatible = "mtk,tddi-ilitek", "chipone-tddi";
 		reg = <0>;
 		status = "okay";
 		spi-max-frequency = <500000>;
 		
-	
+		/* Charger detect */
+		chipone,touch-charger-detect-enable;
+		chipone,touch-charger-detect-type = "notify"; /* notify, poll */
+		chipone,touch-charger-detect-psy-name = "charger";
+		chipone,touch-charger-detect-psp = "POWER_SUPPLY_PROP_ONLINE";
+        	chipone,touch-charger-detect-psp-poll-interval = <1000>;
 
+		/* Earjack detect */
+		chipone,touch-earjack-detect-enable;
+		/* MTK:  /sys/bus/platform/drivers/Accdet_Driver/state,
+		Sprd: /sys/kernel/headset/state
+		QCOM: None, and disable it */
+		chipone,touch-earjack-state-filepath = "/sys/bus/platform/drivers/Accdet_Driver/state";
+		chipone,touch-earjack-poll-interval = <1000>;
 	};
 
 };

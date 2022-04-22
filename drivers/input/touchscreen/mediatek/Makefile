@@ -26,3 +26,4 @@ obj-$(CONFIG_TOUCHSCREEN_HIMAX_CHIPSET_8789P1_8185P3)    +=  hxchipset_8789p1_81
 obj-$(CONFIG_TOUCHSCREEN_HIMAX_CHIPSET) += hxchipset_hx83102p/
 obj-$(CONFIG_TOUCHSCREEN_GOODIX_BRL) += goodix_berlin_driver/
 obj-$(CONFIG_TOUCHSCREEN_ILITEK_S00)	+=  ilitek/
+obj-$(CONFIG_TOUCHSCREEN_CHIPONE)	+=	chipone-tddi/
