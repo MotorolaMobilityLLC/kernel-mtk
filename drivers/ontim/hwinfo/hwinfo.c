@@ -13,10 +13,14 @@
 #include <linux/gpio.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <linux/errno.h>
 
 #include <linux/fs.h>
 #include <asm/system_misc.h>
 #include "../../misc/mediatek/include/mt-plat/mtk_boot_common.h"
+
+#undef  pr_fmt
+#define pr_fmt(fmt) "[hwinfo] " fmt
 
 #define BUF_SIZE 64
 
@@ -37,6 +41,12 @@ char back_cam_efuse_id[64] = {0};
 char backaux_cam_efuse_id[64] = {0};
 char backaux2_cam_efuse_id[64] = {0};
 
+extern unsigned int get_dram_mr(unsigned int index);
+
+struct device_node *node;
+int discrete_memory_gpio = -1;
+
+#define GPIO_DISCRETE_MEMORY 163
 typedef struct mid_match {
 	int index;
 	const char *name;
@@ -951,8 +961,40 @@ static void get_emmc_mfr(void)
 		emmc_mid_name = "Unknown";
 	}
 	strncpy(hwinfo[emmc_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
-	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 }
+
+bool is_discrete_memory(void)
+{
+	return (discrete_memory_gpio >= 0) && (gpio_get_value(discrete_memory_gpio) == 0);
+}
+
+static void get_discrete_memory(void)
+{
+	char *buf = hwinfo[discrete_memory].hwinfo_buf;
+	if (discrete_memory_gpio < 0)
+		strcpy(buf, "Unknown");
+	else
+		strcpy(buf, is_discrete_memory() ? "yes" : "no");
+}
+
+static void get_lpddr_mfr(void)
+{
+	unsigned int vendor_id = get_dram_mr(5);
+	char * buf = hwinfo[lpddr_mfr].hwinfo_buf;
+	if (is_discrete_memory()) {
+		switch (vendor_id) {
+			case 0x06: strcpy(buf, "Kingston"); break;
+			case 0x13: strcpy(buf, "CXMT"); break;
+			case 0x1:
+			case 0xFF: strcpy(buf, "Longsys"); break;
+			default: sprintf(buf, "0x%02X", vendor_id);
+		}
+	} else {
+		get_emmc_mfr();
+		strcpy(buf, hwinfo[emmc_mfr].hwinfo_buf);
+	}
+}
+
 // get_current_cpuid for imie
 extern u32 get_devinfo_with_index(u32 index);
 #define CPUID_REG_INDEX 12
@@ -1157,8 +1199,13 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		get_emmc_cid();
 		break;
 	case emmc_mfr:
-	case lpddr_mfr:
 		get_emmc_mfr();
+		break;
+	case lpddr_mfr:
+		get_lpddr_mfr();
+		break;
+	case discrete_memory:
+		get_discrete_memory();
 		break;
 	case emmc_capacity:
 		get_emmc_size();
@@ -1259,6 +1306,14 @@ EXPORT_SYMBOL(ontim_hwinfo_register);
 static int __init hwinfo_init(void)
 {
 	struct kobject *k_hwinfo = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "ontim,hwinfo");
+	if (!node) {
+		pr_err("not find node: ontim,hwinfo\n");
+		return -ENODEV;
+	}
+	discrete_memory_gpio = of_get_named_gpio(node, "discrete-memory-gpios", 0);
+	pr_info("discrete_memory_gpio=%d\n", discrete_memory_gpio);
 
 	if ( (k_hwinfo = kobject_create_and_add("hwinfo", NULL)) == NULL ) {
 		printk(KERN_ERR "%s:hwinfo sys node create error \n", __func__);

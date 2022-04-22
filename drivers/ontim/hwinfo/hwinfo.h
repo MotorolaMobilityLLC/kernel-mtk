@@ -18,6 +18,7 @@ KEYWORD(emmc_cid)
 KEYWORD(emmc_capacity)
 KEYWORD(lpddr_mfr)
 KEYWORD(lpddr_capacity)
+KEYWORD(discrete_memory) // discrete or eMCP/uMCP memory
 KEYWORD(SPEAKER_MFR)    //Speaker box mfr
 KEYWORD(FP_MFR)         //Fingerprint mfr
 KEYWORD(GSENSOR_MFR)         //Fingerprint mfr

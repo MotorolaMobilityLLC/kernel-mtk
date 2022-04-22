@@ -2762,6 +2762,12 @@ firmware_class.path=/vendor/firmware";
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	hwinfo:hwinfo {
+		compatible = "ontim,hwinfo";
+		base-gpios = <&pio 0 0>;
+		discrete-memory-gpios = <&pio 163 0>;
+	};
+
 	gpio_boardid:gpio_boardid {
 			compatible = "gpio,boardid";
 			gpio,boardid0 = <&pio 163 0>;
