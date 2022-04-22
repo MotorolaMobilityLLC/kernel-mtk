@@ -141,4 +141,14 @@
 	cd-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
 };
 
+/* SVP */
+&mtee_svp {
+	mtee: MTEE {
+		compatible = "mediatek,mtk_svp_on_mtee_support";
+	};
+	svp: SecureVideoPath {
+		compatible = "mediatek,mtk_sec_video_path_support";
+	};
+};
+
 /*End of this file, DO NOT ADD ANYTHING HERE*/
