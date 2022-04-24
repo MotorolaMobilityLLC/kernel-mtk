@@ -1542,8 +1542,11 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0;	/* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.mnf = mnf_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
 	MAUI_S5K5E9_eeprom_get_mnf_data((void *) MAUI_S5K5E9_eeprom, &sensor_info->mnf_calibration);
-	//memcpy(&sensor_info->mnf_calibration, &s5k5e9_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
