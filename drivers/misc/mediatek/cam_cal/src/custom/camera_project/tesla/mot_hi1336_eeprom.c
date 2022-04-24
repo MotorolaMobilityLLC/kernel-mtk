@@ -90,7 +90,7 @@ unsigned int hi1336_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsi
 				(struct STRUCT_MOT_EEPROM_DATA *)pGetSensorCalData;
 	int read_data_size, checkSum, checkSum1;
 
-	memset(&pCamCalData->CalibrationStatus, NONEXISTENCE, sizeof(pCamCalData->CalibrationStatus));
+	memset(&pCamCalData->CalibrationStatus, NO_ERRORS, sizeof(pCamCalData->CalibrationStatus));
 
 	read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
 			HI1336_MOT_EEPROM_ADDR, HI1336_MOT_EEPROM_DATA_SIZE, (unsigned char *)pCamCalData->DumpAllEepromData);
@@ -353,7 +353,23 @@ unsigned int mot_hi1336_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4G = (u32)((tempMax * 512 + (FacG >> 1)) /FacG);
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4B  = (u32)((tempMax * 512 + (FacB >> 1)) /FacB);
 
+		pCamCalData->Single2A.S2aAwb.rValueR   = CalR/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueGr  = CalGr/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueGb  = CalGb/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueB   = CalB/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenR  = FacR/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenGr = FacGr/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenGb = FacGb/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenB  = FacB/MOTO_WB_VALUE_BASE;
 		debug_log("======================AWB CAM_CAL==================\n");
+		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rValueR);
+		debug_log("[rCalGain.u4Gr] = %d\n", pCamCalData->Single2A.S2aAwb.rValueGr);
+		debug_log("[rCalGain.u4Gb] = %d\n", pCamCalData->Single2A.S2aAwb.rValueGb);
+		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rValueB);
+		debug_log("[rFacGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenR);
+		debug_log("[rFacGain.u4Gr] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenGr);
+		debug_log("[rFacGain.u4Gb] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenGb);
+		debug_log("[rFacGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenB);
 		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4R);
 		debug_log("[rCalGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4G);
 		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4B);
@@ -396,11 +412,12 @@ unsigned int mot_hi1336_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 
 	}
 
-	//af posture calibration data
 	if(pCamCalData->sensorID == MOT_DUBAI_HI1336_SENSOR_ID) {
+		//af posture calibration data
 		unsigned char AF_POSTURE[21];
 		unsigned int af_posture_data_offset = 0x0e3f;
 		unsigned int af_inf_posture, af_macro_posture;
+		unsigned int MiddleDac;
 		memset(AF_POSTURE, 0, 21);
 		debug_log("af_posture_data_offset = 0x%x\n", af_posture_data_offset);
 
@@ -433,6 +450,9 @@ unsigned int mot_hi1336_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		debug_log("[AFInfPosture] = 0x%x\n", af_inf_posture);
 		debug_log("[AFMacroPosture] = 0x%x\n", af_macro_posture);
 		debug_log("======================AF POSTURE CAM_CAL==================\n");
+		MiddleDac = AFInf+(AFMacro-AFInf)*47/199;  //refer to af lensShift excel
+		debug_log("MiddleDac = %d", MiddleDac);
+		pCamCalData->Single2A.S2aAF_t.AF_Middle_calibration = MiddleDac;
 	}
 
 	return err;
