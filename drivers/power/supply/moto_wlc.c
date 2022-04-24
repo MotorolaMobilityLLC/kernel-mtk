@@ -406,7 +406,7 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 static int __wlc_run(struct chg_alg_device *alg)
 {
 	struct mtk_wlc *wlc;
-	int ret = 0, ret_value = 0;
+	int ret = 0, ret_value = 0, uisoc = 0;
 
 	wlc = dev_get_drvdata(&alg->dev);
 
@@ -415,14 +415,18 @@ static int __wlc_run(struct chg_alg_device *alg)
 		goto out;
 	}
 
+	uisoc = wlc_hal_get_uisoc(alg);
+	if((NULL != wls_chg_ops) && uisoc == 100)
+		wls_chg_ops->wls_set_battery_soc(uisoc);
+
 	if (wlc_sc_set_charger(alg) != 0) {
 		ret = wlc_leave(alg);
 		ret_value = ALG_DONE;
 		goto out;
 	}
 
-	wlc_dbg("%s cv:%d chg1:%d,%d\n", __func__, wlc->cv, wlc->input_current1,
-		wlc->charging_current1);
+	wlc_dbg("%s cv:%d chg1:%d,%d uisoc %d\n", __func__, wlc->cv, wlc->input_current1,
+		wlc->charging_current1, uisoc);
 
 out:
 	wlc_dbg("%s: plugout=%d\n", __func__, wlc->is_cable_out_occur);
