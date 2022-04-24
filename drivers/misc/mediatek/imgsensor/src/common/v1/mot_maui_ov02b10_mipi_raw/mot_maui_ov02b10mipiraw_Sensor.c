@@ -836,11 +836,14 @@ write_cmos_sensor(0xc2, 0x01);
 write_cmos_sensor(0xfb, 0x01);
 }
 
-#define OV02B10_OTP_SIZE 32
-static uint8_t ov02b10_otp_data[OV02B10_OTP_SIZE] = {0};
-#define OV02B10_OTP_DATA_PATH "/data/vendor/camera_dump/ov02b10_otp_data.bin"
+#define OV02B10_OTP_SIZE 31
+unsigned char ov02b10_otp_data[OV02B10_OTP_SIZE] = {0};
+#define OV02B10_OTP_DATA_PATH "/data/vendor/camera_dump/mot_maui_ov02b10_otp.bin"
+#define MAUI_OV02B10_OTP_CRC_AWB_GROUP1_CAL_SIZE 7
+#define MAUI_OV02B10_OTP_CRC_AWB_GROUP2_CAL_SIZE 6
+#define OV02B10_AWB_DATA_SIZE 15
 #define OV02B10_SERIAL_NUM_SIZE 16
-#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
+#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/macro_serial_number.bin"
 static void ov02b10_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
 {
     struct file *fp = NULL;
@@ -872,17 +875,67 @@ p_err:
     LOG_INF(" end writing file");
 }
 
-static void ov02b10_eeprom_format_calibration_data()
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
 {
-    mnf_status = 0;
-    af_status = 0;
-    awb_status = 0;
-    lsc_status = 0;
-    pdaf_status = 0;
-    dual_status = 0;
+	int32_t crc_match = 0;
+	uint8_t crc = 0x00;
+	uint32_t i;
+	uint32_t tmp = 0;
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+	    tmp += data[i];
+	}
+	crc = tmp%0xff + 1;
+	if (crc == ref_crc)
+		crc_match = 1;
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x  matches? %d\n",
+		ref_crc, crc, crc_match);
+	return crc_match;
+}
 
-    LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
-    	mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+static calibration_status_t MAUI_OV02B10_check_awb_data(void *data)
+{
+    unsigned char *data_awb = data; //add flag and checksum value
+    if(((data_awb[0]&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
+    	LOG_INF("awb data is group1\n");
+    	if(!eeprom_util_check_crc16(&data_awb[0],
+		MAUI_OV02B10_OTP_CRC_AWB_GROUP1_CAL_SIZE,
+		data_awb[7])) {
+		LOG_INF("AWB CRC Fails!");
+		return CRC_FAILURE;
+		}
+    } else if(((data_awb[0]&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
+    	LOG_INF("awb data is group2\n");
+    	if(!eeprom_util_check_crc16(&data_awb[8],
+		MAUI_OV02B10_OTP_CRC_AWB_GROUP2_CAL_SIZE,
+		data_awb[14])) {
+		LOG_INF("AWB CRC Fails!");
+		return CRC_FAILURE;
+		}
+    } else {
+    	LOG_INF("ov02b10 OTP has no awb data\n");
+    	return CRC_FAILURE;
+    }
+    LOG_INF("AWB CRC Pass");
+    return NO_ERRORS;
+}
+
+
+static void MAUI_OV02B10_eeprom_format_calibration_data(void *data)
+{
+	if (NULL == data) {
+	    LOG_INF("data is NULL");
+	    return;
+	}
+	mnf_status            = 0;
+	af_status             = 0;
+	awb_status            = MAUI_OV02B10_check_awb_data(data);
+	lsc_status            = 0;
+	pdaf_status           = 0;
+	dual_status           = 0;
+	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
 
 static int ov02b10_read_data_from_otp(void)
@@ -890,6 +943,8 @@ static int ov02b10_read_data_from_otp(void)
     int i=0;
     LOG_INF("ov02b10_read_data_from_otp -E");
     write_cmos_sensor(0xfd, 0x06);
+    write_cmos_sensor(0x21, 0x00);
+    write_cmos_sensor(0x2f, 0x01);
     for(i=0;i<OV02B10_OTP_SIZE;i++)
     {
     	ov02b10_otp_data[i]=read_cmos_sensor(i);
@@ -922,9 +977,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                 LOG_ERR("ov02b10 i2c write id : 0x%x, sensor id: 0x%x\n",
                 imgsensor.i2c_write_id, *sensor_id);
                 ov02b10_read_data_from_otp();
-                ov02b10_eeprom_format_calibration_data();
-                ov02b10_otp_dump_bin(OV02B10_OTP_DATA_PATH, OV02B10_OTP_SIZE, (void *)ov02b10_otp_data);
+                ov02b10_otp_dump_bin(OV02B10_OTP_DATA_PATH, OV02B10_AWB_DATA_SIZE, (void *)&ov02b10_otp_data[16]);
                 ov02b10_otp_dump_bin(DEPTH_SERIAL_NUM_DATA_PATH, OV02B10_SERIAL_NUM_SIZE, (void *)ov02b10_otp_data);
+                MAUI_OV02B10_eeprom_format_calibration_data((void *)&ov02b10_otp_data[16]);
                 return ERROR_NONE;
             }
 
