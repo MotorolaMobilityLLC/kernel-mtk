@@ -7,13 +7,9 @@ enum HWINFO_E{
 #endif
 
 KEYWORD(CPU_TYPE)
-KEYWORD(NFC_MFR)
 KEYWORD(pon_reason)
-KEYWORD(secboot_version)
 KEYWORD(board_id)
-KEYWORD(hw_version)
 KEYWORD(band_id)
-KEYWORD(qcn_type)
 KEYWORD(serialno)
 KEYWORD(emmc_mfr)
 KEYWORD(emmc_life)
@@ -21,7 +17,6 @@ KEYWORD(emmc_sn)
 KEYWORD(emmc_cid)
 KEYWORD(emmc_capacity)
 KEYWORD(lpddr_mfr)
-KEYWORD(dual_sim)
 KEYWORD(lpddr_capacity)
 KEYWORD(SPEAKER_MFR)    //Speaker box mfr
 KEYWORD(FP_MFR)         //Fingerprint mfr

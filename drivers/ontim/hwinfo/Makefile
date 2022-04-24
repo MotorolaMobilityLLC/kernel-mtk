@@ -16,6 +16,6 @@ ifeq ($(BUILD_SMT),YES)
     $(info ++++++++++++++++++++++++++firefly++++++++++++++++ SMT version)
 endif
 
-obj-y += gpio_boardid.o
+#obj-y += gpio_boardid.o
 obj-y += hwinfo.o
 #obj-y += board_id_adc.o

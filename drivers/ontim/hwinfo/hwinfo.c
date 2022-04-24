@@ -18,9 +18,6 @@
 #include <asm/system_misc.h>
 #include "../../misc/mediatek/include/mt-plat/mtk_boot_common.h"
 
-//#include <linux/qpnp/qpnp-adc.h>
-//#include "board_id_adc.h"
-
 #define BUF_SIZE 64
 
 char front_cam_name[64] = "Unknown";
@@ -40,111 +37,25 @@ char back_cam_efuse_id[64] = {0};
 char backaux_cam_efuse_id[64] = {0};
 char backaux2_cam_efuse_id[64] = {0};
 
-
-#if 0
-//read borad ID from adc
-#define BOARD_ID_MAX 16
-struct qpnp_vadc_result chip_adc_result;
-
-typedef struct adc_voltage {
-	int min_voltage;
-	int max_voltage;
-} adc_boardid_match;
-
-static adc_boardid_match boardid_table[] = {
-	{.min_voltage = 150, .max_voltage = 250}, //10k
-	{.min_voltage = 250, .max_voltage = 350}, //20k
-	{.min_voltage = 350, .max_voltage = 480}, //27k
-	{.min_voltage = 480, .max_voltage = 550}, //39k
-	{.min_voltage = 550, .max_voltage = 630}, //47k
-	{.min_voltage = 630, .max_voltage = 710}, //56k
-	{.min_voltage = 710, .max_voltage = 790}, //68k
-	{.min_voltage = 790, .max_voltage = 870}, //82k
-	{.min_voltage = 870, .max_voltage = 970}, //100k
-	{.min_voltage = 970, .max_voltage = 1070}, //120k
-	{.min_voltage = 1070, .max_voltage = 1170}, //150k
-};
-#endif
-
-typedef struct board_id {
-	int index;
-	const char *hw_version;
-	const char *qcn_type;
-	const char *model;
-} boardid_match_t;
-
-static boardid_match_t board_table[] = {
-	{ .index = 0,  .hw_version = "DVT1",       .qcn_type = "no-ca-split", .model = "advanced1"  },
-	{ .index = 1,  .hw_version = "DVT2",       .qcn_type = "no-ca"      , .model = "primary"    },
-	{ .index = 2,  .hw_version = "PVT",        .qcn_type = "no-ca-del"  , .model = "primary"    },
-	{ .index = 3,  .hw_version = "REL",        .qcn_type = "no-ca-del"  , .model = "primary"    },
-	{ .index = 4,  .hw_version = "DVT2",       .qcn_type = "no-ca-del"  , .model = "standard"   },
-	{ .index = 5,  .hw_version = "DVT2",       .qcn_type = "no-ca"      , .model = "advanced1"  },
-	{ .index = 6,  .hw_version = "DVT2-SPLIT", .qcn_type = "no-ca-split", .model = "advanced1"  },
-	{ .index = 7,  .hw_version = "REL",        .qcn_type = "no-ca-del"  , .model = "standard"   },
-	{ .index = 8,  .hw_version = "EVT",        .qcn_type = "ca"         , .model = "advanced1"  },
-	{ .index = 9,  .hw_version = "DVT1",       .qcn_type = "ca"         , .model = "advanced1"  },
-	{ .index = 10, .hw_version = "DVT1-SPLIT", .qcn_type = "no-ca-split", .model = "advanced1"  },
-	{ .index = 11, .hw_version = "REL-SPLIT",  .qcn_type = "no-ca-split", .model = "advanced2"  },
-	{ .index = 12, .hw_version = "DVT2.5",     .qcn_type = "no-ca-del"  , .model = "primary"    },
-	{ .index = 13, .hw_version = "PVT",        .qcn_type = "no-ca-del"  , .model = "primary"    },
-	{ .index = 14, .hw_version = "PVT",        .qcn_type = "no-ca-del"  , .model = "standard"   },
-	{ .index = 15, .hw_version = "REL-SPLIT",  .qcn_type = "no-ca-split", .model = "advanced1"  },
-};
-
 typedef struct mid_match {
 	int index;
 	const char *name;
 } mid_match_t;
 
 static mid_match_t emmc_table[] = {
-	{
-		.index = 0,
-		.name = "Unknown"
-	},
-	{
-		.index = 17,
-		.name = "Toshiba"
-	},
-	{
-		.index = 19,
-		.name = "Micron"
-	},
-	{
-		.index = 69,
-		.name = "Sandisk"
-	},
-	{
-		.index = 21,
-		.name = "Samsung"
-	},
-	{
-		.index = 0x88,
-		.name = "FORESEE"
-	},
-	{
-		.index = 0x90,
-		.name = "Hynix"
-	},
-	{
-		.index = 0x70,
-		.name = "KSI"
-	},
-	/*UFS*/
-	{
-		.index = 0xCE,
-		.name = "Samsung"
-	},
-	{
-		.index = 0xAD,
-		.name = "Hynix"
-	},
-	{
-		.index = 0x98,
-		.name = "Toshiba"
-	},
+	{ 0, "Unknown" },
+	{ 0x11, "Toshiba" },
+	{ 0x13, "Micron" },
+	{ 0x15, "Samsung" },
+	{ 0x45, "Sandisk" },
+	{ 0x70, "KSI" },
+	{ 0x88, "FORESEE" },
+	{ 0x90, "Hynix" },
+	{ 0x98, "Toshiba" },
+	{ 0xAD, "Hynix" },
+	{ 0xCE, "Samsung" },
+	{ 0xD6, "Longsys" },
 };
-
 
 #define MAX_HWINFO_SIZE 64
 #include "hwinfo.h"
@@ -174,6 +85,7 @@ static const char *foreach_emmc_table(int index)
 
 	return emmc_table[0].name;;
 }
+
 static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 {
 	struct file *fp;
@@ -229,53 +141,22 @@ static int hwinfo_write_file(char *file_name, const char buf[], int buf_size)
 	set_fs(fs);
 	return 0;
 }
-#if 0
-/*Android:Settings->About phone->CPU  register function to distinguish the CPU model*/
-static char *msm_read_hardware_id(void)
+
+#define MODEL_FILE "/sys/firmware/devicetree/base/model"
+static void get_cpu_type(void)
 {
-	static char msm_soc_str[256] = "Qualcomm Technologies, Inc ";
-	static bool string_generated;
-	int ret = 0;
-
-	if (string_generated)
-		return msm_soc_str;
-
-	ret = get_cpu_type();
-	if (ret != 0)
-		goto err_path;
-
-	ret = strlcat(msm_soc_str, hwinfo[CPU_TYPE].hwinfo_buf,
-	              sizeof(msm_soc_str));
-	if (ret > sizeof(msm_soc_str))
-		goto err_path;
-
-	string_generated = true;
-	return msm_soc_str;
-err_path:
-	printk(KERN_CRIT "UNKNOWN SOC TYPE, Using defaults.\n");
-	return "Qualcomm Technologies, Inc SDM710";
+	char data[16];
+	char *buf = hwinfo[CPU_TYPE].hwinfo_buf;
+	int ret = hwinfo_read_file(MODEL_FILE, buf, MAX_HWINFO_SIZE);
+	if (ret != 0) {
+		pr_err("read " MODEL_FILE " fail, ret=%d\n", ret);
+		strcpy(buf, "Unknown");
+		return;
+	}
 }
-#endif
-static int  get_cpu_type(void)
-{
-	//sprintf(hwinfo[CPU_TYPE].hwinfo_buf, "%s",arch_read_hardware_id());
-	return 0;
-}
-#if 0
-char lcd_name[BUF_SIZE] = "unknow";
-static int get_lcd_type(void)
-{
-	sprintf(hwinfo[LCD_MFR].hwinfo_buf, "%s", lcd_name);
-	return 1;
-}
-//__setup("msm_drm.dsi_display0=", set_lcd_name);
-#else
+
 /* BEGIN, Ontim,  wzx, 19/04/19, St-result :PASS,LCD and TP Device information */
-
-//#define LCD_INFO_FILE "/sys/class/graphics/fb0/msm_fb_panel_info"
 #define LCD_INFO_FILE "/sys/ontim_dev_debug/touch_screen/lcdvendor"
-
-/* END */
 static int get_lcd_type(void)
 {
 	char buf[200] = {0};
@@ -294,7 +175,7 @@ static int get_lcd_type(void)
 
 	return 0;
 }
-#endif
+
 #define TP_VENDOR_FILE "/sys/ontim_dev_debug/touch_screen/vendor"
 #define TP_VERSION_FILE "/sys/ontim_dev_debug/touch_screen/version"
 static int get_tp_info(void)
@@ -466,6 +347,7 @@ static int set_backaux2_camera_otp_status(const char * buf, int n)
 	backaux2_cam_otp_status[n] = '\0';
 	return 0;
 }
+
 static int set_backaux_camera_otp_status(const char * buf, int n)
 {
 	int i = 0;
@@ -478,6 +360,7 @@ static int set_backaux_camera_otp_status(const char * buf, int n)
 	}
 	return 0;
 }
+
 static int set_back_camera_otp_status(const char * buf, int n)
 {
 	strncpy(back_cam_otp_status, buf, n);
@@ -485,6 +368,7 @@ static int set_back_camera_otp_status(const char * buf, int n)
 	back_cam_otp_status[n] = '\0';
 	return 0;
 }
+
 static int set_front_camera_otp_status(const char * buf, int n)
 {
 	strncpy(front_cam_otp_status, buf, n);
@@ -506,6 +390,7 @@ static int put_battery_input_suspend(const char * buf, int n)
 
 	return 0;
 }
+
 #define BATTARY_CHARGING_EN_FILE "/sys/bus/platform/devices/charger/input_current"
 static int get_battery_charging_enabled(void)
 {
@@ -528,6 +413,7 @@ static int get_battery_charging_enabled(void)
 
 	return 0;
 }
+
 static int put_battery_charging_enabled(const char * buf, int n)
 {
 	int ret = 0;
@@ -541,6 +427,7 @@ static int put_battery_charging_enabled(const char * buf, int n)
 
 	return 0;
 }
+
 #define TYPEC_VENDOR_FILE "/sys/class/power_supply/usb/typec_mode"
 static ssize_t get_typec_vendor(void)
 {
@@ -769,7 +656,7 @@ static void get_backaux_camera_otp_status(void)
                  strncpy(hwinfo[BACKAUX_CAM_OTP_STATUS].hwinfo_buf, backaux_cam_otp_status,
                         ((strlen(backaux_cam_otp_status) >= sizeof(hwinfo[BACKAUX_CAM_OTP_STATUS].hwinfo_buf) ?
                            sizeof(hwinfo[BACKAUX_CAM_OTP_STATUS].hwinfo_buf) : strlen(backaux_cam_otp_status))));
- }
+}
 
 static void get_back_camera_otp_status(void)
 {
@@ -777,7 +664,7 @@ static void get_back_camera_otp_status(void)
                  strncpy(hwinfo[BACK_CAM_OTP_STATUS].hwinfo_buf, back_cam_otp_status,
                         ((strlen(back_cam_otp_status) >= sizeof(hwinfo[BACK_CAM_OTP_STATUS].hwinfo_buf) ?
                            sizeof(hwinfo[BACK_CAM_OTP_STATUS].hwinfo_buf) : strlen(back_cam_otp_status))));
- }
+}
 
 
 static void get_front_camera_otp_status(void)
@@ -786,7 +673,8 @@ static void get_front_camera_otp_status(void)
                  strncpy(hwinfo[FRONT_CAM_OTP_STATUS].hwinfo_buf, front_cam_otp_status,
                         ((strlen(front_cam_otp_status) >= sizeof(hwinfo[FRONT_CAM_OTP_STATUS].hwinfo_buf) ?
                            sizeof(hwinfo[FRONT_CAM_OTP_STATUS].hwinfo_buf) : strlen(front_cam_otp_status))));
- }
+}
+
 static void get_front_camera_efuse_id(void)
 {
 	if (front_cam_efuse_id != NULL)
@@ -794,6 +682,7 @@ static void get_front_camera_efuse_id(void)
 		        ((strlen(front_cam_efuse_id) >= sizeof(hwinfo[FRONT_CAM_EFUSE].hwinfo_buf) ?
 		          sizeof(hwinfo[FRONT_CAM_EFUSE].hwinfo_buf) : strlen(front_cam_efuse_id))));
 }
+
 static void get_frontaux_camera_efuse_id(void)
 {
 	if (frontaux_cam_efuse_id != NULL)
@@ -801,6 +690,7 @@ static void get_frontaux_camera_efuse_id(void)
 		        ((strlen(frontaux_cam_efuse_id) >= sizeof(hwinfo[FRONTAUX_CAM_EFUSE].hwinfo_buf) ?
 		          sizeof(hwinfo[FRONTAUX_CAM_EFUSE].hwinfo_buf) : strlen(frontaux_cam_efuse_id))));
 }
+
 static void get_back_camera_efuse_id(void)
 {
 	if (back_cam_efuse_id != NULL)
@@ -808,6 +698,7 @@ static void get_back_camera_efuse_id(void)
 		        ((strlen(back_cam_efuse_id) >= sizeof(hwinfo[BACK_CAM_EFUSE].hwinfo_buf) ?
 		          sizeof(hwinfo[BACK_CAM_EFUSE].hwinfo_buf) : strlen(back_cam_efuse_id))));
 }
+
 static void get_backaux_camera_efuse_id(void)
 {
 	if (backaux_cam_efuse_id != NULL)
@@ -828,101 +719,28 @@ static void get_card_present(void)
 {
 	struct device_node *dn;
 	unsigned int gpio_num = -1;
-	char card_holder_present[BUF_SIZE];
+	char *buf = hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf;
 
 	dn = of_find_node_with_property(NULL, "cd-gpios");
 	if (!dn) {
 		pr_err("not found node via cd-gpios\n");
-		strcpy(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, "unknown");
+		strcpy(buf, "Unknown");
 		return;
 	}
 	gpio_num = of_get_named_gpio_flags(dn, "cd-gpios", 0, NULL);
-	memset(card_holder_present, '\0', BUF_SIZE);
-	printk("gpio(%d) value = %d\n", gpio_get_value(gpio_num));
-	if (gpio_get_value(gpio_num) == 1)
-		strncpy(card_holder_present, "truly", 5);
-	else
-		strncpy(card_holder_present, "false", 5);
-
-	memset(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, 0x00, sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf));
-	strncpy(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, card_holder_present,
-	        ((strlen(card_holder_present) >= sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf) ?
-	          sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf) : strlen(card_holder_present))));
+	pr_info("get_card_present: gpio(%d) value = %d\n", gpio_num, gpio_get_value(gpio_num));
+	strcpy(buf, (gpio_get_value(gpio_num) == 1) ? "yes" : "no");
 }
 
-static int get_pon_reason(void)
+static int set_pon_reason(char *src)
 {
-	char pon_reason_info[32] = "UNKNOWN";
-
-	/*	switch ((get_boot_reason() & 0xFF))
-		{
-		case 0x20:
-			pon_reason_info = "usb charger";
-			break;
-		case 0x21:
-			pon_reason_info = "soft reboot";
-			break;
-		case 0xa0:
-			pon_reason_info = "power key";
-			break;
-		case 0xa1:
-			pon_reason_info = "hard reset";
-			break;
-		default:
-			pon_reason_info = "unknow";
-			break;
-		}*/
-
-	return sprintf(hwinfo[pon_reason].hwinfo_buf, "%s", pon_reason_info);
-}
-
-static int get_secure_boot_version(void)
-{
-	char is_secureboot[32] = "Unknown";
-	/*	if (get_secure_boot_value())
-			is_secureboot = "SE";
-		else
-			is_secureboot = "NSE";*/
-
-	return sprintf(hwinfo[secboot_version].hwinfo_buf, "%s", is_secureboot);
-}
-
-static int get_dual_sim(void)
-{
-	unsigned int gpio_base = 343;
-	unsigned int pin4 = 167;
-	int pin_val = 0;
-
-	pin_val |= (gpio_get_value(gpio_base + pin4) & 0x01) << 4;
-
-	printk(KERN_ERR "%s: pin_val is %x ;\n", __func__, pin_val);
-
-	return sprintf(hwinfo[dual_sim].hwinfo_buf, "%s", pin_val ? "sig" : "dual");
-}
-
-#if 0
-static int get_band_id(void)
-{
-	unsigned int gpio_base = 343;
-
-	unsigned int pin1 = 163;
-	unsigned int pin2 = 164;
-	int pin_val = 0;
-
-	pin_val  = (gpio_get_value(gpio_base + pin2) & 0x01) << 1;
-	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01);
-
-	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
-
-	if (pin_val == 1)
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-2");
-	else if (pin_val == 0)
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-1");
-	else
-		strcpy(hwinfo[band_id].hwinfo_buf, "XT2053-1");
+	sprintf(hwinfo[pon_reason].hwinfo_buf, "%s", src);
 	return 0;
 }
-#endif
+
+__setup("androidboot.bootreason=", set_pon_reason);
+
+
 static int set_band_id(char *src)
 {
 	sprintf(hwinfo[band_id].hwinfo_buf, "%s", src);
@@ -930,11 +748,6 @@ static int set_band_id(char *src)
 }
 
 __setup("band_id=", set_band_id);
-
-unsigned int platform_board_id = 0;
-EXPORT_SYMBOL(platform_board_id);
-
-int _atoi(char * str);
 
 // resist calculation:  v / r = (adc_v - v) / r_up => r = v * r_up / (adc_v - v)
 #define ADC_VOLTAGE 1800
@@ -969,7 +782,6 @@ int map2index(const char *msg, int val, int array[], int count)
 #define BOARD_ID_ADC_FILE "/sys/devices/platform/11001000.auxadc/iio:device0/in_voltage2_input"
 static void get_board_id(void)
 {
-#if 1
 	char data[16];
 	char *buf = hwinfo[board_id].hwinfo_buf;
 	int ret = hwinfo_read_file(BOARD_ID_ADC_FILE, data, sizeof(sizeof(data)));
@@ -978,114 +790,23 @@ static void get_board_id(void)
 		strcpy(buf, "Unknown");
 		return;
 	}
-	int v = _atoi(data);
+	int v;
+	kstrtoint(data, 0, &v);
 	int r = v * BOARD_ID_ADC_R_UP / (ADC_VOLTAGE - v);
 	int i = map2index("board_id", r, board_id_adc_r_table, ARRAY_SIZE(board_id_adc_r_table));
 	pr_info("board_id: data=%s v=%d r=%d i=%d r-ri=%d delta=%d%%\n",
 		data, v, r, i, r - board_id_adc_r_table[i], 100 * (r - board_id_adc_r_table[i]) / board_id_adc_r_table[i]);
 	strcpy(buf, board_id_version_table[i]);
-#else
-	unsigned int gpio_base = 343;
-	unsigned int pin0 = 165;
-	unsigned int pin1 = 166;
-	unsigned int pin2 = 167;
-	int pin_val = 0;
-
-	pin_val  = (gpio_get_value(gpio_base + pin2) & 0x01) << 2;
-	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 1;
-	pin_val |= (gpio_get_value(gpio_base + pin0) & 0x01) << 0;
-
-	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
-
-	return sprintf(hwinfo[board_id].hwinfo_buf, "0x%x", pin_val);
-#endif
-}
-
-static int get_qcn_type(void)
-{
-	int id = platform_board_id;
-	if (id > (sizeof(board_table) / sizeof(boardid_match_t) - 1))
-		id = sizeof(board_table) / sizeof(boardid_match_t) - 1;
-	return sprintf(hwinfo[qcn_type].hwinfo_buf, "%s", board_table[id].qcn_type);
-}
-
-static int get_hw_version(void)
-{
-  int id = platform_board_id;
-  if (id > (sizeof(board_table) / sizeof(boardid_match_t) - 1))
-    id = sizeof(board_table) / sizeof(boardid_match_t) - 1;
-  return sprintf(hwinfo[hw_version].hwinfo_buf, "%s", board_table[id].hw_version);
-}
-
-char NFC_BUF[MAX_HWINFO_SIZE] = {"Unknow"};
-EXPORT_SYMBOL(NFC_BUF);
-static void get_nfc_deviceinfo(void)
-{
-	strcpy(hwinfo[NFC_MFR].hwinfo_buf, NFC_BUF);
 }
 
 static int set_serialno(char *src)
 {
-	if (src == NULL)
-		return 0;
-	sprintf(hwinfo[serialno].hwinfo_buf, "%s", src);
-	return 1;
+	strlcpy(hwinfo[serialno].hwinfo_buf, src, MAX_HWINFO_SIZE);
+	return 0;
 }
 __setup("androidboot.serialno=", set_serialno);
 
-//get emmc info
-char pMeminfo[MAX_HWINFO_SIZE] = {'\0'};
-static int set_memory_info(char *src)
-{
-	if (src == NULL)
-		return 0;
-	sprintf(pMeminfo, "%s", src);
-	return 1;
-}
-__setup("memory_info=", set_memory_info);
 
-int _atoi(char * str)
-{
-	int value = 0;
-	int sign = 1;
-	int radix;
-
-	if (*str == '-')
-	{
-		sign = -1;
-		str++;
-	}
-	if (*str == '0' && (*(str + 1) == 'x' || *(str + 1) == 'X'))
-	{
-		radix = 16;
-		str += 2;
-	}
-	else if (*str == '0')
-	{
-		radix = 8;
-		str++;
-	} else {
-		radix = 10;
-	}
-	while (*str && *str != '\0' && *str != ' ' && *str != '\n')
-	{
-		if (radix == 16)
-		{
-			if (*str >= '0' && *str <= '9')
-				value = value * radix + *str - '0';
-			else if (*str >= 'A' && *str <= 'F')
-				value = value * radix + *str - 'A' + 10;
-			else if (*str >= 'a' && *str <= 'f')
-				value = value * radix + *str - 'a' + 10;
-		} else {
-			value = value * radix + *str - '0';
-		}
-		str++;
-	}
-	return sign * value;
-}
-
-#define BYTE(_x) (_x<<0x03)
 #define EMMC_SN_FILE     "/sys/class/mmc_host/mmc0/mmc0:0001/serial"
 static void get_emmc_sn(void)
 {
@@ -1151,18 +872,14 @@ static void get_ddr_cap(void)
 	memcpy(buf, p, q - p - 1);
 	buf[q - p - 1] = '\0';
 	buf[q - p]   = '\0';
-	lpddr_cap = _atoi(buf) / (1024 * 1024);
-	printk("%s: buf:%s i = %d\n", __func__, buf, lpddr_cap);
-	if (lpddr_cap < 2)
-		lpddr_cap = 2;
-	else if (lpddr_cap < 3 && lpddr_cap >= 2)
-		lpddr_cap = 3;
-	else if (lpddr_cap < 4 && lpddr_cap >= 3)
-		lpddr_cap = 4;
-	else if (lpddr_cap < 6 && lpddr_cap >= 5)
-		lpddr_cap = 6;
-	else if (lpddr_cap < 8 && lpddr_cap >= 7)
-		lpddr_cap = 8;
+	kstrtoint(buf, 0, &lpddr_cap);
+	lpddr_cap = (lpddr_cap - 1) / (1024 * 1024) + 1; // convert from KB to GB
+	pr_info("%s: raw=%sKB real=%dGB\n", __func__, buf, lpddr_cap);
+	if (lpddr_cap > 4)
+		if (lpddr_cap <= 6)
+			lpddr_cap = 6;
+		else if (lpddr_cap <= 8)
+			lpddr_cap = 8;
 	sprintf(hwinfo[lpddr_capacity].hwinfo_buf, "%dGB", lpddr_cap);
 }
 
@@ -1191,6 +908,7 @@ static void get_emmc_size(void)
 	int emmc_cap = 0;
 	char buf[MAX_HWINFO_SIZE] = {'\0'};
 	int ret = 0;
+	int i;
 
 	memset(buf, 0x00, sizeof(buf));
 	ret = hwinfo_read_file(EMMC_SIZE_FILE, buf, sizeof(buf));
@@ -1200,28 +918,20 @@ static void get_emmc_size(void)
 	}
 	if (buf[strlen(buf) - 1] == '\n')
 		buf[strlen(buf) - 1] = '\0';
-	emmc_cap = _atoi(buf) / (1024 * 1024 * 2);
-
-	if (emmc_cap < 4)
-		emmc_cap = 4;
-	else if (emmc_cap > 6 && emmc_cap < 8)
-		emmc_cap = 8;
-	else if (emmc_cap > 8 && emmc_cap < 16)
-		emmc_cap = 16;
-	else if (emmc_cap < 32 && emmc_cap > 16)
-		emmc_cap = 32;
-	else if (emmc_cap < 64 && emmc_cap > 32)
-		emmc_cap = 64;
-	else if (emmc_cap < 128 && emmc_cap > 100)
-		emmc_cap = 128;
-
-	sprintf(hwinfo[emmc_capacity].hwinfo_buf, "%dGB", emmc_cap);
+	kstrtoint(buf, 0, &emmc_cap);
+	emmc_cap = (emmc_cap - 1) / (1024 * 1024 * 2) + 1; // convert from sectors to GB
+	pr_info("%s: raw=%s sectors  real=%dGB\n", __func__, buf, emmc_cap);
+	int capacity[] = { 4, 8, 16, 32, 64, 128, 256, 512 };
+	for (i = 0; i < ARRAY_SIZE(capacity); i++)
+		if (emmc_cap < capacity[i])
+			break;
+	sprintf(hwinfo[emmc_capacity].hwinfo_buf, "%dGB", (i < ARRAY_SIZE(capacity)) ? capacity[i] : emmc_cap);
 }
 
 #define EMMC_MANFID_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/manfid"
 static void get_emmc_mfr(void)
 {
-	unsigned char emmc_mid = 0;
+	int emmc_mid = 0;
 	const char *emmc_mid_name;
 	char buf[MAX_HWINFO_SIZE] = {'\0'};
 	int ret = 0;
@@ -1233,7 +943,7 @@ static void get_emmc_mfr(void)
 	}
 	if (buf[strlen(buf) - 1] == '\n')
 		buf[strlen(buf) - 1] = '\0';
-	emmc_mid = _atoi(buf);
+	kstrtoint(buf, 0, &emmc_mid);
 
 	emmc_mid_name = foreach_emmc_table(emmc_mid);
 	if (emmc_mid_name == NULL) {
@@ -1243,8 +953,6 @@ static void get_emmc_mfr(void)
 	strncpy(hwinfo[emmc_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 }
-//extern int  meta_camera_info(void);
-
 // get_current_cpuid for imie
 extern u32 get_devinfo_with_index(u32 index);
 #define CPUID_REG_INDEX 12
@@ -1331,14 +1039,6 @@ return 0;
 static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
 {
 	int i = 0;
-	static int flag = 0;
-	int boot_mode ;
-	boot_mode = (int)get_boot_mode();
-	if (boot_mode == META_BOOT) {
-			if(0==flag)
-			//meta_camera_info();
-		flag=1;
-	}
 
 	printk(KERN_INFO "hwinfo sys node %s \n", attr->attr.name);
 
@@ -1348,9 +1048,6 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	{
 	case CPU_TYPE:
 		get_cpu_type();
-		break;
-	case NFC_MFR:
-		get_nfc_deviceinfo();
 		break;
 	case SPEAKER_MFR:
 		get_speaker_mfr();
@@ -1373,20 +1070,8 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case battery_charging_enabled:
 		get_battery_charging_enabled();
 		break;
-	case dual_sim:
-		get_dual_sim();
-		break;
-	//case band_id:
-	//	get_band_id();
-	//	break;
 	case board_id:
 		get_board_id();
-		break;
-	case hw_version:
-		get_hw_version();
-		break;
-	case qcn_type:
-		get_qcn_type();
 		break;
 	case LCD_MFR:
 		get_lcd_type();
@@ -1465,12 +1150,6 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		get_rfgpio_state();
 		break;
 #endif
-	case pon_reason:
-		get_pon_reason();
-		break;
-	case secboot_version:
-		get_secure_boot_version();
-		break;
 	case emmc_sn:
 		get_emmc_sn();
 		break;
