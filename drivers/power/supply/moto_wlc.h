@@ -103,9 +103,11 @@ struct mtk_wlc {
 struct moto_wls_chg_ops {
 	void *data;
 	void (*wls_current_select)(int  *icl, int *vbus);
+	void (*wls_set_battery_soc)(int uisoc);
 };
 
 extern int wlc_hal_init_hardware(struct chg_alg_device *alg);
+extern int wlc_hal_get_uisoc(struct chg_alg_device *alg);
 extern int wlc_hal_get_charger_type(struct chg_alg_device *alg);
 extern int wlc_hal_set_mivr(struct chg_alg_device *alg,
 	enum chg_idx chgidx, int uV);
