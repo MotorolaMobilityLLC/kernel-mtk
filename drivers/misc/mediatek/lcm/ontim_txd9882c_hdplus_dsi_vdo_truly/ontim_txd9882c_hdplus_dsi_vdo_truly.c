@@ -152,14 +152,13 @@ static struct LCM_setting_table lcm_suspend_setting_gesture[] = {
 static struct LCM_setting_table init_setting[] = {
     {0xFF,0x03, {0x98, 0x82, 0x00} },
     {0x68,0x02,{0x04,0x00}},
-    {0x51,0x01,{0x00}},
+    {0x51,0x01,{0xff}},
     {0x53,0x01,{0x2c}},
     {0x55,0x01,{01}},
-    {0x35,0x01,{00}},
     {0x11,0x01,{0x00}},
     {REGFLAG_DELAY,120,{}},
     {0x29,0x01,{0x00}},
-    {REGFLAG_DELAY,50,{}},
+    {REGFLAG_DELAY,20,{}},
     {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
@@ -292,8 +291,8 @@ static void lcm_reset(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-
-
+	MDELAY(10);
+	
 	LCM_LOGI("%s:icnl9911s lcm reset done\n",__func__);
 }
 
@@ -319,6 +318,7 @@ static void lcm_init(void)
 	LCM_LOGI("%s: gesture_dubbleclick_en=%d \n",__func__,gesture_dubbleclick_en);
 	if (!gesture_dubbleclick_en) {
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
+		MDELAY(6);
 	
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
 
