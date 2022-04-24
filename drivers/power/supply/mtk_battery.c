@@ -287,6 +287,11 @@ static int battery_psy_get_property(struct power_supply *psy,
 			val->intval = gm->fixed_uisoc;
 		else
 			val->intval = bs_data->bat_capacity;
+#ifdef    DUAL_85_VERSION
+		if(bs_data->bat_capacity<30) {
+			val->intval  = 30;
+		}
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval =
@@ -314,8 +319,20 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef    DUAL_85_VERSION
+		if(gm->tbat_precise>=440) {
+			val->intval  = 440;
+		} else {
+			if(gm->tbat_precise<=100) {
+				val->intval  = 100;
+			} else {
+				val->intval = gm->tbat_precise;
+			}
+		}
+#else
 		force_get_tbat(gm, true);
 		val->intval = gm->tbat_precise;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
 		val->intval = check_cap_level(bs_data->bat_capacity);
@@ -690,7 +707,11 @@ int force_get_tbat_internal(struct mtk_battery *gm, bool update)
 					pre_fg_r_value,
 					pre_bat_temperature_val2);
 				/*pmic_auxadc_debug(1);*/
+//BEGIN,ontim,shabei,2019.09.02,mask warning for D85 version to avoid to much stack dump
+#ifndef DUAL_85_VERSION
 				WARN_ON(1);
+#endif
+//ENDIF
 			}
 
 			pre_bat_temperature_volt_temp =
@@ -741,6 +762,12 @@ int force_get_tbat(struct mtk_battery *gm, bool update)
 	bat_temperature_val = force_get_tbat_internal(gm, true);
 	gm->cur_bat_temp = bat_temperature_val;
 
+#ifdef DUAL_85_VERSION
+	if (bat_temperature_val > 59)
+		bat_temperature_val = 59;
+	if (bat_temperature_val < 10)
+		bat_temperature_val = 10;
+#endif
 	return bat_temperature_val;
 }
 

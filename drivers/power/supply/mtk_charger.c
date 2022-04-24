@@ -1134,6 +1134,9 @@ static void mtk_battery_notify_VCharger_check(struct mtk_charger *info)
 static void mtk_battery_notify_VBatTemp_check(struct mtk_charger *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+#ifdef DUAL_85_VERSION
+
+#else
 	if (info->battery_temp >= info->thermal.max_charge_temp) {
 		info->notify_code |= CHG_BAT_OT_STATUS;
 		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
@@ -1164,6 +1167,8 @@ static void mtk_battery_notify_VBatTemp_check(struct mtk_charger *info)
 		}
 #endif
 	}
+#endif
+
 #endif
 }
 
@@ -1261,7 +1266,11 @@ static void charger_check_status(struct mtk_charger *info)
 	if (info->enable_sw_jeita == true) {
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
+#ifdef DUAL_85_VERSION
+			charging = true;
+#else
 			charging = false;
+#endif
 			goto stop_charging;
 		}
 	} else {
