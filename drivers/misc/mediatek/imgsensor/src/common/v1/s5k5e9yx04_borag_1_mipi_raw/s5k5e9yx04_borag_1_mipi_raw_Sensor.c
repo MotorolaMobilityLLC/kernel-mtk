@@ -1027,7 +1027,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			module_id = ((read_cmos_otp(0xA2,0x0afd)<< 8) | (read_cmos_otp(0xA2,0x0afe)));
 			//if ((*sensor_id == imgsensor_info.sensor_id) && module_id == 0x5154) {
-			if ((*sensor_id == imgsensor_info.sensor_id) && module_id == 0xffff) {
+			if ((*sensor_id == imgsensor_info.sensor_id) && module_id == 0x5154) {
 				pr_err("s5k5e9yx04_borag_1[%s](%d)match ok! i2c write id: 0x%x,read sensor id: 0x%x module_id 0x5154 = : 0x%x \n",
 					__FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);
 				memset(front_cam_name,0x00,sizeof(front_cam_name));
@@ -1035,7 +1035,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				return ERROR_NONE;
 			}
 
-            pr_err("s5k5e9yx04_borag_1[%s](%d)match fail! i2c write id: 0x%x,read sensor id: 0x%x  module_id 0x5052 !=: 0x%x \n", 
+            pr_err("s5k5e9yx04_borag_1[%s](%d)match fail! i2c write id: 0x%x,read sensor id: 0x%x  module_id 0x5154 !=: 0x%x \n", 
             		__FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);
 			retry--;
 		} while(retry > 0);

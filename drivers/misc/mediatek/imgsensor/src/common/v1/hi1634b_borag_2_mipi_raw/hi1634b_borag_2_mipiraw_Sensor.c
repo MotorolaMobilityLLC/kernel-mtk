@@ -1669,10 +1669,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			module_id = ((read_cmos_sensor_otp(0xA0,0x0A62) << 8) | read_cmos_sensor_otp(0xA0,0x0A63));
-			if ((*sensor_id == imgsensor_info.sensor_id) && (module_id == 0x4f46)) {
+			if (*sensor_id == imgsensor_info.sensor_id) {
 				printk("Read sensor id ok !i2c write id: 0x%x, sensor id: 0x%x , Ofilm module id 0x4f46 == 0x%x\n", imgsensor.i2c_write_id, *sensor_id, module_id);
 				memset(back_cam_name, 0x00, sizeof(back_cam_name));
-				memcpy(back_cam_name, "0_hi1634b_borag_2", 64);
+				if (module_id == 0x4f46)
+					memcpy(back_cam_name, "0_hi1634b_borag_2", 64);
+				else
+					memcpy(back_cam_name, "0_hi1634b_borag_no_otp", 64);
 				return ERROR_NONE;
 			}
 
@@ -1682,7 +1685,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if ((*sensor_id != imgsensor_info.sensor_id) || (module_id != 0x4f46))  {
+	if (*sensor_id != imgsensor_info.sensor_id) {
 		/*if Sensor ID is not correct,
 		 *Must set *sensor_id to 0xFFFFFFFF
 		 */
