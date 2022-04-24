@@ -74,6 +74,11 @@ static u32 gc02m1_vendor_id = 0x19050000;
 extern unsigned char gc02m1_data_awb[GC02M1_AWB_DATA_SIZE];
 static u32 gc02m1_vendor_id = 0x19050000;
 #endif
+#ifdef MOT_MAUI_OV02B10_MIPI_RAW
+#define OV02B10_AWB_DATA_SIZE 31
+extern unsigned char ov02b10_otp_data[OV02B10_AWB_DATA_SIZE];
+static u32 ov02b10_vendor_id = 0x11110000;
+#endif
 /***********************************************************
  *
  ***********************************************************/
@@ -736,6 +741,22 @@ static long EEPROM_drv_ioctl(struct file *file,
             i4RetValue = ptempbuf->u4Length;
         } else {
 #endif
+#ifdef MOT_MAUI_OV02B10_MIPI_RAW
+        pr_debug("SensorID=%x, DeviceID=%x, offset=%d, length=%d, pu1Params:0x%x\n",
+            ptempbuf->sensorID, ptempbuf->deviceID, ptempbuf->u4Offset, ptempbuf->u4Length, *pu1Params);
+        if(ptempbuf->sensorID == 0x002b) {
+            if(ptempbuf->u4Offset == 0x78){
+                pr_debug("Do layoutcheck\n");
+                memcpy(pu1Params, (u8 *)&ov02b10_vendor_id, 4);
+            }else{
+                if (ptempbuf->sensorID == 0x002b && ptempbuf->u4Length == 0x0F && ptempbuf->u4Offset == 0x10){
+                    pr_debug("awb data copy to user\n");
+                    memcpy(pu1Params, (u8 *) &ov02b10_otp_data[16], ptempbuf->u4Length);
+                }
+            }
+            i4RetValue = ptempbuf->u4Length;
+        } else {
+#endif
 			pr_debug("SensorID=%x DeviceID=%x\n",
 				ptempbuf->sensorID, ptempbuf->deviceID);
 			pcmdInf = EEPROM_get_cmd_info_ex(
@@ -808,6 +829,9 @@ static long EEPROM_drv_ioctl(struct file *file,
         }
 #endif
 #ifdef MOT_MAUI_GC02M1_MIPI_RAW
+        }
+#endif
+#ifdef MOT_MAUI_OV02B10_MIPI_RAW
         }
 #endif
 #ifdef CAM_CALGETDLT_DEBUG
