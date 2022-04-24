@@ -107,6 +107,39 @@ int wlc_hal_init_hardware(struct chg_alg_device *alg)
 	return 0;
 }
 
+int wlc_hal_get_uisoc(struct chg_alg_device *alg)
+{
+	union power_supply_propval prop;
+	struct power_supply *bat_psy = NULL;
+	int ret;
+	struct mtk_wlc *wlc;
+
+	if (alg == NULL)
+		return -EINVAL;
+
+	wlc = dev_get_drvdata(&alg->dev);
+	bat_psy = wlc->bat_psy;
+
+	if (IS_ERR_OR_NULL(bat_psy)) {
+		pr_notice("%s retry to get wlc->bat_psy\n", __func__);
+		bat_psy = devm_power_supply_get_by_phandle(&wlc->pdev->dev, "gauge");
+		wlc->bat_psy = bat_psy;
+	}
+
+	if (IS_ERR_OR_NULL(bat_psy)) {
+		pr_notice("%s Couldn't get bat_psy\n", __func__);
+		ret = 50;
+	} else {
+		ret = power_supply_get_property(bat_psy,
+			POWER_SUPPLY_PROP_CAPACITY, &prop);
+		ret = prop.intval;
+	}
+
+	wlc_dbg("%s:%d\n", __func__,
+		ret);
+	return ret;
+}
+
 int wlc_hal_get_charger_type(struct chg_alg_device *alg)
 {
 	struct mtk_charger *info = NULL;
