@@ -162,7 +162,6 @@ static struct LCM_setting_table init_setting[] = {
     {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
-	{ 0xFF, 0x03, {0x98, 0x82, 0x00} },
 	{ 0x51, 0x01, {0xFF} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -289,9 +288,9 @@ static void lcm_reset(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(10);
+	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(20);
 	
 	LCM_LOGI("%s:icnl9911s lcm reset done\n",__func__);
 }
@@ -318,11 +317,11 @@ static void lcm_init(void)
 	LCM_LOGI("%s: gesture_dubbleclick_en=%d \n",__func__,gesture_dubbleclick_en);
 	if (!gesture_dubbleclick_en) {
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
-		MDELAY(6);
+		MDELAY(2);
 	
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
 
-		MDELAY(6);
+		MDELAY(10);
 #if 1
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
@@ -364,7 +363,9 @@ static void lcm_suspend(void)
 	MDELAY(10);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
+		MDELAY(2);
 		set_gpio_lcd_enp(0);
+		MDELAY(2);
 	}
 #endif
 	LCM_LOGI("%s,icnl9911s done\n", __func__);
@@ -387,8 +388,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	if (level > 255)
 		level = 255;
 
-	bl_level[0].para_list[0] = (level & 0xF0) >> 4;
-	bl_level[0].para_list[1] = (level & 0x0F) << 4;
+	bl_level[0].para_list[0] = level & 0xFF;
 	LCM_LOGI("%s,backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 
