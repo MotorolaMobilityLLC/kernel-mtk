@@ -1056,7 +1056,7 @@ static ssize_t typec_cc_orientation_show(struct device *dev,
 {
 	int ret;
 
-	ret = snprintf(buf, PAGE_SIZE, "cc_sts (%d)\n", typec_cc_orientation);
+	ret = snprintf(buf, PAGE_SIZE, "%d\n", typec_cc_orientation);
 	return ret;
 }
 
