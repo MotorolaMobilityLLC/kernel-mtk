@@ -22,6 +22,23 @@
 #include "firmware/ilitek_v3_fw.h"
 #include "ilitek_v3.h"
 
+#ifdef TOUCHSCREEN_ILITEK_MODEL
+//defined ilitek model
+#include <ontim/ontim_dev_dgb.h>
+static char version[32]="unknown";
+static char vendor_name[32]="unknown";
+static char lcdname[32]="unknown";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+
+#endif
+
+
 /* Debug level */
 bool debug_en = DEBUG_OUTPUT;
 EXPORT_SYMBOL(debug_en);
@@ -665,6 +682,20 @@ int ili_fw_upgrade_handler(void *data)
 		ili_wq_ctrl(WQ_ESD, ENABLE);
 		ili_wq_ctrl(WQ_BAT, ENABLE);
 	}
+
+#ifdef TOUCHSCREEN_ILITEK_MODEL
+    //ILI_ERR("get_info, lcd_name:%s\n", lcd_name);
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0) {
+	    //ILI_ERR("hwinfo already config, bootloader=%s,model=%s", lcd_name, TOUCHSCREEN_ILITEK_MODEL);
+    } else {
+	    uint8_t fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
+	    snprintf(lcdname, sizeof(lcdname), "%s", "txd-ili9882");
+	    snprintf(vendor_name, sizeof(vendor_name), "%s", "txd-ili9882");
+	    snprintf(version, sizeof(version),"FW:%02x,VID:0x94", fw_ver);
+    }
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+
+#endif
 
 	atomic_set(&ilits->fw_stat, END);
 	return ret;

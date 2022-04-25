@@ -4,6 +4,10 @@ BUILD_MODULE := n
 
 ccflags-y += -Wall
 
+ifneq ($(CONFIG_TOUCHSCREEN_ILITEK_MODEL), )
+ccflags-y += -DTOUCHSCREEN_ILITEK_MODEL="\"$(CONFIG_TOUCHSCREEN_ILITEK_MODEL)\""
+endif
+
 ifeq ($(BUILD_PLATFORM),mtk)
 platform=ilitek_v3_mtk
 ccflags-y += -I$(srctree)/drivers/spi/mediatek/mt6797/
