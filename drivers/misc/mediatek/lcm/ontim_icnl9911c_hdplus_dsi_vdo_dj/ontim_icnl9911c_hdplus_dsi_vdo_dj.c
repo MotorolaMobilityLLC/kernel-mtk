@@ -165,8 +165,8 @@ static struct LCM_setting_table init_setting[] = {
     {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
-	{ 0xF0, 0x02, {0x5A, 0x59} },
-	{ 0xF1, 0x02, {0xA5, 0xA6} },
+//	{ 0xF0, 0x02, {0x5A, 0x59} },
+//	{ 0xF1, 0x02, {0xA5, 0xA6} },
 	{ 0x51, 0x01, {0xFF} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -250,7 +250,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 	params->dsi.horizontal_sync_active = 4;
 	params->dsi.horizontal_backporch = 48;
-	params->dsi.horizontal_frontporch = 48;//old is 16,now is 60
+	params->dsi.horizontal_frontporch = 40;//old is 16,now is 60
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.PLL_CLOCK = 424;    /* FrameRate = 90Hz */ /* this value must be in MTK suggested table */
 #if 0
@@ -390,8 +390,8 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	if (level > 255)
 		level = 255;
 
-	bl_level[0].para_list[0] = (level & 0xF0) >> 4;
-	bl_level[0].para_list[1] = (level & 0x0F) << 4;
+	bl_level[0].para_list[0] = level & 0xFF;
+	//bl_level[0].para_list[1] = (level & 0x0F);
 	LCM_LOGI("%s,backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 
