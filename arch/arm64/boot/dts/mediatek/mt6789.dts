@@ -2803,6 +2803,7 @@
 		/* Trustonic Mobicore SW IRQ number 147 = 32 + 115 */
 		mobicore: mobicore {
 			compatible = "trustonic,mobicore";
+			trustonic,real-drv = <1>;
 			interrupts = <GIC_SPI 115 IRQ_TYPE_EDGE_RISING 0>;
 		};
 
