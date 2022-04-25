@@ -95,6 +95,24 @@
 	};
 };
 
+&i2c0 {
+	status = "okay";
+	aw9610x_sar@12 {
+		compatible = "awinic,aw9610x_sar_0";
+		reg = <0x12>;
+		irq-gpio = <&pio 13 0x0>;
+                chip_name = "AW96105";
+		sar-num = <0>;
+		aw9610x,channel_number = <0x3>;
+		ch0_name = "capsense_bottom_left";
+		ch1_name = "capsense_top";
+		ch2_name = "capsense_bottom_right";
+		aw9610x,using-firmware;
+                aw9610x,firmware_name = "aw9610x_0";
+		status = "okay";
+	};
+};
+
 &sound {
 	mediatek,spk-i2s = <3 0>;
 	mediatek,speaker-codec {
