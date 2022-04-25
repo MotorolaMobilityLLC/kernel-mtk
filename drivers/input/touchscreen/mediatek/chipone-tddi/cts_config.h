@@ -135,6 +135,10 @@
     #define CFG_CTS_TOOL_PROC_FILENAME      "icn85xx_tool"
 #endif /* CONFIG_CTS_LEGACY_TOOL */
 
+#define CFG_CTS_UPDATE_CRCCHECK
+
+#define LCM_INFO_EASYQUICK_608  (unsigned char)(0x01)
+#define LCM_INFO_HLT_GLASS  (unsigned char)(0x02)
 /****************************************************************************
  * Platform configurations
  ****************************************************************************/

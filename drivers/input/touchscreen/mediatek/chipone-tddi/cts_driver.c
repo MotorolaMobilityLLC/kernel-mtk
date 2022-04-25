@@ -10,6 +10,22 @@
 #include "cts_cdev.h"
 #include "cts_strerror.h"
 
+/* BEGIN, Ontim,  zsh, 2022/04/25, St-result :PASS,LCD and TP Device information */
+extern unsigned char g_lcm_info_flag;
+extern char lcd_info_pr[256];
+u16  device_fw_ver = 0;
+#include <ontim/ontim_dev_dgb.h>
+static char version[40] = "0x00";
+static char vendor_name[50] = "dj-icnl9911c";
+static char lcdname[50] = "dj-icnl9911c";
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version", version)
+DEV_ATTR_DEFINE("vendor", vendor_name)
+DEV_ATTR_DEFINE("lcdvendor", lcdname)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+/* END */
+
 bool cts_show_debug_log = false;
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
@@ -104,10 +120,31 @@ int cts_driver_resume(struct chipone_ts_data *cts_data)
     return 0;
 }
 
+//add by zsh,2022/04/25
+//start
+static void cts_tp_fw(struct cts_device *cts_dev)
+{
+	u8 cts_fw = 0;
+	cts_fw_reg_readw_retry(cts_dev,
+                    CTS_DEVICE_FW_REG_VERSION, &device_fw_ver, 5, 0);
+	cts_fw = be16_to_cpup(&device_fw_ver);
+	cts_info("ver:0x%x", cts_fw);
+	snprintf(version, sizeof(version)," FW:02_0x%x, VID:0x98", cts_fw);
+	cts_info("version:%s", version);
+}
+//end
+
 int cts_driver_probe(struct device *device, enum cts_bus_type bus_type)
 {
     struct chipone_ts_data *cts_data = NULL;
     int ret = 0;
+
+    /* BEGIN, Ontim,  zsh, 2022/04/25, St-result :PASS,LCD and TP Device information */
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+        return -EIO;
+    }
+    /* END */
 
     cts_data = kzalloc(sizeof(struct chipone_ts_data), GFP_KERNEL);
     if (cts_data == NULL) {
@@ -248,6 +285,23 @@ int cts_driver_probe(struct device *device, enum cts_bus_type bus_type)
 #ifdef CONFIG_MTK_PLATFORM
     tpd_load_status = 1;
 #endif /* CONFIG_MTK_PLATFORM */
+
+//add by zsh 2022/04/25
+//start
+    snprintf(lcdname, sizeof(lcdname),"%s","dj-icnl9911c");
+    snprintf(vendor_name, sizeof(vendor_name),"%s","dj-icnl9911c");
+#if 0
+    if (LCM_INFO_EASYQUICK_608 == g_lcm_info_flag) {
+        snprintf(lcdname, sizeof(lcdname),"%s ", "dj-icnl9911c" );
+        snprintf(vendor_name, sizeof(vendor_name),"%s ", "dj-icnl9911c" );
+    } else if (LCM_INFO_HLT_GLASS == g_lcm_info_flag) {
+        snprintf(lcdname, sizeof(lcdname),"%s ", "dj-icnl9911c" );
+        snprintf(vendor_name, sizeof(vendor_name),"%s ", "dj-icnl9911c" );
+    }
+#endif
+    cts_tp_fw(&cts_data->cts_dev);
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//end
 
     return 0;
 
