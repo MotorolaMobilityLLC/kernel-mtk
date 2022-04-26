@@ -998,15 +998,29 @@ static void slim_video_setting(void)
 
 
 extern char front_cam_name[64];
+extern char front_cam_efuse_id[64];
+
+static  void get_front_cam_efuse_id(void)
+{
+	int i = 0;
+	kal_uint8 efuse_id;
+
+	for(i=0;i<16;i++)
+	{
+		efuse_id = read_cmos_otp(0xA2,0x0B05+i);
+		sprintf(front_cam_efuse_id+2*i,"%02x",efuse_id);
+		msleep(1);
+	}
+}
 /*************************************************************************
 * FUNCTION
 *	get_imgsensor_id
 *
 * DESCRIPTION
-*	This function get the sensor ID 
+*	This function get the sensor ID
 *
 * PARAMETERS
-*	*sensorID : return the sensor ID 
+*	*sensorID : return the sensor ID
 *
 * RETURNS
 *	None
@@ -1032,11 +1046,17 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					__FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);
 				memset(front_cam_name,0x00,sizeof(front_cam_name));
 				if (module_id == 0x4f46)
+				{
 					memcpy(front_cam_name,"1_s5k5e9yx04_borag_2",64);
+					get_front_cam_efuse_id();
+					ontim_get_otp_data(*sensor_id, NULL, 0);
+				}
 				else
+				{
 					memcpy(front_cam_name,"1_s5k5e9yx04_borag_no_otp",64);
+				}
 				return ERROR_NONE;
-			}	
+			}
 
             pr_err("s5k5e9yx04_borag_2[%s](%d)match fail! i2c write id: 0x%x,read sensor id: 0x%x  module_id 0x4f46 !=: 0x%x \n", 
             		__FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, module_id);

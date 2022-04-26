@@ -178,4 +178,5 @@ extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
 				u16 transfer_length, u16 timing);
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 #endif
