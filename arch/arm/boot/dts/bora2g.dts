@@ -358,6 +358,7 @@
 /* FINGERPRINT end */
 
 /* IRTX GPIO end */
+/*
 &irtx_pwm {
 	pinctrl-names = "irtx_gpio_led_default", "irtx_gpio_led_set";
 	pinctrl-0 = <&irtx_gpio_led_default>;
@@ -383,6 +384,7 @@
 		};
 	};
 };
+*/
 /* IRTX GPIO Settings -End */
 
 /* AUDIO GPIO standardization */

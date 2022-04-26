@@ -3369,6 +3369,11 @@
 		};
 	};
 
+	flashlights_ocp8135b: flashlights_ocp8135b {
+		compatible = "mediatek,flashlights_ocp8135b";
+	};
+
+
 	gps {
 		compatible = "mediatek,gps";
 	};
