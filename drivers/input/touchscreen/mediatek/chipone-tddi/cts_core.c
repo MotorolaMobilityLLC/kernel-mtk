@@ -8,6 +8,7 @@
 #include "cts_firmware.h"
 #include "cts_charger_detect.h"
 #include "cts_earjack_detect.h"
+unsigned char g_lcm_info_flag;
 #include "cts_strerror.h"
 
 #ifdef CONFIG_CTS_I2C_HOST
