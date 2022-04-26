@@ -412,6 +412,7 @@ static struct notifier_block tpd_fb_notifier;
 static void touch_resume_workqueue_callback(struct work_struct *work)
 {
 	TPD_DEBUG("GTP %s\n", __func__);
+	pr_err("ilitek touch_resume_workqueue\n");
 	g_tpd_drv->resume(NULL);
 	tpd_suspend_flag = 0;
 }
@@ -431,15 +432,17 @@ static int tpd_fb_notifier_callback(
 		return 0;
 
 	blank = *(int *)evdata->data;
-	pr_err("fb_notify(blank=%d)\n", blank);
+	TPD_DEBUG("fb_notify(blank=%d)\n", blank);
 	if (event != FB_EVENT_BLANK )
  		return 0;
 
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
+		TPD_DEBUG("event222=%d\n",event);
 		if(event == FB_EVENT_BLANK){
 			TPD_DMESG("LCD ON Notify\n");
 			if (g_tpd_drv && tpd_suspend_flag) {
+				pr_err("ilitek LCD ON resume \n");
 				err = queue_work(touch_resume_workqueue,
 						&touch_resume_work);
 				if (!err) {
@@ -450,7 +453,8 @@ static int tpd_fb_notifier_callback(
 		}
 		break;
 	case FB_BLANK_POWERDOWN:
-		if(event == FB_EARLY_EVENT_BLANK){
+                TPD_DEBUG("event=%d 11111\n",event);
+		if(event == FB_EVENT_BLANK){
 			TPD_DMESG("LCD OFF Notify\n");
 			if (g_tpd_drv && !tpd_suspend_flag) {
 				err = cancel_work_sync(&touch_resume_work);
