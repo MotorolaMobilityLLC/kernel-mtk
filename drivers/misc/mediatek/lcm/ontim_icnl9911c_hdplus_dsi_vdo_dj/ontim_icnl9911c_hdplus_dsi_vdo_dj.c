@@ -28,7 +28,7 @@
  * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
  * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
  */
-#define LOG_TAG "LCM-icnl9911c-truly-hjc"
+#define LOG_TAG "LCM-icnl9911c-dj"
 
 #ifndef BUILD_LK
 #include <linux/string.h>
@@ -165,8 +165,6 @@ static struct LCM_setting_table init_setting[] = {
     {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
-//	{ 0xF0, 0x02, {0x5A, 0x59} },
-//	{ 0xF1, 0x02, {0xA5, 0xA6} },
 	{ 0x51, 0x01, {0xFF} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -291,11 +289,10 @@ static void lcm_reset(void)
 
 	//MDELAY(50);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-	MDELAY(10);
+	MDELAY(20);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-
 
 	LCM_LOGI("%s:icnl9911c lcm reset done\n",__func__);
 }
@@ -322,10 +319,11 @@ static void lcm_init(void)
 	LCM_LOGI("%s: gesture_dubbleclick_en=%d \n",__func__,gesture_dubbleclick_en);
 	if (!gesture_dubbleclick_en) {
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
-	
+		MDELAY(2);
+
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
 
-		MDELAY(6);
+		MDELAY(10);
 #if 1
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
@@ -367,7 +365,9 @@ static void lcm_suspend(void)
 	MDELAY(10);
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
+		MDELAY(2);
 		set_gpio_lcd_enp(0);
+		MDELAY(2);
 	}
 #endif
 	LCM_LOGI("%s,icnl9911c done\n", __func__);
