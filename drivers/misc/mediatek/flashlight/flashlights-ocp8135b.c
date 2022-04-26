@@ -527,6 +527,45 @@ err_node_put:
 	return -EINVAL;
 }
 */
+
+static ssize_t show_torch_status(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "ocp8135b_flashlight level = %d\n", g_level);
+}
+
+static ssize_t store_torch_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	int ret = 0;
+	char *pvalue = NULL;
+	unsigned int val = 0;
+
+	if (buf != NULL && size != 0) {
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
+		if (val) {
+			/* Torch LED ON */
+			ocp8135b_set_driver(1);
+			ocp8135b_set_level(6);
+			ocp8135b_timeout_ms = 0;
+			ocp8135b_enable();
+		}else {
+			ocp8135b_disable();
+			ocp8135b_set_driver(0);
+		}
+		PK_DBG("Set torch val:%d", val);
+	}
+	return size;
+}
+
+static const struct device_attribute torch_status_attr = {
+	.attr = {
+		.name = "torch_status",
+		.mode = 0666,
+	},
+	.show = show_torch_status,
+	.store = store_torch_status,
+};
+
 static int ocp8135b_probe(struct platform_device *pdev)
 {
 	struct ocp8135b_platform_data *pdata = dev_get_platdata(&pdev->dev);
@@ -586,6 +625,12 @@ static int ocp8135b_probe(struct platform_device *pdev)
 			err = -EFAULT;
 			goto err;
 		}
+	}
+
+	if (sysfs_create_file(kernel_kobj, &torch_status_attr.attr)) {
+		PK_DBG("sysfs_create_file torch status fail\n");
+		err = -EFAULT;
+		goto err;
 	}
 
 	PK_DBG("Probe done.\n");
