@@ -1639,6 +1639,21 @@ static void slim_video_setting(void)
 }
 
 extern char back_cam_name[64];
+extern char back_cam_efuse_id[64];
+
+static  void get_back_cam_efuse_id(void)
+{
+	int i = 0;
+	kal_uint8 efuse_id;
+
+	for(i=0;i<16;i++)
+	{
+		efuse_id = read_cmos_sensor_otp(0xA0,0x0A6A+i);
+		sprintf(back_cam_efuse_id+2*i,"%02x",efuse_id);
+		msleep(1);
+	}
+}
+
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -1674,6 +1689,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				printk("Read sensor id ok !i2c write id: 0x%x, sensor id: 0x%x ,Qteck module id 0x5154 == 0x%x\n", imgsensor.i2c_write_id, *sensor_id, module_id);
 				memset(back_cam_name, 0x00, sizeof(back_cam_name));
 				memcpy(back_cam_name, "0_hi1634b_borag_1", 64);
+				get_back_cam_efuse_id();
+				ontim_get_otp_data(*sensor_id, NULL, 0);
 				return ERROR_NONE;
 			}
 
