@@ -1366,7 +1366,7 @@ static ssize_t reset_pin_test_show(struct device *dev,
 }
 static DEVICE_ATTR(reset_pin_test, S_IRUGO, reset_pin_test_show, NULL);
 
-static ssize_t int_pin_test_show(struct device *dev,
+/*static ssize_t int_pin_test_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
     struct chipone_ts_data *cts_data = dev_get_drvdata(dev);
@@ -1387,7 +1387,7 @@ static ssize_t int_pin_test_show(struct device *dev,
         "Int-Pin", ret, elapsed_time_ms);
 }
 static DEVICE_ATTR(int_pin_test, S_IRUGO, int_pin_test_show, NULL);
-
+*/
 static ssize_t compensate_cap_test_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
@@ -1632,12 +1632,13 @@ static ssize_t factory_test_show(struct device *dev,
         .flags = 0,
         .elapsed_time_ms = &reset_pin_test_elapsed_time,
     };
-    s64 int_pin_test_elapsed_time = 0;
+/*    s64 int_pin_test_elapsed_time = 0;
     struct cts_test_param int_pin_test_param = {
         .test_item = CTS_TEST_INT_PIN,
         .flags = 0,
         .elapsed_time_ms = &int_pin_test_elapsed_time,
     };
+*/
     struct cts_rawdata_test_priv_param rawdata_test_priv_param = {
         .frames = 16,
         //.work_mode = 0,
@@ -1726,7 +1727,7 @@ static ssize_t factory_test_show(struct device *dev,
     int comp_cap_max = 100;
     int rawdata_test_result = 0;
     int reset_pin_test_result = 0;
-    int int_pin_test_result = 0;
+//    int int_pin_test_result = 0;
     int noise_test_result = 0;
     int open_test_result = 0;
     int short_test_result = 0;
@@ -1816,8 +1817,8 @@ static ssize_t factory_test_show(struct device *dev,
 
     reset_pin_test_result =
         cts_test_reset_pin(cts_dev, &reset_pin_test_param);
-    int_pin_test_result =
-        cts_test_int_pin(cts_dev, &int_pin_test_param);
+//    int_pin_test_result =
+//        cts_test_int_pin(cts_dev, &int_pin_test_param);
     rawdata_test_result =
         cts_test_rawdata(cts_dev, &rawdata_test_param);
     noise_test_result =
@@ -1858,9 +1859,10 @@ static ssize_t factory_test_show(struct device *dev,
     count += cts_print_test_result_to_buffer(buf + count, PAGE_SIZE,
         "Reset-Pin", reset_pin_test_result,
         *(reset_pin_test_param.elapsed_time_ms));
-    count += cts_print_test_result_to_buffer(buf + count, PAGE_SIZE,
+/*    count += cts_print_test_result_to_buffer(buf + count, PAGE_SIZE,
         "Int-Pin", int_pin_test_result,
         *(int_pin_test_param.elapsed_time_ms));
+*/
     count += cts_print_test_result_to_buffer(buf + count, PAGE_SIZE,
         "Rawdata", rawdata_test_result,
         *(rawdata_test_param.elapsed_time_ms));
@@ -2100,7 +2102,7 @@ static DEVICE_ATTR(gesture_test,S_IRUGO,
 static struct attribute *cts_dev_test_atts[] = {
     &dev_attr_testing.attr,
     &dev_attr_reset_pin_test.attr,
-    &dev_attr_int_pin_test.attr,
+//    &dev_attr_int_pin_test.attr,
     &dev_attr_rawdata_test.attr,
     &dev_attr_noise_test.attr,
     &dev_attr_open_test.attr,
