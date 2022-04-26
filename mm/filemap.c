@@ -2733,8 +2733,13 @@ vm_fault_t filemap_fault(struct vm_fault *vmf)
 	bool retry = false;
 
 	max_off = DIV_ROUND_UP(i_size_read(inode), PAGE_SIZE);
-	if (unlikely(offset >= max_off))
+	if (unlikely(offset >= max_off)) {
+#ifdef CONFIG_MTK_VM_DEBUG
+		pr_err("%d: VM_FAULT_SIGBUS, %ld > %ld\n", __LINE__,
+			offset, max_off);
+#endif
 		return VM_FAULT_SIGBUS;
+	}
 
 	trace_android_vh_filemap_fault_get_page(vmf, &page, &retry);
 	if (unlikely(retry))
@@ -2806,6 +2811,10 @@ page_ok:
 	if (unlikely(offset >= max_off)) {
 		unlock_page(page);
 		put_page(page);
+#ifdef CONFIG_MTK_VM_DEBUG
+		pr_err("%d: VM_FAULT_SIGBUS, %ld > %ld\n", __LINE__,
+			offset, max_off);
+#endif
 		return VM_FAULT_SIGBUS;
 	}
 
@@ -2835,6 +2844,9 @@ page_not_uptodate:
 		goto retry_find;
 
 	shrink_readahead_size_eio(ra);
+#ifdef CONFIG_MTK_VM_DEBUG
+	pr_err("%d: VM_FAULT_SIGBUS, %d\n", __LINE__, error);
+#endif
 	return VM_FAULT_SIGBUS;
 
 out_retry:
