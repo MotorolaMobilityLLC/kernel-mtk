@@ -19,7 +19,7 @@
 #include <linux/delay.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/pwm.h>
-
+#include <mt-plat/mtk_pwm.h>
 #include "flashlight-core.h"
 #include "flashlight-dt.h"
 
@@ -45,13 +45,6 @@
 
 #define OCP8135B_NAME "flashlights-ocp8135b"
 
-/* define registers */
-
-/* define mutex and work queue */
-static DEFINE_MUTEX(ocp8135b_mutex);
-static struct work_struct ocp8135b_work;
-static int g_level = 0;
-
 /* define pinctrl */
 #define OCP8135B_PINCTRL_PIN_HWENF 0
 #define OCP8135B_PINCTRL_PIN_HWENM 1
@@ -62,20 +55,10 @@ static int g_level = 0;
 #define OCP8135B_PINCTRL_STATE_HWENF_LOW  "hwenf_low"
 #define OCP8135B_PINCTRL_STATE_HWENM_HIGH "hwenm_high"
 #define OCP8135B_PINCTRL_STATE_HWENM_LOW  "hwenm_low"
-#define OCP8135B_PINCTRL_STATE_PWM        "hwenm_pwm"
-
-#define OCP8135B_NONE (-1)
-#define OCP8135B_DISABLE 0
-#define OCP8135B_ENABLE 1
-#define OCP8135B_ENABLE_TORCH 1
-#define OCP8135B_ENABLE_FLASH 2
-#define OCP8135B_WAIT_TIME 5
-#define OCP8135B_RETRY_TIMES 3
+#define OCP8135B_PINCTRL_STATE_PWM        "ocp8135bpwm"
 #define OCP8135B_LEVEL_TORCH 8
-#define OCP8135B_LEVEL_NUM 34
-#define OCP8135B_CHANNEL_NUM 2
+#define OCP8135B_LEVEL_NUM 32
 
-static struct pwm_device *pwm_chip;
 static struct pinctrl *ocp8135b_pinctrl;
 static struct pinctrl_state *ocp8135b_hwenf_high;
 static struct pinctrl_state *ocp8135b_hwenf_low;
@@ -83,6 +66,10 @@ static struct pinctrl_state *ocp8135b_hwenm_high;
 static struct pinctrl_state *ocp8135b_hwenm_low;
 static struct pinctrl_state *ocp8135b_pwm;
 
+/* define mutex and work queue */
+static DEFINE_MUTEX(ocp8135b_mutex);
+static struct work_struct ocp8135b_work;
+static int g_level = 0;
 /* define usage count */
 static int use_count;
 
@@ -91,29 +78,36 @@ struct ocp8135b_platform_data {
 	int channel_num;
 	struct flashlight_device_id *dev_id;
 };
-/*
-int ocp8135b_pwm_set_config( struct pwm_device *pwm, int duty_cycle)
+
+int ocp8135b_pwm_set_config(int level)
 {
-	int duty_ns, period_ns;
-	struct pwm_state state;
+	struct pwm_spec_config pwm_setting;
 
-	pwm_get_state(pwm, &state);
-	period_ns = state.period;
-	duty_ns = duty_cycle * period_ns / 100;
-	state.duty_cycle = duty_ns;
+	pr_info("ocp8135b_set_pwm: level=%d\n", level);
 
-	if (duty_ns > 0) {
-		state.enabled= true ;
-	} else{
-		state.enabled= false ;
+	memset(&pwm_setting, 0, sizeof(struct pwm_spec_config));
+	pwm_setting.pwm_no = PWM1;
+	pwm_setting.mode = PWM_MODE_FIFO;
+	pwm_setting.clk_div = CLK_DIV16;
+	pwm_setting.clk_src = PWM_CLK_NEW_MODE_BLOCK;
+	pwm_setting.pmic_pad = false;
+
+	pwm_setting.PWM_MODE_FIFO_REGS.HDURATION = 4;
+	pwm_setting.PWM_MODE_FIFO_REGS.LDURATION = 4;
+	pwm_setting.PWM_MODE_FIFO_REGS.IDLE_VALUE = 0;
+	pwm_setting.PWM_MODE_FIFO_REGS.GUARD_VALUE = 0;
+	pwm_setting.PWM_MODE_FIFO_REGS.STOP_BITPOS_VALUE = 31;
+	pwm_setting.PWM_MODE_FIFO_REGS.GDURATION = 0;
+	pwm_setting.PWM_MODE_FIFO_REGS.WAVE_NUM = 0;
+
+	if (level > 0 && level <= 32) {
+		pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA0 = (1 << level) - 1;
+		pwm_set_spec_config(&pwm_setting);
 	}
-	pwm_apply_state(pwm, &state);
-
-	pr_info("ocp8135b_pwm_set_config,period_ns = %d,duty_cycle = %d",state.period,state.duty_cycle);
 
 	return 0;
 }
-*/
+
 /******************************************************************************
  * Pinctrl configuration
  *****************************************************************************/
@@ -121,7 +115,6 @@ static int ocp8135b_pinctrl_init(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	/* get pinctrl */
 	/* get pinctrl */
 	ocp8135b_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(ocp8135b_pinctrl)) {
@@ -201,8 +194,11 @@ static int ocp8135b_pinctrl_set(int pin, int state)
 			pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	case OCP8135B_PINCTRL_PIN_PWM:
-		if (!IS_ERR(ocp8135b_pwm))
-			pinctrl_select_state(ocp8135b_pinctrl, ocp8135b_pwm);
+		if (!IS_ERR(ocp8135b_pwm)){
+				ocp8135b_pwm = pinctrl_lookup_state(ocp8135b_pinctrl, OCP8135B_PINCTRL_STATE_PWM);
+				pinctrl_select_state(ocp8135b_pinctrl, ocp8135b_pwm);
+			}
+		else
 			pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	default:
@@ -226,30 +222,29 @@ static int ocp8135b_set_torch_brightness(int val)
 
 	mdelay(5);
 
-	//ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENM,
-		//OCP8135B_PINCTRL_PINSTATE_LOW);
+	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENM,
+		OCP8135B_PINCTRL_PINSTATE_LOW);
 
-	//ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
-		//OCP8135B_PINCTRL_PINSTATE_HIGH);
+	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
+		OCP8135B_PINCTRL_PINSTATE_HIGH);
 
-	//ocp8135b_pwm_set_config(pwm_chip, val);
+	ocp8135b_pwm_set_config(13);
 
 	return 0;
 }
 
 static int ocp8135b_set_strobe_brightness(int val)
 {
-	//ocp8135b_pwm_set_config(pwm_chip, val);
-
-	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENM,
+	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
+	ocp8135b_pwm_set_config(val);
+
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
-	mdelay(400);
+	mdelay(450);
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
 		OCP8135B_PINCTRL_PINSTATE_LOW);
 
-	//ocp8135b_pwm_set_config(pwm_chip, 0);
 	return 0;
 }
 
@@ -263,10 +258,12 @@ static int ocp8135b_is_torch(int level)
 
 static int ocp8135b_verify_level(int level)
 {
-	if (level < 0)
-		level = 0;
+	if (level <= 0)
+		level = 1;
 	else if (level >= OCP8135B_LEVEL_NUM)
-		level = OCP8135B_LEVEL_NUM - 1;
+		level = OCP8135B_LEVEL_NUM;
+	else
+		level = level + 1;
 
 	return level;
 }
@@ -289,9 +286,9 @@ static int ocp8135b_enable(void)
 	ocp8135b_pinctrl_set(pin_torch, OCP8135B_PINCTRL_PINSTATE_LOW);
 
 	if (!ocp8135b_is_torch(g_level)){
-		ocp8135b_set_torch_brightness(g_level*100/OCP8135B_LEVEL_NUM);
+		ocp8135b_set_torch_brightness(g_level);
 	}else{
-		ocp8135b_set_strobe_brightness(g_level*100/OCP8135B_LEVEL_NUM);
+		ocp8135b_set_strobe_brightness(g_level);
 	}
 	return 0;
 }
@@ -303,6 +300,7 @@ static int ocp8135b_disable(void)
 	int pin_torch = OCP8135B_PINCTRL_PIN_HWENM;
 	int state = OCP8135B_PINCTRL_PINSTATE_LOW;
 
+	mt_pwm_disable(PWM1, false);
 	ocp8135b_pinctrl_set(pin_torch, state);
 	ocp8135b_pinctrl_set(pin_flash, state);
 
@@ -439,6 +437,8 @@ static int ocp8135b_set_driver(int set)
 
 static ssize_t ocp8135b_strobe_store(struct flashlight_arg arg)
 {
+	pr_info("%s in, arg.level = %d\n", __func__, arg.level);
+
 	ocp8135b_set_driver(1);
 	ocp8135b_set_level(arg.level);
 	ocp8135b_timeout_ms = 0;
@@ -540,12 +540,6 @@ static int ocp8135b_probe(struct platform_device *pdev)
 		PK_DBG("Failed to init pinctrl.\n");
 		err = -EFAULT;
 		goto err;
-	}
-
-	pwm_chip = devm_pwm_get(&pdev->dev,"pwm0");
-	if (IS_ERR(pwm_chip)) {
-		pr_err("get pwm device0 failed\n");
-		//goto exit;
 	}
 
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF, OCP8135B_PINCTRL_PINSTATE_LOW);
