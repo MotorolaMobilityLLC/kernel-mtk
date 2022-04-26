@@ -177,6 +177,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			info->data.charging_host_charger_current;
 		pdata->charging_current_limit =
 			info->data.charging_host_charger_current;
+		if (info->sw_jeita.sm == TEMP_T0_TO_T1){
+			pdata->charging_current_limit = 1100000;
+			chr_err("jeita: cdp charging current limit 1100ma 0.3c\n");
+		}
 		is_basic = true;
 
 	} else if (info->chr_type == POWER_SUPPLY_TYPE_USB_DCP) {
@@ -188,6 +192,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			pdata2->input_current_limit =
 				pdata->input_current_limit;
 			pdata2->charging_current_limit = 2000000;
+		}
+		if (info->sw_jeita.sm == TEMP_T0_TO_T1){
+			pdata->charging_current_limit = 1100000;
+			chr_err("jeita: dcp charging current limit 1100ma 0.3c\n");
 		}
 	} else if (info->chr_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
 		/* NONSTANDARD_CHARGER */

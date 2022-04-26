@@ -320,11 +320,11 @@ static int battery_psy_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 #ifdef    DUAL_85_VERSION
-		if(gm->tbat_precise>=440) {
-			val->intval  = 440;
+		if(gm->tbat_precise >= 540) {
+			val->intval = 540;
 		} else {
-			if(gm->tbat_precise<=100) {
-				val->intval  = 100;
+			if(gm->tbat_precise <= 100) {
+				val->intval = 100;
 			} else {
 				val->intval = gm->tbat_precise;
 			}
