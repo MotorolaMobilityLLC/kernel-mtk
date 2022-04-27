@@ -763,7 +763,9 @@ __setup("band_id=", set_band_id);
 #define ADC_VOLTAGE 1800
 
 #define BOARD_ID_ADC_R_UP 100
+// this r table must be ordered!!!
 int board_id_adc_r_table[] = { 100, 82, 43, 30 };
+// this table must be aligned with above table!!!
 char *board_id_version_table[] = { "EVT", "DVT1", "DVT2", "PVT" };
 
 int map2index(const char *msg, int val, int array[], int count)
@@ -793,11 +795,13 @@ int map2index(const char *msg, int val, int array[], int count)
 static void get_board_id(void)
 {
 	char data[16];
-	char *buf = hwinfo[board_id].hwinfo_buf;
+	char *id_buf = hwinfo[board_id].hwinfo_buf;
+	char *ver_buf = hwinfo[hw_version].hwinfo_buf;
 	int ret = hwinfo_read_file(BOARD_ID_ADC_FILE, data, sizeof(sizeof(data)));
-	if (ret != 0) {
+	if (ret) {
 		pr_err("read " BOARD_ID_ADC_FILE " fail, ret=%d\n", ret);
-		strcpy(buf, "Unknown");
+		strcpy(id_buf, "-1");
+		strcpy(ver_buf, "Unknown");
 		return;
 	}
 	int v;
@@ -806,7 +810,12 @@ static void get_board_id(void)
 	int i = map2index("board_id", r, board_id_adc_r_table, ARRAY_SIZE(board_id_adc_r_table));
 	pr_info("board_id: data=%s v=%d r=%d i=%d r-ri=%d delta=%d%%\n",
 		data, v, r, i, r - board_id_adc_r_table[i], 100 * (r - board_id_adc_r_table[i]) / board_id_adc_r_table[i]);
-	strcpy(buf, board_id_version_table[i]);
+	sprintf(id_buf, "%d", i);
+	if (ARRAY_SIZE(board_id_adc_r_table) != ARRAY_SIZE(board_id_version_table)) {
+		pr_err("board_id: Error: board_id_adc_r_table and board_id_version_table have different size\n");
+		strcpy(ver_buf, "Mismatch");
+	} else
+		strcpy(ver_buf, board_id_version_table[i]);
 }
 
 static int set_serialno(char *src)
@@ -1113,6 +1122,7 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		get_battery_charging_enabled();
 		break;
 	case board_id:
+	case hw_version:
 		get_board_id();
 		break;
 	case LCD_MFR:
