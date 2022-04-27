@@ -12,68 +12,7 @@
 
 #include "mediatek/mt6789-moto-common-overlay.dtsi"
 #include "mediatek/cust_mt6789_camera.dtsi"
-
-
-&mtk_leds {
-	compatible = "mediatek,i2c-leds";
-
-	backlight {
-		led_mode = <6>;
-		gate_enable = <1>;
-		pwm_config = <0 1 0 0 0>;
-	};
-};
-
-&pio {
-	mtkfb_pins_lcm_led_en1: lcm_led_en1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_led_en0: lcm_led_en0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO85__FUNC_GPIO85>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO85__FUNC_GPIO85>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO83__FUNC_DSI_TE>;
-		};
-	};
-};
-
-&mtkfb {
-	pinctrl-names = "lcm_led_en1_gpio", "lcm_led_en0_gpio",
-		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te";
-	pinctrl-0 = <&mtkfb_pins_lcm_led_en1>;
-	pinctrl-1 = <&mtkfb_pins_lcm_led_en0>;
-	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
-	status = "okay";
-};
+#include "mediatek/vicky-display.dtsi"
 
 &dispsys_config {
 	pinctrl-names =
