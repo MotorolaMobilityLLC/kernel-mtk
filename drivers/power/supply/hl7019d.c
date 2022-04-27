@@ -45,6 +45,14 @@
 #include <asm/atomic.h>
 #include <mt-plat/mtk_boot.h>
 
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="HL7019D";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
+
+
 //Antaiui <AI_BSP_CHG> <hehl> <2021-03-27> add charger ic HL7015A begin
 #define CONFIG_PROJECT_PHY //hhl add
 //Antaiui <AI_BSP_CHG> <hehl> <2021-03-27> add charger ic HL7015A end
@@ -2392,14 +2400,21 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	pr_err("endy,%s()++\n",__func__);
 
+	//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+	//-add by hzb for ontim debug
+
 	info = devm_kzalloc(&client->dev, sizeof(struct hl7019d_info), GFP_KERNEL);
 
 	if (!info)
 		return -ENOMEM;
-	
+
 	new_client = client;
 	info->dev = &client->dev;
-	
+
 	ret = hl7019d_parse_dt(info, &client->dev);
 	if (ret < 0)
 		return ret;
@@ -2482,6 +2497,11 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 #endif
 
 	charging_check_info = info;
+
+	//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	//-add by hzb for ontim debug
+
 	pr_err("endy,%s()--\n",__func__);
 
 	return 0;

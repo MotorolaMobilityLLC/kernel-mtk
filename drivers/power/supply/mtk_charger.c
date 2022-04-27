@@ -59,6 +59,14 @@
 
 #include "mtk_charger.h"
 
+#ifdef CONFIG_CHARGER_STOP_70PER
+unsigned int capacity_control= 0;
+#else
+unsigned int capacity_control= 0;
+#endif
+module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
+
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -879,6 +887,47 @@ static ssize_t BatteryNotify_store(struct device *dev,
 
 static DEVICE_ATTR_RW(BatteryNotify);
 
+#ifdef CONFIG_CHARGER_STOP_70PER
+static int ontim_runin_onoff_control = 1;
+#else
+static int ontim_runin_onoff_control = 0;
+#endif
+
+int ontim_get_ontim_runin_onoff_control(void)
+{
+	return ontim_runin_onoff_control;
+}
+static ssize_t runin_onoff_ctrl_show(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_runin_onoff_control);
+}
+static ssize_t runin_onoff_ctrl_store(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d", &ontim_runin_onoff_control);
+	return size;
+}
+static DEVICE_ATTR_RW(runin_onoff_ctrl);
+
+static int ontim_charge_onoff_control = 1;/*1=enable charge  0 or other=disable charge*/
+
+static ssize_t charge_onoff_ctrl_show(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_charge_onoff_control);
+}
+static ssize_t charge_onoff_ctrl_store(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct mtk_charger *pinfo = dev->driver_data;
+	struct charger_device *chg_dev;
+	chg_dev = pinfo->chg1_dev;
+
+	chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
+	sscanf(buf, "%d", &ontim_charge_onoff_control);
+	charger_dev_enable_powerpath(chg_dev, ontim_charge_onoff_control);
+	_wake_up_charger(pinfo);
+	return size;
+}
+static DEVICE_ATTR_RW(charge_onoff_ctrl);
+
 /* procfs */
 static int mtk_chg_current_cmd_show(struct seq_file *m, void *data)
 {
@@ -1256,6 +1305,7 @@ static void charger_check_status(struct mtk_charger *info)
 	bool charging = true;
 	int temperature;
 	struct battery_thermal_protection_data *thermal;
+	static int count = 1;
 
 	if (get_charger_type(info) == POWER_SUPPLY_TYPE_UNKNOWN)
 		return;
@@ -1318,6 +1368,36 @@ static void charger_check_status(struct mtk_charger *info)
 		}
 	}
 
+	/* add limit soc max 70% */
+	if(capacity_control) {
+		if ((get_uisoc(info) >= 70) && (count > 0)) {
+			count ++;
+			if (count > 4) {
+				count = 0;
+				chr_err("%s;soc is higher 70 disable charger\n",__func__);
+				charger_dev_enable_powerpath(info->chg1_dev, false);
+				_wake_up_charger(info);
+				charging = false;
+			}
+		} else if ((get_uisoc(info) <= 60) && (!count)) {
+			chr_err("%s;soc is lower 60 enable charger\n",__func__);
+			charger_dev_enable_powerpath(info->chg1_dev, true);
+			_wake_up_charger(info);
+			charging = true;
+			count = 1;
+		} else {
+			if(!count) {
+				chr_err("%s:soc is 60~70 disable charger\n",__func__);
+				charger_dev_enable_powerpath(info->chg1_dev, false);
+				_wake_up_charger(info);
+				charging = false;
+			}
+		}
+		chr_err("%s;charge status:%d count:%d\n",__func__,charging,count);
+	}
+
+	/* add end */
+
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
@@ -1331,6 +1411,11 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
+	if(ontim_charge_onoff_control  !=  1)
+	{
+	    chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
+		charging = false;
+	}
 
 stop_charging:
 	mtk_battery_notify_check(info);

@@ -27,6 +27,15 @@
 #include <linux/power_supply.h>
 #include <linux/regulator/driver.h>
 
+
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="SGM41513";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
+
+
 /**********************************************************
  *
  *   [I2C Slave Setting]
@@ -1391,6 +1400,13 @@ static int bq25601_driver_probe(struct i2c_client *client,
 
 	pr_info("[%s]\n", __func__);
 
+	//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+	//-add by hzb for ontim debug
+
 	info = devm_kzalloc(&client->dev, sizeof(struct bq25601_info),
 			    GFP_KERNEL);
 	if (!info)
@@ -1439,6 +1455,10 @@ static int bq25601_driver_probe(struct i2c_client *client,
 
 
 	bq25601_dump_register(info->chg_dev);
+
+	//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	//-add by hzb for ontim debug
 
 	return 0;
 }
