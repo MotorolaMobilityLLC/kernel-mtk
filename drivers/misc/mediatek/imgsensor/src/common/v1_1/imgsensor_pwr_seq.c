@@ -113,7 +113,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{AFVDD, Vol_2800, 1},
 			{AVDD, Vol_2800, 3},
 			{RST, Vol_High, 1},
-			{SensorMCLK, Vol_High, 5},
+			{SensorMCLK, Vol_High, 9},
 		},
 	},
 #endif
