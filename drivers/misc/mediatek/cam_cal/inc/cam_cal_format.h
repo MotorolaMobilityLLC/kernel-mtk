@@ -141,14 +141,14 @@ struct STRUCT_CAM_CAL_PREGAIN_STRUCT {
 	unsigned int rUnitGainu4G_low;
 	unsigned int rUnitGainu4B_low;
 
-	unsigned char rValueR;
-	unsigned char rValueGr;
-	unsigned char rValueGb;
-	unsigned char rValueB;
-	unsigned char rGoldenR;
-	unsigned char rGoldenGr;
-	unsigned char rGoldenGb;
-	unsigned char rGoldenB;
+	unsigned short rValueR;
+	unsigned short rValueGr;
+	unsigned short rValueGb;
+	unsigned short rValueB;
+	unsigned short rGoldenR;
+	unsigned short rGoldenGr;
+	unsigned short rGoldenGb;
+	unsigned short rGoldenB;
 };
 
 struct STRUCT_CAM_CAL_AF_STRUCT {
