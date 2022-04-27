@@ -2756,12 +2756,10 @@
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
-	gpio_boardid:gpio_boardid {
-			compatible = "gpio,boardid";
-			gpio,boardid0 = <&pio 163 0>;
-			gpio,boardid1 = <&pio 164 0>;
-			gpio,boardid2 = <&pio 165 0>;
-			gpio,boardid3 = <&pio 166 0>;
+	hwinfo:hwinfo {
+		compatible = "ontim,hwinfo";
+		base-gpios = <&pio 0 0>;
+		discrete-memory-gpios = <&pio 163 0>;
 	};
 
 	nfc:nfc {
