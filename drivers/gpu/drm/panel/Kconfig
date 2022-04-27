@@ -832,6 +832,17 @@ config DRM_PANEL_TIANMA_NT37701A_655_FHDP_DPHY_CMD_144HZ
 	  resolution and uses 30-bits RGB per pixel. It provides a
 	  MIPI DSI interface to host.
 
+config DRM_PANEL_CSOT_NT37701A_655_FHDP_DPHY_CMD_144HZ
+	tristate "CSOT 1080*2400 DSC DPHY CMD MODE 144HZ PANEL"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for CSOT NT7701A DSC
+	  DPHY cmd mode Full HD Plus 144HZ panel. The panel has a 1080x2400
+	  resolution and uses 30-bits RGB per pixel. It provides a
+	  MIPI DSI interface to host.
+
 config DRM_PANEL_MOT_DUMMY_VDO_60HZ
 	tristate "DRM_PANEL_MOT_DUMMY_VDO_60HZ"
 	depends on OF
