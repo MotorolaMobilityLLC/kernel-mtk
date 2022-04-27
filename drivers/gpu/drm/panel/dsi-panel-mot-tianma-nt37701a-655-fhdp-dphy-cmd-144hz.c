@@ -466,6 +466,7 @@ static struct mtk_panel_params ext_params_48hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.te_delay = 1,
 };
 
 static struct mtk_panel_params ext_params_60hz = {
@@ -523,6 +524,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.te_delay = 1,
 };
 static struct mtk_panel_params ext_params_90hz = {
 	.dyn_fps = {
@@ -579,6 +581,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.te_delay = 1,
 };
 static struct mtk_panel_params ext_params_120hz = {
 	.dyn_fps = {
@@ -635,6 +638,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.te_delay = 1,
 };
 
 static struct mtk_panel_params ext_params_144hz = {
@@ -692,6 +696,7 @@ static struct mtk_panel_params ext_params_144hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.te_delay = 1,
 };
 
 static int panel_ata_check(struct drm_panel *panel)
