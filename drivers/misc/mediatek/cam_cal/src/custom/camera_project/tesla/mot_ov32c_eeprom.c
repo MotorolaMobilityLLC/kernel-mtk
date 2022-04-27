@@ -64,7 +64,7 @@ unsigned int ov32c_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsig
 				(struct STRUCT_MOT_EEPROM_DATA *)pGetSensorCalData;
 	int read_data_size, checkSum;
 
-	memset(&pCamCalData->CalibrationStatus, NONEXISTENCE, sizeof(pCamCalData->CalibrationStatus));
+	memset(&pCamCalData->CalibrationStatus, NO_ERRORS, sizeof(pCamCalData->CalibrationStatus));
 
 	read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
 			OV32C_MOT_EEPROM_ADDR, OV32C_MOT_EEPROM_DATA_SIZE, (unsigned char *)pCamCalData->DumpAllEepromData);
