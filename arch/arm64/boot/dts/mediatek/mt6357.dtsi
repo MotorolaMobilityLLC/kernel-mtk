@@ -30,8 +30,8 @@
 
 	mt6357keys: mt6357keys {
 		compatible = "mediatek,mt6357-keys";
-		mediatek,long-press-mode = <1>;
-		power-off-time-sec = <0>;
+		mediatek,long-press-mode = <2>; // ontim: reboot when longpress powerkey and upkey
+		power-off-time-sec = <1>; // ontim: 0: 8s; 1: 11s; 2: 14s; 3: 5s
 
 		power {
 			linux,keycodes = <116>;
