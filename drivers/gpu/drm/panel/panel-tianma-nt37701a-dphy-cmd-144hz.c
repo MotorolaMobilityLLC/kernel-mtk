@@ -403,6 +403,7 @@ static struct mtk_panel_params ext_params_48hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.te_delay = 1,
 };
 
 static struct mtk_panel_params ext_params_60hz = {
@@ -457,6 +458,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.te_delay = 1,
 };
 static struct mtk_panel_params ext_params_90hz = {
 	.dyn_fps = {
@@ -510,6 +512,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.te_delay = 1,
 };
 static struct mtk_panel_params ext_params_120hz = {
 	.dyn_fps = {
@@ -563,6 +566,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.te_delay = 1,
 };
 
 
@@ -618,6 +622,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
+	.te_delay = 1,
 };
 
 
