@@ -1,0 +1,32 @@
+&i2c5 {
+	aw883xx_smartpa_0: aw883xx_smartpa@34 {
+		compatible = "awinic,aw883xx_smartpa";
+		#sound-dai-cells = <0>;
+		reset-gpio = <&pio 105 0>;
+		irq-gpio = <&pio 3 0>;
+		reg = <0x34>;
+		sound-channel = <0>;
+		re-min = <1000>;
+		re-max= <40000>;
+		status = "okay";
+	};
+	aw883xx_smartpa_1: aw883xx_smartpa@35 {
+		compatible = "awinic,aw883xx_smartpa";
+		#sound-dai-cells = <0>;
+		reg = <0x35>;
+		reset-gpio = <&pio 104 0>;
+		irq-gpio = <&pio 6 0>;
+		sound-channel = <1>;
+		re-min = <1000>;
+		re-max= <40000>;
+		status = "okay";
+	};
+};
+
+&sound {
+        mediatek,spk-i2s = <3 0>;
+        mediatek,speaker-codec {
+		sound-dai = <&aw883xx_smartpa_0 &aw883xx_smartpa_1>;
+        };
+};
+
