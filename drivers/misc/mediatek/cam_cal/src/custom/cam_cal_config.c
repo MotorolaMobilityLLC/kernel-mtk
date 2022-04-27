@@ -390,7 +390,7 @@ unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 	}
 
 	//manufacture_line
-	ret = snprintf(pCamCalData->ManufactureData.manufacture_line, MAX_CALIBRATION_STRING, "%u", tempBuf[17]);
+	ret = snprintf(pCamCalData->ManufactureData.manufacture_line, MAX_CALIBRATION_STRING, "0x%x", tempBuf[17]);
 
 	if (ret < 0 || ret >= block_size) {
 		debug_log("snprintf of mnf->manufacture_line failed");
