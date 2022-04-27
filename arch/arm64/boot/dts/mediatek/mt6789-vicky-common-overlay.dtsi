@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/gpio/gpio.h>
 #include "mediatek/mt6789-moto-common-overlay.dtsi"
 #include "mediatek/cust_mt6789_camera.dtsi"
 #include "mediatek/vicky-display.dtsi"
@@ -120,6 +121,11 @@
 	mediatek,speaker-codec {
 		sound-dai = <&spk>;
 	};
+};
+
+/* sdcard */
+&mmc1 {
+	cd-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
 };
 
 /*End of this file, DO NOT ADD ANYTHING HERE*/
