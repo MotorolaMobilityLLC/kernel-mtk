@@ -13,6 +13,7 @@
 #include "mediatek/mt6789-moto-common-overlay.dtsi"
 #include "mediatek/cust_mt6789_camera.dtsi"
 #include "mediatek/vicky-display.dtsi"
+#include "mediatek/mt6789-vicky-audio-overlay.dtsi"
 
 &dispsys_config {
 	pinctrl-names =
