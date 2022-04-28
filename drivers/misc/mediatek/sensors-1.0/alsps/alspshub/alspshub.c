@@ -72,6 +72,74 @@ enum {
 	CMC_TRC_DEBUG = 0x8000,
 } CMC_TRC;
 
+#define BUF_SIZE 64
+#define BORA_TP_VENDOR_TXD	 0
+#define BORA_TP_VENDOR_DJ    1
+
+static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
+{
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos = 0;
+	ssize_t len = 0;
+
+	if (file_name == NULL || buf == NULL)
+		return -1;
+
+	fp = filp_open(file_name, O_RDONLY, 0);
+	if (IS_ERR(fp)) {
+		pr_err("file not found.\n");
+		return -1;
+	}
+
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	memset(buf, 0x00, buf_size);
+	len = vfs_read(fp, buf, buf_size, &pos);
+	buf[buf_size - 1] = '\n';
+	filp_close(fp, NULL);
+	set_fs(fs);
+
+	return 0;
+}
+
+static int get_tp_vendor(void)
+{
+	char file_path[BUF_SIZE] = "/sys/ontim_dev_debug/touch_screen/vendor";
+	char buf[BUF_SIZE] = {0};
+	int  ret = 0;
+	int  vendor = 0;
+
+	ret = hwinfo_read_file(file_path, buf, sizeof(buf));
+	if (ret != 0) {
+		pr_err("hwinfo_read_file failed.");
+		return -1;
+	}
+
+	if (buf[strlen(buf) - 1] == '\n') {
+		buf[strlen(buf) - 1] = '\0';
+	}
+
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "bora", 4) == 0) {
+		pr_err("wtd debug bora success.\n");
+		if (strncmp(buf,"txd",3) == 0) {
+		pr_err("wtd debug lcd txd.\n");
+			vendor = BORA_TP_VENDOR_TXD;
+		} else if (strncmp(buf,"dj",2) == 0) {
+		pr_err("wtd debug dj txd.\n");
+			vendor = BORA_TP_VENDOR_DJ;
+		}
+	}
+	printk(KERN_INFO "[ALS/PS]: tp vendor:(0x%x)%s\n", vendor, buf);
+	ret = sensor_set_cmd_to_hub(ID_LIGHT, CUST_ACTION_SET_TRACE, &vendor);
+	if (ret < 0) {
+        pr_err("sensor_set_cmd_to_hub fail,(ID: %d),(action: %d),(ret: %d)\n",
+                ID_LIGHT, CUST_ACTION_SET_TRACE, ret);
+        return -1;
+	}
+	return 0;
+}
+
 long alspshub_read_ps(u8 *ps)
 {
 	long res;
@@ -681,10 +749,15 @@ static int als_enable_nodata(int en)
 	}
 
 	mutex_lock(&alspshub_mutex);
-	if (en)
+	if (en) {
+		res = get_tp_vendor();
+		if (res < 0) {
+			pr_err("get_tp_vendor failed!\n");
+		}		
 		set_bit(CMC_BIT_ALS, &obj_ipi_data->enable);
-	else
+	} else {
 		clear_bit(CMC_BIT_ALS, &obj_ipi_data->enable);
+	}
 	mutex_unlock(&alspshub_mutex);
 	return 0;
 }

@@ -907,6 +907,7 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
 	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
+
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd,
@@ -1865,7 +1866,14 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,
 				custData) + sizeof(req.set_cust_req.getInfo);
 			break;
-		default:
+		case CUST_ACTION_SET_TRACE:
+			req.set_cust_req.setTrace.action =
+				CUST_ACTION_SET_TRACE;
+			req.set_cust_req.setTrace.trace = *((int32_t *) data);
+			len = offsetof(struct SCP_SENSOR_HUB_SET_CUST_REQ,
+                                custData) + sizeof(req.set_cust_req.setTrace);
+			break;
+                default:
 			return -1;
 		}
 		break;
