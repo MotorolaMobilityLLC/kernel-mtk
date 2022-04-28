@@ -5985,11 +5985,15 @@
 			/* reserved for overlay by odm */
 		};
 
+		otg_iddig: otg_iddig {
+			compatible = "mediatek,usb_iddig_bi_eint";
+		};
+
 		extcon_usb: extcon_usb {
 			compatible = "mediatek,extcon-usb";
-			//vbus-supply = <&mt6375_otg_vbus>;
+			vbus-supply = <&sgm4154x_otg_vbus>;
 			vbus-voltage = <5000000>;
-			vbus-current = <1800000>;
+			vbus-current = <1200000>;
 			charger = <&sgm4154x_charger>;
 			tcpc = "type_c_port0";
 			mediatek,bypss-typec-sink = <1>;
@@ -6261,8 +6265,9 @@
 		/* enable_pe_plus; */
 		enable_pd20_reset;
 		power_path_support;
+		boot_battery_voltage = <2500000>;
 		max_charger_voltage = <6500000>;
-		fast_charge_voltage = <3000000>;
+		fast_charge_voltage = <2500000>;
 
 		/* charging current */
 		usb_charger_current = <500000>;
@@ -6687,6 +6692,19 @@
 		temp_t0_thres = <0>;
 		temp_t0_thres_plus_x_degree = <2>;
 		temp_neg_10_thres = <0>;
+		bc12_sel = <&mtk_ctd>;
+		boot_mode = <&chosen>;
+		phys = <&u2port0 PHY_TYPE_USB2>;
+		phy-names = "usb2-phy";
+		usb = <&usb>;
+		sgm4154x_otg_vbus: otg {
+			regulator-compatible = "sgm4154x,otg-vbus";
+			regulator-name = "usb-otg-vbus";
+			regulator-min-microvolt = <4850000>;
+			regulator-max-microvolt = <5300000>;
+			regulator-min-microamp = <1000000>;
+			regulator-max-microamp = <2200000>;
+		};
 	};
 
 	usb_type_c: wusb3801@60 {

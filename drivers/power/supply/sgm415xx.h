@@ -80,6 +80,7 @@
 #define SGM4154x_CHRG_CTRL_d	0x0d
 #define SGM4154x_INPUT_DET   	0x0e
 #define SGM4154x_CHRG_CTRL_f	0x0f
+
 /* charge status flags  */
 #define SGM4154x_CHRG_EN		BIT(4)
 #define SGM4154x_HIZ_EN		    BIT(7)
@@ -88,7 +89,8 @@
 #define SGM4154x_DPDM_ONGOING   BIT(7)
 #define SGM4154x_VBUS_GOOD      BIT(7)
 
-#define SGM4154x_BOOSTV 		GENMASK(5, 4)
+/*otg*/
+#define SGM4154x_BOOSTV		GENMASK(5, 4)
 #define SGM4154x_BOOST_LIM 		BIT(7)
 #define SGM4154x_OTG_EN		    BIT(5)
 
