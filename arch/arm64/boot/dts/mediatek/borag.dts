@@ -250,10 +250,24 @@
 		wusb-tcpc,name = "type_c_port0"; /* tcpc_device's name */
 		compatible = "mediatek,usb_type_c";
 		reg = <0x68>;
+		interrupt-parent = <&pio>;
 		wusb3801,intr_gpio = <&pio 53 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&wusb3801_int_pin_default>;
 		status = "okay";
 	};
 };
+
+&pio {
+	wusb3801_int_pin_default: wusb3801_int_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO53__FUNC_GPIO53>;
+			input-enable;
+			bias-disable;
+		};
+	};
+};
+
 //charger and cc end
 
 /*usb cable start*/

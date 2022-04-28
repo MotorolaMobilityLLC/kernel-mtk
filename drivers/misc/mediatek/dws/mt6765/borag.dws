@@ -123,10 +123,10 @@
             </eint44>
             <eint53>
                 <varName>TCPC_PD</varName>
-                <debounce_time>1</debounce_time>
-                <polarity>High</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Edge</sensitive_level>
+                <debounce_en>Disable</debounce_en>
             </eint53>
             <eint144>
                 <varName>MAIN_PMIC</varName>

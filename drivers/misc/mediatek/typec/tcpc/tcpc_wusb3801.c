@@ -536,6 +536,8 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
     uint8_t status, type;
     struct tcpc_device *tcpc;
 
+	pr_info("wusb3801:irq_work_handler\n");
+
 	tcpc = chip->tcpc;
 	tcpci_lock_typec(tcpc);
 	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_INTERRUPT);
@@ -546,7 +548,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	pr_err("REG[0x03] : 0x%02x\n", rc);
 
 	int_sts = rc & WUSB3801_INT_STS_MASK;
-	pr_err("hzn : int_sts[0x%02x]\n", int_sts);
+	pr_err("wusb3801 : int_sts[0x%02x]\n", int_sts);
 
 	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_STATUS);
 	if (rc < 0) {
@@ -562,7 +564,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	pr_err("sts[0x%02x], type[0x%02x]\n", status, type);
 
 	if (int_sts & WUSB3801_INT_DETACH) {
-		pr_err("hzn: WUSB3801_INT_DETACH\n");
+		pr_err("wusb3801: WUSB3801_INT_DETACH\n");
 #ifdef __TEST_CC_PATCH__
 		if (chip->cc_test_flag == 1) {
 			pr_err("%s: test_cc_patch not used int and return \n", __func__);
@@ -584,7 +586,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	}
 
 	if (int_sts & WUSB3801_INT_ATTACH) {
-		pr_err("hzn: WUSB3801_INT_ATTACH\n");
+		pr_err("wusb3801: WUSB3801_INT_ATTACH\n");
 #ifdef __TEST_CC_PATCH__
 		if (chip->dev_sub_id != 0xA0) {
 			if (chip->cc_test_flag == 0 &&  BITS_GET(rc, WUSB3801_CC_STS_MASK) == 0) {
@@ -645,22 +647,17 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	}
 work_unlock:
 	tcpci_unlock_typec(tcpc);
-	enable_irq(chip->irq);
 }
 
 static irqreturn_t wusb3801_intr_handler(int irq, void *data)
 {
 	struct wusb3801_chip *chip = data;
 
-	pr_err("hzn : wusb3801_intr------------------\n");
+	pr_info("wusb3801:intr_handler\n");
 
-	disable_irq_nosync(irq);
 	__pm_wakeup_event(chip->irq_wake_lock, WUSB3801_IRQ_WAKE_TIME);
 
-	if(!kthread_queue_work(&chip->irq_worker, &chip->irq_work)){
-		dev_err(&chip->client->dev, "%s: can't alloc work\n", __func__);
-		enable_irq(irq);
-	}
+	kthread_queue_work(&chip->irq_worker, &chip->irq_work);
 
 	return IRQ_HANDLED;
 }
@@ -772,7 +769,7 @@ static int wusb3801_parse_dt(struct wusb3801_chip *chip, struct device *dev)
 
 	np = of_find_node_by_name(NULL, "wusb3801_type_c_port0");
 	if (!np) {
-		pr_err("hzn: %s find node wusb3801_type_c_port0 fail\n", __func__);
+		pr_err("wusb3801: %s find node wusb3801_type_c_port0 fail\n", __func__);
 		return -ENODEV;
 	}
 
@@ -793,49 +790,6 @@ static int wusb3801_parse_dt(struct wusb3801_chip *chip, struct device *dev)
 	return ret;
 }
 
-static int wusb3801_set_mode(struct wusb3801_chip *chip, uint8_t mode)
-{
-	int rc = 0;
-
-	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL0);
-	if (rc < 0) {
-		pr_err("%s: fail to read mode\n", __func__);
-		return rc;
-	}
-	rc &= ~WUSB3801_MODE_MASK;
-        rc &= ~WUSB3801_INT_MASK;//Disable the chip interrupt
-	rc |= mode;
-        rc = wusb3801_i2c_write8(chip->tcpc,
-			   WUSB3801_REG_CONTROL0, rc);
-
-	if (rc < 0) {
-		pr_err("failed to write mode(%d)\n", rc);
-		return rc;
-	}
-
-	//Clear the chip interrupt
-	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_INTERRUPT);
-	if (rc < 0) {
-		pr_err("%s: fail to clear chip interrupt\n", __func__);
-		return rc;
-	}
-
-	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL0);
-	if (rc < 0) {
-		pr_err("%s: fail to read chip interrupt\n", __func__);
-		return rc;
-	}
-
-	rc |= WUSB3801_INT_MASK;//enable the chip interrupt
-	rc = wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL0, rc);
-	if (rc < 0) {
-		pr_err("failed to enable chip interrupt(%d)\n", rc);
-		return rc;
-	}
-
-	return rc;
-}
-
 static int wusb3801_tcpcdev_init(struct wusb3801_chip *chip, struct device *dev)
 {
 	struct tcpc_desc *desc;
@@ -847,7 +801,7 @@ static int wusb3801_tcpcdev_init(struct wusb3801_chip *chip, struct device *dev)
 	if (!desc)
 		return -ENOMEM;
 
-	pr_err("hzn: %s\n", __func__);
+	pr_err("wusb3801: %s\n", __func__);
 
 	if (of_property_read_u32(np, "mt-tcpc,role_def", &val) >= 0) {
 		if (val >= TYPEC_ROLE_NR)
@@ -927,7 +881,7 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 
 	pr_err("%s name = %s, gpio = %d\n", __func__,
 				chip->tcpc_desc->name, chip->irq_gpio);
-/*
+
 	ret = devm_gpio_request(chip->dev, chip->irq_gpio, name);
 	if (ret < 0) {
 		pr_err("Error: failed to request GPIO%d (ret = %d)\n",
@@ -941,7 +895,10 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 		chip->irq_gpio, ret);
 		goto init_alert_err;
 	}
-*/
+
+	ret = gpio_get_value(chip->irq_gpio);
+	pr_err("wusb3801 : IRQ gpio val = %d\n", ret);
+
 	chip->irq = gpio_to_irq(chip->irq_gpio);
 	if (chip->irq <= 0) {
 		pr_err("%s gpio to irq fail, chip->irq(%d)\n",
@@ -962,18 +919,16 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 	sched_setscheduler(chip->irq_worker_task, SCHED_FIFO, &param);
 	kthread_init_work(&chip->irq_work, wusb3801_irq_work_handler);
 
-	pr_err("IRQF_NO_THREAD Test\r\n");
 	//huanglei add for reg 0x08& 0x0F write zero fail begin
     wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_02, 0x00);
     wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_09, 0x00);
 	//huanglei add for reg 0x08& 0x0F write zero fail end
 
-
+	pr_info("IRQF_NO_THREAD Test\n");
 	ret = request_irq(chip->irq, wusb3801_intr_handler,
-		IRQF_TRIGGER_LOW | IRQF_NO_THREAD | IRQF_NO_SUSPEND, name, chip);
-
+		IRQF_TRIGGER_FALLING | IRQF_NO_THREAD | IRQF_NO_SUSPEND, name, chip);
 	if (ret < 0) {
-		pr_err("hzn: failed to request irq%d (gpio = %d, ret = %d)\n",
+		pr_err("wusb3801: failed to request irq%d (gpio = %d, ret = %d)\n",
 			chip->irq, chip->irq_gpio, ret);
 		goto init_alert_err;
 	}
@@ -1155,6 +1110,8 @@ err_create_file:
 	device_remove_file(&client->dev, &dev_attr_typec_cc_orientation);
 #endif /* __TEST_CC_PATCH__ */
 err_create_fregdump_file:
+	disable_irq(chip->irq);
+	free_irq(chip->irq, chip);
 	device_remove_file(&client->dev, &dev_attr_wusb3801_regdump);
 err_irq_init:
 	tcpc_device_unregister(chip->dev, chip->tcpc);
@@ -1240,14 +1197,67 @@ static int wusb3801_set_chip_state(struct wusb3801_chip *chip, uint8_t state)
 	return rc;
 }
 
+static int wusb3801_set_mode(struct wusb3801_chip *chip, uint8_t mode)
+{
+	int rc = 0;
+
+	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL0);
+	if (rc < 0) {
+		pr_err("%s: fail to read mode\n", __func__);
+		return rc;
+	}
+	rc &= ~WUSB3801_MODE_MASK;
+        rc &= ~WUSB3801_INT_MASK;//Disable the chip interrupt
+	rc |= mode;
+        rc = wusb3801_i2c_write8(chip->tcpc,
+			   WUSB3801_REG_CONTROL0, rc);
+
+	if (rc < 0) {
+		pr_err("failed to write mode(%d)\n", rc);
+		return rc;
+	}
+
+	//Clear the chip interrupt
+	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_INTERRUPT);
+	if (rc < 0) {
+		pr_err("%s: fail to clear chip interrupt\n", __func__);
+		return rc;
+	}
+
+	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL0);
+	if (rc < 0) {
+		pr_err("%s: fail to read chip interrupt\n", __func__);
+		return rc;
+	}
+
+	rc |= WUSB3801_INT_MASK;//enable the chip interrupt
+	rc = wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL0, rc);
+	if (rc < 0) {
+		pr_err("failed to enable chip interrupt(%d)\n", rc);
+		return rc;
+	}
+
+	return rc;
+}
+
 static void wusb3801_shutdown(struct i2c_client *client)
 {
 	struct wusb3801_chip *chip = i2c_get_clientdata(client);
 
-	if (IS_ERR_VALUE_64(wusb3801_set_mode(chip, WUSB3801_SNK)) ||
-			IS_ERR_VALUE_64(wusb3801_set_chip_state(chip,
-					WUSB3801_STATE_ERROR_RECOVERY)))
-		pr_err("%s: failed to set sink mode\n", __func__);
+	pr_info("wusb3801: wusb3801_shutdown\n");
+
+	if (chip != NULL) {
+		if (chip->irq){
+			disable_irq(chip->irq);
+			free_irq(chip->irq, chip);
+		}
+		tcpm_shutdown(chip->tcpc);
+	}
+	else{
+		if (IS_ERR_VALUE_64(wusb3801_set_mode(chip, WUSB3801_SNK)) ||
+				IS_ERR_VALUE_64(wusb3801_set_chip_state(chip, WUSB3801_STATE_ERROR_RECOVERY)))
+			pr_err("%s: failed to set sink mode\n", __func__);
+	}
 }
 
 
