@@ -116,6 +116,19 @@
 	};
 };
 
+&i2c3 {
+       nfc_pn5xx: nfc_pn5xx@28 {
+		compatible = "nxp,pn5xx";
+		reg = <0x28>;
+		interrupt-parent = <&pio>;
+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 1 0>;
+		nxp,pn544-irq = <&pio 1 0>;
+		nxp,pn544-ven = <&pio 150 0>;
+		nxp,pn544-fd = <&pio 99 0>;
+		status = "okay";
+	};
+};
+
 &sound {
 	mediatek,spk-i2s = <3 0>;
 	mediatek,speaker-codec {
