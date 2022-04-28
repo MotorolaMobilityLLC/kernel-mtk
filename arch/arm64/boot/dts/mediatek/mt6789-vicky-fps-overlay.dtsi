@@ -1,0 +1,98 @@
+
+&pio {
+
+	fingerfp_rst_high: fingerfp_rst_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerfp_rst_low: fingerfp_rst_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerfp_irq_active: fingerfp_irq_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO8__FUNC_GPIO8>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerfp_spi_active: fingerfp_spi_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO42__FUNC_SPI3_CLK>, <PINMUX_GPIO43__FUNC_SPI3_CSB>, <PINMUX_GPIO44__FUNC_SPI3_MO>, <PINMUX_GPIO45__FUNC_SPI3_MI>;
+			drive-strength = <2>;
+		};
+	};
+
+	fingerfp_spi_default: fingerfp_spi_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO42__FUNC_GPIO42>, <PINMUX_GPIO43__FUNC_GPIO43>, <PINMUX_GPIO44__FUNC_GPIO44>, <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	fingerfp_vcc_high: fingerfp_vcc_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerfp_vcc_low: fingerfp_vcc_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+/* FINGERPRINT start */
+&spi3 {
+	status = "okay";
+	/* tee-only;*/
+	fingerprint@0 {
+		compatible = "mediatek,fingerprint";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		status = "okay";
+	};
+};
+
+&odm {
+	fp_egistec {
+		compatible = "fp-egistec";
+		interrupt-parent = <&pio>;
+		interrupts = <10 IRQ_TYPE_EDGE_RISING 10 0>;
+
+		fp-ctrl-power;
+
+		egistec,gpio_reset = <&pio 10 0x0>;
+		egistec,gpio_irq = <&pio 8 0x0>;
+		fp-gpio-vcc-enable;
+		egistec,gpio_vcc_en = <&pio 153 0x0>;
+
+		pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active", "egis_spi_active", "egis_spi_default","egis_vcc_high", "egis_vcc_low";
+		pinctrl-0 = <&fingerfp_rst_high>;
+		pinctrl-1 = <&fingerfp_rst_low>;
+		pinctrl-2 = <&fingerfp_irq_active>;
+		pinctrl-3 = <&fingerfp_spi_active>;
+		pinctrl-4 = <&fingerfp_spi_default>;
+		pinctrl-5 = <&fingerfp_vcc_high>;
+		pinctrl-6 = <&fingerfp_vcc_low>;
+
+		status="okay";
+	};
+
+};
+
+/*End of this file, DO NOT ADD ANYTHING HERE*/
