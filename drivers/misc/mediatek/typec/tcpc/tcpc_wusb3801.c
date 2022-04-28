@@ -45,6 +45,14 @@
 #include <linux/sched/rt.h>
 #endif
 
+#include <ontim/ontim_dev_dgb.h>
+char typec_vendor_name[50]="wusb3801";
+DEV_ATTR_DECLARE(typec)
+DEV_ATTR_DEFINE("vendor",typec_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(typec,typec,8);
+
+
 #define __TEST_CC_PATCH__
 
 /*
@@ -1026,6 +1034,14 @@ static int wusb3801_i2c_probe(struct i2c_client *client,
 	bool use_dt = client->dev.of_node;
 
 	pr_err("%s\n", __func__);
+
+	//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+	//-add by hzb for ontim debug
+
 	if (i2c_check_functionality(client->adapter,
 			I2C_FUNC_SMBUS_I2C_BLOCK | I2C_FUNC_SMBUS_BYTE_DATA))
 		pr_err("I2C functionality : OK...\n");
@@ -1100,6 +1116,10 @@ static int wusb3801_i2c_probe(struct i2c_client *client,
     wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_02, 0x00);
     wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_09, 0x00);
 	//huanglei add for reg 0x08& 0x0F write zero fail end
+
+	//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	//-add by hzb for ontim debug
 
 	pr_err("%s probe OK!\n", __func__);
 

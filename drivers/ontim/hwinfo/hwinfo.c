@@ -327,29 +327,6 @@ static int get_battary_vol(void)
 	return 0;
 }
 
-#define BATTARY_IN_SUSPEND_FILE "/sys/class/power_supply/battery/input_suspend"
-static int get_battery_input_suspend(void)
-{
-	char buf[64] = {0};
-	int ret = 0;
-	int input_suspend_value = 0;
-
-	ret = hwinfo_read_file(BATTARY_IN_SUSPEND_FILE, buf, sizeof(buf));
-	if (ret != 0)
-	{
-		printk(KERN_CRIT "input_suspend_value failed.");
-		return -1;
-	}
-	printk(KERN_INFO "Battary input_suspend_value %s\n", buf);
-	if (buf[strlen(buf) - 1] == '\n')
-		buf[strlen(buf) - 1] = '\0';
-	sscanf(buf, "%d", &input_suspend_value);
-
-	strcpy(hwinfo[battery_input_suspend].hwinfo_buf, buf);
-
-	return 0;
-}
-
 static int set_backaux2_camera_otp_status(const char * buf, int n)
 {
 	strncpy(backaux2_cam_otp_status, buf, n);
@@ -387,21 +364,7 @@ static int set_front_camera_otp_status(const char * buf, int n)
 	return 0;
 }
 
-static int put_battery_input_suspend(const char * buf, int n)
-{
-	int ret = 0;
-
-	ret = hwinfo_write_file(BATTARY_IN_SUSPEND_FILE, buf, 1);
-	if (ret != 0)
-	{
-		printk(KERN_CRIT "input_suspend_value failed.");
-		return -1;
-	}
-
-	return 0;
-}
-
-#define BATTARY_CHARGING_EN_FILE "/sys/bus/platform/devices/charger/input_current"
+#define BATTARY_CHARGING_EN_FILE "/sys/devices/platform/charger/charge_onoff_ctrl"
 static int get_battery_charging_enabled(void)
 {
 	char buf[64] = {0};
@@ -438,7 +401,7 @@ static int put_battery_charging_enabled(const char * buf, int n)
 	return 0;
 }
 
-#define TYPEC_VENDOR_FILE "/sys/class/power_supply/usb/typec_mode"
+#define TYPEC_VENDOR_FILE "/sys/ontim_dev_debug/typec/vendor"
 static ssize_t get_typec_vendor(void)
 {
 	char buf[64] = {0};
@@ -459,7 +422,7 @@ static ssize_t get_typec_vendor(void)
 	return 0;
 }
 
-#define TYPEC_CC_STATUS_FILE "/sys/class/power_supply/usb/typec_cc_orientation"
+#define TYPEC_CC_STATUS_FILE "/sys/class/tcpc/type_c_port0/device/typec_cc_orientation"
 static ssize_t get_typec_cc_status(void)
 {
 	char buf[BUF_SIZE] = {0};
@@ -1115,9 +1078,6 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case BATTARY_CAP:
 		get_battary_cap();
 		break;
-	case battery_input_suspend:
-		get_battery_input_suspend();
-		break;
 	case battery_charging_enabled:
 		get_battery_charging_enabled();
 		break;
@@ -1249,9 +1209,6 @@ static ssize_t hwinfo_store(struct kobject *kobj, struct kobj_attribute *attr, c
 
 	switch (i)
 	{
-	case battery_input_suspend:
-		put_battery_input_suspend(buf, n);
-		break;
 	case battery_charging_enabled:
 		put_battery_charging_enabled(buf, n);
 		break;
