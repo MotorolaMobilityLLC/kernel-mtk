@@ -675,6 +675,7 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 	struct wusb3801_chip *chip = tcpc_get_dev_data(tcpc);
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
 	int ret;
+	int nvalue = 0;
 	char *name;
 	int len;
 
@@ -723,6 +724,21 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 	kthread_init_work(&chip->irq_work, wusb3801_irq_work_handler);
 
 	pr_info("IRQF_NO_THREAD Test\r\n");
+
+	/*for reset*/
+	ret = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL1);
+	pr_err("%s: Control1 value (0x%02x) \n", __func__,ret);
+
+	nvalue = (BITS_GET(ret, 0) == 0x01) ? (ret & 0xFE) : (ret | 0x01);
+	ret = wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL1, nvalue);
+	pr_err("%s: Control1 write ret (0x%02x) \n", __func__, ret);
+
+	/*for REG 2 init*/
+	ret = wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL0, 0x24);
+	pr_err("%s: CONTROL0 write ret (0x%02x) \n", __func__, ret);
+
+	ret = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL0);
+	pr_err("%s: CONTROL0 value (0x%02x) \n", __func__,ret);
 //huanglei add for reg 0x08& 0x0F write zero fail begin
     wusb3801_i2c_write8(chip->tcpc,
         WUSB3801_REG_TEST_02, 0x00);
