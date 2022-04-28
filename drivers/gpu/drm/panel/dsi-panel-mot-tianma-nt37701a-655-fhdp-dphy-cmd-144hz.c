@@ -29,11 +29,13 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
-#include "dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha.h"
+#include "dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha-v2.h"
+#include "dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha-v3.h"
 
 enum panel_version{
 	PANEL_V1 = 1,
 	PANEL_V2,
+	PANEL_V3,
 };
 
 struct lcm {
@@ -132,7 +134,11 @@ static void lcm_panel_init(struct lcm *ctx)
 {
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x6F, 0x06);
-	lcm_dcs_write_seq_static(ctx, 0xB5, 0x00, 0x18, 0x4F);
+	if (ctx->version == PANEL_V3)
+		lcm_dcs_write_seq_static(ctx, 0xB5, 0x00, 0x15, 0x4F);
+	else
+		lcm_dcs_write_seq_static(ctx, 0xB5, 0x00, 0x18, 0x4F);
+
 	lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xB2, 0x11);
 	lcm_dcs_write_seq_static(ctx, 0x6F, 0x0F);
@@ -206,6 +212,9 @@ static void lcm_panel_init(struct lcm *ctx)
 		lcm_dcs_write_seq_static(ctx, 0xE1, 0x63);
 	}
 	lcm_dcs_write_seq_static(ctx, 0x29);
+
+	if (ctx->version == PANEL_V3)
+		lcm_dcs_write_seq_static(ctx, 0x5F, 0x80);
 
 	pr_info("%s-\n", __func__);
 }
@@ -958,35 +967,31 @@ static struct mtk_panel_para_table panel_lhbm_off[] = {
 	{2, {0x86, 0x01}},
 };
 
-static void set_lhbm_alpha(unsigned int bl_level)
+static void set_lhbm_alpha(unsigned int bl_level, enum panel_version version)
 {
 	struct mtk_panel_para_table *pTable = &panel_lhbm_on[1];
 	unsigned int alpha = 0;
-/*
-	if((bl_level < 4095) && (bl_level > 3514))
-		alpha = bl_level;
-	else if((bl_level < 3515) && (bl_level > 1327))
-		alpha = 9955 * bl_level / 10000 + 17;
-	else
-		alpha = (3*bl_level*bl_level + 4754*bl_level)/10000 + 267;
-*/
-	if (bl_level < ARRAY_SIZE(lhbm_alpha))
-		alpha = lhbm_alpha[bl_level];
-	else
-		bl_level = ARRAY_SIZE(lhbm_alpha) -1;
+
+	if (version == PANEL_V3) {
+		if (bl_level > ARRAY_SIZE(lhbm_alpha_v3)) bl_level = ARRAY_SIZE(lhbm_alpha_v3) -1;
+		alpha = lhbm_alpha_v3[bl_level];
+	} else {
+		if (bl_level > ARRAY_SIZE(lhbm_alpha_v2)) bl_level = ARRAY_SIZE(lhbm_alpha_v2) -1;
+		alpha = lhbm_alpha_v2[bl_level];
+	}
 
 	pTable->para_list[1] = (alpha >> 8) & 0xFF;
 	pTable->para_list[2] = alpha & 0xFF;
 	pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
 }
 
-static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
+static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, enum panel_version version)
 {
 	unsigned int para_count = 0;
 	struct mtk_panel_para_table *pTable;
 
 	if (on) {
-		set_lhbm_alpha(bl_level);
+		set_lhbm_alpha(bl_level, version);
 		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_on;
 	} else {
@@ -1007,16 +1012,16 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, v
 	{
 		case 0:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl, ctx->version);
 			break;
 		case 1:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl, ctx->version);
 			cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		case 2:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl, ctx->version);
 			else
 				cb(dsi, handle, &hbm_on_table, 1);
 			break;
