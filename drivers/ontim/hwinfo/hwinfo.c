@@ -19,6 +19,11 @@
 #include <asm/system_misc.h>
 #include "../../misc/mediatek/include/mt-plat/mtk_boot_common.h"
 
+#include "SCP_sensorHub.h" 
+#include "sensor_list.h"
+#include "SCP_power_monitor.h"
+#include "hwmsensor.h"
+
 #undef  pr_fmt
 #define pr_fmt(fmt) "[hwinfo] " fmt
 
@@ -541,42 +546,46 @@ static ssize_t get_fingerprint_id(void)
 	return 0;
 }
 
-#define GSENSOR_VENDOR_FILE "/sys/ontim_dev_debug/gsensor/vendor"
 static ssize_t get_gsensor_id(void)
 {
-	char buf[MAX_HWINFO_SIZE] = {};
-	int ret = 0;
+	int err = 0;
+	struct sensorInfo_t devinfo;
 
-	ret = hwinfo_read_file(GSENSOR_VENDOR_FILE, buf, sizeof(buf));
-	if (ret != 0) {
-		printk(KERN_CRIT "gsensor failed.");
+	memset(&devinfo, 0, sizeof(struct sensorInfo_t));
+
+  	err = sensor_set_cmd_to_hub(ID_ACCELEROMETER,
+        	CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+	if (err < 0) {
+		pr_err("sensor(%d) not register\n", ID_ACCELEROMETER);
 		return -1;
 	}
-	printk(KERN_INFO "gsensor vendor: %s\n", buf);
-	if (buf[strlen(buf) - 1] == '\n')
-		buf[strlen(buf) - 1] = '\0';
 
-	strcpy(hwinfo[GSENSOR_MFR].hwinfo_buf, buf);
+	printk(KERN_INFO "gsensor vendor: %s\n", devinfo.name);
+	if (devinfo.name[strlen(devinfo.name) - 1] == '\n')
+	devinfo.name[strlen(devinfo.name) - 1] = '\0';
 
+	strcpy(hwinfo[GSENSOR_MFR].hwinfo_buf, devinfo.name);
 	return 0;
 }
 
-#define ALSPS_VENDOR_FILE "/sys/ontim_dev_debug/als_prox/vendor"
+
 static ssize_t get_alsps_id(void)
 {
-	char buf[MAX_HWINFO_SIZE] = {};
-	int ret = 0;
-
-	ret = hwinfo_read_file(ALSPS_VENDOR_FILE, buf, sizeof(buf));
-	if (ret != 0) {
-		printk(KERN_CRIT "als_prox failed.");
+	int err = 0, sensor = -1;
+	struct sensorInfo_t devinfo;
+	memset(&devinfo, 0, sizeof(struct sensorInfo_t));
+	err = sensor_set_cmd_to_hub(ID_PROXIMITY,
+	CUST_ACTION_GET_SENSOR_INFO, &devinfo);
+	if (err < 0) {
+		pr_err("sensor(%d) not register\n", ID_PROXIMITY);
 		return -1;
 	}
-	printk(KERN_INFO "als_prox vendor: %s\n", buf);
-	if (buf[strlen(buf) - 1] == '\n')
-		buf[strlen(buf) - 1] = '\0';
 
-	strcpy(hwinfo[ALSPS_MFR].hwinfo_buf, buf);
+	printk(KERN_INFO "als_prox vendor: %s\n", devinfo.name);
+	if (devinfo.name[strlen(devinfo.name) - 1] == '\n')
+		devinfo.name[strlen(devinfo.name) - 1] = '\0';
+
+	strcpy(hwinfo[ALSPS_MFR].hwinfo_buf, devinfo.name);
 
 	return 0;
 }

@@ -16,6 +16,9 @@ ifeq ($(BUILD_SMT),YES)
     $(info ++++++++++++++++++++++++++firefly++++++++++++++++ SMT version)
 endif
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/hwmon/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/sensorHub/inc_v1
+
 #obj-y += gpio_boardid.o
 obj-y += hwinfo.o
 #obj-y += board_id_adc.o
