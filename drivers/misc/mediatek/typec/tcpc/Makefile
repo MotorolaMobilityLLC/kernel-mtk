@@ -24,3 +24,7 @@ tcpc_class-objs += tcpci_event.o \
 		pd_policy_engine_dbg.o pd_policy_engine_com.o pd_dpm_alt_mode_dc.o
 endif
 obj-$(CONFIG_TCPC_CLASS) += tcpc_class.o tcpci_late_sync.o pd_dbg_info.o rt_pd_manager.o
+
+#moto-charger@jianyong.pan  20220412 start
+obj-$(CONFIG_TCPC_WUSB3801) += tcpc_wusb3801.o
+#moto-charger@jianyong.pan  20220412 end
