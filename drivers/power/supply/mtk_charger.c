@@ -65,6 +65,8 @@
 #include "moto_chg_tcmd.h"
 #include <linux/of_gpio.h>
 
+#define _CONFIG_CHARGER_SGM415XX_
+
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -3896,6 +3898,7 @@ static void kpoc_power_off_check(struct mtk_charger *info)
 }
 #endif
 
+#ifndef _CONFIG_CHARGER_SGM415XX_
 static void charger_status_check(struct mtk_charger *info)
 {
 	union power_supply_propval online, status;
@@ -3926,7 +3929,7 @@ static void charger_status_check(struct mtk_charger *info)
 		power_supply_changed(info->psy1);
 	info->is_charging = charging;
 }
-
+#endif
 
 static char *dump_charger_type(int chg_type, int usb_type)
 {
@@ -4033,14 +4036,18 @@ static int charger_routine_thread(void *arg)
 			info->can_charging == true) {
 			if (info->algo.do_algorithm)
 				info->algo.do_algorithm(info);
+#ifndef _CONFIG_CHARGER_SGM415XX_
 			sc_update(info);
 			wakeup_sc_algo_cmd(&info->sc.data, SC_EVENT_CHARGING, 0);
 			charger_status_check(info);
+#endif
 		} else {
 			chr_debug("disable charging %d %d %d\n",
 			    is_disable_charger(info), is_charger_on, info->can_charging);
+#ifndef _CONFIG_CHARGER_SGM415XX_
 			sc_update(info);
 			wakeup_sc_algo_cmd(&info->sc.data, SC_EVENT_STOP_CHARGING, 0);
+#endif
 		}
 		mmi_updata_batt_status(info);
 		spin_lock_irqsave(&info->slock, flags);
@@ -4423,6 +4430,9 @@ static int psy_charger_get_property(struct power_supply *psy,
 			val->intval = true;
 		else
 			val->intval = false;
+		break;
+	case POWER_SUPPLY_PROP_TYPE:
+		val->intval = get_charger_type(info);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = info->enable_hv_charging;

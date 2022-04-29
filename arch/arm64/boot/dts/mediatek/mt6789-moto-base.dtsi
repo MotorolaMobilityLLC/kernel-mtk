@@ -27,7 +27,7 @@
 	/delete-property/ enable_dynamic_mivr;
 };
 
-&mt6375_typec {
+&usb_type_c {
 	/delete-property/ tcpc,en_wd;
 	/delete-property/ tcpc,en_wd_sbu_polling;
 	/delete-property/ tcpc,en_wd_polling_only;
