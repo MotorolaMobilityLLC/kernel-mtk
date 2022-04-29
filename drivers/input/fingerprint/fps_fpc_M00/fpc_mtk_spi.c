@@ -89,7 +89,6 @@ struct fpc_data {
 	int power_ctl_gpio;
 	bool wakeup_enabled;
 	struct wakeup_source *ttw_wl;
-	bool clocks_enabled;
 
 	#ifdef CONFIG_FPC_COMPAT
     bool compatible_enabled;
@@ -102,6 +101,8 @@ extern void mt_spi_disable_master_clk(struct spi_device *spidev);
 extern void mt_spi_enable_master_clk(struct spi_device *spidev);
 bool fpc1022_fp_exist = false;
 
+bool g_fpsensor_clocks_enabled;
+struct spi_device *g_fpsensor_spidev;
 
 static irqreturn_t fpc_irq_handler(int irq, void *handle);
 
@@ -130,25 +131,24 @@ exit:
 	return rc;
 }
 
-static int set_clks(struct fpc_data *fpc, bool enable)
+int set_clks(bool enable)
 {
-	int rc = 0;
-	if(fpc->clocks_enabled == enable)
-		return rc;
+	static int g_fpsensor_clocks_enabled = 0;
+
+	if(g_fpsensor_clocks_enabled == enable)
+		return g_fpsensor_clocks_enabled;
 	if (enable) {
-		mt_spi_enable_master_clk(fpc->spidev);
-		fpc->clocks_enabled = true;
-		rc = 1;
+		mt_spi_enable_master_clk(g_fpsensor_spidev);
+		g_fpsensor_clocks_enabled = true;
 	} else {
-		mt_spi_disable_master_clk(fpc->spidev);
-		fpc->clocks_enabled = false;
-		rc = 0;
+		mt_spi_disable_master_clk(g_fpsensor_spidev);
+		g_fpsensor_clocks_enabled = false;
 	}
 
-	return rc;
+	return g_fpsensor_clocks_enabled;
 }
 
-
+EXPORT_SYMBOL(set_clks);
 
 static int hw_reset(struct  fpc_data *fpc)
 {
@@ -372,8 +372,7 @@ static DEVICE_ATTR(irq, S_IRUSR | S_IWUSR, irq_get, irq_ack);
 static ssize_t clk_enable_set(struct device *device,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct fpc_data *fpc = dev_get_drvdata(device);
-	return set_clks(fpc, (*buf == '1')) ? : count;
+	return set_clks((*buf == '1')) ? : count;
 }
 static DEVICE_ATTR(clk_enable, S_IWUSR, NULL, clk_enable_set);
 
@@ -405,20 +404,23 @@ static ssize_t compatible_all_set(struct device *dev,
 	struct spi_device *spidev = fpc->spidev;
     struct platform_device *pdev = NULL;
 	dev_err(dev, "compatible all enter %d\n", fpc->compatible_enabled);
-	
+
 	if(!strncmp(buf, "enable", strlen("enable")) && fpc->compatible_enabled != 1){
-  
+
         node = of_find_compatible_node(NULL, NULL, "mediatek,fingerprint-pinctrl");
         if (node){
             pdev = of_find_device_by_node(node);
         }else{
             dev_err(dev, "cannot find mediatek,fingerprint-pinctrl node\n");
         }
+
+        fpc->compatible_enabled = 1;
+
 		fpc->pinctrl_fpc = devm_pinctrl_get(&pdev->dev);
 		if (IS_ERR(fpc->pinctrl_fpc)) {
 			rc = PTR_ERR(fpc->pinctrl_fpc);
 			dev_err(fpc->dev, "Cannot find pinctrl_fpc rc = %d.\n", rc);
-			set_clks(fpc,false );
+			set_clks(false);
 			return rc;
 		}
 
@@ -428,7 +430,7 @@ static ssize_t compatible_all_set(struct device *dev,
 			if (IS_ERR(state)) {
 				dev_err(dev, "cannot find '%s'\n", n);
 				rc = -EINVAL;
-				set_clks(fpc,false );
+				set_clks(false);
 				return rc;
 			}
 			dev_info(dev, "found pin control %s\n", n);
@@ -436,17 +438,17 @@ static ssize_t compatible_all_set(struct device *dev,
 		}
 
 		fpc_power_supply(fpc);
-		fpc->clocks_enabled = false;
-		set_clks(fpc, true);
+		//g_fpsensor_clocks_enabled = false;
+		set_clks(true);
 		(void)hw_reset(fpc);
-		
+
 		fpc_sensor_exit = check_hwid(spidev);
 		if (fpc_sensor_exit < 0) {
 				pr_notice("%s: %d get chipid fail. now exit\n",
 					  __func__, __LINE__);
 				devm_pinctrl_put(fpc->pinctrl_fpc);
 				gpio_free(fpc->rst_gpio);
-				set_clks(fpc,false );
+				set_clks(false);
 
 				fpc1022_fp_exist = false;
 				spidev->dev.of_node = fpc_node;
@@ -457,7 +459,7 @@ static ssize_t compatible_all_set(struct device *dev,
 		if (node_eint == NULL) {
 			rc = -EINVAL;
 			dev_err(fpc->dev, "cannot find node_eint rc = %d.\n", rc);
-			set_clks(fpc,false );
+			set_clks(false);
 			return rc;
 		}
 
@@ -472,11 +474,11 @@ static ssize_t compatible_all_set(struct device *dev,
 		if (!irq_num) {
 			rc = -EINVAL;
 			dev_err(fpc->dev, "get irq_num error rc = %d.\n", rc);
-			set_clks(fpc,false );
+			set_clks(false);
 			return rc;
 		}
 
-		
+
 		dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
 		dev_dbg(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
 
@@ -492,7 +494,7 @@ static ssize_t compatible_all_set(struct device *dev,
 			dev_name(dev), fpc);
 		if (rc) {
 			dev_err(dev, "could not request irq %d\n", irq_num);
-			set_clks(fpc,false );
+			set_clks(false);
 			return rc;
 		}
 		dev_dbg(dev, "requested irq %d\n", irq_num);
@@ -500,8 +502,7 @@ static ssize_t compatible_all_set(struct device *dev,
 		/* Request that the interrupt should be wakeable */
 		enable_irq_wake(irq_num);
 		//wakeup_source_init(&fpc->ttw_wl, "fpc_ttw_wl");
-		
-		fpc->compatible_enabled = 1;
+		//fpc->compatible_enabled = 1;
 		rc = hw_reset(fpc);
 		dev_info(dev, "%s: ok\n", __func__);
 		return count;
@@ -509,11 +510,20 @@ static ssize_t compatible_all_set(struct device *dev,
 	}else if(!strncmp(buf, "disable", strlen("disable")) && fpc->compatible_enabled != 0){
 		//sysfs_remove_group(&spidev->dev.kobj, &fpc_attribute_group);
 		//wakeup_source_trash(&fpc->ttw_wl);
-		wakeup_source_remove(fpc->ttw_wl);
-		gpio_free(fpc->rst_gpio);
-		gpio_free(fpc->irq_gpio);
-		dev_info(&spidev->dev, "%s\n", __func__);
 		fpc->compatible_enabled = 0;
+		wakeup_source_remove(fpc->ttw_wl);
+		//gpio_free(fpc->rst_gpio);
+		if(gpio_is_valid(fpc->irq_gpio)){
+			gpio_free(fpc->irq_gpio);
+			dev_dbg(dev, "Release IRQ GPIO#%d.\n", fpc->rst_gpio);
+		}
+		gpio_direction_output(fpc->power_ctl_gpio, 0);
+		dev_info(dev, "cutoff power fpc->power_ctl_gpio = %d\n", gpio_get_value(fpc->power_ctl_gpio));
+		if(gpio_is_valid(fpc->power_ctl_gpio)){
+			gpio_free(fpc->power_ctl_gpio);
+			dev_dbg(dev, "Release POWER GPIO#%d.\n", fpc->power_ctl_gpio);
+		}
+		//fpc->compatible_enabled = 0;
 		return count;
 	}
 	return count;
@@ -573,7 +583,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 	struct device_node *fpc_node;
 	struct fpc_data *fpc;
 	int rc = 0;
-	
+
 #ifndef CONFIG_FPC_COMPAT
 	size_t i;
 	int fpc_sensor_exit  = 0;
@@ -582,7 +592,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 	struct device_node *node_eint, *node;
     struct platform_device *pdev = NULL;
 #endif
-	dev_dbg(dev, "%s\n", __func__);
+	dev_info(dev, "%s, %s\n", __func__, __LINE__);
 
 	fpc_node = spidev->dev.of_node;
 	spidev->dev.of_node = of_find_compatible_node(NULL, NULL, "mediatek,fpsensor");
@@ -606,7 +616,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 	fpc->spidev->mode = SPI_MODE_0;
 	fpc->spidev->bits_per_word = 8;
 	fpc->spidev->max_speed_hz = 1 * 1000 * 1000;
-
+	g_fpsensor_spidev = spidev;
 
 #ifndef CONFIG_FPC_COMPAT
 
@@ -619,7 +629,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 	if (IS_ERR(fpc->pinctrl_fpc)) {
 		rc = PTR_ERR(fpc->pinctrl_fpc);
 		dev_err(fpc->dev, "Cannot find pinctrl_fpc rc = %d.\n", rc);
-		set_clks(fpc,false );
+		set_clks(false);
 		return rc;
 	}
 
@@ -629,7 +639,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 		if (IS_ERR(state)) {
 			dev_err(dev, "cannot find '%s'\n", n);
 			rc = -EINVAL;
-			set_clks(fpc,false );
+			set_clks(false);
 			return rc;
 		}
 		dev_info(dev, "found pin control %s\n", n);
@@ -637,28 +647,29 @@ static int mtk6797_probe(struct spi_device *spidev)
 	}
 
 	fpc_power_supply(fpc);
-	fpc->clocks_enabled = false;
-	set_clks(fpc, true);
+	//g_fpsensor_clocks_enabled = false;
+	set_clks(true);
 	(void)hw_reset(fpc);
-	
 	fpc_sensor_exit = check_hwid(spidev);
 	if (fpc_sensor_exit < 0) {
 			pr_notice("%s: %d get chipid fail. now exit\n",
 				  __func__, __LINE__);
 			devm_pinctrl_put(fpc->pinctrl_fpc);
 			gpio_free(fpc->rst_gpio);
-			set_clks(fpc,false );
+			set_clks(false);
 
 			fpc1022_fp_exist = false;
 			spidev->dev.of_node = fpc_node;
+            dev_info(dev, "%s, [tep-2] %s\n", __func__, __LINE__);
 			return -EAGAIN;
 	}
+    dev_info(dev, "%s, [tep-1] %s\n", __func__, __LINE__);
 	fpc1022_fp_exist = true;
 	node_eint = of_find_compatible_node(NULL, NULL, "mediatek,fpsensor_fp_eint");
 	if (node_eint == NULL) {
 		rc = -EINVAL;
 		dev_err(fpc->dev, "cannot find node_eint rc = %d.\n", rc);
-		set_clks(fpc,false );
+		set_clks(false);
 		return rc;
 	}
 
@@ -673,11 +684,10 @@ static int mtk6797_probe(struct spi_device *spidev)
 	if (!irq_num) {
 		rc = -EINVAL;
 		dev_err(fpc->dev, "get irq_num error rc = %d.\n", rc);
-		set_clks(fpc,false );
+		set_clks(false);
 		return rc;
 	}
 
-	
 	dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
 	dev_dbg(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
 
@@ -693,7 +703,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 		dev_name(dev), fpc);
 	if (rc) {
 		dev_err(dev, "could not request irq %d\n", irq_num);
-		set_clks(fpc,false );
+		set_clks(false);
 		return rc;
 	}
 	dev_dbg(dev, "requested irq %d\n", irq_num);
@@ -701,14 +711,13 @@ static int mtk6797_probe(struct spi_device *spidev)
 	/* Request that the interrupt should be wakeable */
 	enable_irq_wake(irq_num);
 	//wakeup_source_init(&fpc->ttw_wl, "fpc_ttw_wl");
-	
 	fpc->ttw_wl = wakeup_source_create("fpc_ttw_wl");
 	wakeup_source_add(fpc->ttw_wl);
 
 	rc = sysfs_create_group(&dev->kobj, &fpc_attribute_group);
 	if (rc) {
 		dev_err(dev, "could not create sysfs\n");
-		set_clks(fpc,false );
+		set_clks(false);
 		return rc;
 	}
 

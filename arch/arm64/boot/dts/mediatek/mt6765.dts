@@ -1044,10 +1044,6 @@ firmware_class.path=/vendor/firmware";
         fingerprint_pinctrl: fingerprint_pinctrl {
             compatible = "mediatek,fingerprint-pinctrl";
         };
-        /*fingerprint_fpc: fingerprint_fpc {
-            compatible = "mediatek,fingerprint-fpc";
-            fpc,enable-wakeup;
-        };*/
         fps_fpc_eint:fps_fpc_eint {
             compatible = "mediatek,fpc-eint";
             interrupt-parent = <&pio>;
@@ -1057,6 +1053,20 @@ firmware_class.path=/vendor/firmware";
             fpc,gpio-power = <&pio 170 0x0>;
             status = "okay";
         };
+         fps_egis_eint:fps_egis_eint {
+             compatible = "mediatek,egis-eint";
+             interrupt-parent = <&pio>;
+             interrupts = <5 IRQ_TYPE_NONE 5 0>;
+             fp-ctrl-power;
+             fp-gpio-vcc-enable;
+             egistec,gpio_vcc_en = <&pio 170 0x0>;
+             egistec,gpio_reset = <&pio 22 0x0>;
+             egistec,gpio_irq = <&pio 5 0x0>;
+             //vcc_fp-supply = <&mt_pmic_vcama_ldo_reg>;   // ldo for support module vcc
+             //egis-fp,vcc-voltage = <3000000 3000000>;    // ldo voltage default 3.3V
+             //egis-fp,vcc-current = <100000>;
+             status = "okay";
+         };
 
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
