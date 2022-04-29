@@ -111,7 +111,7 @@
 		/delete-property/gate-ic;
 
 		compatible = "tianma,nt37701,cmd,144hz";
-		reg = <2>;
+		reg = <3>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 103 0>,
                           <&pio 165 0>,
@@ -133,7 +133,7 @@
 		/delete-property/gate-ic;
 
 		compatible = "tianma,nt37701,cmd,144hz";
-		reg = <1>;
+		reg = <2>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 103 0>,
                           <&pio 165 0>,
@@ -143,6 +143,27 @@
 		lhbm-enable;
 		port {
 			panel_in3: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	panel4@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "tianma,nt37701,cmd,144hz";
+		reg = <1>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 103 0>,
+                          <&pio 165 0>,
+                          <&pio 166 0>;
+		reset-gpios = <&pio 97 0>;
+		pinctrl-names = "default";
+		lhbm-enable;
+		port {
+			panel_in4: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
