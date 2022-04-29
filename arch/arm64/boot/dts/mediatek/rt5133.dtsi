@@ -39,7 +39,7 @@
 
 &i2c5 {
 	rt5133: rt5133@18 {
-		status = "ok";
+		status = "disabled";
 		compatible = "richtek,rt5133";
 		reg = <0x18>;
 		wakeup-source;

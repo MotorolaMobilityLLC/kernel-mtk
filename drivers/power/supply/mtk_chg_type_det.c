@@ -66,13 +66,14 @@ static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 	if (mci->bc12_sel == MTK_CTD_BY_MAINPMIC)
 		bc12_psy = power_supply_get_by_name("mtk_charger_type");
 	else if (mci->bc12_sel == MTK_CTD_BY_EXTCHG)
-		bc12_psy = power_supply_get_by_name("ext_charger_type");
+		bc12_psy = power_supply_get_by_name("sgm4154x-charger");
 	if (IS_ERR_OR_NULL(bc12_psy)) {
 		pr_notice("%s Couldn't get bc12_psy\n", __func__);
 		return -ENODEV;
 	}
 
 	prop.intval = attach;
+	pr_err("%s: attach= %d \n", __func__, prop.intval);
 	return power_supply_set_property(bc12_psy,
 					 POWER_SUPPLY_PROP_ONLINE, &prop);
 }
@@ -321,12 +322,13 @@ static int mtk_ctd_probe(struct platform_device *pdev)
 	struct mtk_ctd_info *mci;
 	int ret;
 
+	pr_err("%s: --start--\n", __func__);
 	mci = devm_kzalloc(&pdev->dev, sizeof(*mci), GFP_KERNEL);
 	if (!mci)
 		return -ENOMEM;
 
 	mci->dev = &pdev->dev;
-	mci->bc12_sel = MTK_CTD_BY_SUBPMIC;
+	mci->bc12_sel = MTK_CTD_BY_EXTCHG;
 	init_waitqueue_head(&mci->attach_wq);
 	atomic_set(&mci->chrdet_start, 0);
 	mutex_init(&mci->attach_lock);
