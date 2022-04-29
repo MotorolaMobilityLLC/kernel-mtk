@@ -18,5 +18,6 @@ config MTK_FINGERPRINT_SELECT
 	default "GF318M"
 
 source drivers/input/fingerprint/fps_fpc_M00/Kconfig
+source drivers/input/fingerprint/fps_egis_M00/Kconfig
 
 endmenu
