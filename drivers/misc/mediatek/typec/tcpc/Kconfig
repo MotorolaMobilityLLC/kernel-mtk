@@ -23,6 +23,16 @@ config USB_POWER_DELIVERY
 	  Power Delivery
 	  support
 
+#moto-charger@jianyong.pan  20220412 start
+config TCPC_WUSB3801
+	tristate "WUSB3801 TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	help
+	  Say Y to enable WUSB3801
+	  TypeC port Controller
+	  Driver
+#moto-charger@jianyong.pan  20220412 end
+
 config TCPC_RT1711H
 	tristate "Richtek RT1711H TypeC port Controller Driver"
 	depends on TCPC_CLASS
