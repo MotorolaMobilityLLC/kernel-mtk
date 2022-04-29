@@ -893,6 +893,18 @@ config CHARGER_RT9759
 	  for Mediatek Pump Express 5.0.
 	  It depends on config MTK_CHARGER
 
+#moto-charger@jianyong.pan  20220412 start
+config CHARGER_SGM415XX
+	tristate "Charger Driver for SGM415XX Charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  Say Yes to enable SGM415XX driver.
+	  It is mainly used as cap divider charger
+	  for Mediatek Pump Express 5.0.
+	  It depends on config MTK_CHARGER
+#moto-charger@jianyong.pan  20220412 end
+
 config RN5T618_POWER
 	tristate "RN5T618 charger/fuel gauge support"
 	depends on MFD_RN5T618
