@@ -5987,10 +5987,10 @@
 
 		extcon_usb: extcon_usb {
 			compatible = "mediatek,extcon-usb";
-			vbus-supply = <&mt6375_otg_vbus>;
+			//vbus-supply = <&mt6375_otg_vbus>;
 			vbus-voltage = <5000000>;
 			vbus-current = <1800000>;
-			charger = <&mt6375_chg>;
+			charger = <&sgm4154x_charger>;
 			tcpc = "type_c_port0";
 			mediatek,bypss-typec-sink = <1>;
 			mediatek,u2;
@@ -6282,176 +6282,17 @@
 		enable_check_vsys;
 	};
 
-	pe: pe {
-		compatible = "mediatek,charger,pe";
-		gauge = <&mtk_gauge>;
-
-		ta_12v_support;
-		ta_9v_support;
-
-		pe_ichg_level_threshold = <1000000>; /* uA */
-		ta_start_battery_soc = <0>;
-		ta_stop_battery_soc = <85>;
-		min_charger_voltage = <4600000>;
-
-		ta_ac_12v_input_current = <3200000>;
-		ta_ac_9v_input_current = <3200000>;
-		ta_ac_7v_input_current = <3200000>;
-		pe_charger_current = <3000000>;
-		vbat_threshold = <4150>;
-	};
-
-	pe2: pe2 {
-		compatible = "mediatek,charger,pe2";
-		gauge = <&mtk_gauge>;
-
-		/* PE 2.0 */
-		pe20_ichg_level_threshold = <1000000>; /* uA */
-		ta_start_battery_soc = <0>;
-		ta_stop_battery_soc = <85>;
-		min_charger_voltage = <4600000>;
-
-		/* cable measurement impedance */
-		cable_imp_threshold = <699>;
-		vbat_cable_imp_threshold = <3900000>; /* uV */
-
-		/* single charger */
-		sc_input_current = <3200000>;
-		sc_charger_current = <3000000>;
-
-		/* dual charger in series*/
-		dcs_input_current = <3200000>;
-		dcs_chg1_charger_current = <1500000>;
-		dcs_chg2_charger_current = <1500000>;
-
-		dual_polling_ieoc = <450000>;
-		slave_mivr_diff = <100000>;
-		vbat_threshold = <4150>;
-	};
-
-	pdc: pdc {
-		compatible = "mediatek,charger,pd";
-		gauge = <&mtk_gauge>;
-
-		min_charger_voltage = <4600000>;
-		pd_vbus_low_bound = <5000000>;
-		pd_vbus_upper_bound = <5000000>;
-		vsys_watt = <5000000>;
-		ibus_err = <14>;
-
-		pd_stop_battery_soc = <80>;
-
-		/* single charger */
-		sc_input_current = <3200000>;
-		sc_charger_current = <3000000>;
-
-		/* dual charger in series*/
-		dcs_input_current = <3200000>;
-		dcs_chg1_charger_current = <1500000>;
-		dcs_chg2_charger_current = <1500000>;
-
-		/* dual charger */
-		dual_polling_ieoc = <450000>;
-		slave_mivr_diff = <100000>;
-		vbat_threshold = <4150>;
-	};
-
-	pe4: pe4 {
-		compatible = "mediatek,charger,pe4";
-		gauge = <&mtk_gauge>;
-
-		min_charger_voltage = <4600000>;
-		pe40_stop_battery_soc = <80>;
-
-		high_temp_to_leave_pe40 = <46>;
-		high_temp_to_enter_pe40 = <39>;
-		low_temp_to_leave_pe40 = <10>;
-		low_temp_to_enter_pe40 = <16>;
-		ibus_err = <14>;
-
-		/* PE 4.0 cable impedance (mohm) */
-		pe40_r_cable_1a_lower = <500>;
-		pe40_r_cable_2a_lower = <351>;
-		pe40_r_cable_3a_lower = <240>;
-
-		/* single charger */
-		sc_input_current = <3200000>;
-		sc_charger_current = <3000000>;
-
-		/* dual charger in series*/
-		dcs_input_current = <3200000>;
-		dcs_chg1_charger_current = <1500000>;
-		dcs_chg2_charger_current = <1500000>;
-
-		dual_polling_ieoc = <450000>;
-		slave_mivr_diff = <100000>;
-		vbat_threshold = <4150>;
-	};
-
-	pe5: pe5 {
-		compatible = "mediatek,charger,pe5";
-		gauge = <&mtk_gauge>;
-		polling_interval = <10000>;
-		ta_cv_ss_repeat_tmin = <25>;
-		vbat_cv = <4350>;
-		start_soc_min = <0>;
-		start_soc_max = <80>;
-		start_vbat_max = <4300>;
-		idvchg_term = <500>;
-		idvchg_step = <50>;
-		ita_level = <3000 2500 2000 1500>;
-		rcable_level = <250 300 375 500>;
-		ita_level_dual = <5000 3700 3400 3000>;
-		rcable_level_dual = <230 350 450 550>;
-		idvchg_ss_init = <1000>;
-		idvchg_ss_step = <250>;
-		idvchg_ss_step1 = <100>;
-		idvchg_ss_step2 = <50>;
-		idvchg_ss_step1_vbat = <4000>;
-		idvchg_ss_step2_vbat = <4200>;
-		ta_blanking = <400>;
-		swchg_aicr = <0>;
-		swchg_ichg = <1200>;
-		swchg_aicr_ss_init = <400>;
-		swchg_aicr_ss_step = <200>;
-		swchg_off_vbat = <4250>;
-		force_ta_cv_vbat = <4250>;
-		chg_time_max = <5400>;
-		tta_level_def = <0 0 0 0 25 50 60 70 80>;
-		tta_curlmt = <0 0 0 0 0 300 600 900 (-1)>;
-		tta_recovery_area = <3>;
-		tbat_level_def = <0 0 0 5 25 40 43 46 50>;
-		tbat_curlmt = <(-1) (-1) (-1) 300 0 600 900 1050 (-1)>;
-		tbat_recovery_area = <3>;
-		tdvchg_level_def = <0 0 0 5 25 55 60 65 70>;
-		tdvchg_curlmt = <(-1) (-1) (-1) 300 0 300 600 900 (-1)>;
-		tdvchg_recovery_area = <3>;
-		tswchg_level_def = <0 0 0 5 25 65 70 75 80>;
-		tswchg_curlmt = <(-1) (-1) (-1) 200 0 200 300 400 (-1)>;
-		tswchg_recovery_area = <3>;
-		ifod_threshold = <200>;
-		rsw_min = <20>;
-		ircmp_rbat = <40>;
-		ircmp_vclamp = <0>;
-		vta_cap_min = <6800>;
-		vta_cap_max = <11000>;
-		ita_cap_min = <1000>;
-		support_ta = "pca_ta_pps", "pd_adapter";
-		allow_not_check_ta_status;
-		vbat_threshold = <4150>;
-	};
-
 	charger: charger {
 		compatible = "mediatek,charger";
 		gauge = <&mtk_gauge>;
-		charger = <&mt6375_chg>;
+		charger = <&sgm4154x_charger>;
 		bootmode = <&chosen>;
 
 		algorithm_name = "Basic";
 		charger_configuration= <0>;
 
 		/* common */
-		battery_cv = <4350000>;
+		battery_cv = <4400000>;
 		max_charger_voltage = <6500000>;
 		min_charger_voltage = <4600000>;
 
@@ -6490,35 +6331,27 @@
 		charging_host_charger_current = <1500000>;
 
 		/* dynamic mivr */
-		enable_dynamic_mivr;
+		/*enable_dynamic_mivr;*/
 		min_charger_voltage_1 = <4400000>;
 		min_charger_voltage_2 = <4200000>;
 		max_dmivr_charger_current = <1800000>;
 
 		/* fast charging algo support indicator */
-		enable_fast_charging_indicator;
+		/*enable_fast_charging_indicator;*/
 	};
-
-	rt-pd-manager {
-		compatible = "mediatek,rt-pd-manager";
-	};
-
-	pd_adapter: pd_adapter {
-		compatible = "mediatek,pd_adapter";
-		boot_mode = <&chosen>;
-		adapter_name = "pd_adapter";
-		force_cv;
-		phys = <&u2port0 PHY_TYPE_USB2>;
-		phy-names = "usb2-phy";
+	eint_chg_0: eint_chg_0 {
 	};
 
 	mtk_ctd: mtk_ctd {
 		compatible = "mediatek,mtk_ctd";
-		bc12 = <&mt6375_chg>;
-		bc12_sel = <0>;
+		bc12 = <&sgm4154x_charger>;
+		bc12_sel = <2>;
 	};
 
 	subpmic_pmu_eint: subpmic_pmu_eint {
+	};
+
+	cc_cntl_int: cc_cntl_int {
 	};
 
 	mtk_ssc: mtk_ssc {
@@ -6814,231 +6647,58 @@
 	};
 };
 
-&i2c5 {
-	clock-frequency = <1000000>;
-	mt6375: mt6375@34 {
-		compatible = "mediatek,mt6375";
-		reg = <0x34>;
-		status = "okay";
-		interrupt-parent = <&pio>;
-		interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
-		interrupt-controller;
-		#interrupt-cells = <1>;
-		wakeup-source;
-		mt6375_adc: adc {
-			compatible = "mediatek,mt6375-adc";
-			#io-channel-cells = <1>;
-			interrupts = <MT6375_ADC_DONEI>;
-			interrupt-names = "adc_donei";
-		};
-		mt6375_chg: chg {
-			compatible = "mediatek,mt6375-chg";
-			interrupts = <MT6375_FL_PWR_RDY>, <MT6375_FL_DETACH>,
-				     <MT6375_FL_VBUS_OV>, <MT6375_FL_CHG_TOUT>,
-				     <MT6375_FL_WDT>, <MT6375_FL_BC12_DN>,
-				     <MT6375_FL_AICC_DONE>, <MT6375_FL_PE_DONE>,
-				     <MT6375_FL_BATPRO_DONE>,
-				     <MT6375_ADC_VBAT_MON_OV>;
-			interrupt-names = "fl_pwr_rdy", "fl_detach",
-					  "fl_vbus_ov", "fl_chg_tout",
-					  "fl_wdt", "fl_bc12_dn",
-					  "fl_aicc_done", "fl_pe_done",
-					  "fl_batpro_done", "adc_vbat_mon_ov";
-			io-channels = <&mt6375_adc MT6375_ADC_CHGVIN>,
-				      <&mt6375_adc MT6375_ADC_VSYS>,
-				      <&mt6375_adc MT6375_ADC_VBAT>,
-				      <&mt6375_adc MT6375_ADC_IBUS>,
-				      <&mt6375_adc MT6375_ADC_IBAT>,
-				      <&mt6375_adc MT6375_ADC_TEMPJC>,
-				      <&mt6375_adc MT6375_ADC_USBDP>,
-				      <&mt6375_adc MT6375_ADC_USBDM>;
-			chg_name = "primary_chg";
-			aicr = <500>;
-			mivr = <4400>;
-			cv = <4200>;
-			ichg = <2000>;
-			ieoc = <150>;
-			wdt = <40000>;
-			/* wdt_en; */
-			te_en;
-			vbus_ov = <14500>;
-			vrec = <100>;
-			otg_lbp = <2800>;
-			ircmp_r = <16700>;
-			ircmp_v = <32>;
-			chg_tmr = <10>;
-			chg_tmr_en;
-			dcdt_sel = <600>;
-			bc12_sel = <&mtk_ctd>;
-			boot_mode = <&chosen>;
-			phys = <&u2port0 PHY_TYPE_USB2>;
-			phy-names = "usb2-phy";
-			usb = <&usb>;
-			//usb_killer_detect;
-			mt6375_otg_vbus: otg {
-				regulator-compatible = "mt6375,otg-vbus";
-				regulator-name = "usb-otg-vbus";
-				regulator-min-microvolt = <4850000>;
-				regulator-max-microvolt = <5500000>;
-				regulator-min-microamp = <500000>;
-				regulator-max-microamp = <2400000>;
-			};
-		};
-		mt6375_typec: tcpc {
-			compatible = "mediatek,mt6375-tcpc";
-			interrupts = <MT6375_PD_EVT>;
-			interrupt-names = "pd_evt";
-			/* tcpc_device's name */
-			tcpc,name = "type_c_port0";
-			/* 0: Unknown, 1: SNK, 2: SRC, 3: DRP, 4: Try.SRC, 5: Try.SNK */
-			tcpc,role_def = <5>;
-			/* 0: Default, 1: 1.5, 2: 3.0 */
-			tcpc,rp_level = <0>;
-			/* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
-			tcpc,vconn_supply  = <1>;
-			/* the number of notifier supply */
-			tcpc,notifier_supply_num = <3>;
-			io-channels = <&mt6375_adc MT6375_ADC_SBU1>,
-				      <&mt6375_adc MT6375_ADC_SBU2>;
-			charger = <&mt6375_chg>;
-			boot_mode = <&chosen>;
-			tcpc,en_wd;
-			tcpc,en_wd_sbu_polling;
-			tcpc,en_wd_polling_only;
-			tcpc,en_ctd;
-			tcpc,en_fod;
-			tcpc,en_typec_otp;
-			//tcpc,en_floatgnd;
-			wd,sbu_calib_init = <1200>;	/* mV */
-			wd,sbu_pl_bound = <200>;	/* mV */
-			wd,sbu_pl_lbound_c2c = <1100>;	/* mV */
-			wd,sbu_pl_ubound_c2c = <2600>;	/* mV */
-			wd,sbu_ph_auddev = <100>;	/* mV */
-			wd,sbu_ph_lbound = <888>;	/* mV */
-			wd,sbu_ph_lbound1_c2c = <2850>;	/* mV */
-			wd,sbu_ph_ubound1_c2c = <3150>;	/* mV */
-			wd,sbu_ph_ubound2_c2c = <3800>;	/* mV */
-			wd,sbu_aud_ubound = <1600>;	/* mV */
-			pd-data {
-				pd,vid = <0x29cf>;
-				pd,pid = <0x6375>;
-				pd,source-cap-ext = <0x637529cf 0x00000000 0x00000000
-						     0x00000000 0x00000000 0x07010000 >;
-				pd,mfrs = "RichtekTCPC";
-				/*
-				 * VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,
-				 * MAX_POWER_LV = 0x21, MAX_POWER_LVIC = 0x31
-				 * MAX_POWER_HV = 0x41, MAX_POWER_HVIC = 0x51
-				 */
-				pd,charging_policy= <0x21>;
-
-				/*
-				 * Fixed 5V, 500 mA <0x00019032>
-				 * Fixed 5V, 1A <0x00019064>
-				 * Fixed 5V, 2A <0x000190c8>
-				 * Fixed 5V, 3A <0x0001912c>
-				 * Fixed 9V, 500 mA <0x0002d032>
-				 * Fixed 9V, 1A <0x0002d064>
-				 * Fixed 5V, 1.5A <0x00019096>
-				 * Fixed 9V, 2A <0x0002d0c8>
-				 * Fixed 9V, 3A <0x0002d12c>
-				 * Variable 5-9V, 1A <0x8642d064>
-				 * Variable 5-9V, 2A <0x8642d0c8>
-				 * Variable 5-9V, 3A <0x8642d12c>
-				 * PPS 3V~5.9V, 3A <0xC0761E3C>
-				 */
-
-				pd,source-pdo-size = <1>;
-				pd,source-pdo-data = <0x00019032>;
-				/* 5V, 500 mA */
-				pd,sink-pdo-size = <2>;
-				pd,sink-pdo-data = <0x000190c8 0x000190c8> ;
-				/* 0x0002d0c8 : 9V, 2A<0x04019032 0x04019064> */
-
-				/*
-				 * No DP, host + device
-				 *	pd,id-vdo-size = <3>;
-				 *	pd,id-vdo-data =
-						<0xd00029cf 0x0 0x00010000>;
-				 * With DP
-				 *	pd,id-vdo-size = <4>;
-				 *	pd,id-vdo-data =
-				 *	<0xec0029cf 0x0 0x00010000 0x11000001>;
-				 */
-				pd,id-vdo-size = <4>;
-				pd,id-vdo-data = <0xec0029cf 0x0 0x00010000 0x11000001>;
-				bat,nr = <1>;
-				pd,country_nr = <0>;
-
-				bat-info0 {
-					bat,vid = <0x29cf>;
-					bat,pid = <0x6375>;
-					bat,mfrs = "bat1";
-					bat,design_cap = <3000>;
-				};
-			};
-
-			dpm_caps {
-				local_dr_power;
-				local_dr_data;
-				// local_ext_power;
-				local_usb_comm;
-				// local_usb_suspend;
-				// local_high_cap;
-				// local_give_back;
-				local_no_suspend;
-				local_vconn_supply;
-
-				// attempt_discover_cable_dfp;
-				attempt_enter_dp_mode;
-				attempt_discover_cable;
-				attempt_discover_id;
-
-				/* 0: disable, 1: prefer_snk, 2: prefer_src */
-				pr_check = <0>;
-				// pr_reject_as_source;
-				// pr_reject_as_sink;
-				// pr_check_gp_source;
-				// pr_check_gp_sink;
-
-				/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
-				dr_check = <0>;
-				// dr_reject_as_dfp;
-				// dr_reject_as_ufp;
-			};
-			displayport {
-				/* connection type = "both", "ufp_d", "dfp_d" */
-				1st_connection = "dfp_d";
-				2nd_connection = "dfp_d";
-				signal,dp_v13;
-				//signal,dp_gen2;
-				usbr20_not_used;
-				typec,receptacle;
-				ufp_d {
-					//pin_assignment,mode_a;
-					//pin_assignment,mode_b;
-					//pin_assignment,mode_c;
-					//pin_assignment,mode_d;
-					//pin_assignment,mode_e;
-				};
-				dfp_d {
-					/* Only support mode C & D */
-					//pin_assignment,mode_a;
-					//pin_assignment,mode_b;
-					pin_assignment,mode_c;
-					pin_assignment,mode_d;
-					pin_assignment,mode_e;
-					pin_assignment,mode_f;
-				};
-			};
-		};
-		dbg {
-			compatible = "mediatek,mt6375-dbg";
-		};
-	};
-};
-
 &i2c6 {
+	clock-frequency = <400000>;
+	sgm4154x_charger: sgm4154x@3B {
+		status = "okay";
+		compatible = "sgm,sgm41542";
+		reg = <0x3B>;
+		interrupt-parent = <&pio>;
+		interrupts = <4 0>;            //irq num base on hardware design
+		sgm,irq-gpio = <&pio 4 0>;     //irq num base on hardware design
+		sgm,chg-en-gpio = <&pio 64 0>;   //gpio num base on hardware design  1.MTK parent node name is pio  2.QUALCOMM parent node name is tlmm or other
+
+		chg_name = "primary_chg";
+		input-voltage-limit-microvolt = <4700000>;
+
+		/* sw jeita  parameter customer defined*/
+		enable_sw_jeita;
+		jeita_temp_above_t4_cv = <0>;
+		jeita_temp_t3_to_t4_cv = <4100000>;
+		jeita_temp_t2_to_t3_cv = <4350000>;
+		jeita_temp_t1_to_t2_cv = <4350000>;
+		jeita_temp_t0_to_t1_cv = <0>;
+		jeita_temp_below_t0_cv = <0>;
+
+		jeita_temp_above_t4_cc_current = <0>;
+		jeita_temp_t3_to_t4_cc_current = <1000000>;
+		jeita_temp_t2_to_t3_cc_current = <1250000>;
+		jeita_temp_t1_to_t2_cc_current = <1000000>;
+		jeita_temp_below_t0_cc_current = <0>;
+
+		temp_t4_thres = <50>;
+		temp_t4_thres_minus_x_degree = <48>;
+		temp_t3_thres = <45>;
+		temp_t3_thres_minus_x_degree = <45>;
+		temp_t2_thres = <20>;
+		temp_t2_thres_plus_x_degree = <15>;
+		temp_t1_thres = <0>;
+		temp_t1_thres_plus_x_degree = <0>;
+		temp_t0_thres = <0>;
+		temp_t0_thres_plus_x_degree = <2>;
+		temp_neg_10_thres = <0>;
+	};
+
+	usb_type_c: wusb3801@60 {
+		compatible = "mediatek,usb_type_c";
+		reg = <0x60>;
+		interrupt-parent = <&pio>;
+		interrupts = <5 0>;
+		wusb3801,irq-gpio = <&pio 5 0x0>;
+
+		status = "okay";
+	};
+
 	gate_ic: gate_ic@11 {
 		compatible = "mediatek,gate-ic-i2c";
 		gate-power-gpios = <&pio 12 0>;
@@ -7057,6 +6717,7 @@
 &rt5133 {
 	interrupts-extended = <&pio 5 0x0>;
 	enable-gpio = <&pio 15 0x0>;
+	status = "disabled";
 };
 
 &pmic {
@@ -7101,7 +6762,7 @@
 /delete-node/ &mt6358_vpa_reg;
 
 &mtk_gauge {
-	charger = <&mt6375_chg>;
+	charger = <&sgm4154x_charger>;
 };
 
 &mddriver {
