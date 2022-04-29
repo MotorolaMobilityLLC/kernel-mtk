@@ -634,6 +634,7 @@ int tcpci_report_usb_port_changed(struct tcpc_device *tcpc)
 
 	return 0;
 }
+EXPORT_SYMBOL(tcpci_report_usb_port_changed);
 
 /*
  * [BLOCK] TYPEC power control changed
