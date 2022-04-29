@@ -9,6 +9,7 @@
 
 #include <lcm_drv.h>
 
+extern struct LCM_DRIVER ontim_ft8006s_hdplus_dsi_vdo_jz_lcm_drv;
 extern struct LCM_DRIVER ontim_icnl9911c_hdplus_dsi_vdo_dj_lcm_drv;
 extern struct LCM_DRIVER ontim_txd9882c_hdplus_dsi_vdo_truly_lcm_drv;
 extern struct LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;

@@ -24,7 +24,7 @@
 	pinctrl-6 = <&ctp_pins_spi_mode>;
 
 	spi_touch@0 {
-		compatible = "mtk,tddi-ilitek", "chipone-tddi";
+		compatible = "mtk,tddi-ilitek", "chipone-tddi","focaltech,fts";
 		reg = <0>;
 		status = "okay";
 		spi-max-frequency = <500000>;
