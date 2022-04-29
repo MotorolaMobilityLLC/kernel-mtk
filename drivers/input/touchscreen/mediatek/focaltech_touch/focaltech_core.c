@@ -63,6 +63,28 @@
 #define FTS_I2C_VTG_MIN_UV                  1800000
 #define FTS_I2C_VTG_MAX_UV                  1800000
 #endif
+#define ONTIM_DEV_FOCALTECH_INFO
+
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+#include <ontim/ontim_dev_dgb.h>
+#endif
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+extern char *mtkfb_find_lcm_driver(void);
+
+static char version[30]="jz-ft8006s";
+
+static char vendor_name[30]="jz-ft8006s";
+static char lcdname[30]="jz-ft8006s";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+#endif
+
 
 #define FTS_I2C_SLAVE_ADDR                  0x38
 
@@ -1292,6 +1314,12 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     int pdata_size = sizeof(struct fts_ts_platform_data);
 
     FTS_FUNC_ENTER();
+
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+        return -EIO;
+    }
+
     FTS_INFO("%s", FTS_DRIVER_VERSION);
     ts_data->pdata = kzalloc(pdata_size, GFP_KERNEL);
     if (!ts_data->pdata) {
@@ -1402,6 +1430,15 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
 
     tpd_load_status = 1;
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+    if(strstr(lcdname,"ft8006") !=NULL){
+       snprintf(lcdname, sizeof(lcdname),"%s ","jz-ft8006s" );
+       pr_err("lcdname\n ");
+    }
+    snprintf(version, sizeof(version),"FW:01");
+    snprintf(vendor_name, sizeof(vendor_name),"jz-ft8006s" );
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+#endif
     FTS_FUNC_EXIT();
     return 0;
 
