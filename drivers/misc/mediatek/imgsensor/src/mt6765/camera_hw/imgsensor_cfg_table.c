@@ -289,11 +289,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		SENSOR_DRVNAME_MOT_MAUI_S5K5E9_MIPI_RAW,
 		{
 			{RST, Vol_Low, 1},
-			{SensorMCLK, Vol_High, 1},
+			{SensorMCLK, Vol_High, 2},
 			{AVDD, Vol_High, 0},
 			{DVDD, Vol_1200, 0},
 			{DOVDD, Vol_1800, 0},
-			{RST, Vol_High, 5},
+			{RST, Vol_High, 3},
 		},
 	},
 #endif
