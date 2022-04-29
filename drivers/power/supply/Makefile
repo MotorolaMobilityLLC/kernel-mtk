@@ -130,3 +130,7 @@ obj-$(CONFIG_MOTO_CHG_TCMD_SUPPORT) += moto_chg_tcmd.o
 ifneq ($(wildcard $(srctree)/$(src)/k6983v1_64_alpha),)
 obj-$(CONFIG_GAUGE_MT6983_ALPHA_SUPPORT) += k6983v1_64_alpha/
 endif
+
+#moto-charger@jianyong.pan  20220412 start
+obj-$(CONFIG_CHARGER_SGM415XX) += sgm415xx.o
+#moto-charger@jianyong.pan  20220412 end
