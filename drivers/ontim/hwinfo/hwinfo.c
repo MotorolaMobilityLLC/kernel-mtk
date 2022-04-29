@@ -841,6 +841,29 @@ static void get_emmc_sn(void)
 	printk("%s: emmc_sn_buf:%s\n", __func__, buf);
 }
 
+/*
+pos: 0  1 2  3 4 5 6 7 8  9  0 1 2 3  4  5
+cid: D6 0103 413341353531 12 A4F51990 19 B3
+*/
+static void parse_cid(char *cid)
+{
+	char bin[16];
+	char *p = hwinfo[emmc_info].hwinfo_buf;
+	if (strlen(cid) < 32) {
+		strcpy(p, "Unknown");
+		pr_err("%s: invalid cid: %s\n", __func__, cid);
+		return;
+	}
+	hex2bin(bin, cid, sizeof(bin));
+	p += sprintf(p, "%s", foreach_emmc_table(bin[0])); // mfr
+	p += sprintf(p, " %02X%02X", bin[1], bin[2]); // oemid
+	p += sprintf(p, " %6.6s", &bin[3]); // prod_name
+	p += sprintf(p, " %02X", bin[9]); // prv
+	p += sprintf(p, " %02X%02X%02X%02X", bin[10], bin[11], bin[12], bin[13]); // serial
+	p += sprintf(p, " %d", bin[14] >> 4); // month
+	p += sprintf(p, "/%d", (bin[14] & 0xF) + 1997 + 16); // year
+}
+
 #define EMMC_CID_FILE     "/sys/class/mmc_host/mmc0/mmc0:0001/cid"
 static void get_emmc_cid(void)
 {
@@ -859,6 +882,7 @@ static void get_emmc_cid(void)
 	memset(hwinfo[emmc_cid].hwinfo_buf, 0x00, sizeof(hwinfo[emmc_cid].hwinfo_buf));
 	strncpy(hwinfo[emmc_cid].hwinfo_buf, buf, strlen(buf));
 	printk("%s: emmc_cid_buf:%s\n", __func__, buf);
+	parse_cid(buf);
 }
 
 #define LPDDR_SIZE_FILE   "/proc/meminfo"
@@ -1200,6 +1224,7 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		get_emmc_sn();
 		break;
 	case emmc_cid:
+	case emmc_info:
 		get_emmc_cid();
 		break;
 	case emmc_mfr:
