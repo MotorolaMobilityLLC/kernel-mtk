@@ -50,6 +50,22 @@
 #include "nfc.h"
 #include "sn1xx.h"
 #include "pn8xt.h"
+#include <linux/version.h>
+#if (KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE)
+// Legacy implementation, also used on recent kernels for legacy platforms
+// such as (6580 and 6735)
+# define KRNMTKLEGACY_I2C 1
+# define KRNMTKLEGACY_CLK 1
+# define KRNMTKLEGACY_GPIO 1
+#endif
+
+#ifndef NO_MTK_CLK_MANAGEMENT
+# ifdef KRNMTKLEGACY_CLK
+#  include <mt_clkbuf_ctl.h>
+# else
+#  include "../../misc/mediatek/include/mt-plat/mtk-clkbuf-bridge.h"
+# endif
+#endif
 
 #define MAX_BUFFER_SIZE         (512)
 #define WAKEUP_SRC_TIMEOUT      (2000)
@@ -217,8 +233,19 @@ static int nfc_dev_open(struct inode *inode, struct file *filp)
             struct nfc_dev, nfc_device);
 
     filp->private_data = nfc_dev;
-    pr_info("%s: %d,%d\n", __func__, imajor(inode), iminor(inode));
+    clk_buf_ctrl(CLK_BUF_NFC, true);
+    pr_err("%s: %d,%d\n", __func__, imajor(inode), iminor(inode));
     return ret;
+}
+
+static int nfc_dev_release(struct inode *inode, struct file *file)
+{
+
+       clk_buf_ctrl(CLK_BUF_NFC, false);
+
+       pr_err("%s\n", __func__);
+
+       return 0;
 }
 
 long nfc_dev_ioctl(struct file *filep, unsigned int cmd,
@@ -238,6 +265,7 @@ static const struct file_operations nfc_dev_fops = {
         .read   = nfc_dev_read,
         .write  = nfc_dev_write,
         .open   = nfc_dev_open,
+        .release = nfc_dev_release,
         .unlocked_ioctl  = nfc_dev_ioctl,
 };
 
