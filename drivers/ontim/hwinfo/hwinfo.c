@@ -790,6 +790,26 @@ static void get_board_id(void)
 		strcpy(ver_buf, board_id_version_table[i]);
 }
 
+#define NFC_VENDOR_FILE "/sys/ontim_dev_debug/nfcsensor/vendor"
+char NFC_BUF[MAX_HWINFO_SIZE] = {"Unknow"};
+EXPORT_SYMBOL(NFC_BUF);
+static ssize_t get_nfc_deviceinfo(void)
+{
+    int ret = 0;
+
+    ret = hwinfo_read_file(NFC_VENDOR_FILE, NFC_BUF, sizeof(NFC_BUF));
+    if (ret != 0) {
+        printk(KERN_CRIT "get_nfc_vendor failed.");
+        return -1;
+    }
+    printk(KERN_INFO "NFC vendor: %s\n", NFC_BUF);
+    if (NFC_BUF[strlen(NFC_BUF) - 1] == '\n')
+        NFC_BUF[strlen(NFC_BUF) - 1] = '\0';
+    strcpy(hwinfo[NFC_MFR].hwinfo_buf, NFC_BUF);
+
+    return 0;
+}
+
 static int set_serialno(char *src)
 {
 	strlcpy(hwinfo[serialno].hwinfo_buf, src, MAX_HWINFO_SIZE);
@@ -1071,6 +1091,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	{
 	case CPU_TYPE:
 		get_cpu_type();
+		break;
+	case NFC_MFR:
+		get_nfc_deviceinfo();
 		break;
 	case SPEAKER_MFR:
 		get_speaker_mfr();

@@ -67,6 +67,13 @@
 # endif
 #endif
 
+#include <ontim/ontim_dev_dgb.h>
+char nfc_vendor_name[50]="pn557";
+DEV_ATTR_DECLARE(nfc)
+DEV_ATTR_DEFINE("vendor",nfc_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(nfc,nfc,8);
+
 #define MAX_BUFFER_SIZE         (512)
 #define WAKEUP_SRC_TIMEOUT      (2000)
 #define MAX_RETRY_COUNT          3
@@ -316,7 +323,12 @@ static int nfc_probe(struct i2c_client *client,
     struct nfc_platform_data platform_data;
     struct nfc_dev *nfc_dev;
     pr_err("%s: enter\n", __func__);
-
+    //+add by yjj for ontim debug
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+        return -EIO;
+    }
+    //-add by yjj for ontim debug
     ret = nfc_parse_dt(&client->dev, &platform_data);
     if (ret) {
         pr_err("%s : failed to parse\n", __func__);
@@ -447,6 +459,9 @@ static int nfc_probe(struct i2c_client *client,
         pr_err("%s: probing platform failed\n", __func__);
         goto err_request_irq_failed;
     };
+    //+add by yjj for ontim debug
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+    //-add by yjj for ontim debug
     pr_info("%s: probing NXP NFC exited successfully\n", __func__);
     return 0;
 

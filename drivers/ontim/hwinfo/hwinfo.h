@@ -7,6 +7,7 @@ enum HWINFO_E{
 #endif
 
 KEYWORD(CPU_TYPE)
+KEYWORD(NFC_MFR)
 KEYWORD(pon_reason)
 KEYWORD(board_id)
 KEYWORD(band_id)
