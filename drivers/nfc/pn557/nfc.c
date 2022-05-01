@@ -46,6 +46,8 @@
 #include <linux/ioctl.h>
 #include <linux/miscdevice.h>
 #include <linux/i2c.h>
+#include <linux/of.h>
+#include <linux/string.h>
 
 #include "nfc.h"
 #include "sn1xx.h"
@@ -537,8 +539,31 @@ static struct i2c_driver nfc_driver = {
         },
 };
 
+static int check_nfc_device(void)
+{
+    struct device_node *nd;
+    char *node_properties_value = NULL;
+    nd = of_find_node_with_property(NULL, "product.hardware.sku");
+    if (!nd) {
+        pr_err("not found node via product.hardware.sku \n");
+        return -ENODEV;
+    }
+    node_properties_value = (char*)nd->properties->value;
+    pr_info("nd->properties = %s \n", node_properties_value);
+    if(strcmp(node_properties_value,"dsdsn") != 0){
+        if(strcmp(node_properties_value,"ssn") != 0){
+            return -ENODEV;
+        }
+    }
+    return 0;
+}
+
 static int __init nfc_dev_init(void)
 {
+    int have_nfc_flag = 0;
+    have_nfc_flag = check_nfc_device();
+    if(have_nfc_flag < 0)
+        return -ENODEV;
     pr_info("Loading NXP NFC driver\n");
     return i2c_add_driver(&nfc_driver);
 }
