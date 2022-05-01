@@ -3267,10 +3267,15 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 	if (mmi->base_fv_mv == 0) {
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
 	}
-	max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
-	if (max_fv_mv == 0)
+	if (info->dvchg1_dev != NULL
+		&& info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
+		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
+		if (max_fv_mv == 0)
+			max_fv_mv = mmi->base_fv_mv;
+	} else {
 		max_fv_mv = mmi->base_fv_mv;
-
+		info->mmi.chrg_iterm =  info->mmi.back_chrg_iterm;
+	}
 	/* Determine Next State */
 	prev_step = info->mmi.pres_chrg_step;
 
@@ -3555,6 +3560,7 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 				  &info->mmi.chrg_iterm);
 	if (rc)
 		info->mmi.chrg_iterm = 150;
+	 info->mmi.back_chrg_iterm = info->mmi.chrg_iterm;
 
 	info->mmi.enable_mux =
 		of_property_read_bool(node, "mmi,enable-mux");
