@@ -825,7 +825,7 @@ static kal_uint32 gc02m1_macro_read_otp(unsigned char *buff)
 
 	return ret;
 }
-
+extern char backaux2_cam_otp_status[64];
 static kal_uint32 gc02m1_macro_cali_awb(unsigned char *buff) {
 	kal_uint32 ret = 0;
 	kal_uint8 group_flag = 0;
@@ -837,10 +837,12 @@ static kal_uint32 gc02m1_macro_cali_awb(unsigned char *buff) {
 
 	LOG_INF("in");
 
-	//cnce_clear_otp_check_result(SENSOR_NAME);
 	ret = gc02m1_macro_awb_crc(buff,OTP_LEN);
-	//cnce_save_otp_check_result(SENSOR_NAME, "af", 0x4);
-	//cnce_save_otp_check_result(SENSOR_NAME, "awb", ret);
+	memset(backaux2_cam_otp_status, 0x00, sizeof(backaux2_cam_otp_status));
+	if (ret == 0)
+		memcpy(backaux2_cam_otp_status, "1", 64);
+	else
+		memcpy(backaux2_cam_otp_status, "0", 64);
 	if (0 != ret) {
 		LOG_INF("awb otp data checksum error,parse failed");
 		return ret;
