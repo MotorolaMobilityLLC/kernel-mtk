@@ -655,6 +655,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	}
 work_unlock:
 	tcpci_unlock_typec(tcpc);
+	enable_irq(chip->irq);
 }
 
 static irqreturn_t wusb3801_intr_handler(int irq, void *data)
@@ -663,6 +664,7 @@ static irqreturn_t wusb3801_intr_handler(int irq, void *data)
 
 	pr_info("wusb3801:intr_handler\n");
 
+	disable_irq_nosync(irq);
 	__pm_wakeup_event(chip->irq_wake_lock, WUSB3801_IRQ_WAKE_TIME);
 
 	kthread_queue_work(&chip->irq_worker, &chip->irq_work);
@@ -928,13 +930,15 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 	kthread_init_work(&chip->irq_work, wusb3801_irq_work_handler);
 
 	//huanglei add for reg 0x08& 0x0F write zero fail begin
-    wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_02, 0x00);
-    wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_09, 0x00);
+	wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_02, 0x00);
+	wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_09, 0x00);
+	wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL0, 0x24);
+
 	//huanglei add for reg 0x08& 0x0F write zero fail end
 
 	pr_info("IRQF_NO_THREAD Test\n");
 	ret = request_irq(chip->irq, wusb3801_intr_handler,
-		IRQF_TRIGGER_FALLING | IRQF_NO_THREAD | IRQF_NO_SUSPEND, name, chip);
+		IRQF_TRIGGER_LOW | IRQF_NO_THREAD | IRQF_NO_SUSPEND, name, chip);
 	if (ret < 0) {
 		pr_err("wusb3801: failed to request irq%d (gpio = %d, ret = %d)\n",
 			chip->irq, chip->irq_gpio, ret);
@@ -1019,7 +1023,7 @@ static ssize_t typec_cc_orientation_show(struct device *dev,
 {
 	int ret;
 
-	ret = snprintf(buf, PAGE_SIZE, "%d\n", typec_cc_orientation);
+	ret = snprintf(buf, PAGE_SIZE, "cc_%d\n", typec_cc_orientation);
 	return ret;
 }
 
