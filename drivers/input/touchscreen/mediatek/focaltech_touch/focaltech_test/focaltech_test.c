@@ -2215,6 +2215,74 @@ static ssize_t fts_test_store(
     return count;
 }
 
+/*+add by zsh*/
+static ssize_t factory_test_show(
+    struct device *dev, struct device_attribute *attr, char *buf)
+{
+    int count = 0;
+    ktime_t start_time, end_time, delta_time;
+    int ret = 0;
+    char fwname[FILE_NAME_LENGTH] = { 0 };
+    struct fts_ts_data *ts_data = fts_data;
+    struct input_dev *input_dev;
+
+    if (ts_data->suspended) {
+        FTS_INFO("In suspend, no test, return now");
+        return -EINVAL;
+    }
+
+    input_dev = ts_data->input_dev;
+    memset(fwname, 0, sizeof(fwname));
+    snprintf(fwname, FILE_NAME_LENGTH, "%s", "/vendor/firmware/FT8006S-AN_Bora_V01.ini");
+    FTS_TEST_DBG("fwname:%s.", fwname);
+
+    mutex_lock(&input_dev->mutex);
+    fts_irq_disable();
+
+#if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
+    fts_esdcheck_switch(DISABLE);
+#endif
+
+    ret = fts_enter_test_environment(1);
+    if (ret < 0) {
+        FTS_ERROR("enter test environment fail");
+    } else {
+        start_time = ktime_get();
+        fts_test_entry(fwname);
+        end_time = ktime_get();
+   }
+    ret = fts_enter_test_environment(0);
+    if (ret < 0) {
+        FTS_ERROR("enter normal environment fail");
+    }
+
+#if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
+    fts_esdcheck_switch(ENABLE);
+#endif
+
+    fts_irq_enable();
+    mutex_unlock(&input_dev->mutex);
+
+    //fts_test_store(dev, attr, file_name, strlen(file_name));
+
+    delta_time = ktime_sub(end_time, start_time);
+    count += scnprintf(buf + count, PAGE_SIZE,
+        "Factory test, ELAPSED TIME: %lldms\n",
+        ktime_to_ms(delta_time));
+
+
+    if (fts_ftest->result == false) {
+        count += scnprintf(buf + count, PAGE_SIZE,
+            "%-10s : FAIL\n", "Result");
+    } else {
+        count += scnprintf(buf + count, PAGE_SIZE,
+            "%-10s : PASS\n", "Result");
+    }
+    return count;
+}
+static DEVICE_ATTR(factory_test, S_IRUGO | S_IWUSR, factory_test_show, NULL);
+/*-add by zsh*/
+
 /*  test from test.ini
 *    example:echo "***.ini" > fts_test
 */
@@ -2222,6 +2290,7 @@ static DEVICE_ATTR(fts_test, S_IRUGO | S_IWUSR, fts_test_show, fts_test_store);
 
 static struct attribute *fts_test_attributes[] = {
     &dev_attr_fts_test.attr,
+    &dev_attr_factory_test.attr,
     NULL
 };
 
