@@ -141,6 +141,10 @@
 	cd-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
 };
 
+&mtk_ctd {
+		bootmode = <&chosen>;
+};
+
 /* SVP */
 &mtee_svp {
 	mtee: MTEE {
