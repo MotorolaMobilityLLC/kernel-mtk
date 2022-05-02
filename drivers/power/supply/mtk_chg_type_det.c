@@ -19,6 +19,13 @@
 
 #define MTK_CTD_DRV_VERSION	"1.0.0_MTK"
 
+struct tag_bootmode {
+	u32 size;
+	u32 tag;
+	u32 bootmode;
+	u32 boottype;
+};
+
 struct mtk_ctd_info {
 	struct device *dev;
 	/* device tree */
@@ -303,6 +310,8 @@ static int chg_type_det_pm_event(struct notifier_block *notifier,
 
 static void mtk_ctd_parse_dt(struct mtk_ctd_info *mci)
 {
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
 	struct device_node *np = mci->dev->of_node;
 	int ret;
 
@@ -315,6 +324,28 @@ static void mtk_ctd_parse_dt(struct mtk_ctd_info *mci)
 	} else
 		dev_info(mci->dev,
 			 "%s: bc12_sel = %d\n", __func__, mci->bc12_sel);
+
+
+	boot_node = of_parse_phandle(np, "bootmode", 0);
+	if (!boot_node)
+		pr_err("%s: failed to get boot mode phandle\n", __func__);
+	else {
+		tag = (struct tag_bootmode *)of_get_property(boot_node,
+							"atag,boot", NULL);
+		if (!tag)
+			pr_err("%s: failed to get atag,boot\n", __func__);
+		else {
+			pr_err("%s: size:0x%x tag:0x%x bootmode:0x%x boottype:0x%x\n",
+				__func__, tag->size, tag->tag,
+				tag->bootmode, tag->boottype);
+
+			/*charge only mode*/
+			if (tag->bootmode == 8 ||tag->bootmode == 9)
+				mci->tcpc_kpoc = true;
+			else
+				mci->tcpc_kpoc = false;
+		}
+	}
 }
 
 static int mtk_ctd_probe(struct platform_device *pdev)
