@@ -438,7 +438,9 @@ static ssize_t get_typec_cc_status(void)
 		printk(KERN_CRIT "get_typec_cc status failed.");
 		return -1;
 	}
-	buf[1] = '\0';
+	buf[63] = '\n';
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
 	printk(KERN_INFO "Typec cc status: %s\n", buf);
 
 	memcpy(hwinfo[TYPEC_CC_STATUS].hwinfo_buf, buf, BUF_SIZE);
