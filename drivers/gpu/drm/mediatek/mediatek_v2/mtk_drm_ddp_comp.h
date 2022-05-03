@@ -374,6 +374,7 @@ enum mtk_ddp_io_cmd {
 	DUAL_TE_INIT,
 	OVL_GET_SOURCE_BPC,
 	DSI_PANEL_FEATURE_SET,
+	PANEL_HBM_WAITFOR_FPS_VALID,
 };
 
 struct golden_setting_context {
