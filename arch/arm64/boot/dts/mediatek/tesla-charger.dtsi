@@ -14,7 +14,7 @@
 &lk_charger {
 	/* charging current */
 	usb_charger_current = <500000>;
-	ac_charger_current = <1000000>;
+	ac_charger_current = <1500000>;
 	ac_charger_input_current = <1500000>;
 	non_std_ac_charger_current = <1000000>;
 	charging_host_input_current = <1500000>;
