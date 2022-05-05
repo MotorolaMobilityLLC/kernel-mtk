@@ -940,22 +940,14 @@ static int aw36515_remove(struct i2c_client *client)
 
 static int __maybe_unused aw36515_suspend(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct aw36515_flash *flash = i2c_get_clientdata(client);
-
 	pr_info("%s %d", __func__, __LINE__);
-
-	return aw36515_uninit(flash);
+	return 0;
 }
 
 static int __maybe_unused aw36515_resume(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct aw36515_flash *flash = i2c_get_clientdata(client);
-
 	pr_info("%s %d", __func__, __LINE__);
-
-	return aw36515_init(flash);
+	return 0;
 }
 
 static const struct i2c_device_id aw36515_id_table[] = {
