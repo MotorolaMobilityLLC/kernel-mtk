@@ -61,12 +61,10 @@
 
 #ifdef CONFIG_CHARGER_STOP_70PER
 unsigned int capacity_control= 0;
-#else
-unsigned int capacity_control= 0;
-#endif
+
 module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
-
+#endif
 
 #include <ontim/ontim_dev_dgb.h>
 char battery_vendor_name[50]="bora 4000mAh";
@@ -897,10 +895,7 @@ static ssize_t BatteryNotify_store(struct device *dev,
 static DEVICE_ATTR_RW(BatteryNotify);
 
 #ifdef CONFIG_CHARGER_STOP_70PER
-static int ontim_runin_onoff_control = 1;
-#else
 static int ontim_runin_onoff_control = 0;
-#endif
 
 int ontim_get_ontim_runin_onoff_control(void)
 {
@@ -916,6 +911,7 @@ static ssize_t runin_onoff_ctrl_store(struct device *dev,struct device_attribute
 	return size;
 }
 static DEVICE_ATTR_RW(runin_onoff_ctrl);
+
 
 static int ontim_charge_onoff_control = 1;/*1=enable charge  0 or other=disable charge*/
 
@@ -936,6 +932,7 @@ static ssize_t charge_onoff_ctrl_store(struct device *dev,struct device_attribut
 	return size;
 }
 static DEVICE_ATTR_RW(charge_onoff_ctrl);
+#endif
 
 /* procfs */
 static int mtk_chg_current_cmd_show(struct seq_file *m, void *data)
@@ -1314,8 +1311,9 @@ static void charger_check_status(struct mtk_charger *info)
 	bool charging = true;
 	int temperature;
 	struct battery_thermal_protection_data *thermal;
+#ifdef CONFIG_CHARGER_STOP_70PER
 	static int count = 1;
-
+#endif
 	if (get_charger_type(info) == POWER_SUPPLY_TYPE_UNKNOWN)
 		return;
 
@@ -1376,7 +1374,7 @@ static void charger_check_status(struct mtk_charger *info)
 			}
 		}
 	}
-
+#ifdef CONFIG_CHARGER_STOP_70PER
 	/* add limit soc max 70% */
 	if(capacity_control) {
 		if ((get_uisoc(info) >= 70) && (count > 0)) {
@@ -1404,9 +1402,8 @@ static void charger_check_status(struct mtk_charger *info)
 		}
 		chr_err("%s;charge status:%d count:%d\n",__func__,charging,count);
 	}
-
 	/* add end */
-
+#endif
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
@@ -1420,12 +1417,13 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
+#ifdef CONFIG_CHARGER_STOP_70PER
 	if(ontim_charge_onoff_control  !=  1)
 	{
 	    chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
 		charging = false;
 	}
-
+#endif
 stop_charging:
 	mtk_battery_notify_check(info);
 
@@ -1832,7 +1830,7 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
 	if (ret)
 		goto _out;
-
+#ifdef CONFIG_CHARGER_STOP_70PER
 	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
 	if (ret)
 		goto _out;
@@ -1840,7 +1838,7 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_charge_onoff_ctrl);
 	if (ret)
 		goto _out;
-
+#endif
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
 		chr_err("%s: mkdir /proc/mtk_battery_cmd failed\n", __func__);
