@@ -51,6 +51,7 @@ struct lcm {
 	unsigned int hbm_mode;
 	unsigned int dc_mode;
 	unsigned int current_bl;
+	unsigned int current_fps;
 	enum panel_version version;
 };
 
@@ -813,6 +814,7 @@ static void mode_switch_to_144(struct drm_panel *panel,
 			lcm_dcs_write_seq_static(ctx, 0xC1, 0x03);
 			lcm_dcs_write_seq_static(ctx, 0xCE, 0x22, 0x00, 0x00, 0x22, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 		};
+	ctx->current_fps = 144;
 	}
 }
 
@@ -841,6 +843,7 @@ static void mode_switch_to_120(struct drm_panel *panel,
 			lcm_dcs_write_seq_static(ctx, 0xC1, 0x03);
 			lcm_dcs_write_seq_static(ctx, 0xCE, 0x22, 0x00, 0x00, 0x22, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 		};
+	ctx->current_fps = 120;
 	}
 }
 
@@ -869,6 +872,7 @@ static void mode_switch_to_90(struct drm_panel *panel,
 			lcm_dcs_write_seq_static(ctx, 0xC1, 0x03);
 			lcm_dcs_write_seq_static(ctx, 0xCE, 0x22, 0x00, 0x00, 0x22, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 		};
+	ctx->current_fps = 90;
 	}
 }
 
@@ -897,6 +901,7 @@ static void mode_switch_to_60(struct drm_panel *panel,
 			lcm_dcs_write_seq_static(ctx, 0xC1, 0x03);
 			lcm_dcs_write_seq_static(ctx, 0xCE, 0x22, 0x00, 0x00, 0x22, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 		};
+	ctx->current_fps = 60;
 	}
 }
 
@@ -925,6 +930,7 @@ static void mode_switch_to_48(struct drm_panel *panel,
 			lcm_dcs_write_seq_static(ctx, 0xC1 ,0x02);
 			lcm_dcs_write_seq_static(ctx, 0xCE ,0x22 ,0x00 ,0x00 ,0x02 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x000);
 		};
+	ctx->current_fps = 48;
 	}
 }
 
@@ -1128,6 +1134,30 @@ static int panel_ext_powerdown(struct drm_panel *panel)
 	return 0;
 }
 
+static int panel_hbm_waitfor_fps_valid(struct drm_panel *panel, unsigned int timeout_ms)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+	unsigned int count = timeout_ms;
+	unsigned int poll_interval = 1;
+
+	if (count == 0) return 0;
+	pr_info("%s+\n", __func__);
+	while((ctx->current_fps == 48) || (ctx->current_fps == 90)) {
+		if (!count) {
+			pr_warn("%s: it is timeout, and current_fps = %d\n", __func__, ctx->current_fps);
+			break;
+		} else if (count > poll_interval) {
+			usleep_range(poll_interval * 1000, poll_interval *1000);
+			count -= poll_interval;
+		} else {
+			usleep_range(count * 1000, count *1000);
+			count = 0;
+		}
+	}
+	pr_info("%s-\n", __func__);
+	return 0;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
@@ -1137,6 +1167,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
 	.panel_feature_set = panel_feature_set,
+	.panel_hbm_waitfor_fps_valid = panel_hbm_waitfor_fps_valid,
 };
 #endif
 
@@ -1300,6 +1331,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	ctx->dc_mode = 0;
 
 	ctx->lhbm_en = of_property_read_bool(dev->of_node, "lhbm-enable");
+	ctx->current_fps = 60;
 
 	pr_info("%s- lcm,nt37701,cmd,120hz, lhbm_en = %d\n", __func__, ctx->lhbm_en);
 
