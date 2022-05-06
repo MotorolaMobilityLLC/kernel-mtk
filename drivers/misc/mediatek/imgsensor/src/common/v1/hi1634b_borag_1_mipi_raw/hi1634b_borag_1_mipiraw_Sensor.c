@@ -34,8 +34,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = HI1634B_BORAG_1_SENSOR_ID,
 	.checksum_value = 0x55e2a82f,
 	.pre = {
-		.pclk = 80000000,				//record different mode's pclk
-		.linelength =  710, 			//record different mode's linelength
+		.pclk = 640000000,				//record different mode's pclk
+		.linelength =  5680, 			//record different mode's linelength
 		.framelength = 3754, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -48,8 +48,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 678400000//1696*4/10
 	},
 	.cap = {
-		.pclk = 80000000,
-		.linelength = 710,
+		.pclk = 640000000,
+		.linelength = 5680,
 		.framelength = 3754,
 		.startx = 0,
 		.starty = 0,
@@ -60,8 +60,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 678400000//1696*4/10
 	},
 	.normal_video = {
-		.pclk = 80000000,
-		.linelength = 710,
+		.pclk = 640000000,
+		.linelength = 5680,
 		.framelength = 3754,
 		.startx = 0,
 		.starty = 0,
@@ -72,8 +72,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 678400000//1696*4/10
 	},
 	.hs_video = {
-		.pclk = 100000000,				//record different mode's pclk
-		.linelength =  725, 			//record different mode's linelength
+		.pclk = 800000000,				//record different mode's pclk
+		.linelength =  5800, 			//record different mode's linelength
 		.framelength = 1149, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -86,8 +86,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 226132000//565.33*4/10
 	},
     .slim_video = {
-		.pclk = 100000000,				//record different mode's pclk
-		.linelength =  725, 			//record different mode's linelength
+		.pclk = 800000000,				//record different mode's pclk
+		.linelength =  5800, 			//record different mode's linelength
 		.framelength = 1149, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -118,9 +118,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.temperature_support = 0,/* 1, support; 0,not support */
 	.sensor_mode_num = 5,	/* support sensor mode num */
 
-	.cap_delay_frame = 3,	/* enter capture delay frame num */
-	.pre_delay_frame = 3,	/* enter preview delay frame num */
-	.video_delay_frame = 3,	/* enter video delay frame num */
+	.cap_delay_frame = 1,	/* enter capture delay frame num */
+	.pre_delay_frame = 1,	/* enter preview delay frame num */
+	.video_delay_frame = 1,	/* enter video delay frame num */
 	.hs_video_delay_frame = 1,
 	.slim_video_delay_frame = 1,	/* enter slim video delay frame num */
 	.frame_time_delay_frame = 2,
@@ -156,9 +156,9 @@ static struct imgsensor_struct imgsensor = {
 
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
-	{ 4672, 3520, 0,   6, 4672, 3508, 4672, 3508,   8, 4, 4656, 3504, 0, 0, 4656, 3504}, 	// preview (4656 x 3504)
-	{ 4672, 3520, 0,   6, 4672, 3508, 4672, 3508,   8, 4, 4656, 3504, 0, 0, 4656, 3504}, 	// capture (4656 x 3504)
-	{ 4672, 3520, 0,   6, 4672, 3508, 4672, 3508,   8, 4, 4656, 3504, 0, 0, 4656, 3504}, 	// video (4656 x 3504)
+	{ 4672, 3520, 0,   6, 4672, 3508, 4672, 3508,   8, 2, 4656, 3504, 0, 0, 4656, 3504}, 	// preview (4656 x 3504)
+	{ 4672, 3520, 0,   6, 4672, 3508, 4672, 3508,   8, 2, 4656, 3504, 0, 0, 4656, 3504}, 	// capture (4656 x 3504)
+	{ 4672, 3520, 0,   6, 4672, 3508, 4672, 3508,   8, 2, 4656, 3504, 0, 0, 4656, 3504}, 	// video (4656 x 3504)
 	{ 4672, 3520, 8, 674, 4656, 2172, 1552,  724, 136, 2, 1280,  720, 0, 0, 1280,  720}, 	// hs video (1280 x 720) 
 	{ 4672, 3520, 8, 674, 4656, 2172, 1552,  724, 136, 2, 1280,  720, 0, 0, 1280,  720}, 	// slim video (1280 x 720)
 };
