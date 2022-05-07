@@ -30,6 +30,7 @@ enum situation_index_table {
 	tilt_detector,
 	flat,
 	sar,
+	chopchop_gesture,
 	max_situation_support,
 };
 

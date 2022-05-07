@@ -72,6 +72,9 @@ static int handle_to_index(int handle)
 	case ID_SAR:
 		index = sar;
 		break;
+	case ID_CHOPCHOP_GESTURE:
+		index = chopchop_gesture;
+		break;
 	default:
 		index = -1;
 		pr_err("%s invalid handle:%d,index:%d\n", __func__,
