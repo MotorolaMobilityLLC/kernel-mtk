@@ -451,6 +451,26 @@ typedef struct {
 	char manufacture_date[MAX_CALIBRATION_STRING];
 } mot_calibration_mnf_t;
 
+typedef struct {
+	unsigned short awb_src_1_golden_r;
+	unsigned short awb_src_1_golden_gr;
+	unsigned short awb_src_1_golden_gb;
+	unsigned short awb_src_1_golden_b;
+	unsigned short awb_src_1_r;
+	unsigned short awb_src_1_gr;
+	unsigned short awb_src_1_gb;
+	unsigned short awb_src_1_b;
+	unsigned short awb_src_1_rg_ratio;
+	unsigned short awb_src_1_bg_ratio;
+	unsigned short awb_src_1_gr_gb_ratio;
+	unsigned short awb_src_1_golden_rg_ratio;
+	unsigned short awb_src_1_golden_bg_ratio;
+	unsigned short awb_src_1_golden_gr_gb_ratio;
+	unsigned short cie_src_1_ev;//big_y_source
+	unsigned short cie_src_1_u;//lil_x_source
+	unsigned short cie_src_1_v;//lil_y_source   from qcom
+} mot_calibration_3aInfo_t;
+
 typedef enum {
 	STATUS_OK,
 	STATUS_CRC_FAIL,
@@ -724,6 +744,7 @@ struct ACDK_SENSOR_INFO_STRUCT {
         MUINT8 efuseID[64];
 	mot_calibration_status_t calibration_status;
 	mot_calibration_mnf_t mnf_calibration;
+	mot_calibration_3aInfo_t calibration_3aInfo;
 };
 
 #define ACDK_SENSOR_INFO2_STRUCT struct ACDK_SENSOR_INFO_STRUCT
