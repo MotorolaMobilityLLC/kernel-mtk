@@ -928,6 +928,29 @@ static calibration_status_t MAUI_HI1634B_check_lsc_data_mtk(void *data)
 	return NO_ERRORS;
 }
 
+static void MAUI_HI1634B_eeprom_get_3aInfo_data(void *data,
+mot_calibration_3aInfo_t *calibration_3aInfo)
+{
+	struct MAUI_HI1634B_eeprom_t *eeprom = (struct MAUI_HI1634B_eeprom_t*)data;
+	calibration_3aInfo->cie_src_1_ev = to_uint16_swap(eeprom->cie_src_1_ev);
+	calibration_3aInfo->cie_src_1_u = to_uint16_swap(eeprom->cie_src_1_u);
+	calibration_3aInfo->cie_src_1_v = to_uint16_swap(eeprom->cie_src_1_v);
+	calibration_3aInfo->awb_src_1_golden_r = to_uint16_swap(eeprom->awb_src_1_golden_r);
+	calibration_3aInfo->awb_src_1_golden_gr = to_uint16_swap(eeprom->awb_src_1_golden_gr);
+	calibration_3aInfo->awb_src_1_golden_gb = to_uint16_swap(eeprom->awb_src_1_golden_gb);
+	calibration_3aInfo->awb_src_1_golden_b = to_uint16_swap(eeprom->awb_src_1_golden_b);
+	calibration_3aInfo->awb_src_1_r = to_uint16_swap(eeprom->awb_src_1_r);
+	calibration_3aInfo->awb_src_1_gr = to_uint16_swap(eeprom->awb_src_1_gr);
+	calibration_3aInfo->awb_src_1_gb = to_uint16_swap(eeprom->awb_src_1_gb);
+	calibration_3aInfo->awb_src_1_b = to_uint16_swap(eeprom->awb_src_1_b);
+	calibration_3aInfo->awb_src_1_rg_ratio = to_uint16_swap(eeprom->awb_src_1_rg_ratio);
+	calibration_3aInfo->awb_src_1_bg_ratio = to_uint16_swap(eeprom->awb_src_1_bg_ratio);
+	calibration_3aInfo->awb_src_1_gr_gb_ratio = to_uint16_swap(eeprom->awb_src_1_gr_gb_ratio);
+	calibration_3aInfo->awb_src_1_golden_rg_ratio = to_uint16_swap(eeprom->awb_src_1_golden_rg_ratio);
+	calibration_3aInfo->awb_src_1_golden_bg_ratio = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
+	calibration_3aInfo->awb_src_1_golden_gr_gb_ratio = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
+}
+
 static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
@@ -971,6 +994,8 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "OFilm");
 	} else if (eeprom->manufacturer_id[0] == 'Q' && eeprom->manufacturer_id[1] == 'T') {
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else if (eeprom->manufacturer_id[0] == 'T' && eeprom->manufacturer_id[1] == 'S') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Tsp");
 	} else {
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
 		LOG_INF("unknown manufacturer_id");
@@ -1476,6 +1501,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->calibration_status.pdaf = pdaf_status;
     sensor_info->calibration_status.dual = dual_status;
     MAUI_HI1634B_eeprom_get_mnf_data((void *) MAUI_HI1634B_eeprom, &sensor_info->mnf_calibration);
+    MAUI_HI1634B_eeprom_get_3aInfo_data((void *)MAUI_HI1634B_eeprom, &sensor_info->calibration_3aInfo);;
 
 	sensor_info->FrameTimeDelayFrame =
 		imgsensor_info.frame_time_delay_frame;
