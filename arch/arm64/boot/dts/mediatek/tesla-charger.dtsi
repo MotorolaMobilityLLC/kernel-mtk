@@ -278,6 +278,7 @@
 
     cps_wls_charger@30 {
         compatible = "cps,wls-charger-cps4035-L";
+        bootmode = <&chosen>;
         charger = <&mt6375_chg>;
         wireless-fw-name = "cps4035.bin";
         reg = <0x30>;
