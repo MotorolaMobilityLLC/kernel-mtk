@@ -1395,7 +1395,7 @@ static void aw9610x_irq_handle(struct aw9610x *aw9610x)
 	uint32_t curr_status = 0;
 	uint32_t curr_status_val = 0;
 #ifdef AW9610X_SUPPORT_MTK
-	int32_t sarData[AW_CHANNEL_MAX] = {0};
+	static int32_t sarData[AW_CHANNEL_MAX] = {0};
 #endif
 
 	AWLOGD(aw9610x->dev, "enter");
