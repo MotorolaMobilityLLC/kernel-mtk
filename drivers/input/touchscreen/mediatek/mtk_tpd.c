@@ -416,6 +416,7 @@ static void touch_resume_workqueue_callback(struct work_struct *work)
 	g_tpd_drv->resume(NULL);
 	tpd_suspend_flag = 0;
 }
+extern int txdili9882_suspend_flag;
 static int tpd_fb_notifier_callback(
 			struct notifier_block *self,
 			unsigned long event, void *data)
@@ -432,7 +433,7 @@ static int tpd_fb_notifier_callback(
 		return 0;
 
 	blank = *(int *)evdata->data;
-	TPD_DEBUG("fb_notify(blank=%d)\n", blank);
+	pr_err("fb_notify(blank=%d)\n", blank);
 	if (event != FB_EVENT_BLANK )
  		return 0;
 
@@ -454,6 +455,15 @@ static int tpd_fb_notifier_callback(
 		break;
 	case FB_BLANK_POWERDOWN:
                 TPD_DEBUG("event=%d 11111\n",event);
+		if(txdili9882_suspend_flag && !tpd_suspend_flag) {
+			err = cancel_work_sync(&touch_resume_work);
+				if (!err)
+					TPD_DMESG("cancel resume_workqueue failed\n");
+			txdili9882_suspend_flag = 0;
+			tpd_suspend_flag = 1;
+			pr_err("woailuooooooo\n");
+			return 0;
+		}
 		if(event == FB_EVENT_BLANK){
 			TPD_DMESG("LCD OFF Notify\n");
 			if (g_tpd_drv && !tpd_suspend_flag) {
