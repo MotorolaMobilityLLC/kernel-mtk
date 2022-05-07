@@ -133,11 +133,12 @@ struct LCM_setting_table {
 	unsigned char para_list[64];
 };
 
+
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0xFF, 0x03, {0x98, 0x82, 0x00} },
-	{0x28, 0, {} },
+	{0x28, 0x01, {0x00} },
 	{REGFLAG_DELAY, 20, {} },
-	{0x10, 0, {} },
+	{0x10, 0x01, {0x00} },
 	{REGFLAG_DELAY, 120, {} }
 };
 
@@ -203,6 +204,34 @@ static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
+{
+	struct dfps_info *dfps_params = dsi->dfps_params;
+
+	dsi->dfps_enable = 1;
+	dsi->dfps_default_fps = 9000;/*real fps * 100, to support float*/
+	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
+
+	/* DPFS_LEVEL0 */
+	dfps_params[0].level = DFPS_LEVEL0;
+	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
+
+	/* if vfp solution */
+	dfps_params[0].vertical_frontporch = 1352;
+	dfps_params[0].vertical_frontporch_for_low_power = 2466;
+
+	/* DPFS_LEVEL1 */
+	dfps_params[1].level = DFPS_LEVEL1;
+	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+
+	dfps_params[1].vertical_frontporch = 368;
+	dfps_params[1].vertical_frontporch_for_low_power = 1290;
+	dsi->dfps_num = 2;
+}
+#endif
 
 static void lcm_get_params(struct LCM_PARAMS *params)
 {
@@ -265,6 +294,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #endif
 	//params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
 	//params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
+	#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+
+	/****DynFPS start****/
+	lcm_dfps_int(&(params->dsi));
+	/****DynFPS end****/
+	#endif
 
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 0;
@@ -345,6 +380,13 @@ static void lcm_init(void)
 	LCM_LOGI("%s: icnl9911s done\n",__func__);
 }
 
+enum TP_SLEEP_STATUS {
+	ontim_SUSPEND = 0,
+	ontim_DEEP_SLEEP = 1,
+	ontim_RESUME = 2
+};
+extern int ili_sleep_handler(int mode);
+int txdili9882_suspend_flag = 0;
 static void lcm_suspend(void)
 {
 	struct LCM_setting_table *setting_table = NULL;
@@ -360,7 +402,10 @@ static void lcm_suspend(void)
 	}
 #ifndef MACH_FPGA
 	push_table(NULL, setting_table, setting_table_size, 1);
-	MDELAY(10);
+	ili_sleep_handler(ontim_DEEP_SLEEP);
+	txdili9882_suspend_flag =1;
+	MDELAY(150);
+	pr_err("ahahaahhhhhhhhhhhhhhhhhhhh\n");
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
 		MDELAY(2);
