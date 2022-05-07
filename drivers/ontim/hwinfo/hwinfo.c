@@ -792,7 +792,7 @@ static void get_board_id(void)
 		strcpy(ver_buf, board_id_version_table[i]);
 }
 
-#define NFC_VENDOR_FILE "/sys/ontim_dev_debug/nfcsensor/vendor"
+#define NFC_VENDOR_FILE "/sys/ontim_dev_debug/nfc/vendor"
 char NFC_BUF[MAX_HWINFO_SIZE] = {"Unknow"};
 EXPORT_SYMBOL(NFC_BUF);
 static ssize_t get_nfc_deviceinfo(void)
