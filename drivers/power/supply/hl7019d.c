@@ -184,25 +184,26 @@ static struct hl7019d_info *g_info;
 static struct i2c_client *new_client;
 
 
-#define hl7019d_SLAVE_ADDR_1 0xD8
-#define hl7019d_SLAVE_ADDR_2 0xD6
-#define HL7019D_CHECK_CHARGING_STATE
+//#define hl7019d_SLAVE_ADDR_1 0xD8
+//#define hl7019d_SLAVE_ADDR_2 0xD6
+//#define HL7019D_CHECK_CHARGING_STATE
 #ifdef HL7019D_CHECK_CHARGING_STATE
 struct workqueue_struct *charging_check_workqueue;
 struct delayed_work charging_check_work;
 #define CHARGING_CHECK_WAIT_TIME              500    /* ms */
 static int check_time = 0;
-//static int dev_detect = 0;
+static int dev_detect = 0;
+static atomic_t hl7019d_irq_enable_charging = ATOMIC_INIT(0);
+static int is_chager_ic_on = 0;
+static int hl7019d_get_charger_type(struct hl7019d_info *info);
+static int hl7019d_set_charger_type(struct hl7019d_info *info);
+struct hl7019d_info *charging_check_info = NULL;
 
 #define CHARGING_CHECK_TIME	10
 #endif
 
-struct hl7019d_info *charging_check_info = NULL;
-static atomic_t hl7019d_irq_enable_charging = ATOMIC_INIT(0);
-static int is_chager_ic_on = 0;
 
-static int hl7019d_get_charger_type(struct hl7019d_info *info);
-static int hl7019d_set_charger_type(struct hl7019d_info *info);
+
 
 static void enable_boost_polling(bool poll_en);
 static void usbotg_boost_kick_work(struct work_struct *work);
@@ -214,7 +215,7 @@ unsigned int charging_value_to_parameter_hl7019d(const unsigned int *parameter, 
 {
 	if (val < array_size)
 		return parameter[val];
-	pr_err("[hl7019d miki Hugh] Can't find the parameter\n");
+	pr_err("[hl7019d] Can't find the parameter\n");
 	return parameter[0];
 }
 
@@ -223,14 +224,14 @@ unsigned int charging_parameter_to_value_hl7019d(const unsigned int *parameter, 
 {
 	unsigned int i;
 
-	pr_err("[hl7019d miki Hugh] array_size = %d\n", array_size);
+	pr_err("[hl7019d] array_size = %d\n", array_size);
 
 	for (i = 0; i < array_size; i++) {
 		if (val == *(parameter + i))
 			return i;
 	}
 
-	pr_err("[hl7019d miki Hugh] NO register value match\n");
+	pr_err("[hl7019d] NO register value match\n");
 	/* TODO: ASSERT(0);	// not find the value */
 	return 0;
 }
@@ -249,11 +250,11 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 	if (max_value_in_last_element == 1) {
 		for (i = (number - 1); i != 0; i--) {	/* max value in the last element */
 			if (pList[i] <= level) {
-				pr_err("[hl7019d miki Hugh] zzf_%d<=%d, i=%d\n", pList[i], level, i);
+				pr_err("[hl7019d] zzf_%d<=%d, i=%d\n", pList[i], level, i);
 				return pList[i];
 			}
 		}
-		pr_err("[hl7019d miki Hugh] Can't find closest level\n");
+		pr_err("[hl7019d] Can't find closest level\n");
 		return pList[0];
 		/* return 000; */
 	} else {
@@ -261,7 +262,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 			if (pList[i] <= level)
 				return pList[i];
 		}
-		pr_err("[hl7019d miki Hugh] Can't find closest level\n");
+		pr_err("[hl7019d] Can't find closest level\n");
 		return pList[number - 1];
 		/* return 000; */
 	}
@@ -824,19 +825,19 @@ static void hl7019d_vin_status_dump(void)
 	switch(vin_status)
 	{
 		case 0:
-			pr_err("[hl7019d miki Hugh] no input or dpm detection incomplete.\n");
+			pr_err("[hl7019d] no input or dpm detection incomplete.\n");
 			break;
 		case 1:
-			pr_err("[hl7019d miki Hugh] USB host inserted.\n");
+			pr_err("[hl7019d] USB host inserted.\n");
 			break;
 		case 2:
-			pr_err("[hl7019d miki Hugh] Adapter inserted.\n");
+			pr_err("[hl7019d] Adapter inserted.\n");
 			break;
 		case 3:
-			pr_err("[hl7019d miki Hugh] OTG device inserted.\n");
+			pr_err("[hl7019d] OTG device inserted.\n");
 			break;
 		default:
-			pr_err("[hl7019d miki Hugh] wrong vin status.\n");
+			pr_err("[hl7019d] wrong vin status.\n");
 			break;
 	}
 }
@@ -864,19 +865,19 @@ static void hl7019d_chrg_status_dump(void)
 	switch(chrg_status)
 	{
 		case 0:
-			pr_err("[hl7019d miki Hugh] not charging.\n");
+			pr_err("[hl7019d] not charging.\n");
 			break;
 		case 1:
-			pr_err("[hl7019d miki Hugh] precharging mode.\n");
+			pr_err("[hl7019d] precharging mode.\n");
 			break;
 		case 2:
-			pr_err("[hl7019d miki Hugh] fast charging mode.\n");
+			pr_err("[hl7019d] fast charging mode.\n");
 			break;
 		case 3:
-			pr_err("[hl7019d miki Hugh] charge termination done.\n");
+			pr_err("[hl7019d] charge termination done.\n");
 			break;
 		default:
-			pr_err("[hl7019d miki Hugh] wrong charge status.\n");
+			pr_err("[hl7019d] wrong charge status.\n");
 			break;
 	}
 }
@@ -902,9 +903,9 @@ static void hl7019d_dpm_status_dump(void)
 	dpm_status = hl7019d_get_dpm_status();
 
 	if(0x0 == dpm_status)
-		pr_err("[hl7019d miki Hugh] not in dpm.\n");
+		pr_err("[hl7019d] not in dpm.\n");
 	else
-		pr_err("[hl7019d miki Hugh] in vindpm or ilimdpm.\n");
+		pr_err("[hl7019d] in vindpm or ilimdpm.\n");
 }
 
 static unsigned int hl7019d_get_pg_status(void)
@@ -928,9 +929,9 @@ static void hl7019d_pg_status_dump(void)
 	pg_status = hl7019d_get_pg_status();
 
 	if(0x0 == pg_status)
-		pr_err("[hl7019d miki Hugh] power is not good.\n");
+		pr_err("[hl7019d] power is not good.\n");
 	else
-		pr_err("[hl7019d miki Hugh] power is good.\n");
+		pr_err("[hl7019d] power is good.\n");
 }
 
 static unsigned int hl7019d_get_therm_status(void)
@@ -954,9 +955,9 @@ static void hl7019d_therm_status_dump(void)
 	therm_status = hl7019d_get_therm_status();
 
 	if(0x0 == therm_status)
-		pr_err("[hl7019d miki Hugh] ic's thermal status is in normal.\n");
+		pr_err("[hl7019d] ic's thermal status is in normal.\n");
 	else
-		pr_err("[hl7019d miki Hugh] ic is in thermal regulation.\n");
+		pr_err("[hl7019d] ic is in thermal regulation.\n");
 }
 
 static unsigned int hl7019d_get_vsys_status(void)
@@ -980,9 +981,9 @@ static void hl7019d_vsys_status_dump(void)
 	vsys_status = hl7019d_get_vsys_status();
 
 	if(0x0 == vsys_status)
-		pr_err("[hl7019d miki Hugh] ic is not in vsysmin regulation(BAT > VSYSMIN).\n");
+		pr_err("[hl7019d] ic is not in vsysmin regulation(BAT > VSYSMIN).\n");
 	else
-		pr_err("[hl7019d miki Hugh] ic is in vsysmin regulation(BAT < VSYSMIN).\n");
+		pr_err("[hl7019d] ic is in vsysmin regulation(BAT < VSYSMIN).\n");
 }
 
 static void hl7019d_charger_system_status(void)
@@ -1017,9 +1018,9 @@ static void hl7019d_watchdog_fault_dump(void)
 	wtd_fault = hl7019d_get_watchdog_fault();
 
 	if(0x0 == wtd_fault)
-		pr_err("[hl7019d miki Hugh] i2c watchdog is normal.\n");
+		pr_err("[hl7019d] i2c watchdog is normal.\n");
 	else
-		pr_err("[hl7019d miki Hugh] i2c watchdog timer is expirate.\n");
+		pr_err("[hl7019d] i2c watchdog timer is expirate.\n");
 }
 
 static unsigned int hl7019d_get_otg_fault(void)
@@ -1043,9 +1044,9 @@ static void hl7019d_otg_fault_dump(void)
 	otg_fault = hl7019d_get_otg_fault();
 
 	if(0x0 == otg_fault)
-		pr_err("[hl7019d miki Hugh] the OTG function is fine.\n");
+		pr_err("[hl7019d] the OTG function is fine.\n");
 	else
-		pr_err("[hl7019d miki Hugh] the OTG function is error.\n");
+		pr_err("[hl7019d] the OTG function is error.\n");
 }
 
 static unsigned int hl7019d_get_chrg_fault(void)
@@ -1070,19 +1071,19 @@ static void hl7019d_chrg_fault_dump(void)
 	switch(chrg_fault)
 	{
 		case 0:
-			pr_err("[hl7019d miki Hugh] the ic charging status is normal.\n");
+			pr_err("[hl7019d] the ic charging status is normal.\n");
 			break;
 		case 1:
-			pr_err("[hl7019d miki Hugh] the ic's input is fault.\n");
+			pr_err("[hl7019d] the ic's input is fault.\n");
 			break;
 		case 2:
-			pr_err("[hl7019d miki Hugh] the ic's thermal is shutdown.\n");
+			pr_err("[hl7019d] the ic's thermal is shutdown.\n");
 			break;
 		case 3:
-			pr_err("[hl7019d miki Hugh] the ic's charge safety timer is expirate.\n");
+			pr_err("[hl7019d] the ic's charge safety timer is expirate.\n");
 			break;
 		default:
-			pr_err("[hl7019d miki Hugh] the ic's charge fault status is unkown.\n");
+			pr_err("[hl7019d] the ic's charge fault status is unkown.\n");
 			break;
 	}
 }
@@ -1108,9 +1109,9 @@ static void hl7019d_bat_fault_dump(void)
 	bat_fault = hl7019d_get_bat_fault();
 
 	if(0x0 == bat_fault)
-		pr_err("[hl7019d miki Hugh] battery is normal.\n");
+		pr_err("[hl7019d] battery is normal.\n");
 	else
-		pr_err("[hl7019d miki Hugh] battery is in OVP.\n");
+		pr_err("[hl7019d] battery is in OVP.\n");
 }
 
 static unsigned int hl7019d_get_ntc_fault(void)
@@ -1135,16 +1136,16 @@ static void hl7019d_ntc_fault_dump(void)
 	switch(ntc_fault)
 	{
 		case 0:
-			pr_err("[hl7019d miki Hugh] the ic's body temperature is normal.\n");
+			pr_err("[hl7019d] the ic's body temperature is normal.\n");
 			break;
 		case 5:
-			pr_err("[hl7019d miki Hugh] the ic's body temperature is cold.\n");
+			pr_err("[hl7019d] the ic's body temperature is cold.\n");
 			break;
 		case 6:
-			pr_err("[hl7019d miki Hugh] the ic's body temperature is hot.\n");
+			pr_err("[hl7019d] the ic's body temperature is hot.\n");
 			break;
 		default:
-			pr_err("[hl7019d miki Hugh] the ic's body temperature is unknow.\n");
+			pr_err("[hl7019d] the ic's body temperature is unknow.\n");
 			break;
 	}
 }
@@ -1385,13 +1386,13 @@ static int hl7019d_set_current(struct charger_device *chg_dev, u32 current_value
 		return status;
 	}
 
-	pr_err("[hl7019d miki Hugh] charge current setting value: %d.\n", current_value);
+	pr_err("[hl7019d] charge current setting value: %d.\n", current_value);
 	if (current_value <= 500000) {
 		hl7019d_set_ichg(0x0);
 	} else {
 		array_size = ARRAY_SIZE(CSTH);
 		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
-		pr_err("[hl7019d miki Hugh] charge current finally setting value: %d.\n", set_chr_current);
+		pr_err("[hl7019d] charge current finally setting value: %d.\n", set_chr_current);
 		register_value = charging_parameter_to_value_hl7019d(CSTH, array_size, set_chr_current);
 		hl7019d_set_ichg(register_value);
 	}
@@ -1432,7 +1433,7 @@ static int hl7019d_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 		return status;
 	}
 
-	pr_err("[hl7019d miki Hugh] charge voltage setting value: %d.\n", cv);
+	pr_err("[hl7019d] charge voltage setting value: %d.\n", cv);
 	/*static kal_int16 pre_register_value; */
 	array_size = ARRAY_SIZE(VBAT_CVTH);
 	/*pre_register_value = -1; */
@@ -1440,7 +1441,7 @@ static int hl7019d_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 
 	register_value =
 	charging_parameter_to_value_hl7019d(VBAT_CVTH, array_size, set_cv_voltage);
-	pr_err("[hl7019d miki Hugh] charging_set_cv_voltage register_value=0x%x %d %d\n",
+	pr_err("[hl7019d] charging_set_cv_voltage register_value=0x%x %d %d\n",
 	 register_value, cv, set_cv_voltage);
 	hl7019d_set_vreg(register_value);
 
@@ -1482,13 +1483,13 @@ static int hl7019d_set_input_current(struct charger_device *chg_dev, u32 current
 		return status;
 	}
 
-	pr_err("[hl7019d miki Hugh] charge input current setting value: %d.\n", current_value);
+	pr_err("[hl7019d] charge input current setting value: %d.\n", current_value);
 	if (current_value < 100000) {
 		register_value = 0x0;
 	} else {
 		array_size = ARRAY_SIZE(INPUT_CSTH);
 		set_chr_current = bmt_find_closest_level(INPUT_CSTH, array_size, current_value);
-		pr_err("[hl7019d miki Hugh] charge input current finally setting value: %d.\n", set_chr_current);
+		pr_err("[hl7019d] charge input current finally setting value: %d.\n", set_chr_current);
 		register_value = charging_parameter_to_value_hl7019d(INPUT_CSTH, array_size, set_chr_current);
 	}
 
@@ -1524,13 +1525,13 @@ static int hl7019d_set_termination_curr(struct charger_device *chg_dev, u32 term
 	if(!chg_dev)
 		return -EINVAL;
 
-	pr_err("[hl7019d miki Hugh] charge termination current setting value: %d.\n", term_curr);
+	pr_err("[hl7019d] charge termination current setting value: %d.\n", term_curr);
 	if(term_curr < 100000) {
 		hl7019d_set_iterm(0x0);
 	} else {
 		array_size = ARRAY_SIZE(ITERM_CSTH);
 		set_term_current = bmt_find_closest_level(ITERM_CSTH, array_size, term_curr);
-		pr_err("[hl7019d miki Hugh] charge termination current finally setting value: %d.\n", set_term_current);
+		pr_err("[hl7019d] charge termination current finally setting value: %d.\n", set_term_current);
 		register_value = charging_parameter_to_value_hl7019d(ITERM_CSTH, array_size, set_term_current);
 	}
 
@@ -1559,7 +1560,7 @@ static int hl7019d_do_event(struct charger_device *chg_dev, unsigned int event, 
 	if (chg_dev == NULL)
 		return -EINVAL;
 
-	pr_err("[hl7019d miki Hugh] %s: event = %d\n", __func__, event);
+	pr_err("[hl7019d] %s: event = %d\n", __func__, event);
 
 	switch (event) {
 	//case EVENT_EOC:
@@ -1600,54 +1601,54 @@ static int hl7019d_set_ta_current_pattern(struct charger_device *chg_dev, bool i
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() on 1");
+		pr_err("[hl7019d] mtk_ta_increase() on 1");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() off 1");
+		pr_err("[hl7019d] mtk_ta_increase() off 1");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() on 2");
+		pr_err("[hl7019d] mtk_ta_increase() on 2");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() off 2");
+		pr_err("[hl7019d] mtk_ta_increase() off 2");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() on 3");
+		pr_err("[hl7019d] mtk_ta_increase() on 3");
 		msleep(281);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() off 3");
+		pr_err("[hl7019d] mtk_ta_increase() off 3");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() on 4");
+		pr_err("[hl7019d] mtk_ta_increase() on 4");
 		msleep(281);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() off 4");
+		pr_err("[hl7019d] mtk_ta_increase() off 4");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() on 5");
+		pr_err("[hl7019d] mtk_ta_increase() on 5");
 		msleep(281);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() off 5");
+		pr_err("[hl7019d] mtk_ta_increase() off 5");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() on 6");
+		pr_err("[hl7019d] mtk_ta_increase() on 6");
 		msleep(485);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() off 6");
+		pr_err("[hl7019d] mtk_ta_increase() off 6");
 		msleep(50);
 
-		pr_err("[hl7019d miki Hugh] mtk_ta_increase() end\n");
+		pr_err("[hl7019d] mtk_ta_increase() end\n");
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
 		msleep(200);
@@ -1656,54 +1657,54 @@ static int hl7019d_set_ta_current_pattern(struct charger_device *chg_dev, bool i
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() on 1");
+		pr_err("[hl7019d] mtk_ta_decrease() on 1");
 		msleep(281);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() off 1");
+		pr_err("[hl7019d] mtk_ta_decrease() off 1");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() on 2");
+		pr_err("[hl7019d] mtk_ta_decrease() on 2");
 		msleep(281);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() off 2");
+		pr_err("[hl7019d] mtk_ta_decrease() off 2");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() on 3");
+		pr_err("[hl7019d] mtk_ta_decrease() on 3");
 		msleep(281);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() off 3");
+		pr_err("[hl7019d] mtk_ta_decrease() off 3");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() on 4");
+		pr_err("[hl7019d] mtk_ta_decrease() on 4");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() off 4");
+		pr_err("[hl7019d] mtk_ta_decrease() off 4");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() on 5");
+		pr_err("[hl7019d] mtk_ta_decrease() on 5");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() off 5");
+		pr_err("[hl7019d] mtk_ta_decrease() off 5");
 		msleep(85);
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() on 6");
+		pr_err("[hl7019d] mtk_ta_decrease() on 6");
 		msleep(485);
 
 		hl7019d_set_iinlim(0x0); /* 100mA */
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() off 6");
+		pr_err("[hl7019d] mtk_ta_decrease() off 6");
 		msleep(50);
 
-		pr_err("[hl7019d miki Hugh] mtk_ta_decrease() end\n");
+		pr_err("[hl7019d] mtk_ta_decrease() end\n");
 
 		hl7019d_set_iinlim(0x2); /* 500mA */
 	}
@@ -1735,11 +1736,12 @@ static int hl7019d_enable_powerpath(struct charger_device *chg_dev, bool en)
 
 	if(!chg_dev)
 		return -EINVAL;
+	pr_err("[hl7019d] hl7019d_enable_powerpath: %d.-------------\n", en);
 
 	if(true == en)
-		hl7019d_set_vindpm(0x7);
+		hl7019d_set_vindpm(0x7); // 4.44V
 	else
-		hl7019d_set_vindpm(0xf);
+		hl7019d_set_vindpm(0xf); // 5.08V
 
 	return status;
 }
@@ -1776,28 +1778,28 @@ static int hl7019d_set_vindpm_voltage(struct charger_device *chg_dev, u32 vindpm
 	hl7019d_read_interface(HL7019D_COND, &vindpm_status, COND_VINDPM_OFFSET_MASK, COND_VINDPM_OFFSET_SHIFT);
 
 	if(1 == vindpm_status) {
-		pr_err("[hl7019d] enter high vindpm mode.\n");
-		pr_err("[hl7019d] vindpm voltage setting value: %d.\n", vindpm_vol);
+		pr_err("[hl7019d] vindpm voltage setting value: %d.-------------111\n", vindpm_vol);
 
 		if(vindpm_vol < 8300000) {
+			pr_err("[hl7019d] enter high vindpm mode.--------111\n");
 			hl7019d_set_vindpm(0x0);
 		} else {
 			array_size = ARRAY_SIZE(VINDPM_HIGH_CVTH);
 			set_vindpm_vol = bmt_find_closest_level(VINDPM_HIGH_CVTH, array_size, vindpm_vol);
-			pr_err("[hl7019d] vindpm voltage finally setting value: %d.\n", set_vindpm_vol);
+			pr_err("[hl7019d] vindpm voltage finally setting value: %d.-------------111\n", set_vindpm_vol);
 			register_value = charging_parameter_to_value_hl7019d(VINDPM_HIGH_CVTH, array_size, set_vindpm_vol);
 			hl7019d_set_vindpm(register_value);
 		}	
 	} else {
-		pr_err("[hl7019d miki Hugh] enter high vindpm mode.\n");
-		pr_err("[hl7019d miki Hugh] vindpm voltage setting value: %d.\n", vindpm_vol);
+		pr_err("[hl7019d] vindpm voltage setting value: %d.\n", vindpm_vol);
 
 		if(vindpm_vol < 3500000) {
+			pr_err("[hl7019d] enter high vindpm mode.\n");
 			hl7019d_set_vindpm(0x0);
 		} else {
 			array_size = ARRAY_SIZE(VINDPM_NORMAL_CVTH);
 			set_vindpm_vol = bmt_find_closest_level(VINDPM_NORMAL_CVTH, array_size, vindpm_vol);
-			pr_err("[hl7019d miki Hugh] vindpm voltage finally setting value: %d.\n", set_vindpm_vol);
+			pr_err("[hl7019d] vindpm voltage finally setting value: %d.\n", set_vindpm_vol);
 			register_value = charging_parameter_to_value_hl7019d(VINDPM_NORMAL_CVTH, array_size, set_vindpm_vol);
 			hl7019d_set_vindpm(register_value);
 		}	
@@ -1846,7 +1848,7 @@ static int hl7019d_charger_enable_otg(struct charger_device *chg_dev, bool en)
 	if(!chg_dev)
 		return -EINVAL;
 	
-	pr_err("[hl7019d miki Hugh] enable otg %d.\n", en);
+	pr_err("[hl7019d] enable otg %d.\n", en);
 	
 	if(true == en) {
 		hl7019d_set_chg_config(0x2);
@@ -1914,23 +1916,23 @@ static int hl7019d_parse_dt(struct hl7019d_info *info, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 
-	pr_err("[hl7019d miki Hugh] %s\n", __func__);
+	pr_err("[hl7019d] %s\n", __func__);
 
 	if (!np) {
-		pr_err("[hl7019d miki Hugh] %s: no of node\n", __func__);
+		pr_err("[hl7019d] %s: no of node\n", __func__);
 		return -ENODEV;
 	}
 
-	pr_err("[hl7019d miki Hugh] node name: %s.\n", np->name);
+	pr_err("[hl7019d] node name: %s.\n", np->name);
 
 	if (of_property_read_string(np, "charger_name", &info->chg_dev_name) < 0) {
 		info->chg_dev_name = "primary_chg";
-		pr_err("[hl7019d miki Hugh] %s: no charger name\n", __func__);
+		pr_err("[hl7019d] %s: no charger name\n", __func__);
 	}
 
 	if (of_property_read_string(np, "alias_name", &(info->chg_props.alias_name)) < 0) {
 		info->chg_props.alias_name = "hl7019d";
-		pr_err("[hl7019d miki Hugh] %s: no alias name\n", __func__);
+		pr_err("[hl7019d] %s: no alias name\n", __func__);
 	}
 
 /* Miki <BSP_CHARGER> <lin_zc> <20190428> add for charger mode detect start */
@@ -2030,7 +2032,7 @@ static void usbotg_boost_kick_work(struct work_struct *work)
 	struct hl7019d_info *boost_manager =
 		container_of(work, struct hl7019d_info, kick_work);
 
-	pr_err("[hl7019d miki Hugh] usbotg_boost_kick_work\n");
+	pr_err("[hl7019d] usbotg_boost_kick_work\n");
 
 	hl7019d_set_i2cwatchdog_timer_reset(0x1);
 
@@ -2126,6 +2128,7 @@ int hl7019d_charging_check_init(void)
 }
 #endif
 
+#if 0
 static int hl7019d_get_charger_type(struct hl7019d_info *info)
 {
 	unsigned int vbus_stat = 0;
@@ -2278,7 +2281,7 @@ static irqreturn_t hl7019d_irq_handler(int irq, void *data)
 			atomic_set(&hl7019d_irq_enable_charging, 1);
 		}
 	}
-	
+
 	return IRQ_HANDLED;
 }
 
@@ -2314,6 +2317,7 @@ err_nodev:
 err_request_irq:
 	return ret;
 }
+#endif
 
 static struct charger_ops hl7019d_chg_ops = {
 
@@ -2424,7 +2428,7 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 	pr_err("hl7019d : REG0A = 0x%x--------------------------\n", reg_val);
 
 	if (reg_val != 0x20) {
-		pr_err("[hl7019d miki Hugh] %s: get vendor id failed\n", __func__);
+		pr_err("[hl7019d] %s: get vendor id failed\n", __func__);
 		return -ENODEV;
 	}
 
@@ -2432,36 +2436,36 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
     if (0x20 != dev_detect)
 	{
 		if (!is_hl7019d_charger_ic()) {
-			pr_err("[hl7019d miki Hugh] %s: get vendor id failed\n", __func__);
+			pr_err("[hl7019d] %s: get vendor id failed\n", __func__);
 			return -ENODEV;
 		}
 	}
 #endif
 
-	is_chager_ic_on = 1;  // detect hl7019d charger ic
+	//is_chager_ic_on = 1;  // detect hl7019d charger ic
 
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->chg_dev_name,
 		&client->dev, info, &hl7019d_chg_ops, &info->chg_props);
 
 	if (IS_ERR_OR_NULL(info->chg_dev)) {
-		pr_err("[hl7019d miki Hugh] %s: register charger device failed\n", __func__);
+		pr_err("[hl7019d] %s: register charger device failed\n", __func__);
 		ret = PTR_ERR(info->chg_dev);
 		return ret;
 	}
 
-	/* hl7019d_hw_init(); //move to charging_hw_xxx.c */
+/*
 	info->psy = power_supply_get_by_name("charger");
 
 	if (!info->psy) {
-		pr_err("[hl7019d miki Hugh] %s: get power supply failed\n", __func__);
+		pr_err("[hl7019d] %s: get power supply failed\n", __func__);
 		return -EINVAL;
 	}
-	
+*/
 	ret = hl7019d_charger_ic_init(info->chg_dev);
 	if(ret)
 	{
-		pr_err("[hl7019d miki Hugh] %s: charger ic initiation occurs error.\n", __func__);
+		pr_err("[hl7019d] %s: charger ic initiation occurs error.\n", __func__);
 		return -ENODEV;
 	}
 
@@ -2474,20 +2478,12 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
 	info->polling_interval = 20;
 	g_info = info;
-#if 0
-	/* skip registered hl7019d detection to speed up meta boot */
-	if (is_meta_mode()) 
-	{
-		pr_err("[hl7019d]device is in meta mode\n");
-		return 0;
-	}
-#endif
 	info->chg_type = CHARGER_UNKNOWN;
 
 #if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	Charger_Detect_Init();
 #endif
-	hl7019d_register_irq(info);
+	//hl7019d_register_irq(info);
 	hl7019d_set_dpdm_en(0x1);
 
 #ifdef HL7019D_CHECK_CHARGING_STATE
@@ -2496,7 +2492,7 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 		pr_err("[hl7019d]can not creat charging check function\n");
 #endif
 
-	charging_check_info = info;
+	//charging_check_info = info;
 
 	//+add by hzb for ontim debug
 	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
@@ -2532,9 +2528,9 @@ static int __init hl7019d_init(void)
 {
 
 	if (i2c_add_driver(&hl7019d_driver) != 0)
-		pr_err("[hl7019d miki Hugh] Failed to register hl7019d i2c driver.\n");
+		pr_err("[hl7019d] Failed to register hl7019d i2c driver.\n");
 	else
-		pr_err("[hl7019d miki Hugh] Success to register hl7019d i2c driver.\n");
+		pr_err("[hl7019d] Success to register hl7019d i2c driver.\n");
 
 	return 0;
 }
