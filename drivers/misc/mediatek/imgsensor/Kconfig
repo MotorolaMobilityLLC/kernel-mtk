@@ -59,4 +59,10 @@ config MTK_V4L2_IMGSENSOR
 	  To compile this driver as a module, choose M here: the
 	  module wll be called imgsensor.
 
+config MTK_EEPROM_PROJECT
+	string "set imgsensor eeprom name"
+	help
+	  This config is set as sensor eeprom name
+	  which project sensor used for.
+
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
