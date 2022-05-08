@@ -84,6 +84,7 @@ config MTK_PLAT_POWER_MT6833
 	  If the macro is enabled, compile the mt6833 related code.
 	  If unsure, say N.
 
+source "drivers/misc/mediatek/camera_ldo/Kconfig"
 endmenu # Power
 
 menu "MultiMedia, Display, Camera"
