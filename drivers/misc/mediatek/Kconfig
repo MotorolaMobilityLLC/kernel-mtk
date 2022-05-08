@@ -26,6 +26,7 @@ source "drivers/misc/mediatek/mdpm/Kconfig"
 source "drivers/misc/mediatek/pbm/Kconfig"
 source "drivers/misc/mediatek/pmsr/Kconfig"
 source "drivers/misc/mediatek/timer/Kconfig"
+source "drivers/misc/mediatek/camera_ldo/Kconfig"
 endmenu # Power
 
 menu "MultiMedia, Display, Camera"

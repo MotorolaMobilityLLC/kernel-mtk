@@ -362,7 +362,7 @@
 #define OV48C_SENSOR_ID                         0x564843
 #define IMX355_SENSOR_ID                        0x0355
 #define OV13B10_SENSOR_ID                       0x560d42
-#define OV02B10_SENSOR_ID                       0x002b
+
 #define MOT_DUBAI_OV32C_SENSOR_ID               0x3243
 
 #define OV48B_SENSOR_ID                         0x564842
@@ -378,6 +378,15 @@
 //add dubai sensor id begin
 #define MOT_DUBAI_OV50A_SENSOR_ID               0x565041
 //add dubai sensor id end
+
+//Begin: Add sensor id for Vicky
+#define MOT_VICKY_S5KHM6_SENSOR_ID            0x1AD6
+#define MOT_VICKY_HI1634Q_SENSOR_ID           0x1634
+#define MOT_VICKY_OV02B10_SENSOR_ID           0x002b
+#define MOT_VICKY_S5K4H7_SENSOR_ID            0x487b
+//End
+
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -613,12 +622,21 @@
 #define SENSOR_DRVNAME_OV48C_MIPI_RAW           "ov48c_mipi_raw"
 #define SENSOR_DRVNAME_IMX355_MIPI_RAW          "imx355_mipi_raw"
 #define SENSOR_DRVNAME_OV13B10_MIPI_RAW         "ov13b10_mipi_raw"
-#define SENSOR_DRVNAME_OV02B10_MIPI_RAW         "ov02b10_mipi_raw"
+/*moto*/
+#define SENSOR_DRVNAME_HI1634Q_MIPI_RAW "hi1634q_mipi_raw"
 
 //add dubai sensor drvname begin
 #define SENSOR_DRVNAME_MOT_DUBAI_GC02M1B_MIPI_RAW   "mot_dubai_gc02m1b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_DUBAI_OV50A_MIPI_RAW "mot_dubai_ov50a_mipi_raw"
 //add dubai sensor drvname end
+
+//Begin: Add sensor drvname for Vicky
+#define SENSOR_DRVNAME_MOT_VICKY_S5KHM6_MIPI_RAW       "mot_vicky_s5khm6_mipi_raw"
+#define SENSOR_DRVNAME_MOT_VICKY_HI1634Q_MIPI_RAW      "mot_vicky_hi1634q_mipi_raw"
+#define SENSOR_DRVNAME_MOT_VICKY_OV02B10_MIPI_RAW      "mot_vicky_ov02b10_mipi_raw"
+#define SENSOR_DRVNAME_MOT_VICKY_S5K4H7_MIPI_RAW       "mot_vicky_s5k4h7_mipi_raw"
+//End
+
 /******************************************************************************
  *
  ******************************************************************************/

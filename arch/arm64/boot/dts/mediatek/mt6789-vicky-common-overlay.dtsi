@@ -12,7 +12,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include "mediatek/mt6789-moto-common-overlay.dtsi"
-#include "mediatek/cust_mt6789_camera.dtsi"
+#include "mediatek/mt6789_vicky_camera_overlay.dtsi"
 #include "mediatek/vicky-display.dtsi"
 #include "mediatek/mt6789-vicky-audio-overlay.dtsi"
 #include "mediatek/vicky-touch.dtsi"
@@ -88,6 +88,25 @@
 
 #include "mediatek/cust_mt6789_camera_v4l2.dtsi"
 
+&i2c5 {
+	i2c_camera_ldo2{
+		compatible = "mediatek,i2c_camera_ldo2";
+		reg = <0x2f>;
+		status = "okay";
+	};
+	i2c_camera_ldo{
+		compatible = "mediatek,i2c_camera_ldo";
+		reg = <0x35>;
+		status = "okay";
+	};
+	aw36518@63 {
+		compatible = "awinic,aw36518";
+		reg = <0x63>;
+		status = "okay";
+	};
+};
+
+
 &i2c6 {
 	spk: speaker_amp@5c {
 		compatible = "richtek,rt5512";
@@ -97,6 +116,7 @@
 		sound-name-prefix = "Left";
 	};
 };
+
 
 &i2c0 {
 	status = "okay";
