@@ -136,3 +136,4 @@ obj-$(CONFIG_MTK_POWER_GS_LEGACY_V2) += power_gs_v1/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_LEGACY_THERMAL) += thermal/
 obj-$(CONFIG_MTK_MT6382_BDG) += spi_slave_drv/
+obj-$(CONFIG_HQ_CAMERA_LDO) += camera_ldo/
