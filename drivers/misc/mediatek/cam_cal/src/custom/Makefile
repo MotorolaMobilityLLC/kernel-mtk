@@ -14,7 +14,13 @@
 MTK_CUSTOM_PATH := $(srctree)/drivers/misc/mediatek
 CAM_CAL_SRC_PATH := $(MTK_CUSTOM_PATH)/cam_cal/src
 CAM_CAL_CUSTOM_SRC_PATH := $(CAM_CAL_SRC_PATH)/custom
+
+ifdef CONFIG_MTK_EEPROM_PROJECT
+MOT_PROJECT := $(subst ",,$(CONFIG_MTK_EEPROM_PROJECT))
+CAM_CAL_CUSTOM_SRC_LAYOUT_PATH := $(CAM_CAL_CUSTOM_SRC_PATH)/camera_project/$(MOT_PROJECT)
+else
 CAM_CAL_CUSTOM_SRC_LAYOUT_PATH := $(CAM_CAL_CUSTOM_SRC_PATH)/layout
+endif
 COMMON_VERSION := v2
 
 ifeq ($(CONFIG_MTK_SENSOR_PROJECT), "tb8781p2_64")
@@ -46,7 +52,13 @@ empty :=
 space := $(empty) $(empty)
 
 KERNEL_CAM_CAL_SRC := $(notdir $(wildcard $(CAM_CAL_CUSTOM_SRC_LAYOUT_PATH)/*.c))
+
+ifdef CONFIG_MTK_EEPROM_PROJECT
+KERNEL_CAM_CAL_OBJ := $(addprefix camera_project/$(MOT_PROJECT)/,$(patsubst %.c, %.o, $(KERNEL_CAM_CAL_SRC)))
+else
 KERNEL_CAM_CAL_OBJ := $(addprefix layout/,$(patsubst %.c, %.o, $(KERNEL_CAM_CAL_SRC)))
+endif
+
 KERNEL_CAM_CAL := $(basename $(KERNEL_CAM_CAL_SRC))
 CAM_CAL_CONFIG_LIST := $(subst $(space),$(comma),$(foreach e,$(subst ",,$(KERNEL_CAM_CAL)),E($(e))))
 subdir-ccflags-y += -D'CAM_CAL_CONFIG_LIST=$(CAM_CAL_CONFIG_LIST)'
