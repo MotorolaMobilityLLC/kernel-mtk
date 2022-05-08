@@ -31,7 +31,8 @@ char * const imgsensor_hw_pin_names[] = {
 char * const imgsensor_hw_id_names[] = {
 	"mclk",
 	"regulator",
-	"gpio"
+	"gpio",
+	"wl2868"
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
@@ -336,7 +337,7 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 		ret = IMGSENSOR_RETURN_ERROR;
 		return ret;
 	}
-	if (IS_MT6873(phw->g_platform_id) || IS_MT6853(phw->g_platform_id))
+	if (IS_MT6873(phw->g_platform_id) || IS_MT6853(phw->g_platform_id) || IS_MT6789(phw->g_platform_id))
 		imgsensor_hw_power_sequence(
 				phw,
 				sensor_idx,
