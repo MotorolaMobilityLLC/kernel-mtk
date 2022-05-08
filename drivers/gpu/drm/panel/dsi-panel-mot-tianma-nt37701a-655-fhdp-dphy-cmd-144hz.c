@@ -206,6 +206,8 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x6F, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0xCA, 0xA1);
 
+	lcm_dcs_write_seq_static(ctx, 0x88, 0x01);
+
 	lcm_dcs_write_seq_static(ctx, 0x11);
 	usleep_range(120 * 1000, 121 * 1000);
 	if (ctx->version != PANEL_V1) {
@@ -962,16 +964,12 @@ static int mode_switch(struct drm_panel *panel,
 
 static struct mtk_panel_para_table panel_lhbm_on[] = {
 	{3, {0x51, 0x0F, 0xFF}},
-	{3, {0x87, 0x1F, 0xFF}},
-	{2, {0x88, 0x01}},
-	{2, {0x85, 0x01}},
+	{4, {0x87, 0x1F, 0xFF, 0X05}},
 };
 
 static struct mtk_panel_para_table panel_lhbm_off[] = {
 	{3, {0x51, 0x0F, 0xFF}},
-	{3, {0x87, 0x0F, 0xFF}},
-	{2, {0x88, 0x01}},
-	{2, {0x86, 0x01}},
+	{4, {0x87, 0x0F, 0xFF, 0X04}},
 };
 
 static void set_lhbm_alpha(unsigned int bl_level, enum panel_version version)
