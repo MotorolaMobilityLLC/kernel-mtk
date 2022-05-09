@@ -346,7 +346,7 @@
 &spi1 {
     #address-cells = <1>;
     #size-cells = <0>;
-    fingerprint_fpc {
+    fingerprint@0 {
         compatible = "mediatek,fpsensor";
         reg = <0>;
         spi-max-frequency = <500000>;
@@ -355,6 +355,7 @@
         status = "okay";
     };
 };
+
 /* FINGERPRINT end */
 
 /* IRTX GPIO end */
