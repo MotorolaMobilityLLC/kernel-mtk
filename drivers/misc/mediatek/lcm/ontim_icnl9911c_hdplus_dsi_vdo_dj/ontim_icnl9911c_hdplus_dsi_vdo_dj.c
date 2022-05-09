@@ -387,8 +387,18 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight(void *handle, unsigned int level)
 {
-	if (level > 255)
+	if (level == 256)
+    {
 		level = 255;
+    }
+    else
+    {
+        if (level > 256)
+        {
+            level = 255;
+        }
+        level = level*78/100 + 1;
+    }
 
 	bl_level[0].para_list[0] = level & 0xFF;
 	//bl_level[0].para_list[1] = (level & 0x0F);
