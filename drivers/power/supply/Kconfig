@@ -727,6 +727,18 @@ config CHARGER_RT9455
 	help
 	  Say Y to enable support for Richtek RT9455 battery charger.
 
+config MOTO_CHG_WT6670F_SUPPORT
+        bool "Enable WT6670F charger protocol IC for Moto"
+        default n
+        help
+          This is to enable MOTO supports of IC WT6670F.
+
+config WT6670F_QC3P
+        tristate "QC3+ protocal chipset"
+        depends on I2C
+        help
+          Say Y to enable support for QC3 plus protocal chipset.
+
 config CHARGER_CROS_USBPD
 	tristate "ChromeOS EC based USBPD charger"
 	depends on CROS_USBPD_NOTIFY
