@@ -13,8 +13,6 @@
 
 /*begin, fps, fingerprint config*/
 &pio{
-    fpsensor_spi_default: fpsensor_spi_default {
-    };
     fpsensor_rst_low: fpsensor_rst_low {
         pins_cmd_dat {
             pinmux = <PINMUX_GPIO22__FUNC_GPIO22>;
@@ -29,14 +27,39 @@
             output-high;
         };
     };
+    fpsensor_irq_active: fpsensor_irq_active {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
+            slew-rate = <0>;
+            bias-disable;
+        };
+    };
+
+    fpsensor_vcc_high: fpsensor_vcc_high {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    fpsensor_vcc_low: fpsensor_vcc_low {
+        pins_cmd_dat {
+            pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
 };
 
 &fingerprint_pinctrl{
-    pinctrl-names = "fpsensor_spi_default", "fpsensor_rst_low",
-        "fpsensor_rst_high";
-    pinctrl-0 = <&fpsensor_spi_default>;
-    pinctrl-1 = <&fpsensor_rst_low>;
-    pinctrl-2 = <&fpsensor_rst_high>;
+    pinctrl-names = "fpsensor_rst_low", "fpsensor_rst_high", "fpsensor_irq_active",
+            "fpsensor_vcc_high", "fpsensor_vcc_low";
+    pinctrl-0 = <&fpsensor_rst_low>;
+    pinctrl-1 = <&fpsensor_rst_high>;
+    pinctrl-2 = <&fpsensor_irq_active>;
+    pinctrl-3 = <&fpsensor_vcc_high>;
+    pinctrl-4 = <&fpsensor_vcc_low>;
 
     status = "okay";
 };
