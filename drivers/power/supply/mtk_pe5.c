@@ -1224,6 +1224,7 @@ static int pe50_earily_restart(struct pe50_algo_info *info)
  * It cannot start algo again if algo has been started once before
  * Run once flag will be reset after plugging out TA
  */
+#define MMI_START_CURRENT_MA 200
 static inline int pe50_start(struct pe50_algo_info *info)
 {
 	int ret, ibus, vbat, vbus, ita, i;
@@ -1282,7 +1283,7 @@ static inline int pe50_start(struct pe50_algo_info *info)
 		goto start;
 	}
 	ita = precise_div(percent(vbus * ibus, 90), 2 * vbat);
-	if (ita < desc->idvchg_term) {
+	if (ita < MMI_START_CURRENT_MA) {
 		PE50_ERR("estimated ita(%d) < idvchg_term(%d)\n", ita,
 			desc->idvchg_term);
 		return -EINVAL;
