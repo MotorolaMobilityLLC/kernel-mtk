@@ -430,9 +430,18 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight(void *handle, unsigned int level)
 {
-	if (level > 255)
+	if (level == 256)
+    {
 		level = 255;
-
+    }
+    else
+    {
+	if (level > 256)
+        {
+		level = 255;
+        }
+        level = level*71/100 + 1;
+    }
 	bl_level[0].para_list[0] = level & 0xFF;
 	LCM_LOGI("%s,backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
