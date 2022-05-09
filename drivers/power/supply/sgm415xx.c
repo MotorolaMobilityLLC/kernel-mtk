@@ -34,8 +34,22 @@
  *
  *********************************************************/
 
+extern void Charger_Detect_Init(void);
+extern void Charger_Detect_Release(void);
 #define SGM4154x_REG_NUM    (0xF)
-
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int wt6670f_en_hvdcp(void);
+extern int wt6670f_start_detection(void);
+extern int wt6670f_get_protocol(void);
+//extern int wt6670f_get_charger_type(void);
+extern bool wt6670f_is_charger_ready(void);
+//extern void bq2597x_set_psy(void);
+extern int wt6670f_do_reset(void);
+extern bool qc3p_z350_init_ok;
+bool m_chg_ready = false;
+extern int m_chg_type;
+extern int g_qc3p_id;
+#endif
 /* SGM4154x REG06 BOOST_LIM[5:4], uV */
 static const unsigned int BOOST_VOLT_LIMIT[] = {
 	4850000, 5000000, 5150000, 5300000		
@@ -509,7 +523,200 @@ static int sgm4154x_get_input_curr_lim(struct charger_device *chg_dev,unsigned i
 
 	return 0;
 }
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+void wt6670f_get_charger_type_func_work(struct work_struct *work)
+{
+	struct delayed_work *psy_dwork = NULL;
+	struct sgm4154x_device *sgm;
+	struct sgm4154x_state *state;
+	bool early_notified = false;
+	bool should_notify = false;
+	bool need_retry = false;
+	int early_chg_type = 0;
+	int wait_count = 0;
+	int count = 0;
+        union power_supply_propval propval = {.intval = 0};
+     	psy_dwork = container_of(work, struct delayed_work, work);
+	if(psy_dwork == NULL) {
+		pr_err("Cann't get charge_monitor_work\n");
+		return ;
+	}
+	sgm = container_of(psy_dwork, struct sgm4154x_device, psy_dwork);
+	if(sgm == NULL) {
+		pr_err("Cann't get sgm4154x_device\n");
+		return ;
+	}
+	state = &sgm->state;
+	 Charger_Detect_Init();
+	if(0 == g_qc3p_id){//wt6670f
+	do{
+		m_chg_ready = false;
+		m_chg_type = 0;
+		early_notified = false;
+		should_notify = false;
+		need_retry = false;
+		early_chg_type = 0;
+		wt6670f_start_detection();
+        while((!m_chg_ready)&&(count<100)){
+                msleep(30);
+                count++;
+                m_chg_ready = wt6670f_is_charger_ready();
 
+                if(!early_notified){
+		      early_chg_type = wt6670f_get_protocol();
+		   }
+	
+		if(early_chg_type == 0x08 || early_chg_type == 0x09){
+			pr_err("[%s] WT6670F early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
+			break;
+		}
+		switch(early_chg_type){
+			case 0x1:
+                             if(!early_notified){
+				   should_notify = true;
+                                   state->chrg_type = SGM4154x_NON_STANDARD;//NONSTANDARD_CHARGER;//FC
+			     }
+                             break;
+			case 0x2:
+                             if(!early_notified){
+				   should_notify = true;
+                                   state->chrg_type = SGM4154x_USB_SDP;//STANDARD_HOST;//SDP
+                             }
+                             break;
+	    		case 0x3:
+                             if(!early_notified){
+				   should_notify = true;
+                                   state->chrg_type = SGM4154x_USB_CDP;//CDP
+                             }
+                             break;
+			case 0x4:
+			case 0x5:
+                        case 0x6:
+                        case 0x8://QC3P_18W
+                        case 0x9://QC3P_27W
+                             if(!early_notified){
+				   should_notify = true;
+                                   state->chrg_type = SGM4154x_USB_DCP;//STANDARD_CHARGER;//DC
+                             }
+			     break;
+			default:
+			     break;
+
+		}
+
+		// Earlier notify charger detected before QC3+ detected
+		if(should_notify && (!early_notified)/* && (&sgm->psy_dwork != NULL)*/){
+                        pr_err("[%s] WT6670F charger detect early notify!\n",__func__);
+                        if (!sgm->psy)
+                             sgm->psy = power_supply_get_by_name("charger");
+
+			if(sgm->psy){
+	                     propval.intval = state->chrg_type;
+                             power_supply_set_property(sgm->psy,
+                                           POWER_SUPPLY_PROP_CHARGE_TYPE,
+                                           &propval);
+
+			     early_notified = true;
+			}
+		}
+
+//                pr_err("wt6670f waiting type: 0x%x, count: %d\n",m_chg_ready, count);
+                pr_err("wt6670f waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
+//                pr_err("wt6670f waiting early type: 0x%x, chr_type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_type, m_chg_ready, count);
+        }
+        m_chg_type = wt6670f_get_protocol();
+
+	if(m_chg_type == 0x7 && !need_retry){
+		need_retry = true;
+	} else {
+		need_retry = false;
+	}
+
+        pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
+	}while(need_retry);
+	}//wt6670f
+		if(1 == g_qc3p_id){//z350
+			if(qc3p_z350_init_ok) {
+				qc3p_z350_init_ok =false;
+				wt6670f_do_reset();
+			}
+			m_chg_type = 0;
+			wait_count = 0;
+			while((!m_chg_type)&&(wait_count<30)){
+				msleep(30);
+				wait_count++;
+				pr_err("z350 early waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+			}
+			m_chg_type = wt6670f_get_protocol();
+			if((m_chg_type != 0x02)&&(m_chg_type != 0x03))
+			{
+				if (!sgm->psy)
+				sgm->psy = power_supply_get_by_name("charger");
+
+				if(sgm->psy){
+				propval.intval = SGM4154x_USB_DCP;//STANDARD_CHARGER;
+				power_supply_set_property(sgm->psy,POWER_SUPPLY_PROP_CHARGE_TYPE,&propval);
+				}
+				wait_count = 0;
+				while((!m_chg_type)&&(wait_count<30)){
+				msleep(100);
+				wait_count++;
+				pr_err("z350 waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+			}
+			m_chg_type = wt6670f_get_protocol();
+			}
+			if(m_chg_type == 0x04){
+				pr_err("z350==0x04 retry type");
+				msleep(2000);
+				m_chg_type = wt6670f_get_protocol();
+				pr_err("z350==0x04 retry type:%x,%d\n",m_chg_type,wait_count);
+			}
+			if(m_chg_type == 0x10){
+				wt6670f_en_hvdcp();
+
+				wait_count = 0;
+				while((m_chg_type != 0xff)&&(wait_count<30)){
+						msleep(100);
+						wait_count++;
+				}
+				m_chg_type = wt6670f_get_protocol();
+			}
+        	pr_err("[%s] z350 charge type is  0x%x\n",__func__, m_chg_type);
+		}
+
+        switch (m_chg_type) {
+            case 0x1:
+                state->chrg_type = SGM4154x_NON_STANDARD;//NONSTANDARD_CHARGER;//FC
+                break;
+            case 0x2:
+                state->chrg_type = SGM4154x_USB_SDP;//STANDARD_HOST;//SDP
+                break;
+            case 0x3:
+                state->chrg_type = SGM4154x_USB_CDP;//CHARGING_HOST;//CDP
+                break;
+            case 0x4:
+            case 0x5:
+            case 0x6:
+            case 0x8://QC3P_18W
+            case 0x9://QC3P_27W
+                state->chrg_type = SGM4154x_USB_DCP;//STANDARD_CHARGER;//DC
+		break;
+/*
+            case 0x8://QC3P_18W
+                state->chrg_type = QC3P_18W_CHARGER;//DCg
+		break;
+            case 0x9://QC3P_27W
+                state->chrg_type = QC3P_27W_CHARGER;//DC
+                break;
+*/
+	    default:
+                state->chrg_type = SGM4154x_NON_STANDARD;//NONSTANDARD_CHARGER;//FC
+                break;
+        }
+	power_supply_changed(sgm->charger);
+	Charger_Detect_Release();
+}
+#endif
 static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 			     struct sgm4154x_state *state)
 {
@@ -527,6 +734,7 @@ static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 			return ret;
 		}
 	}
+
 	state->chrg_type = chrg_stat & SGM4154x_VBUS_STAT_MASK;
 	state->chrg_stat = chrg_stat & SGM4154x_CHG_STAT_MASK;
 	state->online = !!(chrg_stat & SGM4154x_PG_STAT);
@@ -605,10 +813,17 @@ static int sgm4154x_charging_switch(struct charger_device *chg_dev,bool enable)
 	int ret;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 	
-	if (enable)
+	if (enable){
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		sgm->charging_enabled = true;
+#endif
 		ret = sgm4154x_enable_charger(sgm);
-	else
+	}else{
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		sgm->charging_enabled = false;
+#endif
 		ret = sgm4154x_disable_charger(sgm);
+	}
 	return ret;
 }
 
@@ -849,7 +1064,7 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 	int ret = 0;
 
 	mutex_lock(&sgm->lock);
-	//ret = sgm4154x_get_state(sgm, &state);
+	ret = sgm4154x_get_state(sgm, &state);
 	state = sgm->state;
 	mutex_unlock(&sgm->lock);
 	if (ret)
@@ -1078,6 +1293,9 @@ static void charger_detect_work_func(struct work_struct *work)
 		case SGM4154x_USB_DCP:
 			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	    schedule_delayed_work(&sgm->psy_dwork, 0);
+#endif
 			pr_err("SGM4154x charger type: DCP\n");
 			curr_in_limit = 2000000;
 			break;
@@ -1127,7 +1345,7 @@ static irqreturn_t sgm4154x_irq_handler_thread(int irq, void *private)
 	return IRQ_HANDLED;
 }
 static char *sgm4154x_charger_supplied_to[] = {
-	"main-battery",	
+	"battery",
 };
 
 static struct power_supply_desc sgm4154x_power_supply_desc = {
@@ -1226,8 +1444,6 @@ static int sgm4154x_hw_init(struct sgm4154x_device *sgm)
 		bat_info.constant_charge_voltage_max_uv,
 		bat_info.charge_term_current_ua,
 		sgm->init_data.ilim);
-	/*RESET*/
-	ret =  __sgm4154x_write_byte(sgm, SGM4154x_CHRG_CTRL_b, 0x80);
 
 	/*VINDPM*/
 	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_a,
@@ -1588,6 +1804,7 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	
 	INIT_DELAYED_WORK(&sgm->charge_detect_delayed_work, charger_detect_work_func);
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
+	INIT_DELAYED_WORK(&sgm->psy_dwork, wt6670f_get_charger_type_func_work);
 	if (client->irq) {
 		ret = devm_request_threaded_irq(dev, client->irq, NULL,
 						sgm4154x_irq_handler_thread,
@@ -1604,6 +1821,9 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		pr_err("Failed to register power supply\n");
 		return ret;
 	}
+
+    /*RESET*/
+	ret =  __sgm4154x_write_byte(sgm, SGM4154x_CHRG_CTRL_b, 0x80);
 
 	ret = sgm4154x_hw_init(sgm);
 	if (ret) {
@@ -1633,7 +1853,7 @@ static int sgm4154x_charger_remove(struct i2c_client *client)
     struct sgm4154x_device *sgm = i2c_get_clientdata(client);
 
     cancel_delayed_work_sync(&sgm->charge_monitor_work);
-
+    cancel_delayed_work_sync(&sgm->psy_dwork);
     regulator_unregister(sgm->otg_rdev);
 
     power_supply_unregister(sgm->charger); 
