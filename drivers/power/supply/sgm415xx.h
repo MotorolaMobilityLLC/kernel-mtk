@@ -324,6 +324,14 @@ struct sgm4154x_device {
 	struct wakeup_source *charger_wakelock;
 	bool enable_sw_jeita;
 	struct sgm4154x_jeita data;
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+    struct mutex    chgdet_lock;
+        bool            attach;
+	bool            charging_enabled;
+        /*psy*/
+        struct power_supply *psy;
+        struct delayed_work psy_dwork;
+#endif
 };
 
 #endif /* _SGM4154x_CHARGER_H */
