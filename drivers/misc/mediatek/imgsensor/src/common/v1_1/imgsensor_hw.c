@@ -94,7 +94,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
 				else if (IS_MT6893(phw->g_platform_id) ||
 					IS_MT6885(phw->g_platform_id) ||
 					IS_MT6873(phw->g_platform_id) ||
-					IS_MT6855(phw->g_platform_id))
+					IS_MT6855(phw->g_platform_id) ||
+					IS_MT6789(phw->g_platform_id))
 					pcust_pwr_cfg->i2c_dev = IMGSENSOR_I2C_DEV_4;
 				else
 					pcust_pwr_cfg->i2c_dev = IMGSENSOR_I2C_DEV_2;
