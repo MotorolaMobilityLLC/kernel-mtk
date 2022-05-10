@@ -1676,6 +1676,9 @@
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
+	aw36518: aw36518{
+		compatible = "awinic,aw36518";
+	};
 	mtk_composite_v4l2_1: mtk_composite_v4l2_1 {
 		compatible = "mediatek,mtk_composite_v4l2_1";
 	};
