@@ -17,6 +17,7 @@
 #include "mediatek/mt6789-vicky-audio-overlay.dtsi"
 #include "mediatek/vicky-touch.dtsi"
 #include "mediatek/mt6789-vicky-fps-overlay.dtsi"
+#include "mediatek/mt6789-moto-vicky-charger.dtsi"
 &dispsys_config {
 	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
