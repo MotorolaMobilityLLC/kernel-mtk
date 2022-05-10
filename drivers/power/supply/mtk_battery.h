@@ -31,7 +31,7 @@
 #define BMLOG_DEBUG_LEVEL   7
 #define BMLOG_TRACE_LEVEL   8
 
-#define BMLOG_DEFAULT_LEVEL BMLOG_DEBUG_LEVEL
+#define BMLOG_DEFAULT_LEVEL BMLOG_ERROR_LEVEL
 
 #define bm_err(fmt, args...)   \
 do {\
