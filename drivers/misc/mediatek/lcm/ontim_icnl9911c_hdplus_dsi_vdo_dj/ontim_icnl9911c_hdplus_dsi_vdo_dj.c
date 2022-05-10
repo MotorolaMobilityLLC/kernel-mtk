@@ -293,7 +293,7 @@ static void lcm_reset(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(20);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-
+	MDELAY(10);
 	LCM_LOGI("%s:icnl9911c lcm reset done\n",__func__);
 }
 
@@ -331,7 +331,7 @@ static void lcm_init(void)
 		else
 			LCM_LOGI("%s:---cmd=%0x--i2c write success----\n",__func__, cmd);
 		cmd = 0x01;
-		data = 0x12;
+		data = 0x14;
 		ret = NT50358A_write_byte(cmd, data);
 		if (ret < 0)
 			LCM_LOGI("%s:--cmd=%0x--i2c write error----\n",__func__, cmd);
