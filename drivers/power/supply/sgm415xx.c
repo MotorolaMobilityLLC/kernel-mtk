@@ -239,12 +239,12 @@ static int sgm4154x_get_prechrg_curr(struct sgm4154x_device *sgm)
 	curr = reg_val * SGM4154x_PRECHRG_CURRENT_STEP_uA + offset;
 	return curr;
 }
-
-static int sgm4154x_get_ichg_curr(struct sgm4154x_device *sgm)
+#endif
+static int sgm4154x_get_ichg_curr(struct charger_device *chg_dev, u32 *curr)
 {
 	int ret;
 	u8 ichg;
-    unsigned int curr;
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 	
 	ret = sgm4154x_read_reg(sgm, SGM4154x_CHRG_CTRL_2, &ichg);
 	if (ret)
@@ -253,25 +253,25 @@ static int sgm4154x_get_ichg_curr(struct sgm4154x_device *sgm)
 	ichg &= SGM4154x_ICHRG_I_MASK;
 #if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))	
 	if (ichg <= 0x8)
-		curr = ichg * 5000;
+		*curr = ichg * 5000;
 	else if (ichg <= 0xF)
 		curr = 40000 + (ichg - 0x8) * 10000;
 	else if (ichg <= 0x17)
-		curr = 110000 + (ichg - 0xF) * 20000;
+		*curr = 110000 + (ichg - 0xF) * 20000;
 	else if (ichg <= 0x20)
-		curr = 270000 + (ichg - 0x17) * 30000;
+		*curr = 270000 + (ichg - 0x17) * 30000;
 	else if (ichg <= 0x30)
-		curr = 540000 + (ichg - 0x20) * 60000;
+		*curr = 540000 + (ichg - 0x20) * 60000;
 	else if (ichg <= 0x3C)
-		curr = 1500000 + (ichg - 0x30) * 120000;
+		*curr = 1500000 + (ichg - 0x30) * 120000;
 	else
-		curr = 3000000;
+		*curr = 3000000;
 #else
-	curr = ichg * SGM4154x_ICHRG_I_STEP_uA;
+	*curr = ichg * SGM4154x_ICHRG_I_STEP_uA;
 #endif	
-	return curr;
+	return ret;
 }
-#endif
+
 
 static int sgm4154x_set_term_curr(struct sgm4154x_device *sgm, int uA)
 {
@@ -363,7 +363,7 @@ static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int c
 	
 	
 	reg_val = (chrg_volt-SGM4154x_VREG_V_MIN_uV) / SGM4154x_VREG_V_STEP_uV;
-	reg_val = reg_val<<3;
+	reg_val = reg_val << 3;
 	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_4,
 				  SGM4154x_VREG_V_MASK, reg_val);
 
@@ -380,7 +380,7 @@ static int sgm4154x_get_chrg_volt(struct charger_device *chg_dev,unsigned int *v
 	if (ret)
 		return ret;	
 
-	vreg_val = (vreg_val & SGM4154x_VREG_V_MASK)>>3;
+	vreg_val = (vreg_val & SGM4154x_VREG_V_MASK) >> 3;
 
 	if (15 == vreg_val)
 		*volt = 4352000; //default
@@ -389,6 +389,14 @@ static int sgm4154x_get_chrg_volt(struct charger_device *chg_dev,unsigned int *v
 
 	return 0;
 }
+
+static int sgm4154x_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
+{
+	*curr = 60 * 1000;
+
+	return 0;
+}
+
 #if 0
 static int sgm4154x_get_vindpm_offset_os(struct sgm4154x_device *sgm)
 {
@@ -776,7 +784,7 @@ static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 
 	return 0;
 }
-#if 0
+
 static int sgm4154x_set_hiz_en(struct charger_device *chg_dev, bool hiz_en)
 {
 	u8 reg_val;
@@ -788,7 +796,7 @@ static int sgm4154x_set_hiz_en(struct charger_device *chg_dev, bool hiz_en)
 	return sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_0,
 				  SGM4154x_HIZ_EN, reg_val);
 }
-#endif
+
 static int sgm4154x_enable_charger(struct sgm4154x_device *sgm)
 {
     int ret;
@@ -811,6 +819,7 @@ static int sgm4154x_disable_charger(struct sgm4154x_device *sgm)
 static int sgm4154x_charging_switch(struct charger_device *chg_dev,bool enable)
 {
 	int ret;
+	u8 val;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 	
 	if (enable){
@@ -824,7 +833,54 @@ static int sgm4154x_charging_switch(struct charger_device *chg_dev,bool enable)
 #endif
 		ret = sgm4154x_disable_charger(sgm);
 	}
+
+	pr_err("%s charger %s\n", enable ? "enable" : "disable",
+	       !ret ? "successfully" : "failed");
+	ret = sgm4154x_read_reg(sgm, SGM4154x_CHRG_CTRL_1, &val);
+
+	if (!ret) {
+		val = !!(val & SGM4154x_CHRG_EN);
+		if (sgm->charge_enabled != val) {
+			sgm->charge_enabled = val;
+			power_supply_changed(sgm->charger);
+		}
+	}
 	return ret;
+}
+
+static int sgm4154x_plug_in(struct charger_device *chg_dev)
+{
+
+	int ret;
+
+	ret = sgm4154x_charging_switch(chg_dev, true);
+
+	if (ret)
+		pr_err("Failed to enable charging:%d\n", ret);
+
+	return ret;
+}
+
+static int sgm4154x_plug_out(struct charger_device *chg_dev)
+{
+	int ret;
+
+	ret = sgm4154x_charging_switch(chg_dev, false);
+
+	if (ret)
+		pr_err("Failed to disable charging:%d\n", ret);
+
+
+	return ret;
+}
+
+static int sgm4154x_is_charging_enable(struct charger_device *chg_dev, bool *en)
+{
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+
+	*en = sgm->charge_enabled;
+
+	return 0;
 }
 
 static int sgm4154x_set_recharge_volt(struct sgm4154x_device *sgm, int mV)
@@ -1711,12 +1767,42 @@ static int sgm4154x_vbus_regulator_register(struct sgm4154x_device *sgm)
 	return ret;
 }
 
+static int sgm4154x_do_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+
+	if (!sgm->charger) {
+		dev_notice(sgm->dev, "%s: cannot get charger\n", __func__);
+		return -ENODEV;
+	}
+
+	pr_err("%s:event:%d\n", __func__, event);
+	switch (event) {
+	case EVENT_FULL:
+		sgm->mmi_charging_full = true;
+		break;
+	case EVENT_RECHARGE:
+	case EVENT_DISCHARGE:
+		sgm->mmi_charging_full = false;
+		break;
+	default:
+		break;
+	}
+
+	power_supply_changed(sgm->charger);
+
+	return 0;
+}
+
 static struct charger_ops sgm4154x_chg_ops = {
 	/*.enable_hz = sgm4154x_set_hiz_en,*/
 	/* Normal charging */
+	.plug_in = sgm4154x_plug_in,
+	.plug_out = sgm4154x_plug_out,
 	.dump_registers = sgm4154x_dump_register,
 	.enable = sgm4154x_charging_switch,
-	.get_charging_current = NULL,
+	.is_enabled = sgm4154x_is_charging_enable,
+	.get_charging_current = sgm4154x_get_ichg_curr,
 	.set_charging_current = sgm4154x_set_ichrg_curr,
 	.get_input_current = sgm4154x_get_input_curr_lim,
 	.set_input_current = sgm4154x_set_input_curr_lim,
@@ -1725,7 +1811,7 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.kick_wdt = sgm4154x_reset_watch_dog_timer,
 	.set_mivr = sgm4154x_set_input_volt_lim,
 	.is_charging_done = sgm4154x_get_charging_status,
-
+	.get_min_charging_current = sgm4154x_get_min_ichg,
 	/* Safety timer */
 	.enable_safety_timer = sgm4154x_enable_safetytimer,
 	.is_safety_timer_enabled = sgm4154x_get_is_safetytimer_enable,
@@ -1734,10 +1820,12 @@ static struct charger_ops sgm4154x_chg_ops = {
 	/*.enable_powerpath = sgm4154x_enable_power_path, */
 	/*.is_powerpath_enabled = sgm4154x_get_is_power_path_enable, */
 
+	/* Hz mode */
+	.enable_hz = sgm4154x_set_hiz_en,
 	/* OTG */
 	.enable_otg = sgm4154x_enable_otg,	
 	.set_boost_current_limit = sgm4154x_set_boost_current_limit,
-	//.event = sgm4154x_do_event,
+	.event = sgm4154x_do_event,
 	
 	/* PE+/PE+20 */
 #if (defined(__SGM41542_CHIP_ID__)|| defined(__SGM41516D_CHIP_ID__)|| defined(__SGM41543D_CHIP_ID__))
