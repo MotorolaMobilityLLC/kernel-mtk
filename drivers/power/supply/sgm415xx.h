@@ -320,6 +320,8 @@ struct sgm4154x_device {
 	struct delayed_work charge_monitor_work;
 	struct notifier_block pm_nb;
 	bool sgm4154x_suspend_flag;
+        bool mmi_charging_full;
+        bool charge_enabled;
 
 	struct wakeup_source *charger_wakelock;
 	bool enable_sw_jeita;
