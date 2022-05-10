@@ -4063,6 +4063,24 @@ pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
 			TurnOffDacPower();
 		}
 	}
+
+	//open speaker PA
+	if (enable)
+	{
+		Speaker_Amp_PA_SetMode(0);//Music
+	}else{
+		Speaker_Amp_PA_SetMode(2);//Off
+	}
+
+
+	//open receiver MUX & receiver PA
+	Voice_Amp_Mux_Select(enable);
+	if (enable) {
+		Voice_Amp_PA_SetMode(0);//Music
+	} else {
+		Voice_Amp_PA_SetMode(2);//Off
+	}
+
 }
 static int Headset_Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
