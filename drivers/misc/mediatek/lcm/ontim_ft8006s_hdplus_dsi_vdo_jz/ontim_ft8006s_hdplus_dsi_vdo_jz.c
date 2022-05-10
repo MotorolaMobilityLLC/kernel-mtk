@@ -290,7 +290,7 @@ static void lcm_reset(void)
 	//MDELAY(5);
 	//SET_RESET_PIN(1);
 
-	MDELAY(100);
+	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
@@ -365,7 +365,7 @@ static void lcm_suspend(void)
 	}
 #ifndef MACH_FPGA
 	push_table(NULL, setting_table, setting_table_size, 1);
-	MDELAY(160);//要大于150ms
+	MDELAY(150);//要大于150ms
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
 //		MDELAY(2);
