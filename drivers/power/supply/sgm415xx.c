@@ -1796,16 +1796,18 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		pr_info("%s: register charger device  failed\n", __func__);
 		ret = PTR_ERR(sgm->chg_dev);
 		return ret;
-	}    
-	
+	}
+
 	/* otg regulator */
 	s_chg_dev_otg=sgm->chg_dev;
-		
-	
+
+
 	INIT_DELAYED_WORK(&sgm->charge_detect_delayed_work, charger_detect_work_func);
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
-	INIT_DELAYED_WORK(&sgm->psy_dwork, wt6670f_get_charger_type_func_work);
-	if (client->irq) {
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+    INIT_DELAYED_WORK(&sgm->psy_dwork, wt6670f_get_charger_type_func_work);
+#endif
+    if (client->irq) {
 		ret = devm_request_threaded_irq(dev, client->irq, NULL,
 						sgm4154x_irq_handler_thread,
 						IRQF_TRIGGER_FALLING |
@@ -1814,8 +1816,8 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		if (ret)
 			return ret;
 		enable_irq_wake(client->irq);
-	}	
-	
+	}
+
 	ret = sgm4154x_power_supply_init(sgm, dev);
 	if (ret) {
 		pr_err("Failed to register power supply\n");
@@ -1841,9 +1843,9 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		dev_err(dev, "failed to init regulator\n");
 		return ret;
 	}
-	
+
 	schedule_delayed_work(&sgm->charge_monitor_work,100);
-	
+
 	return ret;
 
 }
@@ -1856,10 +1858,10 @@ static int sgm4154x_charger_remove(struct i2c_client *client)
     cancel_delayed_work_sync(&sgm->psy_dwork);
     regulator_unregister(sgm->otg_rdev);
 
-    power_supply_unregister(sgm->charger); 
-	
+    power_supply_unregister(sgm->charger);
+
 	mutex_destroy(&sgm->lock);
-    mutex_destroy(&sgm->i2c_rw_lock);       
+    mutex_destroy(&sgm->i2c_rw_lock);
 
     return 0;
 }
@@ -1867,7 +1869,7 @@ static int sgm4154x_charger_remove(struct i2c_client *client)
 static void sgm4154x_charger_shutdown(struct i2c_client *client)
 {
     int ret = 0;
-	
+
 	struct sgm4154x_device *sgm = i2c_get_clientdata(client);
     ret = sgm4154x_disable_charger(sgm);
     if (ret) {
@@ -1908,7 +1910,7 @@ MODULE_DEVICE_TABLE(of, sgm4154x_of_match);
 static struct i2c_driver sgm4154x_driver = {
 	.driver = {
 		.name = "sgm4154x_charger",
-		.of_match_table = sgm4154x_of_match,		
+		.of_match_table = sgm4154x_of_match,
 	},
 	.probe = sgm4154x_driver_probe,
 	.remove = sgm4154x_charger_remove,
