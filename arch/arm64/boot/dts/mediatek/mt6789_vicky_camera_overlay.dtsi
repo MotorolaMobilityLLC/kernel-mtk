@@ -254,7 +254,7 @@
 	cam0_vcama-supply = <&mt6358_vcamio_reg>;
 	cam0_vcamio-supply = <&mt6358_vcamio_reg>;
 	cam0_vcamd-supply = <&mt6358_vcamio_reg>;
-//	cam0_vcama1-supply = <&mt6358_vcamio_reg>;
+	cam0_vcamaf-supply = <&mt6358_vcamio_reg>;
 
 	/* front hi1634*/
 	cam1_vcama-supply = <&mt6358_vcamio_reg>;
@@ -275,7 +275,7 @@
 	cam0_pin_vcama = "wl2868";
 	cam0_pin_vcamio = "wl2868";
 	cam0_pin_vcamd = "wl2868";
-	cam0_pin_vcama1 = "wl2868";
+	cam0_pin_vcamaf = "wl2868";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
 	cam1_pin_vcama = "wl2868";
@@ -320,6 +320,12 @@
 		compatible = "mediatek,camera_main";
 		#thermal-sensor-cells = <0>;
 		reg = <0x56>;
+		status = "okay";
+	};
+
+	camera_main_af_mtk:camera_main_af@0c {
+		compatible = "mediatek,camera_main_af";
+		reg = <0x0c>;
 		status = "okay";
 	};
 };
