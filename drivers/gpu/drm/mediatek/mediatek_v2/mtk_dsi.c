@@ -712,8 +712,8 @@ static void mtk_dsi_dphy_timconfig_v2(struct mtk_dsi *dsi, void *handle)
 	hs_zero = hs_zero > hs_prpr ? hs_zero - hs_prpr : hs_zero;
 
 	/* spec.  hs_trail > max(8ui, 60ns+4ui) */
-	hs_trail = NS_TO_CYCLE((9 * ui), cycle_time) > NS_TO_CYCLE((80 + 5 * (ui+1)), cycle_time) ?
-			NS_TO_CYCLE((9 * ui), cycle_time) : NS_TO_CYCLE((80 + 5 * (ui+1)), cycle_time);
+	hs_trail = NS_TO_CYCLE((9 * ui), cycle_time) > NS_TO_CYCLE((80 + 5 * ui), cycle_time) ?
+			NS_TO_CYCLE((9 * ui), cycle_time) : NS_TO_CYCLE((80 + 5 * ui), cycle_time);
 
 	/* spec. ta_get = 5*lpx */
 	ta_get = 5 * lpx;
@@ -766,6 +766,7 @@ CONFIG_REG:
 	//N4/5 must add this constraint, N6 is option, so we use the same
 	lpx = (lpx % 2) ? lpx + 1 : lpx; //lpx must be even
 	hs_prpr = (hs_prpr % 2) ? hs_prpr + 1 : hs_prpr; //hs_prpr must be even
+	hs_prpr = hs_prpr >= 6 ? hs_prpr : 6; //hs_prpr must be more than 6
 	da_hs_exit = (da_hs_exit % 2) ? da_hs_exit : da_hs_exit + 1; //must be odd
 
 	value = REG_FLD_VAL(FLD_LPX, lpx)
