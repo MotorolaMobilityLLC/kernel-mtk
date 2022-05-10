@@ -23,7 +23,7 @@
         #sound-dai-cells = <0>;
         reg = <0x34>;
         irq-gpio = <&pio 4 0x0>;
-        sound-channel = <0>;
+        sound-channel = <1>;
         vcalb_half = "true";
         status = "okay";
     };
@@ -33,7 +33,7 @@
         #sound-dai-cells = <0>;
         reg = <0x35>;
         irq-gpio = <&pio 62 0x0>;
-        sound-channel = <1>;
+        sound-channel = <0>;
         vcalb_half = "true";
         status = "okay";
     };
