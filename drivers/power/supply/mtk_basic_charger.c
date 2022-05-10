@@ -466,12 +466,14 @@ static int do_algorithm(struct mtk_charger *info)
 	return 0;
 }
 
+int battery_status = 0;
+
 static int enable_charging(struct mtk_charger *info,
 						bool en)
 {
 	int i;
 	struct chg_alg_device *alg;
-
+	struct power_supply *bat_psy = NULL;
 
 	chr_err("%s %d\n", __func__, en);
 
@@ -483,11 +485,24 @@ static int enable_charging(struct mtk_charger *info,
 			chg_alg_stop_algo(alg);
 		}
 		charger_dev_enable(info->chg1_dev, false);
+		battery_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		pr_info("hzn: POWER_SUPPLY_STATUS_NOT_CHARGING\n", __func__);
 		charger_dev_do_event(info->chg1_dev, EVENT_DISCHARGE, 0);
 	} else {
 		charger_dev_enable(info->chg1_dev, true);
+		battery_status = POWER_SUPPLY_STATUS_CHARGING;
+		pr_info("hzn: POWER_SUPPLY_STATUS_CHARGING\n", __func__);
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 	}
+	
+	bat_psy =  power_supply_get_by_name("battery");
+	if (IS_ERR_OR_NULL(bat_psy)) {
+		chr_err("%s Couldn't get bat_psy\n", __func__);
+		return 0;
+	}
+
+	power_supply_changed(bat_psy);
+	chr_err("%s get bat_psy succ\n",__func__);
 
 	return 0;
 }

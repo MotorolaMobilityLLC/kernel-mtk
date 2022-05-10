@@ -66,13 +66,6 @@ module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
 #endif
 
-#include <ontim/ontim_dev_dgb.h>
-char battery_vendor_name[50]="bora 4000mAh";
-DEV_ATTR_DECLARE(battery)
-DEV_ATTR_DEFINE("vendor",battery_vendor_name)
-DEV_ATTR_DECLARE_END;
-ONTIM_DEBUG_DECLARE_AND_INIT(battery,battery,8);
-
 
 struct tag_bootmode {
 	u32 size;
@@ -2159,12 +2152,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	char *name = NULL;
 
 	chr_err("%s: starts\n", __func__);
-	//+add by hzb for ontim debug
-	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
-	{
-		return -EIO;
-	}
-	//-add by hzb for ontim debug
+
 
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
 	if (!info)
@@ -2258,9 +2246,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg_alg_nb.notifier_call = chg_alg_event;
 
 	kthread_run(charger_routine_thread, info, "charger_thread");
-	//+add by hzb for ontim debug
-	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-	//-add by hzb for ontim debug
+
 
 	return 0;
 }

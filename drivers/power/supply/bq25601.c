@@ -26,6 +26,7 @@
 #include "charger_class.h"
 #include <linux/power_supply.h>
 #include <linux/regulator/driver.h>
+#include "mtk_charger.h"
 
 
 #include <ontim/ontim_dev_dgb.h>
@@ -1070,14 +1071,14 @@ static int bq25601_get_input_current(struct charger_device *chg_dev,
 				     u32 *aicr)
 {
 	int ret = 0;
-#ifdef FIXME
+//#ifdef FIXME
 	unsigned char val = 0;
 
 	bq25601_read_interface(bq25601_CON0, &val, CON0_IINLIM_MASK,
 			       CON0_IINLIM_SHIFT);
 	ret = (int)val;
 	*aicr = INPUT_CS_VTH[val];
-#endif
+//#endif
 	return ret;
 }
 
@@ -1230,13 +1231,25 @@ static int bq25601_get_is_safetytimer_enable(struct charger_device
 	return val;
 }
 
+static int  bq25601_enable_powerpath(struct charger_device *chg_dev, bool en)
+{
+	int status = 0;
+
+	pr_info("%s; hzn: en = %d;----------------\n", __func__, en);
+
+	if(en)
+		bq25601_set_vindpm(0x6);	/* VIN DPM check 4.5V */
+	else	
+		bq25601_set_vindpm(0xf);	/* VIN DPM check 5.4V */
+	return status;
+}
 
 static unsigned int charging_hw_init(void)
 {
 	unsigned int status = 0;
 
 	bq25601_set_en_hiz(0x0);
-	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.6V */
+	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.5V */
 	bq25601_set_wdt_rst(0x1);	/* Kick watchdog */
 	bq25601_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
 	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
@@ -1304,9 +1317,9 @@ static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 		return -EINVAL;
 
 	pr_info("%s: event = %d\n", __func__, event);
-#ifdef FIXME
+//#ifdef FIXME
 	switch (event) {
-	case EVENT_EOC:
+	case EVENT_FULL:
 		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
 		break;
 	case EVENT_RECHARGE:
@@ -1315,7 +1328,7 @@ static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 	default:
 		break;
 	}
-#endif
+//#endif
 	return 0;
 }
 
