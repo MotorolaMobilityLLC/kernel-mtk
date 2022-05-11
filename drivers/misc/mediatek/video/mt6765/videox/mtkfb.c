@@ -296,9 +296,17 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 
+#ifdef CONFIG_HBM_SUPPORT
+extern bool g_hbm_enable;
+#endif
+
 int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
+#ifdef CONFIG_HBM_SUPPORT
+	if (g_hbm_enable)
+		level = 256;
+#endif
 	DISPDBG("mtkfb_set_backlight_level:%d Start\n",
 		level);
 	primary_display_setbacklight(level);
