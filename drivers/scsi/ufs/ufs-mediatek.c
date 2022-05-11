@@ -1018,9 +1018,6 @@ int ufs_mtk_rpmb_security_out(struct scsi_device *sdev,
 	cmd[4] = 0;                              /* inc_512 bit 7 set to 0 */
 	put_unaligned_be32(trans_len, cmd + 6);  /* transfer length */
 
-	/* Ensure device is resumed before RPMB operation */
-	scsi_autopm_get_device(sdev);
-
 retry:
 	ret = scsi_execute_req(sdev, cmd, DMA_TO_DEVICE,
 				     frames, trans_len, &sshdr,
@@ -1043,9 +1040,6 @@ retry:
 	if (driver_byte(ret) & DRIVER_SENSE)
 		scsi_print_sense_hdr(sdev, "rpmb: security out", &sshdr);
 
-	/* Allow device to be runtime suspended */
-	scsi_autopm_put_device(sdev);
-
 	return ret;
 }
 
@@ -1065,9 +1059,6 @@ int ufs_mtk_rpmb_security_in(struct scsi_device *sdev,
 	cmd[4] = 0;                             /* inc_512 bit 7 set to 0 */
 	put_unaligned_be32(alloc_len, cmd + 6); /* allocation length */
 
-	/* Ensure device is resumed before RPMB operation */
-	scsi_autopm_get_device(sdev);
-
 retry:
 	ret = scsi_execute_req(sdev, cmd, DMA_FROM_DEVICE,
 				     frames, alloc_len, &sshdr,
@@ -1082,9 +1073,6 @@ retry:
 		 */
 		if (--reset_retries > 0)
 			goto retry;
-
-	/* Allow device to be runtime suspended */
-	scsi_autopm_put_device(sdev);
 
 	if (ret)
 		dev_err(&sdev->sdev_gendev, "%s: failed with err %0x\n",
@@ -1129,7 +1117,10 @@ static int ufs_mtk_rpmb_cmd_seq(struct device *dev,
 	 * Use rpmb lock to prevent other rpmb read/write threads cut in line.
 	 * Use mutex not spin lock because in/out function might sleep.
 	 */
-	mutex_lock(&host->rpmb_lock);
+	down(&host->rpmb_sem);
+	/* Ensure device is resumed before RPMB operation */
+	scsi_autopm_get_device(sdev);
+
 	for (ret = 0, i = 0; i < ncmds && !ret; i++) {
 		cmd = &cmds[i];
 		if (cmd->flags & RPMB_F_WRITE)
@@ -1139,7 +1130,10 @@ static int ufs_mtk_rpmb_cmd_seq(struct device *dev,
 			ret = ufs_mtk_rpmb_security_in(sdev, cmd->frames,
 						      cmd->nframes);
 	}
-	mutex_unlock(&host->rpmb_lock);
+
+	/* Allow device to be runtime suspended */
+	scsi_autopm_put_device(sdev);
+	up(&host->rpmb_sem);
 
 	scsi_device_put(sdev);
 	return ret;
@@ -1221,9 +1215,9 @@ static void ufs_mtk_rpmb_add(void *data, async_cookie_t cookie)
 	rawdev_ufs_rpmb = rdev;
 
 	/*
-	 * Initialize rpmb mutex.
+	 * Initialize rpmb semaphore.
 	 */
-	mutex_init(&host->rpmb_lock);
+	sema_init(&host->rpmb_sem, 1);
 
 out_put_dev:
 	scsi_device_put(hba->sdev_rpmb);
@@ -2397,7 +2391,7 @@ int ufs_mtk_pltfrm_suspend(struct device *dev)
 #endif
 
 	host = ufshcd_get_variant(hba);
-	if (!mutex_trylock(&host->rpmb_lock))
+	if (down_trylock(&host->rpmb_sem))
 		return -EBUSY;
 
 #if defined(CONFIG_UFSFEATURE)
@@ -2420,7 +2414,7 @@ out:
 		ufsf_resume(ufsf, true);
 #endif
 	if (ret)
-		mutex_unlock(&host->rpmb_lock);
+		up(&host->rpmb_sem);
 
 	return ret;
 }
@@ -2443,7 +2437,8 @@ int ufs_mtk_pltfrm_resume(struct device *dev)
 #endif
 
 	host = ufshcd_get_variant(hba);
-	mutex_unlock(&host->rpmb_lock);
+	if (!ret)
+		up(&host->rpmb_sem);
 
 	return ret;
 }
