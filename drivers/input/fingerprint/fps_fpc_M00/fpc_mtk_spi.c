@@ -486,7 +486,7 @@ static ssize_t compatible_all_set(struct device *dev,
 
 		irqf = IRQF_TRIGGER_HIGH | IRQF_ONESHOT;
 		if (of_property_read_bool(dev->of_node, "fpc,enable-wakeup")) {
-			irqf |= IRQF_NO_SUSPEND;
+			//irqf |= IRQF_NO_SUSPEND;
 			device_init_wakeup(dev, 1);
 		}
 		rc = devm_request_threaded_irq(dev, irq_num,
