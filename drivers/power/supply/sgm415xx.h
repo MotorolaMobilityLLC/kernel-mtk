@@ -322,6 +322,7 @@ struct sgm4154x_device {
 	bool sgm4154x_suspend_flag;
         bool mmi_charging_full;
         bool charge_enabled;
+	u32 usb_voltage;
 
 	struct wakeup_source *charger_wakelock;
 	bool enable_sw_jeita;
