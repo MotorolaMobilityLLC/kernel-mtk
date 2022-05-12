@@ -94,7 +94,7 @@ static int wt6670f_write_word(struct wt6670f *wt, u8 reg, u16 data)
 	return ret;
 }
 
-static u16 wt6670f_get_vbus_voltage(void)
+u16 wt6670f_get_vbus_voltage(void)
 {
 	int ret;
 	u8 data[2];
@@ -119,9 +119,8 @@ static u16 wt6670f_get_vbus_voltage(void)
 	tmp = (u16)(tmp * 1898 / 100);
 	kernel_neon_end();
 	return tmp;
-	return 0;
 }
-
+EXPORT_SYMBOL_GPL(wt6670f_get_vbus_voltage);
 
 static u16 wt6670f_get_id(u8 reg)
 {

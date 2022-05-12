@@ -2481,6 +2481,7 @@ static bool charger_init_algo(struct mtk_charger *info)
 	if (info->mmi.factory_mode) {
 		/* Disable charging when enter ATM mode(factory mode) */
 		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
+		charger_dev_enable(info->chg1_dev, false);
 	}
 	return true;
 }
@@ -5085,8 +5086,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
 	/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
+#ifndef _CONFIG_CHARGER_SGM415XX_
 	if (info != NULL && info->bootmode != 8 && info->bootmode != 9 && info->atm_enabled != true)
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, true);
+#endif
 	mtk_charger_tcmd_register(info);
 	mmi_info = info;
 	mmi_init(info);

@@ -26,6 +26,7 @@
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
 #include "sgm415xx.h"
+#include "wt6670f.h"
 #include "charger_class.h"
 #include "mtk_charger.h"
 /**********************************************************
@@ -320,7 +321,9 @@ static int sgm4154x_set_ichrg_curr(struct charger_device *chg_dev, unsigned int 
 	int ret;
 	u8 reg_val;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
-	
+
+	pr_info("%s set charging curr = %d\n", __func__, uA);
+
 	if (uA < SGM4154x_ICHRG_I_MIN_uA)
 		uA = SGM4154x_ICHRG_I_MIN_uA;
 	else if ( uA > sgm->init_data.max_ichg)
@@ -495,10 +498,13 @@ static int sgm4154x_set_input_curr_lim(struct charger_device *chg_dev, unsigned 
 	int ret;
 	u8 reg_val;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
-	
-	if (iindpm < SGM4154x_IINDPM_I_MIN_uA ||
-			iindpm > SGM4154x_IINDPM_I_MAX_uA)
-		return -EINVAL;	
+
+	pr_info("%s set input curr = %d\n", __func__, iindpm);
+
+	if (iindpm < SGM4154x_IINDPM_I_MIN_uA)
+		reg_val = 0;
+	else if (iindpm >= SGM4154x_IINDPM_I_MAX_uA)
+		reg_val = 0x1F;
 
 #if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
 	reg_val = (iindpm-SGM4154x_IINDPM_I_MIN_uA) / SGM4154x_IINDPM_STEP_uA;
@@ -797,6 +803,30 @@ static int sgm4154x_set_hiz_en(struct charger_device *chg_dev, bool hiz_en)
 				  SGM4154x_HIZ_EN, reg_val);
 }
 
+static int sgm4154x_enable_power_path(struct charger_device *chg_dev, bool enable)
+{
+	int ret = 0;
+
+	ret = sgm4154x_set_hiz_en(chg_dev, !enable);
+
+	pr_err("charger %s enable_vbus %s\n", enable ? "enable" : "disable",
+	       !ret ? "successfully" : "failed");
+
+	return ret;
+}
+#if 0
+static int sgm4154x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+
+	*vbus = (u32)wt6670f_get_vbus_voltage();
+//	*vbus = 5000;
+	pr_err("VBUS = %d\n", *vbus);
+	sgm->usb_voltage = *vbus;
+
+	return 0;
+}
+#endif
 static int sgm4154x_enable_charger(struct sgm4154x_device *sgm)
 {
     int ret;
@@ -1121,7 +1151,7 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 
 	mutex_lock(&sgm->lock);
 	ret = sgm4154x_get_state(sgm, &state);
-	state = sgm->state;
+	sgm->state = state;
 	mutex_unlock(&sgm->lock);
 	if (ret)
 		return ret;
@@ -1402,6 +1432,7 @@ static irqreturn_t sgm4154x_irq_handler_thread(int irq, void *private)
 }
 static char *sgm4154x_charger_supplied_to[] = {
 	"battery",
+	"mtk-master-charger",
 };
 
 static struct power_supply_desc sgm4154x_power_supply_desc = {
@@ -1795,7 +1826,6 @@ static int sgm4154x_do_event(struct charger_device *chg_dev, u32 event, u32 args
 }
 
 static struct charger_ops sgm4154x_chg_ops = {
-	/*.enable_hz = sgm4154x_set_hiz_en,*/
 	/* Normal charging */
 	.plug_in = sgm4154x_plug_in,
 	.plug_out = sgm4154x_plug_out,
@@ -1815,9 +1845,10 @@ static struct charger_ops sgm4154x_chg_ops = {
 	/* Safety timer */
 	.enable_safety_timer = sgm4154x_enable_safetytimer,
 	.is_safety_timer_enabled = sgm4154x_get_is_safetytimer_enable,
-
+	/* Get vbus voltage*/
+	/*.get_vbus_adc = sgm4154x_get_vbus,*/
 	/* Power path */
-	/*.enable_powerpath = sgm4154x_enable_power_path, */
+	.enable_powerpath = sgm4154x_enable_power_path,
 	/*.is_powerpath_enabled = sgm4154x_get_is_power_path_enable, */
 
 	/* Hz mode */
@@ -1943,7 +1974,10 @@ static int sgm4154x_charger_remove(struct i2c_client *client)
     struct sgm4154x_device *sgm = i2c_get_clientdata(client);
 
     cancel_delayed_work_sync(&sgm->charge_monitor_work);
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
     cancel_delayed_work_sync(&sgm->psy_dwork);
+#endif
     regulator_unregister(sgm->otg_rdev);
 
     power_supply_unregister(sgm->charger);
