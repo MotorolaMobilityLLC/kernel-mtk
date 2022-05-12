@@ -1980,7 +1980,7 @@ static int hl7019d_charger_ic_init(struct charger_device *chg_dev)
 	hl7019d_set_bhot(0x2);		//boost hot threshold 65 centigrade degree
 	hl7019d_set_treg(0x3);		//thermal regulation threadhold upto 120 centigrade degree
 
-	hl7019d_set_dpdm_en(0x0);	//disble D+/D- detection
+	//hl7019d_set_dpdm_en(0x0);	//disble D+/D- detection
 	hl7019d_set_tmr2x_en(0x1);
 	hl7019d_set_ppfet_disable(0x0);	//enable Q4
 	hl7019d_set_chrgfault_int_mask(0x0);		//disable charge fault intteruppt
@@ -2424,12 +2424,19 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 		return ret;
 
 #if 1
+	pr_err("hl7019d : first i2c addr = 0x%x\n", new_client->addr);
 	reg_val = hl7019d_get_vender_code();
-	pr_err("hl7019d : REG0A = 0x%x--------------------------\n", reg_val);
+	pr_err("hl7019d : REG0A = 0x%x\n", reg_val);
 
 	if (reg_val != 0x20) {
-		pr_err("[hl7019d] %s: get vendor id failed\n", __func__);
-		return -ENODEV;
+		pr_err("try hl7019d_SLAVE_ADDR 0x6C \n");
+        new_client->addr = 0x6c;
+		reg_val = hl7019d_get_vender_code();
+		pr_err("hl7019d : reg_val = 0x%x\n", reg_val);
+		if (reg_val != 0x20) {
+			pr_err("[hl7019d] %s: get vendor id failed\n", __func__);
+			return -ENODEV;
+		}
 	}
 
 #else
@@ -2478,13 +2485,13 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
 	info->polling_interval = 20;
 	g_info = info;
-	info->chg_type = CHARGER_UNKNOWN;
+	//info->chg_type = CHARGER_UNKNOWN;
 
 #if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	Charger_Detect_Init();
 #endif
 	//hl7019d_register_irq(info);
-	hl7019d_set_dpdm_en(0x1);
+	//hl7019d_set_dpdm_en(0x1);
 
 #ifdef HL7019D_CHECK_CHARGING_STATE
 	ret = hl7019d_charging_check_init();
