@@ -146,3 +146,10 @@
 		};
 	};
 };
+&mtk_gauge {
+	df-serialnum = "SB18D50387";
+#include "bat_setting/mt6789_battery_table_ATL1.dtsi"
+#include "bat_setting/mt6789_battery_table_ATL2.dtsi"
+#include "bat_setting/mt6789_battery_table_ATL3.dtsi"
+#include "bat_setting/mt6789_battery_table_SCUD.dtsi"
+};
