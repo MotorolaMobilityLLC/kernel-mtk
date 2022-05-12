@@ -30,6 +30,39 @@
 };
 
 &charger {
+        /* common */
+        battery_cv = <4464000>;
+        max_charger_voltage = <12000000>;
+        min_charger_voltage = <4600000>;
+
+        /* charging current */
+        usb_charger_current_suspend = <0>;
+        usb_charger_current_unconfigured = <70000>;
+        usb_charger_current_configured = <500000>;
+        usb_charger_current = <500000>;
+        ac_charger_current = <2500000>;
+        ac_charger_input_current = <2500000>;
+        non_std_ac_charger_current = <1000000>;
+        charging_host_charger_current = <1500000>;
+        apple_1_0a_charger_current = <650000>;
+        apple_2_1a_charger_current = <800000>;
+        ta_ac_charger_current = <2000000>;
+        typec_limit_aicr = <2000000>;
+
+        //mmi config
+        mmi,iterm-ma = <243>;
+        mmi,mmi-temp-zones =
+                       <0 4200 1000  0>,
+                       <10 4250 2500 1000>,
+//                       <10 4450 1000 0>,
+                       <15 4450 2500 0>,
+                       <25 0 4000 4000>,
+//                       <25 4480 4000 0>,
+                       <35 0 4000 4000>,
+//                       <35 4480 4000 0>,
+                       <45 0 4000 4000>,
+//                       <45 4480 4000 0>,
+                       <60 4200 4000 0>;
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
