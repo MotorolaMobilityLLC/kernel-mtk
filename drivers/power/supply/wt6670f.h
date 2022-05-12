@@ -1,3 +1,7 @@
+#ifndef __WT6670F_H
+#define __WT6670F_H
+
+
 #define WT6670_FIRMWARE_VERSION  0x03
 
 struct wt6670f {
@@ -21,3 +25,5 @@ enum {
 };
 
 int wt6670f_isp_flow(struct wt6670f *chip);
+extern u16 wt6670f_get_vbus_voltage(void);
+#endif
