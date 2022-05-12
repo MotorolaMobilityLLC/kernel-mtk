@@ -155,10 +155,11 @@ static struct LCM_setting_table init_setting[] = {
 	{0xA0,0x04,{0x01,0x01,0x88,0x00}},
 	{0x41,0x02,{0x5A, 0x2F}},
     {0x41,0x02,{0x5A,0x19}},
-    {0x0A,0x04,{0x06,0x06,0x62,0x00}},
+//    {0xA0,0x04,{0x06,0x06,0x62,0x00}},
+    {0xA0,0x04,{0x00,0x00,0x46,0x00}},
     {0x19,0x01,{0x01}},
 	{0x51,0x01,{0xff}},
-	{0x53,0x01,{0x24}},
+	{0x53,0x01,{0x2C}},
 	{0x55,0x01,{0x00}},
     {0x11,0x01,{0x00}},
     {REGFLAG_DELAY,120,{}},
@@ -209,6 +210,34 @@ static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
+{
+	struct dfps_info *dfps_params = dsi->dfps_params;
+
+	dsi->dfps_enable = 1;
+	dsi->dfps_default_fps = 9000;/*real fps * 100, to support float*/
+	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
+
+	/* DPFS_LEVEL0 */
+	dfps_params[0].level = DFPS_LEVEL0;
+	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
+
+	/* if vfp solution */
+	dfps_params[0].vertical_frontporch = 1183; //IC廠給的值，從９０幀切到６０幀，只改動ＶＦＰ這個參數就可以了，其他的不動,實測５９．８９HZ.
+	dfps_params[0].vertical_frontporch_for_low_power = 2466;
+
+	/* DPFS_LEVEL1 */
+	dfps_params[1].level = DFPS_LEVEL1;
+	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+
+	dfps_params[1].vertical_frontporch = 200;
+	dfps_params[1].vertical_frontporch_for_low_power = 1290;
+	dsi->dfps_num = 2;
+}
+#endif
 
 static void lcm_get_params(struct LCM_PARAMS *params)
 {
@@ -271,6 +300,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #endif
 	//params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
 	//params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
+	#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+
+	/****DynFPS start****/
+	lcm_dfps_int(&(params->dsi));
+	/****DynFPS end****/
+	#endif
 
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 0;

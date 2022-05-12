@@ -206,6 +206,34 @@ static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
+{
+	struct dfps_info *dfps_params = dsi->dfps_params;
+
+	dsi->dfps_enable = 1;//是否開啓幀率切換功能
+	dsi->dfps_default_fps = 9000;/*real fps * 100, to support float*///默認值
+	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
+
+	/* DPFS_LEVEL0 */
+	dfps_params[0].level = DFPS_LEVEL0;
+	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
+
+	/* if vfp solution */
+	dfps_params[0].vertical_frontporch = 1040;//實測６０．１９ｈｚ.
+	dfps_params[0].vertical_frontporch_for_low_power = 2466; //此參數會在idle期間生效，如果無需此功能，可以將此值設爲０．
+
+	/* DPFS_LEVEL1 */
+	dfps_params[1].level = DFPS_LEVEL1;
+	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+
+	dfps_params[1].vertical_frontporch = 150;
+	dfps_params[1].vertical_frontporch_for_low_power = 1290;
+	dsi->dfps_num = 2;//檔位個數
+}
+#endif
 
 static void lcm_get_params(struct LCM_PARAMS *params)
 {
@@ -268,6 +296,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #endif
 	//params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
 	//params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
+	#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+
+	/****DynFPS start****/
+	lcm_dfps_int(&(params->dsi));
+	/****DynFPS end****/
+	#endif
 
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 0;
