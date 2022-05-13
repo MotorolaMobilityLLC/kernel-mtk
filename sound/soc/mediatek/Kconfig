@@ -414,11 +414,11 @@ config MTK_SCP_AUDIO
 	  Select Y if you have such device.
 	  If unsure select "N".
 
-config SND_SMARTPA_AW883XX
-	tristate "SoC Audio for awinic aw883xx series"
+config SND_SMARTPA_AW883XX_I2S3
+	tristate "awinic aw883xx series on i2s3"
 	depends on I2C
 	help
-	  This option enables support for aw883xx series Smart PA.
+	  This option enables support for aw883xx on i2s3.
 
 config SND_SMARTPA_AW882XX
 	tristate "SoC Audio for awinic aw882xx series"

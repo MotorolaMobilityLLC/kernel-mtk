@@ -529,7 +529,7 @@ SND_SOC_DAILINK_DEFS(i2s2,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S2")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
-#ifdef CONFIG_SND_SMARTPA_AW883XX
+#ifdef CONFIG_SND_SMARTPA_AW883XX_I2S3
 SND_SOC_DAILINK_DEFS(i2s3,
         DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
 	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa.5-0034", "aw883xx-aif-5-34"),
@@ -1135,7 +1135,7 @@ static int mt6789_mt6366_dev_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "%s()\n", __func__);
 
 	/* update speaker type */
-#ifndef CONFIG_SND_SMARTPA_AW883XX
+#ifndef CONFIG_SND_SMARTPA_AW883XX_I2S3
 	ret = mtk_spk_update_info(card, pdev);
 	if (ret) {
 		dev_err(&pdev->dev, "%s(), mtk_spk_update_info error\n",
