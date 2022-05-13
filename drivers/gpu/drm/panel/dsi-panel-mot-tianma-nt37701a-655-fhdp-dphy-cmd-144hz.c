@@ -250,7 +250,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 	if (gpio_status) {
 		for (i=0; i < 4; i++) {
 			pm_en_pin = NULL;
-			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
+			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_HIGH);
 			if (IS_ERR(pm_en_pin)) {
 				pr_err("cannot get bias-gpios 0 %ld\n", PTR_ERR(pm_en_pin));
 				return PTR_ERR(pm_en_pin);
@@ -260,7 +260,8 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			usleep_range(1000, 1001);
 		}
 	} else {
-		for (i=3; i >= 0; i--) {
+		for (i=3; i >=0; i--) {
+			if (i == 1) continue;
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
 			if (IS_ERR(pm_en_pin)) {
