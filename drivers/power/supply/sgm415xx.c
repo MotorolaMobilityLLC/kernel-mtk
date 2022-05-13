@@ -1647,6 +1647,7 @@ static int sgm4154x_enable_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s en = %d\n", __func__, en);
 	if (en) {
+		sgm4154x_set_hiz_en(chg_dev, !en);
 		ret = sgm4154x_enable_vbus(NULL);
 	} else {
 		ret = sgm4154x_disable_vbus(NULL);
