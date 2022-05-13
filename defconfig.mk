@@ -36,6 +36,13 @@ ifneq ($(KERNEL_EXTRA_CONFIG),)
 PRODUCT_SPECIFIC_DEFCONFIGS += $(KERNEL_EXTRA_CONFIG:%=$(LJAPDEFCONFIGSRC)/%.config)
 endif
 
+#some configs need adjust on df build,but not final builds.
+#Actually df bulids include user/userdebug,so we use one specifci config files to
+#adjust such configs.
+ifneq ($(PRODUCT_IS_PRODUCTION),true)
+PRODUCT_SPECIFIC_DEFCONFIGS += $(LJAPDEFCONFIGSRC)/moto-$(DEFCONFIG_BASENAME)-df.config
+endif
+
 define do-make-defconfig
 	$(hide) mkdir -p $(dir $(1))
 	$(hide) printf "# This file was automatically generated from:\n" > $(1);
