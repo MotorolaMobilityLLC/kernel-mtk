@@ -800,13 +800,13 @@ static int mtk_dsp_manage_copybuf(bool action,
 			return -EINVAL;
 		if (dsp_mep->dsp_copy_buf != NULL)
 			return -EINVAL;
-		dsp_mep->dsp_copy_buf = kzalloc(size, GFP_KERNEL);
-		if (!dsp_mep)
-			return -EINVAL;
+		dsp_mep->dsp_copy_buf = vmalloc(size);
+		if (!dsp_mep->dsp_copy_buf)
+			return -ENOMEM;
 	} else {
 		if (dsp_mep->dsp_copy_buf == NULL)
 			return -EINVAL;
-		kfree(dsp_mep->dsp_copy_buf);
+		vfree(dsp_mep->dsp_copy_buf);
 		dsp_mep->dsp_copy_buf = NULL;
 	}
 	return 0;
