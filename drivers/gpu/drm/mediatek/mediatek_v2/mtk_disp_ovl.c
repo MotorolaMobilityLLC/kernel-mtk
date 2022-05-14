@@ -712,13 +712,21 @@ static irqreturn_t mtk_disp_ovl_irq_handler(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
+	if (IS_ERR_OR_NULL(priv))
+		return IRQ_NONE;
+
+	ovl = &priv->ddp_comp;
+	if (IS_ERR_OR_NULL(ovl))
+		return IRQ_NONE;
+
 	val = readl(ovl->regs + DISP_REG_OVL_INTSTA);
 	if (!val) {
 		ret = IRQ_NONE;
 		goto out;
 	}
-
 	DRM_MMP_MARK(IRQ, irq, val);
+
+	mtk_crtc = ovl->mtk_crtc;
 
 	if (ovl->id == DDP_COMPONENT_OVL0)
 		DRM_MMP_MARK(ovl0, val, 0);

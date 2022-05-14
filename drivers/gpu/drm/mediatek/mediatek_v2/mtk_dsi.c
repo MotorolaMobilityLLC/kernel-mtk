@@ -1843,8 +1843,8 @@ static int wait_dsi_wq(struct t_condition_wq *wq, int timeout)
 static irqreturn_t mtk_dsi_irq_status(int irq, void *dev_id)
 {
 	struct mtk_dsi *dsi = dev_id;
-	struct mtk_drm_crtc *mtk_crtc;
-	struct mtk_panel_ext *panel_ext;
+	struct mtk_drm_crtc *mtk_crtc = NULL;
+	struct mtk_panel_ext *panel_ext = NULL;
 	u32 status;
 	static unsigned int dsi_underrun_trigger = 1;
 	unsigned int ret = 0;
@@ -1858,18 +1858,25 @@ static irqreturn_t mtk_dsi_irq_status(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
+	if (IS_ERR_OR_NULL(dsi))
+		return IRQ_NONE;
+
 	status = readl(dsi->regs + DSI_INTSTA);
 	if (!status) {
 		ret = IRQ_NONE;
 		goto out;
 	}
+	DRM_MMP_MARK(IRQ, irq, status);
 
 	mtk_crtc = dsi->ddp_comp.mtk_crtc;
 
-	DRM_MMP_MARK(IRQ, irq, status);
-
-	if (dsi->ddp_comp.id == DDP_COMPONENT_DSI0)
+	if (dsi->ddp_comp.id == DDP_COMPONENT_DSI0) {
+		if (mtk_crtc) {
+			atomic_set(&mtk_crtc->signal_irq_for_pre_fence, 1);
+			wake_up_interruptible(&(mtk_crtc->signal_irq_for_pre_fence_wq));
+		}
 		DRM_MMP_MARK(dsi0, status, 0);
+	}
 	else if (dsi->ddp_comp.id == DDP_COMPONENT_DSI1)
 		DRM_MMP_MARK(dsi1, status, 0);
 
@@ -1948,7 +1955,7 @@ static irqreturn_t mtk_dsi_irq_status(int irq, void *dev_id)
 				if (dsi->encoder.crtc)
 					doze_enabled = mtk_dsi_doze_state(dsi);
 
-				if (panel_ext->params->doze_delay &&
+				if (panel_ext && panel_ext->params->doze_delay &&
 					doze_enabled) {
 					doze_wait =
 						panel_ext->params->doze_delay;
@@ -6198,26 +6205,33 @@ static irqreturn_t dsi_te1_irq_handler(int irq, void *data)
 	unsigned int doze_wait = 0;
 	static unsigned int cnt;
 
-	output_comp = mtk_ddp_comp_request_output(mtk_crtc);
-	if (output_comp == NULL) {
-		DDPPR_ERR("%s: null pointer\n", __func__);
+	if (IS_ERR_OR_NULL(mtk_crtc))
 		return IRQ_NONE;
-	}
+
+	output_comp = mtk_ddp_comp_request_output(mtk_crtc);
+
+	if (IS_ERR_OR_NULL(output_comp))
+		return IRQ_NONE;
+
 	dsi = container_of(output_comp, struct mtk_dsi, ddp_comp);
+
+	if (IS_ERR_OR_NULL(dsi))
+		return IRQ_NONE;
+
 	if (dsi->ddp_comp.id == DDP_COMPONENT_DSI0) {
 		unsigned long long ext_te_time = sched_clock();
 
 		lcm_fps_ctx_update(ext_te_time, 0, 0);
 	}
 
-	if (mtk_crtc && mtk_crtc->base.dev)
+	if (mtk_crtc->base.dev)
 		priv = mtk_crtc->base.dev->dev_private;
 	if (priv && mtk_drm_helper_get_opt(priv->helper_opt,
 			MTK_DRM_OPT_HBM))
 		wakeup_dsi_wq(&dsi->te_rdy);
 
 	if (mtk_dsi_is_cmd_mode(&dsi->ddp_comp) &&
-			mtk_crtc && mtk_crtc->vblank_en) {
+			mtk_crtc->vblank_en) {
 		panel_ext = dsi->ext;
 		if (dsi->encoder.crtc)
 			doze_enabled = mtk_dsi_doze_state(dsi);

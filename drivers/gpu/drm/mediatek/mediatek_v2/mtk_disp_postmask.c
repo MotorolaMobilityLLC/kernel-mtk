@@ -142,6 +142,13 @@ static irqreturn_t mtk_postmask_irq_handler(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
+	if (IS_ERR_OR_NULL(priv))
+		return IRQ_NONE;
+
+	postmask = &priv->ddp_comp;
+	if (IS_ERR_OR_NULL(postmask))
+		return IRQ_NONE;
+
 	val = readl(postmask->regs + DISP_POSTMASK_INTSTA);
 	if (!val) {
 		ret = IRQ_NONE;

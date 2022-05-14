@@ -138,6 +138,13 @@ static irqreturn_t mtk_dsc_irq_handler(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
+	if (IS_ERR_OR_NULL(priv))
+		return IRQ_NONE;
+
+	dsc = &priv->ddp_comp;
+	if (IS_ERR_OR_NULL(dsc))
+		return IRQ_NONE;
+
 	val = readl(dsc->regs + DISP_REG_DSC_INTSTA);
 	if (!val) {
 		ret = IRQ_NONE;
