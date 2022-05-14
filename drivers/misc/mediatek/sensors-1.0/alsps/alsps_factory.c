@@ -349,8 +349,31 @@ static long alsps_factory_compat_ioctl(struct file *file,
 }
 #endif
 
+
+ssize_t als_ps_read (struct file * file, char __user * user_data, size_t size, loff_t * offset){
+	int data = 0, err = 0;
+	char str[100] = {0};
+	if (alsps_factory.fops != NULL &&
+		alsps_factory.fops->ps_get_raw_data != NULL) {
+		err = alsps_factory.fops->ps_get_raw_data(&data);
+		if (err < 0) {
+			pr_err(
+				"ALSPS_GET_PS_RAW_DATA read data fail!\n");
+			return -EINVAL;
+		}
+		snprintf(str, sizeof(str), "psdata = %d\n", data);
+		if (copy_to_user(user_data, str, strlen(str)))
+			return -EFAULT;
+	} else {
+		pr_err("ALSPS_GET_PS_RAW_DATA NULL\n");
+		return -EINVAL;
+	}
+	return strlen(str);
+}
+
 static const struct file_operations _alsps_factory_fops = {
 	.open = alsps_factory_open,
+	.read = als_ps_read,
 	.release = alsps_factory_release,
 	.unlocked_ioctl = alsps_factory_unlocked_ioctl,
 #ifdef CONFIG_COMPAT
