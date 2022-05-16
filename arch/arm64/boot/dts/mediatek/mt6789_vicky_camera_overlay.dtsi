@@ -340,7 +340,11 @@
 		reg = <0x51>;
 		status = "okay";
 	};
-
+	mtk_camera_eeprom2:camera_eeprom2@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x50>;
+		status = "okay";
+	};
         /*Hi1634Q*/
 	camera_sub_mtk:camera_sub@21 {
 		compatible = "mediatek,camera_sub";
