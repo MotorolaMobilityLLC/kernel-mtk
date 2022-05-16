@@ -110,6 +110,7 @@ static void Voice_Amp_Mux_Select(bool enable);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 static void SpeakerDown_Amp_Change(bool enable);//only open down-speaker
+static void SpeakerUp_Amp_Change(bool enable);//only open up-speaker
 static struct mt6357_codec_priv *mCodec_data;
 static struct mt6357_priv *mCodec_priv;
 static unsigned int mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = {
@@ -3761,9 +3762,6 @@ static void SpeakerDown_Amp_Change(bool enable)
 	}else{
 		Speaker_Amp_PA_SetMode(2);//Off
 	}
-
-
-
 }
 
 static int SpeakerDown_Amp_Get(struct snd_kcontrol *kcontrol,
@@ -3796,6 +3794,51 @@ static int SpeakerDown_Amp_Set(struct snd_kcontrol *kcontrol,
 		SpeakerDown_Amp_Change(false);
 	}
 	return 0;
+}
+static int SpeakerUp_Amp_Get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	/* pr_debug("%s()\n", __func__); */
+	ucontrol->value.integer.value[0] =
+		mCodec_data->mAudio_Ana_DevicePower
+			[AUDIO_ANALOG_DEVICE_OUT_SPEAKERL];
+	return 0;
+}
+static int SpeakerUp_Amp_Set(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s() value = %ld\n ", __func__,
+		 ucontrol->value.integer.value[0]);
+	if ((ucontrol->value.integer.value[0] == true) &&
+	    (mCodec_data->mAudio_Ana_DevicePower
+		     [AUDIO_ANALOG_DEVICE_OUT_SPEAKERL] == false)) {
+		SpeakerUp_Amp_Change(true);
+		mCodec_data->mAudio_Ana_DevicePower
+			[AUDIO_ANALOG_DEVICE_OUT_SPEAKERL] =
+		    ucontrol->value.integer.value[0];
+	} else if ((ucontrol->value.integer.value[0] == false) &&
+		   (mCodec_data->mAudio_Ana_DevicePower
+			    [AUDIO_ANALOG_DEVICE_OUT_SPEAKERL] == true)) {
+		mCodec_data->mAudio_Ana_DevicePower
+			[AUDIO_ANALOG_DEVICE_OUT_SPEAKERL] =
+		    ucontrol->value.integer.value[0];
+		SpeakerUp_Amp_Change(false);
+	}
+	return 0;
+}
+
+static void SpeakerUp_Amp_Change(bool enable)
+{
+	pr_debug("%s() enable %d", __func__,enable);
+
+	Voice_Amp_Mux_Select(enable);
+	//open up-speaker(receiver) in Music mode
+	if (enable)
+	{
+		Voice_Amp_PA_SetMode(0);//Music
+	}else{
+		Voice_Amp_PA_SetMode(2);//Off
+	}
 }
 static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
@@ -4589,6 +4632,7 @@ static const struct soc_enum Audio_DL_Enum[] = {
 			    apply_n12db_setting),
 	/**/
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 };
 static const struct snd_kcontrol_new mt6357_snd_controls[] = {
 	SOC_ENUM_EXT("Audio_Amp_R_Switch", Audio_DL_Enum[0], Audio_AmpR_Get,
@@ -4644,6 +4688,8 @@ static const struct snd_kcontrol_new mt6357_snd_controls[] = {
 		     apply_n12db_get, apply_n12db_set),
 	SOC_ENUM_EXT("SpeakerDown_Amp_Switch", Audio_DL_Enum[15],
 		     SpeakerDown_Amp_Get, SpeakerDown_Amp_Set),
+	SOC_ENUM_EXT("SpeakerUp_Amp_Switch", Audio_DL_Enum[16],
+		     SpeakerUp_Amp_Get, SpeakerUp_Amp_Set),
 };
 void SetMicPGAGain(void)
 {
