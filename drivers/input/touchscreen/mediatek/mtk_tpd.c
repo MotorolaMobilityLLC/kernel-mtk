@@ -439,7 +439,7 @@ static int tpd_fb_notifier_callback(
 
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
-		TPD_DEBUG("event222=%d\n",event);
+		//TPD_DEBUG("event222=%d\n",event);
 		if(event == FB_EVENT_BLANK){
 			TPD_DMESG("LCD ON Notify\n");
 			if (g_tpd_drv && tpd_suspend_flag) {
@@ -454,14 +454,14 @@ static int tpd_fb_notifier_callback(
 		}
 		break;
 	case FB_BLANK_POWERDOWN:
-                TPD_DEBUG("event=%d 11111\n",event);
+                //TPD_DEBUG("event=%d 11111\n",event);
 		if(txdili9882_suspend_flag && !tpd_suspend_flag) {
 			err = cancel_work_sync(&touch_resume_work);
 				if (!err)
 					TPD_DMESG("cancel resume_workqueue failed\n");
 			txdili9882_suspend_flag = 0;
 			tpd_suspend_flag = 1;
-			pr_err("woailuooooooo\n");
+			//pr_err("woailuooooooo\n");
 			return 0;
 		}
 		if(event == FB_EVENT_BLANK){
