@@ -56,7 +56,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 840000000,
+		.mipi_pixel_rate = 336000000,
 		.max_framerate = 300,
 	},
 	.cap = {
@@ -68,7 +68,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 840000000,
+		.mipi_pixel_rate = 336000000,
 		.max_framerate = 300,
 	},
 	.normal_video = {	/* Full 30fps */
@@ -80,7 +80,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 840000000,
+		.mipi_pixel_rate = 336000000,
 		.max_framerate = 300,
 	},
 	.hs_video = {	/* Full 30fps */
@@ -92,7 +92,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 840000000,
+		.mipi_pixel_rate = 336000000,
 		.max_framerate = 300,
 	},
 	.slim_video = {
@@ -104,7 +104,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1944,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 840000000,
+		.mipi_pixel_rate = 336000000,
 		.max_framerate = 300,
 	},
 	.margin = 5,
