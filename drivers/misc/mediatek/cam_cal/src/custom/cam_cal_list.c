@@ -21,6 +21,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{HI1339SUBTXD_SENSOR_ID, 0xA2, Common_read_region},
 	//Begin: Add EEPROM for Vicky
 	{MOT_VICKY_S5KHM6_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_VICKY_HI1634Q_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	//End
 	{OV48B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{IMX766_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_32K},
