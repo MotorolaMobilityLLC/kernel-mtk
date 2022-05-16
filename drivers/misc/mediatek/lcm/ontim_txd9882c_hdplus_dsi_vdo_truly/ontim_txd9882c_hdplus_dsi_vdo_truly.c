@@ -405,7 +405,7 @@ static void lcm_suspend(void)
 	ili_sleep_handler(ontim_DEEP_SLEEP);
 	txdili9882_suspend_flag =1;
 	MDELAY(150);
-	pr_err("ahahaahhhhhhhhhhhhhhhhhhhh\n");
+
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
 		MDELAY(2);

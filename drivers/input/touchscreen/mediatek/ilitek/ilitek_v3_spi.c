@@ -602,7 +602,7 @@ static int ilitek_spi_probe(struct spi_device *spi)
 	container_of(to_spi_driver(spi->dev.driver),
 		struct touch_bus_info, bus_driver);
 	ILI_ERR("ilitek spi probe\n");
-	pr_err("gungungun\n");
+
 	if (!spi) {
 		ILI_ERR("spi device is NULL\n");
 		return -ENODEV;
