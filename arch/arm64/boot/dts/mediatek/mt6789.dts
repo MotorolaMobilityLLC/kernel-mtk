@@ -6348,6 +6348,11 @@
 		/* fast charging algo support indicator */
 		/*enable_fast_charging_indicator;*/
 	};
+
+	rt-pd-manager {
+		compatible = "mediatek,rt-pd-manager";
+	};
+
 	eint_chg_0: eint_chg_0 {
 	};
 
