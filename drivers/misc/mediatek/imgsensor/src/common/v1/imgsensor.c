@@ -1012,6 +1012,7 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	/*calibration*/
 	pSensorInfo->calibration_status = pInfo->calibration_status;
 	pSensorInfo->mnf_calibration = pInfo->mnf_calibration;
+	pSensorInfo->calibration_3aInfo = pInfo->calibration_3aInfo;
 	imgsensor_sensor_get_info(
 	    psensor,
 	    MSDK_SCENARIO_ID_CUSTOM1,
