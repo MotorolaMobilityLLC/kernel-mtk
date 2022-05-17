@@ -81,7 +81,7 @@
 #ifdef CONFIG_SND_SOC_AW87XXX
 extern int aw87xxx_add_codec_controls(void *codec);
 extern int aw87xxx_set_profile(int dev_index, char *profile);
-static char *aw_profile[] = {"Music","Receiver", "Off"};/*aw87xxx_acf.bin 文件中配置场景*/
+static char *aw_profile[] = {"Music","Voice", "Off"};/*aw87xxx_acf.bin 文件中配置场景*/
 enum aw87xxx_dev_index {
 	AW_DEV_0 = 0,
 	AW_DEV_1 = 1,
