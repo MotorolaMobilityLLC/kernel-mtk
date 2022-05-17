@@ -106,6 +106,7 @@ struct imgsensor_info_struct {
 	kal_uint8  video_delay_frame;
 	kal_uint8  hs_video_delay_frame;
 	kal_uint8  slim_video_delay_frame;
+	kal_uint8  frame_time_delay_frame;
 	kal_uint8  margin;
 	kal_uint32 min_shutter;
 	kal_uint32 max_frame_length;
