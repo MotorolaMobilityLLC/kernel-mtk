@@ -1799,7 +1799,7 @@
             <device11>
                 <varName>CAMERA_SUB_EEPROM</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address></address>
+                <address>0x51</address>
             </device11>
         </module>
         <module name="md1_eint">
