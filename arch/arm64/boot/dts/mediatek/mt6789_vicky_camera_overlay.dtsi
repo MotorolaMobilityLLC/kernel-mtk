@@ -367,6 +367,12 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
+	mtk_camera_eeprom4:camera_eeprom4@51 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x51>;
+		status = "okay";
+	};
+
 	/*mot_vicky_ov02b10*/
 	camera_main_three_mtk:camera_main_three@3c {
 		compatible = "mediatek,camera_main_three";
