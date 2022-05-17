@@ -118,7 +118,6 @@ obj-$(CONFIG_CHARGER_MT6375)	+= mt6375-charger.o
 obj-$(CONFIG_CHARGER_RT9458)	+= rt9458.o
 obj-$(CONFIG_CHARGER_RT9759)	+= rt9759.o
 obj-$(CONFIG_WT6670F_QC3P)	+= wt6670f_qc3p.o
-wt6670f_qc3p-objs := wt6670f_qc3p.o wt6670f_upgrade.o
 obj-$(CONFIG_GAUGE_MT6375)	+= mt6375-battery.o
 mt6375-battery-objs := mtk_battery_coulomb_service.o mtk_battery.o mtk_battery_algo.o mt6375-gauge.o mtk_battery_daemon.o
 obj-$(CONFIG_CHARGER_TYPE_MT6357) += mt6357-charger-type.o
