@@ -156,6 +156,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .video_delay_frame = 2,
     .hs_video_delay_frame = 2,
     .slim_video_delay_frame = 2,
+    .frame_time_delay_frame = 2,
 
     .isp_driving_current = ISP_DRIVING_6MA,
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
@@ -245,6 +246,18 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
     char pu_send_cmd[2] = {(char)(addr & 0xff), (char)(para & 0xff)};
 
     iWriteRegI2C(pu_send_cmd, 2, imgsensor.i2c_write_id);
+}
+
+static kal_uint32 streaming_control(kal_bool enable)
+{
+    if (enable){
+        write_cmos_sensor(0xfe, 0x00);
+        write_cmos_sensor(0x3e, 0x90);
+    }else{
+        write_cmos_sensor(0xfe, 0x00);
+        write_cmos_sensor(0x3e, 0X00);
+    }
+    return ERROR_NONE;
 }
 
 static uint32_t convert_crc(uint8_t *crc_ptr)
@@ -479,6 +492,48 @@ static void set_shutter(kal_uint16 shutter)
     		set_max_framerate(realtime_fps, 0);
     } else
     	set_max_framerate(realtime_fps, 0);
+    write_cmos_sensor(0xfe, 0x00);
+    write_cmos_sensor(0x03, (shutter >> 8) & 0x3f);
+    write_cmos_sensor(0x04, shutter  & 0xff);
+    LOG_INF("shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
+}
+
+static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length,kal_bool auto_extend_en)
+{
+    unsigned long flags;
+    kal_uint16 realtime_fps = 0;
+    kal_int32 dummy_line = 0;
+    kal_uint16 depth_margin = 10;
+    spin_lock_irqsave(&imgsensor_drv_lock, flags);
+    imgsensor.shutter = shutter;
+    spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
+
+    spin_lock(&imgsensor_drv_lock);
+    /* Change frame time */
+    if (frame_length > 1)
+        dummy_line = frame_length - imgsensor.frame_length;
+    imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
+    if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+        imgsensor.frame_length = shutter + depth_margin;
+
+    if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+        imgsensor.frame_length = imgsensor_info.max_frame_length;
+
+    spin_unlock(&imgsensor_drv_lock);
+    shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+    shutter = (shutter > (imgsensor_info.max_frame_length - depth_margin)) ?
+    (imgsensor_info.max_frame_length - depth_margin) : shutter;
+    realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+    if (imgsensor.autoflicker_en) {
+        if(realtime_fps >= 297 && realtime_fps <= 305)
+            set_max_framerate(296, 0);
+        else if(realtime_fps >= 147 && realtime_fps <= 150)
+            set_max_framerate(146, 0);
+        else
+            set_dummy();
+    } else
+    set_dummy();
     write_cmos_sensor(0xfe, 0x00);
     write_cmos_sensor(0x03, (shutter >> 8) & 0x3f);
     write_cmos_sensor(0x04, shutter  & 0xff);
@@ -975,6 +1030,7 @@ static kal_uint32 close(void)
 {
     LOG_INF("E\n");
     /* No Need to implement this function */
+    streaming_control(KAL_FALSE);
     return ERROR_NONE;
 }
 
@@ -1162,6 +1218,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     	gc02m1_data_serial_num[8], gc02m1_data_serial_num[9],
     	gc02m1_data_serial_num[10]);
     }
+    sensor_info->FrameTimeDelayFrame =
+        imgsensor_info.frame_time_delay_frame;
+
     switch (scenario_id) {
     case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
     	sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
@@ -1396,7 +1455,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
     LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
-    //+bug 558061, zhanglinfeng.wt, modify, 2020/07/02, modify codes for factory mode of photo black screen
     case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
     	*(feature_data + 1) = imgsensor_info.min_gain;
     	*(feature_data + 2) = imgsensor_info.max_gain;
@@ -1410,8 +1468,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     	*(feature_data + 1) = imgsensor_info.min_shutter;
     	*(feature_data + 2) = imgsensor_info.exp_step;
     	break;
-    //-bug 558061, zhanglinfeng.wt, modify, 2020/07/02, modify codes for factory mode of photo black screen
-    //+bug 558061, zhanglinfeng.wt, modify, 2020/06/19, modify codes for mipi rate is 0
     case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ_BY_SCENARIO:
     	switch (*feature_data) {
     	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -1467,7 +1523,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     		break;
     	}
     	break;
-    //-bug 558061, zhanglinfeng.wt, modify, 2020/06/19, modify codes for mipi rate is 0
     case SENSOR_FEATURE_GET_PERIOD:
     	*feature_return_para_16++ = imgsensor.line_length;
     	*feature_return_para_16 = imgsensor.frame_length;
@@ -1477,7 +1532,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     	*feature_return_para_32 = imgsensor.pclk;
     	*feature_para_len = 4;
     	break;
-    //+bug 558061, zhanglinfeng.wt, modify, 2020/07/02, modify codes for factory mode of photo black screen
     case SENSOR_FEATURE_GET_BINNING_TYPE:
     	switch (*(feature_data + 1)) {
     	case MSDK_SCENARIO_ID_CUSTOM3:
@@ -1497,7 +1551,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     		*feature_return_para_32);
     		*feature_para_len = 4;
     	break;
-    //-bug 558061, zhanglinfeng.wt, modify, 2020/07/02, modify codes for factory mode of photo black screen
     case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
     	{
     		kal_uint32 rate;
@@ -1612,7 +1665,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     	ihdr_write_shutter_gain((UINT16)*feature_data, (UINT16)*(feature_data + 1),
     		(UINT16)*(feature_data + 2));
     	break;
-    //+bug 558061, zhanglinfeng.wt, modify, 2020/07/02, modify codes for factory mode of photo black screen
+    case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+    	set_shutter_frame_length((UINT16) *feature_data, (UINT16) *(feature_data+1),(kal_bool) *(feature_data+2));
+        break;
     case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
     	/*
     	* 1, if driver support new sw frame sync
@@ -1622,7 +1677,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     	/* margin info by scenario */
     	*(feature_data + 2) = imgsensor_info.margin;
     	break;
-    //-bug 558061, zhanglinfeng.wt, modify, 2020/07/02, modify codes for factory mode of photo black screen
+    case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+    	LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+    	streaming_control(KAL_FALSE);
+    	break;
+    case SENSOR_FEATURE_SET_STREAMING_RESUME:
+    	LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+    	if (*feature_data != 0)
+    		set_shutter(*feature_data);
+    	streaming_control(KAL_TRUE);
+    	break;
     default:
     	break;
     }
