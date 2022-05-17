@@ -43,6 +43,633 @@ EXPORT_SYMBOL_GPL(qc3p_z350_init_ok);
 EXPORT_SYMBOL_GPL(g_qc3p_id);
 EXPORT_SYMBOL_GPL(m_chg_type);
 
+
+// firme update
+/**
+ * Enter ISP Mode Sequence
+ */
+void wt_enter_isp_mode_sequence(struct wt6670f *chip)
+{
+#if 1
+	mutex_lock(&chip->i2c_rw_lock);
+
+	gpio_direction_output(chip->reset_pin, 0);
+	msleep(5);
+	gpio_direction_output(chip->reset_pin, 1);
+	msleep(1);
+	gpio_direction_output(chip->reset_pin, 0);
+	mdelay(3);
+
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(2);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(2);
+
+	/* sequence */
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//1
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//2
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//3
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//4
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//5
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//6
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//7
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//8
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//9
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(8);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//10
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//11
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//12
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//13
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//14
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(4);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//15
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//16
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	udelay(5);
+	/* sequence end */
+
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//17
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);	//18
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_low);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_low);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_scl_high);
+	udelay(5);
+	pinctrl_select_state(i2c6_pinctrl, i2c6_sda_high);
+
+	msleep(10);
+
+	pinctrl_select_state(i2c6_pinctrl, i2c6_i2c);
+
+	mutex_unlock(&chip->i2c_rw_lock);
+#else
+	int ret;
+	u8 data[1]={0x00};
+	struct i2c_msg msgs[] = {
+        {
+			.addr = 0x2B,
+			.flags = 0,
+			.len = 1,
+			.buf = data,
+        },
+        {
+			.addr = 0x48,
+			.flags = 0,
+			.len = 1,
+			.buf = data,
+        },
+    };
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, msgs, 2);
+	if (ret != 2)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	 mutex_unlock(&chip->i2c_rw_lock);
+#endif
+}
+
+/**
+ * ENABLE ISP Command
+ * (1) This command is used to enable ISP through I2C interface.
+ * (2) WT6670F will ACK all bytes, HOST must use READ CHIP ID command to
+ * check that ISP mode is enabled
+ */
+int wt_enable_isp(struct wt6670f *chip)
+{
+	u8 cmd_buf[7] = {0x57, 0x54, 0x36, 0x36, 0x37, 0x30, 0x46};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+/**
+ * HOLD 8051 Command
+ * (1) This command will hold 8051 CPU and stop executing instruction.
+ */
+int wt_hold_8051(struct wt6670f *chip)
+{
+	u8 cmd_buf[3] = {0x10, 0x00, 0x01};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+/**
+ * READ CHIP ID Command
+ * (1) The Chip ID of WT6670F is 0x70H
+ */
+int wt_read_chip_id(struct wt6670f *chip, u8 *r_buf, u8 len)		//id should be 0x70
+{
+	int ret = 0;
+	struct i2c_adapter *adap = chip->client->adapter;
+	struct i2c_msg msg[2];
+	u8 w_buf[2] = {0x80, 0x00};
+
+	memset(msg, 0, 2 * sizeof(struct i2c_msg));
+
+	msg[0].addr = WT6670_ISP_I2C_ADDR;
+	msg[0].flags = 0 | I2C_M_STOP;
+	msg[0].len = sizeof(w_buf);
+	msg[0].buf = w_buf;
+
+	msg[1].addr = WT6670_ISP_I2C_ADDR;
+	msg[1].flags = (I2C_M_STOP & I2C_M_NOSTART) | I2C_M_RD;
+	msg[1].len = len;
+	msg[1].buf = r_buf;
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(adap, msg, 2);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+
+/**
+ * ENABLE ISP FLASH MODE Command
+ * (1) This command will enable ISP access control to flash memory
+ */
+int wt_enable_isp_flash_mode(struct wt6670f *chip)
+{
+	u8 cmd_buf[3] = {0x10, 0x02, 0x08};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+/**
+ * CHIP ERASE Command
+ * (1) This command will erase whole 4K bytes flash memory.
+ * (2) After send this command, host must wait 20ms ~ 40ms
+ * and then send FINISH command.
+ */
+int wt_chip_erase(struct wt6670f *chip)
+{
+	u8 cmd_buf[3] = {0x20, 0x00, 0x00};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+/**
+ * SET ADDRESS HIGH-BYTE Command
+ * (1) This command will set flash address bit11 ~ bit8.
+ */
+int wt_set_address_high_byte(struct wt6670f *chip, u8 addr_bit_15_8)
+{
+	u8 cmd_buf[3] = {0x10, 0x01, addr_bit_15_8};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+/**
+ * PROGRAM Command
+ * (1) ADDR[11:6] select a 64-byte row of flash memory.
+ * ADDR[5:0] access one byte of one 64-byte row.
+ * (2) When Host program 64-byte data from 0x0300 to 0x033F,
+ * first set address ADDR[11:8] = 0x03,command is S+68+10+01+03+P.
+ * And then, command S+68+41+00+64-byte data +P is to program 64-byte data.
+ * (3) If I2C speed is 400khz and a series of data more than
+ * 64 bytes will be programmed, Host needs to send a “FINISH COMMAND”
+ * after the end of the 64nd data.
+ * Ex. Program 64 bytes data from address 0x0300 to 0x033F
+ * S+68+10+01+03+P
+ * S+68+41+00+Data1+Data2+…+Data64+P
+ * S+68+00+00+00+P
+ * (4) If ISP I2C speed is 400Khz, a byte to byte delay is needed
+ * for program flash spec.
+ */
+int wt_program_flash_64byte(struct wt6670f *chip, u8 addr_bit_7_0, u8 *buf, u8 len)
+{
+	int ret = 0;
+	struct i2c_adapter *adap = chip->client->adapter;
+	struct i2c_msg msg;
+	u8 *w_buf = NULL;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	w_buf = kzalloc(len + 2, GFP_KERNEL);
+	if (w_buf == NULL)
+		return -1;
+
+	w_buf[0] = 0x41;
+	w_buf[1] = addr_bit_7_0;
+	memcpy(w_buf + 2, buf, len);
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.len = len + 2;
+	//msg.len = 1 + 2;
+	msg.buf = w_buf;
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(adap, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	kfree(w_buf);
+	return ret;
+}
+
+/**
+ * FINISH Command
+ * (1) FINISH COMMAND stops erase/program function
+ */
+int wt_finish_erase_or_program(struct wt6670f *chip)
+{
+	u8 cmd_buf[3] = {0x00, 0x00, 0x00};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+/**
+ * READ Command
+ * (1) READ COMMAND can read maximum 64 bytes flash data.
+ * (2) If Host read 64-byte data from 0x0700 ~ 0x073F,
+ * set address ADDR[13:8] = 0x07 first.
+ * READ COMMAND is S+68+61+00+rS+69+64-byte data+P
+ */
+int wt_read_flash_64byte(struct wt6670f *chip, u8 addr_bit_7_0, u8 *buf, u8 len)
+{
+	int ret = 0;
+	struct i2c_msg msg[2];
+	u8 w_buf[2] = {0x61, addr_bit_7_0};
+	u8 *r_buf = NULL;
+
+	memset(msg, 0, 2 * sizeof(struct i2c_msg));
+
+	r_buf = kzalloc(len, GFP_KERNEL);
+	if (r_buf == NULL)
+		return -1;
+
+	msg[0].addr = WT6670_ISP_I2C_ADDR;
+	msg[0].flags = 0 | I2C_M_STOP;
+	msg[0].len = sizeof(w_buf);
+	msg[0].buf = w_buf;
+
+	msg[1].addr = WT6670_ISP_I2C_ADDR;
+	msg[1].flags = 1;
+	msg[1].len = len;
+	msg[1].buf = r_buf;
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, msg, 2);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	memcpy(buf, r_buf, len);
+
+	kfree(r_buf);
+	return ret;
+}
+
+/**
+ * END Command
+ * (1) END COMMAND will reset WT6670F.
+ * Then WT6670F restarts to execute user’s code
+ */
+int wt_restart_chip(struct wt6670f *chip)
+{
+	u8 cmd_buf[3] = {0x10, 0x00, 0x02};
+	struct i2c_msg msg;
+	int ret = 0;
+
+	memset(&msg, 0, sizeof(struct i2c_msg));
+
+	msg.addr = WT6670_ISP_I2C_ADDR;
+	msg.flags = 0 | I2C_M_STOP;
+	msg.buf = cmd_buf;
+	msg.len = sizeof(cmd_buf);
+
+	mutex_lock(&chip->i2c_rw_lock);
+	ret = i2c_transfer(chip->client->adapter, &msg, 1);
+	if (ret < 0)
+	{
+		pr_info("[%s] i2c transfer failed, ret:%d\n", __func__, ret);
+	}
+	mutex_unlock(&chip->i2c_rw_lock);
+
+	return ret;
+}
+
+int wt6670f_isp_flow(struct wt6670f *chip)
+{
+	u8 chip_id = 0;
+	int programed_cnt = 0x0;
+	int addr_bit_15_8 = 0x0;
+	int addr_bit_7_0 = 0x0;
+	u8 *code = NULL;
+	int i = 0;
+	int len = 0;
+	int read_flash_cnt = 0x0;
+
+	code = kzalloc(0x40, GFP_KERNEL);
+	if (code == NULL)
+		return -1;
+#if 0
+	pr_info("%s: i2c speed before set:%d\n", __func__, get_i2c_speed(6));
+	set_i2c_speed(6, 100 * 1000);
+	pr_info("%s: i2c speed after set:%d\n", __func__, get_i2c_speed(6));
+#endif
+	wt6670f_do_reset();
+	wt_enter_isp_mode_sequence(chip);
+
+	//while(check_i2c_bus_free);
+
+	wt_enable_isp(chip);
+
+	wt_read_chip_id(chip, &chip_id, 1);
+	if (chip_id != 0x70)
+	{
+		pr_info("[%s] err, chip_id:%d, skip isp\n", __func__, chip_id);
+		goto isp_err;
+	}
+	pr_info("[%s] , chip_id:%d, skip isp\n", __func__, chip_id);
+	wt_enable_isp_flash_mode(chip);
+	wt_chip_erase(chip);
+	msleep(30);
+	wt_finish_erase_or_program(chip);
+
+	//wt_enable_isp_flash_mode(chip->client);
+
+	while (programed_cnt < WT70F_QC3p_V02_210326_FBA1_bin_len)
+	{
+		addr_bit_15_8 = (programed_cnt >> 8) & 0x0f;
+		addr_bit_7_0 = programed_cnt % 0x100;
+
+		memset(code, 0, 0x40);
+
+		wt_set_address_high_byte(chip, addr_bit_15_8);
+
+		if ((programed_cnt + 0x40) > WT70F_QC3p_V02_210326_FBA1_bin_len)
+		{
+			len =  WT70F_QC3p_V02_210326_FBA1_bin_len % 0x40;
+		}
+		else
+		{
+			len = 0x40;
+		}
+
+		for (i = 0; i < len; i++)
+		{
+			code[i] = WT70F_QC3p_V02_210326_FBA1_bin[programed_cnt + i];
+		}
+
+		if (len != 0x40)
+		{
+			for (i = len; i < 0x40; i++)
+			{
+				code[i] = 0xff;
+			}
+		}
+
+		wt_program_flash_64byte(chip, addr_bit_7_0, code, 0x40);
+
+		wt_finish_erase_or_program(chip);
+		programed_cnt += 0x40;
+	}
+
+	pr_info("[%s] finish program flash, start verify...\n", __func__);
+
+	//wt_enable_isp_flash_mode(chip->client);
+
+	while (read_flash_cnt < 0x1000)
+	{
+		addr_bit_15_8 = (read_flash_cnt >> 8) & 0x0f;
+		addr_bit_7_0 = read_flash_cnt % 0x100;
+
+		memset(code, 0, 0x40);
+
+		wt_set_address_high_byte(chip, addr_bit_15_8);
+		wt_read_flash_64byte(chip, addr_bit_7_0, code, 0x40);
+
+		if (read_flash_cnt > WT70F_QC3p_V02_210326_FBA1_bin_len)
+		{
+
+		}
+		else if (read_flash_cnt + 0x40 > WT70F_QC3p_V02_210326_FBA1_bin_len)
+		{
+			for (i = 0; i < WT70F_QC3p_V02_210326_FBA1_bin_len % 0x40; i++)
+			{
+				if (code[i] != WT70F_QC3p_V02_210326_FBA1_bin[read_flash_cnt + i])
+				{
+					pr_info("[%s] verify flash data failed, fail_addr:0x%x, fail_data:0x%x, correct_data:0x%x\n", __func__, read_flash_cnt + i,
+						code[i], WT70F_QC3p_V02_210326_FBA1_bin[read_flash_cnt + i]);
+				}
+			}
+
+			//need to verify 0xff
+		}
+		else
+		{
+			for (i = 0; i < 0x40; i++)
+			{
+				if (code[i] != WT70F_QC3p_V02_210326_FBA1_bin[read_flash_cnt + i])
+				{
+					pr_info("[%s] verify flash data failed, fail_addr:0x%x, fail_data:0x%x, correct_data:0x%x\n", __func__, read_flash_cnt + i,
+						code[i], WT70F_QC3p_V02_210326_FBA1_bin[read_flash_cnt + i]);
+				}
+			}
+		}
+
+		read_flash_cnt += 0x40;
+	}
+
+	wt_restart_chip(chip);
+
+	kfree(code);
+#if 0
+	set_i2c_speed(6, 400 * 1000);
+	pr_info("%s: i2c speed resume:%dk\n", __func__, get_i2c_speed(6));
+#endif
+	return 0;
+
+isp_err:
+	wt_restart_chip(chip);
+	kfree(code);
+#if 0
+	set_i2c_speed(6, 400 * 1000);
+	pr_info("%s: i2c speed resume:%dk\n", __func__, get_i2c_speed(6));
+#endif
+	return -1;
+}
+
 static int __wt6670f_write_word(struct wt6670f *wt, u8 reg, u16 data)
 {
 	s32 ret;
@@ -615,7 +1242,6 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	firmware_version = wt6670f_get_firmware_version();
 	wt6670f_reset_chg_type();
 	pr_info("[%s] firmware_version = %d, chg_type = 0x%x\n", __func__,firmware_version, _wt->chg_type);
-#if 0
 	if(firmware_version != WT6670_FIRMWARE_VERSION){
             pr_info("[%s]: firmware need upgrade, run wt6670_isp!", __func__);
             wt6670f_isp_flow(wt);
@@ -626,7 +1252,6 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
             	wt6670f_isp_flow(wt);
         	}
         }
-#endif
 	wt6670f_id = wt6670f_get_id(0xBC);
 	if(0x5457 == wt6670f_id){
 		g_qc3p_id = QC3P_WT6670F;
