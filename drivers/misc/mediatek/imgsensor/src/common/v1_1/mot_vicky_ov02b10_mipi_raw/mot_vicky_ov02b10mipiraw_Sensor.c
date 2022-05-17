@@ -29,6 +29,9 @@
 
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
+#include "mot_vicky_ov02b10mipiraw_otp.h"
+extern unsigned char ov02b10_otp_data[OV02B10_OTP_SIZE];
+static ov02b10_calibration_status_t ov02b10_cal_info = {0};
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static  imgsensor_info_struct imgsensor_info = {
@@ -752,6 +755,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             if (*sensor_id == imgsensor_info.sensor_id) {
                 //read_module_data();
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                ov02b10_read_data_from_otp();
+                VICKY_OV02B10_eeprom_format_calibration_data((void *)&ov02b10_otp_data[16], &ov02b10_cal_info);
                 return ERROR_NONE;
             }
             LOG_INF("Read sensor id fail,write_id:0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -1127,6 +1132,25 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorHightSampling = 0;    /* 0 is default 1x */
     sensor_info->SensorPacketECCOrder = 1;
 
+    sensor_info->calibration_status.mnf   = ov02b10_cal_info.mnf_status;
+    sensor_info->calibration_status.af    = ov02b10_cal_info.af_status;
+    sensor_info->calibration_status.awb   = ov02b10_cal_info.awb_status;
+    sensor_info->calibration_status.lsc   = ov02b10_cal_info.lsc_status;
+    sensor_info->calibration_status.pdaf  = ov02b10_cal_info.pdaf_status;
+    sensor_info->calibration_status.dual  = ov02b10_cal_info.dual_status;
+
+    {
+    	snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
+            "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+        ov02b10_otp_data[0], ov02b10_otp_data[1],
+        ov02b10_otp_data[2], ov02b10_otp_data[3],
+        ov02b10_otp_data[4], ov02b10_otp_data[5],
+        ov02b10_otp_data[6], ov02b10_otp_data[7],
+        ov02b10_otp_data[8], ov02b10_otp_data[9],
+        ov02b10_otp_data[10], ov02b10_otp_data[11],
+        ov02b10_otp_data[12], ov02b10_otp_data[13],
+        ov02b10_otp_data[14], ov02b10_otp_data[15]);
+    }
     switch (scenario_id) {
     case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
         sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
