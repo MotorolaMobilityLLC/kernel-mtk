@@ -361,12 +361,14 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	LCM_LOGI("[LCM] lcm_init +\n");
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
+	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(5);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(35);
 
 	push_table(NULL, init_setting,
 		sizeof(init_setting)/sizeof(struct LCM_setting_table), 1);
