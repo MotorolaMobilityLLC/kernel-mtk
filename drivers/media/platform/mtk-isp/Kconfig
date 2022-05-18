@@ -75,3 +75,9 @@ config VIDEO_MTK_ISP_IPESYS
 	    which process the images to generate useful statistics
 	    for isp pipeline image computation such
 	    as motion estimation.
+
+config MTK_MEMORY_OPTIMIZE
+	tristate "Moto memory optimize"
+	help
+	    Tesla do not support vHDR
+	    reduce unnecessary memory usage
