@@ -6010,7 +6010,12 @@ static int mtk_raw_pipeline_register(unsigned int id, struct device *dev,
 	int ret;
 
 	pipe->id = id;
+	/* Tesla not support vHDR, change it to reduce memory usage about 30M */
+#if defined(CONFIG_MTK_MEMORY_OPTIMIZE)
+	pipe->dynamic_exposure_num_max = 1;
+#else
 	pipe->dynamic_exposure_num_max = 3;
+#endif
 
 	/* Initialize subdev */
 	v4l2_subdev_init(sd, &mtk_raw_subdev_ops);
