@@ -189,9 +189,11 @@
 		sar-num = <0>;
 		aw9610x,channel_number = <0x5>;
 		ref_channel = <0x6>;
-		ch0_name = "capsense_bottom_left";
-		ch1_name = "capsense_top";
-		ch2_name = "capsense_bottom_right";
+		ch0_name = "Moto CapSense Ch0";
+		ch1_name = "Moto CapSense Ch1";
+		ch2_name = "Moto CapSense Ch2";
+		ch3_name = "Moto CapSense Ch3";
+		ch4_name = "Moto CapSense Ch4";
 		aw9610x,using-firmware;
                 aw9610x,firmware_name = "aw9610x_0";
 		status = "okay";
