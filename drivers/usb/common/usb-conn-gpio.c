@@ -210,7 +210,8 @@ static int usb_conn_probe(struct platform_device *pdev)
 	 * supply, there's no need for the USB connector to provide it again.
 	 */
 	if (dev->parent && dev->parent->of_node) {
-		if (of_find_property(dev->parent->of_node, "vbus-supply", NULL))
+		if (of_find_property(dev->parent->of_node, "vbus-supply", NULL)
+			&& of_find_property(dev->parent->of_node, "vbus-supply-2nd", NULL))
 			need_vbus = false;
 	}
 
