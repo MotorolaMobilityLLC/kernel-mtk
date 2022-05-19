@@ -8,59 +8,59 @@
 #include <linux/i2c.h>
 
 #define SGM4154x_MANUFACTURER	"Texas Instruments"
-//#define __SGM41541_CHIP_ID__
+#define __SGM41541_CHIP_ID__
 #define __SGM41542_CHIP_ID__
-//#define __SGM41513_CHIP_ID__
-//#define __SGM41513A_CHIP_ID__
-//#define __SGM41513D_CHIP_ID__
-//#define __SGM41516_CHIP_ID__
-//#define __SGM41516D_CHIP_ID__
-//#define __SGM41543_CHIP_ID__
-//#define __SGM41543D_CHIP_ID__
+#define __SGM41513_CHIP_ID__
+#define __SGM41513A_CHIP_ID__
+#define __SGM41513D_CHIP_ID__
+#define __SGM41516_CHIP_ID__
+#define __SGM41516D_CHIP_ID__
+#define __SGM41543_CHIP_ID__
+#define __SGM41543D_CHIP_ID__
 
 #ifdef __SGM41541_CHIP_ID__
-#define SGM4154x_NAME		"sgm41541"
-#define SGM4154x_PN_ID     (BIT(6)| BIT(5))
+#define SGM41541_NAME		"sgm41541"
+#define SGM41541_PN_ID     (BIT(6)| BIT(5))
 #endif
 
 #ifdef __SGM41542_CHIP_ID__
-#define SGM4154x_NAME		"sgm41542"
-#define SGM4154x_PN_ID      (BIT(6)| BIT(5)| BIT(3))
+#define SGM41542_NAME		"sgm41542"
+#define SGM41542_PN_ID      (BIT(6)| BIT(5)| BIT(3))
 #endif
 
 #ifdef __SGM41513_CHIP_ID__
-#define SGM4154x_NAME		"sgm41513"
-#define SGM4154x_PN_ID      0
+#define SGM41513_NAME		"sgm41513"
+#define SGM41513_PN_ID      0
 #endif
 
 #ifdef __SGM41513A_CHIP_ID__
-#define SGM4154x_NAME		"sgm41513A"
-#define SGM4154x_PN_ID      BIT(3)
+#define SGM41513A_NAME		"sgm41513A"
+#define SGM41513A_PN_ID      BIT(3)
 #endif
 
 #ifdef __SGM41513D_CHIP_ID__
-#define SGM4154x_NAME		"sgm41513D"
-#define SGM4154x_PN_ID      BIT(3)
+#define SGM4153D_NAME		"sgm41513D"
+#define SGM4153D_PN_ID      BIT(3)
 #endif
 
 #ifdef __SGM41516_CHIP_ID__
-#define SGM4154x_NAME		"sgm41516"
-#define SGM4154x_PN_ID      (BIT(6)| BIT(5))
+#define SGM41516_NAME		"sgm41516"
+#define SGM41516_PN_ID      (BIT(6)| BIT(5))
 #endif
 
 #ifdef __SGM41516D_CHIP_ID__
-#define SGM4154x_NAME		"sgm41516D"
-#define SGM4154x_PN_ID     (BIT(6)| BIT(5)| BIT(3))
+#define SGM41516D_NAME		"sgm41516D"
+#define SGM41516D_PN_ID     (BIT(6)| BIT(5)| BIT(3))
 #endif
 
 #ifdef __SGM41543_CHIP_ID__
-#define SGM4154x_NAME		"sgm41543"
-#define SGM4154x_PN_ID      BIT(6)
+#define SGM41543_NAME		"sgm41543"
+#define SGM41543_PN_ID      BIT(6)
 #endif
 
 #ifdef __SGM41543D_CHIP_ID__
-#define SGM4154x_NAME		"sgm41543D"
-#define SGM4154x_PN_ID      (BIT(6)| BIT(3))
+#define SGM41543D_NAME		"sgm41543D"
+#define SGM41543D_PN_ID      (BIT(6)| BIT(3))
 #endif
 
 /*define register*/
@@ -163,14 +163,11 @@
 #define SGM4154x_ICHRG_I_MASK		GENMASK(5, 0)
 
 #define SGM4154x_ICHRG_I_MIN_uA			0
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
-#define SGM4154x_ICHRG_I_MAX_uA			3000000
-#define SGM4154x_ICHRG_I_DEF_uA			1980000
-#else
+#define SGM41513_ICHRG_I_MAX_uA			3000000
+#define SGM41513_ICHRG_I_DEF_uA			1980000
 #define SGM4154x_ICHRG_I_STEP_uA	    60000
 #define SGM4154x_ICHRG_I_MAX_uA			3780000
 #define SGM4154x_ICHRG_I_DEF_uA			2040000
-#endif
 /* charge voltage  */
 #define SGM4154x_VREG_V_MASK		GENMASK(7, 3)
 #define SGM4154x_VREG_V_MAX_uV	    4624000
@@ -181,11 +178,8 @@
 /* iindpm current  */
 #define SGM4154x_IINDPM_I_MASK		GENMASK(4, 0)
 #define SGM4154x_IINDPM_I_MIN_uA	100000
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
-#define SGM4154x_IINDPM_I_MAX_uA	3200000
-#else
-#define SGM4154x_IINDPM_I_MAX_uA	3800000
-#endif
+#define SGM41513_IINDPM_I_MAX_uA	3200000
+#define SGM415xx_IINDPM_I_MAX_uA	3800000
 #define SGM4154x_IINDPM_STEP_uA	    100000
 #define SGM4154x_IINDPM_DEF_uA	    2400000
 
@@ -235,6 +229,18 @@
 #define TEMP_T0_THRES_PLUS_X_DEGREE  0
 #define TEMP_NEG_10_THRES 0
 */
+enum sgm415xx_dev_id{
+	SGM41541_ID,
+	SGM41542_ID,
+	SGM41513_ID,
+	SGM41513A_ID,
+	SGM41513D_ID,
+	SGM41516_ID,
+	SGM41516D_ID,
+	SGM41543_ID,
+	SGM41543D_ID,
+};
+
 struct sgm4154x_init_data {
 	u32 ichg;	/* charge current		*/
 	u32 ilim;	/* input current		*/
@@ -295,6 +301,7 @@ struct sgm4154x_device {
 	struct power_supply *usb;
 	struct power_supply *ac;
 	enum power_supply_usb_type psy_usb_type;
+	enum sgm415xx_dev_id dev_id;
 	struct mutex lock;
 	struct mutex i2c_rw_lock;
 

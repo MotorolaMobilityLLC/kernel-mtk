@@ -51,22 +51,17 @@ bool m_chg_ready = false;
 extern int m_chg_type;
 extern int g_qc3p_id;
 #endif
+unsigned int boost_current_limit[2];
+unsigned int SGM4154x_IINDPM_I_MAX_uA;
 /* SGM4154x REG06 BOOST_LIM[5:4], uV */
-static const unsigned int BOOST_VOLT_LIMIT[] = {
+unsigned int BOOST_VOLT_LIMIT[] = {
 	4850000, 5000000, 5150000, 5300000		
 };
  /* SGM4154x REG02 BOOST_LIM[7:7], uA */
-#if (defined(__SGM41542_CHIP_ID__) || defined(__SGM41541_CHIP_ID__)|| defined(__SGM41543_CHIP_ID__)|| defined(__SGM41543D_CHIP_ID__))
-static const unsigned int BOOST_CURRENT_LIMIT[] = {
-	1200000, 2000000
+unsigned int BOOST_CURRENT_LIMIT[2][2] = {
+	{1200000, 2000000},
+	{500000, 1200000}
 };
-#else
-static const unsigned int BOOST_CURRENT_LIMIT[] = {
-	500000, 1200000
-};
-#endif
-
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
 
 static const unsigned int IPRECHG_CURRENT_STABLE[] = {
 	5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000,
@@ -77,7 +72,7 @@ static const unsigned int ITERM_CURRENT_STABLE[] = {
 	5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000,
 	80000, 100000, 120000, 140000, 160000, 180000, 200000, 240000
 };
-#endif
+
 
 
 static enum power_supply_usb_type sgm4154x_usb_type[] = {
@@ -87,8 +82,8 @@ static enum power_supply_usb_type sgm4154x_usb_type[] = {
 	POWER_SUPPLY_USB_TYPE_CDP,	
 };
 
-static const struct charger_properties sgm4154x_chg_props = {
-	.alias_name = SGM4154x_NAME,
+struct charger_properties sgm4154x_chg_props = {
+	.alias_name = SGM41542_NAME,
 };
 
 /**********************************************************
@@ -252,24 +247,25 @@ static int sgm4154x_get_ichg_curr(struct charger_device *chg_dev, u32 *curr)
 		return ret;	
 
 	ichg &= SGM4154x_ICHRG_I_MASK;
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))	
-	if (ichg <= 0x8)
-		*curr = ichg * 5000;
-	else if (ichg <= 0xF)
-		curr = 40000 + (ichg - 0x8) * 10000;
-	else if (ichg <= 0x17)
-		*curr = 110000 + (ichg - 0xF) * 20000;
-	else if (ichg <= 0x20)
-		*curr = 270000 + (ichg - 0x17) * 30000;
-	else if (ichg <= 0x30)
-		*curr = 540000 + (ichg - 0x20) * 60000;
-	else if (ichg <= 0x3C)
-		*curr = 1500000 + (ichg - 0x30) * 120000;
-	else
-		*curr = 3000000;
-#else
-	*curr = ichg * SGM4154x_ICHRG_I_STEP_uA;
-#endif	
+
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID ||  sgm->dev_id == SGM41513D_ID) {
+		if (ichg <= 0x8)
+			*curr = ichg * 5000;
+		else if (ichg <= 0xF)
+			*curr = 40000 + (ichg - 0x8) * 10000;
+		else if (ichg <= 0x17)
+			*curr = 110000 + (ichg - 0xF) * 20000;
+		else if (ichg <= 0x20)
+			*curr = 270000 + (ichg - 0x17) * 30000;
+		else if (ichg <= 0x30)
+			*curr = 540000 + (ichg - 0x20) * 60000;
+		else if (ichg <= 0x3C)
+			*curr = 1500000 + (ichg - 0x30) * 120000;
+		else
+			*curr = 3000000;
+	} else {
+		*curr = ichg * SGM4154x_ICHRG_I_STEP_uA;
+	}
 	return ret;
 }
 
@@ -277,19 +273,19 @@ static int sgm4154x_get_ichg_curr(struct charger_device *chg_dev, u32 *curr)
 static int sgm4154x_set_term_curr(struct sgm4154x_device *sgm, int uA)
 {
 	u8 reg_val;
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))	
 	
-	for(reg_val = 1; reg_val < 16 && uA >= ITERM_CURRENT_STABLE[reg_val]; reg_val++)
-		;
-	reg_val--;
-#else
-	if (uA < SGM4154x_TERMCHRG_I_MIN_uA)
-		uA = SGM4154x_TERMCHRG_I_MIN_uA;
-	else if (uA > SGM4154x_TERMCHRG_I_MAX_uA)
-		uA = SGM4154x_TERMCHRG_I_MAX_uA;
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID ||  sgm->dev_id == SGM41513D_ID) {
+		for(reg_val = 1; reg_val < 16 && uA >= ITERM_CURRENT_STABLE[reg_val]; reg_val++)
+			;
+		reg_val--;
+	} else {
+		if (uA < SGM4154x_TERMCHRG_I_MIN_uA)
+			uA = SGM4154x_TERMCHRG_I_MIN_uA;
+		else if (uA > SGM4154x_TERMCHRG_I_MAX_uA)
+			uA = SGM4154x_TERMCHRG_I_MAX_uA;
 	
-	reg_val = (uA - SGM4154x_TERMCHRG_I_MIN_uA) / SGM4154x_TERMCHRG_CURRENT_STEP_uA;
-#endif
+		reg_val = (uA - SGM4154x_TERMCHRG_I_MIN_uA) / SGM4154x_TERMCHRG_CURRENT_STEP_uA;
+	}
 
 	return sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_3,
 				  SGM4154x_TERMCHRG_CUR_MASK, reg_val);
@@ -299,18 +295,18 @@ static int sgm4154x_set_prechrg_curr(struct sgm4154x_device *sgm, int uA)
 {
 	u8 reg_val;
 	
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
-	for(reg_val = 1; reg_val < 16 && uA >= IPRECHG_CURRENT_STABLE[reg_val]; reg_val++)
-		;
-	reg_val--;
-#else
-	if (uA < SGM4154x_PRECHRG_I_MIN_uA)
-		uA = SGM4154x_PRECHRG_I_MIN_uA;
-	else if (uA > SGM4154x_PRECHRG_I_MAX_uA)
-		uA = SGM4154x_PRECHRG_I_MAX_uA;
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID ||  sgm->dev_id == SGM41513D_ID) {
+		for(reg_val = 1; reg_val < 16 && uA >= IPRECHG_CURRENT_STABLE[reg_val]; reg_val++)
+			;
+		reg_val--;
+	} else {
+		if (uA < SGM4154x_PRECHRG_I_MIN_uA)
+			uA = SGM4154x_PRECHRG_I_MIN_uA;
+		else if (uA > SGM4154x_PRECHRG_I_MAX_uA)
+			uA = SGM4154x_PRECHRG_I_MAX_uA;
 
-	reg_val = (uA - SGM4154x_PRECHRG_I_MIN_uA) / SGM4154x_PRECHRG_CURRENT_STEP_uA;
-#endif
+		reg_val = (uA - SGM4154x_PRECHRG_I_MIN_uA) / SGM4154x_PRECHRG_CURRENT_STEP_uA;
+	}
 	reg_val = reg_val << 4;
 	return sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_3,
 				  SGM4154x_PRECHRG_CUR_MASK, reg_val);
@@ -328,25 +324,26 @@ static int sgm4154x_set_ichrg_curr(struct charger_device *chg_dev, unsigned int 
 		uA = SGM4154x_ICHRG_I_MIN_uA;
 	else if ( uA > sgm->init_data.max_ichg)
 		uA = sgm->init_data.max_ichg;
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
-	if (uA <= 40000)
-		reg_val = uA / 5000;	
-	else if (uA <= 110000)
-		reg_val = 0x08 + (uA -40000) / 10000;	
-	else if (uA <= 270000)
-		reg_val = 0x0F + (uA -110000) / 20000;	
-	else if (uA <= 540000)
-		reg_val = 0x17 + (uA -270000) / 30000;	
-	else if (uA <= 1500000)
-		reg_val = 0x20 + (uA -540000) / 60000;	
-	else if (uA <= 2940000)
-		reg_val = 0x30 + (uA -1500000) / 120000;
-	else 
-		reg_val = 0x3d;
-#else
 
-	reg_val = uA / SGM4154x_ICHRG_I_STEP_uA;
-#endif
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID ||  sgm->dev_id == SGM41513D_ID) {
+		if (uA <= 40000)
+			reg_val = uA / 5000;
+		else if (uA <= 110000)
+			reg_val = 0x08 + (uA -40000) / 10000;
+		else if (uA <= 270000)
+			reg_val = 0x0F + (uA -110000) / 20000;
+		else if (uA <= 540000)
+			reg_val = 0x17 + (uA -270000) / 30000;
+		else if (uA <= 1500000)
+			reg_val = 0x20 + (uA -540000) / 60000;
+		else if (uA <= 2940000)
+			reg_val = 0x30 + (uA -1500000) / 120000;
+		else
+			reg_val = 0x3d;
+	} else {
+		reg_val = uA / SGM4154x_ICHRG_I_STEP_uA;
+	}
+
 	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_2,
 				  SGM4154x_ICHRG_I_MASK, reg_val);
 	
@@ -505,17 +502,16 @@ static int sgm4154x_set_input_curr_lim(struct charger_device *chg_dev, unsigned 
 		reg_val = 0;
 	else if (iindpm >= SGM4154x_IINDPM_I_MAX_uA)
 		reg_val = 0x1F;
-
-#if (defined(__SGM41513_CHIP_ID__) || defined(__SGM41513A_CHIP_ID__) || defined(__SGM41513D_CHIP_ID__))
-	reg_val = (iindpm-SGM4154x_IINDPM_I_MIN_uA) / SGM4154x_IINDPM_STEP_uA;
-#else		
-	if (iindpm >= SGM4154x_IINDPM_I_MIN_uA && iindpm <= 3100000)//default
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID ||  sgm->dev_id == SGM41513D_ID) {
 		reg_val = (iindpm-SGM4154x_IINDPM_I_MIN_uA) / SGM4154x_IINDPM_STEP_uA;
-	else if (iindpm > 3100000 && iindpm < SGM4154x_IINDPM_I_MAX_uA)
-		reg_val = 0x1E;
-	else
-		reg_val = SGM4154x_IINDPM_I_MASK;
-#endif
+	} else {
+		if (iindpm >= SGM4154x_IINDPM_I_MIN_uA && iindpm <= 3100000)//default
+			reg_val = (iindpm-SGM4154x_IINDPM_I_MIN_uA) / SGM4154x_IINDPM_STEP_uA;
+		else if (iindpm > 3100000 && iindpm < SGM4154x_IINDPM_I_MAX_uA)
+			reg_val = 0x1E;
+		else
+			reg_val = SGM4154x_IINDPM_I_MASK;
+	}
 	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_0,
 				  SGM4154x_IINDPM_I_MASK, reg_val);
 	return ret;
@@ -1061,7 +1057,6 @@ static int sgm4154x_get_is_safetytimer_enable(struct charger_device
 	return 0;
 }
 
-#if (defined(__SGM41542_CHIP_ID__)|| defined(__SGM41516D_CHIP_ID__)|| defined(__SGM41543D_CHIP_ID__))
 static int sgm4154x_en_pe_current_partern(struct charger_device
 		*chg_dev,bool is_up)
 {
@@ -1069,22 +1064,23 @@ static int sgm4154x_en_pe_current_partern(struct charger_device
 	
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 	
-	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
-				SGM4154x_EN_PUMPX, SGM4154x_EN_PUMPX);
-	if (ret < 0)
-	{
-		pr_info("[%s] read SGM4154x_CHRG_CTRL_d fail\n", __func__);
-		return ret;
+	if(sgm->dev_id == SGM41542_ID || sgm->dev_id == SGM41543D_ID || sgm->dev_id == SGM41516D_ID) {
+		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					SGM4154x_EN_PUMPX, SGM4154x_EN_PUMPX);
+		if (ret < 0)
+		{
+			pr_info("[%s] read SGM4154x_CHRG_CTRL_d fail\n", __func__);
+			return ret;
+		}
+		if (is_up)
+			ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					SGM4154x_PUMPX_UP, SGM4154x_PUMPX_UP);
+		else
+			ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					SGM4154x_PUMPX_DN, SGM4154x_PUMPX_DN);
 	}
-	if (is_up)
-		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
-				SGM4154x_PUMPX_UP, SGM4154x_PUMPX_UP);
-	else
-		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
-				SGM4154x_PUMPX_DN, SGM4154x_PUMPX_DN);
 	return ret;
 }
-#endif
 
 static enum power_supply_property sgm4154x_power_supply_props[] = {
 	POWER_SUPPLY_PROP_MANUFACTURER,
@@ -1195,7 +1191,7 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_MODEL_NAME:
-		val->strval = SGM4154x_NAME;
+		val->strval = sgm4154x_chg_props.alias_name;
 		break;
 
 	case POWER_SUPPLY_PROP_ONLINE:
@@ -1363,52 +1359,51 @@ static void charger_detect_work_func(struct work_struct *work)
 	{
 		dev_err(sgm->dev, "Vbus not online\n");		
 		goto err;
-	}	
-#if (defined(__SGM41542_CHIP_ID__)|| defined(__SGM41516D_CHIP_ID__)|| defined(__SGM41543D_CHIP_ID__))
-	switch(sgm->state.chrg_type) {
-		case SGM4154x_USB_SDP:
-			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB;
-			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_SDP;
-			pr_err("SGM4154x charger type: SDP\n");
-			curr_in_limit = 500000;
-			break;
-
-		case SGM4154x_USB_CDP:
-			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_CDP;
-			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_CDP;
-			pr_err("SGM4154x charger type: CDP\n");
-			curr_in_limit = 1500000;
-			break;
-
-		case SGM4154x_USB_DCP:
-			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
-			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-	    schedule_delayed_work(&sgm->psy_dwork, 0);
-#endif
-			pr_err("SGM4154x charger type: DCP\n");
-			curr_in_limit = 2000000;
-			break;
-
-		case SGM4154x_UNKNOWN:
-			sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
-			sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
-			pr_err("SGM4154x charger type: UNKNOWN\n");
-			curr_in_limit = 500000;
-			break;	
-
-		default:
-			pr_err("SGM4154x charger type: default\n");
-			//curr_in_limit = 500000;
-			//break;
-			return;
 	}
+	if(sgm->dev_id == SGM41542_ID || sgm->dev_id == SGM41543D_ID || sgm->dev_id == SGM41516D_ID) {
+		switch(sgm->state.chrg_type) {
+			case SGM4154x_USB_SDP:
+				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB;
+				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_SDP;
+				pr_err("SGM4154x charger type: SDP\n");
+				curr_in_limit = 500000;
+				break;
 
-	//set charge parameters
-	dev_err(sgm->dev, "Update: curr_in_limit = %d\n", curr_in_limit);
-	sgm4154x_set_input_curr_lim(sgm->chg_dev, curr_in_limit);
-	
-#endif
+			case SGM4154x_USB_CDP:
+				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_CDP;
+				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_CDP;
+				pr_err("SGM4154x charger type: CDP\n");
+				curr_in_limit = 1500000;
+				break;
+
+			case SGM4154x_USB_DCP:
+				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
+				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
+	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		schedule_delayed_work(&sgm->psy_dwork, 0);
+	#endif
+				pr_err("SGM4154x charger type: DCP\n");
+				curr_in_limit = 2000000;
+				break;
+
+			case SGM4154x_UNKNOWN:
+				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+				pr_err("SGM4154x charger type: UNKNOWN\n");
+				curr_in_limit = 500000;
+				break;
+
+			default:
+				pr_err("SGM4154x charger type: default\n");
+				//curr_in_limit = 500000;
+				//break;
+				return;
+		}
+
+		//set charge parameters
+		dev_err(sgm->dev, "Update: curr_in_limit = %d\n", curr_in_limit);
+		sgm4154x_set_input_curr_lim(sgm->chg_dev, curr_in_limit);
+	}
 	//enable charge
 	sgm4154x_enable_charger(sgm);
 	sgm4154x_dump_register(sgm->chg_dev);
@@ -1474,9 +1469,17 @@ static int sgm4154x_hw_init(struct sgm4154x_device *sgm)
 	int ret = 0;	
 	struct power_supply_battery_info bat_info = { };	
 
-	bat_info.constant_charge_current_max_ua =
-			SGM4154x_ICHRG_I_DEF_uA;
-
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513D_ID) {
+		bat_info.constant_charge_current_max_ua =
+				SGM41513_ICHRG_I_DEF_uA;
+		sgm->init_data.max_ichg =
+				SGM41513_ICHRG_I_MAX_uA;
+	} else {
+		bat_info.constant_charge_current_max_ua =
+				SGM4154x_ICHRG_I_DEF_uA;
+		sgm->init_data.max_ichg =
+				SGM4154x_ICHRG_I_MAX_uA;
+	}
 	bat_info.constant_charge_voltage_max_uv =
 			SGM4154x_VREG_V_DEF_uV;
 
@@ -1486,8 +1489,6 @@ static int sgm4154x_hw_init(struct sgm4154x_device *sgm)
 	bat_info.charge_term_current_ua =
 			SGM4154x_TERMCHRG_I_DEF_uA;
 
-	sgm->init_data.max_ichg =
-			SGM4154x_ICHRG_I_MAX_uA;
 
 	sgm->init_data.max_vreg =
 			SGM4154x_VREG_V_MAX_uV;
@@ -1742,12 +1743,12 @@ static int sgm4154x_set_boost_current_limit(struct charger_device *chg_dev, u32 
 	int ret = 0;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 	
-	if (uA == BOOST_CURRENT_LIMIT[0]){
+	if (uA == boost_current_limit[0]){
 		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_2, SGM4154x_BOOST_LIM,
                      0); 
 	}
 		
-	else if (uA == BOOST_CURRENT_LIMIT[1]){
+	else if (uA == boost_current_limit[1]){
 		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_2, SGM4154x_BOOST_LIM,
                      BIT(7)); 
 	}
@@ -1864,11 +1865,7 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.event = sgm4154x_do_event,
 	
 	/* PE+/PE+20 */
-#if (defined(__SGM41542_CHIP_ID__)|| defined(__SGM41516D_CHIP_ID__)|| defined(__SGM41543D_CHIP_ID__))
 	.send_ta_current_pattern = sgm4154x_en_pe_current_partern,
-#else
-	.send_ta_current_pattern = NULL,
-#endif
 	/*.set_pe20_efficiency_table = NULL,*/
 	/*.send_ta20_current_pattern = NULL,*/
 	/*.set_ta20_reset = NULL,*/
@@ -1895,19 +1892,42 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	
 	mutex_init(&sgm->lock);
 	mutex_init(&sgm->i2c_rw_lock);
-	
+
 	i2c_set_clientdata(client, sgm);
-	
-	ret = sgm4154x_parse_dt(sgm);
-	if (ret)
-		return ret;
-	
+
 	ret = sgm4154x_hw_chipid_detect(sgm);
-	if (ret != SGM4154x_PN_ID){
+	if (ret != SGM41542_PN_ID && ret != SGM41543D_PN_ID) {
+		ret = sgm4154x_hw_chipid_detect(sgm);
 		pr_info("[%s] device not found !!!\n", __func__);
 		return ret;
+	} else {
+		if(ret == SGM41542_PN_ID) {
+			sgm->dev_id  = SGM41542_ID;
+		} else if(ret == SGM41543D_PN_ID) {
+			sgm->dev_id = SGM41543D_ID;
+		}
 	}
+
+	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID || sgm->dev_id == SGM41513D_ID)
+		SGM4154x_IINDPM_I_MAX_uA = SGM41513_IINDPM_I_MAX_uA;
+        else
+		SGM4154x_IINDPM_I_MAX_uA = SGM415xx_IINDPM_I_MAX_uA;
+
+        ret = sgm4154x_parse_dt(sgm);
+        if (ret) {
+                pr_info("[%s] device parse dtbo fail!!!\n", __func__);
+                return ret;
+        }
 	
+	if(sgm->dev_id == SGM41542_ID || sgm->dev_id == SGM41541_ID || sgm->dev_id == SGM41543_ID
+		|| sgm->dev_id == SGM41543D_ID) {
+		boost_current_limit[0] = BOOST_CURRENT_LIMIT[0][0];
+		boost_current_limit[1] = BOOST_CURRENT_LIMIT[0][1];
+	} else {
+		boost_current_limit[0] = BOOST_CURRENT_LIMIT[1][0];
+		boost_current_limit[1] = BOOST_CURRENT_LIMIT[1][1];
+	}
+
 	name = devm_kasprintf(sgm->dev, GFP_KERNEL, "%s","sgm4154x suspend wakelock");
 	sgm->charger_wakelock =	wakeup_source_register(NULL,name);
 	
