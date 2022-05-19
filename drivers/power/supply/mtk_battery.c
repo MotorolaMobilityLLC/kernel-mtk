@@ -537,7 +537,11 @@ static int battery_psy_get_property(struct power_supply *psy,
 		if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
 			bs_data->chg_psy = devm_power_supply_get_by_phandle(
 				&gm->gauge->pdev->dev, "charger");
-			bm_err("%s retry to get chg_psy\n", __func__);
+				if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
+					bs_data->chg_psy = devm_power_supply_get_by_phandle(
+						&gm->gauge->pdev->dev, "charger_2nd");
+					bm_err("%s retry to get chg_psy\n", __func__);
+				}
 		}
 		if (IS_ERR_OR_NULL(bs_data->chg_psy)) {
 			bm_err("%s Couldn't get chg_psy\n", __func__);
@@ -626,8 +630,13 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	if (IS_ERR_OR_NULL(chg_psy)) {
 		chg_psy = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
 							   "charger");
-		bm_err("%s retry to get chg_psy\n", __func__);
-		bs_data->chg_psy = chg_psy;
+		if (IS_ERR_OR_NULL(chg_psy)) {
+			chg_psy = devm_power_supply_get_by_phandle(&gm->gauge->pdev->dev,
+								"charger_2nd");
+			bm_err("%s retry to get chg_psy\n", __func__);
+			bs_data->chg_psy = chg_psy;
+			bm_err("%s charger psy name: %s\n", __func__, chg_psy->desc->name); 
+		}
 	} else {
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &online);
@@ -3518,9 +3527,15 @@ int battery_psy_init(struct platform_device *pdev)
 
 	gm->bs_data.chg_psy = devm_power_supply_get_by_phandle(&pdev->dev,
 							 "charger");
-	if (IS_ERR_OR_NULL(gm->bs_data.chg_psy))
-		bm_err("[BAT_probe] %s: fail to get chg_psy !!\n", __func__);
-
+	if (IS_ERR_OR_NULL(gm->bs_data.chg_psy)) {
+		gm->bs_data.chg_psy = devm_power_supply_get_by_phandle(&pdev->dev,
+								"charger_2nd");
+		if (IS_ERR_OR_NULL(gm->bs_data.chg_psy)) {
+			bm_err("[BAT_probe] %s: fail to get chg_psy !!\n", __func__);
+		}
+	}
+	
+	bm_err("%s charger psy name: %s\n", __func__, gm->bs_data.chg_psy->desc->name);
 	battery_service_data_init(gm);
 	gm->bs_data.psy =
 		power_supply_register(
