@@ -193,9 +193,14 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 
 	extcon->usb_psy = devm_power_supply_get_by_phandle(dev, "charger");
 	if (IS_ERR_OR_NULL(extcon->usb_psy)) {
-		dev_err(dev, "fail to get usb_psy\n");
-		return -EINVAL;
+		extcon->usb_psy = devm_power_supply_get_by_phandle(dev, "charger_2nd");
+		if (IS_ERR_OR_NULL(extcon->usb_psy)) {
+			dev_err(dev, "fail to get usb_psy\n");
+			return -EINVAL;
+		}
 	}
+
+	dev_err(dev, "%s charger psy name: %s\n", __func__, extcon->usb_psy->desc->name);
 
 	INIT_DELAYED_WORK(&extcon->wq_psy, mtk_usb_extcon_psy_detector);
 
