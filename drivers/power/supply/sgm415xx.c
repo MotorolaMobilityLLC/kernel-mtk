@@ -1238,6 +1238,10 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		//val->intval = state.ibus_adc;
 		break;
 
+       case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
+               sgm4154x_get_chrg_volt(sgm->chg_dev,&val->intval);
+               break;
+
 /*	case POWER_SUPPLY_PROP_INPUT_VOLTAGE_LIMIT:
 		ret = sgm4154x_get_input_volt_lim(sgm);
 		if (ret < 0)
