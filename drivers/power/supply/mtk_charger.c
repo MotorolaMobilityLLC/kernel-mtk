@@ -3911,7 +3911,12 @@ static void charger_status_check(struct mtk_charger *info)
 
 	chg_psy = power_supply_get_by_name("primary_chg");
 	if (IS_ERR_OR_NULL(chg_psy)) {
-		chr_err("%s Couldn't get chg_psy\n", __func__);
+		chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev,
+						       "charger_2nd");
+		if (IS_ERR_OR_NULL(chg_psy)) {
+			chr_err("%s Couldn't get chg_psy\n", __func__);
+		}
+		chr_err("%s charger psy name: %s\n", __func__, chg_psy->desc->name);
 	} else {
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &online);
@@ -4687,6 +4692,11 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 	if (IS_ERR_OR_NULL(chg_psy)) {
 		pr_notice("%s Couldn't get chg_psy\n", __func__);
 		chg_psy = power_supply_get_by_name("primary_chg");
+		if (IS_ERR_OR_NULL(chg_psy)) {
+			chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev,
+						       "charger_2nd");
+		}
+		chr_err("%s charger psy name: %s\n", __func__, chg_psy->desc->name);
 		info->chg_psy = chg_psy;
 	} else {
 		ret = power_supply_get_property(chg_psy,
@@ -5005,9 +5015,15 @@ static int mtk_charger_probe(struct platform_device *pdev)
 			&info->psy_cfg1);
 
 	info->chg_psy = power_supply_get_by_name("primary_chg");
-	if (IS_ERR_OR_NULL(info->chg_psy))
-		chr_err("%s: devm power fail to get chg_psy\n", __func__);
-
+	if (IS_ERR_OR_NULL(info->chg_psy)) {
+		info->chg_psy = devm_power_supply_get_by_phandle(&pdev->dev,
+					       "charger_2nd");
+		if (IS_ERR_OR_NULL(info->chg_psy)) {
+			chr_err("%s: devm power fail to get chg_psy\n", __func__);
+		}
+	}
+	chr_err("%s charger psy name: %s\n", __func__, info->chg_psy->desc->name);
+	
 	info->bat_psy = power_supply_get_by_name("battery");
 	if (IS_ERR_OR_NULL(info->bat_psy))
 		chr_err("%s: devm power fail to get bat_psy\n", __func__);
