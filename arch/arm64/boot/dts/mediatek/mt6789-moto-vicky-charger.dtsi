@@ -28,7 +28,18 @@
                 mmi,adc-channel-batid = <3>;
                 mmi,adc-channel-vbat = <100>;
 };
+&lk_charger{
+    usb_charger_current = <500000>;
+    ac_charger_current = <1500000>;
+    ac_charger_input_current = <1500000>;
+    non_std_ac_charger_current = <1000000>;
+    charging_host_input_current = <1500000>;
+    charging_host_charger_current = <1000000>;
 
+    boot_battery_voltage = <3600000>;
+    fast_charge_voltage = <3000000>;
+    temp_t4_threshold = <60>;
+};
 &charger {
         /* common */
         battery_cv = <4464000>;
