@@ -890,7 +890,7 @@ static void custom3_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	remosaic_mode =1;
 	_length = sizeof(addr_data_pair_custom3) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -1770,8 +1770,18 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			seamless_switch(ctx, (*feature_data), 0, 0, 0, 0);
 		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
-		*(feature_data + 1) = imgsensor_info.min_gain;
-		*(feature_data + 2) = imgsensor_info.max_gain;
+        	switch (*feature_data) {
+        		case SENSOR_SCENARIO_ID_CUSTOM1:
+        		case SENSOR_SCENARIO_ID_CUSTOM3:
+        		case SENSOR_SCENARIO_ID_CUSTOM4:
+				*(feature_data + 1) = imgsensor_info.min_gain;
+				*(feature_data + 2) = 64 * BASEGAIN;
+				break;
+			default:
+            			*(feature_data + 1) = imgsensor_info.min_gain;
+            			*(feature_data + 2) = imgsensor_info.max_gain;
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
