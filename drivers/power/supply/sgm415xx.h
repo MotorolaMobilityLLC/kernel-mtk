@@ -106,6 +106,11 @@
 
 #define SGM4154x_WDT_RST_MASK          BIT(6)
 
+/*En termniataion*/
+#define SGM4154x_EN_TERM_MASK          GENMASK(7,7)
+#define SGM4154x_EN_TERM_DISABLE          0
+#define SGM4154x_EN_TERM_ENABLE          BIT(7)
+
 /* SAFETY TIMER SET  */
 #define SGM4154x_SAFETY_TIMER_MASK     GENMASK(3, 3)
 #define SGM4154x_SAFETY_TIMER_DISABLE     0
