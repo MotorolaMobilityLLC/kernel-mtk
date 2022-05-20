@@ -535,7 +535,7 @@ int vcu_ipi_register(struct platform_device *pdev,
 		return -EPROBE_DEFER;
 	}
 
-	if (id < IPI_VCU_INIT || id >= IPI_MAX) {
+	if (id >= IPI_MAX) {
 		dev_info(&pdev->dev, "[VCU] failed to register ipi message (Invalid arg.)\n");
 		return -EINVAL;
 	}
@@ -543,7 +543,7 @@ int vcu_ipi_register(struct platform_device *pdev,
 	i = ipi_id_to_inst_id(id);
 	mutex_lock(&vcu->vcu_mutex[i]);
 
-	if (id >= IPI_VCU_INIT && id < IPI_MAX && handler != NULL) {
+	if (handler != NULL) {
 		ipi_desc = vcu->ipi_desc;
 		ipi_desc[id].name = name;
 		ipi_desc[id].handler = handler;
@@ -822,7 +822,7 @@ static void *vcu_check_gce_pa_base(struct mtk_vcu_queue *vcu_queue, u64 addr, u6
 			addr + length <= (u64)tmp->pa + PAGE_SIZE)
 			return tmp;
 	}
-	pr_info("%s addr %x length %x not found!\n", __func__, addr, length);
+	pr_info("%s addr %llx length %llx not found!\n", __func__, addr, length);
 
 	return NULL;
 }
@@ -838,7 +838,7 @@ static int vcu_check_reg_base(struct mtk_vcu *vcu, u64 addr, u64 length)
 		if (addr >= (u64)vcu->map_base[i].base &&
 			addr + length <= (u64)vcu->map_base[i].base + vcu->map_base[i].len)
 			return 0;
-	pr_info("%s addr %x length %x not found!\n", __func__, addr, length);
+	pr_info("%s addr %llx length %llx not found!\n", __func__, addr, length);
 
 	return -EINVAL;
 }
@@ -852,13 +852,13 @@ static void vcu_set_gce_cmd(struct cmdq_pkt *pkt,
 		if (vcu_check_reg_base(vcu, addr, 4) == 0)
 			cmdq_pkt_read_addr(pkt, addr, CMDQ_THR_SPR_IDX1);
 		else
-			pr_info("[VCU] CMD_READ wrong addr: 0x%x\n", addr);
+			pr_info("[VCU] CMD_READ wrong addr: 0x%llx\n", addr);
 	break;
 	case CMD_WRITE:
 		if (vcu_check_reg_base(vcu, addr, 4) == 0)
 			cmdq_pkt_write(pkt, vcu->clt_base, addr, data, mask);
 		else
-			pr_info("[VCU] CMD_WRITE wrong addr: 0x%x 0x%x 0x%x\n",
+			pr_info("[VCU] CMD_WRITE wrong addr: 0x%llx 0x%llx 0x%x\n",
 				addr, data, mask);
 	break;
 #if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)

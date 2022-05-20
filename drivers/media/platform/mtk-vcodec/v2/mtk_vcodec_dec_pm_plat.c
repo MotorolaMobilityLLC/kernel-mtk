@@ -351,13 +351,13 @@ void mtk_vdec_pmqos_begin_inst(struct mtk_vcodec_ctx *ctx)
 		if (dev->vdec_port_bw[i].port_type < VCODEC_PORT_LARB_SUM) {
 			mtk_icc_set_bw_not_update(dev->vdec_qos_req[i],
 					MBps_to_icc((u32)target_bw), 0);
-			mtk_v4l2_debug(8, "[VDEC] port %d bw %lu MB/s", i, (u32)target_bw);
+			mtk_v4l2_debug(8, "[VDEC] port %d bw %u MB/s", i, (u32)target_bw);
 		} else if (dev->vdec_port_bw[i].port_type == VCODEC_PORT_LARB_SUM) {
 			mtk_icc_set_bw(dev->vdec_qos_req[i], 0, 0);
 			mtk_v4l2_debug(8, "[VDEC] port %d set larb %u bw",
 					i, dev->vdec_port_bw[i].larb);
 		} else {
-			mtk_v4l2_debug(8, "[VDEC] unknown port type %d %d\n",
+			mtk_v4l2_debug(8, "[VDEC] unknown port type %d\n",
 				dev->vdec_port_bw[i].port_type);
 		}
 	}
@@ -383,7 +383,7 @@ void mtk_vdec_pmqos_end_inst(struct mtk_vcodec_ctx *ctx)
 		if (dev->vdec_port_bw[i].port_type < VCODEC_PORT_LARB_SUM) {
 			mtk_icc_set_bw_not_update(dev->vdec_qos_req[i],
 					MBps_to_icc((u32)target_bw), 0);
-			mtk_v4l2_debug(8, "[VDEC] port %d bw %lu MB/s", i, (u32)target_bw);
+			mtk_v4l2_debug(8, "[VDEC] port %d bw %u MB/s", i, (u32)target_bw);
 		} else if (dev->vdec_port_bw[i].port_type == VCODEC_PORT_LARB_SUM) {
 			mtk_icc_set_bw(dev->vdec_qos_req[i], 0, 0);
 			mtk_v4l2_debug(8, "[VDEC] port %d set larb %u bw",
@@ -477,13 +477,13 @@ void mtk_vdec_pmqos_end_frame(struct mtk_vcodec_ctx *ctx)
 		if (dev->vdec_port_bw[i].port_type < VCODEC_PORT_LARB_SUM) {
 			mtk_icc_set_bw_not_update(dev->vdec_qos_req[i],
 				MBps_to_icc((u32)target_bw), 0);
-			mtk_v4l2_debug(6, "[VDEC] port %d bw %lu MB/s", i, (u32)target_bw);
+			mtk_v4l2_debug(8, "[VDEC] port %d bw %u MB/s", i, (u32)target_bw);
 		} else if (dev->vdec_port_bw[i].port_type == VCODEC_PORT_LARB_SUM) {
 			mtk_icc_set_bw(dev->vdec_qos_req[i], 0, 0);
-			mtk_v4l2_debug(6, "[VDEC] port %d set larb %u bw",
+			mtk_v4l2_debug(8, "[VDEC] port %d set larb %u bw",
 					i, dev->vdec_port_bw[i].larb);
 		} else {
-			mtk_v4l2_debug(6, "[VDEC] unknown port type %d",
+			mtk_v4l2_debug(8, "[VDEC] unknown port type %d",
 				dev->vdec_port_bw[i].port_type);
 		}
 	}
