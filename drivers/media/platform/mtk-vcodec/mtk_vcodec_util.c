@@ -552,6 +552,7 @@ static void mtk_vcodec_sync_log(struct mtk_vcodec_dev *dev,
 	pram = kzalloc(sizeof(*pram), GFP_KERNEL);
 	strncpy(pram->param_key, param_key, LOG_PARAM_INFO_SIZE - 1);
 	strncpy(pram->param_val, param_val, LOG_PARAM_INFO_SIZE - 1);
+	pram->param_val[LOG_PARAM_INFO_SIZE-1] = '\0';
 	mtk_v4l2_debug(8, "add new key: %s, value: %s\n",
 		pram->param_key, pram->param_val);
 	list_add(&pram->list, &dev->log_param_list);
