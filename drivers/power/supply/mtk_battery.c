@@ -402,7 +402,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_technology;
 		break;
 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
-		val->intval = 1;
+		val->intval = gm->bat_cycle;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		/* 1 = META_BOOT, 4 = FACTORY_BOOT 5=ADVMETA_BOOT */
