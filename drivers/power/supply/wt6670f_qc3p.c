@@ -36,6 +36,7 @@ struct pinctrl_state *i2c6_sda_low;
 struct pinctrl_state *i2c6_sda_high;
 
 struct wt6670f *_wt = NULL;
+int is_already_probe_ok = 0;
 int g_qc3p_id = 0;
 int m_chg_type = 0;
 bool qc3p_z350_init_ok = false;
@@ -1157,7 +1158,10 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	struct wt6670f *wt;
 
 	pr_info("[%s]\n", __func__);
-
+	if(is_already_probe_ok == 1){
+		pr_info("[%s] is_already_probe_ok\n", __func__);
+		return -1;
+	}
 	wt = devm_kzalloc(&client->dev, sizeof(struct wt6670f), GFP_KERNEL);
 	if (!wt)
 		return -ENOMEM;
@@ -1236,6 +1240,7 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 		qc3p_z350_init_ok = true;
 		gpio_direction_output(_wt->reset_pin, 1);
 		pr_info("[%s] is z350\n", __func__);
+		is_already_probe_ok = 1;
 		goto probe_out;
 	}
 
@@ -1255,6 +1260,7 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 	wt6670f_id = wt6670f_get_id(0xBC);
 	if(0x5457 == wt6670f_id){
 		g_qc3p_id = QC3P_WT6670F;
+		is_already_probe_ok = 1;
 		pr_info("[%s] is wt6670f,firmware_version = %x\n", __func__,firmware_version);
 	}
 
