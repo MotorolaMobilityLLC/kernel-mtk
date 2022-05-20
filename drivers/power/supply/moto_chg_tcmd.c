@@ -40,7 +40,7 @@
 #endif
 
 #define DRIVERNAME	"moto_chg_tcmd"
-
+#define _CONFIG_CHARGER_SGM415XX_
 /*-20 ~ 80 num is 2*10 + 1*/
 #define NTC_TABLE_VALID_NUM	21
 
@@ -315,8 +315,9 @@ static ssize_t force_usb_suspend_store(struct device *dev, struct device_attribu
 		pr_info("%s, %s not a valide buf(%d)\n", __func__, buf, ret);
 		goto end;
 	}
-
-	val = !val;
+#ifdef _CONFIG_CHARGER_SGM415XX_
+	val = !!val;
+#endif
 	/*If charger driver has usb enable interface*/
 	if (chg_client->set_usb_enable) {
 		ret = chg_client->set_usb_enable(chg_client->data, val);

@@ -318,13 +318,12 @@ static int sgm4154x_set_ichrg_curr(struct charger_device *chg_dev, unsigned int 
 	u8 reg_val;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
 
-	pr_info("%s set charging curr = %d\n", __func__, uA);
-
 	if (uA < SGM4154x_ICHRG_I_MIN_uA)
-		uA = SGM4154x_ICHRG_I_MIN_uA;
+		uA = SGM4154x_ICHRG_I_MAX_uA;
 	else if ( uA > sgm->init_data.max_ichg)
 		uA = sgm->init_data.max_ichg;
 
+	pr_info("%s set charging curr = %d\n", __func__, uA);
 	if(sgm->dev_id == SGM41513_ID || sgm->dev_id == SGM41513A_ID ||  sgm->dev_id == SGM41513D_ID) {
 		if (uA <= 40000)
 			reg_val = uA / 5000;
@@ -786,7 +785,7 @@ static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 
 	return 0;
 }
-
+#if 0
 static int sgm4154x_set_hiz_en(struct charger_device *chg_dev, bool hiz_en)
 {
 	u8 reg_val;
@@ -810,7 +809,7 @@ static int sgm4154x_enable_power_path(struct charger_device *chg_dev, bool enabl
 
 	return ret;
 }
-#if 0
+
 static int sgm4154x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 {
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
@@ -899,6 +898,31 @@ static int sgm4154x_plug_out(struct charger_device *chg_dev)
 
 	return ret;
 }
+
+static int sgm4154x_enable_termination(struct charger_device *chg_dev, bool enable)
+{
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+       int ret = 0;
+
+       ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_5, SGM4154x_EN_TERM_MASK,
+                     enable  ? SGM4154x_EN_TERM_ENABLE : SGM4154x_EN_TERM_DISABLE );
+
+	pr_info("%s, %s enable term %s\n", __func__,
+		enable ? "enable" : "disable",
+		ret ? "failed" : "success");
+
+       return ret;
+}
+
+int sgm4154x_extern_enable_termination(bool enable)
+{
+       int ret = 0;
+
+       ret = sgm4154x_enable_termination(s_chg_dev_otg, enable);
+
+       return ret;
+}
+EXPORT_SYMBOL_GPL(sgm4154x_extern_enable_termination);
 
 static int sgm4154x_is_charging_enable(struct charger_device *chg_dev, bool *en)
 {
@@ -1091,10 +1115,11 @@ static enum power_supply_property sgm4154x_power_supply_props[] = {
 	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
 	POWER_SUPPLY_PROP_USB_TYPE,
-	//POWER_SUPPLY_PROP_CHARGING_ENABLED,
+	POWER_SUPPLY_PROP_CHARGING_ENABLED,
 	POWER_SUPPLY_PROP_PRESENT
 };
 
@@ -1102,12 +1127,13 @@ static int sgm4154x_property_is_writeable(struct power_supply *psy,
 					 enum power_supply_property prop)
 {
 	switch (prop) {
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
 	case POWER_SUPPLY_PROP_PRECHARGE_CURRENT:
 	case POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT:
-	//case POWER_SUPPLY_PROP_CHARGING_ENABLED:
+	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		return true;
 	default:
 		return false;
@@ -1123,6 +1149,9 @@ static int sgm4154x_charger_set_property(struct power_supply *psy,
 	switch (prop) {
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
 		ret = sgm4154x_set_input_curr_lim(s_chg_dev_otg, val->intval);
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		ret = sgm4154x_set_ichrg_curr(s_chg_dev_otg, val->intval);
 		break;
 /*	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		sgm4154x_charging_switch(s_chg_dev_otg,val->intval);		
@@ -1248,11 +1277,13 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:		
 		break;
-#if 0
+
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
-		val->intval = !state.hiz_en;
+		val->intval = sgm->charge_enabled;//!state.hiz_en;
 		break;
-#endif
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		val->intval = sgm->init_data.max_ichg;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -1353,6 +1384,7 @@ static void charger_detect_work_func(struct work_struct *work)
 	if(!sgm->state.vbus_gd) {
 		dev_err(sgm->dev, "Vbus not present, disable charge\n");
 		sgm4154x_disable_charger(sgm);
+		sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 		goto err;
 	}
 	if(!state.online)
@@ -1488,7 +1520,6 @@ static int sgm4154x_hw_init(struct sgm4154x_device *sgm)
 
 	bat_info.charge_term_current_ua =
 			SGM4154x_TERMCHRG_I_DEF_uA;
-
 
 	sgm->init_data.max_vreg =
 			SGM4154x_VREG_V_MAX_uV;
@@ -1652,7 +1683,6 @@ static int sgm4154x_enable_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s en = %d\n", __func__, en);
 	if (en) {
-		sgm4154x_set_hiz_en(chg_dev, !en);
 		ret = sgm4154x_enable_vbus(NULL);
 	} else {
 		ret = sgm4154x_disable_vbus(NULL);
@@ -1854,11 +1884,11 @@ static struct charger_ops sgm4154x_chg_ops = {
 	/* Get vbus voltage*/
 	/*.get_vbus_adc = sgm4154x_get_vbus,*/
 	/* Power path */
-	.enable_powerpath = sgm4154x_enable_power_path,
+	/*.enable_powerpath = sgm4154x_enable_power_path,*/
 	/*.is_powerpath_enabled = sgm4154x_get_is_power_path_enable, */
 
 	/* Hz mode */
-	.enable_hz = sgm4154x_set_hiz_en,
+	/*.enable_hz = sgm4154x_set_hiz_en,*/
 	/* OTG */
 	.enable_otg = sgm4154x_enable_otg,	
 	.set_boost_current_limit = sgm4154x_set_boost_current_limit,
