@@ -241,9 +241,9 @@ static int ocp8135b_set_strobe_brightness(int val)
 
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
-	mdelay(450);
-	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
-		OCP8135B_PINCTRL_PINSTATE_LOW);
+	//mdelay(450);
+	//ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
+		//OCP8135B_PINCTRL_PINSTATE_LOW);
 
 	return 0;
 }
