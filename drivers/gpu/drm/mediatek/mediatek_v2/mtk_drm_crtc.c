@@ -98,6 +98,7 @@ static const char * const crtc_gce_client_str[] = {
 	DECLARE_GCE_CLIENT(DECLARE_STR)};
 
 struct drm_mtk_ccorr_caps drm_ccorr_caps;
+static unsigned int dummy_data[MT6983_DUMMY_REG_CNT];
 
 #define ALIGN_TO_32(x) ALIGN_TO(x, 32)
 
@@ -764,7 +765,10 @@ static void bl_cmdq_cb(struct cmdq_cb_data data)
 {
 	struct mtk_cmdq_cb_data *cb_data = data.data;
 
-	cmdq_pkt_destroy(cb_data->cmdq_handle);
+	if (IS_ERR_OR_NULL(cb_data->cmdq_handle))
+		DDPPR_ERR("%s,invalid cmdq handle\n", __func__);
+	else
+		cmdq_pkt_destroy(cb_data->cmdq_handle);
 	kfree(cb_data);
 }
 
@@ -5444,7 +5448,7 @@ static void mtk_crtc_prepare_instr(struct drm_crtc *crtc)
 	}
 }
 
-void mtk_drm_crtc_enable(struct drm_crtc *crtc)
+void mtk_drm_crtc_enable(struct drm_crtc *crtc, bool skip_esd)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_crtc_state *mtk_state = to_mtk_crtc_state(crtc->state);
@@ -5559,7 +5563,7 @@ void mtk_drm_crtc_enable(struct drm_crtc *crtc)
 	drm_crtc_vblank_on(crtc);
 
 	/* 12. enable ESD check */
-	if (mtk_drm_lcm_is_connect())
+	if (skip_esd == false && mtk_drm_lcm_is_connect())
 		mtk_disp_esd_check_switch(crtc, true);
 
 	/* 13. enable fake vsync if need*/
@@ -5646,7 +5650,7 @@ void mtk_drm_crtc_atomic_resume(struct drm_crtc *crtc,
 	/* hold wakelock */
 	mtk_drm_crtc_wk_lock(crtc, 1, __func__, __LINE__);
 
-	mtk_drm_crtc_enable(crtc);
+	mtk_drm_crtc_enable(crtc, false);
 
 	CRTC_MMP_EVENT_END(index, resume,
 			mtk_crtc->enabled, 0);
@@ -6003,7 +6007,7 @@ void mtk_drm_crtc_first_enable(struct drm_crtc *crtc)
 		mtk_drm_top_clk_disable_unprepare(crtc->dev);
 }
 
-void mtk_drm_crtc_disable(struct drm_crtc *crtc, bool need_wait)
+void mtk_drm_crtc_disable(struct drm_crtc *crtc, bool need_wait, bool skip_esd)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	unsigned int crtc_id = drm_crtc_index(&mtk_crtc->base);
@@ -6045,7 +6049,7 @@ void mtk_drm_crtc_disable(struct drm_crtc *crtc, bool need_wait)
 	mtk_drm_fake_vsync_switch(crtc, false);
 
 	/* 3. disable ESD check */
-	if (mtk_drm_lcm_is_connect())
+	if (skip_esd == false && mtk_drm_lcm_is_connect())
 		mtk_disp_esd_check_switch(crtc, false);
 
 	/* 4. stop CRTC */
@@ -6152,7 +6156,7 @@ void mtk_drm_crtc_suspend(struct drm_crtc *crtc)
 		mtk_crtc->sec_on = false;
 	}
 
-	mtk_drm_crtc_disable(crtc, true);
+	mtk_drm_crtc_disable(crtc, true, false);
 
 	mtk_crtc_disable_plane_setting(mtk_crtc);
 
@@ -8444,33 +8448,59 @@ unsigned int mtk_get_plane_slot_idx(struct mtk_drm_crtc *mtk_crtc, unsigned int 
 
 	return idx;
 }
+void mtk_gce_backup_slot_restore(struct mtk_drm_crtc *mtk_crtc, const char *master)
+{
+	size_t size = 0;
+	struct dummy_mapping *table = NULL;
+	int i;
+	unsigned int mmsys_id = 0;
+	struct drm_crtc *crtc = &mtk_crtc->base;
+
+	mmsys_id = mtk_get_mmsys_id(crtc);
+	size = mtk_gce_get_dummy_table(mmsys_id, &table);
+	if (size == 0)
+		return;
+
+	for (i = 0; i < size; i++)
+		writel(dummy_data[i], table[i].addr + table[i].offset);
+	DDPDBG("%s, by %s\n", __func__,
+		IS_ERR_OR_NULL(master) ? "unknown" : master);
+}
+
+void mtk_gce_backup_slot_save(struct mtk_drm_crtc *mtk_crtc, const char *master)
+{
+	size_t size = 0;
+	struct dummy_mapping *table = NULL;
+	int i;
+	unsigned int mmsys_id = 0;
+	struct drm_crtc *crtc = &mtk_crtc->base;
+
+	mmsys_id = mtk_get_mmsys_id(crtc);
+	size = mtk_gce_get_dummy_table(mmsys_id, &table);
+	if (size == 0)
+		return;
+
+	for (i = 0; i < size; i++)
+		dummy_data[i] = readl(table[i].addr + table[i].offset);
+	DDPDBG("%s, by %s\n", __func__,
+		IS_ERR_OR_NULL(master) ? "unknown" : master);
+}
 
 /* for platform that store information in register rather than mermory */
 void mtk_gce_backup_slot_init(struct mtk_drm_crtc *mtk_crtc)
 {
-	struct drm_crtc *crtc = &mtk_crtc->base;
-	size_t size;
-	struct dummy_mapping *table;
-	unsigned int mmsys_id = 0;
+	size_t size = 0;
+	struct dummy_mapping *table = NULL;
 	int i;
+	unsigned int mmsys_id = 0;
+	struct drm_crtc *crtc = &mtk_crtc->base;
 
 	mmsys_id = mtk_get_mmsys_id(crtc);
-	if ((mmsys_id != MMSYS_MT6983) &&
-		(mmsys_id != MMSYS_MT6895) &&
-		(mmsys_id != MMSYS_MT6879))
+	size = mtk_gce_get_dummy_table(mmsys_id, &table);
+	if (size == 0)
 		return;
 
-	if ((mmsys_id == MMSYS_MT6983) ||
-		(mmsys_id == MMSYS_MT6895)) {
-		table = mt6983_dispsys_dummy_register;
-		size = MT6983_DUMMY_REG_CNT;
-	} else if (mmsys_id == MMSYS_MT6879) {
-		table = mt6879_dispsys_dummy_register;
-		size = MT6879_DUMMY_REG_CNT;
-	} else
-		return;
-
-	for (i = 0 ; i < size ; i++)
+	for (i = 0; i < size; i++)
 		writel(0x0, table[i].addr + table[i].offset);
 }
 
@@ -8478,9 +8508,9 @@ unsigned int *mtk_get_gce_backup_slot_va(struct mtk_drm_crtc *mtk_crtc,
 			unsigned int slot_index)
 {
 	struct drm_crtc *crtc = &mtk_crtc->base;
-	size_t size;
+	size_t size = 0;
 	unsigned int offset = 0;
-	struct dummy_mapping *table;
+	struct dummy_mapping *table = NULL;
 	unsigned int idx, mmsys_id = 0;
 
 	if (slot_index > DISP_SLOT_SIZE) {
@@ -8503,14 +8533,8 @@ unsigned int *mtk_get_gce_backup_slot_va(struct mtk_drm_crtc *mtk_crtc,
 
 	idx = slot_index / sizeof(unsigned int);
 
-	if ((mmsys_id == MMSYS_MT6983) ||
-		(mmsys_id == MMSYS_MT6895)) {
-		table = mt6983_dispsys_dummy_register;
-		size = MT6983_DUMMY_REG_CNT;
-	} else if (mmsys_id == MMSYS_MT6879) {
-		table = mt6879_dispsys_dummy_register;
-		size = MT6879_DUMMY_REG_CNT;
-	} else
+	size = mtk_gce_get_dummy_table(mmsys_id, &table);
+	if (size == 0)
 		return NULL;
 
 	if (idx < size) {
@@ -8531,9 +8555,9 @@ dma_addr_t mtk_get_gce_backup_slot_pa(struct mtk_drm_crtc *mtk_crtc,
 			unsigned int slot_index)
 {
 	struct drm_crtc *crtc = &mtk_crtc->base;
-	size_t size;
+	size_t size = 0;
 	unsigned int offset = 0;
-	struct dummy_mapping *table;
+	struct dummy_mapping *table = NULL;
 	unsigned int idx, mmsys_id = 0;
 
 	if (slot_index > DISP_SLOT_SIZE) {
@@ -8556,14 +8580,8 @@ dma_addr_t mtk_get_gce_backup_slot_pa(struct mtk_drm_crtc *mtk_crtc,
 	}
 
 	idx = slot_index / sizeof(unsigned int);
-	if ((mmsys_id == MMSYS_MT6983) ||
-		(mmsys_id == MMSYS_MT6895)) {
-		table = mt6983_dispsys_dummy_register;
-		size = MT6983_DUMMY_REG_CNT;
-	} else if (mmsys_id == MMSYS_MT6879) {
-		table = mt6879_dispsys_dummy_register;
-		size = MT6879_DUMMY_REG_CNT;
-	} else
+	size = mtk_gce_get_dummy_table(mmsys_id, &table);
+	if (size == 0)
 		return 0;
 
 	if (idx < size) {
@@ -10291,12 +10309,12 @@ int mtk_crtc_path_switch(struct drm_crtc *crtc, unsigned int ddp_mode,
 			need_wait = false;
 		else
 			need_wait = true;
-		mtk_drm_crtc_disable(crtc, need_wait);
+		mtk_drm_crtc_disable(crtc, need_wait, false);
 		goto done;
 	} else if (mtk_crtc->ddp_mode == DDP_NO_USE) {
 		CRTC_MMP_MARK(index, path_switch, 0, 3);
 		mtk_crtc->ddp_mode = ddp_mode;
-		mtk_drm_crtc_enable(crtc);
+		mtk_drm_crtc_enable(crtc, false);
 		goto done;
 	}
 

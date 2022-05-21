@@ -2094,6 +2094,7 @@ static void process_dbg_opt(const char *opt)
 		}
 		enable = 1;
 		comp->funcs->io_cmd(comp, NULL, LCM_RESET, &enable);
+		DDPMSG("%s, lcm reset\n", __func__);
 		msleep(20);
 		enable = 0;
 		comp->funcs->io_cmd(comp, NULL, LCM_RESET, &enable);
