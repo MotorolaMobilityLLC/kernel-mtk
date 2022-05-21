@@ -1822,22 +1822,21 @@ int mtk_cam_sv_dev_config(
 				MTK_RAW_MAIN_STREAM_SV_1_OUT - MTK_RAW_SINK_NUM].active_fmt;
 			pad_idx = PAD_SRC_RAW_W0;
 			mf = &ctx->pipe->cfg[MTK_RAW_SINK].mbus_fmt;
+			mtk_cam_seninf_get_pixelmode(ctx->seninf, pad_idx, &cfg_pixel_mode);
 		} else {
 			img_fmt = &ctx->pipe->vdev_nodes[MTK_RAW_MAIN_STREAM_OUT - MTK_RAW_SINK_NUM]
 				.active_fmt;
-			pad_idx = PAD_SRC_RAW0;
 			mf = &ctx->pipe->cfg[MTK_RAW_SINK].mbus_fmt;
+			cfg_pixel_mode = ctx->pipe->res_config.tgo_pxl_mode;
 		}
-		/* Use pixmode from raw pad */
-		mtk_cam_seninf_get_pixelmode(ctx->seninf, pad_idx, &cfg_pixel_mode);
 	} else {
 		img_fmt = &ctx->sv_pipe[idx]
 			->vdev_nodes[MTK_CAMSV_MAIN_STREAM_OUT-MTK_CAMSV_SINK_NUM].active_fmt;
 		pad_idx = ctx->sv_pipe[idx]->seninf_padidx;
 		mf = &ctx->sv_pipe[idx]->cfg[MTK_CAMSV_SINK].mbus_fmt;
+		mtk_cam_seninf_get_pixelmode(ctx->seninf, pad_idx, &cfg_pixel_mode);
 	}
 
-	/* Update cfg_in_param */
 	cfg_in_param.pixel_mode = cfg_pixel_mode;
 	cfg_in_param.data_pattern = 0x0;
 	cfg_in_param.in_crop.p.x = 0;

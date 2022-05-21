@@ -6567,6 +6567,7 @@ int mtk_cam_ctx_stream_on(struct mtk_cam_ctx *ctx)
 		/* stagger mode - use sv to output data to DRAM - online mode */
 		if (mtk_cam_feature_is_stagger(feature_active)) {
 			int used_pipes, src_pad_idx, exp_no;
+			int pad_offset = PAD_SRC_RAW0;
 			unsigned int hw_scen = mtk_raw_get_hdr_scen_id(ctx);
 			bool bDcif;
 
@@ -6578,6 +6579,12 @@ int mtk_cam_ctx_stream_on(struct mtk_cam_ctx *ctx)
 			else
 				exp_no = 1;
 
+			/* check first request is 1 exposure */
+			if (ctx->pipe->stagger_path == STAGGER_ON_THE_FLY &&
+				!mtk_cam_feature_is_2_exposure(feature_first_req) &&
+				!mtk_cam_feature_is_3_exposure(feature_first_req))
+				pad_offset = PAD_SRC_RAW1;
+
 			/* check stagger mode */
 			bDcif = (ctx->pipe->stagger_path == STAGGER_DCIF) ? true : false;
 
@@ -6587,7 +6594,7 @@ int mtk_cam_ctx_stream_on(struct mtk_cam_ctx *ctx)
 					if (cam->sv.pipelines[i -
 						MTKCAM_SUBDEV_CAMSV_START].hw_cap &
 						(1 << (j + CAMSV_EXP_ORDER_SHIFT))) {
-						src_pad_idx = PAD_SRC_RAW0 + j;
+						src_pad_idx = pad_offset + j;
 						break;
 					}
 				}
@@ -6610,7 +6617,7 @@ int mtk_cam_ctx_stream_on(struct mtk_cam_ctx *ctx)
 					ret = mtk_cam_sv_dev_config(
 						ctx, i - MTKCAM_SUBDEV_CAMSV_START, hw_scen,
 						(bDcif && (src_pad_idx == exp_no)) ?
-						2 : src_pad_idx - PAD_SRC_RAW0, tgo_pxl_mode);
+						2 : src_pad_idx - pad_offset, tgo_pxl_mode);
 					if (ret)
 						goto fail_img_buf_release;
 				}
