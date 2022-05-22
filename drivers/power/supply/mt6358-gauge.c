@@ -2941,7 +2941,24 @@ static int bat_vol_get(struct mtk_gauge *gauge,
 
 	return ret;
 }
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+static int charger_vol_get(struct mtk_gauge *gauge,
+	struct mtk_gauge_sysfs_field_info *attr, int *val)
+{
+	int ret;
 
+	if (!IS_ERR(gauge->chan_charger_vbus)) {
+		ret = iio_read_channel_processed(gauge->chan_charger_vbus, val);
+		if (ret < 0)
+			bm_err("[%s]read fail,ret=%d\n", __func__, ret);
+	} else {
+		bm_err("[%s]chan error\n", __func__);
+		ret = -EOPNOTSUPP;
+	}
+
+	return ret;
+}
+#endif
 static int battery_temperature_adc_get(struct mtk_gauge *gauge,
 	struct mtk_gauge_sysfs_field_info *attr, int *val)
 {
@@ -3539,6 +3556,10 @@ static struct mtk_gauge_sysfs_field_info mt6358_sysfs_field_tbl[] = {
 		GAUGE_PROP_HW_VERSION),
 	GAUGE_SYSFS_FIELD_RO(bat_vol_get,
 		GAUGE_PROP_BATTERY_VOLTAGE),
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	GAUGE_SYSFS_FIELD_RO(charger_vol_get,
+		GAUGE_PROP_CHARGER_VOLTAGE),
+#endif
 	GAUGE_SYSFS_FIELD_RO(battery_temperature_adc_get,
 		GAUGE_PROP_BATTERY_TEMPERATURE_ADC),
 	GAUGE_SYSFS_FIELD_RO(bif_voltage_get,
@@ -4056,7 +4077,14 @@ static int mt6358_gauge_probe(struct platform_device *pdev)
 		bm_err("chan_ptim_bat_voltage auxadc get fail, ret=%d\n",
 			ret);
 	}
-
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	gauge->chan_charger_vbus = devm_iio_channel_get(
+		&pdev->dev, "pmic_charger_vbus");
+	if (IS_ERR(gauge->chan_charger_vbus)) {
+		ret = PTR_ERR(gauge->chan_charger_vbus);
+		bm_err("chan_charger_vbus auxadc get fail, ret=%d\n", ret);
+	}
+#endif
 	gauge->chan_ptim_r = devm_iio_channel_get(
 		&pdev->dev, "pmic_ptim_r");
 	if (IS_ERR(gauge->chan_ptim_r)) {
