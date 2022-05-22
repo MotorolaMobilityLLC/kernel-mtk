@@ -180,6 +180,16 @@
 #define SGM4154x_VREG_V_DEF_uV	    4400000
 #define SGM4154x_VREG_V_STEP_uV	    32000
 
+/* VREG Fine Tuning  */
+#define SGM4154x_VREG_FT_MASK	     GENMASK(7, 6)
+#define SGM4154x_VREG_FT_UP_8mV	     BIT(6)
+#define SGM4154x_VREG_FT_DN_8mV	     BIT(7)
+#define SGM4154x_VREG_FT_DN_16mV	 (BIT(7) | BIT(6))
+
+/*rerun apsd*/
+#define SGM4154x_IINDET_EN_MASK		GENMASK(7, 7)
+#define SGM4154x_IINDET_EN				BIT(7)
+
 /* iindpm current  */
 #define SGM4154x_IINDPM_I_MASK		GENMASK(4, 0)
 #define SGM4154x_IINDPM_I_MIN_uA	100000
