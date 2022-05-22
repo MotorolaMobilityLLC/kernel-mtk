@@ -60,10 +60,8 @@
 #include <linux/regmap.h>
 #include <linux/of_platform.h>
 
-#define _CONFIG_CHARGER_SGM415XX_
-
 #include "mtk_charger.h"
-#ifdef _CONFIG_CHARGER_SGM415XX_
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 #include "sgm415xx.h"
 #endif
 int get_uisoc(struct mtk_charger *info)
@@ -72,6 +70,11 @@ int get_uisoc(struct mtk_charger *info)
 	struct power_supply *bat_psy = NULL;
 	int ret;
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (bat_psy == NULL || IS_ERR(bat_psy))
+		bat_psy = power_supply_get_by_name("battery");
+#else
+
 	bat_psy = info->bat_psy;
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
@@ -79,7 +82,7 @@ int get_uisoc(struct mtk_charger *info)
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
 		info->bat_psy = bat_psy;
 	}
-
+#endif
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s Couldn't get bat_psy\n", __func__);
 		ret = 50;
@@ -100,6 +103,10 @@ int get_battery_voltage(struct mtk_charger *info)
 	struct power_supply *bat_psy = NULL;
 	int ret;
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (bat_psy == NULL || IS_ERR(bat_psy))
+		bat_psy = power_supply_get_by_name("battery");
+#else
 	bat_psy = info->bat_psy;
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
@@ -107,6 +114,7 @@ int get_battery_voltage(struct mtk_charger *info)
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
 		info->bat_psy = bat_psy;
 	}
+#endif
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s Couldn't get bat_psy\n", __func__);
@@ -129,6 +137,10 @@ int get_battery_temperature(struct mtk_charger *info)
 	int ret = 0;
 	int tmp_ret = 0;
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (bat_psy == NULL || IS_ERR(bat_psy))
+		bat_psy = power_supply_get_by_name("battery");
+#else
 	bat_psy = info->bat_psy;
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
@@ -136,7 +148,7 @@ int get_battery_temperature(struct mtk_charger *info)
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
 		info->bat_psy = bat_psy;
 	}
-
+#endif
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s Couldn't get bat_psy\n", __func__);
 		ret = 27;
@@ -158,6 +170,10 @@ int get_battery_current(struct mtk_charger *info)
 	int ret = 0;
 	int tmp_ret = 0;
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (bat_psy == NULL || IS_ERR(bat_psy))
+		bat_psy = power_supply_get_by_name("battery");
+#else
 	bat_psy = info->bat_psy;
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
@@ -165,7 +181,7 @@ int get_battery_current(struct mtk_charger *info)
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
 		info->bat_psy = bat_psy;
 	}
-
+#endif
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s Couldn't get bat_psy\n", __func__);
 		ret = 0;
@@ -183,15 +199,28 @@ int get_battery_current(struct mtk_charger *info)
 static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 {
 	union power_supply_propval prop;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	struct power_supply *bat_psy = NULL;
+#else
 	static struct power_supply *chg_psy;
+#endif
 	int ret;
 
-	if (chg_psy == NULL)
-#ifdef _CONFIG_CHARGER_SGM415XX_
-		chg_psy = power_supply_get_by_name("sgm4154x-charger");
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (bat_psy == NULL || IS_ERR(bat_psy))
+		bat_psy = power_supply_get_by_name("battery");
+
+	if (bat_psy == NULL || IS_ERR(bat_psy)) {
+		chr_err("%s Couldn't get bat_psy\n", __func__);
+		ret = 0;
+	} else {
+		ret = power_supply_get_property(bat_psy,
+			POWER_SUPPLY_PROP_CHARGER_VOLTAGE, &prop);
+	}
 #else
+	if (chg_psy == NULL)
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
-#endif
+
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s Couldn't get chg_psy\n", __func__);
 		ret = -1;
@@ -199,6 +228,7 @@ static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_VOLTAGE_NOW, &prop);
 	}
+#endif
 	*vchr = prop.intval;
 
 	chr_debug("%s vbus:%d\n", __func__,
@@ -259,6 +289,10 @@ bool is_battery_exist(struct mtk_charger *info)
 	int ret = 0;
 	int tmp_ret = 0;
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (bat_psy == NULL || IS_ERR(bat_psy))
+		bat_psy = power_supply_get_by_name("battery");
+#else
 	bat_psy = info->bat_psy;
 
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
@@ -266,7 +300,7 @@ bool is_battery_exist(struct mtk_charger *info)
 		bat_psy = devm_power_supply_get_by_phandle(&info->pdev->dev, "gauge");
 		info->bat_psy = bat_psy;
 	}
-
+#endif
 	if (bat_psy == NULL || IS_ERR(bat_psy)) {
 		chr_err("%s Couldn't get bat_psy\n", __func__);
 		ret = 1;
@@ -289,7 +323,7 @@ bool is_charger_exist(struct mtk_charger *info)
 	int tmp_ret = 0;
 
 	if (chg_psy == NULL)
-#ifdef _CONFIG_CHARGER_SGM415XX_
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		chg_psy = power_supply_get_by_name("sgm4154x-charger");
 #else
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
@@ -350,7 +384,7 @@ int get_charger_type(struct mtk_charger *info)
 	}
 
 	if (chg_psy == NULL)
-#ifdef _CONFIG_CHARGER_SGM415XX_
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		chg_psy = power_supply_get_by_name("sgm4154x-charger");
 #else
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
@@ -396,7 +430,7 @@ int get_usb_type(struct mtk_charger *info)
 	int ret;
 
 	if (chg_psy == NULL)
-#ifdef _CONFIG_CHARGER_SGM415XX_
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		chg_psy = power_supply_get_by_name("sgm4154x-charger");
 #else
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
