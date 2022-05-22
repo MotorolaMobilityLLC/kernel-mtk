@@ -62,18 +62,13 @@
 
         //mmi config
         mmi,iterm-ma = <243>;
-        mmi,mmi-temp-zones =
-                       <0 4200 1000  0>,
-                       <10 4250 2500 1000>,
-//                       <10 4450 1000 0>,
-                       <15 4450 2500 0>,
-                       <25 0 4000 4000>,
-//                       <25 4480 4000 0>,
-                       <35 0 4000 4000>,
-//                       <35 4480 4000 0>,
-                       <45 0 4000 4000>,
-//                       <45 4480 4000 0>,
-                       <60 4200 4000 0>;
+	mmi,mmi-temp-zones = <0  4200 1000 0>,
+			<10 4250 3000 1000>,
+			<15 4450 3000 0>,
+			<25 4480 5800 4000>,
+			<35 4480 5800 4000>,
+			<45 4480 5800 4000>,
+			<60 4200 4000 0>;
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
@@ -172,6 +167,29 @@
 
 &mtk_gauge {
         charger_2nd = <&sgm41543d_charger>;
+
+	CAR_TUNE_VALUE = <(100)>;
+	/* Pseudo percentage */
+	g_FG_PSEUDO100_T0 = <(97)>;
+	g_FG_PSEUDO100_T1 = <(97)>;
+	g_FG_PSEUDO100_T2 = <(97)>;
+	g_FG_PSEUDO100_T3 = <(97)>;
+	g_FG_PSEUDO100_T4 = <(97)>;
+};
+
+&mtk_gauge {
+	io-channels = <&pmic_auxadc AUXADC_BAT_TEMP>,
+			<&pmic_auxadc AUXADC_BATADC>,
+			<&pmic_auxadc AUXADC_VBIF>,
+			<&pmic_auxadc AUXADC_IMP>,
+			<&pmic_auxadc AUXADC_VCDT>,
+			<&pmic_auxadc AUXADC_IMIX_R>;
+	io-channel-names = "pmic_battery_temp",
+			"pmic_battery_voltage",
+			"pmic_bif_voltage",
+			"pmic_ptim_voltage",
+			"pmic_charger_vbus",
+			"pmic_ptim_r";
 };
 
 &extcon_usb {
@@ -207,15 +225,15 @@
 					<15 4450 2500 0 0>,
 					<45 4300 5800 4470 4000>,
 					<60 4200 4000 0 0>;
-/*
-            mmi,mmi-ffc-zones = <4200 243>,
-                                <4250 243>,
-                                <4450 243>,
-                                <4480 550>,
-                                <4480 588>,
-                                <4480 631>,
-                                <4200 243>;
-*/
+
+		mmi,mmi-ffc-zones = <4200 243>,
+				<4250 243>,
+				<4450 243>,
+				<4480 575>,
+				<4480 635>,
+				<4480 661>,
+				<4200 243>;
+
 		mmi,thermal-min-level = <1500000>;
 		charger_device_0 {
 			chrg-name = "pmic-sw";
