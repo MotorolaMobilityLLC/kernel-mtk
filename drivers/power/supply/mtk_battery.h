@@ -130,6 +130,9 @@ struct battery_data {
 	/* Add for Battery Service */
 	int bat_batt_vol;
 	int bat_batt_temp;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	int charger_vol;
+#endif
 	struct moto_chg_tcmd_client bat_tcmd_client;//moto add
 };
 
