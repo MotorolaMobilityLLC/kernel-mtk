@@ -107,6 +107,11 @@
 	};
 };
 
+&u2port0 {
+    mediatek,eye-vrt = <7>;
+    mediatek,eye-term = <7>;
+    mediatek,rev6 = <2>;
+};
 
 &i2c6 {
 	spk: speaker_amp@5c {
