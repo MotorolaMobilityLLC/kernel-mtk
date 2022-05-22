@@ -65,8 +65,6 @@
 #include "moto_chg_tcmd.h"
 #include <linux/of_gpio.h>
 
-#define _CONFIG_CHARGER_SGM415XX_
-
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -3905,7 +3903,7 @@ static void kpoc_power_off_check(struct mtk_charger *info)
 }
 #endif
 
-#ifndef _CONFIG_CHARGER_SGM415XX_
+#ifndef CONFIG_MOTO_CHARGER_SGM415XX
 static void charger_status_check(struct mtk_charger *info)
 {
 	union power_supply_propval online, status;
@@ -4048,7 +4046,7 @@ static int charger_routine_thread(void *arg)
 			info->can_charging == true) {
 			if (info->algo.do_algorithm)
 				info->algo.do_algorithm(info);
-#ifndef _CONFIG_CHARGER_SGM415XX_
+#ifndef CONFIG_MOTO_CHARGER_SGM415XX
 			sc_update(info);
 			wakeup_sc_algo_cmd(&info->sc.data, SC_EVENT_CHARGING, 0);
 			charger_status_check(info);
@@ -4056,7 +4054,7 @@ static int charger_routine_thread(void *arg)
 		} else {
 			chr_debug("disable charging %d %d %d\n",
 			    is_disable_charger(info), is_charger_on, info->can_charging);
-#ifndef _CONFIG_CHARGER_SGM415XX_
+#ifndef CONFIG_MOTO_CHARGER_SGM415XX
 			sc_update(info);
 			wakeup_sc_algo_cmd(&info->sc.data, SC_EVENT_STOP_CHARGING, 0);
 #endif
@@ -4834,7 +4832,7 @@ static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
 	//				val, 0);
 	return ret;
 }
-#ifndef _CONFIG_CHARGER_SGM415XX_
+
 static int  mtk_charger_tcmd_set_usb_enable(void *input, int  val)
 {
 	struct mtk_charger *cm = (struct mtk_charger *)input;
@@ -4845,7 +4843,7 @@ static int  mtk_charger_tcmd_set_usb_enable(void *input, int  val)
 
 	return ret;
 }
-#endif
+
 static int  mtk_charger_tcmd_set_chg_current(void *input, int  val)
 {
 	struct mtk_charger *cm = (struct mtk_charger *)input;
@@ -4917,9 +4915,7 @@ static int  mtk_charger_tcmd_register(struct mtk_charger *cm)
 	cm->chg_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_CHG;
 
 	cm->chg_tcmd_client.set_chg_enable = mtk_charger_tcmd_set_chg_enable;
-#ifndef _CONFIG_CHARGER_SGM415XX_
 	cm->chg_tcmd_client.set_usb_enable = mtk_charger_tcmd_set_usb_enable;
-#endif
 	cm->chg_tcmd_client.get_chg_current = mtk_charger_tcmd_get_chg_current;
 	cm->chg_tcmd_client.set_chg_current = mtk_charger_tcmd_set_chg_current;
 	cm->chg_tcmd_client.get_usb_current = mtk_charger_tcmd_get_usb_current;
@@ -5103,9 +5099,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	/* 8 = KERNEL_POWER_OFF_CHARGING_BOOT */
 	/* 9 = LOW_POWER_OFF_CHARGING_BOOT */
+#ifndef CONFIG_MOTO_CHARGER_SGM415XX
 	if (info != NULL && info->bootmode != 8 && info->bootmode != 9 && info->atm_enabled != true)
 		mtk_charger_force_disable_power_path(info, CHG1_SETTING, true);
-
+#endif
 	mtk_charger_tcmd_register(info);
 	mmi_info = info;
 	mmi_init(info);

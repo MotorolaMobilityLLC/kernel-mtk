@@ -74,6 +74,12 @@ static const unsigned int ITERM_CURRENT_STABLE[] = {
 };
 
 
+enum SGM4154x_VREG_FT {
+	VREG_FT_DISABLE,
+	VREG_FT_UP_8mV,
+	VREG_FT_DN_8mV,
+	VREG_FT_DN_16mV,
+};
 
 static enum power_supply_usb_type sgm4154x_usb_type[] = {
 	POWER_SUPPLY_USB_TYPE_UNKNOWN,
@@ -348,13 +354,13 @@ static int sgm4154x_set_ichrg_curr(struct charger_device *chg_dev, unsigned int 
 	
 	return ret;
 }
-
+/*
 static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int chrg_volt)
 {
 	int ret;
 	u8 reg_val;
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
-	
+	pr_info("%s set VREG = %d\n", __func__, chrg_volt);
 	if (chrg_volt < SGM4154x_VREG_V_MIN_uV)
 		chrg_volt = SGM4154x_VREG_V_MIN_uV;
 	else if (chrg_volt > sgm->init_data.max_vreg)
@@ -363,6 +369,83 @@ static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int c
 	
 	reg_val = (chrg_volt-SGM4154x_VREG_V_MIN_uV) / SGM4154x_VREG_V_STEP_uV;
 	reg_val = reg_val << 3;
+	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_4,
+				  SGM4154x_VREG_V_MASK, reg_val);
+
+	return ret;
+}
+*/
+// fine tuning termination voltage,to Improve accuracy
+static int sgm4154x_vreg_fine_tuning(struct sgm4154x_device *sgm, enum SGM4154x_VREG_FT ft)
+{
+	int ret;
+	int reg_val;
+
+	switch(ft) {
+	case VREG_FT_DISABLE:
+		reg_val = 0;
+		break;
+
+	case VREG_FT_UP_8mV:
+		reg_val = SGM4154x_VREG_FT_UP_8mV;
+		break;
+
+	case VREG_FT_DN_8mV:
+		reg_val = SGM4154x_VREG_FT_DN_8mV;
+		break;
+
+	case VREG_FT_DN_16mV:
+		reg_val = SGM4154x_VREG_FT_DN_16mV;
+		break;
+
+	default:
+		reg_val = 0;
+		break;
+	}
+	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_f,
+				  SGM4154x_VREG_FT_MASK, reg_val);
+	pr_info("%s reg_val:%d\n",__func__,reg_val);
+
+	return ret;
+}
+
+static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int chrg_volt)
+{
+	int ret;
+	int reg_val;
+	enum SGM4154x_VREG_FT ft = VREG_FT_DISABLE;
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+
+	if (chrg_volt < SGM4154x_VREG_V_MIN_uV)
+		chrg_volt = SGM4154x_VREG_V_MIN_uV;
+	else if (chrg_volt > sgm->init_data.max_vreg)
+		chrg_volt = sgm->init_data.max_vreg;
+	pr_info("%s chrg_volt = %d\n",__func__, chrg_volt);
+
+	reg_val = (chrg_volt-SGM4154x_VREG_V_MIN_uV) / SGM4154x_VREG_V_STEP_uV;
+
+	switch(chrg_volt) {
+	case 4512000:
+	case 4480000:
+	case 4450000:
+		reg_val++;
+		ft = VREG_FT_DN_16mV;
+		break;
+	case 4200000:
+		reg_val++;
+		ft = VREG_FT_DN_8mV;
+		break;
+	default:
+		break;
+	}
+
+	ret = sgm4154x_vreg_fine_tuning(sgm, ft);
+	if (ret) {
+		pr_err("%s can't set vreg fine tunning ret=%d\n", __func__, ret);
+		return ret;
+	}
+
+	reg_val = reg_val<<3;
 	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_4,
 				  SGM4154x_VREG_V_MASK, reg_val);
 
@@ -385,6 +468,7 @@ static int sgm4154x_get_chrg_volt(struct charger_device *chg_dev,unsigned int *v
 		*volt = 4352000; //default
 	else if (vreg_val < 25)	
 		*volt = vreg_val*SGM4154x_VREG_V_STEP_uV + SGM4154x_VREG_V_MIN_uV;	
+	pr_info("%s get VREG = %d\n", __func__, *volt);
 
 	return 0;
 }
@@ -397,6 +481,20 @@ static int sgm4154x_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
 }
 
 #if 0
+void sgm4154x_rerun_apsd(struct sgm4154x_device * sgm)
+{
+	int rc;
+
+	dev_info(sgm->dev, "re-running APSD\n");
+
+	rc = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_7, SGM4154x_IINDET_EN_MASK,
+                     SGM4154x_IINDET_EN);
+	if (rc < 0)
+		dev_err(sgm->dev, "Couldn't re-run APSD rc=%d\n", rc);
+
+	return;
+}
+
 static int sgm4154x_get_vindpm_offset_os(struct sgm4154x_device *sgm)
 {
 	int ret;
@@ -785,7 +883,7 @@ static int sgm4154x_get_state(struct sgm4154x_device *sgm,
 
 	return 0;
 }
-#if 0
+
 static int sgm4154x_set_hiz_en(struct charger_device *chg_dev, bool hiz_en)
 {
 	u8 reg_val;
@@ -809,7 +907,7 @@ static int sgm4154x_enable_power_path(struct charger_device *chg_dev, bool enabl
 
 	return ret;
 }
-
+#if 0
 static int sgm4154x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 {
 	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
@@ -1683,6 +1781,7 @@ static int sgm4154x_enable_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s en = %d\n", __func__, en);
 	if (en) {
+		ret = sgm4154x_set_hiz_en(chg_dev, !en);
 		ret = sgm4154x_enable_vbus(NULL);
 	} else {
 		ret = sgm4154x_disable_vbus(NULL);
@@ -1884,11 +1983,11 @@ static struct charger_ops sgm4154x_chg_ops = {
 	/* Get vbus voltage*/
 	/*.get_vbus_adc = sgm4154x_get_vbus,*/
 	/* Power path */
-	/*.enable_powerpath = sgm4154x_enable_power_path,*/
+	.enable_powerpath = sgm4154x_enable_power_path,
 	/*.is_powerpath_enabled = sgm4154x_get_is_power_path_enable, */
 
 	/* Hz mode */
-	/*.enable_hz = sgm4154x_set_hiz_en,*/
+	.enable_hz = sgm4154x_set_hiz_en,
 	/* OTG */
 	.enable_otg = sgm4154x_enable_otg,	
 	.set_boost_current_limit = sgm4154x_set_boost_current_limit,

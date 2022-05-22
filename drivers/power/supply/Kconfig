@@ -727,6 +727,12 @@ config CHARGER_RT9455
 	help
 	  Say Y to enable support for Richtek RT9455 battery charger.
 
+config MOTO_CHARGER_SGM415XX
+        bool "Enable SGM415xx charger IC for Moto"
+        default n
+        help
+          This is to enable MOTO supports of IC SGM415xx.
+
 config MOTO_CHG_WT6670F_SUPPORT
         bool "Enable WT6670F charger protocol IC for Moto"
         default n
