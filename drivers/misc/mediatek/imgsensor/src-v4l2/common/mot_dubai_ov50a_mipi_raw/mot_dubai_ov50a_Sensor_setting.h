@@ -38,6 +38,11 @@ kal_uint16 addr_data_pair_preview_mot_dubai_ov50a2q[] = {
 #include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_20220422.h"
 };
 
+
+kal_uint16 addr_data_pair_preview_mot_dubai_ov50a2q_seamless_switch[] = {
+#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_20220422_2.h"
+};
+
 kal_uint16 addr_data_pair_capture_mot_dubai_ov50a2q[] = {
 #include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_20220422.h"
 };
@@ -67,6 +72,42 @@ kal_uint16 addr_data_pair_custom3[] = {
 kal_uint16 addr_data_pair_custom4[] = {
 #include"setting/OV50A40_4096x3072_Cropping_10bit_30fps_AG64_PDVC1_2048x768_20220418.h"
 };
+kal_uint16 addr_data_pair_seamless_switch_group1_start[] = {
+//group 1
+0x3208,0x01,
+0x3016,0xf3,
+0x3017,0xf2,
+0x301f,0x9b,
+};
+
+kal_uint16 addr_data_pair_seamless_switch_group1_end[] = {
+//group 1
+0x301f,0x98,
+0x3017,0xf0,
+0x3016,0xf0,
+0x3208,0x11,
+0x3208,0xa1,
+};
+
+kal_uint16 addr_data_pair_seamless_switch_group2_start[] = {
+//group 2
+0x3208,0x02,
+0x3016,0xf3,
+0x3017,0xf2,
+0x301f,0x9b,
+};
+
+
+kal_uint16 addr_data_pair_seamless_switch_group2_end[] = {
+//group 2
+0x301f,0x98,
+0x3017,0xf0,
+0x3016,0xf0,
+0x3208,0x12,
+0x3208,0xa2,
+};
+
+
 #ifdef SEAMLESS_SWITCH_V2
 kal_uint16 addr_data_pair_seamless_switch_step1_mot_dubai_ov50a2q[] = {
 	//group 0
