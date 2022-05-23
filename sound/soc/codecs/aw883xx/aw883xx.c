@@ -1322,6 +1322,7 @@ static void aw883xx_fw_wrok(struct work_struct *work)
 static void aw883xx_load_fw(struct aw883xx *aw883xx)
 {
 
+#if 0
 	if (aw883xx->aw_pa->platform == AW_QCOM) {
 		/*QCOM sync loading*/
 		aw883xx_request_firmware_file(aw883xx);
@@ -1331,6 +1332,10 @@ static void aw883xx_load_fw(struct aw883xx *aw883xx)
 				&aw883xx->acf_work,
 				msecs_to_jiffies(AW883XX_LOAD_FW_DELAY_TIME));
 	}
+#else
+	aw_dev_info(aw883xx->dev, "use sync loading fw ");
+	aw883xx_request_firmware_file(aw883xx);
+#endif  //To fix aw ctl setup fail change firmware to sync loading
 }
 
 #ifdef AW_MTK_PLATFORM
