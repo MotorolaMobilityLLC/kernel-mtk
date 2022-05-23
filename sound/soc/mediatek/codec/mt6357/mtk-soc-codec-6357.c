@@ -81,10 +81,10 @@
 #ifdef CONFIG_SND_SOC_AW87XXX
 extern int aw87xxx_add_codec_controls(void *codec);
 extern int aw87xxx_set_profile(int dev_index, char *profile);
-static char *aw_profile[] = {"Music","Voice", "Off"};/*aw87xxx_acf.bin 文件中配置场景*/
+static char *aw_profile[] = {"Music","Voice","Fm","Receiver","Off"};/*aw87xxx_acf.bin 文件中配置场景*/
 enum aw87xxx_dev_index {
-	AW_DEV_0 = 0,
-	AW_DEV_1 = 1,
+	AW_DEV_0 = 0,//up-speaker(receiver)
+	AW_DEV_1 = 1,//down-speaker
 };
 #endif
 
@@ -3455,8 +3455,10 @@ static int PMIC_REG_CLEAR_Get(struct snd_kcontrol *kcontrol,
 static void Speaker_Amp_PA_SetMode(int mode){
 	switch(mode){
 		case 0://Music
-		case 1://Receiver
-		case 2:{//Off
+		case 1://Voice
+		case 2://Fm
+		case 3://Receiver
+		case 4:{//Off
 			pr_debug("%s(),mode = %d\n", __func__,mode);
 			aw87xxx_set_profile(AW_DEV_1, aw_profile[mode]);
 			break;
@@ -3467,8 +3469,10 @@ static void Speaker_Amp_PA_SetMode(int mode){
 static void Voice_Amp_PA_SetMode(int mode){
 	switch(mode){
 		case 0://Music
-		case 1://Receiver
-		case 2:{//Off
+		case 1://Voice
+		case 2://Fm
+		case 3://Receiver
+		case 4:{//Off
 			pr_debug("%s(),mode = %d\n", __func__,mode);
 			aw87xxx_set_profile(AW_DEV_0, aw_profile[mode]);
 			break;
@@ -3585,9 +3589,9 @@ static void Voice_Amp_Change(bool enable)
 	Voice_Amp_Mux_Select(enable);
 #ifdef CONFIG_SND_SOC_AW87XXX
 	if (enable) {
-		Voice_Amp_PA_SetMode(1);//Receiver mode
+		Voice_Amp_PA_SetMode(3);//Receiver
 	} else {
-		Voice_Amp_PA_SetMode(2);//Off
+		Voice_Amp_PA_SetMode(4);//Off
 	}
 #endif
 
@@ -3737,16 +3741,14 @@ static void Speaker_Amp_Change(bool enable)
 	{
 		Speaker_Amp_PA_SetMode(0);//Music
 	}else{
-		Speaker_Amp_PA_SetMode(2);//Off
+		Speaker_Amp_PA_SetMode(4);//Off
 	}
 
-
-	//open receiver speaker at Music mode
 	Voice_Amp_Mux_Select(enable);
 	if (enable) {
-		Voice_Amp_PA_SetMode(0);//Music
+		Voice_Amp_PA_SetMode(1);//Voice
 	} else {
-		Voice_Amp_PA_SetMode(2);//Off
+		Voice_Amp_PA_SetMode(4);//Off
 	}
 
 }
@@ -3760,7 +3762,7 @@ static void SpeakerDown_Amp_Change(bool enable)
 	{
 		Speaker_Amp_PA_SetMode(0);//Music
 	}else{
-		Speaker_Amp_PA_SetMode(2);//Off
+		Speaker_Amp_PA_SetMode(4);//Off
 	}
 }
 
@@ -3832,12 +3834,12 @@ static void SpeakerUp_Amp_Change(bool enable)
 	pr_debug("%s() enable %d", __func__,enable);
 
 	Voice_Amp_Mux_Select(enable);
-	//open up-speaker(receiver) in Music mode
+	//open up-speaker(receiver) in Voice mode
 	if (enable)
 	{
-		Voice_Amp_PA_SetMode(0);//Music
+		Voice_Amp_PA_SetMode(1);//Voice
 	}else{
-		Voice_Amp_PA_SetMode(2);//Off
+		Voice_Amp_PA_SetMode(4);//Off
 	}
 }
 static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
@@ -4165,16 +4167,16 @@ pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
 	{
 		Speaker_Amp_PA_SetMode(0);//Music
 	}else{
-		Speaker_Amp_PA_SetMode(2);//Off
+		Speaker_Amp_PA_SetMode(4);//Off
 	}
 
 
 	//open receiver MUX & receiver PA
 	Voice_Amp_Mux_Select(enable);
 	if (enable) {
-		Voice_Amp_PA_SetMode(0);//Music
+		Voice_Amp_PA_SetMode(1);//Voice
 	} else {
-		Voice_Amp_PA_SetMode(2);//Off
+		Voice_Amp_PA_SetMode(4);//Off
 	}
 
 }
