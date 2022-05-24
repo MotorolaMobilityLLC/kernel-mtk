@@ -25,6 +25,20 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(MOT_VICKY_S5KGM1_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_VICKY_S5KGM1_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_Low, 2},
+			{RST, Vol_Low, 5},
+			{DOVDD, Vol_1800, 6},
+			{AVDD, Vol_2800, 7},
+			{DVDD, Vol_1100, 8},
+			{RST, Vol_High, 9},
+			{SensorMCLK, Vol_High, 10}
+		},
+	},
+#endif
 #if defined(MOT_VICKY_HI1634Q_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_VICKY_HI1634Q_MIPI_RAW,

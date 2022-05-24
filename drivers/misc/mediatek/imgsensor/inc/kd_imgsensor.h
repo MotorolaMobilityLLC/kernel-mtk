@@ -381,6 +381,7 @@
 
 //Begin: Add sensor id for Vicky
 #define MOT_VICKY_S5KHM6_SENSOR_ID            0x1AD6
+#define MOT_VICKY_S5KGM1_SENSOR_ID            0x08D1
 #define MOT_VICKY_HI1634Q_SENSOR_ID           0x1634
 #define MOT_VICKY_OV02B10_SENSOR_ID           0x002b
 #define MOT_VICKY_S5K4H7_SENSOR_ID            0x487b
@@ -632,6 +633,7 @@
 
 //Begin: Add sensor drvname for Vicky
 #define SENSOR_DRVNAME_MOT_VICKY_S5KHM6_MIPI_RAW       "mot_vicky_s5khm6_mipi_raw"
+#define SENSOR_DRVNAME_MOT_VICKY_S5KGM1_MIPI_RAW       "mot_vicky_s5kgm1_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_HI1634Q_MIPI_RAW      "mot_vicky_hi1634q_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_OV02B10_MIPI_RAW      "mot_vicky_ov02b10_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_S5K4H7_MIPI_RAW       "mot_vicky_s5k4h7_mipi_raw"
