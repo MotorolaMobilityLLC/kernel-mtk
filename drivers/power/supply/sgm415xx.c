@@ -40,6 +40,7 @@ extern void Charger_Detect_Release(void);
 #define SGM4154x_REG_NUM    (0xF)
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 extern int wt6670f_en_hvdcp(void);
+extern int wt6670f_force_qc3_5V(void);
 extern int wt6670f_start_detection(void);
 extern int wt6670f_get_protocol(void);
 //extern int wt6670f_get_charger_type(void);
@@ -787,6 +788,10 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 						wait_count++;
 				}
 				m_chg_type = wt6670f_get_protocol();
+				if(m_chg_type == 0x05){
+					wt6670f_force_qc3_5V();
+					pr_err("Force set qc3 5V");
+				}
 			}
         	pr_err("[%s] z350 charge type is  0x%x\n",__func__, m_chg_type);
 		}
