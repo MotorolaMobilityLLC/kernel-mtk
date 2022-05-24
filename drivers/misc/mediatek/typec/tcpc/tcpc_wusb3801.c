@@ -1277,11 +1277,11 @@ static void wusb3801_shutdown(struct i2c_client *client)
 		}
 		tcpm_shutdown(chip->tcpc);
 	}
-	else{
-		if (IS_ERR_VALUE_64(wusb3801_set_mode(chip, WUSB3801_SNK)) ||
-				IS_ERR_VALUE_64(wusb3801_set_chip_state(chip, WUSB3801_STATE_ERROR_RECOVERY)))
-			pr_err("%s: failed to set sink mode\n", __func__);
-	}
+
+	if (IS_ERR_VALUE_64(wusb3801_set_mode(chip, WUSB3801_SNK)) ||
+			IS_ERR_VALUE_64(wusb3801_set_chip_state(chip, WUSB3801_STATE_ERROR_RECOVERY)))
+		pr_err("%s: failed to set sink mode\n", __func__);
+
 }
 
 
