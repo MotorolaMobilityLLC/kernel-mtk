@@ -159,6 +159,8 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 	 * state, nCoolerId);
 	 */
 
+   	 mtk_cooler_backlight_dprintk("mtk_cl_backlight_set_cur_state() %d CoolerID:%d\n",state, nCoolerId);
+
 	g_cl_backlight_state[nCoolerId] = state;
 
 	g_backlight_level = 0;
