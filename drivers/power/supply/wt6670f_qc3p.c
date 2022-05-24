@@ -818,6 +818,23 @@ int wt6670f_en_hvdcp(void)
 }
 EXPORT_SYMBOL_GPL(wt6670f_en_hvdcp);
 
+int wt6670f_force_qc3_5V(void)
+{
+	int ret;
+	u16 data = 0x01;
+
+	ret = wt6670f_write_word(_wt, 0x02, data);
+
+	if (ret < 0)
+	{
+		pr_info("z350 force qc3 5V fail\n");
+		return ret;
+	}
+
+	return data & 0xff;
+}
+EXPORT_SYMBOL_GPL(wt6670f_force_qc3_5V);
+
 int wt6670f_get_protocol(void)
 {
 	int ret;
