@@ -290,11 +290,13 @@
 	//cam2_pin_vcama1 = "regulator";
 	cam1_pin_mipi_switch_sel = "gpio";
 	cam2_pin_mipi_switch_sel = "gpio";
+
 	cam4_pin_mclk = "mclk";
 	cam4_pin_rst = "gpio";
 	cam4_pin_vcama = "wl2868";
 	cam4_pin_vcamio = "wl2868";
-	cam0_enable_sensor = "mot_vicky_s5khm6_mipi_raw";
+	cam0_enable_sensor = "mot_vicky_s5khm6_mipi_raw mot_vicky_s5kgm1_mipi_raw";
+
 	cam1_enable_sensor = "mot_vicky_hi1634q_mipi_raw";
 	cam2_enable_sensor = "mot_vicky_s5k4h7_mipi_raw";
 	cam4_enable_sensor = "mot_vicky_ov02b10_mipi_raw";
