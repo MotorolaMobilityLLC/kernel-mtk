@@ -171,10 +171,9 @@ static int fb_early_init_dt_get_chosen(
 
 #define BATTERY_NAME_LEN 30
 
-extern unsigned int platform_board_id;
+
 static int battery_id_type = 0;
-static int battery_pn_flag = 0;
-//static int battery_total_number = 1;
+
 
 static void ontim_form_lk_get_battery_id(void)
 {
@@ -204,54 +203,23 @@ int fgauge_get_profile_id(void)
 
 	battery_type_name = battery_id_type;
 
-	bm_err("ontim battery_type_name = %d battery_pn_flag = %d\n",battery_type_name,battery_pn_flag);
-	if(!battery_pn_flag) {
-		if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
-			if (battery_type_name > 2) {
-				battery_id = battery_type_name - 1;
-				strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
-				battery_id = 0;
-			} else {
-				battery_id = battery_type_name - 1;
-				strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
-			}
-			bm_err("ontim battery_id = %d\n",battery_id);
+	bm_err("ontim battery_type_name = %d\n", battery_type_name);
+
+	if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
+		if (battery_type_name > 2) {
+			battery_id = battery_type_name - 1;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
+			battery_id = 0;
 		} else {
-			battery_id = 0;
+			battery_id = battery_type_name - 1;
 			strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
 		}
-	/* malta and malta lite PN logic */
+		bm_err("ontim battery_id = %d\n",battery_id);
 	} else {
-		if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
-			/* malta lite PN logic */
-			if (battery_type_name > 5) {
-				if (battery_type_name > 8) {
-					battery_id = battery_type_name - 5;
-					strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id + 4],BATTERY_NAME_LEN);
-					battery_id = 3;
-				} else {
-					battery_id = battery_type_name - 5;
-					strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id + 4],BATTERY_NAME_LEN);
-					bm_err("ontim malta lite battery_id = %d\n",battery_id);
-				}
-			/* malta PN logic */
-			} else {
-				battery_id = battery_type_name - 1;
-				strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
-				battery_id = 0;
-				bm_err("ontim malta battery_id = %d\n",battery_id);
-			}
-		}
-		else if (platform_board_id & 0x04) { //malta lite PN logic
-			battery_id = 1;
-			strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id + 4],BATTERY_NAME_LEN);
-			bm_err("ontim malta lite witre error,use default battery_id = %d\n",battery_id);
-		} else { //malta PN logic
-			battery_id = 0;
-			strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
-			bm_err("ontim malta witre error,use default battery_id = %d\n",battery_id);
-		}
+		battery_id = 0;
+		strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
 	}
+
 	bm_err("[%s]Battery id (%d)\n", __func__, battery_id);
 	bm_err("[%s]Battery vendor name (%s)\n", __func__, battery_vendor_name);
 	return battery_id;
@@ -1919,13 +1887,13 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 				__func__, node_name, column);
 			/* correction */
 			column = 3;
-	}
+		}
 
 		sprintf(node_name, "battery%d_profile_t%d", bat_id, i);
 		fg_custom_parse_table(gm, np, node_name,
 			fg_table_cust_data->fg_profile[i].fg_profile, column);
 	}
-		}
+}
 
 #endif	/* end of CONFIG_OF */
 

@@ -1179,12 +1179,12 @@ static int bq25601_enable_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s en = %d\n", __func__, en);
 	if (en) {
-		bq25601_set_chg_config(0);
+		//bq25601_set_chg_config(0);
 		bq25601_set_otg_config(1);
-		bq25601_set_watchdog(0x3);	/* WDT 160s */
+		//bq25601_set_watchdog(0x3);	/* WDT 160s */
 	} else {
 		bq25601_set_otg_config(0);
-		bq25601_set_chg_config(1);
+		//bq25601_set_chg_config(1);
 	}
 	return ret;
 }
@@ -1334,8 +1334,10 @@ static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 
 static int bq25601_enable_vbus(struct regulator_dev *rdev)
 {
-	bq25601_set_chg_config(0);
+	//bq25601_set_chg_config(0);
 	bq25601_set_otg_config(1);
+
+	pr_info("hzn: %s ---\n", __func__);
 
 	return 0;
 }
@@ -1343,7 +1345,9 @@ static int bq25601_enable_vbus(struct regulator_dev *rdev)
 static int bq25601_disable_vbus(struct regulator_dev *rdev)
 {
 	bq25601_set_otg_config(0);
-	bq25601_set_chg_config(1);
+	//bq25601_set_chg_config(1);
+
+	pr_info("hzn: %s ---\n", __func__);
 
 	return 0;
 }

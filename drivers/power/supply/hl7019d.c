@@ -46,7 +46,7 @@
 #include <mt-plat/mtk_boot.h>
 
 #include <ontim/ontim_dev_dgb.h>
-static  char charge_ic_vendor_name[50]="HL7019D";
+static  char charge_ic_vendor_name[50]="HL7019";
 DEV_ATTR_DECLARE(charge_ic)
 DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
 DEV_ATTR_DECLARE_END;
