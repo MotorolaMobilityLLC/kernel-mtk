@@ -270,13 +270,13 @@
 };
 
 &i2c9 {
-    cps_wls_charger@31 {
+    cps_wls_charger_h:cps_wls_charger_h@31 {
         compatible = "cps,wls-charger-cps4035-H";
         reg = <0x31>;
         status = "okay";
     };
 
-    cps_wls_charger@30 {
+    cps_wls_charger_l:cps_wls_charger_l@30 {
         compatible = "cps,wls-charger-cps4035-L";
         bootmode = <&chosen>;
         charger = <&mt6375_chg>;
@@ -286,6 +286,7 @@
         cps_det_int = <&pio 115 0x0>;
         pinctrl-names = "default";
         pinctrl-0 = <&wls_cps4035_int_default>;
+        #cooling-cells = <2>;
         status = "okay";
     };
 };
@@ -399,3 +400,22 @@
 
 };
 
+&chg_ntc {
+	polling-delay = <10000>; /* milliseconds */
+	polling-delay-passive = <5000>; /* milliseconds */
+
+	trips {
+		wlctx_trip0: wlctx-trip0 {
+			temperature = <48000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+	};
+
+	cooling-maps {
+		wlctx-cdev0 {
+			trip = <&wlctx_trip0>;
+			cooling-device = <&cps_wls_charger_l 1 1>;
+		};
+	};
+};
