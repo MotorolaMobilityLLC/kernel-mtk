@@ -2954,7 +2954,8 @@ static void TurnOnDacPower(int device)
 	/* Audio system digital clock power down release */
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0xffff);
 	/* sdm audio fifo clock power on */
-	Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
+	// Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
+	Ana_Set_Reg(AFUNC_AUD_CON0, 0xCFA1, 0xffff);
 	/* scrambler clock on enable */
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0xffff);
 	/* sdm power on */
