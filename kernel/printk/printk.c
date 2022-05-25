@@ -566,6 +566,13 @@ u32 log_buf_len_get(void)
 }
 EXPORT_SYMBOL_GPL(log_buf_len_get);
 
+/* Return log first idx */
+u32 *log_first_idx_get(void)
+{
+	return &log_first_idx;
+}
+EXPORT_SYMBOL_GPL(log_first_idx_get);
+
 /* human readable text of the record */
 static char *log_text(const struct printk_log *msg)
 {
@@ -790,6 +797,7 @@ static int log_store(int facility, int level,
 	/* insert message */
 	log_next_idx += msg->len;
 	log_next_seq++;
+	((struct printk_log *)(log_buf + log_next_idx))->len = 0;
 
 	/* printk too much detect */
 #ifdef CONFIG_LOG_TOO_MUCH_WARNING
@@ -3288,6 +3296,8 @@ static int __init printk_late_init(void)
 #endif
 	int ret;
 
+	pr_info("__LOG_BUF_LEN=%d  sizeof(__log_buf)=%d\n", __LOG_BUF_LEN, sizeof(__log_buf));
+	pr_info("log_buf=%p  __log_buf=%p\n", log_buf, __log_buf);
 	for_each_console(con) {
 		if (!(con->flags & CON_BOOT))
 			continue;
