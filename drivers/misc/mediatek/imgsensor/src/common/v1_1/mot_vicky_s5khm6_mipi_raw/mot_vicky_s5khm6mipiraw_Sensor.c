@@ -157,12 +157,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 80,
 		.mipi_pixel_rate = 1225728000,
 	},
-	.margin = 8,
-	.min_shutter = 10,
-	.min_gain = 64,
-	.max_gain = 1024,
+	.margin = 19,
+	.min_shutter = 8,
+	.min_gain = BASEGAIN,
+	.max_gain = 64*BASEGAIN,
 	.min_gain_iso = 100,
-	.gain_step = 1,
+	.gain_step = 2,
 	.gain_type = 2,
 	.max_frame_length = 0xffff,
 	.ae_shut_delay_frame = 0,
@@ -171,13 +171,13 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
 	.sensor_mode_num = 7,
-	.cap_delay_frame = 2,
-	.pre_delay_frame = 2,
-	.video_delay_frame = 2,
+	.cap_delay_frame = 1,
+	.pre_delay_frame = 1,
+	.video_delay_frame = 1,
 	.hs_video_delay_frame = 2,
-	.slim_video_delay_frame = 2,
+	.slim_video_delay_frame = 1,
 	.custom1_delay_frame = 2,
-	.custom2_delay_frame = 2,
+	.custom2_delay_frame = 1,
 	.isp_driving_current = ISP_DRIVING_4MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_CPHY,
@@ -432,7 +432,7 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0;
 
-	reg_gain = gain / 2;
+	reg_gain = gain*0x20/BASEGAIN;
 	return (kal_uint16) reg_gain;
 }
 
@@ -1642,8 +1642,24 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	/*LOG_INF("feature_id = %d\n", feature_id);*/
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
-		*(feature_data + 1) = imgsensor_info.min_gain;
-		*(feature_data + 2) = imgsensor_info.max_gain;
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM1://9Sum2Bin
+				*(feature_data + 1) = imgsensor_info.min_gain;//1X
+				*(feature_data + 2) = imgsensor_info.max_gain;//Max gain is 64X
+				break;
+			case MSDK_SCENARIO_ID_CUSTOM2://Full
+				*(feature_data + 1) = imgsensor_info.min_gain;
+				*(feature_data + 2) = 8*BASEGAIN;//max gain is 8X
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG://9Sum
+			default:
+				*(feature_data + 1) = imgsensor_info.min_gain;
+				*(feature_data + 2) = imgsensor_info.max_gain;//Max gain is 64X
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
@@ -1651,7 +1667,21 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
-		*(feature_data + 1) = imgsensor_info.min_shutter;
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM1://9Sum2Bin
+				*(feature_data + 1) = 4;
+				break;
+			case MSDK_SCENARIO_ID_CUSTOM2://Full
+				*(feature_data + 1) = 12;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG://9Sum
+			default:
+				*(feature_data + 1) = imgsensor_info.min_shutter;//8
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ_BY_SCENARIO:
 		switch (*feature_data) {
@@ -1941,7 +1971,21 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		 */
 		*(feature_data + 1) = 1;
 		/* margin info by scenario */
-		*(feature_data + 2) = imgsensor_info.margin;
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CUSTOM1://9Sum2Bin
+				*(feature_data + 2) = 13;
+				break;
+			case MSDK_SCENARIO_ID_CUSTOM2://Full
+				*(feature_data + 2) = 25;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG://9Sum
+			default:
+				*(feature_data + 2) = imgsensor_info.margin;//19
+				break;
+		}
 		break;
 	case SENSOR_FEATURE_SET_AWB_GAIN:
 		break;
