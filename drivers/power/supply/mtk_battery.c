@@ -350,7 +350,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_AVG,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+#if 0
 	POWER_SUPPLY_PROP_CHARGER_VOLTAGE,
 #endif
 	POWER_SUPPLY_PROP_CHARGE_FULL,
@@ -445,7 +445,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 
 		ret = 0;
 		break;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+#if 0
 	case POWER_SUPPLY_PROP_CHARGER_VOLTAGE:
 		if (gm->disableGM30)
 			bs_data->charger_vol = 5000;

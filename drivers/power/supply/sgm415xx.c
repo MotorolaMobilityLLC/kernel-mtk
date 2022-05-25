@@ -43,7 +43,7 @@ extern int wt6670f_en_hvdcp(void);
 extern int wt6670f_force_qc3_5V(void);
 extern int wt6670f_start_detection(void);
 extern int wt6670f_get_protocol(void);
-//extern int wt6670f_get_charger_type(void);
+extern int wt6670f_get_charger_type(void);
 extern bool wt6670f_is_charger_ready(void);
 //extern void bq2597x_set_psy(void);
 extern int wt6670f_do_reset(void);
@@ -1359,7 +1359,12 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		val->intval = 5000;
+		val->intval = wt6670f_get_vbus_voltage();
+		if(val->intval < 0 || val->intval > 13000){
+			wt6670f_do_reset();
+			val->intval = wt6670f_get_vbus_voltage();
+		}
+		//val->intval = 5000;
 		break;
 
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
