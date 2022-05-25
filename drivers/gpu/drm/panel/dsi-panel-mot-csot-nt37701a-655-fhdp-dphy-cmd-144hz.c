@@ -31,6 +31,8 @@
 
 #include "dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha.h"
 
+//#define SUPPORT_144HZ_REFRESH_RATE
+
 enum panel_version{
 	PANEL_V1 = 1,
 	PANEL_V2,
@@ -1028,7 +1030,9 @@ static int lcm_get_modes(struct drm_panel *panel,
 	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
+#ifdef SUPPORT_144HZ_REFRESH_RATE
 	struct drm_display_mode *mode_4;
+#endif
 
 	mode = drm_mode_duplicate(connector->dev, &switch_mode_48hz);
 	if (!mode) {
@@ -1073,7 +1077,7 @@ static int lcm_get_modes(struct drm_panel *panel,
 	drm_mode_set_name(mode_3);
 	mode_3->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_3);
-#if 1
+#ifdef SUPPORT_144HZ_REFRESH_RATE
 	mode_4 = drm_mode_duplicate(connector->dev, &switch_mode_144hz);
 	if (!mode_4) {
 		dev_info(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
