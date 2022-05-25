@@ -199,28 +199,16 @@ int get_battery_current(struct mtk_charger *info)
 static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 {
 	union power_supply_propval prop;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
-	struct power_supply *bat_psy = NULL;
-#else
 	static struct power_supply *chg_psy;
-#endif
 	int ret;
 
 #ifdef CONFIG_MOTO_CHARGER_SGM415XX
-	if (bat_psy == NULL || IS_ERR(bat_psy))
-		bat_psy = power_supply_get_by_name("battery");
-
-	if (bat_psy == NULL || IS_ERR(bat_psy)) {
-		chr_err("%s Couldn't get bat_psy\n", __func__);
-		ret = 0;
-	} else {
-		ret = power_supply_get_property(bat_psy,
-			POWER_SUPPLY_PROP_CHARGER_VOLTAGE, &prop);
-	}
+	if (chg_psy == NULL)
+		chg_psy = power_supply_get_by_name("sgm4154x-charger");
 #else
 	if (chg_psy == NULL)
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
-
+#endif
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s Couldn't get chg_psy\n", __func__);
 		ret = -1;
@@ -228,7 +216,7 @@ static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_VOLTAGE_NOW, &prop);
 	}
-#endif
+
 	*vchr = prop.intval;
 
 	chr_debug("%s vbus:%d\n", __func__,
