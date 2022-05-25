@@ -298,6 +298,20 @@ static int moto_read_sensor_otp_data(int page, int start_add, unsigned char *Buf
 	return 0;
 }
 
+mot_s5k4h7_otp_alldata_t mot_s5k4h7_otp_data = {{0}};
+void moto_read_otp_all_data(void)
+{
+	unsigned short page_idx;
+	unsigned short start_addr = OTP_PAGE_START_ADDR;
+	LOG_INF("X");
+	for(page_idx =21;page_idx <122;page_idx++)
+	{
+           moto_read_sensor_otp_data(page_idx,start_addr,mot_s5k4h7_otp_data.data+(page_idx-21)*64,64);
+	}
+	LOG_INF("E");
+	return;
+}
+
 //get vail page flag
 static void mot_select_vail_page(PAGE_INFO *pg_inf)
 {
@@ -613,7 +627,7 @@ int s5k4h7_otp_data(void)
 		mtk_module_info->data,
 		(mot_s5k4h7_otp.mtk_info_crc + 2 - mot_s5k4h7_otp.mtk_info_flag)/sizeof(UINT8));
 	LOG_INF ("mtk_module_info ret %d size = %d\n", ret,size);
-
+	moto_read_otp_all_data();
 	return 0;
 }
 
@@ -621,9 +635,15 @@ unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned int addr
 			unsigned char *data, unsigned int size)
 {
 	unsigned int ret = 0;
+	unsigned int dump_all_size = 6464;
 	unsigned char *otp_data = otp_info_map.data;
+	unsigned char *otp_alldata = mot_s5k4h7_otp_data.data;
 	LOG_INF ("eeprom read data addr = 0x%x size = %d\n",addr,size);
+       if (size !=dump_all_size) {
 	memcpy(data, otp_data + addr,size);
+        } else {
+	memcpy(data, otp_alldata,size);
+        }
 	ret = size;
 	return ret;
 }
