@@ -442,9 +442,10 @@ static long ion_sys_cache_sync(struct ion_client *client,
 	}
 
 	if (kernel_handle->buffer->size < param->size) {
-		IONMSG("%s error, sync size is larger than buf_sz:%zu\n",
+		IONDBG("%s error, sync size is larger than buf_sz:%zu\n",
 		       __func__, kernel_handle->buffer->size);
-		goto err;
+		ion_drv_put_kernel_handle(kernel_handle);
+		return ret;
 	}
 
 	buffer = kernel_handle->buffer;
