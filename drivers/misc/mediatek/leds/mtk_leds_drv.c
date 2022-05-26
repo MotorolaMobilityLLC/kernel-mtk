@@ -100,7 +100,7 @@ static DEFINE_MUTEX(bl_level_limit_mutex);
  ***************************************************************************/
 int setMaxbrightness(int max_level, int enable)
 {
-#if !defined(CONFIG_MTK_AAL_SUPPORT)
+#if defined(CONFIG_MTK_AAL_SUPPORT)
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
 
 	mutex_lock(&bl_level_limit_mutex);
