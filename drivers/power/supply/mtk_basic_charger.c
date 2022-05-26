@@ -60,6 +60,13 @@
 #include "mtk_charger.h"
 #include <linux/gpio.h>
 
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
+//extern int wt6670f_get_charger_type(void);
+extern int wt6670f_set_voltage(u16 voltage);
+extern int m_chg_type;
+extern bool wt6670f_is_detect;
+extern int sgm_config_qc_charger(struct charger_device *chg_dev);
+#endif
 
 static int _uA_to_mA(int uA)
 {
@@ -229,7 +236,6 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 				info->data.usb_charger_current;
 		is_basic = true;
 	}
-
 	info->setting.mmi_fcc_limit  =  ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 	if (pdata->thermal_charging_current_limit < 0 ||
 		pdata->thermal_charging_current_limit > info->mmi.min_therm_current_limit)
@@ -271,6 +277,27 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 					TYPEC_RP_LEVEL));
 		}
 	}
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
+		/*when wt6670f is detect should make sure sgm is 500mA*/
+		if(wt6670f_is_detect == true){
+			if(pdata->input_current_limit > 500000){
+				pdata->input_current_limit = 500000;
+				chr_err("wt6670f is detect, set input_current_limit 500mA!\n");
+			}
+		}else{
+			/*if wt6670f is qc3,vbus will increase 400mv
+			  and then set 3A to ensure 5V3A.*/
+			if(m_chg_type == 0x06){
+			    if(sgm_config_qc_charger(info->chg1_dev) != 0)
+					chr_err("sgm_config_qc_charger set sgm dpdm failed\n");
+			    else{
+				    pdata->input_current_limit = 3000000;
+				    pdata->charging_current_limit = 3000000;
+				    chr_err("it is HVDCP set sgm 3A  m_chg_type = %d\n",m_chg_type);
+			    }
+			}
+		}
+#endif
 
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
