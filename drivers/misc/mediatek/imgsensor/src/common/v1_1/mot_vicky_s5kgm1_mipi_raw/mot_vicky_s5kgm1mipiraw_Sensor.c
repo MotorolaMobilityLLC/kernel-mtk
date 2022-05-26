@@ -64,6 +64,9 @@ static unsigned int g_platform_id;
 #define MODULE_ID_OFFSET 0x0000
 #endif
 
+extern mot_calibration_status_t *VICKY_S5KGM1_eeprom_get_calibration_status(void);
+extern mot_calibration_mnf_t *VICKY_S5KGM1_eeprom_get_mnf_info(void);
+extern void VICKY_S5KGM1_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -890,6 +893,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_info("[%s] i2c write id: 0x%x, sensor id: 0x%x\n",
 					__func__, imgsensor.i2c_write_id, *sensor_id);
+				VICKY_S5KGM1_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id);
@@ -1270,7 +1274,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
 	sensor_info->Custom2DelayFrame = imgsensor_info.custom2_delay_frame;
 
-
+	/*Apply calibration status and manufacture info*/
+	memcpy(&sensor_info->calibration_status, VICKY_S5KGM1_eeprom_get_calibration_status(), sizeof(mot_calibration_status_t));
+	memcpy(&sensor_info->mnf_calibration, VICKY_S5KGM1_eeprom_get_mnf_info(), sizeof(mot_calibration_mnf_t));
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
