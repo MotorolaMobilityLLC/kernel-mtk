@@ -1556,10 +1556,10 @@ int allocate_working_buffer_helper(struct platform_device *pdev)
 					return -1;
 				}
 				mblock[id].start_virt = buf_ptr;
+				get_dma_buf(mblock[id].d_buf);
 				mblock[id].fd =
 				dma_buf_fd(mblock[id].d_buf,
 				O_RDWR | O_CLOEXEC);
-				dma_buf_get(mblock[id].fd);
 				break;
 			default:
 
@@ -1607,10 +1607,10 @@ int allocate_working_buffer_helper(struct platform_device *pdev)
 					return -1;
 				}
 				mblock[id].start_virt = buf_ptr;
+				get_dma_buf(mblock[id].d_buf);
 				mblock[id].fd =
 				dma_buf_fd(mblock[id].d_buf,
 				O_RDWR | O_CLOEXEC);
-				dma_buf_get(mblock[id].fd);
 				break;
 			}
 		} else {

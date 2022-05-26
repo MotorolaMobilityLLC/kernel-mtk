@@ -530,10 +530,10 @@ int isp71_allocate_working_buffer(struct mtk_hcp *hcp_dev, unsigned int mode)
 					return -1;
 				}
 				mblock[id].start_virt = buf_ptr;
+				get_dma_buf(mblock[id].d_buf);
 				mblock[id].fd =
 				dma_buf_fd(mblock[id].d_buf,
 				O_RDWR | O_CLOEXEC);
-				dma_buf_get(mblock[id].fd);
 				dma_buf_begin_cpu_access(mblock[id].d_buf, DMA_BIDIRECTIONAL);
 				kref_init(&mblock[id].kref);
 				break;
@@ -585,10 +585,10 @@ int isp71_allocate_working_buffer(struct mtk_hcp *hcp_dev, unsigned int mode)
 					return -1;
 				}
 				mblock[id].start_virt = buf_ptr;
+				get_dma_buf(mblock[id].d_buf);
 				mblock[id].fd =
 				dma_buf_fd(mblock[id].d_buf,
 				O_RDWR | O_CLOEXEC);
-				dma_buf_get(mblock[id].fd);
 				break;
 			}
 		} else {
