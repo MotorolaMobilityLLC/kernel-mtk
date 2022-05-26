@@ -363,4 +363,41 @@ struct sgm4154x_device {
 #endif
 };
 
+
+#define SGM_SYSFS_FIELD_RW(_name, _prop)	\
+{									 \
+	.attr	= __ATTR(_name, 0644, sgm_sysfs_show, sgm_sysfs_store),\
+	.prop	= _prop,	\
+	.set	= _name##_set,						\
+	.get	= _name##_get,						\
+}
+
+#define SGM_SYSFS_FIELD_RO(_name, _prop)	\
+{			\
+	.attr   = __ATTR(_name, 0444, sgm_sysfs_show, sgm_sysfs_store),\
+	.prop   = _prop,				  \
+	.get	= _name##_get,						\
+}
+
+#define SGM_SYSFS_FIELD_WO(_name, _prop)	\
+{								   \
+	.attr	= __ATTR(_name, 0200, sgm_sysfs_show, sgm_sysfs_store),\
+	.prop	= _prop,	\
+	.set	= _name##_set,						\
+}
+
+enum sgm_property {
+	SGM_PROP_CHARGING_ENABLED,
+};
+
+struct sgm_sysfs_field_info {
+	struct device_attribute attr;
+	enum sgm_property prop;
+	int (*set)(struct sgm4154x_device *sgm,
+		struct sgm_sysfs_field_info *attr, int val);
+	int (*get)(struct sgm4154x_device *sgm,
+		struct sgm_sysfs_field_info *attr, int *val);
+};
+
+
 #endif /* _SGM4154x_CHARGER_H */
