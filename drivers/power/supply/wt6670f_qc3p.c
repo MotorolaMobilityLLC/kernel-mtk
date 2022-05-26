@@ -1279,6 +1279,9 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 		g_qc3p_id = QC3P_WT6670F;
 		is_already_probe_ok = 1;
 		pr_info("[%s] is wt6670f,firmware_version = %x\n", __func__,firmware_version);
+	}else{
+		devm_pinctrl_put(i2c6_pinctrl);
+		pr_info("[%s] failed,release pinctrl\n", __func__);
 	}
 
 probe_out:
