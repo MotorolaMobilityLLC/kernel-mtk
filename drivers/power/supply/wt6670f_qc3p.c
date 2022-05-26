@@ -40,6 +40,7 @@ int is_already_probe_ok = 0;
 int g_qc3p_id = 0;
 int m_chg_type = 0;
 bool qc3p_z350_init_ok = false;
+EXPORT_SYMBOL_GPL(is_already_probe_ok);
 EXPORT_SYMBOL_GPL(qc3p_z350_init_ok);
 EXPORT_SYMBOL_GPL(g_qc3p_id);
 EXPORT_SYMBOL_GPL(m_chg_type);
@@ -818,16 +819,38 @@ int wt6670f_en_hvdcp(void)
 }
 EXPORT_SYMBOL_GPL(wt6670f_en_hvdcp);
 
-int wt6670f_force_qc3_5V(void)
+int wt6670f_force_qc2_5V(void)
 {
 	int ret;
 	u16 data = 0x01;
 
-	ret = wt6670f_write_word(_wt, 0x02, data);
+	if(1 == g_qc3p_id)
+		ret = wt6670f_write_word(_wt, 0x02, data);
+	else
+		ret = wt6670f_write_word(_wt, 0xB1, data);
+	if (ret < 0)
+	{
+		pr_info("%s force qc2 5V fail\n",g_qc3p_id?"z350":"wt6670f");
+		return ret;
+	}
+
+	return data & 0xff;
+}
+EXPORT_SYMBOL_GPL(wt6670f_force_qc2_5V);
+
+int wt6670f_force_qc3_5V(void)
+{
+	int ret;
+	u16 data = 0x04;
+
+	if(1 == g_qc3p_id)
+		ret = wt6670f_write_word(_wt, 0x02, data);
+	else
+		ret = wt6670f_write_word(_wt, 0xB1, data);
 
 	if (ret < 0)
 	{
-		pr_info("z350 force qc3 5V fail\n");
+		pr_info("%s force qc3 5V fail\n",g_qc3p_id?"z350":"wt6670f");
 		return ret;
 	}
 
@@ -840,6 +863,7 @@ int wt6670f_get_protocol(void)
 	int ret;
 	u16 data;
 	u8 data1, data2;
+
 	if(QC3P_WT6670F == g_qc3p_id){
 		ret = wt6670f_read_word(_wt, 0xBD, &data);
 		pr_err("wt6670f get protocol %x\n",data);
