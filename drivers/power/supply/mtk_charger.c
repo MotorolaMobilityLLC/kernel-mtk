@@ -4952,6 +4952,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, info);
 	info->pdev = pdev;
 
+	info->log_level = CHRLOG_ERROR_LEVEL;
 	mtk_charger_parse_dt(info, &pdev->dev);
 
 	mutex_init(&info->cable_out_lock);
