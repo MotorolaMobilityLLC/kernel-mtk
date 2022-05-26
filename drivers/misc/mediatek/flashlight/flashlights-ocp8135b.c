@@ -228,7 +228,7 @@ static int ocp8135b_set_torch_brightness(int val)
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
 
-	ocp8135b_pwm_set_config(13);
+	ocp8135b_pwm_set_config(val*2-1);
 
 	return 0;
 }
