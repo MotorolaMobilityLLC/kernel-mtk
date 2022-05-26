@@ -39,7 +39,10 @@ extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
 #define SGM4154x_REG_NUM    (0xF)
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int wt6670f_set_voltage(u16 voltage);
 extern int wt6670f_en_hvdcp(void);
+extern void wt6670f_reset_chg_type(void);
+extern int wt6670f_force_qc2_5V(void);
 extern int wt6670f_force_qc3_5V(void);
 extern int wt6670f_start_detection(void);
 extern int wt6670f_get_protocol(void);
@@ -50,6 +53,9 @@ extern int wt6670f_do_reset(void);
 extern bool qc3p_z350_init_ok;
 bool m_chg_ready = false;
 extern int m_chg_type;
+extern int is_already_probe_ok;
+bool wt6670f_is_detect = false;
+EXPORT_SYMBOL_GPL(wt6670f_is_detect);
 extern int g_qc3p_id;
 #endif
 unsigned int boost_current_limit[2];
@@ -645,12 +651,125 @@ static int sgm4154x_get_input_curr_lim(struct charger_device *chg_dev,unsigned i
 
 	return 0;
 }
+
+// Must enter 3.0 mode to call ,otherwise cannot step correctly.
+static int sgm4154x_qc30_step_up_vbus(struct sgm4154x_device *sgm)
+{
+	int ret,i;
+	int dp_val;
+
+	for(i=0;i<2;i++){
+		/*  dm 3.3v to dm 0.6v  step up 200mV when IC is QC3.0 mode*/
+		dp_val = SGM4154x_DP_VSEL_MASK;
+		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					  SGM4154x_DP_VSEL_MASK, dp_val); //dp 3.3v
+		if (ret)
+			return ret;
+
+		udelay(2500);
+		dp_val = 0x2<<3;
+		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					  SGM4154x_DP_VSEL_MASK, dp_val); //dp 0.6v
+		if (ret)
+			return ret;
+
+		udelay(2500);
+	}
+	return ret;
+}
+// Must enter 3.0 mode to call ,otherwise cannot step correctly.
+static int sgm4154x_qc30_step_down_vbus(struct sgm4154x_device *sgm)
+{
+	int ret,i;
+	int dm_val;
+	for(i=0;i<2;i++){
+		/* dp 0.6v and dm 0.6v step down 200mV when IC is QC3.0 mode*/
+		dm_val = 0x2<<1;
+		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					  SGM4154x_DM_VSEL_MASK, dm_val); //dm 0.6V
+		if (ret)
+			return ret;
+
+		udelay(2500);
+		dm_val = SGM4154x_DM_VSEL_MASK;
+		ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_d,
+					  SGM4154x_DM_VSEL_MASK, dm_val); //dm 3.3v
+		udelay(2500);
+	}
+	return ret;
+}
+static int sgm4154x_set_dp_dm(struct sgm4154x_device *sgm, int val)
+{
+	int rc = 0;
+
+	switch(val) {
+	case SGM_POWER_SUPPLY_DP_DM_DP_PULSE:
+		sgm->pulse_cnt++;
+		rc = sgm4154x_qc30_step_up_vbus(sgm);
+		if (rc) {
+			pr_err("Couldn't increase pulse count rc=%d\n",rc);
+			sgm->pulse_cnt--;
+		}
+		pr_info("DP_DM_DP_PULSE rc=%d cnt=%d\n",rc, sgm->pulse_cnt);
+		break;
+	case SGM_POWER_SUPPLY_DP_DM_DM_PULSE:
+		rc = sgm4154x_qc30_step_down_vbus(sgm);
+		if (!rc && sgm->pulse_cnt)
+			sgm->pulse_cnt--;
+		pr_err("DP_DM_DM_PULSE rc=%d cnt=%d\n",rc, sgm->pulse_cnt);
+		break;
+	default:
+		break;
+	}
+
+	return rc;
+}
+#define HVDCP_POWER_MIN			15000
+#define HVDCP_VOLTAGE_BASIC		5000
+#define HVDCP_VOLTAGE_NOM		(HVDCP_VOLTAGE_BASIC - 200)
+#define HVDCP_VOLTAGE_MAX		(HVDCP_VOLTAGE_BASIC + 200)
+#define HVDCP_VOLTAGE_MIN		4000
+#define HVDCP_PULSE_COUNT_MAX 	((HVDCP_VOLTAGE_BASIC - 5000) / 200 + 1)
+int sgm_config_qc_charger(struct charger_device *chg_dev)
+{
+	int rc = 0;
+	int vbus_mv;
+	struct sgm4154x_device *sgm = charger_get_data(chg_dev);
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	if(is_already_probe_ok == 1){
+		vbus_mv = wt6670f_get_vbus_voltage();
+	}else{
+		vbus_mv = -1;
+		pr_err("wt6670 get vbus failed\n");
+	}
+#else
+	vbus_mv = 5000;
+#endif
+	if(vbus_mv < 4000 || vbus_mv > 6000){
+		pr_err("vbus is not for qc3.o\n");
+		return -1;
+	}
+
+	pr_info("pulse_cnt=%d, vbus_mv=%d\n", sgm->pulse_cnt, vbus_mv);
+	if (vbus_mv < HVDCP_VOLTAGE_NOM && sgm->pulse_cnt < HVDCP_PULSE_COUNT_MAX)
+		rc=sgm4154x_set_dp_dm(sgm, SGM_POWER_SUPPLY_DP_DM_DP_PULSE);
+	else if (vbus_mv > HVDCP_VOLTAGE_MAX && sgm->pulse_cnt > 0 )
+		rc=sgm4154x_set_dp_dm(sgm, SGM_POWER_SUPPLY_DP_DM_DM_PULSE);
+	else {
+		pr_info("QC3.0 output configure completed\n");
+		//rc = 0;
+	}
+	msleep(100);
+	return rc;
+}
+EXPORT_SYMBOL_GPL(sgm_config_qc_charger);
+
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 void wt6670f_get_charger_type_func_work(struct work_struct *work)
 {
 	struct delayed_work *psy_dwork = NULL;
 	struct sgm4154x_device *sgm;
-	struct sgm4154x_state *state;
 	bool early_notified = false;
 	bool should_notify = false;
 	bool need_retry = false;
@@ -668,179 +787,107 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 		pr_err("Cann't get sgm4154x_device\n");
 		return ;
 	}
-	state = &sgm->state;
-	 Charger_Detect_Init();
+	wt6670f_is_detect = true;
+	sgm4154x_set_input_curr_lim(sgm->chg_dev, 500000);
+	Charger_Detect_Init();
 	if(0 == g_qc3p_id){//wt6670f
-	do{
-		m_chg_ready = false;
-		m_chg_type = 0;
-		early_notified = false;
-		should_notify = false;
-		need_retry = false;
-		early_chg_type = 0;
-		wt6670f_start_detection();
-        while((!m_chg_ready)&&(count<100)){
-                msleep(30);
-                count++;
-                m_chg_ready = wt6670f_is_charger_ready();
-
-                if(!early_notified){
-		      early_chg_type = wt6670f_get_protocol();
-		   }
-	
-		if(early_chg_type == 0x08 || early_chg_type == 0x09){
-			pr_err("[%s] WT6670F early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
-			break;
-		}
-		switch(early_chg_type){
-			case 0x1:
-                             if(!early_notified){
-				   should_notify = true;
-                                   state->chrg_type = SGM4154x_NON_STANDARD;//NONSTANDARD_CHARGER;//FC
-			     }
-                             break;
-			case 0x2:
-                             if(!early_notified){
-				   should_notify = true;
-                                   state->chrg_type = SGM4154x_USB_SDP;//STANDARD_HOST;//SDP
-                             }
-                             break;
-	    		case 0x3:
-                             if(!early_notified){
-				   should_notify = true;
-                                   state->chrg_type = SGM4154x_USB_CDP;//CDP
-                             }
-                             break;
-			case 0x4:
-			case 0x5:
-                        case 0x6:
-                        case 0x8://QC3P_18W
-                        case 0x9://QC3P_27W
-                             if(!early_notified){
-				   should_notify = true;
-                                   state->chrg_type = SGM4154x_USB_DCP;//STANDARD_CHARGER;//DC
-                             }
-			     break;
-			default:
-			     break;
-
-		}
-
-		// Earlier notify charger detected before QC3+ detected
-		if(should_notify && (!early_notified)/* && (&sgm->psy_dwork != NULL)*/){
-                        pr_err("[%s] WT6670F charger detect early notify!\n",__func__);
-                        if (!sgm->psy)
-                             sgm->psy = power_supply_get_by_name("charger");
-
-			if(sgm->psy){
-	                     propval.intval = state->chrg_type;
-                             power_supply_set_property(sgm->psy,
-                                           POWER_SUPPLY_PROP_CHARGE_TYPE,
-                                           &propval);
-
-			     early_notified = true;
-			}
-		}
-
-//                pr_err("wt6670f waiting type: 0x%x, count: %d\n",m_chg_ready, count);
-                pr_err("wt6670f waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
-//                pr_err("wt6670f waiting early type: 0x%x, chr_type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_type, m_chg_ready, count);
-        }
-        m_chg_type = wt6670f_get_protocol();
-
-	if(m_chg_type == 0x7 && !need_retry){
-		need_retry = true;
-	} else {
-		need_retry = false;
-	}
-
-        pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
-	}while(need_retry);
-	}//wt6670f
-		if(1 == g_qc3p_id){//z350
-			if(qc3p_z350_init_ok) {
-				qc3p_z350_init_ok =false;
-				wt6670f_do_reset();
-			}
+		do{
+			m_chg_ready = false;
 			m_chg_type = 0;
-			wait_count = 0;
-			while((!m_chg_type)&&(wait_count<30)){
+			early_notified = false;
+			should_notify = false;
+			need_retry = false;
+			early_chg_type = 0;
+			wt6670f_start_detection();
+			while((!m_chg_ready)&&(count<100)){
 				msleep(30);
-				wait_count++;
-				pr_err("z350 early waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+				count++;
+				m_chg_ready = wt6670f_is_charger_ready();
+
+				if(!early_notified){
+				      early_chg_type = wt6670f_get_protocol();
+				}
+	
+				if(early_chg_type == 0x08 || early_chg_type == 0x09){
+					pr_err("[%s] WT6670F early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
+					break;
+				}
+               			pr_err("wt6670f waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
+
+       			}
+      			m_chg_type = wt6670f_get_protocol();
+
+			if(m_chg_type == 0x7 && !need_retry){
+				need_retry = true;
+			} else {
+				need_retry = false;
 			}
-			m_chg_type = wt6670f_get_protocol();
-			if((m_chg_type != 0x02)&&(m_chg_type != 0x03))
-			{
-				if (!sgm->psy)
+
+        		pr_err("[%s] WT6670F charge type is  0x%x\n",__func__, m_chg_type);
+		}while(need_retry);
+	}//wt6670f
+	if(1 == g_qc3p_id){//z350
+		if(qc3p_z350_init_ok) {
+			qc3p_z350_init_ok =false;
+			wt6670f_do_reset();
+		}
+		m_chg_type = 0;
+		wait_count = 0;
+		while((!m_chg_type)&&(wait_count<30)){
+			msleep(30);
+			wait_count++;
+			pr_err("z350 early waiting dcp type:%x,%d\n",m_chg_type,wait_count);
+		}
+		m_chg_type = wt6670f_get_protocol();
+		if((m_chg_type != 0x02)&&(m_chg_type != 0x03))
+		{
+			if (!sgm->psy)
 				sgm->psy = power_supply_get_by_name("charger");
 
-				if(sgm->psy){
+			if(sgm->psy){
 				propval.intval = SGM4154x_USB_DCP;//STANDARD_CHARGER;
 				power_supply_set_property(sgm->psy,POWER_SUPPLY_PROP_CHARGE_TYPE,&propval);
-				}
-				wait_count = 0;
-				while((!m_chg_type)&&(wait_count<30)){
+			}
+			wait_count = 0;
+			while((!m_chg_type)&&(wait_count<30)){
 				msleep(100);
 				wait_count++;
 				pr_err("z350 waiting dcp type:%x,%d\n",m_chg_type,wait_count);
 			}
 			m_chg_type = wt6670f_get_protocol();
-			}
-			if(m_chg_type == 0x04){
-				pr_err("z350==0x04 retry type");
-				msleep(2000);
-				m_chg_type = wt6670f_get_protocol();
-				pr_err("z350==0x04 retry type:%x,%d\n",m_chg_type,wait_count);
-			}
-			if(m_chg_type == 0x10){
-				wt6670f_en_hvdcp();
-
-				wait_count = 0;
-				while((m_chg_type != 0xff)&&(wait_count<30)){
-						msleep(100);
-						wait_count++;
-				}
-				m_chg_type = wt6670f_get_protocol();
-				if(m_chg_type == 0x05){
-					wt6670f_force_qc3_5V();
-					pr_err("Force set qc3 5V");
-				}
-			}
-        	pr_err("[%s] z350 charge type is  0x%x\n",__func__, m_chg_type);
 		}
+		if(m_chg_type == 0x04){
+			pr_err("z350==0x04 retry type");
+			msleep(2000);
+			m_chg_type = wt6670f_get_protocol();
+			pr_err("z350==0x04 retry type:%x,%d\n",m_chg_type,wait_count);
+		}
+		if(m_chg_type == 0x10){
+			wt6670f_en_hvdcp();
 
-        switch (m_chg_type) {
-            case 0x1:
-                state->chrg_type = SGM4154x_NON_STANDARD;//NONSTANDARD_CHARGER;//FC
-                break;
-            case 0x2:
-                state->chrg_type = SGM4154x_USB_SDP;//STANDARD_HOST;//SDP
-                break;
-            case 0x3:
-                state->chrg_type = SGM4154x_USB_CDP;//CHARGING_HOST;//CDP
-                break;
-            case 0x4:
-            case 0x5:
-            case 0x6:
-            case 0x8://QC3P_18W
-            case 0x9://QC3P_27W
-                state->chrg_type = SGM4154x_USB_DCP;//STANDARD_CHARGER;//DC
-		break;
-/*
-            case 0x8://QC3P_18W
-                state->chrg_type = QC3P_18W_CHARGER;//DCg
-		break;
-            case 0x9://QC3P_27W
-                state->chrg_type = QC3P_27W_CHARGER;//DC
-                break;
-*/
-	    default:
-                state->chrg_type = SGM4154x_NON_STANDARD;//NONSTANDARD_CHARGER;//FC
-                break;
-        }
-	power_supply_changed(sgm->charger);
+			wait_count = 0;
+			while((m_chg_type != 0xff)&&(wait_count<30)){
+					msleep(100);
+					wait_count++;
+			}
+			m_chg_type = wt6670f_get_protocol();
+		}
+        	pr_err("[%s] z350 charge type is  0x%x\n",__func__, m_chg_type);
+	}
+	wt6670f_is_detect = false;
 	Charger_Detect_Release();
+	if(m_chg_type == 0x05){
+		wt6670f_force_qc2_5V();
+		pr_err("Force set qc2 5V");
+		msleep(100);
+	}else if(m_chg_type == 0x06){
+		wt6670f_force_qc3_5V();
+		msleep(100);
+		sgm->pulse_cnt = 0;
+		pr_err("Force set qc3 5V");
+	}
+	sgm4154x_set_input_curr_lim(sgm->chg_dev, 2000000);
+	power_supply_changed(sgm->charger);
 }
 #endif
 static int sgm4154x_get_state(struct sgm4154x_device *sgm,
@@ -974,6 +1021,13 @@ static int sgm4154x_charging_switch(struct charger_device *chg_dev,bool enable)
 		sgm->charging_enabled = false;
 #endif
 		ret = sgm4154x_disable_charger(sgm);
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		if(m_chg_type != 0 && is_already_probe_ok != 0){
+			wt6670f_reset_chg_type();
+			m_chg_type = 0;
+			sgm->pulse_cnt = 0;
+		}
+#endif
 	}
 
 	pr_err("%s charger %s\n", enable ? "enable" : "disable",
@@ -1371,12 +1425,20 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		val->intval = wt6670f_get_vbus_voltage();
-		if(val->intval < 0 || val->intval > 13000){
-			wt6670f_do_reset();
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		if(is_already_probe_ok == 1){
 			val->intval = wt6670f_get_vbus_voltage();
+			if(val->intval < 0 || val->intval > 13000){
+				wt6670f_do_reset();
+				val->intval = wt6670f_get_vbus_voltage();
+			}
+		}else{
+			val->intval = 5000;
+			pr_err("wt6670 probe error,force vbus 5000");
 		}
-		//val->intval = 5000;
+#else
+		val->intval = 5000;
+#endif
 		break;
 
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
@@ -1500,6 +1562,13 @@ static void charger_monitor_work_func(struct work_struct *work)
 	if(!sgm->state.vbus_gd) {
 		dev_err(sgm->dev, "Vbus not present, disable charge\n");
 		sgm4154x_disable_charger(sgm);
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		if(m_chg_type != 0 && is_already_probe_ok != 0){
+			wt6670f_reset_chg_type();
+			m_chg_type = 0;
+			sgm->pulse_cnt = 0;
+		}
+#endif
 		goto OUT;
 	}
 	if(!state.online)
@@ -1546,6 +1615,13 @@ static void charger_detect_work_func(struct work_struct *work)
 		dev_err(sgm->dev, "Vbus not present, disable charge\n");
 		sgm4154x_disable_charger(sgm);
 		sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		if(m_chg_type != 0 && is_already_probe_ok != 0){
+			wt6670f_reset_chg_type();
+			m_chg_type = 0;
+			sgm->pulse_cnt = 0;
+		}
+#endif
 		goto err;
 	}
 	if(!state.online)
@@ -1572,11 +1648,12 @@ static void charger_detect_work_func(struct work_struct *work)
 			case SGM4154x_USB_DCP:
 				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
-	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-		schedule_delayed_work(&sgm->psy_dwork, 0);
-	#endif
 				pr_err("SGM4154x charger type: DCP\n");
 				curr_in_limit = 2000000;
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+				schedule_delayed_work(&sgm->psy_dwork, 0);
+				curr_in_limit = 500000;
+#endif
 				break;
 
 			case SGM4154x_UNKNOWN:
