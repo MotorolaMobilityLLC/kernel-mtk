@@ -148,14 +148,14 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		is_basic = true;
 		goto done;
 	}
-#if 0
+	/* 1:META_BOOT */
 	if ((info->bootmode == 1) ||
 	    (info->bootmode == 5)) {
 		pdata->input_current_limit = 200000; /* 200mA */
 		is_basic = true;
 		goto done;
 	}
-
+#if 0
 	if (info->atm_enabled == true
 		&& (info->chr_type == POWER_SUPPLY_TYPE_USB ||
 		info->chr_type == POWER_SUPPLY_TYPE_USB_CDP)
