@@ -481,7 +481,6 @@ static int sgm4154x_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
 	return 0;
 }
 
-#if 0
 void sgm4154x_rerun_apsd(struct sgm4154x_device * sgm)
 {
 	int rc;
@@ -496,6 +495,21 @@ void sgm4154x_rerun_apsd(struct sgm4154x_device * sgm)
 	return;
 }
 
+static bool sgm4154x_is_rerun_apsd_done(struct sgm4154x_device * sgm)
+{
+        int rc = 0;
+        u8 val = 0;
+        bool result = false;
+	rc = sgm4154x_read_reg(sgm, SGM4154x_CHRG_CTRL_7, &val);
+        if (rc)
+                return false;
+
+        result = !(val & SGM4154x_IINDET_EN_MASK);
+        pr_info("%s:rerun apsd %s", __func__, result ? "done" : "not complete");
+        return result;
+}
+
+#if 0
 static int sgm4154x_get_vindpm_offset_os(struct sgm4154x_device *sgm)
 {
 	int ret;
@@ -1419,6 +1433,49 @@ static bool sgm4154x_state_changed(struct sgm4154x_device *sgm,
 }
 #endif
 
+static void sgm4154x_rerun_apsd_work_func(struct work_struct *work)
+{
+        struct sgm4154x_device * sgm = NULL;
+	struct sgm4154x_state state;
+        int ret = 0;
+        bool apsd_done = false;
+        int check_count = 0;
+
+        pr_err("%s --Start---\n",__func__);
+
+        sgm = container_of(work, struct sgm4154x_device, rerun_apsd_work);
+        if(sgm == NULL) {
+                pr_err("Cann't get sgm4154x_device\n");
+                return;
+        }
+
+        ret = sgm4154x_get_state(sgm, &state);
+        mutex_lock(&sgm->lock);
+        sgm->state = state;
+        mutex_unlock(&sgm->lock);
+
+	if(!sgm->state.vbus_gd) {
+		dev_err(sgm->dev, "Vbus not present, disable charge\n");
+                return;
+	}
+
+        sgm->typec_apsd_rerun_done = true;
+
+        sgm4154x_rerun_apsd(sgm);
+
+        while(check_count < 10) {
+                apsd_done = sgm4154x_is_rerun_apsd_done(sgm);
+                if (apsd_done) {
+                        break;
+                }
+
+                msleep(100);
+                check_count ++;
+        }
+
+	schedule_delayed_work(&sgm->charge_detect_delayed_work, 100);
+}
+
 static void charger_monitor_work_func(struct work_struct *work)
 {
 	int ret = 0;
@@ -2084,9 +2141,19 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	/* otg regulator */
 	s_chg_dev_otg=sgm->chg_dev;
 
+	ret = sgm4154x_hw_init(sgm);
+	if (ret) {
+		dev_err(dev, "Cannot initialize the chip.\n");
+		return ret;
+	}
 
 	INIT_DELAYED_WORK(&sgm->charge_detect_delayed_work, charger_detect_work_func);
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
+	INIT_WORK(&sgm->rerun_apsd_work, sgm4154x_rerun_apsd_work_func);
+
+        //rerun apsd and trigger charger detect when boot with charger
+        schedule_work(&sgm->rerun_apsd_work);
+
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
     INIT_DELAYED_WORK(&sgm->psy_dwork, wt6670f_get_charger_type_func_work);
 #endif
@@ -2107,15 +2174,8 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		return ret;
 	}
 
-    /*RESET*/
-	ret =  __sgm4154x_write_byte(sgm, SGM4154x_CHRG_CTRL_b, 0x80);
-
-	ret = sgm4154x_hw_init(sgm);
-	if (ret) {
-		dev_err(dev, "Cannot initialize the chip.\n");
-		return ret;
-	}
-	
+	/*RESET*/
+	//ret =  __sgm4154x_write_byte(sgm, SGM4154x_CHRG_CTRL_b, 0x80);
 
 	//OTG setting
 	//sgm4154x_set_otg_voltage(s_chg_dev_otg, 5000000); //5V
@@ -2130,7 +2190,6 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	schedule_delayed_work(&sgm->charge_monitor_work,100);
 
 	return ret;
-
 }
 
 static int sgm4154x_charger_remove(struct i2c_client *client)
