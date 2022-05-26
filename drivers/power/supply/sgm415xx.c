@@ -1236,7 +1236,6 @@ static enum power_supply_property sgm4154x_power_supply_props[] = {
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
 	POWER_SUPPLY_PROP_USB_TYPE,
-	POWER_SUPPLY_PROP_CHARGING_ENABLED,
 	POWER_SUPPLY_PROP_PRESENT
 };
 
@@ -1250,7 +1249,6 @@ static int sgm4154x_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
 	case POWER_SUPPLY_PROP_PRECHARGE_CURRENT:
 	case POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT:
-	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		return true;
 	default:
 		return false;
@@ -1398,11 +1396,9 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		break;*/
 
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:		
+         sgm4154x_get_input_curr_lim(s_chg_dev_otg,&val->intval);
 		break;
 
-	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
-		val->intval = sgm->charge_enabled;//!state.hiz_en;
-		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = sgm->init_data.max_ichg;
 		break;
@@ -1951,6 +1947,127 @@ static int sgm4154x_set_boost_current_limit(struct charger_device *chg_dev, u32 
 	return ret;
 }
 #endif
+
+/* ============================================================ */
+/* sysfs */
+/* ============================================================ */
+static int charging_enable_get(struct sgm4154x_device *sgm,
+	struct sgm_sysfs_field_info *attr,
+	int *val)
+{
+	*val = sgm->charge_enabled;
+	pr_err("%s:sgm charging_enable_get:%d\n", __func__, *val);
+	return 0;
+}
+
+static ssize_t sgm_sysfs_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct power_supply *psy;
+	struct sgm4154x_device *sgm;
+	struct sgm_sysfs_field_info *sgm_attr;
+	int val;
+	ssize_t ret;
+
+	ret = kstrtos32(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	psy = dev_get_drvdata(dev);
+	sgm = (struct sgm4154x_device *)power_supply_get_drvdata(psy);
+
+	sgm_attr = container_of(attr,
+		struct sgm_sysfs_field_info, attr);
+	if (sgm_attr->set != NULL)
+		sgm_attr->set(sgm, sgm_attr, val);
+
+	return count;
+}
+
+static ssize_t sgm_sysfs_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct power_supply *psy;
+	struct sgm4154x_device *sgm;
+	struct sgm_sysfs_field_info *sgm_attr;
+	int val = 0;
+	ssize_t count;
+
+	psy = dev_get_drvdata(dev);
+	sgm = (struct sgm4154x_device *)power_supply_get_drvdata(psy);
+
+	sgm_attr = container_of(attr,
+		struct sgm_sysfs_field_info, attr);
+	if (sgm_attr->get != NULL)
+		sgm_attr->get(sgm, sgm_attr, &val);
+
+	count = scnprintf(buf, PAGE_SIZE, "%d\n", val);
+	return count;
+}
+
+static struct sgm_sysfs_field_info sgm_sysfs_field_tbl[] = {
+	SGM_SYSFS_FIELD_RO(charging_enable, SGM_PROP_CHARGING_ENABLED),
+};
+
+int sgm_get_property(enum sgm_property bp,int *val)
+{
+	struct sgm4154x_device *sgm;
+	struct power_supply *psy;
+
+	psy = power_supply_get_by_name("sgm4154x-charger");
+	if (psy == NULL)
+		return -ENODEV;
+
+	sgm = (struct sgm4154x_device *)power_supply_get_drvdata(psy);
+	if (sgm_sysfs_field_tbl[bp].prop == bp)
+		sgm_sysfs_field_tbl[bp].get(sgm,
+			&sgm_sysfs_field_tbl[bp], val);
+	else {
+		pr_err("%s bp:%d idx error\n", __func__, bp);
+		return -ENOTSUPP;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sgm_get_property);
+
+int sgm_get_int_property(enum sgm_property bp)
+{
+	int val;
+
+	sgm_get_property(bp, &val);
+	return val;
+}
+EXPORT_SYMBOL_GPL(sgm_get_int_property);
+
+static struct attribute *
+	sgm_sysfs_attrs[ARRAY_SIZE(sgm_sysfs_field_tbl) + 1];
+
+static const struct attribute_group sgm_sysfs_attr_group = {
+	.attrs = sgm_sysfs_attrs,
+};
+
+static void sgm_sysfs_init_attrs(void)
+{
+	int i, limit = ARRAY_SIZE(sgm_sysfs_field_tbl);
+
+	for (i = 0; i < limit; i++)
+		sgm_sysfs_attrs[i] = &sgm_sysfs_field_tbl[i].attr.attr;
+
+	sgm_sysfs_attrs[limit] = NULL; /* Has additional entry for this */
+}
+
+static int sgm_sysfs_create_group(struct power_supply *psy)
+{
+	sgm_sysfs_init_attrs();
+
+	return sysfs_create_group(&psy->dev.kobj,
+			&sgm_sysfs_attr_group);
+}
+
+
+
+
 static struct regulator_ops sgm4154x_vbus_ops = {
 	.enable = sgm4154x_enable_vbus,
 	.disable = sgm4154x_disable_vbus,
@@ -2173,6 +2290,7 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 		pr_err("Failed to register power supply\n");
 		return ret;
 	}
+	sgm_sysfs_create_group(sgm->charger);
 
 	/*RESET*/
 	//ret =  __sgm4154x_write_byte(sgm, SGM4154x_CHRG_CTRL_b, 0x80);
