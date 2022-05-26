@@ -349,6 +349,7 @@ struct sgm4154x_device {
         bool mmi_charging_full;
         bool charge_enabled;
 	u32 usb_voltage;
+	int pulse_cnt;
 
 	struct wakeup_source *charger_wakelock;
 	bool enable_sw_jeita;
@@ -363,6 +364,11 @@ struct sgm4154x_device {
 #endif
 };
 
+enum {
+	SGM_POWER_SUPPLY_DP_DM_UNKNOWN = 0,
+	SGM_POWER_SUPPLY_DP_DM_DP_PULSE = 1,
+	SGM_POWER_SUPPLY_DP_DM_DM_PULSE = 2,
+};
 
 #define SGM_SYSFS_FIELD_RW(_name, _prop)	\
 {									 \
