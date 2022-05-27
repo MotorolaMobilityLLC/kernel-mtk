@@ -190,14 +190,10 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 {
 	int ret = 0;
 	struct device *dev = extcon->dev;
-
-	extcon->usb_psy = devm_power_supply_get_by_phandle(dev, "charger");
+	extcon->usb_psy = power_supply_get_by_name("sgm4154x-charger");
 	if (IS_ERR_OR_NULL(extcon->usb_psy)) {
-		extcon->usb_psy = devm_power_supply_get_by_phandle(dev, "charger_2nd");
-		if (IS_ERR_OR_NULL(extcon->usb_psy)) {
-			dev_err(dev, "fail to get usb_psy\n");
-			return -EINVAL;
-		}
+		dev_err(dev, "fail to get usb_psy\n");
+		return -EINVAL;
 	}
 
 	dev_err(dev, "%s charger psy name: %s\n", __func__, extcon->usb_psy->desc->name);
@@ -530,7 +526,7 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 		extcon->c_role = USB_ROLE_NONE;
 
 	/* vbus */
-	extcon->vbus = devm_regulator_get(dev, "vbus");
+	extcon->vbus = devm_regulator_get(dev, "usb-otg-vbus");
 	if (IS_ERR(extcon->vbus)) {
 		dev_err(dev, "failed to get vbus\n");
 		return PTR_ERR(extcon->vbus);
