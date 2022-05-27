@@ -192,12 +192,7 @@
 			"pmic_ptim_r";
 };
 
-&extcon_usb {
-        charger_2nd = <&sgm41543d_charger>;
-};
-
 &charger {
-        vbus-supply-2nd = <&sgm41543d_otg_vbus>;
         charger_2nd = <&sgm41543d_charger>;
 };
 
