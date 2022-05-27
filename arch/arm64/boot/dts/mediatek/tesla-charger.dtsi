@@ -400,22 +400,3 @@
 
 };
 
-&chg_ntc {
-	polling-delay = <10000>; /* milliseconds */
-	polling-delay-passive = <5000>; /* milliseconds */
-
-	trips {
-		wlctx_trip0: wlctx-trip0 {
-			temperature = <48000>;
-			hysteresis = <2000>;
-			type = "passive";
-		};
-	};
-
-	cooling-maps {
-		wlctx-cdev0 {
-			trip = <&wlctx_trip0>;
-			cooling-device = <&cps_wls_charger_l 1 1>;
-		};
-	};
-};
