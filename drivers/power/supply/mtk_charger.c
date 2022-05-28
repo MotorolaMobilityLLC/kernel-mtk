@@ -6076,6 +6076,7 @@ static int  mtk_charger_tcmd_set_usb_enable(void *input, int  val)
 
 	val = !!val;
 	ret = charger_dev_enable_powerpath(cm->chg1_dev, val);
+	pr_info("tcmd config power path val = %d\n", val);
 
 	return ret;
 }
