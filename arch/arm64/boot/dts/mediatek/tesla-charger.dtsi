@@ -331,6 +331,9 @@
 	mmi,wls_control_en = <&pio 114 0x0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmi_control_wls_default>;
+	#cooling-cells = <2>;
+	mmi,wlc-rx-mitigation = <(-1) 2500000 2000000 1500000 1200000
+				1000000 700000 500000>;
 };
 
 &ap_ntc {
@@ -339,6 +342,16 @@
  	thermal-sensors = <&tboard_thermistor1>;
 
 	trips {
+		wlc_trip0: wlc-trip0 {
+			temperature = <42000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		wlc_trip1: wlc-trip1 {
+			temperature = <44000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
 		charge_trip0: charge-trip0 {
 			temperature = <45000>;
 			hysteresis = <2000>;
@@ -361,7 +374,7 @@
 		};
 		charge_trip4: charge-trip4 {
 			temperature = <51000>;
-			hysteresis = <2000>;
+			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip5: charge-trip5 {
@@ -372,6 +385,18 @@
 	};
 
 	cooling-maps {
+		wlc-cdev0 {
+			trip = <&wlc_trip0>;
+			cooling-device = <&moto_wlc 2 2>;
+		};
+		wlc-cdev1 {
+			trip = <&wlc_trip1>;
+			cooling-device = <&moto_wlc 5 5>;
+		};
+		wlc-cdev2 {
+			trip = <&charge_trip2>;
+			cooling-device = <&moto_wlc 7 7>;
+		};
 		charge-cdev0 {
 			trip = <&charge_trip0>;
 			cooling-device = <&charger_cooler 1 1>;
