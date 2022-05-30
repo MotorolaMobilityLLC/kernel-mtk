@@ -2959,7 +2959,16 @@ static void TurnOnDacPower(int device)
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0xffff);
 	/* sdm audio fifo clock power on */
 	// Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
-	Ana_Set_Reg(AFUNC_AUD_CON0, 0xCFA1, 0xffff);
+	switch (device) {
+		case AUDIO_ANALOG_DEVICE_OUT_HEADSETL:
+		case AUDIO_ANALOG_DEVICE_OUT_HEADSETR:
+			Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
+			break;
+		default:
+			Ana_Set_Reg(AFUNC_AUD_CON0, 0xCFA1, 0xffff);//phase position revert
+			break;
+	}
+	
 	/* scrambler clock on enable */
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0xffff);
 	/* sdm power on */
