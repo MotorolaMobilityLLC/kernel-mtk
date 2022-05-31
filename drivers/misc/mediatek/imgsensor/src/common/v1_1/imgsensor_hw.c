@@ -24,8 +24,7 @@ char * const imgsensor_hw_pin_names[] = {
 	"vcamio",
 	"mipi_switch_en",
 	"mipi_switch_sel",
-	"mclk",
-	"vcamaf"
+	"mclk"
 };
 
 /*the index is consistent with enum IMGSENSOR_HW_ID*/
