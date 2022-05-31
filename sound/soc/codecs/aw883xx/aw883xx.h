@@ -4,11 +4,13 @@
 #include <linux/version.h>
 #include <sound/control.h>
 #include <sound/soc.h>
-#include "aw_device.h"
+#include "aw883xx_device.h"
 
 /*#define AW_QCOM_PLATFORM*/
 #define AW_MTK_PLATFORM
 /*#define AW_SPRD_PLATFORM*/
+
+#define AW_SYNC_LOAD
 
 #define AW883XX_CHIP_ID_REG	(0x00)
 
@@ -48,7 +50,7 @@ MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #define AW883XX_DSP_16_DATA_MASK	(0x0000ffff)
 
 #define AW_GET_IV_CNT_MAX		(6)
-#define AW_KCONTROL_NUM			(3)
+#define AW_KCONTROL_NUM			(4)
 #define AW_HW_MONITOR_DELAY		(1000)
 
 enum {
@@ -113,6 +115,10 @@ enum aw_re_range {
 	AW_RE_MAX = 40000,
 };
 
+enum {
+	AW_RENAME_DISABLE = 0,
+	AW_RENAME_ENABLE,
+};
 
 /********************************************
  *
@@ -154,6 +160,7 @@ struct aw883xx {
 
 	unsigned char phase_sync;	/*phase sync*/
 	uint32_t allow_pw;
+	uint32_t rename_flag;
 	uint8_t pstream;
 	unsigned char fw_retry_cnt;
 
