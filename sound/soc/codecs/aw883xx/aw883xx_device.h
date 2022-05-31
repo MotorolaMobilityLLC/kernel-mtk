@@ -1,14 +1,13 @@
-#ifndef __AWINIC_DEVICE_FILE_H__
-#define __AWINIC_DEVICE_FILE_H__
-#include "aw_spin.h"
-#include "aw_monitor.h"
-#include "aw_data_type.h"
-#include "aw_calib.h"
+#ifndef __AW883XX_DEVICE_FILE_H__
+#define __AW883XX_DEVICE_FILE_H__
+#include "aw883xx_spin.h"
+#include "aw883xx_monitor.h"
+#include "aw883xx_data_type.h"
+#include "aw883xx_calib.h"
 
 #define AW_DEV_DEFAULT_CH	(0)
 #define AW_DEV_I2S_CHECK_MAX	(5)
 #define AW_DEV_DSP_CHECK_MAX	(5)
-
 
 /********************************************
  *
@@ -22,6 +21,12 @@
 #define AW_DSP_ST_CHECK_MAX		(2)
 #define AW_FADE_IN_OUT_DEFAULT		(0)
 #define AW_CALI_DELAY_CACL(value) ((value * 32) / 48)
+
+#define AW_GET_MIN_VALUE(value1, value2) \
+	((value1) > (value2) ? (value2) : (value1))
+
+#define AW_GET_MAX_VALUE(value1, value2) \
+	((value1) > (value2) ? (value1) : (value2))
 
 struct aw_device;
 
@@ -115,8 +120,8 @@ struct aw_device_ops {
 	int (*aw_dsp_read)(struct aw_device *aw_dev, uint16_t dsp_addr, uint32_t *dsp_data, uint8_t data_type);
 	int (*aw_dsp_write_bits)(struct aw_device *aw_dev, uint16_t dsp_addr, uint16_t mask, uint16_t dsp_data);
 
-	int (*aw_set_volume)(struct aw_device *aw_dev, uint16_t value);
-	int (*aw_get_volume)(struct aw_device *aw_dev, uint16_t *value);
+	int (*aw_set_hw_volume)(struct aw_device *aw_dev, uint16_t value);
+	int (*aw_get_hw_volume)(struct aw_device *aw_dev, uint16_t *value);
 	unsigned int (*aw_reg_val_to_db)(unsigned int value);
 
 	void (*aw_i2s_tx_enable)(struct aw_device *aw_dev, bool flag);
@@ -208,8 +213,11 @@ struct aw_volume_desc {
 	unsigned int reg;
 	unsigned int mask;
 	unsigned int shift;
-	int init_volume;
-	int mute_volume;
+	unsigned int init_volume;
+	unsigned int mute_volume;
+	unsigned int ctl_volume;
+	unsigned int max_volume;
+	unsigned int monitor_volume;
 };
 
 struct aw_dsp_en_desc {
@@ -492,40 +500,42 @@ struct aw_device {
 };
 
 
-void aw_dev_deinit(struct aw_device *aw_dev);
-int aw_device_init(struct aw_device *aw_dev, struct aw_container *aw_prof);
-int aw_device_start(struct aw_device *aw_dev);
-int aw_device_stop(struct aw_device *aw_dev);
+void aw883xx_dev_deinit(struct aw_device *aw_dev);
+int aw883xx_device_init(struct aw_device *aw_dev, struct aw_container *aw_prof);
+int aw883xx_device_start(struct aw_device *aw_dev);
+int aw883xx_device_stop(struct aw_device *aw_dev);
 
-int aw_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_en);
-int aw_dev_get_int_status(struct aw_device *aw_dev, uint16_t *int_status);
-void aw_dev_set_volume_step(struct aw_device *aw_dev, unsigned int step);
-int aw_dev_set_intmask(struct aw_device *aw_dev, bool flag);
-void aw_dev_clear_int_status(struct aw_device *aw_dev);
-int aw_dev_get_volume_step(struct aw_device *aw_dev);
-int aw_device_probe(struct aw_device *aw_dev);
-int aw_device_remove(struct aw_device *aw_dev);
-int aw_dev_syspll_check(struct aw_device *aw_dev);
-int aw_dev_get_dsp_status(struct aw_device *aw_dev);
+int aw883xx_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_en);
+int aw883xx_dev_get_int_status(struct aw_device *aw_dev, uint16_t *int_status);
+void aw883xx_dev_set_volume_step(struct aw_device *aw_dev, unsigned int step);
+int aw883xx_dev_set_intmask(struct aw_device *aw_dev, bool flag);
+void aw883xx_dev_clear_int_status(struct aw_device *aw_dev);
+int aw883xx_dev_get_volume_step(struct aw_device *aw_dev);
+int aw883xx_device_probe(struct aw_device *aw_dev);
+int aw883xx_device_remove(struct aw_device *aw_dev);
+int aw883xx_dev_syspll_check(struct aw_device *aw_dev);
+int aw883xx_dev_get_dsp_status(struct aw_device *aw_dev);
 
-void aw_dev_set_fade_vol_step(struct aw_device *aw_dev, unsigned int step);
-int aw_dev_get_fade_vol_step(struct aw_device *aw_dev);
-void aw_dev_get_fade_time(unsigned int *time, bool fade_in);
-void aw_dev_set_fade_time(unsigned int time, bool fade_in);
-int aw_dev_get_hmute(struct aw_device *aw_dev);
-int aw_dev_sysst_check(struct aw_device *aw_dev);
-int aw_dev_get_list_head(struct list_head **head);
-int aw_dev_dsp_check(struct aw_device *aw_dev);
-void aw_dev_memclk_select(struct aw_device *aw_dev, unsigned char flag);
-void aw_dev_dsp_enable(struct aw_device *aw_dev, bool dsp);
-void aw_dev_mute(struct aw_device *aw_dev, bool mute);
-int aw_dev_dsp_fw_update(struct aw_device *aw_dev,
+void aw883xx_dev_set_fade_vol_step(struct aw_device *aw_dev, unsigned int step);
+int aw883xx_dev_get_fade_vol_step(struct aw_device *aw_dev);
+void aw883xx_dev_get_fade_time(unsigned int *time, bool fade_in);
+void aw883xx_dev_set_fade_time(unsigned int time, bool fade_in);
+int aw883xx_dev_get_hmute(struct aw_device *aw_dev);
+int aw883xx_dev_sysst_check(struct aw_device *aw_dev);
+int aw883xx_dev_get_list_head(struct list_head **head);
+int aw883xx_dev_dsp_check(struct aw_device *aw_dev);
+void aw883xx_dev_memclk_select(struct aw_device *aw_dev, unsigned char flag);
+void aw883xx_dev_dsp_enable(struct aw_device *aw_dev, bool dsp);
+void aw883xx_dev_mute(struct aw_device *aw_dev, bool mute);
+int aw883xx_dev_dsp_fw_update(struct aw_device *aw_dev,
 			uint8_t *data, uint32_t len);
-int aw_dev_dsp_cfg_update(struct aw_device *aw_dev,
+int aw883xx_dev_dsp_cfg_update(struct aw_device *aw_dev,
 			uint8_t *data, uint32_t len);
-int aw_dev_modify_dsp_cfg(struct aw_device *aw_dev,
+int aw883xx_dev_modify_dsp_cfg(struct aw_device *aw_dev,
 			unsigned int addr, uint32_t dsp_data, unsigned char data_type);
-int aw_dev_get_iis_status(struct aw_device *aw_dev);
+int aw883xx_dev_get_iis_status(struct aw_device *aw_dev);
+int aw883xx_dev_set_volume(struct aw_device *aw_dev, uint16_t set_vol);
+int aw883xx_dev_get_volume(struct aw_device *aw_dev, uint16_t *get_vol);
 
 #endif
 
