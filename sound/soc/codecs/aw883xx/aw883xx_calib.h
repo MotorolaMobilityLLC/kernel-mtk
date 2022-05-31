@@ -1,5 +1,5 @@
-#ifndef __AWINIC_CALIBRATION_H__
-#define __AWINIC_CALIBRATION_H__
+#ifndef __AW883XX_CALIBRATION_H__
+#define __AW883XX_CALIBRATION_H__
 
 /*#define AW_CALI_STORE_EXAMPLE*/
 
@@ -128,16 +128,15 @@ struct aw_cali_desc {
 	uint8_t cali_check_st;
 };
 
-void aw_cali_init(struct aw_cali_desc *cali_desc);
-void aw_cali_deinit(struct aw_cali_desc *cali_desc);
-bool aw_cali_svc_get_cali_status(struct aw_cali_desc *cali_desc);
-int aw_cali_svc_set_cali_re_to_dsp(struct aw_cali_desc *cali_desc);
-int aw_cali_svc_get_ra(struct aw_cali_desc *cali_desc);
-int aw_cali_svc_get_dev_te(struct aw_cali_desc *cali_desc, int32_t *te);
-int aw_cali_get_cali_re(struct aw_cali_desc *cali_desc);
-int aw_cali_read_cali_re_from_dsp(struct aw_cali_desc *cali_desc, uint32_t *re);
-
-
+void aw883xx_cali_init(struct aw_cali_desc *cali_desc);
+void aw883xx_cali_deinit(struct aw_cali_desc *cali_desc);
+bool aw883xx_cali_svc_get_cali_status(struct aw_cali_desc *cali_desc);
+int aw883xx_cali_svc_set_cali_re_to_dsp(struct aw_cali_desc *cali_desc);
+int aw883xx_cali_svc_get_ra(struct aw_cali_desc *cali_desc);
+int aw883xx_cali_svc_get_dev_te(struct aw_cali_desc *cali_desc, int32_t *te);
+int aw883xx_cali_get_cali_re(struct aw_cali_desc *cali_desc);
+int aw883xx_cali_read_cali_re_from_dsp(struct aw_cali_desc *cali_desc, uint32_t *re);
+bool aw883xx_cali_check_result(struct aw_cali_desc *cali_desc);
 
 #endif
 
