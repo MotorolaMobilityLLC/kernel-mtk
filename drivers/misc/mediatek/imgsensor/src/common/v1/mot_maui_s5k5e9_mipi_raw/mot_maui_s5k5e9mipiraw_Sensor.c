@@ -499,6 +499,7 @@ I2C_SPEED = 400
 	write_cmos_sensor_8(0x3080, 0x08);
 	write_cmos_sensor_8(0x3C34, 0xEA);
 	write_cmos_sensor_8(0x3C35, 0x5C);
+	write_cmos_sensor_8(0x3931, 0x02);
 }	/*	sensor_init  */
 static void preview_setting(void)
 {
