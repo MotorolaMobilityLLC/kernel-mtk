@@ -1,5 +1,5 @@
-#ifndef __AW_PID_2049_REG_H__
-#define __AW_PID_2049_REG_H__
+#ifndef __AW883XX_PID_2049_REG_H__
+#define __AW883XX_PID_2049_REG_H__
 
 /* registers list */
 #define AW_PID_2049_ID_REG				(0x00)
