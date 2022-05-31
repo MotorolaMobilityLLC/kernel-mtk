@@ -14,7 +14,6 @@
 #include "mediatek/mt6789-moto-common-overlay.dtsi"
 #include "mediatek/mt6789_vicky_camera_overlay.dtsi"
 #include "mediatek/vicky-display.dtsi"
-#include "mediatek/mt6789-vicky-audio-overlay.dtsi"
 #include "mediatek/vicky-touch.dtsi"
 #include "mediatek/mt6789-vicky-fps-overlay.dtsi"
 #include "mediatek/mt6789-moto-vicky-charger.dtsi"
@@ -93,11 +92,6 @@
 	i2c_camera_ldo2{
 		compatible = "mediatek,i2c_camera_ldo2";
 		reg = <0x2f>;
-		status = "okay";
-	};
-	i2c_camera_ldo{
-		compatible = "mediatek,i2c_camera_ldo";
-		reg = <0x35>;
 		status = "okay";
 	};
 	aw36518@63 {
