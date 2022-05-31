@@ -42,7 +42,7 @@
 };
 &charger {
         /* common */
-        battery_cv = <4464000>;
+        battery_cv = <4480000>;
         max_charger_voltage = <12000000>;
         min_charger_voltage = <4600000>;
 
@@ -169,12 +169,56 @@
         charger_2nd = <&sgm41543d_charger>;
 
 	CAR_TUNE_VALUE = <(100)>;
+	DIFFERENCE_FULLOCV_ITH = <(243)>;
+	g_Q_MAX_row = <4>;
+	g_Q_MAX_col = <10>;
+	g_Q_MAX = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		4866 4866 4866 4535/*T0*/
+		4912 4912 4912 4635/*T1*/
+		4995 4995 4995 4620/*T2*/
+		4926 4926 4926 4598/*T3*/
+		4937 4937 4937 4797/*T4*/
+		4914 4890 4914 4914/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_Q_MAX_H_CURRENT_row = <4>;
+	g_Q_MAX_H_CURRENT_col = <10>;
+	g_Q_MAX_H_CURRENT = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		4832 4832 4832 4535/*T0*/
+		4876 4876 4876 4635/*T1*/
+		4900 4900 4900 4620/*T2*/
+		4466 4466 4466 4598/*T3*/
+		3405 3405 3405 4797/*T4*/
+		4914 4890 4914 4914/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
 	/* Pseudo percentage */
-	g_FG_PSEUDO100_T0 = <(97)>;
-	g_FG_PSEUDO100_T1 = <(97)>;
-	g_FG_PSEUDO100_T2 = <(97)>;
-	g_FG_PSEUDO100_T3 = <(97)>;
-	g_FG_PSEUDO100_T4 = <(97)>;
+	g_FG_PSEUDO100 = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		97   97  97  97/*T0*/
+		97   97  97  97/*T1*/
+		97   97  97  97/*T2*/
+		97   97  97  97/*T3*/
+		97   97  97  97/*T4*/
+		100 100 100 100/*T5*/
+		100 100 100 100/*T6*/
+		100 100 100 100/*T7*/
+		100 100 100 100/*T8*/
+		100 100 100 100/*T9*/
+	>;
+	df-serialnum = "SB18D50387";
+	#include "bat_setting/mt6789_battery_table_ATL1.dtsi"
+	#include "bat_setting/mt6789_battery_table_ATL2.dtsi"
+	#include "bat_setting/mt6789_battery_table_ATL3.dtsi"
+	#include "bat_setting/mt6789_battery_table_SCUD.dtsi"
 };
 
 &mtk_gauge {
@@ -218,7 +262,7 @@
 					<0 4200 1000  0 0>,
 					<10 4250 2500 4450 1000>,
 					<15 4450 2500 0 0>,
-					<45 4300 5800 4470 4000>,
+					<45 4350 5800 4480 4000>,
 					<60 4200 4000 0 0>;
 
 		mmi,mmi-ffc-zones = <4200 243>,
@@ -238,14 +282,8 @@
 		charger_device_1 {
 			chrg-name = "cp-master";
 			psy-name = "bq2597x-standalone";
-			charging-curr-min = <1500000>;
+			charging-curr-min = <1000000>;
 		};
 	};
 };
-&mtk_gauge {
-	df-serialnum = "SB18D50387";
-#include "bat_setting/mt6789_battery_table_ATL1.dtsi"
-#include "bat_setting/mt6789_battery_table_ATL2.dtsi"
-#include "bat_setting/mt6789_battery_table_ATL3.dtsi"
-#include "bat_setting/mt6789_battery_table_SCUD.dtsi"
-};
+
