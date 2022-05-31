@@ -11,10 +11,10 @@
 		rename-flag=<1>;
 		status = "okay";
 	};
-	aw883xx_smartpa_1: aw883xx_smartpa@35 {
+	aw883xx_smartpa_1: aw883xx_smartpa@37 {
 		compatible = "awinic,aw883xx_smartpa";
 		#sound-dai-cells = <0>;
-		reg = <0x35>;
+		reg = <0x37>;
 		reset-gpio = <&pio 104 0>;
 		irq-gpio = <&pio 6 0>;
 		sound-channel = <1>;
