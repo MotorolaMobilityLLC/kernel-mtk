@@ -25,12 +25,16 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/of.h>
-#include "aw_spin.h"
-#include "aw_device.h"
+#include "aw883xx_spin.h"
+#include "aw883xx_device.h"
 #include "aw883xx.h"
-#include "aw_log.h"
+#include "aw883xx_log.h"
 
 static DEFINE_MUTEX(g_aw_spin_lock);
+static DEFINE_MUTEX(g_aw_dsp_lock);
+
+static int g_rx_topo_id = AW_RX_TOPO_ID;
+static int g_rx_port_id = AW_RX_PORT_ID;
 
 static unsigned int g_spin_angle = AW_SPIN_0;
 static unsigned int g_spin_mode = AW_SPIN_OFF_MODE;
@@ -57,6 +61,15 @@ static int afe_get_topology(int port_id)
 	return 0;
 }
 #endif
+
+#ifdef AW_QCOM_PLATFORM_SPIN
+extern void aw_set_port_id(int tx_port_id, int rx_port_id);
+#else
+static void aw_set_port_id(int tx_port_id, int rx_port_id) {
+	return;
+}
+#endif
+
 static int aw_get_msg_id(int dev_ch, uint32_t *msg_id)
 {
 	switch (dev_ch) {
@@ -135,17 +148,22 @@ static int aw_mtk_get_spin_angle(void *spin_angle, int size)
 	hdr.opcode_id = AW_MSG_ID_SPIN;
 	hdr.version = AW_DSP_MSG_HDR_VER;
 
+	mutex_lock(&g_aw_dsp_lock);
 	ret = mtk_spk_send_ipi_buf_to_dsp(&hdr, sizeof(struct aw_msg_hdr));
 	if (ret < 0) {
 		pr_err("%s:send cmd failed\n", __func__);
+		mutex_unlock(&g_aw_dsp_lock);
 		return ret;
 	}
 
 	ret = mtk_spk_recv_ipi_buf_from_dsp(spin_angle, size, &size);
 	if (ret < 0) {
 		pr_err("%s:get data failed\n", __func__);
+		mutex_unlock(&g_aw_dsp_lock);
 		return ret;
 	}
+	mutex_unlock(&g_aw_dsp_lock);
+
 	return 0;
 }
 
@@ -186,51 +204,42 @@ static int aw_check_dsp_ready(void)
 {
 	int ret;
 
-	ret = afe_get_topology(AW_RX_PORT_ID);
+	ret = afe_get_topology(g_rx_port_id);
 
-	pr_debug("topo_id 0x%x ", ret);
+	aw_pr_dbg("rx topo_id 0x%x ", ret);
 
-	if (ret != AW_RX_TOPO_ID)
-		return false;
-	else
-		return true;
+	if (ret != g_rx_topo_id)
+		aw_pr_err("get rx_topo_id 0x%x ", ret);
+
+	return 0;
 }
 
 static int aw_qcom_write_data_to_dsp(uint32_t msg_id, void *data, int size)
 {
 	int ret;
-	int try = 0;
 
-	while (try < AW_DSP_TRY_TIME) {
-		if (aw_check_dsp_ready()) {
-			ret = aw_send_afe_cal_apr(msg_id, data, size, true);
-			return ret;
-		} else {
-			try++;
-			usleep_range(AW_10000_US, AW_10000_US + 10);
-			pr_info("%s: afe topo not ready try again\n", __func__);
-		}
-	}
+	mutex_lock(&g_aw_dsp_lock);
 
-	return -EINVAL;
+	aw_check_dsp_ready();
+	ret = aw_send_afe_cal_apr(msg_id, data, size, true);
+
+	mutex_unlock(&g_aw_dsp_lock);
+
+	return ret;
 }
 
 static int aw_qcom_read_data_from_dsp(uint32_t msg_id, void *data, int size)
 {
 	int ret;
-	int try = 0;
 
-	while (try < AW_DSP_TRY_TIME) {
-		if (aw_check_dsp_ready()) {
-			ret = aw_send_afe_cal_apr(msg_id, data, size, false);
-			return ret;
-		} else {
-			try++;
-			usleep_range(AW_10000_US, AW_10000_US + 10);
-			pr_info("%s: afe topo not ready try again\n", __func__);
-		}
-	}
-	return -EINVAL;
+	mutex_lock(&g_aw_dsp_lock);
+
+	aw_check_dsp_ready();
+	ret = aw_send_afe_cal_apr(msg_id, data, size, false);
+
+	mutex_unlock(&g_aw_dsp_lock);
+
+	return ret;
 }
 
 static int aw_qcom_set_spin_angle(struct aw_device *aw_dev,
@@ -342,7 +351,7 @@ static int aw_set_mixer_en(struct aw_device *aw_dev, int32_t is_enable)
 	return ret;
 }
 
-int aw_hold_reg_spin_st(struct aw_spin_desc *spin_desc)
+int aw883xx_hold_reg_spin_st(struct aw_spin_desc *spin_desc)
 {
 	struct aw_device *aw_dev = container_of(spin_desc,
 						struct aw_device, spin_desc);
@@ -377,7 +386,7 @@ int aw_hold_reg_spin_st(struct aw_spin_desc *spin_desc)
 	return 0;
 }
 
-int aw_check_spin_mode(struct aw_spin_desc *spin_desc)
+int aw883xx_check_spin_mode(struct aw_spin_desc *spin_desc)
 {
 	struct list_head *pos = NULL;
 	struct list_head *dev_list = NULL;
@@ -393,7 +402,7 @@ int aw_check_spin_mode(struct aw_spin_desc *spin_desc)
 		return 0;
 	}
 
-	ret = aw_dev_get_list_head(&dev_list);
+	ret = aw883xx_dev_get_list_head(&dev_list);
 	if (ret) {
 		aw_pr_err("get dev list failed");
 		return ret;
@@ -414,7 +423,7 @@ int aw_check_spin_mode(struct aw_spin_desc *spin_desc)
 	return 0;
 }
 
-int aw_hold_dsp_spin_st(struct aw_spin_desc *spin_desc)
+int aw883xx_hold_dsp_spin_st(struct aw_spin_desc *spin_desc)
 {
 	struct aw_device *aw_dev = container_of(spin_desc,
 						struct aw_device, spin_desc);
@@ -437,7 +446,7 @@ int aw_hold_dsp_spin_st(struct aw_spin_desc *spin_desc)
 	return ret;
 }
 
-int aw_set_channal_mode(struct aw_device *aw_pa,
+static int aw_set_channal_mode(struct aw_device *aw_pa,
 					uint32_t spin_angle)
 {
 	int ret;
@@ -475,7 +484,7 @@ static int aw_set_reg_spin_angle(struct aw883xx *aw883xx, uint32_t spin_angle)
 		return -EINVAL;
 	}
 
-	ret = aw_dev_get_list_head(&dev_list);
+	ret = aw883xx_dev_get_list_head(&dev_list);
 	if (ret) {
 		aw_dev_err(aw883xx->dev, "get dev list failed");
 		return ret;
@@ -560,7 +569,7 @@ static int aw_set_spin(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 
-	ctrl_value = ucontrol->value.integer.value[0];
+	ctrl_value = (uint32_t)ucontrol->value.integer.value[0];
 
 	mutex_lock(&g_aw_spin_lock);
 	if (aw883xx->pstream == AW883XX_STREAM_OPEN) {
@@ -669,7 +678,7 @@ static int aw_spin_control_create(struct aw883xx *aw883xx)
 	return 0;
 }
 
-void aw_add_spin_controls(void *aw_dev)
+void aw883xx_add_spin_controls(void *aw_dev)
 {
 	struct aw883xx *aw883xx = (struct aw883xx *)aw_dev;
 
@@ -724,6 +733,34 @@ static int aw_parse_spin_table_dt(struct aw_device *aw_dev,
 	return 0;
 }
 
+static void aw_parse_topo_id_dt(struct aw_device *aw_dev)
+{
+	int ret;
+
+	ret = of_property_read_u32(aw_dev->dev->of_node, "aw-rx-topo-id", &g_rx_topo_id);
+	if (ret < 0) {
+		g_rx_topo_id = AW_RX_TOPO_ID;
+		aw_dev_info(aw_dev->dev, "read aw-rx-topo-id failed,use default");
+	}
+
+	aw_dev_info(aw_dev->dev, "rx-topo-id: 0x%x", g_rx_topo_id);
+}
+
+static void aw_parse_port_id_dt(struct aw_device *aw_dev)
+{
+	int ret;
+
+	ret = of_property_read_u32(aw_dev->dev->of_node, "aw-rx-port-id", &g_rx_port_id);
+	if (ret < 0) {
+		g_rx_port_id = AW_RX_PORT_ID;
+		aw_dev_info(aw_dev->dev, "read aw-rx-port-id failed,use default");
+	}
+
+	aw_set_port_id(0, g_rx_port_id);
+	aw_dev_info(aw_dev->dev, "rx-port-id: 0x%x",
+						g_rx_port_id);
+}
+
 static int aw_parse_spin_mode_dt(struct aw_device *aw_dev)
 {
 	int ret = -1;
@@ -767,11 +804,13 @@ static int aw_parse_spin_mode_dt(struct aw_device *aw_dev)
 	return 0;
 }
 
-void aw_spin_init(struct aw_spin_desc *spin_desc)
+void aw883xx_spin_init(struct aw_spin_desc *spin_desc)
 {
 	struct aw_device *aw_dev = container_of(spin_desc,
 					struct aw_device, spin_desc);
 
 	aw_parse_spin_mode_dt(aw_dev);
+	aw_parse_topo_id_dt(aw_dev);
+	aw_parse_port_id_dt(aw_dev);
 }
 
