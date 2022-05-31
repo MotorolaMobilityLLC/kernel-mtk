@@ -15,11 +15,11 @@
 #include <sound/control.h>
 #include <linux/uaccess.h>
 
-#include "aw_data_type.h"
-#include "aw_log.h"
-#include "aw_device.h"
-#include "aw_bin_parse.h"
-#include "aw_calib.h"
+#include "aw883xx_data_type.h"
+#include "aw883xx_log.h"
+#include "aw883xx_device.h"
+#include "aw883xx_bin_parse.h"
+#include "aw883xx_calib.h"
 
 #define AW_DEV_SYSST_CHECK_MAX   (10)
 
@@ -50,34 +50,66 @@ static int aw_dev_reg_dump(struct aw_device *aw_dev)
 	return 0;
 }
 
+int aw883xx_dev_set_volume(struct aw_device *aw_dev, uint16_t set_vol)
+{
+	uint16_t hw_vol = 0;
+	int ret = -1;
+	struct aw_volume_desc *vol_desc = &aw_dev->volume_desc;
+
+	hw_vol = set_vol + vol_desc->init_volume;
+
+	ret = aw_dev->ops.aw_set_hw_volume(aw_dev, hw_vol);
+	if (ret < 0) {
+		aw_dev_err(aw_dev->dev, "set volume failed");
+		return ret;
+	}
+
+	return 0;
+}
+
+int aw883xx_dev_get_volume(struct aw_device *aw_dev, uint16_t *get_vol)
+{
+	int ret = -1;
+	uint16_t hw_vol = 0;
+	struct aw_volume_desc *vol_desc = &aw_dev->volume_desc;
+
+	ret = aw_dev->ops.aw_get_hw_volume(aw_dev, &hw_vol);
+	if (ret < 0) {
+		aw_dev_err(aw_dev->dev, "read volume failed");
+		return ret;
+	}
+
+	*get_vol = hw_vol - vol_desc->init_volume;
+
+	return 0;
+}
+
 static void aw_dev_fade_in(struct aw_device *aw_dev)
 {
 	int i = 0;
 	struct aw_volume_desc *desc = &aw_dev->volume_desc;
 	int fade_step = aw_dev->fade_step;
-
+	uint16_t fade_in_vol = desc->ctl_volume;
 	if (!aw_dev->fade_en)
 		return;
 
 	if (fade_step == 0 || g_fade_in_time == 0) {
-		aw_dev->ops.aw_set_volume(aw_dev, desc->init_volume);
+		aw883xx_dev_set_volume(aw_dev, fade_in_vol);
 		return;
 	}
 	/*volume up*/
-	for (i = desc->mute_volume; i >= desc->init_volume; i -= fade_step) {
-		aw_dev->ops.aw_set_volume(aw_dev, i);
+	for (i = desc->mute_volume; i >= fade_in_vol; i -= fade_step) {
+		aw883xx_dev_set_volume(aw_dev, i);
 		usleep_range(g_fade_in_time, g_fade_in_time + 10);
 	}
-	if (i != desc->init_volume)
-		aw_dev->ops.aw_set_volume(aw_dev, desc->init_volume);
-
+	if (i != fade_in_vol)
+		aw883xx_dev_set_volume(aw_dev, fade_in_vol);
 
 }
 
 static void aw_dev_fade_out(struct aw_device *aw_dev)
 {
 	int i = 0;
-	uint16_t start_volume = 0;
 	struct aw_volume_desc *desc = &aw_dev->volume_desc;
 	int fade_step = aw_dev->fade_step;
 
@@ -85,33 +117,31 @@ static void aw_dev_fade_out(struct aw_device *aw_dev)
 		return;
 
 	if (fade_step == 0 || g_fade_out_time == 0) {
-		aw_dev->ops.aw_set_volume(aw_dev, desc->mute_volume);
+		aw883xx_dev_set_volume(aw_dev, desc->mute_volume);
 		return;
 	}
 
-	aw_dev->ops.aw_get_volume(aw_dev, &start_volume);
-	i = start_volume;
-	for (i = start_volume; i <= desc->mute_volume; i += fade_step) {
-		aw_dev->ops.aw_set_volume(aw_dev, i);
+	for (i = desc->ctl_volume; i <= desc->mute_volume; i += fade_step) {
+		aw883xx_dev_set_volume(aw_dev, i);
 		usleep_range(g_fade_out_time, g_fade_out_time + 10);
 	}
 	if (i != desc->mute_volume) {
-		aw_dev->ops.aw_set_volume(aw_dev, desc->mute_volume);
+		aw883xx_dev_set_volume(aw_dev, desc->mute_volume);
 		usleep_range(g_fade_out_time, g_fade_out_time + 10);
 	}
 }
 
-int aw_dev_get_fade_vol_step(struct aw_device *aw_dev)
+int aw883xx_dev_get_fade_vol_step(struct aw_device *aw_dev)
 {
 	return aw_dev->fade_step;
 }
 
-void aw_dev_set_fade_vol_step(struct aw_device *aw_dev, unsigned int step)
+void aw883xx_dev_set_fade_vol_step(struct aw_device *aw_dev, unsigned int step)
 {
 	aw_dev->fade_step = step;
 }
 
-void aw_dev_get_fade_time(unsigned int *time, bool fade_in)
+void aw883xx_dev_get_fade_time(unsigned int *time, bool fade_in)
 {
 	if (fade_in)
 		*time = g_fade_in_time;
@@ -119,7 +149,7 @@ void aw_dev_get_fade_time(unsigned int *time, bool fade_in)
 		*time = g_fade_out_time;
 }
 
-void aw_dev_set_fade_time(unsigned int time, bool fade_in)
+void aw883xx_dev_set_fade_time(unsigned int time, bool fade_in)
 {
 	if (fade_in)
 		g_fade_in_time = time;
@@ -167,7 +197,7 @@ static uint32_t aw_dev_calc_dsp_cfg_crc32(uint8_t *buf, uint32_t len)
 
 static int aw_dev_set_dsp_crc32(struct aw_device *aw_dev)
 {
-	uint32_t crc_value;
+	uint32_t crc_value = 0;
 	uint32_t crc_data_len = 0;
 	int ret = -1;
 	struct aw_sec_data_desc *crc_dsp_cfg = &aw_dev->crc_dsp_cfg;
@@ -178,12 +208,12 @@ static int aw_dev_set_dsp_crc32(struct aw_device *aw_dev)
 	if (crc_data_len > crc_dsp_cfg->len) {
 		aw_dev_err(aw_dev->dev, "crc data len :%d > cfg_data len:%d",
 			crc_data_len, crc_dsp_cfg->len);
-		return ret;
+		return -EINVAL;
 	}
 
 	if (crc_data_len % 4 != 0) {
 		aw_dev_err(aw_dev->dev, "The crc data len :%d unsupport", crc_data_len);
-		return ret;
+		return -EINVAL;
 	}
 
 	crc_value = aw_dev_calc_dsp_cfg_crc32(crc_dsp_cfg->data, crc_data_len);
@@ -270,7 +300,7 @@ static int aw_dev_dsp_crc32_check(struct aw_device *aw_dev)
 	aw_dev_dsp_crc_check_enable(aw_dev, true);
 
 	/*dsp enable*/
-	aw_dev_dsp_enable(aw_dev, true);
+	aw883xx_dev_dsp_enable(aw_dev, true);
 	usleep_range(AW_5000_US, AW_5000_US + 100);
 
 	ret = aw_dev_dsp_st_check(aw_dev);
@@ -320,12 +350,12 @@ static void aw_dev_amppd(struct aw_device *aw_dev, bool amppd)
 }
 
 
-void aw_dev_mute(struct aw_device *aw_dev, bool mute)
+void aw883xx_dev_mute(struct aw_device *aw_dev, bool mute)
 {
 	struct aw_mute_desc *mute_desc = &aw_dev->mute_desc;
 
 	aw_dev_dbg(aw_dev->dev, "enter");
-	if (mute || (aw_dev->cali_desc.cali_result == CALI_RESULT_ERROR)) {
+	if (mute) {
 		aw_dev_fade_out(aw_dev);
 		aw_dev->ops.aw_reg_write_bits(aw_dev, mute_desc->reg,
 				mute_desc->mask, mute_desc->enable);
@@ -337,7 +367,7 @@ void aw_dev_mute(struct aw_device *aw_dev, bool mute)
 	aw_dev_info(aw_dev->dev, "done");
 }
 
-int aw_dev_get_hmute(struct aw_device *aw_dev)
+int aw883xx_dev_get_hmute(struct aw_device *aw_dev)
 {
 	uint16_t reg_val = 0;
 	int ret;
@@ -428,7 +458,7 @@ static int aw_dev_get_vcalk_dac(struct aw_device *aw_dev, int16_t *vcalk)
 	return 0;
 }
 
-int aw_dev_modify_dsp_cfg(struct aw_device *aw_dev,
+int aw883xx_dev_modify_dsp_cfg(struct aw_device *aw_dev,
 			unsigned int addr, uint32_t dsp_data, unsigned char data_type)
 {
 	uint32_t addr_offset = 0;
@@ -507,16 +537,19 @@ static int aw_dev_set_vcalb(struct aw_device *aw_dev)
 	}
 
 	ret = aw_dev_vsense_select(aw_dev, &vsense_select);
-	aw_dev_dbg(aw_dev->dev, "vsense_select = %d", vsense_select);
-	if (ret < 0) {
+	if (ret < 0)
 		return ret;
-	}
+	aw_dev_dbg(aw_dev->dev, "vsense_select = %d", vsense_select);
 
 	ret = aw_dev_get_icalk(aw_dev, &icalk_val);
+	if (ret < 0)
+		return ret;
 	icalk = desc->cabl_base_value + desc->icalk_value_factor * icalk_val;
 
 	if (vsense_select == AW_DEV_VDSEL_VSENSE) {
 		ret = aw_dev_get_vcalk(aw_dev, &vcalk_val);
+		if (ret < 0)
+			return ret;
 		vcalk = desc->cabl_base_value + desc->vcalk_value_factor * vcalk_val;
 		vcalb = desc->vcal_factor * desc->vscal_factor /
 			desc->iscal_factor * icalk / vcalk * vcalb_adj;
@@ -525,6 +558,8 @@ static int aw_dev_set_vcalb(struct aw_device *aw_dev)
 				desc->vcalk_value_factor, desc->vscal_factor, icalk, vcalk);
 	} else if (vsense_select == AW_DEV_VDSEL_DAC) {
 		ret = aw_dev_get_vcalk_dac(aw_dev, &vcalk_val);
+		if (ret < 0)
+			return ret;
 		vcalk = desc->cabl_base_value + desc->vcalk_value_factor_vsense_in * vcalk_val;
 		vcalb = desc->vcal_factor * desc->vscal_factor_vsense_in /
 			desc->iscal_factor * icalk / vcalk * vcalb_adj;
@@ -553,7 +588,7 @@ static int aw_dev_set_vcalb(struct aw_device *aw_dev)
 		return ret;
 	}
 
-	ret = aw_dev_modify_dsp_cfg(aw_dev, desc->vcalb_dsp_reg,
+	ret = aw883xx_dev_modify_dsp_cfg(aw_dev, desc->vcalb_dsp_reg,
 					(uint32_t)reg_val, desc->data_type);
 	if (ret < 0) {
 		aw_dev_err(aw_dev->dev, "modify dsp cfg failed");
@@ -584,7 +619,7 @@ static int aw_dev_get_cali_f0_delay(struct aw_device *aw_dev)
 	return 0;
 }
 
-int aw_dev_get_int_status(struct aw_device *aw_dev, uint16_t *int_status)
+int aw883xx_dev_get_int_status(struct aw_device *aw_dev, uint16_t *int_status)
 {
 	int ret = -1;
 	uint16_t reg_val = 0;
@@ -599,19 +634,19 @@ int aw_dev_get_int_status(struct aw_device *aw_dev, uint16_t *int_status)
 	return ret;
 }
 
-void aw_dev_clear_int_status(struct aw_device *aw_dev)
+void aw883xx_dev_clear_int_status(struct aw_device *aw_dev)
 {
 	uint16_t int_status = 0;
 
 	/*read int status and clear*/
-	aw_dev_get_int_status(aw_dev, &int_status);
+	aw883xx_dev_get_int_status(aw_dev, &int_status);
 	/*make sure int status is clear*/
-	aw_dev_get_int_status(aw_dev, &int_status);
+	aw883xx_dev_get_int_status(aw_dev, &int_status);
 	aw_dev_info(aw_dev->dev, "done");
 }
 
 
-int aw_dev_get_iis_status(struct aw_device *aw_dev)
+int aw883xx_dev_get_iis_status(struct aw_device *aw_dev)
 {
 	int ret = -1;
 	uint16_t reg_val = 0;
@@ -635,7 +670,7 @@ static int aw_dev_mode1_pll_check(struct aw_device *aw_dev)
 	uint16_t i = 0;
 
 	for (i = 0; i < AW_DEV_SYSST_CHECK_MAX; i++) {
-		ret = aw_dev_get_iis_status(aw_dev);
+		ret = aw883xx_dev_get_iis_status(aw_dev);
 		if (ret < 0) {
 			aw_dev_err(aw_dev->dev, "mode1 iis signal check error");
 			usleep_range(AW_2000_US, AW_2000_US + 10);
@@ -666,7 +701,7 @@ static int aw_dev_mode2_pll_check(struct aw_device *aw_dev)
 		cco_mux_desc->mask, cco_mux_desc->divider);
 
 	for (i = 0; i < AW_DEV_SYSST_CHECK_MAX; i++) {
-		ret = aw_dev_get_iis_status(aw_dev);
+		ret = aw883xx_dev_get_iis_status(aw_dev);
 		if (ret < 0) {
 			aw_dev_err(aw_dev->dev, "mode2 iis signal check error");
 			usleep_range(AW_2000_US, AW_2000_US + 10);
@@ -695,7 +730,7 @@ static int aw_dev_mode2_pll_check(struct aw_device *aw_dev)
 	return ret;
 }
 
-int aw_dev_syspll_check(struct aw_device *aw_dev)
+int aw883xx_dev_syspll_check(struct aw_device *aw_dev)
 {
 	int ret = -1;
 
@@ -712,7 +747,7 @@ int aw_dev_syspll_check(struct aw_device *aw_dev)
 	return ret;
 }
 
-int aw_dev_sysst_check(struct aw_device *aw_dev)
+int aw883xx_dev_sysst_check(struct aw_device *aw_dev)
 {
 	int ret = -1;
 	unsigned char i;
@@ -757,7 +792,7 @@ static int aw_dev_sysint_check(struct aw_device *aw_dev)
 	uint16_t reg_val = 0;
 	struct aw_int_desc *desc = &aw_dev->int_desc;
 
-	aw_dev_get_int_status(aw_dev, &reg_val);
+	aw883xx_dev_get_int_status(aw_dev, &reg_val);
 
 	if (reg_val & (desc->intst_mask)) {
 		aw_dev_err(aw_dev->dev, "pa stop check fail:0x%04x", reg_val);
@@ -780,7 +815,7 @@ static void aw_dev_get_cur_mode_st(struct aw_device *aw_dev)
 		profctrl_desc->cur_mode = AW_NOT_RCV_MODE;
 }
 
-int aw_dev_set_intmask(struct aw_device *aw_dev, bool flag)
+int aw883xx_dev_set_intmask(struct aw_device *aw_dev, bool flag)
 {
 	int ret = -1;
 	struct aw_int_desc *desc = &aw_dev->int_desc;
@@ -796,7 +831,7 @@ int aw_dev_set_intmask(struct aw_device *aw_dev, bool flag)
 	return ret;
 }
 
-void aw_dev_dsp_enable(struct aw_device *aw_dev, bool dsp)
+void aw883xx_dev_dsp_enable(struct aw_device *aw_dev, bool dsp)
 {
 	int ret = -1;
 	struct aw_dsp_en_desc *desc = &aw_dev->dsp_en_desc;
@@ -838,7 +873,7 @@ static int aw_dev_get_dsp_config(struct aw_device *aw_dev, unsigned char *dsp_cf
 	return 0;
 }
 
-void aw_dev_memclk_select(struct aw_device *aw_dev, unsigned char flag)
+void aw883xx_dev_memclk_select(struct aw_device *aw_dev, unsigned char flag)
 {
 	struct aw_memclk_desc *desc = &aw_dev->memclk_desc;
 	int ret = -1;
@@ -861,7 +896,7 @@ void aw_dev_memclk_select(struct aw_device *aw_dev, unsigned char flag)
 	aw_dev_info(aw_dev->dev, "done");
 }
 
-int aw_dev_get_dsp_status(struct aw_device *aw_dev)
+int aw883xx_dev_get_dsp_status(struct aw_device *aw_dev)
 {
 	int ret = -1;
 	uint16_t reg_val = 0;
@@ -890,7 +925,6 @@ static int aw_dev_get_vmax(struct aw_device *aw_dev, unsigned int *vmax)
 	return 0;
 }
 
-
 /******************************************************
  *
  * aw_dev update cfg
@@ -903,8 +937,10 @@ static int aw_dev_reg_container_update(struct aw_device *aw_dev,
 	int i, ret;
 	uint8_t reg_addr = 0;
 	uint16_t reg_val = 0;
-	uint16_t read_val;
+	uint16_t read_val = 0;
+	uint16_t read_vol = 0;
 	struct aw_int_desc *int_desc = &aw_dev->int_desc;
+	struct aw_volume_desc *vol_desc = &aw_dev->volume_desc;
 	int16_t *reg_data = NULL;
 	int data_len;
 
@@ -943,21 +979,34 @@ static int aw_dev_reg_container_update(struct aw_device *aw_dev,
 			reg_val |= aw_dev->tx_en_desc.tx_disable;
 		}
 
+		if (reg_addr == aw_dev->volume_desc.reg) {
+			read_vol = (reg_val & (~aw_dev->volume_desc.mask)) >>
+				aw_dev->volume_desc.shift;
+			aw_dev->volume_desc.init_volume =
+				aw_dev->ops.aw_reg_val_to_db(read_vol);
+		}
+
 		ret = aw_dev->ops.aw_reg_write(aw_dev, reg_addr, reg_val);
 		if (ret < 0)
 			break;
 
 	}
 
-	aw_hold_reg_spin_st(&aw_dev->spin_desc);
+	aw883xx_hold_reg_spin_st(&aw_dev->spin_desc);
 
 	aw_dev_get_cur_mode_st(aw_dev);
 
-	aw_dev->ops.aw_get_volume(aw_dev, (uint16_t *)&aw_dev->volume_desc.init_volume);
+	if (aw_dev->cur_prof != aw_dev->set_prof) {
+		/*clear control volume when PA change profile*/
+		vol_desc->ctl_volume = 0;
+	} else {
+		/*keep control volume when PA start with sync mode*/
+		aw883xx_dev_set_volume(aw_dev, vol_desc->ctl_volume);
+	}
 
 	/*keep min volume*/
 	if (aw_dev->fade_en)
-		aw_dev->ops.aw_set_volume(aw_dev, aw_dev->volume_desc.mute_volume);
+		aw883xx_dev_set_volume(aw_dev, vol_desc->mute_volume);
 
 	aw_dev_get_dsp_config(aw_dev, &aw_dev->dsp_cfg);
 
@@ -1065,15 +1114,14 @@ static int aw_dev_copy_to_crc_dsp_cfg(struct aw_device *aw_dev,
 		}
 	}
 	memcpy(crc_dsp_cfg->data, data ,size);
-	ret = aw_dev_dsp_data_order(aw_dev, crc_dsp_cfg->data, size);
+	ret = aw883xx_dev_dsp_data_order(aw_dev, crc_dsp_cfg->data, size);
 	if (ret < 0)
 		return ret;
 
 	return 0;
 }
 
-
-int aw_dev_dsp_cfg_update(struct aw_device *aw_dev,
+int aw883xx_dev_dsp_cfg_update(struct aw_device *aw_dev,
 			uint8_t *data, uint32_t len)
 {
 	struct aw_dsp_mem_desc *dsp_mem_desc = &aw_dev->dsp_mem_desc;
@@ -1091,7 +1139,7 @@ int aw_dev_dsp_cfg_update(struct aw_device *aw_dev,
 			return ret;
 
 		aw_dev_set_vcalb(aw_dev);
-		aw_cali_svc_get_ra(&aw_dev->cali_desc);
+		aw883xx_cali_svc_get_ra(&aw_dev->cali_desc);
 		aw_dev_get_cali_f0_delay(aw_dev);
 
 		if (aw_dev->ops.aw_get_hw_mon_st) {
@@ -1185,7 +1233,7 @@ error:
 	return ret;
 }
 
-int aw_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_en)
+int aw883xx_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_en)
 {
 	int ret = -1;
 	struct aw_prof_desc *set_prof_desc = NULL;
@@ -1209,7 +1257,7 @@ int aw_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_
 
 	aw_dev_info(aw_dev->dev, "start update %s", prof_name);
 
-	ret = aw_dev_get_prof_data(aw_dev, aw_dev->set_prof, &set_prof_desc);
+	ret = aw883xx_dev_get_prof_data(aw_dev, aw_dev->set_prof, &set_prof_desc);
 	if (ret < 0)
 		return ret;
 
@@ -1222,12 +1270,12 @@ int aw_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_
 		return ret;
 	}
 
-	aw_dev_mute(aw_dev, true);
+	aw883xx_dev_mute(aw_dev, true);
 
 	if (aw_dev->dsp_cfg == AW_DEV_DSP_WORK)
-		aw_dev_dsp_enable(aw_dev, false);
+		aw883xx_dev_dsp_enable(aw_dev, false);
 
-	aw_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_OSC);
+	aw883xx_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_OSC);
 
 	if (up_dsp_fw_en) {
 		ret = aw_dev_sram_check(aw_dev);
@@ -1247,14 +1295,14 @@ int aw_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_
 	}
 
 	/*update dsp config*/
-	ret = aw_dev_dsp_cfg_update(aw_dev, sec_desc[AW_DATA_TYPE_DSP_CFG].data,
+	ret = aw883xx_dev_dsp_cfg_update(aw_dev, sec_desc[AW_DATA_TYPE_DSP_CFG].data,
 					sec_desc[AW_DATA_TYPE_DSP_CFG].len);
 	if (ret < 0) {
 		aw_dev_err(aw_dev->dev, "update dsp cfg failed");
 		goto error;
 	}
 
-	aw_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_PLL);
+	aw883xx_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_PLL);
 
 	aw_dev->cur_prof = aw_dev->set_prof;
 
@@ -1262,12 +1310,12 @@ int aw_dev_fw_update(struct aw_device *aw_dev, bool up_dsp_fw_en, bool force_up_
 	return 0;
 
 error:
-	aw_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_PLL);
+	aw883xx_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_PLL);
 
 	return ret;
 }
 
-int aw_dev_dsp_check(struct aw_device *aw_dev)
+int aw883xx_dev_dsp_check(struct aw_device *aw_dev)
 {
 	int ret = -1;
 	uint16_t i = 0;
@@ -1278,11 +1326,11 @@ int aw_dev_dsp_check(struct aw_device *aw_dev)
 		aw_dev_dbg(aw_dev->dev, "dsp bypass");
 		return 0;
 	} else if (aw_dev->dsp_cfg == AW_DEV_DSP_WORK) {
+		aw883xx_dev_dsp_enable(aw_dev, false);
+		aw883xx_dev_dsp_enable(aw_dev, true);
+		usleep_range(AW_1000_US, AW_1000_US + 10);
 		for (i = 0; i < AW_DEV_DSP_CHECK_MAX; i++) {
-			aw_dev_dsp_enable(aw_dev, false);
-			aw_dev_dsp_enable(aw_dev, true);
-			usleep_range(AW_1000_US, AW_1000_US + 10);
-			ret = aw_dev_get_dsp_status(aw_dev);
+			ret = aw883xx_dev_get_dsp_status(aw_dev);
 			if (ret < 0) {
 				aw_dev_err(aw_dev->dev, "dsp wdt status error=%d", ret);
 				usleep_range(AW_2000_US, AW_2000_US + 10);
@@ -1306,7 +1354,7 @@ static int aw_dev_set_cfg_f0_fs(struct aw_device *aw_dev)
 
 	if (aw_dev->ops.aw_set_cfg_f0_fs) {
 		aw_dev->ops.aw_set_cfg_f0_fs(aw_dev, &f0_fs);
-		ret = aw_dev_modify_dsp_cfg(aw_dev, cfgf0_fs_desc->dsp_reg,
+		ret = aw883xx_dev_modify_dsp_cfg(aw_dev, cfgf0_fs_desc->dsp_reg,
 					f0_fs, cfgf0_fs_desc->data_type);
 		if (ret < 0) {
 			aw_dev_err(aw_dev->dev, "modify dsp cfg failed");
@@ -1324,7 +1372,7 @@ static void aw_dev_cali_re_update(struct aw_cali_desc *cali_desc)
 
 	if (aw_dev->cali_desc.cali_re < aw_dev->re_range.re_max &&
 		aw_dev->cali_desc.cali_re > aw_dev->re_range.re_min) {
-		aw_cali_svc_set_cali_re_to_dsp(&aw_dev->cali_desc);
+		aw883xx_cali_svc_set_cali_re_to_dsp(&aw_dev->cali_desc);
 	} else {
 		aw_dev_err(aw_dev->dev, "cali_re:%d out of range, no set",
 				aw_dev->cali_desc.cali_re);
@@ -1332,7 +1380,7 @@ static void aw_dev_cali_re_update(struct aw_cali_desc *cali_desc)
 }
 
 
-int aw_device_start(struct aw_device *aw_dev)
+int aw883xx_device_start(struct aw_device *aw_dev)
 {
 	int ret = -1;
 
@@ -1347,7 +1395,7 @@ int aw_device_start(struct aw_device *aw_dev)
 	aw_dev_pwd(aw_dev, false);
 	usleep_range(AW_2000_US, AW_2000_US + 10);
 
-	ret = aw_dev_syspll_check(aw_dev);
+	ret = aw883xx_dev_syspll_check(aw_dev);
 	if (ret < 0) {
 		aw_dev_err(aw_dev->dev, "pll check failed cannot start");
 		aw_dev_reg_dump(aw_dev);
@@ -1359,7 +1407,7 @@ int aw_device_start(struct aw_device *aw_dev)
 	usleep_range(AW_1000_US, AW_1000_US + 50);
 
 	/*check i2s status*/
-	ret = aw_dev_sysst_check(aw_dev);
+	ret = aw883xx_dev_sysst_check(aw_dev);
 	if (ret < 0) {
 		/*check failed*/
 		aw_dev_reg_dump(aw_dev);
@@ -1368,7 +1416,7 @@ int aw_device_start(struct aw_device *aw_dev)
 
 	if (aw_dev->dsp_cfg == AW_DEV_DSP_WORK) {
 		/*dsp bypass*/
-		aw_dev_dsp_enable(aw_dev, false);
+		aw883xx_dev_dsp_enable(aw_dev, false);
 		if (aw_dev->ops.aw_dsp_fw_check) {
 			ret = aw_dev->ops.aw_dsp_fw_check(aw_dev);
 			if (ret < 0) {
@@ -1389,7 +1437,7 @@ int aw_device_start(struct aw_device *aw_dev)
 			}
 		}
 
-		ret = aw_dev_dsp_check(aw_dev);
+		ret = aw883xx_dev_dsp_check(aw_dev);
 		if (ret < 0) {
 			aw_dev_err(aw_dev->dev, "check dsp status failed");
 			aw_dev_reg_dump(aw_dev);
@@ -1404,14 +1452,17 @@ int aw_device_start(struct aw_device *aw_dev)
 		aw_dev->ops.aw_i2s_tx_enable(aw_dev, true);
 
 	/*close mute*/
-	aw_dev_mute(aw_dev, false);
+	if (aw883xx_cali_check_result(&aw_dev->cali_desc))
+		aw883xx_dev_mute(aw_dev, false);
+	else
+		aw883xx_dev_mute(aw_dev, true);
 
 	/*clear inturrupt*/
-	aw_dev_clear_int_status(aw_dev);
+	aw883xx_dev_clear_int_status(aw_dev);
 	/*set inturrupt mask*/
-	aw_dev_set_intmask(aw_dev, true);
+	aw883xx_dev_set_intmask(aw_dev, true);
 
-	aw_monitor_start(&aw_dev->monitor_desc);
+	aw883xx_monitor_start(&aw_dev->monitor_desc);
 
 	aw_dev->status = AW_DEV_PW_ON;
 
@@ -1421,11 +1472,11 @@ int aw_device_start(struct aw_device *aw_dev)
 
 dsp_check_fail:
 crc_check_fail:
-	aw_dev_dsp_enable(aw_dev, false);
+	aw883xx_dev_dsp_enable(aw_dev, false);
 dsp_fw_check_fail:
 sysst_check_fail:
 	/*clear interrupt*/
-	aw_dev_clear_int_status(aw_dev);
+	aw883xx_dev_clear_int_status(aw_dev);
 	aw_dev_amppd(aw_dev, true);
 pll_check_fail:
 	aw_dev_pwd(aw_dev, true);
@@ -1433,7 +1484,7 @@ pll_check_fail:
 	return ret;
 }
 
-int aw_device_stop(struct aw_device *aw_dev)
+int aw883xx_device_stop(struct aw_device *aw_dev)
 {
 	struct aw_sec_data_desc *dsp_cfg =
 		&aw_dev->prof_info.prof_desc[aw_dev->cur_prof].sec_desc[AW_DATA_TYPE_DSP_CFG];
@@ -1451,10 +1502,10 @@ int aw_device_stop(struct aw_device *aw_dev)
 
 	aw_dev->status = AW_DEV_PW_OFF;
 
-	aw_monitor_stop(&aw_dev->monitor_desc);
+	aw883xx_monitor_stop(&aw_dev->monitor_desc);
 
 	/*set mute*/
-	aw_dev_mute(aw_dev, true);
+	aw883xx_dev_mute(aw_dev, true);
 	usleep_range(AW_4000_US, AW_4000_US + 100);
 
 	/*close tx feedback*/
@@ -1463,13 +1514,13 @@ int aw_device_stop(struct aw_device *aw_dev)
 	usleep_range(AW_1000_US, AW_1000_US + 100);
 
 	/*set defaut int mask*/
-	aw_dev_set_intmask(aw_dev, false);
+	aw883xx_dev_set_intmask(aw_dev, false);
 
 	/*check sysint state*/
 	int_st = aw_dev_sysint_check(aw_dev);
 
 	/*close dsp*/
-	aw_dev_dsp_enable(aw_dev, false);
+	aw883xx_dev_dsp_enable(aw_dev, false);
 
 	/*enable amppd*/
 	aw_dev_amppd(aw_dev, true);
@@ -1479,10 +1530,10 @@ int aw_device_stop(struct aw_device *aw_dev)
 
 	if (int_st < 0 || monitor_int_st < 0) {
 		/*system status anomaly*/
-		aw_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_OSC);
-		aw_dev_dsp_cfg_update(aw_dev, dsp_cfg->data, dsp_cfg->len);
+		aw883xx_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_OSC);
+		aw883xx_dev_dsp_cfg_update(aw_dev, dsp_cfg->data, dsp_cfg->len);
 		aw_dev_dsp_fw_update(aw_dev, dsp_fw->data, dsp_fw->len);
-		aw_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_PLL);
+		aw883xx_dev_memclk_select(aw_dev, AW_DEV_MEMCLK_PLL);
 	}
 
 	/*set power down*/
@@ -1493,7 +1544,7 @@ int aw_device_stop(struct aw_device *aw_dev)
 }
 
 /*deinit aw_device*/
-void aw_dev_deinit(struct aw_device *aw_dev)
+void aw883xx_dev_deinit(struct aw_device *aw_dev)
 {
 	if (aw_dev == NULL)
 		return;
@@ -1513,7 +1564,7 @@ void aw_dev_deinit(struct aw_device *aw_dev)
 }
 
 /*init aw_device*/
-int aw_device_init(struct aw_device *aw_dev, struct aw_container *aw_cfg)
+int aw883xx_device_init(struct aw_device *aw_dev, struct aw_container *aw_cfg)
 {
 	int ret;
 
@@ -1522,26 +1573,26 @@ int aw_device_init(struct aw_device *aw_dev, struct aw_container *aw_cfg)
 		return -ENOMEM;
 	}
 
-	ret = aw_dev_cfg_load(aw_dev, aw_cfg);
+	ret = aw883xx_dev_cfg_load(aw_dev, aw_cfg);
 	if (ret < 0) {
-		aw_dev_deinit(aw_dev);
+		aw883xx_dev_deinit(aw_dev);
 		aw_dev_err(aw_dev->dev, "aw_dev acf parse failed");
 		return -EINVAL;
 	}
 
 	aw_dev->cur_prof = aw_dev->prof_info.prof_desc[0].id;
 	aw_dev->set_prof = aw_dev->prof_info.prof_desc[0].id;
-	ret = aw_dev_fw_update(aw_dev, AW_FORCE_UPDATE_ON,
+	ret = aw883xx_dev_fw_update(aw_dev, AW_FORCE_UPDATE_ON,
 			AW_DSP_FW_UPDATE_ON);
 	if (ret < 0) {
 		aw_dev_err(aw_dev->dev, "fw update failed");
 		return ret;
 	}
 
-	aw_dev_set_intmask(aw_dev, false);
+	aw883xx_dev_set_intmask(aw_dev, false);
 
 	/*set mute*/
-	aw_dev_mute(aw_dev, true);
+	aw883xx_dev_mute(aw_dev, true);
 
 	/*close tx feedback*/
 	if (aw_dev->ops.aw_i2s_tx_enable)
@@ -1551,7 +1602,7 @@ int aw_device_init(struct aw_device *aw_dev, struct aw_container *aw_cfg)
 	/*enable amppd*/
 	aw_dev_amppd(aw_dev, true);
 	/*close dsp*/
-	aw_dev_dsp_enable(aw_dev, false);
+	aw883xx_dev_dsp_enable(aw_dev, false);
 	/*set power down*/
 	aw_dev_pwd(aw_dev, true);
 
@@ -1640,7 +1691,7 @@ static void aw_device_parse_dt(struct aw_device *aw_dev)
 	aw883xx_parse_re_range_dt(aw_dev);
 }
 
-int aw_dev_get_list_head(struct list_head **head)
+int aw883xx_dev_get_list_head(struct list_head **head)
 {
 	if (list_empty(&g_dev_list))
 		return -EINVAL;
@@ -1650,26 +1701,26 @@ int aw_dev_get_list_head(struct list_head **head)
 	return 0;
 }
 
-int aw_device_probe(struct aw_device *aw_dev)
+int aw883xx_device_probe(struct aw_device *aw_dev)
 {
 	INIT_LIST_HEAD(&aw_dev->list_node);
 
 	aw_device_parse_dt(aw_dev);
 
-	aw_cali_init(&aw_dev->cali_desc);
+	aw883xx_cali_init(&aw_dev->cali_desc);
 
-	aw_monitor_init(&aw_dev->monitor_desc);
+	aw883xx_monitor_init(&aw_dev->monitor_desc);
 
-	aw_spin_init(&aw_dev->spin_desc);
+	aw883xx_spin_init(&aw_dev->spin_desc);
 
 	return 0;
 }
 
-int aw_device_remove(struct aw_device *aw_dev)
+int aw883xx_device_remove(struct aw_device *aw_dev)
 {
-	aw_monitor_deinit(&aw_dev->monitor_desc);
+	aw883xx_monitor_deinit(&aw_dev->monitor_desc);
 
-	aw_cali_deinit(&aw_dev->cali_desc);
+	aw883xx_cali_deinit(&aw_dev->cali_desc);
 
 	return 0;
 }
