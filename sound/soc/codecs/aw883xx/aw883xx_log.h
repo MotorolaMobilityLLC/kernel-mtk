@@ -1,5 +1,5 @@
-#ifndef __AWINIC_LOG_H__
-#define __AWINIC_LOG_H__
+#ifndef __AW883XX_LOG_H__
+#define __AW883XX_LOG_H__
 
 /********************************************
  * print information control

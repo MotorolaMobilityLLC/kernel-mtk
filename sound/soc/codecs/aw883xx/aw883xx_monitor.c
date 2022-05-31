@@ -29,11 +29,11 @@
 #include <linux/workqueue.h>
 #include <linux/hrtimer.h>
 #include <linux/power_supply.h>
-#include "aw_monitor.h"
-#include "aw_log.h"
-#include "aw_device.h"
+#include "aw883xx_monitor.h"
+#include "aw883xx_log.h"
+#include "aw883xx_device.h"
 #include "aw883xx.h"
-#include "aw_calib.h"
+#include "aw883xx_calib.h"
 
 
 #define AW883XX_MONITOR_NAME "aw883xx_monitor.bin"
@@ -416,51 +416,35 @@ static void aw_monitor_set_ipeak(struct aw_device *aw_dev,
 
 static void aw_monitor_set_gain(struct aw_device *aw_dev, uint16_t gain)
 {
+	uint16_t monitor_vol = 0;
+	uint16_t compared_vol = 0;
 	struct aw_monitor_cfg *monitor_cfg = &aw_dev->monitor_desc.monitor_cfg;
-	uint16_t read_volume;
-	uint16_t set_volume;
-	int ret;
+	struct aw_volume_desc *vol_desc = &aw_dev->volume_desc;
 
 	if (gain == GAIN_NONE || (!monitor_cfg->gain_switch))
 		return;
 
-	ret = aw_dev->ops.aw_get_volume(aw_dev, &read_volume);
-	if (ret < 0) {
-		aw_dev_err(aw_dev->dev, "read volume failed");
-		return;
-	}
+	monitor_vol = aw_dev->ops.aw_reg_val_to_db(gain);
+	vol_desc->monitor_volume = monitor_vol;
 
-	gain = aw_dev->ops.aw_reg_val_to_db(gain);
+	/*get smaller dB*/
+	compared_vol = AW_GET_MAX_VALUE(vol_desc->ctl_volume,
+		vol_desc->monitor_volume);
 
-	/*add offset*/
-	set_volume = gain + aw_dev->volume_desc.init_volume;
-
-	if (read_volume == set_volume) {
-		aw_dev_dbg(aw_dev->dev, "gain = 0x%x, no change", read_volume);
-		return;
-	}
-
-	ret = aw_dev->ops.aw_set_volume(aw_dev, set_volume);
-	if (ret < 0) {
-		aw_dev_err(aw_dev->dev, "set gain failed");
-		return;
-	}
-	aw_dev_info(aw_dev->dev, "set reg val = 0x%x, gain = 0x%x",
-				set_volume, gain);
-
+	aw883xx_dev_set_volume(aw_dev, compared_vol);
 }
 
 static int aw_monitor_vmax_check(struct aw_device *aw_dev)
 {
 	int ret = -1;
 
-	ret = aw_dev_syspll_check(aw_dev);
+	ret = aw883xx_dev_syspll_check(aw_dev);
 	if (ret < 0) {
 		aw_dev_err(aw_dev->dev, "no iis signal");
 		return ret;
 	}
 
-	ret = aw_dev_get_dsp_status(aw_dev);
+	ret = aw883xx_dev_get_dsp_status(aw_dev);
 	if (ret < 0) {
 		aw_dev_err(aw_dev->dev, "dsp not work");
 		return ret;
@@ -508,10 +492,10 @@ static void aw_monitor_set_vmax(struct aw_device *aw_dev,
 static void aw_monitor_check_sysint(struct aw_device *aw_dev)
 {
 	int ret = -1;
-	uint16_t sysint;
+	uint16_t sysint = 0;
 	struct aw_int_desc *desc = &aw_dev->int_desc;
 
-	ret = aw_dev_get_int_status(aw_dev, &sysint);
+	ret = aw883xx_dev_get_int_status(aw_dev, &sysint);
 	if (ret < 0)
 		aw_dev_err(aw_dev->dev, "get_sysint fail, ret=%d", ret);
 
@@ -528,7 +512,7 @@ static int aw_monitor_work(struct aw_device *aw_dev)
 	struct aw_table set_table;
 	int ret = -1;
 
-	if (aw_cali_svc_get_cali_status(&aw_dev->cali_desc)) {
+	if (aw883xx_cali_svc_get_cali_status(&aw_dev->cali_desc)) {
 		aw_dev_info(aw_dev->dev, "done nothing during calibration");
 		return 0;
 	}
@@ -572,7 +556,7 @@ static int aw_monitor_work(struct aw_device *aw_dev)
 	return 0;
 }
 
-void aw_monitor_work_func(struct work_struct *work)
+static void aw_monitor_work_func(struct work_struct *work)
 {
 	struct aw_device *aw_dev  = container_of(work,
 		struct aw_device, monitor_desc.delay_work.work);
@@ -587,7 +571,7 @@ void aw_monitor_work_func(struct work_struct *work)
 	if ((monitor_cfg->monitor_status == AW_MON_CFG_OK) &&
 		monitor_cfg->monitor_switch) {
 
-		if (!aw_dev_get_hmute(aw_dev)) {
+		if (!aw883xx_dev_get_hmute(aw_dev)) {
 			aw_monitor_work(aw_dev);
 			queue_delayed_work(aw883xx->work_queue,
 				&monitor->delay_work,
@@ -608,14 +592,14 @@ static int aw_hw_monitor_work(struct aw_device *aw_dev)
 	return 0;
 }
 
-void aw_hw_monitor_work_func(struct work_struct *work)
+static void aw_hw_monitor_work_func(struct work_struct *work)
 {
 	struct aw_device *aw_dev  = container_of(work,
 		struct aw_device, monitor_desc.hw_monitor_work.work);
 	struct aw883xx *aw883xx = (struct aw883xx *)aw_dev->private_data;
 	struct aw_monitor_desc *monitor = &aw_dev->monitor_desc;
 
-	if (!aw_dev_get_hmute(aw_dev)) {
+	if (!aw883xx_dev_get_hmute(aw_dev)) {
 		aw_hw_monitor_work(aw_dev);
 		queue_delayed_work(aw883xx->work_queue,
 					&monitor->hw_monitor_work,
@@ -623,7 +607,7 @@ void aw_hw_monitor_work_func(struct work_struct *work)
 	}
 }
 
-void aw_monitor_start(struct aw_monitor_desc *monitor_desc)
+void aw883xx_monitor_start(struct aw_monitor_desc *monitor_desc)
 {
 	uint8_t temp_flag = monitor_desc->hw_temp_flag;
 	struct aw_device *aw_dev = container_of(monitor_desc,
@@ -657,13 +641,14 @@ void aw_monitor_start(struct aw_monitor_desc *monitor_desc)
 				&monitor_desc->delay_work, 0);
 }
 
-int aw_monitor_stop(struct aw_monitor_desc *monitor_desc)
+int aw883xx_monitor_stop(struct aw_monitor_desc *monitor_desc)
 {
 	struct aw_device *aw_dev = container_of(monitor_desc,
 			struct aw_device, monitor_desc);
 
 	aw_dev_info(aw_dev->dev, "enter");
 
+	aw_dev->volume_desc.monitor_volume = 0;
 	cancel_delayed_work_sync(&monitor_desc->delay_work);
 	cancel_delayed_work_sync(&monitor_desc->hw_monitor_work);
 
@@ -704,8 +689,9 @@ static void aw_monitor_write_data_to_table(struct aw_device *aw_dev,
 		struct aw_table_info *table_info, const char *offset_ptr)
 {
 	int i;
+	int table_size = AW_TABLE_SIZE;
 
-	for (i = 0; i < table_info->table_num * AW_TABLE_SIZE; i += AW_TABLE_SIZE) {
+	for (i = 0; i < table_info->table_num * table_size; i += table_size) {
 		table_info->aw_table[i / AW_TABLE_SIZE].min_val =
 			AW_GET_16_DATA(offset_ptr[1 + i], offset_ptr[i]);
 		table_info->aw_table[i / AW_TABLE_SIZE].max_val =
@@ -904,7 +890,7 @@ static int aw_monitor_parse_data_v_0_1_1(struct aw_device *aw_dev,
 	return 0;
 }
 
-int aw_monitor_parse_fw(struct aw_monitor_desc *monitor_desc,
+int aw883xx_monitor_parse_fw(struct aw_monitor_desc *monitor_desc,
 				uint8_t *data, uint32_t data_len)
 {
 	struct aw_monitor_hdr_v_0_1_1 *monitor_hdr = NULL;
@@ -975,11 +961,11 @@ static int aw_monitor_real_time_update_monitor(struct aw_device *aw_dev)
 		return ret;
 	}
 
-	aw_monitor_cnt->len = cont->size;
+	aw_monitor_cnt->len = (int)cont->size;
 	memcpy(aw_monitor_cnt->data, cont->data, cont->size);
 	release_firmware(cont);
 
-	ret = aw_monitor_parse_fw(&aw_dev->monitor_desc,
+	ret = aw883xx_monitor_parse_fw(&aw_dev->monitor_desc,
 			aw_monitor_cnt->data, aw_monitor_cnt->len);
 	if (ret < 0)
 		aw_dev_err(aw_dev->dev, "parse monitor firmware failed!");
@@ -1092,7 +1078,7 @@ static ssize_t aw_monitor_store(struct device *dev,
 	} else {
 		aw_dev->monitor_desc.monitor_cfg.monitor_switch = enable;
 		if (enable)
-			aw_monitor_start(&aw_dev->monitor_desc);
+			aw883xx_monitor_start(&aw_dev->monitor_desc);
 	}
 
 	return count;
@@ -1131,12 +1117,12 @@ static ssize_t aw_monitor_update_store(struct device *dev,
 	aw_dev_info(aw_dev->dev, "monitor update = %d", update);
 
 	if (update) {
-		aw_monitor_stop(&aw_dev->monitor_desc);
+		aw883xx_monitor_stop(&aw_dev->monitor_desc);
 		aw_monitor_free_firmware(aw_dev);
 		ret = aw_monitor_real_time_update_monitor(aw_dev);
 		if (ret < 0)
 			return ret;
-		aw_monitor_start(&aw_dev->monitor_desc);
+		aw883xx_monitor_start(&aw_dev->monitor_desc);
 	}
 
 	return count;
@@ -1180,7 +1166,7 @@ static void aw_monitor_parse_dt(struct aw_device *aw_dev)
 	}
 }
 
-void aw_monitor_init(struct aw_monitor_desc *monitor_desc)
+void aw883xx_monitor_init(struct aw_monitor_desc *monitor_desc)
 {
 	int ret;
 	struct aw_device *aw_dev = container_of(monitor_desc,
@@ -1204,12 +1190,12 @@ void aw_monitor_init(struct aw_monitor_desc *monitor_desc)
 		aw_dev_err(aw_dev->dev, "error creating sysfs attr files");
 }
 
-void aw_monitor_deinit(struct aw_monitor_desc *monitor_desc)
+void aw883xx_monitor_deinit(struct aw_monitor_desc *monitor_desc)
 {
 	struct aw_device *aw_dev =
 		container_of(monitor_desc, struct aw_device, monitor_desc);
 
-	aw_monitor_stop(monitor_desc);
+	aw883xx_monitor_stop(monitor_desc);
 
 	sysfs_remove_group(&aw_dev->dev->kobj, &aw_monitor_attr_group);
 }
