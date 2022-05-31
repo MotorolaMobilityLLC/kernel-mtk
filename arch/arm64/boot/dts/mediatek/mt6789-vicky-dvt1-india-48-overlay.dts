@@ -14,17 +14,20 @@
 /plugin/;
 
 #include "mediatek/mt6789-vicky-common-overlay.dtsi"
-#include "mediatek/mt6789-vicky-audio-overlay.dtsi"
+
+#define VICKY_RADIO_IND48M 4
+
 /* Board match root node */
 / {
 	fragment@model {
 		target-path = "/";
 		__overlay__ {
 			mot,model = "vicky";
-			mot,board-id = <0x41 0xA100>;
+			mot,board-id = <(VICKY_RADIO_IND48M << 8 | 0x41) 0xB100>;
 		};
 	};
 };
 
 #include <vicky_evb/cust.dtsi>
+#include "mediatek/mt6789-vicky-audio-india-48-overlay.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
