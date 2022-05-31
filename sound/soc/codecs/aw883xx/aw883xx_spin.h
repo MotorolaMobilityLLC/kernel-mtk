@@ -1,11 +1,10 @@
-#ifndef __AW_SPIN_H__
-#define __AW_SPIN_H__
+#ifndef __AW883XX_SPIN_H__
+#define __AW883XX_SPIN_H__
 
 /*#define AW_MTK_PLATFORM_SPIN*/
 /*#define AW_QCOM_PLATFORM_SPIN*/
 
 #define AW_DSP_TRY_TIME		(3)
-
 #define AW_DSP_MSG_HDR_VER (1)
 #define AFE_MSG_ID_MSG_0 (0X10013D2A)
 #define AFE_MSG_ID_MSG_1 (0X10013D2B)
@@ -63,10 +62,10 @@ struct aw_spin_desc {
 	uint32_t spin_mode;
 };
 
-int aw_check_spin_mode(struct aw_spin_desc *spin_desc);
-int aw_hold_dsp_spin_st(struct aw_spin_desc *spin_desc);
-int aw_hold_reg_spin_st(struct aw_spin_desc *spin_desc);
-void aw_add_spin_controls(void *aw_dev);
-void aw_spin_init(struct aw_spin_desc *spin_desc);
+int aw883xx_check_spin_mode(struct aw_spin_desc *spin_desc);
+int aw883xx_hold_dsp_spin_st(struct aw_spin_desc *spin_desc);
+int aw883xx_hold_reg_spin_st(struct aw_spin_desc *spin_desc);
+void aw883xx_add_spin_controls(void *aw_dev);
+void aw883xx_spin_init(struct aw_spin_desc *spin_desc);
 
 #endif

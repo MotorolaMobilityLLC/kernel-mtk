@@ -1,5 +1,5 @@
-#ifndef __AWINIC_DATA_TYPE_H__
-#define __AWINIC_DATA_TYPE_H__
+#ifndef __AW883XX_DATA_TYPE_H__
+#define __AW883XX_DATA_TYPE_H__
 
 #define AW_NAME_BUF_MAX (50)
 
