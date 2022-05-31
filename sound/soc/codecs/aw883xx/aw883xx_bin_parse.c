@@ -31,8 +31,8 @@
 #include <linux/cdev.h>
 #include <linux/list.h>
 #include <linux/string.h>
-#include "aw_bin_parse.h"
-#include "aw_log.h"
+#include "aw883xx_bin_parse.h"
+#include "aw883xx_log.h"
 
 /* "code version"-"excel version" */
 #define AWINIC_CODE_VERSION "V0.0.8-V1.0.4"
@@ -66,6 +66,8 @@ typedef unsigned long int aw_uint32;
 static char *profile_name[AW_PROFILE_MAX] = {"Music", "Voice", "Voip", "Ringtone", "Ringtone_hs", "Lowpower",
 						"Bypass", "Mmi", "Fm", "Notification", "Receiver"};
 
+static int aw_parse_bin_header_1_0_0(struct aw_bin *bin);
+
 /**
  *
  * Interface function
@@ -88,7 +90,7 @@ static char *profile_name[AW_PROFILE_MAX] = {"Music", "Voice", "Voip", "Ringtone
  * check sum data
  *
  ********************************************************/
-int aw_check_sum(struct aw_bin *bin, int bin_num)
+static int aw_check_sum(struct aw_bin *bin, int bin_num)
 {
 	unsigned int i = 0;
 	unsigned int sum_data = 0;
@@ -121,7 +123,7 @@ int aw_check_sum(struct aw_bin *bin, int bin_num)
 	return 0;
 }
 
-int aw_check_data_version(struct aw_bin *bin, int bin_num)
+static int aw_check_data_version(struct aw_bin *bin, int bin_num)
 {
 	int i = 0;
 
@@ -134,7 +136,7 @@ int aw_check_data_version(struct aw_bin *bin, int bin_num)
 	return -DATA_VER_ERR;
 }
 
-int aw_check_register_num_v1(struct aw_bin *bin, int bin_num)
+static int aw_check_register_num_v1(struct aw_bin *bin, int bin_num)
 {
 	unsigned int check_register_num = 0;
 	unsigned int parse_register_num = 0;
@@ -171,7 +173,7 @@ int aw_check_register_num_v1(struct aw_bin *bin, int bin_num)
 	return 0;
 }
 
-int aw_check_dsp_reg_num_v1(struct aw_bin *bin, int bin_num)
+static int aw_check_dsp_reg_num_v1(struct aw_bin *bin, int bin_num)
 {
 	unsigned int check_dsp_reg_num = 0;
 	unsigned int parse_dsp_reg_num = 0;
@@ -213,7 +215,7 @@ int aw_check_dsp_reg_num_v1(struct aw_bin *bin, int bin_num)
 	return 0;
 }
 
-int aw_check_soc_app_num_v1(struct aw_bin *bin, int bin_num)
+static int aw_check_soc_app_num_v1(struct aw_bin *bin, int bin_num)
 {
 	unsigned int check_soc_app_num = 0;
 	unsigned int parse_soc_app_num = 0;
@@ -257,7 +259,7 @@ int aw_check_soc_app_num_v1(struct aw_bin *bin, int bin_num)
  * bin header 1_0_0
  *
  ********************************************************/
-void aw_get_single_bin_header_1_0_0(struct aw_bin *bin)
+static void aw_get_single_bin_header_1_0_0(struct aw_bin *bin)
 {
 	int i;
 
@@ -302,7 +304,7 @@ void aw_get_single_bin_header_1_0_0(struct aw_bin *bin)
 	bin->all_bin_parse_num += 1;
 }
 
-int aw_parse_each_of_multi_bins_1_0_0(unsigned int bin_num, int bin_serial_num,
+static int aw_parse_each_of_multi_bins_1_0_0(unsigned int bin_num, int bin_serial_num,
 				      struct aw_bin *bin)
 {
 	int ret = 0;
@@ -334,7 +336,7 @@ int aw_parse_each_of_multi_bins_1_0_0(unsigned int bin_num, int bin_serial_num,
 /* Get the number of bins in multi bins, and set a for loop,
  * loop processing each bin data
  */
-int aw_get_multi_bin_header_1_0_0(struct aw_bin *bin)
+static int aw_get_multi_bin_header_1_0_0(struct aw_bin *bin)
 {
 	int i = 0;
 	int ret = 0;
@@ -369,7 +371,7 @@ int aw_get_multi_bin_header_1_0_0(struct aw_bin *bin)
  * of each bin separately
  *
  ********************************************************/
-int aw_parse_bin_header_1_0_0(struct aw_bin *bin)
+static int aw_parse_bin_header_1_0_0(struct aw_bin *bin)
 {
 	int ret = 0;
 	unsigned int bin_data_type;
@@ -432,7 +434,7 @@ static int aw_check_bin_header_version(struct aw_bin *bin)
 	}
 }
 
-int aw_parsing_bin_file(struct aw_bin *bin)
+static int aw_parsing_bin_file(struct aw_bin *bin)
 {
 	int i = 0;
 	int ret = 0;
@@ -500,7 +502,7 @@ int aw_parsing_bin_file(struct aw_bin *bin)
 	return 0;
 }
 
-int aw_dev_dsp_data_order(struct aw_device *aw_dev,
+int aw883xx_dev_dsp_data_order(struct aw_device *aw_dev,
 				uint8_t *data, uint32_t data_len)
 {
 	int i = 0;
@@ -542,7 +544,7 @@ static int aw_dev_parse_raw_dsp_cfg(struct aw_device *aw_dev,
 
 	aw_dev_info(aw_dev->dev, "data_size:%d enter", data_len);
 
-	ret = aw_dev_dsp_data_order(aw_dev, data, data_len);
+	ret = aw883xx_dev_dsp_data_order(aw_dev, data, data_len);
 	if (ret < 0)
 		return ret;
 
@@ -561,7 +563,7 @@ static int aw_dev_parse_raw_dsp_fw(struct aw_device *aw_dev,
 
 	aw_dev_info(aw_dev->dev, "data_size:%d enter", data_len);
 
-	ret = aw_dev_dsp_data_order(aw_dev, data, data_len);
+	ret = aw883xx_dev_dsp_data_order(aw_dev, data, data_len);
 	if (ret < 0)
 		return ret;
 
@@ -600,7 +602,7 @@ static int aw_dev_prof_parse_multi_bin(struct aw_device *aw_dev,
 			prof_desc->sec_desc[AW_DATA_TYPE_REG].len = aw_bin->header_info[i].valid_data_len;
 			prof_desc->sec_desc[AW_DATA_TYPE_REG].data = data + aw_bin->header_info[i].valid_data_addr;
 		} else if (aw_bin->header_info[i].bin_data_type == DATA_TYPE_DSP_REG) {
-			ret= aw_dev_dsp_data_order(aw_dev, data + aw_bin->header_info[i].valid_data_addr,
+			ret= aw883xx_dev_dsp_data_order(aw_dev, data + aw_bin->header_info[i].valid_data_addr,
 					aw_bin->header_info[i].valid_data_len);
 			if (ret < 0)
 				return ret;
@@ -608,7 +610,7 @@ static int aw_dev_prof_parse_multi_bin(struct aw_device *aw_dev,
 			prof_desc->sec_desc[AW_DATA_TYPE_DSP_CFG].len = aw_bin->header_info[i].valid_data_len;
 			prof_desc->sec_desc[AW_DATA_TYPE_DSP_CFG].data = data + aw_bin->header_info[i].valid_data_addr;
 		} else if (aw_bin->header_info[i].bin_data_type == DATA_TYPE_DSP_FW) {
-			ret = aw_dev_dsp_data_order(aw_dev, data + aw_bin->header_info[i].valid_data_addr,
+			ret = aw883xx_dev_dsp_data_order(aw_dev, data + aw_bin->header_info[i].valid_data_addr,
 					aw_bin->header_info[i].valid_data_len);
 			if (ret < 0)
 				return ret;
@@ -670,7 +672,7 @@ static int aw_dev_parse_dev_type(struct aw_device *aw_dev,
 			(aw_dev->i2c->addr == cfg_dde[i].dev_addr) &&
 			(cfg_dde[i].type == AW_DEV_TYPE_ID)) {
 			if (cfg_dde[i].data_type == ACF_SEC_TYPE_MONITOR) {
-				ret = aw_monitor_parse_fw(&aw_dev->monitor_desc,
+				ret = aw883xx_monitor_parse_fw(&aw_dev->monitor_desc,
 						(uint8_t *)prof_hdr + cfg_dde[i].data_offset,
 						cfg_dde[i].data_size);
 				if (ret < 0) {
@@ -718,7 +720,7 @@ static int aw_dev_parse_dev_default_type(struct aw_device *aw_dev,
 		if ((aw_dev->channel == cfg_dde[i].dev_index) &&
 			(cfg_dde[i].type == AW_DEV_DEFAULT_TYPE_ID)) {
 			if (cfg_dde[i].data_type == ACF_SEC_TYPE_MONITOR) {
-				ret = aw_monitor_parse_fw(&aw_dev->monitor_desc,
+				ret = aw883xx_monitor_parse_fw(&aw_dev->monitor_desc,
 						(uint8_t *)prof_hdr + cfg_dde[i].data_offset,
 						cfg_dde[i].data_size);
 				if (ret < 0) {
@@ -978,7 +980,7 @@ static int aw_dev_parse_data_by_sec_type_v_1_0_0_0(struct aw_device *aw_dev, str
 		(*cur_scene_id)++;
 		break;
 	case ACF_SEC_TYPE_MONITOR:
-		return aw_monitor_parse_fw(&aw_dev->monitor_desc,
+		return aw883xx_monitor_parse_fw(&aw_dev->monitor_desc,
 						(uint8_t *)prof_hdr + cfg_dde->data_offset,
 						cfg_dde->data_size);
 	default:
@@ -1109,7 +1111,7 @@ static int aw_dev_load_cfg_by_hdr_v_1_0_0_0(struct aw_device *aw_dev, struct aw_
 	return 0;
 }
 
-int aw_dev_cfg_load(struct aw_device *aw_dev, struct aw_container *aw_cfg)
+int aw883xx_dev_cfg_load(struct aw_device *aw_dev, struct aw_container *aw_cfg)
 {
 	struct aw_cfg_hdr *cfg_hdr = NULL;
 	int ret;
@@ -1297,7 +1299,7 @@ static int aw_dev_check_acf_by_hdr_v_1_0_0_0(struct aw_container *aw_cfg)
 
 }
 
-int aw_dev_load_acf_check(struct aw_container *aw_cfg)
+int aw883xx_dev_load_acf_check(struct aw_container *aw_cfg)
 {
 	struct aw_cfg_hdr *cfg_hdr = NULL;
 
@@ -1326,7 +1328,7 @@ int aw_dev_load_acf_check(struct aw_container *aw_cfg)
 	return 0;
 }
 
-int aw_dev_get_profile_count(struct aw_device *aw_dev)
+int aw883xx_dev_get_profile_count(struct aw_device *aw_dev)
 {
 	if (aw_dev == NULL) {
 		aw_pr_err("aw_dev is NULL");
@@ -1336,7 +1338,7 @@ int aw_dev_get_profile_count(struct aw_device *aw_dev)
 	return aw_dev->prof_info.count;
 }
 
-int aw_dev_check_profile_index(struct aw_device *aw_dev, int index)
+int aw883xx_dev_check_profile_index(struct aw_device *aw_dev, int index)
 {
 	if ((index >= aw_dev->prof_info.count) || (index < 0))
 		return -EINVAL;
@@ -1344,12 +1346,12 @@ int aw_dev_check_profile_index(struct aw_device *aw_dev, int index)
 		return 0;
 }
 
-int aw_dev_get_profile_index(struct aw_device *aw_dev)
+int aw883xx_dev_get_profile_index(struct aw_device *aw_dev)
 {
 	return aw_dev->set_prof;
 }
 
-int aw_dev_set_profile_index(struct aw_device *aw_dev, int index)
+int aw883xx_dev_set_profile_index(struct aw_device *aw_dev, int index)
 {
 	struct aw_prof_desc *prof_desc = NULL;
 
@@ -1382,7 +1384,7 @@ char *aw_dev_get_prof_name(struct aw_device *aw_dev, int index)
 	return prof_info->prof_name_list[prof_desc->id];
 }
 
-int aw_dev_get_prof_data(struct aw_device *aw_dev, int index,
+int aw883xx_dev_get_prof_data(struct aw_device *aw_dev, int index,
 			struct aw_prof_desc **prof_desc)
 {
 	if ((index >= aw_dev->prof_info.count) || (index < 0)) {

@@ -18,9 +18,9 @@
 #include <linux/syscalls.h>
 
 #include "aw883xx.h"
-#include "aw_bin_parse.h"
-#include "aw_pid_2049_reg.h"
-#include "aw_log.h"
+#include "aw883xx_bin_parse.h"
+#include "aw883xx_pid_2049_reg.h"
+#include "aw883xx_log.h"
 
 #define AW_FW_CHECK_PART		(10)
 
@@ -104,7 +104,7 @@ static unsigned int aw_pid_2049_reg_val_to_db(unsigned int value)
 }
 
 /*[9 : 6]: -6DB ; [5 : 0]: -0.125DB reg_value = value / step << 6 + value % step ; step = 6 * 8*/
-static uint16_t aw883xx_db_val_to_reg(uint16_t value)
+static uint16_t aw_pid_2049_db_val_to_reg(uint16_t value)
 {
 	return (((value / AW_PID_2049_VOLUME_STEP_DB) << AW_PID_2049_VOL_6DB_START) +
 			(value % AW_PID_2049_VOLUME_STEP_DB));
@@ -113,7 +113,12 @@ static uint16_t aw883xx_db_val_to_reg(uint16_t value)
 static int aw883xx_set_volume(struct aw883xx *aw883xx, uint16_t value)
 {
 	uint16_t reg_value = 0;
-	uint16_t real_value = aw883xx_db_val_to_reg(value);
+	uint16_t real_value = 0;
+	uint16_t volume = 0;
+	struct aw_volume_desc *vol_desc = &aw883xx->aw_pa->volume_desc;
+
+	volume = AW_GET_MIN_VALUE(value, vol_desc->mute_volume);
+	real_value = aw_pid_2049_db_val_to_reg(volume);
 
 	/* cal real value */
 	aw883xx_reg_read(aw883xx, AW_PID_2049_SYSCTRL2_REG, &reg_value);
@@ -329,7 +334,7 @@ static int aw_pid_2049_dsp_fw_check(struct aw_device *aw_dev)
 
 	aw_dev_info(aw_dev->dev, "enter");
 
-	ret = aw_dev_get_prof_data(aw_dev, aw_dev->cur_prof, &set_prof_desc);
+	ret = aw883xx_dev_get_prof_data(aw_dev, aw_dev->cur_prof, &set_prof_desc);
 	if (ret < 0)
 		return ret;
 
@@ -402,9 +407,10 @@ static int aw883xx_dev_init(struct aw883xx *aw883xx)
 	aw_pa->ops.aw_dsp_write = aw883xx_dev_dsp_write;
 	aw_pa->ops.aw_get_dev_num = aw883xx_get_dev_num;
 
-	aw_pa->ops.aw_get_volume = aw_pid_2049_get_volume;
-	aw_pa->ops.aw_set_volume = aw_pid_2049_set_volume;
+	aw_pa->ops.aw_get_hw_volume = aw_pid_2049_get_volume;
+	aw_pa->ops.aw_set_hw_volume = aw_pid_2049_set_volume;
 	aw_pa->ops.aw_reg_val_to_db = aw_pid_2049_reg_val_to_db;
+
 	aw_pa->ops.aw_check_rd_access = aw_pid_2049_check_rd_access;
 	aw_pa->ops.aw_check_wr_access = aw_pid_2049_check_wr_access;
 	aw_pa->ops.aw_get_reg_num = aw_pid_2049_get_reg_num;
@@ -477,6 +483,8 @@ static int aw883xx_dev_init(struct aw883xx *aw883xx)
 	aw_pa->volume_desc.mask = AW_PID_2049_VOL_MASK;
 	aw_pa->volume_desc.shift = AW_PID_2049_VOL_START_BIT;
 	aw_pa->volume_desc.mute_volume = AW_PID_2049_MUTE_VOL;
+	aw_pa->volume_desc.max_volume = AW_PID_2049_VOL_DEFAULT_VALUE;
+	aw_pa->volume_desc.ctl_volume = AW_PID_2049_VOL_DEFAULT_VALUE;
 
 	aw_pa->dsp_en_desc.reg = AW_PID_2049_SYSCTRL_REG;
 	aw_pa->dsp_en_desc.mask = AW_PID_2049_DSPBY_MASK;
@@ -612,7 +620,7 @@ static int aw883xx_dev_init(struct aw883xx *aw883xx)
 	aw_pa->dsp_st_desc.dsp_reg_s2 = AW_PID_2049_DSP_ST_S2;
 	aw_pa->dsp_st_desc.dsp_reg_e2 = AW_PID_2049_DSP_ST_E2;
 
-	aw_device_probe(aw_pa);
+	aw883xx_device_probe(aw_pa);
 
 	aw883xx->aw_pa = aw_pa;
 
