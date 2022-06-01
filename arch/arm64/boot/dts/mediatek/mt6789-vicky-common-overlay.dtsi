@@ -1185,3 +1185,8 @@
 			thermal-sensors = <&tboard_thermistor5>;
 		};
 };
+
+&charger_cooler {
+        mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
+                                2000000 1500000 1000000 500000>;
+};
