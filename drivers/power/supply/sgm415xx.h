@@ -405,5 +405,7 @@ struct sgm_sysfs_field_info {
 		struct sgm_sysfs_field_info *attr, int *val);
 };
 
+extern bool wt6670f_is_detect;
+extern int sgm_config_qc_charger(struct charger_device *chg_dev);
 
 #endif /* _SGM4154x_CHARGER_H */
