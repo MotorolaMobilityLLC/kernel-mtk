@@ -50,7 +50,6 @@ static int charger_cooling_get_max_state(struct thermal_cooling_device *cdev, un
 	struct charger_cooling_device *charger_cdev = cdev->devdata;
 
 	*state = charger_cdev->max_state;
-
 	return 0;
 }
 
@@ -92,12 +91,37 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	union power_supply_propval prop_vbus;
 	union power_supply_propval prop_s_bat_chr;
 	int ret = -1;
+	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	union power_supply_propval prop_bq_chr;
+	prop_bq_chr.intval = 0;
+	#endif
 
 	if (chg->chg_psy == NULL || IS_ERR(chg->chg_psy)) {
 		pr_info("Couldn't get chg_psy\n");
 		return ret;
 	}
 	prop_bat_chr.intval = master_charger_state_to_current_limit[chg->target_state];
+
+	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	ret = power_supply_get_property(chg->bq_chg_psy,
+		POWER_SUPPLY_PROP_STATUS, &prop_bq_chr);
+	if (ret != 0) {
+		pr_notice("set charging enable fail\n");
+	}
+
+	ret = power_supply_set_property(chg->q_chg_psy,
+		POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &prop_bat_chr);
+	if (ret != 0) {
+		pr_notice("qc3p temp level set bat curr fail\n");
+	}
+
+	if (prop_bq_chr.intval == 1) {
+		if (prop_bat_chr.intval > 1000000) {
+			pr_notice("qc3p prop_bat_chr.intval > 1A\n");
+			return ret;
+		}
+	}
+	#endif
 
 	ret = power_supply_set_property(chg->chg_psy,
 		POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
@@ -110,6 +134,7 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 		prop_input.intval = 0;
 	else
 		prop_input.intval = -1;
+
 	ret = power_supply_set_property(chg->chg_psy,
 		POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT, &prop_input);
 	if (ret != 0) {
@@ -133,8 +158,8 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 		return ret;
 	}
 
-	pr_notice("chr limit state %lu, chr %d, input %d, vbus %d\n",
-		chg->target_state, prop_bat_chr.intval, prop_input.intval, prop_vbus.intval);
+       pr_notice("chr limit state %lu, chr %d, input %d, vbus %d\n",
+               chg->target_state, prop_bat_chr.intval, prop_input.intval, prop_vbus.intval);
 
 	power_supply_changed(chg->chg_psy);
 
@@ -270,6 +295,19 @@ static int charger_cooling_probe(struct platform_device *pdev)
 		pr_info("Couldn't get chg_psy\n");
 		return -EINVAL;
 	}
+	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	charger_cdev->q_chg_psy = power_supply_get_by_name("mmi_chrg_manager");
+	if (charger_cdev->q_chg_psy == NULL || IS_ERR(charger_cdev->q_chg_psy)) {
+		pr_info("Couldn't get mmi chrg manager psy\n");
+		return -EPROBE_DEFER;
+	}
+	charger_cdev->bq_chg_psy = power_supply_get_by_name("bq2597x-standalone");
+	if (charger_cdev->bq_chg_psy == NULL || IS_ERR(charger_cdev->bq_chg_psy)) {
+		pr_info("Couldn't get bq2597x psy\n");
+		return -EPROBE_DEFER;
+	}
+	#endif
+
 	if (charger_cdev->type == DUAL_CHARGER) {
 		charger_cdev->s_chg_psy = power_supply_get_by_name("mtk-slave-charger");
 		if (charger_cdev->s_chg_psy == NULL || IS_ERR(charger_cdev->s_chg_psy)) {
@@ -304,7 +342,6 @@ static int charger_cooling_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, charger_cdev);
 	dev_info(dev, "register %s done, id=%d\n", charger_cdev->name);
-
 	return 0;
 }
 
