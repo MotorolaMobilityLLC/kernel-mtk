@@ -530,7 +530,11 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 		extcon->c_role = USB_ROLE_NONE;
 
 	/* vbus */
+	#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 	extcon->vbus = devm_regulator_get(dev, "usb-otg-vbus");
+	#else
+	extcon->vbus = devm_regulator_get(dev, "vbus");
+	#endif
 	if (IS_ERR(extcon->vbus)) {
 		dev_err(dev, "failed to get vbus\n");
 		return PTR_ERR(extcon->vbus);
