@@ -1360,6 +1360,9 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 			val->intval = POWER_SUPPLY_STATUS_FULL;
 		else
 			val->intval = POWER_SUPPLY_STATUS_CHARGING;
+
+		if (sgm->mmi_charging_full == true)
+			val->intval = POWER_SUPPLY_STATUS_FULL;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		switch (state.chrg_stat) {		
@@ -1394,6 +1397,8 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = state.online;
+		if (!state.online)
+			sgm->mmi_charging_full = false;
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
 		val->intval = state.vbus_gd;
@@ -1428,9 +1433,12 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 		if(is_already_probe_ok == 1){
 			val->intval = wt6670f_get_vbus_voltage();
-			if(val->intval < 0 || val->intval > 13000){
+			if(val->intval > 13000){
 				wt6670f_do_reset();
 				val->intval = wt6670f_get_vbus_voltage();
+			}
+			if(val->intval > 13000){
+				val->intval = 5000;
 			}
 		}else{
 			val->intval = 5000;
