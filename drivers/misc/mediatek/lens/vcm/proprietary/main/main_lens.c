@@ -79,6 +79,10 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+//Begin: Add lens driver for Vicky
+	{1, MOT_VICKY_AFDRV_GT9764, MOT_VICKY_GT9764_SetI2CClient, MOT_VICKY_GT9764_Ioctl,
+	MOT_VICKY_GT9764_Release, MOT_VICKY_GT9764_GetFileName, NULL},
+//End
 	{1, AFDRV_DW9718TAF, DW9718TAF_SetI2Cclient, DW9718TAF_Ioctl,
 	 DW9718TAF_Release, DW9718TAF_GetFileName, NULL},
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
