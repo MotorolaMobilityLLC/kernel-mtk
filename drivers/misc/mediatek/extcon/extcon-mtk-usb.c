@@ -190,7 +190,11 @@ static int mtk_usb_extcon_psy_init(struct mtk_extcon_info *extcon)
 {
 	int ret = 0;
 	struct device *dev = extcon->dev;
+	#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 	extcon->usb_psy = power_supply_get_by_name("sgm4154x-charger");
+	#else
+	extcon->usb_psy = devm_power_supply_get_by_phandle(dev, "charger");
+	#endif
 	if (IS_ERR_OR_NULL(extcon->usb_psy)) {
 		dev_err(dev, "fail to get usb_psy\n");
 		return -EINVAL;
