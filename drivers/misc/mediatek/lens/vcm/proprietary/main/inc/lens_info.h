@@ -65,6 +65,9 @@
 #define AFDRV_OV8825AF "OV8825AF"
 #define AFDRV_WV511AAF "WV511AAF"
 #define AFDRV_DW9718TAF "DW9718TAF"
+//Begin: Add lens driver name for Vicky
+#define MOT_VICKY_AFDRV_GT9764 "MOT_VICKY_GT9764AF"
+//End
 
 #define CONVERT_CCU_TIMESTAMP 0x1000
 

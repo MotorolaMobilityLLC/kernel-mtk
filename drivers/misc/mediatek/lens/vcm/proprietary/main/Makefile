@@ -66,4 +66,4 @@ mainaf-y  += common/bu63169af/OIS_func.o
 mainaf-y  += common/bu63169af/OIS_main.o
 mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
-
+mainaf-y  += common/mot_vicky_gt9764af/MOT_VICKY_GT9764AF.o
