@@ -258,6 +258,9 @@ struct charger_data {
 	int junction_temp_max;
 	int moto_chg_tcmd_ichg;
 	int moto_chg_tcmd_ibat;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	int cp_ichg_limit;
+#endif
 };
 
 /*moto mmi Functionality start*/

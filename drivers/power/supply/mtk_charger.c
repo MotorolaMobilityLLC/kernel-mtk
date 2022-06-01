@@ -2479,9 +2479,7 @@ static bool charger_init_algo(struct mtk_charger *info)
 	if (info->mmi.factory_mode) {
 		/* Disable charging when enter ATM mode(factory mode) */
 		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		charger_dev_enable(info->chg1_dev, false);
-#endif
 	}
 	return true;
 }
@@ -3916,12 +3914,7 @@ static void charger_status_check(struct mtk_charger *info)
 	chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev,
 						       "charger");
 	if (IS_ERR_OR_NULL(chg_psy)) {
-		chg_psy = devm_power_supply_get_by_phandle(&info->pdev->dev,
-						       "charger_2nd");
-		if (IS_ERR_OR_NULL(chg_psy)) {
-			chr_err("%s Couldn't get chg_psy\n", __func__);
-		}
-		chr_err("%s charger psy name: %s\n", __func__, chg_psy->desc->name);
+		chr_err("%s Couldn't get chg_psy\n", __func__);
 	} else {
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_ONLINE, &online);
@@ -4644,6 +4637,11 @@ int psy_charger_set_property(struct power_supply *psy,
 		pr_info("%s: adaptive charging disable ibat %d\n", __func__,
 			info->mmi.adaptive_charging_disable_ibat);
 		break;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
+		info->chg_data[idx].cp_ichg_limit = val->intval;
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -4988,6 +4986,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->chg_data[i].input_current_limit_by_aicl = -1;
 		info->chg_data[i].moto_chg_tcmd_ichg = -1;
 		info->chg_data[i].moto_chg_tcmd_ibat = -1;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+		info->chg_data[i].cp_ichg_limit= -1;
+#endif
 	}
 	info->enable_hv_charging = true;
 
