@@ -445,7 +445,6 @@ int get_usb_type(struct mtk_charger *info)
 
 	if (chg_psy == NULL || IS_ERR(chg_psy)) {
 		chr_err("%s Couldn't get chg_psy\n", __func__);
-		ret = -1;
 	} else {
 
 		ret = power_supply_get_property(chg_psy,
