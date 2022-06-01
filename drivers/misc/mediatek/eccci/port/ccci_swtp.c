@@ -85,6 +85,9 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 	power_mode = swtp->tx_power_mode;
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
+        CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"%s to MD%d,state=%d,ret=%d moto test\n",
+			__func__, swtp->md_id + 1, power_mode, ret);
 	if (ret != 0)
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"%s to MD%d,state=%d,ret=%d\n",
@@ -365,7 +368,11 @@ int swtp_init(int md_id)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
+#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER; // default as radiate mode, DO power
+#else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
+#endif
 
 	spin_lock_init(&swtp_data[md_id].spinlock);
 
