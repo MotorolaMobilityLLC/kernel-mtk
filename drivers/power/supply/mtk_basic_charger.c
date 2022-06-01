@@ -61,11 +61,8 @@
 #include <linux/gpio.h>
 
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
-//extern int wt6670f_get_charger_type(void);
-extern int wt6670f_set_voltage(u16 voltage);
-extern int m_chg_type;
-extern bool wt6670f_is_detect;
-extern int sgm_config_qc_charger(struct charger_device *chg_dev);
+#include "sgm415xx.h"
+#include "wt6670f.h"
 #endif
 
 static int _uA_to_mA(int uA)
@@ -314,7 +311,14 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
 	info->mmi.target_usb = pdata->input_current_limit;
-
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	if (pdata->cp_ichg_limit!= -1) {
+		if (pdata->cp_ichg_limit <
+		    pdata->charging_current_limit)
+			pdata->charging_current_limit =
+					pdata->cp_ichg_limit;
+	}
+#endif
 	sc_select_charging_current(info, pdata);
 
 	if (pdata->thermal_charging_current_limit != -1) {
