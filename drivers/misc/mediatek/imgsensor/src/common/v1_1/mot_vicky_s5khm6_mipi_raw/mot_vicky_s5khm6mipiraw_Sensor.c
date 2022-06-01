@@ -177,12 +177,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 2,
 	.slim_video_delay_frame = 1,
 	.custom1_delay_frame = 2,
-	.custom2_delay_frame = 1,
+	.custom2_delay_frame = 2,
 	.isp_driving_current = ISP_DRIVING_4MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_CPHY,
 	.mipi_settle_delay_mode = 0,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_Gb,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_3_LANE,
 	.i2c_addr_table = {0xAC, 0xff},
@@ -749,7 +749,7 @@ static void check_streamon(void)
 			return;
 		mdelay(1);
 	}
-	LOG_INF("X");
+	LOG_INF("Stream on timeout!X");
 }
 
 static void check_streamoff(void)
@@ -764,7 +764,7 @@ static void check_streamoff(void)
 			return;
 		mdelay(1);
 	}
-	LOG_INF(" Stream Off Fail1!\n");
+	LOG_INF(" Stream Off Fail!\n");
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
@@ -1644,6 +1644,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CUSTOM1://9Sum2Bin
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 				*(feature_data + 1) = imgsensor_info.min_gain;//1X
 				*(feature_data + 2) = imgsensor_info.max_gain;//Max gain is 64X
 				break;
@@ -1669,6 +1670,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 		switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CUSTOM1://9Sum2Bin
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 				*(feature_data + 1) = 4;
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM2://Full
@@ -1973,6 +1975,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		/* margin info by scenario */
 		switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CUSTOM1://9Sum2Bin
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 				*(feature_data + 2) = 13;
 				break;
 			case MSDK_SCENARIO_ID_CUSTOM2://Full
