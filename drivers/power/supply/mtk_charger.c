@@ -2479,7 +2479,9 @@ static bool charger_init_algo(struct mtk_charger *info)
 	if (info->mmi.factory_mode) {
 		/* Disable charging when enter ATM mode(factory mode) */
 		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		charger_dev_enable(info->chg1_dev, false);
+#endif
 	}
 	return true;
 }
@@ -4441,9 +4443,11 @@ static int psy_charger_get_property(struct power_supply *psy,
 		else
 			val->intval = false;
 		break;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 	case POWER_SUPPLY_PROP_TYPE:
 		val->intval = get_charger_type(info);
 		break;
+#endif
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = info->enable_hv_charging;
 		break;
