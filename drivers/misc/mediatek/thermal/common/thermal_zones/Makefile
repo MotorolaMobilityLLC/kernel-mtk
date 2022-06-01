@@ -497,7 +497,6 @@ obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_charger2.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_wtcharger.o
-obj-$(CONFIG_THERMAL) += mtk_ts_flashlight.o
 obj-$(CONFIG_THERMAL) += mtk_ts_mbtherm.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_bqtherm.o
 obj-$(CONFIG_THERMAL) += mtk_ts_btstypc.o
