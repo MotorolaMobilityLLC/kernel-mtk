@@ -49,6 +49,10 @@ struct charger_cooling_device {
 	enum charger_type type;
 	struct power_supply *chg_psy;
 	struct power_supply *s_chg_psy;
+	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	struct power_supply *q_chg_psy;
+	struct power_supply *bq_chg_psy;
+	#endif
 	const struct charger_cooling_platform_data *pdata;
 };
 
