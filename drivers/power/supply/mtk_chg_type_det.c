@@ -73,7 +73,11 @@ static int mtk_ext_get_charger_type(struct mtk_ctd_info *mci, int attach)
 	if (mci->bc12_sel == MTK_CTD_BY_MAINPMIC)
 		bc12_psy = power_supply_get_by_name("mtk_charger_type");
 	else if (mci->bc12_sel == MTK_CTD_BY_EXTCHG)
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 		bc12_psy = power_supply_get_by_name("sgm4154x-charger");
+#else
+		bc12_psy = power_supply_get_by_name("ext_charger_type");
+#endif
 	if (IS_ERR_OR_NULL(bc12_psy)) {
 		pr_notice("%s Couldn't get bc12_psy\n", __func__);
 		return -ENODEV;
@@ -359,7 +363,11 @@ static int mtk_ctd_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	mci->dev = &pdev->dev;
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
 	mci->bc12_sel = MTK_CTD_BY_EXTCHG;
+#else
+	mci->bc12_sel = MTK_CTD_BY_SUBPMIC;
+#endif
 	init_waitqueue_head(&mci->attach_wq);
 	atomic_set(&mci->chrdet_start, 0);
 	mutex_init(&mci->attach_lock);
