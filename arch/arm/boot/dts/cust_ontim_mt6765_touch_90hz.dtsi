@@ -27,7 +27,7 @@
 		compatible = "mtk,tddi-ilitek", "chipone-tddi","focaltech,fts";
 		reg = <0>;
 		status = "okay";
-		spi-max-frequency = <500000>;
+		spi-max-frequency = <9600000>;
 		/* Charger detect */
 		chipone,touch-charger-detect-enable;
 		chipone,touch-charger-detect-type = "notify"; /* notify, poll */

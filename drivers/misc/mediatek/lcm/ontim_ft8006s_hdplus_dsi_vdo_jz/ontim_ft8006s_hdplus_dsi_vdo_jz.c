@@ -160,7 +160,7 @@ static struct LCM_setting_table init_setting[] = {
     {0x19,0x01,{0x01}},
 	{0x51,0x01,{0xff}},
 	{0x53,0x01,{0x2C}},
-	{0x55,0x01,{0x00}},
+	{0x55,0x01,{0x01}},
     {0x11,0x01,{0x00}},
     {REGFLAG_DELAY,120,{}},
     {0x29,0x01,{0x00}},
@@ -225,7 +225,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
 
 	/* if vfp solution */
-	dfps_params[0].vertical_frontporch = 1183; //IC廠給的值，從９０幀切到６０幀，只改動ＶＦＰ這個參數就可以了，其他的不動,實測５９．８９HZ.
+	dfps_params[0].vertical_frontporch = 1170; //IC廠給的值，從９０幀切到６０幀，只改動ＶＦＰ這個參數就可以了，其他的不動,實測60.16HZ.
 	dfps_params[0].vertical_frontporch_for_low_power = 2466;
 
 	/* DPFS_LEVEL1 */
