@@ -830,4 +830,6 @@ enum {
 int wt6670f_do_reset(void);
 int wt6670f_isp_flow(struct wt6670f *chip);
 extern u16 wt6670f_get_vbus_voltage(void);
+extern int wt6670f_set_voltage(u16 voltage);
+extern int m_chg_type;
 #endif
