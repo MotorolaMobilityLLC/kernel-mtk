@@ -13,7 +13,8 @@
 #include "mediatek/mt6855-moto-common-overlay.dtsi"
 
 &mtk_leds {
-	compatible = "mediatek,i2c-leds";
+
+	compatible = "mediatek,disp-leds";
 
 	backlight {
 		led_mode = <6>;
@@ -89,48 +90,18 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
-	switch_fps = <120>;
 	panel1@0 {
-		compatible = "jdi,nt36672e,vdo,120hz";
+		compatible = "mot,dummy,vdo,60hz";
 		reg = <0>;
-		pm-enable-gpios = <&pio 161 0>;
-		reset-gpios = <&pio 95 0>;
-		gate-ic = <4831>;
-		rc-enable = <1>;
 		pinctrl-names = "default";
 		port {
 			panel_in1: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
+
 	};
-	panel2@0 {
-		compatible = "jdi,nt36672e,vdo,60hz";
-		reg = <1>;
-		pm-enable-gpios = <&pio 161 0>;
-		reset-gpios = <&pio 95 0>;
-		gate-ic = <4831>;
-		rc-enable = <1>;
-		pinctrl-names = "default";
-		port {
-			panel_in2: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-	panel3@0 {
-		compatible = "truly,td4330,cmd";
-		reg = <2>;
-		pm-enable-gpios = <&pio 161 0>;
-		reset-gpios = <&pio 95 0>;
-		gate-ic = <4831>;
-		pinctrl-names = "default";
-		port {
-			panel_in3: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
+
 	ports {
 		port {
 			dsi_out: endpoint {
