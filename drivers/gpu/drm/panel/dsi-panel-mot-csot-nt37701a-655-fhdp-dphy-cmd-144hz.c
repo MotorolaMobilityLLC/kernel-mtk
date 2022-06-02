@@ -1001,11 +1001,11 @@ static int panel_ext_powerdown(struct drm_panel *panel)
 	pr_info("%s+\n", __func__);
 	if (ctx->prepared)
 	    return 0;
-
+#if 0
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-
+#endif
 	gate_ic_Power_on(panel, 0);
 
 	return 0;
