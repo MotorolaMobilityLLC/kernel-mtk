@@ -511,7 +511,7 @@
 
 		trips {
 			wlctx_trip0: wlctx-trip0 {
-				temperature = <48000>;
+				temperature = <47000>;
 				hysteresis = <2000>;
 				type = "passive";
 			};
