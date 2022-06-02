@@ -150,6 +150,41 @@
 		};
 	};
 };
+
+&regulator_vibrator {
+	status = "disabled";
+};
+
+&i2c3 {
+	haptic_nv@5A{
+		compatible = "awinic,haptic_nv";
+		reg = < 0x5A >;
+		aw862xx_i2c_addr = < 0x58 >;
+		reset-gpio = <&pio 12 0>;
+		aw8622x_vib_lk_f0_cali = < 0 >;
+		aw8622x_vib_mode = < 2 >; /* mode: RAM -> 2; CONT -> 3 */
+		aw8622x_vib_f0_pre = < 2350 >;
+		aw8622x_vib_f0_cali_percen = < 7 >;
+		aw8622x_vib_cont_drv1_lvl = < 0x7F >;
+		aw8622x_vib_lra_vrms = < 1000 >; /* Motor rated voltage, mV */
+		aw8622x_vib_cont_brk_time = < 0x06 >;
+		aw8622x_vib_cont_tset = < 0x06 >;
+		aw8622x_vib_cont_bemf_set = < 0x02 >;
+		aw8622x_vib_cont_wait_num = < 0x06 >;
+		aw8622x_vib_cont_brk_gain = < 0x08 >;
+		aw8622x_vib_cont_drv1_time = < 0x04 >;
+		aw8622x_vib_cont_drv2_time = < 0x14 >;
+		aw8622x_vib_cont_track_margin = < 0x0F >;
+		aw8622x_vib_sine_array = < 0x05 0xB2 0xFF 0xEF >; /* SIN_H SIN_L COS_H COS_L */
+		aw8622x_vib_d2s_gain = < 0x05 >;
+		aw8622x_vib_trig_config = < 0 0 0 1 0 2 0
+					    0 0 0 1 0 2 0
+					    0 0 0 1 0 2 0 >;
+		aw8622x_vib_duration_time = < 34 67 100 >;
+		status = "okay";
+	};
+};
+
 &gps {
 	pinctrl-names = "default",
 		"gps_l1_lna_disable",
