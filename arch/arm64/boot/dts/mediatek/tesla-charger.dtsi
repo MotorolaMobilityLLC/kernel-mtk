@@ -32,7 +32,7 @@
 	COM_FG_METER_RESISTANCE = <(0)>;
 	CAR_TUNE_VALUE = <(97)>;
 
-	SHUTDOWN_1_TIME = <(10)>;
+	SHUTDOWN_1_TIME = <(15)>;
 	/* If ui_soc shows 1% more than X minites, system will shutdown */
 
 	g_Q_MAX = <
