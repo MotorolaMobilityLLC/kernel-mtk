@@ -7,13 +7,13 @@
 
 &charger
 {
-	battery_cv = <4400000>;
+	battery_cv = <4480000>;
 
 	jeita_temp_above_t4_cv = <4200000>;
 	jeita_temp_t3_to_t4_cv = <4200000>;
-	jeita_temp_t2_to_t3_cv = <4400000>;
-	jeita_temp_t1_to_t2_cv = <4400000>;
-	jeita_temp_t0_to_t1_cv = <4400000>;
+	jeita_temp_t2_to_t3_cv = <4480000>;
+	jeita_temp_t1_to_t2_cv = <4480000>;
+	jeita_temp_t0_to_t1_cv = <4480000>;
 	jeita_temp_below_t0_cv = <4200000>;
 
 	temp_t4_thres = <55>;
@@ -60,28 +60,25 @@
 	/* power on system iboot */
 	SHUTDOWN_GAUGE0_VOLTAGE = <(34000)>;
 	/* shutdown gauge 0% voltage */
+
 	TEMPERATURE_T0 = <(50)>;
 	/* Battery temperature T0 */
 	TEMPERATURE_T1 = <(25)>;
 	/* Battery temperature T1 */
-	TEMPERATURE_T2 = <(10)>;
+	TEMPERATURE_T2 = <(0)>;
 	/* Battery temperature T2 */
-	TEMPERATURE_T3 = <(0)>;
+	TEMPERATURE_T3 = <(-10)>;
 	/* Battery temperature T3 */
-	TEMPERATURE_T4 = <(-6)>;
-	/* Battery temperature T4 */
-	TEMPERATURE_T5 = <(-10)>;
-	/* Battery temperature T5 */
-	g_FG_PSEUDO100_T0 = <(100)>;
+
+	g_FG_PSEUDO100_T0 = <(97)>;
 	/* Pseudo 100% percentage at T0 */
-	g_FG_PSEUDO100_T1 = <(100)>;
+	g_FG_PSEUDO100_T1 = <(97)>;
 	/* Pseudo 100% percentage at T1 */
-	g_FG_PSEUDO100_T2 = <(100)>;
+	g_FG_PSEUDO100_T2 = <(97)>;
 	/* Pseudo 100% percentage at T2 */
-	g_FG_PSEUDO100_T3 = <(100)>;
+	g_FG_PSEUDO100_T3 = <(97)>;
 	/* Pseudo 100% percentage at T3 */
-	g_FG_PSEUDO100_T4 = <(100)>;
-	/* Pseudo 100% percentage at T4 */
+
 	Q_MAX_SYS_VOLTAGE_BAT0 = <(3350)>;
 	/* Pseudo1 for hide percentage */
 	Q_MAX_SYS_VOLTAGE_BAT1 = <(3350)>;
