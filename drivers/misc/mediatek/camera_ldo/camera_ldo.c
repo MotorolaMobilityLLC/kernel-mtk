@@ -303,6 +303,8 @@ EXPORT_SYMBOL(camera_ldo_set_ldo_value);
 static const struct of_device_id i2c_of_match[] = {
 	{ .compatible = "mediatek,i2c_camera_ldo", },
 	{ .compatible = "mediatek,i2c_camera_ldo2", },
+	{ .compatible = "mediatek,i2c_camera_ldo3", },
+	{ .compatible = "mediatek,i2c_camera_ldo4", },
 	{},
 };
 
