@@ -360,12 +360,12 @@
 			type = "passive";
 		};
 		charge_trip4: charge-trip4 {
-			temperature = <51000>;
-			hysteresis = <2000>;
+			temperature = <49000>;
+			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip5: charge-trip5 {
-			temperature = <53000>;
+			temperature = <51000>;
 			hysteresis = <2000>;
 			type = "passive";
 		};
