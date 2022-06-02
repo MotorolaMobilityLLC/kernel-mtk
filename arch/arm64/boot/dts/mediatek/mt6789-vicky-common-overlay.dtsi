@@ -261,6 +261,16 @@
 };
 
 &i2c3 {
+       i2c_camera_ldo3{
+	       compatible = "mediatek,i2c_camera_ldo3";
+	       reg = <0x35>;
+	       status = "okay";
+       };
+       i2c_camera_ldo4{
+	       compatible = "mediatek,i2c_camera_ldo4";
+	       reg = <0x2f>;
+	       status = "okay";
+       };
        nfc_pn5xx: nfc_pn5xx@28 {
 		compatible = "nxp,pn5xx";
 		reg = <0x28>;
