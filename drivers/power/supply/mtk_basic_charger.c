@@ -274,27 +274,6 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 					TYPEC_RP_LEVEL));
 		}
 	}
-#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
-		/*when wt6670f is detect should make sure sgm is 500mA*/
-		if(wt6670f_is_detect == true){
-			if(pdata->input_current_limit > 500000){
-				pdata->input_current_limit = 500000;
-				chr_err("wt6670f is detect, set input_current_limit 500mA!\n");
-			}
-		}else{
-			/*if wt6670f is qc3,vbus will increase 400mv
-			  and then set 3A to ensure 5V3A.*/
-			if(m_chg_type == 0x06){
-			    if(sgm_config_qc_charger(info->chg1_dev) != 0)
-					chr_err("sgm_config_qc_charger set sgm dpdm failed\n");
-			    else{
-				    pdata->input_current_limit = 3000000;
-				    pdata->charging_current_limit = 3000000;
-				    chr_err("it is HVDCP set sgm 3A  m_chg_type = %d\n",m_chg_type);
-			    }
-			}
-		}
-#endif
 
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
@@ -309,6 +288,27 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 	}
 
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
+
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
+		/*when wt6670f is detect should make sure sgm is 500mA*/
+		if(wt6670f_is_detect == true){
+			if(pdata->charging_current_limit > 500000){
+				pdata->charging_current_limit = 500000;
+				chr_err("wt6670f is detect, set charging_current_limit 500mA!\n");
+			}
+		}else{
+			/*if wt6670f is qc3,vbus will increase 400mv
+			  and then set 3A to ensure 5V3A.*/
+			if(m_chg_type == 0x06){
+			    if(sgm_config_qc_charger(info->chg1_dev) != 0)
+					chr_err("sgm_config_qc_charger set sgm dpdm failed\n");
+			    else{
+				    pdata->input_current_limit = 3000000;
+				    chr_err("it is HVDCP set sgm 3A  m_chg_type = %d\n",m_chg_type);
+			    }
+			}
+		}
+#endif
 
 	info->mmi.target_usb = pdata->input_current_limit;
 #ifdef CONFIG_MOTO_CHARGER_SGM415XX
