@@ -14,6 +14,7 @@
 #include <linux/ktime.h>
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
+#include <linux/pm_wakeup.h>
 #include <linux/of.h>
 #include <linux/list.h>
 #include <linux/delay.h>
@@ -69,6 +70,7 @@ static struct pinctrl_state *ocp8135b_pwm;
 /* define mutex and work queue */
 static DEFINE_MUTEX(ocp8135b_mutex);
 static struct work_struct ocp8135b_work;
+static struct wakeup_source *suspend_lock;
 static int g_level = 0;
 /* define usage count */
 static int use_count;
@@ -290,6 +292,8 @@ static int ocp8135b_enable(void)
 	}else{
 		ocp8135b_set_strobe_brightness(g_level);
 	}
+
+	__pm_stay_awake(suspend_lock);
 	return 0;
 }
 
@@ -304,6 +308,7 @@ static int ocp8135b_disable(void)
 	ocp8135b_pinctrl_set(pin_torch, state);
 	ocp8135b_pinctrl_set(pin_flash, state);
 
+	__pm_relax(suspend_lock);
 	return 0;
 }
 
@@ -605,6 +610,8 @@ static int ocp8135b_probe(struct platform_device *pdev)
 	ocp8135b_timer.function = ocp8135b_timer_func;
 	ocp8135b_timeout_ms = 100;
 
+	suspend_lock =
+		wakeup_source_register(NULL, "ocp8135b suspend wakelock");
 	/* init chip hw */
 	ocp8135b_chip_init();
 
