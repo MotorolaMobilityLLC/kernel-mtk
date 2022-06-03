@@ -51,9 +51,10 @@
 #define AW9610X_SCAN_DEFAULT_TIME	(10000)
 #define CALI_FILE_MAX_SIZE		(128)
 
-#ifdef AW_USB_PLUG_CAIL
+#ifdef AW_USB_PLUG_CALI
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,9,0)
-#define USB_POWER_SUPPLY_NAME   "charger"
+//#define USB_POWER_SUPPLY_NAME   "charger"
+#define USB_POWER_SUPPLY_NAME   "mtk_charger_type"
 #else
 #define USB_POWER_SUPPLY_NAME   "usb"
 #endif
@@ -1915,7 +1916,7 @@ static int32_t aw9610x_version_init(struct aw9610x *aw9610x)
 	return AW_OK;
 }
 
-#ifdef AW_USB_PLUG_CAIL
+#ifdef AW_USB_PLUG_CALI
 static void aw9610x_ps_notify_callback_work(struct work_struct *work)
 {
 	struct aw9610x *aw9610x = container_of(work, struct aw9610x, ps_notify_work);
@@ -2008,6 +2009,10 @@ static int aw9610x_ps_notify_init(struct aw9610x *aw9610x)
 				ret);
 			goto free_ps_notifier;
 		}
+	}
+	else
+	{
+		AWLOGE(aw9610x->dev,"power_supply_get_by_name get fail.");
 	}
 	return AW_OK;
 free_ps_notifier:
@@ -2242,7 +2247,7 @@ aw9610x_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		goto err_requst_irq;
 	}
 
-#ifdef AW_USB_PLUG_CAIL
+#ifdef AW_USB_PLUG_CALI
 	ret = aw9610x_ps_notify_init(aw9610x);
 	if (ret < 0) {
 		AWLOGE(aw9610x->dev, "error creating power supply notify");
@@ -2262,10 +2267,10 @@ aw9610x_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	return AW_SAR_SUCCESS;
 
 err_cfg:
-#ifdef AW_USB_PLUG_CAIL
+#ifdef AW_USB_PLUG_CALI
 err_ps_notify:
 #endif
-#ifdef AW_USB_PLUG_CAIL
+#ifdef AW_USB_PLUG_CALI
 	power_supply_unreg_notifier(&aw9610x->ps_notif);
 #endif
 err_requst_irq:

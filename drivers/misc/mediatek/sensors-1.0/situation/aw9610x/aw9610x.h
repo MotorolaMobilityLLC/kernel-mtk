@@ -15,7 +15,7 @@
 /*Open the macro definition using the regulator power mode*/
 //#define AW_POWER_ON
 
-//#define AW_USB_PLUG_CAIL
+#define AW_USB_PLUG_CALI
 
 //#define	AW_INPUT_TRIGGER_TH1
 //#define	AW_INPUT_TRIGGER_TH2
