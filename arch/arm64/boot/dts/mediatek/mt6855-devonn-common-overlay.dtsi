@@ -11,6 +11,7 @@
  */
 
 #include "mediatek/mt6855-moto-common-overlay.dtsi"
+#include <dt-bindings/gpio/gpio.h>
 
 &mtk_leds {
 
@@ -226,6 +227,11 @@
 
 &pdc {
 	pd_vbus_upper_bound = <12000000>;
+};
+
+&mmc1 {
+	cd-gpios = <&pio 14 GPIO_ACTIVE_HIGH>;
+	vmmc-supply = <&mt6369_vmch>;
 };
 
 //#include <k6855v1_64/cust.dtsi>
