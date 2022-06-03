@@ -643,6 +643,11 @@ char *aee_log_buf_addr_get(void)
 	return log_buf_addr_get();
 }
 
+u32 *aee_log_first_idx_get(void)
+{
+	return log_first_idx_get();
+}
+
 #ifdef __aarch64__
 bool aee_on_irq_stack(unsigned long sp, struct stack_info *info)
 {
