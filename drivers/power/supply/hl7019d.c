@@ -54,7 +54,7 @@ ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
 
 //Antaiui <AI_BSP_CHG> <hehl> <2021-03-27> add charger ic HL7015A begin
-#define CONFIG_PROJECT_PHY //hhl add
+//#define CONFIG_PROJECT_PHY //hhl add
 //Antaiui <AI_BSP_CHG> <hehl> <2021-03-27> add charger ic HL7015A end
 
 #define SET_OTG_CURRENT_TO_1A	1
@@ -2487,9 +2487,9 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 	g_info = info;
 	//info->chg_type = CHARGER_UNKNOWN;
 
-#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
-	Charger_Detect_Init();
-#endif
+//#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
+//	Charger_Detect_Init();
+//#endif
 	//hl7019d_register_irq(info);
 	//hl7019d_set_dpdm_en(0x1);
 
