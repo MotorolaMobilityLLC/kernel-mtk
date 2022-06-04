@@ -124,7 +124,7 @@
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
-	mmi,min-cp-therm-current-ua = <2000000>;
+	mmi,min-cp-therm-current-ua = <1600000>;
 	mmi,enable-mux;
 	mmi,mux_wls_switch_en = <&pio 104 0x0>;
 	mmi,mux_wls_boost_en = <&pio 121 0x0>;
@@ -319,7 +319,7 @@
 
 &charger_cooler {
 	mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
-				2000000 1500000 1000000 500000>;
+				2000000 1600000 800000 500000>;
 };
 
 &moto_wlc {
@@ -335,7 +335,7 @@
 
 &ap_ntc {
 	polling-delay = <5000>; /* milliseconds */
-	polling-delay-passive = <1000>; /* milliseconds */
+	polling-delay-passive = <3000>; /* milliseconds */
  	thermal-sensors = <&tboard_thermistor1>;
 
 	trips {
@@ -365,8 +365,13 @@
 			type = "passive";
 		};
 		charge_trip5: charge-trip5 {
+			temperature = <50000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+		charge_trip6: charge-trip6 {
 			temperature = <51000>;
-			hysteresis = <2000>;
+			hysteresis = <1000>;
 			type = "passive";
 		};
 	};
@@ -390,10 +395,14 @@
 		};
 		charge-cdev4 {
 			trip = <&charge_trip4>;
-			cooling-device = <&charger_cooler 7 7>;
+			cooling-device = <&charger_cooler 6 6>;
 		};
 		charge-cdev5 {
 			trip = <&charge_trip5>;
+			cooling-device = <&charger_cooler 7 7>;
+		};
+		charge-cdev6 {
+			trip = <&charge_trip6>;
 			cooling-device = <&charger_cooler 8 8>;
 		};
 	};
