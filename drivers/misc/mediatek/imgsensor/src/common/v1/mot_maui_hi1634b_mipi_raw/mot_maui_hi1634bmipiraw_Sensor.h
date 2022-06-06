@@ -225,7 +225,7 @@ struct MAUI_HI1634B_eeprom_t{
 	uint8_t pdaf_out2_data_mtk[1004];
 	uint8_t pdaf_out1_crc16_mtk[2];
 	uint8_t pdaf_out2_crc16_mtk[2];
-	uint8_t others[1061];
+	uint8_t others[46];
 };
 
 typedef struct {
