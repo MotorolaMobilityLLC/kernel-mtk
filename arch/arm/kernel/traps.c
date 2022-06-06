@@ -67,6 +67,7 @@ static void dump_mem(const char *, const char *, unsigned long, unsigned long);
 
 void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long frame)
 {
+#ifndef CONFIG_ONTIM_BACKTRACE
 	unsigned long end = frame + 4 + sizeof(struct pt_regs);
 
 #ifdef CONFIG_KALLSYMS
@@ -77,10 +78,14 @@ void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long
 
 	if (in_entry_text(from) && end <= ALIGN(frame, THREAD_SIZE))
 		dump_mem("", "Exception stack", frame + 4, end);
+#else
+	printk(" %pS\n", (void *)where);
+#endif
 }
 
 void dump_backtrace_stm(u32 *stack, u32 instruction)
 {
+#ifndef CONFIG_ONTIM_BACKTRACE
 	char str[80], *p;
 	unsigned int x;
 	int reg;
@@ -97,6 +102,7 @@ void dump_backtrace_stm(u32 *stack, u32 instruction)
 	}
 	if (p != str)
 		printk("%s\n", str);
+#endif
 }
 
 #ifndef CONFIG_ARM_UNWIND
