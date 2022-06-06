@@ -65,6 +65,7 @@
 
 #define HI1634B_SERIAL_NUM_SIZE 16
 #define MAIN_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
+#define MOTO_OB_VALUE 64
 
 #if USE_BURST_MODE
 static kal_uint16 HI1634_table_write_cmos_sensor(
@@ -636,25 +637,9 @@ static void slim_video_setting(void)
 	pr_debug("Hi-1634B slim_video_setting end\n");
 }
 
-/*************************************************************************
- * FUNCTION
- *	get_imgsensor_id
- *
- * DESCRIPTION
- *	This function get the sensor ID
- *
- * PARAMETERS
- *	*sensorID : return the sensor ID
- *
- * RETURNS
- *	None
- *
- * GLOBALS AFFECTED
- *
- *************************************************************************/
 #define MAUI_HI1634B_EEPROM_SLAVE_ADDR 0xA0
 #define MAUI_HI1634B_SENSOR_IIC_SLAVE_ADDR 0x40
-#define MAUI_HI1634B_EEPROM_SIZE  0x19FB
+#define MAUI_HI1634B_EEPROM_SIZE  0x0E53
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gt24p64e_hi1634b_eeprom.bin"
 #define MAUI_HI1634B_EEPROM_CRC_AF_CAL_SIZE 24
 #define MAUI_HI1634B_EEPROM_CRC_AWB_CAL_SIZE 43
@@ -935,14 +920,14 @@ mot_calibration_3aInfo_t *calibration_3aInfo)
 	calibration_3aInfo->cie_src_1_ev = to_uint16_swap(eeprom->cie_src_1_ev);
 	calibration_3aInfo->cie_src_1_u = to_uint16_swap(eeprom->cie_src_1_u);
 	calibration_3aInfo->cie_src_1_v = to_uint16_swap(eeprom->cie_src_1_v);
-	calibration_3aInfo->awb_src_1_golden_r = to_uint16_swap(eeprom->awb_src_1_golden_r);
-	calibration_3aInfo->awb_src_1_golden_gr = to_uint16_swap(eeprom->awb_src_1_golden_gr);
-	calibration_3aInfo->awb_src_1_golden_gb = to_uint16_swap(eeprom->awb_src_1_golden_gb);
-	calibration_3aInfo->awb_src_1_golden_b = to_uint16_swap(eeprom->awb_src_1_golden_b);
-	calibration_3aInfo->awb_src_1_r = to_uint16_swap(eeprom->awb_src_1_r);
-	calibration_3aInfo->awb_src_1_gr = to_uint16_swap(eeprom->awb_src_1_gr);
-	calibration_3aInfo->awb_src_1_gb = to_uint16_swap(eeprom->awb_src_1_gb);
-	calibration_3aInfo->awb_src_1_b = to_uint16_swap(eeprom->awb_src_1_b);
+	calibration_3aInfo->awb_src_1_golden_r = (to_uint16_swap(eeprom->awb_src_1_golden_r)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_golden_gr = (to_uint16_swap(eeprom->awb_src_1_golden_gr)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_golden_gb = (to_uint16_swap(eeprom->awb_src_1_golden_gb)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_golden_b = (to_uint16_swap(eeprom->awb_src_1_golden_b)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_r = (to_uint16_swap(eeprom->awb_src_1_r)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_gr = (to_uint16_swap(eeprom->awb_src_1_gr)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_gb = (to_uint16_swap(eeprom->awb_src_1_gb)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_b = (to_uint16_swap(eeprom->awb_src_1_b)/64)-MOTO_OB_VALUE;
 	calibration_3aInfo->awb_src_1_rg_ratio = to_uint16_swap(eeprom->awb_src_1_rg_ratio);
 	calibration_3aInfo->awb_src_1_bg_ratio = to_uint16_swap(eeprom->awb_src_1_bg_ratio);
 	calibration_3aInfo->awb_src_1_gr_gb_ratio = to_uint16_swap(eeprom->awb_src_1_gr_gb_ratio);
@@ -1116,6 +1101,22 @@ static void MAUI_HI1634B_eeprom_format_calibration_data(void *data)
 		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
 
+/*************************************************************************
+ * FUNCTION
+ *	get_imgsensor_id
+ *
+ * DESCRIPTION
+ *	This function get the sensor ID
+ *
+ * PARAMETERS
+ *	*sensorID : return the sensor ID
+ *
+ * RETURNS
+ *	None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
