@@ -52,6 +52,12 @@ config IMGSENSOR_MAIN3
 	  imx258_mipi_mono are of same sensor ID. If not specifying sensor,
 	  imx258_mipi_mono may be recognized as imx258_mipi_raw.
 
+config MTK_CAM_SENSOR_PROBE_RETRY
+       bool "For sensor probe fail"
+       default n
+       help
+         Add retries for sensor id matching
+
 config  MOT_DEVONN_CAMERA_PROJECT
 	tristate "set devonn camera driver"
 	help
