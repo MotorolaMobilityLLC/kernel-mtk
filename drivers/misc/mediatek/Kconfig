@@ -269,6 +269,12 @@ config MTK_LCM_PHYSICAL_ROTATION_HW
 	  Select "y" if you want to enable LCM 180 rotate.
 	  Select "n" if unsure.
 
+config MTK_CAM_SENSOR_PROBE_RETRY
+	bool "For sensor probe fail"
+	default n
+	help
+	  Add retries for sensor id matching
+
 config CUSTOM_KERNEL_IMGSENSOR
 	string "Custom image sensor driver"
 	help
