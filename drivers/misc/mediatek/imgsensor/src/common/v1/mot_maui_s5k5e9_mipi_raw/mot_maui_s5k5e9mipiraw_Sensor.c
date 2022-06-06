@@ -41,6 +41,7 @@
 #define S5K5E9_EEPROM_SIZE 2137
 #define S5K5E9_SERIAL_NUM_SIZE 16
 #define MAIN_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
+#define MOTO_OB_VALUE 64
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static bool bIsLongExposure = KAL_FALSE;
 //static mot_calibration_info_t s5k5e9_cal_info = {0};
@@ -1106,14 +1107,14 @@ mot_calibration_3aInfo_t *calibration_3aInfo)
 	calibration_3aInfo->cie_src_1_ev = to_uint16_swap(eeprom->cie_ev);
 	calibration_3aInfo->cie_src_1_u = to_uint16_swap(eeprom->cie_u);
 	calibration_3aInfo->cie_src_1_v = to_uint16_swap(eeprom->cie_v);
-	calibration_3aInfo->awb_src_1_golden_r = to_uint16_swap(eeprom->awb_src_1_golden_r);
-	calibration_3aInfo->awb_src_1_golden_gr = to_uint16_swap(eeprom->awb_src_1_golden_gr);
-	calibration_3aInfo->awb_src_1_golden_gb = to_uint16_swap(eeprom->awb_src_1_golden_gb);
-	calibration_3aInfo->awb_src_1_golden_b = to_uint16_swap(eeprom->awb_src_1_golden_b);
-	calibration_3aInfo->awb_src_1_r = to_uint16_swap(eeprom->awb_src_1_r);
-	calibration_3aInfo->awb_src_1_gr = to_uint16_swap(eeprom->awb_src_1_gr);
-	calibration_3aInfo->awb_src_1_gb = to_uint16_swap(eeprom->awb_src_1_gb);
-	calibration_3aInfo->awb_src_1_b = to_uint16_swap(eeprom->awb_src_1_b);
+	calibration_3aInfo->awb_src_1_golden_r = (to_uint16_swap(eeprom->awb_src_1_golden_r)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_golden_gr = (to_uint16_swap(eeprom->awb_src_1_golden_gr)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_golden_gb = (to_uint16_swap(eeprom->awb_src_1_golden_gb)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_golden_b = (to_uint16_swap(eeprom->awb_src_1_golden_b)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_r = (to_uint16_swap(eeprom->awb_src_1_r)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_gr = (to_uint16_swap(eeprom->awb_src_1_gr)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_gb = (to_uint16_swap(eeprom->awb_src_1_gb)/64)-MOTO_OB_VALUE;
+	calibration_3aInfo->awb_src_1_b = (to_uint16_swap(eeprom->awb_src_1_b)/64)-MOTO_OB_VALUE;
 	calibration_3aInfo->awb_src_1_rg_ratio = to_uint16_swap(eeprom->awb_src_1_rg_ratio);
 	calibration_3aInfo->awb_src_1_bg_ratio = to_uint16_swap(eeprom->awb_src_1_bg_ratio);
 	calibration_3aInfo->awb_src_1_gr_gb_ratio = to_uint16_swap(eeprom->awb_src_1_gr_gb_ratio);
