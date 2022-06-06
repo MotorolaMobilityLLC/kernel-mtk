@@ -595,7 +595,7 @@ int ili_core_spi_setup(int num)
 }
 
 
-
+int tp_ready = 0;
 static int ilitek_spi_probe(struct spi_device *spi)
 {
 	struct touch_bus_info *info =
@@ -722,7 +722,8 @@ static int ilitek_spi_probe(struct spi_device *spi)
 	
 	if (ili_core_spi_setup(SPI_CLK) < 0)
 		return -EINVAL;
-	
+	tp_ready = 1;
+	ILI_ERR("dump----ilitek spi end \n");
 	return info->hwif->plat_probe();
 }
 
