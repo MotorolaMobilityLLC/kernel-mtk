@@ -446,9 +446,50 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 	UINT32 err = 0;
 	MUINT32 sensorID = 0;
 	MUINT32 retLen = sizeof(MUINT32);
+#ifdef CONFIG_MTK_CAM_SENSOR_PROBE_RETRY
+	int retries = 3;
+	bool matched = false;
+#endif
 
 	IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
 
+#ifdef CONFIG_MTK_CAM_SENSOR_PROBE_RETRY
+	while(retries-- && !matched)
+	{
+		err = imgsensor_hw_power(&pgimgsensor->hw,
+					psensor,
+					psensor_inst->psensor_name,
+					IMGSENSOR_HW_POWER_STATUS_ON);
+
+		if (err == IMGSENSOR_RETURN_SUCCESS)
+			imgsensor_sensor_feature_control(
+				psensor,
+				SENSOR_FEATURE_CHECK_SENSOR_ID,
+				(MUINT8 *)&sensorID,
+				&retLen);
+
+		if (sensorID == 0 || sensorID == 0xFFFFFFFF) {
+			PK_DBG("Fail to get sensor ID %x\n", sensorID);
+			err = ERROR_SENSOR_CONNECT_FAIL;
+		} else {
+			PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
+			err = ERROR_NONE;
+			matched = true;
+		}
+
+		if (err != ERROR_NONE)
+			PK_DBG("ERROR: No imgsensor alive\n");
+
+		imgsensor_hw_power(&pgimgsensor->hw,
+				psensor,
+				psensor_inst->psensor_name,
+				IMGSENSOR_HW_POWER_STATUS_OFF);
+
+		if (!matched && !retries) {
+			PK_DBG("After three matchs,fail to get sensor ID\n");
+		}
+	}
+#else
 	err = imgsensor_hw_power(&pgimgsensor->hw,
 				psensor,
 				psensor_inst->psensor_name,
@@ -476,7 +517,7 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 	    psensor,
 	    psensor_inst->psensor_name,
 	    IMGSENSOR_HW_POWER_STATUS_OFF);
-
+#endif
 	IMGSENSOR_PROFILE(&psensor_inst->profile_time, "CheckIsAlive");
 
 	return err ? -EIO:err;
