@@ -29,6 +29,10 @@
 	};
 };
 
+&sx937x {
+	Semtech,button-flag = <0x1b>;
+};
+
 #include <tesla_evt2/cust.dtsi>
 #include "mediatek/cust_mt6879_camera_v4l2_tesla_evt.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
