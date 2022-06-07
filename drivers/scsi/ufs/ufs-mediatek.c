@@ -69,9 +69,6 @@ static int ufs_abort_aee_count;
 #define ufs_mtk_device_pwr_ctrl(on, ufs_version, res) \
 	ufs_mtk_smc(UFS_MTK_SIP_DEVICE_PWR_CTRL, res, on, ufs_version)
 
-#define ufshcd_eh_in_progress(h) \
-	((h)->eh_flags & UFSHCD_EH_IN_PROGRESS)
-
 #if defined(CONFIG_UFSFEATURE)
 struct mmi_storage_info {
         char type[16];  /* UFS or eMMC */
@@ -99,7 +96,7 @@ char storage_mfrid[32];
 
 static struct ufs_dev_fix ufs_mtk_dev_fixups[] = {
 	UFS_FIX(UFS_ANY_VENDOR, UFS_ANY_MODEL,
-		UFS_DEVICE_QUIRK_DELAY_BEFORE_LPM | UFS_DEVICE_QUIRK_DELAY_AFTER_LPM),
+		UFS_DEVICE_QUIRK_DELAY_AFTER_LPM),
 	UFS_FIX(UFS_VENDOR_SKHYNIX, "H9HQ21AFAMZDAR",
 		UFS_DEVICE_QUIRK_SUPPORT_EXTENDED_FEATURES),
 	UFS_FIX(UFS_VENDOR_SKHYNIX, "H9HQ15AFAMBDAR",
@@ -2034,6 +2031,8 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 
 	ufs_mtk_host_pwr_ctrl(false, res);
 
+	ufs_mtk_ctrl_dev_pwr(hba, false, false);
+
 	return 0;
 fail:
 	/*
@@ -2050,10 +2049,9 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	int err;
 	struct arm_smccc_res res;
 
-	if (ufshcd_eh_in_progress(hba))
-		ufs_mtk_ctrl_dev_pwr(hba, true, false);
-
 	ufs_mtk_host_pwr_ctrl(true, res);
+
+	ufs_mtk_ctrl_dev_pwr(hba, true, false);
 
 	err = ufs_mtk_mphy_power_on(hba, true);
 	if (err)
@@ -2460,13 +2458,7 @@ int ufs_mtk_pltfrm_suspend(struct device *dev)
 		goto out;
 	}
 
-	if (ufshcd_is_auto_hibern8_supported(hba))
-		ufs_mtk_auto_hibern8_disable(hba);
-
 	ret = ufshcd_pltfrm_suspend(dev);
-
-	if (!ret)
-		ufs_mtk_ctrl_dev_pwr(hba, false, false);
 out:
 
 #if defined(CONFIG_UFSFEATURE)
@@ -2490,11 +2482,7 @@ int ufs_mtk_pltfrm_resume(struct device *dev)
 	bool is_link_off = ufshcd_is_link_off(hba);
 #endif
 
-	ufs_mtk_ctrl_dev_pwr(hba, true, false);
-
 	ret = ufshcd_pltfrm_resume(dev);
-	if (ret)
-		ufs_mtk_ctrl_dev_pwr(hba, false, false);
 
 #if defined(CONFIG_UFSFEATURE)
 	if (!ret && ufsf->hba)
@@ -2519,12 +2507,7 @@ int ufs_mtk_pltfrm_runtime_suspend(struct device *dev)
 		ufsf_suspend(ufsf);
 #endif
 
-	if (ufshcd_is_auto_hibern8_supported(hba))
-		ufs_mtk_auto_hibern8_disable(hba);
-
 	ret = ufshcd_pltfrm_runtime_suspend(dev);
-	if (!ret)
-		ufs_mtk_ctrl_dev_pwr(hba, false, false);
 
 #if defined(CONFIG_UFSFEATURE)
 	/* We assume link is off */
@@ -2543,11 +2526,8 @@ int ufs_mtk_pltfrm_runtime_resume(struct device *dev)
 	struct ufsf_feature *ufsf = ufs_mtk_get_ufsf(hba);
 	bool is_link_off = ufshcd_is_link_off(hba);
 #endif
-	ufs_mtk_ctrl_dev_pwr(hba, true, false);
 
 	ret = ufshcd_pltfrm_runtime_resume(dev);
-	if (ret)
-		ufs_mtk_ctrl_dev_pwr(hba, false, false);
 
 #if defined(CONFIG_UFSFEATURE)
 	if (!ret && ufsf->hba)
