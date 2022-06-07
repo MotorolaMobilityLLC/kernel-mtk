@@ -551,6 +551,9 @@ static void mtk_dsc_config(struct mtk_ddp_comp *comp,
 			mtk_ddp_write(comp, 0xD1E9D9C9, DISP_REG_DSC_PPS17, handle);
 			mtk_ddp_write(comp, 0xD20DD1E9, DISP_REG_DSC_PPS18, handle);
 			mtk_ddp_write(comp, 0x0000D230, DISP_REG_DSC_PPS19, handle);
+                        mtk_ddp_write(comp, 0xD209D9E9, DISP_REG_DSC_PPS17, handle);
+                        mtk_ddp_write(comp, 0xD22BD229, DISP_REG_DSC_PPS18, handle);
+                        mtk_ddp_write(comp, 0x0000D271, DISP_REG_DSC_PPS19, handle);
 		} else {
 			//8bpc_to_8bpp_20_slice_h
 			mtk_ddp_write(comp, 0x20000c03, DISP_REG_DSC_PPS6, handle);
