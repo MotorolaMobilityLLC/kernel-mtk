@@ -119,7 +119,7 @@
 };
 /* GPS GPIO standardization end */
 
-#include "mediatek/cust_mt6855_touch_1080x2400.dtsi"
+//#include "mediatek/cust_mt6855_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6855_camera_v4l2.dtsi"
 
 &i2c6 {
@@ -147,6 +147,6 @@
 	cd-gpios = <&pio 14 GPIO_ACTIVE_HIGH>;
 	vmmc-supply = <&mt6369_vmch>;
 };
-
+#include "devonn-touch.dtsi"
 //#include <k6855v1_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
