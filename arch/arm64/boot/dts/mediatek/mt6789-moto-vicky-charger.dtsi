@@ -42,7 +42,7 @@
 };
 &charger {
         /* common */
-        battery_cv = <4480000>;
+        battery_cv = <4450000>;
         max_charger_voltage = <12000000>;
         min_charger_voltage = <4600000>;
 
@@ -263,7 +263,7 @@
 		mmi,batt-curr-boost = <300000>;
 		mmi,batt-ovp-lmt = <4550000>;
 		mmi,pl-chrg-vbatt-min = <3600000>;
-		mmi,typec-middle-current = <1000000>;
+		mmi,typec-middle-current = <800000>;
 		mmi,step-first-current-comp = <0>;
 		mmi,dont-rerun-aicl;
 		mmi,chrg-temp-zones-num = <5>;
@@ -282,7 +282,7 @@
 				<4480 661>,
 				<4200 243>;
 
-		mmi,thermal-min-level = <1000000>;
+		mmi,thermal-min-level = <1500000>;
 		charger_device_0 {
 			chrg-name = "pmic-sw";
 			psy-name = "battery";
@@ -291,7 +291,7 @@
 		charger_device_1 {
 			chrg-name = "cp-master";
 			psy-name = "bq2597x-standalone";
-			charging-curr-min = <1000000>;
+			charging-curr-min = <1500000>;
 		};
 	};
 };
