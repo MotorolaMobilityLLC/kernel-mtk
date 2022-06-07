@@ -529,15 +529,11 @@ static void ilitek_tddi_wq_init(void)
 #endif
 }
 
-extern int tp_ready;
 int ili_sleep_handler(int mode)
 {
 	int ret = 0;
 	bool sense_stop = true;
-	if(!tp_ready) {
-		ILI_ERR("dump -----ilitis is not init\n");
-		return 0;
-	}
+
 	mutex_lock(&ilits->touch_mutex);
 	atomic_set(&ilits->tp_sleep, START);
 
