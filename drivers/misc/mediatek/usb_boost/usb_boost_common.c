@@ -786,14 +786,14 @@ static void boost_ep_disable(void *unused, struct mtu3_ep *mep)
 
 static void mtu3_req_complete_boost(void *unused, struct mtu3_request *mreq)
 {
-	struct usb_request *req = &mreq->request;
+	//struct usb_request *req = &mreq->request;
 	struct mtu3_ep *mep = mreq->mep;
 	int type = boost_get_ep_type(mep->epnum, mep->is_in);
 
 	switch (type) {
 	case USB_TYPE_MTP:
-		if (req->actual >= 8192)
-			usb_boost();
+		//if (req->actual >= 8192)
+		usb_boost();
 		break;
 	case USB_TYPE_RNDIS:
 		if (mep->is_in && mep->type == USB_ENDPOINT_XFER_BULK)
