@@ -114,13 +114,6 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	if (ret != 0) {
 		pr_notice("qc3p temp level set bat curr fail\n");
 	}
-
-	if (prop_bq_chr.intval == 1) {
-		if (prop_bat_chr.intval > 1000000) {
-			pr_notice("qc3p prop_bat_chr.intval > 1A\n");
-			return ret;
-		}
-	}
 	#endif
 
 	ret = power_supply_set_property(chg->chg_psy,
