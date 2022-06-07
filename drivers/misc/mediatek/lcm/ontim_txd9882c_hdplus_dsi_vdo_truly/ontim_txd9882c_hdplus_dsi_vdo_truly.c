@@ -380,18 +380,13 @@ static void lcm_init(void)
 	LCM_LOGI("%s: icnl9911s done\n",__func__);
 }
 
-enum TP_SLEEP_STATUS {
-	ontim_SUSPEND = 0,
-	ontim_DEEP_SLEEP = 1,
-	ontim_RESUME = 2
-};
-extern int ili_sleep_handler(int mode);
-int txdili9882_suspend_flag = 0;
+
+
 static void lcm_suspend(void)
 {
 	struct LCM_setting_table *setting_table = NULL;
 	size_t setting_table_size = 0;
-	LCM_LOGI("%s,txd start\n", __func__);
+	LCM_LOGI("%s,ilitek start suspend\n", __func__);
 
     if (gesture_dubbleclick_en) {
 		setting_table = lcm_suspend_setting_gesture;
@@ -402,8 +397,6 @@ static void lcm_suspend(void)
 	}
 #ifndef MACH_FPGA
 	push_table(NULL, setting_table, setting_table_size, 1);
-	ili_sleep_handler(ontim_DEEP_SLEEP);
-	txdili9882_suspend_flag =1;
 	MDELAY(150);
 
 	if (!gesture_dubbleclick_en) {
@@ -413,14 +406,14 @@ static void lcm_suspend(void)
 		MDELAY(2);
 	}
 #endif
-	LCM_LOGI("%s,icnl9911s done\n", __func__);
+	LCM_LOGI("%s,ilitek suspend end\n", __func__);
 }
 
 static void lcm_resume(void)
 {
-	LCM_LOGI("%s,icnl9911s  start\n",__func__);
+	LCM_LOGI("%s,ilitek  start\n",__func__);
 	lcm_init();
-	LCM_LOGI("%s,icnl9911s  done\n",__func__);
+	LCM_LOGI("%s,ilitek  done\n",__func__);
 }
 
 static unsigned int lcm_ata_check(unsigned char *buffer)
