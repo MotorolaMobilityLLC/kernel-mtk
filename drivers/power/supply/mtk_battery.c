@@ -846,7 +846,6 @@ int force_get_tbat(struct mtk_battery *gm, bool update)
 	}
 
 	bat_temperature_val = force_get_tbat_internal(gm, true);
-	gm->cur_bat_temp = bat_temperature_val;
 
 #ifdef DUAL_85_VERSION
 	if (bat_temperature_val > 59)
@@ -854,6 +853,9 @@ int force_get_tbat(struct mtk_battery *gm, bool update)
 	if (bat_temperature_val < 10)
 		bat_temperature_val = 10;
 #endif
+
+	gm->cur_bat_temp = bat_temperature_val;
+
 	return bat_temperature_val;
 }
 
