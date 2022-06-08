@@ -65,10 +65,10 @@
 #include "moto_chg_tcmd.h"
 #include <linux/of_gpio.h>
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-extern int m_chg_type;
-#define POWER_SUPPLY_TYPE_USB_HVDCP_3P5    0x9
-#endif /* CONFIG_MOTO_CHG_WT6670F_SUPPORT */
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
+#include "wt6670f.h"
+#include "sgm415xx.h"
+#endif
 
 struct tag_bootmode {
 	u32 size;
@@ -3272,14 +3272,19 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
 	}
 
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
+	mmi->vfloat_comp_mv = FV_COMP_0_MV;
 	if ( (info->dvchg1_dev != NULL && info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) ||
                 (m_chg_type == POWER_SUPPLY_TYPE_USB_HVDCP_3P5)){
+		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
+		if (info->mmi.chrg_iterm > FFC_ITERM_500MA) {
+			mmi->vfloat_comp_mv = FV_COMP_16_MV; //Only for ffc charging
+		}
 #else
 	if (info->dvchg1_dev != NULL
 		&& info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
-#endif /* CONFIG_MOTO_CHG_WT6670F_SUPPORT */
 		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
+#endif /* CONFIG_MOTO_CHG_WT6670F_SUPPORT */
 		if (max_fv_mv == 0)
 			max_fv_mv = mmi->base_fv_mv;
 	} else {
