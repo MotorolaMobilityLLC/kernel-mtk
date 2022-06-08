@@ -2515,6 +2515,12 @@
 			clocks = <&clk26m>;
 			clock-names = "ref";
 			#phy-cells = <1>;
+			mediatek,eye-vrt = <6>; /* 0~7 */
+			mediatek,eye-term = <3>; /* 0~7 */
+			mediatek,eye-rev6 = <2>; /* 0~3 */
+			mediatek,host-eye-vrt = <6>; /* 0~7 */
+			mediatek,host-eye-term = <3>; /* 0~7 */
+			mediatek,host-eye-rev6 = <3>; /* 0~3 */
 			nvmem-cells = <&u2_phy_data>;
 			nvmem-cell-names = "intr_cal";
 			nvmem-cell-masks = <0x1f>;
