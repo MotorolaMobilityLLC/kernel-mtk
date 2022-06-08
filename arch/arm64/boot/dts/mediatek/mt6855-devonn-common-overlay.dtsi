@@ -12,70 +12,9 @@
 
 #include "mediatek/mt6855-moto-common-overlay.dtsi"
 #include <dt-bindings/gpio/gpio.h>
-
-&mtk_leds {
-
-	compatible = "mediatek,disp-leds";
-
-	backlight {
-		led_mode = <6>;
-		gate_enable = <1>;
-		pwm_config = <0 1 0 0 0>;
-	};
-};
+#include "mediatek/devonn-display.dtsi"
 
 
-&pio {
-	mtkfb_pins_lcm_led_en1: lcm_led_en1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO161__FUNC_GPIO161>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_led_en0: lcm_led_en0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO161__FUNC_GPIO161>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO95__FUNC_GPIO95>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO95__FUNC_GPIO95>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO94__FUNC_DSI_TE>;
-		};
-	};
-};
-
-&mtkfb {
-	pinctrl-names = "lcm_led_en1_gpio", "lcm_led_en0_gpio",
-		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te";
-	pinctrl-0 = <&mtkfb_pins_lcm_led_en1>;
-	pinctrl-1 = <&mtkfb_pins_lcm_led_en0>;
-	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
-	status = "okay";
-};
 
 &dispsys_config {
 	pinctrl-names =
@@ -85,31 +24,6 @@
 	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
 	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
-};
-
-&dsi0 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	panel1@0 {
-		compatible = "mot,dummy,vdo,60hz";
-		reg = <0>;
-		pinctrl-names = "default";
-		port {
-			panel_in1: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-
-	};
-
-	ports {
-		port {
-			dsi_out: endpoint {
-				remote-endpoint = <&panel_in1>;
-			};
-		};
-	};
 };
 
 /* GPS GPIO standardization start */
