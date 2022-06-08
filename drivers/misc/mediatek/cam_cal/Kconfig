@@ -9,3 +9,9 @@ config MTK_CAM_CAL
 	  on ProjectConfig. The kernel space for EEPROM will be build.
 	  It may be like as "/dev/camera_eeprom0".
 	  User space code will control the driver by open and read this one.
+
+config MTK_VICKY_EEPROM_PROJECT
+	tristate "set imgsensor vicky eeprom name"
+	help
+	  This config is set as sensor eeprom name
+	  which project sensor used for.
