@@ -20,6 +20,7 @@
 #include <linux/power_supply.h>
 #include <linux/regulator/driver.h>
 #include "wt6670f.h"
+#include "wt6670f_firmware.h"
 #include <asm/neon.h>
 
 static DEFINE_MUTEX(wt6670f_i2c_access);
