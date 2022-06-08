@@ -3056,7 +3056,9 @@ static int power_misc_routine_thread(void *arg)
 			sdd->overheat = false;
 			bm_debug("%s battery overheat~ power off\n",
 				__func__);
+#ifndef		DUAL_85_VERSION
 			kernel_power_off();
+#endif
 			return 1;
 		}
 	}
@@ -3233,7 +3235,7 @@ int battery_init(struct platform_device *pdev)
 	gm = gauge->gm;
 	gm->fixed_bat_tmp = 0xffff;
 	gm->tmp_table = Fg_Temperature_Table;
-	gm->log_level = BMLOG_ERROR_LEVEL;
+	gm->log_level = BMLOG_DEBUG_LEVEL;
 	gm->sw_iavg_gap = 3000;
 #ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
 	/* add liang */
