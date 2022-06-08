@@ -650,8 +650,6 @@ CONFIG_MTK_FLASHLIGHT_AW36518=m
 CONFIG_SENSORS_HALL=m
 CONFIG_TOUCHSCREEN_GOODIX_BRL=m
 
-CONFIG_CHARGER_SGM415XX=m
-CONFIG_TCPC_WUSB3801=m
 #
 # Please avoid changing the MTK defconfig files and use this file to
 # add any Motorola-specific configuration changes that are applicable to
