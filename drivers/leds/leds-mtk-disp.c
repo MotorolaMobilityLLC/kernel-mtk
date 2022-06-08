@@ -124,7 +124,9 @@ static int __maybe_unused led_i2c_set(struct mt_led_data *mdev,
 	if (version == MTK_COMMON_LCM_DRV)
 		return mtk_drm_gateic_set_backlight(brightness, 2);
 	else if (version == MTK_LEGACY_LCM_DRV)
-		return _gate_ic_backlight_set(brightness);
+		/* MMI_STOPSHIP <lcd owner>: need to rework gate_ic_backlight interface for Devonn */
+		pr_info("set brightness %d, version:%d", brightness, version);
+		//return _gate_ic_backlight_set(brightness);
 
 	pr_notice("%s,gate ic is not ready yet\n", __func__);
 	return 0;
