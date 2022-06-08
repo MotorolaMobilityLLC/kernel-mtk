@@ -435,6 +435,48 @@ void bq25601_set_en_hiz(unsigned int val)
 				      );
 }
 
+#define SGM4154x_CHRG_CTRL_d	0x0d
+/* PUMPX SET  */
+#define SGM4154x_EN_PUMPX_MASK           0x01
+#define SGM4154x_PUMPX_UP_MASK           0x01
+#define SGM4154x_PUMPX_DN_MASK           0x01
+#define SGM4154x_EN_PUMPX_SHIFT           7
+#define SGM4154x_PUMPX_UP_SHIFT           6
+#define SGM4154x_PUMPX_DN_SHIFT           5
+
+static int sgm4154x_en_pe_current_partern(struct charger_device
+		*chg_dev,bool is_up)
+{
+	unsigned int ret = 0;
+
+	ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x01),
+				       (unsigned char) (SGM4154x_EN_PUMPX_MASK),
+				       (unsigned char) (SGM4154x_EN_PUMPX_SHIFT)
+				      );
+	if (ret < 0)
+	{
+		pr_info("[%s] read SGM4154x_CHRG_CTRL_d fail\n", __func__);
+		return ret;
+	}
+	else
+		pr_info("[%s] is_up = %d \n", __func__, is_up);
+
+	if (is_up)
+		ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x01),
+				       (unsigned char) (SGM4154x_PUMPX_UP_MASK),
+				       (unsigned char) (SGM4154x_PUMPX_UP_SHIFT)
+				      );
+	else
+		ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x01),
+				       (unsigned char) (SGM4154x_PUMPX_DN_MASK),
+				       (unsigned char) (SGM4154x_PUMPX_DN_SHIFT)
+				      );
+	return ret;
+}
+
 void bq25601_set_iinlim(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -1377,7 +1419,8 @@ static struct charger_ops bq25601_chg_ops = {
 #ifdef FIXME
 	.enable_hz = bq25601_enable_hz,
 #endif
-
+	/* PE+/PE+20 */
+	.send_ta_current_pattern = sgm4154x_en_pe_current_partern,
 	/* Normal charging */
 	.dump_registers = bq25601_dump_register,
 	.enable = bq25601_enable_charging,
