@@ -610,8 +610,6 @@ CONFIG_NFC_CHIP_SUPPORT=y
 CONFIG_NFC_ST21NFC=m
 CONFIG_NFC_ST54_SPI=m
 
-CONFIG_CHARGER_SGM415XX=m
-CONFIG_TCPC_WUSB3801=m
 #
 # Please avoid changing the MTK defconfig files and use this file to
 # add any Motorola-specific configuration changes that are applicable to
