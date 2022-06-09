@@ -29,3 +29,12 @@
 	mmi,lower-limit-capacity = <60>;
 };
 
+&charge_leds {
+	compatible = "gpio-leds";
+
+	charging {
+		label = "charging";
+		gpios = <&pio 23 0x0>;
+		default-state = "off";
+	};
+};
