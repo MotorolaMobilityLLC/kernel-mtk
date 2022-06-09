@@ -40,6 +40,7 @@ static struct work_struct sensorlist_work;
 static atomic_t first_ready_after_boot;
 static struct sensorlist_info_t sensorlist_info[maxhandle];
 static DEFINE_SPINLOCK(sensorlist_info_lock);
+extern bool aw9610x_probe_flag;
 
 inline int sensor_to_handle(int sensor)
 {
@@ -123,9 +124,9 @@ static void sensorlist_get_deviceinfo(struct work_struct *work)
 			continue;
 		memset(&devinfo, 0, sizeof(struct sensorInfo_t));
 #ifdef CONFIG_AW9610X_SAR
-		if(sensor == ID_SAR)
+		if((sensor == ID_SAR) && (aw9610x_probe_flag == 1))
 		{
-			spin_lock(&sensorlist_info_lock);
+                	spin_lock(&sensorlist_info_lock);
                 	strlcpy(sensorlist_info[handle].name,"AW96105A",12);
                 	spin_unlock(&sensorlist_info_lock);
 			continue;

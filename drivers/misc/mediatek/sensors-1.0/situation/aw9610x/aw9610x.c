@@ -84,6 +84,8 @@ static uint32_t attr_buf[] = {
 static struct aw9610x *h_aw9610x;
 static int headset_cut = 0;
 #endif
+
+bool aw9610x_probe_flag = 0;
 /******************************************************
 *
 * aw9610x i2c write/read
@@ -2349,6 +2351,8 @@ aw9610x_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 
 	g_aw9610x = aw9610x;
 	aw9610x_situation_init();
+
+        aw9610x_probe_flag = 1;
 
 	return AW_SAR_SUCCESS;
 
