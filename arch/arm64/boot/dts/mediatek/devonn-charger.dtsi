@@ -1,0 +1,31 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&charger {
+	/* common */
+	battery_cv = <4480000>;
+	max_charger_voltage = <6500000>;
+	min_charger_voltage = <4600000>;
+
+	/*mmi config*/
+	mmi,iterm-ma = <243>;
+	mmi,mmi-temp-zones = <0 4200 1000 0>,
+			<10 4250 3000 1000>,
+			<15 0 3000 3000>,
+			<45 0 4000 4000>,
+			<60 4200 4000 0>;
+	mmi,enable-charging-limit;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
+};
+
