@@ -29,3 +29,115 @@
 	mmi,main-utags = "/dev/block/by-name/hw";
 };
 
+&pio {
+	sar_int_default: sar_int_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+			input-enable;
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+
+	sar_int_sleep: sar_int_sleep {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+			input-enable;
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+};
+
+&mt6363_vio18 {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <2100000>;
+};
+
+&i2c7 {
+	status = "okay";
+
+	sx937x:sx937x@2c {
+		compatible = "Semtech,sx937x";
+		reg = <0x2c>;
+		pinctrl-names = "default","sleep";
+		pinctrl-0 = <&sar_int_default>;
+		pinctrl-1 = <&sar_int_sleep>;
+		interrupt-parent = <&pio>;
+		interrupts = <18 0x02>;
+		interrupt-names = "sx937x_irq";
+		Semtech,nirq-gpio = <&pio 18 0x02>;
+		cap_vdd-supply = <&mt6363_vio18>;
+		/*use PH4/5/6 as the reference sensor
+		set it to 0xff if the ref-phases-x is not used*/
+		Semtech,ref-phases-a = <5>;
+		Semtech,ref-phases-b = <6>;
+		Semtech,ref-phases-c = <0xff>;
+		Semtech,button-flag = <0x1f>;
+		Semtech,reg-num = <59>;
+		Semtech,reg-init = <
+			0x8024  0x7F00
+			0x4004  0x70
+			0x4008  0x8
+			0x8020  0x32
+			0x8028  0x86E 		/*AFE_PARAM_PH0*/
+			0x8034  0x86E 		/*AFE_PARAM_PH1*/
+			0x8040  0x86E 		/*AFE_PARAM_PH2*/
+			0x804C  0x896 		/*AFE_PARAM_PH3*/
+			0x8058  0x88E 		/*AFE_PARAM_PH4*/
+			0x8064  0x86E 		/*AFE_PARAM_PH5*/
+			0x8070  0x86E 		/*AFE_PARAM_PH6*/
+			0x807C  0x8AE  		/*AFE_PARAM_PH7*/
+			/*set CS3 to hiz, because it used as IRQ pin*/
+			0x8030  0xFFF9FD 	/*REG_AFEPH_PH0, CS0, ANT1, Bottom center*/
+			0x803C  0xFEF9FF 	/*REG_AFEPH_PH1, CS5, ANT2, Top Right*/
+			0x8048  0xFFD9FF 	/*REG_AFEPH_PH2, CS4, ANT7, Bottom Right*/
+			0x8054  0xF7F9FF 	/*REG_AFEPH_PH3, CS6, ANT3/5/10, Top Left*/
+			0x8060  0xBFF9FF 	/*REG_AFEPH_PH4, CS7, ANT4/6/9, Right*/
+			0x806C  0xFFF9EF 	/*REG_AFEPH_PH5, CS1, ANT1_REF, Bottom_Ref*/
+			0x8078  0xFFF97F 	/*REG_AFEPH_PH6, CS2, ANT9 REF, Right*/
+			0x8084  0xBFF9FF 	/*REG_AFEPH_PH7, NOT USE*/
+			0x8098  0x7232
+			0x80B8  0x7232
+			0x80D8  0x6060
+			0x80F8  0x6969
+			0x8118  0x6969
+			0x8138  0xFF
+			0x8158  0xFF
+			0x8178  0xFF
+			0x80A0  0x1F1F0001
+			0x80C0  0xC0C0002
+			0x80E0  0x23230001
+			0x8100  0x13130002
+			0x8120  0x10100002
+			0x8188  0x8000005
+			0x818C  0x8000006
+			0x8090  0x40E03000
+			0x80B0  0x30E83000
+			0x80D0  0x30E83000
+			0x80F0  0x30E03000
+			0x8110  0x78B53000
+			0x8130  0x2AD67000
+			0x8150  0x2AD67000
+			0x8170  0x2AD67000
+			0x8088  0x300000
+			0x80A8  0x300000
+			0x80C8  0x300000
+			0x80E8  0x300000
+			0x8108  0x300000
+			0x8128  0x300000
+			0x8148  0x300000
+			0x8168  0x300000
+			0x808C  0x40000030
+			0x80AC  0x40000030
+			0x80CC  0x40000030
+			0x80EC  0x40000030
+			0x810C  0x40000030
+			0x812C  0x40000030
+			0x814C  0x40000030
+			0x816C  0x40000030
+		>;
+
+		status = "okay";
+	};
+};
