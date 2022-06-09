@@ -536,16 +536,29 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 void md_cd_get_md_bootup_status(
 	struct ccci_modem *md, unsigned int *buff, int length)
 {
-	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
-	struct md_pll_reg *md_reg = md_info->md_pll_base;
+	struct md_sys1_info *md_info = NULL;
+	struct md_pll_reg *md_reg = NULL;
+
+	if (md == NULL) {
+		CCCI_NOTICE_LOG(-1, TAG, "md is null!!!\n");
+		return;
+	}
 
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats len %d\n", length);
 
-	if (md_info == NULL || md_reg == NULL) {
+	md_info = (struct md_sys1_info *)md->private_data;
+	if (md_info == NULL) {
 		CCCI_NOTICE_LOG(md->index, TAG,
-		 "md_info or md_reg not init skip get md boot status\n");
+			"md_info not init skip get md boot status\n");
 		return;
 	}
+	md_reg = md_info->md_pll_base;
+	if (md_reg == NULL) {
+		CCCI_NOTICE_LOG(md->index, TAG,
+			"md_reg not init skip get md boot status\n");
+		return;
+	}
+
 	if (length < 2 || buff == NULL) {
 		md_cd_dump_md_bootup_status(md);
 		return;
