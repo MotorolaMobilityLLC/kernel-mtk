@@ -116,8 +116,7 @@ static bool support_fast_charging(struct mtk_charger *info)
 			break;
 		}
 	}
-	//hzn add for disable fc
-	ret = false;
+
 	return ret;
 }
 
