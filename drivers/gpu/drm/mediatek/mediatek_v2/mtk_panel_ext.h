@@ -471,6 +471,7 @@ enum mtk_lcm_version {
 	MTK_NULL_LCM_DRV,
 	MTK_LEGACY_LCM_DRV,
 	MTK_COMMON_LCM_DRV,
+	MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS,
 };
 
 struct mtk_panel_funcs {
