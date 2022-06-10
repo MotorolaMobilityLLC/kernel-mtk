@@ -348,6 +348,7 @@ struct sgm4154x_device {
 	struct work_struct rerun_apsd_work;
 
 	int typec_apsd_rerun_done;
+	bool mmi_qc3p_rerun_done;
 
 	struct notifier_block pm_nb;
 	bool sgm4154x_suspend_flag;
