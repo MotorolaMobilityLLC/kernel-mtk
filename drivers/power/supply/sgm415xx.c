@@ -1622,6 +1622,7 @@ static void charger_detect_work_func(struct work_struct *work)
 	if(!sgm->state.vbus_gd) {
 		dev_err(sgm->dev, "Vbus not present, disable charge\n");
 		sgm4154x_disable_charger(sgm);
+		sgm->mmi_qc3p_rerun_done = false;
 		sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 		if(m_chg_type != 0 && is_already_probe_ok != 0){
@@ -1668,6 +1669,11 @@ static void charger_detect_work_func(struct work_struct *work)
 				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
 				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
 				pr_err("SGM4154x charger type: UNKNOWN\n");
+				if (!sgm->mmi_qc3p_rerun_done) {
+					pr_err("SGM4154x charger type: UNKNOWN and rerun apsd once.\n");
+					sgm->mmi_qc3p_rerun_done = true;
+					schedule_work(&sgm->rerun_apsd_work);
+				}
 				curr_in_limit = 500000;
 				break;
 
