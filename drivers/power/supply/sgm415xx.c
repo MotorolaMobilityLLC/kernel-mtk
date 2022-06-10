@@ -1666,8 +1666,8 @@ static void charger_detect_work_func(struct work_struct *work)
 				break;
 
 			case SGM4154x_UNKNOWN:
-				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
-				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+				sgm4154x_power_supply_desc.type = POWER_SUPPLY_TYPE_USB;
+				sgm->psy_usb_type = POWER_SUPPLY_USB_TYPE_SDP;
 				pr_err("SGM4154x charger type: UNKNOWN\n");
 				if (!sgm->mmi_qc3p_rerun_done) {
 					pr_err("SGM4154x charger type: UNKNOWN and rerun apsd once.\n");
