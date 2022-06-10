@@ -584,10 +584,18 @@ SND_SOC_DAILINK_DEFS(ap_dmic,
 	DAILINK_COMP_ARRAY(COMP_CPU("AP_DMIC")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+#ifdef CONFIG_SND_SMARTPA_AW883XX_I2S3
+SND_SOC_DAILINK_DEFS(i2s0,
+	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
+	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa_0", "aw883xx-aif-0"),
+					   COMP_CODEC("aw883xx_smartpa_1", "aw883xx-aif-1")),
+	DAILINK_COMP_ARRAY(COMP_PLATFORM("snd-soc-dummy")));
+#else
 SND_SOC_DAILINK_DEFS(i2s0,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+#endif
 SND_SOC_DAILINK_DEFS(i2s1,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S1")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
@@ -596,10 +604,18 @@ SND_SOC_DAILINK_DEFS(i2s2,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S2")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+#ifdef CONFIG_SND_SMARTPA_AW883XX_I2S3
+SND_SOC_DAILINK_DEFS(i2s3,
+        DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
+	DAILINK_COMP_ARRAY(COMP_CODEC("aw883xx_smartpa_0", "aw883xx-aif-0"),
+			   COMP_CODEC("aw883xx_smartpa_1", "aw883xx-aif-1")),
+	DAILINK_COMP_ARRAY(COMP_PLATFORM("snd-soc-dummy")));
+#else
 SND_SOC_DAILINK_DEFS(i2s3,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+#endif
 SND_SOC_DAILINK_DEFS(i2s5,
 	DAILINK_COMP_ARRAY(COMP_CPU("I2S5")),
 	DAILINK_COMP_ARRAY(COMP_DUMMY()),
@@ -1335,13 +1351,14 @@ static int mt6855_mt6369_dev_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "%s()\n", __func__);
 
 	/* update speaker type */
+#ifndef CONFIG_SND_SMARTPA_AW883XX_I2S3
 	ret = mtk_spk_update_info(card, pdev);
 	if (ret) {
 		dev_err(&pdev->dev, "%s(), mtk_spk_update_info error\n",
 			__func__);
 		return -EINVAL;
 	}
-
+#endif
 	/* get platform node */
 	platform_node = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,platform", 0);
