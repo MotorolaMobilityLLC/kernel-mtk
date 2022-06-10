@@ -830,12 +830,22 @@ STOP_SCAN:
 				ae_data.LTM_Sum[0], ae_data.LTM_Sum[1],
 				ae_data.LTM_Sum[2], ae_data.LTM_Sum[3]);
 		} else
+
+#if defined(CONFIG_MTK_CAMERA_REDUCE_LOG)
+			dev_dbg(ctx->cam->dev,
+				"%s:%s:ctx(%d):pipe(%d):de-queue seq(%d):handle seq(%d),done(0x%x),pipes(req:0x%x,ctx:0x%x,all:0x%x),del_job(%d),del_req(%d)\n",
+				__func__, req->req.debug_str, ctx->stream_id, pipe_id,
+				dequeued_frame_seq_no, s_data->frame_seq_no, req->done_status,
+				req->pipe_used, ctx->streaming_pipe, ctx->cam->streaming_pipe,
+				del_job, del_req);
+#else
 			dev_info(ctx->cam->dev,
 				"%s:%s:ctx(%d):pipe(%d):de-queue seq(%d):handle seq(%d),done(0x%x),pipes(req:0x%x,ctx:0x%x,all:0x%x),del_job(%d),del_req(%d)\n",
 				__func__, req->req.debug_str, ctx->stream_id, pipe_id,
 				dequeued_frame_seq_no, s_data->frame_seq_no, req->done_status,
 				req->pipe_used, ctx->streaming_pipe, ctx->cam->streaming_pipe,
 				del_job, del_req);
+#endif
 
 		spin_unlock(&req->done_status_lock);
 

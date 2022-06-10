@@ -65,4 +65,10 @@ config MTK_EEPROM_PROJECT
 	  This config is set as sensor eeprom name
 	  which project sensor used for.
 
+config MTK_CAMERA_REDUCE_LOG
+	  bool "MTK PLATFORM for reducing log about camera"
+	  help
+		This config is set as log switch
+		which project camera used for.
+
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
