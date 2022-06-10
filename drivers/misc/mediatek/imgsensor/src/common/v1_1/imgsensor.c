@@ -51,7 +51,9 @@
 #if defined(CONFIG_MTK_CAM_SECURE_I2C)
 #include "imgsensor_ca.h"
 #endif
+#ifdef CONFIG_IMGSENSOR_EFUSE
 extern u8 *getImgSensorEfuseID(u32 deviceID);
+#endif
 static DEFINE_MUTEX(gimgsensor_mutex);
 static DEFINE_MUTEX(gimgsensor_open_mutex);
 
@@ -673,7 +675,9 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 			&info.MIPIDataLowPwr2HSSettleDelayM0;
 	MUINT8 *pDPCMType = &info.IMGSENSOR_DPCM_TYPE_PRE;
 	char *pmtk_ccm_name;
+#ifdef CONFIG_IMGSENSOR_EFUSE
 	u8 *efuseBuffer = NULL;
+#endif
 	memset(&info, 0,
 			sizeof(struct ACDK_SENSOR_INFO_STRUCT));
 	memset(&sensor_resolution,
@@ -710,11 +714,13 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 			pDPCMType[i] = info.DPCM_INFO;
 		}
 	}
+#ifdef CONFIG_IMGSENSOR_EFUSE
 	efuseBuffer = getImgSensorEfuseID(pSensorGetInfo->SensorId);
 	if(efuseBuffer){
 		strncpy((char*)info.efuseID,(char*)efuseBuffer,strlen((char*)efuseBuffer));
 		pr_info("Little Sensor(%d) efuseID(%s) (%d),(%d)\n",pSensorGetInfo->SensorId,info.efuseID,sizeof(info.efuseID), sizeof(ACDK_SENSOR_INFO2_STRUCT));
 	}
+#endif
 	if (copy_to_user((void __user *)(pSensorGetInfo->pInfo),
 			(void *)(&info),
 			sizeof(struct ACDK_SENSOR_INFO_STRUCT))) {

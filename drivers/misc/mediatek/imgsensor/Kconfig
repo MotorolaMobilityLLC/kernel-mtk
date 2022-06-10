@@ -12,6 +12,13 @@ config CAMERA_DVDD_SWITCH
 	bool "Use to distinguish camera config for saipan"
 	help
 	    Use to Use to distinguish camera config for saipan
+
+config CAMERA_EFUSE
+	bool CONFIG_IMGSENSOR_EFUSE
+	default y
+	help
+	  CONFIG_IMGSENSOR_EFUSE
+
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
 
 config ARCH_MOTO_PROJECT
