@@ -6618,7 +6618,7 @@ static void mt6358_codec_init_reg(struct mt6358_priv *priv)
 
 	/* accdet s/w enable */
 	regmap_update_bits(priv->regmap, MT6358_ACCDET_CON13,
-			   0xFFFF, 0x700E);
+			   0xFFFF, 0x3006);
 
 	/* Set HP_EINT trigger level to 2.0v */
 	regmap_update_bits(priv->regmap, MT6358_AUDENC_ANA_CON11,
