@@ -122,20 +122,37 @@
 //#include "mediatek/cust_mt6855_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6855_camera_v4l2.dtsi"
 
-&i2c6 {
-	spk: speaker_amp@5c {
-		compatible = "richtek,rt5512";
-		#sound-dai-cells = <0>;
-		reg = <0x5c>;
-		status = "okay";
-		sound-name-prefix = "Left";
-	};
+
+&i2c9 {
+	status = "okay";
+	aw883xx_smartpa_0: aw883xx@34 {
+                compatible = "awinic,aw883xx_smartpa";
+                #sound-dai-cells = <0>;
+                reg = <0x34>;
+                reset-gpio = <&pio 162 0>;
+                sound-channel = <0>;
+                re-min = <1000>;
+                re-max = <40000>;
+		rename-flag=<1>;
+                status = "okay";
+        };
+        aw883xx_smartpa_1: aw883xx@36 {
+                compatible = "awinic,aw883xx_smartpa";
+                #sound-dai-cells = <0>;
+                reg = <0x36>;
+                reset-gpio = <&pio 182 0>;
+                sound-channel = <1>;
+                re-min = <1000>;
+                re-max = <40000>;
+		rename-flag=<1>;
+                status = "okay";
+        };
 };
 
 &sound {
 	mediatek,spk-i2s = <3 0>;
 	mediatek,speaker-codec {
-		sound-dai = <&spk>;
+		sound-dai = <&aw883xx_smartpa_0 &aw883xx_smartpa_1>;
 	};
 };
 
