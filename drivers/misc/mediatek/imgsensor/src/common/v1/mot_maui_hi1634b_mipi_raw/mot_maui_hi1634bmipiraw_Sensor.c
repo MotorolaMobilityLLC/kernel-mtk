@@ -639,7 +639,7 @@ static void slim_video_setting(void)
 
 #define MAUI_HI1634B_EEPROM_SLAVE_ADDR 0xA0
 #define MAUI_HI1634B_SENSOR_IIC_SLAVE_ADDR 0x40
-#define MAUI_HI1634B_EEPROM_SIZE  0x0E53
+#define MAUI_HI1634B_EEPROM_SIZE  0x0E54
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gt24p64e_hi1634b_eeprom.bin"
 #define MAUI_HI1634B_EEPROM_CRC_AF_CAL_SIZE 24
 #define MAUI_HI1634B_EEPROM_CRC_AWB_CAL_SIZE 43
