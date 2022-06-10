@@ -337,11 +337,17 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 	return 0;
 }
 
+static enum mtk_lcm_version mtk_panel_get_lcm_version(void)
+{
+	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tianma_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 //	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
+	.get_lcm_version = mtk_panel_get_lcm_version,
 };
 #endif
 
