@@ -644,6 +644,9 @@ int _wlc_set_prop(struct chg_alg_device *alg,
 		enum chg_alg_props s, int value)
 {
 	struct mtk_wlc *wlc;
+	struct power_supply *psy = NULL;
+	union  power_supply_propval chip_state;
+	int ret = 0;
 
 	pr_notice("%s %d %d\n", __func__, s, value);
 
@@ -658,8 +661,21 @@ int _wlc_set_prop(struct chg_alg_device *alg,
 		break;
 	case ALG_WLC_STATE:
 		moto_wlc_control_gpio(alg, !value);
-		if (!value)
+		if (!value) {
 			wlc_plugout_reset(alg);
+		}
+		if (NULL != wls_chg_ops) {
+			psy = power_supply_get_by_name("wireless");
+			if (!IS_ERR_OR_NULL(psy)) {
+				chip_state.intval = value;
+				ret = power_supply_set_property(
+					psy,
+					POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
+					&chip_state);
+				if (ret < 0)
+					chr_err("set wlc chip state fail\n");
+			}
+		}
 		break;
 	default:
 		break;
