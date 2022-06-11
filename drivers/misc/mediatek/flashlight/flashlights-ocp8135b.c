@@ -239,7 +239,7 @@ static int ocp8135b_set_strobe_brightness(int val)
 {
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
-	ocp8135b_pwm_set_config(val);
+	ocp8135b_pwm_set_config(val*12/10+1);
 
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
