@@ -232,6 +232,24 @@ int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	LOG_INF("Start\n");
 
+	if (*g_pAF_Opened == 2) {
+
+		LOG_INF("apply\n");
+
+		//multiple times
+		if (g_u4CurrPosition > 300) {
+			setPosition(300);
+				mdelay(50);
+			g_u4CurrPosition = 300;
+	}
+
+		while (g_u4CurrPosition > 20) {
+			g_u4CurrPosition -= 20;
+			setPosition(g_u4CurrPosition);
+			mdelay(50);
+		}
+	}
+
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
 
