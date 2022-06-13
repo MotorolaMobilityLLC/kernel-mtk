@@ -262,7 +262,7 @@
 		mmi,pd-curr-max = <3000000>;
 		mmi,batt-curr-boost = <300000>;
 		mmi,batt-ovp-lmt = <4550000>;
-		mmi,pl-chrg-vbatt-min = <3600000>;
+		mmi,pl-chrg-vbatt-min = <3000000>;
 		mmi,typec-middle-current = <800000>;
 		mmi,step-first-current-comp = <0>;
 		mmi,dont-rerun-aicl;
