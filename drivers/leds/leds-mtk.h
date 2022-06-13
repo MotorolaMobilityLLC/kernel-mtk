@@ -30,6 +30,9 @@ struct mt_led_data {
 	int (*mtk_hw_brightness_set)(struct mt_led_data *m_data,
 		int brightness);
 	struct mutex	led_access;
+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+	struct backlight_device *i2c_bd;
+#endif
 };
 
 int mt_leds_parse_dt(struct mt_led_data *mdev, struct fwnode_handle *fwnode);
