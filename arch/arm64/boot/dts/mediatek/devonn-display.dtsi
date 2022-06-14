@@ -59,7 +59,7 @@
 		pwm_config = <0 1 0 0 0>;
 		max-brightness = <2047>;
 		max-hw-brightness = <2047>;
-		default-brightness = <1024>;
+		default-brightness = <1810>;
 	};
 };
 
