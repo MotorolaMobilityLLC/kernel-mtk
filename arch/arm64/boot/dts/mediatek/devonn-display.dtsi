@@ -15,6 +15,8 @@
 };
 
 &i2c6 {
+	id = <6>;
+
 	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
 		compatible = "mediatek,i2c_lcd_bias";
 		reg = <0x3e>;
