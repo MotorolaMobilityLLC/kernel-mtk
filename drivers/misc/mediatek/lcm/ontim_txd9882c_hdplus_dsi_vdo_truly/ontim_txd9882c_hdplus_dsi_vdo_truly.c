@@ -220,7 +220,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 
 	/* if vfp solution */
 	dfps_params[0].vertical_frontporch = 1342;
-	dfps_params[0].vertical_frontporch_for_low_power = 2466;
+	dfps_params[0].vertical_frontporch_for_low_power = 1342;
 
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
@@ -228,7 +228,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
 	dfps_params[1].vertical_frontporch = 356;
-	dfps_params[1].vertical_frontporch_for_low_power = 1290;
+	dfps_params[1].vertical_frontporch_for_low_power = 1342;
 	dsi->dfps_num = 2;
 }
 #endif
