@@ -89,6 +89,13 @@
 #define SGM4154x_DPDM_ONGOING   BIT(7)
 #define SGM4154x_VBUS_GOOD      BIT(7)
 
+/*sysmin*/
+#define SGM4154x_SYS_MIN_MASK      GENMASK(3, 1)
+#define SGM4154x_SYS_MIN_3200MV    (BIT(1)| BIT(2))
+#define SGM4154x_SYS_MIN_3400MV    BIT(3)
+#define SGM4154x_SYS_MIN_3500MV    (BIT(1)| BIT(3))
+#define SGM4154x_SYS_MIN_3600MV    (BIT(2)| BIT(3))
+
 /*otg*/
 #define SGM4154x_BOOSTV		GENMASK(5, 4)
 #define SGM4154x_BOOST_LIM 		BIT(7)
