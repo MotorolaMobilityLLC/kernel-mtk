@@ -1,3 +1,5 @@
 ../vendor/mediatek/kernel_modules/fpsgo_cus
 ../vendor/mediatek/kernel_modules/met_drv_v3
+../motorola/kernel/modules/drivers/backlight/aw99703
+../motorola/kernel/modules/drivers/backlight/sm5350
 
