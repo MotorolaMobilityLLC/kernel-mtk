@@ -790,7 +790,7 @@ static int log_store(int facility, int level,
 	if (ts_nsec > 0)
 		msg->ts_nsec = ts_nsec;
 	else
-		msg->ts_nsec = local_clock();
+		msg->ts_nsec = ktime_get_boot_fast_ns();
 	memset(log_dict(msg) + dict_len, 0, pad_len);
 	msg->len = size;
 
@@ -2057,7 +2057,7 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 		cont.facility = facility;
 		cont.level = level;
 		cont.owner = current;
-		cont.ts_nsec = local_clock();
+		cont.ts_nsec = ktime_get_boot_fast_ns();
 		cont.flags = flags;
 	}
 
@@ -2080,7 +2080,7 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 static size_t log_output(int facility, int level, enum log_flags lflags, const char *dict, size_t dictlen, char *text, size_t text_len)
 {
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-	u64 log_enter_time = local_clock();
+	u64 log_enter_time = ktime_get_boot_fast_ns();
 #endif
 	/*
 	 * If an earlier line was buffered, and we're a continuation
