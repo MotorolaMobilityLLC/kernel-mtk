@@ -1827,6 +1827,9 @@ static int sgm4154x_hw_init(struct sgm4154x_device *sgm)
 	/*ts error-- temp disable jeita */
 	ret = __sgm4154x_write_byte(sgm, SGM4154x_CHRG_CTRL_d, 0x0);
 
+	/*sys_min set to 3.4V*/
+	ret = sgm4154x_update_bits(sgm, SGM4154x_CHRG_CTRL_1,
+				SGM4154x_SYS_MIN_MASK, SGM4154x_SYS_MIN_3400MV);
 	return 0;
 
 err_out:
