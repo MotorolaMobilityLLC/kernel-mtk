@@ -187,7 +187,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.margin = 32,					/* sensor framelength & shutter margin */
 	.min_shutter = 16,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
-	.max_gain = 261120, /*32 * 1024  gain*/
+	.max_gain = 255*BASEGAIN, /*255x gain*/
 	.min_gain_iso = 100,
 	.gain_step = 16, /*minimum step = 4 in 1x~2x gain*/
 	.gain_type = 1,/*to be modify,no gain table for sony*/
@@ -533,7 +533,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	kal_uint32 max_gain = imgsensor_info.max_gain;
        if(remosaic_mode == 1)
        {
-		max_gain = 64*BASEGAIN;
+		max_gain = 63.75*BASEGAIN;
 	}
 	if (gain < imgsensor_info.min_gain || gain > max_gain) {
 		LOG_INF_N("Error gain setting\n");
@@ -1840,7 +1840,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
         		case SENSOR_SCENARIO_ID_CUSTOM3:
         		case SENSOR_SCENARIO_ID_CUSTOM4:
 				*(feature_data + 1) = imgsensor_info.min_gain;
-				*(feature_data + 2) = 64 * BASEGAIN;
+				*(feature_data + 2) = 63.75 * BASEGAIN;
 				break;
 			default:
             			*(feature_data + 1) = imgsensor_info.min_gain;
