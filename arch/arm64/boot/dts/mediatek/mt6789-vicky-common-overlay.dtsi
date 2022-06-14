@@ -1194,3 +1194,20 @@
         mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
                                 2000000 1500000 1000000 500000>;
 };
+
+&swtp {
+	compatible = "mediatek, swtp-eint";
+	interrupt-parent = <&pio>;
+	interrupts = <92 IRQ_TYPE_LEVEL_HIGH>;
+	deb-gpios = <&pio 92 0>;
+	debounce = <512000>;
+	status = "okay";
+};
+&swtp_1 {
+	compatible = "mediatek, swtp1-eint";
+	interrupt-parent = <&pio>;
+	interrupts = <93 IRQ_TYPE_LEVEL_HIGH>;
+	deb-gpios = <&pio 93 0>;
+	debounce = <512000>;
+	status = "okay";
+};

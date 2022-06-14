@@ -20,6 +20,8 @@
 	hall_3: hall_3 { };
 	hall_4: hall_4 { };
 	charge_leds: charge_leds { };
+	swtp: swtp { };
+	swtp_1: swtp_1 { };
 };
 
 
