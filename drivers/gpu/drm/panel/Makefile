@@ -88,6 +88,7 @@ obj-$(CONFIG_DRM_PANEL_TIANMA_NT36672C_CPHY_VDO_90HZ_RT4801) += panel-tianma-nt3
 obj-$(CONFIG_DRM_PANEL_NT37801_MSYNC2_RTE) += panel-nt37801-msync2-rte.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_NT37701A_655_FHDP_DPHY_CMD_144HZ) += dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz.o
 obj-$(CONFIG_DRM_PANEL_CSOT_NT37701A_655_FHDP_DPHY_CMD_144HZ) += dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz.o
+obj-$(CONFIG_DRM_PANEL_CSOT_NT37701A_655_FHDP_DPHY_CMD_144HZ_V1) += dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-v1.o
 obj-$(CONFIG_DRM_PANEL_MOT_DUMMY_VDO_60HZ) += dsi-panel-mot-dummy-vdo-60hz.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_ICNL9922_649_FHDP_DPHY_VDO_120HZ) += dsi-panel-mot-tianma-icnl9922-649-fhdp-dphy-vdo-120hz.o
 
