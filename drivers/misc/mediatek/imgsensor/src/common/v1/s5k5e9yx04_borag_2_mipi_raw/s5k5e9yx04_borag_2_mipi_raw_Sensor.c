@@ -521,7 +521,7 @@ static void preview_setting(void)
        write_cmos_sensor(0x0307,0x5F);
        write_cmos_sensor(0x030D,0x04);
        write_cmos_sensor(0x030E,0x00);
-       write_cmos_sensor(0x030F,0x8C);
+       write_cmos_sensor(0x030F,0xA8);
        write_cmos_sensor(0x3C1F,0x00);
        write_cmos_sensor(0x3C17,0x00);
        write_cmos_sensor(0x0112,0x0A);
@@ -727,7 +727,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0307, 0x5F);
 	write_cmos_sensor(0x030D, 0x04);
 	write_cmos_sensor(0x030E, 0x00);
-	write_cmos_sensor(0x030F, 0x8C);
+	write_cmos_sensor(0x030F, 0xA8);
 	write_cmos_sensor(0x3C1F, 0x00);
 	write_cmos_sensor(0x3C17, 0x00);
 	write_cmos_sensor(0x0112, 0x0A);
@@ -797,7 +797,7 @@ static void normal_video_setting(kal_uint16 currefps)
     write_cmos_sensor(0x0307,0x5F);
     write_cmos_sensor(0x030D,0x04);
     write_cmos_sensor(0x030E,0x00);
-    write_cmos_sensor(0x030F,0x8C);
+    write_cmos_sensor(0x030F,0xA8);
     write_cmos_sensor(0x3C1F,0x00);
     write_cmos_sensor(0x3C17,0x00);
     write_cmos_sensor(0x0112,0x0A);
