@@ -158,13 +158,16 @@ static void tianma_panel_init(struct tianma *ctx)
 	devm_gpiod_put(ctx->dev, ctx->bias_p_gpio);
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
-	tianma_dcs_write_seq_static(ctx, 0x51, 0x0F, 0xFF);
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A,0x59);
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5,0xA6);
+	//tianma_dcs_write_seq_static(ctx, 0xBD,0xA0);//not used
+	tianma_dcs_write_seq_static(ctx, 0x70, 0x00);//dsc disble //0x41 enable
+	//tianma_dcs_write_seq_static(ctx, 0xD0,0x4C,0x23,0x18,0xFF,0xFF,0x00,0x80,0x0C,0xFF,0x0F,0x42,0x00,0x08,0x10);
+	tianma_dcs_write_seq_static(ctx, 0xD1,0x00,0x00,0x00,0x00,0x00,0x33,0x01,0x01);//mipi high speed   Ths-- settle time
+	//tianma_dcs_write_seq_static(ctx, 0x51, 0x0F, 0xFF);
+	tianma_dcs_write_seq_static(ctx, 0x51, 0x0F,0xFF);
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
-	tianma_dcs_write_seq_static(ctx, 0XF0, 0X5A,0X59);
-	tianma_dcs_write_seq_static(ctx, 0XF1, 0XA5,0XA6);
-	tianma_dcs_write_seq_static(ctx, 0XBD, 0xA0);
-	tianma_dcs_write_seq_static(ctx, 0X70, 0x00);
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
@@ -295,7 +298,7 @@ static const struct drm_display_mode default_mode = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params = {
-	.pll_clk = 600,
+	//.pll_clk = 600,
 	.data_rate = 1200,
 	//.vfp_low_power = 840,
 	.cust_esd_check = 0,
@@ -308,6 +311,8 @@ static struct mtk_panel_params ext_params = {
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.output_mode = MTK_PANEL_SINGLE_PORT,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
 };
 
 static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
@@ -368,8 +373,8 @@ static int tianma_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
-	connector->display_info.width_mm = 64;
-	connector->display_info.height_mm = 129;
+	connector->display_info.width_mm = 68;
+	connector->display_info.height_mm = 150;
 
 	return 1;
 }
