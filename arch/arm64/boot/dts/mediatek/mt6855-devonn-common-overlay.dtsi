@@ -295,5 +295,14 @@
 	vmmc-supply = <&mt6369_vmch>;
 };
 #include "devonn-touch.dtsi"
+
+//for alsps sensor tmd2755x
+&mt6369_vio28 {
+	regulator-name = "mt6369_vio28";
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-enable-ramp-delay = <1920>;
+};
+
 //#include <k6855v1_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
