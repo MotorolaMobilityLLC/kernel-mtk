@@ -148,7 +148,7 @@ int pe40_stop(void)
 		pe4->max_charger_ibus = pe4->data.pe40_max_ibus *
 					(100 - pe4->data.ibus_err) / 100;
 	}
-
+	chr_err("%s\n",__func__);
 	return 0;
 }
 
