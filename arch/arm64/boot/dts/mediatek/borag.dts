@@ -237,7 +237,7 @@
 	};
 
 	externel-charger@6b{
-		compatible = "mediatek,hl7019d";
+		compatible = "mediatek,hl7019d", "mediatek,sc89601a_charger";
 		reg = <0x6b>;
 		status = "okay";
 	};
