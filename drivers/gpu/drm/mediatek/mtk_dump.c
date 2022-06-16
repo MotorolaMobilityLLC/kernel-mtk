@@ -186,10 +186,6 @@ void mtk_cust_dump_reg(void __iomem *base, int off1, int off2, int off3,
 			break;
 		s = snprintf(buf + l, max_size, "0x%03x:0x%08x ", off[i],
 			     readl(base + off[i]));
-		if (s < 0) {
-			/* Handle snprintf() error */
-			return;
-		}
 		l += s;
 	}
 
