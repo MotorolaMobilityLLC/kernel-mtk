@@ -3052,7 +3052,7 @@ page_owner=on loop.max_part=7";
 		mediatek,check_dfd_support = <1>;
 		mediatek,dfd_infra_base = <0x34>;
 		mediatek,dfd_ap_addr_offset = <24>;
-		mediatek,dfd_latch_offset = <0x48>;
+		mediatek,dfd_latch_offset = <0x44>;
 	};
 
 	dfd_cache: dfd_cache {
