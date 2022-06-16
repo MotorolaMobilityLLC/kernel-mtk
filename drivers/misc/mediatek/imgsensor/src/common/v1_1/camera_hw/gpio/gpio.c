@@ -17,6 +17,10 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcama_0"},
 	{"ldo_vcama1_1"},
 	{"ldo_vcama1_0"},
+#ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
+	{"ldo_vcamaf_1"},
+	{"ldo_vcamaf_0"},
+#endif
 	{"ldo_vcamd_1"},
 	{"ldo_vcamd_0"},
 	{"ldo_vcamio_1"},
@@ -60,11 +64,38 @@ static enum IMGSENSOR_RETURN gpio_init(
 			gpio_pinctrl_list_cam[i].ppinctrl_lookup_names;
 
 			if (lookup_names) {
+#ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
+				if (strncmp(lookup_names, "ldo_vcamio", strlen("ldo_vcamio")) == 0)
+					ret = snprintf(str_pinctrl_name,
+					sizeof(str_pinctrl_name),
+					"cam%d_%s",
+					0,//camera ldo io all
+					lookup_names);
+				else if ((j != 0)&&(strncmp(lookup_names, "ldo_vcama", strlen("ldo_vcama")) == 0))
+					ret = snprintf(str_pinctrl_name,
+					sizeof(str_pinctrl_name),
+					"cam%d_%s",
+					1,//camera 1,2,4 avdd
+					lookup_names);
+				else if ((j != 0)&&(strncmp(lookup_names, "pnd", strlen("pnd")) == 0))
+					ret = snprintf(str_pinctrl_name,
+					sizeof(str_pinctrl_name),
+					"cam%d_%s",
+					0,//camera 0,1 Dvdd
+					lookup_names);
+				else
+					ret = snprintf(str_pinctrl_name,
+					sizeof(str_pinctrl_name),
+					"cam%d_%s",
+					j,
+					lookup_names);
+#else
 				ret = snprintf(str_pinctrl_name,
 				sizeof(str_pinctrl_name),
 				"cam%d_%s",
 				j,
 				lookup_names);
+#endif
 				if (ret < 0)
 					PK_DBG("NOITCE: %s, snprintf err, %d\n",
 						__func__,
