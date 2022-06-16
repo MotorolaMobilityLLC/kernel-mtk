@@ -2612,6 +2612,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			compatible = "mediatek,mt6779-disp_color0";
 			reg = <0 0x1400e000 0 0x1000>;
 			interrupts = <GIC_SPI 255 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys CLK_MM_DISP_COLOR0>;
+			clock-names = "MDP_COLOR";
 		};
 
 		disp_ccorr0@1400f000 {
