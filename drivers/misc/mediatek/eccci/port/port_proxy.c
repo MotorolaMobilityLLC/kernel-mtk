@@ -1283,7 +1283,8 @@ static inline void proxy_setup_channel_mapping(struct port_proxy *proxy_p)
 			port_list[port->tx_ch] = port;
 
 		/*setup RX_CH=>port list mapping*/
-		list_add_tail(&port->entry, &proxy_p->rx_ch_ports[port->rx_ch]);
+		if (port->rx_ch < CCCI_MAX_CH_NUM)
+			list_add_tail(&port->entry, &proxy_p->rx_ch_ports[port->rx_ch]);
 
 		/* skip no data transmission port,
 		 * such as CCCI_DUMMY_CH type port
