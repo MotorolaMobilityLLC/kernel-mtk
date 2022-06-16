@@ -14,7 +14,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include "mediatek/devonn-display.dtsi"
 #include "mediatek/devonn-charger.dtsi"
-
+#include "mediatek/mt6855_devonn_camera_overlay.dtsi"
 
 &dispsys_config {
 	pinctrl-names =
