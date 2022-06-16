@@ -1434,16 +1434,22 @@ void set_scp_mpu(void)
 #if IS_ENABLED(CONFIG_MTK_EMI) || IS_ENABLED(CONFIG_MEDIATEK_EMI)
 	struct emimpu_region_t md_region = {};
 
-	mtk_emimpu_init_region(&md_region, MPU_REGION_ID_SCP_SMEM);
-	mtk_emimpu_set_addr(&md_region, scp_mem_base_phys,
-		scp_mem_base_phys + scp_mem_size - 1);
-	mtk_emimpu_set_apc(&md_region, MPU_DOMAIN_D0,
-		MTK_EMIMPU_NO_PROTECTION);
-	mtk_emimpu_set_apc(&md_region, MPU_DOMAIN_D3,
-		MTK_EMIMPU_NO_PROTECTION);
-	if (mtk_emimpu_set_protection(&md_region))
-		pr_notice("[SCP]mtk_emimpu_set_protection fail\n");
-	mtk_emimpu_free_region(&md_region);
+	int ret = mtk_emimpu_init_region(&md_region, MPU_REGION_ID_SCP_SMEM);
+
+	if (ret == -1) {
+		pr_notice("[SCP] %s: emimpu_region init fail\n", __func__);
+		WARN_ON(1);
+	} else {
+		mtk_emimpu_set_addr(&md_region, scp_mem_base_phys,
+			scp_mem_base_phys + scp_mem_size - 1);
+		mtk_emimpu_set_apc(&md_region, MPU_DOMAIN_D0,
+			MTK_EMIMPU_NO_PROTECTION);
+		mtk_emimpu_set_apc(&md_region, MPU_DOMAIN_D3,
+			MTK_EMIMPU_NO_PROTECTION);
+		if (mtk_emimpu_set_protection(&md_region))
+			pr_notice("[SCP]mtk_emimpu_set_protection fail\n");
+		mtk_emimpu_free_region(&md_region);
+	}
 #endif
 }
 #endif
