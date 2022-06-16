@@ -55,7 +55,7 @@
 unsigned char gc02m1_data_awb[MODULE_DATA_SIZE] = {0}; //add flag and checksum value
 #define GC02M1_SERIAL_NUM_SIZE 11
 unsigned char gc02m1_data_serial_num[GC02M1_SERIAL_NUM_SIZE] = {0}; //add flag and checksum value
-#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/depth_serial_number.bin"
+#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
