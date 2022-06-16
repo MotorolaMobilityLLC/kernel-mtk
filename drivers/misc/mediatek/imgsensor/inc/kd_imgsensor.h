@@ -387,7 +387,12 @@
 #define MOT_VICKY_S5K4H7_SENSOR_ID            0x487b
 //End
 
-
+//Begin: Add sensor id for devonn
+#define MOT_DEVONN_S5KJN1_SENSOR_ID       0x38E1
+#define MOT_DEVONN_HI1634Q_SENSOR_ID      0x1634
+#define MOT_DEVONN_OV02B10_SENSOR_ID      0x002b
+#define MOT_DEVONN_GC02M1_SENSOR_ID       0x02E0
+//End
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -637,6 +642,13 @@
 #define SENSOR_DRVNAME_MOT_VICKY_HI1634Q_MIPI_RAW      "mot_vicky_hi1634q_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_OV02B10_MIPI_RAW      "mot_vicky_ov02b10_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_S5K4H7_MIPI_RAW       "mot_vicky_s5k4h7_mipi_raw"
+//End
+
+//Begin: Add sensor drv name for devonn
+#define SENSOR_DRVNAME_MOT_DEVONN_S5KJN1_MIPI_RAW        "mot_devonn_s5kjn1_mipi_raw"
+#define SENSOR_DRVNAME_MOT_DEVONN_HI1634Q_MIPI_RAW       "mot_devonn_hi1634q_mipi_raw"
+#define SENSOR_DRVNAME_MOT_DEVONN_OV02B10_MIPI_RAW       "mot_devonn_ov02b10_mipi_raw"
+#define SENSOR_DRVNAME_MOT_DEVONN_GC02M1_MIPI_RAW        "mot_devonn_gc02m1_mipi_raw"
 //End
 
 /******************************************************************************
