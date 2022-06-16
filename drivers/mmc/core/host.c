@@ -150,7 +150,7 @@ int mmc_retune(struct mmc_host *host)
 	if (err){
 		err = mmc_hs400_to_hs200(host->card);
 		host->caps2 &= ~(MMC_CAP2_HS400);
-		dev_info(host->parent,"disable hs400\n");
+		dev_info(host->parent,"disable hs400, %d\n", err);
 		return_to_hs400 = false;
 		if (err)
 			goto out;

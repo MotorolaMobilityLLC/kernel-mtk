@@ -48,7 +48,8 @@
 #include "cqhci.h"
 #include "rpmb-mtk.h"
 #include "../../misc/mediatek/include/mt-plat/mtk_boot_common.h"
-
+#include "mtk-msdc.h"
+#include "mtk-sd-dbg.h"
 void msdc_dump_info(struct mmc_host *mmc);
 
 #define MAX_BD_NUM          1024
@@ -339,65 +340,6 @@ void msdc_dump_info(struct mmc_host *mmc);
 /*--------------------------------------------------------------------------*/
 /* Descriptor Structure                                                     */
 /*--------------------------------------------------------------------------*/
-struct mt_gpdma_desc {
-	u32 gpd_info;
-#define GPDMA_DESC_HWO		(0x1 << 0)
-#define GPDMA_DESC_BDP		(0x1 << 1)
-#define GPDMA_DESC_CHECKSUM	(0xff << 8) /* bit8 ~ bit15 */
-#define GPDMA_DESC_INT		(0x1 << 16)
-#define GPDMA_DESC_NEXT_H4	(0xf << 24)
-#define GPDMA_DESC_PTR_H4	(0xf << 28)
-	u32 next;
-	u32 ptr;
-	u32 gpd_data_len;
-#define GPDMA_DESC_BUFLEN	(0xffff) /* bit0 ~ bit15 */
-#define GPDMA_DESC_EXTLEN	(0xff << 16) /* bit16 ~ bit23 */
-	u32 arg;
-	u32 blknum;
-	u32 cmd;
-};
-
-struct mt_bdma_desc {
-	u32 bd_info;
-#define BDMA_DESC_EOL		(0x1 << 0)
-#define BDMA_DESC_CHECKSUM	(0xff << 8) /* bit8 ~ bit15 */
-#define BDMA_DESC_BLKPAD	(0x1 << 17)
-#define BDMA_DESC_DWPAD		(0x1 << 18)
-#define BDMA_DESC_NEXT_H4	(0xf << 24)
-#define BDMA_DESC_PTR_H4	(0xf << 28)
-	u32 next;
-	u32 ptr;
-	u32 bd_data_len;
-#define BDMA_DESC_BUFLEN	(0xffff) /* bit0 ~ bit15 */
-#define BDMA_DESC_BUFLEN_EXT	(0xffffff) /* bit0 ~ bit23 */
-};
-
-struct msdc_dma {
-	struct scatterlist *sg;	/* I/O scatter list */
-	struct mt_gpdma_desc *gpd;		/* pointer to gpd array */
-	struct mt_bdma_desc *bd;		/* pointer to bd array */
-	dma_addr_t gpd_addr;	/* the physical address of gpd array */
-	dma_addr_t bd_addr;	/* the physical address of bd array */
-};
-
-struct msdc_save_para {
-	u32 msdc_cfg;
-	u32 iocon;
-	u32 sdc_cfg;
-	u32 pad_tune;
-	u32 patch_bit0;
-	u32 patch_bit1;
-	u32 patch_bit2;
-	u32 pad_ds_tune;
-	u32 pad_cmd_tune;
-	u32 emmc50_cfg0;
-	u32 emmc50_cfg3;
-	u32 sdc_fifo_cfg;
-	u32 emmc_top_control;
-	u32 emmc_top_cmd;
-	u32 emmc50_pad_ds_tune;
-};
-
 struct mtk_mmc_compatible {
 	u8 clk_div_bits;
 	bool hs400_tune; /* only used for MT8173 */
@@ -410,87 +352,12 @@ struct mtk_mmc_compatible {
 	bool support_64g;
 };
 
-struct msdc_tune_para {
-	u32 iocon;
-	u32 pad_tune;
-	u32 pad_cmd_tune;
-	u32 emmc_top_control;
-	u32 emmc_top_cmd;
-};
-
 struct msdc_delay_phase {
 	u8 maxlen;
 	u8 start;
 	u8 final_phase;
 };
 
-struct msdc_host {
-	struct device *dev;
-	const struct mtk_mmc_compatible *dev_comp;
-	struct mmc_host *mmc;	/* mmc structure */
-	int cmd_rsp;
-
-	spinlock_t lock;
-	struct mmc_request *mrq;
-	struct mmc_command *cmd;
-	struct mmc_data *data;
-	int error;
-
-	void __iomem *base;		/* host base address */
-	void __iomem *top_base;		/* host top register base address */
-
-	struct msdc_dma dma;	/* dma channel */
-	u64 dma_mask;
-
-	u32 timeout_ns;		/* data timeout ns */
-	u32 timeout_clks;	/* data timeout clks */
-
-	struct pinctrl *pinctrl;
-	struct pinctrl_state *pins_default;
-	struct pinctrl_state *pins_uhs;
-	struct delayed_work req_timeout;
-	int irq;		/* host interrupt */
-
-	struct clk *src_clk;	/* msdc source clock */
-	struct clk *h_clk;      /* msdc h_clk */
-	struct clk *bus_clk;	/* bus clock which used to access register */
-	struct clk *src_clk_cg; /* msdc source clock control gate */
-	struct clk *crypto_clk; /* msdc crypto clock */
-
-	void __iomem *crypto_clk_base; /*dbg use: for dump aes clk cg*/
-
-	u32 mclk;		/* mmc subsystem clock frequency */
-	u32 src_clk_freq;	/* source clock frequency */
-#ifdef CONFIG_MACH_MT8173
-	u32 sclk;		/* SD/MS bus clock frequency */
-#endif
-	unsigned char timing;
-	bool vqmmc_enabled;
-#ifdef CONFIG_MACH_MT8173
-	u32 host_id;
-#endif
-	u32 latch_ck;
-	u32 hs400_ds_delay;
-	u32 hs400_ds_dly3;
-	u32 hs200_cmd_int_delay; /* cmd internal delay for HS200/SDR104 */
-	u32 hs400_cmd_int_delay; /* cmd internal delay for HS400 */
-#ifdef CONFIG_MACH_MT8173
-	u32 hs200_cmd_resp_sel; /* cmd response sample selection */
-	/* valid after tune response && final delay != 0xffffffff */
-	bool tune_response_valid;
-	u8 tune_response_delay; /* saved tune response value */
-#endif
-	bool hs400_cmd_resp_sel_rising;
-				 /* cmd response sample selection for HS400 */
-	bool hs400_mode;	/* current eMMC will run at hs400 mode */
-	bool hs400_tuning;  /* hs400 mode online tuning */
-
-	bool cqhci;	/* support eMMC hw cmdq */
-	struct msdc_save_para save_para; /* used when gate HCLK */
-	struct msdc_tune_para def_tune_para; /* default tune setting */
-	struct msdc_tune_para saved_tune_para; /* tune result of CMD21/CMD19 */
-	struct cqhci_host *cq_host;
-};
 
 struct tag_bootmode {
 	u32 size;
@@ -1398,6 +1265,8 @@ static void msdc_start_command(struct msdc_host *host,
 
 	WARN_ON(host->cmd);
 	host->cmd = cmd;
+	if(host && host->mmc && cmd)
+		dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
 
 	mod_delayed_work(system_wq, &host->req_timeout, DAT_TIMEOUT);
 	if (!msdc_cmd_is_ready(host, mrq, cmd))
@@ -2810,6 +2679,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host = mmc_priv(mmc);
 	ret = mmc_of_parse(mmc);
 
+	msdc_debug_proc_init();
+
 	/* fix uaf(use afer free) issue:backup pdev->name,
 	 * device_rename will free pdev->name
 	 */
@@ -3032,6 +2903,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_RPMB)
 	ret = mmc_rpmb_register(mmc);
 #endif
+	msdc_debug_set_host(mmc);
+
 
 	return 0;
 end:
