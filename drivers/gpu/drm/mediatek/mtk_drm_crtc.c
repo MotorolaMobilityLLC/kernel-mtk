@@ -7286,7 +7286,7 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 	int ret;
 	int i, j, p_mode;
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	u32 result;
+	int result;
 #endif
 	enum mtk_ddp_comp_id comp_id;
 
