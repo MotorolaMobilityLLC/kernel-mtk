@@ -7570,7 +7570,7 @@ cpuqos_mode,dnth0,dnth1,upth0,upth1";
 		status = "okay";
 	};
 };
-#include "mediatek/cust_mt6855_camera.dtsi"
+//#include "mediatek/cust_mt6855_camera.dtsi"
 #include "mediatek/cust_mt6855_msdc.dtsi"
 #include "mediatek/mt6855-clkitg.dtsi"
 #include "mediatek/rt5133.dtsi"
