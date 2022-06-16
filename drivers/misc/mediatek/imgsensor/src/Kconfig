@@ -51,3 +51,8 @@ config IMGSENSOR_MAIN3
 	  with same sensor ID. For example, imx258_mipi_raw and
 	  imx258_mipi_mono are of same sensor ID. If not specifying sensor,
 	  imx258_mipi_mono may be recognized as imx258_mipi_raw.
+
+config  MOT_DEVONN_CAMERA_PROJECT
+	tristate "set devonn camera driver"
+	help
+	  Used to distinguish project-driver code from other projects.
