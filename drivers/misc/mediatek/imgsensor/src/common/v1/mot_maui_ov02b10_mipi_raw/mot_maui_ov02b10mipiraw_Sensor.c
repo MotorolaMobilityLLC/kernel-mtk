@@ -843,7 +843,7 @@ unsigned char ov02b10_otp_data[OV02B10_OTP_SIZE] = {0};
 #define MAUI_OV02B10_OTP_CRC_AWB_GROUP2_CAL_SIZE 6
 #define OV02B10_AWB_DATA_SIZE 15
 #define OV02B10_SERIAL_NUM_SIZE 16
-#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/macro_serial_number.bin"
+#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_macro.bin"
 static void ov02b10_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
 {
     struct file *fp = NULL;
