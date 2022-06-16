@@ -3296,7 +3296,7 @@ static int __init rpmb_init(void)
 	int alloc_ret = -1;
 	int cdev_ret = -1;
 	int major = -1;
-	dev_t dev;
+	dev_t dev = 0;
 	struct device *device = NULL;
 
 	MSG(INFO, "%s start\n", __func__);
