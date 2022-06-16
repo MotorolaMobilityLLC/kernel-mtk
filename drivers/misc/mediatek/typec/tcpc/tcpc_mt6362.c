@@ -1986,12 +1986,8 @@ static int mt6362_parse_dt(struct mt6362_tcpc_data *tdata)
 			desc->role_def = val;
 	}
 
-	if (of_property_read_u32(np, "tcpc,notifier_supply_num", &val) >= 0) {
-		if (val < 0)
-			desc->notifier_supply_num = 0;
-		else
-			desc->notifier_supply_num = val;
-	}
+	if (of_property_read_u32(np, "tcpc,notifier_supply_num", &val) >= 0)
+		desc->notifier_supply_num = val;
 
 	if (of_property_read_u32(np, "tcpc,rp_level", &val) >= 0) {
 		switch (val) {

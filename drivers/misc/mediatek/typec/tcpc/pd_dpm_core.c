@@ -88,22 +88,15 @@ static const struct svdm_svid_ops svdm_svid_ops[] = {
 int dpm_check_supported_modes(void)
 {
 	int i;
-	bool is_disorder = false;
-	bool found_error = false;
+	const int size = ARRAY_SIZE(svdm_svid_ops);
 
-	for (i = 0; i < ARRAY_SIZE(svdm_svid_ops); i++) {
-		if (i < (ARRAY_SIZE(svdm_svid_ops) - 1)) {
-			if (svdm_svid_ops[i + 1].svid <=
-				svdm_svid_ops[i].svid)
-				is_disorder = true;
-		}
+	for (i = 0; i < size; i++) {
 		pr_info("SVDM supported mode [%d]: name = %s, svid = 0x%x\n",
 			i, svdm_svid_ops[i].name,
 			svdm_svid_ops[i].svid);
 	}
-	pr_info("%s : found \"disorder\"...\n", __func__);
-	found_error |= is_disorder;
-	return found_error ? -EFAULT : 0;
+
+	return 0;
 }
 
 /*
