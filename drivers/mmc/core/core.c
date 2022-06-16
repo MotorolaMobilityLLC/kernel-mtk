@@ -167,8 +167,7 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 
 	trace_mmc_request_done(host, mrq);
 
-	if(host && cmd)
-		dbg_add_host_log(host, 1, cmd->opcode, cmd->resp[0]);
+	dbg_add_host_log(host, 1, cmd->opcode, cmd->resp[0]);
 
 	/*
 	 * We list various conditions for the command to be considered
@@ -1259,10 +1258,10 @@ int mmc_cqe_start_req(struct mmc_host *host, struct mmc_request *mrq)
 
 	mmc_mrq_pr_debug(host, mrq, true);
 
-	if(host && mrq && mrq->cmd)
+	if(mrq->cmd)
 		dbg_add_host_log(host, 5, mrq->cmd->opcode, mrq->cmd->arg);
 
-	if(host && mrq && mrq->data){
+	if(mrq->data){
 		if (mrq->data->flags & MMC_DATA_WRITE)
 			dbg_add_host_log(host, 5, MMC_EXECUTE_WRITE_TASK, mrq->data->blocks);//CMD47
 		else if (mrq->data->flags & MMC_DATA_READ)
