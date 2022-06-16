@@ -65,7 +65,11 @@ static unsigned int print_cpu_test = UINT_MAX;
 
 void msdc_debug_set_host(struct mmc_host *mmc)
 {
-	if(mmc && mmc->index >=0 && mmc->index <= HOST_MAX_NUM)
+	if (!mmc){
+		pr_info("mmc is null\n");
+		return;
+	}
+	if(mmc->index >=0 && mmc->index <= HOST_MAX_NUM)
 		mtk_msdc_host[mmc->index] = mmc_priv(mmc);
 	else
 		pr_info("error:index=%d\n",mmc->index);
@@ -399,12 +403,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		seq_puts(m, "==== msdc debug info for aee ====\n");
 		msdc_proc_dump(m, 0);
 
-out:
 	return 0;
-
-invalid_host_id:
-	seq_printf(m, "[SD_Debug]invalid host id: %d\n", id);
-	return 1;
 }
 
 static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,

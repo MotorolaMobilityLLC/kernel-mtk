@@ -1265,8 +1265,8 @@ static void msdc_start_command(struct msdc_host *host,
 
 	WARN_ON(host->cmd);
 	host->cmd = cmd;
-	if(host && host->mmc && cmd)
-		dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+
+	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
 
 	mod_delayed_work(system_wq, &host->req_timeout, DAT_TIMEOUT);
 	if (!msdc_cmd_is_ready(host, mrq, cmd))
