@@ -46,7 +46,7 @@
 	KEEP_100_PERCENT = <(1)>;
 	R_FG_VALUE = <(10)>;
 	/* R_sense resistance */
-	EMBEDDED_SEL = <(0)>;
+	EMBEDDED_SEL = <(1)>;
 	/* Configures whether using embedded battery or not */
 	PMIC_SHUTDOWN_CURRENT = <(20)>;
 	/* System shutdown current */
