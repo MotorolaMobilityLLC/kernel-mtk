@@ -287,6 +287,11 @@ static ssize_t reviser_dbg_read_mem_tcm(struct file *filp, char *buffer,
 	int res = 0;
 	unsigned char *vbuffer;
 
+	if (VLM_TCM_BANK_MAX == 0) {
+		LOG_DEBUG("No TCM\n");
+		return res;
+	}
+
 	if (!reviser_device->tcm_base) {
 		LOG_ERR("No TCM\n");
 		return -EINVAL;

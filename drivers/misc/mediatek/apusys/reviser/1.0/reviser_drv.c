@@ -505,6 +505,8 @@ static long reviser_ioctl(struct file *filp, unsigned int cmd,
 	if (!g_ioctl_enable)
 		return -EINVAL;
 
+	memset(&info, 0, sizeof(struct reviser_ioctl_info));
+
 	switch (cmd) {
 	case REVISER_IOCTL_SET_BOUNDARY:
 
