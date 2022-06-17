@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="05.06.2022.16:19:07"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="06.16.2022.17:42:28"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>borag</proj>
@@ -29,7 +29,7 @@
                 <current>2.0</current>
             </pmic_clk2>
             <pmic_clk3>
-                <varName>HW_CONTROL</varName>
+                <varName>SW_CONTROL</varName>
                 <current>1.0</current>
             </pmic_clk3>
             <pmic_clk4>
@@ -952,16 +952,6 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio87>
-            <gpio89>
-                <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio89>
             <gpio91>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>

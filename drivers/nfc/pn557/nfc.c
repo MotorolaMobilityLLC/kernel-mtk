@@ -53,6 +53,23 @@
 #include "sn1xx.h"
 #include "pn8xt.h"
 #include <ontim/ontim_dev_dgb.h>
+#include <linux/version.h>
+#if (KERNEL_VERSION(4, 4, 0) > LINUX_VERSION_CODE)
+// Legacy implementation, also used on recent kernels for legacy platforms
+// such as (6580 and 6735)
+# define KRNMTKLEGACY_I2C 1
+# define KRNMTKLEGACY_CLK 1
+# define KRNMTKLEGACY_GPIO 1
+#endif
+
+#ifndef NO_MTK_CLK_MANAGEMENT
+# ifdef KRNMTKLEGACY_CLK
+#  include <mt_clkbuf_ctl.h>
+# else
+#  include "../../misc/mediatek/include/mt-plat/mtk-clkbuf-bridge.h"
+# endif
+#endif
+
 char nfc_vendor_name[50]="pn557";
 DEV_ATTR_DECLARE(nfc)
 DEV_ATTR_DEFINE("vendor",nfc_vendor_name)
@@ -225,8 +242,18 @@ static int nfc_dev_open(struct inode *inode, struct file *filp)
             struct nfc_dev, nfc_device);
 
     filp->private_data = nfc_dev;
-    pr_info("%s: %d,%d\n", __func__, imajor(inode), iminor(inode));
+    clk_buf_ctrl(CLK_BUF_NFC, true);
+    pr_err("%s: %d,%d\n", __func__, imajor(inode), iminor(inode));
     return ret;
+}
+
+static int nfc_dev_release(struct inode *inode, struct file *file)
+{
+
+       clk_buf_ctrl(CLK_BUF_NFC, false);
+       pr_err("%s\n", __func__);
+
+       return 0;
 }
 
 long nfc_dev_ioctl(struct file *filep, unsigned int cmd,
@@ -246,6 +273,7 @@ static const struct file_operations nfc_dev_fops = {
         .read   = nfc_dev_read,
         .write  = nfc_dev_write,
         .open   = nfc_dev_open,
+        .release = nfc_dev_release,
         .unlocked_ioctl  = nfc_dev_ioctl,
 };
 
@@ -296,12 +324,10 @@ static int nfc_probe(struct i2c_client *client,
     struct nfc_platform_data platform_data;
     struct nfc_dev *nfc_dev;
     pr_err("%s: enter\n", __func__);
-    //+add by yjj for ontim debug
     if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
     {
         return -EIO;
     }
-    //-add by yjj for ontim debug
     ret = nfc_parse_dt(&client->dev, &platform_data);
     if (ret) {
         pr_err("%s : failed to parse\n", __func__);
@@ -432,9 +458,7 @@ static int nfc_probe(struct i2c_client *client,
         pr_err("%s: probing platform failed\n", __func__);
         goto err_request_irq_failed;
     };
-    //+add by yjj for ontim debug
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-    //-add by yjj for ontim debug
     pr_info("%s: probing NXP NFC exited successfully\n", __func__);
     return 0;
 
