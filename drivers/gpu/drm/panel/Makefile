@@ -92,6 +92,8 @@ obj-$(CONFIG_DRM_PANEL_CSOT_NT37701A_655_FHDP_DPHY_CMD_144HZ_V1) += dsi-panel-mo
 obj-$(CONFIG_DRM_PANEL_MOT_DUMMY_VDO_60HZ) += dsi-panel-mot-dummy-vdo-60hz.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_ICNL9922_649_FHDP_DPHY_VDO_120HZ) += dsi-panel-mot-tianma-icnl9922-649-fhdp-dphy-vdo-120hz.o
 
+
+obj-$(CONFIG_GATEIC_OCP2138) += ocp2138.o
 mediatek-drm-gateic-y := mtk_drm_panel_i2c.o \
 		  mtk_drm_gateic_rt4801h.o \
 		  mtk_drm_gateic_rt4831a.o \
