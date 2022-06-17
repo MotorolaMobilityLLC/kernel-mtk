@@ -37,7 +37,11 @@ static unsigned int slp_wake_reason = WR_NONE;
 static bool slp_suspend_ops_valid_on;
 static bool slp_ck26m_on;
 
-bool slp_dump_gpio;
+#ifdef CONFIG_ONTIM_DEBUG
+bool slp_dump_gpio = true;
+#else
+bool slp_dump_gpio = false;
+#endif
 bool slp_dump_golden_setting;
 int slp_dump_golden_setting_type = GS_PMIC;
 
