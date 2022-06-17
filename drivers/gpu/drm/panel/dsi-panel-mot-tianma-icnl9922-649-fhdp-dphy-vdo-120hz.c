@@ -20,6 +20,7 @@
 #include <linux/of_graph.h>
 #include <linux/platform_device.h>
 #include <linux/gpio/consumer.h>
+#include "ocp2138.h"
 
 #define CONFIG_MTK_PANEL_EXT
 #if defined(CONFIG_MTK_PANEL_EXT)
@@ -31,14 +32,15 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
+extern int ocp2138_BiasPower_disable(u32 pwrdown_delay);
+extern int ocp2138_BiasPower_enable(LCM_LDO_VOLTAGE_E avdd, LCM_LDO_VOLTAGE_E avee,u32 pwrup_delay);
+
 struct tianma {
 	struct device *dev;
 	struct drm_panel panel;
 	struct backlight_device *backlight;
 	struct gpio_desc *pm_enable_gpio;
 	struct gpio_desc *reset_gpio;
-	struct gpio_desc *bias_n_gpio;
-	struct gpio_desc *bias_p_gpio;
 
 	bool prepared;
 	bool enabled;
@@ -127,35 +129,14 @@ static void tianma_panel_init(struct tianma *ctx)
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return;
 	}
-	
-	ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->bias_n_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get bias_n_gpio %ld\n",
-			__func__, PTR_ERR(ctx->bias_n_gpio));
-		return;
-	}
-	
-	ctx->bias_p_gpio = devm_gpiod_get(ctx->dev, "bias_p", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->bias_p_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get bias_p_gpio %ld\n",
-			__func__, PTR_ERR(ctx->bias_p_gpio));
-		return;
-	}
-	gpiod_set_value(ctx->bias_n_gpio, 1);
-	msleep(5);
-	gpiod_set_value(ctx->bias_p_gpio, 1);
-	msleep(5);
-
 	gpiod_set_value(ctx->reset_gpio, 1);
 	msleep(10);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(5);
 	gpiod_set_value(ctx->reset_gpio, 1);
 	msleep(60);
-	
+
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	devm_gpiod_put(ctx->dev, ctx->bias_n_gpio);
-	devm_gpiod_put(ctx->dev, ctx->bias_p_gpio);
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A,0x59);
@@ -197,6 +178,7 @@ static int tianma_disable(struct drm_panel *panel)
 static int tianma_unprepare(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
+	int ret=0;
 
 	if (!ctx->prepared)
 		return 0;
@@ -206,26 +188,18 @@ static int tianma_unprepare(struct drm_panel *panel)
 	tianma_dcs_write_seq_static(ctx, 0x28);
 	tianma_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
-	
-	ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->bias_n_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get bias_n_gpio %ld\n",
-			__func__, PTR_ERR(ctx->bias_n_gpio));
+	ret = ocp2138_BiasPower_disable(5);
+
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->reset_gpio)) {
+		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
+			__func__, PTR_ERR(ctx->reset_gpio));
 		return -1;
 	}
-	
-	ctx->bias_p_gpio = devm_gpiod_get(ctx->dev, "bias_p", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->bias_p_gpio)) {
-		dev_err(ctx->dev, "%s: cannot get bias_p_gpio %ld\n",
-			__func__, PTR_ERR(ctx->bias_p_gpio));
-		return -1;
-	}
-	gpiod_set_value(ctx->bias_n_gpio, 0);
-	udelay(10 * 1000);
-	gpiod_set_value(ctx->bias_p_gpio, 0);
-	udelay(10 * 1000);
-	devm_gpiod_put(ctx->dev, ctx->bias_n_gpio);
-	devm_gpiod_put(ctx->dev, ctx->bias_p_gpio);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	msleep(5);
+	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	ctx->error = 0;
@@ -242,6 +216,8 @@ static int tianma_prepare(struct drm_panel *panel)
 	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 	if (ctx->prepared)
 		return 0;
+
+	ret = ocp2138_BiasPower_enable(20,20,5);
 
 	//lcm_power_enable();
 	tianma_panel_init(ctx);
