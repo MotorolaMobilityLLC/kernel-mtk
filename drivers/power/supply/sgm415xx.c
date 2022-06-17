@@ -2432,6 +2432,11 @@ static void sgm4154x_charger_shutdown(struct i2c_client *client)
     if (ret) {
         pr_err("Failed to disable charger, ret = %d\n", ret);
     }
+
+    ret = sgm4154x_disable_vbus(NULL);
+    if (ret < 0) {
+        pr_err("Failed to disable vbus, ret = %d\n", ret);
+    }
     pr_info("sgm4154x_charger_shutdown\n");
 }
 
