@@ -178,6 +178,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.slim_video_delay_frame = 1,
 	.custom1_delay_frame = 2,
 	.custom2_delay_frame = 2,
+	.frame_time_delay_frame = 2,
 	.isp_driving_current = ISP_DRIVING_4MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_CPHY,
@@ -630,34 +631,28 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
+	kal_int32 dummy_line = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
 	spin_lock(&imgsensor_drv_lock);
-
 	/* Change frame time */
-	#if 0
-	dummy_line = frame_length - imgsensor.frame_length;
-	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-	imgsensor.min_frame_length = imgsensor.frame_length;
-
-
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	#endif
 	if (frame_length > 1)
-	    imgsensor.frame_length = frame_length;
+		dummy_line = frame_length - imgsensor.frame_length;
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
+	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
 
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
+
 	spin_unlock(&imgsensor_drv_lock);
-	shutter = (shutter < imgsensor_info.min_shutter)
-		? imgsensor_info.min_shutter : shutter;
+	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
 	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
-		? (imgsensor_info.max_frame_length - imgsensor_info.margin)
-		: shutter;
+		? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 
 	if (imgsensor.autoflicker_en) {
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
@@ -674,10 +669,8 @@ static void set_shutter_frame_length(kal_uint32 shutter,
 		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
 	}
 
-	/* Update Shutter */
-	write_cmos_sensor(0X0202, shutter & 0xFFFF);
+	write_cmos_sensor(0x0202, shutter & 0xffff);
 	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
-
 }	/* set_shutter_frame_length */
 
 /*************************************************************************
@@ -1267,6 +1260,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
+	sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame;
 
 	sensor_info->AEShutDelayFrame = imgsensor_info.ae_shut_delay_frame;
 	sensor_info->AESensorGainDelayFrame =
