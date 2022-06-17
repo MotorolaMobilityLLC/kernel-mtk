@@ -7394,7 +7394,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 {
 	unsigned long prev_energy = ULONG_MAX, best_energy = ULONG_MAX;
 	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-	int weight, cpu, best_energy_cpu = prev_cpu;
+	int weight, cpu, best_energy_cpu = -1;
 	unsigned long cur_energy;
 	struct perf_domain *pd;
 	struct sched_domain *sd;
@@ -7450,6 +7450,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			goto unlock;
 		}
 
+	best_energy_cpu = prev_cpu;
 	if (cpumask_test_cpu(prev_cpu, &p->cpus_allowed))
 		prev_energy = best_energy = compute_energy(p, prev_cpu, pd);
 	else
@@ -7509,7 +7510,7 @@ unlock:
 		return best_energy_cpu;
 #endif
 
-	return prev_cpu;
+	return -1;
 
 fail:
 	rcu_read_unlock();
