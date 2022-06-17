@@ -309,7 +309,7 @@ void *dual_role_get_drvdata(struct dual_role_phy_instance *dual_role)
 }
 
 static struct dual_role_phy_instance dual_role_service;
-
+static int g_first_check_flag = 1;
 
 #endif /*__MEDIATEK_PLATFORM__*/
 
@@ -571,6 +571,10 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 			rc & WUSB3801_TYPE_MASK : WUSB3801_TYPE_INVALID;
 	pr_err("sts[0x%02x], type[0x%02x]\n", status, type);
 	if (int_sts & WUSB3801_INT_DETACH) {
+		if (g_first_check_flag && !status) {
+			g_first_check_flag = 0;
+			goto work_unlock;
+		}
 #ifdef __TEST_CC_PATCH__
 		if (chip->cc_test_flag == 1) {
 			pr_err("%s: test_cc_patch not used int and return \n", __func__);
