@@ -148,9 +148,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			SENSOR_DRVNAME_MOT_VICKY_OV02B10_MIPI_RAW,
 			{
 			{RST, Vol_Low, 1},
-			{DOVDD, Vol_1800, 1},
-			{SensorMCLK, Vol_High, 1},
-			{AVDD, Vol_2800, 3},
+			{DOVDD, Vol_1800, 0},
+			{SensorMCLK, Vol_High, 0},
+			{AVDD, Vol_2800, 9},
 			{RST, Vol_High, 9}
 		},
 	},
