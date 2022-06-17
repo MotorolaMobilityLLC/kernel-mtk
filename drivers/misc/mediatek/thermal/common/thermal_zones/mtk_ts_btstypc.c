@@ -109,7 +109,7 @@ pr_notice("[Thermal/TZ/TYPEC_THERMAL]" fmt, ##args)
 
 
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
-static struct iio_channel *thermistor_ch5;
+static struct iio_channel *thermistor_ch6;
 static int g_ADC_channel;
 #endif
 
@@ -633,7 +633,7 @@ static int get_hw_typec_therm_temp(void)
 #endif
 
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
-	ret = iio_read_channel_processed(thermistor_ch5, &val);
+	ret = iio_read_channel_processed(thermistor_ch6, &val);
 	mtkts_typec_therm_dprintk("get_hw_typec_therm_temp val=%d\n", val);
 
 	if (ret < 0) {
@@ -1443,22 +1443,22 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	thermistor_ch5 = devm_kzalloc(&pdev->dev, sizeof(*thermistor_ch5),
+	thermistor_ch6 = devm_kzalloc(&pdev->dev, sizeof(*thermistor_ch6),
 		GFP_KERNEL);
-	if (!thermistor_ch5)
+	if (!thermistor_ch6)
 		return -ENOMEM;
 
-	thermistor_ch5 = iio_channel_get(&pdev->dev, "thermistor-ch5");
-	ret = IS_ERR(thermistor_ch5);
+	thermistor_ch6 = iio_channel_get(&pdev->dev, "thermistor-ch6");
+	ret = IS_ERR(thermistor_ch6);
 	if (ret) {
 		mtkts_typec_therm_printk("[%s] fail to get auxadc iio ch0: %d\n",
 			__func__, ret);
 		return ret;
 	}
 
-	g_ADC_channel = thermistor_ch5->channel->channel;
+	g_ADC_channel = thermistor_ch6->channel->channel;
 	mtkts_typec_therm_printk("[%s]get auxadc iio ch: %d\n", __func__,
-		thermistor_ch5->channel->channel);
+		thermistor_ch6->channel->channel);
 
 	/* setup default table */
 	mtkts_typec_therm_prepare_table(g_RAP_ntc_table);
@@ -1488,13 +1488,13 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_OF
-const static struct of_device_id mt_thermistor_of_match6[2] = {
-	{.compatible = "mediatek,mtboard-thermistor6",},
+const static struct of_device_id mt_thermistor_of_match7[2] = {
+	{.compatible = "mediatek,mtboard-thermistor7",},
 	{},
 };
 #endif
 
-#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor6"
+#define THERMAL_THERMISTOR_NAME    "mtboard-thermistor7"
 static struct platform_driver mtk_thermal_typec_therm_driver = {
 	.remove = NULL,
 	.shutdown = NULL,
@@ -1504,7 +1504,7 @@ static struct platform_driver mtk_thermal_typec_therm_driver = {
 	.driver = {
 		.name = THERMAL_THERMISTOR_NAME,
 #ifdef CONFIG_OF
-		.of_match_table = mt_thermistor_of_match6,
+		.of_match_table = mt_thermistor_of_match7,
 #endif
 	},
 };
