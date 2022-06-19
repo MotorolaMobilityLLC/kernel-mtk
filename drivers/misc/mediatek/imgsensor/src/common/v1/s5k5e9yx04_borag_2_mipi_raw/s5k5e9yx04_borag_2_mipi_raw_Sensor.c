@@ -1603,7 +1603,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	if (enable) {
 
 		// 0x0601[2:0]; 0=no pattern,1=solid colour,2 = 100% colour bar ,3 = Fade to gray' colour bar
- 		write_cmos_sensor(0x0601, 0x02);
+		write_cmos_sensor(0x0601, 0x05);
 	} else {
 		write_cmos_sensor(0x0601, 0x00);
 	}
