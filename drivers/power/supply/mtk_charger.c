@@ -645,13 +645,13 @@ void do_sw_jeita_state_machine(struct mtk_charger *info)
 
 	/* set CV after temperature changed */
 	/* In normal range, we adjust CV dynamically */
-	if (sw_jeita->sm != TEMP_T2_TO_T3) {
+	//if (sw_jeita->sm != TEMP_T2_TO_T3) {
 		if (sw_jeita->sm == TEMP_ABOVE_T4)
 			sw_jeita->cv = info->data.jeita_temp_above_t4_cv;
 		else if (sw_jeita->sm == TEMP_T3_TO_T4)
 			sw_jeita->cv = info->data.jeita_temp_t3_to_t4_cv;
 		else if (sw_jeita->sm == TEMP_T2_TO_T3)
-			sw_jeita->cv = 0;
+			sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv;
 		else if (sw_jeita->sm == TEMP_T1_TO_T2)
 			sw_jeita->cv = info->data.jeita_temp_t1_to_t2_cv;
 		else if (sw_jeita->sm == TEMP_T0_TO_T1)
@@ -660,9 +660,9 @@ void do_sw_jeita_state_machine(struct mtk_charger *info)
 			sw_jeita->cv = info->data.jeita_temp_below_t0_cv;
 		else
 			sw_jeita->cv = info->data.battery_cv;
-	} else {
-		sw_jeita->cv = 0;
-	}
+	//} else {
+	//	sw_jeita->cv = 0;
+	//}
 
 	chr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n",
 		sw_jeita->pre_sm, sw_jeita->sm, info->battery_temp,

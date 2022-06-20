@@ -67,13 +67,33 @@ static int _uA_to_mA(int uA)
 		return uA / 1000;
 }
 
+static int fcc_cv_flag = 0;
 static void select_cv(struct mtk_charger *info)
 {
 	u32 constant_voltage;
+	int ret;
 
+	ret = get_battery_current(info);
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
-			info->setting.cv = info->sw_jeita.cv;
+			if(fcc_cv_flag == 0)
+				info->setting.cv = info->sw_jeita.cv;
+			else
+				info->setting.cv = 4510000;
+			if((info->setting.cv == 4480000)&&(ret > 1500)&&(fcc_cv_flag == 0))
+			{
+				info->setting.cv = 4510000;
+				fcc_cv_flag = 1;
+				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
+			}
+			if((fcc_cv_flag == 1)&&(ret < 660))
+			{
+				info->setting.cv = info->sw_jeita.cv;
+				fcc_cv_flag = 0;
+				chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
+			}
+			if(info->sw_jeita.cv == 4200000)
+				info->setting.cv = info->sw_jeita.cv;
 			return;
 		}
 
