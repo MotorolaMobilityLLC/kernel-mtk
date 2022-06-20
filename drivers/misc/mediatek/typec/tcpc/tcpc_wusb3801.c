@@ -309,7 +309,6 @@ void *dual_role_get_drvdata(struct dual_role_phy_instance *dual_role)
 }
 
 static struct dual_role_phy_instance dual_role_service;
-static int g_first_check_flag = 1;
 
 #endif /*__MEDIATEK_PLATFORM__*/
 
@@ -377,6 +376,7 @@ struct wusb3801_chip {
 #ifdef __TEST_CC_PATCH__
 uint8_t	typec_cc_orientation;
 #endif	/* __TEST_CC_PATCH__ */
+static int g_first_check_flag = 1;
 
 static int wusb3801_read_device(void *client, u32 reg, int len, void *dst)
 {
