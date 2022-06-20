@@ -141,11 +141,8 @@ static void tianma_panel_init(struct tianma *ctx)
 
 	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A,0x59);
 	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5,0xA6);
-	//tianma_dcs_write_seq_static(ctx, 0xBD,0xA0);//not used
-	tianma_dcs_write_seq_static(ctx, 0x70, 0x00);//dsc disble //0x41 enable
-	//tianma_dcs_write_seq_static(ctx, 0xD0,0x4C,0x23,0x18,0xFF,0xFF,0x00,0x80,0x0C,0xFF,0x0F,0x42,0x00,0x08,0x10);
-	tianma_dcs_write_seq_static(ctx, 0xD1,0x00,0x00,0x00,0x00,0x00,0x33,0x01,0x01);//mipi high speed   Ths-- settle time
-	//tianma_dcs_write_seq_static(ctx, 0x51, 0x0F, 0xFF);
+
+	tianma_dcs_write_seq_static(ctx, 0xD1,0x00,0x00,0x00,0x00,0x00,0x33,0x01,0x01);
 	tianma_dcs_write_seq_static(ctx, 0x51, 0x0F,0xFF);
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
@@ -260,22 +257,44 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock = 185697,
-	.hdisplay = 1080,
-	.hsync_start = 1080 + 76,
-	.hsync_end = 1080 + 76 + 16,
-	.htotal = 1080 + 76 + 16 + 80,
-	.vdisplay = 2400,
-	.vsync_start = 2400 + 38,
-	.vsync_end = 2400 + 38 + 2,
-	.vtotal = 2400 + 38 + 2 + 32,
+	.clock = 341136,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_0_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_0_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_0_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_0_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_0_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_0_VFP + VSA + VBP,
+};
+static const struct drm_display_mode performance_mode_1 = {
+	.clock = 341136,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_1_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_1_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_1_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_1_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_1_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_1_VFP + VSA + VBP,
 };
 
+static const struct drm_display_mode performance_mode_2 = {
+	.clock = 341136,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_2_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_2_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_2_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_2_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_2_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_2_VFP + VSA + VBP,
+};
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params = {
 	//.pll_clk = 600,
-	.data_rate = 1200,
+	.data_rate = 900,
 	//.vfp_low_power = 840,
 	.cust_esd_check = 0,
 	.esd_check_enable = 0,
@@ -286,11 +305,209 @@ static struct mtk_panel_params ext_params = {
 	},
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
-	.output_mode = MTK_PANEL_SINGLE_PORT,
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+#if 0
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 580,
+		.vfp_lp_dyn = 888,
+		.hfp = 800,
+		.vfp = 54,
+	},
+	.dyn_fps = {
+		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
+		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
+		.dfps_cmd_table[2] = {0, 2, {0x18, 0x22} },
+		/*switch page for esd check*/
+		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
+		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
+	},
+	.data_rate = DATA_RATE,
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_0_FPS,
+#endif
 };
 
+static struct mtk_panel_params ext_params_mode_1 = {
+//	.vfp_low_power = 1302,//60hz
+	.data_rate = 900,
+	.cust_esd_check = 0,
+	.esd_check_enable = 0,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+#if 0
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 580,
+		.vfp_lp_dyn = 1300,
+		.hfp = 372,
+		.vfp = 54,
+	},
+	.dyn_fps = {
+		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
+		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
+		.dfps_cmd_table[2] = {0, 2, {0x18, 0x21} },
+		/*switch page for esd check*/
+		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
+		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
+	},
+	.data_rate = DATA_RATE,
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_0_FPS,
+#endif
+};
+
+static struct mtk_panel_params ext_params_mode_2 = {
+//	.vfp_low_power = 2558,//60hz
+	.data_rate = 900,
+	.cust_esd_check = 0,
+	.esd_check_enable = 0,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+#if 0
+	.dyn = {
+		.switch_en = 1,
+		.pll_clk = 580,
+		.vfp_lp_dyn = 2540,
+		.hfp = 157,
+		.vfp = 54,
+	},
+	.dyn_fps = {
+		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
+		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
+		.dfps_cmd_table[2] = {0, 2, {0x18, 0x20} },
+		/*switch page for esd check*/
+		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
+		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
+	},
+	.data_rate = DATA_RATE,
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = MODE_0_FPS,
+	#endif
+};
 static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
@@ -305,7 +522,40 @@ static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 	return 0;
 }
+struct drm_display_mode *get_mode_by_id(struct drm_connector *connector,
+	unsigned int mode)
+{
+	struct drm_display_mode *m;
+	unsigned int i = 0;
 
+	list_for_each_entry(m, &connector->modes, head) {
+		if (i == mode)
+			return m;
+		i++;
+	}
+	return NULL;
+}
+
+static int mtk_panel_ext_param_set(struct drm_panel *panel,
+			 struct drm_connector *connector, unsigned int mode)
+{
+	struct mtk_panel_ext *ext = find_panel_ext(panel);
+	int ret = 0;
+	struct drm_display_mode *m = get_mode_by_id(connector, mode);
+
+	if (!m)
+		return ret;
+
+	if (drm_mode_vrefresh(m) == MODE_0_FPS)
+		ext->params = &ext_params;
+	else if (drm_mode_vrefresh(m) == MODE_1_FPS)
+		ext->params = &ext_params_mode_1;
+	else if (drm_mode_vrefresh(m) == MODE_2_FPS)
+		ext->params = &ext_params_mode_2;
+	else
+		ret = 1;
+	return ret;
+}
 static int panel_ext_reset(struct drm_panel *panel, int on)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
@@ -326,7 +576,7 @@ static enum mtk_lcm_version mtk_panel_get_lcm_version(void)
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tianma_setbacklight_cmdq,
 	.reset = panel_ext_reset,
-//	.ext_param_set = mtk_panel_ext_param_set,
+	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
 	.get_lcm_version = mtk_panel_get_lcm_version,
 };
@@ -336,6 +586,8 @@ static int tianma_get_modes(struct drm_panel *panel,
 						struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
+	struct drm_display_mode *mode_1;
+	struct drm_display_mode *mode_2;
 
 	mode = drm_mode_duplicate(connector->dev, &default_mode);
 	printk("[%d  %s]hxl_check_dsi_modes  mode:%d  !!\n",__LINE__, __FUNCTION__,mode);
@@ -349,6 +601,30 @@ static int tianma_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
+	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_1);
+	if (!mode_1) {
+		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			performance_mode_1.hdisplay,
+			performance_mode_1.vdisplay,
+			drm_mode_vrefresh(&performance_mode_1));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_1);
+	mode_1->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_1);
+
+
+	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_2);
+	if (!mode_2) {
+		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			performance_mode_2.hdisplay,
+			performance_mode_2.vdisplay,
+			drm_mode_vrefresh(&performance_mode_2));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_2);
+	mode_2->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_2);
 	connector->display_info.width_mm = 68;
 	connector->display_info.height_mm = 150;
 
