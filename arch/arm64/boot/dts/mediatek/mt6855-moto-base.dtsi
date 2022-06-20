@@ -8,4 +8,5 @@
 	utags: utags { };
 	hw: hw { };
 	charge_leds: charge_leds{ };
+	moto_chg_tcmd: moto_chg_tcmd { };
 };
