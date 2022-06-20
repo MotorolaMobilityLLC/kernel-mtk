@@ -1470,7 +1470,12 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		val->intval = sgm->init_data.max_ichg;
+		if (sgm->psy_usb_type == POWER_SUPPLY_USB_TYPE_SDP)
+			val->intval = 500000;
+		else if (sgm->psy_usb_type == POWER_SUPPLY_USB_TYPE_CDP)
+			val->intval = 1500000;
+		else if (sgm->psy_usb_type == POWER_SUPPLY_USB_TYPE_DCP)
+			val->intval = sgm->init_data.max_ichg;
 		break;
 	default:
 		return -EINVAL;
@@ -1569,7 +1574,7 @@ static void charger_monitor_work_func(struct work_struct *work)
 
 	if(!sgm->state.vbus_gd) {
 		dev_err(sgm->dev, "Vbus not present, disable charge\n");
-		sgm4154x_disable_charger(sgm);
+
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 		if(m_chg_type != 0 && is_already_probe_ok != 0){
 			wt6670f_reset_chg_type();
@@ -1690,12 +1695,11 @@ static void charger_detect_work_func(struct work_struct *work)
 	}
 	//enable charge
 	sgm4154x_enable_charger(sgm);
-	sgm4154x_dump_register(sgm->chg_dev);
-	
+
 err:
 	//release wakelock
 	pr_err("%s --Notify charged--\n",__func__);
-	power_supply_changed(sgm->charger);	
+	power_supply_changed(sgm->charger);
 	dev_err(sgm->dev, "Relax wakelock\n");
 	__pm_relax(sgm->charger_wakelock);
 	return;
@@ -2242,7 +2246,8 @@ static struct charger_ops sgm4154x_chg_ops = {
 	/* Normal charging */
 	.plug_in = sgm4154x_plug_in,
 	.plug_out = sgm4154x_plug_out,
-	.dump_registers = sgm4154x_dump_register,
+	/* dump registers */
+	/*.dump_registers = sgm4154x_dump_register,*/
 	.enable = sgm4154x_charging_switch,
 	.is_enabled = sgm4154x_is_charging_enable,
 	.get_charging_current = sgm4154x_get_ichg_curr,
