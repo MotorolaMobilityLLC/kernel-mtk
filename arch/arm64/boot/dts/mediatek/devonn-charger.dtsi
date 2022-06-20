@@ -87,6 +87,7 @@
 
 	ACTIVE_TABLE = <(5)>;
 	R_FG_VALUE = <(5)>;
+	NO_BAT_TEMP_COMPENSATE = <(1)>;
 	df-serialnum = "SB18D39674";
 	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
 };
