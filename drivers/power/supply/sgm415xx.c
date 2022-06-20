@@ -80,7 +80,6 @@ static const unsigned int ITERM_CURRENT_STABLE[] = {
 	80000, 100000, 120000, 140000, 160000, 180000, 200000, 240000
 };
 
-
 enum SGM4154x_VREG_FT {
 	VREG_FT_DISABLE,
 	VREG_FT_UP_8mV,
@@ -1187,7 +1186,7 @@ static int sgm4154x_reset_watch_dog_timer(struct charger_device
 }
 
 
-static int sgm4154x_get_charging_status(struct charger_device *chg_dev,
+static int sgm4154x_get_charging_status_done(struct charger_device *chg_dev,
 				       bool *is_done)
 {
 	//struct sgm4154x_state state;
@@ -1277,6 +1276,22 @@ static int sgm4154x_en_pe_current_partern(struct charger_device
 	return ret;
 }
 
+static u8 sgm4154x_get_charging_status(struct sgm4154x_device *sgm)
+{
+	int ret = 0;
+	u8 chrg_stat;
+
+	ret = sgm4154x_read_reg(sgm, SGM4154x_CHRG_STAT, &chrg_stat);
+	if (ret) {
+		pr_err("%s read SGM4154x_CHRG_STAT fail\n",__func__);
+		return ret;
+	}
+
+	chrg_stat &= SGM4154x_CHG_STAT_MASK;
+
+	return chrg_stat;
+}
+
 static enum power_supply_property sgm4154x_power_supply_props[] = {
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_MODEL_NAME,
@@ -1340,23 +1355,18 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 				union power_supply_propval *val)
 {
 	struct sgm4154x_device *sgm = power_supply_get_drvdata(psy);
-	struct sgm4154x_state state;
+	struct sgm4154x_state state = sgm->state;
+	u8 chrg_status = 0;
 	int ret = 0;
-
-	mutex_lock(&sgm->lock);
-	ret = sgm4154x_get_state(sgm, &state);
-	sgm->state = state;
-	mutex_unlock(&sgm->lock);
-	if (ret)
-		return ret;
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
+		chrg_status = sgm4154x_get_charging_status(sgm);
 		if (!state.chrg_type || (state.chrg_type == SGM4154x_OTG_MODE))
 			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
-		else if (!state.chrg_stat)
+		else if (!chrg_status)
 			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-		else if (state.chrg_stat == SGM4154x_TERM_CHRG)
+		else if (chrg_status == SGM4154x_TERM_CHRG)
 			val->intval = POWER_SUPPLY_STATUS_FULL;
 		else
 			val->intval = POWER_SUPPLY_STATUS_CHARGING;
@@ -1365,13 +1375,14 @@ static int sgm4154x_charger_get_property(struct power_supply *psy,
 			val->intval = POWER_SUPPLY_STATUS_FULL;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
-		switch (state.chrg_stat) {		
+		chrg_status = sgm4154x_get_charging_status(sgm);
+		switch (chrg_status) {
 		case SGM4154x_PRECHRG:
 			val->intval = POWER_SUPPLY_CHARGE_TYPE_TRICKLE;
 			break;
 		case SGM4154x_FAST_CHRG:
 			val->intval = POWER_SUPPLY_CHARGE_TYPE_FAST;
-			break;		
+			break;
 		case SGM4154x_TERM_CHRG:
 			val->intval = POWER_SUPPLY_CHARGE_TYPE_TRICKLE;
 			break;
@@ -2258,7 +2269,7 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.set_constant_voltage = sgm4154x_set_chrg_volt,
 	.kick_wdt = sgm4154x_reset_watch_dog_timer,
 	.set_mivr = sgm4154x_set_input_volt_lim,
-	.is_charging_done = sgm4154x_get_charging_status,
+	.is_charging_done = sgm4154x_get_charging_status_done,
 	.get_min_charging_current = sgm4154x_get_min_ichg,
 	/* Safety timer */
 	.enable_safety_timer = sgm4154x_enable_safetytimer,
@@ -2275,7 +2286,7 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.enable_otg = sgm4154x_enable_otg,	
 	.set_boost_current_limit = sgm4154x_set_boost_current_limit,
 	.event = sgm4154x_do_event,
-	
+
 	/* PE+/PE+20 */
 	.send_ta_current_pattern = sgm4154x_en_pe_current_partern,
 	/*.set_pe20_efficiency_table = NULL,*/
@@ -2367,8 +2378,8 @@ static int sgm4154x_driver_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&sgm->charge_monitor_work, charger_monitor_work_func);
 	INIT_WORK(&sgm->rerun_apsd_work, sgm4154x_rerun_apsd_work_func);
 
-        //rerun apsd and trigger charger detect when boot with charger
-        schedule_work(&sgm->rerun_apsd_work);
+	//rerun apsd and trigger charger detect when boot with charger
+	schedule_work(&sgm->rerun_apsd_work);
 
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
     INIT_DELAYED_WORK(&sgm->psy_dwork, wt6670f_get_charger_type_func_work);
