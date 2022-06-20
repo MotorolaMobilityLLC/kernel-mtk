@@ -268,6 +268,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[] = {
 	{12000, 9000,    0,    0, 12000, 9000, 12000, 9000, 0,     0, 12000, 9000,    0,    0, 12000, 9000}, // custom2
 };
 //customerconfig
+static bool bNeedSetNormalMode = KAL_FALSE;
 
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
 {
@@ -521,7 +522,8 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
-	kal_uint16 l_shift = 1;
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -554,37 +556,36 @@ static void write_shutter(kal_uint32 shutter)
 
 	/* long expsoure */
 	if (shutter >	(imgsensor_info.max_frame_length - imgsensor_info.margin)) {
+		bNeedSetNormalMode = KAL_TRUE;
+		CintR = ((unsigned long long)shutter) / 128;
+		Time_Frame = CintR + 0x0010;
+		LOG_INF("CintR = %d\n", CintR);
+		write_cmos_sensor(0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor(0x0202, CintR & 0xFFFF);
+		write_cmos_sensor(0x0702, 0x0700);
+		write_cmos_sensor(0x0704, 0x0700);
 
-		for (l_shift = 1; l_shift < MAX_CIT_LSHIFT; l_shift++) {
-			if ((shutter >> l_shift) <
-					(imgsensor_info.max_frame_length - imgsensor_info.margin))
-
-				break;
-		}
-		if (l_shift > MAX_CIT_LSHIFT) {
-			LOG_INF("Unable to set such a long exposure %d, set to max\n",   shutter);
-
-			l_shift = MAX_CIT_LSHIFT;
-		}
-		shutter = shutter >> l_shift;
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-
-		LOG_INF("enter long exposure mode, time is %d", l_shift);
-
-		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
+		LOG_INF("download long shutter setting shutter = %d\n", shutter);
 
 		/* Frame exposure mode customization for LE*/
 		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
 		imgsensor.current_ae_effective_frame = 2;
 	} else {
-		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
+		if (bNeedSetNormalMode == KAL_TRUE) {
+			bNeedSetNormalMode = KAL_FALSE;
+			write_cmos_sensor(0x0702, 0x0000);
+			write_cmos_sensor(0x0704, 0x0000);
+			LOG_INF("return to normal shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+		}
+
+		write_cmos_sensor(0x0340, imgsensor.frame_length);
+		write_cmos_sensor(0x0202, imgsensor.shutter);
 		imgsensor.current_ae_effective_frame = 2;
 		LOG_INF("exit long exposure mode");
 	}
 
 	/* Update Shutter */
-	write_cmos_sensor(0X0202, shutter & 0xFFFF);
 	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }	/*	write_shutter  */
