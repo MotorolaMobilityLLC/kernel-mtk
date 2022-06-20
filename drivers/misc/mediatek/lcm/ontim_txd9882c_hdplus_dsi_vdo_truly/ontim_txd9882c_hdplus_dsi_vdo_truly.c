@@ -156,6 +156,7 @@ static struct LCM_setting_table init_setting[] = {
     {0x51,0x01,{0xff}},
     {0x53,0x01,{0x2c}},
     {0x55,0x01,{0x01}},
+    {0x35,0x01,{0x00}},
     {0x11,0x01,{0x00}},
     {REGFLAG_DELAY,120,{}},
     {0x29,0x01,{0x00}},
@@ -397,7 +398,7 @@ static void lcm_suspend(void)
 	}
 #ifndef MACH_FPGA
 	push_table(NULL, setting_table, setting_table_size, 1);
-	MDELAY(150);
+	//MDELAY(150);
 
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
