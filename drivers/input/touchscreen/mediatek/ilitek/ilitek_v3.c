@@ -691,7 +691,7 @@ int ili_fw_upgrade_handler(void *data)
 	    uint8_t fw_ver = (ilits->chip->fw_ver >> 8) & 0xFF;
 	    snprintf(lcdname, sizeof(lcdname), "%s", "txd-ili9882");
 	    snprintf(vendor_name, sizeof(vendor_name), "%s", "txd-ili9882");
-	    snprintf(version, sizeof(version),"FW:%02x,VID:0x94", fw_ver);
+	    snprintf(version, sizeof(version),"FW_%02x#VID_0x94", fw_ver);
     }
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 

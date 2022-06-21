@@ -220,7 +220,7 @@ static int get_tp_info(void)
 	if (buf2[strlen(buf2) - 1] == '\n')
 		buf2[strlen(buf2) - 1] = '\0';
 
-	sprintf(str, "%s-version:%s", buf, buf2);
+	sprintf(str, "%s-version#%s", buf, buf2);
 	memcpy(hwinfo[TP_MFR].hwinfo_buf, str , strlen(str));
 	return 0;
 }
