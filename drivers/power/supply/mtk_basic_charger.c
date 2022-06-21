@@ -79,10 +79,10 @@ static void select_cv(struct mtk_charger *info)
 			if(fcc_cv_flag == 0)
 				info->setting.cv = info->sw_jeita.cv;
 			else
-				info->setting.cv = 4510000;
+				info->setting.cv = 4512000;
 			if((info->setting.cv == 4480000)&&(ret > 1500)&&(fcc_cv_flag == 0))
 			{
-				info->setting.cv = 4510000;
+				info->setting.cv = 4512000;
 				fcc_cv_flag = 1;
 				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
 			}

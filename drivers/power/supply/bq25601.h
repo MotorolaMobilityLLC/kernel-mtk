@@ -18,6 +18,8 @@
 #define bq25601_CON9      0x09
 #define bq25601_CON10      0x0A
 #define	bq25601_CON11		0x0B
+#define	sgm41513_CON15		0x0F
+
 #define bq25601_REG_NUM 12
 #define SGM41513_REG_NUM		0x10
 
@@ -76,6 +78,9 @@
 //CON4
 #define CON4_VREG_MASK     0x1F
 #define CON4_VREG_SHIFT    3
+
+#define CON15_VREG_FT_MASK     0x03
+#define CON15_VREG_FT_SHIFT    6
 
 #define	CON4_TOPOFF_TIMER_MASK 0x03
 #define	CON4_TOPOFF_TIMER_SHIFT 1

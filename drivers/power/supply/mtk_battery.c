@@ -171,9 +171,7 @@ static int fb_early_init_dt_get_chosen(
 
 #define BATTERY_NAME_LEN 30
 
-
 static int battery_id_type = 0;
-
 
 static void ontim_form_lk_get_battery_id(void)
 {
@@ -194,7 +192,6 @@ static void ontim_form_lk_get_battery_id(void)
 		bm_err("ontim battery_id_type = %d  battery_type_name_len = %d\n",battery_id_type,battery_type_name_len);
 	}
 }
-
 
 int fgauge_get_profile_id(void)
 {
@@ -944,8 +941,6 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 	fg_cust_data = &gm->fg_cust_data;
 	fg_table_cust_data = &gm->fg_table_cust_data;
 
-	fgauge_get_profile_id();
-
 	fg_cust_data->versionID1 = FG_DAEMON_CMD_FROM_USER_NUMBER;
 	fg_cust_data->versionID2 = sizeof(gm->fg_cust_data);
 	fg_cust_data->versionID3 = FG_KERNEL_CMD_FROM_USER_NUMBER;
@@ -1400,7 +1395,9 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 	struct fuel_gauge_custom_data *fg_cust_data;
 	struct fuel_gauge_table_custom_data *fg_table_cust_data;
 
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
 	gm->battery_id = fgauge_get_profile_id();
+#endif
 	bat_id = gm->battery_id;
 	fg_cust_data = &gm->fg_cust_data;
 	fg_table_cust_data = &gm->fg_table_cust_data;
