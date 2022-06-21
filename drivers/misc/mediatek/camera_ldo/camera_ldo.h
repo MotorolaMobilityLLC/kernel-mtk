@@ -48,9 +48,13 @@ typedef enum {
 	CAMERA_LDO_AVDD3,
 	CAMERA_LDO_AVDD2,
 	CAMERA_LDO_VDDIO,//CAMERA_LDO_VDDIO
-	CAMERA_LDO_MAX
+	CAMERA_LDO_MAX,
+	CAMERA_LDO_NUM = CAMERA_LDO_MAX,
 } CAMERA_LDO_SELECT;
 
+typedef struct {
+	int ldo_ref_cnt[CAMERA_LDO_NUM];
+} CAMERA_LDO_STATE;
 
 /* DTS state */
 typedef enum {
