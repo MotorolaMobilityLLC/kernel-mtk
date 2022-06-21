@@ -7,8 +7,8 @@
 
 &charger
 {
-	battery_cv = <4480000>;
-
+	/* sw jeita */
+	enable_sw_jeita;
 	jeita_temp_above_t4_cv = <4200000>;
 	jeita_temp_t3_to_t4_cv = <4200000>;
 	jeita_temp_t2_to_t3_cv = <4480000>;
@@ -34,8 +34,6 @@
 	min_charge_temp_plus_x_degree = <2>;
 	max_charge_temp = <55>;
 	max_charge_temp_minus_x_degree = <52>;
-
-	ac_charger_current = <2050000>;
 };
 
 &mtk_gauge {

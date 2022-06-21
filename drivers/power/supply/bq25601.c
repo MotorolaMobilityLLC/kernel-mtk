@@ -699,6 +699,18 @@ void bq25601_set_vreg(unsigned int val)
 				      );
 }
 
+/* 01=VREG+8mv; 10=VREG-8mv; 11=VREG-16mv; */
+void sgm41513_set_vreg_ft(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = bq25601_config_interface((unsigned char) (sgm41513_CON15),
+				       (unsigned char) (val),
+				       (unsigned char) (CON15_VREG_FT_MASK),
+				       (unsigned char) (CON15_VREG_FT_SHIFT)
+				      );
+}
+
 void bq25601_set_topoff_timer(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -1156,12 +1168,22 @@ static int bq25601_set_cv_voltage(struct charger_device *chg_dev,
 	unsigned short register_value;
 
 	pr_err("&&&& cv_value = %d\n", cv);
+	if(cv == 4480000)
+		cv = 4496000;
+	if(cv == 4512000)
+		cv = 4528000;
 	array_size = GETARRAYNUM(VBAT_CV_VTH);
 	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, cv);
+	pr_err("set_cv_voltage = %d\n", set_cv_voltage);
 	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size,
 			 set_cv_voltage);
 	bq25601_set_vreg(register_value);
 	pr_err("&&&& cv reg value = 0x%x\n", register_value);
+
+	if((set_cv_voltage == 4496000) || (set_cv_voltage == 4528000)){
+		sgm41513_set_vreg_ft(3);
+		pr_err("REG0F: 11 = VREG - 16mv\n");
+	}
 
 	return status;
 }

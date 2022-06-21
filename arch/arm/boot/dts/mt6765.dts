@@ -3540,13 +3540,13 @@
 		charger_configuration= <0>;
 
 		/* common */
-		battery_cv = <4400000>;
-		max_charger_voltage = <6500000>;
+		battery_cv = <4480000>;
+		max_charger_voltage = <10500000>;
 		min_charger_voltage = <4600000>;
 
 		/* sw jeita */
-		enable_sw_jeita;
-/*		jeita_temp_above_t4_cv = <4240000>;
+/*		enable_sw_jeita;
+		jeita_temp_above_t4_cv = <4240000>;
 		jeita_temp_t3_to_t4_cv = <4240000>;
 		jeita_temp_t2_to_t3_cv = <4340000>;
 		jeita_temp_t1_to_t2_cv = <4240000>;
@@ -3573,8 +3573,8 @@
 
 		/* charging current */
 		usb_charger_current = <500000>;
-		ac_charger_current = <2100000>;
-		ac_charger_input_current = <2000000>;
+		ac_charger_current = <2500000>;
+		ac_charger_input_current = <2100000>;
 		charging_host_charger_current = <1500000>;
 
 		/* dynamic mivr */
