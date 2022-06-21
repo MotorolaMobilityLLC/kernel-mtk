@@ -35,6 +35,7 @@ static int camera_ldo_i2c_probe(struct i2c_client *client, const struct i2c_devi
 static int camera_ldo_i2c_remove(struct i2c_client *client);
 int deviceid = -1;
 int deviceid_tmp = -1;
+CAMERA_LDO_STATE cam_ldo_state;
 /*****************************************************************************
  * Extern Area
  *****************************************************************************/
@@ -48,7 +49,26 @@ void camera_ldo_set_en_ldo(CAMERA_LDO_SELECT ldonum,unsigned int en)
 		return ;
 	}
 
+	if (ldonum >= CAMERA_LDO_NUM) {
+		CAMERA_LDO_PRINT("[camera_ldo] ldonum is not valid(%d, should be less than %d)!!\n", ldonum, CAMERA_LDO_NUM);
+		return;
+	}
+
 	mutex_lock(&camera_ldo_mutex);
+
+	if (en) {
+		if (cam_ldo_state.ldo_ref_cnt[ldonum]++>0) {
+			CAMERA_LDO_PRINT("[camera_ldo] ldo%d is already enabled!!\n", ldonum);
+			mutex_unlock(&camera_ldo_mutex);
+			return ;
+		}
+	} else {
+		if (--cam_ldo_state.ldo_ref_cnt[ldonum]>0) {
+			CAMERA_LDO_PRINT("[camera_ldo] ldo%d is under using!!\n", ldonum);
+			mutex_unlock(&camera_ldo_mutex);
+			return ;
+		}
+	}
 
 	if(deviceid == WL2868C_deviceid)
 	{
@@ -81,7 +101,7 @@ void camera_ldo_set_en_ldo(CAMERA_LDO_SELECT ldonum,unsigned int en)
 	{
 		i2c_smbus_write_byte_data(camera_ldo_i2c_client,CAMERA_LDO_LDO_EN_ADDR,value);
 	}
-	CAMERA_LDO_PRINT("[camera_ldo] camera_ldo_set_en_ldo enable before:%x after set :%x  \n",ret,value);
+	CAMERA_LDO_PRINT("[camera_ldo] camera_ldo_set_en_ldo%d enable before:%x after set :%x  ref_cnt:%d\n",ldonum,ret,value,cam_ldo_state.ldo_ref_cnt[ldonum]);
 
 	mutex_unlock(&camera_ldo_mutex);
 
@@ -342,6 +362,7 @@ static int camera_ldo_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	}
 	deviceid = deviceid_tmp;
 	camera_ldo_i2c_client = client;
+	memset(&cam_ldo_state, 0x0, sizeof(cam_ldo_state));
 	CAMERA_LDO_PRINT("[camera_ldo]camera_ldo_i2c_probe success addr = 0x%x\n", client->addr);
 	return 0;
 }
