@@ -365,7 +365,11 @@ int swtp_init(int md_id)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
+#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
+#else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
+#endif
 
 	spin_lock_init(&swtp_data[md_id].spinlock);
 
