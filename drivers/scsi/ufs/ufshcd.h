@@ -386,6 +386,12 @@ struct ufs_hba_variant_ops {
 	void    (*compl_task_mgmt)(struct ufs_hba *hba, int tag, int err);
 	void    (*hibern8_notify)(struct ufs_hba *, enum uic_cmd_dme,
 					enum ufs_notify_change_status);
+	/*
+	 * MTK PATCH: Control AH8
+	 *   1: Enable AH8
+	 *   0: Disable AH8.
+	 */
+	void    (*auto_hibern8)(struct ufs_hba *, bool);
 	int	(*apply_dev_quirks)(struct ufs_hba *hba);
 	int     (*suspend)(struct ufs_hba *, enum ufs_pm_op);
 	int     (*resume)(struct ufs_hba *, enum ufs_pm_op);
@@ -1331,6 +1337,16 @@ static inline bool ufshcd_vops_has_ufshci_perf_heuristic(struct ufs_hba *hba) {
 	if (hba->vops && hba->vops->has_ufshci_perf_heuristic)
 		return hba->vops->has_ufshci_perf_heuristic(hba);
 	return false;
+}
+
+/**
+ * MTK PATCH
+ * Wrapper function for safely calling variant operations
+ */
+static inline void ufshcd_vops_auto_hibern8(struct ufs_hba *hba, bool enable)
+{
+	if (hba->vops && hba->vops->auto_hibern8)
+		hba->vops->auto_hibern8(hba, enable);
 }
 
 extern struct ufs_pm_lvl_states ufs_pm_lvl_states[];

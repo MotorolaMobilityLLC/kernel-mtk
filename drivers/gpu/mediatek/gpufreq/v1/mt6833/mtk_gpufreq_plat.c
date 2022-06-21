@@ -1010,6 +1010,7 @@ void mt_gpufreq_power_control(enum mt_power_state power, enum mt_cg_state cg,
 				readl(g_sleep + 0x16C));
 #endif
 		if (g_probe_done) {
+			mutex_unlock(&mt_gpufreq_lock);
 			gpufreq_pr_info("@%s: power=%d g_power_count=%d, skip by dfd_trigger\n",
 					__func__, power, g_power_count);
 			return;

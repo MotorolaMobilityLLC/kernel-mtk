@@ -860,7 +860,7 @@ int dprec_logger_get_result_string(enum DPREC_LOGGER_ENUM source,
 int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 {
 	int n = 0;
-	int i = 0;
+	unsigned int i = 0;
 
 	n += scnprintf(stringbuf + n, strlen - n,
 		       "|**** Display Driver Statistic Information Dump ****\n");

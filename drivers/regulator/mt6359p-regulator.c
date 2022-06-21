@@ -1304,7 +1304,7 @@ static irqreturn_t mt6359_oc_irq(int irq, void *data)
 	struct regulator_dev *rdev = (struct regulator_dev *)data;
 	struct mt6359_regulator_info *info = rdev_get_drvdata(rdev);
 
-	if (info == NULL)
+	if (info == NULL || info->oc_work.timer.function == NULL)
 		return IRQ_NONE;
 	disable_irq_nosync(info->irq);
 	if (!regulator_is_enabled_regmap(rdev))

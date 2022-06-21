@@ -7266,7 +7266,8 @@ void mmsys_config_dump_reg_mt6873(void __iomem *config_regs)
  */
 void mmsys_config_dump_analysis_mt6885(void __iomem *config_regs)
 {
-	unsigned int idx = 0, bit = 0, len = 0;
+	int len = 0;
+	unsigned int idx = 0, bit = 0;
 	unsigned int reg = 0;
 	char clock_on[512] = {'\0'};
 	char *pos = NULL;
@@ -7343,8 +7344,7 @@ void mmsys_config_dump_analysis_mt6885(void __iomem *config_regs)
 			else
 				len = sprintf(pos, "%s,", "n");
 
-			if (len >= 0)
-				pos += len;
+			pos += len;
 
 			if ((ready[idx] & (1 << bit)))
 				len = sprintf(pos, "%s", "r");
@@ -7974,8 +7974,7 @@ void mmsys_config_dump_analysis_mt6833(void __iomem *config_regs)
 			len = sprintf(pos, "%s,", "v");
 		else
 			len = sprintf(pos, "%s,", "n");
-		if (len >= 0)
-			pos += len;
+		pos += len;
 
 		if ((ready & (1 << i)))
 			len = sprintf(pos, "%s", "r");

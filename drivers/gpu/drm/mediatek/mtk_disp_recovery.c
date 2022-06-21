@@ -323,7 +323,7 @@ static int mtk_drm_request_eint(struct drm_crtc *crtc)
 	struct mtk_ddp_comp *output_comp;
 	struct device_node *node;
 	u32 ints[2] = {0, 0};
-	char *compat_str;
+	char *compat_str = NULL;
 	int ret = 0;
 
 	if (unlikely(!esd_ctx)) {

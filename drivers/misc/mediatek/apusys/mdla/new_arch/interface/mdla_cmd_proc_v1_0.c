@@ -199,6 +199,7 @@ int mdla_cmd_ut_run_sync_v1_0(void *run_cmd, void *wait_cmd,
 	struct command_entry ce;
 	u32 core_id = mdla_info->mdla_id;
 
+	memset(&ce, 0, sizeof(struct command_entry));
 	ce.queue_t = sched_clock();
 
 	/* The critical region of command enqueue */

@@ -323,7 +323,7 @@ static void mm2nd_vio_handler(void __iomem *infracfg,
 static uint32_t mt6877_shift_group_get(int slave_type, uint32_t vio_idx)
 {
 	if (slave_type == SLAVE_TYPE_INFRA) {
-		if (vio_idx >= 0 && vio_idx <= 3)
+		if (vio_idx <= 3)
 			return 0;
 		else if (vio_idx >= 4 && vio_idx <= 5)
 			return 1;
@@ -354,7 +354,7 @@ static uint32_t mt6877_shift_group_get(int slave_type, uint32_t vio_idx)
 				__func__, __LINE__, vio_idx);
 
 	} else if (slave_type == SLAVE_TYPE_PERI) {
-		if ((vio_idx >= 0 && vio_idx <= 2) ||
+		if ((vio_idx <= 2) ||
 		    (vio_idx >= 125 && vio_idx <= 128) ||
 		    vio_idx == 175)
 			return 0;
@@ -396,7 +396,7 @@ static uint32_t mt6877_shift_group_get(int slave_type, uint32_t vio_idx)
 				__func__, __LINE__, vio_idx);
 
 	} else if (slave_type == SLAVE_TYPE_PERI2) {
-		if ((vio_idx >= 0 && vio_idx <= 2) ||
+		if ((vio_idx <= 2) ||
 		    (vio_idx >= 108 && vio_idx <= 111) ||
 		    vio_idx == 216)
 			return 0;
@@ -437,7 +437,7 @@ static uint32_t mt6877_shift_group_get(int slave_type, uint32_t vio_idx)
 				__func__, __LINE__, vio_idx);
 
 	} else if (slave_type == SLAVE_TYPE_PERI_PAR) {
-		if (vio_idx >= 0 && vio_idx <= 3)
+		if (vio_idx <= 3)
 			return 0;
 		else if ((vio_idx >= 4 && vio_idx <= 6) ||
 			 (vio_idx >= 32 && vio_idx <= 34) ||

@@ -147,8 +147,14 @@ int mmc_retune(struct mmc_host *host)
 	}
 
 	err = mmc_execute_tuning(host->card);
-	if (err)
-		goto out;
+	if (err){
+		err = mmc_hs400_to_hs200(host->card);
+		host->caps2 &= ~(MMC_CAP2_HS400);
+		dev_info(host->parent,"disable hs400, %d\n", err);
+		return_to_hs400 = false;
+		if (err)
+			goto out;
+	}
 
 	if (return_to_hs400)
 		err = mmc_hs200_to_hs400(host->card);

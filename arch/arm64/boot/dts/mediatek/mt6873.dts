@@ -688,6 +688,12 @@ page_owner=on loop.max_part=7";
 			clock-frequency = <12000000>;
 		};
 
+		clk13m: clk13m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <13000000>;
+		};
+
 		clk32k: clk32k {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
@@ -1339,6 +1345,31 @@ page_owner=on loop.max_part=7";
 			};
 	};
 
+	efuse: efuse@11c10000 {
+		compatible = "mediatek,devinfo";
+		reg = <0 0x11c10000 0 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		efuse_segment: segment@78 {
+			reg = <0x78 0x4>;
+		};
+		apu_pod19: apu_efuse2 {
+			reg = <0x114 0x4>;
+		};
+		lvts_e_data1: data1 {
+			reg = <0x1D0 0x10>;
+		};
+		lvts_e_data2: data2 {
+			reg = <0x2F8 0x48>;
+		};
+		apu_pod26: apu_efuse3 {
+			reg = <0x344 0x4>;
+		};
+		cpu_version: cpu_data {
+			reg = <0x234 0x4>;
+		};
+	};
+
 	pwrap: pwrap@10026000 {
 		compatible = "mediatek,mt6873-pwrap";
 		reg = <0 0x10026000 0 0x1000>,
@@ -1514,7 +1545,7 @@ page_owner=on loop.max_part=7";
 		reg = <0 0x10017000 0 0x1000>;
 		reg-names = "sys_timer_base";
 		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_HIGH>;
-		clocks = <&topckgen TOP_CLK13M>;
+		clocks = <&clk13m>;
 	};
 
 	modem_temp_share@10018000 {
@@ -2903,7 +2934,7 @@ page_owner=on loop.max_part=7";
 		mediatek,check_dfd_support = <1>;
 		mediatek,dfd_infra_base = <0x34>;
 		mediatek,dfd_ap_addr_offset = <24>;
-		mediatek,dfd_latch_offset = <0x48>;
+		mediatek,dfd_latch_offset = <0x44>;
 	};
 
 	dfd_cache: dfd_cache {
@@ -3003,6 +3034,10 @@ page_owner=on loop.max_part=7";
 		eem-offset-big = <0xff>;
 		eem-offset-cci = <0xff>;
 		eem-offset-gpu = <0xff>;
+		nvmem = <&efuse>;
+		nvmem-names = "mtk_efuse";
+		nvmem-cells = <&efuse_segment>;
+		nvmem-cell-names = "efuse_segment_cell";
 	};
 
 	eemgpu_fsm: eemgpu_fsm@1100b000 {

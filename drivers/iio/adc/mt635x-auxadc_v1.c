@@ -519,6 +519,13 @@ static int auxadc_get_data_from_dt(struct mt635x_auxadc_device *adc_dev,
 			*channel, node->name);
 		return ret;
 	}
+
+	if (*channel >= ARRAY_SIZE(auxadc_chans)) {
+		dev_notice(adc_dev->dev, "channel number %d in node:%s not exists\n",
+			   *channel, node->name);
+		return -EINVAL;
+	}
+
 	auxadc_chan = &auxadc_chans[*channel];
 
 	ret = of_property_read_u32_array(node, "resistance-ratio", val_arr, 2);

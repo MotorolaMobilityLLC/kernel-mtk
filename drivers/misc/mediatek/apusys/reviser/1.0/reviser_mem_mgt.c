@@ -314,7 +314,7 @@ int reviser_table_get_tcm(void *drvinfo,
 
 //	LOG_DEBUG("page_num %u tcm_pgtable %lx\n",
 //			page_num, tcm_pgtable->table_tcm[0]);
-	if (g_tcm_free == 0) {
+	if (g_tcm_free == 0 || TABLE_TCM_MAX == 0) {
 		LOG_DEBUG("No free TCM (%u/%u)\n",
 				page_num, g_tcm_free);
 		tcm_pgtable->page_num = 0;
@@ -444,6 +444,11 @@ void reviser_table_print_tcm(void *drvinfo, void *s_file)
 	DEBUG_TAG;
 	if (drvinfo == NULL) {
 		LOG_ERR("invalid argument\n");
+		return;
+	}
+
+	if (TABLE_TCM_MAX == 0) {
+		LOG_DEBUG("No TCM\n");
 		return;
 	}
 

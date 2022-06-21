@@ -177,7 +177,8 @@ void mtk_serial_dump_reg(void __iomem *base, unsigned int offset,
 void mtk_cust_dump_reg(void __iomem *base, int off1, int off2, int off3,
 		       int off4)
 {
-	unsigned int max_size = 84, i = 0, s = 0, l = 0;
+	unsigned int max_size = 84, i = 0;
+	int s = 0, l = 0;
 	int off[] = {off1, off2, off3, off4};
 	char buf[max_size];
 
@@ -186,10 +187,6 @@ void mtk_cust_dump_reg(void __iomem *base, int off1, int off2, int off3,
 			break;
 		s = snprintf(buf + l, max_size, "0x%03x:0x%08x ", off[i],
 			     readl(base + off[i]));
-		if (s < 0) {
-			/* Handle snprintf() error */
-			return;
-		}
 		l += s;
 	}
 

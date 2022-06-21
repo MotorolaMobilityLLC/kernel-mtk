@@ -9,3 +9,5 @@ obj-$(CONFIG_MACH_MT6781) += v1/
 obj-$(CONFIG_MACH_MT6833) += v1/
 obj-$(CONFIG_MACH_MT6877) += v1/
 obj-$(CONFIG_MACH_MT6893) += v1/
+obj-$(CONFIG_MACH_MT6853) += v1/
+obj-$(CONFIG_MACH_MT6873) += v1/
