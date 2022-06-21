@@ -217,6 +217,7 @@ static int request_send(u32 command, const struct mc_uuid_t *uuid, bool is_gp)
 	int wait_tens = 0;
 	int ret = 0;
 
+	mc_dev_info("start");
 	/* Prepare request */
 	mutex_lock(&g_request.states_mutex);
 	/* Wait a little for daemon to connect */
@@ -229,6 +230,8 @@ static int request_send(u32 command, const struct mc_uuid_t *uuid, bool is_gp)
 			wait_tens++;
 			mc_dev_info("daemon not connected after %d0s, waiting",
 				    wait_tens);
+			if (wait_tens >= 3)
+				panic("mc_admin daemon not connected\n");
 			counter_ms = 0;
 		}
 
