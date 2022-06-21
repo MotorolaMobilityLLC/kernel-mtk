@@ -65,7 +65,8 @@ struct TEEC_UUID uuid_ta_fpc = { 0x7778c03f, 0xc30c, 0x4dd0,
 
 #define FPC1022_CHIP 0x1000
 #define FPC1022_CHIP_MASK_SENSOR_TYPE 0xf000
-#define FPC_RESET_LOW_US 5000
+#define FPC_RESET_LOW_US 6000
+#define FPC_POWEROFF_SLEEP_US 1000
 #define FPC_RESET_HIGH1_US 100
 #define FPC_RESET_HIGH2_US 5000
 #define FPC_TTW_HOLD_TIME 1000
@@ -395,7 +396,7 @@ static ssize_t compatible_all_set(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	int fpc_sensor_exit  = 0;
-    	int i;
+	int i;
 	struct device_node *node_eint, *fpc_node, *node;
 	int irqf = 0;
 	int irq_num = 0;
@@ -444,7 +445,7 @@ static ssize_t compatible_all_set(struct device *dev,
 
 		fpc_sensor_exit = check_hwid(spidev);
 		if (fpc_sensor_exit < 0) {
-				pr_notice("%s: %d get chipid fail. now exit\n",
+				/*pr_notice("%s: %d get chipid fail. now exit\n",
 					  __func__, __LINE__);
 				devm_pinctrl_put(fpc->pinctrl_fpc);
 				gpio_free(fpc->rst_gpio);
@@ -452,7 +453,17 @@ static ssize_t compatible_all_set(struct device *dev,
 
 				fpc1022_fp_exist = false;
 				spidev->dev.of_node = fpc_node;
-				return -EAGAIN;
+				return -EAGAIN;*/
+				pr_notice("%s: %d get chipid fail. retry... \n", __func__, __LINE__);
+				set_clks(false);
+				gpio_direction_output(fpc->power_ctl_gpio, 0);
+				usleep_range(FPC_POWEROFF_SLEEP_US, FPC_POWEROFF_SLEEP_US + 100);
+				gpio_direction_output(fpc->power_ctl_gpio, 1);
+				usleep_range(FPC_POWEROFF_SLEEP_US, FPC_POWEROFF_SLEEP_US + 100);
+				set_clks(true);
+				(void)hw_reset(fpc);
+				if(check_hwid(spidev))
+					pr_notice("%s: %d get chipid fail. \n", __func__, __LINE__);
 		}
 		fpc1022_fp_exist = true;
 		node_eint = of_find_compatible_node(NULL, NULL, "mediatek,fpc-eint");
