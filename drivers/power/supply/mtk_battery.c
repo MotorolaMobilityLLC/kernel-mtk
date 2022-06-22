@@ -133,6 +133,17 @@ struct mtk_battery *get_mtk_battery(void)
 	return gauge->gm;
 }
 
+int battery_get_soc(void)
+{
+	struct mtk_battery *gm = get_mtk_battery();
+
+	if (gm != NULL)
+		return gm->soc;
+	else
+		return 50;
+}
+EXPORT_SYMBOL_GPL(battery_get_soc);
+
 int bat_get_debug_level(void)
 {
 	struct mtk_gauge *gauge;
@@ -2458,6 +2469,7 @@ void fg_nafg_monitor(struct mtk_battery *gm)
 /* ============================================================ */
 /* periodic timer */
 /* ============================================================ */
+
 void fg_drv_update_hw_status(struct mtk_battery *gm)
 {
 	ktime_t ktime;
