@@ -14,8 +14,11 @@
 &charger {
 	/* common */
 	battery_cv = <4480000>;
-	max_charger_voltage = <6500000>;
+	max_charger_voltage = <11000000>;
 	min_charger_voltage = <4600000>;
+
+	/*pe2*/
+	fast_charging_indicator = <0x02>;
 
 	/* charging current */
 	usb_charger_current_suspend = <0>;
