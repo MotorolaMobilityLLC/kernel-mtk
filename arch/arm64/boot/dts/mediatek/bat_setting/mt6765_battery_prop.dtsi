@@ -5,6 +5,37 @@
  *
  */
 
+&charger
+{
+	/* sw jeita */
+	enable_sw_jeita;
+	jeita_temp_above_t4_cv = <4200000>;
+	jeita_temp_t3_to_t4_cv = <4200000>;
+	jeita_temp_t2_to_t3_cv = <4480000>;
+	jeita_temp_t1_to_t2_cv = <4480000>;
+	jeita_temp_t0_to_t1_cv = <4480000>;
+	jeita_temp_below_t0_cv = <4200000>;
+
+	temp_t4_thres = <55>;
+	temp_t4_thres_minus_x_degree = <52>;
+	temp_t3_thres = <45>;
+	temp_t3_thres_minus_x_degree = <39>;
+	temp_t2_thres = <15>;
+	temp_t2_thres_plus_x_degree = <18>;
+	temp_t1_thres = <15>;
+	temp_t1_thres_plus_x_degree = <18>;
+	temp_t0_thres = <0>;
+	temp_t0_thres_plus_x_degree = <2>;
+	temp_neg_10_thres = <0>;
+
+	/* battery temperature protection */
+	enable_min_charge_temp;
+	min_charge_temp= <0>;
+	min_charge_temp_plus_x_degree = <2>;
+	max_charge_temp = <55>;
+	max_charge_temp_minus_x_degree = <52>;
+};
+
 &mtk_gauge {
 	DIFFERENCE_FULLOCV_ITH = <(200)>;
 	/* Charging termination current */
@@ -13,7 +44,7 @@
 	KEEP_100_PERCENT = <(1)>;
 	R_FG_VALUE = <(10)>;
 	/* R_sense resistance */
-	EMBEDDED_SEL = <(0)>;
+	EMBEDDED_SEL = <(1)>;
 	/* Configures whether using embedded battery or not */
 	PMIC_SHUTDOWN_CURRENT = <(20)>;
 	/* System shutdown current */
@@ -27,28 +58,25 @@
 	/* power on system iboot */
 	SHUTDOWN_GAUGE0_VOLTAGE = <(34000)>;
 	/* shutdown gauge 0% voltage */
+
 	TEMPERATURE_T0 = <(50)>;
 	/* Battery temperature T0 */
 	TEMPERATURE_T1 = <(25)>;
 	/* Battery temperature T1 */
-	TEMPERATURE_T2 = <(10)>;
+	TEMPERATURE_T2 = <(0)>;
 	/* Battery temperature T2 */
-	TEMPERATURE_T3 = <(0)>;
+	TEMPERATURE_T3 = <(-10)>;
 	/* Battery temperature T3 */
-	TEMPERATURE_T4 = <(-6)>;
-	/* Battery temperature T4 */
-	TEMPERATURE_T5 = <(-10)>;
-	/* Battery temperature T5 */
-	g_FG_PSEUDO100_T0 = <(100)>;
+
+	g_FG_PSEUDO100_T0 = <(97)>;
 	/* Pseudo 100% percentage at T0 */
-	g_FG_PSEUDO100_T1 = <(100)>;
+	g_FG_PSEUDO100_T1 = <(97)>;
 	/* Pseudo 100% percentage at T1 */
-	g_FG_PSEUDO100_T2 = <(100)>;
+	g_FG_PSEUDO100_T2 = <(97)>;
 	/* Pseudo 100% percentage at T2 */
-	g_FG_PSEUDO100_T3 = <(100)>;
+	g_FG_PSEUDO100_T3 = <(97)>;
 	/* Pseudo 100% percentage at T3 */
-	g_FG_PSEUDO100_T4 = <(100)>;
-	/* Pseudo 100% percentage at T4 */
+
 	Q_MAX_SYS_VOLTAGE_BAT0 = <(3350)>;
 	/* Pseudo1 for hide percentage */
 	Q_MAX_SYS_VOLTAGE_BAT1 = <(3350)>;
@@ -70,5 +98,8 @@
 	RBAT_PULL_UP_R = <(16900)>;
 	RBAT_PULL_UP_VOLT = <(1800)>;
 
-#include "mt6765_battery_table_ext.dtsi"
+//#include "mt6765_battery_table_ext.dtsi"
+#include "mt6765_battery_table_borag_0.dtsi"
+#include "mt6765_battery_table_borag_1.dtsi"
+
 };

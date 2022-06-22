@@ -6,6 +6,17 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+ifeq ($(BUILD_D85), YES)
+subdir-ccflags-y += -DDUAL_85_VERSION
+endif
+ifeq ($(BUILD_SMT), YES)
+subdir-ccflags-y += -DCONFIG_MTK_DM_VERITY_OFF
+subdir-ccflags-y += -DCONFIG_CHARGER_STOP_70PER
+endif
+ifneq ($(BUILD_DPWK), YES)
+subdir-ccflags-y += -DCONFIG_ONEKEY_REBOOT_NORMAL_MODE
+endif
+
 obj-y				+= irqchip/
 obj-y				+= bus/
 
@@ -191,3 +202,5 @@ obj-$(CONFIG_UNISYS_VISORBUS)	+= visorbus/
 obj-$(CONFIG_SIOX)		+= siox/
 obj-$(CONFIG_GNSS)		+= gnss/
 obj-$(CONFIG_INTERCONNECT)     += interconnect/
+
+obj-y				+= ontim/

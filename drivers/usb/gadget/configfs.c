@@ -197,6 +197,7 @@ static ssize_t gadget_dev_desc_##_name##_store(struct config_item *item, \
 	ret = kstrtou8(page, 0, &val);			\
 	if (ret)					\
 		return ret;				\
+	pr_info("%s: write_u8: 0x%02X\n", __func__, val);  \
 	to_gadget_info(item)->cdev.desc._name = val;	\
 	return len;					\
 }
@@ -210,6 +211,7 @@ static ssize_t gadget_dev_desc_##_name##_store(struct config_item *item, \
 	ret = kstrtou16(page, 0, &val);			\
 	if (ret)					\
 		return ret;				\
+	pr_info("%s: write_u16: 0x%04X\n", __func__, val);  \
 	to_gadget_info(item)->cdev.desc._name = cpu_to_le16p(&val);	\
 	return len;					\
 }

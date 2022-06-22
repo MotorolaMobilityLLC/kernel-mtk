@@ -540,12 +540,12 @@ void do_charger_detect(struct mtk_charger_type *info, bool en)
 	union power_supply_propval prop_usb_type = {0};
 	int ret = 0;
 
-#ifndef CONFIG_TCPC_CLASS
+//#ifndef CONFIG_TCPC_CLASS
 	if (!mt_usb_is_device()) {
 		pr_info("charger type: UNKNOWN, Now is usb host mode. Skip detection\n");
 		return;
 	}
-#endif
+//#endif
 
 	prop_online.intval = en;
 	if (en) {

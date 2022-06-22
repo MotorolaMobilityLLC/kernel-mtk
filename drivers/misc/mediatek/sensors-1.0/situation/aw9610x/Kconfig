@@ -1,0 +1,13 @@
+#
+# Mediatek AW9610X Driver
+#
+
+config AW9610X_SAR
+	tristate "Awinic AW9610X_Sar driver"
+	depends on I2C
+	help
+	  Say Y here if you have Awinic AW9610X_Sar controller
+	  chip in your system.
+	  If unsure, say N.
+	  To compile this driver as a module, choose M here: the
+	  module will be called AW9610X_Sar key.

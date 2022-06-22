@@ -62,13 +62,13 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 				(defined(CONFIG_LEDS_MTK_DISP) || \
 				defined(CONFIG_LEDS_MTK_PWM) || \
 				defined(CONFIG_LEDS_MTK_I2C))
-			mt_leds_max_brightness_set("lcd-backlight", 70, 0);
+			mt_leds_max_brightness_set("lcd-backlight", 85, 0);
 			#elif defined(CONFIG_LEDS_MTK_DISP) || \
 				  defined(CONFIG_LEDS_MTK_PWM) || \
 				  defined(CONFIG_LEDS_MTK_I2C)
-			setMaxBrightness("lcd-backlight", 70, 0);
+			setMaxBrightness("lcd-backlight", 85, 0);
 			#else
-			setMaxbrightness(178, 1);
+			setMaxbrightness(216, 1);
 			#endif
 			break;
 		case 2:
@@ -77,13 +77,13 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 				(defined(CONFIG_LEDS_MTK_DISP) || \
 				defined(CONFIG_LEDS_MTK_PWM) || \
 				defined(CONFIG_LEDS_MTK_I2C))
-			mt_leds_max_brightness_set("lcd-backlight", 40, 1);
+			mt_leds_max_brightness_set("lcd-backlight", 75, 1);
 			#elif defined(CONFIG_LEDS_MTK_DISP) || \
 				  defined(CONFIG_LEDS_MTK_PWM) || \
 				  defined(CONFIG_LEDS_MTK_I2C)
-			setMaxBrightness("lcd-backlight", 40, 1);
+			setMaxBrightness("lcd-backlight", 75, 1);
 			#else
-			setMaxbrightness(102, 1);
+			setMaxbrightness(191, 1);
 			#endif
 			break;
 		case 3:
@@ -92,13 +92,13 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 				(defined(CONFIG_LEDS_MTK_DISP) || \
 				defined(CONFIG_LEDS_MTK_PWM) || \
 				defined(CONFIG_LEDS_MTK_I2C))
-			mt_leds_max_brightness_set("lcd-backlight", 10, 1);
+			mt_leds_max_brightness_set("lcd-backlight", 65, 1);
 			#elif defined(CONFIG_LEDS_MTK_DISP) || \
 				  defined(CONFIG_LEDS_MTK_PWM) || \
 				  defined(CONFIG_LEDS_MTK_I2C)
-			setMaxBrightness("lcd-backlight", 10, 1);
+			setMaxBrightness("lcd-backlight", 65, 1);
 			#else
-			setMaxbrightness(25, 1);
+			setMaxbrightness(165, 1);
 			#endif
 			break;
 		default:
@@ -158,6 +158,8 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 	 * ("mtk_cl_backlight_set_cur_state() %d CoolerID:%d\n",
 	 * state, nCoolerId);
 	 */
+
+   	 mtk_cooler_backlight_dprintk("mtk_cl_backlight_set_cur_state() %d CoolerID:%d\n",state, nCoolerId);
 
 	g_cl_backlight_state[nCoolerId] = state;
 

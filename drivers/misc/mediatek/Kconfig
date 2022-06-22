@@ -1,5 +1,6 @@
 source "drivers/misc/mediatek/Kconfig.default"
 source "drivers/misc/mediatek/usb20/Kconfig"
+source "drivers/misc/mediatek/usb_cable/Kconfig"
 source "drivers/misc/mediatek/cqdma/Kconfig"
 
 config MTK_PLATFORM
@@ -555,6 +556,9 @@ source "drivers/misc/mediatek/vow/Kconfig"
 source "drivers/misc/mediatek/sda/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 endmenu # Debug
+
+config ONTIM_HWINFO_SUPPORT
+	bool "add /sys/hwinfo"
 
 menu "Misc"
 source "drivers/misc/mediatek/ext_gic/Kconfig"

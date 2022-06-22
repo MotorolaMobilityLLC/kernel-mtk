@@ -67,13 +67,33 @@ static int _uA_to_mA(int uA)
 		return uA / 1000;
 }
 
+static int fcc_cv_flag = 0;
 static void select_cv(struct mtk_charger *info)
 {
 	u32 constant_voltage;
+	int ret;
 
+	ret = get_battery_current(info);
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
-			info->setting.cv = info->sw_jeita.cv;
+			if(fcc_cv_flag == 0)
+				info->setting.cv = info->sw_jeita.cv;
+			else
+				info->setting.cv = 4512000;
+			if((info->setting.cv == 4480000)&&(ret > 1500)&&(fcc_cv_flag == 0))
+			{
+				info->setting.cv = 4512000;
+				fcc_cv_flag = 1;
+				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
+			}
+			if((fcc_cv_flag == 1)&&(ret < 660))
+			{
+				info->setting.cv = info->sw_jeita.cv;
+				fcc_cv_flag = 0;
+				chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
+			}
+			if(info->sw_jeita.cv == 4200000)
+				info->setting.cv = info->sw_jeita.cv;
 			return;
 		}
 
@@ -116,6 +136,7 @@ static bool support_fast_charging(struct mtk_charger *info)
 			break;
 		}
 	}
+
 	return ret;
 }
 
@@ -146,14 +167,14 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		is_basic = true;
 		goto done;
 	}
-
+	/* 1:META_BOOT */
 	if ((info->bootmode == 1) ||
 	    (info->bootmode == 5)) {
 		pdata->input_current_limit = 200000; /* 200mA */
 		is_basic = true;
 		goto done;
 	}
-
+#if 0
 	if (info->atm_enabled == true
 		&& (info->chr_type == POWER_SUPPLY_TYPE_USB ||
 		info->chr_type == POWER_SUPPLY_TYPE_USB_CDP)
@@ -162,7 +183,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		is_basic = true;
 		goto done;
 	}
-
+#endif
 	if (info->chr_type == POWER_SUPPLY_TYPE_USB) {
 		pdata->input_current_limit =
 				info->data.usb_charger_current;
@@ -175,6 +196,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			info->data.charging_host_charger_current;
 		pdata->charging_current_limit =
 			info->data.charging_host_charger_current;
+		if (info->sw_jeita.sm == TEMP_T0_TO_T1){
+			pdata->charging_current_limit = 1100000;
+			chr_err("jeita: cdp charging current limit 1100ma 0.3c\n");
+		}
 		is_basic = true;
 
 	} else if (info->chr_type == POWER_SUPPLY_TYPE_USB_DCP) {
@@ -186,6 +211,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			pdata2->input_current_limit =
 				pdata->input_current_limit;
 			pdata2->charging_current_limit = 2000000;
+		}
+		if (info->sw_jeita.sm == TEMP_T0_TO_T1){
+			pdata->charging_current_limit = 1100000;
+			chr_err("jeita: dcp charging current limit 1100ma 0.3c\n");
 		}
 	} else if (info->chr_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
 		/* NONSTANDARD_CHARGER */
@@ -456,12 +485,14 @@ static int do_algorithm(struct mtk_charger *info)
 	return 0;
 }
 
+int battery_status = 0;
+
 static int enable_charging(struct mtk_charger *info,
 						bool en)
 {
 	int i;
 	struct chg_alg_device *alg;
-
+	struct power_supply *bat_psy = NULL;
 
 	chr_err("%s %d\n", __func__, en);
 
@@ -473,11 +504,24 @@ static int enable_charging(struct mtk_charger *info,
 			chg_alg_stop_algo(alg);
 		}
 		charger_dev_enable(info->chg1_dev, false);
+		battery_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		pr_info("hzn: POWER_SUPPLY_STATUS_NOT_CHARGING\n", __func__);
 		charger_dev_do_event(info->chg1_dev, EVENT_DISCHARGE, 0);
 	} else {
 		charger_dev_enable(info->chg1_dev, true);
+		battery_status = POWER_SUPPLY_STATUS_CHARGING;
+		pr_info("hzn: POWER_SUPPLY_STATUS_CHARGING\n", __func__);
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 	}
+	
+	bat_psy =  power_supply_get_by_name("battery");
+	if (IS_ERR_OR_NULL(bat_psy)) {
+		chr_err("%s Couldn't get bat_psy\n", __func__);
+		return 0;
+	}
+
+	power_supply_changed(bat_psy);
+	chr_err("%s get bat_psy succ\n",__func__);
 
 	return 0;
 }

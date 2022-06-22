@@ -1,0 +1,5 @@
+config HBM_SUPPORT
+        bool "HBM NODE SUPPORT"
+	default n
+        help
+	  HBM node support, say y,will create this node

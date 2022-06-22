@@ -249,12 +249,22 @@ int charger_dev_kick_wdt(struct charger_device *chg_dev)
 }
 EXPORT_SYMBOL(charger_dev_kick_wdt);
 
+#ifdef CONFIG_CHARGER_STOP_70PER
+extern int ontim_get_ontim_runin_onoff_control(void);
+#endif
+
 int charger_dev_set_constant_voltage(struct charger_device *chg_dev, u32 uV)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
-	    chg_dev->ops->set_constant_voltage)
+	    chg_dev->ops->set_constant_voltage){
+#ifdef CONFIG_CHARGER_STOP_70PER
+	    if(ontim_get_ontim_runin_onoff_control()==1)
+		{
+			uV = 4100000;
+		}
+#endif
 		return chg_dev->ops->set_constant_voltage(chg_dev, uV);
-
+	}
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_set_constant_voltage);

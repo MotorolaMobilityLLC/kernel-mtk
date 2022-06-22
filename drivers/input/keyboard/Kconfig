@@ -764,5 +764,11 @@ config KEYBOARD_MTK
 	  To compile this driver as a module, choose M here: the
 	  module will be called mtk-kpd.
 
+config TWOKEY_REBOOT
+	bool "up+power key reboot"
+	default n
+	help
+	  long press up+power key to reboot instead of long press power key to reboot
+
 source "drivers/input/keyboard/mediatek/Kconfig"
 endif

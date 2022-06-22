@@ -1025,16 +1025,48 @@ firmware_class.path=/vendor/firmware";
 	};
 
 	touch: touch {
-		compatible = "goodix,touch";
+		compatible = "mediatek,touch";
 	};
 
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	usb_cable: usb_cable {
+		compatible = "mediatek,usb_cable_eint";
+	};
+
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
+
+     /** begin fingerprint dts config **/
+        fingerprint_pinctrl: fingerprint_pinctrl {
+            compatible = "mediatek,fingerprint-pinctrl";
+        };
+        fps_fpc_eint:fps_fpc_eint {
+            compatible = "mediatek,fpc-eint";
+            interrupt-parent = <&pio>;
+            interrupts = <5 IRQ_TYPE_NONE 5 0>;
+            debounce = <5 0>;
+            fpc,gpio-irq = <&pio 5 0x0>;
+            fpc,gpio-power = <&pio 170 0x0>;
+            status = "okay";
+        };
+         fps_egis_eint:fps_egis_eint {
+             compatible = "mediatek,egis-eint";
+             interrupt-parent = <&pio>;
+             interrupts = <5 IRQ_TYPE_NONE 5 0>;
+             fp-ctrl-power;
+             fp-gpio-vcc-enable;
+             egistec,gpio_vcc_en = <&pio 170 0x0>;
+             egistec,gpio_reset = <&pio 22 0x0>;
+             egistec,gpio_irq = <&pio 5 0x0>;
+             //vcc_fp-supply = <&mt_pmic_vcama_ldo_reg>;   // ldo for support module vcc
+             //egis-fp,vcc-voltage = <3000000 3000000>;    // ldo voltage default 3.3V
+             //egis-fp,vcc-current = <100000>;
+             status = "okay";
+         };
 
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
@@ -2488,6 +2520,12 @@ firmware_class.path=/vendor/firmware";
 			clocks = <&clk26m>;
 			clock-names = "ref";
 			#phy-cells = <1>;
+			mediatek,eye-vrt = <6>; /* 0~7 */
+			mediatek,eye-term = <3>; /* 0~7 */
+			mediatek,eye-rev6 = <2>; /* 0~3 */
+			mediatek,host-eye-vrt = <6>; /* 0~7 */
+			mediatek,host-eye-term = <3>; /* 0~7 */
+			mediatek,host-eye-rev6 = <3>; /* 0~3 */
 			nvmem-cells = <&u2_phy_data>;
 			nvmem-cell-names = "intr_cal";
 			nvmem-cell-masks = <0x1f>;
@@ -2740,6 +2778,12 @@ firmware_class.path=/vendor/firmware";
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	hwinfo:hwinfo {
+		compatible = "ontim,hwinfo";
+		base-gpios = <&pio 0 0>;
+		discrete-memory-gpios = <&pio 163 0>;
+	};
+
 	nfc:nfc {
 			compatible = "mediatek,nfc-gpio-v2";
 			gpio-rst = <172>;
@@ -2748,9 +2792,22 @@ firmware_class.path=/vendor/firmware";
 			gpio-irq-std = <&pio 10 0x0>;
 		};
 
+       als: als_ps@0 {
+                compatible = "mediatek,als_ps";
+               status = "okay";
+
+                pinctrl-names = "plv3v_enable", "plv3v_disable";
+                pinctrl-0 = <&pl_v3v_enable>;
+                pinctrl-1 = <&pl_v3v_disable>;
+        };
+
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
+
+    pn544: pn544 {
+        compatible = "nxp,pn544";
+    };
 
 	disp_mutex0: disp_mutex0@14001000 {
 		compatible = "mediatek,disp_mutex0";
@@ -3336,6 +3393,11 @@ firmware_class.path=/vendor/firmware";
 		};
 	};
 
+	flashlights_ocp8135b: flashlights_ocp8135b {
+		compatible = "mediatek,flashlights_ocp8135b";
+	};
+
+
 	gps {
 		compatible = "mediatek,gps";
 	};
@@ -3479,7 +3541,8 @@ firmware_class.path=/vendor/firmware";
 	charger: charger {
 		compatible = "mediatek,charger";
 		gauge = <&mtk_gauge>;
-		charger = <&mt6370_chg>;
+		//charger = <&mt6370_chg>;
+		charger = <&mtk_charger_type>;
 		bootmode = <&chosen>;
 		pmic = <&main_pmic>;
 
@@ -3487,12 +3550,12 @@ firmware_class.path=/vendor/firmware";
 		charger_configuration= <0>;
 
 		/* common */
-		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
+		battery_cv = <4480000>;
+		max_charger_voltage = <10500000>;
 		min_charger_voltage = <4600000>;
 
 		/* sw jeita */
-		/* enable_sw_jeita; */
+/*		enable_sw_jeita;
 		jeita_temp_above_t4_cv = <4240000>;
 		jeita_temp_t3_to_t4_cv = <4240000>;
 		jeita_temp_t2_to_t3_cv = <4340000>;
@@ -3509,19 +3572,19 @@ firmware_class.path=/vendor/firmware";
 		temp_t1_thres_plus_x_degree = <6>;
 		temp_t0_thres = <0>;
 		temp_t0_thres_plus_x_degree = <0>;
-		temp_neg_10_thres = <0>;
+		temp_neg_10_thres = <0>;*/
 
 		/* battery temperature protection */
-		enable_min_charge_temp;
+/*		enable_min_charge_temp;
 		min_charge_temp = <0>;
 		min_charge_temp_plus_x_degree = <6>;
 		max_charge_temp = <50>;
-		max_charge_temp_minus_x_degree = <47>;
+		max_charge_temp_minus_x_degree = <47>;*/
 
 		/* charging current */
 		usb_charger_current = <500000>;
-		ac_charger_current = <2000000>;
-		ac_charger_input_current = <1500000>;
+		ac_charger_current = <2500000>;
+		ac_charger_input_current = <2100000>;
 		charging_host_charger_current = <1500000>;
 
 		/* dynamic mivr */
@@ -3538,10 +3601,11 @@ firmware_class.path=/vendor/firmware";
 
 	extcon_usb: extcon_usb {
 		compatible = "mediatek,extcon-usb";
-		charger = <&mt6370_chg>;
-		vbus-supply = <&otg_vbus>;
-		vbus-voltage = <5000000>;
-		vbus-current = <1800000>;
+		charger = <&mtk_charger_type>;
+		//charger = <&mt6370_chg>;
+		//vbus-supply = <&otg_vbus>;
+		//vbus-voltage = <5000000>;
+		//vbus-current = <1800000>;
 		dev-conn = <&usb>;
 		mediatek,bypss-typec-sink = <1>;
 	};
@@ -3824,11 +3888,28 @@ firmware_class.path=/vendor/firmware";
 
 };
 
+&pio {
+        pl_v3v_enable: plv3venable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        pl_v3v_disable: plv3vdisable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+};
+
 #include "mediatek/cust_mt6765_msdc.dtsi"
 #include "mediatek/mt6357.dtsi"
 #include "mediatek/bat_setting/mt6765_battery_prop.dtsi"
-#include "mediatek/mt6370.dtsi"
-#include "mediatek/mt6370_pd.dtsi"
+//#include "mediatek/mt6370.dtsi"
+//#include "mediatek/mt6370_pd.dtsi"
 #ifdef CONFIG_CHARGER_RT9471
 #include "mediatek/rt9471.dtsi"
 #endif

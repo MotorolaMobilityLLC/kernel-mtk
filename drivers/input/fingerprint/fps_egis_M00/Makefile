@@ -1,0 +1,1 @@
+obj-$(CONFIG_TRUSTONIC_EGIS_M00)	+= ec617_fp.o

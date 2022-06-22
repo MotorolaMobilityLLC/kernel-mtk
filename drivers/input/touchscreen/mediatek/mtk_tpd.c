@@ -43,9 +43,10 @@ struct pinctrl_state *eint_as_int, *eint_output0,
 		*eint_output1, *rst_output0, *rst_output1;
 const struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,touch", },
-	{ .compatible = "mediatek,mt8167-touch", },
-	{ .compatible = "mediatek,touch-himax", },
+//	{ .compatible = "mediatek,mt8167-touch", },
+//	{ .compatible = "mediatek,touch-himax", },
 	{ .compatible = "goodix,touch", },
+//	{ .compatible = "mtk,tddi-ilitek", },
 	{},
 };
 
@@ -143,7 +144,7 @@ static DEFINE_MUTEX(tpd_set_gpio_mutex);
 void tpd_gpio_as_int(int pin)
 {
 	mutex_lock(&tpd_set_gpio_mutex);
-	TPD_DEBUG("[tpd] %s\n", __func__);
+	pr_err("[tpd] %s\n", __func__);
 	if (pin == 1)
 		pinctrl_select_state(pinctrl1, eint_as_int);
 	mutex_unlock(&tpd_set_gpio_mutex);
@@ -152,7 +153,7 @@ void tpd_gpio_as_int(int pin)
 void tpd_gpio_output(int pin, int level)
 {
 	mutex_lock(&tpd_set_gpio_mutex);
-	TPD_DEBUG("%s pin = %d, level = %d\n", __func__, pin, level);
+	pr_err("%s pin = %d, level = %d\n", __func__, pin, level);
 	if (pin == 1) {
 		if (level)
 			pinctrl_select_state(pinctrl1, eint_output1);
@@ -179,7 +180,7 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 {
 	int ret;
 
-	TPD_DEBUG("[tpd %d] mt_tpd_pinctrl+++++++++++++++++\n", pdev->id);
+	pr_err("[tpd %d] mt_tpd_pinctrl+++++++++++++++++\n", pdev->id);
 	pinctrl1 = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pinctrl1)) {
 		ret = PTR_ERR(pinctrl1);
@@ -196,13 +197,13 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 	eint_as_int = pinctrl_lookup_state(pinctrl1, "state_eint_as_int");
 	if (IS_ERR(eint_as_int)) {
 		ret = PTR_ERR(eint_as_int);
-		TPD_DMESG("Cannot find pinctrl state_eint_as_int!\n");
+		pr_err("Cannot find pinctrl state_eint_as_int!\n");
 		return ret;
 	}
 	eint_output0 = pinctrl_lookup_state(pinctrl1, "state_eint_output0");
 	if (IS_ERR(eint_output0)) {
 		ret = PTR_ERR(eint_output0);
-		TPD_DMESG("Cannot find pinctrl state_eint_output0!\n");
+		pr_err("Cannot find pinctrl state_eint_output0!\n");
 		return ret;
 	}
 	eint_output1 = pinctrl_lookup_state(pinctrl1, "state_eint_output1");
@@ -411,9 +412,11 @@ static struct notifier_block tpd_fb_notifier;
 static void touch_resume_workqueue_callback(struct work_struct *work)
 {
 	TPD_DEBUG("GTP %s\n", __func__);
+	pr_err("ilitek touch_resume_workqueue\n");
 	g_tpd_drv->resume(NULL);
 	tpd_suspend_flag = 0;
 }
+
 static int tpd_fb_notifier_callback(
 			struct notifier_block *self,
 			unsigned long event, void *data)
@@ -423,35 +426,41 @@ static int tpd_fb_notifier_callback(
 	int err = 0;
 
 	TPD_DEBUG("%s\n", __func__);
-
 	evdata = data;
+	if (!evdata)
+	    return 0;
 	/* If we aren't interested in this event, skip it immediately ... */
-	if (event != FB_EVENT_BLANK)
-		return 0;
-
 	blank = *(int *)evdata->data;
-	TPD_DMESG("fb_notify(blank=%d)\n", blank);
+	pr_err("fb_notify(blank=%d)\n", blank);
+
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
-		TPD_DMESG("LCD ON Notify\n");
-		if (g_tpd_drv && tpd_suspend_flag) {
-			err = queue_work(touch_resume_workqueue,
+		TPD_DEBUG("event444=%d\n",event);
+		if(event == FB_EVENT_BLANK){
+			TPD_DMESG("LCD ON Notify\n");
+			if (g_tpd_drv && tpd_suspend_flag) {
+				pr_err("ilitek LCD ON resume \n");
+				err = queue_work(touch_resume_workqueue,
 						&touch_resume_work);
-			if (!err) {
-				TPD_DMESG("start resume_workqueue failed\n");
-				return err;
+				if (!err) {
+					TPD_DMESG("start resume_workqueue failed\n");
+					return err;
+				}
 			}
 		}
 		break;
 	case FB_BLANK_POWERDOWN:
-		TPD_DMESG("LCD OFF Notify\n");
-		if (g_tpd_drv && !tpd_suspend_flag) {
-			err = cancel_work_sync(&touch_resume_work);
-			if (!err)
-				TPD_DMESG("cancel resume_workqueue failed\n");
-			g_tpd_drv->suspend(NULL);
+                TPD_DEBUG("event=%d 3333\n",event);
+		if(event == FB_EARLY_EVENT_BLANK){
+			TPD_DMESG("TestLCD OFF Notify\n");
+			if (g_tpd_drv && !tpd_suspend_flag) {
+				err = cancel_work_sync(&touch_resume_work);
+				if (!err)
+					TPD_DMESG("cancel resume_workqueue failed\n");
+				g_tpd_drv->suspend(NULL);
+			}
+			tpd_suspend_flag = 1;
 		}
-		tpd_suspend_flag = 1;
 		break;
 	default:
 		break;
@@ -604,9 +613,10 @@ static int tpd_probe(struct platform_device *pdev)
 	}
 
 	if (2560 == TPD_RES_X)
-		TPD_RES_X = 2048;
+		TPD_RES_X = 720;
 	if (1600 == TPD_RES_Y)
-		TPD_RES_Y = 1536;
+		TPD_RES_Y = 1600;
+
 	pr_debug("mtk_tpd: TPD_RES_X = %lu, TPD_RES_Y = %lu\n",
 		TPD_RES_X, TPD_RES_Y);
 
@@ -662,6 +672,7 @@ static int tpd_probe(struct platform_device *pdev)
 	INIT_WORK(&touch_resume_work, touch_resume_workqueue_callback);
 	/* use fb_notifier */
 	tpd_fb_notifier.notifier_call = tpd_fb_notifier_callback;
+	tpd_fb_notifier.priority = 200;
 	if (fb_register_client(&tpd_fb_notifier))
 		TPD_DMESG("register fb_notifier fail!\n");
 	/* TPD_TYPE_CAPACITIVE handle */

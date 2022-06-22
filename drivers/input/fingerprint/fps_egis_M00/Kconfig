@@ -1,0 +1,8 @@
+#
+# fp_sensor driver configuration
+#
+
+config TRUSTONIC_EGIS_M00
+    tristate "egis Finger Print Driver"
+    help
+        egis Finger Print Supported

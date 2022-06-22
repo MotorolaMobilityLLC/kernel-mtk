@@ -4,12 +4,16 @@
  */
 
 #define pr_fmt(fmt) "<ALS/PS> " fmt
-
+#include <linux/gpio.h>
 #include "inc/alsps.h"
 #include "inc/aal_control.h"
 struct alsps_context *alsps_context_obj /* = NULL*/;
 struct platform_device *pltfm_dev;
 int last_als_report_data = -1;
+
+struct pinctrl *pinctrl;
+struct pinctrl_state *pins_plv3venable;
+struct pinctrl_state *pins_plv3vdisable;
 
 /* AAL default delay timer(nano seconds)*/
 #define AAL_DELAY 200000000
@@ -859,9 +863,33 @@ static int als_ps_remove(struct platform_device *pdev)
 
 static int als_ps_probe(struct platform_device *pdev)
 {
+        struct device *dev = &pdev->dev;
 	pr_debug("%s\n", __func__);
 	pltfm_dev = pdev;
-	return 0;
+	
+        pinctrl = devm_pinctrl_get(dev);
+        if (IS_ERR(pinctrl)) {
+                pr_err("No find pinctrl!\n");
+                return -1;
+        }
+ 
+        pins_plv3venable = pinctrl_lookup_state(pinctrl, "plv3v_enable");
+ 
+        if (IS_ERR(pins_plv3venable))
+        {
+                pr_err("Cannot find alsps pinctrl pin_v3venable!\n");
+        }
+ 
+        pins_plv3vdisable = pinctrl_lookup_state(pinctrl, "plv3v_disable");
+ 
+        if (IS_ERR(pins_plv3vdisable))
+        {
+                pr_err("Cannot find alsps pinctrl pin_v3vdisable!\n");
+        }
+ 
+        pinctrl_select_state(pinctrl, pins_plv3venable);
+
+        return 0;
 }
 
 #ifdef CONFIG_OF

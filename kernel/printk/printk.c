@@ -566,6 +566,13 @@ u32 log_buf_len_get(void)
 }
 EXPORT_SYMBOL_GPL(log_buf_len_get);
 
+/* Return log first idx */
+u32 *log_first_idx_get(void)
+{
+	return &log_first_idx;
+}
+EXPORT_SYMBOL_GPL(log_first_idx_get);
+
 /* human readable text of the record */
 static char *log_text(const struct printk_log *msg)
 {
@@ -783,13 +790,14 @@ static int log_store(int facility, int level,
 	if (ts_nsec > 0)
 		msg->ts_nsec = ts_nsec;
 	else
-		msg->ts_nsec = local_clock();
+		msg->ts_nsec = ktime_get_boot_fast_ns();
 	memset(log_dict(msg) + dict_len, 0, pad_len);
 	msg->len = size;
 
 	/* insert message */
 	log_next_idx += msg->len;
 	log_next_seq++;
+	((struct printk_log *)(log_buf + log_next_idx))->len = 0;
 
 	/* printk too much detect */
 #ifdef CONFIG_LOG_TOO_MUCH_WARNING
@@ -2049,7 +2057,7 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 		cont.facility = facility;
 		cont.level = level;
 		cont.owner = current;
-		cont.ts_nsec = local_clock();
+		cont.ts_nsec = ktime_get_boot_fast_ns();
 		cont.flags = flags;
 	}
 
@@ -2072,7 +2080,7 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 static size_t log_output(int facility, int level, enum log_flags lflags, const char *dict, size_t dictlen, char *text, size_t text_len)
 {
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-	u64 log_enter_time = local_clock();
+	u64 log_enter_time = ktime_get_boot_fast_ns();
 #endif
 	/*
 	 * If an earlier line was buffered, and we're a continuation
@@ -3288,6 +3296,8 @@ static int __init printk_late_init(void)
 #endif
 	int ret;
 
+	pr_info("__LOG_BUF_LEN=%d  sizeof(__log_buf)=%d\n", __LOG_BUF_LEN, sizeof(__log_buf));
+	pr_info("log_buf=%p  __log_buf=%p\n", log_buf, __log_buf);
 	for_each_console(con) {
 		if (!(con->flags & CON_BOOT))
 			continue;

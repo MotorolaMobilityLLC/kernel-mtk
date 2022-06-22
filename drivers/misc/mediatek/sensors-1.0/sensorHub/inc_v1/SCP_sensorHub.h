@@ -201,6 +201,10 @@ struct sar_event_t {
 	uint32_t status;
 };
 
+typedef struct {
+	int32_t state;		/* 0,1 */
+} ontim_gesture_event_t;
+
 enum activity_type_t {
 	STILL,
 	STANDING,
@@ -257,6 +261,7 @@ struct data_unit_t {
 		struct in_pocket_event_t inpocket_event;
 		struct geofence_event_t geofence_data_t;
 		struct sar_event_t sar_event;
+		ontim_gesture_event_t ontim_gesture_event;
 		int32_t data[8];
 	};
 } __packed;

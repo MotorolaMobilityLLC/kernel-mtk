@@ -28,7 +28,7 @@
 #include <linux/compat.h>
 #endif
 
-
+#include "kd_imgsensor.h"
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -785,6 +785,117 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 	spin_lock(&g_spinLock);
 	g_drvOpened = 0;
 	spin_unlock(&g_spinLock);
+
+	return 0;
+}
+
+int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
+{
+	const char * str_0_hi1634b_borag_path = "/data/vendor/camera_dump/0_hi1634b_borag.data";
+	const char * str_1_s5k5e9yx04_borag_path = "/data/vendor/camera_dump/1_s5k5e9yx04_borag.data";
+	const char * str_dump_path = NULL;
+
+	u32 u4Offset;
+	u32 u4Length;
+	u32 deviceid = 1;
+	u8 *pu1Params = NULL;
+	int i4RetValue = 0;
+	static mm_segment_t oldfs;
+	struct file *fp;
+	loff_t pos;
+	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+
+	pr_info("[%s](%d)  begin  sensorid=%x  p_buf=%p  Length=%d\n",
+		__func__, __LINE__, sensorid, p_buf, Length);
+
+	switch(sensorid)
+	{
+		case HI1634B_BORAG_1_SENSOR_ID:
+		case HI1634B_BORAG_2_SENSOR_ID:
+		{
+			u4Offset = 0X0A55;
+			u4Length = 0x0E53;
+			str_dump_path = str_0_hi1634b_borag_path;
+			deviceid = 0x01;
+			break;
+		}
+		case S5K5E9YX04_BORAG_1_SENSOR_ID:
+		case S5K5E9YX04_BORAG_2_SENSOR_ID:
+		{
+			u4Offset = 0X0AF0;
+			u4Length = 0x0858;
+			str_dump_path = str_1_s5k5e9yx04_borag_path;
+			deviceid = 0x02;
+			break;
+		}
+		default:
+			pr_err("eeprom_driver.c[%s](%d)  not found this sensor   sensorid=0x%x \n",
+				__FUNCTION__, __LINE__,  sensorid);
+			if(p_buf != NULL)
+			{
+				kfree(p_buf);
+			}
+			return -1;
+	}
+	if((sensorid == HI1634B_BORAG_1_SENSOR_ID) || (sensorid == HI1634B_BORAG_2_SENSOR_ID) ||
+		   (sensorid == S5K5E9YX04_BORAG_1_SENSOR_ID) || (sensorid == S5K5E9YX04_BORAG_2_SENSOR_ID))
+	{
+		pu1Params = kmalloc(u4Length, GFP_KERNEL);
+		if (pu1Params == NULL)
+		{
+			pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+					__FUNCTION__, __LINE__);
+			return -1;
+		}
+		pcmdInf = EEPROM_get_cmd_info_ex(sensorid, deviceid);
+		if (pcmdInf != NULL && g_lastDevID != deviceid)
+		{
+			if (EEPROM_set_i2c_bus(pcmdInf->deviceID, pcmdInf) != 0)
+			{
+				pr_debug("deviceID Error!\n");
+				kfree(pu1Params);
+				return -1;
+			}
+			g_lastDevID = deviceid;
+		}
+
+		if (pcmdInf != NULL)
+		{
+			if (pcmdInf->readCMDFunc != NULL)
+			{
+				i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client, u4Offset,pu1Params,u4Length);
+
+				pr_err("eeprom_driver.c[%s](%d)  readCMDFunc   i4RetValue=0x%x \n",
+						   __FUNCTION__, __LINE__, i4RetValue);
+				pr_err("eeprom_driver.c[%s](%d)  0x%x  0x%x ... 0x%x 0x%x \n",
+						    __FUNCTION__, __LINE__,
+						   *pu1Params, *(pu1Params+1), *(pu1Params+u4Length - 2), *(pu1Params+u4Length - 1));
+			}
+			else
+			{
+				pr_err("eeprom_driver.c[%s](%d)  pcmdInf->readCMDFunc == NULL \n",__FUNCTION__, __LINE__);
+				kfree(pu1Params);
+				return -1;
+			}
+
+		}
+	}
+	oldfs = get_fs();
+	set_fs(KERNEL_DS);
+	fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
+	if (IS_ERR(fp))
+	{
+		pr_err("eeprom_driver.c[%s](%d)file open %s error", __FUNCTION__, __LINE__, str_dump_path);
+	}
+	else
+	{
+		pos = 0;
+		pr_info("[%s](%d)  pu1Params=%p   \n", __func__, __LINE__, pu1Params);
+		vfs_write(fp, pu1Params, u4Length, &pos);
+		filp_close(fp, NULL);
+	}
+	set_fs(oldfs);
+	kfree(pu1Params);
 
 	return 0;
 }

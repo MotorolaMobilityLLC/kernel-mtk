@@ -81,7 +81,7 @@ static unsigned int cl_dev_sysrst_state;
 static struct thermal_zone_device *thz_dev;
 /* static struct thermal_cooling_device *cl_dev_dis_charge; */
 static struct thermal_cooling_device *cl_dev_sysrst;
-static int mtktsbattery_debug_log;
+//static int mtktsbattery_debug_log;
 static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -128,9 +128,7 @@ static int polling_factor2 = 10000;
 
 #define mtktsbattery_dprintk(fmt, args...)   \
 do {                                    \
-	if (mtktsbattery_debug_log) {                \
-		pr_debug("[Thermal/TZ/BATTERY]" fmt, ##args); \
-	}                                   \
+    pr_info("[Thermal/TZ/BATTERY]"fmt,##args); \
 } while (0)
 
 #define mtktsbattery_printk(fmt, args...)   \
@@ -423,7 +421,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+#ifndef DUAL_85_VERSION
 		BUG();
+#endif
 	}
 	return 0;
 }

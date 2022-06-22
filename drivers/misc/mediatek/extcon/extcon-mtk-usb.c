@@ -275,6 +275,7 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 		#endif
 	}
 #else
+	pr_info("%s: is_on=%d\n", __func__, is_on);
 	if (is_on) {
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger,

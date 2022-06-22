@@ -122,6 +122,17 @@ static void sensorlist_get_deviceinfo(struct work_struct *work)
 		if (sensor < 0)
 			continue;
 		memset(&devinfo, 0, sizeof(struct sensorInfo_t));
+#ifdef CONFIG_AW9610X_SAR
+		if(sensor == ID_SAR)
+		{
+			if(strstr(saved_command_line, "sar=yes")) {
+				spin_lock(&sensorlist_info_lock);
+				strlcpy(sensorlist_info[handle].name,"AW96105A",12);
+				spin_unlock(&sensorlist_info_lock);
+				continue;
+			}
+		}
+#endif
 		err = sensor_set_cmd_to_hub(sensor,
 			CUST_ACTION_GET_SENSOR_INFO, &devinfo);
 		if (err < 0) {

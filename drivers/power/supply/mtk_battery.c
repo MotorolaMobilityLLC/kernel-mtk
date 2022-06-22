@@ -29,6 +29,12 @@
 #include "mtk_battery.h"
 #include "mtk_battery_table.h"
 
+#include <ontim/ontim_dev_dgb.h>
+char battery_vendor_name[50]="borag 4000mAh";
+DEV_ATTR_DECLARE(battery)
+DEV_ATTR_DEFINE("vendor",battery_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(battery,battery,8);
 
 struct tag_bootmode {
 	u32 size;
@@ -150,10 +156,77 @@ bool is_algo_active(struct mtk_battery *gm)
 	return gm->algo.active;
 }
 
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+static unsigned long bat_node;
+
+static int fb_early_init_dt_get_chosen(
+	unsigned long node, const char *uname, int depth, void *data)
+{
+	if (depth != 1 || (strcmp(uname, "chosen") != 0
+		&& strcmp(uname, "chosen@0") != 0))
+		return 0;
+	bat_node = node;
+	return 1;
+}
+
+#define BATTERY_NAME_LEN 30
+
+static int battery_id_type = 0;
+
+static void ontim_form_lk_get_battery_id(void)
+{
+	int battery_type_name_len = 0;
+	const char *battery_type = NULL;
+	char battery_type_name_tmp[10];
+
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		battery_type =
+		of_get_flat_dt_prop(
+					bat_node,"battery_type_name",
+					&battery_type_name_len);
+	if (battery_type == NULL){
+		bm_err("battery_type == NULL len = %d\n",battery_type_name_len);
+	} else {
+		snprintf(battery_type_name_tmp,(battery_type_name_len + 1), "%s",battery_type);
+		battery_id_type = (int)battery_type_name_tmp[0];
+		bm_err("ontim battery_id_type = %d  battery_type_name_len = %d\n",battery_id_type,battery_type_name_len);
+	}
+}
+
+int fgauge_get_profile_id(void)
+{
+	int battery_type_name = 0;
+	int battery_id = 0;
+
+	battery_type_name = battery_id_type;
+
+	bm_err("ontim battery_type_name = %d\n", battery_type_name);
+
+	if (battery_type_name != 0 && battery_type_name <= BATTERY_TOTAL_NUM) {
+		if (battery_type_name > 2) {
+			battery_id = battery_type_name - 1;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
+			battery_id = 0;
+		} else {
+			battery_id = battery_type_name - 1;
+			strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
+		}
+		bm_err("ontim battery_id = %d\n",battery_id);
+	} else {
+		battery_id = 0;
+		strncpy(battery_vendor_name,g_battery_id_vendor_name[battery_id],BATTERY_NAME_LEN);
+	}
+
+	bm_err("[%s]Battery id (%d)\n", __func__, battery_id);
+	bm_err("[%s]Battery vendor name (%s)\n", __func__, battery_vendor_name);
+	return battery_id;
+}
+#else
 int fgauge_get_profile_id(void)
 {
 	return 0;
 }
+#endif
 
 int wakeup_fg_algo_cmd(
 	struct mtk_battery *gm, unsigned int flow_state, int cmd, int para1)
@@ -242,6 +315,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 };
 
+extern int battery_status;
 static int battery_psy_get_property(struct power_supply *psy,
 	enum power_supply_property psp,
 	union power_supply_propval *val)
@@ -259,6 +333,11 @@ static int battery_psy_get_property(struct power_supply *psy,
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
 		val->intval = bs_data->bat_status;
+		if((battery_status == POWER_SUPPLY_STATUS_NOT_CHARGING) && 
+				(bs_data->bat_status == POWER_SUPPLY_STATUS_CHARGING)){
+			val->intval = battery_status;
+			pr_info("hzn: battery get status = %d", val->intval);
+		}
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		val->intval = bs_data->bat_health;
@@ -287,6 +366,13 @@ static int battery_psy_get_property(struct power_supply *psy,
 			val->intval = gm->fixed_uisoc;
 		else
 			val->intval = bs_data->bat_capacity;
+#ifdef    DUAL_85_VERSION
+		pr_info("D85: real soc = %d", val->intval);
+
+		if(bs_data->bat_capacity<30) {
+			val->intval  = 30;
+		}
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval =
@@ -314,8 +400,22 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef    DUAL_85_VERSION
+		pr_info("D85: real tbat = %d", gm->tbat_precise);
+
+		if(gm->tbat_precise >= 540) {
+			val->intval = 540;
+		} else {
+			if(gm->tbat_precise <= 100) {
+				val->intval = 100;
+			} else {
+				val->intval = gm->tbat_precise;
+			}
+		}
+#else
 		force_get_tbat(gm, true);
 		val->intval = gm->tbat_precise;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
 		val->intval = check_cap_level(bs_data->bat_capacity);
@@ -690,7 +790,11 @@ int force_get_tbat_internal(struct mtk_battery *gm, bool update)
 					pre_fg_r_value,
 					pre_bat_temperature_val2);
 				/*pmic_auxadc_debug(1);*/
+//BEGIN,ontim,shabei,2019.09.02,mask warning for D85 version to avoid to much stack dump
+#ifndef DUAL_85_VERSION
 				WARN_ON(1);
+#endif
+//ENDIF
 			}
 
 			pre_bat_temperature_volt_temp =
@@ -739,6 +843,14 @@ int force_get_tbat(struct mtk_battery *gm, bool update)
 	}
 
 	bat_temperature_val = force_get_tbat_internal(gm, true);
+
+#ifdef DUAL_85_VERSION
+	if (bat_temperature_val > 59)
+		bat_temperature_val = 59;
+	if (bat_temperature_val < 10)
+		bat_temperature_val = 10;
+#endif
+
 	gm->cur_bat_temp = bat_temperature_val;
 
 	return bat_temperature_val;
@@ -828,8 +940,6 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 
 	fg_cust_data = &gm->fg_cust_data;
 	fg_table_cust_data = &gm->fg_table_cust_data;
-
-	fgauge_get_profile_id();
 
 	fg_cust_data->versionID1 = FG_DAEMON_CMD_FROM_USER_NUMBER;
 	fg_cust_data->versionID2 = sizeof(gm->fg_cust_data);
@@ -1285,7 +1395,9 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 	struct fuel_gauge_custom_data *fg_cust_data;
 	struct fuel_gauge_table_custom_data *fg_table_cust_data;
 
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
 	gm->battery_id = fgauge_get_profile_id();
+#endif
 	bat_id = gm->battery_id;
 	fg_cust_data = &gm->fg_cust_data;
 	fg_table_cust_data = &gm->fg_table_cust_data;
@@ -1774,13 +1886,13 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 				__func__, node_name, column);
 			/* correction */
 			column = 3;
-	}
+		}
 
 		sprintf(node_name, "battery%d_profile_t%d", bat_id, i);
 		fg_custom_parse_table(gm, np, node_name,
 			fg_table_cust_data->fg_profile[i].fg_profile, column);
 	}
-		}
+}
 
 #endif	/* end of CONFIG_OF */
 
@@ -2943,7 +3055,9 @@ static int power_misc_routine_thread(void *arg)
 			sdd->overheat = false;
 			bm_debug("%s battery overheat~ power off\n",
 				__func__);
+#ifndef		DUAL_85_VERSION
 			kernel_power_off();
+#endif
 			return 1;
 		}
 	}
@@ -3109,12 +3223,24 @@ int battery_init(struct platform_device *pdev)
 	struct mtk_battery *gm;
 	struct mtk_gauge *gauge;
 
+	//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+	//-add by hzb for ontim debug
+
 	gauge = dev_get_drvdata(&pdev->dev);
 	gm = gauge->gm;
 	gm->fixed_bat_tmp = 0xffff;
 	gm->tmp_table = Fg_Temperature_Table;
-	gm->log_level = BMLOG_ERROR_LEVEL;
+	gm->log_level = BMLOG_DEBUG_LEVEL;
 	gm->sw_iavg_gap = 3000;
+#ifdef CONFIG_ONTIM_GET_BATTERY_ID_NV
+	/* add liang */
+	ontim_form_lk_get_battery_id();
+	/* add end */
+#endif
 
 	init_waitqueue_head(&gm->wait_que);
 
@@ -3167,6 +3293,10 @@ int battery_init(struct platform_device *pdev)
 		battery_algo_init(gm);
 		bm_err("[%s]: kernel mode DONE\n", __func__);
 	}
+
+	//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	//-add by hzb for ontim debug
 
 	return 0;
 }

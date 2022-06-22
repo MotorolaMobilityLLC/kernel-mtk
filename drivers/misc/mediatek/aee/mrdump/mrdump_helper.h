@@ -26,6 +26,7 @@ extern int aee_unwind_frame(struct stackframe *frame);
 #endif
 extern u32 aee_log_buf_len_get(void);
 extern char *aee_log_buf_addr_get(void);
+extern u32 *aee_log_first_idx_get(void);
 extern phys_addr_t aee_memblock_start_of_DRAM(void);
 extern phys_addr_t aee_memblock_end_of_DRAM(void);
 extern unsigned long aee_get_swapper_pg_dir(void);

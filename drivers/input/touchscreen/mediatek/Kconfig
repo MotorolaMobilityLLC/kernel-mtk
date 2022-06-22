@@ -66,7 +66,19 @@ config TOUCHSCREEN_MTK_GT1151
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
 
-source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
+//source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
+source "drivers/input/touchscreen/mediatek/ilitek/Kconfig"
+
+config TOUCHSCREEN_CHIPONE
+    bool "chipone-tddi for Mediatek package"
+    default n
+    help
+      Say Y here if you have chipone icnl9911c touch panel.
+
+      If unsure, say N.
+
+      To compile this dirver as a module, choose M here: the
+      module will be called.
 
 config TOUCHSCREEN_MTK_GSLX680
 	bool "gslX680 for Mediatek package"

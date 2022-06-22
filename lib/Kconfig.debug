@@ -2073,6 +2073,11 @@ config IO_STRICT_DEVMEM
 
 	  If in doubt, say Y.
 
+config ONTIM_DEBUG
+	bool "ontim debug option"
+	help
+	  This is an option for developers. Say Y here for more debug info
+
 source "arch/$(SRCARCH)/Kconfig.debug"
 
 endmenu # Kernel hacking

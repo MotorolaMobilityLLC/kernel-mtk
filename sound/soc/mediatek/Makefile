@@ -54,6 +54,7 @@ subdir-ccflags-y += -Werror -Werror -Icodec/$(MTK_CODEC)/
 subdir-ccflags-y += -Werror -I$(src)/common_int
 
 # Update pmic built flow to avoid codec init later than codec probe
+obj-y += codec/aw87xxx/
 obj-y += codec/$(MTK_CODEC)/
 obj-y += common_int/
 
@@ -148,6 +149,7 @@ subdir-ccflags-y += -Wno-incompatible-pointer-types
 
 # Update pmic built flow to avoid codec init later than codec probe
 ifneq ($(MTK_CODEC),)
+obj-y += codec/aw87xxx/
 obj-y += codec/$(MTK_CODEC)/
 endif
 obj-y += common_int/

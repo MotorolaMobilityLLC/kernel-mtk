@@ -16,7 +16,7 @@
 #include <linux/soc/mediatek/mtk-pm-qos.h>
 #endif
 #include "mt-plat/mtk_smi.h"
-#include "mtk_smi.h"
+//#include "mtk_smi.h"
 
 
 #ifdef MTK_FB_MMDVFS_SUPPORT

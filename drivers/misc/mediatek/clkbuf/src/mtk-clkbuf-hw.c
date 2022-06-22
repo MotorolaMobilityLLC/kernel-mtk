@@ -148,7 +148,7 @@ struct pmic_clkbuf_op *pmic_op;
 static enum CLK_BUF_TYPE  pmic_clk_buf_swctrl[XO_NUMBER] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_DISABLE,
-	CLK_BUF_SW_DISABLE,
+	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_DISABLE,
@@ -577,7 +577,7 @@ static int _clk_buf_ctrl_internal(enum clk_buf_id id,
 	}
 
 	clkbuf_read(PWRAP_DCXO_EN, 0, &val);
-	pr_debug("%s: id=%d, cmd=%d, DCXO_EN = 0x%x\n",
+	pr_info("%s: id=%d, cmd=%d, DCXO_EN = 0x%x\n",
 		__func__, id, cmd, val);
 
 	if (!no_lock)
@@ -652,7 +652,13 @@ wrong_input:
 
 	if (!no_lock)
 		mutex_unlock(&clk_buf_ctrl_lock);
-
+	if(id == CLK_BUF_NFC) {
+        	if(onoff)
+            		ret = _clk_buf_ctrl_internal(CLK_BUF_NFC,CLK_BUF_ON);
+        	else
+            		ret = _clk_buf_ctrl_internal(CLK_BUF_NFC,CLK_BUF_OFF);
+        	pr_info("_clk_buf_ctrl_internal ret %d",ret);
+    	}
 	return ret;
 }
 

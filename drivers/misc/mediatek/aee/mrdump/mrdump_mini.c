@@ -545,6 +545,7 @@ static void mrdump_mini_build_elf_misc(void)
 	/* could also use the kernel log in pstore for LKM case */
 	misc.vaddr = (unsigned long)aee_log_buf_addr_get();
 	misc.size = (unsigned long)aee_log_buf_len_get();
+	misc.start = (unsigned long)aee_log_first_idx_get();
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_KERNEL_LOG_");
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_mbootlog_buffer(&misc.vaddr, &misc.size, &misc.start);

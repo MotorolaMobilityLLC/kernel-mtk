@@ -630,7 +630,7 @@ ssize_t mtk_pctrl_show_one_pin(struct mtk_pinctrl *hw,
 	}
 
 	len += snprintf(buf + len, bufLen - len,
-			"%03d: %1d%1d%1d%1d",
+			"%03d: %1d %1d %1d %1d",
 			gpio,
 			pinmux,
 			mtk_pctrl_get_direction(hw, gpio),
@@ -639,27 +639,27 @@ ssize_t mtk_pctrl_show_one_pin(struct mtk_pinctrl *hw,
 
 	val = mtk_pctrl_get_driving(hw, gpio);
 	if (val >= 0)
-		len += snprintf(buf + len, bufLen - len, "%02d", val);
+		len += snprintf(buf + len, bufLen - len, " %02d", val);
 	else
 		len += snprintf(buf + len, bufLen - len, "XX");
 
 	val = mtk_pctrl_get_smt(hw, gpio);
 	if (val >= 0)
-		len += snprintf(buf + len, bufLen - len, "%1d", val);
+		len += snprintf(buf + len, bufLen - len, " %1d", val);
 	else
 		len += snprintf(buf + len, bufLen - len, "X");
 
 	val = mtk_pctrl_get_ies(hw, gpio);
 	if (val >= 0)
-		len += snprintf(buf + len, bufLen - len, "%1d", val);
+		len += snprintf(buf + len, bufLen - len, " %1d", val);
 	else
 		len += snprintf(buf + len, bufLen - len, "X");
 
 	if (r1 != -1)
-		len += snprintf(buf + len, bufLen - len, "%1d%1d (%1d %1d)\n",
+		len += snprintf(buf + len, bufLen - len, " %1d %1d (%1d %1d)\n",
 			pullen, pullup, r1, r0);
 	else
-		len += snprintf(buf + len, bufLen - len, "%1d%1d\n",
+		len += snprintf(buf + len, bufLen - len, " %1d %1d\n",
 			pullen, pullup);
 
 	return len;

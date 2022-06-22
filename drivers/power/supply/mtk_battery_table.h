@@ -409,6 +409,12 @@ int g_QMAX_SYS_VOL[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	{33500, 33500, 33500, 33500} /*T9*/
 };
 
+#define BATTERY_TOTAL_NUM 2
+char g_battery_id_vendor_name[BATTERY_TOTAL_NUM][32]={
+	"NH40-SB18D48255-4000mah",
+	"NH40-SB18D48256-4000mah",
+};
+
 
 #define TEMPERATURE_TB0	255
 #define TEMPERATURE_TB1	254
@@ -431,7 +437,7 @@ int g_temperature[MAX_TABLE] = {
 #define BAT_NTC_47 0
 
 #if (BAT_NTC_10 == 1)
-#define RBAT_PULL_UP_R             24000
+#define RBAT_PULL_UP_R             16900
 #endif
 
 #if (BAT_NTC_47 == 1)

@@ -39,6 +39,11 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{S5K2P8_SENSOR_ID, 0xA2, Common_read_region},
 	{S5K2P8_SENSOR_ID, 0xA0, Common_read_region},
 	{OV8858_SENSOR_ID, 0xA2, Common_read_region},
+	/*borag project*/
+	{HI1634B_BORAG_1_SENSOR_ID, 0xA0, Common_read_region},
+	{HI1634B_BORAG_2_SENSOR_ID, 0xA0, Common_read_region},
+	{S5K5E9YX04_BORAG_1_SENSOR_ID, 0xA2, Common_read_region},
+	{S5K5E9YX04_BORAG_2_SENSOR_ID, 0xA2, Common_read_region},
 	/* Others */
 	{S5K2X8_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX377_SENSOR_ID, 0xA0, Common_read_region},

@@ -2201,3 +2201,7 @@ source "arch/arm/crypto/Kconfig"
 endif
 
 source "arch/arm/kvm/Kconfig"
+
+config ONTIM_BACKTRACE
+	bool
+	default y

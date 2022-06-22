@@ -1,0 +1,6 @@
+config MICROTRUST_FPC_M00
+    tristate "FPC Finger Print Driver"
+    help
+        FPC Finger Print Supported
+
+

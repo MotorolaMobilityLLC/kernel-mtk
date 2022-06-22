@@ -33,6 +33,9 @@
 #include <linux/compiler.h>
 #include <linux/moduleparam.h>
 #include <linux/wakeup_reason.h>
+#include <linux/ktime.h>
+#include <linux/math64.h>
+#include <linux/rtc.h>
 
 #include "power.h"
 
@@ -682,6 +685,29 @@ static int enter_state(suspend_state_t state)
 	return error;
 }
 
+void print_time(bool show_delta)
+{
+	static ktime_t kt_boot0;
+	ktime_t kt_boot;
+	s32 boot_nsec;
+	struct timespec ts;
+	struct rtc_time tm;
+	s64 dt_mono;
+
+	kt_boot = ktime_get_boottime();
+	dt_mono = NSEC_PER_SEC + kt_boot - ktime_get();
+	if (show_delta)
+		pr_info("delta time: %5lu\n", (unsigned long)div_s64(kt_boot - kt_boot0, NSEC_PER_SEC));
+	kt_boot0 = kt_boot;
+	kt_boot = div_s64_rem(kt_boot, NSEC_PER_SEC, &boot_nsec);
+	dt_mono = div_s64(dt_mono, NSEC_PER_SEC);
+	getnstimeofday(&ts);
+	rtc_time_to_tm(ts.tv_sec, &tm);
+	pr_info("boottime: %5lu.%06u  boottime-monotime: %5lu  realtime: %d-%02d-%02d %02d:%02d:%02d.%06lu UTC\n",
+		(unsigned long)kt_boot, boot_nsec / 1000, (unsigned long)dt_mono,
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000);
+}
 /**
  * pm_suspend - Externally visible function for suspending the system.
  * @state: System sleep state to enter.
@@ -697,6 +723,7 @@ int pm_suspend(suspend_state_t state)
 		return -EINVAL;
 
 	pr_info("suspend entry (%s)\n", mem_sleep_labels[state]);
+	print_time(false);
 	error = enter_state(state);
 	if (error) {
 		suspend_stats.fail++;
@@ -704,7 +731,8 @@ int pm_suspend(suspend_state_t state)
 	} else {
 		suspend_stats.success++;
 	}
-	pr_info("suspend exit\n");
+	pr_info("suspend exit err=%d success=%d fail=%d\n", error, suspend_stats.success, suspend_stats.fail);
+	print_time(true);
 	return error;
 }
 EXPORT_SYMBOL(pm_suspend);

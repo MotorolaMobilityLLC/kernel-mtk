@@ -127,6 +127,10 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
+	LOG_INF("+\n");
+
+	//wait driver ic ready
+	mdelay(5);
 
 	if (*g_pAF_Opened == 1) {
 
@@ -227,6 +231,24 @@ int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	int Ret = 0;
 
 	LOG_INF("Start\n");
+
+	if (*g_pAF_Opened == 2) {
+
+		LOG_INF("apply\n");
+
+		//multiple times
+		if (g_u4CurrPosition > 300) {
+			setPosition(300);
+				mdelay(50);
+			g_u4CurrPosition = 300;
+	}
+
+		while (g_u4CurrPosition > 20) {
+			g_u4CurrPosition -= 20;
+			setPosition(g_u4CurrPosition);
+			mdelay(50);
+		}
+	}
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");

@@ -612,9 +612,9 @@ void mt_usb_otg_init(struct musb *musb)
 	DBG(0, "host controlled by TYPEC\n");
 	typec_control = 1;
 #ifdef CONFIG_TCPC_CLASS
-	DBG(0, "host controlled by IDDIG\n");
-	iddig_int_init();
-	vbus_control = 1;
+//	DBG(0, "host controlled by IDDIG\n");
+//	iddig_int_init();
+//	vbus_control = 1;
 #endif /* CONFIG_TCPC_CLASS */
 #endif /* CONFIG_MTK_USB_TYPEC */
 

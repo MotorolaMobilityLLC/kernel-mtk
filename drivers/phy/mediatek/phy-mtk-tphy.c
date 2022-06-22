@@ -1310,7 +1310,7 @@ static void u2_phy_instance_power_on(struct mtk_tphy *tphy,
 #if (!defined CONFIG_MACH_MT6781) && (!defined CONFIG_MACH_MT6768)
 	tmp = readl(com + U3P_USBPHYACR6);
 	tmp &= ~PA6_RG_U2_PHY_REV6;
-	tmp |= PA6_RG_U2_PHY_REV6_VAL(1);
+	tmp |= PA6_RG_U2_PHY_REV6_VAL(instance->eye_rev6);
 	writel(tmp, com + U3P_USBPHYACR6);
 
 	udelay(800);
@@ -1402,7 +1402,7 @@ static void u2_phy_instance_power_off(struct mtk_tphy *tphy,
 	writel(tmp, com + U3P_U2PHYDTM0);
 
 	tmp = readl(com + U3P_USBPHYACR6);
-	tmp |= PA6_RG_U2_PHY_REV6_VAL(1);
+	tmp |= PA6_RG_U2_PHY_REV6_VAL(instance->eye_rev6);
 	writel(tmp, com + U3P_USBPHYACR6);
 
 	udelay(800);

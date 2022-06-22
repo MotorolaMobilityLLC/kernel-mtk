@@ -128,6 +128,8 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	 DW9718AF_Release, DW9718AF_GetFileName, NULL},
 	{1, AFDRV_GT9764AF, GT9764AF_SetI2Cclient, GT9764AF_Ioctl,
 	GT9764AF_Release, GT9764AF_GetFileName, NULL},
+	{1, AFDRV_GT9772AF, GT9772AF_SetI2Cclient, GT9772AF_Ioctl,
+	GT9772AF_Release, GT9772AF_GetFileName, NULL},
 //#ifdef SUPPORT_GT9768AF
 	{1, AFDRV_GT9768AF, GT9768AF_SetI2Cclient, GT9768AF_Ioctl,
 	GT9768AF_Release, GT9768AF_GetFileName, NULL},
@@ -261,6 +263,8 @@ static void camaf_power_off(void)
 static int DrvPwrDn1 = 1;
 static int DrvPwrDn2 = 1;
 static int DrvPwrDn3 = 1;
+static int DrvPwrDn4 = 1;
+
 #endif
 
 void AF_PowerDown(void)
@@ -282,7 +286,7 @@ void AF_PowerDown(void)
 #endif
 
 #ifdef CONFIG_MACH_MT6765
-		int Ret1 = 0, Ret2 = 0, Ret3 = 0;
+		int Ret1 = 0, Ret2 = 0, Ret3 = 0, Ret4 = 0;
 
 		if (DrvPwrDn1) {
 			Ret1 = LC898217AF_PowerDown(g_pstAF_I2Cclient,
@@ -299,17 +303,24 @@ void AF_PowerDown(void)
 						&g_s4AF_Opened);
 		}
 
-		if (DrvPwrDn1 && DrvPwrDn2 && DrvPwrDn3) {
+		if (DrvPwrDn4) {
+			Ret4 = GT9772AF_PowerDown(g_pstAF_I2Cclient,
+						&g_s4AF_Opened);
+		}
+
+		if (DrvPwrDn1 && DrvPwrDn2 && DrvPwrDn3 && DrvPwrDn4) {
 			if (Ret1 < 0)
 				DrvPwrDn1 = 0;
 			if (Ret2 < 0)
 				DrvPwrDn2 = 0;
 			if (Ret3 < 0)
 				DrvPwrDn3 = 0;
+			if (Ret4 < 0)
+				DrvPwrDn4 = 0;
 
 		}
-			LOG_INF("%d/%d , %d/%d, %d/%d\n", Ret1, DrvPwrDn1,
-				Ret2, DrvPwrDn2, Ret3, DrvPwrDn3);
+			LOG_INF("%d/%d , %d/%d, %d/%d, %d/%d\n", Ret1, DrvPwrDn1,
+				Ret2, DrvPwrDn2, Ret3, DrvPwrDn3, Ret4, DrvPwrDn4);
 #endif
 
 #ifdef CONFIG_MACH_MT6761

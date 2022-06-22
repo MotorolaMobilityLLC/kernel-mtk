@@ -26,6 +26,16 @@
 #include "charger_class.h"
 #include <linux/power_supply.h>
 #include <linux/regulator/driver.h>
+#include "mtk_charger.h"
+
+
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="SGM41513";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
+
 
 /**********************************************************
  *
@@ -185,7 +195,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
  *   [Global Variable]
  *
  *********************************************************/
-unsigned char bq25601_reg[bq25601_REG_NUM] = { 0 };
+unsigned char bq25601_reg[SGM41513_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(bq25601_i2c_access);
 static DEFINE_MUTEX(bq25601_access_lock);
@@ -425,6 +435,48 @@ void bq25601_set_en_hiz(unsigned int val)
 				      );
 }
 
+#define SGM4154x_CHRG_CTRL_d	0x0d
+/* PUMPX SET  */
+#define SGM4154x_EN_PUMPX_MASK           0x01
+#define SGM4154x_PUMPX_UP_MASK           0x01
+#define SGM4154x_PUMPX_DN_MASK           0x01
+#define SGM4154x_EN_PUMPX_SHIFT           7
+#define SGM4154x_PUMPX_UP_SHIFT           6
+#define SGM4154x_PUMPX_DN_SHIFT           5
+
+static int sgm4154x_en_pe_current_partern(struct charger_device
+		*chg_dev,bool is_up)
+{
+	unsigned int ret = 0;
+
+	ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x01),
+				       (unsigned char) (SGM4154x_EN_PUMPX_MASK),
+				       (unsigned char) (SGM4154x_EN_PUMPX_SHIFT)
+				      );
+	if (ret < 0)
+	{
+		pr_info("[%s] read SGM4154x_CHRG_CTRL_d fail\n", __func__);
+		return ret;
+	}
+	else
+		pr_info("[%s] is_up = %d \n", __func__, is_up);
+
+	if (is_up)
+		ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x01),
+				       (unsigned char) (SGM4154x_PUMPX_UP_MASK),
+				       (unsigned char) (SGM4154x_PUMPX_UP_SHIFT)
+				      );
+	else
+		ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x01),
+				       (unsigned char) (SGM4154x_PUMPX_DN_MASK),
+				       (unsigned char) (SGM4154x_PUMPX_DN_SHIFT)
+				      );
+	return ret;
+}
+
 void bq25601_set_iinlim(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -612,6 +664,28 @@ void bq25601_set_iterm(unsigned int val)
 				      );
 }
 
+static u8 sgm41513_iterm[]=
+{
+5 ,10,15,20,
+30,40,50,60,
+80,100,120,140,160,180,200,
+240,
+};
+void sgm41513_set_iterm(u32 cur)
+{
+	u8 reg_val;
+	int i=0;
+
+
+	if (cur > 240)
+		cur=240;
+	while(cur > sgm41513_iterm[i])	i++;
+	reg_val = i;
+	pr_err("%s: cur = %d; reg_val = 0x%x;\n", __func__, cur, reg_val);
+
+	bq25601_set_iterm(reg_val);
+}
+
 /* CON4---------------------------------------------------- */
 
 void bq25601_set_vreg(unsigned int val)
@@ -622,6 +696,18 @@ void bq25601_set_vreg(unsigned int val)
 				       (unsigned char) (val),
 				       (unsigned char) (CON4_VREG_MASK),
 				       (unsigned char) (CON4_VREG_SHIFT)
+				      );
+}
+
+/* 01=VREG+8mv; 10=VREG-8mv; 11=VREG-16mv; */
+void sgm41513_set_vreg_ft(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = bq25601_config_interface((unsigned char) (sgm41513_CON15),
+				       (unsigned char) (val),
+				       (unsigned char) (CON15_VREG_FT_MASK),
+				       (unsigned char) (CON15_VREG_FT_SHIFT)
 				      );
 }
 
@@ -887,17 +973,29 @@ static int bq25601_dump_register(struct charger_device *chg_dev)
 
 	unsigned char i = 0;
 	unsigned int ret = 0;
-
-	pr_info("[bq25601] ");
+#if 0
+	pr_err("[bq25601] ");
 	for (i = 0; i < bq25601_REG_NUM; i++) {
 		ret = bq25601_read_byte(i, &bq25601_reg[i]);
 		if (ret == 0) {
-			pr_info("[bq25601] i2c transfor error\n");
+			pr_err("[bq25601] i2c transfor error\n");
 			return 1;
 		}
-		pr_info("[0x%x]=0x%x ", i, bq25601_reg[i]);
+		pr_err("[0x%x]=0x%x ", i, bq25601_reg[i]);
 	}
 	pr_debug("\n");
+#else
+	pr_err("bq25601_dump_register\n");
+	for (i = 0; i < SGM41513_REG_NUM; i++) {
+		ret = bq25601_read_byte(i, &bq25601_reg[i]);
+		if (ret == 0) {
+			pr_err("[bq25601] i2c transfor error\n");
+			return 1;
+		}
+		pr_err("[0x%x]=0x%x\n", i, bq25601_reg[i]);
+	}
+
+#endif
 	return 0;
 }
 
@@ -947,9 +1045,20 @@ static int bq25601_enable_charging(struct charger_device *chg_dev,
 	return status;
 }
 
-static int bq25601_get_current(struct charger_device *chg_dev,
-			       u32 *ichg)
+static u32 sgm41513_ichg[]=
 {
+0,5,10,15,20,25,30,35,40,
+50,60,70,80,90,100,110,
+130,150,170,190,210,230,250,270,
+300,330,360,390,420,450,480,510,540,
+600,660,720,780,840,900,960,1020,1080,1140,1200,1260,1320,1380,1440,1500,
+1620,1740,1860,1980,2100,2220,2340,2460,2580,2700,2820,2940,
+3000,
+};
+
+static int bq25601_get_current(struct charger_device *chg_dev, u32 *ichg)
+{
+#if 0
 	unsigned int ret_val = 0;
 #ifdef FIXME
 	unsigned char ret_force_20pct = 0;
@@ -968,26 +1077,45 @@ static int bq25601_get_current(struct charger_device *chg_dev,
 
 #endif
 	return ret_val;
+#else
+	unsigned char reg_val = 0;
+
+	bq25601_read_interface(bq25601_CON2, &reg_val, CON2_ICHG_MASK, CON2_ICHG_SHIFT);
+	*ichg = sgm41513_ichg[reg_val] * 1000;
+	pr_err("%s: ichg = %d; reg_val = 0x%x;\n",__func__, *ichg, reg_val);
+	return reg_val;
+	
+#endif
 }
 
 static int bq25601_set_current(struct charger_device *chg_dev,
 			       u32 current_value)
 {
 	unsigned int status = true;
-	unsigned int set_chr_current;
-	unsigned int array_size;
+//	unsigned int set_chr_current;
+//	unsigned int array_size;
 	unsigned int register_value;
+	int i=0;
 
-	pr_info("&&&& charge_current_value = %d\n", current_value);
+	current_value = current_value / 1000;
+
+	if (current_value > 3000) 
+		current_value = 3000;
+
+	while(current_value > sgm41513_ichg[i]) i++;
+	register_value = i;
+
+	pr_err("&&&& charge_current_value = %d\n", current_value);
+/*
 	current_value /= 10;
 	array_size = GETARRAYNUM(CS_VTH);
 	set_chr_current = bmt_find_closest_level(CS_VTH, array_size,
 			  current_value);
 	register_value = charging_parameter_to_value(CS_VTH, array_size,
 			 set_chr_current);
-	//pr_info("&&&& charge_register_value = %d\n",register_value);
-	pr_info("&&&& %s register_value = %d\n", __func__,
-		register_value);
+	//pr_err("&&&& charge_register_value = %d\n",register_value);
+*/
+	pr_err("&&&& %s register_value = 0x%x\n", __func__, register_value);
 	bq25601_set_ichg(register_value);
 
 	return status;
@@ -997,14 +1125,14 @@ static int bq25601_get_input_current(struct charger_device *chg_dev,
 				     u32 *aicr)
 {
 	int ret = 0;
-#ifdef FIXME
+//#ifdef FIXME
 	unsigned char val = 0;
 
 	bq25601_read_interface(bq25601_CON0, &val, CON0_IINLIM_MASK,
 			       CON0_IINLIM_SHIFT);
 	ret = (int)val;
 	*aicr = INPUT_CS_VTH[val];
-#endif
+//#endif
 	return ret;
 }
 
@@ -1018,13 +1146,13 @@ static int bq25601_set_input_current(struct charger_device *chg_dev,
 	unsigned int register_value;
 
 	current_value /= 10;
-	pr_info("&&&& current_value = %d\n", current_value);
+	pr_err("&&&& set_input_current = %dmA\n", current_value/100);
 	array_size = GETARRAYNUM(INPUT_CS_VTH);
 	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size,
 			  current_value);
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size,
 			 set_chr_current);
-	pr_info("&&&& %s register_value = %d\n", __func__,
+	pr_err("&&&& %s register_value = 0x%x\n", __func__,
 		register_value);
 	bq25601_set_iinlim(register_value);
 
@@ -1039,12 +1167,23 @@ static int bq25601_set_cv_voltage(struct charger_device *chg_dev,
 	unsigned int set_cv_voltage;
 	unsigned short register_value;
 
+	pr_err("&&&& cv_value = %d\n", cv);
+	if(cv == 4480000)
+		cv = 4496000;
+	if(cv == 4512000)
+		cv = 4528000;
 	array_size = GETARRAYNUM(VBAT_CV_VTH);
 	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, cv);
+	pr_err("set_cv_voltage = %d\n", set_cv_voltage);
 	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size,
 			 set_cv_voltage);
 	bq25601_set_vreg(register_value);
-	pr_info("&&&& cv reg value = %d\n", register_value);
+	pr_err("&&&& cv reg value = 0x%x\n", register_value);
+
+	if((set_cv_voltage == 4496000) || (set_cv_voltage == 4528000)){
+		sgm41513_set_vreg_ft(3);
+		pr_err("REG0F: 11 = VREG - 16mv\n");
+	}
 
 	return status;
 }
@@ -1104,12 +1243,12 @@ static int bq25601_enable_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s en = %d\n", __func__, en);
 	if (en) {
-		bq25601_set_chg_config(0);
+		//bq25601_set_chg_config(0);
 		bq25601_set_otg_config(1);
-		bq25601_set_watchdog(0x3);	/* WDT 160s */
+		//bq25601_set_watchdog(0x3);	/* WDT 160s */
 	} else {
 		bq25601_set_otg_config(0);
-		bq25601_set_chg_config(1);
+		//bq25601_set_chg_config(1);
 	}
 	return ret;
 }
@@ -1156,17 +1295,30 @@ static int bq25601_get_is_safetytimer_enable(struct charger_device
 	return val;
 }
 
+static int  bq25601_enable_powerpath(struct charger_device *chg_dev, bool en)
+{
+	int status = 0;
+
+	pr_info("%s; hzn: en = %d;----------------\n", __func__, en);
+
+	if(en)
+		bq25601_set_vindpm(0x6);	/* VIN DPM check 4.5V */
+	else	
+		bq25601_set_vindpm(0xf);	/* VIN DPM check 5.4V */
+	return status;
+}
 
 static unsigned int charging_hw_init(void)
 {
 	unsigned int status = 0;
 
 	bq25601_set_en_hiz(0x0);
-	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.6V */
+	bq25601_set_vindpm(0x6);	/* VIN DPM check 4.5V */
 	bq25601_set_wdt_rst(0x1);	/* Kick watchdog */
 	bq25601_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
 	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
-	bq25601_set_iterm(0x2);	/* Termination current 180mA */
+	//bq25601_set_iterm(0x2);	/* Termination current 180mA */
+	sgm41513_set_iterm(180);
 	bq25601_set_vreg(0x11);	/* VREG 4.4V */
 	bq25601_set_pfm(0x1);//disable pfm
 	bq25601_set_rdson(0x0);     /*close rdson*/
@@ -1229,9 +1381,9 @@ static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 		return -EINVAL;
 
 	pr_info("%s: event = %d\n", __func__, event);
-#ifdef FIXME
+//#ifdef FIXME
 	switch (event) {
-	case EVENT_EOC:
+	case EVENT_FULL:
 		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
 		break;
 	case EVENT_RECHARGE:
@@ -1240,14 +1392,16 @@ static int bq25601_do_event(struct charger_device *chg_dev, u32 event,
 	default:
 		break;
 	}
-#endif
+//#endif
 	return 0;
 }
 
 static int bq25601_enable_vbus(struct regulator_dev *rdev)
 {
-	bq25601_set_chg_config(0);
+	//bq25601_set_chg_config(0);
 	bq25601_set_otg_config(1);
+
+	pr_info("hzn: %s ---\n", __func__);
 
 	return 0;
 }
@@ -1255,7 +1409,9 @@ static int bq25601_enable_vbus(struct regulator_dev *rdev)
 static int bq25601_disable_vbus(struct regulator_dev *rdev)
 {
 	bq25601_set_otg_config(0);
-	bq25601_set_chg_config(1);
+	//bq25601_set_chg_config(1);
+
+	pr_info("hzn: %s ---\n", __func__);
 
 	return 0;
 }
@@ -1285,7 +1441,8 @@ static struct charger_ops bq25601_chg_ops = {
 #ifdef FIXME
 	.enable_hz = bq25601_enable_hz,
 #endif
-
+	/* PE+/PE+20 */
+	.send_ta_current_pattern = sgm4154x_en_pe_current_partern,
 	/* Normal charging */
 	.dump_registers = bq25601_dump_register,
 	.enable = bq25601_enable_charging,
@@ -1321,8 +1478,16 @@ static int bq25601_driver_probe(struct i2c_client *client,
 	int ret = 0;
 	struct bq25601_info *info = NULL;
 	struct regulator_config config = { };
+	u8 val = 0;
 
 	pr_info("[%s]\n", __func__);
+
+	//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+	//-add by hzb for ontim debug
 
 	info = devm_kzalloc(&client->dev, sizeof(struct bq25601_info),
 			    GFP_KERNEL);
@@ -1335,6 +1500,15 @@ static int bq25601_driver_probe(struct i2c_client *client,
 	ret = bq25601_parse_dt(info, &client->dev);
 	if (ret < 0)
 		return ret;
+
+	ret = bq25601_read_interface(0x0B, &val, 0xFF, 0x0);
+	pr_err("hzn: i2c read return value:%d----------------\n", ret);
+	pr_err("Reg[0x0B]=0x%x\n", val);
+
+	if(ret == -1){
+		pr_err("[%s] i2c error !!!\n", __func__);
+		return ret;
+	}
 
 	bq25601_hw_component_detect();
 	charging_hw_init();
@@ -1363,6 +1537,10 @@ static int bq25601_driver_probe(struct i2c_client *client,
 
 
 	bq25601_dump_register(info->chg_dev);
+
+	//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	//-add by hzb for ontim debug
 
 	return 0;
 }

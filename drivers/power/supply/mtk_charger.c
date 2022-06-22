@@ -59,6 +59,14 @@
 
 #include "mtk_charger.h"
 
+#ifdef CONFIG_CHARGER_STOP_70PER
+unsigned int capacity_control= 0;
+
+module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
+#endif
+
+
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -637,13 +645,13 @@ void do_sw_jeita_state_machine(struct mtk_charger *info)
 
 	/* set CV after temperature changed */
 	/* In normal range, we adjust CV dynamically */
-	if (sw_jeita->sm != TEMP_T2_TO_T3) {
+	//if (sw_jeita->sm != TEMP_T2_TO_T3) {
 		if (sw_jeita->sm == TEMP_ABOVE_T4)
 			sw_jeita->cv = info->data.jeita_temp_above_t4_cv;
 		else if (sw_jeita->sm == TEMP_T3_TO_T4)
 			sw_jeita->cv = info->data.jeita_temp_t3_to_t4_cv;
 		else if (sw_jeita->sm == TEMP_T2_TO_T3)
-			sw_jeita->cv = 0;
+			sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv;
 		else if (sw_jeita->sm == TEMP_T1_TO_T2)
 			sw_jeita->cv = info->data.jeita_temp_t1_to_t2_cv;
 		else if (sw_jeita->sm == TEMP_T0_TO_T1)
@@ -652,9 +660,9 @@ void do_sw_jeita_state_machine(struct mtk_charger *info)
 			sw_jeita->cv = info->data.jeita_temp_below_t0_cv;
 		else
 			sw_jeita->cv = info->data.battery_cv;
-	} else {
-		sw_jeita->cv = 0;
-	}
+	//} else {
+	//	sw_jeita->cv = 0;
+	//}
 
 	chr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n",
 		sw_jeita->pre_sm, sw_jeita->sm, info->battery_temp,
@@ -878,6 +886,46 @@ static ssize_t BatteryNotify_store(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(BatteryNotify);
+
+#ifdef CONFIG_CHARGER_STOP_70PER
+static int ontim_runin_onoff_control = 0;
+
+int ontim_get_ontim_runin_onoff_control(void)
+{
+	return ontim_runin_onoff_control;
+}
+static ssize_t runin_onoff_ctrl_show(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_runin_onoff_control);
+}
+static ssize_t runin_onoff_ctrl_store(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d", &ontim_runin_onoff_control);
+	return size;
+}
+static DEVICE_ATTR_RW(runin_onoff_ctrl);
+
+
+static int ontim_charge_onoff_control = 1;/*1=enable charge  0 or other=disable charge*/
+
+static ssize_t charge_onoff_ctrl_show(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_charge_onoff_control);
+}
+static ssize_t charge_onoff_ctrl_store(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct mtk_charger *pinfo = dev->driver_data;
+	struct charger_device *chg_dev;
+	chg_dev = pinfo->chg1_dev;
+
+	chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
+	sscanf(buf, "%d", &ontim_charge_onoff_control);
+	charger_dev_enable_powerpath(chg_dev, ontim_charge_onoff_control);
+	_wake_up_charger(pinfo);
+	return size;
+}
+static DEVICE_ATTR_RW(charge_onoff_ctrl);
+#endif
 
 /* procfs */
 static int mtk_chg_current_cmd_show(struct seq_file *m, void *data)
@@ -1134,6 +1182,9 @@ static void mtk_battery_notify_VCharger_check(struct mtk_charger *info)
 static void mtk_battery_notify_VBatTemp_check(struct mtk_charger *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+#ifdef DUAL_85_VERSION
+
+#else
 	if (info->battery_temp >= info->thermal.max_charge_temp) {
 		info->notify_code |= CHG_BAT_OT_STATUS;
 		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
@@ -1164,6 +1215,8 @@ static void mtk_battery_notify_VBatTemp_check(struct mtk_charger *info)
 		}
 #endif
 	}
+#endif
+
 #endif
 }
 
@@ -1251,7 +1304,9 @@ static void charger_check_status(struct mtk_charger *info)
 	bool charging = true;
 	int temperature;
 	struct battery_thermal_protection_data *thermal;
-
+#ifdef CONFIG_CHARGER_STOP_70PER
+	static int count = 1;
+#endif
 	if (get_charger_type(info) == POWER_SUPPLY_TYPE_UNKNOWN)
 		return;
 
@@ -1261,7 +1316,11 @@ static void charger_check_status(struct mtk_charger *info)
 	if (info->enable_sw_jeita == true) {
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
+#ifdef DUAL_85_VERSION
+			charging = true;
+#else
 			charging = false;
+#endif
 			goto stop_charging;
 		}
 	} else {
@@ -1308,7 +1367,36 @@ static void charger_check_status(struct mtk_charger *info)
 			}
 		}
 	}
-
+#ifdef CONFIG_CHARGER_STOP_70PER
+	/* add limit soc max 70% */
+	if(capacity_control) {
+		if ((get_uisoc(info) >= 70) && (count > 0)) {
+			count ++;
+			if (count > 4) {
+				count = 0;
+				chr_err("%s;soc is higher 70 disable charger\n",__func__);
+				charger_dev_enable_powerpath(info->chg1_dev, false);
+				_wake_up_charger(info);
+				charging = false;
+			}
+		} else if ((get_uisoc(info) <= 60) && (!count)) {
+			chr_err("%s;soc is lower 60 enable charger\n",__func__);
+			charger_dev_enable_powerpath(info->chg1_dev, true);
+			_wake_up_charger(info);
+			charging = true;
+			count = 1;
+		} else {
+			if(!count) {
+				chr_err("%s:soc is 60~70 disable charger\n",__func__);
+				charger_dev_enable_powerpath(info->chg1_dev, false);
+				_wake_up_charger(info);
+				charging = false;
+			}
+		}
+		chr_err("%s;charge status:%d count:%d\n",__func__,charging,count);
+	}
+	/* add end */
+#endif
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
@@ -1322,7 +1410,13 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
-
+#ifdef CONFIG_CHARGER_STOP_70PER
+	if(ontim_charge_onoff_control  !=  1)
+	{
+	    chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
+		charging = false;
+	}
+#endif
 stop_charging:
 	mtk_battery_notify_check(info);
 
@@ -1729,7 +1823,15 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
 	if (ret)
 		goto _out;
+#ifdef CONFIG_CHARGER_STOP_70PER
+	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
+	if (ret)
+		goto _out;
 
+	ret = device_create_file(&(pdev->dev), &dev_attr_charge_onoff_ctrl);
+	if (ret)
+		goto _out;
+#endif
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
 		chr_err("%s: mkdir /proc/mtk_battery_cmd failed\n", __func__);
@@ -2051,6 +2153,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	chr_err("%s: starts\n", __func__);
 
+
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
 	if (!info)
 		return -ENOMEM;
@@ -2143,6 +2246,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg_alg_nb.notifier_call = chg_alg_event;
 
 	kthread_run(charger_routine_thread, info, "charger_thread");
+
 
 	return 0;
 }
