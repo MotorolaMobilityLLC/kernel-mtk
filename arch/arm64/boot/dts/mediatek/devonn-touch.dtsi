@@ -20,7 +20,7 @@
 	pinctrl-5 = <&ctp_gt9896s_spi_mode>;
 
 	touch@0{
-		compatible = "chipone-tddi";
+		compatible = "chipone-tddi","focaltech,fts";
 		spi-max-frequency = <10000000>;
 		reg = <0x0>;
 		status = "okay";
@@ -31,6 +31,10 @@
         chipone,y-res = <2400>;
         chipone,def-build-id = <0x0101>;
         chipone,def-config-id = <0x0001>;
+	focaltech,reset-gpio = <&pio 3 0x0>;
+	focaltech,irq-gpio = <&pio 22 0x0>;
+	focaltech,max-touch-number = <10>;
+        focaltech,display-coords = <0 0 1080 2400>;
 	};
 };
 
