@@ -14,9 +14,10 @@
 
 /*Open the macro definition using the regulator power mode*/
 //#define AW_POWER_ON
-
+#ifndef SMT_VERSION
 #define AW_USB_PLUG_CALI
 #define AW_HEADSET_PLUG_CALI
+#endif
 
 //#define	AW_INPUT_TRIGGER_TH1
 //#define	AW_INPUT_TRIGGER_TH2
