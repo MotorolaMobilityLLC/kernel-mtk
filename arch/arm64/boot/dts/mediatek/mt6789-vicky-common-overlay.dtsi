@@ -17,6 +17,24 @@
 #include "mediatek/vicky-touch.dtsi"
 #include "mediatek/mt6789-vicky-fps-overlay.dtsi"
 #include "mediatek/mt6789-moto-vicky-charger.dtsi"
+
+/ {
+	eint_chg_0: eint_chg_0 {
+        };
+
+	cc_cntl_int: cc_cntl_int {
+	};
+
+	otg_iddig: otg_iddig {
+		compatible = "mediatek,usb_iddig_bi_eint";
+	};
+
+};
+
+&extcon_usb {
+	vbus-current = <1200000>;
+};
+
 &dispsys_config {
 	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
