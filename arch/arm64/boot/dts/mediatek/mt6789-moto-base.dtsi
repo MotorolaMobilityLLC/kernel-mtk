@@ -24,13 +24,12 @@
 	swtp_1: swtp_1 { };
 };
 
-
 &charger {
 	/delete-property/ enable_dynamic_mivr;
+	/delete-property/ enable_fast_charging_indicator;
 };
 
-&usb_type_c {
-	/delete-property/ tcpc,en_wd;
-	/delete-property/ tcpc,en_wd_sbu_polling;
-	/delete-property/ tcpc,en_wd_polling_only;
+&extcon_usb {
+	/delete-property/ vbus-supply;
+	/delete-property/ charger;
 };
