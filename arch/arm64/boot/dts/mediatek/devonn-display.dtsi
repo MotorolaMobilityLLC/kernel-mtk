@@ -146,12 +146,25 @@
 		reg = <1>;
 		pm-enable-gpios = <&pio 161 0>;
 		reset-gpios = <&pio 95 0>;
-		bias_n-gpios = <&pio 8 0>;
-		bias_p-gpios = <&pio 183 0>;
 		rc-enable = <1>;
 		pinctrl-names = "default";
 		port {
 			panel_in2: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+
+	};
+
+	panel3@0 {
+		compatible = "tongxingda,FT8726,vdo,120hz";
+		reg = <2>;
+		pm-enable-gpios = <&pio 161 0>;
+		reset-gpios = <&pio 95 0>;
+		rc-enable = <1>;
+		pinctrl-names = "default";
+		port {
+			panel_in3: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
