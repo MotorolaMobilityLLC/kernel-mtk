@@ -304,5 +304,12 @@
 	regulator-enable-ramp-delay = <1920>;
 };
 
+&u2port0{
+	mediatek,eye-vrt = <6>;
+	mediatek,eye-term = <6>;
+	mediatek,rev6 = <3>;
+};
+
+
 //#include <k6855v1_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
