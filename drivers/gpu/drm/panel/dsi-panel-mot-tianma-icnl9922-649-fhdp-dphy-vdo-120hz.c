@@ -185,7 +185,6 @@ static int tianma_unprepare(struct drm_panel *panel)
 	tianma_dcs_write_seq_static(ctx, 0x28);
 	tianma_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
-	ret = ocp2138_BiasPower_disable(5);
 
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
@@ -196,6 +195,8 @@ static int tianma_unprepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(5);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+
+	ret = ocp2138_BiasPower_disable(5);
 
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
