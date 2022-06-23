@@ -339,6 +339,7 @@ int GT9772AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 int GT9772AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			    spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
+	mdelay(1);
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
