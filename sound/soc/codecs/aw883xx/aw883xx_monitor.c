@@ -537,7 +537,15 @@ static int aw_monitor_work(struct aw_device *aw_dev)
 
 	aw_monitor_set_ipeak(aw_dev, set_table.ipeak);
 
-	aw_monitor_set_gain(aw_dev, set_table.gain);
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	if (aw_dev->ramp_in_process){
+		aw_dev_info(aw_dev->dev,"skip volume setting in monitor as ramp in process");
+	} else {
+#endif
+		aw_monitor_set_gain(aw_dev, set_table.gain);
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	}
+#endif
 
 	aw_monitor_set_vmax(aw_dev, set_table.vmax);
 
