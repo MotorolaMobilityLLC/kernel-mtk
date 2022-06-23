@@ -78,7 +78,7 @@
 		status = "okay";
 	};
 };
-
+/*
 &i2c8 {
 	camera_main_af_mtk:camera_main_af@72 {
 		compatible = "mediatek,camera_main_af";
@@ -86,7 +86,7 @@
 		status = "okay";
 	};
 };
-
+*/
 &i2c2 {
 	camera_main_three_af_mtk:camera_main_three_af@0c {
 		compatible = "mediatek,camera_main_three_af";
