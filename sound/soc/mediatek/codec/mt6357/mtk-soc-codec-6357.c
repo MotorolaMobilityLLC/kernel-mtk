@@ -130,6 +130,11 @@ static int mAudio_Analog_Mic1_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic2_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic3_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic4_mode = AUDIO_ANALOGUL_MODE_ACC;
+
+static const char *const Audio_PA_Mode[] = {
+	"MUSIC", "RECEIVER", "VOICE", "FM", "OFF"
+};
+
 enum {
 	AUXADC_AVG_1,
 	AUXADC_AVG_4,
@@ -3994,6 +3999,46 @@ static int Speaker_PA_Fm_Amp_Set(struct snd_kcontrol *kcontrol,
 	}
 	return 0;
 }
+
+/* PA Mode Setting */
+static int PA_TOP_MODE_Amp_Get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	//  pr_debug("%s() mPA_mode = %d\n", __func__, mPA_mode);
+	// ucontrol->value.integer.value[0] = mPA_mode;
+	return 0;
+}
+static int PA_TOP_MODE_Amp_Set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] >
+	    ARRAY_SIZE(Audio_PA_Mode)) {
+		pr_debug("%s() return -EINVAL\n",__func__);
+		return -EINVAL;
+	}
+	pr_debug("%s() mode = %d\n", __func__, ucontrol->value.integer.value[0]);
+	Voice_Amp_PA_SetMode(ucontrol->value.integer.value[0]);
+	return 0;
+}
+static int PA_BOTTOM_MODE_Amp_Get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	//  pr_debug("%s() mPA_mode = %d\n", __func__, mPA_mode);
+	// ucontrol->value.integer.value[0] = mPA_mode;
+	return 0;
+}
+static int PA_BOTTOM_MODE_Amp_Set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] >
+	    ARRAY_SIZE(Audio_PA_Mode)) {
+		pr_debug("%s() return -EINVAL\n",__func__);
+		return -EINVAL;
+	}
+	pr_debug("%s() mode = %d\n", __func__, ucontrol->value.integer.value[0]);
+	Speaker_Amp_PA_SetMode(ucontrol->value.integer.value[0]);
+	return 0;
+}
 static void Ext_Speaker_Amp_Change(bool enable)
 {
 	pr_debug("%s(), enable %d\n", __func__, enable);
@@ -4758,6 +4803,7 @@ static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_PA_Mode),Audio_PA_Mode),//19
 };
 static const struct snd_kcontrol_new mt6357_snd_controls[] = {
 	SOC_ENUM_EXT("Audio_Amp_R_Switch", Audio_DL_Enum[0], Audio_AmpR_Get,
@@ -4822,6 +4868,11 @@ static const struct snd_kcontrol_new mt6357_snd_controls[] = {
 		     Speaker_PA_Voice_Amp_Get, Speaker_PA_Voice_Amp_Set),
 	SOC_ENUM_EXT("Speaker_PA_Fm_Amp_Switch", Audio_DL_Enum[18],
 		     Speaker_PA_Fm_Amp_Get, Speaker_PA_Fm_Amp_Set),
+
+	SOC_ENUM_EXT("PA_TOP_MODE_Amp_Select", Audio_DL_Enum[19],
+		     PA_TOP_MODE_Amp_Get, PA_TOP_MODE_Amp_Set),
+	SOC_ENUM_EXT("PA_BOTTOM_MODE_Amp_Select", Audio_DL_Enum[19],
+		     PA_BOTTOM_MODE_Amp_Get, PA_BOTTOM_MODE_Amp_Set),
 };
 void SetMicPGAGain(void)
 {
