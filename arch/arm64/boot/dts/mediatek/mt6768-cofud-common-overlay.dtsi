@@ -264,6 +264,7 @@
         chip_name = "AW96105";
         sar-num = <0>;
         aw9610x,channel_number = <0x3>;
+        ref_channel = <0>;
         ch0_name = "capsense_bottom_left";
         ch1_name = "capsense_top";
         ch2_name = "capsense_bottom_right";
