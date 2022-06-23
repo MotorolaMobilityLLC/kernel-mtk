@@ -9,6 +9,10 @@
 #define AW_DEV_I2S_CHECK_MAX	(5)
 #define AW_DEV_DSP_CHECK_MAX	(5)
 
+#ifndef CONFIG_AW883XX_RAMP_SUPPORT
+#define CONFIG_AW883XX_RAMP_SUPPORT 1
+#endif
+
 /********************************************
  *
  * DSP I2C WRITES
@@ -444,6 +448,12 @@ struct aw_device {
 	void *private_data;
 
 	uint32_t fade_en;
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	uint32_t ramp_en;
+	uint32_t ramp_in_process;
+	struct workqueue_struct *ramp_queue;
+	struct delayed_work ramp_work;
+#endif
 	unsigned char dsp_cfg;
 
 	uint32_t dsp_fw_len;
@@ -536,6 +546,9 @@ int aw883xx_dev_modify_dsp_cfg(struct aw_device *aw_dev,
 int aw883xx_dev_get_iis_status(struct aw_device *aw_dev);
 int aw883xx_dev_set_volume(struct aw_device *aw_dev, uint16_t set_vol);
 int aw883xx_dev_get_volume(struct aw_device *aw_dev, uint16_t *get_vol);
+
+int aw883xx_dev_set_ramp_status(struct aw_device *aw_dev, uint32_t set_ramp);
+int aw883xx_dev_get_ramp_status(struct aw_device *aw_dev, uint32_t *get_ramp);
 
 #endif
 
