@@ -28,6 +28,10 @@ enum {
 	AW_EXT_DSP_WRITE,
 };
 
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+static unsigned int g_ramp_time_ms = 100; //100ms
+#endif
+
 static unsigned int g_fade_in_time = AW_1000_US / 10;
 static unsigned int g_fade_out_time = AW_1000_US >> 1;
 static LIST_HEAD(g_dev_list);
@@ -83,6 +87,73 @@ int aw883xx_dev_get_volume(struct aw_device *aw_dev, uint16_t *get_vol)
 
 	return 0;
 }
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+int aw883xx_dev_set_ramp_status(struct aw_device *aw_dev, uint32_t set_ramp)
+{
+	aw_dev_info(aw_dev->dev,"original ramp_en=%d, set_ramp=%d, channel=%d",
+			aw_dev->ramp_en, set_ramp, aw_dev->channel);
+
+	// set ramp for top speaker only
+	if (aw_dev->channel == 0) {
+		aw_dev->ramp_en = set_ramp;
+
+		//cancel ramp if in process
+		if(set_ramp == 0)
+			aw_dev->ramp_in_process = 0;
+	}
+
+	return 0;
+}
+
+int aw883xx_dev_get_ramp_status(struct aw_device *aw_dev, uint32_t *get_ramp)
+{
+	*get_ramp = aw_dev->ramp_en;
+
+	return 0;
+}
+
+
+static void aw_dev_do_ramp(struct aw_device *aw_dev)
+{
+	int i = 0;
+	struct aw_volume_desc *desc = &aw_dev->volume_desc;
+	int ramp_step = aw_dev->fade_step;
+	uint16_t ramp_target_vol = desc->ctl_volume;
+
+	if ((!aw_dev->ramp_en) || (!aw_dev->ramp_in_process))
+		return;
+
+	aw_dev_info(aw_dev->dev,"ramp started");
+
+	/*volume up*/
+	for (i = desc->mute_volume; i >= ramp_target_vol; i -= ramp_step) {
+		aw_dev_dbg(aw_dev->dev,"ramp on, set :%d",i);
+		aw883xx_dev_set_volume(aw_dev, i);
+
+		msleep(g_ramp_time_ms);
+		if (aw_dev->ramp_in_process == 0) {
+			aw_dev_info(aw_dev->dev,"ramp canceled");
+			return;
+		}
+	}
+
+	if (i != ramp_target_vol)
+		aw883xx_dev_set_volume(aw_dev, ramp_target_vol);
+
+	aw_dev_info(aw_dev->dev, "ramp done");
+
+	aw_dev->ramp_in_process = 0;
+}
+
+static void aw_dev_ramp_work(struct work_struct *work)
+{
+	struct aw_device *aw_dev =
+		container_of(work, struct aw_device, ramp_work.work);
+
+	aw_dev_do_ramp(aw_dev);
+}
+#endif
 
 static void aw_dev_fade_in(struct aw_device *aw_dev)
 {
@@ -355,14 +426,37 @@ void aw883xx_dev_mute(struct aw_device *aw_dev, bool mute)
 	struct aw_mute_desc *mute_desc = &aw_dev->mute_desc;
 
 	aw_dev_dbg(aw_dev->dev, "enter");
+
 	if (mute) {
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+		if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->ramp_in_process)){
+			aw_dev_info(aw_dev->dev,"amp inprocess,cancel it as mute set ");
+			aw_dev->ramp_in_process = 0;
+		}
+#endif
 		aw_dev_fade_out(aw_dev);
 		aw_dev->ops.aw_reg_write_bits(aw_dev, mute_desc->reg,
 				mute_desc->mask, mute_desc->enable);
 	} else {
 		aw_dev->ops.aw_reg_write_bits(aw_dev, mute_desc->reg,
 				mute_desc->mask, mute_desc->disable);
-		aw_dev_fade_in(aw_dev);
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+		aw_dev_info(aw_dev->dev,"channel=%d,ramp_en=%d,cur_prof=%d", aw_dev->channel, aw_dev->ramp_en, aw_dev->cur_prof);
+
+		if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->cur_prof < 3)){
+			//aw_dev_do_ramp(aw_dev);
+			if (aw_dev->ramp_in_process) {
+				aw_dev_info(aw_dev->dev,"ramp already in process");
+			} else {
+				aw_dev->ramp_in_process = 1;
+				queue_delayed_work(aw_dev->ramp_queue,
+                                                &aw_dev->ramp_work,
+                                                0);
+			}
+		} else
+#endif
+		   aw_dev_fade_in(aw_dev);
 	}
 	aw_dev_info(aw_dev->dev, "done");
 }
@@ -1713,12 +1807,29 @@ int aw883xx_device_probe(struct aw_device *aw_dev)
 
 	aw883xx_spin_init(&aw_dev->spin_desc);
 
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	aw_dev->ramp_queue = create_singlethread_workqueue("aw883xx_ramp");
+	if (!aw_dev->ramp_queue) {
+		aw_dev_err(aw_dev->dev, "create workqueue failed !");
+		return -EINVAL;
+	}
+
+	INIT_DELAYED_WORK(&aw_dev->ramp_work, aw_dev_ramp_work);
+#endif
+
 	return 0;
 }
 
 int aw883xx_device_remove(struct aw_device *aw_dev)
 {
 	aw883xx_monitor_deinit(&aw_dev->monitor_desc);
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	cancel_delayed_work_sync(&aw_dev->ramp_work);
+
+	if (aw_dev->ramp_queue)
+		destroy_workqueue(aw_dev->ramp_queue);
+#endif
 
 	aw883xx_cali_deinit(&aw_dev->cali_desc);
 
