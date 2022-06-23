@@ -299,7 +299,26 @@
 			drive-strength = <3>;
 		};
 	};
+
 	camera_pins_default: camdefault {
+	};
+
+	camaf_m1_default: camaf_m1_default_cfg{
+
+	};
+	camaf_m1_gpio_on: camaf_m1_gpio_on {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO199__FUNC_GPIO199>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camaf_m1_gpio_off: camaf_m1_gpio_off {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO199__FUNC_GPIO199>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
 
 };
@@ -432,6 +451,11 @@
 		reg = <0x1a>;
 		status = "okay";
 	};
+	camera_main_af_mtk:camera_main_af@18 {
+		compatible = "mediatek,camera_main_af";
+		reg = <0x18>;
+		status = "okay";
+	};
 #if 0
 	mtk_camera_eeprom0:camera_eeprom0@50 {
 		compatible = "mediatek,camera_eeprom";
@@ -521,5 +545,13 @@
 		polling-delay-passive = <0>; /* milliseconds */
 		thermal-sensors = <&camera_main_three_mtk>;
 	};
+};
+
+&camera_af_hw_node {
+	pinctrl-names = "camaf_m1_default", "camaf_m1_gpio_on", "camaf_m1_gpio_off";
+	pinctrl-0 = <&camaf_m1_default>;
+	pinctrl-1 = <&camaf_m1_gpio_on>;
+	pinctrl-2 = <&camaf_m1_gpio_off>;
+	status = "okay";
 };
 
