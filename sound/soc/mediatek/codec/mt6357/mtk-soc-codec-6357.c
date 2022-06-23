@@ -132,7 +132,7 @@ static int mAudio_Analog_Mic3_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic4_mode = AUDIO_ANALOGUL_MODE_ACC;
 
 static const char *const Audio_PA_Mode[] = {
-	"MUSIC", "RECEIVER", "VOICE", "FM", "OFF"
+	"MUSIC", "VOICE", "FM","RECEIVER", "OFF"
 };
 
 enum {
