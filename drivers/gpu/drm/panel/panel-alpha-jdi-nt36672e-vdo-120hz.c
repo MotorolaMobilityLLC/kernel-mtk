@@ -1542,7 +1542,32 @@ static struct mipi_dsi_driver jdi_driver = {
 	},
 };
 
-module_mipi_dsi_driver(jdi_driver);
+static int __init jdi_drv_init(void)
+{
+	int ret = 0;
+
+	pr_notice("%s+\n", __func__);
+	mtk_panel_lock();
+	ret = mipi_dsi_driver_register(&jdi_driver);
+	if (ret < 0)
+		pr_notice("%s, Failed to register jdi driver: %d\n",
+			__func__, ret);
+
+	mtk_panel_unlock();
+	pr_notice("%s- ret:%d\n", __func__, ret);
+	return 0;
+}
+
+static void __exit jdi_drv_exit(void)
+{
+	pr_notice("%s+\n", __func__);
+	mtk_panel_lock();
+	mipi_dsi_driver_unregister(&jdi_driver);
+	mtk_panel_unlock();
+	pr_notice("%s-\n", __func__);
+}
+module_init(jdi_drv_init);
+module_exit(jdi_drv_exit);
 
 MODULE_AUTHOR("shaohua deng <shaohua.deng@mediatek.com>");
 MODULE_DESCRIPTION("JDI NT36672E VDO 120HZ AMOLED Panel Driver");
