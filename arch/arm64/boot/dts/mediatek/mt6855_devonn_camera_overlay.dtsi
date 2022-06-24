@@ -438,6 +438,16 @@
 };
 /* CAMERA GPIO end */
 
+&i2c0 {
+        status = "okay";
+        clock-frequency = <400000>;
+        flash_aw36515:aw36515@63 {
+        compatible = "mediatek,aw36515";
+        reg = <0x63>;
+        status = "okay";
+        };
+};
+
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
