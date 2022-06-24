@@ -2,5 +2,4 @@
 # Copyright (C) 2020 MediaTek Inc.
 
 imgsensor_isp6s-objs += \
-	$(subdrv-rpath)/gc02m1_mipi_raw.o
-
+	$(subdrv-rpath)/mot_devonn_gc02m1mipiraw_Sensor.o

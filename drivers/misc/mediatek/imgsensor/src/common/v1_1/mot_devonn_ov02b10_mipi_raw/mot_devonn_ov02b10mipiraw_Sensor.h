@@ -1,8 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2019 MediaTek Inc.
+ */
+
 /*****************************************************************************
  *
  * Filename:
  * ---------
- *     gc02m1mipi_Sensor.h
+ *     mot_devonn_ov02b10rawmipi_Sensor.h
  *
  * Project:
  * --------
@@ -13,13 +18,13 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef __OV02B10MIPI_SENSOR_H__
-#define __OV02B10MIPI_SENSOR_H__
-
+#ifndef _MOT_DEVONN_OV02B10MIPI_SENSOR_H
+#define _MOT_DEVONN_OV02B10MIPI_SENSOR_H
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
+
 
 typedef enum{
  IMGSENSOR_MODE_INIT,
@@ -127,12 +132,11 @@ typedef struct imgsensor_info_struct {
     kal_uint32 gain_type;
 } imgsensor_info_struct;
 
-extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
-extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
+extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
 extern int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId);
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
 extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId, u16 timing);
-
 #endif
