@@ -864,7 +864,32 @@ static struct mipi_dsi_driver lcm_driver = {
 	},
 };
 
-module_mipi_dsi_driver(lcm_driver);
+static int __init truly_drv_init(void)
+{
+	int ret = 0;
+
+	pr_notice("%s+\n", __func__);
+	mtk_panel_lock();
+	ret = mipi_dsi_driver_register(&lcm_driver);
+	if (ret < 0)
+		pr_notice("%s, Failed to register jdi driver: %d\n",
+			__func__, ret);
+
+	mtk_panel_unlock();
+	pr_notice("%s- ret:%d\n", __func__, ret);
+	return 0;
+}
+
+static void __exit truly_drv_exit(void)
+{
+	pr_notice("%s+\n", __func__);
+	mtk_panel_lock();
+	mipi_dsi_driver_unregister(&lcm_driver);
+	mtk_panel_unlock();
+	pr_notice("%s-\n", __func__);
+}
+module_init(truly_drv_init);
+module_exit(truly_drv_exit);
 
 MODULE_AUTHOR("Yi-Lun Wang <Yi-Lun.Wang@mediatek.com>");
 MODULE_DESCRIPTION("truly td4330 CMD LCD Panel Driver");
