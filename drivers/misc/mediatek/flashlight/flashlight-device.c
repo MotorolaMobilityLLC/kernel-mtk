@@ -5,7 +5,13 @@
 
 #include "flashlight-core.h"
 
-#if defined(mt6739)
+#if defined(CONFIG_MTK_FLASHLIGHT_AW36515)
+	const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+        {0, 0, 0, "flashlights-aw36515", 0, 0},
+//        {0, 1, 0, "flashlights-aw36515", 1, 0},
+};
+#elif defined(mt6739)
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 	{0, 0, 0, "flashlights-rt4505", 0, 0},
