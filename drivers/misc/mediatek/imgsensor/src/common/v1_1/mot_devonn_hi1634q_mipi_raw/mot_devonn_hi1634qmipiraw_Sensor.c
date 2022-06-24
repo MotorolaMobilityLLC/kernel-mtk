@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *	 HI1634Qmipi_Sensor.c
+ *	 MOT_DEVONN_HI1634Qmipi_Sensor.c
  *
  * Project:
  * --------
@@ -30,7 +30,7 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
-#define PFX "hi1634q_camera_sensor"
+#define PFX "MOT_DEVONN_HI1634Q_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
 
@@ -49,16 +49,20 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "hi1634qmipiraw_Sensor.h"
+#include "mot_devonn_hi1634qmipiraw_Sensor.h"
+#include "mot_devonn_hi1634qmipiraw_sensor_settings.h"
 
 #undef VENDOR_EDIT
+
+#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
+#define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define USE_BURST_MODE 1
 
 //#define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
 
 #if USE_BURST_MODE
-static kal_uint16 hi1634q_table_write_cmos_sensor(
+static kal_uint16 mot_devonn_hi1634q_table_write_cmos_sensor(
 		kal_uint16 * para, kal_uint32 len);
 #endif
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -70,12 +74,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0x0754a310b,
 	.pre = {
 		.pclk = 640000000,				//record different mode's pclk
-		.linelength =  5680, 			//record different mode's linelength
-		.framelength = 3755, 			//record different mode's framelength
+		.linelength =  5840, 			//record different mode's linelength
+		.framelength = 3651, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2328, 		//record different mode's width of grabwindow
-		.grabwindow_height = 1752,		//record different mode's height of grabwindow
+		.grabwindow_width = 2320, 		//record different mode's width of grabwindow
+		.grabwindow_height = 1740,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
@@ -84,24 +88,24 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.cap = {
 		.pclk = 640000000,
-		.linelength = 5680,
-		.framelength = 3755,
+		.linelength = 5840,
+		.framelength = 3651,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 4656,
-		.grabwindow_height = 3504,
+		.grabwindow_width = 2320,
+		.grabwindow_height = 1740,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 678400000//1696*4/10
+		.mipi_pixel_rate = 339200000//848*4/10
 	},
 	.normal_video = {
 	  .pclk = 640000000,				//record different mode's pclk
-		.linelength =  5680, 			//record different mode's linelength
-		.framelength = 3755,  			//record different mode's framelength
+		.linelength =  5840, 			//record different mode's linelength
+		.framelength = 3651,  			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2328, 		//record different mode's width of grabwindow
-		.grabwindow_height = 1752,		//record different mode's height of grabwindow
+		.grabwindow_width = 2320, 		//record different mode's width of grabwindow
+		.grabwindow_height = 1740,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
@@ -110,48 +114,40 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.hs_video = {
 		.pclk = 640000000,				//record different mode's pclk
-		.linelength =  5680, 			//record different mode's linelength
-		.framelength = 938, 			//record different mode's framelength
+		.linelength =  5840, 			//record different mode's linelength
+		.framelength = 3651, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 1280,		//record different mode's width of grabwindow
-		.grabwindow_height = 720,		//record different mode's height of grabwindow
+		.grabwindow_width = 2320,		//record different mode's width of grabwindow
+		.grabwindow_height = 1740,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 1200,
+		.max_framerate = 300,
 		.mipi_pixel_rate = 339200000//848*4/10
 	},
     .slim_video = {
 		.pclk = 640000000,
-		.linelength = 5680,
-		.framelength = 3755,
+		.linelength = 5840,
+		.framelength = 3651,
 		.startx = 0,
 		.starty = 0,
-    	.grabwindow_width = 1920,
-    	.grabwindow_height = 1080,
-    	.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-    	.max_framerate = 300,
-    	.mipi_pixel_rate = 339200000//848*4/10 - temp
-    },
+		.grabwindow_width = 2320,
+		.grabwindow_height = 1740,
+		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
+		.max_framerate = 300,
+		.mipi_pixel_rate = 339200000//848*4/10 - temp
+	},
 
 	.margin = 4,		/* sensor framelength & shutter margin */
 	.min_shutter = 4,	/* min shutter */
 
-	/*
 	.min_gain = BASEGAIN,
 	.max_gain = 16 * BASEGAIN,
 	.min_gain_iso = 100,
-	.gain_step = 64,
-	.gain_type = 3, // Hynix:type 3
-	*/
-
-	.min_gain = 64,
-	.max_gain = 1024,
-	.min_gain_iso = 100,
 	.exp_step = 2,
 	.gain_step = 4,
-	.gain_type = 3,
+	.gain_type = 3, // Hynix:type 3
 
 	.max_frame_length = 0xffffff,
 	.ae_shut_delay_frame = 0,
@@ -174,10 +170,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_CSI2,//MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
-	//.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x42,0xA2,0x40, 0xff},
+	.i2c_addr_table = {0x42,0xff},
 	.i2c_speed = 1000,
 };
 
@@ -199,14 +194,13 @@ static struct imgsensor_struct imgsensor = {
 	.i2c_write_id = 0x42, /* record current sensor's i2c write id */
 };
 
-
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
-	{ 4704, 3512,	0,	 0, 4704, 3512,  2352, 1756,  12,  2, 2328, 1752, 0, 0, 2328, 1752}, 	// preview (2328 x 1748)
-	{ 4704, 3512,	0,	 0, 4704, 3512,  4704, 3512,  24,  4, 4656, 3504, 0, 0, 4656, 3504}, 	// capture (4656 x 3496)
-	{ 4704, 3512,	0,	 0, 4704, 3512,  2352, 1756,  12,  2, 2328, 1752, 0, 0, 2328, 1752}, 	// video (2328 x 1748)
-	{ 4704, 3512,	0, 482, 4704, 2548,  2352, 1274,  536, 277,	1280,  720, 0, 0, 1280,  720}, 	// hs video (1280 x 720)
-	{ 4704, 3512,	0, 672, 4704, 2168,  2352, 1084,  216,  2,	1920, 1080, 0, 0, 1920, 1080}, 	// slim video (1920 x 1080)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// preview (2320 x 1740)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// capture (2320 x 1740)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// video (2320 x 1740)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// hs video (2320 x 1740)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// slim video (2320 x 1740)
 };
 
 
@@ -358,7 +352,8 @@ static void set_shutter(kal_uint32 shutter)
  *
  *************************************************************************/
 static void set_shutter_frame_length(kal_uint16 shutter,
-				     kal_uint16 frame_length)
+				     kal_uint16 frame_length,
+				     kal_bool auto_extend_en)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
@@ -506,7 +501,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 #if USE_BURST_MODE
 #define I2C_BUFFER_LEN 1020 /* trans# max is 255, each 3 bytes */
-static kal_uint16 hi1634q_table_write_cmos_sensor(kal_uint16 *para,
+static kal_uint16 mot_devonn_hi1634q_table_write_cmos_sensor(kal_uint16 *para,
 						 kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
@@ -567,1206 +562,11 @@ static kal_uint16 hi1634q_table_write_cmos_sensor(kal_uint16 *para,
 }
 #endif
 
-// Hi1634Q_2.0.8.9_gain_cal_1696Mbps_20191125
-static kal_uint16 hi1634q_init_setting[] = {
-/*
-DISP_DATE = "2019-11-25 10:33:55"
-DISP_FORMAT = BAYER10_PACKED
-DISP_DATAORDER = GR_QUAD
-MIPI_LANECNT = 4
-I2C_SPEED = 400
-*/
-0x0790, 0x0100,	// d2a_analog_en
-0x2000, 0x1001,
-0x2002, 0x0000,
-0x2006, 0x40B2,
-0x2008, 0xB038,
-0x200A, 0x8430,
-0x200C, 0x40B2,
-0x200E, 0xB082,
-0x2010, 0x8476,
-0x2012, 0x40B2,
-0x2014, 0xB0F4,
-0x2016, 0x847A,
-0x2018, 0x40B2,
-0x201A, 0xB128,
-0x201C, 0x8434,
-0x201E, 0x40B2,
-0x2020, 0xB19C,
-0x2022, 0x8488,
-0x2024, 0x40B2,
-0x2026, 0xB236,
-0x2028, 0x8486,
-0x202A, 0x40B2,
-0x202C, 0xB43E,
-0x202E, 0x871E,
-0x2030, 0x40B2,
-0x2032, 0xB3B8,
-0x2034, 0x86C8,
-0x2036, 0x4130,
-0x2038, 0x120B,
-0x203A, 0x120A,
-0x203C, 0x403B,
-0x203E, 0x0261,
-0x2040, 0x4B6A,
-0x2042, 0xC3EB,
-0x2044, 0x0000,
-0x2046, 0x1292,
-0x2048, 0xD000,
-0x204A, 0x4ACB,
-0x204C, 0x0000,
-0x204E, 0xB3EB,
-0x2050, 0x0000,
-0x2052, 0x2411,
-0x2054, 0x421F,
-0x2056, 0x85DA,
-0x2058, 0xD21F,
-0x205A, 0x85D8,
-0x205C, 0x930F,
-0x205E, 0x2404,
-0x2060, 0x40F2,
-0x2062, 0xFF80,
-0x2064, 0x0619,
-0x2066, 0x3C07,
-0x2068, 0x90F2,
-0x206A, 0x0011,
-0x206C, 0x0619,
-0x206E, 0x2803,
-0x2070, 0x50F2,
-0x2072, 0xFFF0,
-0x2074, 0x0619,
-0x2076, 0x40B2,
-0x2078, 0xB3BE,
-0x207A, 0x86D0,
-0x207C, 0x413A,
-0x207E, 0x413B,
-0x2080, 0x4130,
-0x2082, 0x120B,
-0x2084, 0x120A,
-0x2086, 0x8231,
-0x2088, 0x430A,
-0x208A, 0x93C2,
-0x208C, 0x0C0A,
-0x208E, 0x2404,
-0x2090, 0xB3D2,
-0x2092, 0x0B05,
-0x2094, 0x2401,
-0x2096, 0x431A,
-0x2098, 0x403B,
-0x209A, 0x8438,
-0x209C, 0x422D,
-0x209E, 0x403E,
-0x20A0, 0x192A,
-0x20A2, 0x403F,
-0x20A4, 0x86EC,
-0x20A6, 0x12AB,
-0x20A8, 0x422D,
-0x20AA, 0x403E,
-0x20AC, 0x86EC,
-0x20AE, 0x410F,
-0x20B0, 0x12AB,
-0x20B2, 0x930A,
-0x20B4, 0x2003,
-0x20B6, 0xD3D2,
-0x20B8, 0x1921,
-0x20BA, 0x3C09,
-0x20BC, 0x403D,
-0x20BE, 0x0200,
-0x20C0, 0x422E,
-0x20C2, 0x403F,
-0x20C4, 0x86EC,
-0x20C6, 0x1292,
-0x20C8, 0x8448,
-0x20CA, 0xC3D2,
-0x20CC, 0x1921,
-0x20CE, 0x1292,
-0x20D0, 0xD046,
-0x20D2, 0x403B,
-0x20D4, 0x8438,
-0x20D6, 0x422D,
-0x20D8, 0x410E,
-0x20DA, 0x403F,
-0x20DC, 0x86EC,
-0x20DE, 0x12AB,
-0x20E0, 0x422D,
-0x20E2, 0x403E,
-0x20E4, 0x86EC,
-0x20E6, 0x403F,
-0x20E8, 0x192A,
-0x20EA, 0x12AB,
-0x20EC, 0x5231,
-0x20EE, 0x413A,
-0x20F0, 0x413B,
-0x20F2, 0x4130,
-0x20F4, 0x4382,
-0x20F6, 0x052C,
-0x20F8, 0x4F0D,
-0x20FA, 0x930D,
-0x20FC, 0x3402,
-0x20FE, 0xE33D,
-0x2100, 0x531D,
-0x2102, 0xF03D,
-0x2104, 0x07F0,
-0x2106, 0x4D0E,
-0x2108, 0xC312,
-0x210A, 0x100E,
-0x210C, 0x110E,
-0x210E, 0x110E,
-0x2110, 0x110E,
-0x2112, 0x930F,
-0x2114, 0x3803,
-0x2116, 0x4EC2,
-0x2118, 0x052C,
-0x211A, 0x3C04,
-0x211C, 0x4EC2,
-0x211E, 0x052D,
-0x2120, 0xE33D,
-0x2122, 0x531D,
-0x2124, 0x4D0F,
-0x2126, 0x4130,
-0x2128, 0x120B,
-0x212A, 0x425F,
-0x212C, 0x0205,
-0x212E, 0xC312,
-0x2130, 0x104F,
-0x2132, 0x114F,
-0x2134, 0x114F,
-0x2136, 0x114F,
-0x2138, 0x114F,
-0x213A, 0x114F,
-0x213C, 0x4F0B,
-0x213E, 0xF31B,
-0x2140, 0x5B0B,
-0x2142, 0x5B0B,
-0x2144, 0x5B0B,
-0x2146, 0x503B,
-0x2148, 0xD1CC,
-0x214A, 0x1292,
-0x214C, 0xD004,
-0x214E, 0x93C2,
-0x2150, 0x86BF,
-0x2152, 0x240B,
-0x2154, 0xB2E2,
-0x2156, 0x0400,
-0x2158, 0x2008,
-0x215A, 0x425F,
-0x215C, 0x86BB,
-0x215E, 0xD36F,
-0x2160, 0xF37F,
-0x2162, 0x5F0F,
-0x2164, 0x5F0B,
-0x2166, 0x4BA2,
-0x2168, 0x0402,
-0x216A, 0x93C2,
-0x216C, 0x86C1,
-0x216E, 0x2414,
-0x2170, 0x421F,
-0x2172, 0x86C6,
-0x2174, 0x4FA2,
-0x2176, 0x8606,
-0x2178, 0x425F,
-0x217A, 0x86BD,
-0x217C, 0x425E,
-0x217E, 0x86BA,
-0x2180, 0x5F0F,
-0x2182, 0x5E0F,
-0x2184, 0x5F0F,
-0x2186, 0x4F0E,
-0x2188, 0x521E,
-0x218A, 0x86CA,
-0x218C, 0x4EA2,
-0x218E, 0x8600,
-0x2190, 0x521F,
-0x2192, 0x86CC,
-0x2194, 0x4FA2,
-0x2196, 0x8602,
-0x2198, 0x413B,
-0x219A, 0x4130,
-0x219C, 0x8231,
-0x219E, 0xD3D2,
-0x21A0, 0x7A12,
-0x21A2, 0xC3D2,
-0x21A4, 0x0F00,
-0x21A6, 0x422D,
-0x21A8, 0x403E,
-0x21AA, 0x06D6,
-0x21AC, 0x410F,
-0x21AE, 0x1292,
-0x21B0, 0x8438,
-0x21B2, 0x93C2,
-0x21B4, 0x86C1,
-0x21B6, 0x243B,
-0x21B8, 0x421F,
-0x21BA, 0x0402,
-0x21BC, 0x0B00,
-0x21BE, 0x7304,
-0x21C0, 0x0000,
-0x21C2, 0x4F82,
-0x21C4, 0x0402,
-0x21C6, 0x421F,
-0x21C8, 0x7100,
-0x21CA, 0xF03F,
-0x21CC, 0x0003,
-0x21CE, 0x0800,
-0x21D0, 0x7A10,
-0x21D2, 0x931F,
-0x21D4, 0x2425,
-0x21D6, 0x931F,
-0x21D8, 0x281C,
-0x21DA, 0x932F,
-0x21DC, 0x2414,
-0x21DE, 0x903F,
-0x21E0, 0x0003,
-0x21E2, 0x240B,
-0x21E4, 0x425E,
-0x21E6, 0x86BB,
-0x21E8, 0xEE0F,
-0x21EA, 0xF31F,
-0x21EC, 0x5F0F,
-0x21EE, 0x4F1F,
-0x21F0, 0xB466,
-0x21F2, 0x9382,
-0x21F4, 0x7112,
-0x21F6, 0x27E2,
-0x21F8, 0x3C1C,
-0x21FA, 0x41A2,
-0x21FC, 0x06D6,
-0x21FE, 0x4192,
-0x2200, 0x0002,
-0x2202, 0x06D8,
-0x2204, 0x3FEF,
-0x2206, 0x4192,
-0x2208, 0x0002,
-0x220A, 0x06DA,
-0x220C, 0x41A2,
-0x220E, 0x06DC,
-0x2210, 0x3FE9,
-0x2212, 0x4192,
-0x2214, 0x0004,
-0x2216, 0x06DA,
-0x2218, 0x4192,
-0x221A, 0x0006,
-0x221C, 0x06DC,
-0x221E, 0x3FE2,
-0x2220, 0x4192,
-0x2222, 0x0006,
-0x2224, 0x06D6,
-0x2226, 0x4192,
-0x2228, 0x0004,
-0x222A, 0x06D8,
-0x222C, 0x3FDB,
-0x222E, 0x1292,
-0x2230, 0xD058,
-0x2232, 0x5231,
-0x2234, 0x4130,
-0x2236, 0x93C2,
-0x2238, 0x86C1,
-0x223A, 0x2427,
-0x223C, 0x430C,
-0x223E, 0x4C0F,
-0x2240, 0x5F0F,
-0x2242, 0x5F0F,
-0x2244, 0x5F0F,
-0x2246, 0x5F0F,
-0x2248, 0x5F0F,
-0x224A, 0x4F1D,
-0x224C, 0x84C4,
-0x224E, 0x4F1E,
-0x2250, 0x84C6,
-0x2252, 0x4F9F,
-0x2254, 0x84C0,
-0x2256, 0x84C4,
-0x2258, 0x4F9F,
-0x225A, 0x84C2,
-0x225C, 0x84C6,
-0x225E, 0x4D8F,
-0x2260, 0x84C0,
-0x2262, 0x4E8F,
-0x2264, 0x84C2,
-0x2266, 0x4F1D,
-0x2268, 0x84CC,
-0x226A, 0x4F1E,
-0x226C, 0x84CE,
-0x226E, 0x4F9F,
-0x2270, 0x84C8,
-0x2272, 0x84CC,
-0x2274, 0x4F9F,
-0x2276, 0x84CA,
-0x2278, 0x84CE,
-0x227A, 0x4D8F,
-0x227C, 0x84C8,
-0x227E, 0x4E8F,
-0x2280, 0x84CA,
-0x2282, 0x531C,
-0x2284, 0x903C,
-0x2286, 0x0005,
-0x2288, 0x3BDA,
-0x228A, 0x1292,
-0x228C, 0xD056,
-0x228E, 0x4130,
-0x2290, 0x7400,
-0x2292, 0x8058,
-0x2294, 0x1807,
-0x2296, 0x00E0,
-0x2298, 0x7002,
-0x229A, 0x17C7,
-0x229C, 0x7000,
-0x229E, 0x1305,
-0x22A0, 0x0006,
-0x22A2, 0x001F,
-0x22A4, 0x0055,
-0x22A6, 0x00DB,
-0x22A8, 0x0012,
-0x22AA, 0x1754,
-0x22AC, 0x206F,
-0x22AE, 0x009E,
-0x22B0, 0x00DD,
-0x22B2, 0x5023,
-0x22B4, 0x00DE,
-0x22B6, 0x005B,
-0x22B8, 0x0119,
-0x22BA, 0x0390,
-0x22BC, 0x00D1,
-0x22BE, 0x0055,
-0x22C0, 0x0040,
-0x22C2, 0x0553,
-0x22C4, 0x0456,
-0x22C6, 0x5041,
-0x22C8, 0x700D,
-0x22CA, 0x2F99,
-0x22CC, 0x2318,
-0x22CE, 0x005C,
-0x22D0, 0x7000,
-0x22D2, 0x1586,
-0x22D4, 0x0001,
-0x22D6, 0x2032,
-0x22D8, 0x0012,
-0x22DA, 0x0008,
-0x22DC, 0x0343,
-0x22DE, 0x0148,
-0x22E0, 0x2123,
-0x22E2, 0x0046,
-0x22E4, 0x05DD,
-0x22E6, 0x00DE,
-0x22E8, 0x00DD,
-0x22EA, 0x00DC,
-0x22EC, 0x00DE,
-0x22EE, 0x07D6,
-0x22F0, 0x5061,
-0x22F2, 0x704F,
-0x22F4, 0x2F99,
-0x22F6, 0x005C,
-0x22F8, 0x5080,
-0x22FA, 0x4D90,
-0x22FC, 0x50A1,
-0x22FE, 0x2122,
-0x2300, 0x7800,
-0x2302, 0xC08C,
-0x2304, 0x0001,
-0x2306, 0x9038,
-0x2308, 0x59F7,
-0x230A, 0x903B,
-0x230C, 0x121C,
-0x230E, 0x9034,
-0x2310, 0x1218,
-0x2312, 0x8C34,
-0x2314, 0x0180,
-0x2316, 0x8DC0,
-0x2318, 0x01C0,
-0x231A, 0x7400,
-0x231C, 0x8058,
-0x231E, 0x1807,
-0x2320, 0x00E0,
-0x2322, 0x00DF,
-0x2324, 0x0047,
-0x2326, 0x7000,
-0x2328, 0x17C5,
-0x232A, 0x0046,
-0x232C, 0x0095,
-0x232E, 0x7000,
-0x2330, 0x148C,
-0x2332, 0x005B,
-0x2334, 0x0014,
-0x2336, 0x001D,
-0x2338, 0x216F,
-0x233A, 0x005E,
-0x233C, 0x00DD,
-0x233E, 0x2244,
-0x2340, 0x001C,
-0x2342, 0x00DE,
-0x2344, 0x005B,
-0x2346, 0x0519,
-0x2348, 0x0150,
-0x234A, 0x0091,
-0x234C, 0x00D5,
-0x234E, 0x0040,
-0x2350, 0x0393,
-0x2352, 0x0356,
-0x2354, 0x5021,
-0x2356, 0x700D,
-0x2358, 0x2F99,
-0x235A, 0x2318,
-0x235C, 0x005C,
-0x235E, 0x0006,
-0x2360, 0x0016,
-0x2362, 0x425A,
-0x2364, 0x0012,
-0x2366, 0x0008,
-0x2368, 0x0403,
-0x236A, 0x01C8,
-0x236C, 0x2123,
-0x236E, 0x0046,
-0x2370, 0x095D,
-0x2372, 0x00DE,
-0x2374, 0x00DD,
-0x2376, 0x00DC,
-0x2378, 0x00DE,
-0x237A, 0x04D6,
-0x237C, 0x5041,
-0x237E, 0x704F,
-0x2380, 0x2F99,
-0x2382, 0x7000,
-0x2384, 0x1702,
-0x2386, 0x202C,
-0x2388, 0x0016,
-0x238A, 0x5060,
-0x238C, 0x2122,
-0x238E, 0x7800,
-0x2390, 0xC08C,
-0x2392, 0x0001,
-0x2394, 0x903B,
-0x2396, 0x121C,
-0x2398, 0x9034,
-0x239A, 0x1218,
-0x239C, 0x8DC0,
-0x239E, 0x01C0,
-0x23A0, 0x0000,
-0x23A2, 0xB290,
-0x23A4, 0x0000,
-0x23A6, 0xB290,
-0x23A8, 0xB302,
-0x23AA, 0x0002,
-0x23AC, 0x0000,
-0x23AE, 0xB31A,
-0x23B0, 0x0000,
-0x23B2, 0xB31A,
-0x23B4, 0xB390,
-0x23B6, 0x0002,
-0x23B8, 0xB3A0,
-0x23BA, 0xB3AC,
-0x23BC, 0xFCE0,
-0x23BE, 0x0040,
-0x23C0, 0x0040,
-0x23C2, 0x0040,
-0x23C4, 0x0040,
-0x23C6, 0x0040,
-0x23C8, 0x0042,
-0x23CA, 0x005A,
-0x23CC, 0x005B,
-0x23CE, 0x005C,
-0x23D0, 0x005E,
-0x23D2, 0x0060,
-0x23D4, 0x0064,
-0x23D6, 0x0066,
-0x23D8, 0x006B,
-0x23DA, 0x006F,
-0x23DC, 0x0073,
-0x23DE, 0x0077,
-0x23E0, 0x007B,
-0x23E2, 0x0081,
-0x23E4, 0x0085,
-0x23E6, 0x0089,
-0x23E8, 0x008D,
-0x23EA, 0x0091,
-0x23EC, 0x0095,
-0x23EE, 0x0099,
-0x23F0, 0x009D,
-0x23F2, 0x00A7,
-0x23F4, 0x00AA,
-0x23F6, 0x00B2,
-0x23F8, 0x00B6,
-0x23FA, 0x00B9,
-0x23FC, 0x00B9,
-0x23FE, 0x0040,
-0x2400, 0x0040,
-0x2402, 0x0040,
-0x2404, 0x0040,
-0x2406, 0x0040,
-0x2408, 0x0040,
-0x240A, 0x0054,
-0x240C, 0x0056,
-0x240E, 0x005A,
-0x2410, 0x005D,
-0x2412, 0x0062,
-0x2414, 0x0066,
-0x2416, 0x006B,
-0x2418, 0x0074,
-0x241A, 0x007B,
-0x241C, 0x007E,
-0x241E, 0x0085,
-0x2420, 0x008C,
-0x2422, 0x0095,
-0x2424, 0x009B,
-0x2426, 0x00A2,
-0x2428, 0x00A8,
-0x242A, 0x00B0,
-0x242C, 0x00B4,
-0x242E, 0x00BE,
-0x2430, 0x00C9,
-0x2432, 0x00D0,
-0x2434, 0x00D8,
-0x2436, 0x00DD,
-0x2438, 0x00EA,
-0x243A, 0x00ED,
-0x243C, 0x00F2,
-0x243E, 0x03FE,
-0x2440, 0x0000,
-0x2442, 0x0000,
-0x2444, 0x0000,
-0x2446, 0x0000,
-0x2448, 0x03FE,
-0x244A, 0x0000,
-0x244C, 0x0000,
-0x244E, 0x0000,
-0x2450, 0x0000,
-0x2452, 0x03FE,
-0x2454, 0x0000,
-0x2456, 0x0000,
-0x2458, 0x0000,
-0x245A, 0x0000,
-0x245C, 0x03FE,
-0x245E, 0x0000,
-0x2460, 0x0000,
-0x2462, 0x0000,
-0x2464, 0x0000,
-0x2466, 0x72D8,
-0x2468, 0x278D,
-0x0262, 0x0600,	// 0: tg/tg_ctl_a
-0x026A, 0xFFFF,	// 1: tg/analog_power_off_max_vblank
-0x026C, 0x00FF,	// 2: tg/analog_power_off_max_vblank_hw
-0x026E, 0x0000,	// 3: tg/analog_power_off_slope
-0x0360, 0x0E8E,	// 4: tg_alt/fw_control_0
-0x040C, 0x01EB,	// 5: adco/dig_offset
-0x0600, 0x1132,	// 6: blc/blc_ctrl00
-0x0604, 0x8008,	// 7: blc/blc_ctrl02
-0x0644, 0x07FE,	// 8: blc/blc_frm_sum_clp_val
-0x0676, 0x07FF,	// 9: blc/blc_lfsr_seed_value
-0x0678, 0x0002,	// 10: blc/blc_spare_register
-0x06A8, 0x0350,	// 11: blc/blc_nr_gain
-0x06AA, 0x0160,	// 12: blc/blc_nr_offset
-0x06AC, 0x0041,	// 13: blc/blc_nr_thres
-0x06AE, 0x03FC,	// 14: blc/blc_obp_win_y_end
-0x06B4, 0x3FFF,	// 15: blc/blc_obp_multi_win_th
-0x06CC, 0x00FF,	// 16: blc/blc_dsc_coef_sign
-0x06E2, 0xFF00,	// 17: blc/blc_ptn_hdr_order
-0x0524, 0x5858,	// 18: d2a_wrapper/ramp_pofs_1
-0x0526, 0x5858,	// 19: d2a_wrapper/ramp_pofs_2
-0x052A, 0x0000,	// 20: d2a_wrapper/ramp_pofs_tn_1
-0x052C, 0x0000,	// 21: d2a_wrapper/ramp_pofs_tn_2
-0x0F00, 0x0000,	// 22: fmt/fmt_vs_ctrl
-0x0B20, 0x0100,	// 23: isp_common/hbin_ctrl1
-0x1102, 0x0008,	// 24: lsc/lsc_ctl_b
-0x1106, 0x0124,	// 25: lsc/blk_height
-0x11C2, 0x0400,	// 26: lsc/pd_adp_ratio
-0x0902, 0x0003,	// 27: mem/tg_pmem_cfg
-0x0904, 0x0003,	// 28: mem/tg_dmem_cfg
-0x0912, 0x0303,	// 29: mem/rambist3_cfg
-0x0914, 0x0300,	// 30: mem/rambist4_cfg
-0x0A04, 0xB4C5,	// 31: sreg/sreg2
-0x0A06, 0xC400,	// 32: sreg/sreg3
-0x0A08, 0xA881,	// 33: sreg/sreg4
-0x0A0A, 0x8388,	// 34: sreg/sreg5
-0x0A0E, 0xFEC0,	// 35: sreg/sreg7
-0x0A10, 0xB040,	// 36: sreg/sreg8
-0x0A12, 0x0000,	// 37: sreg/sreg9
-0x0A18, 0x0010,	// 38: sreg/sreg12
-0x0A20, 0x0015,	// 39: sreg/sreg16
-0x070C, 0x0000,	// 40: smu/clk_cfg_c
-0x0780, 0x010E,	// 41: smu/ts_cfg_a
-0x1202, 0x1E00,	// 42: bdpc/bdpc_control_2
-0x1204, 0xD700,	// 43: bdpc/bdpc_control_3
-0x1210, 0x8028,	// 44: bdpc/bdpc_threshold_4
-0x1216, 0xA0A0,	// 45: bdpc/bdpc_threshold_7
-0x1218, 0x00A0,	// 46: bdpc/bdpc_threshold_8
-0x121A, 0x0000,	// 47: bdpc/bdpc_threshold_9
-0x121C, 0x4128,	// 48: bdpc/bdpc_threshold_10
-0x121E, 0x0000,	// 49: bdpc/bdpc_threshold_11
-0x1220, 0x0000,	// 50: bdpc/bdpc_threshold_12
-0x1222, 0x28FA,	// 51: bdpc/bdpc_threshold_13
-0x105C, 0x0F0B,	// 52: mipi/mipi_static1
-0x1986, 0x0000,	// 53: pdga/pre_linearity_a3_gr
-0x19C6, 0x0000,	// 54: pdga/pre_linearity_a3_gb
-0x1A06, 0x0000,	// 55: pdga_lin/pre_linearity_a3_r
-0x1A46, 0x0000,	// 56: pdga_lin/pre_linearity_a3_b
-0x1958, 0x0041,	// 57: pdga/pre_linearity_point0_gr
-0x195A, 0x006D,	// 58: pdga/pre_linearity_point1_gr
-0x195C, 0x00A4,	// 59: pdga/pre_linearity_point2_gr
-0x195E, 0x026E,	// 60: pdga/pre_linearity_point3_gr
-0x1960, 0x03FE,	// 61: pdga/pre_linearity_point4_gr
-0x1962, 0x0041,	// 62: pdga/pre_linearity_point0_gb
-0x1964, 0x006D,	// 63: pdga/pre_linearity_point1_gb
-0x1966, 0x00A4,	// 64: pdga/pre_linearity_point2_gb
-0x1968, 0x026E,	// 65: pdga/pre_linearity_point3_gb
-0x196A, 0x03FE,	// 66: pdga/pre_linearity_point4_gb
-0x196C, 0x0041,	// 67: pdga/pre_linearity_point0_r
-0x196E, 0x008F,	// 68: pdga/pre_linearity_point1_r
-0x1970, 0x00C4,	// 69: pdga/pre_linearity_point2_r
-0x1972, 0x0288,	// 70: pdga/pre_linearity_point3_r
-0x1974, 0x03FE,	// 71: pdga/pre_linearity_point4_r
-0x1976, 0x0041,	// 72: pdga/pre_linearity_point0_b
-0x1978, 0x008F,	// 73: pdga/pre_linearity_point1_b
-0x197A, 0x00C4,	// 74: pdga/pre_linearity_point2_b
-0x197C, 0x0288,	// 75: pdga/pre_linearity_point3_b
-0x197E, 0x03FE,	// 76: pdga/pre_linearity_point4_b
-0x1980, 0x0063,	// 77: pdga/pre_linearity_a0_gr
-0x1982, 0x005B,	// 78: pdga/pre_linearity_a1_gr
-0x1984, 0x2016,	// 79: pdga/pre_linearity_a2_gr
-0x1988, 0x00BD,	// 80: pdga/pre_linearity_b0_gr_0
-0x198A, 0x0000,	// 81: pdga/pre_linearity_b0_gr_1
-0x198C, 0x0242,	// 82: pdga/pre_linearity_b1_gr_0
-0x198E, 0x0000,	// 83: pdga/pre_linearity_b1_gr_1
-0x1990, 0x2EAB,	// 84: pdga/pre_linearity_b2_gr_0
-0x1992, 0x0000,	// 85: pdga/pre_linearity_b2_gr_1
-0x1994, 0x0000,	// 86: pdga/pre_linearity_b3_gr_0
-0x1996, 0x0000,	// 87: pdga/pre_linearity_b3_gr_1
-0x19C0, 0x0063,	// 88: pdga/pre_linearity_a0_gb
-0x19C2, 0x005B,	// 89: pdga/pre_linearity_a1_gb
-0x19C4, 0x2016,	// 90: pdga/pre_linearity_a2_gb
-0x19C8, 0x00BD,	// 91: pdga/pre_linearity_b0_gb_0
-0x19CA, 0x0000,	// 92: pdga/pre_linearity_b0_gb_1
-0x19CC, 0x0242,	// 93: pdga/pre_linearity_b1_gb_0
-0x19CE, 0x0000,	// 94: pdga/pre_linearity_b1_gb_1
-0x19D0, 0x2EAB,	// 95: pdga/pre_linearity_b2_gb_0
-0x19D2, 0x0000,	// 96: pdga/pre_linearity_b2_gb_1
-0x19D4, 0x0000,	// 97: pdga/pre_linearity_b3_gb_0
-0x19D6, 0x0000,	// 98: pdga/pre_linearity_b3_gb_1
-0x1A00, 0x0045,	// 99: pdga_lin/pre_linearity_a0_r
-0x1A02, 0x002B,	// 100: pdga_lin/pre_linearity_a1_r
-0x1A04, 0x2015,	// 101: pdga_lin/pre_linearity_a2_r
-0x1A08, 0x0076,	// 102: pdga_lin/pre_linearity_b0_r_0
-0x1A0A, 0x0000,	// 103: pdga_lin/pre_linearity_b0_r_1
-0x1A0C, 0x082C,	// 104: pdga_lin/pre_linearity_b1_r_0
-0x1A0E, 0x0000,	// 105: pdga_lin/pre_linearity_b1_r_1
-0x1A10, 0x2A17,	// 106: pdga_lin/pre_linearity_b2_r_0
-0x1A12, 0x0000,	// 107: pdga_lin/pre_linearity_b2_r_1
-0x1A14, 0x0000,	// 108: pdga_lin/pre_linearity_b3_r_0
-0x1A16, 0x0000,	// 109: pdga_lin/pre_linearity_b3_r_1
-0x1A40, 0x0045,	// 110: pdga_lin/pre_linearity_a0_b
-0x1A42, 0x002B,	// 111: pdga_lin/pre_linearity_a1_b
-0x1A44, 0x2015,	// 112: pdga_lin/pre_linearity_a2_b
-0x1A48, 0x0076,	// 113: pdga_lin/pre_linearity_b0_b_0
-0x1A4A, 0x0000,	// 114: pdga_lin/pre_linearity_b0_b_1
-0x1A4C, 0x082C,	// 115: pdga_lin/pre_linearity_b1_b_0
-0x1A4E, 0x0000,	// 116: pdga_lin/pre_linearity_b1_b_1
-0x1A50, 0x2A17,	// 117: pdga_lin/pre_linearity_b2_b_0
-0x1A52, 0x0000,	// 118: pdga_lin/pre_linearity_b2_b_1
-0x1A54, 0x0000,	// 119: pdga_lin/pre_linearity_b3_b_0
-0x1A56, 0x0000,	// 120: pdga_lin/pre_linearity_b3_b_1
-0x19BC, 0x2000,	// 121: pdga/lin_add_dc_gr_0
-0x19FC, 0x2000,	// 122: pdga/lin_add_dc_gb_0
-0x1A3C, 0x2000,	// 123: pdga_lin/lin_add_dc_r_0
-0x1A7C, 0x2000,	// 124: pdga_lin/lin_add_dc_b_0
-0x361C, 0x0000,	// 125: dmem/dmem_reg_0x361c
-0x027E, 0x0100,	// 126: tg/tg_enable_ctl
-};
-
-static kal_uint16 hi1634q_capture_setting[] = {
-/*
-DISP_WIDTH = 4656
-DISP_HEIGHT = 3504
-DISP_NOTE = "QUAD_FULL"
-MIPI_SPEED = 1696.00
-MIPI_LANE = 4
-DISP_DATAORDER = GR_QUAD
-
-////////////////////////////////////////////
-// VT CLK: 80.00MHz
-// Line length: 710
-// Frame length: 3617
-// Frame rate: 31.15
-// ISP CLK: 169.60MHz
-// V-Blank: 1002.88us
-// Output bitwidth: 10 bits
-// PD output bitwidth: 10 bits
-////////////////////////////////////////////
-*/
-0x0204, 0x0008,
-0x0206, 0x02C6,
-0x020A, 0x0E1D,
-0x020E, 0x0EAB,	// 4: tg/frame_length_lines   0x020E, 0x0E21,
-0x0224, 0x0030,
-0x022A, 0x0017,
-0x022C, 0x0E1B,
-0x022E, 0x0DDF,
-0x0234, 0x1111,
-0x0236, 0x1111,
-0x0238, 0x1111,
-0x023A, 0x1111,
-0x0268, 0x0108,
-0x0400, 0x0A10,
-0x0406, 0x1244,
-0x0408, 0x0001,
-0x040E, 0x0200,
-0x0440, 0x011D,
-0x0D00, 0x400B,
-0x0D28, 0x0008,
-0x0D2A, 0x1247,
-0x0602, 0x3712,
-0x0608, 0x0490,
-0x067A, 0x0900,
-0x067C, 0x0009,
-0x06DE, 0x0900,
-0x06E0, 0x0009,
-0x06E4, 0x8300,
-0x06E6, 0x0100,
-0x06E8, 0x0100,
-0x06EA, 0x8300,
-0x0F04, 0x0008,
-0x0F06, 0x0000,
-0x0F08, 0x0022,
-0x0F0A, 0x1133,
-0x0B04, 0x0094,
-0x0B12, 0x1230,
-0x0B14, 0x0DB0,
-0x0B30, 0x0001,
-0x1100, 0x1100,
-0x1108, 0x0002,
-0x1118, 0x0000,
-0x0A1E, 0x0013,
-0x0C00, 0x0023,
-0x0C14, 0x0008,
-0x0C16, 0x0000,
-0x0C18, 0x1240,
-0x0C1A, 0x0E00,
-0x0708, 0x6F80,
-0x0736, 0x0050,
-0x0738, 0x0002,
-0x073C, 0x0700,
-0x0746, 0x00D4,
-0x0748, 0x0002,
-0x074A, 0x0900,
-0x074C, 0x0000,
-0x074E, 0x0100,
-0x1200, 0x0946,
-0x1206, 0x0800,
-0x122E, 0x0490,
-0x1230, 0x0248,
-0x1000, 0x0300,
-0x1002, 0xC311,
-0x1004, 0x2BB0,
-0x1010, 0x0DC3,
-0x1012, 0x013D,
-0x1020, 0xC10D,
-0x1022, 0x0D39,
-0x1024, 0x030D,
-0x1026, 0x1812,
-0x1028, 0x1C10,
-0x102A, 0x170A,
-0x102C, 0x2600,
-0x1066, 0x0420,
-0x1600, 0x0000,
-};
-
-
-static kal_uint16 hi1634q_preview_setting[] = {
-/*
-DISP_WIDTH = 2328
-DISP_HEIGHT = 1752
-DISP_NOTE = "QUAD_2SUM"
-MIPI_SPEED = 848.00
-MIPI_LANE = 4
-DISP_DATAORDER = GR
-
-////////////////////////////////////////////
-// VT CLK: 80.00MHz
-// Line length: 710
-// Frame length: 1865
-// Frame rate: 60.42
-// ISP CLK: 169.60MHz
-// V-Blank: 1002.88us
-// Output bitwidth: 10 bits
-// PD output bitwidth: 10 bits
-////////////////////////////////////////////
-*/
-0x0204, 0x0408,
-0x0206, 0x02C6,
-0x020A, 0x0745,
-0x020E, 0x0EAB,	// 4: tg/frame_length_lines    0x020E, 0x0749,
-0x0224, 0x002C,
-0x022A, 0x0016,
-0x022C, 0x0E26,
-0x022E, 0x0DE2,
-0x0234, 0x2222,
-0x0236, 0x2222,
-0x0238, 0x2222,
-0x023A, 0x2222,
-0x0268, 0x0108,
-0x0400, 0x0E10,
-0x0406, 0x1244,
-0x0408, 0x0001,
-0x040E, 0x0200,
-0x0440, 0x011D,
-0x0D00, 0x4000,
-0x0D28, 0x0004,
-0x0D2A, 0x0923,
-0x0602, 0x3112,
-0x0608, 0x0248,
-0x067A, 0x0303,
-0x067C, 0x0303,
-0x06DE, 0x0303,
-0x06E0, 0x0303,
-0x06E4, 0x8700,
-0x06E6, 0x8700,
-0x06E8, 0x8700,
-0x06EA, 0x8700,
-0x0F04, 0x0004,
-0x0F06, 0x0002,
-0x0F08, 0x0011,
-0x0F0A, 0x2233,
-0x0B04, 0x009C,
-0x0B12, 0x0918,
-0x0B14, 0x06D8,
-0x0B30, 0x0000,
-0x1100, 0x1100,
-0x1108, 0x0402,
-0x1118, 0x0000,
-0x0A1E, 0x0013,
-0x0C00, 0x0021,
-0x0C14, 0x0004,
-0x0C16, 0x0002,
-0x0C18, 0x0920,
-0x0C1A, 0x0700,
-0x0708, 0x6F81,
-0x0736, 0x0050,
-0x0738, 0x0002,
-0x073C, 0x0700,
-0x0746, 0x00D4,
-0x0748, 0x0002,
-0x074A, 0x0900,
-0x074C, 0x0100,
-0x074E, 0x0100,
-0x1200, 0x4946,
-0x1206, 0x1800,
-0x122E, 0x0490,
-0x1230, 0x0248,
-0x1000, 0x0300,
-0x1002, 0xC311,
-0x1004, 0x2BB0,
-0x1010, 0x06CD,
-0x1012, 0x0091,
-0x1020, 0xC107,
-0x1022, 0x071D,
-0x1024, 0x0307,
-0x1026, 0x0C0B,
-0x1028, 0x1209,
-0x102A, 0x0C0A,
-0x102C, 0x1400,
-0x1066, 0x06F1,
-0x1600, 0x0400,
-};
-
-
-static kal_uint16 hi1634q_normal_video_setting[] = {
-/*
-[SENSOR_RES_MOD]
-DISP_WIDTH = 2328
-DISP_HEIGHT = 1752
-DISP_NOTE = "QUAD_2SUM"
-MIPI_SPEED = 848.00
-MIPI_LANE = 4
-DISP_DATAORDER = GR
-
-////////////////////////////////////////////
-// VT CLK: 80.00MHz
-// Line length: 710
-// Frame length: 1865
-// Frame rate: 60.42
-// ISP CLK: 169.60MHz
-// V-Blank: 1002.88us
-// Output bitwidth: 10 bits
-// PD output bitwidth: 10 bits
-////////////////////////////////////////////
-*/
-0x0204, 0x0408,
-0x0206, 0x02C6,
-0x020A, 0x0745,
-0x020E, 0x0EAB,	// 4: tg/frame_length_lines    0x020E, 0x0749,
-0x0224, 0x002C,
-0x022A, 0x0016,
-0x022C, 0x0E26,
-0x022E, 0x0DE2,
-0x0234, 0x2222,
-0x0236, 0x2222,
-0x0238, 0x2222,
-0x023A, 0x2222,
-0x0268, 0x0108,
-0x0400, 0x0E10,
-0x0406, 0x1244,
-0x0408, 0x0001,
-0x040E, 0x0200,
-0x0440, 0x011D,
-0x0D00, 0x4000,
-0x0D28, 0x0004,
-0x0D2A, 0x0923,
-0x0602, 0x3112,
-0x0608, 0x0248,
-0x067A, 0x0303,
-0x067C, 0x0303,
-0x06DE, 0x0303,
-0x06E0, 0x0303,
-0x06E4, 0x8700,
-0x06E6, 0x8700,
-0x06E8, 0x8700,
-0x06EA, 0x8700,
-0x0F04, 0x0004,
-0x0F06, 0x0002,
-0x0F08, 0x0011,
-0x0F0A, 0x2233,
-0x0B04, 0x009C,
-0x0B12, 0x0918,
-0x0B14, 0x06D8,
-0x0B30, 0x0000,
-0x1100, 0x1100,
-0x1108, 0x0402,
-0x1118, 0x0000,
-0x0A1E, 0x0013,
-0x0C00, 0x0021,
-0x0C14, 0x0004,
-0x0C16, 0x0002,
-0x0C18, 0x0920,
-0x0C1A, 0x0700,
-0x0708, 0x6F81,
-0x0736, 0x0050,
-0x0738, 0x0002,
-0x073C, 0x0700,
-0x0746, 0x00D4,
-0x0748, 0x0002,
-0x074A, 0x0900,
-0x074C, 0x0100,
-0x074E, 0x0100,
-0x1200, 0x4946,
-0x1206, 0x1800,
-0x122E, 0x0490,
-0x1230, 0x0248,
-0x1000, 0x0300,
-0x1002, 0xC311,
-0x1004, 0x2BB0,
-0x1010, 0x06CD,
-0x1012, 0x0091,
-0x1020, 0xC107,
-0x1022, 0x071D,
-0x1024, 0x0307,
-0x1026, 0x0C0B,
-0x1028, 0x1209,
-0x102A, 0x0C0A,
-0x102C, 0x1400,
-0x1066, 0x06F1,
-0x1600, 0x0400,
-};
-
-static kal_uint16 hi1634q_hs_video_setting[] = {
-/*
-[SENSOR_RES_MOD]
-DISP_WIDTH = 1280
-DISP_HEIGHT = 720
-DISP_NOTE = "1280x720_2Sum2Avg"
-MIPI_SPEED = 848.00
-MIPI_LANE = 4
-DISP_DATAORDER = GR
-
-////////////////////////////////////////////
-// VT CLK: 80.00MHz
-// Line length: 710
-// Frame length: 938
-// Frame rate: 120.12
-// ISP CLK: 169.60MHz
-// V-Blank: 1934.75us
-// Output bitwidth: 10 bits
-// PD output bitwidth: 10 bits
-////////////////////////////////////////////
-*/
-0x0204, 0x0408,
-0x0206, 0x02C6,
-0x020A, 0x03A6,
-0x020E, 0x03AA,
-0x0224, 0x0434,
-0x022A, 0x0016,
-0x022C, 0x0E26,
-0x022E, 0x09DA,
-0x0234, 0x2222,
-0x0236, 0x2222,
-0x0238, 0x2222,
-0x023A, 0x2222,
-0x0268, 0x0108,
-0x0400, 0x0E10,
-0x0406, 0x1244,
-0x0408, 0x0001,
-0x040E, 0x0200,
-0x0440, 0x011D,
-0x0D00, 0x4000,
-0x0D28, 0x0004,
-0x0D2A, 0x0923,
-0x0602, 0x3112,
-0x0608, 0x0248,
-0x067A, 0x0303,
-0x067C, 0x0303,
-0x06DE, 0x0303,
-0x06E0, 0x0303,
-0x06E4, 0x8700,
-0x06E6, 0x8700,
-0x06E8, 0x8700,
-0x06EA, 0x8700,
-0x0F04, 0x0210,
-0x0F06, 0x0002,
-0x0F08, 0x0011,
-0x0F0A, 0x2233,
-0x0B04, 0x009C,
-0x0B12, 0x0500,
-0x0B14, 0x02D0,
-0x0B30, 0x0000,
-0x1100, 0x1100,
-0x1108, 0x0002,
-0x1118, 0x0698,
-0x0A1E, 0x0013,
-0x0C00, 0x0021,
-0x0C14, 0x0210,
-0x0C16, 0x0002,
-0x0C18, 0x0500,
-0x0C1A, 0x0300,
-0x0708, 0x6F81,
-0x0736, 0x0050,
-0x0738, 0x0002,
-0x073C, 0x0700,
-0x0746, 0x00D4,
-0x0748, 0x0002,
-0x074A, 0x0900,
-0x074C, 0x0100,
-0x074E, 0x0100,
-0x1200, 0x4946,
-0x1206, 0x1800,
-0x122E, 0x0490,
-0x1230, 0x0248,
-0x1000, 0x0300,
-0x1002, 0xC311,
-0x1004, 0x2BB0,
-0x1010, 0x06CD,
-0x1012, 0x01D9,
-0x1020, 0xC107,
-0x1022, 0x071D,
-0x1024, 0x0307,
-0x1026, 0x0C0B,
-0x1028, 0x1209,
-0x102A, 0x0C0A,
-0x102C, 0x1400,
-0x1066, 0x06F1,
-0x1600, 0x0400,
-};
-
-static kal_uint16 hi1634q_slim_video_setting[] = {
-/*
-[SENSOR_RES_MOD]
-DISP_WIDTH = 1920
-DISP_HEIGHT = 1080
-DISP_NOTE = "1920x1080_2Sum2Avg"
-MIPI_SPEED = 848.00
-MIPI_LANE = 4
-DISP_DATAORDER = GR
-
-////////////////////////////////////////////
-// VT CLK: 80.00MHz
-// Line length: 710
-// Frame length: 3755
-// Frame rate: 30.01
-// ISP CLK: 169.60MHz
-// V-Blank: 23740.6us
-// Output bitwidth: 10 bits
-// PD output bitwidth: 10 bits
-////////////////////////////////////////////
-*/
-0x0204, 0x0408,
-0x0206, 0x02C6,
-0x020A, 0x0EA7,
-0x020E, 0x0EAB,
-0x0224, 0x02CC,
-0x022A, 0x0016,
-0x022C, 0x0E26,
-0x022E, 0x0B42,
-0x0234, 0x2222,
-0x0236, 0x2222,
-0x0238, 0x2222,
-0x023A, 0x2222,
-0x0268, 0x0108,
-0x0400, 0x0E10,
-0x0406, 0x1244,
-0x0408, 0x0001,
-0x040E, 0x0200,
-0x0440, 0x011D,
-0x0D00, 0x4000,
-0x0D28, 0x0004,
-0x0D2A, 0x0923,
-0x0602, 0x3112,
-0x0608, 0x0248,
-0x067A, 0x0303,
-0x067C, 0x0303,
-0x06DE, 0x0303,
-0x06E0, 0x0303,
-0x06E4, 0x8700,
-0x06E6, 0x8700,
-0x06E8, 0x8700,
-0x06EA, 0x8700,
-0x0F04, 0x00D0,
-0x0F06, 0x0002,
-0x0F08, 0x0011,
-0x0F0A, 0x2233,
-0x0B04, 0x009C,
-0x0B12, 0x0780,
-0x0B14, 0x0438,
-0x0B30, 0x0000,
-0x1100, 0x1100,
-0x1108, 0x0002,
-0x1118, 0x0454,
-0x0A1E, 0x0013,
-0x0C00, 0x0021,
-0x0C14, 0x00D0,
-0x0C16, 0x0002,
-0x0C18, 0x0780,
-0x0C1A, 0x0480,
-0x0708, 0x6F81,
-0x0736, 0x0050,
-0x0738, 0x0002,
-0x073C, 0x0700,
-0x0746, 0x00D4,
-0x0748, 0x0002,
-0x074A, 0x0900,
-0x074C, 0x0100,
-0x074E, 0x0100,
-0x1200, 0x4946,
-0x1206, 0x1800,
-0x122E, 0x0490,
-0x1230, 0x0248,
-0x1000, 0x0300,
-0x1002, 0xC311,
-0x1004, 0x2BB0,
-0x1010, 0x06CD,
-0x1012, 0x0111,
-0x1020, 0xC107,
-0x1022, 0x071D,
-0x1024, 0x0307,
-0x1026, 0x0C0B,
-0x1028, 0x1209,
-0x102A, 0x0C0A,
-0x102C, 0x1400,
-0x1066, 0x06F1,
-0x1600, 0x0400,
-};
-
-
-
 static void sensor_init(void)
 {
 	pr_debug("Hi-1634Q init start\n");
-	hi1634q_table_write_cmos_sensor(hi1634q_init_setting,
-		sizeof(hi1634q_init_setting)/sizeof(kal_uint16));
+	mot_devonn_hi1634q_table_write_cmos_sensor(mot_devonn_hi1634q_init_setting,
+		sizeof(mot_devonn_hi1634q_init_setting)/sizeof(kal_uint16));
 	pr_debug("Hi-1634Q init end\n");
 
 }	/*	  sensor_init  */
@@ -1775,8 +575,8 @@ static void preview_setting(void)
 {
 	pr_debug("Hi-1634Q preview_setting start\n");
 
-	hi1634q_table_write_cmos_sensor(hi1634q_preview_setting,
-		sizeof(hi1634q_preview_setting)/sizeof(kal_uint16));
+	mot_devonn_hi1634q_table_write_cmos_sensor(mot_devonn_2320x1720_30fps_setting,
+		sizeof(mot_devonn_2320x1720_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q preview_setting end\n");
 
@@ -1788,8 +588,8 @@ static void capture_setting(kal_uint16 currefps)
 {
 	pr_debug("Hi-1634Q capture_setting start\n");
 	/*************MIPI output setting************/
-	hi1634q_table_write_cmos_sensor(hi1634q_capture_setting,
-		sizeof(hi1634q_capture_setting)/sizeof(kal_uint16));
+	mot_devonn_hi1634q_table_write_cmos_sensor(mot_devonn_2320x1720_30fps_setting,
+		sizeof(mot_devonn_2320x1720_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q capture_setting end\n");
 }
@@ -1798,8 +598,8 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	pr_debug("Hi-1634Q normal_video_setting start\n");
 
-	hi1634q_table_write_cmos_sensor(hi1634q_normal_video_setting,
-		sizeof(hi1634q_normal_video_setting)/sizeof(kal_uint16));
+	mot_devonn_hi1634q_table_write_cmos_sensor(mot_devonn_2320x1720_30fps_setting,
+		sizeof(mot_devonn_2320x1720_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q normal_video_setting end\n");
 }
@@ -1808,8 +608,8 @@ static void hs_video_setting(void)
 {
 	pr_debug("Hi-1634Q hs_video_setting start\n");
 
-	hi1634q_table_write_cmos_sensor(hi1634q_hs_video_setting,
-		sizeof(hi1634q_hs_video_setting)/sizeof(kal_uint16));
+	mot_devonn_hi1634q_table_write_cmos_sensor(mot_devonn_2320x1720_30fps_setting,
+		sizeof(mot_devonn_2320x1720_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q hs_video_setting end\n");
 }
@@ -1818,12 +618,361 @@ static void slim_video_setting(void)
 {
 	pr_debug("Hi-1634Q slim_video_setting start\n");
 
-	hi1634q_table_write_cmos_sensor(hi1634q_slim_video_setting,
-		sizeof(hi1634q_slim_video_setting)/sizeof(kal_uint16));
+	mot_devonn_hi1634q_table_write_cmos_sensor(mot_devonn_2320x1720_30fps_setting,
+		sizeof(mot_devonn_2320x1720_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q slim_video_setting end\n");
 }
 
+#define DEVONN_HI1634Q_EEPROM_SLAVE_ADDR 0xA2
+#define DEVONN_HI1634Q_SENSOR_IIC_SLAVE_ADDR 0x42
+#define DEVONN_HI1634Q_EEPROM_SIZE  4389
+#define DEVONN_HI1634Q_EEPROM_CRC_AWB_CAL_SIZE 43
+#define DEVONN_HI1634Q_EEPROM_CRC_OPTICAL_CENTER_CAL_SIZE 16
+#define DEVONN_HI1634Q_EEPROM_CRC_SFR_CAL_SIZE 117
+#define DEVONN_HI1634Q_EEPROM_CRC_LSC_SIZE 1868
+#define DEVONN_HI1634Q_EEPROM_CRC_NECESSARY_DATA_CAL_SIZE 18
+#define DEVONN_HI1634Q_EEPROM_CRC_MANUFACTURING_SIZE 37
+#define DEVONN_HI1634Q_MANUFACTURE_PART_NUMBER "28C85320"
+#define DEVONN_HI1634Q_MPN_LENGTH 8
+static uint8_t DEVONN_HI1634Q_eeprom[DEVONN_HI1634Q_EEPROM_SIZE] = {0};
+static calibration_status_t mnf_status            = CRC_FAILURE;
+static calibration_status_t awb_status            = CRC_FAILURE;
+static calibration_status_t optical_center_status = CRC_FAILURE;
+static calibration_status_t sfr_status            = CRC_FAILURE;
+static calibration_status_t lsc_status            = CRC_FAILURE;
+static calibration_status_t necessary_data_status = CRC_FAILURE;
+static uint8_t crc_reverse_byte(uint32_t data)
+{
+	return ((data * 0x0802LU & 0x22110LU) |
+		(data * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+static uint16_t to_uint16_swap(uint8_t *data)
+{
+	uint16_t converted;
+	memcpy(&converted, data, sizeof(uint16_t));
+	return ntohs(converted);
+}
+static void DEVONN_HI1634Q_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
+{
+	int i = 0;
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = slave;
+	spin_unlock(&imgsensor_drv_lock);
+	//read eeprom data
+	for (i = 0; i < size; i ++) {
+		DEVONN_HI1634Q_eeprom[i] = read_cmos_sensor_8(start_add);
+		start_add ++;
+	}
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = DEVONN_HI1634Q_SENSOR_IIC_SLAVE_ADDR;
+	spin_unlock(&imgsensor_drv_lock);
+}
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+	int32_t crc_match = 0;
+	uint16_t crc = 0x0000;
+	uint16_t crc_reverse = 0x0000;
+	uint32_t i, j;
+	uint32_t tmp;
+	uint32_t tmp_reverse;
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+		tmp_reverse = crc_reverse_byte(data[i]);
+		tmp = data[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+			if (((crc_reverse & 0x8000) >> 8) ^ (tmp_reverse & 0x80))
+				crc_reverse = (crc_reverse << 1) ^ 0x8005;
+			else
+				crc_reverse = crc_reverse << 1;
+			tmp_reverse <<= 1;
+		}
+	}
+	crc_reverse = (crc_reverse_byte(crc_reverse) << 8) |
+		crc_reverse_byte(crc_reverse >> 8);
+	if (crc == ref_crc || crc_reverse == ref_crc)
+		crc_match = 1;
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x CALC Reverse CRC 0x%x matches? %d\n",
+		ref_crc, crc, crc_reverse, crc_match);
+	return crc_match;
+}
+static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
+{
+	uint8_t result = 0;
+	if (unit.r < AWB_R_MIN || unit.r > AWB_R_MAX) {
+		LOG_INF("unit r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, unit.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (unit.gr < AWB_GR_MIN || unit.gr > AWB_GR_MAX) {
+		LOG_INF("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, unit.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (unit.gb < AWB_GB_MIN || unit.gb > AWB_GB_MAX) {
+		LOG_INF("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, unit.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (unit.b < AWB_B_MIN || unit.b > AWB_B_MAX) {
+		LOG_INF("unit b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, unit.b, AWB_B_MAX);
+		result = 1;
+	}
+	if (golden.r < AWB_R_MIN || golden.r > AWB_R_MAX) {
+		LOG_INF("golden r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, golden.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (golden.gr < AWB_GR_MIN || golden.gr > AWB_GR_MAX) {
+		LOG_INF("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, golden.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (golden.gb < AWB_GB_MIN || golden.gb > AWB_GB_MAX) {
+		LOG_INF("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, golden.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (golden.b < AWB_B_MIN || golden.b > AWB_B_MAX) {
+		LOG_INF("golden b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, golden.b, AWB_B_MAX);
+		result = 1;
+	}
+	return result;
+}
+static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t golden,
+		awb_limit_t limit)
+{
+	uint32_t r_g;
+	uint32_t b_g;
+	uint32_t golden_rg, golden_bg;
+	uint32_t r_g_golden_min;
+	uint32_t r_g_golden_max;
+	uint32_t b_g_golden_min;
+	uint32_t b_g_golden_max;
+	r_g = unit.r_g * 1000;
+	b_g = unit.b_g*1000;
+	golden_rg = golden.r_g* 1000;
+	golden_bg = golden.b_g* 1000;
+	r_g_golden_min = limit.r_g_golden_min*16384;
+	r_g_golden_max = limit.r_g_golden_max*16384;
+	b_g_golden_min = limit.b_g_golden_min*16384;
+	b_g_golden_max = limit.b_g_golden_max*16384;
+	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,r_g_golden_min,r_g_golden_max);
+	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,golden_bg,b_g_golden_min,b_g_golden_max);
+	if (r_g < (golden_rg - r_g_golden_min) || r_g > (golden_rg + r_g_golden_max)) {
+		LOG_INF("Final RG calibration factors out of range!");
+		return 1;
+	}
+	if (b_g < (golden_bg - b_g_golden_min) || b_g > (golden_bg + b_g_golden_max)) {
+		LOG_INF("Final BG calibration factors out of range!");
+		return 1;
+	}
+	return 0;
+}
+static calibration_status_t DEVONN_HI1634Q_check_awb_data(void *data)
+{
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+	awb_t unit;
+	awb_t golden;
+	awb_limit_t golden_limit;
+	if(!eeprom_util_check_crc16(eeprom->cie_ev,
+		DEVONN_HI1634Q_EEPROM_CRC_AWB_CAL_SIZE,
+		convert_crc(eeprom->awb_crc16))) {
+		LOG_INF("AWB CRC Fails!");
+		return CRC_FAILURE;
+	}
+	unit.r = to_uint16_swap(eeprom->awb_src_1_r)/64;
+	unit.gr = to_uint16_swap(eeprom->awb_src_1_gr)/64;
+	unit.gb = to_uint16_swap(eeprom->awb_src_1_gb)/64;
+	unit.b = to_uint16_swap(eeprom->awb_src_1_b)/64;
+	unit.r_g = to_uint16_swap(eeprom->awb_src_1_rg_ratio);
+	unit.b_g = to_uint16_swap(eeprom->awb_src_1_bg_ratio);
+	unit.gr_gb = to_uint16_swap(eeprom->awb_src_1_gr_gb_ratio);
+	golden.r = to_uint16_swap(eeprom->awb_src_1_golden_r)/64;
+	golden.gr = to_uint16_swap(eeprom->awb_src_1_golden_gr)/64;
+	golden.gb = to_uint16_swap(eeprom->awb_src_1_golden_gb)/64;
+	golden.b = to_uint16_swap(eeprom->awb_src_1_golden_b)/64;
+	golden.r_g = to_uint16_swap(eeprom->awb_src_1_golden_rg_ratio);
+	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
+	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
+	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
+		LOG_INF("AWB CRC limit Fails!");
+		return LIMIT_FAILURE;
+	}
+	golden_limit.r_g_golden_min = eeprom->awb_r_g_golden_min_limit[0];
+	golden_limit.r_g_golden_max = eeprom->awb_r_g_golden_max_limit[0];
+	golden_limit.b_g_golden_min = eeprom->awb_b_g_golden_min_limit[0];
+	golden_limit.b_g_golden_max = eeprom->awb_b_g_golden_max_limit[0];
+	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
+		LOG_INF("AWB CRC factor limit Fails!");
+		return LIMIT_FAILURE;
+	}
+	LOG_INF("AWB CRC Pass");
+	return NO_ERRORS;
+}
+static calibration_status_t DEVONN_HI1634Q_check_lsc_data(void *data)
+{
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+	if (!eeprom_util_check_crc16(eeprom->mtk_lsc_calibration, DEVONN_HI1634Q_EEPROM_CRC_LSC_SIZE,
+		convert_crc(eeprom->mtk_lsc_crc16))) {
+		LOG_INF("LSC CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("LSC CRC Pass");
+	return NO_ERRORS;
+}
+static void DEVONN_HI1634Q_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		eeprom->eeprom_table_version[0]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+		eeprom->mpn[0], eeprom->mpn[1], eeprom->mpn[2], eeprom->mpn[3],
+		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+	if (eeprom->manufacturer_id[0] == 'S' && eeprom->manufacturer_id[1] == 'U') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	} else if (eeprom->manufacturer_id[0] == 'O' && eeprom->manufacturer_id[1] == 'F') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "OFilm");
+	} else if (eeprom->manufacturer_id[0] == 'Q' && eeprom->manufacturer_id[1] == 'T') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown manufacturer_id");
+	}
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+		eeprom->factory_id[0], eeprom->factory_id[1]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->factory_id failed");
+		mnf->factory_id[0] = 0;
+	}
+	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
+		eeprom->manufacture_line[0]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_line failed");
+		mnf->manufacture_line[0] = 0;
+	}
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+		eeprom->serial_number[0], eeprom->serial_number[1],
+		eeprom->serial_number[2], eeprom->serial_number[3],
+		eeprom->serial_number[4], eeprom->serial_number[5],
+		eeprom->serial_number[6], eeprom->serial_number[7],
+		eeprom->serial_number[8], eeprom->serial_number[9],
+		eeprom->serial_number[10], eeprom->serial_number[11],
+		eeprom->serial_number[12], eeprom->serial_number[13],
+		eeprom->serial_number[14], eeprom->serial_number[15]);
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
+static calibration_status_t DEVONN_HI1634Q_check_optical_center_data(void *data)
+{
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+	if (!eeprom_util_check_crc16(eeprom->optical_center_x_1_r_channel, DEVONN_HI1634Q_EEPROM_CRC_OPTICAL_CENTER_CAL_SIZE,
+		convert_crc(eeprom->optical_center_crc16))) {
+		LOG_INF("optical center CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("optical center CRC Pass");
+	return NO_ERRORS;
+}
+static calibration_status_t DEVONN_HI1634Q_check_sfr_data(void *data)
+{
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+	if (!eeprom_util_check_crc16(eeprom->sfr_distance1_reserve, DEVONN_HI1634Q_EEPROM_CRC_SFR_CAL_SIZE,
+		convert_crc(eeprom->sfr_crc16))) {
+		LOG_INF("SFR CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("SFR CRC Pass");
+	return NO_ERRORS;
+}
+static calibration_status_t DEVONN_HI1634Q_check_necessary_data(void *data)
+{
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+	if (!eeprom_util_check_crc16(eeprom->module_check_flag, DEVONN_HI1634Q_EEPROM_CRC_NECESSARY_DATA_CAL_SIZE,
+		convert_crc(eeprom->mtk_necessary_crc16))) {
+		LOG_INF("mtk necessary CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("mtk necessary CRC Pass");
+	return NO_ERRORS;
+}
+static calibration_status_t DEVONN_HI1634Q_check_manufacturing_data(void *data)
+{
+	struct mot_hi1634q_eeprom_t *eeprom = (struct mot_hi1634q_eeprom_t*)data;
+    LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
+#if 0
+	if(strncmp(eeprom->mpn, DEVONN_HI1634Q_MANUFACTURE_PART_NUMBER, DEVONN_HI1634Q_MPN_LENGTH) != 0) {
+		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
+		return CRC_FAILURE;
+	}
+#endif
+	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, DEVONN_HI1634Q_EEPROM_CRC_MANUFACTURING_SIZE,
+		convert_crc(eeprom->manufacture_crc16))) {
+		LOG_INF("Manufacturing CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+static void DEVONN_HI1634Q_eeprom_format_calibration_data(void *data)
+{
+	if (NULL == data) {
+		LOG_INF("data is NULL");
+		return;
+	}
+	mnf_status            = DEVONN_HI1634Q_check_manufacturing_data(data);
+	awb_status            = DEVONN_HI1634Q_check_awb_data(data);
+	optical_center_status = DEVONN_HI1634Q_check_optical_center_data(data);;
+	sfr_status            = DEVONN_HI1634Q_check_sfr_data(data);;
+	lsc_status            = DEVONN_HI1634Q_check_lsc_data(data);
+	necessary_data_status = DEVONN_HI1634Q_check_necessary_data(data);
+	LOG_INF("status mnf:%d, awb:%d, optical_center:%d, sfr:%d, lsc:%d, necessary_data:%d",
+		mnf_status, awb_status, optical_center_status, sfr_status, lsc_status, necessary_data_status);
+}
 /*************************************************************************
  * FUNCTION
  *	get_imgsensor_id
@@ -1854,6 +1003,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				DEVONN_HI1634Q_read_data_from_eeprom(DEVONN_HI1634Q_EEPROM_SLAVE_ADDR, 0x0000, DEVONN_HI1634Q_EEPROM_SIZE);
+				DEVONN_HI1634Q_eeprom_format_calibration_data((void *)DEVONN_HI1634Q_eeprom);
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
@@ -2023,9 +1174,9 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 	if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
 		pr_debug(
-			"Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
-			imgsensor.current_fps,
-			imgsensor_info.cap.max_framerate / 10);
+		"Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+		imgsensor.current_fps,
+		imgsensor_info.cap.max_framerate / 10);
 	imgsensor.pclk = imgsensor_info.cap.pclk;
 	imgsensor.line_length = imgsensor_info.cap.linelength;
 	imgsensor.frame_length = imgsensor_info.cap.framelength;
@@ -2217,6 +1368,12 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 
 	sensor_info->FrameTimeDelayFrame =
 		imgsensor_info.frame_time_delay_frame;
+
+	sensor_info->calibration_status.mnf = mnf_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
+	DEVONN_HI1634Q_eeprom_get_mnf_data((void *) DEVONN_HI1634Q_eeprom, &sensor_info->mnf_calibration);
+
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -2494,9 +1651,9 @@ static kal_uint32 get_default_framerate_by_scenario(
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
-	pr_debug("set_test_pattern_mode enable: %d", enable);
+	pr_debug("set_test_pattern_mode enable not : %d", enable);
 
-	if (enable) {
+	/*if (enable) {
 		write_cmos_sensor(0x0b04, 0x0095);
 		write_cmos_sensor(0x0C0a, 0x0204);
 	} else {
@@ -2505,7 +1662,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
-	spin_unlock(&imgsensor_drv_lock);
+	spin_unlock(&imgsensor_drv_lock);*/
 	return ERROR_NONE;
 }
 
@@ -2810,7 +1967,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 		set_shutter_frame_length((UINT16) (*feature_data),
-					(UINT16) (*(feature_data + 1)));
+					(UINT16) (*(feature_data + 1)),
+					(BOOL) (*(feature_data + 2)));
 		break;
 	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
 		/*
@@ -2851,7 +2009,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			//*feature_return_para_32 = 1; /*BINNING_SUM*/
-			*feature_return_para_32 = 2; /*BINNING_AVERAGED*/
+			*feature_return_para_32 = 1; /*BINNING_AVERAGED*/
 			break;
 		}
 		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
@@ -2890,6 +2048,7 @@ break;
 #if 0
 	case SENSOR_FEATURE_GET_VC_INFO:
 		pvcinfo = (struct SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+
 		switch (*feature_data_32) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -2936,4 +2095,4 @@ UINT32 HI1634Q_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
 	return ERROR_NONE;
-} /* HI1634Q_MIPI_RAW_SensorInit */
+} /* MOT_DEVONN_HI1634Q_MIPI_RAW_SensorInit */

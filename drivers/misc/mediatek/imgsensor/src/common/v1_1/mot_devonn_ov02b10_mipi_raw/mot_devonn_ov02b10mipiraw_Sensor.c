@@ -1,47 +1,48 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2018 MediaTek Inc.
+ * Copyright (c) 2019 MediaTek Inc.
+ */
+
+/*
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
-
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
-#include <linux/platform_device.h>
 #include <linux/delay.h>
-#include <linux/cdev.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
-#include <linux/atomic.h>
 #include <linux/types.h>
-//#include "imgsensor_eeprom.h"
+#include "mot_devonn_ov02b10mipiraw_Sensor.h"
 
-#include "ov02b10_mipi_raw.h"
+#undef IMGSENSOR_I2C_1000K
 #include "imgsensor_i2c.h"
-#define PFX "ov02b10"
-#define LOG_INF(format, args...)    \
-	pr_debug(PFX "[%s] " format, __func__, ##args)
-#define LOG_ERR(format, args...)    \
-	pr_err(PFX "[%s] " format, __func__, ##args)
+#define IMGSENSOR_MODULE_ID_SUNNY       0x01
+#define PFX "MOT_DEVONN_OV02B10_camera_sensor"
 
-/* Camera Hardwareinfo */
-//extern struct global_otp_struct hw_info_main2_otp;
-static kal_uint32 streaming_control(kal_bool enable);
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+
+#include "mot_devonn_ov02b10mipiraw_otp.h"
+extern unsigned char ov02b10_otp_data[OV02B10_OTP_SIZE];
+static ov02b10_calibration_status_t ov02b10_cal_info = {0};
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-static struct imgsensor_info_struct imgsensor_info = {
-    .sensor_id = MOT_DEVONN_OV02B10_SENSOR_ID,
-    .checksum_value = 0xb7c53a42,       //0x6d01485c // Auto Test Mode 蓄板..
+static  imgsensor_info_struct imgsensor_info = {
 
-	.pre = {
-		.pclk = 16500000,            //record different mode's pclk
-		.linelength = 448,            //record different mode's linelength
+    /*record sensor id defined in Kd_imgsensor.h*/
+    .sensor_id = MOT_DEVONN_OV02B10_SENSOR_ID,
+    .module_id = 0x01,    //0x01 Sunny,0x05 QTEK
+    .checksum_value = 0xb1893b4f, /*checksum value for Camera Auto Test*/
+    .pre = {
+        .pclk = 16500000,    /*record different mode's pclk*/
+        .linelength  = 448,    /*record different mode's linelength*/
         .framelength = 1221,    /*record different mode's framelength*/
         .startx = 0, /*record different mode's startx of grabwindow*/
         .starty = 0,    /*record different mode's starty of grabwindow*/
@@ -63,18 +64,7 @@ static struct imgsensor_info_struct imgsensor_info = {
         .max_framerate = 300,
         .mipi_pixel_rate = 66000000,
     },
-    .cap1 = { /*capture for 15fps*/
-        .pclk = 16500000,
-        .linelength  = 448,
-        .framelength = 1221,
-        .startx = 0,
-        .starty = 0,
-        .grabwindow_width  = 1600,
-        .grabwindow_height = 1200,
-        .mipi_data_lp2hs_settle_dc = 85,
-        .max_framerate = 300,
-        .mipi_pixel_rate = 66000000,
-    },
+
     .normal_video = { /* cap*/
         .pclk = 16500000,
         .linelength  = 448,
@@ -125,20 +115,24 @@ static struct imgsensor_info_struct imgsensor_info = {
         .mipi_pixel_rate = 66000000,
     },
 
-    .margin = 7,            //sensor framelength & shutter margin
-    .min_shutter = 4,        //min shutter
+    .margin = 7,  /*sensor framelength & shutter margin*/
+    .min_shutter = 4,  /*min shutter*/
     .min_gain = 64, /*1x gain*/
     .max_gain = 960, /*64x gain*/
     .min_gain_iso = 100,
     .gain_step = 1,
     .gain_type = 1,/*to be modify,no gain table for sony*/
-    .max_frame_length = 0x7fff,//max framelength by sensor register's limitation
-    .ae_shut_delay_frame = 0,    //shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
-    .ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
-    .ae_ispGain_delay_frame = 2,//isp gain delay frame for AE cycle
+
+    /*max framelength by sensor register's limitation*/
+    .max_frame_length = 0x7fff,
+    .ae_shut_delay_frame = 0,
+    .ae_sensor_gain_delay_frame = 0,
+    .ae_ispGain_delay_frame = 2, /*isp gain delay frame for AE cycle*/
     .frame_time_delay_frame = 2,
-    .ihdr_support = 0,      //1, support; 0,not support
-    .ihdr_le_firstline = 0,  //1,le first ; 0, se first
+    .ihdr_support = 0,      /*1, support; 0,not support*/
+    .ihdr_le_firstline = 0,  /*1,le first ; 0, se first*/
+
+    /*support sensor mode num ,don't support Slow motion*/
     .sensor_mode_num = 6,
     .cap_delay_frame = 3,        /*enter capture delay frame num*/
     .pre_delay_frame = 3,        /*enter preview delay frame num*/
@@ -147,35 +141,48 @@ static struct imgsensor_info_struct imgsensor_info = {
     .slim_video_delay_frame = 3,/*enter slim video delay frame num*/
     .custom1_delay_frame = 3,
     .isp_driving_current = ISP_DRIVING_8MA, /*mclk driving current*/
-    .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
-    .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
-    .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,//sensor output first pixel color
-    .mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
-    .mipi_lane_num = SENSOR_MIPI_1_LANE,//mipi lane num
-    .i2c_addr_table = {0x78,0x7A,0xff},
+
+    /*Sensor_interface_type*/
+    .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
+
+    /*0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2*/
+    .mipi_sensor_type = MIPI_OPHY_CSI2,
+
+    /*0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL*/
+    .mipi_settle_delay_mode = 0, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
+
+    /*sensor output first pixel color*/
+    .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
+
+    .mclk = 24,/*mclk value, suggest 24 or 26 for 24Mhz or 26Mhz*/
+    .mipi_lane_num = SENSOR_MIPI_1_LANE,/*mipi lane num*/
+    .i2c_addr_table = {0x78, 0xff},
     .i2c_speed = 400,
 };
 
 
 static struct imgsensor_struct imgsensor = {
-    .mirror = IMAGE_NORMAL,                //mirrorflip information
-    .sensor_mode = IMGSENSOR_MODE_INIT, //IMGSENSOR_MODE enum value,record current sensor mode,such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video
-    .shutter = 0x0410,                    //current shutter
-    .gain = 0x40,                        //current gain
-    .dummy_pixel = 0,                    //current dummypixel
-    .dummy_line = 0,                    //current dummyline
-    .current_fps = 300,  //full size current fps : 24fps for PIP, 30fps for Normal or ZSD
-    .autoflicker_en = KAL_FALSE,  //auto flicker enable: KAL_FALSE for disable auto flicker, KAL_TRUE for enable auto flicker
-    .test_pattern = KAL_FALSE,        //test pattern mode or not. KAL_FALSE for in test pattern mode, KAL_TRUE for normal output
-    .current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
+    .mirror = IMAGE_HV_MIRROR,
+    .sensor_mode = IMGSENSOR_MODE_INIT,
+    .shutter = 0x0410,            /*current shutter*/
+    .gain = 0x40,                /*current gain*/
+    .dummy_pixel = 0,            /*current dummypixel*/
+    .dummy_line = 0,            /*current dummyline*/
+
+    /*full size current fps : 24fps for PIP, 30fps for Normal or ZSD*/
+    .current_fps = 300,
+    .autoflicker_en = KAL_FALSE,
+    .test_pattern = KAL_FALSE,
+
+    /*current scenario id*/
+    .current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
     .ihdr_mode = 0, //sensor need support LE, SE with HDR feature
-    .i2c_write_id = 0x78,//record current sensor's i2c write id
+    .i2c_write_id = 0x78, /*record current sensor's i2c write id*/
 };
 
 
-/* Sensor output window information */
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10]={
+/* Sensor output window information*/
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
     {1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0, 0, 1600, 1200, 0, 0, 1600, 1200}, // Preview
     {1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0, 0, 1600, 1200, 0, 0, 1600, 1200}, // capture
     {1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0, 0, 1600, 1200, 0, 0, 1600, 1200}, // video
@@ -200,12 +207,11 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
     iWriteRegI2C(pu_send_cmd, 2, imgsensor.i2c_write_id);
 }
 
-
 static void set_dummy(void)
 {
-    	if (imgsensor.frame_length%2 != 0) {
-		imgsensor.frame_length = imgsensor.frame_length - imgsensor.frame_length % 2;
-	}
+    if (imgsensor.frame_length%2 != 0) {
+        imgsensor.frame_length = imgsensor.frame_length - imgsensor.frame_length % 2;
+    }
 
     LOG_INF("imgsensor.frame_length = %d\n", imgsensor.frame_length);
     write_cmos_sensor(0xfd, 0x01);
@@ -691,6 +697,7 @@ static void custom1_setting(void)
     write_cmos_sensor(0x15, 0x3b);
     write_cmos_sensor(0xfe, 0x02);
 }
+
 #if 0
 static void read_module_data(void)
 {
@@ -714,7 +721,6 @@ static void read_module_data(void)
     gImgEepromInfo.i4CurSensorId = imgsensor_info.sensor_id;
 }
 #endif
-
 /*************************************************************************
  * FUNCTION
  *    get_imgsensor_id
@@ -749,6 +755,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             if (*sensor_id == imgsensor_info.sensor_id) {
                 //read_module_data();
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+                ov02b10_read_data_from_otp();
+                DEVONN_OV02B10_eeprom_format_calibration_data((void *)&ov02b10_otp_data[16], &ov02b10_cal_info);
                 return ERROR_NONE;
             }
             LOG_INF("Read sensor id fail,write_id:0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -808,7 +816,7 @@ static kal_uint32 open(void)
      */
 
     /* Feiping.Li@Camera.Drv, 20190729, add for delay i2c clock when power up*/
-    mdelay(9);
+
 
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
         spin_lock(&imgsensor_drv_lock);
@@ -837,9 +845,8 @@ static kal_uint32 open(void)
     }
     /* initail sequence write in  */
     sensor_init();
-    mdelay(10);
-    spin_lock(&imgsensor_drv_lock);
 
+    spin_lock(&imgsensor_drv_lock);
     imgsensor.autoflicker_en = KAL_FALSE;
     imgsensor.sensor_mode = IMGSENSOR_MODE_INIT;
     imgsensor.shutter = 0x0400;
@@ -914,7 +921,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
     set_mirror_flip(imgsensor.mirror);
-    mdelay(10);
+
     return ERROR_NONE;
 }    /*    preview   */
 
@@ -940,29 +947,13 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 
-    /*15fps*/
-    if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
-        imgsensor.pclk = imgsensor_info.cap1.pclk;
-        imgsensor.line_length = imgsensor_info.cap1.linelength;
-        imgsensor.frame_length = imgsensor_info.cap1.framelength;
-        imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
-        imgsensor.autoflicker_en = KAL_FALSE;
-    } else {
-
-        if (imgsensor.current_fps != imgsensor_info.cap.max_framerate) {
-            LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n", imgsensor.current_fps, imgsensor_info.cap1.max_framerate / 10);
-        }
         imgsensor.pclk = imgsensor_info.cap.pclk;
         imgsensor.line_length = imgsensor_info.cap.linelength;
         imgsensor.frame_length = imgsensor_info.cap.framelength;
         imgsensor.min_frame_length = imgsensor_info.cap.framelength;
         imgsensor.autoflicker_en = KAL_FALSE;
-    }
     spin_unlock(&imgsensor_drv_lock);
-
     preview_setting();
-
-    mdelay(10);
 
     if (imgsensor.test_pattern == KAL_TRUE) {
         /*write_cmos_sensor(0x5002,0x00);*/
@@ -986,7 +977,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
     set_mirror_flip(imgsensor.mirror);
-    mdelay(10);
+
     return ERROR_NONE;
 }    /*    normal_video   */
 
@@ -1009,7 +1000,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
     set_mirror_flip(imgsensor.mirror);
-    mdelay(10);
+
 
     return ERROR_NONE;
 }    /*    hs_video   */
@@ -1033,7 +1024,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
     set_mirror_flip(imgsensor.mirror);
-    mdelay(10);
+
 
     return ERROR_NONE;
 }    /*    slim_video     */
@@ -1054,7 +1045,7 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_unlock(&imgsensor_drv_lock);
     custom1_setting();
     set_mirror_flip(imgsensor.mirror);
-    mdelay(10);
+
     return ERROR_NONE;
 }   /*  Custom1   */
 
@@ -1135,13 +1126,31 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorClockFallingCount = 2; /* not use */
     sensor_info->SensorPixelClockCount = 3; /* not use */
     sensor_info->SensorDataLatchCount = 2; /* not use */
-
     sensor_info->MIPIDataLowPwr2HighSpeedTermDelayCount = 0;
     sensor_info->MIPICLKLowPwr2HighSpeedTermDelayCount = 0;
-    sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
-    sensor_info->SensorHightSampling = 0;    // 0 is default 1x
+    sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x*/
+    sensor_info->SensorHightSampling = 0;    /* 0 is default 1x */
     sensor_info->SensorPacketECCOrder = 1;
 
+    sensor_info->calibration_status.mnf   = ov02b10_cal_info.mnf_status;
+    sensor_info->calibration_status.af    = ov02b10_cal_info.af_status;
+    sensor_info->calibration_status.awb   = ov02b10_cal_info.awb_status;
+    sensor_info->calibration_status.lsc   = ov02b10_cal_info.lsc_status;
+    sensor_info->calibration_status.pdaf  = ov02b10_cal_info.pdaf_status;
+    sensor_info->calibration_status.dual  = ov02b10_cal_info.dual_status;
+
+    {
+    	snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
+            "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+        ov02b10_otp_data[0], ov02b10_otp_data[1],
+        ov02b10_otp_data[2], ov02b10_otp_data[3],
+        ov02b10_otp_data[4], ov02b10_otp_data[5],
+        ov02b10_otp_data[6], ov02b10_otp_data[7],
+        ov02b10_otp_data[8], ov02b10_otp_data[9],
+        ov02b10_otp_data[10], ov02b10_otp_data[11],
+        ov02b10_otp_data[12], ov02b10_otp_data[13],
+        ov02b10_otp_data[14], ov02b10_otp_data[15]);
+    }
     switch (scenario_id) {
     case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
         sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
@@ -1588,9 +1597,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     case SENSOR_FEATURE_CHECK_SENSOR_ID:
         get_imgsensor_id(feature_return_para_32);
         break;
-    //case SENSOR_FEATURE_CHECK_MODULE_ID:
-    //    *feature_return_para_32 = imgsensor_info.module_id;
-    //    break;
+    /*case SENSOR_FEATURE_CHECK_MODULE_ID:
+        *feature_return_para_32 = imgsensor_info.module_id;
+        break;*/
     case SENSOR_FEATURE_SET_AUTO_FLICKER_MODE:
         set_auto_flicker_mode((BOOL)*feature_data_16, *(feature_data_16 + 1));
         break;
@@ -1734,4 +1743,4 @@ UINT32 OV02B10_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
         *pfFunc = &sensor_func;
     }
     return ERROR_NONE;
-}    /*    OV02B10_MIPI_RAW_SensorInit    */
+}    /*    MOT_DEVONN_OV02B10_MIPI_RAW_SensorInit    */
