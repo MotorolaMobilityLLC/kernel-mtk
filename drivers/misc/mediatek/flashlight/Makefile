@@ -14,6 +14,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_LM3644)      += flashlights-lm3644.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT4505)      += flashlights-rt4505.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT5081)      += flashlights-rt5081.o
 obj-$(CONFIG_MTK_FLASHLIGHT_AW36518)      += flashlights-aw36518.o
+obj-$(CONFIG_MTK_FLASHLIGHT_AW36515)      += flashlights-aw36515.o
 obj-$(CONFIG_MTK_FLASHLIGHT_MT6336)      += flashlights-mt6336.o
 obj-$(CONFIG_MTK_FLASHLIGHT_MT6370)      += flashlights-mt6370.o
 obj-$(CONFIG_MTK_FLASHLIGHT_MT6360)      += flashlights-mt6360.o
@@ -33,6 +34,9 @@ ccflags-y += -DCONFIG_MTK_FLASHLIGHT_AW3644
 endif
 ifeq ($(CONFIG_MTK_FLASHLIGHT_AW36518),m)
 ccflags-y += -DCONFIG_MTK_FLASHLIGHT_AW36518
+endif
+ifeq ($(CONFIG_MTK_FLASHLIGHT_AW36515),m)
+ccflags-y += -DCONFIG_MTK_FLASHLIGHT_AW36515
 endif
 subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/power_throttling
