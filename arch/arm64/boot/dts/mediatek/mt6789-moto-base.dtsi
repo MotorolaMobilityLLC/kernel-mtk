@@ -33,3 +33,7 @@
 	/delete-property/ vbus-supply;
 	/delete-property/ charger;
 };
+
+&i2c5 {
+	/delete-property/ clock-frequency;
+};
