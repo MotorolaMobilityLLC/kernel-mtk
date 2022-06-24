@@ -54,42 +54,45 @@
 
 #define AW36518_DRIVER_VERSION "V1.1.0"
 
-#define AW36518_REG_BOOST_CONFIG     	(0x07)
-#define AW36518_BIT_SOFT_RST_MASK    	(~(1<<7))
-#define AW36518_BIT_SOFT_RST_ENABLE  	(1<<7)
-#define AW36518_BIT_SOFT_RST_DISABLE 	(0<<7)
+#define AW36518_REG_BOOST_CONFIG        (0x07)
+#define AW36518_BIT_SOFT_RST_MASK       (~(1<<7))
+#define AW36518_BIT_SOFT_RST_ENABLE     (1<<7)
+#define AW36518_BIT_SOFT_RST_DISABLE    (0<<7)
 
 /* define registers */
-#define AW36518_REG_CHIPID           	(0x00)
-#define AW36518_CHIPID           		(0x30)
-#define AW36518_REG_ENABLE           	(0x01)
-#define AW36518_MASK_ENABLE_LED1     	(0x01)
-#define AW36518_DISABLE              	(0x00)
-#define AW36518_ENABLE_LED1          	(0x03)
-#define AW36518_ENABLE_LED1_TORCH    	(0x0B)
-#define AW36518_REG_DEVICE_ID    		(0x0C)
-#define AW36518_DEVICE_ID  				(0x0A)
-#define AW36518_ENABLE_LED1_FLASH    	(0x0F)
-#define AW36518_REG_DUMMY    			(0x09)
+#define AW36518_REG_CHIPID              (0x00)
+#define AW36518_CHIPID                  (0x30)
+#define AW36518_REG_ENABLE              (0x01)
+#define AW36518_MASK_ENABLE_LED1        (0x01)
+#define AW36518_DISABLE                 (0x00)
+#define AW36518_ENABLE_LED1             (0x03)
+#define AW36518_ENABLE_LED1_TORCH       (0x0B)
+#define AW36518_REG_DEVICE_ID           (0x0C)
+#define AW36518_DEVICE_ID               (0x0A)
+#define AW36518_ENABLE_LED1_FLASH       (0x0F)
+#define AW36518_REG_DUMMY               (0x09)
+#define AW36518_REG_FLAG1               (0x0A)
+#define AW36518_REG_FLAG2               (0x0B)
 
-#define AW36518_REG_FLASH_LEVEL_LED1 	(0x03)
-#define AW36518_REG_TORCH_LEVEL_LED1 	(0x05)
+#define AW36518_REG_FLASH_LEVEL_LED1    (0x03)
+#define AW36518_REG_TORCH_LEVEL_LED1    (0x05)
 
-#define AW36518_REG_CTRL1            	(0x31)
-#define AW36518_REG_CTRL2            	(0x69)
-#define AW36518_REG_CHIP_VENDOR_ID   	(0x25)
-#define AW36518_CHIP_VENDOR_ID       	(0x04)
+#define AW36518_REG_CTRL1               (0x31)
+#define AW36518_REG_CTRL2               (0x69)
+#define AW36518_REG_CHIP_VENDOR_ID      (0x25)
+#define AW36518_CHIP_VENDOR_ID          (0x04)
 
-#define AW36518_REG_TIMING_CONF      	(0x08)
-#define AW36518_TORCH_RAMP_TIME      	(0x10)
-#define AW36518_FLASH_TIMEOUT			(0x0A)
-#define AW36518_CHIP_STANDBY			(0x80)
+#define AW36518_REG_TIMING_CONF         (0x08)
+#define AW36518_TORCH_RAMP_TIME         (0x10) //100b  128ms
+#define AW36518_FLASH_TIMEOUT           (0x0A) //1010b 600ms
+#define AW36518_CHIP_STANDBY            (0x80)
+#define AW36518_HW_TIMEOUT              (600)
 
 /* define channel, level */
 #define AW36518_CHANNEL_NUM				1
 #define AW36518_CHANNEL_CH1				0
 
-#define AW36518_LEVEL_NUM				26
+#define AW36518_LEVEL_NUM				30
 #define AW36518_LEVEL_TORCH				7
 
 #define AW_I2C_RETRIES					5
@@ -137,15 +140,23 @@ struct aw36518_chip_data {
 /******************************************************************************
  * aw36518 operations
  *****************************************************************************/
+static const int aw36518_current[AW36518_LEVEL_NUM] = {//y=18 + 62*x
+	10,   28,   46,   64,   82,   100,  118,  136,  198,  260,
+	322,  384,  446,  508,  570,  632,  694,  756,  818,  880,
+	942,  1004, 1066, 1128, 1190, 1252, 1314, 1376, 1438, 1500
+};
+
 static const unsigned char aw36518_torch_level[AW36518_LEVEL_NUM] = {
-	0x06, 0x0F, 0x17, 0x1F, 0x27, 0x2F, 0x37, 0x00, 0x00, 0x00,
+	0x06, 0x12, 0x1D, 0x29, 0x35, 0x41, 0x4D, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 
 static const unsigned char aw36518_flash_level[AW36518_LEVEL_NUM] = {
-	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x10, 0x14, 0x19,
-	0x1D, 0x21, 0x25, 0x2A, 0x2E, 0x32, 0x37, 0x3B, 0x3F, 0x43,
-	0x48, 0x4C, 0x50, 0x54, 0x59, 0x5D};
+	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x16, 0x21, 0x2B,
+	0x36, 0x40, 0x4B, 0x56, 0x60, 0x6B, 0x75, 0x80, 0x8A, 0x95,
+	0x9F, 0xAA, 0xB5, 0xBF, 0xCA, 0xD4, 0xDF, 0xE9, 0xF4, 0xFF
+};
 
 static volatile unsigned char aw36518_reg_enable;
 static volatile int aw36518_level_ch1 = -1;
@@ -267,6 +278,18 @@ static int aw36518_disable_ch1(void)
 	return aw36518_i2c_write(aw36518_i2c_client, reg, val);
 }
 
+static int aw36518_get_flag1(void)
+{
+    unsigned char val;
+    return aw36518_i2c_read(aw36518_i2c_client, AW36518_REG_FLAG1, &val);
+}
+
+static int aw36518_get_flag2(void)
+{
+    unsigned char val;
+    return aw36518_i2c_read(aw36518_i2c_client, AW36518_REG_FLAG2, &val);
+}
+
 static int aw36518_enable(int channel)
 {
 	if (channel == AW36518_CHANNEL_CH1)
@@ -375,6 +398,8 @@ int aw36518_init(void)
 int aw36518_uninit(void)
 {
 	aw36518_disable(AW36518_CHANNEL_CH1);
+	aw36518_get_flag1();
+	aw36518_get_flag2();
 	return 0;
 }
 
@@ -469,6 +494,39 @@ static int aw36518_ioctl(unsigned int cmd, unsigned long arg)
 			aw36518_disable(channel);
 			aw36518_timer_cancel(channel);
 		}
+		break;
+
+	case FLASH_IOC_GET_DUTY_NUMBER:
+		fl_arg->arg = AW36518_LEVEL_NUM;
+		pr_info("%s. FLASH_IOC_GET_DUTY_NUMBER(%d): %d\n",
+				__func__, channel, (int)fl_arg->arg);
+		break;
+
+	case FLASH_IOC_GET_MAX_TORCH_DUTY:
+		pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+		fl_arg->arg = AW36518_LEVEL_TORCH - 1;
+		break;
+
+	case FLASH_IOC_GET_DUTY_CURRENT:
+		fl_arg->arg = aw36518_verify_level(fl_arg->arg);
+		pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
+				channel, (int)fl_arg->arg);
+		fl_arg->arg = aw36518_current[fl_arg->arg];
+		break;
+
+	case FLASH_IOC_GET_HW_TIMEOUT:
+		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+		fl_arg->arg = AW36518_HW_TIMEOUT;
+		break;
+
+	case FLASH_IOC_GET_HW_FAULT:
+		pr_debug("FLASH_IOC_GET_HW_FAULT(%d)\n", channel);
+		fl_arg->arg = aw36518_get_flag1();
+		break;
+
+	case FLASH_IOC_GET_HW_FAULT2:
+		pr_debug("FLASH_IOC_GET_HW_FAULT2(%d)\n", channel);
+		fl_arg->arg = aw36518_get_flag2();
 		break;
 
 	default:
