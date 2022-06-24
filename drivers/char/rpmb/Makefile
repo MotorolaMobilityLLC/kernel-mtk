@@ -37,7 +37,7 @@ ifeq ($(CONFIG_MTK_HW_FDE_AES),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/fde_aes/$(MTK_PLATFORM)
 endif
 
-obj-$(CONFIG_RPMB) += rpmb-mtk.o
+#obj-$(CONFIG_RPMB) += rpmb-mtk.o
 
 obj-$(CONFIG_RPMB) += rpmb.o
 rpmb-objs += core.o

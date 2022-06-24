@@ -1963,7 +1963,7 @@ static int hl7019d_charger_ic_init(struct charger_device *chg_dev)
 	hl7019d_set_force_20pct(0x0);  //set as charge current as registers value
 
 	hl7019d_set_iprechg(0x03);	//precharge current 512mA
-	hl7019d_set_iterm(0x0);		//termination current 128mA
+	hl7019d_set_iterm(0x1);		//termination current 256mA
 
 	hl7019d_set_vreg(0x38);		// VREG 4.4V
 	hl7019d_set_batlowv(0x1);	//battery low 3.0V

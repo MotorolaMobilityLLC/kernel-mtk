@@ -1318,12 +1318,14 @@ static unsigned int charging_hw_init(void)
 	bq25601_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
 	bq25601_set_iprechg(0x8);	/* Precharge current 540mA */
 	//bq25601_set_iterm(0x2);	/* Termination current 180mA */
-	sgm41513_set_iterm(180);
+	sgm41513_set_iterm(200);
 	bq25601_set_vreg(0x11);	/* VREG 4.4V */
+	/* 0=100mv below VREG;1=200mv below VREG */
+	bq25601_set_vrechg(0x0);
+
 	bq25601_set_pfm(0x1);//disable pfm
 	bq25601_set_rdson(0x0);     /*close rdson*/
 	bq25601_set_batlowv(0x1);	/* BATLOWV 3.0V */
-	bq25601_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
 	bq25601_set_en_term(0x1);	/* Enable termination */
 	bq25601_set_watchdog(0x0);	/* WDT disable */
 	bq25601_set_en_timer(0x0);	/* Enable charge timer */

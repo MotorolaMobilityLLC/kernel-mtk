@@ -962,6 +962,8 @@ struct mtk_battery_sysfs_field_info {
 		struct mtk_battery_sysfs_field_info *attr, int *val);
 };
 
+extern int battery_get_soc(void);
+
 /* coulomb service */
 extern void gauge_coulomb_service_init(struct mtk_battery *gm);
 extern void gauge_coulomb_consumer_init(struct gauge_consumer *coulomb,

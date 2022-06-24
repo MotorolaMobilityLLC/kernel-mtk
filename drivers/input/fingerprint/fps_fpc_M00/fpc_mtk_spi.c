@@ -524,14 +524,12 @@ static ssize_t compatible_all_set(struct device *dev,
 		fpc->compatible_enabled = 0;
 		wakeup_source_remove(fpc->ttw_wl);
 		//gpio_free(fpc->rst_gpio);
-		if(gpio_is_valid(fpc->irq_gpio)){
-			gpio_free(fpc->irq_gpio);
-			dev_dbg(dev, "Release IRQ GPIO#%d.\n", fpc->rst_gpio);
-		}
+		devm_free_irq(dev, gpio_to_irq(fpc->irq_gpio), fpc);
+		dev_dbg(dev, "free IRQ %d.\n", gpio_to_irq(fpc->irq_gpio));
 		gpio_direction_output(fpc->power_ctl_gpio, 0);
 		dev_info(dev, "cutoff power fpc->power_ctl_gpio = %d\n", gpio_get_value(fpc->power_ctl_gpio));
 		if(gpio_is_valid(fpc->power_ctl_gpio)){
-			gpio_free(fpc->power_ctl_gpio);
+			devm_gpio_free(dev, fpc->power_ctl_gpio);
 			dev_dbg(dev, "Release POWER GPIO#%d.\n", fpc->power_ctl_gpio);
 		}
 		//fpc->compatible_enabled = 0;

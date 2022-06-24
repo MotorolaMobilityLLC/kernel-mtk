@@ -58,6 +58,7 @@
 #include <linux/reboot.h>
 
 #include "mtk_charger.h"
+#include "mtk_battery.h"
 
 #ifdef CONFIG_CHARGER_STOP_70PER
 unsigned int capacity_control= 0;
@@ -1674,12 +1675,13 @@ static int charger_routine_thread(void *arg)
 		info->charger_thread_timeout = false;
 
 		info->battery_temp = get_battery_temperature(info);
-		chr_err("Vbat=%d vbus:%d ibus:%d I=%d T=%d uisoc:%d type:%s>%s pd:%d\n",
+		chr_err("Vbat=%d vbus:%d ibus:%d I=%d T=%d Soc=%d:%d type:%s>%s pd:%d\n",
 			get_battery_voltage(info),
 			get_vbus(info),
 			get_ibus(info),
 			get_battery_current(info),
 			info->battery_temp,
+			battery_get_soc(),
 			get_uisoc(info),
 			dump_charger_type(info->chr_type),
 			dump_charger_type(get_charger_type(info)),
