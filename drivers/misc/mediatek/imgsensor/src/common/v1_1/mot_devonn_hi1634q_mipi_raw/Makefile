@@ -2,4 +2,4 @@
 # Copyright (C) 2020 MediaTek Inc.
 
 imgsensor_isp6s-objs += \
-	$(subdrv-rpath)/hi1634qmipiraw_Sensor.o
+	$(subdrv-rpath)/mot_devonn_hi1634qmipiraw_Sensor.o
