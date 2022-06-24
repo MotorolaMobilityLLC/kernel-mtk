@@ -71,22 +71,25 @@ static int fcc_cv_flag = 0;
 static void select_cv(struct mtk_charger *info)
 {
 	u32 constant_voltage;
-	int ret;
+	int ibat; /* ma */
+	int vbat; /* mv */
 
-	ret = get_battery_current(info);
+	ibat = get_battery_current(info);
+	vbat = get_battery_voltage(info);
+	chr_err("hzn: ibat = %d; vbat = %d; \n", ibat, vbat);
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
 			if(fcc_cv_flag == 0)
 				info->setting.cv = info->sw_jeita.cv;
 			else
 				info->setting.cv = 4512000;
-			if((info->setting.cv == 4480000)&&(ret > 1500)&&(fcc_cv_flag == 0))
+			if((info->setting.cv == 4470000)&&(ibat > 1500)&&(fcc_cv_flag == 0))
 			{
 				info->setting.cv = 4512000;
 				fcc_cv_flag = 1;
 				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
 			}
-			if((fcc_cv_flag == 1)&&(ret < 660))
+			if((fcc_cv_flag == 1)&&(ibat < 600)&&(vbat > 4470))
 			{
 				info->setting.cv = info->sw_jeita.cv;
 				fcc_cv_flag = 0;
