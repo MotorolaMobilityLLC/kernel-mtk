@@ -644,5 +644,7 @@ int mtk_panel_tch_handle_reg(struct drm_panel *panel);
 void **mtk_panel_tch_handle_init(void);
 int mtk_panel_tch_rst(struct drm_panel *panel);
 enum mtk_lcm_version mtk_drm_get_lcm_version(void);
+void mtk_panel_lock(void);
+void mtk_panel_unlock(void);
 
 #endif
