@@ -7112,6 +7112,16 @@
 			compatible = "mediatek,flashlight_core";
 		};
 
+		flashlights_aw36515: flashlights_aw36515{
+			compatible = "mediatek,flashlights_aw36515";
+			decouple = <0>;
+			channel@1 {
+			type = <0>;
+			ct = <0>;
+			part = <0>;
+			};
+		};
+
 		mtk_composite_v4l2_1: mtk_composite_v4l2_1 {
 			compatible = "mediatek,mtk_composite_v4l2_1";
 		};
