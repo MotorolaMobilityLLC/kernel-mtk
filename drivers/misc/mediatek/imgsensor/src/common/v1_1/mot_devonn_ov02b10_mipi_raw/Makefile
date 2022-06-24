@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2020 MediaTek Inc.
-
 imgsensor_isp6s-objs += \
-	$(subdrv-rpath)/ov02b10_mipi_raw.o
+        $(subdrv-rpath)/mot_devonn_ov02b10mipiraw_Sensor.o
+imgsensor_isp6s-objs += $(subdrv-rpath)/mot_devonn_ov02b10mipiraw_otp.o
