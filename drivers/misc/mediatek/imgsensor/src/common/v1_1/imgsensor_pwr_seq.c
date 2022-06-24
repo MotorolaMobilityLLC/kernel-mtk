@@ -18,12 +18,12 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		SENSOR_DRVNAME_MOT_DEVONN_S5KJN1_MIPI_RAW,
 			{
 				{RST, Vol_Low, 1},
-				{DOVDD, Vol_High, 1},
 				{PDN, Vol_High, 0},
-				{DVDD, Vol_High, 10},
-				{AVDD, Vol_High, 0},
-				{RST, Vol_High, 5},
-				{SensorMCLK, Vol_High, 10},
+				{DVDD, Vol_High, 0},
+				{DOVDD, Vol_High, 2},
+				{AVDD, Vol_High, 3},
+				{RST, Vol_High, 1},
+				{SensorMCLK, Vol_High, 9},
 			},
 	},
 #endif
