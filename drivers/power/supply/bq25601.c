@@ -1228,7 +1228,7 @@ static int bq25601_get_charging_status(struct charger_device *chg_dev,
 	unsigned int ret_val;
 
 	ret_val = bq25601_get_chrg_stat();
-
+	pr_info("%s ret_val = %d\n", __func__, ret_val);
 	if (ret_val == 0x3)
 		*is_done = true;
 	else
