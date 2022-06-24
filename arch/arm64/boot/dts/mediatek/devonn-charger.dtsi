@@ -17,8 +17,8 @@
 	max_charger_voltage = <11000000>;
 	min_charger_voltage = <4600000>;
 
-	/*pe2*/
-	fast_charging_indicator = <0x02>;
+	/*pe4 && pdc && pe2*/
+	fast_charging_indicator = <0x0E>;
 
 	/* charging current */
 	usb_charger_current_suspend = <0>;
@@ -44,6 +44,31 @@
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
+};
+
+&mt6375_typec {
+	pd-data {
+		/* 5V, 900ma */
+		pd,source-pdo-data = <0x0001905a>;
+
+		/* 9V, 2A */
+		pd,sink-pdo-size = <2>;
+		pd,sink-pdo-data = <0x0002D0C8 0x0002D0C8> ;
+	};
+};
+
+&pdc {
+	pd_vbus_low_bound = <5000000>;
+	pd_vbus_upper_bound = <9000000>;
+
+	/* single charger */
+	sc_input_current = <3000000>;
+	sc_charger_current = <4000000>;
+};
+
+&pe4 {
+	pe40_max_vbus = <6000>;
+	pe40_max_ibus = <3000>;
 };
 
 &mtk_gauge {

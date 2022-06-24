@@ -286,10 +286,6 @@
 	};
 };
 
-&pdc {
-	pd_vbus_upper_bound = <12000000>;
-};
-
 &mmc1 {
 	cd-gpios = <&pio 14 GPIO_ACTIVE_HIGH>;
 	vmmc-supply = <&mt6369_vmch>;
