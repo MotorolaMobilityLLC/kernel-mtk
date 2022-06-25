@@ -530,6 +530,11 @@
 		reg = <0x78>;
 		status = "okay";
 	};
+	mtk_camera_eeprom4:camera_eeprom4@51 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x51>;
+		status = "okay";
+	};
 };
 /* CAMERA EEPROM end */
 
