@@ -7069,7 +7069,20 @@
 				<&mipi_tx_config0>;
 			clock-names = "engine", "digital", "hs";
 		};
-
+	/* modify by wt.liangnengjie for swtp start */
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	swtp_1: swtp_1 {
+		compatible = "mediatek, swtp1-eint";
+	};
+	swtp_2: swtp_2 {
+		compatible = "mediatek, swtp2-eint";
+	};
+	swtp_3: swtp_3 {
+		compatible = "mediatek, swtp3-eint";
+	};
+	/* modify by wt.liangnengjie for swtp end */
 		dsi_te: dsi_te {
 			compatible = "mediatek, dsi_te-eint";
 			status = "disabled";
