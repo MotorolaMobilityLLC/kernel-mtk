@@ -133,6 +133,20 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 #else
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
 #endif
+#ifdef CONFIG_MOTO_DEVONN_SWTP_CUST
+	// modify by wt.liangnengjie for swtp start
+	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
+		swtp->tx_power_mode = SWTP_DO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_DO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant4=%d, Ant1=%d, Ant0=%d, Ant5=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
+	} else {
+		swtp->tx_power_mode = SWTP_NO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_NO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant4=%d, Ant1=%d, Ant0=%d, Ant5=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
+	}
+#else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
 #ifdef CONFIG_MOTO_TESLA_SWTP_CUST
@@ -143,7 +157,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 			break;
 		}
 	}
-
+#endif
 #ifdef CONFIG_MOTO_TESLA_SWTP_CUST
 	CCCI_LEGACY_ERR_LOG(-1, SYS,
 			"%s: GPIO14, swtp->gpio_state is %d\n", __func__ , swtp->gpio_state[0]);
