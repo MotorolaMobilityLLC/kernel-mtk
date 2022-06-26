@@ -91,7 +91,7 @@ static unsigned long dal_fb_pa;
 /*static BOOL dal_enable_when_resume = FALSE;*/
 static bool dal_disable_when_resume;
 static unsigned int dal_fg_color = RGB888_To_RGB565(DAL_COLOR_WHITE);
-static unsigned int dal_bg_color = RGB888_To_RGB565(DAL_COLOR_RED);
+static unsigned int dal_bg_color = RGB888_To_RGB565(DAL_COLOR_BLACK);
 static char dal_print_buffer[1024];
 
 bool dal_shown;
@@ -147,7 +147,7 @@ enum DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
 	DAL_CHECK_MFC_RET(MFC_Open(&mfc_handle, dal_fb_addr,
 		DAL_WIDTH, DAL_HEIGHT, DAL_BPP, DAL_FG_COLOR, DAL_BG_COLOR));
 	/* DAL_Clean(); */
-	DAL_SetScreenColor(DAL_COLOR_RED);
+	DAL_SetScreenColor(DAL_COLOR_BLACK);
 
 	return DAL_STATUS_OK;
 }
@@ -216,7 +216,6 @@ enum DAL_STATUS DAL_Clean(void)
 
 	static int dal_clean_cnt;
 	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)mfc_handle;
-
 	DISPMSG("[MTKFB_DAL] DAL_Clean\n");
 	if (mfc_handle == NULL)
 		return DAL_STATUS_NOT_READY;
@@ -230,7 +229,7 @@ enum DAL_STATUS DAL_Clean(void)
 		goto End;
 	}
 	ctxt->screen_color = 0;
-	DAL_SetScreenColor(DAL_COLOR_RED);
+	DAL_SetScreenColor(DAL_COLOR_BLACK);
 
 	if (isAEEEnabled == 1) {
 		show_dal_layer(0);
@@ -261,6 +260,29 @@ int is_DAL_Enabled(void)
 
 	ret = isAEEEnabled;
 	return ret;
+}
+
+unsigned int DAL_Cols(void)
+{
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)mfc_handle;
+	if (!ctxt)
+		return 0;
+	return ctxt->cols;
+}
+
+unsigned int DAL_Rows(void)
+{
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)mfc_handle;
+	if (!ctxt)
+		return 0;
+	return ctxt->rows;
+}
+
+void DAL_SetCursor(int x, int y)
+{
+	if (mfc_handle == NULL)
+		return;
+	MFC_SetCursor(mfc_handle, x, y);
 }
 
 enum DAL_STATUS DAL_Printf(const char *fmt, ...)

@@ -79,7 +79,7 @@ enum MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color,
 
 enum MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle);
 enum MFC_STATUS MFC_SetCursor(MFC_HANDLE handle,
-	unsigned int x, unsigned int y);
+	int x, int y);
 enum MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str);
 
 enum MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str,

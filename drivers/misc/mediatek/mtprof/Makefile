@@ -13,6 +13,7 @@
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ccflags-y += -Idrivers/misc/mediatek/mtprof
+ccflags-y += -Idrivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 

@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/utsname.h>
 #include <linux/uaccess.h>
+#include "disp_assert_layer.h"
 
 #ifdef MODULE
 #include <linux/tracepoint.h>
@@ -90,6 +91,29 @@ bool mt_boot_finish(void)
 }
 EXPORT_SYMBOL_GPL(mt_boot_finish);
 
+
+#ifdef CONFIG_ONTIM_DEBUG
+static char boot_mode[64] = "unknown_mode";
+static char boot_reason[64] = "unknown_reason";
+
+static int get_boot_mode(char *src)
+{
+	snprintf(boot_mode, sizeof(boot_mode), "%s", src);
+	return 0;
+}
+
+__setup("androidboot.boot_mode=", get_boot_mode);
+
+static int get_boot_reason(char *src)
+{
+	snprintf(boot_reason, sizeof(boot_reason), "%s", src);
+	return 0;
+}
+
+__setup("androidboot.boot_reason=", get_boot_reason);
+
+#endif
+
 void bootprof_log_boot(char *str)
 {
 	unsigned long long ts;
@@ -103,11 +127,27 @@ void bootprof_log_boot(char *str)
 
 	if (!enabled)
 		return;
-	n = strlen(str) + 1;
 
 	ts = sched_clock();
 	pr_info("BOOTPROF:%10lld.%06ld:%s\n", msec_high(ts), msec_low(ts), str);
 
+#ifdef CONFIG_ONTIM_DEBUG
+	{
+		char buf[150];
+		int len;
+		len = DAL_Cols();
+		if (len > sizeof(buf))
+			len = sizeof(buf);
+		memset(buf, ' ', len);
+		snprintf(buf, len, "  %lld:%06ld:%s", msec_high(ts), msec_low(ts), str);
+		for (n=0; n<len; n++)
+			if (buf[n]<' ' || buf[n]>'~')
+				buf[n]=' ';
+		buf[len]=0;
+		DAL_SetCursor(0, -2);
+		DAL_Printf("%s\r  Boot: mode=%s reason=%s", buf, boot_mode, boot_reason);
+	}
+#endif
 	mutex_lock(&bootprof_lock);
 	if (log_count >= (LOGS_PER_BUF * BUF_COUNT)) {
 		pr_info("[BOOTPROF] not enuough bootprof buffer\n");
@@ -125,6 +165,7 @@ void bootprof_log_boot(char *str)
 
 	p->timestamp = ts;
 	p->pid = current->pid;
+	n = strlen(str) + 1;
 	n += TASK_COMM_LEN;
 
 	p->comm_event = kzalloc(n, GFP_ATOMIC | __GFP_NORETRY |
@@ -258,6 +299,9 @@ static void mt_bootprof_switch(int on)
 			timestamp_off = ts;
 			if (!boot_finish)
 				boot_finish = true;
+#ifdef CONFIG_ONTIM_DEBUG
+			DAL_Clean();
+#endif
 #ifndef MODULE
 			bootup_finish();
 #endif

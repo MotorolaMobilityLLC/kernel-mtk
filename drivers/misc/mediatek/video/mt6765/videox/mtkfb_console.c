@@ -268,6 +268,9 @@ enum MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
 	ctxt->font_height = MFC_FONT_HEIGHT;
 	ctxt->font_scale = 1;
 
+	pr_info("[MFC] %s: w=%d h=%d bpp=%d rows=%d cols=%d\n",
+		__func__, fb_width, fb_height, fb_bpp, ctxt->rows, ctxt->cols);
+
 	*handle = ctxt;
 
 	return MFC_STATUS_OK;
@@ -378,7 +381,7 @@ enum MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 }
 
 enum MFC_STATUS MFC_SetCursor(MFC_HANDLE handle,
-	unsigned int x, unsigned int y)
+	int x, int y)
 {
 	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
 
@@ -391,6 +394,10 @@ enum MFC_STATUS MFC_SetCursor(MFC_HANDLE handle,
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
+	if (x < 0)
+		x += ctxt->cols;
+	if (y < 0)
+		y += ctxt->rows;
 	ctxt->cursor_row = y;
 	ctxt->cursor_col = x;
 	up(&ctxt->sem);
