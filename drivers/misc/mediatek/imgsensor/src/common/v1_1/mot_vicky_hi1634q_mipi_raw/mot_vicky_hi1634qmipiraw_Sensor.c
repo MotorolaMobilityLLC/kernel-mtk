@@ -165,7 +165,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.slim_video_delay_frame = 1,	/* enter slim video delay frame num */
 	.frame_time_delay_frame = 2,
 
-	.isp_driving_current = ISP_DRIVING_8MA, //ISP_DRIVING_6MA,
+	.isp_driving_current = ISP_DRIVING_6MA, //ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_CSI2,//MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
