@@ -1477,11 +1477,9 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 
 	/* update kick timestamp */
 	idlemgr_pgc->idlemgr_last_kick_time = sched_clock();
-	if(primary_display_is_idle()){
-	   mutex_lock(&LeaveIdleLock);
-	}
 
 	if (primary_display_is_idle()) {
+		mutex_lock(&LeaveIdleLock);
 		primary_display_idlemgr_leave_idle_nolock();
 		primary_display_set_idle_stat(0);
 		mutex_unlock(&LeaveIdleLock);
