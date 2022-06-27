@@ -29,7 +29,7 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
-#include "dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha.h"
+#include "dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha-v1.h"
 
 //#define SUPPORT_144HZ_REFRESH_RATE
 
