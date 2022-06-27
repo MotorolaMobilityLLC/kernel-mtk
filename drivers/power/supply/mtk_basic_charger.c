@@ -76,27 +76,33 @@ static void select_cv(struct mtk_charger *info)
 
 	ibat = get_battery_current(info);
 	vbat = get_battery_voltage(info);
-	chr_err("hzn: ibat = %d; vbat = %d; \n", ibat, vbat);
+	chr_err("chr_type = %d; ibat = %d; vbat = %d; \n", info->chr_type, ibat, vbat);
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
-			if(fcc_cv_flag == 0)
-				info->setting.cv = info->sw_jeita.cv;
-			else
+			if((fcc_cv_flag == 1)&&(info->chr_type == 5)&&(info->sw_jeita.cv != 4200000)){
 				info->setting.cv = 4512000;
-			if((info->setting.cv == 4470000)&&(ibat > 1500)&&(fcc_cv_flag == 0))
+				chr_err("select_cv_0: setting.cv = %d\n", info->setting.cv);
+			}
+			else{
+				info->setting.cv = info->sw_jeita.cv;
+				fcc_cv_flag = 0;
+				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
+			}
+
+			if((info->setting.cv == 4480000)&&(ibat > 1500)&&(fcc_cv_flag == 0))
 			{
 				info->setting.cv = 4512000;
 				fcc_cv_flag = 1;
-				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
+				chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
 			}
-			if((fcc_cv_flag == 1)&&(ibat < 600)&&(vbat > 4470))
+
+			if((fcc_cv_flag == 1)&&(ibat < 600)&&(vbat > 4480))
 			{
 				info->setting.cv = info->sw_jeita.cv;
 				fcc_cv_flag = 0;
-				chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
+				chr_err("select_cv_3: setting.cv = %d\n", info->setting.cv);
 			}
-			if(info->sw_jeita.cv == 4200000)
-				info->setting.cv = info->sw_jeita.cv;
+
 			return;
 		}
 
