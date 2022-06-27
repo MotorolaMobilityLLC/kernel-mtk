@@ -491,9 +491,22 @@ static void dump_charger_name(int type)
 static int get_charger_type(struct mtk_charger_type *info)
 {
 	enum power_supply_usb_type type;
+	unsigned int chrdet = 0;
 	pr_err("%s: check start\n", __func__);
 
 	hw_bc11_init(info);
+
+	chrdet = bc11_get_register_value(info->regmap,
+		PMIC_RGS_CHRDET_ADDR,
+		PMIC_RGS_CHRDET_MASK,
+		PMIC_RGS_CHRDET_SHIFT);
+	pr_info("[%s] [%d] chrdet=%d\n", __func__, __LINE__, chrdet);
+	if (!chrdet) {
+		info->psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+		type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+		return type;
+	}
+
 	if (hw_bc11_DCD(info)) {
 		info->psy_desc.type = POWER_SUPPLY_TYPE_USB;
 		type = POWER_SUPPLY_USB_TYPE_DCP;
