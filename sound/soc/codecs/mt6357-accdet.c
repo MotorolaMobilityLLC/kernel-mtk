@@ -64,6 +64,10 @@
 #define EINT_PLUG_IN			(1)
 #define EINT_MOISTURE_DETECTED	(2)
 
+#ifdef AW9610X_HEADSET_CALI
+extern void aw9610x_plug_headset_cali(int val);
+#endif
+
 struct mt63xx_accdet_data {
 	u32 base;
 	struct snd_soc_card card;
@@ -556,6 +560,11 @@ int accdet_read_audio_res(unsigned int res_value)
 		accdet->cable_type = LINE_OUT_DEVICE;
 		accdet->accdet_status = LINE_OUT;
 		send_status_event(accdet->cable_type, 1);
+		if(strstr(saved_command_line, "sar=yes")) {
+#ifdef AW9610X_HEADSET_CALI
+			aw9610x_plug_headset_cali(1);
+#endif
+		}
 		pr_info("%s() update state:%d\n", __func__, accdet->cable_type);
 	}
 	mutex_unlock(&accdet->res_lock);
@@ -1042,6 +1051,11 @@ static inline void disable_accdet(void)
 static inline void headset_plug_out(void)
 {
 	send_status_event(accdet->cable_type, 0);
+	if(strstr(saved_command_line, "sar=yes")) {
+#ifdef AW9610X_HEADSET_CALI
+		aw9610x_plug_headset_cali(0);
+#endif
+	}
 	accdet->accdet_status = PLUG_OUT;
 	accdet->cable_type = NO_DEVICE;
 
@@ -1323,8 +1337,14 @@ static void accdet_work_callback(struct work_struct *work)
 
 	mutex_lock(&accdet->res_lock);
 	if (accdet->eint_sync_flag) {
-		if (pre_cable_type != accdet->cable_type)
+		if (pre_cable_type != accdet->cable_type) {
 			send_status_event(accdet->cable_type, 1);
+			if(strstr(saved_command_line, "sar=yes")) {
+#ifdef AW9610X_HEADSET_CALI
+				aw9610x_plug_headset_cali(1);
+#endif
+			}
+		}
 	}
 	mutex_unlock(&accdet->res_lock);
 	__pm_relax(accdet->wake_lock);

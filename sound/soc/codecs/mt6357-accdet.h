@@ -31,6 +31,10 @@
 /* 400us, Accdet irq clear timeout  */
 #define ACCDET_TIME_OUT		0x61A80
 
+#ifndef SMT_VERSION
+#define AW9610X_HEADSET_CALI
+#endif
+
 /* cable type recognized by accdet, and report to WiredAccessoryManager */
 enum accdet_report_state {
 	NO_DEVICE =		0,

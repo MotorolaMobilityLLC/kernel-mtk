@@ -78,11 +78,8 @@ static uint32_t attr_buf[] = {
 };
 
 #ifdef AW_HEADSET_PLUG_CALI
-#define HEADSET_STATUS_NODE "/sys/bus/platform/drivers/pmic-codec-accdet/state"
-#define UNPLUG_HEADSET 0
 #define PLUG_HEADSET   1
 static struct aw9610x *h_aw9610x;
-static int headset_cut = 0;
 #endif
 
 /******************************************************
@@ -1554,56 +1551,15 @@ static void aw9610x_interrupt_clear(struct aw9610x *aw9610x)
 }
 
 #ifdef AW_HEADSET_PLUG_CALI
-int get_headset_status(struct aw9610x *aw9610x, int *st)
-{
-	struct file *fp = NULL;
-	loff_t pos = 0;
-	char buff[8];
-	int ret, read_size;
-	u32    state;
-	AWLOGD(aw9610x->dev, "enter");
-	fp = filp_open(HEADSET_STATUS_NODE, O_RDONLY, 0);
-	if (IS_ERR(fp)) {
-		AWLOGD(aw9610x->dev, "%s:filp_open %s fail", __func__, HEADSET_STATUS_NODE);
-		return PTR_ERR(fp);
-	}
-
-	memset(buff, 0, sizeof(buff));
-	read_size = kernel_read(fp, buff, sizeof(buff), &pos);
-	if (read_size < 0) {
-		AWLOGD(aw9610x->dev, "kernel_read %s fail", HEADSET_STATUS_NODE);
-		return read_size;
-	}
-	buff[read_size-1] = '\0';
-	AWLOGD(aw9610x->dev, "read headset buff: %s", buff);
-
-	ret = filp_close(fp, NULL);
-	if (ret) {
-		AWLOGD(aw9610x->dev, "%s:filp_close fail", HEADSET_STATUS_NODE);
-		return ret;
-	}
-
-	ret = kstrtou32(buff, 0, &state);
-	if (ret) {
-		AWLOGD(aw9610x->dev, "kstrtou32 fail");
-		return ret;
-	}
-	AWLOGD(aw9610x->dev, "read headset value: %d", state);
-
-	if (0 != state) {
-		*st = PLUG_HEADSET;
-	} else {
-		*st = UNPLUG_HEADSET;
-	}
-	return 0;
-}
-
-void aw9610x_plug_headset_cali(void)
+void aw9610x_plug_headset_cali(int val)
 {
 	uint32_t data_en = 0;
 	int ret = 0;
-
-	AWLOGI(h_aw9610x->dev, "Headset insert,going to force calibrate");
+	if (PLUG_HEADSET == val) {
+		AWLOGI(h_aw9610x->dev, "Headset plug,going to force calibrate");
+	} else {
+		AWLOGI(h_aw9610x->dev, "Headset unplug,going to force calibrate");
+	}
 	aw9610x_i2c_read(h_aw9610x, REG_SCANCTRL0, &data_en);
 	ret = aw9610x_i2c_write_bits(h_aw9610x, REG_SCANCTRL0, ~(0x3f << 8),
 							(data_en & 0x3f) << 8);
@@ -1612,26 +1568,12 @@ void aw9610x_plug_headset_cali(void)
 		return;
 	}
 }
+EXPORT_SYMBOL(aw9610x_plug_headset_cali);
 #endif
 
 static irqreturn_t aw9610x_irq(int32_t irq, void *data)
 {
 	struct aw9610x *aw9610x = data;
-#ifdef AW_HEADSET_PLUG_CALI
-	int headset_next = 0;
-	int ret = 0;
-
-	ret = get_headset_status(aw9610x, &headset_next);
-	if(0 == ret) {
-		AWLOGD(aw9610x->dev, "headset_cut:%d headset_next: %d", headset_cut, headset_next);
-		if (headset_next != headset_cut) {
-			aw9610x_plug_headset_cali();
-			headset_cut = headset_next;
-		}
-	} else {
-		AWLOGD(aw9610x->dev, "get_headset_status fail");
-	}
-#endif
 	AWLOGD(aw9610x->dev, "enter");
 	aw9610x_interrupt_clear(aw9610x);
 	AWLOGD(aw9610x->dev, "exit");
