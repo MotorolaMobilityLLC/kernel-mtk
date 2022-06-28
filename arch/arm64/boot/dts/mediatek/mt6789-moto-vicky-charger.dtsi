@@ -402,3 +402,6 @@
 	};
 };
 
+&usb_type_c {
+    bootmode = <&chosen>;
+};
