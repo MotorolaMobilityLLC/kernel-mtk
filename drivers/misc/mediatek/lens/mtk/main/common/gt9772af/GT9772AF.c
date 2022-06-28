@@ -21,7 +21,7 @@
 #define AF_I2C_SLAVE_ADDR 0x18
 
 #define MOVE_CODE_STEP_MAX 40
-#define WAIT_STABLE_TIME 15  // ms
+#define WAIT_STABLE_TIME 8  // ms
 #define AF_DEBUG
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                    \
@@ -275,9 +275,12 @@ int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	int Ret = 0;
 	unsigned char Temp;
 	unsigned long m_cur_dac_code = 0;
+	int minReleasePositon = 50;
+	int releaseStep = 50;
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2) {
+
 		LOG_INF("Wait\n");
 
 		s4AF_ReadReg(0x03, &Temp);  //CODE MSB
@@ -288,25 +291,33 @@ int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		m_cur_dac_code = m_cur_dac_code*256 + Temp;
 		g_u4CurrPosition = m_cur_dac_code;
 
-		if(g_u4CurrPosition>(AF_STARTCODE_UP+MOVE_CODE_STEP_MAX)){
-			m_cur_dac_code = AF_STARTCODE_UP+MOVE_CODE_STEP_MAX;
-			setPosition((unsigned short)m_cur_dac_code);
-			LOG_INF("release dac_target_code = %d\n", m_cur_dac_code);
-			msleep(WAIT_STABLE_TIME);
-			g_u4CurrPosition = m_cur_dac_code;
+		LOG_INF("current position = %d\n", g_u4CurrPosition);
+		while(g_u4CurrPosition > minReleasePositon)
+		{
+			if(g_u4CurrPosition > (minReleasePositon + releaseStep*5))
+			{
+				setPosition(minReleasePositon + releaseStep*5);//minReleasePositon + releaseStep*5 = 300
+				msleep(WAIT_STABLE_TIME);
+				g_u4CurrPosition = minReleasePositon + releaseStep*5;
+				LOG_INF("release dac_target_code = %d\n", g_u4CurrPosition);
+			}
+			else if(g_u4CurrPosition > (minReleasePositon + releaseStep*2) && g_u4CurrPosition <= (minReleasePositon + releaseStep*5))
+			{
+				setPosition(minReleasePositon + releaseStep*2);//minReleasePositon + releaseStep*2 = 150
+				msleep(WAIT_STABLE_TIME);
+				g_u4CurrPosition = minReleasePositon + releaseStep*2;
+				LOG_INF("release dac_target_code = %d\n", g_u4CurrPosition);
+			}
+			else
+			{
+				setPosition(minReleasePositon);//minReleasePositon = 50
+				msleep(WAIT_STABLE_TIME);
+				g_u4CurrPosition = minReleasePositon;
+				LOG_INF("release dac_target_code = %d\n", g_u4CurrPosition);
+			}
 		}
-		while (g_u4CurrPosition >= AF_STARTCODE_DOWN) {
-			m_cur_dac_code = g_u4CurrPosition - MOVE_CODE_STEP_MAX;
-			setPosition((unsigned short)m_cur_dac_code);
-			LOG_INF("release dac_target_code = %d\n", m_cur_dac_code);
-			msleep(WAIT_STABLE_TIME);
-			g_u4CurrPosition = m_cur_dac_code;
-        }
-		setPosition(0);
-		LOG_INF("release dac_target_code = %d\n", 0);
-		msleep(WAIT_STABLE_TIME);
-		g_u4CurrPosition = 0;
 	}
+
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
 
