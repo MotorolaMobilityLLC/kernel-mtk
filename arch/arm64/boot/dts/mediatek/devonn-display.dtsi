@@ -18,10 +18,12 @@
 	id = <6>;
 
 	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
-		compatible = "mediatek,i2c_lcd_bias";
+		compatible = "ocp,bias_ocp2138";
 		reg = <0x3e>;
 		ocp,lcd-bias-enn-gpio = <&pio 8 0>;
 		ocp,lcd-bias-enp-gpio = <&pio 183 0>;
+		biasp_en_pin = <183>;
+		biasn_en_pin = <8>;
 		status = "okay";
 	};
 
@@ -30,6 +32,7 @@
 		reg = <0x36>;
 		id = <6>;
 		hwen-gpio = <&pio 161 1>;
+		lk_hwen-gpio = <161>;
 		status = "okay";
 
                 aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
