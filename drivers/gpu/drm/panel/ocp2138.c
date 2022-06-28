@@ -39,7 +39,7 @@ static const struct i2c_device_id ocp2138_i2c_id[] = {{ocp2138_DEV_NAME,0},{}};
 static struct i2c_client *i2c_client = NULL;
 static const struct of_device_id panel_i2c_of_match[] = {
 	 {
-	  .compatible = "mediatek,i2c_lcd_bias",
+	  .compatible = "ocp,bias_ocp2138",
 	  },
  };
 
