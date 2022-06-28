@@ -46,6 +46,7 @@ struct tongxingda {
 	bool enabled;
 
 	int error;
+	unsigned int hbm_mode;
 };
 
 static char bl_tb0[] = { 0x51, 0xff };
@@ -138,8 +139,9 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
-	tongxingda_dcs_write_seq_static(ctx, 0x51, 0xFF,0x0F);
+	tongxingda_dcs_write_seq_static(ctx, 0x51, 0xCC,0x0C);//max:0xFF 0x0F
 	tongxingda_dcs_write_seq_static(ctx, 0x53, 0x2c);
+	tongxingda_dcs_write_seq_static(ctx, 0x55, 0x01);
 //	tongxingda_dcs_write_seq_static(ctx, 0x35, 0x00);
 	tongxingda_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
@@ -210,7 +212,7 @@ static int tongxingda_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
-	ret = ocp2138_BiasPower_enable(20,20,5);
+	ret = ocp2138_BiasPower_enable(15,15,5);
 
 	//lcm_power_enable();
 	tongxingda_panel_init(ctx);
@@ -574,12 +576,89 @@ static enum mtk_lcm_version mtk_panel_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+static int pane_cabc_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table cabc_ui_table = {2, {0x55, 0x01}};
+	struct mtk_panel_para_table cabc_mv_table = {2, {0x55, 0x03}};
+	struct mtk_panel_para_table cabc_off_table = {2, {0x55, 0x00}};
+
+	if (hbm_state > 3) return -1;
+	switch (hbm_state)
+	{
+		case 0:
+			cb(dsi, handle, &cabc_ui_table, 1);
+			break;
+		case 1:
+			cb(dsi, handle, &cabc_mv_table, 1);
+			break;
+		case 2:
+			cb(dsi, handle, &cabc_off_table, 1);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static int pane_hbm_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xFF, 0x0F}};
+	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0xCC, 0x0C}};
+
+	if (hbm_state > 2) return -1;
+	switch (hbm_state)
+	{
+		case 0:
+			cb(dsi, handle, &hbm_off_table, 1);
+			break;
+		case 1:
+			cb(dsi, handle, &hbm_on_table, 1);
+			break;
+		case 2:
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+
+	struct tongxingda *ctx = panel_to_tongxingda(panel);
+
+	if (!cb)
+		return -1;
+	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			pane_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			break;
+		case PARAM_HBM:
+			ctx->hbm_mode = param_info.value;
+			pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			break;
+		case PARAM_DC:
+			break;
+		default:
+			break;
+	}
+
+	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
+	return 0;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tongxingda_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
 	.get_lcm_version = mtk_panel_get_lcm_version,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
