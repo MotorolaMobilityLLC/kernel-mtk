@@ -369,6 +369,14 @@ struct wusb3801_chip {
 	int irq;
 	int chip_id;
 	uint8_t     init_state;
+	u32 bootmode;
+};
+
+struct tag_bootmode {
+    u32 size;
+    u32 tag;
+    u32 bootmode;
+    u32 boottype;
 };
 
 //int tcpci_report_usb_port_attached(struct tcpc_device *tcpc);
@@ -511,7 +519,7 @@ static int test_cc_patch(struct wusb3801_chip *chip)
 		rc_reg_0f = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_TEST_09);
 		if (rc_reg_0f < 0) {
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_09 failed to read 001\n", __func__);
-		}
+        }
 		i++;
 	} while(rc_reg_0f !=0 && i < 5);
 
@@ -627,9 +635,12 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 			rc & WUSB3801_TYPE_MASK : WUSB3801_TYPE_INVALID;
 	pr_err("sts[0x%02x], type[0x%02x]\n", status, type);
 	if (int_sts & WUSB3801_INT_DETACH) {
-		if (g_first_check_flag && !status) {
-			g_first_check_flag = 0;
-			goto work_unlock;
+        /*kernel power off first check when detach*/
+		if (chip->bootmode == 8 || chip->bootmode == 9) {
+			if (g_first_check_flag) {
+				g_first_check_flag = 0;
+				goto work_unlock;
+			}
 		}
 #ifdef __TEST_CC_PATCH__
 		if (chip->cc_test_flag == 1) {
@@ -1359,6 +1370,31 @@ static ssize_t typec_cc_orientation_show(struct device *dev,
 DEVICE_ATTR(typec_cc_orientation, S_IRUGO, typec_cc_orientation_show, NULL);
 #endif /*  __TEST_CC_PATCH__	 */
 
+static void wusb3801_get_boot_mode(struct wusb3801_chip *chip)
+{
+       struct device_node *boot_node = NULL;
+       struct tag_bootmode *tag = NULL;
+
+       boot_node = of_parse_phandle(chip->dev->of_node, "bootmode", 0);
+       if (!boot_node)
+               dev_info(chip->dev, "%s: failed to get boot mode phandle\n",
+                       __func__);
+       else {
+               tag = (struct tag_bootmode *)of_get_property(boot_node,
+                                                       "atag,boot", NULL);
+               if (!tag)
+                       dev_info(chip->dev, "%s: failed to get atag,boot\n",
+                               __func__);
+               else {
+                       dev_info(chip->dev,
+                               "%s: size:0x%x tag:0x%x bootmode:0x%x\n",
+                               __func__, tag->size, tag->tag,
+                                       tag->bootmode);
+                       chip->bootmode = tag->bootmode;
+               }
+       }
+}
+
 static int wusb3801_i2c_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
@@ -1408,13 +1444,16 @@ static int wusb3801_i2c_probe(struct i2c_client *client,
 	wakeup_source_init(&chip->i2c_wake_lock,
 		"wusb3801_i2c_wakelock");*/
 
-	chip->irq_wake_lock = 
+	chip->irq_wake_lock =
 		wakeup_source_register(chip->dev, "wusb3801_irq_wakelock");
 	chip->i2c_wake_lock =
 		wakeup_source_register(chip->dev, "wusb3801_i2c_wakelock");
 
 	chip->chip_id = chip_id;
 	pr_info("wusb3801_chipID = 0x%0x\n", chip_id);
+
+    /*wusb3801 get bootmode*/
+    wusb3801_get_boot_mode(chip);
 
 	ret = wusb3801_tcpcdev_init(chip, &client->dev);
 	if (ret < 0) {
