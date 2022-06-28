@@ -466,13 +466,12 @@
 		reg = <0x18>;
 		status = "okay";
 	};
-#if 0
+
 	mtk_camera_eeprom0:camera_eeprom0@50 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x50>;
 		status = "okay";
 	};
-#endif
 };
 &i2c4 {
 	status = "okay";
