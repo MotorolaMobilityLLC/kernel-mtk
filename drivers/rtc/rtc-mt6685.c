@@ -1182,7 +1182,7 @@ static int mtk_rtc_irq_enable(struct device *dev, unsigned int enabled)
 		goto exit;
 
 	if (enabled)
-		irqen = irqen | RTC_IRQ_EN_ONESHOT_AL;
+		irqen = irqen | RTC_IRQ_EN_AL;
 	else
 		irqen = irqen & ~RTC_IRQ_EN_AL;
 
