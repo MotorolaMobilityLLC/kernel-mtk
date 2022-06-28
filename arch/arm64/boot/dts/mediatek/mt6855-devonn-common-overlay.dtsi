@@ -93,6 +93,13 @@
 
 
 /* FINGERPRINT start */
+
+&mt6369_vfp {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-always-on;
+};
+
 &spi1 {
 	status = "okay";
 	mediatek,pad-select = <0>, <1>;
@@ -120,14 +127,8 @@
 		interrupt-parent = <&pio>;
 		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
 
-		fp-ctrl-power;
-
 		egistec,gpio_reset = <&pio 157 0x0>;
 		egistec,gpio_irq = <&pio 15 0x0>;
-
-		vcc_fp-supply = <&mt6369_vfp>;	// ldo for support module vcc
-		egis-fp,vcc-voltage = <3300000 3300000>;	// ldo voltage default 3.3V
-		egis-fp,vcc-current = <100000>;
 
 		pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active", "egis_spi_active", "egis_spi_default";
 		pinctrl-0 = <&fingerfp_rst_high>;
