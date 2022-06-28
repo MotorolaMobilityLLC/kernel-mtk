@@ -46,6 +46,7 @@ struct tianma {
 	bool enabled;
 
 	int error;
+	unsigned int hbm_mode;
 };
 
 static char bl_tb0[] = { 0x51, 0xff };
@@ -143,8 +144,9 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5,0xA6);
 
 	tianma_dcs_write_seq_static(ctx, 0xD1,0x00,0x00,0x00,0x00,0x00,0x33,0x01,0x01);
-	tianma_dcs_write_seq_static(ctx, 0x51, 0x0F,0xFF);
+	tianma_dcs_write_seq_static(ctx, 0x51, 0x0C,0xCC);//max 0x0F,0xFF
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2c);
+	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
@@ -215,7 +217,7 @@ static int tianma_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
-	ret = ocp2138_BiasPower_enable(20,20,5);
+	ret = ocp2138_BiasPower_enable(15,15,5);
 
 	//lcm_power_enable();
 	tianma_panel_init(ctx);
@@ -574,12 +576,102 @@ static enum mtk_lcm_version mtk_panel_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+
+static int pane_cabc_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table cabc_ui_table = {2, {0x55, 0x01}};
+	struct mtk_panel_para_table cabc_mv_table0 = {2, {0x55, 0x03}};
+	struct mtk_panel_para_table cabc_mv_table1 = {3, {0xF0,0x5A,0x59}};
+	struct mtk_panel_para_table cabc_mv_table2 = {3, {0xF1,0xA5,0xA6}};
+	struct mtk_panel_para_table cabc_mv_table3 = {33, {0xE7,0x30,0x00,0x40,0x00,0x01,0x1F,0x20,0x42,0x1F,0xA0,0x24,0xCC,0x01,0x00,0x00,0x30,0x18,0x15,0x00,0xA8,0xFF,0xFF,0xF0,0xF0,0xF0,0xF0,0xF0,0xFF,0xF5,0xF8,0xFB,0xFF}};
+	struct mtk_panel_para_table cabc_mv_table4 = {33, {0xE8,0x04,0x10,0x24,0x38,0x4C,0x60,0x74,0x88,0x9C,0xB0,0xC4,0xD8,0x98,0x84,0xBB,0xBB,0xCD,0xDD,0xEE,0xFF,0xE7,0xEF,0xF7,0xFF,0x87,0x10,0x99,0xFB,0x5D,0xBF,0x21,0x84}};
+	struct mtk_panel_para_table cabc_mv_table5 = {3, {0xF0,0xA5,0xA5}};
+	struct mtk_panel_para_table cabc_mv_table6 = {3, {0xF1,0x5A,0x5A}};
+	struct mtk_panel_para_table cabc_off_table = {2, {0x55, 0x00}};
+
+	if (hbm_state > 3) return -1;
+	switch (hbm_state)
+	{
+		case 0:
+			cb(dsi, handle, &cabc_ui_table, 1);
+			break;
+		case 1:
+			cb(dsi, handle, &cabc_mv_table0, 1);
+			cb(dsi, handle, &cabc_mv_table1, 1);
+			cb(dsi, handle, &cabc_mv_table2, 1);
+			cb(dsi, handle, &cabc_mv_table3, 1);
+			cb(dsi, handle, &cabc_mv_table4, 1);
+			cb(dsi, handle, &cabc_mv_table5, 1);
+			cb(dsi, handle, &cabc_mv_table6, 1);
+			break;
+		case 2:
+			cb(dsi, handle, &cabc_off_table, 1);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static int pane_hbm_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0xFF}};
+	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0x0C, 0xCC}};
+
+	if (hbm_state > 2) return -1;
+	switch (hbm_state)
+	{
+		case 0:
+			cb(dsi, handle, &hbm_off_table, 1);
+			break;
+		case 1:
+			cb(dsi, handle, &hbm_on_table, 1);
+			break;
+		case 2:
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+
+	struct tianma *ctx = panel_to_tianma(panel);
+
+	if (!cb)
+		return -1;
+	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			pane_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			break;
+		case PARAM_HBM:
+			ctx->hbm_mode = param_info.value;
+			pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			break;
+		case PARAM_DC:
+			break;
+		default:
+			break;
+	}
+
+	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
+	return 0;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tianma_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
 	.get_lcm_version = mtk_panel_get_lcm_version,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
