@@ -28,7 +28,7 @@
 	};
 
 	aw99703_backlight: sprd_backlight@36{
-		compatible = "awinic,aw99703-bl","sm-sm5350";
+		compatible = "awinic,aw99703-bl","ktd,ktd3136";
 		reg = <0x36>;
 		id = <6>;
 		hwen-gpio = <&pio 161 1>;
@@ -53,13 +53,19 @@
                 aw99703,work-mode = <1>; /* backlight */
                 aw99703,default-brightness = <1810>;
 
-                pwm-cfg = <0x0F>;
-                boost-ctl = <0x03>;
-                ctl-bank-en = <0x02>;
-                full-scale-current = <0x17>;
-                map-mode = <0>; /* 0 exponential, 1 linear */
-                current-align-type = <1>;
-                sm5350,default-brightness = <1810>;
+                ktd,hwen-gpio = <&pio 161 1>;
+                ktd,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
+                ktd,using-lsb;
+                ktd,pwm-frequency = <1>; /* 1MHZ */
+                ktd,bl-fscal-led = <0x19>; /* 25mA */
+                ktd,turn-on-ramp = <0x00>;
+                ktd,turn-off-ramp = <0x04>;
+                ktd,pwm-trans-dim = <0>;
+                ktd,i2c-trans-dim = <1>;
+                ktd,bl-channel = <3>;
+                ktd,ovp-level = <2>;
+                ktd,switching-frequency = <1>;
+                ktd,inductor-current = <1>;
 	};
 };
 
