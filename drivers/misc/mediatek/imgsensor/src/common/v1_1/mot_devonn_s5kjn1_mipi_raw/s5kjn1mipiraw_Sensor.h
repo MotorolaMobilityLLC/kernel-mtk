@@ -66,7 +66,7 @@ typedef struct imgsensor_struct {
 	kal_bool  ihdr_en;				//ihdr enable or disable
 	kal_uint8 ihdr_mode;
 	kal_uint8 i2c_write_id;			//record current sensor's i2c write id
-
+	kal_uint8 pdaf_mode;
 	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;
 	kal_uint8 current_ae_effective_frame;
 
