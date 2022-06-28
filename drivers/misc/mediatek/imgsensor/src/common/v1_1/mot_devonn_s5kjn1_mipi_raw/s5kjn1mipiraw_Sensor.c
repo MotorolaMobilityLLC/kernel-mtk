@@ -40,7 +40,7 @@
 
 #include "s5kjn1mipiraw_Sensor.h"
 
-//#define ENABLE_PDAF   1
+#define ENABLE_PDAF   1
 
 #define MULTI_WRITE 1
 
@@ -244,21 +244,28 @@ static kal_uint16 custom1_setting_array[] = {
 #endif
 
 #ifdef ENABLE_PDAF
-static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
+static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[1]=
 {
-    .i4OffsetX = 24,
-    .i4OffsetY = 24,
-    .i4PitchX = 64,
-    .i4PitchY = 64,
-    .i4PairNum = 16,
-    .i4SubBlkW = 16,
-    .i4SubBlkH = 16,
-	.i4BlockNumX = 65,
-	.i4BlockNumY = 48,
-	.iMirrorFlip = 0,//3,
-    .i4PosL = {{28, 31}, {44, 35}, {64, 35}, {80, 31}, {32, 51}, {48, 55}, {60, 55}, {76, 51}, {32, 67}, {48, 63}, {60, 63}, {76, 67}, {28, 87}, {44, 83}, {64, 83}, {80, 87} },
-    .i4PosR = {{28, 35}, {44, 39}, {64, 39}, {80, 35}, {32, 47}, {48, 51}, {60, 51}, {76, 47}, {32, 71}, {48, 67}, {60, 67}, {76, 71}, {28, 83}, {44, 79}, {64, 79}, {80, 83} },
+	{0x02, 0x0A,   0x00,   0x08, 0x40, 0x00,
+	 0x00, 0x2B, 0x0FF0, 0x0C00, 0x00, 0x00, 0x0000, 0x0000,
+	 0x01, 0x30, 0x027C, 0x0BF0, 0x03, 0x00, 0x0000, 0x0000
+	},
+};
 
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
+	.i4OffsetX = 8,
+	.i4OffsetY = 8,
+	.i4PitchX  = 8,
+	.i4PitchY  = 8,
+	.i4PairNum  =4,
+	.i4SubBlkW  =8,
+	.i4SubBlkH  =2,
+	.i4PosL = {{11, 8},{9, 11},{13, 12},{15, 15}},
+	.i4PosR = {{10, 8},{8, 11},{12, 12},{14, 15}},
+	.iMirrorFlip = 0,
+	.i4BlockNumX = 508,
+	.i4BlockNumY = 382,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}},
 };
 #endif
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
@@ -688,8 +695,6 @@ static void capture_setting(kal_uint16 currefps)
 	LOG_INF("[%s] start", __func__);
 	table_write_cmos_sensor(capture_setting_array,	sizeof(capture_setting_array)/sizeof(kal_uint16));
 	LOG_INF("[%s] end", __func__);
-
-	
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -962,7 +967,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	normal_video_setting(imgsensor.current_fps);
-	set_mirror_flip(IMAGE_NORMAL);
+	set_mirror_flip(imgsensor.mirror);
 
 
 	return ERROR_NONE;
@@ -1122,7 +1127,6 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->FrameTimeDelayFrame =
 		imgsensor_info.frame_time_delay_frame;
 
-	
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
@@ -1631,10 +1635,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
 				break;
 			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			default:
 				break;
 		}
@@ -1646,8 +1650,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			default:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0], sizeof(struct SENSOR_VC_INFO_STRUCT));
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			default:
 				break;
 		}
 		break;
@@ -1656,26 +1663,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		//PDAF capacity enable or not
 		switch (*feature_data) {
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 				// video & capture use same setting
 				break;
 			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-				break;
-			case MSDK_SCENARIO_ID_SLIM_VIDEO:
-				//need to check
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-				break;
-			case MSDK_SCENARIO_ID_CUSTOM1:
-				//need to check
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-				break;
-			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-				break;
 			default:
 				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 				break;

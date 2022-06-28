@@ -17,10 +17,15 @@ extern unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned i
 extern unsigned int mot_ov02b10_read_region(struct i2c_client *client, unsigned int addr,
 			unsigned char *data, unsigned int size);
 #endif
+#ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
 extern unsigned int mot_ov02b10_read_region(struct i2c_client *client, unsigned int addr,
 			unsigned char *data, unsigned int size);
+#endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+#ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
+	{MOT_DEVONN_S5KJN1_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_DEVONN_OV02B10_SENSOR_ID, 0x78, mot_ov02b10_read_region},  // otp
+#else
 	/*Below is commom sensor */
 	//Begin: Add EEPROM for Vicky
 	{MOT_VICKY_S5KHM6_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
@@ -53,6 +58,7 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX350_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX386_MONO_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX499_SENSOR_ID, 0xA0, Common_read_region},
+#endif
 	/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };
