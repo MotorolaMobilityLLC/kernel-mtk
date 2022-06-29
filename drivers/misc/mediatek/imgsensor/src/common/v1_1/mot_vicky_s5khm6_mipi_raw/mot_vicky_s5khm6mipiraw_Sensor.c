@@ -439,14 +439,13 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 }
 
 
-#if 0
-static kal_uint32 set_test_pattern_mode(kal_uint32 modes,
-	struct SET_SENSOR_PATTERN_SOLID_COLOR *pdata)
+#if 1
+static kal_uint32 set_test_pattern_mode(kal_uint32 enable)
 {
 	LOG_INF("enable: %d\n", enable);
 
 	if (enable) {
-		write_cmos_sensor(0x0600, 0x0002);
+		write_cmos_sensor(0x0600, 0x0001);
 	} else {
 		write_cmos_sensor(0x0600, 0x0000);
 	};
@@ -1851,10 +1850,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_PDAF_DATA:
 		LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
 		break;
-#if 0
+#if 1
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
-		set_test_pattern_mode((UINT32)*feature_data,
-		(struct SET_SENSOR_PATTERN_SOLID_COLOR *)(uintptr_t)(*(feature_data + 1)));
+		set_test_pattern_mode((UINT32)*feature_data);
 		break;
 #endif
 	case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
