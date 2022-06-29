@@ -2034,7 +2034,7 @@
 		#mbox-cells = <1>;
 	};
 
-	soc {
+	soc: soc {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		compatible = "simple-bus";
