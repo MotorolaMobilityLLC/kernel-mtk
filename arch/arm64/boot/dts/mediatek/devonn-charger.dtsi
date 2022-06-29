@@ -130,6 +130,14 @@
 	};
 };
 
+&soc {
+	charge_led {
+		label = "red";
+		led_mode = <2>;
+		gpio_config = <23>;
+	};
+};
+
 &moto_chg_tcmd {
 	compatible = "mmi,moto-chg-tcmd";
 	status = "okay";
