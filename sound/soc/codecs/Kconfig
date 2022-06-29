@@ -1294,4 +1294,9 @@ config SND_SOC_CS35L41
 	select SND_SOC_COMPRESS
 	depends on I2C
 
+config SND_SOC_FS16XX
+	tristate "Support fs16xx/fs16xx"
+	depends on I2C
+	help
+	  FourSemi Smart Amplifier Driver
 endmenu
