@@ -24,6 +24,7 @@ extern unsigned int mot_ov02b10_read_region(struct i2c_client *client, unsigned 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 #ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
 	{MOT_DEVONN_S5KJN1_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_DEVONN_HI1634Q_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_DEVONN_OV02B10_SENSOR_ID, 0x78, mot_ov02b10_read_region},  // otp
 #else
 	/*Below is commom sensor */
