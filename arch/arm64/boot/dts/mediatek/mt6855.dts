@@ -1906,7 +1906,7 @@
 			     <GIC_SPI 510 IRQ_TYPE_LEVEL_HIGH 0>;
 		#mbox-cells = <1>;
 	};
-	soc {
+	soc: soc {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		compatible = "simple-bus";
