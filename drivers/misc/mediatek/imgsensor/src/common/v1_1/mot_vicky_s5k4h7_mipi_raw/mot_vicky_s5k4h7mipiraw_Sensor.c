@@ -322,7 +322,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	LOG_INF("enable: %d\n", enable);
 
 	if (enable) {
-		write_cmos_sensor_8(0x0601, 0x02);
+		write_cmos_sensor_8(0x0601, 0x05);
 	} else {
 		write_cmos_sensor_8(0x0601, 0x00);
 	}
