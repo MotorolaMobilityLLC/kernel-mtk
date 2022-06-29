@@ -775,6 +775,10 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 	int early_chg_type = 0;
 	int wait_count = 0;
 	int count = 0;
+        u8 chrg_stat;
+        struct sgm4154x_state state;
+        int ret;
+
         union power_supply_propval propval = {.intval = 0};
      	psy_dwork = container_of(work, struct delayed_work, work);
 	if(psy_dwork == NULL) {
@@ -786,6 +790,11 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 		pr_err("Cann't get sgm4154x_device\n");
 		return ;
 	}
+
+        mutex_lock(&sgm->lock);
+        state = sgm->state;
+        mutex_unlock(&sgm->lock);
+
 	wt6670f_is_detect = true;
 	sgm4154x_set_input_curr_lim(sgm->chg_dev, 500000);
 	Charger_Detect_Init();
@@ -886,7 +895,16 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 		pr_err("Force set qc3 5V");
 	}
 	sgm4154x_set_input_curr_lim(sgm->chg_dev, 2000000);
-	power_supply_changed(sgm->charger);
+
+        ret = sgm4154x_read_reg(sgm, SGM4154x_CHRG_STAT, &chrg_stat);
+        if (ret){
+                pr_err("%s read SGM4154x_CHRG_STAT faild\n",__func__);
+        }
+        state.online = !!(chrg_stat & SGM4154x_PG_STAT);
+        if (state.online){
+	        power_supply_changed(sgm->charger);
+                pr_err("%s new online=%d,socket online done\n",__func__, state.online);
+        }
 }
 #endif
 static int sgm4154x_get_state(struct sgm4154x_device *sgm,
