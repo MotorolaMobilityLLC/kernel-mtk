@@ -478,12 +478,13 @@
 	clock-frequency = <400000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
-#if 0
+
 	mtk_camera_eeprom1:camera_eeprom1@51 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x51>;
 		status = "okay";
 	};
+#if 0
 	mtk_camera_eeprom4:camera_eeprom4@50 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x50>;
