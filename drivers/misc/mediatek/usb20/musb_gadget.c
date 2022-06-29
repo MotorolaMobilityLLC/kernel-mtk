@@ -1439,8 +1439,10 @@ static int musb_gadget_enable
 		musb_writew(regs, MUSB_RXCSR, csr);
 #endif
 	}
-
-	fifo_setup(musb, musb_ep);
+	if(musb->is_active)
+		fifo_setup(musb, musb_ep);
+	else
+		goto fail;
 
 #ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
 	/* NOTE:  all the I/O code _should_ work fine without DMA, in case
