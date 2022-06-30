@@ -441,6 +441,9 @@ static int sgm4154x_set_chrg_volt(struct charger_device *chg_dev, unsigned int c
 		reg_val++;
 		ft = VREG_FT_DN_8mV;
 		break;
+	case 4504000:
+		ft = VREG_FT_UP_8mV;
+		break;
 	default:
 		break;
 	}

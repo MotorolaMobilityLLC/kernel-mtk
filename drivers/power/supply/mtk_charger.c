@@ -3278,7 +3278,7 @@ static void mmi_charger_check_status(struct mtk_charger *info)
                 (m_chg_type == POWER_SUPPLY_TYPE_USB_HVDCP_3P5)){
 		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
 		if (info->mmi.chrg_iterm > FFC_ITERM_500MA) {
-			mmi->vfloat_comp_mv = FV_COMP_16_MV; //Only for ffc charging
+			mmi->vfloat_comp_mv = (batt_soc == 100)?FV_COMP_24_MV:FV_COMP_32_MV; //Only for ffc charging
 		}
 #else
 	if (info->dvchg1_dev != NULL
