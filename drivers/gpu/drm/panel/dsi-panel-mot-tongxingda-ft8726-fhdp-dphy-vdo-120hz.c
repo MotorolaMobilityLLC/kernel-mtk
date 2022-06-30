@@ -20,7 +20,6 @@
 #include <linux/of_graph.h>
 #include <linux/platform_device.h>
 #include <linux/gpio/consumer.h>
-#include "ocp2138.h"
 
 #define CONFIG_MTK_PANEL_EXT
 #if defined(CONFIG_MTK_PANEL_EXT)
@@ -32,8 +31,8 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
-extern int ocp2138_BiasPower_disable(u32 pwrdown_delay);
-extern int ocp2138_BiasPower_enable(LCM_LDO_VOLTAGE_E avdd, LCM_LDO_VOLTAGE_E avee,u32 pwrup_delay);
+extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
+extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
 
 struct tongxingda {
 	struct device *dev;
