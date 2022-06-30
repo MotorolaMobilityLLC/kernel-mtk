@@ -2904,7 +2904,7 @@ int mt6369_accdet_init(struct snd_soc_component *component,
 	}
 
 	accdet->jack.jack->input_dev->id.bustype = BUS_HOST;
-	snd_jack_set_key(accdet->jack.jack, SND_JACK_BTN_0, KEY_PLAYPAUSE);
+	snd_jack_set_key(accdet->jack.jack, SND_JACK_BTN_0, KEY_MEDIA);
 	snd_jack_set_key(accdet->jack.jack, SND_JACK_BTN_1, KEY_VOLUMEDOWN);
 	snd_jack_set_key(accdet->jack.jack, SND_JACK_BTN_2, KEY_VOLUMEUP);
 	snd_jack_set_key(accdet->jack.jack, SND_JACK_BTN_3, KEY_VOICECOMMAND);
