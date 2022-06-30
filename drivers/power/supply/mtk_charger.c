@@ -61,7 +61,7 @@
 #include "mtk_battery.h"
 
 #ifdef CONFIG_CHARGER_STOP_70PER
-unsigned int capacity_control= 0;
+unsigned int capacity_control= 1;
 
 module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
