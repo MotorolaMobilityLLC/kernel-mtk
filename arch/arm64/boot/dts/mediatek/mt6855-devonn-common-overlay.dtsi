@@ -261,7 +261,7 @@
                 #sound-dai-cells = <0>;
                 reg = <0x34>;
                 reset-gpio = <&pio 162 0>;
-                sound-channel = <0>;
+                sound-channel = <1>;
                 re-min = <1000>;
                 re-max = <40000>;
 		rename-flag=<1>;
@@ -272,7 +272,7 @@
                 #sound-dai-cells = <0>;
                 reg = <0x36>;
                 reset-gpio = <&pio 182 0>;
-                sound-channel = <1>;
+                sound-channel = <0>;
                 re-min = <1000>;
                 re-max = <40000>;
 		rename-flag=<1>;
