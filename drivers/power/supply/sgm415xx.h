@@ -241,6 +241,7 @@
 #define FFC_ITERM_500MA 500
 #define FV_COMP_0_MV 0
 #define FV_COMP_16_MV 16
+#define FV_COMP_24_MV 24
 #define FV_COMP_32_MV 32
 
 /*
