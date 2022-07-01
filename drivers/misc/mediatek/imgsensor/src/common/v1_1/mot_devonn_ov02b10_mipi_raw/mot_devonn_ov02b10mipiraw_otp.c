@@ -122,6 +122,8 @@ unsigned int mot_ov02b10_read_region(struct i2c_client *client, unsigned int add
     unsigned int ret = 0;
     unsigned char *otp_data = ov02b10_otp_data;
     LOG_INF ("eeprom read data addr = 0x%x size = %d\n",addr,size);
+    if (size > OV02B10_OTP_SIZE)
+        size = OV02B10_OTP_SIZE;
     memcpy(data, otp_data + addr,size);
     ret = size;
     return ret;
