@@ -166,7 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_MONO,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,
 	.i2c_addr_table = {0x6e,0xff},
@@ -834,11 +834,11 @@ static void gc02m1_eeprom_format_calibration_data()
 #define MODULE_GROUP_FLAG_ADDR 0x78
 #define MODULE_GROUP1_START_ADDR 0x80
 #define MODULE_GROUP2_START_ADDR 0xC0
-#define MODULE_DATA_SIZE 16
-static unsigned char gc02m1_serial_data[8] = {0}; //add flag and checksum value
-static unsigned char gc02m1_data_eeprom[17] = {0}; //add flag and checksum value
-#define GC02M1_SERIAL_NUM_SIZE 8
-#define DEPTH_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_depth.bin"
+#define MODULE_DATA_SERIAL_NUMBER_SIZE 11
+#define MODULE_DATA_AWB_BLOCK_SIZE 17
+static unsigned char gc02m1_serial_data[12] = {0}; //add flag and checksum value
+static unsigned char gc02m1_data_eeprom[32] = {0}; //add flag and checksum value
+
 /*
 static void gc02m1_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
 {
@@ -873,7 +873,7 @@ p_err:
 */
 static void read_gc02m1_module_info(void)
 {
-	kal_uint16 i, start_addr = 0, otp_grp_flag = 0, otp_count = 0;
+	kal_uint16 i = 0, start_addr = 0,otp_count = 0;
 
 	//init setting
 	write_cmos_sensor(0xfc, 0x01);
@@ -895,32 +895,25 @@ static void read_gc02m1_module_info(void)
 
 	write_cmos_sensor(0xf3, 0x30); //OTP read init set
 	write_cmos_sensor(0xfe, 0x02); //page select
-	write_cmos_sensor(0x17, MODULE_GROUP_FLAG_ADDR); //set addr
-	write_cmos_sensor(0xf3, 0x34); //otp read pulse
-	otp_grp_flag = read_cmos_sensor(0x19); //read value
-	LOG_INF("otp_grp_flag = 0x%x\n", otp_grp_flag);
-
-	if(((otp_grp_flag&0xC0)>>6) == 0x01){ //Bit[7:6] 01:Valid 11:Invalid
-		start_addr = MODULE_GROUP1_START_ADDR;
-		otp_count = 1;
-		LOG_INF("otp data is group1\n");
-	} else if(((otp_grp_flag&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
-		start_addr = MODULE_GROUP2_START_ADDR;
-		otp_count = 9;
-		LOG_INF("otp data is group2\n");
-	} else {
-		LOG_INF("gc02m1 OTP has no otp data\n");
-	}
-	gc02m1_data_eeprom[0] = otp_grp_flag;
-	for(i = 0; i < MODULE_DATA_SIZE; i++){
-		write_cmos_sensor(0x17, (MODULE_GROUP1_START_ADDR+i*0x08));
+	start_addr = 0x18;
+	for(i = 0; i < MODULE_DATA_SERIAL_NUMBER_SIZE; i++){
+		write_cmos_sensor(0x17, (start_addr+i*0x08));
 		write_cmos_sensor(0xf3, 0x34);
-		gc02m1_data_eeprom[i+1] = read_cmos_sensor(0x19);
-		LOG_INF("value = 0x%x\n",gc02m1_data_eeprom[i+1]);
+		gc02m1_data_eeprom[otp_count] = read_cmos_sensor(0x19);
+		LOG_INF("value[0x%x] = 0x%x\n",(start_addr+i*0x08),gc02m1_data_eeprom[otp_count]);
+		otp_count++;
 	}
-	for(i = 0; i < GC02M1_SERIAL_NUM_SIZE; i++){
-		gc02m1_serial_data[i] = gc02m1_data_eeprom[i+otp_count];
-		LOG_INF("addr = 0x%x, value = 0x%x\n", (start_addr+i*0x08), gc02m1_serial_data[i]);
+	start_addr = 0x78;
+	for(i = 0; i < MODULE_DATA_AWB_BLOCK_SIZE; i++){
+		write_cmos_sensor(0x17, (start_addr+i*0x08));
+		write_cmos_sensor(0xf3, 0x34);
+		gc02m1_data_eeprom[otp_count] = read_cmos_sensor(0x19);
+		LOG_INF("value[0x%x] = 0x%x\n",(start_addr+i*0x08),gc02m1_data_eeprom[otp_count]);
+		otp_count++;
+	}
+	start_addr = 0x18;
+	for(i = 0; i < MODULE_DATA_SERIAL_NUMBER_SIZE; i++){
+		gc02m1_serial_data[i] = gc02m1_data_eeprom[i];
 	}
 }
 #endif
@@ -1740,3 +1733,17 @@ UINT32 GC02M1_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 		*pfFunc = &sensor_func;
 	return ERROR_NONE;
 }
+unsigned int mot_gc02m1_read_region(struct i2c_client *client, unsigned int addr,
+	unsigned char *data, unsigned int size)
+{
+	unsigned int ret = 0;
+	unsigned char *otp_data = gc02m1_data_eeprom;
+	LOG_INF ("eeprom read data addr = 0x%x size = %d\n",addr,size);
+	if (size > 32)
+		size = 32;
+	memcpy(data, otp_data + addr,size);
+	ret = size;
+	return ret;
+}
+EXPORT_SYMBOL(mot_gc02m1_read_region);
+
