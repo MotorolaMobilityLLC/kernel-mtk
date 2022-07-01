@@ -552,6 +552,11 @@
 	};
 };
 
+&mt6360_ldo {
+	sdcard_det_en=<1>;
+	sdcard_hlact=<0>;
+};
+
 #include "mediatek/cust_mt6785_touch_1080x2460.dtsi"
 #include "mediatek/mt6785-moto-lisbon-fps.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
