@@ -2121,9 +2121,9 @@ static int mt6360_set_bist_carrier_mode(struct tcpc_device *tcpc, u8 pattern)
 	return 0;
 }
 
-/* message header (2byte) + data object (7*4) */
+/* transmit count (1byte) + message header (2byte) + data object (7*4) */
 #define MT6360_TRANSMIT_MAX_SIZE \
-	(sizeof(u16) + sizeof(u32) * 7)
+	(1 + sizeof(u16) + sizeof(u32) * 7)
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 static int mt6360_retransmit(struct tcpc_device *tcpc)
