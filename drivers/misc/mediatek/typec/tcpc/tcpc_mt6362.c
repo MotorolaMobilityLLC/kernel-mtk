@@ -1576,8 +1576,8 @@ static int mt6362_get_message(struct tcpc_device *tcpc, u32 *payload,
 	return ret;
 }
 
-/* message header (2byte) + data object (7*4) */
-#define MT6362_TRANSMIT_MAX_SIZE	(sizeof(u16) + sizeof(u32) * 7)
+/* transmit count (1byte) + message header (2byte) + data object (7*4) */
+#define MT6362_TRANSMIT_MAX_SIZE	(1 + sizeof(u16) + sizeof(u32) * 7)
 
 static int mt6362_transmit(struct tcpc_device *tcpc,
 			   enum tcpm_transmit_type type, u16 header,
