@@ -20,12 +20,15 @@ extern unsigned int mot_ov02b10_read_region(struct i2c_client *client, unsigned 
 #ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
 extern unsigned int mot_ov02b10_read_region(struct i2c_client *client, unsigned int addr,
 			unsigned char *data, unsigned int size);
+extern unsigned int mot_gc02m1_read_region(struct i2c_client *client, unsigned int addr,
+			unsigned char *data, unsigned int size);
 #endif
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 #ifdef CONFIG_MOT_DEVONN_CAMERA_PROJECT
 	{MOT_DEVONN_S5KJN1_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
 	{MOT_DEVONN_HI1634Q_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
-	{MOT_DEVONN_OV02B10_SENSOR_ID, 0x78, mot_ov02b10_read_region},  // otp
+	{MOT_DEVONN_GC02M1_SENSOR_ID, 0x6E, mot_gc02m1_read_region, MAX_EEPROM_SIZE_16K},
+	{MOT_DEVONN_OV02B10_SENSOR_ID, 0x78, mot_ov02b10_read_region, MAX_EEPROM_SIZE_16K},  // otp
 #else
 	/*Below is commom sensor */
 	//Begin: Add EEPROM for Vicky
