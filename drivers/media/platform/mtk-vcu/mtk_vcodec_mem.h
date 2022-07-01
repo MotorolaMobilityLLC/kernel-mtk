@@ -55,6 +55,11 @@ struct vcu_pa_pages {
 	struct list_head list;
 };
 
+struct vcu_page_info {
+	struct vcu_pa_pages *page;
+	struct list_head list;
+};
+
 /**
  * struct mtk_vcu_queue - the allocated buffer queue
  *
@@ -70,6 +75,7 @@ struct mtk_vcu_queue {
 	void *vcu;
 	struct mutex mmap_lock;
 	struct device *dev;
+	struct mutex dev_lock;
 	struct device *cmdq_dev;
 	unsigned int num_buffers;
 	const struct vb2_mem_ops *mem_ops;
