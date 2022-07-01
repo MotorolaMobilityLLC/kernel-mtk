@@ -184,7 +184,7 @@
 #define SGM4154x_VREG_V_MASK		GENMASK(7, 3)
 #define SGM4154x_VREG_V_MAX_uV	    4624000
 #define SGM4154x_VREG_V_MIN_uV	    3856000
-#define SGM4154x_VREG_V_DEF_uV	    4400000
+#define SGM4154x_VREG_V_DEF_uV	    4450000
 #define SGM4154x_VREG_V_STEP_uV	    32000
 
 /* VREG Fine Tuning  */
