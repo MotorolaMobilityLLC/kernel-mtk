@@ -1980,7 +1980,7 @@ static int hl7019d_charger_ic_init(struct charger_device *chg_dev)
 	hl7019d_set_bhot(0x2);		//boost hot threshold 65 centigrade degree
 	hl7019d_set_treg(0x3);		//thermal regulation threadhold upto 120 centigrade degree
 
-	//hl7019d_set_dpdm_en(0x0);	//disble D+/D- detection
+	hl7019d_set_dpdm_en(0x0);	//disble D+/D- detection
 	hl7019d_set_tmr2x_en(0x1);
 	hl7019d_set_ppfet_disable(0x0);	//enable Q4
 	hl7019d_set_chrgfault_int_mask(0x0);		//disable charge fault intteruppt
