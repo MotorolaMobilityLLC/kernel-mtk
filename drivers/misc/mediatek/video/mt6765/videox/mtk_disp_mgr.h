@@ -29,4 +29,5 @@ void dump_input_cfg_info(struct disp_input_config *input_cfg,
 int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg);
 int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg);
 void trigger_repaint(int type);
+extern char *mtkfb_find_lcm_driver(void);
 #endif
