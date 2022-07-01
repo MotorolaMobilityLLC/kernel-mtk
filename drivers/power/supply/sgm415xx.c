@@ -1565,7 +1565,7 @@ static void sgm4154x_rerun_apsd_work_func(struct work_struct *work)
 
         while(check_count < 10) {
                 apsd_done = sgm4154x_is_rerun_apsd_done(sgm);
-                if (apsd_done) {
+                if (apsd_done && check_count > 2) {
                         break;
                 }
 
