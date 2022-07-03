@@ -38,6 +38,7 @@ static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4CurrPosition;
 #define Min_Pos 0
 #define Max_Pos 1023
+#define DELAY_TIME 20
 
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {
@@ -236,18 +237,24 @@ int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 		LOG_INF("apply\n");
 
-		//multiple times
-		if (g_u4CurrPosition > 300) {
-			setPosition(300);
-				mdelay(50);
-			g_u4CurrPosition = 300;
-	}
-
-		while (g_u4CurrPosition > 20) {
-			g_u4CurrPosition -= 20;
-			setPosition(g_u4CurrPosition);
-			mdelay(50);
-		}
+        setPosition(270);
+        mdelay(DELAY_TIME);
+        setPosition(240);
+        mdelay(DELAY_TIME);
+        setPosition(210);
+        mdelay(DELAY_TIME);
+        setPosition(180);
+        mdelay(DELAY_TIME);
+        setPosition(150);
+        mdelay(DELAY_TIME);
+        setPosition(120);
+        mdelay(DELAY_TIME);
+        setPosition(90);
+        mdelay(DELAY_TIME);
+        setPosition(60);
+        mdelay(DELAY_TIME);
+        setPosition(30);
+        mdelay(DELAY_TIME);
 	}
 
 	if (*g_pAF_Opened) {
