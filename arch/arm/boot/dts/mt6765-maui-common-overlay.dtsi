@@ -89,8 +89,8 @@
 	};
 	usb_phy_init:usb_phy_init {
 		compatible = "mediatek,phy_tuning";
-		u2_vrt_ref = <6>;
-		u2_term_ref = <6>;
+		u2_vrt_ref = <7>;
+		u2_term_ref = <3>;
 		u2_enhance = <3>;
 		status = "okay";
 	};
