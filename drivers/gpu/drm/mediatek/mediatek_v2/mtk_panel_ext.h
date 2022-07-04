@@ -216,6 +216,16 @@ struct mtk_panel_spr_params {
 
 };
 
+struct mtk_panel_dsc_pps {
+	unsigned int dsc_pps_idx;
+	unsigned int dsc_pps_para;
+};
+
+struct mtk_panel_dsc_pps_params {
+	unsigned int count;
+	struct mtk_panel_dsc_pps dsc_pps_params[20];
+};
+
 struct mtk_panel_dsc_params {
 	unsigned int enable;
 	unsigned int ver; /* [7:4] major [3:0] minor */
@@ -250,6 +260,7 @@ struct mtk_panel_dsc_params {
 	unsigned int rc_quant_incr_limit1;
 	unsigned int rc_tgt_offset_hi;
 	unsigned int rc_tgt_offset_lo;
+	struct mtk_panel_dsc_pps_params pps_list;
 };
 struct mtk_dsi_phy_timcon {
 	unsigned int hs_trail;

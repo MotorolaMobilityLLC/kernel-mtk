@@ -569,6 +569,24 @@ static void mtk_dsc_config(struct mtk_ddp_comp *comp,
 			mtk_ddp_write(comp, 0x0000d1ed,	DISP_REG_DSC_PPS19, handle);
 		}
 
+		if (dsc_params->pps_list.count > 0) {
+			unsigned int i, num, idx, value;
+
+			num = dsc_params->pps_list.count;
+			for (i = 0; i < num; i++) {
+				idx = dsc_params->pps_list.dsc_pps_params[i].dsc_pps_idx;
+				if (idx < 20) {
+					value = dsc_params->pps_list.dsc_pps_params[i].dsc_pps_para;
+					mtk_ddp_write(comp, value,
+						DISP_REG_DSC_PPS0 + idx * 4, handle);
+					DDPINFO("set panel dsc pps %d: 0x%03x, 0x%08x\n", idx,
+						(DISP_REG_DSC_PPS0 + idx * 4), value);
+				} else {
+					DDPMSG("panel dsc pps idx %d is wrong\n", idx);
+				}
+			}
+		}
+
 		if (spr_params->enable && spr_params->relay == 0
 					&& disp_spr_bypass == 0) {
 			mtk_ddp_write(comp, 0x0001d822, DISP_REG_DSC_CFG, handle);//VESA1.2 needed
