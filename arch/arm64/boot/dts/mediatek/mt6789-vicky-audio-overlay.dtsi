@@ -6,6 +6,7 @@
 		irq-gpio = <&pio 3 0>;
 		reg = <0x34>;
 		sound-channel = <0>;
+		fade-enable = <1>;
 		re-min = <1000>;
 		re-max= <40000>;
 		rename-flag=<1>;
@@ -18,6 +19,7 @@
 		reset-gpio = <&pio 104 0>;
 		irq-gpio = <&pio 6 0>;
 		sound-channel = <1>;
+		fade-enable = <1>;
 		re-min = <1000>;
 		re-max= <40000>;
 		rename-flag=<1>;
