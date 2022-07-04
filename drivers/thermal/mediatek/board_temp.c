@@ -13,6 +13,8 @@
 #include <linux/slab.h>
 #include <linux/thermal.h>
 
+#include <linux/iio/consumer.h>
+
 
 #define get_tia_rc_sel(val, offset, mask) (((val) & (mask)) >> (offset))
 #define is_adc_data_valid(val, bit)       (((val) & BIT(bit)) != 0)
@@ -69,6 +71,10 @@ struct board_ntc_info {
 	void __iomem *en_reg;
 	unsigned int prev_val;
 	struct pmic_auxadc_data *adc_data;
+	struct iio_channel *chan_md_ntc;
+	struct iio_channel *chan_charger_ntc;
+	struct iio_channel *chan_flash_ntc;
+	struct iio_channel *chan_wlc_ntc;
 };
 
 unsigned int tia2_rc_sel_to_value(unsigned int sel)
@@ -221,7 +227,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 	struct board_ntc_info *ntc_info = (struct board_ntc_info *)data;
 	struct pmic_auxadc_data *adc_data = ntc_info->adc_data;
 	struct tia_data *tia_param = ntc_info->adc_data->tia_param;
-	unsigned int val, r_type, r_ntc, dbg_reg, en_reg;
+	unsigned int val, r_type, r_ntc;
 	unsigned long long v_in;
 	unsigned int read_tia_reg_time = 0;
 	const unsigned int read_tia_reg_time_max = 3;
@@ -229,33 +235,86 @@ static int board_ntc_get_temp(void *data, int *temp)
 	if (adc_data->is_print_tia_cg == true)
 		print_tia_reg(ntc_info->dev);
 
-	do {
-		val = readl(ntc_info->data_reg);
-		if(val != 0)
-			break;
+	//+EKDEVONN-16, madongyu.wt, add, 20220620, read the ADC value from io-channel if channel-name is matched
+	if (!PTR_ERR_OR_ZERO(ntc_info->chan_md_ntc)){
+		iio_read_channel_raw(ntc_info->chan_md_ntc, &val);
+		r_type = 0;
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_charger_ntc)){
+		iio_read_channel_raw(ntc_info->chan_charger_ntc, &val);
+		r_type = 0;
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_flash_ntc)){
+		iio_read_channel_raw(ntc_info->chan_flash_ntc, &val);
+		r_type = 0;
+	} else if(!PTR_ERR_OR_ZERO(ntc_info->chan_wlc_ntc)){
+		iio_read_channel_raw(ntc_info->chan_wlc_ntc, &val);
+		r_type = 0;
+	//-EKDEVONN-16, madongyu.wt, add, 20220620, read the ADC value from io-channel if channel-name is matched
+	} else {
+		do {
+			val = readl(ntc_info->data_reg);
+			if(val != 0)
+				break;
 
-		mdelay(3);
-		read_tia_reg_time++;
-	} while (read_tia_reg_time < read_tia_reg_time_max);
+			mdelay(3);
+			read_tia_reg_time++;
+		} while (read_tia_reg_time < read_tia_reg_time_max);
 
-	if (val == 0) {
-		if (ntc_info->prev_val == 0) {
-			*temp = 25000;
-			dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
-			return 0;
+		if (val == 0) {
+			if (ntc_info->prev_val == 0) {
+				*temp = 25000;
+				dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
+				return 0;
+			}
+			val = ntc_info->prev_val;
+			dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
 		}
-		val = ntc_info->prev_val;
-		dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
+
+		ntc_info->prev_val = val;
+		pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
+
+//	do {
+//		val = readl(ntc_info->data_reg);
+//		if(val != 0)
+//			break;
+//
+//		mdelay(3);
+//		read_tia_reg_time++;
+//	} while (read_tia_reg_time < read_tia_reg_time_max);
+//
+//	if (val == 0) {
+//		if (ntc_info->prev_val == 0) {
+//			*temp = 25000;
+//			dev_info(ntc_info->dev, "ntc_info->prev_val == 0, temp=25000\n");
+//			return 0;
+//		}
+//		val = ntc_info->prev_val;
+//		dev_info(ntc_info->dev, "val = ntc_info->prev_val\n");
+//	}
+//
+//	ntc_info->prev_val = val;
+//	r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
+//	if (r_type >= adc_data->num_of_pullup_r_type) {
+//		dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
+//		return -EINVAL;
+
+		r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
+		
+		if (r_type >= adc_data->num_of_pullup_r_type) {
+			dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
+			return -EINVAL;
+		}
+
+		if (!is_adc_data_valid(val, tia_param->valid_bit)) {
+			dev_err(ntc_info->dev, "TIA data is invalid now\n");
+			return -EAGAIN;
+		}
+	
+		if (!ntc_info->adc_data->adc2volt) {
+			dev_err(ntc_info->dev, "adc2volt should exist\n");
+			return -ENODEV;
+		}
 	}
-
-	ntc_info->prev_val = val;
-
-	r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
-	if (r_type >= adc_data->num_of_pullup_r_type) {
-		dev_err(ntc_info->dev, "Invalid r_type = %d\n", r_type);
-		return -EINVAL;
-	}
-
+/*
 	if (!is_adc_data_valid(val, tia_param->valid_bit)) {
 		if (ntc_info->dbg_reg && ntc_info->en_reg) {
 			dbg_reg = readl(ntc_info->dbg_reg);
@@ -274,7 +333,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 		dev_err(ntc_info->dev, "adc2volt should exist\n");
 		return -ENODEV;
 	}
-
+*/
 	v_in = ntc_info->adc_data->adc2volt(get_adc_data(val, tia_param->valid_bit - 1));
 	r_ntc = calculate_r_ntc(v_in, adc_data->pullup_r[r_type],
 				adc_data->pullup_v[r_type]);
@@ -289,7 +348,8 @@ static int board_ntc_get_temp(void *data, int *temp)
 		*temp = board_ntc_r_to_temp(ntc_info, r_ntc);
 	}
 
-	dev_dbg_ratelimited(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
+	//dev_dbg_ratelimited(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
+	dev_info(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
 		val, v_in, r_type, r_ntc, *temp);
 
 	return 0;
@@ -403,13 +463,21 @@ static int board_ntc_probe(struct platform_device *pdev)
 		ntc_info->adc_data->is_initialized = true;
 	}
 
+	//+EKDEVONN-16, madongyu.wt, add, 20220620, match the io-channel wiht io-channel-name
+	ntc_info->chan_md_ntc = devm_iio_channel_get(&pdev->dev, "MD_Thermal_NTC");
+	ntc_info->chan_charger_ntc = devm_iio_channel_get(&pdev->dev, "Charger_NTC");
+	ntc_info->chan_flash_ntc = devm_iio_channel_get(&pdev->dev, "Flash_LED_NTC");
+	ntc_info->chan_wlc_ntc = devm_iio_channel_get(&pdev->dev, "WLC_NTC");
+	//+EKDEVONN-16, madongyu.wt, add, 20220620, match the io-channel wiht io-channel-name
+
 	platform_set_drvdata(pdev, ntc_info);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	tia_reg = devm_ioremap_resource(&pdev->dev, res);
+/*
 	if (IS_ERR(tia_reg))
 		return PTR_ERR(tia_reg);
-
+*/
 	ntc_info->data_reg = tia_reg;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
