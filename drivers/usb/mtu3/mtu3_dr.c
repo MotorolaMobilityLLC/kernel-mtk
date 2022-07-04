@@ -143,6 +143,7 @@ static void switch_port_to_on(struct ssusb_mtk *ssusb,
 		ssusb_phy_set_mode(ssusb, mode);
 		ssusb_ip_sw_reset(ssusb);
 	} else {
+		synchronize_irq(ssusb->u3d->irq);
 		ssusb_ip_sleep(ssusb);
 		ssusb_phy_power_off(ssusb);
 		ssusb_clks_disable(ssusb);
