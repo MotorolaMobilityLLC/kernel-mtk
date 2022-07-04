@@ -266,6 +266,7 @@ static irqreturn_t mtk_disp_rdma_irq_handler(int irq, void *dev_id)
 	bool find_work = false;
 	static unsigned int work_id;
 	static DEFINE_RATELIMIT_STATE(isr_ratelimit, 1 * HZ, 4);
+	ktime_t cur_time;
 
 	if (IS_ERR_OR_NULL(priv))
 		return IRQ_NONE;
@@ -367,7 +368,11 @@ static irqreturn_t mtk_disp_rdma_irq_handler(int irq, void *dev_id)
 			priv->ddp_comp.ts_works[work_id].irq_time, i)
 	}
 
+	if (rdma->id == DDP_COMPONENT_RDMA0 && mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base))
+		cur_time = ktime_get();
+
 	if (val & (1 << 1)) {
+		int vrefresh = 0;
 		if (mtk_crtc &&
 			mtk_crtc_is_frame_trigger_mode(&mtk_crtc->base)) {
 			if (rdma->id == DDP_COMPONENT_RDMA0)
@@ -379,6 +384,13 @@ static irqreturn_t mtk_disp_rdma_irq_handler(int irq, void *dev_id)
 			IF_DEBUG_IRQ_TS(find_work, priv->ddp_comp.ts_works[work_id].irq_time, i)
 
 			if (rdma->id == DDP_COMPONENT_RDMA0) {
+				vrefresh = drm_mode_vrefresh(
+						&mtk_crtc->base.state->adjusted_mode);
+				if (vrefresh > 0 &&
+					ktime_to_us(cur_time - mtk_crtc->pf_time) >=
+						(500000 / vrefresh)) {
+					mtk_crtc->pf_time = cur_time;
+				}
 				atomic_set(&mtk_crtc->pf_event, 1);
 				wake_up_interruptible(&mtk_crtc->present_fence_wq);
 				IF_DEBUG_IRQ_TS(find_work,
