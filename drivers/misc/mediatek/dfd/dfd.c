@@ -78,10 +78,11 @@ static int __init fdt_get_chosen(unsigned long node, const char *uname,
 
 static int __init dfd_init(void)
 {
-	struct device_node *dev_node, *infra_node;
+	struct device_node *dev_node, *infra_node, *rgu_node;
 	unsigned long node;
 	const void *prop;
 	unsigned int val;
+	void __iomem *toprgu_base;
 
 	drv = kzalloc(sizeof(struct dfd_drv), GFP_KERNEL);
 	if (!drv)
@@ -92,8 +93,19 @@ static int __init dfd_init(void)
 	/* get dfd settings */
 	dev_node = of_find_compatible_node(NULL, NULL, "mediatek,dfd");
 	if (dev_node) {
-		if (of_property_read_u32(dev_node, "mediatek,dfd_latch_offset", &val))
+		if (of_property_read_u32(dev_node, "mediatek,dfd_latch_offset", &val)) {
 			pr_info("%s: Latch offset not found.\n", __func__);
+			return -EINVAL;
+		}
+		pr_info("%s: Latch offset is 0x%x\n", __func__, val);
+		rgu_node = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
+		toprgu_base = of_iomap(rgu_node, 0);
+
+		if (!toprgu_base)
+			pr_info("%s: RGU base not found.\n", __func__);
+		else
+			pr_info("%s: get topdbg base success\n", __func__);
+		get_dfd_base(toprgu_base, val);
 
 		if (of_property_read_u32(dev_node, "mediatek,enabled", &val))
 			drv->enabled = 0;
