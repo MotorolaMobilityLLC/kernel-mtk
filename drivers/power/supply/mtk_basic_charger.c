@@ -368,6 +368,7 @@ done:
 	return is_basic;
 }
 
+bool is_chg_done = false;
 static int do_algorithm(struct mtk_charger *info)
 {
 	struct chg_alg_device *alg;
@@ -469,6 +470,7 @@ static int do_algorithm(struct mtk_charger *info)
 		}
 	}
 	info->is_chg_done = chg_done;
+	is_chg_done = info->is_chg_done;
 
 	if (is_basic == true) {
 		charger_dev_set_input_current(info->chg1_dev,

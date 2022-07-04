@@ -327,6 +327,8 @@ static enum power_supply_property battery_props[] = {
 };
 
 extern int battery_status;
+extern bool is_chg_done;
+
 static int battery_psy_get_property(struct power_supply *psy,
 	enum power_supply_property psp,
 	union power_supply_propval *val)
@@ -347,7 +349,13 @@ static int battery_psy_get_property(struct power_supply *psy,
 		if((battery_status == POWER_SUPPLY_STATUS_NOT_CHARGING) && 
 				(bs_data->bat_status == POWER_SUPPLY_STATUS_CHARGING)){
 			val->intval = battery_status;
-			pr_info("hzn: battery get status = %d", val->intval);
+			pr_info("bora: battery get status = %d\n", val->intval);
+		}
+
+		pr_info("bora: chg_done = %d\n", is_chg_done);
+		if(is_chg_done){
+			val->intval = POWER_SUPPLY_STATUS_FULL;
+			pr_info("bora: battery get status = %d\n", val->intval);
 		}
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
@@ -378,7 +386,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 		else
 			val->intval = bs_data->bat_capacity;
 #ifdef    DUAL_85_VERSION
-		pr_info("D85: real soc = %d", val->intval);
+		pr_info("D85: real soc = %d\n", val->intval);
 
 		if(bs_data->bat_capacity<30) {
 			val->intval  = 30;
@@ -412,7 +420,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 #ifdef    DUAL_85_VERSION
-		pr_info("D85: real tbat = %d", gm->tbat_precise);
+		pr_info("D85: real tbat = %d\n", gm->tbat_precise);
 
 		if(gm->tbat_precise >= 540) {
 			val->intval = 540;
@@ -517,8 +525,10 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 		ret = power_supply_get_property(chg_psy,
 			POWER_SUPPLY_PROP_STATUS, &status);
 
-		if (!online.intval)
+		if (!online.intval){
 			bs_data->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
+			is_chg_done = false;
+		}
 		else {
 			if (status.intval == POWER_SUPPLY_STATUS_NOT_CHARGING)
 				bs_data->bat_status =
