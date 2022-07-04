@@ -780,7 +780,21 @@ static int mode_switch(struct drm_panel *panel,
 	return ret;
 }
 
+static int panel_ext_powerdown(struct drm_panel *panel)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
 
+	pr_info("%s+\n", __func__);
+	if (ctx->prepared)
+		return 0;
+
+	return 0;
+}
+
+static int panel_ext_init_power(struct drm_panel *panel)
+{
+	return 0;
+}
 
 static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
@@ -788,6 +802,8 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ata_check = panel_ata_check,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.mode_switch = mode_switch,
+	.init_power = panel_ext_init_power,
+	.power_down = panel_ext_powerdown,
 	//.panel_feature_set = panel_feature_set,
 };
 #endif

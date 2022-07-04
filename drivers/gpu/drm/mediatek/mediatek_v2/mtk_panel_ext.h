@@ -455,6 +455,8 @@ struct mtk_panel_funcs {
 	int (*set_backlight_grp_cmdq)(void *dsi_drv, dcs_grp_write_gce cb,
 		void *handle, unsigned int level);
 	int (*reset)(struct drm_panel *panel, int on);
+	int (*init_power)(struct drm_panel *panel);
+	int (*power_down)(struct drm_panel *panel);
 	int (*ata_check)(struct drm_panel *panel);
 	int (*ext_param_set)(struct drm_panel *panel,
 		struct drm_connector *connector, unsigned int mode);
