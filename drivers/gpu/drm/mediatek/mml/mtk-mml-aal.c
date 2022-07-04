@@ -416,24 +416,32 @@ static s32 aal_config_frame(struct mml_comp *comp, struct mml_task *task,
 		cmdq_pkt_write(pkt, NULL, base_pa + AAL_CFG_MAIN,
 			1 << 7, 0x00000080);
 
-	ret = mml_pq_get_comp_config_result(task, AAL_WAIT_TIMEOUT_MS);
+	ret = mml_pq_get_comp_config_result(task, CONFIG_FRAME_WAIT_TIME_MS);
 	if (ret) {
 		mml_pq_comp_config_clear(task);
-		aal_frm->config_success = false;
-		mml_pq_err("get aal param timeout: %d in %dms",
-			ret, AAL_WAIT_TIMEOUT_MS);
+		mml_pq_err("%s get aal param timeout: %d in %dms",
+			__func__, ret, AAL_WAIT_TIMEOUT_MS);
 		ret = -ETIMEDOUT;
-		goto exit;
 	}
 
 	result = get_aal_comp_config_result(task);
 	if (!result) {
+		aal_frm->config_success = false;
 		mml_pq_err("%s: not get result from user lib", __func__);
 		ret = -EBUSY;
 		goto exit;
 	}
 
+	if (!result->aal_reg_cnt) {
+		aal_frm->config_success = false;
+		aal_relay(pkt, base_pa, 0x1);
+		goto exit;
+	}
+
 	regs = result->aal_regs;
+	if (ret)
+		mml_pq_init_comp_config_result(result);
+
 	curve = result->aal_curve;
 
 	/* TODO: use different regs */
@@ -452,6 +460,10 @@ static s32 aal_config_frame(struct mml_comp *comp, struct mml_task *task,
 		mml_write_array(pkt, base_pa + AAL_SRAM_RW_IF_1, curve[i],
 			U32_MAX, reuse, cache, &aal_frm->reuse_curve);
 	}
+
+	mml_pq_msg("%s kernel_aal_curve[0~4] = [%08x, %08x, %08x, %08x, %08x]",
+		__func__, curve[0], curve[1], curve[2],
+		curve[3], curve[4]);
 
 	mml_pq_msg("%s is_aal_need_readback[%d] base_pa[%llx] reuses[%u]",
 		__func__, result->is_aal_need_readback, base_pa,
@@ -549,6 +561,10 @@ static s32 aal_config_tile(struct mml_comp *comp, struct mml_task *task,
 
 	mml_pq_msg("%s jobid[%d] engine_id[%d] idx[%d] pipe[%d] pkt[%p]",
 		__func__, task->job.jobid, comp->id, idx, ccfg->pipe, pkt);
+
+	mml_pq_msg("%s %d: %d: %d: [cut_pos_x, out_hist_xs] = [%d, %d]",
+		__func__, task->job.jobid, comp->id, idx, aal_frm->cut_pos_x,
+		aal_frm->out_hist_xs);
 
 	mml_pq_msg("%s %d: %d: %d: [input] [xs, xe] = [%d, %d], [ys, ye] = [%d, %d]",
 		__func__, task->job.jobid, comp->id, idx, tile->in.xs,
@@ -905,7 +921,6 @@ static s32 aal_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 		mml_pq_err("get aal param timeout: %d in %dms",
 			ret, AAL_WAIT_TIMEOUT_MS);
 		ret = -ETIMEDOUT;
-		goto exit;
 	}
 
 	result = get_aal_comp_config_result(task);
@@ -914,7 +929,6 @@ static s32 aal_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 		ret = -EBUSY;
 		goto exit;
 	}
-
 
 	curve = result->aal_curve;
 	idx = 0;

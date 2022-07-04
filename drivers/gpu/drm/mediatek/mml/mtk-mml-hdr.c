@@ -386,19 +386,27 @@ static s32 hdr_config_frame(struct mml_comp *comp, struct mml_task *task,
 	}
 	hdr_relay(pkt, base_pa, 0x0);
 
-	ret = mml_pq_get_comp_config_result(task, HDR_WAIT_TIMEOUT_MS);
+	ret = mml_pq_get_comp_config_result(task, CONFIG_FRAME_WAIT_TIME_MS);
+
 	if (ret) {
 		mml_pq_comp_config_clear(task);
-		mml_pq_err("get hdr param timeout: %d in %dms",
-			ret, HDR_WAIT_TIMEOUT_MS);
+		mml_pq_err("%s get hdr param timeout: %d in %dms",
+			__func__, ret, CONFIG_FRAME_WAIT_TIME_MS);
 		ret = -ETIMEDOUT;
-		goto err;
 	}
 
 	result = get_hdr_comp_config_result(task);
 	if (!result) {
 		mml_pq_err("%s: not get result from user lib", __func__);
 		ret = -EBUSY;
+		hdr_frm->config_success = false;
+		goto err;
+	}
+
+	if (!result->hdr_reg_cnt) {
+		hdr_frm->config_success = false;
+		mml_pq_err("%s: not get correct reg count", __func__);
+		hdr_relay(pkt, base_pa, 0x1);
 		goto err;
 	}
 
@@ -740,7 +748,6 @@ static s32 hdr_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 		mml_pq_err("get hdr param timeout: %d in %dms",
 			ret, HDR_WAIT_TIMEOUT_MS);
 		ret = -ETIMEDOUT;
-		goto err;
 	}
 
 	result = get_hdr_comp_config_result(task);
@@ -767,8 +774,6 @@ static s32 hdr_reconfig_frame(struct mml_comp *comp, struct mml_task *task,
 	mml_pq_msg("%s is_hdr_need_readback[%d]",
 		__func__, result->is_hdr_need_readback);
 	hdr_frm->is_hdr_need_readback = result->is_hdr_need_readback;
-
-	return 0;
 
 err:
 	return ret;
