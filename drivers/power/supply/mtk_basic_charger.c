@@ -268,7 +268,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 					TYPEC_RP_LEVEL));
 		}
 	}
-
+#if 0
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)
 			&& info->chr_type == POWER_SUPPLY_TYPE_USB)
@@ -280,7 +280,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			}
 		}
 	}
-
+#endif
 	if (pdata->thermal_charging_current_limit != -1) {
 		if (pdata->thermal_charging_current_limit <
 			pdata->charging_current_limit) {
