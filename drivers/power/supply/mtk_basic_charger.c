@@ -433,20 +433,24 @@ static int do_algorithm(struct mtk_charger *info)
 				chg_alg_state_to_str(ret));
 
 			if (ret == ALG_INIT_FAIL || ret == ALG_TA_NOT_SUPPORT) {
+				chr_err("bora: try next algorithm----------- \n");
 				/* try next algorithm */
 				continue;
 			} else if (ret == ALG_TA_CHECKING || ret == ALG_DONE ||
 						ret == ALG_NOT_READY) {
 				/* wait checking , use basic first */
 				is_basic = true;
+				chr_err("bora: wait checking , use basic first----------- \n");
 				break;
-			} else if (ret == ALG_READY || ret == ALG_RUNNING) {
+			//} else if (ret == ALG_READY || ret == ALG_RUNNING) {
+			} else if (ret == ALG_READY) {
 				is_basic = false;
 				//chg_alg_set_setting(alg, &info->setting);
 				chg_alg_start_algo(alg);
+				chr_err("bora: chg_alg_start_algo----------- \n");
 				break;
 			} else {
-				chr_err("algorithm ret is error");
+				chr_err("algorithm ret is error\n");
 				is_basic = true;
 			}
 		}

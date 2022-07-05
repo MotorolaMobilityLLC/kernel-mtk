@@ -3444,7 +3444,7 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,charger,pe";
 		gauge = <&mtk_gauge>;
 
-		ta_12v_support;
+		//ta_12v_support;
 		ta_9v_support;
 
 		pe_ichg_level_threshold = <1000000>; /* uA */
@@ -3452,10 +3452,10 @@ firmware_class.path=/vendor/firmware";
 		ta_stop_battery_soc = <85>;
 		min_charger_voltage = <4600000>;
 
-		ta_ac_12v_input_current = <3200000>;
-		ta_ac_9v_input_current = <3200000>;
-		ta_ac_7v_input_current = <3200000>;
-		pe_charger_current = <3000000>;
+		ta_ac_12v_input_current = <1600000>;
+		ta_ac_9v_input_current = <1600000>;
+		ta_ac_7v_input_current = <2100000>;
+		pe_charger_current = <2600000>;
 	};
 
 	pe2: pe2 {
@@ -3473,8 +3473,8 @@ firmware_class.path=/vendor/firmware";
 		vbat_cable_imp_threshold = <3900000>; /* uV */
 
 		/* single charger */
-		sc_input_current = <3200000>;
-		sc_charger_current = <3000000>;
+		sc_input_current = <2000000>;
+		sc_charger_current = <2600000>;
 
 		/* dual charger in series */
 		dcs_input_current = <3200000>;
@@ -3485,6 +3485,7 @@ firmware_class.path=/vendor/firmware";
 		slave_mivr_diff = <100000>;
 	};
 
+#if 0
 	pdc: pdc {
 		compatible = "mediatek,charger,pd";
 		gauge = <&mtk_gauge>;
@@ -3541,6 +3542,7 @@ firmware_class.path=/vendor/firmware";
 		dual_polling_ieoc = <450000>;
 		slave_mivr_diff = <100000>;
 	};
+#endif
 
 	charger: charger {
 		compatible = "mediatek,charger";

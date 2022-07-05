@@ -1371,11 +1371,8 @@ static int hl7019d_set_current(struct charger_device *chg_dev, u32 current_value
 	unsigned int set_chr_current;
 	unsigned int array_size;
 	unsigned char register_value;
-    
-    pr_err("endy,%s()++\n",__func__);
-    
-    pr_err("endy,%s()current_value = %d.\n",__func__,current_value);
 
+    pr_err("%s()current_value = %d.\n",__func__,current_value);
 
 	if(!chg_dev)
 		return -EINVAL;
@@ -1396,7 +1393,6 @@ static int hl7019d_set_current(struct charger_device *chg_dev, u32 current_value
 		register_value = charging_parameter_to_value_hl7019d(CSTH, array_size, set_chr_current);
 		hl7019d_set_ichg(register_value);
 	}
-    pr_err("endy,%s()--\n",__func__);
 
 	return status;
 }
@@ -1470,9 +1466,8 @@ static int hl7019d_set_input_current(struct charger_device *chg_dev, u32 current
 	unsigned int set_chr_current;
 	unsigned int array_size;
 	unsigned char register_value;
-    pr_err("endy,%s()++\n",__func__);
 	
-    pr_err("endy,%s(),input current = %d.\n",__func__,current_value);
+    pr_err("%s, input current = %d.\n",__func__,current_value);
 
 	if(!chg_dev)
 		return -EINVAL;
@@ -1494,7 +1489,6 @@ static int hl7019d_set_input_current(struct charger_device *chg_dev, u32 current
 	}
 
 	hl7019d_set_iinlim(register_value);
-    pr_err("endy,%s()--\n",__func__);
 
 	return status;
 }

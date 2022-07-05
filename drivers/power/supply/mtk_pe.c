@@ -381,12 +381,9 @@ int mtk_pe_set_charging_current(struct chg_alg_device *alg)
 		pe->input_current)
 		pe->input_current = pe->input_current_limit;
 
-	pe_hal_set_charging_current(alg,
-		CHG1, pe->input_current);
-	pe_hal_set_input_current(alg,
-		CHG1, pe->charging_current);
-	pe_hal_set_cv(alg,
-		CHG1, pe->cv);
+	pe_hal_set_charging_current(alg, CHG1, pe->charging_current);
+	pe_hal_set_input_current(alg, CHG1, pe->input_current);
+	pe_hal_set_cv(alg, CHG1, pe->cv);
 
 	pe_dbg("%s cv:%d icl:%d cc:%d chr_org:%d chr_after:%d\n",
 		__func__,
