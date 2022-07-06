@@ -1229,3 +1229,7 @@
 	debounce = <512000>;
 	status = "okay";
 };
+
+&mt6358codec {
+       audio_if_change = <1>;
+};
