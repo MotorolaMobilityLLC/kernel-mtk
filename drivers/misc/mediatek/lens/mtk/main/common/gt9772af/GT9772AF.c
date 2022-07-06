@@ -131,41 +131,33 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
-
+	LOG_INF(" beg-\n");
 	if (*g_pAF_Opened == 1) {
+		int i4RetValue = 0;
+		char puSendCmdArray[3][2] = {
+			{0x06, 0x84}, {0x07, 0x01}, {0x08, 0x55},
+		};
+		unsigned char cmd_number;
+		i4RetValue = s4AF_WriteReg(0, 0xED, 0xAB); //advance mode
+		LOG_INF("Advance mode ret: %x\n", i4RetValue);
 
-		int ret = 0;
-		unsigned char Temp;
-
-		ret = s4AF_WriteReg(0, 0xED, 0xAB); //advance mode
-		LOG_INF("Advance mode ret: %x\n", ret);
-		s4AF_ReadReg(0x00, &Temp);  //ic info
-		LOG_INF("GT Check HW version: %x\n", Temp);
-
-		s4AF_WriteReg(0, 0x02, 0x00);
-		msleep(1);
-		//direct rise
-		ret = s4AF_WriteReg(0, 0x06, 0x00);
-		if(setPosition(AF_STARTCODE_UP)==0){g_u4CurrPosition = AF_STARTCODE_UP;}
-		msleep(10);
-		//AAC4
-		ret = s4AF_WriteReg(0, 0x06, 0x84);LOG_INF("AAC4 ret: %x\n", ret);
-		ret = s4AF_WriteReg(0, 0x07, 0x01);LOG_INF("0x07 0x01 ret: %x\n", ret);
-		ret = s4AF_WriteReg(0, 0x08, 0x55);LOG_INF("0x08 0x55ret: %x\n", ret);
-		msleep(1);
-		/*debuge
-		s4AF_ReadReg(0x03, &Temp);  //CODE MSB
-		LOG_INF("REG03: %x\n", Temp);
-		s4AF_ReadReg(0x04, &Temp);  //CODE LSB
-		LOG_INF("REG04: %x\n", Temp);
-		*/
+		for (cmd_number = 0; cmd_number < 3; cmd_number++) {
+			i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmdArray[cmd_number], 2);
+			mdelay(1);
+			if (i4RetValue < 0)
+			{
+				LOG_INF("puSendCmdArray[%d] = %x, WriteI2C failed!!\n",cmd_number, puSendCmdArray[cmd_number]);
+			}
+			else
+			{
+				LOG_INF("puSendCmdArray[%d] = %x, WriteI2C success!!\n",cmd_number, puSendCmdArray[cmd_number]);
+			}
+		}
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}
-
-	LOG_INF(" -\n");
-
+	LOG_INF(" end-\n");
 	return 0;
 }
 
