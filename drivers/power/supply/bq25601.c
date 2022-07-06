@@ -474,6 +474,25 @@ static int sgm4154x_en_pe_current_partern(struct charger_device
 				       (unsigned char) (SGM4154x_PUMPX_DN_MASK),
 				       (unsigned char) (SGM4154x_PUMPX_DN_SHIFT)
 				      );
+
+	msleep(2300);
+
+	return ret;
+}
+
+static int sgm4154x_pe_reset_ta(struct charger_device *chg_dev)
+{
+	unsigned int ret = 0;
+
+	ret = bq25601_config_interface((unsigned char) (SGM4154x_CHRG_CTRL_d),
+				       (unsigned char) (0x0),
+				       (unsigned char) (SGM4154x_EN_PUMPX_MASK),
+				       (unsigned char) (SGM4154x_EN_PUMPX_SHIFT)
+				      );
+	if (ret < 0) {
+		pr_info("[%s] write SGM4154x_CHRG_CTRL_d fail\n", __func__);
+		return ret;
+	}
 	return ret;
 }
 
@@ -1445,6 +1464,7 @@ static struct charger_ops bq25601_chg_ops = {
 #endif
 	/* PE+/PE+20 */
 	.send_ta_current_pattern = sgm4154x_en_pe_current_partern,
+	.reset_ta = sgm4154x_pe_reset_ta,
 	/* Normal charging */
 	.dump_registers = bq25601_dump_register,
 	.enable = bq25601_enable_charging,
