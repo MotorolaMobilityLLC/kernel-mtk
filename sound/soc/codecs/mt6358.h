@@ -3792,7 +3792,7 @@ struct mt6358_priv {
 	int reg_afe_vow_periodic;
 	/* vow dmic low power mode, 1: enable, 0: disable */
 	int vow_dmic_lp;
-
+	int audio_if_change;
 	int pull_down_stay_enable;
 };
 
