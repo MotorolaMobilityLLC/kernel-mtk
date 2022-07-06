@@ -6583,8 +6583,11 @@ static void mt6358_set_gpio_smt(struct mt6358_priv *priv)
 	regmap_update_bits(priv->regmap, MT6358_SMT_CON1, 0xff0, 0xff0);
 }
 
+static int mt6358_parse_audio_if_change_dt(struct mt6358_priv *priv);
 static void mt6358_codec_init_reg(struct mt6358_priv *priv)
 {
+	int ret = 0;
+
 	/* enable clk buf */
 	regmap_update_bits(priv->regmap, MT6358_DCXO_CW14,
 			   0x1 << RG_XO_AUDIO_EN_M_SFT,
@@ -6622,6 +6625,19 @@ static void mt6358_codec_init_reg(struct mt6358_priv *priv)
 			   RG_EINTCOMPVTH_MASK_SFT,
 			   0x1 << RG_EINTCOMPVTH_SFT);
 
+	ret = mt6358_parse_audio_if_change_dt(priv);
+	if (ret < 0) {
+		regmap_write(priv->regmap, MT6358_DRV_CON3, 0x8888);
+		dev_info(priv->dev, "%s() mt6358codec node not exist，set to 4mA.\n",__func__);
+	} else {
+		if (priv->audio_if_change){
+			regmap_write(priv->regmap, MT6358_DRV_CON3, 0xcccc);
+			dev_info(priv->dev, "%s() set to 12mA.\n",__func__);
+		} else {
+			regmap_write(priv->regmap, MT6358_DRV_CON3, 0x8888);
+			dev_info(priv->dev, "%s() set to 4mA.\n",__func__);
+		}
+	}
 	/* set gpio */
 	playback_gpio_reset(priv);
 	capture_gpio_reset(priv);
@@ -7688,6 +7704,27 @@ static int mt6358_parse_dt(struct mt6358_priv *priv)
 		dev_info(dev,
 			"%s(), get pull_down_stay_enable fail, default 0\n",
 			__func__);
+	}
+
+	return 0;
+}
+
+static int mt6358_parse_audio_if_change_dt(struct mt6358_priv *priv)
+{
+	int ret;
+	struct device *dev = priv->dev;
+	struct device_node *np;
+
+	np = of_get_child_by_name(dev->parent->of_node, "mt6358codec");
+	if (!np)
+		return  -EINVAL;
+
+	/* get audio if change */
+	ret = of_property_read_u32(np, "audio_if_change", &priv->audio_if_change);
+	if (ret < 0){
+		dev_info(dev, "%s() audio_if_change node not exist, default off.\n",
+			__func__);
+		priv->audio_if_change = 0;
 	}
 
 	return 0;
