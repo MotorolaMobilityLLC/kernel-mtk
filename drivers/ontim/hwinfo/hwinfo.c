@@ -120,7 +120,7 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 	memset(buf, 0x00, buf_size);
-	len = vfs_read(fp, buf, buf_size, &pos);
+	len = vfs_read(fp, buf, buf_size - 1, &pos);
 	if (len > 0)
 		buf[len] = 0;
 	else
