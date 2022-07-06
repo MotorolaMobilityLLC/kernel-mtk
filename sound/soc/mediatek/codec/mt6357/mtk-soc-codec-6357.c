@@ -2923,13 +2923,7 @@ static void TurnOnDacPower(int device)
 	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERL://5
 	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERR://4
 		/* Release LO CMFB pull down */
-		//Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0028, 0xffff);
-		
-		/* 
-                  when speaker open,also open earpice
-		  0x0088 || 0x0028 = 0x00a8 
-                */
-		 Ana_Set_Reg(AUDDEC_ANA_CON7, 0x00a8, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0028, 0xffff);
 		break;
 	case AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L:
 	case AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_R:
@@ -3055,13 +3049,13 @@ static void Audio_Amp_Change(int channels, bool enable)
 		 * __func__, mic_vinp_mv, Ana_Get_Reg(AUDDEC_ELR_0));
 		 */
 #endif
-		if (GetDLStatus() == false || ONTIM_DUAL_SPEAKER_ENABLE)
+		if (GetDLStatus() == false)
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
 		/* here pmic analog control */
-		if (/*mCodec_data->mAudio_Ana_DevicePower
+		if (mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false */true) {
+			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
 			/* switch to ground to de pop-noise */
 			/*HP_Switch_to_Ground();*/
 			/* Disable headphone short-circuit protection */
@@ -3156,10 +3150,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 		}
 	} else {
-		if (/*mCodec_data->mAudio_Ana_DevicePower
+		if (mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false */ true) {
+			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
 			/* Pull-down HPL/R to AVSS28_AUD */
 			hp_pull_down(true);
 #ifndef ANALOG_HPTRIM
@@ -3556,7 +3550,7 @@ static void Voice_Amp_Mux_Select(bool enable){
 			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x1, 0x1);
 			/* Enable Audio DAC  */
 			//Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
-			 Ana_Set_Reg(AUDDEC_ANA_CON0, 0x37ff, 0xffff);
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x300f, 0xffff);
 			/* Enable low-noise mode of DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0281, 0xffff);
 			/* Switch HS MUX to audio DAC */
@@ -3704,7 +3698,7 @@ static void Speaker_Amp_Mux_Select(bool enable){
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x1, 0x1);
 		/* Enable Audio DAC  */
 		// Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x37ff, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x300f, 0xffff);
 		/* Enable low-noise mode of DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0201, 0xffff);
 		/* Switch LOL MUX to audio DAC */
@@ -4139,6 +4133,111 @@ static int Receiver_Speaker_Switch_Set(struct snd_kcontrol *kcontrol,
 	}
 	return 0;
 }
+
+static void Headset_Speaker_Amp_Mux_Select(bool enable){
+	pr_debug("%s(), enable = %d", __func__,enable);
+	if (enable) {
+		if (GetDLStatus() == false || ONTIM_DUAL_SPEAKER_ENABLE) {
+			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_EARPIECEL);
+			/* Disable headphone short-circuit protection */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
+			/* Disable handset short-circuit protection */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0010, 0xffff);
+			/* Disable linout short-circuit protection */
+			// Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0010, 0xffff);
+			 Ana_Set_Reg(AUDDEC_ANA_CON4, 0x117, 0xffff);
+			// Ana_Set_Reg(AUDDEC_ANA_CON4, 0x11b, 0xffff);//speaker on
+			/* Reduce ESD resistance of AU_REFN */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x200, 0x200);
+			/* Set HS gain as minimum (~ -40dB) */
+			Ana_Set_Reg(ZCD_CON3, DL_GAIN_N_40DB, 0xffff);
+			/* Turn on DA_600K_NCP_VA18 */
+			Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
+			/* Set NCP clock as 604kHz // 26MHz/43 = 604KHz */
+			Ana_Set_Reg(AUDNCP_CLKDIV_CON2, 0x002c, 0xffff);
+			/* Toggle RG_DIVCKS_CHG */
+			Ana_Set_Reg(AUDNCP_CLKDIV_CON0, 0x0001, 0xffff);
+			/* Set NCP soft start mode as default mode: 150us */
+			Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0002, 0xffff);
+			/* Enable NCP */
+			Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
+			udelay(250);
+			/* Enable cap-less LDOs (1.5V) */
+			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x1055, 0x1055);
+			/* Enable NV regulator (-1.2V) */
+			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0001, 0xffff);
+			udelay(100);
+			/* Enable AUD_ZCD */
+			Zcd_Enable(true, AUDIO_ANALOG_DEVICE_OUT_EARPIECEL);
+			/* Enable IBIST */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0055, 0xffff);
+			/* Set HP DR bias current optimization, 010: 6uA */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x92, 0xffff);
+			/* Set HP & ZCD bias current optimization */
+			/* 01: ZCD: 4uA, HP/HS/LO: 5uA */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0055, 0xffff);
+			/* Set HS STB enhance circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0090, 0xffff);
+			/* Enable HS driver bias circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0092, 0xffff);
+			/* Enable HS driver core circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0093, 0xffff);
+			/* Set HS gain to normal gain step by step */
+			Ana_Set_Reg(ZCD_CON3,
+				    mCodec_data->mAudio_Ana_Volume
+						[AUDIO_ANALOG_VOLUME_HSOUTL],
+				    0xffff);
+			/* Enable AUD_CLK */
+			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x1, 0x1);
+			/* Enable Audio DAC  */
+			//Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+			 Ana_Set_Reg(AUDDEC_ANA_CON0, 0x37ff, 0xffff);
+			/* Enable low-noise mode of DAC */
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0281, 0xffff);
+			/* Switch HS MUX to audio DAC */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x009b, 0xffff);
+			/* disable Pull-down HPL/R to AVSS28_AUD */
+			hp_pull_down(false);
+
+		}
+	} else {
+		/* HS mux to open */
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x3 << 2);
+		if (GetDLStatus() == false) {
+			/* Pull-down HPL/R to AVSS28_AUD */
+			hp_pull_down(true);
+			/* Disable Audio DAC */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
+			/* Disable AUD_CLK */
+			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x0, 0x1);
+			/* decrease HS gain to minimum gain step by step */
+			Ana_Set_Reg(ZCD_CON3, DL_GAIN_N_40DB, 0xffff);
+			/* Disable HS driver core circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0, 0x1);
+			/* Disable HS driver bias circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x1 << 1);
+			/* Disable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0, 0xff << 8);
+			/* Enable HP main CMFB Switch */
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2 << 8, 0xff << 8);
+			/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
+			Ana_Set_Reg(AUDDEC_ANA_CON7, 0xa8, 0xff);
+			/* Disable IBIST */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x1 << 8, 0x1 << 8);
+			/* Disable AUD_ZCD */
+			Zcd_Enable(false, AUDIO_ANALOG_DEVICE_OUT_EARPIECEL);
+			/* Disable NV regulator (-1.2V) */
+			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0, 0x1);
+			/* Disable cap-less LDOs (1.5V) */
+			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0, 0x1055);
+			/* Disable NCP */
+			Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x1, 0x1);
+			TurnOffDacPower();
+		}
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x1 << 2);
+	}
+}
+
 static void Headset_Speaker_Amp_Change(bool enable)
 {
 pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
@@ -4338,7 +4437,8 @@ pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
 
 
 	//open receiver MUX & receiver PA
-	Voice_Amp_Mux_Select(enable);
+	// Voice_Amp_Mux_Select(enable);
+	Headset_Speaker_Amp_Mux_Select(enable);
 	if (enable) {
 		Voice_Amp_PA_SetMode(0);//Music
 	} else {
