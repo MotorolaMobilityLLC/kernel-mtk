@@ -265,10 +265,8 @@ static int ocp8135b_verify_level(int level)
 		level = 1;
 	else if (level >= OCP8135B_LEVEL_NUM)
 		level = OCP8135B_LEVEL_NUM;
-	else
-		level = level + 1;
 
-	return level;
+	return level - 1;
 }
 
 /* set flashlight level */
