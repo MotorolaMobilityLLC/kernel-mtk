@@ -508,7 +508,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 	else
 		write_cmos_sensor(0x0b00, 0x0000); // stream off
 
-	mdelay(10);
+	mdelay(1);
 	return ERROR_NONE;
 }
 
