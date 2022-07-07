@@ -428,7 +428,7 @@ static char *pe_state_to_str(int state)
 static int _pe_is_algo_ready(struct chg_alg_device *alg)
 {
 	struct mtk_pe *pe;
-	int ret_value = 0, uisoc;
+	int ret_value = 0, uisoc, ichg;
 
 	pe = dev_get_drvdata(&alg->dev);
 	pe_dbg("%s state:%s\n", __func__,
@@ -456,6 +456,18 @@ static int _pe_is_algo_ready(struct chg_alg_device *alg)
 		break;
 	case PE_RUN:
 		ret_value = ALG_RUNNING;
+
+		uisoc = pe_hal_get_uisoc(alg);
+		ichg = pe_hal_get_ibat(alg);
+		pe_err("%s ichg:%d\n", __func__, ichg);
+
+		if ((uisoc >= pe->ta_stop_battery_soc)&&(ichg < pe->pe_ichg_level_threshold)) {
+			ret_value = ALG_DONE;
+			pe_dbg("%s: OK, SOC = (%d,%d),  ichg = (%d, %d), stop PE\n",
+				__func__, pe_hal_get_uisoc(alg),
+				pe->ta_stop_battery_soc, ichg, pe->pe_ichg_level_threshold);
+			pe_leave(alg, true);
+		}
 		break;
 	case PE_DONE:
 		ret_value = ALG_DONE;
