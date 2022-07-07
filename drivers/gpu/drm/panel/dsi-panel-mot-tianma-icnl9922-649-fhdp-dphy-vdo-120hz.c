@@ -33,6 +33,7 @@
 
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
+static int tp_gesture_flag=0;
 
 struct tianma {
 	struct device *dev;
@@ -173,6 +174,19 @@ static int tianma_disable(struct drm_panel *panel)
 	return 0;
 }
 
+static int tianma_set_gesture_flag(int state)
+{
+	if(state == 1)
+	{
+		tp_gesture_flag = 1;
+	}
+	else
+	{
+		tp_gesture_flag = 0;
+	}
+	return 0;
+}
+
 static int tianma_unprepare(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
@@ -187,6 +201,8 @@ static int tianma_unprepare(struct drm_panel *panel)
 	tianma_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
 
+	if(tp_gesture_flag == 0)
+	{
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
@@ -198,6 +214,7 @@ static int tianma_unprepare(struct drm_panel *panel)
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	ret = ocp2138_BiasPower_disable(5);
+	}
 
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
@@ -726,6 +743,7 @@ static int tianma_get_modes(struct drm_panel *panel,
 static const struct drm_panel_funcs tianma_drm_funcs = {
 	.disable = tianma_disable,
 	.unprepare = tianma_unprepare,
+	.set_gesture_flag = tianma_set_gesture_flag,
 	.prepare = tianma_prepare,
 	.enable = tianma_enable,
 	.get_modes = tianma_get_modes,
