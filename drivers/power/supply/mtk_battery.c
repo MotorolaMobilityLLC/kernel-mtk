@@ -405,7 +405,10 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_technology;
 		break;
 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
-		val->intval = 1;
+		if(gm->bat_cycle_count > 0)
+			val->intval = gm->bat_cycle_count;
+		else
+			val->intval = gm->bat_cycle;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		/* 1 = META_BOOT, 4 = FACTORY_BOOT 5=ADVMETA_BOOT */
@@ -2566,6 +2569,26 @@ static int init_done_set(struct mtk_battery *gm,
 	return 0;
 }
 
+static int battery_cycle_set(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	int val)
+{
+	if(val >= 0) {
+		gm->bat_cycle_count = val;
+		bm_debug("[%s] cycle_count = %d\n", __func__, gm->bat_cycle_count);
+	}
+	return 0;
+}
+
+static int battery_cycle_get(struct mtk_battery *gm,
+	struct mtk_battery_sysfs_field_info *attr,
+	int *val)
+{
+	*val = gm->bat_cycle_count;
+	bm_debug("[%s] cycle_count = %d\n", __func__, *val);
+	return 0;
+}
+
 static int reset_set(struct mtk_battery *gm,
 	struct mtk_battery_sysfs_field_info *attr,
 	int val)
@@ -2673,6 +2696,7 @@ static struct mtk_battery_sysfs_field_info battery_sysfs_field_tbl[] = {
 	BAT_SYSFS_FIELD_WO(reset, BAT_PROP_FG_RESET),
 	BAT_SYSFS_FIELD_RW(log_level, BAT_PROP_LOG_LEVEL),
 	BAT_SYSFS_FIELD_WO(temp_th, BAT_PROP_TEMP_TH_GAP),
+	BAT_SYSFS_FIELD_RW(battery_cycle,BAT_PROP_BATTERY_CYCLE),
 };
 
 int battery_get_property(enum battery_property bp,
