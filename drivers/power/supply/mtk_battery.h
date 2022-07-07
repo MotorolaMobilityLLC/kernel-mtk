@@ -114,6 +114,7 @@ enum battery_property {
 	BAT_PROP_FG_RESET,
 	BAT_PROP_LOG_LEVEL,
 	BAT_PROP_TEMP_TH_GAP,
+	BAT_PROP_BATTERY_CYCLE,
 };
 
 struct battery_data {
@@ -1020,6 +1021,7 @@ struct mtk_battery {
 	int bat_cycle_thr;
 	int bat_cycle_car;
 	int bat_cycle_ncar;
+	int bat_cycle_count;
 
 	/* power misc */
 	struct shutdown_controller sdc;
