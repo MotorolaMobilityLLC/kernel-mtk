@@ -29,7 +29,7 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
-#include "dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha.h"
+#include "dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-lhbm-alpha-boe.h"
 
 //#define SUPPORT_144HZ_REFRESH_RATE
 
@@ -251,9 +251,9 @@ static int lcm_prepare(struct drm_panel *panel)
 	gpiod_set_value(ctx->reset_gpio, 0);
 	usleep_range(11000, 11001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(1000, 1001);
+	usleep_range(5000, 5001);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(1000, 1001);
+	usleep_range(5000, 5001);
 	gpiod_set_value(ctx->reset_gpio, 1);
 	usleep_range(11000, 11001);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -1076,6 +1076,13 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 static int panel_ext_init_power(struct drm_panel *panel)
 {
 	int ret;
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	msleep(10);
+
 	ret = gate_ic_Power_on(panel, 1);
 	return ret;
 }
