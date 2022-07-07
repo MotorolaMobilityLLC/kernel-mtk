@@ -230,7 +230,7 @@ static int ocp8135b_set_torch_brightness(int val)
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
 
-	ocp8135b_pwm_set_config(val*2-1);
+	ocp8135b_pwm_set_config(val);
 
 	return 0;
 }
@@ -239,7 +239,7 @@ static int ocp8135b_set_strobe_brightness(int val)
 {
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
-	ocp8135b_pwm_set_config(val*12/10+1);
+	ocp8135b_pwm_set_config(val);
 
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENF,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
@@ -260,6 +260,7 @@ static int ocp8135b_is_torch(int level)
 
 static int ocp8135b_verify_level(int level)
 {
+	level = level*16/13;
 	if (level <= 0)
 		level = 1;
 	else if (level >= OCP8135B_LEVEL_NUM)

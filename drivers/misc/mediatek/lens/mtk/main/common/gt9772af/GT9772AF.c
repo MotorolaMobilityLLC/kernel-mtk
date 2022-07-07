@@ -238,23 +238,23 @@ int GT9772AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		LOG_INF("apply\n");
 
         setPosition(270);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(240);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(210);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(180);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(150);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(120);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(90);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(60);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
         setPosition(30);
-        mdelay(DELAY_TIME);
+        msleep(DELAY_TIME);
 	}
 
 	if (*g_pAF_Opened) {
