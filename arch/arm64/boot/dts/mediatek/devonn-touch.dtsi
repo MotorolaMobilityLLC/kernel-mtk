@@ -35,6 +35,7 @@
 	focaltech,irq-gpio = <&pio 22 0x0>;
 	focaltech,max-touch-number = <10>;
         focaltech,display-coords = <0 0 1080 2400>;
+	focaltech,report_gesture_key = <59>;
 	};
 };
 
