@@ -106,7 +106,7 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 	struct file *fp;
 	mm_segment_t fs;
 	loff_t pos = 0;
-	ssize_t len = 0;
+	int len = 0;
 
 	if (file_name == NULL || buf == NULL)
 		return -1;
@@ -125,8 +125,7 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 		buf[len] = 0;
 	else
 		buf[0] = 0;
-	buf[buf_size - 1] = '\n';
-	printk(KERN_INFO "buf= %s,size = %ld \n", buf, (long int)len);
+	printk(KERN_INFO "file=%s len=%d size=%d buf=%s\n", file_name, len, buf_size, buf);
 	filp_close(fp, NULL);
 	set_fs(fs);
 
@@ -138,7 +137,7 @@ static int hwinfo_write_file(char *file_name, const char buf[], int buf_size)
 	struct file *fp;
 	mm_segment_t fs;
 	loff_t pos = 0;
-	ssize_t len = 0;
+	int len = 0;
 
 	if (file_name == NULL || buf == NULL || buf_size < 1)
 		return -1;
@@ -155,7 +154,7 @@ static int hwinfo_write_file(char *file_name, const char buf[], int buf_size)
 	pos = fp->f_pos;
 	len = vfs_write(fp, buf, buf_size, &pos);
 	fp->f_pos = pos;
-	printk(KERN_INFO "buf = %s,size = %ld \n", buf, (long int)len);
+	printk(KERN_INFO "file=%s len=%d size=%d buf=%s\n", file_name, len, buf_size, buf);
 	filp_close(fp, NULL);
 	set_fs(fs);
 	return 0;
@@ -775,7 +774,7 @@ static void get_board_id(void)
 	char data[16];
 	char *id_buf = hwinfo[board_id].hwinfo_buf;
 	char *ver_buf = hwinfo[hw_version].hwinfo_buf;
-	int ret = hwinfo_read_file(BOARD_ID_ADC_FILE, data, sizeof(sizeof(data)));
+	int ret = hwinfo_read_file(BOARD_ID_ADC_FILE, data, sizeof(data));
 	if (ret) {
 		pr_err("read " BOARD_ID_ADC_FILE " fail, ret=%d\n", ret);
 		strcpy(id_buf, "-1");
