@@ -270,6 +270,11 @@ struct mmi_ffc_zone  {
 	int		ffc_chg_iterm;
 };
 
+struct mmi_cycle_cv_steps {
+	int		cycle;
+	int		delta_cv_mv;
+};
+
 struct mmi_temp_zone {
 	int		temp_c;
 	int		norm_mv;
@@ -329,6 +334,8 @@ struct mmi_params {
 
 	int			num_ffc_zones;
 	struct mmi_ffc_zone	*ffc_zones;
+	int			num_cycle_cv_steps;
+	struct mmi_cycle_cv_steps	*cycle_cv_steps;
 
 	bool			enable_charging_limit;
 	bool			is_factory_image;
