@@ -158,7 +158,7 @@ static struct LCM_setting_table init_setting[] = {
 //    {0xA0,0x04,{0x06,0x06,0x62,0x00}},
     {0xA0,0x04,{0x00,0x00,0x46,0x00}},
     {0x19,0x01,{0x01}},
-	{0x51,0x01,{0xff}},
+	{0x51,0x02,{0xff,0x00}},
 	{0x53,0x01,{0x2C}},
 	{0x55,0x01,{0x01}},
     {0x11,0x01,{0x00}},
@@ -169,7 +169,7 @@ static struct LCM_setting_table init_setting[] = {
     {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
-	{ 0x51, 0x01, {0xFF} },
+	{ 0x51, 0x02, {0xFF,0x00} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -438,6 +438,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
         level = level*71/100;
     }
 	bl_level[0].para_list[0] = level & 0xff;
+	bl_level[0].para_list[1] = level & 0x0f;
 	LCM_LOGI("%s,backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 
