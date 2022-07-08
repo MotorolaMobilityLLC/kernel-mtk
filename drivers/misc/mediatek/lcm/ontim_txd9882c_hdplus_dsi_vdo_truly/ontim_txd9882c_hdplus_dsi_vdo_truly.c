@@ -217,19 +217,35 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* DPFS_LEVEL0 */
 	dfps_params[0].level = DFPS_LEVEL0;
 	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
-	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
+	dfps_params[0].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
 	/* if vfp solution */
-	dfps_params[0].vertical_frontporch = 1342;
-	dfps_params[0].vertical_frontporch_for_low_power = 1342;
+	dfps_params[0].vertical_frontporch = 1330;
+
+	/*if need mipi hopping params add here*/
+
+	//dfps_params[0].dynamic_switch_mipi = 1;
+	//dfps_params[0].PLL_CLOCK_dyn = 456;
+	//dfps_params[0].horizontal_frontporch_dyn = 26;
+	//dfps_params[0].vertical_frontporch_dyn = 1330;
+
 
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
 	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
 	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
-	dfps_params[1].vertical_frontporch = 356;
-	dfps_params[1].vertical_frontporch_for_low_power = 1342;
+	dfps_params[1].vertical_frontporch = 370;
+	dfps_params[1].vertical_frontporch_for_low_power = 1330;
+
+	/*if need mipi hopping params add here*/
+
+	//dfps_params[1].dynamic_switch_mipi = 1;
+	//dfps_params[1].PLL_CLOCK_dyn = 456;
+	//dfps_params[1].horizontal_frontporch_dyn = 26;
+	//dfps_params[1].vertical_frontporch_dyn = 370;
+	//dfps_params[1].vertical_frontporch_for_low_power_dyn = 1330;
+
 	dsi->dfps_num = 2;
 }
 #endif
@@ -271,13 +287,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 16;
-	params->dsi.vertical_frontporch = 356;
+	params->dsi.vertical_frontporch = 370;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 	params->dsi.horizontal_sync_active = 6;
 	params->dsi.horizontal_backporch = 6;
 	params->dsi.horizontal_frontporch = 20;//old is 16,now is 60
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 440;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 445;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 #if 0
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
@@ -353,7 +369,7 @@ static void lcm_init(void)
 	LCM_LOGI("%s: gesture_dubbleclick_en=%d \n",__func__,gesture_dubbleclick_en);
 	if (!gesture_dubbleclick_en) {
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
-		MDELAY(2);
+		MDELAY(6);
 	
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
 
@@ -402,9 +418,9 @@ static void lcm_suspend(void)
 
 	if (!gesture_dubbleclick_en) {
 		set_gpio_lcd_enn(0);
-		MDELAY(2);
+		MDELAY(6);
 		set_gpio_lcd_enp(0);
-		MDELAY(2);
+		MDELAY(6);
 	}
 #endif
 	LCM_LOGI("%s,ilitek suspend end\n", __func__);
@@ -439,6 +455,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	bl_level[0].para_list[0] = level & 0xFF;
 	LCM_LOGI("%s,backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+
 
 }
 
