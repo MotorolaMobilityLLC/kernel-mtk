@@ -1724,6 +1724,12 @@ static void charger_detect_work_func(struct work_struct *work)
 		dev_err(sgm->dev, "Vbus not online\n");		
 		goto err;
 	}
+
+	if((sgm->psy_usb_type == POWER_SUPPLY_USB_TYPE_DCP) && (sgm->state.chrg_type == SGM4154x_USB_DCP))
+	{
+		dev_err(sgm->dev, "Has already detected the dcp type, goto end.\n");
+		goto err;
+	}
 	if(sgm->dev_id == SGM41542_ID || sgm->dev_id == SGM41543D_ID || sgm->dev_id == SGM41516D_ID) {
 		switch(sgm->state.chrg_type) {
 			case SGM4154x_USB_SDP:
