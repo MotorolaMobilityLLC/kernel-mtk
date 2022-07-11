@@ -75,6 +75,7 @@ enum {
 #define BUF_SIZE 64
 #define BORA_TP_VENDOR_TXD	 0
 #define BORA_TP_VENDOR_DJ    1
+#define BORA_TP_VENDOR_JZ    2
 
 static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 {
@@ -121,13 +122,16 @@ static int get_tp_vendor(void)
 	}
 
 	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "bora", 4) == 0) {
-		pr_err("wtd debug bora success.\n");
+		pr_err("ontim debug bora success.\n");
 		if (strncmp(buf,"txd",3) == 0) {
-		pr_err("wtd debug lcd txd.\n");
+			pr_err("ontim debug lcd : [1_txd]\n");
 			vendor = BORA_TP_VENDOR_TXD;
 		} else if (strncmp(buf,"dj",2) == 0) {
-		pr_err("wtd debug dj txd.\n");
+			pr_err("ontim debug lcd : [2_dj]\n");
 			vendor = BORA_TP_VENDOR_DJ;
+		} else if (strncmp(buf,"jz",2) == 0) {
+			pr_err("ontim debug lcd : [3_jz]\n");
+			vendor = BORA_TP_VENDOR_JZ;
 		}
 	}
 	printk(KERN_INFO "[ALS/PS]: tp vendor:(0x%x)%s\n", vendor, buf);
