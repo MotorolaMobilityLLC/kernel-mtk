@@ -1662,13 +1662,14 @@ static void charger_monitor_work_func(struct work_struct *work)
 	}
 	if(!state.online)
 	{
-		dev_err(sgm->dev, "Vbus not online\n");		
+		dev_err(sgm->dev, "Vbus not online\n");
 		goto OUT;
-	}		
+	}
 	sgm4154x_dump_register(sgm->chg_dev);
 	pr_err("%s--End--\n",__func__);
-OUT:	
-	schedule_delayed_work(&sgm->charge_monitor_work, 10*HZ);
+OUT:
+	return;
+	//schedule_delayed_work(&sgm->charge_monitor_work, 10*HZ);
 }
 
 static void charger_detect_work_func(struct work_struct *work)
@@ -2334,7 +2335,7 @@ static struct charger_ops sgm4154x_chg_ops = {
 	.plug_in = sgm4154x_plug_in,
 	.plug_out = sgm4154x_plug_out,
 	/* dump registers */
-	/*.dump_registers = sgm4154x_dump_register,*/
+	.dump_registers = sgm4154x_dump_register,
 	.enable = sgm4154x_charging_switch,
 	.is_enabled = sgm4154x_is_charging_enable,
 	.get_charging_current = sgm4154x_get_ichg_curr,
