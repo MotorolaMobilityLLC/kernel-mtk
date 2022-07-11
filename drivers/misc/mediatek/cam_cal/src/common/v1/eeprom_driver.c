@@ -52,6 +52,9 @@ static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
 static unsigned int g_lastDevID;
 
+extern char back_cam_otp_status[64];
+extern char front_cam_otp_status[64];
+
 /***********************************************************
  *
  ***********************************************************/
@@ -789,6 +792,39 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
+static u32 do_otp_crc_check(u8 *raw_buf, u32 data_count) {
+	u16 crc = 0x0000;
+	u32 ret = 1;
+	u32 i = 0, j = 0, tmp = 0;
+	u16 crc_otp_val_hi = 0x0000;
+	u16 crc_otp_val_lo = 0x0000;
+
+	pr_info("do_otp_crc_check in");
+
+	for (i = 0; i < data_count-2; i++) {
+		tmp = raw_buf[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+		}
+		//pr_info("raw_buf[%d]:0x%x", i, raw_buf[i]);
+	}
+
+	crc_otp_val_hi = raw_buf[data_count-2];
+	crc_otp_val_lo = raw_buf[data_count-1];
+
+	if (((crc_otp_val_hi << 8) | crc_otp_val_lo) == crc) {
+		ret = 1;
+	} else {
+		ret = 0;
+	}
+	pr_info("crc:0x%x, checksum:0x%x", crc, ((crc_otp_val_hi << 8) | crc_otp_val_lo));
+	return ret;
+}
+
 int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 {
 	const char * str_0_hi1634b_borag_path = "/data/vendor/camera_dump/0_hi1634b_borag.data";
@@ -798,7 +834,9 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 	u32 u4Offset;
 	u32 u4Length;
 	u32 deviceid = 1;
+	u16 err = 0, err1 = 0;
 	u8 *pu1Params = NULL;
+	u8 temp1 = 0, temp2 = 0;
 	int i4RetValue = 0;
 	static mm_segment_t oldfs;
 	struct file *fp;
@@ -880,6 +918,56 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 
 		}
 	}
+
+	switch(sensorid)
+	{
+		case HI1634B_BORAG_1_SENSOR_ID:
+		case HI1634B_BORAG_2_SENSOR_ID:
+		{
+			memset(back_cam_otp_status, 0x00, sizeof(back_cam_otp_status));
+			err = do_otp_crc_check(pu1Params + 39, 0X0A95 - 0X0A7B); //af
+			sprintf(back_cam_otp_status,"%01x",err);
+
+			err = do_otp_crc_check(pu1Params + 65, 0X0AC2 - 0X0A95); //awb
+			sprintf(back_cam_otp_status+1,"%01x",err);
+
+			err = do_otp_crc_check(pu1Params + 247, 0X1299 - 0X0B4B); //lsc
+			sprintf(back_cam_otp_status+2,"%01x",err);
+
+			temp1 = *(pu1Params + 2613);
+			temp2 = *(pu1Params + 2614);
+			*(pu1Params + 2613) = *(pu1Params + 3617);
+			*(pu1Params + 2614) = *(pu1Params + 3618);
+			err = do_otp_crc_check(pu1Params + 2117, 0X148B - 0x1299); //pdaf1
+			*(pu1Params + 2613) = temp1;
+			*(pu1Params + 2614) = temp2;
+
+			temp1 = *(pu1Params + 3617);
+			temp2 = *(pu1Params + 3618);
+			*(pu1Params + 3617) = *(pu1Params + 3619);
+			*(pu1Params + 3618) = *(pu1Params + 3620);
+			err1 = do_otp_crc_check(pu1Params + 2613, 0X1877 - 0x1489); //pdaf2
+			*(pu1Params + 3617) = temp1;
+			*(pu1Params + 3618) = temp2;
+
+			sprintf(back_cam_otp_status+3,"%01x",(err & err1));
+			break;
+		}
+		case S5K5E9YX04_BORAG_1_SENSOR_ID:
+		case S5K5E9YX04_BORAG_2_SENSOR_ID:
+		{
+			memset(front_cam_otp_status, 0x00, sizeof(front_cam_otp_status));
+			err = do_otp_crc_check(pu1Params + 65, 0X0B5D - 0X0B30); //awb
+			sprintf(front_cam_otp_status+0,"%01x",err);
+
+			err = do_otp_crc_check(pu1Params + 247, 0X1334 - 0X0BE6); //lsc
+			sprintf(front_cam_otp_status+1,"%01x",err);
+			break;
+		}
+		default:
+			break;
+	}
+
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
 	fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
