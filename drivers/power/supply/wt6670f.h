@@ -12,7 +12,8 @@ struct wt6670f {
 	int count;
 	int chg_type;
 	bool chg_ready;
-
+	struct notifier_block pm_nb;
+	bool wt6670f_suspend_flag;
 	struct mutex i2c_rw_lock;
 };
 
