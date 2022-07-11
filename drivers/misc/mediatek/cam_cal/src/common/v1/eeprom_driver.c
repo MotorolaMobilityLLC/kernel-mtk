@@ -816,7 +816,7 @@ static u32 do_otp_crc_check(u8 *raw_buf, u32 data_count) {
 	crc_otp_val_hi = raw_buf[data_count-2];
 	crc_otp_val_lo = raw_buf[data_count-1];
 
-	if (((crc_otp_val_hi << 8) | crc_otp_val_lo) == crc) {
+	if ((((crc_otp_val_hi << 8) | crc_otp_val_lo) == crc) && (crc != 0xFF) && (crc != 0)) {
 		ret = 1;
 	} else {
 		ret = 0;
