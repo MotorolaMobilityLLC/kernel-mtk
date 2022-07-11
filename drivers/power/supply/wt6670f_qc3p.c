@@ -724,15 +724,49 @@ static int wt6670f_write_word(struct wt6670f *wt, u8 reg, u16 data)
 	return ret;
 }
 
+#define WAIT_I2C_COUNT 50
+#define WAIT_I2C_TIME 10
+int mmi_wt6670f_write_word(struct wt6670f *wt, u8 reg, u16 data)
+{
+	int retry_count = 0;
+
+	while (wt->wt6670f_suspend_flag && retry_count < WAIT_I2C_COUNT) {
+		retry_count ++;
+		dev_err(wt->dev, "wait system resume when I2C write, count %d\n", retry_count);
+		msleep(WAIT_I2C_TIME);
+	}
+
+	if (retry_count >= WAIT_I2C_COUNT)
+		return -EBUSY;
+
+	return wt6670f_write_word(wt, reg, data);
+}
+
+int mmi_wt6670f_read_word(struct wt6670f *wt, u8 reg, u16 *data)
+{
+	int retry_count = 0;
+
+	while (wt->wt6670f_suspend_flag && retry_count < WAIT_I2C_COUNT) {
+		retry_count ++;
+		dev_err(wt->dev, "wait system resume when I2C read, count %d\n", retry_count);
+		msleep(WAIT_I2C_TIME);
+	}
+
+	if (retry_count >= WAIT_I2C_COUNT)
+		return -EBUSY;
+
+	return wt6670f_read_word(wt, reg, data);
+}
+
 u16 wt6670f_get_vbus_voltage(void)
 {
 	int ret;
 	u8 data[2];
 	u16 tmp;
 	if(QC3P_WT6670F == g_qc3p_id)
-		ret = wt6670f_read_word(_wt, 0xBE, (u16 *)data);
+		ret = mmi_wt6670f_read_word(_wt, 0xBE, (u16 *)data);
 	else if(QC3P_Z350 == g_qc3p_id)
-		ret = wt6670f_read_word(_wt, 0x12, (u16 *)data);
+		ret = mmi_wt6670f_read_word(_wt, 0x12, (u16 *)data);
 	else
 		ret = -1;
 	if(ret < 0)
@@ -757,7 +791,7 @@ static u16 wt6670f_get_id(u8 reg)
 	int ret;
 	u16 data;
 
-	ret = wt6670f_read_word(_wt, reg, &data);//wt6670f-0xBC,Z350-0x13
+	ret = mmi_wt6670f_read_word(_wt, reg, &data);//wt6670f-0xBC,Z350-0x13
 
 	if(ret < 0)
 	{
@@ -774,7 +808,7 @@ int wt6670f_start_detection(void)
 	int ret;
 	u16 data = 0x01;
 
-	ret = wt6670f_write_word(_wt, 0xB6, data);
+	ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 	if (ret < 0)
 	{
 		pr_info("wt6670f start detection fail\n");
@@ -790,7 +824,7 @@ int wt6670f_re_run_apsd(void)
 	int ret;
 	u16 data = 0x01;
 
-	ret = wt6670f_write_word(_wt, 0xB6, data);
+	ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 
 	if (ret < 0)
 	{
@@ -808,7 +842,7 @@ int wt6670f_en_hvdcp(void)
 	int ret;
 	u16 data = 0x01;
 
-	ret = wt6670f_write_word(_wt, 0x05, data);
+	ret = mmi_wt6670f_write_word(_wt, 0x05, data);
 
 	if (ret < 0)
 	{
@@ -826,9 +860,9 @@ int wt6670f_force_qc2_5V(void)
 	u16 data = 0x01;
 
 	if(1 == g_qc3p_id)
-		ret = wt6670f_write_word(_wt, 0x02, data);
+		ret = mmi_wt6670f_write_word(_wt, 0x02, data);
 	else
-		ret = wt6670f_write_word(_wt, 0xB1, data);
+		ret = mmi_wt6670f_write_word(_wt, 0xB1, data);
 	if (ret < 0)
 	{
 		pr_info("%s force qc2 5V fail\n",g_qc3p_id?"z350":"wt6670f");
@@ -845,9 +879,9 @@ int wt6670f_force_qc3_5V(void)
 	u16 data = 0x04;
 
 	if(1 == g_qc3p_id)
-		ret = wt6670f_write_word(_wt, 0x02, data);
+		ret = mmi_wt6670f_write_word(_wt, 0x02, data);
 	else
-		ret = wt6670f_write_word(_wt, 0xB1, data);
+		ret = mmi_wt6670f_write_word(_wt, 0xB1, data);
 
 	if (ret < 0)
 	{
@@ -866,11 +900,11 @@ int wt6670f_get_protocol(void)
 	u8 data1, data2;
 
 	if(QC3P_WT6670F == g_qc3p_id){
-		ret = wt6670f_read_word(_wt, 0xBD, &data);
+		ret = mmi_wt6670f_read_word(_wt, 0xBD, &data);
 		pr_err("wt6670f get protocol %x\n",data);
 	}
 	else if(QC3P_Z350 == g_qc3p_id){
-		ret = wt6670f_read_word(_wt, 0x11, &data);
+		ret = mmi_wt6670f_read_word(_wt, 0x11, &data);
 		pr_err("z350 get protocol %x\n",data);
 	}
 	else
@@ -930,7 +964,7 @@ int wt6670f_get_firmware_version(void)
 	int ret;
 	u16 data;
 
-	ret = wt6670f_read_word(_wt, 0xBF, &data);
+	ret = mmi_wt6670f_read_word(_wt, 0xBF, &data);
 	if (ret < 0)
 	{
 		pr_err("wt6670f get firmware fail\n");
@@ -946,7 +980,7 @@ int z350_get_firmware_version(void)
 	int ret;
 	u16 data;
 
-	ret = wt6670f_read_word(_wt, 0x14, &data);
+	ret = mmi_wt6670f_read_word(_wt, 0x14, &data);
 	if (ret < 0)
 	{
 		pr_err("z350 get firmware fail\n");
@@ -984,9 +1018,9 @@ int wt6670f_set_voltage(u16 voltage)
 	pr_err("---->southchip count = %d   %04x,QC3P_WT6670F=%d,g_qc3p_id=%d,voltage=%d,voltage_now=%d\n", _wt->count, step,QC3P_WT6670F,g_qc3p_id,voltage,voltage_now);
 
 	if(QC3P_WT6670F == g_qc3p_id)
-		ret = wt6670f_write_word(_wt, 0xBB, step);
+		ret = mmi_wt6670f_write_word(_wt, 0xBB, step);
 	else if(QC3P_Z350 == g_qc3p_id)
-		ret = wt6670f_write_word(_wt, 0x83, step);
+		ret = mmi_wt6670f_write_word(_wt, 0x83, step);
 	else
 		ret = -1;
 
@@ -1019,9 +1053,9 @@ int wt6670f_set_volt_count(int count)
   pr_err("---->southchip count = %d   %04x\n", _wt->count, step);
 
 	if(QC3P_WT6670F == g_qc3p_id)
-		ret = wt6670f_write_word(_wt, 0xBB, step);
+		ret = mmi_wt6670f_write_word(_wt, 0xBB, step);
 	else if(QC3P_Z350 == g_qc3p_id)
-		ret = wt6670f_write_word(_wt, 0x83, step);
+		ret = mmi_wt6670f_write_word(_wt, 0x83, step);
 
         return ret;
 }
@@ -1066,13 +1100,13 @@ static ssize_t wt6670f_show_registers(struct device *dev,
 	int ret ;
 	u16 data;
 	if(QC3P_WT6670F == g_qc3p_id){
-		ret = wt6670f_read_word(wt, 0xBD, &data);
+		ret = mmi_wt6670f_read_word(wt, 0xBD, &data);
 		idx = snprintf(buf, PAGE_SIZE, ">>> reg[0xBD] = %04x\n", data);
 		pr_err(">>>>>>>>>>WT6670F test southchip  0xBD = %04x\n", data);
 	}
 
 	if(QC3P_Z350 == g_qc3p_id){
-		ret = wt6670f_read_word(wt, 0x11, &data);
+		ret = mmi_wt6670f_read_word(wt, 0x11, &data);
 		idx = snprintf(buf, PAGE_SIZE, ">>> reg[0x11] = %04x\n", data);
 		pr_err(">>>>>>>>>>Z350 test southchip  0x11 = %04x\n", data);
 	}
@@ -1091,10 +1125,10 @@ static ssize_t wt6670f_store_registers(struct device *dev,
 	ret = sscanf(buf, "%x", &val);
 
 	if(QC3P_WT6670F == g_qc3p_id)
-		ret = wt6670f_write_word(wt, 0xBB, val);
+		ret = mmi_wt6670f_write_word(wt, 0xBB, val);
 
 	if(QC3P_Z350 == g_qc3p_id)
-		ret = wt6670f_write_word(wt, 0x83, val);
+		ret = mmi_wt6670f_write_word(wt, 0x83, val);
 
 	return count;
 
@@ -1190,6 +1224,33 @@ static int wt6670f_parse_dt(struct device *dev)
 }
 
 //extern int wt6670f_isp_flow(struct wt6670f *chip);
+
+static int wt6670f_suspend_notifier(struct notifier_block *nb,
+				unsigned long event,void *dummy)
+{
+    struct wt6670f *wrt = container_of(nb, struct wt6670f, pm_nb);
+	if (!wrt)
+		return -ENOMEM;
+    switch (event) {
+
+    case PM_SUSPEND_PREPARE:
+        pr_err("wt6670f PM_SUSPEND \n");
+
+        wrt->wt6670f_suspend_flag = 1;
+
+        return NOTIFY_OK;
+
+    case PM_POST_SUSPEND:
+        pr_err("wt6670f PM_RESUME \n");
+
+        wrt->wt6670f_suspend_flag = 0;
+
+        return NOTIFY_OK;
+
+    default:
+        return NOTIFY_DONE;
+    }
+}
 
 static int wt6670f_i2c_probe(struct i2c_client *client,
 					const struct i2c_device_id *id)
@@ -1308,6 +1369,11 @@ static int wt6670f_i2c_probe(struct i2c_client *client,
 		devm_pinctrl_put(i2c6_pinctrl);
 		pr_info("[%s] failed,release pinctrl\n", __func__);
 	}
+	wt->pm_nb.notifier_call = wt6670f_suspend_notifier;
+	ret = register_pm_notifier(&wt->pm_nb);
+	if (ret) {
+		pr_err("register pm failed\n", __func__);
+	}
 
 probe_out:
 	return 0;
@@ -1319,13 +1385,13 @@ static void wt6670f_shutdown(struct i2c_client *client)
 	u16 data = 0x01;
 
 	if(QC3P_WT6670F == g_qc3p_id){
-		ret = wt6670f_write_word(_wt, 0xB6, data);
+		ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 		pr_info("%s set voltage ok wt6670\n", __func__);
 	}else if(QC3P_Z350 == g_qc3p_id){
-		ret = wt6670f_write_word(_wt, 0x02, data);
+		ret = mmi_wt6670f_write_word(_wt, 0x02, data);
 		pr_info("%s set voltage ok z350\n", __func__);
 	}else{
-		ret = wt6670f_write_word(_wt, 0xB6, data);
+		ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 		pr_info("%s set voltage ok wt6670\n", __func__);
 	}
 	if (ret < 0)
