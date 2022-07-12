@@ -56,7 +56,7 @@ MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #define AW_GET_IV_CNT_MAX		(6)
 
 #ifdef CONFIG_AW883XX_RAMP_SUPPORT
-#define AW_KCONTROL_NUM			(5)
+#define AW_KCONTROL_NUM			(6)
 #else
 #define AW_KCONTROL_NUM			(4)
 #endif
