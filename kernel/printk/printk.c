@@ -792,12 +792,12 @@ static int log_store(int facility, int level,
 	else
 		msg->ts_nsec = ktime_get_boot_fast_ns();
 	memset(log_dict(msg) + dict_len, 0, pad_len);
+	((struct printk_log *)(log_buf + log_next_idx + size))->len = 0;
 	msg->len = size;
 
 	/* insert message */
 	log_next_idx += msg->len;
 	log_next_seq++;
-	((struct printk_log *)(log_buf + log_next_idx))->len = 0;
 
 	/* printk too much detect */
 #ifdef CONFIG_LOG_TOO_MUCH_WARNING
