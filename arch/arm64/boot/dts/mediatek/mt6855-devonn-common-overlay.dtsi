@@ -103,9 +103,8 @@
 
 	fingerfp_spi_default: fingerfp_spi_default {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO68__FUNC_GPIO68>, <PINMUX_GPIO66__FUNC_GPIO66>, <PINMUX_GPIO67__FUNC_GPIO67>, <PINMUX_GPIO65__FUNC_GPIO65>;
-			slew-rate = <1>;
-			output-low;
+			pinmux = <PINMUX_GPIO68__FUNC_SPI1_MI>, <PINMUX_GPIO66__FUNC_SPI1_CSB>, <PINMUX_GPIO67__FUNC_SPI1_MO>, <PINMUX_GPIO65__FUNC_SPI1_CLK>;
+			drive-strength = <2>;
 		};
 	};
 	fps_irq: fps_irq {
