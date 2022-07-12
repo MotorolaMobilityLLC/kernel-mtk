@@ -103,7 +103,7 @@ struct drm_panel_funcs {
 	 * This function is optional.
 	 */
 	int (*unprepare)(struct drm_panel *panel);
-	int (*set_gesture_flag)(int state);
+//	int (*set_gesture_flag)(int state);
 
 	/**
 	 * @get_modes:
