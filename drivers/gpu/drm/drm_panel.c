@@ -143,8 +143,8 @@ int drm_panel_unprepare(struct drm_panel *panel)
 	if (!panel)
 		return -EINVAL;
 
-	if (panel->funcs && panel->funcs->set_gesture_flag)
-		panel->funcs->set_gesture_flag(tp_gesture_flag);
+//	if (panel->funcs && panel->funcs->set_gesture_flag)
+//		panel->funcs->set_gesture_flag(tp_gesture_flag);
 
 	if (panel->funcs && panel->funcs->unprepare)
 		return panel->funcs->unprepare(panel);
