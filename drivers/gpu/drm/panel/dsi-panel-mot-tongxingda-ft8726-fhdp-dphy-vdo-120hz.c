@@ -33,7 +33,7 @@
 
 extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
-static int tp_gesture_flag=0;
+//static int tp_gesture_flag=0;
 
 struct tongxingda {
 	struct device *dev;
@@ -168,7 +168,7 @@ static int tongxingda_disable(struct drm_panel *panel)
 
 	return 0;
 }
-
+#if 0
 static int tongxingda_set_gesture_flag(int state)
 {
 	if(state == 1)
@@ -181,6 +181,7 @@ static int tongxingda_set_gesture_flag(int state)
 	}
 	return 0;
 }
+#endif
 
 static int tongxingda_unprepare(struct drm_panel *panel)
 {
@@ -195,8 +196,8 @@ static int tongxingda_unprepare(struct drm_panel *panel)
 	tongxingda_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
 
-	if(tp_gesture_flag == 0)
-	{
+	//if(tp_gesture_flag == 0)
+	//{
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
@@ -208,7 +209,7 @@ static int tongxingda_unprepare(struct drm_panel *panel)
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
 	ret = ocp2138_BiasPower_disable(5);
-	}
+	//}
 
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
@@ -729,7 +730,7 @@ static int tongxingda_get_modes(struct drm_panel *panel,
 static const struct drm_panel_funcs tongxingda_drm_funcs = {
 	.disable = tongxingda_disable,
 	.unprepare = tongxingda_unprepare,
-	.set_gesture_flag = tongxingda_set_gesture_flag,
+//	.set_gesture_flag = tongxingda_set_gesture_flag,
 	.prepare = tongxingda_prepare,
 	.enable = tongxingda_enable,
 	.get_modes = tongxingda_get_modes,
