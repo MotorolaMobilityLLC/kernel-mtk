@@ -548,7 +548,7 @@ static inline int tcpci_set_wake_lock_pd(
 	return 0;
 }
 
-static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
+inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 {
 	TCPC_INFO("usb_port_attached\n");
 
@@ -569,7 +569,7 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 	return 0;
 }
 
-static inline int tcpci_report_usb_port_detached(struct tcpc_device *tcpc)
+inline int tcpci_report_usb_port_detached(struct tcpc_device *tcpc)
 {
 	TCPC_INFO("usb_port_detached\n");
 
