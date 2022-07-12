@@ -95,6 +95,7 @@ EXPORT_SYMBOL_GPL(mt_boot_finish);
 #ifdef CONFIG_ONTIM_DEBUG
 static char boot_mode[64] = "unknown_mode";
 static char boot_reason[64] = "unknown_reason";
+static bool dal_visible = true;
 
 static int get_boot_mode(char *src)
 {
@@ -132,7 +133,7 @@ void bootprof_log_boot(char *str)
 	pr_info("BOOTPROF:%10lld.%06ld:%s\n", msec_high(ts), msec_low(ts), str);
 
 #ifdef CONFIG_ONTIM_DEBUG
-	{
+	if (dal_visible) {
 		char buf[150];
 		int len;
 		len = DAL_Cols();
@@ -301,6 +302,7 @@ static void mt_bootprof_switch(int on)
 				boot_finish = true;
 #ifdef CONFIG_ONTIM_DEBUG
 			DAL_Clean();
+			dal_visible =  false;
 #endif
 #ifndef MODULE
 			bootup_finish();
