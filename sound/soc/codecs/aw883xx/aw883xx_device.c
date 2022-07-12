@@ -153,6 +153,25 @@ static void aw_dev_ramp_work(struct work_struct *work)
 
 	aw_dev_do_ramp(aw_dev);
 }
+
+int aw883xx_dev_set_attenuate_status(struct aw_device *aw_dev, uint32_t set_attenuate)
+{
+	aw_dev_info(aw_dev->dev,"original attenuate_en=%d, set_attenuate=%d, channel=%d",
+		aw_dev->attenuate_en, set_attenuate, aw_dev->channel);
+
+	// set ramp for top speaker only
+	if (aw_dev->channel == 0) {
+		aw_dev->attenuate_en = set_attenuate;
+        }
+
+        return 0;
+}
+
+int aw883xx_dev_get_attenuate_status(struct aw_device *aw_dev, uint32_t *get_attenuate)
+{
+	*get_attenuate = aw_dev->attenuate_en;
+	return 0;
+}
 #endif
 
 static void aw_dev_fade_in(struct aw_device *aw_dev)
@@ -163,6 +182,13 @@ static void aw_dev_fade_in(struct aw_device *aw_dev)
 	uint16_t fade_in_vol = desc->ctl_volume;
 	if (!aw_dev->fade_en)
 		return;
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	if(aw_dev->attenuate_en){
+		aw_dev_dbg(aw_dev->dev,"attenuate enabled, reduce fade_in_vol to%d",fade_in_vol);
+		fade_in_vol += AW_ATTENUATION_VOL;  //reduce 20db
+	}
+#endif
 
 	if (fade_step == 0 || g_fade_in_time == 0) {
 		aw883xx_dev_set_volume(aw_dev, fade_in_vol);
@@ -1744,6 +1770,13 @@ static void aw883xx_parse_fade_enable_dt(struct aw_device *aw_dev)
 	}
 
 	aw_dev->fade_en = fade_en;
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	aw_dev->ramp_en = 0;
+	aw_dev->ramp_in_process = 0;
+	aw_dev->attenuate_en = 0;
+#endif
+
 }
 
 static void aw883xx_parse_re_range_dt(struct aw_device *aw_dev)
