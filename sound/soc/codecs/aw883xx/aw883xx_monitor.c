@@ -431,6 +431,11 @@ static void aw_monitor_set_gain(struct aw_device *aw_dev, uint16_t gain)
 	compared_vol = AW_GET_MAX_VALUE(vol_desc->ctl_volume,
 		vol_desc->monitor_volume);
 
+	if (aw_dev->attenuate_en){
+		compared_vol += AW_ATTENUATION_VOL;  //reduce 20db
+		aw_dev_dbg(aw_dev->dev,"reduce volume to %d, as attenuation enabled",compared_vol);
+	}
+
 	aw883xx_dev_set_volume(aw_dev, compared_vol);
 }
 

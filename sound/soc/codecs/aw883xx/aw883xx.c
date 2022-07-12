@@ -1010,6 +1010,58 @@ static int aw883xx_ramp_set(struct snd_kcontrol *kcontrol,
 	aw883xx_dev_set_ramp_status(aw883xx->aw_pa,ramp_en);
 	return 0;
 }
+
+static int aw883xx_attenuate_info(struct snd_kcontrol *kcontrol,
+                        struct snd_ctl_elem_info *uinfo)
+{
+        int count;
+
+        uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+        uinfo->count = 1;
+        count = 2;
+
+        uinfo->value.enumerated.items = count;
+
+        if (uinfo->value.enumerated.item >= count)
+                uinfo->value.enumerated.item = count - 1;
+
+        strlcpy(uinfo->value.enumerated.name,
+                aw883xx_switch[uinfo->value.enumerated.item],
+                strlen(aw883xx_switch[uinfo->value.enumerated.item]) + 1);
+
+        return 0;
+}
+
+static int aw883xx_attenuate_get(struct snd_kcontrol *kcontrol,
+                        struct snd_ctl_elem_value *ucontrol)
+{
+        aw_snd_soc_codec_t *codec =
+                aw_componet_codec_ops.kcontrol_codec(kcontrol);
+        struct aw883xx *aw883xx =
+                aw_componet_codec_ops.codec_get_drvdata(codec);
+        uint32_t attenuate_en;
+
+        aw883xx_dev_get_attenuate_status(aw883xx->aw_pa,&attenuate_en);
+
+        ucontrol->value.integer.value[0] = attenuate_en;
+
+        return 0;
+}
+
+static int aw883xx_attenuate_set(struct snd_kcontrol *kcontrol,
+                struct snd_ctl_elem_value *ucontrol)
+{
+        aw_snd_soc_codec_t *codec =
+                aw_componet_codec_ops.kcontrol_codec(kcontrol);
+        struct aw883xx *aw883xx =
+                aw_componet_codec_ops.codec_get_drvdata(codec);
+        uint32_t attenuate_en;
+
+        attenuate_en = ucontrol->value.integer.value[0];
+
+        aw883xx_dev_set_attenuate_status(aw883xx->aw_pa,attenuate_en);
+        return 0;
+}
 #endif
 
 static int aw883xx_profile_info(struct snd_kcontrol *kcontrol,
@@ -1387,6 +1439,18 @@ static int aw883xx_dynamic_create_controls(struct aw883xx *aw883xx)
 	aw883xx_dev_control[4].info = aw883xx_ramp_info;
 	aw883xx_dev_control[4].get = aw883xx_ramp_get;
 	aw883xx_dev_control[4].put = aw883xx_ramp_set;
+
+	kctl_name = devm_kzalloc(aw883xx->codec->dev, AW_NAME_BUF_MAX, GFP_KERNEL);
+        if (!kctl_name)
+                return -ENOMEM;
+
+        snprintf(kctl_name, AW_NAME_BUF_MAX, "aw_dev_%d_attenuate", aw883xx->aw_pa->channel);
+
+        aw883xx_dev_control[4].name = kctl_name;
+        aw883xx_dev_control[4].iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+        aw883xx_dev_control[4].info = aw883xx_attenuate_info;
+        aw883xx_dev_control[4].get = aw883xx_attenuate_get;
+        aw883xx_dev_control[4].put = aw883xx_attenuate_set;
 #endif
 
 	aw_componet_codec_ops.add_codec_controls(aw883xx->codec,
