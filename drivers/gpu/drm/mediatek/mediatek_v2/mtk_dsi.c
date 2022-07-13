@@ -512,7 +512,84 @@ static void mtk_dsi_post_cmd(struct mtk_dsi *dsi,
 	}
 }
 
-static void mtk_dsi_dphy_timconfig(struct mtk_dsi *dsi, void *handle)
+
+static void mtk_dsi_dphy_timconfig_v1(struct mtk_dsi *dsi, void *handle)
+{
+	u32 lpx = 0;
+	u32 da_hs_prep = 0, da_hs_zero = 0, da_hs_trail = 0, da_hs_exit = 0;
+	u32 clk_hs_prep = 0, clk_hs_zero = 0, clk_hs_trail = 0;
+	u32 clk_hs_post = 0, clk_hs_exit = 0;
+	u32 ta_get = 0, ta_sure = 0, ta_go = 0;
+	u32 da_hs_sync = 0;
+	u32 cont_det = 0;
+	u32 value = 0;
+	struct mtk_ddp_comp *comp = &dsi->ddp_comp;
+
+	DDPINFO("%s, line: %d, data rate=%d\n", __func__, __LINE__, dsi->data_rate);
+
+	lpx = (dsi->data_rate * 0x50) / 0x1F40 + 0x1;
+	da_hs_prep = (dsi->data_rate * 0x3B + 0xFA0) / 0x1F40 + 0x1;
+	da_hs_zero = (dsi->data_rate * 0xA3 + 0x2AF8) / 0x1F40 + 0x1 - da_hs_prep;
+	da_hs_trail = (dsi->data_rate * 0x4E + 0x1B58) / 0x1F40 + 0x1;
+	da_hs_exit = (dsi->data_rate * 0x76) / 0x1F40 + 0x1;
+
+	clk_hs_prep = (dsi->data_rate * 0x39) / 0x1F40 + 0x1;
+	clk_hs_zero = (dsi->data_rate * 0x14A) / 0x1F40 + 0x1 - clk_hs_prep;
+	clk_hs_trail = (dsi->data_rate * 0x4E + 0x1B58) / 0x1F40 + 0x1;
+	clk_hs_post = (dsi->data_rate * 0x41 + 0xCF08) / 0x1F40 + 0x1;
+	clk_hs_exit = (dsi->data_rate * 0x76) / 0x1F40 + 0x1;
+
+	ta_go = 0x4 * lpx;
+	ta_get = 0x5 * lpx;
+	ta_sure = 0x3 * lpx / 0x2;
+	da_hs_sync = 0x1;
+	cont_det = 0x0;
+
+	value = REG_FLD_VAL(FLD_LPX, lpx)
+		| REG_FLD_VAL(FLD_HS_PREP, da_hs_prep)
+		| REG_FLD_VAL(FLD_HS_ZERO, da_hs_zero)
+		| REG_FLD_VAL(FLD_HS_TRAIL, da_hs_trail);
+
+	if (handle)
+		cmdq_pkt_write((struct cmdq_pkt *)handle, comp->cmdq_base,
+			comp->regs_pa + DSI_PHY_TIMECON0, value, ~0);
+	else
+		writel(value, dsi->regs + DSI_PHY_TIMECON0);
+
+	value = REG_FLD_VAL(FLD_TA_GO, ta_go)
+		| REG_FLD_VAL(FLD_TA_SURE, ta_sure)
+		| REG_FLD_VAL(FLD_TA_GET, ta_get)
+		| REG_FLD_VAL(FLD_DA_HS_EXIT, da_hs_exit);
+
+	if (handle)
+		cmdq_pkt_write((struct cmdq_pkt *)handle, comp->cmdq_base,
+			comp->regs_pa + DSI_PHY_TIMECON1, value, ~0);
+	else
+		writel(value, dsi->regs + DSI_PHY_TIMECON1);
+
+	value = REG_FLD_VAL(FLD_CONT_DET, cont_det)
+		| REG_FLD_VAL(FLD_DA_HS_SYNC, da_hs_sync)
+		| REG_FLD_VAL(FLD_CLK_HS_ZERO, clk_hs_zero)
+		| REG_FLD_VAL(FLD_CLK_HS_TRAIL, clk_hs_trail);
+
+	if (handle)
+		cmdq_pkt_write((struct cmdq_pkt *)handle, comp->cmdq_base,
+			comp->regs_pa + DSI_PHY_TIMECON2, value, ~0);
+	else
+		writel(value, dsi->regs + DSI_PHY_TIMECON2);
+
+	value = REG_FLD_VAL(FLD_CLK_HS_PREP, clk_hs_prep)
+		| REG_FLD_VAL(FLD_CLK_HS_POST, clk_hs_post)
+		| REG_FLD_VAL(FLD_CLK_HS_EXIT, clk_hs_exit);
+
+	if (handle)
+		cmdq_pkt_write((struct cmdq_pkt *)handle, comp->cmdq_base,
+			comp->regs_pa + DSI_PHY_TIMECON3, value, ~0);
+	else
+		writel(value, dsi->regs + DSI_PHY_TIMECON3);
+}
+
+static void mtk_dsi_dphy_timconfig_v2(struct mtk_dsi *dsi, void *handle)
 {
 	struct mtk_dsi_phy_timcon *phy_timcon = NULL;
 	u32 lpx = 0, hs_prpr = 0, hs_zero = 0, hs_trail = 0;
@@ -643,6 +720,16 @@ CONFIG_REG:
 			comp->regs_pa+DSI_PHY_TIMECON3, value, ~0);
 	else
 		writel(value, dsi->regs + DSI_PHY_TIMECON3);
+}
+
+static void mtk_dsi_dphy_timconfig(struct mtk_dsi *dsi, void *handle)
+{
+	if (dsi && dsi->driver_data) {
+		if (dsi->driver_data->n_verion <= VER_N6)
+			mtk_dsi_dphy_timconfig_v1(dsi, handle);
+		else
+			mtk_dsi_dphy_timconfig_v2(dsi, handle);
+	}
 }
 
 static void mtk_dsi_cphy_timconfig(struct mtk_dsi *dsi, void *handle)
@@ -7546,6 +7633,7 @@ static const struct mtk_dsi_driver_data mt6779_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1,
+	.n_verion = VER_N12,
 };
 
 static const struct mtk_dsi_driver_data mt6885_dsi_driver_data = {
@@ -7566,6 +7654,7 @@ static const struct mtk_dsi_driver_data mt6885_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0xffe,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1,
+	.n_verion = VER_N7,
 };
 
 static const struct mtk_dsi_driver_data mt6983_dsi_driver_data = {
@@ -7586,6 +7675,7 @@ static const struct mtk_dsi_driver_data mt6983_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0xffe,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V2,
+	.n_verion = VER_N5,
 };
 
 static const struct mtk_dsi_driver_data mt6895_dsi_driver_data = {
@@ -7607,6 +7697,7 @@ static const struct mtk_dsi_driver_data mt6895_dsi_driver_data = {
 	.max_vfp = 0xffe,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V2,
 	.dsi_irq_ts_debug = true,
+	.n_verion = VER_N5,
 };
 
 static const struct mtk_dsi_driver_data mt6873_dsi_driver_data = {
@@ -7627,6 +7718,7 @@ static const struct mtk_dsi_driver_data mt6873_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1,
+	.n_verion = VER_N7,
 };
 
 static const struct mtk_dsi_driver_data mt6853_dsi_driver_data = {
@@ -7647,6 +7739,7 @@ static const struct mtk_dsi_driver_data mt6853_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1,
+	.n_verion = VER_N7,
 };
 
 static const struct mtk_dsi_driver_data mt6833_dsi_driver_data = {
@@ -7667,6 +7760,7 @@ static const struct mtk_dsi_driver_data mt6833_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1,
+	.n_verion = VER_N6,
 };
 
 static const struct mtk_dsi_driver_data mt6879_dsi_driver_data = {
@@ -7687,6 +7781,7 @@ static const struct mtk_dsi_driver_data mt6879_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0xffe,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V2,
+	.n_verion = VER_N6,
 };
 
 static const struct mtk_dsi_driver_data mt6855_dsi_driver_data = {
@@ -7707,6 +7802,7 @@ static const struct mtk_dsi_driver_data mt6855_dsi_driver_data = {
 	.dsi_new_trail = false,
 	.max_vfp = 0x7ffe,
 	.mmclk_by_datarate = mtk_dsi_set_mmclk_by_datarate_V1,
+	.n_verion = VER_N6,
 };
 
 static const struct mtk_dsi_driver_data mt2701_dsi_driver_data = {
