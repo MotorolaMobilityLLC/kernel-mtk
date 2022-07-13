@@ -171,6 +171,29 @@ static int hw_reset(struct  fpc_data *fpc)
 	return 0;
 }
 
+static int hw_power_reset(struct fpc_data *fpc)
+{
+	struct device *dev = fpc->dev;
+	int ret = 0;
+
+	dev_info(dev, "fpc Power reset start.");
+	if(gpio_is_valid(fpc->power_ctl_gpio)){
+
+		dev_dbg(dev, "fpc POWER GPIO#%d.\n", fpc->power_ctl_gpio);
+		set_clks(false);
+		gpio_direction_output(fpc->power_ctl_gpio, 0);
+		usleep_range(FPC_POWEROFF_SLEEP_US, FPC_POWEROFF_SLEEP_US + 100);
+		gpio_direction_output(fpc->power_ctl_gpio, 1);
+		usleep_range(FPC_POWEROFF_SLEEP_US, FPC_POWEROFF_SLEEP_US + 100);
+		set_clks(true);
+		(void)hw_reset(fpc);
+	}
+	else{
+		dev_err(dev, "fpc POWER GPIO isn't valid.\n");
+		ret = -1;
+	}
+	return ret;
+}
 
 static int spi_read_hwid(struct spi_device *spi, u8 * rx_buf)
 {
@@ -309,7 +332,7 @@ static ssize_t hw_reset_set(struct device *dev,
 	struct  fpc_data *fpc = dev_get_drvdata(dev);
 
 	if (!strncmp(buf, "reset", strlen("reset"))) {
-		rc = hw_reset(fpc);
+		rc = hw_power_reset(fpc);
 		return rc ? rc : count;
 	}
 	else
