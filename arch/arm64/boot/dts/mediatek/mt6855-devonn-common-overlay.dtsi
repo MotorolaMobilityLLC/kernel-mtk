@@ -1612,5 +1612,12 @@
 			polling-delay-passive = <0>; /* milliseconds */
 			thermal-sensors = <&tboard_thermistor7>;
 		};
+		ltepa_ntc {
+			polling-delay = <0>; /* milliseconds */
+			polling-delay-passive = <0>; /* milliseconds */
+			thermal-sensors = <&tboard_thermistor2>;
+			status = "disabled";
+		};
+
 		/* -EKDEVONN-16, madongyu.wt, modify, 20220620, add the NTC devices connect to board-temp.c */
 };
