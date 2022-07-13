@@ -568,6 +568,11 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	pr_info("wusb3801:irq_work_handler\n");
 
 	tcpci_lock_typec(chip->tcpc);
+
+	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL1);
+
+	pr_err("%s enter reg05 = %d\n",__func__, rc);
+
 	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_INTERRUPT);
 	if (rc < 0) {
 		pr_err("%s: failed to read interrupt\n", __func__);
@@ -646,7 +651,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 					tcpci_notify_typec_state(chip->tcpc);
 					tcpci_source_vbus(chip->tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, 0);
 					chip->tcpc->typec_attach_old = TYPEC_ATTACHED_SRC;
-					pr_err("wusb3801: usb_port_changed----------------222\n");
+					pr_err("wusb3801: typec_attached(otg src)\n");
 				}
 				break;
 			case WUSB3801_TYPE_SRC:
@@ -656,7 +661,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 					tcpci_report_usb_port_attached(chip->tcpc);
 					tcpci_notify_typec_state(chip->tcpc);
 					chip->tcpc->typec_attach_old = TYPEC_ATTACHED_SNK;
-					pr_err("wusb3801: usb_port_changed----------------333\n");
+					pr_err("wusb3801: typec_attached(usb snk)\n");
 				}
 				break;
 			default:
@@ -693,10 +698,22 @@ int wusb3801_alert_status_clear(struct tcpc_device *tcpc, uint32_t mask)
 static int wusb3801_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 {
 	struct wusb3801_chip *chip = tcpc_get_dev_data(tcpc);
+	u8 ret = 0;
 
-	pr_err("%s enter \n",__func__);
-	wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL1, 0x01);
-	mdelay(1);
+	ret = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL1);
+
+	pr_err("%s enter reg05 = %d\n",__func__, ret);
+
+	if(ret == 0){
+		wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL1, 0x01);
+		pr_err("%s write reg05 0x01\n",__func__);
+		mdelay(1);
+	}
+
+	enable_irq_wake(chip->irq);
+
+	pr_info("IRQ enable!\n");
+
 	return 0;
 }
 
@@ -952,6 +969,7 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 	mdelay(1);
 	//huanglei add for reg 0x08& 0x0F write zero fail end
 
+	pr_info("wusb3801: IRQF_NO_THREAD Test\n");
 
 	ret = request_irq(chip->irq, wusb3801_intr_handler,
 		IRQF_TRIGGER_LOW | IRQF_NO_THREAD | IRQF_NO_SUSPEND, name, chip);
@@ -960,9 +978,6 @@ static int wusb3801_init_alert(struct tcpc_device *tcpc)
 			chip->irq, chip->irq_gpio, ret);
 		goto init_alert_err;
 	}
-
-	enable_irq_wake(chip->irq);
-	pr_info("IRQ enable!\n");
 
 	return 0;
 init_alert_err:
