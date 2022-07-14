@@ -18,7 +18,7 @@
 
 	temp_t4_thres = <55>;
 	temp_t4_thres_minus_x_degree = <52>;
-	temp_t3_thres = <45>;
+	temp_t3_thres = <46>;
 	temp_t3_thres_minus_x_degree = <39>;
 	temp_t2_thres = <15>;
 	temp_t2_thres_plus_x_degree = <18>;

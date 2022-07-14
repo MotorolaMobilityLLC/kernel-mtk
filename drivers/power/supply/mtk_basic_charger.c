@@ -73,10 +73,12 @@ static void select_cv(struct mtk_charger *info)
 	u32 constant_voltage;
 	int ibat; /* ma */
 	int vbat; /* mv */
+	int tbat;
 
 	ibat = get_battery_current(info);
 	vbat = get_battery_voltage(info);
-	chr_err("chr_type = %d; ibat = %d; vbat = %d; \n", info->chr_type, ibat, vbat);
+	tbat = get_battery_temperature(info);
+	chr_err("select_cv: chr_type = %d; ibat = %d; vbat = %d; tbat = %d\n", info->chr_type, ibat, vbat, tbat);
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
 			if((fcc_cv_flag == 1)&&(info->chr_type == 5)&&(info->sw_jeita.cv != 4200000)){
@@ -96,11 +98,23 @@ static void select_cv(struct mtk_charger *info)
 				chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
 			}
 
-			if((fcc_cv_flag == 1)&&(ibat < 600)&&(vbat > 4480))
+			if((fcc_cv_flag == 1)&&(ibat <= 780)&&(vbat > 4480)&&(tbat > 35))
 			{
 				info->setting.cv = info->sw_jeita.cv;
 				fcc_cv_flag = 0;
 				chr_err("select_cv_3: setting.cv = %d\n", info->setting.cv);
+			}
+			else if((fcc_cv_flag == 1)&&(ibat <= 670)&&(vbat > 4480)&&(tbat > 25))
+			{
+				info->setting.cv = info->sw_jeita.cv;
+				fcc_cv_flag = 0;
+				chr_err("select_cv_4: setting.cv = %d\n", info->setting.cv);
+			}
+			else if((fcc_cv_flag == 1)&&(ibat <= 600)&&(vbat > 4480))
+			{
+				info->setting.cv = info->sw_jeita.cv;
+				fcc_cv_flag = 0;
+				chr_err("select_cv_5: setting.cv = %d\n", info->setting.cv);
 			}
 
 			return;
