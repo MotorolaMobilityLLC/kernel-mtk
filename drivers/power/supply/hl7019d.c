@@ -1846,11 +1846,11 @@ static int hl7019d_charger_enable_otg(struct charger_device *chg_dev, bool en)
 	
 	if(true == en) {
 		hl7019d_set_chg_config(0x2);
-		enable_boost_polling(true);
+		//enable_boost_polling(true);
 		is_otg_mode = 1;
 	}else {
 		hl7019d_set_chg_config(0x0);
-		enable_boost_polling(false);
+		//enable_boost_polling(false);
 		is_otg_mode = 0;
 	}
 
