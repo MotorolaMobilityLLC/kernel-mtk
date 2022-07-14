@@ -220,7 +220,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	dfps_params[0].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
 	/* if vfp solution */
-	dfps_params[0].vertical_frontporch = 1330;
+	dfps_params[0].vertical_frontporch = 1342;
 
 	/*if need mipi hopping params add here*/
 
@@ -235,8 +235,8 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
 	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
-	dfps_params[1].vertical_frontporch = 370;
-	dfps_params[1].vertical_frontporch_for_low_power = 1330;
+	dfps_params[1].vertical_frontporch = 364;
+	dfps_params[1].vertical_frontporch_for_low_power = 1342;
 
 	/*if need mipi hopping params add here*/
 
@@ -287,13 +287,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 16;
-	params->dsi.vertical_frontporch = 370;
+	params->dsi.vertical_frontporch = 364;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 	params->dsi.horizontal_sync_active = 6;
 	params->dsi.horizontal_backporch = 6;
 	params->dsi.horizontal_frontporch = 20;//old is 16,now is 60
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 445;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 440;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
 #if 0
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
