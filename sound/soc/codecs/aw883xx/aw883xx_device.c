@@ -29,7 +29,14 @@ enum {
 };
 
 #ifdef CONFIG_AW883XX_RAMP_SUPPORT
+static unsigned int g_ramp_volume[22] = {221,221,
+216,216,216,210,210,
+205,205,205,199,199,
+199,194,194,188,188,
+155,122,83,50,0};
+
 static unsigned int g_ramp_time_ms = 100; //100ms
+static unsigned int g_ramp_step = 22; //step0~step21
 #endif
 
 static unsigned int g_fade_in_time = AW_1000_US / 10;
@@ -118,8 +125,8 @@ static void aw_dev_do_ramp(struct aw_device *aw_dev)
 {
 	int i = 0;
 	struct aw_volume_desc *desc = &aw_dev->volume_desc;
-	int ramp_step = aw_dev->fade_step;
 	uint16_t ramp_target_vol = desc->ctl_volume;
+	unsigned int vol;
 
 	if ((!aw_dev->ramp_en) || (!aw_dev->ramp_in_process))
 		return;
@@ -127,9 +134,13 @@ static void aw_dev_do_ramp(struct aw_device *aw_dev)
 	aw_dev_info(aw_dev->dev,"ramp started");
 
 	/*volume up*/
-	for (i = desc->mute_volume; i >= ramp_target_vol; i -= ramp_step) {
-		aw_dev_dbg(aw_dev->dev,"ramp on, set :%d",i);
-		aw883xx_dev_set_volume(aw_dev, i);
+	for (i = 0; i < g_ramp_step; i++) {
+		vol = g_ramp_volume[i];
+		if (vol < ramp_target_vol)
+			vol = ramp_target_vol;
+
+		aw_dev_info(aw_dev->dev,"ramp on, step:%d,set vol :%d",i,vol);
+		aw883xx_dev_set_volume(aw_dev, vol);
 
 		msleep(g_ramp_time_ms);
 		if (aw_dev->ramp_in_process == 0) {
@@ -138,8 +149,10 @@ static void aw_dev_do_ramp(struct aw_device *aw_dev)
 		}
 	}
 
-	if (i != ramp_target_vol)
+	if (vol != ramp_target_vol){
+		aw_dev_info(aw_dev->dev,"set target_vol:%d",ramp_target_vol);
 		aw883xx_dev_set_volume(aw_dev, ramp_target_vol);
+	}
 
 	aw_dev_info(aw_dev->dev, "ramp done");
 
