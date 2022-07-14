@@ -14,49 +14,48 @@
 	force_dyn_mipi_change;
 };
 
-&i2c6 {
-	id = <6>;
-
-	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
-		compatible = "mediatek,i2c_lcd_bias";
-		reg = <0x3e>;
-		ocp,lcd-bias-enn-gpio = <&pio 8 0>;
-		ocp,lcd-bias-enp-gpio = <&pio 183 0>;
-		status = "okay";
-	};
+&i2c7 {
+	id = <7>;
 
 	aw99703_backlight: sprd_backlight@36{
-		compatible = "awinic,aw99703-bl","sm-sm5350";
+		compatible = "awinic,aw99703-bl","ktd,ktd3136";
 		reg = <0x36>;
-		id = <6>;
-		hwen-gpio = <&pio 161 1>;
+		id = <7>;
+		lk_hwen-gpio = <8>;
 		status = "okay";
 
-                aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
-                aw99703,using-lsb;
-                aw99703,ovp-level = <2>; /* 0:17.5V, 1:24V, 2:31V, 3:38V, 4:41.5V */
-                aw99703,ocp-level = <1>; /* 0:0.9A, 1:1.8A, 2:2.7A, 3:3.4A */
-                aw99703,switch-freq = <1>; /* 1000kHz(default) */
-                aw99703,auto-freq-high = <0x10>;
-                aw99703,auto-freq-low = <0x05>;
-                aw99703,bl-fscal-led = <0x17>; /* 24.8mA */
-                aw99703,bl-channel = <3>;
+		aw99703,hwen-gpio = <&pio 8 1>;
+		aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
+		aw99703,using-lsb;
+		aw99703,ovp-level = <2>; /* 31V */
+		aw99703,ocp-level = <1>; /* 1.8A */
+		aw99703,switch-freq = <1>; /* 1000kHz(default) */
+		aw99703,auto-freq-high = <0x10>;
+		aw99703,auto-freq-low = <0x05>;
+		aw99703,bl-fscal-led = <0x15>; /* 21.6mA */
+		aw99703,bl-channel = <2>;
                 aw99703,turn-on-ramp = <0x00>; /* 512us */
                 aw99703,turn-off-ramp = <0x04>; /* 8ms */
-                aw99703,pwm-trans-dim = <0>; /* 2ms */
+		aw99703,pwm-trans-dim = <0>; /* 2ms */
                 aw99703,i2c-trans-dim = <1>; /* 128ms */
-                aw99703,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
-                aw99703,map-type = <0>; /* 0 exponential, 4 linear */
-                aw99703,work-mode = <1>; /* backlight */
+		aw99703,pwm-mode = <0>; /* 0 pwm enable,1 PWM disable */
+		aw99703,map-type = <1>; /* linear */
+		aw99703,work-mode = <1>; /* backlight */
                 aw99703,default-brightness = <1810>;
 
-                pwm-cfg = <0x0F>;
-                boost-ctl = <0x03>;
-                ctl-bank-en = <0x02>;
-                full-scale-current = <0x17>;
-                map-mode = <0>; /* 0 exponential, 1 linear */
-                current-align-type = <1>;
-                sm5350,default-brightness = <1810>;
+                ktd,hwen-gpio = <&pio 8 1>;
+                ktd,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
+                ktd,using-lsb;
+                ktd,pwm-frequency = <1>; /* 1MHZ */
+                ktd,bl-fscal-led = <0x19>; /* 25mA */
+                ktd,turn-on-ramp = <0x00>;
+                ktd,turn-off-ramp = <0x04>;
+                ktd,pwm-trans-dim = <0>;
+                ktd,i2c-trans-dim = <1>;
+                ktd,bl-channel = <3>;
+                ktd,ovp-level = <2>;
+                ktd,switching-frequency = <1>;
+                ktd,inductor-current = <1>;
 	};
 };
 
@@ -73,19 +72,35 @@
 	};
 };
 
-
 &pio {
-	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
+	//bias-pos
+		mtkfb_pins_lcm_bias_pos1_gpio: lcm_bias_pos1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO183__FUNC_GPIO183>;
+			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 
-	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+	mtkfb_pins_lcm_bias_pos0_gpio: lcm_bias_pos0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO8__FUNC_GPIO8>;
+			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	//bias_neg
+	mtkfb_pins_lcm_bias_neg1_gpio: lcm_bias_eng1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_bias_neg0_gpio: lcm_bias_neg0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -115,20 +130,24 @@
 };
 
 &mtkfb {
-	pinctrl-names = "lcd_bias_enp0_gpio", "lcd_bias_enn0_gpio",
+	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te";
-	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp0>;
-	pinctrl-1 = <&mtkfb_pins_lcd_bias_enn0>;
-	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+		"mode_te_te",
+		"lcm_bias_pos1_gpio", "lcm_bias_pos0_gpio",
+		"lcm_bias_eng1_gpio", "lcm_bias_neg0_gpio";
+	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-3 = <&mtkfb_pins_lcm_bias_pos1_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_bias_pos0_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcm_bias_neg1_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcm_bias_neg0_gpio>;
 	status = "okay";
 };
 
 &dsi0 {
 	status = "okay";
-
+	//switch_fps = <120>; //60
 	panel1@0 {
 		compatible = "mot,dummy,vdo,60hz";
 		reg = <0>;
@@ -142,29 +161,16 @@
 	};
 
 	panel2@0 {
-		compatible = "tianma,icnl9922,vdo,120hz";
+		compatible = "tianma,nt36672c,vdo,120hz";
 		reg = <1>;
-		pm-enable-gpios = <&pio 161 0>;
 		reset-gpios = <&pio 95 0>;
+		bias-gpios =<&pio 182 0>, //pos
+					<&pio 134 0>;
+		//gate-ic = <0>;
 		rc-enable = <1>;
 		pinctrl-names = "default";
 		port {
 			panel_in2: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-
-	};
-
-	panel3@0 {
-		compatible = "tongxingda,FT8726,vdo,120hz";
-		reg = <2>;
-		pm-enable-gpios = <&pio 161 0>;
-		reset-gpios = <&pio 95 0>;
-		rc-enable = <1>;
-		pinctrl-names = "default";
-		port {
-			panel_in3: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
