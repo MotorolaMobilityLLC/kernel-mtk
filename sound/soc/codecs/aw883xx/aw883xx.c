@@ -1446,11 +1446,11 @@ static int aw883xx_dynamic_create_controls(struct aw883xx *aw883xx)
 
         snprintf(kctl_name, AW_NAME_BUF_MAX, "aw_dev_%d_attenuate", aw883xx->aw_pa->channel);
 
-        aw883xx_dev_control[4].name = kctl_name;
-        aw883xx_dev_control[4].iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-        aw883xx_dev_control[4].info = aw883xx_attenuate_info;
-        aw883xx_dev_control[4].get = aw883xx_attenuate_get;
-        aw883xx_dev_control[4].put = aw883xx_attenuate_set;
+        aw883xx_dev_control[5].name = kctl_name;
+        aw883xx_dev_control[5].iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+        aw883xx_dev_control[5].info = aw883xx_attenuate_info;
+        aw883xx_dev_control[5].get = aw883xx_attenuate_get;
+        aw883xx_dev_control[5].put = aw883xx_attenuate_set;
 #endif
 
 	aw_componet_codec_ops.add_codec_controls(aw883xx->codec,
