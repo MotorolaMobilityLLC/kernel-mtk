@@ -57,6 +57,12 @@
 //#include <platform/mtk_charger_intf.h>
 #include "sc89601a.h"
 
+static  char charge_ic_vendor_name[50]="SC89601A";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
+
 #if 1
 #undef pr_debug
 #define pr_debug pr_err
@@ -1092,6 +1098,11 @@ static int sc89601a_charger_probe(struct i2c_client *client,
 
 	int ret;
 
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+
 	sc = devm_kzalloc(&client->dev, sizeof(struct sc89601a), GFP_KERNEL);
 	if (!sc) {
 		pr_err("[sc89601a] Out of memory\n");
@@ -1142,6 +1153,8 @@ static int sc89601a_charger_probe(struct i2c_client *client,
 	}
 
 	sc89601a_dump_regs(sc);
+
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 
 	pr_err("sc89601a probe successfully, Part Num:%d, Revision:%d\n!",
 				sc->part_no, sc->revision);
