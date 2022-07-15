@@ -302,10 +302,10 @@ $(PVRSRV_MODNAME)-$(CONFIG_METAG) += services/server/env/linux/osfunc_metag.o
 $(PVRSRV_MODNAME)-$(CONFIG_MIPS) += services/server/env/linux/osfunc_mips.o
 $(PVRSRV_MODNAME)-$(CONFIG_RISCV) += services/server/env/linux/osfunc_riscv.o
 
-ifeq ($(CONFIG_DEBUG_FS),y)
-$(PVRSRV_MODNAME)-$(CONFIG_DEBUG_FS) += services/server/env/linux/pvr_debugfs.o
-else ifeq ($(CONFIG_PROC_FS),y)
+ifeq ($(CONFIG_PROC_FS),y)
 $(PVRSRV_MODNAME)-$(CONFIG_PROC_FS) += services/server/env/linux/pvr_procfs.o
+else ifeq ($(CONFIG_DEBUG_FS),y)
+$(PVRSRV_MODNAME)-$(CONFIG_DEBUG_FS) += services/server/env/linux/pvr_debugfs.o
 endif
 $(PVRSRV_MODNAME)-$(CONFIG_EVENT_TRACING) += services/server/env/linux/trace_events.o
 
