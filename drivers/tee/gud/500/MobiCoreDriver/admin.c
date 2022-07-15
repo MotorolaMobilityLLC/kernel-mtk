@@ -42,6 +42,8 @@
 #include "client.h"
 #include "admin.h"
 
+extern int boot_mode_id;
+
 static struct {
 	struct mutex admin_tgid_mutex;  /* Lock for admin_tgid below */
 	pid_t admin_tgid;
@@ -231,7 +233,8 @@ static int request_send(u32 command, const struct mc_uuid_t *uuid, bool is_gp)
 			mc_dev_info("daemon not connected after %d0s, waiting",
 				    wait_tens);
 			if (wait_tens >= 3)
-				panic("mc_admin daemon not connected\n");
+				if (boot_mode_id == 0 && boot_mode_id == 1) // 0: normal mode;  1: meta mode
+					panic("mc_admin daemon not connected\n");
 			counter_ms = 0;
 		}
 

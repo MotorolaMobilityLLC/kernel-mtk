@@ -92,14 +92,24 @@ bool mt_boot_finish(void)
 EXPORT_SYMBOL_GPL(mt_boot_finish);
 
 
+int  boot_mode_id = -1;
+char sboot_mode[64] = "unknown_mode";
+char sboot_reason[64] = "unknown_reason";
+
 #ifdef CONFIG_ONTIM_DEBUG
-static char boot_mode[64] = "unknown_mode";
-static char boot_reason[64] = "unknown_reason";
-static bool dal_visible = true;
+bool dal_visible = true;
+#endif
 
 static int get_boot_mode(char *src)
 {
-	snprintf(boot_mode, sizeof(boot_mode), "%s", src);
+	char *p;
+	snprintf(sboot_mode, sizeof(sboot_mode), "%s", src);
+	p = strstr(sboot_mode, ",");
+	if (p) *p = 0;
+	kstrtoint(sboot_mode, 0, &boot_mode_id);
+	if (p) *p = ',';
+	pr_info("boot_mode=%s\n", sboot_mode);
+	pr_info("boot_mode_id=%d\n", boot_mode_id);
 	return 0;
 }
 
@@ -107,13 +117,13 @@ __setup("androidboot.boot_mode=", get_boot_mode);
 
 static int get_boot_reason(char *src)
 {
-	snprintf(boot_reason, sizeof(boot_reason), "%s", src);
+	snprintf(sboot_reason, sizeof(sboot_reason), "%s", src);
+	pr_info("boot_reason=%s\n", sboot_reason);
 	return 0;
 }
 
 __setup("androidboot.boot_reason=", get_boot_reason);
 
-#endif
 
 void bootprof_log_boot(char *str)
 {
@@ -146,7 +156,7 @@ void bootprof_log_boot(char *str)
 				buf[n]=' ';
 		buf[len]=0;
 		DAL_SetCursor(0, -2);
-		DAL_Printf("%s\r  Boot: mode=%s reason=%s", buf, boot_mode, boot_reason);
+		DAL_Printf("%s\r  Boot: mode=%s reason=%s", buf, sboot_mode, sboot_reason);
 	}
 #endif
 	mutex_lock(&bootprof_lock);
