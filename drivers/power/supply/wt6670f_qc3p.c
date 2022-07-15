@@ -1147,7 +1147,7 @@ static void wt6670f_create_device_node(struct device *dev)
 int wt6670f_do_reset(void)
 {
 	gpio_direction_output(_wt->reset_pin,1);
-	msleep(1);
+	msleep(10);
 	gpio_direction_output(_wt->reset_pin,0);
 	msleep(10);
 
@@ -1394,6 +1394,7 @@ static void wt6670f_shutdown(struct i2c_client *client)
 		ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
 		pr_info("%s set voltage ok wt6670\n", __func__);
 	}
+	wt6670f_do_reset();
 	if (ret < 0)
 	{
 		pr_info("%s set voltage fail\n",__func__);
