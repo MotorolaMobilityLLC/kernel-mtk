@@ -57,16 +57,14 @@ const unsigned int VBAT_CV_VTH[] = {
 
 };
 
-/*BQ25601 REG04 ICHG[6:0]*/
-const unsigned int CS_VTH[] = {
-	0, 6000, 12000, 18000, 24000,
-	30000, 36000, 42000, 48000, 54000,
-	60000, 66000, 72000, 78000, 84000,
-	90000, 96000, 102000, 108000, 114000,
-	120000, 126000, 132000, 138000, 144000,
-	150000, 156000, 162000, 168000, 174000,
-	180000, 186000, 192000, 198000, 204000,
-	210000, 216000, 222000, 228000
+/*sgm41513 REG02 ICHG[5:0]*/
+const unsigned int ICHG_CS_VTH[] = {
+	0,5,10,15,20,25,30,35,40,50,60,70,80,90,100,
+	110,130,150,170,190,210,230,250,270,300,330,
+	360,390,420,450,480,510,540,600,660,720,780,
+	840,900,960,1020,1080,1140,1200,1260,1320,
+	1380,1440,1500,1620,1740,1860,1980,2100,
+	2220,2340,2460,2580,2700,2820,2940,3000,
 };
 
 /*BQ25601 REG00 IINLIM[5:0]*/
@@ -1064,77 +1062,28 @@ static int bq25601_enable_charging(struct charger_device *chg_dev,
 	return status;
 }
 
-static u32 sgm41513_ichg[]=
-{
-0,5,10,15,20,25,30,35,40,
-50,60,70,80,90,100,110,
-130,150,170,190,210,230,250,270,
-300,330,360,390,420,450,480,510,540,
-600,660,720,780,840,900,960,1020,1080,1140,1200,1260,1320,1380,1440,1500,
-1620,1740,1860,1980,2100,2220,2340,2460,2580,2700,2820,2940,
-3000,
-};
-
-static int bq25601_get_current(struct charger_device *chg_dev, u32 *ichg)
-{
-#if 0
-	unsigned int ret_val = 0;
-#ifdef FIXME
-	unsigned char ret_force_20pct = 0;
-
-	/* Get current level */
-	bq25601_read_interface(bq25601_CON2, &ret_val, CON2_ICHG_MASK,
-			       CON2_ICHG_SHIFT);
-
-	/* Get Force 20% option */
-	bq25601_read_interface(bq25601_CON2, &ret_force_20pct,
-			       CON2_FORCE_20PCT_MASK,
-			       CON2_FORCE_20PCT_SHIFT);
-
-	/* Parsing */
-	ret_val = (ret_val * 64) + 512;
-
-#endif
-	return ret_val;
-#else
-	unsigned char reg_val = 0;
-
-	bq25601_read_interface(bq25601_CON2, &reg_val, CON2_ICHG_MASK, CON2_ICHG_SHIFT);
-	*ichg = sgm41513_ichg[reg_val] * 1000;
-	pr_err("%s: ichg = %d; reg_val = 0x%x;\n",__func__, *ichg, reg_val);
-	return reg_val;
-	
-#endif
-}
-
 static int bq25601_set_current(struct charger_device *chg_dev,
 			       u32 current_value)
 {
 	unsigned int status = true;
-//	unsigned int set_chr_current;
-//	unsigned int array_size;
+	unsigned int set_chr_current;
+	unsigned int array_size;
 	unsigned int register_value;
-	int i=0;
 
 	current_value = current_value / 1000;
-
+	pr_err("%s charge_current_value = %d\n", __func__, current_value);
 	if (current_value > 3000) 
 		current_value = 3000;
 
-	while(current_value > sgm41513_ichg[i]) i++;
-	register_value = i;
-
-	pr_err("&&&& charge_current_value = %d\n", current_value);
-/*
-	current_value /= 10;
-	array_size = GETARRAYNUM(CS_VTH);
-	set_chr_current = bmt_find_closest_level(CS_VTH, array_size,
+	array_size = GETARRAYNUM(ICHG_CS_VTH);
+	set_chr_current = bmt_find_closest_level(ICHG_CS_VTH, array_size,
 			  current_value);
-	register_value = charging_parameter_to_value(CS_VTH, array_size,
+	pr_err("%s charge current finally setting value: %d.\n", __func__,
+			set_chr_current);
+	register_value = charging_parameter_to_value(ICHG_CS_VTH, array_size,
 			 set_chr_current);
-	//pr_err("&&&& charge_register_value = %d\n",register_value);
-*/
-	pr_err("&&&& %s register_value = 0x%x\n", __func__, register_value);
+	pr_err("%s register_value = 0x%x\n", __func__, register_value);
+
 	bq25601_set_ichg(register_value);
 
 	return status;
@@ -1165,14 +1114,16 @@ static int bq25601_set_input_current(struct charger_device *chg_dev,
 	unsigned int register_value;
 
 	current_value /= 10;
-	pr_err("&&&& set_input_current = %dmA\n", current_value/100);
+	pr_err("%s set_input_current = %dmA\n", __func__, current_value/100);
 	array_size = GETARRAYNUM(INPUT_CS_VTH);
 	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size,
 			  current_value);
+	pr_err("%s input current finally setting value: %d.\n", __func__,
+			set_chr_current);
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size,
 			 set_chr_current);
-	pr_err("&&&& %s register_value = 0x%x\n", __func__,
-		register_value);
+	pr_err("%s register_value = 0x%x\n", __func__, register_value);
+
 	bq25601_set_iinlim(register_value);
 
 	return status;
@@ -1186,18 +1137,18 @@ static int bq25601_set_cv_voltage(struct charger_device *chg_dev,
 	unsigned int set_cv_voltage;
 	unsigned short register_value;
 
-	pr_err("&&&& cv_value = %d\n", cv);
+	pr_err("%s cv_value = %d\n", __func__, cv);
 	if(cv == 4480000)
 		cv = 4496000;
 	if(cv == 4512000)
 		cv = 4528000;
 	array_size = GETARRAYNUM(VBAT_CV_VTH);
 	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, cv);
-	pr_err("set_cv_voltage = %d\n", set_cv_voltage);
+	pr_err("%s set_cv_voltage = %d\n", __func__, set_cv_voltage);
 	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size,
 			 set_cv_voltage);
 	bq25601_set_vreg(register_value);
-	pr_err("&&&& cv reg value = 0x%x\n", register_value);
+	pr_err("%s cv reg value = 0x%x\n", __func__, register_value);
 
 	if((set_cv_voltage == 4496000) || (set_cv_voltage == 4528000)){
 		sgm41513_set_vreg_ft(3);
@@ -1468,7 +1419,7 @@ static struct charger_ops bq25601_chg_ops = {
 	/* Normal charging */
 	.dump_registers = bq25601_dump_register,
 	.enable = bq25601_enable_charging,
-	.get_charging_current = bq25601_get_current,
+	//.get_charging_current = bq25601_get_current,
 	.set_charging_current = bq25601_set_current,
 	.get_input_current = bq25601_get_input_current,
 	.set_input_current = bq25601_set_input_current,

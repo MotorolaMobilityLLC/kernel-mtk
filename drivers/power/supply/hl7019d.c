@@ -122,7 +122,8 @@ const unsigned int BOOSTV_CVTH[] = {
 	5318000, 5382000, 5446000, 5510000
 };
 
-const unsigned int CSTH[] = {
+/*hl7019d REG02 ICHG[7:2]*/
+const unsigned int ICHG_CSTH[] = {
 	512000, 576000, 640000, 704000,
 	768000, 832000, 896000, 960000,
 	1024000, 1088000, 1152000, 1216000,
@@ -132,13 +133,7 @@ const unsigned int CSTH[] = {
 	2048000, 2112000, 2176000, 2240000,
 	2304000, 2368000, 2432000, 2496000, 
 	2560000, 2624000, 2688000, 2752000,
-	2816000, 2880000, 2944000, 3008000,
-	3072000, 3200000, 3264000, 3328000, 
-	3392000, 3456000, 3520000, 3584000,
-	3648000, 3712000, 3776000, 3840000,
-	3904000, 3968000, 4032000, 4096000, 
-	4160000, 4224000, 4288000, 4352000,
-	4416000, 4480000, 4544000
+	2816000, 2880000, 2944000, 3008000
 };
 
 /*hl7019d REG00 IINLIM[5:0]*/
@@ -1358,9 +1353,9 @@ static int hl7019d_get_current(struct charger_device *chg_dev, u32 *ichg)
 	if(!chg_dev)
 		return -EINVAL;
 
-	array_size = ARRAY_SIZE(CSTH);
+	array_size = ARRAY_SIZE(ICHG_CSTH);
 	hl7019d_read_interface(HL7019D_CON2, &reg_value, CON2_ICHG_MASK, CON2_ICHG_SHIFT);	/* charge current */
-	*ichg = charging_value_to_parameter_hl7019d(CSTH, array_size, reg_value);
+	*ichg = charging_value_to_parameter_hl7019d(ICHG_CSTH, array_size, reg_value);
 
 	return status;
 }
@@ -1372,8 +1367,6 @@ static int hl7019d_set_current(struct charger_device *chg_dev, u32 current_value
 	unsigned int array_size;
 	unsigned char register_value;
 
-    pr_err("%s()current_value = %d.\n",__func__,current_value);
-
 	if(!chg_dev)
 		return -EINVAL;
 
@@ -1383,16 +1376,21 @@ static int hl7019d_set_current(struct charger_device *chg_dev, u32 current_value
 		return status;
 	}
 
+	if(current_value > 3008000)
+		current_value = 3008000;
+
+	if (current_value < 512000)
+		current_value = 512000;
+
 	pr_err("[hl7019d] charge current setting value: %d.\n", current_value);
-	if (current_value <= 500000) {
-		hl7019d_set_ichg(0x0);
-	} else {
-		array_size = ARRAY_SIZE(CSTH);
-		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
-		pr_err("[hl7019d] charge current finally setting value: %d.\n", set_chr_current);
-		register_value = charging_parameter_to_value_hl7019d(CSTH, array_size, set_chr_current);
-		hl7019d_set_ichg(register_value);
-	}
+
+	array_size = ARRAY_SIZE(ICHG_CSTH);
+	set_chr_current = bmt_find_closest_level(ICHG_CSTH, array_size, current_value);
+	pr_err("[hl7019d] charge current finally setting value: %d.\n", set_chr_current);
+	register_value = charging_parameter_to_value_hl7019d(ICHG_CSTH, array_size, set_chr_current);
+	pr_err("%s register_value = 0x%x\n", __func__, register_value);
+
+	hl7019d_set_ichg(register_value);
 
 	return status;
 }
@@ -1486,6 +1484,9 @@ static int hl7019d_set_input_current(struct charger_device *chg_dev, u32 current
 		set_chr_current = bmt_find_closest_level(INPUT_CSTH, array_size, current_value);
 		pr_err("[hl7019d] charge input current finally setting value: %d.\n", set_chr_current);
 		register_value = charging_parameter_to_value_hl7019d(INPUT_CSTH, array_size, set_chr_current);
+		if(register_value == 0x6)
+			register_value = 0x7;
+		pr_err("%s register_value = 0x%x\n", __func__, register_value);
 	}
 
 	hl7019d_set_iinlim(register_value);
