@@ -172,19 +172,20 @@ int PVRSRVDriverInit(void)
 		return -ENOMEM;
 	}
 
-#if defined(CONFIG_DEBUG_FS)
-	error = PVRDebugFsRegister();
-	if (error != PVRSRV_OK)
-	{
-		return -ENOMEM;
-	}
-#elif defined(CONFIG_PROC_FS)
+/* MTK: use procfs first */
+#if defined(CONFIG_PROC_FS)
 	error = PVRProcFsRegister();
 	if (error != PVRSRV_OK)
 	{
 		return -ENOMEM;
 	}
-#endif /* defined(CONFIG_DEBUG_FS) || defined(CONFIG_PROC_FS) */
+#elif defined(CONFIG_DEBUG_FS)
+	error = PVRDebugFsRegister();
+	if (error != PVRSRV_OK)
+	{
+		return -ENOMEM;
+	}
+#endif /* defined(CONFIG_PROC_FS) || defined(CONFIG_DEBUG_FS) */
 
 #if defined(PVRSRV_ENABLE_PROCESS_STATS)
 	error = PVRSRVStatsInitialise();
