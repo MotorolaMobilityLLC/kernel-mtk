@@ -62,10 +62,11 @@
 
 #ifdef CONFIG_CHARGER_STOP_70PER
 unsigned int capacity_control= 1;
-
+#else
+unsigned int capacity_control= 0;
+#endif
 module_param(capacity_control, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(capacity_control, "DISABLE CHARGING PATH");
-#endif
 
 
 struct tag_bootmode {
@@ -1305,9 +1306,8 @@ static void charger_check_status(struct mtk_charger *info)
 	bool charging = true;
 	int temperature;
 	struct battery_thermal_protection_data *thermal;
-#ifdef CONFIG_CHARGER_STOP_70PER
 	static int count = 1;
-#endif
+
 	if (get_charger_type(info) == POWER_SUPPLY_TYPE_UNKNOWN)
 		return;
 
@@ -1368,7 +1368,7 @@ static void charger_check_status(struct mtk_charger *info)
 			}
 		}
 	}
-#ifdef CONFIG_CHARGER_STOP_70PER
+
 	/* add limit soc max 70% */
 	if(capacity_control) {
 		if ((get_uisoc(info) >= 70) && (count > 0)) {
@@ -1397,7 +1397,7 @@ static void charger_check_status(struct mtk_charger *info)
 		chr_err("%s;charge status:%d count:%d\n",__func__,charging,count);
 	}
 	/* add end */
-#endif
+
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
