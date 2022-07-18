@@ -167,6 +167,34 @@ static void aw_dev_ramp_work(struct work_struct *work)
 	aw_dev_do_ramp(aw_dev);
 }
 
+static void aw_dev_attenuate_work(struct work_struct *work)
+{
+	struct aw_device *aw_dev =
+		container_of(work, struct aw_device, attenuate_work.work);
+	struct aw_volume_desc *desc;
+
+	aw_dev_dbg(aw_dev->dev,"enter attenuate work");
+
+	if (aw_dev == NULL){
+		aw_dev_err(aw_dev->dev,"aw_device is null, return");
+		return;
+	}
+
+	desc = &aw_dev->volume_desc;
+	if (desc == NULL){
+		aw_dev_err(aw_dev->dev,"aw_dev->volume_desc is null, return");
+                return;
+	}
+
+	if (aw_dev->attenuate_in_process){
+		aw_dev_info(aw_dev->dev,"5s later, restore attenuattion, ctl_volume = %d", desc->ctl_volume);
+		aw883xx_dev_set_volume(aw_dev, desc->ctl_volume);
+		aw_dev->attenuate_in_process = 0;
+	} else {
+		aw_dev_info(aw_dev->dev,"attenuattion is 0, do nothing");
+	}
+}
+
 int aw883xx_dev_set_attenuate_status(struct aw_device *aw_dev, uint32_t set_attenuate)
 {
 	aw_dev_info(aw_dev->dev,"original attenuate_en=%d, set_attenuate=%d, channel=%d",
@@ -198,8 +226,15 @@ static void aw_dev_fade_in(struct aw_device *aw_dev)
 
 #ifdef CONFIG_AW883XX_RAMP_SUPPORT
 	if(aw_dev->attenuate_en){
-		aw_dev_dbg(aw_dev->dev,"attenuate enabled, reduce fade_in_vol to%d",fade_in_vol);
+		aw_dev_info(aw_dev->dev,"attenuate enabled, reduce fade_in_vol to%d",fade_in_vol);
 		fade_in_vol += AW_ATTENUATION_VOL;  //reduce 20db
+
+		//we should cancel attenuation 5s later in case speaker is still on
+		aw_dev_info(aw_dev->dev,"schedule work to cancel attenuation 5s later");
+		aw_dev->attenuate_in_process = 1;
+		queue_delayed_work(aw_dev->ramp_queue,
+				&aw_dev->attenuate_work,
+				5*HZ);
 	}
 #endif
 
@@ -471,6 +506,11 @@ void aw883xx_dev_mute(struct aw_device *aw_dev, bool mute)
 		if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->ramp_in_process)){
 			aw_dev_info(aw_dev->dev,"amp inprocess,cancel it as mute set ");
 			aw_dev->ramp_in_process = 0;
+		}
+		if ((aw_dev->channel == 0) && (aw_dev->attenuate_in_process)) {
+			aw_dev_info(aw_dev->dev,"attenuation still enabled when mute set to %d,disable it",mute);
+			aw_dev->attenuate_in_process = 0;
+			cancel_delayed_work_sync(&aw_dev->attenuate_work);
 		}
 #endif
 		aw_dev_fade_out(aw_dev);
@@ -1788,6 +1828,7 @@ static void aw883xx_parse_fade_enable_dt(struct aw_device *aw_dev)
 	aw_dev->ramp_en = 0;
 	aw_dev->ramp_in_process = 0;
 	aw_dev->attenuate_en = 0;
+	aw_dev->attenuate_in_process = 0;
 #endif
 
 }
@@ -1861,6 +1902,7 @@ int aw883xx_device_probe(struct aw_device *aw_dev)
 	}
 
 	INIT_DELAYED_WORK(&aw_dev->ramp_work, aw_dev_ramp_work);
+	INIT_DELAYED_WORK(&aw_dev->attenuate_work, aw_dev_attenuate_work);
 #endif
 
 	return 0;
@@ -1872,6 +1914,7 @@ int aw883xx_device_remove(struct aw_device *aw_dev)
 
 #ifdef CONFIG_AW883XX_RAMP_SUPPORT
 	cancel_delayed_work_sync(&aw_dev->ramp_work);
+	cancel_delayed_work_sync(&aw_dev->attenuate_work);
 
 	if (aw_dev->ramp_queue)
 		destroy_workqueue(aw_dev->ramp_queue);
