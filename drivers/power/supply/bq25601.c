@@ -902,6 +902,16 @@ void bq25601_set_batfet_reset_enable(unsigned int val)
 				);
 }
 
+void bq25601_set_vdpm_bat_track(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = bq25601_config_interface((unsigned char) (bq25601_CON7),
+				(unsigned char) (val),
+				(unsigned char) (CON7_VDPM_BAT_TRACK_MASK),
+				(unsigned char) (CON7_VDPM_BAT_TRACK_SHIFT)
+				);
+}
 
 /* CON8---------------------------------------------------- */
 
@@ -1248,6 +1258,7 @@ static int bq25601_get_charging_status(struct charger_device *chg_dev,
 {
 	unsigned int status = true;
 	unsigned int ret_val;
+	int vbus_stat = 0;
 
 	ret_val = bq25601_get_chrg_stat();
 	pr_info("%s ret_val = %d\n", __func__, ret_val);
@@ -1255,6 +1266,10 @@ static int bq25601_get_charging_status(struct charger_device *chg_dev,
 		*is_done = true;
 	else
 		*is_done = false;
+
+	vbus_stat = bq25601_get_vbus_stat();
+	if(vbus_stat == 2) //cdp
+		bq25601_set_vdpm_bat_track(2); //VDPM_BAT_Track=250mV
 
 	return status;
 }
