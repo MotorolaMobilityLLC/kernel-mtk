@@ -117,6 +117,18 @@ enum battery_property {
 	BAT_PROP_BATTERY_CYCLE,
 };
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+struct usb_data {
+	struct power_supply_desc psd;
+	struct power_supply_config psy_cfg;
+	struct power_supply *psy;
+	struct power_supply *chg_psy;
+
+	int usb_online;
+	int charger_vol;
+};
+#endif
+
 struct battery_data {
 	struct power_supply_desc psd;
 	struct power_supply_config psy_cfg;
@@ -131,9 +143,9 @@ struct battery_data {
 	/* Add for Battery Service */
 	int bat_batt_vol;
 	int bat_batt_temp;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
-	int charger_vol;
-#endif
+//#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+//	int charger_vol;
+//#endif
 	struct moto_chg_tcmd_client bat_tcmd_client;//moto add
 };
 
@@ -903,7 +915,9 @@ struct mtk_battery {
 	struct hrtimer fg_hrtimer;
 	struct mutex ops_lock;
 	struct mutex fg_update_lock;
-
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	struct usb_data usb_data;
+#endif
 	struct battery_data bs_data;
 	struct mtk_coulomb_service cs;
 	struct mtk_gauge *gauge;
