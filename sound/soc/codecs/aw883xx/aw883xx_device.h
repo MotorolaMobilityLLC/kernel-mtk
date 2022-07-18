@@ -456,7 +456,9 @@ struct aw_device {
 	uint32_t ramp_in_process;
 	struct workqueue_struct *ramp_queue;
 	struct delayed_work ramp_work;
+	struct delayed_work attenuate_work;
 	uint32_t attenuate_en;
+	uint32_t attenuate_in_process;
 #endif
 	unsigned char dsp_cfg;
 
