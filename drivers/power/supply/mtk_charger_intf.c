@@ -204,7 +204,7 @@ static int get_pmic_vbus(struct mtk_charger *info, int *vchr)
 
 #ifdef CONFIG_MOTO_CHARGER_SGM415XX
 	if (chg_psy == NULL)
-		chg_psy = power_supply_get_by_name("sgm4154x-charger");
+		chg_psy = power_supply_get_by_name("usb_vbus");
 #else
 	if (chg_psy == NULL)
 		chg_psy = power_supply_get_by_name("mtk_charger_type");
