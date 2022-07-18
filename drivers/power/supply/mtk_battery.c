@@ -340,6 +340,16 @@ int check_cap_level(int uisoc)
 		return POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN;
 }
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+static enum power_supply_property usb_props[] = {
+	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_CHARGE_COUNTER
+};
+#endif
+
 static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_HEALTH,
@@ -361,6 +371,51 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
 };
+
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+static int usb_psy_get_property(struct power_supply *psy,
+					enum power_supply_property psp,
+					union power_supply_propval *val)
+{
+	int ret = 0;
+	struct mtk_battery *gm;
+	struct usb_data *usb_data;
+
+	gm = (struct mtk_battery *)power_supply_get_drvdata(psy);
+	usb_data = &gm->usb_data;
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		val->intval = usb_data->usb_online;
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		val->intval = 5000000;
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		val->intval = 500000;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = gm->ui_soc *
+			gm->fg_table_cust_data.fg_profile[
+				gm->battery_id].q_max * 1000 / 100;
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+		if (gm->disableGM30)
+			usb_data->charger_vol = 5000;
+		else
+			ret = gauge_get_property(GAUGE_PROP_CHARGER_VOLTAGE,
+				&usb_data->charger_vol);
+
+		val->intval = usb_data->charger_vol * 10;
+		ret = 0;
+		break;
+	default:
+		ret = -EINVAL;
+		break;
+	}
+	return ret;
+}
+#endif
 
 static int battery_psy_get_property(struct power_supply *psy,
 	enum power_supply_property psp,
@@ -745,6 +800,24 @@ static void mtk_battery_external_power_changed(struct power_supply *psy)
 	gm->chr_type = cur_chr_type;
 
 }
+
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+void usb_service_data_init(struct mtk_battery *gm)
+{
+	struct usb_data *usb_data;
+
+	usb_data = &gm->usb_data;
+	usb_data->psd.name = "usb_vbus",
+	usb_data->psd.type = POWER_SUPPLY_TYPE_USB;
+	usb_data->psd.properties = usb_props;
+	usb_data->psd.num_properties = ARRAY_SIZE(usb_props);
+	usb_data->psd.get_property = usb_psy_get_property;
+	usb_data->psy_cfg.drv_data = gm;
+
+	usb_data->usb_online = 0;
+}
+#endif
+
 void battery_service_data_init(struct mtk_battery *gm)
 {
 	struct battery_data *bs_data;
@@ -3565,6 +3638,22 @@ int battery_psy_init(struct platform_device *pdev)
 	gm->gauge = gauge;
 	mutex_init(&gm->ops_lock);
 
+#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+	gm->usb_data.chg_psy = devm_power_supply_get_by_phandle(&pdev->dev,
+							 "sgm4154x-charger");
+	if (IS_ERR_OR_NULL(gm->usb_data.chg_psy))
+		bm_err("[BAT_probe] %s: fail to get usb_vbus chg_psy !!\n", __func__);
+
+	usb_service_data_init(gm);
+	gm->usb_data.psy =
+		power_supply_register(
+			&(pdev->dev), &gm->usb_data.psd, &gm->usb_data.psy_cfg);
+	if (IS_ERR(gm->usb_data.psy)) {
+		bm_err("[BAT_probe] power_supply_register USB Fail !!\n");
+		ret = PTR_ERR(gm->usb_data.psy);
+		return ret;
+	}
+#endif
 	gm->bs_data.chg_psy = devm_power_supply_get_by_phandle(&pdev->dev,
 							 "charger");
 	if (IS_ERR_OR_NULL(gm->bs_data.chg_psy)) {
