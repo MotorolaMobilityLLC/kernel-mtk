@@ -319,7 +319,7 @@
 
 &charger_cooler {
 	mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
-				2000000 1600000 800000 500000>;
+				2000000 1600000 500000 300000>;
 };
 
 &moto_wlc {
@@ -373,17 +373,12 @@
 			type = "passive";
 		};
 		charge_trip4: charge-trip4 {
-			temperature = <49000>;
+			temperature = <49500>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip5: charge-trip5 {
 			temperature = <50000>;
-			hysteresis = <1000>;
-			type = "passive";
-		};
-		charge_trip6: charge-trip6 {
-			temperature = <51000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
@@ -412,22 +407,18 @@
 		};
 		charge-cdev2 {
 			trip = <&charge_trip2>;
-			cooling-device = <&charger_cooler 3 3>;
+			cooling-device = <&charger_cooler 5 5>;
 		};
 		charge-cdev3 {
 			trip = <&charge_trip3>;
-			cooling-device = <&charger_cooler 5 5>;
+			cooling-device = <&charger_cooler 6 6>;
 		};
 		charge-cdev4 {
 			trip = <&charge_trip4>;
-			cooling-device = <&charger_cooler 6 6>;
+			cooling-device = <&charger_cooler 7 7>;
 		};
 		charge-cdev5 {
 			trip = <&charge_trip5>;
-			cooling-device = <&charger_cooler 7 7>;
-		};
-		charge-cdev6 {
-			trip = <&charge_trip6>;
 			cooling-device = <&charger_cooler 8 8>;
 		};
 	};
