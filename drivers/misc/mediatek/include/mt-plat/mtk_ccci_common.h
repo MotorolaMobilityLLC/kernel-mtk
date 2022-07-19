@@ -661,6 +661,17 @@ struct ccci_product_data_t {
 struct ccci_product_data_t *ccci_rpc_get_product_data(unsigned int *len);
 #endif
 
+#ifdef CONFIG_MOTO_CCCI_SEC_SUPPORT
+/*Should config the data size according to the cid actual size*/
+#define CCCI_CID_DATA_SIZE (3*1024)
+
+struct ccci_security_data_t {
+   unsigned char cid_data[CCCI_CID_DATA_SIZE];
+   unsigned int cid_size;
+};
+struct ccci_security_data_t *ccci_rpc_get_security_data(unsigned int *len);
+#endif
+
 #if IS_ENABLED(CONFIG_MTK_ECCCI_C2K_USB)
 /* for c2k usb bypass */
 typedef int (*usb_upstream_buffer_cb_t) (int transfer_id,
