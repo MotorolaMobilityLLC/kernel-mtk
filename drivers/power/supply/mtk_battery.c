@@ -352,7 +352,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 			pr_info("bora: battery get status = %d\n", val->intval);
 		}
 
-		pr_info("bora: chg_done = %d\n", is_chg_done);
+		//pr_info("bora: chg_done = %d\n", is_chg_done);
 		if(is_chg_done){
 			val->intval = POWER_SUPPLY_STATUS_FULL;
 			pr_info("bora: battery get status = %d\n", val->intval);

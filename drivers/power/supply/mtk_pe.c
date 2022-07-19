@@ -601,10 +601,12 @@ static int __pe_run(struct chg_alg_device *alg)
 		goto _out;
 
 	chr_volt = pe_hal_get_vbus(alg);
-	chr_volt2 = pe_get_conditional_vbus(alg, 500000);
+
+	pe_dbg("%s: chr_volt = %d; \n", __func__, chr_volt);
 
 	if (pe->ta_9v_support && pe->ta_12v_support) {
 		if (abs(chr_volt - 12000000) > VBUS_MAX_DROP) {
+			chr_volt2 = pe_get_conditional_vbus(alg, 500000);
 			if (abs(chr_volt2 - 12000000) > VBUS_MAX_DROP) {
 				tune = true;
 			} else {
@@ -619,6 +621,7 @@ static int __pe_run(struct chg_alg_device *alg)
 			pe->ta_12v_support, tune);
 	} else if (pe->ta_9v_support && !pe->ta_12v_support) {
 		if (abs(chr_volt - 9000000) > VBUS_MAX_DROP) {
+			chr_volt2 = pe_get_conditional_vbus(alg, 500000);
 			if (abs(chr_volt2 - 9000000) > VBUS_MAX_DROP) {
 				tune = true;
 			} else {

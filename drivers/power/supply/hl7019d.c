@@ -504,7 +504,7 @@ void hl7019d_set_boost_lim(unsigned int val)
 /* CON2 */
 void hl7019d_set_ichg(unsigned int val)
 {
-	if(val > 62) { //hhl modify
+	if(val > 0x27) { //hhl modify
 		pr_err("[%s] parameter error.\n", __func__);
 		return;
 	}
@@ -1486,6 +1486,9 @@ static int hl7019d_set_input_current(struct charger_device *chg_dev, u32 current
 		set_chr_current = bmt_find_closest_level(INPUT_CSTH, array_size, current_value);
 		pr_err("[hl7019d] charge input current finally setting value: %d.\n", set_chr_current);
 		register_value = charging_parameter_to_value_hl7019d(INPUT_CSTH, array_size, set_chr_current);
+		if(register_value == 0x6)
+			register_value = 0x7;
+		pr_err("%s register_value = 0x%x\n", __func__, register_value);
 	}
 
 	hl7019d_set_iinlim(register_value);
