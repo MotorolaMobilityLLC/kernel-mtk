@@ -1891,6 +1891,7 @@
       <elf-symbol name='drm_gem_dmabuf_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1755b11'/>
       <elf-symbol name='drm_gem_dmabuf_vmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb5830b37'/>
       <elf-symbol name='drm_gem_dmabuf_vunmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb5293491'/>
+      <elf-symbol name='drm_gem_fb_begin_cpu_access' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8257085'/>
       <elf-symbol name='drm_gem_fb_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8785ef32'/>
       <elf-symbol name='drm_gem_fb_create_handle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9833b3b5'/>
       <elf-symbol name='drm_gem_fb_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6d312776'/>
@@ -2104,6 +2105,7 @@
       <elf-symbol name='drm_universal_plane_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbab1dfce'/>
       <elf-symbol name='drm_vblank_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb6a4b04a'/>
       <elf-symbol name='drm_wait_one_vblank' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x44b5c4f5'/>
+      <elf-symbol name='drm_writeback_cleanup_job' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x12796f88'/>
       <elf-symbol name='drm_writeback_connector_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc21acb7f'/>
       <elf-symbol name='drm_writeback_queue_job' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf612a2b6'/>
       <elf-symbol name='drm_writeback_signal_completion' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8120a316'/>
@@ -129210,6 +129212,11 @@
         <parameter type-id='ce092740' name='map' filepath='drivers/gpu/drm/drm_prime.c' line='690' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='drm_gem_fb_begin_cpu_access' mangled-name='drm_gem_fb_begin_cpu_access' filepath='drivers/gpu/drm/drm_gem_framebuffer_helper.c' line='417' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_gem_fb_begin_cpu_access'>
+        <parameter type-id='7b332e1c' name='fb' filepath='drivers/gpu/drm/drm_gem_framebuffer_helper.c' line='417' column='1'/>
+        <parameter type-id='eea6b025' name='dir' filepath='drivers/gpu/drm/drm_gem_framebuffer_helper.c' line='417' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='drm_gem_fb_create' mangled-name='drm_gem_fb_create' filepath='drivers/gpu/drm/drm_gem_framebuffer_helper.c' line='268' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_gem_fb_create'>
         <parameter type-id='8898134d' name='dev' filepath='drivers/gpu/drm/drm_gem_framebuffer_helper.c' line='268' column='1'/>
         <parameter type-id='9e99ecc1' name='file' filepath='drivers/gpu/drm/drm_gem_framebuffer_helper.c' line='268' column='1'/>
@@ -130323,6 +130330,10 @@
       <function-decl name='drm_wait_one_vblank' mangled-name='drm_wait_one_vblank' filepath='drivers/gpu/drm/drm_vblank.c' line='1249' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_wait_one_vblank'>
         <parameter type-id='8898134d' name='dev' filepath='drivers/gpu/drm/drm_vblank.c' line='1249' column='1'/>
         <parameter type-id='f0981eeb' name='pipe' filepath='drivers/gpu/drm/drm_vblank.c' line='1249' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='drm_writeback_cleanup_job' mangled-name='drm_writeback_cleanup_job' filepath='drivers/gpu/drm/drm_writeback.c' line='314' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_writeback_cleanup_job'>
+        <parameter type-id='7b4ee155' name='job' filepath='drivers/gpu/drm/drm_writeback.c' line='314' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='drm_writeback_connector_init' mangled-name='drm_writeback_connector_init' filepath='drivers/gpu/drm/drm_writeback.c' line='173' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_writeback_connector_init'>
