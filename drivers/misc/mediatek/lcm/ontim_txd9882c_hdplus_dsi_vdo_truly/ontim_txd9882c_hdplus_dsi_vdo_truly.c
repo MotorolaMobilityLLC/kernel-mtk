@@ -153,7 +153,7 @@ static struct LCM_setting_table lcm_suspend_setting_gesture[] = {
 static struct LCM_setting_table init_setting[] = {
     {0xFF,0x03, {0x98, 0x82, 0x00} },
     {0x68,0x02,{0x04,0x00}},
-    {0x51,0x01,{0xff}},
+    {0x51,0x01,{0x00}},
     {0x53,0x01,{0x2c}},
     {0x55,0x01,{0x01}},
     {0x35,0x01,{0x00}},
@@ -164,7 +164,7 @@ static struct LCM_setting_table init_setting[] = {
     {REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 static struct LCM_setting_table bl_level[] = {
-	{ 0x51, 0x01, {0xFF} },
+	{ 0x51, 0x01, {0xff} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -393,7 +393,7 @@ static void lcm_init(void)
 
 	push_table(NULL, init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-
+	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 	LCM_LOGI("%s: icnl9911s done\n",__func__);
 }
 
