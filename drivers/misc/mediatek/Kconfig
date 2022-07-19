@@ -186,6 +186,14 @@ config MOTO_DRDI_SUPPORT
 	  which transfers product name/radio id etc to modem side.
 	  Say Y here if you are need moto drdi support.
 	  If unsure, say N
+
+config MOTO_CCCI_SEC_SUPPORT
+	bool "moto ccci sec support"
+	help
+	  Used to enable moto ccci security support,
+	  which transfers moto security data, cid data etc to modem side.
+	  Say Y here if you are need moto ccci security support.
+	  If unsure, say N
 endmenu # Config
 
 menu "Misc configs"
