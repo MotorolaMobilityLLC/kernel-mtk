@@ -456,8 +456,7 @@ static int do_algorithm(struct mtk_charger *info)
 				is_basic = true;
 				chr_err("bora: wait checking , use basic first----------- \n");
 				break;
-			//} else if (ret == ALG_READY || ret == ALG_RUNNING) {
-			} else if (ret == ALG_READY) {
+			} else if (ret == ALG_READY || ret == ALG_RUNNING) {
 				is_basic = false;
 				//chg_alg_set_setting(alg, &info->setting);
 				chg_alg_start_algo(alg);
