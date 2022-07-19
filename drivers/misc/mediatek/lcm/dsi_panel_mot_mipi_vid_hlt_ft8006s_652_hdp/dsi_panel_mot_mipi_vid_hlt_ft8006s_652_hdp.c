@@ -219,8 +219,8 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*dfps_params[0].data_rate = xx; */
 	/*if HFP solution*/
 	/*dfps_params[0].horizontal_frontporch = xx;*/
-	dfps_params[0].vertical_frontporch = 1000;
-	dfps_params[0].vertical_frontporch_for_low_power = 1000;
+	dfps_params[0].vertical_frontporch = 1213;
+	dfps_params[0].vertical_frontporch_for_low_power = 1213;
 
 	/*if need mipi hopping params add here*/
 	//dfps_params[0].dynamic_switch_mipi = 0;
@@ -239,7 +239,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*if HFP solution*/
 	/*dfps_params[1].horizontal_frontporch = xx;*/
 	dfps_params[1].vertical_frontporch = 216;
-	dfps_params[1].vertical_frontporch_for_low_power = 1000;//60 FPS in idle mode
+	dfps_params[1].vertical_frontporch_for_low_power = 1213;//60 FPS in idle mode
 
 	/*if need mipi hopping params add here*/
 	//dfps_params[1].dynamic_switch_mipi = 0;
@@ -294,13 +294,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* video mode timing */
 	params->dsi.vertical_sync_active = 10;
 	params->dsi.vertical_backporch = 170;
-	params->dsi.vertical_frontporch = 1000;
-	params->dsi.vertical_frontporch_for_low_power = 1000;
+	params->dsi.vertical_frontporch = 1213;
+	params->dsi.vertical_frontporch_for_low_power = 1213;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 6;
-	params->dsi.horizontal_backporch = 6;
-	params->dsi.horizontal_frontporch = 6;
+	params->dsi.horizontal_sync_active = 10;
+	params->dsi.horizontal_backporch = 10;
+	params->dsi.horizontal_frontporch = 24;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_range = 4;
 	params->dsi.ssc_disable = 1;
@@ -310,7 +310,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.PLL_CLOCK = 270;
 #else
 	/* this value must be in MTK suggested table */
-	params->dsi.PLL_CLOCK = 400;
+	params->dsi.PLL_CLOCK = 450;
 #endif
 
 	params->dsi.clk_lp_per_line_enable = 0;
