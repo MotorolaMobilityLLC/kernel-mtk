@@ -75,7 +75,7 @@ static char version[30]="jz-ft8006s";
 
 static char vendor_name[30]="jz-ft8006s";
 static char lcdname[30]="jz-ft8006s";
-
+extern int usb_detect_flag_for_tp;
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
@@ -1789,6 +1789,8 @@ static void tpd_resume(struct device *dev)
     }
 
     fts_wait_tp_to_valid();
+    if(usb_detect_flag_for_tp == 1)
+        fts_write_reg(0x8B, 1);
     fts_ex_mode_recovery(ts_data);
 
     fts_esdcheck_resume(ts_data);

@@ -59,7 +59,10 @@
 
 #include "mtk_charger.h"
 #include "mtk_battery.h"
-
+int usb_detect_flag_for_tp = 0;
+extern const char* lcd_name;
+extern int fts_write_reg(u8 addr, u8 value);
+extern char *mtkfb_find_lcm_driver(void);
 #ifdef CONFIG_CHARGER_STOP_70PER
 unsigned int capacity_control= 1;
 #else
@@ -1524,6 +1527,21 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	struct chg_alg_device *alg;
 	struct chg_alg_notify notify;
 	int i;
+	//add by zsh 2022/7/19
+	char lcm_name[256] = {0};
+	strcpy(lcm_name, mtkfb_find_lcm_driver());
+	int name_len = 0;
+	name_len = strlen(lcm_name);
+	if( name_len != 0)
+	{
+		if(strncmp(lcm_name, "ontim_ft8006s_hdplus_dsi_vdo_jz", name_len) == 0)
+			
+			{
+				fts_write_reg(0x8B, 0);
+				chr_err("zsh write 0x8B  = 0\n");
+				usb_detect_flag_for_tp = 0;
+			}
+	}
 
 	chr_err("%s\n", __func__);
 	info->chr_type = POWER_SUPPLY_TYPE_UNKNOWN;
@@ -1553,6 +1571,20 @@ static int mtk_charger_plug_in(struct mtk_charger *info,
 	struct chg_alg_device *alg;
 	struct chg_alg_notify notify;
 	int i;
+
+	char lcm_name[256] = {0};
+	strcpy(lcm_name, mtkfb_find_lcm_driver());
+	int name_len = 0;
+	name_len = strlen(lcm_name);
+	if( name_len != 0)
+	{
+		if(strncmp(lcm_name, "ontim_ft8006s_hdplus_dsi_vdo_jz", name_len) == 0)
+		{
+			fts_write_reg(0x8B, 1);
+			chr_err("zsh write 0x8B = 1\n");
+			usb_detect_flag_for_tp = 1;
+		}
+	}
 
 	chr_debug("%s\n",
 		__func__);
