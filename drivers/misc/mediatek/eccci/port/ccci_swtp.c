@@ -182,7 +182,8 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 
 	CCCI_LEGACY_ERR_LOG(-1, SYS,
 		"%s:the end swtp status is %d\n", __func__ , swtp->tx_power_mode);
-
+#endif
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST)
 	inject_pin_status_event(swtp->tx_power_mode, rf_name);
 #else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
@@ -379,7 +380,7 @@ int swtp_init(int md_id)
 	/* tx work setting */
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
-#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST)
 	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
 #else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
