@@ -1114,14 +1114,18 @@ static int bq25601_set_current(struct charger_device *chg_dev,
 //	unsigned int set_chr_current;
 //	unsigned int array_size;
 	unsigned int register_value;
-	int i=0;
+	u8 i=0;
 
 	current_value = current_value / 1000;
 
-	if (current_value > 3000) 
+	if (current_value > 3000)
 		current_value = 3000;
 
 	while(current_value > sgm41513_ichg[i]) i++;
+
+	if(i > 0x1f)
+		i = i-1;
+
 	register_value = i;
 
 	pr_err("&&&& charge_current_value = %d\n", current_value);
