@@ -276,9 +276,9 @@
 };
 
 &u2port0{
-	mediatek,eye-vrt = <6>;
+	mediatek,eye-vrt = <7>;
 	mediatek,eye-term = <6>;
-	mediatek,rev6 = <3>;
+	mediatek,rev6 = <1>;
 };
 
 
