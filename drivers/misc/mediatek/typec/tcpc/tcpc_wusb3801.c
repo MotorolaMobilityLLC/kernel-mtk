@@ -568,11 +568,6 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 	pr_info("wusb3801:irq_work_handler\n");
 
 	tcpci_lock_typec(chip->tcpc);
-
-	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL1);
-
-	pr_err("%s enter reg05 = %d\n",__func__, rc);
-
 	rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_INTERRUPT);
 	if (rc < 0) {
 		pr_err("%s: failed to read interrupt\n", __func__);
@@ -701,9 +696,6 @@ static int wusb3801_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 	u8 ret = 0;
 
 	ret = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_CONTROL1);
-
-	pr_err("%s enter reg05 = %d\n",__func__, ret);
-
 	if(ret == 0){
 		wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_CONTROL1, 0x01);
 		pr_err("%s write reg05 0x01\n",__func__);

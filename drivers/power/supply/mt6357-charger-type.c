@@ -571,6 +571,24 @@ static void do_charger_detection_work(struct work_struct *data)
 				     data, struct mtk_charger_type, chr_work);
 	unsigned int chrdet = 0;
 
+#if IS_ENABLED(CONFIG_USB_MTK_HDRC)
+	int timeout = 200;
+
+	/* add make sure USB Ready */
+	if (is_usb_rdy() == false) {
+		pr_info("CDP, block\n");
+		while (is_usb_rdy() == false && timeout > 0) {
+			msleep(100);
+			timeout--;
+		}
+		if (timeout == 0)
+			pr_info("CDP, timeout\n");
+		else
+			pr_info("CDP, free\n");
+	} else
+		pr_info("CDP, PASS\n");
+#endif
+
 	chrdet = bc11_get_register_value(info->regmap,
 		PMIC_RGS_CHRDET_ADDR,
 		PMIC_RGS_CHRDET_MASK,
