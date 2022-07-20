@@ -167,7 +167,7 @@ exit:
 static int ocp8135b_pinctrl_set(int pin, int state)
 {
 	int ret = 0;
-	pr_info("%s in\n", __func__);
+	//pr_info("%s in\n", __func__);
 
 	if (IS_ERR(ocp8135b_pinctrl)) {
 		pr_err("pinctrl is not available\n");
@@ -207,8 +207,8 @@ static int ocp8135b_pinctrl_set(int pin, int state)
 		pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	}
-	pr_info("pin(%d) state(%d)\n", pin, state);
-	pr_info("%s out\n", __func__);
+	//pr_info("pin(%d) state(%d)\n", pin, state);
+	//pr_info("%s out\n", __func__);
 	return ret;
 }
 
@@ -219,6 +219,7 @@ static int ocp8135b_pinctrl_set(int pin, int state)
 
 static int ocp8135b_set_torch_brightness(int val)
 {
+	pr_info("%s in\n", __func__);
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_HWENM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
 
@@ -237,6 +238,7 @@ static int ocp8135b_set_torch_brightness(int val)
 
 static int ocp8135b_set_strobe_brightness(int val)
 {
+	pr_info("%s in\n", __func__);
 	ocp8135b_pinctrl_set(OCP8135B_PINCTRL_PIN_PWM,
 		OCP8135B_PINCTRL_PINSTATE_HIGH);
 	ocp8135b_pwm_set_config(val);
@@ -252,21 +254,28 @@ static int ocp8135b_set_strobe_brightness(int val)
 
 static int ocp8135b_is_torch(int level)
 {
-	if (level >= OCP8135B_LEVEL_TORCH)
-		return -1;
-
-	return 0;
+	if ((level >= OCP8135B_LEVEL_TORCH) && (level != 40))
+		return 0;
+	else {
+		return 1;
+	}
 }
 
 static int ocp8135b_verify_level(int level)
 {
-	level = level*16/13;
-	if (level <= 0)
-		level = 1;
-	else if (level >= OCP8135B_LEVEL_NUM)
-		level = OCP8135B_LEVEL_NUM;
+	if (level == 40) {
+		pr_info("%s is torch mode\n", __func__);
+		return level;
+	} else {
+		level = level*16/13;
 
-	return level - 1;
+		if (level <= 0)
+			level = 1;
+		else if (level >= OCP8135B_LEVEL_NUM)
+			level = OCP8135B_LEVEL_NUM;
+
+		return level - 1;
+	}
 }
 
 /* set flashlight level */
@@ -286,7 +295,10 @@ static int ocp8135b_enable(void)
 	ocp8135b_pinctrl_set(pin_flash, OCP8135B_PINCTRL_PINSTATE_LOW);
 	ocp8135b_pinctrl_set(pin_torch, OCP8135B_PINCTRL_PINSTATE_LOW);
 
-	if (!ocp8135b_is_torch(g_level)){
+	if (ocp8135b_is_torch(g_level)){
+		if (g_level == 40) {
+			g_level = 12;
+		}
 		ocp8135b_set_torch_brightness(g_level);
 	}else{
 		ocp8135b_set_strobe_brightness(g_level);
@@ -549,7 +561,7 @@ static ssize_t store_torch_status(struct device *dev, struct device_attribute *a
 		if (val) {
 			/* Torch LED ON */
 			ocp8135b_set_driver(1);
-			ocp8135b_set_level(6);
+			ocp8135b_set_level(40);
 			ocp8135b_timeout_ms = 0;
 			ocp8135b_enable();
 		}else {
