@@ -4183,7 +4183,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	disp_switch_data.state = DISP_ALIVE;
 	ret = switch_dev_register(&disp_switch_data);
 #endif
-
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	/*DynFPS*/
+	primary_display_init_multi_cfg_info();
+#endif
 	DISPCHECK("primary_display_init done\n");
 
 done:
