@@ -458,7 +458,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 			}
 			else if (level < 3)
 			{
-				level = 2;
+				level = 3;
 			}
 			level = level*78/100;
 		}
