@@ -376,6 +376,19 @@ enum DSI_SET_MMCLK_TYPE {
 	SET_MMCLK_TYPE_END,
 };
 
+static int tp_gesture_flag=0;
+int touch_set_state(int state, int panel_idx)
+{
+        if (state == 1) {
+                tp_gesture_flag = 1;
+        } else{
+                tp_gesture_flag = 0;
+        }
+
+        return 0;
+}
+EXPORT_SYMBOL(touch_set_state);
+
 struct mtk_panel_ext *mtk_dsi_get_panel_ext(struct mtk_ddp_comp *comp);
 
 static inline struct mtk_dsi *encoder_to_dsi(struct drm_encoder *e)
@@ -3434,6 +3447,7 @@ int mtk_dsi_dump(struct mtk_ddp_comp *comp)
 	return 0;
 }
 
+
 unsigned int mtk_dsi_mode_change_index(struct mtk_dsi *dsi,
 	struct mtk_drm_crtc *mtk_crtc, struct drm_crtc_state *old_state)
 {
@@ -3473,6 +3487,9 @@ unsigned int mtk_dsi_mode_change_index(struct mtk_dsi *dsi,
 		else
 			adjust_panel_params = panel_ext->params;
 	}
+
+	if (panel_ext && panel_ext->funcs && panel_ext->funcs->set_gesture_flag)
+		panel_ext->funcs->set_gesture_flag(tp_gesture_flag);
 
 	if (cur_panel_params && adjust_panel_params
 		&& !(dsi->mipi_hopping_sta && (cur_panel_params->dyn.switch_en ||

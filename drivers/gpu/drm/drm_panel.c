@@ -115,18 +115,6 @@ int drm_panel_prepare(struct drm_panel *panel)
 }
 EXPORT_SYMBOL(drm_panel_prepare);
 
-static int tp_gesture_flag=0;
-int touch_set_state(int state, int panel_idx)
-{
-	if (state == 1) {
-		tp_gesture_flag = 1;
-	} else{
-		tp_gesture_flag = 0;
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL(touch_set_state);
 /**
  * drm_panel_unprepare - power off a panel
  * @panel: DRM panel
@@ -142,9 +130,6 @@ int drm_panel_unprepare(struct drm_panel *panel)
 {
 	if (!panel)
 		return -EINVAL;
-
-	if (panel->funcs && panel->funcs->set_gesture_flag)
-		panel->funcs->set_gesture_flag(tp_gesture_flag);
 
 	if (panel->funcs && panel->funcs->unprepare)
 		return panel->funcs->unprepare(panel);
