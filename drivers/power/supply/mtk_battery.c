@@ -610,9 +610,9 @@ int BattThermistorConverTemp(struct mtk_battery *gm, int Res)
 
 	ptable = gm->tmp_table;
 	if (Res >= ptable[0].TemperatureR) {
-		TBatt_Value = -400;
+		TBatt_Value = -350;
 	} else if (Res <= ptable[20].TemperatureR) {
-		TBatt_Value = 600;
+		TBatt_Value = 650;
 	} else {
 		RES1 = ptable[0].TemperatureR;
 		TMP1 = ptable[0].BatteryTemp;
