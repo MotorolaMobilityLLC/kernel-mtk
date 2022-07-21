@@ -3589,7 +3589,7 @@ firmware_class.path=/vendor/firmware";
 
 		/* charging current */
 		usb_charger_current = <500000>;
-		ac_charger_current = <2500000>;
+		ac_charger_current = <2400000>;
 		ac_charger_input_current = <2100000>;
 		charging_host_charger_current = <1500000>;
 
