@@ -686,6 +686,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
+	.set_gesture_flag = tianma_set_gesture_flag,
 	.get_lcm_version = mtk_panel_get_lcm_version,
 	.panel_feature_set = panel_feature_set,
 };
@@ -743,7 +744,6 @@ static int tianma_get_modes(struct drm_panel *panel,
 static const struct drm_panel_funcs tianma_drm_funcs = {
 	.disable = tianma_disable,
 	.unprepare = tianma_unprepare,
-	.set_gesture_flag = tianma_set_gesture_flag,
 	.prepare = tianma_prepare,
 	.enable = tianma_enable,
 	.get_modes = tianma_get_modes,
