@@ -52,6 +52,29 @@
 /*****************************************************************************
 * Global variable or extern global variabls/functions
 *****************************************************************************/
+
+#define ONTIM_DEV_FOCALTECH_INFO
+
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+#include <ontim/ontim_dev_dgb.h>
+#endif
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+extern char *mtkfb_find_lcm_driver(void);
+
+static char version[30]="jz-ft8006s";
+
+static char vendor_name[30]="jz-ft8006s";
+static char lcdname[30]="jz-ft8006s";
+
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+#endif
+
 u8 fw_file[] = {
 #include FTS_UPGRADE_FW_FILE
 };
@@ -628,6 +651,7 @@ static int fts_pram_start(void)
  *
  * return 0 if success, otherwise return error code
  */
+
 static int fts_fw_write_start(const u8 *buf, u32 len, bool need_reset)
 {
     int ret = 0;
@@ -674,6 +698,7 @@ static int fts_fw_write_start(const u8 *buf, u32 len, bool need_reset)
     }
 
     upg->ts_data->fw_is_running = true;
+
     FTS_INFO("fw download successfully");
     return 0;
 }
@@ -1158,6 +1183,7 @@ static int fts_fwupg_get_fw_file(struct fts_upgrade *upg)
     return ret;
 }
 
+u8 fts_ver = 0;
 static void fts_fwupg_work(struct work_struct *work)
 {
     int ret = 0;
@@ -1194,7 +1220,26 @@ static void fts_fwupg_work(struct work_struct *work)
         msleep(50);
         ret = fts_read_reg(FTS_REG_CHIP_ID, &chip_id);
         FTS_INFO("read chip id:0x%02x", chip_id);
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)  {
+
+		return ;
+	}
+#endif
+	fts_read_reg(FTS_REG_VER, &fts_ver);
+        pr_err("read FTS_FW_VER:0x%x", fts_ver);
+
+#ifdef ONTIM_DEV_FOCALTECH_INFO
+	if(strstr(lcdname,"ft8006") !=NULL){
+	snprintf(lcdname, sizeof(lcdname),"%s ","jz-ft8006s" );
+	pr_err("lcdname\n ");
+	}
+	snprintf(version, sizeof(version),"FW_%02x#VID_0x98",fts_ver);
+	snprintf(vendor_name, sizeof(vendor_name),"jz-ft8006s" );
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+#endif
     }
+
 }
 
 int fts_fwupg_init(struct fts_ts_data *ts_data)

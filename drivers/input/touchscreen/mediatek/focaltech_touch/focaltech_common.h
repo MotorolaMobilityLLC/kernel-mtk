@@ -80,6 +80,7 @@
 #define FTS_REG_WORKMODE_WORK_VALUE         0x00
 #define FTS_REG_ESDCHECK_DISABLE            0x8D
 #define FTS_REG_CHIP_ID                     0xA3
+#define FTS_REG_VER                          0xA6
 #define FTS_REG_CHIP_ID2                    0x9F
 #define FTS_REG_POWER_MODE                  0xA5
 #define FTS_REG_POWER_MODE_SLEEP            0x03
