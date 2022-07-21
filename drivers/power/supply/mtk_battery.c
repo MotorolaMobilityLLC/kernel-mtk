@@ -610,9 +610,9 @@ int BattThermistorConverTemp(struct mtk_battery *gm, int Res)
 
 	ptable = gm->tmp_table;
 	if (Res >= ptable[0].TemperatureR) {
-		TBatt_Value = -400;
+		TBatt_Value = -350;
 	} else if (Res <= ptable[20].TemperatureR) {
-		TBatt_Value = 600;
+		TBatt_Value = 650;
 	} else {
 		RES1 = ptable[0].TemperatureR;
 		TMP1 = ptable[0].BatteryTemp;
@@ -795,7 +795,7 @@ int force_get_tbat_internal(struct mtk_battery *gm, bool update)
 			if (((dtime.tv_sec <= 20) &&
 				(abs(pre_bat_temperature_val2 -
 				bat_temperature_val) >= 50)) ||
-				bat_temperature_val >= 580) {
+				bat_temperature_val >= 600) {
 				bm_err("[%s][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					__func__,
 					bat_temperature_volt_temp,
