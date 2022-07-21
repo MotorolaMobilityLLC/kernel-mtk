@@ -104,8 +104,11 @@ int setMaxbrightness(int max_level, int enable)
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
 
 	mutex_lock(&bl_level_limit_mutex);
-	if(last_level < 3) {
-		last_level = 3;
+
+	if (max_level > current_level) {
+		mutex_unlock(&bl_level_limit_mutex);
+		pr_debug("no need to set level[%d:%d]\n",max_level,current_level);
+		return 0;
 	}
 
 	if (enable == 1) {
