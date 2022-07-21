@@ -277,10 +277,10 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_frontporch = 200;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 	params->dsi.horizontal_sync_active = 10;
-	params->dsi.horizontal_backporch = 20;
+	params->dsi.horizontal_backporch = 16;
 	params->dsi.horizontal_frontporch = 20;//old is 16,now is 60
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 454;    /* FrameRate = 90Hz */ /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 450;    /* FrameRate = 90Hz */ /* this value must be in MTK suggested table */
 #if 0
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
