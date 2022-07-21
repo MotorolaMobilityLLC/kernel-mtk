@@ -672,6 +672,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
+	.set_gesture_flag = tongxingda_set_gesture_flag,
 	.get_lcm_version = mtk_panel_get_lcm_version,
 	.panel_feature_set = panel_feature_set,
 };
@@ -729,7 +730,6 @@ static int tongxingda_get_modes(struct drm_panel *panel,
 static const struct drm_panel_funcs tongxingda_drm_funcs = {
 	.disable = tongxingda_disable,
 	.unprepare = tongxingda_unprepare,
-	.set_gesture_flag = tongxingda_set_gesture_flag,
 	.prepare = tongxingda_prepare,
 	.enable = tongxingda_enable,
 	.get_modes = tongxingda_get_modes,
