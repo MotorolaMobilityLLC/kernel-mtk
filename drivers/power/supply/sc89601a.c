@@ -376,6 +376,24 @@ int sc89601a_exit_hiz_mode(struct sc89601a *sc)
 }
 EXPORT_SYMBOL_GPL(sc89601a_exit_hiz_mode);
 
+int sc89601a_set_ico_enable(struct sc89601a *sc, bool enable)
+{
+	if (enable) {
+		return sc89601a_update_bits(sc, SC89601A_REG_02, 0x10, 0x10);
+	} else {
+		return sc89601a_update_bits(sc, SC89601A_REG_02, 0x10, 0x00);
+	}
+}
+
+static int sc89601a_set_vindpm_os(struct sc89601a *sc, int mv)
+{
+	if (mv == 400) {
+		return sc89601a_update_bits(sc, SC89601A_REG_01, 0x01, 0x00);
+	} else {
+		return sc89601a_update_bits(sc, SC89601A_REG_01, 0x01, 0x01);
+	}
+}
+
 int sc89601a_get_hiz_mode(struct sc89601a *sc, u8 *state)
 {
 	u8 val;
@@ -610,7 +628,7 @@ static struct sc89601a_platform_data* sc89601a_parse_dt(struct device *dev,
 	pdata->usb.ichg = 500;
 	pdata->statctrl = 3;
 	pdata->iprechg = 540; //预充电540mA
-	pdata->iterm = 180;
+	pdata->iterm = 270;
 	pdata->boostv = 5150;
 	pdata->boosti = 1200; //boost limit 1.2A
 	pdata->vac_ovp = 6500;
@@ -625,6 +643,7 @@ static int sc89601a_init_device(struct sc89601a *sc)
 
 	sc89601a_disable_watchdog_timer(sc);
 
+	sc89601a_set_ico_enable(sc, false);
 	sc89601a_disable_safety_timer(sc);
 	sc89601a_exit_hiz_mode(sc);
 	sc89601a_set_input_volt_limit(sc, 4440);	//vindpm 4.44V
@@ -635,6 +654,7 @@ static int sc89601a_init_device(struct sc89601a *sc)
 	sc89601a_set_chargevolt(sc, 4400);	// VREG 4.4V
 	sc89601a_enable_term(sc, SC89601A_TERM_ENABLE);	//enable termination
 	sc89601a_set_charge_timer(sc, SC89601A_CHG_TIMER_12HOURS); //safety charge time upto 12h
+	sc89601a_set_vindpm_os(sc, 400);
 
 	ret = sc89601a_set_stat_ctrl(sc, sc->platform_data->statctrl);
 	if (ret)
@@ -978,11 +998,13 @@ static int sc89601a_set_otg(struct charger_device *chg_dev, bool en)
 
 	if (en)
 	{
+		ret = sc89601a_disable_charger(sc);
 		ret = sc89601a_enable_otg(sc);
 	}
 	else
 	{
 		ret = sc89601a_disable_otg(sc);
+		ret = sc89601a_enable_charger(sc);
 	}
 	return ret;
 }
@@ -1046,7 +1068,124 @@ static int sc89601a_do_event(struct charger_device *chg_dev, u32 event,
 	return 0;
 }
 
+static int sc89601a_get_input_current_limit(struct sc89601a *sc_chg, int *curr)
+{
+	u8 val = 0;
+	int ret;
 
+	ret = sc89601a_read_byte(sc_chg, &val, SC89601A_REG_00);
+	if (ret < 0) {
+		dev_err(sc_chg->dev, "Failed to read register 0x00:%d\n", ret);
+		return ret;
+	}
+
+	val = (val & SC89601A_IINLIM_MASK) >> SC89601A_IINLIM_SHIFT;
+
+	*curr = (val * SC89601A_IINLIM_LSB) + SC89601A_IINLIM_BASE;
+
+	dev_dbg(sc_chg->dev, "get slave charge: input current: %d\n", *curr);
+
+	return ret;
+}
+
+static int sc89601a_pumpx_up(struct sc89601a *sc)
+{
+	int curr;
+
+	sc89601a_get_input_current_limit(sc, &curr);
+	pr_err("[sc89601a] sc89601a_pumpx_up   curr=%d\n",curr);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(500);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	return sc89601a_set_input_current_limit(sc, curr);
+}
+
+static int sc89601a_pumpx_dn(struct sc89601a *sc)
+{
+	int curr;
+
+	sc89601a_get_input_current_limit(sc, &curr);
+
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	sc89601a_set_input_current_limit(sc, 500);
+	msleep(500);
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(100);
+	return sc89601a_set_input_current_limit(sc, curr);
+}
+
+
+static int sc89601a_set_ta_current_pattern(struct charger_device *chg_dev, bool is_increase)
+{
+	unsigned int status = 0;
+
+	if(!chg_dev)
+		return -EINVAL;
+
+	struct sc89601a *sc = dev_get_drvdata(&chg_dev->dev);
+	pr_err("[sc89601a] sc89601a_set_ta_current_pattern  is_increase=%d",is_increase);
+	if(true == is_increase) {
+		sc89601a_pumpx_up(sc);
+	}else{
+		sc89601a_pumpx_dn(sc);
+	}
+
+	return status;
+}
+
+static int sc89601a_set_ta_reset(struct charger_device *chg_dev)
+{
+	struct sc89601a *sc = dev_get_drvdata(&chg_dev->dev);
+
+	sc89601a_set_input_current_limit(sc, 100);
+	msleep(300);
+	sc89601a_set_input_current_limit(sc, 500);
+	return 0;
+}
 static struct charger_ops sc89601a_chg_ops = {
 	/* Normal charging */
 	//.hiz_mode = sc89601a_set_hizmode,
@@ -1081,10 +1220,11 @@ static struct charger_ops sc89601a_chg_ops = {
 	.event = sc89601a_do_event,
 
 	/* PE+/PE+20 */
-	.send_ta_current_pattern = NULL,
+	.send_ta_current_pattern = sc89601a_set_ta_current_pattern,
 	.set_pe20_efficiency_table = NULL,
 	.send_ta20_current_pattern = NULL,
 	//.set_ta20_reset = NULL,
+	.reset_ta = sc89601a_set_ta_reset,
 	.enable_cable_drop_comp = NULL,
 
 	/* ADC */
