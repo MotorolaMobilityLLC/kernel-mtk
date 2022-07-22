@@ -1179,7 +1179,7 @@ EXPORT_SYMBOL_GPL(moto_tcmd_wt6670f_get_firmware_version);
 
 static irqreturn_t wt6670f_intr_handler(int irq, void *data)
 {
-	m_chg_type = 0xff;
+//	m_chg_type = 0xff;
 	pr_info("%s,chg_type 0x:%x\n", __func__,m_chg_type);
 	_wt->chg_ready = true;
 
