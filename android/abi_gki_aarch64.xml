@@ -3235,6 +3235,7 @@
       <elf-symbol name='mmc_gpiod_request_cd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf546b071'/>
       <elf-symbol name='mmc_gpiod_request_ro' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdec968fe'/>
       <elf-symbol name='mmc_hw_reset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe3cbfaa9'/>
+      <elf-symbol name='mmc_issue_type' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc3e2f887'/>
       <elf-symbol name='mmc_of_parse' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x27754442'/>
       <elf-symbol name='mmc_of_parse_voltage' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc37a22cc'/>
       <elf-symbol name='mmc_put_card' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x24716c0b'/>
@@ -6739,6 +6740,13 @@
       <pointer-type-def type-id='4688baa5' size-in-bits='64' id='01307915'/>
       <pointer-type-def type-id='cf9ec29d' size-in-bits='64' id='0131eb61'/>
       <pointer-type-def type-id='971452b1' size-in-bits='64' id='013a716d'/>
+      <enum-decl name='mmc_issue_type' filepath='drivers/mmc/core/queue.h' line='18' column='1' id='013ef24c'>
+        <underlying-type type-id='9cac1fee'/>
+        <enumerator name='MMC_ISSUE_SYNC' value='0'/>
+        <enumerator name='MMC_ISSUE_DCMD' value='1'/>
+        <enumerator name='MMC_ISSUE_ASYNC' value='2'/>
+        <enumerator name='MMC_ISSUE_MAX' value='3'/>
+      </enum-decl>
       <pointer-type-def type-id='38a09a00' size-in-bits='64' id='01443742'/>
       <pointer-type-def type-id='6c6f1c36' size-in-bits='64' id='01481038'/>
       <class-decl name='v4l2_audio' size-in-bits='416' is-struct='yes' visibility='default' filepath='include/uapi/linux/videodev2.h' line='2000' column='1' id='014e0a24'>
@@ -20779,6 +20787,65 @@
         <enumerator name='NF_LOG_TYPE_ULOG' value='1'/>
         <enumerator name='NF_LOG_TYPE_MAX' value='2'/>
       </enum-decl>
+      <class-decl name='mmc_queue' size-in-bits='4352' is-struct='yes' visibility='default' filepath='drivers/mmc/core/queue.h' line='74' column='1' id='260fd734'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='card' type-id='13d38dcb' visibility='default' filepath='drivers/mmc/core/queue.h' line='75' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='ctx' type-id='783f5582' visibility='default' filepath='drivers/mmc/core/queue.h' line='76' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='tag_set' type-id='651086d7' visibility='default' filepath='drivers/mmc/core/queue.h' line='77' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2496'>
+          <var-decl name='blkdata' type-id='59d9c4a9' visibility='default' filepath='drivers/mmc/core/queue.h' line='78' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2560'>
+          <var-decl name='queue' type-id='e7d2a5fc' visibility='default' filepath='drivers/mmc/core/queue.h' line='79' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2624'>
+          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='drivers/mmc/core/queue.h' line='80' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2656'>
+          <var-decl name='in_flight' type-id='e024279b' visibility='default' filepath='drivers/mmc/core/queue.h' line='81' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2752'>
+          <var-decl name='cqe_busy' type-id='f0981eeb' visibility='default' filepath='drivers/mmc/core/queue.h' line='82' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2784'>
+          <var-decl name='busy' type-id='b50a4934' visibility='default' filepath='drivers/mmc/core/queue.h' line='84' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2792'>
+          <var-decl name='recovery_needed' type-id='b50a4934' visibility='default' filepath='drivers/mmc/core/queue.h' line='85' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2800'>
+          <var-decl name='in_recovery' type-id='b50a4934' visibility='default' filepath='drivers/mmc/core/queue.h' line='86' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2808'>
+          <var-decl name='rw_wait' type-id='b50a4934' visibility='default' filepath='drivers/mmc/core/queue.h' line='87' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2816'>
+          <var-decl name='waiting' type-id='b50a4934' visibility='default' filepath='drivers/mmc/core/queue.h' line='88' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='2880'>
+          <var-decl name='recovery_work' type-id='ef9025d0' visibility='default' filepath='drivers/mmc/core/queue.h' line='89' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='3264'>
+          <var-decl name='wait' type-id='b5ab048f' visibility='default' filepath='drivers/mmc/core/queue.h' line='90' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='3456'>
+          <var-decl name='recovery_req' type-id='3dad1a48' visibility='default' filepath='drivers/mmc/core/queue.h' line='91' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='3520'>
+          <var-decl name='complete_req' type-id='3dad1a48' visibility='default' filepath='drivers/mmc/core/queue.h' line='92' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='3584'>
+          <var-decl name='complete_lock' type-id='925167dc' visibility='default' filepath='drivers/mmc/core/queue.h' line='93' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='3968'>
+          <var-decl name='complete_work' type-id='ef9025d0' visibility='default' filepath='drivers/mmc/core/queue.h' line='94' column='1'/>
+        </data-member>
+      </class-decl>
       <function-type size-in-bits='64' id='261083fc'>
         <parameter type-id='f5438ac7'/>
         <parameter type-id='95e97e5e'/>
@@ -33765,6 +33832,7 @@
           <var-decl name='log' type-id='d1a78aeb' visibility='default' filepath='include/linux/fs_context.h' line='78' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='260fd734' size-in-bits='64' id='49b40d32'/>
       <class-decl name='trace_eval_map' size-in-bits='192' is-struct='yes' visibility='default' filepath='include/linux/tracepoint.h' line='28' column='1' id='49b910cc'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='system' type-id='80f4b756' visibility='default' filepath='include/linux/tracepoint.h' line='29' column='1'/>
@@ -40123,6 +40191,7 @@
       <pointer-type-def type-id='4093cbd8' size-in-bits='64' id='59c68f9e'/>
       <pointer-type-def type-id='9c08a09a' size-in-bits='64' id='59cc1ae8'/>
       <pointer-type-def type-id='b5691f14' size-in-bits='64' id='59d4153e'/>
+      <pointer-type-def type-id='705909a1' size-in-bits='64' id='59d9c4a9'/>
       <array-type-def dimensions='1' type-id='a84c031d' size-in-bits='512' id='59daf3ef'>
         <subrange length='64' type-id='7ff19f0f' id='b10be967'/>
       </array-type-def>
@@ -49960,6 +50029,7 @@
           <var-decl name='wb_tcand_bytes' type-id='b59d7dce' visibility='default' filepath='include/linux/writeback.h' line='93' column='1'/>
         </data-member>
       </class-decl>
+      <class-decl name='mmc_blk_data' is-struct='yes' visibility='default' is-declaration-only='yes' id='705909a1'/>
       <pointer-type-def type-id='2181e5cc' size-in-bits='64' id='705eaeca'/>
       <qualified-type-def type-id='edb04712' const='yes' id='70660701'/>
       <function-type size-in-bits='64' id='706f3909'>
@@ -93945,7 +94015,7 @@
           <var-decl name='ctx_str' type-id='e84913bd' visibility='default' filepath='include/uapi/linux/xfrm.h' line='36' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='blk_mq_ctx' size-in-bits='2560' is-struct='yes' visibility='default' filepath='include/../block/blk-mq.h' line='18' column='1' id='cde99b39'>
+      <class-decl name='blk_mq_ctx' size-in-bits='2560' is-struct='yes' visibility='default' filepath='block/blk-mq.h' line='18' column='1' id='cde99b39'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='' type-id='e7f43f82' visibility='default' filepath='block/blk-mq.h' line='19' column='1'/>
         </data-member>
@@ -136745,6 +136815,11 @@
       <function-decl name='mmc_hw_reset' mangled-name='mmc_hw_reset' filepath='drivers/mmc/core/core.c' line='2014' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_hw_reset'>
         <parameter type-id='dd575c43' name='host' filepath='drivers/mmc/core/core.c' line='2014' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='mmc_issue_type' mangled-name='mmc_issue_type' filepath='drivers/mmc/core/queue.c' line='60' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_issue_type'>
+        <parameter type-id='49b40d32' name='mq' filepath='drivers/mmc/core/queue.c' line='60' column='1'/>
+        <parameter type-id='3dad1a48' name='req' filepath='drivers/mmc/core/queue.c' line='60' column='1'/>
+        <return type-id='013ef24c'/>
       </function-decl>
       <function-decl name='mmc_of_parse' mangled-name='mmc_of_parse' filepath='drivers/mmc/core/host.c' line='277' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_of_parse'>
         <parameter type-id='dd575c43' name='host' filepath='drivers/mmc/core/host.c' line='277' column='1'/>
