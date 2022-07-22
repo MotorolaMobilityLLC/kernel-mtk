@@ -30,6 +30,10 @@
 #define MAX_DEBUG_WRITE_INPUT 256
 #define CODEC_SYS_DEBUG_SIZE (1024 * 32)
 
+#ifdef CONFIG_SND_SOC_AW87XXX_KERNEL
+extern int aw87xxx_add_codec_controls(void *codec);
+#endif
+
 static ssize_t mt6369_codec_sysfs_read(struct file *filep, struct kobject *kobj,
 				       struct bin_attribute *attr,
 				       char *buf, loff_t offset, size_t size);
@@ -5815,6 +5819,15 @@ static int mt6369_codec_probe(struct snd_soc_component *cmpnt)
 	snd_soc_add_component_controls(cmpnt,
 				       mt6369_snd_vow_controls,
 				       ARRAY_SIZE(mt6369_snd_vow_controls));
+
+#if defined(CONFIG_SND_SOC_AW87XXX_KERNEL)
+	ret = aw87xxx_add_codec_controls((void *)cmpnt);
+	pr_info("%s awinic\n", __func__);
+	if (ret < 0) {
+		pr_err("%s: awinic add_codec_controls failed, err %d\n",__func__, ret);
+		return ret;
+	}
+#endif
 
 	priv->hp_current_calibrate_val = get_hp_current_calibrate_val(priv);
 
