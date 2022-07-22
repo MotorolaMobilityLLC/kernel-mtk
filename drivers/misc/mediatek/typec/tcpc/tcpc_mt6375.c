@@ -2427,6 +2427,8 @@ static int mt6375_tcpc_init_irq(struct mt6375_tcpc_data *ddata)
 		dev_err(ddata->dev, "failed to request irq %d\n", ddata->irq);
 		return ret;
 	}
+	device_init_wakeup(ddata->dev, true);
+
 	return 0;
 }
 
