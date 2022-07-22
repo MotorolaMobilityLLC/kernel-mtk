@@ -73,14 +73,14 @@
 #define VOW_RECOVERY_WAIT              100
 
 /* length limitation sync by audio hal */
-#ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT
+#if (defined CONFIG_MTK_VOW_DUAL_MIC_SUPPORT && defined DUAL_CH_TRANSFER)
 #define VOW_VBUF_LENGTH      (0x12E80 * 2)  /*(0x12480 + 0x0A00) * 2*/
 #else
 #define VOW_VBUF_LENGTH      (0x12E80)  /* 0x12480 + 0x0A00 */
 #endif
 
 #define VOW_RECOGDATA_SIZE             0x2800
-#ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT
+#if (defined CONFIG_MTK_VOW_DUAL_MIC_SUPPORT && defined DUAL_CH_TRANSFER)
 #define VOW_RECOGDATA_OFFSET    (VOW_VOICEDATA_OFFSET + 2 * VOW_VOICEDATA_SIZE)
 #else
 #define VOW_RECOGDATA_OFFSET        (VOW_VOICEDATA_OFFSET + VOW_VOICEDATA_SIZE)
