@@ -1940,4 +1940,11 @@ config TYPEC_FSA4480
 	tristate "fsa4480 for typec analog headset"
 	depends on I2C
 
+config SND_SOC_AW87XXX_KERNEL
+	tristate "SoC Audio for awinic AW87XXX Smart K PA"
+	depends on I2C
+	help
+	  This option enables support for AW87XXX Smart K PA.
+
+source "sound/soc/codecs/aw87390/Kconfig"
 endmenu
