@@ -220,11 +220,11 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/* DPFS_LEVEL0 */
 	dfps_params[0].level = DFPS_LEVEL0;
 	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
-	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
+	dfps_params[0].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
 	/* if vfp solution */
 	dfps_params[0].vertical_frontporch = 1170; //IC廠給的值，從９０幀切到６０幀，只改動ＶＦＰ這個參數就可以了，其他的不動,實測60.16HZ.
-	dfps_params[0].vertical_frontporch_for_low_power = 2466;
+
 
 	/* DPFS_LEVEL1 */
 	dfps_params[1].level = DFPS_LEVEL1;
@@ -232,7 +232,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
 
 	dfps_params[1].vertical_frontporch = 200;
-	dfps_params[1].vertical_frontporch_for_low_power = 1290;
+	dfps_params[1].vertical_frontporch_for_low_power = 1170;
 	dsi->dfps_num = 2;
 }
 #endif
