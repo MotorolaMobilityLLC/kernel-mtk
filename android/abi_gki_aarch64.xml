@@ -499,6 +499,7 @@
       <elf-symbol name='__traceiter_android_vh_ufs_update_sdev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x604fa0d4'/>
       <elf-symbol name='__traceiter_android_vh_ufs_update_sysfs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd2279f0b'/>
       <elf-symbol name='__traceiter_android_vh_update_topology_flags_workfn' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf9046f81'/>
+      <elf-symbol name='__traceiter_android_vh_usb_new_device_added' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd04e226b'/>
       <elf-symbol name='__traceiter_binder_transaction_received' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x361264a8'/>
       <elf-symbol name='__traceiter_block_rq_insert' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x77d5ed52'/>
       <elf-symbol name='__traceiter_clock_set_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa45eb358'/>
@@ -121583,6 +121584,12 @@
       <function-decl name='__traceiter_android_vh_update_topology_flags_workfn' mangled-name='__traceiter_android_vh_update_topology_flags_workfn' filepath='include/trace/hooks/topology.h' line='18' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_update_topology_flags_workfn'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/topology.h' line='18' column='1'/>
         <parameter type-id='eaa32e2f' name='unused' filepath='include/trace/hooks/topology.h' line='18' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_usb_new_device_added' mangled-name='__traceiter_android_vh_usb_new_device_added' filepath='include/trace/hooks/usb.h' line='15' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_usb_new_device_added'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/usb.h' line='15' column='1'/>
+        <parameter type-id='25e60cb2' name='udev' filepath='include/trace/hooks/usb.h' line='15' column='1'/>
+        <parameter type-id='7292109c' name='err' filepath='include/trace/hooks/usb.h' line='15' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_binder_transaction_received' mangled-name='__traceiter_binder_transaction_received' filepath='drivers/android/./binder_trace.h' line='179' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_binder_transaction_received'>
