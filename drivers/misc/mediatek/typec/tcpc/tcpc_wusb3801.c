@@ -65,8 +65,8 @@ struct wusb3801_chip {
 	struct kthread_worker irq_worker;
 	struct kthread_work irq_work;
 	struct task_struct *irq_worker_task;
-	struct wakeup_source irq_wake_lock;
-	struct wakeup_source i2c_wake_lock;
+	struct wakeup_source * irq_wake_lock;
+	struct wakeup_source * i2c_wake_lock;
 
 	atomic_t poll_count;
 	struct delayed_work	poll_work;
@@ -96,7 +96,7 @@ static int wusb3801_read_device(void *client, u32 reg, int len, void *dst)
 	struct wusb3801_chip *chip = i2c_get_clientdata(i2c);
 	int ret = 0, count = 5;
 
-	__pm_stay_awake(&chip->i2c_wake_lock);
+	__pm_stay_awake(chip->i2c_wake_lock);
 	down(&chip->suspend_lock);
 	while (count) {
 		if (len > 1) {
@@ -118,7 +118,7 @@ static int wusb3801_read_device(void *client, u32 reg, int len, void *dst)
 	}
 out:
 	up(&chip->suspend_lock);
-	__pm_relax(&chip->i2c_wake_lock);
+	__pm_relax(chip->i2c_wake_lock);
 	return ret;
 }
 
@@ -129,7 +129,7 @@ static int wusb3801_write_device(void *client, u32 reg, int len, const void *src
 	struct wusb3801_chip *chip = i2c_get_clientdata(i2c);
 	int ret = 0, count = 5;
 
-	__pm_stay_awake(&chip->i2c_wake_lock);
+	__pm_stay_awake(chip->i2c_wake_lock);
 	down(&chip->suspend_lock);
 	while (count) {
 		if (len > 1) {
@@ -151,7 +151,7 @@ static int wusb3801_write_device(void *client, u32 reg, int len, const void *src
 	}
 out:
 	up(&chip->suspend_lock);
-	__pm_relax(&chip->i2c_wake_lock);
+	__pm_relax(chip->i2c_wake_lock);
 	return ret;
 }
 
@@ -361,7 +361,7 @@ static irqreturn_t wusb3801_intr_handler(int irq, void *data)
 {
 	struct wusb3801_chip *chip = data;
 
-	__pm_wakeup_event(&chip->irq_wake_lock, WUSB3801_IRQ_WAKE_TIME);
+	__pm_wakeup_event(chip->irq_wake_lock, WUSB3801_IRQ_WAKE_TIME);
 
 	kthread_queue_work(&chip->irq_worker, &chip->irq_work);
 	return IRQ_HANDLED;
@@ -1006,10 +1006,10 @@ static int wusb3801_i2c_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, chip);
 	w_client = chip->client;
 	INIT_DELAYED_WORK(&chip->first_check_typec_work, wusb3801_first_check_typec_work);
-	wakeup_source_init(&chip->irq_wake_lock,
-		"wusb3801_irq_wakelock");
-	wakeup_source_init(&chip->i2c_wake_lock,
-		"wusb3801_i2c_wakelock");
+	chip->irq_wake_lock =
+		wakeup_source_register(chip->dev, "wusb3801_irq_wakelock");
+	chip->i2c_wake_lock =
+		wakeup_source_register(chip->dev, "wusb3801_i2c_wakelock");
 
 	chip->chip_id = chip_id;
 	pr_info("wusb3801_chipID = 0x%0x\n", chip_id);
@@ -1064,8 +1064,8 @@ err_create_fregdump_file:
 err_irq_init:
 	tcpc_device_unregister(chip->dev, chip->tcpc);
 err_tcpc_reg:
-	wakeup_source_trash(&chip->i2c_wake_lock);
-	wakeup_source_trash(&chip->irq_wake_lock);
+	wakeup_source_unregister(chip->i2c_wake_lock);
+	wakeup_source_unregister(chip->irq_wake_lock);
 	return ret;
 }
 
