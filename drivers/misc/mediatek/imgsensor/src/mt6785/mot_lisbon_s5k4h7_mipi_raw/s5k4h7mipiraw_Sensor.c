@@ -1426,6 +1426,29 @@ static void s5k4h7qt_eeprom_format_calibration_data(void *data)
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
 		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
+static void s5k4h7qt_eeprom_get_3aInfo_data(void *data,
+mot_calibration_3aInfo_t *calibration_3aInfo)
+{
+
+	struct s5k4h7yx_eeprom_t *eeprom = (struct s5k4h7yx_eeprom_t*)data;
+	calibration_3aInfo->cie_src_1_ev = to_uint16_swap(eeprom->ls_info_group1.cie_src_1_ev);
+	calibration_3aInfo->cie_src_1_u = to_uint16_swap(eeprom->ls_info_group1.cie_src_1_u);
+	calibration_3aInfo->cie_src_1_v = to_uint16_swap(eeprom->ls_info_group1.cie_src_1_v);
+	calibration_3aInfo->awb_src_1_golden_r = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_r);
+	calibration_3aInfo->awb_src_1_golden_gr = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_gr);
+	calibration_3aInfo->awb_src_1_golden_gb = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_gb);
+	calibration_3aInfo->awb_src_1_golden_b = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_b);
+	calibration_3aInfo->awb_src_1_r = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_r);
+	calibration_3aInfo->awb_src_1_gr = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_gr);
+	calibration_3aInfo->awb_src_1_gb = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_gb);
+	calibration_3aInfo->awb_src_1_b = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_b);
+	calibration_3aInfo->awb_src_1_rg_ratio = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_rg_ratio);
+	calibration_3aInfo->awb_src_1_bg_ratio = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_bg_ratio);
+	calibration_3aInfo->awb_src_1_gr_gb_ratio = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_gr_gb_ratio);
+	calibration_3aInfo->awb_src_1_golden_rg_ratio = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_rg_ratio);
+	calibration_3aInfo->awb_src_1_golden_bg_ratio = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_bg_ratio);
+	calibration_3aInfo->awb_src_1_golden_gr_gb_ratio = to_uint16_swap(eeprom->awb_info_group1.awb_src_1_golden_gr_gb_ratio);
+}
 
 static void s5k4h7qt_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
@@ -1918,6 +1941,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->calibration_status.pdaf = pdaf_status;
 	sensor_info->calibration_status.dual = dual_status;
 	s5k4h7qt_eeprom_get_mnf_data((void *)s5k4h7qt_eeprom, &sensor_info->mnf_calibration);
+	s5k4h7qt_eeprom_get_3aInfo_data((void *)s5k4h7qt_eeprom, &sensor_info->calibration_3aInfo);
 #endif
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
