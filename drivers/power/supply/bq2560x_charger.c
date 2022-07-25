@@ -1617,6 +1617,7 @@ static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
 		mutex_unlock(&bq->attach_lock);
 		break;
 	case POWER_SUPPLY_PROP_STATUS:
+		val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
 		ret = bq2560x_get_hiz_mode(bq, &hiz_mode);
 		if (ret)
 			return -EINVAL;
