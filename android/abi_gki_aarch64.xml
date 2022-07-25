@@ -2643,6 +2643,7 @@
       <elf-symbol name='iio_read_channel_attribute' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2862bed3'/>
       <elf-symbol name='iio_read_channel_processed' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2435705d'/>
       <elf-symbol name='iio_read_channel_raw' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x19a2a1e'/>
+      <elf-symbol name='iio_read_channel_scale' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x10b8ec94'/>
       <elf-symbol name='iio_read_mount_matrix' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x90100782'/>
       <elf-symbol name='iio_show_mount_matrix' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x131e3217'/>
       <elf-symbol name='iio_trigger_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb9597d8'/>
@@ -133288,6 +133289,12 @@
         <parameter type-id='7292109c' name='val' filepath='drivers/iio/inkern.c' line='540' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='iio_read_channel_scale' mangled-name='iio_read_channel_scale' filepath='drivers/iio/inkern.c' line='743' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='iio_read_channel_scale'>
+        <parameter type-id='2712709a' name='chan' filepath='drivers/iio/inkern.c' line='743' column='1'/>
+        <parameter type-id='7292109c' name='val' filepath='drivers/iio/inkern.c' line='743' column='1'/>
+        <parameter type-id='7292109c' name='val2' filepath='drivers/iio/inkern.c' line='743' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='iio_read_mount_matrix' mangled-name='iio_read_mount_matrix' filepath='drivers/iio/industrialio-core.c' line='627' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='iio_read_mount_matrix'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/iio/industrialio-core.c' line='627' column='1'/>
         <parameter type-id='e02525e8' name='matrix' filepath='drivers/iio/industrialio-core.c' line='627' column='1'/>
@@ -135102,8 +135109,8 @@
         <parameter type-id='a0c47697' name='res' filepath='lib/kstrtox.c' line='406' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='kswapd' mangled-name='kswapd' filepath='mm/vmscan.c' line='6959' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kswapd'>
-        <parameter type-id='eaa32e2f' name='p' filepath='mm/vmscan.c' line='6959' column='1'/>
+      <function-decl name='kswapd' mangled-name='kswapd' filepath='mm/vmscan.c' line='6960' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kswapd'>
+        <parameter type-id='eaa32e2f' name='p' filepath='mm/vmscan.c' line='6960' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='ksys_sync_helper' mangled-name='ksys_sync_helper' filepath='kernel/power/main.c' line='54' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ksys_sync_helper'>
