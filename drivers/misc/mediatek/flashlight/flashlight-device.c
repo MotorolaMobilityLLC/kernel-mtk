@@ -11,6 +11,11 @@
         {0, 0, 0, "flashlights-aw36515", 0, 0},
 //        {0, 1, 0, "flashlights-aw36515", 1, 0},
 };
+#elif defined(CONFIG_MTK_FLASHLIGHT_DEVONF)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-devonf-pwm", 0, 0},
+};
 #elif defined(mt6739)
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
