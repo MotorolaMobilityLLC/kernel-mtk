@@ -286,6 +286,8 @@ chipone,enable-wakeup;
 //#include "mediatek/cust_mt6855_touch_1080x2400.dtsi"
 #include "mediatek/cust_mt6855_camera_v4l2.dtsi"
 
+/delete-node/ &camera_main_two_af_mtk;
+
 &sound {
 	mediatek,spk-i2s = <3 0>;
 	mediatek,speaker-codec {

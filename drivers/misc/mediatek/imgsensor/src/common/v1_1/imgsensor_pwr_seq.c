@@ -11,8 +11,48 @@
 
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
-
-
+#if defined(MOT_DEVONF_OV50A_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_DEVONF_OV50A_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 1},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_High, 0},
+			{AVDD, Vol_High, 0},
+			{DVDD, Vol_High, 1},
+			{AFVDD, Vol_High, 1},
+			{RST, Vol_High, 5},
+		},
+	},
+#endif
+#if defined(MOT_DEVONF_HI1634Q_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_DEVONF_HI1634Q_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 1},
+			{RST, Vol_Low, 1},
+			{DOVDD, Vol_High, 0},
+			{AVDD, Vol_High, 0},
+			{DVDD, Vol_High, 1},//1.1v
+			{RST, Vol_High, 5},
+		},
+	},
+#endif
+#if defined(MOT_DEVONF_S5K4H7_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_MOT_DEVONF_S5K4H7_MIPI_RAW,
+		{
+			{RST, Vol_Low, 1},
+			{SensorMCLK,Vol_Low,1},
+			{AVDD, Vol_High, 1},
+			{DVDD, Vol_High, 1},
+			{DOVDD, Vol_High, 1},
+			{AFVDD, Vol_High, 1},
+			{RST, Vol_High, 1},
+			{SensorMCLK, Vol_High, 4},
+		},
+	},
+#endif
 #if defined(MOT_DEVONN_S5KJN1_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_MOT_DEVONN_S5KJN1_MIPI_RAW,
