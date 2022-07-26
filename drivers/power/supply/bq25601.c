@@ -1101,9 +1101,8 @@ static int bq25601_get_current(struct charger_device *chg_dev, u32 *ichg)
 
 	bq25601_read_interface(bq25601_CON2, &reg_val, CON2_ICHG_MASK, CON2_ICHG_SHIFT);
 	*ichg = sgm41513_ichg[reg_val] * 1000;
-	pr_err("%s: ichg = %d; reg_val = 0x%x;\n",__func__, *ichg, reg_val);
+	pr_debug("%s: ichg = %d; reg_val = 0x%x;\n",__func__, *ichg, reg_val);
 	return reg_val;
-	
 #endif
 }
 
@@ -1232,14 +1231,14 @@ static int bq25601_set_vindpm_voltage(struct charger_device *chg_dev,
 	unsigned int array_size;
 
 	vindpm /= 1000;
+	pr_err("%s vindpm_voltage = %dmv\r\n", __func__, vindpm);
 	array_size = ARRAY_SIZE(VINDPM_REG);
 	vindpm = bmt_find_closest_level(VINDPM_REG, array_size, vindpm);
 	vindpm = charging_parameter_to_value(VINDPM_REG, array_size, vindpm);
 
-	pr_info("%s vindpm =%d\r\n", __func__, vindpm);
+	pr_err("%s vindpm_reg = 0x%x\r\n", __func__, vindpm);
 
-	//	charging_set_vindpm(vindpm);
-	/*bq25601_set_en_hiz(en);*/
+	bq25601_set_vindpm(vindpm);
 
 	return status;
 }
@@ -1463,9 +1462,7 @@ static const struct regulator_desc bq25601_otg_rdesc = {
 };
 
 static struct charger_ops bq25601_chg_ops = {
-#ifdef FIXME
-	.enable_hz = bq25601_enable_hz,
-#endif
+
 	/* PE+/PE+20 */
 	.send_ta_current_pattern = sgm4154x_en_pe_current_partern,
 	.reset_ta = sgm4154x_pe_reset_ta,
