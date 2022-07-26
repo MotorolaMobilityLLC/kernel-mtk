@@ -16,6 +16,11 @@ const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 	{0, 0, 0, "flashlights-rt4505", 0, 0},
 };
+#elif defined(CONFIG_MTK_FLASHLIGHT_DEVONF)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-devonf-pwm", 0, 0},
+};
 #elif defined(mt6757)
 	#if defined(evb6757p_dm_64) || defined(k57pv1_dm_64) || \
 	defined(k57pv1_64_baymo) || defined(k57pv1_dm_64_bif) || \
