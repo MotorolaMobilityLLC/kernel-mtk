@@ -176,6 +176,18 @@ config MTK_FLASHLIGHT_DUMMY_GPIO
 
 	  Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_DEVONF
+	tristate "Mediatek flashlight devonf pwm driver"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+	  This is flashlight devonf pwm driver for camera.
+
+	  Say Y here if you want a devonf driver IC with GPIO interface.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_DEBUG
 	bool "Mediatek flashlight debugging messages"
 	depends on MTK_FLASHLIGHT
