@@ -1300,6 +1300,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&mipi_mot_vid_djn_nt36525b_hdp_652_lcm_drv,
 #endif
 
+#if defined(DSI_PANEL_MOT_MIPI_VID_DJN_NT36525B_A_652_HDP)
+	&mipi_mot_vid_djn_nt36525b_a_hdp_652_lcm_drv,
+#endif
+
 #if defined(DSI_PANEL_MOT_MIPI_VID_BOE_NT36525C_652_HDP)
 	&mipi_mot_vid_boe_nt36525c_652_hdp_lcm_drv,
 #endif
