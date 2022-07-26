@@ -6037,6 +6037,7 @@
       <elf-symbol name='__tracepoint_android_rvh_update_cpu_capacity' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xef03083e'/>
       <elf-symbol name='__tracepoint_android_rvh_update_cpus_allowed' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf9395534'/>
       <elf-symbol name='__tracepoint_android_rvh_update_misfit_status' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfbbc1cd6'/>
+      <elf-symbol name='__tracepoint_android_rvh_update_thermal_stats' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2c27bcc8'/>
       <elf-symbol name='__tracepoint_android_rvh_util_est_update' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb2c941f9'/>
       <elf-symbol name='__tracepoint_android_rvh_wake_up_new_task' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b60d8f1'/>
       <elf-symbol name='__tracepoint_android_vh_account_task_time' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1afbf0d'/>
@@ -93591,7 +93592,7 @@
           <var-decl name='ctx_str' type-id='e84913bd' visibility='default' filepath='include/uapi/linux/xfrm.h' line='36' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='blk_mq_ctx' size-in-bits='2560' is-struct='yes' visibility='default' filepath='block/blk-mq.h' line='18' column='1' id='cde99b39'>
+      <class-decl name='blk_mq_ctx' size-in-bits='2560' is-struct='yes' visibility='default' filepath='include/../block/blk-mq.h' line='18' column='1' id='cde99b39'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='' type-id='e7f43f82' visibility='default' filepath='block/blk-mq.h' line='19' column='1'/>
         </data-member>
@@ -122027,6 +122028,7 @@
       <var-decl name='__tracepoint_android_rvh_update_cpu_capacity' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_update_cpu_capacity' visibility='default' filepath='include/trace/hooks/sched.h' line='234' column='1' elf-symbol-id='__tracepoint_android_rvh_update_cpu_capacity'/>
       <var-decl name='__tracepoint_android_rvh_update_cpus_allowed' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_update_cpus_allowed' visibility='default' filepath='include/trace/hooks/sched.h' line='165' column='1' elf-symbol-id='__tracepoint_android_rvh_update_cpus_allowed'/>
       <var-decl name='__tracepoint_android_rvh_update_misfit_status' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_update_misfit_status' visibility='default' filepath='include/trace/hooks/sched.h' line='238' column='1' elf-symbol-id='__tracepoint_android_rvh_update_misfit_status'/>
+      <var-decl name='__tracepoint_android_rvh_update_thermal_stats' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_update_thermal_stats' visibility='default' filepath='include/trace/hooks/topology.h' line='22' column='1' elf-symbol-id='__tracepoint_android_rvh_update_thermal_stats'/>
       <var-decl name='__tracepoint_android_rvh_util_est_update' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_util_est_update' visibility='default' filepath='include/trace/hooks/sched.h' line='399' column='1' elf-symbol-id='__tracepoint_android_rvh_util_est_update'/>
       <var-decl name='__tracepoint_android_rvh_wake_up_new_task' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_wake_up_new_task' visibility='default' filepath='include/trace/hooks/sched.h' line='186' column='1' elf-symbol-id='__tracepoint_android_rvh_wake_up_new_task'/>
       <var-decl name='__tracepoint_android_vh_account_task_time' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_account_task_time' visibility='default' filepath='include/trace/hooks/sched.h' line='432' column='1' elf-symbol-id='__tracepoint_android_vh_account_task_time'/>
@@ -124794,7 +124796,7 @@
       </function-decl>
       <var-decl name='cpu_scale' type-id='7359adad' mangled-name='cpu_scale' visibility='default' filepath='drivers/base/arch_topology.c' line='154' column='1' elf-symbol-id='cpu_scale'/>
       <var-decl name='cpu_subsys' type-id='b31bfc8a' mangled-name='cpu_subsys' visibility='default' filepath='drivers/base/cpu.c' line='128' column='1' elf-symbol-id='cpu_subsys'/>
-      <var-decl name='cpu_topology' type-id='366d2368' mangled-name='cpu_topology' visibility='default' filepath='drivers/base/arch_topology.c' line='591' column='1' elf-symbol-id='cpu_topology'/>
+      <var-decl name='cpu_topology' type-id='366d2368' mangled-name='cpu_topology' visibility='default' filepath='drivers/base/arch_topology.c' line='594' column='1' elf-symbol-id='cpu_topology'/>
       <function-decl name='cpufreq_add_update_util_hook' mangled-name='cpufreq_add_update_util_hook' filepath='kernel/sched/cpufreq.c' line='32' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cpufreq_add_update_util_hook'>
         <parameter type-id='95e97e5e' name='cpu' filepath='kernel/sched/cpufreq.c' line='32' column='1'/>
         <parameter type-id='f681f934' name='data' filepath='kernel/sched/cpufreq.c' line='32' column='1'/>
@@ -145760,7 +145762,7 @@
         <parameter type-id='7359adad' name='th_pressure' filepath='drivers/base/arch_topology.c' line='166' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <var-decl name='topology_update_done' type-id='b50a4934' mangled-name='topology_update_done' visibility='default' filepath='drivers/base/arch_topology.c' line='209' column='1' elf-symbol-id='topology_update_done'/>
+      <var-decl name='topology_update_done' type-id='b50a4934' mangled-name='topology_update_done' visibility='default' filepath='drivers/base/arch_topology.c' line='212' column='1' elf-symbol-id='topology_update_done'/>
       <function-decl name='touch_buffer' mangled-name='touch_buffer' filepath='fs/buffer.c' line='60' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='touch_buffer'>
         <parameter type-id='c485c22c' name='bh' filepath='fs/buffer.c' line='60' column='1'/>
         <return type-id='48b5725f'/>
@@ -150219,6 +150221,22 @@
       <function-decl name='zlib_inflate_workspacesize' mangled-name='zlib_inflate_workspacesize' filepath='lib/zlib_inflate/inflate.c' line='28' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='zlib_inflate_workspacesize'>
         <return type-id='95e97e5e'/>
       </function-decl>
+    </abi-instr>
+  </abi-corpus>
+  <abi-corpus version='2.1' path='zsmalloc.ko' architecture='elf-arm-aarch64'>
+    <elf-function-symbols>
+      <elf-symbol name='zs_compact' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5da67adc'/>
+      <elf-symbol name='zs_create_pool' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbcf1f0e6'/>
+      <elf-symbol name='zs_destroy_pool' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc69b7ee5'/>
+      <elf-symbol name='zs_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x958df3ac'/>
+      <elf-symbol name='zs_get_total_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcbe56bc2'/>
+      <elf-symbol name='zs_huge_class_size' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3d8baf3b'/>
+      <elf-symbol name='zs_malloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb29533ee'/>
+      <elf-symbol name='zs_map_object' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc341ae6d'/>
+      <elf-symbol name='zs_pool_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7cceaf92'/>
+      <elf-symbol name='zs_unmap_object' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x924c46f8'/>
+    </elf-function-symbols>
+    <abi-instr address-size='64' language='LANG_C89' path='mm/zsmalloc.c'>
       <function-decl name='zs_compact' mangled-name='zs_compact' filepath='mm/zsmalloc.c' line='2264' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='zs_compact'>
         <parameter type-id='06d9546d' name='pool' filepath='mm/zsmalloc.c' line='2264' column='1'/>
         <return type-id='7359adad'/>
@@ -150267,20 +150285,6 @@
         <return type-id='48b5725f'/>
       </function-decl>
     </abi-instr>
-  </abi-corpus>
-  <abi-corpus version='2.1' path='zsmalloc.ko' architecture='elf-arm-aarch64'>
-    <elf-function-symbols>
-      <elf-symbol name='zs_compact' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5da67adc'/>
-      <elf-symbol name='zs_create_pool' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbcf1f0e6'/>
-      <elf-symbol name='zs_destroy_pool' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc69b7ee5'/>
-      <elf-symbol name='zs_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x958df3ac'/>
-      <elf-symbol name='zs_get_total_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcbe56bc2'/>
-      <elf-symbol name='zs_huge_class_size' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3d8baf3b'/>
-      <elf-symbol name='zs_malloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb29533ee'/>
-      <elf-symbol name='zs_map_object' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc341ae6d'/>
-      <elf-symbol name='zs_pool_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7cceaf92'/>
-      <elf-symbol name='zs_unmap_object' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x924c46f8'/>
-    </elf-function-symbols>
   </abi-corpus>
 </abi-corpus-group>
 
