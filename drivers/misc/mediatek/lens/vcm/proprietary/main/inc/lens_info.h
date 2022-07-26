@@ -70,6 +70,9 @@
 //Begin: Add lens driver name for Vicky
 #define MOT_VICKY_AFDRV_GT9764 "MOT_VICKY_GT9764AF"
 //End
+//Begin: Add lens driver name for Devonf
+#define MOT_DEVONF_AFDRV_GT9764 "MOT_DEVONF_GT9764AF"
+//End
 
 #define CONVERT_CCU_TIMESTAMP 0x1000
 
