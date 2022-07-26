@@ -15,6 +15,7 @@
 #include "mediatek/devonf-display.dtsi"
 #include "mediatek/devonf-charger.dtsi"
 #include "mediatek/mt6855_devonf_camera_overlay.dtsi"
+#include "mediatek/devonf-sar.dtsi"
 #include "mediatek/devonf-audio.dtsi"
 
 &dispsys_config {
