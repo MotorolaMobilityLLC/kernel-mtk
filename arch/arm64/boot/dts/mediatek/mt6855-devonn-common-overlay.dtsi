@@ -15,6 +15,7 @@
 #include "mediatek/devonn-display.dtsi"
 #include "mediatek/devonn-charger.dtsi"
 #include "mediatek/mt6855_devonn_camera_overlay.dtsi"
+#include "mediatek/devonn-sar.dtsi"
 
 //#include "mediatek/mt6363.dtsi"
 #include <dt-bindings/iio/mt635x-auxadc.h>
