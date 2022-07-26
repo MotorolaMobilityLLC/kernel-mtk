@@ -56,3 +56,8 @@ config  MOT_DEVONN_CAMERA_PROJECT
 	tristate "set devonn camera driver"
 	help
 	  Used to distinguish project-driver code from other projects.
+
+config  MOT_DEVONF_CAMERA_PROJECT
+	tristate "set devonf camera driver"
+	help
+	  Used to distinguish project-driver code from other projects.
