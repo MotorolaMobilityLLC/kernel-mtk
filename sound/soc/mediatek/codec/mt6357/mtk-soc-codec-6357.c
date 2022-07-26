@@ -135,6 +135,8 @@ static const char *const Audio_PA_Mode[] = {
 	"MUSIC", "VOICE", "FM","RECEIVER", "OFF"
 };
 
+static const unsigned int kClosePADelayMin = 20*1000;
+static const unsigned int kClosePADelayMax = 30*1000;
 enum {
 	AUXADC_AVG_1,
 	AUXADC_AVG_4,
@@ -3599,16 +3601,14 @@ static void Voice_Amp_Mux_Select(bool enable){
 static void Voice_Amp_Change(bool enable)
 {
 	pr_debug("%s(), enable %d\n", __func__, enable);
-	Voice_Amp_Mux_Select(enable);
-#ifdef CONFIG_SND_SOC_AW87XXX
 	if (enable) {
+		Voice_Amp_Mux_Select(true);
 		Voice_Amp_PA_SetMode(3);//Receiver
 	} else {
 		Voice_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+		Voice_Amp_Mux_Select(false);
 	}
-#endif
-
-
 }
 static int Voice_Amp_Get(struct snd_kcontrol *kcontrol,
 			 struct snd_ctl_elem_value *ucontrol)
@@ -3748,34 +3748,32 @@ static void Speaker_Amp_Change(bool enable)
 {
 	pr_debug("%s() enable %d", __func__,enable);
 
-	Speaker_Amp_Mux_Select(enable);
-	
 	if (enable)
 	{
+		Speaker_Amp_Mux_Select(true);
+		Voice_Amp_Mux_Select(true);
 		Speaker_Amp_PA_SetMode(0);//Music
-	}else{
-		Speaker_Amp_PA_SetMode(4);//Off
-	}
-
-	Voice_Amp_Mux_Select(enable);
-	if (enable) {
 		Voice_Amp_PA_SetMode(0);//Music
-	} else {
-		Voice_Amp_PA_SetMode(4);//Off
+	}else{
+		Voice_Amp_PA_SetMode(0);//Off
+		Speaker_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+		Voice_Amp_Mux_Select(false);
+		Speaker_Amp_Mux_Select(false);
+		
 	}
-
 }
 static void SpeakerDown_Amp_Change(bool enable)
 {
 	pr_debug("%s() enable %d", __func__,enable);
-
-	Speaker_Amp_Mux_Select(enable);
-	
 	if (enable)
 	{
+		Speaker_Amp_Mux_Select(true);
 		Speaker_Amp_PA_SetMode(0);//Music
 	}else{
 		Speaker_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+		Speaker_Amp_Mux_Select(false);
 	}
 }
 
@@ -3846,13 +3844,16 @@ static void SpeakerUp_Amp_Change(bool enable)
 {
 	pr_debug("%s() enable %d", __func__,enable);
 
-	Voice_Amp_Mux_Select(enable);
+	
 	//open up-speaker(receiver) in Music mode
 	if (enable)
 	{
+		Voice_Amp_Mux_Select(true);
 		Voice_Amp_PA_SetMode(0);//Music
 	}else{
 		Voice_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+		Voice_Amp_Mux_Select(false);
 	}
 }
 static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
@@ -3892,20 +3893,17 @@ static void Speaker_PA_Voice_Amp_Change(bool enable)
 {
 	pr_debug("%s() enable %d", __func__,enable);
 
-	Speaker_Amp_Mux_Select(enable);
-	
 	if (enable)
-	{
+	{	Speaker_Amp_Mux_Select(true);
+		Voice_Amp_Mux_Select(true);
 		Speaker_Amp_PA_SetMode(1);//Voice
+		Voice_Amp_PA_SetMode(1);//Voice
 	}else{
 		Speaker_Amp_PA_SetMode(4);//Off
-	}
-
-	Voice_Amp_Mux_Select(enable);
-	if (enable) {
-		Voice_Amp_PA_SetMode(1);//Voice
-	} else {
 		Voice_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+		Speaker_Amp_Mux_Select(false);
+		Voice_Amp_Mux_Select(false);
 	}
 }
 static int Speaker_PA_Voice_Amp_Get(struct snd_kcontrol *kcontrol,
@@ -3944,20 +3942,18 @@ static void Speaker_PA_Fm_Amp_Change(bool enable)
 {
 	pr_debug("%s() enable %d", __func__,enable);
 
-	Speaker_Amp_Mux_Select(enable);
-	
 	if (enable)
 	{
+		Speaker_Amp_Mux_Select(true);
+		Voice_Amp_Mux_Select(true);
 		Speaker_Amp_PA_SetMode(2);//Fm
+		Voice_Amp_PA_SetMode(2);//Fm
 	}else{
 		Speaker_Amp_PA_SetMode(4);//Off
-	}
-
-	Voice_Amp_Mux_Select(enable);
-	if (enable) {
-		Voice_Amp_PA_SetMode(2);//Fm
-	} else {
 		Voice_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+		Speaker_Amp_Mux_Select(false);
+		Voice_Amp_Mux_Select(false);
 	}
 
 }
@@ -4240,7 +4236,12 @@ static void Headset_Speaker_Amp_Mux_Select(bool enable){
 
 static void Headset_Speaker_Amp_Change(bool enable)
 {
-pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
+	pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
+	if(!enable){
+		Speaker_Amp_PA_SetMode(4);//Off
+		Voice_Amp_PA_SetMode(4);//Off
+		usleep_range(kClosePADelayMin, kClosePADelayMax);
+	}
 	if (enable) {
 #ifdef ANALOG_HPTRIM
 		if (apply_n12db_gain) {
@@ -4427,24 +4428,15 @@ pr_debug("%s(), _amp_ enable %d\n", __func__, enable);
 		}
 	}
 
+	//open receiver MUX & receiver PA
+	// Voice_Amp_Mux_Select(enable);
+	Headset_Speaker_Amp_Mux_Select(enable);
 	//open speaker PA
 	if (enable)
 	{
 		Speaker_Amp_PA_SetMode(0);//Music
-	}else{
-		Speaker_Amp_PA_SetMode(4);//Off
-	}
-
-
-	//open receiver MUX & receiver PA
-	// Voice_Amp_Mux_Select(enable);
-	Headset_Speaker_Amp_Mux_Select(enable);
-	if (enable) {
 		Voice_Amp_PA_SetMode(0);//Music
-	} else {
-		Voice_Amp_PA_SetMode(4);//Off
 	}
-
 }
 static int Headset_Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
