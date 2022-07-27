@@ -360,36 +360,22 @@ static void set_shutter_frame_length(kal_uint16 shutter,
  *************************************************************************/
 static kal_uint16 set_gain(kal_uint16 gain)
 {
-    kal_uint8  iReg;
+    kal_uint16  reg_gain;
 
-    if((gain >= 0x40) && (gain <= (15*0x40))) //base gain = 0x40
-    {
-        iReg = 0x10 * gain/BASEGAIN;        //change mtk gain base to aptina gain base
-
-        if(iReg<=0x10)
-        {
-            write_cmos_sensor(0xfd, 0x01);
-            write_cmos_sensor(0x22, 0x10);//0x23
-            write_cmos_sensor(0xfe, 0x02);//fresh
-            LOG_INF("OV02BMIPI_SetGain = 16");
-        }
-        else if(iReg>= 0xf8)//gpw
-        {
-            write_cmos_sensor(0xfd, 0x01);
-            write_cmos_sensor(0x22,0xf8);
-            write_cmos_sensor(0xfe, 0x02);//fresh
-            LOG_INF("OV02BMIPI_SetGain = 160");
-        }
-        else
-        {
-            write_cmos_sensor(0xfd, 0x01);
-            write_cmos_sensor(0x22, (kal_uint8)iReg);
-            write_cmos_sensor(0xfe, 0x02);//fresh
-            LOG_INF("OV02BMIPI_SetGain = %d",iReg);
-        }
+    if (gain < 64) {
+        gain = 64;
+    } else if (gain > 992) {
+        gain = 992; // 992 = max_gain * BASEGAIN = 15.5 * 64
     }
-    else
-        LOG_INF("error gain setting");
+    reg_gain = gain / 4;
+    spin_lock(&imgsensor_drv_lock);
+    imgsensor.gain = reg_gain;
+    spin_unlock(&imgsensor_drv_lock);
+    LOG_INF("gain = %d, reg_gain = 0x%x\n", gain, reg_gain);
+
+    write_cmos_sensor(0xfd, 0x01);
+    write_cmos_sensor(0x22, (reg_gain & 0xFF));
+    write_cmos_sensor(0xfe, 0x02);
 
     return gain;
 }    /*    set_gain  */
