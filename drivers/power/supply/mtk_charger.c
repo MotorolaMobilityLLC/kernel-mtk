@@ -909,9 +909,11 @@ static ssize_t runin_onoff_ctrl_store(struct device *dev,struct device_attribute
 	return size;
 }
 static DEVICE_ATTR_RW(runin_onoff_ctrl);
+#endif
 
 
-static int ontim_charge_onoff_control = 1;/*1=enable charge  0 or other=disable charge*/
+/*1=enable; 0=disable*/
+static bool ontim_charge_onoff_control = 1;
 
 static ssize_t charge_onoff_ctrl_show(struct device *dev,struct device_attribute *attr,char *buf)
 {
@@ -930,7 +932,7 @@ static ssize_t charge_onoff_ctrl_store(struct device *dev,struct device_attribut
 	return size;
 }
 static DEVICE_ATTR_RW(charge_onoff_ctrl);
-#endif
+
 
 /* procfs */
 static int mtk_chg_current_cmd_show(struct seq_file *m, void *data)
@@ -1414,13 +1416,7 @@ static void charger_check_status(struct mtk_charger *info)
 		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
-#ifdef CONFIG_CHARGER_STOP_70PER
-	if(ontim_charge_onoff_control  !=  1)
-	{
-	    chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
-		charging = false;
-	}
-#endif
+
 stop_charging:
 	mtk_battery_notify_check(info);
 
@@ -1725,7 +1721,10 @@ static int charger_routine_thread(void *arg)
 			mtk_charger_start_timer(info);
 
 		check_battery_exist(info);
-		check_dynamic_mivr(info);
+
+		if(ontim_charge_onoff_control == 1)
+			check_dynamic_mivr(info);
+
 		charger_check_status(info);
 		kpoc_power_off_check(info);
 
@@ -1857,15 +1856,17 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
 	if (ret)
 		goto _out;
+
 #ifdef CONFIG_CHARGER_STOP_70PER
 	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
 	if (ret)
 		goto _out;
+#endif
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_charge_onoff_ctrl);
 	if (ret)
 		goto _out;
-#endif
+
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
 		chr_err("%s: mkdir /proc/mtk_battery_cmd failed\n", __func__);

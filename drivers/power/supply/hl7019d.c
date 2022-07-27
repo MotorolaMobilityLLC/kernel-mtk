@@ -1734,7 +1734,7 @@ static int hl7019d_enable_powerpath(struct charger_device *chg_dev, bool en)
 	pr_err("[hl7019d] hl7019d_enable_powerpath: %d.-------------\n", en);
 
 	if(true == en)
-		hl7019d_set_vindpm(0x7); // 4.44V
+		hl7019d_set_vindpm(0x9); // 4.61V
 	else
 		hl7019d_set_vindpm(0xf); // 5.08V
 
@@ -1743,12 +1743,12 @@ static int hl7019d_enable_powerpath(struct charger_device *chg_dev, bool en)
 
 static int hl7019d_get_vindpm_voltage(struct charger_device *chg_dev, bool *in_loop)
 {
-	unsigned int status = 0; 
+	unsigned int status = 0;
 	unsigned char register_value = 0;
 
 	if(!chg_dev)
 		return -EINVAL;
-	
+
 	hl7019d_read_interface(HL7019D_CON8, &register_value, CON8_DPM_STAT_MASK, CON8_DPM_STAT_SHIFT);
 
 	if(0 == register_value)
@@ -1797,7 +1797,7 @@ static int hl7019d_set_vindpm_voltage(struct charger_device *chg_dev, u32 vindpm
 			pr_err("[hl7019d] vindpm voltage finally setting value: %d.\n", set_vindpm_vol);
 			register_value = charging_parameter_to_value_hl7019d(VINDPM_NORMAL_CVTH, array_size, set_vindpm_vol);
 			hl7019d_set_vindpm(register_value);
-		}	
+		}
 	}
 
 	return status;
@@ -1810,7 +1810,7 @@ static int hl7019d_is_safety_timer_enabled(struct charger_device *chg_dev, bool 
 
 	if(!chg_dev)
 		return -EINVAL;
-	
+
 	hl7019d_read_interface(HL7019D_CON5, &register_value, CON5_CHG_TIMER_MASK, CON5_CHG_TIMER_SHIFT);
 
 	if(1 == register_value)

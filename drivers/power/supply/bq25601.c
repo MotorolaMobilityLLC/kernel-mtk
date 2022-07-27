@@ -1324,8 +1324,8 @@ static int  bq25601_enable_powerpath(struct charger_device *chg_dev, bool en)
 	pr_info("%s; hzn: en = %d;----------------\n", __func__, en);
 
 	if(en)
-		bq25601_set_vindpm(0x6);	/* VIN DPM check 4.5V */
-	else	
+		bq25601_set_vindpm(0x7);	/* VIN DPM check 4.6V */
+	else
 		bq25601_set_vindpm(0xf);	/* VIN DPM check 5.4V */
 	return status;
 }
@@ -1485,7 +1485,7 @@ static struct charger_ops bq25601_chg_ops = {
 
 
 	/* Power path */
-	/*.enable_powerpath = bq25601_enable_power_path, */
+	.enable_powerpath = bq25601_enable_powerpath,
 	/*.is_powerpath_enabled = bq25601_get_is_power_path_enable, */
 
 
