@@ -1722,7 +1722,7 @@ static int charger_routine_thread(void *arg)
 
 		check_battery_exist(info);
 
-		if(ontim_charge_onoff_control == 1)
+		if(ontim_charge_onoff_control)
 			check_dynamic_mivr(info);
 
 		charger_check_status(info);
