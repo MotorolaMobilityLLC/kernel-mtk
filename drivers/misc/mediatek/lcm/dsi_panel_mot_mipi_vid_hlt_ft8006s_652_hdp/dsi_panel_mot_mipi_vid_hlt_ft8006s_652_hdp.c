@@ -117,7 +117,9 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x28, 0, {} },
 	{REGFLAG_DELAY, 50, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 120, {} }
+	{REGFLAG_DELAY, 120, {} },
+	{0x17, 1, {0x5A} },
+	{0x18, 1, {0x5A} },
 };
 
 static struct LCM_setting_table init_setting[] = {
@@ -355,7 +357,6 @@ static void lcm_resume_power(void)
 	LCM_LOGI("[LCM] lcm_resume_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_pin_enable(0x14,3);
 }
 
 static void lcm_init(void)
@@ -363,6 +364,7 @@ static void lcm_init(void)
 	LCM_LOGI("[LCM] lcm_init +\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(5);
+	lcm_set_bias_pin_enable(0x14,3);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
