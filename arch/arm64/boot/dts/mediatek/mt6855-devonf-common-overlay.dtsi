@@ -68,7 +68,7 @@
 			output-low;
 		};
 	};
-	fps_irq: fps_irq {
+	fingerprint_irq: fingerprint_irq {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
 			slew-rate = <0>;
@@ -76,7 +76,7 @@
 		};
 	};
 
-	fps_reset_high: fps_reset_high {
+	fingerprint_reset_high: fingerprint_reset_high {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
 			slew-rate = <1>;
@@ -84,9 +84,24 @@
 		};
 	};
 
-	fps_reset_low: fps_reset_low {
+	fingerprint_reset_low: fingerprint_reset_low {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	fpsensor_power_high: fpsensor_power_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fpsensor_power_low: fpsensor_power_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -100,58 +115,51 @@
 	mediatek,pad-select = <0>, <1>;
 	tee-only;
 
-	fingerprint@0 {
-		compatible = "mediatek,fingerprint";
-		reg = <0>;
-		spi-max-frequency = <8000000>;
-		status = "okay";
-	};
-	fpc_tee@1 {
+	fpc_tee@0 {
 		compatible = "fpc,fpc_spi";
-		reg = <1>;
+		reg = <0>;
 		fpc,enable-wakeup;
 		spi-max-frequency = <8000000>;
 		netlink-event = <31>;
 		status = "okay";
 	};
+
+	chipone_tee@1 {
+		status = "okay";
+		compatible = "mediatek,finger-chipone";
+		reg = <1>;
+		spi-max-frequency = <10000000>;
+		netlink-event = <30>;
+	};
 };
 
 &odm {
-	fp_egistec {
-		compatible = "fp-egistec";
-		interrupt-parent = <&pio>;
-		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
-
-		fp-ctrl-power;
-
-		egistec,gpio_reset = <&pio 157 0x0>;
-		egistec,gpio_irq = <&pio 15 0x0>;
-
-		vcc_fp-supply = <&mt6369_vfp>;	// ldo for support module vcc
-		egis-fp,vcc-voltage = <3300000 3300000>;	// ldo voltage default 3.3V
-		egis-fp,vcc-current = <100000>;
-
-		pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active", "egis_spi_active", "egis_spi_default";
-		pinctrl-0 = <&fingerfp_rst_high>;
-		pinctrl-1 = <&fingerfp_rst_low>;
-		pinctrl-2 = <&fingerfp_irq_active>;
-		pinctrl-3 = <&fingerfp_spi_active>;
-		pinctrl-4 = <&fingerfp_spi_default>;
-
-		status="okay";
-	};
-
 	fingerprint_int: fingerprint_int {
 		compatible = "mediatek,fingerprint-fpc";
 		fpc,enable-wakeup;
 		interrupt-parent = <&pio>;
 		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
 		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
-		pinctrl-0 = <&fps_irq>;
-		pinctrl-1 = <&fps_reset_high>;
-		pinctrl-2 = <&fps_reset_low>;
-		fpc,rst= <&pio 157 0>;
+		pinctrl-0 = <&fingerprint_irq>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_reset_low>;
+		fpc,vdd = <&pio 159 0>;
 		fpc,irq = <&pio 15 0>;
+		status = "okay";
+	};
+
+	chipone_int: chipone_int {
+		compatible = "mediatek,chipone-fingerprint";
+chipone,enable-wakeup;
+		interrupt-parent = <&pio>;
+		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+		pinctrl-names = "fingerprint_reset_low", "fingerprint_reset_high" , "fingerprint_irq", "fpsensor_power_high", "fpsensor_power_low";
+		pinctrl-0 = <&fingerprint_reset_low>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_irq>;
+		pinctrl-3= <&fpsensor_power_high>;
+		pinctrl-4 = <&fpsensor_power_low>;
+		chipone,irq = <&pio 15 0>;
 		status = "okay";
 	};
 };
