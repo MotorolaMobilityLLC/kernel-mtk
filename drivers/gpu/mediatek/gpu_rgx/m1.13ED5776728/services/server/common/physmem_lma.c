@@ -761,7 +761,7 @@ PMRSysPhysAddrLocalMem(PMR_IMPL_PRIVDATA pvPriv,
 				uiInAllocOffset = puiOffset[idx] - (uiAllocIndex << uiLog2AllocSize);
 
 				PVR_LOG_RETURN_IF_FALSE(uiAllocIndex < uiNumAllocs,
-					"puiOffset out of range", PVRSRV_ERROR_OUT_OF_RANGE);
+				                        "puiOffset out of range", PVRSRV_ERROR_OUT_OF_RANGE);
 
 				PVR_ASSERT(uiInAllocOffset < (1ULL << uiLog2AllocSize));
 
