@@ -536,8 +536,6 @@ static struct mtk_panel_params ext_params_mode_2 = {
 static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	if (level > 255)
-		level = 255;
 	pr_info("%s backlight = -%d\n", __func__, level);
 	bl_tb0[1] = (u8)level;
 
