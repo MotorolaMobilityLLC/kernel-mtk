@@ -51,7 +51,8 @@ int mt_cpufreq_set_by_wfi_load_cluster(unsigned int cluster_id,
 	|| defined(CONFIG_MACH_MT6781)
 	policy->cur = freq;
 #endif
-	arch_set_freq_scale(p->mt_policy->cpus, freq, p->mt_policy->cpuinfo.max_freq);
+	if( p != NULL && p->mt_policy != NULL)
+		arch_set_freq_scale(p->mt_policy->cpus, freq, p->mt_policy->cpuinfo.max_freq);
 #endif
 	return 0;
 }
