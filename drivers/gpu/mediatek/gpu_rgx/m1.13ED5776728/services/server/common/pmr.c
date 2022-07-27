@@ -1875,7 +1875,8 @@ PMR_DevPhysAddr(const PMR *psPMR,
 		 * concerns.
 		 * We do not need this part in all systems because the GPU has the same
 		 * address view of system RAM as the CPU.
-		 * Alternatively this could be implemented as part of the PMR-factories directly */
+		 * Alternatively this could be implemented as part of the PMR-factories
+		 * directly */
 		if (PhysHeapGetType(psPMR->psPhysHeap) == PHYS_HEAP_TYPE_UMA ||
 		    PhysHeapGetType(psPMR->psPhysHeap) == PHYS_HEAP_TYPE_DMA)
 		{
