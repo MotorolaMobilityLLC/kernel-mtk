@@ -67,6 +67,7 @@ static unsigned int g_platform_id;
 extern mot_calibration_status_t *VICKY_S5KHM6_eeprom_get_calibration_status(void);
 extern mot_calibration_mnf_t *VICKY_S5KHM6_eeprom_get_mnf_info(void);
 extern void VICKY_S5KHM6_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
+static void check_streamon(void);
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -460,6 +461,8 @@ static kal_uint32 set_test_pattern_mode(kal_uint32 enable)
 
 	if (enable) {
 		write_cmos_sensor(0x0600, 0x0001);
+		/* Make sure streaming is ongoing */
+		check_streamon();
 	} else {
 		write_cmos_sensor(0x0600, 0x0000);
 	};
