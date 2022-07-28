@@ -1161,7 +1161,7 @@ static int fts_fwupg_get_fw_file(struct fts_upgrade *upg)
     }
 
     if (FTS_FW_REQUEST_SUPPORT) {
-        msleep(500);
+        msleep(5000);
         ret = fts_get_fw_file_via_request_firmware(upg);
         if (ret != 0) {
             get_fw_i_flag = true;
