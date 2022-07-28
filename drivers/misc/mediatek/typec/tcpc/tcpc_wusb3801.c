@@ -495,7 +495,7 @@ static inline int wusb3801_i2c_read8(struct tcpc_device *tcpc, u8 reg)
 static int test_cc_patch(struct wusb3801_chip *chip)
 {
 	int rc;
-	int rc_reg_08 = 0, rc_reg_0f = 0, i = 0;
+	int rc_reg_08 = 0, rc_reg_0f = 0,i = 0;
 
 	struct device *cdev = &chip->tcpc->dev;
 	dev_err(cdev, "%s \n",__func__);
@@ -503,37 +503,37 @@ static int test_cc_patch(struct wusb3801_chip *chip)
 	do {
 		wusb3801_i2c_write8(chip->tcpc,
 			WUSB3801_REG_TEST_02, 0x82);
-		msleep(100);
+		msleep(10);
 		rc_reg_08 = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_TEST_02);
 		if (rc_reg_08 < 0) {
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_02 failed to read 001\n", __func__);
 		}
 		i++;
-	} while(rc_reg_08 != 0 && i < 5);
+	} while(rc_reg_08 != 0x82 && i < 50);
 
 	i = 0;
 	do {
 		wusb3801_i2c_write8(chip->tcpc,
 			WUSB3801_REG_TEST_09, 0xC0);
-		msleep(100);
+		msleep(10);
 		rc_reg_0f = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_TEST_09);
 		if (rc_reg_0f < 0) {
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_09 failed to read 001\n", __func__);
         }
 		i++;
-	} while(rc_reg_0f !=0 && i < 5);
+	} while(rc_reg_0f != 0xC0 && i < 50);
 
 	i = 0;
 	do {
 		rc = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_TEST0);
-		msleep(10);
+		msleep(2);
 		dev_err(cdev, "%s--- %d = [0x%02x] \n", __func__, WUSB3801_REG_TEST0, rc);
 		i++;
 	} while (i < 5);
 
+	msleep(10);
 	i = 0;
 	do {
-		msleep(10);
 		wusb3801_i2c_write8(chip->tcpc,
 			WUSB3801_REG_TEST_09, 0x00);
 		msleep(10);
@@ -542,7 +542,7 @@ static int test_cc_patch(struct wusb3801_chip *chip)
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_09 failed to read 002\n", __func__);
 		}
 		i++;
-	} while(rc_reg_0f !=0 && i < 5);
+	} while(rc_reg_0f !=0 && i < 50);
 
 	i = 0;
 	do {
@@ -554,7 +554,7 @@ static int test_cc_patch(struct wusb3801_chip *chip)
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_02 failed to read 002\n", __func__);
 		}
 		i++;
-	} while(rc_reg_08 != 0 && i < 5);
+	} while(rc_reg_08 != 0x80 && i < 50);
 
 	i = 0;
 	do {
@@ -565,42 +565,42 @@ static int test_cc_patch(struct wusb3801_chip *chip)
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_02 failed to read 003\n", __func__);
 		}
 		i++;
-	} while(rc_reg_08 != 0 && i < 5);
+	} while(rc_reg_08 != 0 && i < 10);
 
-	pr_err("dhx---add msleep 200\n");
 	dev_err(cdev, "%s rc = [0x%02x] \n", __func__, rc);
 
 //huanglei add for reg 0x08 write zero fail begin
 	i = 0;
 	do {
-		msleep(100);
+		msleep(10);
 		wusb3801_i2c_write8(chip->tcpc,
 			WUSB3801_REG_TEST_02, 0x00);
-		msleep(100);
+		msleep(10);
 		rc_reg_08 = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_TEST_02);
 		if (rc_reg_08 < 0) {
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_02 failed to read 004\n", __func__);
 		}
 		i++;
-	}while(rc_reg_08 != 0 && i < 5);
+	}while(rc_reg_08 != 0 && i < 50);
 //end
 //huanglei add for reg 0x0F write zero fail begin
 	i = 0;
 	do{
-		msleep(100);
+		msleep(10);
 		wusb3801_i2c_write8(chip->tcpc,
 			WUSB3801_REG_TEST_09, 0x00);
-		msleep(100);
+		msleep(10);
 		rc_reg_0f = wusb3801_i2c_read8(chip->tcpc, WUSB3801_REG_TEST_09);
 		if (rc_reg_0f < 0) {
 			dev_err(cdev, "%s: WUSB3801_REG_TEST_09 failed to read 003\n", __func__);
 		}
 		i++;
-	}while(rc_reg_0f !=0 && i < 5);
+	}while(rc_reg_0f !=0 && i < 50);
 //end
     return BITS_GET(rc, 0x40);
 }
 #endif /* __TEST_CC_PATCH__ */
+
 
 static void wusb3801_irq_work_handler(struct kthread_work *work)
 {
