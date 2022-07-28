@@ -639,11 +639,12 @@ unsigned int mot_s5k4h7_read_region(struct i2c_client *client, unsigned int addr
 	unsigned char *otp_data = otp_info_map.data;
 	unsigned char *otp_alldata = mot_s5k4h7_otp_data.data;
 	LOG_INF ("eeprom read data addr = 0x%x size = %d\n",addr,size);
-       if (size !=dump_all_size) {
-	memcpy(data, otp_data + addr,size);
-        } else {
-	memcpy(data, otp_alldata,size);
-        }
+	if (size !=dump_all_size) {
+		size = (addr+size  >= S5K4H7_EEPROM_MAX_SIZE) ? (S5K4H7_EEPROM_MAX_SIZE-addr) : (size);
+		memcpy(data, otp_data + addr,size);
+	} else {
+		memcpy(data, otp_alldata,size);
+	}
 	ret = size;
 	return ret;
 }
