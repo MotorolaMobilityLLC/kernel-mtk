@@ -55,10 +55,8 @@
 * aw87xxx marco
 ******************************************************************/
 #define AW87XXX_I2C_NAME	"aw87xxx_pa"
-#define AW87XXX_DRIVER_VERSION	"v2.4.0.1"
+#define AW87XXX_DRIVER_VERSION	"v2.4.0"
 #define AW87XXX_FW_BIN_NAME	"aw87xxx_acf.bin"
-
-#define AW_TIME_1500_MS	(1500)
 
 /*************************************************************************
  * aw87xxx variable
@@ -197,41 +195,25 @@ static int aw87xxx_power_on(struct aw87xxx *aw87xxx, char *profile)
 	return 0;
 }
 
-static void aw87xxx_start_work_func(struct work_struct *work)
-{
-	int ret = 0;
-	struct aw87xxx *aw87xxx = container_of(work,
-			struct aw87xxx, start_work.work);
 
+
+int aw87xxx_update_profile(struct aw87xxx *aw87xxx, char *profile)
+{
+	int ret = -1;
+
+	AW_DEV_LOGD(aw87xxx->dev, "load profile[%s] enter", profile);
 	mutex_lock(&aw87xxx->reg_lock);
 	aw87xxx_monitor_stop(&aw87xxx->monitor);
-	if (0 == strncmp(aw87xxx->set_profile, aw87xxx->prof_off_name, AW_PROFILE_STR_MAX)) {
-		ret = aw87xxx_power_down(aw87xxx, aw87xxx->set_profile);
+	if (0 == strncmp(profile, aw87xxx->prof_off_name, AW_PROFILE_STR_MAX)) {
+		ret = aw87xxx_power_down(aw87xxx, profile);
 	} else {
-		ret = aw87xxx_power_on(aw87xxx, aw87xxx->set_profile);
+		ret = aw87xxx_power_on(aw87xxx, profile);
 		if (!ret)
 			aw87xxx_monitor_start(&aw87xxx->monitor);
 	}
 	mutex_unlock(&aw87xxx->reg_lock);
-}
 
-int aw87xxx_update_profile(struct aw87xxx *aw87xxx, char *profile)
-{
-	int delay_time = 0;
-
-	AW_DEV_LOGD(aw87xxx->dev, "load profile[%s] enter", profile);
-
-	cancel_delayed_work_sync(&aw87xxx->start_work);
-	if (0 == strncmp(profile, "Voice", AW_PROFILE_STR_MAX) &&
-		(0 == aw87xxx->dev_index)) {
-		AW_DEV_LOGI(aw87xxx->dev, "Voice delay 1.5s for fade in");
-		delay_time = AW_TIME_1500_MS;
-	}
-	strlcpy(aw87xxx->set_profile, profile, AW_PROFILE_STR_MAX);
-
-	schedule_delayed_work(&aw87xxx->start_work, msecs_to_jiffies(delay_time));
-
-	return 0;
+	return ret;
 }
 
 int aw87xxx_update_profile_esd(struct aw87xxx *aw87xxx, char *profile)
@@ -1304,7 +1286,6 @@ static int aw87xxx_i2c_probe(struct i2c_client *client,
 
 	/*monitor init*/
 	aw87xxx_monitor_init(aw87xxx->dev, &aw87xxx->monitor, dev_node);
-	INIT_DELAYED_WORK(&aw87xxx->start_work, aw87xxx_start_work_func);
 
 	/*add device to total list */
 	mutex_lock(&g_aw87xxx_mutex_lock);

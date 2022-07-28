@@ -95,7 +95,6 @@ struct aw_i2c_packet {
 struct aw87xxx {
 	char fw_name[AW87XXX_FW_NAME_MAX];
 	int32_t dev_index;
-	char set_profile[AW_PROFILE_STR_MAX];
 	char *current_profile;
 	char prof_off_name[AW_PROFILE_STR_MAX];
 	uint32_t off_bin_status;
@@ -113,7 +112,6 @@ struct aw87xxx {
 	struct list_head list;
 
 	struct aw_monitor monitor;
-	struct delayed_work start_work;
 };
 
 int aw87xxx_update_profile(struct aw87xxx *aw87xxx, char *profile);
