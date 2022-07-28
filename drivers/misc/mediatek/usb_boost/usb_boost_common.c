@@ -796,7 +796,7 @@ static void mtu3_req_complete_boost(void *unused, struct mtu3_request *mreq)
 		usb_boost();
 		break;
 	case USB_TYPE_RNDIS:
-		if (mep->is_in && mep->type == USB_ENDPOINT_XFER_BULK)
+		if (mep->type == USB_ENDPOINT_XFER_BULK)
 			usb_boost();
 		break;
 	default:
