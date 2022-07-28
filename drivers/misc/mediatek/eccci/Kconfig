@@ -70,3 +70,12 @@ config MOTO_DEVONN_SWTP_CUST
 	  then it is supported, if no,
 	  it is disabled.
 	  The option default disabled.
+
+config MOTO_DEVONF_SWTP_CUST
+	bool "ECCCI devonf swtp customization"
+	depends on MTK_ECCCI_DRIVER
+	help
+	  This option enables devonf swtp customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
