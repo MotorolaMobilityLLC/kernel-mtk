@@ -153,6 +153,8 @@
 #define AP_PLL_CON0		0x0
 /* ((UINT32P)(APMIXED_BASE+0x02C8)) */
 #define MDPLL1_CON0		0x3A0
+#define SCP_SMEM_KEY			(0x5343505f534d454d) /* SCP_SMEM magic key */
+
 
 struct ccci_clk_node {
 	struct clk *clk_ref;
@@ -236,6 +238,7 @@ int md_cd_vcore_config(unsigned int md_id, unsigned int hold_req);
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);
 void md_cd_check_md_DCM(struct md_cd_ctrl *md_ctrl);
+void ccci_notify_set_scpmem(void);
 
 extern unsigned long infra_ao_base;
 extern volatile unsigned int devapc_check_flag;

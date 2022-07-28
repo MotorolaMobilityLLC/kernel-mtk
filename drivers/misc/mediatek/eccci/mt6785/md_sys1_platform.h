@@ -17,6 +17,8 @@
 #include <linux/skbuff.h>
 #include "ccif_hif_platform.h"
 
+#define SCP_SMEM_KEY			(0x5343505f534d454d) /* SCP_SMEM magic key */
+
 struct ccci_clk_node {
 	struct clk *clk_ref;
 	unsigned char *clk_name;
@@ -99,6 +101,7 @@ void md_cd_dump_pccif_reg(struct ccci_modem *md);
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);
 void ccci_set_clk_by_id(int id, unsigned int on);
+void ccci_notify_set_scpmem(void);
 
 extern unsigned long infra_ao_base;
 extern unsigned int devapc_check_flag;

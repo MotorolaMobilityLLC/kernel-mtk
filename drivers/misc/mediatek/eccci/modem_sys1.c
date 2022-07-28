@@ -54,6 +54,11 @@
 
 #define TAG "mcd"
 
+void __weak ccci_notify_set_scpmem(void)
+{
+	CCCI_NORMAL_LOG(-1, TAG, "%s weak done\n", __func__);
+}
+
 void ccif_enable_irq(struct ccci_modem *md)
 {
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
@@ -358,6 +363,8 @@ static int ccci_md_hif_start(struct ccci_modem *md, int stage)
 	case 1:
 		/*enable clk: cldma & ccif */
 		ccci_set_clk_cg(md, 1);
+		/* notify atf/kernel write scp smem to reg*/
+		ccci_notify_set_scpmem();
 		if (md->hif_flag & (1 << CCIF_HIF_ID)) {
 #if (MD_GENERATION >= 6293)
 			md_ccif_sram_reset(CCIF_HIF_ID);

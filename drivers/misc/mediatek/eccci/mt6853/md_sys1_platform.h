@@ -99,6 +99,7 @@ void md_cd_dump_pccif_reg(struct ccci_modem *md);
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);
 void ccci_set_clk_by_id(int id, unsigned int on);
+void ccci_notify_set_scpmem(void);
 
 extern unsigned long infra_ao_base;
 extern unsigned long pericfg_base;
