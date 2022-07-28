@@ -1383,6 +1383,7 @@ static void wt6670f_shutdown(struct i2c_client *client)
 {
 	int ret;
 	u16 data = 0x01;
+	u16 data_r = 0x00;
 
 	if(QC3P_WT6670F == g_qc3p_id){
 		ret = mmi_wt6670f_write_word(_wt, 0xB6, data);
@@ -1398,6 +1399,10 @@ static void wt6670f_shutdown(struct i2c_client *client)
 	if (ret < 0)
 	{
 		pr_info("%s set voltage fail\n",__func__);
+	}
+	if(QC3P_Z350 == g_qc3p_id) {
+		ret = mmi_wt6670f_write_word(_wt, 0x06, data_r);
+		pr_info("%s  wt6670 0x06 set 0 ok\n", __func__);
 	}
 }
 //#define WT6670F_PM_OPS	(NULL)
