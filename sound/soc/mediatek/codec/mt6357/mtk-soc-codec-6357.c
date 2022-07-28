@@ -3755,7 +3755,7 @@ static void Speaker_Amp_Change(bool enable)
 		Speaker_Amp_PA_SetMode(0);//Music
 		Voice_Amp_PA_SetMode(0);//Music
 	}else{
-		Voice_Amp_PA_SetMode(0);//Off
+		Voice_Amp_PA_SetMode(4);//Off
 		Speaker_Amp_PA_SetMode(4);//Off
 		usleep_range(kClosePADelayMin, kClosePADelayMax);
 		Voice_Amp_Mux_Select(false);
