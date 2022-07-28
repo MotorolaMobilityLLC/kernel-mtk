@@ -1443,6 +1443,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
         write_cmos_sensor(0x92, 0x00);
         write_cmos_sensor(0x9b, 0x00);
         write_cmos_sensor(0xfe, 0x02);
+        mdelay(70);
     } else {
         write_cmos_sensor(0xfd, 0x03);
         write_cmos_sensor(0x81, 0x00);
