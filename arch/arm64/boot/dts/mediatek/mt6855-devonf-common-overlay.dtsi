@@ -18,6 +18,24 @@
 #include "mediatek/devonf-sar.dtsi"
 #include "mediatek/devonf-audio.dtsi"
 
+&clock_buffer_ctrl {
+        mediatek,xo-bbck4 = <1>;
+};
+
+&i2c3 {
+        status = "okay";
+        nfc_pn5xx: nfc_pn5xx@28 {
+                compatible = "nxp,pn5xx";
+                reg = <0x28>;
+                interrupt-parent = <&pio>;
+                interrupts = <19 IRQ_TYPE_LEVEL_HIGH>;
+                nxp,pn544-irq = <&pio 2 0>;
+                nxp,pn544-ven = <&pio 161 0>;
+                nxp,pn544-fd = <&pio 1 0>;
+                status = "okay";
+        };
+};
+
 &dispsys_config {
 	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
