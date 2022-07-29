@@ -98,6 +98,7 @@ char sboot_reason[64] = "unknown_reason";
 
 #ifdef CONFIG_ONTIM_DEBUG
 bool dal_visible = true;
+static DEFINE_MUTEX(dal_lock);
 #endif
 
 static int get_boot_mode(char *src)
@@ -150,13 +151,16 @@ void bootprof_log_boot(char *str)
 		if (len > sizeof(buf))
 			len = sizeof(buf);
 		memset(buf, ' ', len);
-		snprintf(buf, len, "  %lld:%06ld:%s", msec_high(ts), msec_low(ts), str);
+		snprintf(buf, len, "  %lld.%06ld:%s", msec_high(ts), msec_low(ts), str);
 		for (n=0; n<len; n++)
 			if (buf[n]<' ' || buf[n]>'~')
 				buf[n]=' ';
 		buf[len]=0;
 		DAL_SetCursor(0, -2);
-		DAL_Printf("%s\r  Boot: mode=%s reason=%s", buf, sboot_mode, sboot_reason);
+		mutex_lock(&dal_lock);
+		if (dal_visible)
+			DAL_Printf("%s\r  Boot: mode=%s reason=%s", buf, sboot_mode, sboot_reason);
+		mutex_unlock(&dal_lock);
 	}
 #endif
 	mutex_lock(&bootprof_lock);
@@ -311,8 +315,10 @@ static void mt_bootprof_switch(int on)
 			if (!boot_finish)
 				boot_finish = true;
 #ifdef CONFIG_ONTIM_DEBUG
-			DAL_Clean();
+			mutex_lock(&dal_lock);
 			dal_visible =  false;
+			DAL_Clean();
+			mutex_unlock(&dal_lock);
 #endif
 #ifndef MODULE
 			bootup_finish();
