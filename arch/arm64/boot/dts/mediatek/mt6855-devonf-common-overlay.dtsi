@@ -183,7 +183,7 @@ chipone,enable-wakeup;
 };
 
 &regulator_vibrator {
-	status = "disabled";
+	status = "ok";
 };
 
 &mt6363keys {
