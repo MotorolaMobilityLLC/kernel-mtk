@@ -336,7 +336,21 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 
 }
 
+enum IMGSENSOR_RETURN imgsensor_i2c_write_ext(
+		struct IMGSENSOR_I2C_CFG *pi2c_cfg,
+		const u16 *pwrite_data,
+		u16 write_items,
+		u16 addr_type,
+		u16 data_type,
+		u16 id,
+		int speed);
 static kal_uint16 table_write_cmos_sensor(const kal_uint16 *para, kal_uint32 len)
+{
+	imgsensor_i2c_write_ext(get_i2c_cfg(), para, len, 2, 2, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
+	return 0;
+}
+
+static kal_uint16 table_write_cmos_sensor_legacy(const kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
 	kal_uint32 tosend, IDX;
@@ -777,10 +791,18 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 static void sensor_init(void)
 {
+	static u8 first_init = 1;
 	LOG_INF("E\n");
-	table_write_cmos_sensor(s5khm6_pre_init_setting, ARRAY_SIZE(s5khm6_pre_init_setting));
-	mdelay(30);
-	table_write_cmos_sensor(s5khm6_post_init_setting, ARRAY_SIZE(s5khm6_post_init_setting));
+	if (first_init) {
+		first_init = 0;
+		table_write_cmos_sensor_legacy(s5khm6_pre_init_setting, ARRAY_SIZE(s5khm6_pre_init_setting));
+		mdelay(30);
+		table_write_cmos_sensor_legacy(s5khm6_post_init_setting, ARRAY_SIZE(s5khm6_post_init_setting));
+	} else {
+		table_write_cmos_sensor(s5khm6_pre_init_setting, ARRAY_SIZE(s5khm6_pre_init_setting));
+		mdelay(30);
+		table_write_cmos_sensor(s5khm6_post_init_setting, ARRAY_SIZE(s5khm6_post_init_setting));
+	}
 	LOG_INF("X\n");
 }
 
