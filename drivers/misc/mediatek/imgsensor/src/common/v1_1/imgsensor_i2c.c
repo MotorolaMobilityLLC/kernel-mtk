@@ -485,6 +485,128 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 	return ret;
 }
 
+#define IMGSENSOR_DIAG 1
+#define IMGSENSOR_I2C_BUF_LEN 8192
+#define IMGSENSOR_BATCH_TH (IMGSENSOR_I2C_CMD_LENGTH_MAX)
+static u8 imgsensor_i2c_buf[IMGSENSOR_I2C_BUF_LEN];
+enum IMGSENSOR_RETURN imgsensor_i2c_write_ext(
+		struct IMGSENSOR_I2C_CFG *pi2c_cfg,
+		const u16 *pwrite_data,
+		u16 write_items,
+		u16 addr_type,
+		u16 data_type,
+		u16 id,
+		int speed)
+{
+	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
+	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
+	struct i2c_msg     *pmsg  = pi2c_cfg->msg;
+	u8                 *pContStart = NULL;
+	u8                 *pdata = imgsensor_i2c_buf;
+	u8                 *pend  = &imgsensor_i2c_buf[IMGSENSOR_I2C_BUF_LEN-1];
+	int batch_cnt   = 0;
+	int item_cnt = 0;
+	int cont_len = 0;
+	int i2c_ret = 0;
+#if IMGSENSOR_DIAG
+	int merged_regs = 0;
+#endif
+
+	if (pinst->pi2c_client == NULL) {
+		pr_err("NOTICE: slave_id %d pi2c_client is NULL!\n", id);
+		return IMGSENSOR_RETURN_ERROR;
+	}
+
+	if (write_items % 2) {
+		pr_err("NOTICE: slave_id %d addr/data can't match!\n", id);
+		return IMGSENSOR_RETURN_ERROR;
+	}
+
+	if (addr_type > 2 || data_type > 2) {
+		pr_err("NOTICE: slave_id %d addr/data type unsupported(%d,%d)!\n",id,addr_type,data_type);
+		return IMGSENSOR_RETURN_ERROR;
+	}
+
+	mutex_lock(&pi2c_cfg->i2c_mutex);
+	while (item_cnt < write_items) {
+		pmsg->addr  = id >> 1;
+		pmsg->flags = 0;
+		pContStart = pdata;
+		/*Fill register start addresss*/
+		if (addr_type == 2) {
+			*pdata++ =  (pwrite_data[item_cnt]>>8) & 0xff ;
+			*pdata++  =  pwrite_data[item_cnt] & 0xff ;
+			cont_len += 2;
+		} else {
+			*pdata++  =  pwrite_data[item_cnt] & 0xff ;
+			cont_len += 1;
+		}
+		item_cnt++;
+
+		/*Fill register data*/
+		if (data_type == 2) {
+			*pdata++  =  (pwrite_data[item_cnt]>>8) & 0xff ;
+			*pdata++  =  pwrite_data[item_cnt] & 0xff ;
+			cont_len += 2;
+		} else {
+			*pdata++  =  pwrite_data[item_cnt] & 0xff ;
+			cont_len += 1;
+		}
+		item_cnt++;
+
+		/*Merge continous address writing into one I2C operation*/
+		while ((item_cnt < write_items-4) && (pwrite_data[item_cnt]-pwrite_data[item_cnt-2] == data_type) && (pdata < pend-data_type)) {
+			if (data_type == 2) {
+				*pdata++  =  (pwrite_data[item_cnt+1]>>8) & 0xff ;
+				*pdata++  =  pwrite_data[item_cnt+1] & 0xff ;
+				cont_len += 2;
+			} else {
+				*pdata++  =  pwrite_data[item_cnt+1] & 0xff ;
+				cont_len += 1;
+			}
+			item_cnt += 2;
+#if IMGSENSOR_DIAG
+			merged_regs ++;
+#endif
+		}
+		pmsg->len = cont_len;
+		pmsg->buf =pContStart ;
+		batch_cnt++;
+		pmsg++;
+		cont_len = 0;
+
+		if ((batch_cnt >= IMGSENSOR_BATCH_TH) || (pdata >= pend-data_type) || (item_cnt >= write_items)) {
+			pr_info("I2C: batch Writing(batch_cnt: %d, buf len:%d)", batch_cnt, pdata-imgsensor_i2c_buf);
+			i2c_ret = mtk_i2c_transfer(
+					pinst->pi2c_client->adapter,
+					pi2c_cfg->msg,
+					batch_cnt,
+					(pi2c_cfg->pinst->status.filter_msg)
+						? I2C_A_FILTER_MSG : 0,
+					((speed > 0) && (speed <= 1000))
+						? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000);
+			if (i2c_ret != batch_cnt) {
+				pr_err("NOTICE: I2C id %d write failed (%d)! speed(0=%d) (0x%x)\n",
+					id, i2c_ret, speed, *pwrite_data);
+				ret = IMGSENSOR_RETURN_ERROR;
+				break;
+			}
+			pdata = imgsensor_i2c_buf;
+			pmsg  = pi2c_cfg->msg;
+			batch_cnt = 0;
+		}
+	}
+
+	mutex_unlock(&pi2c_cfg->i2c_mutex);
+
+#if IMGSENSOR_DIAG
+	pr_info("REGS merged:%d, %d bytes skipped, ratio:%d percent", merged_regs, (1+addr_type)*merged_regs,
+			100*(1+addr_type)*merged_regs/((addr_type+data_type+1)*write_items/2));
+#endif
+
+	return ret;
+}
+
 void imgsensor_i2c_filter_msg(struct IMGSENSOR_I2C_CFG *pi2c_cfg, bool en)
 {
 	pi2c_cfg->pinst->status.filter_msg = en;
