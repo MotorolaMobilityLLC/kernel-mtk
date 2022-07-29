@@ -353,7 +353,7 @@ static void write_shutter(kal_uint32 shutter)
 	write_cmos_sensor_8(0x020D, (shutter & 0xFF0000) >> 16);
 	write_cmos_sensor(0x020A, shutter);
 
-	pr_debug("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
+//	pr_debug("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
 
 }	/*	write_shutter  */
 
@@ -490,8 +490,8 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
-	pr_debug("gain = %d, reg_gain = 0x%x, max_gain:0x%x\n ",
-		gain, reg_gain, max_gain);
+//	pr_debug("gain = %d, reg_gain = 0x%x, max_gain:0x%x\n ",
+//		gain, reg_gain, max_gain);
 
 	reg_gain = reg_gain & 0x00FF;
 	write_cmos_sensor_8(0x0213, reg_gain);
