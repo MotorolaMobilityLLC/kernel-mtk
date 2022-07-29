@@ -193,7 +193,7 @@ void S5K5E9_write_cmos_sensor(u16 addr, u32 para)
 }
 static void set_dummy(void)
 {
-	LOG_INF("dummyline = %d, dummypixels = %d\n", imgsensor.dummy_line, imgsensor.dummy_pixel);
+//	LOG_INF("dummyline = %d, dummypixels = %d\n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 	write_cmos_sensor_8(0x0340, imgsensor.frame_length >> 8);
 	write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
 	write_cmos_sensor_8(0x0342, imgsensor.line_length >> 8);
@@ -305,7 +305,7 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0202, shutter >> 8);
 		write_cmos_sensor_8(0x0203, shutter & 0xFF);
 	}
-	LOG_INF("shutter =%d, framelength =%d bIsLongExposure = %d\n", shutter, imgsensor.frame_length,bIsLongExposure);
+//	LOG_INF("shutter =%d, framelength =%d bIsLongExposure = %d\n", shutter, imgsensor.frame_length,bIsLongExposure);
 }
 /*************************************************************************
 * FUNCTION
@@ -372,7 +372,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+//	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
     write_cmos_sensor_8(0x0204, (reg_gain>>8));
     write_cmos_sensor_8(0x0205, (reg_gain&0xff));
     return gain;
@@ -1783,7 +1783,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	unsigned long long *feature_data = (unsigned long long *) feature_para;
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
-	LOG_INF("feature_id = %d", feature_id);
+//	LOG_INF("feature_id = %d", feature_id);
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 2000000;//uint is ns
