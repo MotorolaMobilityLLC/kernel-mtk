@@ -880,7 +880,7 @@ void ccci_notify_set_scpmem(void)
 			((unsigned long long) ccci_read32(ap_ccif2_base, 0x100));
 		CCCI_NORMAL_LOG(MD_SYS1, TAG,
 			"%s: scp_smem_addr 0x%llx size: 0x%x  magic key: 0x%llx\n",
-			__func__, scp_smem_addr, size);
+			__func__, scp_smem_addr, size, key);
 	} else
 		CCCI_ERROR_LOG(MD_SYS1, TAG, "%s get_smem fail\n", __func__);
 }
