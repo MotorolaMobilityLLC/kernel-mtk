@@ -161,7 +161,7 @@ static void set_dummy(void)
 
     v_blank = ((imgsensor.frame_length-0x4c4) < 0x14) ? 0x14 : (imgsensor.frame_length-0x4c4);
 
-    LOG_INF("imgsensor.frame_length = %d, v_blank = %d\n", imgsensor.frame_length, v_blank);
+//    LOG_INF("imgsensor.frame_length = %d, v_blank = %d\n", imgsensor.frame_length, v_blank);
 
     write_cmos_sensor(0xfd, 0x01);
     write_cmos_sensor(0x14, (v_blank & 0x7F00) >> 8);
@@ -255,7 +255,7 @@ static void write_shutter(kal_uint32 shutter)
     write_cmos_sensor(0x0f, shutter  & 0xFF);
     write_cmos_sensor(0xfe, 0x02);//fresh sss
 
-    LOG_INF("shutter =%d, framelength =%d, v_blank = %d\n", shutter, imgsensor.frame_length, v_blank);
+//    LOG_INF("shutter =%d, framelength =%d, v_blank = %d\n", shutter, imgsensor.frame_length, v_blank);
 }
 
 static void set_shutter(kal_uint32 shutter)
@@ -371,7 +371,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
     spin_lock(&imgsensor_drv_lock);
     imgsensor.gain = reg_gain;
     spin_unlock(&imgsensor_drv_lock);
-    LOG_INF("gain = %d, reg_gain = 0x%x\n", gain, reg_gain);
+//    LOG_INF("gain = %d, reg_gain = 0x%x\n", gain, reg_gain);
 
     write_cmos_sensor(0xfd, 0x01);
     write_cmos_sensor(0x22, (reg_gain & 0xFF));
@@ -1391,7 +1391,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *)feature_para;
 
-    LOG_INF("feature_id = %d\n", feature_id);
+//    LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
     case SENSOR_FEATURE_GET_PERIOD:
     	*feature_return_para_16++ = imgsensor.line_length;
