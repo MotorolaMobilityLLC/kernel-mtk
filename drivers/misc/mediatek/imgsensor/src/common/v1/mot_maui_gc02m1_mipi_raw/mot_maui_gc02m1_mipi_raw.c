@@ -495,7 +495,7 @@ static void set_shutter(kal_uint16 shutter)
     write_cmos_sensor(0xfe, 0x00);
     write_cmos_sensor(0x03, (shutter >> 8) & 0x3f);
     write_cmos_sensor(0x04, shutter  & 0xff);
-    LOG_INF("shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
+//    LOG_INF("shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
 }
 
 static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length,kal_bool auto_extend_en)
@@ -587,8 +587,8 @@ static kal_uint16 set_gain(kal_uint16 gain)
     temp_gain = reg_gain * MOT_MAUI_GC02M1_SENSOR_DGAIN_BASE / MOT_MAUI_GC02M1_AGC_Param[gain_index][0];
     write_cmos_sensor(0xb1, (temp_gain >> 8) & 0x1f);
     write_cmos_sensor(0xb2, temp_gain & 0xff);
-    LOG_INF("MOT_MAUI_GC02M1_AGC_Param[gain_index][1] = 0x%x, temp_gain = 0x%x, reg_gain = %d\n",
-    	MOT_MAUI_GC02M1_AGC_Param[gain_index][1], temp_gain, reg_gain);
+//    LOG_INF("MOT_MAUI_GC02M1_AGC_Param[gain_index][1] = 0x%x, temp_gain = 0x%x, reg_gain = %d\n",
+//    	MOT_MAUI_GC02M1_AGC_Param[gain_index][1], temp_gain, reg_gain);
 
     return reg_gain;
 }
@@ -1454,7 +1454,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *)feature_para;
 
-    LOG_INF("feature_id = %d\n", feature_id);
+//    LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
     case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
     	*(feature_data + 1) = imgsensor_info.min_gain;
