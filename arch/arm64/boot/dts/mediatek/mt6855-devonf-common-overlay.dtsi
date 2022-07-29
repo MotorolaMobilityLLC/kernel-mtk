@@ -168,6 +168,12 @@ chipone,enable-wakeup;
 	status = "disabled";
 };
 
+&mt6363keys {
+        home {
+                linux,keycodes = <115>;
+        };
+};
+
 &i2c3 {
 	haptic_nv@5A{
 		compatible = "awinic,haptic_nv";
