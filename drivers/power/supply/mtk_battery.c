@@ -449,16 +449,16 @@ static int battery_psy_get_property(struct power_supply *psy,
 			int q_max_now = gm->fg_table_cust_data.fg_profile[
 						gm->battery_id].q_max;
 			int remain_ui = 100 - bs_data->bat_capacity;
-			int remain_mah = remain_ui * q_max_now / 10;
+			int remain_mah = remain_ui * q_max_now / 100; /* mah */
 			int current_now =
-			gauge_get_int_property(GAUGE_PROP_BATTERY_CURRENT);
+			gauge_get_int_property(GAUGE_PROP_BATTERY_CURRENT) / 10; /* ma */
 
 			int time_to_full = 0;
 
-			if (current_now != 0)
+			if (current_now > 400)
 				time_to_full = remain_mah * 3600 / current_now;
 
-				bm_debug("time_to_full:%d, remain:ui:%d mah:%d, current_now:%d, qmax:%d\n",
+				bm_debug("time_to_full:%d, remain:ui:%d remain:mah:%d, current_now:%d, qmax:%d\n",
 					time_to_full, remain_ui, remain_mah,
 					current_now, q_max_now);
 			val->intval = abs(time_to_full);
@@ -491,10 +491,10 @@ static int battery_psy_get_property(struct power_supply *psy,
 		ret = -EINVAL;
 		break;
 		}
-
+/*
 	bm_debug("%s psp:%d ret:%d val:%d",
 		__func__, psp, ret, val->intval);
-
+*/
 	return ret;
 }
 
