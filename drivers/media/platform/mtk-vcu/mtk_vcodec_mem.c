@@ -415,7 +415,7 @@ int mtk_vcu_free_buffer(struct mtk_vcu_queue *vcu_queue,
 	if (num_buffers != 0U) {
 		for (buffer = 0; buffer < num_buffers; buffer++) {
 			vcu_buffer = &vcu_queue->bufs[buffer];
-			if (vcu_buffer->dbuf != NULL)
+			if (vcu_buffer->dbuf != NULL || vcu_buffer->mem_priv == NULL)
 				continue;
 			if (vcu_buffer->mem_priv == NULL || vcu_buffer->size == 0) {
 				pr_info("[VCU][Error] %s remove invalid vcu_queue bufs[%u] in num_buffers %u (mem_priv 0x%x size %d ref_cnt %d)\n",
