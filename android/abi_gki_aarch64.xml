@@ -479,6 +479,7 @@
       <elf-symbol name='__traceiter_android_vh_rwsem_wake_finish' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbd987012'/>
       <elf-symbol name='__traceiter_android_vh_rwsem_write_finished' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd61e47bf'/>
       <elf-symbol name='__traceiter_android_vh_rwsem_write_wait_start' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1c7a8b6c'/>
+      <elf-symbol name='__traceiter_android_vh_sched_pelt_multiplier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb77c8f2d'/>
       <elf-symbol name='__traceiter_android_vh_sched_setaffinity_early' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc702f38'/>
       <elf-symbol name='__traceiter_android_vh_sched_stat_runtime_rt' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc2f5714'/>
       <elf-symbol name='__traceiter_android_vh_scheduler_tick' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8c91de8f'/>
@@ -6259,6 +6260,7 @@
       <elf-symbol name='__tracepoint_android_vh_rwsem_wake_finish' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b369940'/>
       <elf-symbol name='__tracepoint_android_vh_rwsem_write_finished' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa15e744e'/>
       <elf-symbol name='__tracepoint_android_vh_rwsem_write_wait_start' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfe512d7a'/>
+      <elf-symbol name='__tracepoint_android_vh_sched_pelt_multiplier' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8363715e'/>
       <elf-symbol name='__tracepoint_android_vh_sched_setaffinity_early' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcec91b82'/>
       <elf-symbol name='__tracepoint_android_vh_sched_stat_runtime_rt' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdb1b2fe1'/>
       <elf-symbol name='__tracepoint_android_vh_scheduler_tick' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa3e74b24'/>
@@ -122307,6 +122309,13 @@
         <parameter type-id='9b58df93' name='sem' filepath='include/trace/hooks/dtask.h' line='44' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_sched_pelt_multiplier' mangled-name='__traceiter_android_vh_sched_pelt_multiplier' filepath='include/trace/hooks/sched.h' line='346' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_sched_pelt_multiplier'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/sched.h' line='346' column='1'/>
+        <parameter type-id='f0981eeb' name='old' filepath='include/trace/hooks/sched.h' line='346' column='1'/>
+        <parameter type-id='f0981eeb' name='cur' filepath='include/trace/hooks/sched.h' line='346' column='1'/>
+        <parameter type-id='7292109c' name='ret' filepath='include/trace/hooks/sched.h' line='346' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_sched_setaffinity_early' mangled-name='__traceiter_android_vh_sched_setaffinity_early' filepath='include/trace/hooks/sched.h' line='444' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_sched_setaffinity_early'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/sched.h' line='444' column='1'/>
         <parameter type-id='f23e2572' name='p' filepath='include/trace/hooks/sched.h' line='444' column='1'/>
@@ -123187,6 +123196,7 @@
       <var-decl name='__tracepoint_android_vh_rwsem_wake_finish' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_rwsem_wake_finish' visibility='default' filepath='include/trace/hooks/rwsem.h' line='29' column='1' elf-symbol-id='__tracepoint_android_vh_rwsem_wake_finish'/>
       <var-decl name='__tracepoint_android_vh_rwsem_write_finished' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_rwsem_write_finished' visibility='default' filepath='include/trace/hooks/rwsem.h' line='21' column='1' elf-symbol-id='__tracepoint_android_vh_rwsem_write_finished'/>
       <var-decl name='__tracepoint_android_vh_rwsem_write_wait_start' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_rwsem_write_wait_start' visibility='default' filepath='include/trace/hooks/dtask.h' line='44' column='1' elf-symbol-id='__tracepoint_android_vh_rwsem_write_wait_start'/>
+      <var-decl name='__tracepoint_android_vh_sched_pelt_multiplier' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_sched_pelt_multiplier' visibility='default' filepath='include/trace/hooks/sched.h' line='346' column='1' elf-symbol-id='__tracepoint_android_vh_sched_pelt_multiplier'/>
       <var-decl name='__tracepoint_android_vh_sched_setaffinity_early' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_sched_setaffinity_early' visibility='default' filepath='include/trace/hooks/sched.h' line='444' column='1' elf-symbol-id='__tracepoint_android_vh_sched_setaffinity_early'/>
       <var-decl name='__tracepoint_android_vh_sched_stat_runtime_rt' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_sched_stat_runtime_rt' visibility='default' filepath='include/trace/hooks/sched.h' line='391' column='1' elf-symbol-id='__tracepoint_android_vh_sched_stat_runtime_rt'/>
       <var-decl name='__tracepoint_android_vh_scheduler_tick' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_scheduler_tick' visibility='default' filepath='include/trace/hooks/sched.h' line='43' column='1' elf-symbol-id='__tracepoint_android_vh_scheduler_tick'/>
