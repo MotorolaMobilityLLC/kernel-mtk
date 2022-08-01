@@ -947,6 +947,7 @@
       <elf-symbol name='clk_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1140fc73'/>
       <elf-symbol name='clk_get_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x63150e06'/>
       <elf-symbol name='clk_get_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x556e4390'/>
+      <elf-symbol name='clk_get_sys' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xec4d9e3a'/>
       <elf-symbol name='clk_hw_get_flags' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x22413a18'/>
       <elf-symbol name='clk_hw_get_name' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x192ad1d2'/>
       <elf-symbol name='clk_hw_get_num_parents' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x76318081'/>
@@ -95097,7 +95098,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='4e13c9d9' size-in-bits='64' id='d064f511'/>
-      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/firmware_loader/../base.h' line='88' column='1' id='d066d157'>
+      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='88' column='1' id='d066d157'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='klist_children' type-id='6160a6ce' visibility='default' filepath='drivers/base/base.h' line='89' column='1'/>
         </data-member>
@@ -104686,7 +104687,7 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='61c46dd8' size-in-bits='64' id='e4372f12'/>
-      <class-decl name='driver_private' size-in-bits='1472' is-struct='yes' visibility='default' filepath='drivers/base/firmware_loader/../base.h' line='58' column='1' id='e44b8083'>
+      <class-decl name='driver_private' size-in-bits='1472' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='58' column='1' id='e44b8083'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='kobj' type-id='b6ab8849' visibility='default' filepath='drivers/base/base.h' line='59' column='1'/>
         </data-member>
@@ -125030,6 +125031,11 @@
       <function-decl name='clk_get_rate' mangled-name='clk_get_rate' filepath='drivers/clk/clk.c' line='1712' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_get_rate'>
         <parameter type-id='7d0bc0eb' name='clk' filepath='drivers/clk/clk.c' line='1712' column='1'/>
         <return type-id='7359adad'/>
+      </function-decl>
+      <function-decl name='clk_get_sys' mangled-name='clk_get_sys' filepath='drivers/clk/clkdev.c' line='94' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_get_sys'>
+        <parameter type-id='80f4b756' name='dev_id' filepath='drivers/clk/clkdev.c' line='94' column='1'/>
+        <parameter type-id='80f4b756' name='con_id' filepath='drivers/clk/clkdev.c' line='94' column='1'/>
+        <return type-id='7d0bc0eb'/>
       </function-decl>
       <function-decl name='clk_hw_get_flags' mangled-name='clk_hw_get_flags' filepath='drivers/clk/clk.c' line='505' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='clk_hw_get_flags'>
         <parameter type-id='9e6d4b4e' name='hw' filepath='drivers/clk/clk.c' line='505' column='1'/>
