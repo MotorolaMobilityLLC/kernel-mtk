@@ -670,6 +670,12 @@ static void slim_video_setting(void)
 	pr_debug("MOT DEVONF OV50A slim_video_setting end\n");
 }
 
+static void write_cross_talk_with_eeprom(void)
+{
+	mot_devonf_ov50a_table_write_cmos_sensor(addr_data_pair_xtalk_with_eeprom,
+		sizeof(addr_data_pair_xtalk_with_eeprom)/sizeof(kal_uint16));
+}
+
 static void custom1_setting(void)
 {
 	pr_debug("MOT DEVONF OV50A custom1_setting start\n");
@@ -977,6 +983,7 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 
 	if ((xtalk_data_valid == 1) && (pdc_data_valid == 1)) {
 		write_cross_talk_data();
+		write_cross_talk_with_eeprom();
 		write_pdc_data();
 	}
 	custom1_setting();
