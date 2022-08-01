@@ -401,7 +401,7 @@ int mtk_vcu_free_buffer(struct mtk_vcu_queue *vcu_queue,
 	if (num_buffers != 0U) {
 		for (buffer = 0; buffer < num_buffers; buffer++) {
 			vcu_buffer = &vcu_queue->bufs[buffer];
-			if (vcu_buffer->dbuf != NULL)
+			if (vcu_buffer->dbuf != NULL || vcu_buffer->mem_priv == NULL)
 				continue;
 			cook = vcu_queue->mem_ops->vaddr(vcu_buffer->mem_priv);
 			dma_addr = vcu_queue->mem_ops->cookie(vcu_buffer->mem_priv);
