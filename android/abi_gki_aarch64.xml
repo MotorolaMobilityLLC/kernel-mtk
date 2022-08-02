@@ -720,6 +720,10 @@
       <elf-symbol name='arc4_setkey' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2bb32ad1'/>
       <elf-symbol name='argv_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe0b13336'/>
       <elf-symbol name='argv_split' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7380dffa'/>
+      <elf-symbol name='arm_smccc_1_1_get_conduit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6d467b08'/>
+      <elf-symbol name='arm_smccc_1_2_hvc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xea1c3e3a'/>
+      <elf-symbol name='arm_smccc_1_2_smc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3e79fb00'/>
+      <elf-symbol name='arm_smccc_get_version' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe98f55f2'/>
       <elf-symbol name='async_schedule_node' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf5f370e0'/>
       <elf-symbol name='async_schedule_node_domain' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd21b61bd'/>
       <elf-symbol name='async_synchronize_cookie' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7a81541b'/>
@@ -1413,6 +1417,7 @@
       <elf-symbol name='device_link_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x33a519f2'/>
       <elf-symbol name='device_link_del' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x463f676b'/>
       <elf-symbol name='device_link_remove' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc3c6e9a9'/>
+      <elf-symbol name='device_match_any' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x32bc8eed'/>
       <elf-symbol name='device_match_fwnode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6bcff370'/>
       <elf-symbol name='device_match_name' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x24f929e0'/>
       <elf-symbol name='device_match_of_node' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbef4c81b'/>
@@ -52246,6 +52251,12 @@
         <parameter type-id='cfff5953'/>
         <return type-id='95e97e5e'/>
       </function-type>
+      <enum-decl name='arm_smccc_conduit' filepath='include/linux/arm-smccc.h' line='248' column='1' id='74a8da23'>
+        <underlying-type type-id='9cac1fee'/>
+        <enumerator name='SMCCC_CONDUIT_NONE' value='0'/>
+        <enumerator name='SMCCC_CONDUIT_SMC' value='1'/>
+        <enumerator name='SMCCC_CONDUIT_HVC' value='2'/>
+      </enum-decl>
       <class-decl name='ff_replay' size-in-bits='32' is-struct='yes' visibility='default' filepath='include/uapi/linux/input.h' line='306' column='1' id='74a8f9e9'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='length' type-id='d315442e' visibility='default' filepath='include/uapi/linux/input.h' line='307' column='1'/>
@@ -124009,6 +124020,12 @@
       </function-decl>
       <var-decl name='arm64_const_caps_ready' type-id='237c0d27' mangled-name='arm64_const_caps_ready' visibility='default' filepath='arch/arm64/kernel/cpufeature.c' line='145' column='1' elf-symbol-id='arm64_const_caps_ready'/>
       <var-decl name='arm64_use_ng_mappings' type-id='b50a4934' mangled-name='arm64_use_ng_mappings' visibility='default' filepath='arch/arm64/kernel/cpufeature.c' line='113' column='1' elf-symbol-id='arm64_use_ng_mappings'/>
+      <function-decl name='arm_smccc_1_1_get_conduit' mangled-name='arm_smccc_1_1_get_conduit' filepath='drivers/firmware/smccc/smccc.c' line='32' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='arm_smccc_1_1_get_conduit'>
+        <return type-id='74a8da23'/>
+      </function-decl>
+      <function-decl name='arm_smccc_get_version' mangled-name='arm_smccc_get_version' filepath='drivers/firmware/smccc/smccc.c' line='41' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='arm_smccc_get_version'>
+        <return type-id='19c2251e'/>
+      </function-decl>
       <var-decl name='arp_tbl' type-id='aebe1cff' mangled-name='arp_tbl' visibility='default' filepath='net/ipv4/arp.c' line='152' column='1' elf-symbol-id='arp_tbl'/>
       <function-decl name='async_schedule_node' mangled-name='async_schedule_node' filepath='kernel/async.c' line='228' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='async_schedule_node'>
         <parameter type-id='5c19cb0c' name='func' filepath='kernel/async.c' line='228' column='1'/>
@@ -127654,6 +127671,11 @@
         <parameter type-id='eaa32e2f' name='consumer' filepath='drivers/base/core.c' line='940' column='1'/>
         <parameter type-id='fa0b179b' name='supplier' filepath='drivers/base/core.c' line='940' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='device_match_any' mangled-name='device_match_any' filepath='drivers/base/core.c' line='4845' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='device_match_any'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/base/core.c' line='4845' column='1'/>
+        <parameter type-id='eaa32e2f' name='unused' filepath='drivers/base/core.c' line='4845' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='device_match_fwnode' mangled-name='device_match_fwnode' filepath='drivers/base/core.c' line='4827' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='device_match_fwnode'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/base/core.c' line='4827' column='1'/>
