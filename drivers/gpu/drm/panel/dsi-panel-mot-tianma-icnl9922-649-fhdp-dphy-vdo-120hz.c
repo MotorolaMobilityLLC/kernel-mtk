@@ -197,9 +197,15 @@ static int tianma_unprepare(struct drm_panel *panel)
 	pr_info("%s\n", __func__);
 	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
+	tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A);
 	tianma_dcs_write_seq_static(ctx, 0x28);
-	tianma_dcs_write_seq_static(ctx, 0x10);
-	msleep(120);
+	msleep(20);
+	tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00, 0x00);
+	msleep(100);
+	tianma_dcs_write_seq_static(ctx, 0xCC, 0x01, 0x00, 0x00);
+	msleep(10);
 
 	if(tp_gesture_flag == 0)
 	{
@@ -209,7 +215,7 @@ static int tianma_unprepare(struct drm_panel *panel)
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return -1;
 	}
-	gpiod_set_value(ctx->reset_gpio, 0);
+	gpiod_set_value(ctx->reset_gpio, 1);
 	msleep(5);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
