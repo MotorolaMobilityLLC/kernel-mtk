@@ -975,8 +975,13 @@ int force_get_tbat_internal(struct mtk_battery *gm, bool update)
 
 			gm->ibat = fg_current_temp;
 
-			if (fg_current_temp > 0)
-				fg_current_state = true;
+                        if (gm->fg_current_pn_label == 1) {
+                            if (fg_current_temp < 0)
+                                fg_current_state = true;
+                        } else {
+                            if (fg_current_temp > 0)
+                                fg_current_state = true;
+                        }
 
 			fg_current_temp = abs(fg_current_temp) / 10;
 
@@ -1559,7 +1564,7 @@ void fg_custom_init_from_header(struct mtk_battery *gm)
 	gm->rbat.rbat_pull_up_r = RBAT_PULL_UP_R;
 	gm->rbat.rbat_pull_up_volt = RBAT_PULL_UP_VOLT;
 	gm->rbat.bif_ntc_r = BIF_NTC_R;
-
+	gm->fg_current_pn_label = 0;
 	if (IS_ENABLED(BAT_NTC_47)) {
 		gm->rbat.type = 47;
 		gm->rbat.rbat_pull_up_r = RBAT_PULL_UP_R;
@@ -1794,7 +1799,8 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 		&(fg_cust_data->full_tracking_bat_int2_multiply), 1);
 	fg_read_dts_val(np, "enable_tmp_intr_suspend",
 		&(gm->enable_tmp_intr_suspend), 1);
-
+	fg_read_dts_val(np, "FG_CURRENT_PN_LABEL",
+		&(gm->fg_current_pn_label), 1);
 	/* Aging Compensation */
 	fg_read_dts_val(np, "AGING_ONE_EN", &(fg_cust_data->aging_one_en), 1);
 	fg_read_dts_val(np, "AGING1_UPDATE_SOC",

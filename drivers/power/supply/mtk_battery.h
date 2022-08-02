@@ -1091,6 +1091,7 @@ struct mtk_battery {
 	/* battery temperature table */
 	int no_bat_temp_compensate;
 	int enable_tmp_intr_suspend;
+	int fg_current_pn_label;
 	struct battery_temperature_table rbat;
 	struct fg_temp *tmp_table;
 
