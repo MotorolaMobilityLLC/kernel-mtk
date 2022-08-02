@@ -202,7 +202,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		&& (info->chr_type == POWER_SUPPLY_TYPE_USB ||
 		info->chr_type == POWER_SUPPLY_TYPE_USB_CDP)
 		) {
-		pdata->input_current_limit = 100000; /* 100mA */
+		//pdata->input_current_limit = 100000; /* 100mA */
 		is_basic = true;
 		goto done;
 	}
