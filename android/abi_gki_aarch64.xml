@@ -4668,6 +4668,7 @@
       <elf-symbol name='skb_recv_datagram' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c6dc244'/>
       <elf-symbol name='skb_scrub_packet' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf57ebe92'/>
       <elf-symbol name='skb_set_owner_w' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x58fb411e'/>
+      <elf-symbol name='skb_split' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xde58f748'/>
       <elf-symbol name='skb_store_bits' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x87132d1c'/>
       <elf-symbol name='skb_to_sgvec' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x815c2990'/>
       <elf-symbol name='skb_to_sgvec_nomark' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3a2bb392'/>
@@ -5234,6 +5235,7 @@
       <elf-symbol name='ttm_sg_tt_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xef7903db'/>
       <elf-symbol name='ttm_tt_destroy_common' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9bc1b8be'/>
       <elf-symbol name='ttm_tt_fini' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa0d0bf20'/>
+      <elf-symbol name='tty_chars_in_buffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5bfcf7fb'/>
       <elf-symbol name='tty_driver_flush_buffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x773414b4'/>
       <elf-symbol name='tty_driver_kref_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xef0763e'/>
       <elf-symbol name='tty_flip_buffer_push' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf0104123'/>
@@ -5258,6 +5260,7 @@
       <elf-symbol name='tty_register_driver' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdc776357'/>
       <elf-symbol name='tty_register_ldisc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9f914690'/>
       <elf-symbol name='tty_schedule_flip' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce7cfac2'/>
+      <elf-symbol name='tty_set_termios' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2c46e2d2'/>
       <elf-symbol name='tty_standard_install' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf6654453'/>
       <elf-symbol name='tty_termios_baud_rate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x409873e3'/>
       <elf-symbol name='tty_termios_copy_hw' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x30e74134'/>
@@ -5268,6 +5271,7 @@
       <elf-symbol name='tty_unthrottle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x46cd912a'/>
       <elf-symbol name='tty_vhangup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7af43cbc'/>
       <elf-symbol name='tty_wakeup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5210bb85'/>
+      <elf-symbol name='tty_write_room' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc126b487'/>
       <elf-symbol name='typec_altmode2port' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf2f37115'/>
       <elf-symbol name='typec_altmode_attention' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x971396e2'/>
       <elf-symbol name='typec_altmode_enter' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeb171e01'/>
@@ -144539,6 +144543,12 @@
         <parameter type-id='f772df6d' name='sk' filepath='net/core/sock.c' line='2234' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='skb_split' mangled-name='skb_split' filepath='net/core/skbuff.c' line='3466' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_split'>
+        <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='3466' column='1'/>
+        <parameter type-id='0fbf3cfd' name='skb1' filepath='net/core/skbuff.c' line='3466' column='1'/>
+        <parameter type-id='51bb592e' name='len' filepath='net/core/skbuff.c' line='3466' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='skb_store_bits' mangled-name='skb_store_bits' filepath='net/core/skbuff.c' line='2754' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='skb_store_bits'>
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='2754' column='1'/>
         <parameter type-id='95e97e5e' name='offset' filepath='net/core/skbuff.c' line='2754' column='1'/>
@@ -147570,6 +147580,10 @@
         <parameter type-id='c21baddd' name='ttm' filepath='drivers/gpu/drm/ttm/ttm_tt.c' line='168' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='tty_chars_in_buffer' mangled-name='tty_chars_in_buffer' filepath='drivers/tty/tty_ioctl.c' line='57' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tty_chars_in_buffer'>
+        <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_ioctl.c' line='57' column='1'/>
+        <return type-id='f0981eeb'/>
+      </function-decl>
       <function-decl name='tty_driver_flush_buffer' mangled-name='tty_driver_flush_buffer' filepath='drivers/tty/tty_ioctl.c' line='92' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tty_driver_flush_buffer'>
         <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_ioctl.c' line='92' column='1'/>
         <return type-id='48b5725f'/>
@@ -147684,6 +147698,11 @@
         <parameter type-id='ec77b5b8' name='port' filepath='drivers/tty/tty_buffer.c' line='413' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='tty_set_termios' mangled-name='tty_set_termios' filepath='drivers/tty/tty_ioctl.c' line='338' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tty_set_termios'>
+        <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_ioctl.c' line='338' column='1'/>
+        <parameter type-id='e55856e5' name='new_termios' filepath='drivers/tty/tty_ioctl.c' line='338' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='tty_standard_install' mangled-name='tty_standard_install' filepath='drivers/tty/tty_io.c' line='1290' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tty_standard_install'>
         <parameter type-id='c2b4b27b' name='driver' filepath='drivers/tty/tty_io.c' line='1290' column='1'/>
         <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_io.c' line='1290' column='1'/>
@@ -147729,6 +147748,10 @@
       <function-decl name='tty_wakeup' mangled-name='tty_wakeup' filepath='drivers/tty/tty_io.c' line='526' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tty_wakeup'>
         <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_io.c' line='526' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='tty_write_room' mangled-name='tty_write_room' filepath='drivers/tty/tty_ioctl.c' line='76' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='tty_write_room'>
+        <parameter type-id='572fbdca' name='tty' filepath='drivers/tty/tty_ioctl.c' line='76' column='1'/>
+        <return type-id='f0981eeb'/>
       </function-decl>
       <function-decl name='typec_altmode2port' mangled-name='typec_altmode2port' filepath='drivers/usb/typec/class.c' line='317' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='typec_altmode2port'>
         <parameter type-id='02913b69' name='alt' filepath='drivers/usb/typec/class.c' line='317' column='1'/>
