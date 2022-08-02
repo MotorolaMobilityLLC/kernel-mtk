@@ -194,6 +194,8 @@ static int tongxingda_unprepare(struct drm_panel *panel)
 	tongxingda_dcs_write_seq_static(ctx, 0x28);
 	tongxingda_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
+	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x00);
+	tongxingda_dcs_write_seq_static(ctx, 0xF7, 0x5A, 0xA5, 0x95, 0x27);
 
 	if(tp_gesture_flag == 0)
 	{
@@ -203,7 +205,7 @@ static int tongxingda_unprepare(struct drm_panel *panel)
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return -1;
 	}
-	gpiod_set_value(ctx->reset_gpio, 0);
+	gpiod_set_value(ctx->reset_gpio, 1);
 	msleep(5);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
