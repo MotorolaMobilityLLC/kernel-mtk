@@ -268,6 +268,8 @@
         charger_2nd = <&sgm41543d_charger>;
 
 	CAR_TUNE_VALUE = <(100)>;
+	COM_FG_METER_RESISTANCE = <(80)>;
+	FG_CURRENT_PN_LABEL = <(1)>;
 	DIFFERENCE_FULLOCV_ITH = <(243)>;
 	g_Q_MAX_row = <4>;
 	g_Q_MAX_col = <10>;
