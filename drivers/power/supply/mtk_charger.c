@@ -2267,7 +2267,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		chr_err("register psy2 fail:%d\n",
 			PTR_ERR(info->psy2));
 
-	info->log_level = CHRLOG_DEBUG_LEVEL;
+	info->log_level = CHRLOG_ERROR_LEVEL;
 
 	info->pd_adapter = get_adapter_by_name("pd_adapter");
 	if (!info->pd_adapter)
