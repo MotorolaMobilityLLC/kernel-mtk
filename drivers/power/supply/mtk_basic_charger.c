@@ -144,6 +144,11 @@ static bool support_fast_charging(struct mtk_charger *info)
 	int i = 0, state = 0;
 	bool ret = false;
 
+	if(info->chr_type != POWER_SUPPLY_TYPE_USB_DCP){
+		chr_err("%s: chr_type is not DCP so no need check fast charging\n", __func__);
+		return ret;
+	}
+
 	for (i = 0; i < MAX_ALG_NO; i++) {
 		alg = info->alg[i];
 		if (alg == NULL)
@@ -222,7 +227,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			info->data.charging_host_charger_current;
 		if (info->sw_jeita.sm == TEMP_T0_TO_T1){
 			pdata->charging_current_limit = 1170000;
-			chr_err("jeita: cdp charging current limit 1100ma 0.3c\n");
+			chr_err("jeita: cdp charging current limit 1170ma\n");
 		}
 		is_basic = true;
 
@@ -238,7 +243,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 		if (info->sw_jeita.sm == TEMP_T0_TO_T1){
 			pdata->charging_current_limit = 1170000;
-			chr_err("jeita: dcp charging current limit 1100ma 0.3c\n");
+			chr_err("jeita: dcp charging current limit 1170ma\n");
 		}
 	} else if (info->chr_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
 		/* NONSTANDARD_CHARGER */
