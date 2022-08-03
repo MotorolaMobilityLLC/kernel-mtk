@@ -756,7 +756,7 @@ static int aw883xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 	} else {
 		aw883xx->pstream = AW883XX_STREAM_OPEN;
 		mutex_lock(&aw883xx->lock);
-		aw883xx_start(aw883xx, AW_ASYNC_START);
+		aw883xx_start(aw883xx, AW_SYNC_START);
 		aw883xx_hold_dsp_spin_st(&aw883xx->aw_pa->spin_desc);
 		mutex_unlock(&aw883xx->lock);
 	}
