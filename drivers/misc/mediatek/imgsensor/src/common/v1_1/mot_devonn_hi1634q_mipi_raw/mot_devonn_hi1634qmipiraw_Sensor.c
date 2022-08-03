@@ -165,7 +165,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.slim_video_delay_frame = 1,	/* enter slim video delay frame num */
 	.frame_time_delay_frame = 2,
 
-	.isp_driving_current = ISP_DRIVING_8MA, //ISP_DRIVING_6MA,
+	.isp_driving_current = ISP_DRIVING_6MA, //ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_CSI2,//MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
@@ -1653,16 +1653,16 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	pr_debug("set_test_pattern_mode enable not : %d", enable);
 
-	/*if (enable) {
-		write_cmos_sensor(0x0b04, 0x0095);
-		write_cmos_sensor(0x0C0a, 0x0204);
+	if (enable) {
+		write_cmos_sensor(0x0B04, 0x009D);
+		write_cmos_sensor(0x0C0A, 0x0100);
 	} else {
-		write_cmos_sensor(0x0b04, 0x0094);
-		write_cmos_sensor(0x0C0a, 0x0000);
+		write_cmos_sensor(0x0B04, 0x009C);
+		write_cmos_sensor(0x0C0A, 0x0000);
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
-	spin_unlock(&imgsensor_drv_lock);*/
+	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
 
