@@ -130,7 +130,10 @@ static void tianma_panel_init(struct tianma *ctx)
 	}
     else {
         dev_info(ctx->dev, "disp:%s: reset_gpio:0x%x\n", __func__, ctx->reset_gpio);
-	    //gpiod_set_value(ctx->reset_gpio, 1);
+	    mdelay (5);
+	    gpiod_set_value(ctx->reset_gpio, 0);
+	    mdelay (10);
+	    gpiod_set_value(ctx->reset_gpio, 1);
 	    mdelay (5);
 	    gpiod_set_value(ctx->reset_gpio, 0);
 	    mdelay (10);
@@ -226,9 +229,16 @@ static int tianma_unprepare(struct drm_panel *panel)
 		//return -1;
 	}
     else {
+	#ifdef IOVCC_IS_LOW
 	    gpiod_set_value(ctx->reset_gpio, 0);
 	    msleep(5);
 	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	#else
+	   //reset keep high
+	    gpiod_set_value(ctx->reset_gpio, 1);
+	    msleep(5);
+	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+		#endif
     }
 
 	printk("[%d %s]bias\n",__LINE__, __FUNCTION__);
@@ -257,18 +267,6 @@ static int tianma_prepare(struct drm_panel *panel)
 	pr_info("%s+\n", __func__);
 	if (ctx->prepared)
 		return 0;
-
-	//lcm_power_enable();
-
-	// lcd reset H -> L -> L
-	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(10000, 10001);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(20);
-
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	// end
 
 	ctx->bias_pos =
 		devm_gpiod_get_index(ctx->dev, "bias", 0, GPIOD_OUT_HIGH);
