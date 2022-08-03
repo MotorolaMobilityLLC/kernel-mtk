@@ -519,6 +519,10 @@ static void imgsensor_init_sensor_list(void)
 	}
 }
 
+#ifdef CONFIG_MOT_DEVONF_CAMERA_PROJECT
+bool devonf_vcamio_reset = false;
+#endif
+
 /******************************************************************************
  * imgsensor_check_is_alive
  ******************************************************************************/
@@ -551,6 +555,12 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 		PK_DBG("Sensor found ID = 0x%x\n", sensorID);
 		err = ERROR_NONE;
 	}
+
+#ifdef CONFIG_MOT_DEVONF_CAMERA_PROJECT
+	if (psensor->inst.sensor_idx == 0) {
+		devonf_vcamio_reset = true;
+	}
+#endif
 
 	imgsensor_hw_power(&pimgsensor->hw,
 			psensor,

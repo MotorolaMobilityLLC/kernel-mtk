@@ -27,6 +27,11 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcamio_0"},
 };
 
+#ifdef CONFIG_MOT_DEVONF_CAMERA_PROJECT
+extern bool devonf_vcamio_reset;
+static int vcamio_cnt = 0;
+#endif
+
 /* for mipi switch platform */
 struct GPIO_PINCTRL gpio_pinctrl_list_switch[
 			GPIO_CTRL_STATE_MAX_NUM_SWITCH] = {
@@ -176,6 +181,16 @@ static enum IMGSENSOR_RETURN gpio_set(
 		pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH)
 		return IMGSENSOR_RETURN_ERROR;
 
+#ifdef CONFIG_MOT_DEVONF_CAMERA_PROJECT
+	if (pin == IMGSENSOR_HW_PIN_DOVDD) {
+		if (pin_state == IMGSENSOR_HW_PIN_STATE_LEVEL_0) {
+			vcamio_cnt--;
+		} else {
+			vcamio_cnt++;
+		}
+	}
+#endif
+
 	sensor_idx_uint = sensor_idx;
 
 	gpio_state = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0)
@@ -193,6 +208,18 @@ static enum IMGSENSOR_RETURN gpio_set(
 		ppinctrl_state =
 			pgpio->ppinctrl_state_cam[sensor_idx_uint][
 			(pin_index << 1) + gpio_state];
+
+#ifdef CONFIG_MOT_DEVONF_CAMERA_PROJECT
+	if ((pin == IMGSENSOR_HW_PIN_DOVDD) && (pin_state == IMGSENSOR_HW_PIN_STATE_LEVEL_0)) {
+		if (devonf_vcamio_reset == true) {
+			vcamio_cnt = 0;
+			devonf_vcamio_reset = false;
+		}
+		if (vcamio_cnt > 0) {
+			return IMGSENSOR_RETURN_SUCCESS;
+		}
+	}
+#endif
 
 	mutex_lock(pgpio->pgpio_mutex);
 
