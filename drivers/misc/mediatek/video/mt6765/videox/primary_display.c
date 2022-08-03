@@ -2321,7 +2321,7 @@ static int _DC_switch_to_DL_fast(int block)
 	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
-	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	new_scenario = DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP;
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle,
 		new_scenario, 0);
@@ -2429,7 +2429,7 @@ static int _DC_switch_to_DL_sw_only(void)
 	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
-	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	new_scenario = DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP;
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle,
 		new_scenario, 1);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario,
@@ -2556,7 +2556,7 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 	}
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
-	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
+	new_scenario = DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP;
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle,
 		new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -2746,7 +2746,7 @@ static int _build_path_direct_link(void)
 	DISPFUNC();
 	pgc->mode = DIRECT_LINK_MODE;
 
-	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_PRIMARY_DISP,
+	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP,
 		pgc->cmdq_handle_config);
 	if (pgc->dpmgr_handle) {
 		DISPDBG("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
@@ -3761,7 +3761,7 @@ static int update_primary_intferface_module(void)
 	enum DISP_MODULE_ENUM interface_module;
 
 	interface_module = _get_dst_module_by_lcm(pgc->plcm);
-	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, interface_module);
+	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP, interface_module);
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP,
 		interface_module);
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_RDMA0_DISP, interface_module);
