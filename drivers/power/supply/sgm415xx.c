@@ -1596,11 +1596,7 @@ static void sgm4154x_rerun_apsd_work_func(struct work_struct *work)
 		dev_err(sgm->dev, "Vbus not present, disable charge\n");
                 return;
 	}
-	
-	if (sgm->state.chrg_type == SGM4154x_USB_DCP) {
-		pr_err("Detect DCP type, don't need to rerun apsd\n");
-		goto out;
-	}
+
         sgm->typec_apsd_rerun_done = true;
 
         sgm4154x_rerun_apsd(sgm);
@@ -1614,7 +1610,7 @@ static void sgm4154x_rerun_apsd_work_func(struct work_struct *work)
                 msleep(100);
                 check_count ++;
         }
-out:
+
 	schedule_delayed_work(&sgm->charge_detect_delayed_work, 100);
 }
 
