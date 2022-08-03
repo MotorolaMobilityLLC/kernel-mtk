@@ -61,7 +61,7 @@
 #include "mtk_charger_algorithm_class.h"
 
 
-static int pe2_dbg_level = PE2_DEBUG_LEVEL;
+static int pe2_dbg_level = PE2_ERROR_LEVEL;
 
 int pe2_get_debug_level(void)
 {
