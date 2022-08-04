@@ -1,5 +1,6 @@
 source "drivers/misc/mediatek/Kconfig.default"
 source "drivers/misc/mediatek/usb20/Kconfig"
+source "drivers/misc/mediatek/usb20_v2/Kconfig"
 source "drivers/misc/mediatek/cqdma/Kconfig"
 
 config MTK_PLATFORM
