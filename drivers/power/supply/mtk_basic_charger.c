@@ -307,6 +307,9 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 				    chr_err("it is HVDCP set sgm 3A  m_chg_type = %d\n",m_chg_type);
 			    }
 			}
+			if(m_chg_type == 0x09){
+			    pdata->input_current_limit = 2500000;
+			}
 		}
 #endif
 
