@@ -68,6 +68,36 @@ struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+static u16 swtp_gpio_pin = 0;
+static ssize_t swtp_gpio_state_show(struct class *class,
+		struct class_attribute *attr,
+		char *buf)
+{
+	int ret;
+	ret = gpio_get_value_cansleep(swtp_gpio_pin);
+	//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpio:%d\n", __func__, ret, swtp_gpio_pin);
+	return sprintf(buf, "%d\n", ret);
+}
+
+static CLASS_ATTR_RO(swtp_gpio_state);
+
+static struct class swtp_class[] = {
+    {
+        .name    = "swtp",
+        .owner   = THIS_MODULE,
+    },
+    {
+        .name    = "swtp1",
+        .owner   = THIS_MODULE,
+    },
+    {
+        .name    = "swtp2",
+        .owner   = THIS_MODULE,
+    }
+};
+#endif
+
 static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
@@ -133,7 +163,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 #else
 	swtp->tx_power_mode = SWTP_NO_TX_POWER;
 #endif
-#if defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+#if defined(CONFIG_MOTO_DEVONN_SWTP_CUST)
 	// modify by wt.liangnengjie for swtp start
 	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
 		swtp->tx_power_mode = SWTP_DO_TX_POWER;
@@ -337,6 +367,14 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				swtp_data[md_id].setdebounce[i]);
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
+
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+			if(swtp_data[md_id].gpiopin[i] != 0){
+				swtp_gpio_pin = swtp_data[md_id].gpiopin[i];
+				ret = class_register(&swtp_class[i]);
+				ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state);
+			}
+#endif
 
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
