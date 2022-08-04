@@ -879,6 +879,7 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 		}
 		m_chg_type = 0;
 		wait_count = 0;
+		early_chg_type = 0;
 		while((!m_chg_type)&&(wait_count<30)){
 			msleep(30);
 			wait_count++;
@@ -913,8 +914,13 @@ void wt6670f_get_charger_type_func_work(struct work_struct *work)
 
 			wait_count = 0;
 			while((m_chg_type != 0xff)&&(wait_count<30)){
-					msleep(100);
-					wait_count++;
+				msleep(100);
+				wait_count++;
+				early_chg_type = wt6670f_get_protocol();
+				if(early_chg_type == 0x06 || early_chg_type == 0x09){
+					pr_err("[%s] z350 early type is QC3+/QC3: %d, skip detecting\n",__func__, early_chg_type);
+					break;
+				}
 			}
 			m_chg_type = wt6670f_get_protocol();
 		}
