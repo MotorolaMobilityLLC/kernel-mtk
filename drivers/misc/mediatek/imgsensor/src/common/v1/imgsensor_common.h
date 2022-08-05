@@ -9,7 +9,9 @@
 
 #define PREFIX "[imgsensor]"
 
+#ifndef CONFIG_MACH_MT6768
 #define pr_fmt(fmt) PREFIX "[%s] " fmt, __func__
+#endif
 
 #include "kd_camera_feature.h"
 #include "kd_imgsensor_define.h"
