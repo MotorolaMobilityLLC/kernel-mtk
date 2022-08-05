@@ -298,14 +298,13 @@ static int unregister_gadget(struct gadget_info *gi)
 
 	pr_info("%s\n", __func__);
 
-	gi->unbinding = true;
-
 	if (gi->secure) {
 		kfree(gi->composite.gadget_driver.udc_name);
 		gi->composite.gadget_driver.udc_name = NULL;
 		return 0;
 	}
 
+	gi->unbinding = true;
 	ret = usb_gadget_unregister_driver(&gi->composite.gadget_driver);
 	if (ret) {
 		pr_err("unregister gadget failed, ret = %d\n", ret);
