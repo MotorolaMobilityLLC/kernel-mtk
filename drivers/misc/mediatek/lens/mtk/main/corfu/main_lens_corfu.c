@@ -40,6 +40,8 @@
 #include <linux/ktime.h>
 /* ------------------------- */
 
+#include <linux/pinctrl/consumer.h>
+
 #include "lens_info.h"
 #include "lens_list.h"
 
