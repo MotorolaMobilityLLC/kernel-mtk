@@ -33,8 +33,8 @@ ifeq ($(CONFIG_MACH_MT6779), y)
   ccflags-y += -I$(srctree)/drivers/misc/mediatek/timer/timesync/
 endif
 
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/dw9781
 
 ifeq ($(CONFIG_ARCH_MOTO_PROJECT),"corfu")
 obj-y += corfu/

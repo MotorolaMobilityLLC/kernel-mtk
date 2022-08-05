@@ -21,9 +21,9 @@
 MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/common
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/dw9781
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/common
 
 MAIN_CFILES  += dw9781/dw9781.c
 MAIN_CFILES  += dw9781/dw9781_circle_test.c

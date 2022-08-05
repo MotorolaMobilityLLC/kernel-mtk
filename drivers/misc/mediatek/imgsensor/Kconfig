@@ -8,3 +8,9 @@ config MTK_IMGSENSOR
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
 source "drivers/misc/mediatek/imgsensor/src/Kconfig"
+
+config ARCH_MOTO_PROJECT
+	string CONFIG_ARCH_MOTO_PROJECT
+	help
+	  CONFIG_ARCH_MOTO_PROJECT
+

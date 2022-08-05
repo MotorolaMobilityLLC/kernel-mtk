@@ -20,8 +20,8 @@ ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 
 MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/inc
-subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/ois/dw9781
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/inc
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/ois/dw9781
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/sub/inc
 
