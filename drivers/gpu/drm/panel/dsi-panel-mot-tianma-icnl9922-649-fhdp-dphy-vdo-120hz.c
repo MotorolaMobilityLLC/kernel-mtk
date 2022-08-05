@@ -147,11 +147,12 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx, 0x51, 0x0C,0xCC);//max 0x0F,0xFF
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
-	tianma_dcs_write_seq_static(ctx, 0x35, 0x00);
-	tianma_dcs_write_seq_static(ctx, 0x11, 0x00);
+	tianma_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
+	tianma_dcs_write_seq_static(ctx, 0x11, 0x00, 0x00);
 	msleep(120);
-	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
+	tianma_dcs_write_seq_static(ctx, 0x29, 0x00, 0x00);
 	msleep(20);
+	tianma_dcs_write_seq_static(ctx, 0xAC, 0x05, 0x00);
 
 }
 
@@ -199,13 +200,12 @@ static int tianma_unprepare(struct drm_panel *panel)
 
 	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
 	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
-	tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A);
-	tianma_dcs_write_seq_static(ctx, 0x28);
+	tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A, 0x00);
+	tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
 	msleep(20);
-	tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00, 0x00);
-	msleep(100);
-	tianma_dcs_write_seq_static(ctx, 0xCC, 0x01, 0x00, 0x00);
-	msleep(10);
+	tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
+	msleep(120);
+	tianma_dcs_write_seq_static(ctx, 0xCC, 0x01, 0x00);
 
 	if(tp_gesture_flag == 0)
 	{
