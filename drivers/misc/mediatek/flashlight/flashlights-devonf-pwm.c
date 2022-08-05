@@ -250,13 +250,19 @@ static int devonf_flashlight_set_pwm(int pwm_num, u32 flash_current, u32 flash_m
  * devonf pwm-flashlight operations
  *****************************************************************************/
 static const u32 devonf_torch_current[DEVONF_LEVEL_NUM] = {
-    10, 30, 50, 70, 80, 90, 100, 0, 0, 0, 0, 0, 0, 0,
+    10, 30, 50, 70, 90, 100, 115, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static const u32 devonf_flash_current[DEVONF_LEVEL_NUM] = {
-    10, 30, 50, 70, 80 , 90 , 100, 150, 200, 250, 300,
+    10, 30, 50, 70, 90, 100, 115, 150, 200, 250, 300,
     350, 400, 450, 500, 550, 600, 650, 700, 750, 800,
     850, 900, 950, 1000, 1100};
+
+static void os_mdelay(unsigned long ms)
+{
+    unsigned long us = ms*1000;
+    usleep_range(us, us+2000);
+}
 
 static int devonf_is_torch(int level)
 {
@@ -307,7 +313,7 @@ static int devonf_enable(struct devonf_flash_operation_data *fl_opdata)
     case DEVONF_FLASH_OP_FIRELOW:
         devonf_pinctrl_set(DEVONF_PINCTRL_PIN_GPIO, DEVONF_PINCTRL_PINSTATE_LOW);
         devonf_pinctrl_set(DEVONF_PINCTRL_PIN_PWM, DEVONF_PINCTRL_PINSTATE_HIGH);
-        msleep(6);
+        os_mdelay(6);
         devonf_pinctrl_set(DEVONF_PINCTRL_PIN_PWM_EN, DEVONF_PINCTRL_PINSTATE_HIGH);
         devonf_flashlight_set_pwm(DEVONF_PWM_NUMBER, flash_current, FLASH_FIRE_LOW_MAXCURRENT);
         break;
