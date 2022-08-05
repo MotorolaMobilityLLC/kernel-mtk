@@ -18,6 +18,8 @@
 		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
 		novatek,reset-gpio = <&pio 3 0x00>;
 		novatek,irq-gpio = <&pio 22 0x2001>;
+		novatek,usb_charger;
+		novatek,psy-name = "battery";
 
 		// 525
 		//novatek,swrst-n8-addr = <0x01F01A>;
