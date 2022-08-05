@@ -19,7 +19,7 @@
 #endif
 #include <mt-plat/mtk_boot.h>
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/charger_type.h>
+#include <mt-plat/v1/charger_type.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
 #include "bq25601.h"
