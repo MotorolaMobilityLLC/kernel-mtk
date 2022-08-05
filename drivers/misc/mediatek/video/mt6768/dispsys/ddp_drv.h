@@ -52,7 +52,8 @@ struct DISP_EXEC_COMMAND {
 #define SKIN_TONE_SIZE 8	/* (-6) */
 #define GRASS_TONE_SIZE 6	/* (-2) */
 #define SKY_TONE_SIZE 3
-#define CCORR_COEF_CNT 4 /* ccorr feature */
+// MMI_STOPSHIP <Kernel>: commented for k419 bringup
+//#define CCORR_COEF_CNT 4 /* ccorr feature */
 
 
 
