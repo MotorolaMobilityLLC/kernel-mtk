@@ -11,14 +11,27 @@
  * GNU General Public License for more details.
  */
 
+&lk_charger {
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <1500000>;
+	ac_charger_input_current = <1500000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_input_current = <1500000>;
+	charging_host_charger_current = <1000000>;
+
+	temp_t4_threshold = <60>;
+};
+
 &charger {
 	/* common */
+        boot_battery_voltage = <3600000>;
 	battery_cv = <4480000>;
 	max_charger_voltage = <14500000>;
 	min_charger_voltage = <4600000>;
 
-	/*pe5 && pdc && pe2 && wlc*/
-	fast_charging_indicator = <0x36>;
+	/*pe5 && pdc && pe2*/
+	fast_charging_indicator = <0x16>;
 	/*swchg + 1CP*/
 	charger_configuration= <3>;
 
@@ -52,9 +65,9 @@
 			<45 4510 765>,
 			<60 4200 250>;
 	mmi,enable-charging-limit;
-	mmi,upper-limit-capacity = <65>;
-	mmi,lower-limit-capacity = <60>;
-	//enable_cp;
+	mmi,upper-limit-capacity = <70>;
+	mmi,lower-limit-capacity = <65>;
+	mmi,min-cp-therm-current-ua = <1600000>;
 };
 
 
@@ -69,11 +82,10 @@
 
 &mt6375_typec {
 	pd-data {
-
+		/* 5V, 900ma */
 		pd,source-pdo-data = <0x0001905a>;
-
+		/* 5V, 3A */
 		pd,sink-pdo-size = <2>;
-		//pd,sink-pdo-data = <0x0002D0C8 0x0002D0C8> ;
                 pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
 	};
 };
@@ -206,135 +218,7 @@
 	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
 };
 
-/*
-&pio {
-	bq2597x_int_default: bq2597x_int_default {
-		pinmux = <PINMUX_GPIO2__FUNC_GPIO2>;
-		slew-rate= <0>;
-		bias-disable;
-	};
-};
-*/
 
-/*
-&odm {
-	mmi_chrg_manager {
-		compatible = "mmi,chrg-manager";
-		mmi,pps-volt-steps = <20000>;
-		mmi,pps-curr-steps = <100000>;
-		mmi,pd-volt-max = <10000000>;
-		mmi,pd-curr-max = <3000000>;
-		mmi,batt-curr-boost = <300000>;
-		mmi,batt-ovp-lmt = <4550000>;
-		mmi,pl-chrg-vbatt-min = <3600000>;
-		mmi,typec-middle-current = <1500000>;
-		mmi,step-first-current-comp = <0>;
-		mmi,dont-rerun-aicl;
-		mmi,chrg-temp-zones-num = <5>;
-		mmi,mmi-chrg-temp-zones =
-					<0 4200 1000  0 0>,
-					<10 4200 2500 4450 1000>,
-					<15 4450 2500 0 0>,
-					<45 4250 5800 4450 4000>,
-					<60 4200 3600 0 0>;
-		mmi,thermal-mitigation =
-					<5800000>,
-					<5000000>,
-					<4000000>,
-					<3000000>,
-					<2000000>;
-		charger_device_0 {
-			chrg-name = "pmic-sw";
-			psy-name = "battery";
-			charging-curr-limited = <1000000>;
-		};
-		charger_device_1 {
-			chrg-name = "cp-master";
-			psy-name = "bq2597x-standalone";
-			charging-curr-min = <2000000>;
-		};
-	};
-};
-*/
-
-/*
-&i2c9 {
-        status = "okay";
-
-        bq2597x-standalone@66 {
-                compatible = "ti,bq2597x-standalone";
-                reg = <0x66>;
-
-                /delete-property/ interrupts;
-                interrupt-parent = <&pio>;
-                interrupts = <2 IRQ_TYPE_EDGE_FALLING 2 0>;
-                interrupt-names = "bq2597x_irq";
-                pinctrl-names = "default";
-                pinctrl-0 = <&bq2597x_int_default>;
-                ti,bq2597x,bat-ovp-disable;
-                ti,bq2597x,bat-ovp-alarm-disable;
-                ti,bq2597x,bat-ucp-alarm-disable;
-                ti,bq2597x,bat-ocp-disable;
-                ti,bq2597x,bat-ocp-alarm-disable;
-
-                ti,bq2597x,bat-ucp-disable;
-
-                ti,bq2597x,bus-ovp-alarm-disable;
-                ti,bq2597x,bus-ocp-disable;
-                ti,bq2597x,bus-ocp-alarm-disable;
-
-
-                ti,bq2597x,bat-therm-disable;
-                ti,bq2597x,bus-therm-disable;
-                ti,bq2597x,die-therm-disable;
-
-                ti,bq2597x,bat-ovp-threshold = <4575>;
-                ti,bq2597x,bat-ovp-alarm-threshold = <4450>;
-                ti,bq2597x,bat-ocp-threshold = <8000>;
-                ti,bq2597x,bat-ocp-alarm-threshold = <6500>;
-
-                ti,bq2597x,bus-ovp-threshold = <12000>;
-                ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
-                ti,bq2597x,bus-ocp-threshold = <3750>;
-                ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
-
-                ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
-
-                ti,bq2597x,bat-therm-threshold = <0x15>;
-                ti,bq2597x,bus-therm-threshold = <0x15>;
-                ti,bq2597x,die-therm-threshold = <125>;
-
-                ti,bq2597x,ac-ovp-threshold = <17>;
-                ti,bq2597x,sense-resistor-mohm = <5>;
-
-        };
-};
-*/
-/*
-&pio {
-	bq25960_int_default: bq25960_int_default {
-		pinmux = <PINMUX_GPIO164__FUNC_GPIO164>;
-		slew-rate= <0>;
-		input-enable;
-		bias-pull-up;
-	};
-};
-
-&i2c9 {
-	status = "okay";
-
-	bq25960-standalone@66 {
-		compatible = "ti,bq25960-standalone";
-		reg = <0x66>;
-
-		interrupt-parent = <&pio>;
-		interrupts = <164 IRQ_TYPE_EDGE_FALLING 164 0>;
-		interrupt-names = "bq25960_irq";
-		pinctrl-names = "default";
-		pinctrl-0 = <&bq25960_int_default>;
-	};
-};
-*/
 
 &i2c9 {
        status = "okay";
@@ -367,6 +251,89 @@
 		default-state = "off";
 	};
 };
+
+&charger_cooler {
+	mmi,thermal-mitigation = <(-1) 5000000 4500000 4000000 3500000
+				3000000 2000000 1000000 500000>;
+};
+
+/*
+&ap_ntc {
+	polling-delay = <5000>;
+	polling-delay-passive = <3000>;
+ 	thermal-sensors = <&tboard_thermistor1>;
+
+	trips {
+		charge_trip0: charge-trip0 {
+			temperature = <45000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip1: charge-trip1 {
+			temperature = <46000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+		charge_trip2: charge-trip2 {
+			temperature = <47000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+		charge_trip3: charge-trip3 {
+			temperature = <48000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+		charge_trip4: charge-trip4 {
+			temperature = <49000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+		charge_trip5: charge-trip5 {
+			temperature = <50000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+		charge_trip6: charge-trip6 {
+			temperature = <51000>;
+			hysteresis = <1000>;
+			type = "passive";
+		};
+	};
+
+	cooling-maps {
+		charge-cdev0 {
+			trip = <&charge_trip0>;
+			cooling-device = <&charger_cooler 1 1>;
+		};
+		charge-cdev1 {
+			trip = <&charge_trip1>;
+			cooling-device = <&charger_cooler 2 2>;
+		};
+		charge-cdev2 {
+			trip = <&charge_trip2>;
+			cooling-device = <&charger_cooler 3 3>;
+		};
+		charge-cdev3 {
+			trip = <&charge_trip3>;
+			cooling-device = <&charger_cooler 5 5>;
+		};
+		charge-cdev4 {
+			trip = <&charge_trip4>;
+			cooling-device = <&charger_cooler 6 6>;
+		};
+		charge-cdev5 {
+			trip = <&charge_trip5>;
+			cooling-device = <&charger_cooler 7 7>;
+		};
+		charge-cdev6 {
+			trip = <&charge_trip6>;
+			cooling-device = <&charger_cooler 8 8>;
+		};
+	};
+
+};
+*/
 
 &moto_chg_tcmd {
 	compatible = "mmi,moto-chg-tcmd";
