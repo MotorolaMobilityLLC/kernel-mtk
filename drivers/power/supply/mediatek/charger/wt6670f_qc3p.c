@@ -111,7 +111,8 @@ static u16 wt6670f_get_vbus_voltage(void)
 
 	pr_err(">>>>>>wt6670f get vbus voltage = %04x  %02x  %02x\n", tmp,
 			data[0], data[1]);
-	return (u16)(tmp * 18.98);
+
+	return (u16)((tmp *1898)/100);
 }
 
 
