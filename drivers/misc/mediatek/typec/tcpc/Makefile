@@ -5,7 +5,11 @@ obj-$(CONFIG_TCPC_MT6360)		+= tcpc_mt6360.o
 obj-$(CONFIG_TCPC_MT6362)		+= tcpc_mt6362.o
 obj-$(CONFIG_TCPC_MT6370)		+= tcpc_mt6370.o
 obj-$(CONFIG_TCPC_RT1711H)		+= tcpc_rt1711h.o
+ifeq ($(CONFIG_MACH_MT6768),y)
+obj-$(CONFIG_TCPC_SGM7220)              += tcpc_sgm7220_v2.o
+else
 obj-$(CONFIG_TCPC_SGM7220)              += tcpc_sgm7220.o
+endif
 obj-$(CONFIG_TCPC_WUSB3801)             += tcpc_wusb3801.o
 obj-$(CONFIG_TCPC_CLASS)		+= tcpci_core.o tcpci_typec.o tcpci_timer.o \
 		tcpm.o tcpci.o pd_dbg_info.o tcpci_alert.o rt_pd_manager.o
