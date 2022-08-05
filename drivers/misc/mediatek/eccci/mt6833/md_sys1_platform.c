@@ -1050,3 +1050,12 @@ int ccci_modem_resume_noirq(struct device *dev)
 	return dpmaif_resume_noirq(dev);
 }
 
+/* notify atf set scp smem addr to scp reg */
+void ccci_notify_set_scpmem(void)
+{
+	struct arm_smccc_res res = {0};
+
+	arm_smccc_smc(MTK_SIP_KERNEL_CCCI_CONTROL, SCP_CLK_SET_DONE,
+		0, 0, 0, 0, 0, 0, &res);
+	CCCI_NORMAL_LOG(MD_SYS1, TAG, "%s [done] res.a0 = %lu\n", __func__, res.a0);
+}
