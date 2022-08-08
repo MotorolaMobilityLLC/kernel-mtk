@@ -20,8 +20,8 @@
 #include <linux/reboot.h>
 
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/charger_class.h>
-#include <mt-plat/charger_type.h>
+#include <mt-plat/v1/charger_class.h>
+#include <mt-plat/v1/charger_type.h>
 #ifdef CONFIG_RT_REGMAP
 #include <mt-plat/rt-regmap.h>
 #endif /* CONFIG_RT_REGMAP */
