@@ -628,7 +628,7 @@ static struct sc89601a_platform_data* sc89601a_parse_dt(struct device *dev,
 	pdata->usb.ichg = 500;
 	pdata->statctrl = 3;
 	pdata->iprechg = 540; //预充电540mA
-	pdata->iterm = 270;
+	pdata->iterm = 210;
 	pdata->boostv = 5150;
 	pdata->boosti = 1200; //boost limit 1.2A
 	pdata->vac_ovp = 6500;
