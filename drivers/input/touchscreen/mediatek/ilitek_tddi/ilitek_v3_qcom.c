@@ -430,6 +430,8 @@ static int ilitek_plat_notifier_fb(struct notifier_block *self, unsigned long ev
 	 *	FB_EVENT_BLANK(0x09): A hardware display blank change occurred.
 	 *	FB_EARLY_EVENT_BLANK(0x10): A hardware display blank early change occurred.
 	 */
+	if (event == FB_EVENT_FB_REGISTERED || event == FB_EVENT_FB_UNREGISTERED)
+		return NOTIFY_DONE;
 	if (evdata && evdata->data) {
 		blank = evdata->data;
 		switch (*blank) {
