@@ -13,7 +13,9 @@ static const struct i2c_device_id gi2c_dev_id[] = {
 	{IMGSENSOR_I2C_DRV_NAME_0, 0},
 	{IMGSENSOR_I2C_DRV_NAME_1, 0},
 	{IMGSENSOR_I2C_DRV_NAME_2, 0},
+#if defined(CONFIG_MACH_MT6768)
 	{IMGSENSOR_I2C_DRV_NAME_3, 0},
+#endif
 	{}
 };
 
@@ -30,10 +32,12 @@ static const struct of_device_id gof_device_id_2[] = {
 	{ .compatible = IMGSENSOR_I2C_OF_DRV_NAME_2, },
 	{}
 };
+#if defined(CONFIG_MACH_MT6768)
 static const struct of_device_id gof_device_id_3[] = {
 	{ .compatible = IMGSENSOR_I2C_OF_DRV_NAME_3, },
 	{}
 };
+#endif
 #endif
 
 static int
@@ -57,12 +61,14 @@ imgsensor_i2c_probe_2(struct i2c_client *client, const struct i2c_device_id *id)
 	return 0;
 }
 
+#if defined(CONFIG_MACH_MT6768)
 static int
 imgsensor_i2c_probe_3(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	gi2c.inst[IMGSENSOR_I2C_DEV_3].pi2c_client = client;
 	return 0;
 }
+#endif
 
 static int imgsensor_i2c_remove(struct i2c_client *client)
 {
@@ -106,6 +112,7 @@ static struct i2c_driver gi2c_driver[IMGSENSOR_I2C_DEV_MAX_NUM] = {
 		},
 		.id_table = gi2c_dev_id,
 	},
+#if defined(CONFIG_MACH_MT6768)
 	{
 		.probe = imgsensor_i2c_probe_3,
 		.remove = imgsensor_i2c_remove,
@@ -118,6 +125,7 @@ static struct i2c_driver gi2c_driver[IMGSENSOR_I2C_DEV_MAX_NUM] = {
 		},
 		.id_table = gi2c_dev_id,
 	}
+#endif
 };
 
 enum IMGSENSOR_RETURN imgsensor_i2c_create(void)
