@@ -298,6 +298,10 @@
 
 &i2c9 {
 	status = "okay";
+	clock-frequency = <400000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	aw883xx_smartpa_0: aw883xx@34 {
                 compatible = "awinic,aw883xx_smartpa";
                 #sound-dai-cells = <0>;
