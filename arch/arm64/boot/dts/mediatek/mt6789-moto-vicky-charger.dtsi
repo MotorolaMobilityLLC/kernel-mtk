@@ -167,6 +167,7 @@
 
 		chg_name = "primary_chg";
 		input-voltage-limit-microvolt = <4700000>;
+		input-current-limit-microamp = <500000>;
 
 		/* sw jeita  parameter customer defined*/
 		enable_sw_jeita;
@@ -220,6 +221,7 @@
 
                 chg_name = "primary_chg";
                 input-voltage-limit-microvolt = <4700000>;
+		input-current-limit-microamp = <500000>;
 
                 /* sw jeita  parameter customer defined*/
                 enable_sw_jeita;
