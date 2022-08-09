@@ -302,7 +302,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 		imgsensor.i2c_write_id,
 		IMGSENSOR_I2C_SPEED);
 }
-
+/*
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
 	char pusendcmd[4] = {
@@ -314,14 +314,16 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 		4,
 		imgsensor.i2c_write_id,
 		IMGSENSOR_I2C_SPEED);
-}
+}*/
 
 static void set_dummy(void)
 {
 	pr_debug("dummyline = %d, dummypixels = %d\n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 
-	write_cmos_sensor_8(0x380e, imgsensor.frame_length >> 8);
+	write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
+	write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
 	write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+
 	write_cmos_sensor_8(0x380c, imgsensor.line_length >> 8);
 	write_cmos_sensor_8(0x380d, imgsensor.line_length & 0xFF);
 
@@ -383,13 +385,15 @@ static void write_shutter(kal_uint32 shutter)
 			set_max_framerate(146, 0);
 		else {
 			/* Extend frame length */
-
-			write_cmos_sensor(0x380e, imgsensor.frame_length);
+			write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
+			write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
+			write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
 		}
 	} else {
 		/* Extend frame length*/
-
-		write_cmos_sensor(0x380e, imgsensor.frame_length);
+		write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
+		write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
+		write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
 	}
 
 	/* Update Shutter */
@@ -478,11 +482,15 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 			set_max_framerate(146, 0);
 		else {
 			/* Extend frame length */
-			write_cmos_sensor(0x380e, imgsensor.frame_length);
+			write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
+			write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
+			write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
 		}
 	} else {
 		/* Extend frame length */
-			write_cmos_sensor(0x380e, imgsensor.frame_length);
+		write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
+		write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
+		write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
 	}
 
 	/* Update Shutter */
