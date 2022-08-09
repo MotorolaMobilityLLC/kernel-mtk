@@ -35,6 +35,8 @@
 #include <lcm_pmic.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
@@ -96,6 +98,12 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_PHYSICAL_WIDTH	(67930)
 #define LCM_PHYSICAL_HEIGHT	(150960)
 
+#define LCM_BL_BITS_11			1
+#if LCM_BL_BITS_11
+#define LCM_BL_MAX_BRIGHTENSS		1638
+#else
+#define LCM_BL_MAX_BRIGHTENSS		3276
+#endif
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -490,7 +498,7 @@ static void lcm_init_power(void)
 	LCM_LOGI("[LCM] lcm_init_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_init(15,1);
+	lcm_set_bias_init(14,1);
 	MDELAY(10);
 }
 
@@ -508,7 +516,7 @@ static void lcm_resume_power(void)
 	LCM_LOGI("[LCM] lcm_resume_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_pin_enable(15,1);
+	lcm_set_bias_pin_enable(14,1);
 	MDELAY(10);
 }
 
@@ -639,6 +647,15 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 }
 
+#if !LCM_BL_BITS_11
+static unsigned int lcm_get_max_brightness(void)
+{
+        LCM_LOGD("%s: return max_brightness:%d\n", __func__, LCM_BL_MAX_BRIGHTENSS);
+        return LCM_BL_MAX_BRIGHTENSS;
+}
+#endif
+
+#if 0
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	//+EKELLIS-830, shenwenbin.wt, modify, 20211224, set backlight to 11bit and set CABC default UI mode and improve dimming
@@ -653,7 +670,30 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	//-EKELLIS-830, shenwenbin.wt, modify, 20211224, set backlight to 11bit and set CABC default UI mode and improve dimming
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
+#endif
 
+static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
+{
+	unsigned int bl_lvl;
+
+	if (level > LCM_BL_MAX_BRIGHTENSS) {
+		LCM_LOGI("%s: djn_nt36525b_a: level%d: exceed max bl:%d\n", __func__, level, LCM_BL_MAX_BRIGHTENSS);
+	}
+	bl_lvl = level;
+	LCM_LOGI("%s,djn_nt36525b_a backlight: level = %d,bl_lvl=%d\n", __func__, level,bl_lvl);
+
+#if LCM_BL_BITS_11
+    //11bit
+	bl_level[0].para_list[0] = (bl_lvl&0x700)>>8;
+#else
+	//12 bit
+	bl_level[0].para_list[0] = (bl_lvl&0xF00)>>8;
+#endif
+	bl_level[0].para_list[1] = (bl_lvl&0xFF);
+	LCM_LOGI("%s,djn_nt36525b_a: para_list[0]=%x,para_list[1]=%x\n",__func__,bl_level[0].para_list[0],bl_level[0].para_list[1]);
+
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
 /*
 static void *lcm_switch_mode(int mode)
 {
@@ -772,6 +812,9 @@ struct LCM_DRIVER mipi_mot_vid_djn_nt36525b_a_hdp_652_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+#if !LCM_BL_BITS_11
+	.get_max_brightness = lcm_get_max_brightness,
+#endif
 	.ata_check = lcm_ata_check,
 #ifdef CONFIG_LCM_NOTIFIY_SUPPORT
 	.set_lcm_notify = lcm_set_recovery_notify,
