@@ -634,12 +634,6 @@ struct S_START_T {
  */
 static unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
 
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-static unsigned int g_virtual_cq_cnt[2] = {0, 0};
-static unsigned int g_virtual_cq_cnt_a;
-static unsigned int g_virtual_cq_cnt_b;
-static  spinlock_t  virtual_cqcnt_lock;
-#endif
 
 static /*volatile*/ wait_queue_head_t P2WaitQueueHead_WaitDeque;
 static /*volatile*/ wait_queue_head_t P2WaitQueueHead_WaitFrame;
@@ -8797,27 +8791,6 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-	case ISP_SET_VIR_CQCNT:
-		spin_lock((spinlock_t *)(&virtual_cqcnt_lock));
-		if (copy_from_user(&g_virtual_cq_cnt, (void *)Param,
-			sizeof(unsigned int)*2) == 0) {
-			pr_info("From hw_module:%d Virtual CQ count from user land : %d\n",
-			g_virtual_cq_cnt[0], g_virtual_cq_cnt[1]);
-		} else {
-			pr_info(
-				"Virtual CQ count copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-
-		if (g_virtual_cq_cnt[0] == 0)
-			g_virtual_cq_cnt_a = g_virtual_cq_cnt[1];
-		else if (g_virtual_cq_cnt[0] == 1)
-			g_virtual_cq_cnt_b = g_virtual_cq_cnt[1];
-
-		spin_unlock((spinlock_t *)(&virtual_cqcnt_lock));
-		break;
-#endif
 	default:
 	{
 		pr_err("Unknown Cmd(%d)\n", Cmd);
@@ -9304,9 +9277,6 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
 	case ISP_SET_SEC_DAPC_REG:
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-        case ISP_SET_VIR_CQCNT:
-#endif
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -10230,9 +10200,6 @@ static signed int ISP_probe(struct platform_device *pDev)
 		spin_lock_init(&(SpinLock_P2FrameList));
 		spin_lock_init(&(SpinLockRegScen));
 		spin_lock_init(&(SpinLock_UserKey));
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-                spin_lock_init(&(virtual_cqcnt_lock));
-#endif
 		#ifdef ENABLE_KEEP_ION_HANDLE
 		for (i = 0; i < ISP_DEV_NODE_NUM; i++) {
 			if (gION_TBL[i].node != ISP_DEV_NODE_NUM) {
@@ -14742,25 +14709,9 @@ LB_CAMA_SOF_IGNORE:
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
 	if (IrqStatus & SOF_INT_ST) {
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-                if ((ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100) !=
-			g_virtual_cq_cnt_a) {
-			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"CAMA PHY cqcnt:%d != VIR cqcnt:%d\n",
-			(ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100),
-			g_virtual_cq_cnt_a);
-		} else {
-			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"CAMA PHY cqcnt:%d VIR cqcnt:%d\n",
-			(ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100),
-			g_virtual_cq_cnt_a);
-#endif
 		wake_up_interruptible(&IspInfo.WaitQHeadCam
 			[ISP_GetWaitQCamIndex(module)]
 			[ISP_WAITQ_HEAD_IRQ_SOF]);
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-                }
-#endif
 	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
 		wake_up_interruptible(&IspInfo.WaitQHeadCam
@@ -15382,25 +15333,9 @@ LB_CAMB_SOF_IGNORE:
 	spin_unlock(&(IspInfo.SpinLockIrq[module]));
 	/*  */
 	if (IrqStatus & SOF_INT_ST) {
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-                if ((ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100) !=
-			g_virtual_cq_cnt_a) {
-			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"CAMA PHY cqcnt:%d != VIR cqcnt:%d\n",
-			(ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100),
-			g_virtual_cq_cnt_a);
-		} else {
-			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"CAMA PHY cqcnt:%d VIR cqcnt:%d\n",
-			(ISP_RD32(CAM_REG_CTL_SPARE2(reg_module))%0x100),
-			g_virtual_cq_cnt_a);
-#endif
 		wake_up_interruptible(&IspInfo.WaitQHeadCam
 			[ISP_GetWaitQCamIndex(module)]
 			[ISP_WAITQ_HEAD_IRQ_SOF]);
-#ifdef CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-                }
-#endif
 	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
 		wake_up_interruptible(&IspInfo.WaitQHeadCam
