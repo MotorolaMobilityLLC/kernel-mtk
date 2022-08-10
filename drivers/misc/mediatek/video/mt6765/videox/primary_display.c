@@ -122,6 +122,7 @@ int g_idle_skip_trigger;
 /*DynFPS for debug*/
 bool g_force_cfg;
 unsigned int g_force_cfg_id;
+int g_idle_skip;
 #if 0 //def CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
 #endif
@@ -4908,6 +4909,7 @@ int primary_display_resume(void)
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
 	int i, skip_update = 0;
+	g_idle_skip = 1;
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	unsigned long long bandwidth;
 	unsigned int in_fps = 60;
