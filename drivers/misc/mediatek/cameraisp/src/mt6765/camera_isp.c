@@ -9504,9 +9504,6 @@ pr_info("- E. register IRQ: done\n");
 	ISP_ion_init();
 #endif
 
-#ifdef KERNEL_LOG
-	IspInfo.DebugMask = (ISP_DBG_INT);
-#endif
 	/*  */
 EXIT:
 	if (Ret < 0) {
