@@ -58,7 +58,7 @@
 
 //#define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
 #define LOG_INF(format, args...)    \
-    pr_err(PFX "[%s] " format, __func__, ##args)
+    pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define LOG_ERR(format, args...)    \
     pr_err(PFX "[%s] " format, __func__, ##args)
@@ -478,7 +478,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	kal_uint16 reg_gain, max_gain = 16 * BASEGAIN;
 
 	if (gain < BASEGAIN || gain > max_gain) {
-		pr_debug("Error max gain setting: %d\n", max_gain);
+		LOG_ERR("Error max gain setting: %d\n", max_gain);
 
 		if (gain < BASEGAIN)
 			gain = BASEGAIN;
@@ -706,13 +706,13 @@ static void MAUI_HI1634B_eeprom_dump_bin(const char *file_name, uint32_t size, c
 	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if (IS_ERR_OR_NULL(fp)) {
             ret = PTR_ERR(fp);
-		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		LOG_ERR("open file error(%s), error(%d)\n",  file_name, ret);
 		goto p_err;
 	}
 
 	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
 	if (ret < 0) {
-		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		LOG_ERR("file write fail(%s) to EEPROM data(%d)", file_name, ret);
 		goto p_err;
 	}
 
@@ -863,7 +863,7 @@ static calibration_status_t MAUI_HI1634B_check_awb_data(void *data)
 	if(!eeprom_util_check_crc16(eeprom->cie_src_1_ev,
 		MAUI_HI1634B_EEPROM_CRC_AWB_CAL_SIZE,
 		convert_crc(eeprom->awb_crc16))) {
-		LOG_INF("AWB CRC Fails!");
+		LOG_ERR("AWB CRC Fails!");
 		return CRC_FAILURE;
 	}
 
@@ -883,7 +883,7 @@ static calibration_status_t MAUI_HI1634B_check_awb_data(void *data)
 	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
 	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
 	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
-		LOG_INF("AWB CRC limit Fails!");
+		LOG_ERR("AWB CRC limit Fails!");
 		return LIMIT_FAILURE;
 	}
 
@@ -893,7 +893,7 @@ static calibration_status_t MAUI_HI1634B_check_awb_data(void *data)
 	golden_limit.b_g_golden_max = eeprom->awb_b_g_golden_max_limit[0];
 
 	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
-		LOG_INF("AWB CRC factor limit Fails!");
+		LOG_ERR("AWB CRC factor limit Fails!");
 		return LIMIT_FAILURE;
 	}
 	LOG_INF("AWB CRC Pass");
@@ -906,7 +906,7 @@ static calibration_status_t MAUI_HI1634B_check_lsc_data_mtk(void *data)
 
 	if (!eeprom_util_check_crc16(eeprom->lsc_data_mtk, MAUI_HI1634B_EEPROM_CRC_LSC_SIZE,
 		convert_crc(eeprom->lsc_crc16_mtk))) {
-		LOG_INF("LSC CRC Fails!");
+		LOG_ERR("LSC CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("LSC CRC Pass");
@@ -946,7 +946,7 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		eeprom->eeprom_table_version[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->table_revision failed");
+		LOG_ERR("snprintf of mnf->table_revision failed");
 		mnf->table_revision[0] = 0;
 	}
 
@@ -955,21 +955,21 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->mot_part_number failed");
+		LOG_ERR("snprintf of mnf->mot_part_number failed");
 		mnf->mot_part_number[0] = 0;
 	}
 
 	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->actuator_id failed");
+		LOG_ERR("snprintf of mnf->actuator_id failed");
 		mnf->actuator_id[0] = 0;
 	}
 
 	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->lens_id failed");
+		LOG_ERR("snprintf of mnf->lens_id failed");
 		mnf->lens_id[0] = 0;
 	}
 
@@ -987,7 +987,7 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 	}
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->integrator failed");
+		LOG_ERR("snprintf of mnf->integrator failed");
 		mnf->integrator[0] = 0;
 	}
 
@@ -995,7 +995,7 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		eeprom->factory_id[0], eeprom->factory_id[1]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->factory_id failed");
+		LOG_ERR("snprintf of mnf->factory_id failed");
 		mnf->factory_id[0] = 0;
 	}
 
@@ -1003,7 +1003,7 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		eeprom->manufacture_line[0]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->manufacture_line failed");
+		LOG_ERR("snprintf of mnf->manufacture_line failed");
 		mnf->manufacture_line[0] = 0;
 	}
 
@@ -1011,7 +1011,7 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
 
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->manufacture_date failed");
+		LOG_ERR("snprintf of mnf->manufacture_date failed");
 		mnf->manufacture_date[0] = 0;
 	}
 
@@ -1026,7 +1026,7 @@ static void MAUI_HI1634B_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[14], eeprom->serial_number[15]);
 	MAUI_HI1634B_eeprom_dump_bin(MAIN_SERIAL_NUM_DATA_PATH,  HI1634B_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->serial_number failed");
+		LOG_ERR("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
 	}
 }
@@ -1592,7 +1592,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		slim_video(image_window, sensor_config_data);
 		break;
 	default:
-		pr_debug("Error ScenarioId setting");
+		LOG_ERR("Error ScenarioId setting");
 		preview(image_window, sensor_config_data);
 		return ERROR_INVALID_SCENARIO_ID;
 	}
@@ -1745,7 +1745,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 		spin_unlock(&imgsensor_drv_lock);
 		if (imgsensor.frame_length > imgsensor.shutter)
 			set_dummy();
-		pr_debug("error scenario_id = %d, we use preview scenario\n",
+		LOG_ERR("error scenario_id = %d, we use preview scenario\n",
 			scenario_id);
 		break;
 	}
