@@ -36,7 +36,7 @@
 /****************************Modify following Strings for debug****************************/
 #define PFX "s5k5e9_camera_sensor"
 #define LOG_1 LOG_INF("s5k5e9,MIPI 2LANE\n")
-#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 #define S5K5E9_EEPROM_SIZE 2137
 #define S5K5E9_SERIAL_NUM_SIZE 16
@@ -305,7 +305,7 @@ static void write_shutter(kal_uint32 shutter)
 		write_cmos_sensor_8(0x0202, shutter >> 8);
 		write_cmos_sensor_8(0x0203, shutter & 0xFF);
 	}
-//	LOG_INF("shutter =%d, framelength =%d bIsLongExposure = %d\n", shutter, imgsensor.frame_length,bIsLongExposure);
+	LOG_INF("shutter =%d, framelength =%d bIsLongExposure = %d\n", shutter, imgsensor.frame_length,bIsLongExposure);
 }
 /*************************************************************************
 * FUNCTION
@@ -372,7 +372,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
 	spin_unlock(&imgsensor_drv_lock);
-//	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
     write_cmos_sensor_8(0x0204, (reg_gain>>8));
     write_cmos_sensor_8(0x0205, (reg_gain&0xff));
     return gain;
@@ -425,7 +425,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 			write_cmos_sensor_8(0x0101, 0x03);
 			break;
 		default:
-			LOG_INF("Error image_mirror setting\n");
+			LOGE("Error image_mirror setting\n");
 	}
 }
 /*************************************************************************
@@ -923,12 +923,12 @@ static void MAUI_S5K5E9_eeprom_dump_bin(const char *file_name, uint32_t size, co
 	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if (IS_ERR_OR_NULL(fp)) {
             ret = PTR_ERR(fp);
-		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		LOGE("open file error(%s), error(%d)\n",  file_name, ret);
 		goto p_err;
 	}
 	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
 	if (ret < 0) {
-		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		LOGE("file write fail(%s) to EEPROM data(%d)", file_name, ret);
 		goto p_err;
 	}
 	LOG_INF("wirte to file(%s)\n", file_name);
@@ -1056,7 +1056,7 @@ static calibration_status_t MAUI_S5K5E9_check_awb_data(void *data)
 	if(!eeprom_util_check_crc16(eeprom->cie_ev,
 		MAUI_S5K5E9_EEPROM_CRC_AWB_CAL_SIZE,
 		convert_crc(eeprom->awb_crc16))) {
-		LOG_INF("AWB CRC Fails!");
+		LOGE("AWB CRC Fails!");
 		return CRC_FAILURE;
 	}
 	unit.r = to_uint16_swap(eeprom->awb_src_1_r)/64;
@@ -1074,7 +1074,7 @@ static calibration_status_t MAUI_S5K5E9_check_awb_data(void *data)
 	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
 	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
 	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
-		LOG_INF("AWB CRC limit Fails!");
+		LOGE("AWB CRC limit Fails!");
 		return LIMIT_FAILURE;
 	}
 	golden_limit.r_g_golden_min = eeprom->awb_r_g_golden_min_limit[0];
@@ -1082,7 +1082,7 @@ static calibration_status_t MAUI_S5K5E9_check_awb_data(void *data)
 	golden_limit.b_g_golden_min = eeprom->awb_b_g_golden_min_limit[0];
 	golden_limit.b_g_golden_max = eeprom->awb_b_g_golden_max_limit[0];
 	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
-		LOG_INF("AWB CRC factor limit Fails!");
+		LOGE("AWB CRC factor limit Fails!");
 		return LIMIT_FAILURE;
 	}
 	LOG_INF("AWB CRC Pass");
@@ -1093,7 +1093,7 @@ static calibration_status_t MAUI_S5K5E9_check_lsc_data(void *data)
 	struct mot_s5k5e9_eeprom_t *eeprom = (struct mot_s5k5e9_eeprom_t*)data;
 	if (!eeprom_util_check_crc16(eeprom->lsc_calibration, MAUI_S5K5E9_EEPROM_CRC_LSC_SIZE,
 		convert_crc(eeprom->lsc_crc16))) {
-		LOG_INF("LSC CRC Fails!");
+		LOGE("LSC CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("LSC CRC Pass");
@@ -1130,24 +1130,24 @@ static void MAUI_S5K5E9_eeprom_get_mnf_data(void *data,
 	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
 		eeprom->eeprom_table_version[0]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->table_revision failed");
+		LOGE("snprintf of mnf->table_revision failed");
 		mnf->table_revision[0] = 0;
 	}
 	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
 		eeprom->mpn[0], eeprom->mpn[1], eeprom->mpn[2], eeprom->mpn[3],
 		eeprom->mpn[4], eeprom->mpn[5], eeprom->mpn[6], eeprom->mpn[7]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->mot_part_number failed");
+		LOGE("snprintf of mnf->mot_part_number failed");
 		mnf->mot_part_number[0] = 0;
 	}
 	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->actuator_id[0]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->actuator_id failed");
+		LOGE("snprintf of mnf->actuator_id failed");
 		mnf->actuator_id[0] = 0;
 	}
 	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", eeprom->lens_id[0]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->lens_id failed");
+		LOGE("snprintf of mnf->lens_id failed");
 		mnf->lens_id[0] = 0;
 	}
 	if (eeprom->manufacturer_id[0] == 'S' && eeprom->manufacturer_id[1] == 'U') {
@@ -1160,28 +1160,28 @@ static void MAUI_S5K5E9_eeprom_get_mnf_data(void *data,
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Tsp");
 	} else {
 		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
-		LOG_INF("unknown manufacturer_id");
+		LOGE("unknown manufacturer_id");
 	}
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->integrator failed");
+		LOGE("snprintf of mnf->integrator failed");
 		mnf->integrator[0] = 0;
 	}
 	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
 		eeprom->factory_id[0], eeprom->factory_id[1]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->factory_id failed");
+		LOGE("snprintf of mnf->factory_id failed");
 		mnf->factory_id[0] = 0;
 	}
 	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
 		eeprom->manufacture_line[0]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->manufacture_line failed");
+		LOGE("snprintf of mnf->manufacture_line failed");
 		mnf->manufacture_line[0] = 0;
 	}
 	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
 		eeprom->manufacture_date[0], eeprom->manufacture_date[1], eeprom->manufacture_date[2]);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->manufacture_date failed");
+		LOGE("snprintf of mnf->manufacture_date failed");
 		mnf->manufacture_date[0] = 0;
 	}
 	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -1195,7 +1195,7 @@ static void MAUI_S5K5E9_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[14], eeprom->serial_number[15]);
 	MAUI_S5K5E9_eeprom_dump_bin(MAIN_SERIAL_NUM_DATA_PATH,  S5K5E9_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
-		LOG_INF("snprintf of mnf->serial_number failed");
+		LOGE("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
 	}
 }
@@ -1204,7 +1204,7 @@ static calibration_status_t MAUI_S5K5E9_check_optical_center_data(void *data)
 	struct mot_s5k5e9_eeprom_t *eeprom = (struct mot_s5k5e9_eeprom_t*)data;
 	if (!eeprom_util_check_crc16(eeprom->optical_center_x_1_r_channel, MAUI_S5K5E9_EEPROM_CRC_OPTICAL_CENTER_CAL_SIZE,
 		convert_crc(eeprom->optical_center_crc16))) {
-		LOG_INF("optical center CRC Fails!");
+		LOGE("optical center CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("optical center CRC Pass");
@@ -1215,7 +1215,7 @@ static calibration_status_t MAUI_S5K5E9_check_sfr_data(void *data)
 	struct mot_s5k5e9_eeprom_t *eeprom = (struct mot_s5k5e9_eeprom_t*)data;
 	if (!eeprom_util_check_crc16(eeprom->sfr_distance1_reserve, MAUI_S5K5E9_EEPROM_CRC_SFR_CAL_SIZE,
 		convert_crc(eeprom->sfr_crc16))) {
-		LOG_INF("SFR CRC Fails!");
+		LOGE("SFR CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("SFR CRC Pass");
@@ -1226,7 +1226,7 @@ static calibration_status_t MAUI_S5K5E9_check_necessary_data(void *data)
 	struct mot_s5k5e9_eeprom_t *eeprom = (struct mot_s5k5e9_eeprom_t*)data;
 	if (!eeprom_util_check_crc16(eeprom->module_check_flag, MAUI_S5K5E9_EEPROM_CRC_NECESSARY_DATA_CAL_SIZE,
 		convert_crc(eeprom->mtk_necessary_crc16))) {
-		LOG_INF("mtk necessary CRC Fails!");
+		LOGE("mtk necessary CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("mtk necessary CRC Pass");
@@ -1238,13 +1238,13 @@ static calibration_status_t MAUI_S5K5E9_check_manufacturing_data(void *data)
     LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
 #if 0
 	if(strncmp(eeprom->mpn, MAUI_S5K5E9_MANUFACTURE_PART_NUMBER, MAUI_S5K5E9_MPN_LENGTH) != 0) {
-		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
+		LOGE("Manufacturing part number (%s) check Fails!", eeprom->mpn);
 		return CRC_FAILURE;
 	}
 #endif
 	if (!eeprom_util_check_crc16(eeprom->eeprom_table_version, MAUI_S5K5E9_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
-		LOG_INF("Manufacturing CRC Fails!");
+		LOGE("Manufacturing CRC Fails!");
 		return CRC_FAILURE;
 	}
 	LOG_INF("Manufacturing CRC Pass");
