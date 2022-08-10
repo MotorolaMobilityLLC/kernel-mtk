@@ -138,7 +138,6 @@ static void tianma_panel_init(struct tianma *ctx)
 	msleep(60);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A,0x59);
 	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5,0xA6);
@@ -159,8 +158,6 @@ static void tianma_panel_init(struct tianma *ctx)
 static int tianma_disable(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
-	
-	printk("[%d  %s]hxl_check_dsi_pcl_data_rate !!\n",__LINE__, __FUNCTION__);
 
 	if (!ctx->enabled)
 		return 0;
@@ -196,33 +193,38 @@ static int tianma_unprepare(struct drm_panel *panel)
 	if (!ctx->prepared)
 		return 0;
 	pr_info("%s\n", __func__);
-	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 
-	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
-	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
-	tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A, 0x00);
-	tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
-	msleep(20);
-	tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
-	msleep(120);
-	tianma_dcs_write_seq_static(ctx, 0xCC, 0x01, 0x00);
-
-	if(tp_gesture_flag == 0)
-	{
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get reset_gpio %ld\n",
 			__func__, PTR_ERR(ctx->reset_gpio));
 		return -1;
 	}
-	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(5);
-	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	if(tp_gesture_flag == 0)
+	{
+		tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
+		tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
+		tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A, 0x00);
+		tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
+		msleep(20);
+		tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
+		msleep(120);
+		tianma_dcs_write_seq_static(ctx, 0xCC, 0x01, 0x00);
+		gpiod_set_value(ctx->reset_gpio, 1);
+		msleep(5);
+		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
-	ret = ocp2138_BiasPower_disable(5);
+		ret = ocp2138_BiasPower_disable(5);
 	}
-
-	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
+	else
+	{
+		tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
+		tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
+		msleep(120);
+		gpiod_set_value(ctx->reset_gpio, 1);
+		msleep(5);
+		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	}
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -235,7 +237,6 @@ static int tianma_prepare(struct drm_panel *panel)
 	int ret;
 
 	pr_info("%s\n", __func__);
-	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 	if (ctx->prepared)
 		return 0;
 
@@ -245,7 +246,6 @@ static int tianma_prepare(struct drm_panel *panel)
 	tianma_panel_init(ctx);
 
 	ret = ctx->error;
-	printk("[%d  %s]hxl_check_dsi1   ret:%d !!\n",__LINE__, __FUNCTION__,ret);
 	if (ret < 0)
 		tianma_unprepare(panel);
 
@@ -257,7 +257,6 @@ static int tianma_prepare(struct drm_panel *panel)
 #ifdef PANEL_SUPPORT_READBACK
 	tianma_panel_get_data(ctx);
 #endif*/
-printk("[%d  %s]hxl_check_dsi  ret:%d !!\n",__LINE__, __FUNCTION__,ret);
 
 	return ret;
 }
@@ -265,8 +264,6 @@ printk("[%d  %s]hxl_check_dsi  ret:%d !!\n",__LINE__, __FUNCTION__,ret);
 static int tianma_enable(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
-	
-	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 
 	if (ctx->enabled)
 		return 0;
@@ -710,7 +707,6 @@ static int tianma_get_modes(struct drm_panel *panel,
 	struct drm_display_mode *mode_2;
 
 	mode = drm_mode_duplicate(connector->dev, &default_mode);
-	printk("[%d  %s]hxl_check_dsi_modes  mode:%d  !!\n",__LINE__, __FUNCTION__,mode);
 	if (!mode) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			default_mode.hdisplay, default_mode.vdisplay,
@@ -768,7 +764,6 @@ static int tianma_probe(struct mipi_dsi_device *dsi)
 	int ret;
 
 	pr_info("%s+ tianma,ICNL9922,vdo,120hz\n", __func__);
-	printk("[%s %d],hxl_check_lcd Enter!! \n", __func__, __LINE__);
 
 	dsi_node = of_get_parent(dev->of_node);
 	if (dsi_node) {
