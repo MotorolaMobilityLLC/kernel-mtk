@@ -40,7 +40,7 @@
 #define LOG_1 LOG_INF("MOT_MAUI_GC02M1, MIPI 1LANE\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
 
@@ -320,7 +320,7 @@ static calibration_status_t MAUI_GC02M1_check_awb_data(void *data)
     	if(!eeprom_util_check_crc16(&data_awb[0],
 		MAUI_GC02M1_OTP_CRC_AWB_GROUP1_CAL_SIZE,
 		convert_crc(&data_awb[7]))) {
-		LOG_INF("AWB CRC Fails!");
+		pr_err("AWB CRC Fails!");
 		return CRC_FAILURE;
 		}
     } else if(((data_awb[0]&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
@@ -328,7 +328,7 @@ static calibration_status_t MAUI_GC02M1_check_awb_data(void *data)
     	if(!eeprom_util_check_crc16(&data_awb[9],
 		MAUI_GC02M1_OTP_CRC_AWB_GROUP2_CAL_SIZE,
 		convert_crc(&data_awb[15]))) {
-		LOG_INF("AWB CRC Fails!");
+		pr_err("AWB CRC Fails!");
 		return CRC_FAILURE;
 		}
     } else {
@@ -367,7 +367,7 @@ static void gc02m1_otp_dump_bin(const char *file_name, uint32_t size, const void
 	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
 	if (IS_ERR_OR_NULL(fp)) {
 		ret = PTR_ERR(fp);
-		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		pr_err("open file error(%s), error(%d)\n",  file_name, ret);
 		goto p_err;
 	}
 
@@ -969,7 +969,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
     }
     if (*sensor_id != imgsensor_info.sensor_id) {
     	/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
-    	pr_info("get_imgsensor_id: 0x%x fail\n", *sensor_id);
+    	pr_err("get_imgsensor_id: 0x%x fail\n", *sensor_id);
     	*sensor_id = 0xFFFFFFFF;
     	return ERROR_SENSOR_CONNECT_FAIL;
     }
@@ -1288,7 +1288,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
     	slim_video(image_window, sensor_config_data);
     	break;
     default:
-    	LOG_INF("Error ScenarioId setting");
+    	pr_err("Error ScenarioId setting");
     	preview(image_window, sensor_config_data);
     	return ERROR_INVALID_SCENARIO_ID;
     }
@@ -1416,7 +1416,7 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
     	spin_unlock(&imgsensor_drv_lock);
     	if (imgsensor.frame_length > imgsensor.shutter)
     		set_dummy();
-    	LOG_INF("error scenario_id = %d, we use preview scenario\n", scenario_id);
+    	pr_err("error scenario_id = %d, we use preview scenario\n", scenario_id);
     	break;
     }
     return ERROR_NONE;
