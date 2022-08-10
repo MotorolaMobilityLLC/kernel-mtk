@@ -115,11 +115,13 @@
 		2180 1620 1503 1511
 		2170 1610 1493 1501>;
 
+	TEMPERATURE_T4 = <(-10)>;
 	ACTIVE_TABLE = <(5)>;
 	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
-	df-serialnum = "SB18D39674";
-	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
+
+	df-serialnum = "SB18D57454";
+	#include "bat_setting/mt6855_battery_pd50_sunw_5000mah.dtsi"
 };
 
 &charge_leds {
