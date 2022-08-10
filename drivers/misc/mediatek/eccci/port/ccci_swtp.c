@@ -176,6 +176,13 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 			"--------SWTP_NO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant4=%d, Ant1=%d, Ant0=%d, Ant5=%d\n",
 			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2], swtp->gpio_state[3]);
 	}
+#elif defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_IN)) {
+		swtp->tx_power_mode = SWTP_DO_TX_POWER;
+	} else {
+		swtp->tx_power_mode = SWTP_NO_TX_POWER;
+	}
+	CCCI_LEGACY_ERR_LOG(-1, SYS, "%s tx_power_mode:%d,gpio_state:%d %d %d\n", __func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2]);
 #else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
