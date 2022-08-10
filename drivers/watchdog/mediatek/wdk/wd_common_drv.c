@@ -165,6 +165,11 @@ static ssize_t wk_proc_cmd_write(struct file *file, const char *buf,
 	ret = sscanf(cmd_buf, "%d %d %d %d %d", &mode,
 		&kinterval, &timeout, &debug_sleep, &en);
 
+	if (ret != 5) {
+		pr_info("[wdk] Wrong parameter format\n");
+		return -1;
+	}
+
 	pr_debug("[wdk] mode=%d interval=%d timeout=%d enable =%d\n",
 		mode, kinterval, timeout, en);
 
