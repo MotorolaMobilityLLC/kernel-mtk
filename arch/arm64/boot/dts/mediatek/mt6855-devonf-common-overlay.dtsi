@@ -995,6 +995,10 @@ chipone,enable-wakeup;
 		125000 2522>;
 };
 
+&ltepa_ntc {
+	status = "disabled";
+};
+
 &thermal_zones{
 		ap_ntc: ap_ntc {
 			polling-delay = <0>; /* milliseconds */
