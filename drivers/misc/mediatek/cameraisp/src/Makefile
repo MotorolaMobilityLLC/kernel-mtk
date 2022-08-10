@@ -28,7 +28,6 @@ endif
 
 ifeq ($(CONFIG_MACH_MT6765),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-  obj-$(CONFIG_MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 #  obj-y += fdvt/
 endif
 
