@@ -1073,6 +1073,7 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 
 	if (on) {
 		set_lhbm_alpha(bl_level, version);
+		usleep_range(20000,20001);
 		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
 		pTable = panel_lhbm_on;
 	} else {
