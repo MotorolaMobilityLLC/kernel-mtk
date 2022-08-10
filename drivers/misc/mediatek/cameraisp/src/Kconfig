@@ -7,13 +7,3 @@ config MTK_CAMERA_ISP_CAMERA_SUPPORT
 	  Disable if it is not supported or
 	  not wanted.
 
-#Enable the P1 node to prevent dropped frames, this patch just for low performance chip,
-#the relevant CR are IKSWS-137754 and ALPS07466003.
-config MOTO_MAUI_PANORAMA_FRAMEDROPPED_PREVENT
-        bool "Maui panorama frame dropped prevent"
-        default n
-        help
-	  Image Signal Processor.
-	  Enable P1 node to prevent dropped frames.
-	  Disable if it is not supported or
-	  not wanted.
