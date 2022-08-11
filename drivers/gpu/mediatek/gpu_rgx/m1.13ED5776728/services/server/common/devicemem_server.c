@@ -421,6 +421,11 @@ DevmemIntCtxCreate(CONNECTION_DATA *psConnection,
 
 	PVR_DPF((PVR_DBG_MESSAGE, "%s", __func__));
 
+	/* Only allow request for a kernel context that comes from a direct bridge
+	 * (psConnection == NULL). Only the FW/KM Ctx is created over the direct bridge. */
+	PVR_LOG_RETURN_IF_INVALID_PARAM(!bKernelMemoryCtx || psConnection == NULL,
+	                                "bKernelMemoryCtx && psConnection");
+
 	/*
 	 * Ensure that we are safe to perform unaligned accesses on memory
 	 * we mark write-combine, as the compiler might generate
