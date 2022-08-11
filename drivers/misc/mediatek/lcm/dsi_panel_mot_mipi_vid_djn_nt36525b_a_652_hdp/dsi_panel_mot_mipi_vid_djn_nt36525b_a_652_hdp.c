@@ -498,7 +498,7 @@ static void lcm_init_power(void)
 	LCM_LOGI("[LCM] lcm_init_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_init(14,1);
+	lcm_set_bias_init(20,1);
 	MDELAY(10);
 }
 
@@ -516,7 +516,7 @@ static void lcm_resume_power(void)
 	LCM_LOGI("[LCM] lcm_resume_power\n");
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_PWR_EN_OUT1);
 	MDELAY(1);
-	lcm_set_bias_pin_enable(14,1);
+	lcm_set_bias_pin_enable(20,1);
 	MDELAY(10);
 }
 
