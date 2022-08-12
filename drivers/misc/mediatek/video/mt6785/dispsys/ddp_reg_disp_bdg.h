@@ -785,7 +785,8 @@ struct RST_CLR_SET_REG {
 };
 
 struct IRQ_MSK_CLR_SET_REG {
-	unsigned REG_00 : 4;
+	unsigned REG_00 : 1;
+	unsigned REG_01 : 3;
 	unsigned REG_04 : 1;
 	unsigned REG_05 : 5;
 	unsigned REG_10 : 1;

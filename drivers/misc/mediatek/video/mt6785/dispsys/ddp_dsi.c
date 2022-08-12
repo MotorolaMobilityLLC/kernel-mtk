@@ -200,6 +200,7 @@ unsigned long DSI_PHY_REG[DSI_INTERFACE_NUM];
 struct DSI_CMDQ_REGS *DSI_CMDQ_REG[DSI_INTERFACE_NUM];
 struct DSI_VM_CMDQ_REGS *DSI_VM_CMD_REG[DSI_INTERFACE_NUM];
 unsigned int deskew_done;
+unsigned int check_stop_done;
 static int mipi_clk_change_sta;
 static int dsi_currect_mode;
 static int dsi_force_config;
@@ -2671,6 +2672,13 @@ void set_deskew_status(unsigned int value)
 	deskew_done = value;
 }
 
+void set_check_stop_status(unsigned int value)
+{
+	DISPMSG("%s, value=%d->%d\n",
+		__func__, check_stop_done, value);
+	check_stop_done = value;
+}
+
 void DSI_MIPI_deskew(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	unsigned int i = 0;
@@ -4472,6 +4480,17 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module,
 			       struct cmdqRecStruct *cmdq, UINT8 cmd,
 			       UINT8 *buffer, UINT8 buffer_size)
 {
+#ifdef CONFIG_MTK_MT6382_BDG
+	UINT32 ret = 0;
+
+	bdg_tx_set_mode(DISP_BDG_DSI0, NULL, CMD_MODE);
+	bdg_set_dcs_read_cmd(true, NULL);
+	ret = DSI_dcs_read_lcm_reg_via_bdg(module,
+					  NULL, cmd, buffer, buffer_size);
+	bdg_set_dcs_read_cmd(false, NULL);
+	bdg_tx_set_mode(DISP_BDG_DSI0, NULL, CMD_MODE);
+	return ret;
+#else
 	int dsi_i = 0;
 	UINT32 max_try_count = 5;
 	UINT32 recv_data_cnt = 0;
@@ -4616,6 +4635,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module,
 			DSI_REG[dsi_i]->DSI_INTEN, RD_RDY, 0);
 
 	return recv_data_cnt;
+#endif
 }
 
 UINT32 DSI_dcs_read_lcm_reg_v4(enum DISP_MODULE_ENUM module,
@@ -6338,7 +6358,8 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);
 	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0);
-	if (get_mt6382_init()) {
+#ifdef CONFIG_MTK_MT6382_BDG
+	if (get_mt6382_init() && DSI_REG[i]->DSI_MODE_CTRL.MODE != CMD_MODE) {
 		ap_send_bdg_tx_stop(module, cmdq_handle);
 		ap_send_bdg_tx_reset(module, cmdq_handle);
 		ap_send_bdg_tx_set_mode(module, cmdq_handle, CMD_MODE);
@@ -6348,6 +6369,8 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		bdg_set_dcs_read_cmd(false, cmdq_handle);
 #endif
 	}
+#endif
+
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
 
 	if (bdg_is_bdg_connected() == 1)
@@ -6793,8 +6816,11 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	/* DSI_RestoreRegisters(module, NULL); */
 	if (atomic_read(&dsi_idle_flg) == 0)
 		DSI_exit_ULPS(module);
-	if (bdg_is_bdg_connected() == 1)
-		check_stopstate(NULL);
+#ifdef CONFIG_MTK_MT6382_BDG
+	if (bdg_is_bdg_connected() == 1)	
+		if (!check_stop_done)
+ 			check_stopstate(NULL);
+#endif	
 	DSI_Reset(module, NULL);
 	_set_power_on_status(module, 1);
 	test = 1;
@@ -7344,12 +7370,13 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 				/* loop: 0~4 */
 			}
 		}
-		if (bdg_is_bdg_connected() == 1) {
-			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x84, 7,
+#ifdef CONFIG_MTK_MT6382_BDG
+		DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x84, 7,
 					rxbypass0, 1); //0x00021084 = 0x00000000
+		if (DSI_REG[0]->DSI_MODE_CTRL.MODE != CMD_MODE)
 			DSI_send_cmd_cmd(cmdq_trigger_handle, DISP_MODULE_DSI0, 1, 0x79, 0x70, 7,
-					rxsel1, 1); //0x00023170 = 0x00000001
-		}
+						rxsel1, 1); //0x00023170 = 0x00000001		
+#endif		
 	} else if (state == CMDQ_ESD_CHECK_CMP) {
 		struct LCM_esd_check_item *lcm_esd_tb;
 		int return_val;
