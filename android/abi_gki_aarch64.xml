@@ -300,6 +300,7 @@
       <elf-symbol name='__traceiter_android_rvh_account_irq_start' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x402e0e29'/>
       <elf-symbol name='__traceiter_android_rvh_after_dequeue_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7c82ee44'/>
       <elf-symbol name='__traceiter_android_rvh_after_enqueue_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x96d0c391'/>
+      <elf-symbol name='__traceiter_android_rvh_audio_usb_offload_disconnect' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa491f0c0'/>
       <elf-symbol name='__traceiter_android_rvh_build_perf_domains' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4b4a53af'/>
       <elf-symbol name='__traceiter_android_rvh_can_migrate_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcee26ad1'/>
       <elf-symbol name='__traceiter_android_rvh_check_preempt_tick' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x48afd9ab'/>
@@ -27328,7 +27329,17 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='c75c7b06' size-in-bits='64' id='380c7edc'/>
-      <class-decl name='ioam6_pernet_data' is-struct='yes' visibility='default' is-declaration-only='yes' id='38200493'/>
+      <class-decl name='ioam6_pernet_data' size-in-bits='3072' is-struct='yes' visibility='default' filepath='include/net/ioam6.h' line='41' column='1' id='38200493'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='lock' type-id='925167dc' visibility='default' filepath='include/net/ioam6.h' line='42' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='384'>
+          <var-decl name='namespaces' type-id='9e095f93' visibility='default' filepath='include/net/ioam6.h' line='43' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='1728'>
+          <var-decl name='schemas' type-id='9e095f93' visibility='default' filepath='include/net/ioam6.h' line='44' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='686e5e33' size-in-bits='64' id='38313007'/>
       <pointer-type-def type-id='781993c9' size-in-bits='64' id='383471a1'/>
       <pointer-type-def type-id='2d83a1b8' size-in-bits='64' id='383758d6'/>
@@ -121200,6 +121211,11 @@
         <parameter type-id='6ed6b432' name='rq' filepath='include/trace/hooks/sched.h' line='357' column='1'/>
         <parameter type-id='f23e2572' name='p' filepath='include/trace/hooks/sched.h' line='357' column='1'/>
         <parameter type-id='95e97e5e' name='flags' filepath='include/trace/hooks/sched.h' line='357' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_rvh_audio_usb_offload_disconnect' mangled-name='__traceiter_android_rvh_audio_usb_offload_disconnect' filepath='include/trace/hooks/audio_usboffload.h' line='35' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_audio_usb_offload_disconnect'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/audio_usboffload.h' line='35' column='1'/>
+        <parameter type-id='8bf48c31' name='intf' filepath='include/trace/hooks/audio_usboffload.h' line='35' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_rvh_build_perf_domains' mangled-name='__traceiter_android_rvh_build_perf_domains' filepath='include/trace/hooks/sched.h' line='230' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_build_perf_domains'>
