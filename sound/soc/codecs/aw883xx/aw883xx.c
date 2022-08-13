@@ -1391,7 +1391,7 @@ static void aw883xx_codec_remove(aw_snd_soc_codec_t *aw_codec)
 
 	cancel_delayed_work_sync(&aw883xx->interrupt_work);
 	cancel_delayed_work_sync(&aw883xx->acf_work);
-	cancel_delayed_work_sync(&aw883xx->aw_pa->monitor_desc->delay_work);
+	cancel_delayed_work_sync(&aw883xx->aw_pa->monitor_desc.delay_work);
 	cancel_delayed_work_sync(&aw883xx->start_work);
 
 	if (aw883xx->work_queue)
