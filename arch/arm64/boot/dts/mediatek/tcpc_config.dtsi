@@ -16,9 +16,14 @@
 #else
 		rt-tcpc,notifier_supply_num = <2>;
 #endif
+#ifdef CONFIG_MACH_MT6765
 		rt1711pd,intr_gpio = <&pio 42 0x0>;
 		rt1711pd,intr_gpio_num = <42>;
 		charger = <&mtk_charger_type>;
+#else
+		rt1711pd,intr_gpio = <&pio 41 0x0>;
+		rt1711pd,intr_gpio_num = <41>;
+#endif
 		pd-data {
 			pd,vid = <0x29cf>;
 			pd,pid = <0x1711>;
