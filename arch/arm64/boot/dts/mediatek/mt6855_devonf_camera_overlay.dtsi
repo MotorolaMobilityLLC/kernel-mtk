@@ -423,18 +423,12 @@
 /* CAMERA EEPROM */
 &i2c2 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	size-cells = <0>;
 	mtk_camera_eeprom0:camera_eeprom0@50 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x50>;
-		status = "okay";
-	};
-	camera_main_three_mtk:camera_main_three@10 {
-		compatible = "mediatek,camera_main_three";
-		#thermal-sensor-cells = <0>;
-		reg = <0x10>;
 		status = "okay";
 	};
 	camera_main_mtk:camera_main@1a {
@@ -451,7 +445,7 @@
 };
 &i2c4 {
 	status = "okay";
-	clock-frequency = <400000>;
+	clock-frequency = <1000000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 	mtk_camera_eeprom1:camera_eeprom1@51 {
@@ -512,11 +506,6 @@
 		polling-delay = <1000>; /* milliseconds */
 		polling-delay-passive = <0>; /* milliseconds */
 		thermal-sensors = <&camera_main_two_mtk>;
-	};
-	camera_main_three: camera_main_three {
-		polling-delay = <1000>; /* milliseconds */
-		polling-delay-passive = <0>; /* milliseconds */
-		thermal-sensors = <&camera_main_three_mtk>;
 	};
 };
 /* CAMERA TZ config end */
