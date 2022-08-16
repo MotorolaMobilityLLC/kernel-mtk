@@ -31,6 +31,8 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
+static int tp_gesture_flag = 0;
+
 struct tianma {
 	struct device *dev;
 	struct drm_panel panel;
@@ -238,6 +240,17 @@ static int tianma_disable(struct drm_panel *panel)
 	return 0;
 }
 
+static int tianma_set_gesture_flag(int state)
+{
+	if(state == 1)
+		tp_gesture_flag = 1;
+	else
+		tp_gesture_flag = 0;
+
+	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
+	return 0;
+}
+
 static int tianma_unprepare(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
@@ -259,30 +272,33 @@ static int tianma_unprepare(struct drm_panel *panel)
 		//return -1;
 	}
     else {
-	#ifdef IOVCC_IS_LOW
+#ifdef IOVCC_IS_LOW
 	    gpiod_set_value(ctx->reset_gpio, 0);
 	    msleep(5);
 	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	#else
+#else
 	   //reset keep high
 	    gpiod_set_value(ctx->reset_gpio, 1);
 	    msleep(5);
 	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-		#endif
+#endif
     }
 
-	printk("[%d %s]bias\n",__LINE__, __FUNCTION__);
-	ctx->bias_neg =
-		devm_gpiod_get_index(ctx->dev, "bias", 1, GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->bias_neg, 0);
-	devm_gpiod_put(ctx->dev, ctx->bias_neg);
+	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
+	if(!tp_gesture_flag) {
+		printk("[%d %s]bias\n",__LINE__, __FUNCTION__);
+		ctx->bias_neg =
+			devm_gpiod_get_index(ctx->dev, "bias", 1, GPIOD_OUT_HIGH);
+		gpiod_set_value(ctx->bias_neg, 0);
+		devm_gpiod_put(ctx->dev, ctx->bias_neg);
 
-	msleep(20);
+		msleep(20);
 
-	ctx->bias_pos =
-		devm_gpiod_get_index(ctx->dev, "bias", 0, GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->bias_pos, 0);
-	devm_gpiod_put(ctx->dev, ctx->bias_pos);
+		ctx->bias_pos =
+			devm_gpiod_get_index(ctx->dev, "bias", 0, GPIOD_OUT_HIGH);
+		gpiod_set_value(ctx->bias_pos, 0);
+		devm_gpiod_put(ctx->dev, ctx->bias_pos);
+	}
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -884,6 +900,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
+	.set_gesture_flag = tianma_set_gesture_flag,
 	.get_lcm_version = mtk_panel_get_lcm_version,
 	.panel_feature_set = panel_feature_set,
 };
