@@ -19,6 +19,7 @@
 		novatek,reset-gpio = <&pio 3 0x00>;
 		novatek,irq-gpio = <&pio 22 0x2001>;
 		novatek,usb_charger;
+		novatek,report_gesture_key;
 		novatek,psy-name = "battery";
 
 		// 525
