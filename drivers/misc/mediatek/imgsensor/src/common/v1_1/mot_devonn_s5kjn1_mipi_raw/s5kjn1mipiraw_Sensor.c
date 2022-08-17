@@ -779,8 +779,7 @@ static kal_uint32 return_sensor_id(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-
-
+#include "mot_devonn_s5kjn1sq_otp.h"
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
@@ -795,6 +794,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 
+				DEVONN_S5KJN1_read_data_from_eeprom(DEVONN_S5KJN1_EEPROM_SLAVE_ADDR, 0x0000, DEVONN_S5KJN1_EEPROM_SIZE);
+				DEVONN_S5KJN1_eeprom_format_calibration_data((void *)DEVONN_S5KJN1_eeprom);
+				remosaic_data_get((void *)DEVONN_S5KJN1_eeprom);
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
@@ -1175,6 +1177,13 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->FrameTimeDelayFrame =
 		imgsensor_info.frame_time_delay_frame;
 
+	sensor_info->calibration_status.mnf = mnf_status;
+	sensor_info->calibration_status.af = af_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
+	sensor_info->calibration_status.pdaf = pdaf_status;
+	sensor_info->calibration_status.dual = dual_status;
+	DEVONN_S5KJN1_eeprom_get_mnf_data((void *) DEVONN_S5KJN1_eeprom, &sensor_info->mnf_calibration);
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
@@ -1867,21 +1876,20 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_4CELL_DATA:/*get 4 cell data from eeprom*/
 	{
-#if 0
+
 		/*get 4 cell data from eeprom*/
 		int type = (kal_uint16)(*feature_data);
 		char *data = (char *)(uintptr_t)(*(feature_data+1));
 
 		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
 			memset(data, 0, S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE + 2);
-			memcpy(data, &AUSTIN_S5KJN1_eeprom_for_remosaic[0], S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE +2);
+			memcpy(data, &DEVONN_S5KJN1_eeprom_for_remosaic[0], S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_SIZE +2);
 			LOG_INF(
 			    "[JX]read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
 			    (UINT16)data[0], (UINT16)data[1],
 			    (UINT16)data[2], (UINT16)data[3],
 			    (UINT16)data[4], (UINT16)data[5]);
 		}
-#endif
 		break;
 	}
 	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
