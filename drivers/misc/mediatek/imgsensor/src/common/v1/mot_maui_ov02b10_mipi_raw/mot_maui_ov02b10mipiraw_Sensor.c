@@ -863,7 +863,7 @@ static calibration_status_t MAUI_OV02B10_check_awb_data(void *data)
     	if(!eeprom_util_check_crc16(&data_awb[0],
 		MAUI_OV02B10_OTP_CRC_AWB_GROUP1_CAL_SIZE,
 		data_awb[7])) {
-		LOG_ERR("AWB CRC Fails!");
+		LOG_INF("AWB CRC Fails!");
 		return CRC_FAILURE;
 		}
     } else if(((data_awb[0]&0x30)>>4) == 0x01){ //Bit[5:4] 01:Valid 11:Invalid
@@ -871,7 +871,7 @@ static calibration_status_t MAUI_OV02B10_check_awb_data(void *data)
     	if(!eeprom_util_check_crc16(&data_awb[8],
 		MAUI_OV02B10_OTP_CRC_AWB_GROUP2_CAL_SIZE,
 		data_awb[14])) {
-		LOG_ERR("AWB CRC Fails!");
+		LOG_INF("AWB CRC Fails!");
 		return CRC_FAILURE;
 		}
     } else {
@@ -1284,7 +1284,7 @@ static kal_uint32 set_max_framerate_by_scenario(enum MSDK_SCENARIO_ID_ENUM scena
     	spin_unlock(&imgsensor_drv_lock);
     	if (imgsensor.frame_length > imgsensor.shutter)
     		set_dummy();
-    	LOG_ERR("error scenario_id = %d, we use preview scenario\n", scenario_id);
+    	LOG_INF("error scenario_id = %d, we use preview scenario\n", scenario_id);
     	break;
     }
     return ERROR_NONE;
