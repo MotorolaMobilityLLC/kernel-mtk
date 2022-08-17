@@ -836,7 +836,7 @@ static void gc02m1_eeprom_format_calibration_data()
 #define MODULE_GROUP2_START_ADDR 0xC0
 #define MODULE_DATA_SERIAL_NUMBER_SIZE 11
 #define MODULE_DATA_AWB_BLOCK_SIZE 17
-static unsigned char gc02m1_serial_data[12] = {0}; //add flag and checksum value
+static unsigned char gc02m1_serial_data[16] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
 static unsigned char gc02m1_data_eeprom[32] = {0}; //add flag and checksum value
 
 /*
@@ -1204,11 +1204,15 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->calibration_status.dual = dual_status;
 	{
 		snprintf(sensor_info->mnf_calibration.serial_number, MAX_CALIBRATION_STRING,
-			"%02x%02x%02x%02x%02x%02x%02x%02x",
+			"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
 		gc02m1_serial_data[0], gc02m1_serial_data[1],
 		gc02m1_serial_data[2], gc02m1_serial_data[3],
 		gc02m1_serial_data[4], gc02m1_serial_data[5],
-		gc02m1_serial_data[6], gc02m1_serial_data[7]);
+		gc02m1_serial_data[6], gc02m1_serial_data[7],
+		gc02m1_serial_data[8], gc02m1_serial_data[9],
+		gc02m1_serial_data[10], gc02m1_serial_data[11],
+		gc02m1_serial_data[12], gc02m1_serial_data[13],
+		gc02m1_serial_data[14], gc02m1_serial_data[15]);
 	}
 #endif
 	switch (scenario_id) {
