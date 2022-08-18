@@ -82,12 +82,12 @@ static enum IMGSENSOR_RETURN gpio_init(
 					"cam%d_%s",
 					1,//camera 1,2,4 avdd
 					lookup_names);
-				else if ((j != 0)&&(strncmp(lookup_names, "pnd", strlen("pnd")) == 0))
+/*				else if ((j != 0)&&(strncmp(lookup_names, "pnd", strlen("pnd")) == 0))
 					ret = snprintf(str_pinctrl_name,
 					sizeof(str_pinctrl_name),
 					"cam%d_%s",
 					0,//camera 0,1 Dvdd
-					lookup_names);
+					lookup_names);*/
 				else
 					ret = snprintf(str_pinctrl_name,
 					sizeof(str_pinctrl_name),
