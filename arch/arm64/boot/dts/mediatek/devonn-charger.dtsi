@@ -79,6 +79,9 @@
 	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
 	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
 	VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
+        CAR_TUNE_VALUE = <(100)>;
+        CURR_MEASURE_20A = <(0)>;
+        UNIT_MULTIPLE = <(1)>;
 
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
