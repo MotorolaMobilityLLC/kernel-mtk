@@ -689,6 +689,65 @@ static ssize_t bat_ocv_store(struct device *dev, struct device_attribute *attr,
 static DEVICE_ATTR(bat_ocv, S_IWUSR | S_IRUGO,
 	bat_ocv_show, bat_ocv_store);
 
+static ssize_t bat_cycle_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int val = -1;
+	int ret = 0;
+
+	if (!bat_client) {
+		pr_err("%s bat client  is null\n", __func__);
+		goto end;
+	}
+
+	if (bat_client->get_bat_cycle) {
+		pr_err("%s get_bat_cycle is null\n", __func__);
+		goto end;
+	}
+
+	ret = bat_client->get_bat_cycle(bat_client->data, &val);
+	if (ret) {
+		pr_err("%s get bat cycle fail %d\n", __func__, ret);
+		goto end;
+	}
+
+end:
+	return snprintf(buf, PAGE_SIZE, "%d\n", val);
+}
+
+static ssize_t bat_cycle_store(struct device *dev, struct device_attribute *attr,
+									const char *buf, size_t count)
+{
+	int val = 0;
+	int ret = 0;
+
+	if (!bat_client) {
+		pr_err("%s bat client is null\n", __func__);
+		goto end;
+	}
+	ret = kstrtoint(buf, 10, &val);
+	if (ret) {
+		pr_info("%s, %s not a valide buf(%d)\n", __func__, buf, ret);
+		goto end;
+	}
+
+	if (!bat_client->set_bat_cycle) {
+		pr_err("%s set_bat_cycle is null\n", __func__);
+		goto end;
+	}
+
+	ret = bat_client->set_bat_cycle(bat_client->data, val);
+	if (ret) {
+		pr_err("%s set_bat_cycle fail %d\n", __func__, ret);
+		goto end;
+	}
+
+end:
+	return count;
+}
+static DEVICE_ATTR(bat_cycle, S_IWUSR | S_IRUGO,
+	bat_cycle_show, bat_cycle_store);
+
+
 static ssize_t chg_type_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -1072,6 +1131,7 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_bat_voltage.attr,
 	&dev_attr_bat_ocv.attr,
 	&dev_attr_bat_id.attr,
+	&dev_attr_bat_cycle.attr,
 	&dev_attr_factory_kill_disable.attr,
 	&dev_attr_chg_type.attr,
 	&dev_attr_adc.attr,
