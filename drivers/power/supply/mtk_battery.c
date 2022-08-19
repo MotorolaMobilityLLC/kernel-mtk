@@ -3840,6 +3840,44 @@ static int battery_tcmd_read_bat_ocv(void *input, int* val)
 	return 0;
 }
 
+static int battery_tcmd_get_bat_cycle(void *input, int* val)
+{
+	struct mtk_battery *gm = input;
+	int ret = 0;
+
+	if (!gm) {
+		ret = -1;
+		bm_info("[%s gm is null\n", __func__);
+	} else {
+		*val = gm->bat_cycle;
+	}
+
+	return ret;
+}
+
+static int battery_tcmd_set_bat_cycle(void *input, int val)
+{
+	struct mtk_battery *gm = input;
+	int ret = 0;
+
+	if (!gm) {
+		ret = -1;
+		bm_err("[%s gm is null\n", __func__);
+		goto end;
+	}
+
+	if (val == 0) {
+		gm->is_reset_battery_cycle = true;
+		wakeup_fg_algo(gm, FG_INTR_BAT_CYCLE);
+	} else {
+		gm->is_reset_battery_cycle = false;
+	}
+
+end:
+	return ret;
+}
+
+
 static int battery_tcmd_register_tcmd(struct mtk_battery *gm)
 {
 	int ret;
@@ -3851,6 +3889,8 @@ static int battery_tcmd_register_tcmd(struct mtk_battery *gm)
 	//data->bat_tcmd_client.get_bat_id = battery_tcmd_read_bat_id;
 	data->bat_tcmd_client.get_bat_voltage = battery_tcmd_read_bat_voltage;
 	data->bat_tcmd_client.get_bat_ocv = battery_tcmd_read_bat_ocv;
+	data->bat_tcmd_client.get_bat_cycle = battery_tcmd_get_bat_cycle;
+	data->bat_tcmd_client.set_bat_cycle = battery_tcmd_set_bat_cycle;
 
 	ret = moto_chg_tcmd_register(&data->bat_tcmd_client);
 
