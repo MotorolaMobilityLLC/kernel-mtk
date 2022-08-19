@@ -167,6 +167,11 @@ extern int DW9800WAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int DW9800WAF_GetFileName(unsigned char *pFileName);
 extern struct regulator *regulator_get_regVCAMAF(void);
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#define VIB_ResetPos VIB_ResetPos_Main
+extern void VIB_ResetPos_Main(unsigned long a_u4Position);
+#endif
+
 #define DW9718AF_SetI2Cclient DW9718AF_SetI2Cclient_Main
 #define DW9718AF_Ioctl DW9718AF_Ioctl_Main
 #define DW9718AF_Release DW9718AF_Release_Main
