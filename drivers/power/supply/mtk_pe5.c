@@ -1386,12 +1386,12 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 	ibus1 -= (ibus_min + ibus_max);
 	ibus1 = precise_div(ibus1, PE50_MEASURE_R_AVG_TIMES);
 
-	ret = pe50_hal_set_aicr(info->alg, CHG1, 400);
+	ret = pe50_hal_set_aicr(info->alg, CHG1, 600);
 	if (ret < 0) {
 		PE50_ERR("set aicr fail(%d)\n", ret);
 		return ret;
 	}
-
+	msleep(100);
 	for (i = 0; i < PE50_MEASURE_R_AVG_TIMES + 2; i++) {
 		ret = pe50_hal_get_adc(info->alg, CHG1, PE50_ADCCHAN_VBUS, &val_vbus);
 		if (ret < 0) {
