@@ -210,7 +210,7 @@
 
 #define OVER_DISCHARGE_LEVEL	-1500
 
-#define UISOC_UPDATE_TYPE		0
+#define UISOC_UPDATE_TYPE		2
 /*
  *	uisoc_update_type:
  *	0: only ui_soc interrupt update ui_soc
