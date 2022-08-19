@@ -43,7 +43,7 @@
 #define LOG_INF(format, args...)    pr_info(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE    1
-
+#define DISABLE_LOG    0
 
 #define AWB_GROUP_FLAG_ADDR 0x78
 #define AWB_GROUP1_START_ADDR 0x80
@@ -537,7 +537,9 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
     write_cmos_sensor(0xfe, 0x00);
     write_cmos_sensor(0x03, (shutter >> 8) & 0x3f);
     write_cmos_sensor(0x04, shutter  & 0xff);
+#if DISABLE_LOG
     LOG_INF("shutter = %d, framelength = %d\n", shutter, imgsensor.frame_length);
+#endif
 }
 
 static kal_uint16 gain2reg(const kal_uint16 gain)

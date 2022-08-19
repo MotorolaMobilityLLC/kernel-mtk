@@ -275,6 +275,12 @@ config MTK_CAM_SENSOR_PROBE_RETRY
 	help
 	  Add retries for sensor id matching
 
+config MTK_CAM_DISABLE_ISP_LOG
+	bool "For disable camera isp log"
+	default n
+	help
+	  MTK native logic disables the debug switch
+
 config CUSTOM_KERNEL_IMGSENSOR
 	string "Custom image sensor driver"
 	help
