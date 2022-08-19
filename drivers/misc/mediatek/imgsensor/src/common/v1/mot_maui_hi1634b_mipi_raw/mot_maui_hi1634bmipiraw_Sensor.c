@@ -55,6 +55,7 @@
 
 #define USE_BURST_MODE 1
 #define ENABLE_PDAF 1
+#define DISABLE_LOG 0
 
 //#define I2C_BUFFER_LEN 255 /* trans# max is 255, each 3 bytes */
 #define LOG_INF(format, args...)    \
@@ -275,8 +276,10 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 
 static void set_dummy(void)
 {
+#if DISABLE_LOG
 	pr_debug("dummyline = %d, dummypixels = %d\n",
 		imgsensor.dummy_line, imgsensor.dummy_pixel);
+#endif
 	write_cmos_sensor(0x020e, imgsensor.frame_length & 0xFFFF);
 	write_cmos_sensor(0x0206, imgsensor.line_length / 8);
 
@@ -293,7 +296,9 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 	/*kal_int16 dummy_line;*/
 	kal_uint32 frame_length = imgsensor.frame_length;
 
+#if DISABLE_LOG
 	pr_debug("framerate = %d, min framelength should enable %d\n", framerate, min_framelength_en);
+#endif
 
 	frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
 	spin_lock(&imgsensor_drv_lock);
@@ -445,7 +450,9 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 	write_cmos_sensor_8(0x020D, (shutter & 0xFF0000) >> 16 );
 	write_cmos_sensor(0x020A, shutter);
 
+#if DISABLE_LOG
     pr_debug("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
+#endif
 
 }	/* set_shutter_frame_length */
 
