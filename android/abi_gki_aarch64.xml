@@ -373,6 +373,7 @@
       <elf-symbol name='__traceiter_android_rvh_selinux_avc_node_delete' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe5e515c'/>
       <elf-symbol name='__traceiter_android_rvh_selinux_avc_node_replace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfaf0424d'/>
       <elf-symbol name='__traceiter_android_rvh_selinux_is_initialized' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x94da738b'/>
+      <elf-symbol name='__traceiter_android_rvh_set_balance_anon_file_reclaim' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6260c8f6'/>
       <elf-symbol name='__traceiter_android_rvh_set_cpus_allowed_by_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd5eb1a60'/>
       <elf-symbol name='__traceiter_android_rvh_set_cpus_allowed_comm' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x251e4ad0'/>
       <elf-symbol name='__traceiter_android_rvh_set_cpus_allowed_ptr_locked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf73ea53a'/>
@@ -447,6 +448,7 @@
       <elf-symbol name='__traceiter_android_vh_drm_atomic_check_modeset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfda832c1'/>
       <elf-symbol name='__traceiter_android_vh_dump_throttled_rt_tasks' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1a34d1a3'/>
       <elf-symbol name='__traceiter_android_vh_enable_thermal_power_throttle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5e711538'/>
+      <elf-symbol name='__traceiter_android_vh_exit_mm' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7b07be57'/>
       <elf-symbol name='__traceiter_android_vh_exit_signal' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2b1b3e7'/>
       <elf-symbol name='__traceiter_android_vh_free_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff390d42'/>
       <elf-symbol name='__traceiter_android_vh_futex_sleep_start' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x33a6b539'/>
@@ -463,6 +465,11 @@
       <elf-symbol name='__traceiter_android_vh_map_util_freq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf7d7ec49'/>
       <elf-symbol name='__traceiter_android_vh_map_util_freq_new' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd9fe962'/>
       <elf-symbol name='__traceiter_android_vh_mark_page_accessed' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1739484d'/>
+      <elf-symbol name='__traceiter_android_vh_mem_cgroup_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x18ae1a82'/>
+      <elf-symbol name='__traceiter_android_vh_mem_cgroup_css_offline' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x821fc5b'/>
+      <elf-symbol name='__traceiter_android_vh_mem_cgroup_css_online' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x82520683'/>
+      <elf-symbol name='__traceiter_android_vh_mem_cgroup_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1549cd2c'/>
+      <elf-symbol name='__traceiter_android_vh_mem_cgroup_id_remove' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x80c321bc'/>
       <elf-symbol name='__traceiter_android_vh_meminfo_proc_show' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa07154b5'/>
       <elf-symbol name='__traceiter_android_vh_mmap_region' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1386e45f'/>
       <elf-symbol name='__traceiter_android_vh_mmc_attach_sd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa6b16e20'/>
@@ -498,6 +505,7 @@
       <elf-symbol name='__traceiter_android_vh_rwsem_write_wait_start' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1c7a8b6c'/>
       <elf-symbol name='__traceiter_android_vh_sched_pelt_multiplier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb77c8f2d'/>
       <elf-symbol name='__traceiter_android_vh_sched_setaffinity_early' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc702f38'/>
+      <elf-symbol name='__traceiter_android_vh_sched_show_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9f95a557'/>
       <elf-symbol name='__traceiter_android_vh_sched_stat_runtime_rt' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc2f5714'/>
       <elf-symbol name='__traceiter_android_vh_scheduler_tick' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8c91de8f'/>
       <elf-symbol name='__traceiter_android_vh_sd_update_bus_speed_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6a484838'/>
@@ -521,6 +529,8 @@
       <elf-symbol name='__traceiter_android_vh_thermal_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc9b6b745'/>
       <elf-symbol name='__traceiter_android_vh_thermal_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x11150fce'/>
       <elf-symbol name='__traceiter_android_vh_try_to_unmap_one' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x16a584db'/>
+      <elf-symbol name='__traceiter_android_vh_tune_scan_type' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x842cf72c'/>
+      <elf-symbol name='__traceiter_android_vh_tune_swappiness' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd2ac8d57'/>
       <elf-symbol name='__traceiter_android_vh_ufs_check_int_errors' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x68dcc61c'/>
       <elf-symbol name='__traceiter_android_vh_ufs_clock_scaling' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x47bf7755'/>
       <elf-symbol name='__traceiter_android_vh_ufs_compl_command' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x812527ff'/>
@@ -991,6 +1001,7 @@
       <elf-symbol name='cec_transmit_attempt_done_ts' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa9821b0'/>
       <elf-symbol name='cec_transmit_done_ts' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xefb73b42'/>
       <elf-symbol name='cec_unregister_adapter' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5f18175'/>
+      <elf-symbol name='cgroup_add_legacy_cftypes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb3972323'/>
       <elf-symbol name='cgroup_path_ns' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xddd0f5a9'/>
       <elf-symbol name='cgroup_taskset_first' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa776e0ec'/>
       <elf-symbol name='cgroup_taskset_next' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x715260b0'/>
@@ -3050,11 +3061,14 @@
       <elf-symbol name='kmalloc_order' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbbe80fdb'/>
       <elf-symbol name='kmalloc_order_trace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb8b9f817'/>
       <elf-symbol name='kmem_cache_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa092972e'/>
+      <elf-symbol name='kmem_cache_alloc_bulk' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3fcf5646'/>
       <elf-symbol name='kmem_cache_alloc_trace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5239aaef'/>
       <elf-symbol name='kmem_cache_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3116c014'/>
       <elf-symbol name='kmem_cache_create_usercopy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xef61a739'/>
       <elf-symbol name='kmem_cache_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe348b38a'/>
       <elf-symbol name='kmem_cache_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4d011cb1'/>
+      <elf-symbol name='kmem_cache_free_bulk' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc93f3e08'/>
+      <elf-symbol name='kmem_cache_shrink' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x12b8e7d3'/>
       <elf-symbol name='kmemdup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x66b4cc41'/>
       <elf-symbol name='kmemdup_nul' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb3f548ad'/>
       <elf-symbol name='kmsg_dump_get_buffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xee518148'/>
@@ -3253,6 +3267,7 @@
       <elf-symbol name='media_request_get_by_fd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x599bfa6d'/>
       <elf-symbol name='media_request_object_complete' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8cae2666'/>
       <elf-symbol name='media_request_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3d256a0f'/>
+      <elf-symbol name='mem_cgroup_from_id' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6da1730'/>
       <elf-symbol name='mem_dump_obj' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcb561441'/>
       <elf-symbol name='mem_encrypt_active' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8dee0072'/>
       <elf-symbol name='memblock_end_of_DRAM' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4c894766'/>
@@ -5256,6 +5271,7 @@
       <elf-symbol name='truncate_setsize' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9aba22f9'/>
       <elf-symbol name='try_module_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x55b19677'/>
       <elf-symbol name='try_to_del_timer_sync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfaf9e645'/>
+      <elf-symbol name='try_to_free_mem_cgroup_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x67f3edc8'/>
       <elf-symbol name='try_wait_for_completion' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x21ef374c'/>
       <elf-symbol name='tso_build_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x761164b9'/>
       <elf-symbol name='tso_build_hdr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb0773f79'/>
@@ -5472,6 +5488,7 @@
       <elf-symbol name='unregister_key_type' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x819cd856'/>
       <elf-symbol name='unregister_kprobe' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeb78b1ed'/>
       <elf-symbol name='unregister_kretprobe' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce598ef2'/>
+      <elf-symbol name='unregister_memory_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x26e298e0'/>
       <elf-symbol name='unregister_module_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6a5ecb18'/>
       <elf-symbol name='unregister_netdev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4f8abfa5'/>
       <elf-symbol name='unregister_netdevice_many' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9fdecc31'/>
@@ -6285,6 +6302,7 @@
       <elf-symbol name='__tracepoint_android_vh_drm_atomic_check_modeset' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7ae4711b'/>
       <elf-symbol name='__tracepoint_android_vh_dump_throttled_rt_tasks' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd29bebac'/>
       <elf-symbol name='__tracepoint_android_vh_enable_thermal_power_throttle' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x13db5a5d'/>
+      <elf-symbol name='__tracepoint_android_vh_exit_mm' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xff76cd99'/>
       <elf-symbol name='__tracepoint_android_vh_exit_signal' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf144058'/>
       <elf-symbol name='__tracepoint_android_vh_free_task' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25db8da7'/>
       <elf-symbol name='__tracepoint_android_vh_ftrace_dump_buffer' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x92d99a98'/>
@@ -6311,6 +6329,11 @@
       <elf-symbol name='__tracepoint_android_vh_map_util_freq' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf9624317'/>
       <elf-symbol name='__tracepoint_android_vh_map_util_freq_new' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb88bf122'/>
       <elf-symbol name='__tracepoint_android_vh_mark_page_accessed' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xaecce819'/>
+      <elf-symbol name='__tracepoint_android_vh_mem_cgroup_alloc' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x81f213a3'/>
+      <elf-symbol name='__tracepoint_android_vh_mem_cgroup_css_offline' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf342a420'/>
+      <elf-symbol name='__tracepoint_android_vh_mem_cgroup_css_online' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xacdf3a05'/>
+      <elf-symbol name='__tracepoint_android_vh_mem_cgroup_free' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x71b34ba2'/>
+      <elf-symbol name='__tracepoint_android_vh_mem_cgroup_id_remove' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x76f2ace1'/>
       <elf-symbol name='__tracepoint_android_vh_meminfo_proc_show' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd7997ac2'/>
       <elf-symbol name='__tracepoint_android_vh_mmap_region' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3771778e'/>
       <elf-symbol name='__tracepoint_android_vh_mmc_attach_sd' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9398abcc'/>
@@ -6382,6 +6405,8 @@
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7736a58d'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x420e27e1'/>
       <elf-symbol name='__tracepoint_android_vh_try_to_unmap_one' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1ddd7db7'/>
+      <elf-symbol name='__tracepoint_android_vh_tune_scan_type' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x45da6384'/>
+      <elf-symbol name='__tracepoint_android_vh_tune_swappiness' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x88fcdb6c'/>
       <elf-symbol name='__tracepoint_android_vh_ufs_check_int_errors' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb5efc415'/>
       <elf-symbol name='__tracepoint_android_vh_ufs_clock_scaling' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7310f377'/>
       <elf-symbol name='__tracepoint_android_vh_ufs_compl_command' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6e94a500'/>
@@ -6565,6 +6590,7 @@
       <elf-symbol name='led_colors' size='80' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b198c77'/>
       <elf-symbol name='loops_per_jiffy' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xba497f13'/>
       <elf-symbol name='mem_section' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa3521253'/>
+      <elf-symbol name='memory_cgrp_subsys' size='240' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce3f44e8'/>
       <elf-symbol name='memstart_addr' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9688de8b'/>
       <elf-symbol name='names_cachep' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3096be16'/>
       <elf-symbol name='nd_tbl' size='568' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x508008a2'/>
@@ -8418,30 +8444,30 @@
       <array-type-def dimensions='1' type-id='8f048e17' size-in-bits='72' id='060772ed'>
         <subrange length='9' type-id='7ff19f0f' id='12e4273c'/>
       </array-type-def>
-      <class-decl name='dma_heap' size-in-bits='1600' is-struct='yes' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='38' column='1' id='060e2e70'>
+      <class-decl name='dma_heap' size-in-bits='1600' is-struct='yes' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='40' column='1' id='060e2e70'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='name' type-id='80f4b756' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='39' column='1'/>
+          <var-decl name='name' type-id='80f4b756' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='41' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='ops' type-id='cabcb658' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='40' column='1'/>
+          <var-decl name='ops' type-id='cabcb658' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='42' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='41' column='1'/>
+          <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='43' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='heap_devt' type-id='8504f260' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='42' column='1'/>
+          <var-decl name='heap_devt' type-id='8504f260' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='44' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='43' column='1'/>
+          <var-decl name='list' type-id='72f469ec' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='45' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='heap_cdev' type-id='22f86351' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='44' column='1'/>
+          <var-decl name='heap_cdev' type-id='22f86351' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='46' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1472'>
-          <var-decl name='refcount' type-id='400fb07b' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='45' column='1'/>
+          <var-decl name='refcount' type-id='400fb07b' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='47' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1536'>
-          <var-decl name='heap_dev' type-id='fa0b179b' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='46' column='1'/>
+          <var-decl name='heap_dev' type-id='fa0b179b' visibility='default' filepath='drivers/dma-buf/dma-heap.c' line='48' column='1'/>
         </data-member>
       </class-decl>
       <array-type-def dimensions='1' type-id='8f048e17' size-in-bits='40' id='06106d49'>
@@ -18142,54 +18168,54 @@
         </data-member>
       </class-decl>
       <qualified-type-def type-id='1e4ac06a' const='yes' id='1f063fe1'/>
-      <class-decl name='dw_pcie' size-in-bits='3392' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='260' column='1' id='1f13c53a'>
+      <class-decl name='dw_pcie' size-in-bits='3392' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='261' column='1' id='1f13c53a'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='dev' type-id='fa0b179b' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='261' column='1'/>
+          <var-decl name='dev' type-id='fa0b179b' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='262' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='dbi_base' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='262' column='1'/>
+          <var-decl name='dbi_base' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='263' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='dbi_base2' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='263' column='1'/>
+          <var-decl name='dbi_base2' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='264' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='atu_base' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='265' column='1'/>
+          <var-decl name='atu_base' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='266' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='atu_size' type-id='b59d7dce' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='266' column='1'/>
+          <var-decl name='atu_size' type-id='b59d7dce' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='267' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='num_ib_windows' type-id='19c2251e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='267' column='1'/>
+          <var-decl name='num_ib_windows' type-id='19c2251e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='268' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='352'>
-          <var-decl name='num_ob_windows' type-id='19c2251e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='268' column='1'/>
+          <var-decl name='num_ob_windows' type-id='19c2251e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='269' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='pp' type-id='69ba9ebc' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='269' column='1'/>
+          <var-decl name='pp' type-id='69ba9ebc' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='270' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1984'>
-          <var-decl name='ep' type-id='6d93aa3a' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='270' column='1'/>
+          <var-decl name='ep' type-id='6d93aa3a' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='271' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3200'>
-          <var-decl name='ops' type-id='60824330' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='271' column='1'/>
+          <var-decl name='ops' type-id='60824330' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='272' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3264'>
-          <var-decl name='version' type-id='f0981eeb' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='272' column='1'/>
+          <var-decl name='version' type-id='f0981eeb' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='273' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3296'>
-          <var-decl name='num_lanes' type-id='95e97e5e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='273' column='1'/>
+          <var-decl name='num_lanes' type-id='95e97e5e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='274' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3328'>
-          <var-decl name='link_gen' type-id='95e97e5e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='274' column='1'/>
+          <var-decl name='link_gen' type-id='95e97e5e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='275' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3360'>
-          <var-decl name='n_fts' type-id='cf114704' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='275' column='1'/>
+          <var-decl name='n_fts' type-id='cf114704' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='276' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3376'>
-          <var-decl name='iatu_unroll_enabled' type-id='b50a4934' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='276' column='1'/>
+          <var-decl name='iatu_unroll_enabled' type-id='b50a4934' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='277' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='3377'>
-          <var-decl name='io_cfg_atu_shared' type-id='b50a4934' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='277' column='1'/>
+          <var-decl name='io_cfg_atu_shared' type-id='b50a4934' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='278' column='1'/>
         </data-member>
       </class-decl>
       <enum-decl name='skb_free_reason' filepath='include/linux/netdevice.h' line='4001' column='1' id='1f17c6b4'>
@@ -48076,25 +48102,25 @@
           <var-decl name='msi_data' type-id='cf29c9b3' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='193' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='msi_page' type-id='02f11ed4' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='194' column='1'/>
+          <var-decl name='msi_page' type-id='02f11ed4' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='195' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='msi_irq_chip' type-id='8846a616' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='195' column='1'/>
+          <var-decl name='msi_irq_chip' type-id='8846a616' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='196' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='896'>
-          <var-decl name='num_vectors' type-id='19c2251e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='196' column='1'/>
+          <var-decl name='num_vectors' type-id='19c2251e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='197' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='928'>
-          <var-decl name='irq_mask' type-id='1c6311dd' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='197' column='1'/>
+          <var-decl name='irq_mask' type-id='1c6311dd' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='198' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1216'>
-          <var-decl name='bridge' type-id='cb0dbc3c' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='198' column='1'/>
+          <var-decl name='bridge' type-id='cb0dbc3c' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='199' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1280'>
-          <var-decl name='lock' type-id='f5c90b3f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='199' column='1'/>
+          <var-decl name='lock' type-id='f5c90b3f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='200' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='1344'>
-          <var-decl name='msi_irq_in_use' type-id='f46d9f4d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='200' column='1'/>
+          <var-decl name='msi_irq_in_use' type-id='f46d9f4d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='201' column='1'/>
         </data-member>
       </class-decl>
       <function-type size-in-bits='64' id='69bc916d'>
@@ -49455,45 +49481,45 @@
         <parameter type-id='5d6479ae'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='dw_pcie_ep' size-in-bits='1216' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='231' column='1' id='6d93aa3a'>
+      <class-decl name='dw_pcie_ep' size-in-bits='1216' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='232' column='1' id='6d93aa3a'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='epc' type-id='108dbc98' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='232' column='1'/>
+          <var-decl name='epc' type-id='108dbc98' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='233' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='func_list' type-id='72f469ec' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='233' column='1'/>
+          <var-decl name='func_list' type-id='72f469ec' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='234' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='ops' type-id='2beae3fa' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='234' column='1'/>
+          <var-decl name='ops' type-id='2beae3fa' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='235' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='phys_base' type-id='2522883d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='235' column='1'/>
+          <var-decl name='phys_base' type-id='2522883d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='236' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='addr_size' type-id='b59d7dce' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='236' column='1'/>
+          <var-decl name='addr_size' type-id='b59d7dce' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='237' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='page_size' type-id='b59d7dce' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='237' column='1'/>
+          <var-decl name='page_size' type-id='b59d7dce' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='238' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='448'>
-          <var-decl name='bar_to_atu' type-id='cf1a4160' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='238' column='1'/>
+          <var-decl name='bar_to_atu' type-id='cf1a4160' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='239' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='512'>
-          <var-decl name='outbound_addr' type-id='ff752d64' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='239' column='1'/>
+          <var-decl name='outbound_addr' type-id='ff752d64' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='240' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='576'>
-          <var-decl name='ib_window_map' type-id='1d2c2b85' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='240' column='1'/>
+          <var-decl name='ib_window_map' type-id='1d2c2b85' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='241' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='ob_window_map' type-id='1d2c2b85' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='241' column='1'/>
+          <var-decl name='ob_window_map' type-id='1d2c2b85' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='242' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='704'>
-          <var-decl name='msi_mem' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='242' column='1'/>
+          <var-decl name='msi_mem' type-id='eaa32e2f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='243' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='768'>
-          <var-decl name='msi_mem_phys' type-id='2522883d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='243' column='1'/>
+          <var-decl name='msi_mem_phys' type-id='2522883d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='244' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='832'>
-          <var-decl name='epf_bar' type-id='ecfa304d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='244' column='1'/>
+          <var-decl name='epf_bar' type-id='ecfa304d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='245' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='6e88f746' size-in-bits='64' id='6d9d7f04'/>
@@ -53555,27 +53581,27 @@
       </function-type>
       <pointer-type-def type-id='b39453c8' size-in-bits='64' id='7855184a'/>
       <pointer-type-def type-id='b1517543' size-in-bits='64' id='785bacaf'/>
-      <class-decl name='dw_pcie_ops' size-in-bits='448' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='247' column='1' id='785fcb49'>
+      <class-decl name='dw_pcie_ops' size-in-bits='448' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='248' column='1' id='785fcb49'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='cpu_addr_fixup' type-id='198dd6d9' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='248' column='1'/>
+          <var-decl name='cpu_addr_fixup' type-id='198dd6d9' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='249' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='read_dbi' type-id='139a279e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='249' column='1'/>
+          <var-decl name='read_dbi' type-id='139a279e' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='250' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='write_dbi' type-id='f87f885a' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='251' column='1'/>
+          <var-decl name='write_dbi' type-id='f87f885a' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='252' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='write_dbi2' type-id='f87f885a' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='253' column='1'/>
+          <var-decl name='write_dbi2' type-id='f87f885a' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='254' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='link_up' type-id='470be30c' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='255' column='1'/>
+          <var-decl name='link_up' type-id='470be30c' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='256' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='320'>
-          <var-decl name='start_link' type-id='470be30c' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='256' column='1'/>
+          <var-decl name='start_link' type-id='470be30c' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='257' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='384'>
-          <var-decl name='stop_link' type-id='5c683561' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='257' column='1'/>
+          <var-decl name='stop_link' type-id='5c683561' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='258' column='1'/>
         </data-member>
       </class-decl>
       <function-type size-in-bits='64' id='78627a7e'>
@@ -58817,18 +58843,18 @@
       </enum-decl>
       <pointer-type-def type-id='7aaba742' size-in-bits='64' id='843888b8'/>
       <pointer-type-def type-id='f7a1d399' size-in-bits='64' id='8438f281'/>
-      <class-decl name='dw_pcie_ep_ops' size-in-bits='256' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='209' column='1' id='84390049'>
+      <class-decl name='dw_pcie_ep_ops' size-in-bits='256' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='210' column='1' id='84390049'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='ep_init' type-id='08ed88d1' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='210' column='1'/>
+          <var-decl name='ep_init' type-id='08ed88d1' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='211' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='raise_irq' type-id='f2ccca1f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='211' column='1'/>
+          <var-decl name='raise_irq' type-id='f2ccca1f' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='212' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='get_features' type-id='19d36127' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='213' column='1'/>
+          <var-decl name='get_features' type-id='19d36127' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='214' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='func_conf_select' type-id='d803107d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='221' column='1'/>
+          <var-decl name='func_conf_select' type-id='d803107d' visibility='default' filepath='drivers/pci/controller/dwc/pcie-designware.h' line='222' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='d0e8296f' size-in-bits='64' id='8443ea63'/>
@@ -121734,6 +121760,11 @@
         <parameter type-id='3f97013a' name='state' filepath='include/trace/hooks/selinux.h' line='14' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_rvh_set_balance_anon_file_reclaim' mangled-name='__traceiter_android_rvh_set_balance_anon_file_reclaim' filepath='include/trace/hooks/vmscan.h' line='12' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_set_balance_anon_file_reclaim'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/vmscan.h' line='12' column='1'/>
+        <parameter type-id='d8e6b335' name='balance_anon_file_reclaim' filepath='include/trace/hooks/vmscan.h' line='12' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_rvh_set_cpus_allowed_by_task' mangled-name='__traceiter_android_rvh_set_cpus_allowed_by_task' filepath='include/trace/hooks/sched.h' line='329' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_set_cpus_allowed_by_task'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/sched.h' line='329' column='1'/>
         <parameter type-id='5f8a1ac4' name='cpu_valid_mask' filepath='include/trace/hooks/sched.h' line='329' column='1'/>
@@ -122235,6 +122266,11 @@
         <parameter type-id='d8e6b335' name='override' filepath='include/trace/hooks/thermal.h' line='31' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_exit_mm' mangled-name='__traceiter_android_vh_exit_mm' filepath='include/trace/hooks/mm.h' line='40' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_exit_mm'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='40' column='1'/>
+        <parameter type-id='df4b7819' name='mm' filepath='include/trace/hooks/mm.h' line='40' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_exit_signal' mangled-name='__traceiter_android_vh_exit_signal' filepath='include/trace/hooks/signal.h' line='18' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_exit_signal'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/signal.h' line='18' column='1'/>
         <parameter type-id='f23e2572' name='task' filepath='include/trace/hooks/signal.h' line='18' column='1'/>
@@ -122336,6 +122372,33 @@
       <function-decl name='__traceiter_android_vh_mark_page_accessed' mangled-name='__traceiter_android_vh_mark_page_accessed' filepath='include/trace/hooks/mm.h' line='118' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_mark_page_accessed'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='118' column='1'/>
         <parameter type-id='02f11ed4' name='page' filepath='include/trace/hooks/mm.h' line='118' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_mem_cgroup_alloc' mangled-name='__traceiter_android_vh_mem_cgroup_alloc' filepath='include/trace/hooks/mm.h' line='76' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_mem_cgroup_alloc'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='76' column='1'/>
+        <parameter type-id='223696fb' name='memcg' filepath='include/trace/hooks/mm.h' line='76' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_mem_cgroup_css_offline' mangled-name='__traceiter_android_vh_mem_cgroup_css_offline' filepath='include/trace/hooks/mm.h' line='89' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_mem_cgroup_css_offline'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='89' column='1'/>
+        <parameter type-id='cfff5953' name='css' filepath='include/trace/hooks/mm.h' line='89' column='1'/>
+        <parameter type-id='223696fb' name='memcg' filepath='include/trace/hooks/mm.h' line='89' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_mem_cgroup_css_online' mangled-name='__traceiter_android_vh_mem_cgroup_css_online' filepath='include/trace/hooks/mm.h' line='86' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_mem_cgroup_css_online'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='86' column='1'/>
+        <parameter type-id='cfff5953' name='css' filepath='include/trace/hooks/mm.h' line='86' column='1'/>
+        <parameter type-id='223696fb' name='memcg' filepath='include/trace/hooks/mm.h' line='86' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_mem_cgroup_free' mangled-name='__traceiter_android_vh_mem_cgroup_free' filepath='include/trace/hooks/mm.h' line='79' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_mem_cgroup_free'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='79' column='1'/>
+        <parameter type-id='223696fb' name='memcg' filepath='include/trace/hooks/mm.h' line='79' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_mem_cgroup_id_remove' mangled-name='__traceiter_android_vh_mem_cgroup_id_remove' filepath='include/trace/hooks/mm.h' line='82' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_mem_cgroup_id_remove'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/mm.h' line='82' column='1'/>
+        <parameter type-id='223696fb' name='memcg' filepath='include/trace/hooks/mm.h' line='82' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_meminfo_proc_show' mangled-name='__traceiter_android_vh_meminfo_proc_show' filepath='include/trace/hooks/mm.h' line='37' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_meminfo_proc_show'>
@@ -122540,6 +122603,11 @@
         <parameter type-id='7292109c' name='retval' filepath='include/trace/hooks/sched.h' line='444' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_sched_show_task' mangled-name='__traceiter_android_vh_sched_show_task' filepath='include/trace/hooks/dtask.h' line='51' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_sched_show_task'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dtask.h' line='51' column='1'/>
+        <parameter type-id='f23e2572' name='task' filepath='include/trace/hooks/dtask.h' line='51' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_sched_stat_runtime_rt' mangled-name='__traceiter_android_vh_sched_stat_runtime_rt' filepath='include/trace/hooks/sched.h' line='391' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_sched_stat_runtime_rt'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/sched.h' line='391' column='1'/>
         <parameter type-id='f23e2572' name='tsk' filepath='include/trace/hooks/sched.h' line='391' column='1'/>
@@ -122674,6 +122742,16 @@
         <parameter type-id='02f11ed4' name='page' filepath='include/trace/hooks/mm.h' line='72' column='1'/>
         <parameter type-id='7359adad' name='addr' filepath='include/trace/hooks/mm.h' line='72' column='1'/>
         <parameter type-id='b50a4934' name='ret' filepath='include/trace/hooks/mm.h' line='72' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_tune_scan_type' mangled-name='__traceiter_android_vh_tune_scan_type' filepath='include/trace/hooks/vmscan.h' line='36' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_tune_scan_type'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/vmscan.h' line='36' column='1'/>
+        <parameter type-id='26a90f95' name='scan_type' filepath='include/trace/hooks/vmscan.h' line='36' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_tune_swappiness' mangled-name='__traceiter_android_vh_tune_swappiness' filepath='include/trace/hooks/vmscan.h' line='39' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_tune_swappiness'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/vmscan.h' line='39' column='1'/>
+        <parameter type-id='7292109c' name='swappiness' filepath='include/trace/hooks/vmscan.h' line='39' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_ufs_check_int_errors' mangled-name='__traceiter_android_vh_ufs_check_int_errors' filepath='include/trace/hooks/ufshcd.h' line='53' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_ufs_check_int_errors'>
@@ -123382,6 +123460,7 @@
       <var-decl name='__tracepoint_android_vh_drm_atomic_check_modeset' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_drm_atomic_check_modeset' visibility='default' filepath='include/trace/hooks/drm_atomic.h' line='18' column='1' elf-symbol-id='__tracepoint_android_vh_drm_atomic_check_modeset'/>
       <var-decl name='__tracepoint_android_vh_dump_throttled_rt_tasks' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_dump_throttled_rt_tasks' visibility='default' filepath='include/trace/hooks/sched.h' line='101' column='1' elf-symbol-id='__tracepoint_android_vh_dump_throttled_rt_tasks'/>
       <var-decl name='__tracepoint_android_vh_enable_thermal_power_throttle' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_enable_thermal_power_throttle' visibility='default' filepath='include/trace/hooks/thermal.h' line='31' column='1' elf-symbol-id='__tracepoint_android_vh_enable_thermal_power_throttle'/>
+      <var-decl name='__tracepoint_android_vh_exit_mm' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_mm' visibility='default' filepath='include/trace/hooks/mm.h' line='40' column='1' elf-symbol-id='__tracepoint_android_vh_exit_mm'/>
       <var-decl name='__tracepoint_android_vh_exit_signal' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_exit_signal' visibility='default' filepath='include/trace/hooks/signal.h' line='18' column='1' elf-symbol-id='__tracepoint_android_vh_exit_signal'/>
       <var-decl name='__tracepoint_android_vh_free_task' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_free_task' visibility='default' filepath='include/trace/hooks/sched.h' line='338' column='1' elf-symbol-id='__tracepoint_android_vh_free_task'/>
       <var-decl name='__tracepoint_android_vh_ftrace_dump_buffer' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_ftrace_dump_buffer' visibility='default' filepath='include/trace/hooks/ftrace_dump.h' line='33' column='1' elf-symbol-id='__tracepoint_android_vh_ftrace_dump_buffer'/>
@@ -123408,6 +123487,11 @@
       <var-decl name='__tracepoint_android_vh_map_util_freq' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_map_util_freq' visibility='default' filepath='include/trace/hooks/sched.h' line='270' column='1' elf-symbol-id='__tracepoint_android_vh_map_util_freq'/>
       <var-decl name='__tracepoint_android_vh_map_util_freq_new' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_map_util_freq_new' visibility='default' filepath='include/trace/hooks/sched.h' line='276' column='1' elf-symbol-id='__tracepoint_android_vh_map_util_freq_new'/>
       <var-decl name='__tracepoint_android_vh_mark_page_accessed' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mark_page_accessed' visibility='default' filepath='include/trace/hooks/mm.h' line='118' column='1' elf-symbol-id='__tracepoint_android_vh_mark_page_accessed'/>
+      <var-decl name='__tracepoint_android_vh_mem_cgroup_alloc' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mem_cgroup_alloc' visibility='default' filepath='include/trace/hooks/mm.h' line='76' column='1' elf-symbol-id='__tracepoint_android_vh_mem_cgroup_alloc'/>
+      <var-decl name='__tracepoint_android_vh_mem_cgroup_css_offline' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mem_cgroup_css_offline' visibility='default' filepath='include/trace/hooks/mm.h' line='89' column='1' elf-symbol-id='__tracepoint_android_vh_mem_cgroup_css_offline'/>
+      <var-decl name='__tracepoint_android_vh_mem_cgroup_css_online' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mem_cgroup_css_online' visibility='default' filepath='include/trace/hooks/mm.h' line='86' column='1' elf-symbol-id='__tracepoint_android_vh_mem_cgroup_css_online'/>
+      <var-decl name='__tracepoint_android_vh_mem_cgroup_free' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mem_cgroup_free' visibility='default' filepath='include/trace/hooks/mm.h' line='79' column='1' elf-symbol-id='__tracepoint_android_vh_mem_cgroup_free'/>
+      <var-decl name='__tracepoint_android_vh_mem_cgroup_id_remove' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mem_cgroup_id_remove' visibility='default' filepath='include/trace/hooks/mm.h' line='82' column='1' elf-symbol-id='__tracepoint_android_vh_mem_cgroup_id_remove'/>
       <var-decl name='__tracepoint_android_vh_meminfo_proc_show' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_meminfo_proc_show' visibility='default' filepath='include/trace/hooks/mm.h' line='37' column='1' elf-symbol-id='__tracepoint_android_vh_meminfo_proc_show'/>
       <var-decl name='__tracepoint_android_vh_mmap_region' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mmap_region' visibility='default' filepath='include/trace/hooks/mm.h' line='69' column='1' elf-symbol-id='__tracepoint_android_vh_mmap_region'/>
       <var-decl name='__tracepoint_android_vh_mmc_attach_sd' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mmc_attach_sd' visibility='default' filepath='include/trace/hooks/mmc.h' line='38' column='1' elf-symbol-id='__tracepoint_android_vh_mmc_attach_sd'/>
@@ -123479,6 +123563,8 @@
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo' visibility='default' filepath='include/trace/hooks/power.h' line='12' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo'/>
       <var-decl name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_freeze_todo_unfrozen' visibility='default' filepath='include/trace/hooks/power.h' line='20' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_freeze_todo_unfrozen'/>
       <var-decl name='__tracepoint_android_vh_try_to_unmap_one' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_try_to_unmap_one' visibility='default' filepath='include/trace/hooks/mm.h' line='72' column='1' elf-symbol-id='__tracepoint_android_vh_try_to_unmap_one'/>
+      <var-decl name='__tracepoint_android_vh_tune_scan_type' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_tune_scan_type' visibility='default' filepath='include/trace/hooks/vmscan.h' line='36' column='1' elf-symbol-id='__tracepoint_android_vh_tune_scan_type'/>
+      <var-decl name='__tracepoint_android_vh_tune_swappiness' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_tune_swappiness' visibility='default' filepath='include/trace/hooks/vmscan.h' line='39' column='1' elf-symbol-id='__tracepoint_android_vh_tune_swappiness'/>
       <var-decl name='__tracepoint_android_vh_ufs_check_int_errors' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_ufs_check_int_errors' visibility='default' filepath='include/trace/hooks/ufshcd.h' line='53' column='1' elf-symbol-id='__tracepoint_android_vh_ufs_check_int_errors'/>
       <var-decl name='__tracepoint_android_vh_ufs_clock_scaling' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_ufs_clock_scaling' visibility='default' filepath='include/trace/hooks/ufshcd.h' line='61' column='1' elf-symbol-id='__tracepoint_android_vh_ufs_clock_scaling'/>
       <var-decl name='__tracepoint_android_vh_ufs_compl_command' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_ufs_compl_command' visibility='default' filepath='include/trace/hooks/ufshcd.h' line='41' column='1' elf-symbol-id='__tracepoint_android_vh_ufs_compl_command'/>
@@ -125652,6 +125738,11 @@
         <parameter type-id='b94a2f7c' name='adap' filepath='drivers/media/cec/core/cec-core.c' line='380' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='cgroup_add_legacy_cftypes' mangled-name='cgroup_add_legacy_cftypes' filepath='kernel/cgroup/cgroup.c' line='4320' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_add_legacy_cftypes'>
+        <parameter type-id='dc91d125' name='ss' filepath='kernel/cgroup/cgroup.c' line='4320' column='1'/>
+        <parameter type-id='03054cfa' name='cfts' filepath='kernel/cgroup/cgroup.c' line='4320' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='cgroup_path_ns' mangled-name='cgroup_path_ns' filepath='kernel/cgroup/cgroup.c' line='2294' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_path_ns'>
         <parameter type-id='46ff135d' name='cgrp' filepath='kernel/cgroup/cgroup.c' line='2294' column='1'/>
         <parameter type-id='26a90f95' name='buf' filepath='kernel/cgroup/cgroup.c' line='2294' column='1'/>
@@ -125659,14 +125750,14 @@
         <parameter type-id='f774a955' name='ns' filepath='kernel/cgroup/cgroup.c' line='2295' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='cgroup_taskset_first' mangled-name='cgroup_taskset_first' filepath='kernel/cgroup/cgroup.c' line='2396' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_taskset_first'>
-        <parameter type-id='8cffa561' name='tset' filepath='kernel/cgroup/cgroup.c' line='2396' column='1'/>
-        <parameter type-id='e7f9d97b' name='dst_cssp' filepath='kernel/cgroup/cgroup.c' line='2397' column='1'/>
+      <function-decl name='cgroup_taskset_first' mangled-name='cgroup_taskset_first' filepath='kernel/cgroup/cgroup.c' line='2437' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_taskset_first'>
+        <parameter type-id='8cffa561' name='tset' filepath='kernel/cgroup/cgroup.c' line='2437' column='1'/>
+        <parameter type-id='e7f9d97b' name='dst_cssp' filepath='kernel/cgroup/cgroup.c' line='2438' column='1'/>
         <return type-id='f23e2572'/>
       </function-decl>
-      <function-decl name='cgroup_taskset_next' mangled-name='cgroup_taskset_next' filepath='kernel/cgroup/cgroup.c' line='2414' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_taskset_next'>
-        <parameter type-id='8cffa561' name='tset' filepath='kernel/cgroup/cgroup.c' line='2414' column='1'/>
-        <parameter type-id='e7f9d97b' name='dst_cssp' filepath='kernel/cgroup/cgroup.c' line='2415' column='1'/>
+      <function-decl name='cgroup_taskset_next' mangled-name='cgroup_taskset_next' filepath='kernel/cgroup/cgroup.c' line='2455' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cgroup_taskset_next'>
+        <parameter type-id='8cffa561' name='tset' filepath='kernel/cgroup/cgroup.c' line='2455' column='1'/>
+        <parameter type-id='e7f9d97b' name='dst_cssp' filepath='kernel/cgroup/cgroup.c' line='2456' column='1'/>
         <return type-id='f23e2572'/>
       </function-decl>
       <function-decl name='check_preempt_curr' mangled-name='check_preempt_curr' filepath='kernel/sched/core.c' line='2135' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='check_preempt_curr'>
@@ -126556,9 +126647,9 @@
       <function-decl name='cpus_read_unlock' mangled-name='cpus_read_unlock' filepath='kernel/cpu.c' line='319' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cpus_read_unlock'>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='cpuset_cpus_allowed' mangled-name='cpuset_cpus_allowed' filepath='kernel/cgroup/cpuset.c' line='3397' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cpuset_cpus_allowed'>
-        <parameter type-id='f23e2572' name='tsk' filepath='kernel/cgroup/cpuset.c' line='3397' column='1'/>
-        <parameter type-id='74bccedd' name='pmask' filepath='kernel/cgroup/cpuset.c' line='3397' column='1'/>
+      <function-decl name='cpuset_cpus_allowed' mangled-name='cpuset_cpus_allowed' filepath='kernel/cgroup/cpuset.c' line='3396' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cpuset_cpus_allowed'>
+        <parameter type-id='f23e2572' name='tsk' filepath='kernel/cgroup/cpuset.c' line='3396' column='1'/>
+        <parameter type-id='74bccedd' name='pmask' filepath='kernel/cgroup/cpuset.c' line='3396' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='crc16' mangled-name='crc16' filepath='lib/crc16.c' line='55' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='crc16'>
@@ -127035,14 +127126,14 @@
         <parameter type-id='95e97e5e' name='count' filepath='crypto/algapi.c' line='565' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='css_next_child' mangled-name='css_next_child' filepath='kernel/cgroup/cgroup.c' line='4331' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_child'>
-        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4331' column='1'/>
-        <parameter type-id='cfff5953' name='parent' filepath='kernel/cgroup/cgroup.c' line='4332' column='1'/>
+      <function-decl name='css_next_child' mangled-name='css_next_child' filepath='kernel/cgroup/cgroup.c' line='4372' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_child'>
+        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4372' column='1'/>
+        <parameter type-id='cfff5953' name='parent' filepath='kernel/cgroup/cgroup.c' line='4373' column='1'/>
         <return type-id='cfff5953'/>
       </function-decl>
-      <function-decl name='css_next_descendant_pre' mangled-name='css_next_descendant_pre' filepath='kernel/cgroup/cgroup.c' line='4401' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_descendant_pre'>
-        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4401' column='1'/>
-        <parameter type-id='cfff5953' name='root' filepath='kernel/cgroup/cgroup.c' line='4402' column='1'/>
+      <function-decl name='css_next_descendant_pre' mangled-name='css_next_descendant_pre' filepath='kernel/cgroup/cgroup.c' line='4442' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='css_next_descendant_pre'>
+        <parameter type-id='cfff5953' name='pos' filepath='kernel/cgroup/cgroup.c' line='4442' column='1'/>
+        <parameter type-id='cfff5953' name='root' filepath='kernel/cgroup/cgroup.c' line='4443' column='1'/>
         <return type-id='cfff5953'/>
       </function-decl>
       <function-decl name='csum_ipv6_magic' mangled-name='csum_ipv6_magic' filepath='arch/arm64/lib/csum.c' line='132' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='csum_ipv6_magic'>
@@ -129447,46 +129538,46 @@
         <parameter type-id='27f3f5d8' name='chan' filepath='drivers/dma/dmaengine.c' line='696' column='1'/>
         <return type-id='27f3f5d8'/>
       </function-decl>
-      <function-decl name='dma_heap_add' mangled-name='dma_heap_add' filepath='drivers/dma-buf/dma-heap.c' line='298' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_add'>
-        <parameter type-id='dbe60995' name='exp_info' filepath='drivers/dma-buf/dma-heap.c' line='298' column='1'/>
+      <function-decl name='dma_heap_add' mangled-name='dma_heap_add' filepath='drivers/dma-buf/dma-heap.c' line='305' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_add'>
+        <parameter type-id='dbe60995' name='exp_info' filepath='drivers/dma-buf/dma-heap.c' line='305' column='1'/>
         <return type-id='ea1bdaf6'/>
       </function-decl>
-      <function-decl name='dma_heap_buffer_alloc' mangled-name='dma_heap_buffer_alloc' filepath='drivers/dma-buf/dma-heap.c' line='79' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_buffer_alloc'>
-        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='79' column='1'/>
-        <parameter type-id='b59d7dce' name='len' filepath='drivers/dma-buf/dma-heap.c' line='79' column='1'/>
-        <parameter type-id='f0981eeb' name='fd_flags' filepath='drivers/dma-buf/dma-heap.c' line='80' column='1'/>
-        <parameter type-id='f0981eeb' name='heap_flags' filepath='drivers/dma-buf/dma-heap.c' line='81' column='1'/>
+      <function-decl name='dma_heap_buffer_alloc' mangled-name='dma_heap_buffer_alloc' filepath='drivers/dma-buf/dma-heap.c' line='81' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_buffer_alloc'>
+        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='81' column='1'/>
+        <parameter type-id='b59d7dce' name='len' filepath='drivers/dma-buf/dma-heap.c' line='81' column='1'/>
+        <parameter type-id='f0981eeb' name='fd_flags' filepath='drivers/dma-buf/dma-heap.c' line='82' column='1'/>
+        <parameter type-id='f0981eeb' name='heap_flags' filepath='drivers/dma-buf/dma-heap.c' line='83' column='1'/>
         <return type-id='5e4f599b'/>
       </function-decl>
-      <function-decl name='dma_heap_buffer_free' mangled-name='dma_heap_buffer_free' filepath='drivers/dma-buf/dma-heap.c' line='73' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_buffer_free'>
-        <parameter type-id='5e4f599b' name='dmabuf' filepath='drivers/dma-buf/dma-heap.c' line='73' column='1'/>
+      <function-decl name='dma_heap_buffer_free' mangled-name='dma_heap_buffer_free' filepath='drivers/dma-buf/dma-heap.c' line='75' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_buffer_free'>
+        <parameter type-id='5e4f599b' name='dmabuf' filepath='drivers/dma-buf/dma-heap.c' line='75' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='dma_heap_bufferfd_alloc' mangled-name='dma_heap_bufferfd_alloc' filepath='drivers/dma-buf/dma-heap.c' line='100' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_bufferfd_alloc'>
-        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='100' column='1'/>
-        <parameter type-id='b59d7dce' name='len' filepath='drivers/dma-buf/dma-heap.c' line='100' column='1'/>
-        <parameter type-id='f0981eeb' name='fd_flags' filepath='drivers/dma-buf/dma-heap.c' line='101' column='1'/>
-        <parameter type-id='f0981eeb' name='heap_flags' filepath='drivers/dma-buf/dma-heap.c' line='102' column='1'/>
+      <function-decl name='dma_heap_bufferfd_alloc' mangled-name='dma_heap_bufferfd_alloc' filepath='drivers/dma-buf/dma-heap.c' line='107' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_bufferfd_alloc'>
+        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='107' column='1'/>
+        <parameter type-id='b59d7dce' name='len' filepath='drivers/dma-buf/dma-heap.c' line='107' column='1'/>
+        <parameter type-id='f0981eeb' name='fd_flags' filepath='drivers/dma-buf/dma-heap.c' line='108' column='1'/>
+        <parameter type-id='f0981eeb' name='heap_flags' filepath='drivers/dma-buf/dma-heap.c' line='109' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='dma_heap_find' mangled-name='dma_heap_find' filepath='drivers/dma-buf/dma-heap.c' line='55' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_find'>
-        <parameter type-id='80f4b756' name='name' filepath='drivers/dma-buf/dma-heap.c' line='55' column='1'/>
+      <function-decl name='dma_heap_find' mangled-name='dma_heap_find' filepath='drivers/dma-buf/dma-heap.c' line='57' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_find'>
+        <parameter type-id='80f4b756' name='name' filepath='drivers/dma-buf/dma-heap.c' line='57' column='1'/>
         <return type-id='ea1bdaf6'/>
       </function-decl>
-      <function-decl name='dma_heap_get_dev' mangled-name='dma_heap_get_dev' filepath='drivers/dma-buf/dma-heap.c' line='279' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_get_dev'>
-        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='279' column='1'/>
+      <function-decl name='dma_heap_get_dev' mangled-name='dma_heap_get_dev' filepath='drivers/dma-buf/dma-heap.c' line='286' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_get_dev'>
+        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='286' column='1'/>
         <return type-id='fa0b179b'/>
       </function-decl>
-      <function-decl name='dma_heap_get_drvdata' mangled-name='dma_heap_get_drvdata' filepath='drivers/dma-buf/dma-heap.c' line='239' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_get_drvdata'>
-        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='239' column='1'/>
+      <function-decl name='dma_heap_get_drvdata' mangled-name='dma_heap_get_drvdata' filepath='drivers/dma-buf/dma-heap.c' line='246' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_get_drvdata'>
+        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='246' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='dma_heap_get_name' mangled-name='dma_heap_get_name' filepath='drivers/dma-buf/dma-heap.c' line='292' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_get_name'>
-        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='292' column='1'/>
+      <function-decl name='dma_heap_get_name' mangled-name='dma_heap_get_name' filepath='drivers/dma-buf/dma-heap.c' line='299' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_get_name'>
+        <parameter type-id='ea1bdaf6' name='heap' filepath='drivers/dma-buf/dma-heap.c' line='299' column='1'/>
         <return type-id='80f4b756'/>
       </function-decl>
-      <function-decl name='dma_heap_put' mangled-name='dma_heap_put' filepath='drivers/dma-buf/dma-heap.c' line='260' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_put'>
-        <parameter type-id='ea1bdaf6' name='h' filepath='drivers/dma-buf/dma-heap.c' line='260' column='1'/>
+      <function-decl name='dma_heap_put' mangled-name='dma_heap_put' filepath='drivers/dma-buf/dma-heap.c' line='267' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_heap_put'>
+        <parameter type-id='ea1bdaf6' name='h' filepath='drivers/dma-buf/dma-heap.c' line='267' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='dma_map_page_attrs' mangled-name='dma_map_page_attrs' filepath='kernel/dma/mapping.c' line='142' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_map_page_attrs'>
@@ -132252,17 +132343,17 @@
         <parameter type-id='f9b06939' name='cap' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='46' column='1'/>
         <return type-id='f9b06939'/>
       </function-decl>
-      <function-decl name='dw_pcie_find_ext_capability' mangled-name='dw_pcie_find_ext_capability' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='93' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_find_ext_capability'>
-        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='93' column='1'/>
-        <parameter type-id='f9b06939' name='cap' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='93' column='1'/>
+      <function-decl name='dw_pcie_find_ext_capability' mangled-name='dw_pcie_find_ext_capability' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='101' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_find_ext_capability'>
+        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='101' column='1'/>
+        <parameter type-id='f9b06939' name='cap' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='101' column='1'/>
         <return type-id='1dc6a898'/>
       </function-decl>
-      <function-decl name='dw_pcie_host_init' mangled-name='dw_pcie_host_init' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='290' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_host_init'>
-        <parameter type-id='d91dfd7a' name='pp' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='290' column='1'/>
+      <function-decl name='dw_pcie_host_init' mangled-name='dw_pcie_host_init' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='281' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_host_init'>
+        <parameter type-id='d91dfd7a' name='pp' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='281' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='dw_pcie_link_up' mangled-name='dw_pcie_link_up' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='530' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_link_up'>
-        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='530' column='1'/>
+      <function-decl name='dw_pcie_link_up' mangled-name='dw_pcie_link_up' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='538' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_link_up'>
+        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='538' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='dw_pcie_own_conf_map_bus' mangled-name='dw_pcie_own_conf_map_bus' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='509' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_own_conf_map_bus'>
@@ -132271,37 +132362,37 @@
         <parameter type-id='95e97e5e' name='where' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='509' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='dw_pcie_read' mangled-name='dw_pcie_read' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='99' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_read'>
-        <parameter type-id='eaa32e2f' name='addr' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='99' column='1'/>
-        <parameter type-id='95e97e5e' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='99' column='1'/>
-        <parameter type-id='f9409001' name='val' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='99' column='1'/>
+      <function-decl name='dw_pcie_read' mangled-name='dw_pcie_read' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='107' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_read'>
+        <parameter type-id='eaa32e2f' name='addr' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='107' column='1'/>
+        <parameter type-id='95e97e5e' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='107' column='1'/>
+        <parameter type-id='f9409001' name='val' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='107' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='dw_pcie_read_dbi' mangled-name='dw_pcie_read_dbi' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='139' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_read_dbi'>
-        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='139' column='1'/>
-        <parameter type-id='19c2251e' name='reg' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='139' column='1'/>
-        <parameter type-id='b59d7dce' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='139' column='1'/>
+      <function-decl name='dw_pcie_read_dbi' mangled-name='dw_pcie_read_dbi' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='147' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_read_dbi'>
+        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='147' column='1'/>
+        <parameter type-id='19c2251e' name='reg' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='147' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='147' column='1'/>
         <return type-id='19c2251e'/>
       </function-decl>
       <function-decl name='dw_pcie_setup_rc' mangled-name='dw_pcie_setup_rc' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='527' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_setup_rc'>
         <parameter type-id='d91dfd7a' name='pp' filepath='drivers/pci/controller/dwc/pcie-designware-host.c' line='527' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='dw_pcie_wait_for_link' mangled-name='dw_pcie_wait_for_link' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='511' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_wait_for_link'>
-        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='511' column='1'/>
+      <function-decl name='dw_pcie_wait_for_link' mangled-name='dw_pcie_wait_for_link' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='519' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_wait_for_link'>
+        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='519' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='dw_pcie_write' mangled-name='dw_pcie_write' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='121' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_write'>
-        <parameter type-id='eaa32e2f' name='addr' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='121' column='1'/>
-        <parameter type-id='95e97e5e' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='121' column='1'/>
-        <parameter type-id='19c2251e' name='val' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='121' column='1'/>
+      <function-decl name='dw_pcie_write' mangled-name='dw_pcie_write' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='129' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_write'>
+        <parameter type-id='eaa32e2f' name='addr' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='129' column='1'/>
+        <parameter type-id='95e97e5e' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='129' column='1'/>
+        <parameter type-id='19c2251e' name='val' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='129' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='dw_pcie_write_dbi' mangled-name='dw_pcie_write_dbi' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='155' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_write_dbi'>
-        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='155' column='1'/>
-        <parameter type-id='19c2251e' name='reg' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='155' column='1'/>
-        <parameter type-id='b59d7dce' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='155' column='1'/>
-        <parameter type-id='19c2251e' name='val' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='155' column='1'/>
+      <function-decl name='dw_pcie_write_dbi' mangled-name='dw_pcie_write_dbi' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='163' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dw_pcie_write_dbi'>
+        <parameter type-id='8bf55d78' name='pci' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='163' column='1'/>
+        <parameter type-id='19c2251e' name='reg' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='163' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='163' column='1'/>
+        <parameter type-id='19c2251e' name='val' filepath='drivers/pci/controller/dwc/pcie-designware.c' line='163' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='edac_device_add_device' mangled-name='edac_device_add_device' filepath='drivers/edac/edac_device.c' line='448' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='edac_device_add_device'>
@@ -136492,6 +136583,13 @@
         <parameter type-id='3eb7c31c' name='gfpflags' filepath='mm/slub.c' line='3240' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
+      <function-decl name='kmem_cache_alloc_bulk' mangled-name='kmem_cache_alloc_bulk' filepath='mm/slub.c' line='3655' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kmem_cache_alloc_bulk'>
+        <parameter type-id='f3b4aca8' name='s' filepath='mm/slub.c' line='3655' column='1'/>
+        <parameter type-id='3eb7c31c' name='flags' filepath='mm/slub.c' line='3655' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='mm/slub.c' line='3655' column='1'/>
+        <parameter type-id='63e171df' name='p' filepath='mm/slub.c' line='3656' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='kmem_cache_alloc_trace' mangled-name='kmem_cache_alloc_trace' filepath='mm/slub.c' line='3252' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kmem_cache_alloc_trace'>
         <parameter type-id='f3b4aca8' name='s' filepath='mm/slub.c' line='3252' column='1'/>
         <parameter type-id='3eb7c31c' name='gfpflags' filepath='mm/slub.c' line='3252' column='1'/>
@@ -136524,6 +136622,16 @@
         <parameter type-id='f3b4aca8' name='s' filepath='mm/slub.c' line='3519' column='1'/>
         <parameter type-id='eaa32e2f' name='x' filepath='mm/slub.c' line='3519' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='kmem_cache_free_bulk' mangled-name='kmem_cache_free_bulk' filepath='mm/slub.c' line='3636' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kmem_cache_free_bulk'>
+        <parameter type-id='f3b4aca8' name='s' filepath='mm/slub.c' line='3636' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='mm/slub.c' line='3636' column='1'/>
+        <parameter type-id='63e171df' name='p' filepath='mm/slub.c' line='3636' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='kmem_cache_shrink' mangled-name='kmem_cache_shrink' filepath='mm/slab_common.c' line='534' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kmem_cache_shrink'>
+        <parameter type-id='f3b4aca8' name='cachep' filepath='mm/slab_common.c' line='534' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='kmemdup' mangled-name='kmemdup' filepath='mm/util.c' line='127' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kmemdup'>
         <parameter type-id='eaa32e2f' name='src' filepath='mm/util.c' line='127' column='1'/>
@@ -137520,6 +137628,10 @@
         <parameter type-id='ac429605' name='req' filepath='drivers/media/mc/mc-request.c' line='79' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='mem_cgroup_from_id' mangled-name='mem_cgroup_from_id' filepath='mm/memcontrol.c' line='5127' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mem_cgroup_from_id'>
+        <parameter type-id='8efea9e5' name='id' filepath='mm/memcontrol.c' line='5127' column='1'/>
+        <return type-id='223696fb'/>
+      </function-decl>
       <function-decl name='mem_dump_obj' mangled-name='mem_dump_obj' filepath='mm/util.c' line='1023' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mem_dump_obj'>
         <parameter type-id='eaa32e2f' name='object' filepath='mm/util.c' line='1023' column='1'/>
         <return type-id='48b5725f'/>
@@ -137563,6 +137675,7 @@
       <function-decl name='memory_block_size_bytes' mangled-name='memory_block_size_bytes' filepath='drivers/base/memory.c' line='112' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='memory_block_size_bytes'>
         <return type-id='7359adad'/>
       </function-decl>
+      <var-decl name='memory_cgrp_subsys' type-id='1d115fd5' mangled-name='memory_cgrp_subsys' visibility='default' filepath='mm/memcontrol.c' line='6586' column='1' elf-symbol-id='memory_cgrp_subsys'/>
       <function-decl name='memory_read_from_buffer' mangled-name='memory_read_from_buffer' filepath='fs/libfs.c' line='799' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='memory_read_from_buffer'>
         <parameter type-id='eaa32e2f' name='to' filepath='fs/libfs.c' line='799' column='1'/>
         <parameter type-id='b59d7dce' name='count' filepath='fs/libfs.c' line='799' column='1'/>
@@ -138797,8 +138910,8 @@
         <parameter type-id='9a537bbe' name='cpu_node' filepath='drivers/of/base.c' line='401' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='of_cpufreq_cooling_register' mangled-name='of_cpufreq_cooling_register' filepath='drivers/thermal/cpufreq_cooling.c' line='654' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='of_cpufreq_cooling_register'>
-        <parameter type-id='343c3ae4' name='policy' filepath='drivers/thermal/cpufreq_cooling.c' line='654' column='1'/>
+      <function-decl name='of_cpufreq_cooling_register' mangled-name='of_cpufreq_cooling_register' filepath='drivers/thermal/cpufreq_cooling.c' line='656' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='of_cpufreq_cooling_register'>
+        <parameter type-id='343c3ae4' name='policy' filepath='drivers/thermal/cpufreq_cooling.c' line='656' column='1'/>
         <return type-id='2feec21f'/>
       </function-decl>
       <function-decl name='of_css' mangled-name='of_css' filepath='kernel/cgroup/cgroup.c' line='654' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='of_css'>
@@ -147831,6 +147944,13 @@
         <parameter type-id='9248e67f' name='timer' filepath='kernel/time/timer.c' line='1229' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='try_to_free_mem_cgroup_pages' mangled-name='try_to_free_mem_cgroup_pages' filepath='mm/vmscan.c' line='6401' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_mem_cgroup_pages'>
+        <parameter type-id='223696fb' name='memcg' filepath='mm/vmscan.c' line='6401' column='1'/>
+        <parameter type-id='7359adad' name='nr_pages' filepath='mm/vmscan.c' line='6402' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/vmscan.c' line='6403' column='1'/>
+        <parameter type-id='b50a4934' name='may_swap' filepath='mm/vmscan.c' line='6404' column='1'/>
+        <return type-id='7359adad'/>
+      </function-decl>
       <function-decl name='try_wait_for_completion' mangled-name='try_wait_for_completion' filepath='kernel/sched/completion.c' line='282' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_wait_for_completion'>
         <parameter type-id='389faaf7' name='x' filepath='kernel/sched/completion.c' line='282' column='1'/>
         <return type-id='b50a4934'/>
@@ -148929,6 +149049,10 @@
       </function-decl>
       <function-decl name='unregister_kretprobe' mangled-name='unregister_kretprobe' filepath='kernel/kprobes.c' line='2069' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_kretprobe'>
         <parameter type-id='d15edd25' name='rp' filepath='kernel/kprobes.c' line='2069' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='unregister_memory_notifier' mangled-name='unregister_memory_notifier' filepath='drivers/base/memory.c' line='99' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_memory_notifier'>
+        <parameter type-id='d504f73d' name='nb' filepath='drivers/base/memory.c' line='99' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='unregister_module_notifier' mangled-name='unregister_module_notifier' filepath='kernel/module.c' line='311' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_module_notifier'>
