@@ -265,6 +265,9 @@ static struct port_t md1_ccci_ports[] = {
 		DATA_AT_CMD_Q, DATA_AT_CMD_Q, 0xFF, 0xFF, MD1_NORMAL_HIF,
 		(PORT_F_WITH_CHAR_NODE|PORT_F_CH_TRAFFIC|PORT_F_DUMP_RAW_DATA),
 		&char_port_ops, 50, "ttyCMIPC9",},
+        {CCCI_CIQ_TX, CCCI_CIQ_RX, 2, 2, 0xFF, 0xFF,
+                MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+                &char_port_ops, 51, "ccci_ciq",},
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF,
 		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
