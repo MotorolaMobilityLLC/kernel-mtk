@@ -484,6 +484,7 @@
       <elf-symbol name='__traceiter_android_vh_mmc_sd_update_cmdline_timing' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe7bbaae6'/>
       <elf-symbol name='__traceiter_android_vh_mmc_sd_update_dataline_timing' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa7c82f6f'/>
       <elf-symbol name='__traceiter_android_vh_mmc_update_partition_status' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x69d10cab'/>
+      <elf-symbol name='__traceiter_android_vh_modify_thermal_cpu_get_power' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xea658355'/>
       <elf-symbol name='__traceiter_android_vh_modify_thermal_request_freq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x35e66620'/>
       <elf-symbol name='__traceiter_android_vh_modify_thermal_target_freq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xedb4afc8'/>
       <elf-symbol name='__traceiter_android_vh_mutex_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd4ab78cf'/>
@@ -6353,6 +6354,7 @@
       <elf-symbol name='__tracepoint_android_vh_mmc_sd_update_dataline_timing' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfc394d4a'/>
       <elf-symbol name='__tracepoint_android_vh_mmc_sdio_pm_flag_set' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x80ed5c28'/>
       <elf-symbol name='__tracepoint_android_vh_mmc_update_partition_status' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x29c9f09c'/>
+      <elf-symbol name='__tracepoint_android_vh_modify_thermal_cpu_get_power' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x72ac2026'/>
       <elf-symbol name='__tracepoint_android_vh_modify_thermal_request_freq' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x240f59e0'/>
       <elf-symbol name='__tracepoint_android_vh_modify_thermal_target_freq' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa965d530'/>
       <elf-symbol name='__tracepoint_android_vh_mutex_init' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x57f88efe'/>
@@ -122491,6 +122493,12 @@
         <parameter type-id='13d38dcb' name='card' filepath='include/trace/hooks/mmc.h' line='59' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_modify_thermal_cpu_get_power' mangled-name='__traceiter_android_vh_modify_thermal_cpu_get_power' filepath='include/trace/hooks/thermal.h' line='47' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_modify_thermal_cpu_get_power'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/thermal.h' line='47' column='1'/>
+        <parameter type-id='343c3ae4' name='policy' filepath='include/trace/hooks/thermal.h' line='47' column='1'/>
+        <parameter type-id='f9409001' name='power' filepath='include/trace/hooks/thermal.h' line='47' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_modify_thermal_request_freq' mangled-name='__traceiter_android_vh_modify_thermal_request_freq' filepath='include/trace/hooks/thermal.h' line='15' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_modify_thermal_request_freq'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/thermal.h' line='15' column='1'/>
         <parameter type-id='343c3ae4' name='policy' filepath='include/trace/hooks/thermal.h' line='15' column='1'/>
@@ -123539,6 +123547,7 @@
       <var-decl name='__tracepoint_android_vh_mmc_sd_update_dataline_timing' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mmc_sd_update_dataline_timing' visibility='default' filepath='include/trace/hooks/mmc.h' line='67' column='1' elf-symbol-id='__tracepoint_android_vh_mmc_sd_update_dataline_timing'/>
       <var-decl name='__tracepoint_android_vh_mmc_sdio_pm_flag_set' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mmc_sdio_pm_flag_set' visibility='default' filepath='include/trace/hooks/mmc.h' line='26' column='1' elf-symbol-id='__tracepoint_android_vh_mmc_sdio_pm_flag_set'/>
       <var-decl name='__tracepoint_android_vh_mmc_update_partition_status' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mmc_update_partition_status' visibility='default' filepath='include/trace/hooks/mmc.h' line='59' column='1' elf-symbol-id='__tracepoint_android_vh_mmc_update_partition_status'/>
+      <var-decl name='__tracepoint_android_vh_modify_thermal_cpu_get_power' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_modify_thermal_cpu_get_power' visibility='default' filepath='include/trace/hooks/thermal.h' line='47' column='1' elf-symbol-id='__tracepoint_android_vh_modify_thermal_cpu_get_power'/>
       <var-decl name='__tracepoint_android_vh_modify_thermal_request_freq' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_modify_thermal_request_freq' visibility='default' filepath='include/trace/hooks/thermal.h' line='15' column='1' elf-symbol-id='__tracepoint_android_vh_modify_thermal_request_freq'/>
       <var-decl name='__tracepoint_android_vh_modify_thermal_target_freq' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_modify_thermal_target_freq' visibility='default' filepath='include/trace/hooks/thermal.h' line='19' column='1' elf-symbol-id='__tracepoint_android_vh_modify_thermal_target_freq'/>
       <var-decl name='__tracepoint_android_vh_mutex_init' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_mutex_init' visibility='default' filepath='include/trace/hooks/dtask.h' line='27' column='1' elf-symbol-id='__tracepoint_android_vh_mutex_init'/>
