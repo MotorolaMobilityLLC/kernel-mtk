@@ -75,11 +75,6 @@
 #define AW36515_REG_FLAG1            (0x0A)
 #define AW36515_REG_FLAG2            (0x0B)
 
-#define AW36515_REG_CTRL1            (0x31)
-#define AW36515_REG_CTRL2            (0x69)
-#define AW36515_REG_CHIP_VENDOR_ID   (0x25)
-#define AW36515_CHIP_VENDOR_ID       (0x04)
-
 #define AW36515_REG_TORCH_LEVEL_LED1 (0x05)
 #define AW36515_REG_FLASH_LEVEL_LED1 (0x03)
 #define AW36515_REG_TORCH_LEVEL_LED2 (0x06)
@@ -223,16 +218,6 @@ static int aw36515_i2c_read(struct i2c_client *client, unsigned char reg, unsign
 	return ret;
 }
 
-static void aw36515_mode_cfg_init(void)
-{
-	struct aw36515_chip_data *pdata = aw36515_i2c_client->dev.driver_data;
-
-	if (pdata->is_mode_switch_init)
-	{
-		aw36515_i2c_write(aw36515_i2c_client, AW36515_REG_CTRL2, 0x02);
-		aw36515_i2c_write(aw36515_i2c_client, AW36515_REG_CTRL1, 0x0C);
-	}
-}
 static void aw36515_soft_reset(void)
 {
 	unsigned char reg_val;
@@ -249,7 +234,6 @@ static int aw36515_enable_ch1(void)
 {
 	unsigned char reg, val;
 
-	aw36515_mode_cfg_init();
 	reg = AW36515_REG_ENABLE;
 	if (!aw36515_is_torch(aw36515_level_ch1)) {
 		/* torch mode */
@@ -276,8 +260,6 @@ static int aw36515_enable(int channel)
 static int aw36515_disable_ch1(void)
 {
 	unsigned char reg, val;
-
-	aw36515_mode_cfg_init();
 	reg = AW36515_REG_ENABLE;
 	if (aw36515_reg_enable & AW36515_MASK_ENABLE_LED2) {
 		/* if LED 2 is enable, disable LED 1 */
@@ -334,30 +316,7 @@ static int aw36515_set_level(int channel, int level)
 
 	return ret;
 }
-int aw36515_read_vendor_id(void)
-{
-	unsigned char val, reg_data;
-	struct aw36515_chip_data *pdata = aw36515_i2c_client->dev.driver_data;
 
-	usleep_range(2000, 2500);
-
-	/* read chip vendor information */
-	aw36515_i2c_read(aw36515_i2c_client, AW36515_REG_CHIP_VENDOR_ID, &val);
-	pr_info("aw36515 0x25 vendorID = 0x%2x\n", val);
-
-	aw36515_i2c_read(aw36515_i2c_client, AW36515_REG_DUMMY, &reg_data);
-	pr_info("aw36515 0x09 ver = 0x%2x\n", reg_data);
-
-	if (((val & 0x04) == AW36515_CHIP_VENDOR_ID) && !(reg_data & 0x01)) {
-		pr_info("aw36515 is_mode_switch_init is true\n");
-		pdata->is_mode_switch_init = true;
-	} else {
-		pdata->is_mode_switch_init = false;
-		pr_info("aw36515 is_mode_switch_init is false\n");
-	}
-
-	return 0;
-}
 /* flashlight init */
 int aw36515_init(void)
 {
@@ -365,9 +324,6 @@ int aw36515_init(void)
 	unsigned char reg, val;
 
 	usleep_range(2000, 2500);
-
-	/* clear enable register */
-	aw36515_mode_cfg_init();
 	reg = AW36515_REG_ENABLE;
 	val = AW36515_DISABLE;
 	ret = aw36515_i2c_write(aw36515_i2c_client, reg, val);
@@ -665,10 +621,6 @@ aw36515_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	/* init mutex and spinlock */
 	mutex_init(&chip->lock);
-
-	/* read vendor id */
-	aw36515_read_vendor_id();
-
 	/* soft rst */
 	aw36515_soft_reset();
 
@@ -733,8 +685,6 @@ static int aw36515_i2c_remove(struct i2c_client *client)
 static void aw36515_i2c_shutdown(struct i2c_client *client)
 {
 	pr_info("aw36515 shutdown start.\n");
-
-	aw36515_mode_cfg_init();
 	aw36515_get_flag1();
 	aw36515_get_flag2();
 	aw36515_i2c_write(aw36515_i2c_client, AW36515_REG_ENABLE,
