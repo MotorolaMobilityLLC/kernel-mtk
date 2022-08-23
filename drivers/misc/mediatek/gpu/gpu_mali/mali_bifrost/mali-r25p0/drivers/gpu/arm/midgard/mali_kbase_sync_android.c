@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2012-2017 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2017, 2020-2022 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -16,7 +16,7 @@
  * along with this program; if not, you can access it online at
  * http://www.gnu.org/licenses/gpl-2.0.html.
  *
- * SPDX-License-Identifier: GPL-2.0
+ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
  *
  */
 
@@ -262,13 +262,17 @@ int kbase_sync_fence_out_create(struct kbase_jd_atom *katom, int tl_fd)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0)
 	fd = get_unused_fd_flags(O_RDWR | O_CLOEXEC);
 	if (fd < 0) {
+                sync_pt_free(pt);
 		sync_fence_put(fence);
+                katom->fence = NULL;
 		goto out;
 	}
 #else
 	fd = get_unused_fd();
 	if (fd < 0) {
+                sync_pt_free(pt);
 		sync_fence_put(fence);
+                katom->fence = NULL;
 		goto out;
 	}
 
@@ -283,16 +287,11 @@ int kbase_sync_fence_out_create(struct kbase_jd_atom *katom, int tl_fd)
 	spin_unlock(&files->file_lock);
 #endif  /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0) */
 
+	/* Place the successfully created fence in katom */
+	katom->fence = fence;
+
 	/* bind fence to the new fd */
 	sync_fence_install(fence, fd);
-
-	katom->fence = sync_fence_fdget(fd);
-	if (katom->fence == NULL) {
-		/* The only way the fence can be NULL is if userspace closed it
-		 * for us, so we don't need to clear it up */
-		fd = -EINVAL;
-		goto out;
-	}
 
 out:
 	fput(tl_file);
