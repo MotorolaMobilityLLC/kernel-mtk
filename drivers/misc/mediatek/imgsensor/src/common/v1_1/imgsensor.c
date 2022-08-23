@@ -1711,7 +1711,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		break;
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
 		{
-#define GAIN_TBL_SIZE 8192
+#define GAIN_TBL_SIZE 4096
 
 			char *pGain_tbl = NULL;
 			unsigned long long *pFeaturePara_64 =
@@ -1816,7 +1816,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_PDAF_DATA:
 	case SENSOR_FEATURE_GET_4CELL_DATA:
 		{
-#define PDAF_DATA_SIZE 4096
+#define PDAF_DATA_SIZE 8192
 			char *pPdaf_data = NULL;
 			unsigned long long *pFeaturePara_64 =
 				(unsigned long long *)pFeaturePara;
