@@ -1465,15 +1465,15 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	pr_debug("set_test_pattern_mode enable: %d", enable);
 
 	if (enable) {
-		write_cmos_sensor_8(0x5000, 0x81);
-		write_cmos_sensor_8(0x5001, 0x00);
-		write_cmos_sensor_8(0x5002, 0x92);
-		write_cmos_sensor_8(0x5081, 0x01);
+		write_cmos_sensor_8(0x401a, 0x00);
+		write_cmos_sensor_8(0x3510, 0x00);
+		write_cmos_sensor_8(0x3511, 0x00);
+		write_cmos_sensor_8(0x3512, 0x00);
 	} else {
-		write_cmos_sensor_8(0x5000, 0xCB);
-		write_cmos_sensor_8(0x5001, 0x43);
-		write_cmos_sensor_8(0x5002, 0x9E);
-		write_cmos_sensor_8(0x5081, 0x00);
+		write_cmos_sensor_8(0x401a, 0x40);
+		write_cmos_sensor_8(0x3510, 0x01);
+		write_cmos_sensor_8(0x3511, 0x00);
+		write_cmos_sensor_8(0x3512, 0x00);
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
