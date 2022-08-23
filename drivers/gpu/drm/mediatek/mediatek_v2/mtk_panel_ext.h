@@ -396,6 +396,7 @@ enum panel_hbm_type {
 };
 
 struct mtk_panel_params {
+	unsigned int change_fps_by_vfp_send_cmd;
 	unsigned int pll_clk;
 	unsigned int data_rate;
 	struct mtk_dsi_phy_timcon phy_timcon;
