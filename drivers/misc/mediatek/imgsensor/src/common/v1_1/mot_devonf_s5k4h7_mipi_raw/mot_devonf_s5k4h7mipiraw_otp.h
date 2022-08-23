@@ -241,7 +241,7 @@ typedef struct mot_s5k4h7_otp_map {
 } mot_s5k4h7_otp_t;
 
 typedef struct mot_s5k4h7_otp_alldata_map{
-      UINT8 data[6555];
+      UINT8 data[6656];
 }mot_s5k4h7_otp_alldata_t;
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
