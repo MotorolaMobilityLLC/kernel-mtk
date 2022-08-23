@@ -114,8 +114,8 @@ static imgsensor_info_struct imgsensor_info = {
 		.framelength = 1754,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
+		.grabwindow_width = 2040,
+		.grabwindow_height = 1536,
 		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 1200,
 		.mipi_pixel_rate = 652800000,
@@ -220,7 +220,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
        { 8160, 6144,    0,    0, 8160, 6144, 4080, 3072,  0,   0, 4080, 3072,    0,    0, 4080, 3072}, // preveiw
        { 8160, 6144,    0,    0, 8160, 6144, 4080, 3072,  0,   0, 4080, 3072,    0,    0, 4080, 3072}, // capture
        { 8160, 6144,    0,    0, 8160, 6144, 4080, 3072,  0,   0, 4080, 3072,    0,    0, 4080, 3072}, // video
-       { 8160, 6144,    240, 912, 7680, 4320, 1280, 720,  0,   0, 1280, 720,    0,    0, 1280, 720}, // hs
+       { 8160, 6144,    0,    0, 8160, 6144, 2040, 1536,  0,   0, 2040, 1536,    0,    0, 2040, 1536}, // hs
        { 8160, 6144,    0,    0, 8160, 6144, 4080, 3072,  0,   0, 4080, 3072,    0,    0, 4080, 3072}, // slim
        { 8160, 6144,    0,    0, 8160, 6144, 8160, 6144,  0,   0, 8160, 6144,    0,    0, 8160, 6144}, // custom1
        { 8160, 6144,    0,    0, 8160, 6144, 2040, 1536,  0,   0, 2040, 1536,    0,    0, 2040, 1536}, // custom2
@@ -245,7 +245,7 @@ static kal_uint16 normal_video_setting_array[] = {
 };
 
 static kal_uint16 hs_video_setting_array[] = {
-#include "settings/s5kjn1_1280x720_120fps.h"
+#include "settings/s5kjn1_2040x1536_120fps.h"
 };
 
 static kal_uint16 slim_video_setting_array[] = {
