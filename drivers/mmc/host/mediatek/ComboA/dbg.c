@@ -2234,7 +2234,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 
 	if (cmd == SD_TOOL_ZONE) {
 		id = p1;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 
 		host = mtk_msdc_host[id];
@@ -2251,7 +2251,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		}
 	} else if (cmd == SD_TOOL_DMA_SIZE) {
 		id = p2;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 		if (p1 == 0) {
 			drv_mode[id] = p3;
@@ -2305,7 +2305,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		char *device_str, *get_set_str;
 
 		id = p2;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 
@@ -2350,7 +2350,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			host->hw->driving_applied->ds_drv);
 	} else if (cmd == SD_TOOL_ENABLE_SLEW_RATE) {
 		id = p1;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		if ((unsigned char)p2 > 1 || (unsigned char)p3 > 1
@@ -2364,7 +2364,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		}
 	} else if (cmd == SD_TOOL_SET_RDTDSEL) {
 		id = p1;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		if ((p2 < 0) || (p2 > 2)) {
@@ -2388,7 +2388,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		}
 	} else if (cmd == SD_TOOL_ENABLE_SMT) {
 		id = p1;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		msdc_set_smt(host, p2);
@@ -2451,7 +2451,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	} else if (cmd == SD_TOOL_MSDC_HOST_MODE) {
 		id = p2;
 		spd_mode = p3;
-		if (id >= HOST_MAX_NUM || id < 0)
+		if (id >= HOST_MAX_NUM || id < 0 || mtk_msdc_host[id] == NULL)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		if (p1 == 1) {
