@@ -330,6 +330,7 @@ static void lcm_reset(void)
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	MDELAY(10);
+
 	LCM_LOGI("%s:ft8006s lcm reset done\n",__func__);
 }
 
@@ -353,6 +354,8 @@ static void lcm_init(void)
 	int ret = 0;
 	LCM_LOGI("%s: ft8006s start\n",__func__);
 	LCM_LOGI("%s: gesture_dubbleclick_en=%d \n",__func__,gesture_dubbleclick_en);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
+	MDELAY(10);
 	if (!gesture_dubbleclick_en) {
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
 		//MDELAY(2);
