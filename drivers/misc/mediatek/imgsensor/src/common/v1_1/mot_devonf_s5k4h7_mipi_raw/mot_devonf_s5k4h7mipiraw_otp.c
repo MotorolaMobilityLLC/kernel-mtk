@@ -326,9 +326,9 @@ void moto_read_otp_all_data(void)
 	unsigned short page_idx;
 	unsigned short start_addr = OTP_PAGE_START_ADDR;
 	LOG_INF("X");
-	for(page_idx =21;page_idx <122;page_idx++)
+	for(page_idx =21;page_idx <125;page_idx++)
 	{
-           moto_read_sensor_otp_data(page_idx,start_addr,mot_s5k4h7_otp_data.data+(page_idx-21)*64,64);
+		moto_read_sensor_otp_data(page_idx,start_addr,mot_s5k4h7_otp_data.data+(page_idx-21)*64,64);
 	}
 	LOG_INF("E");
 	return;
@@ -700,7 +700,7 @@ unsigned int mot_devonf_s5k4h7_read_region(struct i2c_client *client, unsigned i
 			unsigned char *data, unsigned int size)
 {
 	unsigned int ret = 0;
-	unsigned int dump_all_size = 6555;
+	unsigned int dump_all_size = 6656;
 	unsigned char *otp_data = otp_info_map.data;
 	unsigned char *otp_alldata = mot_s5k4h7_otp_data.data;
 	LOG_INF ("eeprom read data addr = 0x%x size = %d\n",addr,size);
