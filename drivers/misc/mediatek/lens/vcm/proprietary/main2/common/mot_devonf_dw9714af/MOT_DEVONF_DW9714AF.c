@@ -25,6 +25,8 @@
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                               \
 	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)                                               \
+	pr_err(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -36,20 +38,21 @@ static spinlock_t *g_pAF_SpinLock;
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4CurrPosition;
+static u16  ParkLensPaceBoundary[4]    = {60, 100, 150, 200};
 
 
 static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
 
-	char puSendCmd[2] = {(char)(a_u2Data >> 4),
-			     (char)((a_u2Data & 0xF) << 4)};
+	char puSendCmd[3] = { 0x03, (char)(a_u2Data >> 8),
+		(char)(a_u2Data & 0xFF) };
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 3);
 
 	if (i4RetValue < 0) {
 		LOG_INF("I2C send failed!!\n");
@@ -85,10 +88,29 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
+	int i4RetValue = 0;
+	char puSendCmdArray[6][3] = {
+	{0xED, 0xAB, 0}, {0x02, 0x01, 0}, {0x02, 0x00, 1},
+	{0x06, 0x84, 0}, {0x07, 0x01, 0}, {0x08, 0x74, 0},
+	};
+	unsigned char cmd_number;
+
 	LOG_INF("+\n");
 
-	if (*g_pAF_Opened == 1) {
+	for (cmd_number = 0; cmd_number < 6; cmd_number++) {
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
+					puSendCmdArray[cmd_number], 2);
+		if (i4RetValue < 0) {
+			LOG_ERR("initdrv failed!\n");
+			return -1;
+		}
+		if(puSendCmdArray[cmd_number][2])
+		{
+			mdelay(puSendCmdArray[cmd_number][2]);
+		}
+	}
 
+	if (*g_pAF_Opened == 1) {
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
@@ -174,8 +196,28 @@ int MOT_DEVONF_DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2) {
-		LOG_INF("Wait\n");
-		s4AF_WriteReg(0x80); /* Power down mode */
+		while (g_u4CurrPosition > 0){
+			// Move in different pace to reduce park lens time
+			if (g_u4CurrPosition > ParkLensPaceBoundary[3])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[2];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[2])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[1];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[1])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[0];
+			}
+			else
+			{
+				break;
+			}
+
+			s4AF_WriteReg(g_u4CurrPosition);
+			mdelay(10);
+		}
 	}
 
 	if (*g_pAF_Opened) {
