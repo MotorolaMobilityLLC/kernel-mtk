@@ -42,7 +42,7 @@
                 aw99703,switch-freq = <1>; /* 1000kHz(default) */
                 aw99703,auto-freq-high = <0x10>;
                 aw99703,auto-freq-low = <0x05>;
-                aw99703,bl-fscal-led = <0x17>; /* 24.8mA */
+                aw99703,bl-fscal-led = <0x19>; /* 24.8mA */
                 aw99703,bl-channel = <3>;
                 aw99703,turn-on-ramp = <0x00>; /* 512us */
                 aw99703,turn-off-ramp = <0x04>; /* 8ms */
@@ -54,16 +54,15 @@
                 aw99703,default-brightness = <1810>;
 
                 ktd,hwen-gpio = <&pio 161 1>;
-                ktd,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
-                ktd,bl-fscal-led = <0x19>; /* 25mA */
-                ktd,turn-on-ramp = <0x00>;
-                ktd,turn-off-ramp = <0x04>;
-                ktd,pwm-trans-dim = <0>;
-                ktd,i2c-trans-dim = <1>;
+                ktd,bl-fscal-led = <0xC9>; /* 25mA */
+                ktd,turn-on-ramp = <0x08>;
+                ktd,turn-off-ramp = <0x08>;
+                ktd,pwm-trans-dim = <4>;
+                ktd,i2c-trans-dim = <256>;
                 ktd,bl-channel = <3>;
-                ktd,ovp-level = <2>;
+                ktd,ovp-level = <32>;/* 32V */
                 ktd,switching-frequency = <1>;
                 ktd,inductor-current = <1>;
 	};
