@@ -25,6 +25,8 @@
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                               \
 	pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)                                               \
+	pr_err(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -131,10 +133,11 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 /* initAF include driver initialization and standby mode */
 static int initAF(void)
 {
-	u8 gt6764_init_setting[3][2] = {
+	u8 gt6764_init_setting[4][2] = {
+					{0x02, 0x00},
 					{0x02, 0x02},
-					{0x06, 0x40}, //SAC setting
-					{0x07, 0x79}};
+					{0x06, 0xC0}, //SAC setting
+					{0x07, 0x02}};
 	u16 regIdx;
 
 	LOG_INF("+\n");
@@ -148,9 +151,19 @@ static int initAF(void)
 		s4AF_ReadReg(0x00, &Temp);  //ic info
 		LOG_INF("Check HW version: 0x00 is %x\n", Temp);
 
-		for (regIdx=0; regIdx<3; regIdx++) {
+		for (regIdx=0; regIdx<4; regIdx++) {
+
 			ret |= s4AF_WriteReg(0, gt6764_init_setting[regIdx][0], gt6764_init_setting[regIdx][1]); //Init setting
+
+			if (ret < 0) {
+				LOG_ERR("initdrv failed!\n");
+				return -1;
+			}
+			if (gt6764_init_setting[regIdx][1] == 0x00) {
+				mdelay(1);
+			}
 		}
+
 		usleep_range(5000,5100);
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
