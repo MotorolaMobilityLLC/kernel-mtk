@@ -2388,6 +2388,7 @@
       <elf-symbol name='find_get_pid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x90b01573'/>
       <elf-symbol name='find_pid_ns' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9542fd3e'/>
       <elf-symbol name='find_task_by_vpid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa6e07172'/>
+      <elf-symbol name='find_user' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x508716e5'/>
       <elf-symbol name='find_vpid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1273c714'/>
       <elf-symbol name='finish_wait' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x92540fbf'/>
       <elf-symbol name='firmware_request_nowarn' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x71952555'/>
@@ -2417,6 +2418,7 @@
       <elf-symbol name='free_pages_exact' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeb44339a'/>
       <elf-symbol name='free_percpu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc9ec4e21'/>
       <elf-symbol name='free_percpu_irq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbc6bec66'/>
+      <elf-symbol name='free_uid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1a4cbb84'/>
       <elf-symbol name='freezing_slow_path' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x42a3708'/>
       <elf-symbol name='freq_qos_add_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8959e3df'/>
       <elf-symbol name='freq_qos_add_request' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x28498a88'/>
@@ -17256,7 +17258,7 @@
       <class-decl name='macsec_ops' is-struct='yes' visibility='default' is-declaration-only='yes' id='1c4048ae'/>
       <pointer-type-def type-id='064acd7a' size-in-bits='64' id='1c475548'/>
       <pointer-type-def type-id='97e3fb6c' size-in-bits='64' id='1c51ec16'/>
-      <class-decl name='pci_sriov' size-in-bits='1280' is-struct='yes' visibility='default' filepath='drivers/pci/controller/dwc/../../pci.h' line='320' column='1' id='1c590219'>
+      <class-decl name='pci_sriov' size-in-bits='1280' is-struct='yes' visibility='default' filepath='drivers/pci/pci.h' line='320' column='1' id='1c590219'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='pos' type-id='95e97e5e' visibility='default' filepath='drivers/pci/pci.h' line='321' column='1'/>
         </data-member>
@@ -133189,6 +133191,10 @@
         <parameter type-id='587f89d2' name='vnr' filepath='kernel/pid.c' line='420' column='1'/>
         <return type-id='f23e2572'/>
       </function-decl>
+      <function-decl name='find_user' mangled-name='find_user' filepath='kernel/user.c' line='170' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='find_user'>
+        <parameter type-id='d80b72e6' name='uid' filepath='kernel/user.c' line='170' column='1'/>
+        <return type-id='273a7d34'/>
+      </function-decl>
       <function-decl name='find_vpid' mangled-name='find_vpid' filepath='kernel/pid.c' line='315' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='find_vpid'>
         <parameter type-id='95e97e5e' name='nr' filepath='kernel/pid.c' line='315' column='1'/>
         <return type-id='b94e5398'/>
@@ -133327,6 +133333,10 @@
       <function-decl name='free_percpu_irq' mangled-name='free_percpu_irq' filepath='kernel/irq/manage.c' line='2516' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_percpu_irq'>
         <parameter type-id='f0981eeb' name='irq' filepath='kernel/irq/manage.c' line='2516' column='1'/>
         <parameter type-id='eaa32e2f' name='dev_id' filepath='kernel/irq/manage.c' line='2516' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='free_uid' mangled-name='free_uid' filepath='kernel/user.c' line='182' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_uid'>
+        <parameter type-id='273a7d34' name='up' filepath='kernel/user.c' line='182' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <var-decl name='freezer_cgrp_subsys' type-id='1d115fd5' mangled-name='freezer_cgrp_subsys' visibility='default' filepath='kernel/cgroup/legacy_freezer.c' line='473' column='1' elf-symbol-id='freezer_cgrp_subsys'/>
