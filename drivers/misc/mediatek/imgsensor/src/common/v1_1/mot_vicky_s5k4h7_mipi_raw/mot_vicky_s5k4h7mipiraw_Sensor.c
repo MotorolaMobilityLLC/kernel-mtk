@@ -396,10 +396,11 @@ static kal_uint32 streaming_control(kal_bool enable)
 	LOG_INF_N("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor_8(0x0100, 0x01);
+		mdelay(10);
 	} else {
 			write_cmos_sensor_8(0x0100, 0x00);
 			for (i = 0; i < timeout; i++) {
-				mdelay(1);
+				mdelay(10);
 				framecnt = read_cmos_sensor_8(0x0005);
 				if ( framecnt == 0xFF) {
 				LOG_INF_N(" Stream Off OK at i=%d.\n", i);
