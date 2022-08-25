@@ -1020,10 +1020,14 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 	case PORT_STAT_APPLE_10W:
 	case PORT_STAT_APPLE_12W:
 	case PORT_STAT_SAMSUNG:
-	case PORT_STAT_DCP:
 		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 		ddata->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
 		bc12_en = true;
+		break;
+	case PORT_STAT_DCP:
+		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
+		ddata->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
+		bc12_en = false;
 		break;
 	case PORT_STAT_SDP:
 		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB;
