@@ -251,7 +251,7 @@
 	regulator-enable-ramp-delay = <1920>;
 };
 
-&msdc1 {
+&mmc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
 
