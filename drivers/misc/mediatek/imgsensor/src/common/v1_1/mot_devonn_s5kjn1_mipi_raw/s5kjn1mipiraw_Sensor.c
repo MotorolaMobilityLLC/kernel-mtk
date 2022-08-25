@@ -210,7 +210,7 @@ static imgsensor_struct imgsensor = {
 	.ihdr_en = KAL_FALSE, //sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0xac,//record current sensor's i2c write id
 	//Long exposure
-	.current_ae_effective_frame = 1,
+	.current_ae_effective_frame = 2,
 
 };
 
@@ -464,7 +464,9 @@ static void set_shutter(kal_uint32 shutter)
 		write_cmos_sensor(0x0202, CintR & 0xFFFF);
 		write_cmos_sensor(0x0702, 0x0700);
 		write_cmos_sensor(0x0704, 0x0700);
-
+		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.current_ae_effective_frame = 2;
 		pr_debug("download long shutter setting shutter = %d\n", shutter);
 	} else {
 		if (bNeedSetNormalMode == KAL_TRUE) {
