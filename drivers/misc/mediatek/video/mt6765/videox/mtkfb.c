@@ -163,7 +163,6 @@ char mtkfb_lcm_name[256] = { 0 };
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 struct fb_info *ext_mtkfb_fb;
 unsigned long ext_fb_pa;
-
 unsigned int ext_lcd_fps = 6000;
 char ext_mtkfb_lcm_name[256] = { 0 };
 #endif
@@ -2577,6 +2576,8 @@ static void mtkfb_shutdown(struct platform_device *pdev)
 	else
 		msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
 
+	g_idle_skip = 0;
+	g_idle_skip_trigger = 0;
 	if (primary_display_is_sleepd()) {
 		MTKFB_LOG("mtkfb has been power off\n");
 		return;
