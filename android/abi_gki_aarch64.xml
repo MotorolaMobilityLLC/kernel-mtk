@@ -9247,7 +9247,7 @@
       <pointer-type-def type-id='91d0de51' size-in-bits='64' id='06ce3ba1'/>
       <pointer-type-def type-id='6f81c9e7' size-in-bits='64' id='06d9380f'/>
       <pointer-type-def type-id='2399d05d' size-in-bits='64' id='06d9546d'/>
-      <enum-decl name='android_debug_per_cpu_symbol' filepath='include/linux/android_debug_symbols.h' line='46' column='1' id='06dde89f'>
+      <enum-decl name='android_debug_per_cpu_symbol' filepath='include/linux/android_debug_symbols.h' line='49' column='1' id='06dde89f'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='ADS_IRQ_STACK_PTR' value='0'/>
         <enumerator name='ADS_DEBUG_PER_CPU_END' value='1'/>
@@ -70859,7 +70859,8 @@
         <enumerator name='ADS_STACK_GUARD_GAP' value='18'/>
         <enumerator name='ADS_SYSCTL_LEGACY_VA_LAYOUT' value='19'/>
         <enumerator name='ADS_SHOW_MEM' value='20'/>
-        <enumerator name='ADS_END' value='21'/>
+        <enumerator name='ADS_PUT_TASK_STACK' value='21'/>
+        <enumerator name='ADS_END' value='22'/>
       </enum-decl>
       <function-type size-in-bits='64' id='9a800b82'>
         <parameter type-id='b64ad7cb'/>
@@ -128775,12 +128776,12 @@
         <parameter type-id='eaa32e2f' name='data' filepath='kernel/module.c' line='4800' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='android_debug_per_cpu_symbol' mangled-name='android_debug_per_cpu_symbol' filepath='drivers/android/android_debug_symbols.c' line='118' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='android_debug_per_cpu_symbol'>
-        <parameter type-id='06dde89f' name='symbol' filepath='drivers/android/android_debug_symbols.c' line='118' column='1'/>
+      <function-decl name='android_debug_per_cpu_symbol' mangled-name='android_debug_per_cpu_symbol' filepath='drivers/android/android_debug_symbols.c' line='119' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='android_debug_per_cpu_symbol'>
+        <parameter type-id='06dde89f' name='symbol' filepath='drivers/android/android_debug_symbols.c' line='119' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
-      <function-decl name='android_debug_symbol' mangled-name='android_debug_symbol' filepath='drivers/android/android_debug_symbols.c' line='101' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='android_debug_symbol'>
-        <parameter type-id='9a7fd0a4' name='symbol' filepath='drivers/android/android_debug_symbols.c' line='101' column='1'/>
+      <function-decl name='android_debug_symbol' mangled-name='android_debug_symbol' filepath='drivers/android/android_debug_symbols.c' line='102' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='android_debug_symbol'>
+        <parameter type-id='9a7fd0a4' name='symbol' filepath='drivers/android/android_debug_symbols.c' line='102' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
       <function-decl name='android_rvh_probe_register' mangled-name='android_rvh_probe_register' filepath='kernel/tracepoint.c' line='841' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='android_rvh_probe_register'>
@@ -157996,7 +157997,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
