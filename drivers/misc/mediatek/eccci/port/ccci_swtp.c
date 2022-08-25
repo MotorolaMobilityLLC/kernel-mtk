@@ -69,54 +69,29 @@ static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
 #if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
-static u16 swtp_gpio_pin[3] = {0};
+static u16 swtp_gpio_pin[MAX_PIN_NUM] = {0};
+static u8 swtp_class_creat_flag = 0;
 static ssize_t swtp_gpio_state_show(struct class *class,
 		struct class_attribute *attr,
 		char *buf)
 {
-	int ret;
-	ret = gpio_get_value_cansleep(swtp_gpio_pin[0]);
-	//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpio:%d\n", __func__, ret, swtp_gpio_pin[0]);
+	int ret =0, i = 0;
+	for (i = 0; i < MAX_PIN_NUM; i++) {
+		if(swtp_gpio_pin[i] == 0)
+			break;
+
+		ret |= gpio_get_value_cansleep(swtp_gpio_pin[i]);
+		//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpios:%d\n", __func__, ret, swtp_gpio_pin[i]);
+	}
+
 	return sprintf(buf, "%d\n", ret);
 }
 
 static CLASS_ATTR_RO(swtp_gpio_state);
 
-static ssize_t swtp_gpio_state1_show(struct class *class,
-		struct class_attribute *attr,
-		char *buf)
-{
-	int ret;
-	ret = gpio_get_value_cansleep(swtp_gpio_pin[1]);
-	//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpio:%d\n", __func__, ret, swtp_gpio_pin[1]);
-	return sprintf(buf, "%d\n", ret);
-}
-
-static CLASS_ATTR_RO(swtp_gpio_state1);
-
-static ssize_t swtp_gpio_state2_show(struct class *class,
-		struct class_attribute *attr,
-		char *buf)
-{
-	int ret;
-	ret = gpio_get_value_cansleep(swtp_gpio_pin[2]);
-	//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpio:%d\n", __func__, ret, swtp_gpio_pin[2]);
-	return sprintf(buf, "%d\n", ret);
-}
-
-static CLASS_ATTR_RO(swtp_gpio_state2);
-
 static struct class swtp_class[] = {
     {
         .name    = "swtp",
-        .owner   = THIS_MODULE,
-    },
-    {
-        .name    = "swtp1",
-        .owner   = THIS_MODULE,
-    },
-    {
-        .name    = "swtp2",
         .owner   = THIS_MODULE,
     }
 };
@@ -402,15 +377,13 @@ static void swtp_init_delayed_work(struct work_struct *work)
 #if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
 			if(swtp_data[md_id].gpiopin[i] != 0){
 				swtp_gpio_pin[i] = swtp_data[md_id].gpiopin[i];
-				//ret = gpio_get_value_cansleep(swtp_gpio_pin[i]);
-				//CCCI_LEGACY_ERR_LOG(md_id, SYS, "%s,swtp%d,swtp_gpio_pin:%d, value:%d\n",__func__, i, swtp_gpio_pin[i], ret);
-				ret = class_register(&swtp_class[i]);
-				if (i == 1){
-					ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state1);
-				}else if(i == 2){
-					ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state2);
-				}else{
-					ret = class_create_file(&swtp_class[i], &class_attr_swtp_gpio_state);
+				//CCCI_LEGACY_ERR_LOG(md_id, SYS, "%s,swtp%d, value:%d\n",__func__, i, swtp_gpio_pin[i]);
+				if(swtp_class_creat_flag == 0){
+					ret = class_register(&swtp_class[0]);
+					ret = class_create_file(&swtp_class[0], &class_attr_swtp_gpio_state);
+					if(!ret){
+						swtp_class_creat_flag = 1;
+					}
 				}
 			}
 #endif
