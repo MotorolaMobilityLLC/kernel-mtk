@@ -177,14 +177,23 @@ static void camaf_power_init(void)
 
 	/* check if customer camera node defined */
 	node = of_find_compatible_node(
+#if defined(CONFIG_MACH_MT6768)
+		NULL, NULL, "mediatek,CAMERA_MAIN_AF");
+#else
 		NULL, NULL, "mediatek,camera_af_lens");
+#endif
 
 	if (node) {
 		kd_node = lens_device->of_node;
 		lens_device->of_node = node;
 
 		if (vcamaf_ldo == NULL) {
+#if defined(CONFIG_MACH_MT6768)
+			vcamaf_ldo = regulator_get(lens_device,"vldo28");
+#else
 			vcamaf_ldo = regulator_get(lens_device, CAMAF_PMIC);
+#endif
+
 			if (IS_ERR(vcamaf_ldo)) {
 				ret = PTR_ERR(vcamaf_ldo);
 				vcamaf_ldo = NULL;
