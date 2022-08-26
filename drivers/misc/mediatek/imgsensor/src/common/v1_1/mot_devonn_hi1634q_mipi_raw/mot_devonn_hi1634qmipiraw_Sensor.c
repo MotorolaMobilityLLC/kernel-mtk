@@ -145,7 +145,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_gain = BASEGAIN,
 	.max_gain = 16 * BASEGAIN,
 	.min_gain_iso = 100,
-	.exp_step = 2,
+	.exp_step = 1,
 	.gain_step = 4,
 	.gain_type = 3, // Hynix:type 3
 
