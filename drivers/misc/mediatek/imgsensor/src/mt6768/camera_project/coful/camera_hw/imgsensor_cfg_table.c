@@ -178,7 +178,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #ifdef CAMERA_CHROMATIX_NOISE
                         {AVDDCN, Vol_1800, 1},
 #endif
-                        {RST, Vol_High, 5}
+                        {RST, Vol_High, 9}
                 },
         },
 #endif
