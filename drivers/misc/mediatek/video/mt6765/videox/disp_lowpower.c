@@ -1136,6 +1136,8 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	int ret = 0;
 	unsigned long long interval = 0;
 	unsigned long long time_diff;
+	g_idle_skip = 0;
+	g_idle_skip_trigger = 0;
 
 	msleep(16000);
 	while (1) {
@@ -1159,6 +1161,10 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 
 		primary_display_manual_lock();
 
+		if (g_idle_skip == 0) {
+			primary_display_manual_unlock();
+			continue;
+		}
 		if (primary_get_state() != DISP_ALIVE) {
 			primary_display_manual_unlock();
 			primary_display_wait_state(DISP_ALIVE,
