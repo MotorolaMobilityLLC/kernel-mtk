@@ -1879,9 +1879,14 @@ static int ccif_late_init(unsigned char hif_id)
 			ccif_ctrl->ap_ccif_irq1_id, ret);
 		return -1;
 	}
+	ret = irq_set_irq_wake(ccif_ctrl->ap_ccif_irq1_id, 1);
+	if (ret)
+		CCCI_ERROR_LOG(ccif_ctrl->md_id, TAG,
+			"irq_set_irq_wake ccif ap_ccif_irq1_id(%d) error %d\n",
+			ccif_ctrl->ap_ccif_irq1_id, ret);
+
 	/*need compare k5.10*/
 	md_ccif_ring_buf_init(CCIF_HIF_ID);
-
 	return 0;
 }
 
@@ -2170,6 +2175,12 @@ static int ccif_hif_hw_init(struct device *dev, struct md_ccif_ctrl *md_ctrl)
 			"request CCIF_AP_DATA IRQ0(%d) error %d\n",
 			md_ctrl->ap_ccif_irq0_id, ret);
 		return -1;
+	}
+	ret = irq_set_irq_wake(md_ctrl->ap_ccif_irq0_id, 1);
+	if (ret){
+		CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+				"irq_set_irq_wake ccif irq0(%d) error %d\n",
+				md_ctrl->ap_ccif_irq0_id, ret);
 	}
 	return 0;
 
