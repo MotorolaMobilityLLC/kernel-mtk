@@ -121,10 +121,10 @@
 
 &u2port0 {
     mediatek,eye-vrt = <7>;
-    mediatek,eye-term = <0>;
+    mediatek,eye-term = <3>;
     mediatek,rev6 = <1>;
     mediatek,eye-vrt-host = <7>;
-    mediatek,eye-term-host = <0>;
+    mediatek,eye-term-host = <3>;
     mediatek,rev6-host = <1>;
 };
 
