@@ -1139,7 +1139,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	g_idle_skip = 0;
 	g_idle_skip_trigger = 0;
 
-	msleep(32000);
+	msleep(16000);
 	while (1) {
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue,
 			atomic_read(&idlemgr_task_wakeup));
