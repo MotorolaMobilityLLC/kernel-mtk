@@ -36,6 +36,10 @@
 #define RX_BUGDET 16
 #define NET_RX_QUEUE_MASK 0x4
 
+#define platform_mt6779 ("MT6779")
+#define platform_mt6877 ("MT6877")
+#define PLATFORM_AP_LEN (16)
+
 struct ccif_flow_control {
 	unsigned int head_magic;
 	unsigned int ap_busy_queue;
