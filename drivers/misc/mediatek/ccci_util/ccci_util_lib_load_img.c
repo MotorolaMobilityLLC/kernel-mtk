@@ -116,6 +116,7 @@ char *ccci_get_ap_platform(void)
 
 	return s_ap_platform_info;
 }
+EXPORT_SYMBOL(ccci_get_ap_platform);
 
 /*--- MD header check ------------ */
 static int check_dsp_header(int md_id, void *parse_addr,
