@@ -132,7 +132,7 @@ static int initdrv(void)
 		puSendCmdArray[1]);
 	LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]),
 		puSendCmdArray[2]);
-
+	mdelay(2);
 	for (cmd_number = 0; cmd_number < 7; cmd_number++) {
 		if (puSendCmdArray[cmd_number][0] != 0xFE) {
 			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
