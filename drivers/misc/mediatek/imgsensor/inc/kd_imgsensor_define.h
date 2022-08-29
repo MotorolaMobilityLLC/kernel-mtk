@@ -484,6 +484,8 @@ typedef struct {
         MotCalibrationStatus lsc_status;
         MotCalibrationStatus pdaf_status;
         MotCalibrationStatus dual_status;
+	MotCalibrationStatus ggc_status;
+	MUINT8 *ggc_data;
 	mot_calibration_mnf_t mnf_cal_data;
 } mot_calibration_info_t;
 
