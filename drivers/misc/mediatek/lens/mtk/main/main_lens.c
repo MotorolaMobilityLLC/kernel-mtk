@@ -74,7 +74,7 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #endif
 
 #ifdef CONFIG_AF_NOISE_ELIMINATION
-static unsigned long af_len = 750;
+static unsigned long af_len = 1;
 static int Open_holder = 0;
 static int Close_holder = 0;
 static struct wakeup_source vib_wakelock;
