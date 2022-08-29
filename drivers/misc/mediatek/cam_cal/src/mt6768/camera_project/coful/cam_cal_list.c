@@ -19,7 +19,7 @@ extern unsigned int S5K4H7_read_region(struct i2c_client *client, unsigned int a
 			unsigned char *data, unsigned int size);
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
-	{MOT_COFUL_S5KJN1_QTECH_ID, 0xA0, Common_read_region},
+	{MOT_COFUL_S5KJN1_QTECH_ID, 0xA0, Common_read_region,0x4000},
 	{MOT_CORFU_HI1336_OFILM_ID, 0xA2, Common_read_region},
 	{MOT_CORFU_HI1336_OFILM_DOE_ID, 0xA2, Common_read_region},
 	{MOT_COFUL_S5K4H7_QTECH_ID, 0x5A, S5K4H7_read_region},
