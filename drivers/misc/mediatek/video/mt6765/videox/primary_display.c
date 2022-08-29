@@ -117,6 +117,8 @@ static unsigned int gPresentFenceIndex;
 unsigned int gTriggerDispMode;
 static unsigned int g_keep;
 static unsigned int g_skip;
+int g_idle_skip;
+int g_idle_skip_trigger;
 /*DynFPS for debug*/
 bool g_force_cfg;
 unsigned int g_force_cfg_id;
@@ -5430,6 +5432,12 @@ static int primary_display_trigger_nolock(int blocking, void *callback,
 			__func__);
 		goto done;
 	}
+
+	if (g_idle_skip_trigger == 0){
+		g_idle_skip++;
+		g_idle_skip_trigger++;
+	}
+
 	primary_display_idlemgr_kick(__func__, 0);
 
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_TRIGGER, 0, 0);

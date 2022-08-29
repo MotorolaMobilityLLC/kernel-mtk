@@ -90,7 +90,7 @@ extern unsigned int arr_fps_enable;
 extern unsigned int round_corner_offset_enable;
 extern bool g_force_cfg;
 extern unsigned int g_force_cfg_id;
-
+int primary_display_ccci_mipi_callback(int usrdata, int en);
 struct DISP_LAYER_INFO {
 	unsigned int id;
 	unsigned int curr_en;
@@ -519,6 +519,8 @@ extern unsigned int gTriggerDispMode;
 extern unsigned int islcmconnected;
 
 size_t mtkfb_get_fb_size(void);
+extern int g_idle_skip;
+extern int g_idle_skip_trigger;
 
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz);
 int primary_fps_ctx_get_fps(unsigned int *fps, int *stable);

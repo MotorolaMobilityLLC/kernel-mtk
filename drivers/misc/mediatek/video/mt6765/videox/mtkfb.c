@@ -2376,6 +2376,7 @@ static struct fb_info *allocate_fb_by_index(struct device *dev)
 }
 #endif
 
+#define CONFIG_MTK_CCCI_DRIVER
 static int mtkfb_probe(struct platform_device *pdev)
 {
 	struct mtkfb_device *fbdev = NULL;
@@ -2524,6 +2525,13 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 
 	fbdev->state = MTKFB_ACTIVE;
+	//if (!strcmp(mtkfb_find_lcm_driver(),
+	//	"ontim_txd9882c_hdplus_dsi_vdo_truly")) {
+	//#ifdef CONFIG_MTK_CCCI_DRIVER
+		//register_ccci_sys_call_back(MD_SYS1,
+		//	MD_DISPLAY_DYNAMIC_MIPI, primary_display_ccci_mipi_callback);
+	//#endif
+	//}
 
 	MSG_FUNC_LEAVE();
 	pr_info("disp driver(2) mtkfb_probe end\n");
@@ -2584,6 +2592,8 @@ static void mtkfb_shutdown(struct platform_device *pdev)
 		msleep(30);
 	else
 		msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
+	g_idle_skip = 0;
+	g_idle_skip_trigger = 0;
 
 	if (primary_display_is_sleepd()) {
 		MTKFB_LOG("mtkfb has been power off\n");
