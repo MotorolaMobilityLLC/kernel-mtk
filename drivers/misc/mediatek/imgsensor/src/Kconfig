@@ -52,3 +52,10 @@ config IMGSENSOR_MAIN3
 	  This config is mainly mapping to userspace.
 	  Consider the numbers of sensors and usage on the phone.
 	  Compare the custom usage defined in user-custom folder.
+
+config MTK_IMGSENSOR_REMOVE_SUB2_PROBE
+	bool "enable remove sub2 sensor probe"
+	default n
+	help
+		This is to enable remove sub2 sensor probe.
+
