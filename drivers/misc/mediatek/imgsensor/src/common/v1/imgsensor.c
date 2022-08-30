@@ -618,7 +618,7 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 		 */
 		if (orderedSearchList[i] == -1)
 			continue;
-#ifdef MOT_MT6768_REMOVE_SUB2_PROBE
+#ifdef CONFIG_MTK_IMGSENSOR_REMOVE_SUB2_PROBE
 		if (psensor->inst.sensor_idx == 3)
 			continue;
 #endif
