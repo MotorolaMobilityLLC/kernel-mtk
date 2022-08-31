@@ -312,6 +312,7 @@
                 re-min = <1000>;
                 re-max = <40000>;
 		rename-flag=<1>;
+		fade-enable = <1>;
                 status = "okay";
         };
         aw883xx_smartpa_1: aw883xx@36 {
@@ -323,6 +324,7 @@
                 re-min = <1000>;
                 re-max = <40000>;
 		rename-flag=<1>;
+		fade-enable = <1>;
                 status = "okay";
         };
 };
