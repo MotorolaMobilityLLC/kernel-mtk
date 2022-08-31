@@ -39,7 +39,8 @@
 
 #include "mot_vicky_s5khm6mipiraw_Sensor.h"
 //#include "mot_vicky_s5khm6_setting_v1p5e_20220418.h"
-#include "mot_vicky_s5khm6_setting_v1p6a_20220518.h"
+//#include "mot_vicky_s5khm6_setting_v1p6a_20220518.h"
+#include "mot_vicky_s5khm6_setting_v1p6a1_20220831.h"
 #include "platform_common.h"
 
 
