@@ -445,6 +445,7 @@
       <elf-symbol name='__traceiter_android_vh_cma_drain_all_pages_bypass' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc098c853'/>
       <elf-symbol name='__traceiter_android_vh_cpu_idle_enter' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3d203999'/>
       <elf-symbol name='__traceiter_android_vh_cpu_idle_exit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x622adfde'/>
+      <elf-symbol name='__traceiter_android_vh_cpufreq_acct_update_power' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7ac8a530'/>
       <elf-symbol name='__traceiter_android_vh_cpufreq_fast_switch' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xecda3718'/>
       <elf-symbol name='__traceiter_android_vh_cpufreq_resolve_freq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce27f08e'/>
       <elf-symbol name='__traceiter_android_vh_cpufreq_target' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8e3247eb'/>
@@ -123092,6 +123093,13 @@
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/cpuidle.h' line='18' column='1'/>
         <parameter type-id='95e97e5e' name='state' filepath='include/trace/hooks/cpuidle.h' line='18' column='1'/>
         <parameter type-id='1b0e1d00' name='dev' filepath='include/trace/hooks/cpuidle.h' line='18' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_cpufreq_acct_update_power' mangled-name='__traceiter_android_vh_cpufreq_acct_update_power' filepath='include/trace/hooks/cpufreq.h' line='22' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_cpufreq_acct_update_power'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/cpufreq.h' line='22' column='1'/>
+        <parameter type-id='91ce1af9' name='cputime' filepath='include/trace/hooks/cpufreq.h' line='22' column='1'/>
+        <parameter type-id='f23e2572' name='p' filepath='include/trace/hooks/cpufreq.h' line='22' column='1'/>
+        <parameter type-id='f0981eeb' name='state' filepath='include/trace/hooks/cpufreq.h' line='22' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_cpufreq_fast_switch' mangled-name='__traceiter_android_vh_cpufreq_fast_switch' filepath='include/trace/hooks/cpufreq.h' line='35' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_cpufreq_fast_switch'>
