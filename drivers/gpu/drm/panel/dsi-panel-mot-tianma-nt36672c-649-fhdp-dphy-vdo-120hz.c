@@ -424,7 +424,7 @@ static struct mtk_panel_params ext_params = {
 	},
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_ONLY,
-	//.ssc_enable = 1,
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -468,7 +468,7 @@ static struct mtk_panel_params ext_params = {
 
 	.dyn = {
 		.switch_en = 1,
-		.pll_clk = 500,
+		.pll_clk = 550,
 		.vfp_lp_dyn = 2600,
 		.hfp = 77,
 		.vfp = 2528,
@@ -499,7 +499,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	},
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_ONLY,
-	//.ssc_enable = 1,
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -543,7 +543,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 
 	.dyn = {
 		.switch_en = 1,
-		.pll_clk = 500,
+		.pll_clk = 550,
 		.vfp_lp_dyn = 2600,
 		.hfp = 77,
 		.vfp = 7476,
@@ -574,6 +574,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	},
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -617,7 +618,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 
 	.dyn = {
 		.switch_en = 1,
-		.pll_clk = 500,
+		.pll_clk = 550,
 		.vfp_lp_dyn = 1300,
 		.hfp = 77,
 		.vfp = 879,
@@ -648,6 +649,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	},
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_ONLY,
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -691,7 +693,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 
 	.dyn = {
 		.switch_en = 1,
-		.pll_clk = 500,
+		.pll_clk = 550,
 		.vfp_lp_dyn = 2540,
 		.hfp = 77,
 		.vfp = 54,
