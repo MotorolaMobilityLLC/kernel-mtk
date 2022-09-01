@@ -19,41 +19,41 @@
 #define PHYSICAL_WIDTH              67716
 #define PHYSICAL_HEIGHT            150480
 
-#define DATA_RATE                   1000
+#define DATA_RATE                   1100
 #define HSA                         4//16
-#define HBP                         40//52
+#define HBP                         90//52
 #define VSA                         2//4
 #define VBP                         20
 
-#define DISP_CLK                    356552 // 356552//176037  //H total *V total * V freq = 1201*2474*120=356552
-#define DISP_PLL_CLK                500
+#define DISP_CLK                    371659 // 356552//176037  //H total *V total * V freq = 1201*2474*120=356552
+#define DISP_PLL_CLK                550
 
 /*Parameter setting for mode 0 Start*/
 #define MODE_60_FPS                  60
 #define MODE_60_VFP                  2528
 #define MODE_60_HFP                  77
-#define MODE_60_DATA_RATE            1000
+#define MODE_60_DATA_RATE            1100
 /*Parameter setting for mode 0 End*/
 
 /*Parameter setting for mode 30 Start*/
 #define MODE_30_FPS                  30
 #define MODE_30_VFP                  7476
 #define MODE_30_HFP                  77
-#define MODE_30_DATA_RATE            1000
+#define MODE_30_DATA_RATE            1100
 /*Parameter setting for mode 30 End*/
 
 /*Parameter setting for mode 1 Start*/
 #define MODE_90_FPS                  90
 #define MODE_90_VFP                  879
 #define MODE_90_HFP                  77
-#define MODE_90_DATA_RATE            1000
+#define MODE_90_DATA_RATE            1100
 /*Parameter setting for mode 1 End*/
 
 /*Parameter setting for mode 2 Start*/
 #define MODE_120_FPS                  120
 #define MODE_120_VFP                  54
 #define MODE_120_HFP                  77
-#define MODE_120_DATA_RATE            1000
+#define MODE_120_DATA_RATE            1100
 /*Parameter setting for mode 2 End*/
 
 #define LFR_EN                      0
