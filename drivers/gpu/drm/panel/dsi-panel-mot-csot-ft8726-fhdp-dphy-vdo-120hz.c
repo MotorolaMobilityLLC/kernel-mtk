@@ -152,7 +152,7 @@ static void csot_panel_init(struct csot *ctx)
 	msleep(120);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(10);
-	csot_dcs_write_seq_static(ctx, 0x51, 0xCC,0x0C);
+	csot_dcs_write_seq_static(ctx, 0x51, 0xC3,0x09);
 	csot_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_dcs_write_seq_static(ctx, 0x55, 0x00);
 
@@ -639,8 +639,8 @@ static int pane_cabc_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb,
 
 static int pane_hbm_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
-	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xFF, 0x0F}};
-	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0xCC, 0x0C}};
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xF9, 0x06}};
+	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0xC3, 0x09}};
 
 	if (hbm_state > 2) return -1;
 	switch (hbm_state)

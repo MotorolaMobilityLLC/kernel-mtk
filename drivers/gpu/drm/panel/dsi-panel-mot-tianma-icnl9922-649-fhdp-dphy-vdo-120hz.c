@@ -143,7 +143,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5,0xA6);
 
 	tianma_dcs_write_seq_static(ctx, 0xD1,0x00,0x00,0x00,0x00,0x00,0x33,0x01,0x01);
-	tianma_dcs_write_seq_static(ctx, 0x51, 0x06,0x67);//max 0x07,0xFF
+	tianma_dcs_write_seq_static(ctx, 0x51, 0x06,0x1D);//max 0x07,0xFF
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
@@ -645,8 +645,8 @@ static int pane_cabc_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce c
 
 static int pane_hbm_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
-	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0xFF}};
-	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0x0C, 0xCC}};
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x07, 0xCB}};
+	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0x06, 0x1D}};
 
 	if (hbm_state > 2) return -1;
 	switch (hbm_state)
