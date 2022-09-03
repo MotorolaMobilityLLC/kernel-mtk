@@ -494,7 +494,7 @@ int mtk_build_eint(struct mtk_pinctrl *hw, struct platform_device *pdev)
 
 		hw->eint->base = devm_ioremap_resource(&pdev->dev, res);
 	} else {
-	#if (defined CONFIG_MACH_MT6739) || (defined CONFIG_MACH_MT6771)
+	#if (defined CONFIG_MACH_MT6739) || (defined CONFIG_MACH_MT6771) || (defined CONFIG_MACH_MT6833)
 		node = of_parse_phandle(np, "reg_base_eint", 0);
 	#else
 		node = of_find_node_by_name(NULL, "eint");
