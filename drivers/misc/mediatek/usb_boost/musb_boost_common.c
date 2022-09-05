@@ -795,14 +795,14 @@ static void boost_ep_disable(void *unused, struct musb_ep *musb_ep)
 
 static void musb_g_giveback_boost(void *unused, struct musb_request *musb_req)
 {
-	struct usb_request *req = &musb_req->request;
+	//struct usb_request *req = &musb_req->request;
 	struct musb_ep *musb_ep = musb_req->ep;
 	int type = boost_get_ep_type(musb_ep->current_epnum, musb_ep->is_in);
 
 	switch (type) {
 	case USB_TYPE_MTP:
-		if (req->actual >= 8192)
-			usb_boost();
+		//if (req->actual >= 8192)
+		usb_boost();
 		break;
 	case USB_TYPE_RNDIS:
 		if (musb_ep->is_in && musb_ep->type == USB_ENDPOINT_XFER_BULK)
