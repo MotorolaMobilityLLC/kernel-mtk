@@ -97,6 +97,9 @@ static int initAF(void)
 
 	LOG_INF("+\n");
 
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+
 	for (cmd_number = 0; cmd_number < 6; cmd_number++) {
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
 					puSendCmdArray[cmd_number], 2);
@@ -229,6 +232,22 @@ int MOT_DEVONF_DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile
 	}
 
 	LOG_INF("End\n");
+
+	return 0;
+}
+
+int MOT_DEVONF_DW9714AF_PowerDown(struct i2c_client *pstAF_I2Cclient,
+			int *pAF_Opened)
+{
+	g_pstAF_I2Cclient = pstAF_I2Cclient;
+	g_pAF_Opened = pAF_Opened;
+
+	LOG_INF("+\n");
+	if (*g_pAF_Opened == 0) {
+		LOG_INF("Set power donw +\n");
+		LOG_INF("Set power donw -\n");
+	}
+	LOG_INF("-\n");
 
 	return 0;
 }
