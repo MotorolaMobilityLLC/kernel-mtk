@@ -58,7 +58,7 @@
                 ktd,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
-                ktd,bl-fscal-led = <0x19>; /* 25mA */
+                ktd,bl-fscal-led = <0xC1>; /* 25mA */
                 ktd,turn-on-ramp = <0x00>;
                 ktd,turn-off-ramp = <0x04>;
                 ktd,pwm-trans-dim = <0>;
