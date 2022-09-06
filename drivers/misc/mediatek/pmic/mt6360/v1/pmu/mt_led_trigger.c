@@ -76,7 +76,7 @@ static ssize_t mt_led_cc_attr_store(struct device *dev,
 	return cnt;
 }
 
-static void mt_led_cc_activate(struct led_classdev *led)
+static int mt_led_cc_activate(struct led_classdev *led)
 {
 	struct mt_led_info *info = (struct mt_led_info *)led;
 	int i = 0, ret = 0;
@@ -99,7 +99,7 @@ static void mt_led_cc_activate(struct led_classdev *led)
 			dev_err(led->dev, "%s: change mode fail\n", __func__);
 			goto out_change_mode;
 		}
-		return;
+		return 0;
 out_change_mode:
 		i = ARRAY_SIZE(mt_led_cc_mode_attrs);
 out_create_file:
@@ -107,6 +107,7 @@ out_create_file:
 			device_remove_file(led->dev, mt_led_cc_mode_attrs + i);
 	} else
 		dev_err(led->dev, "not Support MT CC Trigger\n");
+	return 0;
 }
 
 static void mt_led_cc_deactivate(struct led_classdev *led)
@@ -115,6 +116,7 @@ static void mt_led_cc_deactivate(struct led_classdev *led)
 
 	for (i = 0; i < ARRAY_SIZE(mt_led_cc_mode_attrs); i++)
 		device_remove_file(led->dev, mt_led_cc_mode_attrs + i);
+	return;
 }
 
 static ssize_t mt_led_pwm_attr_show(struct device *dev,
@@ -193,7 +195,7 @@ static ssize_t mt_led_pwm_attr_store(struct device *dev,
 	return cnt;
 }
 
-static void mt_led_pwm_activate(struct led_classdev *led)
+static int mt_led_pwm_activate(struct led_classdev *led)
 {
 	struct mt_led_info *info = (struct mt_led_info *)led;
 	int i = 0, ret = 0;
@@ -218,7 +220,7 @@ static void mt_led_pwm_activate(struct led_classdev *led)
 			goto out_change_mode;
 		}
 
-		return;
+		return 0;
 out_change_mode:
 		i = ARRAY_SIZE(mt_led_pwm_mode_attrs);
 out_create_file:
@@ -226,6 +228,7 @@ out_create_file:
 			device_remove_file(led->dev, mt_led_pwm_mode_attrs + i);
 	} else
 		dev_err(led->dev, "Not Support MT PWM Trigger\n");
+	return 0;
 }
 
 static void mt_led_pwm_deactivate(struct led_classdev *led)
@@ -234,6 +237,7 @@ static void mt_led_pwm_deactivate(struct led_classdev *led)
 
 	for (i = 0; i < ARRAY_SIZE(mt_led_pwm_mode_attrs); i++)
 		device_remove_file(led->dev, mt_led_pwm_mode_attrs + i);
+	return;
 }
 
 static ssize_t mt_led_breath_attr_store(struct device *dev,
@@ -336,7 +340,7 @@ static ssize_t mt_led_breath_attr_store(struct device *dev,
 	return cnt;
 }
 
-static void mt_led_breath_activate(struct led_classdev *led)
+static int mt_led_breath_activate(struct led_classdev *led)
 {
 	struct mt_led_info *info = (struct mt_led_info *)led;
 	int i = 0, ret = 0;
@@ -360,7 +364,7 @@ static void mt_led_breath_activate(struct led_classdev *led)
 			dev_err(led->dev, "%s change mode fail\n", __func__);
 			goto out_change_mode;
 		}
-		return;
+		return 0;
 out_change_mode:
 		i = ARRAY_SIZE(mt_led_breath_mode_attrs);
 out_create_file:
@@ -369,6 +373,7 @@ out_create_file:
 				led->dev, mt_led_breath_mode_attrs + i);
 	} else
 		dev_err(led->dev, "Not Support MT Breath Trigger\n");
+	return 0;
 }
 
 static void mt_led_breath_deactivate(struct led_classdev *led)
@@ -377,6 +382,7 @@ static void mt_led_breath_deactivate(struct led_classdev *led)
 
 	for (i = 0; i < ARRAY_SIZE(mt_led_breath_mode_attrs); i++)
 		device_remove_file(led->dev, mt_led_breath_mode_attrs + i);
+	return;
 }
 
 
