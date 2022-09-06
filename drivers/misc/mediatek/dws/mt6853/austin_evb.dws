@@ -65,26 +65,12 @@
                 <debounce_en>Disable</debounce_en>
             </eint14>
             <eint16>
-                <varName>SWTP</varName>
-                <debounce_time>512</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint16>
-            <eint17>
-                <varName>SWTP_1</varName>
-                <debounce_time>512</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint17>
-            <eint18>
                 <varName>SWTP_2</varName>
                 <debounce_time>512</debounce_time>
                 <polarity>High</polarity>
                 <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint18>
+                <debounce_en>Disable</debounce_en>
+            </eint16>
             <eint22>
                 <varName>CHIPONE_FP</varName>
                 <debounce_time>0</debounce_time>
@@ -92,6 +78,20 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint22>
+            <eint29>
+                <varName>SWTP</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint29>
+            <eint30>
+                <varName>SWTP_1</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint30>
             <eint84>
                 <varName>DSI_TE</varName>
                 <debounce_time>0</debounce_time>
