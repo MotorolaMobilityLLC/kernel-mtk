@@ -2566,6 +2566,11 @@ static int idletime_get(void *data, u64 *val)
 {
 	struct drm_crtc *crtc;
 
+	if (!drm_dev) {
+		DDPPR_ERR("drm_dev null\n");
+		return -ENODEV;
+	}
+
 	crtc = list_first_entry(&(drm_dev)->mode_config.crtc_list,
 				typeof(*crtc), head);
 	if (!crtc) {
