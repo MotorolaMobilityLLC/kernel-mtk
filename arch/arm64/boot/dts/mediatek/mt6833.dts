@@ -1241,7 +1241,6 @@
 		reg = <0 0x11d40000 0 0x1000>;
 	};
 
-
 	mmc0: mmc@11230000 {
 		compatible = "mediatek,mt6833-mmc";
 		reg = <0 0x11230000 0 0x10000>,
@@ -4335,6 +4334,20 @@
 		phys = <&mipi_tx_config0>;
 		phy-names = "dphy";
 	};
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp start*/
+    swtp: swtp {
+        compatible = "mediatek, swtp-eint";
+    };
+    swtp_1: swtp_1 {
+        compatible = "mediatek, swtp1-eint";
+    };
+    swtp_2: swtp_2 {
+        compatible = "mediatek, swtp2-eint";
+    };
+    swtp_3: swtp_3 {
+        compatible = "mediatek, swtp3-eint";
+    };
+/*ExtB EKSAIPAN-82 yangchanghui.wt 20210129 modify for swtp end*/
 
 	dsi_te: dsi_te {
 		compatible = "mediatek, dsi_te-eint";
