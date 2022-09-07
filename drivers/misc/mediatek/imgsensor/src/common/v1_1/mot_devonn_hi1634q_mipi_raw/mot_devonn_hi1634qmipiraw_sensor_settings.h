@@ -31,13 +31,6 @@
 
 // Hi1634Q_2.0.8.9_gain_cal_1696Mbps_20191125
 static kal_uint16 mot_devonn_hi1634q_init_setting[] = {
-/*
-DISP_DATE = "2022-04-13 10:33:55"
-DISP_FORMAT = BAYER10_PACKED
-DISP_DATAORDER = GR_QUAD
-MIPI_LANECNT = 4
-I2C_SPEED = 400
-*/
 0x0790, 0x0100,
 0x2000, 0x1001,
 0x2002, 0x0000,
@@ -731,19 +724,19 @@ I2C_SPEED = 400
 static kal_uint16 mot_devonn_2320x1720_30fps_setting[] = {
 /*
 DISP_WIDTH = 2320
-DISP_HEIGHT = 1720
-DISP_NOTE = "QUAD_FULL"
-MIPI_SPEED = 1696.00
+DISP_HEIGHT = 1740
+DISP_NOTE = "QUAD_2SUM"
+MIPI_SPEED = 828.00
 MIPI_LANE = 4
-DISP_DATAORDER = GR_QUAD
+DISP_DATAORDER = GR
 
 ////////////////////////////////////////////
 // VT CLK: 80.00MHz
-// Line length: 710
-// Frame length: 3617
-// Frame rate: 31.15
-// ISP CLK: 169.60MHz
-// V-Blank: 1002.88us
+// Line length: 730
+// Frame length: 3651
+// Frame rate: 30.02
+// ISP CLK: 165.60MHz
+// V-Blank: 17437.88us
 // Output bitwidth: 10 bits
 // PD output bitwidth: 10 bits
 ////////////////////////////////////////////
@@ -767,7 +760,7 @@ DISP_DATAORDER = GR_QUAD
 0x0406, 0x1244,
 0x0408, 0x0001,
 0x040E, 0x0200,
-0x0440, 0x011D,
+0x0440, 0x0117,
 0x0D00, 0x4000,
 0x0D28, 0x0004,
 0x0D2A, 0x0923,
@@ -807,7 +800,7 @@ DISP_DATAORDER = GR_QUAD
 0x0736, 0x0050,
 0x0738, 0x0002,
 0x073C, 0x0700,
-0x0746, 0x00D4,
+0x0746, 0x00CF,
 0x0748, 0x0002,
 0x074A, 0x0900,
 0x074C, 0x0100,
@@ -819,18 +812,16 @@ DISP_DATAORDER = GR_QUAD
 0x1000, 0x0300,
 0x1002, 0xC311,
 0x1004, 0x2BB0,
-0x1010, 0x0702,
-0x1012, 0x00AE,
+0x1010, 0x06D8,
+0x1012, 0x0099,
 0x1020, 0xC107,
 0x1022, 0x081F,
 0x1024, 0x0509,
 0x1026, 0x0B0A,
 0x1028, 0x1409,
-0x102A, 0x0C0A,
+0x102A, 0x0B0A,
 0x102C, 0x1500,
-0x1060, 0x0338,
-0x1062, 0x0300,
-0x1066, 0x0725,
+0x1066, 0x06FA,
 0x1600, 0x0400,
 };
 #endif
