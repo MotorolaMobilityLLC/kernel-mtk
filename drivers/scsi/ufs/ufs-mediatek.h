@@ -69,6 +69,20 @@ enum {
 	VS_LINK_CFG                 = 5,
 };
 
+
+/*
+ * Vendor specific reset control
+ */
+enum {
+	SW_RST_TARGET_UFSHCI        = 0x1,
+	SW_RST_TARGET_UNIPRO        = 0x2,
+	SW_RST_TARGET_UFSCPT        = 0x4,
+	SW_RST_TARGET_MPHY          = 0x8,
+};
+#define SW_RST_TARGET_ALL (SW_RST_TARGET_UFSHCI | \
+	SW_RST_TARGET_UNIPRO | SW_RST_TARGET_UFSCPT)
+
+
 /*
  * SiP commands
  */
@@ -162,6 +176,7 @@ struct ufs_mtk_host {
 
 	bool pm_qos_init;
 	struct pm_qos_request req_cpu_dma_latency;
+	struct mtk_pm_qos_request req_mm_bandwidth;
 
 	/* performance mode */
 	enum perf_mode perf_mode;
@@ -197,5 +212,7 @@ bool ufs_mtk_perf_is_supported(struct ufs_mtk_host *host);
 int ufs_mtk_perf_setup_crypto_clk(struct ufs_mtk_host *host, bool perf);
 int ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd);
 void ufs_mtk_perf_heurisic_req_done(struct ufs_hba *hba, struct scsi_cmnd *cmd);
+int ufs_mtk_wait_link_state(struct ufs_hba *hba, u32 *state, unsigned long retry_ms);
+void ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target);
 
 #endif /* !_UFS_MEDIATEK_H */
