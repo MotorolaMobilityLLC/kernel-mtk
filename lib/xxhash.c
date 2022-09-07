@@ -91,7 +91,7 @@ EXPORT_SYMBOL(xxh64_copy_state);
 /*-***************************
  * Simple Hash Functions
  ****************************/
-static uint32_t xxh32_round(uint32_t seed, const uint32_t input)
+static inline uint32_t xxh32_round(uint32_t seed, const uint32_t input)
 {
 	seed += input * PRIME32_2;
 	seed = xxh_rotl32(seed, 13);
@@ -153,7 +153,7 @@ uint32_t xxh32(const void *input, const size_t len, const uint32_t seed)
 }
 EXPORT_SYMBOL(xxh32);
 
-static uint64_t xxh64_round(uint64_t acc, const uint64_t input)
+static inline uint64_t xxh64_round(uint64_t acc, const uint64_t input)
 {
 	acc += input * PRIME64_2;
 	acc = xxh_rotl64(acc, 31);
@@ -161,7 +161,7 @@ static uint64_t xxh64_round(uint64_t acc, const uint64_t input)
 	return acc;
 }
 
-static uint64_t xxh64_merge_round(uint64_t acc, uint64_t val)
+static inline uint64_t xxh64_merge_round(uint64_t acc, uint64_t val)
 {
 	val = xxh64_round(0, val);
 	acc ^= val;
