@@ -412,6 +412,7 @@ done:
 	return ret;
 }
 
+extern int mtk_drm_bl_recovery(struct drm_crtc *crtc);
 static int mtk_drm_esd_recover(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -493,6 +494,8 @@ static int mtk_drm_esd_recover(struct drm_crtc *crtc)
 		mtk_crtc_mml_racing_resubmit(crtc, NULL);
 
 	mtk_ddp_comp_io_cmd(output_comp, NULL, CONNECTOR_PANEL_ENABLE, NULL);
+
+	mtk_drm_bl_recovery(crtc);
 
 	CRTC_MMP_MARK(drm_crtc_index(crtc), esd_recovery, 0, 4);
 
