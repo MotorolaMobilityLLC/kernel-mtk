@@ -460,17 +460,17 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 82;//82	//EKELLIS-850, shenwenbin.wt, modify, 20220105,RF desence modify mipi clk to 304MHz
-	params->dsi.horizontal_frontporch = 86;	//86	//EKELLIS-850, shenwenbin.wt, modify, 20220105,RF desence modify mipi clk to 304MHz
+	params->dsi.horizontal_backporch = 74;//82	//EKELLIS-850, shenwenbin.wt, modify, 20220105,RF desence modify mipi clk to 304MHz
+	params->dsi.horizontal_frontporch = 78;	//86	//EKELLIS-850, shenwenbin.wt, modify, 20220105,RF desence modify mipi clk to 304MHz
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_range = 4;
 	params->dsi.ssc_disable = 1;
 	/*params->dsi.ssc_disable = 1;*/
 #ifndef FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
-	params->dsi.PLL_CLOCK = 314;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 304;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 314;//320;	/* this value must be in MTK suggested table */	//EKELLIS-850, shenwenbin.wt, modify, 20220105,RF desence modify mipi clk to 304MHz
+	params->dsi.PLL_CLOCK = 304;//320;	/* this value must be in MTK suggested table */	//EKELLIS-850, shenwenbin.wt, modify, 20220105,RF desence modify mipi clk to 304MHz
 #endif
 	//params->dsi.PLL_CK_CMD = 220;
 	//params->dsi.PLL_CK_VDO = 255;
