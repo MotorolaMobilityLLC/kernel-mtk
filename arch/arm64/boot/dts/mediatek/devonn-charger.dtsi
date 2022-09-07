@@ -78,7 +78,7 @@
 
 &mtk_gauge {
 
-	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
+	DIFFERENCE_FULLOCV_ITH = <350>;  /*gauge cut-off current, should overtop ieoc 50ma*/
 	EMBEDDED_SEL = <(1)>;  /*embedded battery,don't remove the battery for user*/
 	VIR_OLDOCV_DIFF_EMB = <3000>; /*0.1mv*/
 	VIR_OLDOCV_DIFF_EMB_LT = <3000>; /*0.1mv*/
@@ -88,6 +88,7 @@
 	SHUTDOWN_1_TIME = <(10)>;
 	/* If ui_soc shows 1% more than X minites, system will shutdown */
 
+	CHARGER_IEOC = <(243)>;
 	/* battery prop */
 	g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
 	g_FG_PSEUDO100 = <99 99 100 100
