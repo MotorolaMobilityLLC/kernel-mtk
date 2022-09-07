@@ -84,7 +84,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 331200000,	//828*4/10
 	},
 	.cap = {
 		.pclk = 640000000,
@@ -96,7 +96,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1740,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 331200000,	//828*4/10
 	},
 	.normal_video = {
 	  .pclk = 640000000,				//record different mode's pclk
@@ -110,7 +110,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 331200000,	//828*4/10
 	},
 	.hs_video = {
 		.pclk = 640000000,				//record different mode's pclk
@@ -124,7 +124,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10
+		.mipi_pixel_rate = 331200000, 	//828*4/10
 	},
     .slim_video = {
 		.pclk = 640000000,
@@ -136,7 +136,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 1740,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
-		.mipi_pixel_rate = 339200000//848*4/10 - temp
+		.mipi_pixel_rate = 331200000,	//828*4/10
 	},
 
 	.margin = 4,		/* sensor framelength & shutter margin */
