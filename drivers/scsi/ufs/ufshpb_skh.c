@@ -1225,6 +1225,7 @@ void skhpb_rsp_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 {
 	struct skhpb_lu *hpb;
 	struct skhpb_rsp_field *rsp_field;
+	struct skhpb_rsp_field sense_data;
 	struct skhpb_rsp_info *rsp_info;
 	int data_seg_len, num, blk_idx, update_alert;
 
@@ -1251,7 +1252,9 @@ void skhpb_rsp_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 		return;
 	}
 
-	rsp_field = skhpb_get_hpb_rsp(lrbp);
+	memcpy(&sense_data, &lrbp->ucd_rsp_ptr->sr.sense_data_len,
+		sizeof(struct skhpb_rsp_field));
+	rsp_field = &sense_data;
 
 	if ((get_unaligned_be16(rsp_field->sense_data_len + 0)
 		 != SKHPB_DEV_SENSE_SEG_LEN) ||
