@@ -49,7 +49,7 @@ struct tianma {
 	unsigned int hbm_mode;
 };
 
-static char bl_tb0[] = { 0x51, 0xff };
+//static char bl_tb0[] = { 0x51, 0xff };
 
 #define tianma_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
@@ -548,6 +548,7 @@ static struct mtk_panel_params ext_params_mode_2 = {
 	.lfr_minimum_fps = MODE_0_FPS,
 	#endif
 };
+#if 0
 static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
@@ -560,6 +561,7 @@ static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	cb(dsi, handle, bl_tb0, ARRAY_SIZE(bl_tb0));
 	return 0;
 }
+#endif
 struct drm_display_mode *get_mode_by_id(struct drm_connector *connector,
 	unsigned int mode)
 {
@@ -701,7 +703,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 }
 
 static struct mtk_panel_funcs ext_funcs = {
-	.set_backlight_cmdq = tianma_setbacklight_cmdq,
+//	.set_backlight_cmdq = tianma_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 //	.ata_check = panel_ata_check,
