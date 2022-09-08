@@ -2303,6 +2303,9 @@ void fg_custom_init_from_dts(struct platform_device *dev,
 		fg_custom_parse_table(gm, np, node_name,
 			fg_table_cust_data->fg_profile[i].fg_profile, column);
 	}
+
+	fg_read_dts_val(np, "CHARGER_IEOC", &(fg_cust_data->charger_ieoc), 1);
+
 }
 
 #endif	/* end of CONFIG_OF */
