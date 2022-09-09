@@ -4736,9 +4736,11 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 		case PARAM_HBM:
 			if (panel_ext->hbm_type == HBM_MODE_DCS_ONLY) {
 				bl_level = (param_info->value) ? BRIGHTNESS_HBM_ON_SKIP_BL : BRIGHTNESS_HBM_OFF;
-				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
-				if (!ret) mtk_drm_setbacklight(crtc, bl_level);
+			} else {
+				bl_level = (param_info->value) ? BRIGHTNESS_HBM_ON : BRIGHTNESS_HBM_OFF;
 			}
+			ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+			if (!ret) mtk_drm_setbacklight(crtc, bl_level);
 			break;
 		default:
 			ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
