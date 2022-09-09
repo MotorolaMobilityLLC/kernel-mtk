@@ -843,6 +843,29 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
 	struct mtk_panel_params *params =
 			mtk_drm_get_lcm_ext_params(crtc);
+	enum mtk_lcm_version lcm_version = mtk_drm_get_lcm_version();
+
+	if (panel_set_hbm_backlight(crtc, &level)) {
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
+		return 0;
+	}
+
+#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+	if (lcm_version == MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS) {
+		static struct backlight_device *bd = NULL;
+		if (!bd) {
+			pr_info("%s backlight control get i2c_bd\n", __func__);
+			bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
+		}
+
+		if(bd) {
+			return backlight_device_set_brightness(bd, level);
+		} else {
+			pr_err("%s backlight control by I2C bl: no i2c_bd\n", __func__);
+			return -EINVAL;
+		}
+	}
+#endif
 
 	CRTC_MMP_EVENT_START(index, backlight, (unsigned long)crtc,
 			level);
@@ -851,11 +874,6 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 		sb_backlight = level;
 
 	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
-
-	if (panel_set_hbm_backlight(crtc, &level)) {
-		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
-		return 0;
-	}
 
 	if (!(mtk_crtc->enabled)) {
 		DDPINFO("Sleep State set backlight stop --crtc not ebable\n");
