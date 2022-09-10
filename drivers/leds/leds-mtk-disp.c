@@ -128,16 +128,7 @@ static int __maybe_unused led_i2c_set(struct mt_led_data *mdev,
 		return _gate_ic_backlight_set(brightness);
 #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
 	else if (version == MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS) {
-
-		if (!(mdev->i2c_bd)) {
-			pr_info("%s backlight control get i2c_bd\n", __func__);
-			mdev->i2c_bd = backlight_device_get_by_type(BACKLIGHT_PLATFORM);
-		}
-
-		if(mdev->i2c_bd)
-			return backlight_device_set_brightness(mdev->i2c_bd, brightness);
-		else
-			pr_err("%s backlight control by I2C bl: no i2c_bd\n", __func__);
+		return mtkfb_set_backlight_level(brightness);
 	}
 #endif
 	pr_notice("%s,gate ic is not ready yet\n", __func__);
