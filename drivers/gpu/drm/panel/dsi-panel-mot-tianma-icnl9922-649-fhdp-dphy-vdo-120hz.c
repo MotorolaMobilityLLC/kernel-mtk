@@ -369,6 +369,8 @@ static struct mtk_panel_params ext_params = {
 	},
 	.lfr_enable = 1,
 	.lfr_minimum_fps = 60,
+	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 #if 0
 	.dyn = {
 		.switch_en = 1,
@@ -445,6 +447,8 @@ static struct mtk_panel_params ext_params_mode_1 = {
 	},
 	.lfr_enable = 1,
 	.lfr_minimum_fps = 60,
+	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 #if 0
 	.dyn = {
 		.switch_en = 1,
@@ -521,6 +525,8 @@ static struct mtk_panel_params ext_params_mode_2 = {
 	},
 	.lfr_enable = 1,
 	.lfr_minimum_fps = 60,
+	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 #if 0
 	.dyn = {
 		.switch_en = 1,
