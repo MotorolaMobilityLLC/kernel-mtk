@@ -391,6 +391,7 @@ struct msync_cmd_table {
 enum panel_hbm_type {
 	HBM_MODE_DCS_ONLY = 0,
 	HBM_MODE_DCS_GPIO,
+	HBM_MODE_DCS_I2C,
 };
 
 struct mtk_panel_params {
