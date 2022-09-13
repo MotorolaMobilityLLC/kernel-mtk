@@ -2751,8 +2751,8 @@ page_owner=on loop.max_part=7";
 
 		scp-cores = <1>;
 
-		pmic-sshub-support;
-		vow-lp-en-gear = <2>;
+		/*pmic-sshub-support;*/
+		/*vow-lp-en-gear = <2>;*/
 
 		do-ulposc-cali;
 		ccf-fmeter-support;
