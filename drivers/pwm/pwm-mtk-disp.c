@@ -59,9 +59,11 @@ struct mtk_disp_pwm {
 	const struct mtk_pwm_data *data;
 	struct clk *clk_main;
 	struct clk *clk_mm;
+	struct clk *clk_source;
 	void __iomem *base;
 	void __iomem *pmw_src_addr;
 	bool pwm_src_enabled;
+	bool pwm_src_set;
 };
 
 static inline struct mtk_disp_pwm *to_mtk_disp_pwm(struct pwm_chip *chip)
@@ -240,6 +242,15 @@ static int mtk_disp_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 	}
 
 	pwm_src_power_on(mdp);
+	if (mdp->pwm_src_set != true) {
+		if (!IS_ERR(mdp->clk_source)) {
+			err = clk_set_parent(mdp->clk_mm, mdp->clk_source);
+				if (err < 0)
+					dev_info(mdp->chip.dev, "no pwm_src\n");
+			dev_info(mdp->chip.dev, "select clk_mm with pwm_src\n");
+		}
+		mdp->pwm_src_set = true;
+	}
 
 	mtk_disp_pwm_update_bits(mdp, DISP_PWM_EN, mdp->data->enable_mask,
 				 mdp->data->enable_mask);
@@ -303,11 +314,15 @@ static int mtk_disp_pwm_probe(struct platform_device *pdev)
 		goto disable_clk_main;
 
 	pwm_src = devm_clk_get(&pdev->dev, "pwm_src");
-	if (!IS_ERR(pwm_src) && get_pwm_src_base(&pdev->dev, mdp) >= 0) {
-		clk_enable(mdp->clk_mm);
-		clk_set_parent(mdp->clk_mm, pwm_src);
-		clk_disable(mdp->clk_mm);
-		dev_info(&pdev->dev, "select clk_mm with pwm_src\n");
+	if (!IS_ERR(pwm_src)) {
+		mdp->clk_source = pwm_src;
+		if (get_pwm_src_base(&pdev->dev, mdp) >= 0) {
+			clk_enable(mdp->clk_mm);
+			clk_set_parent(mdp->clk_mm, pwm_src);
+			clk_disable(mdp->clk_mm);
+			mdp->pwm_src_set = true;
+			dev_info(&pdev->dev, "select clk_mm with pwm_src\n");
+		}
 	}
 
 	mdp->chip.dev = &pdev->dev;
