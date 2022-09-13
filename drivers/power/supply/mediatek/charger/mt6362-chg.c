@@ -918,6 +918,7 @@ static int mt6362_enable_otg_parameter(struct mt6362_chg_data *data, bool en)
 			if (ret < 0)
 				goto err;
 		}
+		data->otg_rdev->use_count++;
 		data->otg_mode_cnt++;
 	} else {
 		if (data->otg_mode_cnt == 1) {
@@ -925,6 +926,8 @@ static int mt6362_enable_otg_parameter(struct mt6362_chg_data *data, bool en)
 			if (ret < 0)
 				goto err;
 		}
+		if(data->otg_rdev->use_count > 0)
+			data->otg_rdev->use_count--;
 		data->otg_mode_cnt--;
 	}
 	goto out;
