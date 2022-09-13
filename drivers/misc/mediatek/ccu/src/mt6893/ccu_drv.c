@@ -115,6 +115,25 @@ static irqreturn_t ccu_isr_callback_xxx(int irq, void *device_id)
 	LOG_DBG("%s:0x%x\n", __func__, irq);
 	return IRQ_HANDLED;
 }
+
+static uint32_t get_checksum(uint8_t *data, uint32_t size)
+{
+	uint32_t i, val, tv, sz, *ptr;
+
+	if (!data)
+		return 0;
+
+	sz = size >> 2;
+	ptr = (uint32_t *)data;
+	for (i = 0, val = 0; i < sz; ++i)
+		val += ptr[i];
+	for (i = size & ~3, tv = 0; i < size; ++i)
+		tv += ((uint32_t)(data[i])) << ((i & 3) << 3);
+	val = (val + tv) ^ CCU_MAGIC_CHK;
+
+	return val;
+}
+
 #ifdef CONFIG_MTK_QOS_SUPPORT_ENABLE
 static struct mtk_pm_qos_request _ccu_qos_request;
 static u64 _g_freq_steps[MAX_FREQ_STEP];
@@ -980,6 +999,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 	case CCU_IOCTL_ALLOC_MEM:
 	{
 		struct CcuMemHandle handle;
+		uint32_t cs;
 
 		handle.ionHandleKd = 0;
 		ret = copy_from_user(&(handle.meminfo),
@@ -990,6 +1010,14 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			ret);
 			break;
 		}
+
+		cs = get_checksum((uint8_t *)&(handle.meminfo.shareFd),
+			sizeof(struct CcuMemInfo) - sizeof(unsigned int));
+		if (cs != handle.meminfo.chksum) {
+			ret = -EINVAL;
+			break;
+		}
+
 		ret = ccu_allocate_mem(&handle, handle.meminfo.size,
 			handle.meminfo.cached);
 		if (ret != 0) {
@@ -1004,6 +1032,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 	case CCU_IOCTL_DEALLOC_MEM:
 	{
 		struct CcuMemHandle handle;
+		uint32_t cs;
 
 		ret = copy_from_user(&(handle.meminfo),
 			(void *)arg, sizeof(struct CcuMemInfo));
@@ -1013,6 +1042,14 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			ret);
 			break;
 		}
+
+		cs = get_checksum((uint8_t *)&(handle.meminfo.shareFd),
+				sizeof(struct CcuMemInfo) - sizeof(unsigned int));
+		if (cs != handle.meminfo.chksum) {
+			ret = -EINVAL;
+			break;
+		}
+
 		ret = ccu_deallocate_mem(&handle);
 		if (ret != 0) {
 			LOG_ERR(
@@ -1023,8 +1060,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		ret = copy_to_user((void *)arg, &handle.meminfo, sizeof(struct CcuMemInfo));
 		break;
 	}
-
-
 
 	default:
 		LOG_WARN("ioctl:No such command!\n");

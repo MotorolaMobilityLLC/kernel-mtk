@@ -362,4 +362,6 @@ struct ccu_reg_s {
 #define CCU_IOCTL_PRINT_REG                 _IOR(CCU_MAGICNO,  37, int)
 #define CCU_IOCTL_PRINT_SRAM_LOG            _IOR(CCU_MAGICNO,  38, int)
 
+#define CCU_MAGIC_CHK	0x3B7A5D9E
+
 #endif
