@@ -2245,7 +2245,7 @@ int mmdvfs_qos_force_step(int step)
 	}
 	force_step = step;
 #if defined(CONFIG_MACH_MT6785) || defined(CONFIG_MACH_MT6768)
-#if (defined(CONFIG_MTK_MT6382_BDG) && defined(CONFIG_MTK_MT6382_VDO_MODE))
+#if defined(CONFIG_MTK_MT6382_BDG) && defined(CONFIG_MTK_MT6382_VDO_MODE)
 	force_step = 0;
 #endif
 #endif
@@ -2815,7 +2815,12 @@ MODULE_PARM_DESC(force_bwl,
 	"force bwl for each larb");
 
 late_initcall(mmdvfs_pmqos_late_init);
+#if defined(CONFIG_MACH_MT6785) && defined(CONFIG_MTK_MT6382_BDG) \
+	  && defined(CONFIG_MTK_MT6382_CMD_MODE)
+arch_initcall_sync(mmdvfs_pmqos_init);
+#else
 module_init(mmdvfs_pmqos_init);
+#endif
 module_exit(mmdvfs_pmqos_exit);
 
 MODULE_DESCRIPTION("MTK MMDVFS driver");
