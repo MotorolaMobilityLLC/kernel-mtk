@@ -947,13 +947,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 	break;
 	}
 
-	case CCU_READ_REGISTER: {
-		int regToRead = (int)arg;
-		int rc = ccu_read_info_reg(regToRead);
-
-		mutex_unlock(&g_ccu_device->dev_mutex);
-		return rc;
-	}
 	case CCU_IOCTL_IMPORT_MEM: {
 		struct ion_handle *handle;
 		struct import_mem_s import_mem;

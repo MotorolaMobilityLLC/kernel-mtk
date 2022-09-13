@@ -168,8 +168,6 @@ int ccu_memcpy(void *dest, void *src, int length);
 
 int ccu_memclr(void *dest, int length);
 
-int ccu_read_info_reg(int regNo);
-
 int ccu_query_power_status(void);
 
 
