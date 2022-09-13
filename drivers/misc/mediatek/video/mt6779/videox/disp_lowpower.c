@@ -1252,6 +1252,7 @@ static int hrt_bw_cond_change_cb(struct notifier_block *nb,
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	int ret, i;
 	unsigned int hrt_idx;
+	int active_cfg_id = 0;
 
 	primary_display_manual_lock();
 
@@ -1270,7 +1271,7 @@ static int hrt_bw_cond_change_cb(struct notifier_block *nb,
 		 */
 		if (disp_mgr_has_mem_session() ||
 		    primary_is_sec() ||
-		    layering_get_valid_hrt() >= 400) {
+		    layering_get_valid_hrt(active_cfg_id) >= 400) {
 			/* enable HRT throttle */
 			DISPINFO("Cam trigger repain\n");
 			if (primary_is_sec())

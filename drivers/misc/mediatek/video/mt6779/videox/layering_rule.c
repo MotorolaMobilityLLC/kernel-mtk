@@ -452,7 +452,7 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 
 static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param);
 
-void copy_hrt_bound_table(int is_larb, int *hrt_table)
+void copy_hrt_bound_table(int is_larb, int *hrt_table, int active_config_id)
 {
 	unsigned long flags = 0;
 	int valid_num, ovl_bound;
@@ -465,7 +465,7 @@ void copy_hrt_bound_table(int is_larb, int *hrt_table)
 	/* update table if hrt bw is enabled */
 	if (disp_helper_get_option(DISP_OPT_HRT_MODE) == 1) {
 		spin_lock_irqsave(&hrt_table_lock, flags);
-		valid_num = layering_get_valid_hrt();
+		valid_num = layering_get_valid_hrt(active_config_id);
 		ovl_bound = get_phy_layer_limit(
 			get_mapping_table(
 			DISP_HW_LAYER_TB,
@@ -602,7 +602,7 @@ unsigned long long layering_get_frame_bw(void)
 	return bw_base;
 }
 
-int layering_get_valid_hrt(void)
+int layering_get_valid_hrt(int active_cfg_id)
 {
 	unsigned long long dvfs_bw;
 #ifdef MTK_FB_MMDVFS_SUPPORT
@@ -621,7 +621,7 @@ int layering_get_valid_hrt(void)
 		dvfs_bw = 200;
 	}
 
-	DISPINFO("get avail HRT BW:%u : %llu %llu\n",
+	DISPINFO("get avail HRT %d cfg BW:%u : %llu %llu\n", active_cfg_id,
 		mm_hrt_get_available_hrt_bw(get_virtual_port(VIRTUAL_DISP)),
 		dvfs_bw, tmp);
 #endif

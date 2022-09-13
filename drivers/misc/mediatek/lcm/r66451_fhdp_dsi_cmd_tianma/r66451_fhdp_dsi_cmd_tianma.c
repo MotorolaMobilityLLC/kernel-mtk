@@ -571,8 +571,9 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*traversing array must less than DFPS_LEVELS*/
 	/*DPFS_LEVEL0*/
 	dfps_params[0].level = DFPS_LEVEL0;
-	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
-	dfps_params[0].vact_timing_fps = 6000;/*real vact timing fps * 100*/
+	dfps_params[0].fps = 12000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 12000;/*real vact timing fps * 100*/
+	dfps_params[0].dynamic_switch_mipi = 0;
 	/*if mipi clock solution*/
 	/*dfps_params[0].PLL_CLOCK = xx;*/
 	/*dfps_params[0].data_rate = xx; */
@@ -580,8 +581,8 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 
 	/*DPFS_LEVEL1*/
 	dfps_params[1].level = DFPS_LEVEL1;
-	dfps_params[1].fps = 12000;/*real fps * 100, to support float*/
-	dfps_params[1].vact_timing_fps = 12000;/*real vact timing fps * 100*/
+	dfps_params[1].fps = 6000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 6000;/*real vact timing fps * 100*/
 	/*if mipi clock solution*/
 	dfps_params[1].dynamic_switch_mipi = 1;
 	/*dfps_params[1].PLL_CLOCK = xx;*/
