@@ -2294,7 +2294,7 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 
 	if (!musb->is_ready && is_on) {
 		musb->is_ready = true;
-		set_usb_rdy();
+		//set_usb_rdy();
 		/* direct issue connection work if usb is forced on */
 		if (musb_force_on) {
 			DBG(0, "mt_usb_connect() on is_ready begin\n");
@@ -2304,6 +2304,9 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 			mt_usb_reconnect();
 		}
 	}
+
+	if (!is_usb_rdy() && is_on)
+		set_usb_rdy();
 
 	spin_unlock_irqrestore(&musb->lock, flags);
 
