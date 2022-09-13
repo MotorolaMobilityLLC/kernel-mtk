@@ -1239,7 +1239,7 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 		primary_display_cmdq_enabled() ? "CMDQ On" : "CMDQ Off");
 
 	/* print HRT table */
-	copy_hrt_bound_table(0, hrt_table);
+	copy_hrt_bound_table(0, hrt_table, 0); /*TODO: Dummy cfg id used here*/
 	len += scnprintf(stringbuf + len, buf_len - len, "|HRT table=[");
 	for (i = 0; i < HRT_LEVEL_NUM-1; i++)
 		len += scnprintf(stringbuf + len, buf_len - len, "%d, ",
