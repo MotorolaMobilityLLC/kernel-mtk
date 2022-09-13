@@ -125,6 +125,8 @@ static unsigned int eem_checkEfuse = 1;
 static unsigned int eem_chkExEfuse = 1;
 #endif
 static unsigned int informEEMisReady;
+static unsigned int fabinfo2;
+
 
 /* The EMM controller list managed by Picachu. */
 static unsigned int pi_eem_ctrl_id[] = {
@@ -248,9 +250,12 @@ static int get_devinfo(void)
 	nvmem_device_read(nvmem_dev, DEVINFO_OFF_10, sizeof(__u32), &val[10]);
 	nvmem_device_read(nvmem_dev, DEVINFO_OFF_11, sizeof(__u32), &val[11]);
 
+	nvmem_device_read(nvmem_dev, EX_DEV_OFF_FAB2, sizeof(__u32), &tmp);
+	fabinfo2 = (tmp >> 3) & 0x1;
 
 
-	for (i = 1; i < NR_HW_RES_FOR_BANK; i++) {
+
+	for (i = 1; i < NR_HW_RES_FOR_BANK - 3; i++) {
 		if (val[i] == 0) {
 			ret = 1;
 			eem_checkEfuse = 0;
@@ -344,7 +349,7 @@ static int get_devinfo(void)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	/* NR_HW_RES_FOR_BANK =  10 for 5 banks efuse */
-	for (i = 1; i < NR_HW_RES_FOR_BANK; i++) {
+	for (i = 1; i < NR_HW_RES_FOR_BANK - 3; i++) {
 		if (val[i] == 0) {
 			ret = 1;
 			eem_checkEfuse = 0;
@@ -839,7 +844,10 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	eem_write(EEM_DETWINDOW, (((det->DETWINDOW) & 0xffff)));
 	eem_write(EEMCONFIG, (((det->DETMAX) & 0xffff)));
 	/* for two line */
-	eem_write(EEM_CHKSHIFT, (0x77 & 0xff));
+	if ((fabinfo2 == 1) && (det_to_id(det) == EEM_DET_L_HI))
+		eem_write(EEM_CHKSHIFT, (0x87 & 0xff));
+	else
+		eem_write(EEM_CHKSHIFT, (0x77 & 0xff));
 
 #if ENABLE_EEMCTL0
 	/* eem ctrl choose thermal sensors */
@@ -1340,6 +1348,8 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 			det->MTDES	= ex_eem_devinfo.EX_L_HI_MTDES;
 		}
 #endif
+		if (fabinfo2 == 1)
+			det->max_freq_khz = BCPU_FREQ_BASE;
 	break;
 	case EEM_DET_2L_HI:
 		/* TODO: config real B_HI efuse here */
