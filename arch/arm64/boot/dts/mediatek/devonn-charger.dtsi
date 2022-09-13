@@ -169,3 +169,8 @@
 	mmi,adc-channel-batid = <3>;
 	mmi,adc-channel-vbat = <100>;
 };
+
+&lk_charger {
+	/*boot voltage*/
+	boot_battery_voltage = <3560000>;
+};
