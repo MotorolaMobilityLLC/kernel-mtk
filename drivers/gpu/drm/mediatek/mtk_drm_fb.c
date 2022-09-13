@@ -100,8 +100,12 @@ static int mtk_drm_fb_create_handle(struct drm_framebuffer *fb,
 				    unsigned int *handle)
 {
 	struct mtk_drm_fb *mtk_fb = to_mtk_fb(fb);
+	int ret = -EINVAL;
 
-	return drm_gem_handle_create(file_priv, mtk_fb->gem_obj, handle);
+	if (mtk_fb->gem_obj && mtk_fb->gem_obj->dev)
+		ret = drm_gem_handle_create(file_priv, mtk_fb->gem_obj, handle);
+
+	return ret;
 }
 
 static void mtk_drm_fb_destroy(struct drm_framebuffer *fb)
