@@ -375,9 +375,58 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{REGFLAG_DELAY,50,{}}
 };
 
+#if LCM_BL_BITS_11
 static struct LCM_setting_table bl_level[] = {
-	{ 0x51, 0x02, {0x07, 0xFF} },	//EKELLIS-830, shenwenbin.wt, modify, 20211224, set backlight to 11bit and set CABC default UI mode and improve dimming
+	{ 0x51, 0x02, {0x06, 0x66} },	//EKELLIS-830, shenwenbin.wt, modify, 20211224, set backlight to 11bit and set CABC default UI mode and improve dimming
 };
+#else
+//12bit
+static struct LCM_setting_table bl_level[] = {
+	{ 0x51, 0x02, {0x0C, 0xCC} }
+};
+#endif
+
+static struct LCM_setting_table lcm_cabc_setting_ui[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x01} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_mv[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x03} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_disable[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x00} },
+};
+
+struct LCM_cabc_table {
+	int cmd_num;
+	struct LCM_setting_table *cabc_cmds;
+};
+
+//Make sure the seq keep consitent with definition of cabc_mode, otherwise it need remap
+static struct LCM_cabc_table lcm_cabc_settings[] = {
+	{ARRAY_SIZE(lcm_cabc_setting_ui), lcm_cabc_setting_ui},
+	{ARRAY_SIZE(lcm_cabc_setting_mv), lcm_cabc_setting_mv},
+	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
+};
+
+#if LCM_BL_BITS_11
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x06, 0x66} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
+};
+#else
+static struct LCM_setting_table lcm_hbm_setting[] = {
+	{0x51, 2, {0x0C, 0XCC} },	//80% PWM
+	{0x51, 2, {0x0F, 0XFF} },	//100% PWM
+};
+#endif
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned int count, unsigned char force_update)
@@ -792,9 +841,47 @@ static void lcm_get_cabc_status(int *status)
 #ifdef CONFIG_LCM_NOTIFIY_SUPPORT
 /* return TRUE: need notify */
 /* return FALSE: No need notify */
+
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	pr_info("%s,djn_nt36525b_a cmd:%d, value = %d\n", __func__, *lcm_cmd, *lcm_value);
+
+	switch(*lcm_cmd) {
+		case PARAM_HBM:
+			push_table(handle, &lcm_hbm_setting[*lcm_value], 1, 1);
+			break;
+		case PARAM_CABC:
+			if (*lcm_value >= CABC_MODE_NUM) {
+				pr_info("%s: invalid CABC mode:%d out of CABC_MODE_NUM:", *lcm_value, CABC_MODE_NUM);
+			}
+			else {
+				unsigned int cmd_num = lcm_cabc_settings[*lcm_value].cmd_num;
+				pr_info("%s: handle PARAM_CABC, mode=%d, cmd_num=%d", __func__, *lcm_value, cmd_num);
+				push_table(handle, lcm_cabc_settings[*lcm_value].cabc_cmds, cmd_num, 1);
+			}
+			break;
+		default:
+			pr_err("%s,djn_nt36525b_a cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_info("%s,djn_nt36525b_a cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+
+}
+
 static bool lcm_set_recovery_notify(void)
 {
-	return TRUE;
+	char tp_info[] = "nvt";
+
+	//return TRUE if TP need lcm notify
+	//NVT touch recover need enable lcm notify
+	if (strstr(tp_info, "nvt")) {
+		pr_info("%s: djn_nt: return TRUE\n", __func__);
+		return TRUE;
+	}
+
+	return false;
 }
 #endif
 
@@ -821,6 +908,7 @@ struct LCM_DRIVER mipi_mot_vid_djn_nt36525b_a_hdp_652_lcm_drv = {
 #endif
 //	.set_cabc_cmdq = lcm_set_cabc_cmdq,
 //	.get_cabc_status = lcm_get_cabc_status,
+	.set_lcm_cmd = lcm_set_cmdq,
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
