@@ -106,14 +106,14 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 		CCCI_LEGACY_ERR_LOG(-1, SYS, "%s:swtp is null\n", __func__);
 		return -1;
 	}
-
+#ifndef DISABLE_SWTP_FACTORY
 	spin_lock_irqsave(&swtp->spinlock, flags);
 
 	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
 	power_mode = swtp->tx_power_mode;
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
-
+#endif
 	if (ret != 0)
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"%s to MD%d,state=%d,ret=%d\n",
@@ -164,7 +164,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 #endif
 #if defined(CONFIG_MOTO_DEVONN_SWTP_CUST)
 	// modify by wt.liangnengjie for swtp start
-	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_IN)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
+	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
 		swtp->tx_power_mode = SWTP_DO_TX_POWER;
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"--------SWTP_DO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant4=%d, Ant1=%d, Ant0=%d, Ant5=%d\n",
@@ -387,10 +387,11 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				}
 			}
 #endif
-
+#ifndef DISABLE_SWTP_FACTORY
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
 				irq_name[i], &swtp_data[md_id]);
+#endif
 			if (ret) {
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"swtp%d-eint IRQ LINE NOT AVAILABLE\n",
@@ -431,7 +432,12 @@ int swtp_init(int md_id)
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
 #if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+#ifdef DISABLE_SWTP_FACTORY
+	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
+#else
 	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
+#endif
+
 #else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #endif
