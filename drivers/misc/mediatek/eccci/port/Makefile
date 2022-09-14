@@ -46,3 +46,8 @@ ccci_port-y := port_cfg.o \
 
 endif
 
+# Disable SWTP on factory version for devonn
+ifeq ($(TARGET_PRODUCT),devonn_factory)
+ccflags-y += -DDISABLE_SWTP_FACTORY
+endif
+
