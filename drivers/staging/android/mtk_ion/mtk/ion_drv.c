@@ -189,7 +189,6 @@ static int ion_check_user_va(unsigned long va, size_t size)
 	if (unlikely(va_end < va_start))
 		return 0;
 
-	down_read(&current->mm->mmap_sem);
 	vma = find_vma(current->mm, va_start);
 	if (!vma || va_start < vma->vm_start ||
 	    va_end > vma->vm_end) {
@@ -197,7 +196,6 @@ static int ion_check_user_va(unsigned long va, size_t size)
 	} else {
 		ret = vma_is_ion_node(vma);
 	}
-	up_read(&current->mm->mmap_sem);
 
 	return ret;
 }
@@ -241,6 +239,7 @@ static int __cache_sync_by_range(struct ion_client *client,
 				 unsigned long start, size_t size,
 				 int is_kernel_addr)
 {
+	bool lock_vma = false;
 	char ion_name[200];
 	int ret = 0;
 
@@ -255,8 +254,10 @@ static int __cache_sync_by_range(struct ion_client *client,
 		goto start_sync;
 
 	/* userspace va check */
+	down_read(&current->mm->mmap_sem);
 	ret  = __ion_is_user_va(start, size);
 	if (!ret) {
+		up_read(&current->mm->mmap_sem);
 		scnprintf(ion_name, 199,
 			  "CRDISPATCH_KEY(%s),(%d) sz/addr %zx/%lx is_kernel_addr:%d",
 			  (*client->dbg_name) ?
@@ -266,6 +267,7 @@ static int __cache_sync_by_range(struct ion_client *client,
 		//aee_kernel_warning(ion_name, "[ION]: Wrong Address Range");
 		return -EFAULT;
 	}
+	lock_vma = true;
 
 start_sync:
 
@@ -301,6 +303,8 @@ start_sync:
 		break;
 	}
 
+	if (lock_vma)
+		up_read(&current->mm->mmap_sem);
 	__ion_cache_mmp_end(sync_type, size);
 
 	return 0;
