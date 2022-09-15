@@ -4215,7 +4215,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 			bdg_register_init();
 			set_mt6382_init(1);
 			set_deskew_status(1);
-			set_check_stop_status(1);
 		} else
 			set_mt6382_init(0);
 	}

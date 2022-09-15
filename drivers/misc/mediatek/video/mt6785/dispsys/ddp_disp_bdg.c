@@ -83,9 +83,6 @@ int max_phase, dll_fbk, coarse_bank, sel_fast;
 int post_rcvd_rst_val, post_det_dly_thresh_val;
 unsigned int post_rcvd_rst_reg, post_det_dly_thresh_reg;
 unsigned int ddl_cntr_ref_reg;
-static struct task_struct *bdg_eint_chk_task;
-wait_queue_head_t bdg_check_task_wq;
-struct mutex bdg_lock;
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY		0xFFFB
@@ -5322,7 +5319,6 @@ int check_stopstate(void *cmdq)
 	}
 
 	if (timeout == 0) {
-		set_check_stop_status(0);
 		DISPMSG("%s, wait timeout!\n", __func__);
 		return -1;
 	}
@@ -5331,10 +5327,8 @@ int check_stopstate(void *cmdq)
 /* Disable extra design */
 	mtk_spi_write(0x00047080, 0x0);
 	mtk_spi_write(0x00047084, 0x102);
-	set_check_stop_status(1);
 
 	mt6382_init = 1;
-	wake_up_interruptible(&bdg_check_task_wq);
 
 	DISPFUNCEND();
 	return 0;
@@ -6844,24 +6838,20 @@ void bdg_register_init(void)
 	EFUSE = (struct BDG_EFUSE_REGS *)DISPSYS_BDG_EFUSE_BASE;
 	GPIO = (struct BDG_GPIO_REGS *)DISPSYS_BDG_GPIO_BASE;
 	TX_CMDQ_REG[0] = (struct DSI_TX_CMDQ_REGS *)(DISPSYS_BDG_TX_DSI0_BASE + 0xd00);
-
 	/***** NFC SRCLKENAI0 Interrupt Handler +++ *****/
 	nfc_request_eint_irq();
 	/***** NFC SRCLKENAI0 Interrupt Handler --- *****/
-	
 	/* open 6382 dsi eint */
 	DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG, SYS_REG->IRQ_MSK_CLR, REG_04, 1);
-        /* open 6382 rx eint */
-        DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG, SYS_REG->IRQ_MSK_CLR, REG_00, 1);
-	
 	DSI_OUTREGBIT(NULL, struct DSI_TX_INTEN_REG,
 			TX_REG[0]->DSI_TX_INTEN, FRAME_DONE_INT_EN,
 			1);
 	DSI_OUTREGBIT(NULL, struct DSI_TX_INTEN_REG,
 			TX_REG[0]->DSI_TX_INTEN, BUFFER_UNDERRUN_INT_EN,
 			1);
-	// request eint irq
+		// request eint irq
 	bdg_request_eint_irq();
+
 }
 
 int bdg_common_init(enum DISP_BDG_ENUM module,
@@ -6992,7 +6982,6 @@ int bdg_common_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 	DISPFUNCSTART();
 
 	if (mt6382_init) {
-		mt6382_init = 0;
 		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
 		set_ana_mipi_dsi_off(cmdq);
 		ana_macro_off(cmdq);
@@ -7001,7 +6990,6 @@ int bdg_common_deinit(enum DISP_BDG_ENUM module, void *cmdq)
 		clk_buf_disp_ctrl(false);
 		mt6382_init = 0;
 		set_deskew_status(0);
-		set_check_stop_status(0);
 	} else
 		DISPMSG("%s, 6382 not init\n", __func__);
 
@@ -7046,10 +7034,6 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, SYS_REG->RST_DG_CTRL, 0);
 	// Set GPIO to active IRQ
 	DSI_OUTREGBIT(cmdq, struct GPIO_MODE1_REG, GPIO->GPIO_MODE1, GPIO12, 1);
-	/* open 6382 dsi eint */
-	DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG, SYS_REG->IRQ_MSK_CLR, REG_04, 1);
-	/* open 6382 rx eint */
-	DSI_OUTREGBIT(NULL, struct IRQ_MSK_CLR_SET_REG, SYS_REG->IRQ_MSK_CLR, REG_00, 1);
 
 	tx_params = &(config->dispif_config.dsi);
 
@@ -7166,6 +7150,14 @@ int bdg_common_init_for_rx_pat(enum DISP_BDG_ENUM module,
 	return ret;
 }
 
+#if 0
+irqreturn_t bdg_eint_irq_handler(int irq, void *data)
+{
+
+	return IRQ_HANDLED;
+}
+#endif
+
 static struct task_struct *bdg_eint_chk_task;
 wait_queue_head_t bdg_check_task_wq;
 struct mutex bdg_lock;
@@ -7180,7 +7172,7 @@ static int mtk_bdg_eint_check_worker_kthread(void *data)
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
-		ret = wait_event_interruptible(bdg_check_task_wq, mt6382_init);
+		ret = wait_event_interruptible(bdg_check_task_wq, 1);
 		if (ret < 0) {
 			DISPINFO("[ESD]check thread waked up accidently\n");
 			continue;
@@ -7188,14 +7180,16 @@ static int mtk_bdg_eint_check_worker_kthread(void *data)
 
 		mutex_lock(&bdg_lock);
 		irq_ctrl3 = mtk_spi_read((unsigned long)(&SYS_REG->SYSREG_IRQ_CTRL3));
-		if (irq_ctrl3)
-			DISPINFO("%s, mt6382 irq_ctrl3: (0x%x)\n", __func__, irq_ctrl3);
-		
+//		DISPINFO("%s, mt6382 irq_ctrl3: (0x%x)\n", __func__, irq_ctrl3);
+
+#if 0
+		if (irq_ctrl3 & BIT(10))
+			cmdq_bdg_irq_handler();
+#endif
 		if (irq_ctrl3 & BIT(0)) {
 			if (mtk_spi_read(0x0000d280) != 0) {
 				DISPMSG("%s, rx mac irq\n", __func__);
 				bdg_dsi_dump_reg(DISP_BDG_DSI0, 0);
-				DDPAEE("disp bdg 6382 overflow\n");
 			}
 		}
 
@@ -7204,7 +7198,7 @@ static int mtk_bdg_eint_check_worker_kthread(void *data)
 			intsta = (struct DSI_TX_INTSTA_REG *)&val;
 
 			if (intsta->FRAME_DONE_INT_FLAG)
-				DISPINFO("%s, 6382 tx frame done\n", __func__);
+				DDPIRQ("%s, 6382 tx frame done\n", __func__);
 
 			if (intsta->BUFFER_UNDERRUN_INT_FLAG) {
 				bdg_dsi_dump_reg(DISP_BDG_DSI0, 1);
@@ -7213,25 +7207,18 @@ static int mtk_bdg_eint_check_worker_kthread(void *data)
 			DSI_OUTREG32(NULL, TX_REG[0]->DSI_TX_INTSTA, ~val);
 		}
 
-		if (kthread_should_stop()) {
-			DISPMSG("%s, eint check stop\n", __func__);
+		if (kthread_should_stop())
 			break;
-		}
-		
-		mutex_unlock(&bdg_lock);
 
- 		ret = cmdq_bdg_irq_handler();
- 		DISPMSG("%s: irq_ctrl3:%#x ret:%d", __func__, irq_ctrl3, ret);
- 	}
-	
-	DISPFUNCEND();
+		mutex_unlock(&bdg_lock);
+	}
 	return ret;
- }
+}
 
 irqreturn_t bdg_eint_thread_handler(int irq, void *data)
 {
 	wake_up_interruptible(&bdg_check_task_wq);
-	
+
 	return IRQ_HANDLED;
 }
 

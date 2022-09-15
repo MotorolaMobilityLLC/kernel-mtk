@@ -936,17 +936,15 @@ int primary_display_esd_recovery(void)
 	disp_lcm_esd_recover(primary_get_lcm());
 	DISPCHECK("[ESD]lcm recover[end]\n");
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 8);
-#ifdef CONFIG_MTK_MT6382_BDG
 	if (bdg_is_bdg_connected() == 1) {
-		if (get_mt6382_init() == 1 && primary_display_is_video_mode()) {
+		if (get_mt6382_init() == 1) {
 			DISPCHECK("set 6382 mode start\n");
 			bdg_tx_set_mode(DISP_BDG_DSI0, NULL, get_bdg_tx_mode());
 			bdg_tx_start(DISP_BDG_DSI0, NULL);
 		}
-	/*	559-449-314-273*/
-	disp_pm_qos_update_mmclk(559);
+		/*	559-449-314-273*/
+		disp_pm_qos_update_mmclk(559);
 	}
-#endif
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (disp_partial_is_support()) {
 		struct disp_ddp_path_config *data_config =
