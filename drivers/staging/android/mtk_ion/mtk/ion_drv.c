@@ -232,10 +232,6 @@ static int __ion_is_user_va(unsigned long va, size_t size)
 		}
 	}
 
-	/* add more check */
-	if (ret)
-		ret = ion_check_user_va(va, size);
-
 	return ret;
 }
 
@@ -259,20 +255,26 @@ static int __cache_sync_by_range(struct ion_client *client,
 		goto start_sync;
 
 	/* userspace va check */
-	down_read(&current->mm->mmap_sem);
 	ret  = __ion_is_user_va(start, size);
+	if (ret) {
+		lock_vma = true;
+		down_read(&current->mm->mmap_sem);
+		ret = ion_check_user_va(start, size);
+	}
+
 	if (!ret) {
-		up_read(&current->mm->mmap_sem);
+		if (lock_vma) {
+			up_read(&current->mm->mmap_sem);
+			lock_vma = false;
+		}
 		scnprintf(ion_name, 199,
-			  "CRDISPATCH_KEY(%s),(%d) sz/addr %zx/%lx is_kernel_addr:%d",
+			  "CRDISPATCH_KEY(%s),(%d) sz %zx is_kernel_addr:%d",
 			  (*client->dbg_name) ?
 			  client->dbg_name : client->name,
-			  (unsigned int)current->pid, size, start, is_kernel_addr);
+			  (unsigned int)current->pid, size, is_kernel_addr);
 		IONMSG("%s %s\n", __func__, ion_name);
-		//aee_kernel_warning(ion_name, "[ION]: Wrong Address Range");
 		return -EFAULT;
 	}
-	lock_vma = true;
 
 start_sync:
 
@@ -301,6 +303,10 @@ start_sync:
 			__inval_dcache_area((void *)start, size);
 		break;
 	default:
+		if (lock_vma) {
+			up_read(&current->mm->mmap_sem);
+			lock_vma = false;
+		}
 		IONMSG("%s err type. (%d):clt(%s)cache(%d)\n",
 		       __func__, (unsigned int)current->pid,
 		       client->dbg_name, sync_type);
@@ -308,8 +314,10 @@ start_sync:
 		break;
 	}
 
-	if (lock_vma)
+	if (lock_vma) {
 		up_read(&current->mm->mmap_sem);
+		lock_vma = false;
+	}
 	__ion_cache_mmp_end(sync_type, size);
 
 	return 0;
