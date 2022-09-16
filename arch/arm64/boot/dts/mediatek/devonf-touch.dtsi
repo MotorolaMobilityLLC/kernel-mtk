@@ -20,6 +20,7 @@
 		novatek,irq-gpio = <&pio 22 0x2001>;
 		novatek,usb_charger;
 		novatek,report_gesture_key;
+		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
 		novatek,psy-name = "battery";
 
 		// 525
