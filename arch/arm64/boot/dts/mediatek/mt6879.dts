@@ -4247,10 +4247,11 @@
 			/* feature ID, size, alignment */
 			scp_mem_tbl = < 0 0x0      0x0>, /* secure dump,*/
 							 /* its size is in secure_dump_size */
-				      < 1 0x4A700  0x0>, /* vow */
+				      < 1 0x4a700  0x0>, /* vow */
 				      < 2 0x100000 0x0>, /* sensor main*/
 				      < 3 0x180000 0x0>, /* logger */
 				      < 4 0x19000  0x0>, /* audio */
+				      < 5 0xa000   0x0>, /* vow bargein */
 				      < 7 0x19000  0x0>, /* ultrasound*/
 				      < 8 0x10000  0x0>, /* sensor supper*/
 				      < 9 0x1000   0x0>, /* sensor list */
