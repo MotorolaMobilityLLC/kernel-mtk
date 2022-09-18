@@ -3030,13 +3030,12 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	int icl, rc;
 	int rp_level = 0;
 	union power_supply_propval val;
-	struct charger_data *pdata;
 
 	if (info == NULL)
 		return;
 
-	pdata = &info->chg_data[CHG1_SETTING];
-	icl = pdata->input_current_limit / 1000;
+	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
+
 	rc = mmi_get_prop_from_charger(info, POWER_SUPPLY_PROP_ONLINE, &val);
 	if (rc < 0) {
 		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
