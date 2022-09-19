@@ -1175,7 +1175,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 #ifdef CONFIG_MTK_MT6382_BDG_BUF7
 	msleep(31000);
 #else
-	msleep(16000);
+	msleep(26000);
 #endif
 	while (1) {
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue,
