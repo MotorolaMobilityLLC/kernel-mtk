@@ -6260,6 +6260,9 @@
       <elf-symbol name='zlib_inflate_workspacesize' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce5ac24f'/>
     </elf-function-symbols>
     <elf-variable-symbols>
+      <elf-symbol name='GKI_struct_blk_mq_alloc_data' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xed3c0f0a'/>
+      <elf-symbol name='GKI_struct_readahead_control' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5bf5bc68'/>
+      <elf-symbol name='GKI_struct_selinux_state' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43ff668a'/>
       <elf-symbol name='__cpu_active_mask' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x15db3b99'/>
       <elf-symbol name='__cpu_online_mask' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xac594e02'/>
       <elf-symbol name='__cpu_possible_mask' size='8' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xde7ece30'/>
@@ -15922,6 +15925,7 @@
         </data-member>
       </class-decl>
       <qualified-type-def type-id='d70a473a' const='yes' id='17c0f561'/>
+      <pointer-type-def type-id='47b4421d' size-in-bits='64' id='17c43c95'/>
       <pointer-type-def type-id='609e4600' size-in-bits='64' id='17c9b422'/>
       <pointer-type-def type-id='20400679' size-in-bits='64' id='17c9f4a9'/>
       <pointer-type-def type-id='0fa325e9' size-in-bits='64' id='17d22855'/>
@@ -20341,6 +20345,7 @@
           <var-decl name='entry' type-id='72f469ec' visibility='default' filepath='drivers/iommu/iommu.c' line='49' column='1'/>
         </data-member>
       </class-decl>
+      <qualified-type-def type-id='c7d5925c' const='yes' id='23610dc7'/>
       <pointer-type-def type-id='0db936dc' size-in-bits='64' id='236f06da'/>
       <pointer-type-def type-id='696d238e' size-in-bits='64' id='23704f74'/>
       <pointer-type-def type-id='c619ce98' size-in-bits='64' id='2371b41a'/>
@@ -33104,7 +33109,41 @@
       <pointer-type-def type-id='e5fd9491' size-in-bits='64' id='43a53075'/>
       <pointer-type-def type-id='d238557f' size-in-bits='64' id='43ae54cf'/>
       <typedef-decl name='__virtio32' type-id='3f1a6b60' filepath='include/uapi/linux/virtio_types.h' line='43' column='1' id='43ae9528'/>
-      <class-decl name='selinux_state' is-struct='yes' visibility='default' is-declaration-only='yes' id='43af4ec3'/>
+      <class-decl name='selinux_state' size-in-bits='1088' is-struct='yes' visibility='default' filepath='security/selinux/include/security.h' line='90' column='1' id='43af4ec3'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='enforcing' type-id='b50a4934' visibility='default' filepath='security/selinux/include/security.h' line='95' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='8'>
+          <var-decl name='checkreqprot' type-id='b50a4934' visibility='default' filepath='security/selinux/include/security.h' line='97' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='16'>
+          <var-decl name='initialized' type-id='b50a4934' visibility='default' filepath='security/selinux/include/security.h' line='98' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='24'>
+          <var-decl name='policycap' type-id='4addcaf9' visibility='default' filepath='security/selinux/include/security.h' line='99' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='88'>
+          <var-decl name='android_netlink_route' type-id='b50a4934' visibility='default' filepath='security/selinux/include/security.h' line='100' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='96'>
+          <var-decl name='android_netlink_getneigh' type-id='b50a4934' visibility='default' filepath='security/selinux/include/security.h' line='101' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='status_page' type-id='02f11ed4' visibility='default' filepath='security/selinux/include/security.h' line='103' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='192'>
+          <var-decl name='status_lock' type-id='925167dc' visibility='default' filepath='security/selinux/include/security.h' line='104' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='576'>
+          <var-decl name='avc' type-id='c94d353c' visibility='default' filepath='security/selinux/include/security.h' line='106' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='640'>
+          <var-decl name='policy' type-id='62043706' visibility='default' filepath='security/selinux/include/security.h' line='107' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='704'>
+          <var-decl name='policy_mutex' type-id='925167dc' visibility='default' filepath='security/selinux/include/security.h' line='108' column='1'/>
+        </data-member>
+      </class-decl>
       <class-decl name='v4l2_subdev_fh' size-in-bits='1408' is-struct='yes' visibility='default' filepath='include/media/v4l2-subdev.h' line='966' column='1' id='43b269de'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='vfh' type-id='53422e64' visibility='default' filepath='include/media/v4l2-subdev.h' line='967' column='1'/>
@@ -34595,6 +34634,7 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='95e97e5e'/>
       </function-type>
+      <qualified-type-def type-id='afd9eb4a' const='yes' id='47b4421d'/>
       <pointer-type-def type-id='8552664d' size-in-bits='64' id='47b73425'/>
       <array-type-def dimensions='1' type-id='f9b06939' size-in-bits='512' id='47ba3182'>
         <subrange length='64' type-id='7ff19f0f' id='b10be967'/>
@@ -35593,10 +35633,14 @@
       </class-decl>
       <pointer-type-def type-id='c59e4f4c' size-in-bits='64' id='4adb0e6a'/>
       <pointer-type-def type-id='7f16b755' size-in-bits='64' id='4add39c5'/>
+      <array-type-def dimensions='1' type-id='b50a4934' size-in-bits='64' id='4addcaf9'>
+        <subrange length='8' type-id='7ff19f0f' id='56e0c0b1'/>
+      </array-type-def>
       <function-type size-in-bits='64' id='4ae18970'>
         <parameter type-id='68a2d05b'/>
         <return type-id='48b5725f'/>
       </function-type>
+      <pointer-type-def type-id='43af4ec3' size-in-bits='64' id='4ae52763'/>
       <pointer-type-def type-id='c5392ac1' size-in-bits='64' id='4aecccbd'/>
       <enum-decl name='ttm_caching' filepath='include/drm/ttm/ttm_caching.h' line='30' column='1' id='4aed510d'>
         <underlying-type type-id='9cac1fee'/>
@@ -45931,6 +45975,7 @@
           <var-decl name='sys_monoraw' type-id='fbc017ef' visibility='default' filepath='include/linux/timekeeping.h' line='265' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='afbb7720' size-in-bits='64' id='62043706'/>
       <class-decl name='firmware' size-in-bits='192' is-struct='yes' visibility='default' filepath='include/linux/firmware.h' line='12' column='1' id='62049774'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='size' type-id='b59d7dce' visibility='default' filepath='include/linux/firmware.h' line='13' column='1'/>
@@ -72005,6 +72050,7 @@
         <enumerator name='EHCI_HRTIMER_NUM_EVENTS' value='12'/>
       </enum-decl>
       <pointer-type-def type-id='a02c006b' size-in-bits='64' id='9ec870df'/>
+      <pointer-type-def type-id='23610dc7' size-in-bits='64' id='9ec8ec17'/>
       <qualified-type-def type-id='4df659d8' const='yes' id='9ecaa6bf'/>
       <function-type size-in-bits='64' id='9ecd0e66'>
         <parameter type-id='f23e2572'/>
@@ -74236,6 +74282,7 @@
         <parameter type-id='fb7d87a1'/>
         <return type-id='b1a0a119'/>
       </function-type>
+      <class-decl name='selinux_avc' is-struct='yes' visibility='default' is-declaration-only='yes' id='a4426e66'/>
       <array-type-def dimensions='1' type-id='c1c411a0' size-in-bits='6144' id='a4444dc4'>
         <subrange length='2' type-id='7ff19f0f' id='52efc4ef'/>
       </array-type-def>
@@ -82110,6 +82157,7 @@
         <return type-id='eaa32e2f'/>
       </function-type>
       <pointer-type-def type-id='38e7219e' size-in-bits='64' id='afb80c18'/>
+      <class-decl name='selinux_policy' is-struct='yes' visibility='default' is-declaration-only='yes' id='afbb7720'/>
       <class-decl name='css_set' size-in-bits='3392' is-struct='yes' visibility='default' filepath='include/linux/cgroup-defs.h' line='199' column='1' id='afbeac63'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='subsys' type-id='75781a60' visibility='default' filepath='include/linux/cgroup-defs.h' line='205' column='1'/>
@@ -82190,7 +82238,26 @@
       <pointer-type-def type-id='f23e2572' size-in-bits='64' id='afd4c988'/>
       <pointer-type-def type-id='17ae78d2' size-in-bits='64' id='afd7b47c'/>
       <pointer-type-def type-id='e3a91a7c' size-in-bits='64' id='afd8be4a'/>
-      <class-decl name='blk_mq_alloc_data' is-struct='yes' visibility='default' is-declaration-only='yes' id='afd9eb4a'/>
+      <class-decl name='blk_mq_alloc_data' size-in-bits='320' is-struct='yes' visibility='default' filepath='block/blk-mq.h' line='155' column='1' id='afd9eb4a'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='q' type-id='e7d2a5fc' visibility='default' filepath='block/blk-mq.h' line='157' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='flags' type-id='346d62be' visibility='default' filepath='block/blk-mq.h' line='158' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='96'>
+          <var-decl name='shallow_depth' type-id='f0981eeb' visibility='default' filepath='block/blk-mq.h' line='159' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='cmd_flags' type-id='f0981eeb' visibility='default' filepath='block/blk-mq.h' line='160' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='192'>
+          <var-decl name='ctx' type-id='9a335021' visibility='default' filepath='block/blk-mq.h' line='163' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='256'>
+          <var-decl name='hctx' type-id='a47d3467' visibility='default' filepath='block/blk-mq.h' line='164' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='5943f90f' size-in-bits='64' id='afe1ccd7'/>
       <class-decl name='cpupri' size-in-bits='12992' is-struct='yes' visibility='default' filepath='kernel/sched/cpupri.h' line='15' column='1' id='afe3b3de'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -94322,7 +94389,26 @@
       </class-decl>
       <pointer-type-def type-id='af1a3b3d' size-in-bits='64' id='c7c94ce1'/>
       <typedef-decl name='kretprobe_handler_t' type-id='179fe983' filepath='include/linux/kprobes.h' line='57' column='1' id='c7d0fc7e'/>
-      <class-decl name='readahead_control' is-struct='yes' visibility='default' is-declaration-only='yes' id='c7d5925c'/>
+      <class-decl name='readahead_control' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/pagemap.h' line='784' column='1' id='c7d5925c'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='file' type-id='77e79a4b' visibility='default' filepath='include/linux/pagemap.h' line='785' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='mapping' type-id='f57039f0' visibility='default' filepath='include/linux/pagemap.h' line='786' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='ra' type-id='66ec8db7' visibility='default' filepath='include/linux/pagemap.h' line='787' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='192'>
+          <var-decl name='_index' type-id='7359adad' visibility='default' filepath='include/linux/pagemap.h' line='789' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='256'>
+          <var-decl name='_nr_pages' type-id='f0981eeb' visibility='default' filepath='include/linux/pagemap.h' line='790' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='288'>
+          <var-decl name='_batch_count' type-id='f0981eeb' visibility='default' filepath='include/linux/pagemap.h' line='791' column='1'/>
+        </data-member>
+      </class-decl>
       <function-type size-in-bits='64' id='c7da7875'>
         <parameter type-id='80f4b756'/>
         <return type-id='92daca01'/>
@@ -94687,6 +94773,7 @@
       </function-type>
       <pointer-type-def type-id='6c9a7f66' size-in-bits='64' id='c9414b9c'/>
       <pointer-type-def type-id='4add39c5' size-in-bits='64' id='c942333d'/>
+      <pointer-type-def type-id='a4426e66' size-in-bits='64' id='c94d353c'/>
       <pointer-type-def type-id='b16db39f' size-in-bits='64' id='c94f6b13'/>
       <pointer-type-def type-id='1c62d4d4' size-in-bits='64' id='c95d5016'/>
       <function-type size-in-bits='64' id='c95d9034'>
@@ -122391,6 +122478,9 @@
       </function-type>
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
+      <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='22' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='418' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
         <return type-id='b88dd945'/>
