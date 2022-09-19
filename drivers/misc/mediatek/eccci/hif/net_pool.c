@@ -61,35 +61,27 @@ static inline u32 fifo_avail(struct fifo_t *fifo)
 
 static inline void fifo_write(struct fifo_t *fifo, void *skb)
 {
-	int w_idx = 0;
-
-	w_idx = atomic_read(&fifo->w);
-	if (w_idx < 0)
-		return;
-
-	fifo->buf[w_idx] = skb;
+	fifo->buf[atomic_read(&fifo->w)] = skb;
 
 	/* wait: fifo->buf[fifo->w] = skb done*/
 	mb();
 
-	(w_idx < (DL_POOL_LEN - 1)) ? atomic_inc(&fifo->w) :
+	if (atomic_read(&fifo->w) < (DL_POOL_LEN - 1))
+		atomic_inc(&fifo->w);
+	else
 		atomic_set(&fifo->w, 0);
 }
 
 static inline void *fifo_read(struct fifo_t *fifo)
 {
-	int r_idx = 0;
-	void *data = NULL;
+	void *data = fifo->buf[atomic_read(&fifo->r)];
 
-	r_idx = atomic_read(&fifo->r);
-	if (r_idx < 0)
-		return NULL;
-
-	data = fifo->buf[r_idx];
 	/* wait: data = fifo->buf[r] done*/
 	mb();
 
-	(r_idx < (DL_POOL_LEN - 1)) ? atomic_inc(&fifo->r) :
+	if (atomic_read(&fifo->r) < (DL_POOL_LEN - 1))
+		atomic_inc(&fifo->r);
+	else
 		atomic_set(&fifo->r, 0);
 
 	return data;
