@@ -29,7 +29,7 @@ ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
 bool cts_show_debug_log = false;
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
-
+extern char *mtkfb_find_lcm_driver(void);
 int cts_driver_suspend(struct chipone_ts_data *cts_data)
 {
     int ret;
@@ -288,8 +288,16 @@ int cts_driver_probe(struct device *device, enum cts_bus_type bus_type)
 
 //add by zsh 2022/04/25
 //start
-    snprintf(lcdname, sizeof(lcdname),"%s","dj-icnl9911c");
-    snprintf(vendor_name, sizeof(vendor_name),"%s","dj-icnl9911c");
+    if(strcmp(mtkfb_find_lcm_driver(), "ontim_icnl9911c_hdplus_dsi_vdo_dj") == 0) {
+        snprintf(lcdname, sizeof(lcdname),"%s","dj-icnl9911c");
+        snprintf(vendor_name, sizeof(vendor_name),"%s","dj-icnl9911c");
+    }
+    else {
+        snprintf(lcdname, sizeof(lcdname),"%s","boe-icnl9911c");
+        snprintf(vendor_name, sizeof(vendor_name),"%s","boe-icnl9911c");
+
+    }
+
 #if 0
     if (LCM_INFO_EASYQUICK_608 == g_lcm_info_flag) {
         snprintf(lcdname, sizeof(lcdname),"%s ", "dj-icnl9911c" );

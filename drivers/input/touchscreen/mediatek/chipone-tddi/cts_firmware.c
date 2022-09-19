@@ -12,6 +12,8 @@
 #include <linux/namei.h>
 #include <linux/vmalloc.h>
 
+extern char *mtkfb_find_lcm_driver(void);
+
 u32 cts_crc32(const u8 *data, size_t len)
 {
     const static u32 crc32_table[] = {
@@ -321,11 +323,15 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
 
     const struct cts_firmware *firmware = NULL;
     int    i;
-
+    //int name_len = 0;
     cts_info("Request driver builtin if match hwid: %06x fwid: %04x && ver > %04x",
         hwid, fwid, device_fw_ver);
 
-    firmware = cts_driver_builtin_firmwares;
+    if(strcmp(mtkfb_find_lcm_driver(), "ontim_icnl9911c_hdplus_dsi_vdo_dj") == 0)
+        firmware = cts_driver_builtin_firmwares;
+    else
+        firmware = cts_driver_builtin_firmwares_boe;
+
     for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares); i++, firmware++) {
         if (MATCH_HWID(firmware, hwid) && MATCH_FWID(firmware, fwid)) {
             if (!is_firmware_valid(firmware)) {
