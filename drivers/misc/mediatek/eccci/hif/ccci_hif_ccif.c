@@ -70,7 +70,7 @@ void ccif_write32(void *b, unsigned long a, unsigned int v)
 	spin_lock_irqsave(&devapc_flag_lock, flags);
 	if (devapc_check_flag == 1) {
 		writel(v, (b) + (a));
-		mb(); /* make sure register access in order */
+		mb();
 	}
 	spin_unlock_irqrestore(&devapc_flag_lock, flags);
 }
@@ -865,7 +865,7 @@ static void md_ccif_traffic_work_func(struct work_struct *work)
 		}
 		for (idx = 0; idx < CCIF_CH_NUM; idx++) {
 			ret = snprintf(string_temp, 1024,
-				"%srxq%d isr_cnt=%d;",	string, idx,
+				"%srxq%d isr_cnt=%llu;",	string, idx,
 				md_ctrl->isr_cnt[idx]);
 			if (ret < 0 || ret >= 1024) {
 				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
@@ -900,6 +900,7 @@ atomic_t lb_dl_q;
 /*this function may be called from both workqueue and softirq (NAPI)*/
 static unsigned long rx_data_cnt;
 static unsigned int pkg_num;
+
 static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 	int blocking, int *result)
 {
@@ -1130,6 +1131,9 @@ static int md_ccif_send(unsigned char hif_id, int channel_id)
 	struct md_ccif_ctrl *md_ctrl =
 		(struct md_ccif_ctrl *)ccci_hif_get_by_id(hif_id);
 
+	if (md_ctrl == NULL)
+		return -1;
+
 	busy = ccif_read32(md_ctrl->ccif_ap_base, APCCIF_BUSY);
 	if (busy & (1 << channel_id)) {
 		CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
@@ -1161,6 +1165,14 @@ static int md_ccif_send_data(unsigned char hif_id, int channel_id)
 	}
 	return md_ccif_send(hif_id, channel_id);
 }
+
+void ccci_ccif_send_notify(unsigned char user_id)
+{
+	if (user_id < (CCIF_CH_NUM - AP_MD_DATA_NOTIFY))
+		md_ccif_send(CCIF_HIF_ID, (user_id + AP_MD_DATA_NOTIFY));
+}
+EXPORT_SYMBOL(ccci_ccif_send_notify);
+
 
 void md_ccif_sram_reset(unsigned char hif_id)
 {
@@ -1898,6 +1910,49 @@ static int ccif_debug(unsigned char hif_id,
 	}
 	return ret;
 }
+
+static struct ccif_irq_cb_func_info ccif_irq_cb[ID_CCIF_CB_MAX];
+int register_ccif_irq_cb(unsigned char user_id, void (*func)(unsigned char user_id))
+{
+	if (user_id < ID_CCIF_CB_MAX && (user_id < (CCIF_CH_NUM - AP_MD_DATA_NOTIFY))) {
+		ccif_irq_cb[user_id].id = user_id;
+		ccif_irq_cb[user_id].qno = user_id + AP_MD_DATA_NOTIFY;
+		ccif_irq_cb[user_id].cb_func = func;
+		return 0;
+	}
+	return -1;
+}
+EXPORT_SYMBOL(register_ccif_irq_cb);
+
+/* mask_set == 1: mask, clear bit, ==0: unmask set bit */
+int ccif_mask_setting(unsigned char user_id, unsigned char mask_set)
+{
+	struct md_ccif_ctrl *ccif_ctrl =
+		(struct md_ccif_ctrl *)ccci_hif_get_by_id(CCIF_HIF_ID);
+	unsigned int reg_val;
+	unsigned int reg_offset;
+	unsigned long flags;
+
+	if (ccif_ctrl == NULL)
+		return -2;
+
+	switch (user_id) {
+	case ID_CCIF_USER_DATA:
+		spin_lock_irqsave(&ccif_ctrl->mask_lock, flags);
+		reg_offset = APCCIF_IRQ1_MASK;
+		reg_val = ccif_read32(ccif_ctrl->ccif_ap_base, reg_offset);
+		reg_val =
+			mask_set?(reg_val&~(1<<AP_MD_DATA_NOTIFY)):(reg_val|(1<<AP_MD_DATA_NOTIFY));
+		ccif_write32(ccif_ctrl->ccif_ap_base, reg_offset, reg_val);
+		spin_unlock_irqrestore(&ccif_ctrl->mask_lock, flags);
+		break;
+	default:
+		return -1;
+	};
+	return 0;
+}
+EXPORT_SYMBOL(ccif_mask_setting);
+
 static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 {
 	struct md_ccif_ctrl *ccif_ctrl = (struct md_ccif_ctrl *)data;
@@ -1911,6 +1966,10 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 	/*don't ack data queue to avoid missing rx intr*/
 	ccif_write32(ccif_ctrl->ccif_ap_base, APCCIF_ACK,
 		channel_id & (0xFFFF << RINGQ_EXP_BASE));
+
+	if (channel_id & (1 << AP_MD_DATA_NOTIFY) &&
+		ccif_irq_cb[ID_CCIF_USER_DATA].cb_func)
+		ccif_irq_cb[ID_CCIF_USER_DATA].cb_func(ccif_irq_cb[ID_CCIF_USER_DATA].id);
 
 	md_fsm_exp_info(ccif_ctrl->md_id, channel_id);
 
@@ -1977,6 +2036,7 @@ static void ccif_set_clk_on(unsigned char hif_id)
  * for ccif4,5 power off action different:
  * gen97: 0x1000330C [31:0] write 0x0
  * gen98: 0x10001BF0 [15:0] write 0xF7FF
+ * gen95: 0x10001C10 [31:0] write 0x0
  */
 static void ccif_set_clk_off(unsigned char hif_id)
 {
@@ -2002,10 +2062,17 @@ static void ccif_set_clk_off(unsigned char hif_id)
 		}
 	} else if (ccif_ctrl->plat_val.md_gen <= 6297) {
 		/* Clean MD_PCCIF4_SW_READY and MD_PCCIF4_PWR_ON */
-		if (!IS_ERR(ccif_ctrl->pericfg_base)) {
-			CCCI_NORMAL_LOG(ccif_ctrl->md_id, TAG, "%s:pericfg_base:0x%p\n",
-				__func__, ccif_ctrl->pericfg_base);
-			regmap_write(ccif_ctrl->pericfg_base, 0x30c, 0x0);
+		if (ccif_ctrl->plat_val.md_gen == 6297) {
+			if (!IS_ERR(ccif_ctrl->pericfg_base)) {
+				CCCI_NORMAL_LOG(ccif_ctrl->md_id, TAG, "%s:pericfg_base:0x%p\n",
+					__func__, ccif_ctrl->pericfg_base);
+				regmap_write(ccif_ctrl->pericfg_base, 0x30c, 0x0);
+			}
+		} else {
+		/* set gen95 clock */
+			CCCI_NORMAL_LOG(ccif_ctrl->md_id, TAG, "%s:infra_ao_base:0x%p\n",
+				__func__, ccif_ctrl->plat_val.infra_ao_base);
+			regmap_write(ccif_ctrl->plat_val.infra_ao_base, 0xC10, 0x0);
 		}
 
 		for (idx = 0; idx < ARRAY_SIZE(ccif_clk_table); idx++) {
@@ -2168,10 +2235,6 @@ static int ccif_hif_hw_init(struct device *dev, struct md_ccif_ctrl *md_ctrl)
 	md_ctrl->ap_ccif_irq0_id = irq_of_parse_and_map(node, 0);
 	md_ctrl->ap_ccif_irq1_id = irq_of_parse_and_map(node, 1);
 
-	md_ctrl->md_pcore_pccif_base =
-		ioremap_wc(MD_PCORE_PCCIF_BASE, 0x20);
-	CCCI_BOOTUP_LOG(-1, TAG, "pccif:%x\n", MD_PCORE_PCCIF_BASE);
-
 	/* Device tree using none flag to register irq,
 	 * sensitivity has set at "irq_of_parse_and_map"
 	 */
@@ -2213,7 +2276,7 @@ static int ccif_hif_hw_init(struct device *dev, struct md_ccif_ctrl *md_ctrl)
 		md_ctrl->md_ccif5_base = of_iomap(node, 0);
 		if (!md_ctrl->md_ccif5_base) {
 			CCCI_ERROR_LOG(-1, TAG,
-				"ccif5_base fail: 0x%p!\n");
+				"ccif5_base fail\n");
 			return -7;
 		}
 	}
@@ -2244,6 +2307,7 @@ static int ccif_hif_hw_init(struct device *dev, struct md_ccif_ctrl *md_ctrl)
 		md_ctrl->ccif_md_base);
 	CCCI_DEBUG_LOG(-1, TAG, "ccif_irq0:%d,ccif_irq1:%d\n",
 		md_ctrl->ap_ccif_irq0_id, md_ctrl->ap_ccif_irq1_id);
+	spin_lock_init(&md_ctrl->mask_lock);
 	ret = request_irq(md_ctrl->ap_ccif_irq0_id, md_ccif_isr,
 			md_ctrl->ap_ccif_irq0_flags, "CCIF_AP_DATA0", md_ctrl);
 	if (ret) {

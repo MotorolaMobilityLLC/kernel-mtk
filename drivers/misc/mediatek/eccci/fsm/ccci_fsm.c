@@ -39,6 +39,15 @@ static int s_devapc_dump_counter;
 static void (*s_md_state_cb)(enum MD_STATE old_state,
 				enum MD_STATE new_state);
 
+static void (*s_dpmaif_debug_push_data_to_stack)(void);
+
+void ccci_set_dpmaif_debug_cb(void (*dpmaif_debug_cb)(void))
+{
+	s_dpmaif_debug_push_data_to_stack = dpmaif_debug_cb;
+}
+EXPORT_SYMBOL(ccci_set_dpmaif_debug_cb);
+
+
 int mtk_ccci_register_md_state_cb(
 		void (*md_state_cb)(
 			enum MD_STATE old_state,

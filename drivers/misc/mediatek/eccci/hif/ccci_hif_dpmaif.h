@@ -260,8 +260,6 @@ struct dpmaif_rx_queue {
 
 	struct ccci_skb_queue skb_list;
 	unsigned int pit_dp;
-
-	struct dpmaif_debug_data_t dbg_data;
 };
 
 /****************************************************************************
@@ -412,8 +410,6 @@ struct hif_dpmaif_ctrl {
 	atomic_t bat_need_alloc;
 	atomic_t bat_paused_alloc;
 	int bat_alloc_running;
-
-	int enable_pit_debug;
 };
 
 #ifndef CCCI_KMODULE_ENABLE

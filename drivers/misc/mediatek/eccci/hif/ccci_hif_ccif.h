@@ -100,7 +100,6 @@ struct md_ccif_ctrl {
 	struct timer_list bus_timeout_timer;
 	void __iomem *ccif_ap_base;
 	void __iomem *ccif_md_base;
-	void __iomem *md_pcore_pccif_base;
 	void __iomem *md_ccif4_base;
 	void __iomem *md_ccif5_base;
 	struct regmap *pericfg_base;
@@ -129,6 +128,13 @@ struct md_ccif_ctrl {
 
 	unsigned int ccif_hw_reset_ver;
 	void __iomem *infracfg_base;
+	spinlock_t mask_lock;
+};
+
+struct ccif_irq_cb_func_info {
+	enum ccif_isr_cb_user_id id;
+	unsigned int qno; /* hw channel = id + AP_MD_DATA_NOTIFY */
+	void (*cb_func)(unsigned char user_id);
 };
 
 static inline void ccif_set_busy_queue(struct md_ccif_ctrl *md_ctrl,
