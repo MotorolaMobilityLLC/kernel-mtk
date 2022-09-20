@@ -323,16 +323,20 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
 
     const struct cts_firmware *firmware = NULL;
     int    i;
+    int   j = 0;
     //int name_len = 0;
     cts_info("Request driver builtin if match hwid: %06x fwid: %04x && ver > %04x",
         hwid, fwid, device_fw_ver);
 
-    if(strcmp(mtkfb_find_lcm_driver(), "ontim_icnl9911c_hdplus_dsi_vdo_dj") == 0)
+    if(strcmp(mtkfb_find_lcm_driver(), "ontim_icnl9911c_hdplus_dsi_vdo_dj") == 0) {
         firmware = cts_driver_builtin_firmwares;
-    else
+        j = ARRAY_SIZE(cts_driver_builtin_firmwares);
+    }
+    else {
         firmware = cts_driver_builtin_firmwares_boe;
-
-    for (i = 0; i < ARRAY_SIZE(cts_driver_builtin_firmwares); i++, firmware++) {
+        j = ARRAY_SIZE(cts_driver_builtin_firmwares_boe);
+    }
+    for (i = 0; i < j; i++, firmware++) {
         if (MATCH_HWID(firmware, hwid) && MATCH_FWID(firmware, fwid)) {
             if (!is_firmware_valid(firmware)) {
                 cts_err("Found driver builtin '%s' "
@@ -347,13 +351,13 @@ static const struct cts_firmware * cts_request_newer_driver_builtin_firmware(
                 firmware->name, firmware->hwid, firmware->fwid,
                 firmware->size, FIRMWARE_VERSION(firmware));
 
-            if(FIRMWARE_VERSION(firmware) > device_fw_ver) {
+//            if(FIRMWARE_VERSION(firmware) > device_fw_ver) {
                 cts_info("Found newer driver builtin '%s' "
                          "hwid: %06x fwid: %04x size: %zu ver: %04x > %04x",
                     firmware->name, firmware->hwid, firmware->fwid,
                     firmware->size, FIRMWARE_VERSION(firmware), device_fw_ver);
                 return firmware;
-            }
+//          }
         }
     }
 
