@@ -546,7 +546,7 @@ static int test_cc_patch(struct wusb3801_chip *chip)
 			wusb3801_i2c_write8(chip->tcpc, WUSB3801_REG_TEST_02, 0);
 		i++;
 	}while(rc_reg_08 != 0 && i < 5);
-
+	msleep(80);
     return BITS_GET(rc_reg_06, 0x40);
 }
 #endif /* __TEST_CC_PATCH__ */
