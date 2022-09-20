@@ -19,6 +19,6 @@
 		sgm7220,intr_gpio = <&pio 42 0x1>;
 		sgm7220,intr_gpio_num = <42>;
 
-		charger = <&mtk_charger_type>;
+		//charger = <&mtk_charger_type>;
     };
 };

@@ -11,6 +11,29 @@
  * GNU General Public License for more details.
  */
 
+&i2c7 {
+        bq25890@6A {
+                status = "okay";
+                compatible = "ti,bq2589x-1";
+                reg = <0x6A>;
+
+                bq2589x_irq = <&pio 7 0x0>;
+		pinctrl-names = "bq25890_int_n_name";
+		pinctrl-0 = <&bq25890_int_n>;
+        };
+};
+
+&pio {
+	bq25890_int_n: bq25890_int_n {
+		pins_cmd0_dat {
+			pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+			//input-enable;
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
+};
+
 &moto_chg_tcmd {
                 compatible = "mmi,moto-chg-tcmd";
                 status = "okay";
@@ -84,7 +107,6 @@
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
         mmi,vfloat-comp-uv = <20000>;
-	enable_cp;
 };
 
 &bat_gm30 {
