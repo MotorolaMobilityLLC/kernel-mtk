@@ -14,6 +14,7 @@
 #include "mediatek/mt6768-corfu-audio-overlay.dtsi"
 #include "mediatek/cust_mt6768_corfu_touch_1080x2400.dtsi"
 #include "dt-bindings/mmc/mt6768-msdc.h"
+#include "dt-bindings/gpio/gpio.h"
 #include "mediatek/mt6768-moto-corfu-fps.dtsi"
 #include "mediatek/mt6768-moto-corfu-charger.dtsi"
 
@@ -114,8 +115,9 @@
 	};
 };
 
-&msdc1 {
+&mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+        cd-gpios = <&pio 18 GPIO_ACTIVE_HIGH>;
 };
 
 &mrdump_ext_rst {
