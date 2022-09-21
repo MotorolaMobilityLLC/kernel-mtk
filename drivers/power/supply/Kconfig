@@ -949,4 +949,10 @@ config MOTO_CHG_TCMD_SUPPORT
 	help
 	  This is to enable MOTO supports of charger TCMD INTERFACE.
 
+config MOTO_THERMAL_POWER_OFF_ALGO
+        bool "Enable Moto MTK thermal power on/off algo"
+        default n
+        help
+          This is to enable MOTO Moto MTK thermal power on/off algo.
+
 endif # POWER_SUPPLY
