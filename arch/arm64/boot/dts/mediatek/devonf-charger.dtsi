@@ -255,11 +255,12 @@
 };
 
 &charger_cooler {
+	bootmode = <&chosen>;
 	mmi,thermal-mitigation = <(-1) 5200000 4500000 4000000 3500000
 				3000000 2000000 1000000 500000>;
 };
 
-/*
+
 &ap_ntc {
 	polling-delay = <5000>;
 	polling-delay-passive = <3000>;
@@ -267,37 +268,37 @@
 
 	trips {
 		charge_trip0: charge-trip0 {
-			temperature = <45000>;
+			temperature = <42000>;
 			hysteresis = <2000>;
 			type = "passive";
 		};
 		charge_trip1: charge-trip1 {
-			temperature = <46000>;
+			temperature = <43000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip2: charge-trip2 {
-			temperature = <47000>;
+			temperature = <44000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip3: charge-trip3 {
-			temperature = <48000>;
+			temperature = <45000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip4: charge-trip4 {
-			temperature = <49000>;
+			temperature = <46000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip5: charge-trip5 {
-			temperature = <50000>;
+			temperature = <47000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
 		charge_trip6: charge-trip6 {
-			temperature = <51000>;
+			temperature = <48000>;
 			hysteresis = <1000>;
 			type = "passive";
 		};
@@ -318,11 +319,11 @@
 		};
 		charge-cdev3 {
 			trip = <&charge_trip3>;
-			cooling-device = <&charger_cooler 5 5>;
+			cooling-device = <&charger_cooler 4 4>;
 		};
 		charge-cdev4 {
 			trip = <&charge_trip4>;
-			cooling-device = <&charger_cooler 6 6>;
+			cooling-device = <&charger_cooler 5 5>;
 		};
 		charge-cdev5 {
 			trip = <&charge_trip5>;
@@ -335,7 +336,7 @@
 	};
 
 };
-*/
+
 
 &moto_chg_tcmd {
 	compatible = "mmi,moto-chg-tcmd";
