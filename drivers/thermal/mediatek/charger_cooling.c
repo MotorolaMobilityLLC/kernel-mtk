@@ -35,7 +35,7 @@ static const int slave_charger_state_to_current_limit[CHARGER_STATE_NUM] = {
  *==================================================
  */
 // extern bool is_kernel_power_off_charging(void);
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#ifdef CONFIG_MOTO_THERMAL_POWER_OFF_ALGO
 static int g_boot_mode = 0;
 bool is_kernel_power_off_charging(void)
 {
@@ -58,7 +58,7 @@ bool is_thermal_core_thread(void)
 static int charger_throttle(struct charger_cooling_device *charger_cdev, unsigned long state)
 {
 	struct device *dev = charger_cdev->dev;
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#ifdef CONFIG_MOTO_THERMAL_POWER_OFF_ALGO
 
 	if(is_kernel_power_off_charging() && is_thermal_core_thread() ){
 		dev_info(dev, "skip thermal_core charging thermal at COM lvl:%d\n",state);
@@ -74,7 +74,7 @@ static int charger_throttle(struct charger_cooling_device *charger_cdev, unsigne
 	charger_cdev->pdata->state_to_charger_limit(charger_cdev);
 	charger_cl_data.cur_state = state;
 	charger_cl_data.cur_current = master_charger_state_to_current_limit[state];
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#ifdef CONFIG_MOTO_THERMAL_POWER_OFF_ALGO
 	dev_err(dev, "%s: set lv = %ld done, thread:%s\n", charger_cdev->name, state, current->comm);
 #else
 	dev_err(dev, "%s: set lv = %ld done\n", charger_cdev->name, state);
@@ -305,7 +305,7 @@ static int charger_cooling_probe(struct platform_device *pdev)
 	struct thermal_cooling_device *cdev;
 	struct charger_cooling_device *charger_cdev;
 	int i, ret;
-#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#ifdef CONFIG_MOTO_THERMAL_POWER_OFF_ALGO
 	struct device_node *boot_np = NULL;
 	const struct {
 		u32 size;
@@ -332,7 +332,7 @@ static int charger_cooling_probe(struct platform_device *pdev)
 		pr_info("Couldn't get chg_psy\n");
 		return -EINVAL;
 	}
-	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+        #ifdef CONFIG_MOTO_THERMAL_POWER_OFF_ALGO
 	boot_np = of_parse_phandle(np, "bootmode",0);
 	if(!boot_np)
 		pr_info("%d:failed to get bootmode phandle\n", __func__);
@@ -348,6 +348,8 @@ static int charger_cooling_probe(struct platform_device *pdev)
 		__func__, tag->size, tag->tag, tag->boot_mode, tag->boot_type);
 		}
 	}
+        #endif
+	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 	charger_cdev->q_chg_psy = power_supply_get_by_name("mmi_chrg_manager");
 	if (charger_cdev->q_chg_psy == NULL || IS_ERR(charger_cdev->q_chg_psy)) {
 		pr_info("Couldn't get mmi chrg manager psy\n");
