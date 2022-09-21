@@ -161,8 +161,13 @@ static void __ion_cache_mmp_end(enum ION_CACHE_SYNC_TYPE sync_type,
 static int vma_is_ion_node(struct vm_area_struct *vma)
 {
 	struct dma_buf *dmabuf;
+	struct file *file;
 
 	if (unlikely(!vma))
+		return 0;
+
+	file = vma->vm_file;
+	if (!file || !is_dma_buf_file(file))
 		return 0;
 
 	dmabuf = vma->vm_private_data;
