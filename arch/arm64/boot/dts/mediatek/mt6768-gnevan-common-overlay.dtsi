@@ -14,6 +14,7 @@
 #include "mediatek/mt6768-gnevan-audio-overlay.dtsi"
 #include "mediatek/cust_mt6768_gnevan_touch_1080x2400.dtsi"
 #include "dt-bindings/mmc/mt6768-msdc.h"
+#include "dt-bindings/gpio/gpio.h"
 #include "mediatek/mt6768-moto-gnevan-fps.dtsi"
 #include "mediatek/mt6768-moto-gnevan-charger.dtsi"
 #include "mediatek/sgm7220.dtsi"
@@ -118,8 +119,9 @@
 	};*/
 };
 
-&msdc1 {
+&mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+        cd-gpios = <&pio 18 GPIO_ACTIVE_HIGH>;
 };
 
 &mrdump_ext_rst {
