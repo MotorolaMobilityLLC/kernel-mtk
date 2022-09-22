@@ -835,7 +835,6 @@ struct ISP_IRQ_ERR_WAN_CNT_STRUCT {
 };
 
 static signed int FirstUnusedIrqUserKey = 1;
-#define USERKEY_STR_LEN 128
 
 struct UserKeyInfo {
 	/* for the user that register a userKey */
