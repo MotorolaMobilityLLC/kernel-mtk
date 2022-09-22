@@ -114,7 +114,7 @@ typedef enum {
 	EEPROM_CRC_LIST
 }EEPROM_CRC_TYPE_ENUM;
 
-
+/* IKSWT-10846 remove the definition here c/s it was defined in cam_cal_define.h by IKSWR-43170
 struct stCAM_CAL_DATAINFO_STRUCT{
 	u32 sensorID; // Sensor ID
 	u32 deviceID; // MAIN:0x1, SUB:0x2, MAIN_2:0x4, SUB_2:0x8, MAIN_3:0x10, MAIN_4:0x40
@@ -123,6 +123,7 @@ struct stCAM_CAL_DATAINFO_STRUCT{
 	u8  vendorByte[4]; // Module ID offset, Pos ID offset, Vcm ID offset,  Len ID offset
 	u8  *dataBuffer; //It's need malloc dataLength cache
 };
+*/
 
 typedef struct {
 	// Common manufacture info
