@@ -64,5 +64,12 @@ CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev custom_eeprom_driver eeprom_i2c_m
 subdir-ccflags-y += -DMOT_MT6768_COFUL
 endif
 
+sources := gnevan_g gnevan_factory
+ifneq ($(filter $(TARGET_PRODUCT),$(sources)),)
+$(warning this is gnevan CAMERA OTP .....)
+CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev custom_eeprom_driver eeprom_i2c_mot_corfu_gc02m1_tsp
+subdir-ccflags-y += -DMOT_MT6768_COFUL
+endif
+
 $(foreach src,$(CUSTOM_SRC_LIST),$(eval $(call INC_CUSTOM_SRC,$(src))))
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
