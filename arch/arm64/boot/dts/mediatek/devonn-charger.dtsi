@@ -183,3 +183,9 @@
 	non_std_ac_charger_current = <1000000>;
 	charging_host_charger_current = <1000000>;
 };
+
+&mt6375_chg {
+	cv = <4480>;
+	ircmp_r = <0>;
+	ircmp_v = <0>;
+};
