@@ -1624,7 +1624,7 @@ static int bq2560x_psy_gauge_get_property(struct power_supply *psy,
 		hiz_mode = !!hiz_mode;
 
 		ret = bq2560x_read_byte(bq, BQ2560X_REG_08, &status);
-		pr_info("%s status:0x%x, ret:%d", __func__, status, ret);
+		pr_info("status:0x%x, ret:%d", status, ret);
 		if (ret)
 			return -EINVAL;
 
