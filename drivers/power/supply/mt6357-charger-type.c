@@ -743,7 +743,7 @@ static int psy_chr_type_get_property(struct power_supply *psy,
 	struct mtk_charger_type *info;
 	int vbus = 0;
 
-	pr_notice("%s: prop:%d\n", __func__, psp);
+	//pr_notice("%s: prop:%d\n", __func__, psp);
 	info = (struct mtk_charger_type *)power_supply_get_drvdata(psy);
 
 	switch (psp) {
