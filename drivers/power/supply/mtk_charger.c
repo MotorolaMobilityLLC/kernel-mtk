@@ -2818,8 +2818,8 @@ static int psy_charger_get_property(struct power_supply *psy,
 
 	info = (struct mtk_charger *)power_supply_get_drvdata(psy);
 
-	chr_err("%s psp:%d\n",
-		__func__, psp);
+	/*chr_err("%s psp:%d\n",
+		__func__, psp);*/
 
 
 	if (info->psy1 != NULL &&
