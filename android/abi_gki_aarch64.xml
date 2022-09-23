@@ -6664,6 +6664,10 @@
       <elf-symbol name='__tracepoint_mmap_lock_acquire_returned' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbe118c52'/>
       <elf-symbol name='__tracepoint_mmap_lock_released' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5efdd68b'/>
       <elf-symbol name='__tracepoint_mmap_lock_start_locking' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbd628752'/>
+      <elf-symbol name='__tracepoint_net_dev_queue' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf304d20'/>
+      <elf-symbol name='__tracepoint_net_dev_xmit' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1d40474'/>
+      <elf-symbol name='__tracepoint_netif_receive_skb' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8ee83e85'/>
+      <elf-symbol name='__tracepoint_netif_rx' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8aa12be4'/>
       <elf-symbol name='__tracepoint_pelt_cfs_tp' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x64f74abf'/>
       <elf-symbol name='__tracepoint_pelt_dl_tp' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x15c60a71'/>
       <elf-symbol name='__tracepoint_pelt_irq_tp' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2200061c'/>
@@ -127235,6 +127239,10 @@
       <var-decl name='__tracepoint_mmap_lock_acquire_returned' type-id='4ca0c298' mangled-name='__tracepoint_mmap_lock_acquire_returned' visibility='default' filepath='include/trace/events/mmap_lock.h' line='44' column='1' elf-symbol-id='__tracepoint_mmap_lock_acquire_returned'/>
       <var-decl name='__tracepoint_mmap_lock_released' type-id='4ca0c298' mangled-name='__tracepoint_mmap_lock_released' visibility='default' filepath='include/trace/events/mmap_lock.h' line='76' column='1' elf-symbol-id='__tracepoint_mmap_lock_released'/>
       <var-decl name='__tracepoint_mmap_lock_start_locking' type-id='4ca0c298' mangled-name='__tracepoint_mmap_lock_start_locking' visibility='default' filepath='include/trace/events/mmap_lock.h' line='16' column='1' elf-symbol-id='__tracepoint_mmap_lock_start_locking'/>
+      <var-decl name='__tracepoint_net_dev_queue' type-id='4ca0c298' mangled-name='__tracepoint_net_dev_queue' visibility='default' filepath='include/trace/events/net.h' line='143' column='1' elf-symbol-id='__tracepoint_net_dev_queue'/>
+      <var-decl name='__tracepoint_net_dev_xmit' type-id='4ca0c298' mangled-name='__tracepoint_net_dev_xmit' visibility='default' filepath='include/trace/events/net.h' line='71' column='1' elf-symbol-id='__tracepoint_net_dev_xmit'/>
+      <var-decl name='__tracepoint_netif_receive_skb' type-id='4ca0c298' mangled-name='__tracepoint_netif_receive_skb' visibility='default' filepath='include/trace/events/net.h' line='150' column='1' elf-symbol-id='__tracepoint_netif_receive_skb'/>
+      <var-decl name='__tracepoint_netif_rx' type-id='4ca0c298' mangled-name='__tracepoint_netif_rx' visibility='default' filepath='include/trace/events/net.h' line='157' column='1' elf-symbol-id='__tracepoint_netif_rx'/>
       <var-decl name='__tracepoint_pelt_cfs_tp' type-id='4ca0c298' mangled-name='__tracepoint_pelt_cfs_tp' visibility='default' filepath='include/trace/events/sched.h' line='715' column='1' elf-symbol-id='__tracepoint_pelt_cfs_tp'/>
       <var-decl name='__tracepoint_pelt_dl_tp' type-id='4ca0c298' mangled-name='__tracepoint_pelt_dl_tp' visibility='default' filepath='include/trace/events/sched.h' line='723' column='1' elf-symbol-id='__tracepoint_pelt_dl_tp'/>
       <var-decl name='__tracepoint_pelt_irq_tp' type-id='4ca0c298' mangled-name='__tracepoint_pelt_irq_tp' visibility='default' filepath='include/trace/events/sched.h' line='731' column='1' elf-symbol-id='__tracepoint_pelt_irq_tp'/>
