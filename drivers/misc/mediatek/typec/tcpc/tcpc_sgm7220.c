@@ -462,7 +462,7 @@ static void sgm7220_irq_work_handler(struct kthread_work *work)
 
 	down(&chip->suspend_lock);
 	mutex_lock(&mutex2);
-	pr_info("%s enter\n", __func__);
+	//pr_info("%s enter\n", __func__);
 	process_mode_register(chip);
 	process_interrupt_register(chip);
 	process_tcpci_attach_state(chip);
@@ -748,7 +748,7 @@ static int sgm7220_get_power_status(
 	u8 val;
 	int ret;
 
-	pr_err("%s enter\n", __func__);
+	//pr_err("%s enter\n", __func__);
 	ret = sgm7220_read_reg(chip->client, REG_INT, &reg_val);
 	if (ret < 0) {
 		pr_err("%s err\n", __func__);
