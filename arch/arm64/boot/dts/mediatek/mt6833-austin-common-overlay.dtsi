@@ -12,6 +12,7 @@
 
 #include "mediatek/mt6833-moto-common-overlay.dtsi"
 #include <dt-bindings/mmc/mt6833-msdc.h>
+#include <dt-bindings/gpio/gpio.h>
 #include "mediatek/mt6833-austin-sensor-overlay.dtsi"
 #include "mediatek/mt6833-austin-camera-sensor-overlay.dtsi"
 
@@ -253,6 +254,7 @@
 
 &mmc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 4 GPIO_ACTIVE_HIGH>;
 };
 
 &sound {
