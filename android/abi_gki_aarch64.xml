@@ -5018,8 +5018,10 @@
       <elf-symbol name='snd_soc_card_jack_new' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5fd908c1'/>
       <elf-symbol name='snd_soc_component_async_complete' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe859b592'/>
       <elf-symbol name='snd_soc_component_disable_pin' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8cdf25e'/>
+      <elf-symbol name='snd_soc_component_enable_pin' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe7b06919'/>
       <elf-symbol name='snd_soc_component_exit_regmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8b4913a3'/>
       <elf-symbol name='snd_soc_component_force_enable_pin' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa961e90b'/>
+      <elf-symbol name='snd_soc_component_get_pin_status' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xac1ba80c'/>
       <elf-symbol name='snd_soc_component_init_regmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x404c5fd5'/>
       <elf-symbol name='snd_soc_component_initialize' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd8d7ea1d'/>
       <elf-symbol name='snd_soc_component_read' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5d17825d'/>
@@ -150027,6 +150029,11 @@
         <parameter type-id='80f4b756' name='pin' filepath='sound/soc/soc-component.c' line='170' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='snd_soc_component_enable_pin' mangled-name='snd_soc_component_enable_pin' filepath='sound/soc/soc-component.c' line='151' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_component_enable_pin'>
+        <parameter type-id='807b7702' name='component' filepath='sound/soc/soc-component.c' line='151' column='1'/>
+        <parameter type-id='80f4b756' name='pin' filepath='sound/soc/soc-component.c' line='152' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='snd_soc_component_exit_regmap' mangled-name='snd_soc_component_exit_regmap' filepath='sound/soc/soc-component.c' line='419' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_component_exit_regmap'>
         <parameter type-id='807b7702' name='component' filepath='sound/soc/soc-component.c' line='419' column='1'/>
         <return type-id='48b5725f'/>
@@ -150034,6 +150041,11 @@
       <function-decl name='snd_soc_component_force_enable_pin' mangled-name='snd_soc_component_force_enable_pin' filepath='sound/soc/soc-component.c' line='214' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_component_force_enable_pin'>
         <parameter type-id='807b7702' name='component' filepath='sound/soc/soc-component.c' line='214' column='1'/>
         <parameter type-id='80f4b756' name='pin' filepath='sound/soc/soc-component.c' line='215' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='snd_soc_component_get_pin_status' mangled-name='snd_soc_component_get_pin_status' filepath='sound/soc/soc-component.c' line='205' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_component_get_pin_status'>
+        <parameter type-id='807b7702' name='component' filepath='sound/soc/soc-component.c' line='205' column='1'/>
+        <parameter type-id='80f4b756' name='pin' filepath='sound/soc/soc-component.c' line='206' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='snd_soc_component_init_regmap' mangled-name='snd_soc_component_init_regmap' filepath='sound/soc/soc-component.c' line='400' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_component_init_regmap'>
