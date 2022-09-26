@@ -5841,9 +5841,11 @@
       <elf-symbol name='usb_unpoison_urb' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x14516b86'/>
       <elf-symbol name='usb_unregister_notify' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x811dc334'/>
       <elf-symbol name='usb_wakeup_notification' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa06905fd'/>
+      <elf-symbol name='usbnet_cdc_unbind' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x59375107'/>
       <elf-symbol name='usbnet_change_mtu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc66a110e'/>
       <elf-symbol name='usbnet_defer_kevent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdfb3ea65'/>
       <elf-symbol name='usbnet_disconnect' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x827def7'/>
+      <elf-symbol name='usbnet_generic_cdc_bind' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4f9de791'/>
       <elf-symbol name='usbnet_get_drvinfo' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x381aa5e8'/>
       <elf-symbol name='usbnet_get_endpoints' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xae1963cd'/>
       <elf-symbol name='usbnet_get_link' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x76137a5e'/>
@@ -154204,6 +154206,11 @@
         <parameter type-id='f0981eeb' name='portnum' filepath='drivers/usb/core/hub.c' line='698' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='usbnet_cdc_unbind' mangled-name='usbnet_cdc_unbind' filepath='drivers/net/usb/cdc_ether.c' line='360' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usbnet_cdc_unbind'>
+        <parameter type-id='12884b9a' name='dev' filepath='drivers/net/usb/cdc_ether.c' line='360' column='1'/>
+        <parameter type-id='8bf48c31' name='intf' filepath='drivers/net/usb/cdc_ether.c' line='360' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='usbnet_change_mtu' mangled-name='usbnet_change_mtu' filepath='drivers/net/usb/usbnet.c' line='392' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usbnet_change_mtu'>
         <parameter type-id='68a2d05b' name='net' filepath='drivers/net/usb/usbnet.c' line='392' column='1'/>
         <parameter type-id='95e97e5e' name='new_mtu' filepath='drivers/net/usb/usbnet.c' line='392' column='1'/>
@@ -154217,6 +154224,11 @@
       <function-decl name='usbnet_disconnect' mangled-name='usbnet_disconnect' filepath='drivers/net/usb/usbnet.c' line='1599' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usbnet_disconnect'>
         <parameter type-id='8bf48c31' name='intf' filepath='drivers/net/usb/usbnet.c' line='1599' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='usbnet_generic_cdc_bind' mangled-name='usbnet_generic_cdc_bind' filepath='drivers/net/usb/cdc_ether.c' line='112' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usbnet_generic_cdc_bind'>
+        <parameter type-id='12884b9a' name='dev' filepath='drivers/net/usb/cdc_ether.c' line='112' column='1'/>
+        <parameter type-id='8bf48c31' name='intf' filepath='drivers/net/usb/cdc_ether.c' line='112' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='usbnet_get_drvinfo' mangled-name='usbnet_get_drvinfo' filepath='drivers/net/usb/usbnet.c' line='1052' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usbnet_get_drvinfo'>
         <parameter type-id='68a2d05b' name='net' filepath='drivers/net/usb/usbnet.c' line='1052' column='1'/>
