@@ -285,7 +285,7 @@ chipone,enable-wakeup;
 
 &mmc1 {
 	cd-gpios = <&pio 14 GPIO_ACTIVE_HIGH>;
-	vmmc-supply = <&mt6369_vmch>;
+	vmmc-supply = <&mt6369_vmch_eint_low>;
 };
 #include "devonf-touch.dtsi"
 
