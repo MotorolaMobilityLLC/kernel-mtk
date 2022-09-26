@@ -200,10 +200,22 @@ static int csot_unprepare(struct drm_panel *panel)
 	pr_info("%s\n", __func__);
 
 	csot_dcs_write_seq_static(ctx, 0x28);
+	msleep(20);
 	csot_dcs_write_seq_static(ctx, 0x10);
 	msleep(120);
+
+	csot_dcs_write_seq_static(ctx, 0x00, 0x00);//cmd2 enable
+	csot_dcs_write_seq_static(ctx, 0xFF, 0x87, 0x20, 0x01);
+	csot_dcs_write_seq_static(ctx, 0x00, 0x80);
+	csot_dcs_write_seq_static(ctx, 0xFF, 0x87, 0x20);
+
 	csot_dcs_write_seq_static(ctx, 0x00, 0x00);
 	csot_dcs_write_seq_static(ctx, 0xF7, 0x5A, 0xA5, 0x95, 0x27);
+
+	csot_dcs_write_seq_static(ctx, 0x00, 0x00);//cmd2 disable
+	csot_dcs_write_seq_static(ctx, 0xFF, 0x00, 0x00, 0x00);
+	csot_dcs_write_seq_static(ctx, 0x00, 0x80);
+	csot_dcs_write_seq_static(ctx, 0xFF, 0x00, 0x00);
 
 	if(tp_gesture_flag == 0)
 	{
@@ -237,7 +249,9 @@ static int csot_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
+	gpiod_set_value(ctx->reset_gpio, 0);
 	ret = ocp2138_BiasPower_enable(15,15,5);
+	msleep(5);
 
 	//lcm_power_enable();
 	csot_panel_init(ctx);
