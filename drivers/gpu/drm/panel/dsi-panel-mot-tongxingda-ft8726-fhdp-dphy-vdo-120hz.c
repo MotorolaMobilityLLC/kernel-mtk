@@ -139,6 +139,15 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
+
+	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x00);
+	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0x87, 0x20, 0x01);
+	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x80);
+	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0x87, 0x20);
+	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x00);
+	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0xFF, 0xFF, 0xFF);
+	msleep(20);
+
 	tongxingda_dcs_write_seq_static(ctx, 0x51, 0xC3,0x09);//max:0xFF 0x0F
 	tongxingda_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tongxingda_dcs_write_seq_static(ctx, 0x55, 0x01);
