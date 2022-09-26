@@ -3950,6 +3950,10 @@ void mmi_init(struct mtk_charger *info)
 	info->mmi.charging_enable_hz = false;
 	info->mmi.battery_charging_disable = false;
 
+	if (info->mmi.factory_mode) {
+		info->disable_aicl = true;
+	}
+
 	rc = parse_mmi_dt(info, &info->pdev->dev);
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
