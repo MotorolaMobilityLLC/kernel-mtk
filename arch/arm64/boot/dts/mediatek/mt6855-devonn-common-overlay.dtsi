@@ -144,11 +144,6 @@
 
 /* FINGERPRINT start */
 
-&mt6369_vfp {
-	regulator-min-microvolt = <3300000>;
-	regulator-max-microvolt = <3300000>;
-	regulator-always-on;
-};
 
 /* SVP */
 &mtee_svp {
@@ -189,7 +184,10 @@
 
 		egistec,gpio_reset = <&pio 157 0x0>;
 		egistec,gpio_irq = <&pio 15 0x0>;
-
+		fp-ctrl-power;
+		vcc_fp-supply = <&mt6369_vfp>;	// ldo for support module vcc
+		egis-fp,vcc-voltage = <3300000 3300000>;	// ldo voltage default 3.3V
+		egis-fp,vcc-current = <100000>;
 		pinctrl-names = "egis_rst_high", "egis_rst_low", "egis_irq_active", "egis_spi_active", "egis_spi_default";
 		pinctrl-0 = <&fingerfp_rst_high>;
 		pinctrl-1 = <&fingerfp_rst_low>;
@@ -205,6 +203,10 @@
 		fpc,enable-wakeup;
 		interrupt-parent = <&pio>;
 		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+		rgltr-ctrl-support;
+		fp,vdd-supply = <&mt6369_vfp>;
+		fp,voltage-range = <3300000 3300000>;
+		fp,vdd-current = <100000>;
 		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
 		pinctrl-0 = <&fps_irq>;
 		pinctrl-1 = <&fps_reset_high>;
