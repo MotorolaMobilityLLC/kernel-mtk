@@ -249,7 +249,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 	//-EKDEVONN-16, madongyu.wt, add, 20220620, read the ADC value from io-channel if channel-name is matched
 	} else {
 		val = readl(ntc_info->data_reg);
-		pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
+		//pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
 
 //	val = readl(ntc_info->data_reg);
 //	r_type = get_tia_rc_sel(val, tia_param->rc_offset, tia_param->rc_mask);
