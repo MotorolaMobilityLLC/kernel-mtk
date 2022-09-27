@@ -271,7 +271,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 		}
 
 		ntc_info->prev_val = val;
-		pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
+		//pr_info("%s:%d: ntc_info->data_reg=0x%x val=0x%x\n", __func__, __LINE__, ntc_info->data_reg, val);
 
 //	do {
 //		val = readl(ntc_info->data_reg);
