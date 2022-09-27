@@ -23,7 +23,7 @@
 #define HSA                         4//16
 #define HBP                         90//52
 #define VSA                         2//4
-#define VBP                         20
+#define VBP                         18
 
 #define DISP_CLK                    371659 // 356552//176037  //H total *V total * V freq = 1201*2474*120=356552
 #define DISP_PLL_CLK                550
