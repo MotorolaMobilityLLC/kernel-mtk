@@ -231,6 +231,7 @@ static int board_ntc_get_temp(void *data, int *temp)
 	unsigned long long v_in;
 	unsigned int read_tia_reg_time = 0;
 	const unsigned int read_tia_reg_time_max = 3;
+	static int pre_temp = 200 * 10;//200C as init val
 
 	if (adc_data->is_print_tia_cg == true)
 		print_tia_reg(ntc_info->dev);
@@ -348,9 +349,12 @@ static int board_ntc_get_temp(void *data, int *temp)
 		*temp = board_ntc_r_to_temp(ntc_info, r_ntc);
 	}
 
-	//dev_dbg_ratelimited(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
-	dev_info(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
-		val, v_in, r_type, r_ntc, *temp);
+	if (pre_temp != *temp / 100) {
+		pre_temp = *temp / 100;
+		//dev_dbg_ratelimited(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
+		dev_info(ntc_info->dev, "val=0x%x, v_in/r_type/r_ntc/t=%d/%d/%d/%d\n",
+			val, v_in, r_type, r_ntc, *temp);
+	}
 
 	return 0;
 }
