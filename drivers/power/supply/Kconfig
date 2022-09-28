@@ -279,6 +279,15 @@ config BATTERY_DA9150
 	  This driver can also be built as a module. If so, the module will be
 	  called da9150-fg.
 
+config BATTERY_MM8013
+	tristate "FG Driver for BATTERY_MM8013 Charger IC"
+	default n
+	depends on I2C
+	depends on IIO
+	help
+	  Say Yes to enable BATTERY_MM8013 driver.
+	  It is mainly used as battery gauge
+
 config CHARGER_AXP20X
 	tristate "X-Powers AXP20X and AXP22X AC power supply driver"
 	depends on MFD_AXP20X
