@@ -16,10 +16,23 @@
                 status = "okay";
                 compatible = "ti,bq2589x-1";
                 reg = <0x6A>;
+                charger_name = "primary_chg";
 
                 bq2589x_irq = <&pio 7 0x0>;
 		pinctrl-names = "bq25890_int_n_name";
 		pinctrl-0 = <&bq25890_int_n>;
+
+		ti,bq2589x,enable-auto-dpdm;
+		ti,bq2589x,enable-termination;
+		ti,bq2589x,enable-ico;
+		ti,bq2589x,use-absolute-vindpm;
+ 		ti,bq2589x,vbus-volt-high-level = <8700>;/* tune adapter to output 9v */
+ 		ti,bq2589x,vbus-volt-low-level = <4400>;/* tune adapter to output 5v */
+ 		ti,bq2589x,vbat-min-volt-to-tuneup = <3000>;
+		ti,bq2589x,charge-voltage = <4400>;
+		ti,bq2589x,charge-current = <2000>;
+		ti,bq2589x,term-current = <128>;
+                ti,bq2589x,disable-ilim;
         };
 };
 
@@ -165,47 +178,4 @@
 	>;
         #include "bat_setting/mt6768_battery_table_NC50_5000mah_ext.dtsi"
 	#include "bat_setting/mt6768_battery_table_NC50_5000mah_SCUD_ext.dtsi"
-};
-
-&odm {
-	mmi_chrg_manager {
-		compatible = "mmi,chrg-manager";
-		mmi,pps-volt-steps = <20000>;
-		mmi,pps-curr-steps = <40000>;
-		mmi,pd-volt-max = <12000000>;
-		mmi,pd-curr-max = <3000000>;
-		mmi,batt-curr-boost = <300000>;
-		mmi,batt-ovp-lmt = <4550000>;
-		mmi,pl-chrg-vbatt-min = <3600000>;
-		mmi,typec-middle-current = <1500000>;
-		mmi,step-first-current-comp = <0>;
-		mmi,dont-rerun-aicl;
-		mmi,chrg-temp-zones-num = <5>;
-		mmi,mmi-chrg-temp-zones =
-					<0 4200 1000  0 0>,
-					<10 4250 2500 4450 1000>,
-					<15 4450 2500 0 0>,
-					<45 4300 5800 4470 4000>,
-					<60 4200 4000 0 0>;
-/*
-            mmi,mmi-ffc-zones = <4200 243>,
-                                <4250 243>,
-                                <4450 243>,
-                                <4480 550>,
-                                <4480 588>,
-                                <4480 631>,
-                                <4200 243>;
-*/
-		mmi,thermal-min-level = <1500000>;
-		charger_device_0 {
-			chrg-name = "pmic-sw";
-			psy-name = "battery";
-			charging-curr-limited = <500000>;
-		};
-		charger_device_1 {
-			chrg-name = "cp-master";
-			psy-name = "bq2597x-standalone";
-			charging-curr-min = <2000000>;
-		};
-	};
 };

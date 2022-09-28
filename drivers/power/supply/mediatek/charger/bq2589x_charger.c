@@ -53,6 +53,7 @@ struct bq2589x_config {
 	int		term_current;
 	bool	enable_ico;
 	bool	use_absolute_vindpm;
+        bool    disable_ilim;
 };
 
 
@@ -1397,6 +1398,17 @@ static int bq2589x_init_device(struct bq2589x *bq)
 		return ret;
 	}
 
+        /*common initialization*/
+  	if (bq->cfg.disable_ilim) {
+  		ret = bq2589x_update_bits(bq, BQ2589X_REG_00, BQ2589X_ENILIM_MASK,
+  			BQ2589X_ENILIM_DISABLE << BQ2589X_ENILIM_SHIFT);
+  		if (ret < 0) {
+  			dev_err(bq->dev, "%s:Failed to operate EN_LIM for ENLIM_DISABLE:%d\n", __func__, ret);
+  		} else {
+  			dev_err(bq->dev, "%s:Success to operate EN_LIM for ENLIM_DISABLE:%d\n", __func__, ret);
+  		}
+  	}
+
 	bq2589x_set_watchdog_timer(bq, 160);
 
 	bq2589x_set_hz(bq, 0);
@@ -1515,6 +1527,7 @@ static int bq2589x_parse_dt(struct device *dev, struct bq2589x *bq)
 	bq->cfg.enable_auto_dpdm = of_property_read_bool(np, "ti,bq2589x,enable-auto-dpdm");
 	bq->cfg.enable_term = of_property_read_bool(np, "ti,bq2589x,enable-termination");
 	bq->cfg.enable_ico = of_property_read_bool(np, "ti,bq2589x,enable-ico");
+ 	bq->cfg.disable_ilim = of_property_read_bool(np, "ti,bq2589x,disable-ilim");
 	bq->cfg.use_absolute_vindpm = of_property_read_bool(np, "ti,bq2589x,use-absolute-vindpm");
 
 	ret = of_property_read_u32(np, "ti,bq2589x,charge-voltage", &bq->cfg.charge_voltage);
