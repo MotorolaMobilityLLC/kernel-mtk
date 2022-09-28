@@ -101,19 +101,26 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
 	int power_mode, ret = 0;
-
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+	int factory_tx_power_mode = SWTP_NO_TX_POWER;
+#endif
 	if (swtp == NULL) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS, "%s:swtp is null\n", __func__);
 		return -1;
 	}
-#ifndef DISABLE_SWTP_FACTORY
-	spin_lock_irqsave(&swtp->spinlock, flags);
 
+	spin_lock_irqsave(&swtp->spinlock, flags);
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
+		(char *)&factory_tx_power_mode, sizeof(factory_tx_power_mode));
+	power_mode = factory_tx_power_mode;
+#else
 	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
 	power_mode = swtp->tx_power_mode;
-	spin_unlock_irqrestore(&swtp->spinlock, flags);
 #endif
+	spin_unlock_irqrestore(&swtp->spinlock, flags);
+
 	if (ret != 0)
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"%s to MD%d,state=%d,ret=%d\n",
@@ -387,11 +394,11 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				}
 			}
 #endif
-#ifndef DISABLE_SWTP_FACTORY
+
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
 				irq_name[i], &swtp_data[md_id]);
-#endif
+
 			if (ret) {
 				CCCI_LEGACY_ERR_LOG(md_id, SYS,
 					"swtp%d-eint IRQ LINE NOT AVAILABLE\n",
@@ -432,7 +439,7 @@ int swtp_init(int md_id)
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work,
 		swtp_tx_delayed_work);
 #if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
-#ifdef DISABLE_SWTP_FACTORY
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #else
 	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
