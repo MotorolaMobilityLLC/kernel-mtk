@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
+#include <dt-bindings/iio/mt635x-auxadc.h>
 &moto_chg_tcmd {
                 compatible = "mmi,moto-chg-tcmd";
                 status = "okay";
@@ -244,10 +244,11 @@
 
 &i2c0 {
         status = "okay";
+
 	mm8013@55 {
 		compatible = "mitsumi,mm8013c10";
 		reg = <0x55>;
-		status = "okay";
+		//status = "okay";
 		io-channels = <&pmic_auxadc AUXADC_BAT_TEMP>;
 		io-channel-names = "batt_therm";
 
@@ -304,7 +305,7 @@
 
         };
 };
-
+/*
 &i2c4 {
 	cps-wls-charger@38 {
 		compatible = "cps,wls-charger-cps4038";
@@ -335,4 +336,4 @@
         mmi,wlc-rx-mitigation = <(-1) 2500000 2000000 1500000 1200000
                                 1000000 700000 500000>;
 };
-
+*/
