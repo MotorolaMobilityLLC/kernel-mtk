@@ -212,6 +212,14 @@ config CHARGER_SGM41511
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if SGM41511 is used.
 
+config CHARGER_SGM41543
+	bool "CHARGER_SGM41543"
+	help
+	  This is to enable MediaTek supports to SGM41543.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT
+	  Set to Yes if SGM41543 is used.
+
 config LOAD_SWITCH_RT9750
 	bool "Load Switch Driver for Richtek RT9750"
 	depends on MTK_CHARGER
