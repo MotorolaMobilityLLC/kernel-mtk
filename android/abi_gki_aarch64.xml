@@ -1572,6 +1572,7 @@
       <elf-symbol name='devm_alloc_etherdev_mqs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3a966ec9'/>
       <elf-symbol name='devm_backlight_device_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c7941db'/>
       <elf-symbol name='devm_backlight_device_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x79af553c'/>
+      <elf-symbol name='devm_bitmap_zalloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x247c462'/>
       <elf-symbol name='devm_blk_ksm_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3621a862'/>
       <elf-symbol name='devm_clk_bulk_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xac999271'/>
       <elf-symbol name='devm_clk_bulk_get_all' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x239c4a55'/>
@@ -5714,6 +5715,7 @@
       <elf-symbol name='usb_add_hcd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xacac8bb4'/>
       <elf-symbol name='usb_add_phy_dev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4c3b0929'/>
       <elf-symbol name='usb_alloc_coherent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x52e71182'/>
+      <elf-symbol name='usb_alloc_dev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3e6e0ae5'/>
       <elf-symbol name='usb_alloc_urb' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd6cee4e1'/>
       <elf-symbol name='usb_amd_dev_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb9b9df41'/>
       <elf-symbol name='usb_amd_prefetch_quirk' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd87fc0a0'/>
@@ -132580,6 +132582,12 @@
         <parameter type-id='7a76d041' name='bd' filepath='drivers/video/backlight/backlight.c' line='637' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='devm_bitmap_zalloc' mangled-name='devm_bitmap_zalloc' filepath='lib/bitmap.c' line='1432' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_bitmap_zalloc'>
+        <parameter type-id='fa0b179b' name='dev' filepath='lib/bitmap.c' line='1432' column='1'/>
+        <parameter type-id='f0981eeb' name='nbits' filepath='lib/bitmap.c' line='1433' column='1'/>
+        <parameter type-id='3eb7c31c' name='flags' filepath='lib/bitmap.c' line='1433' column='1'/>
+        <return type-id='1d2c2b85'/>
+      </function-decl>
       <function-decl name='devm_blk_ksm_init' mangled-name='devm_blk_ksm_init' filepath='block/keyslot-manager.c' line='152' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_blk_ksm_init'>
         <parameter type-id='fa0b179b' name='dev' filepath='block/keyslot-manager.c' line='152' column='1'/>
         <parameter type-id='bf8a20d2' name='ksm' filepath='block/keyslot-manager.c' line='152' column='1'/>
@@ -154059,6 +154067,12 @@
         <parameter type-id='3eb7c31c' name='mem_flags' filepath='drivers/usb/core/usb.c' line='970' column='1'/>
         <parameter type-id='e835b5d8' name='dma' filepath='drivers/usb/core/usb.c' line='971' column='1'/>
         <return type-id='eaa32e2f'/>
+      </function-decl>
+      <function-decl name='usb_alloc_dev' mangled-name='usb_alloc_dev' filepath='drivers/usb/core/usb.c' line='620' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_alloc_dev'>
+        <parameter type-id='25e60cb2' name='parent' filepath='drivers/usb/core/usb.c' line='620' column='1'/>
+        <parameter type-id='3ab7d422' name='bus' filepath='drivers/usb/core/usb.c' line='621' column='1'/>
+        <parameter type-id='f0981eeb' name='port1' filepath='drivers/usb/core/usb.c' line='621' column='1'/>
+        <return type-id='25e60cb2'/>
       </function-decl>
       <function-decl name='usb_alloc_urb' mangled-name='usb_alloc_urb' filepath='drivers/usb/core/urb.c' line='70' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_alloc_urb'>
         <parameter type-id='95e97e5e' name='iso_packets' filepath='drivers/usb/core/urb.c' line='70' column='1'/>
