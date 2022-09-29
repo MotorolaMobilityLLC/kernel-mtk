@@ -11,6 +11,11 @@
 
 extern void MAIN2AF_PowerDown(void);
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#define VIB_ResetPos VIB_ResetPos_Main
+extern void VIB_ResetPos_Main(unsigned long a_u4Position);
+#endif
+
 #define MOT_DEVONN_DW9800VAF_SetI2Cclient MOT_DEVONN_DW9800VAF_SetI2Cclient_Main
 #define MOT_DEVONN_DW9800VAF_Ioctl MOT_DEVONN_DW9800VAF_Ioctl_Main
 #define MOT_DEVONN_DW9800VAF_Release MOT_DEVONN_DW9800VAF_Release_Main
