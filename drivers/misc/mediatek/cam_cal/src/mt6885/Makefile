@@ -20,6 +20,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/i2c/busses/
 
 # Common code
 obj-y += ../common/$(COMMON_VERSION)/eeprom_driver.o
+obj-y += ../common/$(COMMON_VERSION)/eeprom_driver_moto.o
 obj-y += ../common/$(COMMON_VERSION)/eeprom_i2c_common_driver.o
 obj-y += ../common/$(COMMON_VERSION)/eeprom_utils.o
 
