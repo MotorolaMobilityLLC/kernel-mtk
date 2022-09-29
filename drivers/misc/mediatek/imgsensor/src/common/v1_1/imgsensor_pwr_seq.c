@@ -59,7 +59,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{
 				{RST, Vol_Low, 1},
 				{DOVDD, Vol_1800, 1},
+#ifdef ENABLE_MOT_MT6855_DEVONN
+				{DVDD, Vol_1100, 1},
+#else
 				{DVDD, Vol_1100, 0},
+#endif
 				//{PDN, Vol_High, 0},
 				{AVDD, Vol_High, 1},
 				{RST, Vol_High, 1},
