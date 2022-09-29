@@ -26,6 +26,9 @@
 #define Q_MAX_L_CURRENT 0
 #define Q_MAX_H_CURRENT 10000
 
+/* Default use moto serial number feature */
+#define MTK_GET_BATTERY_ID_BY_SERIALNUMBER
+
 /* multiple battery profile compile options */
 /*#define MTK_GET_BATTERY_ID_BY_AUXADC*/
 
