@@ -9,7 +9,7 @@
 #include "mt6891-moto-common-overlay.dtsi"
 #include "mt6891-lyriq-audio-overlay.dtsi"
 #include "mediatek/lyriq-touch.dtsi"
-
+#include "lyriq-charger-thermal.dtsi"
 &reserved_memory {
 };
 
