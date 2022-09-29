@@ -321,6 +321,9 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 	int ichg1_min = -1, aicr1_min = -1;
 	int ret;
 	int charging_current, input_current, vbus, input_thermal_limit;
+	bool cable_ready = false;
+	int temp = 0, batt_cv = 0;
+	bool cv_auto = true;
 
 	wlc = dev_get_drvdata(&alg->dev);
 
@@ -335,56 +338,76 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 	vbus = VBUS_DEFAULT_MV;
 	charging_current = wlc->wireless_charger_max_current;
 
-	if(NULL != wls_chg_ops)
-		wls_chg_ops->wls_current_select(&input_current, &vbus);
+	if (NULL != wls_chg_ops)
+		wls_chg_ops->wls_current_select(&input_current, &vbus,
+						&cable_ready);
 
-	if (wlc->charging_current_limit1 != -1) {
-		if (wlc->charging_current_limit1 < charging_current)
-			wlc->charging_current1 = wlc->charging_current_limit1;
-		ret = wlc_hal_get_min_charging_current(alg, CHG1, &ichg1_min);
-		if (ret != -EOPNOTSUPP &&
-		    wlc->charging_current_limit1 < ichg1_min)
-			wlc->charging_current1 = 0;
-
-		input_thermal_limit = wlc->charging_current_limit1 / 1000;
-		input_thermal_limit *= VBUS_DEFAULT_MV;
-		input_thermal_limit /= vbus;
-		input_thermal_limit *= 1000;
+	wlc->cable_ready = cable_ready;
+	if (!cable_ready) {
+		mutex_unlock(&wlc->data_lock);
+		wlc_hal_set_charging_current(alg, CHG1, 3150000);
+		temp = wlc_hal_get_batt_temp(alg);
+		if (temp > 15 && temp <= 45)
+			cv_auto = false;
 	} else {
-		wlc->charging_current1 = charging_current;
-		input_thermal_limit = -1;
+		cv_auto = true;
+		if (wlc->charging_current_limit1 != -1) {
+			if (wlc->charging_current_limit1 < charging_current)
+				wlc->charging_current1 =
+					wlc->charging_current_limit1;
+			ret = wlc_hal_get_min_charging_current(alg, CHG1,
+							       &ichg1_min);
+			if (ret != -EOPNOTSUPP &&
+			    wlc->charging_current_limit1 < ichg1_min)
+				wlc->charging_current1 = 0;
+
+			input_thermal_limit =
+				wlc->charging_current_limit1 / 1000;
+			input_thermal_limit *= VBUS_DEFAULT_MV;
+			input_thermal_limit /= vbus;
+			input_thermal_limit *= 1000;
+		} else {
+			wlc->charging_current1 = charging_current;
+			input_thermal_limit = -1;
+		}
+		wlc->charging_current1 = wlc->charging_current1 < wlc->mmi_fcc ?
+						       wlc->charging_current1 :
+						       wlc->mmi_fcc;
+
+		if (input_thermal_limit != -1 &&
+		    input_thermal_limit < input_current) {
+			wlc->input_current1 = input_thermal_limit;
+			ret = wlc_hal_get_min_input_current(alg, CHG1,
+							    &aicr1_min);
+			if (ret != -EOPNOTSUPP &&
+			    input_thermal_limit < aicr1_min)
+				wlc->input_current1 = 0;
+		} else
+			wlc->input_current1 = input_current;
+
+		wlc_info("%s input current = %d:%d:%d:%d, vout = %d\n",
+			 __func__, wlc->input_current1, input_current,
+			 input_thermal_limit, wlc->charging_current_limit1,
+			 vbus);
+		mutex_unlock(&wlc->data_lock);
+
+		if (wlc->input_current1 == 0 || wlc->charging_current1 == 0) {
+			wlc_err("current is zero %d %d\n", wlc->input_current1,
+				wlc->charging_current1);
+			return -1;
+		}
+
+		wlc_hal_set_charging_current(alg, CHG1, wlc->charging_current1);
+		wlc_hal_set_input_current(alg, CHG1, wlc->input_current1);
 	}
-	wlc->charging_current1 = wlc->charging_current1 < wlc->mmi_fcc ?
-					       wlc->charging_current1 :
-					       wlc->mmi_fcc;
-
-
-	if (input_thermal_limit != -1 &&
-	    input_thermal_limit < input_current) {
-		wlc->input_current1 = input_thermal_limit;
-		ret = wlc_hal_get_min_input_current(alg, CHG1, &aicr1_min);
-		if (ret != -EOPNOTSUPP && input_thermal_limit < aicr1_min)
-			wlc->input_current1 = 0;
-	} else
-		wlc->input_current1 = input_current;
-
-	wlc_info("%s input current = %d:%d:%d:%d, vout = %d\n", __func__, wlc->input_current1,
-			input_current, input_thermal_limit, wlc->charging_current_limit1, vbus);
-	mutex_unlock(&wlc->data_lock);
-
-	if (wlc->input_current1 == 0 || wlc->charging_current1 == 0) {
-		wlc_err("current is zero %d %d\n", wlc->input_current1,
-			wlc->charging_current1);
-		return -1;
-	}
-
-	wlc_hal_set_charging_current(alg, CHG1, wlc->charging_current1);
-	wlc_hal_set_input_current(alg, CHG1, wlc->input_current1);
-
 	if (wlc->old_cv == 0 || (wlc->old_cv != wlc->cv) ||
 	    wlc->wlc_6pin_en == 0) {
 		wlc_hal_vbat_mon_en(alg, CHG1, false);
-		wlc_hal_set_cv(alg, CHG1, wlc->cv);
+		batt_cv = wlc_hal_get_batt_cv(alg);
+		if(!cv_auto)
+			wlc_hal_set_cv(alg, CHG1, batt_cv);
+		else
+			wlc_hal_set_cv(alg, CHG1, wlc->cv);
 		if (wlc->wlc_6pin_en && wlc->stop_6pin_re_en != 1)
 			wlc_hal_vbat_mon_en(alg, CHG1, true);
 
@@ -420,7 +443,7 @@ static int __wlc_run(struct chg_alg_device *alg)
 	}
 
 	uisoc = wlc_hal_get_uisoc(alg);
-	if((NULL != wls_chg_ops) && uisoc == 100)
+	if((NULL != wls_chg_ops) && true == wlc->cable_ready && uisoc == 100)
 		wls_chg_ops->wls_set_battery_soc(uisoc);
 
 	if (wlc_sc_set_charger(alg) != 0) {

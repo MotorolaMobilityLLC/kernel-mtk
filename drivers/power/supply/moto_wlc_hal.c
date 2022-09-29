@@ -165,6 +165,56 @@ int wlc_hal_get_charger_type(struct chg_alg_device *alg)
 	return info->chr_type;
 }
 
+int wlc_hal_get_batt_temp(struct chg_alg_device *alg)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+	int ret = 0;
+
+	if (alg == NULL)
+		return -EINVAL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		wlc_err("%s Couldn't get chg_psy\n", __func__);
+		ret = -EINVAL;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+		if (info == NULL)
+			ret = -EINVAL;
+		else
+			ret = info->battery_temp;
+	}
+
+	wlc_dbg("%s battery_temp:%d\n", __func__, ret);
+	return info->battery_temp;
+}
+
+int wlc_hal_get_batt_cv(struct chg_alg_device *alg)
+{
+	struct mtk_charger *info = NULL;
+	struct power_supply *chg_psy = NULL;
+	int ret = 0;
+
+	if (alg == NULL)
+		return -EINVAL;
+
+	chg_psy = power_supply_get_by_name("mtk-master-charger");
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		wlc_err("%s Couldn't get chg_psy\n", __func__);
+		ret = -EINVAL;
+	} else {
+		info = (struct mtk_charger *)power_supply_get_drvdata(chg_psy);
+		if (info == NULL)
+			ret = -EINVAL;
+		else
+			ret = info->data.battery_cv;
+	}
+
+	wlc_dbg("%s battery_cv:%d\n", __func__, ret);
+	return info->data.battery_cv;
+}
+
 int wlc_hal_set_mivr(struct chg_alg_device *alg, enum chg_idx chgidx, int uV)
 {
 	int ret = 0;
