@@ -34,6 +34,29 @@
 		ti,bq2589x,term-current = <128>;
                 ti,bq2589x,disable-ilim;
         };
+
+	sgm41543@0B {
+		status = "okay";
+		compatible = "ti,sgm41543-2";
+		reg = <0x0B>;
+		charger_name = "primary_chg";
+
+		sgm41543,intr_gpio = <&pio 7 0x0>;
+		sgm41543,intr_gpio_num = <7>;
+		ti,sgm41543,usb-vlim = <4600>;
+		ti,sgm41543,usb-ilim = <2000>;
+		ti,sgm41543,usb-vreg = <4400>;
+		ti,sgm41543,usb-ichg = <2000>;
+		ti,sgm41543,precharge-current = <180>;
+		ti,sgm41543,termination-current = <180>;
+		ti,sgm41543,boost-voltage = <4998>;
+		ti,sgm41543,boost-current = <1200>;
+		ti,sgm41543,enable_term;
+		ti,sgm41543,stat-pin-ctrl = <3>;
+		ti,sgm41543,vac-ovp-threshold = <10500>;
+		ti,sgm41543,charge-voltage = <4400>;
+		ti,sgm41543,charge-current = <2000>;
+	};
 };
 
 &pio {
