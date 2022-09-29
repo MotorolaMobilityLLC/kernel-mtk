@@ -20,6 +20,9 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#include "linux/pm_wakeup.h"
+#endif
 
 /* kernel standard */
 #include <linux/regulator/consumer.h>
@@ -66,6 +69,13 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #define LOG_INF(format, args...)
 #endif
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+static unsigned long af_len = 1;
+static int Open_holder = 0;
+static int Close_holder = 0;
+static struct wakeup_source vib_wakelock;
+#endif
+
 /* OIS/EIS Timer & Workqueue */
 static struct workqueue_struct *ois_workqueue;
 static struct work_struct ois_work;
@@ -80,8 +90,13 @@ static struct stAF_OisPosInfo OisPosInfo;
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 #if defined(CONFIG_MOT_DEVONN_CAMERA_PROJECT)
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	{1, MOT_DEVONN_AFDRV_DW9800VAF, MOT_DEVONN_DW9800VAF_SetI2Cclient_Main, MOT_DEVONN_DW9800VAF_Ioctl_Main,
+        MOT_DEVONN_DW9800VAF_Release_Main, MOT_DEVONN_DW9800VAF_GetFileName_Main, NULL, VIB_ResetPos},
+#else
 	{1, MOT_DEVONN_AFDRV_DW9800VAF, MOT_DEVONN_DW9800VAF_SetI2Cclient_Main, MOT_DEVONN_DW9800VAF_Ioctl_Main,
 	MOT_DEVONN_DW9800VAF_Release_Main, MOT_DEVONN_DW9800VAF_GetFileName_Main, NULL},
+#endif
 #elif defined(CONFIG_MOT_DEVONF_CAMERA_PROJECT)
 	{1, MOT_DEVONF_AFDRV_GT9764, MOT_DEVONF_GT9764_SetI2CClient, MOT_DEVONF_GT9764_Ioctl,
 	MOT_DEVONF_GT9764_Release, MOT_DEVONF_GT9764_GetFileName, NULL},
@@ -396,7 +411,31 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 			}
 		}
 		break;
-
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	case AFIOC_T_SETOPENER:
+		spin_lock(&g_AF_SpinLock);
+		Open_holder |= a_u4Param;
+		i4RetValue = Open_holder;
+		if(a_u4Param == VIB_HOLD){
+		    spin_unlock(&g_AF_SpinLock);
+			__pm_stay_awake(&vib_wakelock);
+		}else{
+			spin_unlock(&g_AF_SpinLock);
+		}
+                LOG_INF(" Open_holder = %d\n",Open_holder);
+		break;
+	case AFIOC_T_SETCLOSEER:
+		spin_lock(&g_AF_SpinLock);
+		Close_holder = a_u4Param;
+		Open_holder &= ~a_u4Param;
+		spin_unlock(&g_AF_SpinLock);
+		LOG_INF("Close_holder = %d;Open_holder = %d\n",Close_holder,Open_holder);
+		break;
+	case AFIOC_T_SETVCMPOS:
+		af_len = a_u4Param;
+		LOG_INF("set af_len = %d\n",af_len);
+		break;
+#endif
 	default:
 		if (g_pstAF_CurDrv) {
 			if (g_pstAF_CurDrv->pAF_Ioctl)
@@ -433,11 +472,19 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	LOG_INF("Start\n");
 
 	spin_lock(&g_AF_SpinLock);
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	Close_holder = NO_HOLD;
+	if(g_s4AF_Opened  == 1){
+		spin_unlock(&g_AF_SpinLock);
+		return 0;
+	}
+#else
 	if (g_s4AF_Opened) {
 		spin_unlock(&g_AF_SpinLock);
 		LOG_INF("The device is opened\n");
 		return -EBUSY;
 	}
+#endif
 	g_s4AF_Opened = 1;
 	spin_unlock(&g_AF_SpinLock);
 
@@ -468,12 +515,38 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
-
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	spin_lock(&g_AF_SpinLock);
+	if (g_pstAF_CurDrv && g_s4AF_Opened >= 1 && Open_holder == 0) {
+		spin_unlock(&g_AF_SpinLock);
+#else
 	if (g_pstAF_CurDrv) {
+#endif
 		g_pstAF_CurDrv->pAF_Release(a_pstInode, a_pstFile);
 		g_pstAF_CurDrv = NULL;
-	} else {
+	}
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+        else if(g_s4AF_Opened >= 1 && g_pstAF_CurDrv ){
+			if(Open_holder == VIB_HOLD && Close_holder == CAM_HOLD){
+				spin_unlock(&g_AF_SpinLock);
+				g_pstAF_CurDrv->pAF_ResetPos(af_len);
+			}else{
+				spin_unlock(&g_AF_SpinLock);
+			}
+			spin_lock(&g_AF_SpinLock);
+			if(Close_holder == VIB_HOLD){
+				spin_unlock(&g_AF_SpinLock);
+				__pm_relax(&vib_wakelock);
+			}else{
+				spin_unlock(&g_AF_SpinLock);
+			}
+			return 0;
+        }
+#endif
+	else {
+#ifndef CONFIG_AF_NOISE_ELIMINATION
 		spin_lock(&g_AF_SpinLock);
+#endif
 		g_s4AF_Opened = 0;
 		spin_unlock(&g_AF_SpinLock);
 	}
@@ -494,6 +567,15 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	}
 	/* ------------------------- */
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	spin_lock(&g_AF_SpinLock);
+	if(Close_holder == VIB_HOLD){
+		spin_unlock(&g_AF_SpinLock);
+		__pm_relax(&vib_wakelock);
+	}else{
+		spin_unlock(&g_AF_SpinLock);
+	}
+#endif
 	LOG_INF("End\n");
 
 	return 0;
@@ -697,6 +779,11 @@ static int __init MAINAF_i2C_init(void)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	memset(&vib_wakelock,0,sizeof(vib_wakelock));
+	vib_wakelock.name = "vibrator_noise_elimination";
+	wakeup_source_add(&vib_wakelock);
+#endif
 	return 0;
 }
 
@@ -704,6 +791,10 @@ static void __exit MAINAF_i2C_exit(void)
 {
 	platform_driver_unregister(&g_stAF_Driver);
 	platform_device_unregister(&g_stAF_device);
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	__pm_relax(&vib_wakelock);
+	wakeup_source_remove(&vib_wakelock);
+#endif
 }
 module_init(MAINAF_i2C_init);
 module_exit(MAINAF_i2C_exit);
