@@ -31,6 +31,9 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
+extern int __attribute__ ((weak)) ocp2138_BiasPower_disable(u32 pwrdown_delay);
+extern int __attribute__ ((weak)) ocp2138_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
+
 static int tp_gesture_flag = 0;
 
 struct tianma {
@@ -264,6 +267,7 @@ static int tianma_set_gesture_flag(int state)
 static int tianma_unprepare(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
+	int ret;
 
 	if (!ctx->prepared)
 		return 0;
@@ -297,17 +301,8 @@ static int tianma_unprepare(struct drm_panel *panel)
 	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
 	if(!tp_gesture_flag) {
 		printk("[%d %s]bias\n",__LINE__, __FUNCTION__);
-		ctx->bias_neg =
-			devm_gpiod_get_index(ctx->dev, "bias", 1, GPIOD_OUT_HIGH);
-		gpiod_set_value(ctx->bias_neg, 0);
-		devm_gpiod_put(ctx->dev, ctx->bias_neg);
 
-		msleep(20);
-
-		ctx->bias_pos =
-			devm_gpiod_get_index(ctx->dev, "bias", 0, GPIOD_OUT_HIGH);
-		gpiod_set_value(ctx->bias_pos, 0);
-		devm_gpiod_put(ctx->dev, ctx->bias_pos);
+		ret = ocp2138_BiasPower_disable(5);
 	}
 
 	ctx->error = 0;
@@ -324,18 +319,7 @@ static int tianma_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
-	ctx->bias_pos =
-		devm_gpiod_get_index(ctx->dev, "bias", 0, GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->bias_pos, 1);
-	devm_gpiod_put(ctx->dev, ctx->bias_pos);
-	pr_info("disp: bias-pos = %d\n",ctx->bias_pos );
-
-	msleep(20);
-	ctx->bias_neg =
-		devm_gpiod_get_index(ctx->dev, "bias", 1, GPIOD_OUT_HIGH);
-	gpiod_set_value(ctx->bias_neg, 1);
-	devm_gpiod_put(ctx->dev, ctx->bias_neg);
-		pr_info("disp: bias-neg = %d\n",ctx->bias_neg );
+	ret = ocp2138_BiasPower_enable(15,15,5);
 	tianma_panel_init(ctx);
 
 	ret = ctx->error;
