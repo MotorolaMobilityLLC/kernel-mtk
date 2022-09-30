@@ -42,6 +42,7 @@
 		aw99703,map-type = <4>; /* 0 exponential, 4 linear */
 		aw99703,work-mode = <1>; /* backlight */
                 aw99703,default-brightness = <1024>;
+		aw99703,reinit-brightness = <15>;
 		aw99703,init-seq-enable = <1>;
 		aw99703,init-seq = <0x02 0x04>,
 				<0x03 0xC7>,
