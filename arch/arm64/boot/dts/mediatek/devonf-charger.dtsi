@@ -228,12 +228,12 @@
        sc8551-charger@66{
                compatible = "sc,sc8551-standalone";
                reg = <0x66>;
-               sc,sc8551,irq-gpio = <&pio 46 0>;
+               sc,sc8551,irq-gpio = <&pio 0 0>;
                /*sc,sc8551,bat-ovp-disable = <0>;
                sc,sc8551,bat-ocp_disable = <0>;
                sc,sc8551,bus-ocp-disable = <0>;*/
 
-               sc,sc8551,bat-ovp-threshold = <4525>;
+               sc,sc8551,bat-ovp-threshold = <4600>;
                sc,sc8551,bat-ocp-threshold = <8000>;
 
                sc,sc8551,bus-ovp-threshold = <12000>;
