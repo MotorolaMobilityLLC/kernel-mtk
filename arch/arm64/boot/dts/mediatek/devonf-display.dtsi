@@ -14,6 +14,20 @@
 	force_dyn_mipi_change;
 };
 
+&i2c6 {
+	id = <6>;
+
+	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
+		compatible = "ocp,bias_ocp2138";
+		reg = <0x3e>;
+		ocp,lcd-bias-enn-gpio = <&pio 134 0>;
+		ocp,lcd-bias-enp-gpio = <&pio 182 0>;
+		biasp_en_pin = <182>;
+		biasn_en_pin = <134>;
+		status = "okay";
+	};
+};
+
 &i2c7 {
 	id = <7>;
 
