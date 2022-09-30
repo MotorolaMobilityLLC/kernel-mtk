@@ -43,7 +43,11 @@ int pe50_get_log_level(void)
 #define PE50_ITAOCP_RATIO	110
 #define PE50_IBUSUCPF_RECHECK		250	/* mA */
 #define PE50_VBUS_CALI_THRESHOLD	150	/* mV */
+#if defined(CONFIG_MOTO_PE50_CV_LOWER_BOUND_GAP_OFF)
+#define PE50_CV_LOWER_BOUND_GAP		0	/* mV */
+#else
 #define PE50_CV_LOWER_BOUND_GAP		50	/* mV */
+#endif
 #define PE50_INIT_POLLING_INTERVAL	500	/* ms */
 #define PE50_INIT_RETRY_MAX	0
 #define PE50_MEASURE_R_RETRY_MAX	3
