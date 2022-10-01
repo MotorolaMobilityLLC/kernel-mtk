@@ -95,6 +95,30 @@
         mmi,min-cp-therm-current-ua = <1600000>;
 };
 
+&tboard_thermistor4 {
+	compatible = "mediatek,mtboard-thermistor4";
+	io-channels = <&auxadc 5>;
+	io-channel-names = "thermistor-ch3";
+};
+
+&tboard_thermistor6 {
+	compatible = "mediatek,mtboard-thermistor6";
+	io-channels = <&adc 10>;
+	io-channel-names = "thermistor-ch5";
+};
+
+&tboard_thermistor8 {
+	compatible = "mediatek,mtboard-thermistor8";
+	io-channels = <&auxadc 4>;
+	io-channel-names = "thermistor-ch7";
+};
+
+&tboard_thermistor9 {
+	compatible = "mediatek,mtboard-thermistor9";
+	io-channels = <&auxadc 3>;
+	io-channel-names = "thermistor-ch8";
+};
+
 &bat_gm30 {
         io-channels = <&auxadc 5>;
         io-channel-names = "batteryID-channel";
