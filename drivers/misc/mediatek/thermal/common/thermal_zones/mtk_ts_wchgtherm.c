@@ -596,8 +596,7 @@ static int get_hw_mbtherm_temp(void)
 		return ret;
 	}
 
-	/*val * 1500 / 4096*/
-	ret = (val * 1500) >> 12;
+	ret = val;
 #else
 
 #if defined(APPLY_AUXADC_CALI_DATA)
