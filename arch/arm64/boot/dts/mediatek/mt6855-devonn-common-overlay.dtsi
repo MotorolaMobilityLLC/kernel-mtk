@@ -1610,11 +1610,11 @@
 /* -EKDEVONN-16, madongyu.wt, modify, 20220620, add the NTC devices connect to board-temp.c */
 
 &thermal_zones{
-		ap_ntc: ap_ntc {
-			polling-delay = <0>; /* milliseconds */
-			polling-delay-passive = <0>; /* milliseconds */
-			thermal-sensors = <&tboard_thermistor1>;
-		};
+//		ap_ntc: ap_ntc {
+//			polling-delay = <0>; /* milliseconds */
+//			polling-delay-passive = <0>; /* milliseconds */
+//			thermal-sensors = <&tboard_thermistor1>;
+//		};
 		pa_therm1: pa_therm1 {
 			polling-delay = <0>; /* milliseconds */
 			polling-delay-passive = <0>; /* milliseconds */
