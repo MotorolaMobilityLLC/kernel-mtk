@@ -462,6 +462,7 @@ enum power_supply_property {
 	 * MODEL_NAME and SERIAL_NUMBER. Don't add below SERIAL_NUMBER.
 	 */
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+	POWER_SUPPLY_PROP_SELECT_MUX,
 };
 
 enum power_supply_type {
