@@ -556,6 +556,8 @@ static int battery_get_property(struct power_supply *psy,
 		}
 		bm_err("%s event, name:%s fgcurrent:%d\n", __func__,
 			psy->desc->name, fgcurrent);
+		fgcurrent = 0 - fgcurrent;
+		val->intval = fgcurrent;
 #else
 		b_ischarging = gauge_get_current(&fgcurrent);
 		if (b_ischarging == false)
@@ -573,6 +575,8 @@ static int battery_get_property(struct power_supply *psy,
 		}
 		bm_err("%s event, name:%s fgcurrent:%d\n", __func__,
 			psy->desc->name, fgcurrent);
+		fgcurrent = 0 - fgcurrent;
+		val->intval = fgcurrent;
 #else
 		val->intval = battery_get_bat_avg_current() * 100;
 #endif
