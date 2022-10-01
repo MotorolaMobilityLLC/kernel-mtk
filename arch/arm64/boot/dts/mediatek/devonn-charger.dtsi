@@ -189,3 +189,84 @@
 	ircmp_r = <0>;
 	ircmp_v = <0>;
 };
+
+&ap_ntc {
+	polling-delay = <5000>; /* milliseconds */
+	polling-delay-passive = <3000>; /* milliseconds */
+	thermal-sensors = <&tboard_thermistor1>;
+
+	trips {
+		charge_trip0: charge-trip0 {
+			temperature = <40000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip1: charge-trip1 {
+			temperature = <41000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip2: charge-trip2 {
+			temperature = <42000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip3: charge-trip3 {
+			temperature = <43000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip4: charge-trip4 {
+			temperature = <44000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip5: charge-trip5 {
+			temperature = <45000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip6: charge-trip6 {
+			temperature = <46000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+	};
+
+	cooling-maps {
+		charge-cdev0 {
+			trip = <&charge_trip0>;
+			cooling-device = <&charger_cooler 1 1>;
+		};
+		charge-cdev1 {
+			trip = <&charge_trip1>;
+			cooling-device = <&charger_cooler 2 2>;
+		};
+		charge-cdev2 {
+			trip = <&charge_trip2>;
+			cooling-device = <&charger_cooler 3 3>;
+		};
+		charge-cdev3 {
+			trip = <&charge_trip3>;
+			cooling-device = <&charger_cooler 4 4>;
+		};
+		charge-cdev4 {
+			trip = <&charge_trip4>;
+			cooling-device = <&charger_cooler 5 5>;
+		};
+		charge-cdev5 {
+			trip = <&charge_trip5>;
+			cooling-device = <&charger_cooler 6 6>;
+		};
+		charge-cdev6 {
+			trip = <&charge_trip6>;
+			cooling-device = <&charger_cooler 7 7>;
+		};
+	};
+};
+
+&charger_cooler {
+	bootmode = <&chosen>;
+	mmi,thermal-mitigation = <(-1) 2700000 2200000 2000000 1800000
+				1600000 1200000 900000 500000>;
+};
