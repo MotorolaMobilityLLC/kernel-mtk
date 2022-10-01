@@ -891,6 +891,18 @@ vsys_wkard_fail:
 	return ret;
 }
 
+static int mt6360_is_charger_enable(struct charger_device *chg_dev, bool *en)
+{
+	int ret = 0;
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+
+	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_CTRL2);
+	if (ret < 0)
+		return ret;
+	*en = ((u8)ret & MT6360_MASK_CHG_EN) ? true : false;
+	return 0;
+}
+
 static int mt6360_get_min_ichg(struct charger_device *chg_dev, u32 *uA)
 {
 	*uA = 300000;
@@ -1959,6 +1971,7 @@ static const struct charger_ops mt6360_chg_ops = {
 	.plug_out = mt6360_plug_out,
 	/* enable */
 	.enable = mt6360_enable,
+	.is_enabled = mt6360_is_charger_enable,
 	/* charging current */
 	.set_charging_current = mt6360_set_ichg,
 	.get_charging_current = mt6360_get_ichg,
