@@ -509,6 +509,26 @@ int charger_dev_set_direct_charging_vbusov(struct charger_device *chg_dev,
 }
 EXPORT_SYMBOL(charger_dev_set_direct_charging_vbusov);
 
+int charger_dev_config_mux(struct charger_device *chg_dev,
+	enum mmi_dvchg_mux_channel typec_mos, enum mmi_dvchg_mux_channel wls_mos)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->config_mux)
+		return chg_dev->ops->config_mux(chg_dev, typec_mos, wls_mos);
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_config_mux);
+
+int charger_dev_enable_adc(struct charger_device *chg_dev, bool en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->enable_adc)
+		return chg_dev->ops->enable_adc(chg_dev, en);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_adc);
+
 int charger_dev_set_ibusocp(struct charger_device *chg_dev, u32 uA)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&

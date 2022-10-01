@@ -172,10 +172,6 @@
         #include "bat_setting/austin_batterytable_jk50_scud_5000mah.dtsi"
 };
 
-&mt6360_typec {
-        mt6360pd,intr_gpio_num = <9>;
-        mt6360pd,intr_gpio = <&pio 9 0x0>;
-};
 /*
 &pdc {
         sc_input_current = <3000000>;
@@ -189,6 +185,12 @@
         bootmode = <&chosen>;
 };
 */
+&mt6360_typec {
+	dpm_caps {
+        	/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
+        	dr_check = <2>;
+	};
+};
 &pio {
         bq25960_int_default: bq25960_int_default {
                 pinmux = <PINMUX_GPIO13__FUNC_GPIO13>;
@@ -293,7 +295,7 @@
                 compatible = "mmi,chrg-manager";
                 mmi,pps-volt-steps = <20000>;
                 mmi,pps-curr-steps = <100000>;
-                mmi,pd-volt-max = <12000000>;
+                mmi,pd-volt-max = <11000000>;
                 mmi,pd-curr-max = <6200000>;
                 mmi,batt-curr-boost = <300000>;
                 mmi,batt-ovp-lmt = <4550000>;
@@ -318,12 +320,12 @@
                 };
                 charger_device_1 {
                         chrg-name = "cp-master";
-                        psy-name = "bq25960-master";
+                        psy-name = "cp-master";
                         charging-curr-min = <2500000>;
                 };
                 charger_device_2 {
                         chrg-name = "cp-slave";
-                        psy-name = "bq25960-slave";
+                        psy-name = "cp-slave";
                         charging-curr-min = <3000000>;
                 };
 
