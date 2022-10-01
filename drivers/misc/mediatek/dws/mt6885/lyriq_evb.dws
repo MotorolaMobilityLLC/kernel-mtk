@@ -227,19 +227,19 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_EINT_PIN</varName0>
-                <smt>false</smt>
+                <varName0>GPIO_SC8541_SLAVE_PIN</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio12>
             <gpio13>
-                <eint_mode>false</eint_mode>
+                <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_VENB_PIN</varName0>
-                <smt>false</smt>
+                <varName0>GPIO_SC8541_MASTER_PIN</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio13>
             <gpio14>
