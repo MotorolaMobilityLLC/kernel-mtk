@@ -266,7 +266,7 @@ endif
 
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6885"))
-
+ccflags-y += -DCONFIG_USE_NTC_10k
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
@@ -280,6 +280,10 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_charger2.o
 
+obj-$(CONFIG_THERMAL) += mtk_ts_wtcharger.o
+obj-$(CONFIG_THERMAL) += mtk_ts_btstypc.o
+obj-$(CONFIG_THERMAL) += mtk_ts_bqtherm.o
+obj-$(CONFIG_THERMAL) += mtk_ts_wchgtherm.o
 
 ifneq ($(CONFIG_MTK_COMBO_WIFI),)
     obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
