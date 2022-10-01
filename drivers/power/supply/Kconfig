@@ -288,6 +288,14 @@ config BATTERY_MM8013
 	  Say Yes to enable BATTERY_MM8013 driver.
 	  It is mainly used as battery gauge
 
+config MOTO_PD_HYPER
+        tristate "Moto PD 68W or above hyper charge support"
+        default n
+        depends on IIO
+        help
+          Say Yes to enable.
+          It is mainly used as moto pd 68w.
+
 config CHARGER_AXP20X
 	tristate "X-Powers AXP20X and AXP22X AC power supply driver"
 	depends on MFD_AXP20X

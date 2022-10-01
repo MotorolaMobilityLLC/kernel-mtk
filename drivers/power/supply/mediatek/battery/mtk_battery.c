@@ -614,7 +614,18 @@ static int battery_get_property(struct power_supply *psy,
 #endif
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+#ifdef CONFIG_BATTERY_MM8013
+		ret = mmi_get_prop_from_bms(psp,&prop);
+		if (ret < 0) {
+			pr_err("[%s]Error getting BMS voltage now ret = %d\n", __func__, ret);
+		} else {
+			val->intval = prop.intval;
+		}
+		bm_err("%s event, name:%s voltage now:%d\n", __func__,
+			psy->desc->name, val->intval);
+#else
 		val->intval = battery_get_bat_voltage()* 1000;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = gm.tbat_precise;
