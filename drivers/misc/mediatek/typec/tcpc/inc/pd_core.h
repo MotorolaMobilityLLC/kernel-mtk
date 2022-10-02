@@ -663,6 +663,7 @@
 #define USB_VID_RICHTEK		0x29cf  /* demo uvdm */
 #define USB_VID_DIRECTCHARGE	0x29cf  /* direct charge */
 #define USB_VID_MQP		0x1748
+#define USB_VID_MMI_ADAPTER  0x22b8
 
 /* PD counter definitions */
 #define PD_MESSAGE_ID_COUNT	7
@@ -1027,6 +1028,10 @@ struct pd_port {
 #endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 
 	uint8_t cap_miss_match; /* For src_cap miss match */
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+	uint8_t mmi_adapter_state;
+#endif /* CONFIG_SUPPORT_MMI_ADAPTER */
+	uint8_t pd_vdm_verify_state;
 };
 
 #ifdef CONFIG_USB_PD_ALT_MODE
@@ -1216,7 +1221,7 @@ void pd_lock_msg_output(struct pd_port *pd_port);
 void pd_unlock_msg_output(struct pd_port *pd_port);
 
 int pd_update_connect_state(struct pd_port *pd_port, uint8_t state);
-
+int pd_update_vdm_verify_state(struct pd_port *pd_port, uint8_t state);
 /* ---- PD notify TCPC Policy Engine State Changed ---- */
 
 extern void pd_try_put_pe_idle_event(struct pd_port *pd_port);

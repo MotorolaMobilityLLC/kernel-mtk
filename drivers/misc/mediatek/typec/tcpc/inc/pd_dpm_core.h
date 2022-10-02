@@ -315,7 +315,16 @@ extern bool dc_reset_state(struct pd_port *pd_port,
 extern bool dc_parse_svid_data(struct pd_port *pd_port,
 			struct svdm_svid_data *svid_data);
 #endif /* CONFIG_USB_PD_ALT_MODE_RTDC */
-
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+extern bool mmi_dfp_u_notify_discover_svid(
+	struct pd_port *pd_port, struct svdm_svid_data *svid_data, bool ack);
+extern bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
+		struct svdm_svid_data *svid_data, bool ack);
+extern int mmi_notify_pe_ready(struct pd_port *pd_port,
+		struct svdm_svid_data *svid_data);
+extern bool mmi_dfp_notify_pe_startup(
+	struct pd_port *pd_port, struct svdm_svid_data *svid_data);
+#endif /* CONFIG_SUPPORT_MMI_ADAPTER */
 
 /**
  * pd_dpm_get_ready_reaction
