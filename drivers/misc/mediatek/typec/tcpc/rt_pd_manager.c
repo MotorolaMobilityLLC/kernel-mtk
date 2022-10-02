@@ -376,6 +376,13 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		dev_info(rpmd->dev, "%s cable type = %d\n",
 				    __func__, noti->cable_type.type);
 		break;
+	case TCP_NOTIFY_PD_VDM_VERIFY:
+		dev_info(rpmd->dev, "%s mmi pd vdm verify state = %d\n",
+					__func__, noti->pd_state.vdm_verify);
+//		val.intval = noti->pd_state.vdm_verify;
+//		mmi_set_psy_iio_property(rpmd,
+//				POWER_SUPPLY_IIO_MMI_PD_VDM_VERIFY, &val);
+		break;
 	default:
 		break;
 	};
