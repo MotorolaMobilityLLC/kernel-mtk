@@ -139,7 +139,7 @@ int tcpci_notify_typec_state(struct tcpc_device *tcpc);
 int tcpci_notify_role_swap(
 	struct tcpc_device *tcpc, uint8_t event, uint8_t role);
 int tcpci_notify_pd_state(struct tcpc_device *tcpc, uint8_t connect);
-
+int tcpci_notify_pd_vdm_verify(struct tcpc_device *tcpc, uint8_t vdm_verify);
 int tcpci_set_intrst(struct tcpc_device *tcpc, bool en);
 int tcpci_enable_watchdog(struct tcpc_device *tcpc, bool en);
 

@@ -1350,7 +1350,17 @@ int pd_update_connect_state(struct pd_port *pd_port, uint8_t state)
 	PE_INFO("pd_state=%d\n", state);
 	return tcpci_notify_pd_state(tcpc, state);
 }
+int pd_update_vdm_verify_state(struct pd_port *pd_port, uint8_t state)
+{
+	struct tcpc_device __maybe_unused *tcpc = pd_port->tcpc;
 
+	if (pd_port->pd_vdm_verify_state == state)
+		return 0;
+
+	pd_port->pd_vdm_verify_state = state;
+	PE_INFO("pd_vdm_verify_state=%d\n", state);
+	return tcpci_notify_pd_vdm_verify(tcpc, state);
+}
 #ifdef CONFIG_USB_PD_REV30
 
 /*
