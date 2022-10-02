@@ -500,7 +500,16 @@ int tcpci_notify_pd_state(struct tcpc_device *tcpc, uint8_t connect)
 		TCP_NOTIFY_IDX_USB, TCP_NOTIFY_PD_STATE);
 	return ret;
 }
+int tcpci_notify_pd_vdm_verify(struct tcpc_device *tcpc, uint8_t vdm_verify)
+{
+	struct tcp_notify tcp_noti;
+	int ret;
 
+	tcp_noti.pd_state.vdm_verify = vdm_verify;
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_USB, TCP_NOTIFY_PD_VDM_VERIFY);
+	return ret;
+}
 int tcpci_set_intrst(struct tcpc_device *tcpc, bool en)
 {
 #ifdef CONFIG_TCPC_INTRST_EN
