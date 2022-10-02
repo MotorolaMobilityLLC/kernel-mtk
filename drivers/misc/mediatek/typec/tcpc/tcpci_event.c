@@ -1019,7 +1019,7 @@ void pd_notify_pe_idle(struct pd_port *pd_port)
 	mutex_unlock(&tcpc->access_lock);
 
 	pd_update_connect_state(pd_port, PD_CONNECT_NONE);
-
+	pd_update_vdm_verify_state(pd_port, false);
 	if (notify_pe_idle)
 		tcpc_enable_timer(tcpc, TYPEC_RT_TIMER_PE_IDLE);
 }
