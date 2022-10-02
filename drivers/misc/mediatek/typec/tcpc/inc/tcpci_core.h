@@ -25,7 +25,13 @@
 #include <linux/power_supply.h>
 #endif /* CONFIG_USB_PD_WAIT_BC12 */
 #endif
-
+#define MMI_DBG_ENABLE	1
+#if MMI_DBG_ENABLE
+#define MMI_INFO(format, args...)	\
+	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "MMI> " format, ##args)
+#else
+#define MMI_INFO(format, args...)
+#endif
 /* The switch of log message */
 #define TYPEC_INFO_ENABLE	1
 #define TYPEC_INFO2_ENABLE	1

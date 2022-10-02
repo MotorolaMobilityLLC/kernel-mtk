@@ -83,6 +83,16 @@ static const struct svdm_svid_ops svdm_svid_ops[] = {
 		.reset_state = dc_reset_state,
 	},
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+	{
+		.name = "mmi adapter",
+		.svid = USB_VID_MMI_ADAPTER,
+		.notify_pe_startup = mmi_dfp_notify_pe_startup,
+		.dfp_inform_svids = mmi_dfp_u_notify_discover_svid,
+		.dfp_notify_uvdm = mmi_dfp_notify_uvdm,
+		.notify_pe_ready = mmi_notify_pe_ready,
+	},
+#endif /* CONFIG_SUPPORT_MMI_ADAPTER */
 };
 
 int dpm_check_supported_modes(void)
