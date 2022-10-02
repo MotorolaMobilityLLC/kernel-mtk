@@ -1194,7 +1194,22 @@ static inline int mm8xxx_write(struct mm8xxx_device_info *di, int cmd_index,
 
  static int mm8xxx_battery_temp(struct mm8xxx_device_info *di, int *temp)
 {
+#if 1
+	int rc;
+	union power_supply_propval prop = {0};
+
+	if (di->batt_psy == NULL || IS_ERR(di->batt_psy)) {
+		dev_err(di->dev,"%s Couldn't get bms\n", __func__);
+		return -EINVAL;
+	}
+
+	rc = power_supply_get_property(di->batt_psy, POWER_SUPPLY_PROP_TEMP, &prop);
+	*temp = prop.intval*100;
+
+	return rc;
+#else
 	return iio_read_channel_processed(di->Batt_NTC_channel, temp);
+#endif
 }
 
 static int mm8xxx_battery_temp_to_FG(struct mm8xxx_device_info *di)
