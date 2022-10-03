@@ -2412,6 +2412,7 @@
       <elf-symbol name='extcon_get_edev_name' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd181b439'/>
       <elf-symbol name='extcon_get_extcon_dev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x607135f8'/>
       <elf-symbol name='extcon_get_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6484e95a'/>
+      <elf-symbol name='extcon_get_property_capability' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x73d7994b'/>
       <elf-symbol name='extcon_get_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa13f3b8f'/>
       <elf-symbol name='extcon_register_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7af8e0d5'/>
       <elf-symbol name='extcon_set_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc6a03612'/>
@@ -137066,6 +137067,12 @@
         <parameter type-id='f0981eeb' name='id' filepath='drivers/extcon/extcon.c' line='615' column='1'/>
         <parameter type-id='f0981eeb' name='prop' filepath='drivers/extcon/extcon.c' line='616' column='1'/>
         <parameter type-id='50842338' name='prop_val' filepath='drivers/extcon/extcon.c' line='617' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='extcon_get_property_capability' mangled-name='extcon_get_property_capability' filepath='drivers/extcon/extcon.c' line='782' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='extcon_get_property_capability'>
+        <parameter type-id='c0d6fada' name='edev' filepath='drivers/extcon/extcon.c' line='782' column='1'/>
+        <parameter type-id='f0981eeb' name='id' filepath='drivers/extcon/extcon.c' line='782' column='1'/>
+        <parameter type-id='f0981eeb' name='prop' filepath='drivers/extcon/extcon.c' line='783' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='extcon_get_state' mangled-name='extcon_get_state' filepath='drivers/extcon/extcon.c' line='489' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='extcon_get_state'>
