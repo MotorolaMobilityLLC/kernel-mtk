@@ -1351,7 +1351,7 @@ static int bq2589x_run_aicl(struct charger_device *chg_dev, u32 *uA)
 				ret = bq2589x_read_byte(bq, &status, BQ2589X_REG_13);
 				if (!ret) {
 					*uA = ((status & BQ2589X_IDPM_LIM_MASK))
-						* BQ2589X_IDPM_LIM_LSB
+						* BQ2589X_IDPM_LIM_LSB * 1000
 						+ BQ2589X_IDPM_LIM_BASE * 1000;
 					dev_info(bq->dev, "%s:ICO done, result is:%d uA\n",
 							__func__, *uA);
@@ -1426,13 +1426,13 @@ static int bq2589x_init_device(struct bq2589x *bq)
 		bq->cfg.use_absolute_vindpm = true;
 	bq2589x_use_absolute_vindpm(bq, bq->cfg.use_absolute_vindpm);
 
-
+/* reg01 bit0:0-1  the method logic is incorrect.
 	ret = bq2589x_set_vindpm_offset(bq, 600);
 	if (ret < 0) {
 		dev_info(bq->dev, "%s:Failed to set vindpm offset:%d\n", __func__, ret);
 		return ret;
 	}
-
+*/
 	ret = bq2589x_set_term_current(bq, bq->cfg.term_current);
 	if (ret < 0) {
 		dev_info(bq->dev, "%s:Failed to set termination current:%d\n", __func__, ret);
