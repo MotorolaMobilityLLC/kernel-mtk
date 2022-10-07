@@ -28,3 +28,8 @@
 	};
 //-IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
 };
+
+&charger {
+	/* PE */
+	/delete-property/ ta_12v_support;
+};
