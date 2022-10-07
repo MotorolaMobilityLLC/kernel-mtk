@@ -163,6 +163,11 @@ config CHARGER_RT9759
 	  direct charge
 	  It depends on config MTK_CHARGER
 
+config MOTO_CHG_PEONEPLUS_SUPPORT
+	bool "geneva project customer support"
+	help
+	  Say Y here to enable support of geneva project
+
 config RT_PROP_CHGALGO
 	bool "Richtek Proprietary Charging Algorithm"
 	help
