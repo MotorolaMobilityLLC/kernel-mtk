@@ -532,7 +532,7 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 					info->chg1_data.input_current_limit);
 		chr_err("In meta mode, disable charging and set input current limit to 200mA\n");
 	} else {
-		#ifdef MTK_BASE
+		#if defined(MTK_BASE) || defined(CONFIG_MOTO_CHG_PEONEPLUS_SUPPORT)
 		mtk_pe20_start_algorithm(info);
 		if (mtk_pe20_get_is_connect(info) == false)
 			mtk_pe_start_algorithm(info);
