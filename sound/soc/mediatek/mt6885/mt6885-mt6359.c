@@ -49,6 +49,21 @@ static int cirrus_prince_devs = 4;
 static struct snd_soc_codec_conf *mt_prince_codec_conf;
 #endif
 
+#ifdef CONFIG_SND_SOC_AW882XX
+static struct snd_soc_dai_link_component awinic_codecs[] = {
+	{
+		.name = "aw882xx_smartpa.6-0035",
+		.of_node = NULL,
+		.dai_name = "aw882xx-aif-6-35",
+	},
+	{
+		.name = "aw882xx_smartpa.6-0034",
+		.of_node = NULL,
+		.dai_name = "aw882xx-aif-6-34",
+	},
+};
+#endif
+
 static const char *const mt6885_spk_type_str[] = {MTK_SPK_NOT_SMARTPA_STR,
 						  MTK_SPK_RICHTEK_RT5509_STR,
 						  MTK_SPK_MEDIATEK_MT6660_STR,
@@ -805,8 +820,13 @@ static struct snd_soc_dai_link mt6885_mt6359_dai_links[] = {
 	{
 		.name = "I2S3",
 		.cpu_dai_name = "I2S3",
+#ifdef CONFIG_SND_SOC_AW882XX
+		.codecs = awinic_codecs,
+		.num_codecs = ARRAY_SIZE(awinic_codecs),
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.ignore_suspend = 1,
