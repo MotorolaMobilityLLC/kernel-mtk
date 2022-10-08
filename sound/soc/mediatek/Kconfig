@@ -467,3 +467,9 @@ config SND_SOC_FS16XX
 	depends on I2C
 	help
 	  FourSemi Smart Amplifier Driver.
+
+config SND_SOC_AW882XX
+	tristate "Support aw882xx"
+	depends on I2C
+	help
+	  AW88261 Smart Amplifier Driver.
