@@ -1,0 +1,50 @@
+&sound {
+    compatible = "mediatek,mt6885-mt6359-sound";
+    mediatek,audio-codec = <&mt6359_snd>;
+    mediatek,platform = <&afe>;
+    mediatek,snd_audio_dsp = <&snd_audio_dsp>;
+    mtk_spk_i2s_out = <3>;
+    mtk_spk_i2s_in = <0>;
+    /* mtk_spk_i2s_mck = <3>; */
+    mediatek,speaker-codec {
+        sound-dai = <&aw882xx_smartpa_0 &aw882xx_smartpa_1>;
+    };
+};
+
+
+&i2c6 {
+    speaker_amp: speaker_amp@34 {
+        compatible = "mediatek,speaker_amp";
+        #sound-dai-cells = <0>;
+        reg = <0x34>;
+        status = "disable";
+    };
+
+    aw882xx_smartpa_0: aw882xx@35 {
+        compatible = "awinic,aw882xx_smartpa";
+        #sound-dai-cells = <0>;
+        reg = <0x35>;
+        irq-gpio = <&pio 109 0x0>;
+        sound-channel = <0>;
+        status = "okay";
+    };
+
+    aw882xx_smartpa_1: aw882xx@34 {
+        compatible = "awinic,aw882xx_smartpa";
+        #sound-dai-cells = <0>;
+        reg = <0x34>;
+        irq-gpio = <&pio 31 0x0>;
+        sound-channel = <1>;
+        status = "okay";
+    };
+
+};
+
+&i2c9 {
+    fsa4480_switch: fsa4480@42 {
+        compatible = "fsa,fsa4480-i2c";
+        reg = <0x42>;
+        status = "okay";
+    };
+};
+
