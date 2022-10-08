@@ -1448,6 +1448,12 @@ config SND_SOC_SMARTPAINFO
 
 source "sound/soc/codecs/cs35l43/Kconfig"
 
+config SND_SOC_AW882XX_KERNEL
+	tristate "Support aw882xx kernel driver"
+	depends on I2C
+	help
+	    Aw882xx Smart Amplifier Driver
+
 config SND_SOC_FS16XX_KERNEL
 	tristate "Support fs16xx/fs16xx kernel driver"
 	depends on I2C
