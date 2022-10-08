@@ -41,6 +41,7 @@ struct adsp_exception_control {
 	size_t buf_size;
 
 	struct mutex lock;
+	struct mutex buffer_lock;
 	struct workqueue_struct *workq;
 	struct wait_queue_head *waitq;
 	struct work_struct aed_work;
