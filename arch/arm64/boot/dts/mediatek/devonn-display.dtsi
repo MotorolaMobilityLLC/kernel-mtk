@@ -137,6 +137,7 @@
 		pm-enable-gpios = <&pio 161 0>;
 		reset-gpios = <&pio 95 0>;
 		rc-enable = <1>;
+		hs-tx-vol-flag = <0xa>;// value 6 ~ d
 		pinctrl-names = "default";
 		port {
 			panel_in2: endpoint {
