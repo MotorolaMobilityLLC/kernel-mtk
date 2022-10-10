@@ -124,6 +124,12 @@
         cd-gpios = <&pio 18 GPIO_ACTIVE_HIGH>;
 };
 
+&u2port0{
+	mediatek,eye-vrt = <7>;
+	mediatek,eye-term = <3>;
+	mediatek,eye-rev6 = <3>;
+};
+
 &mrdump_ext_rst {
         force_mode = "EINT";
 };
