@@ -23,6 +23,7 @@
 #define BRIGHTNESS_HBM_ON_SKIP_BL	(BRIGHTNESS_HBM_ON - 2)
 #define HBM_BRIGHTNESS(value) ((value) == 0 ? BRIGHTNESS_HBM_OFF : BRIGHTNESS_HBM_ON)
 
+static unsigned int hs_tx_flag_value = 0xd;
 struct mtk_dsi;
 struct cmdq_pkt;
 struct mtk_panel_para_table {
