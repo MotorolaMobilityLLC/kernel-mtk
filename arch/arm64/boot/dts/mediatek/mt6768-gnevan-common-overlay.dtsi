@@ -79,11 +79,12 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-                max-brightness = <2047>;
+		max-brightness = <2047>;
 		led_mode = <4>;
 		data = <1>;
 		pwm_config = <0 3 0 0 0>;
 	};
+/*
 	gpio-leds {
 		compatible = "gpio-leds";
 		status = "okay";
@@ -95,6 +96,7 @@
 		        retain-state-suspended;
 		};
 	};
+*/
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
@@ -120,6 +122,14 @@
 
 &mrdump_ext_rst {
         force_mode = "EINT";
+};
+
+&i2c0 {
+	i2c_lcd_bias@3e {
+                compatible = "mediatek,i2c_lcd_bias";
+                reg = <0x3e>;
+                status = "okay";
+        };
 };
 
 &i2c2 {
@@ -389,35 +399,35 @@
 		};
 	};
 
-	mtkfb_pins_lcm_vddi_out1_gpio: lcm_vddi_out1_gpio {
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_vddi_out0_gpio: lcm_vddi_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+			pinmux = <PINMUX_GPIO20__FUNC_GPIO20>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 
-	mtkfb_pins_lcm_vci_out1_gpio: lcm_vci_out1_gpio {
+	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			pinmux = <PINMUX_GPIO20__FUNC_GPIO20>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 
-	mtkfb_pins_lcm_vci_out0_gpio: lcm_vci_out0_gpio {
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
 			slew-rate = <1>;
 			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-high;
 		};
 	};
 
@@ -426,21 +436,24 @@
 			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
 		};
 	};
+
+	mtkfb_pins_default: dispdefault {
+	};
 };
 
 &mtkfb {
 	pinctrl-names =
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"lcm_vddi_out1_gpio", "lcm_vddi_out0_gpio",
-		"lcm_vci_out1_gpio", "lcm_vci_out0_gpio",
-		"mode_te_te";
+		"mode_te_te",
+		"lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio",
+		"lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
 	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
 	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-2 = <&mtkfb_pins_lcm_vddi_out1_gpio>;
-	pinctrl-3 = <&mtkfb_pins_lcm_vddi_out0_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_vci_out1_gpio>;
-	pinctrl-5 = <&mtkfb_pins_lcm_vci_out0_gpio>;
-	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-3 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn1>;
 	status = "okay";
 };
 
