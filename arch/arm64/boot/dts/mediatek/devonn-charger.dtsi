@@ -19,6 +19,7 @@
 
 	/* sw jeita */
 	enable_vbat_mon = <0>;
+	disable_aicl;
 
 	/*pe4 && pdc && pe2*/
 	fast_charging_indicator = <0x0E>;
