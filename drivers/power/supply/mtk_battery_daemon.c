@@ -2715,7 +2715,8 @@ static void mtk_battery_daemon_handler(struct mtk_battery *gm, void *nl_data,
 		/* todo */
 		int is_charger_exist = 0;
 
-		if (gm->bs_data.bat_status == POWER_SUPPLY_STATUS_CHARGING)
+		if (gm->bs_data.bat_status == POWER_SUPPLY_STATUS_CHARGING ||
+			gm->bs_data.bat_status == POWER_SUPPLY_STATUS_FULL)
 			is_charger_exist = true;
 		else
 			is_charger_exist = false;
