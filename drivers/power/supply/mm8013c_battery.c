@@ -1498,7 +1498,7 @@ static bool is_input_present(struct mm8xxx_device_info *di)
 		di->usb_psy = power_supply_get_by_name("usb");
 	if (di->usb_psy) {
 		rc = power_supply_get_property(di->usb_psy,
-				POWER_SUPPLY_PROP_PRESENT, &pval);
+				POWER_SUPPLY_PROP_ONLINE, &pval);
 		if (rc < 0)
 			pr_err("Couldn't read USB Present status, rc=%d\n", rc);
 		else
@@ -1506,10 +1506,10 @@ static bool is_input_present(struct mm8xxx_device_info *di)
 	}
 
 	if (!di->dc_psy)
-		di->dc_psy = power_supply_get_by_name("dc");
+		di->dc_psy = power_supply_get_by_name("ac");
 	if (di->dc_psy) {
 		rc = power_supply_get_property(di->dc_psy,
-				POWER_SUPPLY_PROP_PRESENT, &pval);
+				POWER_SUPPLY_PROP_ONLINE, &pval);
 		if (rc < 0)
 			pr_err("Couldn't read DC Present status, rc=%d\n", rc);
 		else
