@@ -1334,6 +1334,21 @@ static int bq2589x_run_aicl(struct charger_device *chg_dev, u32 *uA)
 	return ret;
 }
 
+static int bq2589x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	int ret = 0;
+	struct bq2589x *bq = charger_get_data(chg_dev);
+	ret = bq2589x_adc_read_vbus_volt(bq);
+	if (ret < 0) {
+		dev_err(bq->dev, "%s:bq2589x_adc_read_vbus_volt failed:%d\n", __func__, ret);
+		return ret;
+	}
+
+	*vbus = (u32)(ret * 1000);
+	pr_info("%s: vbus = %d , mv = %d \n", __func__,*vbus, ret);
+	return 0;
+}
+
 static int bq2589x_init_device(struct bq2589x *bq)
 {
 	int ret;
@@ -2013,6 +2028,9 @@ static struct charger_ops bq2589x_chg_ops = {
 	/* Power path */
 	.enable_powerpath = NULL,
 	.is_powerpath_enabled = NULL,
+
+	/* ADC */
+	.get_vbus_adc = bq2589x_get_vbus,
 
 	/* OTG */
 	.enable_otg = bq2589x_set_otg,
