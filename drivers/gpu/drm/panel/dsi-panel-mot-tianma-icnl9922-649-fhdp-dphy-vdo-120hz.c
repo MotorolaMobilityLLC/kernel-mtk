@@ -799,6 +799,10 @@ static int tianma_probe(struct mipi_dsi_device *dsi)
 
 	mipi_dsi_set_drvdata(dsi, ctx);
 
+        ret = of_property_read_u32(dev->of_node, "hs-tx-vol-flag", &hs_tx_flag_value);
+        if (ret < 0)
+                hs_tx_flag_value = 0xd;
+
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
