@@ -136,8 +136,8 @@ static int initAF(void)
 	u8 gt6764_init_setting[4][2] = {
 					{0x02, 0x00},
 					{0x02, 0x02},
-					{0x06, 0xC0}, //SAC setting
-					{0x07, 0x02}};
+					{0x06, 0x40}, //SAC setting (use AAC2)
+					{0x07, 0x08}};
 	u16 regIdx;
 
 	LOG_INF("+\n");
