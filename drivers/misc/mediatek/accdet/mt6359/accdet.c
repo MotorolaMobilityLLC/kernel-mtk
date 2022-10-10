@@ -40,6 +40,12 @@
 #include "pmic_auxadc.h"
 #endif /* end of #if PMIC_ACCDET_KERNEL */
 
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+#include "tcpci_core.h"
+#include "tcpm.h"
+#include "fsa4480-i2c.h"
+#endif
+
 /********************grobal variable definitions******************/
 #if PMIC_ACCDET_CTP
 #define CONFIG_ACCDET_EINT_IRQ
@@ -82,6 +88,16 @@ enum pmic_eint_ID {
 };
 #endif
 
+
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+struct accdet_typec_manager {
+        const char      *name;
+        struct device   *dev;
+        struct tcpc_device *tcpc;
+        struct notifier_block tcp_nb;
+};
+#endif
+
 /* accdet_status_str: to record current 'accdet_status' by string,
  * mapping to  'enum accdet_status'
  */
@@ -104,6 +120,10 @@ static char *accdet_report_str[] = {
 	"Headset_five_pole",
 	"Line_out_device"
 };
+
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+static struct accdet_typec_manager *accdet_typec;
+#endif
 
 /* accdet char device & class & device */
 static dev_t accdet_devno;
@@ -1954,10 +1974,46 @@ static inline void check_cable_type(void)
 			} else {
 				pr_info("accdet headset has been plug-out\n");
 			}
+			#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+			if (cable_type == HEADSET_NO_MIC) {
+				pr_err(" accdet->cable_type is headphone,switch fsa4480 mic and gnd\n");
+				fsa4480_switch_event(FSA_MIC_GND_SWAP);
+				msleep(200);
+				cur_AB = pmic_read(PMIC_ACCDET_MEM_IN_ADDR) >> ACCDET_STATE_MEM_IN_OFFSET;
+				cur_AB = cur_AB & ACCDET_STATE_AB_MASK;
+				if (cur_AB == ACCDET_STATE_AB_01) {
+					accdet_status = MIC_BIAS;
+					cable_type = HEADSET_MIC;
+				}
+			}
+
+			if (cable_type == HEADSET_NO_MIC) {
+				mutex_unlock(&accdet_eint_irq_sync_mutex);
+				/* for IOT HP */
+				accdet_set_debounce(eint_state011,
+					accdet_dts.pwm_deb.eint_debounce3);
+			} else if (cable_type == HEADSET_MIC) {
+				mutex_unlock(&accdet_eint_irq_sync_mutex);
+				/* solution: adjust hook switch debounce time
+				* for fast key press condition, avoid to miss key
+				*/
+				accdet_set_debounce(accdet_state000,
+					button_press_debounce);
+
+				/* adjust debounce1 to original 0x800(64ms),
+				* to fix miss key issue when fast press double key.
+				*/
+				accdet_set_debounce(accdet_state001,
+					button_press_debounce_01);
+				/* for IOT HP */
+				accdet_set_debounce(eint_state011, 0x1);
+			}
+                        #else
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
 			/* wk, for IOT HP */
 			accdet_set_debounce(eint_state011,
 				accdet_dts.pwm_deb.eint_debounce3);
+			#endif
 		} else if (cur_AB == ACCDET_STATE_AB_01) {
 			mutex_lock(&accdet_eint_irq_sync_mutex);
 			if (eint_accdet_sync_flag) {
@@ -2430,6 +2486,24 @@ static void accdet_eint_handler(void)
 {
 	accdet_irq_handle();
 	pr_info("%s() exit\n", __func__);
+}
+#endif
+
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+static void typec_headset_handler(void)
+{
+        if (cur_eint_state == EINT_PIN_PLUG_IN) {
+                cur_eint_state = EINT_PIN_PLUG_OUT;
+        } else {
+                cur_eint_state = EINT_PIN_PLUG_IN;
+                if (accdet_dts.moisture_detect_mode != 0x5) {
+                        mod_timer(&micbias_timer,
+                                jiffies + MICBIAS_DISABLE_TIMER);
+                }
+
+        }
+
+        queue_work(eint_workqueue, &eint_work);
 }
 #endif
 
@@ -3175,6 +3249,64 @@ static inline void accdet_init(void)
 	pr_info("%s() done.\n", __func__);
 }
 
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+static int accdet_tcp_notifier_call(struct notifier_block *nb,
+                                unsigned long event, void *data)
+{
+
+        struct tcp_notify *noti = data;
+        uint8_t old_state = TYPEC_UNATTACHED, new_state = TYPEC_UNATTACHED;
+
+        switch (event) {
+        case TCP_NOTIFY_TYPEC_STATE:
+                old_state = noti->typec_state.old_state;
+                new_state = noti->typec_state.new_state;
+
+                if (old_state == TYPEC_UNATTACHED &&
+                           new_state == TYPEC_ATTACHED_AUDIO) {
+                        /* enable AudioAccessory connection */
+                        pr_err(" fsa4480 enable AudioAccessory connection\n");
+                        fsa4480_switch_event(FSA_TYPEC_ACCESSORY_AUDIO);
+                        msleep(300);
+                        typec_headset_handler();
+                } else if (old_state == TYPEC_ATTACHED_AUDIO &&
+                           new_state == TYPEC_UNATTACHED) {
+                        /* disable AudioAccessory connection */
+                        pr_err("fsa4480 disable AudioAccessory connection\n");
+                        typec_headset_handler();
+                        msleep(300);
+                        fsa4480_switch_event(FSA_TYPEC_ACCESSORY_NONE);
+                }
+        default:
+                break;
+        };
+        return NOTIFY_OK;
+}
+
+static int init_accdet_tcpc(struct accdet_typec_manager *chip)
+{
+        int ret = 0;
+
+        if (!chip->tcpc) {
+                chip->tcpc = tcpc_dev_get_by_name("type_c_port0");
+                if (!chip->tcpc) {
+                        pr_err("fsa4480 get tcpc dev fail\n");
+                        return -ENODEV;
+                }
+        }
+        /* register tcp notifier callback */
+        chip->tcp_nb.notifier_call = accdet_tcp_notifier_call;
+        ret = register_tcp_dev_notifier(chip->tcpc, &chip->tcp_nb,
+                                        TCP_NOTIFY_TYPE_ALL);
+        if (ret < 0) {
+                pr_err("fas4480 register tcpc notifier fail\n");
+                return ret;
+        }
+
+        return 0;
+}
+#endif
+
 /* late init for DC trim, and this API  Will be called by audio */
 void accdet_late_init(unsigned long data)
 {
@@ -3194,9 +3326,20 @@ void accdet_late_init(unsigned long data)
 			accdet_init_debounce();
 			/* just need run once */
 			accdet_init_once();
+#if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+			init_accdet_tcpc(accdet_typec);
+#endif
 		} else
 			pr_info("%s inited dts fail\n", __func__);
 	}
+        #if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+        if (tcpm_inquire_typec_attach_state(accdet_typec->tcpc) == TYPEC_ATTACHED_AUDIO) {
+                fsa4480_switch_event(FSA_TYPEC_ACCESSORY_AUDIO);
+                msleep(300);
+                typec_headset_handler();
+        }
+        #endif
+
 }
 
 void accdet_modify_vref_volt(void)
@@ -3442,6 +3585,15 @@ int mt_accdet_probe(struct platform_device *dev)
 	pmic_enable_interrupt(INT_ACCDET_EINT1, 1, "ACCDET_EINT1");
 #endif
 #endif
+
+        #if IS_ENABLED(CONFIG_TYPEC_FSA4480)
+        accdet_typec = devm_kzalloc(accdet_device, sizeof(struct accdet_typec_manager),
+                                                                GFP_KERNEL);
+        accdet_typec->dev = accdet_device;
+        accdet_typec->name = "accdet_typec_manager";
+        //init_accdet_tcpc(accdet_typec);
+        #endif
+
 	pr_info("%s done!\n", __func__);
 	return 0;
 

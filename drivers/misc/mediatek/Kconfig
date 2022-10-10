@@ -541,6 +541,10 @@ config MTK_MT6382_BDG
 	  Normal project will disable it first
 	  If you are not sure about this, do not set it to y
 
+config TYPEC_FSA4480
+        tristate "fsa4480 for typec analog headset"
+        depends on I2C
+
 source "drivers/misc/mediatek/met_drv/Kconfig"
 source "drivers/misc/mediatek/mtprof/Kconfig"
 source "drivers/misc/mediatek/aee/Kconfig"

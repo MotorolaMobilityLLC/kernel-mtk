@@ -30,6 +30,7 @@ obj-$(CONFIG_MTK_POWER_THROTTLING_COMMON) += power_throttling/
 endif
 
 obj-$(CONFIG_MTK_RTC)	+= rtc/
+obj-$(CONFIG_TYPEC_FSA4480) += fsa4480/
 obj-$(CONFIG_MTK_ACCDET) += accdet/
 obj-$(CONFIG_MTK_AUXADC) += auxadc/
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
