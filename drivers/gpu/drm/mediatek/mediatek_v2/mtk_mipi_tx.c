@@ -2294,7 +2294,7 @@ static int mtk_mipi_tx_pll_cphy_prepare_mt6855(struct clk_hw *hw)
 	}
 	/*set volate: cphy need 500mV*/
 	mtk_mipi_tx_update_bits(mipi_tx, MIPITX_VOLTAGE_SEL,
-		FLD_RG_DSI_HSTX_LDO_REF_SEL, 0xD << 6);
+		FLD_RG_DSI_HSTX_LDO_REF_SEL, hs_tx_flag_value << 6);
 
 	/* change the mipi_volt */
 	if (mipi_volt) {
