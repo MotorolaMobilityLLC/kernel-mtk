@@ -274,6 +274,8 @@ struct mtk_panel_params {
 	//Settings for LFR Function:
 	unsigned int lfr_enable;
 	unsigned int lfr_minimum_fps;
+
+	unsigned int change_fps_by_vfp_send_cmd;
 };
 
 struct mtk_panel_ext {
