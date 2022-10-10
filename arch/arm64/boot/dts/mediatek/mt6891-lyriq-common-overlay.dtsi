@@ -7,6 +7,7 @@
 /plugin/;
 
 #include "mt6891-moto-common-overlay.dtsi"
+#include "mt6891-lyriq-audio-overlay.dtsi"
 
 &reserved_memory {
 };
