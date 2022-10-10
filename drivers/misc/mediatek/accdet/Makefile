@@ -8,6 +8,11 @@ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6359)+= -I$(srctree)/drivers/misc/mediat
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6359P)+= -I$(srctree)/drivers/misc/mediatek/accdet/mt6359
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6390)+= -I$(srctree)/drivers/misc/mediatek/accdet/mt6357
 
+ifneq ($(CONFIG_TYPEC_FSA4480),)
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/fsa4480
+endif
+
 obj-$(CONFIG_MTK_ACCDET) := accdet_drv.o
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6357) += mt6357/
