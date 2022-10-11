@@ -1,0 +1,91 @@
+/* Copyright (c) 2021, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&mt6368_vio28 {
+	regulator-name = "mt6368_vio28";
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-enable-ramp-delay = <1920>;
+};
+
+&pio {
+	pen_int_default: pen_int_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO63__FUNC_GPIO63>, <PINMUX_GPIO64__FUNC_GPIO64>;
+			drive-strength = <2>;
+			input-enable;
+		};
+	};
+	pen_int_sleep: pen_int_sleep {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO63__FUNC_GPIO63>, <PINMUX_GPIO64__FUNC_GPIO64>;
+			drive-strength = <2>;
+			input-enable;
+		};
+	};
+	folio_int_default: folio_int_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>, <PINMUX_GPIO33__FUNC_GPIO33>;
+			drive-strength = <2>;
+			input-enable;
+		};
+	};
+	folio_int_sleep: folio_int_sleep {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO32__FUNC_GPIO32>, <PINMUX_GPIO33__FUNC_GPIO33>;
+			drive-strength = <2>;
+			input-enable;
+		};
+	};
+};
+
+&odm {
+	hall_pen_detect{
+		status = "okay";
+		compatible = "hall,hall_pen_detect";
+		pinctrl-names = "default","sleep";
+		pinctrl-0 = <&pen_int_default>;
+		pinctrl-1 = <&pen_int_sleep>;
+		hall,factory-class-name = "hall_1";
+		hall,input-dev-name = "pen_hall_effect_sensor";
+		hall_vdd-supply = <&mt6363_vio18>;
+		hall,nirq-gpio-num = <2>;
+		hall,nirq-gpio_0 = <&pio 63 0x02>;
+		hall,nirq-gpio-high-val_0 = <0>;
+		hall,nirq-gpio-low-val_0 = <1>;
+		hall,nirq-gpio_1 = <&pio 64 0x02>;
+		hall,nirq-gpio-high-val_1 = <0>;
+		hall,nirq-gpio-low-val_1 = <2>;
+	};
+};
+
+&odm {
+	hall_folio_detect{
+		status = "okay";
+		compatible = "hall,hall_folio_detect";
+		pinctrl-names = "default","sleep";
+		pinctrl-0 = <&folio_int_default>;
+		pinctrl-1 = <&folio_int_sleep>;
+		hall,factory-class-name = "hall_0";
+		hall,input-dev-name = "folio_hall_effect_sensor";
+		hall_vdd-supply = <&mt6363_vio18>;
+		hall,nirq-gpio-num = <2>;
+		hall,nirq-gpio_0 = <&pio 32 0x02>;
+		hall,nirq-gpio-high-val_0 = <0>;
+		hall,nirq-gpio-low-val_0 = <1>;
+		hall,nirq-gpio_1 = <&pio 33 0x02>;
+		hall,nirq-gpio-high-val_1 = <0>;
+		hall,nirq-gpio-low-val_1 = <2>;
+	};
+};
+
+

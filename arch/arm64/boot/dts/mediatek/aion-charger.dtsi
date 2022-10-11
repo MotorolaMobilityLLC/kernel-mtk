@@ -1,0 +1,321 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&lk_charger {
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <1000000>;
+	ac_charger_input_current = <1500000>;
+	non_std_ac_charger_current = <1000000>;
+	charging_host_input_current = <1500000>;
+	charging_host_charger_current = <1000000>;
+
+	temp_t4_threshold = <60>;
+};
+
+&mtk_gauge {
+	DIFFERENCE_FULLOCV_ITH = <(850)>;
+	R_FG_VALUE = <(5)>;
+	CURR_MEASURE_20A = <(0)>;
+	UNIT_MULTIPLE = <(1)>;
+	EMBEDDED_SEL = <(1)>;   /* embedded battery*/
+	COM_FG_METER_RESISTANCE = <(0)>;
+	CAR_TUNE_VALUE = <(97)>;
+
+	g_Q_MAX = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5082 5092 5082 5082/*T0*/
+		5138 5133 5138 5138/*T1*/
+		5135 5100 5135 5135/*T2*/
+		5021 4999 5021 5021/*T3*/
+		4914 4890 4914 4914/*T4*/
+		4914 4890 4914 4914/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_Q_MAX_H_CURRENT = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		5082 5092 5082 5082/*T0*/
+		5138 5133 5138 5138/*T1*/
+		5135 5100 5135 5135/*T2*/
+		5021 4999 5021 5021/*T3*/
+		4914 4890 4914 4914/*T4*/
+		4914 4890 4914 4914/*T5*/
+		3488 3488 3488 3488/*T6*/
+		3488 3488 3488 3488/*T7*/
+		3488 3488 3488 3488/*T8*/
+		3488 3488 3488 3488/*T9*/
+	>;
+	g_FG_PSEUDO100 = <
+		/*bat1,   bat2,   bat3,    bat4*/
+		100 100 100 100/*T0*/
+		100 100 100 100/*T1*/
+		100 100 100 100/*T2*/
+		100 100 100 100/*T3*/
+		100 100 100 100/*T4*/
+		100 100 100 100/*T5*/
+		100 100 100 100/*T6*/
+		100 100 100 100/*T7*/
+		100 100 100 100/*T8*/
+		100 100 100 100/*T9*/
+	>;
+	df-serialnum = "SB18D39674";
+	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
+	#include "bat_setting/mt6879_battery_nf50_sunw_5000mah.dtsi"
+};
+
+&pdc {
+	sc_input_current = <3000000>;
+};
+
+&pe2 {
+	sc_input_current = <3000000>;
+};
+
+&charger {
+	battery_cv = <4480000>;
+	max_charger_voltage = <14500000>;
+	ac_charger_current = <3000000>;
+	usb_charger_current = <500000>;
+	ac_charger_input_current = <1500000>;
+	charging_host_charger_current = <1500000>;
+	/*pe5 && pdc && pe2 && wlc*/
+	fast_charging_indicator = <0x36>;
+	/*swchg + 1CP*/
+	charger_configuration= <3>;
+	wireless_factory_max_current = <3000000>;
+	wireless_factory_max_input_current = <1150000>;
+	enable_dynamic_mivr;
+	/*mmi config*/
+	mmi,iterm-ma = <250>;
+	mmi,mmi-temp-zones = <0 4200 1000 0>,
+			<10 4250 2500 1000>,
+			<15 0 2500 2500>,
+			<45 4250 6000 5200>,
+			<45 4400 5200 4000>,
+			<60 4200 4000 0>;
+	mmi,mmi-ffc-zones = <0 4200 250>,
+			<10 4250 250>,
+			<15 4480 250>,
+			<25 4510 570>,
+			<35 4510 660>,
+			<45 4510 765>,
+			<60 4200 250>;
+	mmi,enable-charging-limit;
+	mmi,upper-limit-capacity = <65>;
+	mmi,lower-limit-capacity = <60>;
+	mmi,min-cp-therm-current-ua = <2000000>;
+	mmi,enable-mux;
+	mmi,mux_wls_switch_en = <&pio 104 0x0>;
+	mmi,mux_wls_boost_en = <&pio 121 0x0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmi_mux_wls_default>;
+};
+
+&moto_chg_tcmd {
+		compatible = "mmi,moto-chg-tcmd";
+		status = "okay";
+
+		mmi,ntc_table = <1>;
+		mmi,ntc_v_ref = <1800000>;
+		mmi,ntc_r_pull = <100000>;
+
+		mmi,batid_v_ref = <1800000>;
+		mmi,batid_r_pull = <100000>;
+
+		mmi,adc-channel-cpu = <0>;
+		mmi,adc-channel-charger = <2>;
+		mmi,adc-channel-pa = <1>;
+		mmi,adc-channel-batid = <3>;
+		mmi,adc-channel-vbat = <100>;
+};
+
+&pio {
+	bq25960_int_default: bq25960_int_default {
+		pinmux = <PINMUX_GPIO117__FUNC_GPIO117>;
+		slew-rate= <0>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	wls_cps4035_int_default: wls_cps4035_int_default {
+		wls_int {
+			pinmux = <PINMUX_GPIO31__FUNC_GPIO31>;
+			input-enable;
+			bias-pull-up;
+		};
+		wls_det_int {
+			pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
+			input-enable;
+			bias-pull-down;
+		};
+	};
+
+	mmi_mux_wls_default: mmi_mux_wls_default {
+		wls_switch {
+			pinmux = <PINMUX_GPIO104__FUNC_GPIO104>;
+			output-low;
+		};
+		wls_boost {
+			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
+			output-low;
+		};
+	};
+
+	mmi_control_wls_default: mmi_control_wls_default {
+		wls_control {
+			pinmux = <PINMUX_GPIO114__FUNC_GPIO114>;
+			output-low;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+
+	bq25960-standalone@65 {
+		compatible = "ti,bq25960-standalone";
+		reg = <0x65>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <117 IRQ_TYPE_EDGE_FALLING 117 0>;
+		interrupt-names = "bq25960_irq";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bq25960_int_default>;
+	};
+};
+
+&pd_adapter{
+	ita_min = <1000>;
+};
+
+
+&pe5 {
+		compatible = "mediatek,charger,pe5";
+		gauge = <&mtk_gauge>;
+		polling_interval = <10000>;
+		ta_cv_ss_repeat_tmin = <25>;
+		vbat_cv = <4510>;
+		start_soc_min = <0>;
+		start_soc_max = <90>;
+		start_vbat_max = <4450>;
+		idvchg_term = <500>;
+		idvchg_step = <50>;
+		ita_level = <3000 2500 2000 1500>;
+		rcable_level = <350 400 500 600>;
+		ita_level_dual = <5000 3700 3400 3000>;
+		rcable_level_dual = <230 350 450 550>;
+		idvchg_ss_init = <1000>;
+		idvchg_ss_step = <250>;
+		idvchg_ss_step1 = <100>;
+		idvchg_ss_step2 = <50>;
+		idvchg_ss_step1_vbat = <4000>;
+		idvchg_ss_step2_vbat = <4200>;
+		ta_blanking = <400>;
+		swchg_aicr = <0>;
+		swchg_ichg = <1200>;
+		swchg_aicr_ss_init = <400>;
+		swchg_aicr_ss_step = <200>;
+		swchg_off_vbat = <4250>;
+		force_ta_cv_vbat = <4250>;
+		chg_time_max = <10800>;
+		tta_level_def = <0 0 0 0 25 50 60 70 80>;
+		tta_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tta_recovery_area = <3>;
+		tbat_level_def = <0 0 0 5 25 40 43 46 50>;
+		tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tbat_recovery_area = <3>;
+		tdvchg_level_def = <0 0 0 5 25 55 60 65 70>;
+		tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tdvchg_recovery_area = <3>;
+		tswchg_level_def = <0 0 0 5 25 65 70 75 80>;
+		tswchg_curlmt = <0 0 0 0 0 0 0 0 0>;
+		tswchg_recovery_area = <3>;
+		ifod_threshold = <200>;
+		rsw_min = <20>;
+		ircmp_rbat = <40>;
+		ircmp_vclamp = <0>;
+		vta_cap_min = <6800>;
+		vta_cap_max = <11000>;
+		ita_cap_min = <1000>;
+		support_ta = "pca_ta_pps", "pd_adapter";
+		allow_not_check_ta_status;
+		vbat_threshold = <4150>;
+		mmi_therm_cur_thres = <500>;
+		mmi_therm_vol_thres = <80>;
+		mmi_therm_step = <3>;
+		mmi_max_ibat = <6000>;
+};
+
+&i2c9 {
+    cps_wls_charger@31 {
+        compatible = "cps,wls-charger-cps4035-H";
+        reg = <0x31>;
+        status = "okay";
+    };
+
+    cps_wls_charger@30 {
+        compatible = "cps,wls-charger-cps4035-L";
+        wireless-fw-name = "cps4035.bin";
+        reg = <0x30>;
+        cps_wls_int = <&pio 31 0x0>;
+        cps_det_int = <&pio 115 0x0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&wls_cps4035_int_default>;
+        status = "okay";
+    };
+};
+
+&mt6375_typec {
+	pd-data {
+		/* 5V, 900ma */
+		pd,source-pdo-data = <0x0001905a>;
+		/* 5V, 3A */
+		pd,sink-pdo-size = <2>;
+		pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
+	};
+};
+
+&smart_pen_charger {
+		compatible = "mmi,pen-charger";
+		mmi,pen-psy-name = "wireless";
+};
+
+
+&charge_leds {
+	compatible = "gpio-leds";
+
+	charging {
+		label = "charging";
+		gpios = <&pio 163 0x0>;
+		default-state = "off";
+	};
+};
+
+&charger_cooler {
+	mmi,thermal-mitigation = <(-1) 5000000 4000000 3000000 2500000
+				2000000 1500000 1000000 500000>;
+};
+
+&moto_wlc {
+	compatible = "moto,charger,wlc";
+	gauge = <&mtk_gauge>;
+	min_charger_voltage = <4600000>;
+	wlc_max_charger_current = <3150000>;
+	wlc_max_input_current = <1150000>;
+	mmi,wls_control_en = <&pio 114 0x0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmi_control_wls_default>;
+};
