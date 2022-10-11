@@ -1,0 +1,20 @@
+/* CONNSYS cable-det GPIO start */
+&odm {
+    rfmisc: rfmisc@aion {
+        wifi_cable_det_support = "true";
+        pinctrl-names = "wifi_cable_pin_default";
+        pinctrl-0 = <&wifi_cable_det_pin_default>;
+        det-gpio = <&pio 124 0X2008>;
+        eint-debounce = <256000>;
+        compatible = "moto,rfmisc";
+    };
+};
+
+&pio {
+	wifi_cable_det_pin_default: wifi_cable_det_pin_default {
+	    pins_cmd_dat {
+			pinmux = <PINMUX_GPIO124__FUNC_GPIO124>;
+		};
+	};
+};
+/* CONNSYS cable-det GPIO end */
