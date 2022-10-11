@@ -1,0 +1,150 @@
+/* Copyright (c) 2021, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&dispsys_config {
+	force_dyn_mipi_change;
+};
+
+&mtk_leds {
+	/delete-property/ compatible;
+	/delete-property/ led_mode;
+	/delete-property/ gate_enable;
+	/delete-property/ pwm_config;
+
+	compatible = "mediatek,disp-leds";
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		max-brightness = <3514>;
+		max-hw-brightness = <3514>;
+		default-brightness = <2577>;
+	};
+};
+
+&mtkfb {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	/delete-property/ pinctrl-1;
+	/delete-property/ pinctrl-2;
+	/delete-property/ pinctrl-3;
+	/delete-property/ pinctrl-4;
+	/delete-property/ pinctrl-5;
+	/delete-property/ pinctrl-6;
+
+	pinctrl-names = "lcm_rst_out0_gpio", "mode_te_te",
+		"oled_vci_en_gpio", "oled_vio_en_gpio",
+		"oled_dvdd_en0_gpio", "oled_dvdd_en1_gpio";
+	pinctrl-0 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-1 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-2 = <&mtkfb_pins_oled_vci_en>;
+	pinctrl-3 = <&mtkfb_pins_oled_vio_en>;
+
+	pinctrl-4 = <&mtkfb_pins_oled_avdd_en0>;
+	pinctrl-5 = <&mtkfb_pins_oled_avdd_en1>;
+	status = "okay";
+
+};
+
+&pio {
+	mtkfb_pins_oled_vci_en: oled_vci_en_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO166__FUNC_GPIO166>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_oled_vio_en: oled_vio_en_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO164__FUNC_GPIO164>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_oled_avdd_en0: oled_dvdd_en0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO103__FUNC_GPIO103>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_oled_avdd_en1: oled_dvdd_en1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_GPIO165>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+};
+
+&dsi0 {
+	status = "okay";
+
+	panel1@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "mot,dummy,vdo,60hz";
+		reg = <0>;
+		pinctrl-names = "default";
+	};
+
+
+	panel2@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "tianma,nt37701,cmd,144hz";
+		reg = <2>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 103 0>,
+                          <&pio 165 0>,
+                          <&pio 166 0>;
+		reset-gpios = <&pio 97 0>;
+		pinctrl-names = "default";
+		lhbm-enable;
+		port {
+			panel_in2: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+
+	panel3@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+		/delete-property/gate-ic;
+
+		compatible = "tianma,nt37701,cmd,144hz";
+		reg = <1>;
+		pm-enable-gpios = <&pio 164 0>,
+                          <&pio 103 0>,
+                          <&pio 165 0>,
+                          <&pio 166 0>;
+		reset-gpios = <&pio 97 0>;
+		pinctrl-names = "default";
+		lhbm-enable;
+		port {
+			panel_in3: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+};
