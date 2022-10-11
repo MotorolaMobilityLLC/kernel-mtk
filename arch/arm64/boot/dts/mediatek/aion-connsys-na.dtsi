@@ -1,0 +1,40 @@
+&connfem {
+    /* Enable epa_elna node to support Wifi & BT ePA/eLNA FEM on customer load */
+	epa_elna {
+		parts = <&qm42195 &qm45197>;
+
+		wifi {
+			flags-0 {
+				open-loop;
+			};
+		};
+
+		bt {
+			flags-0 {
+				/* choose one of: epa_elna / epa / elna / bypass */
+				epa_elna;
+			};
+		};
+	};
+};
+
+/* CONNSYS cable-det GPIO start */
+&odm {
+    rfmisc: rfmisc@aion {
+        wifi_cable_det_support = "true";
+        pinctrl-names = "wifi_cable_pin_default";
+        pinctrl-0 = <&wifi_cable_det_pin_default>;
+        det-gpio = <&pio 124 0X2008>;
+        eint-debounce = <256000>;
+        compatible = "moto,rfmisc";
+    };
+};
+
+&pio {
+	wifi_cable_det_pin_default: wifi_cable_det_pin_default {
+	    pins_cmd_dat {
+			pinmux = <PINMUX_GPIO124__FUNC_GPIO124>;
+		};
+	};
+};
+/* CONNSYS cable-det GPIO end */
