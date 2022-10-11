@@ -2004,6 +2004,7 @@
       <elf-symbol name='drm_connector_list_iter_begin' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xada8d962'/>
       <elf-symbol name='drm_connector_list_iter_end' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x394911be'/>
       <elf-symbol name='drm_connector_list_iter_next' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6570b417'/>
+      <elf-symbol name='drm_connector_list_update' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd51c5df5'/>
       <elf-symbol name='drm_connector_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd49d4d54'/>
       <elf-symbol name='drm_connector_set_panel_orientation' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb925261a'/>
       <elf-symbol name='drm_connector_set_path_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2b664b0e'/>
@@ -2078,6 +2079,7 @@
       <elf-symbol name='drm_dp_mst_allocate_vcpi' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x561afe77'/>
       <elf-symbol name='drm_dp_mst_deallocate_vcpi' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2e892d1f'/>
       <elf-symbol name='drm_dp_mst_detect_port' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x23ef06a4'/>
+      <elf-symbol name='drm_dp_mst_dump_topology' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x762196b9'/>
       <elf-symbol name='drm_dp_mst_get_edid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x320a8a74'/>
       <elf-symbol name='drm_dp_mst_get_port_malloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1a5871d'/>
       <elf-symbol name='drm_dp_mst_hpd_irq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcb20faa'/>
@@ -2208,6 +2210,8 @@
       <elf-symbol name='drm_kms_helper_poll_enable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1ba4614b'/>
       <elf-symbol name='drm_kms_helper_poll_fini' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4c6539d4'/>
       <elf-symbol name='drm_kms_helper_poll_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6cb3eab3'/>
+      <elf-symbol name='drm_master_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd259e69a'/>
+      <elf-symbol name='drm_master_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x888d4825'/>
       <elf-symbol name='drm_match_cea_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9b285573'/>
       <elf-symbol name='drm_mm_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf0517d7a'/>
       <elf-symbol name='drm_mm_insert_node_in_range' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb4032484'/>
@@ -2226,6 +2230,7 @@
       <elf-symbol name='drm_mode_create_dp_colorspace_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x912eefb5'/>
       <elf-symbol name='drm_mode_create_hdmi_colorspace_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x558fd00e'/>
       <elf-symbol name='drm_mode_create_scaling_mode_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6ac758be'/>
+      <elf-symbol name='drm_mode_create_tile_group' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xec7cf1'/>
       <elf-symbol name='drm_mode_crtc_set_gamma_size' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4fcd2d36'/>
       <elf-symbol name='drm_mode_debug_printmodeline' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2ed3c600'/>
       <elf-symbol name='drm_mode_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb5de5bd9'/>
@@ -2241,6 +2246,7 @@
       <elf-symbol name='drm_mode_object_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf6d4f458'/>
       <elf-symbol name='drm_mode_object_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe1fdd1de'/>
       <elf-symbol name='drm_mode_probed_add' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5978683d'/>
+      <elf-symbol name='drm_mode_prune_invalid' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf5662ed5'/>
       <elf-symbol name='drm_mode_set_crtcinfo' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4575a0ca'/>
       <elf-symbol name='drm_mode_set_name' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4a35d30d'/>
       <elf-symbol name='drm_mode_sort' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1421d13'/>
@@ -56861,6 +56867,7 @@
         <enumerator name='HDMI_EOTF_BT_2100_HLG' value='3'/>
       </enum-decl>
       <pointer-type-def type-id='a0eb3346' size-in-bits='64' id='7b332e1c'/>
+      <pointer-type-def type-id='07df1a3d' size-in-bits='64' id='7b361235'/>
       <function-type size-in-bits='64' id='7b49a935'>
         <parameter type-id='77e79a4b'/>
         <parameter type-id='eaa32e2f'/>
@@ -135179,6 +135186,10 @@
         <parameter type-id='40a902ec' name='iter' filepath='drivers/gpu/drm/drm_connector.c' line='696' column='1'/>
         <return type-id='4db02c58'/>
       </function-decl>
+      <function-decl name='drm_connector_list_update' mangled-name='drm_connector_list_update' filepath='drivers/gpu/drm/drm_modes.c' line='1334' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_connector_list_update'>
+        <parameter type-id='4db02c58' name='connector' filepath='drivers/gpu/drm/drm_modes.c' line='1334' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='drm_connector_register' mangled-name='drm_connector_register' filepath='drivers/gpu/drm/drm_connector.c' line='505' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_connector_register'>
         <parameter type-id='4db02c58' name='connector' filepath='drivers/gpu/drm/drm_connector.c' line='505' column='1'/>
         <return type-id='95e97e5e'/>
@@ -135564,6 +135575,11 @@
         <parameter type-id='88a6d23d' name='mgr' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4232' column='1'/>
         <parameter type-id='c45d1018' name='port' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4233' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='drm_dp_mst_dump_topology' mangled-name='drm_dp_mst_dump_topology' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4846' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_dp_mst_dump_topology'>
+        <parameter type-id='f8dc9def' name='m' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4846' column='1'/>
+        <parameter type-id='88a6d23d' name='mgr' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4847' column='1'/>
+        <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='drm_dp_mst_get_edid' mangled-name='drm_dp_mst_get_edid' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4286' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_dp_mst_get_edid'>
         <parameter type-id='4db02c58' name='connector' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='4286' column='1'/>
@@ -136233,6 +136249,14 @@
         <parameter type-id='8898134d' name='dev' filepath='drivers/gpu/drm/drm_probe_helper.c' line='775' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='drm_master_get' mangled-name='drm_master_get' filepath='drivers/gpu/drm/drm_auth.c' line='387' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_master_get'>
+        <parameter type-id='07df1a3d' name='master' filepath='drivers/gpu/drm/drm_auth.c' line='387' column='1'/>
+        <return type-id='07df1a3d'/>
+      </function-decl>
+      <function-decl name='drm_master_put' mangled-name='drm_master_put' filepath='drivers/gpu/drm/drm_auth.c' line='443' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_master_put'>
+        <parameter type-id='7b361235' name='master' filepath='drivers/gpu/drm/drm_auth.c' line='443' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='drm_match_cea_mode' mangled-name='drm_match_cea_mode' filepath='drivers/gpu/drm/drm_edid.c' line='3426' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_match_cea_mode'>
         <parameter type-id='745b39e8' name='to_match' filepath='drivers/gpu/drm/drm_edid.c' line='3426' column='1'/>
         <return type-id='f9b06939'/>
@@ -136320,6 +136344,11 @@
         <parameter type-id='8898134d' name='dev' filepath='drivers/gpu/drm/drm_connector.c' line='1608' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='drm_mode_create_tile_group' mangled-name='drm_mode_create_tile_group' filepath='drivers/gpu/drm/drm_connector.c' line='2628' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_mode_create_tile_group'>
+        <parameter type-id='8898134d' name='dev' filepath='drivers/gpu/drm/drm_connector.c' line='2628' column='1'/>
+        <parameter type-id='80f4b756' name='topology' filepath='drivers/gpu/drm/drm_connector.c' line='2629' column='1'/>
+        <return type-id='c6c44b9f'/>
+      </function-decl>
       <function-decl name='drm_mode_crtc_set_gamma_size' mangled-name='drm_mode_crtc_set_gamma_size' filepath='drivers/gpu/drm/drm_color_mgmt.c' line='202' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_mode_crtc_set_gamma_size'>
         <parameter type-id='b64ad7cb' name='crtc' filepath='drivers/gpu/drm/drm_color_mgmt.c' line='202' column='1'/>
         <parameter type-id='95e97e5e' name='gamma_size' filepath='drivers/gpu/drm/drm_color_mgmt.c' line='203' column='1'/>
@@ -136397,6 +136426,12 @@
       <function-decl name='drm_mode_probed_add' mangled-name='drm_mode_probed_add' filepath='drivers/gpu/drm/drm_modes.c' line='107' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_mode_probed_add'>
         <parameter type-id='4db02c58' name='connector' filepath='drivers/gpu/drm/drm_modes.c' line='107' column='1'/>
         <parameter type-id='11e02f83' name='mode' filepath='drivers/gpu/drm/drm_modes.c' line='108' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='drm_mode_prune_invalid' mangled-name='drm_mode_prune_invalid' filepath='drivers/gpu/drm/drm_modes.c' line='1255' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_mode_prune_invalid'>
+        <parameter type-id='8898134d' name='dev' filepath='drivers/gpu/drm/drm_modes.c' line='1255' column='1'/>
+        <parameter type-id='e84b031a' name='mode_list' filepath='drivers/gpu/drm/drm_modes.c' line='1256' column='1'/>
+        <parameter type-id='b50a4934' name='verbose' filepath='drivers/gpu/drm/drm_modes.c' line='1256' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='drm_mode_set_crtcinfo' mangled-name='drm_mode_set_crtcinfo' filepath='drivers/gpu/drm/drm_modes.c' line='814' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_mode_set_crtcinfo'>
