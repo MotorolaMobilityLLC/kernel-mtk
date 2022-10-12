@@ -559,6 +559,24 @@ struct mot_ltv {
     float raw_accel_margin;
 };
 
+struct mot_tap {
+    uint16_t double_only;
+    int use_stowed;
+    uint16_t idle_timeout_s;
+    uint16_t tap_window_ms;
+    float cor_thr;
+    float cor_spike_thr;
+    float flat_up_deg;
+    float flat_up_ang_limit_deg;
+    float facing_down_deg;
+    float sigz_mag_low_thr;
+    float sigz_mag_high_thr;
+    float sigz_min_peak_thr;
+//    float	iang_limit_deg;
+    uint16_t prod_idx;
+//    float	sigz_inv_peak_thr;
+};
+
 #ifdef CONFIG_MOTO_ALSPS_PARAMS
 struct als_cal {
 	uint32_t alscfg;
@@ -659,6 +677,9 @@ struct mot_als_nvcfg {
     uint32_t  alscfg;
     uint32_t panel_id;
     float als_cali[2];//moto add:light_scale,target_lux
+#ifdef CONFIG_MOTO_LIGHT_1_SENSOR
+    float als1_cali[2];//moto add:light_scale,target_lux
+#endif
 };
 
 struct mot_ps_nvcfg {
@@ -679,6 +700,9 @@ struct mot_params {
 #endif
 #ifdef CONFIG_MOTO_LTV_PARAMS
     struct mot_ltv ltv_params;
+#endif
+#ifdef CONFIG_MOTO_TAP_PARAMS
+    struct mot_tap tap_params;
 #endif
 #ifdef CONFIG_MOTO_ALSPS_PARAMS
     struct als_custom alscustom;
