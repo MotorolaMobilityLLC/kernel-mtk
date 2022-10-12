@@ -17,7 +17,7 @@
 #include "dt-bindings/gpio/gpio.h"
 #include "mediatek/mt6768-moto-gnevan-fps.dtsi"
 #include "mediatek/mt6768-moto-gnevan-charger.dtsi"
-#include "mediatek/sgm7220.dtsi"
+#include "mediatek/sgm7220-gnevan.dtsi"
 #include "mediatek/tcpc_config.dtsi"
 
 &reserved_memory {
