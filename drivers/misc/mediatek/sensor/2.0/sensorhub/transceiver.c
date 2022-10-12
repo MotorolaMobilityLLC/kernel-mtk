@@ -213,7 +213,13 @@ static void transceiver_update_config(struct transceiver_device *dev,
 		 * and so on can use this branch.
 		 */
 		if (src->action == CALI_ACTION &&
-				dst->length <= sizeof(src->word))
+				dst->length <= sizeof(src->word) &&
+				((SENSOR_TYPE_LIGHT != src->sensor_type) &&
+				(SENSOR_TYPE_PROXIMITY != src->sensor_type)
+#ifdef CONFIG_MOTO_LIGHT_1_SENSOR
+				&& (SENSOR_TYPE_LIGHT_1 != src->sensor_type)
+#endif
+				))
 			transceiver_copy_config(dst, src, 0, dst->length, 0);
 		else
 			pr_err_ratelimited("can't update config %u %u %u\n",
@@ -331,6 +337,9 @@ static int transceiver_translate(struct transceiver_device *dev,
 			dst->word[2] = src->value[2];
 			break;
 		case SENSOR_TYPE_LIGHT:
+#ifdef CONFIG_MOTO_LIGHT_1_SENSOR
+		case SENSOR_TYPE_LIGHT_1:
+#endif
 		case SENSOR_TYPE_PRESSURE:
 		case SENSOR_TYPE_PROXIMITY:
 		case SENSOR_TYPE_STEP_COUNTER:
@@ -614,10 +623,23 @@ static int transceiver_config(struct hf_device *hf_dev,
 {
 	struct transceiver_device *dev = hf_dev->private_data;
 	struct transceiver_config *cfg = NULL;
+	bool copy_config = true;
+
+	/* If the sensor is als or ps, copy config only when it's
+	 * cali data */
+#ifdef CONFIG_MOTO_LIGHT_1_SENSOR
+	if (((SENSOR_TYPE_LIGHT == sensor_type || SENSOR_TYPE_LIGHT_1 == sensor_type) &&
+#else
+	if (((SENSOR_TYPE_LIGHT == sensor_type) &&
+#endif
+		(14 != ((uint32_t*)data)[0])) ||
+		((SENSOR_TYPE_PROXIMITY == sensor_type) &&
+		 (15 != ((uint32_t*)data)[0])))
+		copy_config = false;
 
 	mutex_lock(&dev->config_lock);
 	cfg = dev->state[sensor_type].config;
-	if (!cfg) {
+	if (copy_config && !cfg) {
 		cfg = kzalloc(sizeof(*cfg) + length, GFP_KERNEL);
 		if (!cfg) {
 			mutex_unlock(&dev->config_lock);
@@ -632,8 +654,10 @@ static int transceiver_config(struct hf_device *hf_dev,
 
 		}
 	}
-	cfg->length = length;
-	memcpy(cfg->data, data, length);
+	if (copy_config) {
+		cfg->length = length;
+		memcpy(cfg->data, data, length);
+	}
 	mutex_unlock(&dev->config_lock);
 
 	return transceiver_comm_with(sensor_type,
