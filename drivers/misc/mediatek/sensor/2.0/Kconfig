@@ -42,6 +42,18 @@ config MOTO_ALSPS_NVCFG
 	help
 	  This feature Option is used for open/close moto alsps nvcfg parms.
 
+config MOTO_LIGHT_1_SENSOR
+	bool "alternate light sensor"
+	default n
+	help
+	  This feature Option is used for enable/disable moto alternate light sensor.
+
+config MOTO_TAP_PARAMS
+	bool "algo params for moto tap algo"
+	default n
+	help
+	  This feature Option is used for open/close moto tap algo parms.
+
 source "drivers/misc/mediatek/sensor/2.0/mtk_nanohub/Kconfig"
 source "drivers/misc/mediatek/sensor/2.0/sensorhub/Kconfig"
 source "drivers/misc/mediatek/sensor/2.0/test/Kconfig"
