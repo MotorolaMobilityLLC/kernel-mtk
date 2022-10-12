@@ -7,6 +7,7 @@
 #define __MTK_PANEL_EXT_H__
 
 #include <drm/drm_panel.h>
+#include <drm/mediatek_drm.h>
 
 #define RT_MAX_NUM 10
 #define ESD_CHECK_NUM 3
@@ -276,6 +277,8 @@ struct mtk_panel_params {
 	unsigned int lfr_minimum_fps;
 
 	unsigned int change_fps_by_vfp_send_cmd;
+
+	unsigned int use_ext_panel_feature;
 };
 
 struct mtk_panel_ext {
@@ -369,6 +372,9 @@ struct mtk_panel_funcs {
 			    dcs_write_gce cb, void *handle, unsigned int cabc_mode);
 	void (*cabc_get_state)(struct drm_panel *panel, unsigned int *state);
 	int (*notify_fps_chg)(void *dsi_drv, dcs_write_gce cb, void *handle, unsigned int mode);
+	int (*panel_feature_set)(struct drm_panel *panel, void *dsi_drv,
+			    dcs_write_gce cb, void *handle, struct panel_param_info param_info);
+	int (*panel_feature_get)(struct drm_panel *panel, paramId_t param_id);
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);
