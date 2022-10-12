@@ -1,0 +1,22 @@
+/*SGM7220 logic ic
+*/
+&i2c6 {
+	sgm7220_typec: sgm7220_type_c_port0@47 {
+		compatible = "mediatek,usb_type_c_sgm7220";
+		reg = <0x47>;
+
+		tcpc-dual,supported_modes = <0>;         /* 0: dfp/ufp, 1: dfp, 2: ufp */
+		sgm7220-tcpc,name = "type_c_port0";      /* tcpc_device's name */
+		sgm7220-tcpc,role_def = <4>;             /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+		sgm7220-tcpc,rp_level = <0>;             /* 0: Default, 1: 1.5, 2: 3.0 */
+		sgm7220-tcpc,vconn_supply  = <0>;        /* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
+		#if (CONFIG_MTK_GAUGE_VERSION == 30)     /* the number of notifier supply */
+		sgm7220-tcpc,notifier_supply_num = <3>;
+		#else
+		sgm7220-tcpc,notifier_supply_num = <2>;
+		#endif
+		sgm7220,intr_gpio = <&pio 4 0x0>;
+		sgm7220,intr_gpio_num = <4>;
+		//charger = <&mtk_charger_type>;
+	};
+};
