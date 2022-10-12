@@ -135,7 +135,7 @@ static void csot_panel_init(struct csot *ctx)
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(5);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(60);
+	msleep(30);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
@@ -250,8 +250,8 @@ static int csot_prepare(struct drm_panel *panel)
 		return 0;
 
 	gpiod_set_value(ctx->reset_gpio, 0);
+	msleep(3);
 	ret = ocp2138_BiasPower_enable(15,15,5);
-	msleep(5);
 
 	//lcm_power_enable();
 	csot_panel_init(ctx);
