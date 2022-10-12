@@ -137,6 +137,7 @@
 	fingerprint_int: fingerprint_int {
 		compatible = "mediatek,fingerprint-fpc";
 		fpc,enable-wakeup;
+                fpc_pinctrl_on;
 		interrupt-parent = <&pio>;
 		interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
 		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
@@ -153,8 +154,8 @@
                 interrupt-parent = <&pio>;
                 interrupts = <8 IRQ_TYPE_EDGE_RISING 8 0>;
 
-//                fp-ctrl-power;
-//                fp-gpio-vcc-enable;
+                fp-ctrl-power;
+                fp-gpio-vcc-enable;
 
                 egistec,gpio_vcc_en = <&pio 22 0x0>;
                 egistec,gpio_reset = <&pio 21 0x0>;
@@ -206,7 +207,7 @@
 		status = "okay";
 	};
         fingerprintegis@1 {
-                compatible = "mediatek,egis-fingerprint";
+                compatible = "mediatek,fingerprint";
                 reg = <1>;
                 spi-max-frequency = <8000000>;
                 netlink-event = <30>;
