@@ -3153,7 +3153,10 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 	switch (param_info->param_idx) {
 		case PARAM_CABC:
 		case PARAM_ACL:
-			ret = mtk_drm_crtc_set_panel_cabc(crtc, param_info->value);
+			if(panel_ext->use_ext_panel_feature)
+				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+			else
+				ret = mtk_drm_crtc_set_panel_cabc(crtc, param_info->value);
 			break;
 		case PARAM_HBM:
 			if (panel_ext->hbm_type == HBM_MODE_DCS_GPIO)
@@ -3161,9 +3164,14 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 			if(!ret) {
 				ret = mtk_drm_setbacklight(crtc, HBM_BRIGHTNESS(param_info->value));
 			}
+			if(panel_ext->use_ext_panel_feature)
+				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
 			break;
 		default:
-			DDPMSG("%s: param_idx %d can not supported\n", param_info->param_idx);
+			if(panel_ext->use_ext_panel_feature)
+				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+			else
+				DDPMSG("%s: param_idx %d can not supported\n", param_info->param_idx);
 			break;
 	}
 	return ret;
