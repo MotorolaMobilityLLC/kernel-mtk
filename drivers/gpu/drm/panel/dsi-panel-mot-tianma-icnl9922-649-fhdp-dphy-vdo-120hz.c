@@ -131,11 +131,11 @@ static void tianma_panel_init(struct tianma *ctx)
 		return;
 	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(10);
+	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(5);
+	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(60);
+	msleep(30);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
@@ -241,7 +241,6 @@ static int tianma_prepare(struct drm_panel *panel)
 		return 0;
 
 	ret = ocp2138_BiasPower_enable(15,15,5);
-
 	//lcm_power_enable();
 	tianma_panel_init(ctx);
 
