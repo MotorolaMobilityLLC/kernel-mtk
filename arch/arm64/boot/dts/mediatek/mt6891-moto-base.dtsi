@@ -24,4 +24,6 @@
 
         tboard_thermistor9: thermal-sensor9 {
         };
+	moto_wlc: moto_wlc {
+        };
 };

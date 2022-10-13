@@ -899,13 +899,14 @@
                 <ies>true</ies>
             </gpio76>
             <gpio77>
-                <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+		<varName0>EINT_WCHG</varName0>
+		<smt>true</smt>
                 <ies>true</ies>
             </gpio77>
             <gpio78>
@@ -1480,23 +1481,24 @@
             </gpio131>
             <gpio132>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+		<varName0>WLC_DET</varName0>
+		<smt>true</smt>
                 <ies>true</ies>
             </gpio132>
             <gpio133>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_2_CMPDN_PIN</varName0>
-                <smt>false</smt>
+                <varName0>WLC_INHIT</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio133>
             <gpio134>
@@ -1653,11 +1655,12 @@
             <gpio148>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
-                <smt>false</smt>
+		<out_high>false</out_high>
+		<varName0>WLC_MODE_SEL</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio148>
             <gpio149>

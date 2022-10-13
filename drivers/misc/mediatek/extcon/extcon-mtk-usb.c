@@ -29,6 +29,7 @@
 #ifdef CONFIG_MTK_USB_TYPEC_U3_MUX
 #include "mux_switch.h"
 #endif
+#include "mtk_charger_intf.h"
 
 static struct mtk_extcon_info *g_extcon;
 
@@ -37,6 +38,43 @@ static const unsigned int usb_extcon_cable[] = {
 	EXTCON_USB_HOST,
 	EXTCON_NONE,
 };
+static int mmi_mux_typec_otg_chan(enum mmi_mux_channel channel, bool on)
+{
+	struct charger_manager *info = NULL;
+//	struct power_supply *chg_psy = NULL;
+	struct charger_device *chg_psy = NULL;
+
+//	chg_psy = power_supply_get_by_name("primary_chg");
+	chg_psy = get_charger_by_name("primary_chg");
+	if(chg_psy) {
+		info = (struct charger_manager *)charger_dev_get_drvdata(chg_psy);
+		if(info)
+			pr_err("%s could  get charger_manager\n",__func__);
+		else {
+			pr_err("%s Couldn't get charger_manager\n",__func__);
+			return 0;
+		}
+	} else {
+		pr_err("%s Couldn't get chg_psy\n",__func__);
+		return 0;
+	}
+#if 0		
+	if (chg_psy == NULL || IS_ERR(chg_psy)) {
+		pr_err("%s Couldn't get chg_psy\n",__func__);
+		return 0;
+	} else {
+//		info = (struct charger_manager *)power_supply_get_drvdata(chg_psy);
+		info = (struct charger_manager *)charger_dev_get_drvdata(chg_psy);
+	}
+#endif
+	pr_info("%s open typec OTG chan =%d, on = %d\n", __func__, channel, on);
+	if (info->do_mux)
+		info->do_mux(info, channel, on);
+	else
+		pr_err("%s get info->algo.do_mux fail", __func__);
+
+	return 0;
+}
 
 static void mtk_usb_extcon_update_role(struct work_struct *work)
 {
@@ -258,6 +296,7 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 #if defined(CONFIG_MTK_GAUGE_VERSION) && (CONFIG_MTK_GAUGE_VERSION == 30)
 	pr_info("%s: is_on=%d\n", __func__, is_on);
 	if (is_on) {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger,
 			1500000);
@@ -268,6 +307,7 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 		}
 		#endif
 	} else {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 		charger_dev_enable_otg(primary_charger, false);
 		#if 0
 			//# workaround
@@ -276,10 +316,12 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 	}
 #else
 	if (is_on) {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger,
 			1500000);
 	} else {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 		charger_dev_enable_otg(primary_charger, false);
 	}
 #endif
@@ -304,6 +346,7 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 	dev_info(dev, "vbus turn %s\n", is_on ? "on" : "off");
 
 	if (is_on) {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 		if (extcon->vbus_vol) {
 			ret = regulator_set_voltage(vbus,
 					extcon->vbus_vol, extcon->vbus_vol);
@@ -328,6 +371,7 @@ static int mtk_usb_extcon_set_vbus(struct mtk_extcon_info *extcon,
 			return ret;
 		}
 	} else {
+		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, false);
 		regulator_disable(vbus);
 	}
 

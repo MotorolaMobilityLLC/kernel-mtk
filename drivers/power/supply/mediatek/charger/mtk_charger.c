@@ -66,6 +66,7 @@
 #include "mtk_charger_intf.h"
 #include "mtk_charger_init.h"
 #include <linux/qpnp_adaptive_charge.h>
+#include <linux/of_gpio.h>
 
 static char atm_mode[10];
 int __init atm_mode_init(char *s)
@@ -610,6 +611,21 @@ void adaptive_charging_disable_ibat(bool on)
 	_wake_up_charger(info);
 }
 EXPORT_SYMBOL(adaptive_charging_disable_ibat);
+
+void wlc_control_pin_set(bool on)
+{
+	struct charger_manager *info = pinfo;
+
+	if (info == NULL)
+		return;
+
+	if(gpio_is_valid(info->mmi.wls_control_en)) {
+		gpio_set_value(info->mmi.wls_control_en, on);
+	}
+
+	pr_info("%s value:%d\n", __func__,on);
+}
+EXPORT_SYMBOL(wlc_control_pin_set);
 
 int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 {
@@ -2619,6 +2635,21 @@ static int parse_mmi_dt(struct charger_manager *info, struct device *dev)
 	if (rc)
 		info->mmi.chrg_iterm = 150;
 
+	info->mmi.enable_mux =
+		of_property_read_bool(node, "mmi,enable-mux");
+
+	info->mmi.wls_switch_en = of_get_named_gpio(node, "mmi,mux_wls_switch_en", 0);
+	if(!gpio_is_valid(info->mmi.wls_switch_en))
+		pr_err("mmi wls_switch_en is %d invalid\n", info->mmi.wls_switch_en );
+
+	info->mmi.wls_boost_en = of_get_named_gpio(node, "mmi,mux_wls_boost_en", 0);
+	if(!gpio_is_valid(info->mmi.wls_boost_en))
+		pr_err("mmi wls_boost_en is %d invalid\n", info->mmi.wls_boost_en);
+
+	info->mmi.wls_control_en = of_get_named_gpio(node, "mmi,mux_wls_control_en", 0);
+	if(!gpio_is_valid(info->mmi.wls_control_en))
+		pr_err("mmi wls_control_en is %d invalid\n", info->mmi.wls_control_en );
+	
 	info->mmi.enable_charging_limit =
 		of_property_read_bool(node, "mmi,enable-charging-limit");
 
@@ -2867,7 +2898,24 @@ void mmi_init(struct charger_manager *info)
 	rc = parse_mmi_dt(info, &info->pdev->dev);
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
-
+	if(gpio_is_valid(info->mmi.wls_switch_en)) {
+		rc  = devm_gpio_request_one(&info->pdev->dev, info->mmi.wls_switch_en,
+				  GPIOF_OUT_INIT_LOW, "mux_wls_switch_en");
+		if (rc  < 0)
+			pr_err(" [%s] Failed to request wls_switch_en gpio, ret:%d", __func__, rc);
+	}
+	if(gpio_is_valid(info->mmi.wls_boost_en)) {
+		rc  = devm_gpio_request_one(&info->pdev->dev, info->mmi.wls_boost_en,
+				  GPIOF_OUT_INIT_LOW, "mux_wls_boost_en");
+		if (rc  < 0)
+			pr_err(" [%s] Failed to request wls_boost_en gpio, ret:%d", __func__, rc);
+	}
+	if(gpio_is_valid(info->mmi.wls_control_en)) {
+		rc  = devm_gpio_request_one(&info->pdev->dev, info->mmi.wls_control_en,
+				  GPIOF_OUT_INIT_LOW, "mux_wls_control_en");
+		if (rc  < 0)
+			pr_err(" [%s] Failed to request wls_control_en gpio, ret:%d", __func__, rc);
+	}
 	info->mmi.chg_reboot.notifier_call = chg_reboot;
 	info->mmi.chg_reboot.next = NULL;
 	info->mmi.chg_reboot.priority = 1;
@@ -3874,7 +3922,21 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 			SC_CURRENT_LIMIT);
 		info->sc.current_limit = SC_CURRENT_LIMIT;
 	}
+	if (of_property_read_u32(np, "wireless_factory_max_current", &val) >= 0) {
+		info->data.wireless_factory_max_current = val;
+	} else {
+		chr_err("use default WIRELESS_FACTORY_MAX_CURRENT:%d\n",
+			WIRELESS_FACTORY_MAX_CURRENT);
+		info->data.wireless_factory_max_current = WIRELESS_FACTORY_MAX_CURRENT;
+	}
 
+	if (of_property_read_u32(np, "wireless_factory_max_input_current", &val) >= 0) {
+		info->data.wireless_factory_max_input_current = val;
+	} else {
+		chr_err("use default WIRELESS_FACTORY_MAX_INPUT_CURRENT:%d\n",
+			WIRELESS_FACTORY_MAX_INPUT_CURRENT);
+		info->data.wireless_factory_max_input_current = WIRELESS_FACTORY_MAX_INPUT_CURRENT;
+	}
 	chr_err("algorithm name:%s\n", info->algorithm_name);
 
 	return 0;
@@ -5234,6 +5296,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mutex_init(&info->charger_lock);
 	mutex_init(&info->charger_pd_lock);
 	mutex_init(&info->cable_out_lock);
+	mutex_init(&info->mmi_mux_lock);
 	for (i = 0; i < TOTAL_CHARGER; i++) {
 		mutex_init(&info->pp_lock[i]);
 		info->force_disable_pp[i] = false;
