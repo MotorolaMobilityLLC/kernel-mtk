@@ -58,6 +58,7 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 #include "mtk_intf.h"
+#include <linux/gpio.h>
 
 struct tag_bootmode {
 	u32 size;
@@ -340,6 +341,12 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->charging_current_limit = 0;
 	}
 done:
+
+	if ((info->atm_enabled == true) && info->wireless_online) {
+		pdata->charging_current_limit = info->data.wireless_factory_max_current;
+		pdata->input_current_limit = info->data.wireless_factory_max_input_current;
+	}
+
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
 		pdata->charging_current_limit = 0;
@@ -1203,6 +1210,257 @@ static int dvchg2_dev_event(struct notifier_block *nb, unsigned long event,
 	return mtk_pe50_notifier_call(info, MTK_PE50_NOTISRC_CHG, event, data);
 }
 
+#define MMI_MUX(_mos1,  _mos2, _boost, _switch, _chipstate) \
+{ \
+	.typec_mos = _mos1, \
+	.wls_mos = _mos2, \
+	.wls_boost_en = _boost, \
+	.wls_loadswtich_en = _switch, \
+	.wls_chip_en = _chipstate, \
+}
+
+static const struct mmi_mux_configure config_mmi_mux[MMI_MUX_CHANNEL_MAX] = {
+	[MMI_MUX_CHANNEL_NONE] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CLOSE, false, false, true),
+	[MMI_MUX_CHANNEL_TYPEC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false, false),
+	[MMI_MUX_CHANNEL_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_CHG_OPEN, false, false, true),
+	[MMI_MUX_CHANNEL_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_DISABLE, MMI_DVCHG_MUX_DISABLE, true, true, true),
+	[MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, true, true, true),
+	[MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_CHG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE, false, false, false),
+	[MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG] = MMI_MUX(MMI_DVCHG_MUX_OTG_OPEN, MMI_DVCHG_MUX_CLOSE,  false, false, false),
+	[MMI_MUX_CHANNEL_WLC_FW_UPDATE] = MMI_MUX(MMI_DVCHG_MUX_DISABLE, MMI_DVCHG_MUX_DISABLE, true, true, true),
+	[MMI_MUX_CHANNEL_WLC_FACTORY_TEST] = MMI_MUX(MMI_DVCHG_MUX_CLOSE, MMI_DVCHG_MUX_MANUAL_OPEN, false, false, true),
+};
+
+static int mmi_mux_config(struct charger_manager *info, enum mmi_mux_channel channel)
+{
+	struct power_supply	*cp_psy;
+	union power_supply_propval prop = {0,};
+	int rc = 0;
+
+	cp_psy = power_supply_get_by_name("cp-master");
+	if (!cp_psy)
+		return -ENODEV;
+
+	if(gpio_is_valid(info->mmi.wls_control_en)) {
+		gpio_set_value(info->mmi.wls_control_en, !config_mmi_mux[channel].wls_chip_en);
+	}
+	prop.intval = channel;
+	rc = power_supply_set_property(cp_psy,
+				POWER_SUPPLY_PROP_SELECT_MUX, &prop);
+	if (rc < 0)
+		pr_info("%s: POWER_SUPPLY_PROP_SELECT_MUX  failed, rc = %d\n",
+			__func__, rc);
+#if 0
+	if (info->dvchg1_dev == NULL) {
+		info->dvchg1_dev = get_charger_by_name("primary_dvchg");
+		if (info->dvchg1_dev)
+			pr_info("mmi_mux_config Found primary divider charger\n");
+		else {
+			chr_err("*** Error : can't find primary divider charger ***\n");
+			return 0;
+		}
+	}
+
+#if 0 //temp
+	if (!info->mmi.factory_mode) {
+		struct chg_alg_device *alg;
+
+		alg = get_chg_alg_by_name("wlc");
+		if ((NULL != alg) && (alg->alg_id & info->fast_charging_indicator))
+			chg_alg_set_prop(alg, ALG_WLC_STATE, config_mmi_mux[channel].wls_chip_en);
+	}
+#endif
+	charger_dev_config_mux(info->dvchg1_dev,
+		config_mmi_mux[channel].typec_mos, config_mmi_mux[channel].wls_mos);
+
+	if(gpio_is_valid(info->mmi.wls_boost_en))
+		gpio_set_value(info->mmi.wls_boost_en, config_mmi_mux[channel].wls_boost_en);
+	if(gpio_is_valid(info->mmi.wls_switch_en))
+		gpio_set_value(info->mmi.wls_switch_en, config_mmi_mux[channel].wls_loadswtich_en);
+#endif
+	return 0;
+}
+
+static int mmi_mux_switch(struct charger_manager *info, enum mmi_mux_channel channel, bool on)
+{
+	int pre_chan, pre_on;
+
+//	chr_err("mmi_mux_switch enter\n");
+
+//	return 0;
+
+	if(!info->mmi.enable_mux)
+		return 0;
+
+	mutex_lock(&info->mmi_mux_lock);
+	pre_chan =  info->mmi.mux_channel.chan;
+	pre_on = info->mmi.mux_channel.on;
+	if (pre_chan == channel && pre_on == on) {
+		mutex_unlock(&info->mmi_mux_lock);
+		return 0;
+	}
+	switch (channel) {
+		case MMI_MUX_CHANNEL_NONE:
+			break;
+		case MMI_MUX_CHANNEL_TYPEC_CHG:
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
+			break;
+		case MMI_MUX_CHANNEL_TYPEC_OTG:
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
+			break;
+		case MMI_MUX_CHANNEL_WLC_CHG:
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_CHG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
+			break;
+		case MMI_MUX_CHANNEL_WLC_OTG:
+			if (on) {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_OTG;
+					info->mmi.mux_channel.on = true;
+				}
+			} else {
+				if (pre_chan == MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+					info->mmi.mux_channel.on = true;
+				} else if (pre_chan == MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG) {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_OTG);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_OTG;
+					info->mmi.mux_channel.on = true;
+				} else {
+					mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+					info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+					info->mmi.mux_channel.on = false;
+				}
+			}
+			break;
+		case MMI_MUX_CHANNEL_WLC_FW_UPDATE:
+			if (on) {
+				mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_FW_UPDATE);
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FW_UPDATE;
+			 } else {
+				mmi_mux_config(info, MMI_MUX_CHANNEL_NONE);
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_NONE;
+			 }
+			info->mmi.mux_channel.on = on;
+			break;
+		case MMI_MUX_CHANNEL_WLC_FACTORY_TEST:
+			if (on) {
+				mmi_mux_config(info, MMI_MUX_CHANNEL_WLC_FACTORY_TEST);
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_WLC_FACTORY_TEST;
+			 } else {
+				mmi_mux_config(info, MMI_MUX_CHANNEL_TYPEC_CHG);
+				info->mmi.mux_channel.chan = MMI_MUX_CHANNEL_TYPEC_CHG;
+			 }
+			info->mmi.mux_channel.on = true;
+			break;
+		default:
+			chr_err("[%s] Unknown channel: %d\n",
+			__func__, channel);
+	}
+
+	chr_err("[%s] pre= %d,%d config = %d,%d result =%d,%d\n",
+		__func__, pre_chan, pre_on, channel, on,
+		info->mmi.mux_channel.chan,  info->mmi.mux_channel.on);
+	mutex_unlock(&info->mmi_mux_lock);
+
+	return 0;
+}
+
 int mtk_switch_charging_init2(struct charger_manager *info)
 {
 	struct switch_charging_alg_data *swch_alg;
@@ -1247,6 +1505,7 @@ int mtk_switch_charging_init2(struct charger_manager *info)
 	info->do_charging = mtk_switch_charging_do_charging;
 	info->do_event = charger_dev_event;
 	info->change_current_setting = mtk_switch_charging_current;
+	info->do_mux = mmi_mux_switch;
 
 	mtk_switch_chr_pe50_init(info);
 	mtk_switch_chr_pe40_init(info);
