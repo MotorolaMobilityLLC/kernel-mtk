@@ -1442,6 +1442,8 @@ static void _hps_request_wrapper(struct mt_cpu_dvfs *p,
 			aee_record_cpu_dvfs_cb(9);
 #endif
 			act_p->mt_policy = NULL;
+			tag_pr_info("[CPU DVFS] policy of %s set NULL on cpu_down\n",
+				cpu_dvfs_get_name(p));
 			aee_record_cpu_dvfs_cb(10);
 		}
 		break;
