@@ -93,6 +93,10 @@
         mmi,vfloat-comp-uv = <20000>;
 	enable_cp;
         mmi,min-cp-therm-current-ua = <1600000>;
+	mmi,enable-mux;//wireless channel switch
+	pinctrl-0 = <&mmi_mux_wls_default>;
+	mmi,mux_wls_control_en = <&pio 133 0x0>;//wlc_inhibit
+        pinctrl-names = "default";
 };
 
 &tboard_thermistor4 {
@@ -216,10 +220,22 @@
                         pinmux = <PINMUX_GPIO132__FUNC_GPIO132>;
                         input-enable;
                         bias-pull-down;
+                };/*
+		wls_control {
+                        pinmux = <PINMUX_GPIO133__FUNC_GPIO133>;
+                        output-low;
+                };*/
+		wls_mode_select {
+                        pinmux = <PINMUX_GPIO148__FUNC_GPIO148>;
+                        output-low;
                 };
         };
-/*
+
         mmi_mux_wls_default: mmi_mux_wls_default {
+		wls_control {
+                        pinmux = <PINMUX_GPIO133__FUNC_GPIO133>;
+                        output-low;
+                };/*
                 wls_switch {
                         pinmux = <PINMUX_GPIO104__FUNC_GPIO104>;
                         output-low;
@@ -227,9 +243,9 @@
                 wls_boost {
                         pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
                         output-low;
-                };
+                };*/
         };
-*/
+
         mmi_control_wls_default: mmi_control_wls_default {
                 wls_control {
                         pinmux = <PINMUX_GPIO133__FUNC_GPIO133>;
@@ -331,7 +347,7 @@
 
         };
 };
-/*
+
 &i2c4 {
 	cps-wls-charger@38 {
 		compatible = "cps,wls-charger-cps4038";
@@ -341,6 +357,8 @@
 		wireless-fw-name = "cps4038.bin";
 		cps_wls_int = <&pio 77 0x00>;
 		cps_det_int = <&pio 132 0x0>;
+//		mmi,wls_control_en = <&pio 133 0x0>;//wlc_inhibit
+		mmi,wls_mode_select = <&pio 148 0x0>;//wlc_inhibit
 		pinctrl-names = "default";
 		pinctrl-0 = <&wls_cps4035_int_default>;
 		//interrupt-names = "cps_wls_int";
@@ -362,4 +380,101 @@
         mmi,wlc-rx-mitigation = <(-1) 2500000 2000000 1500000 1200000
                                 1000000 700000 500000>;
 };
-*/
+/*
+&ap_ntc {
+        polling-delay = <5000>;
+        polling-delay-passive = <3000>;
+        thermal-sensors = <&tboard_thermistor1>;
+
+        trips {
+                wlc_trip0: wlc-trip0 {
+                        temperature = <42000>;
+                        hysteresis = <2000>;
+                        type = "passive";
+                };
+                wlc_trip1: wlc-trip1 {
+                        temperature = <44000>;
+                        hysteresis = <2000>;
+                        type = "passive";
+                };
+                charge_trip0: charge-trip0 {
+                        temperature = <45000>;
+                        hysteresis = <2000>;
+                        type = "passive";
+                };
+                charge_trip1: charge-trip1 {
+                        temperature = <46000>;
+                        hysteresis = <1000>;
+                        type = "passive";
+                };
+                charge_trip2: charge-trip2 {
+                        temperature = <47000>;
+                        hysteresis = <1000>;
+                        type = "passive";
+                };
+                charge_trip3: charge-trip3 {
+                        temperature = <48000>;
+                        hysteresis = <1000>;
+                        type = "passive";
+                };
+                charge_trip4: charge-trip4 {
+                        temperature = <49000>;
+                        hysteresis = <1000>;
+                        type = "passive";
+                };
+                charge_trip5: charge-trip5 {
+                        temperature = <50000>;
+                        hysteresis = <1000>;
+                        type = "passive";
+                };
+                charge_trip6: charge-trip6 {
+                        temperature = <51000>;
+                        hysteresis = <1000>;
+                        type = "passive";
+                };
+        };
+
+        cooling-maps {
+                wlc-cdev0 {
+                        trip = <&wlc_trip0>;
+                        cooling-device = <&moto_wlc 2 2>;
+                };
+                wlc-cdev1 {
+                        trip = <&wlc_trip1>;
+                        cooling-device = <&moto_wlc 5 5>;
+                };
+                wlc-cdev2 {
+                        trip = <&charge_trip2>;
+                        cooling-device = <&moto_wlc 7 7>;
+                };
+                charge-cdev0 {
+                        trip = <&charge_trip0>;
+                        cooling-device = <&charger_cooler 1 1>;
+                };
+                charge-cdev1 {
+                        trip = <&charge_trip1>;
+                        cooling-device = <&charger_cooler 2 2>;
+                };
+                charge-cdev2 {
+                        trip = <&charge_trip2>;
+                        cooling-device = <&charger_cooler 3 3>;
+                };
+                charge-cdev3 {
+                        trip = <&charge_trip3>;
+                        cooling-device = <&charger_cooler 5 5>;
+                };
+                charge-cdev4 {
+                        trip = <&charge_trip4>;
+                        cooling-device = <&charger_cooler 6 6>;
+                };
+                charge-cdev5 {
+                        trip = <&charge_trip5>;
+                        cooling-device = <&charger_cooler 7 7>;
+                };
+                charge-cdev6 {
+                        trip = <&charge_trip6>;
+                        cooling-device = <&charger_cooler 8 8>;
+                };
+        };
+
+};*/
