@@ -88,7 +88,9 @@ do {								\
 #define CHG_ST_TMO_STATUS	(1 << 4)
 #define CHG_BAT_LT_STATUS	(1 << 5)
 #define CHG_TYPEC_WD_STATUS	(1 << 6)
-
+/*wireless input current and charging current*/
+#define WIRELESS_FACTORY_MAX_CURRENT			3000000
+#define WIRELESS_FACTORY_MAX_INPUT_CURRENT		600000
 /* charger_algorithm notify charger_dev */
 enum {
 	EVENT_EOC,
@@ -109,6 +111,32 @@ enum {
 	CHARGER_DEV_NOTIFY_IBUSUCP_FALL,
 	CHARGER_DEV_NOTIFY_VOUTOVP,
 	CHARGER_DEV_NOTIFY_VDROVP,
+};
+enum mmi_mux_channel {
+	MMI_MUX_CHANNEL_NONE = 0,
+	MMI_MUX_CHANNEL_TYPEC_CHG,
+	MMI_MUX_CHANNEL_TYPEC_OTG,
+	MMI_MUX_CHANNEL_WLC_CHG,
+	MMI_MUX_CHANNEL_WLC_OTG,
+	MMI_MUX_CHANNEL_TYPEC_CHG_WLC_OTG,
+	MMI_MUX_CHANNEL_TYPEC_CHG_WLC_CHG,
+	MMI_MUX_CHANNEL_TYPEC_OTG_WLC_CHG,
+	MMI_MUX_CHANNEL_TYPEC_OTG_WLC_OTG,
+	MMI_MUX_CHANNEL_WLC_FW_UPDATE,
+	MMI_MUX_CHANNEL_WLC_FACTORY_TEST,
+	MMI_MUX_CHANNEL_MAX
+};
+struct mmi_mux_chan {
+	enum mmi_mux_channel chan;
+	bool on;
+};
+
+struct mmi_mux_configure {
+	u32 typec_mos;
+	u32 wls_mos;
+	bool wls_boost_en;
+	bool wls_loadswtich_en;
+	bool wls_chip_en;
 };
 
 /*
@@ -269,6 +297,10 @@ struct charger_custom_data {
 
 	int vsys_watt;
 	int ibus_err;
+
+	/*wireless charger*/
+	int wireless_factory_max_current;
+	int wireless_factory_max_input_current;
 };
 
 struct charger_data {
@@ -366,6 +398,11 @@ struct mmi_params {
 	int			target_fcc;
 	int			target_usb;
 	struct notifier_block	chg_reboot;
+	bool			enable_mux;
+	struct			mmi_mux_chan mux_channel;
+	int			wls_switch_en;
+	int			wls_boost_en;
+	int			wls_control_en;
 };
 
 struct charger_manager {
@@ -522,6 +559,11 @@ struct charger_manager {
 	struct power_supply		*battery_psy;
 	struct power_supply 		*charger_psy;
 	struct mmi_params	mmi;
+	struct power_supply  *wl_psy;
+	int wireless_online;
+	struct mutex mmi_mux_lock;
+	int (*do_mux)(struct charger_manager *info, enum mmi_mux_channel channel, bool on);
+
 };
 
 /* charger related module interface */
