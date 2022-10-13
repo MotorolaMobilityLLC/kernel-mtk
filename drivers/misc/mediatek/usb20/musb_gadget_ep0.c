@@ -996,13 +996,13 @@ musb_g_ep0_queue(struct usb_ep *e, struct usb_request *r, gfp_t gfp_flags)
 	req->tx = ep->is_in;
 
 	spin_lock_irqsave(&musb->lock, lockflags);
-
+	#if 0
 	if (!musb->is_active) {
 		DBG(0, "ep0 request queued when usb not active\n");
 		status = -EINVAL;
 		goto cleanup;
 	}
-
+	#endif
 	if (!list_empty(&ep->req_list)) {
 		status = -EBUSY;
 		goto cleanup;
