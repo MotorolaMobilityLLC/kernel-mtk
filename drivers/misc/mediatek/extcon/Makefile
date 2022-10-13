@@ -2,6 +2,8 @@
 
 ccflags-$(CONFIG_TCPC_CLASS) += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 ccflags-$(CONFIG_MTK_USB_TYPEC_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/typec/switch
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
 
 obj-$(CONFIG_EXTCON_MTK_USB) += extcon-mtk-usb.o
 
