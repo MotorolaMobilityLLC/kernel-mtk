@@ -164,6 +164,33 @@ struct mt_charger {
 	enum charger_type chg_type;
 	int ichg_limit;
 };
+static int mmi_mux_typec_chg_chan(enum mmi_mux_channel channel, bool on)
+{
+	struct charger_manager *info = NULL;
+//	struct power_supply *chg_psy = NULL;
+	struct charger_device *chg_psy = NULL;
+
+//	chg_psy = power_supply_get_by_name("primary_chg");
+	chg_psy = get_charger_by_name("primary_chg");
+	if(chg_psy) {
+		info = (struct charger_manager *)charger_dev_get_drvdata(chg_psy);
+		if(info)
+			pr_err("%s could  get charger_manager\n",__func__);
+		else {
+			pr_err("%s Couldn't get charger_manager\n",__func__);
+			return 0;
+		}
+	} else {
+		pr_err("%s Couldn't get chg_psy\n",__func__);
+		return 0;
+	}
+	pr_info("%s open typec OTG chan =%d, on = %d\n", __func__, channel, on);
+//	if (info->do_mux)
+//		info->do_mux(info, channel, on);
+//	else
+//		pr_err("%s get info->algo.do_mux fail", __func__);
+	return 0;
+}
 
 #ifdef MTK_BASE
 static int mt_charger_online(struct mt_charger *mtk_chg)
@@ -525,6 +552,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			plug_in_out_handler(cti, true, false);
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
@@ -547,14 +575,17 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			}
 			#endif
 			pr_info("%s USB Plug out\n", __func__);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			plug_in_out_handler(cti, false, false);
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 			pr_info("%s Source_to_Sink\n", __func__);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			plug_in_out_handler(cti, true, true);
 		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			pr_info("%s Sink_to_Source\n", __func__);
+			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			plug_in_out_handler(cti, false, true);
 		}
 		break;
