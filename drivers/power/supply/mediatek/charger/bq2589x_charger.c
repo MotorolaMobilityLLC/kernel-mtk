@@ -154,6 +154,7 @@ static int bq2589x_enter_hiz_mode(struct bq2589x *bq);
 static int bq2589x_exit_hiz_mode(struct bq2589x *bq);
 static int bq2589x_enable_charger(struct bq2589x *bq);
 static int bq2589x_disable_charger(struct bq2589x *bq);
+int bq2589x_get_hiz_mode(struct bq2589x *bq, u8 *state);
 
 static void bq2589x_reset_pe_param(void)
 {
@@ -814,6 +815,26 @@ int bq2589x_set_otg(struct charger_device *chg_dev, bool enable)
 {
 	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
 	int ret;
+	u8 state = 0;
+
+	ret = bq2589x_get_hiz_mode(bq,&state);
+	if(!ret && state && enable) {
+		ret = bq2589x_exit_hiz_mode(bq);
+		dev_info(bq->dev, "%s:exit hz mode before enable OTG %s\n", __func__,
+				!ret ? "successfully" : "failed");
+	}
+	else if(!ret) {
+		if(state) {
+			dev_info(bq->dev, "%s: hz mode is on with disable otg\n",__func__);
+		}
+		else if(enable) {
+			dev_info(bq->dev, "%s:hz mode is off with enable otg\n",__func__);
+		}
+		else
+			dev_info(bq->dev, "%s:hz mode is off with disable otg\n",__func__);
+	}
+	else
+		dev_info(bq->dev, "%s:error in get hz mode\n",__func__);
 
 	pr_info("set otg %d\n", enable);
 	if (enable) {
@@ -1330,6 +1351,32 @@ static int bq2589x_run_aicl(struct charger_device *chg_dev, u32 *uA)
 			wait_ico_cnt--;
 		}
 	}
+
+	return ret;
+}
+
+static int bq2589x_enable_power_path(struct charger_device *chg_dev, bool en)
+{
+	struct bq2589x *bq = charger_get_data(chg_dev);
+	dev_info(bq->dev, "%s: en = %d\n", __func__, en);
+
+	return bq2589x_set_hz_mode(chg_dev, !en);
+}
+
+static int bq2589x_is_powerpath_enabled(struct charger_device *chg_dev, bool *en)
+{
+	int ret = 0;
+	u8 val = 0;
+	struct bq2589x *bq = charger_get_data(chg_dev);
+
+	ret = bq2589x_get_hiz_mode(bq, &val);
+	if (ret < 0) {
+		dev_err(bq->dev, "%s: bq2589x_get_hiz_mode failed\n", __func__);
+		return ret;
+	}
+
+	*en = ((val == 0) ? false : true);
+	//*en = !*en;
 
 	return ret;
 }
@@ -2026,8 +2073,8 @@ static struct charger_ops bq2589x_chg_ops = {
 	.is_safety_timer_enabled = bq2589x_is_safety_timer_enabled,
 
 	/* Power path */
-	.enable_powerpath = NULL,
-	.is_powerpath_enabled = NULL,
+	.enable_powerpath = bq2589x_enable_power_path,
+	.is_powerpath_enabled = bq2589x_is_powerpath_enabled,
 
 	/* ADC */
 	.get_vbus_adc = bq2589x_get_vbus,
