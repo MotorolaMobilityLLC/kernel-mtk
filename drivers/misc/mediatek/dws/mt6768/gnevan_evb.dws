@@ -2188,7 +2188,7 @@
         <module name="kpd">
             <row>8</row>
             <column>9</column>
-            <keyMatrix>SEARCH VOLUMEUP NC NC NC NC NC NC NC
+            <keyMatrix>VOLUMEDOWN NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
@@ -2201,7 +2201,7 @@
             <modeKey>NC VOLUMEUP VOLUMEDOWN</modeKey>
             <pwrKeyEint_gpioNum>0</pwrKeyEint_gpioNum>
             <pwrKeyUtility>POWER</pwrKeyUtility>
-            <home_key>VOLUMEDOWN</home_key>
+            <home_key>VOLUMEUP</home_key>
             <bPwrKeyUseEint>false</bPwrKeyUseEint>
             <bPwrKeyGpioDinHigh>false</bPwrKeyGpioDinHigh>
             <pressPeriod>1024</pressPeriod>

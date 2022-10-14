@@ -201,6 +201,11 @@
 	mt6370pd,intr_gpio = <&pio 4 0x0>;
 };
 
+&keypad {
+	pinctrl-names = "default";
+	pinctrl-0 = <&kpd_pins_default>;
+};
+
 /* CONSYS GPIO standardization */
 &pio {
 	consys_pins_default: consys_default {
@@ -228,6 +233,14 @@
 		};
 	};
         msdc1_ins: msdc1_ins {
+	};
+	kpd_pins_default: kpdgpiodefault {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO93__FUNC_KPCOL0>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+			input-enable;
+			input-schmitt-enable;
+		};
 	};
 };
 &consys {
