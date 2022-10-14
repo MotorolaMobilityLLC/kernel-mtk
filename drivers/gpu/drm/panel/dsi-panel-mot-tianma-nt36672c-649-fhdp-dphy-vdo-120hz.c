@@ -174,7 +174,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	    gpiod_set_value(ctx->reset_gpio, 0);
 	    mdelay (10);
 	    gpiod_set_value(ctx->reset_gpio, 1);
-	    mdelay (50);
+	    mdelay (20);
 	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
     }
 
@@ -228,7 +228,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0X35, 0X00);//TE
 
 	tianma_dcs_write_seq_static(ctx, 0x11);
-	msleep(100);
+	msleep(70);
 	tianma_dcs_write_seq_static(ctx, 0x29);
 
 
@@ -275,9 +275,9 @@ static int tianma_unprepare(struct drm_panel *panel)
 	printk("[%d  %s]\n",__LINE__, __FUNCTION__);
 
 	tianma_dcs_write_seq_static(ctx, 0x28);
-	msleep(50);
+	msleep(10);
 	tianma_dcs_write_seq_static(ctx, 0x10);
-	msleep(150);
+	msleep(100);
 
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->reset_gpio)) {
