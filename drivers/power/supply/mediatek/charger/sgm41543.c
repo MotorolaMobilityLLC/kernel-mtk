@@ -42,6 +42,7 @@
 #include "sgm41543.h"
 #include <mt-plat/upmu_common.h>
 /*#include <linux/hardware_info.h>*/
+#include <mtk_battery_internal.h>
 
 #define SGM41543_STATUS_PLUGIN			0x0001
 #define SGM41543_STATUS_PG				0x0002
@@ -1320,24 +1321,13 @@ static int sgm41543_get_ichg(struct charger_device *chg_dev, u32 *curr)
 
 	ret = sgm41543_read_byte(bq, SGM41543_REG_02, &reg_val);
 	if (!ret) {
-
-			ichg = reg_val & REG02_ICHG_MASK;
-			if (ichg <= 0x8)
-				*curr = ichg * 5000;
-			else if (ichg <= 0xF)
-				*curr = 40000 + (ichg - 0x8) * 10000;
-			else if (ichg <= 0x17)
-				*curr = 110000 + (ichg - 0xF) * 20000;
-			else if (ichg <= 0x20)
-				*curr = 270000 + (ichg - 0x17) * 30000;
-			else if (ichg <= 0x30)
-				*curr = 540000 + (ichg - 0x20) * 60000;
-			else if (ichg <= 0x3C)
-				*curr = 1500000 + (ichg - 0x30) * 120000;
+			ichg = ((u32)(reg_val & REG02_ICHG_MASK ) >> REG02_ICHG_SHIFT);
+			if (ichg <= 0x3F)
+				*curr = ichg * 60000;
 			else
-				*curr = 3000000;
+				*curr = 3780000;
 	}
-
+	pr_err("sgm41543_get_ichg = %d\n", *curr);
 	return ret;
 }
 
@@ -1345,6 +1335,15 @@ static int sgm41543_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
 {
 	*curr = 60 * 1000;
 
+	return 0;
+}
+
+static int sgm41543_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	int val = 0;
+	val = pmic_get_vbus();
+	*vbus = (u32)(val * 1000);
+	pr_info("%s: use pmic get vbus = %d , mv = %d \n", __func__,*vbus, val);
 	return 0;
 }
 
@@ -1672,6 +1671,7 @@ static struct charger_ops sgm41543_chg_ops = {
 
 	/* ADC */
 	.get_tchg_adc = NULL,
+	.get_vbus_adc = sgm41543_get_vbus,
 	/* Event */
 	.event = sgm41543_do_event,
 };
@@ -1682,6 +1682,26 @@ static struct of_device_id sgm41543_charger_match_table[] = {
 };
 MODULE_DEVICE_TABLE(of, sgm41543_charger_match_table);
 
+static int sgm41543_charge_status(struct sgm41543 *bq)
+{
+	u8 status = 0;
+	u8 charge_status = 0;
+
+	sgm41543_read_byte(bq, SGM41543_REG_08, &status);
+	charge_status = (status & REG08_CHRG_STAT_MASK) >> REG08_CHRG_STAT_SHIFT;
+
+	switch (charge_status) {
+	case REG08_CHRG_STAT_FASTCHG:
+		return POWER_SUPPLY_CHARGE_TYPE_FAST;
+	case REG08_CHRG_STAT_PRECHG:
+		return POWER_SUPPLY_CHARGE_TYPE_TRICKLE;
+	case REG08_CHRG_STAT_CHGDONE:
+	case REG08_CHRG_STAT_IDLE:
+		return POWER_SUPPLY_CHARGE_TYPE_NONE;
+	default:
+		return POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
+	}
+}
 
 static enum power_supply_property sgm41543_gauge_properties[] = {
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
@@ -1697,6 +1717,7 @@ static int sgm41543_psy_gauge_get_property(struct power_supply *psy,
 	int ret;
 	u8 status;
 	u8 pg_status;
+	int voltage;
 
 	bq = (struct sgm41543 *)power_supply_get_drvdata(psy);
 
@@ -1722,9 +1743,22 @@ static int sgm41543_psy_gauge_get_property(struct power_supply *psy,
 				val->intval = POWER_SUPPLY_STATUS_FULL;
 			else
 				val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
-
 		}else
 			return -EINVAL;
+		break;
+	case POWER_SUPPLY_PROP_ONLINE:
+		voltage = pmic_get_vbus();
+		pr_err("%s val:%d", __func__,voltage);
+		if (voltage > 4400)
+			val->intval = 1;
+		else
+			val->intval = 0;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_TYPE:
+		val->intval = sgm41543_charge_status(bq);
+		break;
+	case POWER_SUPPLY_PROP_TYPE:
+		val->intval = POWER_SUPPLY_TYPE_USB_DCP;
 		break;
 	default:
 		return -EINVAL;
