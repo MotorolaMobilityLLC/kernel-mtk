@@ -4142,8 +4142,8 @@
 		vcp_iommu_venc {
 			vcp-support = <3>;
 			compatible =  "mediatek,vcp-io-venc";
-			dma-ranges = <0x0 0x0 0x0 0x0 0x4 0x0>;
-			iommus = <&disp_iommu M4U_LARB7_PORT2>;
+			dma-ranges = <0x1 0x0 0x1 0x0 0x1 0x0>;
+			iommus = <&disp_iommu M4U_LARB33_VIDEO_UP_512MB2>;
 		};
 
 		vcp_iommu_work {
@@ -4525,6 +4525,7 @@
 			<1 0>,
 			<2 642>, /* use FHD60 worst case * 0.7: 256*458/766 * 1.5 * 4 * 0.7*/
 			<6 7>;
+			mediatek,uniq_dom = <1>;
 		};
 
 		jpgenc@17030000 {
