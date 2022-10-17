@@ -127,7 +127,7 @@ extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
 #define FALSE 0
 #endif
 
-//unsigned int regf6 = 0;
+extern unsigned int regf6;
 
 struct LCM_setting_table {
 	unsigned int cmd;
@@ -155,7 +155,11 @@ static struct LCM_setting_table lcm_suspend_setting_gesture[] = {
 static struct LCM_setting_table init_setting[] = {
 	{0xF0, 0x02, {0x5A, 0x59} },
 	{0xF1, 0x02, {0xA5, 0xA6} },
-	{0xC1, 0x13, {0xC0, 0x20, 0x20, 0x96, 0x04,0x30, 0x28, 0x04, 0x2A, 0x40, 0x36, 0x00, 0x07, 0xC0, 0xFF, 0xFF, 0xC0, 0x00, 0xC0} },
+	{0xF6, 0x01, {0x00}},
+	{0xFA, 0x03, {0x45, 0x93, 0x01}},
+	{0xBD, 0x0A, {0xE9, 0x02, 0x4E, 0xCF, 0x72, 0xA4, 0x08, 0x44, 0xAE, 0x15}},
+	{0xBE, 0x0A, {0x68, 0x7C, 0x46, 0x5A, 0x0c, 0x77, 0x43, 0x07, 0x0E, 0x0E}},
+	{0xC1, 0x13, {0xC0, 0x20, 0x20, 0x96, 0x04,0x30, 0x28, 0x04, 0x2A, 0x40, 0x36, 0x00, 0x07, 0xC0, 0x10, 0xFF, 0x7C, 0x01, 0xC0} },
 	{0x35,0x01,{0x00}},
 	{0x53, 0x01, {0x2C} },
 	{0x51, 0x01, {0x00} },
@@ -346,7 +350,6 @@ static void lcm_resume_power(void)
 {
 }
 
-#if 0
 static int __init parse_pmtmr(char *arg)
 {
 	unsigned int base;
@@ -361,8 +364,6 @@ static int __init parse_pmtmr(char *arg)
 	return 1;
 }
 __setup("androidboot.reg0xf6=", parse_pmtmr);
-
-#endif
 
 static void lcm_init(void)
 {
@@ -394,10 +395,11 @@ static void lcm_init(void)
 #endif
 	}
 	lcm_reset();
-	//init_setting[2].para_list[0] = regf6;
-	push_table(NULL, init_setting,sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+	init_setting[2].para_list[0] = regf6;
+	push_table(NULL, init_setting,
+			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-	//LCM_LOGI("zsh write 0xf6 data = %02x", init_setting[2].para_list[0]);
+	LCM_LOGI("zsh write 0xf6 data = %02x", init_setting[2].para_list[0]);
 	LCM_LOGI("%s: icnl9911c done\n",__func__);
 }
 
