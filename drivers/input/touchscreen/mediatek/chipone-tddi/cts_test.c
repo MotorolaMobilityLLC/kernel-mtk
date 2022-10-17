@@ -740,6 +740,47 @@ static int prepare_test(struct cts_device *cts_dev)
     return 0;
 }
 
+
+static int disable_esd_and_mnt(struct cts_device *cts_dev)
+{
+    int ret;
+
+    ret = cts_set_dev_esd_protection(cts_dev, false);
+    if (ret) {
+        cts_err("Disable firmware ESD protection failed %d(%s)",
+            ret, cts_strerror(ret));
+        return ret;
+    }
+
+    ret = disable_fw_monitor_mode(cts_dev);
+    if (ret) {
+        cts_err("Disable firmware monitor mode failed %d(%s)",
+            ret, cts_strerror(ret));
+    }
+
+    return ret;
+}
+
+// static int enable_esd_and_mnt(struct cts_device *cts_dev)
+// {
+//     int ret;
+
+//     ret = cts_set_dev_esd_protection(cts_dev, true);
+//     if (ret) {
+//         cts_err("Disable firmware ESD protection failed %d(%s)",
+//             ret, cts_strerror(ret));
+//         return ret;
+//     }
+
+//     ret = enable_fw_monitor_mode(cts_dev);
+//     if (ret) {
+//         cts_err("Disable firmware monitor mode failed %d(%s)",
+//             ret, cts_strerror(ret));
+//     }
+
+//     return ret;
+// }
+
 static void post_test(struct cts_device *cts_dev)
 {
     int ret;
@@ -1842,6 +1883,8 @@ int cts_test_rawdata(struct cts_device *cts_dev,
 
     cts_lock_device(cts_dev);
 
+    disable_esd_and_mnt(cts_dev);
+
     for (i = 0; i < 5; i++) {
         int r;
         u8 val;
@@ -2063,6 +2106,8 @@ int cts_test_noise(struct cts_device *cts_dev,
     }
 
     cts_lock_device(cts_dev);
+
+    disable_esd_and_mnt(cts_dev);
 
     for (i = 0; i < 5; i++) {
         int r;
