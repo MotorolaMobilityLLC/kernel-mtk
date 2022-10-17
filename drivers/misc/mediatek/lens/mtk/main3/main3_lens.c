@@ -90,6 +90,8 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	 GT9772AF_Release, GT9772AF_GetFileName, NULL},
 	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl,
 	 DW9714AF_Release, DW9714AF_GetFileName, NULL},
+	{1, AFDRV_MOT_MILAN_DW9714AF, MOT_MILAN_DW9714AF_SetI2Cclient, MOT_MILAN_DW9714AF_Ioctl,
+	 MOT_MILAN_DW9714AF_Release, MOT_MILAN_DW9714AF_GetFileName, NULL},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
