@@ -27,4 +27,5 @@
 };
 
 #include <aion_evb/cust.dtsi>
+#include "mediatek/cust_mt6879_camera_v4l2_tesla.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
