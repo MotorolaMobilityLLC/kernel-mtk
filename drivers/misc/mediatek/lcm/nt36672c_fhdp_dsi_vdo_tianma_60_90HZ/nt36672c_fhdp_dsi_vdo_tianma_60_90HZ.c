@@ -889,10 +889,10 @@ static void lcm_init(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(1);
 
-	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP_OUT1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
 	Bias_power_write_bytes(0x00,0x0F);
 	MDELAY(1);
-	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT1);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
 	Bias_power_write_bytes(0x01,0x0F);
 	MDELAY(10);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
@@ -975,9 +975,9 @@ static void lcm_suspend_power(void)
 {
 	pr_info("%s enter\n", __func__);
 
-	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN_OUT0);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN0);
 	MDELAY(1);
-	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP_OUT0);
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP0);
 
 	if (!hw_checked)
 		lcm_hwrev_check();
