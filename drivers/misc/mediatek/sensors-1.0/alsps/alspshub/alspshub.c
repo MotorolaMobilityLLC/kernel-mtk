@@ -76,6 +76,7 @@ enum {
 #define BORA_TP_VENDOR_TXD	 0
 #define BORA_TP_VENDOR_DJ    1
 #define BORA_TP_VENDOR_JZ    2
+#define BORA_TP_VENDOR_BOE   3
 
 static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 {
@@ -132,6 +133,9 @@ static int get_tp_vendor(void)
 		} else if (strncmp(buf,"jz",2) == 0) {
 			pr_err("ontim debug lcd : [3_jz]\n");
 			vendor = BORA_TP_VENDOR_JZ;
+		} else if (strncmp(buf,"boe",3) == 0) {
+			pr_err("ontim debug lcd : [4_boe]\n");
+			vendor = BORA_TP_VENDOR_BOE;
 		}
 	}
 	printk(KERN_INFO "[ALS/PS]: tp vendor:(0x%x)%s\n", vendor, buf);
