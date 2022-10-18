@@ -604,6 +604,16 @@ int bq2589x_adc_start(struct bq2589x *bq, bool oneshot)
 }
 EXPORT_SYMBOL_GPL(bq2589x_adc_start);
 
+int bq2589x_adc_stop(struct bq2589x *bq)
+{
+	return bq2589x_update_bits(bq,
+		BQ2589X_REG_02,
+		BQ2589X_CONV_RATE_MASK,
+		BQ2589X_ADC_CONTINUE_DISABLE << BQ2589X_CONV_RATE_SHIFT);
+
+}
+EXPORT_SYMBOL_GPL(bq2589x_adc_stop);
+
 int bq2589x_adc_read_battery_volt(struct bq2589x *bq)
 {
 	uint8_t val;
@@ -2236,6 +2246,9 @@ static void bq2589x_charger_shutdown(struct i2c_client *client)
 
 	free_irq(bq->client->irq, NULL);
 	gpio_free(bq2589x_irq);
+	bq2589x_adc_stop(bq);
+	dev_info(bq->dev, "%s:shutdown bq2589x_dump_regs\n", __func__);
+	bq2589x_dump_regs(bq);
 	g_bq = NULL;
 }
 
