@@ -23,9 +23,6 @@
         str[0] = 0;                                 \
     }
 
-#define MILAN_S5KJN1_EEPROM_GGC_SIZE 346
-#define MILAN_S5KJN1_EEPROM_GGC_END_ADDR 0x39C4
-
 static unsigned int g_lastDevID;
 extern struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX];
 
@@ -41,13 +38,19 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			.dataBuffer = NULL
 		},
 		{
-			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
-			{0x00000001, 0x18F60027, 0x00100018, mot_check_af_data  },//High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
-			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
-			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },
-			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data},//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
-			{0x00000001, 0x0000386B, 0x0000015A, mot_check_ggc_data},
-			{0x00000001, 0x00000015, 0x00000010, NULL},//dump serial number.
+			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },                 // mnf
+			{0x00000001, 0x18F60027, 0x00100018, mot_check_af_data  },                 // High 16 bit: AF sync data; Low 16 bit: AF inf/macro data
+			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_ob64_data },            // awb
+			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },                 // lsc
+			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data},                 // High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data
+			{0x00000001, 0x000035F7, 0x00000272, mot_check_sw_ggc_data},               // sw ggc
+			{0x00000001, 0x0000386B, 0x0000015A, mot_check_hw_ggc_data},               // hw ggc
+			{0x00000001, 0x0000191D, 0x00000A34, mot_check_samsung_xtc_data},          // Samsung xtc
+			{0x00000001, 0x00002353, 0x00000300, mot_check_samsung_sensor_xtc_data},   // Samsung sensor xtc
+			{0x00000001, 0x00002655, 0x00000FA0, mot_check_samsung_pd_xtc_data},       // Samsung pd xtc
+			{0x00000000, 0x35F7386B, 0x0272015A, mot_check_omnivision_crosstalk_data}, // Omnivision crosstalk
+			{0x00000000, 0x35F7386B, 0x0272015A, mot_check_omnivision_dpc_data},       // Omnivision dpc
+			{0x00000001, 0x00000015, 0x00000010, NULL},                                // Dump serial number
 		}
 	},
 	{
@@ -60,13 +63,19 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			.dataBuffer = NULL
 		},
 		{
-			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },
-			{0x00000000, 0x00000005, 0x00000002, mot_check_af_data  },
-			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
-			{0x00000001, 0x000011A5, 0x0000074C, mot_check_lsc_data },
-			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data},
-			{0x00000000, 0x0000386B, 0x0000015A, mot_check_ggc_data},
-			{0x00000000, 0x00000015, 0x00000010, NULL},//dump serial number.
+			{0x00000001, 0x00000000, 0x00000025, mot_check_mnf_data },                 // mnf
+			{0x00000000, 0x00000000, 0x00000000, mot_check_af_data  },                 // High 16 bit: AF sync data; Low 16 bit: AF inf/macro data.
+			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },                 // awb
+			{0x00000001, 0x000011A5, 0x0000074C, mot_check_lsc_data },                 // lsc
+			{0x00000000, 0x00000000, 0x00000000, mot_check_pdaf_data},                 // High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
+			{0x00000000, 0x00000000, 0x00000000, mot_check_sw_ggc_data},               // sw ggc
+			{0x00000000, 0x00000000, 0x00000000, mot_check_hw_ggc_data},               // hw ggc
+			{0x00000000, 0x00000000, 0x00000000, mot_check_samsung_xtc_data},          // Samsung xtc
+			{0x00000000, 0x00000000, 0x00000000, mot_check_samsung_sensor_xtc_data},   // Samsung sensor xtc
+			{0x00000000, 0x00000000, 0x00000000, mot_check_samsung_pd_xtc_data},       // Samsung pd xtc
+			{0x00000001, 0x000007C9, 0x00000258, mot_check_omnivision_crosstalk_data}, // Omnivision crosstalk
+			{0x00000001, 0x00000A23, 0x00000780, mot_check_omnivision_dpc_data},       // Omnivision dpc
+			{0x00000000, 0x00000015, 0x00000010, NULL},
 		}
 	},
 };
@@ -328,6 +337,63 @@ int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
 	return crc_match;
 }
 
+static uint8_t mot_eeprom_util_check_awb_ob64_limits(awb_t unit, awb_t golden)
+{
+	uint8_t result = 0;
+
+	if (unit.r < AWB_R_MIN_OB64 || unit.r > AWB_R_MAX_OB64)
+	{
+		LOG_ERR("unit r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN_OB64, unit.r, AWB_R_MAX_OB64);
+		result = 1;
+	}
+	if (unit.gr < AWB_GR_MIN_OB64 || unit.gr > AWB_GR_MAX_OB64)
+	{
+		LOG_ERR("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN_OB64, unit.gr, AWB_GR_MAX_OB64);
+		result = 1;
+	}
+	if (unit.gb < AWB_GB_MIN_OB64 || unit.gb > AWB_GB_MAX_OB64)
+	{
+		LOG_ERR("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN_OB64, unit.gb, AWB_GB_MAX_OB64);
+		result = 1;
+	}
+	if (unit.b < AWB_B_MIN_OB64 || unit.b > AWB_B_MAX_OB64)
+	{
+		LOG_ERR("unit b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN_OB64, unit.b, AWB_B_MAX_OB64);
+		result = 1;
+	}
+
+	if (golden.r < AWB_R_MIN_OB64 || golden.r > AWB_R_MAX_OB64)
+	{
+		LOG_ERR("golden r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN_OB64, golden.r, AWB_R_MAX_OB64);
+		result = 1;
+	}
+	if (golden.gr < AWB_GR_MIN_OB64 || golden.gr > AWB_GR_MAX_OB64)
+	{
+		LOG_ERR("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN_OB64, golden.gr, AWB_GR_MAX_OB64);
+		result = 1;
+	}
+	if (golden.gb < AWB_GB_MIN_OB64 || golden.gb > AWB_GB_MAX_OB64)
+	{
+		LOG_ERR("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN_OB64, golden.gb, AWB_GB_MAX_OB64);
+		result = 1;
+	}
+	if (golden.b < AWB_B_MIN_OB64 || golden.b > AWB_B_MAX_OB64)
+	{
+		LOG_ERR("golden b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN_OB64, golden.b, AWB_B_MAX_OB64);
+		result = 1;
+	}
+
+	return result;
+}
+
 static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
 {
 	uint8_t result = 0;
@@ -494,6 +560,7 @@ static void get_manufacture_data(u8 *data,UINT32 StartAddr,
 		case 0x42: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "Largan 50281A3");	break;
 		case 0x60: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "SEMCO");		break;
 		case 0x80: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "Genius");		break;
+		case 0x82: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "AAC 165174A01");		break;
 		case 0x84: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "AAC 325174A01");	break;
 		case 0xA0: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "Sunnys");		break;
 		case 0xA1: ret = snprintf(pMnfCamID->lens_id, MAX_CALIBRATION_STRING, "Sunnys 39390A-400");break;
@@ -622,6 +689,70 @@ static void mot_check_af_data(u8 *data, UINT32 StartAddr,
 			LOG_INF("AF inf/macro data CRC Pass");
 		}
 	}
+}
+
+static void mot_check_awb_ob64_data(u8 *data,UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t awb_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+	camcal_awb awb_data = {0};
+	camcal_awb *eeprom = &awb_data;
+	awb_t unit;
+	awb_t golden;
+	awb_limit_t golden_limit;
+	MotCalibrationStatus mstatus;
+
+	memcpy(eeprom, data+StartAddr, sizeof(camcal_awb));
+
+	if(!eeprom_util_check_crc16(data+StartAddr,BlockSize,
+					convert_crc(awb_crc16)))
+	{
+		LOG_ERR("AWB CRC Fails!");
+		mstatus = STATUS_CRC_FAIL;
+		goto endfun;
+	}
+	else
+		LOG_INF("AWB CRC Pass");
+
+	unit.r = to_uint16_swap(eeprom->awb_src_1_r);
+	unit.gr = to_uint16_swap(eeprom->awb_src_1_gr);
+	unit.gb = to_uint16_swap(eeprom->awb_src_1_gb);
+	unit.b = to_uint16_swap(eeprom->awb_src_1_b);
+	unit.r_g = to_uint16_swap(eeprom->awb_src_1_rg_ratio);
+	unit.b_g = to_uint16_swap(eeprom->awb_src_1_bg_ratio);
+	unit.gr_gb = to_uint16_swap(eeprom->awb_src_1_gr_gb_ratio);
+
+	golden.r = to_uint16_swap(eeprom->awb_src_1_golden_r);
+	golden.gr = to_uint16_swap(eeprom->awb_src_1_golden_gr);
+	golden.gb = to_uint16_swap(eeprom->awb_src_1_golden_gb);
+	golden.b = to_uint16_swap(eeprom->awb_src_1_golden_b);
+	golden.r_g = to_uint16_swap(eeprom->awb_src_1_golden_rg_ratio);
+	golden.b_g = to_uint16_swap(eeprom->awb_src_1_golden_bg_ratio);
+	golden.gr_gb = to_uint16_swap(eeprom->awb_src_1_golden_gr_gb_ratio);
+
+	if (mot_eeprom_util_check_awb_ob64_limits(unit, golden)) {
+		LOG_ERR("AWB CRC limit Fails!");
+		mstatus = STATUS_LIMIT_FAIL;
+		goto endfun;
+	}
+
+	golden_limit.r_g_golden_min = eeprom->awb_r_g_golden_min_limit[0];
+	golden_limit.r_g_golden_max = eeprom->awb_r_g_golden_max_limit[0];
+	golden_limit.b_g_golden_min = eeprom->awb_b_g_golden_min_limit[0];
+	golden_limit.b_g_golden_max = eeprom->awb_b_g_golden_max_limit[0];
+
+	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit))
+	{
+		LOG_ERR("AWB CRC factor limit Fails!");
+		mstatus = STATUS_LIMIT_FAIL;
+		goto endfun;
+	}
+
+	LOG_INF("AWB Limit Pass");
+	mstatus = STATUS_OK;
+endfun:
+	mot_cal_info->awb_status = mstatus;
 }
 
 static void mot_check_awb_data(u8 *data,UINT32 StartAddr,
@@ -763,23 +894,138 @@ static void  mot_check_pdaf_data( u8 *data, UINT32 StartAddr,
 	}
 }
 
-static void mot_check_ggc_data( u8 *data, UINT32 StartAddr,
+static void mot_check_sw_ggc_data( u8 *data, UINT32 StartAddr,
 				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
 {
-	UINT16 ggc_crc16 = data[MILAN_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|data[MILAN_S5KJN1_EEPROM_GGC_END_ADDR+2];
+	uint8_t sw_ggc_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
 
-	mot_cal_info->ggc_status = STATUS_OK;
-
-	if (eeprom_util_check_crc16((data+StartAddr),BlockSize, ggc_crc16) && mot_cal_info->ggc_data != NULL)
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(sw_ggc_crc16)))
 	{
-		memcpy(mot_cal_info->ggc_data, data+StartAddr, sizeof(uint8_t)*BlockSize);
-		LOG_INF("mot_check_ggc_data CRC Pass!");
+		LOG_INF("SamSung SW GGC CRC Fails!");
+		mot_cal_info->sw_ggc_status = STATUS_CRC_FAIL;
 	}
 	else
 	{
-			LOG_INF("mot_check_ggc_data CRC Fails!");
-			mot_cal_info->ggc_status = STATUS_CRC_FAIL;
+		LOG_INF("SamSung SW GGC CRC Pass");
+		mot_cal_info->sw_ggc_status = STATUS_OK;
 	}
+}
+
+static void mot_check_hw_ggc_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t hw_ggc_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(hw_ggc_crc16)))
+	{
+		LOG_INF("SamSung HW GGC CRC Fails!");
+		mot_cal_info->hw_ggc_status = STATUS_CRC_FAIL;
+	}
+	else
+	{
+		LOG_INF("SamSung HW GGC CRC Pass");
+		mot_cal_info->hw_ggc_status = STATUS_OK;
+	}
+}
+
+static void mot_check_samsung_xtc_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t samsung_xtc_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(samsung_xtc_crc16)))
+	{
+		LOG_INF("SamSung XTC CRC Fails!");
+		mot_cal_info->xtalk_status = STATUS_CRC_FAIL;
+	}
+	else
+	{
+		LOG_INF("SamSung XTC CRC Pass");
+		mot_cal_info->xtalk_status = STATUS_OK;
+	}
+}
+
+static void mot_check_samsung_sensor_xtc_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t samsung_sensor_xtc_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(samsung_sensor_xtc_crc16)))
+	{
+		LOG_INF("SamSung Sesnor XTC CRC Fails!");
+		mot_cal_info->xtalk_status = STATUS_CRC_FAIL;
+	}
+	else
+	{
+		LOG_INF("SamSung Sensor XTC CRC Pass");
+		mot_cal_info->xtalk_status = STATUS_OK;
+	}
+}
+
+static void mot_check_samsung_pd_xtc_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t samsung_pd_xtc_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(samsung_pd_xtc_crc16)))
+	{
+		LOG_INF("SamSung PD XTC CRC Fails!");
+		mot_cal_info->xtalk_status = STATUS_CRC_FAIL;
+	}
+	else
+	{
+		LOG_INF("SamSung PD XTC CRC Pass");
+		mot_cal_info->xtalk_status = STATUS_OK;
+	}
+}
+
+static void mot_check_omnivision_crosstalk_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t ov_crosstalk_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(ov_crosstalk_crc16)))
+	{
+		LOG_INF("Omnivision Crosstalk CRC Fails!");
+		mot_cal_info->xtalk_status = STATUS_CRC_FAIL;
+	}
+	else
+	{
+		LOG_INF("Omnivision Crosstalk CRC Pass");
+		mot_cal_info->xtalk_status = STATUS_OK;
+	}
+}
+
+static void mot_check_omnivision_dpc_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	uint8_t ov_dpc_crc16[2] = {*(data+StartAddr+BlockSize),
+				*(data+StartAddr+BlockSize+1)};
+
+	if (!eeprom_util_check_crc16(data+StartAddr, BlockSize,
+		convert_crc(ov_dpc_crc16)))
+	{
+		LOG_INF("Omnivision DPC CRC Fails!");
+		mot_cal_info->xtalk_status = STATUS_CRC_FAIL;
+	}
+	else
+	{
+		LOG_INF("Omnivision DPC CRC Pass");
+		mot_cal_info->xtalk_status = STATUS_OK;
+	}
+
 }
 
 

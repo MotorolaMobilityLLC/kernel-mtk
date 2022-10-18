@@ -40,14 +40,23 @@
 
 #define BLACK_LEVEL_SAMSUNG_10B_64 0x40
 
-#define AWB_R_MIN 200*64
-#define AWB_R_MAX 880*64
-#define AWB_GR_MIN 760*64
-#define AWB_GR_MAX 880*64
-#define AWB_GB_MIN 760*64
-#define AWB_GB_MAX 880*64
-#define AWB_B_MIN 200*64
-#define AWB_B_MAX 880*64
+#define AWB_R_MIN_OB64 200*64
+#define AWB_R_MAX_OB64 880*64
+#define AWB_GR_MIN_OB64 760*64
+#define AWB_GR_MAX_OB64 880*64
+#define AWB_GB_MIN_OB64 760*64
+#define AWB_GB_MAX_OB64 880*64
+#define AWB_B_MIN_OB64 200*64
+#define AWB_B_MAX_OB64 880*64
+
+#define AWB_R_MIN 200
+#define AWB_R_MAX 880
+#define AWB_GR_MIN 760
+#define AWB_GR_MAX 880
+#define AWB_GB_MIN 760
+#define AWB_GB_MAX 880
+#define AWB_B_MIN 200
+#define AWB_B_MAX 880
 
 /*
 0.97 * 100* 16384
@@ -110,7 +119,13 @@ typedef enum {
 	EEPROM_CRC_AWB_CAL,
 	EEPROM_CRC_LSC,
 	EEPROM_CRC_PDAF_OUTPUT,
-	EEPROM_CRC_GGC,
+	EEPROM_CRC_SW_GGC,
+	EEPROM_CRC_HW_GGC,
+	EEPROM_CRC_SAMSUNG_XTC,
+	EEPROM_CRC_SAMSUNG_SENSOR_XTC,
+	EEPROM_CRC_SAMSUNG_PD_XTC,
+	EEPROM_CRC_OMNIVISION_CROSSTALK,
+	EEPROM_CTC_OMNIVISION_DPC,
 	EEPROM_DUMP_SERIAL_NUMBER,
 	EEPROM_CRC_LIST
 }EEPROM_CRC_TYPE_ENUM;
@@ -155,8 +170,17 @@ typedef struct {
 static void mot_check_mnf_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_af_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_awb_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_awb_ob64_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_lsc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_pdaf_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
-static void mot_check_ggc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_sw_ggc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_hw_ggc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_samsung_xtc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_samsung_sensor_xtc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_samsung_pd_xtc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_omnivision_crosstalk_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_omnivision_dpc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+
+
 
 #endif

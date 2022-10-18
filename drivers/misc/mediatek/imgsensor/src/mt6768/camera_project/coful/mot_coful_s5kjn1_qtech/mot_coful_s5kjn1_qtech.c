@@ -2153,7 +2153,7 @@ static kal_uint32 return_sensor_id(void)
 static void COFUL_S5KJN1_eeprom_format_ggc_data(mot_calibration_info_t *mot_cal_info)
 {
 	int i;
-	if (mot_cal_info->ggc_status == STATUS_OK && mot_cal_info->ggc_data!= NULL) {
+	if (mot_cal_info->hw_ggc_status == STATUS_OK && mot_cal_info->ggc_data!= NULL) {
 		pr_debug("HW GGC CRC success!");
 
 		addr_data_pair_ggc_jn1[0] = 0x6028;
