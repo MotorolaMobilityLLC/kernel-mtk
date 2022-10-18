@@ -104,7 +104,7 @@
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <9>;
+		vib_vol= <11>;
 	};
         /*nfc:nfc {
 		compatible = "mediatek,nfc-gpio-v2";
