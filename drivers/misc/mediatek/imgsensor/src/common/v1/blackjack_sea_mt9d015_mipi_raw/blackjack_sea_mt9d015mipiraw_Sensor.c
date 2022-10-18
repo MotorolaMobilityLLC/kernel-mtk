@@ -207,7 +207,7 @@ static void set_dummy()
   
 }				/*    set_dummy  */
 #else
-static void set_dummy()
+static void set_dummy(void)
 {
 
 	 cam_pr_debug("[A2030MIPI_SetDummy]Frame_length = %d, Line_length = %d", imgsensor.frame_length, imgsensor.line_length);
