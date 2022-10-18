@@ -178,6 +178,44 @@
 	};
 };
 
+&spi5 {
+	st54spi: st54spi@0 {
+		compatible = "st,st54spi";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		gpio-power_nreset = <16>;
+		gpio-power_nreset-std = <&pio 16 0x00>;
+		power_mode = "ST54J";
+		pinctrl-names = "pinctrl_state_mode_spi",
+				"pinctrl_state_mode_idle";
+		pinctrl-0 = <&pinctrl_state_mode_spi>;
+		pinctrl-1 = <&pinctrl_state_mode_idle>;
+		status = "okay";
+	};
+};
+&pio {
+	pinctrl_state_mode_spi: pinctrl_state_mode_spi {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_SPI5_A_CSB>;
+			bias-disable;
+		};
+	};
+	pinctrl_state_mode_idle: pinctrl_state_mode_idle {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO37__FUNC_GPIO37>;
+			bias-disable;
+		};
+	};
+};
+
+&irq_nfc {
+	mmi,status = "/chosen", "mmi,nfc", "ese_st";
+};
+
+&nfc {
+	mmi,status = "/chosen", "mmi,nfc", "ese_st";
+};
+
 /* DISPSYS GPIO standardization */
 &pio {
 	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
