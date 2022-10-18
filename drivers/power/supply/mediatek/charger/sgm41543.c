@@ -682,6 +682,7 @@ static int sgm41543_update_chg_type(struct charger_device *chg_dev, bool en)
 			else
 				pr_info("CDP, free\n");
 		}
+		sgm41543_set_hz(bq, 0);
 		Charger_Detect_Init();
 		while (wait_plugin_cnt >= 0) {
 			if (bq->status&SGM41543_STATUS_PLUGIN)
