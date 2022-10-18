@@ -33,7 +33,7 @@ Readout mode: 4000X3000@30fps
 Summary 9sum 4000x3000
 ExtClk : 24 MHz
 Vt_pix_clk : 1639.995326 MHz
-MIPI_output_speed : 2000 Msps/T
+MIPI_output_speed : 1792 Mbps/lane
 DBR CLK: 150
 Crop_Width : 12024 px
 Crop_Height : 9072 px
@@ -95,7 +95,7 @@ const kal_uint16 s5khm6_12M_30fps_setting[] = {
     0x0300, 0x0007,
     0x030E, 0x0003,
     0x0312, 0x0001,
-    0x0310, 0x00FA,
+    0x0310, 0x00E0,
     0x0324, 0x0000,
     0x0326, 0x0000,
     0x030A, 0x0001,
@@ -1300,14 +1300,13 @@ const kal_uint16 s5khm6_12M_30fps_setting[] = {
     0xFCFC, 0x4000,
     0x020C, 0x0000,
 };
-
 /*
 Readout mode: 2000x1500@60fps
 
 Summary 9sum2bin 2000x1500
 ExtClk : 24 MHz
 Vt_pix_clk : 1639.995326 MHz
-MIPI_output_speed : 2000 Msps/T
+MIPI_output_speed : 1792 Mbps/lane
 DBR CLK: 150
 Crop_Width : 12096 px
 Crop_Height : 9072 px
@@ -1369,7 +1368,7 @@ const kal_uint16 s5khm6_3M_60fps_setting[] = {
     0x0300, 0x0007,
     0x030E, 0x0003,
     0x0312, 0x0001,
-    0x0310, 0x00FA,
+    0x0310, 0x00E0,
     0x0324, 0x0000,
     0x0326, 0x0000,
     0x030A, 0x0001,
@@ -2581,7 +2580,7 @@ Readout modd: 2000x1500@120fps
 Summary 9sum2bin 2000x1500
 ExtClk : 24 MHz
 Vt_pix_clk : 1639.995326 MHz
-MIPI_output_speed : 2000 Msps/T
+MIPI_output_speed : 1792 Mbps/lane
 DBR CLK: 150
 Crop_Width : 12096 px
 Crop_Height : 9072 px
@@ -2643,7 +2642,7 @@ const kal_uint16 s5khm6_3M_120fps_setting[] = {
     0x0300, 0x0007,
     0x030E, 0x0003,
     0x0312, 0x0001,
-    0x0310, 0x00FA,
+    0x0310, 0x00E0,
     0x0324, 0x0000,
     0x0326, 0x0000,
     0x030A, 0x0001,
@@ -3848,14 +3847,13 @@ const kal_uint16 s5khm6_3M_120fps_setting[] = {
     0xFCFC, 0x4000,
     0x020C, 0x0000,
 };
-
 /*
 Readout mode: 108M@8fps
 
 Summary Fullsize 12000x9000
 ExtClk : 24 MHz
 Vt_pix_clk : 1639.995326 MHz
-MIPI_output_speed : 2000 Msps/T
+MIPI_output_speed : 1792 Mbps/lane
 DBR CLK 150
 Crop_Width : 12024 px
 Crop_Height : 9072 px
@@ -3917,7 +3915,7 @@ const kal_uint16 s5khm6_108M_8fps_setting[] = {
     0x0300, 0x0007,
     0x030E, 0x0003,
     0x0312, 0x0001,
-    0x0310, 0x00FA,
+    0x0310, 0x00E0,
     0x0324, 0x0000,
     0x0326, 0x0000,
     0x030A, 0x0001,
@@ -5122,7 +5120,6 @@ const kal_uint16 s5khm6_108M_8fps_setting[] = {
     0xFCFC, 0x4000,
     0x020C, 0x0000,
 };
-
 //Pre-init setting
 const kal_uint16 s5khm6_pre_init_setting[] = {
     0xFCFC, 0x4000,
@@ -7276,7 +7273,5 @@ const kal_uint16 s5khm6_post_init_setting[] = {
     0xFCFC, 0x4510,
     0x0000, 0x0000,
     0x0002, 0x0000,
-    0xFCFC, 0x4000,
-    0x80FC, 0x000B,
 };
 #endif
