@@ -437,6 +437,9 @@ typedef struct {
 	MINT32 lsc;
 	MINT32 pdaf;
 	MINT32 dual;
+	MINT32 sw_ggc;
+	MINT32 hw_ggc;
+	MINT32 xtalk;
 } mot_calibration_status_t;
 
 typedef struct {
@@ -484,7 +487,9 @@ typedef struct {
         MotCalibrationStatus lsc_status;
         MotCalibrationStatus pdaf_status;
         MotCalibrationStatus dual_status;
-	MotCalibrationStatus ggc_status;
+        MotCalibrationStatus sw_ggc_status;
+        MotCalibrationStatus hw_ggc_status;
+        MotCalibrationStatus xtalk_status;
 	MUINT8 *ggc_data;
 	mot_calibration_mnf_t mnf_cal_data;
 } mot_calibration_info_t;

@@ -795,13 +795,13 @@ static void mot_check_ggc_data( u8 *data, UINT32 StartAddr,
 {
 	UINT16 ggc_crc16 = data[COFUL_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|data[COFUL_S5KJN1_EEPROM_GGC_END_ADDR+2];
 
-	mot_cal_info->ggc_status = STATUS_OK;
+	mot_cal_info->hw_ggc_status = STATUS_OK;
 
 	if (eeprom_util_check_crc16((data+StartAddr),BlockSize, ggc_crc16) && mot_cal_info->ggc_data != NULL){
 		memcpy(mot_cal_info->ggc_data, data+StartAddr, sizeof(uint8_t)*BlockSize);
 	}else{
 			LOG_INF("mot_check_ggc_data CRC Fails!");
-			mot_cal_info->ggc_status = STATUS_CRC_FAIL;
+			mot_cal_info->hw_ggc_status = STATUS_CRC_FAIL;
 	}
 }
 
