@@ -42,6 +42,7 @@ static spinlock_t *g_pAF_SpinLock;
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4CurrPosition;
+static u16  ParkLensPaceBoundary[4]    = {60, 100, 150, 200};
 
 static int s4AF_WriteReg(u16 a_u2Data)
 {
@@ -108,6 +109,11 @@ static int initAF(void)
 			{
 				mdelay(puSendCmdArray[cmd_number][2]);
 			}
+	}
+	if (*g_pAF_Opened == 1) {
+		spin_lock(g_pAF_SpinLock);
+		*g_pAF_Opened = 2;
+		spin_unlock(g_pAF_SpinLock);
 	}
 	return 0;
 }
@@ -192,10 +198,29 @@ int MOT_MILAN_DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	char power_down_mode_cmd[2]={0x02,0x01};
 	int ret;
-	LOG_INF("Start\n");
-
-	if (*g_pAF_Opened == 2) {
-		LOG_INF("Wait\n");
+	if (*g_pAF_Opened == 2)
+	{
+		while (g_u4CurrPosition > 0){
+			// Move in different pace to reduce park lens time
+			if (g_u4CurrPosition > ParkLensPaceBoundary[3])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[2];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[2])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[1];
+			}
+			else if (g_u4CurrPosition > ParkLensPaceBoundary[1])
+			{
+				g_u4CurrPosition -= ParkLensPaceBoundary[0];
+			}
+			else
+			{
+				break;
+			}
+			s4AF_WriteReg(g_u4CurrPosition);
+			mdelay(20);
+		}
 		ret = i2c_master_send(g_pstAF_I2Cclient,power_down_mode_cmd, 2);
 		if(ret <0)
 		{
