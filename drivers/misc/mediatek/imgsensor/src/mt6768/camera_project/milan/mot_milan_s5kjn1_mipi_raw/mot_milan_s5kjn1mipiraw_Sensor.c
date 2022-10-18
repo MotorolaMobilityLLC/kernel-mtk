@@ -2291,7 +2291,7 @@ static void s5kjn1_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, 
 static void MILAN_S5KJN1_eeprom_format_ggc_data(mot_calibration_info_t *mot_cal_info)
 {
 	int i;
-	if (mot_cal_info->ggc_status == STATUS_OK && mot_cal_info->ggc_data!= NULL) {
+	if (mot_cal_info->hw_ggc_status == STATUS_OK && mot_cal_info->ggc_data != NULL) {
 		pr_debug("HW GGC CRC success!");
 
 		addr_data_pair_ggc_jn1[0] = 0x6028;
@@ -2751,12 +2751,15 @@ get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->PDAF_Support = 0;
 #endif
 
-	sensor_info->calibration_status.mnf   = s5kjn1_cal_info.mnf_status;
-	sensor_info->calibration_status.af    = s5kjn1_cal_info.af_status;
-	sensor_info->calibration_status.awb   = s5kjn1_cal_info.awb_status;
-	sensor_info->calibration_status.lsc   = s5kjn1_cal_info.lsc_status;
-	sensor_info->calibration_status.pdaf  = s5kjn1_cal_info.pdaf_status;
-	sensor_info->calibration_status.dual  = s5kjn1_cal_info.dual_status;
+	sensor_info->calibration_status.mnf    = s5kjn1_cal_info.mnf_status;
+	sensor_info->calibration_status.af     = s5kjn1_cal_info.af_status;
+	sensor_info->calibration_status.awb    = s5kjn1_cal_info.awb_status;
+	sensor_info->calibration_status.lsc    = s5kjn1_cal_info.lsc_status;
+	sensor_info->calibration_status.pdaf   = s5kjn1_cal_info.pdaf_status;
+	sensor_info->calibration_status.dual   = s5kjn1_cal_info.dual_status;
+	sensor_info->calibration_status.sw_ggc = s5kjn1_cal_info.sw_ggc_status;
+	sensor_info->calibration_status.hw_ggc = s5kjn1_cal_info.hw_ggc_status;
+	sensor_info->calibration_status.xtalk  = s5kjn1_cal_info.xtalk_status;
 
 	memcpy(&sensor_info->mnf_calibration, &s5kjn1_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
 
