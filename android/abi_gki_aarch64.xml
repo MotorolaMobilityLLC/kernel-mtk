@@ -1765,6 +1765,7 @@
       <elf-symbol name='divider_ro_round_rate_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7f8b7fae'/>
       <elf-symbol name='divider_round_rate_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x904f93ae'/>
       <elf-symbol name='dma_alloc_attrs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc9fcc6d5'/>
+      <elf-symbol name='dma_alloc_noncontiguous' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeda21aff'/>
       <elf-symbol name='dma_alloc_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa12e830c'/>
       <elf-symbol name='dma_async_device_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf4ce133d'/>
       <elf-symbol name='dma_async_device_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5fe2f484'/>
@@ -1810,6 +1811,7 @@
       <elf-symbol name='dma_fence_wait_any_timeout' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x51d58e8'/>
       <elf-symbol name='dma_fence_wait_timeout' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x98c039dc'/>
       <elf-symbol name='dma_free_attrs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc0b30a2e'/>
+      <elf-symbol name='dma_free_noncontiguous' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1e9b26b'/>
       <elf-symbol name='dma_free_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb0cddc1f'/>
       <elf-symbol name='dma_get_any_slave_channel' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x21c97b60'/>
       <elf-symbol name='dma_get_required_mask' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x32e3c051'/>
@@ -1857,6 +1859,8 @@
       <elf-symbol name='dma_unmap_page_attrs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa8ac9ba6'/>
       <elf-symbol name='dma_unmap_resource' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xea5a0383'/>
       <elf-symbol name='dma_unmap_sg_attrs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x288c91fe'/>
+      <elf-symbol name='dma_vmap_noncontiguous' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc490b33c'/>
+      <elf-symbol name='dma_vunmap_noncontiguous' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4766d05f'/>
       <elf-symbol name='dmabuf_page_pool_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb47aa711'/>
       <elf-symbol name='dmabuf_page_pool_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcefab871'/>
       <elf-symbol name='dmabuf_page_pool_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa03f7916'/>
@@ -134025,6 +134029,14 @@
         <parameter type-id='7359adad' name='attrs' filepath='kernel/dma/mapping.c' line='492' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
+      <function-decl name='dma_alloc_noncontiguous' mangled-name='dma_alloc_noncontiguous' filepath='kernel/dma/mapping.c' line='630' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_alloc_noncontiguous'>
+        <parameter type-id='fa0b179b' name='dev' filepath='kernel/dma/mapping.c' line='630' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='kernel/dma/mapping.c' line='630' column='1'/>
+        <parameter type-id='eea6b025' name='dir' filepath='kernel/dma/mapping.c' line='631' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp' filepath='kernel/dma/mapping.c' line='631' column='1'/>
+        <parameter type-id='7359adad' name='attrs' filepath='kernel/dma/mapping.c' line='631' column='1'/>
+        <return type-id='4adb0e6a'/>
+      </function-decl>
       <function-decl name='dma_alloc_pages' mangled-name='dma_alloc_pages' filepath='kernel/dma/mapping.c' line='562' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_alloc_pages'>
         <parameter type-id='fa0b179b' name='dev' filepath='kernel/dma/mapping.c' line='562' column='1'/>
         <parameter type-id='b59d7dce' name='size' filepath='kernel/dma/mapping.c' line='562' column='1'/>
@@ -134261,6 +134273,13 @@
         <parameter type-id='eaa32e2f' name='cpu_addr' filepath='kernel/dma/mapping.c' line='517' column='1'/>
         <parameter type-id='cf29c9b3' name='dma_handle' filepath='kernel/dma/mapping.c' line='518' column='1'/>
         <parameter type-id='7359adad' name='attrs' filepath='kernel/dma/mapping.c' line='518' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='dma_free_noncontiguous' mangled-name='dma_free_noncontiguous' filepath='kernel/dma/mapping.c' line='661' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_free_noncontiguous'>
+        <parameter type-id='fa0b179b' name='dev' filepath='kernel/dma/mapping.c' line='661' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='kernel/dma/mapping.c' line='661' column='1'/>
+        <parameter type-id='4adb0e6a' name='sgt' filepath='kernel/dma/mapping.c' line='662' column='1'/>
+        <parameter type-id='eea6b025' name='dir' filepath='kernel/dma/mapping.c' line='662' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='dma_free_pages' mangled-name='dma_free_pages' filepath='kernel/dma/mapping.c' line='585' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_free_pages'>
@@ -134533,6 +134552,17 @@
         <parameter type-id='95e97e5e' name='nents' filepath='kernel/dma/mapping.c' line='273' column='1'/>
         <parameter type-id='eea6b025' name='dir' filepath='kernel/dma/mapping.c' line='273' column='1'/>
         <parameter type-id='7359adad' name='attrs' filepath='kernel/dma/mapping.c' line='274' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='dma_vmap_noncontiguous' mangled-name='dma_vmap_noncontiguous' filepath='kernel/dma/mapping.c' line='674' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_vmap_noncontiguous'>
+        <parameter type-id='fa0b179b' name='dev' filepath='kernel/dma/mapping.c' line='674' column='1'/>
+        <parameter type-id='b59d7dce' name='size' filepath='kernel/dma/mapping.c' line='674' column='1'/>
+        <parameter type-id='4adb0e6a' name='sgt' filepath='kernel/dma/mapping.c' line='675' column='1'/>
+        <return type-id='eaa32e2f'/>
+      </function-decl>
+      <function-decl name='dma_vunmap_noncontiguous' mangled-name='dma_vunmap_noncontiguous' filepath='kernel/dma/mapping.c' line='686' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dma_vunmap_noncontiguous'>
+        <parameter type-id='fa0b179b' name='dev' filepath='kernel/dma/mapping.c' line='686' column='1'/>
+        <parameter type-id='eaa32e2f' name='vaddr' filepath='kernel/dma/mapping.c' line='686' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='dmabuf_page_pool_alloc' mangled-name='dmabuf_page_pool_alloc' filepath='drivers/dma-buf/heaps/page_pool.c' line='80' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dmabuf_page_pool_alloc'>
