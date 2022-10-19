@@ -447,6 +447,8 @@
       <elf-symbol name='__traceiter_android_vh_binder_transaction_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x912f365e'/>
       <elf-symbol name='__traceiter_android_vh_binder_wait_for_work' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x79d2c7d2'/>
       <elf-symbol name='__traceiter_android_vh_binder_wakeup_ilocked' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd64660ac'/>
+      <elf-symbol name='__traceiter_android_vh_blk_alloc_rqs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9143d34c'/>
+      <elf-symbol name='__traceiter_android_vh_blk_rq_ctx_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xecef9a60'/>
       <elf-symbol name='__traceiter_android_vh_build_sched_domains' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1522f52'/>
       <elf-symbol name='__traceiter_android_vh_cache_show' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x744cb9ca'/>
       <elf-symbol name='__traceiter_android_vh_cgroup_attach' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc60e9049'/>
@@ -6586,6 +6588,8 @@
       <elf-symbol name='__tracepoint_android_vh_binder_transaction_init' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2e7c8a6c'/>
       <elf-symbol name='__tracepoint_android_vh_binder_wait_for_work' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbac548dc'/>
       <elf-symbol name='__tracepoint_android_vh_binder_wakeup_ilocked' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x220013f3'/>
+      <elf-symbol name='__tracepoint_android_vh_blk_alloc_rqs' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x23957f60'/>
+      <elf-symbol name='__tracepoint_android_vh_blk_rq_ctx_init' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa5491a33'/>
       <elf-symbol name='__tracepoint_android_vh_build_sched_domains' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe9491ecd'/>
       <elf-symbol name='__tracepoint_android_vh_cache_show' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1459a529'/>
       <elf-symbol name='__tracepoint_android_vh_cgroup_attach' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xde2789e0'/>
@@ -126301,6 +126305,22 @@
         <parameter type-id='d1cf113c' name='proc' filepath='include/trace/hooks/binder.h' line='37' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_blk_alloc_rqs' mangled-name='__traceiter_android_vh_blk_alloc_rqs' filepath='include/trace/hooks/block.h' line='23' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_blk_alloc_rqs'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/block.h' line='23' column='1'/>
+        <parameter type-id='78c01427' name='rq_size' filepath='include/trace/hooks/block.h' line='23' column='1'/>
+        <parameter type-id='cc26d15f' name='set' filepath='include/trace/hooks/block.h' line='23' column='1'/>
+        <parameter type-id='0461ecf5' name='tags' filepath='include/trace/hooks/block.h' line='23' column='1'/>
+        <parameter type-id='f0981eeb' name='hctx_idx' filepath='include/trace/hooks/block.h' line='23' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_blk_rq_ctx_init' mangled-name='__traceiter_android_vh_blk_rq_ctx_init' filepath='include/trace/hooks/block.h' line='28' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_blk_rq_ctx_init'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/block.h' line='28' column='1'/>
+        <parameter type-id='3dad1a48' name='rq' filepath='include/trace/hooks/block.h' line='28' column='1'/>
+        <parameter type-id='0461ecf5' name='tags' filepath='include/trace/hooks/block.h' line='28' column='1'/>
+        <parameter type-id='3620a178' name='data' filepath='include/trace/hooks/block.h' line='28' column='1'/>
+        <parameter type-id='91ce1af9' name='alloc_time_ns' filepath='include/trace/hooks/block.h' line='28' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_build_sched_domains' mangled-name='__traceiter_android_vh_build_sched_domains' filepath='include/trace/hooks/sched.h' line='267' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_build_sched_domains'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/sched.h' line='267' column='1'/>
         <parameter type-id='b50a4934' name='has_asym' filepath='include/trace/hooks/sched.h' line='267' column='1'/>
@@ -127824,6 +127844,8 @@
       <var-decl name='__tracepoint_android_vh_binder_transaction_init' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_transaction_init' visibility='default' filepath='include/trace/hooks/binder.h' line='25' column='1' elf-symbol-id='__tracepoint_android_vh_binder_transaction_init'/>
       <var-decl name='__tracepoint_android_vh_binder_wait_for_work' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_wait_for_work' visibility='default' filepath='include/trace/hooks/binder.h' line='40' column='1' elf-symbol-id='__tracepoint_android_vh_binder_wait_for_work'/>
       <var-decl name='__tracepoint_android_vh_binder_wakeup_ilocked' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_binder_wakeup_ilocked' visibility='default' filepath='include/trace/hooks/binder.h' line='37' column='1' elf-symbol-id='__tracepoint_android_vh_binder_wakeup_ilocked'/>
+      <var-decl name='__tracepoint_android_vh_blk_alloc_rqs' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_blk_alloc_rqs' visibility='default' filepath='include/trace/hooks/block.h' line='23' column='1' elf-symbol-id='__tracepoint_android_vh_blk_alloc_rqs'/>
+      <var-decl name='__tracepoint_android_vh_blk_rq_ctx_init' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_blk_rq_ctx_init' visibility='default' filepath='include/trace/hooks/block.h' line='28' column='1' elf-symbol-id='__tracepoint_android_vh_blk_rq_ctx_init'/>
       <var-decl name='__tracepoint_android_vh_build_sched_domains' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_build_sched_domains' visibility='default' filepath='include/trace/hooks/sched.h' line='267' column='1' elf-symbol-id='__tracepoint_android_vh_build_sched_domains'/>
       <var-decl name='__tracepoint_android_vh_cache_show' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_cache_show' visibility='default' filepath='include/trace/hooks/mm.h' line='61' column='1' elf-symbol-id='__tracepoint_android_vh_cache_show'/>
       <var-decl name='__tracepoint_android_vh_cgroup_attach' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_cgroup_attach' visibility='default' filepath='include/trace/hooks/cgroup.h' line='28' column='1' elf-symbol-id='__tracepoint_android_vh_cgroup_attach'/>
