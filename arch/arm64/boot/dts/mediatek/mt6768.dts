@@ -1684,10 +1684,6 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		compatible = "mediatek,pmic-accdet";
 	};
 
-	swtp:swtp@{
-		compatible = "mediatek, swtp-eint";
-	};
-
 	mt6358_gauge {
 		compatible = "mediatek,mt6358_gauge";
 		bootmode = <&chosen>;
@@ -3144,6 +3140,18 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 			"TOP_ULPOSC1_D2",
 			"TOP_ULPOSC1_D8";
 	};
+
+	/* modify by wt.longyili for swtp start */
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	swtp_1: swtp_1 {
+		compatible = "mediatek, swtp1-eint";
+	};
+	swtp_2: swtp_2 {
+		compatible = "mediatek, swtp2-eint";
+	};
+	/* modify by wt.longyili for swtp end */
 
 	dsi_te: dsi_te {
 		compatible = "mediatek, dsi_te-eint";
