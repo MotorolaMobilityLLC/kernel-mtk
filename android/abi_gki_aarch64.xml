@@ -6322,6 +6322,9 @@
       <elf-symbol name='xa_find_after' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdf36914b'/>
       <elf-symbol name='xa_load' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa85a3e6d'/>
       <elf-symbol name='xa_store' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5b3e282f'/>
+      <elf-symbol name='xas_load' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x64d3cc4e'/>
+      <elf-symbol name='xas_nomem' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x263f039e'/>
+      <elf-symbol name='xas_store' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x75f0e875'/>
       <elf-symbol name='xdp_convert_zc_to_xdp_frame' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9b276688'/>
       <elf-symbol name='xdp_do_flush' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb9681621'/>
       <elf-symbol name='xdp_do_redirect' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x202f26d1'/>
@@ -55406,6 +55409,7 @@
           <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='drivers/nvmem/core.c' line='42' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='bdeecda0' size-in-bits='64' id='77b05ed6'/>
       <array-type-def dimensions='1' type-id='95e97e5e' size-in-bits='416' id='77ba73f2'>
         <subrange length='13' type-id='7ff19f0f' id='487fded1'/>
       </array-type-def>
@@ -73889,6 +73893,10 @@
           <var-decl name='priv' type-id='eaa32e2f' visibility='default' filepath='include/linux/virtio.h' line='120' column='1'/>
         </data-member>
       </class-decl>
+      <function-type size-in-bits='64' id='a2398e84'>
+        <parameter type-id='83f45767'/>
+        <return type-id='48b5725f'/>
+      </function-type>
       <class-decl name='sock' size-in-bits='6976' is-struct='yes' visibility='default' filepath='include/net/sock.h' line='357' column='1' id='a240f41d'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='__sk_common' type-id='5999c5f7' visibility='default' filepath='include/net/sock.h' line='362' column='1'/>
@@ -75438,6 +75446,7 @@
       <pointer-type-def type-id='4bf19232' size-in-bits='64' id='a548fbc8'/>
       <pointer-type-def type-id='a733634c' size-in-bits='64' id='a5490056'/>
       <pointer-type-def type-id='f9b2d12e' size-in-bits='64' id='a54c778f'/>
+      <pointer-type-def type-id='a2398e84' size-in-bits='64' id='a54c80d6'/>
       <array-type-def dimensions='1' type-id='e53d7a90' size-in-bits='infinite' id='a5527824'>
         <subrange length='infinite' type-id='7ff19f0f' id='031f2035'/>
       </array-type-def>
@@ -90532,6 +90541,35 @@
         <parameter type-id='b59d7dce'/>
         <return type-id='95e97e5e'/>
       </function-type>
+      <class-decl name='xa_state' size-in-bits='384' is-struct='yes' visibility='default' filepath='include/linux/xarray.h' line='1310' column='1' id='bdeecda0'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='xa' type-id='60075f2a' visibility='default' filepath='include/linux/xarray.h' line='1311' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='xa_index' type-id='7359adad' visibility='default' filepath='include/linux/xarray.h' line='1312' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='xa_shift' type-id='002ac4a6' visibility='default' filepath='include/linux/xarray.h' line='1313' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='136'>
+          <var-decl name='xa_sibs' type-id='002ac4a6' visibility='default' filepath='include/linux/xarray.h' line='1314' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='144'>
+          <var-decl name='xa_offset' type-id='002ac4a6' visibility='default' filepath='include/linux/xarray.h' line='1315' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='152'>
+          <var-decl name='xa_pad' type-id='002ac4a6' visibility='default' filepath='include/linux/xarray.h' line='1316' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='192'>
+          <var-decl name='xa_node' type-id='83f45767' visibility='default' filepath='include/linux/xarray.h' line='1317' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='256'>
+          <var-decl name='xa_alloc' type-id='83f45767' visibility='default' filepath='include/linux/xarray.h' line='1318' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='320'>
+          <var-decl name='xa_update' type-id='ff53cfc5' visibility='default' filepath='include/linux/xarray.h' line='1319' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='8087dc43' size-in-bits='64' id='bdf62267'/>
       <pointer-type-def type-id='b95f4e75' size-in-bits='64' id='bdf745d1'/>
       <qualified-type-def type-id='60eff7ff' const='yes' id='bdf845e8'/>
@@ -123290,6 +123328,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='ed5381db' size-in-bits='64' id='ff47b24b'/>
+      <typedef-decl name='xa_update_node_t' type-id='a54c80d6' filepath='include/linux/xarray.h' line='1289' column='1' id='ff53cfc5'/>
       <pointer-type-def type-id='a9bd2db1' size-in-bits='64' id='ff554aed'/>
       <qualified-type-def type-id='b5cf31bb' const='yes' id='ff60ef66'/>
       <array-type-def dimensions='1' type-id='0b001c1f' size-in-bits='192' id='ff62a050'>
@@ -157489,6 +157528,20 @@
         <parameter type-id='7359adad' name='index' filepath='lib/xarray.c' line='1574' column='1'/>
         <parameter type-id='eaa32e2f' name='entry' filepath='lib/xarray.c' line='1574' column='1'/>
         <parameter type-id='3eb7c31c' name='gfp' filepath='lib/xarray.c' line='1574' column='1'/>
+        <return type-id='eaa32e2f'/>
+      </function-decl>
+      <function-decl name='xas_load' mangled-name='xas_load' filepath='lib/xarray.c' line='231' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xas_load'>
+        <parameter type-id='77b05ed6' name='xas' filepath='lib/xarray.c' line='231' column='1'/>
+        <return type-id='eaa32e2f'/>
+      </function-decl>
+      <function-decl name='xas_nomem' mangled-name='xas_nomem' filepath='lib/xarray.c' line='297' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xas_nomem'>
+        <parameter type-id='77b05ed6' name='xas' filepath='lib/xarray.c' line='297' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp' filepath='lib/xarray.c' line='297' column='1'/>
+        <return type-id='b50a4934'/>
+      </function-decl>
+      <function-decl name='xas_store' mangled-name='xas_store' filepath='lib/xarray.c' line='774' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xas_store'>
+        <parameter type-id='77b05ed6' name='xas' filepath='lib/xarray.c' line='774' column='1'/>
+        <parameter type-id='eaa32e2f' name='entry' filepath='lib/xarray.c' line='774' column='1'/>
         <return type-id='eaa32e2f'/>
       </function-decl>
       <function-decl name='xdp_convert_zc_to_xdp_frame' mangled-name='xdp_convert_zc_to_xdp_frame' filepath='net/core/xdp.c' line='473' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='xdp_convert_zc_to_xdp_frame'>
