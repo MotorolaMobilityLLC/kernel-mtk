@@ -26,7 +26,7 @@
 #include <linux/fs.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
-
+#include <linux/slab.h>
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -61,7 +61,6 @@ module_param(mot_sensor_debug, int, S_IRWXU);
 
 extern int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc);
 static kal_uint16 addr_data_pair_ggc_jn1[MILAN_S5KJN1_EEPROM_GGC_SIZE+4] = {0};
-static uint8_t MILAN_S5KJN1_eeprom[MILAN_S5KJN1_EEPROM_SIZE] = {0};
 static const char *s5kjn1_dump_file[2] = {EEPROM_DATA_PATH, SERIAL_MAIN_DATA_PATH};
 static mot_calibration_info_t s5kjn1_cal_info = {0};
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info);
@@ -2289,14 +2288,11 @@ static void s5kjn1_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, 
 	spin_unlock(&imgsensor_drv_lock);
 }
 
-static void MILAN_S5KJN1_eeprom_format_ggc_data(void)
+static void MILAN_S5KJN1_eeprom_format_ggc_data(mot_calibration_info_t *mot_cal_info)
 {
-	kal_uint16 gcc_crc16 = MILAN_S5KJN1_eeprom[MILAN_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|MILAN_S5KJN1_eeprom[MILAN_S5KJN1_EEPROM_GGC_END_ADDR+2];
-	kal_uint16 i = 0;
-
-	if (eeprom_util_check_crc16((MILAN_S5KJN1_eeprom+MILAN_S5KJN1_EEPROM_GGC_START_ADDR),
-		MILAN_S5KJN1_EEPROM_GGC_SIZE, gcc_crc16)) {
-		pr_debug("HW GCC CRC success!");
+	int i;
+	if (mot_cal_info->ggc_status == STATUS_OK && mot_cal_info->ggc_data!= NULL) {
+		pr_debug("HW GGC CRC success!");
 
 		addr_data_pair_ggc_jn1[0] = 0x6028;
 		addr_data_pair_ggc_jn1[1] = 0x2400;
@@ -2304,7 +2300,7 @@ static void MILAN_S5KJN1_eeprom_format_ggc_data(void)
 		addr_data_pair_ggc_jn1[3] = 0x0CFC;
 		for(i = 0; i < MILAN_S5KJN1_EEPROM_GGC_SIZE; i += 2){
 			addr_data_pair_ggc_jn1[i+4] = 0x6F12;
-			addr_data_pair_ggc_jn1[i+5] = MILAN_S5KJN1_eeprom[i+MILAN_S5KJN1_EEPROM_GGC_START_ADDR]<<8 | MILAN_S5KJN1_eeprom[i+MILAN_S5KJN1_EEPROM_GGC_START_ADDR+1];
+			addr_data_pair_ggc_jn1[i+5] = mot_cal_info->ggc_data[i]<<8 | mot_cal_info->ggc_data[i+1];
 		}
 
 	}
@@ -2338,11 +2334,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				s5kjn1_cal_info.ggc_data = kmalloc(MILAN_S5KJN1_EEPROM_GGC_SIZE*sizeof(kal_uint8), GFP_KERNEL);
 				s5kjn1_read_data_from_eeprom(S5KJN1_EEPROM_SLAVE_ADDR, S5KJN1_REMOSAIC_PARAM_XTC_DATA_START_ADDR, S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_WITH_CRC_SIZE);
 				eeprom_dump_bin("/data/vendor/camera_dump/mot_s5kjn1_kernel_eeprom_remosaic.bin", S5KJN1_REMOSAIC_PARAM_TOTAL_DATA_WITH_CRC_SIZE, &MILAN_S5KJN1_eeprom_data_for_remosaic[0]);
 				// get calibration status and mnf data.
 				imgread_cam_cal_data(*sensor_id, s5kjn1_dump_file, &s5kjn1_cal_info);
-				MILAN_S5KJN1_eeprom_format_ggc_data();
+				MILAN_S5KJN1_eeprom_format_ggc_data(&s5kjn1_cal_info);
+				kfree(s5kjn1_cal_info.ggc_data);
+				s5kjn1_cal_info.ggc_data = NULL;
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
@@ -2413,7 +2412,7 @@ static kal_uint32 open(void)
 
 	sensor_init();
 
-	pr_debug("wirte gcc date to sensor reg");
+	pr_debug("wirte ggc date to sensor reg");
 	mot_milan_s5kjn1_table_write_cmos_sensor(addr_data_pair_ggc_jn1,
 		sizeof(addr_data_pair_ggc_jn1) / sizeof(kal_uint16));
 	spin_lock(&imgsensor_drv_lock);
