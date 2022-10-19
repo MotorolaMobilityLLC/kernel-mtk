@@ -4799,7 +4799,7 @@ static int isp_composer_handle_ack(struct mtk_cam_device *cam,
 			} else {
 				if (watchdog_scenario(ctx))
 					mtk_ctx_watchdog_stop(ctx,
-						mraw_dev->id + MTKCAM_SUBDEV_MRAW_START);
+						mraw_dev->id + MTKCAM_SUBDEV_MRAW_START, 0);
 				mtk_cam_mraw_vf_on(mraw_dev, 0);
 			}
 		}
@@ -5329,7 +5329,7 @@ void mtk_cam_sensor_switch_stop_reinit_hw(struct mtk_cam_ctx *ctx,
 		mtk_cam_sv_vf_on(sv_dev, 0);
 		if (watchdog_scenario(ctx))
 			mtk_ctx_watchdog_stop(ctx,
-				sv_dev->id + MTKCAM_SUBDEV_CAMSV_START);
+				sv_dev->id + MTKCAM_SUBDEV_CAMSV_START, 0);
 		sv_dev->is_enqueued = 0;
 	}
 
@@ -5337,7 +5337,7 @@ void mtk_cam_sensor_switch_stop_reinit_hw(struct mtk_cam_ctx *ctx,
 		mraw_dev = get_mraw_dev(cam, ctx->mraw_pipe[i]);
 		if (watchdog_scenario(ctx))
 			mtk_ctx_watchdog_stop(ctx,
-				mraw_dev->id + MTKCAM_SUBDEV_MRAW_START);
+				mraw_dev->id + MTKCAM_SUBDEV_MRAW_START, 0);
 		mtk_cam_mraw_vf_on(mraw_dev, 0);
 		mraw_dev->is_enqueued = 0;
 	}
@@ -7403,7 +7403,7 @@ int mtk_cam_ctx_stream_off(struct mtk_cam_ctx *ctx)
 
 	if (watchdog_scenario(ctx))
 		mtk_ctx_watchdog_stop(ctx, get_master_raw_id(
-			cam->num_raw_drivers, ctx->pipe->enabled_raw));
+			cam->num_raw_drivers, ctx->pipe->enabled_raw), 1);
 
 	dev_info(cam->dev, "%s: ctx-%d:  composer_cnt:%d, streaming_pipe:0x%x\n",
 		__func__, ctx->stream_id, cam->composer_cnt, ctx->streaming_pipe);
@@ -8311,7 +8311,7 @@ void mtk_ctx_watchdog_start(struct mtk_cam_ctx *ctx, int timeout_cnt, int pipe_i
 	}
 }
 
-void mtk_ctx_watchdog_stop(struct mtk_cam_ctx *ctx, int pipe_id)
+void mtk_ctx_watchdog_stop(struct mtk_cam_ctx *ctx, int pipe_id, int ctx_streamoff)
 {
 	struct mtk_cam_watchdog_data *watchdog_data = &ctx->watchdog_data[pipe_id];
 	int enabled_watchdog_pipe;
