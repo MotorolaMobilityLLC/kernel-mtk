@@ -835,8 +835,13 @@ static struct snd_soc_dai_link mt6885_mt6359_dai_links[] = {
 	{
 		.name = "I2S0",
 		.cpu_dai_name = "I2S0",
+#ifdef CONFIG_SND_SOC_AW882XX
+                .codecs = awinic_codecs,
+                .num_codecs = ARRAY_SIZE(awinic_codecs),
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.ignore_suspend = 1,
