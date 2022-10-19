@@ -136,6 +136,20 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
        }
        CCCI_LEGACY_ERR_LOG(-1, SYS,"%s:swtp_switch_state : %d\n", __func__, swtp->tx_power_mode);
        //EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, start
+	// modify by wt.longyili for swtp start
+	#elif defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)) {
+		swtp->tx_power_mode = SWTP_DO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_DO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant0=%d, Ant1=%d, Ant3=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2]);
+	} else {
+		swtp->tx_power_mode = SWTP_NO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_NO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:Ant0=%d, Ant1=%d, Ant3=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2]);
+	}
+	// modify by wt.longyili for swtp end
 	#else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
