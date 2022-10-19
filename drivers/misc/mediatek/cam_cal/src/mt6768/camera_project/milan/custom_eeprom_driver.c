@@ -23,6 +23,9 @@
         str[0] = 0;                                 \
     }
 
+#define MILAN_S5KJN1_EEPROM_GGC_SIZE 346
+#define MILAN_S5KJN1_EEPROM_GGC_END_ADDR 0x39C4
+
 static unsigned int g_lastDevID;
 extern struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX];
 
@@ -43,6 +46,7 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
 			{0x00000001, 0x00000BC8, 0x0000074C, mot_check_lsc_data },
 			{0x00000001, 0x13161506, 0x01F003EC, mot_check_pdaf_data},//High 16 bit: pdaf output1 data; Low 16 bit: pdaf output2 data.
+			{0x00000001, 0x0000386B, 0x0000015A, mot_check_ggc_data},
 			{0x00000001, 0x00000015, 0x00000010, NULL},//dump serial number.
 		}
 	},
@@ -61,6 +65,7 @@ MOT_EEPROM_CAL CalcheckTbl[MAX_EEPROM_LAYOUT_NUM] =
 			{0x00000001, 0x00000041, 0x0000002B, mot_check_awb_data },
 			{0x00000001, 0x000011A5, 0x0000074C, mot_check_lsc_data },
 			{0x00000000, 0x00000763, 0x00000800, mot_check_pdaf_data},
+			{0x00000000, 0x0000386B, 0x0000015A, mot_check_ggc_data},
 			{0x00000000, 0x00000015, 0x00000010, NULL},//dump serial number.
 		}
 	},
@@ -757,6 +762,26 @@ static void  mot_check_pdaf_data( u8 *data, UINT32 StartAddr,
 		}
 	}
 }
+
+static void mot_check_ggc_data( u8 *data, UINT32 StartAddr,
+				UINT32 BlockSize, mot_calibration_info_t *mot_cal_info)
+{
+	UINT16 ggc_crc16 = data[MILAN_S5KJN1_EEPROM_GGC_END_ADDR+1]<<8|data[MILAN_S5KJN1_EEPROM_GGC_END_ADDR+2];
+
+	mot_cal_info->ggc_status = STATUS_OK;
+
+	if (eeprom_util_check_crc16((data+StartAddr),BlockSize, ggc_crc16) && mot_cal_info->ggc_data != NULL)
+	{
+		memcpy(mot_cal_info->ggc_data, data+StartAddr, sizeof(uint8_t)*BlockSize);
+		LOG_INF("mot_check_ggc_data CRC Pass!");
+	}
+	else
+	{
+			LOG_INF("mot_check_ggc_data CRC Fails!");
+			mot_cal_info->ggc_status = STATUS_CRC_FAIL;
+	}
+}
+
 
 int imgread_cam_cal_data(int sensorid, const char **dump_file, mot_calibration_info_t *mot_cal_info)
 {

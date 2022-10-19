@@ -110,6 +110,7 @@ typedef enum {
 	EEPROM_CRC_AWB_CAL,
 	EEPROM_CRC_LSC,
 	EEPROM_CRC_PDAF_OUTPUT,
+	EEPROM_CRC_GGC,
 	EEPROM_DUMP_SERIAL_NUMBER,
 	EEPROM_CRC_LIST
 }EEPROM_CRC_TYPE_ENUM;
@@ -156,5 +157,6 @@ static void mot_check_af_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_
 static void mot_check_awb_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_lsc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 static void mot_check_pdaf_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
+static void mot_check_ggc_data(u8 *data, UINT32 StartAddr, UINT32 BlockSize, mot_calibration_info_t *mot_cal_info);
 
 #endif
