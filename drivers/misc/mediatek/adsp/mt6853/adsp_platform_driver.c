@@ -20,6 +20,7 @@
 #include "adsp_platform.h"
 #include "adsp_platform_driver.h"
 #include "adsp_core.h"
+#include "adsp_timesync.h"
 
 #include <linux/suspend.h>
 #include <linux/arm-smccc.h> /* for Kernel Native SMC API */
@@ -146,6 +147,7 @@ int adsp_core0_suspend(void)
 
 	if (get_adsp_state(pdata) == ADSP_RUNNING) {
 		reinit_completion(&pdata->done);
+		adsp_timesync_suspend(APTIME_UNFREEZE);
 		ret = adsp_push_message(ADSP_IPI_DVFS_SUSPEND, &status,
 					sizeof(status), 2000, pdata->id);
 		if (ret != ADSP_IPI_DONE) {
@@ -198,7 +200,6 @@ int adsp_core0_resume(void)
 
 		set_adsp_dram_remapping(pdata->sysram_phys,
 					pdata->sysram_size);
-		timesync_to_adsp(pdata, APTIME_UNFREEZE);
 
 		reinit_completion(&pdata->done);
 		adsp_mt_run(pdata->id);
@@ -209,6 +210,7 @@ int adsp_core0_resume(void)
 			adsp_aed_dispatch(EXCEP_KERNEL, pdata);
 			return -ETIME;
 		}
+		adsp_timesync_resume();
 	}
 	pr_info("%s(), done elapse %lld us", __func__,
 		ktime_us_delta(ktime_get(), start));
@@ -506,23 +508,19 @@ static int adsp_ap_suspend(struct device *dev)
 		}
 	}
 
-#ifdef CONFIG_MTK_TIMER_TIMESYNC
 	if (is_adsp_system_running()) {
-		timesync_to_adsp(adsp_cores[ADSP_A_ID], APTIME_FREEZE);
+		adsp_timesync_suspend(APTIME_FREEZE);
 		pr_info("%s, time sync freeze", __func__);
 	}
-#endif
 	return 0;
 }
 
 static int adsp_ap_resume(struct device *dev)
 {
-#ifdef CONFIG_MTK_TIMER_TIMESYNC
 	if (is_adsp_system_running()) {
-		timesync_to_adsp(adsp_cores[ADSP_A_ID], APTIME_UNFREEZE);
+		adsp_timesync_resume();
 		pr_info("%s, time sync unfreeze", __func__);
 	}
-#endif
 	return 0;
 }
 
