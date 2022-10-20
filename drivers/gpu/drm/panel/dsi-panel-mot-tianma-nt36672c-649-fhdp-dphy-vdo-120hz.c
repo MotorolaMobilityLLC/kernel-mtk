@@ -166,15 +166,14 @@ static void tianma_panel_init(struct tianma *ctx)
 	}
     else {
         dev_info(ctx->dev, "disp:%s: reset_gpio:0x%x\n", __func__, ctx->reset_gpio);
-	    mdelay (5);
 	    gpiod_set_value(ctx->reset_gpio, 0);
-	    mdelay (10);
+	    mdelay (5);
 	    gpiod_set_value(ctx->reset_gpio, 1);
 	    mdelay (5);
 	    gpiod_set_value(ctx->reset_gpio, 0);
-	    mdelay (10);
+	    mdelay (5);
 	    gpiod_set_value(ctx->reset_gpio, 1);
-	    mdelay (20);
+	    mdelay (10);
 	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
     }
 
