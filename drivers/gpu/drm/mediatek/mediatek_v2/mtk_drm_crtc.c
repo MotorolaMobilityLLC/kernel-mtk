@@ -2647,6 +2647,7 @@ static void mtk_crtc_free_sram(struct mtk_drm_crtc *mtk_crtc)
 	slbc_release(sram);
 	mtk_crtc->mml_ir_sram.data = NULL;
 	DRM_MMP_MARK(sram_free, (unsigned long)sram->paddr, sram->size);
+	kfree(sram);
 }
 
 static void mtk_crtc_mml_clean(struct kref *kref)
