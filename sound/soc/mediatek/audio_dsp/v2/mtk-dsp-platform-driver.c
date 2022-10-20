@@ -1508,6 +1508,13 @@ static int mtk_dsp_pcm_copy_dl(struct snd_pcm_substream *substream,
 			   &dsp_mem->adsp_buf.aud_buffer.buf_bridge);
 #endif
 
+	if (substream->runtime->status->state == SNDRV_PCM_STATE_XRUN) {
+		pr_info_ratelimited("%s() state[%d]\n",
+				    __func__,
+				    substream->runtime->status->state);
+		return -1;
+	}
+
 	Ringbuf_Check(ringbuf);
 	Ringbuf_Bridge_Check(
 		&dsp_mem->adsp_buf.aud_buffer.buf_bridge);
