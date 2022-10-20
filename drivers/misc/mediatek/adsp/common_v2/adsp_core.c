@@ -15,13 +15,10 @@
 #include "adsp_ipi_queue.h"
 #include "adsp_mbox.h"
 #include "adsp_core.h"
+#include "adsp_timesync.h"
 
 /* protect access tcm if set reset flag */
 rwlock_t access_rwlock;
-
-/* timesync */
-struct timesync_t adsp_timesync_dram;
-void *adsp_timesync_ptr = &adsp_timesync_dram; /* extern to adsp_help.h */
 
 /* notifier */
 static BLOCKING_NOTIFIER_HEAD(adsp_notifier_list);
@@ -250,15 +247,6 @@ void switch_adsp_power(bool on)
 	}
 }
 
-void timesync_to_adsp(struct adsp_priv *pdata, u32 fz)
-{
-	adsp_timesync_dram.freeze = fz;
-	adsp_timesync_dram.version++;
-	adsp_timesync_dram.version &= 0xff;
-	adsp_copy_to_sharedmem(pdata, ADSP_SHAREDMEM_TIMESYNC,
-			&adsp_timesync_dram, sizeof(adsp_timesync_dram));
-}
-
 void adsp_sram_restore_snapshot(struct adsp_priv *pdata)
 {
 	if (!pdata->itcm || !pdata->itcm_snapshot || !pdata->itcm_size ||
@@ -316,7 +304,6 @@ int adsp_reset(void)
 		pdata = adsp_cores[cid];
 
 		adsp_mt_sw_reset(cid);
-		timesync_to_adsp(pdata, APTIME_UNFREEZE);
 		reinit_completion(&pdata->done);
 
 		adsp_mt_run(cid);
@@ -386,6 +373,7 @@ static int __init adsp_init(void)
 	adsp_ipi_registration(ADSP_IPI_DVFS_SUSPEND,
 			      adsp_suspend_ipi_handler,
 			      "adsp_suspend_ack");
+	adsp_timesync_init();
 
 	pr_info("%s, ret(%d)\n", __func__, ret);
 	return ret;
