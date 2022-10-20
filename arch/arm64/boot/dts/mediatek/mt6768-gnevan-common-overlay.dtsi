@@ -17,6 +17,7 @@
 #include "dt-bindings/gpio/gpio.h"
 #include "mediatek/mt6768-moto-gnevan-fps.dtsi"
 #include "mediatek/mt6768-moto-gnevan-charger.dtsi"
+#include "mediatek/mt6768-moto-gnevan-sensor.dtsi"
 #include "mediatek/sgm7220-gnevan.dtsi"
 #include "mediatek/tcpc_config.dtsi"
 
@@ -122,6 +123,14 @@
 &mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
         cd-gpios = <&pio 18 GPIO_ACTIVE_HIGH>;
+};
+
+/*config stylus pen*/
+&odm {
+    pen_detect: pen_detect {
+       compatible = "rohm,bu520xx_pen_detect";
+       rohm,nirq-gpio = <&pio 17 0x00>;
+    };
 };
 
 &u2port0{
