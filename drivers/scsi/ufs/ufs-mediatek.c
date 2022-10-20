@@ -777,11 +777,10 @@ static int ufs_mtk_setup_ref_clk(struct ufs_hba *hba, bool on)
 		return 0;
 
 	if (on) {
-		#if defined(CONFIG_MACH_MT6781) || defined(CONFIG_MACH_MT6785)
-			clk_buf_ctrl(CLK_BUF_UFS, on);
-		#else
-			ufs_mtk_ref_clk_notify(on, res);
-		#endif
+	#if defined(CONFIG_MACH_MT6781) || defined(CONFIG_MACH_MT6785)
+		clk_buf_ctrl(CLK_BUF_UFS, on);
+	#endif
+		ufs_mtk_ref_clk_notify(on, res);
 		ufshcd_delay_us(host->ref_clk_ungating_wait_us, 10);
 	}
 
@@ -834,9 +833,8 @@ out:
 		ufshcd_delay_us(host->ref_clk_gating_wait_us, 10);
 	#if defined(CONFIG_MACH_MT6781) || defined(CONFIG_MACH_MT6785)
 		clk_buf_ctrl(CLK_BUF_UFS, on);
-	#else
-		ufs_mtk_ref_clk_notify(on, res);
 	#endif
+		ufs_mtk_ref_clk_notify(on, res);
 	}
 
 	return 0;
