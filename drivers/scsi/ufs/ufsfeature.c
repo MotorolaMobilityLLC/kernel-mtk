@@ -271,6 +271,15 @@ void ufsf_device_check(struct ufs_hba *hba)
 	unsigned int lun;
 	u8 selector = 0;
 
+#if defined(CONFIG_SCSI_UFS_HPB)
+	if (ufsf->ufshpb_state == HPB_RESET)
+		return;
+#endif
+#if defined(CONFIG_SCSI_UFS_TW)
+	if (atomic_read(&ufsf->tw_state) == TW_RESET)
+		return;
+#endif
+
 	ufsf->slave_conf_cnt = 0;
 
 	ufsf->hba = hba;
