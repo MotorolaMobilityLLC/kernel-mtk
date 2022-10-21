@@ -73,9 +73,9 @@
                        <0 4200 800  0>,
                        <10 4250 4000 2000>,
                        <15 0 4000 4000>,
-                       <25 4250 12400 6000>,
-                       <35 4250 12400 6000>,
-                       <45 4250 12400 6000>,
+                       <25 4480 12400 6000>,
+                       <35 4480 12400 6000>,
+                       <45 4480 12400 6000>,
                        <60 4200 4000 0>;
 
 	mmi,mmi-ffc-zones =
@@ -109,6 +109,8 @@
 	compatible = "mediatek,mtboard-thermistor6";
 	io-channels = <&adc 10>;
 	io-channel-names = "thermistor-ch5";
+	mos-en-gpio = <&pio 126 0>;
+	//enable_gpio_out;
 };
 
 &tboard_thermistor8 {
@@ -195,6 +197,13 @@
         	dr_check = <2>;
 	};
 };
+
+&mt6360_chg {
+       cv = <4480000>;
+       ircmp_resistor = <25000>;       /* uohm */
+       ircmp_vclamp = <32000>;         /* uV */
+};
+
 &pio {
         bq25960_int_default: bq25960_int_default {
                 pinmux = <PINMUX_GPIO13__FUNC_GPIO13>;
