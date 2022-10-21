@@ -32,6 +32,8 @@
 #include <linux/uidgid.h>
 #include <tmp_bts.h>
 #include <linux/slab.h>
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
 #include <linux/of.h>
 #include <linux/iio/consumer.h>
@@ -495,6 +497,88 @@ static struct TYPEC_THERMAL_TEMPERATURE TYPEC_THERMAL_Temperature_Table7[] = {
 	{125, 2522}
 };
 
+#ifdef CONFIG_TYPEC_GPIO_OUT_TOGGLE
+static int g_trigger_temp = 95000;	/* default 95 deg */
+static int g_GPIO_out_enable = false;	/* 0:disable */
+static int g_GPIO_already_set = false;
+static int mos_en_gpio = 0;
+
+static int tstypc_set_GPIO_toggle_for_monitor(int max_temp)
+{
+	if (g_GPIO_out_enable == false) {
+		return 0;
+	}
+
+	mtkts_typec_therm_printk("max_temp =%d, g_trigger_temp =%d, g_GPIO_already_set =%d\n",
+				max_temp, g_trigger_temp, g_GPIO_already_set);
+	if ((max_temp > g_trigger_temp) && (g_GPIO_already_set == false)){
+		g_GPIO_already_set = true;
+		gpio_direction_output(mos_en_gpio, 1);
+	} else {
+		if (g_GPIO_already_set == true) {
+			g_GPIO_already_set = false;
+			gpio_direction_output(mos_en_gpio, 0);
+		}
+	}
+	return 0;
+}
+
+static int tstypc_read_GPIO_out(struct seq_file *m, void *v)
+{
+
+	seq_printf(m, "GPIO out enable:%d, trigger temperature=%d\n",
+							g_GPIO_out_enable,
+							g_trigger_temp);
+
+	return 0;
+}
+
+
+static ssize_t tstypc_write_GPIO_out(
+struct file *file, const char __user *buffer, size_t count, loff_t *data)
+{
+	char desc[512];
+	char TEMP[10], ENABLE[10];
+	unsigned int valTEMP, valENABLE;
+	int len = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%9s %d %9s %d ", TEMP, &valTEMP,
+		ENABLE, &valENABLE) == 4) {
+		/* mtkts_typec_therm_printk("XXXXXXXXX\n"); */
+
+		if (!strcmp(TEMP, "TEMP")) {
+			g_trigger_temp = valTEMP;
+			mtkts_typec_therm_printk("g_trigger_temp=%d\n", valTEMP);
+		} else {
+			mtkts_typec_therm_printk(
+				"%s TEMP bad argument\n", __func__);
+			return -EINVAL;
+		}
+
+		if (!strcmp(ENABLE, "ENABLE")) {
+			g_GPIO_out_enable = valENABLE;
+			mtkts_typec_therm_printk(
+				"g_GPIO_out_enable=%d,g_GPIO_already_set=%d\n",
+						valENABLE, g_GPIO_already_set);
+		} else {
+			mtkts_typec_therm_printk(
+				"%s ENABLE bad argument\n", __func__);
+			return -EINVAL;
+		}
+
+		return count;
+	}
+
+	mtkts_typec_therm_printk("%s bad argument\n", __func__);
+	return -EINVAL;
+}
+#endif
 
 /* convert register to temperature  */
 static __s32 mtkts_typec_therm_thermistor_conver_temp(__s32 Res)
@@ -634,7 +718,7 @@ static int get_hw_typec_therm_temp(void)
 
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
 	ret = iio_read_channel_processed(thermistor_ch5, &val);
-#ifdef CONFIG_USE_NTC_10k
+#ifdef CONFIG_USE_MT6360_TS_PIN
 	val = val/1000;
 #endif
 	mtkts_typec_therm_dprintk("get_hw_typec_therm_temp val=%d\n", val);
@@ -645,7 +729,7 @@ static int get_hw_typec_therm_temp(void)
 	}
 
 	/*val * 1500 / 4096*/
-#ifdef CONFIG_USE_NTC_10k
+#ifdef CONFIG_USE_MT6360_TS_PIN
 	ret = val;
 #else
 	ret = (val * 1500) >> 12;
@@ -765,8 +849,13 @@ int mtkts_typec_therm_get_hw_temp(void)
 
 	mutex_unlock(&TYPEC_THERMAL_lock);
 
-	if (t_ret > 40000)	/* abnormal high temp */
+	if (t_ret > 40000) {	/* abnormal high temp */
 		mtkts_typec_therm_printk("T_typec_therm=%d\n", t_ret);
+	}
+
+#ifdef CONFIG_TYPEC_GPIO_OUT_TOGGLE
+	tstypc_set_GPIO_toggle_for_monitor(t_ret);
+#endif
 
 	mtkts_typec_therm_dprintk("[%s] T_typec_therm, %d\n", __func__,
 									t_ret);
@@ -1433,6 +1522,21 @@ static const struct file_operations mtkts_typec_therm_param_fops = {
 	.release = single_release,
 };
 
+#ifdef CONFIG_TYPEC_GPIO_OUT_TOGGLE
+static int tstypc_GPIO_out(struct inode *inode, struct file *file)
+{
+	return single_open(file, tstypc_read_GPIO_out, NULL);
+}
+
+static const struct file_operations mtktstypc_GPIO_out_fops = {
+	.owner = THIS_MODULE,
+	.open = tstypc_GPIO_out,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tstypc_write_GPIO_out,
+	.release = single_release,
+};
+#endif
 
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
 static int mtkts_typec_therm_probe(struct platform_device *pdev)
@@ -1450,6 +1554,20 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_TYPEC_GPIO_OUT_TOGGLE
+	mos_en_gpio = of_get_named_gpio(pdev->dev.of_node, "mos-en-gpio", 0);
+	if (!gpio_is_valid(mos_en_gpio)) {
+		mtkts_typec_therm_printk("%s: %d gpio get failed\n", __func__, mos_en_gpio);
+		return -EINVAL;
+	}
+	ret = gpio_request(mos_en_gpio, "mos en pin");
+	if (ret) {
+		mtkts_typec_therm_printk("%s: %d gpio request failed\n", __func__, mos_en_gpio);
+		return ret;
+	}
+	g_GPIO_out_enable = of_property_read_bool(pdev->dev.of_node, "enable_gpio_out");
+	mtkts_typec_therm_printk("%s: %d gpio request Success! g_GPIO_out_enable =%d.\n", __func__, mos_en_gpio,g_GPIO_out_enable);
+#endif
 	thermistor_ch5 = devm_kzalloc(&pdev->dev, sizeof(*thermistor_ch5),
 		GFP_KERNEL);
 	if (!thermistor_ch5)
@@ -1484,6 +1602,13 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 				&mtkts_typec_therm_param_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
+#ifdef CONFIG_TYPEC_GPIO_OUT_TOGGLE
+		entry = proc_create("tztypc_GPIO_out_monitor", 0644,
+						mtkts_typec_therm_dir,
+						&mtktstypc_GPIO_out_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+#endif
 	}
 
 	mtkts_typec_therm_register_thermal();
