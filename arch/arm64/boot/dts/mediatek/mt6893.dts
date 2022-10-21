@@ -523,7 +523,7 @@ page_owner=on loop.max_part=7";
 			};
 		};
 	};
-	disp_leds {
+	disp_leds: disp_leds {
 		compatible = "mediatek,disp-leds";
 
 		backlight {
