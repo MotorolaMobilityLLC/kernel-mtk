@@ -134,6 +134,39 @@
         force_mode = "EINT";
 };
 
+
+//+IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
+&tboard_thermistor1 {
+	compatible = "mediatek,mtboard-thermistor1";
+	io-channels = <&auxadc 0>;
+	io-channel-names = "thermistor-ch0";
+};
+
+&tboard_thermistor2 {
+	compatible = "mediatek,mtboard-thermistor2";
+	io-channels = <&auxadc 1>;
+	io-channel-names = "thermistor-ch1";
+};
+
+&tboard_thermistor3 {
+	compatible = "mediatek,mtboard-thermistor3";
+	io-channels = <&auxadc 2>;
+	io-channel-names = "thermistor-ch2";
+};
+
+&tboard_thermistor4 {
+	compatible = "mediatek,mtboard-thermistor4";
+	io-channels = <&auxadc 3>;
+	io-channel-names = "thermistor-ch3";
+};
+
+&tboard_thermistor5 {
+	compatible = "mediatek,mtboard-thermistor5";
+	io-channels = <&auxadc 4>;
+	io-channel-names = "thermistor-ch4";
+};
+//-IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
+
 &i2c0 {
 	i2c_lcd_bias@3e {
                 compatible = "mediatek,i2c_lcd_bias";
