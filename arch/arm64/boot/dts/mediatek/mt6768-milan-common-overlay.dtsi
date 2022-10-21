@@ -235,6 +235,7 @@
 };
 
 &mmc1 {
+        pinctrl-0 = <&mmc1_pins_default>;
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 	cd-gpios = <&pio 25 0>;
 };
