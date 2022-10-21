@@ -245,7 +245,7 @@
 	};
 	gpslna_pins_init: gpslna@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
+			pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
 			slew-rate = <0>;
 			bias-disable;
 			output-low;
@@ -253,14 +253,14 @@
 	};
 	gpslna_pins_oh: gpslna@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
+			pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	gpslna_pins_ol: gpslna@2 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
+			pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
 			slew-rate = <1>;
 			output-low;
 		};
