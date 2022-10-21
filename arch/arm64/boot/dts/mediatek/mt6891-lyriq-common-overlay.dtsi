@@ -19,12 +19,12 @@
 /* chosen */
 &chosen {
 
-	atag,videolfb-fb_base_l = <0x7e020000>;
+	atag,videolfb-fb_base_l = <0x7a5d0000>;
 	atag,videolfb-fb_base_h = <0x0>;
 	atag,videolfb-islcmfound = <1>;
 	atag,videolfb-islcm_inited = <0>;
 	atag,videolfb-fps= <6000>;
-	atag,videolfb-vramSize= <0x1be0000>;
+	atag,videolfb-vramSize= <0x1df0000>;
 	atag,videolfb-lcmname=
 		"nt35595_fhd_dsi_cmd_truly_nt50358_drv";
 };
@@ -169,9 +169,7 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
-		data = <1>;
-		pwm_config = <0 1 0 0 0>;
+		led_mode = <4>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
@@ -221,74 +219,81 @@
 
 /* DISPSYS GPIO standardization */
 &pio {
-	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO28__FUNC_GPIO28>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
+        mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
 
-	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO28__FUNC_GPIO28>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
+        mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO41__FUNC_DSI_TE>;
+                };
+        };
 
-	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
+        mtkfb_pins_oled_vci_en: oled_vci_en_gpio {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO82__FUNC_GPIO82>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
 
-	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
+        mtkfb_pins_oled_vio_en: oled_vio_en_gpio {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO84__FUNC_GPIO84>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
 
-	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
+        mtkfb_pins_oled_dvdd_en: oled_dvdd_en_gpio {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO80__FUNC_GPIO80>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
 
-	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
+        mtkfb_pins_oled_dvddin_en: oled_dvddin_en_gpio {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO81__FUNC_GPIO81>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
 
-	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO41__FUNC_DSI_TE>;
-		};
-	};
 };
 
 &mtkfb {
-	pinctrl-names = "lcd_bias_enp1_gpio", "lcd_bias_enp0_gpio",
-		"lcd_bias_enn1_gpio", "lcd_bias_enn0_gpio",
-		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te";
-	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
-	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
-	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
-	pinctrl-3 = <&mtkfb_pins_lcd_bias_enn0>;
-	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
-	status = "okay";
+        /delete-property/ pinctrl-names;
+        /delete-property/ pinctrl-0;
+        /delete-property/ pinctrl-1;
+        /delete-property/ pinctrl-2;
+        /delete-property/ pinctrl-3;
+        /delete-property/ pinctrl-4;
+        /delete-property/ pinctrl-5;
+        /delete-property/ pinctrl-6;
+
+        pinctrl-names = "lcm_rst_out0_gpio", "mode_te_te",
+                "oled_vci_en_gpio", "oled_vio_en_gpio",
+                "oled_dvddin_en_gpio","oled_dvdd_en_gpio";
+        pinctrl-0 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+        pinctrl-1 = <&mtkfb_pins_lcm_dsi_te>;
+        pinctrl-2 = <&mtkfb_pins_oled_vci_en>;
+        pinctrl-3 = <&mtkfb_pins_oled_vio_en>;
+        pinctrl-4 = <&mtkfb_pins_oled_dvddin_en>;
+	pinctrl-5 = <&mtkfb_pins_oled_dvdd_en>;
+        status = "okay";
 };
 
 &dispsys_config {
@@ -454,18 +459,24 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	panel1@0 {
-		compatible = "truly,td4330,vdo";
-		reg = <0>;
-		pm-enable-gpios = <&pio 41 0>;
-		reset-gpios = <&pio 42 0>;
-		bias-gpios = <&pio 28 0>,
-			<&pio 29 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
+                /delete-property/ compatible;
+                /delete-property/ pm-enable-gpios;
+                /delete-property/ reset-gpios;
+
+                compatible = "boe,nt37701a,vdo,144hz";
+                reg = <2>;
+                pm-enable-gpios = <&pio 84 0>,
+                          <&pio 81 0>,
+                          <&pio 80 0>,
+                          <&pio 82 0>;
+                reset-gpios = <&pio 42 0>;
+                pinctrl-names = "default";
+                lhbm-enable;
+                port {
+                        panel_in: endpoint {
+                                remote-endpoint = <&dsi_out>;
+                        };
+                };
 	};
 	panel2@0 {
 		compatible = "truly,ft8756,vdo";
