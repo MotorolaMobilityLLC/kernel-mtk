@@ -75,3 +75,4 @@ obj-$(CONFIG_DRM_PANEL_DIJING_ILI9882Q_VDO) += dsi-panel-mot-dijing-ili9882q-hd-
 obj-$(CONFIG_DRM_PANEL_TIANMA_ICNL9911C_VDO) += dsi-panel-mot-tianma-icnl9911c-hd-video.o
 obj-$(CONFIG_DRM_PANEL_BOE_ICNL9911C_VDO) += dsi-panel-mot-boe-icnl9911c-hd-video.o
 obj-$(CONFIG_DRM_PANEL_DJN_ILI9882Q_VDO) += dsi-panel-mot-djn-ili9882q-hd-video.o
+obj-$(CONFIG_DRM_PANEL_BOE_NT37701A_655_FHD_VDO_144HZ) += dsi-panel-mot-boe-nt37701a-655-fhdp-video-144hz.o
