@@ -83,6 +83,17 @@ config REGULATOR_88PM800
 	  It's suitable to support PXA988 chips to control VCC_MAIN and
 	  various voltages.
 
+config MOTO_WL2864C
+        tristate "moto wl2864C regulator driver"
+	depends on I2C && GPIOLIB
+	select REGMAP
+	select CRC8
+	select OF_GPIO
+	select REGULATOR_FIXED_VOLTAGE
+	select MTK_SUBPMIC_MISC
+	help
+	  WL2864C is an pmic chip.
+
 config REGULATOR_88PM8607
 	tristate "Marvell 88PM8607 Power regulators"
 	depends on MFD_88PM860X=y

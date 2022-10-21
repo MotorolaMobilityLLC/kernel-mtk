@@ -62,6 +62,7 @@ mainaf-y  += common/dw9719taf/DW9719TAF.o
 mainaf-y  += common/dw9763af/DW9763AF.o
 mainaf-y  += common/dw9839af/DW9839AF.o
 mainaf-y  += common/gt9764af/GT9764AF.o
+mainaf-y  += common/mot_lyriq_gt9764af/MOT_LYRIQ_GT9764AF.o
 mainaf-y  += common/gt9772af/GT9772AF.o
 mainaf-y  += common/lc898212af/LC898212AF.o
 mainaf-y  += common/lc898212xdaf/LC898212XDAF.o
