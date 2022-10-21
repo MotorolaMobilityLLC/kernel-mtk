@@ -37,3 +37,8 @@ config TYPEC_GPIO_OUT_TOGGLE
 	help
 	  This feature option is used to enable/disable
           mosfet control in usb therm gpio.
+
+config GENEVA_THERMAL_NTC
+	bool "Genva thermal ntc"
+	help
+	  Enable the geneva thermal ntc
