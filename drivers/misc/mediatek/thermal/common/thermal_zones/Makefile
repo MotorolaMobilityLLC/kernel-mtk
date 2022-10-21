@@ -266,7 +266,6 @@ endif
 
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6885"))
-ccflags-y += -DCONFIG_USE_NTC_10k
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
