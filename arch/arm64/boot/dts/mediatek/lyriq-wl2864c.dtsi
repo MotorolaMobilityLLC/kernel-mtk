@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: GPL-2.0
+//
+// Copyright (c) 2021 MediaTek Inc.
+&i2c9 {
+	wl2864c: wl2864c@29 {
+		status = "ok";
+		compatible = "wl2864c";
+		reg = <0x29>;
+		enable_gpio = <&pio 81 0x0>;
+		regulator_nb = "ldo1", "ldo2",
+				"ldo3", "ldo4",
+				"ldo5", "ldo6",
+				"ldo7";
+		regulators {
+			cam_front_dvdd_ldo: ldo1 {
+				regulator-name = "wl2864c-ldo1";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <3787500>;
+
+			};
+			cam_uw_dvdd_ldo: ldo2 {
+				regulator-name = "wl2864c-ldo2";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <3787500>;
+
+			};
+			cam_main_avdd_ldo: ldo3 {
+				regulator-name = "wl2864c-ldo3";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4387500>;
+				regulator-active-discharge;
+			};
+			cam_uw_afvdd_ldo: ldo4 {
+				regulator-name = "wl2864c-ldo4";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4387500>;
+			};
+			cam_main_afvdd_ldo: ldo5 {
+				regulator-name = "wl2864c-ldo5";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+			};
+			cam_front_avdd_ldo: ldo6 {
+				regulator-name = "wl2864c-ldo6";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				regulator-active-discharge;
+			};
+			cam_iovdd_ldo: ldo7 {
+				regulator-name = "wl2864c-ldo7";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4387500>;
+			};
+		};
+	};
+};

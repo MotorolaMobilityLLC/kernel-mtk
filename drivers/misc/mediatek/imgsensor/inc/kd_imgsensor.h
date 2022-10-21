@@ -163,7 +163,11 @@
 #define MOT_AUSTIN_GC02M1B_SENSOR_ID      0x02E1
 #define MOT_AUSTIN_GC02M1_SENSOR_ID      0x02E0
 //add austin sensor id end
-
+//add london sensor id start
+#define MOT_LYRIQ_OV50E_SENSOR_ID      0x565045
+#define MOT_LYRIQ_OV32B_SENSOR_ID      0x3242
+#define MOT_LYRIQ_HI1336_SENSOR_ID      0x1337
+//add london sensor id start
 /*IMX*/
 #define IMX766_SENSOR_ID                        0x0766
 #define IMX499_SENSOR_ID                        0x0499
@@ -704,6 +708,11 @@
 #define SENSOR_DRVNAME_MOT_AUSTIN_GC02M1B_MIPI_RAW   "mot_austin_gc02m1b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_AUSTIN_GC02M1_MIPI_RAW   "mot_austin_gc02m1_mipi_raw"
 //add austin sensor drvname end
+//add london sensor drvname begin
+#define SENSOR_DRVNAME_MOT_LYRIQ_OV50E_MIPI_RAW   "mot_lyriq_ov50e_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LYRIQ_OV32B_MIPI_RAW   "mot_lyriq_ov32b_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LYRIQ_HI1336_MIPI_RAW   "mot_lyriq_hi1336_mipi_raw"
+//add london sensor drvname end
 #define SENSOR_DRVNAME_SAIPAN_QTECH_HI4821Q_MIPI_RAW "saipan_qtech_hi4821q_mipi_raw"
 #define SENSOR_DRVNAME_SAIPAN_SHINE_HI846_MIPI_RAW "saipan_shine_hi846_mipi_raw"
 #define SENSOR_DRVNAME_SAIPAN_DMEGC_HI1336_MIPI_RAW "saipan_dmegc_hi1336_mipi_raw"
