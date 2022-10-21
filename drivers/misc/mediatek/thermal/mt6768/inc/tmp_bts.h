@@ -10,9 +10,15 @@
 #define APPLY_PRECISE_NTC_TABLE
 #define APPLY_AUXADC_CALI_DATA
 
+//+IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
+#define APPLY_PRECISE_BTS_TEMP
+
 #define AUX_IN0_NTC (0)
 #define AUX_IN1_NTC (1)
+#define AUX_IN2_NTC (2)
 #define AUX_IN3_NTC (3)
+#define AUX_IN4_NTC (4)
+//-IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
 
 #define BTS_RAP_PULL_UP_R		390000 /* 390K, pull up resister */
 
@@ -49,6 +55,47 @@
 #define CHARGERTS_RAP_NTC_TABLE		7 /* default is NCP15WF104F03RC(100K) */
 
 #define CHARGERTS_RAP_ADC_CHANNEL		AUX_IN3_NTC /* default is 0 */
+
+//+IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
+#define WT_CHARGER_RAP_PULL_UP_R		390000 /* 390K, pull up resister */
+
+#define WT_CHARGER_TAP_OVER_CRITICAL_LOW	4397119 /* base on 100K NTC temp
+						 * default value -40 deg
+						 */
+
+#define WT_CHARGER_RAP_PULL_UP_VOLTAGE		1800 /* 1.8V ,pull up voltage */
+
+#define WT_CHARGER_RAP_NTC_TABLE		7 /* default is NCP15WF104F03RC(100K) */
+
+#define WT_CHARGER_RAP_ADC_CHANNEL		AUX_IN2_NTC /* default is 0 */
+
+
+
+#define WT_FLASHLIGHT_RAP_PULL_UP_R		390000 /* 390K, pull up resister */
+
+#define WT_FLASHLIGHT_TAP_OVER_CRITICAL_LOW	4397119 /* base on 100K NTC temp
+						 * default value -40 deg
+						 */
+
+#define WT_FLASHLIGHT_RAP_PULL_UP_VOLTAGE		1800 /* 1.8V ,pull up voltage */
+
+#define WT_FLASHLIGHT_RAP_NTC_TABLE		7 /* default is NCP15WF104F03RC(100K) */
+
+#define WT_FLASHLIGHT_RAP_ADC_CHANNEL		AUX_IN3_NTC /* default is 0 */
+
+
+#define WT_RECEIVER_RAP_PULL_UP_R		390000 /* 390K, pull up resister */
+
+#define WT_RECEIVER_TAP_OVER_CRITICAL_LOW	4397119 /* base on 100K NTC temp
+						 * default value -40 deg
+						 */
+
+#define WT_RECEIVER_RAP_PULL_UP_VOLTAGE		1800 /* 1.8V ,pull up voltage */
+
+#define WT_RECEIVER_RAP_NTC_TABLE		7 /* default is NCP15WF104F03RC(100K) */
+
+#define WT_RECEIVER_RAP_ADC_CHANNEL		AUX_IN4_NTC /* default is 0 */
+//-IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
 
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
