@@ -59,12 +59,19 @@
 #define GET_M4U_PORT 0x1F
 #define MTK_CWB_NO_EFFECT_HRT_MAX_WIDTH 128
 
+#define MAX_CMD_PAYLOAD_SIZE	256
+#define DCS_READ_NO_PARAM 0x06
+char dcs_read[MAX_CMD_PAYLOAD_SIZE];
+char read_dlen = 0;
+
 #if IS_ENABLED(CONFIG_DEBUG_FS)
 static struct dentry *mtkfb_dbgfs;
+static struct dentry *motUtil_dbgfs;
 #endif
 
 #if IS_ENABLED(CONFIG_PROC_FS)
 static struct proc_dir_entry *mtkfb_procfs;
+static struct proc_dir_entry *motUtil_procfs;
 static struct proc_dir_entry *disp_lowpower_proc;
 static struct proc_dir_entry *mtkfb_debug_procfs;
 #endif
@@ -1092,6 +1099,59 @@ done:
 	DDPMSG("%s end -\n", __func__);
 }
 
+
+/* adb shell "echo 0x39 0x03 0x51 0x0f 0xff > /proc/motUtil"
+*
+* 0x39   0x03       0x51   0x0f 0xff
+* TYPE   LENGTH   REG    DATA
+*/
+void ddic_dsi_send_cmd_motUtil(char input[])
+{
+	unsigned int i = 0, j = 0;
+	int ret;
+	struct mtk_ddic_dsi_msg *cmd_msg =
+		vmalloc(sizeof(struct mtk_ddic_dsi_msg));
+	u8 tx[256] = {0};
+
+	DDPMSG("%s start case_num:%s\n", __func__, input);
+
+	if (!cmd_msg) {
+		DDPPR_ERR("cmd msg is NULL\n");
+		return;
+	}
+	memset(cmd_msg, 0, sizeof(struct mtk_ddic_dsi_msg));
+
+	cmd_msg->channel = 0;
+	cmd_msg->flags = 0;
+	cmd_msg->tx_cmd_num = 1;
+	cmd_msg->type[0] = input[0];
+	strncpy(tx, &input[2], input[1]);
+	cmd_msg->tx_buf[0] = tx;
+	cmd_msg->tx_len[0] = input[1];
+
+	DDPMSG("send lcm tx_cmd_num:%d\n", (int)cmd_msg->tx_cmd_num);
+	for (i = 0; i < (int)cmd_msg->tx_cmd_num; i++) {
+		DDPMSG("send lcm tx_len[%d]=%d\n",
+			i, (int)cmd_msg->tx_len[i]);
+		for (j = 0; j < (int)cmd_msg->tx_len[i]; j++) {
+			DDPMSG(
+				"send lcm type[%d]=0x%x, tx_buf[%d]--byte:%d,val:0x%x\n",
+				i, cmd_msg->type[i], i, j,
+				*(char *)(cmd_msg->tx_buf[i] + j));
+		}
+	}
+
+	ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
+	if (ret != 0) {
+		DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
+		goto  done;
+	}
+done:
+	vfree(cmd_msg);
+
+	DDPMSG("%s end -\n", __func__);
+}
+
 void ddic_dsi_read_cmd_test(unsigned int case_num)
 {
 	unsigned int i = 0, j = 0;
@@ -1372,6 +1432,67 @@ void ddic_dsi_read_cmd_test(unsigned int case_num)
 done:
 	for (i = 0; i < cmd_msg->rx_cmd_num; i++)
 		kfree(cmd_msg->rx_buf[i]);
+	vfree(cmd_msg);
+
+	DDPMSG("%s end -\n", __func__);
+}
+
+/* adb shell "echo 0x06 0x01 0x0a > /proc/motUtil"
+* adb shell "cat /proc/motUtil"
+* adb shell "echo 0x06 0x02 0x52 > /proc/motUtil"
+* adb shell "cat /proc/motUtil"
+*
+* 0x06   0x02       0x52
+* TYPE   LENGTH   REG
+*/
+void ddic_dsi_read_cmd_motUtil(char input[])
+{
+	unsigned int j = 0;
+	unsigned int ret_dlen = 0;
+	int ret;
+	struct mtk_ddic_dsi_msg *cmd_msg =
+		vmalloc(sizeof(struct mtk_ddic_dsi_msg));
+	u8 tx[10] = {0};
+
+	DDPMSG("%s start case_num:%s\n", __func__, input);
+
+	if (!cmd_msg) {
+		DDPPR_ERR("cmd msg is NULL\n");
+		return;
+	}
+	memset(cmd_msg, 0, sizeof(struct mtk_ddic_dsi_msg));
+
+	cmd_msg->channel = 0;
+	cmd_msg->tx_cmd_num = 1;
+	cmd_msg->type[0] = input[0];
+	tx[0] = input[2];
+	cmd_msg->tx_buf[0] = tx;
+	cmd_msg->tx_len[0] = 1;
+
+	cmd_msg->rx_cmd_num = 1;
+	cmd_msg->rx_buf[0] = vmalloc(256 * sizeof(unsigned char));
+	memset(cmd_msg->rx_buf[0], 0, 256);
+	cmd_msg->rx_len[0] = input[1];
+	read_dlen = input[1];
+
+	ret = mtk_ddic_dsi_read_cmd(cmd_msg);
+	if (ret != 0) {
+		DDPPR_ERR("%s error\n", __func__);
+		goto  done;
+	}
+
+	ret_dlen = cmd_msg->rx_len[0];
+	strncpy(dcs_read, cmd_msg->rx_buf[0], ret_dlen);
+	DDPMSG("read lcm addr:0x%x--dlen:%d\n",
+		*(char *)(cmd_msg->tx_buf[0]), ret_dlen);
+	for (j = 0; j < ret_dlen; j++) {
+		DDPMSG("read lcm addr:0x%x--byte:%d,val:0x%x\n",
+			*(char *)(cmd_msg->tx_buf[0]), j,
+			*(char *)(cmd_msg->rx_buf[0] + j));
+	}
+
+done:
+	vfree(cmd_msg->rx_buf[0]);
 	vfree(cmd_msg);
 
 	DDPMSG("%s end -\n", __func__);
@@ -2535,8 +2656,129 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	return ret;
 }
 
+static ssize_t motUtil_string2num(const char __user *buf,
+					size_t count, char buffer[])
+{
+	char *input, *input_copy, *token, *input_dup = NULL;
+	const char *delim =" ";
+	u32 buf_size = 0;
+	int rc=0, strtoint;
+
+	/*copy the data from user space*/
+	input = kmalloc(count + 1, GFP_KERNEL);
+	if (!input)
+		return -ENOMEM;
+
+	if (copy_from_user(input, buf, count)) {
+		DDPPR_ERR("copy from user failed\n");
+		rc = -EFAULT;
+		goto end;
+	}
+	input[count]='\0';
+	DDPMSG("input_cmd = %s\n", input);
+
+	input_copy = kstrdup(input, GFP_KERNEL);
+	if (!input_copy) {
+		rc = -ENOMEM;
+		goto end;
+	}
+
+	input_dup = input_copy,
+	token = strsep(&input_copy, delim);
+	while (token) {
+		rc = kstrtoint(token, 0, &strtoint);
+		if (rc) {
+			rc = -EIO;
+			DDPPR_ERR("input buffer conversion failed\n");
+			goto end;
+		}
+
+		if (buf_size >= MAX_CMD_PAYLOAD_SIZE) {
+			DDPPR_ERR("buffer size exceeding the limit %d\n",
+					MAX_CMD_PAYLOAD_SIZE);
+			goto end;
+		}
+
+		buffer[buf_size++] = (strtoint & 0xff);
+		token = strsep(&input_copy, delim);
+	}
+
+	DDPMSG("command packet size in bytes: %u\n", buf_size);
+	rc = buf_size;
+end:
+	kfree(input_dup);
+	kfree(input);
+
+	return rc;
+}
+
+static int motUtil_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+
+	return 0;
+}
+static ssize_t motUtil_read(struct file *file, char __user *ubuf, size_t count,
+			  loff_t *ppos)
+{
+	int blen = 0, i;
+	char buffer[MAX_CMD_PAYLOAD_SIZE];
+
+	if (read_dlen > 0) {
+		blen = snprintf(buffer, 16, "motUtil_read: ");
+		for (i = 0; i < read_dlen; i ++)
+				blen += snprintf((buffer + blen) , 6, "0x%02x ",
+					dcs_read[i]);
+
+		blen += snprintf((buffer + blen), 4, "\n");
+	}else
+		DDPPR_ERR("motUtil failed to read from panel\n");
+
+        if (blen <= 0) {
+                DDPPR_ERR("snprintf failed, blen %d\n", blen);
+                return 0;
+        }
+	buffer[blen+1] = '\0';
+
+	DDPMSG("%s, %d, %d, %d %d\n", buffer, blen, read_dlen, count, *ppos);
+
+        return simple_read_from_buffer(ubuf, count, ppos, buffer, blen);
+}
+
+static ssize_t motUtil_write(struct file *file, const char __user *ubuf,
+			   size_t count, loff_t *ppos)
+{
+	u32 buf_size = 0;
+	char buffer[MAX_CMD_PAYLOAD_SIZE];
+	int ret = 0;
+
+	if (*ppos) {
+		DDPMSG("invalid argument(s)\n");
+		ret = -EINVAL;
+		goto end;
+	}
+
+	buf_size = motUtil_string2num(ubuf, count, buffer);
+	if (buf_size <= 0){
+		DDPMSG("invalid input\n");
+		ret = -EINVAL;
+		goto end;
+	}
+	/* buffer[0] DSC data type such as 0x06, 0x39, 0x15, 0x05 */
+	if (buffer[0] == DCS_READ_NO_PARAM)
+		ddic_dsi_read_cmd_motUtil(buffer);
+	else
+		ddic_dsi_send_cmd_motUtil(buffer);
+end:
+	return count;
+}
+
 static const struct file_operations debug_fops = {
 	.read = debug_read, .write = debug_write, .open = debug_open,
+};
+
+static const struct file_operations motUtil_fops = {
+	.read = motUtil_read, .write = motUtil_write, .open = motUtil_open,
 };
 
 static int idletime_set(void *data, u64 val)
@@ -2714,6 +2956,9 @@ void disp_dbg_probe(void)
 	mtkfb_dbgfs = debugfs_create_file("mtkfb", S_IFREG | 0444, NULL,
 					  NULL, &debug_fops);
 
+	motUtil_dbgfs = debugfs_create_file("motUtil", S_IFREG | 0440, NULL,
+					  NULL, &motUtil_fops);
+
 	d_folder = debugfs_create_dir("displowpower", NULL);
 	if (d_folder) {
 		d_file = debugfs_create_file("idletime", S_IFREG | 0644,
@@ -2745,6 +2990,16 @@ void disp_dbg_probe(void)
 			__func__, __LINE__);
 		goto out;
 	}
+
+	motUtil_procfs = proc_create("motUtil", S_IFREG | 0444,
+				   NULL,
+				   &motUtil_fops);
+	if (!motUtil_procfs) {
+		DDPPR_ERR("[%s %d]failed to create motUtil in /proc/motUtil\n",
+			__func__, __LINE__);
+	}
+
+
 
 	disp_lowpower_proc = proc_mkdir("displowpower", NULL);
 	if (!disp_lowpower_proc) {
