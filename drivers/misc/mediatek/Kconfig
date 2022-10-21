@@ -5,6 +5,9 @@ source "drivers/misc/mediatek/cqdma/Kconfig"
 config MTK_PLATFORM
 	string "MTK platform name"
 
+config MOT_LYRIQ
+	string "MOTO project lyriq name"
+
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
