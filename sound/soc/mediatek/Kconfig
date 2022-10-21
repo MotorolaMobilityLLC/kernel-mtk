@@ -473,3 +473,9 @@ config SND_SOC_AW882XX
 	depends on I2C
 	help
 	  AW88261 Smart Amplifier Driver.
+
+config MTK_HAC_SGM3715_SUPPORT
+	bool "Support for HAC function"
+	help
+	 Select Y if you have such device.
+	 If unsure select "N".

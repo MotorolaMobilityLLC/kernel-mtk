@@ -40,6 +40,21 @@ static const struct soc_enum mt6768_spk_type_enum[] = {
 			    mt6768_spk_i2s_type_str),
 };
 
+#ifdef CONFIG_SND_SMARTPA_AW883XX
+struct snd_soc_dai_link_component awinic_codecs[] = {
+	{
+		.of_node = NULL,
+		.dai_name = "aw883xx-aif-7-34",
+		.name = "aw883xx_smartpa.7-0034",
+	},
+	{
+		.of_node = NULL,
+		.dai_name = "aw883xx-aif-7-36",
+		.name = "aw883xx_smartpa.7-0036",
+	},
+};
+#endif
+
 static int mt6768_spk_type_get(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
@@ -563,6 +578,9 @@ static struct snd_soc_dai_link mt6768_mt6358_dai_links[] = {
 #ifdef CONFIG_SND_SOC_FS16XX
 		.codec_dai_name = "fs16xx-aif",
 		.codec_name = "fs16xx",
+#elif defined(CONFIG_SND_SMARTPA_AW883XX)
+		.num_codecs = ARRAY_SIZE(awinic_codecs),
+		.codecs = awinic_codecs,
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
@@ -578,6 +596,9 @@ static struct snd_soc_dai_link mt6768_mt6358_dai_links[] = {
 #ifdef CONFIG_SND_SOC_FS16XX
 		.codec_dai_name = "fs16xx-aif",
 		.codec_name = "fs16xx",
+#elif defined(CONFIG_SND_SMARTPA_AW883XX)
+		.num_codecs = ARRAY_SIZE(awinic_codecs),
+		.codecs = awinic_codecs,
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",

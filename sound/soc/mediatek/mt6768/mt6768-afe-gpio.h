@@ -16,4 +16,8 @@ int mt6768_afe_gpio_init(struct mtk_base_afe *afe);
 int mt6768_afe_gpio_request(struct mtk_base_afe *afe, bool enable,
 			    int dai, int uplink);
 
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+int HAC_Amp_Change(int bEnable);
+#endif
+
 #endif
