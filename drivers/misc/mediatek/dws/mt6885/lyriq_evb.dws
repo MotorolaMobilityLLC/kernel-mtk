@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.17.2022.17:07:15"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.17.2022.16:55:40"-->
 <dct_cfg>
     <general chip="MT6893">
         <proj>MT6893</proj>
@@ -883,8 +883,9 @@
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_CAMERA2_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio75>
@@ -895,6 +896,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_CAMERA_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio76>
@@ -905,8 +907,8 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-		<varName0>EINT_WCHG</varName0>
-		<smt>true</smt>
+                <varName0>EINT_WCHG</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio77>
             <gpio78>
@@ -944,7 +946,7 @@
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
@@ -1486,8 +1488,8 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-		<varName0>WLC_DET</varName0>
-		<smt>true</smt>
+                <varName0>WLC_DET</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio132>
             <gpio133>
@@ -1508,7 +1510,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_2_CMRST_PIN</varName0>
+                <varName0>GPIO_CAMERA_1_CMRST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio134>
@@ -1529,7 +1531,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_2_CMMCLK_PIN</varName0>
+                <varName0>GPIO_CAMERA_1_CMMCLK_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio136>
@@ -1658,8 +1660,8 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-		<out_high>false</out_high>
-		<varName0>WLC_MODE_SEL</varName0>
+                <out_high>false</out_high>
+                <varName0>WLC_MODE_SEL</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio148>
@@ -2447,12 +2449,12 @@
             </i2c_bus9>
             <device5>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_2</channel>
+                <channel>I2C_CHANNEL_8</channel>
                 <address>0x10</address>
             </device5>
             <device6>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
-                <channel>I2C_CHANNEL_2</channel>
+                <channel>I2C_CHANNEL_8</channel>
                 <address>0x51</address>
             </device6>
             <device10>
@@ -2462,8 +2464,8 @@
             </device10>
             <device11>
                 <varName>CAMERA_SUB</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x1A</address>
+                <channel>I2C_CHANNEL_8</channel>
+                <address>0x20</address>
             </device11>
             <device12>
                 <varName>CAMERA_SUB_EEPROM</varName>
@@ -2507,22 +2509,22 @@
             </device21>
             <device24>
                 <varName>CAMERA_MAIN</varName>
-                <channel>I2C_CHANNEL_8</channel>
-                <address>0x1A</address>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x10</address>
             </device24>
             <device25>
                 <varName>CAMERA_MAIN_EEPROM</varName>
-                <channel>I2C_CHANNEL_8</channel>
+                <channel>I2C_CHANNEL_2</channel>
                 <address>0x50</address>
             </device25>
             <device26>
                 <varName>CAMERA_MAIN_AF</varName>
-                <channel>I2C_CHANNEL_8</channel>
-                <address>0x72</address>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x0C</address>
             </device26>
             <device27>
                 <varName>CAMERA_MAIN_TWO_AF</varName>
-                <channel>I2C_CHANNEL_2</channel>
+                <channel>I2C_CHANNEL_8</channel>
                 <address>0x0C</address>
             </device27>
             <device29>
