@@ -23,3 +23,17 @@ config MTK_LEGACY_THERMAL_PLATFORM
 	  drivers. Config platform name for your
 	  selection. It's used for legacy thermal
 	  drivers only.
+
+config USE_MT6360_TS_PIN
+	bool "USE MT6360 TS PIN"
+	default n
+	help
+	  This feature option is used to enable/disable
+          the MT6360 TS detection temperature.
+
+config TYPEC_GPIO_OUT_TOGGLE
+	bool "Enable usb therm gpio toggle"
+	default n
+	help
+	  This feature option is used to enable/disable
+          mosfet control in usb therm gpio.
