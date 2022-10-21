@@ -557,6 +557,7 @@ obj-$(CONFIG_SND_SOC_SMARTPAINFO)	+= snd-soc-smartpa-info.o
 obj-$(CONFIG_SND_SOC_AW87339)	+= aw87339/
 obj-$(CONFIG_SND_SOC_FS16XX_KERNEL) +=foursemi/
 obj-$(CONFIG_SND_SOC_AW882XX_KERNEL) +=aw8882xx/
+obj-$(CONFIG_SND_SMARTPA_AW883XX) += aw883xx/
 
 ifneq (, $(filter y,$(CONFIG_SND_SOC_MT6358) $(CONFIG_SND_SOC_MT6366)))
   MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))

@@ -40,6 +40,10 @@
 
 #include "mt6358.h"
 
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+#include "../mediatek/mt6768/mt6768-afe-gpio.h"
+#endif
+
 enum {
 	AUDIO_ANALOG_VOLUME_HSOUTL,
 	AUDIO_ANALOG_VOLUME_HSOUTR,
@@ -49,6 +53,9 @@ enum {
 	AUDIO_ANALOG_VOLUME_LINEOUTR,
 	AUDIO_ANALOG_VOLUME_MICAMP1,
 	AUDIO_ANALOG_VOLUME_MICAMP2,
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+	AUDIO_ANALOG_VOLUME_HAC,
+#endif
 	AUDIO_ANALOG_VOLUME_TYPE_MAX
 };
 
@@ -838,6 +845,10 @@ static const char *const dl_pga_gain[] = {
 	"-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
 };
 
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+static const char *const hac_function[] = { "Off", "On" };
+#endif
+
 static void zcd_enable(struct mt6358_priv *priv, bool enable, int device)
 {
 	if (enable) {
@@ -1047,8 +1058,42 @@ static int dl_pga_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+static int HAC_Amp_Get(struct snd_kcontrol *kcontrol,
+                struct snd_ctl_elem_value *ucontrol)
+{
+        struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+        struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+        ucontrol->value.integer.value[0] = priv->ana_gain[AUDIO_ANALOG_VOLUME_HAC];
+
+        dev_info(priv->dev, "%s(), get gpio_hac_status %d\n", __func__, ucontrol->value.integer.value[0]);
+        return 0;
+}
+
+static int HAC_Amp_Set(struct snd_kcontrol *kcontrol,
+                struct snd_ctl_elem_value *ucontrol)
+{
+        struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+        struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+        priv->ana_gain[AUDIO_ANALOG_VOLUME_HAC] = ucontrol->value.integer.value[0];
+
+        if (ucontrol->value.integer.value[0] == 1) {
+                HAC_Amp_Change(1);
+                dev_info(priv->dev, "%s(), set gpio_aud_hac_high\n", __func__);
+        } else {
+                HAC_Amp_Change(0);
+                dev_info(priv->dev, "%s(), set gpio_aud_hac_low\n", __func__);
+        }
+
+        return 0;
+}
+#endif
+
 static const struct soc_enum dl_pga_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dl_pga_gain), dl_pga_gain),
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(hac_function), hac_function),
+#endif
 };
 
 #define MT_SOC_ENUM_EXT_ID(xname, xenum, xhandler_get, xhandler_put, id) \
@@ -1073,6 +1118,11 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 	MT_SOC_ENUM_EXT_ID("Lineout_PGAR_GAIN", dl_pga_enum[0],
 			   dl_pga_get, dl_pga_set,
 			   AUDIO_ANALOG_VOLUME_LINEOUTR),
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+	MT_SOC_ENUM_EXT_ID("HAC_Amp_Switch", dl_pga_enum[1],
+                           HAC_Amp_Get, HAC_Amp_Set,
+                           AUDIO_ANALOG_VOLUME_HAC),
+#endif
 };
 
 /* ul pga gain */
