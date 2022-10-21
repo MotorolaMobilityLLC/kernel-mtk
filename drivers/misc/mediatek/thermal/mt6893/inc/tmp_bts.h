@@ -80,7 +80,7 @@
 
 #define FLASHLIGHT_RAP_ADC_CHANNEL             AUX_IN4_NTC /* default is 0 */
 
-#ifdef CONFIG_USE_NTC_10k
+#ifdef CONFIG_USE_MT6360_TS_PIN
 #define TYPEC_THERMAL_RAP_PULL_UP_R               3900 /* 3.9K, pull up resister */
 
 #define TYPEC_THERMAL_TAP_OVER_CRITICAL_LOW       188500 /* base on 10K NTC temp
