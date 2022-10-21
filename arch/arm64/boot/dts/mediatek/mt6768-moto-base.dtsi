@@ -7,4 +7,24 @@
 / {
 	moto_chg_tcmd: moto_chg_tcmd {
 	};
+//+IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
+	/delete-node/ tboard_thermistor1;
+	/delete-node/ tboard_thermistor2;
+	/delete-node/ tboard_thermistor3;
+
+	tboard_thermistor1: thermal-sensor1 {
+	};
+
+	tboard_thermistor2: thermal-sensor2 {
+	};
+
+	tboard_thermistor3: thermal-sensor3 {
+	};
+
+	tboard_thermistor4: thermal-sensor4 {
+	};
+
+	tboard_thermistor5: thermal-sensor5 {
+	};
+//-IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
 };
