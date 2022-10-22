@@ -23,6 +23,7 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/lc898122af
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/mot_gnevan_dw9800vaf/MOT_GNEVAN_DW9800VAF.c
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/lc898212xdaf/inc
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mtk/main/common/bu63165af/inc
@@ -43,6 +44,7 @@ else
 obj-$(CONFIG_MTK_LENS)    += mainaf.o
 
 mainaf-y  += main_lens.o
+mainaf-y  += common/mot_gnevan_dw9800vaf/MOT_GNEVAN_DW9800VAF.o
 mainaf-y  += common/cn3938aaf/CN3938AAF.o
 mainaf-y  += common/fp5510e2af/FP5510E2AF.o
 mainaf-y  += common/bu6424af/BU6424AF.o

@@ -90,6 +90,7 @@ const struct flashlight_device_id flashlight_id[] = {
 #else
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights_ocp8135", 0, 0},
 	{0, 0, 0, "flashlights_ocp8132", 0, 0},
 	{0, 0, 0, "flashlights-corfu-gpio", 0, 1},
 	{0, 0, 0, "flashlights-mt6360", 0, 1},
