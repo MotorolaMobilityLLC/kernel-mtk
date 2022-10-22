@@ -73,24 +73,32 @@ static int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 	return ret;
 }
 
+extern struct ccci_fsm_ctl *fsm_get_entity_by_md_id(int md_id);
 static void ccci_scp_md_state_sync_work(struct work_struct *work)
 {
 	struct ccci_fsm_scp *scp_ctl = container_of(work,
 		struct ccci_fsm_scp, scp_md_state_sync_work);
+	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(scp_ctl->md_id);
 	int ret;
-	enum MD_STATE_FOR_USER state =
-		ccci_fsm_get_md_state_for_user(scp_ctl->md_id);
+	enum MD_STATE_FOR_USER state;
 	int count = 0;
 
-	switch (state) {
-	case MD_STATE_READY:
+	if (ctl == NULL) {
+		CCCI_ERROR_LOG(-1, FSM, "%s ctl is NULL !\n", __func__);
+		return;
+	}
+
+	switch (ctl->md_state) {
+	case READY:
 		switch (scp_ctl->md_id) {
 		case MD_SYS1:
 			while (count < SCP_BOOT_TIMEOUT/EVENT_POLL_INTEVAL) {
 				if (atomic_read(&scp_state) ==
 					SCP_CCCI_STATE_BOOTING
 					|| atomic_read(&scp_state)
-					== SCP_CCCI_STATE_RBREADY)
+					== SCP_CCCI_STATE_RBREADY
+					|| atomic_read(&scp_state)
+					== SCP_CCCI_STATE_STOP)
 					break;
 				count++;
 				msleep(EVENT_POLL_INTEVAL);
@@ -117,15 +125,21 @@ static void ccci_scp_md_state_sync_work(struct work_struct *work)
 			break;
 		};
 		break;
-	case MD_STATE_EXCEPTION:
-		ccci_scp_ipi_send(scp_ctl->md_id,
-			CCCI_OP_MD_STATE, &state);
+	case INVALID:
+	case GATED:
+		state = MD_STATE_INVALID;
+		ccci_scp_ipi_send(scp_ctl->md_id, CCCI_OP_MD_STATE, &state);
+		break;
+	case EXCEPTION:
+		state = MD_STATE_EXCEPTION;
+		ccci_scp_ipi_send(scp_ctl->md_id, CCCI_OP_MD_STATE, &state);
 		break;
 	default:
 		break;
 	};
 }
 
+extern void scp_set_clk_off(void);
 static void ccci_scp_ipi_rx_work(struct work_struct *work)
 {
 	struct ccci_ipi_msg *ipi_msg_ptr = NULL;
@@ -184,6 +198,11 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 					ipi_msg_ptr->md_id);
 				ccci_scp_ipi_send(ipi_msg_ptr->md_id,
 					CCCI_OP_MD_STATE, &data);
+				break;
+			case SCP_CCCI_STATE_STOP:
+				CCCI_NORMAL_LOG(ipi_msg_ptr->md_id, FSM,
+						"MD INVALID,scp send ack to ap\n");
+				scp_set_clk_off();
 				break;
 			default:
 				break;
