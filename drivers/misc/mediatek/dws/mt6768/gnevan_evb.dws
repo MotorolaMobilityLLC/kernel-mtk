@@ -1709,13 +1709,13 @@
             </gpio151>
             <gpio152>
                 <eint_mode>false</eint_mode>
-                <def_mode>5</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_MIPI_SWITCH_SEL_PIN</varName0>
-                <smt>true</smt>
+                <varName0>GPIO_FLASHLIGHT_PIN</varName0>
+                <smt>flase</smt>
                 <ies>true</ies>
             </gpio152>
             <gpio153>
@@ -2058,6 +2058,11 @@
                 <speed_kbps>400</speed_kbps>
                 <pullPushEn>false</pullPushEn>
             </i2c_bus8>
+            <device0>
+                <varName>CAMERA_SUB_EEPROM</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x2D</address>
+            </device0>
             <device3>
                 <varName>I2C_LCD_BIAS</varName>
                 <channel>I2C_CHANNEL_0</channel>
@@ -2076,7 +2081,7 @@
             <device6>
                 <varName>CAMERA_MAIN_AF</varName>
                 <channel>I2C_CHANNEL_2</channel>
-                <address>0x0C</address>
+                <address>0x18</address>
             </device6>
             <device7>
                 <varName>NFC</varName>
@@ -2183,6 +2188,7 @@
             <pmic6>
                 <ldoVar>VLDO28</ldoVar>
                 <defEn>OFF</defEn>
+                <varName0>MAIN_CAMERA_POWER_AF</varName0>
             </pmic6>
         </module>
         <module name="kpd">

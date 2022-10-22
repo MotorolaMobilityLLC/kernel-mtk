@@ -21,6 +21,7 @@ obj-$(CONFIG_MTK_FLASHLIGHT_SYWT78)      += flashlights-sywt78.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY)       += flashlights-dummy.o
 obj-$(CONFIG_MTK_FLASHLIGHT_DUMMY_GPIO)  += flashlights-dummy-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_OCP8132)      += flashlights-ocp8132.o
+obj-$(CONFIG_MTK_FLASHLIGHT_OCP8135)      += flashlights-ocp8135.o
 obj-$(CONFIG_MTK_FLASHLIGHT_CORFU_GPIO)  += flashlights-corfu-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_COFUL_GPIO)  += flashlights-coful-gpio.o
 obj-$(CONFIG_MTK_FLASHLIGHT_COFUD_GPIO)  += flashlights-cofud-gpio.o

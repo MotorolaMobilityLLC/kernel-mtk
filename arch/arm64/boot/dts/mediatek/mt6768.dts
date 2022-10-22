@@ -3671,6 +3671,10 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 			"CLK_SCP_SYS_CAM";
 	};
 
+        camera_af_hw_node: camera_af_hw_node {
+                compatible = "mediatek,camera_af_lens";
+        };
+
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
@@ -3690,6 +3694,16 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		channel@2 {
 			type = <0>;
 			ct = <1>;
+			part = <0>;
+		};
+	};
+
+	flashlights_ocp8135: flashlights_ocp8135 {
+		compatible = "mediatek,flashlights_ocp8135";
+		decouple = <0>;
+		channel@1 {
+			type = <0>;
+			ct = <0>;
 			part = <0>;
 		};
 	};
