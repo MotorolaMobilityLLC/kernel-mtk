@@ -83,6 +83,8 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	{1, MOT_GNEVAN_AFDRV_DW9800VAF, MOT_GNEVAN_DW9800VAF_SetI2Cclient, MOT_GNEVAN_DW9800VAF_Ioctl,
+         MOT_GNEVAN_DW9800VAF_Release, MOT_GNEVAN_DW9800VAF_GetFileName, NULL},
 	{1, AFDRV_CN3938AAF, CN3938AAF_SetI2Cclient, CN3938AAF_Ioctl,
 	 CN3938AAF_Release, CN3938AAF_GetFileName, NULL},
 	{1, AFDRV_MOT_AUSTIN_DW9800VAF, MOT_AUSTIN_DW9800VAF_SetI2Cclient_Main, MOT_AUSTIN_DW9800VAF_Ioctl_Main,
