@@ -9,6 +9,14 @@ config MTK_LENS
 #
 # LENS
 #
+config MTK_LENS_DW9800VAF_SUPPORT
+	tristate "DW9800VAF Lens Driver"
+        depends on MTK_LENS
+	help
+	  DW9800VAF Lens Driver
+	  This config is used to enable the corresponding
+	  lens driver for the camera sensor module
+	  Set as y if the driver is used in this project
 
 config MTK_LENS_DUMMYLENS_SUPPORT
 	tristate "Dummy Lens Driver"
