@@ -11,6 +11,11 @@ config MOTO_MTK_PATCH
         help
           Say Y here for submiting by moto
 
+config MOTO_GNEVAN_PROJECT_CAMERA
+        bool "Define for Gnevan project camera"
+        help
+          Say Y here for distinguish different projects
+
 # EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, start
 config MOTO_ELLIS_PROJECT_SWTP_SETING_APART
         bool "Define for Ellis SWTP seting apart"
