@@ -147,13 +147,14 @@
 			};
 		};
 	};
+
 	panel4@0 {
 		/delete-property/ compatible;
 		/delete-property/ pm-enable-gpios;
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "tianma,nt37701,cmd,144hz";
+		compatible = "tianma,nt37701,cmd,144hz,rode";
 		reg = <1>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 103 0>,
