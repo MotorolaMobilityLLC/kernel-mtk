@@ -87,6 +87,7 @@ obj-$(CONFIG_DRM_PANEL_ALPHA_SAMSUNG_S6E3HAE_CMD_120HZ) += panel-alpha-samsung-s
 obj-$(CONFIG_DRM_PANEL_TIANMA_NT36672C_CPHY_VDO_90HZ_RT4801) += panel-tianma-nt36672c-cphy-vdo-90hz-rt4801.o
 obj-$(CONFIG_DRM_PANEL_NT37801_MSYNC2_RTE) += panel-nt37801-msync2-rte.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_NT37701A_655_FHDP_DPHY_CMD_144HZ) += dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-144hz.o
+obj-$(CONFIG_DRM_PANEL_TIANMA_NT37701A_655_FHDP_DPHY_CMD_144HZ_RODE) += dsi-panel-mot-tianma-nt37701a-655-fhdp-dphy-cmd-rode.o
 obj-$(CONFIG_DRM_PANEL_CSOT_NT37701A_655_FHDP_DPHY_CMD_144HZ) += dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz.o
 obj-$(CONFIG_DRM_PANEL_CSOT_NT37701A_655_FHDP_DPHY_CMD_144HZ_V1) += dsi-panel-mot-csot-nt37701a-655-fhdp-dphy-cmd-144hz-v1.o
 obj-$(CONFIG_DRM_PANEL_BOE_NT37701A_655_FHDP_DPHY_CMD_144HZ) += dsi-panel-mot-boe-nt37701a-655-fhdp-dphy-cmd-144hz.o
