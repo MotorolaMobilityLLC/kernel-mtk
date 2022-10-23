@@ -156,6 +156,7 @@
 
         /* battery prop */
         g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
+        TEMPERATURE_T4 = <(-10)>;
 
         g_FG_PSEUDO100 = <97 97 100 100
                 98 97 100 100
@@ -199,6 +200,6 @@
 		3488 3488 3488 3488/*T8*/
 		3488 3488 3488 3488/*T9*/
 	>;
-        #include "bat_setting/mt6768_battery_table_NC50_5000mah_ext.dtsi"
+        #include "bat_setting/mt6768_battery_table_PG50_ATL_5000mah_ext.dtsi"
 	#include "bat_setting/mt6768_battery_table_NC50_5000mah_SCUD_ext.dtsi"
 };
