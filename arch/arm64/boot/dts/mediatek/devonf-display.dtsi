@@ -46,7 +46,7 @@
 		aw99703,switch-freq = <1>; /* 1000kHz(default) */
 		aw99703,auto-freq-high = <0x10>;
 		aw99703,auto-freq-low = <0x05>;
-		aw99703,bl-fscal-led = <0x18>; /* 24mA */
+		aw99703,bl-fscal-led = <0x19>; /* 24.8mA */
 		aw99703,bl-channel = <3>;
                 aw99703,turn-on-ramp = <0x00>; /* 512us */
                 aw99703,turn-off-ramp = <0x04>; /* 8ms */
@@ -70,10 +70,10 @@
 				<0x02 0x05>;
 
                 ktd,hwen-gpio = <&pio 8 1>;
-                ktd,pwm-mode = <1>; /* 1 pwm enable,0 PWM disable */
+                ktd,pwm-mode = <0>; /* 0 pwm enable;1 PWM disable */
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
-                ktd,bl-fscal-led = <0xC1>; /* 25mA */
+                ktd,bl-fscal-led = <0xC1>; /* 24.2mA */
                 ktd,turn-on-ramp = <0x00>;
                 ktd,turn-off-ramp = <0x04>;
                 ktd,pwm-trans-dim = <0>;
