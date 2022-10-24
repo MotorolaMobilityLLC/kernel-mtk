@@ -331,7 +331,7 @@
 /* CAMERA AF */
 &camera_af_hw_node {
 	camaf_m1_pmic-supply = <&cam_main_afvdd_ldo>;
-	camaf_m2_pmic-supply = <&mt_pmic_vcamio_ldo_reg>;
+	camaf_m2_pmic-supply = <&cam_uw_afvdd_ldo>;
 	camaf_m3_pmic-supply = <&mt_pmic_vcamio_ldo_reg>;
 	status = "okay";
 };
