@@ -1407,6 +1407,7 @@
       <elf-symbol name='debugfs_file_put' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8b8b9c62'/>
       <elf-symbol name='debugfs_initialized' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x716265c7'/>
       <elf-symbol name='debugfs_lookup' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xde909ad0'/>
+      <elf-symbol name='debugfs_lookup_and_remove' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2956a6d2'/>
       <elf-symbol name='debugfs_remove' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x402e076a'/>
       <elf-symbol name='debugfs_rename' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x97e5b1cc'/>
       <elf-symbol name='dec_node_page_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7940be82'/>
@@ -83525,121 +83526,121 @@
           <var-decl name='quirk_max_rate' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='281' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7552'>
-          <var-decl name='reenable_cmdq' type-id='b50a4934' visibility='default' filepath='include/linux/mmc/card.h' line='299' column='1'/>
+          <var-decl name='reenable_cmdq' type-id='b50a4934' visibility='default' filepath='include/linux/mmc/card.h' line='300' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7584'>
-          <var-decl name='erase_size' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='301' column='1'/>
+          <var-decl name='erase_size' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='302' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7616'>
-          <var-decl name='erase_shift' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='302' column='1'/>
+          <var-decl name='erase_shift' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='303' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7648'>
-          <var-decl name='pref_erase' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='303' column='1'/>
+          <var-decl name='pref_erase' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='304' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7680'>
-          <var-decl name='eg_boundary' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='304' column='1'/>
+          <var-decl name='eg_boundary' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='305' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7712'>
-          <var-decl name='erase_arg' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='305' column='1'/>
+          <var-decl name='erase_arg' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='306' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7744'>
-          <var-decl name='erased_byte' type-id='f9b06939' visibility='default' filepath='include/linux/mmc/card.h' line='306' column='1'/>
+          <var-decl name='erased_byte' type-id='f9b06939' visibility='default' filepath='include/linux/mmc/card.h' line='307' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7776'>
-          <var-decl name='raw_cid' type-id='1c6c0c39' visibility='default' filepath='include/linux/mmc/card.h' line='308' column='1'/>
+          <var-decl name='raw_cid' type-id='1c6c0c39' visibility='default' filepath='include/linux/mmc/card.h' line='309' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='7904'>
-          <var-decl name='raw_csd' type-id='1c6c0c39' visibility='default' filepath='include/linux/mmc/card.h' line='309' column='1'/>
+          <var-decl name='raw_csd' type-id='1c6c0c39' visibility='default' filepath='include/linux/mmc/card.h' line='310' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='8032'>
-          <var-decl name='raw_scr' type-id='1872161b' visibility='default' filepath='include/linux/mmc/card.h' line='310' column='1'/>
+          <var-decl name='raw_scr' type-id='1872161b' visibility='default' filepath='include/linux/mmc/card.h' line='311' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='8096'>
-          <var-decl name='raw_ssr' type-id='02fdec64' visibility='default' filepath='include/linux/mmc/card.h' line='311' column='1'/>
+          <var-decl name='raw_ssr' type-id='02fdec64' visibility='default' filepath='include/linux/mmc/card.h' line='312' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='8608'>
-          <var-decl name='cid' type-id='5a0fc813' visibility='default' filepath='include/linux/mmc/card.h' line='312' column='1'/>
+          <var-decl name='cid' type-id='5a0fc813' visibility='default' filepath='include/linux/mmc/card.h' line='313' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='8832'>
-          <var-decl name='csd' type-id='5e477b59' visibility='default' filepath='include/linux/mmc/card.h' line='313' column='1'/>
+          <var-decl name='csd' type-id='5e477b59' visibility='default' filepath='include/linux/mmc/card.h' line='314' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='9216'>
-          <var-decl name='ext_csd' type-id='2561085d' visibility='default' filepath='include/linux/mmc/card.h' line='314' column='1'/>
+          <var-decl name='ext_csd' type-id='2561085d' visibility='default' filepath='include/linux/mmc/card.h' line='315' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='10560'>
-          <var-decl name='scr' type-id='5e938df5' visibility='default' filepath='include/linux/mmc/card.h' line='315' column='1'/>
+          <var-decl name='scr' type-id='5e938df5' visibility='default' filepath='include/linux/mmc/card.h' line='316' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='10624'>
-          <var-decl name='ssr' type-id='5eba9d65' visibility='default' filepath='include/linux/mmc/card.h' line='316' column='1'/>
+          <var-decl name='ssr' type-id='5eba9d65' visibility='default' filepath='include/linux/mmc/card.h' line='317' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='10720'>
-          <var-decl name='sw_caps' type-id='2a479001' visibility='default' filepath='include/linux/mmc/card.h' line='317' column='1'/>
+          <var-decl name='sw_caps' type-id='2a479001' visibility='default' filepath='include/linux/mmc/card.h' line='318' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='10880'>
-          <var-decl name='ext_power' type-id='f3638abb' visibility='default' filepath='include/linux/mmc/card.h' line='318' column='1'/>
+          <var-decl name='ext_power' type-id='f3638abb' visibility='default' filepath='include/linux/mmc/card.h' line='319' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='10944'>
-          <var-decl name='ext_perf' type-id='f3638abb' visibility='default' filepath='include/linux/mmc/card.h' line='319' column='1'/>
+          <var-decl name='ext_perf' type-id='f3638abb' visibility='default' filepath='include/linux/mmc/card.h' line='320' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11008'>
-          <var-decl name='sdio_funcs' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='321' column='1'/>
+          <var-decl name='sdio_funcs' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='322' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11040'>
-          <var-decl name='sdio_funcs_probed' type-id='49178f86' visibility='default' filepath='include/linux/mmc/card.h' line='322' column='1'/>
+          <var-decl name='sdio_funcs_probed' type-id='49178f86' visibility='default' filepath='include/linux/mmc/card.h' line='323' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11072'>
-          <var-decl name='cccr' type-id='7f07e508' visibility='default' filepath='include/linux/mmc/card.h' line='323' column='1'/>
+          <var-decl name='cccr' type-id='7f07e508' visibility='default' filepath='include/linux/mmc/card.h' line='324' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11168'>
-          <var-decl name='cis' type-id='4b644cf4' visibility='default' filepath='include/linux/mmc/card.h' line='324' column='1'/>
+          <var-decl name='cis' type-id='4b644cf4' visibility='default' filepath='include/linux/mmc/card.h' line='325' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11264'>
-          <var-decl name='sdio_func' type-id='4abea81e' visibility='default' filepath='include/linux/mmc/card.h' line='325' column='1'/>
+          <var-decl name='sdio_func' type-id='4abea81e' visibility='default' filepath='include/linux/mmc/card.h' line='326' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11712'>
-          <var-decl name='sdio_single_irq' type-id='c1880945' visibility='default' filepath='include/linux/mmc/card.h' line='326' column='1'/>
+          <var-decl name='sdio_single_irq' type-id='c1880945' visibility='default' filepath='include/linux/mmc/card.h' line='327' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11776'>
-          <var-decl name='major_rev' type-id='f9b06939' visibility='default' filepath='include/linux/mmc/card.h' line='327' column='1'/>
+          <var-decl name='major_rev' type-id='f9b06939' visibility='default' filepath='include/linux/mmc/card.h' line='328' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11784'>
-          <var-decl name='minor_rev' type-id='f9b06939' visibility='default' filepath='include/linux/mmc/card.h' line='328' column='1'/>
+          <var-decl name='minor_rev' type-id='f9b06939' visibility='default' filepath='include/linux/mmc/card.h' line='329' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11808'>
-          <var-decl name='num_info' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='329' column='1'/>
+          <var-decl name='num_info' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='330' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11840'>
-          <var-decl name='info' type-id='7d3cd834' visibility='default' filepath='include/linux/mmc/card.h' line='330' column='1'/>
+          <var-decl name='info' type-id='7d3cd834' visibility='default' filepath='include/linux/mmc/card.h' line='331' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11904'>
-          <var-decl name='tuples' type-id='e5932b8e' visibility='default' filepath='include/linux/mmc/card.h' line='331' column='1'/>
+          <var-decl name='tuples' type-id='e5932b8e' visibility='default' filepath='include/linux/mmc/card.h' line='332' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='11968'>
-          <var-decl name='sd_bus_speed' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='333' column='1'/>
+          <var-decl name='sd_bus_speed' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='334' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12000'>
-          <var-decl name='mmc_avail_type' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='334' column='1'/>
+          <var-decl name='mmc_avail_type' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='335' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12032'>
-          <var-decl name='drive_strength' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='335' column='1'/>
+          <var-decl name='drive_strength' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='336' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12096'>
-          <var-decl name='debugfs_root' type-id='27675065' visibility='default' filepath='include/linux/mmc/card.h' line='337' column='1'/>
+          <var-decl name='debugfs_root' type-id='27675065' visibility='default' filepath='include/linux/mmc/card.h' line='338' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='12160'>
-          <var-decl name='part' type-id='67d619b5' visibility='default' filepath='include/linux/mmc/card.h' line='338' column='1'/>
+          <var-decl name='part' type-id='67d619b5' visibility='default' filepath='include/linux/mmc/card.h' line='339' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14848'>
-          <var-decl name='nr_parts' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='339' column='1'/>
+          <var-decl name='nr_parts' type-id='f0981eeb' visibility='default' filepath='include/linux/mmc/card.h' line='340' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14912'>
-          <var-decl name='complete_wq' type-id='242e3d19' visibility='default' filepath='include/linux/mmc/card.h' line='341' column='1'/>
+          <var-decl name='complete_wq' type-id='242e3d19' visibility='default' filepath='include/linux/mmc/card.h' line='342' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='14976'>
-          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/mmc/card.h' line='343' column='1'/>
+          <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/mmc/card.h' line='344' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='15040'>
-          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/mmc/card.h' line='344' column='1'/>
+          <var-decl name='android_kabi_reserved2' type-id='91ce1af9' visibility='default' filepath='include/linux/mmc/card.h' line='345' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='405001ce' size-in-bits='64' id='b104e6b0'/>
@@ -132081,7 +132082,7 @@
         <parameter type-id='27675065' name='dentry' filepath='fs/debugfs/file.c' line='132' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='debugfs_initialized' mangled-name='debugfs_initialized' filepath='fs/debugfs/inode.c' line='812' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_initialized'>
+      <function-decl name='debugfs_initialized' mangled-name='debugfs_initialized' filepath='fs/debugfs/inode.c' line='834' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_initialized'>
         <return type-id='b50a4934'/>
       </function-decl>
       <function-decl name='debugfs_lookup' mangled-name='debugfs_lookup' filepath='fs/debugfs/inode.c' line='300' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_lookup'>
@@ -132089,15 +132090,20 @@
         <parameter type-id='27675065' name='parent' filepath='fs/debugfs/inode.c' line='300' column='1'/>
         <return type-id='27675065'/>
       </function-decl>
+      <function-decl name='debugfs_lookup_and_remove' mangled-name='debugfs_lookup_and_remove' filepath='fs/debugfs/inode.c' line='746' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_lookup_and_remove'>
+        <parameter type-id='80f4b756' name='name' filepath='fs/debugfs/inode.c' line='746' column='1'/>
+        <parameter type-id='27675065' name='parent' filepath='fs/debugfs/inode.c' line='746' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='debugfs_remove' mangled-name='debugfs_remove' filepath='fs/debugfs/inode.c' line='726' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_remove'>
         <parameter type-id='27675065' name='dentry' filepath='fs/debugfs/inode.c' line='726' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='debugfs_rename' mangled-name='debugfs_rename' filepath='fs/debugfs/inode.c' line='756' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_rename'>
-        <parameter type-id='27675065' name='old_dir' filepath='fs/debugfs/inode.c' line='756' column='1'/>
-        <parameter type-id='27675065' name='old_dentry' filepath='fs/debugfs/inode.c' line='756' column='1'/>
-        <parameter type-id='27675065' name='new_dir' filepath='fs/debugfs/inode.c' line='757' column='1'/>
-        <parameter type-id='80f4b756' name='new_name' filepath='fs/debugfs/inode.c' line='757' column='1'/>
+      <function-decl name='debugfs_rename' mangled-name='debugfs_rename' filepath='fs/debugfs/inode.c' line='778' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='debugfs_rename'>
+        <parameter type-id='27675065' name='old_dir' filepath='fs/debugfs/inode.c' line='778' column='1'/>
+        <parameter type-id='27675065' name='old_dentry' filepath='fs/debugfs/inode.c' line='778' column='1'/>
+        <parameter type-id='27675065' name='new_dir' filepath='fs/debugfs/inode.c' line='779' column='1'/>
+        <parameter type-id='80f4b756' name='new_name' filepath='fs/debugfs/inode.c' line='779' column='1'/>
         <return type-id='27675065'/>
       </function-decl>
       <function-decl name='dec_node_page_state' mangled-name='dec_node_page_state' filepath='mm/vmstat.c' line='665' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='dec_node_page_state'>
