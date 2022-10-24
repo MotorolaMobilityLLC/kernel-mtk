@@ -26,9 +26,9 @@
 #include "eeprom_i2c_s5k4h7_driver.h"
 
 #define PFX "[MOTO_EEPROM s5k4h7-otp]"
-//static int m_mot_camera_debug = 0;
-#define LOG_INF(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
-//#define LOG_DBG(format, args...)        do { if (m_mot_camera_debug   ) { pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+static int m_mot_camera_debug = 1;
+#define LOG_INF(format, args...)        do { if (m_mot_camera_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
+#define LOG_DBG(format, args...)        do { if (m_mot_camera_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 
 #define LOG_ERR(format, args...) pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
@@ -44,8 +44,8 @@
 #define I2C_SPEED 400
 static OTP_INFO  otp_info_map = {
 	.mnf_info.page_info.page[0] = 21,
-	.mnf_info.page_info.page[1] = 25,
-	.mnf_info.page_info.page[2] = 29,
+	.mnf_info.page_info.page[1] = 26,
+	.mnf_info.page_info.page[2] = 31,
 	.mnf_info.page_info.page_offset[0] = {1,0,0},
 	.mnf_info.page_info.page_offset[1] = {1,0,0},
 	.mnf_info.page_info.page_offset[2] = {1,0,0},
@@ -55,8 +55,8 @@ static OTP_INFO  otp_info_map = {
 	.mnf_info.size = 33,//include flag
 
 	.awb_info.page_info.page[0] = 21,
-	.awb_info.page_info.page[1] = 25,
-	.awb_info.page_info.page[2] = 29,
+	.awb_info.page_info.page[1] = 26,
+	.awb_info.page_info.page[2] = 31,
 	.awb_info.page_info.page_offset[0] = {2,8,51},
 	.awb_info.page_info.page_offset[1] = {2,8,51},
 	.awb_info.page_info.page_offset[2] = {2,8,51},
@@ -65,9 +65,9 @@ static OTP_INFO  otp_info_map = {
 	.awb_info.page_info.page_addr[2] = 0x0A3C,
 	.awb_info.size = 59,//include flag
 
-	.lsc_info.page_info.page[0] = 33,
-	.lsc_info.page_info.page[1] = 62,
-	.lsc_info.page_info.page[2] = 91,
+	.lsc_info.page_info.page[0] = 36,
+	.lsc_info.page_info.page[1] = 65,
+	.lsc_info.page_info.page[2] = 94,
 	.lsc_info.page_info.page_offset[0] = {31,64,15},
 	.lsc_info.page_info.page_offset[1] = {31,49,30},
 	.lsc_info.page_info.page_offset[2] = {31,34,45},
@@ -77,8 +77,8 @@ static OTP_INFO  otp_info_map = {
 	.lsc_info.size = 1871,//include flag (lsc + crc +flag) 1868+2+1
 
 	.light_source_info.page_info.page[0] = 21,
-	.light_source_info.page_info.page[1] = 25,
-	.light_source_info.page_info.page[2] = 29,
+	.light_source_info.page_info.page[1] = 26,
+	.light_source_info.page_info.page[2] = 31,
 	.light_source_info.page_info.page_offset[0] = {0,0,0},
 	.light_source_info.page_info.page_offset[1] = {0,0,0},
 	.light_source_info.page_info.page_offset[2] = {0,0,0},
@@ -88,8 +88,8 @@ static OTP_INFO  otp_info_map = {
 	.light_source_info.size = 23,//include flag
 
 	.optical_center_info.page_info.page[0] = 22,
-	.optical_center_info.page_info.page[1] = 26,
-	.optical_center_info.page_info.page[2] = 30,
+	.optical_center_info.page_info.page[1] = 27,
+	.optical_center_info.page_info.page[2] = 32,
 	.optical_center_info.page_info.page_offset[0] = {0,13,8},
 	.optical_center_info.page_info.page_offset[1] = {0,13,8},
 	.optical_center_info.page_info.page_offset[2] = {0,13,8},
@@ -99,47 +99,47 @@ static OTP_INFO  otp_info_map = {
 	.optical_center_info.size = 21,//include flag
 
 	.sfr_distance_1_info.page_info.page[0] = 23,
-	.sfr_distance_1_info.page_info.page[1] = 27,
-	.sfr_distance_1_info.page_info.page[2] = 31,
+	.sfr_distance_1_info.page_info.page[1] = 28,
+	.sfr_distance_1_info.page_info.page[2] = 33,
 	.sfr_distance_1_info.page_info.page_offset[0] = {0,0,0},
 	.sfr_distance_1_info.page_info.page_offset[1] = {0,0,0},
 	.sfr_distance_1_info.page_info.page_offset[2] = {0,0,0},
 	.sfr_distance_1_info.page_info.page_addr[0] = 0x0A0C,
 	.sfr_distance_1_info.page_info.page_addr[1] = 0x0A0C,
 	.sfr_distance_1_info.page_info.page_addr[2] = 0x0A0C,
-	.sfr_distance_1_info.size = 34,//include flag
+	.sfr_distance_1_info.size = 42,//include flag
 
 	.sfr_distance_2_info.page_info.page[0] = 23,
-	.sfr_distance_2_info.page_info.page[1] = 27,
-	.sfr_distance_2_info.page_info.page[2] = 31,
-	.sfr_distance_2_info.page_info.page_offset[0] = {0,22,12},
-	.sfr_distance_2_info.page_info.page_offset[1] = {0,22,12},
-	.sfr_distance_2_info.page_info.page_offset[2] = {0,22,12},
-	.sfr_distance_2_info.page_info.page_addr[0] = 0x0A2E,
-	.sfr_distance_2_info.page_info.page_addr[1] = 0x0A2E,
-	.sfr_distance_2_info.page_info.page_addr[2] = 0x0A2E,
-	.sfr_distance_2_info.size = 34,//include flag
+	.sfr_distance_2_info.page_info.page[1] = 28,
+	.sfr_distance_2_info.page_info.page[2] = 33,
+	.sfr_distance_2_info.page_info.page_offset[0] = {0,14,28},
+	.sfr_distance_2_info.page_info.page_offset[1] = {0,14,28},
+	.sfr_distance_2_info.page_info.page_offset[2] = {0,14,28},
+	.sfr_distance_2_info.page_info.page_addr[0] = 0x0A36,
+	.sfr_distance_2_info.page_info.page_addr[1] = 0x0A36,
+	.sfr_distance_2_info.page_info.page_addr[2] = 0x0A36,
+	.sfr_distance_2_info.size = 42,//include flag
 
 	.sfr_distance_3_info.page_info.page[0] = 24,
-	.sfr_distance_3_info.page_info.page[1] = 28,
-	.sfr_distance_3_info.page_info.page[2] = 32,
-	.sfr_distance_3_info.page_info.page_offset[0] = {0,0,0},
-	.sfr_distance_3_info.page_info.page_offset[1] = {0,0,0},
-	.sfr_distance_3_info.page_info.page_offset[2] = {0,0,0},
-	.sfr_distance_3_info.page_info.page_addr[0] = 0x0A10,
-	.sfr_distance_3_info.page_info.page_addr[1] = 0x0A10,
-	.sfr_distance_3_info.page_info.page_addr[2] = 0x0A10,
-	.sfr_distance_3_info.size = 34,//include flag
+	.sfr_distance_3_info.page_info.page[1] = 29,
+	.sfr_distance_3_info.page_info.page[2] = 34,
+	.sfr_distance_3_info.page_info.page_offset[0] = {0,36,6},
+	.sfr_distance_3_info.page_info.page_offset[1] = {0,36,6},
+	.sfr_distance_3_info.page_info.page_offset[2] = {0,36,6},
+	.sfr_distance_3_info.page_info.page_addr[0] = 0x0A20,
+	.sfr_distance_3_info.page_info.page_addr[1] = 0x0A20,
+	.sfr_distance_3_info.page_info.page_addr[2] = 0x0A20,
+	.sfr_distance_3_info.size = 42,//include flag
 
-	.mtk_module_info.page_info.page[0] = 120,
-	.mtk_module_info.page_info.page[1] = 120,
-	.mtk_module_info.page_info.page[2] = 121,
+	.mtk_module_info.page_info.page[0] = 124,
+	.mtk_module_info.page_info.page[1] = 124,
+	.mtk_module_info.page_info.page[2] = 124,
 	.mtk_module_info.page_info.page_offset[0] = {0,0,0},
-	.mtk_module_info.page_info.page_offset[1] = {0,5,9},
-	.mtk_module_info.page_info.page_offset[2] = {0,0,0},
-	.mtk_module_info.page_info.page_addr[0] = 0x0A31,
-	.mtk_module_info.page_info.page_addr[1] = 0x0A3F,
-	.mtk_module_info.page_info.page_addr[2] = 0x0A0D,
+	.mtk_module_info.page_info.page_offset[1] = {0,0,0},
+	.mtk_module_info.page_info.page_offset[2] = {0,20,2},
+	.mtk_module_info.page_info.page_addr[0] = 0x0A04,
+	.mtk_module_info.page_info.page_addr[1] = 0x0A1A,
+	.mtk_module_info.page_info.page_addr[2] = 0x0A30,
 	.mtk_module_info.size = 22,//include flag
 };
 
@@ -295,7 +295,7 @@ static void mot_select_vail_page(PAGE_INFO *pg_inf)
 		page = pg_inf-> page[i];
 		start_addr = pg_inf-> page_addr[i];
 		moto_read_sensor_otp_data(page,start_addr,&page_flag,1);
-
+		LOG_INF("page %d flag %d%d .", page,GetBit(page_flag, 7),GetBit(page_flag, 6));
 		if (GetBit(page_flag, 7) == 0 && GetBit(page_flag, 6) == 1)
 		{
 			pg_inf-> flag = PAGE_VAIL;
@@ -939,5 +939,6 @@ int s5k4h7_get_cal_info(mot_calibration_info_t * pOtpCalInfo)
 	s5k4h7_check_awb_data(pOtpCalInfo);
 	s5k4h7_check_lsc_data(pOtpCalInfo);
 
+	LOG_INF("status mnf:%d, awb:%d, lsc:%d", pOtpCalInfo->mnf_status, pOtpCalInfo->awb_status, pOtpCalInfo->lsc_status);
 	return 0;
 }
