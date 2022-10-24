@@ -577,6 +577,20 @@
 	};
 };
 
+&i2c4 {
+       nfc_pn5xx: nfc_pn5xx@28 {
+		compatible = "nxp,pn5xx";
+		mmi,status = "/chosen", "mmi,nfc", "nxp";
+		reg = <0x28>;
+		interrupt-parent = <&pio>;
+		interrupts = <11 IRQ_TYPE_LEVEL_HIGH 1 0>;
+		nxp,pn544-irq = <&pio 11 0>;
+		nxp,pn544-ven = <&pio 10 0>;
+		nxp,pn544-fd = <&pio 16 0>;
+		status = "okay";
+	};
+};
+
 &i2c9 {
 	    sx937x@2c {
 		compatible = "Semtech,sx937x";
