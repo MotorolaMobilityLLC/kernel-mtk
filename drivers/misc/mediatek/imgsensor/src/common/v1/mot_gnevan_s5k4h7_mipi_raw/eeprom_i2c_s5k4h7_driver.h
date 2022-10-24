@@ -20,9 +20,9 @@
 #define OTP_PAGE_SIZE 64
 
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gnevan_s5k4h7_otp.bin"
-#define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_wide.bin"
+#define SERIAL_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
 #define DUMP_WIDE_SERIAL_NUMBER_SIZE 8
-#define S5K4H7_EEPROM_MAX_SIZE 2131
+#define S5K4H7_EEPROM_MAX_SIZE 2155
 
 typedef enum {
 	PAGE_INVAIL,
@@ -56,19 +56,7 @@ typedef struct {
 	unsigned int size;
 	unsigned char *data;
 } AWB_INFO;
-#if 0
-typedef struct {
-	PAGE_INFO page_info;
-	unsigned int size;
-	unsigned char *data;
-} AF_INFO;
 
-typedef struct {
-	PAGE_INFO page_info;
-	unsigned int size;
-	unsigned char *data;
-} AF_SYNC_INFO;
-#endif
 typedef struct {
 	PAGE_INFO page_info;
 	unsigned int size;
@@ -187,46 +175,22 @@ typedef struct mot_s5k4h7_otp_map {
 	UINT8 oc_data[16];
 	UINT8 reserve_6[2];
 	UINT8 oc_crc[2];
-	//SFR distance 1 = 50cm, 34 bytes
+	//SFR distance 1 = 50cm, 42 bytes
 	UINT8 sfr_dist1_flag[1];
-	UINT8 sfr_dist1_data[31];
+	UINT8 sfr_dist1_data[39];
 	UINT8 sfr_dist1_crc[2];
-	//SFR distance 2 = 2.5cm, 34 bytes
+	//SFR distance 2 = 2.5cm, 42 bytes
 	UINT8 sfr_dist2_flag[1];
-	UINT8 sfr_dist2_data[31];
+	UINT8 sfr_dist2_data[39];
 	UINT8 sfr_dist2_crc[2];
-	//SFR distance 3 = 1000cm, 34 bytes
+	//SFR distance 3 = 1000cm, 42 bytes
 	UINT8 sfr_dist3_flag[1];
-	UINT8 sfr_dist3_data[31];
+	UINT8 sfr_dist3_data[39];
 	UINT8 sfr_dist3_crc[2];
 	// MTK LSC, 1871 bytes.
 	UINT8 lsc_flag[1];
 	UINT8 lsc_data[1868];
 	UINT8 lsc_crc[2];
-#if 0
-	// AF inf & macro data, 27 bytes.
-	UINT8 af_inf_macro_flag[1];
-	UINT8 af_macro_distance[2];
-	UINT8 af_macro_dac[2];
-	UINT8 af_inf_distance[2];
-	UINT8 af_inf_dac[2];
-	UINT8 af_reserve[16];
-	UINT8 af_crc[2];
-	// AF sync data, 27 bytes
-	UINT8 af_sync_flag[1];
-	UINT8 af_sync_dist_30cm[2];
-	UINT8 af_sync_dac_30cm[2];
-	UINT8 af_sync_dist_50cm[2];
-	UINT8 af_sync_dac_50cm[2];
-	UINT8 af_sync_dist_75cm[2];
-	UINT8 af_sync_dac_75cm[2];
-	UINT8 af_sync_dist_10m[2];
-	UINT8 af_sync_dac_10m[2];
-	UINT8 af_sync_dist_10cm[2];
-	UINT8 af_sync_dac_10cm[2];
-	UINT8 af_sync_rsv[4];
-	UINT8 af_sync_crc[2];
-#endif
 	// MTK necessary info, 22 bytes
 	UINT8 mtk_info_flag[1];
 	UINT8 module_flag[1];
