@@ -139,6 +139,13 @@
 #define BQ2589X_TERM_ENABLE         1
 #define BQ2589X_TERM_DISABLE        0
 
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+#define BQ2589X_STAT_CTRL_MASK		0x40
+#define BQ2589X_STAT_CTRL_SHIFT	6
+#define BQ2589X_STAT_CTRL_ENABLE	0
+#define BQ2589X_STAT_CTRL_DISABLE	1
+#endif
+
 #define BQ2589X_WDT_MASK            0x30
 #define BQ2589X_WDT_SHIFT           4
 #define BQ2589X_WDT_DISABLE         0
@@ -357,5 +364,9 @@
 #define BQ2589X_TS_PROFILE_SHIFT    2
 #define BQ2589X_DEV_REV_MASK        0x03
 #define BQ2589X_DEV_REV_SHIFT       0
+
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+void bq2589x_enable_statpin(bool en);
+#endif
 
 #endif
