@@ -81,6 +81,9 @@ char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"keyboard-backlight",
 	"button-backlight",
 	"lcd-backlight",
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+	"charging",
+#endif
 };
 
 /****************************************************************************
@@ -830,6 +833,10 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 				button_flag = true;
 			}
 		}
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+		if (strcmp(cust->name, "charging") == 0)
+		return 0;
+#endif
 		return mt_brightness_set_pmic(cust->data, level, bl_div_hal);
 
 	case MT65XX_LED_MODE_CUST_LCM:

@@ -33,6 +33,7 @@
 		ti,bq2589x,charge-current = <2000>;
 		ti,bq2589x,term-current = <128>;
                 ti,bq2589x,disable-ilim;
+		ti,bq2589x,stat-pin-ctrl = <1>;
         };
 
 	sgm41543@0B {
