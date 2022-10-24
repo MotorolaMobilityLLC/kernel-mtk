@@ -157,6 +157,7 @@
         /* Tune value for current measurement */
         CAR_TUNE_VALUE = <(101)>;
 	PSEUDO100_EN_DIS = <0>;
+	R_FG_VALUE = <(10)>;
 
         /* battery prop */
         g_temperature = <(50) (25) (10) (0) (-10) (-25) (-30) (-35) (-40) (-45)>;
