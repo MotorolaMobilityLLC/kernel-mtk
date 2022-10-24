@@ -15,6 +15,10 @@ else
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/leds/$(MTK_PLATFORM)
 endif
 
+ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gate_ic
 ccflags-y += -I$(srctree)/drivers/power/supply

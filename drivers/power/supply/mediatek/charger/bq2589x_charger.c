@@ -54,6 +54,9 @@ struct bq2589x_config {
 	bool	enable_ico;
 	bool	use_absolute_vindpm;
         bool    disable_ilim;
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+	int		statctrl;
+#endif
 };
 
 
@@ -712,6 +715,34 @@ int bq2589x_adc_read_charge_current(struct bq2589x *bq)
 	return volt;
 }
 EXPORT_SYMBOL_GPL(bq2589x_adc_read_charge_current);
+
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+static int bq2589x_set_stat_ctrl(int ctrl)
+{
+	struct charger_device *chg_dev;
+	struct bq2589x *bq;
+	u8 val;
+	val = ctrl;
+
+	chg_dev = get_charger_by_name("primary_chg");
+	if (!chg_dev) {
+		pr_notice("[%s]: get primary charger device failed\n", __func__);
+		return -EINVAL;
+	}
+	bq = charger_get_data(chg_dev);
+	return bq2589x_update_bits(bq, BQ2589X_REG_07, BQ2589X_STAT_CTRL_MASK,
+				   val << BQ2589X_STAT_CTRL_SHIFT);
+}
+
+void bq2589x_enable_statpin(bool en)
+{
+
+	if(en)
+		bq2589x_set_stat_ctrl(BQ2589X_STAT_CTRL_ENABLE);
+	else
+		bq2589x_set_stat_ctrl(BQ2589X_STAT_CTRL_DISABLE);
+}
+#endif
 
 int bq2589x_set_chargecurrent(struct bq2589x *bq, u32 curr)
 {
@@ -1433,6 +1464,14 @@ static int bq2589x_init_device(struct bq2589x *bq)
 		return ret;
 	}
 */
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+	ret = bq2589x_set_stat_ctrl(bq->cfg.statctrl);
+	if (ret < 0) {
+		dev_info(bq->dev, "%s:Failed to set stat ctrl:%d\n", __func__, ret);
+		return ret;
+	}
+#endif
+
 	ret = bq2589x_set_term_current(bq, bq->cfg.term_current);
 	if (ret < 0) {
 		dev_info(bq->dev, "%s:Failed to set termination current:%d\n", __func__, ret);
@@ -1615,6 +1654,13 @@ static int bq2589x_parse_dt(struct device *dev, struct bq2589x *bq)
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+	ret = of_property_read_u32(np, "ti,bq2589x,stat-pin-ctrl", &bq->cfg.statctrl);
+	if (ret < 0) {
+		bq->cfg.statctrl = 1;
+	}
+	dev_err(bq->dev, "%s ti,bq2589x,stat-pin-ctrl: %d\n", __func__, bq->cfg.statctrl);
+#endif
 	return 0;
 }
 

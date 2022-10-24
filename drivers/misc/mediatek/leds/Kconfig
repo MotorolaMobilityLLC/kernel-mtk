@@ -71,6 +71,15 @@ config LEDS_MTK_I2C
 	  To compile this driver as a module, choose 'M' here: the module
 	  will be called leds-mtk-i2c.
 
+config LEDS_MTK_CHG_SUPPORT
+	tristate "Mediatek charger LED support"
+	depends on LEDS_CLASS
+	---help---
+	  This option enables support for Mediatek charger LEDs.
+	  say 'y' to enable this
+          Set n to disable.
+	  To compile this driver as a module, the module will be called leds-mtk-charger.
+
 config CONTROL_BL_TEMPERATURE
 	bool "Support backlight controlled by thermal"
 	---help---
