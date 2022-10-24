@@ -88,6 +88,10 @@
 		data = <1>;
 		pwm_config = <0 3 0 0 0>;
 	};
+	led7:led@7 {
+		compatible = "mediatek,charging";
+		led_mode = <3>;
+	};
 /*
 	gpio-leds {
 		compatible = "gpio-leds";
