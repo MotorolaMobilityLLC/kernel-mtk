@@ -6,7 +6,7 @@
  *
  * Filename:
  * ---------
- *     MOT_AION_OV50E2Qmipiraw_Sensor.h
+ *     MOT_AION_OV50A2Qmipiraw_Sensor.h
  *
  * Project:
  * --------
@@ -17,8 +17,8 @@
  *	 CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _MOT_AION_OV50EMIPIRAW_SENSOR_H
-#define _MOT_AION_OV50EMIPIRAW_SENSOR_H
+#ifndef _MOT_AION_OV50AMIPIRAW_SENSOR_H
+#define _MOT_AION_OV50AMIPIRAW_SENSOR_H
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
