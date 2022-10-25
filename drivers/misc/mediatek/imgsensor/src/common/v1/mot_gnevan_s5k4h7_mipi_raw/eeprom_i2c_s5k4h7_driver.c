@@ -42,6 +42,8 @@ static int m_mot_camera_debug = 1;
 
 #define I2C_ADDR 0x5A
 #define I2C_SPEED 400
+#define S5K4H7_OTP_SIZE 6720
+#define S5K4H7_OTP_DATA_PATH "/data/vendor/camera_dump/mot_gnevan_s5k4h7_otp.bin"
 static OTP_INFO  otp_info_map = {
 	.mnf_info.page_info.page[0] = 21,
 	.mnf_info.page_info.page[1] = 26,
@@ -277,6 +279,37 @@ void moto_read_otp_all_data(void)
 	}
 	LOG_INF("E");
 	return;
+}
+
+void s5k4h7_otp_dump_bin(const void *data, uint32_t size)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(S5K4H7_OTP_DATA_PATH, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_ERR("open file error(%s), error(%d)\n",  S5K4H7_OTP_DATA_PATH, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_ERR("file write fail(%s) to EEPROM data(%d)", S5K4H7_OTP_DATA_PATH, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", S5K4H7_OTP_DATA_PATH);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
 }
 
 //get vail page flag
@@ -595,6 +628,7 @@ int s5k4h7_read_otp_data(void)
 		(mot_s5k4h7_otp.mtk_info_crc + 2 - mot_s5k4h7_otp.mtk_info_flag)/sizeof(UINT8));
 	LOG_INF ("mtk_module_info ret %d size = %d\n", ret,size);
 	moto_read_otp_all_data();
+	s5k4h7_otp_dump_bin(mot_s5k4h7_otp_data.data, S5K4H7_OTP_SIZE);
 	return 0;
 }
 
