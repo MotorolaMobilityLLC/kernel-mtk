@@ -52,6 +52,10 @@ enum RPC_OP_ID {
 	IPC_RPC_EFUSE_BLOWING = 0x4011,
 	IPC_RPC_QUERY_CARD_TYPE = 0x4013,
 	IPC_RPC_IT_OP = 0x4321,
+
+#ifdef CONFIG_MOTO_CCCI_SEC_SUPPORT
+	IPC_RPC_CIDDATA_OP = 0x5010,  //CID data
+#endif
 };
 
 struct rpc_pkt {
