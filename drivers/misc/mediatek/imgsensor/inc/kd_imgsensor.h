@@ -210,6 +210,7 @@
 #define OV2650_SENSOR_ID_3                      0x2655
 #define OV20880MIPI_SENSOR_ID                   0x20880
 #define OV05A20_SENSOR_ID                       0x5305
+#define MOT_AION_OV50A_SENSOR_ID                0x565042
 
 /*S5K*/
 #define S5KJD1_SENSOR_ID                        0x3841
@@ -379,12 +380,11 @@
 //add dubai sensor id begin
 #define MOT_DUBAI_OV50A_SENSOR_ID               0x565041
 //add dubai sensor id end
-#define MOT_AION_OV50E_SENSOR_ID                0x565045
 
 //Begin: Add sensor id for Devonf
 #define MOT_DEVONF_OV50A_SENSOR_ID              0x565041
 #define SENSOR_DRVNAME_MOT_DEVONF_OV50A_MIPI_RAW           "mot_devonf_ov50a_mipi_raw"
- #define MOT_DEVONF_HI1634Q_SENSOR_ID            0x1634
+#define MOT_DEVONF_HI1634Q_SENSOR_ID            0x1634
 #define SENSOR_DRVNAME_MOT_DEVONF_HI1634Q_MIPI_RAW         "mot_devonf_hi1634q_mipi_raw"
 #define MOT_DEVONF_S5K4H7_SENSOR_ID             0x487b
 #define SENSOR_DRVNAME_MOT_DEVONF_S5K4H7_MIPI_RAW          "mot_devonf_s5k4h7_mipi_raw"
@@ -454,6 +454,7 @@
 #define SENSOR_DRVNAME_IMX582_MIPI_RAW          "imx582_mipi_raw"
 #define SENSOR_DRVNAME_IMX596_MIPI_RAW          "imx596_mipi_raw"
 /*OV*/
+#define SENSOR_DRVNAME_MOT_AION_OV50A_MIPI_RAW  "mot_aion_ov50a_mipi_raw"
 #define SENSOR_DRVNAME_OV23850_MIPI_RAW         "ov23850_mipi_raw"
 #define SENSOR_DRVNAME_OV16880_MIPI_RAW         "ov16880_mipi_raw"
 #define SENSOR_DRVNAME_OV16885_MIPI_RAW         "ov16885_mipi_raw"
@@ -647,10 +648,6 @@
 #define SENSOR_DRVNAME_MOT_DUBAI_GC02M1B_MIPI_RAW   "mot_dubai_gc02m1b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_DUBAI_OV50A_MIPI_RAW "mot_dubai_ov50a_mipi_raw"
 //add dubai sensor drvname end
-
-//add aion sensor drvname begin
-#define SENSOR_DRVNAME_MOT_AION_OV50E_MIPI_RAW "mot_aion_ov50e_mipi_raw"
-//add aion sensor drvname end
 
 //Begin: Add sensor drvname for Vicky
 #define SENSOR_DRVNAME_MOT_VICKY_S5KHM6_MIPI_RAW       "mot_vicky_s5khm6_mipi_raw"
