@@ -43,7 +43,7 @@
 #define LOG_INF(format, args...) printk(PFX "[JW][%s] " format, __func__, ##args)
 #define LOG_ERR(format, args...) printk(PFX "[JW][%s] " format, __func__, ##args)
 
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5kjn1_eeprom_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gt24p128e_s5kjn1_eeprom.bin"
 #define SERIAL_MAIN_DATA_PATH "/data/vendor/camera_dump/serial_number_main.bin"
 
 
@@ -2714,6 +2714,36 @@ static kal_uint32 return_sensor_id(void)
 	return ((read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 }
 
+void s5kjn1_otp_dump_bin(const void *data, uint32_t size)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(EEPROM_DATA_PATH, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_ERR("open file error(%s), error(%d)\n",  EEPROM_DATA_PATH, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_ERR("file write fail(%s) to EEPROM data(%d)", EEPROM_DATA_PATH, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", EEPROM_DATA_PATH);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
 
 /*************************************************************************
 *FUNCTION
@@ -2744,8 +2774,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 
 			if (*sensor_id == imgsensor_info.sensor_id) {
-
 				GNEVAN_S5KJN1_read_data_from_eeprom(GNEVAN_S5KJN1_EEPROM_SLAVE_ADDR, 0x0000, GNEVAN_S5KJN1_EEPROM_SIZE);
+				s5kjn1_otp_dump_bin(GNEVAN_S5KJN1_eeprom, GNEVAN_S5KJN1_EEPROM_SIZE);
 				GNEVAN_S5KJN1_eeprom_format_calibration_data((void *)GNEVAN_S5KJN1_eeprom);
 				//remosaic_data_get((void *)GNEVAN_S5KJN1_eeprom);
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
