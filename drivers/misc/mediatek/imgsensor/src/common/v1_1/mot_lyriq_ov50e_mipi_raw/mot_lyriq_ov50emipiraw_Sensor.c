@@ -57,12 +57,6 @@ extern mot_calibration_status_t *LYRIQ_OV50E_eeprom_get_calibration_status(void)
 extern mot_calibration_mnf_t *LYRIQ_OV50E_eeprom_get_mnf_info(void);
 extern void LYRIQ_OV50E_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-extern void write_cross_talk_data(void);
-extern void write_pdc_data(void);
-
-extern int xtalk_data_valid;
-extern int pdc_data_valid;
-
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define OV50E_BASEGAIN 128
@@ -209,7 +203,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 };
 
 static struct imgsensor_struct imgsensor = {
-	.mirror = IMAGE_HV_MIRROR,	/* mirrorflip information */
+	.mirror = IMAGE_NORMAL,	/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	/* IMGSENSOR_MODE enum value,record current sensor mode,such as:
 	 * INIT, Preview, Capture, Video,High Speed Video, Slim Video
@@ -652,14 +646,9 @@ kal_uint16 mot_lyriq_ov50e_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 
 static void sensor_init(void)
 {
 	pr_err("MOT LYRIQ OV50E init start\n");
-	if ((xtalk_data_valid == 1) && (pdc_data_valid == 1)) {
-		mot_lyriq_ov50e_table_write_cmos_sensor(addr_data_pair_init_with_cal_mot_lyriq_ov50e,
-			sizeof(addr_data_pair_init_with_cal_mot_lyriq_ov50e)/sizeof(kal_uint16));
-	}
-	else {
-		mot_lyriq_ov50e_table_write_cmos_sensor(addr_data_pair_init_mot_lyriq_ov50e,
-			sizeof(addr_data_pair_init_mot_lyriq_ov50e)/sizeof(kal_uint16));
-	}
+	mot_lyriq_ov50e_table_write_cmos_sensor(addr_data_pair_init_mot_lyriq_ov50e,
+		sizeof(addr_data_pair_init_mot_lyriq_ov50e)/sizeof(kal_uint16));
+
 	pr_err("MOT LYRIQ OV50E end\n");
 
 }	/*	  sensor_init  */
@@ -716,12 +705,6 @@ static void slim_video_setting(void)
 	pr_err("MOT LYRIQ OV50E slim_video_setting end\n");
 }
 
-static void write_cross_talk_with_eeprom(void)
-{
-	mot_lyriq_ov50e_table_write_cmos_sensor(addr_data_pair_xtalk_with_eeprom,
-		sizeof(addr_data_pair_xtalk_with_eeprom)/sizeof(kal_uint16));
-}
-
 static void custom1_setting(void)
 {
 	pr_err("MOT LYRIQ OV50E custom1_setting start\n");
@@ -766,12 +749,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				pr_err("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				LYRIQ_OV50E_eeprom_format_calibration_data(&imgsensor);
 				return ERROR_NONE;
 			}
 
-			pr_err("Read sensor id fail,read:0x%x id: 0x%x\n", return_sensor_id(), imgsensor.i2c_write_id);
+			pr_debug("Read sensor id fail,read:0x%x id: 0x%x\n", return_sensor_id(), imgsensor.i2c_write_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -806,7 +789,7 @@ static kal_uint32 open(void)
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
 
-	pr_err("%s +\n", __func__);
+	pr_debug("%s +\n", __func__);
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -815,11 +798,11 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				pr_err("i2c write id: 0x%x, sensor id: 0x%x\n",
+				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
-			pr_err("Read sensor id fail, id: 0x%x\n",
+			pr_debug("Read sensor id fail, id: 0x%x\n",
 				imgsensor.i2c_write_id);
 			retry--;
 		} while (retry > 0);
@@ -838,7 +821,7 @@ static kal_uint32 open(void)
 
 	imgsensor.min_frame_length = imgsensor_info.pre.framelength;
 	spin_unlock(&imgsensor_drv_lock);
-	pr_err("%s -\n", __func__);
+	pr_debug("%s -\n", __func__);
 
 	return ERROR_NONE;
 } /* open */
@@ -861,7 +844,7 @@ static kal_uint32 open(void)
  *************************************************************************/
 static kal_uint32 close(void)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 	/* No Need to implement this function */
 	streaming_control(KAL_FALSE);
 	return ERROR_NONE;
@@ -887,7 +870,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("%s E\n", __func__);
+	pr_debug("%s E\n", __func__);
 
 	sensor_mode = BINNING_MODE;
 	spin_lock(&imgsensor_drv_lock);
@@ -922,14 +905,14 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 
 	sensor_mode = BINNING_MODE;
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 
 	if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-		pr_err(
+		pr_debug(
 			"Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 			imgsensor.current_fps,
 			imgsensor_info.cap.max_framerate / 10);
@@ -948,7 +931,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 
 	sensor_mode = BINNING_MODE;
 	spin_lock(&imgsensor_drv_lock);
@@ -968,7 +951,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 
 	sensor_mode = FPS120_MODE;
 	spin_lock(&imgsensor_drv_lock);
@@ -992,7 +975,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 
 	sensor_mode = BINNING_MODE;
 	spin_lock(&imgsensor_drv_lock);
@@ -1016,7 +999,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 		image_window, MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 
 	sensor_mode = FULLSIZE_MODE;
 	spin_lock(&imgsensor_drv_lock);
@@ -1028,18 +1011,13 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 
-	if ((xtalk_data_valid == 1) && (pdc_data_valid == 1)) {
-		write_cross_talk_data();
-		write_cross_talk_with_eeprom();
-		write_pdc_data();
-	}
 	custom1_setting();
 	return ERROR_NONE;
 }
 static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 		image_window, MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 
 	sensor_mode = FPS60_MODE;
 	spin_lock(&imgsensor_drv_lock);
@@ -1057,7 +1035,7 @@ static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 static kal_uint32
 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
-	pr_err("E\n");
+	pr_debug("E\n");
 	sensor_resolution->SensorFullWidth =
 		imgsensor_info.cap.grabwindow_width;
 	sensor_resolution->SensorFullHeight =
@@ -1100,7 +1078,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			   MSDK_SENSOR_INFO_STRUCT *sensor_info,
 			   MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("scenario_id = %d\n", scenario_id);
+	pr_debug("scenario_id = %d\n", scenario_id);
 
 	sensor_info->SensorClockPolarity = SENSOR_CLOCK_POLARITY_LOW;
 	sensor_info->SensorClockFallingPolarity = SENSOR_CLOCK_POLARITY_LOW;
@@ -1140,7 +1118,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 #if FPT_PDAF_SUPPORT
-	sensor_info->PDAF_Support = 0;
+	sensor_info->PDAF_Support = 2;
 #endif
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
@@ -1219,7 +1197,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_err("scenario_id = %d\n", scenario_id);
+	pr_debug("scenario_id = %d\n", scenario_id);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.current_scenario_id = scenario_id;
 	spin_unlock(&imgsensor_drv_lock);
@@ -1246,7 +1224,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 		Custom2(image_window, sensor_config_data);
 		break;
 	default:
-		pr_err("Error ScenarioId setting");
+		pr_debug("Error ScenarioId setting");
 		preview(image_window, sensor_config_data);
 		return ERROR_INVALID_SCENARIO_ID;
 	}
@@ -1258,7 +1236,7 @@ static kal_uint32 control(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 
 static kal_uint32 set_video_mode(UINT16 framerate)
 {
-	pr_err("framerate = %d\n ", framerate);
+	pr_debug("framerate = %d\n ", framerate);
 	/* SetVideoMode Function should fix framerate */
 	if (framerate == 0)
 		/* Dynamic frame rate */
@@ -1281,7 +1259,7 @@ static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 	spin_lock(&imgsensor_drv_lock);
 	if (enable) /*enable auto flicker*/ {
 		imgsensor.autoflicker_en = KAL_TRUE;
-		pr_err("enable! fps = %d", framerate);
+		pr_debug("enable! fps = %d", framerate);
 	} else {
 		 /*Cancel Auto flick*/
 		imgsensor.autoflicker_en = KAL_FALSE;
@@ -1297,7 +1275,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 {
 	kal_uint32 frame_length;
 
-	pr_err("scenario_id = %d, framerate = %d\n", scenario_id, framerate);
+	pr_debug("scenario_id = %d, framerate = %d\n", scenario_id, framerate);
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -1336,7 +1314,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 	if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-		pr_err(
+		pr_debug(
 			"Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n"
 			, framerate, imgsensor_info.cap.max_framerate/10);
 		frame_length = imgsensor_info.cap.pclk / framerate * 10
@@ -1429,7 +1407,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 		spin_unlock(&imgsensor_drv_lock);
 		if (imgsensor.frame_length > imgsensor.shutter)
 			set_dummy();
-		pr_err("error scenario_id = %d, we use preview scenario\n",
+		pr_debug("error scenario_id = %d, we use preview scenario\n",
 			scenario_id);
 		break;
 	}
@@ -1440,7 +1418,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 static kal_uint32 get_default_framerate_by_scenario(
 		enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
-	pr_err("scenario_id = %d\n", scenario_id);
+	pr_debug("scenario_id = %d\n", scenario_id);
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -1474,7 +1452,7 @@ static kal_uint32 get_default_framerate_by_scenario(
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
-	pr_err("set_test_pattern_mode enable: %d", enable);
+	pr_debug("set_test_pattern_mode enable: %d", enable);
 
 	if (enable) {
 		write_cmos_sensor_8(0x401a, 0x00);
@@ -1694,7 +1672,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				(MUINT32 *)(uintptr_t)(*(feature_data+1)));
 		break;
 	case SENSOR_FEATURE_GET_PDAF_DATA:
-		pr_err("SENSOR_FEATURE_GET_PDAF_DATA\n");
+		pr_debug("SENSOR_FEATURE_GET_PDAF_DATA\n");
 		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
 		set_test_pattern_mode((BOOL)*feature_data);
@@ -1705,13 +1683,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-		pr_err("current fps :%d\n", (UINT32)*feature_data_32);
+		pr_debug("current fps :%d\n", (UINT32)*feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.current_fps = *feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		pr_err("ihdr enable :%d\n", (BOOL)*feature_data_32);
+		pr_debug("ihdr enable :%d\n", (BOOL)*feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.ihdr_mode = *feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
@@ -1761,7 +1739,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 #if FPT_PDAF_SUPPORT
 	case SENSOR_FEATURE_GET_PDAF_INFO:
-		pr_err("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n",
+		pr_debug("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n",
 			(UINT16) *feature_data);
 		PDAFinfo =
 		  (struct SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
@@ -1769,7 +1747,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			sizeof(struct SET_PD_BLOCK_INFO_T));
 		break;
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-		pr_err(
+		pr_debug(
 		"SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n",
 			(UINT16) *feature_data);
 		/*PDAF capacity enable or not, 2p8 only full size support PDAF*/
@@ -1794,7 +1772,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 		break;
 	case SENSOR_FEATURE_SET_PDAF:
-		pr_err("PDAF mode :%d\n", *feature_data_16);
+		pr_debug("PDAF mode :%d\n", *feature_data_16);
 		imgsensor.pdaf_mode = *feature_data_16;
 		break;
 #endif
@@ -1806,7 +1784,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 
 	case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
-		pr_err("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",
+		pr_debug("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",
 			(UINT16)*feature_data,
 			(UINT16)*(feature_data+1),
 			(UINT16)*(feature_data+2));
@@ -1826,7 +1804,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*(feature_data + 2) = imgsensor_info.margin;
 		break;
 	case SENSOR_FEATURE_SET_HDR_SHUTTER:
-		pr_err("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",
+		pr_debug("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",
 			(UINT16)*feature_data, (UINT16)*(feature_data+1));
 		#if 0
 		ihdr_write_shutter((UINT16)*feature_data,
@@ -1834,11 +1812,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		#endif
 		break;
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
-		pr_err("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		pr_debug("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
 		streaming_control(KAL_FALSE);
 		break;
 	case SENSOR_FEATURE_SET_STREAMING_RESUME:
-		pr_err("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n",
+		pr_debug("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n",
 			*feature_data);
 		if (*feature_data != 0)
 			set_shutter(*feature_data);
