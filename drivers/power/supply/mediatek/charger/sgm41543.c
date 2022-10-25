@@ -172,6 +172,7 @@ struct sgm41543 {
 	int status;
 	int irq;
 	int irq_gpio;
+	int online;
 
 	struct mutex i2c_rw_lock;
 	struct mutex pe_lock;
@@ -985,9 +986,11 @@ static void sgm41543_charger_irq_workfunc(struct work_struct *work)
 		return;
 
 	bq->vbus_type = (status & REG08_VBUS_STAT_MASK) >> REG08_VBUS_STAT_SHIFT;
+	bq->online = (status & REG08_PG_STAT_MASK) >> REG08_PG_STAT_SHIFT;
+
 	sgm41543_dump_regs(bq);
-	dev_info(bq->dev, "%s:bq status = %.2x, bq->vbus_type = %.2x\n",
-			__func__, bq->status, bq->vbus_type);
+	dev_info(bq->dev, "%s:bq status = %.2x, bq->vbus_type = %.2x, online = %.2x\n",
+			__func__, bq->status, bq->vbus_type, bq->online);
 
 	if (!(temp & REG0A_VBUS_GD_MASK) && (bq->status & SGM41543_STATUS_PLUGIN)) {
 		dev_err(bq->dev, "%s:adapter removed\n", __func__);
@@ -1743,7 +1746,7 @@ static int sgm41543_psy_gauge_get_property(struct power_supply *psy,
 	int ret;
 	u8 status;
 	u8 pg_status;
-	int voltage;
+	//int voltage;
 
 	bq = (struct sgm41543 *)power_supply_get_drvdata(psy);
 
@@ -1773,12 +1776,13 @@ static int sgm41543_psy_gauge_get_property(struct power_supply *psy,
 			return -EINVAL;
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
-		voltage = pmic_get_vbus();
+		/*voltage = pmic_get_vbus();
 		pr_err("%s val:%d", __func__,voltage);
 		if (voltage > 4400)
 			val->intval = 1;
 		else
-			val->intval = 0;
+			val->intval = 0;*/
+		val->intval = bq->online;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		val->intval = sgm41543_charge_status(bq);
