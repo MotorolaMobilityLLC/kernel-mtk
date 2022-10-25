@@ -81,6 +81,8 @@ struct bq2589x {
 	int fixed_input_current;
 	int fixed_charge_current;
 
+	int online;
+
 	int		rsoc;
 	struct charger_device *chg_dev;
 	struct charger_properties chg_props;
@@ -1563,15 +1565,16 @@ static int bq2589x_usb_get_property(struct power_supply *psy,
 {
 
 	struct bq2589x *bq = power_supply_get_drvdata(psy);
-	int voltage;
+	//int voltage;
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		voltage = bq2589x_adc_read_vbus_volt(bq);
+		/*voltage = bq2589x_adc_read_vbus_volt(bq);
 		if (voltage > 4400)
 			val->intval = 1;
 		else
-			val->intval = 0;
+			val->intval = 0;*/
+		val->intval = bq->online;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		val->intval = bq2589x_charge_status(bq);
@@ -1779,13 +1782,11 @@ static void bq2589x_adapter_out_workfunc(struct work_struct *work)
 
 	chrdet_psy = power_supply_get_by_name("charger");
 	if (chrdet_psy) {
-		/* repeat report  IKSWT-35382
 		propval.intval = CHARGER_UNKNOWN;
 		ret = power_supply_set_property(chrdet_psy,
 				POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
 		if (ret)
 			dev_info(bq->dev, "[%s] reset chr_type failed:%d\n", __func__, ret);
-		*/
 		propval.intval = 0;
 		ret = power_supply_set_property(chrdet_psy,
 				POWER_SUPPLY_PROP_ONLINE, &propval);
@@ -2059,10 +2060,11 @@ static void bq2589x_charger_irq_workfunc(struct work_struct *work)
 		return;
 
 	bq->vbus_type = (status & BQ2589X_VBUS_STAT_MASK) >> BQ2589X_VBUS_STAT_SHIFT;
+	bq->online = (status & BQ2589X_PG_STAT_MASK) >> BQ2589X_PG_STAT_SHIFT;
 
 	bq2589x_dump_regs(bq);
-	dev_info(bq->dev, "%s:bq status = %.2x, bq->vbus_type = %.2x\n",
-			__func__, bq->status, bq->vbus_type);
+	dev_info(bq->dev, "%s:bq status = %.2x, bq->vbus_type = %.2x, online = %.2x\n",
+			__func__, bq->status, bq->vbus_type, bq->online);
 	if (!(temp & BQ2589X_VBUS_GD_MASK) && (bq->status & BQ2589X_STATUS_PLUGIN)) {
 		dev_info(bq->dev, "%s:adapter removed\n", __func__);
 		bq->status &= ~BQ2589X_STATUS_PLUGIN;
@@ -2208,7 +2210,7 @@ static struct charger_ops bq2589x_chg_ops = {
 	.set_mivr = bq2589x_set_ivl,
 	.is_charging_done = bq2589x_is_charging_done,
 	.get_min_charging_current = bq2589x_get_min_ichg,
-	.enable_chg_type_det = bq2589x_update_chg_type,
+	.enable_chg_type_det = NULL,//bq2589x_update_chg_type,
 	.run_aicl = bq2589x_run_aicl,
 
 	/* Safety timer */
