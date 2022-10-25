@@ -4,9 +4,9 @@
  */
 
 /*****************************************************************************/
-#ifndef __MOT_AION_OV50E_ANA_GAIN_TABLE_H__
-#define __MOT_AION_OV50E_ANA_GAIN_TABLE_H__
-static kal_uint32 mot_aion_ov50e_ana_gain_table[] = {
+#ifndef __MOT_AION_OV50A_ANA_GAIN_TABLE_H__
+#define __MOT_AION_OV50A_ANA_GAIN_TABLE_H__
+static kal_uint32 mot_aion_ov50a_ana_gain_table[] = {
 1024,
 1056,
 1088,
