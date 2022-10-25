@@ -370,6 +370,14 @@ config MTK_TEE_GP_SUPPORT
 	  Trustonic TEE Support or Microtrust TEE Support or Google Trusty
 	  TEE or other 3rd-party TEE)
 
+config MOTO_CCCI_SEC_SUPPORT
+	bool "moto ccci sec support"
+	help
+	  Used to enable moto ccci security support,
+	  which transfers moto security data, cid data etc to modem side.
+	  Say Y here if you are need moto ccci security support.
+	  If unsure, say N
+
 source "drivers/misc/mediatek/trusted_mem/Kconfig"
 source "drivers/misc/mediatek/geniezone/Kconfig"
 source "drivers/misc/mediatek/tee_sanity/Kconfig"
