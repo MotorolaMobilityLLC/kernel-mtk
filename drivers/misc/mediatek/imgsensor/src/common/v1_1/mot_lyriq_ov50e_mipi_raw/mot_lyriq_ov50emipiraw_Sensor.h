@@ -231,6 +231,29 @@ struct LYRIQ_OV50E_eeprom_t{
 	//QCOM LSC
 	uint8_t lsc_data_qcom[1768];
 	uint8_t lsc_crc16_qcom[2];
+	//MTK LSC
+	uint8_t lsc_data_mtk[1868];
+	uint8_t lsc_crc16_mtk[2];
+	//MTK PDAF
+	uint8_t pdaf_out1_data_mtk[496];
+	uint8_t pdaf_out2_data_mtk[1004];
+	uint8_t pdaf_out1_crc16_mtk[2];
+	uint8_t pdaf_out2_crc16_mtk[2];
+	//QPD compensation_calibration
+	uint8_t qpd_compensation_cali[3584];
+	uint8_t qpd_crc16[2];
+	//AF Sync
+	uint8_t af_sync_data[16];
+	uint8_t af_sync_crc[2];
+	//AF Posture
+	uint8_t necessary_data[18];
+	uint8_t necessary_crc[2];
+	//OIS SR
+	uint8_t ois_sr_data[22];
+	uint8_t ois_sr_crc[2];
+	//AK7323 OIS
+	uint8_t ak7323_ois_data[59];
+	uint8_t ak7323_ois_crc[2];
 	//Qcom PDAF LRC(Gain map)
 	uint8_t dcc_cal[3];
 	uint8_t gain_map[890];
@@ -241,26 +264,6 @@ struct LYRIQ_OV50E_eeprom_t{
 	//QCOM PDAF OFFSET
 	uint8_t pdaf_offset[198];
 	uint8_t pdaf_offset_crc[2];
-	//MTK LSC
-	uint8_t lsc_data_mtk[1868];
-	uint8_t lsc_crc16_mtk[2];
-	//MTK PDAF
-	uint8_t pdaf_out1_data_mtk[496];
-	uint8_t pdaf_out2_data_mtk[1004];
-	uint8_t pdaf_out1_crc16_mtk[2];
-	uint8_t pdaf_out2_crc16_mtk[2];
-	//AF Sync
-	uint8_t af_sync_data[24];
-	uint8_t af_sync_crc[2];
-	//AF Posture
-	uint8_t necessary_data[18];
-	uint8_t necessary_crc[2];
-	//OV PDC Posture
-	uint8_t ov_pdc_data[732];
-	uint8_t ov_pdc_crc[2];
-	//OV XTALK Posture
-	uint8_t ov_xtalk_data[288];
-	uint8_t ov_xtalk_crc[2];
 };
 
 typedef struct {

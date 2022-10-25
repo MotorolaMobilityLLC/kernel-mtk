@@ -13,6 +13,9 @@
 
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+#ifdef CONFIG_MOT_LYRIQ
+	{MOT_LYRIQ_OV50E_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+#endif
 	/*Below is commom sensor */
 	{IMX586_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K,
 		BL24SA64_write_region},

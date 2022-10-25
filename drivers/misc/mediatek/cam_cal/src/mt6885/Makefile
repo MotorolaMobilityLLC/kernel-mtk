@@ -13,6 +13,7 @@ endif
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
                     -I$(MTK_CUSTOM_PATH)/imgsensor/src/$(CONFIG_MTK_PLATFORM)/camera_hw \
+                    -I$(MTK_CUSTOM_PATH)/imgsensor/src/common/v2 \
                     -I$(MTK_CUSTOM_PATH)/cam_cal/inc \
                     -I$(CAM_CAL_PLATFORM_SRC_PATH) \
                     -I$(CAM_CAL_SRC_PATH)/common/$(COMMON_VERSION)
