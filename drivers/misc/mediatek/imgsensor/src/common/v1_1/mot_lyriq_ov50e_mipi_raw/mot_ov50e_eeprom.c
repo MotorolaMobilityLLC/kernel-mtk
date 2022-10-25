@@ -21,7 +21,7 @@ static int mot_sensor_debug = 1;
 typedef struct {
 	MUINT16 addr;
 	MUINT16 data;
-} lyriq_ov_cal_addr_data_t;
+} lyriq_ois_cal_addr_data_t;
 
 #define PFX "MOT_LYRIQ_OV50E"
 #define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s] " format, __func__,##args); } } while(0)
@@ -34,22 +34,19 @@ static  struct imgsensor_struct *imgsensor;
 
 #define LYRIQ_OV50E_EEPROM_SLAVE_ADDR 0xA0
 #define LYRIQ_OV50E_SENSOR_IIC_SLAVE_ADDR 0x20
-#define LYRIQ_OV50E_EEPROM_SIZE  0x1DEC
+#define LYRIQ_OV50E_EEPROM_SIZE  0x28A7
 #define LYRIQ_OV50E_EEPROM_CRC_MANUFACTURING_SIZE 37
 #define LYRIQ_OV50E_EEPROM_CRC_AF_CAL_SIZE 24
 #define LYRIQ_OV50E_EEPROM_CRC_AWB_CAL_SIZE 43
 #define LYRIQ_OV50E_EEPROM_CRC_LSC_SIZE 1868
 #define LYRIQ_OV50E_EEPROM_CRC_PDAF_OUTPUT1_SIZE 496
 #define LYRIQ_OV50E_EEPROM_CRC_PDAF_OUTPUT2_SIZE 1004
-#define LYRIQ_OV50E_EEPROM_CRC_XTALK_SIZE 288
-#define LYRIQ_OV50E_EEPROM_CRC_PDC_SIZE 732
-#define LYRIQ_OV50E_EEPROM_CRC_PDC_WRITE_SIZE 720
+#define LYRIQ_OV50E_EEPROM_CRC_QPD_SIZE 3584
+#define LYRIQ_OV50E_EEPROM_CRC_OIS_SR_SIZE 22
+#define LYRIQ_OV50E_EEPROM_CRC_AK7323_OIS_SIZE 59
 
-static lyriq_ov_cal_addr_data_t ov_cross_talk_data[LYRIQ_OV50E_EEPROM_CRC_XTALK_SIZE] = {{0}};
-static lyriq_ov_cal_addr_data_t ov_pdc_data[LYRIQ_OV50E_EEPROM_CRC_PDC_WRITE_SIZE] = {{0}};
-
-int xtalk_data_valid = 0;
-int pdc_data_valid = 0;
+static lyriq_ois_cal_addr_data_t ois_sr_data[LYRIQ_OV50E_EEPROM_CRC_OIS_SR_SIZE] = {{0}};
+static lyriq_ois_cal_addr_data_t ak7323_ois_data[LYRIQ_OV50E_EEPROM_CRC_AK7323_OIS_SIZE] = {{0}};
 
 static uint8_t LYRIQ_OV50E_eeprom[LYRIQ_OV50E_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
@@ -439,48 +436,44 @@ static void LYRIQ_OV50E_eeprom_get_mnf_data(void *data,
 	}
 }
 
-int get_ov_cross_talk_data(void *data)
+int get_ois_sr_data(void *data)
 {
 	int i;
 	struct LYRIQ_OV50E_eeprom_t *eeprom = (struct LYRIQ_OV50E_eeprom_t*)data;
-	if (!eeprom_util_check_crc16(eeprom->ov_xtalk_data, LYRIQ_OV50E_EEPROM_CRC_XTALK_SIZE,
-		convert_crc(eeprom->ov_xtalk_crc)))
+	if (!eeprom_util_check_crc16(eeprom->ois_sr_data, LYRIQ_OV50E_EEPROM_CRC_OIS_SR_SIZE,
+		convert_crc(eeprom->ois_sr_crc)))
 	{
-		pr_debug("Cross Talk Data CRC Fail!");
-		xtalk_data_valid = 0;
+		pr_debug("Ois Sr Data CRC Fail!");
 	}
 	else
 	{
-		pr_debug("Cross Talk Data CRC Pass");
-		xtalk_data_valid = 1;
-		for (i = 0; i < LYRIQ_OV50E_EEPROM_CRC_XTALK_SIZE; i++)
+		pr_debug("Ois Sr Data CRC Pass");
+		for (i = 0; i < LYRIQ_OV50E_EEPROM_CRC_OIS_SR_SIZE; i++)
 		{
-			ov_cross_talk_data[i].addr = 0x5A40 + i;
-			ov_cross_talk_data[i].data = eeprom->ov_xtalk_data[i];
+			ois_sr_data[i].addr = 0x2337 + i;
+			ois_sr_data[i].data = eeprom->ois_sr_data[i];
 		}
 	}
 
 	return 1;
 }
 
-int get_ov_pdc_data(void *data)
+int get_ak7323_ois_data(void *data)
 {
 	int i;
 	struct LYRIQ_OV50E_eeprom_t *eeprom = (struct LYRIQ_OV50E_eeprom_t*)data;
-	if (!eeprom_util_check_crc16(eeprom->ov_pdc_data, LYRIQ_OV50E_EEPROM_CRC_PDC_SIZE,
-		convert_crc(eeprom->ov_pdc_crc)))
+	if (!eeprom_util_check_crc16(eeprom->ak7323_ois_data, LYRIQ_OV50E_EEPROM_CRC_AK7323_OIS_SIZE,
+		convert_crc(eeprom->ak7323_ois_crc)))
 	{
-		pr_debug("PDC Data CRC Fail!");
-		pdc_data_valid = 0;
+		pr_debug("AK7323 OIS Data CRC Fail!");
 	}
 	else
 	{
-		pr_debug("PDC Data CRC Pass");
-		pdc_data_valid = 1;
-		for (i = 0; i < LYRIQ_OV50E_EEPROM_CRC_PDC_WRITE_SIZE; i++)
+		pr_debug("AK7323 OIS Data CRC Pass");
+		for (i = 0; i < LYRIQ_OV50E_EEPROM_CRC_AK7323_OIS_SIZE; i++)
 		{
-			ov_pdc_data[i].addr = 0x5F80 + i;
-			ov_pdc_data[i].data = eeprom->ov_pdc_data[12 + i];
+			ak7323_ois_data[i].addr = 0x234F + i;
+			ak7323_ois_data[i].data = eeprom->ak7323_ois_data[i];
 		}
 	}
 	return 1;
@@ -499,8 +492,8 @@ void LYRIQ_OV50E_eeprom_format_calibration_data(struct imgsensor_struct *pImgsen
 
 	LYRIQ_OV50E_eeprom_get_mnf_data((void *)LYRIQ_OV50E_eeprom, &mnf_info);
 
-	get_ov_cross_talk_data(LYRIQ_OV50E_eeprom);
-	get_ov_pdc_data(LYRIQ_OV50E_eeprom);
+	get_ois_sr_data(LYRIQ_OV50E_eeprom);
+	get_ak7323_ois_data(LYRIQ_OV50E_eeprom);
 
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
 	        calibration_status.mnf, calibration_status.af, calibration_status.awb,
@@ -516,7 +509,7 @@ mot_calibration_mnf_t *LYRIQ_OV50E_eeprom_get_mnf_info(void)
 {
 	return &mnf_info;
 }
-
+/*
 void write_cross_talk_data(void)
 {
 	uint16_t write_table[LYRIQ_OV50E_EEPROM_CRC_XTALK_SIZE * 2] = {0};
@@ -546,3 +539,4 @@ void write_pdc_data(void)
 	pr_debug("apply pdc calibration data success.");
 	pr_debug("X");
 }
+*/
