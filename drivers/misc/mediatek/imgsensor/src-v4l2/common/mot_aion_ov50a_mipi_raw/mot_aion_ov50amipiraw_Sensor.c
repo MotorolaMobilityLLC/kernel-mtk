@@ -6,7 +6,7 @@
  *
  * Filename:
  * ---------
- *     MOT_AION_OV50E2Qmipi_Sensor.c
+ *     MOT_AION_OV50A2Qmipi_Sensor.c
  *
  * Project:
  * --------
@@ -18,7 +18,7 @@
  *
  * Setting version:
  * ------------
- *   update full pd setting for MOT_AION_OV50E2QEB_03B
+ *   update full pd setting for MOT_AION_OV50A2QEB_03B
  *------------------------------------------------------------------------------
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
@@ -33,9 +33,9 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 #include <linux/module.h>
-#include "mot_aion_ov50emipiraw_Sensor.h"
-#include "mot_aion_ov50e_Sensor_setting.h"
-#include "mot_aion_ov50e_ana_gain_table.h"
+#include "mot_aion_ov50amipiraw_Sensor.h"
+#include "mot_aion_ov50a_Sensor_setting.h"
+#include "mot_aion_ov50a_ana_gain_table.h"
 
 #define CPHY_3TRIO
 #define read_cmos_sensor_8(...) subdrv_i2c_rd_u8(__VA_ARGS__)
@@ -51,89 +51,89 @@ static unsigned int _size_to_write;
 static bool _is_seamless = false;
 #define PD_PIX_2_EN 0
 
-#define PFX "mot_aion_ov50e"
+#define PFX "mot_aion_ov50a"
 static int mot_ov50a_camera_debug = 0;
 module_param(mot_ov50a_camera_debug,int, 0644);
 
-static int mot_ov50a_xtalk_en = 0;
+static int mot_ov50a_xtalk_en = 1;
 module_param(mot_ov50a_xtalk_en,int, 0644);
 
 #define LOG_INF(format, args...)        do { if (mot_ov50a_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
-#define LOG_INF_N(format, args...)     pr_debug(PFX "[%s %d] " format, __func__, __LINE__, ##args)
+#define LOG_INF_N(format, args...)     pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 #define LOG_ERR(format, args...)       pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args)
 
 #define MULTI_WRITE 1
-#define FPT_PDAF_SUPPORT 0
-#define SEAMLESS_ 0
-#define SEAMLESS_NO_USE 1
+#define FPT_PDAF_SUPPORT 1
+#define SEAMLESS_ 1
+#define SEAMLESS_NO_USE 0
 static int remosaic_mode =0;
 static int settledebug = 0x10;
 module_param(settledebug,int, 0644);
 MODULE_PARM_DESC(settledebug, "settledebug");
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = MOT_AION_OV50E_SENSOR_ID,
+	.sensor_id = MOT_AION_OV50A_SENSOR_ID,
 
 	.checksum_value = 0x388c7147,//test_Pattern_mode
 
 	.pre = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 4544,
+		.linelength = 600,
+		.framelength = 4168,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.cap = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 4544,
+		.linelength = 600,
+		.framelength = 4168,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.normal_video = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 4544,
+		.linelength = 600,
+		.framelength = 4168,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.hs_video = {
 		.pclk = 75000000,
-		.linelength = 312,
-		.framelength = 2002,
+		.linelength = 275,
+		.framelength = 2272,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2048,
-		.grabwindow_height = 1536,
+		.grabwindow_width = 1920,
+		.grabwindow_height = 1080,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.slim_video = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 4544,
+		.linelength = 600,
+		.framelength = 4168,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.custom1 = {
 		.pclk = 75000000,
@@ -145,49 +145,49 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 6144,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 200,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.custom2 = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 2272,
+		.linelength = 600,
+		.framelength = 2084,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2048,
-		.grabwindow_height = 1536,
-		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 600,
-		.mipi_pixel_rate = 1504800000,
-	},
-	.custom3 = {
-		.pclk = 75000000,
-		.linelength = 237,
-		.framelength = 1318,
-		.startx = 64,
-		.starty = 228,
 		.grabwindow_width = 1920,
 		.grabwindow_height = 1080,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 600,
+		.mipi_pixel_rate = 1280448000,
+	},
+	.custom3 = {
+		.pclk = 75000000,
+		.linelength = 275,
+		.framelength = 1136,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1280,
+		.grabwindow_height = 720,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 2400,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 	.custom4 = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 4544,
+		.linelength = 600,
+		.framelength = 4168,
 		.startx = 2048,
 		.starty = 1536,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1504800000,
+		.mipi_pixel_rate = 1280448000,
 	},
 
 	.margin = 32,					/* sensor framelength & shutter margin */
 	.min_shutter = 16,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
-	.max_gain = 255*BASEGAIN, /*255x gain*/
+	.max_gain = 261120, /*32 * 1024  gain*/
 	.min_gain_iso = 100,
 	.gain_step = 16, /*minimum step = 4 in 1x~2x gain*/
 	.gain_type = 1,/*to be modify,no gain table for sony*/
@@ -217,7 +217,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 #else
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 #endif
-	.mipi_settle_delay_mode = 1,
+	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_R,
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 #ifdef CPHY_3TRIO
@@ -240,17 +240,17 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 	/* video */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* hs_video */
-	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
+	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
 	/* slim_video */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* custom1 */
 	{8192, 6144,    0,    0, 8192, 6144, 8192, 6144,  0,   0, 8192, 6144, 0, 0, 8192, 6144},
 	/* custom2 */
-	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
+	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
 	/* custom3 */
-	{8192, 6144,  256,  912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
+	{8192, 6144,    1536, 1632, 5120, 2880, 1280, 720,  0,   0, 1280, 720, 0, 0, 1280, 720},
 	/* custom4 */
-	{8192, 6144, 2048, 1536, 4096, 3072, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
+	{8192, 6144,    2048,    1536, 4096, 3072, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 };
 
 
@@ -268,12 +268,12 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[2] = {
 		1
 	},
 	{
-		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //1080p 60fps
+		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //custom2
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x0780, 0x0438},
-			{VC_PDAF_STATS, 0x01, 0x2b, 0x0780, 0x21c},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0xF00, 0x10E},
 #if PD_PIX_2_EN
-			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x0780, 0x21c},
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0xF00, 0x10E},
 #endif
 		},
 		1
@@ -300,7 +300,6 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 	case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
 	case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 	case SENSOR_SCENARIO_ID_SLIM_VIDEO:
-	case SENSOR_SCENARIO_ID_CUSTOM4:
 	default:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
@@ -326,7 +325,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4LeFirst = 0,
 	.i4Crop = {
 		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
-		{0, 0}, {64, 228}, {0, 0}, {2048, 1536}
+		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
 	},  //{0, 1632}
 	.iMirrorFlip = 0,
 };
@@ -397,7 +396,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 		write_cmos_sensor_8(ctx, 0x0100, 0x00);
 		ctx->is_streaming = false;
 	}
-	mdelay(3);
+	mdelay(10);
 	return ERROR_NONE;
 }
 static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
@@ -533,7 +532,7 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 	kal_uint32 max_gain = imgsensor_info.max_gain;
        if(remosaic_mode == 1)
        {
-		max_gain = 63.75*BASEGAIN;
+		max_gain = 64*BASEGAIN;
 	}
 	if (gain < imgsensor_info.min_gain || gain > max_gain) {
 		LOG_INF_N("Error gain setting\n");
@@ -674,21 +673,21 @@ static void ov50a_qpd_calibration_apply(struct subdrv_ctx *ctx)
 static void sensor_init(struct subdrv_ctx *ctx)
 {
 	write_cmos_sensor_8(ctx, 0x0103, 0x01);//SW Reset, need delay
-	mdelay(1);
+	mdelay(5);
 	LOG_INF("%s start\n", __func__);
 
 	if (mot_ov50a_xtalk_en) {//Settings that removed xtalk default data.
 		table_write_cmos_sensor(ctx,
-		    addr_data_pair_init_mot_aion_ov50e2q,
-		    sizeof(addr_data_pair_init_mot_aion_ov50e2q) / sizeof(kal_uint16));
+		    addr_data_pair_init_mot_aion_ov50a2q,
+		    sizeof(addr_data_pair_init_mot_aion_ov50a2q) / sizeof(kal_uint16));
 
 		LOG_INF("%s: Applying xtalk...", __func__);
 		ov50a_qpd_calibration_apply(ctx);
 	} else {
 		LOG_INF("%s: skip EEPROM xtalk, use default one...", __func__);
 		table_write_cmos_sensor(ctx,
-		    addr_data_pair_init_mot_aion_ov50e_20220312,
-		    sizeof(addr_data_pair_init_mot_aion_ov50e_20220312) / sizeof(kal_uint16));
+		    addr_data_pair_init_mot_aion_ov50a_20220312,
+		    sizeof(addr_data_pair_init_mot_aion_ov50a_20220312) / sizeof(kal_uint16));
 	}
 	LOG_INF("%s end\n", __func__);
 }
@@ -698,10 +697,10 @@ static void preview_setting(struct subdrv_ctx *ctx)
 	int _length = 0;
 	remosaic_mode =0;
 	LOG_INF("%s start\n", __func__);
-	_length = sizeof(addr_data_pair_preview_mot_aion_ov50e2q_seamless_switch) / sizeof(kal_uint16);
+	_length = sizeof(addr_data_pair_preview_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
-			addr_data_pair_preview_mot_aion_ov50e2q,
+			addr_data_pair_preview_mot_aion_ov50a2q,
 			_length);
 	} else {
 		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
@@ -713,8 +712,8 @@ static void preview_setting(struct subdrv_ctx *ctx)
 			return;
 		}
 		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_preview_mot_aion_ov50e2q_seamless_switch,
-			sizeof(addr_data_pair_preview_mot_aion_ov50e2q_seamless_switch));
+			addr_data_pair_preview_mot_aion_ov50a2q,
+			sizeof(addr_data_pair_preview_mot_aion_ov50a2q));
 		_size_to_write += _length;
 	}
 	LOG_INF("%s end\n", __func__);
@@ -726,10 +725,10 @@ static void capture_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 
 	LOG_INF("%s start\n", __func__);
 	remosaic_mode =0;
-	_length = sizeof(addr_data_pair_capture_mot_aion_ov50e2q) / sizeof(kal_uint16);
+	_length = sizeof(addr_data_pair_capture_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
-			addr_data_pair_capture_mot_aion_ov50e2q,
+			addr_data_pair_capture_mot_aion_ov50a2q,
 			_length);
 	} else {
 		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
@@ -740,8 +739,8 @@ static void capture_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 			return;
 		}
 		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_capture_mot_aion_ov50e2q,
-			sizeof(addr_data_pair_capture_mot_aion_ov50e2q));
+			addr_data_pair_capture_mot_aion_ov50a2q,
+			sizeof(addr_data_pair_capture_mot_aion_ov50a2q));
 		_size_to_write += _length;
 	}
 	LOG_INF("%s end\n", __func__);
@@ -753,10 +752,10 @@ static void normal_video_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 
 	LOG_INF("%s start\n", __func__);
 	remosaic_mode =0;
-	_length = sizeof(addr_data_pair_video_mot_aion_ov50e2q) / sizeof(kal_uint16);
+	_length = sizeof(addr_data_pair_video_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
-			addr_data_pair_video_mot_aion_ov50e2q,
+			addr_data_pair_video_mot_aion_ov50a2q,
 			_length);
 	} else {
 		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
@@ -768,8 +767,8 @@ static void normal_video_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 			return;
 		}
 		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_video_mot_aion_ov50e2q,
-			sizeof(addr_data_pair_video_mot_aion_ov50e2q));
+			addr_data_pair_video_mot_aion_ov50a2q,
+			sizeof(addr_data_pair_video_mot_aion_ov50a2q));
 		_size_to_write += _length;
 	}
 	LOG_INF("%s end\n", __func__);
@@ -781,10 +780,10 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 
 	LOG_INF("%s start\n", __func__);
 	remosaic_mode =0;
-	_length = sizeof(addr_data_pair_hs_video_mot_aion_ov50e2q) / sizeof(kal_uint16);
+	_length = sizeof(addr_data_pair_hs_video_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
-		addr_data_pair_hs_video_mot_aion_ov50e2q,
+		addr_data_pair_hs_video_mot_aion_ov50a2q,
 		_length);
 	} else {
 		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
@@ -796,8 +795,8 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 			return;
 		}
 		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_hs_video_mot_aion_ov50e2q,
-			sizeof(addr_data_pair_hs_video_mot_aion_ov50e2q));
+			addr_data_pair_hs_video_mot_aion_ov50a2q,
+			sizeof(addr_data_pair_hs_video_mot_aion_ov50a2q));
 		_size_to_write += _length;
 	}
 	LOG_INF("%s end\n", __func__);
@@ -808,10 +807,10 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
 	remosaic_mode =0;
-	_length = sizeof(addr_data_pair_slim_video_mot_aion_ov50e2q) / sizeof(kal_uint16);
+	_length = sizeof(addr_data_pair_slim_video_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
-		addr_data_pair_slim_video_mot_aion_ov50e2q,
+		addr_data_pair_slim_video_mot_aion_ov50a2q,
 		_length);
 	} else {
 		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
@@ -823,8 +822,8 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 			return;
 		}
 		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_slim_video_mot_aion_ov50e2q,
-			sizeof(addr_data_pair_slim_video_mot_aion_ov50e2q));
+			addr_data_pair_slim_video_mot_aion_ov50a2q,
+			sizeof(addr_data_pair_slim_video_mot_aion_ov50a2q));
 		_size_to_write += _length;
 	}
 	LOG_INF("%s end\n", __func__);
@@ -890,7 +889,7 @@ static void custom3_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =1;
+	remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom3) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -952,8 +951,8 @@ static kal_uint16 read_cmos_eeprom_8(struct subdrv_ctx *ctx, kal_uint16 addr)
 	return (u16)data;
 }
 
-static kal_uint16 mot_aion_ov50e_PDC_setting[8*2];
-static kal_uint16 mot_aion_ov50e_PDC_setting_burst[720*2];
+static kal_uint16 mot_aion_ov50a_PDC_setting[8*2];
+static kal_uint16 mot_aion_ov50a_PDC_setting_burst[720*2];
 
 static void read_sensor_Cali(struct subdrv_ctx *ctx)
 {
@@ -963,16 +962,16 @@ static void read_sensor_Cali(struct subdrv_ctx *ctx)
 	for (idx = 0; idx < 8; idx++) {
 		eeprom_PDC_addr = 0x1638 + idx;
 		sensor_PDC_addr1 = 0x5C0E + idx;
-		mot_aion_ov50e_PDC_setting[2 * idx] = sensor_PDC_addr1;
-		mot_aion_ov50e_PDC_setting[2 * idx + 1] =
+		mot_aion_ov50a_PDC_setting[2 * idx] = sensor_PDC_addr1;
+		mot_aion_ov50a_PDC_setting[2 * idx + 1] =
 			read_cmos_eeprom_8(ctx, eeprom_PDC_addr);
 	}
 
 	for (idx = 8; idx < 728; idx++) {
 		eeprom_PDC_addr = 0x1638 + idx;
 		sensor_PDC_addr2 = 0x5900 + idx - 8;
-		mot_aion_ov50e_PDC_setting_burst[2 * (idx-8)] = sensor_PDC_addr2;
-		mot_aion_ov50e_PDC_setting_burst[2 * (idx-8) + 1] =
+		mot_aion_ov50a_PDC_setting_burst[2 * (idx-8)] = sensor_PDC_addr2;
+		mot_aion_ov50a_PDC_setting_burst[2 * (idx-8) + 1] =
 			read_cmos_eeprom_8(ctx, eeprom_PDC_addr);
 	}
 
@@ -981,16 +980,16 @@ static void read_sensor_Cali(struct subdrv_ctx *ctx)
 #if 0
 static void write_sensor_PDC(struct subdrv_ctx *ctx)
 {
-	table_write_cmos_sensor(ctx, mot_aion_ov50e_PDC_setting,
-		sizeof(mot_aion_ov50e_PDC_setting)/sizeof(kal_uint16));
-	table_write_cmos_sensor(ctx, mot_aion_ov50e_PDC_setting_burst,
-		sizeof(mot_aion_ov50e_PDC_setting_burst)/sizeof(kal_uint16));
+	table_write_cmos_sensor(ctx, mot_aion_ov50a_PDC_setting,
+		sizeof(mot_aion_ov50a_PDC_setting)/sizeof(kal_uint16));
+	table_write_cmos_sensor(ctx, mot_aion_ov50a_PDC_setting_burst,
+		sizeof(mot_aion_ov50a_PDC_setting_burst)/sizeof(kal_uint16));
 }
 #endif
 static kal_uint32 return_sensor_id(struct subdrv_ctx *ctx)
 {
 	return ((read_cmos_sensor_8(ctx, 0x300a) << 16) |
-		(read_cmos_sensor_8(ctx, 0x300b) << 8) | read_cmos_sensor_8(ctx, 0x300c));
+		(read_cmos_sensor_8(ctx, 0x300b) << 8) | read_cmos_sensor_8(ctx, 0x300c)) + 1;
 }
 
 static int get_imgsensor_id(struct subdrv_ctx *ctx, UINT32 *sensor_id)
@@ -1609,42 +1608,10 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 #if SEAMLESS_NO_USE
 	int k = 0;
 #endif
-        int _length;
 	_is_seamless = true;
 	memset(_i2c_data, 0x0, sizeof(_i2c_data));
 	_size_to_write = 0;
-	if(scenario_id ==SENSOR_SCENARIO_ID_NORMAL_PREVIEW)
-	{
-	    _length = sizeof(addr_data_pair_seamless_switch_group1_start) / sizeof(kal_uint16);
-		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
-			__func__, _is_seamless, _size_to_write);
 
-		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			LOG_INF("_too much i2c data for fast siwtch %d\n",
-				_size_to_write + _length);
-		}
-		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_seamless_switch_group1_start,
-			sizeof(addr_data_pair_seamless_switch_group1_start));
-		_size_to_write += _length;
-	}
-
-	if(scenario_id ==SENSOR_SCENARIO_ID_CUSTOM4)
-	{
-		  _length = sizeof(addr_data_pair_seamless_switch_group2_start) / sizeof(kal_uint16);
-		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
-			__func__, _is_seamless, _size_to_write);
-
-		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			LOG_INF("_too much i2c data for fast siwtch %d\n",
-				_size_to_write + _length);
-		}
-		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_seamless_switch_group2_start,
-			sizeof(addr_data_pair_seamless_switch_group2_start));
-		_size_to_write += _length;
-
-	}
 	LOG_INF("%s %d, %d, %d, %d, %d sizeof(_i2c_data) %d\n", __func__,
 		scenario_id, shutter, gain, shutter_2ndframe, gain_2ndframe, sizeof(_i2c_data));
 	control(ctx, scenario_id, NULL, NULL);
@@ -1657,39 +1624,6 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 		set_shutter(ctx, shutter_2ndframe);
 	if (gain_2ndframe != 0)
 		set_gain(ctx, gain_2ndframe);
-
-	if(scenario_id ==SENSOR_SCENARIO_ID_NORMAL_PREVIEW)
-	{
-	    _length = sizeof(addr_data_pair_seamless_switch_group1_end) / sizeof(kal_uint16);
-		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
-			__func__, _is_seamless, _size_to_write);
-
-		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			LOG_INF("_too much i2c data for fast siwtch %d\n",
-				_size_to_write + _length);
-		}
-		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_seamless_switch_group1_end,
-			sizeof(addr_data_pair_seamless_switch_group1_end));
-		_size_to_write += _length;
-	}
-
-	if(scenario_id ==SENSOR_SCENARIO_ID_CUSTOM4)
-	{
-		  _length = sizeof(addr_data_pair_seamless_switch_group2_end) / sizeof(kal_uint16);
-		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
-			__func__, _is_seamless, _size_to_write);
-
-		if (_size_to_write + _length > _I2C_BUF_SIZE) {
-			LOG_INF("_too much i2c data for fast siwtch %d\n",
-				_size_to_write + _length);
-		}
-		memcpy((void *) (_i2c_data + _size_to_write),
-			addr_data_pair_seamless_switch_group2_end,
-			sizeof(addr_data_pair_seamless_switch_group2_end));
-		_size_to_write += _length;
-
-	}
 	LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
 #if SEAMLESS_NO_USE
@@ -1715,45 +1649,6 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 	return ERROR_NONE;
 }
 
-
-static void set_multi_shutter_frame_length(struct subdrv_ctx *ctx,
-				kal_uint32 *shutters, kal_uint32 shutter_cnt,
-				kal_uint32 frame_length)
-{
-	if (shutter_cnt == 1) {
-		ctx->shutter = shutters[0];
-
-		/* if shutter bigger than frame_length, extend frame length first */
-		if (shutters[0] > ctx->min_frame_length - imgsensor_info.margin)
-			ctx->frame_length = shutters[0] + imgsensor_info.margin;
-		else
-			ctx->frame_length = ctx->min_frame_length;
-
-		if (frame_length > ctx->frame_length)
-			ctx->frame_length = frame_length;
-		if (ctx->frame_length > imgsensor_info.max_frame_length)
-			ctx->frame_length = imgsensor_info.max_frame_length;
-
-
-		shutters[0] = (shutters[0] < imgsensor_info.min_shutter)
-			? imgsensor_info.min_shutter
-			: shutters[0];
-
-		shutters[0] = (shutters[0] > (imgsensor_info.max_frame_length
-				      - imgsensor_info.margin))
-			? (imgsensor_info.max_frame_length - imgsensor_info.margin)
-			: shutters[0];
-		/* Update Shutter */
-		write_cmos_sensor_8(ctx, 0x3840, ctx->frame_length >> 16);
-		write_cmos_sensor_8(ctx, 0x380e, ctx->frame_length >> 8);
-		write_cmos_sensor_8(ctx, 0x380f, ctx->frame_length & 0xFF);
-		write_cmos_sensor_8(ctx, 0x3500, (shutters[0] >> 16) & 0xFF);
-		write_cmos_sensor_8(ctx, 0x3501, (shutters[0] >> 8) & 0xFF);
-		write_cmos_sensor_8(ctx, 0x3502, shutters[0] & 0xFF);
-		LOG_INF_N("Exit! shutters =%d, framelength =%d \n",shutters[0],ctx->frame_length);
-	}
-}
-
 static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feature_id,
 			UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -1774,7 +1669,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 #if FPT_PDAF_SUPPORT
 	struct SET_PD_BLOCK_INFO_T *PDAFinfo;
 #endif
-	LOG_INF_N("liuzy====feature_id = %d\n", feature_id);
+	//pr_debug("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_OUTPUT_FORMAT_BY_SCENARIO:
 		switch (*feature_data) {
@@ -1796,11 +1691,11 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	case SENSOR_FEATURE_GET_ANA_GAIN_TABLE:
 	if ((void *)(uintptr_t) (*(feature_data + 1)) == NULL) {
 		*(feature_data + 0) =
-			sizeof(mot_aion_ov50e_ana_gain_table);
+			sizeof(mot_aion_ov50a_ana_gain_table);
 	} else {
 		memcpy((void *)(uintptr_t) (*(feature_data + 1)),
-		(void *)mot_aion_ov50e_ana_gain_table,
-		sizeof(mot_aion_ov50e_ana_gain_table));
+		(void *)mot_aion_ov50a_ana_gain_table,
+		sizeof(mot_aion_ov50a_ana_gain_table));
 	}
 		break;
 	case SENSOR_FEATURE_GET_SEAMLESS_SCENARIOS:
@@ -1835,18 +1730,8 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			seamless_switch(ctx, (*feature_data), 0, 0, 0, 0);
 		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
-        	switch (*feature_data) {
-        		case SENSOR_SCENARIO_ID_CUSTOM1:
-        		case SENSOR_SCENARIO_ID_CUSTOM3:
-        		case SENSOR_SCENARIO_ID_CUSTOM4:
-				*(feature_data + 1) = imgsensor_info.min_gain;
-				*(feature_data + 2) = 63.75 * BASEGAIN;
-				break;
-			default:
-            			*(feature_data + 1) = imgsensor_info.min_gain;
-            			*(feature_data + 2) = imgsensor_info.max_gain;
-				break;
-		}
+		*(feature_data + 1) = imgsensor_info.min_gain;
+		*(feature_data + 2) = imgsensor_info.max_gain;
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
@@ -1854,22 +1739,21 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		*(feature_data + 2) = imgsensor_info.gain_type;
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
-		*(feature_data + 1) = imgsensor_info.min_shutter;
+	*(feature_data + 1) = imgsensor_info.min_shutter;
 		switch (*feature_data) {
-			case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-			case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
-			case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
-			case SENSOR_SCENARIO_ID_SLIM_VIDEO:
-			case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
-			case SENSOR_SCENARIO_ID_CUSTOM2:
-			case SENSOR_SCENARIO_ID_CUSTOM3:
-				*(feature_data + 2) = 2;
-			case SENSOR_SCENARIO_ID_CUSTOM1:
-			case SENSOR_SCENARIO_ID_CUSTOM4:
-				*(feature_data + 2) = 4;
+		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
+		case SENSOR_SCENARIO_ID_CUSTOM1:
+		case SENSOR_SCENARIO_ID_CUSTOM2:
+		case SENSOR_SCENARIO_ID_CUSTOM3:
+		case SENSOR_SCENARIO_ID_CUSTOM4:
+			*(feature_data + 2) = 2;
 			break;
 		default:
-				*(feature_data + 2) = 2;
+			*(feature_data + 2) = 1;
 			break;
 		}
 		break;
@@ -1913,10 +1797,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 				= imgsensor_info.pre.pclk;
 			break;
 		}
-		break;
-	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
-		*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
-			= 7248000;
 		break;
 	case SENSOR_FEATURE_GET_PERIOD_BY_SCENARIO:
 		switch (*feature_data) {
@@ -2159,7 +2039,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		case SENSOR_SCENARIO_ID_CUSTOM2:
-		case SENSOR_SCENARIO_ID_CUSTOM4:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		default:
@@ -2232,23 +2111,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		break;
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
 		set_frame_length(ctx, (UINT32) (*feature_data));
-		break;
-	case SENSOR_FEATURE_SET_MULTI_SHUTTER_FRAME_TIME:
-		set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),
-					(UINT32) (*(feature_data + 1)),
-					(UINT32) (*(feature_data + 2)));
-	case SENSOR_FEATURE_GET_MAX_EXP_LINE:
-		*(feature_data + 2) =
-			imgsensor_info.max_frame_length - imgsensor_info.margin;
-		break;
-	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
-		/*
-		 * 1, if driver support new sw frame sync
-		 * set_shutter_frame_length(ctx) support third para auto_extend_en
-		 */
-		*(feature_data + 1) = 1;
-		/* margin info by scenario */
-		*(feature_data + 2) = imgsensor_info.margin;
 		break;
 	default:
 	break;
@@ -2341,15 +2203,6 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-      {
-		.bus.csi2 = {
-			.channel = 1,
-			.data_type = 0x2b,
-			.hsize = 0x800,
-			.vsize = 0x300,
-			.user_data_desc = VC_PDAF_STATS,
-		},
-	},
 };
 static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 	{
@@ -2372,12 +2225,12 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-      {
+	{
 		.bus.csi2 = {
-			.channel = 1,
+			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x780,
-			.vsize = 0x21c,
+			.hsize = 0x0780,
+			.vsize = 0x0438,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
@@ -2483,7 +2336,7 @@ static const struct subdrv_ctx defctx = {
 	.exposure_max = 0xffffe9 - 31,
 	.exposure_min = 4,
 	.exposure_step = 1,
-	.frame_time_delay_frame = 2,
+	.frame_time_delay_frame = 3,
 	.margin = 31,
 	.max_frame_length = 0xffffe9,
 	.is_streaming = KAL_FALSE,
@@ -2546,13 +2399,13 @@ static struct subdrv_pw_seq_entry pw_seq[] = {
 			{HW_ID_MCLK_DRIVING_CURRENT, 8, 0},
 			{HW_ID_DOVDD, 1800000, 0},
 			{HW_ID_AVDD, 2800000, 0},
-			{HW_ID_DVDD, 1100000, 1},
+			{HW_ID_DVDD, 1200000, 5},
 			{HW_ID_RST, 1, 5},
 };
 
-const struct subdrv_entry mot_aion_ov50e_mipi_raw_entry = {
-	.name = "mot_aion_ov50e_mipi_raw",
-	.id = MOT_AION_OV50E_SENSOR_ID,
+const struct subdrv_entry mot_aion_ov50a_mipi_raw_entry = {
+	.name = "mot_aion_ov50a_mipi_raw",
+	.id = MOT_AION_OV50A_SENSOR_ID,
 	.pw_seq = pw_seq,
 	.pw_seq_cnt = ARRAY_SIZE(pw_seq),
 	.ops = &ops,
