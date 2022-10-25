@@ -664,6 +664,17 @@ int switch_sim_mode(int id, char *buf,
 	unsigned int len); /* Export by SIM switch */
 unsigned int get_sim_switch_type(void); /* Export by SIM switch */
 
+#ifdef CONFIG_MOTO_CCCI_SEC_SUPPORT
+/*Should config the data size according to the cid actual size*/
+#define CCCI_CID_DATA_SIZE (3*1024)
+
+struct ccci_security_data_t {
+   unsigned char cid_data[CCCI_CID_DATA_SIZE];
+   unsigned int cid_size;
+};
+struct ccci_security_data_t *ccci_rpc_get_security_data(unsigned int *len);
+#endif
+
 #ifdef CONFIG_MTK_ECCCI_C2K
 /* for c2k usb bypass */
 int ccci_c2k_rawbulk_intercept(int ch_id, unsigned int interception);
