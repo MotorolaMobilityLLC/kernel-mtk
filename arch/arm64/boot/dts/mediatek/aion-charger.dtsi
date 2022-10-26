@@ -84,6 +84,10 @@
 	sc_input_current = <3000000>;
 };
 
+&mtk_ctd {
+	bootmode = <&chosen>;
+};
+
 &charger {
 	battery_cv = <4480000>;
 	max_charger_voltage = <14500000>;
@@ -92,11 +96,14 @@
 	ac_charger_input_current = <1500000>;
 	charging_host_charger_current = <1500000>;
 	/*pe5 && pdc && pe2 && wlc*/
-	fast_charging_indicator = <0x36>;
+	//fast_charging_indicator = <0x36>;
 	/*swchg + 1CP*/
-	charger_configuration= <3>;
+	//charger_configuration= <3>;
+        charger_configuration= <0>;
+	fast_charging_indicator = <0x6>;
+
 	wireless_factory_max_current = <3000000>;
-	wireless_factory_max_input_current = <1150000>;
+	wireless_factory_max_input_current = <600000>;
 	enable_dynamic_mivr;
 	/*mmi config*/
 	mmi,iterm-ma = <250>;
