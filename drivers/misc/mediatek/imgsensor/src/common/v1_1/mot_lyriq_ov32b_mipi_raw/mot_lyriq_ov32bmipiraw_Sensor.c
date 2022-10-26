@@ -26,7 +26,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include "mot_lyriq_ov32bmipiraw_Sensor.h"
-
+#include "mot_lyriq_ov32b_eeprom.h"
 #define PFX "[imgsensor] mot_lyriq_ov32bmipiraw"
 
 static int mot_sensor_debug = 0;
@@ -734,8 +734,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				imgsensor_info.sensor_id == *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
-//				imgread_cam_cal_data(*sensor_id, lyriq_ov32b_dump_file, &lyriq_ov32b_cal_info);
-//				get_ov_cross_talk_data(0xA2, 0x07E1, OV_CROSS_TALK_GROUP_SIZE, &ov_cross_talk_data);
+			LYRIQ_OV32B_read_data_from_eeprom(LYRIQ_OV32B_EEPROM_SLAVE_ADDR, 0x0000, LYRIQ_OV32B_EEPROM_SIZE);
+			LYRIQ_OV32B_eeprom_dump_bin(EEPROM_DATA_PATH, LYRIQ_OV32B_EEPROM_SIZE, (void *)LYRIQ_OV32B_eeprom);
+			LYRIQ_OV32B_eeprom_format_calibration_data((void *)LYRIQ_OV32B_eeprom);
 				return ERROR_NONE;
 			}
 			retry--;
@@ -1089,15 +1090,15 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0; /* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
-#if 0
-	sensor_info->calibration_status.mnf   = lyriq_ov32b_cal_info.mnf_status;
-	sensor_info->calibration_status.af    = lyriq_ov32b_cal_info.af_status;
-	sensor_info->calibration_status.awb   = lyriq_ov32b_cal_info.awb_status;
-	sensor_info->calibration_status.lsc   = lyriq_ov32b_cal_info.lsc_status;
-	sensor_info->calibration_status.pdaf  = lyriq_ov32b_cal_info.pdaf_status;
-	sensor_info->calibration_status.dual  = lyriq_ov32b_cal_info.dual_status;
+#if 1
+	sensor_info->calibration_status.mnf   = mnf_status;
+	sensor_info->calibration_status.af    = af_status;
+	sensor_info->calibration_status.awb   = awb_status;
+	sensor_info->calibration_status.lsc   = lsc_status;
+	sensor_info->calibration_status.pdaf  = pdaf_status;
+	sensor_info->calibration_status.dual  = dual_status;
 
-	memcpy(&sensor_info->mnf_calibration, &lyriq_ov32b_cal_info.mnf_cal_data, sizeof(mot_calibration_mnf_t));
+	LYRIQ_OV32B_eeprom_get_mnf_data((void *) LYRIQ_OV32B_eeprom, &sensor_info->mnf_calibration);
 #endif
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
