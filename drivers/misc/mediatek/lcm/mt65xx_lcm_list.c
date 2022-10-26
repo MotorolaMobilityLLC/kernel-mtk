@@ -1296,6 +1296,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
         &mipi_mot_vid_tm_ili7807s_hdp_653_lcm_drv,
 #endif
 
+#if defined(DSI_PANEL_MOT_MIPI_VID_COST_NT36672C_653_HDP)
+        &mipi_mot_vid_cost_nt36672c_hdp_653_lcm_drv,
+#endif
+
 #if defined(DSI_PANEL_MOT_MIPI_VID_TM_ILI7807S_678_HDP)
         &mipi_mot_vid_tm_ili7807s_hdp_678_lcm_drv,
 #endif
