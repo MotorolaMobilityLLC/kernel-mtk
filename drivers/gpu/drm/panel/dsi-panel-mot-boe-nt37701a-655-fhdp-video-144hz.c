@@ -147,23 +147,36 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 static void lcm_panel_init(struct lcm *ctx)
 {
     lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00);
-    lcm_dcs_write_seq_static(ctx, 0xC0, 0x6D, 0xB3, 0x20);
+    lcm_dcs_write_seq_static(ctx, 0xB5, 0x94, 0x42);
+    lcm_dcs_write_seq_static(ctx, 0x6F, 0x05);
+    lcm_dcs_write_seq_static(ctx, 0xB5, 0x7F, 0x00, 0x29, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0x6F, 0x0B);
+    lcm_dcs_write_seq_static(ctx, 0x00, 0x2c, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0x6F, 0x10);
+    lcm_dcs_write_seq_static(ctx, 0xB5, 0x29, 0x29, 0x29, 0x29, 0x29);
+    lcm_dcs_write_seq_static(ctx, 0x6F, 0x16);
+    lcm_dcs_write_seq_static(ctx, 0x0b, 0x19, 0x00, 0x00, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0x6F, 0x1b);
+    lcm_dcs_write_seq_static(ctx, 0x0b, 0x1a, 0x00, 0x00, 0x00);
+
+    lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x08);
+    lcm_dcs_write_seq_static(ctx, 0xE1, 0x00, 0x73, 0x73, 0x73, 0x00);
     lcm_dcs_write_seq_static(ctx, 0xFF, 0xAA, 0x55, 0xA5, 0x80);
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x1D);
     lcm_dcs_write_seq_static(ctx, 0xF2, 0x05);
     lcm_dcs_write_seq_static(ctx, 0xFF, 0xAA, 0x55, 0xA5, 0x81);
-	lcm_dcs_write_seq_static(ctx, 0xFF, 0xAA, 0x55, 0xA5, 0x00);
+
     lcm_dcs_write_seq_static(ctx, 0x35);
     lcm_dcs_write_seq_static(ctx, 0x53, 0x20);
     lcm_dcs_write_seq_static(ctx, 0x51, 0x0D, 0xBA);
     lcm_dcs_write_seq_static(ctx, 0x2A, 0x00, 0x00, 0x04, 0x37);
     lcm_dcs_write_seq_static(ctx, 0x2B, 0x00, 0x00, 0x09, 0x5F);
 
-	lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0xAB);
+    lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0xAB);
 //	lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x00, 0x40);
 
     lcm_dcs_write_seq_static(ctx, 0x82, 0xB0);
-    lcm_dcs_write_seq_static(ctx, 0x88, 0x01, 0x02, 0x1C, 0x08, 0x74);
+    lcm_dcs_write_seq_static(ctx, 0x88, 0x01, 0x02, 0x1C, 0x08, 0x78);
 #ifdef DSC_DISABLE
 	lcm_dcs_write_seq_static(ctx, 0x03, 0x00);
     lcm_dcs_write_seq_static(ctx, 0x90, 0x02);
@@ -188,6 +201,9 @@ static void lcm_panel_init(struct lcm *ctx)
     msleep(120);
     /* Display On */
     lcm_dcs_write_seq_static(ctx, 0x29);
+
+    lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x08);
+    lcm_dcs_write_seq_static(ctx, 0xE1, 0xE1);
 
 	pr_info("%s-\n", __func__);
 }
@@ -397,7 +413,7 @@ static struct mtk_panel_params ext_params_60hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 1,
+	.lcm_index = 0,
 #ifndef DSC_DISABLE
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -470,7 +486,7 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 1,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -542,7 +558,7 @@ static struct mtk_panel_params ext_params_120hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 1,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -614,7 +630,7 @@ static struct mtk_panel_params ext_params_144hz = {
 	},
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
-	.lcm_index = 1,
+	.lcm_index = 0,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -813,7 +829,7 @@ static struct mtk_panel_para_table panel_lhbm_on[] = {
 	{3, {0x87, 0x1F, 0xFF}},
 	{2, {0x88, 0x01}},
 	{2, {0x6F, 0x01}},
-	{5, {0x88, 0x02, 0x1C, 0x08, 0x74}},
+	{5, {0x88, 0x01, 0x02, 0x1C, 0x08, 0x74}},
 	{2, {0x85, 0x01}},
 };
 
