@@ -479,18 +479,24 @@
                 };
 	};
 	panel2@0 {
-		compatible = "truly,ft8756,vdo";
-		reg = <1>;
-		pm-enable-gpios = <&pio 41 0>;
-		reset-gpios = <&pio 42 0>;
-		bias-gpios = <&pio 28 0>,
-			<&pio 29 0>;
-		pinctrl-names = "default";
-		port {
-			panel_in2: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
+                /delete-property/ compatible;
+                /delete-property/ pm-enable-gpios;
+                /delete-property/ reset-gpios;
+
+                compatible = "tm,vtdr6115,vdo,144hz";
+                reg = <1>;
+                pm-enable-gpios = <&pio 84 0>,
+                          <&pio 81 0>,
+                          <&pio 80 0>,
+                          <&pio 82 0>;
+                reset-gpios = <&pio 42 0>;
+                pinctrl-names = "default";
+                lhbm-enable;
+                port {
+                        panel_in2: endpoint {
+                                remote-endpoint = <&dsi_out>;
+                        };
+                };
 	};
 	ports {
 		port {
