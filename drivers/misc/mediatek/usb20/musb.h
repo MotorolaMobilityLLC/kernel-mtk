@@ -93,6 +93,7 @@ struct musb_hdrc_config {
 	u8 ram_bits;		/* ram address size */
 
 	struct musb_hdrc_eps_bits *eps_bits __deprecated;
+	unsigned need_otg_softconn:1;  /* need softconn power bit in otg host mode*/
 };
 
 struct musb_hdrc_platform_data {
