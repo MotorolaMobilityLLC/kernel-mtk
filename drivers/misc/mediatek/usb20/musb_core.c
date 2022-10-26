@@ -1296,7 +1296,8 @@ void musb_start(struct musb *musb)
 
 		if (musb_speed)
 			val |= MUSB_POWER_HSENAB;
-		if (musb->softconnect) {
+		if (musb->softconnect ||
+			(musb->config->need_otg_softconn && musb->is_host)) {
 			DBG(0, "add softconn\n");
 			val |= MUSB_POWER_SOFTCONN;
 		}
@@ -4721,6 +4722,8 @@ static int musb_probe(struct platform_device *pdev)
 
 	DBG(0, "get dr_mode: %d\n", pdata->dr_mode);
 
+	config->need_otg_softconn = of_property_read_bool(np, "need_otg_softconn");
+	DBG(0, "get need_otg_softconn flag: %d\n", config->need_otg_softconn);
 #if IS_ENABLED(CONFIG_MTK_MUSB_DUAL_ROLE)
 	/* assign usb-role-sw */
 	otg_sx = &glue->otg_sx;
