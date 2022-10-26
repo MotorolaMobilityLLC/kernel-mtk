@@ -4,7 +4,7 @@
     mediatek,platform = <&afe>;
     mediatek,snd_audio_dsp = <&snd_audio_dsp>;
     mtk_spk_i2s_out = <3>;
-    mtk_spk_i2s_in = <0>;
+    mtk_spk_i2s_in = <9>;
     /* mtk_spk_i2s_mck = <3>; */
     mediatek,speaker-codec {
         sound-dai = <&aw882xx_smartpa_0 &aw882xx_smartpa_1>;
