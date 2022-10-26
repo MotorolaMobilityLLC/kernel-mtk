@@ -134,6 +134,10 @@ static void fsa4480_update_reg_defaults(struct regmap *regmap)
 	u8 i;
 	int ret;
 
+	//MTK plaform use battery as fsa4480 ldo, need sw reset
+	regmap_write(regmap, FSA4480_RESET,0x01);
+	msleep(5);
+
 	for (i = 0; i < ARRAY_SIZE(fsa_reg_i2c_defaults); i++)
 		ret = regmap_write(regmap, fsa_reg_i2c_defaults[i].reg,
 				   fsa_reg_i2c_defaults[i].val);
