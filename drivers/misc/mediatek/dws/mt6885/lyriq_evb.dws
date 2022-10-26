@@ -2470,7 +2470,7 @@
             </device11>
             <device12>
                 <varName>CAMERA_SUB_EEPROM</varName>
-                <channel>I2C_CHANNEL_4</channel>
+                <channel>I2C_CHANNEL_8</channel>
                 <address>0x51</address>
             </device12>
             <device14>
