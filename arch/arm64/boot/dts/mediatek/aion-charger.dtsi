@@ -202,6 +202,11 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&bq25960_int_default>;
 	};
+
+	NFG1000@55 {
+		compatible = "HXZY,nfg1000";
+		reg = <0x55>;
+	};
 };
 
 &pd_adapter{
