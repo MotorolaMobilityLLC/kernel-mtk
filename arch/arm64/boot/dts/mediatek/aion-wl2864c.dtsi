@@ -7,7 +7,7 @@
 		compatible = "wl2864c";
 		reg = <0x29>;
 		enable_gpio = <&pio 103 0x0>;
-		semi,cs-gpios = <&pio 160 0x0>;
+		semi,cs-gpios = <&pio 168 0x0>;
 		regulator_nb = "ldo1", "ldo2",
 				"ldo3", "ldo4",
 				"ldo5", "ldo6",
