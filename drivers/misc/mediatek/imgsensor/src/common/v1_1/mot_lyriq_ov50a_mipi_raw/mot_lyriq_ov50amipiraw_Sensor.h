@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     mot_lyriq_ov50emipi_Sensor.h
+ *     mot_lyriq_ov50amipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,8 +26,8 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _MOT_LYRIQ_OV50E_SENSOR_H
-#define _MOT_LYRIQ_OV50E_SENSOR_H
+#ifndef _MOT_LYRIQ_OV50A_SENSOR_H
+#define _MOT_LYRIQ_OV50A_SENSOR_H
 #include "imgsensor_sensor.h"
 
 enum IMGSENSOR_MODE {
@@ -175,7 +175,7 @@ typedef enum {
 	LIMIT_FAILURE
 } calibration_status_t;
 
-struct LYRIQ_OV50E_eeprom_t{
+struct LYRIQ_OV50A_eeprom_t{
 	uint8_t eeprom_table_version[1];
 	uint8_t cal_hw_ver[1];
 	uint8_t cal_sw_ver[1];

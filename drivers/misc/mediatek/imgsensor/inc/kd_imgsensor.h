@@ -164,7 +164,7 @@
 #define MOT_AUSTIN_GC02M1_SENSOR_ID      0x02E0
 //add austin sensor id end
 //add london sensor id start
-#define MOT_LYRIQ_OV50E_SENSOR_ID      0x565045
+#define MOT_LYRIQ_OV50A_SENSOR_ID      0x565045
 #define MOT_LYRIQ_OV32B_SENSOR_ID      0x3242
 #define MOT_LYRIQ_HI1336_SENSOR_ID      0x1337
 //add london sensor id start
@@ -709,7 +709,7 @@
 #define SENSOR_DRVNAME_MOT_AUSTIN_GC02M1_MIPI_RAW   "mot_austin_gc02m1_mipi_raw"
 //add austin sensor drvname end
 //add london sensor drvname begin
-#define SENSOR_DRVNAME_MOT_LYRIQ_OV50E_MIPI_RAW   "mot_lyriq_ov50e_mipi_raw"
+#define SENSOR_DRVNAME_MOT_LYRIQ_OV50A_MIPI_RAW   "mot_lyriq_ov50a_mipi_raw"
 #define SENSOR_DRVNAME_MOT_LYRIQ_OV32B_MIPI_RAW   "mot_lyriq_ov32b_mipi_raw"
 #define SENSOR_DRVNAME_MOT_LYRIQ_HI1336_MIPI_RAW   "mot_lyriq_hi1336_mipi_raw"
 //add london sensor drvname end

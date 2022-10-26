@@ -6,7 +6,7 @@
  *
  * Filename:
  * ---------
- *	 mot_lyriq_ov50e_Sensor_setting.h
+ *	 mot_lyriq_ov50a_Sensor_setting.h
  *
  * Project:
  * --------
@@ -15,11 +15,11 @@
  *	 CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _MOT_LYRIQ_OV50E_SENSOR_SETTING_H
-#define _MOT_LYRIQ_OV50E_SENSOR_SETTING_H
+#ifndef _MOT_LYRIQ_OV50A_SENSOR_SETTING_H
+#define _MOT_LYRIQ_OV50A_SENSOR_SETTING_H
 
 
-kal_uint16 addr_data_pair_init_mot_lyriq_ov50e[] = {
+kal_uint16 addr_data_pair_init_mot_lyriq_ov50a[] = {
 	0x0103, 0x01,
 	0x3519, 0x00,
 	0x351a, 0xd9,
@@ -3563,7 +3563,7 @@ kal_uint16 addr_data_pair_init_mot_lyriq_ov50e[] = {
 };
 
 /* Binning 4096*3072@30fps*/
-kal_uint16 addr_data_pair_preview_mot_lyriq_ov50e[] = {
+kal_uint16 addr_data_pair_preview_mot_lyriq_ov50a[] = {
 	0x0100, 0x00,
 	0x0304, 0x03,
 	0x0305, 0x6b,
@@ -4268,7 +4268,7 @@ kal_uint16 addr_data_pair_preview_mot_lyriq_ov50e[] = {
 };
 
 /* full 8192*6144@20fps*/
-kal_uint16 addr_data_pair_fullsize_ov50e[] = {
+kal_uint16 addr_data_pair_fullsize_ov50a[] = {
 	0x0100, 0x00,
 	0x0304, 0x03,
 	0x0305, 0x6b,
@@ -4966,7 +4966,7 @@ kal_uint16 addr_data_pair_fullsize_ov50e[] = {
 	0x0100, 0x01,
 };
 
-kal_uint16 addr_data_pair_60fps_ov50e[] = {
+kal_uint16 addr_data_pair_60fps_ov50a[] = {
 	0x3504, 0x4d,
 	0x3506, 0x13,
 	0x350e, 0x00,
@@ -5222,7 +5222,7 @@ kal_uint16 addr_data_pair_60fps_ov50e[] = {
 	0x4680, 0x11,
 	0x4684, 0x2b,
 };
-kal_uint16 addr_data_pair_120fpsov50e[] = {
+kal_uint16 addr_data_pair_120fpsov50a[] = {
 	0x3504, 0x4c,
 	0x3506, 0x78,
 	0x350e, 0x1e,
