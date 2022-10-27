@@ -26,5 +26,16 @@
 	};
 };
 
+/* TOUCH start */
+
+&spi3 {
+
+	touch@0{
+
+		chipone,cs-gpio = <&pio 74 0x0>;
+		chipone,ldo_en_flag = <1>;
+	};
+};
+/* TOUCH end */
 #include <devonn_pvt/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
