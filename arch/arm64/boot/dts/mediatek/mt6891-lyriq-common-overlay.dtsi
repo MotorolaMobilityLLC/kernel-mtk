@@ -12,7 +12,7 @@
 #include "lyriq-charger-thermal.dtsi"
 #include "mediatek/lyriq-wl2864c.dtsi"
 #include "mediatek/mt6891-lyriq-camera-sensor-overlay.dtsi"
-
+#include "mt6891-lyriq-fps-overlay.dtsi"
 &reserved_memory {
 };
 
