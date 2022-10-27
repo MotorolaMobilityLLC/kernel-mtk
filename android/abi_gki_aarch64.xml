@@ -405,6 +405,7 @@
       <elf-symbol name='__traceiter_android_rvh_ufs_reprogram_all_keys' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa828dca0'/>
       <elf-symbol name='__traceiter_android_rvh_update_cpu_capacity' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc7020ac9'/>
       <elf-symbol name='__traceiter_android_rvh_update_misfit_status' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x535acfde'/>
+      <elf-symbol name='__traceiter_android_rvh_update_thermal_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9b6452c3'/>
       <elf-symbol name='__traceiter_android_rvh_util_est_update' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbfdf4bf4'/>
       <elf-symbol name='__traceiter_android_rvh_wake_up_new_task' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x784c46a3'/>
       <elf-symbol name='__traceiter_android_vh_account_task_time' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x946dd74c'/>
@@ -466,6 +467,7 @@
       <elf-symbol name='__traceiter_android_vh_cpufreq_resolve_freq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce27f08e'/>
       <elf-symbol name='__traceiter_android_vh_cpufreq_target' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8e3247eb'/>
       <elf-symbol name='__traceiter_android_vh_del_page_from_lrulist' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe6848ab7'/>
+      <elf-symbol name='__traceiter_android_vh_disable_thermal_cooling_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa09f4ef0'/>
       <elf-symbol name='__traceiter_android_vh_dma_buf_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc039c759'/>
       <elf-symbol name='__traceiter_android_vh_dmabuf_heap_flags_validation' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe05cf986'/>
       <elf-symbol name='__traceiter_android_vh_do_futex' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdee6d8f'/>
@@ -50562,7 +50564,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -125974,6 +125976,11 @@
         <parameter type-id='d8e6b335' name='need_update' filepath='include/trace/hooks/sched.h' line='229' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_rvh_update_thermal_stats' mangled-name='__traceiter_android_rvh_update_thermal_stats' filepath='include/trace/hooks/topology.h' line='27' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_update_thermal_stats'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/topology.h' line='27' column='1'/>
+        <parameter type-id='95e97e5e' name='cpu' filepath='include/trace/hooks/topology.h' line='27' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_rvh_util_est_update' mangled-name='__traceiter_android_rvh_util_est_update' filepath='include/trace/hooks/sched.h' line='382' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_util_est_update'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/sched.h' line='382' column='1'/>
         <parameter type-id='a6892387' name='cfs_rq' filepath='include/trace/hooks/sched.h' line='382' column='1'/>
@@ -126397,6 +126404,12 @@
         <parameter type-id='02f11ed4' name='page' filepath='include/trace/hooks/mm.h' line='115' column='1'/>
         <parameter type-id='b50a4934' name='compound' filepath='include/trace/hooks/mm.h' line='115' column='1'/>
         <parameter type-id='04110eaa' name='lru' filepath='include/trace/hooks/mm.h' line='115' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='__traceiter_android_vh_disable_thermal_cooling_stats' mangled-name='__traceiter_android_vh_disable_thermal_cooling_stats' filepath='include/trace/hooks/thermal.h' line='49' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_disable_thermal_cooling_stats'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/thermal.h' line='49' column='1'/>
+        <parameter type-id='2feec21f' name='cdev' filepath='include/trace/hooks/thermal.h' line='49' column='1'/>
+        <parameter type-id='7292109c' name='disable_stats' filepath='include/trace/hooks/thermal.h' line='49' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='__traceiter_android_vh_dma_buf_release' mangled-name='__traceiter_android_vh_dma_buf_release' filepath='include/trace/hooks/dmabuf.h' line='20' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_dma_buf_release'>
