@@ -1498,6 +1498,112 @@ done:
 	DDPMSG("%s end -\n", __func__);
 }
 
+int mtk_read_ddic_cellid(unsigned char *cellid, int reg, int reg_offset, int len)
+{
+	struct mtk_ddic_dsi_msg *cmd_msg =
+		vmalloc(sizeof(struct mtk_ddic_dsi_msg));
+	u8 tx[10] = {0};
+	int i,j,k;
+	unsigned int ret_dlen = 0;
+	int ret;
+	int dsi_read_max = 8;	//MTK platform only support 10 byte each read.
+	int dsi_read_pkg;
+
+	if (!cmd_msg) {
+		DDPPR_ERR("cmd msg is NULL\n");
+		return ret_dlen;
+	}
+
+	memset(cmd_msg, 0, sizeof(struct mtk_ddic_dsi_msg));
+
+	cmd_msg->rx_buf[0] = kmalloc(32 * sizeof(unsigned char),
+		GFP_ATOMIC);
+	if (!cmd_msg->rx_buf[0]) {
+		DDPPR_ERR("cmd msg rx_buf is NULL\n");
+		goto  done;
+	}
+
+
+	dsi_read_pkg = len/dsi_read_max;
+	if(len%dsi_read_max)
+		dsi_read_pkg += 1;
+
+	for(k = 0; k < dsi_read_pkg; k++) {
+		if(k) {
+			cmd_msg->channel = 0;
+			cmd_msg->flags |= MIPI_DSI_MSG_USE_LPM;
+			cmd_msg->tx_cmd_num = 1;
+			cmd_msg->type[0] = 0x15;
+			tx[0] = reg_offset;
+			tx[1] = dsi_read_max*k;
+			cmd_msg->tx_buf[0] = tx;
+			cmd_msg->tx_len[0] = 2;
+
+			DDPMSG("send lcm tx_cmd_num:%d\n", (int)cmd_msg->tx_cmd_num);
+			for (i = 0; i < (int)cmd_msg->tx_cmd_num; i++) {
+				DDPMSG("send lcm tx_len[%d]=%d\n",
+					i, (int)cmd_msg->tx_len[i]);
+				for (j = 0; j < (int)cmd_msg->tx_len[i]; j++) {
+					DDPMSG(
+						"send lcm type[%d]=0x%x, tx_buf[%d]--byte:%d,val:0x%x\n",
+						i, cmd_msg->type[i], i, j,
+						*(char *)(cmd_msg->tx_buf[i] + j));
+				}
+			}
+
+			ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
+			if (ret != 0) {
+				DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
+				goto  dsi_error;
+			}
+		}
+
+		/* Read 0x0A = 0x1C */
+		cmd_msg->channel = 0;
+		cmd_msg->flags = 0;
+		cmd_msg->tx_cmd_num = 1;
+		cmd_msg->type[0] = 0x06;
+		tx[0] = reg;
+		cmd_msg->tx_buf[0] = tx;
+		cmd_msg->tx_len[0] = 1;
+
+		cmd_msg->rx_cmd_num = 1;
+		if(len > dsi_read_max)
+			cmd_msg->rx_len[0] = dsi_read_max;
+		else
+			cmd_msg->rx_len[0] = len;
+
+
+		ret = mtk_ddic_dsi_read_cmd(cmd_msg);
+		if (ret != 0) {
+			DDPPR_ERR("%s error\n", __func__);
+			goto  dsi_error;
+		}
+
+		for (i = 0; i < cmd_msg->rx_cmd_num; i++) {
+			ret_dlen = cmd_msg->rx_len[i];
+			DDPMSG("read lcm addr:0x%x--dlen:%d--cmd_idx:%d\n",
+				*(char *)(cmd_msg->tx_buf[i]), ret_dlen, i);
+			for (j = 0; j < ret_dlen; j++) {
+				DDPMSG("read lcm addr:0x%x--byte:%d,val:0x%x\n",
+					*(char *)(cmd_msg->tx_buf[i]), j,
+					*(char *)(cmd_msg->rx_buf[i] + j));
+			}
+		}
+
+		memcpy(&cellid[dsi_read_max*k], cmd_msg->rx_buf[0], ret_dlen);
+
+		len -= ret_dlen;
+	}
+
+dsi_error:
+	kfree(cmd_msg->rx_buf[0]);
+done:
+	vfree(cmd_msg);
+
+	return ret_dlen;
+}
+
 int mtk_dprec_mmp_dump_ovl_layer(struct mtk_plane_state *plane_state)
 {
 	if (gCaptureOVLEn) {
