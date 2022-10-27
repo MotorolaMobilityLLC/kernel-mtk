@@ -24,6 +24,7 @@
 		ocp,lcd-bias-enp-gpio = <&pio 183 0>;
 		biasp_en_pin = <183>;
 		biasn_en_pin = <8>;
+		ldo_en_pin = <158>;
 		status = "okay";
 	};
 
