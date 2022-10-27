@@ -1255,6 +1255,15 @@ static int lcm_get_modes(struct drm_panel *panel)
 	panel->connector->display_info.width_mm = 68;
 	panel->connector->display_info.height_mm = 152;
 
+	panel->connector->display_info.panel_ver = 0x01;
+	panel->connector->display_info.panel_id = 0x010b1591;
+	strcpy(panel->connector->display_info.panel_name, "mipi_mot_vid_tianma_vtdr6115_fhd_655");
+	strcpy(panel->connector->display_info.panel_supplier, "tianma-vtdr6115");
+
+	panel->connector->display_info.panel_cellid_reg = 0x5a;
+	panel->connector->display_info.panel_cellid_offset = 0x65;
+	panel->connector->display_info.panel_cellid_len = 23;
+
 	return 1;
 }
 
