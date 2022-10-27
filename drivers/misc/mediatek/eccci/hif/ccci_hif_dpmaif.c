@@ -4398,17 +4398,10 @@ int dpmaif_stop(unsigned char hif_id)
 	/* stop debug mechnism */
 	del_timer(&dpmaif_ctrl->traffic_monitor);
 
-#ifdef MT6297
 	/* CG set */
 	ccci_hif_dpmaif_set_clk(0);
 	/* 3. todo: reset IP */
 	dpmaif_hw_reset(dpmaif_ctrl->md_id);
-#else
-	/* 3. todo: reset IP */
-	dpmaif_hw_reset(dpmaif_ctrl->md_id);
-	/* CG set */
-	ccci_hif_dpmaif_set_clk(0);
-#endif
 
 #ifdef DPMAIF_DEBUG_LOG
 	CCCI_HISTORY_LOG(-1, TAG, "dpmaif:stop end\n");
