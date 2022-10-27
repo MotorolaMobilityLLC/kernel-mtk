@@ -43,7 +43,7 @@
 #define LCM_ID_0			0x01
 #define LCM_ID_1 			0x05
 #define LCM_ID_2	 		0x07
-#define LCM_ID_3 			0x81
+#define LCM_ID_3 			0xA1
 
 static struct LCM_UTIL_FUNCS lcm_util;
 
