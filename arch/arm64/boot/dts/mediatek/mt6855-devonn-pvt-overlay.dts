@@ -37,5 +37,13 @@
 	};
 };
 /* TOUCH end */
+/* DISPLAY start */
+&dsi0 {
+	panel2@0 {
+		panel-vddio-use-ldo = <1>;
+		ldo_en-gpios = <&pio 158 0>;
+	};
+};
+/* DISPLAY END */
 #include <devonn_pvt/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
