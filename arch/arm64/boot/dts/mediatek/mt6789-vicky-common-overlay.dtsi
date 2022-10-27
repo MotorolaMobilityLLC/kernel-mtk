@@ -1296,3 +1296,6 @@
 &mt6358codec {
        audio_if_change = <1>;
 };
+&usb {
+	need_otg_softconn;
+};
