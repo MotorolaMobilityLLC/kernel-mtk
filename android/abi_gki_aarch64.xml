@@ -1078,6 +1078,7 @@
       <elf-symbol name='blkcg_deactivate_policy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8173ed0e'/>
       <elf-symbol name='blkcg_policy_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x73b3f7c6'/>
       <elf-symbol name='blkcg_policy_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7fff7cc4'/>
+      <elf-symbol name='blkdev_compat_ptr_ioctl' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8520bda'/>
       <elf-symbol name='blkdev_get_by_dev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2f9a403c'/>
       <elf-symbol name='blkdev_get_by_path' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3fcde105'/>
       <elf-symbol name='blkdev_issue_discard' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb6b23d97'/>
@@ -3595,6 +3596,7 @@
       <elf-symbol name='kthread_stop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb8c2d95d'/>
       <elf-symbol name='kthread_unpark' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4066d0b7'/>
       <elf-symbol name='kthread_worker_fn' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x955b0e2e'/>
+      <elf-symbol name='ktime_add_safe' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3952887'/>
       <elf-symbol name='ktime_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb43f9365'/>
       <elf-symbol name='ktime_get_boot_fast_ns' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6ef6b54f'/>
       <elf-symbol name='ktime_get_coarse_real_ts64' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x484f6edf'/>
@@ -106604,6 +106606,7 @@
           <var-decl name='dccp_timeout' type-id='67c1c82c' visibility='default' filepath='include/net/netns/conntrack.h' line='56' column='1'/>
         </data-member>
       </class-decl>
+      <qualified-type-def type-id='fbc017ef' const='yes' id='ddb8523f'/>
       <class-decl name='notification_limit' size-in-bits='96' is-struct='yes' visibility='default' filepath='include/linux/regulator/machine.h' line='88' column='1' id='ddc1e32e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='prot' type-id='95e97e5e' visibility='default' filepath='include/linux/regulator/machine.h' line='89' column='1'/>
@@ -132235,6 +132238,13 @@
         <return type-id='48b5725f'/>
       </function-decl>
       <var-decl name='blkcg_root' type-id='19b26952' mangled-name='blkcg_root' visibility='default' filepath='block/blk-cgroup.c' line='46' column='1' elf-symbol-id='blkcg_root'/>
+      <function-decl name='blkdev_compat_ptr_ioctl' mangled-name='blkdev_compat_ptr_ioctl' filepath='block/ioctl.c' line='241' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blkdev_compat_ptr_ioctl'>
+        <parameter type-id='b88dd945' name='bdev' filepath='block/ioctl.c' line='241' column='1'/>
+        <parameter type-id='2665334e' name='mode' filepath='block/ioctl.c' line='241' column='1'/>
+        <parameter type-id='f0981eeb' name='cmd' filepath='block/ioctl.c' line='242' column='1'/>
+        <parameter type-id='7359adad' name='arg' filepath='block/ioctl.c' line='242' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='blkdev_get_by_dev' mangled-name='blkdev_get_by_dev' filepath='block/bdev.c' line='790' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blkdev_get_by_dev'>
         <parameter type-id='8504f260' name='dev' filepath='block/bdev.c' line='790' column='1'/>
         <parameter type-id='2665334e' name='mode' filepath='block/bdev.c' line='790' column='1'/>
@@ -145524,6 +145534,11 @@
       <function-decl name='kthread_worker_fn' mangled-name='kthread_worker_fn' filepath='kernel/kthread.c' line='723' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kthread_worker_fn'>
         <parameter type-id='eaa32e2f' name='worker_ptr' filepath='kernel/kthread.c' line='723' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='ktime_add_safe' mangled-name='ktime_add_safe' filepath='kernel/time/hrtimer.c' line='327' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ktime_add_safe'>
+        <parameter type-id='ddb8523f' name='lhs' filepath='kernel/time/hrtimer.c' line='327' column='1'/>
+        <parameter type-id='ddb8523f' name='rhs' filepath='kernel/time/hrtimer.c' line='327' column='1'/>
+        <return type-id='fbc017ef'/>
       </function-decl>
       <function-decl name='ktime_get' mangled-name='ktime_get' filepath='kernel/time/timekeeping.c' line='820' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ktime_get'>
         <return type-id='fbc017ef'/>
