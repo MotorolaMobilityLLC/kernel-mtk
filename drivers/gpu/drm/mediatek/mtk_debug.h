@@ -78,5 +78,5 @@ unsigned int mtk_dbg_get_lfr_dbg_value(void);
 #endif
 int mtk_disp_ioctl_debug_log_switch(struct drm_device *dev, void *data,
 	struct drm_file *file_priv);
-
+int mtk_read_ddic_cellid(unsigned char *cellid, int reg, int reg_offset, int len);
 #endif
