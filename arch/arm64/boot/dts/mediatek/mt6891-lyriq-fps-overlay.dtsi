@@ -1,0 +1,80 @@
+
+&pio {
+
+	fingerfp_rst_high: fingerfp_rst_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO14__FUNC_GPIO14>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerfp_rst_low: fingerfp_rst_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO14__FUNC_GPIO14>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerfp_irq_active: fingerfp_irq_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerfp_spi_active: fingerfp_spi_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO156__FUNC_SPI1_A_CLK>, <PINMUX_GPIO157__FUNC_SPI1_A_CSB>, <PINMUX_GPIO158__FUNC_SPI1_A_MI>, <PINMUX_GPIO159__FUNC_SPI1_A_MO>;
+			drive-strength = <2>;
+		};
+	};
+
+	fingerfp_spi_default: fingerfp_spi_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO156__FUNC_GPIO156>, <PINMUX_GPIO157__FUNC_GPIO157>, <PINMUX_GPIO158__FUNC_GPIO158>, <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+/* mt6360 ldo1 */
+&mt_pmic_vfp_ldo_reg {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-boot-on;
+	regulator-always-on;
+};
+
+/* FINGERPRINT start */
+&spi1 {
+	status = "okay";
+	tee-only;
+	goodix_tee@0 {
+		status = "okay";
+		compatible = "goodix,goodix-fp";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		netlink-event = <30>;
+	};
+};
+
+&odm {
+	goodix_fp:goodix_fp{
+		compatible = "mediatek,fingerprint-goodix";
+		interrupt-parent = <&pio>;
+
+		interrupts = <10 IRQ_TYPE_EDGE_RISING 15 0>;
+		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+		pinctrl-0 = <&fingerfp_irq_active>;
+		pinctrl-1 = <&fingerfp_rst_high>;
+		pinctrl-2 = <&fingerfp_rst_low>;
+		int-gpios = <&pio 15 0>;
+		//fp-gpio-ven = <&pio 153 0x0>;
+		status = "okay";
+	};
+};
+
+/*End of this file, DO NOT ADD ANYTHING HERE*/
