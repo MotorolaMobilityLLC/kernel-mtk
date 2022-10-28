@@ -2764,7 +2764,13 @@ static void mtk_output_dsi_disable(struct mtk_dsi *dsi, struct cmdq_pkt *cmdq_ha
 	bool new_doze_state = mtk_dsi_doze_state(dsi);
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(dsi->encoder.crtc);
 
+	struct mtk_panel_ext *panel_ext = mtk_crtc->panel_ext;
+
 	DDPINFO("%s+ doze_enabled:%d\n", __func__, new_doze_state);
+
+	if (panel_ext && panel_ext->funcs && panel_ext->funcs->set_gesture_flag)
+		panel_ext->funcs->set_gesture_flag(tp_gesture_flag);
+
 	if (!dsi->output_en)
 		return;
 
@@ -3487,9 +3493,6 @@ unsigned int mtk_dsi_mode_change_index(struct mtk_dsi *dsi,
 		else
 			adjust_panel_params = panel_ext->params;
 	}
-
-	if (panel_ext && panel_ext->funcs && panel_ext->funcs->set_gesture_flag)
-		panel_ext->funcs->set_gesture_flag(tp_gesture_flag);
 
 	if (cur_panel_params && adjust_panel_params
 		&& !(dsi->mipi_hopping_sta && (cur_panel_params->dyn.switch_en ||
