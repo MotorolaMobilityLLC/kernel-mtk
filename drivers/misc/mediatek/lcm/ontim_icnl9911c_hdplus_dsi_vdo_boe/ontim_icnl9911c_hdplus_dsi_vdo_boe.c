@@ -333,7 +333,7 @@ static void lcm_reset(void)
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 	MDELAY(20);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
-	MDELAY(10);
+	MDELAY(30);
 	LCM_LOGI("%s:icnl9911c lcm reset done\n",__func__);
 }
 
