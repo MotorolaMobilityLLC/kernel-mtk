@@ -131,22 +131,13 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 		return;
 	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(10);
+	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(5);
+	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(30);
+	msleep(22);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
-
-	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x00);
-	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0x87, 0x20, 0x01);
-	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x80);
-	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0x87, 0x20);
-	tongxingda_dcs_write_seq_static(ctx, 0x00, 0x00);
-	tongxingda_dcs_write_seq_static(ctx, 0xFF, 0xFF, 0xFF, 0xFF);
-	msleep(20);
 
 	tongxingda_dcs_write_seq_static(ctx, 0x51, 0xC3,0x09);//max:0xFF 0x0F
 	tongxingda_dcs_write_seq_static(ctx, 0x53, 0x2c);
@@ -155,7 +146,7 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 	tongxingda_dcs_write_seq_static(ctx, 0x11, 0x00);
 	msleep(120);
 	tongxingda_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(20);
+	msleep(2);
 
 }
 
