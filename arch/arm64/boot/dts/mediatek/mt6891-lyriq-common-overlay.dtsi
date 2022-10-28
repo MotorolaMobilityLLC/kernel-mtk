@@ -466,7 +466,6 @@
                 compatible = "boe,nt37701a,vdo,144hz";
                 reg = <2>;
                 pm-enable-gpios = <&pio 84 0>,
-                          <&pio 81 0>,
                           <&pio 80 0>,
                           <&pio 82 0>;
                 reset-gpios = <&pio 42 0>;
@@ -486,7 +485,6 @@
                 compatible = "tm,vtdr6115,vdo,144hz";
                 reg = <1>;
                 pm-enable-gpios = <&pio 84 0>,
-                          <&pio 81 0>,
                           <&pio 80 0>,
                           <&pio 82 0>;
                 reset-gpios = <&pio 42 0>;
