@@ -357,6 +357,7 @@
 #define T8EV5_SENSOR_ID                         0x1011
 
 #define S5KGD1SP_SENSOR_ID                      0x0841
+#define MOT_AION_S5KGD2_SENSOR_ID               0x0842
 #define HI846_SENSOR_ID                         0x0846
 #define OV02A10_MONO_SENSOR_ID                  0x2509
 #define IMX686_SENSOR_ID                        0X0686
@@ -649,6 +650,9 @@
 #define SENSOR_DRVNAME_MOT_DUBAI_OV50A_MIPI_RAW "mot_dubai_ov50a_mipi_raw"
 //add dubai sensor drvname end
 
+//add aion sensor drvname begin
+#define SENSOR_DRVNAME_MOT_AION_S5KGD2_MIPI_RAW "mot_aion_s5kgd2_mipi_raw"
+//add aion sensor drvname end
 //Begin: Add sensor drvname for Vicky
 #define SENSOR_DRVNAME_MOT_VICKY_S5KHM6_MIPI_RAW       "mot_vicky_s5khm6_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_S5KGM1_MIPI_RAW       "mot_vicky_s5kgm1_mipi_raw"
