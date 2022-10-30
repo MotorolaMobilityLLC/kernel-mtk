@@ -105,18 +105,20 @@ int setMaxbrightness(int max_level, int enable)
 
 	mutex_lock(&bl_level_limit_mutex);
 
+    /*
 	if (max_level > current_level) {
 		mutex_unlock(&bl_level_limit_mutex);
 		pr_debug("no need to set level[%d:%d]\n",max_level,current_level);
 		return 0;
 	}
-
+*/
 	if (enable == 1) {
 		limit_flag = 1;
 		limit = max_level;
 		mutex_unlock(&bl_level_limit_mutex);
+        pr_info("zsh 2022-10-28 current_level = %d, last_level = %d\n", current_level, last_level);
 		if (current_level != 0) {
-			if (limit < last_level) {
+			if (limit != last_level) {
 				pr_info
 				    ("Max brightness limit=%d\n", limit);
 				mt65xx_led_set_cust(&cust_led_list
