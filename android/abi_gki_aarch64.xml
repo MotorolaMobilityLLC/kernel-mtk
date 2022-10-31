@@ -2186,6 +2186,7 @@
       <elf-symbol name='drm_dp_mst_topology_mgr_destroy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8e7e3558'/>
       <elf-symbol name='drm_dp_mst_topology_mgr_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbb9a6cd9'/>
       <elf-symbol name='drm_dp_mst_topology_mgr_set_mst' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3dafffb8'/>
+      <elf-symbol name='drm_dp_read_dpcd_caps' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbdaac002'/>
       <elf-symbol name='drm_dp_read_sink_count' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9de14208'/>
       <elf-symbol name='drm_dp_send_power_updown_phy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x13dda18a'/>
       <elf-symbol name='drm_dp_set_subconnector_property' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe1b17593'/>
@@ -3542,6 +3543,7 @@
       <elf-symbol name='led_trigger_unregister_simple' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xebaf4668'/>
       <elf-symbol name='led_update_brightness' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xce6e4aab'/>
       <elf-symbol name='led_update_flash_brightness' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9cabccc2'/>
+      <elf-symbol name='linear_range_get_max_value' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd5301b2c'/>
       <elf-symbol name='linear_range_get_selector_within' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc6e5bcf3'/>
       <elf-symbol name='linear_range_get_value' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd4e6d7e0'/>
       <elf-symbol name='linkwatch_fire_event' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x779b2c96'/>
@@ -4621,10 +4623,14 @@
       <elf-symbol name='rb_next_postorder' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4e68e9be'/>
       <elf-symbol name='rb_prev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf82ec573'/>
       <elf-symbol name='rb_replace_node' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7fe32873'/>
+      <elf-symbol name='rc_allocate_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe59d95c2'/>
+      <elf-symbol name='rc_free_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xee9a13bf'/>
       <elf-symbol name='rc_keydown' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2fe612ee'/>
       <elf-symbol name='rc_map_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb960f15c'/>
       <elf-symbol name='rc_map_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2ed90ced'/>
+      <elf-symbol name='rc_register_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x324fda62'/>
       <elf-symbol name='rc_repeat' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3e96a6eb'/>
+      <elf-symbol name='rc_unregister_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5df6514a'/>
       <elf-symbol name='rcu_barrier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x60a13e90'/>
       <elf-symbol name='rcu_barrier_tasks' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf6f16c56'/>
       <elf-symbol name='rcu_barrier_tasks_trace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcfc7b4e4'/>
@@ -137898,6 +137904,11 @@
         <parameter type-id='b50a4934' name='mst_state' filepath='drivers/gpu/drm/drm_dp_mst_topology.c' line='3706' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='drm_dp_read_dpcd_caps' mangled-name='drm_dp_read_dpcd_caps' filepath='drivers/gpu/drm/drm_dp_helper.c' line='644' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_dp_read_dpcd_caps'>
+        <parameter type-id='7c5f8cd8' name='aux' filepath='drivers/gpu/drm/drm_dp_helper.c' line='644' column='1'/>
+        <parameter type-id='8bff8096' name='dpcd' filepath='drivers/gpu/drm/drm_dp_helper.c' line='645' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='drm_dp_read_sink_count' mangled-name='drm_dp_read_sink_count' filepath='drivers/gpu/drm/drm_dp_helper.c' line='1267' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='drm_dp_read_sink_count'>
         <parameter type-id='7c5f8cd8' name='aux' filepath='drivers/gpu/drm/drm_dp_helper.c' line='1267' column='1'/>
         <return type-id='95e97e5e'/>
@@ -144979,6 +144990,10 @@
         <parameter type-id='26deddb9' name='fled_cdev' filepath='drivers/leds/led-class-flash.c' line='426' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='linear_range_get_max_value' mangled-name='linear_range_get_max_value' filepath='lib/linear_ranges.c' line='70' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='linear_range_get_max_value'>
+        <parameter type-id='0c90828b' name='r' filepath='lib/linear_ranges.c' line='70' column='1'/>
+        <return type-id='f0981eeb'/>
+      </function-decl>
       <function-decl name='linear_range_get_selector_within' mangled-name='linear_range_get_selector_within' filepath='lib/linear_ranges.c' line='255' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='linear_range_get_selector_within'>
         <parameter type-id='0c90828b' name='r' filepath='lib/linear_ranges.c' line='255' column='1'/>
         <parameter type-id='f0981eeb' name='val' filepath='lib/linear_ranges.c' line='256' column='1'/>
@@ -150502,6 +150517,14 @@
         <parameter type-id='c5bcc2c0' name='root' filepath='lib/rbtree.c' line='554' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='rc_allocate_device' mangled-name='rc_allocate_device' filepath='drivers/media/rc/rc-main.c' line='1699' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rc_allocate_device'>
+        <parameter type-id='d4dbe3db' name='type' filepath='drivers/media/rc/rc-main.c' line='1699' column='1'/>
+        <return type-id='75ae4804'/>
+      </function-decl>
+      <function-decl name='rc_free_device' mangled-name='rc_free_device' filepath='drivers/media/rc/rc-main.c' line='1738' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rc_free_device'>
+        <parameter type-id='75ae4804' name='dev' filepath='drivers/media/rc/rc-main.c' line='1738' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='rc_keydown' mangled-name='rc_keydown' filepath='drivers/media/rc/rc-main.c' line='848' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rc_keydown'>
         <parameter type-id='75ae4804' name='dev' filepath='drivers/media/rc/rc-main.c' line='848' column='1'/>
         <parameter type-id='17862576' name='protocol' filepath='drivers/media/rc/rc-main.c' line='848' column='1'/>
@@ -150517,8 +150540,16 @@
         <parameter type-id='31d2664e' name='map' filepath='drivers/media/rc/rc-main.c' line='144' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='rc_register_device' mangled-name='rc_register_device' filepath='drivers/media/rc/rc-main.c' line='1890' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rc_register_device'>
+        <parameter type-id='75ae4804' name='dev' filepath='drivers/media/rc/rc-main.c' line='1890' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='rc_repeat' mangled-name='rc_repeat' filepath='drivers/media/rc/rc-main.c' line='737' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rc_repeat'>
         <parameter type-id='75ae4804' name='dev' filepath='drivers/media/rc/rc-main.c' line='737' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='rc_unregister_device' mangled-name='rc_unregister_device' filepath='drivers/media/rc/rc-main.c' line='2015' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rc_unregister_device'>
+        <parameter type-id='75ae4804' name='dev' filepath='drivers/media/rc/rc-main.c' line='2015' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='rcu_barrier' mangled-name='rcu_barrier' filepath='kernel/rcu/tree.c' line='3984' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcu_barrier'>
