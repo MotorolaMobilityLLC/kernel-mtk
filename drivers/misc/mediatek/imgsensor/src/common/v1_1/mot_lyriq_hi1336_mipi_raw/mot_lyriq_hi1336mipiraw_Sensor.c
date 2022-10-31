@@ -515,7 +515,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
                         // get calibration status and mnf data.
-#if 0
+#if 1
 			LYRIQ_HI1336_read_data_from_eeprom(LYRIQ_HI1336_EEPROM_SLAVE_ADDR, 0x0000, LYRIQ_HI1336_EEPROM_SIZE);
 			LYRIQ_HI1336_eeprom_dump_bin(EEPROM_DATA_PATH, LYRIQ_HI1336_EEPROM_SIZE, (void *)LYRIQ_HI1336_eeprom);
 			LYRIQ_HI1336_eeprom_format_calibration_data((void *)LYRIQ_HI1336_eeprom);
@@ -860,7 +860,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  // 0 is default 1x
 	sensor_info->SensorHightSampling = 0;    // 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
-#if 0
+#if 1
 	sensor_info->calibration_status.mnf   = mnf_status;
 	sensor_info->calibration_status.af    = af_status;
 	sensor_info->calibration_status.awb   = awb_status;
