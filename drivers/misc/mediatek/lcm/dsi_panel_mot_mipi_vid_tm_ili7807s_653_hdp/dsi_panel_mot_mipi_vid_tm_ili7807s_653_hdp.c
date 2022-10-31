@@ -267,8 +267,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #endif
 
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
@@ -375,7 +375,7 @@ static unsigned int lcm_compare_id(void)
 
 /* return TRUE: need recovery */
 /* return FALSE: No need recovery */
-/*
+
 static unsigned int lcm_esd_check(void)
 {
 #ifndef BUILD_LK
@@ -398,7 +398,7 @@ static unsigned int lcm_esd_check(void)
 #endif
 
 }
-*/
+
 
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
@@ -478,7 +478,7 @@ struct LCM_DRIVER mipi_mot_vid_tm_ili7807s_hdp_653_lcm_drv = {
 	.init_power = lcm_init_power,
 	.resume_power = lcm_resume_power,
 	.suspend_power = lcm_suspend_power,
-	//.esd_check = lcm_esd_check,
+	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
 	.update = lcm_update,
