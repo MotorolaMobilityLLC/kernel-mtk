@@ -23,8 +23,8 @@ static int mot_sensor_debug = 1;
 #define LOG_ERROR(format, args...)   pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define HI1336_SERIAL_NUM_SIZE 16
-#define FRONT_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_front.bin"
-#define EEPROM_READY   0
+#define WIDE_SERIAL_NUM_DATA_PATH "/data/vendor/camera_dump/serial_number_wide.bin"
+#define EEPROM_READY   1
 static DEFINE_SPINLOCK(imgsensor_lock);
 
 #if EEPROM_READY //stan
@@ -35,13 +35,16 @@ static DEFINE_SPINLOCK(imgsensor_lock);
 
 #if EEPROM_READY //cfp-210812
 
-#define LYRIQ_HI1336_EEPROM_SLAVE_ADDR 0xA2
-#define LYRIQ_HI1336_SENSOR_IIC_SLAVE_ADDR 0x46
-#define LYRIQ_HI1336_EEPROM_SIZE  0x0F44
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_hi1336_eeprom_front.bin"
+#define LYRIQ_HI1336_EEPROM_SLAVE_ADDR 0xA0
+#define LYRIQ_HI1336_SENSOR_IIC_SLAVE_ADDR 0x40
+#define LYRIQ_HI1336_EEPROM_SIZE  0x1924
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gt24p64e_hi1336_eeprom.bin"
 #define LYRIQ_HI1336_EEPROM_CRC_AF_CAL_SIZE 24
 #define LYRIQ_HI1336_EEPROM_CRC_AWB_CAL_SIZE 43
 #define LYRIQ_HI1336_EEPROM_CRC_LSC_SIZE 1868
+#define LYRIQ_HI1336_EEPROM_CRC_AF_SIZE 24
+#define LYRIQ_HI1336_EEPROM_CRC_PDAFOUT1_SIZE 496
+#define LYRIQ_HI1336_EEPROM_CRC_PDAFOUT2_SIZE 1004
 #define LYRIQ_HI1336_EEPROM_CRC_MANUFACTURING_SIZE 37
 #define LYRIQ_HI1336_MANUFACTURE_PART_NUMBER "28D14866"
 #define LYRIQ_HI1336_MPN_LENGTH 8
@@ -67,7 +70,7 @@ static struct imgsensor_struct hi1336_imgsensor = {
 	.test_pattern = KAL_FALSE,
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,
-	.i2c_write_id = 0x46,
+	.i2c_write_id = 0x40,
 };
 
 static kal_uint16 read_cmos_sensor_8(kal_uint32 addr)
@@ -322,6 +325,39 @@ static calibration_status_t LYRIQ_HI1336_check_awb_data(void *data)
 	return NO_ERRORS;
 }
 
+static calibration_status_t LYRIQ_HI1336_check_af_data_mtk(void *data)
+{
+	struct LYRIQ_HI1336_eeprom_t *eeprom = (struct LYRIQ_HI1336_eeprom_t*)data;
+
+	if (!eeprom_util_check_crc16(eeprom->af_data, LYRIQ_HI1336_EEPROM_CRC_AF_SIZE,
+		convert_crc(eeprom->af_crc16))) {
+		LOG_ERROR("AF CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("AF CRC Pass");
+	return NO_ERRORS;
+}
+
+static calibration_status_t LYRIQ_HI1336_check_pdaf_data_mtk(void *data)
+{
+	struct LYRIQ_HI1336_eeprom_t *eeprom = (struct LYRIQ_HI1336_eeprom_t*)data;
+
+	if (!eeprom_util_check_crc16(eeprom->pdaf_out1_data_mtk, LYRIQ_HI1336_EEPROM_CRC_PDAFOUT1_SIZE,
+		convert_crc(eeprom->pdaf_out1_crc16_mtk))) {
+		LOG_ERROR("PDAF OUT1 CRC Fails!");
+		return CRC_FAILURE;
+	}
+
+	if (!eeprom_util_check_crc16(eeprom->pdaf_out2_data_mtk, LYRIQ_HI1336_EEPROM_CRC_PDAFOUT2_SIZE,
+		convert_crc(eeprom->pdaf_out2_crc16_mtk))) {
+		LOG_ERROR("PDAF OUT2 CRC Fails!");
+		return CRC_FAILURE;
+	}
+	LOG_INF("PDAF CRC Pass");
+	return NO_ERRORS;
+}
+
+
 static calibration_status_t LYRIQ_HI1336_check_lsc_data_mtk(void *data)
 {
 	struct LYRIQ_HI1336_eeprom_t *eeprom = (struct LYRIQ_HI1336_eeprom_t*)data;
@@ -334,7 +370,6 @@ static calibration_status_t LYRIQ_HI1336_check_lsc_data_mtk(void *data)
 	LOG_INF("LSC CRC Pass");
 	return NO_ERRORS;
 }
-
 static void LYRIQ_HI1336_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
@@ -421,7 +456,7 @@ static void LYRIQ_HI1336_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[10], eeprom->serial_number[11],
 		eeprom->serial_number[12], eeprom->serial_number[13],
 		eeprom->serial_number[14], eeprom->serial_number[15]);
-	LYRIQ_HI1336_eeprom_dump_bin(FRONT_SERIAL_NUM_DATA_PATH,  HI1336_SERIAL_NUM_SIZE,  eeprom->serial_number);
+	LYRIQ_HI1336_eeprom_dump_bin(WIDE_SERIAL_NUM_DATA_PATH,  HI1336_SERIAL_NUM_SIZE,  eeprom->serial_number);
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_ERROR("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;
@@ -432,13 +467,7 @@ static void LYRIQ_HI1336_eeprom_get_mnf_data(void *data,
 static calibration_status_t LYRIQ_HI1336_check_manufacturing_data(void *data)
 {
 	struct LYRIQ_HI1336_eeprom_t *eeprom = (struct LYRIQ_HI1336_eeprom_t*)data;
-LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
-#if 0
-	if(strncmp(eeprom->mpn, LYRIQ_HI1336_MANUFACTURE_PART_NUMBER, LYRIQ_HI1336_MPN_LENGTH) != 0) {
-		LOG_INF("Manufacturing part number (%s) check Fails!", eeprom->mpn);
-		return CRC_FAILURE;
-	}
-#endif
+       LOG_INF("Manufacturing eeprom->mpn = %s !",eeprom->mpn);
 	if (!eeprom_util_check_crc16(data, LYRIQ_HI1336_EEPROM_CRC_MANUFACTURING_SIZE,
 		convert_crc(eeprom->manufacture_crc16))) {
 		LOG_ERROR("Manufacturing CRC Fails!");
@@ -456,10 +485,10 @@ static void LYRIQ_HI1336_eeprom_format_calibration_data(void *data)
 	}
 
 	mnf_status = LYRIQ_HI1336_check_manufacturing_data(data);
-	af_status = 0;
+	af_status = LYRIQ_HI1336_check_af_data_mtk(data);
 	awb_status = LYRIQ_HI1336_check_awb_data(data);
 	lsc_status = LYRIQ_HI1336_check_lsc_data_mtk(data);
-	pdaf_status = 0;
+	pdaf_status = LYRIQ_HI1336_check_pdaf_data_mtk(data);
 	dual_status = 0;
 
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
