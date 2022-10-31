@@ -26,18 +26,14 @@
 
 
 #define AF_DRVNAME "DW9800VAF_DRV"
-#define AF_I2C_SLAVE_ADDR        (0x18)
+#define AF_I2C_SLAVE_ADDR        0x18
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...) \
-	pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
-#define LOG_ERR(format, args...) \
-		pr_err(AF_DRVNAME " [%s] " format, __func__, ##args)
-
+	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
-#define LOG_ERR(format, args...)
 #endif
 
 
@@ -56,19 +52,15 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 	int i4RetValue = 0;
 	char puReadCmd[1] = { (char)(a_u2Addr) };
 
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
-
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puReadCmd, 1);
 	if (i4RetValue < 0) {
-		LOG_ERR(" I2C write failed!! i4RetValue =%d\n",i4RetValue);
+		LOG_INF(" I2C write failed!!\n");
 		return -1;
 	}
 
 	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (char *)a_puBuff, 1);
-	if (i4RetValue < 0) {
-		LOG_ERR(" I2C read failed!!i4RetValue = %d\n",i4RetValue);
+	if (i4RetValue != 1) {
+		LOG_INF(" I2C read failed!!\n");
 		return -1;
 	}
 
@@ -84,7 +76,7 @@ static u8 read_data(u8 addr)
 	return get_byte;
 }
 
-static int s4DW9800VAF_ReadReg(unsigned short *a_pu2Result)
+static int s4MOT_DW9800VAF_ReadReg(unsigned short *a_pu2Result)
 {
 	*a_pu2Result = (read_data(0x03) << 8) + (read_data(0x04) & 0xff);
 
@@ -98,14 +90,10 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	char puSendCmd[3] = { 0x03, (char)(a_u2Data >> 8),
 		(char)(a_u2Data & 0xFF) };
 
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
-
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 3);
 
 	if (i4RetValue < 0) {
-		LOG_ERR("I2C send failed!!\n");
+		LOG_INF("I2C send failed!!\n");
 		return -1;
 	}
 
@@ -138,9 +126,12 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
-	char puSendCmdArray[7][2] = {
-	{0x02, 0x01}, {0x02, 0x00}, {0xFE, 0xFE},
-	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x60}, {0xFE, 0xFE},
+	char puSendCmdArray[5][3] = {
+	{0x02, 0x01,0},
+	{0x02, 0x00,1},
+	{0x02, 0x02,0},
+	{0x06, 0x40,0},
+	{0x07, 0x0b,0},
 	};
 	unsigned char cmd_number;
 
@@ -148,22 +139,19 @@ static int initdrv(void)
 			puSendCmdArray[1]);
 	LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]),
 			puSendCmdArray[2]);
-
-	for (cmd_number = 0; cmd_number < 7; cmd_number++) {
-		if (puSendCmdArray[cmd_number][0] != 0xFE) {
-			g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-			g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
-
+	mdelay(2);
+	for (cmd_number = 0; cmd_number < 5; cmd_number++) {
 			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
 					puSendCmdArray[cmd_number], 2);
-
-			if (i4RetValue < 0) {
-				LOG_ERR("initdrv failed!\n");
+			if (i4RetValue < 0)
+			{
+				LOG_INF(" I2C write fail\n");
 				return -1;
-		     }
-		} else {
-			udelay(100);
-		}
+			}
+			if(puSendCmdArray[cmd_number][2])
+			{
+				mdelay(puSendCmdArray[cmd_number][2]);
+			}
 	}
 
 	return i4RetValue;
@@ -175,7 +163,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	int ret = 0;
 
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_ERR("out of range\n");
+		LOG_INF("out of range\n");
 		return -EINVAL;
 	}
 
@@ -183,7 +171,7 @@ static inline int moveAF(unsigned long a_u4Position)
 		unsigned short InitPos;
 
 		initdrv();
-		ret = s4DW9800VAF_ReadReg(&InitPos);
+		ret = s4MOT_DW9800VAF_ReadReg(&InitPos);
 
 		if (ret == 0) {
 			LOG_INF("Init Pos %6d\n", InitPos);
@@ -216,9 +204,10 @@ static inline int moveAF(unsigned long a_u4Position)
 		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
 		spin_unlock(g_pAF_SpinLock);
 	} else {
-		LOG_ERR("set I2C failed when moving the motor\n");
+		LOG_INF("set I2C failed when moving the motor\n");
 		ret = -1;
 	}
+
 	return ret;
 }
 
