@@ -215,12 +215,19 @@ struct LYRIQ_HI1336_eeprom_t{
 	uint8_t rgb_oc_crc16[2];
 	uint8_t sfr_data[117];
 	uint8_t sfr_crc16[2];
-	uint8_t lsc_data_qcom[1768];
-	uint8_t lsc_crc16_qcom[2];
 	uint8_t lsc_data_mtk[1868];
 	uint8_t lsc_crc16_mtk[2];
-	uint8_t others[500];
-};
+	uint8_t pdaf_out1_data_mtk[496];
+	uint8_t pdaf_out2_data_mtk[1004];
+	uint8_t pdaf_out1_crc16_mtk[2];
+	uint8_t pdaf_out2_crc16_mtk[2];
+	//AF Sync
+	uint8_t af_sync_data[24];
+	uint8_t af_sync_crc[2];
+	//AF Posture
+	uint8_t necessary_data[18];
+	uint8_t necessary_crc[2];
+	uint8_t others[2768];};
 
 typedef struct {
 	uint16_t r;
