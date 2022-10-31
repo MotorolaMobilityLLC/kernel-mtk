@@ -207,6 +207,59 @@ static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
+{
+
+	struct dfps_info *dfps_params = dsi->dfps_params;
+	LCM_LOGI("[LCM] lcm_dfps_int start\n");
+	dsi->dfps_enable = 1;
+	dsi->dfps_default_fps = 9000;/*real fps * 100, to support float*/
+	dsi->dfps_def_vact_tim_fps = 9000;/*real vact timing fps * 100*/
+
+	/*traversing array must less than DFPS_LEVELS*/
+	/*DPFS_LEVEL0*/
+	dfps_params[0].level = DFPS_LEVEL0;
+	dfps_params[0].fps = 6000;/*real fps * 100, to support float*/
+	dfps_params[0].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+	/*if mipi clock solution*/
+	/*dfps_params[0].PLL_CLOCK = xx;*/
+	/*dfps_params[0].data_rate = xx; */
+	/*if HFP solution*/
+	/*dfps_params[0].horizontal_frontporch = xx;*/
+	dfps_params[0].vertical_frontporch = 872;
+//	dfps_params[0].vertical_frontporch_for_low_power = 980;
+
+	/*if need mipi hopping params add here*/
+	//dfps_params[0].dynamic_switch_mipi = 0;
+	//dfps_params[0].PLL_CLOCK_dyn = 550;
+	//dfps_params[0].horizontal_frontporch_dyn = 288;
+	//dfps_params[0].vertical_frontporch_dyn = 1291;
+	//dfps_params[0].vertical_frontporch_for_low_power_dyn = 2500;
+
+	/*DPFS_LEVEL1*/
+	dfps_params[1].level = DFPS_LEVEL1;
+	dfps_params[1].fps = 9000;/*real fps * 100, to support float*/
+	dfps_params[1].vact_timing_fps = 9000;/*real vact timing fps * 100*/
+	/*if mipi clock solution*/
+	/*dfps_params[1].PLL_CLOCK = xx;*/
+	/*dfps_params[1].data_rate = xx; */
+	/*if HFP solution*/
+	/*dfps_params[1].horizontal_frontporch = xx;*/
+	dfps_params[1].vertical_frontporch = 40;
+//	dfps_params[1].vertical_frontporch_for_low_power = 980;//60 FPS in idle mode
+
+	/*if need mipi hopping params add here*/
+	//dfps_params[1].dynamic_switch_mipi = 0;
+	//dfps_params[1].PLL_CLOCK_dyn = 550;
+	//dfps_params[1].horizontal_frontporch_dyn = 288;
+	//dfps_params[1].vertical_frontporch_dyn = 8;
+	//dfps_params[1].vertical_frontporch_for_low_power_dyn = 2500;
+
+	dsi->dfps_num = 2;
+		LCM_LOGI("[LCM] lcm_dfps_int endn");
+}
+#endif
 
 static void lcm_get_params(struct LCM_PARAMS *params)
 {
@@ -276,6 +329,11 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	params->corner_pattern_width = 32;
 	params->corner_pattern_height = 32;
+#endif
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	/****DynFPS start****/
+	lcm_dfps_int(&(params->dsi));
+	/****DynFPS end****/
 #endif
 }
 
