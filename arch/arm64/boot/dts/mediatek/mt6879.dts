@@ -5265,6 +5265,11 @@
 			compatible = "mediatek,goodix-fp";
 		};
 	};
+
+	irq_nfc:irq_nfc {
+		compatible = "mediatek,irq_nfc-eint";
+	};
+
 	mmqos_wrapper {
 			compatible = "mediatek,mt6879-mmqos-wrapper";
 	};
