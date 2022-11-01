@@ -81,6 +81,7 @@ struct imgsensor_struct {
 
 	kal_uint8 pdaf_mode;	/* PDAF enable or disable */
 	kal_uint8 i2c_write_id;
+	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;
 	kal_uint8 update_sensor_otp_awb;
 	kal_uint8 update_sensor_otp_lsc;
 };
