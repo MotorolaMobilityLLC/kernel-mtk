@@ -97,14 +97,20 @@
 
 &i2c3 {
 	status = "okay";
-	nfc_pn5xx: nfc_pn5xx@28 {
-		compatible = "nxp,pn5xx";
-		reg = <0x28>;
-		interrupt-parent = <&pio>;
-		interrupts = <19 IRQ_TYPE_LEVEL_HIGH>;
-		nxp,pn544-irq = <&pio 19 0>;
-		nxp,pn544-ven = <&pio 13 0>;
-		nxp,pn544-fd = <&pio 18 0>;
+	st21nfc: st21nfc@08 {
+		compatible = "mediatek,nfc";
+		reg = <0x08>;
+		status = "okay";
+	};
+};
+
+&soc {
+	nfc {
+		compatible = "mediatek,nfc-gpio-v2";
+		gpio-rst = <13>;
+		gpio-rst-std = <&pio 13 0x0>;
+		gpio-irq = <19>;
+		gpio-irq-std = <&pio 19 0x0>;
 		status = "okay";
 	};
 };
