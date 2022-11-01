@@ -97,9 +97,8 @@
 	charging_host_charger_current = <1500000>;
 	/*pe5 && pdc && pe2 && wlc*/
 	//fast_charging_indicator = <0x36>;
-	/*swchg + 1CP*/
-	//charger_configuration= <3>;
-        charger_configuration= <0>;
+	/*swchg + 2CP*/
+	charger_configuration= <4>;
 	fast_charging_indicator = <0x6>;
 
 	wireless_factory_max_current = <3000000>;
@@ -150,8 +149,15 @@
 };
 
 &pio {
-	bq25960_int_default: bq25960_int_default {
+	bq25960_int_default_master: bq25960_int_default_master {
 		pinmux = <PINMUX_GPIO117__FUNC_GPIO117>;
+		slew-rate= <0>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	bq25960_int_default_slave: bq25960_int_default_slave {
+		pinmux = <PINMUX_GPIO122__FUNC_GPIO122>;
 		slew-rate= <0>;
 		input-enable;
 		bias-pull-up;
@@ -192,21 +198,44 @@
 &i2c0 {
 	status = "okay";
 
-	bq25960-standalone@65 {
-		compatible = "ti,bq25960-standalone";
-		reg = <0x65>;
-
-		interrupt-parent = <&pio>;
-		interrupts = <117 IRQ_TYPE_EDGE_FALLING 117 0>;
-		interrupt-names = "bq25960_irq";
-		pinctrl-names = "default";
-		pinctrl-0 = <&bq25960_int_default>;
-	};
-
 	NFG1000@55 {
 		compatible = "HXZY,nfg1000";
 		reg = <0x55>;
 	};
+
+	bq25960_master:bq25960-master@66 {
+		status = "okay";
+		compatible = "ti,bq25960-master";
+		reg = <0x66>;
+
+		sc8541-addr = <0x6B>;
+		sc8541-name = "sc8541-master";
+
+		interrupt-parent = <&pio>;
+		interrupts = <117 IRQ_TYPE_EDGE_FALLING 117 0>;
+		interrupt-names = "bq25960_irq_master";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&bq25960_int_default_master>;
+	};
+
+	bq25960_slave:bq25960-slave@67 {
+		status = "okay";
+		compatible = "ti,bq25960-slave";
+		reg = <0x67>;
+
+		sc8541-addr = <0x6C>;
+		sc8541-name = "sc8541-slave";
+
+		interrupt-parent = <&pio>;
+		interrupts = <122 IRQ_TYPE_EDGE_FALLING 122 0>;
+		interrupt-names = "bq25960_irq_slave";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&bq25960_int_default_slave>;
+	};
+
+
 };
 
 &pd_adapter{
