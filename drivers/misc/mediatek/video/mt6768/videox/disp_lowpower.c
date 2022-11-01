@@ -1171,6 +1171,8 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	int ret = 0;
 	unsigned long long interval = 0;
 	unsigned long long time_diff;
+	g_idle_skip = 0;
+	g_idle_skip_trigger = 0;
 
 #ifdef CONFIG_MTK_MT6382_BDG_BUF7
 	msleep(26000);
@@ -1198,6 +1200,10 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			msleep_interruptible(interval);
 
 		primary_display_manual_lock();
+		if (g_idle_skip == 0) {
+			primary_display_manual_unlock();
+			continue;
+		}
 
 		if (primary_get_state() != DISP_ALIVE) {
 			primary_display_manual_unlock();
