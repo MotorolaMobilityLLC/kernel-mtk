@@ -6206,7 +6206,7 @@
 		< 650000 750000	 2    0x204  400   3	 0       2>,
 		< 725000 750000	 3    0x302  624   1     0x3     1>;
 
-		scp-cores = <2>;
+		scp-cores = <1>;
 
 		/*pmic-sshub-support;*/
 		/*vow-lp-en-gear = <2>;*/
