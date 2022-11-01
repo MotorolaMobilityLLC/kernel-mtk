@@ -2857,6 +2857,8 @@ static int mtkfb_resume(struct platform_device *pdev)
 static void mtkfb_shutdown(struct platform_device *pdev)
 {
 	MTKFB_LOG("[FB Driver] %s()\n", __func__);
+	g_idle_skip = 0;
+	g_idle_skip_trigger = 0;
 	if (primary_display_is_sleepd()) {
 		MTKFB_LOG("mtkfb has been power off\n");
 		return;
