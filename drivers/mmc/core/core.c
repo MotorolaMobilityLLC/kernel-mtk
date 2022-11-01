@@ -902,12 +902,9 @@ int mmc_run_queue_thread(void *data)
 	bool is_done = false;
 	int err;
 	u64 chk_time = 0;
-	struct sched_param scheduler_params = {0};
 
-	/* Set as RT priority */
-	scheduler_params.sched_priority = 1;
-	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
-
+	//up the emmc cmdq thread priority to 110 (nice=-10)
+	set_user_nice(current, -10);
 	pr_info("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL, false);
 
