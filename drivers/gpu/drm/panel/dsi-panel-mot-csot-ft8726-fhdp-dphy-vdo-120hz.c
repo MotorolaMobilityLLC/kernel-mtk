@@ -135,7 +135,7 @@ static void csot_panel_init(struct csot *ctx)
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(22);
+	msleep(12);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
@@ -152,7 +152,7 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_dcs_write_seq_static(ctx, 0x55, 0x00);
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(120);
+	msleep(100);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(2);
 

@@ -135,7 +135,7 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 	gpiod_set_value(ctx->reset_gpio, 0);
 	msleep(1);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(22);
+	msleep(12);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
 
@@ -144,7 +144,7 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 	tongxingda_dcs_write_seq_static(ctx, 0x55, 0x01);
 //	tongxingda_dcs_write_seq_static(ctx, 0x35, 0x00);
 	tongxingda_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(120);
+	msleep(100);
 	tongxingda_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(2);
 
