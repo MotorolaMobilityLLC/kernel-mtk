@@ -344,6 +344,6 @@ extern void _wake_up_charger(struct mtk_charger *info);
 
 /* functions for other */
 extern int mtk_chg_enable_vbus_ovp(bool enable);
-
+extern int _mtk_enable_charging(struct mtk_charger *info, bool en);
 
 #endif /* __MTK_CHARGER_H */

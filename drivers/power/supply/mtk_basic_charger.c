@@ -67,18 +67,74 @@ static int _uA_to_mA(int uA)
 		return uA / 1000;
 }
 
-static int fcc_cv_flag = 0;
 static void select_cv(struct mtk_charger *info)
 {
 	u32 constant_voltage;
 	int ibat; /* ma */
 	int vbat; /* mv */
-	int tbat;
+	int tbat, uisoc;
+
+	static int fcc_cv_flag = 0;
+	static unsigned int ibat_avg = 0;
+	static int counter = 0;
+	static int be_compated = 0;
+	static unsigned int ibat_avg1 = 0;
+	static int counter1 = 0;
 
 	ibat = get_battery_current(info);
 	vbat = get_battery_voltage(info);
 	tbat = get_battery_temperature(info);
-	chr_err("select_cv: chr_type = %d; ibat = %d; vbat = %d; tbat = %d\n", info->chr_type, ibat, vbat, tbat);
+	uisoc = get_uisoc(info);
+	chr_err("select_cv: uisoc = %d; chr_type = %d; ibat = %d; vbat = %d; tbat = %d\n", uisoc, info->chr_type, ibat, vbat, tbat);
+	if((uisoc >= 80) && (info->chr_type == 5) && (ibat > 0)&&(fcc_cv_flag == 0))
+	{
+		if(ibat_avg == 0){
+			ibat_avg = ibat*1000;
+			counter = 1;
+		}
+		else{
+			ibat_avg = (ibat_avg*counter + ibat*1000)/(counter+1);
+			counter++;
+		}
+		chr_err("select_cv: ibat_avg = %d\n", ibat_avg);
+		chr_err("select_cv: counter = %d\n", counter);
+	}
+
+	if(fcc_cv_flag == 1)
+	{
+		if(ibat_avg1 == 0){
+			ibat_avg1 = ibat*1000;
+			counter1 = 1;
+		}
+		else{
+			ibat_avg1 = (ibat_avg1*counter1 + ibat*1000)/(counter1+1);
+			counter1++;
+		}
+		chr_err("select_cv: ibat_avg1 = %d\n", ibat_avg1);
+		chr_err("select_cv: counter1 = %d\n", counter1);
+	}
+
+	if((uisoc < 80) && (ibat_avg != 0) && (counter != 0)){
+		ibat_avg = 0;
+		counter = 0;
+		be_compated = 0;
+		chr_err("select_cv: uisoc < 80 clean ibat_avg\n");
+	}
+
+	if(counter > 1000){
+		ibat_avg = 0;
+		counter = 0;
+		be_compated = 0;
+		chr_err("select_cv: counter > 1000 clean ibat_avg\n");
+	}
+
+	if(ibat < 0){
+		ibat_avg = 0;
+		counter = 0;
+		be_compated = 0;
+		chr_err("select_cv: ibat < 0 clean ibat_avg\n");
+	}
+
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
 			if((fcc_cv_flag == 1)&&(info->chr_type == 5)&&(info->sw_jeita.cv != 4200000)){
@@ -91,30 +147,31 @@ static void select_cv(struct mtk_charger *info)
 				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
 			}
 
-			if((info->setting.cv == 4480000)&&(ibat > 1500)&&(fcc_cv_flag == 0))
+			if((info->setting.cv == 4480000)&&(fcc_cv_flag == 0)&&(vbat >= 4470)&&(be_compated == 0)&&(info->chr_type == 5))
 			{
-				info->setting.cv = 4512000;
-				fcc_cv_flag = 1;
-				chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
+				if(ibat_avg > 2000*1000){
+					info->setting.cv = 4512000;
+					fcc_cv_flag = 1;
+					chr_err("select_cv_2: setting.cv = %d\n", info->setting.cv);
+				}
+				else
+					be_compated = 1;
+
+				ibat_avg = 0;
+				counter = 0;
 			}
 
-			if((fcc_cv_flag == 1)&&(ibat <= 780)&&(vbat > 4480)&&(tbat > 35))
-			{
-				info->setting.cv = info->sw_jeita.cv;
-				fcc_cv_flag = 0;
-				chr_err("select_cv_3: setting.cv = %d\n", info->setting.cv);
-			}
-			else if((fcc_cv_flag == 1)&&(ibat <= 670)&&(vbat > 4480)&&(tbat > 25))
-			{
-				info->setting.cv = info->sw_jeita.cv;
-				fcc_cv_flag = 0;
-				chr_err("select_cv_4: setting.cv = %d\n", info->setting.cv);
-			}
-			else if((fcc_cv_flag == 1)&&(ibat <= 600)&&(vbat > 4480))
-			{
-				info->setting.cv = info->sw_jeita.cv;
-				fcc_cv_flag = 0;
-				chr_err("select_cv_5: setting.cv = %d\n", info->setting.cv);
+			if(counter1 == 6){
+				if(ibat_avg1 < 1800*1000){
+					info->setting.cv = info->sw_jeita.cv;
+					fcc_cv_flag = 0;
+					chr_err("select_cv_3: setting.cv = %d\n", info->setting.cv);
+					_mtk_enable_charging(info, false);
+					msleep(5000);
+					_mtk_enable_charging(info, true);
+				}
+				ibat_avg1 = 0;
+				counter1 = 0;
 			}
 
 			return;
