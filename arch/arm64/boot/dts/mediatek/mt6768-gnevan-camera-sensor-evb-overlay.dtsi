@@ -277,17 +277,26 @@
 			output-high;
 		};
 	};
+
+	flashlights_pwm_pin: flashlights_pwm_pin {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO165__FUNC_PWM1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 };
 
 &flashlights_ocp8135 {
 	compatible = "mediatek,flashlights_ocp8135";
-	pinctrl-names = "flash_default", "flash_en_pin0", "flash_en_pin1", "torch_en_pin0", "torch_en_pin1";
+	pinctrl-names = "flash_default", "flash_en_pin0", "flash_en_pin1", "torch_en_pin0", "torch_en_pin1", "flashlights_pwm_pin";
 
 	pinctrl-0 = <&flash_default>;
 	pinctrl-1 = <&flash_en_pin0>;
 	pinctrl-2 = <&flash_en_pin1>;
 	pinctrl-3 = <&torch_en_pin0>;
 	pinctrl-4 = <&torch_en_pin1>;
+	pinctrl-5 = <&flashlights_pwm_pin>;
 
 	decouple = <0>;
 	channel@1 {

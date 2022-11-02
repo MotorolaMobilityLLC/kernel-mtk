@@ -21,6 +21,18 @@
 
 #include "flashlight-core.h"
 #include "flashlight-dt.h"
+#ifdef CONFIG_MTK_PWM
+#include <mt-plat/mtk_pwm.h>
+#endif
+
+#undef LOG_INF
+#define FLASHLIGHTS_OCP8135_DEBUG 1
+#if FLASHLIGHTS_OCP8135_DEBUG
+#define LOG_INF(format, args...) pr_info("flashLight-ocp8135" "[%s]"  format, __func__,  ##args)
+#else
+#define LOG_INF(format, args...)
+#endif
+#define LOG_ERR(format, args...) pr_err("flashLight-ocp8135" "[%s]" format, __func__, ##args)
 
 /* define device tree */
 #ifndef OCP8135_DTNAME
@@ -43,6 +55,11 @@ static struct work_struct ocp8135_work;
 #define OCP8135_PINCTRL_STATE_HW_CH0_LOW  "torch_en_pin0"
 #define OCP8135_PINCTRL_STATE_HW_CH1_HIGH "flash_en_pin1"
 #define OCP8135_PINCTRL_STATE_HW_CH1_LOW  "flash_en_pin0"
+#define OCP8135_PINCTRL_PIN_PWN 1
+#define OCP8135_PINCTRL_STATE_HW_PWM_EN  "flashlights_pwm_pin"
+static struct pinctrl_state *flashlight_pwm_en;
+static int light_pwm_value;
+static int flash_pwm_value;
 static struct pinctrl *ocp8135_pinctrl;
 static struct pinctrl_state *ocp8135_hw_ch0_high;
 static struct pinctrl_state *ocp8135_hw_ch0_low;
@@ -98,9 +115,34 @@ static int ocp8135_pinctrl_init(struct platform_device *pdev)
 		pr_info("Failed to init (%s)\n", OCP8135_PINCTRL_STATE_HW_CH1_LOW);
 		ret = PTR_ERR(ocp8135_hw_ch1_low);
 	}
+	flashlight_pwm_en = pinctrl_lookup_state(ocp8135_pinctrl, OCP8135_PINCTRL_STATE_HW_PWM_EN);
+	if (IS_ERR(flashlight_pwm_en)) {
+		pr_err("Failed to init (%s)\n", OCP8135_PINCTRL_STATE_HW_PWM_EN);
+		ret = PTR_ERR(flashlight_pwm_en);
+	}
 
 	return ret;
 }
+int mt_flashlight_led_set_pwm(int pwm_num, u32 level)
+{
+    struct pwm_spec_config pwm_setting;
+    memset(&pwm_setting, 0, sizeof(struct pwm_spec_config));
+    pwm_setting.pwm_no = pwm_num;
+    pwm_setting.mode = PWM_MODE_OLD;
+    pwm_setting.pmic_pad = 0;
+    pwm_setting.clk_div = CLK_DIV32;
+    pwm_setting.clk_src = PWM_CLK_OLD_MODE_BLOCK;
+    pwm_setting.PWM_MODE_OLD_REGS.IDLE_VALUE = 0;
+    pwm_setting.PWM_MODE_OLD_REGS.GUARD_VALUE = 0;
+    pwm_setting.PWM_MODE_OLD_REGS.GDURATION = 0;
+    pwm_setting.PWM_MODE_OLD_REGS.WAVE_NUM = 0;
+    /* The number of clk contained in a complete waveform */
+    pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH = 100;
+    pwm_setting.PWM_MODE_OLD_REGS.THRESH = level;
+    pwm_set_spec_config(&pwm_setting);
+    return 0;
+}
+static DEFINE_MUTEX(flashlight_gpio_lock);
 
 static int ocp8135_pinctrl_set(int pin, int state)
 {
@@ -110,29 +152,54 @@ static int ocp8135_pinctrl_set(int pin, int state)
 		pr_info("pinctrl is not available\n");
 		return -1;
 	}
-
+	mutex_lock(&flashlight_gpio_lock);
 	switch (pin) {
 	case OCP8135_PINCTRL_PIN_HWEN:
-		if (state == OCP8135_PINCTRL_PINSTATE_LOW
-			&& !IS_ERR(ocp8135_hw_ch0_low) && !IS_ERR(ocp8135_hw_ch1_low))
+		if (state == OCP8135_PINCTRL_PINSTATE_LOW && !IS_ERR(ocp8135_hw_ch1_low))  //flash mode
 		{
 			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch0_low);
 			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_low);
+			mdelay(6);
 		}
 		else if (state == OCP8135_PINCTRL_PINSTATE_HIGH
-			&& !IS_ERR(ocp8135_hw_ch0_high) && !IS_ERR(ocp8135_hw_ch1_high) && !IS_ERR(ocp8135_hw_ch1_low))
+			&& !IS_ERR(ocp8135_hw_ch1_high) && !IS_ERR(flashlight_pwm_en))
 		{
-			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch0_high);
-			if(g_flash_channel_idx == 1)
-				ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_high);
-			else if(g_flash_channel_idx == 0)
-				ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_low);
+			pr_info("flashlights enter flash_pwm_value= %d\n", flash_pwm_value);
+
+			ret = pinctrl_select_state(ocp8135_pinctrl, flashlight_pwm_en);
+			mt_flashlight_led_set_pwm(1, flash_pwm_value);
+            mdelay(2);
+			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_low);
+			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_high);
+
 		}
+		break;
+	case OCP8135_PINCTRL_PIN_PWN:
+		if (state == OCP8135_PINCTRL_PINSTATE_LOW &&
+				!IS_ERR(ocp8135_hw_ch0_low)){
+			pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch0_low);
+			pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_low);
+			mdelay(6);
+		}
+		else if (state == OCP8135_PINCTRL_PINSTATE_HIGH &&
+				!IS_ERR(ocp8135_hw_ch0_high) && !IS_ERR(flashlight_pwm_en)){	//torch mode
+			pr_info("flashlights enter torch_pwm_value= %d\n", light_pwm_value);
+			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch1_low);
+			ret = pinctrl_select_state(ocp8135_pinctrl, ocp8135_hw_ch0_high);
+			mdelay(6);
+			ret = pinctrl_select_state(ocp8135_pinctrl, flashlight_pwm_en); //ENM
+			ret = pinctrl_select_state(ocp8135_pinctrl, flashlight_pwm_en);
+			mt_flashlight_led_set_pwm(1, light_pwm_value);
+		}
+
+		else
+			pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	default:
 		pr_info("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	}
+	mutex_unlock(&flashlight_gpio_lock);
 	pr_debug("pin(%d) state(%d), ret:%d\n", pin, state, ret);
 
 	return ret;
@@ -145,26 +212,22 @@ static int ocp8135_pinctrl_set(int pin, int state)
 /* flashlight enable function */
 static int ocp8135_enable(void)
 {
-	int pin = OCP8135_PINCTRL_PIN_HWEN;
-
-	if (g_flash_duty == 1) {
-		ocp8135_pinctrl_set(pin, 1);
+	if  (g_flash_duty >= 15){
+		flash_pwm_value = 81;
+		ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, 1);
 	} else {
-		ocp8135_pinctrl_set(pin, 1);
-		ocp8135_pinctrl_set(pin, 0);
+		light_pwm_value = 50;
+		ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWN, 1);
 	}
-	ocp8135_pinctrl_set(pin, 1);
-
 	return 0;
 }
 
 /* flashlight disable function */
 static int ocp8135_disable(void)
 {
-	int pin = 0;
-	int state = 0;
-
-	return ocp8135_pinctrl_set(pin, state);
+	ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_LOW);
+	ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWN, OCP8135_PINCTRL_PINSTATE_LOW);
+	return 0;
 }
 
 /* set flashlight level */
@@ -236,11 +299,6 @@ static int ocp8135_ioctl(unsigned int cmd, unsigned long arg)
 		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		ocp8135_set_level(fl_arg->arg);
-		if((int)fl_arg->arg >= 15)
-			g_flash_channel_idx = 1;
-		else
-			g_flash_channel_idx = 0;
-		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
@@ -395,6 +453,118 @@ err_node_put:
 }
 
 #ifdef FLASH_NODE
+
+#include <linux/cdev.h>
+
+#define WT_FLASHLIGHT_DEVNAME            "flash"
+static dev_t flashlight_geneva;
+static struct cdev *flashlight_cdev;
+static struct class *flashlight_class;
+static struct device *flashlight_device;
+static unsigned long flashduty1;
+
+static const struct file_operations wt_flashlight_fops = {
+    .owner = THIS_MODULE,
+    .unlocked_ioctl = NULL,
+    .open = NULL,
+    .release = NULL,
+#ifdef CONFIG_COMPAT
+    .compat_ioctl = NULL,
+#endif
+};
+static ssize_t show_flashduty1(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    pr_info("[LED]get backlight duty value is:%d\n", flashduty1);
+    return sprintf(buf, "%d\n", flashduty1);
+}
+
+static ssize_t store_flashduty1(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int err;
+	pr_info("Enter!\n");
+	err = kstrtoul(buf, 10, &flashduty1);
+	if(err != 0){
+		return err;
+	}
+        pr_info("ss-torch:set torch level,flashduty1= %d\n", flashduty1);
+
+	switch(flashduty1){
+		case 1001:
+			flash_pwm_value = 28;
+			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+			break;
+
+		case 1002:
+			flash_pwm_value = 38;
+			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+			break;
+
+		case 1003:
+			flash_pwm_value = 48;
+			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+			break;
+
+		case 1005:
+			flash_pwm_value = 58;
+			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+			break;
+
+		case 1007:
+			flash_pwm_value = 81;
+			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+			break;
+
+		default:
+			flash_pwm_value = 45;
+			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+			break;
+	}
+	pr_info("Exit!\n");
+	return count;
+}
+
+static DEVICE_ATTR(rear_flash, 0664, show_flashduty1, store_flashduty1);
+
+
+int ss_flashlight_node_create(void)
+{
+	// create node /sys/class/camera/flash/rear_flash
+	if (alloc_chrdev_region(&flashlight_geneva, 0, 1, WT_FLASHLIGHT_DEVNAME)) {
+		pr_err("[flashlight_probe] alloc_chrdev_region fail~");
+	} else {
+		pr_err("[flashlight_probe] major: %d, minor: %d ~", MAJOR(flashlight_geneva),
+			MINOR(flashlight_geneva));
+	}
+
+	flashlight_cdev = cdev_alloc();
+	if (!flashlight_cdev) {
+		pr_err("[flashlight_probe] Failed to allcoate cdev\n");
+	}
+	flashlight_cdev->ops = &wt_flashlight_fops;
+	flashlight_cdev->owner = THIS_MODULE;
+	if (cdev_add(flashlight_cdev, flashlight_geneva, 1)) {
+		pr_err("[flashlight_probe] cdev_add fail ~" );
+	}
+	flashlight_class = class_create(THIS_MODULE, "camera");   //  /sys/class/camera
+	if (IS_ERR(flashlight_class)) {
+		pr_err("[flashlight_probe] Unable to create class, err = %d ~",
+			(int)PTR_ERR(flashlight_class));
+		return -1 ;
+	}
+	flashlight_device =
+		device_create(flashlight_class, NULL, flashlight_geneva, NULL, WT_FLASHLIGHT_DEVNAME);  //   /sys/class/camera/flash
+	if (NULL == flashlight_device) {
+		pr_err("[flashlight_probe] device_create fail ~");
+	}
+	if (device_create_file(flashlight_device,&dev_attr_rear_flash)) { // /sys/class/camera/flash/rear_flash
+		pr_err("[flashlight_probe]device_create_file flash1 fail!\n");
+	}
+	return 0;
+}
+
+#endif
+
+#ifdef FLASH_NODE
 static int led_flash_state = 0;
 static ssize_t led_flash_show(struct device *dev, struct device_attribute *attr, char *buf){
     return sprintf(buf, "%d\n", led_flash_state);
@@ -495,6 +665,16 @@ static int ocp8135_probe(struct platform_device *pdev)
 	ret = ocp8135_pinctrl_set(0, 0);
 	if(ret < 0)
 		pr_info("AAA - error2 - AAA\n");
+
+#ifdef FLASH_NODE
+		ret = device_create_file(&pdev->dev, &dev_attr_rear_flash);
+		if(ret < 0){
+			pr_err("=== create led_flash_node file failed ===\n");
+		}
+		if (ss_flashlight_node_create() < 0){
+			pr_err( "ss_flashlight_node_create failed!\n");
+		}
+#endif
 
 #ifdef FLASH_NODE
 	ret = device_create_file(&pdev->dev, &dev_attr_led_flash);
