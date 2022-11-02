@@ -16,6 +16,13 @@
 #define AW_GET_MAX_VALUE(value1, value2)  \
 	((value1) > (value2) ? (value1) : (value2))
 
+#ifndef CONFIG_AW882XX_RAMP_SUPPORT
+#define CONFIG_AW882XX_RAMP_SUPPORT 1
+#endif
+
+/* 6db * (208 >> 6) + 0.125db * (208 % 64) = 20 db */
+#define AW_ATTENUATION_VOL      208
+
 enum {
 	AW_1000_US = 1000,
 	AW_2000_US = 2000,
@@ -313,6 +320,16 @@ struct aw_device {
 	struct aw_efcheck_desc efcheck_desc;
 	struct aw_device_ops ops;
 	struct list_head list_node;
+#ifdef CONFIG_AW882XX_RAMP_SUPPORT
+	uint32_t ramp_en;
+	uint32_t ramp_in_process;
+	struct workqueue_struct *ramp_queue;
+	struct delayed_work ramp_work;
+	struct delayed_work attenuate_work;
+	uint32_t attenuate_en;
+	uint32_t attenuate_in_process;
+#endif
+
 };
 
 
@@ -355,6 +372,13 @@ int aw882xx_dev_get_list_head(struct list_head **head);
 int aw882xx_dev_set_volume(struct aw_device *aw_dev, unsigned int set_vol);
 int aw882xx_dev_get_volume(struct aw_device *aw_dev, unsigned int *get_vol);
 void aw882xx_dev_mute(struct aw_device *aw_dev, bool mute);
+
+#ifdef CONFIG_AW882XX_RAMP_SUPPORT
+int aw882xx_dev_set_ramp_status(struct aw_device *aw_dev, uint32_t set_ramp);
+int aw882xx_dev_get_ramp_status(struct aw_device *aw_dev, uint32_t *get_ramp);
+int aw882xx_dev_set_attenuate_status(struct aw_device *aw_dev, uint32_t set_attenuate);
+int aw882xx_dev_get_attenuate_status(struct aw_device *aw_dev, uint32_t *get_attenuate);
+#endif
 
 #endif
 
