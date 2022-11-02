@@ -28,6 +28,17 @@ enum {
 	AW_EXT_DSP_WRITE,
 };
 
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+static unsigned int g_ramp_volume[22] = {221,221,
+216,216,216,210,210,
+205,205,205,199,199,
+199,194,194,188,188,
+155,122,83,50,0};
+
+static unsigned int g_ramp_time_ms = 100; //100ms
+static unsigned int g_ramp_step = 22; //step0~step21
+#endif
+
 static unsigned int g_fade_in_time = AW_1000_US / 10;
 static unsigned int g_fade_out_time = AW_1000_US >> 1;
 static LIST_HEAD(g_dev_list);
@@ -84,6 +95,126 @@ int aw883xx_dev_get_volume(struct aw_device *aw_dev, uint16_t *get_vol)
 	return 0;
 }
 
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+int aw883xx_dev_set_ramp_status(struct aw_device *aw_dev, uint32_t set_ramp)
+{
+	aw_dev_info(aw_dev->dev,"original ramp_en=%d, set_ramp=%d, channel=%d",
+			aw_dev->ramp_en, set_ramp, aw_dev->channel);
+
+	// set ramp for top speaker only
+	if (aw_dev->channel == 0) {
+		aw_dev->ramp_en = set_ramp;
+
+		//cancel ramp if in process
+		if(set_ramp == 0)
+			aw_dev->ramp_in_process = 0;
+	}
+
+	return 0;
+}
+
+int aw883xx_dev_get_ramp_status(struct aw_device *aw_dev, uint32_t *get_ramp)
+{
+	*get_ramp = aw_dev->ramp_en;
+
+	return 0;
+}
+
+
+static void aw_dev_do_ramp(struct aw_device *aw_dev)
+{
+	int i = 0;
+	struct aw_volume_desc *desc = &aw_dev->volume_desc;
+	uint16_t ramp_target_vol = desc->ctl_volume;
+	unsigned int vol;
+
+	if ((!aw_dev->ramp_en) || (!aw_dev->ramp_in_process))
+		return;
+
+	aw_dev_info(aw_dev->dev,"ramp started");
+
+	/*volume up*/
+	for (i = 0; i < g_ramp_step; i++) {
+		vol = g_ramp_volume[i];
+		if (vol < ramp_target_vol)
+			vol = ramp_target_vol;
+
+		aw_dev_info(aw_dev->dev,"ramp on, step:%d,set vol :%d",i,vol);
+		aw883xx_dev_set_volume(aw_dev, vol);
+
+		msleep(g_ramp_time_ms);
+		if (aw_dev->ramp_in_process == 0) {
+			aw_dev_info(aw_dev->dev,"ramp canceled");
+			return;
+		}
+	}
+
+	if (vol != ramp_target_vol){
+		aw_dev_info(aw_dev->dev,"set target_vol:%d",ramp_target_vol);
+		aw883xx_dev_set_volume(aw_dev, ramp_target_vol);
+	}
+
+	aw_dev_info(aw_dev->dev, "ramp done");
+
+	aw_dev->ramp_in_process = 0;
+}
+
+static void aw_dev_ramp_work(struct work_struct *work)
+{
+	struct aw_device *aw_dev =
+		container_of(work, struct aw_device, ramp_work.work);
+
+	aw_dev_do_ramp(aw_dev);
+}
+
+static void aw_dev_attenuate_work(struct work_struct *work)
+{
+	struct aw_device *aw_dev =
+		container_of(work, struct aw_device, attenuate_work.work);
+	struct aw_volume_desc *desc;
+
+	aw_dev_dbg(aw_dev->dev,"enter attenuate work");
+
+	if (aw_dev == NULL){
+		aw_dev_err(aw_dev->dev,"aw_device is null, return");
+		return;
+	}
+
+	desc = &aw_dev->volume_desc;
+	if (desc == NULL){
+		aw_dev_err(aw_dev->dev,"aw_dev->volume_desc is null, return");
+                return;
+	}
+
+	if (aw_dev->attenuate_in_process){
+		aw_dev_info(aw_dev->dev,"5s later, restore attenuattion, ctl_volume = %d", desc->ctl_volume);
+		aw883xx_dev_set_volume(aw_dev, desc->ctl_volume);
+		aw_dev->attenuate_in_process = 0;
+	} else {
+		aw_dev_info(aw_dev->dev,"attenuattion is 0, do nothing");
+	}
+}
+
+int aw883xx_dev_set_attenuate_status(struct aw_device *aw_dev, uint32_t set_attenuate)
+{
+	aw_dev_info(aw_dev->dev,"original attenuate_en=%d, set_attenuate=%d, channel=%d",
+		aw_dev->attenuate_en, set_attenuate, aw_dev->channel);
+
+	// set ramp for top speaker only
+	if (aw_dev->channel == 0) {
+		aw_dev->attenuate_en = set_attenuate;
+        }
+
+        return 0;
+}
+
+int aw883xx_dev_get_attenuate_status(struct aw_device *aw_dev, uint32_t *get_attenuate)
+{
+	*get_attenuate = aw_dev->attenuate_en;
+	return 0;
+}
+#endif
+
 static void aw_dev_fade_in(struct aw_device *aw_dev)
 {
 	int i = 0;
@@ -92,6 +223,20 @@ static void aw_dev_fade_in(struct aw_device *aw_dev)
 	uint16_t fade_in_vol = desc->ctl_volume;
 	if (!aw_dev->fade_en)
 		return;
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	if(aw_dev->attenuate_en){
+		aw_dev_info(aw_dev->dev,"attenuate enabled, reduce fade_in_vol to%d",fade_in_vol);
+		fade_in_vol += AW_ATTENUATION_VOL;  //reduce 20db
+
+		//we should cancel attenuation 5s later in case speaker is still on
+		aw_dev_info(aw_dev->dev,"schedule work to cancel attenuation 5s later");
+		aw_dev->attenuate_in_process = 1;
+		queue_delayed_work(aw_dev->ramp_queue,
+				&aw_dev->attenuate_work,
+				5*HZ);
+	}
+#endif
 
 	if (fade_step == 0 || g_fade_in_time == 0) {
 		aw883xx_dev_set_volume(aw_dev, fade_in_vol);
@@ -232,7 +377,7 @@ static int aw_dev_set_dsp_crc32(struct aw_device *aw_dev)
 static int aw_dev_dsp_crc_check_enable(struct aw_device *aw_dev, bool flag)
 {
 	struct aw_dsp_crc_desc *dsp_crc_desc = &aw_dev->dsp_crc_desc;
-	int ret;
+	int ret = -1;
 
 	aw_dev_info(aw_dev->dev, "enter,flag:%d", flag);
 	if (flag) {
@@ -355,14 +500,42 @@ void aw883xx_dev_mute(struct aw_device *aw_dev, bool mute)
 	struct aw_mute_desc *mute_desc = &aw_dev->mute_desc;
 
 	aw_dev_dbg(aw_dev->dev, "enter");
+
 	if (mute) {
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+		if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->ramp_in_process)){
+			aw_dev_info(aw_dev->dev,"amp inprocess,cancel it as mute set ");
+			aw_dev->ramp_in_process = 0;
+		}
+		if ((aw_dev->channel == 0) && (aw_dev->attenuate_in_process)) {
+			aw_dev_info(aw_dev->dev,"attenuation still enabled when mute set to %d,disable it",mute);
+			aw_dev->attenuate_in_process = 0;
+			cancel_delayed_work_sync(&aw_dev->attenuate_work);
+		}
+#endif
 		aw_dev_fade_out(aw_dev);
 		aw_dev->ops.aw_reg_write_bits(aw_dev, mute_desc->reg,
 				mute_desc->mask, mute_desc->enable);
 	} else {
 		aw_dev->ops.aw_reg_write_bits(aw_dev, mute_desc->reg,
 				mute_desc->mask, mute_desc->disable);
-		aw_dev_fade_in(aw_dev);
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+		aw_dev_info(aw_dev->dev,"channel=%d,ramp_en=%d,cur_prof=%d", aw_dev->channel, aw_dev->ramp_en, aw_dev->cur_prof);
+
+		if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->cur_prof < 3)){
+			//aw_dev_do_ramp(aw_dev);
+			if (aw_dev->ramp_in_process) {
+				aw_dev_info(aw_dev->dev,"ramp already in process");
+			} else {
+				aw_dev->ramp_in_process = 1;
+				queue_delayed_work(aw_dev->ramp_queue,
+                                                &aw_dev->ramp_work,
+                                                0);
+			}
+		} else
+#endif
+		   aw_dev_fade_in(aw_dev);
 	}
 	aw_dev_info(aw_dev->dev, "done");
 }
@@ -1650,6 +1823,14 @@ static void aw883xx_parse_fade_enable_dt(struct aw_device *aw_dev)
 	}
 
 	aw_dev->fade_en = fade_en;
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	aw_dev->ramp_en = 0;
+	aw_dev->ramp_in_process = 0;
+	aw_dev->attenuate_en = 0;
+	aw_dev->attenuate_in_process = 0;
+#endif
+
 }
 
 static void aw883xx_parse_re_range_dt(struct aw_device *aw_dev)
@@ -1713,12 +1894,31 @@ int aw883xx_device_probe(struct aw_device *aw_dev)
 
 	aw883xx_spin_init(&aw_dev->spin_desc);
 
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	aw_dev->ramp_queue = create_singlethread_workqueue("aw883xx_ramp");
+	if (!aw_dev->ramp_queue) {
+		aw_dev_err(aw_dev->dev, "create workqueue failed !");
+		return -EINVAL;
+	}
+
+	INIT_DELAYED_WORK(&aw_dev->ramp_work, aw_dev_ramp_work);
+	INIT_DELAYED_WORK(&aw_dev->attenuate_work, aw_dev_attenuate_work);
+#endif
+
 	return 0;
 }
 
 int aw883xx_device_remove(struct aw_device *aw_dev)
 {
 	aw883xx_monitor_deinit(&aw_dev->monitor_desc);
+
+#ifdef CONFIG_AW883XX_RAMP_SUPPORT
+	cancel_delayed_work_sync(&aw_dev->ramp_work);
+	cancel_delayed_work_sync(&aw_dev->attenuate_work);
+
+	if (aw_dev->ramp_queue)
+		destroy_workqueue(aw_dev->ramp_queue);
+#endif
 
 	aw883xx_cali_deinit(&aw_dev->cali_desc);
 
