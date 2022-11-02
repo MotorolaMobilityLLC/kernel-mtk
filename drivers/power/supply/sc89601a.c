@@ -651,7 +651,7 @@ static int sc89601a_init_device(struct sc89601a *sc)
 	sc89601a_set_sys_min(sc, 0x5);  // sys min 3.5V
 	sc89601a_set_batlowv(sc, 0x1);	//battery low 3.0V
 	sc89601a_set_vrechg(sc, 0);	    //recharge delta 100mV
-	sc89601a_set_chargevolt(sc, 4400);	// VREG 4.4V
+	sc89601a_set_chargevolt(sc, 4480);	// VREG 4.4V
 	sc89601a_enable_term(sc, SC89601A_TERM_ENABLE);	//enable termination
 	sc89601a_set_charge_timer(sc, SC89601A_CHG_TIMER_12HOURS); //safety charge time upto 12h
 	sc89601a_set_vindpm_os(sc, 400);
