@@ -1449,6 +1449,7 @@ void set_scp_mpu(void)
 }
 #endif
 
+#ifndef CONFIG_SOIS_BOOST_CPU
 void scp_register_feature(enum feature_id id)
 {
 	int ret = 0;
@@ -1511,8 +1512,13 @@ void scp_register_feature(enum feature_id id)
 	mutex_unlock(&scp_feature_mutex);
 }
 EXPORT_SYMBOL_GPL(scp_register_feature);
+#endif
 
+#ifdef CONFIG_SOIS_BOOST_CPU
+static void scp_control_feature(enum feature_id id, bool enable)
+#else
 void scp_deregister_feature(enum feature_id id)
+#endif
 {
 	int ret = 0;
 
@@ -1537,7 +1543,11 @@ void scp_deregister_feature(enum feature_id id)
 	}
 	mutex_lock(&scp_feature_mutex);
 
+#ifdef CONFIG_SOIS_BOOST_CPU
+	feature_table[id].enable = enable;
+#else
 	feature_table[id].enable = 0;
+#endif
 
 	if (scp_dvfs_feature_enable())
 		scp_expected_freq = scp_get_freq();
@@ -1571,10 +1581,28 @@ void scp_deregister_feature(enum feature_id id)
 
 	mutex_unlock(&scp_feature_mutex);
 }
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+void scp_register_feature(enum feature_id id)
+{
+	scp_control_feature(id, true);
+}
+EXPORT_SYMBOL_GPL(scp_register_feature);
+
+void scp_deregister_feature(enum feature_id id)
+{
+	scp_control_feature(id, false);
+}
+#endif
+
 EXPORT_SYMBOL_GPL(scp_deregister_feature);
 
 /*scp sensor type register*/
+#ifdef CONFIG_SOIS_BOOST_CPU
+void scp_register_sensor(enum feature_id id, int sensor_id)
+#else
 void scp_register_sensor(enum feature_id id, enum scp_sensor_id sensor_id)
+#endif
 {
 	uint32_t i;
 
@@ -1586,6 +1614,14 @@ void scp_register_sensor(enum feature_id id, enum scp_sensor_id sensor_id)
 		pr_debug("[SCP]register sensor id err");
 		return;
 	}
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+	if (sensor_id >= NUM_SENSOR_TYPE) {
+		pr_info("[SCP] sensor id not in sensor freq table");
+		return;
+	}
+#endif
+
 	/* because feature_table is a global variable
 	 * use mutex lock to protect it from
 	 * accessing in the same time
@@ -1597,13 +1633,30 @@ void scp_register_sensor(enum feature_id id, enum scp_sensor_id sensor_id)
 	}
 
 	/* register sensor*/
+#ifdef CONFIG_SOIS_BOOST_CPU
+	scp_control_feature(id, true);
+#else
 	scp_register_feature(id);
+#endif
 	mutex_unlock(&scp_register_sensor_mutex);
 
 }
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+EXPORT_SYMBOL_GPL(scp_register_sensor);
+#endif
+
 /*scp sensor type deregister*/
+#ifdef CONFIG_SOIS_BOOST_CPU
+void scp_deregister_sensor(enum feature_id id, int sensor_id)
+#else
 void scp_deregister_sensor(enum feature_id id, enum scp_sensor_id sensor_id)
+#endif
 {
+#ifdef CONFIG_SOIS_BOOST_CPU
+	bool feature_enable = false;
+#endif
+
 	uint32_t i;
 
 	/* prevent from access when scp is down */
@@ -1614,19 +1667,47 @@ void scp_deregister_sensor(enum feature_id id, enum scp_sensor_id sensor_id)
 		pr_debug("[SCP]deregister sensor id err");
 		return;
 	}
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+	if (sensor_id < 0 || sensor_id >= NUM_SENSOR_TYPE) {
+		pr_info("[SCP] sensor id not in sensor freq table");
+		return;
+	}
+#endif
+
 	/* because feature_table is a global variable
 	 * use mutex lock to protect it from
 	 * accessing in the same time
 	 */
 	mutex_lock(&scp_register_sensor_mutex);
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+	if (sensor_type_table[sensor_id].feature == sensor_id)
+		sensor_type_table[sensor_id].enable = 0;
+
+	for (i = 0; i < NUM_SENSOR_TYPE; i++) {
+		if (sensor_type_table[i].enable)
+			feature_enable = true;
+	}
+#else
 	for (i = 0; i < NUM_SENSOR_TYPE; i++) {
 		if (sensor_type_table[i].feature == sensor_id)
 			sensor_type_table[i].enable = 0;
 	}
+#endif
+
 	/* deregister sensor*/
+#ifdef CONFIG_SOIS_BOOST_CPU
+	scp_control_feature(id, feature_enable);
+#else
 	scp_deregister_feature(id);
+#endif
 	mutex_unlock(&scp_register_sensor_mutex);
 }
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+EXPORT_SYMBOL_GPL(scp_deregister_sensor);
+#endif
 
 /*
  * apps notification

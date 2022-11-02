@@ -1048,8 +1048,14 @@ int mtk_nanohub_enable_to_hub(uint8_t sensor_id, int enabledisable)
 	int ret = 0;
 	uint32_t apopen[3] = {0};//moto add
 
+#ifdef CONFIG_SOIS_BOOST_CPU
+	if (enabledisable == 1)
+		scp_register_sensor(SENS_FEATURE_ID, sensor_type);
+#else
 	if (enabledisable == 1 && (READ_ONCE(scp_system_ready)))
 		scp_register_feature(SENS_FEATURE_ID);
+#endif
+
 	mutex_lock(&sensor_state_mtx);
 	if (sensor_id >= ID_SENSOR_MAX) {
 		pr_err("invalid id %d\n", sensor_id);
@@ -1067,8 +1073,17 @@ int mtk_nanohub_enable_to_hub(uint8_t sensor_id, int enabledisable)
 	if (atomic_read(&power_status) == SENSOR_POWER_UP) {
 		ret = nanohub_external_write((const uint8_t *)&cmd,
 			sizeof(struct ConfigCmd));
+#ifdef CONFIG_SOIS_BOOST_CPU
+		if (ret < 0) {
+			if (enabledisable)
+				scp_deregister_sensor(SENS_FEATURE_ID,
+					sensor_type);
+ 			pr_err("fail enable: [%d,%d]\n", sensor_id, cmd.cmd);
+		}
+#else
 		if (ret < 0)
 			pr_err("fail enable: [%d,%d]\n", sensor_id, cmd.cmd);
+#endif
 	}
 	//moto add:AP open ps send message to tell scp
 	if(sensor_type == SENSOR_TYPE_PROXIMITY) {
@@ -1084,6 +1099,12 @@ int mtk_nanohub_enable_to_hub(uint8_t sensor_id, int enabledisable)
 
 	if (!enabledisable)
 		mtk_nanohub_disable_report_flush(sensor_id);
+
+#ifdef CONFIG_SOIS_BOOST_CPU
+	if (enabledisable == 0)
+		scp_deregister_sensor(SENS_FEATURE_ID, sensor_type);
+#endif
+
 	mutex_unlock(&sensor_state_mtx);
 	return ret < 0 ? ret : 0;
 }
