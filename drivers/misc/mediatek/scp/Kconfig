@@ -35,3 +35,10 @@ config MTK_TINYSYS_SCP_RV_SUPPORT
 	default n
 	help
 	  MTK_TINYSYS_SCP_VERSION define which scp version will be used
+
+config SOIS_BOOST_CPU
+        tristate "sois boost scp cpu to 416Mhz"
+	depends on MTK_TINYSYS_SCP_SUPPORT
+	default n
+	help
+	  SOIS need to boost scp cpu to max.
