@@ -29,7 +29,6 @@
 #include <linux/clk.h>
 #endif
 
-#include <mt-plat/mtk_wd_api.h>
 #include <mtk_gpu_utility.h>
 #include <linux/time.h>
 
@@ -232,13 +231,6 @@ void __attribute__ ((weak))
 mt_ptp_unlock(unsigned long *flags)
 {
 	pr_notice("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
-}
-
-int __attribute__ ((weak))
-get_wd_api(struct wd_api **obj)
-{
-	pr_notice("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
-	return -1;
 }
 
 /*=============================================================*/
@@ -1419,8 +1411,6 @@ void tscpu_thermal_initial_all_tc(void)
 void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 {
 	int i = 0;
-	int wd_api_ret;
-	struct wd_api *wd_api;
 
 	tscpu_dprintk(
 	"%s,temperature=%d,temperature2=%d,\n", __func__,
@@ -1436,14 +1426,7 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	/* Thermal need to config to direct reset mode
 	 * this API provide by Weiqi Fu(RGU SW owner).
 	 */
-	wd_api_ret = get_wd_api(&wd_api);
-	if (wd_api_ret >= 0) {
-		wd_api->wd_thermal_direct_mode_config(WD_REQ_DIS,
-					WD_REQ_RST_MODE);	/* reset mode */
-	} else {
-		tscpu_warn("%d FAILED TO GET WD API\n", __LINE__);
-		WARN_ON_ONCE(1);
-	}
+	//TODO
 #if THERMAL_PERFORMANCE_PROFILE
 	do_gettimeofday(&end);
 
@@ -1463,13 +1446,7 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	/*Thermal need to config to direct reset mode
 	 *  this API provide by Weiqi Fu(RGU SW owner).
 	 */
-	if (wd_api_ret >= 0) {
-		wd_api->wd_thermal_direct_mode_config(WD_REQ_EN,
-					WD_REQ_RST_MODE);	/* reset mode */
-	} else {
-		tscpu_warn("%d FAILED TO GET WD API\n", __LINE__);
-		WARN_ON_ONCE(1);
-	}
+	//TODO
 }
 
 void tscpu_reset_thermal(void)
