@@ -60,8 +60,8 @@
 };
 
 &i2c6 {
-	aw36515:aw36515@63 {
-		compatible = "mediatek,aw36515";
+	aw36518:aw36518@63 {
+		compatible = "mediatek,aw36518";
 		reg = <0x63>;
 		#cooling-cells = <2>;
 		status = "okay";
@@ -73,17 +73,6 @@
 			port@0 {
 				fl_core_0: endpoint {
 					remote-endpoint = <&flashlight_0>;
-				};
-			};
-		};
-		flash@1{
-			reg = <1>;
-			type = <0>;
-			ct = <1>;
-			part = <0>;
-			port@1 {
-				fl_core_1: endpoint {
-					remote-endpoint = <&flashlight_1>;
 				};
 			};
 		};
@@ -139,11 +128,6 @@
 	port@0 {
 		flashlight_0: endpoint {
 			remote-endpoint = <&fl_core_0>;
-		};
-	};
-	port@1 {
-		flashlight_1: endpoint {
-			remote-endpoint = <&fl_core_1>;
 		};
 	};
 };
