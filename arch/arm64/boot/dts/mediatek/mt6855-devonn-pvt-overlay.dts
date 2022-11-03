@@ -32,7 +32,6 @@
 
 	touch@0{
 
-		chipone,cs-gpio = <&pio 74 0x0>;
 		chipone,ldo_en_flag = <1>;
 	};
 };
