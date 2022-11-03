@@ -70,7 +70,6 @@
 				<0x02 0x05>;
 
                 ktd,hwen-gpio = <&pio 8 1>;
-                ktd,pwm-mode = <0>; /* 0 pwm enable;1 PWM disable */
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
                 ktd,bl-fscal-led = <0xC1>; /* 24.2mA */
