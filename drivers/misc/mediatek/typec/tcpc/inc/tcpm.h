@@ -141,10 +141,13 @@ enum {
 	TCP_NOTIFY_TYPEC_OTP,
 	TCP_NOTIFY_PLUG_OUT,
 	TCP_NOTIFY_MISC_END = TCP_NOTIFY_CABLE_TYPE,
+	/*mmi pd vdm verify*/
+	TCP_NOTIFY_PD_VDM_VERIFY,
 };
 
 struct tcp_ny_pd_state {
 	uint8_t connected;
+	uint8_t vdm_verify;
 };
 
 struct tcp_ny_swap_state {
