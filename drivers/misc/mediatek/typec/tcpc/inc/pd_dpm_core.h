@@ -201,6 +201,17 @@ int pd_dpm_notify_pe_hardreset(struct pd_port *pd_port);
 
 /* TCPCI - VBUS Control */
 
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+extern bool mmi_dfp_u_notify_discover_svid(
+	struct pd_port *pd_port, struct svdm_svid_data *svid_data, bool ack);
+extern bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
+		struct svdm_svid_data *svid_data, bool ack);
+extern int mmi_notify_pe_ready(struct pd_port *pd_port,
+		struct svdm_svid_data *svid_data);
+extern bool mmi_dfp_notify_pe_startup(
+	struct pd_port *pd_port, struct svdm_svid_data *svid_data);
+#endif /* CONFIG_SUPPORT_MMI_ADAPTER */
+
 static inline int pd_dpm_check_vbus_valid(struct pd_port *pd_port)
 {
 	return tcpci_check_vbus_valid(pd_port->tcpc);
