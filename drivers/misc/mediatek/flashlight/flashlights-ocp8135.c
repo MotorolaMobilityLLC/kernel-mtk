@@ -38,6 +38,7 @@
 #ifndef OCP8135_DTNAME
 #define OCP8135_DTNAME "mediatek,flashlights_ocp8135"
 #endif
+#define FLASH_NODE
 
 #define OCP8135_NAME "flashlights_ocp8135"
 
@@ -136,7 +137,7 @@ int mt_flashlight_led_set_pwm(int pwm_num, u32 level)
     pwm_setting.PWM_MODE_OLD_REGS.GUARD_VALUE = 0;
     pwm_setting.PWM_MODE_OLD_REGS.GDURATION = 0;
     pwm_setting.PWM_MODE_OLD_REGS.WAVE_NUM = 0;
-    /* The number of clk contained in a complete waveform */
+    /* The number of clk contained in a complete waveform, 100 <-> 20khz */
     pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH = 100;
     pwm_setting.PWM_MODE_OLD_REGS.THRESH = level;
     pwm_set_spec_config(&pwm_setting);
@@ -462,6 +463,7 @@ static struct cdev *flashlight_cdev;
 static struct class *flashlight_class;
 static struct device *flashlight_device;
 static unsigned long flashduty1;
+static unsigned long flashduty2;
 
 static const struct file_operations wt_flashlight_fops = {
     .owner = THIS_MODULE,
@@ -488,6 +490,17 @@ static ssize_t store_flashduty1(struct device *dev, struct device_attribute *att
 	}
         pr_info("ss-torch:set torch level,flashduty1= %d\n", flashduty1);
 
+
+	if (flashduty1 < 66 || flashduty1 > 1330){//the duty cycle is greater than 5%
+		pr_info("echo flashduty1 error!\n");
+		return 0;
+	}
+	flash_pwm_value = flashduty1*100/1330;
+	pr_info("flash_pwm_value =%d \n",flash_pwm_value);
+	ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
+	mdelay(83);
+	ocp8135_disable();
+# if 0
 	switch(flashduty1){
 		case 1001:
 			flash_pwm_value = 28;
@@ -519,6 +532,7 @@ static ssize_t store_flashduty1(struct device *dev, struct device_attribute *att
 			ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_HIGH);
 			break;
 	}
+#endif
 	pr_info("Exit!\n");
 	return count;
 }
@@ -557,6 +571,47 @@ int ss_flashlight_node_create(void)
 		pr_err("[flashlight_probe] device_create fail ~");
 	}
 	if (device_create_file(flashlight_device,&dev_attr_rear_flash)) { // /sys/class/camera/flash/rear_flash
+		pr_err("[flashlight_probe]device_create_file flash1 fail!\n");
+	}
+	return 0;
+}
+
+static ssize_t show_flashduty2(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    pr_info("[LED]get backlight duty value is:%d\n", flashduty2);
+    return sprintf(buf, "%d\n", flashduty2);
+}
+
+static ssize_t store_flashduty2(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int err;
+	pr_info("Enter!\n");
+	err = kstrtoul(buf, 10, &flashduty2);
+	if(err != 0){
+		return err;
+	}
+        pr_info("s-torch:set torch level,flashduty2= %d\n", flashduty2);
+
+
+	if (flashduty2 < 11 || flashduty2 > 208){//the duty cycle is greater than 5%
+		pr_info("echo flashduty2 error!\n");
+		return 0;
+	}
+	light_pwm_value = flashduty2*100/208;
+	pr_info("torch_pwm_value =%d \n",light_pwm_value);
+	ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWN, OCP8135_PINCTRL_PINSTATE_HIGH);
+
+	pr_info("Exit!\n");
+	return count;
+}
+
+static DEVICE_ATTR(rear_torch, 0664, show_flashduty2, store_flashduty2);
+
+
+int s_flashlight_node_create(void)
+{
+	// create node /sys/class/camera/flash/rear_torch
+	if (device_create_file(flashlight_device,&dev_attr_rear_torch)) { // /sys/class/camera/flash/rear_torch
 		pr_err("[flashlight_probe]device_create_file flash1 fail!\n");
 	}
 	return 0;
@@ -657,7 +712,7 @@ static int ocp8135_probe(struct platform_device *pdev)
 			goto err;
 		}
 	}
-        g_flash_channel_idx = 1;
+	g_flash_channel_idx = 1;
 	ret = ocp8135_pinctrl_set(0, 0);
 	if(ret < 0)
 		pr_info("AAA - error1 - AAA\n");
@@ -674,6 +729,14 @@ static int ocp8135_probe(struct platform_device *pdev)
 		if (ss_flashlight_node_create() < 0){
 			pr_err( "ss_flashlight_node_create failed!\n");
 		}
+		ret = device_create_file(&pdev->dev, &dev_attr_rear_torch);
+		if(ret < 0){
+			pr_err("=== create led_torch_node file failed ===\n");
+		}
+		if (s_flashlight_node_create() < 0){
+			pr_err( "s_flashlight_node_create failed!\n");
+		}
+
 #endif
 
 #ifdef FLASH_NODE
