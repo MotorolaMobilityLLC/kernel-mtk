@@ -360,3 +360,10 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmi_control_wls_default>;
 };
+
+&mt6375_typec {
+	dpm_caps {
+		/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
+		dr_check = <2>;
+	};
+};
