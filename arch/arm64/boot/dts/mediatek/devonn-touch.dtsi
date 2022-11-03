@@ -27,6 +27,7 @@
 
         chipone,rst-gpio = <&pio 3 0x0>;
         chipone,irq-gpio = <&pio 22 0x0>;
+        chipone,cs-gpio = <&pio 74 0x0>;
         chipone,x-res = <1080>;
         chipone,y-res = <2400>;
         chipone,def-build-id = <0x0101>;
