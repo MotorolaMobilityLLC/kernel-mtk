@@ -172,6 +172,10 @@ static void lcm_panel_init(struct lcm *ctx)
     lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xf0, 0xaa, 0x00);
 
+    lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
+    lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
+    lcm_dcs_write_seq_static(ctx, 0xf9, 0xb9);
+
     /* Sleep Out */
     lcm_dcs_write_seq_static(ctx, 0x11);
     msleep(120);
@@ -319,10 +323,11 @@ static int lcm_enable(struct drm_panel *panel)
 #define VBP (20)
 #define HACT (1080)
 #define VACT (2400)
-#define PLL_CLOCK (416586)	//1176*2460*144
+#define DISP_CLOCK (416586)	//1176*2460*144
+#define DISP_PLL_CLK (550)
 
 static const struct drm_display_mode switch_mode_144hz = {
-	.clock		= PLL_CLOCK,
+	.clock		= DISP_CLOCK,
 	.hdisplay	= HACT,
 	.hsync_start	= HACT + HFP,
 	.hsync_end	= HACT + HFP + HSA,
@@ -334,7 +339,7 @@ static const struct drm_display_mode switch_mode_144hz = {
 };
 
 static const struct drm_display_mode switch_mode_120hz = {
-	.clock		= PLL_CLOCK,
+	.clock		= DISP_CLOCK,
 	.hdisplay	= HACT,
 	.hsync_start	= HACT + HFP,
 	.hsync_end	= HACT + HFP + HSA,
@@ -346,7 +351,7 @@ static const struct drm_display_mode switch_mode_120hz = {
 };
 
 static const struct drm_display_mode switch_mode_90hz = {
-	.clock		= PLL_CLOCK,
+	.clock		= DISP_CLOCK,
 	.hdisplay	= HACT,
 	.hsync_start	= HACT + HFP,
 	.hsync_end	= HACT + HFP + HSA,
@@ -358,7 +363,7 @@ static const struct drm_display_mode switch_mode_90hz = {
 };
 
 static const struct drm_display_mode switch_mode_60hz = {
-	.clock = PLL_CLOCK,
+	.clock = DISP_CLOCK,
 	.hdisplay	= HACT,
 	.hsync_start	= HACT + HFP,
 	.hsync_end	= HACT + HFP + HSA,
@@ -371,6 +376,7 @@ static const struct drm_display_mode switch_mode_60hz = {
 
 #if defined(CONFIG_MTK_PANEL_EXT)
 static struct mtk_panel_params ext_params_60hz = {
+	.pll_clk = DISP_PLL_CLK,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -421,11 +427,10 @@ static struct mtk_panel_params ext_params_60hz = {
 
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
-	//.te_delay = 1,
 
 	.dyn = {
-		.switch_en = 0,
-		//.pll_clk = 600,
+		.switch_en = 1,
+		.pll_clk = DISP_PLL_CLK,
 		.vfp_lp_dyn = 3480,
 		.hfp = 60,
 		.vfp = 3480,
@@ -435,13 +440,13 @@ static struct mtk_panel_params ext_params_60hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x00} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
 	},
-	.data_rate = 1156,
-	//.lfr_enable = 1,
-	//.lfr_minimum_fps = 60,
+	.data_rate = DISP_PLL_CLK * 2,
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
-
+	.pll_clk = DISP_PLL_CLK,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -491,11 +496,10 @@ static struct mtk_panel_params ext_params_90hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
-	//.te_delay = 1,
 
 	.dyn = {
-		.switch_en = 0,
-		//.pll_clk = 600,
+		.switch_en = 1,
+		.pll_clk = DISP_PLL_CLK,
 		.vfp_lp_dyn = 1512,
 		.hfp = 60,
 		.vfp = 1512,
@@ -505,14 +509,14 @@ static struct mtk_panel_params ext_params_90hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x01} },
 		.dfps_cmd_table[2] = {0, 3, {0xf0, 0xaa, 0x10} },
-		.dfps_cmd_table[1] = {0, 14, {0xb1, 0x01, 0x55, 0x00, 0x18, 0x0d, 0x98, 0x00, 0x01, 0x55, 0x00, 0x18, 0x05, 0xe8} },
+		.dfps_cmd_table[3] = {0, 14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x05,0xE8} },
 	},
-	.data_rate = 1156,
-	//.lfr_enable = 1,
-	//.lfr_minimum_fps = 60,
+	.data_rate = DISP_PLL_CLK * 2,
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 static struct mtk_panel_params ext_params_120hz = {
-
+	.pll_clk = DISP_PLL_CLK,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -562,11 +566,10 @@ static struct mtk_panel_params ext_params_120hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
-	//.te_delay = 1,
 
 	.dyn = {
-		.switch_en = 0,
-		//.pll_clk = 600,
+		.switch_en = 1,
+		.pll_clk = DISP_PLL_CLK,
 		.vfp_lp_dyn = 528,
 		.hfp = 60,
 		.vfp = 528,
@@ -576,15 +579,15 @@ static struct mtk_panel_params ext_params_120hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
 		.dfps_cmd_table[2] = {0, 3, {0xf0, 0xaa, 0x10} },
-		.dfps_cmd_table[1] = {0, 14, {0xb1, 0x01, 0x55, 0x00, 0x18, 0x0d, 0x98, 0x00, 0x01, 0x55, 0x00, 0x18, 0x02, 0x10} },
+		.dfps_cmd_table[3] = {0, 14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x05,0xE8} },
 	},
-	.data_rate = 1156,
-	//.lfr_enable = 1,
-	//.lfr_minimum_fps = 60,
+	.data_rate = DISP_PLL_CLK * 2,
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 
 static struct mtk_panel_params ext_params_144hz = {
-
+	.pll_clk = DISP_PLL_CLK,
 	.cust_esd_check = 0,
 	.esd_check_enable = 1,
 	.lcm_esd_check_table[0] = {
@@ -634,11 +637,10 @@ static struct mtk_panel_params ext_params_144hz = {
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
-	//.te_delay = 1,
 
 	.dyn = {
-		.switch_en = 0,
-		//.pll_clk = 600,
+		.switch_en = 1,
+		.pll_clk = DISP_PLL_CLK,
 		.vfp_lp_dyn = 36,
 		.hfp = 60,
 		.vfp = 36,
@@ -648,9 +650,9 @@ static struct mtk_panel_params ext_params_144hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x02} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
 	},
-	.data_rate = 1156,
-	//.lfr_enable = 1,
-	//.lfr_minimum_fps = 60,
+	.data_rate = DISP_PLL_CLK * 2,
+	.lfr_enable = 1,
+	.lfr_minimum_fps = 60,
 };
 #endif
 
