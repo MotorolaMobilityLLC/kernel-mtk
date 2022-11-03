@@ -51,6 +51,8 @@
 #define UVDM_INFO_ENABLE	1
 #define TCPM_DBG_ENABLE		1
 
+#define MMI_DBG_ENABLE	1
+
 #if CONFIG_USB_PD_ALT_MODE_RTDC
 #define DC_INFO_ENABLE		1
 #define DC_DBG_ENABLE		1
@@ -717,5 +719,12 @@ static inline bool pd_check_rev30(struct pd_port *pd_port)
 #endif
 
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
+#if MMI_DBG_ENABLE
+#define MMI_INFO(format, args...)	\
+	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "MMI> " format, ##args)
+#else
+#define MMI_INFO(format, args...)
+#endif
 
 #endif /* #ifndef __LINUX_RT_TCPCI_CORE_H */
