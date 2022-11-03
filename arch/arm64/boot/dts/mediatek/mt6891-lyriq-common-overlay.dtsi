@@ -570,6 +570,13 @@
         };
 };
 
+&mt_pmic_vio28_ldo_reg {
+        regulator-min-microvolt = <3300000>;
+        regulator-max-microvolt = <3300000>;
+        regulator-boot-on;
+        regulator-always-on;
+};
+
 &pio {
 	sar_int_pin {
 		sar_int_default: sar_int_default {
