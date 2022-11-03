@@ -367,6 +367,10 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		state.data = noti;
 		typec_mux_set(rpmd->typec_port->mux, &state);
 		break;
+	case TCP_NOTIFY_PD_VDM_VERIFY:
+		dev_info(rpmd->dev, "%s mmi pd vdm verify state = %d\n",
+					__func__, noti->pd_state.vdm_verify);
+		break;
 	default:
 		break;
 	};
