@@ -367,7 +367,7 @@ int swtp_init(int md_id)
 
 	//EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, start
         //+EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
-	#if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART)
+	#if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
 	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
 	#else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
