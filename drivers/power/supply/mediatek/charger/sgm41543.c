@@ -918,9 +918,9 @@ static void sgm41543_adapter_out_workfunc(struct work_struct *work)
 
 	ret = sgm41543_set_input_volt_limit(bq, 4600);
 	if (ret < 0)
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4400 failed:%d\n", __func__, ret);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
 	else
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4400 successfully\n", __func__);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
 
 /*	if (pe.enable)
 		cancel_delayed_work_sync(&bq->monitor_work);
@@ -1089,6 +1089,12 @@ static int sgm41543_init_device(struct sgm41543 *bq)
 				   REG0A_VINDPM_INT_MASK);
 	if (ret)
 		pr_err("Failed to set vindpm and iindpm int mask\n");
+
+	ret = sgm41543_set_input_volt_limit(bq, 4600);
+	if (ret < 0)
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+	else
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
 
 	return 0;
 }
@@ -1375,6 +1381,7 @@ static int sgm41543_get_vchg(struct charger_device *chg_dev, u32 *volt)
 	return ret;
 }
 
+#ifndef CONFIG_MOTO_SGM41543_MIVR_DISABLE
 static int sgm41543_set_ivl(struct charger_device *chg_dev, u32 volt)
 {
 	struct sgm41543 *bq = dev_get_drvdata(&chg_dev->dev);
@@ -1384,6 +1391,7 @@ static int sgm41543_set_ivl(struct charger_device *chg_dev, u32 volt)
 	return sgm41543_set_input_volt_limit(bq, volt / 1000);
 
 }
+#endif
 
 static int sgm41543_set_icl(struct charger_device *chg_dev, u32 curr)
 {
@@ -1648,7 +1656,11 @@ static struct charger_ops sgm41543_chg_ops = {
 	.get_constant_voltage = sgm41543_get_vchg,
 	.set_constant_voltage = sgm41543_set_vchg,
 	.kick_wdt = sgm41543_kick_wdt,
+#ifdef CONFIG_MOTO_SGM41543_MIVR_DISABLE
+	.set_mivr = NULL,
+#else
 	.set_mivr = sgm41543_set_ivl,
+#endif
 	.is_charging_done = sgm41543_is_charging_done,
 	.get_min_charging_current = sgm41543_get_min_ichg,
 	.enable_chg_type_det = sgm41543_update_chg_type,
