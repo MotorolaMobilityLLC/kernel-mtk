@@ -23,67 +23,6 @@
 	temp_t4_threshold = <60>;
 };
 
-&mtk_gauge {
-	DIFFERENCE_FULLOCV_ITH = <(850)>;
-	R_FG_VALUE = <(5)>;
-	CURR_MEASURE_20A = <(0)>;
-	UNIT_MULTIPLE = <(1)>;
-	EMBEDDED_SEL = <(1)>;   /* embedded battery*/
-	COM_FG_METER_RESISTANCE = <(0)>;
-	CAR_TUNE_VALUE = <(97)>;
-
-	g_Q_MAX = <
-		/*bat1,   bat2,   bat3,    bat4*/
-		5082 5092 5082 5082/*T0*/
-		5138 5133 5138 5138/*T1*/
-		5135 5100 5135 5135/*T2*/
-		5021 4999 5021 5021/*T3*/
-		4914 4890 4914 4914/*T4*/
-		4914 4890 4914 4914/*T5*/
-		3488 3488 3488 3488/*T6*/
-		3488 3488 3488 3488/*T7*/
-		3488 3488 3488 3488/*T8*/
-		3488 3488 3488 3488/*T9*/
-	>;
-	g_Q_MAX_H_CURRENT = <
-		/*bat1,   bat2,   bat3,    bat4*/
-		5082 5092 5082 5082/*T0*/
-		5138 5133 5138 5138/*T1*/
-		5135 5100 5135 5135/*T2*/
-		5021 4999 5021 5021/*T3*/
-		4914 4890 4914 4914/*T4*/
-		4914 4890 4914 4914/*T5*/
-		3488 3488 3488 3488/*T6*/
-		3488 3488 3488 3488/*T7*/
-		3488 3488 3488 3488/*T8*/
-		3488 3488 3488 3488/*T9*/
-	>;
-	g_FG_PSEUDO100 = <
-		/*bat1,   bat2,   bat3,    bat4*/
-		100 100 100 100/*T0*/
-		100 100 100 100/*T1*/
-		100 100 100 100/*T2*/
-		100 100 100 100/*T3*/
-		100 100 100 100/*T4*/
-		100 100 100 100/*T5*/
-		100 100 100 100/*T6*/
-		100 100 100 100/*T7*/
-		100 100 100 100/*T8*/
-		100 100 100 100/*T9*/
-	>;
-	df-serialnum = "SB18D39674";
-	#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
-	#include "bat_setting/mt6879_battery_nf50_sunw_5000mah.dtsi"
-};
-
-&pdc {
-	sc_input_current = <3000000>;
-};
-
-&pe2 {
-	sc_input_current = <3000000>;
-};
-
 &mtk_ctd {
 	bootmode = <&chosen>;
 };
@@ -198,7 +137,7 @@
 &i2c0 {
 	status = "okay";
 
-	NFG1000@55 {
+	NFG1000: NFG1000@55 {
 		compatible = "HXZY,nfg1000";
 		reg = <0x55>;
 	};
@@ -242,10 +181,64 @@
 	ita_min = <1000>;
 };
 
+&pdc {
+	compatible = "mediatek,charger,pd";
+	gauge = <&NFG1000>;
+
+	min_charger_voltage = <4600000>;
+	pd_vbus_low_bound = <5000000>;
+	pd_vbus_upper_bound = <5000000>;
+	vsys_watt = <5000000>;
+	ibus_err = <14>;
+
+	pd_stop_battery_soc = <80>;
+
+	/* single charger */
+	sc_input_current = <3000000>;
+	sc_charger_current = <3000000>;
+
+	/* dual charger in series*/
+	dcs_input_current = <3200000>;
+	dcs_chg1_charger_current = <1500000>;
+	dcs_chg2_charger_current = <1500000>;
+
+	/* dual charger */
+	dual_polling_ieoc = <450000>;
+	slave_mivr_diff = <100000>;
+	vbat_threshold = <4150>;
+};
+
+&pe2 {
+	compatible = "mediatek,charger,pe2";
+	gauge = <&NFG1000>;
+
+	/* PE 2.0 */
+	pe20_ichg_level_threshold = <1000000>; /* uA */
+	ta_start_battery_soc = <0>;
+	ta_stop_battery_soc = <85>;
+	min_charger_voltage = <4600000>;
+
+	/* cable measurement impedance */
+	cable_imp_threshold = <699>;
+	vbat_cable_imp_threshold = <3900000>; /* uV */
+
+	/* single charger */
+	sc_input_current = <3000000>;
+	sc_charger_current = <3000000>;
+
+	/* dual charger in series*/
+	dcs_input_current = <3200000>;
+	dcs_chg1_charger_current = <1500000>;
+	dcs_chg2_charger_current = <1500000>;
+
+	dual_polling_ieoc = <450000>;
+	slave_mivr_diff = <100000>;
+	vbat_threshold = <4150>;
+};
 
 &pe5 {
 		compatible = "mediatek,charger,pe5";
-		gauge = <&mtk_gauge>;
+		gauge = <&NFG1000>;
 		polling_interval = <10000>;
 		ta_cv_ss_repeat_tmin = <25>;
 		vbat_cv = <4510>;
@@ -352,7 +345,7 @@
 
 &moto_wlc {
 	compatible = "moto,charger,wlc";
-	gauge = <&mtk_gauge>;
+	gauge = <&NFG1000>;
 	min_charger_voltage = <4600000>;
 	wlc_max_charger_current = <3150000>;
 	wlc_max_input_current = <1150000>;
