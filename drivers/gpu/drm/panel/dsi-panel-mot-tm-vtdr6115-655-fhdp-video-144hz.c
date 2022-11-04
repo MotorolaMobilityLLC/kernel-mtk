@@ -171,6 +171,9 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0xf0, 0xaa, 0x10);
 	lcm_dcs_write_seq_static(ctx, 0xd0, 0x84,0x35,0x50,0x14,0x20,0x00,0x29,0x03,0x17,0x0B,0x00,0x00,0x03,0x17,0x0C,0x00,
                 						0x00,0x09,0x05,0x05,0x17,0x17);
+	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
+	lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
+	lcm_dcs_write_seq_static(ctx, 0xf9, 0xb9);
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
 	lcm_dcs_write_seq_static(ctx, 0x65, 0x03);
 	lcm_dcs_write_seq_static(ctx, 0xf4, 0x03);
@@ -224,7 +227,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			usleep_range(1000, 1001);
 		}
 	} else {
-		for (i=3; i >= 0; i--) {
+		for (i=2; i >= 0; i--) {
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
 			if (IS_ERR(pm_en_pin)) {
@@ -638,7 +641,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x01} },
 		.dfps_cmd_table[2] = {0, 3, {0xf0, 0xaa, 0x10} },
-		.dfps_cmd_table[1] = {0, 14, {0xb1, 0x01, 0x55, 0x00, 0x18, 0x0d, 0x98, 0x00, 0x01, 0x55, 0x00, 0x18, 0x05, 0xe8} },
+		.dfps_cmd_table[3] = {0, 14, {0xb1, 0x01, 0x55, 0x00, 0x18, 0x0d, 0x98, 0x00, 0x01, 0x55, 0x00, 0x18, 0x05, 0xe8} },
 	},
 	.data_rate = 1156,
 	//.lfr_enable = 1,
@@ -771,7 +774,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
 		.dfps_cmd_table[2] = {0, 3, {0xf0, 0xaa, 0x10} },
-		.dfps_cmd_table[1] = {0, 14, {0xb1, 0x01, 0x55, 0x00, 0x18, 0x0d, 0x98, 0x00, 0x01, 0x55, 0x00, 0x18, 0x02, 0x10} },
+		.dfps_cmd_table[3] = {0, 14, {0xb1, 0x01, 0x55, 0x00, 0x18, 0x0d, 0x98, 0x00, 0x01, 0x55, 0x00, 0x18, 0x02, 0x10} },
 	},
 	.data_rate = 1156,
 	//.lfr_enable = 1,
@@ -1218,11 +1221,11 @@ static int panel_ext_powerdown(struct drm_panel *panel)
 	pr_info("%s+\n", __func__);
 	if (ctx->prepared)
 	    return 0;
-#if 0
+
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-#endif
+
 	gate_ic_Power_on(panel, 0);
 
 	return 0;
