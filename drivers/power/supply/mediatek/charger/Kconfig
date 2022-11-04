@@ -225,6 +225,15 @@ config CHARGER_SGM41543
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if SGM41543 is used.
 
+config MOTO_SGM41543_MIVR_DISABLE
+	bool "MOTO_SGM41543_MIVR_DISABLE"
+	depends on CHARGER_SGM41543
+	help
+	  This option enables gnevan mivr disable customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
 config LOAD_SWITCH_RT9750
 	bool "Load Switch Driver for Richtek RT9750"
 	depends on MTK_CHARGER
