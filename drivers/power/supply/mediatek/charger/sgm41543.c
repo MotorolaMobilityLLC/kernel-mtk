@@ -931,11 +931,13 @@ static void sgm41543_adapter_out_workfunc(struct work_struct *work)
 
 	chrdet_psy = power_supply_get_by_name("charger");
 	if (chrdet_psy) {
+		/* repeate report IKSWT-38351 IKSWT-35382
 		propval.intval = CHARGER_UNKNOWN;
 		ret = power_supply_set_property(chrdet_psy,
 				POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
 		if (ret)
 			dev_info(bq->dev, "[%s] reset chr_type failed:%d\n", __func__, ret);
+		*/
 		propval.intval = 0;
 		ret = power_supply_set_property(chrdet_psy,
 				POWER_SUPPLY_PROP_ONLINE, &propval);
