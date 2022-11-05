@@ -1,0 +1,8 @@
+
+config MTK_FLIPTWIST_HUB
+	bool "FLIPWIST for MediaTek package"
+	help
+	  FLIPWIST is a device,
+	  usually portable and electronic
+	  or electromechanical,
+	  that detect device is flipped twice.

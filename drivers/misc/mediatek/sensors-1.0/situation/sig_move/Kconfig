@@ -1,0 +1,8 @@
+
+config MTK_SIGMOVE_HUB
+	bool "SIGMOVE for MediaTek package"
+	help
+	  SIGMOVE is a device,
+	  usually portable and electronic
+	  or electromechanical,
+	  that detect device triggers significant move.
