@@ -931,13 +931,11 @@ static void sgm41543_adapter_out_workfunc(struct work_struct *work)
 
 	chrdet_psy = power_supply_get_by_name("charger");
 	if (chrdet_psy) {
-		/* repeate report IKSWT-38351 IKSWT-35382
 		propval.intval = CHARGER_UNKNOWN;
 		ret = power_supply_set_property(chrdet_psy,
 				POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
 		if (ret)
 			dev_info(bq->dev, "[%s] reset chr_type failed:%d\n", __func__, ret);
-		*/
 		propval.intval = 0;
 		ret = power_supply_set_property(chrdet_psy,
 				POWER_SUPPLY_PROP_ONLINE, &propval);
@@ -1663,7 +1661,7 @@ static struct charger_ops sgm41543_chg_ops = {
 #endif
 	.is_charging_done = sgm41543_is_charging_done,
 	.get_min_charging_current = sgm41543_get_min_ichg,
-	.enable_chg_type_det = sgm41543_update_chg_type,
+	.enable_chg_type_det = NULL,//sgm41543_update_chg_type,
 	/* Safety timer */
 	.enable_safety_timer = sgm41543_set_safety_timer,
 	.is_safety_timer_enabled = sgm41543_is_safety_timer_enabled,
