@@ -83,6 +83,7 @@ struct mm8xxx_device_info {
 	u32 second_battery_param_ver;
 	u32 first_battery_id;
 	u32 second_battery_id;
+	u8 update_interval;
 	struct mutex i2c_rw_lock;
 };
 
@@ -1150,7 +1151,7 @@ static const struct kernel_param_ops param_ops_poll_interval = {
 	.set = poll_interval_param_set,
 };
 
-static unsigned int poll_interval = 360;
+static unsigned int poll_interval = 30;
 module_param_cb(poll_interval, &param_ops_poll_interval, &poll_interval, 0644);
 MODULE_PARM_DESC(poll_interval,
 		"battery poll interval in seconds - 0 disables polling");
@@ -1548,15 +1549,24 @@ static void mm8xxx_battery_update(struct mm8xxx_device_info *di)
 		goto out;
 
 	cache.temperature = mm8xxx_battery_read_temperature(di);
+	cache.temperature += -2731;
 	cache.avg_time_to_empty = mm8xxx_battery_read_averagetimetoempty(di);
 	cache.soc = mm8xxx_battery_read_stateofcharge(di);
 	cache.full_charge_capacity = mm8xxx_battery_read_fullchargecapacity(di);
 	di->cache.flags = cache.flags;
 	cache.health = mm8xxx_battery_read_health(di);
 	cache.cycle_count = mm8xxx_battery_read_cyclecount(di);
-	mm8xxx_battery_temp_to_FG(di);
+	//mm8xxx_battery_temp_to_FG(di);
 
-	mm_info("soc = %d, ui_soc = %d\n", cache.soc, di->cache.soc);
+	mm_info("soc = %d, ui_soc = %d, temperture = %d\n", cache.soc, di->cache.soc, cache.temperature);
+
+	if (input_present) {
+		di->update_interval = 1;
+	}
+	else {
+		di->update_interval = 5;
+	}
+
 	if (di->cache.soc == 0)
 		di->cache.soc = cache.soc;
 
@@ -1610,7 +1620,7 @@ static void mm8xxx_battery_update(struct mm8xxx_device_info *di)
 #endif
 
 out:
-	if ((di->cache.soc != cache.soc) ||
+	if ((di->cache.soc != cache.soc) || (di->cache.temperature != cache.temperature) ||
 	    (di->cache.flags != cache.flags)) {
 		if (di->batt_psy)
 			power_supply_changed(di->batt_psy);
@@ -1751,7 +1761,7 @@ static int mm8xxx_battery_get_property(struct power_supply *psy,
 	struct mm8xxx_device_info *di = power_supply_get_drvdata(psy);
 
 	mutex_lock(&di->lock);
-	if (time_is_before_jiffies(di->last_update + 5 * HZ)) {
+	if (time_is_before_jiffies(di->last_update + di->update_interval * HZ)) {
 		cancel_delayed_work_sync(&di->work);
 		mm8xxx_battery_poll(&di->work.work);
 	}
@@ -1781,8 +1791,13 @@ static int mm8xxx_battery_get_property(struct power_supply *psy,
 		ret = mm8xxx_battery_capacity_level(di, val);
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#if 0
 		mm8xxx_battery_temp(di, &val->intval);
 		val->intval = val->intval / 100;
+#else
+		ret = mm8xxx_simple_value(di->cache.temperature, val);
+		break;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
 		ret = mm8xxx_simple_value(di->cache.avg_time_to_empty, val);
