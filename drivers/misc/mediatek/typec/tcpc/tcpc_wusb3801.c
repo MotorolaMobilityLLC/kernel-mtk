@@ -855,10 +855,10 @@ static int wusb3801_tcpcdev_init(struct wusb3801_chip *chip, struct device *dev)
 	if (IS_ERR(chip->tcpc))
 		return -EINVAL;
 
-	chip->tcpc->typec_attach_old = !TYPEC_UNATTACHED;
-    chip->tcpc->typec_attach_new = TYPEC_UNATTACHED;
+	//chip->tcpc->typec_attach_old = !TYPEC_UNATTACHED;
+    //chip->tcpc->typec_attach_new = TYPEC_UNATTACHED;
     //tcpci_report_usb_port_detached(chip->tcpc);
-    tcpci_report_usb_port_changed(chip->tcpc);
+    //tcpci_report_usb_port_changed(chip->tcpc);
     //chip->tcpc->typec_role = TYPEC_ROLE_UNKNOWN;
 	schedule_delayed_work(
 						&chip->first_check_typec_work, msecs_to_jiffies(3000));
@@ -1051,6 +1051,8 @@ static int wusb3801_i2c_probe(struct i2c_client *client,
 		}
 		pr_info("from 0x%02x read 0x%02x\n", (uint8_t)i, rc);
 	}
+
+        tcpc_schedule_init_work(chip->tcpc);
 
 	pr_info("%s probe OK!\n", __func__);
 	return 0;
