@@ -182,9 +182,11 @@ int set_shutdown_cond(int shutdown_cond)
 		sdc.shutdown_status.is_overheat = true;
 		mutex_unlock(&sdc.lock);
 		bm_err("[%s]OVERHEAT shutdown!\n", __func__);
+	#ifdef MTK_BASE
 		mutex_lock(&system_transition_mutex);
 		kernel_power_off();
 		mutex_unlock(&system_transition_mutex);
+	#endif
 		break;
 	case SOC_ZERO_PERCENT:
 		if (sdc.shutdown_status.is_soc_zero_percent != true) {
@@ -507,7 +509,9 @@ static int power_misc_routine_thread(void *arg)
 			bm_err("%s battery overheat~ power off\n",
 				__func__);
 			mutex_lock(&system_transition_mutex);
+		#ifdef MTK_BASE
 			kernel_power_off();
+		#endif
 			mutex_unlock(&system_transition_mutex);
 			fix_coverity = 1;
 			return 1;
