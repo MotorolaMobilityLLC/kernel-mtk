@@ -721,12 +721,20 @@ static void slim_video_setting()
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
-	enable = false;
 	if (enable) {
 		write_cmos_sensor(0x4501, 0xac);
+		write_cmos_sensor(0x391d, 0x18);
+		write_cmos_sensor(0x3902, 0x85);
+		write_cmos_sensor(0x3909, 0xff);
+		write_cmos_sensor(0x390a, 0xff);
+		write_cmos_sensor(0x3908, 0x00);
 	} else {
 		write_cmos_sensor(0x4501, 0xa4);
-		write_cmos_sensor(0x391d, 0x18);
+		write_cmos_sensor(0x391d, 0x03);
+		write_cmos_sensor(0x3902, 0xc0);
+		write_cmos_sensor(0x3909, 0x00);
+		write_cmos_sensor(0x390a, 0x00);
+		write_cmos_sensor(0x3908, 0x41);
 	}
 	//write_cmos_sensor(0x3200, 0x00);
 	spin_lock(&imgsensor_drv_lock);
