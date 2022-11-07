@@ -3599,20 +3599,13 @@ static kal_uint32 get_default_framerate_by_scenario(enum
 	}
 	return ERROR_NONE;
 }
-/*
+
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
 	if (enable) {
 
-		write_cmos_sensor(0x0200, 0x0002);
-		write_cmos_sensor(0x0202, 0x0002);
-		write_cmos_sensor(0x0204, 0x0020);
-		write_cmos_sensor(0x020E, 0x0100);
-		write_cmos_sensor(0x0210, 0x0100);
-		write_cmos_sensor(0x0212, 0x0100);
-		write_cmos_sensor(0x0214, 0x0100);
-		write_cmos_sensor(0x0600, 0x0002);
+		write_cmos_sensor(0x0600, 0x0001);
 	} else {
 
 		write_cmos_sensor(0x0600, 0x0000);
@@ -3622,7 +3615,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
-*/
+
 static kal_uint32
 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				UINT8 *feature_para, UINT32 *feature_para_len)
@@ -3703,9 +3696,9 @@ feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			  (feature_data + 1)));
 		break;
 
-//	case SENSOR_FEATURE_SET_TEST_PATTERN:
-//		set_test_pattern_mode((BOOL) * feature_data);
-//		break;
+	case SENSOR_FEATURE_SET_TEST_PATTERN:
+		set_test_pattern_mode((BOOL) * feature_data);
+		break;
 
 	case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
 		*feature_return_para_32 = imgsensor_info.checksum_value;
