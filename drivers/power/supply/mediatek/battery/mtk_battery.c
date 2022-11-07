@@ -628,7 +628,18 @@ static int battery_get_property(struct power_supply *psy,
 #endif
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef CONFIG_BATTERY_MM8013
+		ret = mmi_get_prop_from_bms(POWER_SUPPLY_PROP_TEMP,&prop);
+		if (ret < 0) {
+			pr_err("[%s]Error getting BMS TEMP ret = %d\n", __func__, ret);
+			val->intval = 250;
+		} else {
+			val->intval = prop.intval;
+		}
+		bm_err("%s event, TEMP:%d\n", __func__, val->intval);
+#else
 		val->intval = gm.tbat_precise;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
 		val->intval = check_cap_level(data->BAT_CAPACITY);
@@ -1758,6 +1769,10 @@ int force_get_tbat_internal(bool update)
 	static struct timespec pre_time;
 	struct timespec ctime, dtime;
 
+#ifdef CONFIG_BATTERY_MM8013
+	int ret = 0;
+	union power_supply_propval prop = {0};
+#endif
 	if (is_battery_init_done() == false) {
 		gm.tbat_precise = 250;
 		return 25;
@@ -1886,6 +1901,16 @@ int force_get_tbat_internal(bool update)
 		bat_temperature_val = pre_bat_temperature_val;
 	}
 
+#ifdef CONFIG_BATTERY_MM8013
+	ret = mmi_get_prop_from_bms(POWER_SUPPLY_PROP_TEMP,&prop);
+	if (ret < 0) {
+		pr_err("[%s]Error getting BMS TEMP ret = %d\n", __func__, ret);
+		bat_temperature_val = 250;
+	} else {
+		bat_temperature_val = prop.intval;
+	}
+	bm_err("%s event, temp:%d\n", __func__, bat_temperature_val);
+#endif
 	gm.tbat_precise = bat_temperature_val;
 
 	return bat_temperature_val / 10;
