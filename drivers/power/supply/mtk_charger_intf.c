@@ -96,6 +96,7 @@ int get_uisoc(struct mtk_charger *info)
 		ret);
 	return ret;
 }
+EXPORT_SYMBOL(get_uisoc);
 
 int get_battery_voltage(struct mtk_charger *info)
 {
@@ -241,6 +242,7 @@ int get_vbus(struct mtk_charger *info)
 
 	return vchr;
 }
+EXPORT_SYMBOL(get_vbus);
 
 int get_ibat(struct mtk_charger *info)
 {
