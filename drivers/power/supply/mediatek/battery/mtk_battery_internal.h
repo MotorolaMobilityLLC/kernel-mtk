@@ -46,7 +46,11 @@
 #define SHUTDOWN_TIME 40
 #define AVGVBAT_ARRAY_SIZE 30
 #define INIT_VOLTAGE 3450
+#ifdef MTK_BASE
 #define BATTERY_SHUTDOWN_TEMPERATURE 60
+#else
+#define BATTERY_SHUTDOWN_TEMPERATURE 70
+#endif
 
 /* ============================================================ */
 /* typedef and Struct*/
