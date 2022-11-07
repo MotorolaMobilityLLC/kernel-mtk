@@ -1269,14 +1269,30 @@ static int mt6885_mt6359_dev_probe(struct platform_device *pdev)
 		if (ret < 0) {
 			dev_err(&pdev->dev,
 				"i2s out get_dai_link_codecs fail\n");
+#ifdef CONFIG_SND_SOC_AW882XX
+			dev_err(&pdev->dev,
+                                "skip awinic pa probe for i2s out, %s\n",__func__);
+			spk_out_dai_link->num_codecs = 0;
+			spk_out_dai_link->codec_name = "snd-soc-dummy";
+			spk_out_dai_link->codec_dai_name = "snd-soc-dummy-dai";
+#else
 			return -EINVAL;
+#endif
 		}
 		ret = snd_soc_of_get_dai_link_codecs(
 				&pdev->dev, spk_node, spk_iv_dai_link);
 		if (ret < 0) {
 			dev_err(&pdev->dev,
 				"i2s in get_dai_link_codecs fail\n");
+#ifdef CONFIG_SND_SOC_AW882XX
+			dev_err(&pdev->dev,
+                                "skip awinic pa probe for i2s in, %s\n",__func__);
+			spk_iv_dai_link->num_codecs = 0;
+			spk_iv_dai_link->codec_name = "snd-soc-dummy";
+			spk_iv_dai_link->codec_dai_name = "snd-soc-dummy-dai";
+#else
 			return -EINVAL;
+#endif
 		}
 	}
 
