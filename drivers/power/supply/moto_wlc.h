@@ -99,10 +99,11 @@ struct mtk_wlc {
 	int wireless_charger_max_current;
 	int wireless_charger_max_input_current;
 	int input_current_limit;
+	bool cable_ready;
 };
 struct moto_wls_chg_ops {
 	void *data;
-	void (*wls_current_select)(int  *icl, int *vbus);
+	void (*wls_current_select)(int  *icl, int *vbus, bool *cable_ready);
 	void (*wls_set_battery_soc)(int uisoc);
 };
 
@@ -145,6 +146,7 @@ extern int wlc_hal_is_charger_enable(struct chg_alg_device *alg,
 	enum chg_idx chgidx, bool *en);
 extern int wlc_hal_get_log_level(struct chg_alg_device *alg);
 
-
+extern int wlc_hal_get_batt_temp(struct chg_alg_device *alg);
+extern int wlc_hal_get_batt_cv(struct chg_alg_device *alg);
 extern int moto_wireless_chg_ops_register(struct moto_wls_chg_ops *ops);
 #endif /* __MTK_wlc_H */
