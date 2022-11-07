@@ -40,8 +40,6 @@
 #include <linux/jiffies.h>
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
-extern char lcd_panle_name[];
-
 #if NVT_TOUCH_ESD_PROTECT
 static struct delayed_work nvt_esd_check_work;
 static struct workqueue_struct *nvt_esd_check_wq;
@@ -2306,6 +2304,54 @@ static struct spi_driver nvt_spi_driver = {
 	},
 };
 
+static int nvt_get_panel(void)
+{
+	NVT_LOG("enter\n");
+	if (saved_command_line) {
+		char active_panel_name[50] = {0};
+		char *sub;
+		char key_prefix[] = "lcd_name";
+		char ic_prefix[] = "nt";
+		NVT_LOG("saved_command_line is %s\n", saved_command_line);
+		sub = strstr(saved_command_line, key_prefix);
+		if (sub) {
+			char *d;
+			int n, len, len_max = 50;
+
+			d = strstr(sub, " ");
+			if (d) {
+				n = strlen(sub) - strlen(d);
+			} else {
+				n = strlen(sub);
+			}
+
+			if (n > len_max)
+				len = len_max;
+			else
+				len = n;
+
+			strncpy(active_panel_name, sub, len);
+
+			if(strstr(active_panel_name, ic_prefix)) {
+				NVT_LOG("active_panel_name=%s\n", active_panel_name);
+			} else {
+				NVT_LOG("Not novatek panel!\n");
+				NVT_LOG("panel is: %s:", active_panel_name);
+				return -1;
+			}
+
+		} else {
+			NVT_LOG("active panel not found!\n");
+			return -1;
+		}
+	} else {
+		NVT_LOG("saved_command_line null!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 /*******************************************************
 Description:
 	Driver Install function.
@@ -2318,8 +2364,8 @@ static int32_t __init nvt_driver_init(void)
 	int32_t ret = 0;
 
 	NVT_LOG("start\n");
-	if (!(strstr(lcd_panle_name, "nt"))) {
-		NVT_ERR("fail load nvt driver,panle name is %s;\n",lcd_panle_name);
+	if (nvt_get_panel()) {
+		NVT_ERR("MTK get panel error\n");
 		return ENODEV;
 	}
 
