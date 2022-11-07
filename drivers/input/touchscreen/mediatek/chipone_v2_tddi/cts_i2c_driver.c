@@ -14,8 +14,6 @@ static int check_dt(struct device_node *np);
 #endif
 bool cts_show_debug_log = false;
 
-extern char lcd_panle_name[];
-
 module_param_named(debug_log, cts_show_debug_log, bool, 0660);
 MODULE_PARM_DESC(debug_log, "Show debug log control");
 
@@ -868,6 +866,53 @@ static struct spi_driver cts_spi_driver = {
 	.id_table = cts_device_id_table,
 };
 
+static int cts_get_panel(void)
+{
+	cts_info("enter");
+	if (saved_command_line) {
+		char active_panel_name[50] = {0};
+		char *sub;
+		char key_prefix[] = "lcd_name";
+		char ic_prefix[] = "icnl";
+		cts_info("saved_command_line is %s", saved_command_line);
+		sub = strstr(saved_command_line, key_prefix);
+		if (sub) {
+			char *d;
+			int n, len, len_max = 50;
+
+			d = strstr(sub, " ");
+			if (d) {
+				n = strlen(sub) - strlen(d);
+			} else {
+				n = strlen(sub);
+			}
+
+			if (n > len_max)
+				len = len_max;
+			else
+				len = n;
+
+			strncpy(active_panel_name, sub, len);
+			if(strstr(active_panel_name, ic_prefix)) {
+				cts_info("active_panel_name=%s", active_panel_name);
+			} else {
+				cts_info("Not chipone panel!");
+				cts_info("panel is %s", active_panel_name);
+				return -1;
+			}
+
+		} else {
+			cts_info("chipone active panel not found!");
+			return -1;
+		}
+	} else {
+		cts_info("saved_command_line null!");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int __init cts_driver_init(void)
 {
 	cts_info("Init");
@@ -875,8 +920,8 @@ static int __init cts_driver_init(void)
 #ifdef CONFIG_CTS_I2C_HOST
 	return i2c_add_driver(&cts_i2c_driver);
 #else
-	if (!(strstr(lcd_panle_name, "icnl"))) {
-		pr_err("panle_name is %s;\n", lcd_panle_name);
+	if (cts_get_panel()) {
+		pr_err("MTK get chipone panel error");
 		return -ENODEV;
 	}
 
