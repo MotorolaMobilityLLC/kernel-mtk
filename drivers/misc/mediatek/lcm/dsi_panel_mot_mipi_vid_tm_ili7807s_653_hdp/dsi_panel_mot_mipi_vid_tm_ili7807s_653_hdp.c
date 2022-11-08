@@ -37,6 +37,8 @@
 #include <lcm_pmic.h>
 #endif
 
+#include "mtkfb_params.h"
+
 #define LCM_LOGI(fmt, args...)  pr_info("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
 
@@ -168,6 +170,46 @@ static struct LCM_setting_table bl_level[] = {
 	{ 0x51, 0x02, {0x3F, 0xFF} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} },
 };
+
+static struct LCM_setting_table lcm_cabc_setting_ui[] = {
+	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
+	{ 0x55, 1, {0x01} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_mv[] = {
+	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
+	{ 0x55, 1, {0x03} },
+};
+
+static struct LCM_setting_table lcm_cabc_setting_disable[] = {
+	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
+	{ 0x55, 1, {0x00} },
+};
+
+struct LCM_cabc_table {
+	int cmd_num;
+	struct LCM_setting_table *cabc_cmds;
+};
+
+//Make sure the seq keep consitent with definition of cabc_mode, otherwise it need remap
+static struct LCM_cabc_table lcm_cabc_settings[] = {
+	{ARRAY_SIZE(lcm_cabc_setting_ui), lcm_cabc_setting_ui},
+	{ARRAY_SIZE(lcm_cabc_setting_mv), lcm_cabc_setting_mv},
+	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
+};
+
+#if 0 //TBD: HBM support
+static bool hbm_enable = 0; //need enable for DVT/PVT.
+static struct LCM_setting_table lcm_hbm_off[] = {
+	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
+	{ 0x51, 0x02, {0x06, 0x66} },
+};
+
+static struct LCM_setting_table lcm_hbm_on[] = {
+	{ 0xFF, 0x03, {0x78, 0x07, 0x00} },
+	{ 0x51, 0x02, {0x7F, 0xFF} },
+};
+#endif
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned int count, unsigned char force_update)
@@ -524,6 +566,47 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
+static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
+		unsigned int *lcm_count, unsigned int *lcm_value)
+{
+	switch(*lcm_cmd) {
+#if 0
+		case PARAM_HBM:
+			if(hbm_enable) {
+				if(*lcm_value) {
+					pr_info("%s: handle HBM on", __func__);
+					push_table(handle, lcm_hbm_on, ARRAY_SIZE(lcm_hbm_on), 1);
+				}
+				else {
+					pr_info("%s: handle HBM off", __func__);
+					push_table(handle, lcm_hbm_off, ARRAY_SIZE(lcm_hbm_off), 1);
+				}
+			} else {
+				//not support in EVT
+				pr_info("%s: HBM not support in cur HW");
+				return;
+			}
+			break;
+#endif
+		case PARAM_CABC:
+			if (*lcm_value >= CABC_MODE_NUM) {
+				pr_info("%s: invalid CABC mode:%d out of CABC_MODE_NUM:", *lcm_value, CABC_MODE_NUM);
+				return;
+			}
+			else {
+				unsigned int cmd_num = lcm_cabc_settings[*lcm_value].cmd_num;
+				pr_info("%s: set CABC mode=%d, cmd_num=%d", __func__, *lcm_value, cmd_num);
+				push_table(handle, lcm_cabc_settings[*lcm_value].cabc_cmds, cmd_num, 1);
+			}
+			break;
+		default:
+			pr_err("%s,tm_ili cmd:%d, unsupport\n", __func__, *lcm_cmd);
+			break;
+	}
+
+	pr_debug("%s,tm_ili cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
+}
+
 struct LCM_DRIVER mipi_mot_vid_tm_ili7807s_hdp_653_lcm_drv = {
 	.name = "mipi_mot_vid_tm_ili7807s_hdp_653",
 	.supplier = "tm",
@@ -539,5 +622,6 @@ struct LCM_DRIVER mipi_mot_vid_tm_ili7807s_hdp_653_lcm_drv = {
 	.esd_check = lcm_esd_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
+	.set_lcm_cmd = lcm_set_cmdq,
 	.update = lcm_update,
 };
