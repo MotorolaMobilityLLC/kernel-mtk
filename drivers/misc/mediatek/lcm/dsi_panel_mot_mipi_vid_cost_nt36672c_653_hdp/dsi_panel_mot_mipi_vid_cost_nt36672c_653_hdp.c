@@ -174,8 +174,9 @@ static struct LCM_setting_table init_setting_vdo[] = {
 
 
 static struct LCM_setting_table bl_level[] = {
-	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
-	{ 0x51, 0x02, {0x3F, 0xFF} },
+	{0XFF, 0x01, {0X10}},
+	{0XFB, 0x01, {0X01}},
+	{0x51, 0x02, {0x3F, 0xFF}},
 	{ REGFLAG_END_OF_TABLE, 0x00, {} },
 };
 
@@ -525,8 +526,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	LCM_LOGI("%s,cost_nov backlight: level = %d\n,get default level = %d\n", __func__, level, bl_level[1].para_list[0]);
 
 	//for 11bit
-	bl_level[1].para_list[0] = (bl_lvl&0x700)>>8;
-	bl_level[1].para_list[1] = (bl_lvl&0xFF);
+	bl_level[2].para_list[0] = (bl_lvl&0x700)>>8;
+	bl_level[2].para_list[1] = (bl_lvl&0xFF);
 
 	LCM_LOGI("%s:cost_nov: para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
 	push_table(handle, bl_level,
