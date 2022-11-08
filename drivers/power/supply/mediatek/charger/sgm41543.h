@@ -316,4 +316,8 @@
 #define SGM41543_EN_PUMPX			1
 #define SGM41543_PUMPX_UP			1
 #define SGM41543_PUMPX_DN			1
+
+#ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
+void sgm41543_enable_statpin(bool en);
+#endif
 #endif
