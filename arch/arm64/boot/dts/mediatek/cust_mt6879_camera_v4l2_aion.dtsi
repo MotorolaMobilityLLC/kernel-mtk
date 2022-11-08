@@ -47,16 +47,6 @@
 			remote-endpoint = <&main_af>;
 		};
 	};
-	port@1 {
-		fm_af_endpoint: endpoint {
-			remote-endpoint = <&fm_af>;
-		};
-	};
-	port@2 {
-		wide_af_endpoint: endpoint {
-			remote-endpoint = <&wide_af>;
-		};
-	};
 };
 
 &i2c6 {
@@ -88,33 +78,6 @@
 		port {
 			main_af: endpoint {
 				remote-endpoint = <&main_af_endpoint>;
-			};
-		};
-	};
-};
-
-
-&i2c4 {
-	camera_af_fm@18 {
-		compatible = "mediatek,mot_aion_gt9772";
-		reg = <0x18>;
-		vin-supply = <&cam_fm_afvdd_ldo>;
-		port {
-			fm_af: endpoint {
-				remote-endpoint = <&fm_af_endpoint>;
-			};
-		};
-	};
-};
-
-&i2c8 {
-	camera_af_wide@18 {
-		compatible = "mediatek,mot_aion_dw9800v";
-		reg = <0x18>;
-		vin-supply = <&cam_uw_afvdd_ldo>;
-		port {
-			wide_af: endpoint {
-				remote-endpoint = <&wide_af_endpoint>;
 			};
 		};
 	};
