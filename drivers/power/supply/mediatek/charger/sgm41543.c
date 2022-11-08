@@ -565,22 +565,36 @@ EXPORT_SYMBOL_GPL(sgm41543_set_acovp_threshold);
 static int sgm41543_set_stat_ctrl(struct sgm41543 *bq, int ctrl)
 {
 	u8 val;
-
+	int ret = 0;
 	val = ctrl;
 
-	return sgm41543_update_bits(bq, SGM41543_REG_00, REG00_STAT_CTRL_MASK,
-				   val << REG00_STAT_CTRL_SHIFT);
+	if(STAT_CTRL_STAT == val) // ctrl:0 1 3
+		ret = sgm41543_update_bits(bq, SGM41543_REG_00, REG00_STAT_CTRL_MASK, REG00_STAT_CTRL_STAT);
+	else if(STAT_CTRL_ICHG == val) // STAT_SET[1:0]
+		ret = sgm41543_update_bits(bq, SGM41543_REG_00, REG00_STAT_CTRL_MASK, (REG00_STAT_CTRL_ICHG << REG00_STAT_CTRL_SHIFT));
+	else if(STAT_CTRL_DISABLE == val)//Disable(float pin)
+		ret = sgm41543_update_bits(bq, SGM41543_REG_00, REG00_STAT_CTRL_MASK, (REG00_STAT_CTRL_DISABLE << REG00_STAT_CTRL_SHIFT));
+	else {
+		ret = -1;
+		dev_err(bq->dev, "%s: ctrl:%d ret:%d\n", __func__, val,ret);
+	}
+
+	dev_info(bq->dev, "%s: ctrl:%d ret:%d\n", __func__, val,ret);
+	return ret;
 }
 static struct sgm41543 *g_sgm41543;
 void sgm41543_enable_statpin(bool en)
 {
+	if (!g_sgm41543) {
+		pr_err("%s: g_sgm41543 NULL\n",__func__);
+		return;
+	}
 
 	if(en)
 		sgm41543_set_stat_ctrl(g_sgm41543, 0);
 	else
 		sgm41543_set_stat_ctrl(g_sgm41543, 3);
 }
-
 
 static int sgm41543_set_int_mask(struct sgm41543 *bq, int mask)
 {
