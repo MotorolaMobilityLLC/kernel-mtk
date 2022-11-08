@@ -32,6 +32,10 @@
 #include <bq2589x_reg.h>
 #endif
 
+#if defined(CONFIG_CHARGER_SGM41543) && defined(CONFIG_LEDS_MTK_CHG_SUPPORT)
+#include <sgm41543.h>
+#endif
+
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
@@ -312,6 +316,18 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 		else
 		{
 			bq2589x_enable_statpin(1);
+		}
+	}
+#endif
+
+#if defined(CONFIG_CHARGER_SGM41543) && defined(CONFIG_LEDS_MTK_CHG_SUPPORT)
+	if (strcmp(led_data->cust.name, "charging") == 0) {
+		if (level == 0) {
+			sgm41543_enable_statpin(0);
+		}
+		else
+		{
+			sgm41543_enable_statpin(1);
 		}
 	}
 #endif
