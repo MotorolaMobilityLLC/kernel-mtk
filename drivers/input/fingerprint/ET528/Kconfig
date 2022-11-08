@@ -1,0 +1,8 @@
+#
+# fp_sensor driver configuration
+#
+config MTK_FINGERPRINT
+	tristate "egis fingerPrint sensor"
+	depends on SPI_MASTER
+	help
+		add for support egis FP Sensor.

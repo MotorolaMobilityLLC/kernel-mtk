@@ -1,0 +1,42 @@
+menuconfig TINNO
+	bool "tinno kernel code"
+	help
+	  You can build and test tinno kernel code here.
+
+# zane add bring up smartpa AW87390 20211010
+source "tinno/common_features/smartpa/aw87xxx/Kconfig"
+# FM ANT
+source "tinno/common_features/ant_det/Kconfig"
+config TINNO_V770
+    bool "TINNO_V770"
+    default n
+
+# product info.
+config TINNO_PRODUCT_INFO
+    bool "TINNO_PRODUCT_INFO"
+    default n
+
+config LCM_BIAS_SUPPORT
+    bool "LCM_BIAS_SUPPORT"
+    default n
+
+# tp ilitek
+config TINNO_TP_ILITEK
+    bool "TINNO_TP_ILITEK"
+    default n
+
+config TOUCHSCREEN_CHIPONE
+    bool "TOUCHSCREEN_CHIPONE"
+    default n
+
+config TOUCHSCREEN_MTK_ILITEK
+	bool "ILI9881 for Mediatek package"
+	default n
+
+config TOUCHSCREEN_NOVA_HOSTDL
+	bool "TOUCHSCREEN_NOVA_HOSTDL"
+	default n
+
+config TOUCHSCREEN_FTS
+	bool "TOUCHSCREEN_FTS"
+	default n

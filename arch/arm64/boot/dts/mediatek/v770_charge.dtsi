@@ -1,0 +1,346 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (c) 2019 MediaTek Inc.
+ *
+ */
+
+#include "bat_setting/v770_battery_prop.dtsi"
+
+&i2c5 {
+	rt9471@53 {
+		compatible = "richtek,rt9471";
+		charger_name = "primary_chg";
+		reg = <0x53>;
+		status = "okay";
+		charger = <&mtk_charger_type>;	
+
+ 		rt,en_gpio_num = <154>;
+ 		rt,en_gpio = <&pio 154 0x0>;
+ 		rt,ceb_gpio = <&pio 154 0x0>;
+ 		rt,ceb_gpio_num = <154>;
+ 		rt,intr_gpio_num = <11>; /* direct defined GPIO num */
+ 		rt,intr_gpio = <&pio 11 0x0>;
+ //		interrupt-names = "wdtmri";
+ 		ichg = <2000000>; /* uA */
+ 		cv = <4420000>; /* uV */
+ 		ieoc = <100000>; /* uA */
+ 		safety_timer = <12>; /* hour */
+ 		en_st; /* safety timer */
+ 		/* en_te; */
+ 		en_wdt;
+
+		rm-slave-addr = /bits/ 8 <0x53>;
+		rm-name = "rt9471";
+		interrupt-names = "wdt", "chg_mivr", "vbus_gd",
+				  "bc12_done", "detach", "vac_ov",
+				  "otg_fault", "chg_rdy", "chg_done",
+				  "aicc_done", "pe_done", "chg_tout",
+				  "rechg", "chg_batov";
+		vac_ovp = <6500000>;		/* uV */
+		mivr = <4500000>;		/* uV */
+		aicr = <500000>;		/* uA */
+		safe_tmr = <10>;		/* hour */
+		wdt = <40>;			/* sec */
+		/*
+		 * 0: MIVR register
+		 * 1: MIVR = VBAT + 200mV
+		 * 2: MIVR = VBAT + 250mV
+		 * >= 3: MIVR = VBAT + 300mV
+		 */
+		mivr_track = <0>;
+		en_safe_tmr;
+		en_te;
+		/* en_jeita; */
+		/* ceb_invert; */
+		/* dis_i2c_tout; */
+		en_qon_rst;
+		/* auto_aicr; */
+		bc12_sel = <0>;
+		otg_vbus: usb-otg-vbus {
+						regulator-compatible = "usb-otg-vbus";
+						regulator-name = "usb-otg-vbus";
+						regulator-min-microvolt = <4850000>;
+						regulator-max-microvolt = <5300000>;
+						regulator-min-microamp = <500000>;
+						regulator-max-microamp = <1200000>;
+					};
+ 		
+	};
+};
+
+&i2c5 {
+	bq2560x@6B {
+		compatible = "mediatek,bq25601";
+		charger_name = "primary_chg";
+		reg = <0x6B>;
+		status = "okay";
+		charger = <&mtk_charger_type>;		/*for charge status by pony 20210609*/
+	};
+};
+
+&i2c5 {
+	bq2597x_standalone@65 {
+		compatible = "ti,bq2597x-standalone";
+		reg = <0x65>;
+		//interrupt-parent = <&tlmm>;
+		//interrupts = <111 0>;
+		ti,irq-gpio = <&pio 110 0>;
+		ti,bq2597x,bat-therm-disable;
+		ti,bq2597x,bus-therm-disable;
+		ti,bq2597x,die-therm-disable;
+
+		ti,bq2597x,bat-ovp-threshold = <4425>;
+		ti,bq2597x,bat-ovp-alarm-threshold = <4400>;
+		ti,bq2597x,bat-ocp-threshold = <8000>;
+		ti,bq2597x,bat-ocp-alarm-threshold = <7500>;
+		//for dual cp :
+		ti,bq2597x,bat-ocp-disable;
+
+		ti,bq2597x,bus-ovp-threshold = <6500>;
+		ti,bq2597x,bus-ovp-alarm-threshold = <6400>;
+		ti,bq2597x,bus-ocp-threshold = <2100>;
+		ti,bq2597x,bus-ocp-alarm-threshold = <2000>;
+
+		ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
+
+		ti,bq2597x,bat-therm-threshold = <0x15>;/*4.1%*/
+		ti,bq2597x,bus-therm-threshold = <0x15>;/*4.1%*/
+		ti,bq2597x,die-therm-threshold = <125>;
+
+		ti,bq2597x,ac-ovp-threshold = <12>;
+		ti,bq2597x,sense-resistor-mohm = <2>;
+	};
+};
+
+&i2c5 {
+	rt9759_slave@66 {
+		compatible = "richtek,rt9759";
+		status = "disabled";
+		reg = <0x66>;
+		rm_name = "rt9759";
+		rm_slave_addr = /bits/ 8 <0x66>;
+		rt9759,intr-gpios = <&pio 110 0x0>;
+		standalone {
+			chg_name = "primary_divider_chg";
+			vbatovp = <4500000>;
+			vbatovp_alm = <4400000>;
+			ibatocp = <6100000>;
+			ibatocp_alm = <6000000>;
+			ibatucp_alm = <1000000>;
+			vbusovp = <6500000>;
+			vbusovp_alm = <6400000>;
+			ibusocp = <4250000>;
+			ibusocp_alm = <4000000>;
+			vacovp = <6600000>;
+			wdt = <30000000>;
+			ibat_rsense = <1>; /* 0: 2mohm, 1: 5mohm */
+			ibusucpf_deglitch = <0>; /* 0: 10us, 1: 5ms */
+			/* vbatovp_dis; */
+			/* vbatovp_alm_dis; */
+			/* ibatocp_dis; */
+			ibatocp_alm_dis;
+			ibatucp_alm_dis;
+			/* vbusovp_alm_dis; */
+			/* ibusocp_dis; */
+			ibusocp_alm_dis;
+			/* wdt_dis; */
+			/* tsbusotp_dis; */
+			/* tsbatotp_dis; */
+			/* tdieotp_dis; */
+			/* reg_en; */
+			/* voutovp_dis; */
+			/* ibusadc_dis; */
+			/* vbusadc_dis; */
+			/* vacadc_dis; */
+			/* voutadc_dis; */
+			/* vbatadc_dis; */
+			/* ibatadc_dis; */
+			/* tsbusadc_dis; */
+			/* tsbatadc_dis; */
+			/* tdieadc_dis; */
+		};
+		slave {
+			chg_name = "secondary_divider_chg";
+			vbatovp = <4500000>;
+			vbatovp_alm = <4400000>;
+			ibatocp = <6100000>;
+			ibatocp_alm = <6000000>;
+			ibatucp_alm = <1000000>;
+			vbusovp = <6500000>;
+			vbusovp_alm = <6400000>;
+			ibusocp = <4250000>;
+			ibusocp_alm = <4000000>;
+			vacovp = <6600000>;
+			wdt = <1000000>;
+			ibat_rsense = <1>; /* 0: 2mohm, 1: 5mohm */
+			ibusucpf_deglitch = <0>; /* 0: 10us, 1: 5ms */
+			vbatovp_dis;
+			vbatovp_alm_dis;
+			ibatocp_dis;
+			ibatocp_alm_dis;
+			ibatucp_alm_dis;
+			vbusovp_alm_dis;
+			/* ibusocp_dis; */
+			ibusocp_alm_dis;
+			wdt_dis;
+			/* tsbusotp_dis; */
+			/* tsbatotp_dis; */
+			/* tdieotp_dis; */
+			/* reg_en; */
+			/* voutovp_dis; */
+			/* ibusadc_dis; */
+			/* vbusadc_dis; */
+			/* vacadc_dis; */
+			/* voutadc_dis; */
+			vbatadc_dis;
+			ibatadc_dis;
+			/* tsbusadc_dis; */
+			/* tsbatadc_dis; */
+			/* tdieadc_dis; */
+		};
+	};
+	rt9759_master@65 {
+		compatible = "richtek,rt9759";
+		status = "disabled";
+		reg = <0x65>;
+		rm_name = "rt9759";
+		rm_slave_addr = /bits/ 8 <0x65>;
+		rt9759,intr-gpios = <&pio 110 0x0>;
+		standalone {
+			chg_name = "primary_divider_chg";
+			vbatovp = <4500000>;
+			vbatovp_alm = <4400000>;
+			ibatocp = <6100000>;
+			ibatocp_alm = <6000000>;
+			ibatucp_alm = <1000000>;
+			vbusovp = <6500000>;
+			vbusovp_alm = <6400000>;
+			ibusocp = <4250000>;
+			ibusocp_alm = <4000000>;
+			vacovp = <6600000>;
+			wdt = <30000000>;
+			ibat_rsense = <1>; /* 0: 2mohm, 1: 5mohm */
+			ibusucpf_deglitch = <0>; /* 0: 10us, 1: 5ms */
+			/* vbatovp_dis; */
+			/* vbatovp_alm_dis; */
+			/* ibatocp_dis; */
+			ibatocp_alm_dis;
+			ibatucp_alm_dis;
+			/* vbusovp_alm_dis; */
+			/* ibusocp_dis; */
+			ibusocp_alm_dis;
+			/* wdt_dis; */
+			/* tsbusotp_dis; */
+			tsbatotp_dis;
+			/* tdieotp_dis; */
+			/* reg_en; */
+			/* voutovp_dis; */
+			/* ibusadc_dis; */
+			/* vbusadc_dis; */
+			/* vacadc_dis; */
+			/* voutadc_dis; */
+			/* vbatadc_dis; */
+			/* ibatadc_dis; */
+			/* tsbusadc_dis; */
+			/* tsbatadc_dis; */
+			/* tdieadc_dis; */
+		};
+		master {
+			chg_name = "primary_divider_chg";
+			vbatovp = <4500000>;
+			vbatovp_alm = <4400000>;
+			ibatocp = <6100000>;
+			ibatocp_alm = <6000000>;
+			ibatucp_alm = <1000000>;
+			vbusovp = <6500000>;
+			vbusovp_alm = <6400000>;
+			ibusocp = <4250000>;
+			ibusocp_alm = <4000000>;
+			vacovp = <6600000>;
+			wdt = <30000000>;
+			ibat_rsense = <1>; /* 0: 2mohm, 1: 5mohm */
+			ibusucpf_deglitch = <0>; /* 0: 10us, 1: 5ms */
+			/* vbatovp_dis; */
+			/* vbatovp_alm_dis; */
+			/* ibatocp_dis; */
+			ibatocp_alm_dis;
+			/* ibatucp_alm_dis; */
+			/* vbusovp_alm_dis; */
+			/* ibusocp_dis; */
+			ibusocp_alm_dis;
+			/* wdt_dis; */
+			tsbusotp_dis;
+			tsbatotp_dis;
+			/* tdieotp_dis; */
+			/* reg_en; */
+			/* voutovp_dis; */
+			/* ibusadc_dis; */
+			/* vbusadc_dis; */
+			/* vacadc_dis; */
+			/* voutadc_dis; */
+			/* vbatadc_dis; */
+			/* ibatadc_dis; */
+			tsbusadc_dis;
+			tsbatadc_dis;
+			/* tdieadc_dis; */
+		};
+	};
+};
+
+
+&lk_charger {
+	fast_charge_voltage = <3200000>;
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <900000>;
+	ac_charger_input_current = <2000000>;
+	non_std_ac_charger_current = <500000>;
+	charging_host_charger_current = <900000>;
+	ta_ac_charger_current = <3000000>;
+	pd_charger_current = <500000>;
+
+/* battery temperature protection */
+	temp_t4_threshold = <55>;
+	temp_t3_threshold = <45>;
+	temp_t1_threshold = <5>;	
+};
+
+&charger {
+	battery_cv = <4420000>;				
+	jeita_temp_above_t4_cv = <4100000>;
+	jeita_temp_t3_to_t4_cv = <4100000>;
+	jeita_temp_t2_to_t3_cv = <4420000>;
+	jeita_temp_t1_to_t2_cv = <4420000>;
+	jeita_temp_t0_to_t1_cv = <4420000>;
+	jeita_temp_below_t0_cv = <4100000>;
+	enable_sw_jeita;
+	temp_t4_thres = <55>;
+	temp_t4_thres_minus_x_degree = <52>;
+	temp_t3_thres = <45>;
+	temp_t3_thres_minus_x_degree = <43>;
+	temp_t2_thres = <10>;
+	temp_t2_thres_plus_x_degree = <12>;
+	temp_t1_thres = <5>;
+	temp_t1_thres_plus_x_degree = <7>;
+	temp_t0_thres = <0>;
+	temp_t0_thres_plus_x_degree = <0>;
+	temp_neg_10_thres = <0>;
+
+	/* battery temperature protection */
+	enable_min_charge_temp;
+	min_charge_temp = <3>;
+	min_charge_temp_plus_x_degree = <5>;
+	max_charge_temp = <55>;
+	max_charge_temp_minus_x_degree = <52>;
+
+	/* jeita charging current by pony date20210323 */
+	jeita_temp_t3_to_t4_cc = <1500000>;		//temp 45~60 current
+	jeita_temp_t2_to_t3_cc = <2000000>;		//temp 10~45 current
+	jeita_temp_t1_to_t2_cc = <1400000>;		//temp 0~10 current
+
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <2000000>;
+	ac_charger_input_current = <2000000>;
+	charging_host_charger_current = <1000000>;
+};
