@@ -176,7 +176,6 @@ static void tianma_panel_init(struct tianma *ctx)
 	    mdelay (10);
 	    devm_gpiod_put(ctx->dev, ctx->reset_gpio);
     }
-
 	printk("[%d %s]\n",__LINE__, __FUNCTION__);
 	tianma_dcs_write_seq_static(ctx,0XFF, 0X10);
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
@@ -188,11 +187,20 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0XFF, 0X25);
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
 	tianma_dcs_write_seq_static(ctx,0X18, 0X20);
-    	tianma_dcs_write_seq_static(ctx,0XD6, 0X80);
-    	tianma_dcs_write_seq_static(ctx,0XD7, 0X02);
-    	tianma_dcs_write_seq_static(ctx,0XDA, 0X00);
-    	tianma_dcs_write_seq_static(ctx,0XDD, 0X02);
-    	tianma_dcs_write_seq_static(ctx,0XE0, 0X00);
+
+	tianma_dcs_write_seq_static(ctx,0XD6, 0X80);
+	tianma_dcs_write_seq_static(ctx,0XD7, 0X82);
+	tianma_dcs_write_seq_static(ctx,0XDA, 0X02);
+	tianma_dcs_write_seq_static(ctx,0XDD, 0X02);
+	tianma_dcs_write_seq_static(ctx,0XE0, 0X02);
+	tianma_dcs_write_seq_static(ctx,0XFF, 0X20);
+	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
+	tianma_dcs_write_seq_static(ctx,0X1F, 0X00);
+	tianma_dcs_write_seq_static(ctx,0X6D, 0X55);
+
+	tianma_dcs_write_seq_static(ctx,0XFF, 0XE0);
+	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
+	tianma_dcs_write_seq_static(ctx,0X85, 0X32);
 
 	tianma_dcs_write_seq_static(ctx,0XFF, 0XF0);
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
@@ -207,23 +215,29 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
 	tianma_dcs_write_seq_static(ctx,0X53, 0X22);
 	tianma_dcs_write_seq_static(ctx,0X54, 0X02);
-	//0926  RGBBGR
+
 	tianma_dcs_write_seq_static(ctx,0XFF, 0X24);
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
-	tianma_dcs_write_seq_static(ctx,0X7A, 0X03);
+	tianma_dcs_write_seq_static(ctx,0X7A, 0X04);
 	tianma_dcs_write_seq_static(ctx,0XA3, 0X04);
 	tianma_dcs_write_seq_static(ctx,0XE9, 0X04);
-
+	tianma_dcs_write_seq_static(ctx,0X4D, 0X03);
+	tianma_dcs_write_seq_static(ctx,0X4E, 0X2F);
+	tianma_dcs_write_seq_static(ctx,0X4F, 0X2F);
+	tianma_dcs_write_seq_static(ctx,0X53, 0X2F);
 	tianma_dcs_write_seq_static(ctx,0XFF, 0X26);
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
 	tianma_dcs_write_seq_static(ctx,0XB4, 0X11);
+
 	tianma_dcs_write_seq_static(ctx,0XFF, 0X10);
 	tianma_dcs_write_seq_static(ctx,0XFB, 0X01);
 	tianma_dcs_write_seq_static(ctx,0XC1, 0X89,0X28,0X00,0X08,0X00,0XAA,0X02,0X0E,0X00,0X2B,0X00,0X07,0X0D,0XB7,0X0C,0XB7); //DSC
 	tianma_dcs_write_seq_static(ctx,0XC2,0X1B,0XA0); //DSC
+
 	tianma_dcs_write_seq_static(ctx, 0x51, 0x06,0x2A);//max 0x07,0xFF
 	tianma_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tianma_dcs_write_seq_static(ctx, 0x55, 0x01);
+
 	tianma_dcs_write_seq_static(ctx,0X35, 0X00);//TE
 
 	tianma_dcs_write_seq_static(ctx, 0x11);
@@ -357,7 +371,7 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock = DISP_CLK,
+	.clock = 373475,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -368,7 +382,7 @@ static const struct drm_display_mode default_mode = {
 	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
 };
 static const struct drm_display_mode performance_mode_30hz = {
-	.clock = DISP_CLK,
+	.clock = 373475,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
@@ -380,7 +394,7 @@ static const struct drm_display_mode performance_mode_30hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock = DISP_CLK,
+	.clock = 373512,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -392,7 +406,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock = DISP_CLK,
+	.clock = 373475,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
@@ -459,21 +473,6 @@ static struct mtk_panel_params ext_params = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = 550,
-		.vfp_lp_dyn = 2600,
-		.hfp = 77,
-		.vfp = 2528,
-	},
-	.dyn_fps = {
-		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
-		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
-		.dfps_cmd_table[2] = {0, 2, {0x18, 0x22} },
-		//switch page for esd check
-		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
-		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
-	},
 	.data_rate = DATA_RATE,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -534,21 +533,6 @@ static struct mtk_panel_params ext_params_mode_30 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = 550,
-		.vfp_lp_dyn = 2600,
-		.hfp = 77,
-		.vfp = 7476,
-	},
-	.dyn_fps = {
-		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
-		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
-		.dfps_cmd_table[2] = {0, 2, {0x18, 0x21} },
-		//switch page for esd check
-		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
-		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
-	},
 	.data_rate = DATA_RATE,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -609,21 +593,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = 550,
-		.vfp_lp_dyn = 1300,
-		.hfp = 77,
-		.vfp = 879,
-	},
-	.dyn_fps = {
-		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
-		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
-		.dfps_cmd_table[2] = {0, 2, {0x18, 0x21} },
-		//switch page for esd check
-		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
-		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
-	},
 	.data_rate = DATA_RATE,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
@@ -684,21 +653,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = 550,
-		.vfp_lp_dyn = 2540,
-		.hfp = 77,
-		.vfp = 54,
-	},
-	.dyn_fps = {
-		.dfps_cmd_table[0] = {0, 2, {0xFF, 0x25} },
-		.dfps_cmd_table[1] = {0, 2, {0xFB, 0x01} },
-		.dfps_cmd_table[2] = {0, 2, {0x18, 0x20} },
-		//switch page for esd check
-		.dfps_cmd_table[3] = {0, 2, {0xFF, 0x10} },
-		.dfps_cmd_table[4] = {0, 2, {0xFB, 0x01} },
-	},
 	.data_rate = DATA_RATE,
 	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = MODE_60_FPS,
