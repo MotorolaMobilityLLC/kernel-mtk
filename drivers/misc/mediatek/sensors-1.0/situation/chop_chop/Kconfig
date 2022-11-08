@@ -1,0 +1,8 @@
+
+config MTK_CHOPCHOP_HUB
+	bool "CHOPCHOP for MediaTek package"
+	help
+	  CHOPCHOP is a device,
+	  usually portable and electronic
+	  or electromechanical,
+	  that detect device is chopped twice.
