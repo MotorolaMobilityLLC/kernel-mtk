@@ -340,6 +340,10 @@ unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39449A-400");
 	else if(tempBuf[12] == 0x40)
 		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39397A-400");
+	else if(tempBuf[12] == 0x45)
+		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39459A-400");
+	else if(tempBuf[12] == 0x43)
+		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39374B-400");
 	else
 		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Unknow");
 
