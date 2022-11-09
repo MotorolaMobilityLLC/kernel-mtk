@@ -97,16 +97,14 @@ struct imgsensor_info_struct {
 	//capture scenario relative information
 	struct imgsensor_mode_struct cap;
 	struct imgsensor_mode_struct cap1;
-	struct imgsensor_mode_struct cap2;
-	//normal video  scenario relative information
+	//normal video scenario relative information
 	struct imgsensor_mode_struct normal_video;
 	//high speed video scenario relative information
 	struct imgsensor_mode_struct hs_video;
 	//slim video for VT scenario relative information
 	struct imgsensor_mode_struct slim_video;
 
-//shutter delay frame for AE cycle
-	kal_uint8  ae_shut_delay_frame;
+	kal_uint8 ae_shut_delay_frame;	//shutter delay frame for AE cycle
 	//sensor gain delay frame for AE cycle
 	kal_uint8  ae_sensor_gain_delay_frame;
 	//isp gain delay frame for AE cycle
@@ -124,7 +122,7 @@ struct imgsensor_info_struct {
 	kal_uint8  hs_video_delay_frame;
 	//enter slim video delay frame num
 	kal_uint8  slim_video_delay_frame;
-
+	kal_uint8 frame_time_delay_frame;
 //sensor framelength & shutter margin
 	kal_uint8  margin;
 	kal_uint32 min_shutter;			//min shutter
@@ -142,6 +140,11 @@ struct imgsensor_info_struct {
 
 	kal_uint8  i2c_addr_table[5];
 	kal_uint32  i2c_speed;     //i2c speed
+	kal_uint32 min_gain;
+	kal_uint32 max_gain;
+	kal_uint32 min_gain_iso;
+	kal_uint32 gain_step;
+	kal_uint32 gain_type;
 };
 
 
