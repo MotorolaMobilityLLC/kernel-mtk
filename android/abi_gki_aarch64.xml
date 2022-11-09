@@ -945,6 +945,7 @@
       <elf-symbol name='blk_mq_init_queue' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe25d0698'/>
       <elf-symbol name='blk_mq_map_queues' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4d4d7b79'/>
       <elf-symbol name='blk_mq_pci_map_queues' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x233010e7'/>
+      <elf-symbol name='blk_mq_queue_inflight' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa7682480'/>
       <elf-symbol name='blk_mq_quiesce_queue' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1aeaea1f'/>
       <elf-symbol name='blk_mq_requeue_request' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb1c9c997'/>
       <elf-symbol name='blk_mq_rq_cpu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b14ba81'/>
@@ -51275,7 +51276,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -131314,6 +131315,10 @@
         <parameter type-id='95e97e5e' name='offset' filepath='block/blk-mq-pci.c' line='27' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='blk_mq_queue_inflight' mangled-name='blk_mq_queue_inflight' filepath='block/blk-mq.c' line='877' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_mq_queue_inflight'>
+        <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-mq.c' line='877' column='1'/>
+        <return type-id='b50a4934'/>
+      </function-decl>
       <function-decl name='blk_mq_quiesce_queue' mangled-name='blk_mq_quiesce_queue' filepath='block/blk-mq.c' line='232' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='blk_mq_quiesce_queue'>
         <parameter type-id='e7d2a5fc' name='q' filepath='block/blk-mq.c' line='232' column='1'/>
         <return type-id='48b5725f'/>
@@ -160969,7 +160974,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
