@@ -927,7 +927,12 @@ static int dpmaif_net_rx_push_thread(void *arg)
 #endif
 #ifndef CCCI_KMODULE_ENABLE
 #ifdef CCCI_SKB_TRACE
-		per_md_data->netif_rx_profile[6] = sched_clock();
+		if (per_md_data == NULL)
+			per_md_data = ccci_get_per_md_data(hif_ctrl->md_id);
+
+		if (per_md_data)
+			per_md_data->netif_rx_profile[6] = sched_clock();
+
 		if (count > 0)
 			skb->tstamp = sched_clock();
 #endif
@@ -964,10 +969,12 @@ static int dpmaif_net_rx_push_thread(void *arg)
 #endif
 #ifndef CCCI_KMODULE_ENABLE
 #ifdef CCCI_SKB_TRACE
-		per_md_data->netif_rx_profile[6] = sched_clock() -
-			per_md_data->netif_rx_profile[6];
-		per_md_data->netif_rx_profile[5] = count;
-		trace_ccci_skb_rx(per_md_data->netif_rx_profile);
+		if (per_md_data) {
+			per_md_data->netif_rx_profile[6] = sched_clock() -
+				per_md_data->netif_rx_profile[6];
+			per_md_data->netif_rx_profile[5] = count;
+			trace_ccci_skb_rx(per_md_data->netif_rx_profile);
+		}
 #endif
 #endif
 	}
