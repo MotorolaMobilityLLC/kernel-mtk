@@ -31,6 +31,10 @@
 	};
 };
 
+&memory_ssmr_features {
+	prot-region-based-size = <0 0>;
+};
+
 /* chosen */
 &chosen {
 
