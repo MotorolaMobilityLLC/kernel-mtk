@@ -22,7 +22,7 @@
 	disable_aicl;
 
 	/*pe4 && pdc && pe2*/
-	fast_charging_indicator = <0x0E>;
+	fast_charging_indicator = <0x06>;
 
 	/* charging current */
 	usb_charger_current_suspend = <0>;
@@ -68,7 +68,7 @@
 	pd_vbus_upper_bound = <9000000>;
 
 	/* single charger */
-	sc_input_current = <3000000>;
+	sc_input_current = <2000000>;
 	sc_charger_current = <4000000>;
 };
 
