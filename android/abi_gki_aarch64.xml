@@ -190,6 +190,7 @@
       <elf-symbol name='__irq_set_handler' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x55cde3ef'/>
       <elf-symbol name='__kfifo_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x139f2189'/>
       <elf-symbol name='__kfifo_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdb760f52'/>
+      <elf-symbol name='__kfifo_from_user' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x30a80826'/>
       <elf-symbol name='__kfifo_from_user_r' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfeebc7c4'/>
       <elf-symbol name='__kfifo_in' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf23fcb99'/>
       <elf-symbol name='__kfifo_in_r' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3955fcf6'/>
@@ -3570,6 +3571,7 @@
       <elf-symbol name='lzorle1x_1_compress' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x79f697e4'/>
       <elf-symbol name='mac_pton' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x652032cb'/>
       <elf-symbol name='make_bad_inode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1a54afd0'/>
+      <elf-symbol name='mangle_path' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x23b9d6e2'/>
       <elf-symbol name='mark_buffer_dirty' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeadc93bf'/>
       <elf-symbol name='match_hex' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xad0413d4'/>
       <elf-symbol name='match_int' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4e3567f7'/>
@@ -4661,6 +4663,7 @@
       <elf-symbol name='rdev_get_regmap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1a580a80'/>
       <elf-symbol name='read_cache_page' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdfb1ab04'/>
       <elf-symbol name='read_cache_page_gfp' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfcf3cf08'/>
+      <elf-symbol name='read_sanitised_ftr_reg' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3562f983'/>
       <elf-symbol name='rebuild_sched_domains' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa65ab83d'/>
       <elf-symbol name='reciprocal_value' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa965ca81'/>
       <elf-symbol name='reclaim_pages' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2d55e4f4'/>
@@ -4713,6 +4716,7 @@
       <elf-symbol name='register_virtio_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3290b14'/>
       <elf-symbol name='register_virtio_driver' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5378826e'/>
       <elf-symbol name='register_vmap_purge_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x26ed2186'/>
+      <elf-symbol name='register_wide_hw_breakpoint' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbc09d5a3'/>
       <elf-symbol name='regmap_add_irq_chip' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x20f99af'/>
       <elf-symbol name='regmap_async_complete' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe54dbd36'/>
       <elf-symbol name='regmap_attach_dev' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf095ba89'/>
@@ -5392,6 +5396,7 @@
       <elf-symbol name='snd_soc_info_volsw_sx' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3ff98ec0'/>
       <elf-symbol name='snd_soc_info_xr_sx' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x87ffcc2c'/>
       <elf-symbol name='snd_soc_jack_add_gpios' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x36db9502'/>
+      <elf-symbol name='snd_soc_jack_free_gpios' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6f9d655a'/>
       <elf-symbol name='snd_soc_jack_notifier_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x20c1ad2c'/>
       <elf-symbol name='snd_soc_jack_report' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc63c3646'/>
       <elf-symbol name='snd_soc_limit_volume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfcda79cf'/>
@@ -5994,6 +5999,7 @@
       <elf-symbol name='unregister_virtio_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbd6fbd33'/>
       <elf-symbol name='unregister_virtio_driver' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x639c332d'/>
       <elf-symbol name='unregister_vmap_purge_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb7c69a63'/>
+      <elf-symbol name='unregister_wide_hw_breakpoint' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3176388a'/>
       <elf-symbol name='up' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcf2a6966'/>
       <elf-symbol name='up_read' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b50e951'/>
       <elf-symbol name='up_write' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x20d81059'/>
@@ -51269,7 +51275,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -126388,6 +126394,13 @@
         <parameter type-id='f3207f74' name='fifo' filepath='lib/kfifo.c' line='55' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='__kfifo_from_user' mangled-name='__kfifo_from_user' filepath='lib/kfifo.c' line='210' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__kfifo_from_user'>
+        <parameter type-id='f3207f74' name='fifo' filepath='lib/kfifo.c' line='210' column='1'/>
+        <parameter type-id='eaa32e2f' name='from' filepath='lib/kfifo.c' line='210' column='1'/>
+        <parameter type-id='7359adad' name='len' filepath='lib/kfifo.c' line='211' column='1'/>
+        <parameter type-id='807869d3' name='copied' filepath='lib/kfifo.c' line='211' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__kfifo_from_user_r' mangled-name='__kfifo_from_user_r' filepath='lib/kfifo.c' line='499' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__kfifo_from_user_r'>
         <parameter type-id='f3207f74' name='fifo' filepath='lib/kfifo.c' line='499' column='1'/>
         <parameter type-id='eaa32e2f' name='from' filepath='lib/kfifo.c' line='499' column='1'/>
@@ -145141,6 +145154,12 @@
         <parameter type-id='7e666abe' name='inode' filepath='fs/bad_inode.c' line='207' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='mangle_path' mangled-name='mangle_path' filepath='fs/seq_file.c' line='456' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mangle_path'>
+        <parameter type-id='26a90f95' name='s' filepath='fs/seq_file.c' line='456' column='1'/>
+        <parameter type-id='80f4b756' name='p' filepath='fs/seq_file.c' line='456' column='1'/>
+        <parameter type-id='80f4b756' name='esc' filepath='fs/seq_file.c' line='456' column='1'/>
+        <return type-id='26a90f95'/>
+      </function-decl>
       <function-decl name='mark_buffer_dirty' mangled-name='mark_buffer_dirty' filepath='fs/buffer.c' line='1082' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mark_buffer_dirty'>
         <parameter type-id='c485c22c' name='bh' filepath='fs/buffer.c' line='1082' column='1'/>
         <return type-id='48b5725f'/>
@@ -150667,6 +150686,10 @@
         <parameter type-id='3eb7c31c' name='gfp' filepath='mm/filemap.c' line='3639' column='1'/>
         <return type-id='02f11ed4'/>
       </function-decl>
+      <function-decl name='read_sanitised_ftr_reg' mangled-name='read_sanitised_ftr_reg' filepath='arch/arm64/kernel/cpufeature.c' line='1236' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='read_sanitised_ftr_reg'>
+        <parameter type-id='19c2251e' name='id' filepath='arch/arm64/kernel/cpufeature.c' line='1236' column='1'/>
+        <return type-id='91ce1af9'/>
+      </function-decl>
       <var-decl name='reboot_mode' type-id='fdb20761' mangled-name='reboot_mode' visibility='default' filepath='kernel/reboot.c' line='35' column='1' elf-symbol-id='reboot_mode'/>
       <function-decl name='rebuild_sched_domains' mangled-name='rebuild_sched_domains' filepath='kernel/cgroup/cpuset.c' line='1069' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rebuild_sched_domains'>
         <return type-id='48b5725f'/>
@@ -150890,6 +150913,12 @@
       <function-decl name='register_vmap_purge_notifier' mangled-name='register_vmap_purge_notifier' filepath='mm/vmalloc.c' line='1607' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_vmap_purge_notifier'>
         <parameter type-id='d504f73d' name='nb' filepath='mm/vmalloc.c' line='1607' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='register_wide_hw_breakpoint' mangled-name='register_wide_hw_breakpoint' filepath='kernel/events/hw_breakpoint.c' line='559' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='register_wide_hw_breakpoint'>
+        <parameter type-id='20862e61' name='attr' filepath='kernel/events/hw_breakpoint.c' line='559' column='1'/>
+        <parameter type-id='20a2e4e6' name='triggered' filepath='kernel/events/hw_breakpoint.c' line='560' column='1'/>
+        <parameter type-id='eaa32e2f' name='context' filepath='kernel/events/hw_breakpoint.c' line='561' column='1'/>
+        <return type-id='a0127209'/>
       </function-decl>
       <function-decl name='regmap_add_irq_chip' mangled-name='regmap_add_irq_chip' filepath='drivers/base/regmap/regmap-irq.c' line='928' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='regmap_add_irq_chip'>
         <parameter type-id='29af9a71' name='map' filepath='drivers/base/regmap/regmap-irq.c' line='928' column='1'/>
@@ -154512,6 +154541,12 @@
         <parameter type-id='3c269e0e' name='gpios' filepath='sound/soc/soc-jack.c' line='312' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='snd_soc_jack_free_gpios' mangled-name='snd_soc_jack_free_gpios' filepath='sound/soc/soc-jack.c' line='446' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_jack_free_gpios'>
+        <parameter type-id='12a060a4' name='jack' filepath='sound/soc/soc-jack.c' line='446' column='1'/>
+        <parameter type-id='95e97e5e' name='count' filepath='sound/soc/soc-jack.c' line='446' column='1'/>
+        <parameter type-id='3c269e0e' name='gpios' filepath='sound/soc/soc-jack.c' line='447' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='snd_soc_jack_notifier_register' mangled-name='snd_soc_jack_notifier_register' filepath='sound/soc/soc-jack.c' line='181' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='snd_soc_jack_notifier_register'>
         <parameter type-id='12a060a4' name='jack' filepath='sound/soc/soc-jack.c' line='181' column='1'/>
         <parameter type-id='d504f73d' name='nb' filepath='sound/soc/soc-jack.c' line='182' column='1'/>
@@ -157568,6 +157603,10 @@
       <function-decl name='unregister_vmap_purge_notifier' mangled-name='unregister_vmap_purge_notifier' filepath='mm/vmalloc.c' line='1613' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_vmap_purge_notifier'>
         <parameter type-id='d504f73d' name='nb' filepath='mm/vmalloc.c' line='1613' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='unregister_wide_hw_breakpoint' mangled-name='unregister_wide_hw_breakpoint' filepath='kernel/events/hw_breakpoint.c' line='596' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='unregister_wide_hw_breakpoint'>
+        <parameter type-id='a0127209' name='cpu_events' filepath='kernel/events/hw_breakpoint.c' line='596' column='1'/>
+        <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='up' mangled-name='up' filepath='kernel/locking/semaphore.c' line='182' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='up'>
         <parameter type-id='a965a5b5' name='sem' filepath='kernel/locking/semaphore.c' line='182' column='1'/>
