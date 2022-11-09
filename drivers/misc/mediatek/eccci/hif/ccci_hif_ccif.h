@@ -36,7 +36,7 @@
 #define RX_BUGDET 16
 #define NET_RX_QUEUE_MASK 0x4
 
-#define platform_mt6779 ("MT6779")
+#define platform_mt6781 ("MT6781")
 #define platform_mt6877 ("MT6877")
 #define PLATFORM_AP_LEN (16)
 
