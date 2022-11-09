@@ -2028,6 +2028,8 @@ void ccci_port_queue_status_notify(int md_id, int hif_id, int qno,
 	CHECK_HIF_ID(hif_id);
 	CHECK_QUEUE_ID(qno);
 	proxy_p = GET_PORT_PROXY(md_id);
+	if (proxy_p == NULL)
+		return;
 	proxy_dispatch_queue_status(proxy_p, hif_id, qno,
 		dir, (unsigned int)state);
 }
