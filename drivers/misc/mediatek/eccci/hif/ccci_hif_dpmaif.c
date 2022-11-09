@@ -2751,6 +2751,12 @@ static void record_drb_skb(unsigned char q_num, unsigned short cur_idx,
 	unsigned int *temp;
 #endif
 
+	if (drb_skb == NULL) {
+		CCCI_ERROR_LOG(dpmaif_ctrl->md_id, TAG,
+			"%s idx=%u,drb_skb is NULL\n", __func__, cur_idx);
+		return;
+	}
+
 	drb_skb->skb = skb;
 	drb_skb->phy_addr = phy_addr;
 	drb_skb->data_len = data_len;
@@ -3620,6 +3626,7 @@ static int dpmaif_rxq_init(struct dpmaif_rx_queue *queue)
 static int dpmaif_tx_buf_init(struct dpmaif_tx_queue *txq)
 {
 	int ret = 0;
+	unsigned int retry;
 
 	/* DRB buffer init */
 	txq->drb_size_cnt = DPMAIF_UL_DRB_ENTRY_SIZE;
@@ -3645,14 +3652,22 @@ static int dpmaif_tx_buf_init(struct dpmaif_tx_queue *txq)
 		return LOW_MEMORY_DRB;
 	}
 	memset(txq->drb_base, 0, DPMAIF_UL_DRB_SIZE);
+
 	/* alloc buffer for AP SW */
-	txq->drb_skb_base =
-		kzalloc((txq->drb_size_cnt * sizeof(struct dpmaif_drb_skb)),
-				GFP_KERNEL);
+	for (retry = 0; retry < 5; retry++) {
+		txq->drb_skb_base =
+			kzalloc((txq->drb_size_cnt * sizeof(struct dpmaif_drb_skb)),
+			GFP_KERNEL|__GFP_RETRY_MAYFAIL);
+		if (txq->drb_skb_base)
+			break;
+		CCCI_ERROR_LOG(-1, TAG, "alloc txq->drb_skb_base fail %u\n", retry);
+	}
+
 	if (!txq->drb_skb_base) {
 		CCCI_ERROR_LOG(-1, TAG, "drb skb buffer request fail\n");
 		return LOW_MEMORY_DRB;
 	}
+
 	return ret;
 }
 
@@ -3792,7 +3807,9 @@ int dpmaif_late_init(unsigned char hif_id)
 	for (i = 0; i < DPMAIF_RXQ_NUM; i++) {
 		rx_q = &dpmaif_ctrl->rxq[i];
 		rx_q->index = i;
-		dpmaif_rxq_init(rx_q);
+		ret = dpmaif_rxq_init(rx_q);
+		if (ret < 0)
+			return ret;
 		rx_q->skb_idx = -1;
 	}
 
@@ -3808,7 +3825,9 @@ int dpmaif_late_init(unsigned char hif_id)
 	for (i = 0; i < DPMAIF_TXQ_NUM; i++) {
 		tx_q = &dpmaif_ctrl->txq[i];
 		tx_q->index = i;
-		dpmaif_txq_init(tx_q);
+		ret = dpmaif_txq_init(tx_q);
+		if (ret < 0)
+			return ret;
 	}
 
 	/* wakeup source init */
