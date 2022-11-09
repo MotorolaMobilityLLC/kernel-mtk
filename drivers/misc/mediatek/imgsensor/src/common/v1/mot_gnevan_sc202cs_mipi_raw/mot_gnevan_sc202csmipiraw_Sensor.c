@@ -166,6 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,//mipi lane num
 	.i2c_addr_table = {0x6C, 0xff},
+	.i2c_speed = 400,
 };
 
 
