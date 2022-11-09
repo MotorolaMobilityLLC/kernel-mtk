@@ -3389,6 +3389,7 @@ static int dpmaif_bat_init(struct dpmaif_bat_request *bat_req,
 {
 	int sw_buf_size = buf_type ? sizeof(struct dpmaif_bat_page_t) :
 		sizeof(struct dpmaif_bat_skb_t);
+	int retry = 0;
 
 	bat_req->bat_size_cnt = DPMAIF_DL_BAT_ENTRY_SIZE;
 	bat_req->skb_pkt_cnt = bat_req->bat_size_cnt;
@@ -3412,8 +3413,13 @@ static int dpmaif_bat_init(struct dpmaif_bat_request *bat_req,
 #endif
 	/* alloc buffer for AP SW to record skb information */
 
-	bat_req->bat_skb_ptr = kzalloc((bat_req->skb_pkt_cnt *
-		sw_buf_size), GFP_KERNEL);
+	for (retry = 0; retry < 5; retry++) {
+		bat_req->bat_skb_ptr = kzalloc((bat_req->skb_pkt_cnt *
+		sw_buf_size), GFP_KERNEL|__GFP_RETRY_MAYFAIL);
+		if (bat_req->bat_skb_ptr)
+			break;
+		CCCI_ERROR_LOG(-1, TAG, "alloc BAT memory fail retry%d\n", retry);
+	}
 	if (!bat_req->bat_base || !bat_req->bat_skb_ptr) {
 		CCCI_ERROR_LOG(-1, TAG, "bat request fail\n");
 		return LOW_MEMORY_BAT;
@@ -3426,7 +3432,9 @@ static int dpmaif_bat_init(struct dpmaif_bat_request *bat_req,
 static int dpmaif_rx_buf_init(struct dpmaif_rx_queue *rxq)
 {
 	int ret = 0;
-
+#ifdef PIT_USING_CACHE_MEM
+	int retry;
+#endif
 	/* PIT buffer init */
 	rxq->pit_size_cnt = DPMAIF_DL_PIT_ENTRY_SIZE;
 	/* alloc buffer for HW && AP SW */
@@ -3452,8 +3460,13 @@ static int dpmaif_rx_buf_init(struct dpmaif_rx_queue *rxq)
 	}
 #else
 	CCCI_BOOTUP_LOG(-1, TAG, "Using cacheable PIT memory\r\n");
-	rxq->pit_base = kmalloc((rxq->pit_size_cnt
-			* sizeof(struct dpmaifq_normal_pit)), GFP_KERNEL);
+	for (retry = 0; retry < 5; retry++) {
+		rxq->pit_base = kmalloc((rxq->pit_size_cnt
+			* sizeof(struct dpmaifq_normal_pit)), GFP_KERNEL|__GFP_RETRY_MAYFAIL);
+		if (rxq->pit_base)
+			break;
+		CCCI_ERROR_LOG(-1, TAG, "alloc PIT memory fail %d\n", retry);
+	}
 	if (!rxq->pit_base) {
 		CCCI_ERROR_LOG(-1, TAG, "alloc PIT memory fail\r\n");
 		return LOW_MEMORY_PIT;
