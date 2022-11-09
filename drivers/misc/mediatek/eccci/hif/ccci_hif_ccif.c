@@ -1984,10 +1984,10 @@ static void set_md_ccif5_dummy(void)
 	ap_platform = ccci_get_ap_platform();
 #if (MD_GENERATION == 6295)
 	if ((ap_platform != NULL) &&
-		(!strncmp(platform_mt6779, ap_platform, PLATFORM_AP_LEN)))
-		pericfg_addr = 0x1000122c;
+		(!strncmp(platform_mt6781, ap_platform, PLATFORM_AP_LEN)))
+		pericfg_addr = 0x10001c10;
 	else
-		pericfg_addr = 0x1000322c;
+		pericfg_addr = 0x1000122c;
 #elif (MD_GENERATION == 6297)
 	if ((ap_platform != NULL) &&
 		(!strncmp(platform_mt6877, ap_platform, PLATFORM_AP_LEN)))
