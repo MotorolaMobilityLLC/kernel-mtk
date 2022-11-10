@@ -56,7 +56,7 @@ static struct STRUCT_CALIBRATION_LAYOUT_STRUCT cal_layout_table = {
 
 struct STRUCT_CAM_CAL_CONFIG_STRUCT mot_s5kgd2_eeprom = {
 	.name = "mot_s5kgd2_eeprom",
-	.sensor_type = UW_CAMERA,
+	.sensor_type = FRONT_CAMERA,
 	.check_layout_function = mot_layout_no_ck,
 	.read_function = Common_read_region,
 	.mot_do_factory_verify_function = s5kgd2_mot_do_factory_verify,
