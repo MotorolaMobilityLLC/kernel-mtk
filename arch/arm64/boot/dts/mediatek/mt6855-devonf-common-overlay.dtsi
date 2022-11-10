@@ -213,6 +213,8 @@ chipone,enable-wakeup;
 };
 
 &regulator_vibrator {
+	min-volt = <3000000>;
+	max-volt = <3500000>;
 	status = "ok";
 };
 
