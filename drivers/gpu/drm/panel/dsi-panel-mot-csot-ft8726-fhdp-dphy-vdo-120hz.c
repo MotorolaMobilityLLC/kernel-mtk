@@ -131,14 +131,13 @@ static void csot_panel_init(struct csot *ctx)
 		return;
 	}
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(1);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	msleep(1);
+	usleep_range(5000,5001);
 	gpiod_set_value(ctx->reset_gpio, 1);
-	msleep(12);
+	usleep_range(20000,20001);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	csot_dcs_write_seq_static(ctx, 0x00, 0x00);
 	csot_dcs_write_seq_static(ctx, 0xFF, 0x87,0x20,0x01);
@@ -152,9 +151,9 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0x53, 0x2C);
 	csot_dcs_write_seq_static(ctx, 0x55, 0x00);
 	csot_dcs_write_seq_static(ctx, 0x11, 0x00);
-	msleep(80);
+	usleep_range(98000,98001);
 	csot_dcs_write_seq_static(ctx, 0x29, 0x00);
-	msleep(2);
+	usleep_range(2000,2001);
 
 }
 
@@ -162,7 +161,6 @@ static int csot_disable(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
 
-	printk("[%d  %s]hxl_check_dsi_pcl_data_rate !!\n",__LINE__, __FUNCTION__);
 
 	if (!ctx->enabled)
 		return 0;
@@ -232,7 +230,6 @@ static int csot_unprepare(struct drm_panel *panel)
 	ret = ocp2138_BiasPower_disable(5);
 	}
 
-	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 
 	ctx->error = 0;
 	ctx->prepared = false;
@@ -245,7 +242,6 @@ static int csot_prepare(struct drm_panel *panel)
 	int ret;
 
 	pr_info("%s\n", __func__);
-	printk("[%d  %s]hxl_check_ft8726_resume !!\n",__LINE__, __FUNCTION__);
 	if (ctx->prepared)
 		return 0;
 
@@ -257,7 +253,6 @@ static int csot_prepare(struct drm_panel *panel)
 	csot_panel_init(ctx);
 
 	ret = ctx->error;
-	printk("[%d  %s]hxl_check_dsi1   ret:%d !!\n",__LINE__, __FUNCTION__,ret);
 	if (ret < 0)
 		csot_unprepare(panel);
 
@@ -269,7 +264,6 @@ static int csot_prepare(struct drm_panel *panel)
 #ifdef PANEL_SUPPORT_READBACK
 	csot_panel_get_data(ctx);
 #endif*/
-printk("[%d  %s]hxl_check_dsi  ret:%d !!\n",__LINE__, __FUNCTION__,ret);
 
 	return ret;
 }
@@ -278,7 +272,6 @@ static int csot_enable(struct drm_panel *panel)
 {
 	struct csot *ctx = panel_to_csot(panel);
 
-	printk("[%d  %s]hxl_check_dsi !!\n",__LINE__, __FUNCTION__);
 
 	if (ctx->enabled)
 		return 0;
@@ -600,7 +593,6 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	int flag=0;
 
 	flag=drm_mode_vrefresh(m);
-	printk("[%d  %s]hxl_check_fps flag_0622_1209=%d\n",__LINE__, __FUNCTION__,flag);
 
 	if (!m)
 		return ret;
@@ -726,7 +718,6 @@ static int csot_get_modes(struct drm_panel *panel,
 	struct drm_display_mode *mode_2;
 
 	mode = drm_mode_duplicate(connector->dev, &default_mode);
-	printk("[%d  %s]hxl_check_dsi_modes  mode:%d  !!\n",__LINE__, __FUNCTION__,mode);
 	if (!mode) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
 			default_mode.hdisplay, default_mode.vdisplay,
@@ -784,7 +775,6 @@ static int csot_probe(struct mipi_dsi_device *dsi)
 	int ret;
 
 	pr_info("%s+ csot,FT8726,vdo,120hz\n", __func__);
-	printk("[%s %d],hxl_check_lcd Enter!! \n", __func__, __LINE__);
 
 	dsi_node = of_get_parent(dev->of_node);
 	if (dsi_node) {
