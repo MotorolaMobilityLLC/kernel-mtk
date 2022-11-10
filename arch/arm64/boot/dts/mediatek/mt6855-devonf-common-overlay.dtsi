@@ -23,6 +23,7 @@
 &chosen {
 	bootargs = "console=tty0  root=/dev/ram \
 		    loglevel=8 \
+		    nokaslr \
 		    8250.nr_uarts=4 \
 		    androidboot.hardware=mt6855 \
 		    transparent_hugepage=never \
