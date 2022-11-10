@@ -92,7 +92,7 @@ struct mtk_nanohub_device {
 	int32_t proximity_config_data[3];
 	int32_t pressure_config_data[2];
 	int32_t sar_config_data[4];
-	int32_t ois_config_data[2];
+	int32_t ois_config_data[6];
 
 #ifdef CONFIG_MOTO_LIGHT_1_SENSOR
 	int32_t light_1_config_data[2];//moto
