@@ -2392,16 +2392,18 @@ repeat:
 			PE50_ERR("set dual dvchg protection fail(%d)\n", ret);
 			goto single_dvchg_restart;
 		}
-		ret = pe50_enable_dvchg_charging(info, PE50_DVCHG_SLAVE, true);
-		if (ret < 0) {
-			PE50_ERR("en slave dvchg fail(%d)\n", ret);
-			goto single_dvchg_restart;
-		}
 		ret = pe50_enable_dvchg_charging(info, PE50_DVCHG_MASTER, true);
 		if (ret < 0) {
 			PE50_ERR("en master dvchg fail(%d)\n", ret);
 			goto single_dvchg_restart;
 		}
+		msleep(200);
+		ret = pe50_enable_dvchg_charging(info, PE50_DVCHG_SLAVE, true);
+		if (ret < 0) {
+			PE50_ERR("en slave dvchg fail(%d)\n", ret);
+			goto single_dvchg_restart;
+		}
+
 		goto ss_dvchg;
 single_dvchg_restart:
 		ret = pe50_earily_restart(info);
