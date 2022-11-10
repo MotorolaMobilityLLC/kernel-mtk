@@ -1173,6 +1173,7 @@ static int bq25601_enable_otg(struct charger_device *chg_dev, bool en)
 
 	pr_info("%s en = %d\n", __func__, en);
 	if (en) {
+		bq25601_set_en_hiz(0x0);
 		bq25601_set_chg_config(0);
 		bq25601_set_otg_config(1);
 #if (!(defined CONFIG_MOTO_CHG_BQ25601_SUPPORT) && !(defined CONFIG_MOTO_CHG_WT6670F_SUPPORT))
