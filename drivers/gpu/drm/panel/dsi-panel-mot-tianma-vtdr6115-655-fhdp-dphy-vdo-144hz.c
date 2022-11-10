@@ -900,7 +900,7 @@ static int lcm_get_modes(struct drm_panel *panel,
 
 	connector->display_info.width_mm = 68;
 	connector->display_info.height_mm = 152;
-	return 0;
+	return 1;
 }
 
 static const struct drm_panel_funcs lcm_drm_funcs = {
@@ -948,7 +948,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST
 			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
 			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
