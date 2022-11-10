@@ -31,6 +31,7 @@
 #define per_frame 1
 
 #define MULTI_WRITE 1
+#define ENABLE_PDAF
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -69,45 +70,45 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 4208,
 		.grabwindow_height = 3120,
+		.mipi_pixel_rate = 571200000,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 571200000, //( 1428M*4/10)
 	},
 	.hs_video = {
 		.pclk = 600000000,
 		.linelength = 6004,
-		.framelength = 832,
+		.framelength = 3316,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280 ,
-		.grabwindow_height = 720 ,
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 1200,
-		.mipi_pixel_rate = 190400000, //( 467M*4/10)
+		.grabwindow_width = 4208,
+		.grabwindow_height = 3120,
+		.mipi_pixel_rate = 566400000,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 300,
 	},
 	.slim_video = {
 		.pclk = 600000000,
 		.linelength = 6004,
-		.framelength = 832,
+		.framelength = 3316,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 1200,
-		.mipi_pixel_rate = 190400000, //( 467M * 4 / 10 )
+		.grabwindow_width = 4208,
+		.grabwindow_height = 3120,
+		.mipi_pixel_rate = 566400000,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 300,
 	},
 	.custom1 = {
 		.pclk = 600000000,
-		.linelength = 7040,
-		.framelength = 2840,
+		.linelength = 6004,
+		.framelength = 1659,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 3648,
-		.grabwindow_height = 2736,
+		.grabwindow_width = 1920,
+		.grabwindow_height = 1080,
+		.mipi_pixel_rate = 285600000,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 300,
-		.mipi_pixel_rate = 398400000, //(996M * 4 / 10 )
+		.max_framerate = 600,
 	},
 	.margin = 4,
 	.min_shutter = 4,
@@ -142,7 +143,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x40,0xff},
@@ -167,14 +168,48 @@ static struct imgsensor_struct imgsensor = {
 
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
-	{ 4224, 3136,   0,   6, 4224, 3124,	 4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},		// preview (4208 x 3120)
-	{ 4224, 3136,   0,   6, 4224, 3124,	 4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},		// capture (4208 x 3120)
-	{ 4224, 3136,   0,   6, 4224, 3124,	 4224, 3124,  8,  2, 4208, 3120, 0, 0, 4208, 3120},		// VIDEO (4208 x 3120)
-	{ 4224, 3136,   0, 482, 4224, 2172,	 1408,  724,  64, 2, 1280, 720, 0, 0,  1280,  720},		// hight speed video (1280 x 720)
-	{ 4224, 3136,   0, 482, 4224, 2172,  1408,  724,  64, 2, 1280,  720, 0, 0, 1280,  720},       // slim video (1280 x 720)
-	{ 4224, 3136,   288, 200, 3648, 2736,  3648,  2736,  0, 0, 3648,  2736, 0, 0, 3648,  2736},  // custom1 (3648 x 2736)
+    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //preview
+    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //capture
+    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //video
+    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //hs video
+    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //slim video
+    { 4208, 3120,   184,   480, 3840, 2160,  1920, 1080,  0,  0, 1920, 1080, 0, 0, 1920, 1080}, //custom1
 
 };
+
+#ifdef ENABLE_PDAF
+static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[1]=
+{
+	{	0x02, //VC_Num
+	0x0a, //VC_PixelNum
+	0x00, //ModeSelect	/* 0:auto 1:direct */
+	0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
+	0x00, //0DValue		/* 0D Value */
+	0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
+	0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
+	0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
+	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
+	0x00, 0x00, 0x0000, 0x0000
+	},
+};
+
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
+	.i4OffsetX = 56,
+	.i4OffsetY = 24,
+	.i4PitchX = 32,
+	.i4PitchY = 32,
+	.i4PairNum =8,
+	.i4SubBlkW =16,
+	.i4SubBlkH =8,
+	.i4PosL = {{58,31},{74,31},{66,35},{82,35},{58,47},{74,47},{66,51},{82,51}},
+	.i4PosR = {{58,27},{74,27},{66,39},{82,39},{58,43},{74,43},{66,55},{82,55}},
+	.i4BlockNumX = 128,
+	.i4BlockNumY = 96,
+	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.iMirrorFlip = 0,
+};
+#endif
+
 
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 1020
@@ -846,6 +881,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorModeNum =
 		imgsensor_info.sensor_mode_num;
 
+	sensor_info->PDAF_Support = 2;
 	sensor_info->SensorMIPILaneNumber =
 		imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
@@ -1213,6 +1249,11 @@ static kal_uint32 feature_control(
 	unsigned long long *feature_data =
 		(unsigned long long *) feature_para;
 
+#ifdef ENABLE_PDAF
+	struct SET_PD_BLOCK_INFO_T *PDAFinfo;
+	struct SENSOR_VC_INFO_STRUCT *pvcinfo;
+#endif
+
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
 		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
@@ -1419,6 +1460,71 @@ static kal_uint32 feature_control(
 			(UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
 	#endif
 	break;
+#ifdef ENABLE_PDAF
+	/******************** PDAF START >>> *********/
+	case SENSOR_FEATURE_GET_PDAF_INFO:
+		pr_debug("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n", (UINT16)*feature_data);
+		PDAFinfo = (struct SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info, sizeof(struct SET_PD_BLOCK_INFO_T));
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			default:
+				break;
+		}
+		break;
+	case SENSOR_FEATURE_GET_VC_INFO:
+		pr_debug("SENSOR_FEATURE_GET_VC_INFO %d\n", (UINT16)*feature_data);
+		pvcinfo = (struct SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+		switch (*feature_data_32) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			default:
+				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0], sizeof(struct SENSOR_VC_INFO_STRUCT));
+				break;
+		}
+		break;
+	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+		pr_debug("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", (UINT16)*feature_data);
+		//PDAF capacity enable or not
+		switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				// video & capture use same setting
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				//need to check
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+				break;
+			case MSDK_SCENARIO_ID_CUSTOM1:
+				//need to check
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+				break;
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+				break;
+		}
+		break;
+	case SENSOR_FEATURE_SET_PDAF:
+		pr_debug("PDAF mode :%d\n", *feature_data_16);
+		imgsensor.pdaf_mode= *feature_data_16;
+		break;
+	/******************** PDAF END   <<< *********/
+#endif
 	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
 		*feature_return_para_i32 = 0;
 		*feature_para_len = 4;
