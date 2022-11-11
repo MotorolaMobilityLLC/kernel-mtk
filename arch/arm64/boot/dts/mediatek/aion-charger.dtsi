@@ -35,10 +35,9 @@
 	ac_charger_input_current = <1500000>;
 	charging_host_charger_current = <1500000>;
 	/*pe5 && pdc && pe2 && wlc*/
-	//fast_charging_indicator = <0x36>;
+	fast_charging_indicator = <0x36>;
 	/*swchg + 2CP*/
 	charger_configuration= <4>;
-	fast_charging_indicator = <0x26>;
 
 	wireless_factory_max_current = <3000000>;
 	wireless_factory_max_input_current = <600000>;
@@ -254,7 +253,7 @@
 		idvchg_step = <50>;
 		ita_level = <3000 2500 2000 1500>;
 		rcable_level = <350 400 500 600>;
-		ita_level_dual = <5000 3700 3400 3000>;
+		ita_level_dual = <6200 3700 3400 3000>;
 		rcable_level_dual = <230 350 450 550>;
 		idvchg_ss_init = <1000>;
 		idvchg_ss_step = <250>;
@@ -295,7 +294,7 @@
 		mmi_therm_cur_thres = <500>;
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
-		mmi_max_ibat = <6000>;
+		mmi_max_ibat = <12400>;
 };
 
 &i2c0 {
