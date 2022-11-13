@@ -771,6 +771,15 @@ static const struct mmi_mux_configure config_mmi_mux[MMI_MUX_CHANNEL_MAX] = {
 
 static int mmi_mux_config(struct mtk_charger *info, enum mmi_mux_channel channel)
 {
+	if (info->dvchg1_dev == NULL) {
+		info->dvchg1_dev = get_charger_by_name("primary_dvchg");
+		if (info->dvchg1_dev)
+			pr_info("mmi_mux_config Found primary divider charger\n");
+		else {
+			chr_err("*** Error : can't find primary divider charger ***\n");
+		}
+	}
+
 	if (!info->mmi.factory_mode) {
 		struct chg_alg_device *alg;
 
