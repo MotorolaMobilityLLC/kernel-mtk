@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 /* 0 means battery id is 0 */
-serialnum_0	= "SB18D20540";
+serialnum_0	= "SB18D67654";
 battery0_name="ATL_PG50_5000MAH";
 battery0_profile_t0_num = <100>;
 battery0_profile_t0_col = <3>;
