@@ -381,6 +381,7 @@
 //add dubai sensor id begin
 #define MOT_DUBAI_OV50A_SENSOR_ID               0x565041
 //add dubai sensor id end
+#define MOT_AION_OV50E_SENSOR_ID                0x565048
 
 //Begin: Add sensor id for Devonf
 #define MOT_DEVONF_OV50A_SENSOR_ID              0x565041
@@ -652,7 +653,9 @@
 
 //add aion sensor drvname begin
 #define SENSOR_DRVNAME_MOT_AION_S5KGD2_MIPI_RAW "mot_aion_s5kgd2_mipi_raw"
+#define SENSOR_DRVNAME_MOT_AION_OV50E_MIPI_RAW "mot_aion_ov50e_mipi_raw"
 //add aion sensor drvname end
+
 //Begin: Add sensor drvname for Vicky
 #define SENSOR_DRVNAME_MOT_VICKY_S5KHM6_MIPI_RAW       "mot_vicky_s5khm6_mipi_raw"
 #define SENSOR_DRVNAME_MOT_VICKY_S5KGM1_MIPI_RAW       "mot_vicky_s5kgm1_mipi_raw"
