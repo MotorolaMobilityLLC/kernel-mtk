@@ -102,6 +102,7 @@ static struct moto_chg_tcmd_client* chg_client;
 static struct moto_chg_tcmd_client* bat_client;
 static struct moto_chg_tcmd_client* pm_adc_client;
 static struct moto_chg_tcmd_client* ap_adc_client;
+static struct moto_chg_tcmd_client* wls_client;
 #endif
 
 /* NCP15WF104F03RC(100K) */
@@ -1019,6 +1020,53 @@ static ssize_t adc_vbat_store(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(adc_vbat, S_IWUSR | S_IRUGO,
 				adc_vbat_show, adc_vbat_store);
+static ssize_t wireless_en_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	int ret;
+	int val;
+
+	if (!wls_client) {
+		pr_err("%s wls_client is null\n", __func__);
+		goto end;
+	}
+
+	ret = kstrtouint(buf, 10, &val);
+	if (ret) {
+		pr_info("%s, %s not a valide buf(%d)\n", __func__, buf, ret);
+		goto end;
+	}
+
+	if (wls_client->wls_en) {
+		ret = wls_client->wls_en(wls_client->data, !!val);
+		if (ret) {
+			pr_err("%s wls en fail %d\n", __func__, ret);
+		}
+	}
+
+end:
+	return count;
+}
+
+static DEVICE_ATTR(wireless_en, S_IRUGO|S_IWUSR,
+				NULL, wireless_en_store);
+
+static ssize_t wireless_chip_id_show(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	int val = 0;
+	if (wls_client->get_chip_id) {
+		val = wls_client->get_chip_id(wls_client->data);
+		if (!val) {
+			pr_err("%s wls get chip id fail %d\n", __func__, val);
+		}
+	}
+	return sprintf(buf, "%x\n", val);
+}
+static DEVICE_ATTR(wireless_chip_id, S_IRUGO|S_IWUSR,
+				wireless_chip_id_show, NULL);
 
 static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_address.attr,
@@ -1040,6 +1088,8 @@ static struct attribute *moto_chg_tcmd_attrs[] = {
 	&dev_attr_charger_temp.attr,
 	&dev_attr_pa_temp.attr,
 	&dev_attr_adc_vbat.attr,
+	&dev_attr_wireless_en.attr,
+	&dev_attr_wireless_chip_id.attr,
 	NULL,
 };
 
@@ -1101,6 +1151,9 @@ int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 		case MOTO_CHG_TCMD_CLIENT_AP_ADC:
 			ap_adc_client = client;
 			break;
+		case MOTO_CHG_TCMD_CLIENT_WLS:
+			wls_client = client;
+			break;
 		default :
 			pr_err("%s invalide client id %d\n",
 				__func__,
@@ -1111,6 +1164,7 @@ int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 
 	return 0;
 }
+EXPORT_SYMBOL(moto_chg_tcmd_register);
 
 static int moto_chg_tcmd_res_to_temp(struct moto_chg_tcmd_data *data,
 					int vol, int vol_ntc, int r_pull)
