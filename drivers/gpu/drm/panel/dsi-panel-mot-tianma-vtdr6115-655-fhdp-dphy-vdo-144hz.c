@@ -29,6 +29,7 @@
 #include "../mediatek/mediatek_v2/mtk_drm_graphics_base.h"
 #endif
 
+#include "dsi-panel-mot-tianma-vtdr6115-655-fhdp-dphy-vdo-144hz-lhbm-alpha.h"
 
 #define SUPPORT_144HZ_REFRESH_RATE
 #define DSC_10BIT
@@ -163,24 +164,25 @@ static void lcm_panel_init(struct lcm *ctx)
 										0x09,0xBE,0x19,0xFC,0x19,0xFA,0x19,0xF8,0x1A,0x38,0x1A,0x78,0x1A,0xB6,0x2A,0xB6,
 										0x2A,0xF4,0x2A,0xF4,0x4B,0x34,0x63,0x74,0x00,0x00,0x00,0x00,0x00,0x00);
 #endif
-	lcm_dcs_write_seq_static(ctx, 0xf0, 0xaa, 0x10);
-	lcm_dcs_write_seq_static(ctx, 0xd0, 0x84,0x35,0x50,0x14,0x20,0x00,0x29,0x03,0x17,0x0B,0x00,0x00,0x03,0x17,0x0C,0x00,
-                						0x00,0x09,0x05,0x05,0x17,0x17);
+	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
+	lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
+	lcm_dcs_write_seq_static(ctx, 0xf9, 0xb9);
+
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
 	lcm_dcs_write_seq_static(ctx, 0x65, 0x03);
 	lcm_dcs_write_seq_static(ctx, 0xf4, 0x03);
-    lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x00);
+
+	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
+	lcm_dcs_write_seq_static(ctx, 0xf3, 0x02);
+
+	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xf0, 0xaa, 0x00);
 
-    lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
-    lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
-    lcm_dcs_write_seq_static(ctx, 0xf9, 0xb9);
-
-    /* Sleep Out */
-    lcm_dcs_write_seq_static(ctx, 0x11);
-    msleep(120);
-    /* Display On */
-    lcm_dcs_write_seq_static(ctx, 0x29);
+	/* Sleep Out */
+	lcm_dcs_write_seq_static(ctx, 0x11);
+	msleep(120);
+	/* Display On */
+	lcm_dcs_write_seq_static(ctx, 0x29);
 
 	pr_info("%s tm vtdr6115-\n", __func__);
 }
@@ -804,9 +806,164 @@ static int mode_switch(struct drm_panel *panel, unsigned int cur_mode,
 }
 #endif
 
+static struct mtk_panel_para_table panel_lhbm_bright_on[] = {
+	{3, {0xf0, 0xaa, 0x13}},
+	{2, {0xc6, 0x01}},
+	{3, {0x63, 0x03, 0xff}},
+	{2, {0x62, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_lhbm_bright_off[] = {
+	{2, {0x62, 0x00}},
+	{3, {0xf0, 0xaa, 0x13}},
+	{2, {0xc6, 0x00}},
+};
+
+static struct mtk_panel_para_table panel_lhbm_dark_on[] = {
+	{3, {0xf0, 0xaa, 0x13}},
+	{2, {0xc6, 0x01}},
+	{3, {0x63, 0x03, 0xff}},
+	{3, {0x51, 0x06, 0x8f}},
+	{2, {0x62, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_lhbm_dark_off[] = {
+	{2, {0x62, 0x00}},
+	{3, {0x51, 0x03, 0xff}},
+	{3, {0xf0, 0xaa, 0x13}},
+	{2, {0xc6, 0x00}},
+};
+
+static struct mtk_panel_para_table panel_lhbm_off_hbm_on[] = {
+	{2, {0x62, 0x00}},
+	{3, {0x51, 0x0f, 0xff}},
+	{3, {0xf0, 0xaa, 0x13}},
+	{2, {0xc6, 0x00}},
+};
+
+static void set_lhbm_alpha(unsigned int bl_level)
+{
+	struct mtk_panel_para_table *pTable = &panel_lhbm_dark_on[2];
+	unsigned int alpha = 0;
+
+	alpha = lhbm_alpha[bl_level - 1];
+
+	pTable->para_list[1] = (alpha >> 8) & 0xFF;
+	pTable->para_list[2] = alpha & 0xFF;
+	pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
+}
+
+static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
+
+	if (on) {
+		if (bl_level <= ARRAY_SIZE(lhbm_alpha)) {
+			set_lhbm_alpha(bl_level);
+			para_count = sizeof(panel_lhbm_dark_on) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_lhbm_dark_on;
+		} else {
+			para_count = sizeof(panel_lhbm_bright_on) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_lhbm_bright_on;
+		}
+	} else {
+		if (bl_level <= ARRAY_SIZE(lhbm_alpha)) {
+			pTable = &panel_lhbm_dark_off[1];
+			pTable->para_list[1] = (bl_level >> 8) & 0xFF;
+			pTable->para_list[2] = bl_level & 0xFF;
+			para_count = sizeof(panel_lhbm_dark_off) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_lhbm_dark_off;
+		} else {
+			para_count = sizeof(panel_lhbm_bright_off) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_lhbm_bright_off;
+		}
+	}
+	cb(dsi, handle, pTable, para_count);
+	return 0;
+
+}
+
+static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0xFF}};
+
+	if (hbm_state > 2) return -1;
+	switch (hbm_state)
+	{
+		case 0:
+			if (ctx->lhbm_en)
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+			break;
+		case 1:
+			if (ctx->lhbm_en)
+				cb(dsi, handle, panel_lhbm_off_hbm_on, 4);
+			else
+				cb(dsi, handle, &hbm_on_table, 1);
+			break;
+		case 2:
+			if (ctx->lhbm_en)
+				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl);
+			else
+				cb(dsi, handle, &hbm_on_table, 1);
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+
+static struct mtk_panel_para_table panel_dc_off[] = {
+	{2, {0x5e, 0x00}},
+};
+
+static struct mtk_panel_para_table panel_dc_on[] = {
+	{2, {0x5e, 0x01}},
+};
+
+static int pane_dc_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t dc_state)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
+
+	if (dc_state) {
+		para_count = sizeof(panel_dc_on) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_dc_on;
+	} else {
+		para_count = sizeof(panel_dc_off) / sizeof(struct mtk_panel_para_table);
+		pTable = panel_dc_off;
+	}
+	cb(dsi, handle, pTable, para_count);
+	return 0;
+}
+
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
 {
+
+	struct lcm *ctx = panel_to_lcm(panel);
+
+	if (!cb)
+		return -1;
+	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+		case PARAM_ACL:
+			break;
+		case PARAM_HBM:
+			ctx->hbm_mode = param_info.value;
+			pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+			break;
+		case PARAM_DC:
+			pane_dc_set_cmdq(dsi, cb, handle, param_info.value);
+			ctx->dc_mode = param_info.value;
+			break;
+		default:
+			break;
+	}
+
 	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
 	return 0;
 }
