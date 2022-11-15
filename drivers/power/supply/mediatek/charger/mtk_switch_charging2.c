@@ -85,6 +85,12 @@ static void _disable_all_charging(struct charger_manager *info)
 			mtk_pe20_reset_ta_vchr(info);
 	}
 
+	if (mtk_wlc_get_is_enable(info)) {
+		mtk_wlc_set_is_enable(info, false);
+		if (mtk_wlc_get_is_connect(info))
+			mtk_wlc_reset_ta_vchr(info);
+	}
+
 	if (mtk_pe_get_is_enable(info)) {
 		mtk_pe_set_is_enable(info, false);
 		if (mtk_pe_get_is_connect(info))
@@ -137,7 +143,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
 
 	/* AICL */
-	if (!mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
+	if (!mtk_pe20_get_is_connect(info) &&!mtk_wlc_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
 	    !mtk_is_TA_support_pd_pps(info) && !mtk_pdc_check_charger(info)) {
 		charger_dev_run_aicl(info->chg1_dev,
 				&pdata->input_current_limit_by_aicl);
@@ -223,6 +229,9 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (mtk_pe20_get_is_connect(info) == true) {
                        pdata->input_current_limit = 3000000;
                        pdata->charging_current_limit = 3000000;
+	}else if ( mtk_wlc_get_is_connect(info) == true) {
+                       pdata->input_current_limit = info->wlc.wireless_charger_max_input_current;
+                       pdata->charging_current_limit =  info->wlc.wireless_charger_max_current;
 	} else if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
 			if (info->usb_state == USB_SUSPEND)
@@ -261,6 +270,12 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 					&pdata->charging_current_limit,
 					&pdata->input_current_limit);
 		mtk_pe_set_charging_current(info,
+					&pdata->charging_current_limit,
+					&pdata->input_current_limit);
+	} else if (info->chr_type == WIRELESS_CHARGER) {
+		pdata->input_current_limit = info->wlc.wireless_charger_max_input_current;//1150000;
+		pdata->charging_current_limit = info->wlc.wireless_charger_max_current;//3600000;
+		mtk_wlc_set_charging_current(info,
 					&pdata->charging_current_limit,
 					&pdata->input_current_limit);
 	} else if (info->chr_type == CHARGING_HOST) {
@@ -313,7 +328,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	}
 
 	if (pdata->input_current_limit_by_aicl != -1 &&
-	    !mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
+	    !mtk_pe20_get_is_connect(info) && !mtk_wlc_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
 	    !mtk_is_TA_support_pd_pps(info)) {
 		if (pdata->input_current_limit_by_aicl <
 		    pdata->input_current_limit)
@@ -399,6 +414,11 @@ done:
 			mtk_pe20_set_is_enable(info, false);
 			if (mtk_pe20_get_is_connect(info))
 				mtk_pe20_reset_ta_vchr(info);
+		}
+		if (mtk_wlc_get_is_enable(info)) {
+			mtk_wlc_set_is_enable(info, false);
+			if (mtk_wlc_get_is_connect(info))
+				mtk_wlc_reset_ta_vchr(info);
 		}
 
 		if (mtk_pe_get_is_enable(info)) {
@@ -510,6 +530,7 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	swchgalg->total_charging_time = 0;
 
 	mtk_pe20_set_is_cable_out_occur(info, true);
+	mtk_wlc_set_is_cable_out_occur(info, true);
 	mtk_pe_set_is_cable_out_occur(info, true);
 	mtk_pdc_plugout(info);
 
@@ -999,6 +1020,17 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 		}
 	}
 
+	if (mtk_wlc_check_charger_avail() == true){
+			chr_err("enter WLC!\n");
+			swchgalg->state = CHR_PDC;
+			if (mtk_wlc_get_is_enable(info)) {
+				mtk_wlc_set_is_enable(info, false);
+				if (mtk_wlc_get_is_connect(info))
+					mtk_wlc_reset_ta_vchr(info);
+			}
+			return 1;
+	}
+
 	swchg_turn_on_charging(info);
 
 	#ifdef MTK_BASE
@@ -1024,7 +1056,10 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 		mtk_pe20_set_is_enable(info, true);
 		mtk_pe20_set_to_check_chr_type(info, true);
 	}
-
+	if (!mtk_wlc_get_is_enable(info)) {
+		mtk_wlc_set_is_enable(info, true);
+		mtk_wlc_set_to_check_chr_type(info, true);
+	}
 	if (!mtk_pe_get_is_enable(info)) {
 		mtk_pe_set_is_enable(info, true);
 		mtk_pe_set_to_check_chr_type(info, true);
@@ -1081,6 +1116,7 @@ static int mtk_switch_chr_full(struct charger_manager *info)
 		swchgalg->state = CHR_CC;
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 		mtk_pe20_set_to_check_chr_type(info, true);
+		mtk_wlc_set_to_check_chr_type(info, true);
 		mtk_pe_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
 		get_monotonic_boottime(&swchgalg->charging_begin_time);
@@ -1111,6 +1147,13 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 		mtk_pe20_check_charger(info);
 		if (mtk_pe20_get_is_connect(info) == false)
 			mtk_pe_check_charger(info);
+	}
+
+	chr_err("%s,  %d\n", __func__,mtk_wlc_check_charger_avail());
+
+	if (mtk_wlc_check_charger_avail() == true) {
+		mtk_wlc_set_is_enable(info, true);
+		mtk_wlc_check_charger(info);
 	}
 
 	do {
@@ -1243,15 +1286,18 @@ static int mmi_mux_config(struct charger_manager *info, enum mmi_mux_channel cha
 	if (!cp_psy)
 		return -ENODEV;
 
-	if(gpio_is_valid(info->mmi.wls_control_en)) {
-		gpio_set_value(info->mmi.wls_control_en, !config_mmi_mux[channel].wls_chip_en);
-	}
 	prop.intval = channel;
 	rc = power_supply_set_property(cp_psy,
 				POWER_SUPPLY_PROP_SELECT_MUX, &prop);
 	if (rc < 0)
 		pr_info("%s: POWER_SUPPLY_PROP_SELECT_MUX  failed, rc = %d\n",
 			__func__, rc);
+
+	//factory mode , no need close wlc ic for upgrade fw
+	if(gpio_is_valid(info->mmi.wls_control_en) && 	!info->mmi.factory_mode) {
+		gpio_set_value(info->mmi.wls_control_en, !config_mmi_mux[channel].wls_chip_en);
+	}
+
 #if 0
 	if (info->dvchg1_dev == NULL) {
 		info->dvchg1_dev = get_charger_by_name("primary_dvchg");
