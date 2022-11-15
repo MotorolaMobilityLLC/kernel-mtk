@@ -30,6 +30,7 @@ obj-y += charger_class.o mtk_charger.o mtk_switch_charging.o mtk_pdc_intf.o\
 	 adapter_class.o mtk_pd_adapter.o\
 	 mtk_switch_charging2.o mtk_intf.o mtk_pe40.o mtk_pdc.o
 
+obj-$(CONFIG_MOTO_WLC_ALG_SUPPORT) += moto_wlc_intf.o
 obj-$(CONFIG_MTK_DUAL_CHARGER_SUPPORT) += mtk_dual_switch_charging.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pe_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pe20_intf.o

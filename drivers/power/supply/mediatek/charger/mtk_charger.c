@@ -632,7 +632,7 @@ int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
-		if (mtk_pe20_get_is_connect(info))
+		if (mtk_pe20_get_is_connect(info) ||mtk_wlc_get_is_connect(info))
 			return 2;
 	}
 
@@ -1255,7 +1255,7 @@ static DEVICE_ATTR(sw_jeita, 0644, show_sw_jeita,
 /* pump express series */
 bool mtk_is_pep_series_connect(struct charger_manager *info)
 {
-	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info))
+	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info) ||mtk_wlc_get_is_connect(info) )
 		return true;
 
 	return false;
@@ -1773,6 +1773,7 @@ static void check_dynamic_mivr(struct charger_manager *info)
 	if (info->enable_dynamic_mivr) {
 		if (!mtk_pe40_get_is_connect(info) &&
 			!mtk_pe20_get_is_connect(info) &&
+			!mtk_wlc_get_is_connect(info) &&
 			!mtk_pe_get_is_connect(info) &&
 			!mtk_pdc_check_charger(info)) {
 
@@ -3195,6 +3196,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 	info->enable_sw_jeita = of_property_read_bool(np, "enable_sw_jeita");
 	info->enable_pe_plus = of_property_read_bool(np, "enable_pe_plus");
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
+	info->enable_wlc = of_property_read_bool(np, "enable_wlc");
 	info->enable_pe_4 = of_property_read_bool(np, "enable_pe_4");
 	info->enable_pe_5 = of_property_read_bool(np, "enable_pe_5");
 	info->enable_cp = of_property_read_bool(np, "enable_cp");
@@ -3960,6 +3962,12 @@ static ssize_t show_Pump_Express(struct device *dev,
 			is_ta_detected = 1;
 	}
 
+	if (IS_ENABLED(CONFIG_MOTO_WLC_ALG_SUPPORT)) {
+		/* Is PE+20 connect */
+		if (mtk_wlc_get_is_connect(pinfo))
+			is_ta_detected = 1;
+	}
+
 	if (IS_ENABLED(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)) {
 		/* Is PE+ connect */
 		if (mtk_pe_get_is_connect(pinfo))
@@ -3969,10 +3977,11 @@ static ssize_t show_Pump_Express(struct device *dev,
 	if (mtk_is_TA_support_pd_pps(pinfo) == true || pinfo->is_pdc_run == true)
 		is_ta_detected = 1;
 
-	pr_debug("%s: detected = %d, pe20_connect = %d, pe_connect = %d\n",
+	pr_debug("%s: detected = %d, pe20_connect = %d, pe_connect = %d,wlc_connect:%d\n",
 		__func__, is_ta_detected,
 		mtk_pe20_get_is_connect(pinfo),
-		mtk_pe_get_is_connect(pinfo));
+		mtk_pe_get_is_connect(pinfo),
+		mtk_wlc_get_is_connect(pinfo));
 
 	return sprintf(buf, "%u\n", is_ta_detected);
 }
@@ -5360,6 +5369,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (mtk_pe20_init(info) < 0)
 		info->enable_pe_2 = false;
 
+	if (mtk_wlc_init(info, &pdev->dev) < 0)
+		info->enable_wlc = false;
+
 	if (mtk_pe40_init(info) == false)
 		info->enable_pe_4 = false;
 
@@ -5439,6 +5451,7 @@ static int mtk_charger_remove(struct platform_device *dev)
 	struct charger_manager *info = platform_get_drvdata(dev);
 
 	mtk_pe50_deinit(info);
+	mtk_wlc_remove(info);
 	return 0;
 }
 
@@ -5447,10 +5460,13 @@ static void mtk_charger_shutdown(struct platform_device *dev)
 	struct charger_manager *info = platform_get_drvdata(dev);
 	int ret;
 
-	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info)) {
+	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info) || mtk_wlc_get_is_connect(info)) {
 		if (info->chg2_dev)
 			charger_dev_enable(info->chg2_dev, false);
 		ret = mtk_pe20_reset_ta_vchr(info);
+		if (ret == -ENOTSUPP)
+			mtk_pe_reset_ta_vchr(info);
+		ret = mtk_wlc_reset_ta_vchr(info);
 		if (ret == -ENOTSUPP)
 			mtk_pe_reset_ta_vchr(info);
 		pr_debug("%s: reset TA before shutdown\n", __func__);

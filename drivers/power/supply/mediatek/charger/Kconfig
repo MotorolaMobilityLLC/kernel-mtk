@@ -52,6 +52,11 @@ config MTK_PUMP_EXPRESS_PLUS_20_SUPPORT
 	  Set Yes to enable PE+2.0
 	  Set No to disable PE+2.0
 
+config MOTO_WLC_ALG_SUPPORT
+        tristate "moto wlc interface driver for charger"
+        help
+          This is to enable MOTO supports of wlc charger INTERFACE.
+
 config MTK_PUMP_EXPRESS_50_SUPPORT
 	bool "Mediatek Pump Express 5.0"
 	select RT_PROP_CHGALGO
