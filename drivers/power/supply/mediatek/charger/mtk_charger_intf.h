@@ -28,6 +28,7 @@ struct charger_manager;
 struct charger_data;
 #include "mtk_pe_intf.h"
 #include "mtk_pe20_intf.h"
+#include "moto_wlc_intf.h"
 #include "mtk_pe40_intf.h"
 #include "mtk_pe50_intf.h"
 #include "mtk_pdc_intf.h"
@@ -244,6 +245,8 @@ struct charger_custom_data {
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
 
+	int wlc_ichg_level_threshold;	/* ma */
+	
 	/* pe4.0 */
 	int pe40_single_charger_input_current;	/* ma */
 	int pe40_single_charger_current;
@@ -487,6 +490,10 @@ struct charger_manager {
 	/* pe 2.0 */
 	bool enable_pe_2;
 	struct mtk_pe20 pe2;
+
+	/* wlc */
+	bool enable_wlc;
+	struct mtk_wlc wlc;
 
 	/* pe 4.0 */
 	bool enable_pe_4;
