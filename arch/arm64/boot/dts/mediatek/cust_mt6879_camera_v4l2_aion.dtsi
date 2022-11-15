@@ -312,7 +312,8 @@
 
 	sensor0: sensor0@20 {
 		compatible = "mediatek,imgsensor";
-		sensor-names = "mot_aion_ov50a_mipi_raw";
+		sensor-names = "mot_aion_ov50a_mipi_raw",
+				"mot_aion_ov50e_mipi_raw";
 		reg = <0x20>;
 		#thermal-sensor-cells = <0>;
 		pinctrl-names = "mclk_off",
