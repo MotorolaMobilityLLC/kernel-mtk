@@ -376,10 +376,9 @@
 	};
 };
 
-&moto_wlc {
-        compatible = "moto,charger,wlc";
-        gauge = <&bat_gm30>;
-        min_charger_voltage = <4600000>;
+&charger {
+	enable_wlc;
+        wlc_min_charger_voltage = <4600000>;
         wlc_max_charger_current = <3150000>;
         wlc_max_input_current = <1150000>;
         mmi,wls_control_en = <&pio 133 0x0>;//wlc_inhibit
