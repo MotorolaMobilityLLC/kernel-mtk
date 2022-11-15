@@ -268,7 +268,7 @@
 
         bq25960-master@6a {
                 compatible = "ti,bq25960-master";
-                reg = <0x6a>;
+                reg = <0x65>;
 
                 interrupt-parent = <&pio>;
                 interrupts = <13 IRQ_TYPE_EDGE_FALLING 13 0>;
@@ -281,7 +281,7 @@
 
         bq25960-slave@6c {
                 compatible = "ti,bq25960-slave";
-                reg = <0x6c>;
+                reg = <0x67>;
 
                 interrupt-parent = <&pio>;
                 interrupts = <12 IRQ_TYPE_EDGE_FALLING 12 0>;
