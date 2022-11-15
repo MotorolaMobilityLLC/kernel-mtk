@@ -15,7 +15,7 @@
 unsigned int s5kgd2_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
 
 #define S5KGD2_MOT_EEPROM_ADDR 0x00
-#define S5KGD2_MOT_EEPROM_DATA_SIZE 0x1911
+#define S5KGD2_MOT_EEPROM_DATA_SIZE 0x190B
 #define S5KGD2_MOT_SERIAL_NUMBER_ADDR 0x15
 #define S5KGD2_MOT_MNF_ADDR 0x00
 #define S5KGD2_MOT_MNF_DATA_SIZE 37
