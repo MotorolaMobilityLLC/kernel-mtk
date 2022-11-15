@@ -328,11 +328,11 @@
 		};
 		charge-cdev5 {
 			trip = <&charge_trip5>;
-			cooling-device = <&charger_cooler 7 7>;
+			cooling-device = <&charger_cooler 6 6>;
 		};
 		charge-cdev6 {
 			trip = <&charge_trip6>;
-			cooling-device = <&charger_cooler 8 8>;
+			cooling-device = <&charger_cooler 7 7>;
 		};
 	};
 
