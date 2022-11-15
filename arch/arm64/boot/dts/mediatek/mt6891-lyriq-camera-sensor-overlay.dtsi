@@ -288,7 +288,7 @@
 	cam2_pin_vcamio = "regulator";
 
 
-	cam0_enable_sensor = "mot_lyriq_ov50a_mipi_raw";
+	cam0_enable_sensor = "mot_lyriq_ov50e_mipi_raw mot_lyriq_ov50a_mipi_raw";
 	cam1_enable_sensor = "mot_lyriq_ov32b_mipi_raw";
 	cam2_enable_sensor = "mot_lyriq_hi1336_mipi_raw";
 	status = "okay";
