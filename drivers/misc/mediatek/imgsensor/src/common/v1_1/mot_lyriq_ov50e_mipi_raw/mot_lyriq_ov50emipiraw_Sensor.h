@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     mot_lyriq_ov50amipi_Sensor.h
+ *     mot_lyriq_ov50emipi_Sensor.h
  *
  * Project:
  * --------
@@ -26,8 +26,8 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _MOT_LYRIQ_OV50A_SENSOR_H
-#define _MOT_LYRIQ_OV50A_SENSOR_H
+#ifndef _MOT_LYRIQ_OV50E_SENSOR_H
+#define _MOT_LYRIQ_OV50E_SENSOR_H
 #include "imgsensor_sensor.h"
 
 enum IMGSENSOR_MODE {
@@ -54,8 +54,8 @@ struct imgsensor_mode_struct {
 	kal_uint32 linelength; /* record different mode's linelength */
 	kal_uint32 framelength; /* record different mode's framelength */
 
-	kal_uint16 startx; /* record different mode's startx of grabwindow */
-	kal_uint16 starty; /* record different mode's startx of grabwindow */
+	kal_uint8 startx; /* record different mode's startx of grabwindow */
+	kal_uint8 starty; /* record different mode's startx of grabwindow */
 
 	kal_uint16 grabwindow_width;
 	kal_uint16 grabwindow_height;
@@ -134,9 +134,13 @@ struct imgsensor_info_struct {
 	kal_uint32 max_frame_length;
 	kal_uint32 min_gain;
 	kal_uint32 max_gain;
+	kal_uint32 max_gain_fullsize;
+	kal_uint32 max_gain_60fps;
+	kal_uint32 max_gain_120fps;
 	kal_uint32 min_gain_iso;
 	kal_uint32 gain_step;
 	kal_uint32 exp_step;
+	kal_uint32 exp_step_fullsize;
 	kal_uint32 gain_type;
 	kal_uint8 isp_driving_current; /* mclk driving current */
 	kal_uint8 sensor_interface_type; /* sensor_interface_type */
@@ -171,7 +175,7 @@ typedef enum {
 	LIMIT_FAILURE
 } calibration_status_t;
 
-struct LYRIQ_OV50A_eeprom_t{
+struct LYRIQ_OV50E_eeprom_t{
 	uint8_t eeprom_table_version[1];
 	uint8_t cal_hw_ver[1];
 	uint8_t cal_sw_ver[1];
@@ -236,7 +240,7 @@ struct LYRIQ_OV50A_eeprom_t{
 	uint8_t pdaf_out1_crc16_mtk[2];
 	uint8_t pdaf_out2_crc16_mtk[2];
 	//QPD compensation_calibration
-	uint8_t qpd_compensation_cali[3568];
+	uint8_t qpd_compensation_cali[3584];
 	uint8_t qpd_crc16[2];
 	//AF Sync
 	uint8_t af_sync_data[16];
@@ -248,7 +252,7 @@ struct LYRIQ_OV50A_eeprom_t{
 	uint8_t ois_sr_data[22];
 	uint8_t ois_sr_crc[2];
 	//AK7323 OIS
-	uint8_t ak7323_ois_data[168];
+	uint8_t ak7323_ois_data[59];
 	uint8_t ak7323_ois_crc[2];
 	//Qcom PDAF LRC(Gain map)
 	uint8_t dcc_cal[3];
@@ -256,7 +260,7 @@ struct LYRIQ_OV50A_eeprom_t{
 	uint8_t pdaf_lrc_crc[2];
 	//QCOM PDAF DCC
 	uint8_t pdaf_dcc[102];
-	uint8_t pdaf_dcc_crc[2];
+	uint8_t dcc_crc[2];
 	//QCOM PDAF OFFSET
 	uint8_t pdaf_offset[198];
 	uint8_t pdaf_offset_crc[2];

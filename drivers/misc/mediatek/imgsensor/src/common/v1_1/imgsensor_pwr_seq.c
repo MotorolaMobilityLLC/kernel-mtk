@@ -11,6 +11,19 @@
 
 /* Legacy design */
 struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
+#if defined(MOT_LYRIQ_OV50E_MIPI_RAW)
+        {
+                SENSOR_DRVNAME_MOT_LYRIQ_OV50E_MIPI_RAW,
+                {
+                        {SensorMCLK, Vol_High, 0},
+                        {RST, Vol_Low, 1},
+                        {DOVDD, Vol_1800, 0},
+                        {AVDD, Vol_2800, 0},
+                        {DVDD, Vol_1100, 1},
+                        {RST, Vol_High, 5}
+                },
+        },
+#endif
 #if defined(MOT_LYRIQ_OV50A_MIPI_RAW)
         {
                 SENSOR_DRVNAME_MOT_LYRIQ_OV50A_MIPI_RAW,
