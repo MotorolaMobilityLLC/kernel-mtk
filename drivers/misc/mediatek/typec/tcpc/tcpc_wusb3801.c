@@ -285,7 +285,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 		//tcpci_report_usb_port_detached(chip->tcpc);
 		tcpci_report_usb_port_changed(chip->tcpc);
 		//tcpc->typec_role = TYPEC_ROLE_UNKNOWN;
-		tcpci_notify_typec_state(tcpc);
+		//tcpci_notify_typec_state(tcpc);
 		if (tcpc->typec_attach_old == TYPEC_ATTACHED_SRC) {
 		    tcpci_source_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_0V, 0);
 		    msleep(100);
@@ -330,7 +330,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 				//tcpci_report_usb_port_attached(chip->tcpc);
 				tcpci_report_usb_port_changed(chip->tcpc);
 				tcpci_source_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, 0);
-				tcpci_notify_typec_state(tcpc);
+				//tcpci_notify_typec_state(tcpc);
 				tcpc->typec_attach_old = TYPEC_ATTACHED_SRC;
 		}
 		break;
@@ -343,7 +343,7 @@ static void wusb3801_irq_work_handler(struct kthread_work *work)
 				tcpc->typec_attach_new = TYPEC_ATTACHED_SNK;
 				//tcpci_report_usb_port_attached(chip->tcpc);
 				tcpci_report_usb_port_changed(chip->tcpc);
-				tcpci_notify_typec_state(tcpc);
+				//tcpci_notify_typec_state(tcpc);
 				tcpc->typec_attach_old = TYPEC_ATTACHED_SNK;
 		}
 		break;
@@ -767,7 +767,7 @@ static void wusb3801_first_check_typec_work(struct work_struct *work)
 		//chip->tcpc->typec_role = TYPEC_ROLE_SRC;
 		//tcpci_notify_role_swap(chip->tcpc, TCP_NOTIFY_DR_SWAP, PD_ROLE_DFP);
 		tcpci_source_vbus(chip->tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, 0);
-		tcpci_notify_typec_state(chip->tcpc);
+		//tcpci_notify_typec_state(chip->tcpc);
 		chip->tcpc->typec_attach_old = TYPEC_ATTACHED_SRC;
 		break;
 	case WUSB3801_TYPE_SRC:
@@ -776,7 +776,7 @@ static void wusb3801_first_check_typec_work(struct work_struct *work)
 		tcpci_report_usb_port_changed(chip->tcpc);
 		//chip->tcpc->typec_role = TYPEC_ROLE_SNK;
 		//tcpci_notify_role_swap(chip->tcpc, TCP_NOTIFY_DR_SWAP, PD_ROLE_UFP);
-		tcpci_notify_typec_state(chip->tcpc);
+		//tcpci_notify_typec_state(chip->tcpc);
 		chip->tcpc->typec_attach_old = TYPEC_ATTACHED_SNK;
 		break;
 	default:
