@@ -34,6 +34,9 @@
 #include "mtk_dump.h"
 #include "mtk_disp_bdg.h"
 #include "mtk_dsi.h"
+#ifdef CONFIG_DISP_ESD_NOTIFY_SUPPORT
+#include "mtk_disp_notify.h"
+#endif
 
 #define ESD_TRY_CNT 5
 #define ESD_CHECK_PERIOD 2000 /* ms */
@@ -620,6 +623,10 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 	int recovery_flg = 0;
 	bool check_te = false, te_timeout = false;
 	unsigned int crtc_idx;
+#ifdef CONFIG_DISP_ESD_NOTIFY_SUPPORT
+	int data_resume = MTK_DISP_EARLY_BLANK_UNBLANK;
+	int data_suspend = MTK_DISP_EARLY_BLANK_POWERDOWN;
+#endif
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -716,6 +723,9 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 			DDPPR_ERR(
 				"[ESD%u]esd check fail, will do esd recovery. te timeout:%d try=%d\n",
 				crtc_idx, te_timeout, i);
+#ifdef CONFIG_DISP_ESD_NOTIFY_SUPPORT
+			mtk_disp_notifier_call_chain(MTK_ERALY_NOTIFY_TP_EVENT_BLANK, &data_suspend);
+#endif
 			mtk_drm_esd_recover(crtc);
 			recovery_flg = 1;
 		} while (++i < ESD_TRY_CNT);
@@ -737,6 +747,9 @@ static int mtk_drm_esd_check_worker_kthread(void *data)
 		} else if (recovery_flg) {
 			DDPINFO("[ESD%u] esd recovery success\n", crtc_idx);
 			recovery_flg = 0;
+#ifdef CONFIG_DISP_ESD_NOTIFY_SUPPORT
+			mtk_disp_notifier_call_chain(MTK_NOTIFY_TP_EVENT_BLANK, &data_resume);
+#endif
 		}
 		mtk_drm_trace_end();
 		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
