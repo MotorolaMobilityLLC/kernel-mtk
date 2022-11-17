@@ -206,6 +206,15 @@ config CHARGER_BQ25601
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ25601 is used.
 
+config MOTO_BQ25890_MIVR_DISABLE
+	bool "MOTO_BQ25890_MIVR_DISABLE"
+	depends on CHARGER_BQ25890
+	help
+	  This option enables gnevan mivr disable customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
 config CHARGER_BQ25890
 	bool "CHARGER_BQ25890"
 	help
