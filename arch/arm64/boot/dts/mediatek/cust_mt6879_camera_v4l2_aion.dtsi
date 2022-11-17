@@ -22,15 +22,6 @@
 		enable-active-high;
 	};
 
-	cam_main_ois_dvdd_ldo: gpio8-fixed{
-		compatible = "regulator-fixed";
-		regulator-name = "cam_main_ois_dvdd_ldo";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&pio 8 0x0>;
-		enable-active-high;
-	};
-
 	cam_fm_avdd_ldo: gpio160-fixed{
 		compatible = "regulator-fixed";
 		regulator-name = "cam_fm_avdd_ldo";
@@ -83,7 +74,6 @@
 	camera_af_main@18 {
 		compatible = "mediatek,mot_aion_gt9764";
 		reg = <0x18>;
-		vin-supply = <&cam_main_ois_dvdd_ldo>;
 		vdd-supply = <&cam_main_afdd_ldo>;
 		port {
 			main_af: endpoint {
@@ -348,7 +338,6 @@
 		avdd-supply = <&cam_main_avdd_ldo>;
 		dvdd-supply = <&cam_main_dvdd_ldo>;
 		dovdd-supply = <&cam_iovdd_ldo>;
-		afvdd-supply = <&cam_main_ois_dvdd_ldo>;
 
 		clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
 			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
