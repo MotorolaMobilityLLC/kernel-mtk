@@ -281,7 +281,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 		(u8 *)&get_byte,
 		1,
 		imgsensor.i2c_write_id,
-		IMGSENSOR_I2C_SPEED);
+		imgsensor_info.i2c_speed);
 	return get_byte;
 }
 
@@ -296,7 +296,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 		3,
 		3,
 		imgsensor.i2c_write_id,
-		IMGSENSOR_I2C_SPEED);
+		imgsensor_info.i2c_speed);
 }
 /*
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
