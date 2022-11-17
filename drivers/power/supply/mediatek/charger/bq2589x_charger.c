@@ -137,7 +137,9 @@ static int bq2589x_get_icl(struct charger_device *chg_dev, u32 *curr);
 static int bq2589x_get_vchg(struct charger_device *chg_dev, u32 *volt);
 static int bq2589x_set_vchg(struct charger_device *chg_dev, u32 volt);
 static int bq2589x_kick_wdt(struct charger_device *chg_dev);
+#ifndef CONFIG_MOTO_BQ25890_MIVR_DISABLE
 static int bq2589x_set_ivl(struct charger_device *chg_dev, u32 volt);
+#endif
 static int bq2589x_is_charging_done(struct charger_device *chg_dev, bool *done);
 static int bq2589x_get_min_ichg(struct charger_device *chg_dev, u32 *curr);
 static int bq2589x_set_safety_timer(struct charger_device *chg_dev, bool en);
@@ -300,6 +302,7 @@ static int bq2589x_kick_wdt(struct charger_device *chg_dev)
 	return bq2589x_reset_watchdog_timer(bq);
 }
 
+#ifndef CONFIG_MOTO_BQ25890_MIVR_DISABLE
 static int bq2589x_set_ivl(struct charger_device *chg_dev, u32 volt)
 {
 	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
@@ -308,6 +311,7 @@ static int bq2589x_set_ivl(struct charger_device *chg_dev, u32 volt)
 
 	return bq2589x_set_input_volt_limit(bq, volt/1000);
 }
+#endif
 
 static int bq2589x_is_charging_done(struct charger_device *chg_dev, bool *done)
 {
@@ -1308,6 +1312,7 @@ static int bq2589x_update_chg_type(struct charger_device *chg_dev, bool en)
 			else
 				pr_info("CDP, free\n");
 		}
+		bq2589x_exit_hiz_mode(bq);
 		Charger_Detect_Init();
 		while (wait_plugin_cnt >= 0) {
 			if (bq->status&BQ2589X_STATUS_PLUGIN)
@@ -1561,7 +1566,11 @@ static int bq2589x_init_device(struct bq2589x *bq)
 
 	bq2589x_set_hz(bq, 0);
 
-
+	ret = bq2589x_set_input_volt_limit(bq, 4600);
+	if (ret < 0)
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+	else
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
 	return ret;
 }
 
@@ -1803,9 +1812,9 @@ static void bq2589x_adapter_out_workfunc(struct work_struct *work)
 
 	ret = bq2589x_set_input_volt_limit(bq, 4600);
 	if (ret < 0)
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4400 failed:%d\n", __func__, ret);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
 	else
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4400 successfully\n", __func__);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
 
 	if (pe.enable)
 		cancel_delayed_work_sync(&bq->monitor_work);
@@ -2104,6 +2113,13 @@ static void bq2589x_charger_irq_workfunc(struct work_struct *work)
 		bq->status &= ~BQ2589X_STATUS_PLUGIN;
 		schedule_work(&bq->adapter_out_work);
 	} else if ((temp & BQ2589X_VBUS_GD_MASK) && !(bq->status & BQ2589X_STATUS_PLUGIN)) {
+		/* REG0D bit7: register is reset to default value when input source is plugged-in ,default relative mode*/
+		bq2589x_use_absolute_vindpm(bq, bq->cfg.use_absolute_vindpm);
+		ret = bq2589x_set_input_volt_limit(bq, 4600);
+		if (ret < 0)
+			dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+		else
+			dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
 		dev_info(bq->dev, "%s:adapter plugged in\n", __func__);
 		bq->status |= BQ2589X_STATUS_PLUGIN;
 		schedule_work(&bq->adapter_in_work);
@@ -2241,7 +2257,11 @@ static struct charger_ops bq2589x_chg_ops = {
 	.get_constant_voltage = bq2589x_get_vchg,
 	.set_constant_voltage = bq2589x_set_vchg,
 	.kick_wdt = bq2589x_kick_wdt,
+#ifdef CONFIG_MOTO_BQ25890_MIVR_DISABLE
+	.set_mivr = NULL,
+#else
 	.set_mivr = bq2589x_set_ivl,
+#endif
 	.is_charging_done = bq2589x_is_charging_done,
 	.get_min_charging_current = bq2589x_get_min_ichg,
 	.enable_chg_type_det = NULL,//bq2589x_update_chg_type,
