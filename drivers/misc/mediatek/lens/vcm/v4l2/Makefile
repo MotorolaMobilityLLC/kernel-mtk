@@ -17,3 +17,4 @@ obj-$(CONFIG_MTK_V4L2_LENS)   += mot_dubai_dw9800v/
 obj-$(CONFIG_MTK_V4L2_LENS)   += mot_dubai_ak7377a/
 obj-$(CONFIG_MTK_V4L2_LENS)   += mot_aion_gt9764/
 obj-$(CONFIG_MTK_V4L2_LENS)   += mot_aion_dw9800v/
+obj-$(CONFIG_MTK_V4L2_LENS)   += mot_aion_gt9772/
