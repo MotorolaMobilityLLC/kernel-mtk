@@ -137,6 +137,17 @@ static void tianma_panel_init(struct tianma *ctx)
 	gpiod_set_value(ctx->reset_gpio, 0);
 	usleep_range(1000,1001);
 	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(10000,10001);
+
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A,0x59);
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5,0xA6);
+	tianma_dcs_write_seq_static(ctx, 0xCC, 0x01);
+
+	gpiod_set_value(ctx->reset_gpio, 1);
+	usleep_range(1000,1001);
+	gpiod_set_value(ctx->reset_gpio, 0);
+	usleep_range(1000,1001);
+	gpiod_set_value(ctx->reset_gpio, 1);
 	usleep_range(30000,30001);
 
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -151,7 +162,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx, 0x35, 0x00, 0x00);
 	tianma_dcs_write_seq_static(ctx, 0xBD, 0x00);
 	tianma_dcs_write_seq_static(ctx, 0x11, 0x00, 0x00);
-	usleep_range(100000,100001);
+	usleep_range(80000,80001);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00, 0x00);
 	usleep_range(20000,20001);
 	tianma_dcs_write_seq_static(ctx, 0xBD, 0xA1, 0xA2);
