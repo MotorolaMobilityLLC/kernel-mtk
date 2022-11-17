@@ -47,6 +47,11 @@
 			remote-endpoint = <&main_af>;
 		};
 	};
+	port@1 {
+		fm_af_endpoint: endpoint {
+			remote-endpoint = <&fm_af>;
+		};
+	};
 	port@2 {
 		wide_af_endpoint: endpoint {
 			remote-endpoint = <&wide_af>;
@@ -101,8 +106,17 @@
 	};
 };
 
-&pio {
-
+&i2c4 {
+	camera_af_fm@18 {
+		compatible = "mediatek,mot_aion_gt9772";
+		reg = <0x18>;
+		vin-supply = <&cam_fm_afvdd_ldo>;
+		port {
+			fm_af: endpoint {
+				remote-endpoint = <&fm_af_endpoint>;
+			};
+		};
+	};
 };
 
 &mtk_composite_v4l2_1 {
