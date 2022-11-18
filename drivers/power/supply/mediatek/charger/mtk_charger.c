@@ -2353,9 +2353,16 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	if (mmi->base_fv_mv == 0) {
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
 	}
-	max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
-	if (max_fv_mv == 0)
+        pr_info("[%s]mtk pe connect: %d\n",
+		 __func__, mtk_pe_get_is_connect(info));
+	if (mtk_pe_get_is_connect(info)) {
+		max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
+		if (max_fv_mv == 0)
+			max_fv_mv = mmi->base_fv_mv;
+	} else {
 		max_fv_mv = mmi->base_fv_mv;
+		info->mmi.chrg_iterm = info->mmi.back_chrg_iterm;
+	}
 
 	/* Determine Next State */
 	prev_step = info->mmi.pres_chrg_step;
@@ -2635,6 +2642,7 @@ static int parse_mmi_dt(struct charger_manager *info, struct device *dev)
 				  &info->mmi.chrg_iterm);
 	if (rc)
 		info->mmi.chrg_iterm = 150;
+        info->mmi.back_chrg_iterm = info->mmi.chrg_iterm;
 
 	info->mmi.enable_mux =
 		of_property_read_bool(node, "mmi,enable-mux");
