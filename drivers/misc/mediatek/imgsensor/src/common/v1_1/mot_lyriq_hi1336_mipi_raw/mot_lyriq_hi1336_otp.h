@@ -37,7 +37,7 @@ static DEFINE_SPINLOCK(imgsensor_lock);
 
 #define LYRIQ_HI1336_EEPROM_SLAVE_ADDR 0xA0
 #define LYRIQ_HI1336_SENSOR_IIC_SLAVE_ADDR 0x40
-#define LYRIQ_HI1336_EEPROM_SIZE  0x1924
+#define LYRIQ_HI1336_EEPROM_SIZE  0x1925
 #define EEPROM_DATA_PATH "/data/vendor/camera_dump/mot_gt24p64e_hi1336_eeprom.bin"
 #define LYRIQ_HI1336_EEPROM_CRC_AF_CAL_SIZE 24
 #define LYRIQ_HI1336_EEPROM_CRC_AWB_CAL_SIZE 43
@@ -117,37 +117,6 @@ static void LYRIQ_HI1336_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start
 	spin_lock(&imgsensor_lock);
 	hi1336_imgsensor.i2c_write_id = LYRIQ_HI1336_SENSOR_IIC_SLAVE_ADDR;
 	spin_unlock(&imgsensor_lock);
-}
-
-static void LYRIQ_HI1336_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
-{
-	struct file *fp = NULL;
-	mm_segment_t old_fs;
-	int ret = 0;
-
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
-	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
-	if (IS_ERR_OR_NULL(fp)) {
-            ret = PTR_ERR(fp);
-		LOG_ERROR("open file error(%s), error(%d)\n",  file_name, ret);
-		goto p_err;
-	}
-
-	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
-	if (ret < 0) {
-		LOG_ERROR("file write fail(%s) to EEPROM data(%d)", file_name, ret);
-		goto p_err;
-	}
-
-	LOG_INF("wirte to file(%s)\n", file_name);
-p_err:
-	if (!IS_ERR_OR_NULL(fp))
-		filp_close(fp, NULL);
-
-	set_fs(old_fs);
-	LOG_INF(" end writing file");
 }
 
 static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
@@ -456,7 +425,7 @@ static void LYRIQ_HI1336_eeprom_get_mnf_data(void *data,
 		eeprom->serial_number[10], eeprom->serial_number[11],
 		eeprom->serial_number[12], eeprom->serial_number[13],
 		eeprom->serial_number[14], eeprom->serial_number[15]);
-	LYRIQ_HI1336_eeprom_dump_bin(WIDE_SERIAL_NUM_DATA_PATH,  HI1336_SERIAL_NUM_SIZE,  eeprom->serial_number);
+
 	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
 		LOG_ERROR("snprintf of mnf->serial_number failed");
 		mnf->serial_number[0] = 0;

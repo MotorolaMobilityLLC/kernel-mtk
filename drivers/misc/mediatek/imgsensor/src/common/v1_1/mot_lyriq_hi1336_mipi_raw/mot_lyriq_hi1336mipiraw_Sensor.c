@@ -552,7 +552,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                         // get calibration status and mnf data.
 #if 1
 			LYRIQ_HI1336_read_data_from_eeprom(LYRIQ_HI1336_EEPROM_SLAVE_ADDR, 0x0000, LYRIQ_HI1336_EEPROM_SIZE);
-			LYRIQ_HI1336_eeprom_dump_bin(EEPROM_DATA_PATH, LYRIQ_HI1336_EEPROM_SIZE, (void *)LYRIQ_HI1336_eeprom);
 			LYRIQ_HI1336_eeprom_format_calibration_data((void *)LYRIQ_HI1336_eeprom);
 #endif
 			LOG_INF("hi1336 i2c write id : 0x%x, sensor id: 0x%x\n",
