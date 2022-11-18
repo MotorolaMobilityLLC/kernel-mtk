@@ -116,4 +116,9 @@ config MTK_THERMAL_JATM
 	  to optimize game UX under a proper Tskin control.
 	  It will take care of both better user experience and Tskin control.
 
+config MOTO_THERMAL_CHARGER_STATE_NUM
+	int "Set MOTO charger cooling state number"
+	default 9
+	help
+	  This is to set MOTO charger cooling state number.
 endif
