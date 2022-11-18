@@ -735,7 +735,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				// get calibration status and mnf data.
 			LYRIQ_OV32B_read_data_from_eeprom(LYRIQ_OV32B_EEPROM_SLAVE_ADDR, 0x0000, LYRIQ_OV32B_EEPROM_SIZE);
-			LYRIQ_OV32B_eeprom_dump_bin(EEPROM_DATA_PATH, LYRIQ_OV32B_EEPROM_SIZE, (void *)LYRIQ_OV32B_eeprom);
 			LYRIQ_OV32B_eeprom_format_calibration_data((void *)LYRIQ_OV32B_eeprom);
 				return ERROR_NONE;
 			}
