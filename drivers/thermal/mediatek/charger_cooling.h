@@ -13,7 +13,11 @@
  *===========================================================
  */
 #define CHARGER_COOLING_UNLIMITED_STATE	(0)
+#ifdef CONFIG_MOTO_THERMAL_CHARGER_STATE_NUM
+#define CHARGER_STATE_NUM CONFIG_MOTO_THERMAL_CHARGER_STATE_NUM
+#else
 #define CHARGER_STATE_NUM 9
+#endif
 #define MAX_CHARGER_COOLER_NAME_LEN		(20)
 
 /*==================================================
