@@ -382,6 +382,7 @@ struct mmi_params {
 	int			chrg_taper_cnt;
 	int			temp_state;
 	int			chrg_iterm;
+        int			back_chrg_iterm;
 
 	struct mmi_ffc_zone	*ffc_zones;
 
