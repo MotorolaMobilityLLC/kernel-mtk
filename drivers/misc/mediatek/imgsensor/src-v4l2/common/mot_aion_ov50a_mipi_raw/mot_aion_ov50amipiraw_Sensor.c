@@ -66,7 +66,8 @@ module_param(mot_ov50a_xtalk_en,int, 0644);
 #define FPT_PDAF_SUPPORT 1
 #define SEAMLESS_ 1
 #define SEAMLESS_NO_USE 0
-static int remosaic_mode =0;
+static int full_remosaic_mode =0;
+static int crop_remosaic_mode =0;
 static int settledebug = 0x10;
 module_param(settledebug,int, 0644);
 MODULE_PARM_DESC(settledebug, "settledebug");
@@ -78,38 +79,38 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 75000000,
 		.linelength = 600,
-		.framelength = 4168,
+		.framelength = 4164,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.cap = {
 		.pclk = 75000000,
 		.linelength = 600,
-		.framelength = 4168,
+		.framelength = 4164,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.normal_video = {
 		.pclk = 75000000,
 		.linelength = 600,
-		.framelength = 4168,
+		.framelength = 4164,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.hs_video = {
 		.pclk = 75000000,
@@ -117,77 +118,89 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 2272,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1920,
-		.grabwindow_height = 1080,
+		.grabwindow_width = 2048,
+		.grabwindow_height = 1536,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.slim_video = {
 		.pclk = 75000000,
 		.linelength = 600,
-		.framelength = 4168,
+		.framelength = 4164,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.custom1 = {
 		.pclk = 75000000,
-		.linelength = 550,
-		.framelength = 6816,
+		.linelength = 390,
+		.framelength = 6408,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 8192,
 		.grabwindow_height = 6144,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 200,
-		.mipi_pixel_rate = 1280448000,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 1778400000,
 	},
 	.custom2 = {
 		.pclk = 75000000,
 		.linelength = 600,
-		.framelength = 2084,
+		.framelength = 2080,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1920,
-		.grabwindow_height = 1080,
+		.grabwindow_width = 2048,
+		.grabwindow_height = 1536,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 600,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.custom3 = {
 		.pclk = 75000000,
-		.linelength = 275,
-		.framelength = 1136,
+		.linelength = 225,
+		.framelength = 1388,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1280,
-		.grabwindow_height = 720,
+		.grabwindow_width = 1980,
+		.grabwindow_height = 1080,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 2400,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 	.custom4 = {
 		.pclk = 75000000,
+		.linelength = 450,
+		.framelength = 2776,
+		.startx = 0,
+		.starty = 384,
+		.grabwindow_width = 4096,
+		.grabwindow_height = 2304,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 1316016000,
+	},
+	.custom5 = {
+		.pclk = 75000000,
 		.linelength = 600,
-		.framelength = 4168,
+		.framelength = 4164,
 		.startx = 2048,
 		.starty = 1536,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 1316016000,
 	},
 
 	.margin = 32,					/* sensor framelength & shutter margin */
 	.min_shutter = 16,				/* min shutter */
-	.min_gain = BASEGAIN, /*1x gain*/
-	.max_gain = 261120, /*32 * 1024  gain*/
+	.min_gain = 1024, /*1x gain*/
+	.max_gain = 261120, /*255 * 1024  gain*/
 	.min_gain_iso = 100,
 	.gain_step = 16, /*minimum step = 4 in 1x~2x gain*/
 	.gain_type = 1,/*to be modify,no gain table for sony*/
@@ -197,7 +210,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 9,			//support sensor mode num
+	.sensor_mode_num = 10,			//support sensor mode num
 
 	.cap_delay_frame = 2,			//enter capture delay frame num
 	.pre_delay_frame = 2,			//enter preview delay frame num
@@ -207,7 +220,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.custom1_delay_frame = 2,		//enter custom1 delay frame num
 	.custom2_delay_frame = 2,		//enter custom2 delay frame num
 	.custom3_delay_frame = 2,		//enter custom3 delay frame num
-	.custom4_delay_frame = 2,		//enter custom3 delay frame num
+	.custom4_delay_frame = 2,		//enter custom4 delay frame num
+	.custom5_delay_frame = 2,		//enter custom5 delay frame num
 	.frame_time_delay_frame = 2,
 
 	.isp_driving_current = ISP_DRIVING_8MA,
@@ -218,7 +232,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 #endif
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_R,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_B,
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 #ifdef CPHY_3TRIO
 	.mipi_lane_num = SENSOR_MIPI_3_LANE,//mipi lane num
@@ -232,7 +246,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 /* Sensor output window information */
 
-static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
+static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	/* Preview*/
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* capture */
@@ -240,17 +254,19 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[9] = {
 	/* video */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* hs_video */
-	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
+	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
 	/* slim_video */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* custom1 */
 	{8192, 6144,    0,    0, 8192, 6144, 8192, 6144,  0,   0, 8192, 6144, 0, 0, 8192, 6144},
 	/* custom2 */
-	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
+	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
 	/* custom3 */
-	{8192, 6144,    1536, 1632, 5120, 2880, 1280, 720,  0,   0, 1280, 720, 0, 0, 1280, 720},
+	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
 	/* custom4 */
-	{8192, 6144,    2048,    1536, 4096, 3072, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
+	{8192, 6144,    0,   768, 8192, 4608, 4096, 2304,  0,  0, 4096, 2304, 0, 0, 4096, 2304},
+	/* custom5 */
+	{8192, 6144,  2048,  1536, 4096, 3072, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 };
 
 
@@ -530,8 +546,12 @@ static kal_uint32 set_gain(struct subdrv_ctx *ctx, kal_uint32 gain)
 {
 	kal_uint16 reg_gain;
 	kal_uint32 max_gain = imgsensor_info.max_gain;
-       if(remosaic_mode == 1)
-       {
+	if(full_remosaic_mode == 1)
+	{
+		max_gain = 16*BASEGAIN;
+	}
+	if(crop_remosaic_mode == 1)
+	{
 		max_gain = 64*BASEGAIN;
 	}
 	if (gain < imgsensor_info.min_gain || gain > max_gain) {
@@ -686,8 +706,8 @@ static void sensor_init(struct subdrv_ctx *ctx)
 	} else {
 		LOG_INF("%s: skip EEPROM xtalk, use default one...", __func__);
 		table_write_cmos_sensor(ctx,
-		    addr_data_pair_init_mot_aion_ov50a_20220312,
-		    sizeof(addr_data_pair_init_mot_aion_ov50a_20220312) / sizeof(kal_uint16));
+		    addr_data_pair_init_mot_aion_ov50a_20221114,
+		    sizeof(addr_data_pair_init_mot_aion_ov50a_20221114) / sizeof(kal_uint16));
 	}
 	LOG_INF("%s end\n", __func__);
 }
@@ -695,7 +715,8 @@ static void sensor_init(struct subdrv_ctx *ctx)
 static void preview_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	LOG_INF("%s start\n", __func__);
 	_length = sizeof(addr_data_pair_preview_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
@@ -724,7 +745,8 @@ static void capture_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 	int _length = 0;
 
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_capture_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -751,7 +773,8 @@ static void normal_video_setting(struct subdrv_ctx *ctx, kal_uint16 currefps)
 	int _length = 0;
 
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_video_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -779,7 +802,8 @@ static void hs_video_setting(struct subdrv_ctx *ctx)
 	int _length = 0;
 
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_hs_video_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -806,7 +830,8 @@ static void slim_video_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_slim_video_mot_aion_ov50a2q) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -834,7 +859,8 @@ static void custom1_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =1;
+	full_remosaic_mode =1;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom1) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -862,7 +888,8 @@ static void custom2_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom2) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -889,7 +916,8 @@ static void custom3_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =0;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom3) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -916,7 +944,8 @@ static void custom4_setting(struct subdrv_ctx *ctx)
 {
 	int _length = 0;
 	LOG_INF("%s start\n", __func__);
-	remosaic_mode =1;
+	full_remosaic_mode =0;
+	crop_remosaic_mode =0;
 	_length = sizeof(addr_data_pair_custom4) / sizeof(kal_uint16);
 	if (!_is_seamless) {
 		table_write_cmos_sensor(ctx,
@@ -938,6 +967,34 @@ static void custom4_setting(struct subdrv_ctx *ctx)
 	}
 	LOG_INF("%s end\n", __func__);
 }	/*	custom4_setting  */
+
+static void custom5_setting(struct subdrv_ctx *ctx)
+{
+	int _length = 0;
+	LOG_INF("%s start\n", __func__);
+	full_remosaic_mode =0;
+	crop_remosaic_mode =1;
+	_length = sizeof(addr_data_pair_custom5) / sizeof(kal_uint16);
+	if (!_is_seamless) {
+		table_write_cmos_sensor(ctx,
+		addr_data_pair_custom5,
+		_length);
+	} else {
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
+			__func__, _is_seamless, _size_to_write);
+
+		if (_size_to_write + _length > _I2C_BUF_SIZE) {
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
+				_size_to_write + _length);
+			return;
+		}
+		memcpy((void *) (_i2c_data + _size_to_write),
+			addr_data_pair_custom5,
+			sizeof(addr_data_pair_custom5));
+		_size_to_write += _length;
+	}
+	LOG_INF("%s end\n", __func__);
+}	/*	custom5_setting  */
 
 
 /* ITD: Modify Dualcam By Jesse 190924 End */
@@ -1219,6 +1276,20 @@ static kal_uint32 Custom4(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_ST
 	return ERROR_NONE;
 }   /*  Custom4   */
 
+static kal_uint32 Custom5(struct subdrv_ctx *ctx, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+	LOG_INF_N("E\n");
+	ctx->sensor_mode = IMGSENSOR_MODE_CUSTOM5;
+	ctx->pclk = imgsensor_info.custom5.pclk;
+	//ctx->video_mode = KAL_FALSE;
+	ctx->line_length = imgsensor_info.custom5.linelength;
+	ctx->frame_length = imgsensor_info.custom5.framelength;
+	ctx->min_frame_length = imgsensor_info.custom5.framelength;
+	ctx->autoflicker_en = KAL_FALSE;
+	custom5_setting(ctx);
+	return ERROR_NONE;
+}   /*  Custom5   */
 
 static int get_resolution(struct subdrv_ctx *ctx,
 		MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
@@ -1274,6 +1345,8 @@ static int get_info(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_
 		imgsensor_info.custom3_delay_frame;
 	sensor_info->DelayFrame[SENSOR_SCENARIO_ID_CUSTOM4] =
 		imgsensor_info.custom4_delay_frame;
+	sensor_info->DelayFrame[SENSOR_SCENARIO_ID_CUSTOM5] =
+		imgsensor_info.custom5_delay_frame;
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
 /* The frame of setting shutter default 0 for TG int */
@@ -1343,6 +1416,9 @@ static int control(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_i
 	break;
 	case SENSOR_SCENARIO_ID_CUSTOM4:
 		Custom4(ctx, image_window, sensor_config_data);
+	break;
+	case SENSOR_SCENARIO_ID_CUSTOM5:
+		Custom5(ctx, image_window, sensor_config_data);
 	break;
 	default:
 		LOG_ERR("Error ScenarioId setting");
@@ -1507,6 +1583,18 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 		if (ctx->frame_length > ctx->shutter)
 			set_dummy(ctx);
 	break;
+	case SENSOR_SCENARIO_ID_CUSTOM5:
+	    frameHeight = imgsensor_info.custom5.pclk / framerate * 10 /
+			imgsensor_info.custom5.linelength;
+		ctx->dummy_line = (frameHeight >
+			imgsensor_info.custom5.framelength) ?
+			(frameHeight - imgsensor_info.custom5.framelength):0;
+	    ctx->frame_length = imgsensor_info.custom5.framelength +
+			ctx->dummy_line;
+	    ctx->min_frame_length = ctx->frame_length;
+		if (ctx->frame_length > ctx->shutter)
+			set_dummy(ctx);
+	break;
 	default:
 	    frameHeight = imgsensor_info.pre.pclk / framerate * 10 /
 			imgsensor_info.pre.linelength;
@@ -1558,6 +1646,9 @@ static kal_uint32 get_default_framerate_by_scenario(struct subdrv_ctx *ctx,
 	break;
 	case SENSOR_SCENARIO_ID_CUSTOM4:
 	    *framerate = imgsensor_info.custom4.max_framerate;
+	break;
+	case SENSOR_SCENARIO_ID_CUSTOM5:
+	    *framerate = imgsensor_info.custom5.max_framerate;
 	break;
 /* ITD: Modify Dualcam By Jesse 190924 End */
 	default:
@@ -1682,6 +1773,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_CUSTOM2:
 		case SENSOR_SCENARIO_ID_CUSTOM3:
 		case SENSOR_SCENARIO_ID_CUSTOM4:
+		case SENSOR_SCENARIO_ID_CUSTOM5:
 			*(feature_data + 1)
 			= (enum ACDK_SENSOR_OUTPUT_DATA_FORMAT_ENUM)
 				imgsensor_info.sensor_output_dataformat;
@@ -1731,7 +1823,29 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
-		*(feature_data + 2) = imgsensor_info.max_gain;
+		switch (*feature_data) {
+		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
+			*(feature_data + 2) = imgsensor_info.max_gain;
+			break;
+		case SENSOR_SCENARIO_ID_CUSTOM1:
+			*(feature_data + 2) = 16384; //16 * 1024
+			break;
+		case SENSOR_SCENARIO_ID_CUSTOM2:
+			*(feature_data + 2) = imgsensor_info.max_gain;
+			break;
+		case SENSOR_SCENARIO_ID_CUSTOM3:
+		case SENSOR_SCENARIO_ID_CUSTOM4:
+		case SENSOR_SCENARIO_ID_CUSTOM5:
+			*(feature_data + 2) = 65536; //64 * 1024
+			break;
+		default:
+			*(feature_data + 2) = imgsensor_info.max_gain;
+			break;
+		}
 		break;
 	case SENSOR_FEATURE_GET_BASE_GAIN_ISO_AND_STEP:
 		*(feature_data + 0) = imgsensor_info.min_gain_iso;
@@ -1750,10 +1864,11 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_CUSTOM2:
 		case SENSOR_SCENARIO_ID_CUSTOM3:
 		case SENSOR_SCENARIO_ID_CUSTOM4:
-			*(feature_data + 2) = 2;
+		case SENSOR_SCENARIO_ID_CUSTOM5:
+			*(feature_data + 2) = 16;
 			break;
 		default:
-			*(feature_data + 2) = 1;
+			*(feature_data + 2) = 16;
 			break;
 		}
 		break;
@@ -1790,6 +1905,10 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_CUSTOM4:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 				= imgsensor_info.custom4.pclk;
+			break;
+		case SENSOR_SCENARIO_ID_CUSTOM5:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+				= imgsensor_info.custom5.pclk;
 			break;
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		default:
@@ -1839,6 +1958,11 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
 			= (imgsensor_info.custom4.framelength << 16)
 				+ imgsensor_info.custom4.linelength;
+			break;
+		case SENSOR_SCENARIO_ID_CUSTOM5:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1))
+			= (imgsensor_info.custom5.framelength << 16)
+				+ imgsensor_info.custom5.linelength;
 			break;
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		default:
@@ -1964,6 +2088,11 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 				(void *)&imgsensor_winsize_info[8],
 				sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
 		break;
+		case SENSOR_SCENARIO_ID_CUSTOM5:
+			memcpy((void *)wininfo,
+				(void *)&imgsensor_winsize_info[9],
+				sizeof(struct SENSOR_WINSIZE_INFO_STRUCT));
+		break;
 /* ITD: Modify Dualcam By Jesse 190924 End */
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		default:
@@ -2014,6 +2143,10 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			case SENSOR_SCENARIO_ID_CUSTOM4:
 				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
 					imgsensor_info.custom4.mipi_pixel_rate;
+				break;
+			case SENSOR_SCENARIO_ID_CUSTOM5:
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+					imgsensor_info.custom5.mipi_pixel_rate;
 				break;
 
 			case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
@@ -2083,7 +2216,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
 		case SENSOR_SCENARIO_ID_CUSTOM1:
-		case SENSOR_SCENARIO_ID_CUSTOM4:
+		case SENSOR_SCENARIO_ID_CUSTOM5:
 			*feature_return_para_32 = 1000;
 			break;
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
@@ -2091,6 +2224,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			*feature_return_para_32 = 1256;
 			break;
 		case SENSOR_SCENARIO_ID_CUSTOM2:
+		case SENSOR_SCENARIO_ID_CUSTOM4:
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
 		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
@@ -2268,6 +2402,17 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus4[] = {
 		},
 	},
 };
+static struct mtk_mbus_frame_desc_entry frame_desc_cus5[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 0x1000,
+			.vsize = 0x0c00,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	},
+};
 
 static int get_frame_desc(struct subdrv_ctx *ctx,
 		int scenario_id, struct mtk_mbus_frame_desc *fd)
@@ -2318,6 +2463,11 @@ static int get_frame_desc(struct subdrv_ctx *ctx,
 		fd->num_entries = ARRAY_SIZE(frame_desc_cus4);
 		memcpy(fd->entry, frame_desc_cus4, sizeof(frame_desc_cus4));
 		break;
+	case SENSOR_SCENARIO_ID_CUSTOM5:
+		fd->type = MTK_MBUS_FRAME_DESC_TYPE_CSI2;
+		fd->num_entries = ARRAY_SIZE(frame_desc_cus5);
+		memcpy(fd->entry, frame_desc_cus5, sizeof(frame_desc_cus5));
+		break;
 	default:
 		return -1;
 	}
@@ -2329,7 +2479,7 @@ static int get_frame_desc(struct subdrv_ctx *ctx,
 static const struct subdrv_ctx defctx = {
 
 	.ana_gain_def = 4 * BASEGAIN,
-	.ana_gain_max = 32768, /*32 * 1024  gain*/
+	.ana_gain_max = 261120, /*255 * 1024  gain*/
 	.ana_gain_min = BASEGAIN,
 	.ana_gain_step = 4,
 	.exposure_def = 0x3D0,
