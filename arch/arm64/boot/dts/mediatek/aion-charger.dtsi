@@ -266,10 +266,10 @@
 		start_vbat_max = <4450>;
 		idvchg_term = <500>;
 		idvchg_step = <50>;
-		ita_level = <3000 2500 2000 1500>;
-		rcable_level = <350 400 500 600>;
-		ita_level_dual = <6200 3700 3400 3000>;
-		rcable_level_dual = <230 350 450 550>;
+		ita_level = <3000 2400 1900 1500>;
+		rcable_level = <270 310 350 500>;
+		ita_level_dual = <6200 2400 1900 1500>;
+		rcable_level_dual = <230 310 350 500>;
 		idvchg_ss_init = <1000>;
 		idvchg_ss_step = <250>;
 		idvchg_ss_step1 = <100>;
@@ -310,6 +310,7 @@
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
 		mmi_max_ibat = <12400>;
+		mmi_max_hrst_cnt = <2>;
 };
 
 &i2c0 {
