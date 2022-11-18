@@ -1383,12 +1383,12 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 	ibus1 -= (ibus_min + ibus_max);
 	ibus1 = precise_div(ibus1, PE50_MEASURE_R_AVG_TIMES);
 
-	ret = pe50_hal_set_aicr(info->alg, CHG1, 400);
+	ret = pe50_hal_set_aicr(info->alg, CHG1, 600);
 	if (ret < 0) {
 		PE50_ERR("set aicr fail(%d)\n", ret);
 		return ret;
 	}
-
+	msleep(100);
 	for (i = 0; i < PE50_MEASURE_R_AVG_TIMES + 2; i++) {
 		ret = pe50_hal_get_adc(info->alg, CHG1, PE50_ADCCHAN_VBUS, &val_vbus);
 		if (ret < 0) {
@@ -1913,10 +1913,19 @@ static int pe50_select_ita_lmt_by_r(struct pe50_algo_info *info, bool dual)
 	u32 *rcable_level = dual ? desc->rcable_level_dual : desc->rcable_level;
 	u32 *ita_level = dual ? desc->ita_level_dual : desc->ita_level;
 
+#ifdef MTK_BASE
 	if (!auth_data->support_meas_cap) {
 		ita_lmt_by_r = ita_level[PE50_RCABLE_NORMAL];
 		goto out;
 	}
+#else
+	PE50_INFO("data->mmi_hardreset_cnt = %d, max cnt = %d\n",
+		data->mmi_hardreset_cnt, data->mmi_hardreset_max_cnt);
+	if (data->mmi_hardreset_cnt < data->mmi_hardreset_max_cnt) {
+		ita_lmt_by_r = ita_level[PE50_RCABLE_NORMAL];
+		goto out;
+	}
+#endif
 	if (data->r_cable_by_swchg <= rcable_level[PE50_RCABLE_NORMAL])
 		ita_lmt_by_r = ita_level[PE50_RCABLE_NORMAL];
 	else if (data->r_cable_by_swchg <= rcable_level[PE50_RCABLE_BAD1])
@@ -3390,8 +3399,11 @@ static int pe50_notify_hardreset_hdlr(struct pe50_algo_info *info)
 		.reset_ta = false,
 		.hardreset_ta = false,
 	};
+	struct pe50_algo_data *data = info->data;
 
-	PE50_INFO("++\n");
+	data->mmi_hardreset_cnt++;
+	PE50_INFO("++ data->mmi_hardreset_cnt = %d \n", data->mmi_hardreset_cnt);
+
 	return __pe50_plugout_reset(info, &sinfo);
 }
 
@@ -3401,8 +3413,10 @@ static int pe50_notify_detach_hdlr(struct pe50_algo_info *info)
 		.reset_ta = false,
 		.hardreset_ta = false,
 	};
+	struct pe50_algo_data *data = info->data;
 
 	PE50_INFO("++\n");
+	data->mmi_hardreset_cnt = 0;
 	return __pe50_plugout_reset(info, &sinfo);
 }
 
@@ -3746,6 +3760,7 @@ static int pe50_init_algo(struct chg_alg_device *alg)
 		goto out;
 	}
 	data->inited = true;
+	data->mmi_hardreset_cnt = 0;
 	PE50_INFO("successfully\n");
 out:
 	mutex_unlock(&data->lock);
@@ -4202,6 +4217,15 @@ static int pe50_parse_dt(struct pe50_algo_info *info)
 			MMI_MAX_IBAT);
 		data->mmi_max_ibat = MMI_MAX_IBAT;
 	}
+
+	if (of_property_read_u32(np, "mmi_max_hrst_cnt", &val) >= 0)
+		data->mmi_hardreset_max_cnt = val;
+	else {
+		pr_notice("mmi_max_hrst_cnt using default:%d\n",
+			MMI_MAX_HRST_CNT);
+		data->mmi_hardreset_max_cnt = MMI_MAX_HRST_CNT;
+	}
+
 	return 0;
 }
 
