@@ -232,6 +232,16 @@
 			hysteresis = <2000>;
 			type = "passive";
 		};
+		charge_trip7: charge-trip7 {
+			temperature = <47000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
+		charge_trip8: charge-trip8 {
+			temperature = <48000>;
+			hysteresis = <2000>;
+			type = "passive";
+		};
 	};
 
 	cooling-maps {
@@ -263,11 +273,19 @@
 			trip = <&charge_trip6>;
 			cooling-device = <&charger_cooler 7 7>;
 		};
+		charge-cdev7 {
+			trip = <&charge_trip7>;
+			cooling-device = <&charger_cooler 8 8>;
+		};
+		charge-cdev8 {
+			trip = <&charge_trip8>;
+			cooling-device = <&charger_cooler 9 9>;
+		};
 	};
 };
 
 &charger_cooler {
 	bootmode = <&chosen>;
 	mmi,thermal-mitigation = <(-1) 2700000 2200000 2000000 1800000
-				1600000 1200000 900000 500000>;
+				1600000 1200000 900000 600000 300000>;
 };
