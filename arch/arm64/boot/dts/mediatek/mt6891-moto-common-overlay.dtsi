@@ -30,4 +30,9 @@
     };
 };
 
+/* disable manual mrdump start */
+&mrdump_ext_rst {
+    force_mode = "EINT";
+};
+/* disable manual mrdump end */
 
