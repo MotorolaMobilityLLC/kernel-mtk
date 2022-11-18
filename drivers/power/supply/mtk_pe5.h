@@ -19,6 +19,7 @@
 #define MMI_THERMAL_VOL_THRESHOLD	80
 #define MMI_THERMAL_STEP	3
 #define MMI_MAX_IBAT	6000
+#define MMI_MAX_HRST_CNT 100
 
 extern int pe50_get_log_level(void);
 #define PE50_DBG(fmt, ...) \
@@ -188,6 +189,8 @@ struct pe50_algo_data {
 	int mmi_therm_vol_thres;
 	int mmi_therm_step;
 	int mmi_max_ibat;
+	int mmi_hardreset_cnt;
+	int mmi_hardreset_max_cnt;
 };
 
 /* Setting from dtsi */
