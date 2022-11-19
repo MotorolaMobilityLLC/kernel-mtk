@@ -242,7 +242,11 @@ static inline void unlock_vma_ref_count(struct vm_area_struct *vma)
 }
 #endif	/* CONFIG_SPECULATIVE_PAGE_FAULT */
 
-#ifdef CONFIG_HAVE_MOVE_PMD
+/*
+ * Speculative page fault handlers will not detect page table changes done
+ * without ptl locking.
+ */
+#if defined(CONFIG_HAVE_MOVE_PMD) && !defined(CONFIG_SPECULATIVE_PAGE_FAULT)
 static bool move_normal_pmd(struct vm_area_struct *vma, unsigned long old_addr,
 		  unsigned long new_addr, pmd_t *old_pmd, pmd_t *new_pmd)
 {
@@ -318,7 +322,11 @@ static inline bool move_normal_pmd(struct vm_area_struct *vma,
 }
 #endif
 
-#ifdef CONFIG_HAVE_MOVE_PUD
+/*
+ * Speculative page fault handlers will not detect page table changes done
+ * without ptl locking.
+ */
+#if defined(CONFIG_HAVE_MOVE_PUD) && !defined(CONFIG_SPECULATIVE_PAGE_FAULT)
 static bool move_normal_pud(struct vm_area_struct *vma, unsigned long old_addr,
 		  unsigned long new_addr, pud_t *old_pud, pud_t *new_pud)
 {
