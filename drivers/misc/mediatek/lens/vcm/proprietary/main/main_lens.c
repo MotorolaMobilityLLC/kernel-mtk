@@ -72,6 +72,7 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #ifdef CONFIG_AF_NOISE_ELIMINATION
 static unsigned long af_len = 1;
 static int Open_holder = 0;
+static int Open_cnt = 0;
 static int Close_holder = 0;
 static struct wakeup_source vib_wakelock;
 #endif
@@ -473,7 +474,8 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
 	spin_lock(&g_AF_SpinLock);
 #ifdef CONFIG_AF_NOISE_ELIMINATION
-	Close_holder = NO_HOLD;
+        Open_cnt++;
+	Open_holder = NO_HOLD;
 	if(g_s4AF_Opened  == 1){
 		spin_unlock(&g_AF_SpinLock);
 		return 0;
@@ -501,7 +503,6 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
 	g_EnableTimer = 0;
 	/* ------------------------- */
-
 	LOG_INF("End\n");
 
 	return 0;
@@ -516,8 +517,9 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 #ifdef CONFIG_AF_NOISE_ELIMINATION
+	LOG_INF("g_s4AF_Opened = %d Close_holder=%d Open_cnt=%d \n",g_s4AF_Opened,Close_holder,Open_cnt);
 	spin_lock(&g_AF_SpinLock);
-	if (g_pstAF_CurDrv && g_s4AF_Opened >= 1 && Open_holder == 0) {
+	if (g_pstAF_CurDrv && g_s4AF_Opened >= 1 && Open_holder == 0 && Close_holder == NO_HOLD) {
 		spin_unlock(&g_AF_SpinLock);
 #else
 	if (g_pstAF_CurDrv) {
@@ -526,7 +528,7 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		g_pstAF_CurDrv = NULL;
 	}
 #ifdef CONFIG_AF_NOISE_ELIMINATION
-        else if(g_s4AF_Opened >= 1 && g_pstAF_CurDrv ){
+        else if(g_s4AF_Opened >= 1 && g_pstAF_CurDrv && Open_cnt > 1){
 			if(Open_holder == VIB_HOLD && Close_holder == CAM_HOLD){
 				spin_unlock(&g_AF_SpinLock);
 				g_pstAF_CurDrv->pAF_ResetPos(af_len);
@@ -534,12 +536,10 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 				spin_unlock(&g_AF_SpinLock);
 			}
 			spin_lock(&g_AF_SpinLock);
-			if(Close_holder == VIB_HOLD){
-				spin_unlock(&g_AF_SpinLock);
-				__pm_relax(&vib_wakelock);
-			}else{
-				spin_unlock(&g_AF_SpinLock);
-			}
+			Close_holder = NO_HOLD;
+			Open_holder = NO_HOLD;
+			Open_cnt--;
+			spin_unlock(&g_AF_SpinLock);
 			return 0;
         }
 #endif
@@ -550,7 +550,9 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		g_s4AF_Opened = 0;
 		spin_unlock(&g_AF_SpinLock);
 	}
-
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+        Open_cnt=0;
+#endif
 	camaf_power_off();
 
 	/* OIS/EIS Timer & Workqueue */
