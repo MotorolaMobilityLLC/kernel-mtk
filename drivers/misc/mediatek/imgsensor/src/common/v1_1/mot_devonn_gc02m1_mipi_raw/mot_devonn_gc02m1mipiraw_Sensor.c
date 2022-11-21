@@ -817,20 +817,6 @@ static calibration_status_t lsc_status = CRC_FAILURE;
 static calibration_status_t pdaf_status = CRC_FAILURE;
 static calibration_status_t dual_status = CRC_FAILURE;
 
-static void gc02m1_eeprom_format_calibration_data()
-{
-	mnf_status = 0;
-	af_status = 0;
-	awb_status = 0;
-	lsc_status = 0;
-	pdaf_status = 0;
-	dual_status = 0;
-
-	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
-		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
-}
-
-
 #define MODULE_GROUP_FLAG_ADDR 0x78
 #define MODULE_GROUP1_START_ADDR 0x80
 #define MODULE_GROUP2_START_ADDR 0xC0
@@ -838,39 +824,98 @@ static void gc02m1_eeprom_format_calibration_data()
 #define MODULE_DATA_AWB_BLOCK_SIZE 17
 static unsigned char gc02m1_serial_data[16] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
 static unsigned char gc02m1_data_eeprom[32] = {0}; //add flag and checksum value
-
-/*
-static void gc02m1_otp_dump_bin(const char *file_name, uint32_t size, const void *data)
+static uint8_t crc_reverse_byte(uint32_t data)
 {
-	struct file *fp = NULL;
-	mm_segment_t old_fs;
-	int ret = 0;
-
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
-	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
-	if (IS_ERR_OR_NULL(fp)) {
-		ret = PTR_ERR(fp);
-		LOG_ERROR("open file error(%s), error(%d)\n",  file_name, ret);
-		goto p_err;
-	}
-
-	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
-	if (ret < 0) {
-		LOG_ERROR("file write fail(%s) to EEPROM data(%d)", file_name, ret);
-		goto p_err;
-	}
-
-	LOG_INF("wirte to file(%s)\n", file_name);
-p_err:
-	if (!IS_ERR_OR_NULL(fp))
-		filp_close(fp, NULL);
-
-	set_fs(old_fs);
-	LOG_INF(" end writing file");
+	return ((data * 0x0802LU & 0x22110LU) |
+		(data * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
 }
-*/
+
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+
+
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+	int32_t crc_match = 0;
+	uint16_t crc = 0x0000;
+	uint16_t crc_reverse = 0x0000;
+	uint32_t i, j;
+
+	uint32_t tmp;
+	uint32_t tmp_reverse;
+
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+		tmp_reverse = crc_reverse_byte(data[i]);
+		tmp = data[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+
+			if (((crc_reverse & 0x8000) >> 8) ^ (tmp_reverse & 0x80))
+				crc_reverse = (crc_reverse << 1) ^ 0x8005;
+			else
+				crc_reverse = crc_reverse << 1;
+
+			tmp_reverse <<= 1;
+		}
+	}
+
+	crc_reverse = (crc_reverse_byte(crc_reverse) << 8) |
+		crc_reverse_byte(crc_reverse >> 8);
+
+	if (crc == ref_crc || crc_reverse == ref_crc)
+		crc_match = 1;
+
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x CALC Reverse CRC 0x%x matches? %d\n",
+		ref_crc, crc, crc_reverse, crc_match);
+
+	return crc_match;
+}
+
+static void gc02m1_eeprom_format_calibration_data()
+{
+	unsigned char check_sum = 0;
+        /*only check awb data*/
+	mnf_status = 0;
+	af_status = 0;
+	lsc_status = 0;
+	pdaf_status = 0;
+	dual_status = 0;
+	//Bit[7:6]:WB  flag  group1   00:Empty; 01:Valid; 11:Invalid
+	//Bit[5:4]:WB  flag  group2   00:Empty; 01:Valid; 11:Invalid
+	LOG_INF_N("awb flag =%x\n", gc02m1_data_eeprom[11]);
+	if((gc02m1_data_eeprom[11] & 0x40)  == 0x40)
+	{
+		LOG_INF_N("group1 \n");
+		check_sum=eeprom_util_check_crc16(&gc02m1_data_eeprom[11],7,convert_crc(&gc02m1_data_eeprom[18]));
+
+	}
+        else if((gc02m1_data_eeprom[11] & 0x01) == 0x01)
+	{
+		LOG_INF_N("group2 \n");
+		check_sum=eeprom_util_check_crc16(&gc02m1_data_eeprom[20],6,convert_crc(&gc02m1_data_eeprom[26]));
+	}
+        else
+        {
+		awb_status = CRC_FAILURE;
+	}
+
+        if(check_sum)
+	{
+		awb_status = 0;
+	}
+
+	LOG_INF_N("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+}
+
 static void read_gc02m1_module_info(void)
 {
 	kal_uint16 i = 0, start_addr = 0,otp_count = 0;
