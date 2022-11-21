@@ -15,6 +15,6 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-obj-y += dsi_panel_mot_mipi_vid_cost_nt36672c_653_hdp.o
+obj-y += dsi_panel_mot_mipi_vid_csot_nt36672c_653_hdp.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
