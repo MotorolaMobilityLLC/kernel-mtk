@@ -328,11 +328,9 @@ static int mt_charger_set_property(struct power_supply *psy,
 		if (mtk_chg->chg_type != CHARGER_UNKNOWN)
 			charger_manager_force_disable_power_path(
 				cti->chg_consumer, MAIN_CHARGER, false);
-#ifdef MTK_BASE
 		else if (!cti->tcpc_kpoc)
 			charger_manager_force_disable_power_path(
 				cti->chg_consumer, MAIN_CHARGER, true);
-#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		charger_manager_cp_set_ichg(cti->chg_consumer, MAIN_CHARGER, val->intval);
