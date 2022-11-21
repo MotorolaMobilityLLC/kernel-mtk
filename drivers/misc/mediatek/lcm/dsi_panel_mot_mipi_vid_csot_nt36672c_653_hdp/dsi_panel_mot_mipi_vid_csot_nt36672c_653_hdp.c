@@ -622,9 +622,9 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 	pr_debug("%s,csot_nt cmd:%d, value = %d done\n", __func__, *lcm_cmd, *lcm_value);
 }
 
-struct LCM_DRIVER mipi_mot_vid_cost_nt36672c_hdp_653_lcm_drv = {
-	.name = "mipi_mot_vid_cost_nt36672c_hdp_653",
-	.supplier = "cost",
+struct LCM_DRIVER mipi_mot_vid_csot_nt36672c_hdp_653_lcm_drv = {
+	.name = "mipi_mot_vid_csot_nt36672c_hdp_653",
+	.supplier = "csot",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
