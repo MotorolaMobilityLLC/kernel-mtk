@@ -328,6 +328,7 @@
                 mmi,typec-middle-current = <1500000>;
                 mmi,step-first-current-comp = <0>;
                 mmi,dont-rerun-aicl;
+		mmi,support-mm8013c;
                 mmi,enable-new-sourcecap-dec;
                 mmi,disable-ignore-hysteresis;
                 mmi,chrg-temp-zones-num = <5>;
