@@ -91,7 +91,7 @@ signed int battery_get_bat_current(void)
 {
 	int curr_val;
 	bool is_charging;
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#if defined(CONFIG_MTK_DISABLE_GAUGE)  || defined(CONFIG_BATTERY_MM8013)
 	union power_supply_propval value;
 
 	/* get battery current from external "battery" power supply if support */
@@ -119,7 +119,7 @@ signed int battery_get_soc(void)
 {
 	struct mtk_battery *gm = get_mtk_battery();
 
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#if defined(CONFIG_MTK_DISABLE_GAUGE)  || defined(CONFIG_BATTERY_MM8013)
 	union power_supply_propval value;
 
 	/* get battery current from external "battery" power supply if support */
@@ -140,12 +140,18 @@ signed int battery_get_soc(void)
 
 signed int battery_get_uisoc(void)
 {
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
+	struct mtk_battery *gm = get_mtk_battery();
+
+#if defined(CONFIG_MTK_DISABLE_GAUGE)  || defined(CONFIG_BATTERY_MM8013)
 	union power_supply_propval value;
 	struct power_supply *ba_psy = power_supply_get_by_name("battery");
+	if (ba_psy) {
+		power_supply_get_property(ba_psy, POWER_SUPPLY_PROP_CAPACITY, &value);
+		pr_info("%s:get ba_psy success, ui_soc(%d)\n",__func__, value.intval);
+		return value.intval;
+	}
 #endif
 
-	struct mtk_battery *gm = get_mtk_battery();
 	if (gm != NULL) {
 		int boot_mode = gm->boot_mode;
 
@@ -157,16 +163,6 @@ signed int battery_get_uisoc(void)
 		else if (boot_mode == 0)
 			return gm->ui_soc;
 	}
-
-
-	/* get battery ui_soc from external "battery" power supply if support */
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
-	if (ba_psy) {
-		power_supply_get_property(ba_psy, POWER_SUPPLY_PROP_CAPACITY, &value);
-		pr_info("%s:get ba_psy success, ui_soc(%d)\n",__func__, value.intval);
-		return value.intval;
-	}
-#endif
 
 	return 50;
 }
@@ -210,7 +206,7 @@ signed int battery_get_bat_avg_current(void)
 {
 	bool valid;
 
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#if defined(CONFIG_MTK_DISABLE_GAUGE)  || defined(CONFIG_BATTERY_MM8013)
 		union power_supply_propval value;
 
 		/* get battery current from external "battery" power supply if support */
