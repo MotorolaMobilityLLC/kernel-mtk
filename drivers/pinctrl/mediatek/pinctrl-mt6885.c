@@ -797,7 +797,17 @@ static const struct of_device_id mt6885_pinctrl_of_match[] = {
 
 static int mt6885_pinctrl_probe(struct platform_device *pdev)
 {
-	return mtk_paris_pinctrl_probe(pdev, &mt6885_data);
+    int rc= mtk_paris_pinctrl_probe(pdev, &mt6885_data);
+#ifdef CONFIG_MOT_LYRIQ
+    if(!rc) {
+        struct mtk_pinctrl *hw = platform_get_drvdata(pdev);
+        if(hw) {
+            mtk_pinconf_drive_set_raw(hw,&mtk_pins_mt6885[156],2);
+            pr_info("set Pin-156 driviing strength 2");
+        }
+    }
+#endif
+	return rc;
 }
 
 static struct platform_driver mt6885_pinctrl_driver = {
