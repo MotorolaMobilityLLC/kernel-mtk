@@ -303,12 +303,15 @@
 		io-channels = <&pmic_auxadc AUXADC_BAT_TEMP>;
 		io-channel-names = "batt_therm";
 
-		latest_fw_version = <0x0812>;
-		first_battery_param_ver = <0x0202>;
-		second_battery_param_ver = <0x0202>;
+		latest_fw_version = <0x0815>;
+		first_battery_param_ver = <0x0203>;
+		second_battery_param_ver = <0x0203>;
+
+		first_batt_sn = "SB18D47432";
+		second_batt_sn = "SB18D47433";
 
 		first_battery_id = <0x0103>;
-		second_battery_id = <0x0102>;
+		second_battery_id = <0x0101>;
 	};
 };
 
