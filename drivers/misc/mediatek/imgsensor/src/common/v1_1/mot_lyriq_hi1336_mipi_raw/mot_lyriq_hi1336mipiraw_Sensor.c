@@ -392,6 +392,69 @@ static void set_shutter(kal_uint32 shutter)
 
 /*************************************************************************
  * FUNCTION
+ *	set_shutter_frame_length
+ *
+ * DESCRIPTION
+ *	for frame & 3A sync
+ *
+ *************************************************************************/
+static void set_shutter_frame_length(kal_uint16 shutter,
+				     kal_uint16 frame_length,
+				     kal_bool auto_extend_en)
+{
+	unsigned long flags;
+	kal_uint16 realtime_fps = 0;
+	kal_int32 dummy_line = 0;
+
+	spin_lock_irqsave(&imgsensor_drv_lock, flags);
+	imgsensor.shutter = shutter;
+	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
+
+	spin_lock(&imgsensor_drv_lock);
+	/* Change frame time */
+	if (frame_length > 1)
+		dummy_line = frame_length - imgsensor.frame_length;
+
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
+	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	spin_unlock(&imgsensor_drv_lock);
+	shutter = (shutter < imgsensor_info.min_shutter)
+			? imgsensor_info.min_shutter : shutter;
+	shutter =
+	(shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
+		? (imgsensor_info.max_frame_length - imgsensor_info.margin)
+		: shutter;
+
+	if (imgsensor.autoflicker_en) {
+		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 /
+				imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305)
+			set_max_framerate(296, 0);
+		else if (realtime_fps >= 147 && realtime_fps <= 150)
+			set_max_framerate(146, 0);
+		else {
+			/* Extend frame length */
+			write_cmos_sensor(0x020e, imgsensor.frame_length);
+		}
+	} else {
+		/* Extend frame length */
+		write_cmos_sensor(0x020e, imgsensor.frame_length);
+	}
+
+	/* Update Shutter */
+	write_cmos_sensor_8(0x020D, (shutter & 0xFF0000) >> 16 );
+	write_cmos_sensor(0x020A, shutter);
+
+	pr_debug("frame_length = %d , shutter = %d \n", imgsensor.frame_length, shutter);
+
+}	/* set_shutter_frame_length */
+/*************************************************************************
+ * FUNCTION
  *	set_gain
  *
  * DESCRIPTION
@@ -1459,6 +1522,20 @@ static kal_uint32 feature_control(
 			(UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
 	#endif
 	break;
+	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+		set_shutter_frame_length((UINT16) (*feature_data),
+					(UINT16) (*(feature_data + 1)),
+					(BOOL) (*(feature_data + 2)));
+		break;
+	case SENSOR_FEATURE_GET_FRAME_CTRL_INFO_BY_SCENARIO:
+		/*
+		 * 1, if driver support new sw frame sync
+		 * set_shutter_frame_length() support third para auto_extend_en
+		 */
+		*(feature_data + 1) = 1;
+		/* margin info by scenario */
+		*(feature_data + 2) = imgsensor_info.margin;
+		break;
 #ifdef ENABLE_PDAF
 	/******************** PDAF START >>> *********/
 	case SENSOR_FEATURE_GET_PDAF_INFO:
