@@ -526,6 +526,7 @@ static int bq2589x_set_otg_volt(struct bq2589x *bq, int volt)
 }
 EXPORT_SYMBOL_GPL(bq2589x_set_otg_volt);
 
+#if 0
 static int bq2589x_set_otg_current(struct charger_device *chg_dev, unsigned int curr)
 {
 	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
@@ -555,6 +556,39 @@ static int bq2589x_set_otg_current(struct charger_device *chg_dev, unsigned int 
 		temp << BQ2589X_BOOST_LIM_SHIFT);
 }
 EXPORT_SYMBOL_GPL(bq2589x_set_otg_current);
+#else
+static int bq2589x_set_otg_current(struct charger_device *chg_dev, u32 uA)
+{
+	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
+	u8 temp;
+	u32 curr = uA / 1000;
+
+	pr_info("set otg current %d\n", curr);
+	if (curr == 500)
+		temp = BQ2589X_BOOST_LIM_500MA;
+	else if (curr == 750)
+		temp = BQ2589X_BOOST_LIM_700MA;
+	else if (curr == 1200)
+		temp = BQ2589X_BOOST_LIM_1100MA;
+	else if (curr == 1400)
+		temp = BQ2589X_BOOST_LIM_1300MA;
+	else if (curr == 1650)
+		temp = BQ2589X_BOOST_LIM_1600MA;
+	else if (curr == 1875)
+		temp = BQ2589X_BOOST_LIM_1800MA;
+	else if (curr == 2150)
+		temp = BQ2589X_BOOST_LIM_2100MA;
+	else if (curr == 2450)
+		temp = BQ2589X_BOOST_LIM_2400MA;
+	else
+		temp = BQ2589X_BOOST_LIM_1100MA;
+
+	return bq2589x_update_bits(bq,
+		BQ2589X_REG_0A,
+		BQ2589X_BOOST_LIM_MASK,
+		temp << BQ2589X_BOOST_LIM_SHIFT);
+}
+#endif
 
 static int bq2589x_enable_charger(struct bq2589x *bq)
 {
