@@ -298,8 +298,13 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 	if (is_on) {
 		mmi_mux_typec_otg_chan(MMI_MUX_CHANNEL_TYPEC_OTG, true);
 		charger_dev_enable_otg(primary_charger, true);
+	#if defined(CONFIG_CHARGER_BQ25890) && defined(CONFIG_CHARGER_SGM41543)
+		charger_dev_set_boost_current_limit(primary_charger,
+			1200000);
+	#else
 		charger_dev_set_boost_current_limit(primary_charger,
 			1500000);
+	#endif
 		#if 0
 		{// # workaround
 			charger_dev_kick_wdt(primary_charger);
