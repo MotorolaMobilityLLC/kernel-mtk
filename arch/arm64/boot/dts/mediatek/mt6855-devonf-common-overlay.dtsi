@@ -21,8 +21,7 @@
 #include <dt-bindings/iio/mt635x-auxadc.h>
 
 &chosen {
-	bootargs_ext = "nokaslr \
-		    initcall_debug=0";
+	bootargs_ext = "initcall_debug=0";
 };
 
 &pmic_adc {
