@@ -119,7 +119,7 @@
 		ta_cv_ss_repeat_tmin = <25>;
 		vbat_cv = <4510>;
 		start_soc_min = <0>;
-		start_soc_max = <90>;
+		start_soc_max = <80>;
 		start_vbat_max = <4450>;
 		idvchg_term = <500>;
 		idvchg_step = <50>;
