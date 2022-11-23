@@ -145,8 +145,8 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	}
 	#endif
 	//EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, end
-
-       #if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART)
+       //IKSWS-174667: resolve Milan SWTP issue
+       #if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MILAN_PROJECT_SWTP_SETING_APART)
         inject_pin_status_event(swtp->tx_power_mode, rf_name);
        #else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
