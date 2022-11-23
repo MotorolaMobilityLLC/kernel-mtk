@@ -260,7 +260,7 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //preivew
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS, 0x01, 0x2b, 0x1000, 0x300},
+			{VC_PDAF_STATS, 0x01, 0x30, 0x1400, 0x300},
 #if PD_PIX_2_EN
 			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x300},
 #endif
@@ -340,7 +340,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4LeFirst = 0,
 	.i4Crop = {
 		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
-		{0, 0}, {64, 228}, {0, 0}, {2048, 1536}
+		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
 	},  //{0, 1632}
 	.iMirrorFlip = 0,
 };
