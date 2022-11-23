@@ -251,7 +251,7 @@ static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
-#if 0 //TBD: #ifdef CONFIG_MTK_HIGH_FRAME_RATE
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
 static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 {
 
@@ -271,7 +271,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*dfps_params[0].data_rate = xx; */
 	/*if HFP solution*/
 	/*dfps_params[0].horizontal_frontporch = xx;*/
-	dfps_params[0].vertical_frontporch = 880;
+	dfps_params[0].vertical_frontporch = 800;
 //	dfps_params[0].vertical_frontporch_for_low_power = 980;
 
 	/*if need mipi hopping params add here*/
@@ -374,7 +374,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->corner_pattern_width = 32;
 	params->corner_pattern_height = 32;
 #endif
-#if 0 //#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	/****DynFPS start****/
 	lcm_dfps_int(&(params->dsi));
 	/****DynFPS end****/
