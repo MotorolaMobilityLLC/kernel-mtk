@@ -163,11 +163,12 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 SENSOR_DRVNAME_MOT_GNEVAN_S5KJN1_MIPI_RAW,
                 {
                         {RST, Vol_Low, 1},
-			{DOVDD, Vol_1800, 0},
-			{DVDD, Vol_1100, 10},
+                        {SensorMCLK, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{DVDD, Vol_1100, 1},
 			{AVDD, Vol_High, 1},
-			{RST, Vol_High, 5},
-                        {SensorMCLK, Vol_High, 10},
+			{RST, Vol_High, 9},
+
                 },
         },
 #endif
@@ -177,9 +178,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
                 {
                         {RST, Vol_Low, 1},
 			{SensorMCLK, Vol_High, 1},
-                        {AVDD, Vol_2800, 0},
-                        {DVDD, Vol_High, 0},
-                        {DOVDD, Vol_1800, 0},
+                        {DVDD, Vol_High, 1},
+                        {AVDD, Vol_2800, 1},
+                        {DOVDD, Vol_1800, 1},
                         {RST, Vol_High, 5}
                 },
         },
@@ -192,7 +193,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{DOVDD, Vol_1800, 1},
 			{AVDD, Vol_2800, 1},
 			{RST, Vol_High, 2},
-                        {SensorMCLK, Vol_High, 2},
+                        {SensorMCLK, Vol_High, 5},
                 },
         },
 #endif
