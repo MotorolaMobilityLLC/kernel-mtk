@@ -223,15 +223,16 @@ static int tianma_unprepare(struct drm_panel *panel)
 		}
 	}
 
+	tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
+	tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
+	tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A, 0x00);
+	tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
+	msleep(20);
+	tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
+	msleep(120);
+
 	if(tp_gesture_flag == 0)
 	{
-		tianma_dcs_write_seq_static(ctx, 0xF0, 0x5A, 0x59);
-		tianma_dcs_write_seq_static(ctx, 0xF1, 0xA5, 0xA6);
-		tianma_dcs_write_seq_static(ctx, 0xAC, 0x0A, 0x00);
-		tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
-		msleep(20);
-		tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
-		msleep(120);
 		tianma_dcs_write_seq_static(ctx, 0xCC, 0x01, 0x00);
 		if(panel_vddio_use_ldo == 1) {
 			gpiod_set_value(ctx->reset_gpio, 0);
@@ -249,9 +250,6 @@ static int tianma_unprepare(struct drm_panel *panel)
 	}
 	else
 	{
-		tianma_dcs_write_seq_static(ctx, 0x28, 0x00, 0x00);
-		tianma_dcs_write_seq_static(ctx, 0x10, 0x00, 0x00);
-		msleep(120);
 		gpiod_set_value(ctx->reset_gpio, 1);
 		msleep(5);
 		devm_gpiod_put(ctx->dev, ctx->reset_gpio);
