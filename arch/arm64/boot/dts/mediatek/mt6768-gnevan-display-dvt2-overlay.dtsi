@@ -47,7 +47,7 @@
 
 	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -55,7 +55,7 @@
 
 	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
 			slew-rate = <1>;
 			output-high;
 		};
