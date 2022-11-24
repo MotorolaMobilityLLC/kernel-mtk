@@ -88,3 +88,12 @@
 };
 
 /* DISPSYS GPIO standardization end*/
+
+&odm {
+	disp_panel: disp_panel {
+		compatible = "mediatek,disp_panel";
+		lcm,max-level = <1750>;
+		lcm,hbm-vev = <2>;
+	};
+};
+
