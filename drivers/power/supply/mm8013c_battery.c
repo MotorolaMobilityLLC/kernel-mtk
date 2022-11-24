@@ -24,6 +24,7 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/types.h>
+#include <linux/semaphore.h>
 
 #define MM8XXX_MANUFACTURER	"MITSUMI ELECTRIC"
 #define MM8XXX_BATT_PHY "bms"
@@ -75,6 +76,8 @@ struct mm8xxx_device_info {
 	struct power_supply *dc_psy;
 	struct list_head list;
 	struct mutex lock;
+	struct semaphore suspend_lock;
+	struct wakeup_source *i2c_wake_lock;
 	u8 *cmds;
 	struct iio_channel *Batt_NTC_channel;
 	bool fake_battery;
@@ -84,6 +87,7 @@ struct mm8xxx_device_info {
 	u32 first_battery_id;
 	u32 second_battery_id;
 	u8 update_interval;
+	bool mm8xxx_suspend_flag;
 	struct mutex i2c_rw_lock;
 };
 
@@ -972,6 +976,37 @@ static int mm8xxx_battery_write_4byteCmd(struct mm8xxx_device_info *di, unsigned
 	return 0;
 }
 
+#define WAIT_I2C_COUNT 50
+#define WAIT_I2C_TIME 10
+int mmi_mm8xxx_battery_read(struct mm8xxx_device_info *di, u8 cmd)
+{
+	int ret = 0;
+	struct i2c_client *client = to_i2c_client(di->dev);
+
+	__pm_stay_awake(di->i2c_wake_lock);
+	down(&di->suspend_lock);
+	ret = mm8xxx_battery_read(di, cmd);
+	up(&di->suspend_lock);
+	__pm_relax(di->i2c_wake_lock);
+
+	return ret;
+}
+
+int mmi_mm8xxx_battery_write(struct mm8xxx_device_info *di, u8 cmd,
+				int value)
+{
+	int ret = 0;
+	struct i2c_client *client = to_i2c_client(di->dev);
+
+	__pm_stay_awake(di->i2c_wake_lock);
+	down(&di->suspend_lock);
+	ret = mm8xxx_battery_write(di, cmd, value);
+	up(&di->suspend_lock);
+	__pm_relax(di->i2c_wake_lock);
+
+	return ret;
+}
+
 /* MM8XXX Flags */
 #define MM8XXX_FLAG_DSG		BIT(0)
 #define MM8XXX_FLAG_SOCF	BIT(1)
@@ -1264,8 +1299,10 @@ static int mm8xxx_battery_read_stateofcharge(struct mm8xxx_device_info *di)
 
 	soc = mm8xxx_read(di, MM8XXX_CMD_STATEOFCHARGE);
 
-	if (soc < 0)
-		dev_dbg(di->dev, "error reading State-of-Charge\n");
+	if (soc < 0) {
+		dev_err(di->dev, "error reading State-of-Charge\n");
+		soc = 1; //Return a fake soc 1% when error
+	}
 
 	return soc;
 }
@@ -1330,8 +1367,10 @@ static int mm8xxx_battery_read_temperature(struct mm8xxx_device_info *di)
 	int temp;
 
 	temp = mm8xxx_read(di, MM8XXX_CMD_TEMPERATURE);
-	if (temp < 0)
+	if (temp < 0) {
 		dev_err(di->dev, "error reading temperature\n");
+		temp = 2981; //Return a fake temp 250C=2981-2731 when error
+	}
 
 	return temp;
 }
@@ -1557,7 +1596,6 @@ static void mm8xxx_battery_update(struct mm8xxx_device_info *di)
 	cache.health = mm8xxx_battery_read_health(di);
 	cache.cycle_count = mm8xxx_battery_read_cyclecount(di);
 	//mm8xxx_battery_temp_to_FG(di);
-
 	mm_info("soc = %d, ui_soc = %d, temperture = %d\n", cache.soc, di->cache.soc, cache.temperature);
 
 	if (input_present) {
@@ -1761,7 +1799,7 @@ static int mm8xxx_battery_get_property(struct power_supply *psy,
 	struct mm8xxx_device_info *di = power_supply_get_drvdata(psy);
 
 	mutex_lock(&di->lock);
-	if (time_is_before_jiffies(di->last_update + di->update_interval * HZ)) {
+	if (time_is_before_jiffies(di->last_update + di->update_interval * HZ) && (di->mm8xxx_suspend_flag == false)) {
 		cancel_delayed_work_sync(&di->work);
 		mm8xxx_battery_poll(&di->work.work);
 	}
@@ -2176,11 +2214,15 @@ static int mm8xxx_battery_probe(struct i2c_client *client,
 	di->chip = id->driver_data;
 	di->name = name;
 
-	di->bus.read = mm8xxx_battery_read;
-	di->bus.write = mm8xxx_battery_write;
+	di->bus.read = mmi_mm8xxx_battery_read;
+	di->bus.write = mmi_mm8xxx_battery_write;
 	di->cmds = mm8xxx_chip_data[di->chip].cmds;
 
 	mm8xxx_battery_parse_dts(di);
+
+	sema_init(&di->suspend_lock, 1);
+	di->i2c_wake_lock =
+		wakeup_source_register(di->dev, "mm8013_i2c_wake_lock");
 
 	ret = mmi_get_battery_info(di, HW_VER_CMD);
 	if (ret != MM8013_HW_VERSION) {
@@ -2283,6 +2325,39 @@ static int mm8xxx_battery_remove(struct i2c_client *client)
 	return 0;
 }
 
+static int mmi_fg_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct mm8xxx_device_info *di = i2c_get_clientdata(client);
+	mm_info("mmi_fg_suspend");
+	if (di) {
+		down(&di->suspend_lock);
+	}
+	di->mm8xxx_suspend_flag = true;
+	cancel_delayed_work_sync(&di->work);
+
+	return 0;
+}
+
+static int mmi_fg_resume(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct mm8xxx_device_info *di = i2c_get_clientdata(client);
+	mm_info("mmi_fg_resume");
+	if (di) {
+		up(&di->suspend_lock);
+	}
+	di->mm8xxx_suspend_flag = false;
+	schedule_delayed_work(&di->work, 100);
+
+	return 0;
+}
+
+static const struct dev_pm_ops mmi_fg_pm_ops = {
+	.resume		= mmi_fg_resume,
+	.suspend	= mmi_fg_suspend,
+};
+
 static const struct i2c_device_id mm8xxx_battery_id_table[] = {
 	{ "mm8118g01", MM8118G01 },
 	{ "mm8118w02", MM8118W02 },
@@ -2305,6 +2380,7 @@ static struct i2c_driver mm8xxx_battery_driver = {
 	.driver = {
 		.name = "mm8xxx-battery",
 		.of_match_table = of_match_ptr(mm8xxx_battery_of_match_table),
+		.pm     = &mmi_fg_pm_ops,
 	},
 	.probe = mm8xxx_battery_probe,
 	.remove = mm8xxx_battery_remove,
