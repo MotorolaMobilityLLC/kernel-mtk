@@ -271,14 +271,14 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 
 
 //the index order of VC_STAGGER_NE/ME/SE in array identify the order of readout in MIPI transfer
-static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[2] = {
+static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //preivew
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
-			{VC_PDAF_STATS, 0x01, 0x2b, 0x800, 0x300},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x1000, 0x300},
 #if PD_PIX_2_EN
-			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x800, 0x300},
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x300},
 #endif
 		},
 		1
@@ -286,10 +286,32 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[2] = {
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //custom2
 		{
-			{VC_STAGGER_NE, 0x00, 0x2b, 0x0780, 0x0438},
-			{VC_PDAF_STATS, 0x01, 0x2b, 0xF00, 0x10E},
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x1000, 0x180},
 #if PD_PIX_2_EN
-			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0xF00, 0x10E},
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x180},
+#endif
+		},
+		1
+	},
+	{
+		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //custom4
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0x900},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x1000, 0x240},
+#if PD_PIX_2_EN
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x240},
+#endif
+		},
+		1
+	},
+	{
+		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //custom5
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0xc00},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x800, 0x300},
+#if PD_PIX_2_EN
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x800, 0x300},
 #endif
 		},
 		1
@@ -310,6 +332,14 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 
 	case SENSOR_SCENARIO_ID_CUSTOM2:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[1],
+			sizeof(struct SENSOR_VC_INFO2_STRUCT));
+		break;
+	case SENSOR_SCENARIO_ID_CUSTOM4:
+		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[2],
+			sizeof(struct SENSOR_VC_INFO2_STRUCT));
+		break;
+	case SENSOR_SCENARIO_ID_CUSTOM5:
+		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[3],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
 		break;
 	case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
@@ -2172,6 +2202,8 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		case SENSOR_SCENARIO_ID_CUSTOM2:
+		case SENSOR_SCENARIO_ID_CUSTOM4:
+		case SENSOR_SCENARIO_ID_CUSTOM5:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		default:
@@ -2264,11 +2296,11 @@ static struct mtk_mbus_frame_desc_entry frame_desc_prev[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-      {
+	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x800,
+			.hsize = 0x1000,
 			.vsize = 0x300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
@@ -2285,11 +2317,11 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cap[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-      {
+	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x800,
+			.hsize = 0x1000,
 			.vsize = 0x300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
@@ -2306,11 +2338,11 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-      {
+	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x800,
+			.hsize = 0x1000,
 			.vsize = 0x300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
@@ -2321,8 +2353,8 @@ static struct mtk_mbus_frame_desc_entry frame_desc_hs_vid[] = {
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0780,
-			.vsize = 0x0438,
+			.hsize = 0x0800,
+			.vsize = 0x0600,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
@@ -2337,6 +2369,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1000,
+			.vsize = 0x300,
+			.user_data_desc = VC_PDAF_STATS,
+		},
+	},
 };
 static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 	{
@@ -2349,22 +2390,22 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 		},
 	},
 };
-static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = {
+static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //2048x1536@60fps
 	{
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0780,
-			.vsize = 0x0438,
+			.hsize = 0x0800,
+			.vsize = 0x0600,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
 	{
 		.bus.csi2 = {
-			.channel = 0,
+			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x0780,
-			.vsize = 0x0438,
+			.hsize = 0x1000,
+			.vsize = 0x0180,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
@@ -2375,14 +2416,34 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus3[] = {
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0500,
-			.vsize = 0x02D0,
+			.hsize = 0x0780,
+			.vsize = 0x0438,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
 };
 
-static struct mtk_mbus_frame_desc_entry frame_desc_cus4[] = {
+static struct mtk_mbus_frame_desc_entry frame_desc_cus4[] = { //sHDR
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 0x1000,
+			.vsize = 0x0900,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1000,
+			.vsize = 0x0240,
+			.user_data_desc = VC_PDAF_STATS,
+		},
+	},
+};
+static struct mtk_mbus_frame_desc_entry frame_desc_cus5[] = { //in sensor zoom
 	{
 		.bus.csi2 = {
 			.channel = 0,
@@ -2392,24 +2453,13 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus4[] = {
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
-      {
+	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
 			.hsize = 0x800,
 			.vsize = 0x300,
 			.user_data_desc = VC_PDAF_STATS,
-		},
-	},
-};
-static struct mtk_mbus_frame_desc_entry frame_desc_cus5[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0x1000,
-			.vsize = 0x0c00,
-			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
 };
