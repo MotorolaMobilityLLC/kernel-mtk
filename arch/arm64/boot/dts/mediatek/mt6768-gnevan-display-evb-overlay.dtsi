@@ -92,7 +92,7 @@
 &odm {
 	disp_panel: disp_panel {
 		compatible = "mediatek,disp_panel";
-		lcm,max-level = <1638>;
+		lcm,max-level = <1456>;
 		lcm,hbm-vev = <0>;
 	};
 };
