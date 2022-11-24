@@ -1534,34 +1534,38 @@ void kbase_csf_queue_group_terminate(struct kbase_context *kctx,
 	if (group) {
 		unsigned long flags;
 
-		spin_lock_irqsave(&kctx->csf.event_lock, flags);
-
-		dev_dbg(kbdev->dev,
-			"Remove any pending group fatal error from context %pK\n",
-			(void *)group->kctx);
-
-		list_del_init(&group->error_tiler_oom.link);
-		list_del_init(&group->error_timeout.link);
-		list_del_init(&group->error_fatal.link);
-		spin_unlock_irqrestore(&kctx->csf.event_lock, flags);
-
+                /* Stop the running of the given group */
 		term_queue_group(group);
 		kctx->csf.queue_groups[group_handle] = NULL;
+
+		mutex_unlock(&kctx->csf.lock);
+
+		/* Cancel any pending event callbacks. If one is in progress
+		 * then this thread waits synchronously for it to complete (which
+		 * is why we must unlock the context first). We already ensured
+		 * that no more callbacks can be enqueued by terminating the group.
+		 */
+		cancel_queue_group_events(group);
+
+		mutex_lock(&kctx->csf.lock);
+
+		/* Clean up after the termination */
+                spin_lock_irqsave(&kctx->csf.event_lock, flags);
+
+                dev_dbg(kbdev->dev,
+                        "Remove any pending group fatal error from context %pK\n",
+                        (void *)group->kctx);
+
+                list_del_init(&group->error_tiler_oom.link);
+                list_del_init(&group->error_timeout.link);
+                list_del_init(&group->error_fatal.link);
+                spin_unlock_irqrestore(&kctx->csf.event_lock, flags);
 	}
 
 	mutex_unlock(&kctx->csf.lock);
 	if (reset_prevented)
 		kbase_reset_gpu_allow(kbdev);
 
-	if (!group)
-		return;
-
-	/* Cancel any pending event callbacks. If one is in progress
-	 * then this thread waits synchronously for it to complete (which
-	 * is why we must unlock the context first). We already ensured
-	 * that no more callbacks can be enqueued by terminating the group.
-	 */
-	cancel_queue_group_events(group);
 	kfree(group);
 }
 
