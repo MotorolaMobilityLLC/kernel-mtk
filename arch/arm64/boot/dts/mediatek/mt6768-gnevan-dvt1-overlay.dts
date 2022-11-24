@@ -25,6 +25,6 @@
 	};
 };
 #include "mediatek/mt6768-gnevan-camera-sensor-evb-overlay.dtsi"
-#include "mediatek/mt6768-gnevan-display-evt-overlay.dtsi"
-#include <gnevan_dvt/cust.dtsi>
+#include "mediatek/mt6768-gnevan-display-dvt1-overlay.dtsi"
+#include <gnevan_dvt1/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
