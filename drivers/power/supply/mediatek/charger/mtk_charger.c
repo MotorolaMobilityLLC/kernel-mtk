@@ -5440,9 +5440,13 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (info->chg1_consumer != NULL &&
 	    boot_mode != KERNEL_POWER_OFF_CHARGING_BOOT &&
 	    boot_mode != LOW_POWER_OFF_CHARGING_BOOT)
+#ifdef CONFIG_MOTO_POWER_PATH_DISABLE
+		charger_manager_force_disable_power_path(
+			info->chg1_consumer, MAIN_CHARGER, false);
+#else
 		charger_manager_force_disable_power_path(
 			info->chg1_consumer, MAIN_CHARGER, true);
-
+#endif
 	info->init_done = true;
 	if (info->mmi.factory_mode) {
 		/* Disable charging when enter ATM mode(factory mode) */
