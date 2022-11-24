@@ -34,14 +34,9 @@
 
 #define SUPPORT_144HZ_REFRESH_RATE
 //#define DSC_DISABLE
-#define DSC_10BIT
-#ifdef DSC_10BIT
-#define DSC_BITS	10
-#define DSC_CFG		2088//40
-#else
 #define DSC_BITS	8
 #define DSC_CFG		34
-#endif
+
 
 enum panel_version{
 	PANEL_V1 = 1,
@@ -188,13 +183,14 @@ static void lcm_panel_init(struct lcm *ctx)
 #ifdef DSC_10BIT
     lcm_dcs_write_seq_static(ctx, 0x91, 0xAB, 0x28, 0x00, 0x0C, 0xC2, 0x00, 0x03, 0x1C, 0x01, 0x7E, 0x00, 0x0F, 0x08, 0xBB, 0x04, 0x3D, 0x10, 0xF0);
 #else
-    lcm_dcs_write_seq_static(ctx, 0x91, 0x89, 0x28, 0x00, 0x14, 0xC2, 0x00, 0x03, 0x1C, 0x02, 0x8C, 0x00, 0x0F, 0x05, 0x0e, 0x02, 0x8b, 0x10, 0xF0);
+    lcm_dcs_write_seq_static(ctx, 0x91, 0x89, 0x28, 0x00, 0x0C, 0xC2, 0x00, 0x03, 0x1C, 0x01, 0x7E, 0x00, 0x0F, 0x08, 0xBB, 0x04, 0x3D, 0x10, 0xF0);
 #endif
     lcm_dcs_write_seq_static(ctx, 0x2C);
     lcm_dcs_write_seq_static(ctx, 0x8B, 0x80);
 
     //FrameRate 60Hz:0x01  120HZ:0x02
     lcm_dcs_write_seq_static(ctx, 0x2F, 0x01);
+	lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0x79);
 
     /* Sleep Out */
     lcm_dcs_write_seq_static(ctx, 0x11);
@@ -344,15 +340,15 @@ static int lcm_enable(struct drm_panel *panel)
 }
 
 
-#define HFP (60)
-#define HSA (10)
-#define HBP (60)
+#define HFP (32)
+#define HSA (32)
+#define HBP (32)
 #define VFP (3449)
 #define VSA (2)
 #define VBP (5)
 #define HACT (1080)
 #define VACT (2400)
-#define PLL_CLOCK (449232)	//1210*2435*144
+#define PLL_CLOCK (413199)	//1176*2440*144
 
 static const struct drm_display_mode switch_mode_144hz = {
 	.clock		= PLL_CLOCK,
@@ -424,7 +420,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.dsc_cfg = DSC_CFG,
 		.rct_on = 1,
 		.bit_per_channel = DSC_BITS,
-		.dsc_line_buf_depth = 11,
+		.dsc_line_buf_depth = 9,
 		.bp_enable = 1,
 		.bit_per_pixel = 128,
 		.pic_height = 2400,
@@ -442,12 +438,12 @@ static struct mtk_panel_params ext_params_60hz = {
 		.slice_bpg_offset = 1085,
 		.initial_offset = 6144,
 		.final_offset = 4336,
-		.flatness_minqp = 7,
-		.flatness_maxqp = 16,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
 		.rc_model_size = 8192,
 		.rc_edge_factor = 6,
-		.rc_quant_incr_limit0 = 15,
-		.rc_quant_incr_limit1 = 15,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 
@@ -469,7 +465,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x2F, 0x01} },
 		.dfps_cmd_table[1] = {0, 5, {0x3B, 0x00, 0x07, 0x0d, 0x79} },
 	},
-	.data_rate = 1228,
+	.data_rate = 1148,
 	//.lfr_enable = 1,
 	//.lfr_minimum_fps = 60,
 	.change_fps_by_vfp_send_cmd = 1,
@@ -497,7 +493,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.dsc_cfg = DSC_CFG,
 		.rct_on = 1,
 		.bit_per_channel = DSC_BITS,
-		.dsc_line_buf_depth = 11,
+		.dsc_line_buf_depth = 9,
 		.bp_enable = 1,
 		.bit_per_pixel = 128,
 		.pic_height = 2400,
@@ -515,12 +511,12 @@ static struct mtk_panel_params ext_params_90hz = {
 		.slice_bpg_offset = 1085,
 		.initial_offset = 6144,
 		.final_offset = 4336,
-		.flatness_minqp = 7,
-		.flatness_maxqp = 16,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
 		.rc_model_size = 8192,
 		.rc_edge_factor = 6,
-		.rc_quant_incr_limit0 = 15,
-		.rc_quant_incr_limit1 = 15,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 
@@ -541,7 +537,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x2F, 0x03} },
 		.dfps_cmd_table[1] = {0, 5, {0x3B, 0x00, 0x07, 0x05, 0xD9} },
 	},
-	.data_rate = 1228,
+	.data_rate = 1148,
 	//.lfr_enable = 1,
 	//.lfr_minimum_fps = 60,
 	.change_fps_by_vfp_send_cmd = 1,
@@ -569,7 +565,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.dsc_cfg = DSC_CFG,
 		.rct_on = 1,
 		.bit_per_channel = DSC_BITS,
-		.dsc_line_buf_depth = 11,
+		.dsc_line_buf_depth = 9,
 		.bp_enable = 1,
 		.bit_per_pixel = 128,
 		.pic_height = 2400,
@@ -587,12 +583,12 @@ static struct mtk_panel_params ext_params_120hz = {
 		.slice_bpg_offset = 1085,
 		.initial_offset = 6144,
 		.final_offset = 4336,
-		.flatness_minqp = 7,
-		.flatness_maxqp = 16,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
 		.rc_model_size = 8192,
 		.rc_edge_factor = 6,
-		.rc_quant_incr_limit0 = 15,
-		.rc_quant_incr_limit1 = 15,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
@@ -612,7 +608,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x2F, 0x02} },
 		.dfps_cmd_table[1] = {0, 5, {0x3B, 0x00, 0x07, 0x02, 0x09} },
 	},
-	.data_rate = 1228,
+	.data_rate = 1148,
 	//.lfr_enable = 1,
 	//.lfr_minimum_fps = 60,
 	.change_fps_by_vfp_send_cmd = 1,
@@ -641,7 +637,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.dsc_cfg = DSC_CFG,
 		.rct_on = 1,
 		.bit_per_channel = DSC_BITS,
-		.dsc_line_buf_depth = 11,
+		.dsc_line_buf_depth = 9,
 		.bp_enable = 1,
 		.bit_per_pixel = 128,
 		.pic_height = 2400,
@@ -659,12 +655,12 @@ static struct mtk_panel_params ext_params_144hz = {
 		.slice_bpg_offset = 1085,
 		.initial_offset = 6144,
 		.final_offset = 4336,
-		.flatness_minqp = 7,
-		.flatness_maxqp = 16,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
 		.rc_model_size = 8192,
 		.rc_edge_factor = 6,
-		.rc_quant_incr_limit0 = 15,
-		.rc_quant_incr_limit1 = 15,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
 	},
@@ -684,7 +680,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.dfps_cmd_table[0] = {0, 2, {0x2F, 0x04} },
 		.dfps_cmd_table[1] = {0, 5, {0x3B, 0x00, 0x07, 0x00, 0x21} },
 	},
-	.data_rate = 1228,
+	.data_rate = 1148,
 	//.lfr_enable = 1,
 	//.lfr_minimum_fps = 60,
 	.change_fps_by_vfp_send_cmd = 1,
