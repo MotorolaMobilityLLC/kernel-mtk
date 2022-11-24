@@ -214,6 +214,15 @@ config CHARGER_BQ25890
 	  and config MTK_SWCHR_SUPPORT
 	  Set to Yes if BQ25890 is used.
 
+config MOTO_POWER_PATH_DISABLE
+	bool "MOTO_POWER_PATH_DISABLE"
+	depends on MTK_CHARGER
+	help
+	  This option enables gnevan powerpath disable customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
 config CHARGER_SGM41511
 	bool "CHARGER_SGM41511"
 	help
