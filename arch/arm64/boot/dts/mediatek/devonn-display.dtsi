@@ -32,7 +32,7 @@
 		compatible = "awinic,aw99703-bl","ktd,ktd3136";
 		reg = <0x36>;
 		id = <6>;
-		hwen-gpio = <&pio 161 1>;
+		aw99703,hwen-gpio = <&pio 161 1>;
 		lk_hwen-gpio = <161>;
 		status = "okay";
 
