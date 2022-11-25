@@ -3300,9 +3300,27 @@ static unsigned long get_queue_doorbell_pfn(struct kbase_device *kbdev,
 			 (u64)queue->doorbell_nr * CSF_HW_DOORBELL_PAGE_SIZE));
 }
 
+static int
+#if (KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE || \
+	KERNEL_VERSION(5, 11, 0) > LINUX_VERSION_CODE)
+kbase_csf_user_io_pages_vm_mremap(struct vm_area_struct *vma)
+#else
+kbase_csf_user_io_pages_vm_mremap(struct vm_area_struct *vma, unsigned long flags)
+#endif
+{
+	pr_debug("Unexpected call to mremap method for User IO pages mapping vma\n");
+	return -EINVAL;
+}
+
+static int kbase_csf_user_io_pages_vm_split(struct vm_area_struct *vma, unsigned long addr)
+{
+	pr_debug("Unexpected call to split method for User IO pages mapping vma\n");
+	return -EINVAL;
+}
+
 static void kbase_csf_user_io_pages_vm_open(struct vm_area_struct *vma)
 {
-	WARN(1, "Unexpected attempt to clone private vma\n");
+	pr_debug("Unexpected call to the open method for User IO pages mapping vma\n");
 	vma->vm_private_data = NULL;
 }
 
@@ -3314,8 +3332,10 @@ static void kbase_csf_user_io_pages_vm_close(struct vm_area_struct *vma)
 	int err;
 	bool reset_prevented = false;
 
-	if (WARN_ON(!queue))
+	if (!queue) {
+		pr_debug("Close method called for the new User IO pages mapping vma\n");
 		return;
+	}
 
 	kctx = queue->kctx;
 	kbdev = kctx->kbdev;
@@ -3359,9 +3379,12 @@ static vm_fault_t kbase_csf_user_io_pages_vm_fault(struct vm_fault *vmf)
 	struct memory_group_manager_device *mgm_dev;
 
 	/* Few sanity checks up front */
-	if ((nr_pages != BASEP_QUEUE_NR_MMAP_USER_PAGES) ||
-	    (vma->vm_pgoff != queue->db_file_offset))
+	if (!queue || (nr_pages != BASEP_QUEUE_NR_MMAP_USER_PAGES) ||
+	    (vma->vm_pgoff != queue->db_file_offset)) {
+		pr_warn("Unexpected CPU page fault on User IO pages mapping for process %s tgid %d pid %d\n",
+			current->comm, current->tgid, current->pid);
 		return VM_FAULT_SIGBUS;
+	}
 
 	mutex_lock(&queue->kctx->csf.lock);
 	kbdev = queue->kctx->kbdev;
@@ -3425,6 +3448,12 @@ exit:
 static const struct vm_operations_struct kbase_csf_user_io_pages_vm_ops = {
 	.open = kbase_csf_user_io_pages_vm_open,
 	.close = kbase_csf_user_io_pages_vm_close,
+#if KERNEL_VERSION(5, 11, 0) <= LINUX_VERSION_CODE
+	.may_split = kbase_csf_user_io_pages_vm_split,
+#else
+	.split = kbase_csf_user_io_pages_vm_split,
+#endif
+	.mremap = kbase_csf_user_io_pages_vm_mremap,
 	.fault = kbase_csf_user_io_pages_vm_fault
 };
 
