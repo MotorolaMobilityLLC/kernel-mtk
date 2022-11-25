@@ -2990,6 +2990,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		default:
 			break;
 		}
+		break;
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
 		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
