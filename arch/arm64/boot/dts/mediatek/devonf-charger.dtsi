@@ -356,3 +356,8 @@
 	mmi,adc-channel-batid = <3>;
 	mmi,adc-channel-vbat = <100>;
 };
+
+&lk_charger {
+       /* LCD brightness*/
+       led_brightness = <1023>;
+};
