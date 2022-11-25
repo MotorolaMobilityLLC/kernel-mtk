@@ -209,7 +209,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 				   struct common_audit_data *a)
 {
 	char comm[sizeof(current->comm)];
-
+	const struct cred *cred = current_cred();
 	/*
 	 * To keep stack sizes in check force programers to notice if they
 	 * start making this union too large!  See struct lsm_network_audit
@@ -219,6 +219,10 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 
 	audit_log_format(ab, " pid=%d comm=", task_tgid_nr(current));
 	audit_log_untrustedstring(ab, memcpy(comm, current->comm, sizeof(comm)));
+	if (cred) {
+		kuid_t uid =  cred->uid;
+		audit_log_format(ab, " uid=%d", uid);
+	}
 
 	switch (a->type) {
 	case LSM_AUDIT_DATA_NONE:
@@ -269,7 +273,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 			audit_log_format(ab, " ino=%lu", inode->i_ino);
 		}
 
-		audit_log_format(ab, " ioctlcmd=0x%hx", a->u.op->cmd);
+		audit_log_format(ab, " ioctlcmd=0x%08x", a->u.op->cmd);
 		audit_getcwd();
 		break;
 	}
