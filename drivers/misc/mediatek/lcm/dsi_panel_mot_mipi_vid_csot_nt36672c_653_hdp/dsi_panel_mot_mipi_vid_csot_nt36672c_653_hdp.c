@@ -106,6 +106,23 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #define FALSE 0
 #endif
 
+#define ALS_BL_MAX_BRIGHTNESS			2047	//bl max level of upper layer
+#define LCM_BL_MAX_LEVEL_DEFAULT		1456	//DVT2, PVT
+#define LCM_BL_MAX_LEVEL_MIN			1000	//bl max level min check
+/*
+#define LCM_BL_MAX_LEVEL_DVT1			1820
+#define LCM_BL_MAX_LEVEL_EVT			1750
+*/
+
+static unsigned int hbm_ver, bl_max_level = LCM_BL_MAX_LEVEL_DEFAULT;
+static bool need_get_dt = 1;
+//should keep consisent with lcm,hbm-vev in dts
+enum lcm_hbm_hwrev {
+	LCM_HBM_DEFAULT = 0, 	//dvt2, pvt
+	LCM_HBM_DVT1,		//dvt1
+	LCM_HBM_EVT		//evt
+};
+
 extern void lcm_set_bias_pin_disable(unsigned int delay);
 extern void lcm_set_bias_pin_enable(unsigned int value,unsigned int delay);
 extern void lcm_set_bias_init(unsigned int value,unsigned int delay);
@@ -178,7 +195,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 static struct LCM_setting_table bl_level[] = {
 	{0XFF, 0x01, {0X10}},
 	{0XFB, 0x01, {0X01}},
-	{0x51, 0x02, {0x3F, 0xFF}},
+	{0x51, 0x02, {0x04, 0xFF}},
 	{ REGFLAG_END_OF_TABLE, 0x00, {} },
 };
 
@@ -212,20 +229,34 @@ static struct LCM_cabc_table lcm_cabc_settings[] = {
 	{ARRAY_SIZE(lcm_cabc_setting_disable), lcm_cabc_setting_disable},
 };
 
-#if 0 //TBD: HBM support
-static bool hbm_enable = 0; //need enable for DVT/PVT.
+//HBM START, keep consistent with dts lcm,max-level / LCM_BL_MAX_LEVEL_*
+//dvt2, pvt
 static struct LCM_setting_table lcm_hbm_off[] = {
 	{0XFF, 0x01, {0X10}},
 	{0XFB, 0x01, {0X01}},
-	{0x51, 0x02, {0x06, 0x66} },
+	{0x51, 0x02, {0x05, 0xB0} },
+};
+
+//dvt1
+static struct LCM_setting_table lcm_hbm_off_dvt1[] = {
+	{0XFF, 0x01, {0X10}},
+	{0XFB, 0x01, {0X01}},
+	{0x51, 0x02, {0x07, 0x1C} },
+};
+
+//evt
+static struct LCM_setting_table lcm_hbm_off_evt[] = {
+	{0XFF, 0x01, {0X10}},
+	{0XFB, 0x01, {0X01}},
+	{0x51, 0x02, {0x06, 0xD6} },
 };
 
 static struct LCM_setting_table lcm_hbm_on[] = {
 	{0XFF, 0x01, {0X10}},
 	{0XFB, 0x01, {0X01}},
-	{0x51, 0x02, {0x7F, 0xFF} },
+	{0x51, 0x02, {0x07, 0xFF} },
 };
-#endif
+//HBM END
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned int count, unsigned char force_update)
@@ -319,6 +350,56 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 }
 #endif
 
+static int lcm_parse_dt() {
+	int ret = 0;
+    struct device_node *node = NULL;
+	char node_name[] = "mediatek,disp_panel";
+
+	LCM_LOGD("tm: enter\n");
+    node = of_find_compatible_node(NULL, NULL, node_name);
+    if (node) {
+        int ret, value;
+
+		ret = of_property_read_u32(node, "lcm,hbm-vev", &value);
+		if (!ret && value) {
+			hbm_ver = value;
+			LCM_LOGI("get lcm,hbm-vev =%d\n", hbm_ver);
+		}
+		else
+			hbm_ver = 0;
+
+#if 1 //get max brightness from dts
+		ret = of_property_read_u32(node, "lcm,max-level", &value);
+		if (!ret && value >= LCM_BL_MAX_LEVEL_MIN && value <= ALS_BL_MAX_BRIGHTNESS) {
+			bl_max_level = value;
+			LCM_LOGI("tm: get max-level, bl_max_level=%d\n", bl_max_level);
+		}
+		else {
+			bl_max_level = LCM_BL_MAX_LEVEL_DEFAULT;
+			LCM_LOGI("tm: get max-level fail ret=%d, bl_max_level=%d\n", ret, bl_max_level);
+		}
+#else //set max brightness per panel if need
+		switch(hbm_ver) {
+			case LCM_HBM_DVT1:
+				bl_max_level = LCM_BL_MAX_LEVEL_DVT1;
+				break;
+			case LCM_HBM_EVT:
+				bl_max_level = LCM_BL_MAX_LEVEL_EVT;
+				break;
+			default:
+				bl_max_level = LCM_BL_MAX_LEVEL_DEFAULT;
+				break;
+		}
+		LCM_LOGI("tm: set bl_max_level=%d\n", bl_max_level);
+#endif
+    } else {
+		bl_max_level = LCM_BL_MAX_LEVEL_DEFAULT;
+		LCM_LOGI("tm: node not found, set bl_max_level=%d\n", bl_max_level);
+    }
+
+	return ret;
+}
+
 static void lcm_get_params(struct LCM_PARAMS *params)
 {
 	memset(params, 0, sizeof(struct LCM_PARAMS));
@@ -393,6 +474,12 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	lcm_dfps_int(&(params->dsi));
 	/****DynFPS end****/
 #endif
+
+	if (need_get_dt) {
+		//get dt info when first enter
+		lcm_parse_dt();
+		need_get_dt = 0;
+	}
 }
 
 static void lcm_init_power(void)
@@ -477,13 +564,13 @@ static unsigned int lcm_compare_id(void)
 
 	read_reg_v2(0xA1, buffer, 4);
 
-	LCM_LOGI("%s,cost_nov id=0x%02x%02x%02x%02x\n", __func__,buffer[0], buffer[1],buffer[2],buffer[3]);
+	LCM_LOGI("%s,csot_nov id=0x%02x%02x%02x%02x\n", __func__,buffer[0], buffer[1],buffer[2],buffer[3]);
 	if (LCM_ID_0 == buffer[0] && LCM_ID_1 == buffer[1] && LCM_ID_2 == buffer[2] && LCM_ID_3 == buffer[3]) {
-		LCM_LOGI("%s: cost_nov 653 matched\n", __func__);
+		LCM_LOGI("%s: csot_nov 653 matched\n", __func__);
 		return 1;
 	}
 	else {
-		LCM_LOGI("%s: cost_nov 653 not matched\n", __func__);
+		LCM_LOGI("%s: csot_nov 653 not matched\n", __func__);
 		return 0;
 	}
 }
@@ -570,13 +657,23 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	unsigned int bl_lvl = level;
 
-	LCM_LOGI("%s,cost_nov backlight: level = %d\n,get default level = %d\n", __func__, level, bl_level[1].para_list[0]);
+	if (bl_max_level < LCM_BL_MAX_LEVEL_MIN || bl_max_level > ALS_BL_MAX_BRIGHTNESS) {
+		//bl_max_level recheck
+		LCM_LOGI("resume:tm: abnormal bl_max_level=%d\n, bl_max_level");
+		lcm_parse_dt();
+	}
+
+	//trans bl level for HBM case
+	bl_lvl = level*bl_max_level/ALS_BL_MAX_BRIGHTNESS;
+	//avoid black when level > 0 and low
+	if (level > 0 && !bl_lvl)
+		bl_lvl = 1;
 
 	//for 11bit
 	bl_level[2].para_list[0] = (bl_lvl&0x700)>>8;
 	bl_level[2].para_list[1] = (bl_lvl&0xFF);
 
-	LCM_LOGI("%s:cost_nov: para_list[0]=0x%x,para_list[1]=0x%x\n",__func__,bl_level[1].para_list[0],bl_level[1].para_list[1]);
+	LCM_LOGI("%s:csot:level=%d, bl_lvl=%d, para[0]=0x%x,para[1]=0x%x\n",__func__, level, bl_lvl, bl_level[2].para_list[0],bl_level[2].para_list[1]);
 	push_table(handle, bl_level,
 		sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
@@ -585,24 +682,31 @@ static void lcm_set_cmdq(void *handle, unsigned int *lcm_cmd,
 		unsigned int *lcm_count, unsigned int *lcm_value)
 {
 	switch(*lcm_cmd) {
-#if 0
 		case PARAM_HBM:
-			if(hbm_enable) {
-				if(*lcm_value) {
-					pr_info("%s: handle HBM on", __func__);
-					push_table(handle, lcm_hbm_on, ARRAY_SIZE(lcm_hbm_on), 1);
+			if(*lcm_value) {
+				pr_info("%s: handle HBM on", __func__);
+				push_table(handle, lcm_hbm_on, ARRAY_SIZE(lcm_hbm_on), 1);
+			}
+			else {
+				switch(hbm_ver) {
+					case LCM_HBM_DVT1:
+						//dvt1
+						push_table(handle, lcm_hbm_off_dvt1, ARRAY_SIZE(lcm_hbm_off_dvt1), 1);
+						pr_info("%s:v1: handle HBM off", __func__);
+						break;
+					case LCM_HBM_EVT:
+						//evt
+						push_table(handle, lcm_hbm_off_evt, ARRAY_SIZE(lcm_hbm_off_evt), 1);
+						pr_info("%s:v2: handle HBM off", __func__);
+						break;
+					default:
+						//dvt2, pvt
+						push_table(handle, lcm_hbm_off, ARRAY_SIZE(lcm_hbm_off), 1);
+						pr_info("%s: handle HBM off", __func__);
+						break;
 				}
-				else {
-					pr_info("%s: handle HBM off", __func__);
-					push_table(handle, lcm_hbm_off, ARRAY_SIZE(lcm_hbm_off), 1);
-				}
-			} else {
-				//not support in EVT
-				pr_info("%s: HBM not support in cur HW");
-				return;
 			}
 			break;
-#endif
 		case PARAM_CABC:
 			if (*lcm_value >= CABC_MODE_NUM) {
 				pr_info("%s: invalid CABC mode:%d out of CABC_MODE_NUM:", *lcm_value, CABC_MODE_NUM);
