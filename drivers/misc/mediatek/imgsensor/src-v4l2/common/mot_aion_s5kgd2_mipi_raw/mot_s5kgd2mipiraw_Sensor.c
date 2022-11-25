@@ -43,7 +43,6 @@
 #include "adaptor-subdrv.h"
 #include "adaptor-i2c.h"
 
-
 #define read_cmos_sensor_8(...) subdrv_i2c_rd_u8(__VA_ARGS__)
 #define write_cmos_sensor_8(...) subdrv_i2c_wr_u8(__VA_ARGS__)
 #define read_cmos_sensor(...) subdrv_i2c_rd_u16(__VA_ARGS__)
@@ -62,7 +61,7 @@ module_param(mot_s5kgd2_camera_debug,int, 0644);
 /***********************   Modify end    **************************************/
 #define per_frame 1
 #define MULTI_WRITE 1
-#define ENABLE_PDAF 0
+#define ENABLE_PDAF 1
 #define USE_REMOSAIC 0
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -184,12 +183,36 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2448, 0, 0, 3280, 2464},       // preview
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2448, 0, 0, 3280, 2464},       // capture
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2448, 0, 0, 3280, 2464},       // VIDEO
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2448, 0, 0, 3280, 2464},       // hight speed video
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2448, 0, 0, 3280, 2464},       // slim video
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2448, 0, 0, 3280, 2464},       // custom1
+    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // preview
+    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // capture
+    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // VIDEO
+    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // hight speed video
+    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // slim video
+    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // custom1
+};
+
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
+	.i4OffsetX = 8,
+	.i4OffsetY = 8,
+	.i4PitchX = 16,
+	.i4PitchY = 16,
+	.i4PairNum = 16,
+	.i4SubBlkW = 8,
+	.i4SubBlkH = 2,
+	.i4PosL = {
+		{9, 8}, {17, 8}, {11, 11}, {19, 11},
+		{15, 12}, {23, 12}, {13, 15}, {21, 15},
+		{9, 16}, {17, 16}, {11, 19}, {19, 19},
+		{15, 20}, {23, 20}, {13, 23}, {21, 23}
+	},
+	.i4PosR = {
+		{8, 8}, {16, 8}, {10, 11}, {18, 11},
+		{14, 12}, {22, 12}, {12, 15}, {20, 15},
+		{8, 16}, {16, 16}, {10, 19}, {18, 19},
+		{14, 20}, {22, 20}, {12, 23}, {20, 23}
+	},
+	.i4BlockNumX = 204,
+	.i4BlockNumY = 153,
 };
 
 static kal_uint16 addr_data_pair_init_mot_aion_s5kgd2[] = {
@@ -854,7 +877,15 @@ static int get_info(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
+	/* 0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
+	 * 3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode,
+	 * 5: PDAF DualPD VC mode
+	 */
+#if ENABLE_PDAF
+	sensor_info->PDAF_Support = 2;
+#else
 	sensor_info->PDAF_Support = 0;
+#endif
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
 	sensor_info->SensorClockDividCount = 3; /* not use */
@@ -1128,6 +1159,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 
 
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
+	struct SET_PD_BLOCK_INFO_T *PDAFinfo;
 
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
 		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
@@ -1288,6 +1320,9 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			(enum MSDK_SCENARIO_ID_ENUM)*(feature_data),
 			(MUINT32 *)(uintptr_t)(*(feature_data + 1)));
 		break;
+	case SENSOR_FEATURE_GET_PDAF_DATA:
+		LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
+		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
 		set_test_pattern_mode(ctx, (BOOL)*feature_data);
 		break;
@@ -1343,20 +1378,61 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		set_shutter_frame_length(ctx, (UINT32) *feature_data,
 			(UINT32) *(feature_data + 1));
 		break;
-#if 0
-	case SENSOR_FEATURE_GET_4CELL_DATA:
-		/*get 4 cell data from eeprom*/
-		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
-			LOG_INF("Read Cross Talk Start");
-			read_four_cell_from_eeprom(ctx, data);
-			LOG_INF("Read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
-				(UINT16)data[0], (UINT16)data[1],
-				(UINT16)data[2], (UINT16)data[3],
-				(UINT16)data[4], (UINT16)data[5]);
+	case SENSOR_FEATURE_GET_PDAF_INFO:
+		LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n",
+			(UINT16) *feature_data);
+
+		PDAFinfo =
+			(struct SET_PD_BLOCK_INFO_T *)
+				(uintptr_t)(*(feature_data+1));
+
+		switch (*feature_data) {
+		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
+			memcpy((void *)PDAFinfo,
+				(void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
+		default:
+			break;
 		}
 		break;
-#endif
 
+	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+		LOG_INF(
+			"SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n",
+			(UINT16) *feature_data);
+
+		/*PDAF capacity enable or not, 2p8 only full size support PDAF*/
+		switch (*feature_data) {
+		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
+		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			break;
+		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
+		case SENSOR_SCENARIO_ID_CUSTOM1:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			break;
+		}
+		break;
+	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+		LOG_INF("SENSOR_FEATURE_GET_PDAF_REG_SETTING %d",
+			(*feature_para_len));
+
+		break;
+	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+
+		break;
+	case SENSOR_FEATURE_SET_PDAF:
+		LOG_INF("PDAF mode :%d\n", *feature_data_16);
+		ctx->pdaf_mode = *feature_data_16;
+		break;
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
 		streaming_control(ctx, KAL_FALSE);
@@ -1418,7 +1494,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = rate;
 		}
 		break;
-
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
 		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
@@ -1438,6 +1513,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_prev[] = {
 			.vsize = 0x9A0,
 		},
 	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1A0,
+			.vsize = 0x990,
+			.user_data_desc = VC_PDAF_STATS,
+		},
+	},
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_cap[] = {
@@ -1447,6 +1531,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cap[] = {
 			.data_type = 0x2b,
 			.hsize = 0xCD0,
 			.vsize = 0x9A0,
+		},
+	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1A0,
+			.vsize = 0x990,
+			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
 };
@@ -1460,6 +1553,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.vsize = 0x9A0,
 		},
 	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1A0,
+			.vsize = 0x990,
+			.user_data_desc = VC_PDAF_STATS,
+		},
+	},
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
@@ -1471,6 +1573,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.vsize = 0x9A0,
 		},
 	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1A0,
+			.vsize = 0x990,
+			.user_data_desc = VC_PDAF_STATS,
+		},
+	},
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
@@ -1480,6 +1591,15 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 			.data_type = 0x2b,
 			.hsize = 0xCD0,
 			.vsize = 0x9A0,
+		},
+	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 0x1A0,
+			.vsize = 0x990,
+			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
 };
