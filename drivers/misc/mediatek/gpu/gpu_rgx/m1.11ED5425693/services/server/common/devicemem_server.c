@@ -365,6 +365,12 @@ DevmemIntCtxCreate(CONNECTION_DATA *psConnection,
 	IMG_HANDLE hPrivDataInt = NULL;
 	MMU_DEVICEATTRIBS      *psMMUDevAttrs;
 
+	/* Only allow request for a kernel context that comes from a direct bridge
+	 * (psConnection == NULL). Only the FW/KM Ctx is created over the direct bridge. */
+	PVR_LOGR_IF_FALSE(!bKernelMemoryCtx || psConnection == NULL,
+	                  "invalid bKernelMemoryCtx && psConnection",
+	                  PVRSRV_ERROR_INVALID_PARAMS);
+
 	if ((psDeviceNode->pfnCheckDeviceFeature) &&
 		PVRSRV_IS_FEATURE_SUPPORTED(psDeviceNode, MIPS))
 	{
