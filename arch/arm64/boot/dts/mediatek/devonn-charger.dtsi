@@ -175,6 +175,9 @@
 	/*boot voltage*/
 	boot_battery_voltage = <3560000>;
 
+	/* LCD brightness*/
+	led_brightness = <1023>;
+
 	/* charging current */
 	usb_charger_current = <500000>;
 	ac_charger_input_current = <1500000>;
