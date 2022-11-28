@@ -67,6 +67,11 @@ kal_uint16 addr_data_pair_custom3[] = {
 
 //custom4
 kal_uint16 addr_data_pair_custom4[] = {
-#include"setting/OV50A40_4096x2304_4C2SCG_10bit_30fps_AG255_PDVC1_4096x576_1924Msps_20220727.h"
+#include"setting/OV50A40_4096x2304_4C2SCG_STG2_10bit_30fps_AG64_PDVC2_4096x576_1924Msps_20220705.h"
+};
+
+//custom5
+kal_uint16 addr_data_pair_custom5[] = {
+#include"setting/OV50A40_4096x3072_Cropping_10bit_30fps_AG64_1924Msps_20221121.h"
 };
 #endif
