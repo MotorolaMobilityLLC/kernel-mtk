@@ -417,6 +417,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(battery_charging_enabled),
 	POWER_SUPPLY_ATTR(charging_enabled),
 	POWER_SUPPLY_ATTR(step_charging_enabled),
+	POWER_SUPPLY_ATTR(charging_enable_adc),
 	POWER_SUPPLY_ATTR(step_charging_step),
 	POWER_SUPPLY_ATTR(pin_enabled),
 	POWER_SUPPLY_ATTR(input_suspend),
