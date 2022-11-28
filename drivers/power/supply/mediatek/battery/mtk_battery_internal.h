@@ -894,6 +894,11 @@ struct mtk_battery {
 	int algo_ocv_to_soc;
 	int algo_vtemp;
 
+#ifdef CONFIG_BATTERY_MM8013
+/* cust batt_temp read fg */
+	int battery_tmp_to_enable_extfg;
+#endif
+
 	bool is_reset_aging_factor;
 	int aging_factor;
 

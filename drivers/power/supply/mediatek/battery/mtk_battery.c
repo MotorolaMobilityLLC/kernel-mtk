@@ -317,6 +317,27 @@ int battery_get_boot_mode(void)
 	return boot_mode;
 }
 
+#ifdef CONFIG_BATTERY_MM8013
+/* ============================================================ */
+/* custom setting */
+/* ============================================================ */
+static bool get_batt_temp_from_fg(void)
+{
+	struct device_node *np = of_find_node_by_path("/odm");
+	int val;
+
+	if (of_property_read_u32(np, "BATTERY_TMP_TO_ENABLE_EXTFG", &val)) {
+		bm_err("Get BATTERY_TMP_TO_ENABLE_EXTFG failed\n");
+		of_node_put(np);
+		return -1;
+	}
+	bm_err("Get BATTERY_TMP_TO_ENABLE_EXTFG %d\n",val);
+	of_node_put(np);
+
+	return val;
+}
+#endif
+
 bool is_fg_disabled(void)
 {
 	return gm.disableGM30;
@@ -629,12 +650,17 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 #ifdef CONFIG_BATTERY_MM8013
-		ret = mmi_get_prop_from_bms(POWER_SUPPLY_PROP_TEMP,&prop);
-		if (ret < 0) {
-			pr_err("[%s]Error getting BMS TEMP ret = %d\n", __func__, ret);
-			val->intval = 250;
+		if (gm.battery_tmp_to_enable_extfg) {
+			ret = mmi_get_prop_from_bms(POWER_SUPPLY_PROP_TEMP,&prop);
+			if (ret < 0) {
+				pr_err("[%s]Error getting BMS TEMP ret = %d\n", __func__, ret);
+				val->intval = 250;
+			} else {
+				val->intval = prop.intval;
+			}
+			bm_err("%s event, TEMP:%d\n", __func__, val->intval);
 		} else {
-			val->intval = prop.intval;
+			val->intval = gm.tbat_precise;
 		}
 		if (gm.fixed_bat_tmp != 0xffff) {
 			gm.tbat_precise = gm.fixed_bat_tmp * 10;
@@ -1906,14 +1932,16 @@ int force_get_tbat_internal(bool update)
 	}
 
 #ifdef CONFIG_BATTERY_MM8013
-	ret = mmi_get_prop_from_bms(POWER_SUPPLY_PROP_TEMP,&prop);
-	if (ret < 0) {
-		pr_err("[%s]Error getting BMS TEMP ret = %d\n", __func__, ret);
-		bat_temperature_val = 250;
-	} else {
-		bat_temperature_val = prop.intval;
+	if (gm.battery_tmp_to_enable_extfg) {
+		ret = mmi_get_prop_from_bms(POWER_SUPPLY_PROP_TEMP,&prop);
+		if (ret < 0) {
+			pr_err("[%s]Error getting BMS TEMP ret = %d\n", __func__, ret);
+			bat_temperature_val = 250;
+		} else {
+			bat_temperature_val = prop.intval;
+		}
+		bm_err("%s event, temp:%d\n", __func__, bat_temperature_val);
 	}
-	bm_err("%s event, temp:%d\n", __func__, bat_temperature_val);
 #endif
 	gm.tbat_precise = bat_temperature_val;
 
@@ -4821,6 +4849,10 @@ static int __init battery_probe(struct platform_device *dev)
 		gm.bat_nb.notifier_call = battery_callback;
 		register_charger_manager_notifier(gm.pbat_consumer, &gm.bat_nb);
 	}
+
+#ifdef CONFIG_BATTERY_MM8013
+	gm.battery_tmp_to_enable_extfg = get_batt_temp_from_fg();
+#endif
 
 	battery_debug_init();
 
