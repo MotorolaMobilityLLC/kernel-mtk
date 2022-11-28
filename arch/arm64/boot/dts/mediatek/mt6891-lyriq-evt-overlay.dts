@@ -21,13 +21,13 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "lyriq";
-			mot,board-id = <0x43 0xA100>;
+			mot,board-id = <0x43 0xA200>;
 		};
 	};
 };
 
 &odm {
-	BATTERY_TMP_TO_ENABLE_EXTFG = <0>;
+	BATTERY_TMP_TO_ENABLE_EXTFG = <1>;
 };
 
 #include <lyriq_evb/cust.dtsi>
