@@ -179,19 +179,28 @@
 	};
 };
 
+//&spi5 {
+//	st54spi: st54spi@0 {
+//		compatible = "st,st54spi";
+//		reg = <0>;
+//		spi-max-frequency = <1000000>;
+//		gpio-power_nreset = <16>;
+//		gpio-power_nreset-std = <&pio 16 0x00>;
+//		power_mode = "ST54J";
+//		pinctrl-names = "pinctrl_state_mode_spi",
+//				"pinctrl_state_mode_idle";
+//		pinctrl-0 = <&pinctrl_state_mode_spi>;
+//		pinctrl-1 = <&pinctrl_state_mode_idle>;
+//		status = "okay";
+//	};
+//};
 &spi5 {
-	st54spi: st54spi@0 {
-		compatible = "st,st54spi";
+	p61: p61@0 {
+		compatible = "nxp,p61";
 		reg = <0>;
-		spi-max-frequency = <1000000>;
-		gpio-power_nreset = <16>;
-		gpio-power_nreset-std = <&pio 16 0x00>;
-		power_mode = "ST54J";
-		pinctrl-names = "pinctrl_state_mode_spi",
-				"pinctrl_state_mode_idle";
-		pinctrl-0 = <&pinctrl_state_mode_spi>;
-		pinctrl-1 = <&pinctrl_state_mode_idle>;
-		status = "okay";
+		spi-max-frequency = <20000000>;
+                nxp,nfcc = "4-0028";
+//                nxp,p61-rst = <&gpio2 5 0>;
 	};
 };
 &pio {
