@@ -4620,6 +4620,19 @@ page_owner=on loop.max_part=7";
 		phy-names = "dphy";
 	};
 
+        swtp: swtp {
+                compatible = "mediatek, swtp-eint";
+        };
+        swtp_1: swtp_1 {
+                compatible = "mediatek, swtp1-eint";
+        };
+        swtp_2: swtp_2 {
+                compatible = "mediatek, swtp2-eint";
+        };
+        swtp_3: swtp_3 {
+                compatible = "mediatek, swtp3-eint";
+        };
+
 	dsi_te: dsi_te {
 		compatible = "mediatek, dsi_te-eint";
 		status = "disabled";
