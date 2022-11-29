@@ -78,7 +78,13 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 
 	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
+        #if defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+        CCCI_LEGACY_ERR_LOG(-1, SYS,"%s ret =%d\n",__func__, ret);
+        #endif
 	power_mode = swtp->tx_power_mode;
+        #if defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+        CCCI_LEGACY_ERR_LOG(-1, SYS,"%s swtp->tx_power_mode =%d\n",__func__, swtp->tx_power_mode);
+        #endif
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	if (ret != 0)
@@ -150,6 +156,20 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2]);
 	}
 	// modify by wt.longyili for swtp end
+        #elif defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+	if ((swtp->gpio_state[0] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[1] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[2] == SWTP_EINT_PIN_PLUG_OUT)&&(swtp->gpio_state[3] == SWTP_EINT_PIN_PLUG_OUT)) {
+		swtp->tx_power_mode = SWTP_DO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+			"--------SWTP_DO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:gpio168-ANT8=%d, gpio169-Ant2=%d, gpio170-Ant1=%d, gpio171-Ant0=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2],swtp->gpio_state[3]);
+	}
+        else {
+		swtp->tx_power_mode = SWTP_NO_TX_POWER;
+		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
+      	     "-------SWTP_NO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:gpio168-ANT8=%d, gpio169-Ant2=%d, gpio170-Ant1=%d, gpio171-Ant0=%d\n",
+			__func__, swtp->tx_power_mode, swtp->gpio_state[0], swtp->gpio_state[1], swtp->gpio_state[2],swtp->gpio_state[3]);
+	}
+
 	#else
 	for (i = 0; i < MAX_PIN_NUM; i++) {
 		if (swtp->gpio_state[i] == SWTP_EINT_PIN_PLUG_IN) {
@@ -160,7 +180,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	#endif
 	//EKELLIS-137 liangnengjie.wt, SWTP logic modify , 20210421, for RF swtp function fali, end
 
-       #if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+       #if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
         inject_pin_status_event(swtp->tx_power_mode, rf_name);
        #else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
@@ -367,7 +387,7 @@ int swtp_init(int md_id)
 
 	//EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, start
         //+EKMAUI-7, zhouxin2.wt, RF Bring up swtp cfg, 20220402
-	#if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART)
+	#if defined(CONFIG_MOTO_ELLIS_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_TONGA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_MAUI_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
 	swtp_data[md_id].tx_power_mode = SWTP_DO_TX_POWER;
 	#else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
