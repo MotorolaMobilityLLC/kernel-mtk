@@ -58,10 +58,4 @@
  */
 /* #define PLAT_DEFAULT_TEE_AFFINITY_MASK (0xXX)  */
 
-#ifdef CONFIG_MACH_MT6893
-#define TEE_WORKER_BIG_CORE             1
-#define PLAT_DEFAULT_TEE_AFFINITY_MASK  (0xF0)
-#define BIG_CORE_SWITCH_AFFINITY_MASK   (0xF0)
-#endif
-
 #endif /* _MC_DRV_PLATFORM_H_ */
