@@ -85,6 +85,34 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint41>
+            <eint168>
+                <varName>SWTP</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint168>
+            <eint169>
+                <varName>SWTP_1</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint169>
+            <eint170>
+                <varName>SWTP_2</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint170>
+            <eint171>
+                <varName>SWTP_3</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint171>
         </module>
         <module name="gpio">
             <count>227</count>
@@ -1856,8 +1884,8 @@
                 <ies>true</ies>
             </gpio167>
             <gpio168>
-                <eint_mode>false</eint_mode>
-                <def_mode>6</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
@@ -1866,8 +1894,8 @@
                 <ies>true</ies>
             </gpio168>
             <gpio169>
-                <eint_mode>false</eint_mode>
-                <def_mode>6</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
@@ -1876,8 +1904,8 @@
                 <ies>true</ies>
             </gpio169>
             <gpio170>
-                <eint_mode>false</eint_mode>
-                <def_mode>6</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
@@ -1886,8 +1914,8 @@
                 <ies>true</ies>
             </gpio170>
             <gpio171>
-                <eint_mode>false</eint_mode>
-                <def_mode>6</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
