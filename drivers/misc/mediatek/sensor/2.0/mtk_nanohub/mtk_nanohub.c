@@ -766,7 +766,7 @@ static void mtk_nanohub_init_sensor_info(void)
 	p = &sensor_state[SENSOR_TYPE_TAP];
 	p->sensorType = SENSOR_TYPE_TAP;
 	p->rate = SENSOR_RATE_ONCHANGE;
-	p->gain = 1;
+	p->gain = 1000;
 	strlcpy(p->name, "Tap", sizeof(p->name));
 	strlcpy(p->vendor, "motorola", sizeof(p->vendor));
 }
