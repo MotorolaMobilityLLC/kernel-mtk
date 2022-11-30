@@ -34,7 +34,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/power_supply.h>
-#include "moto_chg_tcmd.h"
+#include <linux/power/moto_chg_tcmd.h>
 #ifdef USE_LIST_HEAD
 #include <linux/list.h>
 #endif
