@@ -12,8 +12,7 @@
 #include "mtk_charger_algorithm_class.h"
 #include <linux/power_supply.h>
 #include "mtk_smartcharging.h"
-#include "moto_chg_tcmd.h"
-
+#include <linux/power/moto_chg_tcmd.h>
 
 #define CHARGING_INTERVAL 10
 #define CHARGING_FULL_INTERVAL 20

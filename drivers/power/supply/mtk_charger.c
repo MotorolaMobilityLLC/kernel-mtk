@@ -62,7 +62,7 @@
 
 #include "mtk_charger.h"
 #include "mtk_battery.h"
-#include "moto_chg_tcmd.h"
+#include <linux/power/moto_chg_tcmd.h>
 #include <linux/of_gpio.h>
 
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX)
