@@ -307,6 +307,7 @@
 };
 
 &i2c8 {
+	clock-frequency = <1000000>;
 	mtk_camera_eeprom1:camera_eeprom1@51 {
 		compatible = "mediatek,camera_eeprom";
 		reg = <0x51>;
