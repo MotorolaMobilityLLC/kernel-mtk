@@ -28,9 +28,9 @@
 #include <linux/wait.h>		/* For wait queue*/
 #include <net/sock.h>		/* netlink */
 #include <linux/suspend.h>
+#include <linux/power/moto_chg_tcmd.h>
 #include "mtk_battery.h"
 #include "mtk_battery_table.h"
-#include "moto_chg_tcmd.h"
 
 struct tag_bootmode {
 	u32 size;
