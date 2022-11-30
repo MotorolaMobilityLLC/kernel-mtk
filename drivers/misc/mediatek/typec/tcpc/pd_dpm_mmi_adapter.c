@@ -95,7 +95,7 @@ static int mmi_hmac_sha256(u8 *key, u8 ksize,uint32_t *plaintext,
         return -ENOMEM;
     }
 
-    data_out = kzalloc(sizeof(*data_out) * psize * 4,GFP_KERNEL);
+    data_out = kzalloc(sizeof(*data_out) * psize * 8,GFP_KERNEL);
     if (!data_out) {
         kfree(data_in);
         return -ENOMEM;
