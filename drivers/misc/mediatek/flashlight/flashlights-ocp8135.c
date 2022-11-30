@@ -300,6 +300,7 @@ static int ocp8135_ioctl(unsigned int cmd, unsigned long arg)
 		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		ocp8135_set_level(fl_arg->arg);
+		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
