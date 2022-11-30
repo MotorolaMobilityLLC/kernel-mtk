@@ -16,8 +16,8 @@
 #include <linux/sysfs.h>
 #include <linux/wait.h>
 #include <linux/ktime.h>
+#include <linux/power/moto_chg_tcmd.h>
 #include "mtk_gauge.h"
-#include "moto_chg_tcmd.h"
 
 
 #define NETLINK_FGD 26
