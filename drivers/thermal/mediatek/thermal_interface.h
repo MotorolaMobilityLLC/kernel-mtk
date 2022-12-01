@@ -115,6 +115,18 @@ struct md_info {
 	struct md_thermal_actuator_t *actuator_info;
 };
 
+struct pid_term_info {
+	int limit_state;
+	int p;
+	int i;
+	int d;
+};
+
+struct pid_info {
+	int pid_num;
+	struct pid_term_info *pid_term_data;
+};
+
 extern void update_ap_ntc_headroom(int temp, int polling_interval);
 extern int get_thermal_headroom(enum headroom_id id);
 extern int set_cpu_min_opp(int gear, int opp);

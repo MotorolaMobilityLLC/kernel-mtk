@@ -84,6 +84,7 @@ struct frs_info frs_data;
 EXPORT_SYMBOL(frs_data);
 
 static struct md_info md_info_data;
+static struct pid_info pid_info_data;
 
 #ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
 int scrn_nl_send_to_user(void *buf, int size)
@@ -1037,6 +1038,87 @@ static ssize_t sports_mode_store(struct kobject *kobj,
 	return count;
 }
 
+static ssize_t pid_info_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf)
+{
+	int len = 0, i;
+	struct pid_term_info *pid_data;
+
+	if (pid_info_data.pid_num <= 0) {
+		len += snprintf(buf + len, PAGE_SIZE - len, "\n");
+		return len;
+	}
+
+	pid_data = pid_info_data.pid_term_data;
+	for (i = 0; i < pid_info_data.pid_num; i++) {
+		if (i > 0)
+			len += snprintf(buf + len, PAGE_SIZE - len, ",");
+
+		len += snprintf(buf + len, PAGE_SIZE - len, "%d,%d,%d,%d",
+			pid_data[i].limit_state,
+			pid_data[i].p,
+			pid_data[i].i,
+			pid_data[i].d);
+	}
+
+	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
+
+	return len;
+}
+
+static ssize_t pid_info_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	char cmd[4];
+	int num = 0, len = 0, i, state, p_term, i_term, d_term;
+	struct pid_term_info *pid_data;
+
+	if (sscanf(buf, "%d %3s%n", &num, cmd, &len) != 2) {
+		pr_info("%s: wrong scan info type and num %s\n", __func__, buf);
+		return -EINVAL;
+	}
+
+	if (strncmp(cmd, "PID", 3) != 0) {
+		pr_info("%s: wrong info type=%s\n", __func__, cmd);
+		return -EINVAL;
+	}
+
+	pid_data = pid_info_data.pid_term_data;
+	if (pid_info_data.pid_num != num && pid_data != NULL) {
+		devm_kfree(tm_data.dev, pid_data);
+		pid_data = NULL;
+	}
+
+	if (!pid_data) {
+		pid_data = devm_kcalloc(tm_data.dev, num,
+			sizeof(struct pid_term_info), GFP_KERNEL);
+		if (!pid_data)
+			return -ENOMEM;
+
+		pid_info_data.pid_term_data = pid_data;
+		pid_info_data.pid_num = num;
+	}
+
+	buf += len;
+
+	pid_data = pid_info_data.pid_term_data;
+	for (i = 0; i < pid_info_data.pid_num; i++) {
+		if (sscanf(buf, " %d %d %d %d%n", &state, &p_term, &i_term, &d_term, &len) == 4) {
+			buf += len;
+			pid_data[i].limit_state = state;
+			pid_data[i].p = p_term;
+			pid_data[i].i = i_term;
+			pid_data[i].d = d_term;
+		} else {
+			pr_info("%s: wrong scan info type and num %s\n", __func__, buf);
+			return -EINVAL;
+		}
+	}
+
+	return count;
+}
+
+
 static struct kobj_attribute ttj_attr = __ATTR_RW(ttj);
 static struct kobj_attribute power_budget_attr = __ATTR_RW(power_budget);
 static struct kobj_attribute cpu_info_attr = __ATTR_RO(cpu_info);
@@ -1059,6 +1141,7 @@ static struct kobj_attribute min_ttj_attr = __ATTR_RW(min_ttj);
 static struct kobj_attribute min_throttle_freq_attr =
 	__ATTR_RW(min_throttle_freq);
 static struct kobj_attribute sports_mode_attr = __ATTR_RW(sports_mode);
+static struct kobj_attribute pid_info_attr = __ATTR_RW(pid_info);
 
 
 static struct attribute *thermal_attrs[] = {
@@ -1083,6 +1166,7 @@ static struct attribute *thermal_attrs[] = {
 	&utc_count_attr.attr,
 	&min_throttle_freq_attr.attr,
 	&sports_mode_attr.attr,
+	&pid_info_attr.attr,
 	NULL
 };
 static struct attribute_group thermal_attr_group = {
