@@ -11,6 +11,12 @@
  * GNU General Public License for more details.
  */
 
+&mt6375_typec {
+       tcpc,en_wd;
+       tcpc,en_wd_sbu_polling;
+       tcpc,en_wd_polling_only;
+};
+
 &lk_charger {
 	/* charging current */
 	usb_charger_current = <500000>;
