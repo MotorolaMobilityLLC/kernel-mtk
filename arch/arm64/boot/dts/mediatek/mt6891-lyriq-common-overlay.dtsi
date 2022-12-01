@@ -201,19 +201,31 @@
 		spi-max-frequency = <20000000>;
                 nxp,nfcc = "4-0028";
 //                nxp,p61-rst = <&gpio2 5 0>;
+		pinctrl-names = "pinctrl_state_mode_spi",
+				"pinctrl_state_mode_idle";
+		pinctrl-0 = <&pinctrl_state_mode_spi>;
+		pinctrl-1 = <&pinctrl_state_mode_idle>;
+		status = "okay";
 	};
 };
 &pio {
 	pinctrl_state_mode_spi: pinctrl_state_mode_spi {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO37__FUNC_SPI5_A_CSB>;
-			bias-disable;
+			pinmux = <PINMUX_GPIO36__FUNC_SPI5_A_CLK>,
+				 <PINMUX_GPIO37__FUNC_SPI5_A_CSB>,
+				 <PINMUX_GPIO38__FUNC_SPI5_A_MI>,
+				 <PINMUX_GPIO39__FUNC_SPI5_A_MO>;
+			drive-strength = <2>;
 		};
 	};
 	pinctrl_state_mode_idle: pinctrl_state_mode_idle {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO37__FUNC_GPIO37>;
-			bias-disable;
+			pinmux = <PINMUX_GPIO36__FUNC_GPIO36>,
+				 <PINMUX_GPIO37__FUNC_GPIO37>,
+				 <PINMUX_GPIO38__FUNC_GPIO38>,
+				 <PINMUX_GPIO39__FUNC_GPIO39>;
+			slew-rate = <1>;
+			output-low;
 		};
 	};
 };
