@@ -44,6 +44,7 @@ static  struct imgsensor_struct *imgsensor;
 #define LYRIQ_OV50A_EEPROM_CRC_QPD_SIZE 3568
 #define LYRIQ_OV50A_EEPROM_CRC_OIS_SR_SIZE 22
 #define LYRIQ_OV50A_EEPROM_CRC_AK7323_OIS_SIZE 168
+#define LYRIQ_OV50A_EEPROM_CRC_AF_SYNC_SIZE 16
 
 static lyriq_ois_cal_addr_data_t ois_sr_data[LYRIQ_OV50A_EEPROM_CRC_OIS_SR_SIZE] = {{0}};
 static lyriq_ois_cal_addr_data_t ak7323_ois_data[LYRIQ_OV50A_EEPROM_CRC_AK7323_OIS_SIZE] = {{0}};
@@ -344,6 +345,19 @@ static calibration_status_t LYRIQ_OV50A_check_pdaf_data(void *data)
 	return NO_ERRORS;
 }
 
+static calibration_status_t LYRIQ_OV50A_check_af_sync_data(void *data)
+{
+        struct LYRIQ_OV50A_eeprom_t *eeprom = (struct LYRIQ_OV50A_eeprom_t*)data;
+
+        if (!eeprom_util_check_crc16(eeprom->af_sync_data, LYRIQ_OV50A_EEPROM_CRC_AF_SYNC_SIZE,
+                convert_crc(eeprom->af_sync_crc))) {
+                LOG_INF("AF SYNC CRC Fails!");
+                return CRC_FAILURE;
+        }
+        LOG_INF("AF SYNC CRC Pass");
+        return NO_ERRORS;
+}
+
 static void LYRIQ_OV50A_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
@@ -488,6 +502,7 @@ void LYRIQ_OV50A_eeprom_format_calibration_data(struct imgsensor_struct *pImgsen
 	calibration_status.awb = LYRIQ_OV50A_check_awb_data(LYRIQ_OV50A_eeprom);
 	calibration_status.lsc = LYRIQ_OV50A_check_lsc_data_mtk(LYRIQ_OV50A_eeprom);
 	calibration_status.pdaf = LYRIQ_OV50A_check_pdaf_data(LYRIQ_OV50A_eeprom);
+	calibration_status.af_sync = LYRIQ_OV50A_check_af_sync_data(LYRIQ_OV50A_eeprom);
 	calibration_status.dual = NO_ERRORS;
 
 	LYRIQ_OV50A_eeprom_get_mnf_data((void *)LYRIQ_OV50A_eeprom, &mnf_info);
@@ -495,9 +510,9 @@ void LYRIQ_OV50A_eeprom_format_calibration_data(struct imgsensor_struct *pImgsen
 	get_ak7323_ois_data(LYRIQ_OV50A_eeprom);
 	get_ak7323_ois_data(LYRIQ_OV50A_eeprom);
 
-	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, af_sync:%d, dual:%d",
 	        calibration_status.mnf, calibration_status.af, calibration_status.awb,
-	        calibration_status.lsc, calibration_status.pdaf, calibration_status.dual);
+	        calibration_status.lsc, calibration_status.pdaf, calibration_status.af_sync, calibration_status.dual);
 }
 
 mot_calibration_status_t *LYRIQ_OV50A_eeprom_get_calibration_status(void)
