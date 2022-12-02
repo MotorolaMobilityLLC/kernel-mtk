@@ -1969,7 +1969,6 @@ static void sgm41543_charger_shutdown(struct i2c_client *client)
 	struct sgm41543 *bq = i2c_get_clientdata(client);
 	sgm41543_disable_otg(bq);
 	dev_info(bq->dev, "%s: shutdown\n", __func__);
-	power_supply_unregister(bq->psy);
 
 #ifdef WT_COMPILE_FACTORY_VERSION
 	sgm41543_enable_vbus(bq->chg_dev,true);
