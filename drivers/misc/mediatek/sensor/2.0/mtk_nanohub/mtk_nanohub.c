@@ -682,7 +682,7 @@ static void mtk_nanohub_init_sensor_info(void)
 
 	p = &sensor_state[SENSOR_TYPE_OIS];
 	p->sensorType = SENSOR_TYPE_OIS;
-	p->gain = 1000000;
+	p->gain = 100000; /* ois data range [0, 4095], avoid int32 overflow */
 	strlcpy(p->name, "ois", sizeof(p->name));
 	strlcpy(p->vendor, "mtk", sizeof(p->vendor));
 
