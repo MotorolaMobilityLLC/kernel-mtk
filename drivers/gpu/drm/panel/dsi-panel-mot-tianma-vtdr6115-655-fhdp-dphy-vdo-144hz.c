@@ -140,6 +140,8 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 
 static void lcm_panel_init(struct lcm *ctx)
 {
+	lcm_dcs_write_seq_static(ctx, 0xF0, 0xAA, 0x10);
+	lcm_dcs_write_seq_static(ctx, 0xD0, 0x84,0x35,0x50,0x14,0x20,0x00,0x29,0x07,0x17,0x19,0x00,0x00,0x07,0x17,0x1a,0x00,0x00,0x0b,0x05,0x05,0x17,0x17);//swire pulse:ELVSS 30pulse-normal 24pulse-HBM
 	lcm_dcs_write_seq_static(ctx, 0x03, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x35);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x20);
@@ -172,15 +174,16 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x65, 0x03);
 	lcm_dcs_write_seq_static(ctx, 0xf4, 0x03);
 
+	/* Sleep Out */
+	lcm_dcs_write_seq_static(ctx, 0x11);
+	msleep(120);
+
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
 	lcm_dcs_write_seq_static(ctx, 0xf3, 0x02);
 
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0xf0, 0xaa, 0x00);
 
-	/* Sleep Out */
-	lcm_dcs_write_seq_static(ctx, 0x11);
-	msleep(120);
 	/* Display On */
 	lcm_dcs_write_seq_static(ctx, 0x29);
 
@@ -222,7 +225,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			}
 			gpiod_set_value(pm_en_pin, gpio_status);
 			devm_gpiod_put(ctx->dev, pm_en_pin);
-			usleep_range(1000, 1001);
+			usleep_range(3000, 3001);
 		}
 	} else {
 		for (i=3; i >= 0; i--) {
@@ -234,7 +237,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			}
 			gpiod_set_value(pm_en_pin, gpio_status);
 			devm_gpiod_put(ctx->dev, pm_en_pin);
-			usleep_range(1000, 1001);
+			usleep_range(3000, 3001);
 		}
 	}
 	return 0;
