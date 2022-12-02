@@ -436,6 +436,7 @@ typedef struct {
 	MINT32 af;
 	MINT32 lsc;
 	MINT32 pdaf;
+	MINT32 af_sync;
 	MINT32 dual;
 } mot_calibration_status_t;
 
