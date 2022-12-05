@@ -146,16 +146,20 @@ static void lcm_panel_init(struct lcm *ctx)
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x05);
     lcm_dcs_write_seq_static(ctx, 0xB5, 0x7F, 0x00, 0x29, 0x00);
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x0B);
-    lcm_dcs_write_seq_static(ctx, 0x00, 0x2c, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0xB5, 0x00, 0x2c, 0x00);
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x10);
     lcm_dcs_write_seq_static(ctx, 0xB5, 0x29, 0x29, 0x29, 0x29, 0x29);
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x16);
-    lcm_dcs_write_seq_static(ctx, 0x0b, 0x19, 0x00, 0x00, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0xB5, 0x0b, 0x19, 0x00, 0x00, 0x00);
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x1b);
-    lcm_dcs_write_seq_static(ctx, 0x0b, 0x1a, 0x00, 0x00, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0xB5, 0x0b, 0x1a, 0x00, 0x00, 0x00);
 
+    lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0xB7, 0x33, 0x33, 0x33, 0x33, 0x33, 0x21, 0x0f, 0xed, 0xca, 0x86, 0x42, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0x6F, 0x0C);
+    lcm_dcs_write_seq_static(ctx, 0xB7, 0x05, 0x55, 0x55, 0x15, 0x00, 0x00, 0x00);
     lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x08);
-    lcm_dcs_write_seq_static(ctx, 0xE1, 0x00, 0x73, 0x73, 0x73, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0xE1, 0x00);
     lcm_dcs_write_seq_static(ctx, 0xFF, 0xAA, 0x55, 0xA5, 0x80);
     lcm_dcs_write_seq_static(ctx, 0x6F, 0x1D);
     lcm_dcs_write_seq_static(ctx, 0xF2, 0x05);
@@ -167,10 +171,7 @@ static void lcm_panel_init(struct lcm *ctx)
     lcm_dcs_write_seq_static(ctx, 0x2A, 0x00, 0x00, 0x04, 0x37);
     lcm_dcs_write_seq_static(ctx, 0x2B, 0x00, 0x00, 0x09, 0x5F);
 
-    lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0xAB);
-//	lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x00, 0x40);
-
-    lcm_dcs_write_seq_static(ctx, 0x82, 0xB0);
+    lcm_dcs_write_seq_static(ctx, 0x82, 0xB2);
     lcm_dcs_write_seq_static(ctx, 0x88, 0x01, 0x02, 0x1C, 0x08, 0x78);
 #ifdef DSC_DISABLE
 	lcm_dcs_write_seq_static(ctx, 0x03, 0x00);
@@ -242,17 +243,34 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			usleep_range(1000, 1001);
 		}
 	} else {
-		for (i=2; i >= 0; i--) {
-			pm_en_pin = NULL;
-			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
-			if (IS_ERR(pm_en_pin)) {
-				pr_err("cannot get bias-gpios[%d] %ld\n", i, PTR_ERR(pm_en_pin));
-				return PTR_ERR(pm_en_pin);
-			}
-			gpiod_set_value(pm_en_pin, gpio_status);
-			devm_gpiod_put(ctx->dev, pm_en_pin);
-			usleep_range(1000, 1001);
+		pm_en_pin = NULL;
+		pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", 2, GPIOD_OUT_LOW);
+		if (IS_ERR(pm_en_pin)) {
+			pr_err("cannot get bias-gpios[%d] %ld\n", 2, PTR_ERR(pm_en_pin));
+			return PTR_ERR(pm_en_pin);
 		}
+		gpiod_set_value(pm_en_pin, gpio_status);
+		devm_gpiod_put(ctx->dev, pm_en_pin);
+		usleep_range(1000, 1001);
+
+		pm_en_pin = NULL;
+		pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", 1, GPIOD_OUT_LOW);
+		if (IS_ERR(pm_en_pin)) {
+			pr_err("cannot get bias-gpios[%d] %ld\n", 1, PTR_ERR(pm_en_pin));
+			return PTR_ERR(pm_en_pin);
+		}
+		gpiod_set_value(pm_en_pin, gpio_status);
+		devm_gpiod_put(ctx->dev, pm_en_pin);
+		usleep_range(9000, 9001);	//DVDD TO VCI, delay should be more than 9ms
+
+		pm_en_pin = NULL;
+		pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", 0, GPIOD_OUT_LOW);
+		if (IS_ERR(pm_en_pin)) {
+			pr_err("cannot get bias-gpios[%d] %ld\n", 0, PTR_ERR(pm_en_pin));
+			return PTR_ERR(pm_en_pin);
+		}
+		gpiod_set_value(pm_en_pin, gpio_status);
+		devm_gpiod_put(ctx->dev, pm_en_pin);
 	}
 	return 0;
 }
