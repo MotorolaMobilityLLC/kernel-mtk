@@ -41,8 +41,8 @@
 		aw99703,hwen-gpio = <&pio 8 1>;
 		aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
 		aw99703,using-lsb;
-		aw99703,ovp-level = <2>; /* 0:17.5V, 1:24V, 2:31V, 3:38V, 4:41.5V */
-		aw99703,ocp-level = <1>; /* 0:0.9A, 1:1.8A, 2:2.7A, 3:3.4A */
+		aw99703,ovp-level = <3>; /* 0:17.5V, 1:24V, 2:31V, 3:38V, 4:41.5V */
+		aw99703,ocp-level = <2>; /* 0:0.9A, 1:1.8A, 2:2.7A, 3:3.4A */
 		aw99703,switch-freq = <1>; /* 1000kHz(default) */
 		aw99703,auto-freq-high = <0x10>;
 		aw99703,auto-freq-low = <0x05>;
@@ -78,7 +78,8 @@
                 ktd,pwm-trans-dim = <0>;
                 ktd,i2c-trans-dim = <1>;
                 ktd,bl-channel = <3>;
-                ktd,ovp-level = <2>;
+                ktd,ovp-level = <32>;  /*25.9v or 32v */
+                ktd,ocp-level = <2600>;
                 ktd,switching-frequency = <1>;
                 ktd,inductor-current = <1>;
 	};
