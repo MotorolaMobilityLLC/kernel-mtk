@@ -63,6 +63,10 @@
 	};
 };
 
+&extcon_usb {
+	vbus-current = <1100000>;
+};
+
 &pdc {
 	pd_vbus_low_bound = <5000000>;
 	pd_vbus_upper_bound = <9000000>;
