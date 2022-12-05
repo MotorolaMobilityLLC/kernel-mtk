@@ -302,7 +302,7 @@ static void lcm_dfps_int(struct LCM_DSI_PARAMS *dsi)
 	/*dfps_params[0].data_rate = xx; */
 	/*if HFP solution*/
 	/*dfps_params[0].horizontal_frontporch = xx;*/
-	dfps_params[0].vertical_frontporch = 800;
+	dfps_params[0].vertical_frontporch = 900;
 //	dfps_params[0].vertical_frontporch_for_low_power = 980;
 
 	/*if need mipi hopping params add here*/
