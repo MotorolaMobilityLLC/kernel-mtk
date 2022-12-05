@@ -50,7 +50,10 @@ static inline u32 wlc_get_ibat(void)
 {
 	return battery_get_bat_current() * 100;
 }
-
+static inline u32 wlc_get_soc(void)
+{
+	return battery_get_uisoc();
+}
 static bool cancel_wlc(struct charger_manager *pinfo)
 {
 //	if (mtk_pdc_check_charger(pinfo) || mtk_is_TA_support_pd_pps(pinfo))
@@ -490,6 +493,9 @@ int mtk_wlc_set_charging_current(struct charger_manager *pinfo,
 	struct mtk_wlc *wlc = &pinfo->wlc;
 //	int ichg1_min = -1, aicr1_min = -1;
 	int charging_current, input_current, vbus, input_thermal_limit;
+	bool cable_ready = false;
+	*aicr = 0;
+	*ichg = 0;
 
 	chr_info("%s: starts\n", __func__);
 
@@ -507,8 +513,16 @@ int mtk_wlc_set_charging_current(struct charger_manager *pinfo,
 	vbus = VBUS_DEFAULT_MV;
 	charging_current = wlc->wireless_charger_max_current;
 
-	if(NULL != wls_chg_ops)
-		wls_chg_ops->wls_current_select(&input_current, &vbus);
+	if(NULL != wls_chg_ops) {
+		wls_chg_ops->wls_current_select(&input_current, &vbus,&cable_ready);
+		if(wlc_get_soc() == 100)
+			wls_chg_ops->wls_set_battery_soc(100);
+	}
+
+	if(!cable_ready) {
+		chr_info("%s: cable_ready:%d\n", __func__, cable_ready);
+//		input_current = 0;
+	}
 
 	if (wlc->charging_current_limit1 != -1) {
 		if (wlc->charging_current_limit1 < charging_current)
@@ -543,15 +557,15 @@ int mtk_wlc_set_charging_current(struct charger_manager *pinfo,
 			input_current, input_thermal_limit, wlc->charging_current_limit1, vbus);
 	mutex_unlock(&wlc->access_lock);
 
-	if (wlc->input_current1 == 0 || wlc->charging_current1 == 0) {
+	if (wlc->input_current1 == 0 /*|| wlc->charging_current1 == 0*/) {
 		chr_info("current is zero %d %d\n", wlc->input_current1,
 			wlc->charging_current1);
 		return -1;
 	}
 
-	chr_info("%s: starts, ichg:%d\n", __func__, ichg);
-	*aicr = wlc->aicr_cable_imp;
-	*ichg = pinfo->wlc.wireless_charger_max_current;
+	chr_info("%s: starts, ichg:%d\n", __func__, *ichg);
+	*aicr = wlc->charging_current1;
+	*ichg = wlc->input_current1;
 	chr_info("%s: OK, ichg = %dmA, AICR = %dmA\n",
 		__func__, *ichg / 1000, *aicr / 1000);
 
@@ -817,6 +831,7 @@ void mtk_wlc_set_is_enable(struct charger_manager *pinfo, bool enable)
 
 	chr_info("%s: enable = %d\n", __func__, enable);
 	pinfo->wlc.is_enabled = enable;
+	pinfo->wlc.is_connect = enable;
 
 	__pm_relax(pinfo->wlc.suspend_lock);
 	mutex_unlock(&pinfo->wlc.access_lock);

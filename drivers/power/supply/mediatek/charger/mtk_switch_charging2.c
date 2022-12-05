@@ -232,6 +232,9 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	}else if ( mtk_wlc_get_is_connect(info) == true) {
                        pdata->input_current_limit = info->wlc.wireless_charger_max_input_current;
                        pdata->charging_current_limit =  info->wlc.wireless_charger_max_current;
+		mtk_wlc_set_charging_current(info,
+					&pdata->input_current_limit,
+					&pdata->charging_current_limit);
 	} else if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
 			if (info->usb_state == USB_SUSPEND)
@@ -276,8 +279,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->input_current_limit = info->wlc.wireless_charger_max_input_current;//1150000;
 		pdata->charging_current_limit = info->wlc.wireless_charger_max_current;//3600000;
 		mtk_wlc_set_charging_current(info,
-					&pdata->charging_current_limit,
-					&pdata->input_current_limit);
+					&pdata->input_current_limit,
+					&pdata->charging_current_limit);
 	} else if (info->chr_type == CHARGING_HOST) {
 		pdata->input_current_limit =
 				info->data.charging_host_charger_current;
@@ -356,11 +359,6 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->charging_current_limit = 0;
 	}
 done:
-
-	if ((info->atm_enabled == true) && info->wireless_online) {
-		pdata->charging_current_limit = info->data.wireless_factory_max_current;
-		pdata->input_current_limit = info->data.wireless_factory_max_input_current;
-	}
 
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
@@ -1020,17 +1018,6 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 		}
 	}
 
-	if (mtk_wlc_check_charger_avail() == true){
-			chr_err("enter WLC!\n");
-			swchgalg->state = CHR_PDC;
-			if (mtk_wlc_get_is_enable(info)) {
-				mtk_wlc_set_is_enable(info, false);
-				if (mtk_wlc_get_is_connect(info))
-					mtk_wlc_reset_ta_vchr(info);
-			}
-			return 1;
-	}
-
 	swchg_turn_on_charging(info);
 
 	#ifdef MTK_BASE
@@ -1152,8 +1139,7 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	chr_err("%s,  %d\n", __func__,mtk_wlc_check_charger_avail());
 
 	if (mtk_wlc_check_charger_avail() == true) {
-		mtk_wlc_set_is_enable(info, true);
-		mtk_wlc_check_charger(info);
+			mtk_wlc_set_is_enable(info, true);
 	}
 
 	do {
@@ -1197,8 +1183,6 @@ static int charger_dev_event(struct notifier_block *nb,
 	struct charger_manager *info =
 			container_of(nb, struct charger_manager, chg1_nb);
 	struct chgdev_notify *data = v;
-
-	chr_info("%s %ld", __func__, event);
 
 	switch (event) {
 	case CHARGER_DEV_NOTIFY_EOC:
@@ -1333,10 +1317,7 @@ static int mmi_mux_switch(struct charger_manager *info, enum mmi_mux_channel cha
 {
 	int pre_chan, pre_on;
 
-//	chr_err("mmi_mux_switch enter\n");
-
-//	return 0;
-
+	chr_err("wlc enter %s\n",__func__);
 	if(!info->mmi.enable_mux)
 		return 0;
 
