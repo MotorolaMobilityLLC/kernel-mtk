@@ -47,6 +47,7 @@
 		goodix,input-max-y = <2400>;
 		goodix,edge-ctrl;
 		mmi,enable-gestures;
+		mmi,supported_gesture_type = <0x07>;
 		mmi,power-off-suspend;
 		mmi,usb-charger-detection;
 		mmi,charger-psy-name = "battery";
