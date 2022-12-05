@@ -16,7 +16,7 @@
 
 struct moto_wls_chg_ops {
 	void *data;
-	void (*wls_current_select)(int  *icl, int *vbus);
+	void (*wls_current_select)(int  *icl, int *vbus, bool *cable_ready);
 	void (*wls_set_battery_soc)(int uisoc);
 };
 
@@ -62,6 +62,7 @@ struct mtk_wlc {
 	struct thermal_cooling_device *tcd;
 	int max_state;
 	int cur_state;
+	bool cable_ready;
 };
 
 #ifdef CONFIG_MOTO_WLC_ALG_SUPPORT
