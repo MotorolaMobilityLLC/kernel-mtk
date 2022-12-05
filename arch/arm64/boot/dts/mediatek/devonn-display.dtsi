@@ -70,14 +70,20 @@
                 ktd,using-lsb;
                 ktd,pwm-frequency = <1>; /* 1MHZ */
                 ktd,bl-fscal-led = <0xC1>; /* 24.2mA */
-                ktd,turn-on-ramp = <0x08>;
+                ktd,turn-on-ramp = <0x00>;
                 ktd,turn-off-ramp = <0x08>;
                 ktd,pwm-trans-dim = <4>;
-                ktd,i2c-trans-dim = <256>;
+                ktd,i2c-trans-dim = <128>;
                 ktd,bl-channel = <3>;
                 ktd,ovp-level = <32>;/* 32V */
                 ktd,switching-frequency = <1>;
-                ktd,inductor-current = <1>;
+                ktd,inductor-current = <2600>;
+                ktd3136,init-seq-enable = <1>;
+                ktd3136,init-seq = <0x02 0xC1>,
+				<0x03 0x2E>,
+				<0x06 0x0F>,
+				<0x07 0x04>,
+				<0x08 0x01>;
 	};
 };
 
