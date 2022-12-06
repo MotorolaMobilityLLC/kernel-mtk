@@ -222,11 +222,19 @@ static int bq2589x_is_charging_enable(struct charger_device *chg_dev, bool *en)
 static int bq2589x_get_ichg(struct charger_device *chg_dev, u32 *curr)
 {
 	struct bq2589x *bq = dev_get_drvdata(&chg_dev->dev);
-
-	*curr = bq2589x_adc_read_charge_current(bq) * 1000;
-
-	return 0;
-
+	u8 reg_val;
+	int ichg;
+	int ret;
+	ret = bq2589x_read_byte(bq, &reg_val, BQ2589X_REG_04);
+	if (!ret) {
+			ichg = ((u32)(reg_val & BQ2589X_ICHG_MASK ) >> BQ2589X_ICHG_SHIFT);
+			if (ichg <= 0x7F)
+				*curr = ichg * 64000;
+			else
+				*curr = 5056000;
+	}
+	pr_err("bq2589x_get_ichg = %d\n", *curr);
+	return ret;
 }
 
 static int bq2589x_set_icl(struct charger_device *chg_dev, u32 curr)
