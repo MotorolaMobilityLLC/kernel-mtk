@@ -2801,6 +2801,10 @@ static int mtkfb_probe(struct platform_device *pdev)
 		register_ccci_sys_call_back(MD_SYS1,
 			MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
 #endif
+	} else if (!strcmp(mtkfb_find_lcm_driver(),
+			"mipi_mot_vid_tm_ili7807s_hdp_653")) {
+		register_ccci_sys_call_back(MD_SYS1,
+			MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
 	}
 
 	MSG_FUNC_LEAVE();
