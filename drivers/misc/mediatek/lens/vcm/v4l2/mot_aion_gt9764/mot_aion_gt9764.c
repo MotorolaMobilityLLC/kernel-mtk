@@ -107,8 +107,8 @@ static int mot_aion_gt9764_init(struct mot_aion_gt9764_device *mot_aion_gt9764)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&mot_aion_gt9764->sd);
 	int ret = 0;
-	char puSendCmdArray[1][2] = {
-	{0x02, 0x00},
+	char puSendCmdArray[3][2] = {
+	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x05},
 	};
 	unsigned char cmd_number;
 
@@ -119,7 +119,7 @@ static int mot_aion_gt9764_init(struct mot_aion_gt9764_device *mot_aion_gt9764)
 
 	LOG_INF("Check HW version: %x\n", ret);
 
-	for (cmd_number = 0; cmd_number < 1; cmd_number++) {
+	for (cmd_number = 0; cmd_number < 3; cmd_number++) {
 		if (puSendCmdArray[cmd_number][0] != 0xFE) {
 			ret = i2c_smbus_write_byte_data(client,
 					puSendCmdArray[cmd_number][0],
