@@ -2600,6 +2600,7 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 			clocks = <&clk26m>;
 			clock-names = "ref";
 			#phy-cells = <1>;
+			mediatek,host-eye-disc = <7>;/*0~15*/
 			status = "okay";
 		};
 	};
