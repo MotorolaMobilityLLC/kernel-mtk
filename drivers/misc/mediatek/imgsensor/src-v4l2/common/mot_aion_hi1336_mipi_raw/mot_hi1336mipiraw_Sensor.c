@@ -155,6 +155,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 2,
 	.slim_video_delay_frame = 2,
 	.custom1_delay_frame = 2,
+	.frame_time_delay_frame = 2,
 	.isp_driving_current = ISP_DRIVING_4MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
@@ -1690,7 +1691,6 @@ static void set_frame_length(struct subdrv_ctx *ctx, kal_uint32 frame_length)
 		ctx->frame_length, frame_length, ctx->min_frame_length);
 }
 
-#if 0
 static void set_multi_shutter_frame_length(struct subdrv_ctx *ctx,
 				kal_uint32 *shutters, kal_uint16 shutter_cnt,
 				kal_uint16 frame_length)
@@ -1712,16 +1712,14 @@ static void set_multi_shutter_frame_length(struct subdrv_ctx *ctx,
 			shutters[0] = imgsensor_info.min_shutter;
 
 		/* Update Shutter */
-		set_cmos_sensor(ctx, 0x0340, ctx->frame_length & 0xFFFF);
-		set_cmos_sensor(ctx, 0X0202, shutters[0] & 0xFFFF);
-
-		commit_write_sensor(ctx);
+		write_cmos_sensor(ctx, 0x020e, ctx->frame_length);
+		write_cmos_sensor_8(ctx, 0x020D, (shutters[0] & 0xFF0000) >> 16 );
+		write_cmos_sensor(ctx, 0x020A, shutters[0] & 0xFFFF);
 
 		DEBUG_LOG(ctx, "shutters[0] =%d, framelength =%d\n",
 			shutters[0], ctx->frame_length);
 	}
 }
-#endif
 
 /*************************************************************************
  * FUNCTION
@@ -2995,9 +2993,9 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
 	case SENSOR_FEATURE_SET_MULTI_SHUTTER_FRAME_TIME:
-		/*set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),
-					(UINT16) (*(feature_data + 1)),
-					(UINT16) (*(feature_data + 2)));*/
+		set_multi_shutter_frame_length(ctx, (UINT32 *)(*feature_data),
+					(UINT32) (*(feature_data + 1)),
+					(UINT16) (*(feature_data + 2)));
 		break;
 	case SENSOR_FEATURE_PRELOAD_EEPROM_DATA:
 
