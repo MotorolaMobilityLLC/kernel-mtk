@@ -210,7 +210,7 @@ static int aw36518_torch_brt_ctrl(struct aw36518_flash *flash,
 	br_bits = aw36518_TORCH_BRT_uA_TO_REG(brt);
 
 	rval = regmap_update_bits(flash->regmap,
-					  REG_LED0_TORCH_BR, 0x7f, br_bits);
+					  REG_LED0_TORCH_BR, 0xff, br_bits);
 	return rval;
 }
 
@@ -233,7 +233,7 @@ static int aw36518_flash_brt_ctrl(struct aw36518_flash *flash,
 	br_bits = aw36518_FLASH_BRT_uA_TO_REG(brt);
 
 	rval = regmap_update_bits(flash->regmap,
-				REG_LED0_FLASH_BR, 0x7f, br_bits);
+				REG_LED0_FLASH_BR, 0xff, br_bits);
 
 	return rval;
 }
