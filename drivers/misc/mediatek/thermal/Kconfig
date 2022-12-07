@@ -42,3 +42,8 @@ config GENEVA_THERMAL_NTC
 	bool "Genva thermal ntc"
 	help
 	  Enable the geneva thermal ntc
+
+config THERMAL_CP_SUPPORT
+      bool "Thermal charge pump support"
+      help
+         3rd charge pump thermal limit charge current

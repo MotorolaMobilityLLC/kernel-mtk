@@ -203,6 +203,9 @@ else
 		ifeq ($(CONFIG_MTK_DUAL_CHARGER_SUPPORT),y)
 			obj-$(CONFIG_THERMAL) += mtk_cooler_bcct_2nd.o
 		endif
+		ifeq ($(CONFIG_THERMAL_CP_SUPPORT),y)
+                       obj-$(CONFIG_THERMAL) += mtk_cooler_bcct_cp.o
+                endif
 	else
 		obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.o
 	endif
