@@ -636,6 +636,10 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			val->intval = prop.intval;
 		}
+		if (gm.fixed_bat_tmp != 0xffff) {
+			gm.tbat_precise = gm.fixed_bat_tmp * 10;
+			val->intval = gm.tbat_precise;
+		}
 		bm_err("%s event, TEMP:%d\n", __func__, val->intval);
 #else
 		val->intval = gm.tbat_precise;
