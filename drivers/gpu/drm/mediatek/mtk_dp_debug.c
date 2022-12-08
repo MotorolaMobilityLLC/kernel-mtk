@@ -87,22 +87,22 @@ void mtk_dp_debug(const char *opt)
 		else if (strncmp(opt + 6, "8ch", 3) == 0)
 			mtk_dp_force_audio(6, 0xff, 0xff);
 
-		if (strncmp(opt + 9, "32fs", 4) == 0)
+		if (strncmp(opt + min_t(int, strlen(opt), 9), "32fs", 4) == 0)
 			mtk_dp_force_audio(0xff, 0, 0xff);
-		else if (strncmp(opt + 9, "44fs", 4) == 0)
+		else if (strncmp(opt + min_t(int, strlen(opt), 9), "44fs", 4) == 0)
 			mtk_dp_force_audio(0xff, 1, 0xff);
-		else if (strncmp(opt + 9, "48fs", 4) == 0)
+		else if (strncmp(opt + min_t(int, strlen(opt), 9), "48fs", 4) == 0)
 			mtk_dp_force_audio(0xff, 2, 0xff);
-		else if (strncmp(opt + 9, "96fs", 4) == 0)
+		else if (strncmp(opt + min_t(int, strlen(opt), 9), "96fs", 4) == 0)
 			mtk_dp_force_audio(0xff, 3, 0xff);
-		else if (strncmp(opt + 9, "192f", 4) == 0)
+		else if (strncmp(opt + min_t(int, strlen(opt), 9), "192f", 4) == 0)
 			mtk_dp_force_audio(0xff, 4, 0xff);
 
-		if (strncmp(opt + 13, "16bit", 5) == 0)
+		if (strncmp(opt + min_t(int, strlen(opt), 13), "16bit", 5) == 0)
 			mtk_dp_force_audio(0xff, 0xff, 0);
-		else if (strncmp(opt + 13, "20bit", 5) == 0)
+		else if (strncmp(opt + min_t(int, strlen(opt), 13), "20bit", 5) == 0)
 			mtk_dp_force_audio(0xff, 0xff, 1);
-		else if (strncmp(opt + 13, "24bit", 5) == 0)
+		else if (strncmp(opt + min_t(int, strlen(opt), 13), "24bit", 5) == 0)
 			mtk_dp_force_audio(0xff, 0xff, 2);
 
 	} else if (strncmp(opt, "dptest:", 7) == 0) {
