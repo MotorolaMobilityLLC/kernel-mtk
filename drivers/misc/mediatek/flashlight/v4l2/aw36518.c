@@ -53,8 +53,8 @@
  *	min 40ms, step 40ms, max 1600ms
  */
 #define aw36518_FLASH_TOUT_MIN 40
-#define aw36518_FLASH_TOUT_STEP 600
-#define aw36518_FLASH_TOUT_MAX 1600
+#define aw36518_FLASH_TOUT_STEP 40
+#define aw36518_FLASH_TOUT_MAX 600
 
 /*  TORCH BRT
  *	min 750uA, step 1510uA, max 386000uA
@@ -176,12 +176,12 @@ static int aw36518_enable_ctrl(struct aw36518_flash *flash,
 	if (on)
 	{
 		rval = regmap_update_bits(flash->regmap,
-						  REG_ENABLE, 0x01, 0x01);
+						  REG_ENABLE, 0x03, 0x03);
 	}
 	else
 	{
 		rval = regmap_update_bits(flash->regmap,
-						  REG_ENABLE, 0x01, 0x00);
+						  REG_ENABLE, 0x03, 0x00);
 	}
 
 	return rval;
@@ -238,27 +238,27 @@ static int aw36518_flash_brt_ctrl(struct aw36518_flash *flash,
 	return rval;
 }
 
-/* flash1/2 timeout control */
+/* flash1 timeout control */
 static int aw36518_flash_tout_ctrl(struct aw36518_flash *flash,
 				unsigned int tout)
 {
 	int rval;
 	u8 tout_bits;
 	pr_info_ratelimited("%s tout=%d", __func__, tout);
-        if (tout <= 0)
+        if (tout <= 40)
         {
 		tout_bits = 0x00;
 	}
 	else if (tout <= 400)
 	{
-		tout_bits = (tout / aw36518_FLASH_TOUT_STEP) -1;
+		tout_bits = (tout / aw36518_FLASH_TOUT_STEP)-1;
 	}
 	else
 	{
 		tout_bits = 0x0a;
 	}
 	rval = regmap_update_bits(flash->regmap,
-				  REG_FLASH_TOUT, 0x1f, tout_bits);
+				  REG_FLASH_TOUT, 0x0f, tout_bits);
 
 	return rval;
 }
@@ -561,7 +561,7 @@ static int aw36518_init(struct aw36518_flash *flash)
 	unsigned int reg_val;
 
 	/* set timeout */
-	rval = aw36518_flash_tout_ctrl(flash, 400);
+	rval = aw36518_flash_tout_ctrl(flash, aw36518_FLASH_TOUT_MAX);
 	if (rval < 0)
 		return rval;
 	/* output disable */
@@ -866,25 +866,23 @@ static int aw36518_remove(struct i2c_client *client)
 	pm_runtime_set_suspended(&client->dev);
 	return 0;
 }
+static void aw36518_shutdown(struct i2c_client *client)
+{
+	regmap_update_bits(aw36518_flash_data->regmap,REG_ENABLE, 0x0f, 0x00);
+	pr_info_ratelimited("%s", __func__);
+	return;
+}
 
 static int __maybe_unused aw36518_suspend(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct aw36518_flash *flash = i2c_get_clientdata(client);
-
 	pr_info("%s %d", __func__, __LINE__);
-
-	return aw36518_uninit(flash);
+	return 0;
 }
 
 static int __maybe_unused aw36518_resume(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct aw36518_flash *flash = i2c_get_clientdata(client);
-
 	pr_info("%s %d", __func__, __LINE__);
-
-	return aw36518_init(flash);
+	return 0;
 }
 
 static const struct i2c_device_id aw36518_id_table[] = {
@@ -914,6 +912,7 @@ static struct i2c_driver aw36518_i2c_driver = {
 		   },
 	.probe = aw36518_probe,
 	.remove = aw36518_remove,
+	.shutdown = aw36518_shutdown,
 	.id_table = aw36518_id_table,
 };
 
