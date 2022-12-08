@@ -10,6 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#include <dt-bindings/iio/adc/mediatek,mt6375_auxadc.h>
+#include <dt-bindings/iio/adc/mediatek,mt6375_adc.h>
+#include <dt-bindings/iio/mt635x-auxadc.h>
 
 &mt6375_typec {
        tcpc,en_wd;
@@ -150,6 +153,12 @@
 	NFG1000: NFG1000@55 {
 		compatible = "HXZY,nfg1000";
 		reg = <0x55>;
+
+		io-channels = <&mt6375_auxadc MT6375_AUXADC_BATON>,
+			      <&mt6375_auxadc MT6375_AUXADC_VREF>;
+		io-channel-names = "bat_temp", "vref";
+
+		uirbat_pull_up_r_full = <24000>;/*24k*/
 	};
 
 	bq25960_master:bq25960-master@66 {
