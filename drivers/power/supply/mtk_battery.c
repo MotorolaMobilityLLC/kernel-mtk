@@ -355,8 +355,14 @@ static int battery_psy_get_property(struct power_supply *psy,
 		//pr_info("bora: chg_done = %d\n", is_chg_done);
 		if(is_chg_done){
 			val->intval = POWER_SUPPLY_STATUS_FULL;
-			pr_info("bora: battery get status = %d\n", val->intval);
+			if (gm->b_EOC != true){
+				bm_err("POWER_SUPPLY_STATUS_FULL\n");
+				gm->b_EOC = true;
+				notify_fg_chr_full(gm);
+			}
 		}
+		else
+			gm->b_EOC = false;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		val->intval = bs_data->bat_health;
