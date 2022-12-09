@@ -48,6 +48,13 @@ config MOTO_LYRIQ_PROJECT_SWTP_SETING_APART
         help
           Say Y here for distinguish different projects
 
+config MOTO_DISABLE_SWTP_FACTORY
+	bool "ECCCI lyriq swtp customization"
+	help
+	  This option enables lyriq swtp customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
 config MOT_WL2868
   	bool CONFIG_MOT_WL2868
   	default n
