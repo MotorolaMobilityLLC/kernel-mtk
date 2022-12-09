@@ -52,7 +52,7 @@ kal_uint16 addr_data_pair_60fps_ov50a_20221103[] = {
 #include"setting/OV50A40_2048x1536_4C1SCG_10bit_60fps_AG255_1924Msps_20221103.h"
 };
 kal_uint16 addr_data_pair_60fps_ov50a[] = {
-#include"setting/OV50A40_2048x1536_4C2SCG_10bit_60fps_AG255_PDVC1_4096x384_1924Msps_20221103.h"
+#include"setting/OV50A40_2048x1536_4C2SCG_10bit_60fps_AG255_PDVC1_2048x768_1924Msps_20221208.h"
 };
 
 //custom2
