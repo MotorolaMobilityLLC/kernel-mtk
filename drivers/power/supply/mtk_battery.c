@@ -519,7 +519,7 @@ static int battery_psy_get_property(struct power_supply *psy,
 		val->intval = gm->algo_qmax * 1000 / 10;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = gm->ui_soc * gm->algo_qmax * 1000 / 100;
+		val->intval = gm->ui_soc * (gm->algo_qmax * 1000 / 10) / 100;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		/* 1 = META_BOOT, 4 = FACTORY_BOOT 5=ADVMETA_BOOT */
