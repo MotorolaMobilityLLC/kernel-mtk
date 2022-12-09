@@ -68,14 +68,26 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
 	int power_mode, ret = 0;
-
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+        int factory_tx_power_mode = SWTP_NO_TX_POWER;
+#endif
 	if (swtp == NULL) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS, "%s:swtp is null\n", __func__);
 		return -1;
 	}
 
 	spin_lock_irqsave(&swtp->spinlock, flags);
-
+#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
+		(char *)&factory_tx_power_mode, sizeof(factory_tx_power_mode));
+        #if defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+        CCCI_LEGACY_ERR_LOG(-1, SYS,"%s ret =%d\n",__func__, ret);
+        #endif
+	power_mode = factory_tx_power_mode;
+        #if defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+        CCCI_LEGACY_ERR_LOG(-1, SYS,"%s factory_tx_power_mode =%d\n",__func__, factory_tx_power_mode);
+        #endif
+#else
 	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
         #if defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
@@ -85,6 +97,7 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
         #if defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
         CCCI_LEGACY_ERR_LOG(-1, SYS,"%s swtp->tx_power_mode =%d\n",__func__, swtp->tx_power_mode);
         #endif
+#endif
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	if (ret != 0)
@@ -392,6 +405,9 @@ int swtp_init(int md_id)
 	#else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 	#endif
+    #ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+    swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
+    #endif
 	//EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, end
 
 	spin_lock_init(&swtp_data[md_id].spinlock);
