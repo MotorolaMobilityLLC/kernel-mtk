@@ -25,7 +25,6 @@
 		novatek,panel-supplier = "csot";
 		novatek,fw_ic_info = "nt36672c", "nt36672n";
 		novatek,usb_charger;
-		novatek,usb-psp-online;
 
 		/* 672A, 525B, 675, 526, 672C, 523 */
 		novatek,swrst-n8-addr = <0x03F0FE>;
