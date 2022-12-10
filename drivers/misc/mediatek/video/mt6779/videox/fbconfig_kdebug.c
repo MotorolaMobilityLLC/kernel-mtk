@@ -118,6 +118,8 @@ static struct PM_TOOL_S pm_params = {
 	.pLcm_drv = NULL,
 };
 
+struct mutex fb_config_lock;
+
 static void *pm_get_handle(void)
 {
 	return (void *)&pm_params;
@@ -211,6 +213,7 @@ static int fbconfig_open(struct inode *inode, struct file *file)
 
 	file->private_data = inode->i_private;
 	pm_params = (struct PM_TOOL_S *)pm_get_handle();
+	mutex_init(&fb_config_lock);
 	if (pm_params == NULL) {
 		pr_debug("%s=>pm_params is empty!!\n", __func__);
 		return -EFAULT;
@@ -314,7 +317,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd,
 			record_tmp_list = NULL;
 			return -EFAULT;
 		}
+		mutex_lock(&fb_config_lock);
 		list_add(&record_tmp_list->list, &head_list.list);
+		mutex_unlock(&fb_config_lock);
 		return 0;
 	}
 	case DRIVER_IC_CONFIG_DONE:
@@ -322,7 +327,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd,
 		/* print_from_head_to_tail(); */
 		Panel_Master_dsi_config_entry("PM_DDIC_CONFIG", NULL);
 		/* free the memory ..... */
+		mutex_lock(&fb_config_lock);
 		free_list_memory();
+		mutex_unlock(&fb_config_lock);
 		return 0;
 	}
 	case MIPI_SET_CC:
