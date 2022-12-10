@@ -2195,6 +2195,7 @@ static int bq25890x_enable_pump_express(struct bq2589x *bq, bool en)
 	const int max_wait_times = 3;
 
 	pr_info("%s: en = %d\n", __func__, en);
+	ret = bq2589x_set_icl(bq->chg_dev, 800000);
 	ret = bq2589x_set_ichg(bq->chg_dev, 2000000);
 	if (ret < 0)
 		return ret;

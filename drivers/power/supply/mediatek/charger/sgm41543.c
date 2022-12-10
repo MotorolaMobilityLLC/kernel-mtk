@@ -1597,6 +1597,7 @@ static int sgm41543_enable_pump_express(struct sgm41543 *bq, bool en)
 	const int max_wait_times = 3;
 
 	pr_info("%s: en = %d\n", __func__, en);
+	ret = sgm41543_set_icl(bq->chg_dev, 800000);
 	ret = sgm41543_set_ichg(bq->chg_dev, 2000000);
 	if (ret < 0)
 		return ret;
