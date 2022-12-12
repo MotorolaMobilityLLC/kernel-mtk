@@ -6719,7 +6719,10 @@ static int ISP_probe(struct platform_device *pDev)
 
 					return Ret;
 				}
-
+                //fix the camerahalserver panic from MTK's patch.IKSWT-57951(ALPS07759423)
+                //Reset irq ref cnt after request_irq by disable_irq
+                disable_irq(isp_devs[dev_idx].irq);
+                //fix the camerahalserver panic from MTK's patch.IKSWT-57951(ALPS07759423)
 				LOG_INF(
 				"G_u4DevNodeCt=%d, devnode(%s), irq=%d, ISR: %s\n",
 					atomic_read(&G_u4DevNodeCt), pDev->dev.of_node->name,
