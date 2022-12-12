@@ -23,6 +23,8 @@ struct cmdq_util_controller_fp {
 typedef bool (*cmdq_mminfra_power)(void);
 typedef bool (*cmdq_mminfra_gce_cg)(u32);
 
+typedef void (*cmdq_usage_cb)(u32);
+
 void cmdq_controller_set_fp(struct cmdq_util_controller_fp *cust_cmdq_util);
 #endif
 
@@ -192,6 +194,8 @@ struct cmdq_thread {
 	u64			lock_time;
 	u64			irq_time;
 	u32			irq_task;
+	atomic_t		usage;
+	cmdq_usage_cb usage_cb;
 };
 
 extern int mtk_cmdq_log;
@@ -288,8 +292,8 @@ void cmdq_thread_dump_all(void *mbox_cmdq, const bool lock, const bool dump_pkt,
 void cmdq_thread_dump_all_seq(void *mbox_cmdq, struct seq_file *seq);
 void cmdq_mbox_thread_remove_task(struct mbox_chan *chan,
 	struct cmdq_pkt *pkt);
-void cmdq_mbox_enable(void *chan);
-void cmdq_mbox_disable(void *chan);
+s32 cmdq_mbox_enable(void *chan);
+s32 cmdq_mbox_disable(void *chan);
 s32 cmdq_mbox_get_usage(void *chan);
 void *cmdq_mbox_get_base(void *chan);
 phys_addr_t cmdq_mbox_get_base_pa(void *chan);
@@ -329,6 +333,7 @@ void cmdq_mmp_wait(struct mbox_chan *chan, void *pkt);
 s32 cmdq_sec_insert_backup_cookie(struct cmdq_pkt *pkt);
 void cmdq_mbox_dump_dbg(void *mbox_cmdq, void *chan, const bool lock);
 void cmdq_chan_dump_dbg(void *chan);
+void cmdq_get_usage_cb(struct mbox_chan *chan, cmdq_usage_cb usage_cb);
 void cmdq_get_mminfra_cb(cmdq_mminfra_power cb);
 void cmdq_get_mminfra_gce_cg_cb(cmdq_mminfra_gce_cg cb);
 void cmdq_dump_usage(void);
