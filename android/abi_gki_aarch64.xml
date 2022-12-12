@@ -529,6 +529,7 @@
       <elf-symbol name='__traceiter_android_vh_cpuidle_psci_exit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x667d7b31'/>
       <elf-symbol name='__traceiter_android_vh_del_page_from_lrulist' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe6848ab7'/>
       <elf-symbol name='__traceiter_android_vh_disable_thermal_cooling_stats' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa09f4ef0'/>
+      <elf-symbol name='__traceiter_android_vh_dm_update_clone_bio' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc0db192a'/>
       <elf-symbol name='__traceiter_android_vh_dma_buf_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc039c759'/>
       <elf-symbol name='__traceiter_android_vh_dmabuf_heap_flags_validation' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe05cf986'/>
       <elf-symbol name='__traceiter_android_vh_do_futex' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdee6d8f'/>
@@ -6928,6 +6929,7 @@
       <elf-symbol name='__tracepoint_android_vh_cpuidle_psci_exit' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8c331003'/>
       <elf-symbol name='__tracepoint_android_vh_del_page_from_lrulist' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x43058362'/>
       <elf-symbol name='__tracepoint_android_vh_disable_thermal_cooling_stats' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5e447fbe'/>
+      <elf-symbol name='__tracepoint_android_vh_dm_update_clone_bio' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x682cea93'/>
       <elf-symbol name='__tracepoint_android_vh_dma_buf_release' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb605aa17'/>
       <elf-symbol name='__tracepoint_android_vh_dmabuf_heap_flags_validation' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9f94a498'/>
       <elf-symbol name='__tracepoint_android_vh_do_futex' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2c256c39'/>
@@ -11555,6 +11557,7 @@
       </array-type-def>
       <pointer-type-def type-id='05cdb97d' size-in-bits='64' id='0b603cc1'/>
       <pointer-type-def type-id='3f6ca798' size-in-bits='64' id='0b660ebe'/>
+      <pointer-type-def type-id='5520e014' size-in-bits='64' id='0b6bd27e'/>
       <function-type size-in-bits='64' id='0b6df38c'>
         <parameter type-id='70d417ab'/>
         <parameter type-id='c151d965'/>
@@ -12705,6 +12708,14 @@
       <function-type size-in-bits='64' id='0ef969d4'>
         <parameter type-id='d9863f2f'/>
         <return type-id='48b5725f'/>
+      </function-type>
+      <function-type size-in-bits='64' id='0efc83de'>
+        <parameter type-id='b88dd945'/>
+        <parameter type-id='91ce1af9'/>
+        <parameter type-id='91ce1af9'/>
+        <parameter type-id='98031623'/>
+        <parameter type-id='b50a4934'/>
+        <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='38ef7882' size-in-bits='64' id='0effb5d0'/>
       <class-decl name='thermal_attr' size-in-bits='448' is-struct='yes' visibility='default' filepath='drivers/thermal/thermal_core.h' line='57' column='1' id='0f035502'>
@@ -23424,6 +23435,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='a24a51b3' size-in-bits='64' id='280dcd9f'/>
+      <pointer-type-def type-id='c3a10c20' size-in-bits='64' id='28138af2'/>
       <class-decl name='v4l2_prio_state' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/media/v4l2-dev.h' line='112' column='1' id='281d3096'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='prios' type-id='6ed968f3' visibility='default' filepath='include/media/v4l2-dev.h' line='113' column='1'/>
@@ -23715,7 +23727,20 @@
           <var-decl name='next' type-id='c872b38e' visibility='default' filepath='include/linux/freelist.h' line='20' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='hd_geometry' is-struct='yes' visibility='default' is-declaration-only='yes' id='28e89e7e'/>
+      <class-decl name='hd_geometry' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/uapi/linux/hdreg.h' line='324' column='1' id='28e89e7e'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='heads' type-id='002ac4a6' visibility='default' filepath='include/uapi/linux/hdreg.h' line='325' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='8'>
+          <var-decl name='sectors' type-id='002ac4a6' visibility='default' filepath='include/uapi/linux/hdreg.h' line='326' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='16'>
+          <var-decl name='cylinders' type-id='8efea9e5' visibility='default' filepath='include/uapi/linux/hdreg.h' line='327' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='start' type-id='7359adad' visibility='default' filepath='include/uapi/linux/hdreg.h' line='328' column='1'/>
+        </data-member>
+      </class-decl>
       <typedef-decl name='atomic64_t' type-id='2fef71f1' filepath='include/linux/types.h' line='175' column='1' id='28ee064c'/>
       <class-decl name='thermal_governor' size-in-bits='576' is-struct='yes' visibility='default' filepath='include/linux/thermal.h' line='200' column='1' id='2901941b'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -35102,6 +35127,7 @@
         <return type-id='48b5725f'/>
       </function-type>
       <qualified-type-def type-id='67409b07' const='yes' id='45f3f04e'/>
+      <pointer-type-def type-id='8a49f2ad' size-in-bits='64' id='45f42df9'/>
       <class-decl name='__drm_connnectors_state' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/drm/drm_atomic.h' line='183' column='1' id='45f4b23b'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='ptr' type-id='4db02c58' visibility='default' filepath='include/drm/drm_atomic.h' line='184' column='1'/>
@@ -41317,6 +41343,13 @@
         <enumerator name='TYPEC_POLARITY_CC1' value='0'/>
         <enumerator name='TYPEC_POLARITY_CC2' value='1'/>
       </enum-decl>
+      <function-type size-in-bits='64' id='5520e014'>
+        <parameter type-id='b88dd945'/>
+        <parameter type-id='91ce1af9'/>
+        <parameter type-id='91ce1af9'/>
+        <parameter type-id='19c2251e'/>
+        <return type-id='95e97e5e'/>
+      </function-type>
       <function-type size-in-bits='64' id='55274865'>
         <parameter type-id='dc1ef2b7'/>
         <return type-id='b50a4934'/>
@@ -53469,6 +53502,12 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <qualified-type-def type-id='5fb55d48' const='yes' id='70ebcb19'/>
+      <function-type size-in-bits='64' id='70eee7af'>
+        <parameter type-id='b88dd945'/>
+        <parameter type-id='91ce1af9'/>
+        <parameter type-id='98031623'/>
+        <return type-id='95e97e5e'/>
+      </function-type>
       <pointer-type-def type-id='057e4bd2' size-in-bits='64' id='70f0fa74'/>
       <pointer-type-def type-id='acfd9368' size-in-bits='64' id='70f1634e'/>
       <pointer-type-def type-id='e8a73faf' size-in-bits='64' id='70ff05c7'/>
@@ -65124,6 +65163,11 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='49178f86' size-in-bits='64' id='8a47abc3'/>
+      <function-type size-in-bits='64' id='8a49f2ad'>
+        <parameter type-id='b88dd945'/>
+        <parameter type-id='91ce1af9'/>
+        <return type-id='95e97e5e'/>
+      </function-type>
       <pointer-type-def type-id='822ce289' size-in-bits='64' id='8a4f973d'/>
       <enum-decl name='can_state' filepath='include/uapi/linux/can/netlink.h' line='69' column='1' id='8a54dc38'>
         <underlying-type type-id='9cac1fee'/>
@@ -70843,6 +70887,15 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='45257a94' size-in-bits='64' id='9800391a'/>
+      <enum-decl name='pr_type' filepath='include/uapi/linux/pr.h' line='7' column='1' id='98031623'>
+        <underlying-type type-id='9cac1fee'/>
+        <enumerator name='PR_WRITE_EXCLUSIVE' value='1'/>
+        <enumerator name='PR_EXCLUSIVE_ACCESS' value='2'/>
+        <enumerator name='PR_WRITE_EXCLUSIVE_REG_ONLY' value='3'/>
+        <enumerator name='PR_EXCLUSIVE_ACCESS_REG_ONLY' value='4'/>
+        <enumerator name='PR_WRITE_EXCLUSIVE_ALL_REGS' value='5'/>
+        <enumerator name='PR_EXCLUSIVE_ACCESS_ALL_REGS' value='6'/>
+      </enum-decl>
       <function-type size-in-bits='64' id='9803cec6'>
         <parameter type-id='68a2d05b'/>
         <parameter type-id='19c2251e'/>
@@ -84157,6 +84210,7 @@
       <pointer-type-def type-id='5c18a8e2' size-in-bits='64' id='af5a73b0'/>
       <pointer-type-def type-id='5e6083f1' size-in-bits='64' id='af5eeab9'/>
       <pointer-type-def type-id='4c110a85' size-in-bits='64' id='af60ef81'/>
+      <pointer-type-def type-id='0efc83de' size-in-bits='64' id='af664338'/>
       <pointer-type-def type-id='319f13b8' size-in-bits='64' id='af6bced6'/>
       <function-type size-in-bits='64' id='af6e35e9'>
         <parameter type-id='d02f4143'/>
@@ -86285,7 +86339,23 @@
           <var-decl name='' type-id='ac5ab5d3' visibility='default' filepath='include/linux/hdmi.h' line='386' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='pr_ops' is-struct='yes' visibility='default' is-declaration-only='yes' id='b45c773c'/>
+      <class-decl name='pr_ops' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/pr.h' line='7' column='1' id='b45c773c'>
+        <data-member access='public' layout-offset-in-bits='0'>
+          <var-decl name='pr_register' type-id='0b6bd27e' visibility='default' filepath='include/linux/pr.h' line='8' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='64'>
+          <var-decl name='pr_reserve' type-id='28138af2' visibility='default' filepath='include/linux/pr.h' line='10' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='128'>
+          <var-decl name='pr_release' type-id='eda6f223' visibility='default' filepath='include/linux/pr.h' line='12' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='192'>
+          <var-decl name='pr_preempt' type-id='af664338' visibility='default' filepath='include/linux/pr.h' line='14' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='256'>
+          <var-decl name='pr_clear' type-id='45f42df9' visibility='default' filepath='include/linux/pr.h' line='16' column='1'/>
+        </data-member>
+      </class-decl>
       <pointer-type-def type-id='a06ec50c' size-in-bits='64' id='b4605ad2'/>
       <typedef-decl name='perf_copy_f' type-id='a056c492' filepath='include/linux/perf_event.h' line='75' column='1' id='b468b440'/>
       <array-type-def dimensions='1' type-id='8efea9e5' size-in-bits='448' id='b469d7a7'>
@@ -94368,6 +94438,13 @@
       <pointer-type-def type-id='bb56dd02' size-in-bits='64' id='c398045c'/>
       <pointer-type-def type-id='d2c7a2c1' size-in-bits='64' id='c39cf839'/>
       <class-decl name='xol_area' is-struct='yes' visibility='default' is-declaration-only='yes' id='c39df2b8'/>
+      <function-type size-in-bits='64' id='c3a10c20'>
+        <parameter type-id='b88dd945'/>
+        <parameter type-id='91ce1af9'/>
+        <parameter type-id='98031623'/>
+        <parameter type-id='19c2251e'/>
+        <return type-id='95e97e5e'/>
+      </function-type>
       <pointer-type-def type-id='449a6017' size-in-bits='64' id='c3a1efbb'/>
       <pointer-type-def type-id='e0a68fea' size-in-bits='64' id='c3a28778'/>
       <pointer-type-def type-id='a5390025' size-in-bits='64' id='c3a655b9'/>
@@ -117711,6 +117788,7 @@
       <class-decl name='ip_tunnel_parm' is-struct='yes' visibility='default' is-declaration-only='yes' id='ed9e49a6'/>
       <pointer-type-def type-id='4852a8ec' size-in-bits='64' id='ed9f97a6'/>
       <pointer-type-def type-id='d6e6975e' size-in-bits='64' id='eda08098'/>
+      <pointer-type-def type-id='70eee7af' size-in-bits='64' id='eda6f223'/>
       <class-decl name='kmem_cache_node' size-in-bits='512' is-struct='yes' visibility='default' filepath='mm/slab.h' line='564' column='1' id='edac1e8f'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='list_lock' type-id='fb4018a0' visibility='default' filepath='mm/slab.h' line='565' column='1'/>
@@ -125272,7 +125350,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='22' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='416' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='417' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -128555,6 +128633,12 @@
         <parameter type-id='7292109c' name='disable_stats' filepath='include/trace/hooks/thermal.h' line='49' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_dm_update_clone_bio' mangled-name='__traceiter_android_vh_dm_update_clone_bio' filepath='include/trace/hooks/dm.h' line='14' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_dm_update_clone_bio'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dm.h' line='14' column='1'/>
+        <parameter type-id='fb55efa1' name='clone' filepath='include/trace/hooks/dm.h' line='14' column='1'/>
+        <parameter type-id='fb55efa1' name='bio' filepath='include/trace/hooks/dm.h' line='14' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_dma_buf_release' mangled-name='__traceiter_android_vh_dma_buf_release' filepath='include/trace/hooks/dmabuf.h' line='20' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_dma_buf_release'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dmabuf.h' line='20' column='1'/>
         <parameter type-id='5e4f599b' name='data' filepath='include/trace/hooks/dmabuf.h' line='20' column='1'/>
@@ -130108,6 +130192,7 @@
       <var-decl name='__tracepoint_android_vh_cpuidle_psci_exit' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_cpuidle_psci_exit' visibility='default' filepath='include/trace/hooks/cpuidle_psci.h' line='23' column='1' elf-symbol-id='__tracepoint_android_vh_cpuidle_psci_exit'/>
       <var-decl name='__tracepoint_android_vh_del_page_from_lrulist' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_del_page_from_lrulist' visibility='default' filepath='include/trace/hooks/mm.h' line='121' column='1' elf-symbol-id='__tracepoint_android_vh_del_page_from_lrulist'/>
       <var-decl name='__tracepoint_android_vh_disable_thermal_cooling_stats' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_disable_thermal_cooling_stats' visibility='default' filepath='include/trace/hooks/thermal.h' line='49' column='1' elf-symbol-id='__tracepoint_android_vh_disable_thermal_cooling_stats'/>
+      <var-decl name='__tracepoint_android_vh_dm_update_clone_bio' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_dm_update_clone_bio' visibility='default' filepath='include/trace/hooks/dm.h' line='14' column='1' elf-symbol-id='__tracepoint_android_vh_dm_update_clone_bio'/>
       <var-decl name='__tracepoint_android_vh_dma_buf_release' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_dma_buf_release' visibility='default' filepath='include/trace/hooks/dmabuf.h' line='20' column='1' elf-symbol-id='__tracepoint_android_vh_dma_buf_release'/>
       <var-decl name='__tracepoint_android_vh_dmabuf_heap_flags_validation' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_dmabuf_heap_flags_validation' visibility='default' filepath='include/trace/hooks/dmabuf.h' line='25' column='1' elf-symbol-id='__tracepoint_android_vh_dmabuf_heap_flags_validation'/>
       <var-decl name='__tracepoint_android_vh_do_futex' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_do_futex' visibility='default' filepath='include/trace/hooks/futex.h' line='34' column='1' elf-symbol-id='__tracepoint_android_vh_do_futex'/>
