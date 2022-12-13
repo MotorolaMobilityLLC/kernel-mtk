@@ -2665,6 +2665,26 @@ static char *stepchg_str[] = {
 	[STEP_NONE]		= "NONE",
 };
 
+int mmi_set_prop_to_battery(struct mtk_charger *info,
+				enum power_supply_property psp,
+				union power_supply_propval *val)
+{
+	int rc;
+
+	if (!info->bat_psy) {
+		info->bat_psy = power_supply_get_by_name("battery");
+
+		if (!info->bat_psy) {
+			pr_err("[%s]Error getting battery power sypply\n", __func__);
+			return -EINVAL;
+		}
+	}
+
+	rc = power_supply_set_property(info->bat_psy, psp, val);
+
+	return rc;
+}
+
 int mmi_get_prop_from_battery(struct mtk_charger *info,
 				enum power_supply_property psp,
 				union power_supply_propval *val)
@@ -3354,9 +3374,15 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 #endif /* CONFIG_MOTO_CHG_WT6670F_SUPPORT */
 		if (max_fv_mv == 0)
 			max_fv_mv = mmi->base_fv_mv;
+
+		val.intval = true;
+		mmi_set_prop_to_battery(info, POWER_SUPPLY_PROP_TYPE, &val);
 	} else {
 		max_fv_mv = mmi->base_fv_mv;
 		info->mmi.chrg_iterm =  info->mmi.back_chrg_iterm;
+
+		val.intval = false;
+		mmi_set_prop_to_battery(info, POWER_SUPPLY_PROP_TYPE, &val);
 	}
 
 	if(info->mmi.cycle_cv_steps != NULL) {
