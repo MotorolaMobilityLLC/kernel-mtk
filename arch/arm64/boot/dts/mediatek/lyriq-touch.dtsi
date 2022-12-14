@@ -45,6 +45,8 @@
 		goodix,panel-max-p = <256>;
 		goodix,input-max-x = <1080>;
 		goodix,input-max-y = <2400>;
+		goodix,interpolation-ctrl;
+		goodix,sample-ctrl;
 		goodix,edge-ctrl;
 		mmi,enable-gestures;
 		mmi,supported_gesture_type = <0x07>;
