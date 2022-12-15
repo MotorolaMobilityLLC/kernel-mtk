@@ -85,7 +85,7 @@ static void _disable_all_charging(struct charger_manager *info)
 			mtk_pe20_reset_ta_vchr(info);
 	}
 
-	if (mtk_wlc_get_is_enable(info)) {
+	if (wlc_get_online()) {
 		mtk_wlc_set_is_enable(info, false);
 		if (mtk_wlc_get_is_connect(info))
 			mtk_wlc_reset_ta_vchr(info);
@@ -143,7 +143,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
 
 	/* AICL */
-	if (!mtk_pe20_get_is_connect(info) &&!mtk_wlc_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
+	if (!mtk_pe20_get_is_connect(info) &&!wlc_get_online() && !mtk_pe_get_is_connect(info) &&
 	    !mtk_is_TA_support_pd_pps(info) && !mtk_pdc_check_charger(info)) {
 		charger_dev_run_aicl(info->chg1_dev,
 				&pdata->input_current_limit_by_aicl);
@@ -229,7 +229,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (mtk_pe20_get_is_connect(info) == true) {
                        pdata->input_current_limit = 3000000;
                        pdata->charging_current_limit = 3000000;
-	}else if ( mtk_wlc_get_is_connect(info) == true) {
+	}else if ( wlc_get_online() == true) {
                        pdata->input_current_limit = info->wlc.wireless_charger_max_input_current;
                        pdata->charging_current_limit =  info->wlc.wireless_charger_max_current;
 		mtk_wlc_set_charging_current(info,
@@ -264,6 +264,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 				info->data.non_std_ac_charger_current;
 		pdata->charging_current_limit =
 				info->data.non_std_ac_charger_current;
+		if (info->chr_type == WIRELESS_CHARGER) {
+			pdata->input_current_limit = info->wlc.wireless_charger_max_input_current;//1150000;
+			pdata->charging_current_limit = info->wlc.wireless_charger_max_current;//3600000;
+			mtk_wlc_set_charging_current(info,
+					&pdata->input_current_limit,
+					&pdata->charging_current_limit);
+			pr_info("wlc input_current_limit:%d\n",__func__, pdata->input_current_limit);
+		}
 	} else if (info->chr_type == STANDARD_CHARGER) {
 		pdata->input_current_limit =
 				info->data.ac_charger_input_current;
@@ -331,7 +339,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	}
 
 	if (pdata->input_current_limit_by_aicl != -1 &&
-	    !mtk_pe20_get_is_connect(info) && !mtk_wlc_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
+	    !mtk_pe20_get_is_connect(info) && !wlc_get_online() && !mtk_pe_get_is_connect(info) &&
 	    !mtk_is_TA_support_pd_pps(info)) {
 		if (pdata->input_current_limit_by_aicl <
 		    pdata->input_current_limit)
@@ -412,11 +420,6 @@ done:
 			mtk_pe20_set_is_enable(info, false);
 			if (mtk_pe20_get_is_connect(info))
 				mtk_pe20_reset_ta_vchr(info);
-		}
-		if (mtk_wlc_get_is_enable(info)) {
-			mtk_wlc_set_is_enable(info, false);
-			if (mtk_wlc_get_is_connect(info))
-				mtk_wlc_reset_ta_vchr(info);
 		}
 
 		if (mtk_pe_get_is_enable(info)) {

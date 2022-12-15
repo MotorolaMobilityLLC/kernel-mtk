@@ -88,6 +88,7 @@ extern int moto_wireless_chg_ops_register(struct moto_wls_chg_ops *ops);
 extern int mtk_wlc_remove(struct charger_manager *pinfo);
 extern bool mtk_wlc_check_charger_avail(void);
 extern void moto_wlc_control_gpio(struct charger_manager *pinfo, bool enable);
+bool wlc_get_online(void);
 #else /* NOT CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT */
 
 static inline int mtk_wlc_init(struct charger_manager *pinfo,struct device *dev)
@@ -158,6 +159,10 @@ static inline bool mtk_wlc_check_charger_avail(void){
 }
 static inline void moto_wlc_control_gpio(struct charger_manager *pinfo, bool enable){
 	return ;
+}
+static inline bool wlc_get_online(void)
+{
+	return false;
 }
 #endif /* CONFIG_MOTO_WLC_ALG_SUPPORT */
 
