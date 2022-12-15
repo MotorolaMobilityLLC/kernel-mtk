@@ -61,6 +61,29 @@ static bool cancel_wlc(struct charger_manager *pinfo)
 	return false;
 }
 
+bool wlc_get_online(void)
+{
+	struct power_supply *wl_psy = NULL;
+	union power_supply_propval prop;
+	int ret;
+
+	wl_psy = power_supply_get_by_name("wireless");
+	if (wl_psy == NULL || IS_ERR(wl_psy)) {
+		chr_err("%s Couldn't get wl_psy\n", __func__);
+		prop.intval = 0;
+	} else {
+		ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_ONLINE, &prop);
+		if (ret < 0) {
+			pr_info("[%s]: get wireless online failed, ret = %d\n", __func__, ret);
+			return false;
+		}
+	}
+
+	chr_info("%s:%d\n", __func__, prop.intval);
+	return prop.intval == 1 ? true:false;
+}
+
 int mtk_wlc_reset_ta_vchr(struct charger_manager *pinfo)
 {
 	int ret = 0, chr_volt = 0;
@@ -499,7 +522,7 @@ int mtk_wlc_set_charging_current(struct charger_manager *pinfo,
 
 	chr_info("%s: starts\n", __func__);
 
-	if (!wlc->is_connect)
+	if (!wlc_get_online())
 		return -ENOTSUPP;
 
 //	if (wlc->input_current_limit1 == 0 ||

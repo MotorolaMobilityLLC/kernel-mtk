@@ -632,7 +632,7 @@ int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
-		if (mtk_pe20_get_is_connect(info) ||mtk_wlc_get_is_connect(info))
+		if (mtk_pe20_get_is_connect(info) ||wlc_get_online())
 			return 2;
 	}
 
@@ -1049,7 +1049,8 @@ bool is_typec_adapter(struct charger_manager *info)
 	if (rp > 500 &&
 			mtk_pe20_get_is_connect(info) == false &&
 			mtk_pe_get_is_connect(info) == false &&
-			info->enable_type_c == true)
+			info->enable_type_c == true&&
+			wlc_get_online() == false)
 		return true;
 
 	return false;
@@ -1255,7 +1256,7 @@ static DEVICE_ATTR(sw_jeita, 0644, show_sw_jeita,
 /* pump express series */
 bool mtk_is_pep_series_connect(struct charger_manager *info)
 {
-	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info) ||mtk_wlc_get_is_connect(info) )
+	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info) ||wlc_get_online() )
 		return true;
 
 	return false;
@@ -1442,7 +1443,7 @@ int charger_manager_notifier(struct charger_manager *info, int event)
 {
 	return srcu_notifier_call_chain(&info->evt_nh, event, NULL);
 }
-
+extern int wireless_get_charger_type(void);
 int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 {
 	struct charger_manager *info =
@@ -1463,6 +1464,27 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 				chr_err("%s: %ld %s tmp:%d %d chr:%d\n",
 					__func__, event, psy->desc->name, tmp,
 					info->battery_temp,
+					mt_get_charger_type());
+			}
+		}
+	}
+
+	if (strcmp(psy->desc->name, "wireless") == 0) {
+		ret = power_supply_get_property(psy,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+		if (!ret) {
+			tmp = val.intval ;
+			if (info->wireless_online != tmp ) {
+				info->wireless_online = tmp;
+				if(info->wireless_online == true) {
+					charger_manager_force_disable_power_path(info->chg1_consumer, MAIN_CHARGER, false);
+					charger_manager_enable_power_path(info->chg1_consumer, MAIN_CHARGER, info->wireless_online == 1 ? true:false);
+					wireless_get_charger_type();
+					_wake_up_charger(info);
+				}
+				chr_err("%s: %ld %s tmp:%d %d chr:%d\n",
+					__func__, event, psy->desc->name, tmp,
+					info->wireless_online,
 					mt_get_charger_type());
 			}
 		}
@@ -1773,7 +1795,7 @@ static void check_dynamic_mivr(struct charger_manager *info)
 	if (info->enable_dynamic_mivr) {
 		if (!mtk_pe40_get_is_connect(info) &&
 			!mtk_pe20_get_is_connect(info) &&
-			!mtk_wlc_get_is_connect(info) &&
+			!wlc_get_online() &&
 			!mtk_pe_get_is_connect(info) &&
 			!mtk_pdc_check_charger(info)) {
 
@@ -3972,7 +3994,7 @@ static ssize_t show_Pump_Express(struct device *dev,
 
 	if (IS_ENABLED(CONFIG_MOTO_WLC_ALG_SUPPORT)) {
 		/* Is PE+20 connect */
-		if (mtk_wlc_get_is_connect(pinfo))
+		if (wlc_get_online())
 			is_ta_detected = 1;
 	}
 
@@ -3989,7 +4011,7 @@ static ssize_t show_Pump_Express(struct device *dev,
 		__func__, is_ta_detected,
 		mtk_pe20_get_is_connect(pinfo),
 		mtk_pe_get_is_connect(pinfo),
-		mtk_wlc_get_is_connect(pinfo));
+		wlc_get_online());
 
 	return sprintf(buf, "%u\n", is_ta_detected);
 }
@@ -5472,7 +5494,7 @@ static void mtk_charger_shutdown(struct platform_device *dev)
 	struct charger_manager *info = platform_get_drvdata(dev);
 	int ret;
 
-	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info) || mtk_wlc_get_is_connect(info)) {
+	if (mtk_pe20_get_is_connect(info) || mtk_pe_get_is_connect(info) || wlc_get_online()) {
 		if (info->chg2_dev)
 			charger_dev_enable(info->chg2_dev, false);
 		ret = mtk_pe20_reset_ta_vchr(info);
