@@ -298,7 +298,12 @@ cpumask_t tee_set_affinity(void)
 		     l_ctx.default_affinity_mask,
 		     cpumask_pr_args(&old_affinity),
 		     current->pid);
-	set_cpus_allowed_ptr(current, to_cpumask(&affinity));
+	if(current->flags & PF_NO_SETAFFINITY){
+		mc_dev_devel("Skip set_cpus_allowed_ptr as PF_NO_SETAFFINITY masked (pid = %u)", current->pid);
+	}
+        else {
+		set_cpus_allowed_ptr(current, to_cpumask(&affinity));
+	}
 
 	return old_affinity;
 }
@@ -313,7 +318,12 @@ void tee_restore_affinity(cpumask_t old_affinity)
 		     l_ctx.default_affinity_mask,
 		     cpumask_pr_args(&current_affinity),
 		     current->pid);
-	set_cpus_allowed_ptr(current, &old_affinity);
+	if(current->flags & PF_NO_SETAFFINITY){
+		mc_dev_devel("Skip set_cpus_allowed_ptr as PF_NO_SETAFFINITY masked (pid = %u)",current->pid);
+	}
+	else {
+		set_cpus_allowed_ptr(current, &old_affinity);
+	}
 }
 
 void nq_session_init(struct nq_session *session, bool is_gp)

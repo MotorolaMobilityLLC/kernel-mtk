@@ -21,8 +21,10 @@
  * Manage dynamically switch TEE worker threads/TEE affinity to big core only.
  * Or default core affinity.
  */
+
 #if defined(BIG_CORE_SWITCH_AFFINITY_MASK)
 void set_tee_worker_threads_on_big_core(bool big_core);
+EXPORT_SYMBOL(set_tee_worker_threads_on_big_core);
 #endif
 
 #endif /* _MC_LINUX_API_H_ */
