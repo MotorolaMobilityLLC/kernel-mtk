@@ -145,6 +145,7 @@
 	mediatek,eye-vrt = <7>;
 	mediatek,eye-term = <3>;
 	mediatek,eye-rev6 = <3>;
+        mediatek,eye-disc = <7>;/*0~15*/
 };
 
 &mrdump_ext_rst {
