@@ -63,6 +63,7 @@ static const struct fsa4480_reg_val fsa_reg_i2c_defaults[] = {
 	{FSA4480_DELAY_L_MIC, 0x00},
 	{FSA4480_DELAY_L_SENSE, 0x00},
 	{FSA4480_DELAY_L_AGND, 0x09},
+	{FSA4480_SWITCH_CONTROL, 0x18},
 	{FSA4480_SWITCH_SETTINGS, 0x98},
 };
 
