@@ -118,14 +118,13 @@ inline int get_mapped_fd(struct dma_buf *dmabuf)
 	}
 
 	target_fd = __alloc_fd(f, 0, rlim_cur, O_CLOEXEC);
-
-	get_file(dmabuf->file);
-
 	if (target_fd < 0) {
 		put_files_struct(f);
 		vcu_put_file_lock();
 		return -EMFILE;
 	}
+
+	get_file(dmabuf->file);
 
 	__fd_install(f, target_fd, dmabuf->file);
 
