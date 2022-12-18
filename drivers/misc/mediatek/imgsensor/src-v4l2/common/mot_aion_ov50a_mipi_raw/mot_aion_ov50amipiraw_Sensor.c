@@ -1722,17 +1722,81 @@ static kal_uint32 get_sensor_temperature(struct subdrv_ctx *ctx)
 	return temperature_convert;
 }
 
+static kal_uint16 addr_data_pair_seamless_switch_group1_start[] = {
+//group 1
+0x3208,0x01,
+0x3016,0xf3,
+0x3017,0xf2,
+0x301f,0x9b,
+};
+
+static kal_uint16 addr_data_pair_seamless_switch_group1_end[] = {
+//group 1
+0x301f,0x98,
+0x3017,0xf0,
+0x3016,0xf0,
+0x3208,0x11,
+0x3208,0xa1,
+};
+
+static  kal_uint16 addr_data_pair_seamless_switch_group2_start[] = {
+//group 2
+0x3208,0x02,
+0x3016,0xf3,
+0x3017,0xf2,
+0x301f,0x9b,
+};
+
+
+static kal_uint16 addr_data_pair_seamless_switch_group2_end[] = {
+//group 2
+0x301f,0x98,
+0x3017,0xf0,
+0x3016,0xf0,
+0x3208,0x12,
+0x3208,0xa2,
+};
+
 static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	kal_uint32 shutter, kal_uint32 gain,
 	kal_uint32 shutter_2ndframe, kal_uint32 gain_2ndframe)
 {
-#if SEAMLESS_NO_USE
-	int k = 0;
-#endif
+        int _length;
 	_is_seamless = true;
 	memset(_i2c_data, 0x0, sizeof(_i2c_data));
 	_size_to_write = 0;
+	if(scenario_id ==SENSOR_SCENARIO_ID_NORMAL_PREVIEW)
+	{
+	    _length = sizeof(addr_data_pair_seamless_switch_group1_start) / sizeof(kal_uint16);
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
+			__func__, _is_seamless, _size_to_write);
 
+		if (_size_to_write + _length > _I2C_BUF_SIZE) {
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
+				_size_to_write + _length);
+		}
+		memcpy((void *) (_i2c_data + _size_to_write),
+			addr_data_pair_seamless_switch_group1_start,
+			sizeof(addr_data_pair_seamless_switch_group1_start));
+		_size_to_write += _length;
+	}
+
+	if(scenario_id ==SENSOR_SCENARIO_ID_CUSTOM5)
+	{
+		  _length = sizeof(addr_data_pair_seamless_switch_group2_start) / sizeof(kal_uint16);
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
+			__func__, _is_seamless, _size_to_write);
+
+		if (_size_to_write + _length > _I2C_BUF_SIZE) {
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
+				_size_to_write + _length);
+		}
+		memcpy((void *) (_i2c_data + _size_to_write),
+			addr_data_pair_seamless_switch_group2_start,
+			sizeof(addr_data_pair_seamless_switch_group2_start));
+		_size_to_write += _length;
+
+	}
 	LOG_INF("%s %d, %d, %d, %d, %d sizeof(_i2c_data) %d\n", __func__,
 		scenario_id, shutter, gain, shutter_2ndframe, gain_2ndframe, sizeof(_i2c_data));
 	control(ctx, scenario_id, NULL, NULL);
@@ -1745,26 +1809,45 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 		set_shutter(ctx, shutter_2ndframe);
 	if (gain_2ndframe != 0)
 		set_gain(ctx, gain_2ndframe);
+
+	if(scenario_id ==SENSOR_SCENARIO_ID_NORMAL_PREVIEW)
+	{
+	    _length = sizeof(addr_data_pair_seamless_switch_group1_end) / sizeof(kal_uint16);
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
+			__func__, _is_seamless, _size_to_write);
+
+		if (_size_to_write + _length > _I2C_BUF_SIZE) {
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
+				_size_to_write + _length);
+		}
+		memcpy((void *) (_i2c_data + _size_to_write),
+			addr_data_pair_seamless_switch_group1_end,
+			sizeof(addr_data_pair_seamless_switch_group1_end));
+		_size_to_write += _length;
+	}
+
+	if(scenario_id ==SENSOR_SCENARIO_ID_CUSTOM5)
+	{
+		  _length = sizeof(addr_data_pair_seamless_switch_group2_end) / sizeof(kal_uint16);
+		LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
+			__func__, _is_seamless, _size_to_write);
+
+		if (_size_to_write + _length > _I2C_BUF_SIZE) {
+			LOG_INF("_too much i2c data for fast siwtch %d\n",
+				_size_to_write + _length);
+		}
+		memcpy((void *) (_i2c_data + _size_to_write),
+			addr_data_pair_seamless_switch_group2_end,
+			sizeof(addr_data_pair_seamless_switch_group2_end));
+		_size_to_write += _length;
+
+	}
 	LOG_INF("%s _is_seamless %d, _size_to_write %d\n",
 			__func__, _is_seamless, _size_to_write);
-#if SEAMLESS_NO_USE
-	for (k = 0; k < _size_to_write; k += 2)
-		pr_debug("k = %d, 0x%04x , 0x%02x\n", k,  _i2c_data[k], _i2c_data[k+1]);
 
-
-#endif
 	table_write_cmos_sensor(ctx,
 		_i2c_data,
 		_size_to_write);
-
-#if SEAMLESS_NO_USE
-	LOG_INF("===========================================\n");
-
-	for (k = 0; k < _size_to_write; k += 2)
-		LOG_INF("k = %d, 0x%04x , 0x%02x\n",
-			k,  _i2c_data[k], read_cmos_sensor_8(ctx, _i2c_data[k]));
-#endif
-
 	_is_seamless = false;
 	LOG_INF_N("exit\n");
 	return ERROR_NONE;
@@ -1862,9 +1945,9 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		pScenarios = (MUINT32 *)((uintptr_t)(*(feature_data+1)));
 		switch (*feature_data) {
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-			*pScenarios = SENSOR_SCENARIO_ID_CUSTOM4;
+			*pScenarios = SENSOR_SCENARIO_ID_CUSTOM5;
 			break;
-		case SENSOR_SCENARIO_ID_CUSTOM4:
+		case SENSOR_SCENARIO_ID_CUSTOM5:
 			*pScenarios = SENSOR_SCENARIO_ID_NORMAL_PREVIEW;
 			break;
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
