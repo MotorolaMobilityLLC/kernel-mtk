@@ -48,6 +48,11 @@ config MOTO_LYRIQ_PROJECT_SWTP_SETING_APART
         help
           Say Y here for distinguish different projects
 
+config MOTO_LYRIQ_DRDI_RF_SET_INDEX
+        bool "Define for Lyriq DRDI RF set index"
+        help
+          Say Y here for distinguish different RF index
+
 config MOTO_DISABLE_SWTP_FACTORY
 	bool "ECCCI lyriq swtp customization"
 	help
