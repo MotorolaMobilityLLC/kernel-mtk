@@ -1235,6 +1235,9 @@ static void sensor_init(void)
 		addr_data_pair_init_mot_gnevan_s5kjn1,
 		sizeof(addr_data_pair_init_mot_gnevan_s5kjn1) /
 		sizeof(kal_uint16));
+	/* Increase the duration of ths-exit to solve the problem of mipi data signal abnormal power off */
+	write_cmos_sensor(0x6028, 0x4000);
+	write_cmos_sensor_byte(0x0816, 0x16);
 	LOG_INF("X\n");
 
 }
