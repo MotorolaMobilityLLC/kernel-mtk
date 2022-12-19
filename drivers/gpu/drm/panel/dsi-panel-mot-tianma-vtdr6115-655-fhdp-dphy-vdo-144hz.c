@@ -437,21 +437,13 @@ static struct mtk_panel_params ext_params_60hz = {
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = DISP_PLL_CLK,
-		.vfp_lp_dyn = 3480,
-		.hfp = 60,
-		.vfp = 3480,
-	},
 	.dyn_fps = {
 		.switch_en = 1,
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x00} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
 	},
 	.data_rate = DISP_PLL_CLK * 2,
-	.lfr_enable = 1,
-	.lfr_minimum_fps = 60,
+	.change_fps_by_vfp_send_cmd = 1,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -506,13 +498,6 @@ static struct mtk_panel_params ext_params_90hz = {
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = DISP_PLL_CLK,
-		.vfp_lp_dyn = 1512,
-		.hfp = 60,
-		.vfp = 1512,
-	},
 	.dyn_fps = {
 		.switch_en = 1,
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
@@ -521,8 +506,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.dfps_cmd_table[3] = {0, 14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x05,0xE8} },
 	},
 	.data_rate = DISP_PLL_CLK * 2,
-	.lfr_enable = 1,
-	.lfr_minimum_fps = 60,
+	.change_fps_by_vfp_send_cmd = 1,
 };
 static struct mtk_panel_params ext_params_120hz = {
 	.pll_clk = DISP_PLL_CLK,
@@ -576,13 +560,6 @@ static struct mtk_panel_params ext_params_120hz = {
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = DISP_PLL_CLK,
-		.vfp_lp_dyn = 528,
-		.hfp = 60,
-		.vfp = 528,
-	},
 	.dyn_fps = {
 		.switch_en = 1,
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
@@ -591,8 +568,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.dfps_cmd_table[3] = {0, 14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x02,0x10} },
 	},
 	.data_rate = DISP_PLL_CLK * 2,
-	.lfr_enable = 1,
-	.lfr_minimum_fps = 60,
+	.change_fps_by_vfp_send_cmd = 1,
 };
 
 static struct mtk_panel_params ext_params_144hz = {
@@ -647,21 +623,13 @@ static struct mtk_panel_params ext_params_144hz = {
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
 
-	.dyn = {
-		.switch_en = 1,
-		.pll_clk = DISP_PLL_CLK,
-		.vfp_lp_dyn = 36,
-		.hfp = 60,
-		.vfp = 36,
-	},
 	.dyn_fps = {
 		.switch_en = 1,
 		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x02} },
 		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
 	},
 	.data_rate = DISP_PLL_CLK * 2,
-	.lfr_enable = 1,
-	.lfr_minimum_fps = 60,
+	.change_fps_by_vfp_send_cmd = 1,
 };
 #endif
 
