@@ -118,15 +118,29 @@ static int gt9772_init(struct gt9772_device *gt9772)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&gt9772->sd);
 	int ret = 0;
-
-	LOG_INF("+\n");
+	char puSendCmdArray[5][2] = {
+	{0xed, 0xab}, {0x02, 0x00},
+	{0x06, 0x84}, {0x07, 0x01}, {0x08, 0x53},
+	};
+	unsigned char cmd_number;
         msleep(1);
+	LOG_INF("+\n");
 	client->addr  = GT9772_I2C_SLAVE_ADDR >> 1;
-	ret = i2c_smbus_read_byte_data(client, 0x00);
 
 	LOG_INF("Check HW version: %x\n", ret);
 
-	ret = i2c_smbus_write_byte_data(client, 0xed, 0xab);
+	for (cmd_number = 0; cmd_number < 5; cmd_number++) {
+		if (puSendCmdArray[cmd_number][0] != 0xFE) {
+			ret = i2c_smbus_write_byte_data(client,
+					puSendCmdArray[cmd_number][0],
+					puSendCmdArray[cmd_number][1]);
+
+			if (ret < 0)
+				return -1;
+		} else {
+			mdelay(1);
+		}
+	}
 
 	LOG_INF("-\n");
 
