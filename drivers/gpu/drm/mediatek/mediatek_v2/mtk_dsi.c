@@ -5631,14 +5631,18 @@ void mtk_dsi_send_switch_cmd(struct mtk_dsi *dsi,
 	if (dsi->slave_dsi)
 		mtk_dsi_leave_idle(dsi->slave_dsi);
 
-	for (i = 0; i < MAX_DYN_CMD_NUM; i++) {
-		dfps_cmd = &params->dyn_fps.dfps_cmd_table[i];
-		if (dfps_cmd->cmd_num == 0)
-			break;
+	if (params->dyn_fps.dfps_cmd_grp_size) {
+		mtk_dsi_cmdq_grp_gce(dsi, handle, params->dyn_fps.dfps_cmd_grp_table, params->dyn_fps.dfps_cmd_grp_size);
+	} else {
+		for (i = 0; i < MAX_DYN_CMD_NUM; i++) {
+			dfps_cmd = &params->dyn_fps.dfps_cmd_table[i];
+			if (dfps_cmd->cmd_num == 0)
+				break;
 
-		if (dfps_cmd->src_fps == 0 || drm_mode_vrefresh(old_mode) == dfps_cmd->src_fps)
-			mipi_dsi_dcs_write_gce_dyn(dsi, handle, dfps_cmd->para_list,
-				dfps_cmd->cmd_num);
+			if (dfps_cmd->src_fps == 0 || drm_mode_vrefresh(old_mode) == dfps_cmd->src_fps)
+				mipi_dsi_dcs_write_gce_dyn(dsi, handle, dfps_cmd->para_list,
+					dfps_cmd->cmd_num);
+		}
 	}
 }
 

@@ -314,6 +314,8 @@ struct dynamic_fps_params {
 	unsigned int vact_timing_fps;
 	unsigned int data_rate;
 	struct dfps_switch_cmd dfps_cmd_table[MAX_DYN_CMD_NUM];
+	struct mtk_panel_para_table dfps_cmd_grp_table[MAX_DYN_CMD_NUM];
+	unsigned int dfps_cmd_grp_size;
 };
 
 /* M-SYNC2.0 */
