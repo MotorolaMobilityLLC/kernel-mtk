@@ -439,8 +439,9 @@ static struct mtk_panel_params ext_params_60hz = {
 
 	.dyn_fps = {
 		.switch_en = 1,
-		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x00} },
-		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
+		.dfps_cmd_grp_table[0] = {2, {0x6c, 0x00} },
+		.dfps_cmd_grp_table[1] = {2, {0x62, 0x00} },
+		.dfps_cmd_grp_size = 2,
 	},
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
@@ -500,10 +501,11 @@ static struct mtk_panel_params ext_params_90hz = {
 
 	.dyn_fps = {
 		.switch_en = 1,
-		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
-		.dfps_cmd_table[1] = {0, 2, {0x62, 0x01} },
-		.dfps_cmd_table[2] = {0, 3, {0xf0, 0xaa, 0x10} },
-		.dfps_cmd_table[3] = {0, 14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x05,0xE8} },
+		.dfps_cmd_grp_table[0] = {2, {0x6c, 0x01} },
+		.dfps_cmd_grp_table[1] = {2, {0x62, 0x01} },
+		.dfps_cmd_grp_table[2] = {3, {0xf0, 0xaa, 0x10} },
+		.dfps_cmd_grp_table[3] = {14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x05,0xE8} },
+		.dfps_cmd_grp_size = 4,
 	},
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
@@ -562,10 +564,11 @@ static struct mtk_panel_params ext_params_120hz = {
 
 	.dyn_fps = {
 		.switch_en = 1,
-		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x01} },
-		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
-		.dfps_cmd_table[2] = {0, 3, {0xf0, 0xaa, 0x10} },
-		.dfps_cmd_table[3] = {0, 14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x02,0x10} },
+		.dfps_cmd_grp_table[0] = {2, {0x6c, 0x01} },
+		.dfps_cmd_grp_table[1] = {2, {0x62, 0x00} },
+		.dfps_cmd_grp_table[2] = {3, {0xf0, 0xaa, 0x10} },
+		.dfps_cmd_grp_table[3] = {14, {0xB1,0x01,0x54,0x00,0x18,0x0D,0x98,0x00,0x01,0x54,0x00,0x18,0x02,0x10} },
+		.dfps_cmd_grp_size = 4,
 	},
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
@@ -625,8 +628,9 @@ static struct mtk_panel_params ext_params_144hz = {
 
 	.dyn_fps = {
 		.switch_en = 1,
-		.dfps_cmd_table[0] = {0, 2, {0x6c, 0x02} },
-		.dfps_cmd_table[1] = {0, 2, {0x62, 0x00} },
+		.dfps_cmd_grp_table[0] = {2, {0x6c, 0x02} },
+		.dfps_cmd_grp_table[1] = {2, {0x62, 0x00} },
+		.dfps_cmd_grp_size = 2,
 	},
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
