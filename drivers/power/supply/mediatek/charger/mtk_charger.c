@@ -1994,6 +1994,29 @@ stop_charging:
 	info->can_charging = charging;
 }
 
+static struct power_supply *cp_psy = NULL;
+
+static bool mmi_get_pd_pps_support(struct charger_manager *info)
+{
+	int rc;
+	bool pd_pps_support = false;
+	union power_supply_propval val;
+	if (!cp_psy) {
+		cp_psy = power_supply_get_by_name("mmi_chrg_manager");
+		if (!cp_psy) {
+			pr_err("[%s] get cp psy failed\n", __func__);
+			return false;
+		}
+	}
+	rc = power_supply_get_property(cp_psy,
+				POWER_SUPPLY_PROP_PD_PPS_SUPPORT, &val);
+	if (!rc) {
+		pd_pps_support = val.intval;
+		pr_err("[%s] get pd pps support success, val is %d\n", __func__, val.intval);
+	}
+	return pd_pps_support;
+}
+
 /*********************
  * MMI Functionality *
  *********************/
@@ -2381,7 +2404,7 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	}
         pr_info("[%s]mtk pe connect: %d\n",
 		 __func__, mtk_pe_get_is_connect(info));
-	if (mtk_pe_get_is_connect(info)) {
+	if (mtk_pe_get_is_connect(info) || mmi_get_pd_pps_support(info)) {
 		max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
 		if (max_fv_mv == 0)
 			max_fv_mv = mmi->base_fv_mv;
