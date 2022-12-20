@@ -187,12 +187,12 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
         else {
 		swtp->tx_power_mode = SWTP_NO_TX_POWER;
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
-      	     "-------LYRIQ JPN SWTP_DO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:gpio169-Ant2=%d, gpio170-Ant1=%d, gpio171-Ant0=%d\n",
+      	     "-------LYRIQ JPN SWTP_NO_TX_POWER----------%s>>tx_power_mode = %d,gpio_state:gpio169-Ant2=%d, gpio170-Ant1=%d, gpio171-Ant0=%d\n",
 			__func__, swtp->tx_power_mode,swtp->gpio_state[1], swtp->gpio_state[2],swtp->gpio_state[3]);
 	}
 
         }
-	// swtp logic for row sku(rx index 0)
+	// swtp logic for row sku(rf index 0)
         else {
                 CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"LYRIQ ROW %s moto_drdi_rf_set_index = %d\n",
