@@ -1568,8 +1568,12 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	charger_dev_set_mivr(info->chg1_dev, info->data.min_charger_voltage);
 	charger_dev_plug_out(info->chg1_dev);
 	chr_err("lenovo mtk_charger_plug_out, atm_mode=%s\n", atm_mode);
-	if (!strcmp(atm_mode, "enable") && !info->chg_tcmd_client.factory_kill_disable)
-		orderly_poweroff(true);
+	if (!strcmp(atm_mode, "enable") && !info->chg_tcmd_client.factory_kill_disable) {
+		msleep(500);
+		chr_err("lenovo mtk_charger_plug_out, wait 500ms, vbus:%d\n",charger_get_vbus());
+		if(charger_get_vbus() < 3500)
+			orderly_poweroff(true);
+	}
 	return 0;
 }
 
