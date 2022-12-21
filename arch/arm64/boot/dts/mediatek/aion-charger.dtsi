@@ -28,6 +28,7 @@
 	non_std_ac_charger_current = <1000000>;
 	charging_host_input_current = <1500000>;
 	charging_host_charger_current = <1000000>;
+	pre_charge_current = <400>;
 
 	temp_t4_threshold = <60>;
 };
