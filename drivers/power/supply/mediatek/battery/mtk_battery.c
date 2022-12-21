@@ -4870,6 +4870,9 @@ static int __init battery_probe(struct platform_device *dev)
 	battery_tcmd_register_tcmd(&battery_main);
 
 	gm.is_probe_done = true;
+#ifdef CONFIG_BATTERY_MM8013
+	fg_bat_temp_int_internal(); //Enable batt temp interrupt
+#endif
 
 	return 0;
 }
