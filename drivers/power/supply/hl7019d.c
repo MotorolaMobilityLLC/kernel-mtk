@@ -192,9 +192,9 @@ struct workqueue_struct *charging_check_workqueue;
 struct delayed_work charging_check_work;
 #define CHARGING_CHECK_WAIT_TIME              500    /* ms */
 static int check_time = 0;
-static int dev_detect = 0;
+//static int dev_detect = 0;
 static atomic_t hl7019d_irq_enable_charging = ATOMIC_INIT(0);
-static int is_chager_ic_on = 0;
+//static int is_chager_ic_on = 0;
 static int hl7019d_get_charger_type(struct hl7019d_info *info);
 static int hl7019d_set_charger_type(struct hl7019d_info *info);
 struct hl7019d_info *charging_check_info = NULL;
@@ -370,8 +370,8 @@ unsigned int hl7019d_config_interface(unsigned char reg_num, unsigned char val, 
 
 	ret = hl7019d_write_byte(reg_num, &hl7019d_reg, 2);
 	mutex_unlock(&hl7019d_access_lock);
-	pr_err("[hl7019d_config_interface] write Reg[%x]=0x%x from 0x%x\n", reg_num,
-			hl7019d_reg, hl7019d_reg_ori);
+	//pr_err("[hl7019d_config_interface] write Reg[%x]=0x%x from 0x%x\n", reg_num,
+	//		hl7019d_reg, hl7019d_reg_ori);
 	/* Check */
 	/* hl7019d_read_byte(reg_num, &hl7019d_reg, 1); */
 	/* pr_err("[hl7019d_config_interface] Check Reg[%x]=0x%x\n", reg_num, hl7019d_reg); */
@@ -576,7 +576,7 @@ void hl7019d_set_iterm(unsigned int val)
 /* CON4 */
 void hl7019d_set_vreg(unsigned int val)
 {
-	if(val > 63) {
+	if(val > 0x3f) {
 		pr_err("[%s] parameter error.\n", __func__);
 		return;
 	}
@@ -1949,7 +1949,7 @@ static int hl7019d_charger_ic_init(struct charger_device *chg_dev)
 
 	hl7019d_set_en_hiz(0);	 // enable IC
 	hl7019d_set_vindpm(0x7);	 //vindpm 4.44V
-	hl7019d_set_iinlim(0x6);	 //input current 2A
+	hl7019d_set_iinlim(0x2);	 //input current 0.5A
 
 	hl7019d_set_sys_min(0x5);  // sys min 3.5V
 	hl7019d_set_boost_lim(0x0); //boost limit 1A
@@ -1960,7 +1960,7 @@ static int hl7019d_charger_ic_init(struct charger_device *chg_dev)
 	hl7019d_set_iprechg(0x03);	//precharge current 512mA
 	hl7019d_set_iterm(0x1);		//termination current 256mA
 
-	hl7019d_set_vreg(0x38);		// VREG 4.4V
+	hl7019d_set_vreg(0x3d);		// VREG 4.48V
 	hl7019d_set_batlowv(0x1);	//battery low 3.0V
 	hl7019d_set_vrechg(0x0);		//recharge delta 100mV
 
@@ -2418,33 +2418,11 @@ static int hl7019d_driver_probe(struct i2c_client *client, const struct i2c_devi
 	if (ret < 0)
 		return ret;
 
-#if 1
-	pr_err("hl7019d : first i2c addr = 0x%x\n", new_client->addr);
 	reg_val = hl7019d_get_vender_code();
-	pr_err("hl7019d : REG0A = 0x%x\n", reg_val);
-
 	if (reg_val != 0x20) {
-		pr_err("try hl7019d_SLAVE_ADDR 0x6C \n");
-        new_client->addr = 0x6c;
-		reg_val = hl7019d_get_vender_code();
-		pr_err("hl7019d : reg_val = 0x%x\n", reg_val);
-		if (reg_val != 0x20) {
-			pr_err("[hl7019d] %s: get vendor id failed\n", __func__);
-			return -ENODEV;
-		}
+		pr_err("%s: get vendor id failed\n", __func__);
+		return -ENODEV;
 	}
-
-#else
-    if (0x20 != dev_detect)
-	{
-		if (!is_hl7019d_charger_ic()) {
-			pr_err("[hl7019d] %s: get vendor id failed\n", __func__);
-			return -ENODEV;
-		}
-	}
-#endif
-
-	//is_chager_ic_on = 1;  // detect hl7019d charger ic
 
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->chg_dev_name,
