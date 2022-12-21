@@ -259,6 +259,18 @@
 	status = "okay";
 };
 
+&pio {
+	spislv_pins_default: spislv_mode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO85__FUNC_SPI1_A_MI>,
+				<PINMUX_GPIO86__FUNC_SPI1_A_CSB>,
+				<PINMUX_GPIO87__FUNC_SPI1_A_MO>,
+				<PINMUX_GPIO88__FUNC_SPI1_A_CLK>;
+			drive-strength = <3>;
+		};
+	};
+};
+
 &spi1 {
 	status = "okay";
 	#address-cells = <1>;
@@ -277,18 +289,6 @@
 		high-speed-tick-delay = /bits/ 8 <2>;
 		high-speed-early-trans = /bits/ 8 <0>;
 		slave-drive-strength = /bits/ 8 <3>;
-	};
-};
-
-&pio {
-	spislv_pins_default: spislv_mode_default {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO85__FUNC_SPI1_A_MI>,
-				<PINMUX_GPIO86__FUNC_SPI1_A_CSB>,
-				<PINMUX_GPIO87__FUNC_SPI1_A_MO>,
-				<PINMUX_GPIO88__FUNC_SPI1_A_CLK>;
-			drive-strength = <3>;
-		};
 	};
 };
 

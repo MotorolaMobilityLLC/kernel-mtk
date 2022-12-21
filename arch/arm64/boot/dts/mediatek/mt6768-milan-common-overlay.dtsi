@@ -708,27 +708,6 @@
 	status = "okay";
 };
 
-&spi3 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&spislv_pins_default>;
-
-	spislv@0 {
-		compatible = "mediatek,spi_slave";
-		reg = <0>;
-		spi-max-frequency = <55000000>;
-		spi-tx-bus-width = <1>;
-		spi-rx-bus-width = <1>;
-		low-speed-tick-delay = /bits/ 8 <1>;
-		low-speed-early-trans = /bits/ 8 <0>;
-		high-speed-tick-delay = /bits/ 8 <1>;
-		high-speed-early-trans = /bits/ 8 <1>;
-		slave-drive-strength = /bits/ 8 <3>;
-	};
-};
-
 &pio {
 	spislv_pins_default: spislv_mode_default {
 		pins_cmd_dat {
@@ -739,6 +718,27 @@
 			drive-strength = <3>;
 		};
 	};
+};
+
+&spi3 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&spislv_pins_default>;
+
+      spislv@0 {
+            compatible = "mediatek,spi_slave";
+            reg = <0>;
+            spi-max-frequency = <55000000>;
+            spi-tx-bus-width = <1>;
+            spi-rx-bus-width = <1>;
+            low-speed-tick-delay = /bits/ 8 <4>;
+            low-speed-early-trans = /bits/ 8 <0>;
+            high-speed-tick-delay = /bits/ 8 <2>;
+            high-speed-early-trans = /bits/ 8 <0>;
+            slave-drive-strength = /bits/ 8 <3>;
+      };
 };
 
 /* DISPSYS GPIO standardization end*/
