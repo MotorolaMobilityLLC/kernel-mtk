@@ -2918,6 +2918,10 @@ void fg_drv_update_hw_status(void)
 	else
 		ktime = ktime_set(60, 0);
 
+#ifdef CONFIG_BATTERY_MM8013
+	ktime = ktime_set(20, 0); //30s period update the temp
+#endif
+
 	hrtimer_start(&gm.fg_hrtimer, ktime, HRTIMER_MODE_REL);
 
 }
