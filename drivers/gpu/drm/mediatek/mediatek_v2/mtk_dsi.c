@@ -2907,6 +2907,68 @@ static void mtk_dsi_encoder_disable(struct drm_encoder *encoder)
 			(unsigned long)dsi->output_en, 0);
 }
 
+extern int mtk_read_ddic_cellid(unsigned char *cellid, int reg, int offset_reg, int len);
+static ssize_t panelCellId_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	static int reg_addr = 0;
+	static int offset_reg_addr = 0;
+	static int len = 0;
+
+	int written = 0, ret;
+	unsigned char cellid[32];
+
+	if(!reg_addr || !offset_reg_addr || !len) {
+		if (dsi && dsi->ext && dsi->ext->params) {
+			reg_addr = dsi->ext->params->panel_cellid_reg;
+			offset_reg_addr = dsi->ext->params->panel_cellid_offset_reg;
+			len = dsi->ext->params->panel_cellid_len;
+			DDPMSG("houdz reg_addr 0x%x offset_reg_addr 0x%x len 0x%x\n");
+		}
+		else return 0;
+	}
+
+	if(reg_addr && offset_reg_addr && len && len<32) {
+		memset(cellid, 0, 32);
+
+		ret = mtk_read_ddic_cellid(cellid, reg_addr, offset_reg_addr, len);
+		if(ret) {
+			written = snprintf(buf, PAGE_SIZE, "%s\n", cellid);
+		}
+	}
+	return written;
+}
+
+static DEVICE_ATTR_RO(panelCellId);
+
+static const struct attribute *conn_panel_attrs[] = {
+	&dev_attr_panelCellId.attr,
+	NULL
+};
+
+static int moto_panel_sysfs_add(struct mtk_dsi *dsi)
+{
+	int ret;
+	static bool sysfs_add_done = 0;
+
+	if (sysfs_add_done) return 0;
+
+	if (!dsi || !dsi->conn.kdev) {
+		DDPMSG("dsi->conn->kdev is still null\n");
+		return -EINVAL;
+	}
+
+	ret = sysfs_create_files(&dsi->conn.kdev->kobj, conn_panel_attrs);
+
+	DDPMSG(" sysfs add done, ret\n", ret);
+	sysfs_add_done = true;
+
+	return ret;
+}
+
 static void mtk_dsi_encoder_enable(struct drm_encoder *encoder)
 {
 	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
@@ -2918,6 +2980,8 @@ static void mtk_dsi_encoder_enable(struct drm_encoder *encoder)
 			(unsigned long)crtc, index);
 
 	DDPINFO("%s\n", __func__);
+
+	if (index == 0) moto_panel_sysfs_add(dsi);
 
 	if (index == 0) {
 		DDP_PROFILE("[PROFILE] %s before notify start\n", __func__);
