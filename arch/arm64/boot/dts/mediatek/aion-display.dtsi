@@ -24,8 +24,8 @@
 	backlight {
 		label = "lcd-backlight";
 		led_mode = <4>;
-		max-brightness = <3514>;
-		max-hw-brightness = <3514>;
+		max-brightness = <4095>;
+		max-hw-brightness = <4095>;
 		default-brightness = <2577>;
 	};
 };
