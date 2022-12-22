@@ -32,7 +32,9 @@
 #include <linux/interrupt.h>
 #include <linux/arm-smccc.h>
 #include <linux/soc/mediatek/mtk_sip_svc.h>
-
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+#include <linux/soc/mediatek/mtk-pm-qos.h>
+#endif
 #include <linux/mmc/card.h>
 #include <linux/mmc/core.h>
 #include <linux/mmc/host.h>
@@ -602,42 +604,41 @@ static void sdr_get_field(void __iomem *reg, u32 field, u32 *val)
 	*val = ((tv & field) >> (ffs((unsigned int)field) - 1));
 }
 
-static void msdc_retry(struct msdc_host *host, int addr, int val, int expr, int retry, int cnt,
+static void msdc_retry(struct msdc_host *host, int addr, int val, int retry, int cnt,
 	struct mmc_host *mmc)
 {
+	int backup = cnt;
 
-	do {
-		int backup = cnt;
-
-		while (retry) {
-			sdr_set_bits(host->base + addr, val);
-			if (!(expr))
-				break;
-			if (cnt-- == 0) {
-				retry--; mdelay(1); cnt = backup;
-			}
+	while (retry > 0) {
+		sdr_set_bits(host->base + addr, val);
+		while(cnt > 0){
+			if (!(readl(host->base + addr) & val))
+				return;
+			cnt--;
 		}
-		if (retry == 0) {
-			dev_info(mmc->parent, "%s\n", __func__);
-			msdc_dump_info(mmc);
+		if (cnt <= 0) {
+			retry--; mdelay(1); cnt = backup;
 		}
-		WARN_ON(retry == 0);
-	} while (0);
+	}
+	if (retry == 0) {
+		dev_info(mmc->parent, "%s\n", __func__);
+		msdc_dump_info(mmc);
+	}
+	WARN_ON(retry == 0);
 }
 static void msdc_reset_hw(struct msdc_host *host)
 {
 	u32 val;
+
 	dev_dbg(host->mmc->parent, "%s\n",__func__);
 
 	//sdr_set_bits(host->base + MSDC_CFG, MSDC_CFG_RST);
 	msdc_retry(host, MSDC_CFG, MSDC_CFG_RST,
-		readl(host->base + MSDC_CFG) & MSDC_CFG_RST,
-		10, 1000, host->mmc);
+		100, 1000, host->mmc);
 
 	//sdr_set_bits(host->base + MSDC_FIFOCS, MSDC_FIFOCS_CLR);
 	msdc_retry(host, MSDC_FIFOCS, MSDC_FIFOCS_CLR,
-		readl(host->base + MSDC_FIFOCS) & MSDC_FIFOCS_CLR,
-		10, 1000, host->mmc);
+		100, 1000, host->mmc);
 
 	val = readl(host->base + MSDC_INT);
 	writel(val, host->base + MSDC_INT);
@@ -2900,10 +2901,23 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (ret)
 		goto release;
 
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+	mtk_pm_qos_add_request(&host->pm_qos, MTK_PM_QOS_VCORE_OPP, 1);
+#endif
+
 	pm_runtime_set_active(host->dev);
 	pm_runtime_set_autosuspend_delay(host->dev, MTK_MMC_AUTOSUSPEND_DELAY);
 	pm_runtime_use_autosuspend(host->dev);
 	pm_runtime_enable(host->dev);
+
+	if (mmc->host_function == MSDC_EMMC) {
+		mmc->ocr_avail_mmc = MMC_VDD_EMMC;
+		mmc->ocr_avail = mmc->ocr_avail_mmc;
+	} else if (mmc->host_function == MSDC_SD) {
+		mmc->ocr_avail_sd = MMC_VDD_SD;
+		mmc->ocr_avail = mmc->ocr_avail_sd;
+	}
+
 	ret = mmc_add_host(mmc);
 
 	if (ret)
@@ -2918,6 +2932,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	return 0;
 end:
 	pm_runtime_disable(host->dev);
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+	mtk_pm_qos_remove_request(&host->pm_qos);
+#endif
 release:
 	platform_set_drvdata(pdev, NULL);
 	msdc_deinit_hw(host);
@@ -2959,6 +2976,10 @@ static int msdc_drv_remove(struct platform_device *pdev)
 			host->dma.gpd, host->dma.gpd_addr);
 	dma_free_coherent(&pdev->dev, MAX_BD_NUM * sizeof(struct mt_bdma_desc),
 			host->dma.bd, host->dma.bd_addr);
+
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+	mtk_pm_qos_remove_request(&host->pm_qos);
+#endif
 
 	mmc_free_host(host->mmc);
 
@@ -3062,6 +3083,9 @@ static int msdc_runtime_suspend(struct device *dev)
 
 	msdc_save_reg(host);
 	msdc_gate_clock(mmc);
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+	mtk_pm_qos_update_request(&host->pm_qos, MTK_PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+#endif
 	return 0;
 }
 
@@ -3070,6 +3094,9 @@ static int msdc_runtime_resume(struct device *dev)
 	struct mmc_host *mmc = dev_get_drvdata(dev);
 	struct msdc_host *host = mmc_priv(mmc);
 	struct arm_smccc_res smccc_res;
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+	mtk_pm_qos_update_request(&host->pm_qos, 1);
+#endif
 
 	msdc_ungate_clock(mmc);
 	msdc_restore_reg(host);

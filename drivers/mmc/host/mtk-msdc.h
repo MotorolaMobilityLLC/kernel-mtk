@@ -7,6 +7,10 @@
 #define __MT_MSDC_H__
 
 #include <mt-plat/sync_write.h>
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+#include <linux/soc/mediatek/mtk-pm-qos.h>
+#endif
+
 #define HOST_MAX_NUM            (2)
 
 
@@ -230,6 +234,11 @@ struct msdc_host {
 	struct msdc_tune_para def_tune_para; /* default tune setting */
 	struct msdc_tune_para saved_tune_para; /* tune result of CMD21/CMD19 */
 	struct cqhci_host *cq_host;
+
+#if defined(CONFIG_MACH_MT6768) && defined(CONFIG_MTK_PMQOS)
+	struct mtk_pm_qos_request pm_qos;
+#endif
+
 };
 
 
