@@ -376,3 +376,7 @@
 		dr_check = <2>;
 	};
 };
+
+&extcon_usb {
+	vbus-current = <1300000>;
+};
