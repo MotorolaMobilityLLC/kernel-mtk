@@ -17,6 +17,20 @@
 #include "mediatek/aion-wl2864c.dtsi"
 #include "mediatek/aion-charger.dtsi"
 
+/*Remove unused i2c device*/
+&rt6160 {
+	status = "disabled";
+};
+
+&ps5169 {
+	status = "disabled";
+};
+
+&gate_ic {
+	status = "disabled";
+};
+/*Remove unused i2c device end*/
+
 &i2c6 {
     aw882xx_smartpa_0: aw882xx@34 {
         compatible = "awinic,aw882xx_smartpa";
