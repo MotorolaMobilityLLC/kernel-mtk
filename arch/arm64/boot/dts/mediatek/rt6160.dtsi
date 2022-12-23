@@ -3,7 +3,7 @@
 // Copyright (c) 2021 MediaTek Inc.
 
 &i2c5 {
-	rt6160@75 {
+	rt6160: rt6160@75 {
 		compatible = "richtek,rt6160";
 		reg = <0x75>;
 		//enable-gpios = <&gpio26 2 0>;
