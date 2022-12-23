@@ -194,8 +194,8 @@
 
 &mt6360_chg {
        cv = <4480000>;
-       ircmp_resistor = <0>;       /* uohm */
-       ircmp_vclamp = <0>;         /* uV */
+       ircmp_resistor = <7000>;       /* uohm */
+       ircmp_vclamp = <32000>;         /* uV */
 };
 
 &pio {
