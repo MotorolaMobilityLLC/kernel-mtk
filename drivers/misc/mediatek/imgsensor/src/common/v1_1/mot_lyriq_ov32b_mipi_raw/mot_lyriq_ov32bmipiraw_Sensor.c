@@ -190,7 +190,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = 0,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_HW_BAYER_B,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {I2C_ADDR,0xff},
@@ -1770,7 +1770,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				*feature_return_para_32 = 1000; /*BINNING_NONE*/
 				break;
 			default:
-				*feature_return_para_32 = 1310; /*BINNING_AVERAGED*/
+				*feature_return_para_32 = 1000; /*BINNING_AVERAGED*/
 				break;
 		}
 		pr_debug("SENSOR_FEATURE_GET_BINNING_TYPE AE_binning_type:%d,\n",
