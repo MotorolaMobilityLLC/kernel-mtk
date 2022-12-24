@@ -568,6 +568,7 @@
       <elf-symbol name='__traceiter_android_vh_get_thermal_zone_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x14b02a03'/>
       <elf-symbol name='__traceiter_android_vh_gic_resume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x54acc7d'/>
       <elf-symbol name='__traceiter_android_vh_gic_set_affinity' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x832846b9'/>
+      <elf-symbol name='__traceiter_android_vh_gic_suspend' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdc3c88f3'/>
       <elf-symbol name='__traceiter_android_vh_gic_v2_resume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c5bab37'/>
       <elf-symbol name='__traceiter_android_vh_handle_failed_page_trylock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2df34b95'/>
       <elf-symbol name='__traceiter_android_vh_handle_tlb_conf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1554e1e6'/>
@@ -2930,6 +2931,9 @@
       <elf-symbol name='gether_set_qmult' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x559df9de'/>
       <elf-symbol name='gether_setup_name_default' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x15f53cff'/>
       <elf-symbol name='gf128mul_lle' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e13f6f6'/>
+      <elf-symbol name='gic_cpu_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd7b1df3a'/>
+      <elf-symbol name='gic_dist_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd866bde1'/>
+      <elf-symbol name='gic_dist_wait_for_rwp' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7f9d6c73'/>
       <elf-symbol name='gic_resume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x14da596c'/>
       <elf-symbol name='gic_v2_resume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1edeef7e'/>
       <elf-symbol name='glob_match' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5009c71d'/>
@@ -7003,6 +7007,7 @@
       <elf-symbol name='__tracepoint_android_vh_get_thermal_zone_device' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf63d5b1a'/>
       <elf-symbol name='__tracepoint_android_vh_gic_resume' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe7eeb6d7'/>
       <elf-symbol name='__tracepoint_android_vh_gic_set_affinity' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2b46dd56'/>
+      <elf-symbol name='__tracepoint_android_vh_gic_suspend' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa29dd83b'/>
       <elf-symbol name='__tracepoint_android_vh_gic_v2_resume' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc47c11fa'/>
       <elf-symbol name='__tracepoint_android_vh_handle_failed_page_trylock' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25966033'/>
       <elf-symbol name='__tracepoint_android_vh_handle_tlb_conf' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2e7dc9bc'/>
@@ -51417,7 +51422,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -125395,7 +125400,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='22' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='418' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='419' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -128916,6 +128921,11 @@
         <parameter type-id='eaa32e2f' name='reg' filepath='include/trace/hooks/gic.h' line='26' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_gic_suspend' mangled-name='__traceiter_android_vh_gic_suspend' filepath='include/trace/hooks/gic_v3.h' line='35' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_gic_suspend'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/gic_v3.h' line='35' column='1'/>
+        <parameter type-id='174bf37c' name='gd' filepath='include/trace/hooks/gic_v3.h' line='35' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_gic_v2_resume' mangled-name='__traceiter_android_vh_gic_v2_resume' filepath='include/trace/hooks/gic.h' line='22' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_gic_v2_resume'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/gic.h' line='22' column='1'/>
         <parameter type-id='7544e824' name='domain' filepath='include/trace/hooks/gic.h' line='22' column='1'/>
@@ -130314,6 +130324,7 @@
       <var-decl name='__tracepoint_android_vh_get_thermal_zone_device' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_get_thermal_zone_device' visibility='default' filepath='include/trace/hooks/thermal.h' line='45' column='1' elf-symbol-id='__tracepoint_android_vh_get_thermal_zone_device'/>
       <var-decl name='__tracepoint_android_vh_gic_resume' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_gic_resume' visibility='default' filepath='include/trace/hooks/gic_v3.h' line='32' column='1' elf-symbol-id='__tracepoint_android_vh_gic_resume'/>
       <var-decl name='__tracepoint_android_vh_gic_set_affinity' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_gic_set_affinity' visibility='default' filepath='include/trace/hooks/gic.h' line='26' column='1' elf-symbol-id='__tracepoint_android_vh_gic_set_affinity'/>
+      <var-decl name='__tracepoint_android_vh_gic_suspend' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_gic_suspend' visibility='default' filepath='include/trace/hooks/gic_v3.h' line='35' column='1' elf-symbol-id='__tracepoint_android_vh_gic_suspend'/>
       <var-decl name='__tracepoint_android_vh_gic_v2_resume' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_gic_v2_resume' visibility='default' filepath='include/trace/hooks/gic.h' line='22' column='1' elf-symbol-id='__tracepoint_android_vh_gic_v2_resume'/>
       <var-decl name='__tracepoint_android_vh_handle_failed_page_trylock' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_handle_failed_page_trylock' visibility='default' filepath='include/trace/hooks/vmscan.h' line='24' column='1' elf-symbol-id='__tracepoint_android_vh_handle_failed_page_trylock'/>
       <var-decl name='__tracepoint_android_vh_handle_tlb_conf' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_handle_tlb_conf' visibility='default' filepath='include/trace/hooks/fault.h' line='33' column='1' elf-symbol-id='__tracepoint_android_vh_handle_tlb_conf'/>
@@ -142042,8 +142053,17 @@
         <parameter type-id='2a82ed9c' name='b' filepath='crypto/gf128mul.c' line='170' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='gic_cpu_init' mangled-name='gic_cpu_init' filepath='drivers/irqchip/irq-gic-v3.c' line='1139' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_cpu_init'>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='gic_dist_init' mangled-name='gic_dist_init' filepath='drivers/irqchip/irq-gic-v3.c' line='795' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_dist_init'>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='gic_dist_wait_for_rwp' mangled-name='gic_dist_wait_for_rwp' filepath='drivers/irqchip/irq-gic-v3.c' line='217' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_dist_wait_for_rwp'>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <var-decl name='gic_nonsecure_priorities' type-id='237c0d27' mangled-name='gic_nonsecure_priorities' visibility='default' filepath='drivers/irqchip/irq-gic-v3.c' line='92' column='1' elf-symbol-id='gic_nonsecure_priorities'/>
-      <function-decl name='gic_resume' mangled-name='gic_resume' filepath='drivers/irqchip/irq-gic-v3.c' line='1360' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_resume'>
+      <function-decl name='gic_resume' mangled-name='gic_resume' filepath='drivers/irqchip/irq-gic-v3.c' line='1363' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_resume'>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='gic_v2_resume' mangled-name='gic_v2_resume' filepath='drivers/irqchip/irq-gic.c' line='403' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='gic_v2_resume'>
