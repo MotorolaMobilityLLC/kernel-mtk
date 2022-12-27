@@ -24,7 +24,7 @@
 atomic_t gt9886_tui_flag = ATOMIC_INIT(0);
 EXPORT_SYMBOL(gt9886_tui_flag);
 
-int tpd_enter_tui(void)
+int gt9886_tpd_enter_tui(void)
 {
 	int ret = 0;
 
@@ -34,9 +34,9 @@ int tpd_enter_tui(void)
 
 	return ret;
 }
-EXPORT_SYMBOL(tpd_enter_tui);
+EXPORT_SYMBOL(gt9886_tpd_enter_tui);
 
-int tpd_exit_tui(void)
+int gt9886_tpd_exit_tui(void)
 {
 	int ret = 0;
 
@@ -49,6 +49,6 @@ int tpd_exit_tui(void)
 
 	return ret;
 }
-EXPORT_SYMBOL(tpd_exit_tui);
+EXPORT_SYMBOL(gt9886_tpd_exit_tui);
 #endif
 
