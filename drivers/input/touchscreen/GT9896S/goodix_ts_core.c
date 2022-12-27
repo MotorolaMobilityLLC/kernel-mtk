@@ -48,7 +48,7 @@ static int gt9896s_polling_flag;
 
 struct gt9896s_module gt9896s_modules;
 
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if IS_ENABLED(CONFIG_TRUSTONIC_TRUSTED_UI)
 struct gt9896s_ts_core *ts_core_for_tui;
 EXPORT_SYMBOL_GPL(ts_core_for_tui);
 #endif
@@ -2019,7 +2019,7 @@ static int gt9896s_ts_disp_notifier_callback(struct notifier_block *nb,
 //resume: touch power on is after display to avoid display disturb
 			ts_info("%s IN", __func__);
 			if (*data == MTK_DISP_BLANK_UNBLANK) {
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if IS_ENABLED(CONFIG_TRUSTONIC_TRUSTED_UI)
 				if (!atomic_read(&gt9896s_tui_flag))
 #endif
 					gt9896s_ts_resume(core_data);
@@ -2031,7 +2031,7 @@ static int gt9896s_ts_disp_notifier_callback(struct notifier_block *nb,
 			ts_info("%s IN", __func__);
 			if (*data == MTK_DISP_BLANK_POWERDOWN) {
 
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if IS_ENABLED(CONFIG_TRUSTONIC_TRUSTED_UI)
 				if (!atomic_read(&gt9896s_tui_flag))
 #endif
 					gt9896s_ts_suspend(core_data);
@@ -2267,7 +2267,7 @@ static int gt9896s_ts_probe(struct platform_device *pdev)
 #endif
 
 	/* for tui touch */
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if IS_ENABLED(CONFIG_TRUSTONIC_TRUSTED_UI)
 	ts_core_for_tui = core_data;
 #endif
 
@@ -2288,6 +2288,11 @@ static int gt9896s_ts_probe(struct platform_device *pdev)
 	ts_info("core probe OUT");
 	/* wakeup ext module register work */
 	complete_all(&gt9896s_modules.core_comp);
+	#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
+		ts_info("%s: %d set tui function\n", __func__, __LINE__);
+		register_tpd_tui_request(gt9896s_tpd_enter_tui, gt9896s_tpd_exit_tui);
+	#endif
+
 	return 0;
 
 err:
