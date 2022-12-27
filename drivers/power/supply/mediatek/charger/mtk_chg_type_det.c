@@ -331,6 +331,7 @@ int wireless_get_charger_type(void)
 	int ret;
 	struct mt_charger *info = NULL;
 	struct power_supply *psy = power_supply_get_by_name("charger");
+	static enum charger_type pre_chg_type = CHARGER_UNKNOWN;
 
 	pr_info("%s enter\n", __func__);
 
@@ -363,11 +364,13 @@ int wireless_get_charger_type(void)
 	}
 
 
-	pr_info("%s usb_type:%d, wireless_type:%d\n", __func__,info->chg_type,prop_wls.intval);
+	pr_info("%s usb_type:%d, wireless_type:%d,pre_chg_type:%d\n", __func__,info->chg_type,prop_wls.intval,pre_chg_type);
 
-	if((NONSTANDARD_CHARGER == info->chg_type ||CHARGER_UNKNOWN == info->chg_type  )&& prop_wls.intval == POWER_SUPPLY_TYPE_WIRELESS   ) {
+	//when wireless plug in, apsd type maybe unknow or nonstandard.  when wlc plug out, vbus int comes before wirless int. pre_chg_type also could handle it.
+	if((NONSTANDARD_CHARGER == info->chg_type ||(CHARGER_UNKNOWN == info->chg_type && pre_chg_type != WIRELESS_CHARGER ) )&& prop_wls.intval == POWER_SUPPLY_TYPE_WIRELESS   ) {
 		info->chg_type = WIRELESS_CHARGER;
 	}
+	pre_chg_type = info->chg_type;
 
 	if(info->chg_type != WIRELESS_CHARGER && CHARGER_UNKNOWN != info->chg_type) {
 		pr_info("%s  normal charger connected, switch mux to usb vbus\n", __func__);
