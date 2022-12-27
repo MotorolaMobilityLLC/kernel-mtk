@@ -96,6 +96,7 @@ obj-$(CONFIG_DRM_PANEL_TONGXINGDA_FT8726_FHDP_DPHY_VDO_120HZ) += dsi-panel-mot-t
 obj-$(CONFIG_DRM_PANEL_CSOT_FT8726_FHDP_DPHY_VDO_120HZ) += dsi-panel-mot-csot-ft8726-fhdp-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_NT36672C_649_FHDP_DPHY_VDO_120HZ) += dsi-panel-mot-tianma-nt36672c-649-fhdp-dphy-vdo-120hz.o
 obj-$(CONFIG_DRM_PANEL_TIANMA_VTDR6115_655_FHDP_DPHY_VDO_144HZ) += dsi-panel-mot-tianma-vtdr6115-655-fhdp-dphy-vdo-144hz.o
+obj-$(CONFIG_DRM_PANEL_CSOT_VTDR6115_655_FHDP_DPHY_VDO_144HZ) += dsi-panel-mot-csot-vtdr6115-655-fhdp-dphy-vdo-144hz.o
 
 obj-$(CONFIG_GATEIC_OCP2138) += ocp2138.o
 mediatek-drm-gateic-y := mtk_drm_panel_i2c.o \
