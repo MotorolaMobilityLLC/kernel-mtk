@@ -48,3 +48,4 @@ obj-$(CONFIG_THERMAL) += mtk_ts_6359vgpu.o
 obj-$(CONFIG_THERMAL) += mtk_ts_6359tsx.o
 obj-$(CONFIG_THERMAL) += mtk_ts_6359dcxo.o
 obj-$(CONFIG_THERMAL) += mtk_ti_6315.o
+obj-$(CONFIG_THERMAL) += vtskin_temp.o
