@@ -3261,6 +3261,7 @@ static int accdet_tcp_notifier_call(struct notifier_block *nb,
         case TCP_NOTIFY_TYPEC_STATE:
                 old_state = noti->typec_state.old_state;
                 new_state = noti->typec_state.new_state;
+		pr_err("typec notify fsa4480 %d %d", old_state, new_state);
 
                 if (old_state == TYPEC_UNATTACHED &&
                            new_state == TYPEC_ATTACHED_AUDIO) {
@@ -3296,6 +3297,7 @@ static int init_accdet_tcpc(struct accdet_typec_manager *chip)
         }
         /* register tcp notifier callback */
         chip->tcp_nb.notifier_call = accdet_tcp_notifier_call;
+	chip->tcp_nb.priority = 99;
         ret = register_tcp_dev_notifier(chip->tcpc, &chip->tcp_nb,
                                         TCP_NOTIFY_TYPE_ALL);
         if (ret < 0) {
