@@ -826,9 +826,6 @@
 	touch: touch {
 			compatible = "goodix,touch";
 		};
-	touch_panel: touch_panel {
-			compatible = "mediatek,touch_panel";
-		};
 
 	cm_mgr: cm_mgr@0c530000 {
 		compatible = "mediatek,mt6879-cm_mgr";
@@ -4346,6 +4343,10 @@
 			host-id = <0x6879>;
 			conn-id = <0x0205>;
 			interrupts = <GIC_SPI 666 IRQ_TYPE_LEVEL_HIGH 0>;
+		};
+
+		touch_panel: touch_panel {
+			compatible = "mediatek,touch-panel";
 		};
 
 		gpu_protected_memory_allocator: protected-memory-allocator {
