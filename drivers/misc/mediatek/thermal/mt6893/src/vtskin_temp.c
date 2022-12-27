@@ -643,7 +643,7 @@ static int mtktsvtskin1_bind(struct thermal_zone_device *thermal,
 		table_val = 9;
 		mtktsvtskin_dprintk("[%s] %s\n", __func__, cdev->type);
 	} else {
-		pr_notice(dev, "mtktsvtskin_bind called return 0\n");
+		pr_notice("mtktsvtskin_bind called return 0\n");
 		return 0;
 	}
 
@@ -1034,8 +1034,6 @@ void mtktsvtskin_max_register_thermal(void)
 	int i = VTSKIN_MAX_INDEX, ret;
 	struct vtskin_data *skin_data = &mt6893_vtskin_data;
 	struct thermal_zone_device *tzdev;
-	struct device *dev = mt6893_vtskin_data.dev;
-
 
 
 
@@ -1062,9 +1060,6 @@ void mtktsvtskin1_register_thermal(void)
 	int i = VTSKIN1_INDEX, ret;
 	struct vtskin_data *skin_data = &mt6893_vtskin_data;
 	struct thermal_zone_device *tzdev;
-	struct device *dev = mt6893_vtskin_data.dev;
-
-
 
 
 	tzdev= mtk_thermal_zone_device_register(mtk_thermal_get_vtksin_tz_name(i), num_trip1,
@@ -1090,9 +1085,6 @@ void mtktsvtskin2_register_thermal(void)
 	int i = VTSKIN2_INDEX , ret;
 	struct vtskin_data *skin_data = &mt6893_vtskin_data;
 	struct thermal_zone_device *tzdev;
-	struct device *dev = mt6893_vtskin_data.dev;
-
-
 
 
 	tzdev= mtk_thermal_zone_device_register(mtk_thermal_get_vtksin_tz_name(i), num_trip2,
@@ -1118,7 +1110,6 @@ void mtktsvtskin3_register_thermal(void)
 	int i = VTSKIN3_INDEX , ret;
 	struct vtskin_data *skin_data = &mt6893_vtskin_data;
 	struct thermal_zone_device *tzdev;
-	struct device *dev = mt6893_vtskin_data.dev;
 
 	tzdev= mtk_thermal_zone_device_register(mtk_thermal_get_vtksin_tz_name(i), num_trip3,
 							NULL, &mtktsvtskin3_dev_ops,
@@ -2137,7 +2128,6 @@ static int vtskin_probe(struct platform_device *pdev)
 		0664, mtktsvtskin_dir, &mtkts_vtskin_max_fops);
 	if (entry)
 		proc_set_user(entry, uid, gid);
-	}
 
 	entry = proc_create(mtk_thermal_get_vtksin_tz_proc_name(VTSKIN1_INDEX),
 			0664, mtktsvtskin_dir, &mtkts_vtskin1_fops);
