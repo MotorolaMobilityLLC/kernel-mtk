@@ -188,11 +188,11 @@ static int wl2864c_of_parse_cb(struct device_node *np,
 static struct regulator_desc wl2864c_regls_desc[WL2864C_MAX_REGULATORS] = {
 	WL2864C_REGL_DESC(LDO1, ldo1, "vin1", 600000,  12500),
 	WL2864C_REGL_DESC(LDO2, ldo2, "vin1", 600000,  12500),
-	WL2864C_REGL_DESC(LDO3, ldo3, "vin2", 1200000, 12500),
-	WL2864C_REGL_DESC(LDO4, ldo4, "vin2", 1200000, 12500),
-	WL2864C_REGL_DESC(LDO5, ldo5, "vin2", 1200000,  12500),
-	WL2864C_REGL_DESC(LDO6, ldo6, "vin2", 1200000,  12500),
-	WL2864C_REGL_DESC(LDO7, ldo7, "vin2", 1200000, 12500),
+	WL2864C_REGL_DESC(LDO3, ldo3, "bob_buck", 1200000, 12500),
+	WL2864C_REGL_DESC(LDO4, ldo4, "bob_buck", 1200000, 12500),
+	WL2864C_REGL_DESC(LDO5, ldo5, "bob_buck", 1200000,  12500),
+	WL2864C_REGL_DESC(LDO6, ldo6, "bob_buck", 1200000,  12500),
+	WL2864C_REGL_DESC(LDO7, ldo7, "bob_buck", 1200000, 12500),
 };
 
 static int wl2864c_regulator_init(struct wl2864c *chip)

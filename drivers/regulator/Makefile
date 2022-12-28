@@ -171,6 +171,8 @@ obj-$(CONFIG_REGULATOR_WM8350) += wm8350-regulator.o
 obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
 obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
 obj-$(CONFIG_MOTO_WL2864C)  += wl2864c-regulator.o
+obj-$(CONFIG_MOTO_SGM62110)  += sgm62110-regulator.o
+
 
 ifneq ($(wildcard $(srctree)/$(src)/k6983v1_64_alpha),)
 obj-$(CONFIG_REGULATOR_MT6983_ALPHA_SUPPORT) += k6983v1_64_alpha/
