@@ -457,6 +457,10 @@ struct mtk_panel_params {
 
 	int max_bl_level;
 	enum panel_hbm_type hbm_type;
+
+	int panel_cellid_reg;
+	int panel_cellid_offset_reg;
+	int panel_cellid_len;
 };
 
 struct mtk_panel_ext {
