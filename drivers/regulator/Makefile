@@ -177,6 +177,8 @@ obj-$(CONFIG_REGULATOR_WL2864C) += wl2864c-regulator.o
 obj-$(CONFIG_REGULATOR_FAN53870) += fan53870-ldo.o
 obj-$(CONFIG_REGULATOR_ALPHA_FOLDABLE_SUPPORT_ET5904) += et5904.o
 obj-$(CONFIG_MOTO_WL2864C)  += wl2864c-regulator.o
+obj-$(CONFIG_MOTO_SGM62110)  += sgm62110-regulator.o
+
 
 ifneq ($(wildcard $(srctree)/$(src)/k6983v1_64_alpha),)
 obj-$(CONFIG_REGULATOR_MT6983_ALPHA_SUPPORT) += k6983v1_64_alpha/
