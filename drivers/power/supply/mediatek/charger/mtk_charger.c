@@ -2139,6 +2139,12 @@ int mmi_chrg_rate_check(void)
 		goto end_rate_check;
 	}
 
+        if (mtk_pe_get_is_connect(pinfo)) {
+                pr_info("[%s]pe connect, set as Turbo\n", __func__);
+                chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+        }
+
 	chg_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
 
 end_rate_check:
