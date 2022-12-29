@@ -1819,6 +1819,7 @@ static void fbt_do_jerk_locked(struct render_info *thr, struct fbt_jerk *jerk, i
 
 	mutex_lock(&fbt_mlock);
 
+	rescue_opp_c = clamp(rescue_opp_c, 0, NR_FREQ_CPU - 1);
 	blc_wt = fbt_get_new_base_blc(pld, blc_wt, rescue_enhance_f, rescue_opp_c);
 	if (!blc_wt)
 		goto EXIT;
@@ -2168,6 +2169,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid,
 	int cluster, i = 0;
 	int min_ceiling = 0;
 
+	bhr_opp = clamp(bhr_opp, 0, NR_FREQ_CPU - 1);
 	pld =
 		kcalloc(cluster_num, sizeof(struct cpu_ctrl_data),
 				GFP_KERNEL);
@@ -3930,6 +3932,7 @@ void fpsgo_uboost2fbt_uboost(struct render_info *thr)
 	if (!floor)
 		goto leave;
 
+	rescue_opp_c = clamp(rescue_opp_c, 0, NR_FREQ_CPU - 1);
 	headroom = rescue_opp_c;
 	if (thr->boost_info.cur_stage == FPSGO_JERK_SECOND)
 		headroom = rescue_second_copp;
