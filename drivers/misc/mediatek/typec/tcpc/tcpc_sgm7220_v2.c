@@ -296,6 +296,24 @@ static void sgm7220_process_mode_register(struct sgm7220_chip *chip, u8 status)
 	val = (tmp & MOD_ACTIVE_CABLE_DETECTION);
 }
 
+static int sgm7220_remote_rp_level(struct sgm7220_chip *chip)
+{
+	if (chip->type_c_param.current_det == DET_CUR_USB) {
+		return TYPEC_CC_VOLT_SNK_DFT;
+	}else if (chip->type_c_param.current_det == DET_CUR_1P5) {
+		return TYPEC_CC_VOLT_SNK_1_5;
+	} else if (chip->type_c_param.current_det == DET_CUR_3A) {
+		return TYPEC_CC_VOLT_SNK_3_0;
+	}else {
+		return TYPEC_CC_VOLT_SNK_DFT;
+	}
+}
+
+static int sgm7220_local_rp_level(struct sgm7220_chip *chip)
+{
+	return TYPEC_CC_RP_1_5;
+}
+
 static void sgm7220_process_interrupt_register(struct sgm7220_chip *chip, u8 status)
 {
 	struct tcpc_device *tcpc;
@@ -343,6 +361,7 @@ static void sgm7220_process_interrupt_register(struct sgm7220_chip *chip, u8 sta
 	case SGM7220_TYPE_SNK:
 		if (tcpc->typec_attach_new != TYPEC_ATTACHED_SRC) {
 				tcpc->typec_attach_new = TYPEC_ATTACHED_SRC;
+				tcpc->typec_local_rp_level = sgm7220_local_rp_level(chip);
 				tcpci_report_usb_port_changed(tcpc);
 				tcpci_source_vbus(tcpc, TCP_VBUS_CTRL_TYPEC, TCPC_VBUS_SOURCE_5V, 0);
 				//tcpci_notify_typec_state(tcpc);
@@ -352,6 +371,7 @@ static void sgm7220_process_interrupt_register(struct sgm7220_chip *chip, u8 sta
 	case SGM7220_TYPE_SRC:
 		if (tcpc->typec_attach_new != TYPEC_ATTACHED_SNK) {
 				tcpc->typec_attach_new = TYPEC_ATTACHED_SNK;
+				tcpc->typec_remote_rp_level = sgm7220_remote_rp_level(chip);
 				tcpci_report_usb_port_changed(tcpc);
 				//tcpci_notify_typec_state(tcpc);
 				tcpc->typec_attach_old = TYPEC_ATTACHED_SNK;
