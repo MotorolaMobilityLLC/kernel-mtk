@@ -815,10 +815,14 @@ static int fmt_gce_wait_callback(unsigned long arg)
 	ret = cmdq_pkt_wait_complete(fmt->gce_task[taskid].pkt_ptr);
 
 	if (ret != 0L) {
-		fmt_debug(0, "wait before flush, id %d taskid %d pkt_ptr %p",
-		identifier, taskid, fmt->gce_task[taskid].pkt_ptr);
-		atomic_dec(&fmt->gce_task_wait_cnt[taskid]);
-		return -EINVAL;
+		if (ret == -EINVAL) {
+			fmt_debug(0, "wait before flush, id %d taskid %d pkt_ptr %p",
+			identifier, taskid, fmt->gce_task[taskid].pkt_ptr);
+			atomic_dec(&fmt->gce_task_wait_cnt[taskid]);
+			return -EINVAL;
+		} else if (ret == -ETIMEDOUT)
+			fmt_debug(0, "wait timeout, id %d taskid %d pkt_ptr %p",
+			identifier, taskid, fmt->gce_task[taskid].pkt_ptr);
 	}
 
 	if (fmt_dbg_level == 4)
@@ -850,9 +854,8 @@ static int fmt_gce_wait_callback(unsigned long arg)
 	mutex_unlock(fmt->mux_gce_th[identifier]);
 
 	cmdq_pkt_destroy(fmt->gce_task[taskid].pkt_ptr);
-	fmt_clear_gce_task(taskid);
-
 	atomic_dec(&fmt->gce_task_wait_cnt[taskid]);
+	fmt_clear_gce_task(taskid);
 
 	return ret;
 }
