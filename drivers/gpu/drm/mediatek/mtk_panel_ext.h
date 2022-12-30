@@ -377,6 +377,7 @@ struct mtk_panel_funcs {
 	int (*panel_feature_set)(struct drm_panel *panel, void *dsi_drv,
 			    dcs_write_gce cb, void *handle, struct panel_param_info param_info);
 	int (*panel_feature_get)(struct drm_panel *panel, paramId_t param_id);
+	int (*panel_hbm_waitfor_fps_valid)(struct drm_panel *panel, unsigned int timeout_ms);
 };
 
 void mtk_panel_init(struct mtk_panel_ctx *ctx);

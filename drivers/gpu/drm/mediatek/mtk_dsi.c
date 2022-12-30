@@ -6806,6 +6806,16 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 					       *(struct panel_param_info*) params);
 		break;
 	}
+	case PANEL_HBM_WAITFOR_FPS_VALID:
+	{
+		panel_ext = mtk_dsi_get_panel_ext(comp);
+		if (!(panel_ext && panel_ext->funcs &&
+		      panel_ext->funcs->panel_hbm_waitfor_fps_valid))
+			break;
+
+		panel_ext->funcs->panel_hbm_waitfor_fps_valid(dsi->panel, *(unsigned int *)params);
+	}
+		break;
 	default:
 		break;
 	}
