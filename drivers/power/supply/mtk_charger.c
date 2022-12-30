@@ -4104,6 +4104,81 @@ static void charger_status_check(struct mtk_charger *info)
 }
 #endif
 
+#ifdef CONFIG_MOTO_REMOVE_MTK_GAUGE
+int mmi_charger_get_batt_status(void)
+{
+	struct power_supply *chg_psy = NULL;
+	struct power_supply *wl_psy = NULL;
+	struct power_supply *dv2_chg_psy = NULL;
+	union power_supply_propval online;
+	union power_supply_propval wls_online;
+	union power_supply_propval status;
+	int bat_status;
+	int ret;
+
+	wl_psy = power_supply_get_by_name("wireless");
+	if (wl_psy == NULL || IS_ERR(wl_psy)) {
+		pr_info("%s Couldn't get wl_psy\n", __func__);
+		wls_online.intval = 0;
+	} else {
+		ret = power_supply_get_property(wl_psy,
+			POWER_SUPPLY_PROP_ONLINE, &wls_online);
+	}
+
+	if (IS_ERR_OR_NULL(chg_psy)) {
+		chg_psy = devm_power_supply_get_by_phandle(&mmi_info->pdev->dev,
+							   "charger");
+		if (IS_ERR_OR_NULL(chg_psy)) {
+			pr_err("%s, can't get charger psy", __func__);
+			return POWER_SUPPLY_STATUS_UNKNOWN;
+		}
+	}
+
+	ret = power_supply_get_property(chg_psy,
+		POWER_SUPPLY_PROP_ONLINE, &online);
+	online.intval =online.intval || wls_online.intval;
+
+	ret = power_supply_get_property(chg_psy,
+		POWER_SUPPLY_PROP_STATUS, &status);
+
+	if (!online.intval) {
+		bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
+	} else {
+		if (status.intval == POWER_SUPPLY_STATUS_NOT_CHARGING) {
+			bat_status =
+				POWER_SUPPLY_STATUS_NOT_CHARGING;
+
+			dv2_chg_psy = power_supply_get_by_name("mtk-mst-div-chg");
+			if (!IS_ERR_OR_NULL(dv2_chg_psy)) {
+				ret = power_supply_get_property(dv2_chg_psy,
+					POWER_SUPPLY_PROP_ONLINE, &online);
+				if (online.intval) {
+					bat_status =
+						POWER_SUPPLY_STATUS_CHARGING;
+					status.intval =
+						POWER_SUPPLY_STATUS_CHARGING;
+				}
+			}
+		} else if (status.intval == POWER_SUPPLY_STATUS_FULL)
+			bat_status =
+				POWER_SUPPLY_STATUS_FULL;
+		else {
+			bat_status =
+				POWER_SUPPLY_STATUS_CHARGING;
+		}
+	}
+	pr_info("%s,bat_status=%d", __func__, bat_status);
+
+	return bat_status;
+}
+
+int mmi_charger_update_batt_status(void)
+{
+	return mmi_info->mmi.batt_statues;
+}
+EXPORT_SYMBOL(mmi_charger_update_batt_status);
+#endif
+
 static char *dump_charger_type(int chg_type, int usb_type)
 {
 	switch (chg_type) {
@@ -4171,6 +4246,9 @@ static int charger_routine_thread(void *arg)
 		spin_unlock_irqrestore(&info->slock, flags);
 		info->charger_thread_timeout = false;
 
+		#ifdef CONFIG_MOTO_REMOVE_MTK_GAUGE
+		info->mmi.batt_statues = mmi_charger_get_batt_status();
+		#endif
 		info->battery_temp = get_battery_temperature(info);
 		ret = charger_dev_get_adc(info->chg1_dev,
 			ADC_CHANNEL_VBAT, &vbat_min, &vbat_max);

@@ -344,6 +344,7 @@ struct mmi_params {
 	int			base_fv_mv;
 	int			vfloat_comp_mv;
 	int			batt_health;
+	int			batt_statues;
 	int			max_chrg_temp;
 
 	/*target parameter*/
