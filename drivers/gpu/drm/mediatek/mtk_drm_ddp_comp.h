@@ -245,6 +245,7 @@ enum mtk_ddp_io_cmd {
 	DSI_CABC_GET_STATE,
 	DSI_NOTIFY_FPS_CHG,
 	DSI_PANEL_FEATURE_SET,
+	PANEL_HBM_WAITFOR_FPS_VALID,
 };
 
 struct golden_setting_context {
