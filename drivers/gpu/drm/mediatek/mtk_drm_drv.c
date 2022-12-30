@@ -3145,8 +3145,11 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 	struct panel_param_info *param_info = data;
 	struct mtk_drm_private *private = dev->dev_private;
 	struct drm_crtc *crtc = private->crtc[0];
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
 	struct mtk_panel_params *panel_ext = mtk_drm_get_lcm_ext_params(crtc);
 	int ret = 0;
+	unsigned int timeout = 30;
 
 	DDPMSG("%s: set param_idx %d to %d\n", __func__, param_info->param_idx, param_info->value);
 
@@ -3159,8 +3162,13 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 				ret = mtk_drm_crtc_set_panel_cabc(crtc, param_info->value);
 			break;
 		case PARAM_HBM:
-			if(panel_ext->use_ext_panel_feature)
+			if(panel_ext->use_ext_panel_feature) {
+				if (comp && (param_info->value == 2)) {
+					mtk_ddp_comp_io_cmd(comp, NULL, PANEL_HBM_WAITFOR_FPS_VALID, &timeout);
+				}
+
 				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
+			}
 
 			if (panel_ext->hbm_type == HBM_MODE_DCS_GPIO)
 				ret = mtk_drm_crtc_set_panel_hbm_gpio(crtc, param_info->value);
