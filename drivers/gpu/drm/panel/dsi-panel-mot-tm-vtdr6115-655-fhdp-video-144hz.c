@@ -60,6 +60,7 @@ struct lcm {
 	unsigned int hbm_mode;
 	unsigned int dc_mode;
 	unsigned int current_bl;
+	unsigned int current_fps;
 	enum panel_version version;
 };
 
@@ -978,16 +979,25 @@ static int panel_ext_reset(struct drm_panel *panel, int on)
 static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
 {
 	struct mtk_panel_ext *ext = find_panel_ext(panel);
+	struct lcm *ctx = panel_to_lcm(panel);
 	int ret = 0;
 
-	if (mode == 0)
+	if (mode == 0) {
 		ext->params = &ext_params_60hz;
-	else if (mode == 1)
+		ctx->current_fps = 60;
+	}
+	else if (mode == 1) {
 		ext->params = &ext_params_144hz;
-	else if (mode == 2)
+		ctx->current_fps = 144;
+	}
+	else if (mode == 2) {
 		ext->params = &ext_params_120hz;
-	else if (mode == 3)
+		ctx->current_fps = 120;
+	}
+	else if (mode == 3) {
 		ext->params = &ext_params_90hz;
+		ctx->current_fps = 90;
+	}
 	else
 		ret = 1;
 
@@ -1194,6 +1204,7 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 
 	if (!cb)
 		return -1;
+
 	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
 
 	switch (param_info.param_idx) {
@@ -1213,6 +1224,30 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 	}
 
 	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
+	return 0;
+}
+
+static int panel_hbm_waitfor_fps_valid(struct drm_panel *panel, unsigned int timeout_ms)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+	unsigned int count = timeout_ms;
+	unsigned int poll_interval = 1;
+
+	if (count == 0) return 0;
+	pr_info("%s+, fps = %d \n", __func__, ctx->current_fps);
+	while((ctx->current_fps != 120)) {
+		if (!count) {
+			pr_warn("%s: it is timeout, and current_fps = %d\n", __func__, ctx->current_fps);
+			break;
+		} else if (count > poll_interval) {
+			usleep_range(poll_interval * 1000, poll_interval *1000);
+			count -= poll_interval;
+		} else {
+			usleep_range(count * 1000, count *1000);
+			count = 0;
+		}
+	}
+	pr_info("%s-, fps = %d \n", __func__, ctx->current_fps);
 	return 0;
 }
 
@@ -1256,6 +1291,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	//.mode_switch = mode_switch,
 	.panel_feature_set = panel_feature_set,
+	.panel_hbm_waitfor_fps_valid = panel_hbm_waitfor_fps_valid,
 };
 
 static int lcm_get_modes(struct drm_panel *panel)
