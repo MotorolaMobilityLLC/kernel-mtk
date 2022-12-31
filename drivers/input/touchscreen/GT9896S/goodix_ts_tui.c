@@ -61,44 +61,6 @@ int gt9896s_tpd_exit_tui(void)
 	return ret;
 }
 EXPORT_SYMBOL(gt9896s_tpd_exit_tui);
-#else
-
-int tpd_enter_tui(void)
-{
-	int ret = 0;
-
-	ts_info("[%s] enter TUI", __func__);
-
-	ts_core_for_tui->ts_event.touch_data.touch_num = 0;
-	gt9896s_ts_report_finger(ts_core_for_tui->input_dev,
-		&ts_core_for_tui->ts_event.touch_data);
-
-	gt9896s_ts_irq_enable(ts_core_for_tui, false);
-
-	mt_spi_enable_master_clk(ts_core_for_tui->ts_dev->spi_dev);
-
-	atomic_set(&gt9896s_tui_flag, true);
-
-	return ret;
-}
-
-int tpd_exit_tui(void)
-{
-	int ret = 0;
-
-	ts_info("[%s] exit TUI", __func__);
-
-	mt_spi_disable_master_clk(ts_core_for_tui->ts_dev->spi_dev);
-
-	gt9896s_ts_irq_enable(ts_core_for_tui, false);
-
-	gt9896s_ts_irq_enable(ts_core_for_tui, true);
-
-	atomic_set(&gt9896s_tui_flag, false);
-
-	return ret;
-}
-
 #endif
 #endif
 
