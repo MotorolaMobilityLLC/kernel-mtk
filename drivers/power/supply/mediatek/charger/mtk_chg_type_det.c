@@ -251,7 +251,7 @@ static int mt_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = 0;
 		/* Force to 1 in all charger type */
-		if (mtk_chg->chg_type != CHARGER_UNKNOWN)
+		if (mtk_chg->chg_type != CHARGER_UNKNOWN && mtk_chg->chg_type != WIRELESS_CHARGER)
 			val->intval = 1;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
@@ -494,11 +494,12 @@ static int mt_ac_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = 0;
 		/* Force to 1 in all charger type */
-		if (mtk_chg->chg_type != CHARGER_UNKNOWN)
+		if (mtk_chg->chg_type != CHARGER_UNKNOWN )
 			val->intval = 1;
 		/* Reset to 0 if charger type is USB */
 		if ((mtk_chg->chg_type == STANDARD_HOST) ||
-			(mtk_chg->chg_type == CHARGING_HOST))
+			(mtk_chg->chg_type == CHARGING_HOST) ||
+			(mtk_chg->chg_type == WIRELESS_CHARGER))
 			val->intval = 0;
 		break;
 	default:
