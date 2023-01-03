@@ -13,6 +13,7 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
+	mediatek,pad-select = <0>, <1>;
 	pinctrl-names = "default", "gt9896s_int_active",
 		"gt9896s_reset_active", "gt9896s_int_suspend",
 		"gt9896s_reset_suspend", "gt9896s_spi_mode";
@@ -36,8 +37,8 @@
 		spi-max-frequency = <9600000>;  /* 4800000,9600000,15000000,19200000 */
 		goodix,reset-gpio = <&pio 159 0x0>;
 		goodix,irq-gpio = <&pio 22 0x2002>;
-		goodix,iovdd-gpio = <&pio 167 0x0>;
-		goodix,avdd-name = "vtouch";
+		goodix,avdd-gpio = <&pio 167 0x0>;
+		goodix,iovdd-name = "vtouch";
 		vtouch-supply = <&mt6368_vtp>;
 		goodix,irq-flags = <0x2002>; /* 1:trigger rising, 2:trigger falling;*/
 		goodix,panel-max-id = <10>;
@@ -51,6 +52,28 @@
 		mmi,usb-charger-detection;
 		mmi,charger-psy-name = "battery";
 	};
+
+	focaltech@1 {
+		status = "ok";
+		compatible = "focaltech,fts";
+		reg = <1>;
+		spi-max-frequency = <12000000>;
+
+		focaltech,reset-gpio = <&pio 159 0x0>;
+		focaltech,irq-gpio = <&pio 22 0x2800>;
+		focaltech,max-touch-number = <10>;
+		focaltech,display-coords =  <0 0 1080 2400>;
+		focaltech,panel-supplier = "csot";
+		vcc_i2c-supply = <&mt6368_vtp>;
+		focaltech,vdd-gpio = <&pio 167 0x0>;
+
+		pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+		pinctrl-0 = <&ctp_gt9896s_int_active &ctp_gt9896s_reset_active>;
+		pinctrl-1 = <&ctp_gt9896s_int_suspend &ctp_gt9896s_reset_suspend>;
+		pinctrl-2 = <&ctp_gpio_release>;
+		mmi,status = "/chosen","mmi,panel_name","contains","csot_vtdr6115";
+		mmi,power-off-suspend;
+    };
 };
 
 &pio {
@@ -99,6 +122,14 @@
 				<PINMUX_GPIO77__FUNC_SPI3_MO>,
 				<PINMUX_GPIO78__FUNC_SPI3_MI>;
 			drive-strength = <2>;
+		};
+	};
+	ctp_gpio_release: gpio_release {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO22__FUNC_GPIO22>,
+				<PINMUX_GPIO159__FUNC_GPIO159>;
+			drive-strength = <2>;
+			bias-disable;
 		};
 	};
 };
