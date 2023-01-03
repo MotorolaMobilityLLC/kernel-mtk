@@ -97,6 +97,58 @@ static struct class swtp_class[] = {
 };
 #endif
 
+#ifdef CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
+static bool no_rfcable_detect = false;
+int mmi_get_bootarg(char *key, char *value, int len)
+{
+	const char *bootargs_tmp = NULL;
+	char *idx = NULL;
+	char *kvpair = NULL;
+	int err = 1;
+	struct device_node *n = of_find_node_by_path("/chosen");
+	size_t bootargs_tmp_len = 0;
+	char *bootargs_str = NULL;
+	char *found_value = NULL;
+
+	if (n == NULL)
+		goto err;
+
+	if (of_property_read_string(n, "mmi,bootconfig", &bootargs_tmp) != 0)
+		goto putnode;
+
+	bootargs_tmp_len = strlen(bootargs_tmp);
+	/* The following operations need a non-const
+	 * version of bootargs
+	 */
+	bootargs_str = kzalloc(bootargs_tmp_len + 1, GFP_KERNEL);
+	if (!bootargs_str)
+		goto putnode;
+
+	strlcpy(bootargs_str, bootargs_tmp, bootargs_tmp_len + 1);
+
+	idx = strnstr(bootargs_str, key, strlen(bootargs_str));
+	if (idx) {
+		kvpair = strsep(&idx, " ");
+		if (kvpair)
+			if (strsep(&kvpair, "=")) {
+				found_value = strsep(&kvpair, "\n");
+				if (found_value) {
+					strlcpy(value, found_value, len);
+					pr_info("mmi_get_bootarg: %s", found_value);
+                                        err = 0;
+				}
+			}
+	}
+
+	if (bootargs_str)
+	    kfree(bootargs_str);
+putnode:
+	of_node_put(n);
+err:
+	return err;
+}
+#endif
+
 static int swtp_send_tx_power(struct swtp_t *swtp)
 {
 	unsigned long flags;
@@ -110,11 +162,31 @@ static int swtp_send_tx_power(struct swtp_t *swtp)
 	}
 
 	spin_lock_irqsave(&swtp->spinlock, flags);
+
+
 #ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
+// FACTORY SW: SET NO_TX directly
 	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
 		(char *)&factory_tx_power_mode, sizeof(factory_tx_power_mode));
 	power_mode = factory_tx_power_mode;
-#else
+
+#elif defined (CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT)
+// Customer SW:  Check bypass RFcable flag and then set power accordingly
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: no_rfcable_detect: %d\n", __func__ , no_rfcable_detect);
+	if (no_rfcable_detect)
+	{
+		power_mode = SWTP_DO_TX_POWER; // always set DO tx power when no rfcable detect
+		ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
+			(char *)&power_mode, sizeof(power_mode));
+	}
+	else
+	{
+		ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
+			(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
+		power_mode = swtp->tx_power_mode;
+	}
+#else // MTK original
 	ret = exec_ccci_kern_func_by_md_id(swtp->md_id, ID_UPDATE_TX_POWER,
 		(char *)&swtp->tx_power_mode, sizeof(swtp->tx_power_mode));
 	power_mode = swtp->tx_power_mode;
@@ -227,6 +299,13 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 		"%s:the end swtp status is %d\n", __func__ , swtp->tx_power_mode);
 #endif
 #if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_DEVONN_SWTP_CUST) || defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
+
+
+#ifdef CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: no_rfcable_detect: %d\n", __func__ , no_rfcable_detect);
+	if (!no_rfcable_detect)
+#endif // only inject pin event if no_rfcable_detect is false
 	inject_pin_status_event(swtp->tx_power_mode, rf_name);
 #else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
@@ -424,6 +503,10 @@ SWTP_INIT_END:
 
 int swtp_init(int md_id)
 {
+#ifdef CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
+	char no_rfcable_detect_str[16] = "false";
+#endif
+
 	/* parameter check */
 	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD) {
 		CCCI_LEGACY_ERR_LOG(-1, SYS,
@@ -454,6 +537,14 @@ int swtp_init(int md_id)
 	/* schedule init work */
 	schedule_delayed_work(&swtp_data[md_id].init_delayed_work, HZ);
 
+#ifdef CONFIG_MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
+	mmi_get_bootarg("androidboot.no_rfcable_detect=", no_rfcable_detect_str, sizeof(no_rfcable_detect_str));
+	CCCI_LEGACY_ERR_LOG(-1, SYS,
+			"%s: no_rfcable_detect_str: %s\n", __func__ , no_rfcable_detect_str);
+	if (strncmp(no_rfcable_detect_str,"true",4) == 0) {
+		no_rfcable_detect = true;
+	}
+#endif
 	CCCI_BOOTUP_LOG(md_id, SYS, "%s end, init_delayed_work scheduled\n",
 		__func__);
 	return 0;
