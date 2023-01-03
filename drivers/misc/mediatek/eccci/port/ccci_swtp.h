@@ -9,7 +9,7 @@
 /* modify MAX_PIN_NUM/DTS to support more gpio,
  * need to follow SOP for customization.
  */
-#ifdef CONFIG_MOTO_TESLA_SWTP_CUST
+#if defined(CONFIG_MOTO_TESLA_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
 #define MAX_PIN_NUM 7
 #define SWTP5_COMPATIBLE_DEVICE_ID "mediatek, swtp5-eint"
 #define SWTP6_COMPATIBLE_DEVICE_ID "mediatek, swtp6-eint"
