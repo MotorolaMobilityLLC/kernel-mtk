@@ -64,6 +64,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static int full_remosaic_mode =0;
 static int crop_remosaic_mode =0;
 
+extern void write_cross_talk_data(void);
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_LYRIQ_OV50A_SENSOR_ID,
 
@@ -306,14 +307,6 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
 		1
 	},
 };
-
-#define OV50A_EEPROM_IIC_ADDR 0xA0
-#define OV50A_SENSOR_IIC_ADDR 0x20
-#define OV50A_XTLK_EEPROM_OFFSET 0x150F
-#define OV50A_XTLK_REG_OFFSET 0x71F0
-#define OV50A_XTLK_BYTES 3568
-//static u8 ov50a_xtlk_buf[OV50A_XTLK_BYTES];
-//static u8 xtalk_ready = 0;
 
 static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 scenario)
 {
@@ -885,11 +878,11 @@ kal_uint16 mot_lyriq_ov50a_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 
 static void sensor_init(void)
 {
 	pr_err("MOT LYRIQ OV50A init start\n");
-
 	mot_lyriq_ov50a_table_write_cmos_sensor(addr_data_pair_init_mot_lyriq_ov50a,
-		sizeof(addr_data_pair_init_mot_lyriq_ov50a)/sizeof(kal_uint16));
-	pr_err("MOT LYRIQ OV50A end\n");
-
+	    sizeof(addr_data_pair_init_mot_lyriq_ov50a)/sizeof(kal_uint16));
+       pr_err("%s: Applying xtalk...", __func__);
+       write_cross_talk_data();
+       pr_err("MOT LYRIQ OV50A init end\n");
 }	/*	  sensor_init  */
 
 static void preview_setting(void)
