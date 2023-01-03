@@ -602,7 +602,7 @@
 	interrupt-parent = <&pio>;
 	interrupts = <14 IRQ_TYPE_LEVEL_HIGH 14 0>;
 	deb-gpios = <&pio 14 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 
@@ -610,41 +610,41 @@
 	interrupt-parent = <&pio>;
 	interrupts = <15 IRQ_TYPE_LEVEL_HIGH 15 0>;
 	deb-gpios = <&pio 15 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 &swtp_2 {
 	interrupt-parent = <&pio>;
 	interrupts = <17 IRQ_TYPE_LEVEL_HIGH 17 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 &swtp_3 {
 	interrupt-parent = <&pio>;
 	interrupts = <20 IRQ_TYPE_LEVEL_HIGH 20 0>;
 	deb-gpios = <&pio 20 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 &swtp_4 {
 	interrupt-parent = <&pio>;
 	interrupts = <21 IRQ_TYPE_LEVEL_HIGH 21 0>;
 	deb-gpios = <&pio 21 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 &swtp_5 {
 	interrupt-parent = <&pio>;
 	interrupts = <30 IRQ_TYPE_LEVEL_HIGH 30 0>;
 	deb-gpios = <&pio 30 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 &swtp_6 {
 	interrupt-parent = <&pio>;
 	interrupts = <124 IRQ_TYPE_LEVEL_HIGH 124 0>;
 	deb-gpios = <&pio 124 0>;
-	debounce = <512000>;
+	debounce = <512>;
 	status = "okay";
 };
 
