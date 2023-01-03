@@ -25,6 +25,7 @@
 
 #define EEPROM_DEBUG
 #define MOTO_OB_VALUE 64
+#define MOTO_WB_VALUE_BASE 64
 #define MOT_AWB_RB_MIN_VALUE 200
 #define MOT_AWB_G_MIN_VALUE 760
 #define MOT_AWB_RBG_MAX_VALUE 880
@@ -361,6 +362,12 @@ unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Tianshi");
 	} else if(tempBuf[13] == 'S' && tempBuf[14] == 'U') {
 		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Sunny");
+	} else if(tempBuf[13] == 'Q' && tempBuf[14] == 'T') {
+		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Qtech");
+	} else if(tempBuf[13] == 'S' && tempBuf[14] == 'W') {
+		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Sunwin");
+	} else if(tempBuf[13] == 'O' && tempBuf[14] == 'F') {
+		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Ofilm");
 	} else {
 		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Unknow");
 	}
@@ -443,10 +450,12 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 	unsigned int err = CamCalReturnErr[pCamCalData->Command];
 
 	unsigned char AWBAFConfig = 0x3; //set af awb enable
-	unsigned short AFInf, AFMacro;
+	unsigned short AFInf, AFMacro, AFInfDistance, AFMacroDistance;
 	int RGBGratioDeviation, tempMax = 0;
 	int CalR = 1, CalGr = 1, CalGb = 1, CalG = 1, CalB = 1;
 	int FacR = 1, FacGr = 1, FacGb = 1, FacG = 1, FacB = 1;
+	int RawCalR = 1, RawCalGr = 1, RawCalGb = 1, RawCalB = 1;
+	int RawFacR = 1, RawFacGr = 1, RawFacGb = 1, RawFacB = 1;
 	int rg_ratio_gold = 1, bg_ratio_gold = 1, grgb_ratio_gold = 1;
 	int rg_ratio_unit = 1, bg_ratio_unit = 1, grgb_ratio_unit = 1;
 	uint8_t  af_data[26] = {0};
@@ -517,10 +526,15 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			return err;
 		}
 
-		CalR  = (awb_data[24]<<8 | awb_data[25])/64;
-		CalGr = (awb_data[26]<<8 | awb_data[27])/64;
-		CalGb = (awb_data[28]<<8 | awb_data[29])/64;
-		CalB  = (awb_data[30]<<8 | awb_data[31])/64;
+		RawCalR  = (awb_data[24]<<8 | awb_data[25]);
+		RawCalGr = (awb_data[26]<<8 | awb_data[27]);
+		RawCalGb = (awb_data[28]<<8 | awb_data[29]);
+		RawCalB  = (awb_data[30]<<8 | awb_data[31]);
+
+		CalR  = RawCalR / MOTO_WB_VALUE_BASE;
+		CalGr = RawCalGr / MOTO_WB_VALUE_BASE;
+		CalGb = RawCalGb / MOTO_WB_VALUE_BASE;
+		CalB  = RawCalB / MOTO_WB_VALUE_BASE;
 
 		if(CalR<MOT_AWB_RB_MIN_VALUE || CalR>MOT_AWB_RBG_MAX_VALUE
 			|| CalGr<MOT_AWB_G_MIN_VALUE ||CalGr>MOT_AWB_RBG_MAX_VALUE
@@ -531,24 +545,39 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			return err;
 		}
 
+		//Let's use EEPROM programmed values instead actual values to improve accuracy here
 #ifdef MOTO_OB_VALUE
-		CalR  = CalR - MOTO_OB_VALUE;
-		CalGr = CalGr - MOTO_OB_VALUE;
-		CalGb = CalGb - MOTO_OB_VALUE;
-		CalB  = CalB - MOTO_OB_VALUE;
+		CalR  = RawCalR - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		CalGr = RawCalGr - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		CalGb = RawCalGb - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		CalB  = RawCalB - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+#else
+		CalR  = RawCalR;
+		CalGr = RawCalGr;
+		CalGb = RawCalGb;
+		CalB  = RawCalB;
 #endif
+
 		CalG = ((CalGr + CalGb) + 1) >> 1;
-		debug_log("Unit R = %d, Gr= %d, Gb = %d, B = %d, G = %d", CalR, CalGr, CalGb, CalB, CalG);
+
+		debug_log("Unit R = %d, Gr= %d, Gb = %d, B = %d, G = %d", CalR/MOTO_WB_VALUE_BASE,
+		          CalGr/MOTO_WB_VALUE_BASE, CalGb/MOTO_WB_VALUE_BASE, CalB/MOTO_WB_VALUE_BASE, CalG/MOTO_WB_VALUE_BASE);
+
 		tempMax = MAX_temp(CalR,CalG,CalB);
 
 		pCamCalData->Single2A.S2aAwb.rUnitGainu4R = (u32)((tempMax*512 + (CalR >> 1))/CalR);
 		pCamCalData->Single2A.S2aAwb.rUnitGainu4G = (u32)((tempMax*512 + (CalG >> 1))/CalG);
 		pCamCalData->Single2A.S2aAwb.rUnitGainu4B  = (u32)((tempMax*512 + (CalB >> 1))/CalB);
 
-		FacR  = (awb_data[10]<<8 | awb_data[11])/64;
-		FacGr = (awb_data[12]<<8 | awb_data[13])/64;
-		FacGb = (awb_data[14]<<8 | awb_data[15])/64;
-		FacB  = (awb_data[16]<<8 | awb_data[17])/64;
+		RawFacR  = (awb_data[10]<<8 | awb_data[11]);
+		RawFacGr = (awb_data[12]<<8 | awb_data[13]);
+		RawFacGb = (awb_data[14]<<8 | awb_data[15]);
+		RawFacB  = (awb_data[16]<<8 | awb_data[17]);
+
+		FacR  = RawFacR / MOTO_WB_VALUE_BASE;
+		FacGr = RawFacGr / MOTO_WB_VALUE_BASE;
+		FacGb = RawFacGb / MOTO_WB_VALUE_BASE;
+		FacB  = RawFacB / MOTO_WB_VALUE_BASE;
 
 		if(FacR<MOT_AWB_RB_MIN_VALUE || FacR>MOT_AWB_RBG_MAX_VALUE
 			|| FacGr<MOT_AWB_G_MIN_VALUE ||FacGr>MOT_AWB_RBG_MAX_VALUE
@@ -559,21 +588,47 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			return err;
 		}
 
+		//Let's use EEPROM programmed values instead actual values to improve accuracy here
 #ifdef MOTO_OB_VALUE
-		FacR  = FacR - MOTO_OB_VALUE;
-		FacGr = FacGr - MOTO_OB_VALUE;
-		FacGb = FacGb - MOTO_OB_VALUE;
-		FacB  = FacB - MOTO_OB_VALUE;
+		FacR  = RawFacR - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		FacGr = RawFacGr - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		FacGb = RawFacGb - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		FacB  = RawFacB - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+#else
+		FacR  = RawFacR;
+		FacGr = RawFacGr;
+		FacGb = RawFacGb;
+		FacB  = RawFacB;
 #endif
+
 		FacG = ((FacGr + FacGb) + 1) >> 1;
-		debug_log("Gold R = %d, Gr= %d, Gb = %d, B = %d, G = %d", FacR, FacGr, FacGb, FacB, FacG);
+
+		debug_log("Gold R = %d, Gr= %d, Gb = %d, B = %d, G = %d", FacR/MOTO_WB_VALUE_BASE,
+		          FacGr/MOTO_WB_VALUE_BASE, FacGb/MOTO_WB_VALUE_BASE, FacB/MOTO_WB_VALUE_BASE, FacG/MOTO_WB_VALUE_BASE);
+
 		tempMax = MAX_temp(FacR,FacG,FacB);
 
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4R = (u32)((tempMax * 512 + (FacR >> 1)) /FacR);
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4G = (u32)((tempMax * 512 + (FacG >> 1)) /FacG);
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4B  = (u32)((tempMax * 512 + (FacB >> 1)) /FacB);
 
+		pCamCalData->Single2A.S2aAwb.rValueR   = CalR/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueGr  = CalGr/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueGb  = CalGb/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueB   = CalB/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenR  = FacR/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenGr = FacGr/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenGb = FacGb/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenB  = FacB/MOTO_WB_VALUE_BASE;
 		debug_log("======================AWB CAM_CAL==================\n");
+		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rValueR);
+		debug_log("[rCalGain.u4Gr] = %d\n", pCamCalData->Single2A.S2aAwb.rValueGr);
+		debug_log("[rCalGain.u4Gb] = %d\n", pCamCalData->Single2A.S2aAwb.rValueGb);
+		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rValueB);
+		debug_log("[rFacGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenR);
+		debug_log("[rFacGain.u4Gr] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenGr);
+		debug_log("[rFacGain.u4Gb] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenGb);
+		debug_log("[rFacGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenB);
 		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4R);
 		debug_log("[rCalGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4G);
 		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4B);
@@ -606,13 +661,61 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		}
 		AFMacro = (af_data[2]<<8 | af_data[3])/64;
 		AFInf = (af_data[6]<<8 | af_data[7])/64;
+		AFInfDistance = af_data[4]<<8 | af_data[5];
+		AFMacroDistance = af_data[0]<<8 | af_data[1];
 		pCamCalData->Single2A.S2aAf[0] = AFInf;
 		pCamCalData->Single2A.S2aAf[1] = AFMacro;
+		pCamCalData->Single2A.S2aAF_t.AF_infinite_pattern_distance = AFInfDistance;
+		pCamCalData->Single2A.S2aAF_t.AF_Macro_pattern_distance = AFMacroDistance;
 
 		debug_log("======================AF CAM_CAL==================\n");
+		debug_log("[AFInfDistance] = %dmm\n", AFInfDistance);
+		debug_log("[AFMacroDistance] = %dmm\n", AFMacroDistance);
 		debug_log("[AFInf] = %d\n", AFInf);
 		debug_log("[AFMacro] = %d\n", AFMacro);
 		debug_log("======================AF CAM_CAL==================\n");
+	}
+
+	if(pCamCalData->sensorID == MOT_DUBAI_OV50A_SENSOR_ID) {
+		//af posture calibration data
+		unsigned char AF_POSTURE[20];
+		unsigned int af_posture_data_offset = 0x2313;
+		unsigned int af_inf_posture, af_macro_posture, AF_infinite_calibration_temperature;
+		memset(AF_POSTURE, 0, 20);
+		debug_log("af_posture_data_offset = 0x%x\n", af_posture_data_offset);
+
+		read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				af_posture_data_offset, 20, (unsigned char *) AF_POSTURE);
+		if (read_data_size > 0)
+			err = CAM_CAL_ERR_NO_ERR;
+		else {
+			pCamCalData->Single2A.S2aBitEn = CAM_CAL_NONE_BITEN;
+			error_log("Read Failed\n");
+			show_cmd_error_log(pCamCalData->Command);
+		}
+
+		checkSum = AF_POSTURE[18]<<8 | AF_POSTURE[19];
+		if(check_crc16(AF_POSTURE, 18, checkSum)) {
+			debug_log("check_crc16 ok");
+			err = CAM_CAL_ERR_NO_ERR;
+		} else {
+			debug_log("check_crc16 err");
+			err = CAM_CAL_NONE_BITEN;
+			return err;
+		}
+
+		af_inf_posture = AF_POSTURE[10]<<8|AF_POSTURE[9];
+		af_macro_posture = AF_POSTURE[12]<<8|AF_POSTURE[11];
+		AF_infinite_calibration_temperature = AF_POSTURE[17];
+		pCamCalData->Single2A.S2aAF_t.Posture_AF_infinite_calibration = af_inf_posture;
+		pCamCalData->Single2A.S2aAF_t.Posture_AF_macro_calibration = af_macro_posture;
+		pCamCalData->Single2A.S2aAF_t.AF_infinite_calibration_temperature = AF_infinite_calibration_temperature;
+
+		debug_log("======================AF POSTURE CAM_CAL==================\n");
+		debug_log("[AFInfPosture] = 0x%x\n", af_inf_posture);
+		debug_log("[AFMacroPosture] = 0x%x\n", af_macro_posture);
+		debug_log("[AFInfiniteCalibrationTemperature] = 0x%x\n", AF_infinite_calibration_temperature);
+		debug_log("======================AF POSTURE CAM_CAL==================\n");
 	}
 
 	return err;
@@ -635,6 +738,8 @@ unsigned int mot_do_awb_gain(struct EEPROM_DRV_FD_DATA *pdata,
 	int RGBGratioDeviation, tempMax = 0;
 	int CalR = 1, CalGr = 1, CalGb = 1, CalG = 1, CalB = 1;
 	int FacR = 1, FacGr = 1, FacGb = 1, FacG = 1, FacB = 1;
+	int RawCalR = 1, RawCalGr = 1, RawCalGb = 1, RawCalB = 1;
+	int RawFacR = 1, RawFacGr = 1, RawFacGb = 1, RawFacB = 1;
 	int rg_ratio_gold = 1, bg_ratio_gold = 1, grgb_ratio_gold = 1;
 	int rg_ratio_unit = 1, bg_ratio_unit = 1, grgb_ratio_unit = 1;
 	uint8_t  awb_data[45] = {0};
@@ -701,10 +806,15 @@ unsigned int mot_do_awb_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			return err;
 		}
 
-		CalR  = (awb_data[24]<<8 | awb_data[25])/64;
-		CalGr = (awb_data[26]<<8 | awb_data[27])/64;
-		CalGb = (awb_data[28]<<8 | awb_data[29])/64;
-		CalB  = (awb_data[30]<<8 | awb_data[31])/64;
+		RawCalR = (awb_data[24]<<8 | awb_data[25]);
+		RawCalGr = (awb_data[26]<<8 | awb_data[27]);
+		RawCalGb = (awb_data[28]<<8 | awb_data[29]);
+		RawCalB = (awb_data[30]<<8 | awb_data[31]);
+
+		CalR  = RawCalR / MOTO_WB_VALUE_BASE;
+		CalGr = RawCalGr / MOTO_WB_VALUE_BASE;
+		CalGb = RawCalGb / MOTO_WB_VALUE_BASE;
+		CalB  = RawCalB / MOTO_WB_VALUE_BASE;
 
 		if(CalR<MOT_AWB_RB_MIN_VALUE || CalR>MOT_AWB_RBG_MAX_VALUE
 			|| CalGr<MOT_AWB_G_MIN_VALUE ||CalGr>MOT_AWB_RBG_MAX_VALUE
@@ -716,23 +826,36 @@ unsigned int mot_do_awb_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		}
 
 #ifdef MOTO_OB_VALUE
-		CalR  = CalR - MOTO_OB_VALUE;
-		CalGr = CalGr - MOTO_OB_VALUE;
-		CalGb = CalGb - MOTO_OB_VALUE;
-		CalB  = CalB - MOTO_OB_VALUE;
+		CalR  = RawCalR - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		CalGr = RawCalGr - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		CalGb = RawCalGb - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		CalB  = RawCalB - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+#else
+		CalR  = RawCalR;
+		CalGr = RawCalGr;
+		CalGb = RawCalGb;
+		CalB  = RawCalB;
 #endif
+
 		CalG = ((CalGr + CalGb) + 1) >> 1;
-		debug_log("Unit R = %d, Gr= %d, Gb = %d, B = %d, G = %d", CalR, CalGr, CalGb, CalB, CalG);
+
+		debug_log("Unit R = %d, Gr= %d, Gb = %d, B = %d, G = %d", CalR/MOTO_WB_VALUE_BASE,
+		          CalGr/MOTO_WB_VALUE_BASE, CalGb/MOTO_WB_VALUE_BASE, CalB/MOTO_WB_VALUE_BASE, CalG/MOTO_WB_VALUE_BASE);
 		tempMax = MAX_temp(CalR,CalG,CalB);
 
 		pCamCalData->Single2A.S2aAwb.rUnitGainu4R = (u32)((tempMax*512 + (CalR >> 1))/CalR);
 		pCamCalData->Single2A.S2aAwb.rUnitGainu4G = (u32)((tempMax*512 + (CalG >> 1))/CalG);
 		pCamCalData->Single2A.S2aAwb.rUnitGainu4B  = (u32)((tempMax*512 + (CalB >> 1))/CalB);
 
-		FacR  = (awb_data[10]<<8 | awb_data[11])/64;
-		FacGr = (awb_data[12]<<8 | awb_data[13])/64;
-		FacGb = (awb_data[14]<<8 | awb_data[15])/64;
-		FacB  = (awb_data[16]<<8 | awb_data[17])/64;
+		RawFacR  = (awb_data[10]<<8 | awb_data[11]);
+		RawFacGr = (awb_data[12]<<8 | awb_data[13]);
+		RawFacGb = (awb_data[14]<<8 | awb_data[15]);
+		RawFacB  = (awb_data[16]<<8 | awb_data[17]);
+
+		FacR  = RawFacR / MOTO_WB_VALUE_BASE;
+		FacGr = RawFacGr / MOTO_WB_VALUE_BASE;
+		FacGb = RawFacGb / MOTO_WB_VALUE_BASE;
+		FacB  = RawFacB / MOTO_WB_VALUE_BASE;
 
 		if(FacR<MOT_AWB_RB_MIN_VALUE || FacR>MOT_AWB_RBG_MAX_VALUE
 			|| FacGr<MOT_AWB_G_MIN_VALUE ||FacGr>MOT_AWB_RBG_MAX_VALUE
@@ -744,20 +867,42 @@ unsigned int mot_do_awb_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		}
 
 #ifdef MOTO_OB_VALUE
-		FacR  = FacR - MOTO_OB_VALUE;
-		FacGr = FacGr - MOTO_OB_VALUE;
-		FacGb = FacGb - MOTO_OB_VALUE;
-		FacB  = FacB - MOTO_OB_VALUE;
+		FacR  = RawFacR - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		FacGr = RawFacGr - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		FacGb = RawFacGb - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+		FacB  = RawFacB - MOTO_OB_VALUE * MOTO_WB_VALUE_BASE;
+#else
+		FacR  = RawFacR;
+		FacGr = RawFacGr;
+		FacGb = RawFacGb;
+		FacB  = RawFacB;
 #endif
 		FacG = ((FacGr + FacGb) + 1) >> 1;
-		debug_log("Gold R = %d, Gr= %d, Gb = %d, B = %d, G = %d", FacR, FacGr, FacGb, FacB, FacG);
+		debug_log("Gold R = %d, Gr= %d, Gb = %d, B = %d, G = %d", FacR/MOTO_WB_VALUE_BASE,
+		          FacGr/MOTO_WB_VALUE_BASE, FacGb/MOTO_WB_VALUE_BASE, FacB/MOTO_WB_VALUE_BASE, FacG/MOTO_WB_VALUE_BASE);
 		tempMax = MAX_temp(FacR,FacG,FacB);
 
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4R = (u32)((tempMax * 512 + (FacR >> 1)) /FacR);
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4G = (u32)((tempMax * 512 + (FacG >> 1)) /FacG);
 		pCamCalData->Single2A.S2aAwb.rGoldGainu4B  = (u32)((tempMax * 512 + (FacB >> 1)) /FacB);
 
+		pCamCalData->Single2A.S2aAwb.rValueR   = CalR/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueGr  = CalGr/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueGb  = CalGb/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rValueB   = CalB/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenR  = FacR/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenGr = FacGr/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenGb = FacGb/MOTO_WB_VALUE_BASE;
+		pCamCalData->Single2A.S2aAwb.rGoldenB  = FacB/MOTO_WB_VALUE_BASE;
 		debug_log("======================AWB CAM_CAL==================\n");
+		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rValueR);
+		debug_log("[rCalGain.u4Gr] = %d\n", pCamCalData->Single2A.S2aAwb.rValueGr);
+		debug_log("[rCalGain.u4Gb] = %d\n", pCamCalData->Single2A.S2aAwb.rValueGb);
+		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rValueB);
+		debug_log("[rFacGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenR);
+		debug_log("[rFacGain.u4Gr] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenGr);
+		debug_log("[rFacGain.u4Gb] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenGb);
+		debug_log("[rFacGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldenB);
 		debug_log("[rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4R);
 		debug_log("[rCalGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4G);
 		debug_log("[rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4B);
