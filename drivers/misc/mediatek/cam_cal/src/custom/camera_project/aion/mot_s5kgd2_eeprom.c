@@ -76,7 +76,7 @@ unsigned int s5kgd2_mot_do_factory_verify(struct EEPROM_DRV_FD_DATA *pdata, unsi
 				(struct STRUCT_MOT_EEPROM_DATA *)pGetSensorCalData;
 	int read_data_size, checkSum, checkSum1;
 
-	memset(&pCamCalData->CalibrationStatus, NONEXISTENCE, sizeof(pCamCalData->CalibrationStatus));
+	memset(&pCamCalData->CalibrationStatus, NO_ERRORS, sizeof(pCamCalData->CalibrationStatus));
 
 	read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
 			S5KGD2_MOT_EEPROM_ADDR, S5KGD2_MOT_EEPROM_DATA_SIZE, (unsigned char *)pCamCalData->DumpAllEepromData);
