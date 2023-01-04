@@ -616,6 +616,7 @@
 &swtp_2 {
 	interrupt-parent = <&pio>;
 	interrupts = <17 IRQ_TYPE_LEVEL_HIGH 17 0>;
+	deb-gpios = <&pio 17 0>;
 	debounce = <512>;
 	status = "okay";
 };
