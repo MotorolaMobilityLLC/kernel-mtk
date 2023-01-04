@@ -18,6 +18,7 @@
 		touch,irq-gpio = <&pio 0 0x0>;
 		touch,reset-gpio = <&pio 23 0x0>;
 		touch,psy-name = "battery";
+		ilitek,report_gesture_key;
 
 		//novatek
 		novatek,reset-gpio = <&pio 23 0x0>;
