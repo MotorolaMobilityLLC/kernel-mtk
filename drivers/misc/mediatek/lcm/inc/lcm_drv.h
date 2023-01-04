@@ -1006,9 +1006,17 @@ enum LCM_DRV_IOCTL_CMD {
 	LCM_DRV_IOCTL_ENABLE_CMD_MODE = 0x100,
 };
 
+/* touchscreen gesture state */
+enum gesture_state {
+	GESTURE_UNKNOWN = 0,
+	GESTURE_OFF = 1,
+	GESTURE_ON =2,
+};
+
 struct LCM_DRIVER {
 	const char *name;
 	const char *supplier;
+	int tp_gesture_status;
 	void (*set_util_funcs)(const struct LCM_UTIL_FUNCS *util);
 	void (*get_params)(struct LCM_PARAMS *params);
 
