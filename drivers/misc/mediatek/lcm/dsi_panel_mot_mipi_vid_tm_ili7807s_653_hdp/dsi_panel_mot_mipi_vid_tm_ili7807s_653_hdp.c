@@ -171,7 +171,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0x35, 0x01, {0x00}},
 
 	{0x11, 0x01, {0x00}},
-	{REGFLAG_DELAY,120,{}},
+	{REGFLAG_DELAY,90,{}},
 	{0x51, 0x02, {0x00, 0x00} },
 	{0x53, 0x01, {0x2C}},
 	{0x55, 0x01, {0x00}},
@@ -468,21 +468,21 @@ static void lcm_init_power(void)
 {
 	LCM_LOGI("[LCM] lcm_init_power\n");
 	lcm_set_bias_init(15,3);
-	MDELAY(10);
+	MDELAY(5);
 }
 
 static void lcm_suspend_power(void)
 {
 	LCM_LOGI("[LCM] lcm_suspend_power\n");
 	lcm_set_bias_pin_disable(3);
-	MDELAY(10);
+	MDELAY(5);
 }
 
 static void lcm_resume_power(void)
 {
 	LCM_LOGI("[LCM] lcm_resume_power\n");
 	lcm_set_bias_pin_enable(15,3);
-	MDELAY(10);
+	MDELAY(5);
 }
 
 static void lcm_init(void)
@@ -495,7 +495,7 @@ static void lcm_init(void)
 	MDELAY(10);
 
 	SET_RESET_PIN(1);
-	MDELAY(10);
+	MDELAY(5);
 
 	push_table(NULL, init_setting_vdo,
 		sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table),
