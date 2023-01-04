@@ -153,9 +153,13 @@ static struct LCM_setting_table init_setting_vdo[] = {
 
 	{0XFF, 0x01, {0X2B}},
 	{0XFB, 0x01, {0X01}},
-	{0XB7, 0x01, {0X2B}},
-	{0XB8, 0x01, {0X11}},
+	{0XB7, 0x01, {0X2C}},
+	{0XB8, 0x01, {0X1E}},
 	{0XC0, 0x01, {0X01}},
+
+	{0xFF, 0x01, {0x24}},
+	{0XFB, 0x01, {0X01}},
+	{0X32, 0x01, {0X09}},
 
 	{0xFF, 0x01, {0x25}},
 	{0XFB, 0x01, {0X01}},
