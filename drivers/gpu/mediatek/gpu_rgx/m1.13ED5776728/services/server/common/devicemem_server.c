@@ -232,90 +232,30 @@ static INLINE void DevmemIntHeapRelease(DEVMEMINT_HEAP *psDevmemHeap)
 PVRSRV_ERROR
 DevmemIntUnpin(PMR *psPMR)
 {
-	PVRSRV_ERROR eError;
-
-	/* Unpin */
-	eError = PMRUnpinPMR(psPMR, IMG_FALSE);
-
-	return eError;
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+	return PVRSRV_ERROR_NOT_IMPLEMENTED;
 }
 
 PVRSRV_ERROR
 DevmemIntUnpinInvalidate(DEVMEMINT_MAPPING *psDevmemMapping, PMR *psPMR)
 {
-	PVRSRV_ERROR eError;
-
-	eError = PMRUnpinPMR(psPMR, IMG_TRUE);
-	PVR_GOTO_IF_ERROR(eError, e_exit);
-
-	/* Invalidate mapping */
-	eError = MMU_ChangeValidity(psDevmemMapping->psReservation->psDevmemHeap->psDevmemCtx->psMMUContext,
-	                            psDevmemMapping->psReservation->sBase,
-	                            psDevmemMapping->uiNumPages,
-	                            psDevmemMapping->psReservation->psDevmemHeap->uiLog2PageSize,
-	                            IMG_FALSE, /* !< Choose to invalidate PT entries */
-	                            psPMR);
-
-e_exit:
-	return eError;
+	PVR_UNREFERENCED_PARAMETER(psDevmemMapping);
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+	return PVRSRV_ERROR_NOT_IMPLEMENTED;
 }
-
 PVRSRV_ERROR
 DevmemIntPin(PMR *psPMR)
 {
-	PVRSRV_ERROR eError = PVRSRV_OK;
-
-	/* Start the pinning */
-	eError = PMRPinPMR(psPMR);
-
-	return eError;
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+	return PVRSRV_ERROR_NOT_IMPLEMENTED;
 }
 
 PVRSRV_ERROR
 DevmemIntPinValidate(DEVMEMINT_MAPPING *psDevmemMapping, PMR *psPMR)
 {
-	PVRSRV_ERROR eError;
-	PVRSRV_ERROR eErrorMMU = PVRSRV_OK;
-	IMG_UINT32 uiLog2PageSize = psDevmemMapping->psReservation->psDevmemHeap->uiLog2PageSize;
-
-	/* Start the pinning */
-	eError = PMRPinPMR(psPMR);
-
-	if (eError == PVRSRV_OK)
-	{
-		/* Make mapping valid again */
-		eErrorMMU = MMU_ChangeValidity(psDevmemMapping->psReservation->psDevmemHeap->psDevmemCtx->psMMUContext,
-		                            psDevmemMapping->psReservation->sBase,
-		                            psDevmemMapping->uiNumPages,
-		                            uiLog2PageSize,
-		                            IMG_TRUE, /* !< Choose to make PT entries valid again */
-		                            psPMR);
-	}
-	else if (eError == PVRSRV_ERROR_PMR_NEW_MEMORY)
-	{
-		/* If we lost the physical backing we have to map it again because
-		 * the old physical addresses are not valid anymore. */
-		IMG_UINT32 uiFlags;
-		uiFlags = PMR_Flags(psPMR);
-
-		eErrorMMU = MMU_MapPages(psDevmemMapping->psReservation->psDevmemHeap->psDevmemCtx->psMMUContext,
-		                         uiFlags,
-		                         psDevmemMapping->psReservation->sBase,
-		                         psPMR,
-		                         0,
-		                         psDevmemMapping->uiNumPages,
-		                         NULL,
-		                         uiLog2PageSize);
-	}
-
-	/* Just overwrite eError if the mappings failed.
-	 * PMR_NEW_MEMORY has to be propagated to the user. */
-	if (eErrorMMU != PVRSRV_OK)
-	{
-		eError = eErrorMMU;
-	}
-
-	return eError;
+	PVR_UNREFERENCED_PARAMETER(psDevmemMapping);
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+	return PVRSRV_ERROR_NOT_IMPLEMENTED;
 }
 
 /*************************************************************************/ /*!
@@ -618,10 +558,10 @@ DevmemIntMapPages(DEVMEMINT_RESERVATION *psReservation,
                   IMG_DEV_VIRTADDR sDevVAddrBase)
 {
 	PVRSRV_ERROR eError;
+	IMG_UINT32 uiPMRMaxChunkCount = PMRGetMaxChunkCount(psPMR);
 
-	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PageCount < PMR_MAX_SUPPORTED_PAGE_COUNT), "ui32PageCount");
-	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PhysicalPgOffset < PMR_MAX_SUPPORTED_PAGE_COUNT), "ui32PhysicalPgOffset");
-
+	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PageCount < uiPMRMaxChunkCount), "ui32PageCount");
+	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PhysicalPgOffset < uiPMRMaxChunkCount), "ui32PhysicalPgOffset");
 	if (psReservation->psDevmemHeap->uiLog2PageSize > PMR_GetLog2Contiguity(psPMR))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
@@ -651,7 +591,7 @@ DevmemIntUnmapPages(DEVMEMINT_RESERVATION *psReservation,
                     IMG_DEV_VIRTADDR sDevVAddrBase,
                     IMG_UINT32 ui32PageCount)
 {
-	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PageCount < PMR_MAX_SUPPORTED_PAGE_COUNT), "ui32PageCount");
+	PVR_LOG_RETURN_IF_INVALID_PARAM(ui32PageCount < PMR_MAX_SUPPORTED_4K_PAGE_COUNT, "ui32PageCount");
 
 	/* Unmap the pages and mark them invalid in the MMU PTE */
 	MMU_UnmapPages(psReservation->psDevmemHeap->psDevmemCtx->psMMUContext,

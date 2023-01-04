@@ -45,6 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "img_defs.h"
 
+#include "pmr.h"
 #include "devicemem_history_server.h"
 
 #include "common_devicememhistory_bridge.h"
@@ -660,7 +661,11 @@ DevicememHistoryUnmapVRange_exit:
 }
 
 static_assert(DEVMEM_ANNOTATION_MAX_LEN <= IMG_UINT32_MAX,
-	      "DEVMEM_ANNOTATION_MAX_LEN must not be larger than IMG_UINT32_MAX");
+			"DEVMEM_ANNOTATION_MAX_LEN must not be larger than IMG_UINT32_MAX");
+static_assert(PMR_MAX_SUPPORTED_4K_PAGE_COUNT <= IMG_UINT32_MAX,
+			"PMR_MAX_SUPPORTED_4K_PAGE_COUNT must not be larger than IMG_UINT32_MAX");
+static_assert(PMR_MAX_SUPPORTED_4K_PAGE_COUNT <= IMG_UINT32_MAX,
+			"PMR_MAX_SUPPORTED_4K_PAGE_COUNT must not be larger than IMG_UINT32_MAX");
 
 static IMG_INT
 PVRSRVBridgeDevicememHistorySparseChange(IMG_UINT32 ui32DispatchTableEntry,
@@ -698,6 +703,24 @@ PVRSRVBridgeDevicememHistorySparseChange(IMG_UINT32 ui32DispatchTableEntry,
 	     sizeof(IMG_UINT32)) +
 	    ((IMG_UINT64) psDevicememHistorySparseChangeIN->ui32FreePageCount *
 	     sizeof(IMG_UINT32)) + 0;
+
+	if (unlikely
+		(psDevicememHistorySparseChangeIN->ui32AllocPageCount >
+		PMR_MAX_SUPPORTED_4K_PAGE_COUNT))
+	{
+		psDevicememHistorySparseChangeOUT->eError =
+			PVRSRV_ERROR_BRIDGE_ARRAY_SIZE_TOO_BIG;
+		goto DevicememHistorySparseChange_exit;
+	}
+
+	if (unlikely
+		(psDevicememHistorySparseChangeIN->ui32FreePageCount >
+		PMR_MAX_SUPPORTED_4K_PAGE_COUNT))
+	{
+		psDevicememHistorySparseChangeOUT->eError =
+			PVRSRV_ERROR_BRIDGE_ARRAY_SIZE_TOO_BIG;
+		goto DevicememHistorySparseChange_exit;
+	}
 
 	if (ui64BufferSize > IMG_UINT32_MAX)
 	{
