@@ -776,6 +776,7 @@ static int sgm41543_update_chg_type(struct charger_device *chg_dev, bool en)
 	}
 
 #endif
+        power_supply_changed(chrdet_psy);
 	mutex_unlock(&sgm41543_type_det_lock);
 	return 0;
 }
@@ -970,7 +971,7 @@ static void sgm41543_charger_irq_workfunc(struct work_struct *work)
 	u8 temp = 0;
 	int ret;
 
-	mdelay(100);
+	//mdelay(100);
 
 	/* Read STATUS and FAULT registers */
 	ret = sgm41543_read_byte(bq, SGM41543_REG_08, &status);
