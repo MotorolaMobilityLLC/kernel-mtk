@@ -1479,6 +1479,11 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 				if(info->wireless_online == true) {
 					charger_manager_force_disable_power_path(info->chg1_consumer, MAIN_CHARGER, false);
 					charger_manager_enable_power_path(info->chg1_consumer, MAIN_CHARGER, info->wireless_online == 1 ? true:false);
+					if(info->mmi.factory_mode) {
+						chr_err("%s:wireless factory input current:%d\n",
+							__func__, info->data.wireless_factory_max_input_current);
+						charger_dev_set_input_current(info->chg1_dev, info->data.wireless_factory_max_input_current);
+					}
 					wireless_get_charger_type();
 					_wake_up_charger(info);
 				}
@@ -1538,8 +1543,14 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	memset(&pinfo->sc.data, 0, sizeof(struct scd_cmd_param_t_1));
 	pinfo->sc.disable_in_this_plug = false;
 	wakeup_sc_algo_cmd(&pinfo->sc.data, SC_EVENT_PLUG_IN, 0);
-	charger_dev_set_input_current(info->chg1_dev,
+	if(info->wireless_online == true && info->mmi.factory_mode) {
+			chr_err("%s:wireless factory input current:%d\n",
+				__func__, info->data.wireless_factory_max_input_current);
+			charger_dev_set_input_current(info->chg1_dev, info->data.wireless_factory_max_input_current);
+	}else {
+		charger_dev_set_input_current(info->chg1_dev,
 				info->chg1_data.input_current_limit);
+	}
 	charger_dev_plug_in(info->chg1_dev);
 	return 0;
 }
