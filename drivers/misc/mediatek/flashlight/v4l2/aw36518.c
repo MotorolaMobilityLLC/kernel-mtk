@@ -490,6 +490,7 @@ static int aw36518_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 static int aw36518_close(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 {
+	regmap_update_bits(aw36518_flash_data->regmap,REG_FLAG2, 0x0f, 0x00);
 	pr_info("%s\n", __func__);
 
 	pm_runtime_put(sd->dev);
@@ -868,7 +869,7 @@ static int aw36518_remove(struct i2c_client *client)
 }
 static void aw36518_shutdown(struct i2c_client *client)
 {
-	regmap_update_bits(aw36518_flash_data->regmap,REG_ENABLE, 0x0f, 0x00);
+	regmap_update_bits(aw36518_flash_data->regmap,REG_FLAG2, 0x0f, 0x00);
 	pr_info_ratelimited("%s", __func__);
 	return;
 }
