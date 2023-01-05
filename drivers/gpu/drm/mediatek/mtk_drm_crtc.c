@@ -1135,12 +1135,12 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	if (!(comp && comp->funcs && comp->funcs->io_cmd))
 		return -EINVAL;
 
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 	if (!(mtk_crtc->enabled)) {
 		DDPINFO("%s: skip, slept\n", __func__);
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return -EINVAL;
 	}
-
-	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 
 	mtk_drm_idlemgr_kick(__func__, crtc, 0);
 
