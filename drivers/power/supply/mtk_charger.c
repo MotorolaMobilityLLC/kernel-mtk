@@ -3090,6 +3090,12 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
 	else
 		info->mmi.charge_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_SGM415XX) && defined(CONFIG_FORCE_QC3_ICL)
+	//Qc3+ should show trubo power
+	if (m_chg_type == 0x09) {
+		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+	}
+#endif
 
 end_rate_check:
 	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
