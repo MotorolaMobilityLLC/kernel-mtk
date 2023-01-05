@@ -950,6 +950,7 @@ kal_uint16 addr_data_pair_init_hi1336[] = {
 	0x0908, 0x0003,
 	0x0708, 0x2f00,
 	0x027e, 0x0100,
+	0x0B02, 0x0100,
 };
 
 kal_uint16 addr_data_pair_preview_hi1336[] = {
