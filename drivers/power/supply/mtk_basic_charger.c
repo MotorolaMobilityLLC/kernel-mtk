@@ -303,12 +303,20 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 			    if(sgm_config_qc_charger(info->chg1_dev) != 0)
 					chr_err("sgm_config_qc_charger set sgm dpdm failed\n");
 			    else{
+#ifdef CONFIG_FORCE_QC3_ICL
+				    pdata->input_current_limit = 2000000;
+#else
 				    pdata->input_current_limit = 3000000;
+#endif
 				    chr_err("it is HVDCP set sgm 3A  m_chg_type = %d\n",m_chg_type);
 			    }
 			}
 			if(m_chg_type == 0x09){
+#ifdef CONFIG_FORCE_QC3_ICL
+			    pdata->input_current_limit = 2000000;
+#else
 			    pdata->input_current_limit = 2500000;
+#endif
 			}
 		}
 #endif
