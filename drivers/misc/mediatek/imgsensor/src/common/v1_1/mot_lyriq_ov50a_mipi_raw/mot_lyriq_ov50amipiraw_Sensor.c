@@ -1975,6 +1975,44 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
                         sizeof(addr_data_pair_seamless_switch_group1_end)/sizeof(kal_uint16));
 	}
 		break;
+	case MSDK_SCENARIO_ID_CUSTOM5:
+	{
+		mot_lyriq_ov50a_table_write_cmos_sensor(addr_data_pair_seamless_switch_group3_start,
+			sizeof(addr_data_pair_seamless_switch_group3_start)/sizeof(kal_uint16));
+
+		control(scenario_id, NULL, NULL);
+
+		if (ae_ctrl) {
+			pr_debug("call MSDK_SCENARIO_ID_CUSTOM5 %d %d",
+				ae_ctrl[SHUTTER_NE_FRM_1],
+				ae_ctrl[GAIN_NE_FRM_1]);
+			set_shutter(ae_ctrl[SHUTTER_NE_FRM_1]);
+			set_gain(ae_ctrl[GAIN_NE_FRM_1]);
+		}
+
+		mot_lyriq_ov50a_table_write_cmos_sensor(addr_data_pair_seamless_switch_group3_end,
+			sizeof(addr_data_pair_seamless_switch_group3_end)/sizeof(kal_uint16));
+	}
+		break;
+	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+	{
+		mot_lyriq_ov50a_table_write_cmos_sensor(addr_data_pair_seamless_switch_group1_start,
+			sizeof(addr_data_pair_seamless_switch_group1_start)/sizeof(kal_uint16));
+
+		control(scenario_id, NULL, NULL);
+
+		if (ae_ctrl) {
+			pr_debug("call MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG %d %d",
+				ae_ctrl[SHUTTER_NE_FRM_1],
+				ae_ctrl[GAIN_NE_FRM_1]);
+			set_shutter(ae_ctrl[SHUTTER_NE_FRM_1]);
+			set_gain(ae_ctrl[GAIN_NE_FRM_1]);
+		}
+
+		mot_lyriq_ov50a_table_write_cmos_sensor(addr_data_pair_seamless_switch_group1_end,
+			sizeof(addr_data_pair_seamless_switch_group1_end)/sizeof(kal_uint16));
+	}
+		break;
 	default:
 	{
 		pr_debug("%s error! wrong setting in set_seamless_switch = %d",
@@ -2024,6 +2062,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM4:
 			*pScenarios = MSDK_SCENARIO_ID_VIDEO_PREVIEW;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*pScenarios = MSDK_SCENARIO_ID_CUSTOM5;
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM5:
+			*pScenarios = MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG;
 			break;
 		default:
 			*pScenarios = 0xff;
