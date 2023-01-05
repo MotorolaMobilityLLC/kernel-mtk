@@ -417,7 +417,7 @@ static void bq2589x_dump_regs(struct bq2589x *bq)
 	int ret;
 
 	for (addr = 0x0; addr <= 0x14; addr++) {
-		msleep(20);
+		//msleep(20);
 		ret = bq2589x_read_byte(bq, &val, addr);
 		if (!ret)
 			pr_info("Reg[%.2x] = 0x%.2x\n", addr, val);
@@ -1398,6 +1398,7 @@ static int bq2589x_update_chg_type(struct charger_device *chg_dev, bool en)
 	}
 
 #endif
+        power_supply_changed(chrdet_psy);
 	mutex_unlock(&bq2589x_type_det_lock);
 	return 0;
 }
@@ -2095,7 +2096,9 @@ static void bq2589x_charger_irq_workfunc(struct work_struct *work)
 	u8 temp = 0;
 	int ret;
 
-	mdelay(100);
+	dev_info(bq->dev, "%s: enter\n", __func__);
+
+	//mdelay(100);
 
 	/* Read STATUS and FAULT registers */
 	ret = bq2589x_read_byte(bq, &status, BQ2589X_REG_0B);
@@ -2162,7 +2165,7 @@ static irqreturn_t bq2589x_charger_interrupt(int irq, void *data)
 {
 	struct bq2589x *bq = data;
 
-	dev_info(bq->dev, "in %s\n", __func__);
+	dev_info(bq->dev, "in %s irq %d\n", __func__, irq);
 	schedule_work(&bq->irq_work);
 	return IRQ_HANDLED;
 }
