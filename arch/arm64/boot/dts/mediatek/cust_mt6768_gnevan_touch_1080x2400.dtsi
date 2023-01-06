@@ -26,6 +26,8 @@
 		novatek,panel-supplier = "csot";
 		novatek,fw_ic_info = "nt36672c", "nt36672n";
 		novatek,usb_charger;
+		novatek,report_gesture_key = <1>;
+		novatek,panel_wakeup = <1>;
 
 		/* 672A, 525B, 675, 526, 672C, 523 */
 		novatek,swrst-n8-addr = <0x03F0FE>;
