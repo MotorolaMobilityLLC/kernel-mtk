@@ -2420,8 +2420,8 @@ static void mmi_charger_check_status(struct charger_manager *info)
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
 	}
         pr_info("[%s]mtk pe connect: %d\n",
-		 __func__, mtk_pe_get_is_connect(info));
-	if (mtk_pe_get_is_connect(info) || mmi_get_pd_pps_support(info)) {
+		 __func__, mtk_pe_get_is_cable_connect(info));
+	if (mtk_pe_get_is_cable_connect(info) || mmi_get_pd_pps_support(info)) {
 		max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
 		if (max_fv_mv == 0)
 			max_fv_mv = mmi->base_fv_mv;
