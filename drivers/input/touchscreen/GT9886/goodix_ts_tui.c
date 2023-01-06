@@ -24,11 +24,7 @@
 atomic_t gt9886_tui_flag = ATOMIC_INIT(0);
 EXPORT_SYMBOL(gt9886_tui_flag);
 
-#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
 int gt9886_tpd_enter_tui(void)
-#else
-int tpd_enter_tui(void)
-#endif
 {
 	int ret = 0;
 
@@ -38,18 +34,9 @@ int tpd_enter_tui(void)
 
 	return ret;
 }
-
-#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
 EXPORT_SYMBOL(gt9886_tpd_enter_tui);
-#else
-EXPORT_SYMBOL(tpd_enter_tui);
-#endif
 
-#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
 int gt9886_tpd_exit_tui(void)
-#else
-int tpd_exit_tui(void)
-#endif
 {
 	int ret = 0;
 
@@ -62,11 +49,6 @@ int tpd_exit_tui(void)
 
 	return ret;
 }
-
-#if IS_ENABLED(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API)
 EXPORT_SYMBOL(gt9886_tpd_exit_tui);
-#else
-EXPORT_SYMBOL(tpd_exit_tui);
-#endif
 #endif
 
