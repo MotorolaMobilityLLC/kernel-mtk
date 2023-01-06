@@ -107,7 +107,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
-		.grabwindow_height = 3072,
+		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 1316016000,
@@ -119,7 +119,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
-		.grabwindow_height = 1536,
+		.grabwindow_height = 1152,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
 		.mipi_pixel_rate = 1316016000,
@@ -155,7 +155,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
-		.grabwindow_height = 1536,
+		.grabwindow_height = 1152,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 600,
 		.mipi_pixel_rate = 1316016000,
@@ -166,7 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1388,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 1980,
+		.grabwindow_width = 1920,
 		.grabwindow_height = 1080,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 2400,
@@ -177,7 +177,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.linelength = 450,
 		.framelength = 2776,
 		.startx = 0,
-		.starty = 384,
+		.starty = 0,
 		.grabwindow_width = 4096,
 		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
@@ -252,15 +252,15 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	/* capture */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* video */
-	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
+	{8192, 6144,    0,    768, 8192, 4608, 4096, 2304,  0,   0, 4096, 2304, 0, 0, 4096, 2304},
 	/* hs_video */
-	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
+	{8192, 6144,    0,    768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 	/* slim_video */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* custom1 */
 	{8192, 6144,    0,    0, 8192, 6144, 8192, 6144,  0,   0, 8192, 6144, 0, 0, 8192, 6144},
 	/* custom2 */
-	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
+	{8192, 6144,    0,    768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 	/* custom3 */
 	{8192, 6144,    256, 912, 7680, 4320, 1920, 1080,  0,   0, 1920, 1080, 0, 0, 1920, 1080},
 	/* custom4 */
@@ -271,7 +271,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 
 
 //the index order of VC_STAGGER_NE/ME/SE in array identify the order of readout in MIPI transfer
-static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
+static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[5] = {
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //preivew
 		{
@@ -284,12 +284,23 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 		1
 	},
 	{
+		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //normal video
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0x900},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x1000, 0x240},
+#if PD_PIX_2_EN
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x240},
+#endif
+		},
+		1
+	},
+	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //custom2
 		{
-			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x600},
-			{VC_PDAF_STATS, 0x01, 0x2b, 0x1000, 0x180},
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x800, 0x480},
+			{VC_PDAF_STATS, 0x01, 0x2b, 0x800, 0x240},
 #if PD_PIX_2_EN
-			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x180},
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x800, 0x240},
 #endif
 		},
 		1
@@ -329,22 +340,24 @@ static u8 xtalk_ready = 0;
 static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 scenario)
 {
 	switch (scenario) {
-
-	case SENSOR_SCENARIO_ID_CUSTOM2:
+	case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[1],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
 		break;
-	case SENSOR_SCENARIO_ID_CUSTOM4:
+	case SENSOR_SCENARIO_ID_CUSTOM2:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[2],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
 		break;
-	case SENSOR_SCENARIO_ID_CUSTOM5:
+	case SENSOR_SCENARIO_ID_CUSTOM4:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[3],
+			sizeof(struct SENSOR_VC_INFO2_STRUCT));
+		break;
+	case SENSOR_SCENARIO_ID_CUSTOM5:
+		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[4],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
 		break;
 	case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 	case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
-	case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 	case SENSOR_SCENARIO_ID_SLIM_VIDEO:
 	default:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
@@ -736,8 +749,8 @@ static void sensor_init(struct subdrv_ctx *ctx)
 	} else {
 		LOG_INF("%s: skip EEPROM xtalk, use default one...", __func__);
 		table_write_cmos_sensor(ctx,
-		    addr_data_pair_init_mot_aion_ov50a_20221114,
-		    sizeof(addr_data_pair_init_mot_aion_ov50a_20221114) / sizeof(kal_uint16));
+		    addr_data_pair_init_mot_aion_ov50a_20230102,
+		    sizeof(addr_data_pair_init_mot_aion_ov50a_20230102) / sizeof(kal_uint16));
 	}
 	LOG_INF("%s end\n", __func__);
 }
@@ -2473,7 +2486,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.channel = 0,
 			.data_type = 0x2b,
 			.hsize = 0x1000,
-			.vsize = 0x0c00,
+			.vsize = 0x900,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
@@ -2482,7 +2495,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.channel = 1,
 			.data_type = 0x2b,
 			.hsize = 0x1000,
-			.vsize = 0x300,
+			.vsize = 0x240,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
@@ -2492,8 +2505,8 @@ static struct mtk_mbus_frame_desc_entry frame_desc_hs_vid[] = {
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0800,
-			.vsize = 0x0600,
+			.hsize = 0x800,
+			.vsize = 0x480,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
@@ -2529,13 +2542,13 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
 		},
 	},
 };
-static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //2048x1536@60fps
+static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //2048x1152@60fps
 	{
 		.bus.csi2 = {
 			.channel = 0,
 			.data_type = 0x2b,
-			.hsize = 0x0800,
-			.vsize = 0x0600,
+			.hsize = 0x800,
+			.vsize = 0x480,
 			.user_data_desc = VC_STAGGER_NE,
 		},
 	},
@@ -2543,8 +2556,8 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = { //2048x1536@60fps
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x1000,
-			.vsize = 0x0180,
+			.hsize = 0x800,
+			.vsize = 0x240,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
