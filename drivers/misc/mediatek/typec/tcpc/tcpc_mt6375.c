@@ -225,6 +225,8 @@
 #define MT6375_MSK_WDLDO_SEL	GENMASK(7, 6)
 #define MT6375_SFT_WDLDO_SEL	(6)
 /* RT2 MT6375_REG_WDSET3: 0x21 */
+#define MT6375_MASK_WD_TSLEEP	GENMASK(5, 4)
+#define MT6375_SHFT_WD_TSLEEP	(4)
 #define MT6375_MASK_WD_TDET	GENMASK(2, 0)
 #define MT6375_SHFT_WD_TDET	(0)
 /* RT2 MT6375_REG_WD1MISCSET: 0x22 */
@@ -242,6 +244,8 @@
 	(MT6375_MSK_DPDET_EN | MT6375_MSK_DMDET_EN)
 #define MT6375_MSK_MANUAL_MODE	BIT(7)
 
+#define MT6375_WD_SETTING2(TDET, TSLEEP) \
+	((TDET << MT6375_SHFT_WD_TDET) | (TSLEEP << MT6375_SHFT_WD_TSLEEP))
 struct mt6375_tcpc_data {
 	struct device *dev;
 	struct regmap *rmap;
@@ -256,10 +260,13 @@ struct mt6375_tcpc_data {
 	u16 curr_irq_mask;
 
 	atomic_t wd_protect_retry;
+	atomic_t wd_one_min_cnt;
 
 #if CONFIG_WATER_DETECTION
 #if CONFIG_WD_POLLING_ONLY
 	struct delayed_work wd_poll_dwork;
+	struct alarm wd_one_minute_timer;
+	struct delayed_work wd_one_minute_dwork;
 #endif /* CONFIG_WD_POLLING_ONLY */
 #endif /* CONFIG_WATER_DETECTION */
 
@@ -353,6 +360,13 @@ enum mt6375_wd_tdet {
 	MT6375_WD_TDET_40MS,
 	MT6375_WD_TDET_100MS,
 	MT6375_WD_TDET_400MS,
+};
+
+enum mt6375_wd_tsleep {
+	MT6375_WD_TSLEEP_16X = 0,
+	MT6375_WD_TSLEEP_128X,
+	MT6375_WD_TSLEEP_512X,
+	MT6375_WD_TSLEEP_1024X,
 };
 
 static const u8 mt6375_vend_alert_clearall[MT6375_VEND_INT_NUM] = {
@@ -530,8 +544,24 @@ static inline int mt6375_bulk_write_rt2(struct mt6375_tcpc_data *ddata, u32 reg,
 static inline int mt6375_update_bits_rt2(struct mt6375_tcpc_data *ddata,
 					 u32 reg, u8 mask, u8 data)
 {
-	return regmap_update_bits(ddata->rmap, reg + MT6375_REG_RT2BASEADDR,
+	int ret;
+	unsigned int reg_data = 0;
+
+	ret = regmap_update_bits(ddata->rmap, reg + MT6375_REG_RT2BASEADDR,
 				  mask, data);
+	if (ret)
+		return ret;
+
+	if (reg == MT6375_REG_WDSET3) {
+		ret = regmap_read(ddata->rmap, reg + MT6375_REG_RT2BASEADDR,
+				  &reg_data);
+		if (ret)
+			return ret;
+		MT6375_DBGINFO("reg0x%04X = 0x%02X\n",
+			       reg + MT6375_REG_RT2BASEADDR, reg_data);
+	}
+
+	return 0;
 }
 
 static int mt6375_sw_reset(struct mt6375_tcpc_data *ddata)
@@ -889,8 +919,14 @@ static int mt6375_init_wd(struct mt6375_tcpc_data *ddata)
 	 */
 	mt6375_write8(ddata, MT6375_REG_WDSET, 0x50);
 
-	/* WD_EXIT_CNT = 4times */
-	mt6375_set_bits(ddata, MT6375_REG_WDSET1, 0x02);
+	/*
+	 * WD_EXIT_CNT = 2times
+	 * 00 = 1 times
+	 * 01 = 2 times
+	 * 10 = 4 times
+	 * 11 = 8 times
+	 */
+	mt6375_set_bits(ddata, MT6375_REG_WDSET1, 0x01);
 
 	/* WD1_RPULL_EN = 1, WD1_DISCHG_EN = 1 */
 	mt6375_write8(ddata, MT6375_REG_WD1MISCCTRL, 0x06);
@@ -996,6 +1032,53 @@ static int mt6375_set_wd_protection_parameter(struct mt6375_tcpc_data *ddata,
 		return ret;
 	return mt6375_set_wd_protection_path(ddata, chan);
 }
+
+#if CONFIG_WD_POLLING_ONLY
+static void mt6375_enable_wd_one_minute_timer(struct mt6375_tcpc_data *ddata,
+					 bool en)
+{
+	if (en)
+		alarm_start_relative(&ddata->wd_one_minute_timer,
+				     ms_to_ktime(60000));
+	else
+		alarm_cancel(&ddata->wd_one_minute_timer);
+}
+
+static enum alarmtimer_restart
+mt6375_wd_one_minute_timer_handler(struct alarm *alarm, ktime_t now)
+{
+	struct mt6375_tcpc_data *ddata = container_of(alarm,
+						      struct mt6375_tcpc_data,
+						      wd_one_minute_timer);
+
+	schedule_delayed_work(&ddata->wd_one_minute_dwork, 0);
+	return ALARMTIMER_NORESTART;
+}
+
+static void mt6375_wd_one_minute_dwork_handler(struct work_struct *work)
+{
+	struct delayed_work *dwork = to_delayed_work(work);
+	struct mt6375_tcpc_data *ddata = container_of(dwork,
+						      struct mt6375_tcpc_data,
+						      wd_one_minute_dwork);
+	int i, ret;
+
+	ret = tcpci_is_water_detected(ddata->tcpc);
+	MT6375_DBGINFO("ret = %d\n", ret);
+	if (ret <= 0)
+		return;
+	atomic_inc(&ddata->wd_one_min_cnt);
+	mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
+			       MT6375_MASK_WD_TDET | MT6375_MASK_WD_TSLEEP,
+			       MT6375_WD_SETTING2(MT6375_WD_TDET_40MS,
+						  MT6375_WD_TSLEEP_512X));
+	for (i = 0; i < MT6375_WD_CHAN_NUM; i++) {
+		if (!mt6375_wd_chan_en[i])
+			continue;
+		mt6375_set_wd_protection_parameter(ddata, i);
+	}
+}
+#endif /* CONFIG_WD_POLLING_ONLY */
 
 static int mt6375_check_wd_status(struct mt6375_tcpc_data *ddata,
 				  enum mt6375_wd_chan chan, bool *error)
@@ -1214,12 +1297,12 @@ static int mt6375_enable_wd_polling(struct mt6375_tcpc_data *ddata, bool en)
 {
 	int ret, i;
 
+	MT6375_DBGINFO("en = %d\n", en);
 	if (en) {
-		ret = mt6375_update_bits_rt2(ddata,
-					     MT6375_REG_WDSET3,
-					     MT6375_MASK_WD_TDET,
-					     MT6375_WD_TDET_10MS <<
-						MT6375_SHFT_WD_TDET);
+		ret = mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
+				(MT6375_MASK_WD_TDET | MT6375_MASK_WD_TSLEEP),
+				MT6375_WD_SETTING2(MT6375_WD_TDET_10MS,
+						   MT6375_WD_TSLEEP_1024X));
 		if (ret < 0)
 			return ret;
 		for (i = 0; i < MT6375_WD_CHAN_NUM; i++) {
@@ -1238,21 +1321,47 @@ static int mt6375_enable_wd_protection(struct mt6375_tcpc_data *ddata, bool en)
 {
 	int i, ret;
 
-	MT6375_DBGINFO("%s: en = %d\n", __func__, en);
+	MT6375_DBGINFO("en = %d\n", en);
 	if (en) {
-		ret = mt6375_update_bits_rt2(ddata,
-					     MT6375_REG_WDSET3,
-					     MT6375_MASK_WD_TDET,
-					     MT6375_WD_TDET_1MS <<
-						MT6375_SHFT_WD_TDET);
-		if (ret < 0)
-			return ret;
+		if (atomic_read(&ddata->wd_one_min_cnt) > 1) {
+			MT6375_DBGINFO("already in wd_one_minute\n");
+			ret = mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
+			       MT6375_MASK_WD_TDET | MT6375_MASK_WD_TSLEEP,
+			       MT6375_WD_SETTING2(MT6375_WD_TDET_40MS,
+						  MT6375_WD_TSLEEP_512X));
+			if (ret < 0)
+				return ret;
+		} else {
+			ret = mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
+				(MT6375_MASK_WD_TDET | MT6375_MASK_WD_TSLEEP),
+				MT6375_WD_SETTING2(MT6375_WD_TDET_1MS,
+						   MT6375_WD_TSLEEP_1024X));
+			if (ret < 0)
+				return ret;
+		}
+
 		for (i = 0; i < MT6375_WD_CHAN_NUM; i++) {
 			if (!mt6375_wd_chan_en[i])
 				continue;
 			mt6375_set_wd_protection_parameter(ddata, i);
 		}
+		if (atomic_read(&ddata->wd_one_min_cnt) == 0) {
+			mt6375_enable_wd_one_minute_timer(ddata, true);
+			atomic_inc(&ddata->wd_one_min_cnt);
+		}
+	} else {
+		cancel_delayed_work_sync(&ddata->wd_poll_dwork);
+		if (atomic_read(&ddata->wd_one_min_cnt) > 0) {
+			mt6375_enable_wd_one_minute_timer(ddata, false);
+			atomic_set(&ddata->wd_one_min_cnt, 0);
+		}
+
+		ret = mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
+				(MT6375_MASK_WD_TDET | MT6375_MASK_WD_TSLEEP),
+				MT6375_WD_SETTING2(MT6375_WD_TDET_10MS,
+						   MT6375_WD_TSLEEP_1024X));
 	}
+
 	/* set DPDM manual mode and DPDM_DET_EN = 1 */
 	ret = regmap_update_bits(ddata->rmap, MT6375_REG_DPDM_CTRL1,
 		MT6375_MSK_MANUAL_MODE | MT6375_MSK_DPDMDET_EN, en ? 0xff : 0);
@@ -2668,9 +2777,14 @@ static int mt6375_tcpc_probe(struct platform_device *pdev)
 	}
 
 	atomic_set(&ddata->wd_protect_retry, CONFIG_WD_PROTECT_RETRY_COUNT);
+	atomic_set(&ddata->wd_one_min_cnt, 0);
 #if CONFIG_WATER_DETECTION
 #if CONFIG_WD_POLLING_ONLY
 	INIT_DELAYED_WORK(&ddata->wd_poll_dwork, mt6375_wd_poll_dwork_handler);
+	INIT_DELAYED_WORK(&ddata->wd_one_minute_dwork,
+			  mt6375_wd_one_minute_dwork_handler);
+	alarm_init(&ddata->wd_one_minute_timer, ALARM_REALTIME,
+		   mt6375_wd_one_minute_timer_handler);
 #endif /* CONFIG_WD_POLLING_ONLY */
 #endif /* CONFIG_WATER_DETECTION */
 	INIT_DELAYED_WORK(&ddata->hidet_dwork, mt6375_hidet_dwork_handler);
@@ -2741,6 +2855,8 @@ static void mt6375_shutdown(struct platform_device *pdev)
 #if CONFIG_WD_POLLING_ONLY
 	if (ddata->desc->en_wd_polling_only)
 		cancel_delayed_work_sync(&ddata->wd_poll_dwork);
+	alarm_cancel(&ddata->wd_one_minute_timer);
+	cancel_delayed_work_sync(&ddata->wd_one_minute_dwork);
 #endif /* CONFIG_WD_POLLING_ONLY */
 #endif /* CONFIG_WATER_DETECTION */
 
