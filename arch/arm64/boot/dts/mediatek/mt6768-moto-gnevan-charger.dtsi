@@ -34,6 +34,10 @@
 		ti,bq2589x,term-current = <128>;
                 ti,bq2589x,disable-ilim;
 		ti,bq2589x,stat-pin-ctrl = <1>;
+
+		/* enable dynamic adjust battery voltage */
+		ti,bq2589x,enable-dynamic-adjust-batvol;
+		ti,bq2589x,ffc-cv = <4510000>;
         };
 
 	sgm41543@0B {
@@ -57,6 +61,10 @@
 		ti,sgm41543,vac-ovp-threshold = <10500>;
 		ti,sgm41543,charge-voltage = <4400>;
 		ti,sgm41543,charge-current = <2000>;
+
+		/* enable dynamic adjust battery voltage */
+		ti,sgm41543,enable-dynamic-adjust-batvol;
+		ti,sgm41543,ffc-cv = <4510000>;
 	};
 };
 
@@ -135,9 +143,9 @@
                         <4200 243>,
                         <4480 243>,
                         <4480 243>,
-                        <4528 518>,
-                        <4528 536>,
-                        <4528 548>,
+                        <4510 518>,
+                        <4510 536>,
+                        <4510 548>,
                         <4200 243>;
 
         mmi,enable-charging-limit;
