@@ -42,6 +42,21 @@ int tpd_exit_tui(void)
 }
 EXPORT_SYMBOL(tpd_exit_tui);
 #endif
+
+static int __init mt_soc_tui_common_init(void)
+{
+	int ret = 0;
+
+	pr_info("%s call\n", __func__);
+	return ret;
+}
+module_init(mt_soc_tui_common_init);
+
+static void __exit mt_soc_tui_common_exit(void)
+{
+}
+module_exit(mt_soc_tui_common_exit);
+
 MODULE_DESCRIPTION("tui common");
 MODULE_AUTHOR("mediatek");
 MODULE_LICENSE("GPL v2");
