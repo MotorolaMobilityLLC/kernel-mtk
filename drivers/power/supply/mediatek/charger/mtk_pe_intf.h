@@ -16,6 +16,7 @@ struct mtk_pe {
 	bool to_tune_ta_vchr;
 	bool is_cable_out_occur; /* Plug out happened while detecting PE+ */
 	bool is_connect;
+	bool is_pe_cable_connect;
 	bool is_enabled;
 };
 
@@ -36,6 +37,7 @@ extern void mtk_pe_set_is_cable_out_occur(struct charger_manager *pinfo,
 
 extern bool mtk_pe_get_to_check_chr_type(struct charger_manager *pinfo);
 extern bool mtk_pe_get_is_connect(struct charger_manager *pinfo);
+extern bool mtk_pe_get_is_cable_connect(struct charger_manager *pinfo);
 extern bool mtk_pe_get_is_enable(struct charger_manager *pinfo);
 
 #else /* NOT CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT */
