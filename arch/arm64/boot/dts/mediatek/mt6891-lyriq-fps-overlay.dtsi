@@ -66,7 +66,7 @@
 		compatible = "mediatek,fingerprint-goodix";
 		interrupt-parent = <&pio>;
 
-		interrupts = <10 IRQ_TYPE_EDGE_RISING 15 0>;
+		interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
 		pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
 		pinctrl-0 = <&fingerfp_irq_active>;
 		pinctrl-1 = <&fingerfp_rst_high>;
