@@ -11,7 +11,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
 */
-
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -46,7 +45,9 @@
 #define RTC_BBPU_RELOAD		BIT(5)
 #define RTC_BBPU_CBUSY		BIT(6)
 
+#define RTC_WRTGR_MT6357	0x3a
 #define RTC_WRTGR_MT6358	0x3a
+#define RTC_WRTGR_MT6359	0x3a
 #define RTC_WRTGR_MT6397	0x3c
 
 #define RTC_IRQ_STA		0x0002
@@ -268,7 +269,7 @@ static const struct reg_field mtk_rtc_spare_reg_fields[SPARE_RG_MAX] = {
 };
 
 static const struct mtk_rtc_compatible mt6359_rtc_compat = {
-	.wrtgr_addr		= RTC_WRTGR_MT6358,
+	.wrtgr_addr		= RTC_WRTGR_MT6359,
 	.spare_reg_fields	= mtk_rtc_spare_reg_fields,
 	.cali_reg_fields	= mt6359_cali_reg_fields,
 	.eosc_cali_version	= EOSC_CALI_MT6359_SERIES,
@@ -282,7 +283,7 @@ static const struct mtk_rtc_compatible mt6358_rtc_compat = {
 };
 
 static const struct mtk_rtc_compatible mt6357_rtc_compat = {
-	.wrtgr_addr		= RTC_WRTGR_MT6358,
+	.wrtgr_addr		= RTC_WRTGR_MT6357,
 	.spare_reg_fields	= mtk_rtc_spare_reg_fields,
 	.cali_reg_fields	= mt6357_cali_reg_fields,
 	.eosc_cali_version	= EOSC_CALI_MT6357_SERIES,
