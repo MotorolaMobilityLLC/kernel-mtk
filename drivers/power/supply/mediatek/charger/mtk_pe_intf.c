@@ -243,6 +243,7 @@ static int pe_detect_ta(struct charger_manager *pinfo)
 
 	if (ret == 0) {
 		pe->is_connect = true;
+		pe->is_pe_cable_connect = true; /* ffc enable */
 		chr_info("%s: OK, is_connect = %d\n", __func__,
 			pe->is_connect);
 		return ret;
@@ -634,6 +635,20 @@ bool mtk_pe_get_is_connect(struct charger_manager *pinfo)
 
 	return pinfo->pe.is_connect;
 }
+
+/* ffc enable begin */
+bool mtk_pe_get_is_cable_connect(struct charger_manager *pinfo)
+{
+	/*
+	 * Cable out is occurred,
+	 * but not execute plugout_reset yet
+	 */
+	if (pinfo->pe.is_cable_out_occur)
+		pinfo->pe.is_pe_cable_connect = false;
+
+	return pinfo->pe.is_pe_cable_connect;
+}
+/* ffc enable end */
 
 bool mtk_pe_get_is_enable(struct charger_manager *pinfo)
 {
