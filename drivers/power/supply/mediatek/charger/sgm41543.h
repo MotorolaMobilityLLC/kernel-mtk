@@ -317,6 +317,12 @@
 #define SGM41543_PUMPX_UP			1
 #define SGM41543_PUMPX_DN			1
 
+/* Register 0x0D */
+#define SGM41543_REG_0F             0x0F
+#define SGM41543_VREG_FT_MASK		0xc0
+
+#define SGM41543_VREG_LSB            32
+
 #ifdef CONFIG_LEDS_MTK_CHG_SUPPORT
 void sgm41543_enable_statpin(bool en);
 #endif
