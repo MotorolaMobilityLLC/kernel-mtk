@@ -183,11 +183,12 @@ static ssize_t tcpc_show_property(struct device *dev,
 		}
 		break;
 	case TCPC_DESC_PD_TEST:
-		ret = snprintf(buf, 256, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
+		ret = snprintf(buf, 256, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
 				"1: pr_swap", "2: dr_swap", "3: vconn_swap",
 				"4: soft reset", "5: hard reset",
 				"6: get_src_cap", "7: get_sink_cap",
-				"8: discover_id", "9: discover_cable");
+				"8: discover_id", "9: discover_cable",
+				"10: enable wd pro", "11: disable wd pro");
 		if (ret < 0)
 			dev_dbg(dev, "%s: ret=%d\n", __func__, ret);
 		break;
@@ -347,6 +348,12 @@ static ssize_t tcpc_store_property(struct device *dev,
 			break;
 		case 9:
 			tcpm_dpm_vdm_discover_cable(tcpc, NULL);
+			break;
+		case 10:
+			tcpci_set_water_protection(tcpc, true);
+			break;
+		case 11:
+			tcpci_set_water_protection(tcpc, false);
 			break;
 		default:
 			break;
