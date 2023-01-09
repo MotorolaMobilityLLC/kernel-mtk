@@ -42,6 +42,20 @@
 
 #define OCP8135_NAME "flashlights_ocp8135"
 
+#ifdef CONFIG_PM_WAKELOCKS
+#include <linux/pm_wakeup.h>
+#else
+#include <linux/wakelock.h>
+#endif
+
+#ifdef CONFIG_PM_WAKELOCKS
+struct wakeup_source *torch_wake_lock;
+#else
+struct wake_lock *torch_wake_lock;
+#endif
+
+static volatile int g_torchWaitLock;
+
 /* define registers */
 
 /* define mutex and work queue */
@@ -78,6 +92,31 @@ struct ocp8135_platform_data {
 	struct flashlight_device_id *dev_id;
 };
 
+void enable_torch_wakelock(void)
+{
+	if (g_torchWaitLock == 0) {
+#ifdef CONFIG_PM_WAKELOCKS
+		__pm_stay_awake(torch_wake_lock);
+#else
+		wake_lock(torch_wake_lock);
+#endif
+		g_torchWaitLock = 1;
+		LOG_INF("torch wakelock enable!!\n");
+	}
+}
+
+void diable_torch_wakelock(void)
+{
+	if (g_torchWaitLock == 1) {
+#ifdef CONFIG_PM_WAKELOCKS
+		__pm_relax(torch_wake_lock);
+#else
+		wake_unlock(torch_wake_lock);
+#endif
+		g_torchWaitLock = 0;
+		LOG_INF("torch wakelock diable!!\n");
+	}
+}
 
 /******************************************************************************
  * Pinctrl configuration
@@ -217,6 +256,7 @@ static int ocp8135_enable(void)
 		flash_pwm_value = 81;
 		ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, 1);
 	} else {
+		enable_torch_wakelock();
 		light_pwm_value = 50;
 		ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWN, 1);
 	}
@@ -226,6 +266,8 @@ static int ocp8135_enable(void)
 /* flashlight disable function */
 static int ocp8135_disable(void)
 {
+	LOG_ERR("disable.\n");
+	diable_torch_wakelock();
 	ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_HWEN, OCP8135_PINCTRL_PINSTATE_LOW);
 	ocp8135_pinctrl_set(OCP8135_PINCTRL_PIN_PWN, OCP8135_PINCTRL_PINSTATE_LOW);
 	return 0;
@@ -746,6 +788,13 @@ static int ocp8135_probe(struct platform_device *pdev)
 		pr_err("=== create led_flash_node file failed ===\n");
 	}
 #endif
+
+#ifdef CONFIG_PM_WAKELOCKS
+	torch_wake_lock = wakeup_source_register(NULL, "torch_lock_wakelock");
+#else
+	wake_lock_init(torch_wake_lock, WAKE_LOCK_SUSPEND, "torch_lock_wakelock");
+#endif
+
 	pr_debug("Probe done.\n");
 
 	return 0;
