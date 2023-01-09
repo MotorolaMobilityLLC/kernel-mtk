@@ -1268,6 +1268,11 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	struct cmdq_pkt *cmdq_handle;
 	bool is_frame_mode;
 
+	if (!mtk_drm_lcm_is_connect()) {
+		DDPMSG("%s: lcm is not connected, skip\n", __func__);
+		return 0;
+	}
+
 	if (!(comp && comp->funcs && comp->funcs->io_cmd))
 		return -EINVAL;
 
