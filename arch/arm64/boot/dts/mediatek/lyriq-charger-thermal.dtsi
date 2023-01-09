@@ -191,6 +191,12 @@
         bootmode = <&chosen>;
 };
 */
+&mt6360_typec {
+	dpm_caps {
+        	/* 0: disable, 1: prefer_ufp, 2: prefer_dfp */
+        	dr_check = <2>;
+	};
+};
 
 &mt6360_chg {
        cv = <4480000>;
