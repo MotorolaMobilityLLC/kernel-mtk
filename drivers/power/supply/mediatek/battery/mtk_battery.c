@@ -529,8 +529,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			val->intval = prop.intval;
 		}
-		bm_err("%s event, name:%s cycle count:%d\n", __func__,
-			psy->desc->name, val->intval);
 #else
 		val->intval = gm.bat_cycle;
 #endif
@@ -556,8 +554,6 @@ static int battery_get_property(struct power_supply *psy,
 			} else {
 				data->BAT_CAPACITY = prop.intval;
 			}
-			bm_err("%s event, name:%s capacity:%d\n", __func__,
-			psy->desc->name, data->BAT_CAPACITY);
 			val->intval = data->BAT_CAPACITY;
 		}
 #else
@@ -575,8 +571,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			fgcurrent = prop.intval;
 		}
-		bm_err("%s event, name:%s fgcurrent:%d\n", __func__,
-			psy->desc->name, fgcurrent);
 		fgcurrent = 0 - fgcurrent;
 		val->intval = fgcurrent;
 #else
@@ -594,8 +588,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			fgcurrent = prop.intval;
 		}
-		bm_err("%s event, name:%s fgcurrent:%d\n", __func__,
-			psy->desc->name, fgcurrent);
 		fgcurrent = 0 - fgcurrent;
 		val->intval = fgcurrent;
 #else
@@ -610,8 +602,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			val->intval = prop.intval;
 		}
-		bm_err("%s event, name:%s qmax:%d\n", __func__,
-			psy->desc->name, val->intval);
 #else
 		val->intval =
 			fg_table_cust_data.fg_profile[gm.battery_id].q_max
@@ -626,8 +616,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			val->intval = prop.intval;
 		}
-		bm_err("%s event, name:%s charge counter:%d\n", __func__,
-			psy->desc->name, val->intval);
 #else
 		val->intval = gm.ui_soc *
 			fg_table_cust_data.fg_profile[gm.battery_id].q_max
@@ -642,8 +630,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			val->intval = prop.intval;
 		}
-		bm_err("%s event, name:%s voltage now:%d\n", __func__,
-			psy->desc->name, val->intval);
 #else
 		val->intval = battery_get_bat_voltage()* 1000;
 #endif
@@ -658,7 +644,6 @@ static int battery_get_property(struct power_supply *psy,
 			} else {
 				val->intval = prop.intval;
 			}
-			bm_err("%s event, TEMP:%d\n", __func__, val->intval);
 		} else {
 			val->intval = gm.tbat_precise;
 		}
@@ -666,7 +651,6 @@ static int battery_get_property(struct power_supply *psy,
 			gm.tbat_precise = gm.fixed_bat_tmp * 10;
 			val->intval = gm.tbat_precise;
 		}
-		bm_err("%s event, TEMP:%d\n", __func__, val->intval);
 #else
 		val->intval = gm.tbat_precise;
 #endif
@@ -708,8 +692,6 @@ static int battery_get_property(struct power_supply *psy,
 		} else {
 			val->intval = prop.intval;
 		}
-		bm_err("%s event, name:%s full design:%d\n", __func__,
-			psy->desc->name, val->intval);
 #else
 		if (check_cap_level(data->BAT_CAPACITY) ==
 			POWER_SUPPLY_CAPACITY_LEVEL_UNKNOWN)
@@ -736,9 +718,18 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = mmi_chrg_rate_check();
 		break;
 	case POWER_SUPPLY_PROP_AGE:
+#ifdef CONFIG_BATTERY_MM8013
+		ret = mmi_get_prop_from_bms(psp,&prop);
+		if (ret < 0) {
+			pr_err("[%s]Error getting BMS full design ret = %d\n", __func__, ret);
+		} else {
+			val->intval = prop.intval;
+		}
+#else
 		if (gm.aging_factor > 10000)
 			gm.aging_factor = 10000;
 		val->intval = gm.aging_factor /100;
+#endif
 		break;
 
 	default:
@@ -851,7 +842,6 @@ void battery_update(struct battery_data *bat_data)
 	} else {
 		bat_data->BAT_CAPACITY = prop.intval;
 	}
-	bm_err("%s event, capacity:%d\n", __func__, bat_data->BAT_CAPACITY);
 #endif
 
 	if (is_fg_disabled())
@@ -1940,7 +1930,6 @@ int force_get_tbat_internal(bool update)
 		} else {
 			bat_temperature_val = prop.intval;
 		}
-		bm_err("%s event, temp:%d\n", __func__, bat_temperature_val);
 	}
 #endif
 	gm.tbat_precise = bat_temperature_val;
