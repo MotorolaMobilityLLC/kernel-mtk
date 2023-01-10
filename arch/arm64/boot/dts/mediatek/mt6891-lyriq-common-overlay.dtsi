@@ -713,4 +713,7 @@
         status = "okay";
 };
 
+&mmc1 {
+    status = "disabled";
+};
 /*End of this file, DO NOT ADD ANYTHING HERE*/
