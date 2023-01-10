@@ -3839,6 +3839,7 @@
       <elf-symbol name='mmc_gpio_set_cd_wake' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb56b0ab9'/>
       <elf-symbol name='mmc_gpiod_request_cd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf546b071'/>
       <elf-symbol name='mmc_gpiod_request_ro' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdec968fe'/>
+      <elf-symbol name='mmc_hs200_tuning' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf990e5e9'/>
       <elf-symbol name='mmc_hw_reset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe3cbfaa9'/>
       <elf-symbol name='mmc_issue_type' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc3e2f887'/>
       <elf-symbol name='mmc_of_parse' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x27754442'/>
@@ -3856,13 +3857,19 @@
       <elf-symbol name='mmc_retune_hold' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe89f5639'/>
       <elf-symbol name='mmc_retune_release' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7bb069de'/>
       <elf-symbol name='mmc_retune_timer_stop' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2f2cc33d'/>
+      <elf-symbol name='mmc_select_bus_width' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfcad1e5d'/>
       <elf-symbol name='mmc_select_card' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5fd87c39'/>
+      <elf-symbol name='mmc_select_hs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x57e369e3'/>
+      <elf-symbol name='mmc_select_hs400' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc7da0904'/>
+      <elf-symbol name='mmc_select_hs_ddr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2694a3ec'/>
+      <elf-symbol name='mmc_select_timing' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4dd7e1f8'/>
       <elf-symbol name='mmc_send_status' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8853f365'/>
       <elf-symbol name='mmc_send_tuning' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9dec77b5'/>
       <elf-symbol name='mmc_set_bus_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3c5df88a'/>
       <elf-symbol name='mmc_set_bus_width' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf6debd0b'/>
       <elf-symbol name='mmc_set_clock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf4547be5'/>
       <elf-symbol name='mmc_set_data_timeout' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8871c413'/>
+      <elf-symbol name='mmc_set_initial_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x761d2c00'/>
       <elf-symbol name='mmc_set_timing' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6ac8541a'/>
       <elf-symbol name='mmc_sw_reset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe924b87b'/>
       <elf-symbol name='mmc_switch' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x42890ddb'/>
@@ -11623,7 +11630,6 @@
       </array-type-def>
       <pointer-type-def type-id='05cdb97d' size-in-bits='64' id='0b603cc1'/>
       <pointer-type-def type-id='3f6ca798' size-in-bits='64' id='0b660ebe'/>
-      <pointer-type-def type-id='5520e014' size-in-bits='64' id='0b6bd27e'/>
       <function-type size-in-bits='64' id='0b6df38c'>
         <parameter type-id='70d417ab'/>
         <parameter type-id='c151d965'/>
@@ -12774,14 +12780,6 @@
       <function-type size-in-bits='64' id='0ef969d4'>
         <parameter type-id='d9863f2f'/>
         <return type-id='48b5725f'/>
-      </function-type>
-      <function-type size-in-bits='64' id='0efc83de'>
-        <parameter type-id='b88dd945'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='98031623'/>
-        <parameter type-id='b50a4934'/>
-        <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='38ef7882' size-in-bits='64' id='0effb5d0'/>
       <class-decl name='thermal_attr' size-in-bits='448' is-struct='yes' visibility='default' filepath='drivers/thermal/thermal_core.h' line='57' column='1' id='0f035502'>
@@ -23501,7 +23499,6 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='a24a51b3' size-in-bits='64' id='280dcd9f'/>
-      <pointer-type-def type-id='c3a10c20' size-in-bits='64' id='28138af2'/>
       <class-decl name='v4l2_prio_state' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/media/v4l2-dev.h' line='112' column='1' id='281d3096'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='prios' type-id='6ed968f3' visibility='default' filepath='include/media/v4l2-dev.h' line='113' column='1'/>
@@ -23793,20 +23790,7 @@
           <var-decl name='next' type-id='c872b38e' visibility='default' filepath='include/linux/freelist.h' line='20' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='hd_geometry' size-in-bits='128' is-struct='yes' visibility='default' filepath='include/uapi/linux/hdreg.h' line='324' column='1' id='28e89e7e'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='heads' type-id='002ac4a6' visibility='default' filepath='include/uapi/linux/hdreg.h' line='325' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='8'>
-          <var-decl name='sectors' type-id='002ac4a6' visibility='default' filepath='include/uapi/linux/hdreg.h' line='326' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='16'>
-          <var-decl name='cylinders' type-id='8efea9e5' visibility='default' filepath='include/uapi/linux/hdreg.h' line='327' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='start' type-id='7359adad' visibility='default' filepath='include/uapi/linux/hdreg.h' line='328' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='hd_geometry' is-struct='yes' visibility='default' is-declaration-only='yes' id='28e89e7e'/>
       <typedef-decl name='atomic64_t' type-id='2fef71f1' filepath='include/linux/types.h' line='175' column='1' id='28ee064c'/>
       <class-decl name='thermal_governor' size-in-bits='576' is-struct='yes' visibility='default' filepath='include/linux/thermal.h' line='200' column='1' id='2901941b'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -35193,7 +35177,6 @@
         <return type-id='48b5725f'/>
       </function-type>
       <qualified-type-def type-id='67409b07' const='yes' id='45f3f04e'/>
-      <pointer-type-def type-id='8a49f2ad' size-in-bits='64' id='45f42df9'/>
       <class-decl name='__drm_connnectors_state' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/drm/drm_atomic.h' line='183' column='1' id='45f4b23b'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='ptr' type-id='4db02c58' visibility='default' filepath='include/drm/drm_atomic.h' line='184' column='1'/>
@@ -41409,13 +41392,6 @@
         <enumerator name='TYPEC_POLARITY_CC1' value='0'/>
         <enumerator name='TYPEC_POLARITY_CC2' value='1'/>
       </enum-decl>
-      <function-type size-in-bits='64' id='5520e014'>
-        <parameter type-id='b88dd945'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='19c2251e'/>
-        <return type-id='95e97e5e'/>
-      </function-type>
       <function-type size-in-bits='64' id='55274865'>
         <parameter type-id='dc1ef2b7'/>
         <return type-id='b50a4934'/>
@@ -53568,12 +53544,6 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <qualified-type-def type-id='5fb55d48' const='yes' id='70ebcb19'/>
-      <function-type size-in-bits='64' id='70eee7af'>
-        <parameter type-id='b88dd945'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='98031623'/>
-        <return type-id='95e97e5e'/>
-      </function-type>
       <pointer-type-def type-id='057e4bd2' size-in-bits='64' id='70f0fa74'/>
       <pointer-type-def type-id='acfd9368' size-in-bits='64' id='70f1634e'/>
       <pointer-type-def type-id='e8a73faf' size-in-bits='64' id='70ff05c7'/>
@@ -65229,11 +65199,6 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='49178f86' size-in-bits='64' id='8a47abc3'/>
-      <function-type size-in-bits='64' id='8a49f2ad'>
-        <parameter type-id='b88dd945'/>
-        <parameter type-id='91ce1af9'/>
-        <return type-id='95e97e5e'/>
-      </function-type>
       <pointer-type-def type-id='822ce289' size-in-bits='64' id='8a4f973d'/>
       <enum-decl name='can_state' filepath='include/uapi/linux/can/netlink.h' line='69' column='1' id='8a54dc38'>
         <underlying-type type-id='9cac1fee'/>
@@ -70954,15 +70919,6 @@
         <return type-id='95e97e5e'/>
       </function-type>
       <pointer-type-def type-id='45257a94' size-in-bits='64' id='9800391a'/>
-      <enum-decl name='pr_type' filepath='include/uapi/linux/pr.h' line='7' column='1' id='98031623'>
-        <underlying-type type-id='9cac1fee'/>
-        <enumerator name='PR_WRITE_EXCLUSIVE' value='1'/>
-        <enumerator name='PR_EXCLUSIVE_ACCESS' value='2'/>
-        <enumerator name='PR_WRITE_EXCLUSIVE_REG_ONLY' value='3'/>
-        <enumerator name='PR_EXCLUSIVE_ACCESS_REG_ONLY' value='4'/>
-        <enumerator name='PR_WRITE_EXCLUSIVE_ALL_REGS' value='5'/>
-        <enumerator name='PR_EXCLUSIVE_ACCESS_ALL_REGS' value='6'/>
-      </enum-decl>
       <function-type size-in-bits='64' id='9803cec6'>
         <parameter type-id='68a2d05b'/>
         <parameter type-id='19c2251e'/>
@@ -84277,7 +84233,6 @@
       <pointer-type-def type-id='5c18a8e2' size-in-bits='64' id='af5a73b0'/>
       <pointer-type-def type-id='5e6083f1' size-in-bits='64' id='af5eeab9'/>
       <pointer-type-def type-id='4c110a85' size-in-bits='64' id='af60ef81'/>
-      <pointer-type-def type-id='0efc83de' size-in-bits='64' id='af664338'/>
       <pointer-type-def type-id='319f13b8' size-in-bits='64' id='af6bced6'/>
       <function-type size-in-bits='64' id='af6e35e9'>
         <parameter type-id='d02f4143'/>
@@ -86406,23 +86361,7 @@
           <var-decl name='' type-id='ac5ab5d4' visibility='default' filepath='include/linux/hdmi.h' line='386' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='pr_ops' size-in-bits='320' is-struct='yes' visibility='default' filepath='include/linux/pr.h' line='7' column='1' id='b45c773c'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='pr_register' type-id='0b6bd27e' visibility='default' filepath='include/linux/pr.h' line='8' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='pr_reserve' type-id='28138af2' visibility='default' filepath='include/linux/pr.h' line='10' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='128'>
-          <var-decl name='pr_release' type-id='eda6f223' visibility='default' filepath='include/linux/pr.h' line='12' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='192'>
-          <var-decl name='pr_preempt' type-id='af664338' visibility='default' filepath='include/linux/pr.h' line='14' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='256'>
-          <var-decl name='pr_clear' type-id='45f42df9' visibility='default' filepath='include/linux/pr.h' line='16' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='pr_ops' is-struct='yes' visibility='default' is-declaration-only='yes' id='b45c773c'/>
       <pointer-type-def type-id='a06ec50c' size-in-bits='64' id='b4605ad2'/>
       <typedef-decl name='perf_copy_f' type-id='a056c492' filepath='include/linux/perf_event.h' line='75' column='1' id='b468b440'/>
       <array-type-def dimensions='1' type-id='8efea9e5' size-in-bits='448' id='b469d7a7'>
@@ -94505,13 +94444,6 @@
       <pointer-type-def type-id='bb56dd02' size-in-bits='64' id='c398045c'/>
       <pointer-type-def type-id='d2c7a2c1' size-in-bits='64' id='c39cf839'/>
       <class-decl name='xol_area' is-struct='yes' visibility='default' is-declaration-only='yes' id='c39df2b8'/>
-      <function-type size-in-bits='64' id='c3a10c20'>
-        <parameter type-id='b88dd945'/>
-        <parameter type-id='91ce1af9'/>
-        <parameter type-id='98031623'/>
-        <parameter type-id='19c2251e'/>
-        <return type-id='95e97e5e'/>
-      </function-type>
       <pointer-type-def type-id='449a6017' size-in-bits='64' id='c3a1efbb'/>
       <pointer-type-def type-id='e0a68fea' size-in-bits='64' id='c3a28778'/>
       <pointer-type-def type-id='a5390025' size-in-bits='64' id='c3a655b9'/>
@@ -117857,7 +117789,6 @@
       <class-decl name='ip_tunnel_parm' is-struct='yes' visibility='default' is-declaration-only='yes' id='ed9e49a6'/>
       <pointer-type-def type-id='4852a8ec' size-in-bits='64' id='ed9f97a6'/>
       <pointer-type-def type-id='d6e6975e' size-in-bits='64' id='eda08098'/>
-      <pointer-type-def type-id='70eee7af' size-in-bits='64' id='eda6f223'/>
       <class-decl name='kmem_cache_node' size-in-bits='512' is-struct='yes' visibility='default' filepath='mm/slab.h' line='564' column='1' id='edac1e8f'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='list_lock' type-id='fb4018a0' visibility='default' filepath='mm/slab.h' line='565' column='1'/>
@@ -146736,6 +146667,10 @@
         <parameter type-id='f0981eeb' name='debounce' filepath='drivers/mmc/core/slot-gpio.c' line='226' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='mmc_hs200_tuning' mangled-name='mmc_hs200_tuning' filepath='drivers/mmc/core/mmc.c' line='1570' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_hs200_tuning'>
+        <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc.c' line='1570' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='mmc_hw_reset' mangled-name='mmc_hw_reset' filepath='drivers/mmc/core/core.c' line='2014' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_hw_reset'>
         <parameter type-id='dd575c43' name='host' filepath='drivers/mmc/core/core.c' line='2014' column='1'/>
         <return type-id='95e97e5e'/>
@@ -146813,8 +146748,28 @@
         <parameter type-id='dd575c43' name='host' filepath='drivers/mmc/core/host.c' line='157' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='mmc_select_bus_width' mangled-name='mmc_select_bus_width' filepath='drivers/mmc/core/mmc.c' line='999' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_select_bus_width'>
+        <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc.c' line='999' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='mmc_select_card' mangled-name='mmc_select_card' filepath='drivers/mmc/core/mmc_ops.c' line='108' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_select_card'>
         <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc_ops.c' line='108' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='mmc_select_hs' mangled-name='mmc_select_hs' filepath='drivers/mmc/core/mmc.c' line='1069' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_select_hs'>
+        <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc.c' line='1069' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='mmc_select_hs400' mangled-name='mmc_select_hs400' filepath='drivers/mmc/core/mmc.c' line='1159' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_select_hs400'>
+        <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc.c' line='1159' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='mmc_select_hs_ddr' mangled-name='mmc_select_hs_ddr' filepath='drivers/mmc/core/mmc.c' line='1088' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_select_hs_ddr'>
+        <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc.c' line='1088' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='mmc_select_timing' mangled-name='mmc_select_timing' filepath='drivers/mmc/core/mmc.c' line='1539' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_select_timing'>
+        <parameter type-id='13d38dcb' name='card' filepath='drivers/mmc/core/mmc.c' line='1539' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='mmc_send_status' mangled-name='mmc_send_status' filepath='drivers/mmc/core/mmc_ops.c' line='85' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_send_status'>
@@ -146846,6 +146801,10 @@
       <function-decl name='mmc_set_data_timeout' mangled-name='mmc_set_data_timeout' filepath='drivers/mmc/core/core.c' line='649' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_set_data_timeout'>
         <parameter type-id='6de64ec1' name='data' filepath='drivers/mmc/core/core.c' line='649' column='1'/>
         <parameter type-id='652034a8' name='card' filepath='drivers/mmc/core/core.c' line='649' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='mmc_set_initial_state' mangled-name='mmc_set_initial_state' filepath='drivers/mmc/core/core.c' line='980' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_set_initial_state'>
+        <parameter type-id='dd575c43' name='host' filepath='drivers/mmc/core/core.c' line='980' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='mmc_set_timing' mangled-name='mmc_set_timing' filepath='drivers/mmc/core/core.c' line='1268' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='mmc_set_timing'>
