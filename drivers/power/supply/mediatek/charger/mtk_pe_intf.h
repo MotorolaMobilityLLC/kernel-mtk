@@ -91,6 +91,10 @@ static inline bool mtk_pe_get_is_connect(struct charger_manager *pinfo)
 {
 	return false;
 }
+static inline bool mtk_pe_get_is_cable_connect(struct charger_manager *pinfo)
+{
+	return false;
+}
 static inline bool mtk_pe_get_is_enable(struct charger_manager *pinfo)
 {
 	return false;
