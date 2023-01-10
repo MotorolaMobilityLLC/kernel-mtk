@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.10.2022.15:34:16"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="01.09.2023.14:55:58"-->
 <dct_cfg>
     <general chip="MT6893">
         <proj>MT6893</proj>
@@ -2521,16 +2521,6 @@
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x64</address>
             </device17>
-            <device19>
-                <varName>I2C_LCD_BIAS</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x3E</address>
-            </device19>
-            <device20>
-                <varName>DP_SWITCH</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x50</address>
-            </device20>
             <device21>
                 <varName>EXT_BUCK_VMDDR</varName>
                 <channel>I2C_CHANNEL_6</channel>
