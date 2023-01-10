@@ -334,6 +334,23 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
+	pr_err("set_test_pattern_mode enable: %d", enable);
+
+	if (enable) {
+		write_cmos_sensor_8(0x3019, 0xf0);
+		write_cmos_sensor_8(0x4308, 0x01);
+		write_cmos_sensor_8(0x4300, 0x00);
+		write_cmos_sensor_8(0x4302, 0x00);
+		write_cmos_sensor_8(0x4304, 0x00);
+		write_cmos_sensor_8(0x4306, 0x00);
+	} else {
+		write_cmos_sensor_8(0x50c1, 0x00);
+		write_cmos_sensor_8(0x3019, 0xd2);
+		write_cmos_sensor_8(0x4308, 0x00);
+	}
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.test_pattern = enable;
+	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
 
