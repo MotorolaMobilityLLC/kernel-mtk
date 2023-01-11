@@ -810,7 +810,7 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
 		.ignore_suspend = 1,
 		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
 	},
-#elif defined(CONFIG_SND_SMARTPA_AW883XX)
+#elif defined(CONFIG_SND_SMARTPA_AW883XX_KO)
 	{
 		.name = "I2S3",
 		.cpu_dai_name = "I2S3",
