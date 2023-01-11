@@ -1050,7 +1050,10 @@ bool is_typec_adapter(struct charger_manager *info)
 			mtk_pe20_get_is_connect(info) == false &&
 			mtk_pe_get_is_connect(info) == false &&
 			info->enable_type_c == true&&
-			wlc_get_online() == false)
+			wlc_get_online() == false &&
+			info->chr_type != STANDARD_HOST &&
+                        info->chr_type != CHARGING_HOST &&
+			info->chr_type != CHARGER_UNKNOWN)
 		return true;
 
 	return false;
