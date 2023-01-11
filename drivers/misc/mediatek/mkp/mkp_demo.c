@@ -402,7 +402,7 @@ static void probe_android_vh_selinux_avc_lookup(void *ignore,
 	struct avc_sbuf_content *ro_avc_sharebuf_ptr;
 	int i;
 	struct mkp_avc_node *temp_node = NULL;
-	static DEFINE_RATELIMIT_STATE(rs_avc, 1*HZ, 10);
+	static DEFINE_RATELIMIT_STATE(rs_avc, 5*HZ, 5);
 
 	if (!node || g_ro_avc_handle == 0)
 		return;
@@ -607,7 +607,7 @@ exit:
 static void probe_android_vh_check_mmap_file(void *ignore,
 	const struct file *file, unsigned long prot, unsigned long flag, unsigned long ret)
 {
-	static DEFINE_RATELIMIT_STATE(rs_mmap, 1*HZ, 10);
+	static DEFINE_RATELIMIT_STATE(rs_mmap, 5*HZ, 5);
 
 	check_cred(&rs_mmap);
 	check_selinux_state(&rs_mmap);
@@ -615,7 +615,7 @@ static void probe_android_vh_check_mmap_file(void *ignore,
 
 static void probe_android_vh_check_file_open(void *ignore, const struct file *file)
 {
-	static DEFINE_RATELIMIT_STATE(rs_open, 1*HZ, 10);
+	static DEFINE_RATELIMIT_STATE(rs_open, 5*HZ, 5);
 
 	check_cred(&rs_open);
 	check_selinux_state(&rs_open);
@@ -624,7 +624,7 @@ static void probe_android_vh_check_file_open(void *ignore, const struct file *fi
 static void probe_android_vh_check_bpf_syscall(void *ignore,
 	int cmd, const union bpf_attr *attr, unsigned int size)
 {
-	static DEFINE_RATELIMIT_STATE(rs_bpf, 1*HZ, 10);
+	static DEFINE_RATELIMIT_STATE(rs_bpf, 5*HZ, 5);
 
 	check_cred(&rs_bpf);
 	check_selinux_state(&rs_bpf);
