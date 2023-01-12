@@ -4970,7 +4970,7 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 		 current wireless chip could support when wireless cable insert.
 	*/
 	if(info->wireless_online && info->mmi.factory_mode)
-		mtk_charger_tcmd_set_usb_current((void *)info, info->data.wireless_factory_max_input_current);
+		mtk_charger_tcmd_set_usb_current((void *)info, info->data.wireless_factory_max_input_current / 1000);
 
 	_wake_up_charger(info);
 }
