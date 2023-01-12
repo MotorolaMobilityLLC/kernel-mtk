@@ -1475,16 +1475,10 @@ static int bq2589x_is_powerpath_enabled(struct charger_device *chg_dev, bool *en
 
 static int bq2589x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 {
-	int ret = 0;
-	struct bq2589x *bq = charger_get_data(chg_dev);
-	ret = bq2589x_adc_read_vbus_volt(bq);
-	if (ret < 0) {
-		dev_err(bq->dev, "%s:bq2589x_adc_read_vbus_volt failed:%d\n", __func__, ret);
-		return ret;
-	}
-
-	*vbus = (u32)(ret * 1000);
-	pr_info("%s: vbus = %d , mv = %d \n", __func__,*vbus, ret);
+	int val = 0;
+	val = pmic_get_vbus();
+	*vbus = (u32)(val * 1000);
+	pr_info("%s: use pmic get vbus = %d , mv = %d \n", __func__,*vbus, val);
 	return 0;
 }
 
