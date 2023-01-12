@@ -324,16 +324,16 @@ static int lcm_enable(struct drm_panel *panel)
 }
 
 
-#define HFP (32)
-#define HSA (32)
-#define HBP (32)
+#define HFP (20)
+#define HSA (10)
+#define HBP (20)
 #define VFP (3480)
 #define VSA (4)
 #define VBP (20)
 #define HACT (1080)
 #define VACT (2400)
-#define DISP_CLOCK (416586)	//1176*2460*144
-#define DISP_PLL_CLK (550)
+#define DISP_CLOCK (400291)	//1130*2460*144
+#define DISP_PLL_CLK (510)
 
 static const struct drm_display_mode switch_mode_144hz = {
 	.clock		= DISP_CLOCK,
@@ -1100,7 +1100,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE
 			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
 			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
