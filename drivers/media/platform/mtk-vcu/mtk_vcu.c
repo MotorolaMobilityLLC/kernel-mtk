@@ -323,7 +323,8 @@ struct mtk_vcu {
 	struct gce_ctx_info gce_info[VCODEC_INST_MAX];
 	atomic_t gce_job_cnt[VCU_CODEC_MAX][GCE_THNUM_MAX];
 	unsigned long flags[VCU_CODEC_MAX];
-	int open_cnt;
+	atomic_t open_cnt;
+	struct mutex vcu_dev_mutex;
 	bool abort;
 	struct semaphore vpud_killed;
 	bool is_entering_suspend;
@@ -408,7 +409,7 @@ int vcu_ipi_send(struct platform_device *pdev,
 
 	mutex_lock(&vcu->vcu_mutex[i]);
 	if (vcu_ptr->abort) {
-		if (vcu_ptr->open_cnt > 0) {
+		if (atomic_read(&vcu_ptr->open_cnt) > 0) {
 			dev_info(vcu->dev, "wait for vpud killed %d\n",
 				vcu_ptr->vpud_killed.count);
 			ret = down_interruptible(&vcu_ptr->vpud_killed);
@@ -439,11 +440,13 @@ int vcu_ipi_send(struct platform_device *pdev,
 
 	if (vcu_ptr->abort || ret == 0) {
 		dev_info(&pdev->dev, "vcu ipi %d ack time out !%d", id, ret);
-		if (!vcu_ptr->abort) {
+		vcu_get_file_lock();
+		if (!vcu_ptr->abort && vcud_task) {
 			send_sig(SIGTERM, vcud_task, 0);
 			send_sig(SIGKILL, vcud_task, 0);
 		}
-		if (vcu_ptr->open_cnt > 0) {
+		vcu_put_file_lock();
+		if (atomic_read(&vcu_ptr->open_cnt) > 0) {
 			dev_info(vcu->dev, "wait for vpud killed %d\n",
 				vcu_ptr->vpud_killed.count);
 			ret = down_interruptible(&vcu_ptr->vpud_killed);
@@ -1522,6 +1525,8 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 	int vcuid = 0;
 	struct mtk_vcu_queue *vcu_queue;
 
+	mutex_lock(&vcu_ptr->vcu_dev_mutex);
+
 	if (strcmp(current->comm, "camd") == 0)
 		vcuid = 2;
 	else if (strcmp(current->comm, "mdpd") == 0)
@@ -1532,6 +1537,7 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 			(current->tgid != vcud_task->tgid ||
 			current->group_leader != vcud_task->group_leader)) {
 			vcu_put_file_lock();
+			mutex_unlock(&vcu_ptr->vcu_dev_mutex);
 			return -EACCES;
 		}
 		vcud_task = current->group_leader;
@@ -1546,24 +1552,30 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 	}
 
 	vcu_mtkdev[vcuid]->vcuid = vcuid;
-	if (IS_ERR_OR_NULL(vcu_mtkdev[vcuid]->clt_vdec[0]))
+	if (IS_ERR_OR_NULL(vcu_mtkdev[vcuid]->clt_vdec[0])) {
+		mutex_unlock(&vcu_ptr->vcu_dev_mutex);
 		return -EINVAL;
+	}
 
 	vcu_queue = mtk_vcu_mem_init(vcu_mtkdev[vcuid]->dev,
 		vcu_mtkdev[vcuid]->clt_vdec[0]->chan->mbox->dev);
 
-	if (vcu_queue == NULL)
+	if (vcu_queue == NULL) {
+		mutex_unlock(&vcu_ptr->vcu_dev_mutex);
 		return -ENOMEM;
+	}
 	vcu_queue->vcu = vcu_mtkdev[vcuid];
 	file->private_data = vcu_queue;
 	vcu_ptr->vpud_killed.count = 0;
-	vcu_ptr->open_cnt++;
+	atomic_inc(&vcu_ptr->open_cnt);
 	vcu_ptr->abort = false;
 	vcu_ptr->vpud_is_going_down = 0;
 
 	pr_info("[VCU] %s name: %s pid %d tgid %d open_cnt %d current %p group_leader %p\n",
 		__func__, current->comm, current->pid, current->tgid,
-		vcu_ptr->open_cnt, current, current->group_leader);
+		atomic_read(&vcu_ptr->open_cnt), current, current->group_leader);
+
+	mutex_unlock(&vcu_ptr->vcu_dev_mutex);
 
 	return 0;
 }
@@ -1571,13 +1583,15 @@ static int mtk_vcu_open(struct inode *inode, struct file *file)
 static int mtk_vcu_release(struct inode *inode, struct file *file)
 {
 	unsigned long flags;
+	struct task_struct *task = NULL;
+
+	mutex_lock(&vcu_ptr->vcu_dev_mutex);
 
 	if (file->private_data)
 		mtk_vcu_mem_release((struct mtk_vcu_queue *)file->private_data);
 	pr_info("[VCU] %s name: %s pid %d open_cnt %d\n", __func__,
-		current->comm, current->tgid, vcu_ptr->open_cnt);
-	vcu_ptr->open_cnt--;
-	if (vcu_ptr->open_cnt == 0) {
+		current->comm, current->tgid, atomic_read(&vcu_ptr->open_cnt));
+	if (atomic_dec_and_test(&vcu_ptr->open_cnt)) {
 		/* reset vpud due to abnormal situations. */
 		vcu_ptr->abort = true;
 		vcu_get_file_lock();
@@ -1593,7 +1607,15 @@ static int mtk_vcu_release(struct inode *inode, struct file *file)
 
 		if (vcu_ptr->curr_ctx[VCU_VDEC])
 			vdec_check_release_lock(vcu_ptr->curr_ctx[VCU_VDEC]);
+	} else {
+		vcu_get_file_lock();
+		vcu_get_task(&task, NULL, 0);
+		if (current == task)
+			vcu_get_task(NULL, NULL, 1);
+		vcu_put_file_lock();
 	}
+
+	mutex_unlock(&vcu_ptr->vcu_dev_mutex);
 
 	return 0;
 }
@@ -2405,6 +2427,8 @@ static int mtk_vcu_probe(struct platform_device *pdev)
 	atomic_set(&vcu->gce_job_cnt[VCU_VDEC][1], 0);
 	atomic_set(&vcu->gce_job_cnt[VCU_VENC][0], 0);
 	atomic_set(&vcu->gce_job_cnt[VCU_VENC][1], 0);
+	atomic_set(&vcu->open_cnt, 0);
+	mutex_init(&vcu->vcu_dev_mutex);
 	/* init character device */
 
 	ret = alloc_chrdev_region(&vcu_mtkdev[vcuid]->vcu_devno, 0, 1,
