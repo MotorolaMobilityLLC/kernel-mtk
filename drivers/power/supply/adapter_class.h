@@ -58,6 +58,7 @@ enum adapter_event {
 	MTK_PD_CONNECT_TYPEC_ONLY_SNK,
 	MTK_TYPEC_WD_STATUS,
 	MTK_TYPEC_HRESET_STATUS,
+	MMI_PD30_VDM_VERIFY,
 };
 
 enum adapter_property {
@@ -118,6 +119,8 @@ struct adapter_ops {
 	int (*get_output)(struct adapter_device *dev, int *mV, int *mA);
 	int (*authentication)(struct adapter_device *dev,
 			      struct adapter_auth_data *data);
+	int (*update_apdo_cap)(struct adapter_device *dev,
+			      struct adapter_auth_data *data);
 	int (*is_cc)(struct adapter_device *dev, bool *cc);
 	int (*set_wdt)(struct adapter_device *dev, u32 ms);
 	int (*enable_wdt)(struct adapter_device *dev, bool en);
@@ -167,6 +170,8 @@ extern int adapter_dev_get_cap(struct adapter_device *adapter_dev,
 	struct adapter_power_cap *cap);
 extern int adapter_dev_authentication(struct adapter_device *adapter_dev,
 				      struct adapter_auth_data *data);
+extern int adapter_dev_update_apdo_cap(struct adapter_device *adapter_dev,
+			       struct adapter_auth_data *data);
 extern int adapter_dev_is_cc(struct adapter_device *adapter_dev, bool *cc);
 extern int adapter_dev_set_wdt(struct adapter_device *adapter_dev, u32 ms);
 extern int adapter_dev_enable_wdt(struct adapter_device *adapter_dev, bool en);
