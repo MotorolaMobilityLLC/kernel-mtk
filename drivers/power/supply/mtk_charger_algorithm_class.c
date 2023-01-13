@@ -33,6 +33,7 @@ static const char *const chg_alg_notify_evt_name[EVT_MAX] = {
 	[EVT_VBUSOVP_ALARM] = "EVT_VBUSOVP_ALARM",
 	[EVT_BATPRO_DONE] = "EVT_BATPRO_DONE",
 	[EVT_ALGO_STOP] = "EVT_ALGO_STOP",
+	[EVT_VDM_VERIFY] = "EVT_VDM_VERIFY",
 };
 
 static void chg_alg_device_release(struct device *dev)
