@@ -2146,10 +2146,23 @@ void pd_dpm_dynamic_disable_vconn(struct pd_port *pd_port)
 /*
  * PE : Notify DPM
  */
-
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+extern bool mmi_tcpc_get_pd_flag(void);
+#endif
 int pd_dpm_notify_pe_startup(struct pd_port *pd_port)
 {
 	uint32_t reactions = DPM_REACTION_CAP_ALWAYS;
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+	bool dynamic_dpm_caps = mmi_tcpc_get_pd_flag();
+
+	if(dynamic_dpm_caps) {
+		//0x80e98b
+		pd_port->dpm_caps |= DPM_CAP_DR_CHECK_PROP(2);
+	}else {
+		//0xe98b
+		pd_port->dpm_caps &= ~DPM_CAP_DR_CHECK_PROP(2);
+	}
+#endif
 
 #ifdef CONFIG_USB_PD_DFP_FLOW_DELAY_STARTUP
 	reactions |= DPM_REACTION_DFP_FLOW_DELAY;
