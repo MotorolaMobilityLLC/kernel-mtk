@@ -131,6 +131,7 @@
 &mmc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
         cd-gpios = <&pio 18 GPIO_ACTIVE_HIGH>;
+        vmmc-supply = <&mt6358_vmch_eint_low>;
 };
 
 /*config stylus pen*/
