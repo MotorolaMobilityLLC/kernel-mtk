@@ -100,6 +100,17 @@ int adapter_dev_authentication(struct adapter_device *adapter_dev,
 }
 EXPORT_SYMBOL(adapter_dev_authentication);
 
+int adapter_dev_update_apdo_cap(struct adapter_device *adapter_dev,
+			       struct adapter_auth_data *data)
+{
+	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
+	    adapter_dev->ops->update_apdo_cap)
+		return adapter_dev->ops->update_apdo_cap(adapter_dev, data);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(adapter_dev_update_apdo_cap);
+
 int adapter_dev_is_cc(struct adapter_device *adapter_dev, bool *cc)
 {
 	if (adapter_dev != NULL && adapter_dev->ops != NULL &&
