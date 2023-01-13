@@ -131,6 +131,13 @@ config MTK_TYPEC_WATER_DETECT_BY_PCB
 	  Say Yes to let PCB decides enabling water detection or not.
 	  If unsure, say N.
 
+config SUPPORT_MMI_ADAPTER
+	bool "MMI private PD protocol"
+	default n
+	help
+	  Say Yes to enable MMI pd protocl.
+	  It is mainly used as pd charger
+
 config TYPEC_PD_POWER_OFF_CHARGE_DELAY
 	bool "typec pd delay in power off charging mode"
 	depends on TCPC_CLASS
