@@ -180,7 +180,7 @@ static void lcm_panel_init(struct lcm *ctx)
 
 	/* Sleep Out */
 	lcm_dcs_write_seq_static(ctx, 0x11);
-	msleep(120);
+	msleep(80);
 
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
 	lcm_dcs_write_seq_static(ctx, 0xf3, 0x08);
@@ -276,10 +276,10 @@ static int lcm_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
-	// lcd reset L->H -> L -> L
+	// lcd reset  L-> H -> L -> H
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(11000, 11001);
+	usleep_range(2000, 2001);
 	gpiod_set_value(ctx->reset_gpio, 1);
 	usleep_range(5000, 5001);
 	gpiod_set_value(ctx->reset_gpio, 0);
