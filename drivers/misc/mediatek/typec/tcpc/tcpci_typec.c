@@ -299,6 +299,18 @@ static const char *const typec_attach_name[] = {
 	"NORP_SRC",
 };
 #endif /* TYPEC_INFO_ENABLE || TYPEC_DBG_ENABLE */
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+static bool g_tcpc_pd_adapter_flag = false;
+void mmi_tcpc_set_pd_flag(bool flag){
+	pr_notice("%s  pd flag:%d\n", __func__, flag);
+	g_tcpc_pd_adapter_flag = flag;
+}
+
+bool mmi_tcpc_get_pd_flag(void){
+	pr_notice("%s  pd flag:%d\n", __func__, g_tcpc_pd_adapter_flag);
+	return g_tcpc_pd_adapter_flag;
+}
+#endif
 
 static int typec_alert_attach_state_change(struct tcpc_device *tcpc)
 {
@@ -312,7 +324,7 @@ static int typec_alert_attach_state_change(struct tcpc_device *tcpc)
 #endif	/* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
 
 	if (tcpc->typec_attach_old == tcpc->typec_attach_new) {
-		TYPEC_DBG("Attached-> %s(repeat)\n",
+		TYPEC_INFO("Attached-> %s(repeat)\n",
 			typec_attach_name[tcpc->typec_attach_new]);
 		return 0;
 	}
@@ -320,6 +332,15 @@ static int typec_alert_attach_state_change(struct tcpc_device *tcpc)
 	TYPEC_INFO("Attached-> %s\n",
 		   typec_attach_name[tcpc->typec_attach_new]);
 
+#ifdef CONFIG_SUPPORT_MMI_ADAPTER
+	if(tcpc->typec_remote_rp_level == TYPEC_CC_VOLT_SNK_3_0 &&
+	   tcpc->typec_local_rp_level == TYPEC_RP_1_5 &&
+	   tcpc->typec_attach_new != TYPEC_UNATTACHED ) {
+		mmi_tcpc_set_pd_flag(true);
+	}else if(tcpc->typec_attach_new == TYPEC_UNATTACHED) {
+		mmi_tcpc_set_pd_flag(false);
+	}
+#endif
 	/*Report function */
 	ret = tcpci_report_usb_port_changed(tcpc);
 
