@@ -341,12 +341,9 @@ static void swtp_send_tx_power_state(struct swtp_t *swtp)
 
 static irqreturn_t swtp_irq_handler(int irq, void *data)
 {
-#ifdef CONFIG_MOTO_DISABLE_SWTP_FACTORY
-	swtp_switch_state(-1, NULL); // Moto factory build calls with NULL swtp param;
-	return IRQ_HANDLED;
-#else
 	struct swtp_t *swtp = (struct swtp_t *)data;
 	int ret = 0;
+
 	ret = swtp_switch_state(irq, swtp);
 	if (ret < 0) {
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
@@ -356,7 +353,6 @@ static irqreturn_t swtp_irq_handler(int irq, void *data)
 		swtp_send_tx_power_state(swtp);
 
 	return IRQ_HANDLED;
-#endif
 }
 
 static void swtp_tx_delayed_work(struct work_struct *work)
