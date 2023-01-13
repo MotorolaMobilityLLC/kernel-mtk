@@ -87,7 +87,7 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		max-brightness = <2047>;
+		max-brightness = <1456>;
 		led_mode = <4>;
 		data = <1>;
 		pwm_config = <0 3 0 0 0>;
