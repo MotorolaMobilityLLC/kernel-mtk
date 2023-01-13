@@ -5053,6 +5053,10 @@ int notify_adapter_event(struct notifier_block *notifier,
 			pinfo->notify_code &= ~CHG_TYPEC_WD_STATUS;
 		mtk_chgstat_notify(pinfo);
 		break;
+	case MMI_PD30_VDM_VERIFY:
+		chr_err("%s VDM VERIFY\n", __func__);
+		mtk_chg_alg_notify_call(pinfo, EVT_VDM_VERIFY, 0);
+		break;
 	}
 	return NOTIFY_DONE;
 }
