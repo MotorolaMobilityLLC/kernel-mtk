@@ -106,9 +106,10 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #define FALSE 0
 #endif
 
-#define ALS_BL_MAX_BRIGHTNESS			2047	//bl max level of upper layer
+#define ALS_BL_MAX_BRIGHTNESS			1456	//bl max level of upper layer
 #define LCM_BL_MAX_LEVEL_DEFAULT		1456	//DVT2, PVT
 #define LCM_BL_MAX_LEVEL_MIN			1000	//bl max level min check
+#define LCM_BL_MAX_LEVEL_MAX			2047
 /*
 #define LCM_BL_MAX_LEVEL_DVT1			1820
 #define LCM_BL_MAX_LEVEL_EVT			1750
@@ -360,7 +361,7 @@ static int lcm_parse_dt() {
 
 #if 1 //get max brightness from dts
 		ret = of_property_read_u32(node, "lcm,max-level", &value);
-		if (!ret && value >= LCM_BL_MAX_LEVEL_MIN && value <= ALS_BL_MAX_BRIGHTNESS) {
+		if (!ret && value >= LCM_BL_MAX_LEVEL_MIN && value <= LCM_BL_MAX_LEVEL_MAX) {
 			bl_max_level = value;
 			LCM_LOGI("tm: get max-level, bl_max_level=%d\n", bl_max_level);
 		}
@@ -647,7 +648,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	unsigned int bl_lvl = level;
 
-	if (bl_max_level < LCM_BL_MAX_LEVEL_MIN || bl_max_level > ALS_BL_MAX_BRIGHTNESS) {
+	if (bl_max_level < LCM_BL_MAX_LEVEL_MIN || bl_max_level > LCM_BL_MAX_LEVEL_MAX) {
 		//bl_max_level recheck
 		LCM_LOGI("resume:tm: abnormal bl_max_level=%d\n, bl_max_level");
 		lcm_parse_dt();
@@ -663,7 +664,10 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	bl_level[2].para_list[0] = (bl_lvl&0x700)>>8;
 	bl_level[2].para_list[1] = (bl_lvl&0xFF);
 
-	LCM_LOGI("%s:csot_nt:level=%d, bl_lvl=%d, para[0]=0x%x,para[1]=0x%x\n",__func__, level, bl_lvl, bl_level[2].para_list[0],bl_level[2].para_list[1]);
+	if (bl_lvl == level)
+		LCM_LOGI("%s:csot_nt:level=bl_lvl=%d, para[0]=0x%x,para[1]=0x%x\n",__func__, bl_lvl, bl_level[2].para_list[0],bl_level[2].para_list[1]);
+	else
+		LCM_LOGI("%s:csot_nt:level=%d, bl_lvl=%d, para[0]=0x%x,para[1]=0x%x\n",__func__, level, bl_lvl, bl_level[2].para_list[0],bl_level[2].para_list[1]);
 	push_table(handle, bl_level,
 		sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
