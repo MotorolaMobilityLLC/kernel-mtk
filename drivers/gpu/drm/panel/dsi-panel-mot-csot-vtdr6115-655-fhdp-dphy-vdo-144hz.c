@@ -323,7 +323,7 @@ static int lcm_enable(struct drm_panel *panel)
 }
 
 
-#define HFP (20)
+#define HFP (22)
 #define HSA (10)
 #define HBP (20)
 #define VFP (3480)
@@ -332,7 +332,7 @@ static int lcm_enable(struct drm_panel *panel)
 #define HACT (1080)
 #define VACT (2400)
 #define DISP_CLOCK (397037)	//1130*2440*144
-#define DISP_PLL_CLK (506)
+#define DISP_PLL_CLK (508)
 
 static const struct drm_display_mode switch_mode_144hz = {
 	.clock		= DISP_CLOCK,
