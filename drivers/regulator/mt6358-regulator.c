@@ -698,6 +698,7 @@ static int mt6358_vmch_eint_enable(struct regulator_dev *rdev)
 	unsigned int val;
 	int ret;
 
+	dev_info(&rdev->dev, "mt6358_vmch_eint_enable\n");
 	if (rdev->desc->id == MT6358_ID_VMCH_EINT_HIGH)
 		val = MT6358_PMIC_RG_LDO_VMCH_EINT_POL_MASK;
 	else
@@ -720,6 +721,7 @@ static int mt6358_vmch_eint_disable(struct regulator_dev *rdev)
 {
 	int ret;
 
+	dev_info(&rdev->dev, "mt6358_vmch_eint_disable\n");
 	ret = regmap_update_bits(rdev->regmap, MT6358_LDO_VMCH_CON0, BIT(0), 0);
 	if (ret)
 		return ret;
