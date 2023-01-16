@@ -94,7 +94,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4208,
-		.grabwindow_height = 3120,
+		.grabwindow_height = 2368,
 		.mipi_pixel_rate = 571200000,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
@@ -1240,7 +1240,7 @@ static kal_uint16 normal_video_setting_array[] = {
 	0x3250, 0xa060,
 	0x0730, 0x770f,
 	0x0732, 0xe0b0,
-	0x1118, 0x0006,
+	0x1118, 0x017e,
 	0x1200, 0x011f,
 	0x1204, 0x1c01,
 	0x1240, 0x0100,
@@ -1250,10 +1250,10 @@ static kal_uint16 normal_video_setting_array[] = {
 	0x1004, 0x2bab,
 	0x103e, 0x0000,
 	0x1020, 0xc10b,
-	0x1022, 0x0e35,
-	0x1024, 0x050f,
-	0x1026, 0x1310,
-	0x1028, 0x1b0e,
+	0x1022, 0x0a31,
+	0x1024, 0x030b,
+	0x1026, 0x0d0f,
+	0x1028, 0x1a0e,
 	0x102a, 0x1311,
 	0x102c, 0x2400,
 	0x1010, 0x07d0,
@@ -1274,8 +1274,8 @@ static kal_uint16 normal_video_setting_array[] = {
 	0x022a, 0x0017,
 	0x0222, 0x0c80,
 	0x022c, 0x0c89,
-	0x0224, 0x002e,
-	0x022e, 0x0c61,
+	0x0224, 0x01a6,
+	0x022e, 0x0ae9,
 	0x0f04, 0x0008,
 	0x0f06, 0x0000,
 	0x023a, 0x1111,
@@ -1287,7 +1287,7 @@ static kal_uint16 normal_video_setting_array[] = {
 	0x0206, 0x05dd,
 	0x020e, 0x0d02,
 	0x0b12, 0x1070,
-	0x0b14, 0x0c30,
+	0x0b14, 0x0940,
 	0x0204, 0x0000,
 	0x041c, 0x0048,
 	0x041e, 0x1047,
@@ -1444,50 +1444,10 @@ static kal_uint16 custom1_setting_array[] = {
 	0x0b04, 0x037c,
 };
 
-/* VC2 for PDAF */
-static struct SENSOR_VC_INFO_STRUCT vc_info_preview = {
-	0x02, //VC_Num
-	0x0a, //VC_PixelNum
-	0x00, //ModeSelect	/* 0:auto 1:direct */
-	0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
-	0x00, //0DValue		/* 0D Value */
-	0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
-	0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
-	0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
-	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
-	0x00, 0x00, 0x0000, 0x0000,	// VC3 ??
-};
-
-static struct SENSOR_VC_INFO_STRUCT vc_info_capture = {
-	0x02, //VC_Num
-	0x0a, //VC_PixelNum
-	0x00, //ModeSelect	/* 0:auto 1:direct */
-	0x00, //EXPO_Ratio	/* 1/1, 1/2, 1/4, 1/8 */
-	0x00, //0DValue		/* 0D Value */
-	0x00, //RG_STATSMODE	/* STATS divistion mode 0:16x16  1:8x8	2:4x4  3:1x1 */
-	0x00, 0x2B, 0x1070, 0x0C30,	// VC0 Maybe image data?
-	0x00, 0x00, 0x0000, 0x0000,	// VC1 MVHDR
-	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
-	0x00, 0x00, 0x0000, 0x0000,	// VC3 ??
-};
-
-static struct SENSOR_VC_INFO_STRUCT vc_info_video = {
-	0x02, //VC_Num
-	0x0a, //VC_PixelNum
-	0x00, //ModeSelect    /* 0:auto 1:direct */
-	0x00, //EXPO_Ratio    /* 1/1, 1/2, 1/4, 1/8 */
-	0x00, //0DValue	   /* 0D Value */
-	0x00, //RG_STATSMODE  /* STATS divistion mode 0:16x16	1:8x8  2:4x4  3:1x1 */
-	0x00, 0x2B, 0x1070, 0x0C30,   // VC0 Maybe image data?
-	0x00, 0x00, 0x0000, 0x0000,   // VC1 MVHDR
-	0x01, 0x2b, 0x0100, 0x0300,   // VC2 PDAF
-	0x00, 0x00, 0x0000, 0x0000,  // VC3 ??
-};
-
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[] = {
     { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //preview
     { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //capture
-    { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //video
+    { 4208, 3120,   0,   376, 4208, 2368,  4208, 2368,  0,  0, 4208, 2368, 0, 0, 4208, 2368}, //video
     { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //hs video
     { 4208, 3120,   0,   0, 4208, 3120,  4208, 3120,  0,  0, 4208, 3120, 0, 0, 4208, 3120}, //slim video
     { 4208, 3120,   184,   480, 3840, 2160,  1920, 1080,  0,  0, 1920, 1080, 0, 0, 1920, 1080}, //custom1
@@ -1506,6 +1466,31 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumX = 128,
 	.i4BlockNumY = 96,
 	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.i4Crop = {
+		{0, 0}, {0, 0}, {0, 376}, {0, 0}, {0, 0},
+		{0, 0}
+	},
+	.iMirrorFlip = 0,
+};
+
+
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_vdieo_info = {
+	.i4OffsetX = 56,
+	.i4OffsetY = 0,
+	.i4PitchX = 32,
+	.i4PitchY = 32,
+	.i4PairNum =8,
+	.i4SubBlkW =16,
+	.i4SubBlkH =8,
+	.i4PosL = {{58,3},{74,3},{66,15},{82,15},{58,19},{74,19},{66,31},{82,31}},
+	.i4PosR = {{58,7},{74,7},{66,11},{82,11},{58,23},{74,23},{66,27},{82,27}},
+	.i4BlockNumX = 128,
+	.i4BlockNumY = 74,
+	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.i4Crop = {
+		{0, 0}, {0, 0}, {0, 376}, {0, 0}, {0, 0},
+		{0, 0}
+	},
 	.iMirrorFlip = 0,
 };
 
@@ -2590,7 +2575,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	 */
 	struct SET_PD_BLOCK_INFO_T *PDAFinfo;
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
-	struct SENSOR_VC_INFO_STRUCT *pvcinfo;
 	/* SET_SENSOR_AWB_GAIN *pSetSensorAWB
 	 *  = (SET_SENSOR_AWB_GAIN *)feature_para;
 	 */
@@ -2825,9 +2809,13 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		switch (*feature_data) {
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 			memcpy((void *)PDAFinfo,
 				(void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+			memcpy((void *)PDAFinfo,
+				(void *)&imgsensor_pd_vdieo_info,
 				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
@@ -2972,28 +2960,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			break;
 		}
 		break;
-	case SENSOR_FEATURE_GET_VC_INFO:
-		pvcinfo =
-			(struct SENSOR_VC_INFO_STRUCT *)
-				(uintptr_t)(*(feature_data+1));
 
-		switch (*feature_data_32) {
-		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-			memcpy((void *)pvcinfo, (void *)&vc_info_preview,
-			       sizeof(struct SENSOR_VC_INFO_STRUCT));
-			break;
-		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
-			memcpy((void *)pvcinfo, (void *)&vc_info_capture,
-			       sizeof(struct SENSOR_VC_INFO_STRUCT));
-			break;
-		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
-			memcpy((void *)pvcinfo, (void *)&vc_info_video,
-			       sizeof(struct SENSOR_VC_INFO_STRUCT));
-			break;
-		default:
-			break;
-		}
-		break;
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
 		set_frame_length(ctx, (UINT32) (*feature_data));
 		break;
@@ -3058,18 +3025,20 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.channel = 0,
 			.data_type = 0x2b,
 			.hsize = 0x1070,
-			.vsize = 0x0c30,
+			.vsize = 0x0940,
 		},
 	},
+
 	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
-			.hsize = 0x0100,
-			.vsize = 0x0300,
+			.hsize = 0x0100,  //256
+			.vsize = 0x0250,  //592
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
+
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_hs_vid[] = {
