@@ -232,6 +232,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 		}
 	} else {
 		for (i=3; i >= 0; i--) {
+			if (i == 2) continue;
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
 			if (IS_ERR(pm_en_pin)) {
@@ -980,6 +981,7 @@ static int panel_ext_powerdown(struct drm_panel *panel)
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
+	usleep_range(1000, 1001);
 
 	gate_ic_Power_on(panel, 0);
 
