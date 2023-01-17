@@ -100,7 +100,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4096,
-		.grabwindow_height = 3072,
+		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 1316016000,
@@ -253,7 +253,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	/* capture */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* video */
-	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
+	{8192, 6144,    0,  768, 8192, 4608, 4096, 2304,  0,  0, 4096, 2304, 0, 0, 4096, 2304},
 	/* hs_video */
 	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
 	/* slim_video */
@@ -271,7 +271,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 };
 
 //the index order of VC_STAGGER_NE/ME/SE in array identify the order of readout in MIPI transfer
-static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
+static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //preivew
 		{
@@ -306,6 +306,17 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[3] = {
 		},
 		1
 	},
+	{
+		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //normal video
+		{
+			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0x900},
+			{VC_PDAF_STATS, 0x01, 0x30, 0x1400, 0x240},
+#if PD_PIX_2_EN
+			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x240},
+#endif
+		},
+		1
+	},
 };
 
 static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 scenario)
@@ -318,7 +329,6 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[0],
 			sizeof(struct SENSOR_VC_INFO2_STRUCT));
@@ -327,6 +337,10 @@ static void get_vc_info_2(struct SENSOR_VC_INFO2_STRUCT *pvcinfo2, kal_uint32 sc
                 memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[2],
                         sizeof(struct SENSOR_VC_INFO2_STRUCT));
                 break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		memcpy((void *)pvcinfo2, (void *)&SENSOR_VC_INFO2[3],
+			sizeof(struct SENSOR_VC_INFO2_STRUCT));
+		break;
 	default:
 		break;
 	}
@@ -348,7 +362,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumY = 0,
 	.i4LeFirst = 0,
 	.i4Crop = {
-		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+		{0, 0}, {0, 0}, {0, 384}, {0, 0}, {0, 0},
 		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
 	},  //{0, 1632}
 	.iMirrorFlip = 0,
