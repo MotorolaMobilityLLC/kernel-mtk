@@ -7383,7 +7383,9 @@
       <elf-symbol name='param_ops_ushort' size='32' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x35701c2d'/>
       <elf-symbol name='pci_bus_type' size='208' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5ed7d00a'/>
       <elf-symbol name='percpu_counter_batch' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5240ee7'/>
+      <elf-symbol name='phy_basic_features' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd17d2a22'/>
       <elf-symbol name='phy_basic_t1_features' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbbf4dfbe'/>
+      <elf-symbol name='phy_gbit_features' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8effb505'/>
       <elf-symbol name='phy_gbit_fibre_features' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb98bb315'/>
       <elf-symbol name='platform_bus' size='912' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xeacdfb3f'/>
       <elf-symbol name='platform_bus_type' size='208' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x648ffea5'/>
@@ -51481,7 +51483,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -100250,7 +100252,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='4e13c9d9' size-in-bits='64' id='d064f511'/>
-      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/power/../base.h' line='88' column='1' id='d066d157'>
+      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='88' column='1' id='d066d157'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='klist_children' type-id='6160a6ce' visibility='default' filepath='drivers/base/base.h' line='89' column='1'/>
         </data-member>
@@ -149786,6 +149788,7 @@
         <parameter type-id='7efbcaaf' name='phydev' filepath='drivers/net/phy/phy_device.c' line='1205' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <var-decl name='phy_basic_features' type-id='f05e8e77' mangled-name='phy_basic_features' visibility='default' filepath='drivers/net/phy/phy_device.c' line='41' column='1' elf-symbol-id='phy_basic_features'/>
       <var-decl name='phy_basic_t1_features' type-id='f05e8e77' mangled-name='phy_basic_t1_features' visibility='default' filepath='drivers/net/phy/phy_device.c' line='44' column='1' elf-symbol-id='phy_basic_t1_features'/>
       <function-decl name='phy_calibrate' mangled-name='phy_calibrate' filepath='drivers/phy/phy-core.c' line='437' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_calibrate'>
         <parameter type-id='503ff1ba' name='phy' filepath='drivers/phy/phy-core.c' line='437' column='1'/>
@@ -149891,6 +149894,7 @@
         <parameter type-id='ff47b24b' name='bus' filepath='drivers/net/phy/phy_device.c' line='997' column='1'/>
         <return type-id='7efbcaaf'/>
       </function-decl>
+      <var-decl name='phy_gbit_features' type-id='f05e8e77' mangled-name='phy_gbit_features' visibility='default' filepath='drivers/net/phy/phy_device.c' line='47' column='1' elf-symbol-id='phy_gbit_features'/>
       <var-decl name='phy_gbit_fibre_features' type-id='f05e8e77' mangled-name='phy_gbit_fibre_features' visibility='default' filepath='drivers/net/phy/phy_device.c' line='50' column='1' elf-symbol-id='phy_gbit_fibre_features'/>
       <function-decl name='phy_get' mangled-name='phy_get' filepath='drivers/phy/phy-core.c' line='694' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='phy_get'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/phy/phy-core.c' line='694' column='1'/>
