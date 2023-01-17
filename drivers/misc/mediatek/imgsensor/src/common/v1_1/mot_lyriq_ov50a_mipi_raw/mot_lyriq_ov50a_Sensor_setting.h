@@ -32,7 +32,7 @@ kal_uint16 addr_data_pair_capture_mot_lyriq_ov50a[] = {
 };
 
 kal_uint16 addr_data_pair_video_mot_lyriq_ov50a[] = {
-#include"setting/OV50A40_4096x3072_4C2SCG_10bit_30fps_AG255_PDVC1_4096x768_1924Msps_20220705.h"
+#include"setting/OV50A40_4096x2304_4C2SCG_10bit_30fps_AG255_PDVC1_4096x576_1924Msps_20220727.h"
 };
 
 kal_uint16 addr_data_pair_slim_video_mot_lyriq_ov50a[] = {
