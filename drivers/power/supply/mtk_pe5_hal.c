@@ -262,6 +262,35 @@ int pe50_hal_update_apdo_cap(struct chg_alg_device *alg,
 	return -EINVAL;
 }
 
+bool pe50_hal_is_adaptor_power_change(struct chg_alg_device *alg,
+			     struct pe50_ta_auth_data *data)
+{
+	int ret, i;
+	struct pe50_hal *hal = chg_alg_dev_get_drv_hal_data(alg);
+	struct adapter_auth_data _data = {
+		.vcap_min = data->vcap_min,
+		.vcap_max = data->vcap_max,
+		.icap_min = data->icap_min,
+	};
+
+	for (i = 0; i < hal->support_ta_cnt; i++) {
+		if (!hal->adapters[i])
+			continue;
+		ret = adapter_dev_update_apdo_cap(hal->adapters[i], &_data);
+		if (ret < 0 || ret != MTK_ADAPTER_OK) {
+			PE50_DBG("authenticate fail(%d)\n", ret);
+			continue;
+		}
+
+		if (data->ita_max != _data.ita_max) {
+			PE50_INFO("adaptor power change \n");
+			return true;
+		}
+
+	}
+	return false;
+}
+
 int pe50_hal_send_ta_hardreset(struct chg_alg_device *alg)
 {
 	int ret;
