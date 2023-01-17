@@ -45,7 +45,7 @@
 			pd,source-pdo-size = <1>;
 			pd,source-pdo-data = <0x00019096>; /* 5V, 1500 mA */
 			pd,sink-pdo-size = <1>;
-			pd,sink-pdo-data = <0x000190c8>;
+			pd,sink-pdo-data = <0x0001912c>;
 
 			/*
 			 * No DP, host + device
