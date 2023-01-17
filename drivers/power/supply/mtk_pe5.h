@@ -294,6 +294,8 @@ extern int pe50_hal_authenticate_ta(struct chg_alg_device *alg,
 				    struct pe50_ta_auth_data *data);
 extern int pe50_hal_update_apdo_cap(struct chg_alg_device *alg,
 				    struct pe50_ta_auth_data *data);
+extern bool pe50_hal_is_adaptor_power_change(struct chg_alg_device *alg,
+			     struct pe50_ta_auth_data *data);
 extern int pe50_hal_send_ta_hardreset(struct chg_alg_device *alg);
 extern int pe50_hal_init_hardware(struct chg_alg_device *alg,
 				  const char **support_ta, int support_ta_cnt);
