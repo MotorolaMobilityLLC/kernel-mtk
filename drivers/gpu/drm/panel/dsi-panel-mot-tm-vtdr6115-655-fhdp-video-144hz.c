@@ -145,6 +145,7 @@ static void lcm_dcs_write(struct lcm *ctx, const void *data, size_t len)
 
 static void lcm_panel_init(struct lcm *ctx)
 {
+	pr_info("%s+\n", __func__);
 	lcm_dcs_write_seq_static(ctx, 0x03, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x35, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x53, 0x20);
@@ -187,7 +188,7 @@ static void lcm_panel_init(struct lcm *ctx)
 
     /* Sleep Out */
     lcm_dcs_write_seq_static(ctx, 0x11);
-    msleep(120);
+    msleep(75);
 
 
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
@@ -199,7 +200,7 @@ static void lcm_panel_init(struct lcm *ctx)
     /* Display On */
     lcm_dcs_write_seq_static(ctx, 0x29);
 
-	pr_info("%s tm vtdr6115-\n", __func__);
+	pr_info("%s tm\n", __func__);
 }
 
 static int lcm_disable(struct drm_panel *panel)
@@ -293,11 +294,7 @@ static int lcm_prepare(struct drm_panel *panel)
 	// lcd reset L->H -> L -> L
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
 	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(11000, 11001);
-	gpiod_set_value(ctx->reset_gpio, 1);
-	usleep_range(5000, 5001);
-	gpiod_set_value(ctx->reset_gpio, 0);
-	usleep_range(5000, 5001);
+	usleep_range(2000, 2001);
 	gpiod_set_value(ctx->reset_gpio, 1);
 	usleep_range(20000, 20001);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
@@ -1259,7 +1256,7 @@ static int panel_ext_init_power(struct drm_panel *panel)
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_HIGH);
 	gpiod_set_value(ctx->reset_gpio, 0);
 	devm_gpiod_put(ctx->dev, ctx->reset_gpio);
-	msleep(10);
+	msleep(1);
 
 	ret = gate_ic_Power_on(panel, 1);
 	return ret;
