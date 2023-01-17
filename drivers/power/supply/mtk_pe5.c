@@ -1109,6 +1109,12 @@ static int pe50_stop(struct pe50_algo_info *info, struct pe50_stop_info *sinfo)
 	atomic_set(&data->stop_algo, 0);
 	alarm_cancel(&data->timer);
 
+	if (pe50_hal_is_adaptor_power_change(info->alg, &data->ta_auth_data)) {
+		data->ta_ready = false;
+		data->run_once = false;
+		PE50_INFO("PE50 stop due to adaptor power change\n");
+	}
+
 	if (data->is_swchg_en)
 		pe50_enable_swchg_charging(info, false);
 	pe50_enable_dvchg_charging(info, PE50_DVCHG_SLAVE, false);
