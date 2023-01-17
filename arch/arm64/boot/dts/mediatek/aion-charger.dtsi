@@ -53,21 +53,21 @@
 	wireless_factory_max_input_current = <600000>;
 	enable_dynamic_mivr;
 	/*mmi config*/
-	mmi,iterm-ma = <215>;
+	mmi,iterm-ma = <429>;
 	mmi,mmi-temp-zones = <0 4200 800 0>,
 			<10 4250 4000 2000>,
 			<15 0 4000 4000>,
-			<45 4250 12400 8000>,
+			<45 4250 12200 8000>,
 			<45 4300 8000 6000>,
 			<45 4500 6000 4000>,
 			<60 4250 6000 0>;
-	mmi,mmi-ffc-zones = <0 4200 215>,
-			<10 4250 215>,
-			<15 4500 215>,
+	mmi,mmi-ffc-zones = <0 4200 429>,
+			<10 4250 429>,
+			<15 4500 429>,
 			<25 4530 740>,
 			<35 4530 797>,
 			<45 4530 1097>,
-			<60 4200 215>;
+			<60 4200 429>;
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
@@ -310,7 +310,7 @@
 		mmi_therm_cur_thres = <500>;
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
-		mmi_max_ibat = <12400>;
+		mmi_max_ibat = <12200>;
 		mmi_max_hrst_cnt = <2>;
 };
 
