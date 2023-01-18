@@ -23,6 +23,7 @@
 #include <linux/slab.h>
 #include <linux/sched/task.h>
 #include <linux/sched/signal.h>
+#include <linux/sched/mm.h>
 /*=============================================================
  *Weak functions
  *=============================================================
@@ -37,6 +38,9 @@ mtk_wcn_cmb_stub_query_ctrl(void)
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 static DEFINE_SEMAPHORE(sem_mutex);
+
+#define MAX_PROCTITLE_AUDIT_LEN 128
+
 static int isTimerCancelled;
 
 static int wmt_tm_debug_log;
@@ -1179,6 +1183,81 @@ static int wmt_wifi_tx_thro_limit_open(struct inode *inode, struct file *file)
 	return single_open(file, wmt_wifi_tx_thro_limit_read, PDE_DATA(inode));
 }
 
+
+
+/******************************************************************************
+ * aee_get_cmdline is a copy of get_cmdline in mm/util.c, please pay attension to
+ * whether this function has changed when the kernel version is upgraded.
+ *****************************************************************************/
+static int aee_get_cmdline(struct task_struct *task, char *buffer, int buflen)
+{
+	int res = 0;
+	unsigned int len = 0;
+	struct mm_struct *mm = get_task_mm(task);
+	unsigned long arg_start = 0;
+	unsigned long arg_end = 0;
+	unsigned long env_start = 0;
+	unsigned long env_end = 0;
+
+	if (!mm || !buffer || !buflen)
+		goto out;
+	if (!mm->arg_end)
+		goto out_mm;	/* Shh! No looking before we're done */
+
+	arg_start = mm->arg_start;
+	arg_end = mm->arg_end;
+	env_start = mm->env_start;
+	env_end = mm->env_end;
+
+	len = arg_end - arg_start;
+
+	if (len > buflen)
+		len = buflen;
+
+	res = access_process_vm(task, arg_start, buffer, len, FOLL_FORCE);
+
+	/*
+	 * If the nul at the end of args has been overwritten, then
+	 * assume application is using setproctitle(3).
+	 */
+	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
+		len = strnlen(buffer, res);
+		if (len < res) {
+			res = len;
+		} else {
+			len = env_end - env_start;
+			if (len > buflen - res)
+				len = buflen - res;
+			res += access_process_vm(task, env_start,
+						 buffer+res, len,
+						 FOLL_FORCE);
+			res = strnlen(buffer, res);
+		}
+	}
+out_mm:
+	mmput(mm);
+out:
+	return res;
+}
+
+static int compare_cmdline(void)
+{
+	int len = 0;
+	char buf[MAX_PROCTITLE_AUDIT_LEN] = {0};
+
+	len = aee_get_cmdline(current, buf, MAX_PROCTITLE_AUDIT_LEN);
+
+	if (len == 0)
+		return -1;
+
+	if (!strncmp(buf, "thermal", 7) || !strncmp(buf, "/vendor/bin/thermal", 19))
+		return 0;
+
+	wmt_tm_printk("%s: task %s open %s failed!\n",__func__, current->comm, buf);
+	return -1;
+}
+
+
 int wmt_test_thro;
 /* New Wifi throttling Algo+ */
 ssize_t wmt_wifi_algo_write(
@@ -1404,6 +1483,8 @@ struct file *filp, const char __user *buf, size_t len, loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	if (compare_cmdline() != 0)
+		return -1;
 
 	len = (len < (MAX_LEN - 1)) ? len : (MAX_LEN - 1);
 	/* write data to the buffer */
@@ -1426,7 +1507,6 @@ int wmt_tm_pid_read(struct seq_file *m, void *v)
 
 	seq_printf(m, "%d\n", tm_input_pid);
 	/* ret = strlen(tmp); */
-
 	/* memcpy(buf, tmp, ret*sizeof(char)); */
 
 	wmt_tm_printk("[%s] %d\n", __func__, tm_input_pid);
