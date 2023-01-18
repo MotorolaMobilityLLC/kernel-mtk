@@ -45,7 +45,7 @@ cmdq_mminfra_gce_cg mminfra_gce_cg;
 
 /* ddp main/sub, mdp path 0/1/2/3, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
-#define CMDQ_IRQ_MASK			GENMASK(CMDQ_THR_MAX_COUNT - 1, 0)
+#define CMDQ_IRQ_MASK			GENMASK(gce_thread_nr - 1, 0)
 
 #define CMDQ_CORE_REST			0x0
 #define CMDQ_CURR_IRQ_STATUS		0x10
@@ -119,6 +119,9 @@ cmdq_mminfra_gce_cg mminfra_gce_cg;
 /* pc and end shift bit for gce, should be config in probe */
 int gce_shift_bit;
 EXPORT_SYMBOL(gce_shift_bit);
+
+u32 gce_thread_nr;
+EXPORT_SYMBOL(gce_thread_nr);
 
 int gce_mminfra;
 EXPORT_SYMBOL(gce_mminfra);
@@ -1264,7 +1267,7 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	end[end_cnt++] = sched_clock();
 #endif
-	set_bit(CMDQ_THR_MAX_COUNT, &cmdq->err_irq_idx);
+	set_bit(gce_thread_nr, &cmdq->err_irq_idx);
 	wake_up_interruptible(&cmdq->err_irq_wq);
 #if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR_DEBUG)
 	end[end_cnt] = sched_clock();
@@ -1313,7 +1316,7 @@ static int cmdq_irq_handler_thread(void *data)
 		wait_event_interruptible(cmdq->err_irq_wq, cmdq->err_irq_idx);
 		irq = cmdq->err_irq_idx;
 
-		if (irq & BIT(CMDQ_THR_MAX_COUNT)) {
+		if (irq & BIT(gce_thread_nr)) {
 			struct cmdq_task *task, *tmp;
 
 			spin_lock_irqsave(&cmdq->irq_removes_lock, flags);
@@ -1329,8 +1332,8 @@ static int cmdq_irq_handler_thread(void *data)
 			}
 			spin_unlock_irqrestore(&cmdq->irq_removes_lock, flags);
 
-			clear_bit(CMDQ_THR_MAX_COUNT, &cmdq->err_irq_idx);
-			if (irq == BIT(CMDQ_THR_MAX_COUNT))
+			clear_bit(gce_thread_nr, &cmdq->err_irq_idx);
+			if (irq == BIT(gce_thread_nr))
 				continue;
 		}
 
@@ -2300,6 +2303,7 @@ static int cmdq_probe(struct platform_device *pdev)
 
 	gce_shift_bit = plat_data->shift;
 	gce_mminfra = plat_data->mminfra;
+	gce_thread_nr = plat_data->thread_nr;
 	if (of_property_read_bool(dev->of_node, "skip-poll-sleep"))
 		skip_poll_sleep = true;
 
