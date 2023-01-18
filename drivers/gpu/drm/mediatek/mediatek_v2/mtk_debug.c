@@ -2024,13 +2024,16 @@ static void process_dbg_opt(const char *opt)
 		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
 		char option[100] = "";
 		char *tmp;
-		int value, i;
+		int value, i, limited;
 		enum MTK_DRM_HELPER_OPT helper_opt;
 		struct mtk_drm_private *priv = drm_dev->dev_private;
 		int ret;
 
 		tmp = (char *)(opt + 7);
+		limited = strlen(tmp);
 		for (i = 0; i < 99; i++) {    /* option[99] should be '\0' to aviod oob */
+			if (i >= limited)
+				return;
 			if (tmp[i] != ',' && tmp[i] != ' ')
 				option[i] = tmp[i];
 			else
