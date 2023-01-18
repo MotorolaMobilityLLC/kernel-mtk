@@ -1125,7 +1125,7 @@ void ddic_dsi_send_cmd_motUtil(char input[])
 	cmd_msg->flags = 0;
 	cmd_msg->tx_cmd_num = 1;
 	cmd_msg->type[0] = input[0];
-	strncpy(tx, &input[2], input[1]);
+	memcpy(tx, &input[2], input[1]);
 	cmd_msg->tx_buf[0] = tx;
 	cmd_msg->tx_len[0] = input[1];
 
@@ -1482,7 +1482,7 @@ void ddic_dsi_read_cmd_motUtil(char input[])
 	}
 
 	ret_dlen = cmd_msg->rx_len[0];
-	strncpy(dcs_read, cmd_msg->rx_buf[0], ret_dlen);
+	memcpy(dcs_read, cmd_msg->rx_buf[0], ret_dlen);
 	DDPMSG("read lcm addr:0x%x--dlen:%d\n",
 		*(char *)(cmd_msg->tx_buf[0]), ret_dlen);
 	for (j = 0; j < ret_dlen; j++) {
