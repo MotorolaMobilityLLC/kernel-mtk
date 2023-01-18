@@ -40,6 +40,7 @@ static DEFINE_SEMAPHORE(sem_mutex);
 static int isTimerCancelled;
 
 static int wmt_tm_debug_log;
+static DEFINE_MUTEX(WMT_pg_task_lock);
 #define wmt_tm_dprintk(fmt, args...)   \
 do { \
 	if (wmt_tm_debug_log) \
@@ -216,9 +217,15 @@ static int wmt_send_signal(int level)
 	if (ret == 0 && tm_input_pid != tm_pid) {
 		tm_pid = tm_input_pid;
 
-		if (pg_task != NULL)
+		if (pg_task != NULL){
+			mutex_lock(&WMT_pg_task_lock);
 			put_task_struct(pg_task);
+			mutex_unlock(&WMT_pg_task_lock);
+		}
+
+		rcu_read_lock();
 		pg_task = get_pid_task(find_vpid(tm_pid), PIDTYPE_PID);
+		rcu_read_unlock();
 	}
 
 	if (ret == 0 && pg_task) {
