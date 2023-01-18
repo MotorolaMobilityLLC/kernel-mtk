@@ -20,6 +20,11 @@
        tcpc,en_wd_polling_only;
 };
 
+&mt6375_chg {
+	ircmp_r = <0>;
+	ircmp_v = <0>;
+};
+
 &lk_charger {
 	/* charging current */
 	usb_charger_current = <500000>;
