@@ -433,6 +433,22 @@ static struct mtk_panel_params ext_params_60hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
+
+		.pps_list = {
+			.count = 3,
+			.dsc_pps_params[0] = {
+				.dsc_pps_idx = 17,
+				.dsc_pps_para = 0xD1E9D9C9,
+			},
+			.dsc_pps_params[1] = {
+				.dsc_pps_idx = 18,
+				.dsc_pps_para = 0xD20DD1E9,
+			},
+			.dsc_pps_params[2] = {
+				.dsc_pps_idx = 19,
+				.dsc_pps_para = 0x0000D230,
+			},
+		},
 	},
 
 	.max_bl_level = 3514,
@@ -500,6 +516,22 @@ static struct mtk_panel_params ext_params_90hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
+
+		.pps_list = {
+			.count = 3,
+			.dsc_pps_params[0] = {
+				.dsc_pps_idx = 17,
+				.dsc_pps_para = 0xD1E9D9C9,
+			},
+			.dsc_pps_params[1] = {
+				.dsc_pps_idx = 18,
+				.dsc_pps_para = 0xD20DD1E9,
+			},
+			.dsc_pps_params[2] = {
+				.dsc_pps_idx = 19,
+				.dsc_pps_para = 0x0000D230,
+			},
+		},
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
@@ -567,6 +599,22 @@ static struct mtk_panel_params ext_params_120hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
+
+		.pps_list = {
+			.count = 3,
+			.dsc_pps_params[0] = {
+				.dsc_pps_idx = 17,
+				.dsc_pps_para = 0xD1E9D9C9,
+			},
+			.dsc_pps_params[1] = {
+				.dsc_pps_idx = 18,
+				.dsc_pps_para = 0xD20DD1E9,
+			},
+			.dsc_pps_params[2] = {
+				.dsc_pps_idx = 19,
+				.dsc_pps_para = 0x0000D230,
+			},
+		},
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
@@ -635,6 +683,22 @@ static struct mtk_panel_params ext_params_144hz = {
 		.rc_quant_incr_limit1 = 15,
 		.rc_tgt_offset_hi = 3,
 		.rc_tgt_offset_lo = 3,
+
+		.pps_list = {
+			.count = 3,
+			.dsc_pps_params[0] = {
+				.dsc_pps_idx = 17,
+				.dsc_pps_para = 0xD1E9D9C9,
+			},
+			.dsc_pps_params[1] = {
+				.dsc_pps_idx = 18,
+				.dsc_pps_para = 0xD20DD1E9,
+			},
+			.dsc_pps_params[2] = {
+				.dsc_pps_idx = 19,
+				.dsc_pps_para = 0x0000D230,
+			},
+		},
 	},
 	.max_bl_level = 3514,
 	.hbm_type = HBM_MODE_DCS_ONLY,
