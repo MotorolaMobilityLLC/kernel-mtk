@@ -85,6 +85,7 @@ struct imgsensor_struct {
 	kal_uint8  ihdr_en;				//ihdr enable or disable
 	kal_uint8  pdaf_mode;				//ihdr enable or disable
 	kal_uint8 i2c_write_id; //record current sensor's i2c write id
+	kal_bool extend_frame_length_en;
 };
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
