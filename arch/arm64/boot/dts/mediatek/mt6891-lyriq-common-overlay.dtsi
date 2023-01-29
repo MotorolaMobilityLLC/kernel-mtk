@@ -19,7 +19,7 @@
 &memory_ssmr_features {
 	iris-recognition-size = <0 0>;
 	tui-size = <0 0>;
-	wfd-size = <0 0x6000000>;
+	wfd-size = <0 0x7000000>;
 	prot-region-based-size = <0 0>;
 	ta-elf-size = <0 0>;
 	ta-stack-heap-size = <0 0>;
