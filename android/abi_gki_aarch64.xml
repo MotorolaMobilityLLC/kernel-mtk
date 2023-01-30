@@ -3216,6 +3216,7 @@
       <elf-symbol name='iio_show_mount_matrix' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x131e3217'/>
       <elf-symbol name='iio_trigger_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb9597d8'/>
       <elf-symbol name='iio_trigger_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6cbb2869'/>
+      <elf-symbol name='iio_trigger_generic_data_rdy_poll' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2d6bcdcb'/>
       <elf-symbol name='iio_trigger_notify_done' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfb4a9fd4'/>
       <elf-symbol name='iio_trigger_poll' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3970d75b'/>
       <elf-symbol name='iio_trigger_unregister' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x433fa49d'/>
@@ -3265,6 +3266,7 @@
       <elf-symbol name='input_alloc_absinfo' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8d64962b'/>
       <elf-symbol name='input_allocate_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9e3bb8f1'/>
       <elf-symbol name='input_close_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcf9ef4a8'/>
+      <elf-symbol name='input_device_enabled' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x457260a3'/>
       <elf-symbol name='input_event' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdd007012'/>
       <elf-symbol name='input_ff_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd8da26c5'/>
       <elf-symbol name='input_ff_create_memless' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x17dd354a'/>
@@ -143245,6 +143247,11 @@
         <parameter type-id='54e54fbb' name='trig' filepath='drivers/iio/industrialio-trigger.c' line='626' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='iio_trigger_generic_data_rdy_poll' mangled-name='iio_trigger_generic_data_rdy_poll' filepath='drivers/iio/industrialio-trigger.c' line='215' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='iio_trigger_generic_data_rdy_poll'>
+	<parameter type-id='95e97e5e' name='irq' filepath='drivers/iio/industrialio-trigger.c' line='215' column='1'/>
+        <parameter type-id='eaa32e2f' name='private' filepath='drivers/iio/industrialio-trigger.c' line='215' column='1'/>
+        <return type-id='4bdecfd7'/>
+      </function-decl>
       <function-decl name='iio_trigger_notify_done' mangled-name='iio_trigger_notify_done' filepath='drivers/iio/industrialio-trigger.c' line='239' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='iio_trigger_notify_done'>
         <parameter type-id='54e54fbb' name='trig' filepath='drivers/iio/industrialio-trigger.c' line='239' column='1'/>
         <return type-id='48b5725f'/>
@@ -143509,6 +143516,10 @@
       <function-decl name='input_close_device' mangled-name='input_close_device' filepath='drivers/input/input.c' line='686' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='input_close_device'>
         <parameter type-id='bef1b918' name='handle' filepath='drivers/input/input.c' line='686' column='1'/>
         <return type-id='48b5725f'/>
+      </function-decl>
+      <function-decl name='input_device_enabled' mangled-name='input_device_enabled' filepath='drivers/input/input.c' line='2228' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='input_device_enabled'>
+        <parameter type-id='74b427eb' name='dev' filepath='drivers/input/input.c' line='2228' column='1'/>
+        <return type-id='b50a4934'/>
       </function-decl>
       <function-decl name='input_event' mangled-name='input_event' filepath='drivers/input/input.c' line='449' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='input_event'>
         <parameter type-id='74b427eb' name='dev' filepath='drivers/input/input.c' line='449' column='1'/>
