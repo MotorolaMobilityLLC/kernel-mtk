@@ -951,7 +951,8 @@ static void devapc_extra_handler(int slave_type, const char *vio_master,
 	/* Severity level */
 	if (dbg_stat->enable_KE && (ret_cb != DEVAPC_NOT_KE)) {
 		pr_info(PFX "Device APC Violation Issue/%s", dispatch_key);
-		BUG_ON((id != INFRA_SUBSYS_APMCU) && (id != INFRA_SUBSYS_CONN));
+		if ((strncasecmp(dispatch_key,"MSDC1_S-1",9)) != 0)
+			BUG_ON((id != INFRA_SUBSYS_APMCU) && (id != INFRA_SUBSYS_CONN));
 
 	} else if (dbg_stat->enable_AEE) {
 		/* call mtk aee_kernel_exception */
