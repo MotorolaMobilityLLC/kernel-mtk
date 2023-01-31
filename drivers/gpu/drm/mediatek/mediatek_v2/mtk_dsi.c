@@ -2926,7 +2926,7 @@ static ssize_t panelCellId_show(struct device *device,
 			reg_addr = dsi->ext->params->panel_cellid_reg;
 			offset_reg_addr = dsi->ext->params->panel_cellid_offset_reg;
 			len = dsi->ext->params->panel_cellid_len;
-			DDPMSG("houdz reg_addr 0x%x offset_reg_addr 0x%x len 0x%x\n");
+			DDPMSG("%s: reg_addr 0x%x offset_reg_addr 0x%x len 0x%x\n", __func__, reg_addr, offset_reg_addr, len);
 		}
 		else return 0;
 	}
