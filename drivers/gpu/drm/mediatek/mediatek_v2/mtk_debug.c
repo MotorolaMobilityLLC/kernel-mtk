@@ -230,6 +230,8 @@ static int mtk_disp_pd_callback(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
+static bool reading_cellid = false;
+
 static int draw_RGBA8888_buffer(char *va, int w, int h,
 		       char r, char g, char b, char a)
 {
@@ -512,6 +514,11 @@ int mtkfb_set_backlight_level(unsigned int level)
 	if (IS_ERR_OR_NULL(crtc)) {
 		DDPPR_ERR("%s failed to find crtc\n", __func__);
 		return -EINVAL;
+	}
+
+	if (reading_cellid) {
+		DDPMSG("%s: is reading cellid, skip backlight\n");
+		return 0;
 	}
 
 	ret = mtk_drm_setbacklight(crtc, level);
@@ -4391,6 +4398,7 @@ int mtk_read_ddic_cellid(unsigned char *cellid, int reg, int offset_reg, int len
 	if(len%dsi_read_max)
 		dsi_read_pkg += 1;
 
+	reading_cellid = true;
 	for(k = 0; k < dsi_read_pkg; k++) {
 		if(k) {
 			cmd_msg->channel = 0;
@@ -4463,6 +4471,6 @@ dsi_error:
 	kfree(cmd_msg->rx_buf[0]);
 done:
 	vfree(cmd_msg);
-
+	reading_cellid = false;
 	return ret_dlen;
 }
