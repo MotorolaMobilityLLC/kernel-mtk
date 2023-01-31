@@ -4054,7 +4054,7 @@ int mtk_read_ddic_cellid(unsigned char *cellid, int reg, int offset_reg, int len
 				}
 			}
 
-			//ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
+			ret = mtk_ddic_dsi_send_cmd(cmd_msg, true);
 			if (ret != 0) {
 				DDPPR_ERR("mtk_ddic_dsi_send_cmd error\n");
 				goto  dsi_error;
