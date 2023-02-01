@@ -3549,6 +3549,7 @@ void mtk_drm_top_clk_disable_unprepare(struct drm_device *drm)
 		}
 		clk_disable_unprepare(priv->top_clk[i]);
 	}
+
 	DDPMSG("%s: mtcmos off\n", __func__);
 	pm_runtime_put_sync(priv->mmsys_dev);
 	if (priv->side_mmsys_dev)
@@ -4717,18 +4718,6 @@ int mtk_drm_fm_lcm_auto_test(struct drm_device *dev, void *data,
 	return 0;
 }
 
-static int suspend_meg=0;
-void suspend_status_set(int state)
-{
-	if (state == 1) {
-		suspend_meg = 1;
-	} else{
-		suspend_meg = 0;
-	}
-
-        //return 0;
-}
-EXPORT_SYMBOL(suspend_status_set);
 static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 		struct drm_file *file_priv)
 {
@@ -4740,9 +4729,7 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 	unsigned int bl_level = 0;
 
 	DDPMSG("%s: set param_idx %d to %d\n", __func__, param_info->param_idx, param_info->value);
-	if(suspend_meg == 1) {
-		return -1;
-	}
+
 	switch (param_info->param_idx) {
 		case PARAM_HBM:
 			if (panel_ext->hbm_type == HBM_MODE_DCS_ONLY) {
