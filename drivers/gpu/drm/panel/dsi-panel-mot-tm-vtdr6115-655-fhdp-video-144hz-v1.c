@@ -171,8 +171,8 @@ static void lcm_panel_init(struct lcm *ctx)
 										0x2A,0xF4,0x2A,0xF4,0x4B,0x34,0x63,0x74,0x00,0x00,0x00,0x00,0x00,0x00);
 #endif
 	lcm_dcs_write_seq_static(ctx, 0xf0, 0xaa, 0x10);
-	lcm_dcs_write_seq_static(ctx, 0xd0, 0x84,0x35,0x50,0x14,0x20,0x00,0x29,0x07,0x17,0x19,0x00,0x00,0x07,0x17,0x1a,0x00,
-										0x00,0x0b,0x05,0x05,0x17,0x17);
+	lcm_dcs_write_seq_static(ctx, 0xd0, 0x84,0x35,0x50,0x14,0x20,0x00,0x29,0x07,0x1d,0x19,0x00,0x00,0x07,0x1d,0x1a,0x00,
+										0x00,0x0b,0x05,0x05,0x1d,0x1d);
 
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
 	lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
@@ -950,8 +950,8 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 		return 0;
 	}
 
-	if (!(ctx->current_bl && level)) pr_info("backlight changed from %u to %u\n", ctx->current_bl, level);
-	else pr_info("backlight changed from %u to %u\n", ctx->current_bl, level);
+	if (!(ctx->current_bl && level)) pr_info("tm_v1 backlight changed from %u to %u\n", ctx->current_bl, level);
+	else pr_info("tm_v1 backlight changed from %u to %u\n", ctx->current_bl, level);
 
 	bl_tb0[1] = (u8)((level>>8)&0xF);
 	bl_tb0[2] = (u8)(level&0xFF);
@@ -1351,9 +1351,9 @@ static int lcm_get_modes(struct drm_panel *panel)
 	panel->connector->display_info.width_mm = 68;
 	panel->connector->display_info.height_mm = 152;
 
-	panel->connector->display_info.panel_ver = 0x01;
+	panel->connector->display_info.panel_ver = 0x03;
 	panel->connector->display_info.panel_id = 0x010b1591;
-	strcpy(panel->connector->display_info.panel_name, "mipi_mot_vid_tianma_vtdr6115_fhd_655");
+	strcpy(panel->connector->display_info.panel_name, "mipi_mot_vid_tianma_vtdr6115_fhd_655_v1");
 	strcpy(panel->connector->display_info.panel_supplier, "tianma-vtdr6115");
 
 	panel->connector->display_info.panel_cellid_reg = 0x5a;
@@ -1457,7 +1457,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 
 	ctx->lhbm_en = of_property_read_bool(dev->of_node, "lhbm-enable");
 
-	pr_info("%s- lcm,tm, lhbm_en = %d\n", __func__, ctx->lhbm_en);
+	pr_info("%s- lcm,tm_v1, lhbm_en = %d\n", __func__, ctx->lhbm_en);
 
 	return ret;
 }
@@ -1474,7 +1474,7 @@ static int lcm_remove(struct mipi_dsi_device *dsi)
 
 static const struct of_device_id lcm_of_match[] = {
 	{
-		.compatible = "tm,vtdr6115,vdo,144hz",
+		.compatible = "tm,vtdr6115,vdo,144hz,v1",
 	},
 	{}
 };
@@ -1485,7 +1485,7 @@ static struct mipi_dsi_driver lcm_driver = {
 	.probe = lcm_probe,
 	.remove = lcm_remove,
 	.driver = {
-		.name = "tm_vtdr6115_655_1080x2400",
+		.name = "tm_vtdr6115_655_1080x2400_v1",
 		.owner = THIS_MODULE,
 		.of_match_table = lcm_of_match,
 	},
