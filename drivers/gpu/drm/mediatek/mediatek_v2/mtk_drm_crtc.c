@@ -828,7 +828,7 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 	}
 	return false;
 }
-extern void suspend_status_set(int state);
+
 int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -844,11 +844,6 @@ int mtk_drm_setbacklight(struct drm_crtc *crtc, unsigned int level)
 	struct mtk_panel_params *params =
 			mtk_drm_get_lcm_ext_params(crtc);
 	enum mtk_lcm_version lcm_version = mtk_drm_get_lcm_version();
-	if(level > 0) {
-		suspend_status_set(0);
-	} else {
-		suspend_status_set(1);
-	}
 
 	if (panel_set_hbm_backlight(crtc, &level)) {
 		return 0;
@@ -1302,8 +1297,10 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 		cmdq_pkt_set_event(cmdq_handle,
 				mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
 	}
+
 	cmdq_pkt_flush(cmdq_handle);
 	cmdq_pkt_destroy(cmdq_handle);
+
 	DDPMSG("%s set panel feature (%d) to %d, success!\n", __func__, param_info.param_idx, param_info.value);
 
 	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
