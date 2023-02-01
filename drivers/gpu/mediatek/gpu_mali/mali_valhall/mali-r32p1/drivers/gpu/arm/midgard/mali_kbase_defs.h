@@ -1876,17 +1876,15 @@ struct kbasep_gwt_list_element {
  *                                 to a @kbase_context.
  * @ext_res_node:                  List head for adding the metadata to a
  *                                 @kbase_context.
- * @alloc:                         The physical memory allocation structure
- *                                 which is mapped.
- * @gpu_addr:                      The GPU virtual address the resource is
- *                                 mapped to.
+ * @reg:                           External resource information, containing
+ *                                 the corresponding VA region
  * @ref:                           Reference count.
  *
  * External resources can be mapped into multiple contexts as well as the same
  * context multiple times.
- * As kbase_va_region itself isn't refcounted we can't attach our extra
- * information to it as it could be removed under our feet leaving external
- * resources pinned.
+ * As kbase_va_region is refcounted, we guarantee that it will be available
+ * for the duration of the external resource, meaning it is sufficient to use
+ * it to rederive any additional data, like the GPU address.
  * This metadata structure binds a single external resource to a single
  * context, ensuring that per context mapping is tracked separately so it can
  * be overridden when needed and abuses by the application (freeing the resource
@@ -1894,8 +1892,7 @@ struct kbasep_gwt_list_element {
  */
 struct kbase_ctx_ext_res_meta {
 	struct list_head ext_res_node;
-	struct kbase_mem_phy_alloc *alloc;
-	u64 gpu_addr;
+	struct kbase_va_region *reg;
 	u32 ref;
 };
 
