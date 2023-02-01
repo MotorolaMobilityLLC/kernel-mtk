@@ -514,8 +514,8 @@
                 /delete-property/ pm-enable-gpios;
                 /delete-property/ reset-gpios;
 
-                compatible = "tm,vtdr6115,vdo,144hz";
-                reg = <1>;
+                compatible = "tm,vtdr6115,vdo,144hz,v1";
+                reg = <3>;
                 pm-enable-gpios = <&pio 84 0>,
                           <&pio 82 0>,
                           <&pio 80 0>;
@@ -528,6 +528,25 @@
                         };
                 };
 	};
+	panel3@0 {
+                /delete-property/ compatible;
+                /delete-property/ pm-enable-gpios;
+                /delete-property/ reset-gpios;
+
+                compatible = "tm,vtdr6115,vdo,144hz";
+                reg = <1>;
+                pm-enable-gpios = <&pio 84 0>,
+                          <&pio 82 0>,
+                          <&pio 80 0>;
+                reset-gpios = <&pio 42 0>;
+                pinctrl-names = "default";
+                lhbm-enable;
+                port {
+                        panel_in3: endpoint {
+                                remote-endpoint = <&dsi_out>;
+                        };
+                };
+        };
 	ports {
 		port {
 			dsi_out: endpoint {
