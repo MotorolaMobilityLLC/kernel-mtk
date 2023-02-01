@@ -277,6 +277,9 @@ static int lcm_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
+	ctx->hbm_mode = 0;
+	ctx->dc_mode = 0;
+
 	// lcd reset  L-> H -> L -> H
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
 	gpiod_set_value(ctx->reset_gpio, 0);
@@ -730,7 +733,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	char bl_tb0[] = { 0x51, 0x0f, 0xff};
 	struct lcm *ctx = g_ctx;
 
-	if (ctx->hbm_mode) {
+	if ((ctx->hbm_mode) && level) {
 		pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
 		return 0;
 	}
