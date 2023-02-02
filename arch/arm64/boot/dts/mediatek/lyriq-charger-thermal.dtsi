@@ -321,8 +321,8 @@
 		io-channel-names = "batt_therm";
 
 		latest_fw_version = <0x0815>;
-		first_battery_param_ver = <0x0203>;
-		second_battery_param_ver = <0x0203>;
+		first_battery_param_ver = <0x0205>;
+		second_battery_param_ver = <0x0205>;
 
 		first_batt_sn = "SB18D47432";
 		second_batt_sn = "SB18D47433";
