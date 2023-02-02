@@ -18,6 +18,7 @@
 		touch,irq-gpio = <&pio 0 0x0>;
 		touch,reset-gpio = <&pio 23 0x0>;
 		touch,psy-name = "battery";
+		ili,dda-device-info = "ilitek-ts for Geneva4G";
 		ilitek,report_gesture_key;
 
 		//novatek
@@ -25,6 +26,7 @@
 		novatek,irq-gpio = <&pio 0 0x0>;
 		novatek,panel-supplier = "csot";
 		novatek,fw_ic_info = "nt36672c", "nt36672n";
+		novatek,dda-device-info = "novatek-ts for Geneva4G";
 		novatek,usb_charger;
 		novatek,report_gesture_key = <1>;
 		novatek,panel_wakeup = <1>;
