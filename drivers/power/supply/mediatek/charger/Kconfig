@@ -232,6 +232,14 @@ config MOTO_POWER_PATH_DISABLE
 	  it is disabled.
 	  The option default disabled.
 
+config FACTORY_INIT_INPUT_CURRENT
+	bool "FACTORY_INIT_INPUT_CURRENT"
+	help
+	  This option config init input current, if yes,
+	  then the init input currnt is 1.5A, if no,
+	  the init input currnt is 0.5A.
+	  The option default 0.5A.
+
 config CHARGER_SGM41511
 	bool "CHARGER_SGM41511"
 	help
