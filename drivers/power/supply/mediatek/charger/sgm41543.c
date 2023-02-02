@@ -488,7 +488,6 @@ static int sgm41543_set_hz(struct sgm41543 *bq, bool en)
 		sgm41543_enter_hiz_mode(bq);
 	} else {
 		sgm41543_exit_hiz_mode(bq);
-		sgm41543_set_input_current_limit(bq, 2050);
 	}
 
 	return 0;
@@ -1092,8 +1091,11 @@ static int sgm41543_init_device(struct sgm41543 *bq)
 		dev_info(bq->dev, "%s:Failed to set charge voltage:%d\n", __func__, ret);
 		return ret;
 	}
-
+#ifdef CONFIG_FACTORY_INIT_INPUT_CURRENT
 	ret = sgm41543_set_input_current_limit(bq, 1500);
+#else
+	ret = sgm41543_set_input_current_limit(bq, 500);
+#endif
 	if (ret < 0) {
 		dev_info(bq->dev, "%s:Failed to set charge current:%d\n", __func__, ret);
 		return ret;

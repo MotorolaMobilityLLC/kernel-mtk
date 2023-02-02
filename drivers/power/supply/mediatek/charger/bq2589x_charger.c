@@ -394,7 +394,6 @@ static int bq2589x_set_hz_mode(struct charger_device *chg_dev, bool en)
 		bq2589x_enter_hiz_mode(bq);
 	} else {
 		bq2589x_exit_hiz_mode(bq);
-		bq2589x_set_input_current_limit(bq, 2050);
 	}
 
 	return 0;
@@ -1298,7 +1297,6 @@ static int bq2589x_set_hz(struct bq2589x *bq, bool en)
 		bq2589x_enter_hiz_mode(bq);
 	} else {
 		bq2589x_exit_hiz_mode(bq);
-		bq2589x_set_input_current_limit(bq, 2050);
 	}
 
 	return 0;
@@ -1561,8 +1559,11 @@ static int bq2589x_init_device(struct bq2589x *bq)
 		dev_info(bq->dev, "%s:Failed to set charge voltage:%d\n", __func__, ret);
 		return ret;
 	}
-
+#ifdef CONFIG_FACTORY_INIT_INPUT_CURRENT
 	ret = bq2589x_set_input_current_limit(bq, 1500);
+#else
+	ret = bq2589x_set_input_current_limit(bq, 500);
+#endif
 	if (ret < 0) {
 		dev_info(bq->dev, "%s:Failed to set charge current:%d\n", __func__, ret);
 		return ret;
