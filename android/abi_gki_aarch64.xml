@@ -634,6 +634,7 @@
       <elf-symbol name='__traceiter_android_vh_printk_caller_id' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x409ea043'/>
       <elf-symbol name='__traceiter_android_vh_printk_ext_header' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x35d0ca61'/>
       <elf-symbol name='__traceiter_android_vh_printk_hotplug' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5728d98f'/>
+      <elf-symbol name='__traceiter_android_vh_psi_group' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x10f97d22'/>
       <elf-symbol name='__traceiter_android_vh_record_mutex_lock_starttime' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x602544f5'/>
       <elf-symbol name='__traceiter_android_vh_record_pcpu_rwsem_starttime' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6f509622'/>
       <elf-symbol name='__traceiter_android_vh_record_rtmutex_lock_starttime' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5b9948c1'/>
@@ -7138,6 +7139,7 @@
       <elf-symbol name='__tracepoint_android_vh_printk_caller_id' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x422dde96'/>
       <elf-symbol name='__tracepoint_android_vh_printk_ext_header' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf400ae3e'/>
       <elf-symbol name='__tracepoint_android_vh_printk_hotplug' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x7f6382dd'/>
+      <elf-symbol name='__tracepoint_android_vh_psi_group' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1b54b5dd'/>
       <elf-symbol name='__tracepoint_android_vh_ptype_head' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x40b365e3'/>
       <elf-symbol name='__tracepoint_android_vh_record_mutex_lock_starttime' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1deb1eec'/>
       <elf-symbol name='__tracepoint_android_vh_record_pcpu_rwsem_starttime' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x18111c92'/>
@@ -27246,6 +27248,7 @@
       </class-decl>
       <typedef-decl name='__s32' type-id='95e97e5e' filepath='include/uapi/asm-generic/int-ll64.h' line='26' column='1' id='3158a266'/>
       <pointer-type-def type-id='6ae7a739' size-in-bits='64' id='3168497d'/>
+      <pointer-type-def type-id='12878ab3' size-in-bits='64' id='316cdcd3'/>
       <class-decl name='key_tag' size-in-bits='192' is-struct='yes' visibility='default' filepath='include/linux/key.h' line='102' column='1' id='3173bc57'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='rcu' type-id='e3d8ce29' visibility='default' filepath='include/linux/key.h' line='103' column='1'/>
@@ -36786,7 +36789,7 @@
         <parameter type-id='9d57e433'/>
         <return type-id='48b5725f'/>
       </function-type>
-      <class-decl name='subsys_private' size-in-bits='4608' is-struct='yes' visibility='default' filepath='drivers/base/base.h' line='40' column='1' id='4a19d21e'>
+      <class-decl name='subsys_private' size-in-bits='4608' is-struct='yes' visibility='default' filepath='drivers/base/power/../base.h' line='40' column='1' id='4a19d21e'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='subsys' type-id='8cf069a2' visibility='default' filepath='drivers/base/base.h' line='41' column='1'/>
         </data-member>
@@ -125733,7 +125736,7 @@
       <pointer-type-def type-id='46f53066' size-in-bits='64' id='fffb07a4'/>
       <qualified-type-def type-id='55efd1a3' const='yes' id='fffdaf52'/>
       <var-decl name='GKI_struct_blk_mq_alloc_data' type-id='17c43c95' mangled-name='GKI_struct_blk_mq_alloc_data' visibility='default' filepath='block/vendor_hooks.c' line='22' column='1' elf-symbol-id='GKI_struct_blk_mq_alloc_data'/>
-      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='423' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
+      <var-decl name='GKI_struct_readahead_control' type-id='9ec8ec17' mangled-name='GKI_struct_readahead_control' visibility='default' filepath='drivers/android/vendor_hooks.c' line='426' column='1' elf-symbol-id='GKI_struct_readahead_control'/>
       <var-decl name='GKI_struct_selinux_state' type-id='4ae52763' mangled-name='GKI_struct_selinux_state' visibility='default' filepath='security/selinux/vendor_hooks.c' line='21' column='1' elf-symbol-id='GKI_struct_selinux_state'/>
       <function-decl name='I_BDEV' mangled-name='I_BDEV' filepath='block/bdev.c' line='42' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='I_BDEV'>
         <parameter type-id='7e666abe' name='inode' filepath='block/bdev.c' line='42' column='1'/>
@@ -129650,6 +129653,11 @@
         <parameter type-id='7292109c' name='flag' filepath='include/trace/hooks/printk.h' line='12' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_vh_psi_group' mangled-name='__traceiter_android_vh_psi_group' filepath='include/trace/hooks/psi.h' line='20' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_psi_group'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/psi.h' line='20' column='1'/>
+        <parameter type-id='316cdcd3' name='group' filepath='include/trace/hooks/psi.h' line='20' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_vh_record_mutex_lock_starttime' mangled-name='__traceiter_android_vh_record_mutex_lock_starttime' filepath='include/trace/hooks/dtask.h' line='70' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_vh_record_mutex_lock_starttime'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/dtask.h' line='70' column='1'/>
         <parameter type-id='f23e2572' name='tsk' filepath='include/trace/hooks/dtask.h' line='70' column='1'/>
@@ -130782,6 +130790,7 @@
       <var-decl name='__tracepoint_android_vh_printk_caller_id' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_printk_caller_id' visibility='default' filepath='include/trace/hooks/printk.h' line='16' column='1' elf-symbol-id='__tracepoint_android_vh_printk_caller_id'/>
       <var-decl name='__tracepoint_android_vh_printk_ext_header' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_printk_ext_header' visibility='default' filepath='include/trace/hooks/printk.h' line='22' column='1' elf-symbol-id='__tracepoint_android_vh_printk_ext_header'/>
       <var-decl name='__tracepoint_android_vh_printk_hotplug' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_printk_hotplug' visibility='default' filepath='include/trace/hooks/printk.h' line='12' column='1' elf-symbol-id='__tracepoint_android_vh_printk_hotplug'/>
+      <var-decl name='__tracepoint_android_vh_psi_group' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_psi_group' visibility='default' filepath='include/trace/hooks/psi.h' line='20' column='1' elf-symbol-id='__tracepoint_android_vh_psi_group'/>
       <var-decl name='__tracepoint_android_vh_ptype_head' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_ptype_head' visibility='default' filepath='include/trace/hooks/net.h' line='21' column='1' elf-symbol-id='__tracepoint_android_vh_ptype_head'/>
       <var-decl name='__tracepoint_android_vh_record_mutex_lock_starttime' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_record_mutex_lock_starttime' visibility='default' filepath='include/trace/hooks/dtask.h' line='70' column='1' elf-symbol-id='__tracepoint_android_vh_record_mutex_lock_starttime'/>
       <var-decl name='__tracepoint_android_vh_record_pcpu_rwsem_starttime' type-id='4ca0c298' mangled-name='__tracepoint_android_vh_record_pcpu_rwsem_starttime' visibility='default' filepath='include/trace/hooks/dtask.h' line='79' column='1' elf-symbol-id='__tracepoint_android_vh_record_pcpu_rwsem_starttime'/>
@@ -151612,7 +151621,7 @@
         <parameter type-id='f9b06939' name='command' filepath='drivers/input/serio/libps2.c' line='347' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <var-decl name='psi_system' type-id='12878ab3' mangled-name='psi_system' visibility='default' filepath='kernel/sched/psi.c' line='186' column='1' elf-symbol-id='psi_system'/>
+      <var-decl name='psi_system' type-id='12878ab3' mangled-name='psi_system' visibility='default' filepath='kernel/sched/psi.c' line='188' column='1' elf-symbol-id='psi_system'/>
       <function-decl name='pskb_expand_head' mangled-name='pskb_expand_head' filepath='net/core/skbuff.c' line='1711' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='pskb_expand_head'>
         <parameter type-id='0fbf3cfd' name='skb' filepath='net/core/skbuff.c' line='1711' column='1'/>
         <parameter type-id='95e97e5e' name='nhead' filepath='net/core/skbuff.c' line='1711' column='1'/>
@@ -162536,7 +162545,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
