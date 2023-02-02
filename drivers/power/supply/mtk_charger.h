@@ -64,6 +64,12 @@ struct charger_data;
 #define WIRELESS_FACTORY_MAX_CURRENT			3000000
 #define WIRELESS_FACTORY_MAX_INPUT_CURRENT		1150000
 
+/*wireless charging power*/
+#define WLS_RX_CAP_15W 15
+#define WLS_RX_CAP_10W 10
+#define WLS_RX_CAP_8W 8
+#define WLS_RX_CAP_5W 5
+
 /* dynamic mivr */
 #define V_CHARGER_MIN_1 4400000 /* 4.4 V */
 #define V_CHARGER_MIN_2 4200000 /* 4.2 V */
