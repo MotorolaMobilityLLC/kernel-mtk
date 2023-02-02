@@ -98,6 +98,23 @@
 	mmi,mux_wls_control_en = <&pio 133 0x0>;//wlc_inhibit
         pinctrl-names = "default";
 };
+&vtskin {
+	/delete-property/ vtskin1;
+	vtskin1 {
+		ref-num = <2>;
+		operation = "OP_COEF";
+
+		vtskin_coef_0{
+			sensor-name  = "mtktsbattery";
+			sensor-coeff = <9>;
+		};
+
+		vtskin_coef_1{
+			sensor-name  = "mtktsAP";
+			sensor-coeff  = <1>;
+		};
+	};
+};
 
 &tboard_thermistor4 {
 	compatible = "mediatek,mtboard-thermistor4";
