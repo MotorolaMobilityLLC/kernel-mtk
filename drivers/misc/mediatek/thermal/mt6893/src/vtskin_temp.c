@@ -19,9 +19,13 @@
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 #include <mt-plat/aee.h>
+#ifdef CONFIG_PM
+#include <linux/suspend.h>
+#endif
 
 
 
+static DEFINE_MUTEX(vtskin_mutex);
 
 
 static kuid_t uid = KUIDT_INIT(0);
@@ -151,6 +155,7 @@ static int polling_trip_temp2 = 20000;
 static int polling_factor1 = 5000;
 static int polling_factor2 = 10000;
 
+static int g_resume_done = 1;
 
 
 
@@ -824,6 +829,10 @@ static int mtktsvtskin_get_temp(struct thermal_zone_device *thermal, int *temp)
 	char *sensor_name;
 	int id = mtk_thermal_get_vtksin_idx(thermal->type);
 
+	if (!g_resume_done){
+		*temp = THERMAL_TEMP_INVALID;
+		return 0;
+	}
 	if (skin_param[id].ref_num == 0) {
 		*temp = THERMAL_TEMP_INVALID;
 		return 0;
@@ -2092,6 +2101,34 @@ static const struct file_operations mtkts_vtskin3_fops = {
 };
 
 
+
+#ifdef CONFIG_PM
+static int vtskin_pm_event(
+		struct notifier_block *notifier,
+		unsigned long pm_event, void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		mutex_lock(&vtskin_mutex);
+		g_resume_done = 0;
+		mutex_unlock(&vtskin_mutex);
+		break;
+	case PM_POST_SUSPEND:
+		mutex_lock(&vtskin_mutex);
+		g_resume_done = 1;
+		mutex_unlock(&vtskin_mutex);
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block vtskin_pm_notifier_func = {
+	.notifier_call = vtskin_pm_event,
+	.priority = 0,
+};
+#endif
+
+
 static int vtskin_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -2101,6 +2138,10 @@ static int vtskin_probe(struct platform_device *pdev)
 	struct proc_dir_entry *mtktsvtskin_dir = NULL;
 	struct proc_dir_entry *entry = NULL;
 	int i; //ret;
+#ifdef CONFIG_PM
+		int ret = -1;
+#endif
+
 
 	if (!pdev->dev.of_node) {
 		pr_notice("Only DT based supported\n");
@@ -2144,6 +2185,11 @@ static int vtskin_probe(struct platform_device *pdev)
 	if (entry)
 		proc_set_user(entry, uid, gid);
 
+#ifdef CONFIG_PM
+		ret = register_pm_notifier(&vtskin_pm_notifier_func);
+		if (ret)
+			pr_notice("Failed to register dctm PM notifier.\n");
+#endif
 
 
 
