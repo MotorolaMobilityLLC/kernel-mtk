@@ -2001,8 +2001,9 @@ static void mmu_teardown_level(struct kbase_device *kbdev,
 	lockdep_assert_held(&mmut->mmu_lock);
 
 	pgd_page = kmap_atomic(pfn_to_page(PFN_DOWN(pgd)));
+
 	/* kmap_atomic should NEVER fail. */
-	if (WARN_ON(pgd_page == NULL))
+	if (WARN_ON_ONCE(pgd_page == NULL))
 		return;
 	/* Copy the page to our preallocated buffer so that we can minimize
 	 * kmap_atomic usage
