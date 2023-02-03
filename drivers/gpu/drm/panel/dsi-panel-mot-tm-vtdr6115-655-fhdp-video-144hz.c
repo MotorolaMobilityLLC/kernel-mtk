@@ -1123,7 +1123,7 @@ static void set_lhbm_alpha(unsigned int bl_level, unsigned int on)
 	}
 }
 
-static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
+static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
 	unsigned int para_count = 0, i = 0;
 
@@ -1134,6 +1134,12 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32
 			cb(dsi, handle, panel_lhbm_on[i].para_list, panel_lhbm_on[i].count);
 	} else {
 		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
+		if(fps == 90)
+			panel_lhbm_off[0].para_list[1] = 0x01;
+		else
+			panel_lhbm_off[0].para_list[1] = 0x00;
+		pr_info("%s: panel_lhbm_off(0x%x, 0x%x)\n", __func__,
+			panel_lhbm_off[0].para_list[0], panel_lhbm_off[0].para_list[1]);
 		for(i=0; i < para_count; i++)
 			cb(dsi, handle, panel_lhbm_off[i].para_list, panel_lhbm_off[i].count);
 	}
@@ -1151,16 +1157,16 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void 
 	{
 		case 0:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl, ctx->current_fps);
 			break;
 		case 1:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl, ctx->current_fps);
 			cb(dsi, handle, &hbm_on_table.para_list, hbm_on_table.count);
 			break;
 		case 2:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl, ctx->current_fps);
 			else
 				cb(dsi, handle, &hbm_on_table.para_list, hbm_on_table.count);
 			break;
