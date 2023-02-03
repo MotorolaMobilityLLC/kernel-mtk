@@ -123,6 +123,8 @@ static struct logger_buffer dprec_logger_buffer[DPREC_LOGGER_PR_NUM] = {
 static bool is_buffer_init;
 static char *debug_buffer;
 
+static bool reading_cellid = false;
+
 static int draw_RGBA8888_buffer(char *va, int w, int h,
 		       char r, char g, char b, char a)
 {
@@ -367,6 +369,12 @@ int mtkfb_set_backlight_level(unsigned int level)
 		DDPPR_ERR("find crtc fail\n");
 		return 0;
 	}
+
+	if (reading_cellid) {
+		DDPMSG("%s: is reading cellid, skip backlight\n", __func__);
+		return 0;
+	}
+
 	mtk_drm_setbacklight(crtc, level);
 
 	return 0;
@@ -1528,6 +1536,7 @@ int mtk_read_ddic_cellid(unsigned char *cellid, int reg, int reg_offset, int len
 	if(len%dsi_read_max)
 		dsi_read_pkg += 1;
 
+	reading_cellid = true;
 	for(k = 0; k < dsi_read_pkg; k++) {
 		if(k) {
 			cmd_msg->channel = 0;
@@ -1600,7 +1609,7 @@ dsi_error:
 	kfree(cmd_msg->rx_buf[0]);
 done:
 	vfree(cmd_msg);
-
+	reading_cellid = false;
 	return ret_dlen;
 }
 
