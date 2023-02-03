@@ -23,4 +23,5 @@ struct switch_charging_alg_data {
 	struct timespec charging_begin_time;
 };
 
+#define MMI_WLC_INPUT_LIMIT 1150000  //15 wolt
 #endif /* End of _MTK_SWITCH_CHARGER_H */
