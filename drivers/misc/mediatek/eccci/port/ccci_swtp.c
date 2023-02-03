@@ -47,7 +47,7 @@ struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
-#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
 static int swtp_tx_power_mode = SWTP_DO_TX_POWER;
 static ssize_t swtp_gpio_state_show(struct class *class,
 		struct class_attribute *attr,
@@ -231,7 +231,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	inject_pin_status_event(swtp->curr_mode, rf_name);
        #endif
 
-	#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+	#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
 	swtp_tx_power_mode = swtp->tx_power_mode;
 	#endif
 
@@ -339,7 +339,7 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
-#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
 	ret = class_register(&swtp_class);
 
 	ret = class_create_file(&swtp_class, &class_attr_swtp_gpio_state);
@@ -447,7 +447,7 @@ int swtp_init(int md_id)
     #endif
 	//EKELLIS-890 liangnengjie.wt, SWTP logic modify , 20210529, for RF swtp function fali, end
 
-	#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
+	#if defined(SWTP_GPIO_STATE_CUST) || defined(CONFIG_MOTO_GENEVA_PROJECT_SWTP_SETING_APART) || defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
 	swtp_tx_power_mode = swtp_data[md_id].tx_power_mode;
 	#endif
 
