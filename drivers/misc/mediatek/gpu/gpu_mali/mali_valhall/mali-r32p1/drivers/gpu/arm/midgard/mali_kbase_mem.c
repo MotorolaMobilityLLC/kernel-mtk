@@ -1367,6 +1367,7 @@ struct kbase_va_region *kbase_alloc_free_region(struct rb_root *rbtree,
 		return NULL;
 
 	new_reg->va_refcnt = 1;
+	new_reg->no_user_free_refcnt = 0;
 	new_reg->cpu_alloc = NULL; /* no alloc bound yet */
 	new_reg->gpu_alloc = NULL; /* no alloc bound yet */
 	new_reg->rbtree = rbtree;
@@ -1969,7 +1970,7 @@ int kbase_mem_free_region(struct kbase_context *kctx, struct kbase_va_region *re
 		__func__, (void *)reg, (void *)kctx);
 	lockdep_assert_held(&kctx->reg_lock);
 
-	if (reg->flags & KBASE_REG_NO_USER_FREE) {
+	if (kbase_va_region_is_no_user_free(kctx, reg)) {
 		dev_warn(kctx->kbdev->dev, "Attempt to free GPU memory whose freeing by user space is forbidden!\n");
 		return -EINVAL;
 	}
@@ -2175,8 +2176,11 @@ int kbase_update_region_flags(struct kbase_context *kctx,
 	if (flags & BASEP_MEM_PERMANENT_KERNEL_MAPPING)
 		reg->flags |= KBASE_REG_PERMANENT_KERNEL_MAPPING;
 
-	if (flags & BASEP_MEM_NO_USER_FREE)
-		reg->flags |= KBASE_REG_NO_USER_FREE;
+	if (flags & BASEP_MEM_NO_USER_FREE) {
+		kbase_gpu_vm_lock(kctx);
+		kbase_va_region_no_user_free_get(kctx, reg);
+		kbase_gpu_vm_unlock(kctx);
+	}
 
 	if (flags & BASE_MEM_GPU_VA_SAME_4GB_PAGE)
 		reg->flags |= KBASE_REG_GPU_VA_SAME_4GB_PAGE;
@@ -3527,7 +3531,14 @@ static void kbase_jit_destroy_worker(struct work_struct *work)
 		mutex_unlock(&kctx->jit_evict_lock);
 
 		kbase_gpu_vm_lock(kctx);
-		reg->flags &= ~KBASE_REG_NO_USER_FREE;
+		/*
+		 * Incrementing the refcount is prevented on JIT regions.
+		 * If/when this ever changes we would need to compensate
+		 * by implementing "free on putting the last reference",
+		 * but only for JIT regions.
+		 */
+		WARN_ON(reg->no_user_free_refcnt > 1);
+		kbase_va_region_no_user_free_put(kctx, reg);
 		kbase_mem_free_region(kctx, reg);
 		kbase_gpu_vm_unlock(kctx);
 	} while (1);
@@ -4250,6 +4261,29 @@ struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 		}
 	}
 
+	/* Similarly to tiler heap init, there is a short window of time
+	 * where the (either recycled or newly allocated, in our case) region has
+	 * "no user free" refcount incremented but is still missing the DONT_NEED flag, and
+	 * doesn't yet have the ACTIVE_JIT_ALLOC flag either. Temporarily leaking the
+	 * allocation is the least bad option that doesn't lead to a security issue down the
+	 * line (it will eventually be cleaned up during context termination).
+	 *
+	 * We also need to call kbase_gpu_vm_lock regardless, as we're updating the region
+	 * flags.
+	 */
+	kbase_gpu_vm_lock(kctx);
+	if (unlikely(reg->no_user_free_refcnt > 1)) {
+		kbase_gpu_vm_unlock(kctx);
+		dev_err(kctx->kbdev->dev, "JIT region has no_user_free_refcnt > 1!\n");
+
+		mutex_lock(&kctx->jit_evict_lock);
+		list_move(&reg->jit_node, &kctx->jit_pool_head);
+		mutex_unlock(&kctx->jit_evict_lock);
+
+		reg = NULL;
+		goto end;
+	}
+
 	trace_mali_jit_alloc(reg, info->id);
 
 	kctx->jit_current_allocations++;
@@ -4267,6 +4301,7 @@ struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 	kbase_jit_report_update_pressure(kctx, reg, info->va_pages,
 			KBASE_JIT_REPORT_ON_ALLOC_OR_FREE);
 #endif /* MALI_JIT_PRESSURE_LIMIT_BASE */
+		kbase_gpu_vm_unlock(kctx);
 
 end:
 	for (i = 0; i != ARRAY_SIZE(prealloc_sas); ++i)
@@ -4377,7 +4412,14 @@ bool kbase_jit_evict(struct kbase_context *kctx)
 	mutex_unlock(&kctx->jit_evict_lock);
 
 	if (reg) {
-		reg->flags &= ~KBASE_REG_NO_USER_FREE;
+		/*
+		 * Incrementing the refcount is prevented on JIT regions.
+		 * If/when this ever changes we would need to compensate
+		 * by implementing "free on putting the last reference",
+		 * but only for JIT regions.
+		 */
+		WARN_ON(reg->no_user_free_refcnt > 1);
+		kbase_va_region_no_user_free_put(kctx, reg);
 		kbase_mem_free_region(kctx, reg);
 	}
 
@@ -4399,7 +4441,14 @@ void kbase_jit_term(struct kbase_context *kctx)
 		list_del(&walker->jit_node);
 		list_del_init(&walker->gpu_alloc->evict_node);
 		mutex_unlock(&kctx->jit_evict_lock);
-		walker->flags &= ~KBASE_REG_NO_USER_FREE;
+		/*
+		 * Incrementing the refcount is prevented on JIT regions.
+		 * If/when this ever changes we would need to compensate
+		 * by implementing "free on putting the last reference",
+		 * but only for JIT regions.
+		 */
+		WARN_ON(walker->no_user_free_refcnt > 1);
+		kbase_va_region_no_user_free_put(kctx, walker);
 		kbase_mem_free_region(kctx, walker);
 		mutex_lock(&kctx->jit_evict_lock);
 	}
@@ -4411,7 +4460,14 @@ void kbase_jit_term(struct kbase_context *kctx)
 		list_del(&walker->jit_node);
 		list_del_init(&walker->gpu_alloc->evict_node);
 		mutex_unlock(&kctx->jit_evict_lock);
-		walker->flags &= ~KBASE_REG_NO_USER_FREE;
+		/*
+		 * Incrementing the refcount is prevented on JIT regions.
+		 * If/when this ever changes we would need to compensate
+		 * by implementing "free on putting the last reference",
+		 * but only for JIT regions.
+		 */
+		WARN_ON(walker->no_user_free_refcnt > 1);
+		kbase_va_region_no_user_free_put(kctx, walker);
 		kbase_mem_free_region(kctx, walker);
 		mutex_lock(&kctx->jit_evict_lock);
 	}
