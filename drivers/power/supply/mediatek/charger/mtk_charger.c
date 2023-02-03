@@ -1583,8 +1583,11 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	charger_dev_plug_out(info->chg1_dev);
 	chr_err("lenovo mtk_charger_plug_out, atm_mode=%s\n", atm_mode);
 	if (!strcmp(atm_mode, "enable") && !info->chg_tcmd_client.factory_kill_disable) {
-		msleep(500);
-		chr_err("lenovo mtk_charger_plug_out, wait 500ms, vbus:%d\n",charger_get_vbus());
+		if(info->wireless_online == true)
+			msleep(3000);
+		else
+			msleep(1000);
+		chr_err("lenovo mtk_charger_plug_out, wait 1000ms, vbus:%d\n",charger_get_vbus());
 		if(charger_get_vbus() < 3500)
 			orderly_poweroff(true);
 	}
