@@ -5260,11 +5260,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg1_consumer =
 		charger_manager_get_by_name(&pdev->dev, "charger_port1");
 
-	if (info->chg1_consumer != NULL &&
-	    boot_mode != KERNEL_POWER_OFF_CHARGING_BOOT &&
-	    boot_mode != LOW_POWER_OFF_CHARGING_BOOT)
-		charger_manager_force_disable_power_path(
-			info->chg1_consumer, MAIN_CHARGER, true);
+	ret = IS_ERR_OR_NULL(info->chg1_consumer);
+	if (ret) {
+		chr_err("fail to create chg1_consumer.\n");
+		return ret;
+	}
 
 	info->init_done = true;
 	if (info->mmi.factory_mode) {
