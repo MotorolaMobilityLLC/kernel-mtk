@@ -3055,7 +3055,8 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 #define TURBO_CHRG_THRSH 2500
 void mmi_charge_rate_check(struct mtk_charger *info)
 {
-	int icl, rc;
+	int icl = 0;
+	int rc = 0;
 	int rp_level = 0;
 	union power_supply_propval val;
 
