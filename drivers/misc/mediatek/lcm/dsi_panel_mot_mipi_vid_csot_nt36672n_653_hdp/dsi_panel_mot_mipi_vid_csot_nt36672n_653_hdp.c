@@ -505,7 +505,7 @@ static void lcm_init(void)
 	MDELAY(5);
 
 	SET_RESET_PIN(1);
-	MDELAY(5);
+	MDELAY(10);
 
 	push_table(NULL, init_setting_vdo,
 		sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table),
