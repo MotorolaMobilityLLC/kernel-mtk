@@ -265,9 +265,12 @@ static void set_max_framerate(struct subdrv_ctx *ctx, UINT16 framerate,
 }	/*	set_max_framerate  */
 
 
+int bNeedSetNormalMode = 0;
 static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
+	kal_uint32 CintR = 0;
+	kal_uint32 Time_Frame = 0;
 
 	if (shutter > ctx->min_frame_length - imgsensor_info.margin)
 		ctx->frame_length = shutter + imgsensor_info.margin;
@@ -300,9 +303,35 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 			write_cmos_sensor(ctx, 0x0340, ctx->frame_length);
 	}
 	/* Update Shutter*/
-	write_cmos_sensor(ctx, 0x0340, ctx->frame_length);
-	write_cmos_sensor(ctx, 0X0202, shutter & 0xFFFF);
 
+	if (shutter >= 119875) {
+
+		bNeedSetNormalMode = KAL_TRUE;
+		if(shutter >= 3836010){
+			shutter = 3836010;
+		}
+		CintR = ((unsigned long long)shutter) / 128;
+		Time_Frame = CintR + 10;
+		pr_debug("CintR = %d\n", CintR);
+		write_cmos_sensor(ctx,0x0340, Time_Frame & 0xFFFF);
+		write_cmos_sensor(ctx,0x0202, CintR & 0xFFFF);
+		write_cmos_sensor(ctx,0x0702, 0x0700);
+		write_cmos_sensor(ctx,0x0704, 0x0700);
+		ctx->ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
+		ctx->ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
+		ctx->current_ae_effective_frame = 2;
+		LOG_INF_N("download long shutter setting shutter = %d\n", shutter);
+	} else {
+		if (bNeedSetNormalMode == KAL_TRUE) {
+			bNeedSetNormalMode = KAL_FALSE;
+			write_cmos_sensor(ctx,0x0702, 0x0000);
+			write_cmos_sensor(ctx,0x0704, 0x0000);
+
+			LOG_INF("return to normal shutter =%d, framelength =%d\n", shutter,ctx->frame_length);
+
+		}
+		write_cmos_sensor(ctx,0x0202, shutter);
+	}
 	LOG_INF("shutter = %d, framelength = %d\n",
 		shutter, ctx->frame_length);
 }	/*	write_shutter  */
@@ -415,7 +444,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 	if (enable) {
 		write_cmos_sensor_8(ctx, 0x0100,0x01);
 
-		while (1)
+		while (120)
 		{
 			framecnt = read_cmos_sensor_8(ctx,0x0005);
 			if ((framecnt & 0xff) != 0xFF)
@@ -425,9 +454,10 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 			}
 			else
 			{
-				LOG_INF("stream is not on, %d, i=%d", framecnt, i++);
+				LOG_INF("stream is not on, %d, i=%d", framecnt, i);
 				mdelay(1);
 			}
+			i++;
 		}
 
 	} else {
@@ -1460,6 +1490,13 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		}
 		*feature_para_len = 4;
 		break;
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+		*feature_return_para_32 = ctx->current_ae_effective_frame;
+		break;
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
+		memcpy(feature_return_para_32,
+		       &ctx->ae_frm_mode,
+		       sizeof(struct IMGSENSOR_AE_FRM_MODE));
 	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
 		{
 			kal_uint32 rate;
