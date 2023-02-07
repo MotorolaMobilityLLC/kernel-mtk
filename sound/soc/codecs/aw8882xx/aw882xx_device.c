@@ -659,7 +659,7 @@ void aw882xx_dev_mute(struct aw_device *aw_dev, bool mute)
 #ifdef CONFIG_AW882XX_RAMP_SUPPORT
                 aw_dev_info(aw_dev->dev,"channel=%d,ramp_en=%d,cur_prof=%d", aw_dev->channel, aw_dev->ramp_en, aw_dev->cur_prof);
 
-                if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->cur_prof < 3)){//yao,check cur_prof here
+                if ((aw_dev->channel == 0) && (aw_dev->ramp_en) && (aw_dev->cur_prof < 1)){ /* we have two prof:music/recv. Don't ramp for recv*/
                         //aw_dev_do_ramp(aw_dev);
                         if (aw_dev->ramp_in_process) {
                                 aw_dev_info(aw_dev->dev,"ramp already in process");
