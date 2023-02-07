@@ -27,6 +27,18 @@ static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
 	unsigned long addr;
 	struct vm_struct *area;
 
+	//MMI_STOPSHIP[ioremap]: WARN_ON if some services access msdc1 illegal
+	static volatile int monitor_addr_map_count = 0;
+	phys_addr_t monitor_addr = 0x11240030;
+
+	if(phys_addr <= monitor_addr && (phys_addr + size) >= monitor_addr){
+		if(monitor_addr_map_count > 0) {
+			pr_err("[%s] catch map monitor PA: phyps_addr(%pa),size(0x%x)\n",__func__,&phys_addr,size);
+			WARN_ON(1);
+		}
+		monitor_addr_map_count++;
+	}
+
 	/*
 	 * Page align the mapping address and size, taking account of any
 	 * offset.
