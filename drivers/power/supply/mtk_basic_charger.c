@@ -151,6 +151,12 @@ static void select_cv(struct mtk_charger *info)
 					info->setting.cv = 4450000;
 				else
 					info->setting.cv = info->sw_jeita.cv;
+
+				if((vbat > 4430)&&(info->setting.cv == 4430000))
+					info->setting.cv = 4430000;
+				else
+					info->setting.cv = info->sw_jeita.cv;
+
 				fcc_cv_flag = 0;
 				chr_err("select_cv_1: setting.cv = %d\n", info->setting.cv);
 			}
@@ -188,7 +194,7 @@ static void select_cv(struct mtk_charger *info)
 				chr_err("select_cv_4: setting.cv = %d\n", info->setting.cv);
 			}
 			if((fcc_cv_flag == 1)&&(ibat < 780)&&(tbat >= 35)){
-				info->setting.cv = info->sw_jeita.cv;
+				info->setting.cv = 4430000;
 				fcc_cv_flag = 0;
 				chr_err("select_cv_5: setting.cv = %d\n", info->setting.cv);
 			}
