@@ -3,7 +3,6 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-include $(TOP)/vendor/mediatek/proprietary/hardware/mtkcam/MotFeatures.mk
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ifeq ($(CONFIG_ARCH_MOTO_PROJECT),)
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
