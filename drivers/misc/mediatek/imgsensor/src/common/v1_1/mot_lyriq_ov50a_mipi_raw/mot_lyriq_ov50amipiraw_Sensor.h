@@ -134,6 +134,7 @@ struct imgsensor_info_struct {
 	kal_uint8 custom5_delay_frame; /* enter custom5 delay frame num */
 	kal_uint8  frame_time_delay_frame;
 	kal_uint8 margin; /* sensor framelength & shutter margin */
+	kal_uint8 margin_shdr;
 	kal_uint32 min_shutter; /* min shutter */
 	kal_uint32 max_frame_length;
 	kal_uint32 min_gain;
