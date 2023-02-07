@@ -147,12 +147,11 @@ static void select_cv(struct mtk_charger *info)
 				chr_err("select_cv_0: setting.cv = %d\n", info->setting.cv);
 			}
 			else{
-				if((vbat > 4450)&&(info->setting.cv == 4450000))
-					info->setting.cv = 4450000;
-				else
+				if(info->sw_jeita.cv == 4200000)
 					info->setting.cv = info->sw_jeita.cv;
-
-				if((vbat > 4430)&&(info->setting.cv == 4430000))
+				else if((vbat > 4450)&&(info->setting.cv == 4450000))
+					info->setting.cv = 4450000;
+				else if((vbat > 4430)&&(info->setting.cv == 4430000))
 					info->setting.cv = 4430000;
 				else
 					info->setting.cv = info->sw_jeita.cv;
