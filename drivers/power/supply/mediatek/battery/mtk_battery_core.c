@@ -1335,7 +1335,8 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 {
 	struct device_node *np = dev->dev.of_node;
 	unsigned int val;
-	int bat_id, multi_battery, active_table, i, j, ret, column;
+	int bat_id, i, j, ret, column;
+	int multi_battery = 0, active_table = 0;
 	int r_pseudo100_raw = 0, r_pseudo100_col = 0;
 	char node_name[128];
 
