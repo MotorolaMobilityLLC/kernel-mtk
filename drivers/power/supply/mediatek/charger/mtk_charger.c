@@ -4475,7 +4475,32 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 _out:
 	return ret;
 }
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+#define CHG_SHOW_MAX_SIEZE 50
+static int mmi_notify_lpd_event(struct charger_manager *info) {
+	char *event_string = NULL;
+	char *batt_uenvp[2];
 
+	if(!info->battery_psy)
+		info->battery_psy = power_supply_get_by_name("battery");
+	if(!info->battery_psy) {
+		chr_err("%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_LPD_PRESENT=%s", info->water_detected? "true": "false");
+
+	batt_uenvp[0] = event_string;
+	batt_uenvp[1] = NULL;
+	kobject_uevent_env(&info->battery_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+	chr_err("%s, lpd:%d send %s\n",__func__, info->water_detected, event_string);
+	kfree(event_string);
+	return 0;
+}
+#endif
 void notify_adapter_event(enum adapter_type type, enum adapter_event evt,
 	void *val)
 {
@@ -4545,6 +4570,9 @@ void notify_adapter_event(enum adapter_type type, enum adapter_event evt,
 			else
 				pinfo->notify_code &= ~CHG_TYPEC_WD_STATUS;
 			mtk_chgstat_notify(pinfo);
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+			mmi_notify_lpd_event(pinfo);
+#endif
 			break;
 		case MTK_TYPEC_HRESET_STATUS:
 			chr_err("hreset status = %d\n", *(bool *)val);

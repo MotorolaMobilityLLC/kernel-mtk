@@ -106,6 +106,10 @@ struct mt6360_pmu_chg_info {
 	struct workqueue_struct *pe_wq;
 	struct work_struct pe_work;
 	u8 ctd_dischg_status;
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+	struct power_supply *batt_psy;
+	char                *batt_uenvp[2];
+#endif
 };
 
 /* for recive bat oc notify */
@@ -2356,7 +2360,32 @@ static irqreturn_t mt6360_pmu_dcdti_handler(int irq, void *data)
 	dev_dbg(mpci->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+#define CHG_SHOW_MAX_SIEZE 50
+static int mmi_notify_vbus_event(struct mt6360_pmu_chg_info *mpci, bool vbus_status) {
+	char *event_string = NULL;
 
+	if(!mpci->batt_psy)
+		mpci->batt_psy = power_supply_get_by_name("battery");
+	if(!mpci->batt_psy) {
+		dev_notice(mpci->dev,
+			"%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_VBUS_PRESENT=%s", vbus_status? "true": "false");
+
+	mpci->batt_uenvp[0] = event_string;
+	mpci->batt_uenvp[1] = NULL;
+	kobject_uevent_env(&mpci->batt_psy->dev.kobj, KOBJ_CHANGE, mpci->batt_uenvp);
+	dev_info(mpci->dev, "%s, vbus:%d send %s\n",__func__, vbus_status, event_string);
+	kfree(event_string);
+	return 0;
+}
+#endif
 static irqreturn_t mt6360_pmu_chrdet_ext_evt_handler(int irq, void *data)
 {
 	struct mt6360_pmu_chg_info *mpci = data;
@@ -2370,6 +2399,9 @@ static irqreturn_t mt6360_pmu_chrdet_ext_evt_handler(int irq, void *data)
 	if (mpci->pwr_rdy == pwr_rdy)
 		goto out;
 	mpci->pwr_rdy = pwr_rdy;
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+	mmi_notify_vbus_event(mpci, pwr_rdy);
+#endif
 #ifdef CONFIG_MT6360_PMU_CHARGER_TYPE_DETECT
 #ifndef CONFIG_TCPC_CLASS
 	mutex_lock(&mpci->chgdet_lock);
@@ -3053,6 +3085,14 @@ static int mt6360_pmu_chg_remove(struct platform_device *pdev)
 	mutex_destroy(&mpci->aicr_lock);
 	mutex_destroy(&mpci->pe_lock);
 	mutex_destroy(&mpci->hidden_mode_lock);
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+	if(mpci->batt_psy) {
+		if(mpci->batt_uenvp[0]) {
+			kfree(mpci->batt_uenvp[0]);
+			mpci->batt_uenvp[0] = NULL;
+		}
+	}
+#endif
 	return 0;
 }
 

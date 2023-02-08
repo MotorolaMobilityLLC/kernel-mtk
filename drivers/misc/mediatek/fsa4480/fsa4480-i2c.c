@@ -68,7 +68,38 @@ static const struct fsa4480_reg_val fsa_reg_i2c_defaults[] = {
 };
 
 static struct fsa4480_priv *fsa_priv;
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+#define WAS4780_PIN_SEL 0x13
+#define WAS4780_INTERVAL 0x16
+#define WAS4780_FUN_EN 0x12
+#define WAS4780_RES_DT 0x14
+enum pin_sel_res{
+PIN_SEL_CC = 0,
+PIN_SEL_DP,
+PIN_SEL_DM,
+PIN_SEL_SBU1,
+PIN_SEL_SBU2,
+};
+int audio_switch_detect_pin_resistance(enum pin_sel_res pin_sel, int *res_value) {
+	int sw_set_tmp;
 
+	regmap_read(fsa_priv->regmap, FSA4480_SWITCH_SETTINGS, &sw_set_tmp);
+	if(pin_sel > PIN_SEL_SBU2) {
+		return -EINVAL;
+	}
+
+	regmap_write(fsa_priv->regmap, FSA4480_SWITCH_SETTINGS, 0x80);//disable sw
+	regmap_write(fsa_priv->regmap, WAS4780_PIN_SEL, pin_sel);// select pin
+	regmap_write(fsa_priv->regmap, WAS4780_INTERVAL, 0); // single select
+	regmap_write(fsa_priv->regmap, WAS4780_FUN_EN, 0x22); // bit1 for en_res, bit 5 for range
+
+	msleep(200);
+	regmap_read(fsa_priv->regmap, WAS4780_RES_DT, res_value);
+	regmap_write(fsa_priv->regmap, FSA4480_SWITCH_SETTINGS, sw_set_tmp); // bit1 for en_res, bit 5 for range
+	pr_err("%s detect resistance:%d, value:%d\n", __func__, pin_sel, *res_value);
+	return 0;
+}
+#endif
 static void fsa4480_usbc_update_settings(struct fsa4480_priv *fsa_priv,
 		u32 switch_control, u32 switch_enable)
 {
