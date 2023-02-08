@@ -435,6 +435,7 @@ enum mtk_ddp_io_cmd {
 	DSI_GET_CMD_MODE_LINE_TIME,
 	OVL_GET_SOURCE_BPC,
 	DSI_PANEL_FEATURE_SET,
+	PANEL_HBM_WAITFOR_FPS_VALID,
 };
 
 struct golden_setting_context {
