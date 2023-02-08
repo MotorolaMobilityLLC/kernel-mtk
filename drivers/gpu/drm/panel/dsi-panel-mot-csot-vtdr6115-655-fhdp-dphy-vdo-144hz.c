@@ -918,7 +918,7 @@ static void set_lhbm_alpha(unsigned int bl_level)
 	pr_info("%s: backlight %d alpha %d(0x%x, 0x%x)\n", __func__, bl_level, alpha, pTable->para_list[1], pTable->para_list[2]);
 }
 
-static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level)
+static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
 	unsigned int para_count = 0;
 	struct mtk_panel_para_table *pTable;
@@ -943,6 +943,11 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, ui
 			para_count = sizeof(panel_lhbm_bright_off) / sizeof(struct mtk_panel_para_table);
 			pTable = panel_lhbm_bright_off;
 		}
+
+		if(fps == 90)
+			pTable[0].para_list[1] = 0x01;
+		else
+			pTable[0].para_list[1] = 0x00;
 	}
 	cb(dsi, handle, pTable, para_count);
 	return 0;
@@ -958,17 +963,21 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, v
 	{
 		case 0:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl, ctx->current_fps);
 			break;
 		case 1:
-			if (ctx->lhbm_en)
+			if (ctx->lhbm_en) {
+				if (ctx->current_fps == 90) panel_lhbm_off_hbm_on[0].para_list[1] = 1;
+				else panel_lhbm_off_hbm_on[0].para_list[1] = 0;
+
 				cb(dsi, handle, panel_lhbm_off_hbm_on, 4);
-			else
+			} else {
 				cb(dsi, handle, &hbm_on_table, 1);
+			}
 			break;
 		case 2:
 			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl);
+				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl,  ctx->current_fps);
 			else
 				cb(dsi, handle, &hbm_on_table, 1);
 			break;
