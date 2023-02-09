@@ -231,12 +231,9 @@
 	};
 	pinctrl_state_mode_idle: pinctrl_state_mode_idle {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO36__FUNC_GPIO36>,
-				 <PINMUX_GPIO37__FUNC_GPIO37>,
-				 <PINMUX_GPIO38__FUNC_GPIO38>,
-				 <PINMUX_GPIO39__FUNC_GPIO39>;
+			pinmux = <PINMUX_GPIO37__FUNC_GPIO37>;
 			slew-rate = <1>;
-			output-low;
+			output-high;
 		};
 	};
 };
