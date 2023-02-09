@@ -3,6 +3,5 @@
 ../motorola/kernel/modules/drivers/backlight/aw99703
 ../motorola/kernel/modules/drivers/backlight/ktd3136
 ../motorola/kernel/modules/drivers/regulator/ocp2138
-../motorola/kernel/modules/drivers/power/nfg1000_fg_mmi
 ../motorola/kernel/modules/drivers/power/sc8551_mmi
 ../motorola/kernel/modules/drivers/power/bq25980_mmi
