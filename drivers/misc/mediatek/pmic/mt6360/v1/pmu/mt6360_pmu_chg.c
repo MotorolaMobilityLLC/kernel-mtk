@@ -2876,6 +2876,25 @@ out:
 	return ret;
 }
 
+static int mt6360_chg_init_otg_oc_setting(struct mt6360_pmu_chg_info *mpci)
+{
+	int ret = 0;
+
+	ret = mt6360_enable_hidden_mode(mpci->chg_dev, true);
+	if (ret < 0)
+		return ret;
+	ret = mt6360_pmu_reg_write(mpci->mpi,
+				   MT6360_PMU_CHG_HIDDEN_CTRL24, 0x05);
+	if (ret < 0) {
+		dev_err(mpci->dev, "%s: write reg0x%02X failed\n",
+			__func__, MT6360_PMU_CHG_HIDDEN_CTRL24);
+		return ret;
+	}
+	mt6360_enable_hidden_mode(mpci->chg_dev, false);
+
+	return ret;
+}
+
 static ssize_t shipping_mode_store(struct device *dev,
 				   struct device_attribute *attr,
 				   const char *buf, size_t count)
@@ -3009,6 +3028,12 @@ static int mt6360_pmu_chg_probe(struct platform_device *pdev)
 		dev_err(mpci->dev, "charger device register fail\n");
 		ret = PTR_ERR(mpci->chg_dev);
 		goto err_mutex_init;
+	}
+
+	ret = mt6360_chg_init_otg_oc_setting(mpci);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "%s: init setting otg oc setting fail\n", __func__);
+		goto err_register_chg_dev;
 	}
 
 	/* irq register */
