@@ -46,6 +46,7 @@
 };
 
 &charger {
+	gauge = <&smart_battery>;
 	battery_cv = <4500000>;
 	max_charger_voltage = <14500000>;
 	ac_charger_current = <3000000>;
@@ -103,6 +104,11 @@
 		mmi,adc-channel-pa = <1>;
 		mmi,adc-channel-batid = <3>;
 		mmi,adc-channel-vbat = <100>;
+};
+
+&smart_battery {
+		compatible = "mmi,smart-battery";
+		status = "okay";
 };
 
 &pio {
@@ -211,7 +217,7 @@
 
 &pdc {
 	compatible = "mediatek,charger,pd";
-	gauge = <&NFG1000>;
+	gauge = <&smart_battery>;
 
 	min_charger_voltage = <4600000>;
 	pd_vbus_low_bound = <5000000>;
@@ -236,9 +242,17 @@
 	vbat_threshold = <4150>;
 };
 
+&pe {
+	gauge = <&smart_battery>;
+};
+
+&pe4 {
+	gauge = <&smart_battery>;
+};
+
 &pe2 {
 	compatible = "mediatek,charger,pe2";
-	gauge = <&NFG1000>;
+	gauge = <&smart_battery>;
 
 	/* PE 2.0 */
 	pe20_ichg_level_threshold = <1000000>; /* uA */
@@ -266,7 +280,7 @@
 
 &pe5 {
 		compatible = "mediatek,charger,pe5";
-		gauge = <&NFG1000>;
+		gauge = <&smart_battery>;
 		polling_interval = <10000>;
 		ta_cv_ss_repeat_tmin = <25>;
 		vbat_cv = <4530>;
@@ -369,7 +383,7 @@
 
 &moto_wlc {
 	compatible = "moto,charger,wlc";
-	gauge = <&NFG1000>;
+	gauge = <&smart_battery>;
 	min_charger_voltage = <4600000>;
 	wlc_max_charger_current = <3150000>;
 	wlc_max_input_current = <1150000>;
