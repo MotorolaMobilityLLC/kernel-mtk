@@ -25,7 +25,7 @@ typedef struct {
 
 typedef struct {
 	MUINT16 addr;
-	MUINT16 data;
+	u8 data;
 } lyriq_qpd_cal_addr_data_t;
 
 #define PFX "MOT_LYRIQ_OV50A"
@@ -61,13 +61,15 @@ static  struct imgsensor_struct *imgsensor;
 
 static lyriq_ois_cal_addr_data_t ois_sr_data[LYRIQ_OV50A_EEPROM_CRC_OIS_SR_SIZE] = {{0}};
 static lyriq_ois_cal_addr_data_t ak7323_ois_data[LYRIQ_OV50A_EEPROM_CRC_AK7323_OIS_SIZE] = {{0}};
-static lyriq_qpd_cal_addr_data_t ov_cross_talk_data[OV50A_XTLK_BYTES] = {{0}};
-static uint16_t write_table[OV50A_XTLK_BYTES*2] = {0};
+lyriq_qpd_cal_addr_data_t ov_cross_talk_data[OV50A_XTLK_BYTES] = {{0}};
+u8 write_xtalk_one[XTALK_FIRST_SECTION_BYTES] = {0};
+u8 write_xtalk_two[XTALK_SECOND_SECTION_BYTES] = {0};
 static uint8_t LYRIQ_OV50A_eeprom[LYRIQ_OV50A_EEPROM_SIZE] = {0};
 static mot_calibration_status_t calibration_status = {CRC_FAILURE};
 static mot_calibration_mnf_t mnf_info = {0};
 
-extern kal_uint16 mot_lyriq_ov50a_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len);
+extern adaptor_i2c_wr_seq_p8(struct IMGSENSOR_I2C_CFG *pi2c_cfg,
+		kal_uint16 addr, kal_uint16 reg, u8 *p_vals, kal_uint16 n_vals);
 
 static uint8_t crc_reverse_byte(uint32_t data)
 {
@@ -391,10 +393,11 @@ int get_ov_cross_talk_data(void *data)
 		}
 		for (i = 0; i < XTALK_SECOND_SECTION_BYTES; i++)
 		{
-			ov_cross_talk_data[i].addr = XTALK_SECOND_SECTION_START + i;
-			ov_cross_talk_data[i].data = eeprom->qpd_compensation_cali[XTALK_FIRST_SECTION_BYTES+i];
+			ov_cross_talk_data[XTALK_FIRST_SECTION_BYTES+i].addr = XTALK_SECOND_SECTION_START + i;
+			ov_cross_talk_data[XTALK_FIRST_SECTION_BYTES+i].data = eeprom->qpd_compensation_cali[XTALK_FIRST_SECTION_BYTES+i];
 		}
-	       memcpy(write_table, &ov_cross_talk_data[0].addr, sizeof(write_table));
+	       memcpy(write_xtalk_one, &(eeprom->qpd_compensation_cali[0]), sizeof(write_xtalk_one));
+	       memcpy(write_xtalk_two, &(eeprom->qpd_compensation_cali[XTALK_FIRST_SECTION_BYTES]), sizeof(write_xtalk_two));
 	}
 
 	return 1;
@@ -569,12 +572,17 @@ mot_calibration_mnf_t *LYRIQ_OV50A_eeprom_get_mnf_info(void)
 
 void write_cross_talk_data(void)
 {
-	pr_debug("E\n");
-	mot_lyriq_ov50a_table_write_cmos_sensor(write_table,
-		sizeof(write_table)/sizeof(uint16_t));
-
-	pr_debug("apply cross talk calibration data success.");
-	pr_debug("X");
+       uint16_t ret =0;
+	ret = adaptor_i2c_wr_seq_p8(get_i2c_cfg(),imgsensor->i2c_write_id>>1,XTALK_FIRST_SECTION_START,write_xtalk_one,
+		XTALK_FIRST_SECTION_BYTES);
+		if (ret < 0) {
+			pr_err("%s: Sequential Apply xtalk failed, ret: %d\n", __func__, ret);
+		}
+	ret |= adaptor_i2c_wr_seq_p8(get_i2c_cfg(),imgsensor->i2c_write_id>>1,XTALK_SECOND_SECTION_START,write_xtalk_two,
+		XTALK_SECOND_SECTION_BYTES);
+		if (ret < 0) {
+			pr_err("%s: Sequential Apply xtalk failed, ret: %d\n", __func__, ret);
+		}
 }
 /*
 void write_pdc_data(void)
