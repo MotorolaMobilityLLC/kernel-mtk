@@ -589,6 +589,7 @@
 &u2port0 {
 	mediatek,eye-vrt = <4>;
 	mediatek,rev6 = <2>;
+	mediatek,discth = <8>;
 };
 
 
