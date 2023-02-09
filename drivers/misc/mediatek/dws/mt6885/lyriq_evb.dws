@@ -2445,7 +2445,7 @@
                 <pullPushEn>false</pullPushEn>
             </i2c_bus1>
             <i2c_bus2>
-                <speed_kbps>400</speed_kbps>
+                <speed_kbps>1000</speed_kbps>
                 <pullPushEn>false</pullPushEn>
             </i2c_bus2>
             <i2c_bus3>
@@ -2469,7 +2469,7 @@
                 <pullPushEn>false</pullPushEn>
             </i2c_bus7>
             <i2c_bus8>
-                <speed_kbps>400</speed_kbps>
+                <speed_kbps>1000</speed_kbps>
                 <pullPushEn>false</pullPushEn>
             </i2c_bus8>
             <i2c_bus9>

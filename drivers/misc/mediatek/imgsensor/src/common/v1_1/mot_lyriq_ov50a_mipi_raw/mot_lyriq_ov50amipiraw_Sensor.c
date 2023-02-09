@@ -63,7 +63,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define FPT_PDAF_SUPPORT 1
 static int full_remosaic_mode =0;
 static int crop_remosaic_mode =0;
-
+#define MULTI_WRITE_REGISTER_VALUE  (8)
+#define MAX_BUF_SIZE 255
+#define MAX_VAL_NUM_U8 (MAX_BUF_SIZE - 2)
 extern void write_cross_talk_data(void);
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MOT_LYRIQ_OV50A_SENSOR_ID,
@@ -847,6 +849,54 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 
 #define I2C_BUFFER_LEN 765
+kal_uint16 adaptor_i2c_wr_seq_p8(struct IMGSENSOR_I2C_CFG *pi2c_cfg,
+		kal_uint16 addr, kal_uint16 reg, u8 *p_vals, kal_uint16 n_vals)
+{
+	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
+	struct i2c_msg     *msg  = pi2c_cfg->msg;
+	u8 *buf, *pbuf, *pdata;
+	kal_uint16 ret, sent, total = 0, cnt;
+	buf = kmalloc(MAX_BUF_SIZE, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	sent = 0;
+	total = n_vals;
+	pdata = p_vals;
+	buf[0] = reg >> 8;
+	buf[1] = reg & 0xff;
+
+	msg->addr = addr;
+	msg->flags = pinst->pi2c_client->flags;
+	msg->buf = buf;
+
+	while (sent < total) {
+		cnt = total - sent;
+		if (cnt > MAX_VAL_NUM_U8)
+			cnt = MAX_VAL_NUM_U8;
+		buf[0] = reg >> 8;
+		buf[1] = reg & 0xff;
+
+		pbuf = buf + 2;
+		memcpy(pbuf, pdata, cnt);
+		msg->len = 2 + cnt;
+		ret = i2c_transfer(pinst->pi2c_client->adapter, pi2c_cfg->msg, 1);
+		if (ret < 0) {
+			dev_err(&pinst->pi2c_client->dev,
+				"i2c transfer failed (%d)\n", ret);
+			kfree(buf);
+			return -EIO;
+		}
+		sent += cnt;
+		pdata += cnt;
+		reg += cnt;
+	}
+
+	kfree(buf);
+
+	return 0;
+}
+
 kal_uint16 mot_lyriq_ov50a_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 {
 	char puSendCmd[I2C_BUFFER_LEN];
