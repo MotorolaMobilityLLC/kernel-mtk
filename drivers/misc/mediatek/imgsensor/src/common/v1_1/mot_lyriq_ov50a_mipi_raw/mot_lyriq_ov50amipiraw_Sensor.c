@@ -313,7 +313,7 @@ static struct SENSOR_VC_INFO2_STRUCT SENSOR_VC_INFO2[4] = {
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00, //normal video
 		{
 			{VC_STAGGER_NE, 0x00, 0x2b, 0x1000, 0x900},
-			{VC_PDAF_STATS, 0x01, 0x30, 0x1400, 0x240},
+			{VC_PDAF_STATS, 0x02, 0x30, 0x1400, 0x240},
 #if PD_PIX_2_EN
 			{VC_PDAF_STATS_NE_PIX_2, 0x01, 0x2b, 0x1000, 0x240},
 #endif
@@ -688,7 +688,7 @@ static void hdr_write_tri_shutter(kal_uint16 le, kal_uint16 me, kal_uint16 se)
 	imgsensor.frame_length = max((kal_uint32)(le + me + pre_se + imgsensor_info.margin_shdr),
 		imgsensor.min_frame_length);
 	imgsensor.frame_length = max((kal_uint32)(le + me + se + imgsensor_info.margin_shdr),
-		imgsensor.min_frame_length);
+		imgsensor.frame_length);
 	imgsensor.frame_length = min(imgsensor.frame_length, imgsensor_info.max_frame_length);
 	spin_unlock(&imgsensor_drv_lock);
 
