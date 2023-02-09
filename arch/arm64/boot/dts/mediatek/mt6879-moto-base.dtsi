@@ -17,6 +17,7 @@
 	hall_3: hall_3 { };
 	hall_4: hall_4 { };
 	charge_leds: charge_leds { };
+	smart_battery: smart_battery { };
 };
 
 &mmc1 {
