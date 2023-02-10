@@ -1505,7 +1505,11 @@ static int sgm41543_do_event(struct charger_device *chg_dev, u32 event, u32 args
 
 	switch (event) {
 	case EVENT_EOC:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
+		break;
 	case EVENT_RECHARGE:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_RECHG);
+		break;
 /*	case EVENT_DISCHARGE:
 		pr_err("event:%d\n", event);
 		power_supply_changed(bq->psy);
