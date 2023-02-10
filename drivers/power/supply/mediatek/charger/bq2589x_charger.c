@@ -2104,9 +2104,14 @@ static void bq2589x_adjust_constant_voltage(struct bq2589x *bq, int vbat, int ib
 	if (bq->final_cv > vbat) {
 		bq->cv_tune++;
 	} else if (bq->cv_tune > min_cv_tune) {
-		if (bq->final_cv >= bq->cfg.ffc_cv && ibat_ua <= 700000)
-			pr_err("ibat is close to iterm, and do not tune drop\n");
-		else
+		if (BQ2589X_VBUS_USB_DCP == bq->vbus_type || BQ2589X_VBUS_MAXC == bq->vbus_type) {
+			if(bq->final_cv >= bq->cfg.ffc_cv && ibat_ua<=700000) //18W case
+				pr_err("ffc ibat is close to iterm, and do not tune drop \n");
+			else if(ibat_ua<=400000) // 10W case
+				pr_err("ibat is close to iterm, and do not tune drop \n");
+			else
+				bq->cv_tune--;
+		} else
 			bq->cv_tune--;
 	}
 
