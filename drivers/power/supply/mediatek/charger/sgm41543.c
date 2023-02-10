@@ -1890,9 +1890,14 @@ static void sgm41543_dynamic_adjust_charge_voltage(struct sgm41543 *sgm_chg, int
 	if (sgm_chg->final_cv > vbat) {
 		sgm_chg->tune_cv++;
 	} else if (sgm_chg->tune_cv > min_tune_cv) {
-		if (sgm_chg->final_cv >= sgm_chg->ffc_cv && ibat_ua <= 650000)
-			pr_err("ibat is close to iterm, and do not tune drop\n");
-		else
+		if (SGM41543_VBUS_USB_DCP == sgm_chg->vbus_type || SGM41543_VBUS_MAXC == sgm_chg->vbus_type) {
+			if(sgm_chg->final_cv >= sgm_chg->ffc_cv && ibat_ua<=650000) //18W case
+				pr_err("ffc ibat is close to iterm, and do not tune drop \n");
+			else if(ibat_ua<=350000) // 10W case
+				pr_err("ibat is close to iterm, and do not tune drop \n");
+			else
+				sgm_chg->tune_cv--;
+		} else
 			sgm_chg->tune_cv--;
 	}
 
