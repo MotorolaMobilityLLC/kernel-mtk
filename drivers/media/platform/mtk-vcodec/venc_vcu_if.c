@@ -606,11 +606,8 @@ int vcu_enc_encode(struct venc_vcu_inst *vcu, unsigned int bs_mode,
 	ret = vcu_enc_send_msg(vcu, &out, sizeof(out));
 	mutex_unlock(vcu->ctx_ipi_binding);
 
-	if (ret) {
-		mtk_vcodec_err(vcu, "AP_IPIMSG_ENC_ENCODE %d fail %d",
-					   bs_mode, ret);
-		return ret;
-	}
+	if (ret)
+		mtk_vcodec_err(vcu, "AP_IPIMSG_ENC_ENCODE %d fail %d", bs_mode, ret);
 
 	if (frm_buf) {
 		for (i = 0; i < frm_buf->num_planes; i++) {
@@ -626,10 +623,10 @@ int vcu_enc_encode(struct venc_vcu_inst *vcu, unsigned int bs_mode,
 	if (bs_buf && bs_buf->dmabuf != NULL)
 		close_mapped_fd(out.bs_fd);
 
-	mtk_vcodec_debug(vcu, "bs_mode %d size %d key_frm %d <-",
-		bs_mode, vcu->bs_size, vcu->is_key_frm);
+	mtk_vcodec_debug(vcu, "bs_mode %d size %d key_frm %d ret %d<-",
+		bs_mode, vcu->bs_size, vcu->is_key_frm, ret);
 
-	return 0;
+	return ret;
 }
 
 int vcu_enc_deinit(struct venc_vcu_inst *vcu)
