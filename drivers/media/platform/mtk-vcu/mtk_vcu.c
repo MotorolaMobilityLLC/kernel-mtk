@@ -2181,11 +2181,9 @@ int mtk_vcu_write(const char *val, const struct kernel_param *kp)
 	if (strstr(vcu_ptr->vdec_log_info->log_info, "vcu_log 1")) {
 		vcu_ptr->enable_vcu_dbg_log = 1;
 		pr_info("[VCU] enable vcu_log\n");
-		return 0;
 	} else if (strstr(vcu_ptr->vdec_log_info->log_info, "vcu_log 0")) {
 		vcu_ptr->enable_vcu_dbg_log = 0;
 		pr_info("[VCU] disable vcu_log\n");
-		return 0;
 	}
 
 	pr_info("[log wakeup VPUD] log_info %p vcu_ptr %p val %p: %s %lu\n",
