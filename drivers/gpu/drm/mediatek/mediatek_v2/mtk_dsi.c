@@ -7560,7 +7560,7 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 		      panel_ext->funcs->panel_feature_set))
 			break;
 
-		panel_ext->funcs->panel_feature_set(dsi->panel, dsi,
+		return panel_ext->funcs->panel_feature_set(dsi->panel, dsi,
 					       mipi_dsi_dcs_grp_write_gce, handle,
 					       *(struct panel_param_info*) params);
 	}
