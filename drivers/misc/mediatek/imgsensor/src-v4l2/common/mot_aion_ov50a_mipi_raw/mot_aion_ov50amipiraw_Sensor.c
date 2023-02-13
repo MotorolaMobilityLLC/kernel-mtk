@@ -198,6 +198,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 
 	.margin = 32,					/* sensor framelength & shutter margin */
+	.margin_shdr = 46,
 	.min_shutter = 16,				/* min shutter */
 	.min_gain = 1024, /*1x gain*/
 	.max_gain = 212992, /*208 * 1024  gain*/
@@ -399,7 +400,8 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 
 static void write_frame_len(struct subdrv_ctx *ctx)
 {
-	LOG_INF_N("fll %d\n", ctx->frame_length);
+	LOG_INF_N("extend_frame_length_en %d fll %d\n",
+		ctx->extend_frame_length_en, ctx->frame_length);
 
 	if (ctx->extend_frame_length_en == KAL_FALSE) {
 		memset(_i2c_data, 0x0, sizeof(_i2c_data));
@@ -419,21 +421,14 @@ static void set_dummy(struct subdrv_ctx *ctx)
 {
 
        if (!_is_seamless) {
-               memset(_i2c_data, 0x0, sizeof(_i2c_data));
-               _size_to_write = 0;
-               _i2c_data[_size_to_write++] = 0x380e;
-               _i2c_data[_size_to_write++] = ctx->frame_length >> 8;
-               _i2c_data[_size_to_write++] = 0x380f;
-               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
-               table_write_cmos_sensor(ctx, _i2c_data,
-               _size_to_write);
+			write_frame_len(ctx);
        } else {
-               _i2c_data[_size_to_write++] = 0x3840;
-               _i2c_data[_size_to_write++] = ctx->frame_length >> 16;
-               _i2c_data[_size_to_write++] = 0x380e;
-               _i2c_data[_size_to_write++] = ctx->frame_length >> 8;
-               _i2c_data[_size_to_write++] = 0x380f;
-               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
+			_i2c_data[_size_to_write++] = 0x3840;
+			_i2c_data[_size_to_write++] = ctx->frame_length >> 16;
+			_i2c_data[_size_to_write++] = 0x380e;
+			_i2c_data[_size_to_write++] = ctx->frame_length >> 8;
+			_i2c_data[_size_to_write++] = 0x380f;
+			_i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
        }
 }
 
@@ -441,7 +436,13 @@ static void set_max_framerate(struct subdrv_ctx *ctx, UINT16 framerate, kal_bool
 {
 	kal_uint32 frame_length = ctx->frame_length;
 
-	frame_length = ctx->pclk / framerate * 10 / ctx->line_length;
+	if (ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM4){
+		frame_length = ctx->pclk / (framerate * 10 * 2) / ctx->line_length;
+	} else {
+		frame_length = ctx->pclk / framerate * 10 / ctx->line_length;
+	}
+
+	LOG_INF("%s fll %d\n", __func__, ctx->frame_length);
 
 	ctx->frame_length = (frame_length > ctx->min_frame_length) ?
 			frame_length : ctx->min_frame_length;
@@ -654,24 +655,17 @@ static void hdr_write_tri_shutter(struct subdrv_ctx *ctx, kal_uint16 le, kal_uin
 {
 	kal_uint16 realtime_fps = 0;
 
-/*	kal_uint16 maxcit = imgsensor.frame_length - 46;
-	kal_uint16 lastse = 0;
-	kal_uint16 maxcitlong = MAXCIT -lastse;
-
-	pr_debug("E! le:0x%x, me:0x%x, se:0x%x maxcit %d maxcitlong %d frame_length %d\n",
-                le, me, se, MAXCIT, maxcitlong, imgsensor.frame_length);
-
+	kal_uint16 pre_se = read_cmos_sensor_8(ctx, 0x3541) << 8 | read_cmos_sensor_8(ctx, 0x3542);
+	LOG_INF("max! le:0x%x, me:0x%x, se:0x%x pre_se 0x%x, frame_length %d\n",
+		le, me, se, pre_se, ctx->frame_length);
 	le = (kal_uint16)max(imgsensor_info.min_shutter, (kal_uint32)le);
 	se = (kal_uint16)max(imgsensor_info.min_shutter, (kal_uint32)se);
-
-	le = (kal_uint16)min((kal_uint32)MAXCIT, (kal_uint32)le);
-	le = (kal_uint16)min((kal_uint32)maxcitlong, (kal_uint32)le);
-
 	le = (kal_uint16)max((kal_uint32)le, (kal_uint32)se);
-	lastse = se;
-*/
-	ctx->frame_length = max((kal_uint32)(le + me + se + imgsensor_info.margin),
+
+	ctx->frame_length = max((kal_uint32)(le + me + pre_se + imgsensor_info.margin_shdr),
 		ctx->min_frame_length);
+	ctx->frame_length = max((kal_uint32)(le + me + se + imgsensor_info.margin_shdr),
+		ctx->frame_length);
 	ctx->frame_length = min(ctx->frame_length, imgsensor_info.max_frame_length);
 
 	LOG_INF("E! le:0x%x, me:0x%x, se:0x%x autoflicker_en %d frame_length %d\n",
@@ -1761,7 +1755,7 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 			set_dummy(ctx);
 	break;
 	case SENSOR_SCENARIO_ID_CUSTOM4:
-	    frameHeight = imgsensor_info.custom4.pclk / framerate * 10 /
+	    frameHeight = imgsensor_info.custom4.pclk / (framerate * 10 * 2) /
 			imgsensor_info.custom4.linelength;
 		ctx->dummy_line = (frameHeight >
 			imgsensor_info.custom4.framelength) ?
@@ -1983,6 +1977,7 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_
 {
 	int _length;
 	memset(_i2c_data, 0x0, sizeof(_i2c_data));
+	ctx->extend_frame_length_en = KAL_FALSE;
 	_size_to_write = 0;
 	if((scenario_id == SENSOR_SCENARIO_ID_NORMAL_VIDEO) || (scenario_id == SENSOR_SCENARIO_ID_CUSTOM4))
 	{
@@ -2732,7 +2727,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			case VC_STAGGER_ME:
 			case VC_STAGGER_SE:
 			default:
-				*(feature_data + 2) = 16777182;
+				*(feature_data + 2) = 16777169;
 				break;
 			}
 		} else {
