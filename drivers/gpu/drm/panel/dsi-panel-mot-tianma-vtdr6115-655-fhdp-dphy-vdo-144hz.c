@@ -915,8 +915,14 @@ static void set_lhbm_alpha(unsigned int bl_level)
 {
 	struct mtk_panel_para_table *pTable = &panel_lhbm_dark_on[2];
 	unsigned int alpha = 0;
+	unsigned int lhbm_alpha_index = bl_level-1;
 
-	alpha = lhbm_alpha[bl_level - 1];
+	if (bl_level == 0)
+		lhbm_alpha_index = 0;
+	else if (bl_level > sizeof(lhbm_alpha))
+		lhbm_alpha_index = sizeof(lhbm_alpha)-1;
+
+	alpha = lhbm_alpha[lhbm_alpha_index];
 
 	pTable->para_list[1] = (alpha >> 8) & 0xFF;
 	pTable->para_list[2] = alpha & 0xFF;
@@ -1020,31 +1026,35 @@ static int pane_dc_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint3
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
 			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
 {
-
 	struct lcm *ctx = panel_to_lcm(panel);
+	int ret = 0;
 
-	if (!cb)
-		return -1;
-	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+	if ((!cb) || (!ctx->enabled)) {
+		ret = -1;
+	} else {
+		pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
 
-	switch (param_info.param_idx) {
-		case PARAM_CABC:
-		case PARAM_ACL:
-			break;
-		case PARAM_HBM:
-			ctx->hbm_mode = param_info.value;
-			pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-			break;
-		case PARAM_DC:
-			pane_dc_set_cmdq(dsi, cb, handle, param_info.value);
-			ctx->dc_mode = param_info.value;
-			break;
-		default:
-			break;
+		switch (param_info.param_idx) {
+			case PARAM_CABC:
+			case PARAM_ACL:
+				ret = -1;
+				break;
+			case PARAM_HBM:
+				ctx->hbm_mode = param_info.value;
+				pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				break;
+			case PARAM_DC:
+				pane_dc_set_cmdq(dsi, cb, handle, param_info.value);
+				ctx->dc_mode = param_info.value;
+				break;
+			default:
+				ret = -1;
+				break;
+		}
+
+		pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
 	}
-
-	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
-	return 0;
+	return ret;
 }
 
 static int panel_hbm_waitfor_fps_valid(struct drm_panel *panel, unsigned int timeout_ms)
