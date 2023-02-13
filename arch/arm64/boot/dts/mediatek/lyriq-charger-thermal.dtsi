@@ -106,12 +106,12 @@
 
 		vtskin_coef_0{
 			sensor-name  = "mtktsbattery";
-			sensor-coeff = <9>;
+			sensor-coeff = <68>;
 		};
 
 		vtskin_coef_1{
 			sensor-name  = "mtktsAP";
-			sensor-coeff  = <1>;
+			sensor-coeff  = <27>;
 		};
 	};
 };
