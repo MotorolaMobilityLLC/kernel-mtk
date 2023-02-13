@@ -98,7 +98,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 3280,
-		.grabwindow_height = 2464,
+		.grabwindow_height = 1848,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 560000000,
@@ -185,7 +185,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // preview
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // capture
-    { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // VIDEO
+    { 6560, 4928,   0,   616, 6560, 3696,  3280, 1848,  0,  0, 3280, 1848, 0, 0, 3280, 1848},       // VIDEO
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // hight speed video
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // slim video
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // custom1
@@ -221,6 +221,10 @@ static kal_uint16 addr_data_pair_init_mot_aion_s5kgd2[] = {
 
 static kal_uint16 addr_data_pair_preview_mot_s5kgd2[] = {
 #include"setting/mot_aion_s5kgd2_3280x2464_30fps.h"
+};
+
+static kal_uint16 addr_data_pair_video_mot_s5kgd2[] = {
+#include"setting/mot_aion_s5kgd2_3280x1848_30fps.h"
 };
 
 static kal_uint16 addr_data_pair_custom1_s5kgd2[] = {
@@ -444,7 +448,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 	if (enable) {
 		write_cmos_sensor_8(ctx, 0x0100,0x01);
 
-		while (120)
+		while (i < 255)
 		{
 			framecnt = read_cmos_sensor_8(ctx,0x0005);
 			if ((framecnt & 0xff) != 0xFF)
@@ -497,11 +501,10 @@ static void sensor_init(struct subdrv_ctx *ctx)
        LOG_INF("E\n");
        write_cmos_sensor(ctx, 0xFCFC,0x4000);
        write_cmos_sensor(ctx, 0x6028,0x4000);
-       write_cmos_sensor(ctx, 0x0000,0x0010);
+       write_cmos_sensor(ctx, 0x0000,0x0025);
        write_cmos_sensor(ctx, 0x0000,0x0842);
        write_cmos_sensor(ctx, 0x6010,0x0001);
        mdelay(30);
-
     	mot_aion_s5kgd2_write_cmos_sensor(ctx,
 			addr_data_pair_init_mot_aion_s5kgd2,
 			sizeof(addr_data_pair_init_mot_aion_s5kgd2)/sizeof(kal_uint16));
@@ -533,8 +536,8 @@ static void video_setting(struct subdrv_ctx *ctx)
 {
     	LOG_INF("E\n");
     	mot_aion_s5kgd2_write_cmos_sensor(ctx,
-		addr_data_pair_preview_mot_s5kgd2,
-		sizeof(addr_data_pair_preview_mot_s5kgd2)/sizeof(kal_uint16));
+		addr_data_pair_video_mot_s5kgd2,
+		sizeof(addr_data_pair_video_mot_s5kgd2)/sizeof(kal_uint16));
     	LOG_INF("X\n");
 }
 
@@ -1600,15 +1603,17 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.vsize = 0x9A0,
 		},
 	},
+#if 1
 	{
 		.bus.csi2 = {
 			.channel = 1,
 			.data_type = 0x2b,
 			.hsize = 0x1A0,
-			.vsize = 0x990,
+			.vsize = 0x730,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
+#endif
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
@@ -1620,6 +1625,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.vsize = 0x9A0,
 		},
 	},
+#if 0
 	{
 		.bus.csi2 = {
 			.channel = 1,
@@ -1629,6 +1635,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
+#endif
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
