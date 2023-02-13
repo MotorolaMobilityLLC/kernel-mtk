@@ -298,3 +298,9 @@ config MOTO_CHG_WT6670F_SUPPORT
         default n
         help
           This is to enable MOTO supports of IC WT6670F.
+
+config MOTO_CHG_FFC_5V10W_SUPPORT
+		bool "Enable 5V10W charger FFC feature"
+		default n
+		help
+			This is to enable MOTO 5V10W Charger FFC feature.
