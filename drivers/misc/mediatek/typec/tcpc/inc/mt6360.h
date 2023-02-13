@@ -331,7 +331,9 @@ enum mt6360_id_rupsel {
 #define MT6360_WD_DET_CC_RPSEL			BIT(7)
 #define MT6360_WD_DET_CC_ROLE_PRT		BIT(6)
 #define MT6360_WD_DET_CC_ROLE_DET		BIT(5)
-
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+#define MT6360_WD_DET_DPDM_ON_TIME		0x0C
+#endif
 /*
  * MT6360_REG_WD_DET_CTRL5			(0xC4)
  */
