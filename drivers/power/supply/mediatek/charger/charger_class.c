@@ -750,7 +750,19 @@ int charger_dev_set_usbid_src_ton(struct charger_device *charger_dev,
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_set_usbid_src_ton);
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+int charger_dev_set_usbid_is_period(struct charger_device *charger_dev,
+				    u32 period)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+	    charger_dev->ops->set_usbid_is_period)
+		return charger_dev->ops->set_usbid_is_period(charger_dev,
+							     period);
 
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_set_usbid_is_period);
+#endif
 int charger_dev_enable_usbid_floating(struct charger_device *charger_dev,
 				      bool en)
 {
