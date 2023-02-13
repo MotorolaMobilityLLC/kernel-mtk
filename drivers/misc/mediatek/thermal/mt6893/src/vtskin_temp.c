@@ -865,8 +865,8 @@ static int mtktsvtskin_get_temp(struct thermal_zone_device *thermal, int *temp)
 			pr_notice("sensor_coef:  %d\n", coef);
 			vtskin += tz_temp * coef;
 			if (i == skin_param[id].ref_num - 1){
-				pr_notice(" divide by vtskin / 10");
-				*temp = (int)(vtskin / 10);
+				pr_notice(" divide by vtskin / 100");
+				*temp = (int)(vtskin / 100);
 			}
 		}
 	}
