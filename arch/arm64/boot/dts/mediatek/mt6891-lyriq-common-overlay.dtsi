@@ -487,7 +487,24 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
+
 	panel1@0 {
+		/delete-property/ compatible;
+		/delete-property/ pm-enable-gpios;
+		/delete-property/ reset-gpios;
+
+		compatible = "mot,dummy,vdo,60hz";
+		reg = <0>;
+		pinctrl-names = "default";
+		port {
+		    panel_in1: endpoint {
+		        remote-endpoint = <&dsi_out>;
+            };
+        };
+
+	};
+
+	panel2@0 {
                 /delete-property/ compatible;
                 /delete-property/ pm-enable-gpios;
                 /delete-property/ reset-gpios;
@@ -506,7 +523,7 @@
                         };
                 };
 	};
-	panel2@0 {
+	panel3@0 {
                 /delete-property/ compatible;
                 /delete-property/ pm-enable-gpios;
                 /delete-property/ reset-gpios;
@@ -525,7 +542,7 @@
                         };
                 };
 	};
-	panel3@0 {
+	panel4@0 {
                 /delete-property/ compatible;
                 /delete-property/ pm-enable-gpios;
                 /delete-property/ reset-gpios;
