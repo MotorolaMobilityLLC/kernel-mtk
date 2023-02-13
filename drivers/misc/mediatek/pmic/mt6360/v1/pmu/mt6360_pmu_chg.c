@@ -299,6 +299,38 @@ static inline u32 mt6360_trans_usbid_src_ton(u32 src_ton)
 	return maxidx;
 }
 
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+static const u32 mt6360_usbid_is_period[] = {
+	4, 100, 200, 1600,
+};
+
+static inline u32 mt6360_trans_usbid_is_period(u32 period)
+{
+	int i;
+	int maxidx = ARRAY_SIZE(mt6360_usbid_is_period) - 1;
+	printk(KERN_ERR "%s, xuwei  period:%d", __func__, period);
+	if (period == 0)
+		return 0;
+	if (period < mt6360_usbid_is_period[0])
+		return 0;
+	if (period > mt6360_usbid_is_period[maxidx])
+		return maxidx;
+
+	for (i = 0; i < maxidx; i++) {
+		if (period == mt6360_usbid_is_period[i])
+			return i;
+		if (period > mt6360_usbid_is_period[i] &&
+		    period < mt6360_usbid_is_period[i + 1]) {
+			if ((period - mt6360_usbid_is_period[i]) <=
+			    (mt6360_usbid_is_period[i + 1] - period))
+				return i;
+			else
+				return i + 1;
+		}
+	}
+	return maxidx;
+}
+#endif
 static inline int mt6360_get_ieoc(struct mt6360_pmu_chg_info *mpci, u32 *uA)
 {
 	int ret = 0;
@@ -1941,7 +1973,17 @@ static int mt6360_set_usbid_src_ton(struct charger_device *chg_dev, u32 src_ton)
 					  MT6360_MASK_ISTDET,
 					  data << MT6360_SHFT_ISTDET);
 }
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+static int mt6360_set_usbid_is_period(struct charger_device *chg_dev, u32 period)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	u32 data = mt6360_trans_usbid_is_period(period);
 
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_USBID_CTRL1,
+					  MT6360_MASK_ISPERIOD,
+					  data << MT6360_SHFT_ISPERIOD);
+}
+#endif
 static int mt6360_enable_usbid_floating(struct charger_device *chg_dev, bool en)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
@@ -2039,6 +2081,9 @@ static const struct charger_ops mt6360_chg_ops = {
 	.get_ctd_dischg_status = mt6360_get_ctd_dischg_status,
 	.enable_hidden_mode = mt6360_enable_hidden_mode,
 	.enable_hz = mt6360_enable_hz,
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+	.set_usbid_is_period = mt6360_set_usbid_is_period,
+#endif
 };
 
 static const struct charger_properties mt6360_chg_props = {
