@@ -764,6 +764,15 @@ config DRM_PANEL_TRULY_ICNL9911C_VDO
 	  and uses 24-bits RGB per pixel. It provides a MIPI DSI interface
 	  to host.
 
+config DRM_PANEL_MOT_DUMMY_VDO_60HZ
+	tristate "DRM_PANEL_MOT_DUMMY_VDO_60HZ"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for DRM_PANEL_MOT_DUMMY_VDO_60HZ
+	  panel. It provides a MIPI DSI interface to host.
+
 config DRM_PANEL_BOE_NT36525C_VDO
 	tristate "boe HD+ vdo mode panel"
 	depends on OF
