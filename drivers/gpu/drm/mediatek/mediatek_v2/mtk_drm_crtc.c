@@ -1261,6 +1261,7 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	struct mtk_ddp_comp *comp = mtk_ddp_comp_request_output(mtk_crtc);
 	struct cmdq_pkt *cmdq_handle;
 	bool is_frame_mode;
+	int ret = 0;
 
 	if (!mtk_drm_lcm_is_connect()) {
 		DDPMSG("%s: lcm is not connected, skip\n", __func__);
@@ -1270,12 +1271,13 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	if (!(comp && comp->funcs && comp->funcs->io_cmd))
 		return -EINVAL;
 
+	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
+
 	if (!(mtk_crtc->enabled)) {
 		DDPINFO("%s: skip, slept\n", __func__);
+		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return -EINVAL;
 	}
-
-	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 
 	mtk_drm_idlemgr_kick(__func__, crtc, 0);
 
@@ -1294,7 +1296,7 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 				mtk_crtc->gce_obj.event[EVENT_STREAM_DIRTY]);
 	}
 
-	comp->funcs->io_cmd(comp, cmdq_handle, DSI_PANEL_FEATURE_SET, &param_info);
+	ret = comp->funcs->io_cmd(comp, cmdq_handle, DSI_PANEL_FEATURE_SET, &param_info);
 
 	if (is_frame_mode) {
 		cmdq_pkt_set_event(cmdq_handle,
@@ -1303,13 +1305,15 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 				mtk_crtc->gce_obj.event[EVENT_STREAM_BLOCK]);
 	}
 
-	cmdq_pkt_flush(cmdq_handle);
+	if (ret < 0) {
+		DDPMSG("%s set panel feature (%d) to %d, failed!\n", __func__, param_info.param_idx, param_info.value);
+	} else {
+		cmdq_pkt_flush(cmdq_handle);
+		DDPMSG("%s set panel feature (%d) to %d, success!\n", __func__, param_info.param_idx, param_info.value);
+	}
 	cmdq_pkt_destroy(cmdq_handle);
-
-	DDPMSG("%s set panel feature (%d) to %d, success!\n", __func__, param_info.param_idx, param_info.value);
-
 	DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
-	return 0;
+	return ret;
 }
 
 int mtk_drm_crtc_hbm_wait(struct drm_crtc *crtc, bool en)
