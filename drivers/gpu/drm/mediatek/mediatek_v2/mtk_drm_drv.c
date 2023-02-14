@@ -4720,6 +4720,18 @@ int mtk_drm_fm_lcm_auto_test(struct drm_device *dev, void *data,
 }
 #endif
 
+static bool mtk_drm_check_pane_feature_valid(struct drm_crtc *crtc, struct panel_param_info param_info)
+{
+	uint32_t param_value = 0;
+	bool  ret = false;
+	if (!mtk_drm_crtc_get_panel_feature(crtc, param_info.param_idx, &param_value))
+	{
+		if (param_value != param_info.value) ret = true;
+		DDPMSG("%s: set param_idx %d from %d to %d\n", __func__, param_info.param_idx, param_value, param_info.value);
+	}
+	return ret;
+}
+
 static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 		struct drm_file *file_priv)
 {
@@ -4732,6 +4744,10 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 	int ret = 0;
 	unsigned int bl_level = 0;
 	unsigned int timeout = 30;
+
+	if (panel_ext->check_panel_feature) {
+		if (!mtk_drm_check_pane_feature_valid(crtc, *param_info)) return ret;
+	}
 
 	DDPMSG("%s: set param_idx %d to %d\n", __func__, param_info->param_idx, param_info->value);
 

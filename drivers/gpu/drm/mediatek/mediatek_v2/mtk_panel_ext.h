@@ -461,6 +461,8 @@ struct mtk_panel_params {
 	int panel_cellid_reg;
 	int panel_cellid_offset_reg;
 	int panel_cellid_len;
+
+	bool check_panel_feature;
 };
 
 struct mtk_panel_ext {
@@ -579,7 +581,7 @@ struct mtk_panel_funcs {
 		void *dsi_drv, dcs_write_gce_pack cb, void *handle);
 	int (*panel_feature_set)(struct drm_panel *panel, void *dsi_drv,
 			    dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info);
-	int (*panel_feature_get)(struct drm_panel *panel, paramId_t param_id);
+	int (*panel_feature_get)(struct drm_panel *panel, struct panel_param_info *param_info);
 	int (*set_gesture_flag)(int state);
 	int (*panel_hbm_waitfor_fps_valid)(struct drm_panel *panel, unsigned int timeout_ms);
 };

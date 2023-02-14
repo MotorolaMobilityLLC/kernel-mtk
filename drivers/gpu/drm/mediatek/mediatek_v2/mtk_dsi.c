@@ -7669,6 +7669,20 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 	}
 		break;
 
+	case DSI_PANEL_FEATURE_GET:
+	{
+		struct panel_param_info *param_info = (struct panel_param_info*)params;
+
+		panel_ext = mtk_dsi_get_panel_ext(comp);
+		if (!(panel_ext && panel_ext->funcs &&
+		      panel_ext->funcs->panel_feature_get)) {
+			return  -1;
+		} else {
+			return panel_ext->funcs->panel_feature_get(dsi->panel, param_info);
+		}
+	}
+		break;
+
 	case PANEL_HBM_WAITFOR_FPS_VALID:
 	{
 		panel_ext = mtk_dsi_get_panel_ext(comp);
