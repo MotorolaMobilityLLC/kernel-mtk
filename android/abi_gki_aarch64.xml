@@ -1838,6 +1838,7 @@
       <elf-symbol name='devm_of_platform_populate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe74e115b'/>
       <elf-symbol name='devm_of_pwm_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8c6c580e'/>
       <elf-symbol name='devm_pci_alloc_host_bridge' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9618c53d'/>
+      <elf-symbol name='devm_pci_remap_cfg_resource' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2a0c1626'/>
       <elf-symbol name='devm_pci_remap_cfgspace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6cf17398'/>
       <elf-symbol name='devm_phy_create' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x4976235b'/>
       <elf-symbol name='devm_phy_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe5a76bd3'/>
@@ -51568,7 +51569,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -100344,7 +100345,7 @@
         </data-member>
       </class-decl>
       <pointer-type-def type-id='4e13c9d9' size-in-bits='64' id='d064f511'/>
-      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/power/../base.h' line='88' column='1' id='d066d157'>
+      <class-decl name='device_private' size-in-bits='1728' is-struct='yes' visibility='default' filepath='drivers/base/firmware_loader/../base.h' line='88' column='1' id='d066d157'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='klist_children' type-id='6160a6ce' visibility='default' filepath='drivers/base/base.h' line='89' column='1'/>
         </data-member>
@@ -136624,6 +136625,11 @@
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/pci/probe.c' line='623' column='1'/>
         <parameter type-id='b59d7dce' name='priv' filepath='drivers/pci/probe.c' line='624' column='1'/>
         <return type-id='cb0dbc3c'/>
+      </function-decl>
+      <function-decl name='devm_pci_remap_cfg_resource' mangled-name='devm_pci_remap_cfg_resource' filepath='drivers/pci/pci.c' line='4275' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_pci_remap_cfg_resource'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/pci/pci.c' line='4275' column='1'/>
+        <parameter type-id='c9d64c0d' name='res' filepath='drivers/pci/pci.c' line='4276' column='1'/>
+        <return type-id='eaa32e2f'/>
       </function-decl>
       <function-decl name='devm_pci_remap_cfgspace' mangled-name='devm_pci_remap_cfgspace' filepath='drivers/pci/pci.c' line='4235' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_pci_remap_cfgspace'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/pci/pci.c' line='4235' column='1'/>
