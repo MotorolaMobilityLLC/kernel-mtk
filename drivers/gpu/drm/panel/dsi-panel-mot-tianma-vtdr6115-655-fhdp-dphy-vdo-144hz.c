@@ -470,6 +470,8 @@ static struct mtk_panel_params ext_params_60hz = {
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
+
+	.check_panel_feature = 1,
 };
 
 static struct mtk_panel_params ext_params_90hz = {
@@ -554,6 +556,8 @@ static struct mtk_panel_params ext_params_90hz = {
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
+
+	.check_panel_feature = 1,
 };
 static struct mtk_panel_params ext_params_120hz = {
 	.pll_clk = DISP_PLL_CLK,
@@ -637,6 +641,8 @@ static struct mtk_panel_params ext_params_120hz = {
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
+
+	.check_panel_feature = 1,
 };
 
 static struct mtk_panel_params ext_params_144hz = {
@@ -719,6 +725,8 @@ static struct mtk_panel_params ext_params_144hz = {
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
+
+	.check_panel_feature = 1,
 };
 #endif
 
@@ -1057,6 +1065,29 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 	return ret;
 }
 
+static int panel_feature_get(struct drm_panel *panel, struct panel_param_info *param_info)
+{
+	struct lcm *ctx = panel_to_lcm(panel);
+	int ret = 0;
+
+	switch (param_info->param_idx) {
+		case PARAM_CABC:
+		case PARAM_ACL:
+			ret = -1;
+			break;
+		case PARAM_HBM:
+			param_info->value = ctx->hbm_mode;
+			break;
+		case PARAM_DC:
+			param_info->value = ctx->dc_mode;
+			break;
+		default:
+			ret = -1;
+			break;
+	}
+	return ret;
+}
+
 static int panel_hbm_waitfor_fps_valid(struct drm_panel *panel, unsigned int timeout_ms)
 {
 	struct lcm *ctx = panel_to_lcm(panel);
@@ -1114,6 +1145,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ata_check = panel_ata_check,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.panel_feature_set = panel_feature_set,
+	.panel_feature_get = panel_feature_get,
 	.panel_hbm_waitfor_fps_valid = panel_hbm_waitfor_fps_valid,
 };
 
