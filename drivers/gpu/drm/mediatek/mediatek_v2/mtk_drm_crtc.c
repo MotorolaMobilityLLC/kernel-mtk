@@ -794,6 +794,17 @@ static void bl_cmdq_cb(struct cmdq_cb_data data)
 	kfree(cb_data);
 }
 
+static bool panel_is_hbm_on(struct drm_crtc *crtc)
+{
+	int32_t hbm_mode = 0;
+
+	if (!mtk_drm_crtc_get_panel_feature(crtc, PARAM_HBM, &hbm_mode)) {
+		if (hbm_mode) return true;
+	}
+	return false;
+}
+
+
 static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 {
 	unsigned int bl_level;
@@ -817,13 +828,18 @@ static bool panel_set_hbm_backlight(struct drm_crtc *crtc, unsigned int *bl_lvl)
 	} else {
 		bl_lvl_during_hbm = bl_level;
 
-		if (bl_level == 0) {
-			hbm_mode = false;
-			pr_info(" bl_vl=%d, set hbm_mode to false\n", bl_level);
-		}
-		else if (hbm_mode) {
+		if ((panel_ext->check_panel_feature) && (panel_is_hbm_on(crtc))) {
 			pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
 			return true;
+		} else {
+			if (bl_level == 0) {
+				hbm_mode = false;
+				pr_info(" bl_vl=%d, set hbm_mode to false\n", bl_level);
+			}
+			else if (hbm_mode) {
+				pr_info("HBM is on.. ignore setting backlight. bl_vl=%d\n", bl_lvl_during_hbm);
+				return true;
+			}
 		}
 	}
 	return false;
