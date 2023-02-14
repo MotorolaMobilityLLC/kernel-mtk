@@ -74,6 +74,7 @@
 		pinctrl-1 = <&ctp_gt9896s_int_suspend &ctp_gt9896s_reset_suspend>;
 		pinctrl-2 = <&ctp_gpio_release>;
 		mmi,status = "/chosen","mmi,panel_name","contains","csot_vtdr6115";
+		focaltech,edge-ctrl;
 		mmi,power-off-suspend;
     };
 };
