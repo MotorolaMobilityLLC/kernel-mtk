@@ -144,7 +144,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_gain = BASEGAIN,
 	.max_gain = 16384,//1024 * 16=16384
 	.min_gain_iso = 100,
-	.gain_step = 32,
+	.gain_step = 2,
 	.gain_type = 2,
 	.max_frame_length = 0xffffffff,
 
@@ -1688,7 +1688,7 @@ static const struct subdrv_ctx defctx = {
 	.ana_gain_def = BASEGAIN * 4,
 	.ana_gain_max = 16384,//1024 * 16=16384
 	.ana_gain_min = BASEGAIN,
-	.ana_gain_step = 32,
+	.ana_gain_step = 2,
 	.exposure_def = 0x3D0,
 	.exposure_max = 0xffff - 10,
 	.exposure_min = 3,
