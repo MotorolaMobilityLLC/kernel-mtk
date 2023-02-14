@@ -100,6 +100,11 @@ struct mtk_wlc {
 	int wireless_charger_max_input_current;
 	int input_current_limit;
 	bool cable_ready;
+
+	/*wireless thermal*/
+	struct thermal_cooling_device *tcd;
+	int max_state;
+	int cur_state;
 };
 struct moto_wls_chg_ops {
 	void *data;
