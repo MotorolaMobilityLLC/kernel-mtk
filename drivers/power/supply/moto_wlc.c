@@ -61,9 +61,15 @@
 #include "mtk_charger_algorithm_class.h"
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
+#include <linux/thermal.h>
 
 static int wlc_dbg_level = WLC_DEBUG_LEVEL;
 struct moto_wls_chg_ops *wls_chg_ops = NULL;
+
+#define CHARGER_STATE_NUM 8
+static int wlc_state_to_current_limit[CHARGER_STATE_NUM] = {
+	-1, 2500000, 2000000, 1500000, 1200000, 1000000, 700000, 500000
+};
 
 int wlc_get_debug_level(void)
 {
@@ -606,6 +612,7 @@ static void mtk_wlc_parse_dt(struct mtk_wlc *wlc, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 	u32 val;
+	int i;
 
 	wlc->wls_control_en = of_get_named_gpio(np, "mmi,wls_control_en", 0);
 	if (!gpio_is_valid(wlc->wls_control_en))
@@ -632,6 +639,15 @@ static void mtk_wlc_parse_dt(struct mtk_wlc *wlc, struct device *dev)
 		pr_err("use default WIRELESS_CHARGER_MAX_INPUT_CURRENT:%d\n",
 			WIRELESS_CHARGER_MAX_INPUT_CURRENT);
 		wlc->wireless_charger_max_input_current = WIRELESS_CHARGER_MAX_INPUT_CURRENT;
+	}
+
+	if (of_property_read_u32_array(np, "mmi,wlc-rx-mitigation",
+			wlc_state_to_current_limit, CHARGER_STATE_NUM))
+		pr_info("Not define wlc rx thermal table, use defaut table\n");
+
+	for (i = 0; i < CHARGER_STATE_NUM; i++) {
+		pr_info("mmi wlc rx table: table %d, current %d mA\n",
+			i, wlc_state_to_current_limit[i]);
 	}
 }
 
@@ -709,7 +725,6 @@ int _wlc_set_setting(struct chg_alg_device *alg_dev,
 	wlc->cv = setting->cv;
 	wlc->wlc_6pin_en = setting->vbat_mon_en;
 	wlc->input_current_limit1 = setting->input_current_limit1;
-	wlc->charging_current_limit1 = setting->charging_current_limit1;
 	wlc->input_current_limit2 = setting->input_current_limit2;
 	wlc->charging_current_limit2 = setting->charging_current_limit2;
 	wlc->mmi_fcc = setting->mmi_fcc_limit;
@@ -745,6 +760,49 @@ int moto_wireless_chg_ops_register(struct moto_wls_chg_ops *ops)
 }
 EXPORT_SYMBOL(moto_wireless_chg_ops_register);
 
+static int wlc_tcd_get_max_state(struct thermal_cooling_device *tcd,
+	unsigned long *state)
+{
+	struct mtk_wlc *wlc = tcd->devdata;
+
+	*state = wlc->max_state;
+
+	return 0;
+}
+
+static int wlc_tcd_get_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long *state)
+{
+	struct mtk_wlc *wlc = tcd->devdata;
+
+	*state = wlc->cur_state;
+
+	return 0;
+}
+
+static int wlc_tcd_set_cur_state(struct thermal_cooling_device *tcd,
+	unsigned long state)
+{
+	struct mtk_wlc *wlc = tcd->devdata;
+
+	if (state > wlc->max_state)
+		return -EINVAL;
+
+	wlc->charging_current_limit1 = wlc_state_to_current_limit[state];
+	wlc->cur_state = state;
+
+	wlc_info("%s cur state = %d, config state = %d, cur limt = %d\n",
+		__func__, wlc->cur_state, state, wlc->charging_current_limit1);
+
+	return 0;
+}
+
+static const struct thermal_cooling_device_ops wlc_tcd_ops = {
+	.get_max_state = wlc_tcd_get_max_state,
+	.get_cur_state = wlc_tcd_get_cur_state,
+	.set_cur_state = wlc_tcd_set_cur_state,
+};
+
 static int mtk_wlc_probe(struct platform_device *pdev)
 {
 	struct mtk_wlc *wlc = NULL;
@@ -778,11 +836,23 @@ static int mtk_wlc_probe(struct platform_device *pdev)
 	wlc->alg = chg_alg_device_register("wlc", &pdev->dev, wlc, &wlc_alg_ops,
 					   NULL);
 
+	/* Register thermal zone cooling device */
+	wlc->charging_current_limit1 = -1;
+	wlc->max_state = CHARGER_STATE_NUM - 1;
+	wlc->tcd = thermal_of_cooling_device_register(dev_of_node(&pdev->dev),
+		"moto_wlc", wlc, &wlc_tcd_ops);
+
 	return 0;
 }
 
 static int mtk_wlc_remove(struct platform_device *dev)
 {
+	struct mtk_wlc *wlc;
+
+	wlc = (struct mtk_wlc  *)platform_get_drvdata(dev);
+	if(wlc->tcd)
+		thermal_cooling_device_unregister(wlc->tcd);
+
 	return 0;
 }
 
