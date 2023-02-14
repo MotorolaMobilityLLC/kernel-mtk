@@ -676,27 +676,32 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 {
 
 	struct csot *ctx = panel_to_csot(panel);
+	int ret = 0;
 
-	if (!cb)
-		return -1;
-	pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+	if ((!cb) || (!ctx->enabled)) {
+		ret = -1;
+	} else {
+		pr_info("%s: set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
 
-	switch (param_info.param_idx) {
-		case PARAM_CABC:
-			pane_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-			break;
-		case PARAM_HBM:
-			ctx->hbm_mode = param_info.value;
-			pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-			break;
-		case PARAM_DC:
-			break;
-		default:
-			break;
+		switch (param_info.param_idx) {
+			case PARAM_CABC:
+				pane_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				break;
+			case PARAM_HBM:
+				ctx->hbm_mode = param_info.value;
+				pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				break;
+			case PARAM_DC:
+				ret = -1;
+				break;
+			default:
+				ret = -1;
+				break;
+		}
+
+		pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
 	}
-
-	pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
-	return 0;
+	return ret;
 }
 
 static struct mtk_panel_funcs ext_funcs = {
