@@ -1159,20 +1159,12 @@ static kal_uint32 get_default_framerate_by_scenario(struct subdrv_ctx *ctx,
 static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 {
 	LOG_INF("Test_Pattern enable: %d\n", enable);
-#if 0
 	if (enable)
 	{
-		write_cmos_sensor_8(ctx, 0x3019,0xf0);
-		write_cmos_sensor_8(ctx, 0x4308,0x01);
-		write_cmos_sensor_8(ctx, 0x4300,0x00);
-		write_cmos_sensor_8(ctx, 0x4302,0x00);
-		write_cmos_sensor_8(ctx, 0x4304,0x00);
-		write_cmos_sensor_8(ctx, 0x4306,0x07);
+		write_cmos_sensor(ctx, 0x0600,0x0001);
 	} else {
-		write_cmos_sensor_8(ctx, 0x3019,0xd2);
-		write_cmos_sensor_8(ctx, 0x4308,0x00);
+		write_cmos_sensor(ctx, 0x0600,0x0000);
 	}
-#endif
 	ctx->test_pattern = enable;
 	return ERROR_NONE;
 }
@@ -1600,10 +1592,9 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.channel = 0,
 			.data_type = 0x2b,
 			.hsize = 0xCD0,
-			.vsize = 0x9A0,
+			.vsize = 0x738,
 		},
 	},
-#if 1
 	{
 		.bus.csi2 = {
 			.channel = 1,
@@ -1613,7 +1604,6 @@ static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
-#endif
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
@@ -1625,7 +1615,6 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.vsize = 0x9A0,
 		},
 	},
-#if 0
 	{
 		.bus.csi2 = {
 			.channel = 1,
@@ -1635,7 +1624,6 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
-#endif
 };
 
 static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
