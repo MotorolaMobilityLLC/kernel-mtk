@@ -200,7 +200,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.margin = 32,					/* sensor framelength & shutter margin */
 	.min_shutter = 16,				/* min shutter */
 	.min_gain = 1024, /*1x gain*/
-	.max_gain = 261120, /*255 * 1024  gain*/
+	.max_gain = 212992, /*208 * 1024  gain*/
 	.min_gain_iso = 100,
 	.gain_step = 16, /*minimum step = 4 in 1x~2x gain*/
 	.gain_type = 1,/*to be modify,no gain table for sony*/
@@ -3080,7 +3080,7 @@ static int get_frame_desc(struct subdrv_ctx *ctx,
 static const struct subdrv_ctx defctx = {
 
 	.ana_gain_def = 4 * BASEGAIN,
-	.ana_gain_max = 261120, /*255 * 1024  gain*/
+	.ana_gain_max = 212992, /*208 * 1024  gain*/
 	.ana_gain_min = BASEGAIN,
 	.ana_gain_step = 4,
 	.exposure_def = 0x3D0,
