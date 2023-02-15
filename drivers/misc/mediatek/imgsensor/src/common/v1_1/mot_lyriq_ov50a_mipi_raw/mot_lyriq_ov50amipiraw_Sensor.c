@@ -195,7 +195,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.margin_shdr = 46,
 	.min_shutter = 16,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
-	.max_gain = 255*BASEGAIN, /*255x gain*/
+	.max_gain = 208*BASEGAIN, /*255x gain*/
 	.min_gain_iso = 100,
 	.gain_step = 1, /*minimum step = 4 in 1x~2x gain*/
 	.gain_type = 1,/*to be modify,no gain table for sony*/
