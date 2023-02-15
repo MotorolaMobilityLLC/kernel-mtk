@@ -1536,7 +1536,7 @@ static void mmi_charger_ffc_init(struct charger_manager *info)
 
 	mmi->ffc_state = CHARGER_FFC_STATE_INITIAL;
 	mmi->ffc_entry_threshold = 2000000;
-	mmi->ffc_exit_threshold = 0;
+	mmi->ffc_exit_threshold =  1800000;
 	mmi->ffc_ibat_windowsum = 0;
 	mmi->ffc_ibat_count = 0;
 	mmi->ffc_ibat_windowsize = 6;
@@ -2390,15 +2390,22 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 		pr_debug("[%s] ffc_state:%d, charge state:%d, uisoc:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc);
 		switch (mmi->ffc_state) {
 			case CHARGER_FFC_STATE_INITIAL:
-				if (current_charge_state == STEP_MAX && batt_soc >= mmi->ffc_uisoc_threshold &&
-					info->chr_type == STANDARD_CHARGER) {
-					info->data.ac_charger_input_current += 500000;
-					/* bump charging current +500mA to try ffc */
-					charger_dev_set_input_current(info->chg1_dev, info->data.ac_charger_input_current);
-					mmi->ffc_state = CHARGER_FFC_STATE_PROBING;
-					pr_debug("[%s] set input current bump to %d\n", __func__, info->data.ac_charger_input_current);
+				if (current_charge_state == STEP_MAX &&
+					(info->chr_type == STANDARD_CHARGER && !is_typec_adapter(info) &&
+					!(mtk_pe_get_is_cable_connect(info) || mmi_get_pd_pps_support(info)))) {
+					if (info->data.ac_charger_input_current == info->ffc_input_current_backup) {
+						info->data.ac_charger_input_current += 500000;
+						/* bump charging current +500mA to try ffc */
+						charger_dev_set_input_current(info->chg1_dev, info->data.ac_charger_input_current);
+					}
+
+					if (batt_soc >= mmi->ffc_uisoc_threshold) {
+						mmi->ffc_state = CHARGER_FFC_STATE_PROBING;
+						pr_debug("[%s] set input current bump to %d\n", __func__, info->data.ac_charger_input_current);
+					}
 				}
 				else {
+					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					pr_debug("[%s] ui_soc:%d, charge_type:%d\n", __func__, batt_soc, info->chr_type);
 				}
 				loop = false;
@@ -2530,6 +2537,8 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 				if (!info->ffc_charger_wakelock->active)
 					__pm_stay_awake(info->ffc_charger_wakelock);
 				schedule_delayed_work(&info->ffc_enable_charge_work, 5 * HZ);
+
+				mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 				loop = false;
 			break;
 			case CHARGER_FFC_STATE_INVALID:
