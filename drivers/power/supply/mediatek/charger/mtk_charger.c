@@ -1535,7 +1535,7 @@ static void mmi_charger_ffc_init(struct charger_manager *info)
 
 	mmi->ffc_state = CHARGER_FFC_STATE_INITIAL;
 	mmi->ffc_entry_threshold = 2000000;
-	mmi->ffc_exit_threshold =  1800000;
+	mmi->ffc_exit_threshold =  0;
 	mmi->ffc_ibat_windowsum = 0;
 	mmi->ffc_ibat_count = 0;
 	mmi->ffc_ibat_windowsize = 6;
