@@ -6167,11 +6167,17 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 #endif
 
 #ifndef CONFIG_MTK_MT6382_BDG
-		cmdq_pkt_clear_event(handle,
-				mtk_crtc->gce_obj.event[EVENT_DSI0_SOF]);
+		if (dsi && dsi->ext && dsi->ext->params
+			&& dsi->ext->params->change_fps_by_vfp_send_cmd) {
+				cmdq_pkt_wfe(handle,
+				     mtk_crtc->gce_obj.event[EVENT_VDO_EOF]);
+		} else {
+			cmdq_pkt_clear_event(handle,
+					mtk_crtc->gce_obj.event[EVENT_DSI0_SOF]);
 
-		cmdq_pkt_wait_no_clear(handle,
-				mtk_crtc->gce_obj.event[EVENT_DSI0_SOF]);
+			cmdq_pkt_wait_no_clear(handle,
+					mtk_crtc->gce_obj.event[EVENT_DSI0_SOF]);
+		}
 #else
 		cmdq_pkt_wfe(handle,
 				mtk_crtc->gce_obj.event[EVENT_CMD_EOF]);
@@ -6186,8 +6192,6 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 
 		if (dsi && dsi->ext && dsi->ext->params
 			&& dsi->ext->params->change_fps_by_vfp_send_cmd) {
-			cmdq_pkt_wfe(handle,
-				     mtk_crtc->gce_obj.event[EVENT_CMD_EOF]);
 			/*1.1 send cmd: stop vdo mode*/
 			mtk_dsi_stop_vdo_mode(dsi, handle);
 			/* for crtc first enable,dyn fps fail*/
@@ -6225,13 +6229,11 @@ static void mtk_dsi_vdo_timing_change(struct mtk_dsi *dsi,
 			 * avoid config continue after we trigger vdo mode
 			 */
 			cmdq_pkt_clear_event(handle,
-				     mtk_crtc->gce_obj.event[EVENT_CMD_EOF]);
+				     mtk_crtc->gce_obj.event[EVENT_VDO_EOF]);
 			/*1.3 send cmd: trigger*/
 			mtk_disp_mutex_trigger(comp->mtk_crtc->mutex[0], handle);
 			mtk_dsi_trigger(comp, handle);
 		}
-
-		mtk_dsi_porch_setting(comp, handle, DSI_VFP, vfp);
 
 #ifdef CONFIG_MTK_MT6382_BDG
 		mtk_dsi_vfp_porch_setting_6382(dsi, vfp, handle);
