@@ -199,7 +199,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 #endif
-	if (is_typec_adapter(info)) {
+	if (is_typec_adapter(info) && (info->chr_type != CHARGER_UNKNOWN)) {
 		if (adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL)
 			== 3000) {
 			if (pdata->typec_input_current_limit > 1500000
