@@ -1053,8 +1053,7 @@ bool is_typec_adapter(struct charger_manager *info)
 			info->enable_type_c == true&&
 			wlc_get_online() == false &&
 			info->chr_type != STANDARD_HOST &&
-                        info->chr_type != CHARGING_HOST &&
-			info->chr_type != CHARGER_UNKNOWN)
+                        info->chr_type != CHARGING_HOST)
 		return true;
 
 	return false;
