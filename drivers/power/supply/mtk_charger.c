@@ -4996,6 +4996,31 @@ static void mtk_charger_external_power_changed(struct power_supply *psy)
 	_wake_up_charger(info);
 }
 
+#define CHG_SHOW_MAX_SIEZE 50
+static int mmi_notify_lpd_event(struct mtk_charger *pinfo) {
+	char *event_string = NULL;
+	char *batt_uenvp[2];
+
+	if(!pinfo->bat_psy)
+		pinfo->bat_psy = power_supply_get_by_name("battery");
+	if(!pinfo->bat_psy) {
+		chr_err("%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_LPD_PRESENT=%s", pinfo->water_detected? "true": "false");
+
+	batt_uenvp[0] = event_string;
+	batt_uenvp[1] = NULL;
+	kobject_uevent_env(&pinfo->bat_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+	chr_err("%s, lpd:%d send %s\n",__func__, pinfo->water_detected, event_string);
+	kfree(event_string);
+	return 0;
+}
+
 int notify_adapter_event(struct notifier_block *notifier,
 			unsigned long evt, void *val)
 {
@@ -5073,6 +5098,7 @@ int notify_adapter_event(struct notifier_block *notifier,
 		else
 			pinfo->notify_code &= ~CHG_TYPEC_WD_STATUS;
 		mtk_chgstat_notify(pinfo);
+		mmi_notify_lpd_event(pinfo);
 		break;
 	case MMI_PD30_VDM_VERIFY:
 		chr_err("%s VDM VERIFY\n", __func__);
