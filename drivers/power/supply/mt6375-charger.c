@@ -250,6 +250,9 @@ struct mt6375_chg_data {
 	atomic_t tchg;
 	int vbat0_flag;
 	int mmi_chg_status;
+
+	struct power_supply *batt_psy;
+	char                *batt_uenvp[2];
 };
 
 struct mt6375_chg_platform_data {
@@ -877,6 +880,32 @@ static void mt6375_chg_attach_pre_process(struct mt6375_chg_data *ddata,
 		dev_notice(ddata->dev, "%s bc12 work already queued\n", __func__);
 }
 
+#define CHG_SHOW_MAX_SIEZE 50
+static int mmi_notify_vbus_event(struct mt6375_chg_data *ddata, bool vbus_status)
+{
+	char *event_string = NULL;
+
+	if(!ddata->batt_psy)
+		ddata->batt_psy = power_supply_get_by_name("battery");
+	if(!ddata->batt_psy) {
+		dev_notice(ddata->dev,
+			"%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_VBUS_PRESENT=%s", vbus_status? "true": "false");
+
+	ddata->batt_uenvp[0] = event_string;
+	ddata->batt_uenvp[1] = NULL;
+	kobject_uevent_env(&ddata->batt_psy->dev.kobj, KOBJ_CHANGE, ddata->batt_uenvp);
+	dev_info(ddata->dev, "%s, vbus:%d send %s\n",__func__, vbus_status, event_string);
+	kfree(event_string);
+	return 0;
+}
+
 static void mt6375_chg_pwr_rdy_process(struct mt6375_chg_data *ddata)
 {
 	int ret;
@@ -887,6 +916,9 @@ static void mt6375_chg_pwr_rdy_process(struct mt6375_chg_data *ddata)
 		return;
 	ddata->pwr_rdy = val;
 	mt_dbg(ddata->dev, "pwr_rdy=%d\n", val);
+
+	mmi_notify_vbus_event(ddata, val);
+
 	ret = mt6375_chg_field_set(ddata, F_BLEED_DIS_EN, !ddata->pwr_rdy);
 	if (ret < 0)
 		dev_err(ddata->dev, "failed to set bleed discharge = %d\n",
