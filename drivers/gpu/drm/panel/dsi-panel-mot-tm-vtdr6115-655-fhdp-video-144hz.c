@@ -945,8 +945,9 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 	char bl_tb0[] = { 0x51, 0x0f, 0xff};
 	struct lcm *ctx = tm_ctx;
 
-	if (ctx->hbm_mode && level) {
+	if (ctx->hbm_mode) {
 		pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
+		ctx->current_bl = level;
 		return 0;
 	}
 
