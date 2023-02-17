@@ -3168,12 +3168,12 @@ static int mtk_drm_ioctl_set_panel_feature(struct drm_device *dev, void *data,
 				}
 
 				ret = mtk_drm_crtc_set_panel_feature(crtc, *param_info);
-			}
-
-			if (panel_ext->hbm_type == HBM_MODE_DCS_GPIO)
-				ret = mtk_drm_crtc_set_panel_hbm_gpio(crtc, param_info->value);
-			if(!ret) {
-				ret = mtk_drm_setbacklight(crtc, HBM_BRIGHTNESS(param_info->value));
+			} else {
+				if (panel_ext->hbm_type == HBM_MODE_DCS_GPIO)
+					ret = mtk_drm_crtc_set_panel_hbm_gpio(crtc, param_info->value);
+				if(!ret) {
+					ret = mtk_drm_setbacklight(crtc, HBM_BRIGHTNESS(param_info->value));
+				}
 			}
 			break;
 		default:
