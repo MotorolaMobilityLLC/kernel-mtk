@@ -1637,7 +1637,28 @@ int kbase_gpu_munmap(struct kbase_context *kctx, struct kbase_va_region *reg)
 
 	/* Tear down down GPU page tables, depending on memory type. */
 	switch (reg->gpu_alloc->type) {
-	case KBASE_MEM_TYPE_ALIAS: /* Fall-through */
+	case KBASE_MEM_TYPE_ALIAS: {
+		size_t i = 0;
+		struct kbase_mem_phy_alloc *alloc = reg->gpu_alloc;
+
+		/* Due to the way the number of valid PTEs and ATEs are tracked
+		 * currently, only the GPU virtual range that is backed & mapped
+		 * should be passed to the kbase_mmu_teardown_pages() function,
+		 * hence individual aliased regions needs to be unmapped
+		 * separately.
+		 */
+		for (i = 0; i < alloc->imported.alias.nents; i++) {
+			if (alloc->imported.alias.aliased[i].alloc) {
+				err = kbase_mmu_teardown_pages(
+					kctx->kbdev, &kctx->mmu,
+					reg->start_pfn +
+						(i *
+						 alloc->imported.alias.stride),
+					alloc->imported.alias.aliased[i].length,
+					kctx->as_nr);
+			}
+		}
+	} break;
 	case KBASE_MEM_TYPE_IMPORTED_UMM:
 		err = kbase_mmu_teardown_pages(kctx->kbdev, &kctx->mmu,
 				reg->start_pfn, reg->nr_pages, kctx->as_nr);
