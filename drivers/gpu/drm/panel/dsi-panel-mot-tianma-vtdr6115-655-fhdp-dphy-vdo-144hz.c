@@ -153,7 +153,7 @@ static void lcm_panel_init(struct lcm *ctx)
 	lcm_dcs_write_seq_static(ctx, 0x51, 0x00, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x59, 0x09);
 	lcm_dcs_write_seq_static(ctx, 0x6f, 0x01);
-	lcm_dcs_write_seq_static(ctx, 0x6c, 0x00);
+	lcm_dcs_write_seq_static(ctx, 0x6c, 0x01);
 	lcm_dcs_write_seq_static(ctx, 0x62, 0x00);
 	lcm_dcs_write_seq_static(ctx, 0x6d, 0x00);
 #ifdef DSC_10BIT
@@ -171,6 +171,7 @@ static void lcm_panel_init(struct lcm *ctx)
 										0x09,0xBE,0x19,0xFC,0x19,0xFA,0x19,0xF8,0x1A,0x38,0x1A,0x78,0x1A,0xB6,0x2A,0xB6,
 										0x2A,0xF4,0x2A,0xF4,0x4B,0x34,0x63,0x74,0x00,0x00,0x00,0x00,0x00,0x00);
 #endif
+
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x80);
 	lcm_dcs_write_seq_static(ctx, 0x65, 0x0e);
 	lcm_dcs_write_seq_static(ctx, 0xf9, 0xb9);
@@ -284,6 +285,7 @@ static int lcm_prepare(struct drm_panel *panel)
 
 	ctx->hbm_mode = 0;
 	ctx->dc_mode = 0;
+	ctx->current_fps = 120;
 
 	// lcd reset  H -> L -> H
 	ctx->reset_gpio = devm_gpiod_get(ctx->dev, "reset", GPIOD_OUT_LOW);
@@ -1166,7 +1168,7 @@ static int lcm_get_modes(struct drm_panel *panel,
 		return -ENOMEM;
 	}
 	drm_mode_set_name(mode_1);
-	mode_1->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	mode_1->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_1);
 
 	mode_2 = drm_mode_duplicate(connector->dev, &switch_mode_90hz);
@@ -1188,7 +1190,7 @@ static int lcm_get_modes(struct drm_panel *panel,
 		return -ENOMEM;
 	}
 	drm_mode_set_name(mode_3);
-	mode_3->type = DRM_MODE_TYPE_DRIVER;
+	mode_3->type = DRM_MODE_TYPE_DRIVER| DRM_MODE_TYPE_PREFERRED;;
 	drm_mode_probed_add(connector, mode_3);
 
 	mode_4 = drm_mode_duplicate(connector->dev, &switch_mode_144hz);
@@ -1296,6 +1298,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 #endif
 	ctx->hbm_mode = 0;
 	ctx->dc_mode = 0;
+	ctx->current_fps = 120;
 
 	ctx->lhbm_en = of_property_read_bool(dev->of_node, "lhbm-enable");
 
