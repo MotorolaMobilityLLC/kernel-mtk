@@ -309,6 +309,9 @@ static int lcm_prepare(struct drm_panel *panel)
 	if (ctx->prepared)
 		return 0;
 
+	ctx->hbm_mode = 0;
+	ctx->dc_mode = 0;
+
 	ret = panel_ext_init_power(panel);
 	if (ret < 0) goto error;
 
@@ -963,6 +966,7 @@ static int lcm_setbacklight_cmdq(void *dsi, dcs_write_gce cb, void *handle,
 
 	if (ctx->hbm_mode) {
 		pr_info("hbm_mode = %d, skip backlight(%d)\n", ctx->hbm_mode, level);
+		ctx->current_bl = level;
 		return 0;
 	}
 
