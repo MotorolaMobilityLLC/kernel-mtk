@@ -1197,6 +1197,7 @@ not_auddev:
 	return false;
 }
 
+#define OV_CALBE_SBU_RES_V 180  //mv-->56k
 static int __mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 				      enum mt6375_wd_chan chan, bool *wd)
 {
@@ -1257,6 +1258,13 @@ static int __mt6375_is_water_detected(struct mt6375_tcpc_data *ddata,
 			goto out;
 		}
 		msleep(20);
+	}
+
+	//ov cable with sbu 46k, add 10k tolerance to 56k
+	if(wd_adc < OV_CALBE_SBU_RES_V) {
+		MT6375_DBGINFO("OV cable detected, ignore lpd\n");
+		*wd = false;
+		goto out;
 	}
 
 #if CONFIG_CABLE_TYPE_DETECTION
