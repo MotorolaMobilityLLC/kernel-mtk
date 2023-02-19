@@ -47,6 +47,7 @@ struct tongxingda {
 
 	int error;
 	unsigned int hbm_mode;
+	unsigned int cabc_mode;
 };
 
 //static char bl_tb0[] = { 0x51, 0xff };
@@ -249,6 +250,10 @@ static int tongxingda_prepare(struct drm_panel *panel)
 		tongxingda_unprepare(panel);
 
 	ctx->prepared = true;
+
+	ctx->hbm_mode = 0;
+	ctx->cabc_mode = 0;
+
 /*#if defined(CONFIG_MTK_PANEL_EXT)
 	mtk_panel_tch_rst(panel);
 #endif
@@ -679,21 +684,20 @@ static int panel_feature_set(struct drm_panel *panel, void *dsi,
 
 		switch (param_info.param_idx) {
 			case PARAM_CABC:
+				if (ctx->cabc_mode == param_info.value) return -1;
+				ctx->cabc_mode = param_info.value;
 				pane_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
 				break;
 			case PARAM_HBM:
+				if (ctx->hbm_mode == param_info.value) return -1;
 				ctx->hbm_mode = param_info.value;
 				pane_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
-				break;
-			case PARAM_DC:
-				ret = -1;
 				break;
 			default:
 				ret = -1;
 				break;
 		}
-
-		pr_info("%s: set feature %d to %d success\n", __func__, param_info.param_idx, param_info.value);
+		pr_info("%s: set feature %d to %d, ret %d\n", __func__, param_info.param_idx, param_info.value, ret);
 	}
 	return ret;
 }
@@ -824,6 +828,9 @@ static int tongxingda_probe(struct mipi_dsi_device *dsi)
 
 	ctx->prepared = true;
 	ctx->enabled = true;
+
+	ctx->hbm_mode = 0;
+	ctx->cabc_mode = 0;
 
 	drm_panel_init(&ctx->panel, dev, &tongxingda_drm_funcs, DRM_MODE_CONNECTOR_DSI);
 
