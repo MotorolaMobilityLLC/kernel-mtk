@@ -2302,7 +2302,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		case SENSOR_SCENARIO_ID_CUSTOM3:
 		case SENSOR_SCENARIO_ID_CUSTOM4:
 		case SENSOR_SCENARIO_ID_CUSTOM5:
-			*(feature_data + 2) = 65536; //64 * 1024
+			*(feature_data + 2) = 65280; //63.75 * 1024
 			break;
 		default:
 			*(feature_data + 2) = imgsensor_info.max_gain;
