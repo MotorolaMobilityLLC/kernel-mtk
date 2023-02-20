@@ -361,20 +361,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(precharge_current),
 	POWER_SUPPLY_ATTR(charge_term_current),
 	POWER_SUPPLY_ATTR(calibrate),
-	/* Charge pump properties */
-	// MMI_STOPSHIP <Kernel>: remove duplicated definitions
-	//POWER_SUPPLY_ATTR(cp_status1),
-	//POWER_SUPPLY_ATTR(cp_irq_status),
-	//POWER_SUPPLY_ATTR(input_voltage_settled),
-	//POWER_SUPPLY_ATTR(input_current_now),
-	//POWER_SUPPLY_ATTR(chip_version),
-	//POWER_SUPPLY_ATTR(update_now),
-	//POWER_SUPPLY_ATTR(pd_current_max),
-	//POWER_SUPPLY_ATTR(pd_voltage_max),
-	//POWER_SUPPLY_ATTR(input_current_settled),
-	//POWER_SUPPLY_ATTR(system_temp_level),
-	//POWER_SUPPLY_ATTR(num_system_temp_levels),
-	//POWER_SUPPLY_ATTR(cp_enable),
 
 #ifdef CONFIG_BQ2597X_CHARGE_PUMP
 	POWER_SUPPLY_ATTR(dp_dm_bq),
