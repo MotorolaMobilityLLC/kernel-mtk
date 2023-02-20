@@ -113,6 +113,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg1_min = 0, aicr1_min = 0;
 	int ret = 0;
+	union power_supply_propval val;
 
 	struct device *dev = NULL;
 	struct device_node *boot_node = NULL;
@@ -319,7 +320,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
-	if (info->mmi.target_usb == 0) {
+	ret = mmi_get_prop_from_charger(info,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+	if (ret < 0) {
+		pr_err("[%s]Error getting charger online ret = %d\n", __func__, ret);
+		val.intval = 0;
+	}
+
+	if ((info->mmi.target_usb == 0) && (val.intval)) {
 		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
 	}
 
@@ -784,6 +792,7 @@ static int select_pdc_charging_current_limit(struct charger_manager *info)
 	struct charger_data *pdata;
 	u32 ichg1_min = 0, aicr1_min = 0;
 	int ret = 0;
+	union power_supply_propval val;
 
 	pdata = &info->chg1_data;
 
@@ -796,7 +805,14 @@ static int select_pdc_charging_current_limit(struct charger_manager *info)
 #else
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
-	if (info->mmi.target_usb == 0) {
+	ret = mmi_get_prop_from_charger(info,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+	if (ret < 0) {
+		pr_err("[%s]Error getting charger online ret = %d\n", __func__, ret);
+		val.intval = 0;
+	}
+
+	if ((info->mmi.target_usb == 0) && (val.intval)) {
 		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
 	}
 
