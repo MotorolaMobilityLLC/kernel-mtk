@@ -668,7 +668,7 @@
 		Semtech,ref-phases-a = <5>;
 		Semtech,ref-phases-b = <6>;
 		Semtech,ref-phases-c = <0xff>;
-		Semtech,button-flag = <0x1f>;
+		Semtech,button-flag = <0x0f>;
 		Semtech,reg-num = <59>;
 		Semtech,reg-init = <
 			0x8024  0x7F00
