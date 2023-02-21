@@ -1124,6 +1124,39 @@ end:
 	return ret;
 }
 
+int moto_chg_tcmd_get_client(struct moto_chg_tcmd_client **client, enum MOTO_CHG_TCMD_CLIENT_ID client_id)
+{
+	switch (client_id) {
+		case MOTO_CHG_TCMD_CLIENT_CHG:
+			*client = chg_client;
+			break;
+		case MOTO_CHG_TCMD_CLIENT_BAT:
+			*client = bat_client;
+			break;
+		case MOTO_CHG_TCMD_CLIENT_PM_ADC:
+			*client = pm_adc_client;
+			break;
+		case MOTO_CHG_TCMD_CLIENT_AP_ADC:
+			*client = ap_adc_client;
+			break;
+		case MOTO_CHG_TCMD_CLIENT_WLS:
+			*client = wls_client;
+			break;
+		default :
+			pr_err("%s invalide client id %d\n",
+				__func__,
+				client_id);
+			break;
+	}
+
+	if(*client == NULL) {
+		pr_err("%s invalide chg tcmd client(null)\n", __func__);
+		return -EINVAL;
+	}else
+		return 0;
+}
+EXPORT_SYMBOL(moto_chg_tcmd_get_client);
+
 int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client)
 {
 #ifdef USE_LIST_HEAD
