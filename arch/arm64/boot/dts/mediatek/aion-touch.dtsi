@@ -47,6 +47,7 @@
 		goodix,panel-max-w = <256>;
 		goodix,panel-max-p = <256>;
 		goodix,edge-ctrl;
+		goodix,sample-ctrl;
 		goodix,interpolation-ctrl;
 		mmi,enable-gestures;
 		mmi,power-off-suspend;
