@@ -176,8 +176,8 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	}
 	// modify by wt.longyili for swtp end
         #elif defined(CONFIG_MOTO_LYRIQ_PROJECT_SWTP_SETING_APART)
-	// swtp logic for jpn sku(rf index 1,3,5)
-        if (moto_drdi_rf_set_index == 1 || moto_drdi_rf_set_index == 3 || moto_drdi_rf_set_index == 5)
+	// swtp logic for jpn sku(rf index 1,3,5,7)
+        if (moto_drdi_rf_set_index == 1 || moto_drdi_rf_set_index == 3 || moto_drdi_rf_set_index == 5 || moto_drdi_rf_set_index == 7)
         {
                 CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"LYRIQ JPN %s moto_drdi_rf_set_index = %d\n",
@@ -196,7 +196,7 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 	}
 
         }
-	// swtp logic for row sku(rf index 0,2,4)
+	// swtp logic for row sku(rf index 0,2,4,6)
         else {
                 CCCI_LEGACY_ERR_LOG(swtp->md_id, SYS,
 			"LYRIQ ROW %s moto_drdi_rf_set_index = %d\n",
