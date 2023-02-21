@@ -46,5 +46,5 @@ struct moto_chg_tcmd_client {
 };
 
 int moto_chg_tcmd_register(struct moto_chg_tcmd_client *client);
-
+int moto_chg_tcmd_get_client(struct moto_chg_tcmd_client **client, enum MOTO_CHG_TCMD_CLIENT_ID client_id);
 #endif
