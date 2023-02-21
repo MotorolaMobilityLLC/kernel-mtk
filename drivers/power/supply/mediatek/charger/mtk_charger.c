@@ -1489,6 +1489,10 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 					}
 					wireless_get_charger_type();
 					_wake_up_charger(info);
+				}else {
+					if(info->mmi.factory_mode) {
+						_wake_up_charger(info);
+					}
 				}
 				chr_err("%s: %ld %s tmp:%d %d chr:%d\n",
 					__func__, event, psy->desc->name, tmp,
