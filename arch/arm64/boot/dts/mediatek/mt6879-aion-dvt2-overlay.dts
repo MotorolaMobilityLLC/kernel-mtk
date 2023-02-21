@@ -15,10 +15,6 @@
 
 #include "mediatek/mt6879-aion-common-overlay.dtsi"
 
-&sx937x {
-	Semtech,button-flag = <0x1f>;
-};
-
 /* Board match root node */
 / {
 	fragment@model {
