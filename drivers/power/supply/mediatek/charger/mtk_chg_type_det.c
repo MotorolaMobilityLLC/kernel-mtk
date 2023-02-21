@@ -281,7 +281,8 @@ static int mt_charger_get_property(struct power_supply *psy,
 			break;
 		default:
 		break;
-	}
+		}
+		break;
 	case POWER_SUPPLY_PROP_CHARGE_ENABLED:
 		rc = charger_manager_is_enabled(cti->chg_consumer, MAIN_CHARGER, &en);
 		if (rc < 0)
