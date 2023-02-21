@@ -320,6 +320,7 @@
 		io-channels = <&pmic_auxadc AUXADC_BAT_TEMP>;
 		io-channel-names = "batt_therm";
 
+		disable-battery-update;
 		latest_fw_version = <0x0815>;
 		first_battery_param_ver = <0x0205>;
 		second_battery_param_ver = <0x0205>;
