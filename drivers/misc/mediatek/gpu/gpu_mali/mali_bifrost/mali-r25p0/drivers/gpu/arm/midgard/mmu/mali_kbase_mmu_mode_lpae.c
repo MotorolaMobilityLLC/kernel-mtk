@@ -40,6 +40,9 @@
 #define ENTRY_FLAGS_MASK (ENTRY_ATTR_BITS | ENTRY_RD_BIT | ENTRY_WR_BIT | \
 		ENTRY_SHARE_BITS | ENTRY_ACCESS_BIT | ENTRY_NX_BIT)
 
+#define UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR (55)
+#define VALID_ENTRY_MASK ((u64)0xF << UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR)
+
 /* Helper Function to perform assignment of page table entries, to
  * ensure the use of strd, which is required on LPAE systems.
  */
@@ -128,6 +131,7 @@ static phys_addr_t pte_to_phy_addr(u64 entry)
 	if (!(entry & 1))
 		return 0;
 
+	entry &= ~VALID_ENTRY_MASK;
 	return entry & ~0xFFF;
 }
 
@@ -142,7 +146,7 @@ static int pte_is_valid(u64 pte, int const level)
 }
 
 /*
- * Map KBASE_REG flags to MMU flags
+ * Map KBASE_REG flags to MMU flags.
  */
 static u64 get_mmu_flags(unsigned long flags)
 {
@@ -186,14 +190,49 @@ static void entry_set_ate(u64 *entry,
 			     ENTRY_IS_ATE);
 }
 
-static void entry_set_pte(u64 *entry, phys_addr_t phy)
+static unsigned int get_num_valid_entries(u64 *pgd)
 {
-	page_table_entry_set(entry, (phy & ~0xFFF) | ENTRY_IS_PTE);
+	register unsigned int num_of_valid_entries;
+	num_of_valid_entries =
+		(unsigned int)((pgd[2] & VALID_ENTRY_MASK) >>
+			       (UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR - 8));
+	num_of_valid_entries |=
+		(unsigned int)((pgd[1] & VALID_ENTRY_MASK) >>
+			       (UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR - 4));
+	num_of_valid_entries |=
+		(unsigned int)((pgd[0] & VALID_ENTRY_MASK) >>
+			       (UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR));
+	return num_of_valid_entries;
 }
 
-static void entry_invalidate(u64 *entry)
+static void set_num_valid_entries(u64 *pgd, unsigned int num_of_valid_entries)
 {
-	page_table_entry_set(entry, ENTRY_IS_INVAL);
+	WARN_ON_ONCE(num_of_valid_entries > KBASE_MMU_PAGE_ENTRIES);
+	pgd[0] &= ~VALID_ENTRY_MASK;
+	pgd[0] |= ((u64)(num_of_valid_entries & 0xF)
+		   << UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR);
+	pgd[1] &= ~VALID_ENTRY_MASK;
+	pgd[1] |= ((u64)((num_of_valid_entries >> 4) & 0xF)
+		   << UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR);
+	pgd[2] &= ~VALID_ENTRY_MASK;
+	pgd[2] |= ((u64)((num_of_valid_entries >> 8) & 0xF)
+		   << UNUSED_BIT_POSITION_IN_PAGE_DESCRIPTOR);
+}
+
+static void entry_set_pte(u64 *pgd, u64 vpfn, phys_addr_t phy)
+{
+	unsigned int nr_entries = get_num_valid_entries(pgd);
+	page_table_entry_set(&pgd[vpfn], (phy & PAGE_MASK) | ENTRY_ACCESS_BIT |
+						 ENTRY_IS_PTE);
+	set_num_valid_entries(pgd, nr_entries + 1);
+}
+
+static void entries_invalidate(u64 *entry, u32 count)
+{
+	u32 i;
+
+	for (i = 0; i < count; i++)
+		page_table_entry_set(entry + i, ENTRY_IS_INVAL);
 }
 
 static struct kbase_mmu_mode const lpae_mode = {
@@ -205,7 +244,9 @@ static struct kbase_mmu_mode const lpae_mode = {
 	.pte_is_valid = pte_is_valid,
 	.entry_set_ate = entry_set_ate,
 	.entry_set_pte = entry_set_pte,
-	.entry_invalidate = entry_invalidate,
+	.entries_invalidate = entries_invalidate,
+	.get_num_valid_entries = get_num_valid_entries,
+	.set_num_valid_entries = set_num_valid_entries,
 	.flags = 0
 };
 

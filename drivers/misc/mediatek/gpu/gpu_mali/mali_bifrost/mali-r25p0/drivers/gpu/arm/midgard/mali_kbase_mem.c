@@ -1309,7 +1309,7 @@ struct kbase_va_region *kbase_alloc_free_region(struct rb_root *rbtree,
 
 	KBASE_DEBUG_ASSERT(rbtree != NULL);
 
-	/* zone argument should only contain zone related region flags */
+	/* zone argument should only contain zone related region flags. */
 	KBASE_DEBUG_ASSERT((zone & ~KBASE_REG_ZONE_MASK) == 0);
 	KBASE_DEBUG_ASSERT(nr_pages > 0);
 	/* 64-bit address range is the max */
@@ -1569,6 +1569,8 @@ static void kbase_jd_user_buf_unmap(struct kbase_context *kctx,
 int kbase_gpu_munmap(struct kbase_context *kctx, struct kbase_va_region *reg)
 {
 	int err = 0;
+	size_t i;
+	struct kbase_mem_phy_alloc *alloc;
 
 	if (reg->start_pfn == 0)
 		return 0;
@@ -1578,7 +1580,28 @@ int kbase_gpu_munmap(struct kbase_context *kctx, struct kbase_va_region *reg)
 
 	/* Tear down down GPU page tables, depending on memory type. */
 	switch (reg->gpu_alloc->type) {
-	case KBASE_MEM_TYPE_ALIAS: /* Fall-through */
+	case KBASE_MEM_TYPE_ALIAS: {
+		i = 0;
+		alloc = reg->gpu_alloc;
+		/* Due to the way the number of valid PTEs and ATEs are tracked
+		 * currently, only the GPU virtual range that is backed & mapped
+		 * should be passed to the kbase_mmu_teardown_pages() function,
+		 * hence individual aliased regions needs to be unmapped
+		 * separately.
+		 */
+		for (i = 0; i < alloc->imported.alias.nents; i++) {
+			if (alloc->imported.alias.aliased[i].alloc) {
+				err = kbase_mmu_teardown_pages(
+					kctx->kbdev, &kctx->mmu,
+					reg->start_pfn +
+						(i *
+						 alloc->imported.alias.stride),
+					alloc->imported.alias.aliased[i].length,
+					kctx->as_nr);
+			}
+		}
+	} break;
+
 	case KBASE_MEM_TYPE_IMPORTED_UMM:
 		err = kbase_mmu_teardown_pages(kctx->kbdev, &kctx->mmu,
 				reg->start_pfn, reg->nr_pages, kctx->as_nr);
