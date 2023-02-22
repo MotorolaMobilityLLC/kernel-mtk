@@ -2944,8 +2944,10 @@ static unsigned int __mt_gpufreq_get_cur_vsram_gpu(void)
 {
 	unsigned int volt = 0;
 
-	/* regulator_get_voltage prints volt with uV */
-	volt = regulator_get_voltage(g_pmic->reg_vsram_gpu) / 10;
+	if (regulator_is_enabled(g_pmic->reg_vsram_gpu)) {
+		/* regulator_get_voltage prints volt with uV */
+		volt = regulator_get_voltage(g_pmic->reg_vsram_gpu) / 10;
+	}
 
 	return volt;
 }
@@ -2956,10 +2958,10 @@ static unsigned int __mt_gpufreq_get_cur_vsram_gpu(void)
 static unsigned int __mt_gpufreq_get_cur_vgpu(void)
 {
 	unsigned int volt = 0;
-
-	/* regulator_get_voltage prints volt with uV */
-	volt = regulator_get_voltage(g_pmic->reg_vgpu) / 10;
-
+	if (regulator_is_enabled(g_pmic->reg_vgpu)){
+		/* regulator_get_voltage prints volt with uV */
+		volt = regulator_get_voltage(g_pmic->reg_vgpu) / 10;
+	}
 	return volt;
 }
 
