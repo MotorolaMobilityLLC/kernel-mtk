@@ -2144,7 +2144,10 @@ void update_charging_limit_modes(struct charger_manager *info, int batt_soc)
 #define TURBO_CHRG_THRSH 2500
 int mmi_chrg_rate_check(void)
 {
-	int chg_rate, icl, icl_c, rc;
+	int chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+	int icl = 0;
+	int icl_c = 0;
+	int  rc = 0;
 	union power_supply_propval val;
 	char *charge_rate[] = {
 		"None", "Normal", "Weak", "Turbo"
@@ -2153,6 +2156,26 @@ int mmi_chrg_rate_check(void)
 	if (pinfo == NULL) {
 		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
 		goto end_rate_check;
+	}
+
+	if (!pinfo->wl_psy) {
+		pinfo->wl_psy = power_supply_get_by_name("wireless");
+	}
+	if (pinfo->wl_psy) {
+		rc = power_supply_get_property(pinfo->wl_psy,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+		if (val.intval) {
+			rc = power_supply_get_property(pinfo->wl_psy,
+				POWER_SUPPLY_PROP_POWER_NOW, &val);
+			if (val.intval >= WLS_RX_CAP_15W) {
+				chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+			} else if(val.intval >= WLS_RX_CAP_5W) {
+				chg_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+			} else {
+				chg_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
+			}
+			goto end_rate_check;
+		}
 	}
 
 	icl = pinfo->chg1_data.input_current_limit / 1000;
