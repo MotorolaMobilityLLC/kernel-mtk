@@ -1539,7 +1539,7 @@ static void mmi_charger_ffc_init(struct charger_manager *info)
 
 	mmi->ffc_state = CHARGER_FFC_STATE_INITIAL;
 	mmi->ffc_entry_threshold = 2000000;
-	mmi->ffc_exit_threshold =  0;
+	mmi->ffc_exit_threshold =  1800000;
 	mmi->ffc_ibat_windowsum = 0;
 	mmi->ffc_ibat_count = 0;
 	mmi->ffc_ibat_windowsize = 6;
@@ -2385,12 +2385,13 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 	int rc;
 	bool loop = true;
 	struct mmi_params *mmi = &info->mmi;
-	int max_fv_mv = _max_fv_mv;
+	int max_fv_mv = _max_fv_mv, vbatt;
+	int vcurr;
 	union power_supply_propval val;
 	unsigned long target_timestamp;
 
 	do {
-		pr_debug("[%s] ffc_state:%d, charge state:%d, uisoc:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc);
+		pr_debug("[%s] ffc_state:%d, charge stage:%d, uisoc:%d\n", __func__, mmi->ffc_state, current_charge_state, batt_soc);
 		switch (mmi->ffc_state) {
 			case CHARGER_FFC_STATE_INITIAL:
 				if (current_charge_state == STEP_MAX &&
@@ -2400,16 +2401,17 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 						info->data.ac_charger_input_current += 500000;
 						/* bump charging current +500mA to try ffc */
 						charger_dev_set_input_current(info->chg1_dev, info->data.ac_charger_input_current);
+						pr_debug("[%s] bump inputcur up to %d\n", __func__, info->data.ac_charger_input_current);
 					}
 
 					if (batt_soc >= mmi->ffc_uisoc_threshold) {
 						mmi->ffc_state = CHARGER_FFC_STATE_PROBING;
-						pr_debug("[%s] set input current bump to %d\n", __func__, info->data.ac_charger_input_current);
+						pr_debug("[%s] uisoc is up to %d, ffc probing starts\n", __func__, mmi->ffc_uisoc_threshold);
 					}
 				}
 				else {
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
-					pr_debug("[%s] ui_soc:%d, charge_type:%d\n", __func__, batt_soc, info->chr_type);
+					pr_debug("[%s] ui_soc:%d, charge_type:%d not for ffc\n", __func__, batt_soc, info->chr_type);
 				}
 				loop = false;
 			break;
@@ -2428,7 +2430,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 					}
 
 					if (val.intval > mmi->ffc_entry_threshold) {
-						pr_debug("[%s] current can bump up to entry threshold:%d\n", __func__, mmi->ffc_entry_threshold);
+						pr_debug("[%s] charging current can bump up to entry threshold:%d\n", __func__, mmi->ffc_entry_threshold);
 						mmi->ffc_state = CHARGER_FFC_STATE_STANDBY;
 					}
 					else if (val.intval == 0) {
@@ -2442,12 +2444,12 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 				}
 				else {
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
-					pr_debug("[%s] current charge state fliped, ffc session quit\n", __func__);
+					pr_debug("[%s] invalid stage:%d, ffc session quit\n", __func__, current_charge_state);
 				}
 			break;
 			case CHARGER_FFC_STATE_STANDBY:
 				if (current_charge_state != STEP_MAX && current_charge_state != STEP_NORM) {
-					pr_info("[%s] unexpected charge status %d in ffc_state:%d\n", __func__, current_charge_state, mmi->ffc_state);
+					pr_info("[%s] invalid stage:%d in ffc_state:%d\n", __func__, current_charge_state, mmi->ffc_state);
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
 				}
@@ -2483,7 +2485,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 			break;
 			case CHARGER_FFC_STATE_GOREADY:
 				if (current_charge_state != STEP_NORM) {
-					pr_err("%s] charge status:%d in ffc_state:%d, quit ffc session\n", __func__, current_charge_state, mmi->ffc_state);
+					pr_err("%s] invalid stage:%d in ffc_state:%d, quit ffc session\n", __func__, current_charge_state, mmi->ffc_state);
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
 				}
@@ -2495,7 +2497,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 				max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
 				if (max_fv_mv == 0) {
 					max_fv_mv = _max_fv_mv;
-					pr_info("[%s] NORMAL set the max_fv_mv fail, reset value to %d\n", __func__, max_fv_mv);
+					pr_info("[%s] set ffc max_fv_mv fail, reset value to %d\n", __func__, max_fv_mv);
 				}
 				mmi->ffc_state = CHARGER_FFC_STATE_RUNNING;
 				loop = false;
@@ -2503,7 +2505,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 			break;
 			case CHARGER_FFC_STATE_RUNNING:
 				if (current_charge_state != STEP_NORM) {
-					pr_err("%s] charge status:%d in ffc_state:%d, quit ffc session\n", __func__, current_charge_state, mmi->ffc_state);
+					pr_err("%s] invalid stage:%d in ffc_state:%d, quit ffc session\n", __func__, current_charge_state, mmi->ffc_state);
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
 				}
@@ -2512,23 +2514,53 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
 				}
-				mmi->ffc_ibat_count++;
-				mmi->ffc_ibat_windowsum += val.intval;
-				loop = false;
+
+				if (val.intval < 0) {
+					pr_err("[%s] still in discharging at:%d, retry\n", __func__, val.intval);
+					break;
+				}
+
+				vcurr = val.intval;
+
+				if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val)) < 0) {
+					pr_err("[%s] Error getting batt voltage rc=%d\n", __func__, rc);
+					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
+					break;
+				}
+
+				if (val.intval < 0) {
+					pr_err("[%s] error batt voltage:%d, retry\n", __func__, val.intval);
+					break;
+				}
+
+				vbatt = val.intval / 1000;
 
 				max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
 				if (max_fv_mv == 0) {
 					max_fv_mv = _max_fv_mv;
-					pr_info("[%s] NORMAL set the max_fv_mv fail, reset value to %d\n", __func__, max_fv_mv);
+					pr_info("[%s] get ffc max_fv_mv fail, reset value to %d\n", __func__, max_fv_mv);
+					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
+					break;
 				}
 
-				if ((mmi->ffc_ibat_count % mmi->ffc_ibat_windowsize) == 0) {
-					mmi->ffc_iavg = mmi->ffc_ibat_windowsum / mmi->ffc_ibat_count;
-					if (mmi->ffc_iavg <= mmi->ffc_exit_threshold) {
-						loop = true;
-						mmi->ffc_state = CHARGER_FFC_STATE_AVGEXIT;
+				if (vbatt < max_fv_mv) {
+					mmi->ffc_ibat_count++;
+					mmi->ffc_ibat_windowsum += vcurr;
+					loop = false;
+
+					if ((mmi->ffc_ibat_count % mmi->ffc_ibat_windowsize) == 0) {
+						mmi->ffc_iavg = mmi->ffc_ibat_windowsum / mmi->ffc_ibat_count;
+						if (mmi->ffc_iavg <= mmi->ffc_exit_threshold) {
+							loop = true;
+							mmi->ffc_state = CHARGER_FFC_STATE_AVGEXIT;
+						}
+						pr_debug("[%s] ffc_iavg:%d in ffc, max_fv_mv:%d, vbatt:%d\n", __func__, mmi->ffc_iavg, max_fv_mv, vbatt);
 					}
-					pr_debug("[%s] ffc_iavg:%d in ffc, max_fv_mv:%d\n", __func__, mmi->ffc_iavg, max_fv_mv);
+				}
+				else {
+					pr_debug("[%s] ffc charging to target voltage:%d, quit ffc session \n", __func__, max_fv_mv);
+					mmi->ffc_state = CHARGER_FFC_STATE_FFCDONE;
+					break;
 				}
 			break;
 			case CHARGER_FFC_STATE_AVGEXIT:
@@ -2544,11 +2576,22 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 				mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 				loop = false;
 			break;
+			case CHARGER_FFC_STATE_FFCDONE:
+				max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
+				if (max_fv_mv == 0) {
+					max_fv_mv = _max_fv_mv;
+					pr_info("[%s] set ffc max_fv_mv fail, reset value to %d\n", __func__, max_fv_mv);
+					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
+					break;
+				}
+				pr_debug("[%s] ffc session done, max_fv_mv:%d\n", __func__, max_fv_mv);
+				loop = false;
+			break;
 			case CHARGER_FFC_STATE_INVALID:
 				max_fv_mv = _max_fv_mv;
 				info->data.ac_charger_input_current = info->ffc_input_current_backup;
 				// charger_dev_set_input_current(info->chg1_dev, info->data.ac_charger_input_current);
-				pr_err("[%s] ffc detection failure, quit ffc session, restore input cur:%d\n", __func__, info->data.ac_charger_input_current);
+				pr_err("[%s] no ffc session, restore input cur:%d\n", __func__, info->data.ac_charger_input_current);
 				loop = false;
 			break;
 		}
