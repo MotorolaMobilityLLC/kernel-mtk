@@ -2279,7 +2279,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		pAeCtrls = (MUINT32 *)((uintptr_t)(*(feature_data+1)));
 		if (pAeCtrls)
 			seamless_switch(ctx, (*feature_data), *pAeCtrls,
-				*(pAeCtrls+5), *(pAeCtrls+10), *(pAeCtrls+15));
+				*(pAeCtrls+5), *(pAeCtrls+1), *(pAeCtrls+6));
 		else
 			seamless_switch(ctx, (*feature_data), 0, 0, 0, 0);
 		break;
