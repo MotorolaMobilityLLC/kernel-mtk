@@ -98,6 +98,12 @@ enum {
 	EVENT_RECHARGE,
 };
 
+/*wireless charging power*/
+#define WLS_RX_CAP_15W 15
+#define WLS_RX_CAP_10W 10
+#define WLS_RX_CAP_8W 8
+#define WLS_RX_CAP_5W 5
+
 /* charger_dev notify charger_manager */
 enum {
 	CHARGER_DEV_NOTIFY_VBUS_OVP,
