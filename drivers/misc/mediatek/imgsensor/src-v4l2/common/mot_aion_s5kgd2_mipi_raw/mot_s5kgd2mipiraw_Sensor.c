@@ -134,18 +134,10 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.min_gain_iso = 100,
 	.gain_step = 2,
 	.gain_type = 2,
-	.max_frame_length = 0xffffffff,
-
-
-#if per_frame
+	.max_frame_length = 0xffff,
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
 	.ae_ispGain_delay_frame = 2,
-#else
-    	.ae_shut_delay_frame = 0,
-    	.ae_sensor_gain_delay_frame = 1,
-    	.ae_ispGain_delay_frame = 2,
-#endif
 	.ihdr_support = 0,	/* 1, support; 0,not support */
 	.ihdr_le_firstline = 0,	/* 1,le first ; 0, se first */
 	.temperature_support = 1, /* 1, support; 0,not support */
@@ -160,7 +152,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_BAYER_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
        .i2c_addr_table = {0x20, 0xff},
@@ -1154,7 +1146,7 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		break;
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_shutter;
-		*(feature_data + 2) = 1;
+		*(feature_data + 2) = 2;
 		break;
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ_BY_SCENARIO:
 		switch (*feature_data) {
