@@ -36,6 +36,8 @@
 #define mkp_debug 0
 DEBUG_SET_LEVEL(DEBUG_LEVEL_ERR);
 
+#define AUDIT_MODE 1
+
 struct work_struct *avc_work;
 
 static uint32_t g_ro_avc_handle __ro_after_init;
@@ -735,6 +737,7 @@ int __init mkp_demo_init(void)
 	unsigned long size = 0x100000;
 	struct device_node *node;
 	u32 mkp_policy = 0x0001ffff;
+	int mkp_mode = -1;
 
 	node = of_find_node_by_path("/chosen");
 	if (node) {
@@ -895,8 +898,13 @@ int __init mkp_demo_init(void)
 		}
 	}
 
-	if (policy_ctrl[MKP_POLICY_TASK_CRED] ||
-		policy_ctrl[MKP_POLICY_SELINUX_STATE]) {
+	/* More intensive per-task security checks. These should only be
+	 * enabled in the "AUDIT" mkp mode. */
+	mkp_mode = mkp_get_mode_hvc_call();
+	if ((mkp_mode == AUDIT_MODE) &&
+		(policy_ctrl[MKP_POLICY_TASK_CRED] ||
+		 policy_ctrl[MKP_POLICY_SELINUX_STATE])) {
+		pr_info("%s: MKP per-task checks enabled\n", __func__);
 		ret = register_trace_android_vh_check_mmap_file(
 				probe_android_vh_check_mmap_file, NULL);
 		if (ret) {
