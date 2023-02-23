@@ -840,7 +840,7 @@ static int mt6375_get_chg_status(struct mt6375_chg_data *ddata)
 		else
 			return POWER_SUPPLY_STATUS_NOT_CHARGING;
 	case CHG_STAT_DONE:
-		return POWER_SUPPLY_STATUS_FULL;
+		return POWER_SUPPLY_STATUS_CHARGING;
 	case CHG_STAT_FAULT:
 		return POWER_SUPPLY_STATUS_NOT_CHARGING;
 	default:
@@ -2001,6 +2001,7 @@ static int mt6375_do_event(struct charger_device *chgdev, u32 event, u32 args)
 	switch (event) {
 	case EVENT_FULL:
 		 ddata->mmi_chg_status = POWER_SUPPLY_STATUS_FULL;
+		 dev_info(ddata->dev, "%s EVENT_FULL", __func__);
 		 power_supply_changed(ddata->psy);
 		 break;
 	case EVENT_RECHARGE:
