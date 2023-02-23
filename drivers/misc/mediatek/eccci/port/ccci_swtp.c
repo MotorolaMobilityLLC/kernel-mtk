@@ -68,7 +68,7 @@ struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
-#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
 static u16 swtp_gpio_pin[MAX_PIN_NUM] = {0};
 static u8 swtp_class_creat_flag = 0;
 static ssize_t swtp_gpio_state_show(struct class *class,
@@ -460,7 +460,7 @@ static void swtp_init_delayed_work(struct work_struct *work)
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
 
-#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST)
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
 			if(swtp_data[md_id].gpiopin[i] != 0){
 				swtp_gpio_pin[i] = swtp_data[md_id].gpiopin[i];
 				//CCCI_LEGACY_ERR_LOG(md_id, SYS, "%s,swtp%d, value:%d\n",__func__, i, swtp_gpio_pin[i]);
