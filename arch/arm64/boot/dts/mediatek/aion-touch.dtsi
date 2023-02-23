@@ -77,7 +77,6 @@
 		mmi,status = "/chosen","mmi,panel_name","contains","csot_vtdr6115";
 		focaltech,edge-ctrl;
 		mmi,enable-gestures;
-		mmi,power-off-suspend;
 		mmi,supported_gesture_type = <0x07>;
     };
 };
