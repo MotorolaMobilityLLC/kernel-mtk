@@ -74,6 +74,9 @@ enum mkp_hvc_func_num {
 	/* Essential for MKP service */
 	HVC_FUNC_ESS_0 = 96,
 	HVC_FUNC_ESS_1 = 97,
+
+	/* IKSECURITY-4344 Moto: Determine how many RKP features to enable */
+	HVC_FUNC_GET_MODE = 201,
 };
 
 int mkp_set_mapping_ro_hvc_call(uint32_t policy, uint32_t handle);
@@ -110,5 +113,6 @@ int __init mkp_setup_essential_hvc_call(unsigned long phys_offset, unsigned long
 	unsigned long fixaddr_real_start);
 
 int __init mkp_start_granting_hvc_call(void);
+int __init mkp_get_mode_hvc_call(void);
 
 #endif /* _MKP_HVC_H */
