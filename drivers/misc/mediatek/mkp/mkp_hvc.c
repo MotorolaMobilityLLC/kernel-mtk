@@ -323,3 +323,23 @@ int __init mkp_start_granting_hvc_call(void)
 
 	return ret;
 }
+
+/* Determine which / how many RKP features to enable */
+int __init mkp_get_mode_hvc_call(void)
+{
+	struct arm_smccc_res res;
+	int mkp_hvc_fast_call_id;
+	int ret = -1;
+
+	mkp_hvc_fast_call_id = MKP_HVC_CALL_ID(0, HVC_FUNC_GET_MODE);
+	mkp_smccc_hvc(mkp_hvc_fast_call_id, 0, 0, 0, 0, 0, 0, 0, &res);
+
+	/* Mode */
+	if (res.a0 == 1) {
+		ret = 1;
+	} else {
+		ret = 0;
+	}
+
+	return ret;
+}
