@@ -1883,6 +1883,7 @@
       <elf-symbol name='devm_regulator_register' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc151236f'/>
       <elf-symbol name='devm_regulator_register_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa1f5c258'/>
       <elf-symbol name='devm_regulator_unregister_notifier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x83bce697'/>
+      <elf-symbol name='devm_release_resource' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xfb306128'/>
       <elf-symbol name='devm_remove_action' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x5e69a909'/>
       <elf-symbol name='devm_request_any_context_irq' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x366cbccd'/>
       <elf-symbol name='devm_request_pci_bus_resources' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf3b1e0f6'/>
@@ -3449,6 +3450,7 @@
       <elf-symbol name='irq_do_set_affinity' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6339391b'/>
       <elf-symbol name='irq_domain_add_legacy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x75d8e8dd'/>
       <elf-symbol name='irq_domain_alloc_irqs_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x245655f7'/>
+      <elf-symbol name='irq_domain_associate_many' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf3e95203'/>
       <elf-symbol name='irq_domain_create_hierarchy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x78cded33'/>
       <elf-symbol name='irq_domain_disconnect_hierarchy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xacc1fea0'/>
       <elf-symbol name='irq_domain_free_irqs_common' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1436aef4'/>
@@ -51587,7 +51589,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -136902,6 +136904,11 @@
         <parameter type-id='d504f73d' name='nb' filepath='drivers/regulator/devres.c' line='405' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='devm_release_resource' mangled-name='devm_release_resource' filepath='kernel/resource.c' line='1523' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_release_resource'>
+        <parameter type-id='fa0b179b' name='dev' filepath='kernel/resource.c' line='1523' column='1'/>
+        <parameter type-id='c9d64c0d' name='new' filepath='kernel/resource.c' line='1523' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='devm_remove_action' mangled-name='devm_remove_action' filepath='drivers/base/devres.c' line='754' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_remove_action'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/base/devres.c' line='754' column='1'/>
         <parameter type-id='b7f9d8e6' name='action' filepath='drivers/base/devres.c' line='754' column='1'/>
@@ -145078,6 +145085,13 @@
         <parameter type-id='f0981eeb' name='nr_irqs' filepath='kernel/irq/irqdomain.c' line='1715' column='1'/>
         <parameter type-id='eaa32e2f' name='arg' filepath='kernel/irq/irqdomain.c' line='1716' column='1'/>
         <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='irq_domain_associate_many' mangled-name='irq_domain_associate_many' filepath='kernel/irq/irqdomain.c' line='612' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='irq_domain_associate_many'>
+        <parameter type-id='7544e824' name='domain' filepath='kernel/irq/irqdomain.c' line='612' column='1'/>
+        <parameter type-id='f0981eeb' name='irq_base' filepath='kernel/irq/irqdomain.c' line='612' column='1'/>
+        <parameter type-id='88370ce9' name='hwirq_base' filepath='kernel/irq/irqdomain.c' line='613' column='1'/>
+        <parameter type-id='95e97e5e' name='count' filepath='kernel/irq/irqdomain.c' line='613' column='1'/>
+        <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='irq_domain_create_hierarchy' mangled-name='irq_domain_create_hierarchy' filepath='kernel/irq/irqdomain.c' line='1095' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='irq_domain_create_hierarchy'>
         <parameter type-id='7544e824' name='parent' filepath='kernel/irq/irqdomain.c' line='1095' column='1'/>
@@ -162621,6 +162635,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
