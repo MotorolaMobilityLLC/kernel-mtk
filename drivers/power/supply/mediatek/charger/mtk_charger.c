@@ -2202,7 +2202,7 @@ int mmi_chrg_rate_check(void)
 			}
 	}
 
-#if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT)
+#if defined(CONFIG_MOTO_CHG_BQ25601_SUPPORT) || defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) || defined(CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT)
 	if (icl > TURBO_CHRG_THRSH) {
 #else
 	if (icl >= TURBO_CHRG_THRSH) {
