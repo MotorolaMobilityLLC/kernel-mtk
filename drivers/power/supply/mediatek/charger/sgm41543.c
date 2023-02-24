@@ -203,6 +203,8 @@ static const struct charger_properties sgm41543_chg_props = {
 	.alias_name = "sgm41543",
 };
 
+static int sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg, bool query, int *vbat_uV_out);
+
 static int __sgm41543_read_reg(struct sgm41543 *bq, u8 reg, u8 *data)
 {
 	s32 ret;
@@ -1602,6 +1604,27 @@ static int sgm41543_set_boost_ilmt(struct charger_device *chg_dev, u32 curr)
 	return ret;
 }
 
+static int sgm41543_get_adc(struct charger_device *chg_dev, enum adc_channel chan, int *min, int *max)
+{
+	struct sgm41543 *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret = -ENOTSUPP;
+
+	switch (chan) {
+		case ADC_CHANNEL_VBAT:
+			ret = sgm41543_run_ir_compensation(bq, true, min);
+			if (!ret) {
+				if (max && min) {
+					*max = *min;
+				}
+			}
+		break;
+		default:
+		break;
+	}
+
+	return ret;
+}
+
 int sgm41543_force_dpdm(struct sgm41543 *bq)
 {
 	int ret, timeout = 50;
@@ -1756,6 +1779,10 @@ static struct charger_ops sgm41543_chg_ops = {
 	/* ADC */
 	.get_tchg_adc = NULL,
 	.get_vbus_adc = sgm41543_get_vbus,
+
+	/* General ADC */
+	.get_adc = sgm41543_get_adc,
+
 	/* Event */
 	.event = sgm41543_do_event,
 };
@@ -1929,10 +1956,10 @@ static void sgm41543_dynamic_adjust_charge_voltage(struct sgm41543 *sgm_chg, int
 }
 
 /* enable dynamic adjust battery voltage */
-static void sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg)
+static int sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg, bool query, int *vbat_uV_out)
 {
 	int vbat_uV, ibat_ua;
-	int ret;
+	int ret = 0;
 	struct power_supply *batt_psy;
 	union power_supply_propval propval;
 
@@ -1947,7 +1974,7 @@ static void sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg)
 		if (ret < 0) {
 			pr_err("[%s]: get current failed, ret = %d\n", __func__, ret);
 			__pm_relax(sgm_chg->ir_wakelock);
-			return;
+			return ret;
 		}
 		ibat_ua = propval.intval;
 		ret = power_supply_get_property(batt_psy,
@@ -1955,7 +1982,7 @@ static void sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg)
 		if (ret < 0) {
 			pr_err("[%s]: get voltage failed, ret = %d\n", __func__, ret);
 			__pm_relax(sgm_chg->ir_wakelock);
-			return;
+			return ret;
 		}
 		vbat_uV = propval.intval;
 	} else {
@@ -1966,13 +1993,19 @@ static void sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg)
 			ibat_ua, sgm_chg->final_cc, vbat_uV, sgm_chg->final_cv);
 	if (((ibat_ua > 10000) && ibat_ua < (sgm_chg->final_cc-100000)) || (vbat_uV > sgm_chg->final_cv)) {
 		/* vbat - iR */
-		vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 10 * 1000;
-		sgm41543_dynamic_adjust_charge_voltage(sgm_chg, vbat_uV, ibat_ua);
+		vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 13 * 1000;
+		if (!query) {
+			sgm41543_dynamic_adjust_charge_voltage(sgm_chg, vbat_uV, ibat_ua);
+		}
 		dev_err(sgm_chg->dev, "[%s] ibat_ma=%d vbat_uV=%d \n",__func__, ibat_ua, vbat_uV);
 	}
 
+	if (vbat_uV_out) {
+		*vbat_uV_out = vbat_uV;
+	}
+
 	__pm_relax(sgm_chg->ir_wakelock);
-	return;
+	return ret;
 }
 
 static void sgm41543_monitor_workfunc(struct work_struct *work)
@@ -2004,7 +2037,7 @@ static void sgm41543_monitor_workfunc(struct work_struct *work)
 
 	/* enable dynamic adjust battery voltage */
 	if (sgm_chg->enable_dynamic_adjust_batvol) {
-		sgm41543_run_ir_compensation(sgm_chg);
+		sgm41543_run_ir_compensation(sgm_chg, false, NULL);
 	}
 
 	schedule_delayed_work(&sgm_chg->monitor_work, msecs_to_jiffies(10000));
