@@ -26,6 +26,8 @@
 
 
 static DEFINE_MUTEX(vtskin_mutex);
+static DEFINE_MUTEX(vtskin_mutex_policy);
+
 
 
 static kuid_t uid = KUIDT_INIT(0);
@@ -841,7 +843,13 @@ static int mtktsvtskin_get_temp(struct thermal_zone_device *thermal, int *temp)
 			return -EINVAL;
 		}
 		pr_notice("vtskin_get_temp sensor_name   %s\n", sensor_name);
-		tzd = thermal_zone_get_zone_by_name(sensor_name);
+		if(!mutex_trylock(&vtskin_mutex_policy)) {
+			*temp = THERMAL_TEMP_INVALID;
+			return 0;
+		} else {
+			tzd = thermal_zone_get_zone_by_name(sensor_name);
+			mutex_unlock(&vtskin_mutex_policy);
+		}
 		if (IS_ERR_OR_NULL(tzd) || !tzd->ops->get_temp) {
 			pr_notice("get %s temp fail\n", sensor_name);
 			*temp = THERMAL_TEMP_INVALID;
@@ -1247,8 +1255,10 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 		mtktsvtskin_dprintk(
 				"[%s] mtktsvtskin_unregister_thermal\n",
 				__func__);
-
+		mutex_lock(&vtskin_mutex_policy);
 		mtktsvtskin3_unregister_thermal();
+		mutex_unlock(&vtskin_mutex_policy);
+
 		pr_notice("num_trip3 mtktsvtskin_write [%d]\n",num_trip3);
 
 		if (num_trip3 < 0 || num_trip3 > 10) {
@@ -1465,8 +1475,9 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 		mtktsvtskin_dprintk(
 				"[%s] mtktsvtskin_unregister_thermal\n",
 				__func__);
-
+		mutex_lock(&vtskin_mutex_policy);
 		mtktsvtskin2_unregister_thermal();
+		mutex_unlock(&vtskin_mutex_policy);
 		pr_notice("num_trip2 mtktsvtskin_write [%d]\n",num_trip2);
 
 		if (num_trip2 < 0 || num_trip2 > 10) {
@@ -1685,7 +1696,9 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 		mtktsvtskin_dprintk(
 				"[%s] mtktsvtskin_unregister_thermal\n",__func__);
 
+		mutex_lock(&vtskin_mutex_policy);
 		mtktsvtskin1_unregister_thermal();
+		mutex_unlock(&vtskin_mutex_policy);
 		pr_notice("num_trip1 mtktsvtskin_write [%d]\n",num_trip1);
 
 		if (num_trip1 < 0 || num_trip1 > 10) {
@@ -1771,7 +1784,6 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 
 		mtktsvtskin_dprintk(
 			"[%s] mtktsvtskin_register_thermal\n", __func__);
-
 
 		mtktsvtskin1_register_thermal();
 		up(&sem_mutex);
@@ -1899,8 +1911,10 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 		down(&sem_mutex);
 		mtktsvtskin_dprintk(
 				"[%s] mtktsvtskin0_unregister_thermal\n",__func__);
-
+		mutex_lock(&vtskin_mutex_policy);
 		mtktsvtskin_max_unregister_thermal();
+		mutex_unlock(&vtskin_mutex_policy);
+
 		pr_notice("num_trip mtktsvtskin_write[%d]\n", num_trip);
 
 		if (num_trip < 0 || num_trip > 10) {
