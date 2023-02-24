@@ -594,7 +594,8 @@ struct charger_manager {
 #ifdef CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT
 	/* 10w ffc */
 	bool ffc_discharging;
-	int 	ffc_input_current_backup;
+	int ffc_input_current_backup;
+	int	ffc_max_fv_mv_backup;
 	struct wakeup_source *ffc_charger_wakelock;
 	struct delayed_work ffc_enable_charge_work;
 #endif
