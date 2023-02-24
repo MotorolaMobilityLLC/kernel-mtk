@@ -175,12 +175,64 @@ struct cmdq {
 	s32			gpr[CMDQ_GPR_CNT_ID];
 	bool			pair;
 	atomic_t		user;
+	struct timer_list	active_check_timer;
+	struct work_struct	active_check_work;
 };
 
 struct gce_plat {
 	u32 thread_nr;
 	u8 shift;
 };
+
+static struct cmdq *g_cmdq[2];
+static void cmdq_dump_usage(void)
+{
+	s32 i, j, usage[CMDQ_THR_MAX_COUNT];
+
+	for (i = 0; i < 2; i++) {
+		if (!g_cmdq[i])
+			continue;
+
+		cmdq_msg("%s: hwid:%hu suspend:%d usage:%d user:%d wake_lock:%d\n",
+			__func__, g_cmdq[i]->hwid, g_cmdq[i]->suspended,
+			atomic_read(&g_cmdq[i]->usage),
+			atomic_read(&g_cmdq[i]->user),
+			g_cmdq[i]->wake_locked);
+
+		for (j = 0; j < ARRAY_SIZE(g_cmdq[i]->thread); j++)
+			usage[j] = atomic_read(&g_cmdq[i]->thread[j].user_usage);
+
+		cmdq_msg("%s: thread usage:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+			__func__,
+			usage[0], usage[1], usage[2], usage[3], usage[4],
+			usage[5], usage[6], usage[7], usage[8], usage[9],
+			usage[10], usage[11], usage[12], usage[13], usage[14],
+			usage[15], usage[16], usage[17], usage[18], usage[19],
+			usage[20], usage[21], usage[22], usage[23]);
+	}
+}
+
+static void cmdq_active_resource_time_check(struct timer_list *t)
+{
+	struct cmdq *cmdq = from_timer(cmdq, t, active_check_timer);
+
+	if (!work_pending(&cmdq->active_check_work))
+		queue_work(cmdq->buf_dump_wq, &cmdq->active_check_work);
+
+	mod_timer(&cmdq->active_check_timer, jiffies + msecs_to_jiffies(2 * 60 * 1000));
+}
+
+static void cmdq_check_resource_work(struct work_struct *work_item)
+{
+	cmdq_dump_usage();
+}
+
+static void cmdq_wakelock_check(struct cmdq *cmdq)
+{
+	timer_setup(&cmdq->active_check_timer, cmdq_active_resource_time_check, 0);
+	INIT_WORK(&cmdq->active_check_work, cmdq_check_resource_work);
+	mod_timer(&cmdq->active_check_timer, jiffies + msecs_to_jiffies(2 * 60 * 1000));
+}
 
 static void cmdq_init_cpu(struct cmdq *cmdq)
 {
@@ -2028,7 +2080,10 @@ static int cmdq_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MTK_CMDQ_MBOX_EXT
 	cmdq->hwid = cmdq_util_track_ctrl(cmdq, cmdq->base_pa, false);
+	g_cmdq[cmdq->hwid] = cmdq;
 #endif
+	cmdq_wakelock_check(cmdq);
+
 	return 0;
 }
 
