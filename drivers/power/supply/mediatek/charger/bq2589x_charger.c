@@ -156,7 +156,7 @@ static int bq2589x_set_safety_timer(struct charger_device *chg_dev, bool en);
 static int bq2589x_is_safety_timer_enabled(struct charger_device *chg_dev, bool *en);
 static int bq2589x_set_hz_mode(struct charger_device *chg_dev, bool en);
 static int bq2589x_do_event(struct charger_device *chg_dev, u32 event, u32 args);
-static int bq2580x_run_ir_compensation(struct bq2589x *bq);
+static int bq2580x_run_ir_compensation(struct bq2589x *bq, bool query, int *vbat_uv_out);
 
 /* ops function */
 static int bq2589x_enable_charging(struct charger_device *chg_dev, bool enable);
@@ -1514,6 +1514,27 @@ static int bq2589x_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 	return 0;
 }
 
+static int bq2589x_get_adc(struct charger_device *chg_dev, enum adc_channel chan, int *min, int *max)
+{
+	int ret = -ENOTSUPP;
+	struct bq2589x *bq = charger_get_data(chg_dev);
+
+	switch (chan) {
+		case ADC_CHANNEL_VBAT:
+			ret = bq2580x_run_ir_compensation(bq, true, min);
+			if (!ret) {
+				if (max && min) {
+					*max = *min;
+				}
+			}
+		break;
+		default:
+		break;
+	}
+
+	return ret;
+}
+
 static int bq2589x_init_device(struct bq2589x *bq)
 {
 	int ret;
@@ -2132,11 +2153,11 @@ static void bq2589x_adjust_constant_voltage(struct bq2589x *bq, int vbat, int ib
 }
 
 /* enable dynamic adjust battery voltage */
-static int bq2580x_run_ir_compensation(struct bq2589x *bq)
+static int bq2580x_run_ir_compensation(struct bq2589x *bq, bool query, int *vbat_uV_out)
 {
 	union power_supply_propval val_battery = {0};
 	int ret = 0;
-	int vbat_uv, ibat_ua;
+	int vbat_uV = 0, ibat_ua;
 
 	if (!bq->ir_wakelock->active) {
 		__pm_stay_awake(bq->ir_wakelock);
@@ -2170,18 +2191,25 @@ static int bq2580x_run_ir_compensation(struct bq2589x *bq)
 			__pm_relax(bq->ir_wakelock);
 			return ret;
 		}
-		vbat_uv = val_battery.intval;
+		vbat_uV = val_battery.intval;
 		dev_err(bq->dev, "[%s] vbat=%duV, cv=%duV, ibat=%duA, cc=%duA,tune=%d\n", __func__,
-			vbat_uv, bq->final_cv, ibat_ua, bq->final_cc,bq->cv_tune);
+			vbat_uV, bq->final_cv, ibat_ua, bq->final_cc,bq->cv_tune);
 
-		if ((ibat_ua > 10000 && ibat_ua < (bq->final_cc - 100000)) || vbat_uv > bq->final_cv) {
-			vbat_uv = vbat_uv - (ibat_ua * 18) / 1000 + 10 * 1000;
-			dev_err(bq->dev, "[%s] vbat=%duV, cv=%duV\n", __func__, vbat_uv, bq->final_cv);
-			bq2589x_adjust_constant_voltage(bq, vbat_uv, ibat_ua);
+		if ((ibat_ua > 10000 && ibat_ua < (bq->final_cc - 100000)) || vbat_uV > bq->final_cv) {
+			vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 13 * 1000;
+			dev_err(bq->dev, "[%s] vbat=%duV, cv=%duV\n", __func__, vbat_uV, bq->final_cv);
+			if (!query) {
+				bq2589x_adjust_constant_voltage(bq, vbat_uV, ibat_ua);
+			}
 		}
 	}
 
 	__pm_relax(bq->ir_wakelock);
+
+	if (vbat_uV_out) {
+		*vbat_uV_out = vbat_uV;
+	}
+
 	return 0;
 }
 
@@ -2223,7 +2251,7 @@ static void bq2589x_monitor_workfunc(struct work_struct *work)
 
 	/* enable dynamic adjust battery voltage */
 	if (bq->enable_dynamic_adjust_batvol) {
-		bq2580x_run_ir_compensation(bq);
+		bq2580x_run_ir_compensation(bq, false, NULL);
 	}
 
 #ifdef CONFIG_CUSTOMER_SUPPORT
@@ -2464,6 +2492,9 @@ static struct charger_ops bq2589x_chg_ops = {
 	.get_tchg_adc = NULL,
 	.enable_hz = bq2589x_set_hz_mode,
 	.event = bq2589x_do_event,
+
+	/* General ADC */
+	.get_adc = bq2589x_get_adc,
 
 	/* Shipping mode */
 	//.enable_shipping_mode = bq2589x_enable_shipping_mode,
