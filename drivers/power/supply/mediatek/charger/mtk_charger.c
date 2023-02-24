@@ -1548,6 +1548,7 @@ static void mmi_charger_ffc_init(struct charger_manager *info)
 	mmi->ffc_uisoc_threshold = 75;
 
 	info->ffc_discharging = false;
+	info->ffc_max_fv_mv_backup = 4510;
 	info->data.ac_charger_input_current = info->ffc_input_current_backup;
 	pr_debug("[%s] ffc initilaize...\n", __func__);
 }
@@ -2391,16 +2392,42 @@ static void ffc_enable_charge_work(struct work_struct *work)
 	struct charger_manager *info = container_of(work,
 							struct charger_manager, ffc_enable_charge_work.work);
 	enum charger_type chr_type;
+	int rc;
+	int vbat_min = 0, vbat_max = 0, vbatt = 0;
 
-	chr_type = mt_get_charger_type();
+	do {
+		rc = charger_dev_get_adc(info->chg1_dev, ADC_CHANNEL_VBAT, &vbat_min, &vbat_max);
 
-	info->ffc_discharging = false;
+		if (rc < 0) {
+			pr_err("[%s] Error getting batt voltage rc=%d\n", __func__, rc);
+			break;
+		}
 
-	if (chr_type != CHARGER_UNKNOWN) {
-		_wake_up_charger(pinfo);
+		if (vbat_min < 0) {
+			pr_err("[%s] error batt voltage:%d:%d\n", __func__, vbat_min, vbat_max);
+			break;
+		}
+
+		vbatt = vbat_min / 1000;
+
+	} while (0);
+
+	if (info->ffc_max_fv_mv_backup >= vbatt) {
+		info->ffc_discharging = false;
+		chr_type = mt_get_charger_type();
+
+		if (chr_type != CHARGER_UNKNOWN) {
+			_wake_up_charger(pinfo);
+		}
+		__pm_relax(info->ffc_charger_wakelock);
 	}
-	pr_err("ffc_enable_charge_work\n");
-	__pm_relax(info->ffc_charger_wakelock);
+	else {
+		if (!info->ffc_charger_wakelock->active)
+			__pm_stay_awake(info->ffc_charger_wakelock);
+		schedule_delayed_work(&info->ffc_enable_charge_work, 5 * HZ);
+	}
+
+	pr_info("ffc_enable_charge_work\n");
 }
 
 static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int batt_soc, int current_charge_state, int _max_fv_mv)
@@ -2409,7 +2436,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 	bool loop = true;
 	struct mmi_params *mmi = &info->mmi;
 	int max_fv_mv = _max_fv_mv, vbatt;
-	int vcurr;
+	int vcurr, vbat_min = 0, vbat_max = 0;
 	union power_supply_propval val;
 	unsigned long target_timestamp;
 
@@ -2440,7 +2467,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 			break;
 			case CHARGER_FFC_STATE_PROBING:
 				if (current_charge_state == STEP_MAX || current_charge_state == STEP_NORM) {
-					if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_CURRENT_AVG, &val)) < 0) {
+					if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_CURRENT_NOW, &val)) < 0) {
 						pr_err("[%s] Error getting batt current avg current rc=%d\n", __func__, rc);
 						mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 						loop = false;
@@ -2486,7 +2513,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 				
 				if (time_is_before_eq_jiffies(target_timestamp) || mmi->ffc_iavg_update_timestamp == 0) {
 					/* iavg update required */
-					if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_CURRENT_AVG, &val)) < 0) {
+					if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_CURRENT_NOW, &val)) < 0) {
 						pr_err("[%s] Error getting batt current avg current rc=%d\n", __func__, rc);
 						mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 						break;
@@ -2532,7 +2559,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
 				}
-				if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_CURRENT_AVG, &val)) < 0) {
+				if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_CURRENT_NOW, &val)) < 0) {
 					pr_err("[%s] Error getting batt current avg current rc=%d\n", __func__, rc);
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
@@ -2545,18 +2572,20 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 
 				vcurr = val.intval;
 
-				if ((rc = mmi_get_prop_from_battery(info, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val)) < 0) {
+				rc = charger_dev_get_adc(info->chg1_dev, ADC_CHANNEL_VBAT, &vbat_min, &vbat_max);
+
+				if (rc < 0) {
 					pr_err("[%s] Error getting batt voltage rc=%d\n", __func__, rc);
 					mmi->ffc_state = CHARGER_FFC_STATE_INVALID;
 					break;
 				}
 
-				if (val.intval < 0) {
+				if (vbat_min < 0) {
 					pr_err("[%s] error batt voltage:%d, retry\n", __func__, val.intval);
 					break;
 				}
 
-				vbatt = val.intval / 1000;
+				vbatt = vbat_min / 1000;
 
 				max_fv_mv = mmi_get_ffc_fv(info, mmi->pres_temp_zone);
 				if (max_fv_mv == 0) {
@@ -2592,6 +2621,7 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 				mmi->ffc_ibat_windowsum = 0;
 				mmi->ffc_iavg = 0;
 				info->ffc_discharging = true;
+				info->ffc_max_fv_mv_backup = max_fv_mv;
 				if (!info->ffc_charger_wakelock->active)
 					__pm_stay_awake(info->ffc_charger_wakelock);
 				schedule_delayed_work(&info->ffc_enable_charge_work, 5 * HZ);
