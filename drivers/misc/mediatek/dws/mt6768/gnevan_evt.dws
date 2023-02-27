@@ -343,7 +343,7 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
+                <out_high>false</out_high>
                 <varName0>SENSOR_FP_3P3_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
