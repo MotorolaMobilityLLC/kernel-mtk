@@ -360,6 +360,7 @@ static int mtk_usb_extcon_tcpc_init(struct mtk_extcon_info *extcon)
 }
 #endif
 
+#ifdef MTK_BASE
 static void mtk_usb_extcon_detect_cable(struct work_struct *work)
 {
 	struct mtk_extcon_info *extcon = container_of(to_delayed_work(work),
@@ -431,6 +432,7 @@ static int mtk_usb_extcon_id_pin_init(struct mtk_extcon_info *extcon)
 
 	return 0;
 }
+#endif
 
 #if IS_ENABLED(CONFIG_TCPC_CLASS)
 #define PROC_FILE_SMT "mtk_typec"
@@ -570,12 +572,12 @@ static int mtk_usb_extcon_probe(struct platform_device *pdev)
 	extcon->extcon_wq = create_singlethread_workqueue("extcon_usb");
 	if (!extcon->extcon_wq)
 		return -ENOMEM;
-
+#ifdef MTK_BASE
 	/* get id resources */
 	ret = mtk_usb_extcon_id_pin_init(extcon);
 	if (ret < 0)
 		dev_info(dev, "failed to init id pin\n");
-
+#endif
 	/* power psy */
 	ret = mtk_usb_extcon_psy_init(extcon);
 	if (ret < 0)
