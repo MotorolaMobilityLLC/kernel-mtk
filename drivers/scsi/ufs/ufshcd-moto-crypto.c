@@ -46,7 +46,9 @@ static u32 ufshcd_get_crypto_para(const union ufs_crypto_cfg_entry *cfg, int slo
     if (cfg->config_enable == 0)
 		crypto_para |= 0x01;
 
+#ifdef CONFIG_MTK_UFS_DEBUG
 	pr_notice("ufshcd_get_crypto_para with cfg=0x%x\n", crypto_para);
+#endif
 
 	return crypto_para;
 }
@@ -65,17 +67,21 @@ static int ufshcd_program_wrapped_key(struct ufs_hba *hba,
 	ufshcd_writel(hba, 0, slot_offset + 16 * sizeof(cfg->reg_val[0]));
 	wmb();
 
+#ifdef CONFIG_MTK_UFS_DEBUG
 	/* Write dword 0-15 w/ the wrapped key through secure driver */
 	pr_notice("Trustonic HWKM: Start programming slot: %d\n", slot);
+#endif
 	if (hwkm_program_key(
 			cfg->crypto_key, /* 64 bytes wrapped key data */
 			UFS_CRYPTO_KEY_MAX_SIZE/2 + WRAPPED_STORAGE_KEY_HEADER_SIZE, /* 40 bytes in effect */
 			crypto_para,
 			STORAGE_KEY_UFS) != 0) {
-		pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE");
+		pr_notice("Trustonic HWKM: Unwrap or install storage key failed to ICE, slot=%d, cfg=0x%x\n", slot, crypto_para);
 		goto out;
 	}
+#ifdef CONFIG_MTK_UFS_DEBUG
 	pr_notice("Trustonic HWKM: End programing slot: %d\n", slot);
+#endif
 	wmb();
 
 	/* Write dword 17 */
