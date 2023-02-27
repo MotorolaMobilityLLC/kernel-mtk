@@ -82,15 +82,14 @@
                         <4200 215>,
                         <4480 215>,
                         <4480 215>,
-                        <4510 712>,
-                        <4510 816>,
-                        <4510 952>,
+                        <4510 744>,
+                        <4510 848>,
+                        <4510 984>,
                         <4200 215>;
 
         mmi,enable-charging-limit;
         mmi,upper-limit-capacity = <65>;
         mmi,lower-limit-capacity = <60>;
-        mmi,vfloat-comp-uv = <10000>;
 	enable_cp;
         mmi,min-cp-therm-current-ua = <1600000>;
 	mmi,enable-mux;//wireless channel switch
