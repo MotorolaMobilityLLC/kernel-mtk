@@ -958,11 +958,11 @@ static void sgm41543_adapter_out_workfunc(struct work_struct *work)
 	struct power_supply *chrdet_psy;
 	union power_supply_propval propval;
 
-	ret = sgm41543_set_input_volt_limit(bq, 4600);
+	ret = sgm41543_set_input_volt_limit(bq, 4700);
 	if (ret < 0)
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 failed:%d\n", __func__, ret);
 	else
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 successfully\n", __func__);
 
 	/* enable dynamic adjust battery voltage */
 	if (bq->enable_dynamic_adjust_batvol)
@@ -1139,11 +1139,11 @@ static int sgm41543_init_device(struct sgm41543 *bq)
 	if (ret)
 		pr_err("Failed to set vindpm and iindpm int mask\n");
 
-	ret = sgm41543_set_input_volt_limit(bq, 4600);
+	ret = sgm41543_set_input_volt_limit(bq, 4700);
 	if (ret < 0)
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 failed:%d\n", __func__, ret);
 	else
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 successfully\n", __func__);
 
 	return 0;
 }
