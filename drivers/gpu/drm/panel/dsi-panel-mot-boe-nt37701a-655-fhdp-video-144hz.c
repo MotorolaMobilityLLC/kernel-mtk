@@ -37,6 +37,7 @@
 #define DSC_BITS	8
 #define DSC_CFG		34
 
+//#define LCM_VDO_MODE
 
 enum panel_version{
 	PANEL_V1 = 1,
@@ -191,9 +192,19 @@ static void lcm_panel_init(struct lcm *ctx)
     lcm_dcs_write_seq_static(ctx, 0x2C);
     lcm_dcs_write_seq_static(ctx, 0x8B, 0x80);
 
+
+
+#ifndef LCM_VDO_MODE
     //FrameRate 60Hz:0x01  120HZ:0x02
     lcm_dcs_write_seq_static(ctx, 0x2F, 0x01);
-	lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0x79);
+
+    lcm_dcs_write_seq_static(ctx, 0xF0, 0x55, 0xAA, 0x52, 0x08, 0x00);
+    lcm_dcs_write_seq_static(ctx, 0xc0, 0x6e);
+#else
+    //FrameRate 60Hz:0x01  120HZ:0x02
+    lcm_dcs_write_seq_static(ctx, 0x2F, 0x01);
+    lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0x79);
+#endif
 
     /* Sleep Out */
     lcm_dcs_write_seq_static(ctx, 0x11);
@@ -362,7 +373,7 @@ static int lcm_enable(struct drm_panel *panel)
 	return 0;
 }
 
-
+#ifdef LCM_VDO_MODE
 #define HFP (32)
 #define HSA (32)
 #define HBP (32)
@@ -952,6 +963,546 @@ static struct mtk_panel_params ext_params_144hz = {
 	.use_ext_panel_feature = 1,
 };
 #endif
+#else
+#define HFP (4)
+#define HSA (4)
+#define HBP (4)
+#define HACT (1080)
+#define VFP (20)
+#define VSA (2)
+#define VBP (8)
+#define VACT (2400)
+#define PLL_CLOCK (330)
+
+static const struct drm_display_mode switch_mode_144hz = {
+	.clock		= 382112,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode switch_mode_120hz = {
+	.clock		= 318428,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode switch_mode_90hz = {
+	.clock		= 238821,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode switch_mode_60hz = {
+	.clock = 159214,
+	.hdisplay	= HACT,
+	.hsync_start	= HACT + HFP,
+	.hsync_end	= HACT + HFP + HSA,
+	.htotal		= HACT + HFP + HSA + HBP,
+	.vdisplay	= VACT,
+	.vsync_start	= VACT + VFP,
+	.vsync_end	= VACT + VFP + VSA,
+	.vtotal		= VACT + VFP + VSA + VBP,
+};
+
+static struct mtk_panel_params ext_params_60hz = {
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68256,
+	.physical_height_um = 151680,
+	.lcm_index = 0,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = DSC_CFG,
+		.rct_on = 1,
+		.bit_per_channel = DSC_BITS,
+		.dsc_line_buf_depth = 9,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+
+		.rc_buf_thresh[ 0] = 14,
+		.rc_buf_thresh[ 1] = 28,
+		.rc_buf_thresh[ 2] = 42,
+		.rc_buf_thresh[ 3] = 56,
+		.rc_buf_thresh[ 4] = 70,
+		.rc_buf_thresh[ 5] = 84,
+		.rc_buf_thresh[ 6] = 98,
+		.rc_buf_thresh[ 7] = 105,
+		.rc_buf_thresh[ 8] = 112,
+		.rc_buf_thresh[ 9] = 119,
+		.rc_buf_thresh[10] = 121,
+		.rc_buf_thresh[11] = 123,
+		.rc_buf_thresh[12] = 125,
+		.rc_buf_thresh[13] = 126,
+		.rc_range_parameters[ 0].range_min_qp = 0,
+		.rc_range_parameters[ 0].range_max_qp = 4,
+		.rc_range_parameters[ 0].range_bpg_offset = 2,
+		.rc_range_parameters[ 1].range_min_qp = 0,
+		.rc_range_parameters[ 1].range_max_qp = 4,
+		.rc_range_parameters[ 1].range_bpg_offset = 0,
+		.rc_range_parameters[ 2].range_min_qp = 1,
+		.rc_range_parameters[ 2].range_max_qp = 5,
+		.rc_range_parameters[ 2].range_bpg_offset = 0,
+		.rc_range_parameters[ 3].range_min_qp = 1,
+		.rc_range_parameters[ 3].range_max_qp = 6,
+		.rc_range_parameters[ 3].range_bpg_offset = -2,
+		.rc_range_parameters[ 4].range_min_qp = 3,
+		.rc_range_parameters[ 4].range_max_qp = 7,
+		.rc_range_parameters[ 4].range_bpg_offset = -4,
+		.rc_range_parameters[ 5].range_min_qp = 3,
+		.rc_range_parameters[ 5].range_max_qp = 7,
+		.rc_range_parameters[ 5].range_bpg_offset = -6,
+		.rc_range_parameters[ 6].range_min_qp = 3,
+		.rc_range_parameters[ 6].range_max_qp = 7,
+		.rc_range_parameters[ 6].range_bpg_offset = -8,
+		.rc_range_parameters[ 7].range_min_qp = 3,
+		.rc_range_parameters[ 7].range_max_qp = 8,
+		.rc_range_parameters[ 7].range_bpg_offset = -8,
+		.rc_range_parameters[ 8].range_min_qp = 3,
+		.rc_range_parameters[ 8].range_max_qp = 9,
+		.rc_range_parameters[ 8].range_bpg_offset = -8,
+		.rc_range_parameters[ 9].range_min_qp = 3,
+		.rc_range_parameters[ 9].range_max_qp = 10,
+		.rc_range_parameters[ 9].range_bpg_offset = -10,
+		.rc_range_parameters[10].range_min_qp = 5,
+		.rc_range_parameters[10].range_max_qp = 11,
+		.rc_range_parameters[10].range_bpg_offset = -10,
+		.rc_range_parameters[11].range_min_qp = 5,
+		.rc_range_parameters[11].range_max_qp = 12,
+		.rc_range_parameters[11].range_bpg_offset = -12,
+		.rc_range_parameters[12].range_min_qp = 5,
+		.rc_range_parameters[12].range_max_qp = 13,
+		.rc_range_parameters[12].range_bpg_offset = -12,
+		.rc_range_parameters[13].range_min_qp = 7,
+		.rc_range_parameters[13].range_max_qp = 13,
+		.rc_range_parameters[13].range_bpg_offset = -12,
+		.rc_range_parameters[14].range_min_qp = 13,
+		.rc_range_parameters[14].range_max_qp = 15,
+		.rc_range_parameters[14].range_bpg_offset = -12,
+	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
+	//.te_delay = 1,
+
+	.dyn_fps = {
+		.data_rate = 440,
+	},
+	.data_rate = 440,
+
+	.use_ext_panel_feature = 1,
+};
+static struct mtk_panel_params ext_params_90hz = {
+
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68256,
+	.physical_height_um = 151680,
+	.lcm_index = 0,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = DSC_CFG,
+		.rct_on = 1,
+		.bit_per_channel = DSC_BITS,
+		.dsc_line_buf_depth = 9,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+
+		.rc_buf_thresh[ 0] = 14,
+		.rc_buf_thresh[ 1] = 28,
+		.rc_buf_thresh[ 2] = 42,
+		.rc_buf_thresh[ 3] = 56,
+		.rc_buf_thresh[ 4] = 70,
+		.rc_buf_thresh[ 5] = 84,
+		.rc_buf_thresh[ 6] = 98,
+		.rc_buf_thresh[ 7] = 105,
+		.rc_buf_thresh[ 8] = 112,
+		.rc_buf_thresh[ 9] = 119,
+		.rc_buf_thresh[10] = 121,
+		.rc_buf_thresh[11] = 123,
+		.rc_buf_thresh[12] = 125,
+		.rc_buf_thresh[13] = 126,
+		.rc_range_parameters[ 0].range_min_qp = 0,
+		.rc_range_parameters[ 0].range_max_qp = 4,
+		.rc_range_parameters[ 0].range_bpg_offset = 2,
+		.rc_range_parameters[ 1].range_min_qp = 0,
+		.rc_range_parameters[ 1].range_max_qp = 4,
+		.rc_range_parameters[ 1].range_bpg_offset = 0,
+		.rc_range_parameters[ 2].range_min_qp = 1,
+		.rc_range_parameters[ 2].range_max_qp = 5,
+		.rc_range_parameters[ 2].range_bpg_offset = 0,
+		.rc_range_parameters[ 3].range_min_qp = 1,
+		.rc_range_parameters[ 3].range_max_qp = 6,
+		.rc_range_parameters[ 3].range_bpg_offset = -2,
+		.rc_range_parameters[ 4].range_min_qp = 3,
+		.rc_range_parameters[ 4].range_max_qp = 7,
+		.rc_range_parameters[ 4].range_bpg_offset = -4,
+		.rc_range_parameters[ 5].range_min_qp = 3,
+		.rc_range_parameters[ 5].range_max_qp = 7,
+		.rc_range_parameters[ 5].range_bpg_offset = -6,
+		.rc_range_parameters[ 6].range_min_qp = 3,
+		.rc_range_parameters[ 6].range_max_qp = 7,
+		.rc_range_parameters[ 6].range_bpg_offset = -8,
+		.rc_range_parameters[ 7].range_min_qp = 3,
+		.rc_range_parameters[ 7].range_max_qp = 8,
+		.rc_range_parameters[ 7].range_bpg_offset = -8,
+		.rc_range_parameters[ 8].range_min_qp = 3,
+		.rc_range_parameters[ 8].range_max_qp = 9,
+		.rc_range_parameters[ 8].range_bpg_offset = -8,
+		.rc_range_parameters[ 9].range_min_qp = 3,
+		.rc_range_parameters[ 9].range_max_qp = 10,
+		.rc_range_parameters[ 9].range_bpg_offset = -10,
+		.rc_range_parameters[10].range_min_qp = 5,
+		.rc_range_parameters[10].range_max_qp = 11,
+		.rc_range_parameters[10].range_bpg_offset = -10,
+		.rc_range_parameters[11].range_min_qp = 5,
+		.rc_range_parameters[11].range_max_qp = 12,
+		.rc_range_parameters[11].range_bpg_offset = -12,
+		.rc_range_parameters[12].range_min_qp = 5,
+		.rc_range_parameters[12].range_max_qp = 13,
+		.rc_range_parameters[12].range_bpg_offset = -12,
+		.rc_range_parameters[13].range_min_qp = 7,
+		.rc_range_parameters[13].range_max_qp = 13,
+		.rc_range_parameters[13].range_bpg_offset = -12,
+		.rc_range_parameters[14].range_min_qp = 13,
+		.rc_range_parameters[14].range_max_qp = 15,
+		.rc_range_parameters[14].range_bpg_offset = -12,
+	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
+	//.te_delay = 1,
+
+	.dyn_fps = {
+		.data_rate = 630,
+	},
+	.data_rate = 630,
+
+	.use_ext_panel_feature = 1,
+};
+static struct mtk_panel_params ext_params_120hz = {
+
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68256,
+	.physical_height_um = 151680,
+	.lcm_index = 0,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = DSC_CFG,
+		.rct_on = 1,
+		.bit_per_channel = DSC_BITS,
+		.dsc_line_buf_depth = 9,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+
+		.rc_buf_thresh[ 0] = 14,
+		.rc_buf_thresh[ 1] = 28,
+		.rc_buf_thresh[ 2] = 42,
+		.rc_buf_thresh[ 3] = 56,
+		.rc_buf_thresh[ 4] = 70,
+		.rc_buf_thresh[ 5] = 84,
+		.rc_buf_thresh[ 6] = 98,
+		.rc_buf_thresh[ 7] = 105,
+		.rc_buf_thresh[ 8] = 112,
+		.rc_buf_thresh[ 9] = 119,
+		.rc_buf_thresh[10] = 121,
+		.rc_buf_thresh[11] = 123,
+		.rc_buf_thresh[12] = 125,
+		.rc_buf_thresh[13] = 126,
+		.rc_range_parameters[ 0].range_min_qp = 0,
+		.rc_range_parameters[ 0].range_max_qp = 4,
+		.rc_range_parameters[ 0].range_bpg_offset = 2,
+		.rc_range_parameters[ 1].range_min_qp = 0,
+		.rc_range_parameters[ 1].range_max_qp = 4,
+		.rc_range_parameters[ 1].range_bpg_offset = 0,
+		.rc_range_parameters[ 2].range_min_qp = 1,
+		.rc_range_parameters[ 2].range_max_qp = 5,
+		.rc_range_parameters[ 2].range_bpg_offset = 0,
+		.rc_range_parameters[ 3].range_min_qp = 1,
+		.rc_range_parameters[ 3].range_max_qp = 6,
+		.rc_range_parameters[ 3].range_bpg_offset = -2,
+		.rc_range_parameters[ 4].range_min_qp = 3,
+		.rc_range_parameters[ 4].range_max_qp = 7,
+		.rc_range_parameters[ 4].range_bpg_offset = -4,
+		.rc_range_parameters[ 5].range_min_qp = 3,
+		.rc_range_parameters[ 5].range_max_qp = 7,
+		.rc_range_parameters[ 5].range_bpg_offset = -6,
+		.rc_range_parameters[ 6].range_min_qp = 3,
+		.rc_range_parameters[ 6].range_max_qp = 7,
+		.rc_range_parameters[ 6].range_bpg_offset = -8,
+		.rc_range_parameters[ 7].range_min_qp = 3,
+		.rc_range_parameters[ 7].range_max_qp = 8,
+		.rc_range_parameters[ 7].range_bpg_offset = -8,
+		.rc_range_parameters[ 8].range_min_qp = 3,
+		.rc_range_parameters[ 8].range_max_qp = 9,
+		.rc_range_parameters[ 8].range_bpg_offset = -8,
+		.rc_range_parameters[ 9].range_min_qp = 3,
+		.rc_range_parameters[ 9].range_max_qp = 10,
+		.rc_range_parameters[ 9].range_bpg_offset = -10,
+		.rc_range_parameters[10].range_min_qp = 5,
+		.rc_range_parameters[10].range_max_qp = 11,
+		.rc_range_parameters[10].range_bpg_offset = -10,
+		.rc_range_parameters[11].range_min_qp = 5,
+		.rc_range_parameters[11].range_max_qp = 12,
+		.rc_range_parameters[11].range_bpg_offset = -12,
+		.rc_range_parameters[12].range_min_qp = 5,
+		.rc_range_parameters[12].range_max_qp = 13,
+		.rc_range_parameters[12].range_bpg_offset = -12,
+		.rc_range_parameters[13].range_min_qp = 7,
+		.rc_range_parameters[13].range_max_qp = 13,
+		.rc_range_parameters[13].range_bpg_offset = -12,
+		.rc_range_parameters[14].range_min_qp = 13,
+		.rc_range_parameters[14].range_max_qp = 15,
+		.rc_range_parameters[14].range_bpg_offset = -12,
+	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
+	//.te_delay = 1,
+
+	.dyn_fps = {
+		.data_rate = 820,
+	},
+	.data_rate = 820,
+
+	.use_ext_panel_feature = 1,
+};
+
+static struct mtk_panel_params ext_params_144hz = {
+
+	.cust_esd_check = 0,
+	.esd_check_enable = 1,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.physical_width_um = 68256,
+	.physical_height_um = 151680,
+	.lcm_index = 0,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable = 1,
+		.ver = 17,
+		.slice_mode = 0,
+		.rgb_swap = 0,
+		.dsc_cfg = DSC_CFG,
+		.rct_on = 1,
+		.bit_per_channel = DSC_BITS,
+		.dsc_line_buf_depth = 9,
+		.bp_enable = 1,
+		.bit_per_pixel = 128,
+		.pic_height = 2400,
+		.pic_width = 1080,
+		.slice_height = 12,
+		.slice_width = 1080,
+		.chunk_size = 1080,
+		.xmit_delay = 512,
+		.dec_delay = 796,
+		.scale_value = 32,
+		.increment_interval = 382,
+		.decrement_interval = 15,
+		.line_bpg_offset = 12,
+		.nfl_bpg_offset = 2235,
+		.slice_bpg_offset = 1085,
+		.initial_offset = 6144,
+		.final_offset = 4336,
+		.flatness_minqp = 3,
+		.flatness_maxqp = 12,
+		.rc_model_size = 8192,
+		.rc_edge_factor = 6,
+		.rc_quant_incr_limit0 = 11,
+		.rc_quant_incr_limit1 = 11,
+		.rc_tgt_offset_hi = 3,
+		.rc_tgt_offset_lo = 3,
+
+		.rc_buf_thresh[ 0] = 14,
+		.rc_buf_thresh[ 1] = 28,
+		.rc_buf_thresh[ 2] = 42,
+		.rc_buf_thresh[ 3] = 56,
+		.rc_buf_thresh[ 4] = 70,
+		.rc_buf_thresh[ 5] = 84,
+		.rc_buf_thresh[ 6] = 98,
+		.rc_buf_thresh[ 7] = 105,
+		.rc_buf_thresh[ 8] = 112,
+		.rc_buf_thresh[ 9] = 119,
+		.rc_buf_thresh[10] = 121,
+		.rc_buf_thresh[11] = 123,
+		.rc_buf_thresh[12] = 125,
+		.rc_buf_thresh[13] = 126,
+		.rc_range_parameters[ 0].range_min_qp = 0,
+		.rc_range_parameters[ 0].range_max_qp = 4,
+		.rc_range_parameters[ 0].range_bpg_offset = 2,
+		.rc_range_parameters[ 1].range_min_qp = 0,
+		.rc_range_parameters[ 1].range_max_qp = 4,
+		.rc_range_parameters[ 1].range_bpg_offset = 0,
+		.rc_range_parameters[ 2].range_min_qp = 1,
+		.rc_range_parameters[ 2].range_max_qp = 5,
+		.rc_range_parameters[ 2].range_bpg_offset = 0,
+		.rc_range_parameters[ 3].range_min_qp = 1,
+		.rc_range_parameters[ 3].range_max_qp = 6,
+		.rc_range_parameters[ 3].range_bpg_offset = -2,
+		.rc_range_parameters[ 4].range_min_qp = 3,
+		.rc_range_parameters[ 4].range_max_qp = 7,
+		.rc_range_parameters[ 4].range_bpg_offset = -4,
+		.rc_range_parameters[ 5].range_min_qp = 3,
+		.rc_range_parameters[ 5].range_max_qp = 7,
+		.rc_range_parameters[ 5].range_bpg_offset = -6,
+		.rc_range_parameters[ 6].range_min_qp = 3,
+		.rc_range_parameters[ 6].range_max_qp = 7,
+		.rc_range_parameters[ 6].range_bpg_offset = -8,
+		.rc_range_parameters[ 7].range_min_qp = 3,
+		.rc_range_parameters[ 7].range_max_qp = 8,
+		.rc_range_parameters[ 7].range_bpg_offset = -8,
+		.rc_range_parameters[ 8].range_min_qp = 3,
+		.rc_range_parameters[ 8].range_max_qp = 9,
+		.rc_range_parameters[ 8].range_bpg_offset = -8,
+		.rc_range_parameters[ 9].range_min_qp = 3,
+		.rc_range_parameters[ 9].range_max_qp = 10,
+		.rc_range_parameters[ 9].range_bpg_offset = -10,
+		.rc_range_parameters[10].range_min_qp = 5,
+		.rc_range_parameters[10].range_max_qp = 11,
+		.rc_range_parameters[10].range_bpg_offset = -10,
+		.rc_range_parameters[11].range_min_qp = 5,
+		.rc_range_parameters[11].range_max_qp = 12,
+		.rc_range_parameters[11].range_bpg_offset = -12,
+		.rc_range_parameters[12].range_min_qp = 5,
+		.rc_range_parameters[12].range_max_qp = 13,
+		.rc_range_parameters[12].range_bpg_offset = -12,
+		.rc_range_parameters[13].range_min_qp = 7,
+		.rc_range_parameters[13].range_max_qp = 13,
+		.rc_range_parameters[13].range_bpg_offset = -12,
+		.rc_range_parameters[14].range_min_qp = 13,
+		.rc_range_parameters[14].range_max_qp = 15,
+		.rc_range_parameters[14].range_bpg_offset = -12,
+	},
+	.max_bl_level = 3514,
+	.hbm_type = HBM_MODE_DCS_ONLY,
+	//.te_delay = 1,
+
+	.dyn_fps = {
+		.data_rate = 1000,
+	},
+	.data_rate = 1000,
+
+	.use_ext_panel_feature = 1,
+};
+#endif
 static int panel_ata_check(struct drm_panel *panel)
 {
 	/* Customer test by own ATA tool */
@@ -1024,7 +1575,7 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel, unsigned int mode)
 	return ret;
 }
 
-#if 0
+#ifndef LCM_VDO_MODE
 static void mode_switch_to_144(struct drm_panel *panel,
 	enum MTK_PANEL_MODE_SWITCH_STAGE stage)
 {
@@ -1032,7 +1583,7 @@ static void mode_switch_to_144(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x04);
-		lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x00, 0x1c);
+		msleep(6);
 	}
 }
 
@@ -1043,7 +1594,7 @@ static void mode_switch_to_120(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x02);
-		lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x01, 0xee);
+		msleep(8);
 	}
 }
 
@@ -1054,7 +1605,7 @@ static void mode_switch_to_90(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x03);
-		lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x05, 0xbc);
+		msleep(11);
 	}
 }
 static void mode_switch_to_60(struct drm_panel *panel,
@@ -1064,7 +1615,7 @@ static void mode_switch_to_60(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x01);
-		lcm_dcs_write_seq_static(ctx, 0x3B, 0x00, 0x07, 0x0d, 0x58);
+		msleep(16);
 	}
 }
 
@@ -1076,15 +1627,15 @@ static int mode_switch(struct drm_panel *panel, unsigned int cur_mode,
 	if (cur_mode == dst_mode)
 		return ret;
 
-	pr_info("##### %s: mode switch to %d\n", __func__, dst_mode);
+	pr_info("%s: mode switch to %d\n", __func__, dst_mode);
 
-    if (dst_mode == 60) { /*switch to 60 */
+    if (dst_mode == 0) { /*switch to 60 */
 		mode_switch_to_60(panel, stage);
-	} else if (dst_mode == 90) { /*switch to 60 */
+	} else if (dst_mode == 3) { /*switch to 60 */
 		mode_switch_to_90(panel, stage);
-	} else if (dst_mode == 120) { /*switch to 120 */
+	} else if (dst_mode == 2) { /*switch to 120 */
 		mode_switch_to_120(panel, stage);
-	} else if (dst_mode == 144) { /*switch to 144 */
+	} else if (dst_mode == 1) { /*switch to 144 */
 		mode_switch_to_144(panel, stage);
 	} else
 		ret = 1;
@@ -1303,7 +1854,9 @@ static struct mtk_panel_funcs ext_funcs = {
 	//.power_down = panel_ext_powerdown,
 	.ata_check = panel_ata_check,
 	.ext_param_set = mtk_panel_ext_param_set,
-	//.mode_switch = mode_switch,
+#ifndef LCM_VDO_MODE
+	.mode_switch = mode_switch,
+#endif
 	.panel_feature_set = panel_feature_set,
 	.panel_hbm_waitfor_fps_valid = panel_hbm_waitfor_fps_valid,
 };
@@ -1367,7 +1920,11 @@ static int lcm_get_modes(struct drm_panel *panel)
 
 	panel->connector->display_info.panel_ver = 0x01;
 	panel->connector->display_info.panel_id = 0x010b1591;
+#ifndef LCM_VDO_MODE
+	strcpy(panel->connector->display_info.panel_name, "mipi_mot_cmd_boe_nt37701a_fhd_655");
+#else
 	strcpy(panel->connector->display_info.panel_name, "mipi_mot_vid_boe_nt37701a_fhd_655");
+#endif
 	strcpy(panel->connector->display_info.panel_supplier, "boe-nt37701a");
 
 	panel->connector->display_info.panel_cellid_reg = 0xac;
@@ -1423,9 +1980,14 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 	ctx->dev = dev;
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
+#ifndef LCM_VDO_MODE
+	dsi->mode_flags = MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
+			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+#else
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE
 			 | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET
 			 | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+#endif
 
 	backlight = of_parse_phandle(dev->of_node, "backlight", 0);
 	if (backlight) {
