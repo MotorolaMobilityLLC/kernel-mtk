@@ -39,6 +39,9 @@
 #include <linux/iio/consumer.h>
 #include <linux/iio/iio.h>
 #endif
+#ifdef CONFIG_PM
+#include <linux/suspend.h>
+#endif
 /*=============================================================
  *Weak functions
  *=============================================================
@@ -95,6 +98,9 @@ static int polling_trip_temp1 = 40000;
 static int polling_trip_temp2 = 20000;
 static int polling_factor1 = 5000;
 static int polling_factor2 = 10000;
+
+static int g_resume_done = 1;
+static DEFINE_MUTEX(typc_mutex);
 
 #define MTKTS_TYPEC_THERMAL_SW_FILTER (0)
 #define MTKTS_TYPEC_THERMAL_TEMP_CRIT 60000	/* 60.000 degree Celsius */
@@ -864,6 +870,12 @@ int mtkts_typec_therm_get_hw_temp(void)
 
 static int mtkts_typec_therm_get_temp(struct thermal_zone_device *thermal, int *t)
 {
+#ifdef CONFIG_USE_MT6360_TS_PIN
+	if (!g_resume_done){
+		*t = THERMAL_TEMP_INVALID;
+		return 0;
+	}
+#endif
 	*t = mtkts_typec_therm_get_hw_temp();
 
 	if ((int)*t > 52000)
@@ -1538,6 +1550,32 @@ static const struct file_operations mtktstypc_GPIO_out_fops = {
 };
 #endif
 
+#ifdef CONFIG_PM
+static int typc_pm_event(
+		struct notifier_block *notifier,
+		unsigned long pm_event, void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		mutex_lock(&typc_mutex);
+		g_resume_done = 0;
+		mutex_unlock(&typc_mutex);
+		break;
+	case PM_POST_SUSPEND:
+		mutex_lock(&typc_mutex);
+		g_resume_done = 1;
+		mutex_unlock(&typc_mutex);
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block typc_pm_notifier_func = {
+	.notifier_call = typc_pm_event,
+	.priority = 0,
+};
+#endif
+
 #if defined(CONFIG_MEDIATEK_MT6577_AUXADC)
 static int mtkts_typec_therm_probe(struct platform_device *pdev)
 {
@@ -1612,6 +1650,13 @@ static int mtkts_typec_therm_probe(struct platform_device *pdev)
 	}
 
 	mtkts_typec_therm_register_thermal();
+
+#ifdef CONFIG_PM
+		ret = register_pm_notifier(&typc_pm_notifier_func);
+		if (ret)
+			pr_notice("Failed to register typc PM notifier.\n");
+#endif
+
 #if 0
 	mtkTTimer_register("mtktstypec_therm", mtkts_typec_therm_start_thermal_timer,
 					mtkts_typec_therm_cancel_thermal_timer);
