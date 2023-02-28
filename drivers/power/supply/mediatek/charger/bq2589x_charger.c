@@ -1625,11 +1625,11 @@ static int bq2589x_init_device(struct bq2589x *bq)
 
 	bq2589x_set_hz(bq, 0);
 
-	ret = bq2589x_set_input_volt_limit(bq, 4600);
+	ret = bq2589x_set_input_volt_limit(bq, 4700);
 	if (ret < 0)
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 failed:%d\n", __func__, ret);
 	else
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 successfully\n", __func__);
 	return ret;
 }
 
@@ -1888,11 +1888,11 @@ static void bq2589x_adapter_out_workfunc(struct work_struct *work)
 	struct power_supply *chrdet_psy;
 	union power_supply_propval propval;
 
-	ret = bq2589x_set_input_volt_limit(bq, 4600);
+	ret = bq2589x_set_input_volt_limit(bq, 4700);
 	if (ret < 0)
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 failed:%d\n", __func__, ret);
 	else
-		dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
+		dev_info(bq->dev, "%s:reset vindpm threshold to 4700 successfully\n", __func__);
 
 	/* enable dynamic adjust battery voltage */
 	if (bq->enable_dynamic_adjust_batvol)
@@ -2313,11 +2313,11 @@ static void bq2589x_charger_irq_workfunc(struct work_struct *work)
 	} else if ((temp & BQ2589X_VBUS_GD_MASK) && !(bq->status & BQ2589X_STATUS_PLUGIN)) {
 		/* REG0D bit7: register is reset to default value when input source is plugged-in ,default relative mode*/
 		bq2589x_use_absolute_vindpm(bq, bq->cfg.use_absolute_vindpm);
-		ret = bq2589x_set_input_volt_limit(bq, 4600);
+		ret = bq2589x_set_input_volt_limit(bq, 4700);
 		if (ret < 0)
-			dev_info(bq->dev, "%s:reset vindpm threshold to 4600 failed:%d\n", __func__, ret);
+			dev_info(bq->dev, "%s:reset vindpm threshold to 4700 failed:%d\n", __func__, ret);
 		else
-			dev_info(bq->dev, "%s:reset vindpm threshold to 4600 successfully\n", __func__);
+			dev_info(bq->dev, "%s:reset vindpm threshold to 4700 successfully\n", __func__);
 		dev_info(bq->dev, "%s:adapter plugged in\n", __func__);
 		bq->status |= BQ2589X_STATUS_PLUGIN;
 		schedule_work(&bq->adapter_in_work);

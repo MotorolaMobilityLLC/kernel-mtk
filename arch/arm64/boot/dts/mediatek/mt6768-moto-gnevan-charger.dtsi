@@ -105,7 +105,7 @@
         /* common */
         battery_cv = <4480000>;
         max_charger_voltage = <15000000>;
-        min_charger_voltage = <4600000>;
+        min_charger_voltage = <4700000>;
         max_dmivr_charger_current = <2000000>;
 
         enable_pe_plus;
