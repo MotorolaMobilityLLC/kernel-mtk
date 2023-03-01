@@ -255,7 +255,7 @@ static int aw36518_flash_tout_ctrl(struct aw36518_flash *flash,
 	}
 	else
 	{
-		tout_bits = 0x0a;
+		tout_bits = 0x09;  //400ms
 	}
 	rval = regmap_update_bits(flash->regmap,
 				  REG_FLASH_TOUT, 0x0f, tout_bits);
