@@ -5710,6 +5710,22 @@ void mtk_dsi_send_switch_cmd(struct mtk_dsi *dsi,
 	}
 }
 
+void mtk_dsi_send_lp_cmd(struct mtk_dsi *dsi,
+			struct cmdq_pkt *handle,
+			struct mtk_drm_crtc *mtk_crtc)
+{
+	struct mtk_panel_params *params = NULL;
+
+	if (dsi->ext && dsi->ext->params)
+		params = mtk_crtc->panel_ext->params;
+	else /* can't find panel ext information,stop */
+		return;
+
+	if (params->lp_cmd_grp_size) {
+		mtk_dsi_cmdq_grp_gce(dsi, handle, params->lp_cmd_grp_table, params->lp_cmd_grp_size);
+	}
+}
+
 unsigned int mtk_dsi_get_dsc_compress_rate(struct mtk_dsi *dsi)
 {
 	unsigned int compress_rate, bpp, bpc;
@@ -7007,11 +7023,45 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 			vfp_low_power = panel_ext->params->vfp_low_power;
 		if (vfp_low_power) {
 			DDPINFO("vfp_low_power=%d\n", vfp_low_power);
+
+
+			if (dsi && dsi->ext && dsi->ext->params&& dsi->ext->params->change_fps_by_vfp_send_cmd) {
+
+				/*1.1 send cmd: stop vdo mode*/
+				mtk_dsi_stop_vdo_mode(dsi, handle);
+				/* for crtc first enable,dyn fps fail*/
+				if (dsi->data_rate == 0) {
+					dsi->data_rate = mtk_dsi_default_rate(dsi);
+					mtk_mipi_tx_pll_rate_set_adpt(dsi->phy, dsi->data_rate);
+					if (dsi->data_rate)
+						mtk_dsi_phy_timconfig(dsi, NULL);
+				}
+			}
+
 			mtk_dsi_porch_setting(comp, handle, DSI_VFP,
 					vfp_low_power);
 			if (dsi->slave_dsi)
 				mtk_dsi_porch_setting(&dsi->slave_dsi->ddp_comp, handle, DSI_VFP,
 					vfp_low_power);
+
+
+			if (dsi && dsi->ext && dsi->ext->params&& dsi->ext->params->change_fps_by_vfp_send_cmd) {
+
+				/*1.2 send cmd: send cmd*/
+				mtk_dsi_send_lp_cmd(dsi, handle, comp->mtk_crtc);
+				/*1.3 send cmd: start vdo mode*/
+				mtk_dsi_start_vdo_mode(comp, handle);
+				/*clear EOF
+
+				* avoid config continue after we trigger vdo mode
+
+				*/
+
+				/*1.3 send cmd: trigger*/
+				mtk_disp_mutex_trigger(comp->mtk_crtc->mutex[0], handle);
+				mtk_dsi_trigger(comp, handle);
+
+			}
 		}
 	}
 		break;
@@ -7059,11 +7109,43 @@ static int mtk_dsi_io_cmd(struct mtk_ddp_comp *comp, struct cmdq_pkt *handle,
 			cmdq_pkt_wait_no_clear(handle,
 				crtc->gce_obj.event[EVENT_DSI0_SOF]);
 		}
+
+		if (dsi && dsi->ext && dsi->ext->params&& dsi->ext->params->change_fps_by_vfp_send_cmd && panel_ext->params->vfp_low_power) {
+
+			/*1.1 send cmd: stop vdo mode*/
+			mtk_dsi_stop_vdo_mode(dsi, handle);
+			/* for crtc first enable,dyn fps fail*/
+			if (dsi->data_rate == 0) {
+				dsi->data_rate = mtk_dsi_default_rate(dsi);
+				mtk_mipi_tx_pll_rate_set_adpt(dsi->phy, dsi->data_rate);
+				if (dsi->data_rate)
+					mtk_dsi_phy_timconfig(dsi, NULL);
+			}
+		}
+
 		mtk_dsi_porch_setting(comp, handle, DSI_VFP,
 					vfront_porch);
 		if (dsi->slave_dsi)
 			mtk_dsi_porch_setting(&dsi->slave_dsi->ddp_comp, handle, DSI_VFP,
 					vfront_porch);
+		if (dsi && dsi->ext && dsi->ext->params&& dsi->ext->params->change_fps_by_vfp_send_cmd && panel_ext->params->vfp_low_power) {
+
+			/*1.2 send cmd: send cmd*/
+			mtk_dsi_send_switch_cmd(dsi, handle, crtc, 0, 0);
+
+			/*1.3 send cmd: start vdo mode*/
+			mtk_dsi_start_vdo_mode(comp, handle);
+			/*clear EOF
+
+			* avoid config continue after we trigger vdo mode
+
+			*/
+
+			/*1.3 send cmd: trigger*/
+			mtk_disp_mutex_trigger(crtc->mutex[0], handle);
+			mtk_dsi_trigger(comp, handle);
+
+		}
 	}
 		break;
 	case DSI_GET_TIMING:
