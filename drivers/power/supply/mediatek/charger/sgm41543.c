@@ -1993,7 +1993,7 @@ static int sgm41543_run_ir_compensation(struct sgm41543 *sgm_chg, bool query, in
 			ibat_ua, sgm_chg->final_cc, vbat_uV, sgm_chg->final_cv);
 	if (((ibat_ua > 10000) && ibat_ua < (sgm_chg->final_cc-100000)) || (vbat_uV > sgm_chg->final_cv)) {
 		/* vbat - iR */
-		vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 13 * 1000;
+		vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 12 * 1000;
 		if (!query) {
 			sgm41543_dynamic_adjust_charge_voltage(sgm_chg, vbat_uV, ibat_ua);
 		}
