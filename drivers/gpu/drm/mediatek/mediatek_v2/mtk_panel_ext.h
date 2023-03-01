@@ -430,6 +430,8 @@ struct mtk_panel_params {
 	unsigned int vdo_per_frame_lp_enable; /* Enable video mode per frame lp */
 	struct mtk_dsi_phy_timcon phy_timcon;
 	unsigned int vfp_low_power;
+	struct mtk_panel_para_table lp_cmd_grp_table[MAX_DYN_CMD_NUM];
+	unsigned int lp_cmd_grp_size;
 	struct dynamic_mipi_params dyn;
 	struct dynamic_fps_params dyn_fps;
 	bool skip_unnecessary_switch;
