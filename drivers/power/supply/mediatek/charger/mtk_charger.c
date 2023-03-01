@@ -2595,7 +2595,8 @@ static int mmi_charger_check_dcp_ffc_status(struct charger_manager *info, int ba
 					break;
 				}
 
-				if (vbatt < max_fv_mv) {
+				/* float down offset 5mV to fit in more robust ffc state */
+				if (vbatt < (max_fv_mv - 5)) {
 					mmi->ffc_ibat_count++;
 					mmi->ffc_ibat_windowsum += vcurr;
 					loop = false;
