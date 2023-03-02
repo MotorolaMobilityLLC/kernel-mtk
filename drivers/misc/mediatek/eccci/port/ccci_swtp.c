@@ -69,19 +69,15 @@ static const char rf_name[] = "RF_cable";
 #define MAX_RETRY_CNT 30
 
 #if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
-static u16 swtp_gpio_pin[MAX_PIN_NUM] = {0};
-static u8 swtp_class_creat_flag = 0;
+static int swtp_tx_power_mode = SWTP_DO_TX_POWER;
 static ssize_t swtp_gpio_state_show(struct class *class,
 		struct class_attribute *attr,
 		char *buf)
 {
-	int ret =0, i = 0;
-	for (i = 0; i < MAX_PIN_NUM; i++) {
-		if(swtp_gpio_pin[i] == 0)
-			break;
+	int ret = 0;
 
-		ret |= gpio_get_value_cansleep(swtp_gpio_pin[i]);
-		//CCCI_LEGACY_ERR_LOG(-1, SYS,"%s,ret:%d,gpios:%d\n", __func__, ret, swtp_gpio_pin[i]);
+	if (swtp_tx_power_mode == SWTP_NO_TX_POWER) {
+		ret = 1;
 	}
 
 	return sprintf(buf, "%d\n", ret);
@@ -89,11 +85,9 @@ static ssize_t swtp_gpio_state_show(struct class *class,
 
 static CLASS_ATTR_RO(swtp_gpio_state);
 
-static struct class swtp_class[] = {
-    {
-        .name    = "swtp",
-        .owner   = THIS_MODULE,
-    }
+static struct class swtp_class = {
+	.name			= "swtp",
+	.owner			= THIS_MODULE,
 };
 #endif
 
@@ -310,6 +304,11 @@ static int swtp_switch_state(int irq, struct swtp_t *swtp)
 #else
 	inject_pin_status_event(swtp->curr_mode, rf_name);
 #endif
+
+	#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
+	swtp_tx_power_mode = swtp->tx_power_mode;
+	#endif
+
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	return swtp->tx_power_mode;
@@ -413,6 +412,12 @@ static void swtp_init_delayed_work(struct work_struct *work)
 		goto SWTP_INIT_END;
 	}
 
+#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
+	ret = class_register(&swtp_class);
+
+	ret = class_create_file(&swtp_class, &class_attr_swtp_gpio_state);
+#endif
+
 	if (ARRAY_SIZE(swtp_of_match) != ARRAY_SIZE(irq_name) ||
 		ARRAY_SIZE(swtp_of_match) > MAX_PIN_NUM + 1 ||
 		ARRAY_SIZE(irq_name) > MAX_PIN_NUM + 1) {
@@ -459,20 +464,6 @@ static void swtp_init_delayed_work(struct work_struct *work)
 				swtp_data[md_id].setdebounce[i]);
 			swtp_data[md_id].eint_type[i] = ints1[1];
 			swtp_data[md_id].irq[i] = irq_of_parse_and_map(node, 0);
-
-#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
-			if(swtp_data[md_id].gpiopin[i] != 0){
-				swtp_gpio_pin[i] = swtp_data[md_id].gpiopin[i];
-				//CCCI_LEGACY_ERR_LOG(md_id, SYS, "%s,swtp%d, value:%d\n",__func__, i, swtp_gpio_pin[i]);
-				if(swtp_class_creat_flag == 0){
-					ret = class_register(&swtp_class[0]);
-					ret = class_create_file(&swtp_class[0], &class_attr_swtp_gpio_state);
-					if(!ret){
-						swtp_class_creat_flag = 1;
-					}
-				}
-			}
-#endif
 
 			ret = request_irq(swtp_data[md_id].irq[i],
 				swtp_irq_handler, IRQF_TRIGGER_NONE,
@@ -531,6 +522,10 @@ int swtp_init(int md_id)
 #else
 	swtp_data[md_id].tx_power_mode = SWTP_NO_TX_POWER;
 #endif
+
+	#if defined(CONFIG_MOTO_DEVONF_SWTP_CUST) || defined(CONFIG_MOTO_AION_SWTP_CUST)
+	swtp_tx_power_mode = swtp_data[md_id].tx_power_mode;
+	#endif
 
 	spin_lock_init(&swtp_data[md_id].spinlock);
 
