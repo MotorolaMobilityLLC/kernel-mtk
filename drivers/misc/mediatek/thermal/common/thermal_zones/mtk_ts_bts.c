@@ -60,17 +60,28 @@ static kgid_t gid = KGIDT_INIT(1000);
 static DEFINE_SEMAPHORE(sem_mutex);
 
 static unsigned int interval = 1;	/* seconds, 0 : no auto polling */
+#ifdef CONFIG_POWEROFF_CHG_THERM_LYRIQ
+static int trip_temp[10] = { 120000, 46000, 100000, 90000, 80000,
+				70000, 65000, 60000, 55000, 50000 };
+#else
 static int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000,
 				70000, 65000, 60000, 55000, 50000 };
+#endif
 
 static struct thermal_zone_device *thz_dev;
 static int mtkts_bts_debug_log;
 static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+#ifdef CONFIG_POWEROFF_CHG_THERM_LYRIQ
+static int num_trip = 2;
+static char g_bind0[20] = {"mtktsAP-sysrst"};
+static char g_bind1[20] = { "abcct_2nd" };
+#else
 static int num_trip;
 static char g_bind0[20] = {"mtktsAP-sysrst"};
 static char g_bind1[20] = { 0 };
+#endif
 static char g_bind2[20] = { 0 };
 static char g_bind3[20] = { 0 };
 static char g_bind4[20] = { 0 };

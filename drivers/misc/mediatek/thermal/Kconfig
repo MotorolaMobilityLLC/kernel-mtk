@@ -31,6 +31,13 @@ config USE_MT6360_TS_PIN
 	  This feature option is used to enable/disable
           the MT6360 TS detection temperature.
 
+config POWEROFF_CHG_THERM_LYRIQ
+	bool "Support thermal control in power off charging"
+	default n
+	help
+	  This feature option is used to support thermal
+          control in poweroff charging for project lyriq.
+
 config TYPEC_GPIO_OUT_TOGGLE
 	bool "Enable usb therm gpio toggle"
 	default n
