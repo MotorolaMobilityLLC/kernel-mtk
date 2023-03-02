@@ -21,15 +21,6 @@
 		gpio = <&pio 59 0x0>;
 		enable-active-high;
 	};
-
-	cam_fm_avdd_ldo: gpio160-fixed{
-		compatible = "regulator-fixed";
-		regulator-name = "cam_fm_avdd_ldo";
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		gpio = <&pio 160 0x0>;
-		enable-active-high;
-	};
 };
 
 &mtk_composite_v4l2_2 {
@@ -39,11 +30,6 @@
 		};
 	};
 	port@1 {
-		fm_af_endpoint: endpoint {
-			remote-endpoint = <&fm_af>;
-		};
-	};
-	port@2 {
 		wide_af_endpoint: endpoint {
 			remote-endpoint = <&wide_af>;
 		};
@@ -96,18 +82,6 @@
 	};
 };
 
-&i2c4 {
-	camera_af_fm@18 {
-		compatible = "mediatek,mot_manaus_gt9772";
-		reg = <0x18>;
-		vin-supply = <&cam_fm_afvdd_ldo>;
-		port {
-			fm_af: endpoint {
-				remote-endpoint = <&fm_af_endpoint>;
-			};
-		};
-	};
-};
 
 &mtk_composite_v4l2_1 {
 	port@0 {
@@ -316,8 +290,7 @@
 
 	sensor0: sensor0@20 {
 		compatible = "mediatek,imgsensor";
-		sensor-names = "mot_manaus_ov50a_mipi_raw",
-				"mot_manaus_ov50e_mipi_raw";
+		sensor-names = "mot_manaus_ov50a_mipi_raw";
 		reg = <0x20>;
 		#thermal-sensor-cells = <0>;
 		pinctrl-names = "mclk_off",
@@ -375,7 +348,7 @@
 
 	sensor1: sensor1@20 {
 		compatible = "mediatek,imgsensor";
-		sensor-names = "mot_manaus_s5kgd2_mipi_raw";
+		sensor-names = "mot_manaus_ov32b_mipi_raw";
 		reg = <0x20>;
 		#thermal-sensor-cells = <0>;
 		pinctrl-names = "mclk_off",

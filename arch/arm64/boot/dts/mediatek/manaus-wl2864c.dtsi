@@ -6,8 +6,7 @@
 		status = "ok";
 		compatible = "wl2864c";
 		reg = <0x29>;
-		//enable_gpio = <&pio 103 0x0>;
-                vin2-supply = <&bob_buck>;
+		enable_gpio = <&pio 103 0x0>;
 		semi,cs-gpios = <&pio 168 0x0>;
 		regulator_nb = "ldo1", "ldo2",
 				"ldo3", "ldo4",
@@ -37,7 +36,7 @@
 				regulator-min-microvolt = <1200000>;
 				regulator-max-microvolt = <4387500>;
 			};
-			cam_fm_afvdd_ldo: ldo5 {
+			cam_fm_avdd_ldo: ldo5 {
 				regulator-name = "wl2864c-ldo5";
 				regulator-min-microvolt = <2800000>;
 				regulator-max-microvolt = <2800000>;
