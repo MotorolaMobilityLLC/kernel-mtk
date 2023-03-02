@@ -2196,7 +2196,7 @@ static int bq2580x_run_ir_compensation(struct bq2589x *bq, bool query, int *vbat
 			vbat_uV, bq->final_cv, ibat_ua, bq->final_cc,bq->cv_tune);
 
 		if ((ibat_ua > 10000 && ibat_ua < (bq->final_cc - 100000)) || vbat_uV > bq->final_cv) {
-			vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 12 * 1000;
+			vbat_uV = vbat_uV - (ibat_ua * 18) / 1000 + 10 * 1000;
 			dev_err(bq->dev, "[%s] vbat=%duV, cv=%duV\n", __func__, vbat_uV, bq->final_cv);
 			if (!query) {
 				bq2589x_adjust_constant_voltage(bq, vbat_uV, ibat_ua);
