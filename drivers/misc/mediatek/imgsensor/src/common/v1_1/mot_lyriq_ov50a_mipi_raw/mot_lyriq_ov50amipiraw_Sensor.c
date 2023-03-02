@@ -1949,9 +1949,13 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	if (enable) {
 		write_cmos_sensor_8(0x50c1, 0x01);
 		write_cmos_sensor_8(0x50c2, 0xff);
+		write_cmos_sensor_8(0x53c1, 0x01);
+		write_cmos_sensor_8(0x53c2, 0xff);
 	} else {
 		write_cmos_sensor_8(0x50c1, 0x00);
 		write_cmos_sensor_8(0x50c2, 0x00);
+		write_cmos_sensor_8(0x53c1, 0x00);
+		write_cmos_sensor_8(0x53c2, 0x00);
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
