@@ -2418,6 +2418,11 @@ static int mmi_notify_vbus_event(struct mt6360_pmu_chg_info *mpci, bool vbus_sta
 		return -EINVAL;
 	}
 
+	if(wlc_get_online()) {
+		dev_notice(mpci->dev,
+			"%s: wlc online , no need send lpd vbus info\n", __func__);
+		return 0;
+	}
 	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
 
 	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
