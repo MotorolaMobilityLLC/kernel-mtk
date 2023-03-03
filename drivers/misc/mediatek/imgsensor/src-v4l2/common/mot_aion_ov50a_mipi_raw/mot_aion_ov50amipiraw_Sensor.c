@@ -174,7 +174,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.custom4 = {
 		.pclk = 75000000,
-		.linelength = 450,
+		.linelength = 900,
 		.framelength = 2776,
 		.startx = 0,
 		.starty = 0,
@@ -411,7 +411,7 @@ static void write_frame_len(struct subdrv_ctx *ctx)
 		_i2c_data[_size_to_write++] = 0x380e;
 		_i2c_data[_size_to_write++] = ctx->frame_length >> 8;
 		_i2c_data[_size_to_write++] = 0x380f;
-		_i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
+		_i2c_data[_size_to_write++] = ctx->frame_length & 0xFE;
 		table_write_cmos_sensor(ctx, _i2c_data,
 		_size_to_write);
 	}
@@ -436,11 +436,7 @@ static void set_max_framerate(struct subdrv_ctx *ctx, UINT16 framerate, kal_bool
 {
 	kal_uint32 frame_length = ctx->frame_length;
 
-	if (ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM4){
-		frame_length = ctx->pclk / (framerate * 10 * 2) / ctx->line_length;
-	} else {
-		frame_length = ctx->pclk / framerate * 10 / ctx->line_length;
-	}
+	frame_length = ctx->pclk / framerate * 10 / ctx->line_length;
 
 	LOG_INF("%s fll %d\n", __func__, ctx->frame_length);
 
@@ -1755,7 +1751,7 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 			set_dummy(ctx);
 	break;
 	case SENSOR_SCENARIO_ID_CUSTOM4:
-	    frameHeight = imgsensor_info.custom4.pclk / (framerate * 10 * 2) /
+	    frameHeight = imgsensor_info.custom4.pclk / framerate * 10 /
 			imgsensor_info.custom4.linelength;
 		ctx->dummy_line = (frameHeight >
 			imgsensor_info.custom4.framelength) ?
@@ -2321,20 +2317,12 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 	case SENSOR_FEATURE_GET_MIN_SHUTTER_BY_SCENARIO:
 	*(feature_data + 1) = imgsensor_info.min_shutter;
 		switch (*feature_data) {
-		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
-		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
-		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
-		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
 		case SENSOR_SCENARIO_ID_CUSTOM1:
-		case SENSOR_SCENARIO_ID_CUSTOM2:
-		case SENSOR_SCENARIO_ID_CUSTOM3:
-		case SENSOR_SCENARIO_ID_CUSTOM4:
 		case SENSOR_SCENARIO_ID_CUSTOM5:
-			*(feature_data + 2) = 16;
+			*(feature_data + 2) = 4;
 			break;
 		default:
-			*(feature_data + 2) = 16;
+			*(feature_data + 2) = 2;
 			break;
 		}
 		break;
