@@ -169,7 +169,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.custom4 = {
 		.pclk = 75000000,
-		.linelength = 450,
+		.linelength = 900,
 		.framelength = 2776,
 		.startx = 0,
 		.starty = 0,
@@ -451,11 +451,7 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 
 	pr_err("framerate = %d, min framelength should enable %d\n", framerate, min_framelength_en);
 
-	if (imgsensor.sensor_mode == IMGSENSOR_MODE_CUSTOM4){
-		frame_length = imgsensor.pclk / (framerate * 10 * 2) / imgsensor.line_length;
-	} else {
-		frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
-	}
+	frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
 
 	pr_debug("%s fll %d\n", __func__, imgsensor.frame_length);
 
@@ -1848,7 +1844,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 			set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM4:
-		frame_length = imgsensor_info.custom4.pclk / (framerate * 10 * 2)
+		frame_length = imgsensor_info.custom4.pclk / framerate * 10
 				/ imgsensor_info.custom4.linelength;
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.dummy_line =
