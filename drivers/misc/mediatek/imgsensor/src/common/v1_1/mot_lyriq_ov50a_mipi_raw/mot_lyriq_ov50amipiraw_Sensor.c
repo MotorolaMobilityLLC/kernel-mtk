@@ -428,7 +428,7 @@ static void write_frame_len(kal_uint32 fll)
 	if (imgsensor.extend_frame_length_en == KAL_FALSE) {
 		write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
 		write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0XFF);
-		write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
+		write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFE);
         }
 }
 
