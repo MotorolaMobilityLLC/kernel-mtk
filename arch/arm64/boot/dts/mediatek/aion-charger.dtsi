@@ -338,7 +338,7 @@
 		mmi_therm_vol_thres = <80>;
 		mmi_therm_step = <3>;
 		mmi_max_ibat = <12200>;
-		mmi_max_hrst_cnt = <2>;
+		mmi_max_hrst_cnt = <0>;
 };
 
 &i2c0 {
