@@ -34,8 +34,8 @@
  * uniformly adjusted for gradual lens movement, with desired
  * number of control steps.
  */
-#define MOT_AION_DW9800V_MOVE_STEPS			16
-#define MOT_AION_DW9800V_MOVE_DELAY_US			1000
+#define MOT_AION_DW9800V_MOVE_STEPS			32
+#define MOT_AION_DW9800V_MOVE_DELAY_US			10000
 #define MOT_AION_DW9800V_STABLE_TIME_US			2000
 
 /* mot_aion_dw9800v device structure */
@@ -77,10 +77,10 @@ static int mot_aion_dw9800v_set_position(struct mot_aion_dw9800v_device *mot_aio
 static int mot_aion_dw9800v_release(struct mot_aion_dw9800v_device *mot_aion_dw9800v)
 {
 	int ret, val;
-	struct i2c_client *client = v4l2_get_subdevdata(&mot_aion_dw9800v->sd);
 
+	struct i2c_client *client = v4l2_get_subdevdata(&mot_aion_dw9800v->sd);
 	for (val = round_down(mot_aion_dw9800v->focus->val, MOT_AION_DW9800V_MOVE_STEPS);
-	     val >= 0; val -= MOT_AION_DW9800V_MOVE_STEPS) {
+	     val >= 400; val -= MOT_AION_DW9800V_MOVE_STEPS) {
 		ret = mot_aion_dw9800v_set_position(mot_aion_dw9800v, val);
 		if (ret) {
 			LOG_INF("%s I2C failure: %d",
@@ -90,7 +90,6 @@ static int mot_aion_dw9800v_release(struct mot_aion_dw9800v_device *mot_aion_dw9
 		usleep_range(MOT_AION_DW9800V_MOVE_DELAY_US,
 			     MOT_AION_DW9800V_MOVE_DELAY_US + 500);
 	}
-
 	i2c_smbus_write_byte_data(client, 0x02, 0x20);
 
 	/*
@@ -99,7 +98,6 @@ static int mot_aion_dw9800v_release(struct mot_aion_dw9800v_device *mot_aion_dw9
 	 */
 	usleep_range(MOT_AION_DW9800V_STABLE_TIME_US - MOT_AION_DW9800V_MOVE_DELAY_US,
 		     MOT_AION_DW9800V_STABLE_TIME_US - MOT_AION_DW9800V_MOVE_DELAY_US + 500);
-
 	return 0;
 }
 
@@ -143,7 +141,7 @@ static int mot_aion_dw9800v_power_off(struct mot_aion_dw9800v_device *mot_aion_d
 {
 	int ret;
 
-	LOG_INF("%s\n", __func__);
+	LOG_INF("%s +\n", __func__);
 
 	ret = mot_aion_dw9800v_release(mot_aion_dw9800v);
 	if (ret)
@@ -160,7 +158,7 @@ static int mot_aion_dw9800v_power_off(struct mot_aion_dw9800v_device *mot_aion_d
 	if (mot_aion_dw9800v->vcamaf_pinctrl && mot_aion_dw9800v->vcamaf_off)
 		ret = pinctrl_select_state(mot_aion_dw9800v->vcamaf_pinctrl,
 					mot_aion_dw9800v->vcamaf_off);
-
+	LOG_INF("%s -\n", __func__);
 	return ret;
 }
 
