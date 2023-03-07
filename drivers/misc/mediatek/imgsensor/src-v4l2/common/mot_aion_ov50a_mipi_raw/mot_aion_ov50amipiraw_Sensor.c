@@ -885,8 +885,8 @@ static void sensor_init(struct subdrv_ctx *ctx)
 	} else {
 		LOG_INF("%s: skip EEPROM xtalk, use default one...", __func__);
 		table_write_cmos_sensor(ctx,
-		    addr_data_pair_init_mot_aion_ov50a_20230102,
-		    sizeof(addr_data_pair_init_mot_aion_ov50a_20230102) / sizeof(kal_uint16));
+		    addr_data_pair_init_mot_aion_ov50a_20230307,
+		    sizeof(addr_data_pair_init_mot_aion_ov50a_20230307) / sizeof(kal_uint16));
 	}
 	LOG_INF("%s end\n", __func__);
 }
