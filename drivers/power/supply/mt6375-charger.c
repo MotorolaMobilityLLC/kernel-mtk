@@ -1694,7 +1694,7 @@ out:
 static int mt6375_run_pe(struct mt6375_chg_data *ddata, bool pe20)
 {
 	int ret;
-	unsigned long timeout = pe20 ? 1400 : 2800;
+	unsigned long timeout = pe20 ? 1800 : 2800;
 	long ret_comp;
 
 	ret = mt6375_chg_field_set(ddata, F_IAICR, 800);
