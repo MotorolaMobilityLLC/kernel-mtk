@@ -19,7 +19,7 @@
 #define _MOT_LYRIQ_OV50A_SENSOR_SETTING_H
 
 kal_uint16 addr_data_pair_init_mot_lyriq_ov50a[] = {
-#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20221228.h"
+#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230307.h"
 };
 
 /* Binning 4096*3072@30fps*/
@@ -41,7 +41,7 @@ kal_uint16 addr_data_pair_slim_video_mot_lyriq_ov50a[] = {
 
 /* full 8192*6144@20fps*/
 kal_uint16 addr_data_pair_fullsize_ov50a[] = {
-#include"setting/OV50A40_8192x6144_10bit_30fps_AG16_2600Msps_20220711.h"
+#include"setting/OV50A40_8192x6144_10bit_30fps_AG16_2600Msps_20230210.h"
 };
 
 //hs_video
