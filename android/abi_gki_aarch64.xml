@@ -15554,7 +15554,7 @@
         <return type-id='48b5725f'/>
       </function-type>
       <pointer-type-def type-id='2b7b3388' size-in-bits='64' id='14f24806'/>
-      <class-decl name='anon_vma' size-in-bits='832' is-struct='yes' visibility='default' filepath='include/linux/rmap.h' line='33' column='1' id='14f332cc'>
+      <class-decl name='anon_vma' size-in-bits='960' is-struct='yes' visibility='default' filepath='include/linux/rmap.h' line='33' column='1' id='14f332cc'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='root' type-id='a8f86cda' visibility='default' filepath='include/linux/rmap.h' line='34' column='1'/>
         </data-member>
@@ -15565,13 +15565,19 @@
           <var-decl name='refcount' type-id='49178f86' visibility='default' filepath='include/linux/rmap.h' line='43' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='608'>
-          <var-decl name='degree' type-id='f0981eeb' visibility='default' filepath='include/linux/rmap.h' line='51' column='1'/>
+          <var-decl name='degree' type-id='f0981eeb' visibility='default' filepath='include/linux/rmap.h' line='45' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='640'>
-          <var-decl name='parent' type-id='a8f86cda' visibility='default' filepath='include/linux/rmap.h' line='53' column='1'/>
+          <var-decl name='parent' type-id='a8f86cda' visibility='default' filepath='include/linux/rmap.h' line='47' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='704'>
-          <var-decl name='rb_root' type-id='6fe1603d' visibility='default' filepath='include/linux/rmap.h' line='65' column='1'/>
+          <var-decl name='rb_root' type-id='6fe1603d' visibility='default' filepath='include/linux/rmap.h' line='59' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='832'>
+          <var-decl name='num_children' type-id='7359adad' visibility='default' filepath='include/linux/rmap.h' line='74' column='1'/>
+        </data-member>
+        <data-member access='public' layout-offset-in-bits='896'>
+          <var-decl name='num_active_vmas' type-id='7359adad' visibility='default' filepath='include/linux/rmap.h' line='76' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='031a4ff0' size-in-bits='64' id='1507ee2a'/>
@@ -162900,7 +162906,6 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
-
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
