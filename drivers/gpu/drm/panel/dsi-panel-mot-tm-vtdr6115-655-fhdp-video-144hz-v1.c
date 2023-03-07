@@ -1461,6 +1461,7 @@ static int lcm_probe(struct mipi_dsi_device *dsi)
 #endif
 	ctx->hbm_mode = 0;
 	ctx->dc_mode = 0;
+	ctx->current_bl = 1750;
 
 	ctx->lhbm_en = of_property_read_bool(dev->of_node, "lhbm-enable");
 
