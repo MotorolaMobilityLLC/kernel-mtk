@@ -164,7 +164,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // preview
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // capture
-    { 6560, 4928,   0,   616, 6560, 3696,  3280, 1848,  0,  0, 3280, 1848, 0, 0, 3280, 1848},       // VIDEO
+    { 6560, 4928,   0,   616, 6560, 3696,  3280, 1848,  0,  0, 3280, 1848, 0, 0, 3280, 1848},     // VIDEO
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // hight speed video
     { 6560, 4928,   0,   0, 6560, 4928,  3280, 2464,  0,  0, 3280, 2464, 0, 0, 3280, 2464},       // slim video
 };
@@ -189,8 +189,39 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 		{8, 16}, {16, 16}, {10, 19}, {18, 19},
 		{14, 20}, {22, 20}, {12, 23}, {20, 23}
 	},
+	.i4Crop = {
+		{0, 0}, {0, 0}, {0, 308}, {0, 0}, {0, 0}
+	},
 	.i4BlockNumX = 204,
 	.i4BlockNumY = 153,
+};
+
+
+static struct SET_PD_BLOCK_INFO_T imgsensor_pd_vdieo_info = {
+	.i4OffsetX = 8,
+	.i4OffsetY = 8,
+	.i4PitchX = 16,
+	.i4PitchY = 16,
+	.i4PairNum = 16,
+	.i4SubBlkW = 8,
+	.i4SubBlkH = 2,
+	.i4PosL = {
+		{9, 8}, {17, 8}, {11, 11}, {19, 11},
+		{15, 12}, {23, 12}, {13, 15}, {21, 15},
+		{9, 16}, {17, 16}, {11, 19}, {19, 19},
+		{15, 20}, {23, 20}, {13, 23}, {21, 23}
+	},
+	.i4PosR = {
+		{8, 8}, {16, 8}, {10, 11}, {18, 11},
+		{14, 12}, {22, 12}, {12, 15}, {20, 15},
+		{8, 16}, {16, 16}, {10, 19}, {18, 19},
+		{14, 20}, {22, 20}, {12, 23}, {20, 23}
+	},
+	.i4Crop = {
+		{0, 0}, {0, 0}, {0, 308}, {0, 0}, {0, 0}
+	},
+	.i4BlockNumX = 204,
+	.i4BlockNumY = 115,
 };
 
 static kal_uint16 addr_data_pair_init_mot_aion_s5kgd2[] = {
@@ -1329,11 +1360,15 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 		switch (*feature_data) {
 		case SENSOR_SCENARIO_ID_NORMAL_CAPTURE:
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
-		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
 		case SENSOR_SCENARIO_ID_SLIM_VIDEO:
 		case SENSOR_SCENARIO_ID_HIGHSPEED_VIDEO:
 			memcpy((void *)PDAFinfo,
 				(void *)&imgsensor_pd_info,
+				sizeof(struct SET_PD_BLOCK_INFO_T));
+			break;
+		case SENSOR_SCENARIO_ID_NORMAL_VIDEO:
+			memcpy((void *)PDAFinfo,
+				(void *)&imgsensor_pd_vdieo_info,
 				sizeof(struct SET_PD_BLOCK_INFO_T));
 			break;
 		default:
