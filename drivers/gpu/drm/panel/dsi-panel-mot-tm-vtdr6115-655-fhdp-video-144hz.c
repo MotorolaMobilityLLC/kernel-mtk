@@ -1124,15 +1124,15 @@ static void set_lhbm_alpha(unsigned int bl_level, unsigned int on)
 	}
 }
 
-static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
+static int panel_lhbm_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t on, uint32_t bl_level, uint32_t fps)
 {
-	unsigned int para_count = 0, i = 0;
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
 
 	set_lhbm_alpha(bl_level, on);
 	if (on) {
 		para_count = sizeof(panel_lhbm_on) / sizeof(struct mtk_panel_para_table);
-		for(i=0; i < para_count; i++)
-			cb(dsi, handle, panel_lhbm_on[i].para_list, panel_lhbm_on[i].count);
+		pTable = panel_lhbm_on;
 	} else {
 		para_count = sizeof(panel_lhbm_off) / sizeof(struct mtk_panel_para_table);
 		if(fps == 90)
@@ -1141,15 +1141,15 @@ static int panel_lhbm_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32
 			panel_lhbm_off[0].para_list[1] = 0x00;
 		pr_info("%s: panel_lhbm_off(0x%x, 0x%x)\n", __func__,
 			panel_lhbm_off[0].para_list[0], panel_lhbm_off[0].para_list[1]);
-		for(i=0; i < para_count; i++)
-			cb(dsi, handle, panel_lhbm_off[i].para_list, panel_lhbm_off[i].count);
+		pTable = panel_lhbm_off;
 	}
+	cb(dsi, handle, pTable, para_count);
 	pr_info("%s: para_count %d\n", __func__, para_count);
 	return 0;
 
 }
 
-static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void *handle, uint32_t hbm_state)
+static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
 	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0x0F, 0xFF}};
 
@@ -1163,13 +1163,13 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_write_gce cb, void 
 		case 1:
 			if (ctx->lhbm_en)
 				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl, ctx->current_fps);
-			cb(dsi, handle, &hbm_on_table.para_list, hbm_on_table.count);
+			cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		case 2:
 			if (ctx->lhbm_en)
 				panel_lhbm_set_cmdq(dsi, cb, handle, 1, ctx->current_bl, ctx->current_fps);
 			else
-				cb(dsi, handle, &hbm_on_table.para_list, hbm_on_table.count);
+				cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		default:
 			break;
@@ -1186,25 +1186,26 @@ static struct mtk_panel_para_table panel_dc_on[] = {
    {2, {0x5e, 0x01}},
 };
 
-static int pane_dc_set_cmdq(void *dsi, dcs_write_gce cb, void *handle, uint32_t dc_state)
+static int pane_dc_set_cmdq(void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t dc_state)
 {
-	unsigned int para_count = 0, i = 0;
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable;
 
 	if (dc_state) {
 		para_count = sizeof(panel_dc_on) / sizeof(struct mtk_panel_para_table);
-		for(i=0; i < para_count; i++)
-			cb(dsi, handle, panel_dc_on[i].para_list, panel_dc_on[i].count);
+		pTable = panel_dc_on;
 	} else {
 		para_count = sizeof(panel_dc_off) / sizeof(struct mtk_panel_para_table);
-		for(i=0; i < para_count; i++)
-			cb(dsi, handle, panel_dc_off[i].para_list, panel_dc_off[i].count);
+		pTable = panel_dc_off;
 	}
+
+	cb(dsi, handle, pTable, para_count);
 
 	return 0;
 }
 
 static int panel_feature_set(struct drm_panel *panel, void *dsi,
-			      dcs_write_gce cb, void *handle, struct panel_param_info param_info)
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
 {
 
 	struct lcm *ctx = panel_to_lcm(panel);
