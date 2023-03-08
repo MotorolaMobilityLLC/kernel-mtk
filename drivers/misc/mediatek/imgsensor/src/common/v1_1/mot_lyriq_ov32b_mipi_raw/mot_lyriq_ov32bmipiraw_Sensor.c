@@ -30,7 +30,7 @@
 #define PFX "[imgsensor] mot_lyriq_ov32bmipiraw"
 
 static int mot_sensor_debug = 0;
-module_param(mot_sensor_debug, int, S_IRWXU);
+module_param(mot_sensor_debug, int, S_IRUSR | S_IWUSR);
 
 #define LOG_INF(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
 #define LOG_DEBUG(format, args...)        do { if (mot_sensor_debug   ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
