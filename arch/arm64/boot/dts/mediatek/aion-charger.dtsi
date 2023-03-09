@@ -359,9 +359,9 @@
 	pd-data {
 		/* 5V, 900ma */
 		pd,source-pdo-data = <0x0001905a>;
-		/* 5V, 3A  9V, 2A*/
-		pd,sink-pdo-size = <2>;
-		pd,sink-pdo-data = <0x0001912c 0x0002d0c8> ;
+		/* 5V, 3A  9V, 2A  9V, 3A*/
+		pd,sink-pdo-size = <3>;
+		pd,sink-pdo-data = <0x0001912c 0x0002d0c8 0x0002d12c> ;
 	};
 };
 
