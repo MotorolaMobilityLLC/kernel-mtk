@@ -341,7 +341,7 @@
                 mmi,pps-volt-steps = <20000>;
                 mmi,pps-curr-steps = <100000>;
                 mmi,pd-volt-max = <11000000>;
-                mmi,pd-curr-max = <6200000>;
+                mmi,pd-curr-max = <6100000>;
                 mmi,batt-curr-boost = <300000>;
                 mmi,batt-ovp-lmt = <4550000>;
                 mmi,pl-chrg-vbatt-min = <3000000>;
@@ -356,7 +356,7 @@
                                         <0 4200 800  0 0 0 0 0 0>,
                                         <10 4250 4000 4480 2000 0 0 0 0>,
                                         <15 4480 4000 0 0 0 0 0 0>,
-                                        <45 4250 12400 4300 8000 4480 6000 4500 4000>,
+                                        <45 4250 11800 4300 8000 4480 6000 4500 4000>,
                                         <60 4200 4000 0 0 0 0 0 0>;
                 mmi,thermal-min-level = <2000000>;
                 charger_device_0 {
