@@ -45,6 +45,9 @@ struct mtk_ctd_info {
 	struct notifier_block pm_nb;
 	bool is_suspend;
 	bool pd_rdy;
+	struct work_struct	mmi_hardreset_work;
+	bool is_mmi_pd_hardreset;
+	bool is_mmi_pd_hardreset_plugout;
 };
 
 enum {
@@ -225,7 +228,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	struct tcp_notify *noti = data;
 	struct mtk_ctd_info *mci = (struct mtk_ctd_info *)container_of(nb,
 						    struct mtk_ctd_info, pd_nb);
+#ifdef MTK_BASE
 	int counter = 0;	/* for coverity */
+#endif
 
 	switch (event) {
 	case TCP_NOTIFY_SINK_VBUS:
@@ -233,6 +238,11 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		break;
 	case TCP_NOTIFY_PD_STATE:
 		handle_pd_rdy_attach(mci, noti);
+		if (noti->pd_state.connected == PD_CONNECT_HARD_RESET)
+			mci->is_mmi_pd_hardreset = true;
+		else
+			mci->is_mmi_pd_hardreset = false;
+		pr_info("%s: is_mmi_pd_hardreset = %d\n", __func__, mci->is_mmi_pd_hardreset);
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
 		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
@@ -241,6 +251,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
+			mci->is_mmi_pd_hardreset_plugout = false;
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, true);
 			handle_typec_pd_attach(mci, ATTACH_TYPE_TYPEC);
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
@@ -252,6 +263,12 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			if (mci->tcpc_kpoc) {
 				pr_info("%s: typec unattached, power off\n",
 					__func__);
+				if (mci->is_mmi_pd_hardreset) {
+					mci->is_mmi_pd_hardreset_plugout = true;
+					schedule_work(&mci->mmi_hardreset_work);
+					break;
+				}
+#ifdef MTK_BASE
 				while (1) {
 					if (counter >= 20000) {
 						kernel_power_off();
@@ -266,6 +283,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					}
 					counter++;
 				}
+#endif
 			}
 			mmi_mux_typec_chg_chan(MMI_MUX_CHANNEL_TYPEC_CHG, false);
 			handle_typec_pd_attach(mci, ATTACH_TYPE_NONE);
@@ -355,6 +373,25 @@ static void mtk_ctd_parse_dt(struct mtk_ctd_info *mci)
 	}
 }
 
+#define MMI_HARDRESET_CNT 50
+static void mmi_pd_hardreset_work(struct work_struct *work)
+
+{
+	int i;
+	struct mtk_ctd_info *mci = container_of(work, struct mtk_ctd_info,
+						mmi_hardreset_work);
+
+	for (i = 0; i < MMI_HARDRESET_CNT; i++) {
+		msleep(20);
+		if (!mci->is_mmi_pd_hardreset_plugout)
+			break;
+	}
+
+	pr_info("mmi_pd_hardreset_work i = %d\n", i);
+	if (i >= MMI_HARDRESET_CNT)
+		kernel_power_off();
+}
+
 static int mtk_ctd_probe(struct platform_device *pdev)
 {
 	struct mtk_ctd_info *mci;
@@ -416,6 +453,10 @@ static int mtk_ctd_probe(struct platform_device *pdev)
 		pr_notice("%s: run typec attach kthread fail\n", __func__);
 		return PTR_ERR(mci->attach_task);
 	}
+
+	INIT_WORK(&mci->mmi_hardreset_work,
+					mmi_pd_hardreset_work);
+
 	dev_info(mci->dev, "%s: successfully\n", __func__);
 	return 0;
 }
