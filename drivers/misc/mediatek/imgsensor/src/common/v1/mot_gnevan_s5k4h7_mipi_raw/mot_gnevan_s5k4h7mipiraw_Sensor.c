@@ -1455,6 +1455,9 @@ static kal_uint32 feature_control(
 
 	//LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
+	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
+		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1000000;//uint is ns
+		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
 		*(feature_data + 2) = imgsensor_info.max_gain;
