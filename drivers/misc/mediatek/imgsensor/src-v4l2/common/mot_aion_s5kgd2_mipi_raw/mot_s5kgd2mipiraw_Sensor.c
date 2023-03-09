@@ -479,7 +479,7 @@ static void sensor_init(struct subdrv_ctx *ctx)
        write_cmos_sensor(ctx, 0x0000,0x0025);
        write_cmos_sensor(ctx, 0x0000,0x0842);
        write_cmos_sensor(ctx, 0x6010,0x0001);
-       mdelay(30);
+       mdelay(19);
     	mot_aion_s5kgd2_write_cmos_sensor(ctx,
 			addr_data_pair_init_mot_aion_s5kgd2,
 			sizeof(addr_data_pair_init_mot_aion_s5kgd2)/sizeof(kal_uint16));
