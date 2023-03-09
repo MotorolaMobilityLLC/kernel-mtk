@@ -556,7 +556,7 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
                _i2c_data[_size_to_write++] = 0x380e;
                _i2c_data[_size_to_write++] = ctx->frame_length >> 8;
                _i2c_data[_size_to_write++] = 0x380f;
-               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
+               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFE;
                _i2c_data[_size_to_write++] = 0x3500;
                _i2c_data[_size_to_write++] = (shutter >> 16) & 0xFF;
                _i2c_data[_size_to_write++] = 0x3501;
@@ -572,7 +572,7 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
                _i2c_data[_size_to_write++] = 0x380e;
                _i2c_data[_size_to_write++] = ctx->frame_length >> 8;
                _i2c_data[_size_to_write++] = 0x380f;
-               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
+               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFE;
                _i2c_data[_size_to_write++] = 0x3500;
                _i2c_data[_size_to_write++] = (shutter >> 16) & 0xFF;
                _i2c_data[_size_to_write++] = 0x3501;
@@ -1742,7 +1742,7 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 	    frameHeight = imgsensor_info.custom3.pclk / framerate * 10 /
 			imgsensor_info.custom3.linelength;
 		ctx->dummy_line = (frameHeight >
-			imgsensor_info.custom2.framelength) ?
+			imgsensor_info.custom3.framelength) ?
 			(frameHeight - imgsensor_info.custom3.framelength):0;
 	    ctx->frame_length = imgsensor_info.custom3.framelength +
 			ctx->dummy_line;
