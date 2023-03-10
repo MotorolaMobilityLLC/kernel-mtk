@@ -1583,7 +1583,6 @@ static void mode_switch_to_144(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x04);
-		msleep(6);
 	}
 }
 
@@ -1594,7 +1593,7 @@ static void mode_switch_to_120(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x02);
-		msleep(8);
+		mdelay(6);
 	}
 }
 
@@ -1605,7 +1604,7 @@ static void mode_switch_to_90(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x03);
-		msleep(11);
+		mdelay(8);
 	}
 }
 static void mode_switch_to_60(struct drm_panel *panel,
@@ -1615,7 +1614,7 @@ static void mode_switch_to_60(struct drm_panel *panel,
 		struct lcm *ctx = panel_to_lcm(panel);
 
 		lcm_dcs_write_seq_static(ctx, 0x2F, 0x01);
-		msleep(16);
+		mdelay(11);
 	}
 }
 
