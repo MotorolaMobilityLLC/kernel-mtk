@@ -112,6 +112,7 @@
 
 &i2c3 {
 	status = "okay";
+	clock-frequency = <400000>;
 	st21nfc: st21nfc@08 {
 		compatible = "mediatek,nfc";
 		reg = <0x08>;
