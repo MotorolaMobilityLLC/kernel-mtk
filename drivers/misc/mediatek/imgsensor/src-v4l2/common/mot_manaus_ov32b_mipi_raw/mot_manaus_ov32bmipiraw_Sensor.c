@@ -1490,17 +1490,6 @@ static struct mtk_mbus_frame_desc_entry frame_desc_slim_vid[] = {
 	},
 };
 
-static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
-	{
-		.bus.csi2 = {
-			.channel = 0,
-			.data_type = 0x2b,
-			.hsize = 0xCC0,
-			.vsize = 0x990,
-		},
-	},
-};
-
 #endif
 static int get_frame_desc(struct subdrv_ctx *ctx,
 		int scenario_id, struct mtk_mbus_frame_desc *fd)
