@@ -1456,7 +1456,12 @@ static kal_uint32 feature_control(
 	//LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
-		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1000000;//uint is ns
+		if (!strcmp(s5k4h7_cal_info.mnf_cal_data.integrator, "Qtech"))
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 2500000;
+		else if (!strcmp(s5k4h7_cal_info.mnf_cal_data.integrator, "Tianshi"))
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 1000000;
+		else
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = 0;//uint is ns
 		break;
 	case SENSOR_FEATURE_GET_GAIN_RANGE_BY_SCENARIO:
 		*(feature_data + 1) = imgsensor_info.min_gain;
