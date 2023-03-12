@@ -6153,8 +6153,11 @@
       <elf-symbol name='ufshcd_runtime_suspend' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbafed781'/>
       <elf-symbol name='ufshcd_shutdown' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x684ba32e'/>
       <elf-symbol name='ufshcd_suspend_prepare' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xcd3a0a7e'/>
+      <elf-symbol name='ufshcd_system_freeze' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x3266acae'/>
+      <elf-symbol name='ufshcd_system_restore' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x98325377'/>
       <elf-symbol name='ufshcd_system_resume' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa1b3aa03'/>
       <elf-symbol name='ufshcd_system_suspend' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x68a59b34'/>
+      <elf-symbol name='ufshcd_system_thaw' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x1847e552'/>
       <elf-symbol name='ufshcd_transfer_rsp_status' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x992d807e'/>
       <elf-symbol name='ufshcd_uic_change_pwr_mode' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8d553ef2'/>
       <elf-symbol name='ufshcd_uic_hibern8_enter' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x452fcee7'/>
@@ -51591,7 +51594,7 @@
       </class-decl>
       <pointer-type-def type-id='3e1d184a' size-in-bits='64' id='6aee814c'/>
       <pointer-type-def type-id='74e7a035' size-in-bits='64' id='6af64a09'/>
-      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv6/route.c' line='130' column='1' id='6b1203e5'>
+      <class-decl name='uncached_list' size-in-bits='192' is-struct='yes' visibility='default' filepath='net/ipv4/route.c' line='1505' column='1' id='6b1203e5'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='net/ipv4/route.c' line='1506' column='1'/>
         </data-member>
@@ -158814,9 +158817,9 @@
         <parameter type-id='b5952621' name='str_t' filepath='drivers/scsi/ufs/ufshcd.c' line='379' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='ufshcd_alloc_host' mangled-name='ufshcd_alloc_host' filepath='drivers/scsi/ufs/ufshcd.c' line='9498' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_alloc_host'>
-        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9498' column='1'/>
-        <parameter type-id='f38ff799' name='hba_handle' filepath='drivers/scsi/ufs/ufshcd.c' line='9498' column='1'/>
+      <function-decl name='ufshcd_alloc_host' mangled-name='ufshcd_alloc_host' filepath='drivers/scsi/ufs/ufshcd.c' line='9548' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_alloc_host'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9548' column='1'/>
+        <parameter type-id='f38ff799' name='hba_handle' filepath='drivers/scsi/ufs/ufshcd.c' line='9548' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='ufshcd_auto_hibern8_update' mangled-name='ufshcd_auto_hibern8_update' filepath='drivers/scsi/ufs/ufshcd.c' line='4224' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_auto_hibern8_update'>
@@ -158842,8 +158845,8 @@
         <parameter type-id='35f4156d' name='desired_pwr_mode' filepath='drivers/scsi/ufs/ufshcd.c' line='4435' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='ufshcd_dealloc_host' mangled-name='ufshcd_dealloc_host' filepath='drivers/scsi/ufs/ufshcd.c' line='9470' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_dealloc_host'>
-        <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='9470' column='1'/>
+      <function-decl name='ufshcd_dealloc_host' mangled-name='ufshcd_dealloc_host' filepath='drivers/scsi/ufs/ufshcd.c' line='9520' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_dealloc_host'>
+        <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='9520' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='ufshcd_delay_us' mangled-name='ufshcd_delay_us' filepath='drivers/scsi/ufs/ufshcd.c' line='632' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_delay_us'>
@@ -159006,8 +159009,8 @@
         <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='9447' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='ufshcd_resume_complete' mangled-name='ufshcd_resume_complete' filepath='drivers/scsi/ufs/ufshcd.c' line='9779' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_resume_complete'>
-        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9779' column='1'/>
+      <function-decl name='ufshcd_resume_complete' mangled-name='ufshcd_resume_complete' filepath='drivers/scsi/ufs/ufshcd.c' line='9829' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_resume_complete'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9829' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='ufshcd_runtime_resume' mangled-name='ufshcd_runtime_resume' filepath='drivers/scsi/ufs/ufshcd.c' line='9406' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_runtime_resume'>
@@ -159022,8 +159025,16 @@
         <parameter type-id='442b8d89' name='hba' filepath='drivers/scsi/ufs/ufshcd.c' line='9431' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='ufshcd_suspend_prepare' mangled-name='ufshcd_suspend_prepare' filepath='drivers/scsi/ufs/ufshcd.c' line='9790' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_suspend_prepare'>
-        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9790' column='1'/>
+      <function-decl name='ufshcd_suspend_prepare' mangled-name='ufshcd_suspend_prepare' filepath='drivers/scsi/ufs/ufshcd.c' line='9840' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_suspend_prepare'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9840' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='ufshcd_system_freeze' mangled-name='ufshcd_system_freeze' filepath='drivers/scsi/ufs/ufshcd.c' line='9467' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_system_freeze'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9467' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='ufshcd_system_restore' mangled-name='ufshcd_system_restore' filepath='drivers/scsi/ufs/ufshcd.c' line='9475' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_system_restore'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9475' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='ufshcd_system_resume' mangled-name='ufshcd_system_resume' filepath='drivers/scsi/ufs/ufshcd.c' line='9351' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_system_resume'>
@@ -159032,6 +159043,10 @@
       </function-decl>
       <function-decl name='ufshcd_system_suspend' mangled-name='ufshcd_system_suspend' filepath='drivers/scsi/ufs/ufshcd.c' line='9324' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_system_suspend'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9324' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
+      <function-decl name='ufshcd_system_thaw' mangled-name='ufshcd_system_thaw' filepath='drivers/scsi/ufs/ufshcd.c' line='9509' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_system_thaw'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/scsi/ufs/ufshcd.c' line='9509' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='ufshcd_transfer_rsp_status' mangled-name='ufshcd_transfer_rsp_status' filepath='drivers/scsi/ufs/ufshcd.c' line='5174' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ufshcd_transfer_rsp_status'>
@@ -159402,16 +159417,16 @@
         <parameter type-id='95e97e5e' name='pipe' filepath='drivers/usb/core/message.c' line='1208' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='usb_composite_probe' mangled-name='usb_composite_probe' filepath='drivers/usb/gadget/composite.c' line='2489' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_composite_probe'>
-        <parameter type-id='c64e62ba' name='driver' filepath='drivers/usb/gadget/composite.c' line='2489' column='1'/>
+      <function-decl name='usb_composite_probe' mangled-name='usb_composite_probe' filepath='drivers/usb/gadget/composite.c' line='2493' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_composite_probe'>
+        <parameter type-id='c64e62ba' name='driver' filepath='drivers/usb/gadget/composite.c' line='2493' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='usb_composite_setup_continue' mangled-name='usb_composite_setup_continue' filepath='drivers/usb/gadget/composite.c' line='2533' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_composite_setup_continue'>
-        <parameter type-id='2a895c01' name='cdev' filepath='drivers/usb/gadget/composite.c' line='2533' column='1'/>
+      <function-decl name='usb_composite_setup_continue' mangled-name='usb_composite_setup_continue' filepath='drivers/usb/gadget/composite.c' line='2537' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_composite_setup_continue'>
+        <parameter type-id='2a895c01' name='cdev' filepath='drivers/usb/gadget/composite.c' line='2537' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
-      <function-decl name='usb_composite_unregister' mangled-name='usb_composite_unregister' filepath='drivers/usb/gadget/composite.c' line='2517' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_composite_unregister'>
-        <parameter type-id='c64e62ba' name='driver' filepath='drivers/usb/gadget/composite.c' line='2517' column='1'/>
+      <function-decl name='usb_composite_unregister' mangled-name='usb_composite_unregister' filepath='drivers/usb/gadget/composite.c' line='2521' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_composite_unregister'>
+        <parameter type-id='c64e62ba' name='driver' filepath='drivers/usb/gadget/composite.c' line='2521' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
       <function-decl name='usb_control_msg' mangled-name='usb_control_msg' filepath='drivers/usb/core/message.c' line='136' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='usb_control_msg'>
