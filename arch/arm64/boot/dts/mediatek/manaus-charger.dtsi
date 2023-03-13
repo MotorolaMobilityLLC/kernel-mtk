@@ -58,8 +58,6 @@
 	/*swchg + 2CP*/
 	charger_configuration= <4>;
 
-	wireless_factory_max_current = <3000000>;
-	wireless_factory_max_input_current = <600000>;
 	enable_dynamic_mivr;
 	/*mmi config*/
 	mmi,iterm-ma = <429>;
@@ -81,11 +79,6 @@
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
 	mmi,min-cp-therm-current-ua = <2000000>;
-	mmi,enable-mux;
-	mmi,mux_wls_switch_en = <&pio 104 0x0>;
-	mmi,mux_wls_boost_en = <&pio 121 0x0>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&mmi_mux_wls_default>;
 };
 
 &moto_chg_tcmd {
@@ -124,41 +117,6 @@
 		slew-rate= <0>;
 		input-enable;
 		bias-pull-up;
-	};
-
-	wls_cps4035_int_default: wls_cps4035_int_default {
-		wls_int {
-			pinmux = <PINMUX_GPIO31__FUNC_GPIO31>;
-			input-enable;
-			bias-pull-up;
-		};
-		wls_det_int {
-			pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
-			input-enable;
-			bias-pull-down;
-		};
-		wls_mode_select {
-			pinmux = <PINMUX_GPIO116__FUNC_GPIO116>;
-			output-low;
-                 };
-	};
-
-	mmi_mux_wls_default: mmi_mux_wls_default {
-		wls_switch {
-			pinmux = <PINMUX_GPIO104__FUNC_GPIO104>;
-			output-low;
-		};
-		wls_boost {
-			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
-			output-low;
-		};
-	};
-
-	mmi_control_wls_default: mmi_control_wls_default {
-		wls_control {
-			pinmux = <PINMUX_GPIO114__FUNC_GPIO114>;
-			output-low;
-		};
 	};
 };
 
@@ -341,20 +299,6 @@
 		mmi_max_hrst_cnt = <0>;
 };
 
-&i2c0 {
-    cps_wls_charger@38 {
-        compatible = "cps,wls-charger-cps4038";
-        wireless-fw-name = "cps4038.bin";
-        reg = <0x38>;
-        cps_wls_int = <&pio 31 0x0>;
-        cps_det_int = <&pio 115 0x0>;
-        wls_mode_select = <&pio 116 0x0>;
-        pinctrl-names = "default";
-        pinctrl-0 = <&wls_cps4035_int_default>;
-        status = "okay";
-    };
-};
-
 &mt6375_typec {
 	pd-data {
 		/* 5V, 900ma */
@@ -364,12 +308,6 @@
 		pd,sink-pdo-data = <0x0001912c 0x0002d0c8 0x0002d12c> ;
 	};
 };
-
-&smart_pen_charger {
-		compatible = "mmi,pen-charger";
-		mmi,pen-psy-name = "wireless";
-};
-
 
 &charge_leds {
 	compatible = "gpio-leds";
@@ -384,20 +322,6 @@
 &charger_cooler {
 	mmi,thermal-mitigation = <(-1) 8000000 6000000 4000000 3000000
 				2000000 1000000 500000 300000>;
-};
-
-&moto_wlc {
-	compatible = "moto,charger,wlc";
-	gauge = <&smart_battery>;
-	min_charger_voltage = <4600000>;
-	wlc_max_charger_current = <3150000>;
-	wlc_max_input_current = <1150000>;
-	mmi,wls_control_en = <&pio 114 0x0>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&mmi_control_wls_default>;
-	#cooling-cells = <2>;
-	mmi,wlc-rx-mitigation = <(-1) 2500000 2000000 1500000 1200000
-							1000000 800000 500000>;
 };
 
 &extcon_usb {
