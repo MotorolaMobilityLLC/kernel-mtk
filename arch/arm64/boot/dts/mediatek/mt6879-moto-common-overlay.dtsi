@@ -735,6 +735,29 @@
 
 		status = "okay";
 	};
+
+	awinic_sar:awinic_sar@12 {
+			/* common node */
+			compatible = "awinic,aw_sar";
+			reg = < 0x12 >;
+			sar-num = < 0 >;
+			pinctrl-names = "default","sleep";
+			pinctrl-0 = <&sar_int_default>;
+			pinctrl-1 = <&sar_int_sleep>;
+			interrupt-parent = <&pio>;
+			interrupts = <119 0x02>;
+			interrupt-names = "awinic_irq";
+			irq-gpio = <&pio 119 0x02>;
+			//vcc1-supply = <&mt6363_vio18>;
+			channel_use_flag = <0x1f>;
+			aw_sar,use_plug_cail;
+			aw_sar,update_fw;
+			aw_sar,using_pm_ops;
+			/* private node belongs to aw963xx */
+			start-mode = < 1 >; // 0: start in rom  1: start in ram
+			irq-mux = < 2 >; // set csx as irq pin. config this field when connect to aw96308/aw96310
+			status = "okay";
+	};
 };
 
 /* CONNSYS TCXO GPIO start */
