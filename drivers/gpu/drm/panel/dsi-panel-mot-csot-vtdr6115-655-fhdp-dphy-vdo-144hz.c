@@ -224,7 +224,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_HIGH);
 			if (IS_ERR(pm_en_pin)) {
-				pr_err("cannot get bias-gpios 0 %ld\n", PTR_ERR(pm_en_pin));
+				pr_err("cannot get bias-gpios %d %ld\n", i, PTR_ERR(pm_en_pin));
 				return PTR_ERR(pm_en_pin);
 			}
 			gpiod_set_value(pm_en_pin, gpio_status);
@@ -237,7 +237,7 @@ static int gate_ic_Power_on(struct drm_panel *panel, int enabled)
 			pm_en_pin = NULL;
 			pm_en_pin = devm_gpiod_get_index(ctx->dev, "pm-enable", i, GPIOD_OUT_LOW);
 			if (IS_ERR(pm_en_pin)) {
-				pr_err("cannot get bias-gpios 0 %ld\n", PTR_ERR(pm_en_pin));
+				pr_err("cannot get bias-gpios %d %ld\n", i, PTR_ERR(pm_en_pin));
 				return PTR_ERR(pm_en_pin);
 			}
 			gpiod_set_value(pm_en_pin, gpio_status);
