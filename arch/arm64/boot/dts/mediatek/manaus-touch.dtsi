@@ -47,12 +47,13 @@
 		goodix,panel-max-w = <256>;
 		goodix,panel-max-p = <256>;
 		goodix,edge-ctrl;
+		goodix,sample-ctrl;
 		goodix,interpolation-ctrl;
 		mmi,enable-gestures;
 		mmi,power-off-suspend;
 		mmi,usb-charger-detection;
 		mmi,supported_gesture_type = <0x07>;
-		mmi,charger-psy-name = "battery";
+		mtk-charger = <&mt6375_chg>;
 	};
 
 	focaltech@1 {
@@ -75,7 +76,11 @@
 		pinctrl-2 = <&ctp_gpio_release>;
 		mmi,status = "/chosen","mmi,panel_name","contains","csot_vtdr6115";
 		focaltech,edge-ctrl;
-		mmi,power-off-suspend;
+		focaltech,interpolation-ctrl;
+		mmi,enable-gestures;
+		mmi,supported_gesture_type = <0x07>;
+		mmi,usb-charger-detection;
+		mtk-charger = <&mt6375_chg>;
     };
 };
 
