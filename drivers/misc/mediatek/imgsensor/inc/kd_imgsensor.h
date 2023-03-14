@@ -211,7 +211,10 @@
 #define OV20880MIPI_SENSOR_ID                   0x20880
 #define OV05A20_SENSOR_ID                       0x5305
 #define MOT_AION_OV50A_SENSOR_ID                0x565042
+
 #define MOT_MANAUS_OV32B_SENSOR_ID                0x3242
+#define MOT_MANAUS_OV50A_SENSOR_ID                0x565043
+
 
 /*S5K*/
 #define S5KJD1_SENSOR_ID                        0x3841
@@ -659,6 +662,11 @@
 #define SENSOR_DRVNAME_MOT_AION_S5KGD2_MIPI_RAW "mot_aion_s5kgd2_mipi_raw"
 #define SENSOR_DRVNAME_MOT_AION_OV50E_MIPI_RAW "mot_aion_ov50e_mipi_raw"
 //add aion sensor drvname end
+
+//add manaus sensor drvname begin
+#define SENSOR_DRVNAME_MOT_MANAUS_OV50A_MIPI_RAW "mot_manaus_ov50a_mipi_raw"
+//add manaus sensor drvname end
+
 
 //Begin: Add sensor drvname for Vicky
 #define SENSOR_DRVNAME_MOT_VICKY_S5KHM6_MIPI_RAW       "mot_vicky_s5khm6_mipi_raw"
