@@ -463,11 +463,6 @@ static struct mtk_panel_params ext_params_60hz = {
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
 
-	.vfp_low_power = 3444,
-	.lp_cmd_grp_table[0] = {2, {0x6c, 0x00} },
-	.lp_cmd_grp_table[1] = {2, {0x62, 0x00} },
-	.lp_cmd_grp_size = 2,
-
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
@@ -554,11 +549,6 @@ static struct mtk_panel_params ext_params_90hz = {
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
 
-	.vfp_low_power = 3444,
-	.lp_cmd_grp_table[0] = {2, {0x6c, 0x00} },
-	.lp_cmd_grp_table[1] = {2, {0x62, 0x00} },
-	.lp_cmd_grp_size = 2,
-
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
@@ -644,11 +634,6 @@ static struct mtk_panel_params ext_params_120hz = {
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
 
-	.vfp_low_power = 3444,
-	.lp_cmd_grp_table[0] = {2, {0x6c, 0x00} },
-	.lp_cmd_grp_table[1] = {2, {0x62, 0x00} },
-	.lp_cmd_grp_size = 2,
-
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
@@ -732,11 +717,6 @@ static struct mtk_panel_params ext_params_144hz = {
 	},
 	.data_rate = DISP_PLL_CLK * 2,
 	.change_fps_by_vfp_send_cmd = 1,
-
-	.vfp_low_power = 3444,
-	.lp_cmd_grp_table[0] = {2, {0x6c, 0x00} },
-	.lp_cmd_grp_table[1] = {2, {0x62, 0x00} },
-	.lp_cmd_grp_size = 2,
 
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
