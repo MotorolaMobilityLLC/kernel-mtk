@@ -340,6 +340,11 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 	//FRONT
+	mtk_camera_eeprom1:camera_eeprom1@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x50>;
+		status = "okay";
+	};
 
 	sensor1: sensor1@20 {
 		compatible = "mediatek,imgsensor";
