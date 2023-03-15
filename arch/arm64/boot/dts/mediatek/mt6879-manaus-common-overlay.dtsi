@@ -66,45 +66,15 @@
 };
 
 &regulator_vibrator {
-	status = "disabled";
+	status = "ok";
+	min-volt = <3000000>;
+	max-volt = <3000000>;
 };
 &vibrator0 {
 	status = "disabled";
 };
 
-&i2c6 {
-	clock-frequency = <400000>;
-	haptic_hv@5A {
-		compatible = "awinic,haptic_hv";
-		reg = <0x5A>;
-		irq-gpio = <&pio 6 0>;
-		reset-gpio = <&pio 0 0>;
-		pinctrl-names = "irq_active";
-		pinctrl-0 = <&vibrator_irq_input>;
-		f0_pre = < 2350 >;
-		f0_cali_percent = /bits/ 8 < 7 >;
-		mode = /bits/ 8 < 5 >;
-		aw8671x_gain_bypass = /bits/ 8 < 1 >;
-		aw8671x_brk_bst_md = /bits/ 8 < 0 >;
-		aw8671x_cont_drv1_lvl = /bits/ 8 < 0x50 >;
-		aw8671x_cont_lra_vrms = < 1800 >; /* Motor rated voltage, mV */
-		aw8671x_cont_brk_time = /bits/ 8 < 0x08 >;
-		aw8671x_cont_tset = /bits/ 8 < 0x06 >;
-		aw8671x_cont_bemf_set = /bits/ 8 < 0x02 >;
-		aw8671x_cont_track_margin = /bits/ 8 < 0x0F >;
-		aw8671x_cont_brk_gain = /bits/ 8 < 0x08 >;
-		aw8671x_cont_bst_brk_gain = /bits/ 8 < 0x05 >;
-		aw8671x_cont_wait_num = /bits/ 8 < 0x06 >;
-		aw8671x_cont_drv1_time = /bits/ 8 < 0xEE >;
-		aw8671x_cont_drv2_time = /bits/ 8 < 0xEE >;
-		aw8671x_duration_time = /bits/ 8 < 20 30 60 >;
-		aw8671x_d2s_gain = /bits/ 8 < 0x04 >;
-		aw8671x_trig_config = /bits/ 8 < 0 0 0 1 0 2 0 0
-						 0 0 0 1 0 2 0 0
-						 0 0 0 1 0 2 0 0 >;
-		aw8671x_bst_vol_default = < 6336 >;
-	};
-};
+
 
 &clock_buffer_ctrl {
 	mediatek,xo-bbck4 = <1>;
