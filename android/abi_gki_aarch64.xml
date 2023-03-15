@@ -12519,15 +12519,15 @@
           <var-decl name='dbg_dev_root' type-id='27675065' visibility='default' filepath='include/linux/dmaengine.h' line='954' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='nl80211_wowlan_tcp_data_token_feature' size-in-bits='96' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5702' column='1' id='0dd56ffa'>
+      <class-decl name='nl80211_wowlan_tcp_data_token_feature' size-in-bits='96' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5704' column='1' id='0dd56ffa'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='min_len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5703' column='1'/>
+          <var-decl name='min_len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5705' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='max_len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5703' column='1'/>
+          <var-decl name='max_len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5705' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='bufsize' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5703' column='1'/>
+          <var-decl name='bufsize' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5705' column='1'/>
         </data-member>
       </class-decl>
       <array-type-def dimensions='1' type-id='8f048e17' size-in-bits='368' id='0ddb15d8'>
@@ -23808,15 +23808,15 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='48b5725f'/>
       </function-type>
-      <class-decl name='nl80211_wowlan_tcp_data_token' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5691' column='1' id='2868c21b'>
+      <class-decl name='nl80211_wowlan_tcp_data_token' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5693' column='1' id='2868c21b'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='offset' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5692' column='1'/>
+          <var-decl name='offset' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5694' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5692' column='1'/>
+          <var-decl name='len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5694' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='token_stream' type-id='167619f6' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5693' column='1'/>
+          <var-decl name='token_stream' type-id='167619f6' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5695' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='a87c488a' size-in-bits='64' id='2869bb38'/>
@@ -32404,7 +32404,7 @@
           <var-decl name='android_kabi_reserved1' type-id='91ce1af9' visibility='default' filepath='include/linux/pm.h' line='303' column='1'/>
         </data-member>
       </class-decl>
-      <enum-decl name='nl80211_band' filepath='include/uapi/linux/nl80211.h' line='5287' column='1' id='3eaa0294'>
+      <enum-decl name='nl80211_band' filepath='include/uapi/linux/nl80211.h' line='5289' column='1' id='3eaa0294'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_BAND_2GHZ' value='0'/>
         <enumerator name='NL80211_BAND_5GHZ' value='1'/>
@@ -43660,7 +43660,7 @@
         <parameter type-id='4616a179'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <enum-decl name='nl80211_dfs_regions' filepath='include/uapi/linux/nl80211.h' line='4457' column='1' id='5a85c988'>
+      <enum-decl name='nl80211_dfs_regions' filepath='include/uapi/linux/nl80211.h' line='4459' column='1' id='5a85c988'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_DFS_UNSET' value='0'/>
         <enumerator name='NL80211_DFS_FCC' value='1'/>
@@ -57154,7 +57154,7 @@
         <return type-id='48b5725f'/>
       </function-type>
       <pointer-type-def type-id='d17d9181' size-in-bits='64' id='790a00b9'/>
-      <enum-decl name='nl80211_reg_initiator' filepath='include/uapi/linux/nl80211.h' line='4268' column='1' id='790cc131'>
+      <enum-decl name='nl80211_reg_initiator' filepath='include/uapi/linux/nl80211.h' line='4270' column='1' id='790cc131'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_REGDOM_SET_BY_CORE' value='0'/>
         <enumerator name='NL80211_REGDOM_SET_BY_USER' value='1'/>
@@ -63527,7 +63527,7 @@
       </array-type-def>
       <pointer-type-def type-id='ceff8680' size-in-bits='64' id='8640fd9e'/>
       <pointer-type-def type-id='b2d59d2a' size-in-bits='64' id='86462700'/>
-      <enum-decl name='nl80211_iftype' filepath='include/uapi/linux/nl80211.h' line='3419' column='1' id='86505f90'>
+      <enum-decl name='nl80211_iftype' filepath='include/uapi/linux/nl80211.h' line='3421' column='1' id='86505f90'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_IFTYPE_UNSPECIFIED' value='0'/>
         <enumerator name='NL80211_IFTYPE_ADHOC' value='1'/>
@@ -65634,7 +65634,7 @@
         <return type-id='b50a4934'/>
       </function-type>
       <pointer-type-def type-id='31e0f35d' size-in-bits='64' id='8b42c33d'/>
-      <enum-decl name='nl80211_sar_type' filepath='include/uapi/linux/nl80211.h' line='7654' column='1' id='8b4863ac'>
+      <enum-decl name='nl80211_sar_type' filepath='include/uapi/linux/nl80211.h' line='7656' column='1' id='8b4863ac'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_SAR_TYPE_POWER' value='0'/>
         <enumerator name='NUM_NL80211_SAR_TYPE' value='1'/>
@@ -70301,7 +70301,7 @@
       </function-type>
       <qualified-type-def type-id='1c4048ae' const='yes' id='95be97f3'/>
       <qualified-type-def type-id='1740bab9' const='yes' id='95d0d4e8'/>
-      <enum-decl name='nl80211_bss_scan_width' filepath='include/uapi/linux/nl80211.h' line='4965' column='1' id='95d46034'>
+      <enum-decl name='nl80211_bss_scan_width' filepath='include/uapi/linux/nl80211.h' line='4967' column='1' id='95d46034'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_BSS_CHAN_WIDTH_20' value='0'/>
         <enumerator name='NL80211_BSS_CHAN_WIDTH_10' value='1'/>
@@ -71750,7 +71750,7 @@
         <parameter type-id='b50a4934'/>
         <return type-id='48b5725f'/>
       </function-type>
-      <enum-decl name='nl80211_dfs_state' filepath='include/uapi/linux/nl80211.h' line='6660' column='1' id='996e1634'>
+      <enum-decl name='nl80211_dfs_state' filepath='include/uapi/linux/nl80211.h' line='6662' column='1' id='996e1634'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_DFS_USABLE' value='0'/>
         <enumerator name='NL80211_DFS_UNAVAILABLE' value='1'/>
@@ -88284,7 +88284,7 @@
           <var-decl name='cgroup_ns' type-id='f774a955' visibility='default' filepath='include/linux/nsproxy.h' line='40' column='1'/>
         </data-member>
       </class-decl>
-      <enum-decl name='nl80211_user_reg_hint_type' filepath='include/uapi/linux/nl80211.h' line='4481' column='1' id='b833d4ac'>
+      <enum-decl name='nl80211_user_reg_hint_type' filepath='include/uapi/linux/nl80211.h' line='4483' column='1' id='b833d4ac'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_USER_REG_HINT_USER' value='0'/>
         <enumerator name='NL80211_USER_REG_HINT_CELL_BASE' value='1'/>
@@ -102584,15 +102584,15 @@
         <return type-id='48b5725f'/>
       </function-type>
       <pointer-type-def type-id='ae79630f' size-in-bits='64' id='d59ce2e7'/>
-      <class-decl name='nl80211_wowlan_tcp_data_seq' size-in-bits='96' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5680' column='1' id='d5a1b375'>
+      <class-decl name='nl80211_wowlan_tcp_data_seq' size-in-bits='96' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5682' column='1' id='d5a1b375'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='start' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5681' column='1'/>
+          <var-decl name='start' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5683' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='offset' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5681' column='1'/>
+          <var-decl name='offset' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5683' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5681' column='1'/>
+          <var-decl name='len' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='5683' column='1'/>
         </data-member>
       </class-decl>
       <pointer-type-def type-id='97f0888c' size-in-bits='64' id='d5a71d52'/>
@@ -108012,7 +108012,7 @@
         </data-member>
       </class-decl>
       <qualified-type-def type-id='2b1e6e59' const='yes' id='e03e976a'/>
-      <enum-decl name='nl80211_chan_width' filepath='include/uapi/linux/nl80211.h' line='4937' column='1' id='e043cccc'>
+      <enum-decl name='nl80211_chan_width' filepath='include/uapi/linux/nl80211.h' line='4939' column='1' id='e043cccc'>
         <underlying-type type-id='9cac1fee'/>
         <enumerator name='NL80211_CHAN_WIDTH_20_NOHT' value='0'/>
         <enumerator name='NL80211_CHAN_WIDTH_20' value='1'/>
@@ -109424,12 +109424,12 @@
           <var-decl name='mibs' type-id='547691f8' visibility='default' filepath='include/net/snmp.h' line='105' column='1'/>
         </data-member>
       </class-decl>
-      <class-decl name='nl80211_vendor_cmd_info' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='6730' column='1' id='e223f110'>
+      <class-decl name='nl80211_vendor_cmd_info' size-in-bits='64' is-struct='yes' visibility='default' filepath='include/uapi/linux/nl80211.h' line='6732' column='1' id='e223f110'>
         <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='vendor_id' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='6731' column='1'/>
+          <var-decl name='vendor_id' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='6733' column='1'/>
         </data-member>
         <data-member access='public' layout-offset-in-bits='32'>
-          <var-decl name='subcmd' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='6732' column='1'/>
+          <var-decl name='subcmd' type-id='3f1a6b60' visibility='default' filepath='include/uapi/linux/nl80211.h' line='6734' column='1'/>
         </data-member>
       </class-decl>
       <function-type size-in-bits='64' id='e2245803'>
