@@ -190,7 +190,6 @@ static void lcm_panel_init(struct lcm *ctx)
     lcm_dcs_write_seq_static(ctx, 0x11);
     msleep(75);
 
-
 	lcm_dcs_write_seq_static(ctx, 0xff, 0x5a, 0x81);
 	lcm_dcs_write_seq_static(ctx, 0xf3, 0x08);
 
@@ -405,6 +404,7 @@ static struct mtk_panel_params ext_params_60hz = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
 	.lcm_index = 1,
@@ -539,6 +539,7 @@ static struct mtk_panel_params ext_params_90hz = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
 	.lcm_index = 1,
@@ -673,6 +674,7 @@ static struct mtk_panel_params ext_params_120hz = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
 	.lcm_index = 1,
@@ -808,6 +810,7 @@ static struct mtk_panel_params ext_params_144hz = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.lcm_color_mode = MTK_DRM_COLOR_MODE_DISPLAY_P3,
 	.physical_width_um = 68256,
 	.physical_height_um = 151680,
 	.lcm_index = 1,
