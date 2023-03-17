@@ -157,8 +157,8 @@ static char g_bind39[20] = { 0 };
 
 static int polling_trip_temp1 = 40000;
 static int polling_trip_temp2 = 20000;
-static int polling_factor1 = 5000;
-static int polling_factor2 = 10000;
+//static int polling_factor1 = 5000;
+static int polling_factor2 = 120000;
 
 static int g_resume_done = 1;
 
@@ -882,11 +882,11 @@ static int mtktsvtskin_get_temp(struct thermal_zone_device *thermal, int *temp)
 
 
 	if ((int)*temp >= polling_trip_temp1)
-		thermal->polling_delay = interval * 1000;
+		thermal->polling_delay = interval * polling_factor2;
 	else if ((int)*temp < polling_trip_temp2)
 		thermal->polling_delay = interval * polling_factor2;
 	else
-		thermal->polling_delay = interval * polling_factor1;
+		thermal->polling_delay = interval * polling_factor2;
 	return 0;
 }
 
