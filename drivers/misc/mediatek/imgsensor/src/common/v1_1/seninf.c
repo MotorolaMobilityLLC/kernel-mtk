@@ -462,6 +462,9 @@ static long seninf_ioctl(struct file *pfile,
 			(*(unsigned int *)pbuff) >> 16, (*(unsigned int *)pbuff) & 0xFFFF);
 #endif
 		break;
+	case KDSENINFIOC_X_SET_SWITCH_TG_FOR_STAGGER:
+		ret = Switch_Tg_For_Stagger((*(unsigned int *)pbuff) & 0xFFFF);
+		break;
 	default:
 		PK_DBG("No such command %d\n", cmd);
 		ret = -EPERM;
