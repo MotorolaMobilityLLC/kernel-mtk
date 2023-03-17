@@ -139,6 +139,7 @@
 
 &cpu7 {
 	clock-frequency = <2600000000>;
+	dynamic-power-coefficient = <357>;
 };
 
 &odm {
