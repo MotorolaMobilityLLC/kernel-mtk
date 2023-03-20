@@ -269,6 +269,7 @@
 	cam1_vcamd-supply = <&cam_front_dvdd_ldo>;
 	cam2_vcamio-supply = <&cam_iovdd_ldo>;
 	cam2_vcamd-supply = <&cam_uw_dvdd_ldo>;
+        cam2_vcamaf-supply = <&cam_uw_afvdd_ldo>;
 
 
 	cam0_pin_mclk = "mclk";
@@ -286,6 +287,7 @@
 	cam2_pin_vcama = "gpio";
 	cam2_pin_vcamd = "regulator";
 	cam2_pin_vcamio = "regulator";
+        cam2_pin_vcamaf = "regulator";
 
 
 	cam0_enable_sensor = "mot_lyriq_ov50e_mipi_raw mot_lyriq_ov50a_mipi_raw";
@@ -350,7 +352,7 @@
 /* CAMERA AF */
 &camera_af_hw_node {
 	camaf_m1_pmic-supply = <&cam_main_afvdd_ldo>;
-	camaf_m2_pmic-supply = <&cam_uw_afvdd_ldo>;
+	/*camaf_m2_pmic-supply = <&cam_uw_afvdd_ldo>;*/
 	camaf_m3_pmic-supply = <&mt_pmic_vcamio_ldo_reg>;
 	status = "okay";
 };
