@@ -2,6 +2,7 @@
 ../vendor/mediatek/kernel_modules/met_drv_v3
 ../motorola/kernel/modules/drivers/backlight/aw99703
 ../motorola/kernel/modules/drivers/backlight/ktd3136
+../motorola/kernel/modules/drivers/backlight/sm5350
 ../motorola/kernel/modules/drivers/regulator/ocp2138
 ../motorola/kernel/modules/drivers/regulator/sm5109c
 ../motorola/kernel/modules/drivers/power/sc8551_mmi
