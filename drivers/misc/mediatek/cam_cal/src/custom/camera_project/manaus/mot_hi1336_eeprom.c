@@ -75,7 +75,7 @@ struct STRUCT_CAM_CAL_CONFIG_STRUCT mot_hi1336_eeprom = {
 	.read_function = Common_read_region,
 	.mot_do_factory_verify_function = hi1336_mot_do_factory_verify,
 	.layout = &cal_layout_table,
-	.sensor_id = MOT_AION_HI1336_SENSOR_ID,
+	.sensor_id = MOT_MANAUS_HI1336_SENSOR_ID,
 	.i2c_write_id = 0xA0,
 	.max_size = 0x8000,
 	.serial_number_bit = 16,
@@ -418,7 +418,7 @@ unsigned int mot_hi1336_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 
 	}
 
-	if(pCamCalData->sensorID == MOT_AION_HI1336_SENSOR_ID) {
+	if(pCamCalData->sensorID == MOT_MANAUS_HI1336_SENSOR_ID) {
 		//af posture calibration data
 		unsigned char AF_POSTURE[21];
 		unsigned int af_posture_data_offset = 0x0e3f;
