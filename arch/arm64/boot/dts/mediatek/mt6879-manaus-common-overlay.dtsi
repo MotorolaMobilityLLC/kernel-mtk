@@ -635,15 +635,4 @@
 &i2c5 {
 	status = "okay";
 
-	sgm61220@75 {
-		status = "ok";
-		compatible = "sgm62110";
-		reg = <0x75>;
-
-		regulators {
-			bob_buck: ldo1 {
-				regulator-name = "sgm62110-buck";
-			};
-		};
-	};
 };
