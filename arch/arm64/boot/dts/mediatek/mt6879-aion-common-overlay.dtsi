@@ -16,6 +16,7 @@
 #include "mediatek/aion-sensor.dtsi"
 #include "mediatek/aion-wl2864c.dtsi"
 #include "mediatek/aion-charger.dtsi"
+#include "mediatek/aion-memory.dtsi"
 
 /*Remove unused i2c device*/
 &rt6160 {
