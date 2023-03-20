@@ -21,7 +21,7 @@ char * const imgsensor_hw_pin_names[] = {
 #ifdef CONFIG_REGULATOR_RT5133
 	"vcama1",
 #endif
-#if defined(IMGSENSOR_MT6781) || defined(IMGSENSOR_MT6877)
+#if defined(IMGSENSOR_MT6781) || defined(IMGSENSOR_MT6877) || defined(CONFIG_MOT_LYRIQ)
 	"vcamaf",
 #endif
 	"vcamd",
