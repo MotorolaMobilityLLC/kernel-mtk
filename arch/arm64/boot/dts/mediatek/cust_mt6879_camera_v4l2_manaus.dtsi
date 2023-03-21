@@ -25,6 +25,11 @@
 
 &mtk_composite_v4l2_2 {
 	port@0 {
+		main_af_endpoint: endpoint {
+			remote-endpoint = <&main_af>;
+		};
+	};
+	port@1 {
 		wide_af_endpoint: endpoint {
 			remote-endpoint = <&wide_af>;
 		};
@@ -51,6 +56,18 @@
 	};
 };
 
+&i2c2 {
+	camera_af_main@18 {
+		compatible = "mediatek,mot_manaus_gt9764";
+		reg = <0x18>;
+		vdd-supply = <&cam_main_afdd_ldo>;
+		port {
+			main_af: endpoint {
+				remote-endpoint = <&main_af_endpoint>;
+			};
+		};
+	};
+};
 
 
 &i2c8 {
