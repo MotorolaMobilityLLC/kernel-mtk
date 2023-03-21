@@ -60,7 +60,9 @@
 
 	wireless_factory_max_current = <3000000>;
 	wireless_factory_max_input_current = <600000>;
-	enable_dynamic_mivr;
+
+	disable_aicl;
+
 	/*mmi config*/
 	mmi,iterm-ma = <429>;
 	mmi,mmi-temp-zones = <0 4200 800 0>,
