@@ -2771,7 +2771,7 @@ static void mmi_charger_check_status(struct charger_manager *info)
 	if (mmi->charging_limit_modes == CHARGING_LIMIT_RUN)
 		pr_warn("Factory Mode/Image so Limiting Charging!!!\n");
 
-	if (!charger_present) {
+	if (!charger_present && !wlc_get_online()) {
 		mmi->pres_chrg_step = STEP_NONE;
 	} else if ((mmi->pres_temp_zone == ZONE_HOT) ||
 		   (mmi->pres_temp_zone == ZONE_COLD) ||
