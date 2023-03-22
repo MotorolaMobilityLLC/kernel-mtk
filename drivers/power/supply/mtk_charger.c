@@ -3137,8 +3137,22 @@ static ssize_t charge_rate_show(struct device *dev,
 			 charge_rate[mmi_info->mmi.charge_rate]);
 }
 
+static DEVICE_ATTR(charge_rate, S_IRUGO, charge_rate_show, NULL);
+
 static mmi_get_battery_age(void)
 {
+#ifdef CONFIG_MOTO_REMOVE_MTK_GAUGE
+	union power_supply_propval val = {0};
+
+	if (!mmi_info) {
+		pr_err("SMBMMI: mmi_info is not initialized\n");
+		return 100;
+	}
+
+	mmi_get_prop_from_battery(mmi_info, POWER_SUPPLY_PROP_SCOPE, &val);
+
+	return val.intval;
+#else
 	struct mtk_gauge *gauge;
 	struct power_supply *psy;
 
@@ -3159,8 +3173,8 @@ static mmi_get_battery_age(void)
 	pr_info("[%s]battery age is %d\n", __func__, gauge->gm->aging_factor);
 
 	return gauge->gm->aging_factor /100;
+#endif
 }
-static DEVICE_ATTR(charge_rate, S_IRUGO, charge_rate_show, NULL);
 
 static ssize_t age_show(struct device *dev,
 			struct device_attribute *attr,
