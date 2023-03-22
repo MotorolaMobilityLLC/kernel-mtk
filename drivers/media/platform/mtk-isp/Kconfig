@@ -79,5 +79,6 @@ config VIDEO_MTK_ISP_IPESYS
 config MTK_MEMORY_OPTIMIZE
 	tristate "Moto memory optimize"
 	help
-	    Tesla do not support vHDR
-	    reduce unnecessary memory usage
+	    only video mode support vHDR, other mode don't need this vHDR
+	    buffer,the condition mtk_cam_feature_is_switchable_hdr is sufficient,
+	    so reduce unnecessary dynamic_exposure_num_max judgement.
