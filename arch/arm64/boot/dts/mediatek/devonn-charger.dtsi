@@ -90,8 +90,8 @@
         CAR_TUNE_VALUE = <(100)>;
         CURR_MEASURE_20A = <(0)>;
         UNIT_MULTIPLE = <(1)>;
-	SHUTDOWN_GAUGE1_XMINS = <(0)>;
-	PSEUDO1_EN = <(0)>;
+	SHUTDOWN_1_TIME = <(10)>;
+	/* If ui_soc shows 1% more than X minites, system will shutdown */
 
 	CHARGER_IEOC = <(243)>;
 	/* battery prop */
