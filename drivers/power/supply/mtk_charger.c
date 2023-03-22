@@ -2756,7 +2756,7 @@ static int mmi_get_ffc_fv(struct mtk_charger *info, int temp_c)
 	info->mmi.chrg_iterm = zone->ffc_chg_iterm;
 	ffc_max_fv = zone->ffc_max_mv;
 	pr_info("FFC temp zone %d, fv %d mV, chg iterm %d mA\n",
-		  zone, ffc_max_fv, info->mmi.chrg_iterm);
+		  ((i > 0)? (i - 1) : 0), ffc_max_fv, info->mmi.chrg_iterm);
 
 	return ffc_max_fv;
 }
