@@ -6894,8 +6894,12 @@ int mtk_cam_ctx_stream_on(struct mtk_cam_ctx *ctx)
 		 * TODO: validate pad's setting of each pipes
 		 * return -EPIPE if failed
 		 */
+#if defined(CONFIG_MTK_MEMORY_OPTIMIZE)
+		if(mtk_cam_feature_is_switchable_hdr(feature_active)) {
+#else
 		if (ctx->pipe->dynamic_exposure_num_max > 1 ||
 		    mtk_cam_feature_is_switchable_hdr(feature_active)) {
+#endif
 			// dcif may have to double for during skip frame
 			buf_require = max(buf_require,
 				2 + mtk_cam_feature_is_3_exposure(feature_active));
