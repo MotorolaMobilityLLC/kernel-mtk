@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2020 MediaTek Inc.
+ */
+
+/* TOUCH start */
+
+&spi3 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	touch@0{
+		compatible = "novatek,NVT-ts-spi";
+		reg = <0>; //Same as CS ID
+		status = "ok";
+
+		spi-max-frequency = <9600000>;	//4800000,9600000,15000000,19200000
+		novatek,reset-gpio = <&pio 3 0x00>;
+		novatek,irq-gpio = <&pio 22 0x2001>;
+		novatek,usb_charger;
+		novatek,report_gesture_key;
+		novatek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
+		novatek,psy-name = "battery";
+
+		// 525
+		//novatek,swrst-n8-addr = <0x01F01A>;
+
+		// 672A, 525B, 675, 526, 672C, 523
+		novatek,swrst-n8-addr = <0x03F0FE>;
+		novatek,spi-rd-fast-addr = <0x03F310>;
+
+	};
+};
+
+/* TOUCH end */
