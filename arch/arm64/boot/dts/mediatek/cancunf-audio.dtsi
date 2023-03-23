@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2021 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&i2c6 {
+	spk: speaker_amp@5c {
+		compatible = "richtek,rt5512";
+		#sound-dai-cells = <0>;
+		reg = <0x5c>;
+		sound-name-prefix = "Left";
+		status ="disable";
+	};
+
+	aw87xxx_pa@58 {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x58>;
+
+		dev_index = < 0 >;
+		status = "okay";
+	};
+
+	aw87xxx_pa@59 {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x59>;
+
+		dev_index = < 1 >;
+		status = "okay";
+	};
+};
