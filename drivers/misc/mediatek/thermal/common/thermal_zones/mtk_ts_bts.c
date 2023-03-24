@@ -61,7 +61,7 @@ static DEFINE_SEMAPHORE(sem_mutex);
 
 static unsigned int interval = 1;	/* seconds, 0 : no auto polling */
 #ifdef CONFIG_POWEROFF_CHG_THERM_LYRIQ
-static int trip_temp[10] = { 120000, 46000, 100000, 90000, 80000,
+static int trip_temp[10] = { 120000, 43000, 100000, 90000, 80000,
 				70000, 65000, 60000, 55000, 50000 };
 #else
 static int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000,

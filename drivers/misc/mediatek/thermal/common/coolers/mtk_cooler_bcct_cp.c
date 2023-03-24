@@ -417,11 +417,11 @@ static struct x_chrlmt_handle abcct_2nd_chrlmt_handle;
 static long abcct_2nd_prev_temp;
 static long abcct_2nd_curr_temp;
 #ifdef CONFIG_POWEROFF_CHG_THERM_LYRIQ
-static long abcct_2nd_target_temp = 46000;
+static long abcct_2nd_target_temp = 44000;
 static long abcct_2nd_kp = 1000;
 static long abcct_2nd_ki = 200000;
 static long abcct_2nd_kd = 5;
-static int abcct_2nd_max_bat_chr_curr_limit = 8000;
+static int abcct_2nd_max_bat_chr_curr_limit = 10000;
 static int abcct_2nd_min_bat_chr_curr_limit = 5000;
 #else
 static long abcct_2nd_target_temp = 48000;
@@ -697,7 +697,7 @@ static int mtk_cooler_abcct_2nd_register_ltf(void)
 			&mtk_cl_abcct_2nd_ops_ext);
 #ifdef CONFIG_POWEROFF_CHG_THERM_LYRIQ
 	if(cl_abcct_2nd_dev) {
-		mtk_thermal_cooling_device_add_exit_point(cl_abcct_2nd_dev, 3000); //exit condition
+		mtk_thermal_cooling_device_add_exit_point(cl_abcct_2nd_dev, 2000); //exit condition
 	}
 #endif
 	return 0;
