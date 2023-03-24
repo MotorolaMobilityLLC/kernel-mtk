@@ -1711,8 +1711,6 @@ static int pane_hbm_set_cmdq(struct lcm *ctx, void *dsi, dcs_grp_write_gce cb, v
 				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
 			break;
 		case 1:
-			if (ctx->lhbm_en)
-				panel_lhbm_set_cmdq(dsi, cb, handle, 0, ctx->current_bl);
 			cb(dsi, handle, &hbm_on_table, 1);
 			break;
 		case 2:
