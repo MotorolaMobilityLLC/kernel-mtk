@@ -496,17 +496,6 @@ static int get_charger_type(struct mtk_charger_type *info)
 
 	hw_bc11_init(info);
 
-	chrdet = bc11_get_register_value(info->regmap,
-		PMIC_RGS_CHRDET_ADDR,
-		PMIC_RGS_CHRDET_MASK,
-		PMIC_RGS_CHRDET_SHIFT);
-	pr_info("[%s] [%d] chrdet=%d\n", __func__, __LINE__, chrdet);
-	if (!chrdet) {
-		info->psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
-		type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
-		return type;
-	}
-
 	if (hw_bc11_DCD(info)) {
 		info->psy_desc.type = POWER_SUPPLY_TYPE_USB;
 		type = POWER_SUPPLY_USB_TYPE_DCP;
@@ -529,6 +518,16 @@ static int get_charger_type(struct mtk_charger_type *info)
 		hw_bc11_done(info);
 	else
 		pr_info("charger type: skip bc11 release for BC12 DCP SPEC\n");
+
+	chrdet = bc11_get_register_value(info->regmap,
+		PMIC_RGS_CHRDET_ADDR,
+		PMIC_RGS_CHRDET_MASK,
+		PMIC_RGS_CHRDET_SHIFT);
+	pr_info("[%s] [%d] chrdet=%d\n", __func__, __LINE__, chrdet);
+	if (!chrdet) {
+		info->psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
+		type = POWER_SUPPLY_USB_TYPE_UNKNOWN;
+	}
 
 	dump_charger_name(info->psy_desc.type);
 	pr_err("%s:check end\n", __func__);
