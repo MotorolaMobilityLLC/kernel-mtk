@@ -538,6 +538,11 @@
 	};
 };
 
+&therm_intf {
+	/*Vsensor name should be CASE DIFFERENT with the name in config file*/
+	mmi,temperature-names = "BACK_TEMP";/*for "back_temp" in config file*/
+};
+
 &pio {
 	vibrator_irq_input: vibrator_irq_input {
 		pins_cmd_dat {
