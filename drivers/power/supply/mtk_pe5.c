@@ -1358,6 +1358,8 @@ static int pe50_calculate_rcable_by_swchg(struct pe50_algo_info *info)
 		return ret;
 	}
 
+	pe50_hal_enable_hz(info->alg, CHG1, false);
+
 	pe50_hal_set_cv(info->alg, CHG1, data->cv_limit * 1000);
 	pe50_hal_enable_charging(info->alg, CHG1, true);
 	msleep(600);
@@ -1624,6 +1626,14 @@ static int pe50_algo_init_with_ta_cv(struct pe50_algo_info *info)
 			  desc->start_vbat_max);
 		goto out;
 	}
+
+	ret = pe50_hal_enable_hz(info->alg, CHG1, true);
+	if (ret < 0) {
+		PE50_ERR("set swchg hz fail(%d)\n", ret);
+		goto err;
+	}
+
+	msleep(500); /* Wait current stable */
 
 	ret = pe50_set_ta_cap_cv(info, 8000, 1000);
 	if (ret < 0) {
