@@ -18,25 +18,35 @@
 	id = <6>;
 
 	i2c_lcd_bias_mtk:i2c_lcd_bias@3e {
-		compatible = "ocp,bias_ocp2138";
+		compatible = "sm,bias_sm5109";
 		reg = <0x3e>;
-		ocp,lcd-bias-enn-gpio = <&pio 134 0>;
-		ocp,lcd-bias-enp-gpio = <&pio 182 0>;
+		sm,lcd-bias-enn-gpio = <&pio 134 0>;
+		sm,lcd-bias-enp-gpio = <&pio 182 0>;
 		biasp_en_pin = <182>;
 		biasn_en_pin = <134>;
 		status = "okay";
 	};
-};
-
-&i2c7 {
-	id = <7>;
 
 	aw99703_backlight: sprd_backlight@36{
-		compatible = "awinic,aw99703-bl","ktd,ktd3136";
+		compatible = "awinic,aw99703-bl", "sm-sm5350";
 		reg = <0x36>;
-		id = <7>;
+		id = <6>;
 		lk_hwen-gpio = <8>;
 		status = "okay";
+
+		//sm5350
+		//pwm-cfg = <0x0F>;
+		hwen-gpio = <&pio 8 1>;
+		boost-ctl = <0x02>;
+		ctl-bank-en = <0x02>;
+		full-scale-current = <0x17>;
+		map-mode = <1>; /* 0 exponential, 1 linear */
+		sm5350,default-brightness = <1810>;
+		sm5350,init-seq-enable = <1>;
+		sm5350,init-seq = <0x1A 0x02>,
+				<0x10 0x07>,
+				<0x23 0xFF>,
+				<0x24 0x02>;
 
 		aw99703,hwen-gpio = <&pio 8 1>;
 		aw99703,bl-map = <3>; /* brightness map level 1:256,2:1024,3:2048 */
@@ -71,21 +81,6 @@
 				<0x23 0x61>,
 				<0x02 0x05>;
 
-                ktd,hwen-gpio = <&pio 8 1>;
-                ktd,using-lsb;
-                ktd,pwm-frequency = <1>; /* 1MHZ */
-                ktd,bl-fscal-led = <0xC1>; /* 24.2mA */
-                ktd,turn-on-ramp = <0x00>;
-                ktd,turn-off-ramp = <0x04>;
-                ktd,pwm-trans-dim = <0>;
-                ktd,i2c-trans-dim = <128>;
-                ktd,skip-first-trans;
-                ktd,reset-trans-delay;
-                ktd,bl-channel = <3>;
-                ktd,ovp-level = <32>;  /*25.9v or 32v */
-                ktd,ocp-level = <2600>;
-                ktd,switching-frequency = <1>;
-                ktd,inductor-current = <1>;
 	};
 };
 
@@ -98,13 +93,12 @@
 		led_mode = <6>;
 		max-brightness = <2047>;
 		max-hw-brightness = <2047>;
-		default-brightness = <1024>;
+		default-brightness = <1810>;
 	};
 };
 
 &pio {
-	//bias-pos
-		mtkfb_pins_lcm_bias_pos1_gpio: lcm_bias_pos1_gpio {
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
 			slew-rate = <1>;
@@ -112,23 +106,7 @@
 		};
 	};
 
-	mtkfb_pins_lcm_bias_pos0_gpio: lcm_bias_pos0_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO182__FUNC_GPIO182>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	//bias_neg
-	mtkfb_pins_lcm_bias_neg1_gpio: lcm_bias_eng1_gpio {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	mtkfb_pins_lcm_bias_neg0_gpio: lcm_bias_neg0_gpio {
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
 			slew-rate = <1>;
@@ -160,24 +138,22 @@
 };
 
 &mtkfb {
-	pinctrl-names =
+	pinctrl-names = "lcd_bias_enp0_gpio", "lcd_bias_enn0_gpio",
 		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
-		"mode_te_te",
-		"lcm_bias_pos1_gpio", "lcm_bias_pos0_gpio",
-		"lcm_bias_eng1_gpio", "lcm_bias_neg0_gpio";
-	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
-	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
-	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
-	pinctrl-3 = <&mtkfb_pins_lcm_bias_pos1_gpio>;
-	pinctrl-4 = <&mtkfb_pins_lcm_bias_pos0_gpio>;
-	pinctrl-5 = <&mtkfb_pins_lcm_bias_neg1_gpio>;
-	pinctrl-6 = <&mtkfb_pins_lcm_bias_neg0_gpio>;
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-1 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
 	status = "okay";
 };
 
 &dsi0 {
 	status = "okay";
-	//switch_fps = <120>; //60
+	#address-cells = <1>;
+	#size-cells = <0>;
+	//switch_fps = <120>;
 	panel1@0 {
 		compatible = "mot,dummy,vdo,60hz";
 		reg = <0>;
@@ -191,13 +167,11 @@
 	};
 
 	panel2@0 {
-		compatible = "tianma,nt36672c,vdo,120hz";
+		compatible = "tm,nt36672c,vdo,120hz";
 		reg = <1>;
 		reset-gpios = <&pio 95 0>;
-		bias-gpios =<&pio 182 0>, //pos
-					<&pio 134 0>;
-		//gate-ic = <0>;
-		rc-enable = <1>;
+		bias_n-gpios = <&pio 134 0>;
+		bias_p-gpios = <&pio 182 0>;
 		pinctrl-names = "default";
 		port {
 			panel_in2: endpoint {
