@@ -1489,6 +1489,127 @@ static void therm_intf_debugfs_init(void) {}
 static void therm_intf_debugfs_exit(void) {}
 #endif
 
+/*-----------------------------------thermal zone interface--------------------------------*/
+#define TEMP_NODE_SENSOR_NAMES "mmi,temperature-names"
+#define DEFAULT_TEMPERATURE -270000
+#define MMI_SYS_TEMP_NAME_LENGTH 20
+
+struct mmi_sys_temp_sensor {
+	struct thermal_zone_device *tz_dev;
+	const char *name;
+	int temp;
+};
+
+struct mmi_sys_temp_dev {
+	int num_sensors;
+	struct mmi_sys_temp_sensor *sensor;
+};
+
+static int mmi_sys_temp_get(struct thermal_zone_device *thermal,
+			    int *temp)
+{
+	struct mmi_sys_temp_sensor *sensor = thermal->devdata;
+	int len;
+
+	if (!sensor)
+		return -EINVAL;
+
+	len = MMI_SYS_TEMP_NAME_LENGTH;
+
+	if (!strncasecmp(sensor->name, u_vsensor0.user_vsensor_name, len))
+		sensor->temp = u_vsensor0.temp;
+	else if (!strncasecmp(sensor->name, u_vsensor1.user_vsensor_name, len))
+		sensor->temp = u_vsensor1.temp;
+	else if (!strncasecmp(sensor->name, u_vsensor2.user_vsensor_name, len))
+		sensor->temp = u_vsensor2.temp;
+	else if (!strncasecmp(sensor->name, u_vsensor3.user_vsensor_name, len))
+		sensor->temp = u_vsensor3.temp;
+	else if (!strncasecmp(sensor->name, u_vsensor4.user_vsensor_name, len))
+		sensor->temp = u_vsensor4.temp;
+	else
+		sensor->temp = DEFAULT_TEMPERATURE;
+
+	*temp = sensor->temp;
+	pr_info("%s=%d\n", sensor->name, *temp);
+
+	return 0;
+}
+
+static struct thermal_zone_device_ops mmi_sys_temp_ops = {
+	.get_temp = mmi_sys_temp_get,
+};
+
+static int mmi_thermal_zone_register(struct platform_device *pdev)
+{
+	static struct mmi_sys_temp_dev *sys_temp_dev;
+	int num_sensors;
+	int num_registered = 0;
+	int i, ret;
+
+	num_sensors = of_property_count_strings(pdev->dev.of_node, TEMP_NODE_SENSOR_NAMES);
+	dev_info(&pdev->dev, "num_sensors = %d\n", num_sensors);
+	if (num_sensors <= 0) {
+		dev_err(&pdev->dev,
+			"bad number of sensors: %d\n", num_sensors);
+		return 0;
+	}
+	sys_temp_dev = devm_kzalloc(&pdev->dev, sizeof(struct mmi_sys_temp_dev),
+				    GFP_KERNEL);
+	if (!sys_temp_dev) {
+		dev_err(&pdev->dev,
+			"Unable to alloc memory for sys_temp_dev\n");
+		return -ENOMEM;
+	}
+	sys_temp_dev->num_sensors = num_sensors;
+
+	sys_temp_dev->sensor =
+				(struct mmi_sys_temp_sensor *)devm_kzalloc(&pdev->dev,
+				(num_sensors *
+				       sizeof(struct mmi_sys_temp_sensor)),
+				       GFP_KERNEL);
+	if (!sys_temp_dev->sensor) {
+		dev_err(&pdev->dev,
+			"Unable to alloc memory for sensor\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < num_sensors; i++) {
+		ret = of_property_read_string_index(pdev->dev.of_node,
+						TEMP_NODE_SENSOR_NAMES, i,
+						&sys_temp_dev->sensor[i].name);
+		if (ret) {
+			dev_err(&pdev->dev, "Unable to read of_prop string\n");
+			goto err_thermal_unreg;
+		}
+
+		sys_temp_dev->sensor[i].temp = DEFAULT_TEMPERATURE;
+		sys_temp_dev->sensor[i].tz_dev =
+		   thermal_zone_device_register(sys_temp_dev->sensor[i].name,
+						0, 0,
+						&sys_temp_dev->sensor[i],
+						&mmi_sys_temp_ops,
+						NULL, 0, 0);
+		if (IS_ERR(sys_temp_dev->sensor[i].tz_dev)) {
+			dev_err(&pdev->dev,
+				"thermal_zone_device_register() failed.\n");
+			ret = -ENODEV;
+			goto err_thermal_unreg;
+		}
+		num_registered = i + 1;
+	}
+
+
+
+	return 0;
+
+err_thermal_unreg:
+	for (i = 0; i < num_registered; i++)
+		thermal_zone_device_unregister(sys_temp_dev->sensor[i].tz_dev);
+
+	devm_kfree(&pdev->dev, sys_temp_dev);
+	return 0;
+}
+/*-----------------------------------thermal zone interface end--------------------------------*/
 
 static const struct of_device_id therm_intf_of_match[] = {
 	{ .compatible = "mediatek,therm_intf", },
@@ -1580,6 +1701,9 @@ static int therm_intf_probe(struct platform_device *pdev)
 
 	mtk_leds_register_notifier(&leds_init_notifier);
 #endif
+
+	//prepare for thermal_zone
+	mmi_thermal_zone_register(pdev);
 
 	return 0;
 }
