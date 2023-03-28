@@ -32,7 +32,7 @@
 /* #define PANEL_SUPPORT_READBACK */
 
 //TBD
-//#define BIAS_SM5109
+#define BIAS_SM5109
 
 #ifdef BIAS_SM5109
 extern int __attribute__ ((weak)) sm5109_BiasPower_disable(u32 pwrdown_delay);
