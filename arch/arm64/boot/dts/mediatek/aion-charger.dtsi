@@ -299,7 +299,7 @@
 		ita_level = <3000 2500 2000 1500>;
 		rcable_level = <230 280 380 480>;
 		ita_level_dual = <6200 3000 2500 2000>;
-		rcable_level_dual = <130 230 280 380>;
+		rcable_level_dual = <180 230 280 380>;
 		idvchg_ss_init = <1000>;
 		idvchg_ss_step = <250>;
 		idvchg_ss_step1 = <100>;
