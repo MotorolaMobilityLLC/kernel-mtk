@@ -210,12 +210,6 @@ chipone,enable-wakeup;
 	status = "ok";
 };
 
-&mt6363keys {
-        home {
-                linux,keycodes = <115>;
-        };
-};
-
 /* GPS GPIO standardization start */
 &pio {
 	gps_pins_default: gps_default {
