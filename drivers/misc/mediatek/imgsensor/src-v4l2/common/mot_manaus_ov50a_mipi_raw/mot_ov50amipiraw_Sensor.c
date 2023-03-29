@@ -388,7 +388,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 		{0, 0}, {0, 0}, {0, 384}, {0, 192}, {0, 0},
 		{0, 0}, {0, 192}, {64, 228}, {0, 384}, {2048, 1536}
 	},  //{0, 1632}
-	.iMirrorFlip = 3,
+	.iMirrorFlip = 0,
 };
 #endif
 
