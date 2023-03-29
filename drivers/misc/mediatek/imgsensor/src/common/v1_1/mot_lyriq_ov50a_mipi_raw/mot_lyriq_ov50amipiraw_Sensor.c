@@ -837,9 +837,17 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 	if (enable)
 		write_cmos_sensor_8(0x0100, 0x01); // stream on
-	else
+	else {
+		write_cmos_sensor_8(0x3208, 0x02); // reset switch_group2
+		write_cmos_sensor_8(0x0000, 0x00);
+		write_cmos_sensor_8(0x3208, 0x12);
+		write_cmos_sensor_8(0x3208, 0xa2);
+		write_cmos_sensor_8(0x3208, 0x01); // reset switch_group2
+		write_cmos_sensor_8(0x0000, 0x00);
+		write_cmos_sensor_8(0x3208, 0x11);
+		write_cmos_sensor_8(0x3208, 0xa1);
 		write_cmos_sensor_8(0x0100, 0x00); // stream off
-
+	}
 	mdelay(10);
 	return ERROR_NONE;
 }
