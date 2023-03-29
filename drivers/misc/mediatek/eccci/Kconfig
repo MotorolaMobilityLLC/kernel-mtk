@@ -98,6 +98,15 @@ config MOTO_AION_SWTP_CUST
 	  it is disabled.
 	  The option default disabled.
 
+config MOTO_CANCUNF_SWTP_CUST
+	bool "ECCCI cancunf swtp customization"
+	depends on MTK_ECCCI_DRIVER
+	help
+	  This option enables cancunf swtp customization, if yes,
+	  then it is supported, if no,
+	  it is disabled.
+	  The option default disabled.
+
 config MOTO_BYPSS_RF_CABLE_DETECT_SUPPORT
 	bool "ECCCI by pass rfcable detection"
 	depends on MTK_ECCCI_DRIVER
