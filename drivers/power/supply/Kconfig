@@ -296,6 +296,14 @@ config MOTO_PD_HYPER
           Say Yes to enable.
           It is mainly used as moto pd 68w.
 
+config SUPPORT_BQ25980
+        tristate "Charger pump bq25980 support"
+        default n
+        depends on IIO
+        help
+          Say Yes to enable.
+          It is mainly used for charger pump bq25980 IC.
+
 config CHARGER_AXP20X
 	tristate "X-Powers AXP20X and AXP22X AC power supply driver"
 	depends on MFD_AXP20X
