@@ -256,7 +256,10 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		if (is_typec_adapter(info)) {
 			if (adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL)
 				== 3000) {
-				pdata->input_current_limit = 3000000;
+				if (info->mmi.typec_rp_max_current)
+					pdata->input_current_limit = info->mmi.typec_rp_max_current;
+				else
+					pdata->input_current_limit = 3000000;
 				pdata->charging_current_limit = 3000000;
 			} else if (adapter_dev_get_property(info->pd_adapter,
 				TYPEC_RP_LEVEL) == 1500) {
