@@ -952,6 +952,15 @@ config DRM_PANEL_TM_NT36672C_650_FHDP_DPHY_VDO_120HZ
 	  Say Y here if you want to enable support for TM_NT36672C_650_FHDP_DPHY_VDO_120HZ
 	  panel. It provides a MIPI DSI interface to host.
 
+config DRM_PANEL_CSOT_FT8726_650_FHDP_DPHY_VDO_120HZ
+	tristate "CSOT 1080*2400 120 HZ VDO ft8726 panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  Say Y here if you want to enable support for DRM_PANEL_CSOT_FT8726_650_FHDP_DPHY_VDO_120HZ
+	  panel. It provides a MIPI DSI interface to host.
 
 config DRM_MEDIATEK_PANEL
 	tristate "drm panel common driver"
