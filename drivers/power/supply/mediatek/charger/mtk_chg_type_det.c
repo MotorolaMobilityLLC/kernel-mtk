@@ -400,7 +400,83 @@ int wireless_get_wireless_online(struct mt_charger *info)
 	}
 	return ret;
 }
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+#define CHG_SHOW_MAX_SIEZE 50
+int mmi_notify_vbus_event(void) {
+	char *event_string = NULL;
+	struct power_supply *batt_psy = NULL;
+	char *batt_uenvp[2];
+	bool vbus_status = false;
+	int vbus_voltage = 0;
 
+	if(!batt_psy)
+		batt_psy = power_supply_get_by_name("battery");
+	if(!batt_psy) {
+		pr_err("%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	//vbus present
+	vbus_voltage =  battery_get_vbus();
+	if(vbus_voltage >= 3000)
+		vbus_status = true;
+
+	if(wlc_get_online()) {
+		pr_err("%s: wlc online , no need send lpd vbus info\n", __func__);
+		return 0;
+	}
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_VBUS_PRESENT=%s", vbus_status? "true": "false");
+
+	batt_uenvp[0] = event_string;
+	batt_uenvp[1] = NULL;
+	kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+	pr_info("%s, vbus:%d send %s,vbus_voltage:%d\n",__func__, vbus_status, event_string, vbus_voltage);
+	kfree(event_string);
+	return 0;
+}
+int mmi_notify_lpd_event(void) {
+	char *event_string = NULL;
+	char *batt_uenvp[2];
+	struct power_supply *battery_psy = NULL;
+	struct charger_manager *info = NULL;
+	struct charger_device *chg_psy = NULL;
+
+	chg_psy = get_charger_by_name("primary_chg");
+	if(chg_psy) {
+		info = (struct charger_manager *)charger_dev_get_drvdata(chg_psy);
+		if(info)
+			pr_err("%s could  get charger_manager\n",__func__);
+		else {
+			pr_err("%s Couldn't get charger_manager\n",__func__);
+			return 0;
+		}
+	} else {
+		pr_err("%s Couldn't get chg_psy\n",__func__);
+		return 0;
+	}
+
+	battery_psy = power_supply_get_by_name("battery");
+	if(!battery_psy) {
+		chr_err("%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_LPD_PRESENT=%s", info->water_detected? "true": "false");
+
+	batt_uenvp[0] = event_string;
+	batt_uenvp[1] = NULL;
+	kobject_uevent_env(&info->battery_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+	pr_info("%s, lpd:%d send %s\n",__func__, info->water_detected, event_string);
+	kfree(event_string);
+	return 0;
+}
+#endif
 static int mt_charger_set_property(struct power_supply *psy,
 	enum power_supply_property psp, const union power_supply_propval *val)
 {
@@ -445,7 +521,14 @@ static int mt_charger_set_property(struct power_supply *psy,
 		charger_manager_cp_set_ichg(cti->chg_consumer, MAIN_CHARGER, val->intval);
 		mtk_chg->ichg_limit =  val->intval;
 		return 0;
-
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+	case POWER_SUPPLY_PROP_MOISTURE_DETECTED:
+		if(val->intval == 1) {
+			mmi_notify_lpd_event();
+			mmi_notify_vbus_event();
+		}
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -546,6 +629,9 @@ static enum power_supply_property mt_charger_properties[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_MAX,
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+	POWER_SUPPLY_PROP_MOISTURE_DETECTED,
+#endif
 };
 
 static enum power_supply_property mt_ac_properties[] = {
