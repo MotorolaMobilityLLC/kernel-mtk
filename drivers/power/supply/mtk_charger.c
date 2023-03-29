@@ -3801,6 +3801,11 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 	if (rc)
 		info->mmi.min_therm_current_limit = 2000000;
 
+	rc = of_property_read_u32(node, "mmi,typec-rp-max-current",
+				  &info->mmi.typec_rp_max_current);
+	if (rc)
+		info->mmi.typec_rp_max_current = 0;
+
 	return rc;
 }
 

@@ -366,6 +366,7 @@ struct mmi_params {
 	int			wls_boost_en;
 	int			charge_rate;
 	unsigned int	active_fast_alg;
+	int			typec_rp_max_current;
 };
 /*moto mmi Functionality end*/
 
