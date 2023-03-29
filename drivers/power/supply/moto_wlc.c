@@ -538,6 +538,11 @@ static int _wlc_stop_algo(struct chg_alg_device *alg)
 
 	wlc_dbg("%s %d\n", __func__, wlc->state);
 	if (wlc->state == WLC_RUN) {
+		if (NULL != wls_chg_ops &&
+			true == wlc->cable_ready &&
+			NULL != wls_chg_ops->wls_stop_epp) {
+			wls_chg_ops->wls_stop_epp();
+		}
 		wlc_reset_ta_vchr(alg);
 		wlc->state = WLC_HW_READY;
 	}
