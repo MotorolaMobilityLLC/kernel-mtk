@@ -64,6 +64,7 @@
 	disable_aicl;
 
 	/*mmi config*/
+	mmi,typec-rp-max-current = <2000000>;
 	mmi,iterm-ma = <461>;
 	mmi,mmi-temp-zones = <0 4200 800 0>,
 			<10 4250 4000 2000>,
