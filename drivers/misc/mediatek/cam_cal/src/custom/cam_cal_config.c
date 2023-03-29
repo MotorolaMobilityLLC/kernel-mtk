@@ -676,7 +676,9 @@ unsigned int mot_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		debug_log("======================AF CAM_CAL==================\n");
 	}
 
-	if((pCamCalData->sensorID == MOT_DUBAI_OV50A_SENSOR_ID) || (pCamCalData->sensorID == MOT_AION_OV50A_SENSOR_ID)) {
+	if((pCamCalData->sensorID == MOT_DUBAI_OV50A_SENSOR_ID) ||
+	   (pCamCalData->sensorID == MOT_AION_OV50A_SENSOR_ID)  ||
+	   (pCamCalData->sensorID == MOT_MANAUS_OV50A_SENSOR_ID) ) {
 		//af posture calibration data
 		unsigned char AF_POSTURE[20];
 		unsigned int af_posture_data_offset = 0x2313;
