@@ -808,6 +808,16 @@ int charger_dev_enable_hidden_mode(struct charger_device *charger_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_enable_hidden_mode);
 
+int charger_dev_ctrl_dpdm(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+					   charger_dev->ops->enable_ctrl_dpdm)
+		return charger_dev->ops->enable_ctrl_dpdm(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_ctrl_dpdm);
+
 int charger_dev_enable_bleed_discharge(struct charger_device *charger_dev,
 				       bool en)
 {
