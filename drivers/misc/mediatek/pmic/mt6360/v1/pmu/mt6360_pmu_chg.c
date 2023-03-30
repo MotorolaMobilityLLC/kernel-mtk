@@ -2011,6 +2011,14 @@ static int mt6360_get_ctd_dischg_status(struct charger_device *chg_dev,
 	return 0;
 }
 
+static int mt6360_control_dpdm(struct charger_device *chg_dev, bool en)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+
+	return mt6360_set_usbsw_state(mpci,
+				      en ? MT6360_USBSW_CHG : MT6360_USBSW_USB);
+}
+
 static const struct charger_ops mt6360_chg_ops = {
 	/* cable plug in/out */
 	.plug_in = mt6360_plug_in,
@@ -2084,6 +2092,7 @@ static const struct charger_ops mt6360_chg_ops = {
 #ifdef CONFIG_MTK_TYPEC_WATER_DETECT
 	.set_usbid_is_period = mt6360_set_usbid_is_period,
 #endif
+	.enable_ctrl_dpdm = mt6360_control_dpdm,
 };
 
 static const struct charger_properties mt6360_chg_props = {
