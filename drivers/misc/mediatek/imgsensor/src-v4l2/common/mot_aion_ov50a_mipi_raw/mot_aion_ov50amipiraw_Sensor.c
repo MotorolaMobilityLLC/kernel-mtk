@@ -465,10 +465,31 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 {
 	LOG_INF_N("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
-		write_cmos_sensor_8(ctx, 0x0100, 0X01);
+		write_cmos_sensor_8(ctx, 0x0100, 0x01);
 		ctx->is_streaming = true;
 	} else {
-		write_cmos_sensor_8(ctx, 0x0100, 0x00);
+                memset(_i2c_data, 0x0, sizeof(_i2c_data));
+                _size_to_write = 0;
+                _i2c_data[_size_to_write++] = 0x3208; //reset switch group2
+                _i2c_data[_size_to_write++] = 0x02;
+                _i2c_data[_size_to_write++] = 0x0000;
+                _i2c_data[_size_to_write++] = 0x00;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0x12;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0xa2;
+                _i2c_data[_size_to_write++] = 0x3208; //reset switch group2
+                _i2c_data[_size_to_write++] = 0x01;
+                _i2c_data[_size_to_write++] = 0x0000;
+                _i2c_data[_size_to_write++] = 0x00;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0x11;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0xa1;
+                _i2c_data[_size_to_write++] = 0x0100;
+                _i2c_data[_size_to_write++] = 0x00;
+                table_write_cmos_sensor(ctx, _i2c_data,
+                _size_to_write);
 		ctx->is_streaming = false;
 	}
 	mdelay(10);
