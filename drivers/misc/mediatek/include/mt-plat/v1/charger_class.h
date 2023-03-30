@@ -177,6 +177,7 @@ struct charger_ops {
 	int (*get_ctd_dischg_status)(struct charger_device *dev, u8 *status);
 	int (*enable_hz)(struct charger_device *dev, bool en);
 
+	int (*enable_ctrl_dpdm)(struct charger_device *dev, bool en);
 	int (*enable_bleed_discharge)(struct charger_device *dev, bool en);
 	/* mux*/
 	int (*config_mux)(struct charger_device *dev,
@@ -356,7 +357,7 @@ extern int charger_dev_enable_force_typec_otp(struct charger_device *dev,
 					      bool en);
 extern int charger_dev_get_ctd_dischg_status(struct charger_device *dev,
 					     u8 *status);
-
+extern int charger_dev_ctrl_dpdm(struct charger_device *dev, bool en);
 extern int charger_dev_enable_bleed_discharge(struct charger_device *dev,
 					      bool en);
 

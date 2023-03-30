@@ -1731,8 +1731,11 @@ static inline int mt6360_init_water_detection(struct tcpc_device *tcpc)
 	 * (when RUST_PROTECT_EN is "1"), set as 4
 	 */
 	/* TODO: Modify PINS_SEL to CC1/CC2/DP/DM if USB setting is ready */
+#ifdef MTK_BASE
 	mt6360_i2c_write8(tcpc, MT6360_REG_WD_DET_CTRL2, 0x82);
-
+#else
+	mt6360_i2c_write8(tcpc, MT6360_REG_WD_DET_CTRL2, 0x42);
+#endif
 	/* DPDM Pull up capability, 220u */
 	mt6360_i2c_write8(tcpc, MT6360_REG_WD_DET_CTRL3, 0xFF);
 
@@ -1954,6 +1957,7 @@ err:
 static int mt6360_set_water_protection(struct tcpc_device *tcpc, bool en)
 {
 	int ret;
+	struct mt6360_chip *chip = tcpc_get_dev_data(tcpc);
 
 	if (en)
 		mt6360_enable_auto_rpconnect(tcpc, false);
@@ -1961,7 +1965,7 @@ static int mt6360_set_water_protection(struct tcpc_device *tcpc, bool en)
 		(tcpc, MT6360_REG_WD_DET_CTRL1, MT6360_WD_PROTECTION_EN);
 	if (!en)
 		mt6360_enable_auto_rpconnect(tcpc, true);
-	return ret;
+	return charger_dev_ctrl_dpdm(chip->chgdev, en);
 }
 
 static int mt6360_set_usbid_polling(struct tcpc_device *tcpc, bool en)
