@@ -19,7 +19,9 @@
 		sound-name-prefix = "Left";
 		status ="disable";
 	};
+};
 
+&i2c7 {
 	aw87xxx_pa@58 {
 		compatible = "awinic,aw87xxx_pa";
 		reg = <0x58>;
