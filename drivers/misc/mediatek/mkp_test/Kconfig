@@ -1,5 +1,5 @@
 config MTK_MKP_TEST
 	tristate "Test MTK MKP feature"
-	default m
+	default n
 	help
 	  Test MKP
