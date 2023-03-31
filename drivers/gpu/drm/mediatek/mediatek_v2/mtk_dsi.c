@@ -2942,9 +2942,64 @@ static ssize_t panelCellId_show(struct device *device,
 	return written;
 }
 
+static ssize_t panelVer_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	int written = 0;
+
+	if (dsi && dsi->ext && dsi->ext->params) {
+		mutex_lock(&connector->dev->mode_config.mutex);
+		written = snprintf(buf, PAGE_SIZE, "0x%016llx\n",
+					dsi->ext->params->panel_ver);
+		mutex_unlock(&connector->dev->mode_config.mutex);
+	}
+
+	return written;
+}
+
+static ssize_t panelName_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	int written = 0;
+
+	if (dsi && dsi->ext && dsi->ext->params) {
+		mutex_lock(&connector->dev->mode_config.mutex);
+		written = snprintf(buf, PAGE_SIZE, "%s\n", dsi->ext->params->panel_name);
+		mutex_unlock(&connector->dev->mode_config.mutex);
+	}
+	return written;
+}
+
+static ssize_t panelSupplier_show(struct device *device,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct drm_connector *connector = dev_get_drvdata(device);
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+	int written = 0;
+	if (dsi && dsi->ext && dsi->ext->params) {
+		mutex_lock(&connector->dev->mode_config.mutex);
+		written = snprintf(buf, PAGE_SIZE, "%s\n", dsi->ext->params->panel_supplier);
+		mutex_unlock(&connector->dev->mode_config.mutex);
+	}
+	return written;
+}
+
+static DEVICE_ATTR_RO(panelVer);
+static DEVICE_ATTR_RO(panelName);
+static DEVICE_ATTR_RO(panelSupplier);
 static DEVICE_ATTR_RO(panelCellId);
 
 static const struct attribute *conn_panel_attrs[] = {
+	&dev_attr_panelVer.attr,
+	&dev_attr_panelName.attr,
+	&dev_attr_panelSupplier.attr,
 	&dev_attr_panelCellId.attr,
 	NULL
 };

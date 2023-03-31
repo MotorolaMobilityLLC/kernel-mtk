@@ -23,6 +23,8 @@
 #define BRIGHTNESS_HBM_ON_SKIP_BL	(BRIGHTNESS_HBM_ON - 2)
 #define HBM_BRIGHTNESS(value) ((value) == 0 ? BRIGHTNESS_HBM_OFF : BRIGHTNESS_HBM_ON)
 
+#define DRM_DISPLAY_NAME_LEN 128
+
 static unsigned int hs_tx_flag_value = 0xd;
 struct mtk_dsi;
 struct cmdq_pkt;
@@ -463,6 +465,11 @@ struct mtk_panel_params {
 	int panel_cellid_reg;
 	int panel_cellid_offset_reg;
 	int panel_cellid_len;
+
+	u64 panel_id;
+	u64 panel_ver;
+	char panel_name[DRM_DISPLAY_NAME_LEN];
+	char panel_supplier[DRM_DISPLAY_NAME_LEN];
 
 	bool check_panel_feature;
 };
