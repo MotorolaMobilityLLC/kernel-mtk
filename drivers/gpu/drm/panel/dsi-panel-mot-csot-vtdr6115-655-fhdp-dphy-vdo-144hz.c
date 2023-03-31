@@ -469,6 +469,11 @@ static struct mtk_panel_params ext_params_60hz = {
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
 
+	.panel_ver = 1,
+	.panel_id = 0x080b1595,
+	.panel_name = "panel-csot-vtdr6115-vdo-144hz",
+	.panel_supplier = "csot-vtdr6115",
+
 	.check_panel_feature = 1,
 };
 
@@ -555,6 +560,11 @@ static struct mtk_panel_params ext_params_90hz = {
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
 
+	.panel_ver = 1,
+	.panel_id = 0x080b1595,
+	.panel_name = "panel-csot-vtdr6115-vdo-144hz",
+	.panel_supplier = "csot-vtdr6115",
+
 	.check_panel_feature = 1,
 };
 static struct mtk_panel_params ext_params_120hz = {
@@ -640,6 +650,11 @@ static struct mtk_panel_params ext_params_120hz = {
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
 
+	.panel_ver = 1,
+	.panel_id = 0x080b1595,
+	.panel_name = "panel-csot-vtdr6115-vdo-144hz",
+	.panel_supplier = "csot-vtdr6115",
+
 	.check_panel_feature = 1,
 };
 
@@ -723,6 +738,11 @@ static struct mtk_panel_params ext_params_144hz = {
 	.panel_cellid_reg = 0x5a,
 	.panel_cellid_offset_reg = 0x65,
 	.panel_cellid_len = 23,
+
+	.panel_ver = 1,
+	.panel_id = 0x080b1595,
+	.panel_name = "panel-csot-vtdr6115-vdo-144hz",
+	.panel_supplier = "csot-vtdr6115",
 
 	.check_panel_feature = 1,
 };
@@ -1153,7 +1173,6 @@ static int lcm_get_modes(struct drm_panel *panel,
 	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
 	struct drm_display_mode *mode_3;
-	
 	struct drm_display_mode *mode_4;
 
 	mode_1 = drm_mode_duplicate(connector->dev, &switch_mode_60hz);
