@@ -269,11 +269,21 @@ static int led_level_set(struct led_classdev *led_cdev,
 		output_met_backlight_tag(brightness);
 #endif
 
-led_dat->brightness = brightness;
+	led_dat->brightness = brightness;
 #ifdef CONFIG_LEDS_BRIGHTNESS_CHANGED
 	call_notifier(1, led_dat);
 #endif
-#ifndef CONFIG_MTK_AAL_SUPPORT
+#ifdef CONFIG_MTK_AAL_SUPPORT
+	disp_pq_notify_backlight_changed(trans_level);
+#else
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	trans_level = disp_ccorr_change_backlight(trans_level);
+	brightness = (
+		(((1 << led_dat->conf.led_bits) - 1) * trans_level
+		+ (((1 << led_dat->conf.trans_bits) - 1) / 2))
+		/ ((1 << led_dat->conf.trans_bits) - 1));
+	led_dat->brightness = brightness;
+#endif
 	led_level_disp_set(led_dat, brightness);
 	led_dat->last_level = brightness;
 #endif

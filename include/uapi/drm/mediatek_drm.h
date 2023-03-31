@@ -390,6 +390,13 @@ struct DISP_CCORR_COEF_T {
 	unsigned int coef[3][3];
 };
 
+#define SLD_CCORR_SIZE 512
+
+struct DISP_SLD_PARAM {
+	int sld_ccorr_table[SLD_CCORR_SIZE];
+	int sld_bl;
+};
+
 #define DISP_GAMMA_LUT_SIZE 512
 
 enum disp_gamma_id_t {
@@ -455,6 +462,8 @@ struct DISP_PQ_PARAM {
 #define DRM_MTK_SUPPORT_COLOR_TRANSFORM    0x2D
 #define DRM_MTK_READ_SW_REG   0x2E
 #define DRM_MTK_WRITE_SW_REG   0x2F
+#define DRM_MTK_SUPPORT_SLD 0x56
+#define DRM_MTK_SET_SLD_PARAM 0x57
 
 /* AAL */
 #define DRM_MTK_AAL_INIT_REG	0x30
@@ -801,6 +810,15 @@ struct DRM_DISP_WRITE_REG {
 #define DRM_IOCTL_MTK_DEBUG_LOG     DRM_IOWR(DRM_COMMAND_BASE + \
 			DRM_MTK_DEBUG_LOG, int)
 
+#define DRM_IOCTL_MTK_GET_PQ_CAPS DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_MTK_GET_PQ_CAPS, struct mtk_drm_pq_caps_info)
+#define DRM_IOCTL_MTK_SET_PQ_CAPS    DRM_IOWR(DRM_COMMAND_BASE + \
+		DRM_MTK_SET_PQ_CAPS, struct mtk_drm_pq_caps_info)
+
+#define DRM_IOCTL_MTK_SUPPORT_SLD  DRM_IOWR(DRM_COMMAND_BASE + \
+	DRM_MTK_SUPPORT_SLD, bool)
+#define DRM_IOCTL_MTK_SET_SLD_PARAM    DRM_IOWR(DRM_COMMAND_BASE + \
+	DRM_MTK_SET_SLD_PARAM, struct DISP_SLD_PARAM)
 
 /* AAL IOCTL */
 #define AAL_HIST_BIN            33	/* [0..32] */

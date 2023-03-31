@@ -1534,6 +1534,9 @@ int mtk_drm_ioctl_aal_set_param(struct drm_device *dev, void *data,
 	backlight_value = g_aal_param.FinalBacklight;
 	/* set cabc gain zero when detect backlight */
 	/* setting equal to zero */
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	backlight_value = disp_ccorr_change_backlight(backlight_value);
+#endif
 	if (backlight_value == 0)
 		g_aal_param.cabc_fltgain_force = 0;
 

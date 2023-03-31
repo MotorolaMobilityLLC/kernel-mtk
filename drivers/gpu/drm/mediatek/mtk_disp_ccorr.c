@@ -74,6 +74,48 @@ static int g_rgb_matrix[3][3] = {
 	{1024, 0, 0},
 	{0, 1024, 0},
 	{0, 0, 1024} };
+
+#ifdef CONFIG_MTK_SLD_SUPPORT
+static DEFINE_SPINLOCK(g_sld_bl_change_lock);
+static bool sld_end_flag;
+static int sld_tmp_bl = 240;
+// sld_backligt_value should equals with led default backlight
+static int sld_backligt_value = 400;
+static int sld_old_backligt_value;
+static struct DISP_SLD_PARAM g_sld_param = {
+.sld_ccorr_table ={
+	0x3, 0x4, 0x4, 0x4, 0x5, 0x6, 0x6, 0x6, 0x7, 0x8, 0x8, 0x8, 0x9, 0xA, 0xA,
+	0xA, 0xB, 0xC, 0xC, 0xC, 0xD, 0xE, 0xE, 0xE, 0xF, 0x10, 0x10, 0x10, 0x11,
+	0x12, 0x12, 0x12, 0x13, 0x14, 0x14, 0x14, 0x15, 0x16, 0x16, 0x16, 0x17, 0x18,
+	0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
+	0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2E, 0x30, 0x31, 0x32, 0x34, 0x36,
+	0x37, 0x38, 0x3A, 0x3C, 0x3D, 0x3E, 0x40, 0x42, 0x43, 0x44, 0x46, 0x48, 0x49,
+	0x4B, 0x4D, 0x4F, 0x51, 0x53, 0x55, 0x57, 0x59, 0x5B, 0x5D, 0x5F, 0x61, 0x63,
+	0x65, 0x67, 0x69, 0x6B, 0x6D, 0x6F, 0x71, 0x74, 0x76, 0x78, 0x7B, 0x7E, 0x80,
+	0x82, 0x85, 0x88, 0x8A, 0x8C, 0x8F, 0x92, 0x94, 0x96, 0x99, 0x9C, 0x9E, 0xA0,
+	0xA3, 0xA6, 0xAA, 0xAD, 0xB0, 0xB3, 0xB6, 0xBA, 0xBD, 0xC0, 0xC4, 0xC7, 0xCA,
+	0xCD, 0xD0, 0xD4, 0xD7, 0xDA, 0xDE, 0xE1, 0xE4, 0xE8, 0xEC, 0xF1, 0xF5, 0xF9,
+	0xFE, 0x102, 0x106, 0x10A, 0x10E, 0x113, 0x117, 0x11B, 0x120, 0x124, 0x128, 0x12C,
+	0x130, 0x135, 0x139, 0x13E, 0x144, 0x14A, 0x14F, 0x154, 0x15A, 0x160, 0x165, 0x16A,
+	0x170, 0x176, 0x17B, 0x180, 0x186, 0x18C, 0x191, 0x196, 0x19C, 0x1A2, 0x1A7, 0x1AE,
+	0x1B5, 0x1BC, 0x1C3, 0x1CA, 0x1D1, 0x1D8, 0x1DF, 0x1E6, 0x1ED, 0x1F4, 0x1FB, 0x202,
+	0x209, 0x210, 0x217, 0x21E, 0x225, 0x22C, 0x233, 0x23C, 0x246, 0x24F, 0x258, 0x262,
+	0x26B, 0x274, 0x27E, 0x287, 0x291, 0x29A, 0x2A3, 0x2AD, 0x2B6, 0x2BF, 0x2C9, 0x2D2,
+	0x2DB, 0x2E5, 0x2EE, 0x2FC, 0x30B, 0x319, 0x327, 0x336, 0x344, 0x353, 0x361, 0x36F,
+	0x37E, 0x38C, 0x39A, 0x3A9, 0x3B7, 0x3C6, 0x3D4, 0x3E2, 0x3F1, 0x3FF,
+},
+.sld_bl = 240,
+};
+
+static bool g_sld_enable;
+static bool g_sld_enable_pre;
+
+static int g_sld_matrix[3][3] = {
+	{1024, 0, 0},
+	{0, 1024, 0},
+	{0, 0, 1024} };
+#endif
+
 static struct DRM_DISP_CCORR_COEF_T g_multiply_matrix_coef;
 static int g_disp_ccorr_without_gamma;
 
@@ -108,7 +150,7 @@ static int disp_ccorr_write_coef_reg(struct mtk_ddp_comp *comp,
 enum CCORR_IOCTL_CMD {
 	SET_CCORR = 0,
 	SET_INTERRUPT,
-	BYPASS_CCORR
+	BYPASS_CCORR,
 };
 
 struct mtk_disp_ccorr_data {
@@ -227,6 +269,9 @@ static int disp_ccorr_write_coef_reg(struct mtk_ddp_comp *comp,
 	unsigned int temp_matrix[3][3];
 	unsigned int cfg_val;
 	int i, j;
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	unsigned int temp_sld_matrix[3][3];
+#endif
 
 	if (lock)
 		mutex_lock(&g_ccorr_global_lock);
@@ -242,8 +287,16 @@ static int disp_ccorr_write_coef_reg(struct mtk_ddp_comp *comp,
 		multiply_matrix = &g_multiply_matrix_coef;
 		disp_ccorr_multiply_3x3(ccorr->coef, g_ccorr_color_matrix,
 			temp_matrix);
+#ifdef CONFIG_MTK_SLD_SUPPORT
+		disp_ccorr_multiply_3x3(temp_matrix, g_rgb_matrix,
+			temp_sld_matrix);
+		disp_ccorr_multiply_3x3(temp_sld_matrix, g_sld_matrix,
+			multiply_matrix->coef);
+#else
 		disp_ccorr_multiply_3x3(temp_matrix, g_rgb_matrix,
 			multiply_matrix->coef);
+#endif
+
 		ccorr = multiply_matrix;
 
 		ccorr->offset[0] = g_disp_ccorr_coef[id]->offset[0];
@@ -392,6 +445,93 @@ static void disp_ccorr_set_interrupt(struct mtk_ddp_comp *comp,
 			SET_INTERRUPT, &enabled);
 }
 
+/* change backlight when sld enable */
+int disp_ccorr_change_backlight(int bl)
+{
+#ifdef CONFIG_MTK_SLD_SUPPORT
+
+	int backligt_value = bl;
+	unsigned long flags;
+
+	DDPINFO("%s sld_backligt_value: %d\n", __func__, sld_backligt_value);
+
+	spin_lock_irqsave(&g_sld_bl_change_lock, flags);
+	sld_old_backligt_value = sld_backligt_value;
+	sld_backligt_value = bl;
+	spin_unlock_irqrestore(&g_sld_bl_change_lock, flags);
+
+	if (g_sld_enable) {
+		if (default_comp != NULL &&
+			g_ccorr_relay_value[index_of_ccorr(default_comp->id)] != 1) {
+			disp_ccorr_set_interrupt(default_comp, 1);
+
+			if (default_comp != NULL &&
+					default_comp->mtk_crtc != NULL)
+				mtk_crtc_check_trigger(default_comp->mtk_crtc, false,
+					true);
+		}
+		if(backligt_value < g_sld_param.sld_bl)
+			backligt_value = g_sld_param.sld_bl;
+	}
+
+	return backligt_value;
+#else
+	return bl;
+#endif
+}
+EXPORT_SYMBOL_GPL(disp_ccorr_change_backlight);
+
+/* set color matrix by 10bit backlight when subdued light display enable */
+void disp_ccorr_sld_impl(struct mtk_ddp_comp *comp)
+{
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	int i;
+	unsigned long flags;
+
+	if (g_sld_enable) {
+		// stop set color matrix when g_sld_matrix equals with target or tmp_bl over sld_bl
+		if ((sld_tmp_bl >= g_sld_param.sld_bl - 1)||
+			((g_sld_matrix[0][0] == g_sld_param.sld_ccorr_table[sld_tmp_bl])
+				 && sld_tmp_bl == sld_backligt_value)) {
+			// keep tmp_bl smaller than sld_bl to prevent ccorr_table out of bounds
+			if(sld_tmp_bl >= g_sld_param.sld_bl - 1)
+				sld_tmp_bl = g_sld_param.sld_bl - 2;
+			// set backlight to sld_bl when sld enable
+			if((!g_sld_enable_pre && g_sld_enable)
+					&& (sld_backligt_value < g_sld_param.sld_bl)) {
+				mt_leds_brightness_set("lcd-backlight", g_sld_param.sld_bl);
+				g_sld_enable_pre = true;
+			}
+			sld_end_flag = true;
+			disp_ccorr_set_interrupt(comp, 0);
+			return;
+		} else if (sld_tmp_bl < sld_backligt_value)
+			sld_tmp_bl ++;
+		else if (sld_tmp_bl > sld_backligt_value)
+			sld_tmp_bl --;
+
+		for (i = 0; i < 3; i += 1)
+			g_sld_matrix[i][i] = g_sld_param.sld_ccorr_table[sld_tmp_bl];
+		sld_end_flag = false;
+	} else {
+		for (i = 0; i < 3; i += 1)
+			g_sld_matrix[i][i] = 1024;
+		sld_end_flag = true;
+	}
+	spin_lock_irqsave(&g_sld_bl_change_lock, flags);
+	if (comp->mtk_crtc->is_dual_pipe) {
+		disp_ccorr_write_coef_reg(default_comp, NULL, 0);
+		disp_ccorr_write_coef_reg(ccorr1_default_comp, NULL, 0);
+	} else
+		disp_ccorr_write_coef_reg(comp, NULL, 0);
+	spin_unlock_irqrestore(&g_sld_bl_change_lock, flags);
+	if (comp->mtk_crtc != NULL)
+		mtk_crtc_check_trigger(comp->mtk_crtc, false, false);
+
+#endif
+}
+
+
 static void disp_ccorr_clear_irq_only(struct mtk_ddp_comp *comp)
 {
 	unsigned int intsta;
@@ -467,6 +607,19 @@ static irqreturn_t mtk_disp_ccorr_irq_handler(int irq, void *dev_id)
 	struct mtk_ddp_comp *ccorr = &priv->ddp_comp;
 
 	disp_ccorr_on_end_of_frame(ccorr);
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	if(g_sld_enable || (g_sld_enable_pre && !g_sld_enable))
+		return IRQ_WAKE_THREAD;
+#endif
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t mtk_disp_ccorr_irq_thread(int irq, void *dev_id)
+{
+	struct mtk_disp_ccorr *priv = dev_id;
+	struct mtk_ddp_comp *ccorr = &priv->ddp_comp;
+
+	disp_ccorr_sld_impl(ccorr);
 
 	return IRQ_HANDLED;
 }
@@ -638,8 +791,11 @@ static int mtk_disp_ccorr_set_interrupt(struct mtk_ddp_comp *comp, void *data)
 		writel(0x2, comp->regs + DISP_REG_CCORR_INTEN);
 		DDPINFO("%s: Interrupt enabled\n", __func__);
 	} else {
-		/* Disable output frame end interrupt */
-		writel(0x0, comp->regs + DISP_REG_CCORR_INTEN);
+		/* Disable output frame end interrupt when sld end*/
+#ifdef CONFIG_MTK_SLD_SUPPORT
+		if (sld_end_flag)
+#endif
+			writel(0x0, comp->regs + DISP_REG_CCORR_INTEN);
 		DDPINFO("%s: Interrupt disabled\n", __func__);
 	}
 	spin_unlock_irqrestore(&g_ccorr_clock_lock, flags);
@@ -846,6 +1002,48 @@ int mtk_drm_ioctl_set_ccorr(struct drm_device *dev, void *data,
 	}
 }
 
+int mtk_drm_ioctl_enable_sld(struct drm_device *dev, void *data,
+		struct drm_file *file_priv)
+{
+	int ret = 0;
+	struct mtk_drm_private *private = dev->dev_private;
+	struct mtk_ddp_comp *comp = private->ddp_comp[DDP_COMPONENT_CCORR0];
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	unsigned long flags;
+
+	spin_lock_irqsave(&g_sld_bl_change_lock, flags);
+	g_sld_enable_pre = g_sld_enable;
+	g_sld_enable = *((bool *)data);
+	spin_unlock_irqrestore(&g_sld_bl_change_lock, flags);
+
+	/* set sld_backlight_value by leds API when sld disable */
+	/* or set tmp_bl to leds backlight when sld enable */
+	if(!g_sld_enable)
+		mt_leds_brightness_set("lcd-backlight", sld_backligt_value);
+	else
+		sld_tmp_bl = sld_backligt_value;
+#endif
+	disp_ccorr_set_interrupt(comp, 1);
+	return ret;
+
+}
+
+int mtk_drm_ioctl_set_sld_param(struct drm_device *dev, void *data,
+		struct drm_file *file_priv)
+{
+	int ret = 0;
+	struct mtk_drm_private *private = dev->dev_private;
+	struct mtk_ddp_comp *comp = private->ddp_comp[DDP_COMPONENT_CCORR0];
+
+#ifdef CONFIG_MTK_SLD_SUPPORT
+	memcpy(&g_sld_param, data, sizeof(struct DISP_SLD_PARAM));
+#endif
+	mtk_crtc_check_trigger(comp->mtk_crtc, false, true);
+	disp_ccorr_set_interrupt(comp, 1);
+	return ret;
+
+}
+
 int mtk_drm_ioctl_ccorr_eventctl(struct drm_device *dev, void *data,
 		struct drm_file *file_priv)
 {
@@ -979,7 +1177,9 @@ static void mtk_ccorr_bypass(struct mtk_ddp_comp *comp, int bypass,
 static int mtk_ccorr_user_cmd(struct mtk_ddp_comp *comp,
 	struct cmdq_pkt *handle, unsigned int cmd, void *data)
 {
+
 	DDPINFO("%s: cmd: %d\n", __func__, cmd);
+
 	switch (cmd) {
 	case SET_CCORR:
 	{
@@ -1193,9 +1393,10 @@ static int mtk_disp_ccorr_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 
-	ret = devm_request_irq(dev, irq, mtk_disp_ccorr_irq_handler,
-			       IRQF_TRIGGER_NONE | IRQF_SHARED,
-			       dev_name(dev), priv);
+	ret = devm_request_threaded_irq(dev, irq, mtk_disp_ccorr_irq_handler,
+					mtk_disp_ccorr_irq_thread,
+					IRQF_TRIGGER_NONE | IRQF_SHARED,
+					dev_name(dev), priv);
 
 	pm_runtime_enable(dev);
 
