@@ -303,6 +303,11 @@ static int mt_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = mtk_chg->ichg_limit;
 		break;
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+		case POWER_SUPPLY_PROP_MOISTURE_DETECTED:
+			val->intval = 0;
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
