@@ -348,6 +348,7 @@
     cps_wls_charger@38 {
         compatible = "cps,wls-charger-cps4038";
         wireless-fw-name = "cps4038.bin";
+        enable_stop_epp = <1>;
         reg = <0x38>;
         cps_wls_int = <&pio 31 0x0>;
         cps_det_int = <&pio 115 0x0>;
