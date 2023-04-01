@@ -721,8 +721,7 @@ static ssize_t nvt_flash_read(struct file *file, char __user *buff, size_t count
 #endif				/* #if NVT_TOUCH_ESD_PROTECT */
 
 	spi_wr = str[0] >> 7;
-	if((((str[0] & 0x7F) << 8) | str[1])
-		> (sizeof(str)/sizeof(*str) - 2 * sizeof(*str))){
+	if ((((str[0] & 0x7F) << 8) | str[1]) > (count - 2 * sizeof(*str))) {
 		NVT_ERR("memcpy out-of-bounds error!\n");
 		ret = -ENOMEM;
 		goto out;
