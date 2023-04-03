@@ -3194,12 +3194,41 @@ static const struct attribute_group power_supply_mmi_attr_group = {
 	.attrs = mmi_g,
 };
 
-#define MMI_BATT_UEVENT_NUM (2)
+static bool mmi_check_vbus_present(struct mtk_charger *info)
+{
+	int vbus_present = false;
+	int vbus_vol = 0;
+	union power_supply_propval val = {0};
+
+	if (info == NULL)
+		return false;
+
+	if (!info->wl_psy) {
+		info->wl_psy = power_supply_get_by_name("wireless");
+	}
+
+	if (info->wl_psy) {
+		power_supply_get_property(info->wl_psy,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+		if (val.intval)
+			return false;
+	}
+
+	vbus_vol = get_vbus(info);
+	if (vbus_vol >= 3000)
+		vbus_present = true;
+
+	return vbus_present;
+}
+
+#define MMI_BATT_UEVENT_NUM (4)
 static void mmi_updata_batt_status(struct mtk_charger *info)
 {
 	static struct power_supply	*batt_psy;
 	char *chrg_rate_string = NULL;
 	char *batt_age_string = NULL;
+	char *chrg_lpd_string = NULL;
+	char *chrg_vbus_string = NULL;
 	char *batt_string = NULL;
 	char *envp[MMI_BATT_UEVENT_NUM + 1];
 	int rc;
@@ -3224,6 +3253,8 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 	} else {
 		chrg_rate_string = batt_string;
 		batt_age_string = &batt_string[CHG_SHOW_MAX_SIZE];
+		chrg_lpd_string = &batt_string[CHG_SHOW_MAX_SIZE * 2];
+		chrg_vbus_string = &batt_string[CHG_SHOW_MAX_SIZE * 3];
 
 		scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_CHARGE_RATE=%s",
@@ -3233,9 +3264,17 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 			  "POWER_SUPPLY_AGE=%d",
 			  mmi_get_battery_age());
 
+		scnprintf(chrg_lpd_string, CHG_SHOW_MAX_SIZE,
+			  "POWER_SUPPLY_LPD_PRESENT=%s", info->water_detected? "true": "false");
+
+		scnprintf(chrg_vbus_string, CHG_SHOW_MAX_SIZE,
+			  "POWER_SUPPLY_VBUS_PRESENT=%s", mmi_check_vbus_present(info)? "true": "false");
+
 		envp[0] = chrg_rate_string;
 		envp[1] = batt_age_string;
-		envp[2] = NULL;
+		envp[2] = chrg_lpd_string;
+		envp[3] = chrg_vbus_string;
+		envp[4] = NULL;
 		kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
 		kfree(batt_string);
 	}
