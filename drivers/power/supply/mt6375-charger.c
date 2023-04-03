@@ -252,6 +252,7 @@ struct mt6375_chg_data {
 	int mmi_chg_status;
 
 	struct power_supply *batt_psy;
+	struct power_supply *wlc_psy;
 	char                *batt_uenvp[2];
 };
 
@@ -884,6 +885,7 @@ static void mt6375_chg_attach_pre_process(struct mt6375_chg_data *ddata,
 static int mmi_notify_vbus_event(struct mt6375_chg_data *ddata, bool vbus_status)
 {
 	char *event_string = NULL;
+	union power_supply_propval val = {0};
 
 	if(!ddata->batt_psy)
 		ddata->batt_psy = power_supply_get_by_name("battery");
@@ -891,6 +893,16 @@ static int mmi_notify_vbus_event(struct mt6375_chg_data *ddata, bool vbus_status
 		dev_notice(ddata->dev,
 			"%s: get battery supply failed\n", __func__);
 		return -EINVAL;
+	}
+
+	if(!ddata->wlc_psy)
+		ddata->wlc_psy = power_supply_get_by_name("wireless");
+
+	if (ddata->wlc_psy) {
+		power_supply_get_property(ddata->wlc_psy,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+		if (val.intval)
+			return 0;
 	}
 
 	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
