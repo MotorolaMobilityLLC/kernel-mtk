@@ -431,3 +431,9 @@ config SND_I2S1
 	depends on I2C
 	help
 	  This option enables support for default i2s1.
+
+config MTK_HAC_SGM3715_SUPPORT
+	bool "Support for HAC function"
+	help
+	 Select Y if you have such device.
+	 If unsure select "N".
