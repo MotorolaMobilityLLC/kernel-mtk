@@ -63,9 +63,14 @@ struct cred_sbuf_content {
 
 #define mkp_test_msg(fmt, args...)      seq_printf(m, "[mkp_test] "fmt"\n", ##args)
 
-static noinline void __try_to_attack(void *taddr)
+static noinline void __try_to_attack(struct seq_file *m, void *taddr)
 {
 	*(char *)(taddr) = '0';
+	if (*(volatile char *)(taddr) == '0') {
+		mkp_test_msg("__try_to_attack succeeded\n");
+	} else {
+		mkp_test_msg("__try_to_attack failed\n");
+	}
 }
 
 static void try_to_attack_ko(struct seq_file *m, unsigned long addr)
@@ -82,7 +87,7 @@ static void try_to_attack_ko(struct seq_file *m, unsigned long addr)
 		return;
 	}
 
-	__try_to_attack(taddr);
+	__try_to_attack(m, taddr);
 }
 
 static void try_to_attack(struct seq_file *m, unsigned long addr)
@@ -99,7 +104,7 @@ static void try_to_attack(struct seq_file *m, unsigned long addr)
 		return;
 	}
 
-	__try_to_attack(taddr);
+	__try_to_attack(m, taddr);
 }
 
 /******************************************************
