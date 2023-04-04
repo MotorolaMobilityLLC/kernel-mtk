@@ -34,6 +34,10 @@
 extern int aw87xxx_add_codec_controls(void *codec);
 #endif
 
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+extern int HAC_Amp_Change(int bEnable);
+#endif
+
 static ssize_t mt6369_codec_sysfs_read(struct file *filep, struct kobject *kobj,
 				       struct bin_attribute *attr,
 				       char *buf, loff_t offset, size_t size);
@@ -5491,6 +5495,47 @@ static const struct snd_kcontrol_new mt6369_snd_vow_controls[] = {
 			  NULL, audio_vow_periodic_parm_set),
 };
 
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+static const char *const hac_function[] = { "Off", "On" };
+
+static int HAC_Amp_Get(struct snd_kcontrol *kcontrol,
+                struct snd_ctl_elem_value *ucontrol)
+{
+        struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+        struct mt6369_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+        ucontrol->value.integer.value[0] = priv->ana_gain[AUDIO_ANALOG_VOLUME_HAC];
+
+        dev_info(priv->dev, "%s(), get gpio_hac_status %d\n", __func__, ucontrol->value.integer.value[0]);
+        return 0;
+}
+
+static int HAC_Amp_Set(struct snd_kcontrol *kcontrol,
+                struct snd_ctl_elem_value *ucontrol)
+{
+        struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+        struct mt6369_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+        priv->ana_gain[AUDIO_ANALOG_VOLUME_HAC] = ucontrol->value.integer.value[0];
+
+        if (ucontrol->value.integer.value[0] == 1) {
+                HAC_Amp_Change(1);
+                dev_info(priv->dev, "%s(), set gpio_aud_hac_high\n", __func__);
+        } else {
+                HAC_Amp_Change(0);
+                dev_info(priv->dev, "%s(), set gpio_aud_hac_low\n", __func__);
+        }
+
+        return 0;
+}
+
+static const struct soc_enum hac_control_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(hac_function), hac_function),
+};
+
+static const struct snd_kcontrol_new mt6369_snd_hac_controls[] = {
+	SOC_ENUM_EXT("HAC_Amp_Switch", hac_control_enum[0], HAC_Amp_Get, HAC_Amp_Set),
+};
+#endif
+
 /* misc control */
 static const char *const off_on_function[] = {"Off", "On"};
 
@@ -5819,6 +5864,13 @@ static int mt6369_codec_probe(struct snd_soc_component *cmpnt)
 	snd_soc_add_component_controls(cmpnt,
 				       mt6369_snd_vow_controls,
 				       ARRAY_SIZE(mt6369_snd_vow_controls));
+
+#ifdef CONFIG_MTK_HAC_SGM3715_SUPPORT
+	/* add hac controls */
+	snd_soc_add_component_controls(cmpnt,
+				       mt6369_snd_hac_controls,
+				       ARRAY_SIZE(mt6369_snd_hac_controls));
+#endif
 
 #if defined(CONFIG_SND_SOC_AW87XXX_KERNEL)
 	ret = aw87xxx_add_codec_controls((void *)cmpnt);
