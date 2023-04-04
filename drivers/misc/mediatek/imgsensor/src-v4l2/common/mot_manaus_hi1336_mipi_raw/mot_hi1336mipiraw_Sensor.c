@@ -1397,8 +1397,8 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4PairNum =8,
 	.i4SubBlkW =16,
 	.i4SubBlkH =8,
-	.i4PosL = {{58,31},{74,31},{66,35},{82,35},{58,47},{74,47},{66,51},{82,51}},
-	.i4PosR = {{58,27},{74,27},{66,39},{82,39},{58,43},{74,43},{66,55},{82,55}},
+	.i4PosR = {{58,31},{74,31},{66,35},{82,35},{58,47},{74,47},{66,51},{82,51}},
+	.i4PosL = {{58,27},{74,27},{66,39},{82,39},{58,43},{74,43},{66,55},{82,55}},
 	.i4BlockNumX = 128,
 	.i4BlockNumY = 96,
 	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
