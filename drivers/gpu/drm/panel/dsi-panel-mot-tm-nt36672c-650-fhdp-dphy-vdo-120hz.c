@@ -805,7 +805,7 @@ static struct mipi_dsi_driver tianma_driver = {
 	.probe = tianma_probe,
 	.remove = tianma_remove,
 	.driver = {
-		.name = "tm_nt36672c_vid_650_1080",
+		.name = "tm_nt36672c_vid_649_1080",
 		.owner = THIS_MODULE,
 		.of_match_table = tianma_of_match,
 	},
