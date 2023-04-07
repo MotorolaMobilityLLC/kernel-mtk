@@ -1281,7 +1281,6 @@ int mtk_drm_crtc_get_panel_feature(struct drm_crtc *crtc, paramId_t param_id, ui
 	param_info.param_idx = param_id;
 
 	ret = comp->funcs->io_cmd(comp, NULL, DSI_PANEL_FEATURE_GET, &param_info);
-	DDPMSG("%s get panel feature (%d) = 0x%x\n", __func__, param_info.param_idx, param_info.value);
 	*param_value = param_info.value;
 	return ret;
 }
@@ -1305,7 +1304,7 @@ int mtk_drm_crtc_set_panel_feature(struct drm_crtc *crtc, struct panel_param_inf
 	DDP_MUTEX_LOCK(&mtk_crtc->lock, __func__, __LINE__);
 
 	if (!(mtk_crtc->enabled)) {
-		DDPINFO("%s: skip, slept\n", __func__);
+		DDPMSG("%s: skip, slept\n", __func__);
 		DDP_MUTEX_UNLOCK(&mtk_crtc->lock, __func__, __LINE__);
 		return -EINVAL;
 	}
