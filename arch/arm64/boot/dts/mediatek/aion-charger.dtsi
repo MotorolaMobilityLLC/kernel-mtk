@@ -89,6 +89,10 @@
 	mmi,mux_wls_boost_en = <&pio 121 0x0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&mmi_mux_wls_default>;
+
+	mmi,pd-pmax-mw = <68000>;
+	mmi,pd_vbus_low_bound = <5000000>;
+	mmi,pd_vbus_upper_bound = <9000000>;
 };
 
 &moto_chg_tcmd {
