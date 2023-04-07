@@ -2048,7 +2048,7 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 			sizeof(addr_data_pair_seamless_switch_group3_end)/sizeof(kal_uint16));
 	}
 		break;
-	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 	{
 		mot_lyriq_ov50a_table_write_cmos_sensor(addr_data_pair_seamless_switch_group1_start,
 			sizeof(addr_data_pair_seamless_switch_group1_start)/sizeof(kal_uint16));
@@ -2056,7 +2056,7 @@ static kal_uint32 seamless_switch(enum MSDK_SCENARIO_ID_ENUM scenario_id, uint32
 		control(scenario_id, NULL, NULL);
 
 		if (ae_ctrl) {
-			pr_debug("call MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG %d %d",
+			pr_debug("call MSDK_SCENARIO_ID_CAMERA_PREVIEW %d %d",
 				ae_ctrl[SHUTTER_NE_FRM_1],
 				ae_ctrl[GAIN_NE_FRM_1]);
 			set_shutter(ae_ctrl[SHUTTER_NE_FRM_1]);
@@ -2117,11 +2117,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_CUSTOM4:
 			*pScenarios = MSDK_SCENARIO_ID_VIDEO_PREVIEW;
 			break;
-		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			*pScenarios = MSDK_SCENARIO_ID_CUSTOM5;
 			break;
 		case MSDK_SCENARIO_ID_CUSTOM5:
-			*pScenarios = MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG;
+			*pScenarios = MSDK_SCENARIO_ID_CAMERA_PREVIEW;
 			break;
 		default:
 			*pScenarios = 0xff;
