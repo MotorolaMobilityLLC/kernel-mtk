@@ -72,6 +72,7 @@ struct bq2589x {
 	int		vbus_type;
 
 	struct wakeup_source *pe_tune_wakelock;
+	struct wakeup_source *chg_det_wakelock;
 	struct mutex pe_lock;
 
 	bool	enabled;
@@ -1353,6 +1354,9 @@ static int bq2589x_update_chg_type(struct charger_device *chg_dev, bool en)
 				pr_info("CDP, free\n");
 		}
 		bq2589x_exit_hiz_mode(bq);
+		if (!bq->chg_det_wakelock->active) {
+		__pm_stay_awake(bq->chg_det_wakelock);
+		}
 		Charger_Detect_Init();
 		while (wait_plugin_cnt >= 0) {
 			if (bq->status&BQ2589X_STATUS_PLUGIN)
@@ -1362,6 +1366,7 @@ static int bq2589x_update_chg_type(struct charger_device *chg_dev, bool en)
 		}
 		bq2589x_force_dpdm(bq);
 		bq->vbus_type = bq2589x_get_vbus_type(bq);
+		__pm_relax(bq->chg_det_wakelock);
 		switch ((int)bq->vbus_type) {
 		case BQ2589X_VBUS_USB_SDP:
 			chg_type = STANDARD_HOST;
@@ -1696,7 +1701,7 @@ static int bq2589x_psy_register(struct bq2589x *bq)
 	int ret;
 
 	bq->usb.name = "bq2589x";
-	bq->usb.type = POWER_SUPPLY_TYPE_USB;
+	bq->usb.type = POWER_SUPPLY_TYPE_UNKNOWN;
 	bq->usb.properties = bq2589x_charger_props;
 	bq->usb.num_properties = ARRAY_SIZE(bq2589x_charger_props);
 	bq->usb.get_property = bq2589x_usb_get_property;
@@ -2576,6 +2581,7 @@ static int bq2589x_charger_probe(struct i2c_client *client,
 		goto err_0;
 
 	bq->pe_tune_wakelock = wakeup_source_register(bq->dev, "bq25890 suspend wakelock");
+	bq->chg_det_wakelock = wakeup_source_register(bq->dev, "bq25890 chg_det suspend wakelock");
 	/* enable dynamic adjust battery voltage */
 	if (bq->enable_dynamic_adjust_batvol) {
 		bq->ir_wakelock = wakeup_source_register(bq->dev, "bq25890 ir suspend wakelock");

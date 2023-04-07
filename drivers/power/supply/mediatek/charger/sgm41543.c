@@ -189,7 +189,7 @@ struct sgm41543 {
 	struct power_supply_desc psy_desc;
 	struct power_supply_config psy_cfg;
 	struct power_supply *psy;
-
+    struct wakeup_source *chg_det_wakelock;
 	/* enable dynamic adjust battery voltage */
 	bool enable_dynamic_adjust_batvol;
 	struct wakeup_source *ir_wakelock;
@@ -710,6 +710,9 @@ static int sgm41543_update_chg_type(struct charger_device *chg_dev, bool en)
 				pr_info("CDP, free\n");
 		}
 		sgm41543_set_hz(bq, 0);
+		if (!bq->chg_det_wakelock->active) {
+		__pm_stay_awake(bq->chg_det_wakelock);
+		}
 		Charger_Detect_Init();
 		while (wait_plugin_cnt >= 0) {
 			if (bq->status&SGM41543_STATUS_PLUGIN)
@@ -719,6 +722,7 @@ static int sgm41543_update_chg_type(struct charger_device *chg_dev, bool en)
 		}
 		sgm41543_force_dpdm(bq);
 		bq->vbus_type = sgm41543_get_vbus_type(bq);
+		__pm_relax(bq->chg_det_wakelock);
 		switch ((int)bq->vbus_type) {
 		case SGM41543_VBUS_USB_SDP:
 			chg_type = STANDARD_HOST;
@@ -2151,7 +2155,7 @@ static int sgm41543_charger_probe(struct i2c_client *client,
 	INIT_WORK(&bq->adapter_in_work, sgm41543_adapter_in_workfunc);
 	INIT_WORK(&bq->adapter_out_work, sgm41543_adapter_out_workfunc);
 	INIT_DELAYED_WORK(&bq->monitor_work, sgm41543_monitor_workfunc);
-
+    bq->chg_det_wakelock = wakeup_source_register(bq->dev, "sgm41543 chg_det suspend wakelock");
 	/* enable dynamic adjust battery voltage */
 	if (bq->enable_dynamic_adjust_batvol) {
 		bq->ir_wakelock = wakeup_source_register(bq->dev, "sgm41543 ir suspend wakelock");
