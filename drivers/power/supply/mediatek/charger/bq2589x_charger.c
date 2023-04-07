@@ -1338,6 +1338,10 @@ static int bq2589x_update_chg_type(struct charger_device *chg_dev, bool en)
 
 	mutex_lock(&bq2589x_type_det_lock);
 	if (en) {
+		if (!bq->chg_det_wakelock->active) {
+			__pm_stay_awake(bq->chg_det_wakelock);
+		}
+
 		if (first_connect) {
 			while (wait_cdp_cnt >= 0) {
 				if (is_usb_rdy()) {
@@ -1354,9 +1358,7 @@ static int bq2589x_update_chg_type(struct charger_device *chg_dev, bool en)
 				pr_info("CDP, free\n");
 		}
 		bq2589x_exit_hiz_mode(bq);
-		if (!bq->chg_det_wakelock->active) {
-		__pm_stay_awake(bq->chg_det_wakelock);
-		}
+
 		Charger_Detect_Init();
 		while (wait_plugin_cnt >= 0) {
 			if (bq->status&BQ2589X_STATUS_PLUGIN)
@@ -1701,7 +1703,7 @@ static int bq2589x_psy_register(struct bq2589x *bq)
 	int ret;
 
 	bq->usb.name = "bq2589x";
-	bq->usb.type = POWER_SUPPLY_TYPE_UNKNOWN;
+	bq->usb.type = POWER_SUPPLY_TYPE_USB;
 	bq->usb.properties = bq2589x_charger_props;
 	bq->usb.num_properties = ARRAY_SIZE(bq2589x_charger_props);
 	bq->usb.get_property = bq2589x_usb_get_property;
