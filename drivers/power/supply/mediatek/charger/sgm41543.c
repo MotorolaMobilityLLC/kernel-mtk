@@ -694,6 +694,10 @@ static int sgm41543_update_chg_type(struct charger_device *chg_dev, bool en)
 
 	mutex_lock(&sgm41543_type_det_lock);
 	if (en) {
+		if (!bq->chg_det_wakelock->active) {
+			__pm_stay_awake(bq->chg_det_wakelock);
+		}
+
 		if (first_connect) {
 			while (wait_cdp_cnt >= 0) {
 				if (is_usb_rdy()) {
@@ -710,9 +714,7 @@ static int sgm41543_update_chg_type(struct charger_device *chg_dev, bool en)
 				pr_info("CDP, free\n");
 		}
 		sgm41543_set_hz(bq, 0);
-		if (!bq->chg_det_wakelock->active) {
-		__pm_stay_awake(bq->chg_det_wakelock);
-		}
+
 		Charger_Detect_Init();
 		while (wait_plugin_cnt >= 0) {
 			if (bq->status&SGM41543_STATUS_PLUGIN)
