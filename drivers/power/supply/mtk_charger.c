@@ -2533,6 +2533,9 @@ static int mtk_charger_plug_out(struct mtk_charger *info)
 	if (info->enable_vbat_mon)
 		charger_dev_enable_6pin_battery_charging(info->chg1_dev, false);
 
+	memset(&info->mmi.apdo_cap, 0, sizeof(struct adapter_auth_data));
+	info->mmi.pd_cap_max_watt = 0;
+
 	power_supply_changed(info->psy1);
 	return 0;
 }
@@ -3225,7 +3228,169 @@ static bool mmi_check_vbus_present(struct mtk_charger *info)
 	return vbus_present;
 }
 
-#define MMI_BATT_UEVENT_NUM (4)
+#define PPS_6A 6000
+#define MOTO_68W 68000
+#define MOTO_125W 125000
+#define PPS_60W 60000
+#define PPS_100W 100000
+#define PD_PMIN_POWER 15000
+#ifndef MAX
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
+#endif
+static int mmi_get_apdo_power(struct mtk_charger *info, bool force)
+{
+	int ret = 0;
+	int pmax_mw = 0;
+	struct adapter_auth_data *data = &info->mmi.apdo_cap;
+	struct adapter_auth_data _data = {
+		.vcap_min = 6800,
+		.vcap_max = 11000,
+		.icap_min = 1000,
+	};
+
+	if (data->vta_max == 0 || data->ita_max == 0 || force == true) {
+		ret = adapter_dev_update_apdo_cap(info->pd_adapter, &_data);
+		if (ret < 0 || ret != MTK_ADAPTER_OK) {
+			pr_info("%s get apdo cap fail(%d)\n", __func__, ret);
+			pmax_mw = 0;
+			return pmax_mw;
+		}
+
+		data->vta_min = _data.vta_min;
+		data->vta_max = _data.vta_max;
+		data->ita_min = _data.ita_min;
+		data->ita_max = _data.ita_max;
+	}
+
+	pmax_mw = (data->vta_max * data->ita_max) /1000;
+
+	pr_info("%s vta_max(%d) ita_max(%d) pmax_mw(%d)\n",
+			__func__, data->vta_max, data->ita_max, pmax_mw);
+
+	if (data->ita_max <= PPS_6A && pmax_mw >= PPS_60W)
+		pmax_mw = PPS_60W;
+
+	if (data->ita_max > PPS_6A &&
+	        (pmax_mw !=  MOTO_68W || pmax_mw !=  MOTO_125W)) {
+		if (pmax_mw < PPS_100W )
+			pmax_mw = MOTO_68W;
+		else
+			pmax_mw = MOTO_125W;
+	}
+
+	if (pmax_mw > info->mmi.pd_pmax_mw)
+		pmax_mw = info->mmi.pd_pmax_mw;
+	else if (pmax_mw < PD_PMIN_POWER)
+		pmax_mw = PD_PMIN_POWER;
+
+	return pmax_mw;
+}
+
+static int mmi_get_pdc_power(struct mtk_charger *info, bool force)
+{
+	struct adapter_power_cap acap = {0};
+	int ret = 0, i = 0, idx = 0;
+	int pmax_mw = 0;
+	struct mmi_params *mmi = &info->mmi;
+
+	if (mmi->pd_cap_max_watt == 0 || force) {
+		ret = adapter_dev_get_cap(info->pd_adapter, MTK_PD, &acap);
+		if (ret < 0) {
+			pr_info("[%s]get pd cap fail(%d)\n", __func__, ret);
+			pmax_mw = 0;
+			return pmax_mw;
+		}
+
+		for (i = 0; i < acap.nr; i++) {
+			if (acap.min_mv[i] <= mmi->vbus_h &&
+				acap.min_mv[i] >= mmi->vbus_l &&
+				acap.max_mv[i] <= mmi->vbus_h &&
+				acap.max_mv[i] >= mmi->vbus_l) {
+
+				if (acap.maxwatt[i] > mmi->pd_cap_max_watt) {
+					mmi->pd_cap_max_watt = acap.maxwatt[i];
+					idx = i;
+				}
+				pr_info("%d %d %d %d %d %d\n",
+					acap.min_mv[i],
+					acap.max_mv[i],
+					mmi->vbus_h,
+					mmi->vbus_l,
+					acap.maxwatt[i],
+					mmi->pd_cap_max_watt);
+				continue;
+			}
+		}
+		pr_info("[%s]idx:%d vbus:%d %d maxwatt:%d\n", __func__,
+			idx, acap.min_mv[idx], acap.max_mv[idx],
+			mmi->pd_cap_max_watt);
+	}
+
+	pmax_mw = mmi->pd_cap_max_watt / 1000;
+
+	if (pmax_mw > mmi->pd_pmax_mw)
+		pmax_mw = mmi->pd_pmax_mw;
+	else if (pmax_mw < PD_PMIN_POWER)
+		pmax_mw = PD_PMIN_POWER;
+
+	return pmax_mw;
+}
+
+static int mmi_check_power_watt(struct mtk_charger *info, bool force)
+{
+	int rc = 0;
+	int icl = 0;
+	int power_watt = 0;
+	union power_supply_propval val;
+
+	if (info == NULL)
+		return power_watt;
+
+	if (!info->wl_psy) {
+		info->wl_psy = power_supply_get_by_name("wireless");
+	}
+	if (info->wl_psy) {
+		rc = power_supply_get_property(info->wl_psy,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+		if (val.intval) {
+			rc = power_supply_get_property(info->wl_psy,
+				POWER_SUPPLY_PROP_POWER_NOW, &val);
+			power_watt = val.intval;
+			return power_watt;
+		}
+	}
+
+	rc = mmi_get_prop_from_charger(info, POWER_SUPPLY_PROP_ONLINE, &val);
+	if (rc < 0) {
+		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
+		power_watt = 0;
+		return power_watt;
+	} else if (!val.intval) {
+		pr_info("[%s]usb off line\n", __func__);
+		power_watt = 0;
+		return power_watt;
+	}
+
+	icl = get_charger_input_current(info, info->chg1_dev) / 1000;
+
+	if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
+		power_watt = mmi_get_apdo_power(info, force) / 1000;
+
+	} else if (info->pd_type == MTK_PD_CONNECT_PE_READY_SNK
+			|| info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_PD30) {
+		power_watt = mmi_get_pdc_power(info, force) / 1000;
+
+	} else {
+		power_watt = 5 * icl /1000;
+	}
+
+	power_watt = MAX(power_watt, 1);
+
+	pr_info("[%s] power_watt = %dW\n", __func__, power_watt);
+	return power_watt;
+}
+
+#define MMI_BATT_UEVENT_NUM (5)
 static void mmi_updata_batt_status(struct mtk_charger *info)
 {
 	static struct power_supply	*batt_psy;
@@ -3233,6 +3398,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 	char *batt_age_string = NULL;
 	char *chrg_lpd_string = NULL;
 	char *chrg_vbus_string = NULL;
+	char *chrg_pmax_mw = NULL;
 	char *batt_string = NULL;
 	char *envp[MMI_BATT_UEVENT_NUM + 1];
 	int rc;
@@ -3259,6 +3425,7 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 		batt_age_string = &batt_string[CHG_SHOW_MAX_SIZE];
 		chrg_lpd_string = &batt_string[CHG_SHOW_MAX_SIZE * 2];
 		chrg_vbus_string = &batt_string[CHG_SHOW_MAX_SIZE * 3];
+		chrg_pmax_mw = &batt_string[CHG_SHOW_MAX_SIZE * 4];
 
 		scnprintf(chrg_rate_string, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_CHARGE_RATE=%s",
@@ -3274,11 +3441,15 @@ static void mmi_updata_batt_status(struct mtk_charger *info)
 		scnprintf(chrg_vbus_string, CHG_SHOW_MAX_SIZE,
 			  "POWER_SUPPLY_VBUS_PRESENT=%s", mmi_check_vbus_present(info)? "true": "false");
 
+		scnprintf(chrg_pmax_mw, CHG_SHOW_MAX_SIZE,
+			  "POWER_SUPPLY_POWER_WATT=%d", mmi_check_power_watt(info, false));
+
 		envp[0] = chrg_rate_string;
 		envp[1] = batt_age_string;
 		envp[2] = chrg_lpd_string;
 		envp[3] = chrg_vbus_string;
-		envp[4] = NULL;
+		envp[4] = chrg_pmax_mw;
+		envp[5] = NULL;
 		kobject_uevent_env(&batt_psy->dev.kobj, KOBJ_CHANGE, envp);
 		kfree(batt_string);
 	}
@@ -3856,6 +4027,21 @@ static int parse_mmi_dt(struct mtk_charger *info, struct device *dev)
 				  &info->mmi.typec_rp_max_current);
 	if (rc)
 		info->mmi.typec_rp_max_current = 0;
+
+	rc = of_property_read_u32(node, "mmi,pd-pmax-mw",
+				  &info->mmi.pd_pmax_mw);
+	if (rc)
+		info->mmi.pd_pmax_mw = 30000;
+
+	rc = of_property_read_u32(node, "mmi,pd_vbus_upper_bound",
+				  &info->mmi.vbus_h);
+	if (rc)
+		info->mmi.vbus_h = 9000000;
+
+	rc = of_property_read_u32(node, "mmi,pd_vbus_low_bound",
+				  &info->mmi.vbus_l);
+	if (rc)
+		info->mmi.vbus_l = 5000000;
 
 	return rc;
 }
@@ -5091,6 +5277,34 @@ static int mmi_notify_lpd_event(struct mtk_charger *pinfo) {
 	return 0;
 }
 
+#define CHG_SHOW_MAX_SIEZE 50
+static int mmi_notify_power_event(struct mtk_charger *pinfo) {
+	char *event_string = NULL;
+	char *batt_uenvp[2];
+	int pmax_w = 0;
+
+	if(!pinfo->bat_psy)
+		pinfo->bat_psy = power_supply_get_by_name("battery");
+	if(!pinfo->bat_psy) {
+		chr_err("%s: get battery supply failed\n", __func__);
+		return -EINVAL;
+	}
+
+	pmax_w = mmi_check_power_watt(pinfo, true);
+
+	event_string = kmalloc(CHG_SHOW_MAX_SIEZE, GFP_KERNEL);
+
+	scnprintf(event_string, CHG_SHOW_MAX_SIEZE,
+			"POWER_SUPPLY_POWER_WATT=%d", pmax_w);
+
+	batt_uenvp[0] = event_string;
+	batt_uenvp[1] = NULL;
+	kobject_uevent_env(&pinfo->bat_psy->dev.kobj, KOBJ_CHANGE, batt_uenvp);
+	chr_err("%s, pmax_w:%d send %s\n",__func__, pmax_w, event_string);
+	kfree(event_string);
+	return 0;
+}
+
 int notify_adapter_event(struct notifier_block *notifier,
 			unsigned long evt, void *val)
 {
@@ -5172,6 +5386,7 @@ int notify_adapter_event(struct notifier_block *notifier,
 		break;
 	case MMI_PD30_VDM_VERIFY:
 		chr_err("%s VDM VERIFY\n", __func__);
+		mmi_notify_power_event(pinfo);
 		mtk_chg_alg_notify_call(pinfo, EVT_VDM_VERIFY, 0);
 		break;
 	}
