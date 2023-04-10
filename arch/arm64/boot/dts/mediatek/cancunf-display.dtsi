@@ -35,11 +35,11 @@
 		status = "okay";
 
 		//sm5350
-		//pwm-cfg = <0x0F>;
+		pwm-cfg = <0x0F>;
 		hwen-gpio = <&pio 8 1>;
 		boost-ctl = <0x02>;
 		ctl-bank-en = <0x02>;
-		full-scale-current = <0x17>;
+		full-scale-current = <0x19>;
 		map-mode = <1>; /* 0 exponential, 1 linear */
 		sm5350,default-brightness = <1810>;
 		sm5350,init-seq-enable = <1>;
