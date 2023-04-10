@@ -438,6 +438,7 @@ static struct mtk_panel_params ext_params = {
 	.panel_id = 0x08022652,
 	.panel_name = "csot_ft8726_vid_649_1080_120hz",
 	.panel_supplier = "csot",
+	.lcm_index = 1,
 
 };
 
@@ -501,6 +502,7 @@ static struct mtk_panel_params ext_params_mode_1 = {
 	.panel_id = 0x08022652,
 	.panel_name = "csot_ft8726_vid_649_1080_120hz",
 	.panel_supplier = "csot",
+	.lcm_index = 1,
 };
 
 static struct mtk_panel_params ext_params_mode_2 = {
@@ -563,6 +565,7 @@ static struct mtk_panel_params ext_params_mode_2 = {
 	.panel_id = 0x08022652,
 	.panel_name = "csot_ft8726_vid_649_1080_120hz",
 	.panel_supplier = "csot",
+	.lcm_index = 1,
 };
 /*
 static int csot_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
