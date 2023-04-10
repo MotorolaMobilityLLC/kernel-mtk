@@ -434,6 +434,10 @@ static struct mtk_panel_params ext_params = {
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
+	.panel_ver = 1,
+	.panel_id = 0x08022652,
+	.panel_name = "csot_ft8726_vid_649_1080_120hz",
+	.panel_supplier = "csot",
 
 };
 
@@ -493,6 +497,10 @@ static struct mtk_panel_params ext_params_mode_1 = {
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
+	.panel_ver = 1,
+	.panel_id = 0x08022652,
+	.panel_name = "csot_ft8726_vid_649_1080_120hz",
+	.panel_supplier = "csot",
 };
 
 static struct mtk_panel_params ext_params_mode_2 = {
@@ -551,6 +559,10 @@ static struct mtk_panel_params ext_params_mode_2 = {
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
+	.panel_ver = 1,
+	.panel_id = 0x08022652,
+	.panel_name = "csot_ft8726_vid_649_1080_120hz",
+	.panel_supplier = "csot",
 };
 /*
 static int csot_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
