@@ -54,11 +54,41 @@ struct tianma {
 	bool enabled;
 
 	int error;
+	unsigned int hbm_mode;
+	unsigned int cabc_mode;
 };
 
-#if defined(CONFIG_MTK_PANEL_EXT)
-static char bl_tb0[] = { 0x51, 0xff };
-#endif
+static struct mtk_panel_para_table panel_cabc_ui[] = {
+	{2, {0xFF, 0x10}},
+	{2, {0xFB, 0x01}},
+	{2, {0x55, 0x01}},
+};
+
+static struct mtk_panel_para_table panel_cabc_mv[] = {
+	{2, {0xFF, 0x10}},
+	{2, {0xFB, 0x01}},
+	{2, {0x55, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_cabc_disable[] = {
+	{2, {0xFF, 0x10}},
+	{2, {0xFB, 0x01}},
+	{2, {0x55, 0x00}},
+};
+
+static struct mtk_panel_para_table panel_hbm_on[] = {
+	{2, {0xFF, 0x10}},
+	{2, {0xFB, 0x01}},
+	{3, {0x51, 0x07, 0xD5}},
+};
+
+static struct mtk_panel_para_table panel_hbm_off[] = {
+	{2, {0xFF, 0x10}},
+	{2, {0xFB, 0x01}},
+	{3, {0x51, 0x06, 0x2A}},
+};
+
+//static char bl_tb0[] = { 0x51, 0xff };
 
 //struct tianma *g_ctx = NULL;
 
@@ -224,7 +254,6 @@ static void tianma_panel_init(struct tianma *ctx)
 	msleep(120);
 	tianma_dcs_write_seq_static(ctx, 0x29, 0x00);
 	msleep(20);
-
 	pr_info("disp:init code %s-\n", __func__);
 }
 
@@ -307,6 +336,8 @@ static int tianma_prepare(struct drm_panel *panel)
 	}
 
 	tianma_panel_init(ctx);
+	ctx->hbm_mode = 0;
+	ctx->cabc_mode = 0;
 
 	ret = ctx->error;
 	printk("[%d  %s]hxl_check_dsi   ret:%d !!\n",__LINE__, __FUNCTION__,ret);
@@ -394,6 +425,7 @@ static struct mtk_panel_params ext_params = {
 		.para_list[0] = 0x9c,
 	},
 	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -450,6 +482,7 @@ static struct mtk_panel_params ext_params_mode_1 = {
 		.para_list[0] = 0x9c,
 	},
 	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -505,6 +538,7 @@ static struct mtk_panel_params ext_params_mode_2 = {
 		.para_list[0] = 0x9c,
 	},
 	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -553,9 +587,9 @@ static struct mtk_panel_params ext_params_mode_2 = {
 static int tianma_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	//pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
+	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
 
-#if 1
+#if 0
 
 	if (!cb) {
 		pr_info("%s cb NULL!\n", __func__);
@@ -625,12 +659,129 @@ static enum mtk_lcm_version nt36672c_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+static int panel_cabc_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (cabc_mode > 3) {
+		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_mode);
+		return -1;
+	}
+
+	switch (cabc_mode) {
+		case 0:
+			para_count = sizeof(panel_cabc_ui) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_ui;
+			break;
+		case 1:
+			para_count = sizeof(panel_cabc_mv) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_mv;
+			break;
+		case 2:
+			para_count = sizeof(panel_cabc_disable) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_disable;
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		pr_info("%s: set CABC mode :%d", __func__, cabc_mode);
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: CABC mode:%d not support", __func__, cabc_mode);
+
+	return 0;
+}
+
+static int panel_hbm_set_cmdq(struct tianma *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (hbm_state > 1) {
+		pr_info("%s: invalid hbm_state:%d, return\n", __func__, hbm_state);
+		return -1;
+	}
+
+	switch (hbm_state) {
+		case 1:
+			para_count = sizeof(panel_hbm_on) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_on;
+			pr_info("%s: set HBM on", __func__);
+			break;
+		case 0:
+			para_count = sizeof(panel_hbm_off) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_off;
+			pr_info("%s: set HBM off", __func__);
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: HBM pTable null, hbm_state:%s", __func__, hbm_state);
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+	struct tianma *ctx = panel_to_tianma(panel);
+	int ret = -1;
+
+	if (!cb)
+		return -1;
+
+	if (!ctx->enabled) {
+		pr_info("%s: skip set feature %d to %d, panel not enabled\n", __func__, param_info.param_idx, param_info.value);
+		return -1;
+	}
+
+	pr_info("%s: start set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			if (ctx->cabc_mode != param_info.value) {
+				ctx->cabc_mode = param_info.value;
+				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
+			break;
+		case PARAM_HBM:
+			if (ctx->hbm_mode != param_info.value) {
+				ctx->hbm_mode = param_info.value;
+				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+			break;
+		default:
+			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+			break;
+	}
+
+	return ret;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tianma_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = nt36672c_get_lcm_version,
 //	.ata_check = panel_ata_check,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
