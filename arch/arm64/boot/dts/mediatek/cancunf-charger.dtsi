@@ -26,22 +26,22 @@
 &charger {
 	/* common */
         boot_battery_voltage = <3600000>;
-	battery_cv = <4480000>;
-	max_charger_voltage = <14500000>;
+	battery_cv = <4500000>;
+	max_charger_voltage = <11000000>;
 	min_charger_voltage = <4600000>;
 
-	/*pe5 && pdc && pe2*/
-	fast_charging_indicator = <0x16>;
+	/*pdc && pe2*/
+	fast_charging_indicator = <0x06>;
 	/*swchg + 1CP*/
-	charger_configuration= <3>;
+	//charger_configuration= <3>;
 
 	/* charging current */
 	usb_charger_current_suspend = <0>;
 	usb_charger_current_unconfigured = <70000>;
 	usb_charger_current_configured = <500000>;
 	usb_charger_current = <500000>;
-	ac_charger_current = <2050000>;
-	ac_charger_input_current = <2000000>;
+	ac_charger_current = <3000000>;
+	ac_charger_input_current = <3000000>;
 	non_std_ac_charger_current = <1000000>;
 	charging_host_charger_current = <1500000>;
 	apple_1_0a_charger_current = <650000>;
@@ -52,24 +52,30 @@
 	/*mmi config*/
 	mmi,iterm-ma = <243>;
 	mmi,mmi-temp-zones = <0 4200 1000 0>,
-			<10 4250 3000 1000>,
-			<15 0 3000 3000>,
-			<45 4300 6000 5200>,
-			<45 4400 5200 4000>,
+			<10 4500 3000 1000>,
+			<15 4500 3000 3000>,
+			<45 4500 4000 4000>,
 			<60 4200 4000 0>;
-	mmi,mmi-ffc-zones = <0 4200 250>,
-			<10 4480 250>,
-			<15 4480 250>,
-			<25 4510 524>,
-			<35 4510 560>,
-			<45 4510 599>,
-			<60 4200 250>;
+	mmi,mmi-ffc-zones = <0 4200 243>,
+			<10 4480 243>,
+			<15 4480 243>,
+			<25 4530 506>,
+			<35 4530 560>,
+			<45 4530 965>,
+			<60 4200 243>;
 	mmi,enable-charging-limit;
 	mmi,upper-limit-capacity = <70>;
 	mmi,lower-limit-capacity = <65>;
 	mmi,min-cp-therm-current-ua = <1600000>;
 };
 
+/*
+&mt6375_chg {
+	cv = <4500>;
+	ircmp_r = <16700>;
+	ircmp_v = <32>;
+};
+*/
 
 &pdc {
 	sc_input_current = <3000000>;
@@ -111,64 +117,6 @@
 	ita_min = <1000>;
 };
 
-
-&pe5 {
-		compatible = "mediatek,charger,pe5";
-		gauge = <&mtk_gauge>;
-		polling_interval = <10000>;
-		ta_cv_ss_repeat_tmin = <25>;
-		vbat_cv = <4510>;
-		start_soc_min = <0>;
-		start_soc_max = <80>;
-		start_vbat_max = <4450>;
-		idvchg_term = <500>;
-		idvchg_step = <50>;
-		ita_level = <3000 2500 2000 1500>;
-		rcable_level = <350 400 500 600>;
-		ita_level_dual = <5000 3700 3400 3000>;
-		rcable_level_dual = <230 350 450 550>;
-		idvchg_ss_init = <1000>;
-		idvchg_ss_step = <250>;
-		idvchg_ss_step1 = <100>;
-		idvchg_ss_step2 = <50>;
-		idvchg_ss_step1_vbat = <4000>;
-		idvchg_ss_step2_vbat = <4200>;
-		ta_blanking = <400>;
-		swchg_aicr = <0>;
-		swchg_ichg = <1200>;
-		swchg_aicr_ss_init = <400>;
-		swchg_aicr_ss_step = <200>;
-		swchg_off_vbat = <4250>;
-		force_ta_cv_vbat = <4250>;
-		chg_time_max = <10800>;
-		tta_level_def = <0 0 0 0 25 50 60 70 80>;
-		tta_curlmt = <0 0 0 0 0 0 0 0 0>;
-		tta_recovery_area = <3>;
-		tbat_level_def = <0 0 0 5 25 40 43 46 50>;
-		tbat_curlmt = <0 0 0 0 0 0 0 0 0>;
-		tbat_recovery_area = <3>;
-		tdvchg_level_def = <0 0 0 5 25 55 60 65 70>;
-		tdvchg_curlmt = <0 0 0 0 0 0 0 0 0>;
-		tdvchg_recovery_area = <3>;
-		tswchg_level_def = <0 0 0 5 25 65 70 75 80>;
-		tswchg_curlmt = <0 0 0 0 0 0 0 0 0>;
-		tswchg_recovery_area = <3>;
-		ifod_threshold = <200>;
-		rsw_min = <20>;
-		ircmp_rbat = <40>;
-		ircmp_vclamp = <0>;
-		vta_cap_min = <6800>;
-		vta_cap_max = <11000>;
-		ita_cap_min = <1000>;
-		support_ta = "pca_ta_pps", "pd_adapter";
-		allow_not_check_ta_status;
-		vbat_threshold = <4150>;
-		mmi_therm_cur_thres = <500>;
-		mmi_therm_vol_thres = <80>;
-		mmi_therm_step = <3>;
-		mmi_max_ibat = <6000>;
-};
-
 &mtk_gauge {
 
 	DIFFERENCE_FULLOCV_ITH = <80>;  /*gauge cut-off current, should overtop ieoc 50ma*/
@@ -191,61 +139,38 @@
 		100 100 100 100
 		100 100 100 100>;
 
-	g_Q_MAX = <4937 4871 2490 1965
-		4991 4936 2468 1984
-		4995 4905 2310 1946
-		4936 4794 1858 1873
-		4780 4920 1843 1851
-		2211 1652 1533 1541
-		2201 1642 1523 1531
-		2191 1632 1513 1521
-		2181 1622 1503 1511
-		2171 1612 1493 1501>;
+	g_Q_MAX = <4990 4996 4996 4996
+		4996 4996 4996 4996
+		4996 4996 4996 4996
+		4996 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996
+		4990 4996 4996 4996>;
 
-	g_Q_MAX_H_CURRENT = <4937 4871 2190 1665
-		4991 4936 2168 1684
-		4995 4905 2010 1646
-		4936 4794 1558 1573
-		4780 4920 1543 1551
-		2210 1650 1533 1541
-		2200 1640 1523 1531
-		2190 1630 1513 1521
-		2180 1620 1503 1511
-		2170 1610 1493 1501>;
+	g_Q_MAX_H_CURRENT = <4970 4990 4990 4990
+		4980 4990 4990 4990
+		4980 4990 4990 4990
+		4980 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990
+		4970 4990 4990 4990>;
 
 	ACTIVE_TABLE = <(5)>;
 	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
-	df-serialnum = "SB18D61156";
-	//#include "bat_setting/mt6879_battery_nf50_atl_5000mah.dtsi"
-	#include "bat_setting/mt6855_battery_table_lwn_5000.dtsi"
-	#include "bat_setting/mt6855_battery_table_ff.dtsi"
+//	df-serialnum = "SB18D61156";
+	df-serialnum = "SB18D86478";
+	#include "bat_setting/mt6855_battery_pc50_atl_5000mah.dtsi"
+//	#include "bat_setting/mt6855_battery_table_lwn_5000.dtsi"
+//	#include "bat_setting/mt6855_battery_table_ff.dtsi"
 
 };
-
-
-
-&i2c9 {
-       status = "okay";
-       sc8551-charger@66{
-               compatible = "sc,sc8551-standalone";
-               reg = <0x66>;
-               sc,sc8551,irq-gpio = <&pio 0 0>;
-               /*sc,sc8551,bat-ovp-disable = <0>;
-               sc,sc8551,bat-ocp_disable = <0>;
-               sc,sc8551,bus-ocp-disable = <0>;*/
-
-               sc,sc8551,bat-ovp-threshold = <4600>;
-               sc,sc8551,bat-ocp-threshold = <8000>;
-
-               sc,sc8551,bus-ovp-threshold = <12000>;
-               sc,sc8551,bus-ocp-threshold = <3750>;
-
-               sc,sc8551,ac-ovp-threshold = <12000>;
-               sc,sc8551,sense-resistor-mohm = <5>;
-       };
-};
-
 
 &charge_leds {
 	compatible = "gpio-leds";

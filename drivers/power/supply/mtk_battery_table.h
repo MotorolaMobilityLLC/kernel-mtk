@@ -458,12 +458,41 @@ int g_temperature[MAX_TABLE] = {
 #define RBAT_PULL_UP_R             61900
 #endif
 
+#ifdef CONFIG_CANCUNF_BATTERY_NTC
+#define RBAT_PULL_UP_VOLT          1840
+#else
 #define RBAT_PULL_UP_VOLT          2800
+#endif
 
 #define BIF_NTC_R 16000
 
 #if (BAT_NTC_10 == 1)
 struct fg_temp fg_temp_table[23] = {
+#ifdef CONFIG_CANCUNF_BATTERY_NTC
+		{-40, 202700},
+		{-35, 153000},
+		{-30, 116670},
+		{-25, 89849},
+		{-20, 69814},
+		{-15, 54733},
+		{-10, 43245},
+		{-5, 34388},
+		{0,  27545},
+		{5,  22229},
+		{10, 18050},
+		{15, 14741},
+		{20, 12108},
+		{25, 10000},
+		{30, 8307},
+		{35, 6942},
+		{40, 5828},
+		{45, 4912},
+		{50, 4159},
+		{55, 3531},
+		{60, 3010},
+		{65, 2582},
+		{70, 2223}
+#else
 		{-40, 195652},
 		{-35, 148171},
 		{-30, 113347},
@@ -487,6 +516,7 @@ struct fg_temp fg_temp_table[23] = {
 		{60, 3014},
 		{65, 2588},
 		{70, 2227}
+#endif
 };
 #endif
 
