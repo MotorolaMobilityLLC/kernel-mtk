@@ -25,6 +25,26 @@
 #include "charger_class.h"
 #include "mtk_charger.h"
 
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+extern int wt6670f_set_voltage(u16 voltage);
+extern int wt6670f_set_volt_count(int count);
+extern int wt6670f_en_hvdcp(void);
+extern void wt6670f_reset_chg_type(void);
+extern int wt6670f_force_qc2_5V(void);
+extern int wt6670f_force_qc3_5V(void);
+extern int wt6670f_start_detection(void);
+extern int wt6670f_get_protocol(void);
+extern int wt6670f_get_charger_type(void);
+extern bool wt6670f_is_charger_ready(void);
+extern int wt6670f_do_reset(void);
+bool m_chg_ready = false;
+extern int m_chg_type;
+extern int is_already_probe_ok;
+bool wt6670f_is_detect = false;
+EXPORT_SYMBOL_GPL(wt6670f_is_detect);
+extern int g_qc3p_id;
+#endif
+
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, 0644);
 #define mt_dbg(dev, fmt, ...) \
@@ -250,6 +270,11 @@ struct mt6375_chg_data {
 	atomic_t tchg;
 	int vbat0_flag;
 	int mmi_chg_status;
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	struct delayed_work psy_dwork;
+	int pulse_cnt;
+#endif
 
 	struct power_supply *batt_psy;
 	struct power_supply *wlc_psy;
@@ -1080,6 +1105,11 @@ static void mt6375_chg_bc12_work_func(struct work_struct *work)
 	case PORT_STAT_DCP:
 		ddata->psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 		ddata->psy_usb_type = POWER_SUPPLY_USB_TYPE_DCP;
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		schedule_delayed_work(&ddata->psy_dwork, 0);
+#endif
+
 		bc12_en = false;
 		break;
 	case PORT_STAT_SDP:
@@ -1896,6 +1926,145 @@ static int mt6375_enable_chg_type_det(struct charger_device *chgdev, bool en)
 	return 0;
 }
 
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+#define HVDCP_POWER_MIN			15000
+#define HVDCP_VOLTAGE_BASIC		5000000
+#define HVDCP_VOLTAGE_NOM		(HVDCP_VOLTAGE_BASIC - 200000)
+#define HVDCP_VOLTAGE_MAX		(HVDCP_VOLTAGE_BASIC + 200000)
+#define HVDCP_VOLTAGE_MIN		4000000
+#define HVDCP_PULSE_COUNT_MAX 	((HVDCP_VOLTAGE_BASIC - 5000000) / 200000 + 2)
+int mt6375_config_qc_charger(struct charger_device *chg_dev)
+{
+	int rc = 0;
+	int vbus_mv;
+	struct mt6375_chg_data *ddata = charger_get_data(chg_dev);
+
+	if(is_already_probe_ok == 1) {
+		rc = mt6375_get_vbus(chg_dev, &vbus_mv);
+		if (rc != 0) {
+			pr_err("wt6670 get vbus failed\n");
+			return -1;
+		}
+	} else {
+		vbus_mv = -1;
+		pr_err("wt6670 get vbus failed\n");
+	}
+
+	if(vbus_mv < 4000000 || vbus_mv > 6000000) {
+		pr_err("vbus is not for qc3.0\n");
+		return -1;
+	}
+
+	pr_info("pulse_cnt=%d, vbus_mv=%d\n", ddata->pulse_cnt, vbus_mv);
+	if (vbus_mv < HVDCP_VOLTAGE_NOM && ddata->pulse_cnt < HVDCP_PULSE_COUNT_MAX) {
+		rc = wt6670f_set_volt_count(1);
+		if (rc<0)
+			dev_err(ddata->dev, "wt6670f_set_volt_count up failed\n");
+		else
+			ddata->pulse_cnt++;
+	} else if (vbus_mv > HVDCP_VOLTAGE_MAX && ddata->pulse_cnt > 0 ) {
+		rc = wt6670f_set_volt_count(-1);
+		if (rc<0)
+			dev_err(ddata->dev, "wt6670f_set_volt_count down failed\n");
+		else {
+			ddata->pulse_cnt--;
+		}
+	} else {
+		pr_info("QC3.0 output configure completed\n");
+		rc = 0;
+	}
+	msleep(100);
+	return rc;
+}
+EXPORT_SYMBOL_GPL(mt6375_config_qc_charger);
+
+void wt6670f_get_charger_type_func_work(struct work_struct *work)
+{
+	struct delayed_work *psy_dwork = NULL;
+	struct mt6375_chg_data *ddata;
+	bool early_notified = false;
+	bool should_notify = false;
+	bool need_retry = false;
+	int early_chg_type = 0;
+	int count = 0;
+
+	if (!is_already_probe_ok) {
+		pr_err("6670f is not exit \n");
+		return;
+	}
+
+	psy_dwork = container_of(work, struct delayed_work, work);
+	if(psy_dwork == NULL) {
+		pr_err("Cann't get charge_monitor_work\n");
+		return ;
+	}
+	ddata = container_of(psy_dwork, struct mt6375_chg_data, psy_dwork);
+	if(ddata == NULL) {
+		pr_err("Cann't get mt6375_chg_data \n");
+		return ;
+	}
+
+	pr_err(" start 6670 bc12 \n");
+	wt6670f_is_detect = true;
+
+	mt6375_chg_field_set(ddata, F_IAICR, 500);
+	mt6375_chg_set_usbsw(ddata, USBSW_CHG);
+	if(0 == g_qc3p_id && is_already_probe_ok != 0) {//wt6670f
+		do{
+			m_chg_ready = false;
+			m_chg_type = 0;
+			early_notified = false;
+			should_notify = false;
+			need_retry = false;
+			early_chg_type = 0;
+			wt6670f_start_detection();
+			while((!m_chg_ready)&&(count<100)) {
+				msleep(30);
+				count++;
+				m_chg_ready = wt6670f_is_charger_ready();
+
+				if(!early_notified){
+				      early_chg_type = wt6670f_get_protocol();
+				}
+
+				if(early_chg_type == 0x08 || early_chg_type == 0x09){
+					pr_err("[%s] WT6670F early type is QC3+: %d, skip detecting\n",__func__, early_chg_type);
+					break;
+				}
+					pr_err("wt6670f waiting early type: 0x%x, detect ready: 0x%x, count: %d\n", early_chg_type, m_chg_ready, count);
+			}
+			m_chg_type = wt6670f_get_protocol();
+
+			if(m_chg_type == 0x7 && !need_retry){
+				need_retry = true;
+			} else {
+				need_retry = false;
+			}
+			power_supply_changed(ddata->psy);
+			pr_err("[%s]   WT6670F charge type is  0x%x\n",__func__, m_chg_type);
+		}while(need_retry);
+	}//wt6670f
+	wt6670f_is_detect = false;
+
+	if(m_chg_type == 0x05){
+		wt6670f_force_qc2_5V();
+		pr_err("Force set qc2 5V");
+		msleep(100);
+	}else if(m_chg_type == 0x06){
+		wt6670f_force_qc3_5V();
+		msleep(100);
+		ddata->pulse_cnt = 0;
+		pr_err("Force set qc3 5V");
+	}
+
+	if (m_chg_type != 0x09) {
+		mt6375_chg_field_set(ddata, F_IAICR, 3000);
+	} else {
+		mt6375_chg_field_set(ddata, F_IAICR, 500);
+	}
+}
+#endif
+
 #define DUMP_REG_BUF_SIZE	1024
 static int mt6375_dump_registers(struct charger_device *chgdev)
 {
@@ -2058,6 +2227,15 @@ static int mt6375_plug_out(struct charger_device *chgdev)
 	ddata->mmi_chg_status = POWER_SUPPLY_STATUS_DISCHARGING;
 
 	if (pdata->wdt_en) {
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	if(m_chg_type != 0 && is_already_probe_ok != 0){
+		wt6670f_reset_chg_type();
+		m_chg_type = 0;
+		ddata->pulse_cnt = 0;
+	}
+#endif
+
 		ret = mt6375_chg_field_set(ddata, F_WDT_EN, 0);
 		if (ret < 0) {
 			dev_err(ddata->dev, "failed to disable WDT\n");
@@ -2744,6 +2922,11 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 		goto out;
 	}
 	INIT_WORK(&ddata->bc12_work, mt6375_chg_bc12_work_func);
+
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+    INIT_DELAYED_WORK(&ddata->psy_dwork, wt6670f_get_charger_type_func_work);
+#endif
+
 	platform_set_drvdata(pdev, ddata);
 
 	ret = device_create_file(dev, &dev_attr_shipping_mode);
@@ -2810,6 +2993,9 @@ static int mt6375_chg_remove(struct platform_device *pdev)
 
 	mt_dbg(&pdev->dev, "%s\n", __func__);
 	if (ddata) {
+#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+		cancel_delayed_work_sync(&ddata->psy_dwork);
+#endif
 		charger_device_unregister(ddata->chgdev);
 		device_remove_file(ddata->dev, &dev_attr_shipping_mode);
 		destroy_workqueue(ddata->wq);
