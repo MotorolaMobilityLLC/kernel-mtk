@@ -49,6 +49,16 @@
 		
 		status = "okay";
 	};
+
+     nfc_pn5xx: nfc_pn5xx@28 {
+		compatible = "qcom,sn-nci";
+		reg = <0x28>;
+		interrupt-parent = <&pio>;
+		interrupts = <2 IRQ_TYPE_LEVEL_HIGH 1 0>;
+		qcom,sn-irq = <&pio 2 0>;
+		qcom,sn-ven = <&pio 161 0>;
+		status = "okay";
+	};
 };
 
 &dispsys_config {
@@ -138,8 +148,43 @@
 			slew-rate = <1>;
 			output-low;
 		};
+       };
+};
+
+&spi5 {
+	p61: p61@0 {
+		compatible = "nxp,p61";
+		reg = <0>;
+		spi-max-frequency = <20000000>;
+		nxp,nfcc = "3-0028";
+//		nxp,p61-rst = <&gpio2 5 0>;
+		pinctrl-names = "pinctrl_state_mode_spi",
+				"pinctrl_state_mode_idle";
+		pinctrl-0 = <&pinctrl_state_mode_spi>;
+		pinctrl-1 = <&pinctrl_state_mode_idle>;
+		status = "okay";
 	};
 };
+
+&pio {
+        pinctrl_state_mode_spi: pinctrl_state_mode_spi {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO77__FUNC_SPI5_CLK>,
+                                 <PINMUX_GPIO78__FUNC_SPI5_CSB>,
+                                 <PINMUX_GPIO79__FUNC_SPI5_MO>,
+                                 <PINMUX_GPIO80__FUNC_SPI5_MI>;
+                        drive-strength = <2>;
+                };
+        };
+        pinctrl_state_mode_idle: pinctrl_state_mode_idle {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO78__FUNC_GPIO78>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+};
+
 
 /* SVP */
 &mtee_svp {
