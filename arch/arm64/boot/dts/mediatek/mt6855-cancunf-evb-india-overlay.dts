@@ -14,6 +14,7 @@
 /plugin/;
 
 #include "mediatek/mt6855-cancunf-common-overlay.dtsi"
+#define VICKY_RADIO_IND48M 5
 
 /* Board match root node */
 / {
@@ -21,11 +22,11 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "cancunf";
-			mot,board-id = <0x44 0xA100>;
+			mot,board-id = <(VICKY_RADIO_IND48M << 8 | 0x44) 0xA100>;
 		};
 	};
 };
 
 #include <cancunf_evb/cust.dtsi>
-#include "mediatek/cancunf-charger.dtsi"
+#include "mediatek/cancunf-charger-india-overlay.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
