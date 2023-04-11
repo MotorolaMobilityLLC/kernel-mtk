@@ -1,0 +1,126 @@
+
+&mt6369_vfp {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-always-on;
+};
+
+&pio {
+
+        fingerfp_rst_high: fingerfp_rst_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+
+        fingerfp_rst_low: fingerfp_rst_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+
+        fingerfp_irq_active: fingerfp_irq_active {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
+                        slew-rate = <0>;
+                        bias-disable;
+                };
+        };
+
+        fingerfp_spi_active: fingerfp_spi_active {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO68__FUNC_SPI1_MI>, <PINMUX_GPIO66__FUNC_SPI1_CSB>, <PINMUX_GPIO67__FUNC_SPI1_MO>, <PINMUX_GPIO65__FUNC_SPI1_CLK>;
+                        drive-strength = <2>;
+                };
+        };
+
+        fingerfp_spi_default: fingerfp_spi_default {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO68__FUNC_GPIO68>, <PINMUX_GPIO66__FUNC_GPIO66>, <PINMUX_GPIO67__FUNC_GPIO67>, <PINMUX_GPIO65__FUNC_GPIO65>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        fingerprint_irq: fingerprint_irq {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO15__FUNC_GPIO15>;
+                        slew-rate = <0>;
+                        bias-disable;
+                };
+        };
+
+        fingerprint_reset_high: fingerprint_reset_high {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+
+        fingerprint_reset_low: fingerprint_reset_low {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO157__FUNC_GPIO157>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+ };
+
+/* FINGERPRINT start */
+&spi1 {
+        status = "okay";
+        mediatek,pad-select = <0>, <1>;
+        tee-only;
+
+        goodix_tee@0 {
+                compatible = "mediatek,finger-goodix";
+                reg = <0>;
+                spi-max-frequency = <8000000>;
+                netlink-event = <30>;
+                status = "okay";
+        };
+
+        chipone_tee@1 {
+                status = "okay";
+                compatible = "mediatek,finger-chipone";
+                reg = <1>;
+                spi-max-frequency = <10000000>;
+                netlink-event = <30>;
+        };
+};
+
+&odm {
+
+        fingerprint_int: fingerprint_int {
+                compatible = "mediatek,fingerprint-goodix";
+                fp_vdd-supply = <&mt6369_vfp>;
+                interrupt-parent = <&pio>;
+                goodix_rst = <&pio 157 0x00>;
+                gf,gpio_irq = <&pio 15 0x00>;
+                interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+                pinctrl-names = "fingerprint_irq", "fingerprint_reset_high", "fingerprint_reset_low";
+                pinctrl-0 = <&fingerprint_irq>;
+                pinctrl-1 = <&fingerprint_reset_high>;
+                pinctrl-2 = <&fingerprint_reset_low>;
+                status = "okay";
+        };
+
+        chipone_int: chipone_int {
+                compatible = "mediatek,chipone-fingerprint";
+chipone,enable-wakeup;
+                fp_vdd-supply = <&mt6369_vfp>;
+                interrupt-parent = <&pio>;
+                interrupts = <15 IRQ_TYPE_EDGE_RISING 15 0>;
+                pinctrl-names = "fingerprint_reset_low", "fingerprint_reset_high" , "fingerprint_irq";
+                pinctrl-0 = <&fingerprint_reset_low>;
+                pinctrl-1 = <&fingerprint_reset_high>;
+                pinctrl-2 = <&fingerprint_irq>;
+                chipone,irq = <&pio 15 0>;
+                status = "okay";
+        };
+};
+
