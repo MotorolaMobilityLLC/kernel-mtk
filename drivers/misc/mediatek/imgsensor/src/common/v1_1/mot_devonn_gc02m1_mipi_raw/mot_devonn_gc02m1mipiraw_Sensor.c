@@ -891,13 +891,13 @@ static void gc02m1_eeprom_format_calibration_data()
 	//Bit[7:6]:WB  flag  group1   00:Empty; 01:Valid; 11:Invalid
 	//Bit[5:4]:WB  flag  group2   00:Empty; 01:Valid; 11:Invalid
 	LOG_INF_N("awb flag =%x\n", gc02m1_data_eeprom[11]);
-	if((gc02m1_data_eeprom[11] & 0x40)  == 0x40)
+	if((gc02m1_data_eeprom[11] & 0xC0)  == 0x40)
 	{
 		LOG_INF_N("group1 \n");
 		check_sum=eeprom_util_check_crc16(&gc02m1_data_eeprom[11],7,convert_crc(&gc02m1_data_eeprom[18]));
 
 	}
-        else if((gc02m1_data_eeprom[11] & 0x01) == 0x01)
+        else if((gc02m1_data_eeprom[11] & 0x30) == 0x10)
 	{
 		LOG_INF_N("group2 \n");
 		check_sum=eeprom_util_check_crc16(&gc02m1_data_eeprom[20],6,convert_crc(&gc02m1_data_eeprom[26]));
