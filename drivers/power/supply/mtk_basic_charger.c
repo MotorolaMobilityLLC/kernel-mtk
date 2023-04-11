@@ -65,6 +65,12 @@
 #include "wt6670f.h"
 #endif
 
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
+#include "wt6670f.h"
+extern bool wt6670f_is_detect;
+extern int mt6375_config_qc_charger(struct charger_device *chg_dev);
+#endif
+
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -116,6 +122,24 @@ static bool support_fast_charging(struct mtk_charger *info)
 		if (info->enable_fast_charging_indicator &&
 		    ((alg->alg_id & info->fast_charging_indicator) == 0))
 			continue;
+
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
+		if(wt6670f_is_detect == true && alg->alg_id  != PE5_ID) {
+			chr_err("wt6670f is detecting and skip detect others type\n");
+			return ret;
+		} else if (m_chg_type == 0x06) {
+			/*when wt6670f is detect should make sure sgm is 500mA*/
+			if(mt6375_config_qc_charger(info->chg1_dev) != 0) {
+				chr_err("sgm_config_qc_charger set sgm dpdm failed\n");
+			} else {
+				chr_err("it is HVDCP set sgm 3A  m_chg_type = %d\n",m_chg_type);
+			}
+			return ret;
+		} else if (m_chg_type == 0x08 || m_chg_type == 0x09) {
+			chr_err("qc type and skip others type \n");
+			return ret;
+		}
+#endif
 
 		chg_alg_set_current_limit(alg, &info->setting);
 		state = chg_alg_is_algo_ready(alg);
@@ -324,8 +348,25 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 #endif
 
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
+	/*when wt6670f is detect should make sure sgm is 500mA*/
+	if(wt6670f_is_detect == true){
+		if(pdata->charging_current_limit > 500000){
+			pdata->charging_current_limit = 500000;
+			chr_err("wt6670f is detect, set charging_current_limit 500mA!\n");
+		}
+	} else {
+		if(m_chg_type == 0x09 || m_chg_type == 0x08) {
+			if (info->mmi.target_fcc <= 0)
+				pdata->charging_current_limit = 0;
+			else
+				pdata->charging_current_limit = 2000000;
+		}
+	}
+#endif
+
 	info->mmi.target_usb = pdata->input_current_limit;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	if (pdata->cp_ichg_limit!= -1) {
 		if (pdata->cp_ichg_limit <
 		    pdata->charging_current_limit)
