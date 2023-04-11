@@ -757,6 +757,24 @@ config WT6670F_QC3P
         help
           Say Y to enable support for QC3 plus protocal chipset.
 
+config MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+        bool "Enable discrete charger pumpfor Moto"
+        default n
+        help
+          This is to enable MOTO supports of charger pump.
+
+config MOTO_CHARGER_MT6375_SUPPORT
+        bool "MT6375 sw charger support"
+        default n
+        help
+          This is to enable MOTO supports of MT6375 control.
+
+config MOTO_CHARGE_PUMP_OVP_CONTROL_SUPPORT
+        bool "CHARGER PUMP ovp control support"
+        default n
+        help
+          This is to enable MOTO supports of charger vac control ovp.
+
 config CHARGER_CROS_USBPD
 	tristate "ChromeOS EC based USBPD charger"
 	depends on CROS_USBPD_NOTIFY
@@ -972,5 +990,11 @@ config MOTO_PE50_CV_LOWER_BOUND_GAP_OFF
 	default n
 	help
 	  This is config charger pe5 cv lower bound gap
+
+config CANCUNF_BATTERY_NTC
+	bool "This is config cancunf battery ntc table"
+	default n
+	help
+	  This is config cancunf battery ntc table
 
 endif # POWER_SUPPLY

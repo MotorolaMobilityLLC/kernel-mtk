@@ -128,9 +128,11 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	union power_supply_propval prop_s_bat_chr;
 	int ret = -1;
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	union power_supply_propval prop_bq_chr;
 	prop_bq_chr.intval = 0;
-	#endif
+	#endif // CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	#endif // CONFIG_MOTO_CHG_WT6670F_SUPPORT
 
 	if (chg->chg_psy == NULL || IS_ERR(chg->chg_psy)) {
 		pr_info("Couldn't get chg_psy\n");
@@ -139,6 +141,7 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	prop_bat_chr.intval = master_charger_state_to_current_limit[chg->target_state];
 
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	ret = power_supply_get_property(chg->bq_chg_psy,
 		POWER_SUPPLY_PROP_STATUS, &prop_bq_chr);
 	if (ret != 0) {
@@ -150,7 +153,8 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	if (ret != 0) {
 		pr_notice("qc3p temp level set bat curr fail\n");
 	}
-	#endif
+	#endif // CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	#endif // CONFIG_MOTO_CHG_WT6670F_SUPPORT
 
 	ret = power_supply_set_property(chg->chg_psy,
 		POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
@@ -350,6 +354,7 @@ static int charger_cooling_probe(struct platform_device *pdev)
 	}
         #endif
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	charger_cdev->q_chg_psy = power_supply_get_by_name("mmi_chrg_manager");
 	if (charger_cdev->q_chg_psy == NULL || IS_ERR(charger_cdev->q_chg_psy)) {
 		pr_info("Couldn't get mmi chrg manager psy\n");
@@ -360,7 +365,8 @@ static int charger_cooling_probe(struct platform_device *pdev)
 		pr_info("Couldn't get bq2597x psy\n");
 		return -EPROBE_DEFER;
 	}
-	#endif
+	#endif // CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	#endif // CONFIG_MOTO_CHG_WT6670F_SUPPORT
 
 	if (charger_cdev->type == DUAL_CHARGER) {
 		charger_cdev->s_chg_psy = power_supply_get_by_name("mtk-slave-charger");

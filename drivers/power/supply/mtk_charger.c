@@ -70,6 +70,10 @@
 #include "sgm415xx.h"
 #endif
 
+#if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_CHARGER_MT6375_SUPPORT)
+#include "wt6670f.h"
+#endif
+
 struct tag_bootmode {
 	u32 size;
 	u32 tag;
@@ -3447,6 +3451,14 @@ static void mmi_charger_check_status(struct mtk_charger *info)
 		if (info->mmi.chrg_iterm > FFC_ITERM_500MA) {
 			mmi->vfloat_comp_mv = (batt_soc == 100)?FV_COMP_24_MV:FV_COMP_32_MV; //Only for ffc charging
 		}
+#elif defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT)
+	//mmi->vfloat_comp_mv = FV_COMP_0_MV;
+	if ( (info->dvchg1_dev != NULL && info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) ||
+                (m_chg_type == 0x09)) {
+		max_fv_mv = mmi_get_ffc_fv(info, batt_temp);
+		//if (info->mmi.chrg_iterm > FFC_ITERM_500MA) {
+		//	mmi->vfloat_comp_mv = (batt_soc == 100)?FV_COMP_24_MV:FV_COMP_32_MV; //Only for ffc charging
+		//}
 #else
 	if (info->dvchg1_dev != NULL
 		&& info->pd_type == MTK_PD_CONNECT_PE_READY_SNK_APDO) {
@@ -4968,7 +4980,7 @@ int psy_charger_set_property(struct power_supply *psy,
 		pr_info("%s: adaptive charging disable ibat %d\n", __func__,
 			info->mmi.adaptive_charging_disable_ibat);
 		break;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
 		info->chg_data[idx].cp_ichg_limit = val->intval;
 		break;
@@ -5347,7 +5359,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->chg_data[i].input_current_limit_by_aicl = -1;
 		info->chg_data[i].moto_chg_tcmd_ichg = -1;
 		info->chg_data[i].moto_chg_tcmd_ibat = -1;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_SGM415XX)
 		info->chg_data[i].cp_ichg_limit= -1;
 #endif
 	}

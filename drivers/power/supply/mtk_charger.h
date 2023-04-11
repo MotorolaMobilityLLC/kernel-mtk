@@ -263,7 +263,7 @@ struct charger_data {
 	int junction_temp_max;
 	int moto_chg_tcmd_ichg;
 	int moto_chg_tcmd_ibat;
-#ifdef CONFIG_MOTO_CHARGER_SGM415XX
+#if defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT) || defined(CONFIG_MOTO_CHARGER_SGM415XX)
 	int cp_ichg_limit;
 #endif
 };
