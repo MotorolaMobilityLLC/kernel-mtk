@@ -348,36 +348,48 @@ static int csot_enable(struct drm_panel *panel)
 static const struct drm_display_mode default_mode = {
 	.clock = 360586,
 	.hdisplay = FRAME_WIDTH,
-	.hsync_start = FRAME_WIDTH + MODE_0_HFP,
-	.hsync_end = FRAME_WIDTH + MODE_0_HFP + HSA,
-	.htotal = FRAME_WIDTH + MODE_0_HFP + HSA + HBP,
+	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_60_HFP + HSA + HBP,
 	.vdisplay = FRAME_HEIGHT,
-	.vsync_start = FRAME_HEIGHT + MODE_0_VFP,
-	.vsync_end = FRAME_HEIGHT + MODE_0_VFP + VSA,
-	.vtotal = FRAME_HEIGHT + MODE_0_VFP + VSA + VBP,
+	.vsync_start = FRAME_HEIGHT + MODE_60_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_60_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
 };
-static const struct drm_display_mode performance_mode_1 = {
+static const struct drm_display_mode performance_mode_30hz = {
 	.clock = 360586,
 	.hdisplay = FRAME_WIDTH,
-	.hsync_start = FRAME_WIDTH + MODE_1_HFP,
-	.hsync_end = FRAME_WIDTH + MODE_1_HFP + HSA,
-	.htotal = FRAME_WIDTH + MODE_1_HFP + HSA + HBP,
+	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_30_HFP + HSA + HBP,
 	.vdisplay = FRAME_HEIGHT,
-	.vsync_start = FRAME_HEIGHT + MODE_1_VFP,
-	.vsync_end = FRAME_HEIGHT + MODE_1_VFP + VSA,
-	.vtotal = FRAME_HEIGHT + MODE_1_VFP + VSA + VBP,
+	.vsync_start = FRAME_HEIGHT + MODE_30_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_30_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_30_VFP + VSA + VBP,
 };
 
-static const struct drm_display_mode performance_mode_2 = {
+static const struct drm_display_mode performance_mode_90hz = {
 	.clock = 360586,
 	.hdisplay = FRAME_WIDTH,
-	.hsync_start = FRAME_WIDTH + MODE_2_HFP,
-	.hsync_end = FRAME_WIDTH + MODE_2_HFP + HSA,
-	.htotal = FRAME_WIDTH + MODE_2_HFP + HSA + HBP,
+	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_90_HFP + HSA + HBP,
 	.vdisplay = FRAME_HEIGHT,
-	.vsync_start = FRAME_HEIGHT + MODE_2_VFP,
-	.vsync_end = FRAME_HEIGHT + MODE_2_VFP + VSA,
-	.vtotal = FRAME_HEIGHT + MODE_2_VFP + VSA + VBP,
+	.vsync_start = FRAME_HEIGHT + MODE_90_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_90_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_90_VFP + VSA + VBP,
+};
+
+static const struct drm_display_mode performance_mode_120hz = {
+	.clock		= 360586,
+	.hdisplay = FRAME_WIDTH,
+	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
+	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
+	.htotal = FRAME_WIDTH + MODE_120_HFP + HSA + HBP,
+	.vdisplay = FRAME_HEIGHT,
+	.vsync_start = FRAME_HEIGHT + MODE_120_VFP,
+	.vsync_end = FRAME_HEIGHT + MODE_120_VFP + VSA,
+	.vtotal = FRAME_HEIGHT + MODE_120_VFP + VSA + VBP,
 };
 
 #if defined(CONFIG_MTK_PANEL_EXT)
@@ -392,6 +404,7 @@ static struct mtk_panel_params ext_params = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -434,7 +447,7 @@ static struct mtk_panel_params ext_params = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = 1,
+	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
@@ -446,7 +459,7 @@ static struct mtk_panel_params ext_params = {
 
 };
 
-static struct mtk_panel_params ext_params_mode_1 = {
+static struct mtk_panel_params ext_params_mode_30 = {
 //	.vfp_low_power = 1302,//60hz
 	.data_rate = 1042,
 	.cust_esd_check = 0,
@@ -456,6 +469,7 @@ static struct mtk_panel_params ext_params_mode_1 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -498,8 +512,7 @@ static struct mtk_panel_params ext_params_mode_1 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = 1,
-	.lfr_minimum_fps = 60,
+
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
 	.panel_ver = 1,
@@ -509,7 +522,7 @@ static struct mtk_panel_params ext_params_mode_1 = {
 	.lcm_index = 1,
 };
 
-static struct mtk_panel_params ext_params_mode_2 = {
+static struct mtk_panel_params ext_params_mode_90 = {
 //	.vfp_low_power = 2558,//60hz
 	.data_rate = 1042,
 	.cust_esd_check = 0,
@@ -519,6 +532,7 @@ static struct mtk_panel_params ext_params_mode_2 = {
 		.count = 1,
 		.para_list[0] = 0x9c,
 	},
+	.ssc_enable = 1,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
@@ -561,7 +575,7 @@ static struct mtk_panel_params ext_params_mode_2 = {
 		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
 		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
 	},
-	.lfr_enable = 1,
+	.lfr_enable = LFR_EN,
 	.lfr_minimum_fps = 60,
 	.max_bl_level = 2047,
 	.hbm_type = HBM_MODE_DCS_I2C,
@@ -571,6 +585,72 @@ static struct mtk_panel_params ext_params_mode_2 = {
 	.panel_supplier = "csot",
 	.lcm_index = 1,
 };
+
+static struct mtk_panel_params ext_params_mode_120 = {
+//	.vfp_low_power = 1302,//60hz
+	.data_rate = 1042,
+	.cust_esd_check = 0,
+	.esd_check_enable = 0,
+	.lcm_esd_check_table[0] = {
+		.cmd = 0x0a,
+		.count = 1,
+		.para_list[0] = 0x9c,
+	},
+	.ssc_enable = 1,
+	.lane_swap_en = 0,
+	.lp_perline_en = 0,
+	.physical_width_um = PHYSICAL_WIDTH,
+	.physical_height_um = PHYSICAL_HEIGHT,
+	.lcm_index = 2,
+
+	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
+	.dsc_params = {
+		.enable                =  DSC_ENABLE,
+		.ver                   =  DSC_VER,
+		.slice_mode            =  DSC_SLICE_MODE,
+		.rgb_swap              =  DSC_RGB_SWAP,
+		.dsc_cfg               =  DSC_DSC_CFG,
+		.rct_on                =  DSC_RCT_ON,
+		.bit_per_channel       =  DSC_BIT_PER_CHANNEL,
+		.dsc_line_buf_depth    =  DSC_DSC_LINE_BUF_DEPTH,
+		.bp_enable             =  DSC_BP_ENABLE,
+		.bit_per_pixel         =  DSC_BIT_PER_PIXEL,
+		.pic_height            =  FRAME_HEIGHT,
+		.pic_width             =  FRAME_WIDTH,
+		.slice_height          =  DSC_SLICE_HEIGHT,
+		.slice_width           =  DSC_SLICE_WIDTH,
+		.chunk_size            =  DSC_CHUNK_SIZE,
+		.xmit_delay            =  DSC_XMIT_DELAY,
+		.dec_delay             =  DSC_DEC_DELAY,
+		.scale_value           =  DSC_SCALE_VALUE,
+		.increment_interval    =  DSC_INCREMENT_INTERVAL,
+		.decrement_interval    =  DSC_DECREMENT_INTERVAL,
+		.line_bpg_offset       =  DSC_LINE_BPG_OFFSET,
+		.nfl_bpg_offset        =  DSC_NFL_BPG_OFFSET,
+		.slice_bpg_offset      =  DSC_SLICE_BPG_OFFSET,
+		.initial_offset        =  DSC_INITIAL_OFFSET,
+		.final_offset          =  DSC_FINAL_OFFSET,
+		.flatness_minqp        =  DSC_FLATNESS_MINQP,
+		.flatness_maxqp        =  DSC_FLATNESS_MAXQP,
+		.rc_model_size         =  DSC_RC_MODEL_SIZE,
+		.rc_edge_factor        =  DSC_RC_EDGE_FACTOR,
+		.rc_quant_incr_limit0  =  DSC_RC_QUANT_INCR_LIMIT0,
+		.rc_quant_incr_limit1  =  DSC_RC_QUANT_INCR_LIMIT1,
+		.rc_tgt_offset_hi      =  DSC_RC_TGT_OFFSET_HI,
+		.rc_tgt_offset_lo      =  DSC_RC_TGT_OFFSET_LO,
+	},
+	.lfr_enable = LFR_EN,
+	.lfr_minimum_fps = 60,
+	.max_bl_level = 2047,
+	.hbm_type = HBM_MODE_DCS_I2C,
+	.panel_ver = 1,
+	.panel_id = 0x08022652,
+	.panel_name = "csot_ft8726_vid_649_1080_120hz",
+	.panel_supplier = "csot",
+	.lcm_index = 1,
+};
+
+
 /*
 static int csot_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
@@ -612,12 +692,14 @@ static int mtk_panel_ext_param_set(struct drm_panel *panel,
 	if (!m)
 		return ret;
 
-	if (drm_mode_vrefresh(m) == MODE_0_FPS)
+	if (drm_mode_vrefresh(m) == MODE_60_FPS)
 		ext->params = &ext_params;
-	else if (drm_mode_vrefresh(m) == MODE_1_FPS)
-		ext->params = &ext_params_mode_1;
-	else if (drm_mode_vrefresh(m) == MODE_2_FPS)
-		ext->params = &ext_params_mode_2;
+	else if (drm_mode_vrefresh(m) == MODE_30_FPS)
+		ext->params = &ext_params_mode_30;
+	else if (drm_mode_vrefresh(m) == MODE_90_FPS)
+		ext->params = &ext_params_mode_90;
+	else if (drm_mode_vrefresh(m) == MODE_120_FPS)
+		ext->params = &ext_params_mode_120;
 	else
 		ret = 1;
 	return ret;
@@ -761,6 +843,7 @@ static int csot_get_modes(struct drm_panel *panel,
 	struct drm_display_mode *mode;
 	struct drm_display_mode *mode_1;
 	struct drm_display_mode *mode_2;
+	struct drm_display_mode *mode_3;
 
 	mode = drm_mode_duplicate(connector->dev, &default_mode);
 	if (!mode) {
@@ -773,12 +856,12 @@ static int csot_get_modes(struct drm_panel *panel,
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 	drm_mode_probed_add(connector, mode);
 
-	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_1);
+	mode_1 = drm_mode_duplicate(connector->dev, &performance_mode_30hz);
 	if (!mode_1) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			performance_mode_1.hdisplay,
-			performance_mode_1.vdisplay,
-			drm_mode_vrefresh(&performance_mode_1));
+			performance_mode_30hz.hdisplay,
+			performance_mode_30hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_30hz));
 		return -ENOMEM;
 	}
 	drm_mode_set_name(mode_1);
@@ -786,17 +869,29 @@ static int csot_get_modes(struct drm_panel *panel,
 	drm_mode_probed_add(connector, mode_1);
 
 
-	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_2);
+	mode_2 = drm_mode_duplicate(connector->dev, &performance_mode_90hz);
 	if (!mode_2) {
 		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
-			performance_mode_2.hdisplay,
-			performance_mode_2.vdisplay,
-			drm_mode_vrefresh(&performance_mode_2));
+			performance_mode_90hz.hdisplay,
+			performance_mode_90hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_90hz));
 		return -ENOMEM;
 	}
 	drm_mode_set_name(mode_2);
 	mode_2->type = DRM_MODE_TYPE_DRIVER;
 	drm_mode_probed_add(connector, mode_2);
+
+	mode_3 = drm_mode_duplicate(connector->dev, &performance_mode_120hz);
+	if (!mode_3) {
+		dev_err(connector->dev->dev, "failed to add mode %ux%ux@%u\n",
+			performance_mode_120hz.hdisplay,
+			performance_mode_120hz.vdisplay,
+			drm_mode_vrefresh(&performance_mode_120hz));
+		return -ENOMEM;
+	}
+	drm_mode_set_name(mode_3);
+	mode_3->type = DRM_MODE_TYPE_DRIVER;
+	drm_mode_probed_add(connector, mode_3);
 	connector->display_info.width_mm = 68;
 	connector->display_info.height_mm = 150;
 
