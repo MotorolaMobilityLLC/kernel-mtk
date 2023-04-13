@@ -60,7 +60,16 @@ static spinlock_t *g_pAF_SpinLock;
 static unsigned long g_u4CurrPosition = 512;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4AF_INF;
-
+struct aw86006_i2c_rw {
+	uint8_t rw;               //r:0, w:1
+	u16 addr;
+	u16 byte_addr;
+	uint8_t pdata[8];
+	u16 byte_data;
+};
+extern int gyro_offset_cali_run(void);
+extern int aw86006_ois_i2c_rw(struct aw86006_i2c_rw *param);
+extern int aw86006_set_ois_mode(uint8_t flag);
 /*******************************************************************************
  * I2c read/write
  ******************************************************************************/
@@ -242,7 +251,23 @@ long MOT_CANCUNF_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 {
 	long ret = 0;
 
+	void *pBuff = NULL;
 	AW_LOGI("Start");
+
+	if (_IOC_DIR(a_u4Command) == _IOC_NONE)
+		return -EFAULT;
+
+	pBuff = kzalloc(_IOC_SIZE(a_u4Command), GFP_KERNEL);
+	if (pBuff == NULL)
+		return -ENOMEM;
+	memset(pBuff, 0, _IOC_SIZE(a_u4Command));
+
+	/*if (_IOC_WRITE & _IOC_DIR(a_u4Command)) {
+		 ret = copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
+		//kfree(pBuff);
+		AW_LOGI("ioctl copy from user failed or no need, %d, %d", (_IOC_WRITE & _IOC_DIR(a_u4Command)), ret);
+		//return -EFAULT;
+	}*/
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
@@ -258,6 +283,20 @@ long MOT_CANCUNF_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 	case AFIOC_T_SETINFPOS:
 		ret = AW86006AF_SetInf(a_u4Param);
 		break;
+	case OISIOC_G_GYRO_OFFSET_CALI:
+		ret = gyro_offset_cali_run();
+		break;
+	case OISIOC_G_HEA:
+		copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
+		ret = aw86006_ois_i2c_rw((struct aw86006_i2c_rw *)pBuff);
+		if (copy_to_user((struct aw86006_i2c_rw  __user *) a_u4Param, (struct aw86006_i2c_rw *)pBuff, _IOC_SIZE(a_u4Command))) {
+			AW_LOGI("failed to copy i2c data");
+		}
+		break;
+	case OISIOC_T_OISMODE:
+		copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
+		ret = aw86006_set_ois_mode( *((uint8_t *)pBuff));
+		break;
 	default:
 		AW_LOGE("NO CMD!\n");
 		ret = -EPERM;
@@ -266,6 +305,7 @@ long MOT_CANCUNF_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 
 	AW_LOGI("End");
 
+	kfree(pBuff);
 	return ret;
 }
 
