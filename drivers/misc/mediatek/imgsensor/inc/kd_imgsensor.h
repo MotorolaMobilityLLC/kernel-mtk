@@ -397,6 +397,17 @@
 #define SENSOR_DRVNAME_MOT_DEVONF_S5K4H7_MIPI_RAW          "mot_devonf_s5k4h7_mipi_raw"
 //end
 
+//Begin: Add sensor id for CANCUNF
+#define MOT_CANCUNF_OV50D_SENSOR_ID              0x565044
+#define SENSOR_DRVNAME_MOT_CANCUNF_OV50D_MIPI_RAW           "mot_cancunf_ov50d_mipi_raw"
+#define MOT_CANCUNF_HI1634Q_SENSOR_ID            0x1634
+#define SENSOR_DRVNAME_MOT_CANCUNF_HI1634Q_MIPI_RAW         "mot_cancunf_hi1634q_mipi_raw"
+#define MOT_CANCUNF_S5K4H7_SENSOR_ID             0x487b
+#define SENSOR_DRVNAME_MOT_CANCUNF_S5K4H7_MIPI_RAW          "mot_cancunf_s5k4h7_mipi_raw"
+#define MOT_CANCUNF_SC202_SENSOR_ID             0xeb52
+#define SENSOR_DRVNAME_MOT_CANCUNF_SC202_MIPI_RAW             "mot_cancunf_sc202_mipi_raw"
+//end
+
 //Begin: Add sensor id for Vicky
 #define MOT_VICKY_S5KHM6_SENSOR_ID            0x1AD6
 #define MOT_VICKY_S5KGM1_SENSOR_ID            0x08D1

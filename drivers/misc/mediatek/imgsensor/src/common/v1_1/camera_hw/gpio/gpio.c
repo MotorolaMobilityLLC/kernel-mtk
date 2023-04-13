@@ -17,7 +17,7 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 	{"ldo_vcama_0"},
 	{"ldo_vcama1_1"},
 	{"ldo_vcama1_0"},
-#if defined(CONFIG_MOT_DEVONN_CAMERA_PROJECT) || defined(CONFIG_MOT_DEVONF_CAMERA_PROJECT)
+#if defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT)  || defined(CONFIG_MOT_DEVONN_CAMERA_PROJECT) || defined(CONFIG_MOT_DEVONF_CAMERA_PROJECT)
 	{"ldo_vcamaf_1"},
 	{"ldo_vcamaf_0"},
 #endif
