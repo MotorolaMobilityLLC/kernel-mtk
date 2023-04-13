@@ -32,6 +32,7 @@
 #define AW86006_DRIVER_VERSION		"v0.4.0"
 #define AW86006_FW_NAME			"aw86006.prog"
 
+static bool centoron = false;
 const char fw_check_str[] = { 'A', 'W', 'I', 'N', 'I', 'C', 0, 0 };
 struct cam_ois_ctrl_t *g_o_ctrl;
 static struct class *ois_debug_class;
@@ -250,7 +251,7 @@ static int aw86006_soc_connect_check(struct cam_ois_ctrl_t *o_ctrl)
 	uint8_t w_buf[14] = { 0 };
 	uint8_t r_buf[14] = { 0 };
 	uint8_t cmp_buf[5] = {0x00, 0x01, 0x00, 0x00, 0x00};
-       int i;
+
 	soc_struct.module = SOC_HANK;
 
 	soc_struct.event = SOC_HANK_CONNECT;
@@ -285,12 +286,6 @@ static int aw86006_soc_connect_check(struct cam_ois_ctrl_t *o_ctrl)
 	memset(w_buf, 0, sizeof(w_buf));
 	aw86006_soc_buf_build(o_ctrl, w_buf, &soc_struct);
 
-       for(i = 0; i < 14; i ++ ) {
-        pr_err("aw86006 w_buffer: %x, ", w_buf[i]);
-       }
-       for(i = 0; i < 14; i ++ ) {
-        pr_err("aw86006 r_buffer: %x, ", r_buf[i]);
-       }
 	ret = memcmp(w_buf, r_buf, sizeof(r_buf));
 	if (ret != 0) {
 		AW_LOGI("connect memcmp error!");
@@ -1158,6 +1153,12 @@ static int aw86006_firmware_update(struct cam_ois_ctrl_t *o_ctrl,
 	int i = 0;
 	uint8_t standby_flag = 0;
 
+	//get standby flag need set ois on
+	uint8_t data = 0x1;
+	ret = aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &data, AW_SIZE_BYTE_1);
+       if(ret < 0) {
+               AW_LOGE("i2c write failed");
+       }
 	AW_LOGI("enter");
 
 	/* fw check */
@@ -1930,6 +1931,154 @@ static int aw86006_set_normal_mode(struct cam_ois_ctrl_t *o_ctrl)
 	return OIS_SUCCESS;
 }
 
+int gyro_offset_cali_run(void)
+{
+	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
+	struct accelgyro_dift ag_dift = {0};
+	int i = 0;
+	int ret = OIS_ERROR;
+	uint8_t ois_mode = 0;
+	uint8_t unlock_val[2] = { 0xa4, 0xac };
+	uint8_t lock_val[2] = { 0xdc, 0xd4 };
+	uint8_t trigger_cmd[4] = { 0x01, 0x02, 0x01, 0x01 };
+	uint8_t exit_cmd[4] = { 0x00, 0x00, 0x00, 0x02 };
+	uint8_t check_val = 0;
+
+	AW_LOGI("start!");
+
+	/* check accelgyro_diff */
+	ret = aw86006_accelgyro_dift_raw_data_check(o_ctrl);
+	if (ret < 0) {
+		AW_LOGE("accelgyro_dift raw data error");
+		return OIS_ERROR;
+	}
+
+	/* OIS off */
+	ois_mode = OIS_DISABLE;
+	do {
+		aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2,
+						&ois_mode, AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2,
+						&check_val, AW_SIZE_BYTE_1);
+	} while ((check_val != 0x00) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x00) {
+		AW_LOGE("reg[0001]:0x%x != 0x00, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+
+	/* enter normal mode */
+	ret = aw86006_set_normal_mode(o_ctrl);
+	if (ret < 0)
+		return OIS_ERROR;
+
+	/* unlock register */
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf20f, AW_SIZE_BYTE_2,
+						&unlock_val[0], AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, 0xf20f, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+	} while ((check_val != 0x01) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x01) {
+		AW_LOGE("reg[f20f]:0x%x != 0x01, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+	/* unlock register */
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf8ff, AW_SIZE_BYTE_2,
+						&unlock_val[1], AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, 0xf8ff, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+	} while ((check_val != 0x01) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x01) {
+		AW_LOGE("reg[f8ff]:0x%x != 0x01, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+	/* Read the data in the flash into the register, trigger_cmd[0]: 0x01 */
+	aw86006_i2c_writes(o_ctrl, 0xf8e4, AW_SIZE_BYTE_2, &trigger_cmd[0],
+								AW_SIZE_BYTE_1);
+	msleep(5); /* delay 5ms at least */
+
+	/* Select the gyroscope zero drift calibration function, cmd[1]: 0x02 */
+	aw86006_i2c_writes(o_ctrl, 0xf200, AW_SIZE_BYTE_2, &trigger_cmd[1],
+								AW_SIZE_BYTE_1);
+
+	/* Enter mass production test mode, trigger_cmd[2]: 0x01 */
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf203, AW_SIZE_BYTE_2,
+					&trigger_cmd[2], AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, 0xf203, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+	} while ((check_val != 0x01) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x01) {
+		AW_LOGE("reg[f203]:0x%x != 0x01, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+	/* Trigger zero drift calibration of gyroscope, trigger_cmd[3]:0x01 */
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf202, AW_SIZE_BYTE_2,
+					&trigger_cmd[3], AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, 0xf201, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+	} while ((check_val != 0x11) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x11) {
+		AW_LOGE("reg[f201]:0x%x != 0x11, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+	msleep(1000); /* delay 1s at least */
+
+	/* Check if the calibration is complete */
+	i = 0;
+	do {
+		aw86006_i2c_reads(o_ctrl, 0xf201, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+		msleep(5);
+	} while ((check_val != 0x21) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x21) {
+		AW_LOGE("reg[f201]:0x%x != 0x21, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+	/* Exit calibration mode */
+	aw86006_i2c_writes(o_ctrl, 0xf200, AW_SIZE_BYTE_2, &exit_cmd[0],
+								AW_SIZE_BYTE_1);
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf203, AW_SIZE_BYTE_2, &exit_cmd[2],
+								AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, 0xf203, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+	} while ((check_val != 0x00) && (i++ < AW_ERROR_LOOP));
+	if (check_val != 0x00) {
+		AW_LOGE("reg[f203]:0x%x != 0, i: %d", check_val, i);
+		return OIS_ERROR;
+	}
+
+	/* Data update to flash, exit_cmd[3]: 0x02 */
+	aw86006_i2c_writes(o_ctrl, 0xf8e4, AW_SIZE_BYTE_2, &exit_cmd[3],
+								AW_SIZE_BYTE_1);
+	msleep(20 * 2); /* 2: two sector */
+	/* Lock register */
+	aw86006_i2c_writes(o_ctrl, 0xf8ff, AW_SIZE_BYTE_2, &lock_val[0],
+								AW_SIZE_BYTE_1);
+	aw86006_i2c_writes(o_ctrl, 0xf20f, AW_SIZE_BYTE_2, &lock_val[1],
+								AW_SIZE_BYTE_1);
+
+	/* Read the zero drift value of the three-axis angular velocity and
+	 * acceleration of the gyroscope
+	 */
+	ret = aw86006_get_accelgyro_dift(o_ctrl, ag_dift);
+	if (ret < 0) {
+		//*result = OIS_ERROR;
+		AW_LOGE("aw86006 gyro offset cali error!");
+		return OIS_ERROR;
+	} else {
+		AW_LOGI("aw86006 gyro offset cali ok! ,ret = %d", ret);
+	}
+	return OIS_SUCCESS;
+}
 static ssize_t gyro_offset_cali_show(struct class *class,
 					struct class_attribute *attr, char *buf)
 {
@@ -2101,11 +2250,12 @@ static ssize_t gyro_offset_cali_store(struct class *class,
 	 * acceleration of the gyroscope
 	 */
 	ret = aw86006_get_accelgyro_dift(o_ctrl, ag_dift);
-	if (ret < 0)
+	if (ret < 0) {
 		AW_LOGE("aw86006 gyro offset cali error!");
-	else
+		return 0;
+	} else {
 		AW_LOGI("aw86006 gyro offset cali ok!");
-
+	}
 	return count;
 }
 
@@ -2317,47 +2467,85 @@ static int aw86006_get_chip_info(__user struct aw86006_chipinfo *param)
 	return 0;
 }
 
-static int aw86006_set_ois_mode(uint8_t flag)
+int aw86006_set_ois_mode(uint8_t flag)
 {
 	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
 	int ret = OIS_ERROR;
 	int loop = 0;
 	uint8_t temp = 0;
+	uint8_t data[1] = {0x0};
 
 	AW_LOGI("enter");
 
-	/* enable OIS mode */
-	do {
-		AW_LOGD("set ois status: %d", flag);
-		ret = aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2,
-							&flag, AW_SIZE_BYTE_1);
-		if (ret < 0) {
-			AW_LOGE("Send OIS mode error");
-			return ret;
-		}
-		/* 1000 us */
+	if(flag == 0) {
+		centoron = true;
+		data[0] = 0;
+		ret = aw86006_i2c_writes(o_ctrl, 0x0001, 2, data, 1);
 		usleep_range(1000, 1500);
-		/* check OIS enable status */
-		ret = aw86006_i2c_reads(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2,
-							&temp, AW_SIZE_BYTE_1);
-		if (ret < 0) {
-			AW_LOGE("Read OIS mode error");
-			return ret;
-		}
-		AW_LOGD("OIS enable value: 0x%02x", temp);
 
-		if (temp == flag) {
-			AW_LOGD("Set OIS mode OK!");
-			break;
+		data[0] = 0xa6;
+		ret = aw86006_i2c_writes(o_ctrl, 0xF31F, 2, data, 1);
+		usleep_range(1000, 1500);
+
+		data[0] = 0x04;
+		//data[0] = 0x00;
+		ret = aw86006_i2c_writes(o_ctrl, 0xF300, 2, data, 1);
+		usleep_range(1000, 1500);
+
+		data[0] = 0X01;
+		ret = aw86006_i2c_writes(o_ctrl, 0x0001, 2, data, 1);
+		usleep_range(1000, 1500);
+		AW_LOGI("set ois centor on mode ret :%d", ret);
+	}  else {
+		if(centoron) {
+			centoron = false;
+			data[0] = 0;
+			ret = aw86006_i2c_writes(o_ctrl, 0x0001, 2, data, 1);
+			usleep_range(1000, 1500);
+
+			data[0] = 0xa6;
+			ret = aw86006_i2c_writes(o_ctrl, 0xF31F, 2, data, 1);
+			usleep_range(1000, 1500);
+
+			data[0] = 0x00;
+			ret = aw86006_i2c_writes(o_ctrl, 0xF300, 2, data, 1);
+			usleep_range(1000, 1500);
+			AW_LOGI("set ois centor off and switch to ois on, ret :%d", ret);
+
 		}
-	} while ((++loop) < AW_ERROR_LOOP);
+		/* enable OIS mode */
+		do {
+			AW_LOGI("set ois status: %d", flag);
+			ret = aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2,
+								&flag, AW_SIZE_BYTE_1);
+			if (ret < 0) {
+				AW_LOGE("Send OIS mode error");
+				return ret;
+			}
+			/* 1000 us */
+			usleep_range(1000, 1500);
+			/* check OIS enable status */
+			ret = aw86006_i2c_reads(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2,
+								&temp, AW_SIZE_BYTE_1);
+			if (ret < 0) {
+				AW_LOGE("Read OIS mode error");
+				return ret;
+			}
+			AW_LOGD("OIS enable value: 0x%02x", temp);
+
+			if (temp == flag) {
+				AW_LOGD("Set OIS mode OK!");
+				break;
+			}
+		} while ((++loop) < AW_ERROR_LOOP);
+	}
 	if (loop >= AW_ERROR_LOOP)
 		return OIS_ERROR;
 
 	return 0;
 }
 
-static int aw86006_ois_update(uint32_t param)
+int aw86006_ois_update(uint32_t param)
 {
 	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
 
@@ -2365,17 +2553,82 @@ static int aw86006_ois_update(uint32_t param)
 
 	/* fw update */
 	schedule_work(&o_ctrl->aw_fw_update_work);
-
 	return 0;
 }
+//EXPORT_SYMBOL(aw86006_ois_update);
 
-static long aw86006_unlocked_ioctl(struct file *file, unsigned int cmd,
-							unsigned long arg)
+int aw86006_update_fw_sync(void)
 {
+	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
+
+	const struct firmware *fw = NULL;
+	int loop = 0;
 	int ret = OIS_ERROR;
 
 	AW_LOGI("enter");
 
+	/* load firmware */
+	do {
+		ret = request_firmware(&fw, AW86006_FW_NAME, o_ctrl->dev);
+		if (ret == 0)
+			break;
+	} while ((++loop) < AW_ERROR_LOOP);
+	if (loop >= AW_ERROR_LOOP) {
+		AW_LOGE("request_firmware [%s] failed!", AW86006_FW_NAME);
+		return 0;
+	}
+	mutex_lock(&o_ctrl->aw_ois_mutex);
+	aw86006_firmware_update(o_ctrl, fw);
+	mutex_unlock(&o_ctrl->aw_ois_mutex);
+
+	AW_LOGI("End");
+	return 0;
+}
+EXPORT_SYMBOL(aw86006_update_fw_sync);
+int aw86006_ois_i2c_rw(struct aw86006_i2c_rw *param)
+{
+	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
+	int ret;
+	AW_LOGI("Start");
+	if(param != NULL) {
+		AW_LOGI(" i2c read write %d, addr:%x, addr_n: %d, data: %p, data_n:%d", param->rw, param->addr, param->byte_addr, param->pdata, param->byte_data);
+	} else {
+		AW_LOGE("aw86006ois param is null");
+	}
+	if(param->rw == 0)   // i2c read
+	{
+		aw86006_i2c_reads(o_ctrl, param->addr, param->byte_addr, param->pdata, param->byte_data);
+		AW_LOGI("i2c read value:%x", *(param->pdata));
+	} else {      //i2c write
+		ret = aw86006_i2c_writes(o_ctrl, param->addr, param->byte_addr, param->pdata, param->byte_data);
+		AW_LOGI("aw86006ois write result ret:%d", ret);
+	}
+	return 0;
+}
+static long aw86006_unlocked_ioctl(struct file *file, unsigned int cmd,
+							unsigned long arg)
+{
+	int ret = OIS_ERROR;
+       void *pBuff = NULL;
+	AW_LOGI("enter");
+
+	if (_IOC_DIR(cmd) == _IOC_NONE)
+		return -EFAULT;
+
+	pBuff = kzalloc(_IOC_SIZE(cmd), GFP_KERNEL);
+	if (pBuff == NULL)
+		return -ENOMEM;
+	memset(pBuff, 0, _IOC_SIZE(cmd));
+
+	if ((_IOC_WRITE & _IOC_DIR(cmd)) &&
+	    copy_from_user(pBuff,
+			   (void *)arg,
+			   _IOC_SIZE(cmd))) {
+
+		kfree(pBuff);
+		AW_LOGE("ioctl copy from user failed\n");
+		return -EFAULT;
+	}
 	switch (cmd) {
 	case OISIOC_G_CHIPINFO:
 		ret = aw86006_get_chip_info(
@@ -2387,11 +2640,18 @@ static long aw86006_unlocked_ioctl(struct file *file, unsigned int cmd,
 	case OISIOC_T_UPDATE:
 		ret = aw86006_ois_update((uint32_t)arg);
 		break;
+	/*case OISIOC_G_HEA:
+		ret = aw86006_ois_i2c_rw((struct aw86006_i2c_rw *)pBuff);
+		if (copy_to_user((struct aw86006_i2c_rw  __user *) arg, (struct aw86006_i2c_rw *)pBuff, _IOC_SIZE(cmd))) {
+			AW_LOGI("failed to copy i2c data");
+		}
+		break;*/
 	default:
 		AW_LOGI("NO CMD!");
 		break;
 	}
 
+	kfree(pBuff);
 	return ret;
 }
 
