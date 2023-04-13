@@ -1070,9 +1070,7 @@ static void mt6375_wd_one_minute_dwork_handler(struct work_struct *work)
 
 	ret = tcpci_is_water_detected(ddata->tcpc);
 	MT6375_DBGINFO("ret = %d\n", ret);
-	if (ret <= 0)
-		return;
-	atomic_inc(&ddata->wd_one_min_cnt);
+	atomic_set(&ddata->wd_one_min_cnt, 2);
 	mt6375_update_bits_rt2(ddata, MT6375_REG_WDSET3,
 			       MT6375_MASK_WD_TDET | MT6375_MASK_WD_TSLEEP,
 			       MT6375_WD_SETTING2(MT6375_WD_TDET_40MS,
@@ -1360,7 +1358,7 @@ static int mt6375_enable_wd_protection(struct mt6375_tcpc_data *ddata, bool en)
 		}
 		if (atomic_read(&ddata->wd_one_min_cnt) == 0) {
 			mt6375_enable_wd_one_minute_timer(ddata, true);
-			atomic_inc(&ddata->wd_one_min_cnt);
+			atomic_set(&ddata->wd_one_min_cnt, 1);
 		}
 	} else {
 		cancel_delayed_work_sync(&ddata->wd_poll_dwork);
