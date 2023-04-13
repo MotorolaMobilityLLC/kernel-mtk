@@ -236,4 +236,11 @@ struct stAF_MotorI2CSendCmd {
 
 #define AFIOC_X_CTRLPARA _IOWR(AF_MAGIC, 18, struct stAF_CtrlCmd)
 
+#define OIS_MAGIC 'O'
+//#define OISIOC_G_CHIPINFO _IOWR(OIS_MAGIC, 0, struct aw86006_chipinfo)
+#define OISIOC_T_OISMODE _IOW(OIS_MAGIC, 1, u32)
+//#define OISIOC_T_UPDATE _IOW(OIS_MAGIC, 2, u32)
+#define OISIOC_G_HEA  _IOWR(OIS_MAGIC, 3, struct aw86006_i2c_rw)
+#define OISIOC_G_GYRO_OFFSET_CALI _IOR(OIS_MAGIC, 4, int)
+
 #endif

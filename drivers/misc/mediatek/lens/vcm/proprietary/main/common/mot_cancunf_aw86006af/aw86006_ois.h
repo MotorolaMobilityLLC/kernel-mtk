@@ -54,7 +54,7 @@
 #define AW_ERROR_LOOP			(5)
 #define AW_FLASH_WRITE_ERROR_LOOP	(2)
 #define AW_FLASH_READ_ERROR_LOOP	(2)
-#define AW_FLASH_ERASE_ERROR_LOOP	(2)
+#define AW_FLASH_ERASE_ERROR_LOOP	(5)
 #define AW_JUMP_BOOT_LOOP		(6)
 #define AW_JUMP_MOVE_LOOP		(6)
 
@@ -195,6 +195,14 @@ struct aw86006_chipinfo {
 	uint8_t chipid;
 };
 
+struct aw86006_i2c_rw {
+	uint8_t rw;               //r:0, w:1
+	u16 addr;
+	u16 byte_addr;
+	uint8_t pdata[8];
+	u16 byte_data;
+};
+
 struct soc_protocol {
 	uint8_t checksum;
 	uint8_t protocol_ver;
@@ -253,6 +261,7 @@ struct cam_ois_ctrl_t {
 #define OISIOC_G_CHIPINFO _IOWR(OIS_MAGIC, 0, struct aw86006_chipinfo)
 #define OISIOC_T_OISMODE _IOW(OIS_MAGIC, 1, u32)
 #define OISIOC_T_UPDATE _IOW(OIS_MAGIC, 2, u32)
+#define OISIOC_G_HEA  _IOWR(OIS_MAGIC, 3, struct aw86006_i2c_rw)
 
 #endif
 
