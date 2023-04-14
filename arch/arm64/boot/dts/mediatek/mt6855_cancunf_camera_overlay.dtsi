@@ -276,6 +276,43 @@
 	};
 	camera_pins_default: camdefault {
 	};
+	flashlight_gpio_high: flashlight@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_gpio_low: flashlight@1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO21__FUNC_GPIO21>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pwm_high: flashlight@2 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO24__FUNC_GPIO24>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pwm_low: flashlight@3 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO24__FUNC_GPIO24>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pwm_en: flashlight@4 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO24__FUNC_PWM_1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flash_default: flashlightdefault {
+	};
 };
 &kd_camera_hw1 {
 	pinctrl-names = "default",
@@ -412,7 +449,33 @@
 	};
 };
 /* CAMERA EEPROM end */
+/* CAMERA Flashlight */
+&flashlights_cancunf {
+	compatible = "mediatek,flashlights_cancunf_pwm";
+	pinctrl-names = "default",
+		"flashlight_gpio_high",
+		"flashlight_gpio_low",
+		"flashlight_pwm_high",
+		"flashlight_pwm_low",
+		"flashlight_pwm_en";
 
+	pinctrl-0 = <&flash_default>;
+	pinctrl-1 = <&flashlight_gpio_high>;
+	pinctrl-2 = <&flashlight_gpio_low>;
+	pinctrl-3 = <&flashlight_pwm_high>;
+	pinctrl-4 = <&flashlight_pwm_low>;
+	pinctrl-5 = <&flashlight_pwm_en>;
+        srcclk = <&pericfg_ao_clk>;
+
+	decouple = <1>;
+	channel@1 {
+                status = "okay";
+		type = <0>;
+		ct = <0>;
+		part = <0>;
+	};
+};
+/* CAMERA Flashlight end */
 /* CAMERA AF */
 &i2c2 {
 	camera_main_af_mtk:camera_main_af@72 {
