@@ -353,6 +353,9 @@
         compatible = "cps,wls-charger-cps4038";
         wireless-fw-name = "cps4038.bin";
         enable_stop_epp = <1>;
+        enable_rx_offset_detect = <1>;
+        /*stop rx offset detect battery soc*/
+        rod_stop_battery_soc = <90>;
         bootmode = <&chosen>;
         reg = <0x38>;
         cps_wls_int = <&pio 31 0x0>;
