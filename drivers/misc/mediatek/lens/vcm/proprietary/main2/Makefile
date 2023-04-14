@@ -20,6 +20,7 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/vcm/proprietary/main2/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/vcm/proprietary/main2/common/lc898212xdaf_f/inc
+#subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/vcm/proprietary/main2/common/mot_cancunf_dw9714af/MOT_CANCUNF_DW9714AF.c
 
 obj-$(CONFIG_MTK_LENS)    += main2af.o
 
@@ -37,3 +38,4 @@ main2af-y  += common/lc898217afc/LC898217AFC.o
 main2af-y  += common/dw9718taf/DW9718TAF.o
 main2af-y  += common/gt9772af/GT9772AF.o
 main2af-y  += common/mot_devonf_dw9714af/MOT_DEVONF_DW9714AF.o
+main2af-y  += common/mot_cancunf_dw9714af/MOT_CANCUNF_DW9714AF.o

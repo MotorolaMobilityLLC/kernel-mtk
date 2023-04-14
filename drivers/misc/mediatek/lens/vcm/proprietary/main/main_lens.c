@@ -100,6 +100,9 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 #elif defined(CONFIG_MOT_DEVONF_CAMERA_PROJECT)
 	{1, MOT_DEVONF_AFDRV_GT9764, MOT_DEVONF_GT9764_SetI2CClient, MOT_DEVONF_GT9764_Ioctl,
 	MOT_DEVONF_GT9764_Release, MOT_DEVONF_GT9764_GetFileName, NULL},
+#elif defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT)
+	{1, MOT_CANCUNF_AFDRV_AW86006, MOT_CANCUNF_AW86006_SetI2Cclient, MOT_CANCUNF_AW86006_Ioctl,
+	MOT_CANCUNF_AW86006_Release, MOT_CANCUNF_AW86006_GetFileName, NULL},
 #else
 //Begin: Add lens driver for Vicky
 	{1, MOT_VICKY_AFDRV_GT9764, MOT_VICKY_GT9764_SetI2CClient, MOT_VICKY_GT9764_Ioctl,
@@ -713,6 +716,7 @@ static int AF_i2c_probe(struct i2c_client *client,
 
 		return i4RetValue;
 	}
+        aw86006_ois_init(g_pstAF_I2Cclient);
 
 	spin_lock_init(&g_AF_SpinLock);
 

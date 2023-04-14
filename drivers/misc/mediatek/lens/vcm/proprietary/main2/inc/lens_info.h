@@ -57,6 +57,9 @@
 //Begin: Add lens driver name for Devonf
 #define MOT_DEVONF_AFDRV_DW9714 "MOT_DEVONF_DW9714AF"
 //End
+//Begin: Add lens driver name for Cancunf
+#define MOT_CANCUNF_AFDRV_DW9714 "MOT_CANCUNF_DW9714AF"
+//End
 
 
 /* Structures */
