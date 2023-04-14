@@ -57,10 +57,8 @@ extern mot_calibration_status_t *CANCUNF_OV50D_eeprom_get_calibration_status(voi
 extern mot_calibration_mnf_t *CANCUNF_OV50D_eeprom_get_mnf_info(void);
 extern void CANCUNF_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgsensor);
 
-extern void write_cross_talk_data(void);
 extern void write_pdc_data(void);
 
-extern int xtalk_data_valid;
 extern int pdc_data_valid;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -287,7 +285,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 		(u8 *)&get_byte,
 		1,
 		imgsensor.i2c_write_id,
-		IMGSENSOR_I2C_SPEED);
+		imgsensor_info.i2c_speed);
 	return get_byte;
 }
 
@@ -302,7 +300,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 		3,
 		3,
 		imgsensor.i2c_write_id,
-		IMGSENSOR_I2C_SPEED);
+		imgsensor_info.i2c_speed);
 }
 /*
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
@@ -643,11 +641,13 @@ kal_uint16 mot_cancunf_ov50d_table_write_cmos_sensor(kal_uint16 *para, kal_uint3
 static void sensor_init(void)
 {
 	pr_debug("MOT CANCUNF OV50D init start\n");
-	if ((xtalk_data_valid == 1) && (pdc_data_valid == 1)) {
+	/*
+	if (pdc_data_valid == 1) {
 		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_with_cal_mot_cancunf_ov50d,
 			sizeof(addr_data_pair_init_with_cal_mot_cancunf_ov50d)/sizeof(kal_uint16));
 	}
-	else {
+	else */
+	{
 		mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_init_mot_cancunf_ov50d,
 			sizeof(addr_data_pair_init_mot_cancunf_ov50d)/sizeof(kal_uint16));
 	}
@@ -705,12 +705,6 @@ static void slim_video_setting(void)
 		sizeof(addr_data_pair_preview_mot_cancunf_ov50d)/sizeof(kal_uint16));
 
 	pr_debug("MOT CANCUNF OV50D slim_video_setting end\n");
-}
-
-static void write_cross_talk_with_eeprom(void)
-{
-	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_xtalk_with_eeprom,
-		sizeof(addr_data_pair_xtalk_with_eeprom)/sizeof(kal_uint16));
 }
 
 static void custom1_setting(void)
@@ -1017,12 +1011,11 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *
 	imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-
-	if ((xtalk_data_valid == 1) && (pdc_data_valid == 1)) {
-		write_cross_talk_data();
-		write_cross_talk_with_eeprom();
+    /*
+	if (pdc_data_valid == 1) {
 		write_pdc_data();
 	}
+	*/
 	custom1_setting();
 	return ERROR_NONE;
 }
