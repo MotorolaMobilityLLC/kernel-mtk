@@ -21,6 +21,9 @@ char * const imgsensor_hw_pin_names[] = {
 	"vcama1",
 	"vcamaf",
 	"vcamd",
+#if defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT)
+	"vcamd1",
+#endif
 	"vcamio",
 	"mipi_switch_en",
 	"mipi_switch_sel",
