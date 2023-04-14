@@ -369,6 +369,7 @@ void kbase_remove_va_region(struct kbase_device *kbdev,
 	struct rb_node *rbnext;
 	struct kbase_va_region *next = NULL;
 	struct rb_root *reg_rbtree = NULL;
+	struct kbase_va_region *orig_reg = reg;
 
 	int merged_front = 0;
 	int merged_back = 0;
@@ -465,6 +466,12 @@ void kbase_remove_va_region(struct kbase_device *kbdev,
 		}
 		rb_replace_node(&(reg->rblink), &(free_reg->rblink), reg_rbtree);
 	}
+
+	/* This operation is always safe because the function never frees
+	 * the region. If the region has been merged to both front and back,
+	 * then it's the previous region that is supposed to be freed.
+	 */
+	orig_reg->start_pfn = 0;
 
 out:
 	return;
