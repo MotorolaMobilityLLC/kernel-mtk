@@ -657,6 +657,7 @@ static int transceiver_config(struct hf_device *hf_dev,
 			mutex_unlock(&dev->config_lock);
 			return -ENOMEM;
 		}
+		cfg->length = length;
 		dev->state[sensor_type].config = cfg;
 	} else {
 #if 0
@@ -670,7 +671,16 @@ static int transceiver_config(struct hf_device *hf_dev,
 	}
 
 	if (copy_config) {
-		cfg->length = length;
+		if (cfg->length != length) {
+			kfree(cfg);
+			cfg = kzalloc(sizeof(*cfg) + length, GFP_KERNEL);
+			if (!cfg) {
+				mutex_unlock(&dev->config_lock);
+				return -ENOMEM;
+			}
+			dev->state[sensor_type].config = cfg;
+			cfg->length = length;
+		}
 		memcpy(cfg->data, data, length);
 	}
 	mutex_unlock(&dev->config_lock);
