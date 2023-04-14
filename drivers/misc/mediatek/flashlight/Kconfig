@@ -188,6 +188,18 @@ config MTK_FLASHLIGHT_DEVONF
 
 	  Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_CANCUNF
+	tristate "Mediatek flashlight cancunf pwm driver"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+	  This is flashlight cancunf pwm driver for camera.
+
+	  Say Y here if you want a cancun driver IC with GPIO interface.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_DEBUG
 	bool "Mediatek flashlight debugging messages"
 	depends on MTK_FLASHLIGHT
