@@ -86,6 +86,20 @@
 			output-high;
 		};
 	};
+	camera_pins_cam0_vcamd1_0: cam0@vcam6 {
+		pins_cmd_dat {
+		pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_vcamd1_1: cam0@vcam7 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_cam1_vcamd_0: cam1@vcam0 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
@@ -337,7 +351,8 @@
 			"cam1_mclk_6mA", "cam1_mclk_8mA",
 			"cam2_mclk_off",
 			"cam2_mclk_2mA", "cam2_mclk_4mA",
-			"cam2_mclk_6mA", "cam2_mclk_8mA";
+			"cam2_mclk_6mA", "cam2_mclk_8mA",
+			"cam0_ldo_vcamd1_0", "cam0_ldo_vcamd1_1";
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
 	pinctrl-2 = <&camera_pins_cam0_rst_1>;
@@ -380,6 +395,8 @@
 	pinctrl-39 = <&camera_pins_cam2_mclk_4ma>;
 	pinctrl-40 = <&camera_pins_cam2_mclk_6ma>;
 	pinctrl-41 = <&camera_pins_cam2_mclk_8ma>;
+	pinctrl-42 = <&camera_pins_cam0_vcamd1_0>;
+	pinctrl-43 = <&camera_pins_cam0_vcamd1_1>;
 
 	cam0_vcamaf-supply = <&mt6369_vtp>;
 
@@ -389,6 +406,7 @@
 	cam0_pin_vcama = "gpio";
 	cam0_pin_vcamd = "gpio";
 	cam0_pin_vcamio = "gpio";
+	cam0_pin_vcamd1 = "gpio";
 	cam0_pin_vcamaf = "regulator";
 	cam1_pin_mclk = "mclk";
 	cam1_pin_rst = "gpio";
@@ -486,7 +504,7 @@
 
 };
 &i2c8 {
-	camera_main_two_af_mtk:camera_main_two_af@0c {
+	camera_main_two_af_mtk2:camera_main_two_af@0c {
 		compatible = "mediatek,camera_main_two_af";
 		reg = <0x0c>;
 		status = "okay";

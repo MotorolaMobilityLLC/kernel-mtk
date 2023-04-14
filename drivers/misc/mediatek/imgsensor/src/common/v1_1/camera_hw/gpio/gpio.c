@@ -23,6 +23,10 @@ struct GPIO_PINCTRL gpio_pinctrl_list_cam[
 #endif
 	{"ldo_vcamd_1"},
 	{"ldo_vcamd_0"},
+#if defined(CONFIG_MOT_CANCUNF_CAMERA_PROJECT)
+	{"ldo_vcamd1_1"},
+	{"ldo_vcamd1_0"},
+#endif
 	{"ldo_vcamio_1"},
 	{"ldo_vcamio_0"},
 };

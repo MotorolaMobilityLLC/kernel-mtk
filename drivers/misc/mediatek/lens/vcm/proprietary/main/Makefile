@@ -26,6 +26,7 @@ ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
 else
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/vcm/proprietary/main/common/bu63169af/inc
 endif
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/vcm/proprietary/main/common/mot_cancunf_aw86006af/MOT_CANCUNF_AW86006AF.c
 
 obj-$(CONFIG_MTK_LENS)    += mainaf.o
 
@@ -69,3 +70,5 @@ mainaf-y  += common/bu63169af/OIS_user.o
 mainaf-y  += common/bu64253gwzaf/BU64253GWZAF.o
 mainaf-y  += common/mot_vicky_gt9764af/MOT_VICKY_GT9764AF.o
 mainaf-y  += common/mot_devonf_gt9764af/MOT_DEVONF_GT9764AF.o
+mainaf-y  += common/mot_cancunf_aw86006af/AF/MOT_CANCUNF_AW86006AF.o
+mainaf-y  += common/mot_cancunf_aw86006af/aw86006_ois.o
