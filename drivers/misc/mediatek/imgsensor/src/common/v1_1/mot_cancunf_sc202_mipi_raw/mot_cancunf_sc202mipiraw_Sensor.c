@@ -36,7 +36,7 @@
 #define LOG_1 LOG_INF("SC202CS,MIPI 1LANE\n")
 #define LOG_2 LOG_INF("preview 1600*1200@30fps,864Mbps/lane; video 1600*1200@30fps,864Mbps/lane; capture 2M@30fps,864Mbps/lane\n")
 /****************************   Modify end    *******************************************/
-//extern void sc202_read_otp_data(mot_calibration_info_t * pOtpCalInfo);
+extern void sc202_read_otp_data(mot_calibration_info_t * pOtpCalInfo);
 //define LOG_INF(format, args...)    xlog_printk(ANDROID_LOG_INFO   , PFX, "[%s] " format, __FUNCTION__, ##args)
 
 #define LOG_INF(format, args...)    \
@@ -918,7 +918,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			pr_err("cwd return_sensor_id:0x%x\n",*sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
-				//sc202_read_otp_data(&sc202cs_cal_info);
+				sc202_read_otp_data(&sc202cs_cal_info);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
