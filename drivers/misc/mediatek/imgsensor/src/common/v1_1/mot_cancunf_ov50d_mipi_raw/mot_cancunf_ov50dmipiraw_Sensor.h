@@ -253,14 +253,11 @@ struct CANCUNF_OV50D_eeprom_t{
 	uint8_t af_sync_data[24];
 	uint8_t af_sync_crc[2];
 	//AF Posture
-	uint8_t necessary_data[18];
+	uint8_t necessary_data[19];
 	uint8_t necessary_crc[2];
 	//OV PDC Posture
-	uint8_t ov_pdc_data[732];
+	uint8_t ov_pdc_data[458];
 	uint8_t ov_pdc_crc[2];
-	//OV XTALK Posture
-	uint8_t ov_xtalk_data[288];
-	uint8_t ov_xtalk_crc[2];
 };
 
 typedef struct {
