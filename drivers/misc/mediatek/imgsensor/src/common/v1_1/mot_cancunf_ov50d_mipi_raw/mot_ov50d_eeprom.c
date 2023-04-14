@@ -34,21 +34,18 @@ static  struct imgsensor_struct *imgsensor;
 
 #define CANCUNF_OV50D_EEPROM_SLAVE_ADDR 0xA0
 #define CANCUNF_OV50D_SENSOR_IIC_SLAVE_ADDR 0x20
-#define CANCUNF_OV50D_EEPROM_SIZE  0x1DEC
+#define CANCUNF_OV50D_EEPROM_SIZE  0x1CBF
 #define CANCUNF_OV50D_EEPROM_CRC_MANUFACTURING_SIZE 37
 #define CANCUNF_OV50D_EEPROM_CRC_AF_CAL_SIZE 24
 #define CANCUNF_OV50D_EEPROM_CRC_AWB_CAL_SIZE 43
 #define CANCUNF_OV50D_EEPROM_CRC_LSC_SIZE 1868
 #define CANCUNF_OV50D_EEPROM_CRC_PDAF_OUTPUT1_SIZE 496
 #define CANCUNF_OV50D_EEPROM_CRC_PDAF_OUTPUT2_SIZE 1004
-#define CANCUNF_OV50D_EEPROM_CRC_XTALK_SIZE 288
-#define CANCUNF_OV50D_EEPROM_CRC_PDC_SIZE 732
-#define CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE 720
+#define CANCUNF_OV50D_EEPROM_CRC_PDC_SIZE 458
+#define CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE 446
 
-static cancunf_ov_cal_addr_data_t ov_cross_talk_data[CANCUNF_OV50D_EEPROM_CRC_XTALK_SIZE] = {{0}};
 static cancunf_ov_cal_addr_data_t ov_pdc_data[CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE] = {{0}};
 
-int xtalk_data_valid = 0;
 int pdc_data_valid = 0;
 
 static uint8_t CANCUNF_OV50D_eeprom[CANCUNF_OV50D_EEPROM_SIZE] = {0};
@@ -439,33 +436,9 @@ static void CANCUNF_OV50D_eeprom_get_mnf_data(void *data,
 	}
 }
 
-int get_ov_cross_talk_data(void *data)
-{
-	int i;
-	struct CANCUNF_OV50D_eeprom_t *eeprom = (struct CANCUNF_OV50D_eeprom_t*)data;
-	if (!eeprom_util_check_crc16(eeprom->ov_xtalk_data, CANCUNF_OV50D_EEPROM_CRC_XTALK_SIZE,
-		convert_crc(eeprom->ov_xtalk_crc)))
-	{
-		pr_debug("Cross Talk Data CRC Fail!");
-		xtalk_data_valid = 0;
-	}
-	else
-	{
-		pr_debug("Cross Talk Data CRC Pass");
-		xtalk_data_valid = 1;
-		for (i = 0; i < CANCUNF_OV50D_EEPROM_CRC_XTALK_SIZE; i++)
-		{
-			ov_cross_talk_data[i].addr = 0x5A40 + i;
-			ov_cross_talk_data[i].data = eeprom->ov_xtalk_data[i];
-		}
-	}
-
-	return 1;
-}
-
 int get_ov_pdc_data(void *data)
 {
-	int i;
+	//int i;
 	struct CANCUNF_OV50D_eeprom_t *eeprom = (struct CANCUNF_OV50D_eeprom_t*)data;
 	if (!eeprom_util_check_crc16(eeprom->ov_pdc_data, CANCUNF_OV50D_EEPROM_CRC_PDC_SIZE,
 		convert_crc(eeprom->ov_pdc_crc)))
@@ -476,12 +449,14 @@ int get_ov_pdc_data(void *data)
 	else
 	{
 		pr_debug("PDC Data CRC Pass");
+		/*
 		pdc_data_valid = 1;
 		for (i = 0; i < CANCUNF_OV50D_EEPROM_CRC_PDC_WRITE_SIZE; i++)
 		{
 			ov_pdc_data[i].addr = 0x5F80 + i;
 			ov_pdc_data[i].data = eeprom->ov_pdc_data[12 + i];
 		}
+		*/
 	}
 	return 1;
 }
@@ -499,7 +474,6 @@ void CANCUNF_OV50D_eeprom_format_calibration_data(struct imgsensor_struct *pImgs
 
 	CANCUNF_OV50D_eeprom_get_mnf_data((void *)CANCUNF_OV50D_eeprom, &mnf_info);
 
-	get_ov_cross_talk_data(CANCUNF_OV50D_eeprom);
 	get_ov_pdc_data(CANCUNF_OV50D_eeprom);
 
 	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
@@ -517,20 +491,6 @@ mot_calibration_mnf_t *CANCUNF_OV50D_eeprom_get_mnf_info(void)
 	return &mnf_info;
 }
 
-void write_cross_talk_data(void)
-{
-	uint16_t write_table[CANCUNF_OV50D_EEPROM_CRC_XTALK_SIZE * 2] = {0};
-
-	pr_debug("E\n");
-
-	memcpy(write_table, &ov_cross_talk_data[0].addr, sizeof(write_table));
-
-	mot_cancunf_ov50d_table_write_cmos_sensor(write_table,
-		sizeof(write_table)/sizeof(uint16_t));
-
-	pr_debug("apply cross talk calibration data success.");
-	pr_debug("X");
-}
 
 void write_pdc_data(void)
 {
