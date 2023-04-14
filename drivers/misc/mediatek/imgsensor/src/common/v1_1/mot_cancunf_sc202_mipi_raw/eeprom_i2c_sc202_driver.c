@@ -115,37 +115,6 @@ static u16 read_cmos_sensor(u16 addr)
 	return get_byte;
 }
 
-void sc202cs_otp_dump_bin(const void *data, uint32_t size)
-{
-	struct file *fp = NULL;
-	mm_segment_t old_fs;
-	int ret = 0;
-
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
-	fp = filp_open(SC202CS_OTP_DATA_PATH, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
-	if (IS_ERR_OR_NULL(fp)) {
-		ret = PTR_ERR(fp);
-		pr_err("open file error(%s), error(%d)\n",  SC202CS_OTP_DATA_PATH, ret);
-		goto p_err;
-	}
-
-	//ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
-	if (ret < 0) {
-		pr_err("file write fail(%s) to EEPROM data(%d)", SC202CS_OTP_DATA_PATH, ret);
-		goto p_err;
-	}
-
-	pr_debug("wirte to file(%s)\n", SC202CS_OTP_DATA_PATH);
-p_err:
-	if (!IS_ERR_OR_NULL(fp))
-		filp_close(fp, NULL);
-
-	set_fs(old_fs);
-	pr_debug(" end writing file");
-}
-
 static void write_cmos_sensor(u16 addr, u16 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8),
@@ -206,17 +175,17 @@ int sc202cs_iReadData(unsigned int ui4_offset,
 	return 0;
 }
 
-unsigned int sc202_read_region(struct i2c_client *client, unsigned int addr,
+unsigned int mot_cancunf_sc202_read_region(struct i2c_client *client, unsigned int addr,
 				unsigned char *data, unsigned int size)
 {
-        pr_debug("hfx sc202_read_region\n");
+        pr_debug("mot_cancunf_sc202_read_region\n");
 	g_pstI2CclientG = client;
 	if (size > (SC202CS_OTP_SIZE + SC202CS_OTP_HEAD))
 		size = (SC202CS_OTP_SIZE + SC202CS_OTP_HEAD);
 	memcpy((void*)data,(void*)g_otpMemoryData,size);
 	return size;
 }
-
+EXPORT_SYMBOL(mot_cancunf_sc202_read_region);
 void sc202_read_otp_data(mot_calibration_info_t * pOtpCalInfo)
 {
 	u8 awbGroupFlag = 0;
@@ -251,7 +220,6 @@ void sc202_read_otp_data(mot_calibration_info_t * pOtpCalInfo)
 	else {
 		pr_err("sc202cs awb checksum fail");
 	}
-	sc202cs_otp_dump_bin(g_otpMemoryData+SC202CS_OTP_HEAD, SC202CS_OTP_SIZE);
 }
 
 
