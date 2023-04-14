@@ -111,6 +111,7 @@ struct moto_wls_chg_ops {
 	void (*wls_current_select)(int  *icl, int *vbus, bool *cable_ready);
 	void (*wls_set_battery_soc)(int uisoc);
 	void (*wls_stop_epp)(void);
+	void (*wls_notify_thermal_icl)(int thermal_icl);
 };
 
 extern int wlc_hal_init_hardware(struct chg_alg_device *alg);
