@@ -17,6 +17,7 @@
 	charge_leds: charge_leds{ };
 	moto_chg_tcmd: moto_chg_tcmd { };
 	flashlights_devonf: flashlights_devonf { };
+        flashlights_cancunf: flashlights_cancunf { };
 };
 
 &mt6375_typec {
