@@ -94,7 +94,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.cap = {
 		.pclk = 100000000,
@@ -106,19 +106,19 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3072,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1902000000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.normal_video = {
-		.pclk = 75000000,
-		.linelength = 600,
-		.framelength = 4166,
+		.pclk = 100000000,
+		.linelength = 425,
+		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 4096,
-		.grabwindow_height = 3072,
+		.grabwindow_width = 2048,
+		.grabwindow_height = 1152,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.hs_video = {
 		.pclk = 75000000,
@@ -186,7 +186,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 2,			//support sensor mode num
+	.sensor_mode_num = 7,			//support sensor mode num
 
 	.cap_delay_frame = 2,			//enter capture delay frame num
 	.pre_delay_frame = 2,			//enter preview delay frame num
@@ -233,7 +233,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
 	/* capture */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* video */
-	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
+	{8192, 6144,    0,  768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 	/* hs_video */
 	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
 	/* slim_video */
@@ -681,8 +681,8 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	pr_debug("MOT CANCUNF OV50D normal_video_setting start\n");
 
-	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_preview_mot_cancunf_ov50d,
-		sizeof(addr_data_pair_preview_mot_cancunf_ov50d)/sizeof(kal_uint16));
+	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_cancunf_ov50d,
+		sizeof(addr_data_pair_normal_video_mot_cancunf_ov50d)/sizeof(kal_uint16));
 
 	pr_debug("MOT CANCUNF OV50D normal_video_setting end\n");
 }
