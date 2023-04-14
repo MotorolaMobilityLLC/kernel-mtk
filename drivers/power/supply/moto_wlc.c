@@ -382,8 +382,14 @@ static int wlc_sc_set_charger(struct chg_alg_device *alg)
 			if (ret != -EOPNOTSUPP &&
 			    input_thermal_limit < aicr1_min)
 				wlc->input_current1 = 0;
+			wlc_info("%s input_thermal_limit:%d aicr1_min:%d\n",
+					__func__, input_thermal_limit, aicr1_min);
 		} else
 			wlc->input_current1 = input_current;
+
+		if (NULL != wls_chg_ops &&
+			NULL != wls_chg_ops->wls_notify_thermal_icl)
+			wls_chg_ops->wls_notify_thermal_icl(input_thermal_limit);
 
 		wlc_info("%s input current = %d:%d:%d:%d, vout = %d\n",
 			 __func__, wlc->input_current1, input_current,
