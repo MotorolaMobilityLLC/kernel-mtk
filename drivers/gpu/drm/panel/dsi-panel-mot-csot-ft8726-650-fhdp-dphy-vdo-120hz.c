@@ -409,7 +409,6 @@ static struct mtk_panel_params ext_params = {
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
-	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -474,7 +473,6 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
-	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -537,7 +535,6 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
-	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
@@ -601,7 +598,6 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.lp_perline_en = 0,
 	.physical_width_um = PHYSICAL_WIDTH,
 	.physical_height_um = PHYSICAL_HEIGHT,
-	.lcm_index = 2,
 
 	.output_mode = MTK_PANEL_DSC_SINGLE_PORT,
 	.dsc_params = {
