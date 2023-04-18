@@ -54,9 +54,36 @@ struct tongxingda {
 	bool enabled;
 
 	int error;
+	unsigned int hbm_mode;
+	unsigned int cabc_mode;
 };
 
-#if defined(CONFIG_MTK_PANEL_EXT)
+static struct mtk_panel_para_table panel_cabc_ui[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x01}},
+};
+
+static struct mtk_panel_para_table panel_cabc_mv[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x03}},
+};
+
+static struct mtk_panel_para_table panel_cabc_disable[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{2, {0x55, 0x00}},
+};
+
+static struct mtk_panel_para_table panel_hbm_on[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{3, {0x51, 0x07, 0xD5}},
+};
+
+static struct mtk_panel_para_table panel_hbm_off[] = {
+	{4, {0xFF, 0x78, 0x07, 0x00}},
+	{3, {0x51, 0x06, 0x2A}},
+};
+
+#if 0 //defined(CONFIG_MTK_PANEL_EXT)
 static char bl_tb0[] = { 0x51, 0xff };
 #endif
 
@@ -275,6 +302,8 @@ static int tongxingda_prepare(struct drm_panel *panel)
 	}
 
 	tongxingda_panel_init(ctx);
+	ctx->hbm_mode = 0;
+	ctx->cabc_mode = 0;
 
 	ret = ctx->error;
 	printk("[%d  %s]hxl_check_dsi   ret:%d !!\n",__LINE__, __FUNCTION__,ret);
@@ -377,6 +406,7 @@ static struct mtk_panel_params ext_params = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 2,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.max_bl_level = 2047,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
@@ -438,6 +468,7 @@ static struct mtk_panel_params ext_params_mode_30 = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 2,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -497,6 +528,7 @@ static struct mtk_panel_params ext_params_mode_90 = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 2,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.max_bl_level = 2047,
 	.ssc_enable = 1,
 	.lane_swap_en = 0,
@@ -558,6 +590,7 @@ static struct mtk_panel_params ext_params_mode_120 = {
 	.panel_name = "txd_ili7807s_vid_649_1080",
 	.panel_supplier = "txd",
 	.lcm_index = 2,
+	.hbm_type = HBM_MODE_DCS_I2C,
 	.max_bl_level = 2047,
 	.lane_swap_en = 0,
 	.lp_perline_en = 0,
@@ -607,9 +640,9 @@ static struct mtk_panel_params ext_params_mode_120 = {
 static int tongxingda_setbacklight_cmdq(void *dsi, dcs_write_gce cb,
 	void *handle, unsigned int level)
 {
-	//pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
+	pr_info("%s: skip for using bl ic, level=%d\n", __func__, level);
 
-#if 1
+#if 0
 
 	if (!cb) {
 		pr_info("%s cb NULL!\n", __func__);
@@ -681,12 +714,129 @@ static enum mtk_lcm_version ili7807s_get_lcm_version(void)
 	return MTK_LEGACY_LCM_DRV_WITH_BACKLIGHTCLASS;
 }
 
+static int panel_cabc_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t cabc_mode)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (cabc_mode > 3) {
+		pr_info("%s: invalid CABC mode:%d, return\n", __func__, cabc_mode);
+		return -1;
+	}
+
+	switch (cabc_mode) {
+		case 0:
+			para_count = sizeof(panel_cabc_ui) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_ui;
+			break;
+		case 1:
+			para_count = sizeof(panel_cabc_mv) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_mv;
+			break;
+		case 2:
+			para_count = sizeof(panel_cabc_disable) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_cabc_disable;
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		pr_info("%s: set CABC mode :%d", __func__, cabc_mode);
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: CABC mode:%d not support", __func__, cabc_mode);
+
+	return 0;
+}
+
+static int panel_hbm_set_cmdq(struct tongxingda *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
+{
+	unsigned int para_count = 0;
+	struct mtk_panel_para_table *pTable = NULL;
+
+	if (hbm_state > 1) {
+		pr_info("%s: invalid hbm_state:%d, return\n", __func__, hbm_state);
+		return -1;
+	}
+
+	switch (hbm_state) {
+		case 1:
+			para_count = sizeof(panel_hbm_on) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_on;
+			pr_info("%s: set HBM on", __func__);
+			break;
+		case 0:
+			para_count = sizeof(panel_hbm_off) / sizeof(struct mtk_panel_para_table);
+			pTable = panel_hbm_off;
+			pr_info("%s: set HBM off", __func__);
+			break;
+		default:
+			break;
+	}
+
+	if (pTable) {
+		cb(dsi, handle, pTable, para_count);
+	}
+	else
+		pr_info("%s: HBM pTable null, hbm_state:%s", __func__, hbm_state);
+
+	return 0;
+}
+
+static int panel_feature_set(struct drm_panel *panel, void *dsi,
+			      dcs_grp_write_gce cb, void *handle, struct panel_param_info param_info)
+{
+	struct tongxingda *ctx = panel_to_tongxingda(panel);
+	int ret = -1;
+
+	if (!cb)
+		return -1;
+
+	if (!ctx->enabled) {
+		pr_info("%s: skip set feature %d to %d, panel not enabled\n", __func__, param_info.param_idx, param_info.value);
+		return -1;
+	}
+
+	pr_info("%s: start set feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+
+	switch (param_info.param_idx) {
+		case PARAM_CABC:
+			if (ctx->cabc_mode != param_info.value) {
+				ctx->cabc_mode = param_info.value;
+				panel_cabc_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set CABC to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same CABC mode:%d\n", __func__, ctx->cabc_mode);
+			break;
+		case PARAM_HBM:
+			if (ctx->hbm_mode != param_info.value) {
+				ctx->hbm_mode = param_info.value;
+				panel_hbm_set_cmdq(ctx, dsi, cb, handle, param_info.value);
+				pr_debug("%s: set HBM to %d end\n", __func__, param_info.value);
+				ret = 0;
+			}
+			else
+				pr_info("%s: skip same HBM mode:%d\n", __func__, ctx->hbm_mode);
+			break;
+		default:
+			pr_info("%s: skip unsupport feature %d to %d\n", __func__, param_info.param_idx, param_info.value);
+			break;
+	}
+
+	return ret;
+}
+
 static struct mtk_panel_funcs ext_funcs = {
 	.set_backlight_cmdq = tongxingda_setbacklight_cmdq,
 	.reset = panel_ext_reset,
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = ili7807s_get_lcm_version,
 //	.ata_check = panel_ata_check,
+	.panel_feature_set = panel_feature_set,
 };
 #endif
 
