@@ -27,11 +27,11 @@ kal_uint16 addr_data_pair_xtalk_mot_ov50a2q[] = {
 };
 
 kal_uint16 addr_data_pair_init_mot_ov50a2q[] = {
-#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230102_remove_xtalk_data.h"
+#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230307_remove_xtalk_data.h"
 };
 
-kal_uint16 addr_data_pair_init_mot_ov50a_20230102[] = {
-#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230102.h"
+kal_uint16 addr_data_pair_init_mot_ov50a_20230307[] = {
+#include "setting/OV50A40_Initial_CPHY_3Trio_1924Msps_20230307.h"
 };
 
 kal_uint16 addr_data_pair_preview_mot_ov50a2q[] = {
