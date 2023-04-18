@@ -82,7 +82,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.startx = 0,
 			.starty = 0,
 			.grabwindow_width = 1600,
-			.grabwindow_height = 1200,
+			.grabwindow_height = 900,
 			.mipi_data_lp2hs_settle_dc = 23,
 			.mipi_pixel_rate = 72000000,//720M*1/10
 			.max_framerate = 300,
@@ -94,7 +94,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.startx = 0,
 			.starty = 0,
 			.grabwindow_width = 1600,
-			.grabwindow_height = 1200,
+			.grabwindow_height = 900,
 			.mipi_data_lp2hs_settle_dc = 23,
 			.mipi_pixel_rate = 72000000,//720M*1/10
 			.max_framerate = 300,
@@ -106,7 +106,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 			.startx = 0,
 			.starty = 0,
 			.grabwindow_width = 1600,
-			.grabwindow_height = 1200,
+			.grabwindow_height = 900,
 			.mipi_data_lp2hs_settle_dc = 23,
 		.mipi_pixel_rate = 72000000,//720M*1/10
 			.max_framerate = 300,
@@ -164,9 +164,9 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 {
 	{ 1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,    0, 0, 1600, 1200}, // Preview
 	{ 1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,    0, 0, 1600, 1200}, // capture
-	{ 1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,    0, 0, 1600, 1200}, // video
-	{ 1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,    0, 0, 1600, 1200}, //hight speed video
-	{ 1600, 1200, 0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,    0, 0, 1600, 1200},// slim video
+	{ 1600, 1200, 0, 150, 1600, 900, 1600, 900, 0000, 0000, 1600, 900,    0, 0, 1600, 900}, // video
+	{ 1600, 1200, 0, 150, 1600, 900, 1600, 900, 0000, 0000, 1600, 900,    0, 0, 1600, 900}, //hight speed video
+	{ 1600, 1200, 0, 150, 1600, 900, 1600, 900, 0000, 0000, 1600, 900,    0, 0, 1600, 900},// slim video
 };
 
 
@@ -722,7 +722,6 @@ static void sensor_init(void)
 	*/
 	write_cmos_sensor(0x0103,0x01);
 	mDELAY(10);
-	write_cmos_sensor(0x0100,0x00);
 	write_cmos_sensor(0x36e9,0x80);
 	write_cmos_sensor(0x36e9,0x24);
 	write_cmos_sensor(0x301f,0x01);
@@ -829,15 +828,27 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3e09,0x00);
 	write_cmos_sensor(0x4509,0x28);
 	write_cmos_sensor(0x450d,0x61);
-	write_cmos_sensor(0x0100,0x01);
 	write_cmos_sensor(0x3221,0x66);
 }	/*	sensor_init  */
 
 static void preview_setting(void)
 {
-	write_cmos_sensor(0x0100,0x00);
-	mDELAY(10);
-	write_cmos_sensor(0x0100,0x01);
+	write_cmos_sensor(0x3200, 0x00);
+	write_cmos_sensor(0x3201, 0x00);
+	write_cmos_sensor(0x3202, 0x00);
+	write_cmos_sensor(0x3203, 0x00);
+	write_cmos_sensor(0x3204, 0x06);
+	write_cmos_sensor(0x3205, 0x47);
+	write_cmos_sensor(0x3206, 0x04);
+	write_cmos_sensor(0x3207, 0xb7);
+	write_cmos_sensor(0x3208, 0x06);
+	write_cmos_sensor(0x3209, 0x40);
+	write_cmos_sensor(0x320a, 0x04);
+	write_cmos_sensor(0x320b, 0xb0);
+	write_cmos_sensor(0x3210, 0x00);
+	write_cmos_sensor(0x3211, 0x04);
+	write_cmos_sensor(0x3212, 0x00);
+	write_cmos_sensor(0x3213, 0x04);
 
 }    /*    preview_setting  */
 
@@ -850,7 +861,22 @@ static void capture_setting(kal_uint16 currefps)
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n",currefps);
-	preview_setting();
+	write_cmos_sensor(0x3200, 0x00);
+	write_cmos_sensor(0x3201, 0x00);
+	write_cmos_sensor(0x3202, 0x00);
+	write_cmos_sensor(0x3203, 0x96);
+	write_cmos_sensor(0x3204, 0x06);
+	write_cmos_sensor(0x3205, 0x47);
+	write_cmos_sensor(0x3206, 0x04);
+	write_cmos_sensor(0x3207, 0x21);
+	write_cmos_sensor(0x3208, 0x06);
+	write_cmos_sensor(0x3209, 0x40);
+	write_cmos_sensor(0x320a, 0x03);
+	write_cmos_sensor(0x320b, 0x84);
+	write_cmos_sensor(0x3210, 0x00);
+	write_cmos_sensor(0x3211, 0x04);
+	write_cmos_sensor(0x3212, 0x00);
+	write_cmos_sensor(0x3213, 0x04);
 }
 
 static void hs_video_setting()
