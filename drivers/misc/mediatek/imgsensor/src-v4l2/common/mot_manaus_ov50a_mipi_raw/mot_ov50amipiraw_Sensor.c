@@ -199,7 +199,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.margin = 32,					/* sensor framelength & shutter margin */
 	.margin_shdr = 46,
-	.min_shutter = 16,				/* min shutter */
+	.min_shutter = 8,				/* min shutter */
 	.min_gain = 1024, /*1x gain*/
 	.max_gain = 212992, /*208 * 1024  gain*/
 	.min_gain_iso = 100,
@@ -465,10 +465,31 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 {
 	LOG_INF_N("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
-		write_cmos_sensor_8(ctx, 0x0100, 0X01);
+		write_cmos_sensor_8(ctx, 0x0100, 0x01);
 		ctx->is_streaming = true;
 	} else {
-		write_cmos_sensor_8(ctx, 0x0100, 0x00);
+                memset(_i2c_data, 0x0, sizeof(_i2c_data));
+                _size_to_write = 0;
+                _i2c_data[_size_to_write++] = 0x3208; //reset switch group2
+                _i2c_data[_size_to_write++] = 0x02;
+                _i2c_data[_size_to_write++] = 0x0000;
+                _i2c_data[_size_to_write++] = 0x00;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0x12;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0xa2;
+                _i2c_data[_size_to_write++] = 0x3208; //reset switch group2
+                _i2c_data[_size_to_write++] = 0x01;
+                _i2c_data[_size_to_write++] = 0x0000;
+                _i2c_data[_size_to_write++] = 0x00;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0x11;
+                _i2c_data[_size_to_write++] = 0x3208;
+                _i2c_data[_size_to_write++] = 0xa1;
+                _i2c_data[_size_to_write++] = 0x0100;
+                _i2c_data[_size_to_write++] = 0x00;
+                table_write_cmos_sensor(ctx, _i2c_data,
+                _size_to_write);
 		ctx->is_streaming = false;
 	}
 	mdelay(10);
@@ -556,7 +577,7 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
                _i2c_data[_size_to_write++] = 0x380e;
                _i2c_data[_size_to_write++] = ctx->frame_length >> 8;
                _i2c_data[_size_to_write++] = 0x380f;
-               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
+               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFE;
                _i2c_data[_size_to_write++] = 0x3500;
                _i2c_data[_size_to_write++] = (shutter >> 16) & 0xFF;
                _i2c_data[_size_to_write++] = 0x3501;
@@ -572,7 +593,7 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
                _i2c_data[_size_to_write++] = 0x380e;
                _i2c_data[_size_to_write++] = ctx->frame_length >> 8;
                _i2c_data[_size_to_write++] = 0x380f;
-               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFF;
+               _i2c_data[_size_to_write++] = ctx->frame_length & 0xFE;
                _i2c_data[_size_to_write++] = 0x3500;
                _i2c_data[_size_to_write++] = (shutter >> 16) & 0xFF;
                _i2c_data[_size_to_write++] = 0x3501;
@@ -885,8 +906,8 @@ static void sensor_init(struct subdrv_ctx *ctx)
 	} else {
 		LOG_INF("%s: skip EEPROM xtalk, use default one...", __func__);
 		table_write_cmos_sensor(ctx,
-		    addr_data_pair_init_mot_ov50a_20230102,
-		    sizeof(addr_data_pair_init_mot_ov50a_20230102) / sizeof(kal_uint16));
+		    addr_data_pair_init_mot_ov50a_20230307,
+		    sizeof(addr_data_pair_init_mot_ov50a_20230307) / sizeof(kal_uint16));
 	}
 	LOG_INF("%s end\n", __func__);
 }
@@ -1175,53 +1196,6 @@ static void custom5_setting(struct subdrv_ctx *ctx)
 	LOG_INF("%s end\n", __func__);
 }	/*	custom5_setting  */
 
-
-/* ITD: Modify Dualcam By Jesse 190924 End */
-static kal_uint16 read_cmos_eeprom_8(struct subdrv_ctx *ctx, kal_uint16 addr)
-{
-
-	u8 data;
-
-	adaptor_i2c_rd_u8(ctx->i2c_client, 0xA0 >> 1, addr, &data);
-
-	return (u16)data;
-}
-
-static kal_uint16 mot_ov50a_PDC_setting[8*2];
-static kal_uint16 mot_ov50a_PDC_setting_burst[720*2];
-
-static void read_sensor_Cali(struct subdrv_ctx *ctx)
-{
-	kal_uint16 idx = 0, eeprom_PDC_addr = 0x1638;
-	kal_uint16 sensor_PDC_addr1 = 0x5C0E, sensor_PDC_addr2 = 0x5900;
-
-	for (idx = 0; idx < 8; idx++) {
-		eeprom_PDC_addr = 0x1638 + idx;
-		sensor_PDC_addr1 = 0x5C0E + idx;
-		mot_ov50a_PDC_setting[2 * idx] = sensor_PDC_addr1;
-		mot_ov50a_PDC_setting[2 * idx + 1] =
-			read_cmos_eeprom_8(ctx, eeprom_PDC_addr);
-	}
-
-	for (idx = 8; idx < 728; idx++) {
-		eeprom_PDC_addr = 0x1638 + idx;
-		sensor_PDC_addr2 = 0x5900 + idx - 8;
-		mot_ov50a_PDC_setting_burst[2 * (idx-8)] = sensor_PDC_addr2;
-		mot_ov50a_PDC_setting_burst[2 * (idx-8) + 1] =
-			read_cmos_eeprom_8(ctx, eeprom_PDC_addr);
-	}
-
-	ctx->is_read_preload_eeprom = 1;
-}
-#if 0
-static void write_sensor_PDC(struct subdrv_ctx *ctx)
-{
-	table_write_cmos_sensor(ctx, mot_ov50a_PDC_setting,
-		sizeof(mot_ov50a_PDC_setting)/sizeof(kal_uint16));
-	table_write_cmos_sensor(ctx, mot_ov50a_PDC_setting_burst,
-		sizeof(mot_ov50a_PDC_setting_burst)/sizeof(kal_uint16));
-}
-#endif
 static kal_uint32 return_sensor_id(struct subdrv_ctx *ctx)
 {
 	return ((read_cmos_sensor_8(ctx, 0x300a) << 16) |
@@ -1742,7 +1716,7 @@ static kal_uint32 set_max_framerate_by_scenario(struct subdrv_ctx *ctx,
 	    frameHeight = imgsensor_info.custom3.pclk / framerate * 10 /
 			imgsensor_info.custom3.linelength;
 		ctx->dummy_line = (frameHeight >
-			imgsensor_info.custom2.framelength) ?
+			imgsensor_info.custom3.framelength) ?
 			(frameHeight - imgsensor_info.custom3.framelength):0;
 	    ctx->frame_length = imgsensor_info.custom3.framelength +
 			ctx->dummy_line;
@@ -2782,13 +2756,6 @@ static int feature_control(struct subdrv_ctx *ctx, MSDK_SENSOR_FEATURE_ENUM feat
 			break;
 		}
 		*feature_para_len = 4;
-		break;
-	case SENSOR_FEATURE_PRELOAD_EEPROM_DATA:
-		/*get eeprom preloader data*/
-		*feature_return_para_32 = ctx->is_read_preload_eeprom;
-		*feature_para_len = 4;
-		if (ctx->is_read_preload_eeprom != 1)
-			read_sensor_Cali(ctx);
 		break;
 	case SENSOR_FEATURE_SET_FRAMELENGTH:
 		set_frame_length(ctx, (UINT32) (*feature_data));
