@@ -99,13 +99,13 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 339200000//848*4/10
 	},
 	.normal_video = {
-	  .pclk = 640000000,				//record different mode's pclk
-		.linelength =  5840, 			//record different mode's linelength
-		.framelength = 3651,  			//record different mode's framelength
+		.pclk = 640000000,				//record different mode's pclk
+		.linelength =  5680, 			//record different mode's linelength
+		.framelength = 3754,  			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 2320, 		//record different mode's width of grabwindow
-		.grabwindow_height = 1740,		//record different mode's height of grabwindow
+		.grabwindow_height = 1312,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
@@ -114,12 +114,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	.hs_video = {
 		.pclk = 640000000,				//record different mode's pclk
-		.linelength =  5840, 			//record different mode's linelength
-		.framelength = 3651, 			//record different mode's framelength
+		.linelength =  5680, 			//record different mode's linelength
+		.framelength = 3754, 			//record different mode's framelength
 		.startx = 0,				    //record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 2320,		//record different mode's width of grabwindow
-		.grabwindow_height = 1740,		//record different mode's height of grabwindow
+		.grabwindow_height = 1312,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
@@ -128,12 +128,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
     .slim_video = {
 		.pclk = 640000000,
-		.linelength = 5840,
-		.framelength = 3651,
+		.linelength = 5680,
+		.framelength = 3754,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2320,
-		.grabwindow_height = 1740,
+		.grabwindow_height = 1312,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
 		.mipi_pixel_rate = 339200000//848*4/10 - temp
@@ -198,9 +198,9 @@ static struct imgsensor_struct imgsensor = {
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// preview (2320 x 1740)
 	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// capture (2320 x 1740)
-	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// video (2320 x 1740)
-	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// hs video (2320 x 1740)
-	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,  6, 2320, 1740, 0, 0, 2320, 1740}, 	// slim video (2320 x 1740)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,220, 2320, 1312, 0, 0, 2320, 1312}, 	// video (2320 x 1312)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,220, 2320, 1312, 0, 0, 2320, 1312}, 	// hs video (2320 x 1312)
+	{ 4656, 3504,	0,	 0, 4656, 3504,  2328, 1752,  4,220, 2320, 1312, 0, 0, 2320, 1312}, 	// slim video (2320 x 1312)
 };
 
 
@@ -574,8 +574,8 @@ static void preview_setting(void)
 {
 	pr_debug("Hi-1634Q preview_setting start\n");
 
-	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1720_30fps_setting,
-		sizeof(mot_cancunf_2320x1720_30fps_setting)/sizeof(kal_uint16));
+	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1740_30fps_setting,
+		sizeof(mot_cancunf_2320x1740_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q preview_setting end\n");
 
@@ -587,8 +587,8 @@ static void capture_setting(kal_uint16 currefps)
 {
 	pr_debug("Hi-1634Q capture_setting start\n");
 	/*************MIPI output setting************/
-	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1720_30fps_setting,
-		sizeof(mot_cancunf_2320x1720_30fps_setting)/sizeof(kal_uint16));
+	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1740_30fps_setting,
+		sizeof(mot_cancunf_2320x1740_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q capture_setting end\n");
 }
@@ -597,8 +597,8 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	pr_debug("Hi-1634Q normal_video_setting start\n");
 
-	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1720_30fps_setting,
-		sizeof(mot_cancunf_2320x1720_30fps_setting)/sizeof(kal_uint16));
+	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1312_30fps_setting,
+		sizeof(mot_cancunf_2320x1312_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q normal_video_setting end\n");
 }
@@ -607,8 +607,8 @@ static void hs_video_setting(void)
 {
 	pr_debug("Hi-1634Q hs_video_setting start\n");
 
-	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1720_30fps_setting,
-		sizeof(mot_cancunf_2320x1720_30fps_setting)/sizeof(kal_uint16));
+	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1312_30fps_setting,
+		sizeof(mot_cancunf_2320x1312_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q hs_video_setting end\n");
 }
@@ -617,8 +617,8 @@ static void slim_video_setting(void)
 {
 	pr_debug("Hi-1634Q slim_video_setting start\n");
 
-	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1720_30fps_setting,
-		sizeof(mot_cancunf_2320x1720_30fps_setting)/sizeof(kal_uint16));
+	mot_cancunf_hi1634q_table_write_cmos_sensor(mot_cancunf_2320x1312_30fps_setting,
+		sizeof(mot_cancunf_2320x1312_30fps_setting)/sizeof(kal_uint16));
 
 	pr_debug("Hi-1634Q slim_video_setting end\n");
 }
