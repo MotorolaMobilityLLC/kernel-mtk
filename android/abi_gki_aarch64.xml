@@ -1827,6 +1827,7 @@
       <elf-symbol name='devm_iio_channel_get_all' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2bf32454'/>
       <elf-symbol name='devm_iio_device_alloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x99e72c1c'/>
       <elf-symbol name='devm_iio_kfifo_buffer_setup_ext' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x95ec2851'/>
+      <elf-symbol name='devm_iio_triggered_buffer_setup_ext' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x84093fd3'/>
       <elf-symbol name='devm_input_allocate_device' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xd940616d'/>
       <elf-symbol name='devm_ioremap' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x31f4adef'/>
       <elf-symbol name='devm_ioremap_resource' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x30516c87'/>
@@ -136703,6 +136704,15 @@
         <parameter type-id='cd733e18' name='buffer_attrs' filepath='drivers/iio/buffer/kfifo_buf.c' line='226' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='devm_iio_triggered_buffer_setup_ext' mangled-name='devm_iio_triggered_buffer_setup_ext' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='104' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_iio_triggered_buffer_setup_ext'>
+        <parameter type-id='fa0b179b' name='dev' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='104' column='1'/>
+        <parameter type-id='226853d2' name='indio_dev' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='105' column='1'/>
+        <parameter type-id='3fefe9b7' name='h' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='106' column='1'/>
+        <parameter type-id='3fefe9b7' name='thread' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='107' column='1'/>
+        <parameter type-id='7597aac3' name='ops' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='108' column='1'/>
+        <parameter type-id='cd733e18' name='buffer_attrs' filepath='drivers/iio/buffer/industrialio-triggered-buffer.c' line='109' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='devm_input_allocate_device' mangled-name='devm_input_allocate_device' filepath='drivers/input/input.c' line='1984' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='devm_input_allocate_device'>
         <parameter type-id='fa0b179b' name='dev' filepath='drivers/input/input.c' line='1984' column='1'/>
         <return type-id='74b427eb'/>
@@ -146223,8 +146233,8 @@
         <parameter type-id='a0c47697' name='res' filepath='lib/kstrtox.c' line='406' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='kswapd' mangled-name='kswapd' filepath='mm/vmscan.c' line='7046' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kswapd'>
-        <parameter type-id='eaa32e2f' name='p' filepath='mm/vmscan.c' line='7046' column='1'/>
+      <function-decl name='kswapd' mangled-name='kswapd' filepath='mm/vmscan.c' line='7062' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='kswapd'>
+        <parameter type-id='eaa32e2f' name='p' filepath='mm/vmscan.c' line='7062' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='ksys_sync_helper' mangled-name='ksys_sync_helper' filepath='kernel/power/main.c' line='54' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='ksys_sync_helper'>
@@ -152449,8 +152459,8 @@
         <parameter type-id='19c2251e' name='d' filepath='lib/math/reciprocal_div.c' line='17' column='1'/>
         <return type-id='80ebe7f7'/>
       </function-decl>
-      <function-decl name='reclaim_pages' mangled-name='reclaim_pages' filepath='mm/vmscan.c' line='2435' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='reclaim_pages'>
-        <parameter type-id='e84b031a' name='page_list' filepath='mm/vmscan.c' line='2435' column='1'/>
+      <function-decl name='reclaim_pages' mangled-name='reclaim_pages' filepath='mm/vmscan.c' line='2451' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='reclaim_pages'>
+        <parameter type-id='e84b031a' name='page_list' filepath='mm/vmscan.c' line='2451' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='reclaim_shmem_address_space' mangled-name='reclaim_shmem_address_space' filepath='mm/shmem.c' line='4253' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='reclaim_shmem_address_space'>
@@ -158191,11 +158201,11 @@
         <parameter type-id='9248e67f' name='timer' filepath='kernel/time/timer.c' line='1229' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
-      <function-decl name='try_to_free_mem_cgroup_pages' mangled-name='try_to_free_mem_cgroup_pages' filepath='mm/vmscan.c' line='6463' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_mem_cgroup_pages'>
-        <parameter type-id='223696fb' name='memcg' filepath='mm/vmscan.c' line='6463' column='1'/>
-        <parameter type-id='7359adad' name='nr_pages' filepath='mm/vmscan.c' line='6464' column='1'/>
-        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/vmscan.c' line='6465' column='1'/>
-        <parameter type-id='b50a4934' name='may_swap' filepath='mm/vmscan.c' line='6466' column='1'/>
+      <function-decl name='try_to_free_mem_cgroup_pages' mangled-name='try_to_free_mem_cgroup_pages' filepath='mm/vmscan.c' line='6479' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_free_mem_cgroup_pages'>
+        <parameter type-id='223696fb' name='memcg' filepath='mm/vmscan.c' line='6479' column='1'/>
+        <parameter type-id='7359adad' name='nr_pages' filepath='mm/vmscan.c' line='6480' column='1'/>
+        <parameter type-id='3eb7c31c' name='gfp_mask' filepath='mm/vmscan.c' line='6481' column='1'/>
+        <parameter type-id='b50a4934' name='may_swap' filepath='mm/vmscan.c' line='6482' column='1'/>
         <return type-id='7359adad'/>
       </function-decl>
       <function-decl name='try_to_release_page' mangled-name='try_to_release_page' filepath='mm/filemap.c' line='4015' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='try_to_release_page'>
@@ -162906,6 +162916,7 @@
     </abi-instr>
   </abi-corpus>
 </abi-corpus-group>
+
 <!--
      libabigail: abidw: 2.1.0SOONG BUILD NUMBER PLACEHOLDER
 -->
