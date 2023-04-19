@@ -79,7 +79,7 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 static struct mtk_panel_para_table panel_hbm_on[] = {
 	{2, {0xFF, 0x10}},
 	{2, {0xFB, 0x01}},
-	{3, {0x51, 0x07, 0xD5}},
+	{3, {0x51, 0x07, 0xCC}},
 };
 
 static struct mtk_panel_para_table panel_hbm_off[] = {
@@ -245,7 +245,7 @@ static void tianma_panel_init(struct tianma *ctx)
 	tianma_dcs_write_seq_static(ctx,0X53,0X2c);
 	tianma_dcs_write_seq_static(ctx,0X36,0X00);
 	tianma_dcs_write_seq_static(ctx,0XB0,0X00);
-	tianma_dcs_write_seq_static(ctx,0X51,0X07,0xff);
+	tianma_dcs_write_seq_static(ctx,0X51,0X06,0x2A); //max 0x07,0xFF
 	tianma_dcs_write_seq_static(ctx,0X35,0X00);
 	tianma_dcs_write_seq_static(ctx,0XC0,0X03);
 	tianma_dcs_write_seq_static(ctx,0xC1,0x89,0x28,0x00,0x08,0x00,0xAA,0x02,0x0E,0x00,0x2B,0x00,0x07,0x0D,0xB7,0x0C,0xB7);
