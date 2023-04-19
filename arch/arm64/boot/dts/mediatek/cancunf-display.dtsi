@@ -39,12 +39,15 @@
 		hwen-gpio = <&pio 8 1>;
 		boost-ctl = <0x02>;
 		ctl-bank-en = <0x02>;
-		full-scale-current = <0x19>;
-		map-mode = <1>; /* 0 exponential, 1 linear */
+		full-scale-current = <0x18>; //24.2 mA
+		map-mode = <1>; //0x16 : 0 exponential, 1 linear
 		sm5350,default-brightness = <1810>;
 		sm5350,init-seq-enable = <1>;
 		sm5350,init-seq = <0x1A 0x02>,
+				<0x1C 0x0F>,
 				<0x10 0x07>,
+				<0x16 0x01>,
+				<0x18 0x18>,
 				<0x23 0xFF>,
 				<0x24 0x02>;
 
@@ -56,7 +59,7 @@
 		aw99703,switch-freq = <1>; /* 1000kHz(default) */
 		aw99703,auto-freq-high = <0x10>;
 		aw99703,auto-freq-low = <0x05>;
-		aw99703,bl-fscal-led = <0x19>; /* 24.8mA */
+		aw99703,bl-fscal-led = <0x18>; /* 24mA */
 		aw99703,bl-channel = <3>;
 		aw99703,turn-on-ramp = <0x00>; /* 512us */
 		aw99703,turn-off-ramp = <0x04>; /* 8ms */
