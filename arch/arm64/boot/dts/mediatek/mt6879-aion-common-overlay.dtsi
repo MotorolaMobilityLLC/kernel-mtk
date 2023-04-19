@@ -683,3 +683,13 @@
 		};
 	};
 };
+
+/* long powerkey reset setting */
+
+&spmi {
+	main_pmic: pmic@4 {
+		mt6363keys: mt6363keys {
+			power-off-time-sec = <1>;
+		};
+	};
+};
