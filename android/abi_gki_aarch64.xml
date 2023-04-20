@@ -5766,6 +5766,7 @@
       <elf-symbol name='start_poll_synchronize_srcu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbdc9818d'/>
       <elf-symbol name='start_tty' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xac3f0146'/>
       <elf-symbol name='static_key_disable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb912560d'/>
+      <elf-symbol name='static_key_enable' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x6b2b69f7'/>
       <elf-symbol name='static_key_slow_dec' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x2f4880df'/>
       <elf-symbol name='static_key_slow_inc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x8e92f7c4'/>
       <elf-symbol name='stop_machine' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdfc04014'/>
@@ -6459,6 +6460,7 @@
       <elf-symbol name='uuid_gen' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x69e683de'/>
       <elf-symbol name='uuid_parse' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb67fec0e'/>
       <elf-symbol name='v4l2_compat_ioctl32' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x25e6118b'/>
+      <elf-symbol name='v4l2_ctrl_add_handler' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf09e1161'/>
       <elf-symbol name='v4l2_ctrl_auto_cluster' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x71637514'/>
       <elf-symbol name='v4l2_ctrl_cluster' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xe98b49f5'/>
       <elf-symbol name='v4l2_ctrl_find' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x230e396c'/>
@@ -8436,6 +8438,10 @@
       <array-type-def dimensions='1' type-id='19c2251e' size-in-bits='512' id='02fdec64'>
         <subrange length='16' type-id='7ff19f0f' id='848d0938'/>
       </array-type-def>
+      <function-type size-in-bits='64' id='0300abda'>
+        <parameter type-id='184ff936'/>
+        <return type-id='b50a4934'/>
+      </function-type>
       <pointer-type-def type-id='ea2ebeac' size-in-bits='64' id='03054cfa'/>
       <pointer-type-def type-id='e151255a' size-in-bits='64' id='030d0b18'/>
       <enum-decl name='iommu_cap' filepath='include/linux/iommu.h' line='116' column='1' id='031224de'>
@@ -27326,6 +27332,7 @@
           <var-decl name='removed' type-id='b50a4934' visibility='default' filepath='include/linux/key.h' line='105' column='1'/>
         </data-member>
       </class-decl>
+      <pointer-type-def type-id='0300abda' size-in-bits='64' id='3177a274'/>
       <class-decl name='sighand_struct' size-in-bits='16640' is-struct='yes' visibility='default' filepath='include/linux/sched/signal.h' line='21' column='1' id='317e3dc9'>
         <data-member access='public' layout-offset-in-bits='0'>
           <var-decl name='siglock' type-id='fb4018a0' visibility='default' filepath='include/linux/sched/signal.h' line='22' column='1'/>
@@ -157168,6 +157175,10 @@
         <parameter type-id='f8840c23' name='key' filepath='kernel/jump_label.c' line='212' column='1'/>
         <return type-id='48b5725f'/>
       </function-decl>
+      <function-decl name='static_key_enable' mangled-name='static_key_enable' filepath='kernel/jump_label.c' line='187' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='static_key_enable'>
+        <parameter type-id='f8840c23' name='key' filepath='kernel/jump_label.c' line='187' column='1'/>
+        <return type-id='48b5725f'/>
+      </function-decl>
       <function-decl name='static_key_slow_dec' mangled-name='static_key_slow_dec' filepath='kernel/jump_label.c' line='267' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='static_key_slow_dec'>
         <parameter type-id='f8840c23' name='key' filepath='kernel/jump_label.c' line='267' column='1'/>
         <return type-id='48b5725f'/>
@@ -160643,6 +160654,13 @@
         <parameter type-id='f0981eeb' name='cmd' filepath='drivers/media/v4l2-core/v4l2-compat-ioctl32.c' line='1234' column='1'/>
         <parameter type-id='7359adad' name='arg' filepath='drivers/media/v4l2-core/v4l2-compat-ioctl32.c' line='1234' column='1'/>
         <return type-id='bd54fe1a'/>
+      </function-decl>
+      <function-decl name='v4l2_ctrl_add_handler' mangled-name='v4l2_ctrl_add_handler' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1548' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='v4l2_ctrl_add_handler'>
+        <parameter type-id='2b59fa5e' name='hdl' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1548' column='1'/>
+        <parameter type-id='2b59fa5e' name='add' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1549' column='1'/>
+        <parameter type-id='3177a274' name='filter' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1550' column='1'/>
+        <parameter type-id='b50a4934' name='from_other_dev' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1551' column='1'/>
+        <return type-id='95e97e5e'/>
       </function-decl>
       <function-decl name='v4l2_ctrl_auto_cluster' mangled-name='v4l2_ctrl_auto_cluster' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1626' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='v4l2_ctrl_auto_cluster'>
         <parameter type-id='f0981eeb' name='ncontrols' filepath='drivers/media/v4l2-core/v4l2-ctrls-core.c' line='1626' column='1'/>
