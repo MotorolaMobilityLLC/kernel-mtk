@@ -94,6 +94,9 @@ int scp_awake_lock(void *_scp_id)
 		if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
 			pr_notice("%s: resetting scp, break\n", __func__);
 			break;
+		} else if (atomic_read(&scp_reset_status) == RESET_STATUS_START_WDT) {
+			pr_notice("%s: restarting recovery, break\n", __func__);
+			break;
 		}
 #endif  // SCP_RECOVERY_SUPPORT
 
@@ -191,6 +194,9 @@ int scp_awake_unlock(void *_scp_id)
 #if SCP_RECOVERY_SUPPORT
 		if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
 			pr_notice("%s: scp is being reset, break\n", __func__);
+			break;
+		} else if (atomic_read(&scp_reset_status) == RESET_STATUS_START_WDT) {
+			pr_notice("%s: restarting recovery, break\n", __func__);
 			break;
 		}
 #endif  // SCP_RECOVERY_SUPPORT
