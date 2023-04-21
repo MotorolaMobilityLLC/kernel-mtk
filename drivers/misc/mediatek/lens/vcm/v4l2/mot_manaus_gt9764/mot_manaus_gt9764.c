@@ -108,7 +108,7 @@ static int mot_manaus_gt9764_init(struct mot_manaus_gt9764_device *mot_manaus_gt
 	struct i2c_client *client = v4l2_get_subdevdata(&mot_manaus_gt9764->sd);
 	int ret = 0;
 	char puSendCmdArray[3][2] = {
-	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x05},
+	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x07},
 	};
 	unsigned char cmd_number;
 
