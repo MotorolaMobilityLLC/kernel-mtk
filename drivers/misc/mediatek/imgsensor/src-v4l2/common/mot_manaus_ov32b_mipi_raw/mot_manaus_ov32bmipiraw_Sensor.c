@@ -52,7 +52,7 @@
 
 /**********************Modify Following Strings for Debug**********************/
 #define PFX "mot_manaus_ov32b"
-static int mot_ov32b_camera_debug = 0;
+static int mot_ov32b_camera_debug = 1;
 module_param(mot_ov32b_camera_debug,int, 0644);
 
 static int mot_ov32b_fusion_talk_en = 0;
@@ -416,7 +416,6 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 		if (tmp & 0x01)
 			write_cmos_sensor_8(ctx, 0x0100, 0x00); // stream off
 	}
-
 	return ERROR_NONE;
 }
 #define OV32B_EEPROM_IIC_ADDR 0xA2
@@ -1038,15 +1037,11 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 {
 	LOG_INF("Test_Pattern enable: %d\n", enable);
 	if (enable) {
-		write_cmos_sensor_8(ctx, 0x3019, 0xf0);
-		write_cmos_sensor_8(ctx, 0x4308, 0x01);
-		write_cmos_sensor_8(ctx, 0x4300, 0x00);
-		write_cmos_sensor_8(ctx, 0x4302, 0x00);
-		write_cmos_sensor_8(ctx, 0x4304, 0x00);
-		write_cmos_sensor_8(ctx, 0x4306, 0x07);
+		write_cmos_sensor_8(ctx,0x50c1,0x01);
+		write_cmos_sensor_8(ctx,0x50c2,0xff);
 	} else {
-		write_cmos_sensor_8(ctx, 0x3019, 0xd2);
-		write_cmos_sensor_8(ctx, 0x4308, 0x00);
+		write_cmos_sensor_8(ctx,0x50c1,0x00);
+		write_cmos_sensor_8(ctx,0x50c2,0x00);
 	}
 	ctx->test_pattern = enable;
 	return ERROR_NONE;
