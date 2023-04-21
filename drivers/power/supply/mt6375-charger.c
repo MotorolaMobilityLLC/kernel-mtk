@@ -25,6 +25,15 @@
 #include "charger_class.h"
 #include "mtk_charger.h"
 
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+#include <linux/gpio.h>
+#include <linux/of_device.h>
+#include <linux/of_gpio.h>
+#include <linux/pinctrl/consumer.h>
+
+bool typecotp_chg;
+#endif
+
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 extern int wt6670f_set_voltage(u16 voltage);
 extern int wt6670f_set_volt_count(int count);
@@ -209,6 +218,10 @@ enum mt6375_adc_chan {
 	ADC_CHAN_TEMP_JC,
 	ADC_CHAN_USBDP,
 	ADC_CHAN_USBDM,
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+	ADC_CHAN_VREFTS,
+	ADC_CHAN_TS,
+#endif
 	ADC_CHAN_MAX,
 };
 
@@ -279,6 +292,11 @@ struct mt6375_chg_data {
 	struct power_supply *batt_psy;
 	struct power_supply *wlc_psy;
 	char                *batt_uenvp[2];
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+	struct pinctrl *mos_pinctrl;
+	struct pinctrl_state *mos_gpio_on;
+	struct pinctrl_state *mos_gpio_off;
+#endif
 };
 
 struct mt6375_chg_platform_data {
@@ -1514,6 +1532,14 @@ static int mt6375_get_adc(struct charger_device *chgdev, enum adc_channel chan,
 	case ADC_CHANNEL_TEMP_JC:
 		adc_chan = ADC_CHAN_TEMP_JC;
 		break;
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+	case ADC_CHANNEL_VREFTS:
+		adc_chan = ADC_CHAN_VREFTS;
+		break;
+    case ADC_CHANNEL_TS:
+		adc_chan = ADC_CHAN_TS;
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -1525,6 +1551,48 @@ static int mt6375_get_adc(struct charger_device *chgdev, enum adc_channel chan,
 	*max = *min;
 	return 0;
 }
+
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+static int mt6375_get_vrefts(struct charger_device *chgdev, int *vrefts)
+{
+	return mt6375_get_adc(chgdev, ADC_CHANNEL_VREFTS, vrefts, vrefts);
+}
+
+static int mt6375_get_ts(struct charger_device *chgdev, int *ts)
+{
+	return mt6375_get_adc(chgdev, ADC_CHANNEL_TS, ts, ts);
+}
+
+static int mt6375_enable_mos_short(struct charger_device *chgdev, bool en)
+{
+	int ret = 0;
+	struct mt6375_chg_data *ddata = charger_get_data(chgdev);
+
+	if(en) {
+		pinctrl_select_state(ddata->mos_pinctrl, ddata->mos_gpio_on);
+	} else {
+		pinctrl_select_state(ddata->mos_pinctrl, ddata->mos_gpio_off);
+	}
+	return ret;
+}
+
+static int mos_parse_dt(struct mt6375_chg_data *ddata)
+{
+	struct device_node *node = ddata->dev->of_node;
+
+	if(!node) {
+		return -EINVAL;
+	}
+	ddata->mos_pinctrl = devm_pinctrl_get(ddata->dev);
+	if (IS_ERR(ddata->mos_pinctrl)) {
+		dev_err(ddata->dev, "mos_pinctrl not found\n");
+	} else {
+		ddata->mos_gpio_on = pinctrl_lookup_state(ddata->mos_pinctrl, "mos_on");
+		ddata->mos_gpio_off = pinctrl_lookup_state(ddata->mos_pinctrl, "mos_off");
+	}
+	return 0;
+}
+#endif
 
 static int mt6375_get_vbus(struct charger_device *chgdev, u32 *vbus)
 {
@@ -2359,6 +2427,11 @@ static const struct charger_ops mt6375_chg_ops = {
 	.get_ibat_adc = mt6375_get_ibat,
 	.get_tchg_adc = mt6375_get_tchg,
 	.get_zcv = mt6375_get_zcv,
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+	.get_vrefts_adc = mt6375_get_vrefts,
+	.get_ts_adc = mt6375_get_ts,
+	.enable_mos_short = mt6375_enable_mos_short,
+#endif
 	/* charing termination */
 	.set_eoc_current = mt6375_set_ieoc,
 	.enable_termination = mt6375_enable_te,
@@ -2607,6 +2680,9 @@ static int mt6375_chg_get_pdata(struct device *dev)
 		pdata->usb_killer_detect =
 			device_property_read_bool(dev, "usb_killer_detect");
 
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+		typecotp_chg = of_property_read_bool(np, "typecotp_chg");
+#endif
 		/* mediatek chgdev name */
 		if (of_property_read_string(np, "chg_name", &pdata->chg_name))
 			dev_notice(dev, "failed to get chg_name\n");
@@ -2907,6 +2983,12 @@ static int mt6375_chg_probe(struct platform_device *pdev)
 	}
 
 	ddata->dev = dev;
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+	ret = mos_parse_dt(ddata);
+	if(ret < 0) {
+		dev_err(&pdev->dev, "[%s] Couldn't parse DT nodes ret = %d\n", __func__, ret);
+	}
+#endif
 	init_completion(&ddata->pe_done);
 	init_completion(&ddata->aicc_done);
 	mutex_init(&ddata->attach_lock);

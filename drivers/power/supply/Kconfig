@@ -997,4 +997,10 @@ config CANCUNF_BATTERY_NTC
 	help
 	  This is config cancunf battery ntc table
 
+config MOTO_JP_TYPECOTP_SUPPORT
+	bool "This is config cancunf jp typecotp support"
+	default n
+	help
+	  This is config cancunf jp typecotp support
+
 endif # POWER_SUPPLY
