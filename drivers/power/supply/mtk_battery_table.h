@@ -546,7 +546,37 @@ struct fg_temp fg_temp_table[21] = {
 };
 #endif
 
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+struct typec_vol_temp {
+	int vol;
+	int temp;
+};
 
+struct typec_vol_temp typec_table[17] = {
+		{1743121, 700},
+		{1706500, 800},
+		{1652861, 900},
+		{1578549, 1000},
+		{1481344, 1100},
+		{1361798, 1200},
+		{1224590, 1300},
+		{1076289, 1400},
+		{925778, 1500},
+		{782609, 1600},
+		{651064, 1700},
+		{537410, 1800},
+		{439535, 1900},
+		{358522, 2000},
+		{293562, 2100},
+		{240000, 2200},
+		{215350, 2250}
+
+};
+#define typec_tab_len 17
+#define otp_threshold 750
+#define recover_threshold 650
+#define otpv_threshold 4000
+#endif
 
 /* ============================================================
  * <DOD, Battery_Voltage> Table
