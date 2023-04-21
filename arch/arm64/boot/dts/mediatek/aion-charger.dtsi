@@ -301,10 +301,10 @@
 		start_vbat_max = <4450>;
 		idvchg_term = <500>;
 		idvchg_step = <50>;
-		ita_level = <3000 2500 2000 1500>;
-		rcable_level = <230 280 380 480>;
-		ita_level_dual = <6200 3000 2500 2000>;
-		rcable_level_dual = <180 230 280 380>;
+		ita_level = <3000 2000 1500 1000>;
+		rcable_level = <230 260 300 480>;
+		ita_level_dual = <6200 3000 2000 1500>;
+		rcable_level_dual = <180 230 260 300>;
 		idvchg_ss_init = <1000>;
 		idvchg_ss_step = <250>;
 		idvchg_ss_step1 = <100>;
