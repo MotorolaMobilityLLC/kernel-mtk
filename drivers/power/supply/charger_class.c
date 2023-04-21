@@ -648,6 +648,35 @@ int charger_dev_set_boost_current_limit(struct charger_device *chg_dev, u32 uA)
 }
 EXPORT_SYMBOL(charger_dev_set_boost_current_limit);
 
+#ifdef CONFIG_MOTO_JP_TYPECOTP_SUPPORT
+int charger_dev_get_vrefts(struct charger_device *chg_dev, int *uV)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_vrefts_adc)
+		return chg_dev->ops->get_vrefts_adc(chg_dev, uV);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_vrefts);
+
+int charger_dev_get_ts(struct charger_device *chg_dev, int *uV)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_ts_adc)
+		return chg_dev->ops->get_ts_adc(chg_dev, uV);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_ts);
+
+int charger_dev_enable_mos_short(struct charger_device *chg_dev, bool en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->enable_mos_short)
+		return chg_dev->ops->enable_mos_short(chg_dev, en);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_mos_short);
+#endif
+
 int charger_dev_get_zcv(struct charger_device *chg_dev, u32 *uV)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_zcv)
