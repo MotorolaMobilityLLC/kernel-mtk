@@ -357,10 +357,7 @@ static bool select_charging_current_limit(struct mtk_charger *info,
 		}
 	} else {
 		if(m_chg_type == 0x09 || m_chg_type == 0x08) {
-			if (info->mmi.target_fcc <= 0)
-				pdata->charging_current_limit = 0;
-			else
-				pdata->charging_current_limit = 2000000;
+				pdata->input_current_limit = 2000000;
 		}
 	}
 #endif
