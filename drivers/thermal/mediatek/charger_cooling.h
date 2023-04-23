@@ -56,6 +56,9 @@ struct charger_cooling_device {
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 	struct power_supply *q_chg_psy;
 	struct power_supply *bq_chg_psy;
+	#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	bool thermal_charger_pump_support;
+	#endif
 	#endif
 	const struct charger_cooling_platform_data *pdata;
 };
