@@ -2004,33 +2004,33 @@ static int mt6375_enable_chg_type_det(struct charger_device *chgdev, bool en)
 int mt6375_config_qc_charger(struct charger_device *chg_dev)
 {
 	int rc = 0;
-	int vbus_mv;
+	int vbus_uv;
 	struct mt6375_chg_data *ddata = charger_get_data(chg_dev);
 
 	if(is_already_probe_ok == 1) {
-		rc = mt6375_get_vbus(chg_dev, &vbus_mv);
+		rc = mt6375_get_vbus(chg_dev, &vbus_uv);
 		if (rc != 0) {
 			pr_err("wt6670 get vbus failed\n");
 			return -1;
 		}
 	} else {
-		vbus_mv = -1;
+		vbus_uv = -1;
 		pr_err("wt6670 get vbus failed\n");
 	}
 
-	if(vbus_mv < 4000000 || vbus_mv > 6000000) {
+	if(vbus_uv < 4000000 || vbus_uv > 6000000) {
 		pr_err("vbus is not for qc3.0\n");
 		return -1;
 	}
 
-	pr_info("pulse_cnt=%d, vbus_mv=%d\n", ddata->pulse_cnt, vbus_mv);
-	if (vbus_mv < HVDCP_VOLTAGE_NOM && ddata->pulse_cnt < HVDCP_PULSE_COUNT_MAX) {
+	pr_info("pulse_cnt=%d, vbus_uv=%d\n", ddata->pulse_cnt, vbus_uv);
+	if (vbus_uv < HVDCP_VOLTAGE_NOM && ddata->pulse_cnt < HVDCP_PULSE_COUNT_MAX) {
 		rc = wt6670f_set_volt_count(1);
 		if (rc<0)
 			dev_err(ddata->dev, "wt6670f_set_volt_count up failed\n");
 		else
 			ddata->pulse_cnt++;
-	} else if (vbus_mv > HVDCP_VOLTAGE_MAX && ddata->pulse_cnt > 0 ) {
+	} else if (vbus_uv > HVDCP_VOLTAGE_MAX && ddata->pulse_cnt > 0 ) {
 		rc = wt6670f_set_volt_count(-1);
 		if (rc<0)
 			dev_err(ddata->dev, "wt6670f_set_volt_count down failed\n");
