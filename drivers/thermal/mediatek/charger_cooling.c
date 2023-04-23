@@ -128,11 +128,9 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	union power_supply_propval prop_s_bat_chr;
 	int ret = -1;
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-	#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
 	union power_supply_propval prop_bq_chr;
 	prop_bq_chr.intval = 0;
-	#endif // CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	#endif // CONFIG_MOTO_CHG_WT6670F_SUPPORT
+	#endif
 
 	if (chg->chg_psy == NULL || IS_ERR(chg->chg_psy)) {
 		pr_info("Couldn't get chg_psy\n");
@@ -141,13 +139,26 @@ static int cooling_state_to_charger_limit_v1(struct charger_cooling_device *chg)
 	prop_bat_chr.intval = master_charger_state_to_current_limit[chg->target_state];
 
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-	#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	if(chg->thermal_charger_pump_support) {
+		ret = power_supply_get_property(chg->bq_chg_psy,
+			POWER_SUPPLY_PROP_STATUS, &prop_bq_chr);
+		if (ret != 0) {
+			pr_notice("get charging enable fail\n");
+		}
+
+		ret = power_supply_set_property(chg->q_chg_psy,
+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &prop_bat_chr);
+		if (ret != 0) {
+			pr_notice("qc3p temp level set bat curr fail\n");
+		}
+	}
+	#else
 	ret = power_supply_get_property(chg->bq_chg_psy,
 		POWER_SUPPLY_PROP_STATUS, &prop_bq_chr);
 	if (ret != 0) {
 		pr_notice("set charging enable fail\n");
 	}
-
 	ret = power_supply_set_property(chg->q_chg_psy,
 		POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &prop_bat_chr);
 	if (ret != 0) {
@@ -353,8 +364,24 @@ static int charger_cooling_probe(struct platform_device *pdev)
 		}
 	}
         #endif
+
 	#ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
-	#ifndef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	charger_cdev->thermal_charger_pump_support = of_property_read_bool(np, "mmi,thermal-charger-pump-support");
+	if (charger_cdev->thermal_charger_pump_support) {
+		charger_cdev->q_chg_psy = power_supply_get_by_name("mmi_chrg_manager");
+		if (charger_cdev->q_chg_psy == NULL || IS_ERR(charger_cdev->q_chg_psy)) {
+			pr_info("Couldn't get mmi chrg manager psy\n");
+			return -EPROBE_DEFER;
+		}
+		charger_cdev->bq_chg_psy = power_supply_get_by_name("cp-standalone");
+		if (charger_cdev->bq_chg_psy == NULL || IS_ERR(charger_cdev->bq_chg_psy)) {
+			pr_info("Couldn't get cp standlone psy\n");
+			return -EPROBE_DEFER;
+		}
+	}
+	pr_err("%s: thermal-charger-pump-support = %d \n", __func__, charger_cdev->thermal_charger_pump_support);
+	#else
 	charger_cdev->q_chg_psy = power_supply_get_by_name("mmi_chrg_manager");
 	if (charger_cdev->q_chg_psy == NULL || IS_ERR(charger_cdev->q_chg_psy)) {
 		pr_info("Couldn't get mmi chrg manager psy\n");
