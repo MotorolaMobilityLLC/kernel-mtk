@@ -353,7 +353,7 @@ static void set_shutter(kal_uint16 shutter)
 #define SC202CS_SENSOR_GAIN_MAX_VALID_INDEX  6
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	kal_uint16 reg_gain = gain << 4;
+	kal_uint16 reg_gain = gain << 3;
 
 	if (reg_gain < SC202CS_SENSOR_GAIN_BASE)
 		reg_gain = SC202CS_SENSOR_GAIN_BASE;
