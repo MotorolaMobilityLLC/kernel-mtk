@@ -65,9 +65,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 #define OV50D_BASEGAIN 128
 
-#define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 32640    /*255*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_60FPS_PLATFORM 2040           /*15.9375*128, 128 GAINBASE*/
-#define OV50D_MAX_GAIN_120FPS_PLATFORM 8160          /*63.75*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_BINNINGSIZE_PLATFORM 7936    /*62*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_60FPS_PLATFORM 1984           /*15.5*128, 128 GAINBASE*/
+#define OV50D_MAX_GAIN_120FPS_PLATFORM 1984          /*15.5*128, 128 GAINBASE*/
 
 #define FPT_PDAF_SUPPORT 1
 
@@ -153,15 +153,13 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 760800000,
 	},
 	.margin = 31,					/* sensor framelength & shutter margin */
-	.min_shutter = 8,				/* min shutter */
+	.min_shutter = 20,				/* min shutter */
 	.min_gain = BASEGAIN, /*1x gain*/
-	.max_gain = 3968, 				/*255 * 64*/
-	.max_gain_fullsize = 1020, 		/*15.9375 * 64*/
-	.max_gain_60fps = 1020,			/*15.9375 * 64*/
-	.max_gain_120fps = 4080,		/*63.75 * 64*/
+	.max_gain = 3968, 				/*62 * 64*/
+	.max_gain_60fps = 992,			/*15.5 * 64*/
+	.max_gain_120fps = 992,			/*15.5 * 64*/
 	.min_gain_iso = 100,
-	.exp_step = 2,
-	.exp_step_fullsize = 4,
+	.exp_step = 1,
 	.gain_step = 2, /*minimum step = 2 in 1x~2x gain*/
 	.gain_type = 4,/*to be modify,no gain table for sony*/
 	.max_frame_length = 0xffffff,     /* max framelength by sensor register's limitation */
@@ -1733,18 +1731,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_GET_BINNING_TYPE:
 		switch (*(feature_data + 1)) {
-			case MSDK_SCENARIO_ID_CUSTOM1:
-				*feature_return_para_32 = 1540;
-				break;
 			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-				*feature_return_para_32 = 1256;
-				break;
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 			default:
-				*feature_return_para_32 = 1119;
+				*feature_return_para_32 = 1000;
 			break;
 		}
 		*feature_para_len = 4;
