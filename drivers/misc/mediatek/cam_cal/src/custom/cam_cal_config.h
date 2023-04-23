@@ -50,6 +50,11 @@ struct STRUCT_CAM_CAL_CONFIG_STRUCT {
 	unsigned int has_stored_data;
 };
 
+struct STRUCT_MOT_LENS__ID{
+	uint8_t lens_id;
+	char lens_name[40];
+};
+
 unsigned int show_cmd_error_log(enum ENUM_CAMERA_CAM_CAL_TYPE_ENUM cmd);
 int get_mtk_format_version(struct EEPROM_DRV_FD_DATA *pdata, unsigned int *pGetSensorCalData);
 

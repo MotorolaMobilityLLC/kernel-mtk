@@ -275,7 +275,68 @@ int  mot_check_awb_data(unsigned char* awb_data, int  size)
 	return NO_ERRORS;
 }
 
+unsigned int mot_lens_id_to_name(uint8_t id,unsigned int block_size,unsigned char * lens_id,unsigned int err)
+{
+    int i=0,flag=0,ret=0;
 
+    const struct STRUCT_MOT_LENS__ID lens_table[] =
+    {
+	{0x21,"38134A-400"},
+	{0x22,"39411A-400"},
+	{0xE0,"ZD0017J1"},
+	{0x23,"39292B-400"},
+	{0xE1,"XA-0216L-H5085"},
+	{0x80,"505265A02"},
+	{0x24,"39374A-400"},
+	{0x25,"39449A-400"},
+	{0x26,"39453A-400"},
+	{0x27,"39454A-400"},
+	{0x81,"505265C01"},
+	{0x2F,"39454A-400"},
+	{0x40,"39397A-400"},
+	{0xE2,"1630A"},
+	{0x41,"39395A-403"},
+	{0x42,"39486A-400"},
+	{0x43,"39374B-400"},
+	{0x44,"39449B-400"},
+	{0x45,"39495A-400"},
+	{0x2E,"39453D-400"},
+	{0x46,"39516A-400"},
+	{0xE3,"ZC0018G1"},
+	{0x82,"1086261A01"},
+	{0x47,"39603A-400"},
+	{0x36,"39453D-402"},
+	{0x83,"506288A01-100"},
+	{0x3E,"39453C-400"},
+	{0x60,"39553A-400"},
+	{0xE4,"ZD0017P4"},
+	{0x2B,"39292C-400"},
+	{0x48,"39397B-400"},
+    };
+
+    for (i =0;i <  sizeof(lens_table)/sizeof(struct STRUCT_MOT_LENS__ID);i++)
+   {
+      if(id == lens_table[i].lens_id)
+      {
+          ret = snprintf(lens_id, MAX_CALIBRATION_STRING, lens_table[i].lens_name);
+          flag = 1;
+          break;
+      }
+   }
+
+   if (flag == 0)
+   {
+       ret = snprintf(lens_id, MAX_CALIBRATION_STRING, "Unknow");
+   }
+
+   if (ret < 0 || ret >= block_size)
+   {
+	debug_log("snprintf of mnf->lens_id failed");
+	memset(lens_id, 0,MAX_CALIBRATION_STRING);
+	err = CAM_CAL_ERR_NO_PARTNO;
+   }
+   return err;
+}
 unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData)
 {
@@ -333,30 +394,8 @@ unsigned int mot_do_manufacture_info(struct EEPROM_DRV_FD_DATA *pdata,
 			sizeof(pCamCalData->ManufactureData.actuator_id));
 		err = CAM_CAL_ERR_NO_PARTNO;
 	}
-
 	//lens_id
-	if(tempBuf[12] == 0x24)
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39374A-400");
-	else if(tempBuf[12] == 0x25)
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39449A-400");
-	else if(tempBuf[12] == 0x40)
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39397A-400");
-	else if(tempBuf[12] == 0x60)
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39553A-400");
-	else if(tempBuf[12] == 0x45)
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39459A-400");
-	else if(tempBuf[12] == 0x43)
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Sunny 39374B-400");
-	else
-		ret = snprintf(pCamCalData->ManufactureData.lens_id, MAX_CALIBRATION_STRING, "Unknow");
-
-	if (ret < 0 || ret >= block_size) {
-		debug_log("snprintf of mnf->lens_id failed");
-		memset(pCamCalData->ManufactureData.lens_id, 0,
-			sizeof(pCamCalData->ManufactureData.lens_id));
-		err = CAM_CAL_ERR_NO_PARTNO;
-	}
-
+        err = mot_lens_id_to_name(tempBuf[12],block_size,pCamCalData->ManufactureData.lens_id,err);
 	//manufacture id
 	if(tempBuf[13] == 'T' && tempBuf[14] == 'S') {
 		ret = snprintf(pCamCalData->ManufactureData.manufacturer_id, MAX_CALIBRATION_STRING, "Tianshi");
