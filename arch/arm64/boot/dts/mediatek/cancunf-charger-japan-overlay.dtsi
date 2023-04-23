@@ -87,7 +87,12 @@
 		pinctrl-names = "mos_on","mos_off";
 		pinctrl-0 = <&mos_on>;
 		pinctrl-1 = <&mos_off>;
+
+	cv = <4500>;
+	ircmp_r = <0>;
+	ircmp_v = <0>;
 };
+
 &pio {
 	mos_on: mos_on {
 		pins_cmd_dat {
@@ -122,6 +127,10 @@
 		pd,sink-pdo-size = <2>;
 		pd,sink-pdo-data = <0x0001912c 0x0001912c> ;
 	};
+};
+
+&extcon_usb {
+	vbus-current = <1100000>;
 };
 
 /*
