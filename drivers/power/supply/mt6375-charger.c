@@ -2294,16 +2294,14 @@ static int mt6375_plug_out(struct charger_device *chgdev)
 
 	ddata->mmi_chg_status = POWER_SUPPLY_STATUS_DISCHARGING;
 
-	if (pdata->wdt_en) {
-
 #ifdef CONFIG_MOTO_CHG_WT6670F_SUPPORT
 	if(m_chg_type != 0 && is_already_probe_ok != 0){
 		wt6670f_reset_chg_type();
-		m_chg_type = 0;
 		ddata->pulse_cnt = 0;
 	}
 #endif
 
+	if (pdata->wdt_en) {
 		ret = mt6375_chg_field_set(ddata, F_WDT_EN, 0);
 		if (ret < 0) {
 			dev_err(ddata->dev, "failed to disable WDT\n");
