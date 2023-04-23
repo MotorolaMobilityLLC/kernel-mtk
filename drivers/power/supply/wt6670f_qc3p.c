@@ -1159,6 +1159,7 @@ void wt6670f_reset_chg_type(void)
 {
         _wt->chg_type = 0;
 	_wt->chg_ready = false;
+	m_chg_type = 0;
 }
 EXPORT_SYMBOL_GPL(wt6670f_reset_chg_type);
 
