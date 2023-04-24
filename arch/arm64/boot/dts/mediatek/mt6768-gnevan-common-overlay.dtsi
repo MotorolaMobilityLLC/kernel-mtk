@@ -153,6 +153,23 @@
         force_mode = "EINT";
 };
 
+&vtskin {
+	/delete-property/ vtskin1;
+	vtskin1 {
+		ref-num = <2>;
+		operation = "OP_COEF";
+
+		vtskin_coef_0{
+			sensor-name  = "mtktsbattery";
+			sensor-coeff = <50>;
+		};
+
+		vtskin_coef_1{
+			sensor-name  = "mtktsAP";
+			sensor-coeff  = <47>;
+		};
+	};
+};
 
 //+IKSWT-19825,huangyuxun.wt,add,20220929,add thermal ntc
 &tboard_thermistor1 {
