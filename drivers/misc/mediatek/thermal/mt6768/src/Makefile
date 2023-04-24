@@ -29,3 +29,4 @@ obj-$(CONFIG_MTK_LEGACY_THERMAL) += mtk_ts_6358buck1.o
 obj-$(CONFIG_MTK_LEGACY_THERMAL) += mtk_ts_6358buck2.o
 obj-$(CONFIG_MTK_LEGACY_THERMAL) += mtk_ts_6358buck3.o
 obj-$(CONFIG_MTK_LEGACY_THERMAL) += mtk_thermal_ipi.o
+obj-$(CONFIG_THERMAL) += vtskin_temp.o

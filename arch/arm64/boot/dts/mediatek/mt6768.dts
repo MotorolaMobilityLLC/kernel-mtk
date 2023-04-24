@@ -2377,6 +2377,113 @@ defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		io-channel-names = "thermistor-ch3";
 	};
 
+	vtskin: vtskin {
+		compatible = "mediatek,mt6893-virtual-tskin";
+
+		 num-sensor =  <4>;
+		#thermal-sensor-cells = <1>;
+
+		vtskin-max {
+
+			ref-num = <2>;
+			operation = "OP_MAX";
+			vtskin_coef_0{
+				sensor-name = "vtskin1";
+				sensor-coeff = <0>;
+			};
+			vtskin_coef_1{
+				sensor-name = "vtskin2";
+				sensor-coeff = <0>;
+			};
+
+		};
+
+
+		vtskin1 {
+			ref-num = <4>;
+			operation = "OP_COEF";
+
+			vtskin_coef_0{
+				sensor-name  = "mtktscpu";
+				sensor-coeff = <2>;
+			};
+
+			vtskin_coef_1{
+				sensor-name  = "mtktsAP";
+				sensor-coeff  = <3>;
+			};
+
+			vtskin_coef_2{
+				sensor-name  = "mtktsbtsnrpa";
+				sensor-coeff = <4>;
+			};
+
+			vtskin_coef_3{
+				sensor-name  = "mtktswmt";
+				sensor-coeff  = <5>;
+			};
+
+		};
+
+
+
+		vtskin2{
+
+			ref-num = <4>;
+			operation = "OP_COEF";
+			vtskin_coef_0{
+				sensor-name  = "mtktscpu";
+				sensor-coeff  = <3>;
+			};
+
+			vtskin_coef_1{
+				sensor-name  = "mtktsAP";
+				sensor-coeff = <4>;
+			};
+
+			vtskin_coef_2{
+				sensor-name = "mtktsbtsnrpa";
+				sensor-coeff = <5>;
+			};
+
+			vtskin_coef_3{
+				sensor-name  = "mtktswmt";
+				sensor-coeff = <8>;
+			};
+
+		};
+
+
+
+		vtskin3{
+
+			ref-num = <4>;
+			operation = "OP_COEF";
+
+			vtskin_coef_0{
+				sensor-name  = "mtktscpu";
+				sensor-coeff  = <1>;
+			};
+
+			vtskin_coef_1{
+				sensor-name  = "mtktsAP";
+				sensor-coeff = <6>;
+			};
+
+			vtskin_coef_2{
+				sensor-name = "mtktsbtsnrpa";
+				sensor-coeff = <8>;
+			};
+
+			vtskin_coef_3{
+				sensor-name  = "mtktswmt";
+				sensor-coeff = <7>;
+			};
+
+		};
+
+	};
+
 	drcc: drcc {
 		compatible = "mediatek,drcc";
 		state = <255>;
