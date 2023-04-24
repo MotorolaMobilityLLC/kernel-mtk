@@ -3174,14 +3174,11 @@ void mmi_charge_rate_check(struct mtk_charger *info)
  	}
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	if ((icl >= TURBO_CHRG_THRSH) && ((vbus*icl/1000) >= TURBO_PWR_THRSH)){
+	if ((icl >= TURBO_CHRG_THRSH) && ((vbus*icl/1000) >= TURBO_PWR_THRSH))
 #else
-	if (icl >= TURBO_CHRG_THRSH){
+	if (icl >= TURBO_CHRG_THRSH)
 #endif
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	}
-#endif
 	else if (icl < WEAK_CHRG_THRSH)
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
 	else
