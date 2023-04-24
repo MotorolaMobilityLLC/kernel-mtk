@@ -58,8 +58,10 @@
 	/*swchg + 2CP*/
 	charger_configuration= <4>;
 
-	enable_dynamic_mivr;
+	disable_aicl;
+
 	/*mmi config*/
+	mmi,typec-rp-max-current = <2000000>;
 	mmi,iterm-ma = <429>;
 	mmi,mmi-temp-zones = <0 4200 800 0>,
 			<10 4250 4000 2000>,
@@ -79,6 +81,10 @@
 	mmi,upper-limit-capacity = <65>;
 	mmi,lower-limit-capacity = <60>;
 	mmi,min-cp-therm-current-ua = <2000000>;
+
+	mmi,pd-pmax-mw = <68000>;
+	mmi,pd_vbus_low_bound = <5000000>;
+	mmi,pd_vbus_upper_bound = <9000000>;
 };
 
 &moto_chg_tcmd {
@@ -252,10 +258,10 @@
 		start_vbat_max = <4450>;
 		idvchg_term = <500>;
 		idvchg_step = <50>;
-		ita_level = <3000 2500 2000 1500>;
-		rcable_level = <230 280 380 480>;
-		ita_level_dual = <6200 3000 2500 2000>;
-		rcable_level_dual = <130 230 280 380>;
+		ita_level = <3000 2000 1500 1000>;
+		rcable_level = <230 260 300 480>;
+		ita_level_dual = <6200 3000 2000 1500>;
+		rcable_level_dual = <180 230 260 300>;
 		idvchg_ss_init = <1000>;
 		idvchg_ss_step = <250>;
 		idvchg_ss_step1 = <100>;
@@ -303,9 +309,9 @@
 	pd-data {
 		/* 5V, 900ma */
 		pd,source-pdo-data = <0x0001905a>;
-		/* 5V, 3A  9V, 2A  9V, 3A*/
-		pd,sink-pdo-size = <3>;
-		pd,sink-pdo-data = <0x0001912c 0x0002d0c8 0x0002d12c> ;
+		/*5V, 2A 5V, 3A  9V, 2A  9V, 3A*/
+		pd,sink-pdo-size = <4>;
+		pd,sink-pdo-data = <0x000190c8 0x0001912c 0x0002d0c8 0x0002d12c> ;
 	};
 };
 
