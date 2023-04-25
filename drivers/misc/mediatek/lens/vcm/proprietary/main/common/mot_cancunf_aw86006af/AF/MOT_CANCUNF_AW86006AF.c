@@ -96,14 +96,21 @@ static int aw86006_i2c_writes(uint32_t a_u4Addr, uint8_t a_Addr_uSize,
 
 static inline int AF_init(void)
 {
-    int ret = 0;
-    uint8_t data[1] = {0x1};
-    ret = aw86006_i2c_writes(0x0001, 2, data, 1);
-    if(ret < 0) {
-        AW_LOGE("Set OIS ON error, ret = %d", ret);
-    } else {
-        AW_LOGE("Set OIS ON success , ret = %d", ret);
-    }
+	int ret = 0;
+	uint8_t data[1] = {0x1};
+	uint8_t dataSac[2] = {0x5, 0x3};
+	ret = aw86006_i2c_writes(0x0001, 2, data, 1);
+	if(ret < 0) {
+		AW_LOGE("Set OIS ON error, ret = %d", ret);
+	} else {
+		AW_LOGE("Set OIS ON success , ret = %d", ret);
+	}
+	ret = aw86006_i2c_writes(0x000B, 2, dataSac, 2);
+	if(ret < 0) {
+		AW_LOGE("Set SAC error, ret = %d", ret);
+	} else {
+		AW_LOGI("Set SAC success , ret = %d", ret);
+	}
 	/* add AF init start */
 	AW_LOGD("AF init");
 	/* add AF init end */
