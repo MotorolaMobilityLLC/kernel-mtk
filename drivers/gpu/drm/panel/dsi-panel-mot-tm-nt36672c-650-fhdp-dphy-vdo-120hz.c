@@ -31,16 +31,11 @@
 /* option function to read data from some panel address */
 /* #define PANEL_SUPPORT_READBACK */
 
-//TBD
-#define BIAS_SM5109
-
-#ifdef BIAS_SM5109
+//#define BIAS_SM5109
 extern int __attribute__ ((weak)) sm5109_BiasPower_disable(u32 pwrdown_delay);
 extern int __attribute__ ((weak)) sm5109_BiasPower_enable(u32 avdd, u32 avee,u32 pwrup_delay);
-#else
-//To be removed when sm5109 bias config ready
-#define BIAS_TMP_V0
-#endif
+
+static int tp_gesture_flag = 0;
 
 struct tianma {
 	struct device *dev;
@@ -168,11 +163,9 @@ static void tianma_panel_init(struct tianma *ctx)
 {
 	pr_info("disp: %s+\n", __func__);
 
-#ifdef BIAS_SM5109
 	sm5109_BiasPower_enable(15,15,5);
-#endif
 
-#ifdef BIAS_TMP_V0
+#if 0 //#ifdef BIAS_TMP_V0
 	ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
 	ctx->bias_p_gpio = devm_gpiod_get(ctx->dev, "bias_p", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->bias_n_gpio)) {
@@ -276,6 +269,17 @@ static int tianma_disable(struct drm_panel *panel)
 	return 0;
 }
 
+static int tianma_set_gesture_flag(int state)
+{
+	if(state == 1)
+		tp_gesture_flag = 1;
+	else
+		tp_gesture_flag = 0;
+
+	pr_info("%s:disp:set tp_gesture_flag:%d\n", __func__, tp_gesture_flag);
+	return 0;
+}
+
 static int tianma_unprepare(struct drm_panel *panel)
 {
 	struct tianma *ctx = panel_to_tianma(panel);
@@ -293,11 +297,12 @@ static int tianma_unprepare(struct drm_panel *panel)
 
 	ctx->prepared = false;
 
-#ifdef BIAS_SM5109
-	sm5109_BiasPower_disable(5);
-#endif
+	pr_info("%s:disp: tp_gesture_flag:%d\n",__func__, tp_gesture_flag);
+	if(!tp_gesture_flag) {
+		sm5109_BiasPower_disable(5);
+	}
 
-#ifdef BIAS_TMP_V0
+#if 0 //#ifdef BIAS_TMP_V0
 	ctx->bias_n_gpio = devm_gpiod_get(ctx->dev, "bias_n", GPIOD_OUT_HIGH);
 	if (IS_ERR(ctx->bias_n_gpio)) {
 		dev_err(ctx->dev, "%s: cannot get bias_n_gpio %ld\n",
@@ -875,6 +880,7 @@ static struct mtk_panel_funcs ext_funcs = {
 	.ext_param_set = mtk_panel_ext_param_set,
 	.get_lcm_version = nt36672c_get_lcm_version,
 //	.ata_check = panel_ata_check,
+	.set_gesture_flag = tianma_set_gesture_flag,
 	.panel_feature_set = panel_feature_set,
 };
 #endif
