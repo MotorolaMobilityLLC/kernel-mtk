@@ -75,17 +75,13 @@ static struct mtk_panel_para_table panel_cabc_disable[] = {
 
 static struct mtk_panel_para_table panel_hbm_on[] = {
 	{4, {0xFF, 0x78, 0x07, 0x00}},
-	{3, {0x51, 0x07, 0xCC}},
+	{3, {0x51, 0x07, 0xFF}},
 };
 
 static struct mtk_panel_para_table panel_hbm_off[] = {
 	{4, {0xFF, 0x78, 0x07, 0x00}},
-	{3, {0x51, 0x06, 0x2A}},
+	{3, {0x51, 0x06, 0x66}},
 };
-
-#if 0 //defined(CONFIG_MTK_PANEL_EXT)
-static char bl_tb0[] = { 0x51, 0xff };
-#endif
 
 #define tongxingda_dcs_write_seq(ctx, seq...)                                     \
 	({                                                                     \
@@ -210,7 +206,7 @@ static void tongxingda_panel_init(struct tongxingda *ctx)
 
 	printk("[%d  %s]hxl_check_bias !!\n",__LINE__, __FUNCTION__);
 	tongxingda_dcs_write_seq_static(ctx, 0xFF,0x78,0x07,0x00);
-	tongxingda_dcs_write_seq_static(ctx, 0x51, 0x06,0x2A);//max:0x07 0xFF
+	tongxingda_dcs_write_seq_static(ctx, 0x51, 0x06,0x66);//max:0x07 0xFF
 	tongxingda_dcs_write_seq_static(ctx, 0x53, 0x2c);
 	tongxingda_dcs_write_seq_static(ctx, 0x55, 0x03);
 	tongxingda_dcs_write_seq_static(ctx, 0x35, 0x00);
