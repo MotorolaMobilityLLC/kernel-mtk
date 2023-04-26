@@ -185,7 +185,7 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx, 0x00,0xB0);
 	csot_dcs_write_seq_static(ctx, 0xB4,0x00,0x08,0x02,0x00,0x00,0xbb,0x00,0x07,0x0d,0xb7,0x0c,0xb7,0x10,0xf0);
 	csot_dcs_write_seq_static(ctx, 0x35,0x00);
-	csot_dcs_write_seq_static(ctx, 0x51,0xC5,0x05);
+	csot_dcs_write_seq_static(ctx, 0x51,0xCC,0x0C);
 	csot_dcs_write_seq_static(ctx, 0x53,0x2C);
 	csot_dcs_write_seq_static(ctx, 0x55,0x00);
 
@@ -751,8 +751,8 @@ static int panel_cabc_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb
 
 static int panel_hbm_set_cmdq(struct csot *ctx, void *dsi, dcs_grp_write_gce cb, void *handle, uint32_t hbm_state)
 {
-	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xF9, 0x09}};
-	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0xC5, 0x05}};
+	struct mtk_panel_para_table hbm_on_table = {3, {0x51, 0xFF, 0x0F}};
+	struct mtk_panel_para_table hbm_off_table = {3, {0x51, 0xCC, 0x0C}};
 
 	if (hbm_state > 2) {
 		pr_info("%s: invalid HBM mode:%d, return\n", __func__, hbm_state);
