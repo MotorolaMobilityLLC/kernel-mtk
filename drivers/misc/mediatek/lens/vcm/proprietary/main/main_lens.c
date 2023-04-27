@@ -716,8 +716,9 @@ static int AF_i2c_probe(struct i2c_client *client,
 
 		return i4RetValue;
 	}
-        aw86006_ois_init(g_pstAF_I2Cclient);
-
+#ifdef CONFIG_MOT_CANCUNF_CAMERA_PROJECT
+	aw86006_ois_init(g_pstAF_I2Cclient);
+#endif
 	spin_lock_init(&g_AF_SpinLock);
 
 	LOG_INF("Attached!!\n");
