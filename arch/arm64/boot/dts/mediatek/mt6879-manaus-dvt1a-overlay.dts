@@ -21,7 +21,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "manaus";
-			mot,board-id = <0x47 0xB1A0>;
+			mot,board-id = <0x48 0xB1A0>;
 		};
 	};
 };
