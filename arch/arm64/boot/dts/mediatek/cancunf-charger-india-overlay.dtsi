@@ -274,6 +274,7 @@
 	ACTIVE_TABLE = <(5)>;
 	R_FG_VALUE = <(5)>;
 	NO_BAT_TEMP_COMPENSATE = <(1)>;
+	CAR_TUNE_VALUE = <(99)>;
 //	df-serialnum = "SB18D61156";
 	df-serialnum = "SB18D86478";
 	#include "bat_setting/mt6855_battery_pc50_atl_5000mah.dtsi"
