@@ -39,15 +39,16 @@
 		hwen-gpio = <&pio 8 1>;
 		boost-ctl = <0x02>;
 		ctl-bank-en = <0x02>;
-		full-scale-current = <0x18>; //24.2 mA
-		map-mode = <1>; //0x16 : 0 exponential, 1 linear
+		full-scale-current = <0x19>; //25 mA
+		map-mode = <0>; //0x16 : 0 exponential, 1 linear
+		current-align-type = <0x01>;
 		sm5350,default-brightness = <1810>;
 		sm5350,init-seq-enable = <1>;
 		sm5350,init-seq = <0x1A 0x02>,
 				<0x1C 0x0F>,
 				<0x10 0x07>,
-				<0x16 0x01>,
-				<0x18 0x18>,
+				<0x16 0x00>,
+				<0x18 0x19>,
 				<0x23 0xFF>,
 				<0x24 0x02>;
 
