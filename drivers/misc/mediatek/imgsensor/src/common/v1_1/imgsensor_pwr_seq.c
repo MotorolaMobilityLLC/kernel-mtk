@@ -31,11 +31,11 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_MOT_CANCUNF_HI1634Q_MIPI_RAW,
 		{
-			{SensorMCLK, Vol_High, 1},
 			{RST, Vol_Low, 1},
 			{DOVDD, Vol_High, 0},
 			{AVDD, Vol_High, 0},
 			{DVDD, Vol_High, 1},//1.1v
+			{SensorMCLK, Vol_High, 1},
 			{RST, Vol_High, 5},
 		},
 	},
