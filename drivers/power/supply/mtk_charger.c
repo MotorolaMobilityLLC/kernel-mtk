@@ -3115,16 +3115,13 @@ static bool mmi_has_current_tapered(struct mtk_charger *info,
 
 #define WEAK_CHRG_THRSH 450
 #define TURBO_CHRG_THRSH 2500
-#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-#define TURBO_PWR_THRSH 20
-#endif
 void mmi_charge_rate_check(struct mtk_charger *info)
 {
 	int icl = 0;
 	int rc = 0;
 	int rp_level = 0;
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	int vbus = get_vbus(info)/1000; /* mV to V */
+	int ibus = get_ibus(info); /* mA */
 #endif
 	union power_supply_propval val;
 
@@ -3174,7 +3171,7 @@ void mmi_charge_rate_check(struct mtk_charger *info)
  	}
 
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	if ((icl >= TURBO_CHRG_THRSH) && ((vbus*icl/1000) >= TURBO_PWR_THRSH))
+	if ((icl >= TURBO_CHRG_THRSH) && (ibus >= TURBO_CHRG_THRSH))
 #else
 	if (icl >= TURBO_CHRG_THRSH)
 #endif
@@ -3184,16 +3181,22 @@ void mmi_charge_rate_check(struct mtk_charger *info)
 	else
 		info->mmi.charge_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
 #if defined(CONFIG_MOTO_CHG_WT6670F_SUPPORT) && ((defined(CONFIG_MOTO_CHARGER_SGM415XX) && defined(CONFIG_FORCE_QC3_ICL)) || defined(CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT))
+#ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
+	// QC2, QC3 and Qc3+ all support max power more than 15w, should show trubo power
+	if ((m_chg_type == 0x05) || (m_chg_type == 0x06) ||
+            (m_chg_type == 0x08) || (m_chg_type == 0x09)) {
+#else
 	//Qc3+ should show trubo power
 	if (m_chg_type == 0x09) {
+#endif
 		info->mmi.charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 	}
 #endif
 
 end_rate_check:
 #ifdef CONFIG_MOTO_DISCRETE_CHARGE_PUMP_SUPPORT
-	pr_info("%s ICL:%d, vbus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
-		__func__, icl, vbus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
+	pr_info("%s ICL:%d, ibus: %d, Rp:%d, PD:%d, chg_type: %d, Charger Detected: %s\n",
+		__func__, icl, ibus, rp_level, info->pd_type, m_chg_type, charge_rate[info->mmi.charge_rate]);
 #else
 	pr_info("%s ICL:%d, Rp:%d, PD:%d, Charger Detected: %s\n",
 		__func__, icl, rp_level, info->pd_type, charge_rate[info->mmi.charge_rate]);
