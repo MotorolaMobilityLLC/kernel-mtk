@@ -82,8 +82,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.checksum_value = 0x388c7147,
 	.pre = {
-		.pclk = 100000000,
-		.linelength = 425,
+		.pclk = 800000000,
+		.linelength = 3400,
 		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
@@ -94,8 +94,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 760800000,
 	},
 	.cap = {
-		.pclk = 100000000,
-		.linelength = 425,
+		.pclk = 800000000,
+		.linelength = 3400,
 		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
@@ -106,8 +106,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 760800000,
 	},
 	.normal_video = {
-		.pclk = 100000000,
-		.linelength = 425,
+		.pclk = 800000000,
+		.linelength = 3400,
 		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
@@ -118,8 +118,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 760800000,
 	},
 	.hs_video = {
-		.pclk = 100000000,
-		.linelength = 325,
+		.pclk = 800000000,
+		.linelength = 2600,
 		.framelength = 2564,
 		.startx = 0,
 		.starty = 0,
@@ -130,20 +130,20 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 760800000,
 	},
 	.slim_video = {
-		.pclk = 75000000,
-		.linelength = 600,
-		.framelength = 4166,
+		.pclk = 800000000,
+		.linelength = 3400,
+		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 4096,
-		.grabwindow_height = 3072,
+		.grabwindow_width = 2048,
+		.grabwindow_height = 1152,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 1280448000,
+		.mipi_pixel_rate = 760800000,
 	},
 	.custom1 = {
-		.pclk = 100000000,
-		.linelength = 325,
+		.pclk = 800000000,
+		.linelength = 2600,
 		.framelength = 5128,
 		.startx = 0,
 		.starty = 0,
@@ -219,7 +219,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 	/* hs_video */
 	{8192, 6144,    0,  768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 	/* slim_video */
-	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
+	{8192, 6144,    0,  768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 	/* custom1 */
 	{8192, 6144,    0,  768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 };
@@ -305,10 +305,6 @@ static void set_dummy(void)
 	write_cmos_sensor_8(0x3840, (imgsensor.frame_length >> 16) & 0xFF);
 	write_cmos_sensor_8(0x380e, (imgsensor.frame_length >> 8) & 0xFF);
 	write_cmos_sensor_8(0x380f, imgsensor.frame_length & 0xFF);
-
-	write_cmos_sensor_8(0x380c, imgsensor.line_length >> 8);
-	write_cmos_sensor_8(0x380d, imgsensor.line_length & 0xFF);
-
 }	/*	set_dummy  */
 
 static kal_uint32 return_sensor_id(void)
@@ -690,8 +686,8 @@ static void slim_video_setting(void)
 {
 	pr_debug("MOT CANCUNF OV50D slim_video_setting start\n");
 
-	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_preview_mot_cancunf_ov50d,
-		sizeof(addr_data_pair_preview_mot_cancunf_ov50d)/sizeof(kal_uint16));
+	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_cancunf_ov50d,
+		sizeof(addr_data_pair_normal_video_mot_cancunf_ov50d)/sizeof(kal_uint16));
 
 	pr_debug("MOT CANCUNF OV50D slim_video_setting end\n");
 }
