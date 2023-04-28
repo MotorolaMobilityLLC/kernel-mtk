@@ -28,6 +28,7 @@
 #include <linux/version.h>
 #include <linux/ratelimit.h>
 #include <linux/priority_control_manager.h>
+#include <linux/sched/signal.h>
 
 #include <mali_kbase_jm.h>
 #include <mali_kbase_kinstr_jm.h>
@@ -1250,6 +1251,12 @@ int kbase_jd_submit(struct kbase_context *kctx,
 		return -EINVAL;
 	}
 
+	if (nr_atoms > BASE_JD_ATOM_COUNT) {
+		dev_dbg(kbdev->dev, "Invalid attempt to submit %u atoms at once for kctx %d_%d",
+			nr_atoms, kctx->tgid, kctx->id);
+		return -EINVAL;
+	}
+
 	/* All atoms submitted in this call have the same flush ID */
 	latest_flush = kbase_backend_get_current_flush_id(kbdev);
 
@@ -1378,6 +1385,12 @@ while (false)
 		kbase_disjoint_event_potential(kbdev);
 
 		mutex_unlock(&jctx->lock);
+		if (fatal_signal_pending(current)) {
+			dev_dbg(kbdev->dev, "Fatal signal pending for kctx %d_%d",
+				kctx->tgid, kctx->id);
+			/* We're being killed so the result code doesn't really matter  */
+			return 0;
+		}
 	}
 
 	if (need_to_try_schedule_context)
