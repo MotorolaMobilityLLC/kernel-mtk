@@ -146,6 +146,7 @@ int pe2_reset_ta_vchr(struct chg_alg_device *alg)
 	u32 retry_cnt = 0;
 	struct mtk_pe20 *pe2;
 	int chg_cnt, i, is_chip_enabled;
+	int mivr = 0;
 
 	pe2_dbg("%s: starts\n", __func__);
 	pe2 = dev_get_drvdata(&alg->dev);
@@ -192,7 +193,11 @@ int pe2_reset_ta_vchr(struct chg_alg_device *alg)
 
 	if (ret_value != 0) {
 		pe2_err("%s: failed, ret = %d\n", __func__, ret);
-		ret = pe2_hal_set_mivr(alg, CHG1, pe2->vbus - 500000);
+		if ((pe2->vbus - 500000) > pe2->min_charger_voltage)
+			mivr = pe2->vbus - 500000;
+		else
+			mivr = pe2->min_charger_voltage;
+		ret = pe2_hal_set_mivr(alg, CHG1, mivr);
 		if (ret < 0)
 			pe2_err("%s:set mivr fail, ret:%d\n",
 			__func__, ret);
