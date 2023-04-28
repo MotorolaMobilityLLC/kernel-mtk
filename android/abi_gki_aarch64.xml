@@ -471,6 +471,7 @@
       <elf-symbol name='__traceiter_android_rvh_try_to_wake_up_success' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x9709c6cc'/>
       <elf-symbol name='__traceiter_android_rvh_ttwu_cond' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf1935a81'/>
       <elf-symbol name='__traceiter_android_rvh_uclamp_eff_get' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x28eaab76'/>
+      <elf-symbol name='__traceiter_android_rvh_ufs_complete_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf9cae9e9'/>
       <elf-symbol name='__traceiter_android_rvh_ufs_reprogram_all_keys' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa828dca0'/>
       <elf-symbol name='__traceiter_android_rvh_update_cpu_capacity' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xc7020ac9'/>
       <elf-symbol name='__traceiter_android_rvh_update_cpus_allowed' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xdbff9b91'/>
@@ -7030,6 +7031,7 @@
       <elf-symbol name='__tracepoint_android_rvh_try_to_wake_up_success' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xbc0d0d45'/>
       <elf-symbol name='__tracepoint_android_rvh_ttwu_cond' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xb96cdd49'/>
       <elf-symbol name='__tracepoint_android_rvh_uclamp_eff_get' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x76a8e7d1'/>
+      <elf-symbol name='__tracepoint_android_rvh_ufs_complete_init' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0x149dd525'/>
       <elf-symbol name='__tracepoint_android_rvh_ufs_reprogram_all_keys' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xa8c77d76'/>
       <elf-symbol name='__tracepoint_android_rvh_update_cpu_capacity' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xef03083e'/>
       <elf-symbol name='__tracepoint_android_rvh_update_cpus_allowed' size='72' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes' crc='0xf9395534'/>
@@ -106710,14 +106712,7 @@
         <parameter type-id='95e97e5e'/>
         <return type-id='95e97e5e'/>
       </function-type>
-      <class-decl name='fscrypt_keyring' size-in-bits='8256' is-struct='yes' visibility='default' filepath='fs/crypto/keyring.c' line='30' column='1' id='dd510bd0'>
-        <data-member access='public' layout-offset-in-bits='0'>
-          <var-decl name='lock' type-id='fb4018a0' visibility='default' filepath='fs/crypto/keyring.c' line='35' column='1'/>
-        </data-member>
-        <data-member access='public' layout-offset-in-bits='64'>
-          <var-decl name='key_hashtable' type-id='64f4baeb' visibility='default' filepath='fs/crypto/keyring.c' line='38' column='1'/>
-        </data-member>
-      </class-decl>
+      <class-decl name='fscrypt_keyring' is-struct='yes' visibility='default' is-declaration-only='yes' id='dd510bd0'/>
       <pointer-type-def type-id='a7d74313' size-in-bits='64' id='dd575c43'/>
       <class-decl name='cstate' size-in-bits='1536' is-struct='yes' visibility='default' filepath='include/net/slhc_vj.h' line='128' column='1' id='dd60e4df'>
         <data-member access='public' layout-offset-in-bits='0'>
@@ -128772,6 +128767,11 @@
         <parameter type-id='7292109c' name='ret' filepath='include/trace/hooks/sched.h' line='331' column='1'/>
         <return type-id='95e97e5e'/>
       </function-decl>
+      <function-decl name='__traceiter_android_rvh_ufs_complete_init' mangled-name='__traceiter_android_rvh_ufs_complete_init' filepath='include/trace/hooks/ufshcd.h' line='29' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_ufs_complete_init'>
+        <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/ufshcd.h' line='29' column='1'/>
+        <parameter type-id='442b8d89' name='hba' filepath='include/trace/hooks/ufshcd.h' line='29' column='1'/>
+        <return type-id='95e97e5e'/>
+      </function-decl>
       <function-decl name='__traceiter_android_rvh_ufs_reprogram_all_keys' mangled-name='__traceiter_android_rvh_ufs_reprogram_all_keys' filepath='include/trace/hooks/ufshcd.h' line='33' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__traceiter_android_rvh_ufs_reprogram_all_keys'>
         <parameter type-id='eaa32e2f' name='__data' filepath='include/trace/hooks/ufshcd.h' line='33' column='1'/>
         <parameter type-id='442b8d89' name='hba' filepath='include/trace/hooks/ufshcd.h' line='33' column='1'/>
@@ -130960,6 +130960,7 @@
       <var-decl name='__tracepoint_android_rvh_try_to_wake_up_success' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_try_to_wake_up_success' visibility='default' filepath='include/trace/hooks/sched.h' line='169' column='1' elf-symbol-id='__tracepoint_android_rvh_try_to_wake_up_success'/>
       <var-decl name='__tracepoint_android_rvh_ttwu_cond' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_ttwu_cond' visibility='default' filepath='include/trace/hooks/sched.h' line='237' column='1' elf-symbol-id='__tracepoint_android_rvh_ttwu_cond'/>
       <var-decl name='__tracepoint_android_rvh_uclamp_eff_get' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_uclamp_eff_get' visibility='default' filepath='include/trace/hooks/sched.h' line='331' column='1' elf-symbol-id='__tracepoint_android_rvh_uclamp_eff_get'/>
+      <var-decl name='__tracepoint_android_rvh_ufs_complete_init' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_ufs_complete_init' visibility='default' filepath='include/trace/hooks/ufshcd.h' line='29' column='1' elf-symbol-id='__tracepoint_android_rvh_ufs_complete_init'/>
       <var-decl name='__tracepoint_android_rvh_ufs_reprogram_all_keys' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_ufs_reprogram_all_keys' visibility='default' filepath='include/trace/hooks/ufshcd.h' line='33' column='1' elf-symbol-id='__tracepoint_android_rvh_ufs_reprogram_all_keys'/>
       <var-decl name='__tracepoint_android_rvh_update_cpu_capacity' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_update_cpu_capacity' visibility='default' filepath='include/trace/hooks/sched.h' line='225' column='1' elf-symbol-id='__tracepoint_android_rvh_update_cpu_capacity'/>
       <var-decl name='__tracepoint_android_rvh_update_cpus_allowed' type-id='4ca0c298' mangled-name='__tracepoint_android_rvh_update_cpus_allowed' visibility='default' filepath='include/trace/hooks/sched.h' line='156' column='1' elf-symbol-id='__tracepoint_android_rvh_update_cpus_allowed'/>
