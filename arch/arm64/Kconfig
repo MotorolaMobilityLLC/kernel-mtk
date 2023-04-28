@@ -2111,3 +2111,9 @@ config DUMMY_SND_CARD_SUPPORT
 	default n
 	help
 	Enable it only for not smart pa on board.
+
+config FSA4480_SENS_TO_GND
+	bool "fsa4480 sens connect to gnd"
+	default n
+	help
+	Enable it only for fsa4480 sens connect to gnd.
