@@ -63,7 +63,11 @@ static const struct fsa4480_reg_val fsa_reg_i2c_defaults[] = {
 	{FSA4480_DELAY_L_MIC, 0x00},
 	{FSA4480_DELAY_L_SENSE, 0x00},
 	{FSA4480_DELAY_L_AGND, 0x09},
+#ifdef CONFIG_FSA4480_SENS_TO_GND
+	{FSA4480_SWITCH_SETTINGS, 0x9D},
+#else
 	{FSA4480_SWITCH_SETTINGS, 0x98},
+#endif
 };
 
 static struct fsa4480_priv *fsa_priv;
@@ -120,7 +124,11 @@ int fsa4480_switch_event(enum fsa_function event)
 		break;
 	case FSA_TYPEC_ACCESSORY_NONE:
 		/* deactivate switches */
+#ifdef CONFIG_FSA4480_SENS_TO_GND
+		fsa4480_usbc_update_settings(fsa_priv, 0x18, 0x9D);
+#else
 		fsa4480_usbc_update_settings(fsa_priv, 0x18, 0x98);
+#endif
 	default:
 		break;
 	}
@@ -188,8 +196,11 @@ static int fsa4480_remove(struct i2c_client *i2c)
 	if (!fsa_priv)
 		return -EINVAL;
 
-
+#ifdef CONFIG_FSA4480_SENS_TO_GND
+	fsa4480_usbc_update_settings(fsa_priv, 0x18, 0x9D);
+#else
 	fsa4480_usbc_update_settings(fsa_priv, 0x18, 0x98);
+#endif
 	pm_relax(fsa_priv->dev);
 	mutex_destroy(&fsa_priv->notification_lock);
 	dev_set_drvdata(&i2c->dev, NULL);
