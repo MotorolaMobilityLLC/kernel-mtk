@@ -556,6 +556,13 @@
 #define CS_STATUS_WAIT_PROTM_PEND_SET(reg_val, value) \
 	(((reg_val) & ~CS_STATUS_WAIT_PROTM_PEND_MASK) |  \
 	 (((value) << CS_STATUS_WAIT_PROTM_PEND_SHIFT) & CS_STATUS_WAIT_PROTM_PEND_MASK))
+#define CS_STATUS_WAIT_SYNC_WAIT_SIZE_SHIFT 30
+#define CS_STATUS_WAIT_SYNC_WAIT_SIZE_MASK (0x1 << CS_STATUS_WAIT_SYNC_WAIT_SIZE_SHIFT)
+#define CS_STATUS_WAIT_SYNC_WAIT_SIZE_GET(reg_val)                                                 \
+	(((reg_val)&CS_STATUS_WAIT_SYNC_WAIT_SIZE_MASK) >> CS_STATUS_WAIT_SYNC_WAIT_SIZE_SHIFT)
+#define CS_STATUS_WAIT_SYNC_WAIT_SIZE_SET(reg_val, value)                                          \
+	(((reg_val) & ~CS_STATUS_WAIT_SYNC_WAIT_SIZE_MASK) |                                       \
+	 (((value) << CS_STATUS_WAIT_SYNC_WAIT_SIZE_SHIFT) & CS_STATUS_WAIT_SYNC_WAIT_SIZE_MASK))
 #define CS_STATUS_WAIT_SYNC_WAIT_SHIFT 31
 #define CS_STATUS_WAIT_SYNC_WAIT_MASK (0x1 << CS_STATUS_WAIT_SYNC_WAIT_SHIFT)
 #define CS_STATUS_WAIT_SYNC_WAIT_GET(reg_val) \
