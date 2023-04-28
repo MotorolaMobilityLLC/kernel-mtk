@@ -111,8 +111,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 7840,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2048,
-		.grabwindow_height = 1152,
+		.grabwindow_width = 4096,
+		.grabwindow_height = 2304,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 760800000,
@@ -215,7 +215,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[6] = {
 	/* capture */
 	{8192, 6144,    0,    0, 8192, 6144, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* video */
-	{8192, 6144,    0,  768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
+	{8192, 6144,    0,  768, 8192, 4608, 4096, 2304,  0,   0, 4096, 2304, 0, 0, 4096, 2304},
 	/* hs_video */
 	{8192, 6144,    0,  768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
 	/* slim_video */
@@ -686,8 +686,8 @@ static void slim_video_setting(void)
 {
 	pr_debug("MOT CANCUNF OV50D slim_video_setting start\n");
 
-	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_normal_video_mot_cancunf_ov50d,
-		sizeof(addr_data_pair_normal_video_mot_cancunf_ov50d)/sizeof(kal_uint16));
+	mot_cancunf_ov50d_table_write_cmos_sensor(addr_data_pair_slim_video_mot_cancunf_ov50d,
+		sizeof(addr_data_pair_slim_video_mot_cancunf_ov50d)/sizeof(kal_uint16));
 
 	pr_debug("MOT CANCUNF OV50D slim_video_setting end\n");
 }
