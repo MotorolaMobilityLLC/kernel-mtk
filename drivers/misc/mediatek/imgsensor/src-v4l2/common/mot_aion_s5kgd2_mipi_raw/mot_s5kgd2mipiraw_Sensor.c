@@ -51,7 +51,7 @@
 
 /**********************Modify Following Strings for Debug**********************/
 #define PFX "mot_aion_s5kgd2"
-static int mot_s5kgd2_camera_debug = 1;
+static int mot_s5kgd2_camera_debug = 0;
 module_param(mot_s5kgd2_camera_debug,int, 0644);
 
 #define LOG_INF(format, args...)        do { if (mot_s5kgd2_camera_debug ) { pr_err(PFX "[%s %d] " format, __func__, __LINE__, ##args); } } while(0)
