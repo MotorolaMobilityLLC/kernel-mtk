@@ -2350,6 +2350,13 @@ log_inf("IRQ clear(%d), type(%d), userKey(%d), timeout(%d), status(%d)\n",
 		if (FDVT_REQUEST_STATE_EMPTY ==
 			g_FDVT_ReqRing.FDVTReq_Struct
 			[g_FDVT_ReqRing.WriteIdx].State) {
+			if (enqueNum > _SUPPORT_MAX_FDVT_FRAME_REQUEST_) {
+				log_err(
+				"FDVT Enque Num is bigger than enqueNum:%d\n",
+				enqueNum);
+				Ret = -EFAULT;
+				break;
+			}
 			spin_lock_irqsave(
 				&(FDVTInfo.SpinLockIrq
 				[FDVT_IRQ_TYPE_INT_FDVT_ST]),
@@ -2362,11 +2369,6 @@ log_inf("IRQ clear(%d), type(%d), userKey(%d), timeout(%d), status(%d)\n",
 				&(FDVTInfo.SpinLockIrq
 				[FDVT_IRQ_TYPE_INT_FDVT_ST]),
 				flags);
-			if (enqueNum > _SUPPORT_MAX_FDVT_FRAME_REQUEST_) {
-				log_err(
-				"FDVT Enque Num is bigger than enqueNum:%d\n",
-				enqueNum);
-			}
 			log_dbg("FDVT_ENQNUE_NUM:%d\n",
 				enqueNum);
 		} else {
