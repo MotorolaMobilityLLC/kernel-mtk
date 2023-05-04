@@ -186,7 +186,7 @@
 	};
 
 	panel3@0 {
-                compatible = "csot_ft8726,vid,120hz";
+                compatible = "txd,ili7807s,vdo,120hz";
                 reg = <2>;
                 reset-gpios = <&pio 95 0>;
                 bias_n-gpios = <&pio 134 0>;
@@ -201,7 +201,7 @@
         };
 
 	panel4@0 {
-                compatible = "txd,ili7807s,vdo,120hz";
+                compatible = "csot_ft8725,vid,120hz";
                 reg = <3>;
                 reset-gpios = <&pio 95 0>;
                 bias_n-gpios = <&pio 134 0>;
@@ -209,6 +209,21 @@
                 pinctrl-names = "default";
                 port {
                         panel_in4: endpoint {
+                                remote-endpoint = <&dsi_out>;
+                        };
+                };
+
+        };
+
+	panel5@0 {
+                compatible = "csot_ft8726,vid,120hz";
+                reg = <4>;
+                reset-gpios = <&pio 95 0>;
+                bias_n-gpios = <&pio 134 0>;
+                bias_p-gpios = <&pio 182 0>;
+                pinctrl-names = "default";
+                port {
+                        panel_in5: endpoint {
                                 remote-endpoint = <&dsi_out>;
                         };
                 };
