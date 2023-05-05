@@ -26,6 +26,11 @@
 	};
 };
 
+&awinic_sar {
+	channel_use_flag = <0x1f>;
+	platform_state = "evt";
+};
+
 #include <manaus_evb/cust.dtsi>
 #include "mediatek/cust_mt6879_camera_v4l2_manaus.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
