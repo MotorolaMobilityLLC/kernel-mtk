@@ -29,7 +29,7 @@
 #include <linux/workqueue.h>
 #include "aw86006_ois.h"
 
-#define AW86006_DRIVER_VERSION		"v0.4.0"
+#define AW86006_DRIVER_VERSION		"v0.4.0.2"
 #define AW86006_FW_NAME			"aw86006.prog"
 
 static bool centoron = false;
@@ -2313,6 +2313,368 @@ static ssize_t slave_var_store(struct class *class,
 	return count;
 }
 
+/****************************** drwacycle test ***************************/
+static int aw86006_pow(int power)
+{
+	int i = 0;
+	int sum = 1;
+
+	if (power >= 0) {
+		for (i = 0; i < power; i++)
+			sum *= 2;
+	} else {
+		for (i = 1; i <= -power; i++)
+			sum = 1000000 / aw86006_pow(i);
+	}
+
+	return sum;
+}
+
+/* return int_value is real_value * 1000000 */
+static int aw86006_register_to_int(uint8_t *pdata)
+{
+	int i = 0;
+	int x = 0;
+	int sum = 0;
+	int int_value = 0;
+	uint32_t reg_value = 0;
+	uint8_t e = 0;
+
+	if (pdata == NULL)
+		return 0;
+
+	reg_value = (pdata[3] << 24) | (pdata[2] << 16) | (pdata[1] << 8) | pdata[0];
+
+	e = (reg_value & 0x7F800000) >> 23;
+	x = reg_value & 0x007FFFFF;
+	for (i = 22; i >= 0; i--)
+		sum += ((x >> i) & 0x01) * aw86006_pow(i - 23);
+
+	if (e >= 127)
+		int_value = aw86006_pow(e - 127) * (1000000 + sum);
+	else
+		int_value = (1000000 + sum) / aw86006_pow(127 - e);
+
+	if (reg_value & 0x80000000)
+		int_value = -int_value;
+
+	return int_value;
+}
+
+// int_value is coordinates * 10000
+// 1.F * 2 ^ (e - 127) = int_value
+static uint32_t aw86006_int_to_register(int int_value)
+{
+	int i = 0;
+	int e = 0;
+	uint32_t reg_value = 0;
+	int float_part = 0;
+
+	if (int_value == 0)
+		return 0;
+
+	AW_LOGI("int_value = %d", int_value);
+
+	if (int_value & 0x80000000)
+		reg_value |= (1 << 31);
+
+	if (int_value < 0)
+		int_value = -int_value;
+
+	for (i = 0; i < 12; i++) { // 2^11 = 2048, it should be able to cover
+		if ((int_value < 10000) && ((int_value * aw86006_pow(i)) > 10000)) {
+			e = 127 - i;
+			break;
+		} else if ((int_value >= 10000) && (aw86006_pow(i) >= (int_value / 10000))) {
+			e = 127 + i - 1;
+			break;
+		}
+	}
+	reg_value |= e << 23;
+	if (e >= 127)
+		float_part = (int_value - aw86006_pow(e - 127) * 10000) * 100 / aw86006_pow(e - 127);
+	else
+		float_part = (int_value * aw86006_pow(127 - e) - 10000) * 100;
+	for (i = 0; i < 23; i++) {
+		float_part *= 2;
+		if (float_part >= 1000000) {
+			float_part -= 1000000;
+			reg_value |= 1 << (22 - i);
+		}
+	}
+
+	return reg_value;
+}
+
+static int aw86006_get_lens_offset(struct cam_ois_ctrl_t *o_ctrl, int16_t *lens_offset)
+{
+	uint8_t data[4] = { 0 };
+	int ret = 0;
+
+	/* Read raw data */
+	aw86006_i2c_reads(o_ctrl, 0xf89c, AW_SIZE_BYTE_2, data, 4);
+
+	ret = aw86006_raw_data_check(data, sizeof(data)/sizeof(data[0]));
+	if (ret < 0) {
+		AW_LOGI("lens offset raw data is all 0xff");
+		return OIS_ERROR;
+	}
+
+	/* lens_offset_x */
+	*lens_offset = (int16_t)((data[1] << 8) | data[0]);
+	/* lens_offset_y */
+	*(lens_offset + 1) = (int16_t)((data[3] << 8) | data[2]);
+
+	return 0;
+}
+
+static int aw86006_um_to_code(int *pgyro_gain, int um, int *pr_code)
+{
+	int parm = 0;
+	int i = 0;
+	int num = 0;
+
+	AW_LOGI("gyao gain: %d %d ,um: %d", pgyro_gain[0], pgyro_gain[1],um);
+
+	num = sizeof(code_gain)/sizeof(code_gain[0]);
+	for (i = 0; i < num; i++) {
+		if (um == code_gain[i].r_um) {
+			parm = code_gain[i].gain;
+			break;
+		}
+	}
+	AW_LOGI("um: %d, parm: %d", um, parm);
+
+	for (i = 0; i < 2; i++) {
+		if (pgyro_gain[i] < 0)
+			pr_code[i] = (-pgyro_gain[i]/1000) * parm;
+		else
+			pr_code[i] = (pgyro_gain[i]/1000) * parm;
+
+		AW_LOGI("code[%d]: %d", i, pr_code[i]);
+	}
+
+	return 0;
+}
+
+static int aw86006_get_gyro_gain(struct cam_ois_ctrl_t *o_ctrl, int *gyro_gain)
+{
+	uint8_t data[8] = { 0 };
+	int ret = 0;
+
+	/* Read gyro gain raw data */
+	aw86006_i2c_reads(o_ctrl, 0xf86c, AW_SIZE_BYTE_2, data, 8);
+
+	/* data check */
+	ret = aw86006_raw_data_check(data, sizeof(data)/sizeof(data[0]));
+	if (ret < 0) {
+		AW_LOGE("gyro gain raw data is all 0xff");
+		return OIS_ERROR;
+	}
+	/* transfer data to gyro gain, real_gain * 1000000 */
+	gyro_gain[0] = aw86006_register_to_int(&data[0]);
+	gyro_gain[1] = aw86006_register_to_int(&data[4]);
+
+	if ((gyro_gain[0]== 0) || (gyro_gain[1] == 0)) {
+		AW_LOGE("gyro gain x or y is 0: %d %d", gyro_gain[0], gyro_gain[1]);
+		return OIS_ERROR;
+	}
+
+	AW_LOGI("gyro_gain:%d %d",gyro_gain[0], gyro_gain[1]);
+
+	return 0;
+}
+/* drawcycles */
+/* circle test */
+/*
+ * r_um: radius, uint: um
+ * step: Step
+ * cycles: Cycles
+ * accuracy:Allowable error range, uint: um
+ * err_cnt: Average number of error points per revolution
+*/
+int aw86006_ois_drawcircle_test(int r_um, int step, int cycles, int accuracy_um, int t1, int t2)
+{
+	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
+	int ret = 0;
+	int i = 0;
+	int j = 0;
+	int gyro_gain[2] = { 0 };
+	int r_code[2] = { 0 };
+	int accuracy_code[2] = { 0 };
+	int int32_target[2] = { 0 };
+	int int32_avgout[2] = { 0 };
+	int err_cnt = 0;
+	int32_t bias[2] = { 0 };
+	int16_t lens_offset[2] = { 0 };
+	uint8_t ois_mode = 0;
+	uint8_t lock_status = 0;
+	uint8_t check_val = 0;
+	uint8_t mode_cmd[] = { 0x00, 0x00, 0x01, 0x00};
+	uint8_t u8_target[8] = { 0 };
+	uint32_t u32_temp = 0;
+	uint8_t data[8] = { 0 };
+
+	AW_LOGI("r_um: %d accuracy_um: %d, t1 :%d, t2:%d", r_um, accuracy_um, t1, t2);
+	/* get gyro gain */
+	ret = aw86006_get_gyro_gain(o_ctrl, gyro_gain);
+	if (ret < 0) {
+		AW_LOGI("gyro gain data is error!!");
+		return OIS_ERROR;
+	}
+	/* um to code */
+	aw86006_um_to_code(gyro_gain, r_um, r_code);
+	aw86006_um_to_code(gyro_gain, accuracy_um, accuracy_code);
+
+	/* get len offset */
+	aw86006_get_lens_offset(o_ctrl, lens_offset);
+	if (ret < 0) {
+		AW_LOGI("lens offset data is error!!");
+		return OIS_ERROR;
+	}
+	AW_LOGI("lens_offset: 0x%hx(%d) 0x%hx(%d)",lens_offset[AXIS_X],
+		lens_offset[AXIS_X], lens_offset[AXIS_Y], lens_offset[AXIS_Y]);
+
+	/* off ois */
+	ois_mode = OIS_DISABLE;
+	aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &ois_mode,
+								AW_SIZE_BYTE_1);
+	/* unlock */
+	lock_status = 0xa6;
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf31f, AW_SIZE_BYTE_2, &lock_status,
+								AW_SIZE_BYTE_1);
+		aw86006_i2c_reads(o_ctrl, 0xf31f, AW_SIZE_BYTE_2, &check_val,
+								AW_SIZE_BYTE_1);
+		if (check_val == 0x01)
+			break;
+	} while (i++ < AW_ERROR_LOOP);
+	if (check_val != 0x01) {
+		AW_LOGE("unlock error");
+		return OIS_ERROR;
+	}
+	/* turn off sine_on mode */
+	aw86006_i2c_writes(o_ctrl, 0xf301, AW_SIZE_BYTE_2, &mode_cmd[0],
+								AW_SIZE_BYTE_1);
+	/* turn off square_on mode */
+	aw86006_i2c_writes(o_ctrl, 0xf303, AW_SIZE_BYTE_2, &mode_cmd[1],
+								AW_SIZE_BYTE_1);
+	/* turn on step_on mode */
+	aw86006_i2c_writes(o_ctrl, 0xf300, AW_SIZE_BYTE_2, &mode_cmd[2],
+								AW_SIZE_BYTE_1);
+	/* ois on */
+	ois_mode = OIS_ENABLE;
+	aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &ois_mode,
+								AW_SIZE_BYTE_1);
+	for (j = 0; j < cycles; j++) {
+		for (i = 0; i < 120; i++) {
+			int32_target[AXIS_X] = r_code[AXIS_X] * tab_sin[i*step]/100;
+			int32_target[AXIS_Y] = r_code[AXIS_Y] * tab_cos[i*step]/100;
+
+			u32_temp = aw86006_int_to_register(int32_target[AXIS_X]);
+			memcpy(&u8_target[0], &u32_temp, 4);
+			AW_LOGI("u8_target X: 0x%02x  0x%02x  0x%02x  0x%02x",
+						u8_target[0], u8_target[1],
+						u8_target[2], u8_target[3]);
+
+			u32_temp = aw86006_int_to_register(int32_target[AXIS_Y]);
+			memcpy(&u8_target[4], &u32_temp, 4);
+			AW_LOGI("u8_target Y: 0x%02x  0x%02x  0x%02x  0x%02x",
+						u8_target[4], u8_target[5],
+						u8_target[6], u8_target[7]);
+			aw86006_i2c_writes(o_ctrl, 0xf304, AW_SIZE_BYTE_2,
+							&u8_target[0], 8);
+			/* Time interval between steps */
+			if ((j == 0) && (i == 0)) {
+				msleep(t1);
+			} else {
+				msleep(t2);
+			}
+			/* read average out */
+			aw86006_i2c_reads(o_ctrl, 0xf44c, AW_SIZE_BYTE_2, data, 8);
+			/* 1000000倍 */
+			int32_avgout[0] = aw86006_register_to_int(&data[0]);
+			int32_avgout[1] = aw86006_register_to_int(&data[4]);
+
+			bias[0] = (int32_avgout[0]/100 - int32_target[0])/10000;
+			bias[1] = (int32_avgout[1]/100 - int32_target[1])/10000;
+			AW_LOGI("check ng point i: %d, x, y :%d, %d, target: %d, %d, bias: %d, %d", i, int32_avgout[0]/100, int32_avgout[1]/100, int32_target[0], int32_target[1], bias[0], bias[1]);
+			if ((abs(bias[0]) > accuracy_code[0]/1000) || (abs(bias[1]) > accuracy_code[1]/1000)) {
+				err_cnt++;
+				AW_LOGE("NG point: i: %d, bias: %d %d", i, bias[0], bias[1]);
+			}
+		}
+	}
+	/* lens reset default position */
+	memset(data, 0, sizeof(data) / sizeof(data[0]));
+	aw86006_i2c_writes(o_ctrl, 0xf304, AW_SIZE_BYTE_2, data, 8);
+	/* turn off step_on */
+	aw86006_i2c_writes(o_ctrl, 0xf300, AW_SIZE_BYTE_2, &mode_cmd[3], 1);
+
+	/* ois off */
+	ois_mode = OIS_DISABLE;
+	aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &ois_mode, 1);
+
+	/* lock */
+	lock_status = 0xd6;
+	i = 0;
+	do {
+		aw86006_i2c_writes(o_ctrl, 0xf31f, AW_SIZE_BYTE_2, &lock_status, 1);
+		aw86006_i2c_reads(o_ctrl, 0xf31f, AW_SIZE_BYTE_2, &check_val, 1);
+		if (check_val == 0x00)
+			break;
+	} while (i++ < AW_ERROR_LOOP);
+	if (check_val != 0x00) {
+		AW_LOGE("lock error.");
+		return OIS_ERROR;
+	}
+
+	err_cnt /= cycles;
+	AW_LOGI("drawcircle_test end, average err_cnt: %d\n", err_cnt);
+
+	return err_cnt;
+}
+//int aw86006_ois_drawcircle_test(int r_um, int step, int cycles, int accuracy_um, int t1, int t2)
+int run_aw86006ois_drawcircle(motOISHeaParam *param)
+{
+   if(param == NULL) {
+        AW_LOGE("fail to draw circle, param is null");
+        return -1;
+   }
+   return aw86006_ois_drawcircle_test(param->radius, param->steps_in_degree, 1, param->accuracy, param->wait0, param->wait1);
+}
+static ssize_t drawcycle_show(struct class *class, struct class_attribute *attr,
+								char *buf)
+{
+	ssize_t len = 0;
+	return len;
+}
+
+static ssize_t drawcycle_store(struct class *class,
+						struct class_attribute *attr,
+						const char *buf, size_t count)
+{
+	int32_t r_um = 100;
+	int32_t step = 3;
+	int32_t cycles = 1;
+	int32_t accuracy_um = 5;
+
+	AW_LOGI("enter");
+
+	if (sscanf(buf, "%d %d %d %d", &r_um, &step, &cycles, &accuracy_um) == 4) {
+		AW_LOGD("r_um: %d, step: %d, cycles: %d, accu_um: %d", r_um,
+						step, cycles, accuracy_um);
+		if ((r_um == 0)||(step == 0)||(cycles == 0)||(accuracy_um == 0)) {
+			AW_LOGE("Input param error!!");
+			return OIS_ERROR;
+		}
+		aw86006_ois_drawcircle_test(r_um, step, cycles, accuracy_um, 200, 50);
+	}
+
+	return count;
+}
+
 /*******************************************************************************
  * Debug node
  * Path: /sys/class/aw86006_ois
@@ -2329,6 +2691,7 @@ static CLASS_ATTR_RW(standby);
 static CLASS_ATTR_RW(jump);
 static CLASS_ATTR_RW(gyro_offset_cali);
 static CLASS_ATTR_RW(slave_var);
+static CLASS_ATTR_RW(drawcycle);
 
 static int aw86006_create_sysfs(void)
 {
@@ -2401,6 +2764,11 @@ static int aw86006_create_sysfs(void)
 			AW_LOGE("Create slave_var failed, ret: %d", ret);
 			return ret;
 		}
+		ret = class_create_file(ois_debug_class, &class_attr_drawcycle);
+		if (ret < 0) {
+			AW_LOGE("Create drawcycle failed, ret: %d", ret);
+			return ret;
+		}
 	}
 
 	AW_LOGI("Creat sysfs debug success.");
@@ -2426,6 +2794,7 @@ static void aw86006_destroy_sysfs(void)
 		class_remove_file(ois_debug_class,
 						&class_attr_gyro_offset_cali);
 		class_remove_file(ois_debug_class, &class_attr_slave_var);
+		class_remove_file(ois_debug_class, &class_attr_drawcycle);
 		class_destroy(ois_debug_class);
 		ois_debug_class = NULL;
 		AW_LOGD("destroy ois_debug_class done!");
@@ -2585,26 +2954,6 @@ int aw86006_update_fw_sync(void)
 	return 0;
 }
 EXPORT_SYMBOL(aw86006_update_fw_sync);
-int aw86006_ois_i2c_rw(struct aw86006_i2c_rw *param)
-{
-	struct cam_ois_ctrl_t *o_ctrl = g_o_ctrl;
-	int ret;
-	AW_LOGI("Start");
-	if(param != NULL) {
-		AW_LOGI(" i2c read write %d, addr:%x, addr_n: %d, data: %p, data_n:%d", param->rw, param->addr, param->byte_addr, param->pdata, param->byte_data);
-	} else {
-		AW_LOGE("aw86006ois param is null");
-	}
-	if(param->rw == 0)   // i2c read
-	{
-		aw86006_i2c_reads(o_ctrl, param->addr, param->byte_addr, param->pdata, param->byte_data);
-		AW_LOGI("i2c read value:%x", *(param->pdata));
-	} else {      //i2c write
-		ret = aw86006_i2c_writes(o_ctrl, param->addr, param->byte_addr, param->pdata, param->byte_data);
-		AW_LOGI("aw86006ois write result ret:%d", ret);
-	}
-	return 0;
-}
 static long aw86006_unlocked_ioctl(struct file *file, unsigned int cmd,
 							unsigned long arg)
 {
@@ -2640,12 +2989,6 @@ static long aw86006_unlocked_ioctl(struct file *file, unsigned int cmd,
 	case OISIOC_T_UPDATE:
 		ret = aw86006_ois_update((uint32_t)arg);
 		break;
-	/*case OISIOC_G_HEA:
-		ret = aw86006_ois_i2c_rw((struct aw86006_i2c_rw *)pBuff);
-		if (copy_to_user((struct aw86006_i2c_rw  __user *) arg, (struct aw86006_i2c_rw *)pBuff, _IOC_SIZE(cmd))) {
-			AW_LOGI("failed to copy i2c data");
-		}
-		break;*/
 	default:
 		AW_LOGI("NO CMD!");
 		break;
