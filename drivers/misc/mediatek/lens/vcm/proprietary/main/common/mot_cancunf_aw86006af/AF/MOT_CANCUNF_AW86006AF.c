@@ -24,6 +24,7 @@
 #include <linux/string.h>
 #include <uapi/asm-generic/errno-base.h>
 #include "lens_info.h"
+#include "../aw86006_ois.h"
 //#include "AW86006AF.h"
 
 #define SOC_OIS_I2C_ADDR		0x69
@@ -32,17 +33,6 @@
 #define OIS_MAIN_H
 
 #define AF_DRVNAME		"AW86006AF_DRV"
-
-/* Log Format */
-#define AW_LOGI(format, ...) \
-	pr_info("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
-								##__VA_ARGS__)
-#define AW_LOGD(format, ...) \
-	pr_debug("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
-								##__VA_ARGS__)
-#define AW_LOGE(format, ...) \
-	pr_err("[%s][%04d]%s: " format "\n", AF_DRVNAME, __LINE__, __func__, \
-								##__VA_ARGS__)
 
 /* register address */
 #define REG_AF_CODE	(0x0009)
@@ -56,20 +46,15 @@
 struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
+static int hea_test_runing = 0;
 
 static unsigned long g_u4CurrPosition = 512;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4AF_INF;
-struct aw86006_i2c_rw {
-	uint8_t rw;               //r:0, w:1
-	u16 addr;
-	u16 byte_addr;
-	uint8_t pdata[8];
-	u16 byte_data;
-};
+
 extern int gyro_offset_cali_run(void);
-extern int aw86006_ois_i2c_rw(struct aw86006_i2c_rw *param);
 extern int aw86006_set_ois_mode(uint8_t flag);
+extern int run_aw86006ois_drawcircle(motOISHeaParam *param);
 /*******************************************************************************
  * I2c read/write
  ******************************************************************************/
@@ -133,7 +118,10 @@ static inline int SetPos(unsigned long a_u4Position)
 	uint8_t pos[2] = { 0 };
 
 	AW_LOGI("Start");
-
+	if(hea_test_runing) {
+		AW_LOGI("can not setPos when runing hea test");
+		return 0;
+	}
 	pos[0] = (uint8_t)(a_u4Position >> 8);
 	pos[1] = (uint8_t)(a_u4Position & 0xff);
 
@@ -288,10 +276,9 @@ long MOT_CANCUNF_AW86006AF_Ioctl(struct file *a_pstFile, uint32_t a_u4Command,
 		break;
 	case OISIOC_G_HEA:
 		copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
-		ret = aw86006_ois_i2c_rw((struct aw86006_i2c_rw *)pBuff);
-		if (copy_to_user((struct aw86006_i2c_rw  __user *) a_u4Param, (struct aw86006_i2c_rw *)pBuff, _IOC_SIZE(a_u4Command))) {
-			AW_LOGI("failed to copy i2c data");
-		}
+		hea_test_runing = 1;
+		ret = run_aw86006ois_drawcircle((motOISHeaParam *)pBuff);
+		hea_test_runing = 0;
 		break;
 	case OISIOC_T_OISMODE:
 		copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command));
