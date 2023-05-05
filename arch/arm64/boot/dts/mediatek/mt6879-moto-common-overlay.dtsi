@@ -748,8 +748,8 @@
 			interrupts = <119 0x02>;
 			interrupt-names = "awinic_irq";
 			irq-gpio = <&pio 119 0x02>;
-			//vcc1-supply = <&mt6363_vio18>;
-			channel_use_flag = <0x1f>;
+			//vcc0-supply = <&mt6363_vio18>;
+			channel_use_flag = <0x07>;
 			aw_sar,use_plug_cail;
 			aw_sar,update_fw;
 			aw_sar,using_pm_ops;
