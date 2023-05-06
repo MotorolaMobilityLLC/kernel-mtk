@@ -382,7 +382,7 @@ static int tianma_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-	.clock		= 363381,
+	.clock		= 362193,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_60_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_60_HFP + HSA,
@@ -393,7 +393,7 @@ static const struct drm_display_mode default_mode = {
 	.vtotal = FRAME_HEIGHT + MODE_60_VFP + VSA + VBP,
 };
 static const struct drm_display_mode performance_mode_30hz = {
-	.clock		= 363381,
+	.clock		= 362193,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_30_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_30_HFP + HSA,
@@ -405,7 +405,7 @@ static const struct drm_display_mode performance_mode_30hz = {
 };
 
 static const struct drm_display_mode performance_mode_90hz = {
-	.clock		= 363381,
+	.clock		= 362193,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_90_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_90_HFP + HSA,
@@ -417,7 +417,7 @@ static const struct drm_display_mode performance_mode_90hz = {
 };
 
 static const struct drm_display_mode performance_mode_120hz = {
-	.clock		= 363381,
+	.clock		= 362193,
 	.hdisplay = FRAME_WIDTH,
 	.hsync_start = FRAME_WIDTH + MODE_120_HFP,
 	.hsync_end = FRAME_WIDTH + MODE_120_HFP + HSA,
