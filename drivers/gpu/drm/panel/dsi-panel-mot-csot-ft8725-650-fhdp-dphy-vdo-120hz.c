@@ -426,8 +426,8 @@ static void csot_panel_init(struct csot *ctx)
 	csot_dcs_write_seq_static(ctx,0xA4,0xF1);
 	csot_dcs_write_seq_static(ctx,0x00,0x82);
 	csot_dcs_write_seq_static(ctx,0xCE,0x2F,0x2F);
-	csot_dcs_write_seq_static(ctx,0x00,0xC0);
-	csot_dcs_write_seq_static(ctx,0xC5,0x0F);
+	//csot_dcs_write_seq_static(ctx,0x00,0xC0);
+	//csot_dcs_write_seq_static(ctx,0xC5,0x0F);
 	csot_dcs_write_seq_static(ctx,0x00,0x90);
 	csot_dcs_write_seq_static(ctx,0xA7,0x1d);
 	csot_dcs_write_seq_static(ctx,0x00,0xB0);
