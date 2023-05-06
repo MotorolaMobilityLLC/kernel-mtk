@@ -685,10 +685,11 @@
 };
 
 /* long powerkey reset setting */
-
+/* MMI_STOPSHIP <BOOTLOADER>: change long pressing reset from power key to home key + power key */
 &spmi {
 	main_pmic: pmic@4 {
 		mt6363keys: mt6363keys {
+			mediatek,long-press-mode = <2>;
 			power-off-time-sec = <1>;
 		};
 	};
