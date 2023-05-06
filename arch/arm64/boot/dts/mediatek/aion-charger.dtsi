@@ -14,6 +14,10 @@
 #include <dt-bindings/iio/adc/mediatek,mt6375_adc.h>
 #include <dt-bindings/iio/mt635x-auxadc.h>
 
+&mt6363_dynamic_loading_throttling {
+	vbb-uvlo-level = <2900>;
+};
+
 &mt6375_typec {
        tcpc,en_wd;
        tcpc,en_wd_sbu_polling;
