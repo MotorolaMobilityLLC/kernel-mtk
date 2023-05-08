@@ -1472,9 +1472,6 @@ static int get_info(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_
 
 	sensor_info->DelayFrame[SENSOR_SCENARIO_ID_CUSTOM6] =
 		imgsensor_info.custom6_delay_frame;
-
-	sensor_info->DelayFrame[SENSOR_SCENARIO_ID_CUSTOM6] =
-		imgsensor_info.custom6_delay_frame;
 	sensor_info->SensorMasterClockSwitch = 0; /* not use */
 	sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
 /* The frame of setting shutter default 0 for TG int */
@@ -1547,7 +1544,7 @@ static int control(struct subdrv_ctx *ctx, enum MSDK_SCENARIO_ID_ENUM scenario_i
 	break;
 	case SENSOR_SCENARIO_ID_CUSTOM5:
 		Custom5(ctx, image_window, sensor_config_data);
-
+	break;
 	case SENSOR_SCENARIO_ID_CUSTOM6:
 		Custom6(ctx, image_window, sensor_config_data);
 	break;
