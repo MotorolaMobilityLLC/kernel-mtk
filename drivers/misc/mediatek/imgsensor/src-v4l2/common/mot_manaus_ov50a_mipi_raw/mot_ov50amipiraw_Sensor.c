@@ -204,7 +204,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2048,
-		.grabwindow_height = 1152,
+		.grabwindow_height = 1536,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 		.mipi_pixel_rate = 1316016000,
@@ -282,7 +282,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[11] = {
 	/* custom5 */
 	{8192, 6144,  2048,  1536, 4096, 3072, 4096, 3072,  0,   0, 4096, 3072, 0, 0, 4096, 3072},
 	/* custom6 */
-	{8192, 6144,    0,    768, 8192, 4608, 2048, 1152,  0,   0, 2048, 1152, 0, 0, 2048, 1152},
+	{8192, 6144,    0,    0, 8192, 6144, 2048, 1536,  0,   0, 2048, 1536, 0, 0, 2048, 1536},
 };
 
 #define OV50A_EEPROM_IIC_ADDR 0xA0
@@ -310,7 +310,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4LeFirst = 0,
 	.i4Crop = {
 		{0, 0}, {0, 0}, {0, 384}, {0, 192}, {0, 0},
-		{0, 0}, {0, 192}, {64, 228}, {0, 384}, {2048, 1536},{0, 192}
+		{0, 0}, {0, 192}, {64, 228}, {0, 384}, {2048, 1536},{0, 0}
 	},
 	.iMirrorFlip = 0,
 };
@@ -2984,7 +2984,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus5[] = { //in sensor zoom
 	},
 };
 
-static struct mtk_mbus_frame_desc_entry frame_desc_cus6[] = { //2048x1152@30fps
+static struct mtk_mbus_frame_desc_entry frame_desc_cus6[] = { //2048x1536@30fps
 	{
 		.bus.csi2 = {
 			.channel = 0,
@@ -2999,7 +2999,7 @@ static struct mtk_mbus_frame_desc_entry frame_desc_cus6[] = { //2048x1152@30fps
 			.channel = 1,
 			.data_type = 0x2b,
 			.hsize = 0x800,
-			.vsize = 0x240,
+			.vsize = 0x300,
 			.user_data_desc = VC_PDAF_STATS,
 		},
 	},
