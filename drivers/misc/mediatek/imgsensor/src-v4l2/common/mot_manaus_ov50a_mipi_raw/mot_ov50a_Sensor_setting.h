@@ -72,7 +72,7 @@ kal_uint16 addr_data_pair_custom5[] = {
 };
 
 kal_uint16 addr_data_pair_custom6[] = {
-#include"setting/OV50A40_2048x1152_4C2SCG_10bit_30fps_AG255_PDVC1_2048x576_1924Msps_20230421.h"
+#include"setting/OV50A40_2048x1536_4C2SCG_10bit_30fps_AG255_PDVC1_2048x768_1924Msps_20230506.h"
 }; //3rd video
 
 #ifdef SEAMLESS_SWITCH_V2
