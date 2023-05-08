@@ -802,6 +802,10 @@ static int wlc_tcd_set_cur_state(struct thermal_cooling_device *tcd,
 	wlc->charging_current_limit1 = wlc_state_to_current_limit[state];
 	wlc->cur_state = state;
 
+	if (NULL != wls_chg_ops &&
+		NULL != wls_chg_ops->wls_notify_cur_state)
+		wls_chg_ops->wls_notify_cur_state(state, wlc->charging_current_limit1);
+
 	wlc_info("%s cur state = %d, config state = %d, cur limt = %d\n",
 		__func__, wlc->cur_state, state, wlc->charging_current_limit1);
 
