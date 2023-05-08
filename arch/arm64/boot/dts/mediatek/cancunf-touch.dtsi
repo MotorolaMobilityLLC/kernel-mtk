@@ -41,6 +41,7 @@
 		//ilitek
 		touch,reset-gpio = <&pio 3 0x0>;
 		touch,irq-gpio = <&pio 22 0x0>;
+		touch,psy-name = "battery";
 
 	};
 };
