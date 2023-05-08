@@ -29,7 +29,7 @@
 #include <linux/workqueue.h>
 #include "aw86006_ois.h"
 
-#define AW86006_DRIVER_VERSION		"v0.4.0.2"
+#define AW86006_DRIVER_VERSION		"v0.4.0.3"
 #define AW86006_FW_NAME			"aw86006.prog"
 
 static bool centoron = false;
@@ -617,7 +617,7 @@ static int aw86006_soc_flash_download_check(struct cam_ois_ctrl_t *o_ctrl,
 		AW_LOGE("Failed to write checkinfo!");
 		return OIS_ERROR;
 	}
-
+	AW_LOGI("success");
 	return OIS_SUCCESS;
 }
 
@@ -811,6 +811,206 @@ static int aw86006_soc_flash_update(struct cam_ois_ctrl_t *o_ctrl,
 		if (ret == OIS_SUCCESS)
 			break;
 		AW_LOGI("soc_flash_download_check failed! loop: %d", loop);
+	} while ((++loop) < AW_ERROR_LOOP);
+	if (loop >= AW_ERROR_LOOP)
+		return OIS_ERROR;
+
+	ret = aw86006_reset(o_ctrl);
+	if (ret != OIS_SUCCESS) {
+		AW_LOGE("aw86006_reset failed!");
+		return OIS_ERROR;
+	}
+	msleep(AW_RESET_DELAY);
+
+	AW_LOGI("success!");
+
+	return OIS_SUCCESS;
+}
+
+/******************** use flashboot update app ********************/
+/* isp hand connect */
+static int aw86006_isp_hank_connect_check(struct cam_ois_ctrl_t *o_ctrl)
+{
+	uint8_t protocol_buf[6] = { 0 };
+	int loop = 0;
+
+	do {
+		protocol_buf[0] = ISP_BOOT_VERS | ISP_VERS_VERSION;
+		protocol_buf[1] = 0x00;
+		aw86006_i2c_writes(o_ctrl, AW_SIZE_BYTE_0, AW_SIZE_BYTE_0,
+						protocol_buf, AW_SIZE_BYTE_2);
+		usleep_range(ISP_FLASH_HANK_DELAY, ISP_FLASH_HANK_DELAY + 50);
+		protocol_buf[0] = ISP_BOOT_VERS | ISP_VERS_CONNECT_ACK;
+		aw86006_i2c_reads(o_ctrl, protocol_buf[0], AW_SIZE_BYTE_1,
+					&protocol_buf[1], ISP_HANK_ACK_LEN);
+		if (protocol_buf[1] == ISP_EVENT_OK)
+			break;
+
+		AW_LOGI("isp erase loop: %d", loop);
+		aw86006_jump_move_check(o_ctrl);
+	} while ((++loop) < AW_ERROR_LOOP);
+	if (loop >= AW_ERROR_LOOP)
+		return -ISP_HANK_ERROR;
+
+	AW_LOGI("aw86006 isp version: v%d.%d.%d.%d", protocol_buf[5],
+			protocol_buf[4], protocol_buf[3], protocol_buf[2]);
+
+	return OIS_SUCCESS;
+}
+/* isp flash erase */
+static int aw86006_isp_flash_erase_check(struct cam_ois_ctrl_t *o_ctrl,
+						uint32_t addr, uint32_t len)
+{
+	int ret = OIS_SUCCESS;
+	int loop = 0;
+	uint8_t protocol_buf[7] = { 0 };
+	uint32_t erase_block = len / AW_FLASH_ERASE_LEN +
+					((len % AW_FLASH_ERASE_LEN) ? 1 : 0);
+
+	do {
+		protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_ERASE_BLOCK;
+		protocol_buf[1] = (uint8_t) (addr >> 0);
+		protocol_buf[2] = (uint8_t) (addr >> 8);
+		protocol_buf[3] = (uint8_t) (addr >> 16);
+		protocol_buf[4] = (uint8_t) (addr >> 24);
+		protocol_buf[5] = (uint8_t) (erase_block >> 0);
+		protocol_buf[6] = (uint8_t) (erase_block >> 8);
+		ret = aw86006_i2c_writes(o_ctrl, AW_SIZE_BYTE_0, AW_SIZE_BYTE_0,
+						protocol_buf, AW_SIZE_BYTE_7);
+		if (ret < 0) {
+			AW_LOGI("write isp erase cmd error, loop: %d", loop);
+			continue;
+		}
+
+		msleep(erase_block * ISP_ERASE_BLOCK_DELAY);
+
+		protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_ERASE_BLOCK_ACK;
+		ret = aw86006_i2c_reads(o_ctrl, protocol_buf[0], AW_SIZE_BYTE_1,
+					&protocol_buf[1], ISP_ERASE_ACK_LEN);
+		if (ret < 0) {
+			AW_LOGI("i2c read check error, loop: %d", loop);
+			continue;
+		}
+		if (protocol_buf[1] == ISP_EVENT_OK)
+			break;
+
+		AW_LOGI("isp erase loop: %d", loop);
+	} while ((++loop) < AW_ERROR_LOOP);
+	if (loop >= AW_ERROR_LOOP)
+		return -ISP_FLASH_ERROR;
+
+	AW_LOGI("success!");
+
+	return OIS_SUCCESS;
+}
+/* isp flash write */
+static int aw86006_isp_flash_write_check(struct cam_ois_ctrl_t *o_ctrl,
+					uint32_t addr, uint32_t block_num,
+					uint8_t *bin_buf, uint32_t len)
+{
+	uint8_t protocol_buf[80] = { 0 };
+	uint16_t i = 0;
+
+	protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_WRITE;
+	protocol_buf[1] =
+		(uint8_t) ((addr + AW_ISP_FLASH_WRITE_LEN * block_num) >> 0);
+	protocol_buf[2] =
+		(uint8_t) ((addr + AW_ISP_FLASH_WRITE_LEN * block_num) >> 8);
+	protocol_buf[3] =
+		(uint8_t) ((addr + AW_ISP_FLASH_WRITE_LEN * block_num) >> 16);
+	protocol_buf[4] =
+		(uint8_t) ((addr + AW_ISP_FLASH_WRITE_LEN * block_num) >> 24);
+	protocol_buf[5] = (uint8_t) (len >> 0);
+	protocol_buf[6] = (uint8_t) (len >> 8);
+
+	memcpy(&protocol_buf[8], bin_buf + AW_ISP_FLASH_WRITE_LEN * block_num, len);
+	protocol_buf[7] = 0;
+	for (i = 0; i < len; i++)
+		protocol_buf[7] += protocol_buf[8 + i];
+
+	aw86006_i2c_writes(o_ctrl, AW_SIZE_BYTE_0, AW_SIZE_BYTE_0,
+						protocol_buf, 8 + len);
+	usleep_range(1000, 1050);
+#ifdef AW_ISP_READ_CHECK
+	/* delay time need to be confirmed according to AW_ISP_FLASH_WRITE_LEN */
+	usleep_range(ISP_FLASH_WRITE_DELAY, ISP_FLASH_WRITE_DELAY + 50);
+
+	protocol_buf[0] = ISP_BOOT_FLASH | ISP_FLASH_WRITE_ACK;
+	ois_block_read_addr8_data8(o_ctrl, protocol_buf[0],
+					CAMERA_SENSOR_I2C_TYPE_BYTE,
+					&protocol_buf[1], ISP_WRITE_ACK_LEN);
+	if (protocol_buf[1] != ISP_EVENT_OK)
+		return -ISP_FLASH_ERROR;
+#endif
+	return OIS_SUCCESS;
+}
+/* isp download */
+static int aw86006_isp_flash_download_check(struct cam_ois_ctrl_t *o_ctrl,
+				uint32_t addr, uint8_t *bin_buf, size_t len)
+{
+	uint32_t flash_block = len / AW_ISP_FLASH_WRITE_LEN;
+	uint32_t flash_tail = len % AW_ISP_FLASH_WRITE_LEN;
+	uint32_t i = 0;
+	int ret = OIS_SUCCESS;
+
+	if (bin_buf == NULL)
+		return -ISP_PBUF_ERROR;
+	if ((addr < AW_FLASH_BASE_ADDR) || (addr >= AW_FLASH_TOP_ADDR))
+		return -ISP_ADDR_ERROR;
+	if (aw86006_isp_hank_connect_check(o_ctrl) != OIS_SUCCESS) {
+		AW_LOGE("isp hank connect check error!");
+		return -ISP_HANK_ERROR;
+	}
+
+	ret = aw86006_isp_flash_erase_check(o_ctrl, addr, len);
+	if (ret != OIS_SUCCESS) {
+		AW_LOGE("isp flash erase error!");
+		return ret;
+	}
+	for (i = 0; i < flash_block; i++) {
+		ret = aw86006_isp_flash_write_check(o_ctrl, addr, i, bin_buf,
+							AW_ISP_FLASH_WRITE_LEN);
+		if (ret != OIS_SUCCESS) {
+			AW_LOGE("isp flash write error, block: %d", i);
+			return ret;
+		}
+	}
+	if (flash_tail != 0) {
+		ret = aw86006_isp_flash_write_check(o_ctrl, addr, i, bin_buf,
+								flash_tail);
+		if (ret != OIS_SUCCESS) {
+			AW_LOGE("isp flash tail write error!");
+			return ret;
+		}
+	}
+
+	AW_LOGI("success");
+
+	return OIS_SUCCESS;
+}
+
+static int aw86006_isp_flash_update(struct cam_ois_ctrl_t *o_ctrl,
+				uint32_t addr, uint8_t *data_p, size_t fw_size)
+{
+	int ret = OIS_SUCCESS;
+	int loop = 0;
+
+	if (!data_p) {
+		AW_LOGE("data_p is NULL");
+		return OIS_ERROR;
+	}
+	ret = aw86006_jump_move_check(o_ctrl);
+	if (ret != OIS_SUCCESS) {
+		AW_LOGE("jump move failed!");
+		return OIS_ERROR;
+	}
+
+	/* update flash */
+	do {
+		ret = aw86006_isp_flash_download_check(o_ctrl, addr, data_p, fw_size);
+		if (ret == OIS_SUCCESS)
+			break;
+		AW_LOGD("isp flash download check failed! loop: %d", loop);
 	} while ((++loop) < AW_ERROR_LOOP);
 	if (loop >= AW_ERROR_LOOP)
 		return OIS_ERROR;
@@ -1027,9 +1227,11 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 							AW_FLASH_MOVE_LENGTH;
 	size_t app_buf_size = g_aw86006_info.fw.app_length;
 	int i = 0;
+	int j = 0;
 	int ret = OIS_ERROR;
 	uint8_t *all_buf_ptr = (uint8_t *) fw->data;
 	uint8_t *app_buf_ptr = (uint8_t *) fw->data + AW_FLASH_MOVE_LENGTH;
+	uint8_t standby_flag = 0;
 
 	AW_LOGI("enter");
 
@@ -1086,7 +1288,7 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 					(info_rd.app_id !=
 						g_aw86006_info.fw.app_id)) {
 				AW_LOGI("app not match, update app!");
-				ret = aw86006_soc_flash_update(o_ctrl,
+				ret = aw86006_isp_flash_update(o_ctrl,
 						AW_FLASH_APP_ADDR, app_buf_ptr,
 						app_buf_size);
 				if (ret != OIS_SUCCESS) {
@@ -1126,17 +1328,29 @@ static int aw86006_mem_download(struct cam_ois_ctrl_t *o_ctrl,
 	}
 
 	for (i = 0; i <= AW_ERROR_LOOP; i++) {
-		ret = aw86006_runtime_check(o_ctrl);
-		if (ret == OIS_SUCCESS) {
-			AW_LOGI("runtime_check pass, no need to update fw!");
-			break;
+		/* Get standby flag */
+		for (j = 0; j < AW_ERROR_LOOP; j++) {
+			aw86006_get_standby_flag(o_ctrl, &standby_flag);
+			if (standby_flag == AW_IC_STANDBY)
+				break;
+			mdelay(AW_RESET_DELAY);
 		}
-		AW_LOGI("runtime_check failed, update app! loop: %d", i);
+
+		if (standby_flag == AW_IC_STANDBY) {
+			ret = aw86006_runtime_check(o_ctrl);
+			if (ret == OIS_SUCCESS) {
+				AW_LOGI("chipid/version check pass!");
+				break;
+			}
+		}
+
+		AW_LOGI("update app again! loop: %d", i);
 		if (i == AW_ERROR_LOOP)
 			break;
 
-		ret = aw86006_soc_flash_update(o_ctrl, AW_FLASH_APP_ADDR,
-						app_buf_ptr, app_buf_size);
+		ret = aw86006_isp_flash_update(o_ctrl,
+						AW_FLASH_APP_ADDR, app_buf_ptr,
+						app_buf_size);
 		if (ret != OIS_SUCCESS) {
 			AW_LOGE("update app failed!");
 			break;
@@ -1153,12 +1367,6 @@ static int aw86006_firmware_update(struct cam_ois_ctrl_t *o_ctrl,
 	int i = 0;
 	uint8_t standby_flag = 0;
 
-	//get standby flag need set ois on
-	uint8_t data = 0x1;
-	ret = aw86006_i2c_writes(o_ctrl, REG_OIS_ENABLE, AW_SIZE_BYTE_2, &data, AW_SIZE_BYTE_1);
-       if(ret < 0) {
-               AW_LOGE("i2c write failed");
-       }
 	AW_LOGI("enter");
 
 	/* fw check */
