@@ -131,29 +131,7 @@
 		/delete-property/ reset-gpios;
 		/delete-property/gate-ic;
 
-		compatible = "tianma,vtdr6115,vdo,144hz";
-		reg = <1>;
-		pm-enable-gpios = <&pio 164 0>,
-                          <&pio 166 0>,
-                          <&pio 103 0>,
-                          <&pio 165 0>;
-		reset-gpios = <&pio 97 0>;
-		pinctrl-names = "default";
-		lhbm-enable;
-		port {
-			panel_in3: endpoint {
-				remote-endpoint = <&dsi_out>;
-			};
-		};
-	};
-
-	panel4@0 {
-		/delete-property/ compatible;
-		/delete-property/ pm-enable-gpios;
-		/delete-property/ reset-gpios;
-		/delete-property/gate-ic;
-
-		compatible = "csot,vtdr6115,vdo,144hz";
+		compatible = "csot,vtdr6115,vdo,144hz,c7";
 		reg = <3>;
 		pm-enable-gpios = <&pio 164 0>,
                           <&pio 166 0>,
@@ -163,7 +141,7 @@
 		pinctrl-names = "default";
 		lhbm-enable;
 		port {
-			panel_in4: endpoint {
+			panel_in3: endpoint {
 				remote-endpoint = <&dsi_out>;
 			};
 		};
