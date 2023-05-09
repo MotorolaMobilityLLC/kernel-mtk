@@ -116,6 +116,12 @@ config MTK_THERMAL_JATM
 	  to optimize game UX under a proper Tskin control.
 	  It will take care of both better user experience and Tskin control.
 
+config CANCUNF_SURFACE_NTC_SUPPORT
+	bool "cancunF use the surface_ntc to dtsi"
+	default y
+	help
+	  set iio name for cancunF
+
 config MOTO_THERMAL_CHARGER_STATE_NUM
 	int "Set MOTO charger cooling state number"
 	default 9
