@@ -13,6 +13,9 @@
 
 bool mtk_cam_is_ext_isp(struct mtk_cam_ctx *ctx)
 {
+	if (!ctx)
+		return false;
+
 	if (!ctx->used_raw_num)
 		return false;
 
