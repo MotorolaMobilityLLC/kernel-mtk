@@ -314,6 +314,25 @@ enum charging_limit_modes {
 	CHARGING_LIMIT_UNKNOWN,
 };
 
+#ifdef CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT
+typedef enum {
+	CHARGER_FFC_STATE_INITIAL,
+	CHARGER_FFC_STATE_PROBING,
+	CHARGER_FFC_STATE_STANDBY,
+	CHARGER_FFC_STATE_GOREADY,
+	CHARGER_FFC_STATE_RUNNING,
+	CHARGER_FFC_STATE_AVGEXIT,
+	CHARGER_FFC_STATE_FFCDONE,
+	CHARGER_FFC_STATE_INVALID,
+} CHARGER_FFC_STATE_T;
+
+enum {
+	CHARGER_FLAG_INVALID,
+	CHARGER_FLAG_FFC,
+	CHARGER_FLAG_NON_FFC,
+};
+#endif
+
 struct mmi_params {
 	bool			init_done;
 	bool			factory_mode;
@@ -342,6 +361,18 @@ struct mmi_params {
 	struct mmi_ffc_zone	*ffc_zones;
 	int			num_cycle_cv_steps;
 	struct mmi_cycle_cv_steps	*cycle_cv_steps;
+
+#ifdef CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT
+	CHARGER_FFC_STATE_T	ffc_state;
+	int			ffc_entry_threshold;
+	int			ffc_exit_threshold;
+	int			ffc_uisoc_threshold;
+	long		ffc_ibat_windowsum;
+	long		ffc_ibat_count;
+	int			ffc_ibat_windowsize;
+	int			ffc_iavg;
+	unsigned long ffc_iavg_update_timestamp;
+#endif
 
 	bool			enable_charging_limit;
 	bool			is_factory_image;
@@ -519,6 +550,15 @@ struct mtk_charger {
 	unsigned int enable_meta_current_limit;
 
 	struct smartcharging sc;
+
+#ifdef CONFIG_MOTO_CHG_FFC_5V10W_SUPPORT
+	/* 10w ffc */
+	bool ffc_discharging;
+	int ffc_input_current_backup;
+	int ffc_max_fv_mv_backup;
+	struct wakeup_source *ffc_charger_wakelock;
+	struct delayed_work ffc_enable_charge_work;
+#endif
 
 	/*daemon related*/
 	struct sock *daemo_nl_sk;
