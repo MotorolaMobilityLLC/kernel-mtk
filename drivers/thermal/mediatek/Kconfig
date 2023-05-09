@@ -123,6 +123,11 @@ config MTK_VTSKIN_THERMAL
 	  via vitrual tskin for Mediatek platforms.
 	  This driver collects other sensor temperature with coefficient to calculate
 	  virtual skin temperatrure.
+config CANCUNF_SURFACE_NTC_SUPPORT
+	bool "cancunF use the surface_ntc to dtsi"
+	default y
+	help
+	  set iio name for cancunF
 
 config MOTO_THERMAL_CHARGER_STATE_NUM
 	int "Set MOTO charger cooling state number"
