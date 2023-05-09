@@ -429,7 +429,11 @@ static int board_ntc_probe(struct platform_device *pdev)
 	ntc_info->chan_md_ntc = devm_iio_channel_get(&pdev->dev, "MD_Thermal_NTC");
 	ntc_info->chan_charger_ntc = devm_iio_channel_get(&pdev->dev, "Charger_NTC");
 	ntc_info->chan_flash_ntc = devm_iio_channel_get(&pdev->dev, "Flash_LED_NTC");
+#if defined (CONFIG_CANCUNF_SURFACE_NTC_SUPPORT)
+	ntc_info->chan_wlc_ntc = devm_iio_channel_get(&pdev->dev, "Surface_NTC");
+#else
 	ntc_info->chan_wlc_ntc = devm_iio_channel_get(&pdev->dev, "WLC_NTC");
+#endif //CONFIG_CANCUNF_SURFACE_NTC_SUPPORT
 	//+EKDEVONN-16, madongyu.wt, add, 20220620, match the io-channel wiht io-channel-name
 
 	platform_set_drvdata(pdev, ntc_info);
