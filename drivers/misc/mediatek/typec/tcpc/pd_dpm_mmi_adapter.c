@@ -95,7 +95,8 @@ static int mmi_hmac_sha256(u8 *key, u8 ksize,uint32_t *plaintext,
         return -ENOMEM;
     }
 
-    data_out = kzalloc(sizeof(*data_out) * psize * 4,GFP_KERNEL);
+    //This size shoud be 32Bytes or larger, because sha256 output is 32Bytes.
+    data_out = kzalloc(sizeof(*data_out) * psize * 4 * 2,GFP_KERNEL);
     if (!data_out) {
         kfree(data_in);
         return -ENOMEM;
@@ -210,7 +211,7 @@ bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data, bool ack)
 {
     uint32_t out[SHA256_NUM] = {0};
-    char key[] = MMI_KEY;
+    unsigned char key[] = MMI_KEY;
     int i = 0;
     switch(pd_port->mmi_adapter_state) {
     case MMI_REQUEST_CAP:
@@ -239,7 +240,7 @@ bool mmi_dfp_notify_uvdm(struct pd_port *pd_port,
              * src data : pd_port->uvdm_data[1-4]
              * random   : random_num
              */
-            mmi_hmac_sha256(key,sizeof(key),random_num,SHA256_NUM,out);
+            mmi_hmac_sha256(key,sizeof(key)-1,random_num,SHA256_NUM,out);
             for (i = 0;i < SHA256_NUM;i++) {
                 if (pd_port->uvdm_data[i+1] != out[i])
                     goto out;
