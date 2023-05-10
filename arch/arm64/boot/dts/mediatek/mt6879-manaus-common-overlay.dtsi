@@ -32,6 +32,7 @@
 /*Remove unused i2c device end*/
 
 &i2c6 {
+    clock-frequency = <400000>;
     aw882xx_smartpa_1: aw882xx@35 {
         compatible = "awinic,aw882xx_smartpa";
         #sound-dai-cells = <0>;
