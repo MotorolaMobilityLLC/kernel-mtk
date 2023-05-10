@@ -42,7 +42,8 @@
 		touch,reset-gpio = <&pio 3 0x0>;
 		touch,irq-gpio = <&pio 22 0x0>;
 		touch,psy-name = "battery";
-
+		ilitek,report_gesture_key;
+		ilitek,supported_gesture_type = <0x06>; //bit2-0: double:single:zero tap
 	};
 };
 
