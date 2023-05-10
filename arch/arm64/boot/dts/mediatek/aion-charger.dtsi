@@ -67,6 +67,9 @@
 
 	disable_aicl;
 
+	/* dynamic mivr */
+	enable_dynamic_mivr;
+
 	/*mmi config*/
 	mmi,typec-rp-max-current = <2000000>;
 	mmi,iterm-ma = <461>;
