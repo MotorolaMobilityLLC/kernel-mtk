@@ -275,6 +275,18 @@ struct compat_disp_scenario_config_t {
 	compat_uint_t scenario;
 };
 
+struct compat_dyn_config_info {
+	compat_uint_t vsyncFPS;
+	compat_uint_t vact_timing_fps;
+	compat_uint_t width;
+	compat_uint_t height;
+};
+
+struct compat_multi_configs {
+	compat_uint_t config_num;
+	struct compat_dyn_config_info dyn_cfgs[MULTI_CONFIG_NUM];
+};
+
 int _compat_ioctl_prepare_present_fence(struct file *file, unsigned long arg);
 int _compat_ioctl_trigger_session(struct file *file, unsigned long arg);
 int _compat_ioctl_destroy_session(struct file *file, unsigned long arg);
@@ -294,6 +306,7 @@ int _compat_ioctl_inset_session_buffer(struct file *file, unsigned long arg);
 int _compat_ioctl_query_valid_layer(struct file *file, unsigned long arg);
 int _compat_ioctl_set_scenario(struct file *file, unsigned long arg);
 int _compat_ioctl_wait_all_jobs_done(struct file *file, unsigned long arg);
+int _compat_ioctl_get_multi_configs(struct file *file, unsigned long arg);
 
 #define	COMPAT_DISP_IOCTL_CREATE_SESSION \
 	DISP_IOW(201, struct compat_disp_session_config)
@@ -343,6 +356,8 @@ int _compat_ioctl_wait_all_jobs_done(struct file *file, unsigned long arg);
 	DISP_IOW(223, struct compat_disp_scenario_config_t)
 #define COMPAT_DISP_IOCTL_WAIT_ALL_JOBS_DONE \
 	DISP_IOW(224, compat_uint_t)
+#define COMPAT_DISP_IOCTL_GET_MULTI_CONFIGS \
+	DISP_IOR(231, struct compat_multi_configs)
 
 #endif
 #endif /*_COMPAT_MTK_DISP_MGR_H_*/

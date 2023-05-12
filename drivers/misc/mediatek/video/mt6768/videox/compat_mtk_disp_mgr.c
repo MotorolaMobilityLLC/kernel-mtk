@@ -526,6 +526,34 @@ static int compat_get_disp_layer_info(
 	return err;
 }
 
+static int compat_get_disp_multi_configs(
+	struct compat_multi_configs __user *data32,
+	struct multi_configs __user *data)
+{
+	compat_uint_t u;
+	int j;
+	int err;
+
+	err = get_user(u, &(data32->config_num));
+	err |= put_user(u, &(data->config_num));
+
+	for (j = 0; j < ARRAY_SIZE(data32->dyn_cfgs); j++) {
+		err = get_user(u, &(data32->dyn_cfgs[j].vsyncFPS));
+		err |= put_user(u, &(data->dyn_cfgs[j].vsyncFPS));
+
+		err = get_user(u, &(data32->dyn_cfgs[j].vact_timing_fps));
+		err |= put_user(u, &(data->dyn_cfgs[j].vact_timing_fps));
+
+		err = get_user(u, &(data32->dyn_cfgs[j].width));
+		err |= put_user(u, &(data->dyn_cfgs[j].width));
+
+		err = get_user(u, &(data32->dyn_cfgs[j].height));
+		err |= put_user(u, &(data->dyn_cfgs[j].height));
+	}
+
+	return err;
+}
+
 static int compat_get_disp_session_info(
 	struct compat_disp_session_info __user *data32,
 	struct disp_session_info __user *data)
@@ -614,6 +642,34 @@ static int compat_put_disp_layer_info(
 	err |= put_user(u, &(data32->hrt_num));
 	err |= get_user(u, &(data->res_idx));
 	err |= put_user(u, &(data32->res_idx));
+	return err;
+}
+
+static int compat_put_disp_multi_configs(
+	struct compat_multi_configs __user *data32,
+	struct multi_configs __user *data)
+{
+	compat_uint_t u;
+	int j;
+	int err;
+
+	err = get_user(u, &(data->config_num));
+	err |= put_user(u, &(data32->config_num));
+
+	for (j = 0; j < ARRAY_SIZE(data->dyn_cfgs); j++) {
+		err = get_user(u, &(data->dyn_cfgs[j].vsyncFPS));
+		err |= put_user(u, &(data32->dyn_cfgs[j].vsyncFPS));
+
+		err = get_user(u, &(data->dyn_cfgs[j].vact_timing_fps));
+		err |= put_user(u, &(data32->dyn_cfgs[j].vact_timing_fps));
+
+		err = get_user(u, &(data->dyn_cfgs[j].width));
+		err |= put_user(u, &(data32->dyn_cfgs[j].width));
+
+		err = get_user(u, &(data->dyn_cfgs[j].height));
+		err |= put_user(u, &(data32->dyn_cfgs[j].height));
+	}
+
 	return err;
 }
 
@@ -1113,6 +1169,41 @@ int _compat_ioctl_query_valid_layer(struct file *file, unsigned long arg)
 	err = compat_put_disp_layer_info(data32, data);
 	if (err) {
 		DISPERR("compat_put_disp_layer_info fail!\n");
+		return err;
+	}
+
+	return ret;
+}
+
+int _compat_ioctl_get_multi_configs(struct file *file, unsigned long arg)
+{
+	int ret = 0;
+	int err = 0;
+	struct compat_multi_configs __user *data32;
+	struct multi_configs __user *data;
+
+	DISPDBG("COMPAT_DISP_IOCTL_GET_MULTI_CONFIGS\n");
+	data32 = compat_ptr(arg);
+
+	data = compat_alloc_user_space(sizeof(struct multi_configs));
+	if (data == NULL) {
+		DISPERR("compat_alloc_user_space fail!\n");
+		return -EFAULT;
+	}
+
+	err = compat_get_disp_multi_configs(data32, data);
+	if (err) {
+		DISPERR("compat_get_disp_multi_configs fail!\n");
+		return err;
+	}
+
+	ret = file->f_op->unlocked_ioctl(file,
+		DISP_IOCTL_GET_MULTI_CONFIGS, (unsigned long)data);
+
+	err = compat_put_disp_multi_configs(data32, data);
+
+	if (err) {
+		DISPERR("compat_put_disp_multi_configs fail!\n");
 		return err;
 	}
 
