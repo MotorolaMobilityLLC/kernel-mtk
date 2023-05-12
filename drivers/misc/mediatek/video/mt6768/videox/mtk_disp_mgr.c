@@ -1807,7 +1807,10 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,
 	{
 		return _compat_ioctl_wait_all_jobs_done(file, arg);
 	}
-
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	case COMPAT_DISP_IOCTL_GET_MULTI_CONFIGS:
+		return _compat_ioctl_get_multi_configs(file, arg);
+#endif
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:
