@@ -558,10 +558,10 @@ DevmemIntMapPages(DEVMEMINT_RESERVATION *psReservation,
                   IMG_DEV_VIRTADDR sDevVAddrBase)
 {
 	PVRSRV_ERROR eError;
+	IMG_UINT32 uiPMRMaxChunkCount = PMRGetMaxChunkCount(psPMR);
 
-	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PageCount < PMR_MAX_SUPPORTED_PAGE_COUNT), "ui32PageCount");
-	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PhysicalPgOffset < PMR_MAX_SUPPORTED_PAGE_COUNT), "ui32PhysicalPgOffset");
-
+	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PageCount < uiPMRMaxChunkCount), "ui32PageCount");
+	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PhysicalPgOffset < uiPMRMaxChunkCount), "ui32PhysicalPgOffset");
 	if (psReservation->psDevmemHeap->uiLog2PageSize > PMR_GetLog2Contiguity(psPMR))
 	{
 		PVR_DPF((PVR_DBG_ERROR,
@@ -591,7 +591,7 @@ DevmemIntUnmapPages(DEVMEMINT_RESERVATION *psReservation,
                     IMG_DEV_VIRTADDR sDevVAddrBase,
                     IMG_UINT32 ui32PageCount)
 {
-	PVR_LOG_RETURN_IF_INVALID_PARAM((ui32PageCount < PMR_MAX_SUPPORTED_PAGE_COUNT), "ui32PageCount");
+	PVR_LOG_RETURN_IF_INVALID_PARAM(ui32PageCount < PMR_MAX_SUPPORTED_4K_PAGE_COUNT, "ui32PageCount");
 
 	/* Unmap the pages and mark them invalid in the MMU PTE */
 	MMU_UnmapPages(psReservation->psDevmemHeap->psDevmemCtx->psMMUContext,

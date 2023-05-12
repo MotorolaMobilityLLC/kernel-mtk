@@ -307,6 +307,7 @@ $(PVRSRV_MODNAME)-$(CONFIG_PROC_FS) += services/server/env/linux/pvr_procfs.o
 else ifeq ($(CONFIG_DEBUG_FS),y)
 $(PVRSRV_MODNAME)-$(CONFIG_DEBUG_FS) += services/server/env/linux/pvr_debugfs.o
 endif
+
 $(PVRSRV_MODNAME)-$(CONFIG_EVENT_TRACING) += services/server/env/linux/trace_events.o
 
 ccflags-y += -I$(OUT)/target_neutral/intermediates/firmware

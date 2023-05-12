@@ -411,6 +411,11 @@ PMRPDumpSaveToFile_exit:
 	return 0;
 }
 
+static_assert(PHYSMEM_PDUMP_MEMSPACE_MAX_LENGTH <= IMG_UINT32_MAX,
+			"PHYSMEM_PDUMP_MEMSPACE_MAX_LENGTH must not be larger than IMG_UINT32_MAX");
+static_assert(PHYSMEM_PDUMP_SYMNAME_MAX_LENGTH <= IMG_UINT32_MAX,
+			"PHYSMEM_PDUMP_SYMNAME_MAX_LENGTH must not be larger than IMG_UINT32_MAX");
+
 static IMG_INT
 PVRSRVBridgePMRPDumpSymbolicAddr(IMG_UINT32 ui32DispatchTableEntry,
 				 IMG_UINT8 * psPMRPDumpSymbolicAddrIN_UI8,

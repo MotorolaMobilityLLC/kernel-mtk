@@ -74,8 +74,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define PMR_MAX_TRANSLATION_STACK_ALLOC				(32)
 
-/* Maximum number of pages a PMR can have is 1G of memory */
-#define PMR_MAX_SUPPORTED_PAGE_COUNT				(262144)
+/* Maximum size PMR can have is 8G of memory */
+#define PMR_MAX_SUPPORTED_SIZE (0x200000000ULL)
+/* Max number of pages in a PMR at 4k page size */
+#define PMR_MAX_SUPPORTED_4K_PAGE_COUNT (PMR_MAX_SUPPORTED_SIZE >> 12ULL)
 
 typedef IMG_UINT64 PMR_BASE_T;
 typedef IMG_UINT64 PMR_SIZE_T;
@@ -101,6 +103,18 @@ typedef struct _PMR_EXPORT_ PMR_EXPORT;
 typedef struct _PMR_PAGELIST_ PMR_PAGELIST;
 
 //typedef struct _PVRSRV_DEVICE_NODE_ *PPVRSRV_DEVICE_NODE;
+
+/*
+* PMRValidateSize
+*
+* Given a size value, check the value against the max supported
+* PMR size of 1GB. Return IMG_FALSE if size exceeds max, IMG_TRUE
+* otherwise.
+*/
+static inline IMG_BOOL PMRValidateSize(IMG_UINT64 uiSize)
+{
+	return (uiSize > PMR_MAX_SUPPORTED_SIZE) ? IMG_FALSE : IMG_TRUE;
+}
 
 /*
  * PMRCreatePMR
@@ -563,6 +577,14 @@ PMR_GetMappigTable(const PMR *psPMR);
 
 IMG_UINT32
 PMR_GetLog2Contiguity(const PMR *psPMR);
+
+/*
+* PMRGetMaxChunkCount
+*
+* Given a PMR, calculate the maximum number of chunks supported by
+* the PMR from the contiguity and return it.
+*/
+IMG_UINT32 PMRGetMaxChunkCount(PMR *psPMR);
 
 const IMG_CHAR *
 PMR_GetAnnotation(const PMR *psPMR);
