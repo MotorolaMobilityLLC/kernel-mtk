@@ -3091,8 +3091,6 @@ static int layering_rule_start(struct drm_mtk_layering_info *disp_info_user,
 			HRT_SECONDARY);
 		mtk_rollback_all_resize_layer_to_GPU(&layering_info,
 			HRT_THIRD);
-		mtk_rollback_all_resize_layer_to_GPU(&layering_info,
-			HRT_FOURTH);
 	}
 
 	/* Check can do MML or not */
@@ -3628,21 +3626,19 @@ int mtk_layering_rule_ioctl(struct drm_device *dev, void *data,
 
 #if IS_ENABLED(CONFIG_COMPAT)
 struct drm_mtk_layering_info_32 {
-	compat_uptr_t input_config[LYE_CRTC];
-	int disp_mode[LYE_CRTC];
+	compat_uptr_t input_config[3];
+	int disp_mode[3];
 	/* index of crtc display mode including resolution, fps... */
-	int disp_mode_idx[LYE_CRTC];
-	int layer_num[LYE_CRTC];
-	int gles_head[LYE_CRTC];
-	int gles_tail[LYE_CRTC];
+	int disp_mode_idx[3];
+	int layer_num[3];
+	int gles_head[3];
+	int gles_tail[3];
 	int hrt_num;
-	uint32_t disp_idx;
-	uint32_t disp_list;
 	/* res_idx: SF/HWC selects which resolution to use */
 	int res_idx;
 	uint32_t hrt_weight;
 	uint32_t hrt_idx;
-	compat_uptr_t mml_frame_info[LYE_CRTC];
+	compat_uptr_t mml_frame_info[3];
 };
 
 int mtk_layering_rule_ioctl_compat(struct file *file, unsigned int cmd,
@@ -3658,7 +3654,7 @@ int mtk_layering_rule_ioctl_compat(struct file *file, unsigned int cmd,
 	if (copy_from_user(&data32, argp, sizeof(data32)))
 		return -EFAULT;
 	memset(&data, 0, sizeof(data));
-	for (i = 0; i < LYE_CRTC; i++) {
+	for (i = 0; i < 3; i++) {
 		data.input_config[i] = compat_ptr(data32.input_config[i]);
 		data.disp_mode[i] = data32.disp_mode[i];
 		data.disp_mode_idx[i] = data32.disp_mode_idx[i];
@@ -3668,8 +3664,6 @@ int mtk_layering_rule_ioctl_compat(struct file *file, unsigned int cmd,
 		data.mml_cfg[i] = compat_ptr(data32.mml_frame_info[i]);
 	}
 	data.hrt_num = data32.hrt_num;
-	data.disp_idx = data32.disp_idx;
-	data.disp_list = data32.disp_list;
 	data.res_idx = data32.res_idx;
 	data.hrt_weight = data32.hrt_weight;
 	data.hrt_idx = data32.hrt_idx;
@@ -3678,7 +3672,7 @@ int mtk_layering_rule_ioctl_compat(struct file *file, unsigned int cmd,
 	if (err)
 		return err;
 
-	for (i = 0; i < LYE_CRTC; i++) {
+	for (i = 0; i < 3; i++) {
 		//data32.input_config[i] = ptr_to_compat(data.input_config[i]);
 		data32.disp_mode[i] = data.disp_mode[i];
 		data32.disp_mode_idx[i] = data.disp_mode_idx[i];
@@ -3687,8 +3681,6 @@ int mtk_layering_rule_ioctl_compat(struct file *file, unsigned int cmd,
 		data32.gles_tail[i] = data.gles_tail[i];
 	}
 	data32.hrt_num = data.hrt_num;
-	data32.disp_idx = data.disp_idx;
-	data32.disp_list = data.disp_list;
 	data32.res_idx = data.res_idx;
 	data32.hrt_weight = data.hrt_weight;
 	data32.hrt_idx = data.hrt_idx;
