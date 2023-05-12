@@ -427,6 +427,8 @@ TLReleaseData_exit:
 
 static_assert(PRVSRVTL_MAX_STREAM_NAME_SIZE <= IMG_UINT32_MAX,
 	      "PRVSRVTL_MAX_STREAM_NAME_SIZE must not be larger than IMG_UINT32_MAX");
+static_assert(PVRSRVTL_MAX_DISCOVERABLE_STREAMS_BUFFER <= IMG_UINT32_MAX,
+			"PVRSRVTL_MAX_DISCOVERABLE_STREAMS_BUFFER must not be larger than IMG_UINT32_MAX");
 
 static IMG_INT
 PVRSRVBridgeTLDiscoverStreams(IMG_UINT32 ui32DispatchTableEntry,

@@ -48,8 +48,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /*
 	RGX Device Virtual Address Space Definitions
-	NOTES:
-		Base addresses have to be a multiple of 4MiB
 
 		RGX_PDSCODEDATA_HEAP_BASE and RGX_USCCODE_HEAP_BASE will be programmed,
 		on a global basis, into RGX_CR_PDS_EXEC_BASE and RGX_CR_USC_CODE_BASE_*
@@ -70,9 +68,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		use within device memory layer.
 */
 
-	/* Start at 4 MiB Size of 512 GiB less 4 MiB (managed by OS/Services) */
-	#define RGX_GENERAL_SVM_HEAP_BASE			IMG_UINT64_C(0x0000400000)
-	#define RGX_GENERAL_SVM_HEAP_SIZE			IMG_UINT64_C(0x7FFFC00000)
+	/* Start at 2 MiB Size of 512 GiB less 2 MiB (managed by OS/Services) */
+	#define RGX_GENERAL_SVM_HEAP_BASE           IMG_UINT64_C(0x0000200000)
+	#define RGX_GENERAL_SVM_HEAP_SIZE			IMG_UINT64_C(0x7FFFE00000)
 
 	/* Start at 512GiB. Size of 255 GiB */
 	#define RGX_GENERAL_HEAP_BASE				IMG_UINT64_C(0x8000000000)
